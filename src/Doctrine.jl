@@ -14,7 +14,7 @@ using Typeclass
   ∘(f::Mor, g::Mor) = compose(f, g)
 end
 
-# Parent: Category
+# Parent class: Category
 @class MonoidalCategory Ob Mor begin
   otimes(A::Ob, B::Ob)::Ob
   otimes(f::Mor, g::Mor)::Mor

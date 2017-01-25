@@ -4,7 +4,6 @@ export Ob, Mor, AtomicOb, AtomicMor, CompositeMor, IdentityMor
 export ob, mor, dom, codom, id, compose
 
 import ..Doctrine
-using Match
 using Typeclass
 
 abstract Ob
@@ -13,54 +12,36 @@ abstract Mor
 # Category
 ##########
 
-immutable AtomicOb <: Ob
-  name::Symbol
+function expr(head::Symbol, args::Array, typ::Type)::Expr
+  ex = Expr(head, args...)
+  ex.typ = typ
+  return ex
 end
 
-immutable AtomicMor <: Mor
-  name::Symbol
-  dom::Ob
-  codom::Ob
-end
+# Generators
+ob(A::Symbol) = expr(:gen, [A], Ob)
+mor(f::Symbol, dom::Expr, codom::Expr) = expr(:gen, [f,dom,codom], Mor)
 
-immutable CompositeMor <: Mor
-  mors::Array{Mor}
-end
-
-immutable IdentityMor <: Mor
-  ob::Ob
-end
-
-# Constructors
-ob(A::Symbol)::Ob = AtomicOb(A)
-mor(f::Symbol, dom::Ob, codom::Ob)::Mor = AtomicMor(f, dom, codom)
-
-# Category interface
-dom(f::AtomicMor) = f.dom
-dom(f::CompositeMor) = dom(first(f.mors))
-dom(f::IdentityMor) = f.obj
-
-codom(f::AtomicMor) = f.codom
-codom(f::CompositeMor) = codom(last(f.mors))
-codom(f::IdentityMor) = f.obj
-
-@instance! Doctrine.Category Ob Mor begin
-  dom(f::Mor) = dom(f)
-  codom(f::Mor) = codom(f)
-  id(A::Ob) = IdentityMor(A)
+@instance! Doctrine.Category Expr Expr begin
+  dom(f::Expr) = dom(f, Val{f.head})
+  codom(f::Expr) = codom(f, Val{f.head})
+  id(A::Expr) = expr(:id, [A], Ob)
   
-  function compose(f::Mor, g::Mor)
+  function compose(f::Expr, g::Expr)
     if codom(f) != dom(g)
       error("Incompatible domains $(codom(f)) and $(dom(f))")
     end
-    mors(f) = isa(f, CompositeMor) ? f.mors : f
-    @match (f, g) begin 
-      (IdentityMor, _) => g
-      (_, IdentityMor) => f
-      _ => CompositeMor([mors(f) mors(g)])
-    end
+    expr(:compose, [f,g], Mor)
   end
 end
+
+dom(f::Expr, ::Type{Val{:gen}}) = f.args[2]
+dom(f::Expr, ::Type{Val{:compose}}) = dom(first(f.args))
+dom(f::Expr, ::Type{Val{:id}}) = f.args[1]
+
+codom(f::Expr, ::Type{Val{:gen}}) = f.args[3]
+codom(f::Expr, ::Type{Val{:compose}}) = codom(last(f.args))
+codom(f::Expr, ::Type{Val{:id}}) = f.args[1]
 
 # Monoidal category
 ###################
