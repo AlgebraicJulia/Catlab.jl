@@ -3,8 +3,9 @@ module Syntax
 export Ob, Mor, AtomicOb, AtomicMor, CompositeMor, IdentityMor
 export ob, mor, dom, codom, id, compose
 
-import ..Doctrine
+import Base: ==
 using Typeclass
+import ..Doctrine
 
 # Expressions
 #############
@@ -29,15 +30,19 @@ last but leads to a large proliferation of types and makes it inconvenient to
 write generic code operating on expressions as a homogeneous data structure
 (analogous to S-expressions).
 """
-abstract DoctrineExpr
+abstract BaseExpr
 
-immutable ObExpr <: DoctrineExpr
+head(expr::BaseExpr)::Symbol = expr.head
+args(expr::BaseExpr)::Array = expr.args
+==(e1::BaseExpr, e2::BaseExpr)::Bool = head(e1)==head(e2) && args(e1)==args(e2)
+
+immutable ObExpr <: BaseExpr
   head::Symbol
   args::Array
   ObExpr(head, args...) = new(head, [args...])
 end
 
-immutable MorExpr <: DoctrineExpr
+immutable MorExpr <: BaseExpr
   head::Symbol
   args::Array
   MorExpr(head, args...) = new(head, [args...])
@@ -47,10 +52,10 @@ end
 ##########
 
 @instance! Doctrine.Category ObExpr MorExpr begin
-  dom(f::MorExpr) = dom(f, Val{f.head})
-  codom(f::MorExpr) = codom(f, Val{f.head})
+  dom(f::MorExpr) = dom(f, Val{head(f)})
+  codom(f::MorExpr) = codom(f, Val{head(f)})
   id(A::ObExpr) = MorExpr(:id, A)
-  
+
   function compose(f::MorExpr, g::MorExpr)
     if codom(f) != dom(g)
       error("Incompatible domains $(codom(f)) and $(dom(f))")
@@ -63,13 +68,13 @@ end
 ob(A::Symbol) = ObExpr(:gen, A)
 mor(f::Symbol, dom::ObExpr, codom::ObExpr) = MorExpr(:gen, f, dom, codom)
 
-dom(f::MorExpr, ::Type{Val{:gen}}) = f.args[2]
-dom(f::MorExpr, ::Type{Val{:compose}}) = dom(first(f.args))
-dom(f::MorExpr, ::Type{Val{:id}}) = f.args[1]
+dom(f::MorExpr, ::Type{Val{:gen}}) = args(f)[2]
+dom(f::MorExpr, ::Type{Val{:compose}}) = dom(first(args(f)))
+dom(f::MorExpr, ::Type{Val{:id}}) = args(f)[1]
 
-codom(f::MorExpr, ::Type{Val{:gen}}) = f.args[3]
-codom(f::MorExpr, ::Type{Val{:compose}}) = codom(last(f.args))
-codom(f::MorExpr, ::Type{Val{:id}}) = f.args[1]
+codom(f::MorExpr, ::Type{Val{:gen}}) = args(f)[3]
+codom(f::MorExpr, ::Type{Val{:compose}}) = codom(last(args(f)))
+codom(f::MorExpr, ::Type{Val{:id}}) = args(f)[1]
 
 # Monoidal category
 ###################
