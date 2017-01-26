@@ -6,7 +6,7 @@ using Base.Test
 
 A, B = ob(:A), ob(:B)
 f = mor(:f, A, B)
-g = mor(:f, B, A)
+g = mor(:g, B, A)
 
 # Equality of equivalent generator instances
 @test ob(:A) == ob(:A)
@@ -27,6 +27,12 @@ g = mor(:f, B, A)
 @test f∘g == compose(f,g)
 @test f∘g∘f == compose(compose(f,g),f)
 
+# Display
+@test as_sexpr(A) == ":A"
+@test as_sexpr(f) == ":f"
+@test as_sexpr(compose(f,g)) == "(compose :f :g)"
+@test as_sexpr(compose(f,g,f)) == "(compose :f :g :f)"
+
 # Monoidal category
 ###################
 
@@ -45,3 +51,8 @@ I = munit(A)
 @test otimes(f,f,f) == otimes(otimes(f,f),f)
 @test A⊗B == otimes(A,B)
 @test f⊗g == otimes(f,g)
+
+# Display
+@test as_sexpr(otimes(A,B)) == "(otimes :A :B)"
+@test as_sexpr(otimes(f,g)) == "(otimes :f :g)"
+@test as_sexpr(compose(otimes(f,f),otimes(g,g))) == "(compose (otimes :f :f) (otimes :g :g))"

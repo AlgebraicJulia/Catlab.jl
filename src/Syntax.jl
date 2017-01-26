@@ -1,6 +1,6 @@
 module Syntax
 
-export BaseExpr, ObExpr, MorExpr
+export BaseExpr, ObExpr, MorExpr, as_sexpr
 export ob, mor, dom, codom, id, compose, ∘
 export otimes, munit, ⊗
 
@@ -34,20 +34,6 @@ write generic code operating on expressions as a homogeneous data structure
 """
 abstract BaseExpr
 
-head(expr::BaseExpr)::Symbol = expr.head
-args(expr::BaseExpr)::Array = expr.args
-=={E<:BaseExpr}(e1::E, e2::E)::Bool = head(e1)==head(e2) && args(e1)==args(e2)
-
-""" Apply associative binary operation to two expressions.
-
-Maintains the normal form E(:op, [e1,e2,..]) where e1,e2,... are expressions 
-that are *not* applications of :op.
-"""
-function associate{E<:BaseExpr}(op::Symbol, e1::E, e2::E)
-  terms(expr::E) = head(expr) == op ? args(expr) : [expr]
-  E(op, [terms(e1);terms(e2)]...)
-end
-
 immutable ObExpr <: BaseExpr
   head::Symbol
   args::Array
@@ -58,6 +44,40 @@ immutable MorExpr <: BaseExpr
   head::Symbol
   args::Array
   MorExpr(head, args...) = new(head, [args...])
+end
+
+head(expr::BaseExpr)::Symbol = expr.head
+args(expr::BaseExpr)::Array = expr.args
+=={E<:BaseExpr}(e1::E, e2::E)::Bool = head(e1)==head(e2) && args(e1)==args(e2)
+
+""" Apply associative binary operation to two expressions.
+
+Maintains the normal form E(:op, [e1,e2,..]) where e1,e2,... are expressions
+that are *not* applications of :op.
+"""
+function associate{E<:BaseExpr}(op::Symbol, e1::E, e2::E)
+  terms(expr::E) = head(expr) == op ? args(expr) : [expr]
+  E(op, [terms(e1);terms(e2)]...)
+end
+
+""" Show the expression as an S-expression.
+
+Cf. the standard library function `Meta.show_sexpr`.
+"""
+show_sexpr(expr::BaseExpr) = show_expr(STDOUT, expr)
+show_sexpr(io::IO, expr::BaseExpr) = print(io, as_sexpr(expr))
+
+""" Convert the expression to an S-expression string.
+
+The transformation is *not* one-to-one since the domains and codomains are
+discarded.
+"""
+function as_sexpr(expr::BaseExpr)::String
+  if head(expr) == :gen
+    repr(args(expr)[1])
+  else
+    string("(", join([head(expr), map(as_sexpr,args(expr))...], " "), ")")
+  end
 end
 
 # Category
