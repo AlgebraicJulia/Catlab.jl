@@ -4,6 +4,9 @@ export MonoidalCategory, otimes, munit, ⊗
 
 using Typeclass
 
+@doc """ Doctrine: *category* (with no extra structure)
+""" Category
+
 @class Category Ob Mor begin
   dom(f::Mor)::Ob
   codom(f::Mor)::Ob
@@ -18,7 +21,14 @@ using Typeclass
   ∘(fs::Vararg{Mor}) = compose(fs...)
 end
 
-# Parent class: Category
+@doc """ Doctrine: *monoidal category*
+
+Parent typeclass: `Category`
+
+To avoid associators and unitors, we assume the monoidal category is *strict*.
+By the coherence theorem, there is no loss of generality.
+""" MonoidalCategory
+
 @class MonoidalCategory Ob Mor begin
   otimes(A::Ob, B::Ob)::Ob
   otimes(f::Mor, g::Mor)::Mor

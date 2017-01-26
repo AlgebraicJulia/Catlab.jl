@@ -2,8 +2,10 @@ module Syntax
 
 export BaseExpr, ObExpr, MorExpr
 export ob, mor, dom, codom, id, compose, ∘
+export otimes, munit, ⊗
 
 import Base: ==
+using Match
 using Typeclass
 import ..Doctrine
 
@@ -78,5 +80,21 @@ codom(f::MorExpr, ::Type{Val{:id}}) = args(f)[1]
 
 # Monoidal category
 ###################
+
+@instance! Doctrine.MonoidalCategory ObExpr MorExpr begin
+  function otimes(A::ObExpr, B::ObExpr)
+    terms(expr::ObExpr) = head(expr) == :otimes ? args(expr) : [expr]
+    @match (A, B) begin
+      (ObExpr(:unit,_), _) => B
+      (_, ObExpr(:unit,_)) => A
+      _ => ObExpr(:otimes, [terms(A);terms(B)]...)
+    end
+  end
+  otimes(f::MorExpr, g::MorExpr) = MorExpr(:otimes, f, g)
+  munit(::ObExpr) = ObExpr(:unit)
+end
+
+dom(f::MorExpr, ::Type{Val{:otimes}}) = otimes(map(dom, args(f))...)
+codom(f::MorExpr, ::Type{Val{:otimes}}) = otimes(map(codom, args(f))...)
 
 end
