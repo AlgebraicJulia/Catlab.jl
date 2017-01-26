@@ -36,7 +36,17 @@ abstract BaseExpr
 
 head(expr::BaseExpr)::Symbol = expr.head
 args(expr::BaseExpr)::Array = expr.args
-==(e1::BaseExpr, e2::BaseExpr)::Bool = head(e1)==head(e2) && args(e1)==args(e2)
+=={E<:BaseExpr}(e1::E, e2::E)::Bool = head(e1)==head(e2) && args(e1)==args(e2)
+
+""" Apply associative binary operation to two expressions.
+
+Maintains the normal form E(:op, [e1,e2,..]) where e1,e2,... are expressions 
+that are *not* applications of :op.
+"""
+function associate{E<:BaseExpr}(op::Symbol, e1::E, e2::E)
+  terms(expr::E) = head(expr) == op ? args(expr) : [expr]
+  E(op, [terms(e1);terms(e2)]...)
+end
 
 immutable ObExpr <: BaseExpr
   head::Symbol
@@ -53,6 +63,20 @@ end
 # Category
 ##########
 
+@doc """ Syntax for a *category*.
+
+Although they implement the `Category` typeclass, the expressions do not
+strictly speaking form a category because they don't satisfy the category laws,
+e.g.,
+```
+compose(f, id(A)) != compose(f)
+```
+The expressions form a *syntax* for categories. Equational reasoning and the
+conversion to normal form are handled by other components. (An exception is the
+associativity of composition, which for convenience is handled at the syntactic
+level.) Similar remarks apply to the other doctrines.
+""" CategorySyntax
+
 @instance! Doctrine.Category ObExpr MorExpr begin
   dom(f::MorExpr) = dom(f, Val{head(f)})
   codom(f::MorExpr) = codom(f, Val{head(f)})
@@ -62,7 +86,7 @@ end
     if codom(f) != dom(g)
       error("Incompatible domains $(codom(f)) and $(dom(f))")
     end
-    MorExpr(:compose, f, g)
+    associate(:compose, f, g)
   end
 end
 
@@ -81,16 +105,22 @@ codom(f::MorExpr, ::Type{Val{:id}}) = args(f)[1]
 # Monoidal category
 ###################
 
+@doc """ Syntax for a (strict) *monoidal category*.
+
+To satisfy the strictness requirement, monoidal products of objects are
+automatically brought to normal form. No other equational reasoning is performed
+at the syntactic level.
+""" MonoidalCategorySyntax
+
 @instance! Doctrine.MonoidalCategory ObExpr MorExpr begin
   function otimes(A::ObExpr, B::ObExpr)
-    terms(expr::ObExpr) = head(expr) == :otimes ? args(expr) : [expr]
     @match (A, B) begin
       (ObExpr(:unit,_), _) => B
       (_, ObExpr(:unit,_)) => A
-      _ => ObExpr(:otimes, [terms(A);terms(B)]...)
+      _ => associate(:otimes, A, B)
     end
   end
-  otimes(f::MorExpr, g::MorExpr) = MorExpr(:otimes, f, g)
+  otimes(f::MorExpr, g::MorExpr) = associate(:otimes, f, g)
   munit(::ObExpr) = ObExpr(:unit)
 end
 
