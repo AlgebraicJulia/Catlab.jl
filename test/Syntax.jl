@@ -14,3 +14,9 @@ g = mor(:f, B, A)
 @test codom(f) == B
 @test dom(compose(f,g)) == A
 @test codom(compose(f,g)) == A
+@test_throws Exception compose(f,f)
+
+# Extra syntax
+@test compose(f,g,f) == compose(compose(f,g),f)
+@test f∘g == compose(f,g)
+@test f∘g∘f == compose(compose(f,g),f)

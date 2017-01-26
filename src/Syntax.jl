@@ -1,7 +1,7 @@
 module Syntax
 
-export Ob, Mor, AtomicOb, AtomicMor, CompositeMor, IdentityMor
-export ob, mor, dom, codom, id, compose
+export BaseExpr, ObExpr, MorExpr
+export ob, mor, dom, codom, id, compose, ∘
 
 import Base: ==
 using Typeclass

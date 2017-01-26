@@ -10,8 +10,12 @@ using Typeclass
   id(A::Ob)::Mor
   compose(f::Mor, g::Mor)::Mor
 
+  # Varargs
+  compose(fs::Vararg{Mor}) = foldl(compose, fs)
+
   # Unicode syntax
   ∘(f::Mor, g::Mor) = compose(f, g)
+  ∘(fs::Vararg{Mor}) = compose(fs...)
 end
 
 # Parent class: Category
@@ -19,10 +23,16 @@ end
   otimes(A::Ob, B::Ob)::Ob
   otimes(f::Mor, g::Mor)::Mor
   munit(::Ob)::Ob
-  
+
+  # Varargs
+  otimes(As::Vararg{Ob}) = foldl(otimes, As)
+  otimes(fs::Vararg{Mor}) = foldl(otimes, fs)
+
   # Unicode syntax
   ⊗(A::Ob, B::Ob) = otimes(A, B)
   ⊗(f::Mor, g::Mor) = otimes(f, g)
+  ⊗(As::Vararg{Ob}) = otimes(As...)
+  ⊗(fs::Vararg{Mor}) = otimes(fs...)
 end
 
 end
