@@ -8,7 +8,7 @@ export
 import Base: ==
 using Match
 using Typeclass
-import ..Doctrine
+using ..Doctrine: Category, MonoidalCategory
 
 # Expressions
 #############
@@ -78,7 +78,7 @@ associativity of composition, which for convenience is handled at the syntactic
 level.) Similar remarks apply to the other doctrines.
 """ CategorySyntax
 
-@instance! Doctrine.Category ObExpr MorExpr begin
+@instance! Category ObExpr MorExpr begin
   dom(f::MorExpr) = dom(f, Val{head(f)})
   codom(f::MorExpr) = codom(f, Val{head(f)})
   id(A::ObExpr) = MorExpr(:id, A)
@@ -113,7 +113,7 @@ automatically brought to normal form. No other equational reasoning is performed
 at the syntactic level.
 """ MonoidalCategorySyntax
 
-@instance! Doctrine.MonoidalCategory ObExpr MorExpr begin
+@instance! MonoidalCategory ObExpr MorExpr begin
   function otimes(A::ObExpr, B::ObExpr)
     @match (A, B) begin
       (ObExpr(:unit,_), _) => B
