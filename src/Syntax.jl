@@ -1,8 +1,9 @@
 module Syntax
-
-export BaseExpr, ObExpr, MorExpr, as_sexpr
-export ob, mor, dom, codom, id, compose, ∘
-export otimes, munit, ⊗
+export
+  BaseExpr, ObExpr, MorExpr, head, args,
+  as_sexpr, show_sexpr, as_infix, show_infix,
+  ob, mor, dom, codom, id, compose, ∘,
+  otimes, munit, ⊗
 
 import Base: ==
 using Match
@@ -58,26 +59,6 @@ that are *not* applications of :op.
 function associate{E<:BaseExpr}(op::Symbol, e1::E, e2::E)
   terms(expr::E) = head(expr) == op ? args(expr) : [expr]
   E(op, [terms(e1);terms(e2)]...)
-end
-
-""" Show the expression as an S-expression.
-
-Cf. the standard library function `Meta.show_sexpr`.
-"""
-show_sexpr(expr::BaseExpr) = show_expr(STDOUT, expr)
-show_sexpr(io::IO, expr::BaseExpr) = print(io, as_sexpr(expr))
-
-""" Convert the expression to an S-expression string.
-
-The transformation is *not* one-to-one since the domains and codomains are
-discarded.
-"""
-function as_sexpr(expr::BaseExpr)::String
-  if head(expr) == :gen
-    repr(args(expr)[1])
-  else
-    string("(", join([head(expr), map(as_sexpr,args(expr))...], " "), ")")
-  end
 end
 
 # Category
@@ -146,5 +127,62 @@ end
 
 dom(f::MorExpr, ::Type{Val{:otimes}}) = otimes(map(dom, args(f))...)
 codom(f::MorExpr, ::Type{Val{:otimes}}) = otimes(map(codom, args(f))...)
+
+# Pretty-print
+##############
+
+""" Show the expression as an S-expression.
+
+Cf. the standard library function `Meta.show_sexpr`.
+"""
+show_sexpr(expr::BaseExpr) = show_expr(STDOUT, expr)
+show_sexpr(io::IO, expr::BaseExpr) = print(io, as_sexpr(expr))
+
+""" Format the expression as an S-expression.
+
+The transformation is *not* one-to-one since the domains and codomains are
+discarded.
+"""
+function as_sexpr(expr::BaseExpr)::String
+  if head(expr) == :gen
+    repr(args(expr)[1])
+  else
+    string("(", join([head(expr), map(as_sexpr,args(expr))...], " "), ")")
+  end
+end
+
+""" Show the expression in infix notation, using Unicode symbols for operators.
+"""
+show_infix(expr::BaseExpr) = show_infix(STDOUT, expr)
+show_infix(io::IO, expr::BaseExpr) = print(io, as_infix(expr))
+
+""" Format the expression in infix notation.
+"""
+as_infix(expr::ObExpr) = _as_infix(expr)
+as_infix(expr::MorExpr) =
+  "$(_as_infix(expr)) : $(_as_infix(dom(expr))) → $(_as_infix(codom(expr)))"
+
+function _as_infix(expr::BaseExpr, paren::Bool=false)::String
+  head, args = Syntax.head(expr), Syntax.args(expr)
+  if head == :gen # special case: generator
+    return string(args[1])
+  end
+  
+  symbol = get(symbol_table, head, string(head))
+  if length(symbol) <= 1 && length(args) >= 2 # case 1: infix
+    result = join([_as_infix(a,true) for a in args], symbol)
+    paren ? "($result)" : result
+  elseif length(args) >= 1 # case 2: prefix
+    string(symbol, "[", join(map(_as_infix, args), ","), "]")
+  else # degenerate case: no arguments
+    symbol
+  end
+end
+
+const symbol_table = Dict{Symbol,String}(
+  :compose => " ",
+  :otimes => "⊗",
+  :unit => "I",
+)
 
 end

@@ -1,10 +1,15 @@
 module Doctrine
-export Category, dom, codom, id, compose, ∘
-export MonoidalCategory, otimes, munit, ⊗
+export
+  Category, dom, codom, id, compose, ∘,
+  MonoidalCategory, otimes, munit, ⊗
 
 using Typeclass
 
 @doc """ Doctrine: *category* (with no extra structure)
+
+**Warning**: We compose functions from left to right, e.g., if f:A→B and g:B→C
+then f∘g:A→C. Under this convention function are applied on the right, e.g.,
+if a∈A then af∈B.
 """ Category
 
 @class Category Ob Mor begin
@@ -26,7 +31,8 @@ end
 Parent typeclass: `Category`
 
 To avoid associators and unitors, we assume the monoidal category is *strict*.
-By the coherence theorem, there is no loss of generality.
+By the coherence theorem there is no loss of generality, but we may add a
+typeclass for weak monoidal categories later.
 """ MonoidalCategory
 
 @class MonoidalCategory Ob Mor begin
