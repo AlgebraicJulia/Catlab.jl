@@ -14,7 +14,12 @@ import ..Doctrine:
 # Diagrams
 ##########
 
-""" TODO: Document
+""" Base class for boxes in wiring diagrams.
+
+The `Box` classes are abstract wiring diagrams (aka string diagrams). Here
+"abstract" means that they cannot be directly rendered as raster or vector
+graphics. However, they form a useful intermediate representation that can be
+readily translated into Graphviz, TikZ, or other diagram languages.
 """
 abstract Box
 
@@ -64,21 +69,24 @@ end
 show(io::IO, box::WiringDiagram) =
   print(io, "WiringDiagram($(box.boxes),$(box.connections))")
 
-""" Flatten a wiring diagram.
+""" Completely flatten a wiring diagram.
 """
-function flatten!(diagram::WiringDiagram)::WiringDiagram
+function flatten(diagram::WiringDiagram)::WiringDiagram
   for (i,box) in enumerate(diagram.boxes)
     if isa(box, WiringDiagram)
-      return flatten!(flatten!(diagram, i))
+      return flatten(flatten(diagram, i))
     end
   end
   return diagram
 end
 
-function flatten!(diagram::WiringDiagram, subindex::Int)
+""" Flatten a single wiring diagram inside another wiring diagram.
+"""
+function flatten(diagram::WiringDiagram, subindex::Int)
   # Flatten boxes.
   sub = diagram.boxes[subindex]::WiringDiagram
-  splice!(diagram.boxes, subindex, sub.boxes)
+  boxes = copy(diagram.boxes)
+  splice!(boxes, subindex, sub.boxes)
 
   # Flatten connections.
   set_box(c::Connector, box::Int) = Connector(box, c.kind, c.port)
@@ -98,8 +106,8 @@ function flatten!(diagram::WiringDiagram, subindex::Int)
     tgt = c.tgt.box == 0 ? reindex(out_map[c.tgt]) : sub_reindex(c.tgt)
     push!(connections, Connection(src => tgt))
   end
-  diagram.connections = connections
-  return diagram
+
+  WiringDiagram(boxes, connections, dom(diagram), codom(diagram))
 end
 
 # Category
@@ -120,7 +128,7 @@ end
       Set(Connection((1,Output,i) => (2,Input,i)) for i in eachindex(f.codom)),
       Set(Connection((2,Output,i) => (0,Output,i)) for i in eachindex(g.codom))
     )
-    flatten!(WiringDiagram(boxes, connections, dom(f), codom(g)))
+    flatten(WiringDiagram(boxes, connections, dom(f), codom(g)))
   end
 end
 
@@ -138,7 +146,7 @@ end
       Set(Connection((1,Output,i) => (0,Output,i)) for i in eachindex(f.codom)),
       Set(Connection((2,Output,i) => (0,Output,i+n)) for i in eachindex(g.codom))
     )
-    flatten!(WiringDiagram(
+    flatten(WiringDiagram(
       boxes, connections, otimes(dom(f),dom(g)), otimes(codom(f),codom(g))))
   end
   munit(::Wires) = Wires()
