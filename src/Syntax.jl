@@ -1,14 +1,17 @@
 module Syntax
 export
-  BaseExpr, ObExpr, MorExpr, head, args,
+  BaseExpr, ObExpr, MorExpr, ob_expr, mor_expr, head, args,
   as_sexpr, show_sexpr, as_infix, show_infix,
-  ob, mor, dom, codom, id, compose, ∘,
+  dom, codom, id, compose, ∘,
   otimes, munit, ⊗
 
 import Base: ==
 using Match
 using Typeclass
-using ..Doctrine: Category, MonoidalCategory
+
+import ..Doctrine:
+  Category, dom, codom, id, compose, ∘,
+  MonoidalCategory, otimes, munit, ⊗
 
 # Expressions
 #############
@@ -47,6 +50,11 @@ immutable MorExpr <: BaseExpr
   MorExpr(head, args...) = new(head, [args...])
 end
 
+# Generators
+ob_expr(A::Symbol) = ObExpr(:gen, A)
+mor_expr(f::Symbol, dom::ObExpr, codom::ObExpr) = MorExpr(:gen, f, dom, codom)
+
+# Accessors and operators
 head(expr::BaseExpr)::Symbol = expr.head
 args(expr::BaseExpr)::Array = expr.args
 =={E<:BaseExpr}(e1::E, e2::E)::Bool = head(e1)==head(e2) && args(e1)==args(e2)
@@ -90,10 +98,6 @@ level.) Similar remarks apply to the other doctrines.
     associate(:compose, f, g)
   end
 end
-
-# Generators
-ob(A::Symbol) = ObExpr(:gen, A)
-mor(f::Symbol, dom::ObExpr, codom::ObExpr) = MorExpr(:gen, f, dom, codom)
 
 dom(f::MorExpr, ::Type{Val{:gen}}) = args(f)[2]
 dom(f::MorExpr, ::Type{Val{:compose}}) = dom(first(args(f)))
@@ -167,10 +171,10 @@ function _as_infix(expr::BaseExpr, paren::Bool=false)::String
   if head == :gen # special case: generator
     return string(args[1])
   end
-  
+
   symbol = get(symbol_table, head, string(head))
   if length(symbol) <= 1 && length(args) >= 2 # case 1: infix
-    result = join([_as_infix(a,true) for a in args], symbol)
+    result = join((_as_infix(a,true) for a in args), symbol)
     paren ? "($result)" : result
   elseif length(args) >= 1 # case 2: prefix
     string(symbol, "[", join(map(_as_infix, args), ","), "]")

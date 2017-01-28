@@ -1,16 +1,16 @@
 using CompCat.Syntax
 using Base.Test
 
-# Category
-##########
-
-A, B = ob(:A), ob(:B)
-f = mor(:f, A, B)
-g = mor(:g, B, A)
+A, B = ob_expr(:A), ob_expr(:B)
+f = mor_expr(:f, A, B)
+g = mor_expr(:g, B, A)
 
 # Equality of equivalent generator instances
-@test ob(:A) == ob(:A)
-@test mor(:f, ob(:A), ob(:B)) == mor(:f, ob(:A), ob(:B))
+@test ob_expr(:A) == ob_expr(:A)
+@test mor_expr(:f, ob_expr(:A), ob_expr(:B)) == mor_expr(:f, ob_expr(:A), ob_expr(:B))
+
+# Category
+##########
 
 # Domains and codomains
 @test dom(f) == A
@@ -64,6 +64,6 @@ I = munit(A)
 
 @test as_infix(otimes(A,B)) == "A⊗B"
 @test as_infix(otimes(f,g)) == "f⊗g : A⊗B → B⊗A"
-@test as_infix(mor(:f, I, A)) == "f : I → A"
+@test as_infix(mor_expr(:f, I, A)) == "f : I → A"
 @test as_infix(compose(otimes(f,f),otimes(g,g))) == "(f⊗f) (g⊗g) : A⊗A → A⊗A"
 @test as_infix(otimes(compose(f,g),compose(g,f))) == "(f g)⊗(g f) : A⊗B → A⊗B"
