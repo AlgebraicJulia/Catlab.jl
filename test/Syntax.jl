@@ -5,7 +5,7 @@ A, B = ob_expr(:A), ob_expr(:B)
 f = mor_expr(:f, A, B)
 g = mor_expr(:g, B, A)
 
-# Equality of equivalent generator instances
+# Equality of equivalent generators
 @test ob_expr(:A) == ob_expr(:A)
 @test mor_expr(:f, ob_expr(:A), ob_expr(:B)) == mor_expr(:f, ob_expr(:A), ob_expr(:B))
 

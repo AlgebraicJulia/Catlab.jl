@@ -1,9 +1,10 @@
 module Diagram
 export
   Box, Wires, ConnectorKind, Connector, Connection, AtomicBox, WiringDiagram,
-  dom, codom, id, compose, ∘
+  dom, codom, id, compose, ∘,
+  otimes, munit, ⊗
 
-import Base: eachindex, length
+import Base: ==, eachindex, length, show
 using Typeclass
 
 import ..Doctrine:
@@ -21,6 +22,7 @@ immutable Wires
   wires::Array
   Wires(wires...) = new(collect(wires))
 end
+==(w1::Wires, w2::Wires) = w1.wires == w2.wires
 eachindex(wires::Wires) = eachindex(wires.wires)
 length(wires::Wires) = length(wires.wires)
 
@@ -30,6 +32,8 @@ immutable Connector
   kind::ConnectorKind
   port::Int
 end
+show(io::IO, c::Connector) = print(io, "($(c.box),$(c.kind),$(c.port))")
+
 immutable Connection
   src::Connector
   tgt::Connector
@@ -37,12 +41,16 @@ immutable Connection
   Connection(src::Tuple, tgt::Tuple) = new(Connector(src...), Connector(tgt...))
   Connection(pair::Pair) = Connection(first(pair), last(pair))
 end
+show(io::IO, c::Connection) = print(io, "$(c.src)=>$(c.tgt)")
 
 type AtomicBox <: Box
   content::Any
   dom::Wires
   codom::Wires
 end
+==(b1::AtomicBox, b2::AtomicBox) =
+  b1.content == b2.content && b1.dom == b2.dom && b1.codom == b2.codom
+show(io::IO, box::AtomicBox) = print(io, "Box($(repr(box.content)))")
 
 type WiringDiagram <: Box
   boxes::Array{Box}
@@ -50,6 +58,11 @@ type WiringDiagram <: Box
   dom::Wires
   codom::Wires
 end
+==(b1::WiringDiagram, b2::WiringDiagram) =
+  b1.boxes == b2.boxes && b1.connections == b2.connections &&
+  b1.dom == b2.dom && b1.codom == b2.codom
+show(io::IO, box::WiringDiagram) =
+  print(io, "WiringDiagram($(box.boxes),$(box.connections))")
 
 """ Flatten a wiring diagram.
 """
@@ -69,23 +82,23 @@ function flatten!(diagram::WiringDiagram, subindex::Int)
 
   # Flatten connections.
   set_box(c::Connector, box::Int) = Connector(box, c.kind, c.port)
-  reindex(c::Connector) = set_box(c, c.box > subindex ? c.box + length(sub.boxes) : c.box)
+  reindex(c::Connector) =
+    set_box(c, c.box > subindex ? c.box + length(sub.boxes) - 1 : c.box)
   sub_reindex(c::Connector) = set_box(c, c.box + subindex - 1)
 
-  in_conns = filter(c -> c.tgt.box == subindex, diagram.connections)
-  in_map = Dict(set_box(c.tgt, 0) => reindex(c.src) for c in in_conns)
-  out_conns = filter(c -> c.src.box == subindex, diagram.connections)
-  out_map = Dict(set_box(c.src, 0) => reindex(c.tgt) for c in out_conns)
-
-  conns = Set(Connection(reindex(c.src) => reindex(c.tgt))
-              for c in diagram.connections if c ∉ in_conns && c ∉ out_conns)
-  for conn in sub.connections
-    src = conn.src.box == 0 ? in_map[conn.src] : sub_reindex(conn.src)
-    tgt = conn.tgt.box == 0 ? out_map[conn.tgt] : sub_reindex(conn.src)
-    push!(conns, Connection(src => tgt))
+  in_map = Dict(set_box(c.tgt, 0) => c.src
+                for c in diagram.connections if c.tgt.box == subindex)
+  out_map = Dict(set_box(c.src, 0) => c.tgt
+                 for c in diagram.connections if c.src.box == subindex)
+  connections = Set(Connection(reindex(c.src) => reindex(c.tgt))
+                    for c in diagram.connections
+                    if c.src.box != subindex && c.tgt.box != subindex)
+  for c in sub.connections
+    src = c.src.box == 0 ? reindex(in_map[c.src]) : sub_reindex(c.src)
+    tgt = c.tgt.box == 0 ? reindex(out_map[c.tgt]) : sub_reindex(c.tgt)
+    push!(connections, Connection(src => tgt))
   end
-  diagram.connections = conns
-
+  diagram.connections = connections
   return diagram
 end
 
