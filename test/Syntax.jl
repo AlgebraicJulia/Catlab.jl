@@ -1,6 +1,7 @@
 using CompCat.Syntax
 using Base.Test
 
+# Generators
 A, B = ob_expr(:A), ob_expr(:B)
 f = mor_expr(:f, A, B)
 g = mor_expr(:g, B, A)
@@ -28,15 +29,23 @@ g = mor_expr(:g, B, A)
 @test f∘g∘f == compose(compose(f,g),f)
 
 # Pretty-print
-@test as_sexpr(A) == ":A"
-@test as_sexpr(f) == ":f"
-@test as_sexpr(compose(f,g)) == "(compose :f :g)"
-@test as_sexpr(compose(f,g,f)) == "(compose :f :g :f)"
+function sexpr(expr)
+  buf = IOBuffer(); show_sexpr(buf, expr); takebuf_string(buf)
+end
 
-@test as_infix(A) == "A"
-@test as_infix(f) == "f : A → B"
-@test as_infix(id(A)) == "id[A] : A → A"
-@test as_infix(compose(f,g)) == "f g : A → A"
+@test sexpr(A) == ":A"
+@test sexpr(f) == ":f"
+@test sexpr(compose(f,g)) == "(compose :f :g)"
+@test sexpr(compose(f,g,f)) == "(compose :f :g :f)"
+
+function infix(expr)
+  buf = IOBuffer(); pprint(buf, expr); takebuf_string(buf)
+end
+
+@test infix(A) == "A"
+@test infix(f) == "f : A → B"
+@test infix(id(A)) == "id[A] : A → A"
+@test infix(compose(f,g)) == "f g : A → A"
 
 # Monoidal category
 ###################
@@ -58,12 +67,12 @@ I = munit(A)
 @test f⊗g == otimes(f,g)
 
 # Pretty-print
-@test as_sexpr(otimes(A,B)) == "(otimes :A :B)"
-@test as_sexpr(otimes(f,g)) == "(otimes :f :g)"
-@test as_sexpr(compose(otimes(f,f),otimes(g,g))) == "(compose (otimes :f :f) (otimes :g :g))"
+@test sexpr(otimes(A,B)) == "(otimes :A :B)"
+@test sexpr(otimes(f,g)) == "(otimes :f :g)"
+@test sexpr(compose(otimes(f,f),otimes(g,g))) == "(compose (otimes :f :f) (otimes :g :g))"
 
-@test as_infix(otimes(A,B)) == "A⊗B"
-@test as_infix(otimes(f,g)) == "f⊗g : A⊗B → B⊗A"
-@test as_infix(mor_expr(:f, I, A)) == "f : I → A"
-@test as_infix(compose(otimes(f,f),otimes(g,g))) == "(f⊗f) (g⊗g) : A⊗A → A⊗A"
-@test as_infix(otimes(compose(f,g),compose(g,f))) == "(f g)⊗(g f) : A⊗B → A⊗B"
+@test infix(otimes(A,B)) == "A⊗B"
+@test infix(otimes(f,g)) == "f⊗g : A⊗B → B⊗A"
+@test infix(mor_expr(:f, I, A)) == "f : I → A"
+@test infix(compose(otimes(f,f),otimes(g,g))) == "(f⊗f) (g⊗g) : A⊗A → A⊗A"
+@test infix(otimes(compose(f,g),compose(g,f))) == "(f g)⊗(g f) : A⊗B → A⊗B"

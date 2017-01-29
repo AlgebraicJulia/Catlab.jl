@@ -1,7 +1,6 @@
 module Syntax
 export
-  BaseExpr, ObExpr, MorExpr, ob_expr, mor_expr, head, args,
-  as_sexpr, show_sexpr, as_infix, show_infix,
+  BaseExpr, ObExpr, MorExpr, ob_expr, mor_expr, head, args, show_sexpr, pprint,
   dom, codom, id, compose, ∘,
   otimes, munit, ⊗
 
@@ -136,16 +135,14 @@ codom(f::MorExpr, ::Type{Val{:otimes}}) = otimes(map(codom, args(f))...)
 
 """ Show the expression as an S-expression.
 
+The transformation is *not* one-to-one since the domains and codomains are
+discarded.
+
 Cf. the standard library function `Meta.show_sexpr`.
 """
 show_sexpr(expr::BaseExpr) = show_expr(STDOUT, expr)
 show_sexpr(io::IO, expr::BaseExpr) = print(io, as_sexpr(expr))
 
-""" Format the expression as an S-expression.
-
-The transformation is *not* one-to-one since the domains and codomains are
-discarded.
-"""
 function as_sexpr(expr::BaseExpr)::String
   if head(expr) == :gen
     repr(args(expr)[1])
@@ -154,18 +151,16 @@ function as_sexpr(expr::BaseExpr)::String
   end
 end
 
-""" Show the expression in infix notation, using Unicode symbols for operators.
-"""
-show_infix(expr::BaseExpr) = show_infix(STDOUT, expr)
-show_infix(io::IO, expr::BaseExpr) = print(io, as_infix(expr))
+""" Pretty-print the expression in infix notation.
 
-""" Format the expression in infix notation.
+Uses Unicode symbols for operators.
 """
-as_infix(expr::ObExpr) = _as_infix(expr)
-as_infix(expr::MorExpr) =
-  "$(_as_infix(expr)) : $(_as_infix(dom(expr))) → $(_as_infix(codom(expr)))"
+pprint(expr::BaseExpr) = pprint(STDOUT, expr)
+pprint(io::IO, expr::ObExpr) = print(io, as_infix(expr))
+pprint(io::IO, expr::MorExpr) = print(io,
+  "$(as_infix(expr)) : $(as_infix(dom(expr))) → $(as_infix(codom(expr)))")
 
-function _as_infix(expr::BaseExpr, paren::Bool=false)::String
+function as_infix(expr::BaseExpr, paren::Bool=false)::String
   head, args = Syntax.head(expr), Syntax.args(expr)
   if head == :gen # special case: generator
     return string(args[1])
@@ -173,10 +168,10 @@ function _as_infix(expr::BaseExpr, paren::Bool=false)::String
 
   symbol = get(symbol_table, head, string(head))
   if length(symbol) <= 1 && length(args) >= 2 # case 1: infix
-    result = join((_as_infix(a,true) for a in args), symbol)
+    result = join((as_infix(a,true) for a in args), symbol)
     paren ? "($result)" : result
   elseif length(args) >= 1 # case 2: prefix
-    string(symbol, "[", join(map(_as_infix, args), ","), "]")
+    string(symbol, "[", join(map(as_infix, args), ","), "]")
   else # degenerate case: no arguments
     symbol
   end
