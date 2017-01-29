@@ -4,6 +4,6 @@ using Base.Test
   include("Syntax.jl")
 end
 
-@testset "Diagram" begin
-  include("Diagram.jl")
+@testset "Diagram.Wiring" begin
+  include("diagram/Wiring.jl")
 end

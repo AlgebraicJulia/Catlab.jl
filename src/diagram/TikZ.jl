@@ -62,4 +62,7 @@ end
   props::Vector{Property}
 end
 
+# Pretty-print
+##############
+
 end
