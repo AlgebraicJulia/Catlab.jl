@@ -4,15 +4,16 @@ export
   dom, codom, id, compose, ∘,
   otimes, munit, ⊗
 
-import Base: ==, eachindex, length, show
+import Base: eachindex, length, show
+using AutoHashEquals
 using Typeclass
 
 import ..Doctrine:
   Category, dom, codom, id, compose, ∘,
   MonoidalCategory, otimes, munit, ⊗
 
-# Diagrams
-##########
+# Wiring Diagrams
+#################
 
 """ Base class for boxes in wiring diagrams.
 
@@ -23,11 +24,10 @@ readily translated into Graphviz, TikZ, or other diagram languages.
 """
 abstract Box
 
-immutable Wires
+@auto_hash_equals immutable Wires
   wires::Array
   Wires(wires...) = new(collect(wires))
 end
-==(w1::Wires, w2::Wires) = w1.wires == w2.wires
 eachindex(wires::Wires) = eachindex(wires.wires)
 length(wires::Wires) = length(wires.wires)
 
@@ -48,24 +48,19 @@ immutable Connection
 end
 show(io::IO, c::Connection) = print(io, "$(c.src)=>$(c.tgt)")
 
-type AtomicBox <: Box
+@auto_hash_equals type AtomicBox <: Box
   content::Any
   dom::Wires
   codom::Wires
 end
-==(b1::AtomicBox, b2::AtomicBox) =
-  b1.content == b2.content && b1.dom == b2.dom && b1.codom == b2.codom
 show(io::IO, box::AtomicBox) = print(io, "Box($(repr(box.content)))")
 
-type WiringDiagram <: Box
+@auto_hash_equals type WiringDiagram <: Box
   boxes::Array{Box}
   connections::Set{Connection}
   dom::Wires
   codom::Wires
 end
-==(b1::WiringDiagram, b2::WiringDiagram) =
-  b1.boxes == b2.boxes && b1.connections == b2.connections &&
-  b1.dom == b2.dom && b1.codom == b2.codom
 show(io::IO, box::WiringDiagram) =
   print(io, "WiringDiagram($(box.boxes),$(box.connections))")
 

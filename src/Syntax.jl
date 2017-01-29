@@ -5,7 +5,7 @@ export
   dom, codom, id, compose, ∘,
   otimes, munit, ⊗
 
-import Base: ==
+using AutoHashEquals
 using Match
 using Typeclass
 
@@ -38,13 +38,13 @@ write generic code operating on expressions as a homogeneous data structure
 """
 abstract BaseExpr
 
-immutable ObExpr <: BaseExpr
+@auto_hash_equals immutable ObExpr <: BaseExpr
   head::Symbol
   args::Array
   ObExpr(head, args...) = new(head, [args...])
 end
 
-immutable MorExpr <: BaseExpr
+@auto_hash_equals immutable MorExpr <: BaseExpr
   head::Symbol
   args::Array
   MorExpr(head, args...) = new(head, [args...])
@@ -57,7 +57,6 @@ mor_expr(f::Symbol, dom::ObExpr, codom::ObExpr) = MorExpr(:gen, f, dom, codom)
 # Accessors and operators
 head(expr::BaseExpr)::Symbol = expr.head
 args(expr::BaseExpr)::Array = expr.args
-=={E<:BaseExpr}(e1::E, e2::E)::Bool = head(e1)==head(e2) && args(e1)==args(e2)
 
 """ Apply associative binary operation to two expressions.
 
