@@ -25,7 +25,7 @@ readily translated into Graphviz, TikZ, or other diagram languages.
 abstract Box
 
 @auto_hash_equals immutable Wires
-  wires::Array
+  wires::Vector
   Wires(wires...) = new(collect(wires))
 end
 eachindex(wires::Wires) = eachindex(wires.wires)
@@ -56,7 +56,7 @@ end
 show(io::IO, box::AtomicBox) = print(io, "Box($(repr(box.content)))")
 
 @auto_hash_equals type WiringDiagram <: Box
-  boxes::Array{Box}
+  boxes::Vector{Box}
   connections::Set{Connection}
   dom::Wires
   codom::Wires

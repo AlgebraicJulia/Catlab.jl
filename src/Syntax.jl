@@ -40,13 +40,13 @@ abstract BaseExpr
 
 @auto_hash_equals immutable ObExpr <: BaseExpr
   head::Symbol
-  args::Array
+  args::Vector
   ObExpr(head, args...) = new(head, [args...])
 end
 
 @auto_hash_equals immutable MorExpr <: BaseExpr
   head::Symbol
-  args::Array
+  args::Vector
   MorExpr(head, args...) = new(head, [args...])
 end
 
@@ -56,7 +56,7 @@ mor_expr(f::Symbol, dom::ObExpr, codom::ObExpr) = MorExpr(:gen, f, dom, codom)
 
 # Accessors and operators
 head(expr::BaseExpr)::Symbol = expr.head
-args(expr::BaseExpr)::Array = expr.args
+args(expr::BaseExpr)::Vector = expr.args
 
 """ Apply associative binary operation to two expressions.
 
