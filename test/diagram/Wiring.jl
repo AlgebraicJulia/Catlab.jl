@@ -1,13 +1,13 @@
 using CompCat.Diagram.Wiring
 using Base.Test
 
-A, B = Wires(:A), Wires(:B)
-f = AtomicBox(:f, A, B)
-g = AtomicBox(:g, B, A)
+A, B = wires(:A), wires(:B)
+f = box(:f, A, B)
+g = box(:g, B, A)
 
 # Equality of equivalent boxes
-@test Wires(:A) == Wires(:A)
-@test AtomicBox(:f, Wires(:A), Wires(:B)) == AtomicBox(:f, Wires(:A), Wires(:B))
+@test wires(:A) == wires(:A)
+@test box(:f, wires(:A), wires(:B)) == box(:f, wires(:A), wires(:B))
 
 # Category
 ##########
@@ -21,6 +21,10 @@ g = AtomicBox(:g, B, A)
 
 # Associativity
 @test compose(compose(f,g),f) == compose(f,compose(g,f))
+
+# Identity
+@test compose(id(A), f) == f
+@test compose(f, id(B)) == f
 
 # Monoidal category
 ###################

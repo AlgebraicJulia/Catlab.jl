@@ -1,7 +1,7 @@
 module Wiring
 export
-  Box, Wires, ConnectorKind, Input, Output, Connector, Connection,
-  AtomicBox, WiringDiagram,
+  Wires, Box, WiringDiagram, wires, box,
+  ConnectorKind, Input, Output, Connector, Connection,
   dom, codom, id, compose, ∘,
   otimes, munit, ⊗
 
@@ -16,19 +16,16 @@ import ...Doctrine:
 # Wiring Diagrams
 #################
 
-""" Base class for boxes in wiring diagrams.
+abstract BaseBox
 
-The `Box` classes are abstract wiring diagrams (aka string diagrams). Here
-"abstract" means that they cannot be directly rendered as raster or vector
-graphics. However, they form a useful intermediate representation that can be
-readily translated into Graphviz, TikZ, and other diagram languages.
+""" Object in the category of wiring diagrams.
+
+See also `WiringDiagram`.
 """
-abstract Box
-
 @auto_hash_equals immutable Wires
   wires::Vector
-  Wires(wires...) = new(collect(wires))
 end
+wires(wires...) = Wires(collect(wires))
 eachindex(wires::Wires) = eachindex(wires.wires)
 length(wires::Wires) = length(wires.wires)
 
@@ -49,21 +46,44 @@ immutable Connection
 end
 show(io::IO, c::Connection) = print(io, "$(c.src)=>$(c.tgt)")
 
-@auto_hash_equals type AtomicBox <: Box
+""" Atomic or generator box with no internal structure.
+"""
+@auto_hash_equals type Box <: BaseBox
   content::Any
   dom::Wires
   codom::Wires
 end
-show(io::IO, box::AtomicBox) = print(io, "Box($(repr(box.content)))")
+show(io::IO, box::Box) = print(io, "Box($(repr(box.content)))")
 
-@auto_hash_equals type WiringDiagram <: Box
-  boxes::Vector{Box}
+""" Morphism in the category of wiring diagrams.
+
+The `Box` and `Wires` types represent abstract wiring diagrams (aka string
+diagrams). Here "abstract" means that they cannot be directly rendered as raster
+or vector graphics. However, they form a useful intermediate representation that
+can be straightforwardly translated into Graphviz, TikZ, and other diagram
+languages.
+"""
+@auto_hash_equals type WiringDiagram <: BaseBox
+  boxes::Vector{BaseBox}
   connections::Set{Connection}
   dom::Wires
   codom::Wires
 end
 show(io::IO, box::WiringDiagram) =
   print(io, "WiringDiagram($(box.boxes),$(box.connections))")
+
+""" A wiring diagram with a single inner Box.
+
+These are the generators of the category of wiring diagrams.
+"""
+function box(content, dom::Wires, codom::Wires)
+  inner = Box(content, dom, codom)
+  connections = union(
+    Set(Connection((0,Input,i) => (1,Input,i)) for i in eachindex(dom)),
+    Set(Connection((1,Output,i) => (0,Output,i)) for i in eachindex(codom))
+  )
+  WiringDiagram([inner], connections, dom, codom)
+end
 
 """ Completely flatten a wiring diagram.
 """
@@ -109,12 +129,17 @@ end
 # Category
 ##########
 
-@instance! Category Wires Box begin
-  dom(f::Box) = f.dom
-  codom(f::Box) = f.codom
-  id(A::Wires) = AtomicBox(:id, A, A)
+@instance! Category Wires WiringDiagram begin
+  dom(f::WiringDiagram) = f.dom
+  codom(f::WiringDiagram) = f.codom
+  
+  function id(A::Wires)
+    connections = Set(
+      Connection((0,Input,i) => (0,Output,i)) for i in eachindex(A))
+    WiringDiagram([], connections, A, A)
+  end
 
-  function compose(f::Box, g::Box)
+  function compose(f::WiringDiagram, g::WiringDiagram)
     if codom(f) != dom(g)
       error("Incompatible domains $(codom(f)) and $(dom(f))")
     end
@@ -131,9 +156,10 @@ end
 # Monoidal category
 ###################
 
-@instance! MonoidalCategory Wires Box begin
-  otimes(A::Wires, B::Wires) = Wires([A.wires; B.wires]...)
-  function otimes(f::Box, g::Box)
+@instance! MonoidalCategory Wires WiringDiagram begin
+  otimes(A::Wires, B::Wires) = Wires([A.wires; B.wires])
+  
+  function otimes(f::WiringDiagram, g::WiringDiagram)
     m, n = length(f.dom), length(f.codom)
     boxes = [f,g]
     connections = union(
@@ -145,7 +171,8 @@ end
     flatten(WiringDiagram(
       boxes, connections, otimes(dom(f),dom(g)), otimes(codom(f),codom(g))))
   end
-  munit(::Wires) = Wires()
+  
+  munit(::Wires) = Wires([])
 end
 
 end

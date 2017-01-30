@@ -144,7 +144,7 @@ function to_tikz_graph(diagram::Wiring.WiringDiagram)::Graph
   end
   
   # Atomic nodes (visible).
-  box_height(box::Wiring.AtomicBox) = 2*max(length(box.dom),length(box.codom))
+  box_height(box) = 2*max(length(box.dom),length(box.codom))
   for (i,box) in enumerate(diagram.boxes)
     props = [ Property("minimum height", "$(box_height(box))em") ]
     push!(stmts, GraphNode("b$i"; props=props, content=string(box.content)))
