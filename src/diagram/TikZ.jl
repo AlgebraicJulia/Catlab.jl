@@ -1,6 +1,6 @@
 module TikZ
-export Expression, Statement, GraphStatement, Coordinate, Property,
-       Picture, Node, Edge, EdgeNode, Graph, GraphNode, GraphEdge
+export Expression, Statement, GraphStatement, Coordinate, Property, 
+       PathOperation, Picture, Node, Edge, EdgeNode, Graph, GraphNode, GraphEdge
 
 using AutoHashEquals
 import ...Syntax: pprint
@@ -30,6 +30,13 @@ end
   Property(key::AbstractString, value::AbstractString) = new(key, Nullable(value))
 end
 
+@auto_hash_equals immutable PathOperation <: Expression
+  op::AbstractString
+  props::Vector{Property}
+  
+  PathOperation(op::AbstractString; props=Property[]) = new(op, props)
+end
+
 @auto_hash_equals immutable Picture <: Expression
   stmts::Vector{Statement}
   props::Vector{Property}
@@ -57,11 +64,13 @@ end
 @auto_hash_equals immutable Edge <: Statement
   src::AbstractString
   tgt::AbstractString
+  op::PathOperation
   props::Vector{Property}
   node::Nullable{EdgeNode}
   
-  Edge(src::AbstractString, tgt::AbstractString; props=Property[],
-       node=Nullable()) = new(src, tgt, props, node)
+  Edge(src::AbstractString, tgt::AbstractString;
+       op=PathOperation("to"), props=Property[], node=Nullable()) =
+    new(src, tgt, op, props, node)
 end
 
 @auto_hash_equals immutable Graph <: Statement
@@ -129,7 +138,8 @@ function pprint(io::IO, edge::Edge, n::Int)
   indent(io, n)
   print(io, "\\draw")
   pprint(io, edge.props)
-  print(io, " ($(edge.src)) to")
+  print(io, " ($(edge.src)) ")
+  pprint(io, edge.op)
   if !isnull(edge.node)
     print(io, " ")
     pprint(io, get(edge.node))
@@ -179,6 +189,11 @@ end
 
 function pprint(io::IO, coord::Coordinate, n::Int)
   print(io, "($(coord.x),$(coord.y))")
+end
+
+function pprint(io::IO, op::PathOperation, n::Int)
+  print(io, op.op)
+  pprint(io, op.props)
 end
 
 function pprint(io::IO, prop::Property, n::Int)

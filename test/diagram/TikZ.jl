@@ -1,6 +1,9 @@
 using CompCat.Diagram.TikZ
 using Base.Test
 
+# Pretty-print
+##############
+
 function tikz(expr::Expression)
   buf = IOBuffer(); pprint(buf, expr); takebuf_string(buf)
 end
@@ -20,6 +23,8 @@ end
 @test tikz(Edge("f","g"; node=EdgeNode())) == "\\draw (f) to node (g);\n"
 @test tikz(Edge("f","g"; node=EdgeNode(;props=[Property("circle")],content="e"))) ==
   "\\draw (f) to node[circle] {e} (g);\n"
+@test tikz(Edge("f","g"; op=PathOperation("to"; props=[Property("out","0")]))) ==
+  "\\draw (f) to[out=0] (g);\n"
 
 # Picture statement
 @test tikz(
