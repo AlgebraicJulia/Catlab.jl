@@ -1,6 +1,7 @@
 module Wiring
 export
-  Box, Wires, ConnectorKind, Connector, Connection, AtomicBox, WiringDiagram,
+  Box, Wires, ConnectorKind, Input, Output, Connector, Connection,
+  AtomicBox, WiringDiagram,
   dom, codom, id, compose, ∘,
   otimes, munit, ⊗
 
