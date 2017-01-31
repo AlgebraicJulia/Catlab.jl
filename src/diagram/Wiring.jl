@@ -53,6 +53,8 @@ show(io::IO, c::Connection) = print(io, "$(c.src)=>$(c.tgt)")
   dom::Wires
   codom::Wires
 end
+dom(box::Box) = box.dom
+codom(box::Box) = box.codom
 show(io::IO, box::Box) = print(io, "Box($(repr(box.content)))")
 
 """ Morphism in the category of wiring diagrams.

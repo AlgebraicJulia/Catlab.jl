@@ -7,6 +7,7 @@ using AutoHashEquals
 using Match
 import ...Syntax: pprint
 import ..Wiring
+import ..Wiring: dom, codom
 
 # AST
 #####
@@ -105,7 +106,7 @@ end
 # Wiring Diagrams
 #################
 
-""" TODO
+""" Create a TikZ picture of a wiring diagram.
 """
 function to_tikz(diagram::Wiring.WiringDiagram)::Picture
   graph = to_tikz_graph(diagram)
@@ -118,22 +119,26 @@ function to_tikz(diagram::Wiring.WiringDiagram)::Picture
     src = connector_anchor(diagram, conn.src)
     tgt = connector_anchor(diagram, conn.tgt)
     if conn.src.box == 0
-      content = dom(diagram)[conn.src.port]
+      content = dom(diagram).wires[conn.src.port]
     else
-      content = codom(diagram.boxes[conn.src.box])[conn.src.port]
+      content = codom(diagram.boxes[conn.src.box]).wires[conn.src.port]
     end
-    push!(stmts, Edge(src, tgt; props=props, op=op, content=string(content)))
+    node = EdgeNode(props=[Property("above")], content=string(content))
+    push!(stmts, Edge(src, tgt; props=props, op=op, node=node))
   end
   
   props = [ Property("decoration",
-                     "{markings,mark=at position 0.5 with {\arrow{>}}}") ]
+                     "{markings,mark=at position 0.5 with {\\arrow{>}}}") ]
   Picture(graph, stmts...; props=props)
 end
 
-""" TODO
+""" Create a TikZ graph for a wiring diagram.
+
+We use TikZ's "layered" graph layout to position the nodes. The edges created
+here are not visible; their only purpose is to determine the layout.
 """
 function to_tikz_graph(diagram::Wiring.WiringDiagram)::Graph
-  stmts = GraphStatments[]
+  stmts = GraphStatement[]
   
   # Outer box nodes (invisible).
   for i in eachindex(dom(diagram)) # In-ports of outer box
@@ -152,7 +157,7 @@ function to_tikz_graph(diagram::Wiring.WiringDiagram)::Graph
   
   # Edges (invisible: for layout only).
   for conn in sort_connections(diagram.connections)
-    push!(stmts, EdgeNode(connector_node(conn.src), connector_node(conn.tgt)))
+    push!(stmts, GraphEdge(connector_node(conn.src), connector_node(conn.tgt)))
   end
 
   props = [
@@ -178,7 +183,7 @@ function sort_connections(conns::Set{Wiring.Connection})::Vector{Wiring.Connecti
     c1.box < c2.box || c1.kind < c2.kind || c1.port < c2.port
   lt(c1::Wiring.Connection, c2::Wiring.Connection) =
     lt(c1.src, c2.src) || lt(c1.tgt, c2.tgt)
-  sort(conns, lt=lt)
+  sort!(collect(conns), lt=lt)
 end
 
 """ TikZ node associated with Connector.
@@ -200,7 +205,7 @@ function connector_anchor(diagram::Wiring.WiringDiagram, conn::Wiring.Connector)
   end
   box = diagram.boxes[conn.box]
   m, n = length(box.dom), length(box.codom)
-  if conn.kind == Input
+  if conn.kind == Wiring.Input
     frac = @sprintf "%.3f" (conn.port / (m+1))
     m == 1 ? node : "\$($node.north west)!$(frac)!($node.south west)\$"
   else

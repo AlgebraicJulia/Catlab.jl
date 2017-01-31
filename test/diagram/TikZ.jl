@@ -1,5 +1,18 @@
+import CompCat.Diagram: Wiring
 using CompCat.Diagram.TikZ
 using Base.Test
+
+# Wiring Diagrams
+#################
+
+# We can't test that these pictures look right, but we can at least test that
+# they exist!
+A, B = wires(:A), wires(:B)
+f = box(:f, A, B)
+g = box(:g, B, A)
+
+@test isa(to_tikz(f), Picture)
+@test isa(to_tikz(compose(f,g)), Picture)
 
 # Pretty-print
 ##############
