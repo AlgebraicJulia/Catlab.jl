@@ -6,11 +6,13 @@ using Base.Test
 ##############
 
 # Node statement
-@test spprint(Node("f")) == "\\node (f);\n"
-@test spprint(Node("f"; props=[Property("circle")])) == "\\node[circle] (f);\n"
+@test spprint(Node("f")) == "\\node (f) {};\n"
+@test spprint(Node("f"; props=[Property("circle")])) == 
+  "\\node[circle] (f) {};\n"
 @test spprint(Node("f"; props=[Property("circle"),Property("fill","red")])) ==
-  "\\node[circle,fill=red] (f);\n"
-@test spprint(Node("f"; coord=Coordinate("0","1"))) == "\\node (f) at (0,1);\n"
+  "\\node[circle,fill=red] (f) {};\n"
+@test spprint(Node("f"; coord=Coordinate("0","1"))) ==
+  "\\node (f) at (0,1) {};\n"
 @test spprint(Node("f"; coord=Coordinate("1","0"), content="fun")) ==
   "\\node (f) at (1,0) {fun};\n"
 
@@ -31,14 +33,14 @@ Picture(
   Edge("f","g")
 )) == """
 \\begin{tikzpicture}
-  \\node (f);
-  \\node (g);
+  \\node (f) {};
+  \\node (g) {};
   \\draw (f) to (g);
 \\end{tikzpicture}
 """
 @test spprint(Picture(Node("f");props=[Property("node distance","1cm")])) == """
 \\begin{tikzpicture}[node distance=1cm]
-  \\node (f);
+  \\node (f) {};
 \\end{tikzpicture}
 """
 
@@ -51,10 +53,10 @@ Picture(
 )) == """
 \\begin{tikzpicture}
   \\begin{scope}[red]
-    \\node (f);
+    \\node (f) {};
   \\end{scope}
   \\begin{scope}[blue]
-    \\node (g);
+    \\node (g) {};
   \\end{scope}
   \\draw (f) to (g);
 \\end{tikzpicture}

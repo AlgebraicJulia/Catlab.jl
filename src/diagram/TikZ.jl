@@ -59,10 +59,10 @@ end
   name::AbstractString
   props::Vector{Property}
   coord::Nullable{Coordinate}
-  content::Nullable{AbstractString}
+  content::AbstractString
   
-  Node(name::AbstractString; props=Property[], coord=Nullable(),
-       content=Nullable()) = new(name, props, coord, content)
+  Node(name::AbstractString; props=Property[], coord=Nullable(), content="") =
+    new(name, props, coord, content)
 end
 
 @auto_hash_equals immutable EdgeNode <: Expression
@@ -168,7 +168,7 @@ function pprint(io::IO, node::Node, n::Int)
     pprint(io, get(node.coord))
   end
   if !isnull(node.content)
-    print(io, " {$(get(node.content))}")
+    print(io, " {$(node.content)}")
   end
   println(io, ";")
 end
