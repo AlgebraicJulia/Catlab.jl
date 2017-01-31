@@ -1,7 +1,7 @@
 module TikZ
 export Expression, Statement, GraphStatement, Coordinate, Property, 
        PathOperation, Picture, Node, Edge, EdgeNode, Graph, GraphNode,
-       GraphEdge, to_tikz
+       GraphEdge, pprint, spprint, to_tikz
 
 using AutoHashEquals
 using Match
@@ -216,6 +216,14 @@ end
 """
 pprint(expr::Expression) = pprint(STDOUT, expr)
 pprint(io::IO, expr::Expression) = pprint(io, expr, 0)
+
+""" Pretty-print the TikZ expression as a string.
+"""
+function spprint(expr::Expression)::AbstractString
+  buf = IOBuffer()
+  pprint(buf, expr)
+  takebuf_string(buf)
+end
 
 function pprint(io::IO, pic::Picture, n::Int)
   indent(io, n)
