@@ -98,3 +98,19 @@ Graph(
     c -> d;
   };
 };"""
+
+# Matrix statement
+@test spprint(
+MatrixNode(
+  vcat(hcat( [[Node("f")]],             [[Edge("g1","g2")]] ),
+       hcat( [[Node("h1"),Node("h2")]], [[Node("i1"),Node("i2")]] )),
+  props=[Property("draw","red")]
+)) == """
+\\matrix[draw=red]{
+  \\node (f) {}; &
+  \\draw (g1) to (g2); \\\\
+  \\node (h1) {};
+  \\node (h2) {}; &
+  \\node (i1) {};
+  \\node (i2) {}; \\\\
+};"""

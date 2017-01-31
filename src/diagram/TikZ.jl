@@ -1,7 +1,7 @@
 module TikZ
 export Expression, Statement, GraphStatement, Coordinate, Property, 
        PathOperation, Picture, Scope, Node, Edge, EdgeNode, Graph, GraphScope,
-       GraphNode, GraphEdge, pprint, spprint, to_tikz
+       GraphNode, GraphEdge, MatrixNode, pprint, spprint, to_tikz
 
 using AutoHashEquals
 using Match
@@ -116,6 +116,14 @@ end
   
   GraphEdge(src::AbstractString, tgt::AbstractString; props=Property[]) =
     new(src, tgt, props)
+end
+
+@auto_hash_equals immutable MatrixNode <: Statement
+  stmts::Matrix{Vector{Statement}}
+  props::Vector{Property}
+  
+  MatrixNode(stmts::Matrix{Vector{Statement}}; props=Property[]) =
+    new(stmts, props)
 end
 
 # Pretty-print
@@ -240,6 +248,27 @@ function pprint(io::IO, node::GraphEdge, n::Int)
   print(io, "$(node.src) ->")
   pprint(io, node.props)
   print(io, " $(node.tgt);")
+end
+
+function pprint(io::IO, matrix::MatrixNode, ind::Int)
+  indent(io, ind)
+  print(io, "\\matrix")
+  pprint(io, matrix.props)
+  println(io, "{")
+  m,n = size(matrix.stmts)
+  for i = 1:m
+    for j = 1:n
+      p = length(matrix.stmts[i,j])
+      for k = 1:p
+        pprint(io, matrix.stmts[i,j][k], ind+2)
+        if (k < p) println(io) end
+      end
+      if (j < n) println(io, " &") end
+    end
+    println(io, " \\\\")
+  end
+  indent(io, ind)
+  print(io, "};")
 end
 
 function pprint(io::IO, coord::Coordinate, n::Int)
