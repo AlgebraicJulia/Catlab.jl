@@ -54,7 +54,25 @@ Picture(
 \\end{tikzpicture}
 """
 
-# Graph, GraphNode, GraphEdge statements
+# Scope statement
+@test spprint(
+Picture(
+  Scope(Node("f"); props=[Property("red")]),
+  Scope(Node("g"); props=[Property("blue")]),
+  Edge("f","g")
+)) == """
+\\begin{tikzpicture}
+  \\begin{scope}[red]
+    \\node (f);
+  \\end{scope}
+  \\begin{scope}[blue]
+    \\node (g);
+  \\end{scope}
+  \\draw (f) to (g);
+\\end{tikzpicture}
+"""
+
+# Graph, GraphScope, GraphNode, GraphEdge statements
 @test spprint(
 Graph(
   GraphNode("f";content="fun"),
@@ -73,5 +91,23 @@ Graph(
 \\graph{
   f [circle];
   f ->[edge label=X] g;
+};
+"""
+@test spprint(
+Graph(
+  GraphScope(
+    GraphEdge("a","b"); props=[Property("same layer")]
+  ),
+  GraphScope(
+    GraphEdge("c","d"); props=[Property("same layer")]
+  )
+)) == """
+\\graph{
+  {[same layer]
+    a -> b;
+  };
+  {[same layer]
+    c -> d;
+  };
 };
 """

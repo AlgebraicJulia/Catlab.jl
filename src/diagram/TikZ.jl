@@ -1,7 +1,7 @@
 module TikZ
 export Expression, Statement, GraphStatement, Coordinate, Property, 
-       PathOperation, Picture, Node, Edge, EdgeNode, Graph, GraphNode,
-       GraphEdge, pprint, spprint, to_tikz
+       PathOperation, Picture, Scope, Node, Edge, EdgeNode, Graph, GraphScope,
+       GraphNode, GraphEdge, pprint, spprint, to_tikz
 
 using AutoHashEquals
 using Match
@@ -48,6 +48,13 @@ end
   Picture(stmts::Vararg{Statement}; props=Property[]) = new([stmts...], props)
 end
 
+@auto_hash_equals immutable Scope <: Statement
+  stmts::Vector{Statement}
+  props::Vector{Property}
+  
+  Scope(stmts::Vararg{Statement}; props=Property[]) = new([stmts...], props)
+end
+
 @auto_hash_equals immutable Node <: Statement
   name::AbstractString
   props::Vector{Property}
@@ -82,6 +89,14 @@ end
   props::Vector{Property}
   
   Graph(stmts::Vararg{GraphStatement}; props=Property[]) =
+    new([stmts...], props)
+end
+
+@auto_hash_equals immutable GraphScope <: GraphStatement
+  stmts::Vector{GraphStatement}
+  props::Vector{Property}
+  
+  GraphScope(stmts::Vararg{GraphStatement}; props=Property[]) =
     new([stmts...], props)
 end
 
@@ -140,13 +155,19 @@ here are not visible; their only purpose is to determine the layout.
 function to_tikz_graph(diagram::Wiring.WiringDiagram)::Graph
   stmts = GraphStatement[]
   
-  # Outer box nodes (invisible).
-  for i in eachindex(dom(diagram)) # In-ports of outer box
+  # In-ports of outer box (invisible).
+  #in_stmts = GraphStatement[]
+  for i in eachindex(dom(diagram))
     push!(stmts, GraphNode("in$i"; props=[Property("draw","none")], content=""))
   end
-  for i in eachindex(codom(diagram)) # Out-ports of outer box
+  #push!(stmts, GraphScope(in_stmts...; props=[Property("same layer")]))
+  
+  # Out-ports of outer box (invisible).
+  #out_stmts = GraphStatement[]
+  for i in eachindex(codom(diagram))
     push!(stmts, GraphNode("out$i"; props=[Property("draw","none")], content=""))
   end
+  #push!(stmts, GraphScope(out_stmts...; props=[Property("same layer")]))
   
   # Atomic nodes (visible).
   box_height(box) = 2*max(length(box.dom),length(box.codom))
@@ -242,6 +263,18 @@ function pprint(io::IO, pic::Picture, n::Int)
   println(io, "\\end{tikzpicture}")
 end
 
+function pprint(io::IO, scope::Scope, n::Int)
+  indent(io, n)
+  print(io, "\\begin{scope}")
+  pprint(io, scope.props)
+  println(io)
+  for stmt in scope.stmts
+    pprint(io, stmt, n+2)
+  end
+  indent(io, n)
+  println(io, "\\end{scope}")
+end
+
 function pprint(io::IO, node::Node, n::Int)
   indent(io, n)
   print(io, "\\node")
@@ -282,8 +315,20 @@ function pprint(io::IO, graph::Graph, n::Int)
   indent(io, n)
   print(io, "\\graph")
   pprint(io, graph.props)
-  println(io, '{')
+  println(io, "{")
   for stmt in graph.stmts
+    pprint(io, stmt, n+2)
+  end
+  indent(io, n)
+  println(io, "};")
+end
+
+function pprint(io::IO, scope::GraphScope, n::Int)
+  indent(io, n)
+  print(io, "{")
+  pprint(io, scope.props)
+  println(io)
+  for stmt in scope.stmts
     pprint(io, stmt, n+2)
   end
   indent(io, n)
