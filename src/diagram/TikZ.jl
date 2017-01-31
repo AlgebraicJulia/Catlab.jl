@@ -141,9 +141,10 @@ function pprint(io::IO, pic::Picture, n::Int)
   println(io)
   for stmt in pic.stmts
     pprint(io, stmt, n+2)
+    println(io)
   end
   indent(io, n)
-  println(io, "\\end{tikzpicture}")
+  print(io, "\\end{tikzpicture}")
 end
 
 function pprint(io::IO, scope::Scope, n::Int)
@@ -153,9 +154,10 @@ function pprint(io::IO, scope::Scope, n::Int)
   println(io)
   for stmt in scope.stmts
     pprint(io, stmt, n+2)
+    println(io)
   end
   indent(io, n)
-  println(io, "\\end{scope}")
+  print(io, "\\end{scope}")
 end
 
 function pprint(io::IO, node::Node, n::Int)
@@ -170,7 +172,7 @@ function pprint(io::IO, node::Node, n::Int)
   if !isnull(node.content)
     print(io, " {$(node.content)}")
   end
-  println(io, ";")
+  print(io, ";")
 end
 
 function pprint(io::IO, edge::Edge, n::Int)
@@ -183,7 +185,7 @@ function pprint(io::IO, edge::Edge, n::Int)
     print(io, " ")
     pprint(io, get(edge.node))
   end
-  println(io, " ($(edge.tgt));")
+  print(io, " ($(edge.tgt));")
 end
 
 function pprint(io::IO, node::EdgeNode, n::Int)
@@ -201,9 +203,10 @@ function pprint(io::IO, graph::Graph, n::Int)
   println(io, "{")
   for stmt in graph.stmts
     pprint(io, stmt, n+2)
+    println(io)
   end
   indent(io, n)
-  println(io, "};")
+  print(io, "};")
 end
 
 function pprint(io::IO, scope::GraphScope, n::Int)
@@ -213,9 +216,10 @@ function pprint(io::IO, scope::GraphScope, n::Int)
   println(io)
   for stmt in scope.stmts
     pprint(io, stmt, n+2)
+    println(io)
   end
   indent(io, n)
-  println(io, "};")
+  print(io, "};")
 end
 
 function pprint(io::IO, node::GraphNode, n::Int)
@@ -228,14 +232,14 @@ function pprint(io::IO, node::GraphNode, n::Int)
     print(io, " ")
     pprint(io, node.props)
   end
-  println(io, ";")
+  print(io, ";")
 end
 
 function pprint(io::IO, node::GraphEdge, n::Int)
   indent(io ,n)
   print(io, "$(node.src) ->")
   pprint(io, node.props)
-  println(io, " $(node.tgt);")
+  print(io, " $(node.tgt);")
 end
 
 function pprint(io::IO, coord::Coordinate, n::Int)

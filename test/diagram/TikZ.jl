@@ -6,24 +6,24 @@ using Base.Test
 ##############
 
 # Node statement
-@test spprint(Node("f")) == "\\node (f) {};\n"
+@test spprint(Node("f")) == "\\node (f) {};"
 @test spprint(Node("f"; props=[Property("circle")])) == 
-  "\\node[circle] (f) {};\n"
+  "\\node[circle] (f) {};"
 @test spprint(Node("f"; props=[Property("circle"),Property("fill","red")])) ==
-  "\\node[circle,fill=red] (f) {};\n"
+  "\\node[circle,fill=red] (f) {};"
 @test spprint(Node("f"; coord=Coordinate("0","1"))) ==
-  "\\node (f) at (0,1) {};\n"
+  "\\node (f) at (0,1) {};"
 @test spprint(Node("f"; coord=Coordinate("1","0"), content="fun")) ==
-  "\\node (f) at (1,0) {fun};\n"
+  "\\node (f) at (1,0) {fun};"
 
 # Edge statement
-@test spprint(Edge("f","g")) == "\\draw (f) to (g);\n"
-@test spprint(Edge("f","g"; props=[Property("red")])) == "\\draw[red] (f) to (g);\n"
-@test spprint(Edge("f","g"; node=EdgeNode())) == "\\draw (f) to node (g);\n"
+@test spprint(Edge("f","g")) == "\\draw (f) to (g);"
+@test spprint(Edge("f","g"; props=[Property("red")])) == "\\draw[red] (f) to (g);"
+@test spprint(Edge("f","g"; node=EdgeNode())) == "\\draw (f) to node (g);"
 @test spprint(Edge("f","g"; node=EdgeNode(;props=[Property("circle")],content="e"))) ==
-  "\\draw (f) to node[circle] {e} (g);\n"
+  "\\draw (f) to node[circle] {e} (g);"
 @test spprint(Edge("f","g"; op=PathOperation("to"; props=[Property("out","0")]))) ==
-  "\\draw (f) to[out=0] (g);\n"
+  "\\draw (f) to[out=0] (g);"
 
 # Picture statement
 @test spprint(
@@ -36,13 +36,12 @@ Picture(
   \\node (f) {};
   \\node (g) {};
   \\draw (f) to (g);
-\\end{tikzpicture}
-"""
+\\end{tikzpicture}"""
+
 @test spprint(Picture(Node("f");props=[Property("node distance","1cm")])) == """
 \\begin{tikzpicture}[node distance=1cm]
   \\node (f) {};
-\\end{tikzpicture}
-"""
+\\end{tikzpicture}"""
 
 # Scope statement
 @test spprint(
@@ -59,8 +58,7 @@ Picture(
     \\node (g) {};
   \\end{scope}
   \\draw (f) to (g);
-\\end{tikzpicture}
-"""
+\\end{tikzpicture}"""
 
 # Graph, GraphScope, GraphNode, GraphEdge statements
 @test spprint(
@@ -71,8 +69,8 @@ Graph(
 \\graph{
   f/\"fun\";
   f -> g;
-};
-"""
+};"""
+
 @test spprint(
 Graph(
   GraphNode("f";props=[Property("circle")]),
@@ -81,8 +79,8 @@ Graph(
 \\graph{
   f [circle];
   f ->[edge label=X] g;
-};
-"""
+};"""
+
 @test spprint(
 Graph(
   GraphScope(
@@ -99,5 +97,4 @@ Graph(
   {[same layer]
     c -> d;
   };
-};
-"""
+};"""
