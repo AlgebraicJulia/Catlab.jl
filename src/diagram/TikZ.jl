@@ -14,8 +14,15 @@ import ..Wiring: dom, codom
 
 """ Base class for TikZ abstract syntax tree.
 
-The AST is very incomplete! It is adapted from the (also incomplete) BNF
-grammar for TikZ in [TikZit](http://tikzit.sourceforge.net/manual.html).
+The AST is incomplete! It supports:
+- Nodes (`\\node`) and edges (`\\draw`)
+- Nodes along edges (`\\draw ... node ...`)
+- Graphs (`\\graph`)
+- Matrices (`\\matrix`)
+- Scopes and nested pictures
+
+The AST is adapted from the (also incomplete) BNF grammar for TikZ in
+[TikZit](http://tikzit.sourceforge.net/manual.html).
 """
 abstract Expression
 abstract Statement <: Expression
@@ -59,7 +66,8 @@ end
   name::AbstractString
   props::Vector{Property}
   coord::Nullable{Coordinate}
-  content::AbstractString
+  # Allow nested pictures even though TikZ does not "officially" support them.
+  content::Union{AbstractString,Picture}
   
   Node(name::AbstractString; props=Property[], coord=Nullable(), content="") =
     new(name, props, coord, content)
@@ -177,7 +185,13 @@ function pprint(io::IO, node::Node, n::Int)
     print(io, " at ")
     pprint(io, get(node.coord))
   end
-  if !isnull(node.content)
+  if isa(node.content, Picture)
+    println(io, " {")
+    pprint(io, node.content, n+2)
+    println(io)
+    indent(io, n)
+    print(io, "}")
+  else
     print(io, " {$(node.content)}")
   end
   print(io, ";")

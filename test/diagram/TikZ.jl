@@ -43,6 +43,35 @@ Picture(
   \\node (f) {};
 \\end{tikzpicture}"""
 
+@test spprint( # Nested pictures
+Picture(
+  Node("outer1"; content=
+    Picture(
+      Node("inner1"),
+      Node("inner2")
+    )),
+  Node("outer2"; content=
+    Picture(
+      Node("inner3"),
+      Node("inner4")
+    ));
+  props=[Property("remember picture")]
+)) == """
+\\begin{tikzpicture}[remember picture]
+  \\node (outer1) {
+    \\begin{tikzpicture}
+      \\node (inner1) {};
+      \\node (inner2) {};
+    \\end{tikzpicture}
+  };
+  \\node (outer2) {
+    \\begin{tikzpicture}
+      \\node (inner3) {};
+      \\node (inner4) {};
+    \\end{tikzpicture}
+  };
+\\end{tikzpicture}"""
+
 # Scope statement
 @test spprint(
 Picture(
