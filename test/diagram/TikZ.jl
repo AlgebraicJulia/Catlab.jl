@@ -1,4 +1,3 @@
-import CompCat.Diagram: Wiring
 using CompCat.Diagram.TikZ
 using Base.Test
 

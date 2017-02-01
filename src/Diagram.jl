@@ -1,6 +1,6 @@
 module Diagram
 
-include("diagram/Wiring.jl")
+include("diagram/AbstractWiring.jl")
 include("diagram/TikZ.jl")
 include("diagram/Interactive.jl")
 

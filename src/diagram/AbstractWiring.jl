@@ -1,4 +1,11 @@
-module Wiring
+""" The category of abstract wiring diagrams (aka string diagrams).
+
+"Abstract" means that they cannot be directly rendered as raster or vector
+graphics. However, they form a useful intermediate representation that can be
+straightforwardly translated into Graphviz, TikZ, and other declarative diagram
+languages.
+"""
+module AbstractWiring
 export
   Wires, Box, WiringDiagram, wires, box,
   ConnectorKind, Input, Output, Connector, Connection,
@@ -19,8 +26,6 @@ import ...Doctrine:
 abstract BaseBox
 
 """ Object in the category of wiring diagrams.
-
-See also `WiringDiagram`.
 """
 @auto_hash_equals immutable Wires
   wires::Vector
@@ -58,12 +63,6 @@ codom(box::Box) = box.codom
 show(io::IO, box::Box) = print(io, "Box($(repr(box.content)))")
 
 """ Morphism in the category of wiring diagrams.
-
-The `Box` and `Wires` types represent abstract wiring diagrams (aka string
-diagrams). Here "abstract" means that they cannot be directly rendered as raster
-or vector graphics. However, they form a useful intermediate representation that
-can be straightforwardly translated into Graphviz, TikZ, and other diagram
-languages.
 """
 @auto_hash_equals type WiringDiagram <: BaseBox
   boxes::Vector{BaseBox}

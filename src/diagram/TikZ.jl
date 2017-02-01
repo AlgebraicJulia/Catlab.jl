@@ -4,10 +4,7 @@ export Expression, Statement, GraphStatement, Coordinate, Property,
        GraphNode, GraphEdge, MatrixNode, pprint, spprint, to_tikz
 
 using AutoHashEquals
-using Match
 import ...Syntax: pprint
-import ..Wiring
-import ..Wiring: dom, codom
 
 # AST
 #####

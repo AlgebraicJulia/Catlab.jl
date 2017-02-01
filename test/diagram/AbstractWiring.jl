@@ -1,4 +1,4 @@
-using CompCat.Diagram.Wiring
+using CompCat.Diagram.AbstractWiring
 using Base.Test
 
 A, B = wires(:A), wires(:B)
