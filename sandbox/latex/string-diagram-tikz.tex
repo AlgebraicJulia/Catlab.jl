@@ -1,6 +1,7 @@
 \documentclass[12pt]{article}
 \usepackage[margin=1in]{geometry}
 \usepackage[colorlinks=true]{hyperref}
+\usepackage{parskip}
 
 \usepackage{tikz}
 \usetikzlibrary{calc}
@@ -9,13 +10,22 @@
 
 \begin{document}
 
+We sketch a variety of methods for drawing string diagrams (aka wiring
+diagrams) in TikZ. An important requirement is that the method be
+\emph{automatable}: we should be able to generate the TikZ code mechanically,
+without human tweaking.
+
 \section*{Automatic layout: graph drawing}
 
 \usetikzlibrary{graphdrawing}
 \usetikzlibrary{graphs}
 \usegdlibrary{layered}
 
-\paragraph{Angular anchors}
+A first approach is to use the TikZ graph drawing library
+(\texttt{graphdrawing}). The ``layered layout'' uses the \emph{Sugiyama
+  method}, the same algorithm used by Graphviz's \texttt{dot} program.
+
+\paragraph{Graph edges}
 
 The anchors in \texttt{graphdrawing} are not normal anchors. They are either
 strings (``center'' or a compass direction like ``north east'') or numbers
@@ -48,7 +58,7 @@ function \texttt{createVertex} in the TikZ
 \end{tikzpicture}
 \end{center}
 
-\paragraph{Calculated anchors with manual edges}
+\paragraph{Standard edges}
 
 Inspired by \href{http://tex.stackexchange.com/a/247825}{TeX.SE}, I think it's
 better to use invisible edges in \texttt{graphdrawing} and then draw the edges
@@ -126,13 +136,22 @@ Alternatively, with curved edges:
 \end{tikzpicture}
 \end{center}
 
+While the graph layout is fine in this simple case, it fails on more
+complicated examples. One reason is that the layout algorithm, particularly the
+edge crossing heuristics, cannot account for the ``ports'' that we wish to
+assign to nodes like $h$. (In contrast, Graphviz \emph{does} support ports
+through its record and HTML labels.)
+
 \section*{Semi-automatic layout: matrices}
+
+We give up on automatic layout and try using the \texttt{matrix} library to
+help with node alignment.
 
 \usetikzlibrary{matrix}
 
-\paragraph{One matrix} In this approach, we use a TikZ \texttt{matrix} with one
-row and a column for every composition. Inside each column, the nodes of the
-tensor product are positioned essentially manually (using \texttt{below of}
+\paragraph{One matrix} In this approach, we use a single matrix with one row
+and a column for every composition. Inside each column, the nodes of the tensor
+product are positioned essentially manually (using \texttt{below of}
 directives).
 
 \begin{center}
@@ -214,6 +233,8 @@ matrices in TikZ 3.0.
 \end{tikzpicture}
 \end{center}
 
+Here's another example:
+
 \begin{center}
 \begin{tikzpicture}[decoration={
     markings,
@@ -258,7 +279,16 @@ matrices in TikZ 3.0.
 
 \usetikzlibrary{fit}
 
-\paragraph{Fit}
+The potential of the matrix approach cannot be fully realized because TikZ does
+not allow matrices to be nested. What we really want is \emph{compositional} or
+\emph{functional} graphics, as in
+\href{https://docs.racket-lang.org/pict/}{Pict} for Racket or
+\href{https://github.com/GiovineItalia/Compose.jl}{Compose.jl} for Julia. TikZ
+has a different programming model. We consider some ways to try to force the
+compositional model onto TikZ.
+
+\paragraph{Fit} The \texttt{fit} library creates nodes bounding arbitrary sets
+of coordinates.
 
 \begin{center}
 \begin{tikzpicture}[decoration={
@@ -291,7 +321,15 @@ matrices in TikZ 3.0.
 \end{tikzpicture}
 \end{center}
 
-\paragraph{Pic}
+The \texttt{fit} library is useful for drawing outer boxes, but it's utility
+for layout is limited because you can only create a fitted box \emph{after} its
+content has been placed on the canvas.
+
+\paragraph{Pic} At first sight, the \texttt{pic} library looks like exactly
+what the doctor ordered. It allows you to create ``small pictures'' that are
+reusable and behave in many ways like nodes. However, a crucial difference is
+that TikZ does not assign anchors to pics like it does to nodes. Consequently,
+aligning pics is difficult:
 
 \begin{center}
 \begin{tikzpicture}[
@@ -313,18 +351,62 @@ matrices in TikZ 3.0.
       \node[draw,dotted,fit=(f1) (g1)] (f1g1) {};
       \pic[below=1em of f1g1] {f2g2};
       \node[draw,dotted,fit=(f2) (g2)] (f2g2) {};
-    },
-    composed/.pic={
-      \pic {tensored};
-      \node[draw,dotted,fit=(f1g1) (f2g2)] (tensored) {};
-      \node[draw,right=2em of tensored,minimum height=4em] (h) {h};
-      \coordinate (h_in1) at ($(h.north west)!0.30!(h.south west)$);
-      \coordinate (h_in2) at ($(h.north west)!0.70!(h.south west)$);
-      \draw[postaction={decorate}] (g1) to[out=0,in=180] (h_in1);
-      \draw[postaction={decorate}] (g2) to[out=0,in=180] (h_in2);
     }
   ]
-  \pic {composed};
+  \pic {tensored};
+  \node[draw,dotted,fit=(f1g1) (f2g2)] {};
+\end{tikzpicture}
+\end{center}
+
+As with \texttt{fit}, the problem is that the bounding box of a pic cannot be
+known until \emph{after} it is rendered. I don't think there is a workaround
+(see \href{http://tex.stackexchange.com/q/185279/124082}{TeX.SE}).
+
+\paragraph{Nested pictures} The only successful approach I have found is
+recursively nesting \texttt{tikzpicture}s inside other
+\texttt{tikzpicture}s. Amusingly, unlike \texttt{fit} and \texttt{pic}, this
+method is not ``officially'' supported and it seems to be generally reviled by
+the \href{http://tex.stackexchange.com/q/47377/124082}{TeX.SE} community. Yet
+it really does work beautifully:
+
+\begin{center}
+  \begin{tikzpicture}[
+    remember picture,
+    decoration={markings, mark=at position 0.5 with {\arrow{>}}},
+    execute at begin node=$, execute at end node=$,
+    every node/.style={inner sep=0},
+  ]
+  \node (tensor1) {
+    \begin{tikzpicture}
+      \node (f1g1) {
+        \begin{tikzpicture}[every node/.style={inner sep=0.333em}]
+          \node[draw] (f1) {f_1};
+          \node[draw,right=2em of f1] (g1) {g_1};
+          \draw[postaction={decorate}] (f1) to node[above,midway] {X} (g1);
+          \node[draw,dotted,fit=(f1) (g1)] {};
+        \end{tikzpicture}
+      };
+      \node[below=0em of f1g1] (f2g2) {
+        \begin{tikzpicture}[every node/.style={inner sep=0.333em}]
+          \node[draw] (f2) {\mathrm{foo}_2};
+          \node[draw,right=2em of f2] (g2) {\mathrm{goo}_2};
+          \draw[postaction={decorate}] (f2) to node[above,midway] {X} (g2);
+          \node[draw,dotted,fit=(f2) (g2)] {};
+        \end{tikzpicture}
+      };
+      \node[draw,dotted,fit=(f1g1) (f2g2)] {};
+    \end{tikzpicture}
+  };
+  \node[right=2em of tensor1] (tensor2) {
+    \begin{tikzpicture}[every node/.style={inner sep=0.333em}]
+      \node[draw,minimum height=4em] (h1) {h_1};
+      \node[draw,minimum height=4em,below=1em of h1] (h2) {h_2};
+      \node[draw,dotted,fit=(h1) (h2)] {};
+    \end{tikzpicture}
+  };
+  \draw[postaction={decorate}] (g1.east) to[out=0,in=180] (h1.west);
+  \draw[postaction={decorate}] (g2.east) to[out=0,in=180] (h2.west);
+  \node[draw,dotted,fit=(tensor1) (tensor2)] {};
 \end{tikzpicture}
 \end{center}
 
