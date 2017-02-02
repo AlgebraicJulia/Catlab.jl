@@ -1,7 +1,7 @@
 module TikZ
-export Expression, Statement, GraphStatement, Coordinate, Property, 
+export Expression, Statement, GraphStatement, Coordinate, Property,
        PathOperation, Picture, Scope, Node, Edge, EdgeNode, Graph, GraphScope,
-       GraphNode, GraphEdge, MatrixNode, pprint, spprint, to_tikz
+       GraphNode, GraphEdge, MatrixNode, pprint, spprint
 
 using AutoHashEquals
 import ...Syntax: pprint
@@ -60,6 +60,7 @@ end
 end
 
 @auto_hash_equals immutable Node <: Statement
+  # FIXME: Name is optional, according to TikZ manual.
   name::AbstractString
   props::Vector{Property}
   coord::Nullable{Coordinate}
