@@ -13,9 +13,7 @@ function TikzPicture(pic::TikZ.Picture; usePDF2SVG=true)::TikzPicture
     # FIXME: Dependencies are hard-coded!
     "\\usetikzlibrary{calc}",
     "\\usetikzlibrary{decorations.markings}",
-    "\\usetikzlibrary{graphdrawing}",
-    "\\usetikzlibrary{graphs}",
-    "\\usegdlibrary{layered}",
+    "\\usetikzlibrary{positioning}",
   ], "\n")
   TikzPicture(data; options=options, preamble=preamble, usePDF2SVG=usePDF2SVG)
 end
