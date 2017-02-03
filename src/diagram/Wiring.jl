@@ -32,16 +32,19 @@ Warning: Since our implementation uses the `remember picture` option, LaTeX must
 be *twice* to fully render the picture. See (TikZ Manual, Sec 17.13).
 """
 function diagram_tikz(f::MorExpr; font_size::Number=12, math_mode::Bool=true,
-                      compose_sep::Number=2, tensor_sep::Number=1)::TikZ.Picture
+                      box_size::Number=2, compose_sep::Number=2,
+                      product_sep::Number=0.5)::TikZ.Picture
   # Draw input and output arrows by adding identities on either side of f. 
   f_ext = compose(id(dom(f)), f, id(codom(f)))
   
-  mor = mor_tikz(f_ext, "n"; compose_sep=compose_sep, tensor_sep=tensor_sep)
+  mor = mor_tikz(f_ext, "n"; box_size=box_size, 
+                 compose_sep=compose_sep, product_sep=product_sep)
   props = [
     TikZ.Property("remember picture"),
     TikZ.Property("decoration", 
                   "{markings, mark=at position 0.5 with {\\arrow{stealth}}}"),
-    TikZ.Property("font", "{\\fontsize{$font_size}{$(format(1.2*font_size))}}"),
+    TikZ.Property("font", 
+                  "{\\fontsize{$(format(font_size))}{$(format(1.2*font_size))}}"),
     TikZ.Property("generator/.style",
                   "{draw,solid,rounded corners,inner sep=0.333em}"),
     TikZ.Property("container/.style", "{inner sep=0}"),
@@ -62,7 +65,7 @@ end
 function mor_tikz(f::MorExpr, name::String, ::Type{Val{:gen}}; kwargs...)
   dom_ports = ports_tikz(dom(f), name, "west")
   codom_ports = ports_tikz(codom(f), name, "east")
-  height = 2 * max(1, length(dom_ports), length(codom_ports))
+  height = box_size(max(length(dom_ports), length(codom_ports)); kwargs...)
   props = [
     TikZ.Property("generator"),
     TikZ.Property("minimum height", "$(height)em")
@@ -73,7 +76,7 @@ end
 
 function mor_tikz(f::MorExpr, name::String, ::Type{Val{:id}}; kwargs...)
   ports = ports_tikz(dom(f), name, "center")
-  height = 2 * max(1, length(ports))
+  height = box_size(length(ports); kwargs...)
   props = [
     TikZ.Property("minimum height", "$(height)em")
   ]
@@ -82,9 +85,8 @@ function mor_tikz(f::MorExpr, name::String, ::Type{Val{:id}}; kwargs...)
 end
 
 function mor_tikz(f::MorExpr, name::String, ::Type{Val{:compose}}; kwargs...)
-  kwargs = Dict(kwargs)
-  compose_sep = kwargs[:compose_sep]
-
+  compose_sep = Dict(kwargs)[:compose_sep]
+  
   mors = [ mor_tikz(g, "$name$i"; kwargs...) for (i,g) in enumerate(args(f)) ]
   stmts = TikZ.Statement[ mors[1].node ]
   for i = 2:length(mors)
@@ -105,15 +107,14 @@ function mor_tikz(f::MorExpr, name::String, ::Type{Val{:compose}}; kwargs...)
 end
 
 function mor_tikz(f::MorExpr, name::String, ::Type{Val{:otimes}}; kwargs...)
-  kwargs = Dict(kwargs)
-  tensor_sep = kwargs[:tensor_sep]
-
+  product_sep = Dict(kwargs)[:product_sep]
+  
   mors = []
   for (i,g) in enumerate(args(f))
     mor = mor_tikz(g, "$name$i"; kwargs...)
     if i > 1
       push!(mor.node.props,
-            TikZ.Property("below=$(tensor_sep)em of $name$(i-1)"))
+            TikZ.Property("below=$(product_sep)em of $name$(i-1)"))
       end
     push!(mors, mor)
   end
@@ -124,6 +125,18 @@ function mor_tikz(f::MorExpr, name::String, ::Type{Val{:otimes}}; kwargs...)
   dom = vcat([ mor.dom for mor in mors]...)
   codom = vcat([ mor.codom for mor in mors]...)
   MorTikZ(node, dom, codom)
+end
+
+""" Compute the size of a generator box from the number of its ports.
+
+We use the unique formula consistent with the monoidal product, meaning that
+the size of a product of generators depends only on the total number of ports,
+not the number of generators.
+"""
+function box_size(ports::Int; kwargs...)::Number
+  kwargs = Dict(kwargs)
+  m = max(1, ports)
+  m * kwargs[:box_size] + (m-1) * kwargs[:product_sep]
 end
 
 function ports_tikz(A::ObExpr, name::String, dir::String)::Vector{PortTikZ}
