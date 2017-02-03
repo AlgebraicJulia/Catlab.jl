@@ -63,8 +63,8 @@ function mor_tikz(f::MorExpr, name::String; kwargs...)::MorTikZ
 end
 
 function mor_tikz(f::MorExpr, name::String, ::Type{Val{:gen}}; kwargs...)
-  dom_ports = ports_tikz(dom(f), name, "west")
-  codom_ports = ports_tikz(codom(f), name, "east")
+  dom_ports = ports_tikz(dom(f), name, "west"; kwargs...)
+  codom_ports = ports_tikz(codom(f), name, "east"; kwargs...)
   height = box_size(max(length(dom_ports), length(codom_ports)); kwargs...)
   props = [
     TikZ.Property("generator"),
@@ -75,7 +75,7 @@ function mor_tikz(f::MorExpr, name::String, ::Type{Val{:gen}}; kwargs...)
 end
 
 function mor_tikz(f::MorExpr, name::String, ::Type{Val{:id}}; kwargs...)
-  ports = ports_tikz(dom(f), name, "center")
+  ports = ports_tikz(dom(f), name, "center"; kwargs...)
   height = box_size(length(ports); kwargs...)
   props = [
     TikZ.Property("minimum height", "$(height)em")
@@ -127,11 +127,11 @@ function mor_tikz(f::MorExpr, name::String, ::Type{Val{:otimes}}; kwargs...)
   MorTikZ(node, dom, codom)
 end
 
-""" Compute the size of a generator box from the number of its ports.
+""" Compute the size of a box from the number of its ports.
 
 We use the unique formula consistent with the monoidal product, meaning that
-the size of a product of generators depends only on the total number of ports,
-not the number of generators.
+the size of a product of generator boxes depends only on the total number of
+ports, not the number of generators.
 """
 function box_size(ports::Int; kwargs...)::Number
   kwargs = Dict(kwargs)
@@ -139,18 +139,23 @@ function box_size(ports::Int; kwargs...)::Number
   m * kwargs[:box_size] + (m-1) * kwargs[:product_sep]
 end
 
-function ports_tikz(A::ObExpr, name::String, dir::String)::Vector{PortTikZ}
+""" Compute the locations of ports on a box.
+
+These anchors are consistent with the monoidal product (see `box_size`).
+"""
+function ports_tikz(A::ObExpr, name::String, dir::String; kwargs...)::Vector{PortTikZ}
+  kw = Dict(kwargs)
   @match A begin
     ObExpr(:unit, _) => []
     ObExpr(:gen, syms) => [ PortTikZ("$name.$dir", string(first(syms))) ]
     ObExpr(:otimes, gens) => begin
       @assert all(head(B) == :gen for B in gens)
-      m = length(gens)
-      dir = dir == "center" ? "" : " $dir"
       ports = []
+      m = length(gens)
+      start = (m*kw[:box_size] + (m-1)*kw[:product_sep]) / 2
       for (i,B) in enumerate(gens)
-        frac = @sprintf "%.3f" (i / (m+1))
-        anchor = "\$($name.north$dir)!$(frac)!($name.south$dir)\$"
+        offset = kw[:box_size]/2 + (i-1)*(kw[:box_size]+kw[:product_sep])
+        anchor = "\$($name.$dir)+(0,$(start-offset)em)\$"
         push!(ports, PortTikZ(anchor, string(first(args(B)))))
       end
       ports
