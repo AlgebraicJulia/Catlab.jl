@@ -29,19 +29,13 @@ g = mor_expr(:g, B, A)
 @test f∘g∘f == compose(compose(f,g),f)
 
 # Pretty-print
-function sexpr(expr)
-  buf = IOBuffer(); show_sexpr(buf, expr); takebuf_string(buf)
-end
-
+sexpr(expr::BaseExpr) = sprint(show_sexpr, expr)
 @test sexpr(A) == ":A"
 @test sexpr(f) == ":f"
 @test sexpr(compose(f,g)) == "(compose :f :g)"
 @test sexpr(compose(f,g,f)) == "(compose :f :g :f)"
 
-function infix(expr)
-  buf = IOBuffer(); pprint(buf, expr); takebuf_string(buf)
-end
-
+infix(expr::BaseExpr) = sprint(show_infix, expr)
 @test infix(A) == "A"
 @test infix(f) == "f : A → B"
 @test infix(id(A)) == "id[A] : A → A"

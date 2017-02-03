@@ -1,6 +1,7 @@
 module Syntax
 export
-  BaseExpr, ObExpr, MorExpr, ob_expr, mor_expr, head, args, show_sexpr, pprint,
+  BaseExpr, ObExpr, MorExpr, ob_expr, mor_expr, head, args,
+  show_sexpr, show_infix,
   dom, codom, id, compose, ∘,
   otimes, munit, ⊗
 
@@ -151,13 +152,13 @@ function as_sexpr(expr::BaseExpr)::String
   end
 end
 
-""" Pretty-print the expression in infix notation.
+""" Show the expression in infix notation.
 
 Uses Unicode symbols for operators.
 """
-pprint(expr::BaseExpr) = pprint(STDOUT, expr)
-pprint(io::IO, expr::ObExpr) = print(io, as_infix(expr))
-pprint(io::IO, expr::MorExpr) = print(io,
+show_infix(expr::BaseExpr) = show_infix(STDOUT, expr)
+show_infix(io::IO, expr::ObExpr) = print(io, as_infix(expr))
+show_infix(io::IO, expr::MorExpr) = print(io,
   "$(as_infix(expr)) : $(as_infix(dom(expr))) → $(as_infix(codom(expr)))")
 
 function as_infix(expr::BaseExpr, paren::Bool=false)::String

@@ -1,6 +1,8 @@
 using CompCat.Diagram.TikZ
 using Base.Test
 
+spprint(expr::Expression) = sprint(pprint, expr)
+
 # Pretty-print
 ##############
 

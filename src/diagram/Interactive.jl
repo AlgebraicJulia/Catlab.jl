@@ -8,8 +8,8 @@ import ..TikZ
 """ Convert our TikZ picture type to `TikzPicture`'s picture type. 
 """
 function TikzPicture(pic::TikZ.Picture; usePDF2SVG=true)::TikzPicture
-  data = join(TikZ.spprint(stmt) for stmt in pic.stmts)
-  options = join((TikZ.spprint(prop) for prop in pic.props), ",")
+  data = join(sprint(TikZ.pprint, stmt) for stmt in pic.stmts)
+  options = join((sprint(TikZ.pprint, prop) for prop in pic.props), ",")
   preamble = join([
     # FIXME: Dependencies are hard-coded!
     "\\usetikzlibrary{calc}",
