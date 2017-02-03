@@ -1,6 +1,7 @@
 module Interactive
 export TikzPicture
 
+import Base: show
 import TikzPictures: TikzPicture
 import ..TikZ
 
@@ -16,6 +17,10 @@ function TikzPicture(pic::TikZ.Picture; usePDF2SVG=true)::TikzPicture
     "\\usetikzlibrary{positioning}",
   ], "\n")
   TikzPicture(data; options=options, preamble=preamble, usePDF2SVG=usePDF2SVG)
+end
+
+function show(f::IO, ::MIME"image/svg+xml", pic::TikZ.Picture)
+  show(f, MIME"image/svg+xml"(), TikzPicture(pic))
 end
 
 end
