@@ -25,7 +25,7 @@ g = mor_expr(:g, B, A)
 
 # Extra syntax
 @test compose(f,g,f) == compose(compose(f,g),f)
-@test f∘g == compose(f,g)
+@test g∘f == compose(f,g)
 @test f∘g∘f == compose(compose(f,g),f)
 
 # Monoidal category

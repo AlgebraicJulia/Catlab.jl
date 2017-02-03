@@ -7,9 +7,12 @@ using Typeclass
 
 @doc """ Doctrine: *category* (with no extra structure)
 
-**Warning**: We compose functions from left to right, e.g., if f:A→B and g:B→C
-then f∘g:A→C. Under this convention function are applied on the right, e.g.,
-if a∈A then af∈B.
+**Warning**: We compose functions from left to right, i.e., if f:A→B and g:B→C
+then compose(f,g):A→C. Under this convention function are applied on the right,
+e.g., if a∈A then af∈B.
+
+We retain the usual meaning of the symbol ∘, i.e., g∘f = compose(f,g).
+This usage is too entrenched to overturn, however inconvenient it may be.
 """ Category
 
 @class Category Ob Mor begin
@@ -18,12 +21,12 @@ if a∈A then af∈B.
   id(A::Ob)::Mor
   compose(f::Mor, g::Mor)::Mor
 
-  # Varargs
+  # Extra syntax
   compose(fs::Vararg{Mor}) = foldl(compose, fs)
 
   # Unicode syntax
-  ∘(f::Mor, g::Mor) = compose(f, g)
-  ∘(fs::Vararg{Mor}) = compose(fs...)
+  ∘(f::Mor, g::Mor) = compose(g, f)
+  ∘(fs::Vararg{Mor}) = foldl(∘, fs)
 end
 
 @doc """ Doctrine: *monoidal category*
@@ -40,7 +43,7 @@ typeclass for weak monoidal categories later.
   otimes(f::Mor, g::Mor)::Mor
   munit(::Ob)::Ob
 
-  # Varargs
+  # Extra syntax
   otimes(As::Vararg{Ob}) = foldl(otimes, As)
   otimes(fs::Vararg{Mor}) = foldl(otimes, fs)
 
