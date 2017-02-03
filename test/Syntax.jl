@@ -28,19 +28,6 @@ g = mor_expr(:g, B, A)
 @test f∘g == compose(f,g)
 @test f∘g∘f == compose(compose(f,g),f)
 
-# Pretty-print
-sexpr(expr::BaseExpr) = sprint(show_sexpr, expr)
-@test sexpr(A) == ":A"
-@test sexpr(f) == ":f"
-@test sexpr(compose(f,g)) == "(compose :f :g)"
-@test sexpr(compose(f,g,f)) == "(compose :f :g :f)"
-
-infix(expr::BaseExpr) = sprint(show_infix, expr)
-@test infix(A) == "A"
-@test infix(f) == "f : A → B"
-@test infix(id(A)) == "id[A] : A → A"
-@test infix(compose(f,g)) == "f g : A → A"
-
 # Monoidal category
 ###################
 
@@ -61,12 +48,47 @@ I = munit(A)
 @test f⊗g == otimes(f,g)
 
 # Pretty-print
+##############
+
+# S-expressions
+sexpr(expr::BaseExpr) = sprint(show_sexpr, expr)
+
+@test sexpr(A) == ":A"
+@test sexpr(f) == ":f"
+@test sexpr(compose(f,g)) == "(compose :f :g)"
+@test sexpr(compose(f,g,f)) == "(compose :f :g :f)"
+
+@test sexpr(I) == "(unit)"
 @test sexpr(otimes(A,B)) == "(otimes :A :B)"
 @test sexpr(otimes(f,g)) == "(otimes :f :g)"
 @test sexpr(compose(otimes(f,f),otimes(g,g))) == "(compose (otimes :f :f) (otimes :g :g))"
 
+# Infix (Unicode)
+infix(expr::BaseExpr) = sprint(show_infix, expr)
+
+@test infix(A) == "A"
+@test infix(f) == "f"
+@test infix(id(A)) == "id[A]"
+@test infix(compose(f,g)) == "f g"
+
+@test infix(I) == "I"
 @test infix(otimes(A,B)) == "A⊗B"
-@test infix(otimes(f,g)) == "f⊗g : A⊗B → B⊗A"
-@test infix(mor_expr(:f, I, A)) == "f : I → A"
-@test infix(compose(otimes(f,f),otimes(g,g))) == "(f⊗f) (g⊗g) : A⊗A → A⊗A"
-@test infix(otimes(compose(f,g),compose(g,f))) == "(f g)⊗(g f) : A⊗B → A⊗B"
+@test infix(otimes(f,g)) == "f⊗g"
+@test infix(compose(otimes(f,f),otimes(g,g))) == "(f⊗f) (g⊗g)"
+@test infix(otimes(compose(f,g),compose(g,f))) == "(f g)⊗(g f)"
+
+# Infix (LaTeX)
+latex(expr::BaseExpr) = sprint(show_latex, expr)
+
+@test latex(A) == "A"
+@test latex(f) == "f"
+@test latex(id(A)) == "\\mathrm{id}_{A}"
+@test latex(compose(f,g)) == "f g"
+
+@test latex(I) == "I"
+@test latex(otimes(A,B)) == "A \\otimes B"
+@test latex(otimes(f,g)) == "f \\otimes g"
+@test latex(compose(otimes(f,f),otimes(g,g))) == 
+  "\\left(f \\otimes f\\right) \\left(g \\otimes g\\right)"
+@test latex(otimes(compose(f,g),compose(g,f))) == 
+  "\\left(f g\\right) \\otimes \\left(g f\\right)"

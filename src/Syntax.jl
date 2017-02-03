@@ -1,7 +1,7 @@
 module Syntax
 export
   BaseExpr, ObExpr, MorExpr, ob_expr, mor_expr, head, args,
-  show_sexpr, show_infix,
+  show_infix, show_latex, show_sexpr,
   dom, codom, id, compose, ∘,
   otimes, munit, ⊗
 
@@ -152,24 +152,20 @@ function as_sexpr(expr::BaseExpr)::String
   end
 end
 
-""" Show the expression in infix notation.
-
-Uses Unicode symbols for operators.
+""" Show the expression in infix notation using Unicode symbols.
 """
 show_infix(expr::BaseExpr) = show_infix(STDOUT, expr)
-show_infix(io::IO, expr::ObExpr) = print(io, as_infix(expr))
-show_infix(io::IO, expr::MorExpr) = print(io,
-  "$(as_infix(expr)) : $(as_infix(dom(expr))) → $(as_infix(codom(expr)))")
+show_infix(io::IO, expr::BaseExpr) = print(io, as_infix(expr))
 
-function as_infix(expr::BaseExpr, paren::Bool=false)::String
+function as_infix(expr::BaseExpr; paren::Bool=false)::String
   head, args = Syntax.head(expr), Syntax.args(expr)
   if head == :gen # special case: generator
     return string(args[1])
   end
 
-  symbol = get(symbol_table, head, string(head))
+  symbol = get(symbol_table_unicode, head, string(head))
   if length(symbol) <= 1 && length(args) >= 2 # case 1: infix
-    result = join((as_infix(a,true) for a in args), symbol)
+    result = join((as_infix(a;paren=true) for a in args), symbol)
     paren ? "($result)" : result
   elseif length(args) >= 1 # case 2: prefix
     string(symbol, "[", join(map(as_infix, args), ","), "]")
@@ -178,10 +174,35 @@ function as_infix(expr::BaseExpr, paren::Bool=false)::String
   end
 end
 
-const symbol_table = Dict{Symbol,String}(
+const symbol_table_unicode = Dict{Symbol,String}(
   :compose => " ",
   :otimes => "⊗",
   :unit => "I",
 )
+
+""" Show the expression in infix notation using LaTeX math.
+
+Does *not* include `\$` or `\\[begin|end]{equation}` delimiters.
+"""
+show_latex(expr::BaseExpr) = show_latex(STDOUT, expr)
+show_latex(io::IO, expr::BaseExpr) = print(io, as_latex(expr))
+
+as_latex(expr::BaseExpr; kw...) = as_latex(expr, Val{head(expr)}; kw...)
+as_latex(expr::BaseExpr, ::Type{Val{:gen}}; kw...) = string(first(args(expr)))
+
+as_latex(id::MorExpr, ::Type{Val{:id}}; kw...) =
+  "\\mathrm{id}_{$(as_latex(dom(id)))}"
+as_latex(expr::MorExpr, ::Type{Val{:compose}}; paren::Bool=false, kw...) =
+  infix_op_latex(expr, " ", paren)
+
+as_latex(::ObExpr, ::Type{Val{:unit}}, kw...) = "I"
+as_latex(expr::BaseExpr, ::Type{Val{:otimes}}; paren::Bool=false, kw...) =
+  infix_op_latex(expr, "\\otimes", paren)
+
+function infix_op_latex(expr::BaseExpr, op::String, paren::Bool)
+  sep = op == " " ? op : " $op "
+  result = join((as_latex(a;paren=true) for a in args(expr)), sep)
+  paren ? "\\left($result\\right)" : result
+end
 
 end

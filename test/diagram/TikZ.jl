@@ -1,10 +1,10 @@
 using CompCat.Diagram.TikZ
 using Base.Test
 
-spprint(expr::Expression) = sprint(pprint, expr)
-
 # Pretty-print
 ##############
+
+spprint(expr::Expression) = sprint(pprint, expr)
 
 # Node statement
 @test spprint(Node("f")) == "\\node (f) {};"

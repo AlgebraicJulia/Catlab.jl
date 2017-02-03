@@ -3,6 +3,8 @@ export TikzPicture
 
 import Base: show
 import TikzPictures: TikzPicture
+
+using ...Syntax
 import ..TikZ
 
 """ Convert our TikZ picture type to `TikzPicture`'s picture type. 
@@ -19,8 +21,14 @@ function TikzPicture(pic::TikZ.Picture; usePDF2SVG=true)::TikzPicture
   TikzPicture(data; options=options, preamble=preamble, usePDF2SVG=usePDF2SVG)
 end
 
-function show(f::IO, ::MIME"image/svg+xml", pic::TikZ.Picture)
-  show(f, MIME"image/svg+xml"(), TikzPicture(pic))
+function show(io::IO, ::MIME"image/svg+xml", pic::TikZ.Picture)
+  show(io, MIME"image/svg+xml"(), TikzPicture(pic))
+end
+
+function show(io::IO, ::MIME"text/latex", expr::BaseExpr)
+  print(io, "\$")
+  show_latex(io, expr)
+  print(io, "\$")
 end
 
 end
