@@ -1,5 +1,9 @@
 .DS_Store
 
+# Jupyter
+.ipynb_checkpoints
+
+# Julia
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
