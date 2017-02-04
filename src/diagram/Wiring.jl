@@ -32,19 +32,19 @@ Warning: Since our implementation uses the `remember picture` option, LaTeX must
 be *twice* to fully render the picture. See (TikZ Manual, Sec 17.13).
 """
 function diagram_tikz(f::MorExpr; font_size::Number=12, math_mode::Bool=true,
+                      mid_arrow::String="Stealth", wire_labels::Bool=true,
                       box_size::Number=2, compose_sep::Number=2,
                       product_sep::Number=0.5)::TikZ.Picture
   # Draw input and output arrows by adding identities on either side of f. 
   f_ext = compose(id(dom(f)), f, id(codom(f)))
   
-  style = Dict(:box_size => box_size,
-               :compose_sep => compose_sep, :product_sep => product_sep)
+  style = Dict(:mid_arrow => !isempty(mid_arrow), :wire_labels => wire_labels,
+               :box_size => box_size, :compose_sep => compose_sep,
+               :product_sep => product_sep)
   mor = mor_tikz(f_ext, "n", style)
   
   props = [
     TikZ.Property("remember picture"),
-    TikZ.Property("decoration", 
-                  "{markings, mark=at position 0.5 with {\\arrow{stealth}}}"),
     TikZ.Property("font", 
                   "{\\fontsize{$(format(font_size))}{$(format(1.2*font_size))}}"),
     TikZ.Property("generator/.style",
@@ -53,6 +53,10 @@ function diagram_tikz(f::MorExpr; font_size::Number=12, math_mode::Bool=true,
     TikZ.Property("every path/.style", "{solid}"),
     TikZ.Property("every to/.style", "{out=0,in=180}"),
   ]
+  if !isempty(mid_arrow)
+    decoration = "{markings, mark=at position 0.5 with {\\arrow{$mid_arrow}}}"
+    push!(props, TikZ.Property("decoration", decoration))
+  end
   if math_mode
     append!(props, [ TikZ.Property("execute at begin node", "\$"),
                      TikZ.Property("execute at end node", "\$") ])
@@ -88,6 +92,13 @@ end
 
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:compose}})
   compose_sep = style[:compose_sep]
+  edge_props = style[:mid_arrow] ?
+    [ TikZ.Property("postaction", "{decorate}") ] : []
+  edge_node_props = [
+    TikZ.Property("above", "0.25em"),
+    TikZ.Property("midway")
+  ]
+  
   mors = [ mor_tikz(g, "$name$i", style) for (i,g) in enumerate(args(f)) ]
   stmts = TikZ.Statement[ mors[1].node ]
   for i = 2:length(mors)
@@ -95,9 +106,13 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:compose}})
           TikZ.Property("right=$(compose_sep)em of $name$(i-1))"))
     push!(stmts, mors[i].node)
     for j = 1:length(mors[i].dom)
+      node = Nullable()
+      if style[:wire_labels]
+        node = TikZ.EdgeNode(content=mors[i].dom[j].content,
+                             props=edge_node_props)
+      end
       edge = TikZ.Edge(mors[i-1].codom[j].anchor, mors[i].dom[j].anchor;
-                       props=[TikZ.Property("postaction","{decorate}")],
-                       op=TikZ.PathOperation("to"))
+                       op=TikZ.PathOperation("to"), props=edge_props, node=node)
       push!(stmts, edge)
     end
   end
@@ -109,6 +124,7 @@ end
 
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:otimes}})
   product_sep = style[:product_sep]
+  
   mors = []
   for (i,g) in enumerate(args(f))
     mor = mor_tikz(g, "$name$i", style)
