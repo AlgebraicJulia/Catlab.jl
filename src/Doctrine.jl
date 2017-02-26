@@ -4,7 +4,7 @@ export
   MonoidalCategory, otimes, opow, munit, ⊗,
   SymmetricMonoidalCategory, braid, σ,
   InternalMonoid, InternalComonoid, mcopy, mmerge, create, delete, Δ, ∇,
-  CompactClosedCategory, dual, unit, counit, η, ε
+  CompactClosedCategory, dual, ev, coev
 
 using Typeclass
 
@@ -103,13 +103,9 @@ Parent typeclass: `SymmetricMonoidalCategory`
 """ CompactClosedCategory
 
 @class CompactClosedCategory Ob Mor begin
-  dual(A::Ob)::Ob    # A˟
-  unit(A::Ob)::Mor   # I → A˟⊗A
-  counit(A::Ob)::Mor # A⊗A˟ → I
-  
-  # Unicode syntax
-  η(A::Ob) = unit(A)
-  ε(A::Ob) = counit(A)
+  dual(A::Ob)::Ob  # A˟
+  ev(A::Ob)::Mor   # A⊗A˟ → I
+  coev(A::Ob)::Mor # I → A˟⊗A
 end
 
 end

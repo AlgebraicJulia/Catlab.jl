@@ -72,11 +72,11 @@ I = munit(A)
 # Compact closed category
 #########################
 
-@test dom(unit(A)) == I
-@test codom(unit(A)) == otimes(dual(A), A)
+@test dom(ev(A)) == otimes(A, dual(A))
+@test codom(ev(A)) == I
 
-@test dom(counit(A)) == otimes(A, dual(A))
-@test codom(counit(A)) == I
+@test dom(coev(A)) == I
+@test codom(coev(A)) == otimes(dual(A), A)
 
 # Pretty-print
 ##############
@@ -137,5 +137,5 @@ latex(expr::BaseExpr) = sprint(show_latex, expr)
 @test latex(delete(A)) == "e_{A}"
 
 @test latex(dual(A)) == "A^{*}"
-@test latex(unit(A)) == "η_{A}"
-@test latex(counit(A)) == "ε_{A}"
+@test latex(ev(A)) == "\\mathrm{ev}_{A}"
+@test latex(coev(A)) == "\\mathrm{coev}_{A}"

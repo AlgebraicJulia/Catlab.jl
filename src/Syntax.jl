@@ -3,7 +3,7 @@ export
   BaseExpr, ObExpr, MorExpr, ob_expr, mor_expr, head, args,
   show_infix, show_latex, show_sexpr,
   dom, codom, id, compose, ∘, otimes, opow, munit, ⊗,
-  braid, σ, mcopy, mmerge, create, delete, Δ, ∇, dual, unit, counit, η, ε
+  braid, σ, mcopy, mmerge, create, delete, Δ, ∇, dual, ev, coev
 
 using AutoHashEquals
 using Match
@@ -14,7 +14,7 @@ import ..Doctrine:
   MonoidalCategory, otimes, opow, munit, ⊗,
   SymmetricMonoidalCategory, braid, σ,
   InternalMonoid, InternalComonoid, mcopy, mmerge, create, delete, Δ, ∇,
-  CompactClosedCategory, dual, unit, counit, η, ε
+  CompactClosedCategory, dual, ev, coev
 
 # Expressions
 #############
@@ -175,15 +175,15 @@ codom(f::MorExpr, ::Type{Val{:delete}}) = munit(args(f)[1])
 
 @instance! CompactClosedCategory ObExpr MorExpr begin
   dual(A::ObExpr) = ObExpr(:dual, A)
-  unit(A::ObExpr) = MorExpr(:unit, A)
-  counit(A::ObExpr) = MorExpr(:counit, A)
+  ev(A::ObExpr) = MorExpr(:eval, A)
+  coev(A::ObExpr) = MorExpr(:coeval, A)
 end
 
-dom(f::MorExpr, ::Type{Val{:unit}}) = munit(args(f)[1])
-codom(f::MorExpr, ::Type{Val{:unit}}) = otimes(dual(args(f)[1]), args(f)[1])
+dom(f::MorExpr, ::Type{Val{:eval}}) = otimes(args(f)[1], dual(args(f)[1]))
+codom(f::MorExpr, ::Type{Val{:eval}}) = munit(args(f)[1])
 
-dom(f::MorExpr, ::Type{Val{:counit}}) = otimes(args(f)[1], dual(args(f)[1]))
-codom(f::MorExpr, ::Type{Val{:counit}}) = munit(args(f)[1])
+dom(f::MorExpr, ::Type{Val{:coeval}}) = munit(args(f)[1])
+codom(f::MorExpr, ::Type{Val{:coeval}}) = otimes(dual(args(f)[1]), args(f)[1])
 
 # Pretty-print
 ##############
@@ -281,11 +281,11 @@ end
 function as_latex(expr::ObExpr, ::Type{Val{:dual}}; kw...)
   supscript(as_latex(first(args(expr))), "*")
 end
-function as_latex(expr::MorExpr, ::Type{Val{:unit}}; kw...)
-  subscript("η", as_latex(first(args(expr))))
+function as_latex(expr::MorExpr, ::Type{Val{:eval}}; kw...)
+  subscript("\\mathrm{ev}", as_latex(first(args(expr))))
 end
-function as_latex(expr::MorExpr, ::Type{Val{:counit}}; kw...)
-  subscript("ε", as_latex(first(args(expr))))
+function as_latex(expr::MorExpr, ::Type{Val{:coeval}}; kw...)
+  subscript("\\mathrm{coev}", as_latex(first(args(expr))))
 end
 
 subscript(body::String, sub::String) = "$(body)_{$sub}"
