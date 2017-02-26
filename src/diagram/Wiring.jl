@@ -5,19 +5,25 @@ export diagram_tikz
 
 import Formatting: format
 using Match
-import ...Syntax: ObExpr, MorExpr, dom, codom, head, args, compose, id, otimes
+
+import ...Syntax
+import ...Syntax: ObExpr, MorExpr, dom, codom, head, args, compose, id
 import ..TikZ
 
 # TikZ
 ######
 
 immutable PortTikZ
-  content::AbstractString
+  ob::ObExpr
   anchor::AbstractString
   angle::Integer
+  label::Bool
+  PortTikZ(ob::ObExpr, anchor::AbstractString;
+           angle::Integer=0, label::Bool=true) = new(ob, anchor, angle, label)
 end
 
 immutable MorTikZ
+  mor::MorExpr
   node::TikZ.Node
   dom::Vector{PortTikZ}
   codom::Vector{PortTikZ}
@@ -37,19 +43,26 @@ function diagram_tikz(f::MorExpr; font_size::Number=12, math_mode::Bool=true,
                       box_size::Number=2, compose_sep::Number=2,
                       product_sep::Number=0.5)::TikZ.Picture
   # Draw input and output arrows by adding identities on either side of f. 
-  f_ext = compose(id(dom(f)), f, id(codom(f)))
+  f_ext = f
+  f_ext = head(dom(f)) == :unit ? f_ext : compose(id(dom(f)), f_ext)
+  f_ext = head(codom(f)) == :unit ? f_ext : compose(f_ext, id(codom(f)))
   
   style = Dict(:arrowtip => !isempty(arrowtip), :labels => labels,
                :box_size => box_size, :compose_sep => compose_sep,
                :product_sep => product_sep)
+  
+  # Create node for extended morphism.
   mor = mor_tikz(f_ext, "n", style)
   
+  # Create picture with this single node.
   props = [
     TikZ.Property("remember picture"),
     TikZ.Property("font", 
                   "{\\fontsize{$(format(font_size))}{$(format(1.2*font_size))}}"),
     TikZ.Property("generator/.style",
                   "{draw,solid,rounded corners,inner sep=0.333em}"),
+    TikZ.Property("monoid node/.style",
+                  "{draw,fill,circle,minimum size=0.333em}"),
     TikZ.Property("container/.style", "{inner sep=0}"),
     TikZ.Property("every path/.style", "{solid}"),
   ]
@@ -79,7 +92,7 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:gen}})
     TikZ.Property("minimum height", "$(height)em")
   ]
   node = TikZ.Node(name; content=string(first(args(f))), props=props)
-  MorTikZ(node, dom_ports, codom_ports)
+  MorTikZ(f, node, dom_ports, codom_ports)
 end
 
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:id}})
@@ -90,7 +103,7 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:id}})
     TikZ.Property("minimum height", "$(height)em")
   ]
   node = TikZ.Node(name; props=props)
-  MorTikZ(node, dom_ports, codom_ports)
+  MorTikZ(f, node, dom_ports, codom_ports)
 end
 
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:compose}})
@@ -111,9 +124,12 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:compose}})
     for j = 1:length(mors[i].dom)
       src_port = mors[i-1].codom[j]
       tgt_port = mors[i].dom[j]
-      node = if (style[:labels])
-               TikZ.EdgeNode(content=tgt_port.content, props=edge_node_props)
-             else Nullable() end
+      if (style[:labels] && src_port.label && tgt_port.label)
+        label = string(first(args(tgt_port.ob)))
+        node = TikZ.EdgeNode(content=label, props=edge_node_props)
+      else
+        node = Nullable()
+      end
       op = TikZ.PathOperation("to"; props=[
         TikZ.Property("out", string(src_port.angle)),
         TikZ.Property("in", string(tgt_port.angle)),
@@ -126,7 +142,7 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:compose}})
 
   props = [ TikZ.Property("container") ]
   node = TikZ.Node(name; content=TikZ.Picture(stmts...), props=props)
-  MorTikZ(node, first(mors).dom, last(mors).codom)
+  MorTikZ(f, node, first(mors).dom, last(mors).codom)
 end
 
 # Monoidal category
@@ -149,7 +165,43 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:otimes}})
   node = TikZ.Node(name; content=TikZ.Picture(stmts...), props=props)
   dom = vcat([ mor.dom for mor in mors]...)
   codom = vcat([ mor.codom for mor in mors]...)
-  MorTikZ(node, dom, codom)
+  MorTikZ(f, node, dom, codom)
+end
+
+# TODO: Symmetric monoidal category
+
+# Internal (co)monoid
+
+function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:copy}})
+  A = Syntax.dom(f)
+  dom = [ PortTikZ(A, "$name.west", angle=180) ]
+  codom = [ PortTikZ(A, "$name.north", angle=90, label=false),
+            PortTikZ(A, "$name.south", angle=270, label=false) ]
+  node = TikZ.Node(name; props=[TikZ.Property("monoid node")])
+  MorTikZ(f, node, dom, codom)
+end
+
+function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:merge}})
+  A = Syntax.codom(f)
+  dom = [ PortTikZ(A, "$name.north", angle=90, label=false),
+          PortTikZ(A, "$name.south", angle=270, label=false) ]
+  codom = [ PortTikZ(A, "$name.east", angle=0) ]
+  node = TikZ.Node(name; props=[TikZ.Property("monoid node")])
+  MorTikZ(f, node, dom, codom)
+end
+
+function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:create}})
+  A = Syntax.codom(f)
+  codom = [ PortTikZ(A, "$name.east", angle=0) ]
+  node = TikZ.Node(name; props=[TikZ.Property("monoid node")])
+  MorTikZ(f, node, [], codom)
+end
+
+function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:delete}})
+  A = Syntax.dom(f)
+  dom = [ PortTikZ(A, "$name.west", angle=180) ]
+  node = TikZ.Node(name; props=[TikZ.Property("monoid node")])
+  MorTikZ(f, node, dom, [])
 end
 
 # Helper functions
@@ -174,20 +226,16 @@ function box_anchors(A::ObExpr, name::String, style::Dict;
   box_size, product_sep = style[:box_size], style[:product_sep]
   @match A begin
     ObExpr(:unit, _) => []
-    ObExpr(:gen, syms) => begin
-      content = string(first(syms))
-      [ PortTikZ(content, "$name.$dir", angle) ]
-    end
+    ObExpr(:gen, syms) => [ PortTikZ(A, "$name.$dir", angle=angle) ]
     ObExpr(:otimes, gens) => begin
       @assert all(head(B) == :gen for B in gens)
       ports = []
       m = length(gens)
       start = (m*box_size + (m-1)*product_sep) / 2
       for (i,B) in enumerate(gens)
-        content = string(first(args(B)))
         offset = box_size/2 + (i-1)*(box_size+product_sep)
         anchor = "\$($name.$dir)+(0,$(start-offset)em)\$"
-        push!(ports, PortTikZ(content, anchor, angle))
+        push!(ports, PortTikZ(B, anchor, angle=angle))
       end
       ports
     end
