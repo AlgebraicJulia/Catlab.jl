@@ -1,3 +1,4 @@
+using CompCat.Doctrine
 using CompCat.Syntax
 using Base.Test
 
@@ -47,6 +48,36 @@ I = munit(A)
 @test A⊗B == otimes(A,B)
 @test f⊗g == otimes(f,g)
 
+# Symmetric monoidal category
+#############################
+
+@test dom(braid(A,B)) == otimes(A,B)
+@test codom(braid(A,B)) == otimes(B,A)
+
+# Internal (co)monoid
+#####################
+
+# Monoid
+@test dom(mmerge(A)) == otimes(A,A)
+@test codom(mmerge(A)) == A
+@test dom(create(A)) == I
+@test codom(create(A)) == A
+
+# Comonoid
+@test dom(mcopy(A)) == A
+@test codom(mcopy(A)) == otimes(A,A)
+@test dom(delete(A)) == A
+@test codom(delete(A)) == I
+
+# Compact closed category
+#########################
+
+@test dom(unit(A)) == I
+@test codom(unit(A)) == otimes(dual(A), A)
+
+@test dom(counit(A)) == otimes(A, dual(A))
+@test codom(counit(A)) == I
+
 # Pretty-print
 ##############
 
@@ -77,6 +108,11 @@ infix(expr::BaseExpr) = sprint(show_infix, expr)
 @test infix(compose(otimes(f,f),otimes(g,g))) == "(f⊗f) (g⊗g)"
 @test infix(otimes(compose(f,g),compose(g,f))) == "(f g)⊗(g f)"
 
+@test infix(braid(A,B)) == "braid[A,B]"
+@test infix(mmerge(A)) == "merge[A]"
+@test infix(mcopy(A)) == "copy[A]"
+@test infix(compose(mcopy(A), otimes(f,f))) == "copy[A] (f⊗f)"
+
 # Infix (LaTeX)
 latex(expr::BaseExpr) = sprint(show_latex, expr)
 
@@ -92,3 +128,14 @@ latex(expr::BaseExpr) = sprint(show_latex, expr)
   "\\left(f \\otimes f\\right) \\left(g \\otimes g\\right)"
 @test latex(otimes(compose(f,g),compose(g,f))) == 
   "\\left(f g\\right) \\otimes \\left(g f\\right)"
+
+@test latex(braid(A,B)) == "\\sigma_{A,B}"
+
+@test latex(mcopy(A)) == "\\Delta_{A}"
+@test latex(mmerge(A)) == "\\nabla_{A}"
+@test latex(create(A)) == "i_{A}"
+@test latex(delete(A)) == "e_{A}"
+
+@test latex(dual(A)) == "A^{*}"
+@test latex(unit(A)) == "η_{A}"
+@test latex(counit(A)) == "ε_{A}"

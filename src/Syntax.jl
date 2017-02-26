@@ -2,8 +2,8 @@ module Syntax
 export
   BaseExpr, ObExpr, MorExpr, ob_expr, mor_expr, head, args,
   show_infix, show_latex, show_sexpr,
-  dom, codom, id, compose, ∘,
-  otimes, munit, ⊗
+  dom, codom, id, compose, ∘, otimes, opow, munit, ⊗,
+  braid, σ, mcopy, mmerge, create, delete, Δ, ∇, dual, unit, counit, η, ε
 
 using AutoHashEquals
 using Match
@@ -11,7 +11,10 @@ using Typeclass
 
 import ..Doctrine:
   Category, dom, codom, id, compose, ∘,
-  MonoidalCategory, otimes, munit, ⊗
+  MonoidalCategory, otimes, opow, munit, ⊗,
+  SymmetricMonoidalCategory, braid, σ,
+  InternalMonoid, InternalComonoid, mcopy, mmerge, create, delete, Δ, ∇,
+  CompactClosedCategory, dual, unit, counit, η, ε
 
 # Expressions
 #############
@@ -99,11 +102,12 @@ level.) Similar remarks apply to the other doctrines.
 end
 
 dom(f::MorExpr, ::Type{Val{:gen}}) = args(f)[2]
-dom(f::MorExpr, ::Type{Val{:compose}}) = dom(first(args(f)))
-dom(f::MorExpr, ::Type{Val{:id}}) = args(f)[1]
-
 codom(f::MorExpr, ::Type{Val{:gen}}) = args(f)[3]
+
+dom(f::MorExpr, ::Type{Val{:compose}}) = dom(first(args(f)))
 codom(f::MorExpr, ::Type{Val{:compose}}) = codom(last(args(f)))
+
+dom(f::MorExpr, ::Type{Val{:id}}) = args(f)[1]
 codom(f::MorExpr, ::Type{Val{:id}}) = args(f)[1]
 
 # Monoidal category
@@ -130,6 +134,56 @@ end
 
 dom(f::MorExpr, ::Type{Val{:otimes}}) = otimes(map(dom, args(f))...)
 codom(f::MorExpr, ::Type{Val{:otimes}}) = otimes(map(codom, args(f))...)
+
+# Symmetric monoidal category
+#############################
+
+@instance! SymmetricMonoidalCategory ObExpr MorExpr begin
+  braid(A::ObExpr, B::ObExpr) = MorExpr(:braid, A, B)
+end
+
+dom(f::MorExpr, ::Type{Val{:braid}}) = otimes(args(f)[1], args(f)[2])
+codom(f::MorExpr, ::Type{Val{:braid}}) = otimes(args(f)[2], args(f)[1])
+
+# Internal (co)monoid
+#####################
+
+@instance! InternalMonoid ObExpr MorExpr begin
+  mmerge(A::ObExpr) = MorExpr(:merge, A)
+  create(A::ObExpr) = MorExpr(:create, A)
+end
+
+@instance! InternalComonoid ObExpr MorExpr begin
+  mcopy(A::ObExpr) = MorExpr(:copy, A)
+  delete(A::ObExpr) = MorExpr(:delete, A)
+end
+
+dom(f::MorExpr, ::Type{Val{:copy}}) = args(f)[1]
+codom(f::MorExpr, ::Type{Val{:copy}}) = opow(args(f)[1], 2)
+
+dom(f::MorExpr, ::Type{Val{:merge}}) = opow(args(f)[1], 2)
+codom(f::MorExpr, ::Type{Val{:merge}}) = args(f)[1]
+
+dom(f::MorExpr, ::Type{Val{:create}}) = munit(args(f)[1])
+codom(f::MorExpr, ::Type{Val{:create}}) = args(f)[1]
+
+dom(f::MorExpr, ::Type{Val{:delete}}) = args(f)[1]
+codom(f::MorExpr, ::Type{Val{:delete}}) = munit(args(f)[1])
+
+# Compact closed category
+#########################
+
+@instance! CompactClosedCategory ObExpr MorExpr begin
+  dual(A::ObExpr) = ObExpr(:dual, A)
+  unit(A::ObExpr) = MorExpr(:unit, A)
+  counit(A::ObExpr) = MorExpr(:counit, A)
+end
+
+dom(f::MorExpr, ::Type{Val{:unit}}) = munit(args(f)[1])
+codom(f::MorExpr, ::Type{Val{:unit}}) = otimes(dual(args(f)[1]), args(f)[1])
+
+dom(f::MorExpr, ::Type{Val{:counit}}) = otimes(args(f)[1], dual(args(f)[1]))
+codom(f::MorExpr, ::Type{Val{:counit}}) = munit(args(f)[1])
 
 # Pretty-print
 ##############
@@ -190,16 +244,54 @@ show_latex(io::IO, expr::BaseExpr) = print(io, as_latex(expr))
 as_latex(expr::BaseExpr; kw...) = as_latex(expr, Val{head(expr)}; kw...)
 as_latex(expr::BaseExpr, ::Type{Val{:gen}}; kw...) = string(first(args(expr)))
 
-as_latex(id::MorExpr, ::Type{Val{:id}}; kw...) =
-  "\\mathrm{id}_{$(as_latex(dom(id)))}"
-as_latex(expr::MorExpr, ::Type{Val{:compose}}; paren::Bool=false, kw...) =
-  infix_op_latex(expr, " ", paren)
+# Category
+function as_latex(id::MorExpr, ::Type{Val{:id}}; kw...)
+  subscript("\\mathrm{id}", as_latex(dom(id)))
+end
+function as_latex(expr::MorExpr, ::Type{Val{:compose}}; paren::Bool=false, kw...)
+  binary_op(expr, " ", paren)
+end
 
-as_latex(::ObExpr, ::Type{Val{:unit}}, kw...) = "I"
-as_latex(expr::BaseExpr, ::Type{Val{:otimes}}; paren::Bool=false, kw...) =
-  infix_op_latex(expr, "\\otimes", paren)
+# Monoidal category
+as_latex(::ObExpr, ::Type{Val{:unit}}; kw...) = "I"
+function as_latex(expr::BaseExpr, ::Type{Val{:otimes}}; paren::Bool=false, kw...)
+  binary_op(expr, "\\otimes", paren)
+end
 
-function infix_op_latex(expr::BaseExpr, op::String, paren::Bool)
+# Symmetric monoidal category
+function as_latex(expr::MorExpr, ::Type{Val{:braid}}; kw...)
+  subscript("\\sigma", join(map(as_latex, args(expr)), ","))
+end
+
+# Internal (co)monoid
+function as_latex(expr::MorExpr, ::Type{Val{:copy}}; kw...)
+  subscript("\\Delta", as_latex(dom(expr)))
+end
+function as_latex(expr::MorExpr, ::Type{Val{:delete}}; kw...)
+  subscript("e", as_latex(dom(expr)))
+end
+function as_latex(expr::MorExpr, ::Type{Val{:merge}}; kw...)
+  subscript("\\nabla", as_latex(codom(expr)))
+end
+function as_latex(expr::MorExpr, ::Type{Val{:create}}; kw...)
+  subscript("i", as_latex(codom(expr)))
+end
+
+# Closed compact category
+function as_latex(expr::ObExpr, ::Type{Val{:dual}}; kw...)
+  supscript(as_latex(first(args(expr))), "*")
+end
+function as_latex(expr::MorExpr, ::Type{Val{:unit}}; kw...)
+  subscript("η", as_latex(first(args(expr))))
+end
+function as_latex(expr::MorExpr, ::Type{Val{:counit}}; kw...)
+  subscript("ε", as_latex(first(args(expr))))
+end
+
+subscript(body::String, sub::String) = "$(body)_{$sub}"
+supscript(body::String, sup::String) = "$(body)^{$sup}"
+
+function binary_op(expr::BaseExpr, op::String, paren::Bool)
   sep = op == " " ? op : " $op "
   result = join((as_latex(a;paren=true) for a in args(expr)), sep)
   paren ? "\\left($result\\right)" : result
