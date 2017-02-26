@@ -12,8 +12,9 @@ import ..TikZ
 ######
 
 immutable PortTikZ
-  anchor::AbstractString
   content::AbstractString
+  anchor::AbstractString
+  angle::Integer
 end
 
 immutable MorTikZ
@@ -29,7 +30,7 @@ This is achieved by nesting TikZ pictures in TikZ nodes recursively--a feature
 not officially supported by TikZ but which is commonly used nonetheless.
 
 Warning: Since our implementation uses the `remember picture` option, LaTeX must
-be *twice* to fully render the picture. See (TikZ Manual, Sec 17.13).
+be run *twice* to fully render the picture. See (TikZ Manual, Sec 17.13).
 """
 function diagram_tikz(f::MorExpr; font_size::Number=12, math_mode::Bool=true,
                       mid_arrow::String="Stealth", wire_labels::Bool=true,
@@ -51,7 +52,6 @@ function diagram_tikz(f::MorExpr; font_size::Number=12, math_mode::Bool=true,
                   "{draw,solid,rounded corners,inner sep=0.333em}"),
     TikZ.Property("container/.style", "{inner sep=0}"),
     TikZ.Property("every path/.style", "{solid}"),
-    TikZ.Property("every to/.style", "{out=0,in=180}"),
   ]
   if !isempty(mid_arrow)
     decoration = "{markings, mark=at position 0.5 with {\\arrow{$mid_arrow}}}"
@@ -68,9 +68,11 @@ function mor_tikz(f::MorExpr, name::String, style::Dict)::MorTikZ
   mor_tikz(f, name, style, Val{head(f)})
 end
 
+# Category
+
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:gen}})
-  dom_ports = box_anchors(dom(f), name, style, dir="west")
-  codom_ports = box_anchors(codom(f), name, style, dir="east")
+  dom_ports = box_anchors(dom(f), name, style, dir="west", angle=180)
+  codom_ports = box_anchors(codom(f), name, style, dir="east", angle=0)
   height = box_size(max(length(dom_ports), length(codom_ports)), style)
   props = [
     TikZ.Property("generator"),
@@ -81,13 +83,14 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:gen}})
 end
 
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:id}})
-  ports = box_anchors(dom(f), name, style, dir="center")
-  height = box_size(length(ports), style)
+  dom_ports = box_anchors(dom(f), name, style, dir="center", angle=180)
+  codom_ports = box_anchors(codom(f), name, style, dir="center", angle=0)
+  height = box_size(length(dom_ports), style)
   props = [
     TikZ.Property("minimum height", "$(height)em")
   ]
   node = TikZ.Node(name; props=props)
-  MorTikZ(node, ports, ports)
+  MorTikZ(node, dom_ports, codom_ports)
 end
 
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:compose}})
@@ -106,13 +109,17 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:compose}})
           TikZ.Property("right=$(compose_sep)em of $name$(i-1))"))
     push!(stmts, mors[i].node)
     for j = 1:length(mors[i].dom)
-      node = Nullable()
-      if style[:wire_labels]
-        node = TikZ.EdgeNode(content=mors[i].dom[j].content,
-                             props=edge_node_props)
-      end
-      edge = TikZ.Edge(mors[i-1].codom[j].anchor, mors[i].dom[j].anchor;
-                       op=TikZ.PathOperation("to"), props=edge_props, node=node)
+      src_port = mors[i-1].codom[j]
+      tgt_port = mors[i].dom[j]
+      node = if (style[:wire_labels])
+               TikZ.EdgeNode(content=tgt_port.content, props=edge_node_props)
+             else Nullable() end
+      op = TikZ.PathOperation("to"; props=[
+        TikZ.Property("out", string(src_port.angle)),
+        TikZ.Property("in", string(tgt_port.angle)),
+      ])
+      edge = TikZ.Edge(src_port.anchor, tgt_port.anchor;
+                       op=op, props=edge_props, node=node)
       push!(stmts, edge)
     end
   end
@@ -121,6 +128,8 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:compose}})
   node = TikZ.Node(name; content=TikZ.Picture(stmts...), props=props)
   MorTikZ(node, first(mors).dom, last(mors).codom)
 end
+
+# Monoidal category
 
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:otimes}})
   product_sep = style[:product_sep]
@@ -143,6 +152,8 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:otimes}})
   MorTikZ(node, dom, codom)
 end
 
+# Helper functions
+
 """ Compute the size of a box from the number of its ports.
 
 We use the unique formula consistent with the monoidal product, meaning that
@@ -159,20 +170,24 @@ end
 These anchors are consistent with the monoidal product (see `box_size`).
 """
 function box_anchors(A::ObExpr, name::String, style::Dict;
-                     dir::String="center")::Vector{PortTikZ}
+                     dir::String="center", angle::Int=0)::Vector{PortTikZ}
   box_size, product_sep = style[:box_size], style[:product_sep]
   @match A begin
     ObExpr(:unit, _) => []
-    ObExpr(:gen, syms) => [ PortTikZ("$name.$dir", string(first(syms))) ]
+    ObExpr(:gen, syms) => begin
+      content = string(first(syms))
+      [ PortTikZ(content, "$name.$dir", angle) ]
+    end
     ObExpr(:otimes, gens) => begin
       @assert all(head(B) == :gen for B in gens)
       ports = []
       m = length(gens)
       start = (m*box_size + (m-1)*product_sep) / 2
       for (i,B) in enumerate(gens)
+        content = string(first(args(B)))
         offset = box_size/2 + (i-1)*(box_size+product_sep)
         anchor = "\$($name.$dir)+(0,$(start-offset)em)\$"
-        push!(ports, PortTikZ(anchor, string(first(args(B)))))
+        push!(ports, PortTikZ(content, anchor, angle))
       end
       ports
     end
