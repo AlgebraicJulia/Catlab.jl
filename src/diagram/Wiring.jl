@@ -99,9 +99,7 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:id}})
   dom_ports = box_anchors(dom(f), name, style, dir="center", angle=180)
   codom_ports = box_anchors(codom(f), name, style, dir="center", angle=0)
   height = box_size(length(dom_ports), style)
-  props = [
-    TikZ.Property("minimum height", "$(height)em")
-  ]
+  props = [ TikZ.Property("minimum height", "$(height)em") ]
   node = TikZ.Node(name; props=props)
   MorTikZ(f, node, dom_ports, codom_ports)
 end
@@ -172,9 +170,13 @@ end
 
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:braid}})
   A, B = args(f)[1], args(f)[2]
-  dom = [ PortTikZ(A, name, angle=135), PortTikZ(B, name, angle=225) ]
-  codom = [ PortTikZ(B, name, angle=45), PortTikZ(A, name, angle=315) ]
-  node = TikZ.Node(name; props=[TikZ.Property("minimum size", "0")])
+  center = "$name.center"
+  dom = [ PortTikZ(A, center, angle=135), PortTikZ(B, center, angle=225) ]
+  codom = [ PortTikZ(B, center, angle=45), PortTikZ(A, center, angle=315) ]
+  props = [
+    TikZ.Property("minimum height", "$(box_size(2,style))em")
+  ]
+  node = TikZ.Node(name; props=props)
   MorTikZ(f, node, dom, codom)
 end
 
@@ -213,16 +215,22 @@ end
 # Compact closed category
 
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:eval}})
-  ports = [ PortTikZ(args(dom(f))[1], name, angle=90),
-            PortTikZ(args(dom(f))[2], name, angle=270) ]
-  node = TikZ.Node(name; props=[TikZ.Property("minimum size", "0")])
+  ports = [ PortTikZ(args(dom(f))[1], "$name.center", angle=90),
+            PortTikZ(args(dom(f))[2], "$name.center", angle=270) ]
+  props = [
+    TikZ.Property("minimum height", "$(box_size(2,style))em")
+  ]
+  node = TikZ.Node(name; props=props)
   MorTikZ(f, node, ports, [])
 end
 
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:coeval}})
-  ports = [ PortTikZ(args(codom(f))[1], name, angle=90),
-            PortTikZ(args(codom(f))[2], name, angle=270) ]
-  node = TikZ.Node(name; props=[TikZ.Property("minimum size", "0")])
+  ports = [ PortTikZ(args(codom(f))[1], "$name.center", angle=90),
+            PortTikZ(args(codom(f))[2], "$name.center", angle=270) ]
+  props = [
+    TikZ.Property("minimum height", "$(box_size(2,style))em")
+  ]
+  node = TikZ.Node(name; props=props)
   MorTikZ(f, node, [], ports)
 end
 
