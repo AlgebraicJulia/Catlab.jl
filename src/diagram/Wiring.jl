@@ -168,7 +168,15 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:otimes}})
   MorTikZ(f, node, dom, codom)
 end
 
-# TODO: Symmetric monoidal category
+# Symmetric monoidal category
+
+function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:braid}})
+  A, B = args(f)[1], args(f)[2]
+  dom = [ PortTikZ(A, name, angle=135), PortTikZ(B, name, angle=225) ]
+  codom = [ PortTikZ(B, name, angle=45), PortTikZ(A, name, angle=315) ]
+  node = TikZ.Node(name; props=[TikZ.Property("minimum size", "0")])
+  MorTikZ(f, node, dom, codom)
+end
 
 # Internal (co)monoid
 
