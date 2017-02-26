@@ -33,13 +33,13 @@ Warning: Since our implementation uses the `remember picture` option, LaTeX must
 be run *twice* to fully render the picture. See (TikZ Manual, Sec 17.13).
 """
 function diagram_tikz(f::MorExpr; font_size::Number=12, math_mode::Bool=true,
-                      mid_arrow::String="Stealth", wire_labels::Bool=true,
+                      arrowtip::String="", labels::Bool=true,
                       box_size::Number=2, compose_sep::Number=2,
                       product_sep::Number=0.5)::TikZ.Picture
   # Draw input and output arrows by adding identities on either side of f. 
   f_ext = compose(id(dom(f)), f, id(codom(f)))
   
-  style = Dict(:mid_arrow => !isempty(mid_arrow), :wire_labels => wire_labels,
+  style = Dict(:arrowtip => !isempty(arrowtip), :labels => labels,
                :box_size => box_size, :compose_sep => compose_sep,
                :product_sep => product_sep)
   mor = mor_tikz(f_ext, "n", style)
@@ -53,8 +53,8 @@ function diagram_tikz(f::MorExpr; font_size::Number=12, math_mode::Bool=true,
     TikZ.Property("container/.style", "{inner sep=0}"),
     TikZ.Property("every path/.style", "{solid}"),
   ]
-  if !isempty(mid_arrow)
-    decoration = "{markings, mark=at position 0.5 with {\\arrow{$mid_arrow}}}"
+  if !isempty(arrowtip)
+    decoration = "{markings, mark=at position 0.5 with {\\arrow{$arrowtip}}}"
     push!(props, TikZ.Property("decoration", decoration))
   end
   if math_mode
@@ -95,7 +95,7 @@ end
 
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:compose}})
   compose_sep = style[:compose_sep]
-  edge_props = style[:mid_arrow] ?
+  edge_props = style[:arrowtip] ?
     [ TikZ.Property("postaction", "{decorate}") ] : []
   edge_node_props = [
     TikZ.Property("above", "0.25em"),
@@ -111,7 +111,7 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:compose}})
     for j = 1:length(mors[i].dom)
       src_port = mors[i-1].codom[j]
       tgt_port = mors[i].dom[j]
-      node = if (style[:wire_labels])
+      node = if (style[:labels])
                TikZ.EdgeNode(content=tgt_port.content, props=edge_node_props)
              else Nullable() end
       op = TikZ.PathOperation("to"; props=[
