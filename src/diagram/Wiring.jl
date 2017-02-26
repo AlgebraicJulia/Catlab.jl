@@ -199,17 +199,31 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:merge}})
 end
 
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:create}})
-  A = Syntax.codom(f)
-  codom = [ PortTikZ(A, "$name.east", angle=0) ]
+  ports = [ PortTikZ(codom(f), "$name.east", angle=0) ]
   node = TikZ.Node(name; props=[TikZ.Property("monoid node")])
-  MorTikZ(f, node, [], codom)
+  MorTikZ(f, node, [], ports)
 end
 
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:delete}})
-  A = Syntax.dom(f)
-  dom = [ PortTikZ(A, "$name.west", angle=180) ]
+  ports = [ PortTikZ(dom(f), "$name.west", angle=180) ]
   node = TikZ.Node(name; props=[TikZ.Property("monoid node")])
-  MorTikZ(f, node, dom, [])
+  MorTikZ(f, node, ports, [])
+end
+
+# Compact closed category
+
+function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:eval}})
+  ports = [ PortTikZ(args(dom(f))[1], name, angle=90),
+            PortTikZ(args(dom(f))[2], name, angle=270) ]
+  node = TikZ.Node(name; props=[TikZ.Property("minimum size", "0")])
+  MorTikZ(f, node, ports, [])
+end
+
+function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:coeval}})
+  ports = [ PortTikZ(args(codom(f))[1], name, angle=90),
+            PortTikZ(args(codom(f))[2], name, angle=270) ]
+  node = TikZ.Node(name; props=[TikZ.Property("minimum size", "0")])
+  MorTikZ(f, node, [], ports)
 end
 
 # Helper functions
@@ -234,9 +248,7 @@ function box_anchors(A::ObExpr, name::String, style::Dict;
   box_size, product_sep = style[:box_size], style[:product_sep]
   @match A begin
     ObExpr(:unit, _) => []
-    ObExpr(:gen, syms) => [ PortTikZ(A, "$name.$dir", angle=angle) ]
     ObExpr(:otimes, gens) => begin
-      @assert all(head(B) == :gen for B in gens)
       ports = []
       m = length(gens)
       start = (m*box_size + (m-1)*product_sep) / 2
@@ -247,6 +259,7 @@ function box_anchors(A::ObExpr, name::String, style::Dict;
       end
       ports
     end
+    _ => [ PortTikZ(A, "$name.$dir", angle=angle) ]
   end
 end
 
