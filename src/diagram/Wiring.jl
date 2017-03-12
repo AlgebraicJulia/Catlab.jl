@@ -31,16 +31,17 @@ end
 
 """ Draw a wiring diagram in TikZ for the given formula.
 
-THe diagram is constructed recursively, mirroring the structure of the formula.
+The diagram is constructed recursively, mirroring the structure of the formula.
 This is achieved by nesting TikZ pictures in TikZ nodes recursively--a feature
-not officially supported by TikZ but which is commonly used nonetheless.
+not officially supported by TikZ but that is nonetheless in widespread use.
 
 Warning: Since our implementation uses the `remember picture` option, LaTeX must
 be run *twice* to fully render the picture. See (TikZ Manual, Sec 17.13).
 """
 function diagram_tikz(f::MorExpr;
     font_size::Number=12, line_width::String="0.4pt", math_mode::Bool=true,
-    arrowtip::String="", labels::Bool=true, box_size::Number=2,
+    arrowtip::String="", labels::Bool=true,
+    box_padding::String="0.333em", box_size::Number=2,
     compose_sep::Number=2, product_sep::Number=0.5)::TikZ.Picture
   # Draw input and output arrows by adding identities on either side of f. 
   f_ext = f
@@ -59,8 +60,8 @@ function diagram_tikz(f::MorExpr;
     TikZ.Property("remember picture"),
     TikZ.Property("font", 
                   "{\\fontsize{$(format(font_size))}{$(format(1.2*font_size))}}"),
-    TikZ.Property("generator/.style",
-                  "{draw,solid,rounded corners,inner sep=0.333em}"),
+    TikZ.Property("morphism node/.style",
+                  "{draw,solid,rounded corners,inner sep=$box_padding}"),
     TikZ.Property("monoid node/.style",
                   "{draw,fill,circle,minimum size=0.333em}"),
     TikZ.Property("container/.style", "{inner sep=0}"),
@@ -89,7 +90,7 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:gen}})
   codom_ports = box_anchors(codom(f), name, style, dir="east", angle=0)
   height = box_size(max(length(dom_ports), length(codom_ports)), style)
   props = [
-    TikZ.Property("generator"),
+    TikZ.Property("morphism node"),
     TikZ.Property("minimum height", "$(height)em")
   ]
   node = TikZ.Node(name; content=string(first(args(f))), props=props)
