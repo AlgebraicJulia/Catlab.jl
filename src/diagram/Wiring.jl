@@ -38,10 +38,10 @@ not officially supported by TikZ but which is commonly used nonetheless.
 Warning: Since our implementation uses the `remember picture` option, LaTeX must
 be run *twice* to fully render the picture. See (TikZ Manual, Sec 17.13).
 """
-function diagram_tikz(f::MorExpr; font_size::Number=12, math_mode::Bool=true,
-                      arrowtip::String="", labels::Bool=true,
-                      box_size::Number=2, compose_sep::Number=2,
-                      product_sep::Number=0.5)::TikZ.Picture
+function diagram_tikz(f::MorExpr;
+    font_size::Number=12, line_width::String="0.4pt", math_mode::Bool=true,
+    arrowtip::String="", labels::Bool=true, box_size::Number=2,
+    compose_sep::Number=2, product_sep::Number=0.5)::TikZ.Picture
   # Draw input and output arrows by adding identities on either side of f. 
   f_ext = f
   f_ext = head(dom(f)) == :unit ? f_ext : compose(id(dom(f)), f_ext)
@@ -64,7 +64,8 @@ function diagram_tikz(f::MorExpr; font_size::Number=12, math_mode::Bool=true,
     TikZ.Property("monoid node/.style",
                   "{draw,fill,circle,minimum size=0.333em}"),
     TikZ.Property("container/.style", "{inner sep=0}"),
-    TikZ.Property("every path/.style", "{solid}"),
+    TikZ.Property("every path/.style",
+                  "{solid, line width=$line_width}"),
   ]
   if !isempty(arrowtip)
     decoration = "{markings, mark=at position 0.5 with {\\arrow{$arrowtip}}}"
