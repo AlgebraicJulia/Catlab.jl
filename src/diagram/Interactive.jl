@@ -32,4 +32,14 @@ function show(io::IO, ::MIME"text/latex", expr::BaseExpr)
   print(io, "\$")
 end
 
+function show(io::IO, ::MIME"text/latex", expr::MorExpr)
+  print(io, "\$")
+  show_latex(io, expr)
+  print(io, " : ")
+  show_latex(io, dom(expr))
+  print(io, " \\to ")
+  show_latex(io, codom(expr))
+  print(io, "\$")
+end
+
 end
