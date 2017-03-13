@@ -88,6 +88,8 @@ function diagram_tikz(f::MorExpr;
   TikZ.Picture(mor.node; props=props)
 end
 
+""" Create a TikZ node representing a morphism.
+"""
 function mor_tikz(f::MorExpr, name::String, style::Dict)::MorTikZ
   mor_tikz(f, name, style, Val{head(f)})
 end
@@ -230,8 +232,8 @@ end
 # Compact closed category
 
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:eval}})
-  ports = [ PortTikZ(args(dom(f))[1], "$name.center", angle=90),
-            PortTikZ(args(dom(f))[2], "$name.center", angle=270) ]
+  ports = [ PortTikZ(args(dom(f))[1], "$name.center", angle=90, label=false),
+            PortTikZ(args(dom(f))[2], "$name.center", angle=270, label=false) ]
   props = [
     TikZ.Property("minimum height", "$(box_size(2,style))em")
   ]
@@ -240,8 +242,8 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:eval}})
 end
 
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:coeval}})
-  ports = [ PortTikZ(args(codom(f))[1], "$name.center", angle=90),
-            PortTikZ(args(codom(f))[2], "$name.center", angle=270) ]
+  ports = [ PortTikZ(args(codom(f))[1], "$name.center", angle=90, label=false),
+            PortTikZ(args(codom(f))[2], "$name.center", angle=270, label=false) ]
   props = [
     TikZ.Property("minimum height", "$(box_size(2,style))em")
   ]
