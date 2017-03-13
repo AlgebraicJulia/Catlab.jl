@@ -136,8 +136,8 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:compose}})
       
       # Create edge node for label.
       if (style[:labels] && src_port.label && tgt_port.label)
-        label = string(first(args(tgt_port.ob)))
-        node = TikZ.EdgeNode(content=label, props=edge_node_props)
+        node = TikZ.EdgeNode(content=wire_label(tgt_port.ob),
+                             props=edge_node_props)
       else
         node = Nullable()
       end
@@ -285,5 +285,11 @@ function box_anchors(A::ObExpr, name::String, style::Dict;
     _ => [ PortTikZ(A, "$name.$dir"; kwargs...) ]
   end
 end
+
+""" Get label for a wire (an object).
+"""
+wire_label(A::ObExpr) = wire_label(A, Val{head(A)})
+wire_label(A::ObExpr, ::Type{Val{:gen}}) = string(first(args(A)))
+wire_label(A::ObExpr, ::Type{Val{:dual}}) = wire_label(first(args(A)))
 
 end
