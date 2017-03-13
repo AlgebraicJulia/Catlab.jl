@@ -43,14 +43,23 @@ function diagram_tikz(f::MorExpr;
     arrowtip::String="", labels::Bool=true,
     box_padding::String="0.333em", box_size::Number=2,
     compose_sep::Number=2, product_sep::Number=0.5)::TikZ.Picture
-  # Draw input and output arrows by adding identities on either side of f. 
-  f_ext = f
-  f_ext = head(dom(f)) == :unit ? f_ext : compose(id(dom(f)), f_ext)
-  f_ext = head(codom(f)) == :unit ? f_ext : compose(f_ext, id(codom(f)))
-  
+  # Parse arguments.
   style = Dict(:arrowtip => !isempty(arrowtip), :labels => labels,
                :box_size => box_size, :compose_sep => compose_sep,
                :product_sep => product_sep)
+  
+  # Draw input and output arrows by adding identities on either side of f. 
+  f_ext = f
+  if head(f) == :id
+    f_ext = compose(id(dom(f)), f_ext)
+  else
+    if head(dom(f)) != :unit
+      f_ext = compose(id(dom(f)), f_ext)
+    end
+    if head(codom(f)) != :unit
+      f_ext = compose(f_ext, id(codom(f)))
+    end
+  end
   
   # Create node for extended morphism.
   mor = mor_tikz(f_ext, "n", style)
@@ -124,12 +133,16 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:compose}})
     for j = 1:length(mors[i].dom)
       src_port = mors[i-1].codom[j]
       tgt_port = mors[i].dom[j]
+      
+      # Create edge node for label.
       if (style[:labels] && src_port.label && tgt_port.label)
         label = string(first(args(tgt_port.ob)))
         node = TikZ.EdgeNode(content=label, props=edge_node_props)
       else
         node = Nullable()
       end
+      
+      # Create path operation and draw edge.
       op = TikZ.PathOperation("to"; props=[
         TikZ.Property("out", string(src_port.angle)),
         TikZ.Property("in", string(tgt_port.angle)),
@@ -254,7 +267,7 @@ end
 These anchors are consistent with the monoidal product (see `box_size`).
 """
 function box_anchors(A::ObExpr, name::String, style::Dict;
-                     dir::String="center", angle::Int=0)::Vector{PortTikZ}
+                     dir::String="center", kwargs...)::Vector{PortTikZ}
   box_size, product_sep = style[:box_size], style[:product_sep]
   @match A begin
     ObExpr(:unit, _) => []
@@ -265,11 +278,11 @@ function box_anchors(A::ObExpr, name::String, style::Dict;
       for (i,B) in enumerate(gens)
         offset = box_size/2 + (i-1)*(box_size+product_sep)
         anchor = "\$($name.$dir)+(0,$(start-offset)em)\$"
-        push!(ports, PortTikZ(B, anchor, angle=angle))
+        push!(ports, PortTikZ(B, anchor; kwargs...))
       end
       ports
     end
-    _ => [ PortTikZ(A, "$name.$dir", angle=angle) ]
+    _ => [ PortTikZ(A, "$name.$dir"; kwargs...) ]
   end
 end
 
