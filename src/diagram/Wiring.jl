@@ -70,7 +70,7 @@ function diagram_tikz(f::MorExpr;
     TikZ.Property("font", 
                   "{\\fontsize{$(format(font_size))}{$(format(1.2*font_size))}}"),
     TikZ.Property("morphism node/.style",
-                  "{draw,solid,rounded corners,inner sep=$box_padding}"),
+                  "{draw,solid,inner sep=$box_padding}"),
     TikZ.Property("monoid node/.style",
                   "{draw,fill,circle,minimum size=0.333em}"),
     TikZ.Property("container/.style", "{inner sep=0}"),
@@ -96,15 +96,18 @@ end
 
 # Category
 
+""" Create a TikZ node representing a generator morphism.
+
+TODO
+"""
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:gen}})
   dom_ports = box_anchors(dom(f), name, style, dir="west", angle=180)
   codom_ports = box_anchors(codom(f), name, style, dir="east", angle=0)
-  height = box_size(max(length(dom_ports), length(codom_ports)), style)
-  props = [
-    TikZ.Property("morphism node"),
-    TikZ.Property("minimum height", "$(height)em")
-  ]
-  node = TikZ.Node(name; content=string(first(args(f))), props=props)
+  size = box_size(max(length(dom_ports), length(codom_ports)), style)
+  content = box_default(f, "$name box", size)
+
+  props = [ TikZ.Property("container") ]
+  node = TikZ.Node(name; content=content, props=props)
   MorTikZ(f, node, dom_ports, codom_ports)
 end
 
@@ -252,6 +255,21 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:coeval}})
 end
 
 # Helper functions
+
+""" The default renderer for a generator box. 
+
+Draws a rectangle with rounded corners.
+"""
+function box_default(gen::MorExpr, name::String, size::Number)::TikZ.Picture
+  props = [
+    TikZ.Property("morphism node"),
+    TikZ.Property("rectangle"),
+    TikZ.Property("rounded corners"),
+    TikZ.Property("minimum height", "$(size)em")
+  ]
+  node = TikZ.Node(name; content=string(first(args(gen))), props=props)
+  TikZ.Picture(node)
+end
 
 """ Compute the size of a box from the number of its ports.
 
