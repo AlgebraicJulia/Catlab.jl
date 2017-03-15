@@ -261,6 +261,25 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:coeval}})
   MorTikZ(f, node, [], ports)
 end
 
+# Dagger category
+
+function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:dagger}})
+  # FIXME: Presently only support dagger on generators. To support more general
+  # morphisms, we should fully distribute the dagger across composition, tensor
+  # products, etc.
+  gen = first(args(f))
+  @assert head(gen) == :gen
+  
+  dom_ports = box_anchors(dom(f), name, style, dir="west", angle=180)
+  codom_ports = box_anchors(codom(f), name, style, dir="east", angle=0)
+  size = box_size(max(length(dom_ports), length(codom_ports)), style)
+  
+  content = box_renderer_trapezium(gen, "$name box", size; reverse=true)
+  props = [ TikZ.Property("container") ]
+  node = TikZ.Node(name; content=content, props=props)
+  MorTikZ(f, node, dom_ports, codom_ports)
+end
+
 # Helper functions
 
 """ The "default" renderer for a generator box.
@@ -282,13 +301,13 @@ end
 """ Draws a rotated trapezium with rounded corners.
 """
 function box_renderer_trapezium(gen::MorExpr, name::String,
-                                size::Number)::TikZ.Picture
+                                size::Number; reverse::Bool=false)::TikZ.Picture
   props = [
     TikZ.Property("morphism node"),
     TikZ.Property("trapezium"),
     TikZ.Property("trapezium angle", "80"),
     TikZ.Property("trapezium stretches body"),
-    TikZ.Property("shape border rotate", "270"),
+    TikZ.Property("shape border rotate", reverse ? "90" : "270"),
     TikZ.Property("rounded corners"),
     # Actually the height because of rotation.
     TikZ.Property("minimum width", "$(size)em")
