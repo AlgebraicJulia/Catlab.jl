@@ -3,7 +3,7 @@ export
   BaseExpr, ObExpr, MorExpr, ob_expr, mor_expr, head, args,
   show_infix, show_latex, show_sexpr,
   dom, codom, id, compose, ∘, otimes, opow, munit, ⊗,
-  braid, σ, mcopy, mmerge, create, delete, Δ, ∇, dual, ev, coev
+  braid, σ, mcopy, mmerge, create, delete, Δ, ∇, dual, ev, coev, dagger
 
 using AutoHashEquals
 using Match
@@ -14,7 +14,8 @@ import ..Doctrine:
   MonoidalCategory, otimes, opow, munit, ⊗,
   SymmetricMonoidalCategory, braid, σ,
   InternalMonoid, InternalComonoid, mcopy, mmerge, create, delete, Δ, ∇,
-  CompactClosedCategory, dual, ev, coev
+  CompactClosedCategory, dual, ev, coev,
+  DaggerCategory, dagger
 
 # Expressions
 #############
@@ -185,6 +186,16 @@ codom(f::MorExpr, ::Type{Val{:eval}}) = munit(args(f)[1])
 dom(f::MorExpr, ::Type{Val{:coeval}}) = munit(args(f)[1])
 codom(f::MorExpr, ::Type{Val{:coeval}}) = otimes(dual(args(f)[1]), args(f)[1])
 
+# Dagger category
+#################
+
+@instance! DaggerCategory ObExpr MorExpr begin
+  dagger(f::MorExpr) = MorExpr(:dagger, f)
+end
+
+dom(f::MorExpr, ::Type{Val{:dagger}}) = codom(first(args(f)))
+codom(f::MorExpr, ::Type{Val{:dagger}}) = dom(first(args(f)))
+
 # Pretty-print
 ##############
 
@@ -295,6 +306,13 @@ function binary_op(expr::BaseExpr, op::String, paren::Bool)
   sep = op == " " ? op : " $op "
   result = join((as_latex(a;paren=true) for a in args(expr)), sep)
   paren ? "\\left($result\\right)" : result
+end
+
+# Dagger category
+function as_latex(expr::MorExpr, ::Type{Val{:dagger}}; kw...)
+  f = first(args(expr))
+  result = as_latex(f)
+  supscript(head(f) == :gen ? result : "\\left($result\\right)", "\\dagger")
 end
 
 end

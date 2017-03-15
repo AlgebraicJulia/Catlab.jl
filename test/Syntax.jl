@@ -78,6 +78,12 @@ I = munit(A)
 @test dom(coev(A)) == I
 @test codom(coev(A)) == otimes(dual(A), A)
 
+# Dagger category
+#################
+
+@test dom(dagger(f)) == B
+@test codom(dagger(f)) == A
+
 # Pretty-print
 ##############
 
@@ -113,6 +119,8 @@ infix(expr::BaseExpr) = sprint(show_infix, expr)
 @test infix(mcopy(A)) == "copy[A]"
 @test infix(compose(mcopy(A), otimes(f,f))) == "copy[A] (f⊗f)"
 
+@test infix(dagger(f)) == "dagger[f]"
+
 # Infix (LaTeX)
 latex(expr::BaseExpr) = sprint(show_latex, expr)
 
@@ -139,3 +147,6 @@ latex(expr::BaseExpr) = sprint(show_latex, expr)
 @test latex(dual(A)) == "A^{*}"
 @test latex(ev(A)) == "\\mathrm{ev}_{A}"
 @test latex(coev(A)) == "\\mathrm{coev}_{A}"
+
+@test latex(dagger(f)) == "f^{\\dagger}"
+@test latex(dagger(compose(f,g))) == "\\left(f g\\right)^{\\dagger}"

@@ -4,7 +4,8 @@ export
   MonoidalCategory, otimes, opow, munit, ⊗,
   SymmetricMonoidalCategory, braid, σ,
   InternalMonoid, InternalComonoid, mcopy, mmerge, create, delete, Δ, ∇,
-  CompactClosedCategory, dual, ev, coev
+  CompactClosedCategory, dual, ev, coev,
+  DaggerCategory, dagger
 
 using Typeclass
 
@@ -106,6 +107,15 @@ Parent typeclass: `SymmetricMonoidalCategory`
   dual(A::Ob)::Ob  # A˟
   ev(A::Ob)::Mor   # A⊗A˟ → I
   coev(A::Ob)::Mor # I → A˟⊗A
+end
+
+@doc """ Doctrine of *dagger category*
+
+Parent typeclass: `Category`
+""" DaggerCategory
+
+@class DaggerCategory Ob Mor begin
+  dagger(f::Mor)::Mor
 end
 
 end
