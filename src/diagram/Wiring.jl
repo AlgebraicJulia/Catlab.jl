@@ -98,14 +98,21 @@ end
 
 """ Create a TikZ node representing a generator morphism.
 
-TODO
+The node content is a nested TikZ picture that typically contains a visible
+node. Nesting pictures even at this level may seem crazy, but it's the only way
+I know to get a bounding box on the inner node, regardless of its shape,
+*before* it's rendered. In fact, this is the same problem that forces us to use
+nested pictures in the first place.
 """
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:gen}})
+  # TODO: For maximum flexibility, we could defer the calculation of the anchor
+  # locations to the renderer. Presently we assume that the node is sufficiently
+  # "box-like" for the default anchors to make sense.
   dom_ports = box_anchors(dom(f), name, style, dir="west", angle=180)
   codom_ports = box_anchors(codom(f), name, style, dir="east", angle=0)
   size = box_size(max(length(dom_ports), length(codom_ports)), style)
-  content = box_default(f, "$name box", size)
-
+  
+  content = box_renderer_trapezium(f, "$name box", size)
   props = [ TikZ.Property("container") ]
   node = TikZ.Node(name; content=content, props=props)
   MorTikZ(f, node, dom_ports, codom_ports)
@@ -256,18 +263,37 @@ end
 
 # Helper functions
 
-""" The default renderer for a generator box. 
+""" The "default" renderer for a generator box.
 
 Draws a rectangle with rounded corners.
 """
-function box_default(gen::MorExpr, name::String, size::Number)::TikZ.Picture
+function box_renderer_rectangle(gen::MorExpr, name::String,
+                                size::Number)::TikZ.Picture
   props = [
     TikZ.Property("morphism node"),
     TikZ.Property("rectangle"),
     TikZ.Property("rounded corners"),
     TikZ.Property("minimum height", "$(size)em")
   ]
-  node = TikZ.Node(name; content=string(first(args(gen))), props=props)
+  node = TikZ.Node(name; content=box_label(gen), props=props)
+  TikZ.Picture(node)
+end
+
+""" Draws a rotated trapezium with rounded corners.
+"""
+function box_renderer_trapezium(gen::MorExpr, name::String,
+                                size::Number)::TikZ.Picture
+  props = [
+    TikZ.Property("morphism node"),
+    TikZ.Property("trapezium"),
+    TikZ.Property("trapezium angle", "80"),
+    TikZ.Property("trapezium stretches body"),
+    TikZ.Property("shape border rotate", "270"),
+    TikZ.Property("rounded corners"),
+    # Actually the height because of rotation.
+    TikZ.Property("minimum width", "$(size)em")
+  ]
+  node = TikZ.Node(name; content=box_label(gen), props=props)
   TikZ.Picture(node)
 end
 
@@ -305,6 +331,11 @@ function box_anchors(A::ObExpr, name::String, style::Dict;
     _ => [ PortTikZ(A, "$name.$dir"; kwargs...) ]
   end
 end
+
+""" Get label for a box (a morphism).
+"""
+box_label(f::MorExpr) = box_label(f, Val{head(f)})
+box_label(f::MorExpr, ::Type{Val{:gen}}) = string(first(args(f)))
 
 """ Get label for a wire (an object).
 """

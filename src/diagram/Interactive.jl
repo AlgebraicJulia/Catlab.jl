@@ -18,6 +18,7 @@ function TikzPicture(pic::TikZ.Picture; usePDF2SVG=true)::TikzPicture
     "\\usetikzlibrary{calc}",
     "\\usetikzlibrary{decorations.markings}",
     "\\usetikzlibrary{positioning}",
+    "\\usetikzlibrary{shapes.geometric}",
   ], "\n")
   TikzPicture(data; options=options, preamble=preamble, usePDF2SVG=usePDF2SVG)
 end
