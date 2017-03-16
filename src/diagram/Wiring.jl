@@ -181,7 +181,7 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:otimes}})
     if i > 1
       push!(mor.node.props,
             TikZ.Property("below=$(product_sep)em of $name$(i-1)"))
-      end
+    end
     push!(mors, mor)
   end
   stmts = TikZ.Statement[ mor.node for mor in mors ]
@@ -211,32 +211,51 @@ end
 
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:copy}})
   A = Syntax.dom(f)
-  dom = [ PortTikZ(A, "$name.west", angle=180) ]
-  codom = [ PortTikZ(A, "$name.north", angle=90, label=false),
-            PortTikZ(A, "$name.south", angle=270, label=false) ]
-  node = TikZ.Node(name; props=[TikZ.Property("monoid node")])
+  dom = [ PortTikZ(A, "$name point.west", angle=180) ]
+  codom = [ PortTikZ(A, "$name point.north", angle=90, label=false),
+            PortTikZ(A, "$name point.south", angle=270, label=false) ]
+  node = monoid_node_tikz(name, style, 2)
   MorTikZ(f, node, dom, codom)
 end
 
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:merge}})
   A = Syntax.codom(f)
-  dom = [ PortTikZ(A, "$name.north", angle=90, label=false),
-          PortTikZ(A, "$name.south", angle=270, label=false) ]
-  codom = [ PortTikZ(A, "$name.east", angle=0) ]
-  node = TikZ.Node(name; props=[TikZ.Property("monoid node")])
+  dom = [ PortTikZ(A, "$name point.north", angle=90, label=false),
+          PortTikZ(A, "$name point.south", angle=270, label=false) ]
+  codom = [ PortTikZ(A, "$name point.east", angle=0) ]
+  node = monoid_node_tikz(name, style, 2)
   MorTikZ(f, node, dom, codom)
 end
 
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:create}})
-  ports = [ PortTikZ(codom(f), "$name.east", angle=0) ]
-  node = TikZ.Node(name; props=[TikZ.Property("monoid node")])
+  ports = [ PortTikZ(codom(f), "$name point.east", angle=0) ]
+  node = monoid_node_tikz(name, style, 1)
   MorTikZ(f, node, [], ports)
 end
 
 function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:delete}})
-  ports = [ PortTikZ(dom(f), "$name.west", angle=180) ]
-  node = TikZ.Node(name; props=[TikZ.Property("monoid node")])
+  ports = [ PortTikZ(dom(f), "$name point.west", angle=180) ]
+  node = monoid_node_tikz(name, style, 1)
   MorTikZ(f, node, ports, [])
+end
+
+""" Create a TikZ node for a (co)monoid morphism.
+
+Uses a small, visible node for the point and a big, invisible node as a spacer.
+FIXME: Is there a more elegant way to achieve the desired margin?
+"""
+function monoid_node_tikz(name::String, style::Dict, ports::Int)::TikZ.Node
+  pic = TikZ.Picture(
+    TikZ.Node("$name box"; props=[
+      TikZ.Property("minimum height", "$(box_size(ports,style))em"),
+    ]),
+    TikZ.Node("$name point"; props=[
+      TikZ.Property("monoid node"),
+      TikZ.Property("above", "0 of $name box.center"),
+      TikZ.Property("anchor", "center"),
+    ]),
+  )
+  TikZ.Node(name; content=pic, props=[TikZ.Property("container")])
 end
 
 # Compact closed category

@@ -27,6 +27,9 @@ abstract GraphStatement <: Expression
 @auto_hash_equals immutable Coordinate <: Expression
   x::AbstractString
   y::AbstractString
+  
+  Coordinate(x::AbstractString, y::AbstractString) = new(x, y)
+  Coordinate(x::Number, y::Number) = new(string(x), string(y))
 end
 
 @auto_hash_equals immutable Property <: Expression
