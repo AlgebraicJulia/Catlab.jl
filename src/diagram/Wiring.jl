@@ -41,12 +41,12 @@ be run *twice* to fully render the picture. See (TikZ Manual, Sec 17.13).
 function diagram_tikz(f::MorExpr;
     font_size::Number=12, line_width::String="0.4pt", math_mode::Bool=true,
     arrowtip::String="", labels::Bool=true,
-    box_padding::String="0.333em", box_size::Number=2,
+    box_angle::Int=80, box_padding::String="0.333em", box_size::Number=2,
     compose_sep::Number=2, product_sep::Number=0.5)::TikZ.Picture
   # Parse arguments.
   style = Dict(:arrowtip => !isempty(arrowtip), :labels => labels,
-               :box_size => box_size, :compose_sep => compose_sep,
-               :product_sep => product_sep)
+               :box_angle => box_angle, :box_size => box_size,
+               :compose_sep => compose_sep, :product_sep => product_sep)
   
   # Draw input and output arrows by adding identities on either side of f. 
   f_ext = f
@@ -112,7 +112,7 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:gen}})
   codom_ports = box_anchors(codom(f), name, style, dir="east", angle=0)
   size = box_size(max(length(dom_ports), length(codom_ports)), style)
   
-  content = box_renderer_trapezium(f, "$name box", size)
+  content = box_renderer_trapezium(f, "$name box", size; angle=style[:box_angle])
   props = [ TikZ.Property("container") ]
   node = TikZ.Node(name; content=content, props=props)
   MorTikZ(f, node, dom_ports, codom_ports)
@@ -293,7 +293,8 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:dagger}})
   codom_ports = box_anchors(codom(f), name, style, dir="east", angle=0)
   size = box_size(max(length(dom_ports), length(codom_ports)), style)
   
-  content = box_renderer_trapezium(gen, "$name box", size; reverse=true)
+  content = box_renderer_trapezium(gen, "$name box", size;
+                                   angle=style[:box_angle], reverse=true)
   props = [ TikZ.Property("container") ]
   node = TikZ.Node(name; content=content, props=props)
   MorTikZ(f, node, dom_ports, codom_ports)
@@ -319,12 +320,12 @@ end
 
 """ Draws a rotated trapezium with rounded corners.
 """
-function box_renderer_trapezium(gen::MorExpr, name::String,
-                                size::Number; reverse::Bool=false)::TikZ.Picture
+function box_renderer_trapezium(gen::MorExpr, name::String, size::Number;
+                                angle::Int=80, reverse::Bool=false)::TikZ.Picture
   props = [
     TikZ.Property("morphism node"),
     TikZ.Property("trapezium"),
-    TikZ.Property("trapezium angle", "80"),
+    TikZ.Property("trapezium angle", "$angle"),
     TikZ.Property("trapezium stretches body"),
     TikZ.Property("shape border rotate", reverse ? "90" : "270"),
     TikZ.Property("rounded corners"),
