@@ -56,7 +56,9 @@ end
 
 # Generators
 ob_expr(A::Symbol) = ObExpr(:gen, A)
+ob_expr(A::String) = ob_expr(Symbol(A))
 mor_expr(f::Symbol, dom::ObExpr, codom::ObExpr) = MorExpr(:gen, f, dom, codom)
+mor_expr(f::String, dom::ObExpr, codom::ObExpr) = mor_expr(Symbol(f), dom, codom)
 
 # Accessors and operators
 head(expr::BaseExpr)::Symbol = expr.head
