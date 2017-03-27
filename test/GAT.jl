@@ -1,6 +1,8 @@
 import CompCat: GAT
 using CompCat.GAT
+
 using Base.Test
+import DataStructures: OrderedDict
 
 # Julia expression parsing
 ##########################
@@ -89,15 +91,36 @@ cons = GAT.TermConstructor(:compose, [:f,:g], raw_expr(:Hom,:X,:Z), context)
     codom::Ob
   end
   
-  function id(A)::Hom(A,A)
-    A::Ob
+  function id(X)::Hom(X,X)
+    X::Ob
   end
-  function compose(f,g)::Hom(A,C)
-    A,B,C::Ob
-    f::Hom(A,B)
-    g::Hom(B,C)
+  function compose(f,g)::Hom(X,Z)
+    X::Ob
+    Y::Ob
+    Z::Ob
+    f::Hom(X,Y)
+    g::Hom(Y,Z)
   end
 end
+
+# Manually constructed signature of theory of categories
+head = GAT.SignatureBinding(:Category, [:Ob, :Hom])
+types = OrderedDict((
+  :Ob => GAT.TypeConstructor(:Ob, [], GAT.Context()),
+  :Hom => GAT.TypeConstructor(:Hom, [:dom,:codom], 
+    GAT.Context((:dom => raw_expr(:Ob), :codom => raw_expr(:Ob)))),
+))
+terms = OrderedDict((
+  :id => GAT.TermConstructor(:id, [:X], raw_expr(:Hom,:X,:X), 
+    GAT.Context(:X => raw_expr(:Ob))),
+  :compose => GAT.TermConstructor(:compose, [:f,:g], raw_expr(:Hom,:X,:Z),
+    GAT.Context((
+      :X => raw_expr(:Ob), :Y => raw_expr(:Ob), :Z => raw_expr(:Ob),
+      :f => raw_expr(:Hom,:X,:Y), :g => raw_expr(:Hom,:Y,:Z)))),
+))
+sig = GAT.Signature(head, types, terms)
+
+@test Category == sig
 
 # Equivalent shorthand definition of Category signature
 # @signature CategoryAbbrev(Ob,Hom) begin

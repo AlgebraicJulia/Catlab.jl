@@ -29,15 +29,15 @@ end
   context::Context
 end
 
-immutable SignatureCall
+@auto_hash_equals immutable SignatureBinding
   name::Symbol
   params::Vector{Symbol}
 end
 
-immutable Signature
-  head::SignatureCall
-  types::Dict{Symbol,TypeConstructor}
-  terms::Dict{Symbol,TermConstructor}
+@auto_hash_equals immutable Signature
+  head::SignatureBinding
+  types::OrderedDict{Symbol,TypeConstructor}
+  terms::OrderedDict{Symbol,TermConstructor}
 end
   
 # Julia expression parsing
@@ -89,21 +89,40 @@ function parse_term_constructor(expr::Expr)::TermConstructor
   TermConstructor(name, params, typ, context)
 end
 
-function parse_signature_call(expr::Expr)::SignatureCall
+function parse_signature_binding(expr::Expr)::SignatureBinding
   @match expr begin
-    Expr(:call, [name::Symbol, params...], _) => SignatureCall(name, params)
+    Expr(:call, [name::Symbol, params...], _) => SignatureBinding(name, params)
     _ => throw(ParseError("Ill-formed signature header $(as_sexpr(expr))"))
   end
+end
+
+function parse_signature_body(expr::Expr)
+  @assert expr.head == :block
+  types, terms = [], []
+  for elem in filter_line(expr).args
+    @match elem begin
+      Expr(:type, _, _) => begin 
+        cons = parse_type_constructor(elem)
+        push!(types, (cons.name => cons))
+      end
+      Expr(:function, _, _) => begin
+        cons = parse_term_constructor(elem)
+        push!(terms, (cons.name => cons))
+    end
+      _ => throw(ParseError("Ill-formed signature element $(as_sexpr(elem))"))
+    end
+  end
+  return (OrderedDict(types), OrderedDict(terms))
 end
 
 # Macros
 ########
 
 macro signature(args...)
-  head = parse_signature_call(args[1])
-  body = filter_line(args[end])
-  #println(dump(body))
-  return :()
+  head = parse_signature_binding(args[1])
+  types, terms = parse_signature_body(args[end])
+  sig = Signature(head, types, terms)
+  return esc(:($(sig.head.name) = $sig))
 end
 
 # Utility functions
@@ -117,7 +136,7 @@ function as_sexpr(expr)::AbstractString
   takebuf_string(io)
 end
 
-""" Remove all :line annotations from an expression.
+""" Remove all :line annotations from a Julia expression.
 """
 function filter_line(expr::Expr, recurse::Bool=false)
   args = filter(x -> !(isa(x, Expr) && x.head == :line), expr.args)
