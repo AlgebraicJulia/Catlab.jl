@@ -59,10 +59,7 @@ function parse_context(expr::Expr)::Context
       Expr(:(::), [name::Symbol, typ], _) => (name, parse_raw_expr(typ))
       _ => throw(ParseError("Ill-formed context expression $(as_sexpr(expr))"))
     end
-    if haskey(context, name)
-      throw(ParseError("Duplicate name in context expression $(as_sexpr(expr))"))
-    end
-    push!(context, name => typ)
+    push_unique!(context, name, typ)
   end
   return context
 end
@@ -98,26 +95,23 @@ end
 
 function parse_signature_body(expr::Expr)
   @assert expr.head == :block
-  types, terms = [], []
+  push_cons! = (collection, cons) -> push_unique!(collection, cons.name, cons)
+  types, terms = OrderedDict(), OrderedDict()
   for elem in filter_line(expr).args
     @match elem begin
-      Expr(:type, _, _) => begin 
-        cons = parse_type_constructor(elem)
-        push!(types, (cons.name => cons))
-      end
-      Expr(:function, _, _) => begin
-        cons = parse_term_constructor(elem)
-        push!(terms, (cons.name => cons))
-    end
+      Expr(:type, _, _) => push_cons!(types, parse_type_constructor(elem))
+      Expr(:function, _, _) => push_cons!(terms, parse_term_constructor(elem))
       _ => throw(ParseError("Ill-formed signature element $(as_sexpr(elem))"))
     end
   end
-  return (OrderedDict(types), OrderedDict(terms))
+  return (types, terms)
 end
 
 # Macros
 ########
 
+""" TOOD
+"""
 macro signature(args...)
   head = parse_signature_binding(args[1])
   types, terms = parse_signature_body(args[end])
@@ -136,14 +130,20 @@ function as_sexpr(expr)::AbstractString
   takebuf_string(io)
 end
 
-""" Remove all :line annotations from a Julia expression.
+""" Remove all :line annotations from a Julia expression. Not recursive.
 """
-function filter_line(expr::Expr, recurse::Bool=false)
+function filter_line(expr::Expr)
   args = filter(x -> !(isa(x, Expr) && x.head == :line), expr.args)
-  if recurse
-    args = [ isa(x, Expr) ? filter_line(x, true) : x for x in args ]
-  end
   Expr(expr.head, args...)
+end
+
+""" Push key-value pair unless there is a key collision.
+"""
+function push_unique!(collection, key, value)
+  if haskey(collection, key)
+    throw(ParseError("Name $key already defined"))
+  end
+  collection[key] = value
 end
 
 end
