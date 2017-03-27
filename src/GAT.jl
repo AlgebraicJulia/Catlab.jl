@@ -34,10 +34,25 @@ end
   params::Vector{Symbol}
 end
 
+""" Signature for a generalized algebraic theory (GAT).
+"""
 @auto_hash_equals immutable Signature
   head::SignatureBinding
   types::OrderedDict{Symbol,TypeConstructor}
   terms::OrderedDict{Symbol,TermConstructor}
+end
+
+immutable JuliaFunction
+  call_expr::Expr
+  return_type::Nullable{Expr}
+  default_impl::Nullable{Expr}
+end
+
+""" Signature for GAT plus default Julia code for instances.
+"""
+type JuliaClass
+  signature::Signature
+  functions::Vector{JuliaFunction}
 end
   
 # Julia expression parsing
@@ -64,26 +79,20 @@ function parse_context(expr::Expr)::Context
   return context
 end
 
-function parse_type_constructor(expr::Expr)::TypeConstructor
-  @assert expr.head == :type
-  name, params = @match expr.args[2] begin
-    Expr(:call, [name::Symbol, params...], _) => (name, params)
-    name::Symbol => (name, [])
-    _ => throw(ParseError("Ill-formed type constructor $(as_sexpr(expr))"))
+function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor}
+  cons_expr, context = @match expr begin
+    Expr(:call, [:<=, inner, context], _) => (inner, parse_context(context))
+    _ => (expr, Context())
   end
-  context = parse_context(expr.args[3])
-  TypeConstructor(name, params, context)
-end
-
-function parse_term_constructor(expr::Expr)::TermConstructor
-  @assert expr.head == :function
-  name, params, typ = @match expr.args[1] begin
+  @match cons_expr begin
+    (Expr(:(::), [name::Symbol, :TYPE], _)
+      => TypeConstructor(name, [], context))
+    (Expr(:(::), [Expr(:call, [name::Symbol, params...], _), :TYPE], _)
+      => TypeConstructor(name, params, context))
     (Expr(:(::), [Expr(:call, [name::Symbol, params...], _), typ], _)
-      => (name, params, parse_raw_expr(typ)))
-    _ => throw(ParseError("Ill-formed term constructor $(as_sexpr(expr))"))
+      => TermConstructor(name, params, parse_raw_expr(typ), context))
+    _ => throw(ParseError("Ill-formed term constructor $(as_sexpr(cons_expr))"))
   end
-  context = parse_context(expr.args[2])
-  TermConstructor(name, params, typ, context)
 end
 
 function parse_signature_binding(expr::Expr)::SignatureBinding
@@ -95,13 +104,12 @@ end
 
 function parse_signature_body(expr::Expr)
   @assert expr.head == :block
-  push_cons! = (collection, cons) -> push_unique!(collection, cons.name, cons)
   types, terms = OrderedDict(), OrderedDict()
   for elem in filter_line(expr).args
-    @match elem begin
-      Expr(:type, _, _) => push_cons!(types, parse_type_constructor(elem))
-      Expr(:function, _, _) => push_cons!(terms, parse_term_constructor(elem))
-      _ => throw(ParseError("Ill-formed signature element $(as_sexpr(elem))"))
+    cons = parse_constructor(elem)
+    @match cons begin
+      cons::TypeConstructor => push_unique!(types, cons.name, cons)
+      cons::TermConstructor => push_unique!(terms, cons.name, cons)
     end
   end
   return (types, terms)
