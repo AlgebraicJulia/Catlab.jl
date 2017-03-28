@@ -37,7 +37,6 @@ end
 """ Signature for a generalized algebraic theory (GAT).
 """
 @auto_hash_equals immutable Signature
-  head::SignatureBinding
   types::OrderedDict{Symbol,TypeConstructor}
   terms::OrderedDict{Symbol,TermConstructor}
 end
@@ -89,17 +88,31 @@ end
 """ Parse type or term constructor in a GAT.
 """
 function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor}
+  # Context is optional.
   cons_expr, context = @match expr begin
     Expr(:call, [:<=, inner, context], _) => (inner, parse_context(context))
     _ => (expr, Context())
   end
+  
+  # Allow abbreviated syntax where tail of context is included in parameters.
+  function parse_params(params)::Vector{Symbol}
+    [ @match param begin
+        Expr(:(::), [name::Symbol, typ], _) => begin
+          push_unique!(context, name, parse_raw_expr(typ))
+          name
+        end
+        name::Symbol => name
+        _ => throw(ParseError("Ill-formed type/term parameter $(as_sexpr(param))"))
+      end for param in params ]
+  end
+  
   @match cons_expr begin
     (Expr(:(::), [name::Symbol, :TYPE], _)
       => TypeConstructor(name, [], context))
     (Expr(:(::), [Expr(:call, [name::Symbol, params...], _), :TYPE], _)
-      => TypeConstructor(name, params, context))
+      => TypeConstructor(name, parse_params(params), context))
     (Expr(:(::), [Expr(:call, [name::Symbol, params...], _), typ], _)
-      => TermConstructor(name, params, parse_raw_expr(typ), context))
+      => TermConstructor(name, parse_params(params), parse_raw_expr(typ), context))
     _ => throw(ParseError("Ill-formed type/term constructor $(as_sexpr(cons_expr))"))
   end
 end
@@ -155,9 +168,9 @@ end
 macro signature(args...)
   head = parse_signature_binding(args[1])
   types, terms, funs = parse_signature_body(args[end])
-  sig = Signature(head, types, terms)
+  sig = Signature(types, terms)
   julia_sig = JuliaSignature(sig, funs)
-  return esc(:($(sig.head.name) = $julia_sig))
+  return esc(:($(head.name) = $julia_sig))
 end
 
 # Utility functions

@@ -40,16 +40,18 @@ expr = :(unit()::Ob)
 cons = GAT.TermConstructor(:unit, [], raw_expr(:Ob), GAT.Context())
 @test GAT.parse_constructor(expr) == cons
 
-expr = :(id(X)::Hom(X,X) <= (X::Ob,))
 context = GAT.Context(:X => raw_expr(:Ob))
 cons = GAT.TermConstructor(:id, [:X], raw_expr(:Hom,:X,:X), context)
-@test GAT.parse_constructor(expr) == cons
+@test GAT.parse_constructor(:(id(X)::Hom(X,X) <= (X::Ob,))) == cons
+@test GAT.parse_constructor(:(id(X::Ob)::Hom(X,X))) == cons
 
 expr = :(compose(f,g)::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob, f::Hom(X,Y), g::Hom(Y,Z)))
 context = GAT.Context((
   :X => raw_expr(:Ob), :Y => raw_expr(:Ob), :Z => raw_expr(:Ob),
   :f => raw_expr(:Hom,:X,:Y), :g => raw_expr(:Hom,:Y,:Z)))
 cons = GAT.TermConstructor(:compose, [:f,:g], raw_expr(:Hom,:X,:Z), context)
+@test GAT.parse_constructor(expr) == cons
+expr = :(compose(f::Hom(X,Y), g::Hom(Y,Z))::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob))
 @test GAT.parse_constructor(expr) == cons
 
 # Julia functions
@@ -75,7 +77,6 @@ parse_fun = (expr) -> GAT.parse_function(GAT.filter_line(expr, recurse=true))
 end
 
 # Manually constructed signature of theory of categories
-head = GAT.SignatureBinding(:Category, [:Ob, :Hom])
 types = OrderedDict((
   :Ob => GAT.TypeConstructor(:Ob, [], GAT.Context()),
   :Hom => GAT.TypeConstructor(:Hom, [:dom,:codom], 
@@ -89,19 +90,17 @@ terms = OrderedDict((
       :X => raw_expr(:Ob), :Y => raw_expr(:Ob), :Z => raw_expr(:Ob),
       :f => raw_expr(:Hom,:X,:Y), :g => raw_expr(:Hom,:Y,:Z)))),
 ))
-category_signature = GAT.Signature(head, types, terms)
+category_signature = GAT.Signature(types, terms)
 
 @test Category.signature == category_signature
 
 # Equivalent shorthand definition of Category signature
-# @signature CategoryAbbrev(Ob,Hom) begin
-#   Ob::TYPE
-#   Hom(dom::Ob, codom::Ob)::TYPE
-#   
-#   id(X::Ob)::Hom(X,X)
-#   compose(f::Hom(A,B),g::Hom(B,C))::Hom(A,C) <= begin
-#     A::Ob
-#     B::Ob
-#     C::Ob
-#   end
-# end
+@signature CategoryAbbrev(Ob,Hom) begin
+  Ob::TYPE
+  Hom(dom::Ob, codom::Ob)::TYPE
+  
+  id(X::Ob)::Hom(X,X)
+  compose(f::Hom(X,Y),g::Hom(Y,Z))::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob)
+end
+
+@test CategoryAbbrev.signature == category_signature
