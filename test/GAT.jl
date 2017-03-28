@@ -80,6 +80,16 @@ context = GAT.Context((
 cons = GAT.TermConstructor(:compose, [:f,:g], raw_expr(:Hom,:X,:Z), context)
 @test GAT.parse_constructor(expr) == cons
 
+# Julia functions
+parse_fun = (expr) -> GAT.parse_function(GAT.filter_line(expr, recurse=true))
+@test (parse_fun(:(function f(x,y) x end)) == 
+       GAT.JuliaFunction(:(f(x,y)), Nullable(), quote x end))
+@test (parse_fun(:(function f(x::Int,y::Int)::Int x end)) == 
+       GAT.JuliaFunction(:(f(x::Int,y::Int)), :Int, quote x end))
+@test (parse_fun(:(f(x,y) = x)) == 
+       GAT.JuliaFunction(:(f(x,y)), Nullable(), quote x end))
+@test_throws ParseError parse_fun(:(f(x,y)))
+
 # Macros
 ########
 
@@ -120,7 +130,7 @@ terms = OrderedDict((
 ))
 sig = GAT.Signature(head, types, terms)
 
-@test Category == sig
+@test Category.signature == sig
 
 # Equivalent shorthand definition of Category signature
 # @signature CategoryAbbrev(Ob,Hom) begin

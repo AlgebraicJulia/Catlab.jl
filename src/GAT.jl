@@ -42,15 +42,15 @@ end
   terms::OrderedDict{Symbol,TermConstructor}
 end
 
-immutable JuliaFunction
+@auto_hash_equals immutable JuliaFunction
   call_expr::Expr
-  return_type::Nullable{Expr}
+  return_type::Nullable{Union{Symbol,Expr}}
   default_impl::Nullable{Expr}
 end
 
 """ Signature for GAT plus default Julia code for instances.
 """
-type JuliaClass
+type JuliaSignature
   signature::Signature
   functions::Vector{JuliaFunction}
 end
@@ -58,14 +58,21 @@ end
 # Julia expression parsing
 ##########################
 
+""" Parse a raw expression in a GAT.
+
+A "raw expression" is a just composition of function and constant symbols.
+"""
 function parse_raw_expr(expr)::RawExpr
   @match expr begin
-    Expr(:call, [head::Symbol, args...], _) => RawExpr(head, map(parse_raw_expr, args))
+    (Expr(:call, [head::Symbol, args...], _)
+      => RawExpr(head, map(parse_raw_expr, args)))
     head::Symbol => RawExpr(head, [])
     _ => throw(ParseError("Ill-formed raw expression $(as_sexpr(expr))"))
   end
 end
 
+""" Parse context for term or type in a GAT.
+"""
 function parse_context(expr::Expr)::Context
   @assert expr.head == :block
   context = OrderedDict()
@@ -79,6 +86,8 @@ function parse_context(expr::Expr)::Context
   return context
 end
 
+""" Parse type or term constructor in a GAT.
+"""
 function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor}
   cons_expr, context = @match expr begin
     Expr(:call, [:<=, inner, context], _) => (inner, parse_context(context))
@@ -91,28 +100,51 @@ function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor}
       => TypeConstructor(name, params, context))
     (Expr(:(::), [Expr(:call, [name::Symbol, params...], _), typ], _)
       => TermConstructor(name, params, parse_raw_expr(typ), context))
-    _ => throw(ParseError("Ill-formed term constructor $(as_sexpr(cons_expr))"))
+    _ => throw(ParseError("Ill-formed type/term constructor $(as_sexpr(cons_expr))"))
+  end
+end
+
+""" Parse a Julia function into standardized form.
+"""
+function parse_function(expr::Expr)::JuliaFunction
+  fun_expr, impl = @match expr begin
+    Expr(:(=), args, _) => args
+    Expr(:function, args, _) => args
+    _ => throw(ParseError("Ill-formed function definition $(as_sexpr(expr))"))
+  end
+  @match fun_expr begin
+    (Expr(:(::), [Expr(:call, args, _), return_type], _) => 
+      JuliaFunction(Expr(:call, args...), return_type, impl))
+    (Expr(:call, args, _) =>
+      JuliaFunction(Expr(:call, args...), Nullable(), impl))
+    _ => throw(ParseError("Ill-formed function header $(as_sexpr(fun_expr))"))
   end
 end
 
 function parse_signature_binding(expr::Expr)::SignatureBinding
   @match expr begin
     Expr(:call, [name::Symbol, params...], _) => SignatureBinding(name, params)
-    _ => throw(ParseError("Ill-formed signature header $(as_sexpr(expr))"))
+    _ => throw(ParseError("Ill-formed signature binding $(as_sexpr(expr))"))
   end
 end
 
 function parse_signature_body(expr::Expr)
   @assert expr.head == :block
-  types, terms = OrderedDict(), OrderedDict()
+  types, terms, funs = OrderedDict(), OrderedDict(), []
   for elem in filter_line(expr).args
-    cons = parse_constructor(elem)
-    @match cons begin
-      cons::TypeConstructor => push_unique!(types, cons.name, cons)
-      cons::TermConstructor => push_unique!(terms, cons.name, cons)
+    if elem.head in (:(::), :call)
+      cons = parse_constructor(elem)
+      @match cons begin
+        cons::TypeConstructor => push_unique!(types, cons.name, cons)
+        cons::TermConstructor => push_unique!(terms, cons.name, cons)
+      end
+    elseif elem.head in (:(=), :function)
+      push!(funs, parse_function(elem))
+    else
+      throw(ParseError("Ill-formed signature element $(as_sexpr(elem))"))
     end
   end
-  return (types, terms)
+  return (types, terms, funs)
 end
 
 # Macros
@@ -122,9 +154,10 @@ end
 """
 macro signature(args...)
   head = parse_signature_binding(args[1])
-  types, terms = parse_signature_body(args[end])
+  types, terms, funs = parse_signature_body(args[end])
   sig = Signature(head, types, terms)
-  return esc(:($(sig.head.name) = $sig))
+  julia_sig = JuliaSignature(sig, funs)
+  return esc(:($(sig.head.name) = $julia_sig))
 end
 
 # Utility functions
@@ -140,8 +173,11 @@ end
 
 """ Remove all :line annotations from a Julia expression. Not recursive.
 """
-function filter_line(expr::Expr)
+function filter_line(expr::Expr; recurse::Bool=false)
   args = filter(x -> !(isa(x, Expr) && x.head == :line), expr.args)
+  if recurse
+    args = [ isa(x,Expr) ? filter_line(x,recurse=true) : x for x in args ]
+  end
   Expr(expr.head, args...)
 end
 
