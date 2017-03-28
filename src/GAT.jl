@@ -50,7 +50,7 @@ end
 
 """ Signature for GAT plus default Julia code for instances.
 """
-type JuliaSignature
+@auto_hash_equals immutable JuliaSignature
   signature::Signature
   functions::Vector{JuliaFunction}
 end
@@ -74,9 +74,9 @@ end
 """ Parse context for term or type in a GAT.
 """
 function parse_context(expr::Expr)::Context
-  @assert expr.head == :block
+  @assert expr.head == :tuple
   context = OrderedDict()
-  for arg in filter_line(expr).args
+  for arg in expr.args
     name, typ = @match arg begin
       Expr(:(::), [name::Symbol, typ], _) => (name, parse_raw_expr(typ))
       _ => throw(ParseError("Ill-formed context expression $(as_sexpr(expr))"))
@@ -176,7 +176,7 @@ end
 function filter_line(expr::Expr; recurse::Bool=false)
   args = filter(x -> !(isa(x, Expr) && x.head == :line), expr.args)
   if recurse
-    args = [ isa(x,Expr) ? filter_line(x,recurse=true) : x for x in args ]
+    args = [ isa(x, Expr) ? filter_line(x; recurse=true) : x for x in args ]
   end
   Expr(expr.head, args...)
 end

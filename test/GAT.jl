@@ -17,40 +17,20 @@ raw_expr(name, args...) = GAT.RawExpr(
 @test_throws ParseError GAT.parse_raw_expr(:(Hom(X,0)))
 
 # Contexts
-expr = quote
-  X::Ob
-  Y::Ob
-end
-context = GAT.Context((:X => raw_expr(:Ob), :Y => raw_expr(:Ob)))
-@test GAT.parse_context(expr) == context
-
-expr = quote
-  X::Ob
-  Y::Ob
-  f::Hom(X,Y)
-end
-context = GAT.Context((:X => raw_expr(:Ob), :Y => raw_expr(:Ob), 
-                       :f => raw_expr(:Hom, :X, :Y)))
-@test GAT.parse_context(expr) == context
-
-expr = quote end
-@test GAT.parse_context(expr) == GAT.Context()
-
-expr = quote
-  X::Ob
-  X::Ob
-end
-@test_throws ParseError GAT.parse_context(expr) # Repeat variables
+@test (GAT.parse_context(:((X::Ob, Y::Ob))) == 
+       GAT.Context((:X => raw_expr(:Ob), :Y => raw_expr(:Ob))))
+@test (GAT.parse_context(:((X::Ob, Y::Ob, f::Hom(X,Y)))) == 
+       GAT.Context((:X => raw_expr(:Ob), :Y => raw_expr(:Ob), 
+                    :f => raw_expr(:Hom, :X, :Y))))
+@test GAT.parse_context(:(())) == GAT.Context()
+@test_throws ParseError GAT.parse_context(:((X::Ob, X::Ob))) # Repeat variables
 
 # Type constructor
 expr = :(Ob::TYPE)
 cons = GAT.TypeConstructor(:Ob, [], GAT.Context())
 @test GAT.parse_constructor(expr) == cons
 
-expr = :(Hom(X,Y)::TYPE <= begin
-  X::Ob
-  Y::Ob
-end)
+expr = :(Hom(X,Y)::TYPE <= (X::Ob, Y::Ob))
 context = GAT.Context((:X => raw_expr(:Ob), :Y => raw_expr(:Ob)))
 cons = GAT.TypeConstructor(:Hom, [:X,:Y], context)
 @test GAT.parse_constructor(expr) == cons
@@ -60,20 +40,12 @@ expr = :(unit()::Ob)
 cons = GAT.TermConstructor(:unit, [], raw_expr(:Ob), GAT.Context())
 @test GAT.parse_constructor(expr) == cons
 
-expr = :(id(X)::Hom(X,X) <= begin
-  X::Ob
-end)
+expr = :(id(X)::Hom(X,X) <= (X::Ob,))
 context = GAT.Context(:X => raw_expr(:Ob))
 cons = GAT.TermConstructor(:id, [:X], raw_expr(:Hom,:X,:X), context)
 @test GAT.parse_constructor(expr) == cons
 
-expr = :(compose(f,g)::Hom(X,Z) <= begin
-  X::Ob
-  Y::Ob
-  Z::Ob
-  f::Hom(X,Y)
-  g::Hom(Y,Z)
-end)
+expr = :(compose(f,g)::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob, f::Hom(X,Y), g::Hom(Y,Z)))
 context = GAT.Context((
   :X => raw_expr(:Ob), :Y => raw_expr(:Ob), :Z => raw_expr(:Ob),
   :f => raw_expr(:Hom,:X,:Y), :g => raw_expr(:Hom,:Y,:Z)))
@@ -96,21 +68,10 @@ parse_fun = (expr) -> GAT.parse_function(GAT.filter_line(expr, recurse=true))
 # Signature of the theory of categories
 @signature Category(Ob,Hom) begin
   Ob::TYPE
-  Hom(dom, codom)::TYPE <= begin
-    dom::Ob
-    codom::Ob
-  end
+  Hom(dom, codom)::TYPE <= (dom::Ob, codom::Ob)
   
-  id(X)::Hom(X,X) <= begin
-    X::Ob
-  end
-  compose(f,g)::Hom(X,Z) <= begin
-    X::Ob
-    Y::Ob
-    Z::Ob
-    f::Hom(X,Y)
-    g::Hom(Y,Z)
-  end
+  id(X)::Hom(X,X) <= (X::Ob,)
+  compose(f,g)::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob, f::Hom(X,Y), g::Hom(Y,Z))
 end
 
 # Manually constructed signature of theory of categories
@@ -128,9 +89,9 @@ terms = OrderedDict((
       :X => raw_expr(:Ob), :Y => raw_expr(:Ob), :Z => raw_expr(:Ob),
       :f => raw_expr(:Hom,:X,:Y), :g => raw_expr(:Hom,:Y,:Z)))),
 ))
-sig = GAT.Signature(head, types, terms)
+category_signature = GAT.Signature(head, types, terms)
 
-@test Category.signature == sig
+@test Category.signature == category_signature
 
 # Equivalent shorthand definition of Category signature
 # @signature CategoryAbbrev(Ob,Hom) begin
