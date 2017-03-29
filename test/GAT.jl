@@ -87,7 +87,8 @@ terms = OrderedDict((
 ))
 category_signature = GAT.Signature(types, terms)
 
-@test Category.signature == category_signature
+@test isa(Category, Module)
+@test Category.signature() == category_signature
 
 # Equivalent shorthand definition of Category signature
 @signature CategoryAbbrev(Ob,Hom) begin
@@ -98,15 +99,15 @@ category_signature = GAT.Signature(types, terms)
   compose(f::Hom(X,Y),g::Hom(Y,Z))::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob)
 end
 
-@test CategoryAbbrev.signature == category_signature
+@test CategoryAbbrev.signature() == category_signature
 
 # Methods for signature
 accessors = [ GAT.JuliaFunction(:(dom(::Hom)), :Ob),
               GAT.JuliaFunction(:(codom(::Hom)), :Ob) ]
 constructors = [ GAT.JuliaFunction(:(id(X::Ob)), :Hom),
                  GAT.JuliaFunction(:(compose(f::Hom, g::Hom)), :Hom) ]
-@test GAT.accessors(Category.signature) == accessors
-@test GAT.constructors(Category.signature) == constructors
+@test GAT.accessors(Category.signature()) == accessors
+@test GAT.constructors(Category.signature()) == constructors
 @test GAT.interface(Category) == [accessors; constructors]
 
 # Utility functions

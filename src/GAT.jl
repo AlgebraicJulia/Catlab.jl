@@ -9,6 +9,16 @@ using Match
 # Internal data types
 #####################
 
+@auto_hash_equals immutable JuliaFunction
+  call_expr::Expr
+  return_type::Nullable{Union{Symbol,Expr}}
+  default_impl::Nullable{Expr}
+  
+  function JuliaFunction(call_expr, return_type=Nullabe(), default_impl=Nullable()) 
+    new(call_expr, return_type, default_impl)
+  end
+end
+
 typealias Context OrderedDict{Symbol,Union{Symbol,Expr}}
 
 @auto_hash_equals immutable TypeConstructor
@@ -24,11 +34,6 @@ end
   context::Context
 end
 
-@auto_hash_equals immutable SignatureBinding
-  name::Symbol
-  params::Vector{Symbol}
-end
-
 """ Signature for a generalized algebraic theory (GAT).
 """
 @auto_hash_equals immutable Signature
@@ -36,21 +41,9 @@ end
   terms::OrderedDict{Symbol,TermConstructor}
 end
 
-@auto_hash_equals immutable JuliaFunction
-  call_expr::Expr
-  return_type::Nullable{Union{Symbol,Expr}}
-  default_impl::Nullable{Expr}
-  
-  function JuliaFunction(call_expr, return_type=Nullabe(), default_impl=Nullable()) 
-    new(call_expr, return_type, default_impl)
-  end
-end
-
-""" Signature for GAT plus default Julia code for instances.
-"""
-@auto_hash_equals immutable JuliaSignature
-  signature::Signature
-  functions::Vector{JuliaFunction}
+@auto_hash_equals immutable SignatureBinding
+  name::Symbol
+  params::Vector{Symbol}
 end
 
 # Julia parsing
@@ -172,12 +165,17 @@ immutable _GAT{T} end
 macro signature(args...)
   # Parse signature: GAT and extra Julia functions.
   head = parse_signature_binding(args[1])
-  types, terms, funs = parse_signature_body(args[end])
-  sig = Signature(types, terms)
-  julia_sig = JuliaSignature(sig, funs)
+  types, terms, functions = parse_signature_body(args[end])
+  signature = Signature(types, terms)
   
   # Generate code: signature definition and method stubs.
-  return esc(:($(head.name) = $julia_sig))
+  #
+  # Modules must be at top level:
+  # https://github.com/JuliaLang/julia/issues/21009
+  return esc(Expr(:toplevel, :(module $(head.name)
+    signature() = $signature
+    functions() = $functions
+  end)))
 end
 
 """ Julia functions for type parameter accessors.
@@ -203,13 +201,13 @@ function constructor(cons::TermConstructor)::JuliaFunction
   JuliaFunction(call_expr, return_type)
 end
 
-function interface(sig::JuliaSignature)::Vector{JuliaFunction}
-  [ accessors(sig.signature);
-    constructors(sig.signature);
-    sig.functions ]
+function interface(mod::Module)::Vector{JuliaFunction}
+  [ accessors(mod.signature());
+    constructors(mod.signature());
+    mod.functions() ]
 end
 
-methodswith(sig::JuliaSignature, args...) = methodswith(_GAT{sig}, args...)
+methodswith(mod::Module, args...) = methodswith(_GAT{names(mod)[1]}, args...)
 
 # Utility functions
 ###################
