@@ -1,20 +1,15 @@
 module GAT
-export @signature
+export @signature, methodswith
 
 using Base.Meta: show_sexpr
 using AutoHashEquals
 import DataStructures: OrderedDict
 using Match
 
-# Internal types
-################
+# Internal data types
+#####################
 
-@auto_hash_equals immutable RawExpr
-  head::Symbol
-  args::Vector{RawExpr}
-end
-
-typealias Context OrderedDict{Symbol,RawExpr}
+typealias Context OrderedDict{Symbol,Union{Symbol,Expr}}
 
 @auto_hash_equals immutable TypeConstructor
   name::Symbol
@@ -25,7 +20,7 @@ end
 @auto_hash_equals immutable TermConstructor
   name::Symbol
   params::Vector{Symbol}
-  typ::RawExpr
+  typ::Union{Symbol,Expr}
   context::Context
 end
 
@@ -45,6 +40,10 @@ end
   call_expr::Expr
   return_type::Nullable{Union{Symbol,Expr}}
   default_impl::Nullable{Expr}
+  
+  function JuliaFunction(call_expr, return_type=Nullabe(), default_impl=Nullable()) 
+    new(call_expr, return_type, default_impl)
+  end
 end
 
 """ Signature for GAT plus default Julia code for instances.
@@ -53,21 +52,41 @@ end
   signature::Signature
   functions::Vector{JuliaFunction}
 end
+
+# Julia parsing
+###############
+
+""" Parse Julia function declaration into standardized form.
+"""
+function parse_function(expr::Expr)::JuliaFunction
+  fun_expr, impl = @match expr begin
+    Expr(:(=), args, _) => args
+    Expr(:function, args, _) => args
+    _ => throw(ParseError("Ill-formed function definition $(as_sexpr(expr))"))
+  end
+  @match fun_expr begin
+    (Expr(:(::), [Expr(:call, args, _), return_type], _) => 
+      JuliaFunction(Expr(:call, args...), return_type, impl))
+    (Expr(:call, args, _) =>
+      JuliaFunction(Expr(:call, args...), Nullable(), impl))
+    _ => throw(ParseError("Ill-formed function header $(as_sexpr(fun_expr))"))
+  end
+end
   
-# Julia expression parsing
-##########################
+# GAT parsing
+#############
 
 """ Parse a raw expression in a GAT.
 
 A "raw expression" is a just composition of function and constant symbols.
 """
-function parse_raw_expr(expr)::RawExpr
+function parse_raw_expr(expr)
   @match expr begin
-    (Expr(:call, [head::Symbol, args...], _)
-      => RawExpr(head, map(parse_raw_expr, args)))
-    head::Symbol => RawExpr(head, [])
+    Expr(:call, args, _) => map(parse_raw_expr, args)
+    head::Symbol => nothing
     _ => throw(ParseError("Ill-formed raw expression $(as_sexpr(expr))"))
   end
+  expr
 end
 
 """ Parse context for term or type in a GAT.
@@ -117,23 +136,6 @@ function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor}
   end
 end
 
-""" Parse a Julia function into standardized form.
-"""
-function parse_function(expr::Expr)::JuliaFunction
-  fun_expr, impl = @match expr begin
-    Expr(:(=), args, _) => args
-    Expr(:function, args, _) => args
-    _ => throw(ParseError("Ill-formed function definition $(as_sexpr(expr))"))
-  end
-  @match fun_expr begin
-    (Expr(:(::), [Expr(:call, args, _), return_type], _) => 
-      JuliaFunction(Expr(:call, args...), return_type, impl))
-    (Expr(:call, args, _) =>
-      JuliaFunction(Expr(:call, args...), Nullable(), impl))
-    _ => throw(ParseError("Ill-formed function header $(as_sexpr(fun_expr))"))
-  end
-end
-
 function parse_signature_binding(expr::Expr)::SignatureBinding
   @match expr begin
     Expr(:call, [name::Symbol, params...], _) => SignatureBinding(name, params)
@@ -160,18 +162,54 @@ function parse_signature_body(expr::Expr)
   return (types, terms, funs)
 end
 
-# Macros
-########
+# Signatures
+############
+
+immutable _GAT{T} end
 
 """ TOOD
 """
 macro signature(args...)
+  # Parse signature: GAT and extra Julia functions.
   head = parse_signature_binding(args[1])
   types, terms, funs = parse_signature_body(args[end])
   sig = Signature(types, terms)
   julia_sig = JuliaSignature(sig, funs)
+  
+  # Generate code: signature definition and method stubs.
   return esc(:($(head.name) = $julia_sig))
 end
+
+""" Julia functions for type parameter accessors.
+"""
+function accessors(sig::Signature)::Vector{JuliaFunction}
+  vcat(map(accessors, values(sig.types))...)
+end
+function accessors(cons::TypeConstructor)::Vector{JuliaFunction}
+  [ JuliaFunction(Expr(:call, p, Expr(:(::), cons.name)),
+                  strip_type(cons.context[p]))
+    for p in cons.params ]
+end
+
+""" Julia functions for term constructors of GAT.
+"""
+function constructors(sig::Signature)::Vector{JuliaFunction}
+  map(constructor, values(sig.terms))
+end
+function constructor(cons::TermConstructor)::JuliaFunction
+  args = [ Expr(:(::), p, strip_type(cons.context[p])) for p in cons.params ]
+  call_expr = Expr(:call, cons.name, args...)
+  return_type = strip_type(cons.typ)
+  JuliaFunction(call_expr, return_type)
+end
+
+function interface(sig::JuliaSignature)::Vector{JuliaFunction}
+  [ accessors(sig.signature);
+    constructors(sig.signature);
+    sig.functions ]
+end
+
+methodswith(sig::JuliaSignature, args...) = methodswith(_GAT{sig}, args...)
 
 # Utility functions
 ###################
@@ -184,9 +222,9 @@ function as_sexpr(expr)::AbstractString
   takebuf_string(io)
 end
 
-""" Remove all :line annotations from a Julia expression. Not recursive.
+""" Remove all :line annotations from a Julia expression.
 """
-function filter_line(expr::Expr; recurse::Bool=false)
+function filter_line(expr::Expr; recurse::Bool=false)::Expr
   args = filter(x -> !(isa(x, Expr) && x.head == :line), expr.args)
   if recurse
     args = [ isa(x, Expr) ? filter_line(x; recurse=true) : x for x in args ]
@@ -201,6 +239,25 @@ function push_unique!(collection, key, value)
     throw(ParseError("Name $key already defined"))
   end
   collection[key] = value
+end
+
+""" Remove type parameters from dependent type.
+"""
+function strip_type(expr)::Symbol
+  @match expr begin
+    Expr(:call, [head::Symbol, args...], _) => head
+    sym::Symbol => sym
+  end
+end
+
+""" Recursively remove type parameters from all dependent types in expression.
+"""
+function strip_types(expr)
+  @match expr begin
+    Expr(:(::), [fst, snd], _) => Expr(:(::), [strip_types(fst), strip_type(snd)]...)
+    Expr(head, args, _) => Expr(head, map(strip_types, args)...)
+    _ => expr
+  end
 end
 
 end
