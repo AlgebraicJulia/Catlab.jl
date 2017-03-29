@@ -224,10 +224,14 @@ macro signature(args...)
   # Generate module: signature definition and method stubs.
   all_functions = [ interface(signature); functions ]
   body = Expr(:block, [
+    esc(Expr(:export, [cons.name for cons in values(types)]...));
+    esc(Expr(:export, unique(f.call_expr.args[1] for f in all_functions)...));
+  
+    [ gen_abstract_type(cons) for cons in values(types) ];
+    [ esc(gen_function(fun)) for fun in all_functions ];
+    
     esc(:(signature() = $(signature)));
     esc(:(functions() = $(functions)));
-    [ gen_abstract_type(cons) for cons in values(signature.types) ];
-    [ esc(gen_function(fun)) for fun in all_functions ];
   ]...)
   # Modules must be at top level:
   # https://github.com/JuliaLang/julia/issues/21009

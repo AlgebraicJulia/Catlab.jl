@@ -83,6 +83,7 @@ expr = :(compose(f::Hom(X,Y), g::Hom(Y,Z))::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob))
 end
 
 @test isa(Category, Module)
+@test sort(names(Category)) == sort([:Category, :Ob, :Hom, :dom, :codom, :id, :compose])
 @test isa(Category.Ob, Type)
 @test isa(Category.Hom, Type)
 @test isa(Category.dom, Function) && isa(Category.codom, Function)
