@@ -1,10 +1,19 @@
 module GAT
-export @signature, methodswith
+export @signature, BaseExpr, head, args
 
 using Base.Meta: show_sexpr
 using AutoHashEquals
 import DataStructures: OrderedDict
 using Match
+
+# Data types
+############
+
+abstract BaseExpr{T}
+
+constructor{T}(::Type{BaseExpr{T}}) = T
+head{T}(::BaseExpr{T}) = T
+args(expr::BaseExpr) = expr.args
 
 # Internal data types
 #####################
@@ -12,10 +21,10 @@ using Match
 @auto_hash_equals immutable JuliaFunction
   call_expr::Expr
   return_type::Nullable{Union{Symbol,Expr}}
-  default_impl::Nullable{Expr}
+  impl::Nullable{Expr}
   
-  function JuliaFunction(call_expr, return_type=Nullabe(), default_impl=Nullable()) 
-    new(call_expr, return_type, default_impl)
+  function JuliaFunction(call_expr, return_type=Nullable(), impl=Nullable()) 
+    new(call_expr, return_type, impl)
   end
 end
 
@@ -46,10 +55,10 @@ end
   params::Vector{Symbol}
 end
 
-# Julia parsing
-###############
+# Julia expressions
+###################
 
-""" Parse Julia function declaration into standardized form.
+""" Parse Julia function definition into standardized form.
 """
 function parse_function(expr::Expr)::JuliaFunction
   fun_expr, impl = @match expr begin
@@ -65,9 +74,45 @@ function parse_function(expr::Expr)::JuliaFunction
     _ => throw(ParseError("Ill-formed function header $(as_sexpr(fun_expr))"))
   end
 end
+
+""" Generate Julia expression for function definition.
+"""
+function gen_function(fun::JuliaFunction)::Expr
+  if isnull(fun.return_type)
+    head = fun.call_expr
+  else 
+    head = Expr(:(::), fun.call_expr, get(fun.return_type))
+  end
+  if isnull(fun.impl)
+    body = Expr(:block)
+  else
+    # Wrap implementation inside block if not already.
+    impl = get(fun.impl)
+    body = impl.head == :block ? impl : Expr(:block, impl)
+  end
+  Expr(:function, head, body)
+end
+
+""" Convert Julia expression to S-expression.
+"""
+function as_sexpr(expr)::AbstractString
+  io = IOBuffer()
+  show_sexpr(io, expr)
+  takebuf_string(io)
+end
+
+""" Remove all :line annotations from a Julia expression.
+"""
+function filter_line(expr::Expr; recurse::Bool=false)::Expr
+  args = filter(x -> !(isa(x, Expr) && x.head == :line), expr.args)
+  if recurse
+    args = [ isa(x, Expr) ? filter_line(x; recurse=true) : x for x in args ]
+  end
+  Expr(expr.head, args...)
+end
   
-# GAT parsing
-#############
+# GAT expressions
+#################
 
 """ Parse a raw expression in a GAT.
 
@@ -79,7 +124,7 @@ function parse_raw_expr(expr)
     head::Symbol => nothing
     _ => throw(ParseError("Ill-formed raw expression $(as_sexpr(expr))"))
   end
-  expr
+  expr # Return the expression unmodified. This function just checks syntax.
 end
 
 """ Parse context for term or type in a GAT.
@@ -136,6 +181,8 @@ function parse_signature_binding(expr::Expr)::SignatureBinding
   end
 end
 
+""" Parse the body of a GAT signature declaration.
+"""
 function parse_signature_body(expr::Expr)
   @assert expr.head == :block
   types, terms, funs = OrderedDict(), OrderedDict(), []
@@ -155,10 +202,16 @@ function parse_signature_body(expr::Expr)
   return (types, terms, funs)
 end
 
+""" Generate abstract type definition for GAT type constructor.
+"""
+function gen_abstract_type(cons::TypeConstructor)::Expr
+  Expr(:abstract, Expr(:(<:), 
+    Expr(:curly, esc(cons.name), esc(:T)),
+    Expr(:curly, :BaseExpr, esc(:T))))
+end
+
 # Signatures
 ############
-
-immutable _GAT{T} end
 
 """ TOOD
 """
@@ -168,14 +221,18 @@ macro signature(args...)
   types, terms, functions = parse_signature_body(args[end])
   signature = Signature(types, terms)
   
-  # Generate code: signature definition and method stubs.
-  #
+  # Generate module: signature definition and method stubs.
+  all_functions = [ interface(signature); functions ]
+  body = Expr(:block, [
+    esc(:(signature() = $(signature)));
+    esc(:(functions() = $(functions)));
+    [ gen_abstract_type(cons) for cons in values(signature.types) ];
+    [ esc(gen_function(fun)) for fun in all_functions ];
+  ]...)
   # Modules must be at top level:
   # https://github.com/JuliaLang/julia/issues/21009
-  return esc(Expr(:toplevel, :(module $(head.name)
-    signature() = $signature
-    functions() = $functions
-  end)))
+  mod = Expr(:module, true, esc(head.name), body)
+  return Expr(:toplevel, mod)
 end
 
 """ Julia functions for type parameter accessors.
@@ -201,34 +258,15 @@ function constructor(cons::TermConstructor)::JuliaFunction
   JuliaFunction(call_expr, return_type)
 end
 
-function interface(mod::Module)::Vector{JuliaFunction}
-  [ accessors(mod.signature());
-    constructors(mod.signature());
-    mod.functions() ]
+function interface(sig::Signature)::Vector{JuliaFunction}
+  [ accessors(sig); constructors(sig) ]
 end
-
-methodswith(mod::Module, args...) = methodswith(_GAT{names(mod)[1]}, args...)
+function interface(mod::Module)::Vector{JuliaFunction}
+  [ interface(mod.signature()); mod.functions() ]
+end
 
 # Utility functions
 ###################
-
-""" Convert Julia expression to S-expression.
-"""
-function as_sexpr(expr)::AbstractString
-  io = IOBuffer()
-  show_sexpr(io, expr)
-  takebuf_string(io)
-end
-
-""" Remove all :line annotations from a Julia expression.
-"""
-function filter_line(expr::Expr; recurse::Bool=false)::Expr
-  args = filter(x -> !(isa(x, Expr) && x.head == :line), expr.args)
-  if recurse
-    args = [ isa(x, Expr) ? filter_line(x; recurse=true) : x for x in args ]
-  end
-  Expr(expr.head, args...)
-end
 
 """ Push key-value pair unless there is a key collision.
 """

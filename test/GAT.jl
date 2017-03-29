@@ -3,12 +3,21 @@ using CompCat.GAT
 
 using Base.Test
 import DataStructures: OrderedDict
+  
+# Julia expressions
+###################
 
-# Julia parsing
-###############
+# Function generation
+filter_lines(expr) = GAT.filter_line(expr, recurse=true)
+@test (GAT.gen_function(GAT.JuliaFunction(:(f(x,y)))) ==
+       filter_lines(:(function f(x,y) end)))
+@test (GAT.gen_function(GAT.JuliaFunction(:(f(x::Int,y::Int)), :Int)) ==
+       filter_lines(:(function f(x::Int,y::Int)::Int end)))
+@test (GAT.gen_function(GAT.JuliaFunction(:(f(x)), :Bool, :(isnull(x)))) ==
+       filter_lines(:(function f(x)::Bool isnull(x) end)))
 
-# Functions
-parse_fun = (expr) -> GAT.parse_function(GAT.filter_line(expr, recurse=true))
+# Function parsing
+parse_fun(expr) = GAT.parse_function(filter_lines(expr))
 @test (parse_fun(:(function f(x,y) x end)) == 
        GAT.JuliaFunction(:(f(x,y)), Nullable(), quote x end))
 @test (parse_fun(:(function f(x::Int,y::Int)::Int x end)) == 
@@ -17,8 +26,8 @@ parse_fun = (expr) -> GAT.parse_function(GAT.filter_line(expr, recurse=true))
        GAT.JuliaFunction(:(f(x,y)), Nullable(), quote x end))
 @test_throws ParseError parse_fun(:(f(x,y)))
 
-# GAT parsing
-#############
+# GAT expressions
+#################
 
 # Raw expressions
 @test GAT.parse_raw_expr(:(Ob)) == :Ob
@@ -73,6 +82,12 @@ expr = :(compose(f::Hom(X,Y), g::Hom(Y,Z))::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob))
   compose(f,g)::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob, f::Hom(X,Y), g::Hom(Y,Z))
 end
 
+@test isa(Category, Module)
+@test isa(Category.Ob, Type)
+@test isa(Category.Hom, Type)
+@test isa(Category.dom, Function) && isa(Category.codom, Function)
+@test isa(Category.id, Function) && isa(Category.compose, Function)
+
 # Manually constructed signature of theory of categories
 types = OrderedDict((
   :Ob => GAT.TypeConstructor(:Ob, [], GAT.Context()),
@@ -87,7 +102,6 @@ terms = OrderedDict((
 ))
 category_signature = GAT.Signature(types, terms)
 
-@test isa(Category, Module)
 @test Category.signature() == category_signature
 
 # Equivalent shorthand definition of Category signature
