@@ -31,6 +31,12 @@ sig = GAT.JuliaFunctionSig(:f, [:Int,:Int])
 @test GAT.parse_function_sig(:(f(::Int,::Int))) == sig
 @test GAT.parse_function_sig(:(f(x,y))) == GAT.JuliaFunctionSig(:f, [:Any,:Any])
 
+# Type transformations
+bindings = Dict((:r => :R, :s => :S, :t => :T))
+@test GAT.replace_types(bindings, :(foo(x::r,y::s)::t)) == :(foo(x::R,y::S)::T)
+@test GAT.replace_types(bindings, :(foo(r::s))) == :(foo(r::S))
+@test GAT.replace_types(bindings, :(foo(xs::Vararg{r}))) == :(foo(xs::Vararg{R}))
+
 # GAT expressions
 #################
 
@@ -74,6 +80,26 @@ cons = GAT.TermConstructor(:compose, [:f,:g], :(Hom(X,Z)), context)
 @test GAT.parse_constructor(expr) == cons
 expr = :(compose(f::Hom(X,Y), g::Hom(Y,Z))::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob))
 @test GAT.parse_constructor(expr) == cons
+
+# Type transformations
+bindings = Dict((:Ob => :Obj, :Hom => :Mor))
+cons = GAT.TypeConstructor(:Hom, [:X,:Y],
+  GAT.Context((:X => :Ob, :Y => :Ob)))
+target = GAT.TypeConstructor(:Mor, [:X,:Y],
+  GAT.Context((:X => :Obj, :Y => :Obj)))
+@test GAT.replace_types(bindings, cons) == target
+
+cons = GAT.TermConstructor(:compose, [:f,:g], :(Hom(X,Z)), 
+  GAT.Context((:X => :Obj, :Y => :Obj, :Z => :Obj,
+               :f => :(Hom(X,Y)), :g => :(Hom(Y,Z)))))
+target = GAT.TermConstructor(:compose, [:f,:g], :(Mor(X,Z)), 
+  GAT.Context((:X => :Obj, :Y => :Obj, :Z => :Obj,
+               :f => :(Mor(X,Y)), :g => :(Mor(Y,Z)))))
+@test GAT.replace_types(bindings, cons) == target
+
+@test GAT.strip_type(:Ob) == :Ob
+@test GAT.strip_type(:(Hom(X,Y))) == :Hom
+@test GAT.strip_type(:(Hom(dual(X),dual(Y)))) == :Hom
 
 # Signatures
 ############
@@ -129,13 +155,32 @@ constructors = [ GAT.JuliaFunction(:(id(X::Ob)), :Hom),
 @test GAT.constructors(Category.class().signature) == constructors
 @test GAT.interface(Category.class()) == [accessors; constructors]
 
-# Instances
-###########
-
+# Signature extension
 @signature Semigroup(S) begin
   S::TYPE
-  stimes(x::S,y::S)::S
+  times(x::S,y::S)::S
 end
+
+@signature Semigroup(M) => MonoidExt(M) begin
+  munit()::M
+end
+
+@test isa(Semigroup, Module) && isa(MonoidExt, Module)
+@test isa(MonoidExt.times, Function)
+@test isa(MonoidExt.munit, Function)
+
+signature = GAT.Signature(
+  OrderedDict(:M => GAT.TypeConstructor(:M, [], GAT.Context())),
+  OrderedDict(
+    :times => GAT.TermConstructor(:times, [:x,:y], :M,
+      GAT.Context((:x => :M, :y => M))),
+    :munit => GAT.TermConstructor(:munit, [], :M, GAT.Context()),
+  )
+)
+@test MonoidExt.class().signature == signature
+
+# Instances
+###########
 
 @instance Semigroup(Vector) begin
   stimes(x::Vector, y::Vector) = [x; y]
@@ -166,15 +211,3 @@ end
 @test_throws ErrorException @instance Monoid(AbstractString) begin
   mtimes(x::AbstractString, y::AbstractString) = string(x,y)
 end
-
-# Utility functions
-###################
-
-bindings = Dict((:r => :R, :s => :S, :t => :T))
-@test GAT.replace_types(bindings, :(foo(x::r,y::s)::t)) == :(foo(x::R,y::S)::T)
-@test GAT.replace_types(bindings, :(foo(r::s))) == :(foo(r::S))
-@test GAT.replace_types(bindings, :(foo(xs::Vararg{r}))) == :(foo(xs::Vararg{R}))
-
-@test GAT.strip_type(:Ob) == :Ob
-@test GAT.strip_type(:(Hom(X,Y))) == :Hom
-@test GAT.strip_type(:(Hom(dual(X),dual(Y)))) == :Hom

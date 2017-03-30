@@ -1,7 +1,6 @@
 module GAT
 export @signature, @instance, BaseExpr, head, args
 
-using Base.Meta: show_sexpr
 using AutoHashEquals
 import DataStructures: OrderedDict
 using Match
@@ -60,11 +59,11 @@ end
   terms::OrderedDict{Symbol,TermConstructor}
 end
 
-""" Class = GAT signature + Julia-specific content.
+""" Typeclass = GAT signature + Julia-specific content.
 """
-immutable Class
+immutable Typeclass
   name::Symbol
-  params::Vector{Symbol}
+  type_params::Vector{Symbol}
   signature::Signature
   functions::Vector{JuliaFunction}
 end
@@ -78,14 +77,14 @@ function parse_function(expr::Expr)::JuliaFunction
   fun_expr, impl = @match expr begin
     Expr(:(=), args, _) => args
     Expr(:function, args, _) => args
-    _ => throw(ParseError("Ill-formed function definition $(as_sexpr(expr))"))
+    _ => throw(ParseError("Ill-formed function definition $expr"))
   end
   @match fun_expr begin
     (Expr(:(::), [Expr(:call, args, _), return_type], _) => 
       JuliaFunction(Expr(:call, args...), return_type, impl))
     (Expr(:call, args, _) =>
       JuliaFunction(Expr(:call, args...), Nullable(), impl))
-    _ => throw(ParseError("Ill-formed function header $(as_sexpr(fun_expr))"))
+    _ => throw(ParseError("Ill-formed function header $fun_expr"))
   end
 end
 
@@ -94,7 +93,7 @@ end
 function parse_function_sig(call_expr::Expr)::JuliaFunctionSig
   name, args = @match call_expr begin
     Expr(:call, [name::Symbol, args...], _) => (name, args)
-    _ => throw(ParseError("Ill-formed function signature $(as_sexpr(call_expr))"))
+    _ => throw(ParseError("Ill-formed function signature $call_expr"))
   end
   types = [ @match expr begin
       Expr(:(::), [_, typ::Symbol], _) => typ
@@ -123,12 +122,37 @@ function gen_function(fun::JuliaFunction)::Expr
   Expr(:function, head, body)
 end
 
-""" Convert Julia expression to S-expression.
+""" Replace types in signature of Julia function.
 """
-function as_sexpr(expr)::AbstractString
-  io = IOBuffer()
-  show_sexpr(io, expr)
-  takebuf_string(io)
+function replace_types(bindings::Dict, f::JuliaFunction)::JuliaFunction
+  JuliaFunction(
+    replace_types(bindings, f.call_expr),
+    isnull(f.return_type) ?
+      Nullable() : replace_symbols(bindings, get(f.return_type)),
+    f.impl) # Don't touch the function body.
+end
+
+""" Replace types in Julia expression.
+"""
+function replace_types(bindings::Dict, expr::Union{Symbol,Expr})
+  recurse(expr) = replace_types(bindings, expr)
+  @match expr begin
+    (Expr(:(::), [fst, snd], _) => 
+      Expr(:(::), [recurse(fst), replace_symbols(bindings, snd)]...))
+    Expr(head, args, _) => Expr(head, map(recurse, args)...)
+    _ => expr
+  end
+end
+
+""" Replace symbols (occuring anywhere) in a Julia expression.
+"""
+function replace_symbols(bindings::Dict, expr)
+  recurse(expr) = replace_symbols(bindings, expr)
+  @match expr begin
+    Expr(head, args, _) => Expr(head, map(recurse,args)...)
+    sym::Symbol => get(bindings, sym, sym)
+    _ => expr
+  end
 end
 
 """ Remove all :line annotations from a Julia expression.
@@ -152,7 +176,7 @@ function parse_raw_expr(expr)
   @match expr begin
     Expr(:call, args, _) => map(parse_raw_expr, args)
     head::Symbol => nothing
-    _ => throw(ParseError("Ill-formed raw expression $(as_sexpr(expr))"))
+    _ => throw(ParseError("Ill-formed raw expression $expr"))
   end
   expr # Return the expression unmodified. This function just checks syntax.
 end
@@ -165,7 +189,7 @@ function parse_context(expr::Expr)::Context
   for arg in expr.args
     name, typ = @match arg begin
       Expr(:(::), [name::Symbol, typ], _) => (name, parse_raw_expr(typ))
-      _ => throw(ParseError("Ill-formed context expression $(as_sexpr(expr))"))
+      _ => throw(ParseError("Ill-formed context expression $expr"))
     end
     push_unique!(context, name, typ)
   end
@@ -189,7 +213,7 @@ function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor}
           name
         end
         name::Symbol => name
-        _ => throw(ParseError("Ill-formed type/term parameter $(as_sexpr(param))"))
+        _ => throw(ParseError("Ill-formed type/term parameter $param"))
       end for param in params ]
   end
   
@@ -200,7 +224,7 @@ function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor}
       => TypeConstructor(name, parse_params(params), context))
     (Expr(:(::), [Expr(:call, [name::Symbol, params...], _), typ], _)
       => TermConstructor(name, parse_params(params), parse_raw_expr(typ), context))
-    _ => throw(ParseError("Ill-formed type/term constructor $(as_sexpr(cons_expr))"))
+    _ => throw(ParseError("Ill-formed type/term constructor $cons_expr"))
   end
 end
 
@@ -210,6 +234,35 @@ function gen_abstract_type(cons::TypeConstructor)::Expr
   Expr(:abstract, Expr(:(<:), 
     Expr(:curly, esc(cons.name), esc(:T)),
     Expr(:curly, :BaseExpr, esc(:T))))
+end
+
+""" Replace names of type constructors.
+"""
+function replace_types(bindings::Dict, cons::TypeConstructor)::TypeConstructor
+  TypeConstructor(replace_symbols(bindings, cons.name),
+                  cons.params,
+                  replace_types(bindings, cons.context))
+end
+function replace_types(bindings::Dict, cons::TermConstructor)::TermConstructor
+  TermConstructor(cons.name, cons.params,
+                  replace_symbols(bindings, cons.typ),
+                  replace_types(bindings, cons.context))
+end
+function replace_types(bindings::Dict, context::Context)::Context
+  GAT.Context(((name => @match expr begin
+    (Expr(:call, [sym::Symbol, args...], _) => 
+      Expr(:call, replace_symbols(bindings, sym), args...))
+    sym::Symbol => replace_symbols(bindings, sym)
+  end) for (name, expr) in context))
+end
+
+""" Remove type parameters from dependent type.
+"""
+function strip_type(expr)::Symbol
+  @match expr begin
+    Expr(:call, [head::Symbol, args...], _) => head
+    sym::Symbol => sym
+  end
 end
 
 # Signatures
@@ -222,7 +275,7 @@ macro signature(head, body)
   head = parse_signature_binding(head)
   types, terms, functions = parse_signature_body(body)
   signature = Signature(types, terms)
-  class = Class(head.name, head.params, signature, functions)
+  class = Typeclass(head.name, head.params, signature, functions)
   
   # Generate module: signature definition and method stubs.
   all_functions = [ interface(signature); functions ]
@@ -244,7 +297,7 @@ end
 function parse_signature_binding(expr::Expr)::SignatureBinding
   @match expr begin
     Expr(:call, [name::Symbol, params...], _) => SignatureBinding(name, params)
-    _ => throw(ParseError("Ill-formed signature binding $(as_sexpr(expr))"))
+    _ => throw(ParseError("Ill-formed signature binding $expr"))
   end
 end
 
@@ -263,7 +316,7 @@ function parse_signature_body(expr::Expr)
     elseif elem.head in (:(=), :function)
       push!(funs, parse_function(elem))
     else
-      throw(ParseError("Ill-formed signature element $(as_sexpr(elem))"))
+      throw(ParseError("Ill-formed signature element $elem"))
     end
   end
   return (types, terms, funs)
@@ -300,7 +353,7 @@ end
 function interface(sig::Signature)::Vector{JuliaFunction}
   [ accessors(sig); constructors(sig) ]
 end
-function interface(class::Class)::Vector{JuliaFunction}
+function interface(class::Typeclass)::Vector{JuliaFunction}
   [ interface(class.signature); class.functions ]
 end
 
@@ -329,7 +382,7 @@ function instance_code(mod, instance_types, instance_fns)
   code = Expr(:block, imports...)
   
   # Method definitions.
-  bindings = Dict(zip(class.params, instance_types))
+  bindings = Dict(zip(class.type_params, instance_types))
   bound_fns = [ replace_types(bindings, f) for f in class_fns ]
   bound_fns = OrderedDict(parse_function_sig(f) => f for f in bound_fns)
   instance_fns = Dict(parse_function_sig(f) => f for f in instance_fns)
@@ -365,42 +418,6 @@ function push_unique!(collection, key, value)
     throw(ParseError("Name $key already defined"))
   end
   collection[key] = value
-end
-
-""" Recursively replace types in Julia expression.
-"""
-function replace_types(bindings::Dict, f::JuliaFunction)::JuliaFunction
-  JuliaFunction(
-    replace_types(bindings, f.call_expr),
-    isnull(f.return_type) ?
-      Nullable() : replace_symbol(bindings, get(f.return_type)),
-    f.impl)
-end
-function replace_types(bindings::Dict, expr::Union{Symbol,Expr})
-  recurse(expr) = replace_types(bindings, expr)
-  @match expr begin
-    (Expr(:(::), [fst, snd], _) => 
-      Expr(:(::), [recurse(fst), replace_symbol(bindings, snd)]...))
-    Expr(head, args, _) => Expr(head, map(recurse, args)...)
-    _ => expr
-  end
-end
-function replace_symbol(bindings::Dict, expr)
-  recurse(expr) = replace_symbol(bindings, expr)
-  @match expr begin
-    Expr(head, args, _) => Expr(head, map(recurse,args)...)
-    sym::Symbol => get(bindings, sym, sym)
-    _ => expr
-  end
-end
-
-""" Remove type parameters from dependent type.
-"""
-function strip_type(expr)::Symbol
-  @match expr begin
-    Expr(:call, [head::Symbol, args...], _) => head
-    sym::Symbol => sym
-  end
 end
 
 end
