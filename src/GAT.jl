@@ -372,20 +372,26 @@ end
 function replace_types(bindings::Dict, f::JuliaFunction)::JuliaFunction
   JuliaFunction(
     replace_types(bindings, f.call_expr),
-    isnull(f.return_type) ? Nullable() : replace_type(bindings, get(f.return_type)),
+    isnull(f.return_type) ?
+      Nullable() : replace_symbol(bindings, get(f.return_type)),
     f.impl)
 end
 function replace_types(bindings::Dict, expr::Union{Symbol,Expr})
   recurse(expr) = replace_types(bindings, expr)
   @match expr begin
-    (Expr(:(::), [fst, snd::Symbol], _) => 
-      Expr(:(::), [recurse(fst), replace_type(bindings, snd)]...))
+    (Expr(:(::), [fst, snd], _) => 
+      Expr(:(::), [recurse(fst), replace_symbol(bindings, snd)]...))
     Expr(head, args, _) => Expr(head, map(recurse, args)...)
     _ => expr
   end
 end
-function replace_type(bindings::Dict, typ::Symbol)
-  get(bindings, typ, typ)
+function replace_symbol(bindings::Dict, expr)
+  recurse(expr) = replace_symbol(bindings, expr)
+  @match expr begin
+    Expr(head, args, _) => Expr(head, map(recurse,args)...)
+    sym::Symbol => get(bindings, sym, sym)
+    _ => expr
+  end
 end
 
 """ Remove type parameters from dependent type.

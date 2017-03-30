@@ -132,10 +132,24 @@ constructors = [ GAT.JuliaFunction(:(id(X::Ob)), :Hom),
 # Instances
 ###########
 
+@signature Semigroup(S) begin
+  S::TYPE
+  stimes(x::S,y::S)::S
+end
+
+@instance Semigroup(Vector) begin
+  stimes(x::Vector, y::Vector) = [x; y]
+end
+
+@test isa(stimes, Function)
+@test stimes([1,2],[3,4]) == [1,2,3,4]
+
 @signature Monoid(M) begin
   M::TYPE
   munit()::M
   mtimes(x::M,y::M)::M
+  
+  mtimes(xs::Vararg{M}) = foldl(mtimes, xs)
 end
 
 @instance Monoid(Vector) begin
@@ -146,6 +160,12 @@ end
 @test isa(munit, Function) && isa(mtimes, Function)
 @test munit(Vector) == []
 @test mtimes([1,2],[3,4]) == [1,2,3,4]
+@test mtimes([1,2],[3,4],[5,6]) == [1,2,3,4,5,6]
+
+# Incomplete instance
+@test_throws ErrorException @instance Monoid(AbstractString) begin
+  mtimes(x::AbstractString, y::AbstractString) = string(x,y)
+end
 
 # Utility functions
 ###################
@@ -153,6 +173,7 @@ end
 bindings = Dict((:r => :R, :s => :S, :t => :T))
 @test GAT.replace_types(bindings, :(foo(x::r,y::s)::t)) == :(foo(x::R,y::S)::T)
 @test GAT.replace_types(bindings, :(foo(r::s))) == :(foo(r::S))
+@test GAT.replace_types(bindings, :(foo(xs::Vararg{r}))) == :(foo(xs::Vararg{R}))
 
 @test GAT.strip_type(:Ob) == :Ob
 @test GAT.strip_type(:(Hom(X,Y))) == :Hom
