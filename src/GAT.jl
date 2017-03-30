@@ -50,8 +50,8 @@ end
 """ Signature for a generalized algebraic theory (GAT).
 """
 @auto_hash_equals immutable Signature
-  types::OrderedDict{Symbol,TypeConstructor}
-  terms::OrderedDict{Symbol,TermConstructor}
+  types::Vector{TypeConstructor}
+  terms::Vector{TermConstructor}
 end
 
 immutable SignatureBinding
@@ -191,15 +191,21 @@ end
 """
 function parse_context(expr::Expr)::Context
   @assert expr.head == :tuple
-  context = OrderedDict()
+  context = Context()
   for arg in expr.args
     name, typ = @match arg begin
       Expr(:(::), [name::Symbol, typ], _) => (name, parse_raw_expr(typ))
       _ => throw(ParseError("Ill-formed context expression $expr"))
     end
-    push_unique!(context, name, typ)
+    push_context!(context, name, typ)
   end
   return context
+end
+function push_context!(context, name, expr)
+  if haskey(context, name)
+    throw(ParseError("Name $name already defined"))
+  end
+  context[name] = expr
 end
 
 """ Parse type or term constructor in a GAT.
@@ -215,7 +221,7 @@ function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor}
   function parse_params(params)::Vector{Symbol}
     [ @match param begin
         Expr(:(::), [name::Symbol, typ], _) => begin
-          push_unique!(context, name, parse_raw_expr(typ))
+          push_context!(context, name, parse_raw_expr(typ))
           name
         end
         name::Symbol => name
@@ -244,10 +250,8 @@ end
 """ Replace names of type constructors in a GAT.
 """
 function replace_types(bindings::Dict, sig::Signature)::Signature
-  Signature(OrderedDict(replace_symbols(bindings,k) => replace_types(bindings,v)
-                        for (k,v) in sig.types),
-            OrderedDict(replace_symbols(bindings,k) => replace_types(bindings,v)
-                        for (k,v) in sig.terms))
+  Signature([ replace_types(bindings, t) for t in sig.types ],
+            [ replace_types(bindings, t) for t in sig.terms ])
 end
 function replace_types(bindings::Dict, cons::TypeConstructor)::TypeConstructor
   TypeConstructor(replace_symbols(bindings, cons.name),
@@ -311,8 +315,8 @@ function signature_code(main_class, base_mod, base_params)
     bindings = Dict(zip(base_class.type_params, base_params))
     main_sig = main_class.signature
     base_sig = replace_types(bindings, base_class.signature)
-    sig = Signature(merge(base_sig.types, main_sig.types),
-                    merge(base_sig.terms, main_sig.terms))
+    sig = Signature([base_sig.types; main_sig.types],
+                    [base_sig.terms; main_sig.terms])
     functions = [ [ replace_types(bindings, f) for f in base_class.functions ]; 
                   main_class.functions ]
     class = Typeclass(main_class.name, main_class.type_params, sig, functions)
@@ -322,10 +326,10 @@ function signature_code(main_class, base_mod, base_params)
   signature = class.signature
   all_functions = [ interface(signature); class.functions ]
   body = Expr(:block, [
-    Expr(:export, [cons.name for cons in values(signature.types)]...);
+    Expr(:export, [cons.name for cons in signature.types]...);
     Expr(:export, unique(f.call_expr.args[1] for f in all_functions)...);
   
-    map(gen_abstract_type, values(signature.types));
+    map(gen_abstract_type, signature.types);
     map(gen_function, all_functions);
     
     :(class() = $(class));
@@ -357,27 +361,30 @@ end
 """
 function parse_signature_body(expr::Expr)
   @assert expr.head == :block
-  types, terms, funs = OrderedDict(), OrderedDict(), []
+  types, terms, funs = OrderedDict(), [], []
   for elem in filter_line(expr).args
     if elem.head in (:(::), :call)
       cons = parse_constructor(elem)
-      @match cons begin
-        cons::TypeConstructor => push_unique!(types, cons.name, cons)
-        cons::TermConstructor => push_unique!(terms, cons.name, cons)
-      end
+      if isa(cons, TypeConstructor)
+        if haskey(types, cons.name)
+          throw(ParseError("Duplicate type constructor $elem"))
+        else
+          types[cons.name] = cons end
+      else
+        push!(terms, cons) end
     elseif elem.head in (:(=), :function)
       push!(funs, parse_function(elem))
     else
       throw(ParseError("Ill-formed signature element $elem"))
     end
   end
-  return (types, terms, funs)
+  return (collect(values(types)), terms, funs)
 end
 
 """ Julia functions for type parameter accessors.
 """
 function accessors(sig::Signature)::Vector{JuliaFunction}
-  vcat(map(accessors, values(sig.types))...)
+  vcat(map(accessors, sig.types)...)
 end
 function accessors(cons::TypeConstructor)::Vector{JuliaFunction}
   [ JuliaFunction(Expr(:call, p, Expr(:(::), cons.name)),
@@ -388,7 +395,7 @@ end
 """ Julia functions for term constructors of GAT.
 """
 function constructors(sig::Signature)::Vector{JuliaFunction}
-  map(constructor, values(sig.terms))
+  map(constructor, sig.terms)
 end
 function constructor(cons::TermConstructor)::JuliaFunction
   return_type = strip_type(cons.typ)
@@ -458,18 +465,6 @@ function parse_instance_body(expr::Expr)::Vector{JuliaFunction}
     Expr(:block, args, _) => map(parse_function, args)
     _ => throw(ParseEror("Ill-formed instance definition"))
   end  
-end
-
-# Utility functions
-###################
-
-""" Push key-value pair unless there is a key collision.
-"""
-function push_unique!(collection, key, value)
-  if haskey(collection, key)
-    throw(ParseError("Name $key already defined"))
-  end
-  collection[key] = value
 end
 
 end

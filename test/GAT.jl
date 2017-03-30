@@ -120,17 +120,17 @@ end
 @test isa(Category.id, Function) && isa(Category.compose, Function)
 
 # Manually constructed signature of theory of categories
-types = OrderedDict((
-  :Ob => GAT.TypeConstructor(:Ob, [], GAT.Context()),
-  :Hom => GAT.TypeConstructor(:Hom, [:dom,:codom], 
+types = [
+  GAT.TypeConstructor(:Ob, [], GAT.Context()),
+  GAT.TypeConstructor(:Hom, [:dom,:codom], 
     GAT.Context((:dom => :Ob, :codom => :Ob))),
-))
-terms = OrderedDict((
-  :id => GAT.TermConstructor(:id, [:X], :(Hom(X,X)), GAT.Context(:X => :Ob)),
-  :compose => GAT.TermConstructor(:compose, [:f,:g], :(Hom(X,Z)),
+]
+terms = [
+  GAT.TermConstructor(:id, [:X], :(Hom(X,X)), GAT.Context(:X => :Ob)),
+  GAT.TermConstructor(:compose, [:f,:g], :(Hom(X,Z)),
     GAT.Context((:X => :Ob, :Y => :Ob, :Z => :Ob,
                  :f => :(Hom(X,Y)), :g => :(Hom(Y,Z))))),
-))
+]
 category_signature = GAT.Signature(types, terms)
 
 @test Category.class().signature == category_signature
@@ -170,12 +170,10 @@ end
 @test isa(MonoidExt.munit, Function)
 
 signature = GAT.Signature(
-  OrderedDict(:M => GAT.TypeConstructor(:M, [], GAT.Context())),
-  OrderedDict(
-    :times => GAT.TermConstructor(:times, [:x,:y], :M,
+  [ GAT.TypeConstructor(:M, [], GAT.Context()) ],
+  [ GAT.TermConstructor(:times, [:x,:y], :M,
       GAT.Context((:x => :M, :y => :M))),
-    :munit => GAT.TermConstructor(:munit, [], :M, GAT.Context()),
-  )
+    GAT.TermConstructor(:munit, [], :M, GAT.Context()) ],
 )
 @test MonoidExt.class().signature == signature
 
