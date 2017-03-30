@@ -1,5 +1,5 @@
 module GAT
-export @signature, BaseExpr, head, args
+export @signature, @instance, BaseExpr, head, args
 
 using Base.Meta: show_sexpr
 using AutoHashEquals
@@ -103,6 +103,7 @@ function parse_function_sig(call_expr::Expr)::JuliaFunctionSig
     end for expr in args ]
   JuliaFunctionSig(name, types)
 end
+parse_function_sig(fun::JuliaFunction) = parse_function_sig(fun.call_expr)
 
 """ Generate Julia expression for function definition.
 """
@@ -285,9 +286,14 @@ function constructors(sig::Signature)::Vector{JuliaFunction}
   map(constructor, values(sig.terms))
 end
 function constructor(cons::TermConstructor)::JuliaFunction
-  args = [ Expr(:(::), p, strip_type(cons.context[p])) for p in cons.params ]
-  call_expr = Expr(:call, cons.name, args...)
   return_type = strip_type(cons.typ)
+  if isempty(cons.params)
+    # Special case: term constructors with no arguments dispatch on term type.
+    args = [ :(::Type{$return_type}) ]
+  else
+    args = [ Expr(:(::), p, strip_type(cons.context[p])) for p in cons.params ]
+  end
+  call_expr = Expr(:call, cons.name, args...)
   JuliaFunction(call_expr, return_type)
 end
 
@@ -304,8 +310,49 @@ end
 """ TODO
 """
 macro instance(head, body)
+  # Parse the instance definition.
   head = parse_signature_binding(head)
-  :()
+  functions = parse_instance_body(body)
+  
+  # We must generate and evaluate the code at *run time* because the signature
+  # module is not defined at *parse time*.  
+  expr = :(instance_code($(esc(head.name)), $(esc(head.params)), $functions))
+  Expr(:call, esc(:eval), expr)
+end
+function instance_code(mod, instance_types, instance_fns)
+  # Explicitly import the stub definitions.
+  # FIXME: Is this necessary?
+  class = mod.class()
+  class_fns = interface(class)
+  imports = [ Expr(:import, class.name, name)
+              for name in unique(f.call_expr.args[1] for f in class_fns) ]
+  code = Expr(:block, imports...)
+  
+  # Method definitions.
+  bindings = Dict(zip(class.params, instance_types))
+  bound_fns = [ replace_types(bindings, f) for f in class_fns ]
+  bound_fns = OrderedDict(parse_function_sig(f) => f for f in bound_fns)
+  instance_fns = Dict(parse_function_sig(f) => f for f in instance_fns)
+  for (sig, f) in bound_fns
+    if haskey(instance_fns, sig)
+      f_impl = instance_fns[sig]
+    elseif !isnull(f.impl)
+      f_impl = f
+    else
+      error("Method $(f.call_expr) not implemented in $(class.name) instance")
+    end
+    push!(code.args, gen_function(f_impl))
+  end
+  return code
+end
+
+""" Parse the body of a GAT instance definition.
+"""
+function parse_instance_body(expr::Expr)::Vector{JuliaFunction}
+  @match filter_line(expr) begin
+    Expr(:block, args, _) => map(parse_function, args)
+    _ => throw(ParseEror("Ill-formed instance definition"))
+  end  
 end
 
 # Utility functions
@@ -322,7 +369,13 @@ end
 
 """ Recursively replace types in Julia expression.
 """
-function replace_types(bindings::Dict, expr)
+function replace_types(bindings::Dict, f::JuliaFunction)::JuliaFunction
+  JuliaFunction(
+    replace_types(bindings, f.call_expr),
+    isnull(f.return_type) ? Nullable() : replace_type(bindings, get(f.return_type)),
+    f.impl)
+end
+function replace_types(bindings::Dict, expr::Union{Symbol,Expr})
   recurse(expr) = replace_types(bindings, expr)
   @match expr begin
     (Expr(:(::), [fst, snd::Symbol], _) => 

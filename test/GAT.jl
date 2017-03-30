@@ -129,6 +129,24 @@ constructors = [ GAT.JuliaFunction(:(id(X::Ob)), :Hom),
 @test GAT.constructors(Category.class().signature) == constructors
 @test GAT.interface(Category.class()) == [accessors; constructors]
 
+# Instances
+###########
+
+@signature Monoid(M) begin
+  M::TYPE
+  munit()::M
+  mtimes(x::M,y::M)::M
+end
+
+@instance Monoid(Vector) begin
+  munit(::Type{Vector}) = []
+  mtimes(x::Vector, y::Vector) = [x; y]
+end
+
+@test isa(munit, Function) && isa(mtimes, Function)
+@test munit(Vector) == []
+@test mtimes([1,2],[3,4]) == [1,2,3,4]
+
 # Utility functions
 ###################
 
