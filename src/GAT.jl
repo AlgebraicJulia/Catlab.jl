@@ -28,6 +28,11 @@ args(expr::BaseExpr) = expr.args
   end
 end
 
+@auto_hash_equals immutable JuliaFunctionSig
+  name::Symbol
+  types::Vector{Union{Symbol,Expr}}
+end
+
 typealias Context OrderedDict{Symbol,Union{Symbol,Expr}}
 
 @auto_hash_equals immutable TypeConstructor
@@ -43,6 +48,11 @@ end
   context::Context
 end
 
+@auto_hash_equals immutable SignatureBinding
+  name::Symbol
+  params::Vector{Symbol}
+end
+
 """ Signature for a generalized algebraic theory (GAT).
 """
 @auto_hash_equals immutable Signature
@@ -50,9 +60,13 @@ end
   terms::OrderedDict{Symbol,TermConstructor}
 end
 
-@auto_hash_equals immutable SignatureBinding
+""" Class = GAT signature + Julia-specific content.
+"""
+immutable Class
   name::Symbol
   params::Vector{Symbol}
+  signature::Signature
+  functions::Vector{JuliaFunction}
 end
 
 # Julia expressions
@@ -73,6 +87,21 @@ function parse_function(expr::Expr)::JuliaFunction
       JuliaFunction(Expr(:call, args...), Nullable(), impl))
     _ => throw(ParseError("Ill-formed function header $(as_sexpr(fun_expr))"))
   end
+end
+
+""" Parse signature of Julia function.
+"""
+function parse_function_sig(call_expr::Expr)::JuliaFunctionSig
+  name, args = @match call_expr begin
+    Expr(:call, [name::Symbol, args...], _) => (name, args)
+    _ => throw(ParseError("Ill-formed function signature $(as_sexpr(call_expr))"))
+  end
+  types = [ @match expr begin
+      Expr(:(::), [_, typ::Symbol], _) => typ
+      Expr(:(::), [typ::Symbol], _) => typ
+      _ => :Any
+    end for expr in args ]
+  JuliaFunctionSig(name, types)
 end
 
 """ Generate Julia expression for function definition.
@@ -174,6 +203,43 @@ function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor}
   end
 end
 
+""" Generate abstract type definition from a GAT type constructor.
+"""
+function gen_abstract_type(cons::TypeConstructor)::Expr
+  Expr(:abstract, Expr(:(<:), 
+    Expr(:curly, esc(cons.name), esc(:T)),
+    Expr(:curly, :BaseExpr, esc(:T))))
+end
+
+# Signatures
+############
+
+""" TOOD
+"""
+macro signature(head, body)
+  # Parse signature: GAT and extra Julia functions.
+  head = parse_signature_binding(head)
+  types, terms, functions = parse_signature_body(body)
+  signature = Signature(types, terms)
+  class = Class(head.name, head.params, signature, functions)
+  
+  # Generate module: signature definition and method stubs.
+  all_functions = [ interface(signature); functions ]
+  body = Expr(:block, [
+    esc(Expr(:export, [cons.name for cons in values(types)]...));
+    esc(Expr(:export, unique(f.call_expr.args[1] for f in all_functions)...));
+  
+    [ gen_abstract_type(cons) for cons in values(types) ];
+    [ esc(gen_function(fun)) for fun in all_functions ];
+    
+    esc(:(class() = $(class)));
+  ]...)
+  # Modules must be at top level:
+  # https://github.com/JuliaLang/julia/issues/21009
+  mod = Expr(:module, true, esc(head.name), body)
+  return Expr(:toplevel, mod)
+end
+
 function parse_signature_binding(expr::Expr)::SignatureBinding
   @match expr begin
     Expr(:call, [name::Symbol, params...], _) => SignatureBinding(name, params)
@@ -202,43 +268,6 @@ function parse_signature_body(expr::Expr)
   return (types, terms, funs)
 end
 
-""" Generate abstract type definition for GAT type constructor.
-"""
-function gen_abstract_type(cons::TypeConstructor)::Expr
-  Expr(:abstract, Expr(:(<:), 
-    Expr(:curly, esc(cons.name), esc(:T)),
-    Expr(:curly, :BaseExpr, esc(:T))))
-end
-
-# Signatures
-############
-
-""" TOOD
-"""
-macro signature(args...)
-  # Parse signature: GAT and extra Julia functions.
-  head = parse_signature_binding(args[1])
-  types, terms, functions = parse_signature_body(args[end])
-  signature = Signature(types, terms)
-  
-  # Generate module: signature definition and method stubs.
-  all_functions = [ interface(signature); functions ]
-  body = Expr(:block, [
-    esc(Expr(:export, [cons.name for cons in values(types)]...));
-    esc(Expr(:export, unique(f.call_expr.args[1] for f in all_functions)...));
-  
-    [ gen_abstract_type(cons) for cons in values(types) ];
-    [ esc(gen_function(fun)) for fun in all_functions ];
-    
-    esc(:(signature() = $(signature)));
-    esc(:(functions() = $(functions)));
-  ]...)
-  # Modules must be at top level:
-  # https://github.com/JuliaLang/julia/issues/21009
-  mod = Expr(:module, true, esc(head.name), body)
-  return Expr(:toplevel, mod)
-end
-
 """ Julia functions for type parameter accessors.
 """
 function accessors(sig::Signature)::Vector{JuliaFunction}
@@ -265,8 +294,18 @@ end
 function interface(sig::Signature)::Vector{JuliaFunction}
   [ accessors(sig); constructors(sig) ]
 end
-function interface(mod::Module)::Vector{JuliaFunction}
-  [ interface(mod.signature()); mod.functions() ]
+function interface(class::Class)::Vector{JuliaFunction}
+  [ interface(class.signature); class.functions ]
+end
+
+# Instances
+###########
+
+""" TODO
+"""
+macro instance(head, body)
+  head = parse_signature_binding(head)
+  :()
 end
 
 # Utility functions
@@ -281,22 +320,27 @@ function push_unique!(collection, key, value)
   collection[key] = value
 end
 
+""" Recursively replace types in Julia expression.
+"""
+function replace_types(bindings::Dict, expr)
+  recurse(expr) = replace_types(bindings, expr)
+  @match expr begin
+    (Expr(:(::), [fst, snd::Symbol], _) => 
+      Expr(:(::), [recurse(fst), replace_type(bindings, snd)]...))
+    Expr(head, args, _) => Expr(head, map(recurse, args)...)
+    _ => expr
+  end
+end
+function replace_type(bindings::Dict, typ::Symbol)
+  get(bindings, typ, typ)
+end
+
 """ Remove type parameters from dependent type.
 """
 function strip_type(expr)::Symbol
   @match expr begin
     Expr(:call, [head::Symbol, args...], _) => head
     sym::Symbol => sym
-  end
-end
-
-""" Recursively remove type parameters from all dependent types in expression.
-"""
-function strip_types(expr)
-  @match expr begin
-    Expr(:(::), [fst, snd], _) => Expr(:(::), [strip_types(fst), strip_type(snd)]...)
-    Expr(head, args, _) => Expr(head, map(strip_types, args)...)
-    _ => expr
   end
 end
 

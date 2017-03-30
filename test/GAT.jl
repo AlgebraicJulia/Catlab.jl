@@ -26,6 +26,11 @@ parse_fun(expr) = GAT.parse_function(filter_lines(expr))
        GAT.JuliaFunction(:(f(x,y)), Nullable(), quote x end))
 @test_throws ParseError parse_fun(:(f(x,y)))
 
+sig = GAT.JuliaFunctionSig(:f, [:Int,:Int])
+@test GAT.parse_function_sig(:(f(x::Int,y::Int))) == sig
+@test GAT.parse_function_sig(:(f(::Int,::Int))) == sig
+@test GAT.parse_function_sig(:(f(x,y))) == GAT.JuliaFunctionSig(:f, [:Any,:Any])
+
 # GAT expressions
 #################
 
@@ -84,8 +89,7 @@ end
 
 @test isa(Category, Module)
 @test sort(names(Category)) == sort([:Category, :Ob, :Hom, :dom, :codom, :id, :compose])
-@test isa(Category.Ob, Type)
-@test isa(Category.Hom, Type)
+@test isa(Category.Ob, Type) && isa(Category.Hom, Type)
 @test isa(Category.dom, Function) && isa(Category.codom, Function)
 @test isa(Category.id, Function) && isa(Category.compose, Function)
 
@@ -103,7 +107,7 @@ terms = OrderedDict((
 ))
 category_signature = GAT.Signature(types, terms)
 
-@test Category.signature() == category_signature
+@test Category.class().signature == category_signature
 
 # Equivalent shorthand definition of Category signature
 @signature CategoryAbbrev(Ob,Hom) begin
@@ -114,25 +118,24 @@ category_signature = GAT.Signature(types, terms)
   compose(f::Hom(X,Y),g::Hom(Y,Z))::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob)
 end
 
-@test CategoryAbbrev.signature() == category_signature
+@test CategoryAbbrev.class().signature == category_signature
 
 # Methods for signature
 accessors = [ GAT.JuliaFunction(:(dom(::Hom)), :Ob),
               GAT.JuliaFunction(:(codom(::Hom)), :Ob) ]
 constructors = [ GAT.JuliaFunction(:(id(X::Ob)), :Hom),
                  GAT.JuliaFunction(:(compose(f::Hom, g::Hom)), :Hom) ]
-@test GAT.accessors(Category.signature()) == accessors
-@test GAT.constructors(Category.signature()) == constructors
-@test GAT.interface(Category) == [accessors; constructors]
+@test GAT.accessors(Category.class().signature) == accessors
+@test GAT.constructors(Category.class().signature) == constructors
+@test GAT.interface(Category.class()) == [accessors; constructors]
 
 # Utility functions
 ###################
 
+bindings = Dict((:r => :R, :s => :S, :t => :T))
+@test GAT.replace_types(bindings, :(foo(x::r,y::s)::t)) == :(foo(x::R,y::S)::T)
+@test GAT.replace_types(bindings, :(foo(r::s))) == :(foo(r::S))
+
 @test GAT.strip_type(:Ob) == :Ob
 @test GAT.strip_type(:(Hom(X,Y))) == :Hom
 @test GAT.strip_type(:(Hom(dual(X),dual(Y)))) == :Hom
-
-@test GAT.strip_types(:(id(X::Ob))) == :(id(X::Ob))
-@test GAT.strip_types(:(id(X::Ob)::Hom(X,X))) == :(id(X::Ob)::Hom)
-@test (GAT.strip_types(:(function id(X::Ob)::Hom(X,X) end)) ==
-       :(function id(X::Ob)::Hom end))
