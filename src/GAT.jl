@@ -241,8 +241,14 @@ function gen_abstract_type(cons::TypeConstructor)::Expr
   :(abstract $(cons.name){T} <: $stub_name{T})
 end
 
-""" Replace names of type constructors.
+""" Replace names of type constructors in a GAT.
 """
+function replace_types(bindings::Dict, sig::Signature)::Signature
+  Signature(OrderedDict(replace_symbols(bindings,k) => replace_types(bindings,v)
+                        for (k,v) in sig.types),
+            OrderedDict(replace_symbols(bindings,k) => replace_types(bindings,v)
+                        for (k,v) in sig.terms))
+end
 function replace_types(bindings::Dict, cons::TypeConstructor)::TypeConstructor
   TypeConstructor(replace_symbols(bindings, cons.name),
                   cons.params,
@@ -281,6 +287,7 @@ macro signature(head, body)
   @assert length(head.base) <= 1 "Multiple signature extension not supported"
   if length(head.base) == 1
     base_name, base_params = head.base[1].name, head.base[1].params
+    @assert all(p in head.main.params for p in base_params)
   else 
     base_name, base_params = nothing, []
   end
@@ -295,7 +302,22 @@ macro signature(head, body)
   expr = :(signature_code($class, $(esc(base_name)), $base_params))
   Expr(:call, esc(:eval), expr)
 end
-function signature_code(class, base_class, base_params)
+function signature_code(main_class, base_mod, base_params)
+  # Add types/terms/functions from base class, if provided.
+  if base_mod == nothing
+    class = main_class
+  else
+    base_class = base_mod.class()
+    bindings = Dict(zip(base_class.type_params, base_params))
+    main_sig = main_class.signature
+    base_sig = replace_types(bindings, base_class.signature)
+    sig = Signature(merge(base_sig.types, main_sig.types),
+                    merge(base_sig.terms, main_sig.terms))
+    functions = [ [ replace_types(bindings, f) for f in base_class.functions ]; 
+                  main_class.functions ]
+    class = Typeclass(main_class.name, main_class.type_params, sig, functions)
+  end
+  
   # Generate module: signature definition and method stubs.
   signature = class.signature
   all_functions = [ interface(signature); class.functions ]
@@ -311,7 +333,7 @@ function signature_code(class, base_class, base_params)
   # Modules must be at top level:
   # https://github.com/JuliaLang/julia/issues/21009
   mod = Expr(:module, true, class.name, body)
-  return Expr(:toplevel, mod)
+  Expr(:toplevel, mod)
 end
 
 function parse_signature_head(expr::Expr)::SignatureHead

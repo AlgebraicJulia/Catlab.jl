@@ -173,7 +173,7 @@ signature = GAT.Signature(
   OrderedDict(:M => GAT.TypeConstructor(:M, [], GAT.Context())),
   OrderedDict(
     :times => GAT.TermConstructor(:times, [:x,:y], :M,
-      GAT.Context((:x => :M, :y => M))),
+      GAT.Context((:x => :M, :y => :M))),
     :munit => GAT.TermConstructor(:munit, [], :M, GAT.Context()),
   )
 )
@@ -183,11 +183,11 @@ signature = GAT.Signature(
 ###########
 
 @instance Semigroup(Vector) begin
-  stimes(x::Vector, y::Vector) = [x; y]
+  times(x::Vector, y::Vector) = [x; y]
 end
 
-@test isa(stimes, Function)
-@test stimes([1,2],[3,4]) == [1,2,3,4]
+@test isa(times, Function)
+@test times([1,2],[3,4]) == [1,2,3,4]
 
 @signature Monoid(M) begin
   M::TYPE
