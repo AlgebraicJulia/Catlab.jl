@@ -19,8 +19,28 @@ This usage is too entrenched to overturn, however inconvenient it may be.
 
   # Extra syntax
   compose(fs::Vararg{Hom}) = foldl(compose, fs)
-
-  # Unicode syntax
   ∘(f::Hom, g::Hom) = compose(g, f)
   ∘(fs::Vararg{Hom}) = foldl(∘, fs)
+end
+
+@doc """ Doctrine of (strict) *2-category*
+""" Category2
+
+@signature Category(Ob,Hom) => Category2(Ob,Hom,Hom2) begin
+  Hom2(dom::Hom(A,B), codom::Hom(A,B))::TYPE <= (A::Ob, B::Ob)
+  
+  # Hom categories: Vertical composition
+  id(f)::Hom2(f,f) <= (A::Ob, B::Ob, f::Hom(A,B))
+  compose(α::Hom2(f,g), β::Hom2(g,h))::Hom2(f,h) <=
+    (A::Ob, B::Ob, f::Hom(A,B), g::Hom(A,B), h::Hom(A,B))
+  
+  # Horizontal compostion
+  compose2(α::Hom2(f,g), β::Hom2(h,k))::Hom2(compose(f,h),compose(g,k)) <=
+    (A::Ob, B::Ob, C::Ob, f::Hom(A,B), g::Hom(A,B), h::Hom(B,C), k::Hom(B,C))
+  
+  # Extra syntax
+  compose(αs::Vararg{Hom2}) = foldl(compose, αs)
+  compose2(αs::Vararg{Hom2}) = foldl(compose2, αs)
+  ∘(α::Hom2, β::Hom2) = compose(g, f)
+  ∘(αs::Vararg{Hom2}) = foldl(∘, αs)
 end

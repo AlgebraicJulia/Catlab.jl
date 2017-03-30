@@ -1,5 +1,5 @@
 module Doctrine
-export Category,
+export Category, Category2,
   MonoidalCategory, SymmetricMonoidalCategory,
   CompactClosedCategory,
   DaggerCategory, DaggerCompactCategory
