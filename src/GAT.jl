@@ -47,16 +47,22 @@ end
   context::Context
 end
 
-@auto_hash_equals immutable SignatureBinding
-  name::Symbol
-  params::Vector{Symbol}
-end
-
 """ Signature for a generalized algebraic theory (GAT).
 """
 @auto_hash_equals immutable Signature
   types::OrderedDict{Symbol,TypeConstructor}
   terms::OrderedDict{Symbol,TermConstructor}
+end
+
+immutable SignatureBinding
+  name::Symbol
+  params::Vector{Symbol}
+end
+
+immutable SignatureHead
+  main::SignatureBinding
+  base::Vector{SignatureBinding}
+  SignatureHead(main, base=[]) = new(main, base)
 end
 
 """ Typeclass = GAT signature + Julia-specific content.
@@ -231,9 +237,8 @@ end
 """ Generate abstract type definition from a GAT type constructor.
 """
 function gen_abstract_type(cons::TypeConstructor)::Expr
-  Expr(:abstract, Expr(:(<:), 
-    Expr(:curly, esc(cons.name), esc(:T)),
-    Expr(:curly, :BaseExpr, esc(:T))))
+  stub_name = GlobalRef(GAT, :BaseExpr)
+  :(abstract $(cons.name){T} <: $stub_name{T})
 end
 
 """ Replace names of type constructors.
@@ -271,27 +276,52 @@ end
 """ TOOD
 """
 macro signature(head, body)
-  # Parse signature: GAT and extra Julia functions.
-  head = parse_signature_binding(head)
+  # Parse signature header.
+  head = parse_signature_head(head)
+  @assert length(head.base) <= 1 "Multiple signature extension not supported"
+  if length(head.base) == 1
+    base_name, base_params = head.base[1].name, head.base[1].params
+  else 
+    base_name, base_params = nothing, []
+  end
+    
+  # Parse signature body: GAT types/terms and extra Julia functions.
   types, terms, functions = parse_signature_body(body)
   signature = Signature(types, terms)
-  class = Typeclass(head.name, head.params, signature, functions)
+  class = Typeclass(head.main.name, head.main.params, signature, functions)
   
+  # We must generate and evaluate the code at *run time* because the base
+  # signature, if specified, is not available at *parse time*.
+  expr = :(signature_code($class, $(esc(base_name)), $base_params))
+  Expr(:call, esc(:eval), expr)
+end
+function signature_code(class, base_class, base_params)
   # Generate module: signature definition and method stubs.
-  all_functions = [ interface(signature); functions ]
+  signature = class.signature
+  all_functions = [ interface(signature); class.functions ]
   body = Expr(:block, [
-    esc(Expr(:export, [cons.name for cons in values(types)]...));
-    esc(Expr(:export, unique(f.call_expr.args[1] for f in all_functions)...));
+    Expr(:export, [cons.name for cons in values(signature.types)]...);
+    Expr(:export, unique(f.call_expr.args[1] for f in all_functions)...);
   
-    [ gen_abstract_type(cons) for cons in values(types) ];
-    [ esc(gen_function(fun)) for fun in all_functions ];
+    map(gen_abstract_type, values(signature.types));
+    map(gen_function, all_functions);
     
-    esc(:(class() = $(class)));
+    :(class() = $(class));
   ]...)
   # Modules must be at top level:
   # https://github.com/JuliaLang/julia/issues/21009
-  mod = Expr(:module, true, esc(head.name), body)
+  mod = Expr(:module, true, class.name, body)
   return Expr(:toplevel, mod)
+end
+
+function parse_signature_head(expr::Expr)::SignatureHead
+  parse = parse_signature_binding
+  @match expr begin
+    (Expr(:(=>), [Expr(:tuple, bases, _), main], _)
+      => SignatureHead(parse(main), map(parse, bases)))
+    Expr(:(=>), [base, main], _) => SignatureHead(parse(main), [parse(base)])
+    _ => SignatureHead(parse(expr))
+  end
 end
 
 function parse_signature_binding(expr::Expr)::SignatureBinding
