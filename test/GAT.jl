@@ -33,9 +33,8 @@ sig = GAT.JuliaFunctionSig(:f, [:Int,:Int])
 
 # Type transformations
 bindings = Dict((:r => :R, :s => :S, :t => :T))
-@test GAT.replace_types(bindings, :(foo(x::r,y::s)::t)) == :(foo(x::R,y::S)::T)
-@test GAT.replace_types(bindings, :(foo(r::s))) == :(foo(r::S))
-@test GAT.replace_types(bindings, :(foo(xs::Vararg{r}))) == :(foo(xs::Vararg{R}))
+@test GAT.replace_symbols(bindings, :(foo(x::r,y::s)::t)) == :(foo(x::R,y::S)::T)
+@test GAT.replace_symbols(bindings, :(foo(xs::Vararg{r}))) == :(foo(xs::Vararg{R}))
 
 # GAT expressions
 #################
@@ -114,10 +113,10 @@ target = GAT.TermConstructor(:compose, [:f,:g], :(Mor(X,Z)),
 end
 
 @test isa(Category, Module)
-@test sort(names(Category)) == sort([:Category, :Ob, :Hom, :dom, :codom, :id, :compose])
+@test sort(names(Category)) == sort([:Category, :Ob, :Hom])
 @test isa(Category.Ob, Type) && isa(Category.Hom, Type)
-@test isa(Category.dom, Function) && isa(Category.codom, Function)
-@test isa(Category.id, Function) && isa(Category.compose, Function)
+@test isa(dom, Function) && isa(codom, Function)
+@test isa(id, Function) && isa(compose, Function)
 @test length(methodswith(Category.Ob)) == 1 # id
 @test length(methodswith(Category.Hom)) == 3 # compose, dom, codom
 
@@ -168,8 +167,8 @@ end
 end
 
 @test isa(Semigroup, Module) && isa(MonoidExt, Module)
-@test isa(MonoidExt.times, Function)
-@test isa(MonoidExt.munit, Function)
+@test isa(times, Function)
+@test isa(munit, Function)
 
 signature = GAT.Signature(
   [ GAT.TypeConstructor(:M, [], GAT.Context()) ],

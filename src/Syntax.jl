@@ -65,15 +65,20 @@ function syntax_code(name::Symbol, mod::Module, functions::Vector)
   class = mod.class()
   signature = class.signature
   
-  body = Expr(:block, [
-    Expr(:export, [cons.name for cons in signature.types]...);
-    Expr(:export, [cons.name for cons in signature.terms]...);
+  # Generate module with syntax types.
+  mod = Expr(:module, true, name,
+    Expr(:block, [
+      Expr(:export, [cons.name for cons in signature.types]...);  
+      map(gen_type, signature.types);
+    ]...))
   
-    map(gen_type, signature.types);
-    map(gen_term_constructor, signature.terms);
-  ]...)
-  mod = Expr(:module, true, name, body)
-  Expr(:toplevel, mod)
+  #
+  bindings = Dict(cons.name => Expr(:(.), name, QuoteNode(cons.name))
+                  for cons in signature.types)
+  fns = map(gen_term_constructor, signature.terms)
+  toplevel = [ GAT.replace_symbols(bindings, f) for f in fns ]
+  
+  Expr(:toplevel, mod, toplevel...)
 end
 
 """ Generate code for syntax type definition.

@@ -125,24 +125,14 @@ end
 
 """ Replace types in signature of Julia function.
 """
-function replace_types(bindings::Dict, f::JuliaFunction)::JuliaFunction
+function replace_symbols(bindings::Dict, f::JuliaFunction)::JuliaFunction
   JuliaFunction(
-    replace_types(bindings, f.call_expr),
-    isnull(f.return_type) ?
-      Nullable() : replace_symbols(bindings, get(f.return_type)),
-    f.impl) # Don't touch the function body.
-end
-
-""" Replace types in Julia expression.
-"""
-function replace_types(bindings::Dict, expr::Union{Symbol,Expr})
-  recurse(expr) = replace_types(bindings, expr)
-  @match expr begin
-    (Expr(:(::), [fst, snd], _) => 
-      Expr(:(::), [recurse(fst), replace_symbols(bindings, snd)]...))
-    Expr(head, args, _) => Expr(head, map(recurse, args)...)
-    _ => expr
-  end
+    replace_symbols(bindings, f.call_expr),
+    isnull(f.return_type) ? Nullable() :
+      replace_symbols(bindings, get(f.return_type)),
+    isnull(f.impl) ? Nullable() :
+      replace_symbols(bindings, get(f.impl)),
+  )
 end
 
 """ Replace symbols (occuring anywhere) in a Julia expression.
@@ -312,27 +302,30 @@ function signature_code(main_class, base_mod, base_params)
     base_sig = replace_types(bindings, base_class.signature)
     sig = Signature([base_sig.types; main_sig.types],
                     [base_sig.terms; main_sig.terms])
-    functions = [ [ replace_types(bindings, f) for f in base_class.functions ]; 
+    functions = [ [ replace_symbols(bindings, f) for f in base_class.functions ];
                   main_class.functions ]
     class = Typeclass(main_class.name, main_class.type_params, sig, functions)
   end
-  
-  # Generate module: signature definition and method stubs.
   signature = class.signature
-  all_functions = [ interface(signature); class.functions ]
-  body = Expr(:block, [
-    Expr(:export, [cons.name for cons in signature.types]...);
-    Expr(:export, unique(f.call_expr.args[1] for f in all_functions)...);
   
-    map(gen_abstract_type, signature.types);
-    map(gen_function, all_functions);
-    
-    :(class() = $(class));
-  ]...)
+  # Generate module with stub types.
+  mod = Expr(:module, true, class.name, 
+    Expr(:block, [
+      Expr(:export, [cons.name for cons in signature.types]...);
+      map(gen_abstract_type, signature.types);      
+      :(class() = $(class));
+    ]...))
+  
+  # Generate method stubs.
+  # (We put them outside the module, so the stub type names must be qualified.)
+  bindings = Dict(cons.name => Expr(:(.), class.name, QuoteNode(cons.name))
+                  for cons in signature.types)
+  fns = [ interface(signature); class.functions ]
+  toplevel = [ gen_function(replace_symbols(bindings, f)) for f in fns ]
+  
   # Modules must be at top level:
   # https://github.com/JuliaLang/julia/issues/21009
-  mod = Expr(:module, true, class.name, body)
-  Expr(:toplevel, mod)
+  Expr(:toplevel, mod, toplevel...)
 end
 
 function parse_signature_head(expr::Expr)::SignatureHead
@@ -427,17 +420,10 @@ macro instance(head, body)
   Expr(:call, esc(:eval), expr)
 end
 function instance_code(mod, instance_types, instance_fns)
-  # Explicitly import the stub definitions.
-  # FIXME: Is this necessary?
+  code = Expr(:block)
   class = mod.class()
-  class_fns = interface(class)
-  imports = [ Expr(:import, class.name, name)
-              for name in unique(f.call_expr.args[1] for f in class_fns) ]
-  code = Expr(:block, imports...)
-  
-  # Method definitions.
   bindings = Dict(zip(class.type_params, instance_types))
-  bound_fns = [ replace_types(bindings, f) for f in class_fns ]
+  bound_fns = [ replace_symbols(bindings, f) for f in interface(class) ]
   bound_fns = OrderedDict(parse_function_sig(f) => f for f in bound_fns)
   instance_fns = Dict(parse_function_sig(f) => f for f in instance_fns)
   for (sig, f) in bound_fns
