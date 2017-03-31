@@ -1,202 +1,69 @@
-module Syntax
-export
-  BaseExpr, ObExpr, MorExpr, ob_expr, mor_expr, head, args,
-  show_infix, show_latex, show_sexpr,
-  dom, codom, id, compose, ∘, otimes, opow, munit, ⊗,
-  braid, σ, mcopy, mmerge, create, delete, Δ, ∇, dual, ev, coev, dagger
+""" Syntax for a generalized algebraic theory (GAT).
 
-using AutoHashEquals
-using Match
-using Typeclass
-
-import ..Doctrine:
-  Category, dom, codom, id, compose, ∘,
-  MonoidalCategory, otimes, opow, munit, ⊗,
-  SymmetricMonoidalCategory, braid, σ,
-  InternalMonoid, InternalComonoid, mcopy, mmerge, create, delete, Δ, ∇,
-  CompactClosedCategory, dual, ev, coev,
-  DaggerCategory, dagger
-
-# Expressions
-#############
-
-""" Base type for expressions in categorical languages.
-
-We define Julia types for each "kind" or "metatype" in the language: currently
-*object* and *morphism*, perhaps later *2-morphism*, *3-morphism*, etc. The
-concrete types are structurally similar to the core type `Expr` in Julia.
-
-**Design note**: An alternative approach would represent every kind with the
-`Expr` type, using its `typ` field to distinguish objects and morphisms. I think
-that would be a mistake. It would conflate the `Ob` and `Mor` type parameters in
-the type classes. More fundamentally, it is always wrong to change the kind of
-an expression at the syntactic level, e.g., any rewrite rule that transforms an
-object expression to a morphism expression makes a category error. We should
-enforce this constraint at the type level in Julia.
-
-At the other extreme, we could create a concrete type for each syntactic element
-(`GeneratorMor`, `IdMor`, `CompositeMor`, etc). This idea is better than the
-last but leads to a large proliferation of types and makes it inconvenient to
-write generic code operating on expressions as a homogeneous data structure
-(analogous to S-expressions).
-"""
-abstract BaseExpr
-
-@auto_hash_equals immutable ObExpr <: BaseExpr
-  head::Symbol
-  args::Vector
-  ObExpr(head, args...) = new(head, [args...])
-end
-
-@auto_hash_equals immutable MorExpr <: BaseExpr
-  head::Symbol
-  args::Vector
-  MorExpr(head, args...) = new(head, [args...])
-end
-
-# Generators
-ob_expr(A::Symbol) = ObExpr(:gen, A)
-ob_expr(A::String) = ob_expr(Symbol(A))
-mor_expr(f::Symbol, dom::ObExpr, codom::ObExpr) = MorExpr(:gen, f, dom, codom)
-mor_expr(f::String, dom::ObExpr, codom::ObExpr) = mor_expr(Symbol(f), dom, codom)
-
-# Accessors and operators
-head(expr::BaseExpr)::Symbol = expr.head
-args(expr::BaseExpr)::Vector = expr.args
-
-""" Apply associative binary operation to two expressions.
-
-Maintains the normal form E(:op, [e1,e2,..]) where e1,e2,... are expressions
-that are *not* applications of :op.
-"""
-function associate{E<:BaseExpr}(op::Symbol, e1::E, e2::E)
-  terms(expr::E) = head(expr) == op ? args(expr) : [expr]
-  E(op, [terms(e1);terms(e2)]...)
-end
-
-# Category
-##########
-
-@doc """ Syntax for a *category*.
-
-Although they implement the `Category` typeclass, the expressions do not
-strictly speaking form a category because they don't satisfy the category laws,
-e.g.,
+Unlike instances of a theory, syntactic expressions don't necessarily satisfy
+the equations of the theory. For example, the default syntax operations for the
+`Category` theory don't form a category because they don't satisfy the category
+laws, e.g.,
 ```
 compose(f, id(A)) != compose(f)
 ```
-The expressions form a *syntax* for categories. Equational reasoning and the
-conversion to normal form are handled by other components. (An exception is the
-associativity of composition, which for convenience is handled at the syntactic
-level.) Similar remarks apply to the other doctrines.
-""" CategorySyntax
+Whether dependent types are enfored at runtime and whether expressions are
+automatically brought to normal form depends on the particular syntax. In
+general, a single theory may have many different syntaxes. The purpose of this
+module to make the construction of syntax simple but flexible.
+"""
+module Syntax
+export BaseExpr, head, args, first, last, associate
 
-@instance! Category ObExpr MorExpr begin
-  dom(f::MorExpr) = dom(f, Val{head(f)})
-  codom(f::MorExpr) = codom(f, Val{head(f)})
-  id(A::ObExpr) = MorExpr(:id, A)
+# Data types
+############
 
-  function compose(f::MorExpr, g::MorExpr)
-    if codom(f) != dom(g)
-      error("Incompatible domains $(codom(f)) and $(dom(f))")
-    end
-    associate(:compose, f, g)
-  end
+""" Base type for expression in the syntax of a GAT.
+
+We define Julia types for each *type constructor* in the theory, e.g., object,
+morphism*, and 2-morphism in the theory of 2-categories. Of course, Julia's
+type system does not support dependent types, so the type parameters are
+incorporated in the Julia types. (They are stored as extra data in the
+expression instances.)
+  
+The concrete types are structurally similar to the core type `Expr` in Julia.
+However, the *term constructor* is represented as a type parameter, rather than
+as a `head` field. This makes dispatch using Julia's type system more
+convenient.
+"""
+abstract BaseExpr{T}
+
+term{T}(::Type{BaseExpr{T}}) = T
+head{T}(::BaseExpr{T}) = T
+
+args(expr::BaseExpr) = expr.args
+first(expr::BaseExpr) = first(args(expr))
+last(expr::BaseExpr) = last(args(expr))
+
+type_args(expr::BaseExpr) = expr.type_args
+
+# Normal forms
+##############
+
+""" Apply associative binary operation.
+
+Maintains the normal form `op(e1,e2,...)` where `e1`,`e2`,... are expressions
+that are *not* applications of `op()`
+"""
+function associate{E<:BaseExpr}(op::Symbol, e1::E, e2::E)::E
+  terms(expr::BaseExpr) = head(expr) == op ? args(expr) : [expr]
+  E{op}([terms(e1); terms(e2)], )
 end
 
-dom(f::MorExpr, ::Type{Val{:gen}}) = args(f)[2]
-codom(f::MorExpr, ::Type{Val{:gen}}) = args(f)[3]
+""" Apply associative binary operation with units.
 
-dom(f::MorExpr, ::Type{Val{:compose}}) = dom(first(args(f)))
-codom(f::MorExpr, ::Type{Val{:compose}}) = codom(last(args(f)))
-
-dom(f::MorExpr, ::Type{Val{:id}}) = args(f)[1]
-codom(f::MorExpr, ::Type{Val{:id}}) = args(f)[1]
-
-# Monoidal category
-###################
-
-@doc """ Syntax for a (strict) *monoidal category*.
-
-To satisfy the strictness requirement, monoidal products of objects are
-automatically brought to normal form. No other equational reasoning is performed
-at the syntactic level.
-""" MonoidalCategorySyntax
-
-@instance! MonoidalCategory ObExpr MorExpr begin
-  function otimes(A::ObExpr, B::ObExpr)
-    @match (A, B) begin
-      (ObExpr(:unit,_), _) => B
-      (_, ObExpr(:unit,_)) => A
-      _ => associate(:otimes, A, B)
-    end
-  end
-  otimes(f::MorExpr, g::MorExpr) = associate(:otimes, f, g)
-  munit(::ObExpr) = ObExpr(:unit)
+Reduces a freely generated (typed) monoid to normal form.
+"""
+function associate{E<:BaseExpr}(op::Symbol, unit::Symbol, e1::E, e2::E)::E
+  if (head(e1) == unit) e2
+  elseif (head(e2) == unit) e1
+  else associate(op, e1, e2) end
 end
-
-dom(f::MorExpr, ::Type{Val{:otimes}}) = otimes(map(dom, args(f))...)
-codom(f::MorExpr, ::Type{Val{:otimes}}) = otimes(map(codom, args(f))...)
-
-# Symmetric monoidal category
-#############################
-
-@instance! SymmetricMonoidalCategory ObExpr MorExpr begin
-  braid(A::ObExpr, B::ObExpr) = MorExpr(:braid, A, B)
-end
-
-dom(f::MorExpr, ::Type{Val{:braid}}) = otimes(args(f)[1], args(f)[2])
-codom(f::MorExpr, ::Type{Val{:braid}}) = otimes(args(f)[2], args(f)[1])
-
-# Internal (co)monoid
-#####################
-
-@instance! InternalMonoid ObExpr MorExpr begin
-  mmerge(A::ObExpr) = MorExpr(:merge, A)
-  create(A::ObExpr) = MorExpr(:create, A)
-end
-
-@instance! InternalComonoid ObExpr MorExpr begin
-  mcopy(A::ObExpr) = MorExpr(:copy, A)
-  delete(A::ObExpr) = MorExpr(:delete, A)
-end
-
-dom(f::MorExpr, ::Type{Val{:copy}}) = args(f)[1]
-codom(f::MorExpr, ::Type{Val{:copy}}) = opow(args(f)[1], 2)
-
-dom(f::MorExpr, ::Type{Val{:merge}}) = opow(args(f)[1], 2)
-codom(f::MorExpr, ::Type{Val{:merge}}) = args(f)[1]
-
-dom(f::MorExpr, ::Type{Val{:create}}) = munit(args(f)[1])
-codom(f::MorExpr, ::Type{Val{:create}}) = args(f)[1]
-
-dom(f::MorExpr, ::Type{Val{:delete}}) = args(f)[1]
-codom(f::MorExpr, ::Type{Val{:delete}}) = munit(args(f)[1])
-
-# Compact closed category
-#########################
-
-@instance! CompactClosedCategory ObExpr MorExpr begin
-  dual(A::ObExpr) = ObExpr(:dual, A)
-  ev(A::ObExpr) = MorExpr(:eval, A)
-  coev(A::ObExpr) = MorExpr(:coeval, A)
-end
-
-dom(f::MorExpr, ::Type{Val{:eval}}) = otimes(args(f)[1], dual(args(f)[1]))
-codom(f::MorExpr, ::Type{Val{:eval}}) = munit(args(f)[1])
-
-dom(f::MorExpr, ::Type{Val{:coeval}}) = munit(args(f)[1])
-codom(f::MorExpr, ::Type{Val{:coeval}}) = otimes(dual(args(f)[1]), args(f)[1])
-
-# Dagger category
-#################
-
-@instance! DaggerCategory ObExpr MorExpr begin
-  dagger(f::MorExpr) = MorExpr(:dagger, f)
-end
-
-dom(f::MorExpr, ::Type{Val{:dagger}}) = codom(first(args(f)))
-codom(f::MorExpr, ::Type{Val{:dagger}}) = dom(first(args(f)))
 
 # Pretty-print
 ##############
@@ -257,64 +124,64 @@ show_latex(io::IO, expr::BaseExpr) = print(io, as_latex(expr))
 as_latex(expr::BaseExpr; kw...) = as_latex(expr, Val{head(expr)}; kw...)
 as_latex(expr::BaseExpr, ::Type{Val{:gen}}; kw...) = string(first(args(expr)))
 
-# Category
-function as_latex(id::MorExpr, ::Type{Val{:id}}; kw...)
-  subscript("\\mathrm{id}", as_latex(dom(id)))
-end
-function as_latex(expr::MorExpr, ::Type{Val{:compose}}; paren::Bool=false, kw...)
-  binary_op(expr, " ", paren)
-end
-
-# Monoidal category
-as_latex(::ObExpr, ::Type{Val{:unit}}; kw...) = "I"
-function as_latex(expr::BaseExpr, ::Type{Val{:otimes}}; paren::Bool=false, kw...)
-  binary_op(expr, "\\otimes", paren)
-end
-
-# Symmetric monoidal category
-function as_latex(expr::MorExpr, ::Type{Val{:braid}}; kw...)
-  subscript("\\sigma", join(map(as_latex, args(expr)), ","))
-end
-
-# Internal (co)monoid
-function as_latex(expr::MorExpr, ::Type{Val{:copy}}; kw...)
-  subscript("\\Delta", as_latex(dom(expr)))
-end
-function as_latex(expr::MorExpr, ::Type{Val{:delete}}; kw...)
-  subscript("e", as_latex(dom(expr)))
-end
-function as_latex(expr::MorExpr, ::Type{Val{:merge}}; kw...)
-  subscript("\\nabla", as_latex(codom(expr)))
-end
-function as_latex(expr::MorExpr, ::Type{Val{:create}}; kw...)
-  subscript("i", as_latex(codom(expr)))
-end
-
-# Closed compact category
-function as_latex(expr::ObExpr, ::Type{Val{:dual}}; kw...)
-  supscript(as_latex(first(args(expr))), "*")
-end
-function as_latex(expr::MorExpr, ::Type{Val{:eval}}; kw...)
-  subscript("\\mathrm{ev}", as_latex(first(args(expr))))
-end
-function as_latex(expr::MorExpr, ::Type{Val{:coeval}}; kw...)
-  subscript("\\mathrm{coev}", as_latex(first(args(expr))))
-end
-
-subscript(body::String, sub::String) = "$(body)_{$sub}"
-supscript(body::String, sup::String) = "$(body)^{$sup}"
-
-function binary_op(expr::BaseExpr, op::String, paren::Bool)
-  sep = op == " " ? op : " $op "
-  result = join((as_latex(a;paren=true) for a in args(expr)), sep)
-  paren ? "\\left($result\\right)" : result
-end
-
-# Dagger category
-function as_latex(expr::MorExpr, ::Type{Val{:dagger}}; kw...)
-  f = first(args(expr))
-  result = as_latex(f)
-  supscript(head(f) == :gen ? result : "\\left($result\\right)", "\\dagger")
-end
+# # Category
+# function as_latex(id::MorExpr, ::Type{Val{:id}}; kw...)
+#   subscript("\\mathrm{id}", as_latex(dom(id)))
+# end
+# function as_latex(expr::MorExpr, ::Type{Val{:compose}}; paren::Bool=false, kw...)
+#   binary_op(expr, " ", paren)
+# end
+# 
+# # Monoidal category
+# as_latex(::ObExpr, ::Type{Val{:unit}}; kw...) = "I"
+# function as_latex(expr::BaseExpr, ::Type{Val{:otimes}}; paren::Bool=false, kw...)
+#   binary_op(expr, "\\otimes", paren)
+# end
+# 
+# # Symmetric monoidal category
+# function as_latex(expr::MorExpr, ::Type{Val{:braid}}; kw...)
+#   subscript("\\sigma", join(map(as_latex, args(expr)), ","))
+# end
+# 
+# # Internal (co)monoid
+# function as_latex(expr::MorExpr, ::Type{Val{:copy}}; kw...)
+#   subscript("\\Delta", as_latex(dom(expr)))
+# end
+# function as_latex(expr::MorExpr, ::Type{Val{:delete}}; kw...)
+#   subscript("e", as_latex(dom(expr)))
+# end
+# function as_latex(expr::MorExpr, ::Type{Val{:merge}}; kw...)
+#   subscript("\\nabla", as_latex(codom(expr)))
+# end
+# function as_latex(expr::MorExpr, ::Type{Val{:create}}; kw...)
+#   subscript("i", as_latex(codom(expr)))
+# end
+# 
+# # Closed compact category
+# function as_latex(expr::ObExpr, ::Type{Val{:dual}}; kw...)
+#   supscript(as_latex(first(args(expr))), "*")
+# end
+# function as_latex(expr::MorExpr, ::Type{Val{:eval}}; kw...)
+#   subscript("\\mathrm{ev}", as_latex(first(args(expr))))
+# end
+# function as_latex(expr::MorExpr, ::Type{Val{:coeval}}; kw...)
+#   subscript("\\mathrm{coev}", as_latex(first(args(expr))))
+# end
+# 
+# subscript(body::String, sub::String) = "$(body)_{$sub}"
+# supscript(body::String, sup::String) = "$(body)^{$sup}"
+# 
+# function binary_op(expr::BaseExpr, op::String, paren::Bool)
+#   sep = op == " " ? op : " $op "
+#   result = join((as_latex(a;paren=true) for a in args(expr)), sep)
+#   paren ? "\\left($result\\right)" : result
+# end
+# 
+# # Dagger category
+# function as_latex(expr::MorExpr, ::Type{Val{:dagger}}; kw...)
+#   f = first(args(expr))
+#   result = as_latex(f)
+#   supscript(head(f) == :gen ? result : "\\left($result\\right)", "\\dagger")
+# end
 
 end

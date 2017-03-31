@@ -1,8 +1,8 @@
-import CompCat: GAT
-using CompCat.GAT
-
 using Base.Test
 import DataStructures: OrderedDict
+
+import CompCat: GAT
+using CompCat.GAT
   
 # Julia expressions
 ###################

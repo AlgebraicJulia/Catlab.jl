@@ -1,21 +1,14 @@
 module GAT
-export @signature, @instance, BaseExpr, head, args
+export @signature, @instance
 
 using AutoHashEquals
 import DataStructures: OrderedDict
 using Match
 
+import ..Syntax: BaseExpr
+
 # Data types
 ############
-
-abstract BaseExpr{T}
-
-constructor{T}(::Type{BaseExpr{T}}) = T
-head{T}(::BaseExpr{T}) = T
-args(expr::BaseExpr) = expr.args
-
-# Internal data types
-#####################
 
 @auto_hash_equals immutable JuliaFunction
   call_expr::Expr

@@ -4,10 +4,10 @@ using Base.Test
   include("GAT.jl")
 end
 
-# @testset "Syntax" begin
-#   include("Syntax.jl")
-# end
-# 
+@testset "Syntax" begin
+  include("Syntax.jl")
+end
+
 # @testset "Diagram.AbstractWiring" begin
 #   include("diagram/AbstractWiring.jl")
 # end
