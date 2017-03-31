@@ -7,13 +7,18 @@ laws, e.g.,
 ```
 compose(f, id(A)) != compose(f)
 ```
-Whether dependent types are enfored at runtime and whether expressions are
+Whether dependent types are enforced at runtime and whether expressions are
 automatically brought to normal form depends on the particular syntax. In
 general, a single theory may have many different syntaxes. The purpose of this
 module to make the construction of syntax simple but flexible.
 """
 module Syntax
-export BaseExpr, head, args, first, last, associate
+export @syntax, BaseExpr, head, args, first, last, associate
+
+import Base: ==
+
+import ..GAT
+import ..GAT: Signature, TypeConstructor, TermConstructor, JuliaFunction
 
 # Data types
 ############
@@ -39,8 +44,69 @@ head{T}(::BaseExpr{T}) = T
 args(expr::BaseExpr) = expr.args
 first(expr::BaseExpr) = first(args(expr))
 last(expr::BaseExpr) = last(args(expr))
-
 type_args(expr::BaseExpr) = expr.type_args
+
+function ==(e1::BaseExpr, e2::BaseExpr)
+  head(e1) == head(e2) && args(e1) == args(e2) && type_args(e1) == type_args(e2)
+end
+
+# Syntax
+########
+
+""" TODO
+"""
+macro syntax(syntax_name, mod_name, body=Expr(:block))
+  functions = map(GAT.parse_function, GAT.strip_lines(body).args)
+  expr = Expr(:call, :syntax_code,
+              Expr(:quote, syntax_name), esc(mod_name), functions)
+  Expr(:call, esc(:eval), expr)
+end
+function syntax_code(name::Symbol, mod::Module, functions::Vector)
+  class = mod.class()
+  signature = class.signature
+  
+  body = Expr(:block, [
+    Expr(:export, [cons.name for cons in signature.types]...);
+    Expr(:export, [cons.name for cons in signature.terms]...);
+  
+    map(gen_type, signature.types);
+    map(gen_term_constructor, signature.terms);
+  ]...)
+  mod = Expr(:module, true, name, body)
+  Expr(:toplevel, mod)
+end
+
+""" Generate code for syntax type definition.
+"""
+function gen_type(cons::TypeConstructor)::Expr
+  base_name = GlobalRef(Syntax, :BaseExpr)
+  expr = :(immutable $(cons.name){T} <: $base_name{T}
+    args::Vector{$base_name}
+    type_args::Vector{$base_name}
+  end)
+  GAT.strip_lines(expr, recurse=true)
+end
+
+""" Generate code for syntax term generators.
+
+Effectively, these generators are arity-zero term constructors that we allow to
+be created on the fly.
+"""
+function gen_term_generator(cons::TypeConstructor)::Expr
+  Expr(:call, :(sym::Symbol), )
+end
+
+""" Generate code for syntax term constructors.
+"""
+function gen_term_constructor(cons::TermConstructor)::Expr
+  sig = GAT.constructor(cons)
+  body = Expr(:call,
+    Expr(:curly, get(sig.return_type), Expr(:quote, cons.name)),
+    Expr(:vect, cons.params...),
+    Expr(:vect),
+  )
+  GAT.gen_function(JuliaFunction(sig.call_expr, sig.return_type, body))
+end
 
 # Normal forms
 ##############

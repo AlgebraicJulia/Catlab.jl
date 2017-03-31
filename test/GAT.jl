@@ -8,16 +8,16 @@ using CompCat.GAT
 ###################
 
 # Function generation
-filter_lines(expr) = GAT.filter_line(expr, recurse=true)
+strip_lines(expr) = GAT.strip_lines(expr, recurse=true)
 @test (GAT.gen_function(GAT.JuliaFunction(:(f(x,y)))) ==
-       filter_lines(:(function f(x,y) end)))
+       strip_lines(:(function f(x,y) end)))
 @test (GAT.gen_function(GAT.JuliaFunction(:(f(x::Int,y::Int)), :Int)) ==
-       filter_lines(:(function f(x::Int,y::Int)::Int end)))
+       strip_lines(:(function f(x::Int,y::Int)::Int end)))
 @test (GAT.gen_function(GAT.JuliaFunction(:(f(x)), :Bool, :(isnull(x)))) ==
-       filter_lines(:(function f(x)::Bool isnull(x) end)))
+       strip_lines(:(function f(x)::Bool isnull(x) end)))
 
 # Function parsing
-parse_fun(expr) = GAT.parse_function(filter_lines(expr))
+parse_fun(expr) = GAT.parse_function(strip_lines(expr))
 @test (parse_fun(:(function f(x,y) x end)) == 
        GAT.JuliaFunction(:(f(x,y)), Nullable(), quote x end))
 @test (parse_fun(:(function f(x::Int,y::Int)::Int x end)) == 

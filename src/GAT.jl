@@ -158,10 +158,10 @@ end
 
 """ Remove all :line annotations from a Julia expression.
 """
-function filter_line(expr::Expr; recurse::Bool=false)::Expr
+function strip_lines(expr::Expr; recurse::Bool=false)::Expr
   args = filter(x -> !(isa(x, Expr) && x.head == :line), expr.args)
   if recurse
-    args = [ isa(x, Expr) ? filter_line(x; recurse=true) : x for x in args ]
+    args = [ isa(x, Expr) ? strip_lines(x; recurse=true) : x for x in args ]
   end
   Expr(expr.head, args...)
 end
@@ -357,7 +357,7 @@ end
 function parse_signature_body(expr::Expr)
   @assert expr.head == :block
   types, terms, funs = OrderedDict(), [], []
-  for elem in filter_line(expr).args
+  for elem in strip_lines(expr).args
     if elem.head in (:(::), :call)
       cons = parse_constructor(elem)
       if isa(cons, TypeConstructor)
@@ -456,7 +456,7 @@ end
 """ Parse the body of a GAT instance definition.
 """
 function parse_instance_body(expr::Expr)::Vector{JuliaFunction}
-  @match filter_line(expr) begin
+  @match strip_lines(expr) begin
     Expr(:block, args, _) => map(parse_function, args)
     _ => throw(ParseEror("Ill-formed instance definition"))
   end  
