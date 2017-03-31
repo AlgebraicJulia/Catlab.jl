@@ -5,10 +5,12 @@ using AutoHashEquals
 import DataStructures: OrderedDict
 using Match
 
-import ..Syntax: BaseExpr
-
 # Data types
 ############
+
+""" Base type for method stubs in GAT signature.
+"""
+abstract Stub
 
 @auto_hash_equals immutable JuliaFunction
   call_expr::Expr
@@ -236,8 +238,8 @@ end
 """ Generate abstract type definition from a GAT type constructor.
 """
 function gen_abstract_type(cons::TypeConstructor)::Expr
-  stub_name = GlobalRef(GAT, :BaseExpr)
-  :(abstract $(cons.name){T} <: $stub_name{T})
+  stub_name = GlobalRef(GAT, :Stub)
+  :(abstract $(cons.name) <: $stub_name)
 end
 
 """ Replace names of type constructors in a GAT.

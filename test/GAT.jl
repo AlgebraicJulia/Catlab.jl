@@ -118,6 +118,8 @@ end
 @test isa(Category.Ob, Type) && isa(Category.Hom, Type)
 @test isa(Category.dom, Function) && isa(Category.codom, Function)
 @test isa(Category.id, Function) && isa(Category.compose, Function)
+@test length(methodswith(Category.Ob)) == 1 # id
+@test length(methodswith(Category.Hom)) == 3 # compose, dom, codom
 
 # Manually constructed signature of theory of categories
 types = [
