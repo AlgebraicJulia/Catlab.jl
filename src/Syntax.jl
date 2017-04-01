@@ -65,14 +65,15 @@ function syntax_code(name::Symbol, mod::Module, functions::Vector)
   class = mod.class()
   signature = class.signature
   
-  # Generate module with syntax types.
+  # Generate module with syntax types and term generators.
   mod = Expr(:module, true, name,
     Expr(:block, [
       Expr(:export, [cons.name for cons in signature.types]...);  
       map(gen_type, signature.types);
+      map(gen_term_generator, signature.types);
     ]...))
   
-  #
+  # Generate functions for term constructors.
   bindings = Dict(cons.name => Expr(:(.), name, QuoteNode(cons.name))
                   for cons in signature.types)
   fns = map(gen_term_constructor, signature.terms)
@@ -86,19 +87,10 @@ end
 function gen_type(cons::TypeConstructor)::Expr
   base_name = GlobalRef(Syntax, :BaseExpr)
   expr = :(immutable $(cons.name){T} <: $base_name{T}
-    args::Vector{$base_name}
+    args::Vector
     type_args::Vector{$base_name}
   end)
   GAT.strip_lines(expr, recurse=true)
-end
-
-""" Generate code for syntax term generators.
-
-Effectively, these generators are arity-zero term constructors that we allow to
-be created on the fly.
-"""
-function gen_term_generator(cons::TypeConstructor)::Expr
-  Expr(:call, :(sym::Symbol), )
 end
 
 """ Generate code for syntax term constructors.
@@ -111,6 +103,26 @@ function gen_term_constructor(cons::TermConstructor)::Expr
     Expr(:vect),
   )
   GAT.gen_function(JuliaFunction(sig.call_expr, sig.return_type, body))
+end
+
+""" Generate code for generator terms.
+
+Effectively, these generators are arity-zero term constructors that we allow to
+be created on the fly.
+"""
+function gen_term_generator(cons::TypeConstructor)::Expr
+  name = Symbol(lowercase(string(cons.name)))
+  @assert name != cons.name # XXX: We are enforcing a case convention...
+  name_param = gensym(:sym)
+  type_params = [ Expr(:(::), p, GAT.strip_type(cons.context[p]))
+                  for p in cons.params ]
+  call_expr = Expr(:call, name, :($name_param::Symbol), type_params...)
+  body = Expr(:call,
+    Expr(:curly, cons.name, QuoteNode(:generator)),
+    Expr(:vect, name_param),
+    Expr(:vect, cons.params...),
+  )
+  GAT.gen_function(JuliaFunction(call_expr, cons.name, body))
 end
 
 # Normal forms

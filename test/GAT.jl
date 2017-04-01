@@ -167,8 +167,8 @@ end
 end
 
 @test isa(Semigroup, Module) && isa(MonoidExt, Module)
-@test isa(times, Function)
-@test isa(munit, Function)
+@test length(methods(times)) == 2 # Semigroup.S, MonoidExt.M
+@test length(methods(munit)) == 1 # MonoidExt.M
 
 signature = GAT.Signature(
   [ GAT.TypeConstructor(:M, [], GAT.Context()) ],
@@ -185,28 +185,28 @@ signature = GAT.Signature(
   times(x::Vector, y::Vector) = [x; y]
 end
 
-@test isa(times, Function)
 @test times([1,2],[3,4]) == [1,2,3,4]
 
 @signature Monoid(M) begin
   M::TYPE
   munit()::M
-  mtimes(x::M,y::M)::M
+  times(x::M,y::M)::M
   
-  mtimes(xs::Vararg{M}) = foldl(mtimes, xs)
+  times(xs::Vararg{M}) = foldl(times, xs)
 end
 
-@instance Monoid(Vector) begin
-  munit(::Type{Vector}) = []
-  mtimes(x::Vector, y::Vector) = [x; y]
+# Incomplete instance of Monoid
+@test_throws ErrorException @instance Monoid(String) begin
+  times(x::AbsStringtractString, y::String) = string(x,y)
 end
 
-@test isa(munit, Function) && isa(mtimes, Function)
-@test munit(Vector) == []
-@test mtimes([1,2],[3,4]) == [1,2,3,4]
-@test mtimes([1,2],[3,4],[5,6]) == [1,2,3,4,5,6]
-
-# Incomplete instance
-@test_throws ErrorException @instance Monoid(AbstractString) begin
-  mtimes(x::AbstractString, y::AbstractString) = string(x,y)
+# Complete instance of Monoid
+@instance Monoid(String) begin
+  munit(::Type{String}) = ""
+  times(x::String, y::String) = string(x,y)
 end
+
+@test length(methods(munit)) == 3 # Monoid, MonoidExt, String
+@test munit(String) == ""
+@test times("a", "b") == "ab"
+@test times("a", "b", "c") == "abc"
