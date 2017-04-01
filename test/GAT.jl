@@ -1,3 +1,5 @@
+module TestGAT
+
 using Base.Test
 import DataStructures: OrderedDict
 
@@ -117,6 +119,8 @@ end
 @test isa(Category.Ob, Type) && isa(Category.Hom, Type)
 @test isa(dom, Function) && isa(codom, Function)
 @test isa(id, Function) && isa(compose, Function)
+
+export dom, codom, id, compose
 @test length(methodswith(Category.Ob)) == 1 # id
 @test length(methodswith(Category.Hom)) == 3 # compose, dom, codom
 
@@ -210,3 +214,5 @@ end
 @test munit(String) == ""
 @test times("a", "b") == "ab"
 @test times("a", "b", "c") == "abc"
+
+end
