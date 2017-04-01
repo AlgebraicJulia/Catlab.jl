@@ -182,6 +182,20 @@ signature = GAT.Signature(
 )
 @test MonoidExt.class().signature == signature
 
+# GAT expressions in a signature
+################################
+
+sig = Category.class().signature
+context = GAT.Context((:X => :Ob, :Y => :Ob, :Z => :Ob,
+                       :f => :(Hom(X,Y)), :g => :(Hom(Y,Z))))
+@test GAT.expand_in_context(:X, [:f,:g], context, sig) == :(dom(f))
+@test (GAT.expand_in_context(:(Hom(X,Z)), [:f,:g], context, sig) ==
+       :(Hom(dom(f),codom(g))))
+
+context = GAT.Context((:X => :Ob, :Y => :Ob, :Z => :Ob, :f => :(Hom(X,Y))))
+@test_throws ErrorException GAT.expand_in_context(:W, [:f], context, sig)
+@test_throws ErrorException GAT.expand_in_context(:Z, [:f], context, sig)
+
 # Instances
 ###########
 

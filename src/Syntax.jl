@@ -17,9 +17,11 @@ export @syntax, BaseExpr, head, args, first, last, associate, show_sexpr
 
 import Base: ==, first, last
 import Base.Meta: show_sexpr
+using Match
 
 import ..GAT
-import ..GAT: Signature, TypeConstructor, TermConstructor, JuliaFunction
+import ..GAT: Context, Signature, TypeConstructor, TermConstructor,
+  JuliaFunction
 
 # Data types
 ############
@@ -71,10 +73,10 @@ function syntax_code(name::Symbol, mod::Module, functions::Vector)
   mod = Expr(:module, true, name,
     Expr(:block, [
       Expr(:export, [cons.name for cons in signature.types]...);  
-      map(gen_type, signature.types);
-      vcat(map(gen_accessors, signature.types)...);
-      map(gen_term_generator, signature.types);
-      map(gen_term_constructor, signature.terms);
+      gen_types(signature);
+      gen_accessors(signature);
+      gen_term_generators(signature);
+      gen_term_constructors(signature);
     ]...))
   
   # Generate toplevel functions.
@@ -116,6 +118,9 @@ function gen_type(cons::TypeConstructor)::Expr
   end)
   GAT.strip_lines(expr, recurse=true)
 end
+function gen_types(sig::Signature)::Vector{Expr}
+  map(gen_type, sig.types)
+end
 
 """ Generate code for type parameter accessors.
 """
@@ -130,17 +135,27 @@ function gen_accessors(cons::TypeConstructor)::Vector{Expr}
   end
   fns
 end
+function gen_accessors(sig::Signature)::Vector{Expr}
+  vcat(map(gen_accessors, sig.types)...)
+end
 
 """ Generate code for syntax term constructors.
 """
-function gen_term_constructor(cons::TermConstructor)::Expr
-  sig = GAT.constructor(cons)
+function gen_term_constructor(cons::TermConstructor, sig::Signature)::Expr
+  f = GAT.constructor(cons)
+  type_params = @match GAT.expand_term_type_in_context(cons, sig) begin
+    Expr(:call, [name::Symbol, args...], _) => args
+    _::Symbol => []
+  end
   body = Expr(:call,
-    Expr(:curly, get(sig.return_type), Expr(:quote, cons.name)),
+    Expr(:curly, get(f.return_type), Expr(:quote, cons.name)),
     Expr(:vect, cons.params...),
-    Expr(:vect),
+    Expr(:vect, type_params...),
   )
-  GAT.gen_function(JuliaFunction(sig.call_expr, sig.return_type, body))
+  GAT.gen_function(JuliaFunction(f.call_expr, f.return_type, body))
+end
+function gen_term_constructors(sig::Signature)::Vector{Expr}
+  [ gen_term_constructor(cons, sig) for cons in sig.terms ]
 end
 
 """ Generate code for generator terms.
@@ -161,6 +176,9 @@ function gen_term_generator(cons::TypeConstructor)::Expr
     Expr(:vect, cons.params...),
   )
   GAT.gen_function(JuliaFunction(call_expr, cons.name, body))
+end
+function gen_term_generators(sig::Signature)::Vector{Expr}
+  map(gen_term_generator, sig.types)
 end
 
 # Normal forms

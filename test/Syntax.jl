@@ -74,14 +74,21 @@ g = FreeCategory.hom(:g, Y, Z)
 h = FreeCategory.hom(:h, Z, W)
 @test isa(X, FreeCategory.Ob) && isa(f, FreeCategory.Hom)
 @test_throws MethodError FreeCategory.hom(:f)
-#@test dom(f) == X && codom(f) == Y
+@test dom(f) == X
+@test codom(f) == Y
 
 @test isa(id(X), FreeCategory.Hom)
-#@test dom(id(X)) == X && codom(id(X)) == X
+@test dom(id(X)) == X
+@test codom(id(X)) == X
 
 @test isa(compose(f,g), FreeCategory.Hom)
+@test dom(compose(f,g)) == X
+@test codom(compose(f,g)) == Z
+
 @test compose(compose(f,g),h) == compose(f,compose(g,h))
 @test compose(f,g,h) == compose(compose(f,g),h)
+@test dom(compose(f,g,h)) == X
+@test codom(compose(f,g,h)) == W
 
 # Pretty-print
 ##############

@@ -404,6 +404,55 @@ function interface(class::Typeclass)::Vector{JuliaFunction}
   [ interface(class.signature); class.functions ]
 end
 
+# GAT expressions in a signature
+################################
+
+""" Expand context variables that occur implicitly in an expression.
+
+Reference: (Cartmell, 1986, Sec 10: 'Informal syntax').
+"""
+function expand_in_context(expr, params::Vector{Symbol},
+                           context::Context, sig::Signature)
+  @match expr begin
+    Expr(:call, [name::Symbol, args...], _) => begin
+      expanded = [expand_in_context(e, params, context, sig) for e in args]
+      Expr(:call, name, expanded...)
+    end
+    name::Symbol => begin
+      if name in params
+        name
+      elseif haskey(context, name)
+        expand_symbol_in_context(name, params, context, sig)
+      else
+        error("Name $name missing from context $context")
+      end
+    end
+    _ => throw(ParseError("Ill-formed raw expression $expr"))
+  end
+end
+
+function expand_symbol_in_context(sym::Symbol, params::Vector{Symbol},
+                                  context::Context, sig::Signature)
+  names = collect(keys(context))
+  start = findfirst(names .== sym) + 1
+  for name in names[start:end]
+    expr = context[name]
+    if isa(expr, Expr) && expr.head == :call && sym in expr.args[2:end]
+      # FIXME: This search will break for overloaded types!
+      cons = sig.types[findfirst(x -> x.name == expr.args[1], sig.types)]
+      accessor = cons.params[findfirst(expr.args[2:end] .== sym)]
+      expanded = Expr(:call, accessor, name)
+      return expand_in_context(expanded, params, context, sig)
+    end
+  end
+  error("Name $sym does not occur explicitly among $params in context $context")
+end
+
+function expand_term_type_in_context(cons::TermConstructor, sig::Signature)
+  isa(cons.typ, Symbol) ? cons.typ :
+    expand_in_context(cons.typ, cons.params, cons.context, sig)
+end
+
 # Instances
 ###########
 

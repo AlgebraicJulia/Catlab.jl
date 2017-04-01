@@ -4,7 +4,7 @@ using ..GAT
 
 To avoid associators and unitors, we assume the monoidal category is *strict*.
 By the coherence theorem there is no loss of generality, but we may add a
-typeclass for weak monoidal categories later.
+signature for weak monoidal categories later.
 """ MonoidalCategory
 
 @signature Category(Ob,Hom) => MonoidalCategory(Ob,Hom) begin
