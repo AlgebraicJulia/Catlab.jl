@@ -13,9 +13,10 @@ general, a single theory may have many different syntaxes. The purpose of this
 module to make the construction of syntax simple but flexible.
 """
 module Syntax
-export @syntax, BaseExpr, head, args, first, last, associate
+export @syntax, BaseExpr, head, args, first, last, associate, show_sexpr
 
 import Base: ==, first, last
+import Base.Meta: show_sexpr
 
 import ..GAT
 import ..GAT: Signature, TypeConstructor, TermConstructor, JuliaFunction
@@ -56,6 +57,7 @@ end
 """ TODO
 """
 macro syntax(syntax_name, mod_name, body=Expr(:block))
+  @assert body.head == :block
   functions = map(GAT.parse_function, GAT.strip_lines(body).args)
   expr = Expr(:call, :syntax_code,
               Expr(:quote, syntax_name), esc(mod_name), functions)
@@ -190,10 +192,10 @@ end
 # Pretty-print
 ##############
 
-""" Show the expression as an S-expression.
+""" Show the syntax expression as an S-expression.
 
-The transformation is *not* one-to-one since the domains and codomains are
-discarded.
+The transformation is *not* one-to-one since type arguments (e.g. domains and
+codomains of morphisms) are not shown.
 
 Cf. the standard library function `Meta.show_sexpr`.
 """
@@ -201,8 +203,8 @@ show_sexpr(expr::BaseExpr) = show_expr(STDOUT, expr)
 show_sexpr(io::IO, expr::BaseExpr) = print(io, as_sexpr(expr))
 
 function as_sexpr(expr::BaseExpr)::String
-  if head(expr) == :gen
-    repr(args(expr)[1])
+  if head(expr) == :generator
+    repr(first(expr))
   else
     string("(", join([head(expr), map(as_sexpr,args(expr))...], " "), ")")
   end

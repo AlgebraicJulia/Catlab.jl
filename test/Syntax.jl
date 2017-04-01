@@ -6,9 +6,11 @@ tests of the Syntax module.
 module TestSyntax
 
 using Base.Test
-
 using CompCat.GAT
 using CompCat.Syntax
+
+# Syntax
+########
 
 # Simple case: Monoid (no dependent types)
 
@@ -54,23 +56,45 @@ e = munit(FreeMonoidAssocUnit.M)
   Hom(dom::Ob, codom::Ob)::TYPE
   
   id(X::Ob)::Hom(X,X)
-  compose(f::Hom(X,Y),g::Hom(Y,Z))::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob)
+  compose(f::Hom(X,Y), g::Hom(Y,Z))::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob)
   
   compose(fs::Vararg{Hom}) = foldl(compose, fs)
 end
 
-@syntax FreeCategory Category
+@syntax FreeCategory Category begin
+  compose(f::Hom, g::Hom) = associate(FreeCategory.compose(f,g))
+end
+
 @test isa(FreeCategory, Module)
 @test sort(names(FreeCategory)) == sort([:FreeCategory, :Ob, :Hom])
 
-X, Y, Z = FreeCategory.ob(:X), FreeCategory.ob(:Y), FreeCategory.ob(:Z)
-f, g = FreeCategory.hom(:f, X, Y), FreeCategory.hom(:f, Y, Z)
+X, Y, Z, W = map(FreeCategory.ob, [:X, :Y, :Z, :W])
+f = FreeCategory.hom(:f, X, Y)
+g = FreeCategory.hom(:g, Y, Z)
+h = FreeCategory.hom(:h, Z, W)
 @test isa(X, FreeCategory.Ob) && isa(f, FreeCategory.Hom)
 @test_throws MethodError FreeCategory.hom(:f)
 #@test dom(f) == X && codom(f) == Y
 
 @test isa(id(X), FreeCategory.Hom)
 #@test dom(id(X)) == X && codom(id(X)) == X
+
 @test isa(compose(f,g), FreeCategory.Hom)
+@test compose(compose(f,g),h) == compose(f,compose(g,h))
+@test compose(f,g,h) == compose(compose(f,g),h)
+
+# Pretty-print
+##############
+
+A, B = FreeCategory.ob(:A), FreeCategory.ob(:B)
+f, g, = FreeCategory.hom(:f, A, B), FreeCategory.hom(:g, B, A)
+
+# S-expressions
+sexpr(expr::BaseExpr) = sprint(show_sexpr, expr)
+
+@test sexpr(A) == ":A"
+@test sexpr(f) == ":f"
+@test sexpr(compose(f,g)) == "(compose :f :g)"
+@test sexpr(compose(f,g,f)) == "(compose :f :g :f)"
 
 end
