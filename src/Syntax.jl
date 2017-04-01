@@ -15,7 +15,7 @@ module to make the construction of syntax simple but flexible.
 module Syntax
 export @syntax, BaseExpr, head, args, first, last, associate
 
-import Base: ==
+import Base: ==, first, last
 
 import ..GAT
 import ..GAT: Signature, TypeConstructor, TermConstructor, JuliaFunction
@@ -65,20 +65,42 @@ function syntax_code(name::Symbol, mod::Module, functions::Vector)
   class = mod.class()
   signature = class.signature
   
-  # Generate module with syntax types and term generators.
+  # Generate module with syntax types and type/term generators.
   mod = Expr(:module, true, name,
     Expr(:block, [
       Expr(:export, [cons.name for cons in signature.types]...);  
       map(gen_type, signature.types);
+      vcat(map(gen_accessors, signature.types)...);
       map(gen_term_generator, signature.types);
+      map(gen_term_constructor, signature.terms);
     ]...))
   
-  # Generate functions for term constructors.
+  # Generate toplevel functions.
+  toplevel = []
   bindings = Dict(cons.name => Expr(:(.), name, QuoteNode(cons.name))
                   for cons in signature.types)
-  fns = map(gen_term_constructor, signature.terms)
-  toplevel = [ GAT.replace_symbols(bindings, f) for f in fns ]
-  
+  syntax_fns = Dict(GAT.parse_function_sig(f) => f for f in functions)
+  for f in GAT.interface(class)
+    sig = GAT.parse_function_sig(f)
+    if haskey(syntax_fns, sig)
+      # Case 1: The method is overriden in the syntax body.
+      expr = GAT.gen_function(GAT.replace_symbols(bindings, syntax_fns[sig]))
+    elseif !isnull(f.impl)
+      # Case 2: The method is already implemented in signature.
+      expr = GAT.gen_function(GAT.replace_symbols(bindings, f))
+    else
+      # Case 3: Call the default syntax method.
+      params = [ gensym("x$i") for i in eachindex(sig.types) ]
+      call_expr = Expr(:call, sig.name, 
+        [ Expr(:(::), p, t) for (p,t) in zip(params, sig.types) ]...)
+      body = Expr(:call, Expr(:(.), name, QuoteNode(sig.name)), params...)
+      f_impl = JuliaFunction(call_expr, f.return_type, body)
+      # Inline these very short functions.
+      expr = Expr(:macrocall, Symbol("@inline"),
+                  GAT.gen_function(GAT.replace_symbols(bindings, f_impl)))
+    end
+    push!(toplevel, expr)
+  end
   Expr(:toplevel, mod, toplevel...)
 end
 
@@ -91,6 +113,20 @@ function gen_type(cons::TypeConstructor)::Expr
     type_args::Vector{$base_name}
   end)
   GAT.strip_lines(expr, recurse=true)
+end
+
+""" Generate code for type parameter accessors.
+"""
+function gen_accessors(cons::TypeConstructor)::Vector{Expr}
+  fns = []
+  sym = gensym(:x)
+  for (i, param) in enumerate(cons.params)
+    call_expr = Expr(:call, param, Expr(:(::), sym, cons.name))
+    return_type = GAT.strip_type(cons.context[param])
+    body = Expr(:ref, Expr(:(.), sym, QuoteNode(:type_args)), i)
+    push!(fns, GAT.gen_function(JuliaFunction(call_expr, return_type, body)))
+  end
+  fns
 end
 
 """ Generate code for syntax term constructors.
@@ -133,19 +169,22 @@ end
 Maintains the normal form `op(e1,e2,...)` where `e1`,`e2`,... are expressions
 that are *not* applications of `op()`
 """
-function associate{E<:BaseExpr}(op::Symbol, e1::E, e2::E)::E
-  terms(expr::BaseExpr) = head(expr) == op ? args(expr) : [expr]
-  E{op}([terms(e1); terms(e2)], )
+function associate{E<:BaseExpr}(expr::E)::E
+  op, e1, e2 = head(expr), first(expr), last(expr)
+  args1 = head(e1) == op ? args(e1) : [e1]
+  args2 = head(e2) == op ? args(e2) : [e2]
+  E([args1; args2], type_args(expr))
 end
 
 """ Apply associative binary operation with units.
 
 Reduces a freely generated (typed) monoid to normal form.
 """
-function associate{E<:BaseExpr}(op::Symbol, unit::Symbol, e1::E, e2::E)::E
+function associate(unit::Symbol, expr::BaseExpr)::BaseExpr
+  e1, e2 = first(expr), last(expr)
   if (head(e1) == unit) e2
   elseif (head(e2) == unit) e1
-  else associate(op, e1, e2) end
+  else associate(expr) end
 end
 
 # Pretty-print

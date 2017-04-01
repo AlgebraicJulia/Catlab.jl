@@ -10,6 +10,8 @@ using Base.Test
 using CompCat.GAT
 using CompCat.Syntax
 
+# Simple case: Monoid (no dependent types)
+
 @signature Monoid(M) begin
   M::TYPE
   munit()::M
@@ -27,9 +29,25 @@ x, y, z = FreeMonoid.m(:x), FreeMonoid.m(:y), FreeMonoid.m(:z)
 @test isa(munit(FreeMonoid.M), FreeMonoid.M)
 @test mtimes(mtimes(x,y),z) != mtimes(x,mtimes(y,z))
 
-# @syntax FreeMonoidAssoc Monoid begin
-#   mtimes(x::M, y::M) = Super.mtimes(x,y)
-# end
+@syntax FreeMonoidAssoc Monoid begin
+  mtimes(x::M, y::M) = associate(FreeMonoidAssoc.mtimes(x,y))
+end
+
+x, y, z = FreeMonoidAssoc.m(:x), FreeMonoidAssoc.m(:y), FreeMonoidAssoc.m(:z)
+e = munit(FreeMonoidAssoc.M)
+@test mtimes(mtimes(x,y),z) == mtimes(x,mtimes(y,z))
+@test mtimes(e,x) != x && mtimes(x,e) != x
+
+@syntax FreeMonoidAssocUnit Monoid begin
+  mtimes(x::M, y::M) = associate(:munit, FreeMonoidAssocUnit.mtimes(x,y))
+end
+
+x, y, z = FreeMonoidAssocUnit.m(:x), FreeMonoidAssocUnit.m(:y), FreeMonoidAssocUnit.m(:z)
+e = munit(FreeMonoidAssocUnit.M)
+@test mtimes(mtimes(x,y),z) == mtimes(x,mtimes(y,z))
+@test mtimes(e,x) == x && mtimes(x,e) == x
+
+# Category (includes dependent types)
 
 @signature Category(Ob,Hom) begin
   Ob::TYPE
@@ -49,8 +67,10 @@ X, Y, Z = FreeCategory.ob(:X), FreeCategory.ob(:Y), FreeCategory.ob(:Z)
 f, g = FreeCategory.hom(:f, X, Y), FreeCategory.hom(:f, Y, Z)
 @test isa(X, FreeCategory.Ob) && isa(f, FreeCategory.Hom)
 @test_throws MethodError FreeCategory.hom(:f)
+#@test dom(f) == X && codom(f) == Y
 
 @test isa(id(X), FreeCategory.Hom)
+#@test dom(id(X)) == X && codom(id(X)) == X
 @test isa(compose(f,g), FreeCategory.Hom)
 
 end

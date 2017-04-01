@@ -97,8 +97,8 @@ function parse_function_sig(call_expr::Expr)::JuliaFunctionSig
     _ => throw(ParseError("Ill-formed function signature $call_expr"))
   end
   types = [ @match expr begin
-      Expr(:(::), [_, typ::Symbol], _) => typ
-      Expr(:(::), [typ::Symbol], _) => typ
+      Expr(:(::), [_, typ], _) => typ
+      Expr(:(::), [typ], _) => typ
       _ => :Any
     end for expr in args ]
   JuliaFunctionSig(name, types)
@@ -375,9 +375,9 @@ function accessors(sig::Signature)::Vector{JuliaFunction}
   vcat(map(accessors, sig.types)...)
 end
 function accessors(cons::TypeConstructor)::Vector{JuliaFunction}
-  [ JuliaFunction(Expr(:call, p, Expr(:(::), cons.name)),
-                  strip_type(cons.context[p]))
-    for p in cons.params ]
+  [ JuliaFunction(Expr(:call, param, Expr(:(::), cons.name)),
+                  strip_type(cons.context[param]))
+    for param in cons.params ]
 end
 
 """ Julia functions for term constructors of GAT.
