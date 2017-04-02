@@ -9,9 +9,6 @@ using Base.Test
 using CompCat.GAT
 using CompCat.Syntax
 
-# Syntax
-########
-
 # Simple case: Monoid (no dependent types)
 
 @signature Monoid(M) begin
@@ -32,7 +29,7 @@ x, y, z = FreeMonoid.m(:x), FreeMonoid.m(:y), FreeMonoid.m(:z)
 @test mtimes(mtimes(x,y),z) != mtimes(x,mtimes(y,z))
 
 @syntax FreeMonoidAssoc Monoid begin
-  mtimes(x::M, y::M) = associate(FreeMonoidAssoc.mtimes(x,y))
+  mtimes(x::M, y::M) = associate(Super.mtimes(x,y))
 end
 
 x, y, z = FreeMonoidAssoc.m(:x), FreeMonoidAssoc.m(:y), FreeMonoidAssoc.m(:z)
@@ -41,7 +38,7 @@ e = munit(FreeMonoidAssoc.M)
 @test mtimes(e,x) != x && mtimes(x,e) != x
 
 @syntax FreeMonoidAssocUnit Monoid begin
-  mtimes(x::M, y::M) = associate_unit(:munit, FreeMonoidAssocUnit.mtimes(x,y))
+  mtimes(x::M, y::M) = associate_unit(:munit, Super.mtimes(x,y))
 end
 
 x, y, z = FreeMonoidAssocUnit.m(:x), FreeMonoidAssocUnit.m(:y), FreeMonoidAssocUnit.m(:z)
@@ -62,7 +59,7 @@ e = munit(FreeMonoidAssocUnit.M)
 end
 
 @syntax FreeCategory Category begin
-  compose(f::Hom, g::Hom) = associate(FreeCategory.compose(f,g))
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g))
 end
 
 @test isa(FreeCategory, Module)
@@ -92,8 +89,7 @@ h = FreeCategory.hom(:h, Z, W)
 @test codom(compose(f,g,h)) == W
 
 @syntax FreeCategoryStrict Category begin
-  compose(f::Hom, g::Hom) =
-    associate(FreeCategoryStrict.compose(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end
 
 X, Y = FreeCategoryStrict.ob(:X), FreeCategoryStrict.ob(:Y)
@@ -102,19 +98,5 @@ g = FreeCategoryStrict.hom(:g, Y, X)
 
 @test isa(compose(f,g,f), FreeCategoryStrict.Hom)
 @test_throws SyntaxDomainError compose(f,f)
-
-# Pretty-print
-##############
-
-A, B = FreeCategory.ob(:A), FreeCategory.ob(:B)
-f, g, = FreeCategory.hom(:f, A, B), FreeCategory.hom(:g, B, A)
-
-# S-expressions
-sexpr(expr::BaseExpr) = sprint(show_sexpr, expr)
-
-@test sexpr(A) == ":A"
-@test sexpr(f) == ":f"
-@test sexpr(compose(f,g)) == "(compose :f :g)"
-@test sexpr(compose(f,g,f)) == "(compose :f :g :f)"
 
 end

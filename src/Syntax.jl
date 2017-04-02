@@ -93,8 +93,9 @@ function syntax_code(name::Symbol, mod::Module, functions::Vector)
   
   # Generate toplevel functions.
   toplevel = []
-  bindings = Dict(cons.name => Expr(:(.), name, QuoteNode(cons.name))
-                  for cons in signature.types)
+  bindings = Dict{Symbol,Any}(
+    c.name => Expr(:(.), name, QuoteNode(c.name)) for c in signature.types)
+  bindings[:Super] = name
   syntax_fns = Dict(GAT.parse_function_sig(f) => f for f in functions)
   for f in GAT.interface(class)
     sig = GAT.parse_function_sig(f)
