@@ -456,8 +456,8 @@ function expand_symbol_in_context(sym::Symbol, params::Vector{Symbol},
   # but not in
   #   (:X => :Ob, :Y => :Ob, :f => :(Hom(otimes(X,Y))))
   names = collect(keys(context))
-  start = findfirst(names .== sym) + 1
-  for name in names[start:end]
+  start = findfirst(names .== sym)
+  for name in names[start+1:end]
     expr = context[name]
     if isa(expr, Expr) && expr.head == :call && sym in expr.args[2:end]
       cons = get_type(sig, expr.args[1])
@@ -475,6 +475,33 @@ of a term constructor.
 function expand_term_type_in_context(cons::TermConstructor, sig::Signature)
   isa(cons.typ, Symbol) ? cons.typ :
     expand_in_context(cons.typ, cons.params, cons.context, sig)
+end
+
+""" Implicit equations defined by a context.
+
+This function allows a generalized algebraic theory (GAT) to be expressed as
+an essentially algebraic theory, i.e., as partial functions whose domains are
+defined by equations.
+
+References:
+ - (Cartmell, 1986, Sec 6: "Essentially algebraic theories and categories with 
+    finite limits")
+ - (Freyd, 1972, "Aspects of topoi")
+"""
+function equations(context::Context, sig::Signature)::Vector{Pair}
+  # The same restrictions as `expand_symbol_in_context` apply here.
+  eqs = Pair[]
+  names = collect(keys(context))
+  for (start, var) in enumerate(names)
+    for name in names[start+1:end]
+      expr = context[name]
+      expr = isa(expr, Symbol) ? Expr(:call, expr) : expr
+      cons = get_type(sig, expr.args[1])
+      accessors = cons.params[find(expr.args[2:end] .== var)]
+      append!(eqs, ( Expr(:call, a, name) => var for a in accessors ))
+    end
+  end
+  eqs
 end
 
 # Instances
