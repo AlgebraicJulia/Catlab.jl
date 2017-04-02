@@ -29,6 +29,17 @@ g = mor_expr(:g, B, A)
 @test g∘f == compose(f,g)
 @test f∘g∘f == compose(compose(f,g),f)
 
+# 2-category
+############
+
+A, B = FreeCategory2.ob(:A), FreeCategory2.ob(:B)
+f, g, h = [ FreeCategory2.hom(sym, A, B) for sym in [:f,:g,:h] ]
+α, β = FreeCategory2.hom2(:α, f, g), FreeCategory2.hom2(:β, g, h)
+@test dom2(α) == f
+@test codom2(α) == g
+@test dom2(compose(α,β)) == f
+@test codom2(compose(α,β)) == h
+
 # Monoidal category
 ###################
 

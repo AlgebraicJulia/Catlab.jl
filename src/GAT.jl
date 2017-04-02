@@ -397,11 +397,27 @@ function constructor(cons::TermConstructor)::JuliaFunction
   JuliaFunction(call_expr, return_type)
 end
 
+""" Complete set of Julia functions for a signature.
+"""
 function interface(sig::Signature)::Vector{JuliaFunction}
   [ accessors(sig); constructors(sig) ]
 end
+
+""" Complete set of Julia functions for a type class.
+"""
 function interface(class::Typeclass)::Vector{JuliaFunction}
   [ interface(class.signature); class.functions ]
+end
+
+""" Get type constructor by name.
+
+Unlike term constructors, type constructors cannot be overloaded, so there is at
+most one type constructor with a given name.
+"""
+function get_type(sig::Signature, name::Symbol)::TypeConstructor
+  indices = find(cons -> cons.name == name, sig.types)
+  @assert length(indices) == 1
+  sig.types[indices[1]]
 end
 
 # GAT expressions in a signature
@@ -430,16 +446,21 @@ function expand_in_context(expr, params::Vector{Symbol},
     _ => throw(ParseError("Ill-formed raw expression $expr"))
   end
 end
-
 function expand_symbol_in_context(sym::Symbol, params::Vector{Symbol},
                                   context::Context, sig::Signature)
+  # This code expands symbols that occur as direct arguments to type
+  # constructors. If there are term constructors in between, it does not work:
+  # indeed, it cannot work in general because the term constructors are not
+  # necessarily injective. For example, we can expand :X in
+  #   (:X => :Ob, :f => :(Hom(X)))
+  # but not in
+  #   (:X => :Ob, :Y => :Ob, :f => :(Hom(otimes(X,Y))))
   names = collect(keys(context))
   start = findfirst(names .== sym) + 1
   for name in names[start:end]
     expr = context[name]
     if isa(expr, Expr) && expr.head == :call && sym in expr.args[2:end]
-      # FIXME: This search will break for overloaded types!
-      cons = sig.types[findfirst(x -> x.name == expr.args[1], sig.types)]
+      cons = get_type(sig, expr.args[1])
       accessor = cons.params[findfirst(expr.args[2:end] .== sym)]
       expanded = Expr(:call, accessor, name)
       return expand_in_context(expanded, params, context, sig)
@@ -448,6 +469,9 @@ function expand_symbol_in_context(sym::Symbol, params::Vector{Symbol},
   error("Name $sym does not occur explicitly among $params in context $context")
 end
 
+""" Expand context variables that occur implicitly in the type expression 
+of a term constructor.
+"""
 function expand_term_type_in_context(cons::TermConstructor, sig::Signature)
   isa(cons.typ, Symbol) ? cons.typ :
     expand_in_context(cons.typ, cons.params, cons.context, sig)
