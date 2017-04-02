@@ -498,10 +498,23 @@ function equations(context::Context, sig::Signature)::Vector{Pair}
       expr = isa(expr, Symbol) ? Expr(:call, expr) : expr
       cons = get_type(sig, expr.args[1])
       accessors = cons.params[find(expr.args[2:end] .== var)]
-      append!(eqs, ( Expr(:call, a, name) => var for a in accessors ))
+      append!(eqs, (Expr(:call, a, name) => var for a in accessors))
     end
   end
   eqs
+end
+
+""" Implicit equations defined by context, allowing for implicit variables.
+"""
+function equations(params::Vector{Symbol}, context::Context,
+                   sig::Signature)::Vector{Pair}
+  eqs = ((expand_in_context(lhs, params, context, sig) =>
+          expand_in_context(rhs, params, context, sig))
+         for (lhs, rhs) in equations(context, sig))
+  # Remove tautologies (expr == expr) resulting from expansions.
+  # FIXME: Should we worry about redundancies from the symmetry of equality,
+  # i.e., (expr1 == expr2) && (expr2 == expr1)?
+  collect(filter(eq -> eq.first != eq.second, eqs))
 end
 
 # Instances

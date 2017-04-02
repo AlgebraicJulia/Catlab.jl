@@ -197,14 +197,15 @@ context = GAT.Context((:X => :Ob, :Y => :Ob, :Z => :Ob, :f => :(Hom(X,Y))))
 @test_throws ErrorException GAT.expand_in_context(:Z, [:f], context, sig)
 
 context = GAT.Context((:X => :Ob, :Y => :Ob, :f => :(Hom(X,Y))))
-eqs = [ :(dom(f)) => :X, :(codom(f)) => :Y ]
-@test GAT.equations(context, sig) == eqs
+@test GAT.equations(context, sig) == [ :(dom(f)) => :X, :(codom(f)) => :Y ]
+@test GAT.equations([:f], context, sig) == []
 
 context = GAT.Context((:X => :Ob, :Y => :Ob, :Z => :Ob,
                        :f => :(Hom(X,Y)), :g => :(Hom(Y,Z))))
-eqs = [ :(dom(f)) => :X, :(codom(f)) => :Y,
-        :(dom(g)) => :Y, :(codom(g)) => :Z ]
-@test GAT.equations(context, sig) == eqs
+@test (GAT.equations(context, sig) ==
+       [ :(dom(f)) => :X, :(codom(f)) => :Y,
+         :(dom(g)) => :Y, :(codom(g)) => :Z ])
+@test GAT.equations([:f,:g], context, sig) == [ :(dom(g)) => :(codom(f)) ]
 
 # Instances
 ###########
