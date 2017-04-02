@@ -41,7 +41,7 @@ e = munit(FreeMonoidAssoc.M)
 @test mtimes(e,x) != x && mtimes(x,e) != x
 
 @syntax FreeMonoidAssocUnit Monoid begin
-  mtimes(x::M, y::M) = associate(:munit, FreeMonoidAssocUnit.mtimes(x,y))
+  mtimes(x::M, y::M) = associate_unit(:munit, FreeMonoidAssocUnit.mtimes(x,y))
 end
 
 x, y, z = FreeMonoidAssocUnit.m(:x), FreeMonoidAssocUnit.m(:y), FreeMonoidAssocUnit.m(:z)
@@ -84,11 +84,24 @@ h = FreeCategory.hom(:h, Z, W)
 @test isa(compose(f,g), FreeCategory.Hom)
 @test dom(compose(f,g)) == X
 @test codom(compose(f,g)) == Z
+@test isa(compose(f,f), FreeCategory.Hom) # Doesn't check domains.
 
 @test compose(compose(f,g),h) == compose(f,compose(g,h))
 @test compose(f,g,h) == compose(compose(f,g),h)
 @test dom(compose(f,g,h)) == X
 @test codom(compose(f,g,h)) == W
+
+@syntax FreeCategoryStrict Category begin
+  compose(f::Hom, g::Hom) =
+    associate(FreeCategoryStrict.compose(f,g; strict=true))
+end
+
+X, Y = FreeCategoryStrict.ob(:X), FreeCategoryStrict.ob(:Y)
+f = FreeCategoryStrict.hom(:f, X, Y)
+g = FreeCategoryStrict.hom(:g, Y, X)
+
+@test isa(compose(f,g,f), FreeCategoryStrict.Hom)
+@test_throws SyntaxDomainError compose(f,f)
 
 # Pretty-print
 ##############

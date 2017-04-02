@@ -13,9 +13,10 @@ general, a single theory may have many different syntaxes. The purpose of this
 module to make the construction of syntax simple but flexible.
 """
 module Syntax
-export @syntax, BaseExpr, head, args, first, last, associate, show_sexpr
+export @syntax, BaseExpr, SyntaxDomainError, head, args, first, last,
+  associate, associate_unit, show_sexpr
 
-import Base: ==, first, last
+import Base: ==, first, last, showerror
 import Base.Meta: show_sexpr
 using Match
 
@@ -51,6 +52,17 @@ type_args(expr::BaseExpr) = expr.type_args
 
 function ==(e1::BaseExpr, e2::BaseExpr)
   head(e1) == head(e2) && args(e1) == args(e2) && type_args(e1) == type_args(e2)
+end
+
+type SyntaxDomainError <: Exception
+  constructor::Symbol
+  args::Vector
+end
+
+function showerror(io::IO, exc::DomainError)
+  print(io, "Domain error in term constructor $(exc.constructor)(")
+  join(io, exc.args, ",")
+  print(io, ")")
 end
 
 # Syntax
@@ -142,17 +154,39 @@ end
 """ Generate code for syntax term constructors.
 """
 function gen_term_constructor(cons::TermConstructor, sig::Signature)::Expr
-  f = GAT.constructor(cons)
-  type_params = @match GAT.expand_term_type_in_context(cons, sig) begin
+  head = GAT.constructor(cons)
+  call_expr, return_type = head.call_expr, get(head.return_type)
+  body = Expr(:block)
+  
+  # Create expression to check constructor domain.
+  eqs = GAT.equations(cons, sig)
+  if !isempty(eqs)
+    clauses = [ Expr(:call,:(==),lhs,rhs) for (lhs,rhs) in eqs ]
+    conj = foldr((x,y) -> Expr(:(&&),x,y), clauses)
+    insert!(call_expr.args, 2,
+      Expr(:parameters, Expr(:kw, :strict, false)))
+    push!(body.args,
+      Expr(:if,
+        Expr(:(&&), :strict, Expr(:call, :(!), conj)),
+        Expr(:call, :throw,
+          Expr(:call, GlobalRef(Syntax, :SyntaxDomainError),
+            Expr(:quote, cons.name),
+            Expr(:vect, cons.params...)))))
+  end
+  
+  # Create call to expression constructor. Requires expanding the implicit
+  # variables in the type expression.
+  type_params = @match GAT.expand_term_type(cons, sig) begin
     Expr(:call, [name::Symbol, args...], _) => args
     _::Symbol => []
   end
-  body = Expr(:call,
-    Expr(:curly, get(f.return_type), Expr(:quote, cons.name)),
-    Expr(:vect, cons.params...),
-    Expr(:vect, type_params...),
-  )
-  GAT.gen_function(JuliaFunction(f.call_expr, f.return_type, body))
+  push!(body.args,
+    Expr(:call,
+      Expr(:curly, return_type, Expr(:quote, cons.name)),
+      Expr(:vect, cons.params...),
+      Expr(:vect, type_params...)))
+  
+  GAT.gen_function(JuliaFunction(call_expr, return_type, body))
 end
 function gen_term_constructors(sig::Signature)::Vector{Expr}
   [ gen_term_constructor(cons, sig) for cons in sig.terms ]
@@ -196,11 +230,11 @@ function associate{E<:BaseExpr}(expr::E)::E
   E([args1; args2], type_args(expr))
 end
 
-""" Apply associative binary operation with units.
+""" Apply associative binary operation with unit.
 
 Reduces a freely generated (typed) monoid to normal form.
 """
-function associate(unit::Symbol, expr::BaseExpr)::BaseExpr
+function associate_unit(unit::Symbol, expr::BaseExpr)::BaseExpr
   e1, e2 = first(expr), last(expr)
   if (head(e1) == unit) e2
   elseif (head(e2) == unit) e1

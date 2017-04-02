@@ -472,7 +472,7 @@ end
 """ Expand context variables that occur implicitly in the type expression 
 of a term constructor.
 """
-function expand_term_type_in_context(cons::TermConstructor, sig::Signature)
+function expand_term_type(cons::TermConstructor, sig::Signature)
   isa(cons.typ, Symbol) ? cons.typ :
     expand_in_context(cons.typ, cons.params, cons.context, sig)
 end
@@ -515,6 +515,12 @@ function equations(params::Vector{Symbol}, context::Context,
   # FIXME: Should we worry about redundancies from the symmetry of equality,
   # i.e., (expr1 == expr2) && (expr2 == expr1)?
   collect(filter(eq -> eq.first != eq.second, eqs))
+end
+
+""" Implicit equations for term constructor.
+"""
+function equations(cons::TermConstructor, sig::Signature)::Vector{Pair}
+  equations(cons.params, cons.context, sig)
 end
 
 # Instances
