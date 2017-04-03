@@ -1,5 +1,8 @@
 using ..GAT
 
+# Monoidal category
+###################
+
 @doc """ Doctrine of *monoidal category*
 
 To avoid associators and unitors, we assume the monoidal category is *strict*.
@@ -24,6 +27,9 @@ signature for weak monoidal categories later.
   ⊗(fs::Vararg{Hom}) = otimes(fs...)
 end
 
+# Symmetric monoidal category
+#############################
+
 @doc """ Doctrine of *symmetric monoidal category*
 
 The signature (but not the axioms) is the same as a braided monoidal category.
@@ -36,8 +42,11 @@ end
 @syntax FreeSymmetricMonoidalCategory SymmetricMonoidalCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; check=true))
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end
+
+# (Co)cartesian category
+########################
 
 @doc """ Doctrine of *cartesian category*
 
@@ -57,7 +66,7 @@ end
 @syntax FreeCartesianCategory CartesianCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; check=true))
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end
 
 @doc """ Doctrine of *cocartesian category*
@@ -78,8 +87,11 @@ end
 @syntax FreeCocartesianCategory CocartesianCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; check=true))
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end
+
+# Compact closed category
+#########################
 
 @doc """ Doctrine of *compact closed category*
 """ CompactClosedCategory
@@ -94,8 +106,11 @@ end
 @syntax FreeCompactClosedCategory CompactClosedCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; check=true))
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end
+
+# Dagger category
+#################
 
 @doc """ Doctrine of *dagger category*
 """ DaggerCategory
@@ -117,5 +132,5 @@ end
 @syntax FreeDaggerCompactCategory DaggerCompactCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; check=true))
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end

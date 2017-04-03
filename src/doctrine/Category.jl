@@ -1,6 +1,9 @@
 using ..GAT
 using ..Syntax
 
+# Category
+##########
+
 @doc """ Doctrine of *category* (with no extra structure)
 
 **Warning**: We compose functions from left to right, i.e., if f:A→B and g:B→C
@@ -27,6 +30,9 @@ end
 @syntax FreeCategory Category begin
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end
+
+# 2-category
+############
 
 @doc """ Doctrine of (strict) *2-category*
 """ Category2

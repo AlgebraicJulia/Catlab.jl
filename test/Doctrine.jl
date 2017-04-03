@@ -2,7 +2,9 @@ module TestDoctrine
 
 using Base.Test
 using CompCat.Doctrine
-import CompCat.Syntax: SyntaxDomainError, show_sexpr
+using CompCat.Syntax
+
+sexpr(expr::BaseExpr) = sprint(show_sexpr, expr)
 
 # Category
 ##########
@@ -24,6 +26,12 @@ f, g = FreeCategory.hom(:f, A, B), FreeCategory.hom(:g, B, A)
 @test compose(f,g,f) == compose(compose(f,g),f)
 @test g∘f == compose(f,g)
 @test f∘g∘f == compose(compose(f,g),f)
+
+# S-expressions
+@test sexpr(A) == ":A"
+@test sexpr(f) == ":f"
+@test sexpr(compose(f,g)) == "(compose :f :g)"
+@test sexpr(compose(f,g,f)) == "(compose :f :g :f)"
 
 # 2-category
 ############
@@ -64,6 +72,12 @@ I = munit(Syntax.Ob)
 @test otimes(f,f,f) == otimes(otimes(f,f),f)
 @test A⊗B == otimes(A,B)
 @test f⊗g == otimes(f,g)
+
+# S-expressions
+@test sexpr(I) == "(munit)"
+@test sexpr(otimes(A,B)) == "(otimes :A :B)"
+@test sexpr(otimes(f,g)) == "(otimes :f :g)"
+@test sexpr(compose(otimes(f,f),otimes(g,g))) == "(compose (otimes :f :f) (otimes :g :g))"
 
 # Cartesian category
 ####################
@@ -112,21 +126,6 @@ f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
 @test dom(dagger(f)) == B
 @test codom(dagger(f)) == A
 
-# Pretty-print
-##############
-
-# # S-expressions
-# sexpr(expr::BaseExpr) = sprint(show_sexpr, expr)
-# 
-# @test sexpr(A) == ":A"
-# @test sexpr(f) == ":f"
-# @test sexpr(compose(f,g)) == "(compose :f :g)"
-# @test sexpr(compose(f,g,f)) == "(compose :f :g :f)"
-# 
-# @test sexpr(I) == "(unit)"
-# @test sexpr(otimes(A,B)) == "(otimes :A :B)"
-# @test sexpr(otimes(f,g)) == "(otimes :f :g)"
-# @test sexpr(compose(otimes(f,f),otimes(g,g))) == "(compose (otimes :f :f) (otimes :g :g))"
 # 
 # # Infix (Unicode)
 # infix(expr::BaseExpr) = sprint(show_infix, expr)
