@@ -138,6 +138,7 @@ I = munit(Syntax.Ob)
   "\\left(f \\otimes f\\right) \\cdot \\left(g \\otimes g\\right)"
 @test latex(otimes(compose(f,g),compose(g,f))) == 
   "\\left(f \\cdot g\\right) \\otimes \\left(g \\cdot f\\right)"
+@test latex(braid(A,B)) == "\\sigma_{A,B}"
 
 # Cartesian category
 ####################
@@ -146,10 +147,15 @@ Syntax = FreeCartesianCategory
 A, B = Syntax.ob(:A), Syntax.ob(:B)
 f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
 
+# Domains and codomains
 @test dom(mcopy(A)) == A
 @test codom(mcopy(A)) == otimes(A,A)
 @test dom(delete(A)) == A
 @test codom(delete(A)) == I
+
+# Infix notation (LaTeX)
+@test latex(mcopy(A)) == "\\Delta_{A}"
+@test latex(delete(A)) == "\\lozenge_{A}" 
 
 # Cocartesian category
 ######################
@@ -158,10 +164,15 @@ Syntax = FreeCocartesianCategory
 A, B = Syntax.ob(:A), Syntax.ob(:B)
 f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
 
+# Domains and codomains
 @test dom(mmerge(A)) == otimes(A,A)
 @test codom(mmerge(A)) == A
 @test dom(create(A)) == I
 @test codom(create(A)) == A
+
+# Infix notation (LaTeX)
+@test latex(mmerge(A)) == "\\nabla_{A}"
+@test latex(create(A)) == "\\square_{A}"
 
 # Compact closed category
 #########################
@@ -170,11 +181,16 @@ Syntax = FreeCompactClosedCategory
 A, B = Syntax.ob(:A), Syntax.ob(:B)
 f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
 
+# Domains and codomains
 @test dom(ev(A)) == otimes(A, dual(A))
 @test codom(ev(A)) == I
-
 @test dom(coev(A)) == I
 @test codom(coev(A)) == otimes(dual(A), A)
+
+# Infix notation (LaTeX)
+@test latex(dual(A)) == "A^*"
+@test latex(ev(A)) == "\\mathrm{ev}_{A}"
+@test latex(coev(A)) == "\\mathrm{coev}_{A}"
 
 # Dagger compact category
 #########################
@@ -183,21 +199,12 @@ Syntax = FreeDaggerCompactCategory
 A, B = Syntax.ob(:A), Syntax.ob(:B)
 f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
 
+# Domains and codomains
 @test dom(dagger(f)) == B
 @test codom(dagger(f)) == A
 
-# @test latex(braid(A,B)) == "\\sigma_{A,B}"
-# 
-# @test latex(mcopy(A)) == "\\Delta_{A}"
-# @test latex(mmerge(A)) == "\\nabla_{A}"
-# @test latex(create(A)) == "i_{A}"
-# @test latex(delete(A)) == "e_{A}"
-# 
-# @test latex(dual(A)) == "A^{*}"
-# @test latex(ev(A)) == "\\mathrm{ev}_{A}"
-# @test latex(coev(A)) == "\\mathrm{coev}_{A}"
-# 
-# @test latex(dagger(f)) == "f^{\\dagger}"
-# @test latex(dagger(compose(f,g))) == "\\left(f g\\right)^{\\dagger}"
+# Infix notation (LaTeX)
+@test latex(dagger(f)) == "f^\\dagger"
+@test latex(dagger(compose(f,g))) == "\\left(f \\cdot g\\right)^\\dagger"
 
 end

@@ -36,7 +36,7 @@ function show_unicode(io::IO, expr::HomExpr{:compose}; kw...)
 end
 
 function show_latex(io::IO, expr::HomExpr{:id}; kw...)
-  subscript(io, "\\mathrm{id}", sprint(show_latex, dom(expr)))
+  show_latex_script(io, expr, "\\mathrm{id}")
 end
 function show_latex(io::IO, expr::HomExpr{:compose}; paren::Bool=false, kw...)
   show_latex_infix(io, expr, "\\cdot"; paren=paren)

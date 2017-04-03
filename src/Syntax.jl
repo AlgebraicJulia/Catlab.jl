@@ -14,8 +14,9 @@ module to make the construction of syntax simple but flexible.
 """
 module Syntax
 export @syntax, BaseExpr, SyntaxDomainError, head, args, first, last,
-  associate, associate_unit, 
-  show_sexpr, show_unicode, show_unicode_infix, show_latex, show_latex_infix
+  associate, associate_unit,
+  show_sexpr, show_unicode, show_unicode_infix,
+  show_latex, show_latex_infix, show_latex_script
 
 import Base: first, last, show, showerror, ==
 import Base.Meta: show_sexpr
@@ -363,53 +364,16 @@ function show_latex_infix(io::IO, expr::BaseExpr, op::String; paren::Bool=false,
   if (paren) print(io, "\\right)") end
 end
 
+function show_latex_script(io::IO, expr::BaseExpr, head::String; super::Bool=false, kw...)
+  print(io, head, super ? "^" : "_", "{")
+  join(io, [sprint(show_latex, arg) for arg in args(expr)], ",")
+  print(io, "}")
+end
+
 function show(io::IO, ::MIME"text/latex", expr::BaseExpr)
   print(io, "\$")
   show_latex(io, expr)
   print(io, "\$")
 end
-
-# # Monoidal category
-# as_latex(::ObExpr, ::Type{Val{:unit}}; kw...) = "I"
-# function as_latex(expr::BaseExpr, ::Type{Val{:otimes}}; paren::Bool=false, kw...)
-#   binary_op(expr, "\\otimes", paren)
-# end
-# 
-# # Symmetric monoidal category
-# function as_latex(expr::MorExpr, ::Type{Val{:braid}}; kw...)
-#   subscript("\\sigma", join(map(as_latex, args(expr)), ","))
-# end
-# 
-# # Internal (co)monoid
-# function as_latex(expr::MorExpr, ::Type{Val{:copy}}; kw...)
-#   subscript("\\Delta", as_latex(dom(expr)))
-# end
-# function as_latex(expr::MorExpr, ::Type{Val{:delete}}; kw...)
-#   subscript("e", as_latex(dom(expr)))
-# end
-# function as_latex(expr::MorExpr, ::Type{Val{:merge}}; kw...)
-#   subscript("\\nabla", as_latex(codom(expr)))
-# end
-# function as_latex(expr::MorExpr, ::Type{Val{:create}}; kw...)
-#   subscript("i", as_latex(codom(expr)))
-# end
-# 
-# # Closed compact category
-# function as_latex(expr::ObExpr, ::Type{Val{:dual}}; kw...)
-#   supscript(as_latex(first(args(expr))), "*")
-# end
-# function as_latex(expr::MorExpr, ::Type{Val{:eval}}; kw...)
-#   subscript("\\mathrm{ev}", as_latex(first(args(expr))))
-# end
-# function as_latex(expr::MorExpr, ::Type{Val{:coeval}}; kw...)
-#   subscript("\\mathrm{coev}", as_latex(first(args(expr))))
-# end
-# 
-# # Dagger category
-# function as_latex(expr::MorExpr, ::Type{Val{:dagger}}; kw...)
-#   f = first(args(expr))
-#   result = as_latex(f)
-#   supscript(head(f) == :gen ? result : "\\left($result\\right)", "\\dagger")
-# end
 
 end

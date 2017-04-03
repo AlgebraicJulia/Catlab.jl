@@ -61,6 +61,10 @@ end
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end
 
+function show_latex(io::IO, expr::HomExpr{:braid}; kw...)
+  show_latex_script(io, expr, "\\sigma")
+end
+
 # (Co)cartesian category
 ########################
 
@@ -84,6 +88,13 @@ end
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end
 
+function show_latex(io::IO, expr::HomExpr{:mcopy}; kw...)
+  show_latex_script(io, expr, "\\Delta")
+end
+function show_latex(io::IO, expr::HomExpr{:delete}; kw...)
+  show_latex_script(io, expr, "\\lozenge")
+end
+
 """ Doctrine of *cocartesian category*
 
 Actually, this is a cocartesian *symmetric monoidal* category but we omit these
@@ -104,6 +115,13 @@ end
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end
 
+function show_latex(io::IO, expr::HomExpr{:mmerge}; kw...)
+  show_latex_script(io, expr, "\\nabla")
+end
+function show_latex(io::IO, expr::HomExpr{:create}; kw...)
+  show_latex_script(io, expr, "\\square")
+end
+
 # Compact closed category
 #########################
 
@@ -120,6 +138,17 @@ end
   otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+end
+
+function show_latex(io::IO, expr::ObExpr{:dual}; kw...)
+  show_latex(io, first(expr))
+  print(io, "^*")
+end
+function show_latex(io::IO, expr::HomExpr{:ev}; kw...)
+  show_latex_script(io, expr, "\\mathrm{ev}")
+end
+function show_latex(io::IO, expr::HomExpr{:coev}; kw...)
+  show_latex_script(io, expr, "\\mathrm{coev}")
 end
 
 # Dagger category
@@ -144,4 +173,12 @@ end
   otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+end
+
+function show_latex(io::IO, expr::HomExpr{:dagger}; kw...)
+  f = first(expr)
+  if (head(f) != :generator) print(io, "\\left(") end
+  show_latex(io, f)
+  if (head(f) != :generator) print(io, "\\right)") end
+  print(io, "^\\dagger")
 end
