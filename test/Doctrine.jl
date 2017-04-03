@@ -5,6 +5,7 @@ using CompCat.Doctrine
 using CompCat.Syntax
 
 sexpr(expr::BaseExpr) = sprint(show_sexpr, expr)
+infix(expr::BaseExpr) = sprint(show_infix, expr)
 
 # Category
 ##########
@@ -44,20 +45,41 @@ f, g = FreeCategory.hom(:f, A, B), FreeCategory.hom(:g, B, A)
 @test sexpr(compose(f,g)) == "(compose :f :g)"
 @test sexpr(compose(f,g,f)) == "(compose :f :g :f)"
 
+# Infix notation (Unicode)
+@test infix(A) == "A"
+@test infix(f) == "f"
+@test infix(id(A)) == "id[A]"
+@test infix(compose(f,g)) == "f⋅g"
+
 # 2-category
 ############
 
-A, B = FreeCategory2.ob(:A), FreeCategory2.ob(:B)
-f, g, h = [ FreeCategory2.hom(sym, A, B) for sym in [:f,:g,:h] ]
-α, β = FreeCategory2.hom2(:α, f, g), FreeCategory2.hom2(:β, g, h)
+Syntax = FreeCategory2
+A, B, C, D = [ Syntax.ob(sym) for sym in [:A,:B,:C,:D] ]
+f, g, F, G = [ Syntax.hom(sym, A, B) for sym in [:f,:g,:F,:G] ]
+h, k, H, K = [ Syntax.hom(sym, B, C) for sym in [:h,:k,:H,:K] ]
 
 # Domains and codomains
+α, β = Syntax.hom2(:α, f, g), Syntax.hom2(:β, g, h)
 @test dom(α) == f
 @test codom(α) == g
 @test dom(dom(α)) == A
 @test codom(dom(α)) == B
 @test dom(compose(α,β)) == f
 @test codom(compose(α,β)) == h
+@test_throws SyntaxDomainError compose2(α,β)
+
+α, β = Syntax.hom2(:α, f, g), Syntax.hom2(:β, h, k)
+@test dom(compose2(α,β)) == compose(f,h)
+@test codom(compose2(α,β)) == compose(g,k)
+
+# Infix notation (Unicode)
+α, β = Syntax.hom2(:α, f, g), Syntax.hom2(:β, g, h)
+@test infix(compose(f,h)) == "f⋅h"
+@test infix(compose(α,β)) == "α⋅β"
+
+α, β = Syntax.hom2(:α, f, g), Syntax.hom2(:β, h, k)
+@test infix(compose2(α,β)) == "α*β"
 
 # Symmetric monoidal category
 #############################
@@ -93,6 +115,13 @@ I = munit(Syntax.Ob)
 @test sexpr(otimes(A,B)) == "(otimes :A :B)"
 @test sexpr(otimes(f,g)) == "(otimes :f :g)"
 @test sexpr(compose(otimes(f,f),otimes(g,g))) == "(compose (otimes :f :f) (otimes :g :g))"
+
+# Infix notation (Unicode)
+@test infix(I) == "I"
+@test infix(otimes(A,B)) == "A⊗B"
+@test infix(otimes(f,g)) == "f⊗g"
+@test infix(compose(otimes(f,f),otimes(g,g))) == "(f⊗f)⋅(g⊗g)"
+@test infix(otimes(compose(f,g),compose(g,f))) == "(f⋅g)⊗(g⋅f)"
 
 # Cartesian category
 ####################
@@ -141,27 +170,6 @@ f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
 @test dom(dagger(f)) == B
 @test codom(dagger(f)) == A
 
-# 
-# # Infix (Unicode)
-# infix(expr::BaseExpr) = sprint(show_infix, expr)
-# 
-# @test infix(A) == "A"
-# @test infix(f) == "f"
-# @test infix(id(A)) == "id[A]"
-# @test infix(compose(f,g)) == "f g"
-# 
-# @test infix(I) == "I"
-# @test infix(otimes(A,B)) == "A⊗B"
-# @test infix(otimes(f,g)) == "f⊗g"
-# @test infix(compose(otimes(f,f),otimes(g,g))) == "(f⊗f) (g⊗g)"
-# @test infix(otimes(compose(f,g),compose(g,f))) == "(f g)⊗(g f)"
-# 
-# @test infix(braid(A,B)) == "braid[A,B]"
-# @test infix(mmerge(A)) == "merge[A]"
-# @test infix(mcopy(A)) == "copy[A]"
-# @test infix(compose(mcopy(A), otimes(f,f))) == "copy[A] (f⊗f)"
-# 
-# @test infix(dagger(f)) == "dagger[f]"
 # 
 # # Infix (LaTeX)
 # latex(expr::BaseExpr) = sprint(show_latex, expr)

@@ -1,5 +1,6 @@
 using ..GAT
 using ..Syntax
+import ..Syntax: show_infix
 
 # Category
 ##########
@@ -28,6 +29,10 @@ end
 
 @syntax FreeCategory(ObExpr,HomExpr) Category begin
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+end
+
+function show_infix(io::IO, expr::HomExpr{:compose}; paren::Bool=false)
+  show_infix(io, expr, "⋅"; paren=paren)
 end
 
 # 2-category
@@ -62,4 +67,11 @@ Checks domains of morphisms but not 2-morphisms.
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
   compose(α::Hom2, β::Hom2) = associate(Super.compose(α,β))
   compose2(α::Hom2, β::Hom2) = associate(Super.compose2(α,β))
+end
+
+function show_infix(io::IO, expr::Hom2Expr{:compose}; paren::Bool=false)
+  show_infix(io, expr, "⋅"; paren=paren)
+end
+function show_infix(io::IO, expr::Hom2Expr{:compose2}; paren::Bool=false)
+  show_infix(io, expr, "*"; paren=paren)
 end

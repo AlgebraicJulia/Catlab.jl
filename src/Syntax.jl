@@ -14,7 +14,7 @@ module to make the construction of syntax simple but flexible.
 """
 module Syntax
 export @syntax, BaseExpr, SyntaxDomainError, head, args, first, last,
-  associate, associate_unit, show_sexpr
+  associate, associate_unit, show_sexpr, show_infix
 
 import Base: first, last, show, showerror, ==
 import Base.Meta: show_sexpr
@@ -322,30 +322,23 @@ end
 """ Show the expression in infix notation using Unicode symbols.
 """
 show_infix(expr::BaseExpr) = show_infix(STDOUT, expr)
-show_infix(io::IO, expr::BaseExpr) = print(io, as_infix(expr))
 
-function as_infix(expr::BaseExpr; paren::Bool=false)::String
-  head, args = Syntax.head(expr), Syntax.args(expr)
-  if head == :gen # special case: generator
-    return string(args[1])
-  end
-
-  symbol = get(symbol_table_unicode, head, string(head))
-  if length(symbol) <= 1 && length(args) >= 2 # case 1: infix
-    result = join((as_infix(a;paren=true) for a in args), symbol)
-    paren ? "($result)" : result
-  elseif length(args) >= 1 # case 2: prefix
-    string(symbol, "[", join(map(as_infix, args), ","), "]")
-  else # degenerate case: no arguments
-    symbol
-  end
+# By default, show in prefix notation.
+function show_infix(io::IO, expr::BaseExpr; paren::Bool=false)
+  print(io, head(expr))
+  print(io, "[")
+  join(io, [sprint(show_infix, arg) for arg in args(expr)], ",")
+  print(io, "]")
 end
-
-const symbol_table_unicode = Dict{Symbol,String}(
-  :compose => " ",
-  :otimes => "⊗",
-  :unit => "I",
-)
+function show_infix(io::IO, expr::BaseExpr{:generator}; paren::Bool=false)
+  print(io, first(expr))
+end
+function show_infix(io::IO, expr::BaseExpr, op::String; paren::Bool=false)
+  show_infix_paren(io::IO, expr::BaseExpr) = show_infix(io, expr; paren=true)
+  if (paren) print(io, "(") end
+  join(io, [sprint(show_infix_paren, arg) for arg in args(expr)], op)
+  if (paren) print(io, ")") end
+end
 
 """ Show the expression in infix notation using LaTeX math.
 
