@@ -16,7 +16,7 @@ module Syntax
 export @syntax, BaseExpr, SyntaxDomainError, head, args, first, last,
   associate, associate_unit, show_sexpr
 
-import Base: first, last, showerror
+import Base: first, last, show, showerror, ==
 import Base.Meta: show_sexpr
 using Match
 
@@ -50,9 +50,17 @@ first(expr::BaseExpr) = first(args(expr))
 last(expr::BaseExpr) = last(args(expr))
 type_args(expr::BaseExpr) = expr.type_args
 
-function Base.:(==)(e1::BaseExpr, e2::BaseExpr)
+function ==(e1::BaseExpr, e2::BaseExpr)
   head(e1) == head(e2) && args(e1) == args(e2) && type_args(e1) == type_args(e2)
 end
+
+function show(io::IO, expr::BaseExpr)
+  print(io, head(expr))
+  print(io, "(")
+  join(io, args(expr), ",")
+  print(io, ")")
+end
+show(io::IO, expr::BaseExpr{:generator}) = print(io, first(expr))
 
 type SyntaxDomainError <: Exception
   constructor::Symbol

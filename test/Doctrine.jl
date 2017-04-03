@@ -32,6 +32,12 @@ f, g = FreeCategory.hom(:f, A, B), FreeCategory.hom(:g, B, A)
 @test g∘f == compose(f,g)
 @test f∘g∘f == compose(compose(f,g),f)
 
+# String format
+@test string(A) == "A"
+@test string(f) == "f"
+@test string(compose(f,g)) == "compose(f,g)"
+@test string(compose(f,g,f)) == "compose(f,g,f)"
+
 # S-expressions
 @test sexpr(A) == ":A"
 @test sexpr(f) == ":f"
@@ -77,6 +83,10 @@ I = munit(Syntax.Ob)
 @test otimes(f,f,f) == otimes(otimes(f,f),f)
 @test A⊗B == otimes(A,B)
 @test f⊗g == otimes(f,g)
+
+# String format
+@test string(otimes(f,g)) == "otimes(f,g)"
+@test string(compose(otimes(f,f),otimes(g,g))) == "compose(otimes(f,f),otimes(g,g))"
 
 # S-expressions
 @test sexpr(I) == "(munit)"
