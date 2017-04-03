@@ -9,7 +9,8 @@ signature for weak monoidal categories later.
 
 @signature Category(Ob,Hom) => MonoidalCategory(Ob,Hom) begin
   otimes(A::Ob, B::Ob)::Ob
-  otimes(f::Hom(A,B), g::Hom(C,D))::Hom(otimes(A,C),otimes(B,D))
+  otimes(f::Hom(A,B), g::Hom(C,D))::Hom(otimes(A,C),otimes(B,D)) <=
+    (A::Ob, B::Ob, C::Ob, D::Ob)
   munit()::Ob
 
   # Extra syntax
@@ -25,15 +26,59 @@ end
 
 @doc """ Doctrine of *symmetric monoidal category*
 
-In fact, the signature (but not the axioms) is the same as a braided monoidal
-category.
+The signature (but not the axioms) is the same as a braided monoidal category.
 """ SymmetricMonoidalCategory
 
 @signature MonoidalCategory(Ob,Hom) => SymmetricMonoidalCategory(Ob,Hom) begin
   braid(A::Ob, B::Ob)::Hom(otimes(A,B),otimes(B,A))
+end
+
+@syntax FreeSymmetricMonoidalCategory SymmetricMonoidalCategory begin
+  otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
+  otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; check=true))
+end
+
+@doc """ Doctrine of *cartesian category*
+
+Actually, this is a cartesian *symmetric monoidal* category but we omit these
+qualifiers for brevity.
+""" CartesianCategory
+
+@signature SymmetricMonoidalCategory(Ob,Hom) => CartesianCategory(Ob,Hom) begin
+  mcopy(A::Ob)::Hom(A,otimes(A,A))
+  delete(A::Ob)::Hom(A,munit())
   
   # Unicode syntax
-  σ(A::Ob, B::Ob) = braid(A, B)
+  Δ(A::Ob) = mcopy(A)
+  ◇(A::Ob) = delete(A)
+end
+
+@syntax FreeCartesianCategory CartesianCategory begin
+  otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
+  otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; check=true))
+end
+
+@doc """ Doctrine of *cocartesian category*
+
+Actually, this is a cocartesian *symmetric monoidal* category but we omit these
+qualifiers for brevity.
+""" CocartesianCategory
+
+@signature SymmetricMonoidalCategory(Ob,Hom) => CocartesianCategory(Ob,Hom) begin
+  mmerge(A::Ob)::Hom(otimes(A,A),A)
+  create(A::Ob)::Hom(munit(),A)
+  
+  # Unicode syntax
+  ∇(A::Ob) = mmerge(A)
+  □(A::Ob) = create(A)
+end
+
+@syntax FreeCocartesianCategory CocartesianCategory begin
+  otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
+  otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; check=true))
 end
 
 @doc """ Doctrine of *compact closed category*
@@ -44,6 +89,12 @@ end
   
   ev(A::Ob)::Hom(otimes(A,dual(A)), munit())
   coev(A::Ob)::Hom(munit(), otimes(dual(A),A))
+end
+
+@syntax FreeCompactClosedCategory CompactClosedCategory begin
+  otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
+  otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; check=true))
 end
 
 @doc """ Doctrine of *dagger category*
@@ -61,4 +112,10 @@ FIXME: This signature should extend both `DaggerCategory` and
 
 @signature CompactClosedCategory(Ob,Hom) => DaggerCompactCategory(Ob,Hom) begin
   dagger(f::Hom(A,B))::Hom(B,A) <= (A::Ob,B::Ob)
+end
+
+@syntax FreeDaggerCompactCategory DaggerCompactCategory begin
+  otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
+  otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; check=true))
 end

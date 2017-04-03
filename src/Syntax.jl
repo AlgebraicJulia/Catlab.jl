@@ -16,7 +16,7 @@ module Syntax
 export @syntax, BaseExpr, SyntaxDomainError, head, args, first, last,
   associate, associate_unit, show_sexpr
 
-import Base: ==, first, last, showerror
+import Base: first, last, showerror
 import Base.Meta: show_sexpr
 using Match
 
@@ -50,7 +50,7 @@ first(expr::BaseExpr) = first(args(expr))
 last(expr::BaseExpr) = last(args(expr))
 type_args(expr::BaseExpr) = expr.type_args
 
-function ==(e1::BaseExpr, e2::BaseExpr)
+function Base.:(==)(e1::BaseExpr, e2::BaseExpr)
   head(e1) == head(e2) && args(e1) == args(e2) && type_args(e1) == type_args(e2)
 end
 
@@ -86,7 +86,7 @@ function syntax_code(name::Symbol, mod::Module, functions::Vector)
     Expr(:block, [
       Expr(:export, [cons.name for cons in signature.types]...);  
       gen_types(signature);
-      gen_accessors(signature);
+      gen_type_accessors(signature);
       gen_term_generators(signature);
       gen_term_constructors(signature);
     ]...))
@@ -121,7 +121,7 @@ function syntax_code(name::Symbol, mod::Module, functions::Vector)
   Expr(:toplevel, mod, toplevel...)
 end
 
-""" Generate code for syntax type definition.
+""" Generate syntax type definitions.
 """
 function gen_type(cons::TypeConstructor)::Expr
   base_name = GlobalRef(Syntax, :BaseExpr)
@@ -135,9 +135,9 @@ function gen_types(sig::Signature)::Vector{Expr}
   map(gen_type, sig.types)
 end
 
-""" Generate code for type parameter accessors.
+""" Generate accessor methods for type parameters.
 """
-function gen_accessors(cons::TypeConstructor)::Vector{Expr}
+function gen_type_accessors(cons::TypeConstructor)::Vector{Expr}
   fns = []
   sym = gensym(:x)
   for (i, param) in enumerate(cons.params)
@@ -148,11 +148,11 @@ function gen_accessors(cons::TypeConstructor)::Vector{Expr}
   end
   fns
 end
-function gen_accessors(sig::Signature)::Vector{Expr}
-  vcat(map(gen_accessors, sig.types)...)
+function gen_type_accessors(sig::Signature)::Vector{Expr}
+  vcat(map(gen_type_accessors, sig.types)...)
 end
 
-""" Generate code for syntax term constructors.
+""" Generate methods for syntax term constructors.
 """
 function gen_term_constructor(cons::TermConstructor, sig::Signature)::Expr
   head = GAT.constructor(cons)
@@ -175,9 +175,16 @@ function gen_term_constructor(cons::TermConstructor, sig::Signature)::Expr
             Expr(:vect, cons.params...)))))
   end
   
-  # Create call to expression constructor. Requires expanding the implicit
-  # variables in the type expression.
-  type_params = @match GAT.expand_term_type(cons, sig) begin
+  # Create call to expression constructor. To evaluate the return type, we must
+  # expand the implicit variables in the constructor type expression.
+  # 
+  # The re-binding below ensures that user overrides are preferred over the
+  # default term constructors when evaluating the return type.
+  # XXX: Is there another way? Fetching the current module seems like a hack.
+  mod = current_module()
+  bindings = Dict(c.name => GlobalRef(mod, c.name) for c in sig.terms)
+  return_expr = GAT.replace_symbols(bindings, GAT.expand_term_type(cons, sig))
+  type_params = @match return_expr begin
     Expr(:call, [name::Symbol, args...], _) => args
     _::Symbol => []
   end
@@ -193,7 +200,7 @@ function gen_term_constructors(sig::Signature)::Vector{Expr}
   [ gen_term_constructor(cons, sig) for cons in sig.terms ]
 end
 
-""" Generate code for generator terms.
+""" Generate methods for term generators.
 
 Effectively, these generators are arity-zero term constructors that we allow to
 be created on the fly.
@@ -252,7 +259,7 @@ codomains of morphisms) are not shown.
 
 Cf. the standard library function `Meta.show_sexpr`.
 """
-show_sexpr(expr::BaseExpr) = show_expr(STDOUT, expr)
+show_sexpr(expr::BaseExpr) = show_sexpr(STDOUT, expr)
 show_sexpr(io::IO, expr::BaseExpr) = print(io, as_sexpr(expr))
 
 function as_sexpr(expr::BaseExpr)::String

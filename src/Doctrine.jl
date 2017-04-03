@@ -1,8 +1,14 @@
 module Doctrine
-export Category, Category2,
-  MonoidalCategory, SymmetricMonoidalCategory,
-  CompactClosedCategory,
-  DaggerCategory, DaggerCompactCategory
+
+# TODO: Generate these automatically from signature?
+export Category, FreeCategory, id, compose, ∘, dom, codom
+export Category2, FreeCategory2, compose2
+export MonoidalCategory, otimes, munit, ⊗
+export SymmetricMonoidalCategory, FreeSymmetricMonoidalCategory, braid
+export CartesianCategory, FreeCartesianCategory, mcopy, delete
+export CocartesianCategory, FreeCocartesianCategory, mmerge, create
+export CompactClosedCategory, FreeCompactClosedCategory, dual, ev, coev
+export DaggerCategory, DaggerCompactCategory, FreeDaggerCompactCategory, dagger
 
 include("doctrine/Category.jl")
 include("doctrine/Monoidal.jl")

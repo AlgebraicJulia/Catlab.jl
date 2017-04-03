@@ -1,4 +1,5 @@
 using ..GAT
+using ..Syntax
 
 @doc """ Doctrine of *category* (with no extra structure)
 
@@ -23,6 +24,10 @@ This usage is too entrenched to overturn, however inconvenient it may be.
   ∘(fs::Vararg{Hom}) = foldl(∘, fs)
 end
 
+@syntax FreeCategory Category begin
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+end
+
 @doc """ Doctrine of (strict) *2-category*
 """ Category2
 
@@ -43,4 +48,15 @@ end
   compose2(αs::Vararg{Hom2}) = foldl(compose2, αs)
   ∘(α::Hom2, β::Hom2) = compose(g, f)
   ∘(αs::Vararg{Hom2}) = foldl(∘, αs)
+end
+
+@doc """ Syntax for a 2-category.
+
+Checks domains of morphisms but not 2-morphisms.
+""" FreeCategory2
+
+@syntax FreeCategory2 Category2 begin
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+  compose(α::Hom2, β::Hom2) = associate(Super.compose(α,β))
+  compose2(α::Hom2, β::Hom2) = associate(Super.compose2(α,β))
 end

@@ -8,6 +8,10 @@ end
   include("Syntax.jl")
 end
 
+@testset "Doctrine" begin
+  include("Doctrine.jl")
+end
+
 # @testset "Diagram.AbstractWiring" begin
 #   include("diagram/AbstractWiring.jl")
 # end
