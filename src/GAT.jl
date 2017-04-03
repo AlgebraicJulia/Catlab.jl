@@ -289,7 +289,9 @@ macro signature(head, body)
   # We must generate and evaluate the code at *run time* because the base
   # signature, if specified, is not available at *parse time*.
   expr = :(signature_code($class, $(esc(base_name)), $base_params))
-  Expr(:call, esc(:eval), expr)
+  Expr(:block,
+    Expr(:call, esc(:eval), expr),
+    :(Core.@__doc__ $(esc(head.main.name))))
 end
 function signature_code(main_class, base_mod, base_params)
   # Add types/terms/functions from base class, if provided.

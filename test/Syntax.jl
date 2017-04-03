@@ -11,14 +11,20 @@ using CompCat.Syntax
 
 # Simple case: Monoid (no dependent types)
 
+""" Signature of the theory of monoids.
+"""
 @signature Monoid(M) begin
   M::TYPE
   munit()::M
   mtimes(x::M,y::M)::M
 end
 
+""" Syntax for the theory of monoids.
+"""
 @syntax FreeMonoid Monoid
+
 @test isa(FreeMonoid, Module)
+@test contains(string(Docs.doc(FreeMonoid)), "theory of monoids")
 @test sort(names(FreeMonoid)) == sort([:FreeMonoid, :M])
 
 x, y, z = FreeMonoid.m(:x), FreeMonoid.m(:y), FreeMonoid.m(:z)

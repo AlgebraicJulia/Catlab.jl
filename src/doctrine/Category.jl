@@ -4,7 +4,7 @@ using ..Syntax
 # Category
 ##########
 
-@doc """ Doctrine of *category* (with no extra structure)
+""" Doctrine of *category* (with no extra structure)
 
 **Warning**: We compose functions from left to right, i.e., if f:A→B and g:B→C
 then compose(f,g):A→C. Under this convention function are applied on the right,
@@ -12,8 +12,7 @@ e.g., if a∈A then af∈B.
 
 We retain the usual meaning of the symbol ∘, i.e., g∘f = compose(f,g).
 This usage is too entrenched to overturn, however inconvenient it may be.
-""" Category
-
+"""
 @signature Category(Ob,Hom) begin
   Ob::TYPE
   Hom(dom::Ob,codom::Ob)::TYPE
@@ -34,9 +33,8 @@ end
 # 2-category
 ############
 
-@doc """ Doctrine of (strict) *2-category*
-""" Category2
-
+""" Doctrine of (strict) *2-category*
+"""
 @signature Category(Ob,Hom) => Category2(Ob,Hom,Hom2) begin
   Hom2(dom::Hom(A,B), codom::Hom(A,B))::TYPE <= (A::Ob, B::Ob)
   
@@ -56,11 +54,10 @@ end
   ∘(αs::Vararg{Hom2}) = foldl(∘, αs)
 end
 
-@doc """ Syntax for a 2-category.
+""" Syntax for a 2-category.
 
 Checks domains of morphisms but not 2-morphisms.
-""" FreeCategory2
-
+"""
 @syntax FreeCategory2 Category2 begin
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
   compose(α::Hom2, β::Hom2) = associate(Super.compose(α,β))

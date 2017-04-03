@@ -105,7 +105,8 @@ target = GAT.TermConstructor(:compose, [:f,:g], :(Mor(X,Z)),
 # Signatures
 ############
 
-# Signature of the theory of categories
+""" Signature of the theory of categories
+"""
 @signature Category(Ob,Hom) begin
   Ob::TYPE
   Hom(dom, codom)::TYPE <= (dom::Ob, codom::Ob)
@@ -115,6 +116,7 @@ target = GAT.TermConstructor(:compose, [:f,:g], :(Mor(X,Z)),
 end
 
 @test isa(Category, Module)
+@test contains(string(Docs.doc(Category)), "theory of categories")
 @test sort(names(Category)) == sort([:Category, :Ob, :Hom])
 @test isa(Category.Ob, Type) && isa(Category.Hom, Type)
 @test isa(dom, Function) && isa(codom, Function)
@@ -140,7 +142,8 @@ category_signature = GAT.Signature(types, terms)
 
 @test Category.class().signature == category_signature
 
-# Equivalent shorthand definition of Category signature
+""" Equivalent shorthand definition of Category signature
+"""
 @signature CategoryAbbrev(Ob,Hom) begin
   Ob::TYPE
   Hom(dom::Ob, codom::Ob)::TYPE

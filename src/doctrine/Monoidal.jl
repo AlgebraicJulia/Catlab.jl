@@ -3,13 +3,12 @@ using ..GAT
 # Monoidal category
 ###################
 
-@doc """ Doctrine of *monoidal category*
+""" Doctrine of *monoidal category*
 
 To avoid associators and unitors, we assume the monoidal category is *strict*.
 By the coherence theorem there is no loss of generality, but we may add a
 signature for weak monoidal categories later.
-""" MonoidalCategory
-
+"""
 @signature Category(Ob,Hom) => MonoidalCategory(Ob,Hom) begin
   otimes(A::Ob, B::Ob)::Ob
   otimes(f::Hom(A,B), g::Hom(C,D))::Hom(otimes(A,C),otimes(B,D)) <=
@@ -30,11 +29,10 @@ end
 # Symmetric monoidal category
 #############################
 
-@doc """ Doctrine of *symmetric monoidal category*
+""" Doctrine of *symmetric monoidal category*
 
 The signature (but not the axioms) is the same as a braided monoidal category.
-""" SymmetricMonoidalCategory
-
+"""
 @signature MonoidalCategory(Ob,Hom) => SymmetricMonoidalCategory(Ob,Hom) begin
   braid(A::Ob, B::Ob)::Hom(otimes(A,B),otimes(B,A))
 end
@@ -48,12 +46,11 @@ end
 # (Co)cartesian category
 ########################
 
-@doc """ Doctrine of *cartesian category*
+""" Doctrine of *cartesian category*
 
 Actually, this is a cartesian *symmetric monoidal* category but we omit these
 qualifiers for brevity.
-""" CartesianCategory
-
+"""
 @signature SymmetricMonoidalCategory(Ob,Hom) => CartesianCategory(Ob,Hom) begin
   mcopy(A::Ob)::Hom(A,otimes(A,A))
   delete(A::Ob)::Hom(A,munit())
@@ -69,12 +66,11 @@ end
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end
 
-@doc """ Doctrine of *cocartesian category*
+""" Doctrine of *cocartesian category*
 
 Actually, this is a cocartesian *symmetric monoidal* category but we omit these
 qualifiers for brevity.
-""" CocartesianCategory
-
+"""
 @signature SymmetricMonoidalCategory(Ob,Hom) => CocartesianCategory(Ob,Hom) begin
   mmerge(A::Ob)::Hom(otimes(A,A),A)
   create(A::Ob)::Hom(munit(),A)
@@ -93,9 +89,8 @@ end
 # Compact closed category
 #########################
 
-@doc """ Doctrine of *compact closed category*
-""" CompactClosedCategory
-
+""" Doctrine of *compact closed category*
+"""
 @signature SymmetricMonoidalCategory(Ob,Hom) => CompactClosedCategory(Ob,Hom) begin
   dual(A::Ob)::Ob
   
@@ -112,19 +107,17 @@ end
 # Dagger category
 #################
 
-@doc """ Doctrine of *dagger category*
-""" DaggerCategory
-
+""" Doctrine of *dagger category*
+"""
 @signature Category(Ob,Hom) => DaggerCategory(Ob,Hom) begin
   dagger(f::Hom(A,B))::Hom(B,A) <= (A::Ob,B::Ob)
 end
 
-@doc """ Doctrine of *dagger compact category*
+""" Doctrine of *dagger compact category*
 
 FIXME: This signature should extend both `DaggerCategory` and
 `CompactClosedCategory`, but we don't support multiple inheritance yet.
-""" DaggerCompactCategory
-
+"""
 @signature CompactClosedCategory(Ob,Hom) => DaggerCompactCategory(Ob,Hom) begin
   dagger(f::Hom(A,B))::Hom(B,A) <= (A::Ob,B::Ob)
 end

@@ -75,7 +75,9 @@ macro syntax(syntax_name, mod_name, body=Expr(:block))
   functions = map(GAT.parse_function, GAT.strip_lines(body).args)
   expr = Expr(:call, :syntax_code,
               Expr(:quote, syntax_name), esc(mod_name), functions)
-  Expr(:call, esc(:eval), expr)
+  Expr(:block,
+    Expr(:call, esc(:eval), expr),
+    :(Core.@__doc__ $(esc(syntax_name))))
 end
 function syntax_code(name::Symbol, mod::Module, functions::Vector)
   class = mod.class()

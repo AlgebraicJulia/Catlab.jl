@@ -1,10 +1,9 @@
 using ..GAT
 
-@doc """ Doctrine of *bicategory of relations*
+""" Doctrine of *bicategory of relations*
 
-Reference: Carboni & Walters, 1987
-""" BicategoryRelations
-
+Reference: (Carboni & Walters, 1987, "Cartesian bicategories I")
+"""
 @signature SymmetricMonoidalCategory(Ob,Hom) => BicategoryRelations(Ob,Hom) begin
   # Dagger category.
   dagger(f::Hom(A,B))::Hom(B,A) <= (A::Ob,B::Ob)
