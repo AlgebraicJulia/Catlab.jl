@@ -15,7 +15,7 @@ module to make the construction of syntax simple but flexible.
 module Syntax
 export @syntax, BaseExpr, SyntaxDomainError, head, args, first, last,
   associate, associate_unit, 
-  show_sexpr, show_infix, show_latex, show_latex_infix
+  show_sexpr, show_unicode, show_unicode_infix, show_latex, show_latex_infix
 
 import Base: first, last, show, showerror, ==
 import Base.Meta: show_sexpr
@@ -322,21 +322,21 @@ end
 
 """ Show the expression in infix notation using Unicode symbols.
 """
-show_infix(expr::BaseExpr) = show_infix(STDOUT, expr)
+show_unicode(expr::BaseExpr) = show_unicode(STDOUT, expr)
 
 # By default, show in prefix notation.
-function show_infix(io::IO, expr::BaseExpr; kw...)
+function show_unicode(io::IO, expr::BaseExpr; kw...)
   print(io, head(expr))
   print(io, "[")
-  join(io, [sprint(show_infix, arg) for arg in args(expr)], ",")
+  join(io, [sprint(show_unicode, arg) for arg in args(expr)], ",")
   print(io, "]")
 end
-show_infix(io::IO, expr::BaseExpr{:generator}; kw...) = print(io, first(expr))
+show_unicode(io::IO, expr::BaseExpr{:generator}; kw...) = print(io, first(expr))
 
-function show_infix(io::IO, expr::BaseExpr, op::String; paren::Bool=false)
-  show_infix_paren(io::IO, expr::BaseExpr) = show_infix(io, expr; paren=true)
+function show_unicode_infix(io::IO, expr::BaseExpr, op::String; paren::Bool=false)
+  show_unicode_paren(io::IO, expr::BaseExpr) = show_unicode(io, expr; paren=true)
   if (paren) print(io, "(") end
-  join(io, [sprint(show_infix_paren, arg) for arg in args(expr)], op)
+  join(io, [sprint(show_unicode_paren, arg) for arg in args(expr)], op)
   if (paren) print(io, ")") end
 end
 

@@ -5,7 +5,7 @@ using CompCat.Doctrine
 using CompCat.Syntax
 
 sexpr(expr::BaseExpr) = sprint(show_sexpr, expr)
-infix(expr::BaseExpr) = sprint(show_infix, expr)
+unicode(expr::BaseExpr) = sprint(show_unicode, expr)
 latex(expr::BaseExpr) = sprint(show_latex, expr)
 
 # Category
@@ -47,10 +47,10 @@ f, g = FreeCategory.hom(:f, A, B), FreeCategory.hom(:g, B, A)
 @test sexpr(compose(f,g,f)) == "(compose :f :g :f)"
 
 # Infix notation (Unicode)
-@test infix(A) == "A"
-@test infix(f) == "f"
-@test infix(id(A)) == "id[A]"
-@test infix(compose(f,g)) == "f⋅g"
+@test unicode(A) == "A"
+@test unicode(f) == "f"
+@test unicode(id(A)) == "id[A]"
+@test unicode(compose(f,g)) == "f⋅g"
 
 # Infix notation (LaTeX)
 @test latex(A) == "A"
@@ -82,11 +82,11 @@ h, k, H, K = [ Syntax.hom(sym, B, C) for sym in [:h,:k,:H,:K] ]
 
 # Infix notation (Unicode)
 α, β = Syntax.hom2(:α, f, g), Syntax.hom2(:β, g, h)
-@test infix(compose(f,h)) == "f⋅h"
-@test infix(compose(α,β)) == "α⋅β"
+@test unicode(compose(f,h)) == "f⋅h"
+@test unicode(compose(α,β)) == "α⋅β"
 
 α, β = Syntax.hom2(:α, f, g), Syntax.hom2(:β, h, k)
-@test infix(compose2(α,β)) == "α*β"
+@test unicode(compose2(α,β)) == "α*β"
 
 # Symmetric monoidal category
 #############################
@@ -124,11 +124,11 @@ I = munit(Syntax.Ob)
 @test sexpr(compose(otimes(f,f),otimes(g,g))) == "(compose (otimes :f :f) (otimes :g :g))"
 
 # Infix notation (Unicode)
-@test infix(I) == "I"
-@test infix(otimes(A,B)) == "A⊗B"
-@test infix(otimes(f,g)) == "f⊗g"
-@test infix(compose(otimes(f,f),otimes(g,g))) == "(f⊗f)⋅(g⊗g)"
-@test infix(otimes(compose(f,g),compose(g,f))) == "(f⋅g)⊗(g⋅f)"
+@test unicode(I) == "I"
+@test unicode(otimes(A,B)) == "A⊗B"
+@test unicode(otimes(f,g)) == "f⊗g"
+@test unicode(compose(otimes(f,f),otimes(g,g))) == "(f⊗f)⋅(g⊗g)"
+@test unicode(otimes(compose(f,g),compose(g,f))) == "(f⋅g)⊗(g⋅f)"
 
 # Infix notation (LaTeX)
 @test latex(I) == "I"

@@ -1,6 +1,6 @@
 using ..GAT
 using ..Syntax
-import ..Syntax: show_infix, show_latex
+import ..Syntax: show_unicode, show_latex
 
 # Monoidal category
 ###################
@@ -28,13 +28,13 @@ signature for weak monoidal categories later.
   ⊗(fs::Vararg{Hom}) = otimes(fs...)
 end
 
-function show_infix(io::IO, expr::ObExpr{:otimes}; kw...)
-  show_infix(io, expr, "⊗"; kw...)
+function show_unicode(io::IO, expr::ObExpr{:otimes}; kw...)
+  show_unicode_infix(io, expr, "⊗"; kw...)
 end
-function show_infix(io::IO, expr::HomExpr{:otimes}; kw...)
-  show_infix(io, expr, "⊗"; kw...)
+function show_unicode(io::IO, expr::HomExpr{:otimes}; kw...)
+  show_unicode_infix(io, expr, "⊗"; kw...)
 end
-show_infix(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
+show_unicode(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
 
 function show_latex(io::IO, expr::ObExpr{:otimes}; kw...)
   show_latex_infix(io, expr, "\\otimes"; kw...)
