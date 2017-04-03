@@ -175,15 +175,8 @@ function gen_term_constructor(cons::TermConstructor, sig::Signature)::Expr
             Expr(:vect, cons.params...)))))
   end
   
-  # Create call to expression constructor. To evaluate the return type, we must
-  # expand the implicit variables in the constructor type expression.
-  # 
-  # The re-binding below ensures that user overrides are preferred over the
-  # default term constructors when evaluating the return type.
-  # XXX: Is there another way? Fetching the current module seems like a hack.
-  mod = current_module()
-  bindings = Dict(c.name => GlobalRef(mod, c.name) for c in sig.terms)
-  return_expr = GAT.replace_symbols(bindings, GAT.expand_term_type(cons, sig))
+  # Create call to expression constructor.
+  return_expr = gen_term_constructor_expr(cons, sig)
   type_params = @match return_expr begin
     Expr(:call, [name::Symbol, args...], _) => args
     _::Symbol => []
@@ -198,6 +191,36 @@ function gen_term_constructor(cons::TermConstructor, sig::Signature)::Expr
 end
 function gen_term_constructors(sig::Signature)::Vector{Expr}
   [ gen_term_constructor(cons, sig) for cons in sig.terms ]
+end
+
+""" Generate expression for return type of term constructor.
+
+Besides expanding the implicit variables, we must handle two annoying issues:
+1. Replace nullary constructors with unary constructors per our convention, e.g.
+   munit() -> munit(Ob)
+2. Rebind the term constructors to ensure that user overrides are preferred over
+   the default term constructors.
+"""
+function gen_term_constructor_expr(cons, sig)
+  expr = GAT.expand_term_type(cons, sig)
+  expr = replace_nullary_constructors(expr, sig)
+  
+  # XXX: Is there another way? Fetching the current module seems like a hack.
+  mod = current_module()
+  bindings = Dict(c.name => GlobalRef(mod, c.name) for c in sig.terms)
+  GAT.replace_symbols(bindings, expr)
+end
+function replace_nullary_constructors(expr, sig)
+  @match expr begin
+    Expr(:call, [name::Symbol], _) => begin
+      terms = sig.terms[find(cons -> cons.name == name, sig.terms)]
+      @assert length(terms) == 1
+      Expr(:call, name, terms[1].typ)
+    end
+    Expr(:call, [name::Symbol, args...], _) =>
+      Expr(:call, name, [replace_nullary_constructors(a,sig) for a in args]...)
+    _ => expr
+  end
 end
 
 """ Generate methods for term generators.
