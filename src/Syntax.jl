@@ -14,7 +14,8 @@ module to make the construction of syntax simple but flexible.
 """
 module Syntax
 export @syntax, BaseExpr, SyntaxDomainError, head, args, first, last,
-  associate, associate_unit, show_sexpr, show_infix
+  associate, associate_unit, 
+  show_sexpr, show_infix, show_latex, show_latex_infix
 
 import Base: first, last, show, showerror, ==
 import Base.Meta: show_sexpr
@@ -324,15 +325,14 @@ end
 show_infix(expr::BaseExpr) = show_infix(STDOUT, expr)
 
 # By default, show in prefix notation.
-function show_infix(io::IO, expr::BaseExpr; paren::Bool=false)
+function show_infix(io::IO, expr::BaseExpr; kw...)
   print(io, head(expr))
   print(io, "[")
   join(io, [sprint(show_infix, arg) for arg in args(expr)], ",")
   print(io, "]")
 end
-function show_infix(io::IO, expr::BaseExpr{:generator}; paren::Bool=false)
-  print(io, first(expr))
-end
+show_infix(io::IO, expr::BaseExpr{:generator}; kw...) = print(io, first(expr))
+
 function show_infix(io::IO, expr::BaseExpr, op::String; paren::Bool=false)
   show_infix_paren(io::IO, expr::BaseExpr) = show_infix(io, expr; paren=true)
   if (paren) print(io, "(") end
@@ -345,19 +345,30 @@ end
 Does *not* include `\$` or `\\[begin|end]{equation}` delimiters.
 """
 show_latex(expr::BaseExpr) = show_latex(STDOUT, expr)
-show_latex(io::IO, expr::BaseExpr) = print(io, as_latex(expr))
 
-as_latex(expr::BaseExpr; kw...) = as_latex(expr, Val{head(expr)}; kw...)
-as_latex(expr::BaseExpr, ::Type{Val{:gen}}; kw...) = string(first(args(expr)))
+# By default, show in prefix notation.
+function show_latex(io::IO, expr::BaseExpr; kw...)
+  print(io, "\\mathrm{$(head(expr))}")
+  print(io, "\\left[")
+  join(io, [sprint(show_latex, arg) for arg in args(expr)], ",")
+  print(io, "\\right]")
+end
+show_latex(io::IO, expr::BaseExpr{:generator}; kw...) = print(io, first(expr))
 
-# # Category
-# function as_latex(id::MorExpr, ::Type{Val{:id}}; kw...)
-#   subscript("\\mathrm{id}", as_latex(dom(id)))
-# end
-# function as_latex(expr::MorExpr, ::Type{Val{:compose}}; paren::Bool=false, kw...)
-#   binary_op(expr, " ", paren)
-# end
-# 
+function show_latex_infix(io::IO, expr::BaseExpr, op::String; paren::Bool=false, kw...)
+  show_latex_paren(io::IO, expr::BaseExpr) = show_latex(io, expr; paren=true, kw...)
+  sep = op == " " ? op : " $op "
+  if (paren) print(io, "\\left(") end
+  join(io, [sprint(show_latex_paren, arg) for arg in args(expr)], sep)
+  if (paren) print(io, "\\right)") end
+end
+
+function show(io::IO, ::MIME"text/latex", expr::BaseExpr)
+  print(io, "\$")
+  show_latex(io, expr)
+  print(io, "\$")
+end
+
 # # Monoidal category
 # as_latex(::ObExpr, ::Type{Val{:unit}}; kw...) = "I"
 # function as_latex(expr::BaseExpr, ::Type{Val{:otimes}}; paren::Bool=false, kw...)
@@ -392,15 +403,6 @@ as_latex(expr::BaseExpr, ::Type{Val{:gen}}; kw...) = string(first(args(expr)))
 # end
 # function as_latex(expr::MorExpr, ::Type{Val{:coeval}}; kw...)
 #   subscript("\\mathrm{coev}", as_latex(first(args(expr))))
-# end
-# 
-# subscript(body::String, sub::String) = "$(body)_{$sub}"
-# supscript(body::String, sup::String) = "$(body)^{$sup}"
-# 
-# function binary_op(expr::BaseExpr, op::String, paren::Bool)
-#   sep = op == " " ? op : " $op "
-#   result = join((as_latex(a;paren=true) for a in args(expr)), sep)
-#   paren ? "\\left($result\\right)" : result
 # end
 # 
 # # Dagger category

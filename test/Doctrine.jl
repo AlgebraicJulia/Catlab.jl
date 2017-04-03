@@ -6,6 +6,7 @@ using CompCat.Syntax
 
 sexpr(expr::BaseExpr) = sprint(show_sexpr, expr)
 infix(expr::BaseExpr) = sprint(show_infix, expr)
+latex(expr::BaseExpr) = sprint(show_latex, expr)
 
 # Category
 ##########
@@ -50,6 +51,12 @@ f, g = FreeCategory.hom(:f, A, B), FreeCategory.hom(:g, B, A)
 @test infix(f) == "f"
 @test infix(id(A)) == "id[A]"
 @test infix(compose(f,g)) == "f⋅g"
+
+# Infix notation (LaTeX)
+@test latex(A) == "A"
+@test latex(f) == "f"
+@test latex(id(A)) == "\\mathrm{id}_{A}"
+@test latex(compose(f,g)) == "f \\cdot g"
 
 # 2-category
 ############
@@ -123,6 +130,15 @@ I = munit(Syntax.Ob)
 @test infix(compose(otimes(f,f),otimes(g,g))) == "(f⊗f)⋅(g⊗g)"
 @test infix(otimes(compose(f,g),compose(g,f))) == "(f⋅g)⊗(g⋅f)"
 
+# Infix notation (LaTeX)
+@test latex(I) == "I"
+@test latex(otimes(A,B)) == "A \\otimes B"
+@test latex(otimes(f,g)) == "f \\otimes g"
+@test latex(compose(otimes(f,f),otimes(g,g))) == 
+  "\\left(f \\otimes f\\right) \\cdot \\left(g \\otimes g\\right)"
+@test latex(otimes(compose(f,g),compose(g,f))) == 
+  "\\left(f \\cdot g\\right) \\otimes \\left(g \\cdot f\\right)"
+
 # Cartesian category
 ####################
 
@@ -170,23 +186,6 @@ f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
 @test dom(dagger(f)) == B
 @test codom(dagger(f)) == A
 
-# 
-# # Infix (LaTeX)
-# latex(expr::BaseExpr) = sprint(show_latex, expr)
-# 
-# @test latex(A) == "A"
-# @test latex(f) == "f"
-# @test latex(id(A)) == "\\mathrm{id}_{A}"
-# @test latex(compose(f,g)) == "f g"
-# 
-# @test latex(I) == "I"
-# @test latex(otimes(A,B)) == "A \\otimes B"
-# @test latex(otimes(f,g)) == "f \\otimes g"
-# @test latex(compose(otimes(f,f),otimes(g,g))) == 
-#   "\\left(f \\otimes f\\right) \\left(g \\otimes g\\right)"
-# @test latex(otimes(compose(f,g),compose(g,f))) == 
-#   "\\left(f g\\right) \\otimes \\left(g f\\right)"
-# 
 # @test latex(braid(A,B)) == "\\sigma_{A,B}"
 # 
 # @test latex(mcopy(A)) == "\\Delta_{A}"

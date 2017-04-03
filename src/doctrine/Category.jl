@@ -1,6 +1,6 @@
 using ..GAT
 using ..Syntax
-import ..Syntax: show_infix
+import ..Syntax: show_infix, show_latex
 
 # Category
 ##########
@@ -31,8 +31,15 @@ end
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end
 
-function show_infix(io::IO, expr::HomExpr{:compose}; paren::Bool=false)
-  show_infix(io, expr, "⋅"; paren=paren)
+function show_infix(io::IO, expr::HomExpr{:compose}; kw...)
+  show_infix(io, expr, "⋅"; kw...)
+end
+
+function show_latex(io::IO, expr::HomExpr{:id}; kw...)
+  subscript(io, "\\mathrm{id}", sprint(show_latex, dom(expr)))
+end
+function show_latex(io::IO, expr::HomExpr{:compose}; paren::Bool=false, kw...)
+  show_latex_infix(io, expr, "\\cdot"; paren=paren)
 end
 
 # 2-category
@@ -69,9 +76,16 @@ Checks domains of morphisms but not 2-morphisms.
   compose2(α::Hom2, β::Hom2) = associate(Super.compose2(α,β))
 end
 
-function show_infix(io::IO, expr::Hom2Expr{:compose}; paren::Bool=false)
-  show_infix(io, expr, "⋅"; paren=paren)
+function show_infix(io::IO, expr::Hom2Expr{:compose}; kw...)
+  show_infix(io, expr, "⋅"; kw...)
 end
-function show_infix(io::IO, expr::Hom2Expr{:compose2}; paren::Bool=false)
-  show_infix(io, expr, "*"; paren=paren)
+function show_infix(io::IO, expr::Hom2Expr{:compose2}; kw...)
+  show_infix(io, expr, "*"; kw...)
+end
+
+function show_latex(io::IO, expr::Hom2Expr{:compose}; kw...)
+  show_latex_infix(io, expr, "\\cdot"; kw...)
+end
+function show_latex(io::IO, expr::Hom2Expr{:compose2}; kw...)
+  show_latex_infix(io, expr, "*"; kw...)
 end
