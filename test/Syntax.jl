@@ -52,6 +52,13 @@ e = munit(FreeMonoidAssocUnit.M)
 @test mtimes(mtimes(x,y),z) == mtimes(x,mtimes(y,z))
 @test mtimes(e,x) == x && mtimes(x,e) == x
 
+abstract MonoidExpr{T} <: BaseExpr{T}
+@syntax FreeMonoidTyped(MonoidExpr) Monoid
+
+x = FreeMonoidTyped.m(:x)
+@test issubtype(FreeMonoidTyped.M, MonoidExpr)
+@test isa(x, FreeMonoidTyped.M) && isa(x, MonoidExpr)
+
 # Category (includes dependent types)
 
 @signature Category(Ob,Hom) begin

@@ -26,7 +26,7 @@ This usage is too entrenched to overturn, however inconvenient it may be.
   ∘(fs::Vararg{Hom}) = foldl(∘, fs)
 end
 
-@syntax FreeCategory Category begin
+@syntax FreeCategory(ObExpr,HomExpr) Category begin
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end
 
@@ -58,7 +58,7 @@ end
 
 Checks domains of morphisms but not 2-morphisms.
 """
-@syntax FreeCategory2 Category2 begin
+@syntax FreeCategory2(ObExpr,HomExpr,Hom2Expr) Category2 begin
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
   compose(α::Hom2, β::Hom2) = associate(Super.compose(α,β))
   compose2(α::Hom2, β::Hom2) = associate(Super.compose2(α,β))

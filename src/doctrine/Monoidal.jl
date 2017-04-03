@@ -37,7 +37,7 @@ The signature (but not the axioms) is the same as a braided monoidal category.
   braid(A::Ob, B::Ob)::Hom(otimes(A,B),otimes(B,A))
 end
 
-@syntax FreeSymmetricMonoidalCategory SymmetricMonoidalCategory begin
+@syntax FreeSymmetricMonoidalCategory(ObExpr,HomExpr) SymmetricMonoidalCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
@@ -60,7 +60,7 @@ qualifiers for brevity.
   ◇(A::Ob) = delete(A)
 end
 
-@syntax FreeCartesianCategory CartesianCategory begin
+@syntax FreeCartesianCategory(ObExpr,HomExpr) CartesianCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
@@ -80,7 +80,7 @@ qualifiers for brevity.
   □(A::Ob) = create(A)
 end
 
-@syntax FreeCocartesianCategory CocartesianCategory begin
+@syntax FreeCocartesianCategory(ObExpr,HomExpr) CocartesianCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
@@ -98,7 +98,7 @@ end
   coev(A::Ob)::Hom(munit(), otimes(dual(A),A))
 end
 
-@syntax FreeCompactClosedCategory CompactClosedCategory begin
+@syntax FreeCompactClosedCategory(ObExpr,HomExpr) CompactClosedCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
@@ -122,7 +122,7 @@ FIXME: This signature should extend both `DaggerCategory` and
   dagger(f::Hom(A,B))::Hom(B,A) <= (A::Ob,B::Ob)
 end
 
-@syntax FreeDaggerCompactCategory DaggerCompactCategory begin
+@syntax FreeDaggerCompactCategory(ObExpr,HomExpr) DaggerCompactCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))

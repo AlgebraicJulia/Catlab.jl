@@ -70,16 +70,23 @@ end
 
 """ TODO
 """
-macro syntax(syntax_name, mod_name, body=Expr(:block))
+macro syntax(syntax_head, mod_name, body=Expr(:block))
   @assert body.head == :block
+  syntax_name, base_types = @match syntax_head begin
+    Expr(:call, [name::Symbol, args...], _) => (name, args)
+    name::Symbol => (name, [])
+    _ => throw(ParseError("Ill-formed syntax signature $syntax_head"))
+  end
   functions = map(GAT.parse_function, GAT.strip_lines(body).args)
-  expr = Expr(:call, :syntax_code,
-              Expr(:quote, syntax_name), esc(mod_name), functions)
+  
+  expr = Expr(:call, :syntax_code, Expr(:quote, syntax_name),
+              esc(Expr(:ref, :Type, base_types...)), esc(mod_name), functions)
   Expr(:block,
     Expr(:call, esc(:eval), expr),
     :(Core.@__doc__ $(esc(syntax_name))))
 end
-function syntax_code(name::Symbol, mod::Module, functions::Vector)
+function syntax_code(name::Symbol, base_types::Vector{Type}, mod::Module,
+                     functions::Vector)
   class = mod.class()
   signature = class.signature
   
@@ -87,7 +94,7 @@ function syntax_code(name::Symbol, mod::Module, functions::Vector)
   mod = Expr(:module, true, name,
     Expr(:block, [
       Expr(:export, [cons.name for cons in signature.types]...);  
-      gen_types(signature);
+      gen_types(signature, base_types);
       gen_type_accessors(signature);
       gen_term_generators(signature);
       gen_term_constructors(signature);
@@ -125,16 +132,25 @@ end
 
 """ Generate syntax type definitions.
 """
-function gen_type(cons::TypeConstructor)::Expr
-  base_name = GlobalRef(Syntax, :BaseExpr)
+function gen_type(cons::TypeConstructor, base_type::Type=Any)::Expr
+  base_expr = GlobalRef(Syntax, :BaseExpr)
+  base_name = if base_type == Any
+    base_expr
+  else
+    GlobalRef(base_type.name.module, base_type.name.name)
+  end
   expr = :(immutable $(cons.name){T} <: $base_name{T}
     args::Vector
-    type_args::Vector{$base_name}
+    type_args::Vector{$base_expr}
   end)
   GAT.strip_lines(expr, recurse=true)
 end
-function gen_types(sig::Signature)::Vector{Expr}
-  map(gen_type, sig.types)
+function gen_types(sig::Signature, base_types::Vector{Type})::Vector{Expr}
+  if isempty(base_types)
+    map(gen_type, sig.types)
+  else
+    map(gen_type, sig.types, base_types)
+  end
 end
 
 """ Generate accessor methods for type parameters.

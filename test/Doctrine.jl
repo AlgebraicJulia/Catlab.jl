@@ -12,6 +12,11 @@ sexpr(expr::BaseExpr) = sprint(show_sexpr, expr)
 A, B = FreeCategory.ob(:A), FreeCategory.ob(:B)
 f, g = FreeCategory.hom(:f, A, B), FreeCategory.hom(:g, B, A)
 
+# Expression types
+@test isa(A, FreeCategory.Ob) && isa(f, FreeCategory.Hom)
+@test isa(A, ObExpr) && isa(f, HomExpr)
+@test isa(A, CategoryExpr) && isa(f, CategoryExpr)
+
 # Domains and codomains
 @test dom(f) == A
 @test codom(f) == B
