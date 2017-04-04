@@ -62,7 +62,7 @@ end
   # Extra syntax
   compose(αs::Vararg{Hom2}) = foldl(compose, αs)
   compose2(αs::Vararg{Hom2}) = foldl(compose2, αs)
-  ∘(α::Hom2, β::Hom2) = compose(g, f)
+  ∘(α::Hom2, β::Hom2) = compose(β, α)
   ∘(αs::Vararg{Hom2}) = foldl(∘, αs)
 end
 
