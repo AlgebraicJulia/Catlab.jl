@@ -1,3 +1,25 @@
+""" Generalized algebraic theories (GATs) in Julia.
+
+GATs generalize (multisorted) algebraic theories by incorporating a fragment of
+dependent type theory. They allow type and term constructors to be partially
+defined. GATs provide a convenient formal syntax for categorical structures.
+
+At present, this module only supports defining the *signature* of a GAT. In the
+future we may allow *axioms* to be expressed as well. Regardless, we will
+persist in calling this module "GAT". Signatures are defined using the
+`@signature` macro.
+
+There are two useful things to do with a GAT signature:
+
+1. Define *instances* of the signature (models of the theory) using the
+  `@instance` macro
+2. Define *syntax* systems using the `@syntax` macro (see `Syntax` module)
+
+References:
+
+- (Cartmell, 1986, "Generalized algebraic theories and contextual categoies")
+- (Pitts, 1995, "Categorical logic", Sec 6: "Dependent types")
+"""
 module GAT
 export @signature, @instance
 
@@ -268,7 +290,18 @@ end
 # Signatures
 ############
 
-""" TOOD
+""" Define a signature of a generalized algebraic theory (GAT).
+
+Three kinds of things can go in the signature body:
+
+1. Type constructors, indicated by the special type `TYPE`, e.g.
+   `Hom(X::Ob,Y::Ob)::TYPE`
+2. Term constructors, e.g.,
+   `id(X::Ob)::Hom(X,X)`
+3. Julia functions operating on the term constructors to provide additional
+   functionality
+
+A signature can extend existing signatures (at present only one).
 """
 macro signature(head, body)
   # Parse signature header.
@@ -528,7 +561,10 @@ end
 # Instances
 ###########
 
-""" TODO
+""" Define an *instance* of a generalized algebraic theory (GAT).
+
+These are perfectly analagous to instances of a type class in Haskell. See also
+the Typeclass.jl library for Julia.
 """
 macro instance(head, body)
   # Parse the instance definition.
