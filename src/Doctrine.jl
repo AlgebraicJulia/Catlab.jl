@@ -8,8 +8,9 @@ export Category, FreeCategory, id, compose, ∘, dom, codom
 export Category2, FreeCategory2, compose2
 export MonoidalCategory, otimes, munit, ⊗
 export SymmetricMonoidalCategory, FreeSymmetricMonoidalCategory, braid
-export CartesianCategory, FreeCartesianCategory, mcopy, delete
-export CocartesianCategory, FreeCocartesianCategory, mmerge, create
+export CartesianCategory, FreeCartesianCategory, mcopy, delete, Δ, ◇
+export CocartesianCategory, FreeCocartesianCategory, mmerge, create, ∇, □
+export BiproductCategory, FreeBiproductCategory
 export CompactClosedCategory, FreeCompactClosedCategory, dual, ev, coev
 export DaggerCategory, DaggerCompactCategory, FreeDaggerCompactCategory, dagger
 

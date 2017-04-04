@@ -6,6 +6,7 @@ export diagram_tikz
 import Formatting: format
 using Match
 
+import ...Doctrine
 import ...Doctrine: ObExpr, HomExpr, dom, codom, head, args, compose, id
 import ..TikZ
 
@@ -203,7 +204,7 @@ end
 # Internal (co)monoid
 
 function mor_tikz(f::HomExpr{:mcopy}, name::String, style::Dict)
-  A = Syntax.dom(f)
+  A = Doctrine.dom(f)
   dom = [ PortTikZ(A, "$name point.west", angle=180) ]
   codom = [ PortTikZ(A, "$name point.north", angle=90, label=false),
             PortTikZ(A, "$name point.south", angle=270, label=false) ]
@@ -212,7 +213,7 @@ function mor_tikz(f::HomExpr{:mcopy}, name::String, style::Dict)
 end
 
 function mor_tikz(f::HomExpr{:mmerge}, name::String, style::Dict)
-  A = Syntax.codom(f)
+  A = Doctrine.codom(f)
   dom = [ PortTikZ(A, "$name point.north", angle=90, label=false),
           PortTikZ(A, "$name point.south", angle=270, label=false) ]
   codom = [ PortTikZ(A, "$name point.east", angle=0) ]

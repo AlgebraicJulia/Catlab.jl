@@ -122,6 +122,32 @@ function show_latex(io::IO, expr::HomExpr{:create}; kw...)
   show_latex_script(io, expr, "\\square")
 end
 
+# Biproduct category
+####################
+
+""" Doctrine of *bicategory category*
+
+Also known as a *semiadditive category*.
+"""
+@signature SymmetricMonoidalCategory(Ob,Hom) => BiproductCategory(Ob,Hom) begin
+  mcopy(A::Ob)::Hom(A,otimes(A,A))
+  mmerge(A::Ob)::Hom(otimes(A,A),A)
+  delete(A::Ob)::Hom(A,munit())
+  create(A::Ob)::Hom(munit(),A)
+  
+  # Unicode syntax
+  ∇(A::Ob) = mmerge(A)
+  Δ(A::Ob) = mcopy(A)
+  ◇(A::Ob) = delete(A)
+  □(A::Ob) = create(A)
+end
+
+@syntax FreeBiproductCategory(ObExpr,HomExpr) BiproductCategory begin
+  otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
+  otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+end
+
 # Compact closed category
 #########################
 
