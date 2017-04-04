@@ -27,12 +27,8 @@ abstract BaseBox
 
 """ Object in the category of wiring diagrams.
 """
-@auto_hash_equals immutable Wires
-  wires::Vector
-end
-wires(wires...) = Wires(collect(wires))
-eachindex(wires::Wires) = eachindex(wires.wires)
-length(wires::Wires) = length(wires.wires)
+typealias Wires Vector
+wires(wires...) = collect(wires)
 
 @enum ConnectorKind Input Output
 immutable Connector
@@ -153,7 +149,7 @@ end
     flatten(WiringDiagram(boxes, connections, dom(f), codom(g)))
   end
 
-  otimes(A::Wires, B::Wires) = Wires([A.wires; B.wires])
+  otimes(A::Wires, B::Wires) = [A; B]
   
   function otimes(f::WiringDiagram, g::WiringDiagram)
     m, n = length(f.dom), length(f.codom)
@@ -168,7 +164,7 @@ end
       boxes, connections, otimes(dom(f),dom(g)), otimes(codom(f),codom(g))))
   end
   
-  munit(::Type{Wires}) = Wires([])
+  munit(::Type{Wires}) = []
   
   function braid(A::Wires, B::Wires)
     m, n = length(A), length(B)
