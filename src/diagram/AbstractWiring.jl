@@ -14,8 +14,8 @@ export
 
 import Base: eachindex, length, show
 using AutoHashEquals
-using Typeclass
 
+using ...GAT
 import ...Doctrine:
   Category, dom, codom, id, compose, ∘,
   MonoidalCategory, otimes, munit, ⊗
@@ -127,10 +127,10 @@ function flatten(diagram::WiringDiagram, subindex::Int)
   WiringDiagram(boxes, connections, dom(diagram), codom(diagram))
 end
 
-# Category
-##########
+# Monoidal category
+###################
 
-@instance! Category Wires WiringDiagram begin
+@instance MonoidalCategory(Wires, WiringDiagram) begin
   dom(f::WiringDiagram) = f.dom
   codom(f::WiringDiagram) = f.codom
   
@@ -152,12 +152,7 @@ end
     )
     flatten(WiringDiagram(boxes, connections, dom(f), codom(g)))
   end
-end
 
-# Monoidal category
-###################
-
-@instance! MonoidalCategory Wires WiringDiagram begin
   otimes(A::Wires, B::Wires) = Wires([A.wires; B.wires])
   
   function otimes(f::WiringDiagram, g::WiringDiagram)
@@ -173,7 +168,7 @@ end
       boxes, connections, otimes(dom(f),dom(g)), otimes(codom(f),codom(g))))
   end
   
-  munit(::Wires) = Wires([])
+  munit(::Type{Wires}) = Wires([])
 end
 
 end
