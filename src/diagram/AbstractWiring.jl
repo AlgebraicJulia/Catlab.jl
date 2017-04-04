@@ -10,7 +10,7 @@ export
   Wires, Box, WiringDiagram, wires, box,
   ConnectorKind, Input, Output, Connector, Connection,
   dom, codom, id, compose, ∘,
-  otimes, munit, ⊗
+  otimes, munit, braid, ⊗
 
 import Base: eachindex, length, show
 using AutoHashEquals
@@ -18,7 +18,7 @@ using AutoHashEquals
 using ...GAT
 import ...Doctrine:
   Category, dom, codom, id, compose, ∘,
-  MonoidalCategory, otimes, munit, ⊗
+  SymmetricMonoidalCategory, otimes, munit, braid, ⊗
 
 # Wiring Diagrams
 #################
@@ -130,7 +130,7 @@ end
 # Monoidal category
 ###################
 
-@instance MonoidalCategory(Wires, WiringDiagram) begin
+@instance SymmetricMonoidalCategory(Wires, WiringDiagram) begin
   dom(f::WiringDiagram) = f.dom
   codom(f::WiringDiagram) = f.codom
   
@@ -169,6 +169,15 @@ end
   end
   
   munit(::Type{Wires}) = Wires([])
+  
+  function braid(A::Wires, B::Wires)
+    m, n = length(A), length(B)
+    connections = union(
+      Set(Connection((0,Input,i) => (0,Output,i+n)) for i in eachindex(A)),
+      Set(Connection((0,Input,i+m) => (0,Output,i)) for i in eachindex(B))
+    )
+    WiringDiagram([], connections, otimes(A,B), otimes(B,A))
+  end
 end
 
 end
