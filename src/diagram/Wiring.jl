@@ -6,8 +6,7 @@ export diagram_tikz
 import Formatting: format
 using Match
 
-import ...Syntax
-import ...Syntax: ObExpr, MorExpr, dom, codom, head, args, compose, id
+import ...Doctrine: ObExpr, HomExpr, dom, codom, head, args, compose, id
 import ..TikZ
 
 # TikZ
@@ -23,7 +22,7 @@ immutable PortTikZ
 end
 
 immutable MorTikZ
-  mor::MorExpr
+  mor::HomExpr
   node::TikZ.Node
   dom::Vector{PortTikZ}
   codom::Vector{PortTikZ}
@@ -38,7 +37,7 @@ not officially supported by TikZ but that is nonetheless in widespread use.
 Warning: Since our implementation uses the `remember picture` option, LaTeX must
 be run *twice* to fully render the picture. See (TikZ Manual, Sec 17.13).
 """
-function diagram_tikz(f::MorExpr;
+function diagram_tikz(f::HomExpr;
     font_size::Number=12, line_width::String="0.4pt", math_mode::Bool=true,
     arrowtip::String="", labels::Bool=true,
     box_angle::Int=80, box_padding::String="0.333em", box_size::Number=2,
@@ -53,10 +52,10 @@ function diagram_tikz(f::MorExpr;
   if head(f) == :id
     f_ext = compose(id(dom(f)), f_ext)
   else
-    if head(dom(f)) != :unit
+    if head(dom(f)) != :munit
       f_ext = compose(id(dom(f)), f_ext)
     end
-    if head(codom(f)) != :unit
+    if head(codom(f)) != :munit
       f_ext = compose(f_ext, id(codom(f)))
     end
   end
@@ -88,12 +87,6 @@ function diagram_tikz(f::MorExpr;
   TikZ.Picture(mor.node; props=props)
 end
 
-""" Create a TikZ node representing a morphism.
-"""
-function mor_tikz(f::MorExpr, name::String, style::Dict)::MorTikZ
-  mor_tikz(f, name, style, Val{head(f)})
-end
-
 # Category
 
 """ Create a TikZ node representing a generator morphism.
@@ -104,7 +97,7 @@ I know to get a bounding box on the inner node, regardless of its shape,
 *before* it's rendered. In fact, this is the same problem that forces us to use
 nested pictures in the first place.
 """
-function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:gen}})
+function mor_tikz(f::HomExpr{:generator}, name::String, style::Dict)
   # TODO: For maximum flexibility, we could defer the calculation of the anchor
   # locations to the renderer. Presently we assume that the node is sufficiently
   # "box-like" for the default anchors to make sense.
@@ -118,7 +111,7 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:gen}})
   MorTikZ(f, node, dom_ports, codom_ports)
 end
 
-function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:id}})
+function mor_tikz(f::HomExpr{:id}, name::String, style::Dict)
   dom_ports = box_anchors(dom(f), name, style, dir="center", angle=180)
   codom_ports = box_anchors(codom(f), name, style, dir="center", angle=0)
   height = box_size(length(dom_ports), style)
@@ -127,7 +120,7 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:id}})
   MorTikZ(f, node, dom_ports, codom_ports)
 end
 
-function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:compose}})
+function mor_tikz(f::HomExpr{:compose}, name::String, style::Dict)
   compose_sep = style[:compose_sep]
   edge_props = style[:arrowtip] ?
     [ TikZ.Property("postaction", "{decorate}") ] : []
@@ -172,7 +165,7 @@ end
 
 # Monoidal category
 
-function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:otimes}})
+function mor_tikz(f::HomExpr{:otimes}, name::String, style::Dict)
   product_sep = style[:product_sep]
   
   mors = []
@@ -195,7 +188,7 @@ end
 
 # Symmetric monoidal category
 
-function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:braid}})
+function mor_tikz(f::HomExpr{:braid}, name::String, style::Dict)
   A, B = args(f)[1], args(f)[2]
   center = "$name.center"
   dom = [ PortTikZ(A, center, angle=135), PortTikZ(B, center, angle=225) ]
@@ -209,7 +202,7 @@ end
 
 # Internal (co)monoid
 
-function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:copy}})
+function mor_tikz(f::HomExpr{:mcopy}, name::String, style::Dict)
   A = Syntax.dom(f)
   dom = [ PortTikZ(A, "$name point.west", angle=180) ]
   codom = [ PortTikZ(A, "$name point.north", angle=90, label=false),
@@ -218,7 +211,7 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:copy}})
   MorTikZ(f, node, dom, codom)
 end
 
-function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:merge}})
+function mor_tikz(f::HomExpr{:mmerge}, name::String, style::Dict)
   A = Syntax.codom(f)
   dom = [ PortTikZ(A, "$name point.north", angle=90, label=false),
           PortTikZ(A, "$name point.south", angle=270, label=false) ]
@@ -227,13 +220,13 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:merge}})
   MorTikZ(f, node, dom, codom)
 end
 
-function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:create}})
+function mor_tikz(f::HomExpr{:create}, name::String, style::Dict)
   ports = [ PortTikZ(codom(f), "$name point.east", angle=0) ]
   node = monoid_node_tikz(name, style, 1)
   MorTikZ(f, node, [], ports)
 end
 
-function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:delete}})
+function mor_tikz(f::HomExpr{:delete}, name::String, style::Dict)
   ports = [ PortTikZ(dom(f), "$name point.west", angle=180) ]
   node = monoid_node_tikz(name, style, 1)
   MorTikZ(f, node, ports, [])
@@ -260,7 +253,7 @@ end
 
 # Compact closed category
 
-function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:eval}})
+function mor_tikz(f::HomExpr{:ev}, name::String, style::Dict)
   ports = [ PortTikZ(args(dom(f))[1], "$name.center", angle=90, label=false),
             PortTikZ(args(dom(f))[2], "$name.center", angle=270, label=false) ]
   props = [
@@ -270,7 +263,7 @@ function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:eval}})
   MorTikZ(f, node, ports, [])
 end
 
-function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:coeval}})
+function mor_tikz(f::HomExpr{:coev}, name::String, style::Dict)
   ports = [ PortTikZ(args(codom(f))[1], "$name.center", angle=90, label=false),
             PortTikZ(args(codom(f))[2], "$name.center", angle=270, label=false) ]
   props = [
@@ -282,12 +275,12 @@ end
 
 # Dagger category
 
-function mor_tikz(f::MorExpr, name::String, style::Dict, ::Type{Val{:dagger}})
+function mor_tikz(f::HomExpr{:dagger}, name::String, style::Dict)
   # FIXME: Presently only support dagger on generators. To support more general
   # morphisms, we should fully distribute the dagger across composition, tensor
   # products, etc.
   gen = first(args(f))
-  @assert head(gen) == :gen
+  @assert head(gen) == :generator
   
   dom_ports = box_anchors(dom(f), name, style, dir="west", angle=180)
   codom_ports = box_anchors(codom(f), name, style, dir="east", angle=0)
@@ -306,7 +299,7 @@ end
 
 Draws a rectangle with rounded corners.
 """
-function box_renderer_rectangle(gen::MorExpr, name::String,
+function box_renderer_rectangle(gen::HomExpr, name::String,
                                 size::Number)::TikZ.Picture
   props = [
     TikZ.Property("morphism node"),
@@ -320,7 +313,7 @@ end
 
 """ Draws a rotated trapezium with rounded corners.
 """
-function box_renderer_trapezium(gen::MorExpr, name::String, size::Number;
+function box_renderer_trapezium(gen::HomExpr, name::String, size::Number;
                                 angle::Int=80, reverse::Bool=false)::TikZ.Picture
   props = [
     TikZ.Property("morphism node"),
@@ -354,9 +347,10 @@ These anchors are consistent with the monoidal product (see `box_size`).
 function box_anchors(A::ObExpr, name::String, style::Dict;
                      dir::String="center", kwargs...)::Vector{PortTikZ}
   box_size, product_sep = style[:box_size], style[:product_sep]
-  @match A begin
-    ObExpr(:unit, _) => []
-    ObExpr(:otimes, gens) => begin
+  @match head(A) begin
+    :munit => []
+    :otimes => begin
+      gens = args(A)
       ports = []
       m = length(gens)
       start = (m*box_size + (m-1)*product_sep) / 2
@@ -373,13 +367,11 @@ end
 
 """ Get label for a box (a morphism).
 """
-box_label(f::MorExpr) = box_label(f, Val{head(f)})
-box_label(f::MorExpr, ::Type{Val{:gen}}) = string(first(args(f)))
+box_label(f::HomExpr{:generator}) = string(first(args(f)))
 
 """ Get label for a wire (an object).
 """
-wire_label(A::ObExpr) = wire_label(A, Val{head(A)})
-wire_label(A::ObExpr, ::Type{Val{:gen}}) = string(first(args(A)))
-wire_label(A::ObExpr, ::Type{Val{:dual}}) = wire_label(first(args(A)))
+wire_label(A::ObExpr{:generator}) = string(first(args(A)))
+wire_label(A::ObExpr{:dual}) = wire_label(first(args(A)))
 
 end

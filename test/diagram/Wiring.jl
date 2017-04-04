@@ -1,15 +1,18 @@
-using CompCat.Syntax
-using CompCat.Diagram.Wiring
-import CompCat.Diagram: TikZ
+module TestWiring
 
 using Base.Test
+
+using CompCat.Doctrine
+using CompCat.Diagram.Wiring
+import CompCat.Diagram: TikZ
 
 # TikZ
 ######
 
-A, B = ob_expr(:A), ob_expr(:B)
-f = mor_expr(:f, A, B)
-g = mor_expr(:g, B, A)
+Syntax = FreeDaggerCompactCategory
+A, B = Syntax.ob(:A), Syntax.ob(:B)
+f = Syntax.hom(:f, A, B)
+g = Syntax.hom(:g, B, A)
 
 # We can't test that these pictures look right, but we can at least test that
 # they exist!
@@ -18,3 +21,5 @@ g = mor_expr(:g, B, A)
 @test isa(diagram_tikz(compose(id(A), f, id(B))), TikZ.Picture)
 @test isa(diagram_tikz(otimes(f,g)), TikZ.Picture)
 @test isa(diagram_tikz(dagger(f)), TikZ.Picture)
+
+end
