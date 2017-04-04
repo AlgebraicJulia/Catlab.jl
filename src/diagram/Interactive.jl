@@ -27,20 +27,4 @@ function show(io::IO, ::MIME"image/svg+xml", pic::TikZ.Picture)
   show(io, MIME"image/svg+xml"(), TikzPicture(pic))
 end
 
-function show(io::IO, ::MIME"text/latex", expr::BaseExpr)
-  print(io, "\$")
-  show_latex(io, expr)
-  print(io, "\$")
-end
-
-function show(io::IO, ::MIME"text/latex", expr::MorExpr)
-  print(io, "\$")
-  show_latex(io, expr)
-  print(io, " : ")
-  show_latex(io, dom(expr))
-  print(io, " \\to ")
-  show_latex(io, codom(expr))
-  print(io, "\$")
-end
-
 end

@@ -1,152 +1,115 @@
-using CompCat.Doctrine
-using CompCat.Syntax
+""" Test the Syntax module.
+
+The unit tests are sparse because many of the Doctrine tests are really just
+tests of the Syntax module.
+"""
+module TestSyntax
+
 using Base.Test
+using CompCat.GAT
+using CompCat.Syntax
 
-# Generators
-A, B = ob_expr(:A), ob_expr(:B)
-f = mor_expr(:f, A, B)
-g = mor_expr(:g, B, A)
+# Simple case: Monoid (no dependent types)
 
-# Equality of equivalent generators
-@test ob_expr(:A) == ob_expr(:A)
-@test mor_expr(:f, ob_expr(:A), ob_expr(:B)) == mor_expr(:f, ob_expr(:A), ob_expr(:B))
+""" Signature of the theory of monoids.
+"""
+@signature Monoid(M) begin
+  M::TYPE
+  munit()::M
+  mtimes(x::M,y::M)::M
+end
 
-# Category
-##########
+""" Syntax for the theory of monoids.
+"""
+@syntax FreeMonoid Monoid
 
-# Domains and codomains
-@test dom(f) == A
-@test codom(f) == B
-@test dom(compose(f,g)) == A
-@test codom(compose(f,g)) == A
-@test_throws Exception compose(f,f)
+@test isa(FreeMonoid, Module)
+@test contains(string(Docs.doc(FreeMonoid)), "theory of monoids")
+@test sort(names(FreeMonoid)) == sort([:FreeMonoid, :M])
 
-# Associativity
-@test compose(compose(f,g),f) == compose(f,compose(g,f))
+x, y, z = FreeMonoid.m(:x), FreeMonoid.m(:y), FreeMonoid.m(:z)
+@test x == FreeMonoid.m(:x)
+@test x != y
+@test isa(mtimes(x,y), FreeMonoid.M)
+@test isa(munit(FreeMonoid.M), FreeMonoid.M)
+@test mtimes(mtimes(x,y),z) != mtimes(x,mtimes(y,z))
 
-# Extra syntax
-@test compose(f,g,f) == compose(compose(f,g),f)
-@test g∘f == compose(f,g)
-@test f∘g∘f == compose(compose(f,g),f)
+@syntax FreeMonoidAssoc Monoid begin
+  mtimes(x::M, y::M) = associate(Super.mtimes(x,y))
+end
 
-# Monoidal category
-###################
+x, y, z = FreeMonoidAssoc.m(:x), FreeMonoidAssoc.m(:y), FreeMonoidAssoc.m(:z)
+e = munit(FreeMonoidAssoc.M)
+@test mtimes(mtimes(x,y),z) == mtimes(x,mtimes(y,z))
+@test mtimes(e,x) != x && mtimes(x,e) != x
 
-# Domains and codomains
-@test dom(otimes(f,g)) == otimes(dom(f),dom(g))
-@test codom(otimes(f,g)) == otimes(codom(f),codom(g))
+@syntax FreeMonoidAssocUnit Monoid begin
+  mtimes(x::M, y::M) = associate_unit(:munit, Super.mtimes(x,y))
+end
 
-# Associativity and unit
-I = munit(A)
-@test otimes(A,I) == A
-@test otimes(I,A) == A
-@test otimes(otimes(A,B),A) == otimes(A,otimes(B,A))
-@test otimes(otimes(f,g),f) == otimes(f,otimes(g,f))
+x, y, z = FreeMonoidAssocUnit.m(:x), FreeMonoidAssocUnit.m(:y), FreeMonoidAssocUnit.m(:z)
+e = munit(FreeMonoidAssocUnit.M)
+@test mtimes(mtimes(x,y),z) == mtimes(x,mtimes(y,z))
+@test mtimes(e,x) == x && mtimes(x,e) == x
 
-# Extra syntax
-@test otimes(f,f,f) == otimes(otimes(f,f),f)
-@test A⊗B == otimes(A,B)
-@test f⊗g == otimes(f,g)
+abstract MonoidExpr{T} <: BaseExpr{T}
+@syntax FreeMonoidTyped(MonoidExpr) Monoid
 
-# Symmetric monoidal category
-#############################
+x = FreeMonoidTyped.m(:x)
+@test issubtype(FreeMonoidTyped.M, MonoidExpr)
+@test isa(x, FreeMonoidTyped.M) && isa(x, MonoidExpr)
 
-@test dom(braid(A,B)) == otimes(A,B)
-@test codom(braid(A,B)) == otimes(B,A)
+# Category (includes dependent types)
 
-# Internal (co)monoid
-#####################
+@signature Category(Ob,Hom) begin
+  Ob::TYPE
+  Hom(dom::Ob, codom::Ob)::TYPE
+  
+  id(X::Ob)::Hom(X,X)
+  compose(f::Hom(X,Y), g::Hom(Y,Z))::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob)
+  
+  compose(fs::Vararg{Hom}) = foldl(compose, fs)
+end
 
-# Monoid
-@test dom(mmerge(A)) == otimes(A,A)
-@test codom(mmerge(A)) == A
-@test dom(create(A)) == I
-@test codom(create(A)) == A
+@syntax FreeCategory Category begin
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g))
+end
 
-# Comonoid
-@test dom(mcopy(A)) == A
-@test codom(mcopy(A)) == otimes(A,A)
-@test dom(delete(A)) == A
-@test codom(delete(A)) == I
+@test isa(FreeCategory, Module)
+@test sort(names(FreeCategory)) == sort([:FreeCategory, :Ob, :Hom])
 
-# Compact closed category
-#########################
+X, Y, Z, W = map(FreeCategory.ob, [:X, :Y, :Z, :W])
+f = FreeCategory.hom(:f, X, Y)
+g = FreeCategory.hom(:g, Y, Z)
+h = FreeCategory.hom(:h, Z, W)
+@test isa(X, FreeCategory.Ob) && isa(f, FreeCategory.Hom)
+@test_throws MethodError FreeCategory.hom(:f)
+@test dom(f) == X
+@test codom(f) == Y
 
-@test dom(ev(A)) == otimes(A, dual(A))
-@test codom(ev(A)) == I
+@test isa(id(X), FreeCategory.Hom)
+@test dom(id(X)) == X
+@test codom(id(X)) == X
 
-@test dom(coev(A)) == I
-@test codom(coev(A)) == otimes(dual(A), A)
+@test isa(compose(f,g), FreeCategory.Hom)
+@test dom(compose(f,g)) == X
+@test codom(compose(f,g)) == Z
+@test isa(compose(f,f), FreeCategory.Hom) # Doesn't check domains.
 
-# Dagger category
-#################
+@test compose(compose(f,g),h) == compose(f,compose(g,h))
+@test compose(f,g,h) == compose(compose(f,g),h)
+@test dom(compose(f,g,h)) == X
+@test codom(compose(f,g,h)) == W
 
-@test dom(dagger(f)) == B
-@test codom(dagger(f)) == A
+@syntax FreeCategoryStrict Category begin
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+end
 
-# Pretty-print
-##############
+X, Y = FreeCategoryStrict.ob(:X), FreeCategoryStrict.ob(:Y)
+f = FreeCategoryStrict.hom(:f, X, Y)
+g = FreeCategoryStrict.hom(:g, Y, X)
 
-# S-expressions
-sexpr(expr::BaseExpr) = sprint(show_sexpr, expr)
+@test isa(compose(f,g,f), FreeCategoryStrict.Hom)
+@test_throws SyntaxDomainError compose(f,f)
 
-@test sexpr(A) == ":A"
-@test sexpr(f) == ":f"
-@test sexpr(compose(f,g)) == "(compose :f :g)"
-@test sexpr(compose(f,g,f)) == "(compose :f :g :f)"
-
-@test sexpr(I) == "(unit)"
-@test sexpr(otimes(A,B)) == "(otimes :A :B)"
-@test sexpr(otimes(f,g)) == "(otimes :f :g)"
-@test sexpr(compose(otimes(f,f),otimes(g,g))) == "(compose (otimes :f :f) (otimes :g :g))"
-
-# Infix (Unicode)
-infix(expr::BaseExpr) = sprint(show_infix, expr)
-
-@test infix(A) == "A"
-@test infix(f) == "f"
-@test infix(id(A)) == "id[A]"
-@test infix(compose(f,g)) == "f g"
-
-@test infix(I) == "I"
-@test infix(otimes(A,B)) == "A⊗B"
-@test infix(otimes(f,g)) == "f⊗g"
-@test infix(compose(otimes(f,f),otimes(g,g))) == "(f⊗f) (g⊗g)"
-@test infix(otimes(compose(f,g),compose(g,f))) == "(f g)⊗(g f)"
-
-@test infix(braid(A,B)) == "braid[A,B]"
-@test infix(mmerge(A)) == "merge[A]"
-@test infix(mcopy(A)) == "copy[A]"
-@test infix(compose(mcopy(A), otimes(f,f))) == "copy[A] (f⊗f)"
-
-@test infix(dagger(f)) == "dagger[f]"
-
-# Infix (LaTeX)
-latex(expr::BaseExpr) = sprint(show_latex, expr)
-
-@test latex(A) == "A"
-@test latex(f) == "f"
-@test latex(id(A)) == "\\mathrm{id}_{A}"
-@test latex(compose(f,g)) == "f g"
-
-@test latex(I) == "I"
-@test latex(otimes(A,B)) == "A \\otimes B"
-@test latex(otimes(f,g)) == "f \\otimes g"
-@test latex(compose(otimes(f,f),otimes(g,g))) == 
-  "\\left(f \\otimes f\\right) \\left(g \\otimes g\\right)"
-@test latex(otimes(compose(f,g),compose(g,f))) == 
-  "\\left(f g\\right) \\otimes \\left(g f\\right)"
-
-@test latex(braid(A,B)) == "\\sigma_{A,B}"
-
-@test latex(mcopy(A)) == "\\Delta_{A}"
-@test latex(mmerge(A)) == "\\nabla_{A}"
-@test latex(create(A)) == "i_{A}"
-@test latex(delete(A)) == "e_{A}"
-
-@test latex(dual(A)) == "A^{*}"
-@test latex(ev(A)) == "\\mathrm{ev}_{A}"
-@test latex(coev(A)) == "\\mathrm{coev}_{A}"
-
-@test latex(dagger(f)) == "f^{\\dagger}"
-@test latex(dagger(compose(f,g))) == "\\left(f g\\right)^{\\dagger}"
+end

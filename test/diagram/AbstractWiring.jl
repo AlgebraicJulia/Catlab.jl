@@ -1,3 +1,5 @@
+module TestAbstractWiring
+
 using CompCat.Diagram.AbstractWiring
 using Base.Test
 
@@ -34,8 +36,10 @@ g = box(:g, B, A)
 @test codom(otimes(f,g)) == otimes(codom(f),codom(g))
 
 # Associativity and unit
-I = munit(A)
+I = munit(Wires)
 @test otimes(A,I) == A
 @test otimes(I,A) == A
 @test otimes(otimes(A,B),A) == otimes(A,otimes(B,A))
 @test otimes(otimes(f,g),f) == otimes(f,otimes(g,f))
+
+end

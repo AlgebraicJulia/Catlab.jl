@@ -1,7 +1,8 @@
 module CompCat
 
-include("Doctrine.jl")
+include("GAT.jl")
 include("Syntax.jl")
+include("Doctrine.jl")
 include("Diagram.jl")
 
 end
