@@ -153,6 +153,11 @@ f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
 @test dom(delete(A)) == A
 @test codom(delete(A)) == I
 
+# Derived syntax
+@test pair(f,f) == compose(mcopy(A), otimes(f,f))
+@test proj1(A,B) == otimes(id(A), delete(B))
+@test proj2(A,B) == otimes(delete(A), id(B))
+
 # Infix notation (LaTeX)
 @test latex(mcopy(A)) == "\\Delta_{A}"
 @test latex(delete(A)) == "\\lozenge_{A}" 
@@ -169,6 +174,11 @@ f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
 @test codom(mmerge(A)) == A
 @test dom(create(A)) == I
 @test codom(create(A)) == A
+
+# Derived syntax
+@test copair(f,f) == compose(otimes(f,f), mmerge(B))
+@test in1(A,B) == otimes(id(A), create(B))
+@test in2(A,B) == otimes(create(A), id(B))
 
 # Infix notation (LaTeX)
 @test latex(mmerge(A)) == "\\nabla_{A}"

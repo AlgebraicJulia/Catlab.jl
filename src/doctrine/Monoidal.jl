@@ -77,15 +77,29 @@ qualifiers for brevity.
   mcopy(A::Ob)::Hom(A,otimes(A,A))
   delete(A::Ob)::Hom(A,munit())
   
+  pair(f::Hom(A,B), g::Hom(A,C))::Hom(A,otimes(B,C)) <= (A::Ob, B::Ob, C::Ob)
+  proj1(A::Ob, B::Ob)::Hom(otimes(A,B),A)
+  proj2(A::Ob, B::Ob)::Hom(otimes(A,B),B)
+  
   # Unicode syntax
   Δ(A::Ob) = mcopy(A)
   ◇(A::Ob) = delete(A)
 end
 
+""" Syntax for a free cartesian category.
+
+In this syntax, the pairing and projection operations are defined using
+duplication and deletion, and do not have their own syntactic elements.
+Of course, this convention could be reversed.
+"""
 @syntax FreeCartesianCategory(ObExpr,HomExpr) CartesianCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+  
+  pair(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g))
+  proj1(A::Ob, B::Ob) = otimes(id(A), delete(B))
+  proj2(A::Ob, B::Ob) = otimes(delete(A), id(B))
 end
 
 function show_latex(io::IO, expr::HomExpr{:mcopy}; kw...)
@@ -104,15 +118,29 @@ qualifiers for brevity.
   mmerge(A::Ob)::Hom(otimes(A,A),A)
   create(A::Ob)::Hom(munit(),A)
   
+  copair(f::Hom(A,C), g::Hom(B,C))::Hom(otimes(A,B),C) <= (A::Ob, B::Ob, C::Ob)
+  in1(A::Ob, B::Ob)::Hom(A,otimes(A,B))
+  in2(A::Ob, B::Ob)::Hom(B,otimes(A,B))
+  
   # Unicode syntax
   ∇(A::Ob) = mmerge(A)
   □(A::Ob) = create(A)
 end
 
+""" Syntax for a free cocartesian category.
+
+In this syntax, the copairing and inclusion operations are defined using
+merging and creation, and do not have their own syntactic elements.
+Of course, this convention could be reversed.
+"""
 @syntax FreeCocartesianCategory(ObExpr,HomExpr) CocartesianCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+  
+  copair(f::Hom, g::Hom) = compose(otimes(f,g), mmerge(codom(f)))
+  in1(A::Ob, B::Ob) = otimes(id(A), create(B))
+  in2(A::Ob, B::Ob) = otimes(create(A), id(B))
 end
 
 function show_latex(io::IO, expr::HomExpr{:mmerge}; kw...)
