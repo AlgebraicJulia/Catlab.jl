@@ -286,7 +286,7 @@ function gen_term_generators(sig::Signature)::Vector{Expr}
   map(gen_term_generator, sig.types)
 end
 
-# Normal forms
+# Simplication
 ##############
 
 """ Simplify associative binary operation.
@@ -305,25 +305,25 @@ end
 
 Reduces a freely generated (typed) monoid to normal form.
 """
-function associate_unit(unit::Function, expr::BaseExpr)::BaseExpr
+function associate_unit(expr::BaseExpr, unit::Function)::BaseExpr
   e1, e2 = first(expr), last(expr)
   if (head(e1) == head(unit)) e2
   elseif (head(e2) == head(unit)) e1
   else associate(expr) end
 end
 
-""" Simplify anti-involutive unary operation.
+""" Simplify unary operation that is an anti-involution on a (typed) monoid.
 """ 
-function anti_involute(inv::Function, op::Function, unit::Function,
-                       inv_expr::BaseExpr)::BaseExpr
-  expr = first(inv_expr)
+function anti_involute(raw_expr::BaseExpr, inv::Function, op::Function,
+                       unit::Function)::BaseExpr
+  expr = first(raw_expr)
   if head(expr) == head(inv)
     first(expr)
   elseif head(expr) == head(op)
     op([inv(A) for A in reverse(args(expr))]...)
   elseif head(expr) == head(unit)
     expr
-  else inv_expr end
+  else raw_expr end
 end
 
 # FIXME: This doesn't seem like a good idea.

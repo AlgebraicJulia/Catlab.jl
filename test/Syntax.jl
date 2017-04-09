@@ -44,7 +44,7 @@ e = munit(FreeMonoidAssoc.M)
 @test mtimes(e,x) != x && mtimes(x,e) != x
 
 @syntax FreeMonoidAssocUnit Monoid begin
-  mtimes(x::M, y::M) = associate_unit(munit, Super.mtimes(x,y))
+  mtimes(x::M, y::M) = associate_unit(Super.mtimes(x,y), munit)
 end
 
 x, y, z = FreeMonoidAssocUnit.m(:x), FreeMonoidAssocUnit.m(:y), FreeMonoidAssocUnit.m(:z)

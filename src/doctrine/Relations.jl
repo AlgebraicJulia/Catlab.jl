@@ -28,7 +28,7 @@ References:
 end
 
 @syntax FreeBicategoryRelations(ObExpr,HomExpr) BicategoryRelations begin
-  otimes(A::Ob, B::Ob) = associate_unit(munit, Super.otimes(A,B))
+  otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end
@@ -51,7 +51,7 @@ References:
 end
 
 @syntax FreeAbelianBicategoryRelations(ObExpr,HomExpr) AbelianBicategoryRelations begin
-  otimes(A::Ob, B::Ob) = associate_unit(munit, Super.otimes(A,B))
+  otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end

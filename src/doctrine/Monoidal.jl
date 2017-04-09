@@ -56,7 +56,7 @@ The signature (but not the axioms) is the same as a braided monoidal category.
 end
 
 @syntax FreeSymmetricMonoidalCategory(ObExpr,HomExpr) SymmetricMonoidalCategory begin
-  otimes(A::Ob, B::Ob) = associate_unit(munit, Super.otimes(A,B))
+  otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end
@@ -93,7 +93,7 @@ duplication and deletion, and do not have their own syntactic elements.
 Of course, this convention could be reversed.
 """
 @syntax FreeCartesianCategory(ObExpr,HomExpr) CartesianCategory begin
-  otimes(A::Ob, B::Ob) = associate_unit(munit, Super.otimes(A,B))
+  otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
   
@@ -134,7 +134,7 @@ merging and creation, and do not have their own syntactic elements.
 Of course, this convention could be reversed.
 """
 @syntax FreeCocartesianCategory(ObExpr,HomExpr) CocartesianCategory begin
-  otimes(A::Ob, B::Ob) = associate_unit(munit, Super.otimes(A,B))
+  otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
   
@@ -171,7 +171,7 @@ Also known as a *semiadditive category*.
 end
 
 @syntax FreeBiproductCategory(ObExpr,HomExpr) BiproductCategory begin
-  otimes(A::Ob, B::Ob) = associate_unit(munit, Super.otimes(A,B))
+  otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end
@@ -189,8 +189,8 @@ end
 end
 
 @syntax FreeCompactClosedCategory(ObExpr,HomExpr) CompactClosedCategory begin
-  dual(A::Ob) = anti_involute(dual, otimes, munit, Super.dual(A))
-  otimes(A::Ob, B::Ob) = associate_unit(munit, Super.otimes(A,B))
+  dual(A::Ob) = anti_involute(Super.dual(A), dual, otimes, munit)
+  otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end
@@ -217,7 +217,7 @@ end
 
 @syntax FreeDaggerCategory(ObExpr,HomExpr) DaggerCategory begin
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
-  dagger(f::Hom) = anti_involute(dagger, compose, id, Super.dagger(f))
+  dagger(f::Hom) = anti_involute(Super.dagger(f), dagger, compose, id)
 end
 
 """ Doctrine of *dagger compact category*
@@ -230,8 +230,8 @@ FIXME: This signature should extend both `DaggerCategory` and
 end
 
 @syntax FreeDaggerCompactCategory(ObExpr,HomExpr) DaggerCompactCategory begin
-  dual(A::Ob) = anti_involute(dual, otimes, munit, Super.dual(A))
-  otimes(A::Ob, B::Ob) = associate_unit(munit, Super.otimes(A,B))
+  dual(A::Ob) = anti_involute(Super.dual(A), dual, otimes, munit)
+  otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end
