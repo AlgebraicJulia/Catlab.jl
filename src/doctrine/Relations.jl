@@ -20,5 +20,7 @@ Reference: (Carboni & Walters, 1987, "Cartesian bicategories I")
   
   # Unicode syntax
   ∇(A::Ob) = mmerge(A)
+  ◇(A::Ob) = delete(A)
   Δ(A::Ob) = mcopy(A)
+  □(A::Ob) = create(A)
 end

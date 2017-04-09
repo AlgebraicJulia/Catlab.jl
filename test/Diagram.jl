@@ -6,6 +6,6 @@ end
   include("diagram/TikZ.jl")
 end
 
-@testset "Diagram.Wiring" begin
-  include("diagram/Wiring.jl")
+@testset "Diagram.TikZWiring" begin
+  include("diagram/TikZWiring.jl")
 end

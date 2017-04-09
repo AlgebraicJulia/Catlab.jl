@@ -20,7 +20,7 @@ import ...Doctrine:
   Category, dom, codom, id, compose, ∘,
   SymmetricMonoidalCategory, otimes, munit, braid, ⊗
 
-# Wiring Diagrams
+# Wiring diagrams
 #################
 
 abstract BaseBox
@@ -123,8 +123,8 @@ function flatten(diagram::WiringDiagram, subindex::Int)
   WiringDiagram(boxes, connections, dom(diagram), codom(diagram))
 end
 
-# Monoidal category
-###################
+# Symmetric monoidal category
+#############################
 
 @instance SymmetricMonoidalCategory(Wires, WiringDiagram) begin
   dom(f::WiringDiagram) = f.dom

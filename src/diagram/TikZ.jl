@@ -1,3 +1,5 @@
+""" AST and pretty printer for TikZ.
+"""
 module TikZ
 export Expression, Statement, GraphStatement, Coordinate, Property,
        PathOperation, Picture, Scope, Node, Edge, EdgeNode, Graph, GraphScope,

@@ -1,3 +1,5 @@
+module TestTikZ
+
 using CompCat.Diagram.TikZ
 using Base.Test
 
@@ -144,3 +146,5 @@ MatrixNode(
   \\node (i1) {};
   \\node (i2) {}; \\\\
 };"""
+
+end
