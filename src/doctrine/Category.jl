@@ -1,3 +1,5 @@
+import Base: show
+
 using ..GAT
 using ..Syntax
 import ..Syntax: show_unicode, show_latex
@@ -40,6 +42,22 @@ function show_latex(io::IO, expr::HomExpr{:id}; kw...)
 end
 function show_latex(io::IO, expr::HomExpr{:compose}; paren::Bool=false, kw...)
   show_latex_infix(io, expr, "\\cdot"; paren=paren)
+end
+
+function show(io::IO, ::MIME"text/latex", expr::BaseExpr)
+  print(io, "\$")
+  show_latex(io, expr)
+  print(io, "\$")
+end
+
+function show(io::IO, ::MIME"text/latex", expr::HomExpr)
+  print(io, "\$")
+  show_latex(io, expr)
+  print(io, " : ")
+  show_latex(io, dom(expr))
+  print(io, " \\to ")
+  show_latex(io, codom(expr))
+  print(io, "\$")
 end
 
 # 2-category

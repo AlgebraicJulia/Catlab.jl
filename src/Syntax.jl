@@ -399,10 +399,4 @@ function show_latex_script(io::IO, expr::BaseExpr, head::String; super::Bool=fal
   print(io, "}")
 end
 
-function show(io::IO, ::MIME"text/latex", expr::BaseExpr)
-  print(io, "\$")
-  show_latex(io, expr)
-  print(io, "\$")
-end
-
 end
