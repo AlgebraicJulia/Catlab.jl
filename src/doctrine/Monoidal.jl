@@ -1,3 +1,5 @@
+using Match
+
 using ..GAT
 using ..Syntax
 import ..Syntax: show_unicode, show_latex
@@ -189,9 +191,20 @@ end
 end
 
 @syntax FreeCompactClosedCategory(ObExpr,HomExpr) CompactClosedCategory begin
+  dual(A::Ob) = distribute_dual(Super.dual(A))
   otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+end
+
+function distribute_dual(dual_expr::ObExpr{:dual})
+  expr = first(dual_expr)
+  @match head(expr) begin
+    :munit => expr
+    :otimes => otimes([dual(A) for A in reverse(args(expr))]...)
+    :dual => first(expr)
+    _ => dual_expr
+  end
 end
 
 function show_latex(io::IO, expr::ObExpr{:dual}; kw...)
@@ -224,6 +237,7 @@ FIXME: This signature should extend both `DaggerCategory` and
 end
 
 @syntax FreeDaggerCompactCategory(ObExpr,HomExpr) DaggerCompactCategory begin
+  dual(A::Ob) = distribute_dual(Super.dual(A))
   otimes(A::Ob, B::Ob) = associate_unit(:munit, Super.otimes(A,B))
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))

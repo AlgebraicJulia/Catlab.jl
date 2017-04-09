@@ -190,12 +190,18 @@ f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
 Syntax = FreeCompactClosedCategory
 A, B = Syntax.ob(:A), Syntax.ob(:B)
 f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
+I = munit(Syntax.Ob)
 
 # Domains and codomains
 @test dom(ev(A)) == otimes(A, dual(A))
 @test codom(ev(A)) == I
 @test dom(coev(A)) == I
 @test codom(coev(A)) == otimes(dual(A), A)
+
+# Duals
+@test dual(I) == I
+@test dual(otimes(A,B)) == otimes(dual(B),dual(A))
+@test dual(dual(A)) == A
 
 # Infix notation (LaTeX)
 @test latex(dual(A)) == "A^*"
