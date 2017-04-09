@@ -301,7 +301,8 @@ Used to morphisms in internal monoids and comonoids.
 Implemented using a small, visible node for the point and a big, invisible node
 as a spacer. FIXME: Is there a more elegant way to achieve the desired margin?
 """
-function junction_circle(spec::BoxSpec, wires_in::WiresTikZ, wires_out::WiresTikZ)
+function junction_circle(spec::BoxSpec, wires_in::WiresTikZ, wires_out::WiresTikZ;
+                         fill::Bool=true)
   m = max(length(wires_in), length(wires_out))
   @assert m <= 2
   name, style = spec.name, spec.style
@@ -324,7 +325,7 @@ function junction_circle(spec::BoxSpec, wires_in::WiresTikZ, wires_out::WiresTik
     ]),
     TikZ.Node("$name point"; props=[
       TikZ.Property("draw"),
-      TikZ.Property("fill"),
+      TikZ.Property(fill ? "fill" : "solid"),
       TikZ.Property("circle"),
       TikZ.Property("minimum size", "0.333em"),
       TikZ.Property("above", "0 of $name box.center"),
@@ -334,11 +335,11 @@ function junction_circle(spec::BoxSpec, wires_in::WiresTikZ, wires_out::WiresTik
   node = TikZ.Node(name; content=pic, props=[TikZ.Property("container")])
   BoxTikZ(node, dom, codom)
 end
-function junction_circle(spec::BoxSpec, dom::ObExpr, codom::ObExpr)
-  junction_circle(spec, wires(dom), wires(codom))
+function junction_circle(spec::BoxSpec, dom::ObExpr, codom::ObExpr; kw...)
+  junction_circle(spec, wires(dom), wires(codom); kw...)
 end
-function junction_circle(spec::BoxSpec, f::HomExpr)
-  junction_circle(spec, dom(f), codom(f))
+function junction_circle(spec::BoxSpec, f::HomExpr; kw...)
+  junction_circle(spec, dom(f), codom(f); kw...)
 end
 
 """ A cup.
