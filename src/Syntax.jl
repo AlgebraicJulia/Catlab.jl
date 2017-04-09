@@ -14,7 +14,7 @@ module to make the construction of syntax simple but flexible.
 """
 module Syntax
 export @syntax, BaseExpr, SyntaxDomainError, head, args, first, last,
-  associate, associate_unit,
+  associate, associate_unit, anti_involute,
   show_sexpr, show_unicode, show_unicode_infix,
   show_latex, show_latex_infix, show_latex_script
 
@@ -289,7 +289,7 @@ end
 # Normal forms
 ##############
 
-""" Apply associative binary operation.
+""" Simplify associative binary operation.
 
 Maintains the normal form `op(e1,e2,...)` where `e1`,`e2`,... are expressions
 that are *not* applications of `op()`
@@ -301,16 +301,33 @@ function associate{E<:BaseExpr}(expr::E)::E
   E([args1; args2], type_args(expr))
 end
 
-""" Apply associative binary operation with unit.
+""" Simplify associative binary operation with unit.
 
 Reduces a freely generated (typed) monoid to normal form.
 """
-function associate_unit(unit::Symbol, expr::BaseExpr)::BaseExpr
+function associate_unit(unit::Function, expr::BaseExpr)::BaseExpr
   e1, e2 = first(expr), last(expr)
-  if (head(e1) == unit) e2
-  elseif (head(e2) == unit) e1
+  if (head(e1) == head(unit)) e2
+  elseif (head(e2) == head(unit)) e1
   else associate(expr) end
 end
+
+""" Simplify anti-involutive unary operation.
+""" 
+function anti_involute(inv::Function, op::Function, unit::Function,
+                       inv_expr::BaseExpr)::BaseExpr
+  expr = first(inv_expr)
+  if head(expr) == head(inv)
+    first(expr)
+  elseif head(expr) == head(op)
+    op([inv(A) for A in reverse(args(expr))]...)
+  elseif head(expr) == head(unit)
+    expr
+  else inv_expr end
+end
+
+# FIXME: This doesn't seem like a good idea.
+head(f::Function)::Symbol = Symbol(split(string(f),'.')[end])
 
 # Pretty-print
 ##############
