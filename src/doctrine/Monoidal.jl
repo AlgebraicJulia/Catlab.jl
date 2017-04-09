@@ -1,3 +1,5 @@
+import Lazy: @>
+
 using ..GAT
 using ..Syntax
 import ..Syntax: show_unicode, show_latex
@@ -234,6 +236,9 @@ end
   otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+  dagger(f::Hom) = @>(Super.dagger(f),
+    anti_involute(dagger, compose, id),
+    distribute_unary(dagger, otimes))
 end
 
 function show_latex(io::IO, expr::HomExpr{:dagger}; kw...)

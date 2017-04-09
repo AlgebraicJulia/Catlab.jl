@@ -14,7 +14,7 @@ module to make the construction of syntax simple but flexible.
 """
 module Syntax
 export @syntax, BaseExpr, SyntaxDomainError, head, args, first, last,
-  associate, associate_unit, anti_involute,
+  associate, associate_unit, distribute_unary, anti_involute,
   show_sexpr, show_unicode, show_unicode_infix,
   show_latex, show_latex_infix, show_latex_script
 
@@ -312,10 +312,28 @@ function associate_unit(expr::BaseExpr, unit::Function)::BaseExpr
   else associate(expr) end
 end
 
+""" Distribute unary operation over a binary operation.
+"""
+function distribute_unary(raw_expr::BaseExpr, un_op::Function,
+                          bin_op::Function)::BaseExpr
+  if head(raw_expr) != head(un_op)
+    return raw_expr
+  end
+  expr = first(raw_expr)
+  if head(expr) == head(bin_op)
+    bin_op([un_op(A) for A in args(expr)]...)
+  else
+    raw_expr
+  end
+end
+
 """ Simplify unary operation that is an anti-involution on a (typed) monoid.
 """ 
 function anti_involute(raw_expr::BaseExpr, inv::Function, op::Function,
                        unit::Function)::BaseExpr
+  if head(raw_expr) != head(inv)
+    return raw_expr
+  end
   expr = first(raw_expr)
   if head(expr) == head(inv)
     first(expr)

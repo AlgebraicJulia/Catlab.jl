@@ -228,4 +228,19 @@ f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
 @test latex(dagger(f)) == "f^\\dagger"
 #@test latex(dagger(compose(f,g))) == "\\left(f \\cdot g\\right)^\\dagger"
 
+# Dagger compact category
+#########################
+
+Syntax = FreeDaggerCompactCategory
+A, B = Syntax.ob(:A), Syntax.ob(:B)
+f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
+
+# Dagger
+@test dagger(compose(f,g)) == compose(dagger(g),dagger(f))
+@test dagger(id(A)) == id(A)
+@test dagger(dagger(f)) == f
+@test dagger(otimes(f,g)) == otimes(dagger(f),dagger(g))
+@test (dagger(otimes(compose(f,g),compose(g,f))) == 
+       otimes(compose(dagger(g),dagger(f)),compose(dagger(f),dagger(g))))
+
 end
