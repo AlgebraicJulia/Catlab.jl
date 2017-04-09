@@ -2,11 +2,11 @@
 """
 module TikZWiring
 export WireDirection, WireForward, WireBackward, WireTikZ, WiresTikZ, PortTikZ,
-  BoxTikZ, BoxSpec, wiring_diagram, wires, box,
-  sequence, parallel, rect, trapezium, lines,
-  wire_cross, wire_split, wire_merge, wire_create, wire_delete, cup, cap
+  BoxTikZ, BoxSpec, wiring_diagram, wires, box, sequence, parallel,
+  rect, trapezium, lines, crossing, junction_circle, cup, cap
 
 import Formatting: format
+using Match
 
 import ...Doctrine: ObExpr, HomExpr, dom, codom, head, args, compose, id
 import ..TikZ
@@ -280,7 +280,7 @@ end
 
 Used to draw braid morphisms in symmatric monoidal categories.
 """ 
-function wire_cross(spec::BoxSpec, wire1::WireTikZ, wire2::WireTikZ)
+function crossing(spec::BoxSpec, wire1::WireTikZ, wire2::WireTikZ)
   name, style = spec.name, spec.style
   dom = [ PortTikZ(wire1, "$name.center", angle=135),
           PortTikZ(wire2, "$name.center", angle=225) ]
@@ -292,59 +292,54 @@ function wire_cross(spec::BoxSpec, wire1::WireTikZ, wire2::WireTikZ)
   node = TikZ.Node(name; props=props)
   BoxTikZ(node, dom, codom)
 end
-wire_cross(spec::BoxSpec, A::ObExpr) = wire_cross(spec, wires(A)...)
+crossing(spec::BoxSpec, A::ObExpr) = crossing(spec, wires(A)...)
 
-""" Split a wire into two.
+""" A junction of wires drawn as a circle.
 
-Used to draw copy morphisms in internal comonoids.
+Used to morphisms in internal monoids and comonoids.
+
+Implemented using a small, visible node for the point and a big, invisible node
+as a spacer. FIXME: Is there a more elegant way to achieve the desired margin?
 """
-function wire_split(spec::BoxSpec, wire::WireTikZ)
+function junction_circle(spec::BoxSpec, wires_in::WiresTikZ, wires_out::WiresTikZ)
+  m = max(length(wires_in), length(wires_out))
+  @assert m <= 2
   name, style = spec.name, spec.style
-  dom = [ PortTikZ(wire, "$name point.west", angle=180) ]
-  codom = [ PortTikZ(wire, "$name point.north", angle=90, show_label=false),
-            PortTikZ(wire, "$name point.south", angle=270, show_label=false) ]
-  node = monoid_node_tikz(name, style, 2)
+  dom = @match length(wires_in) begin
+    0 => []
+    1 => [ PortTikZ(wires_in[1], "$name point.west", angle=180) ]
+    2 => [ PortTikZ(wires_in[1], "$name point.north", angle=90, show_label=false),
+           PortTikZ(wires_in[2], "$name point.south", angle=270, show_label=false) ]
+  end
+  codom = @match length(wires_out) begin
+    0 => []
+    1 => [ PortTikZ(wires_out[1], "$name point.east", angle=0) ]
+    2 => [ PortTikZ(wires_out[1], "$name point.north", angle=90, show_label=false),
+           PortTikZ(wires_out[2], "$name point.south", angle=270, show_label=false) ]
+  end
+  
+  pic = TikZ.Picture(
+    TikZ.Node("$name box"; props=[
+      TikZ.Property("minimum height", "$(box_size(m,style))em"),
+    ]),
+    TikZ.Node("$name point"; props=[
+      TikZ.Property("draw"),
+      TikZ.Property("fill"),
+      TikZ.Property("circle"),
+      TikZ.Property("minimum size", "0.333em"),
+      TikZ.Property("above", "0 of $name box.center"),
+      TikZ.Property("anchor", "center"),
+    ]),
+  )
+  node = TikZ.Node(name; content=pic, props=[TikZ.Property("container")])
   BoxTikZ(node, dom, codom)
 end
-wire_split(spec::BoxSpec, A::ObExpr) = wire_split(spec, wires(A)...)
-
-""" Merge two wires into one.
-
-Used to draw merge morphisms in internal monoids.
-"""
-function wire_merge(spec::BoxSpec, wire::WireTikZ)
-  name, style = spec.name, spec.style
-  dom = [ PortTikZ(wire, "$name point.north", angle=90, show_label=false),
-          PortTikZ(wire, "$name point.south", angle=270, show_label=false) ]
-  codom = [ PortTikZ(wire, "$name point.east", angle=0) ]
-  node = monoid_node_tikz(name, style, 2)
-  BoxTikZ(node, dom, codom)
+function junction_circle(spec::BoxSpec, dom::ObExpr, codom::ObExpr)
+  junction_circle(spec, wires(dom), wires(codom))
 end
-wire_merge(spec::BoxSpec, A::ObExpr) = wire_merge(spec, wires(A)...)
-
-""" Create a wire from nothing.
-
-Used to draw creation morphisms in internal monoids.
-"""
-function wire_create(spec::BoxSpec, wire::WireTikZ)
-  name, style = spec.name, spec.style
-  ports = [ PortTikZ(wire, "$name point.east", angle=0) ]
-  node = monoid_node_tikz(name, style, 1)
-  BoxTikZ(node, [], ports)
+function junction_circle(spec::BoxSpec, f::HomExpr)
+  junction_circle(spec, dom(f), codom(f))
 end
-wire_create(spec::BoxSpec, A::ObExpr) = wire_create(spec, wires(A)...)
-
-""" Terminate a wire.
-
-Used to draw deletion morphisms in internal comonoids.
-"""
-function wire_delete(spec::BoxSpec, wire::WireTikZ)
-  name, style = spec.name, spec.style
-  ports = [ PortTikZ(wire, "$name point.west", angle=180) ]
-  node = monoid_node_tikz(name, style, 1)
-  BoxTikZ(node, ports, [])
-end
-wire_delete(spec::BoxSpec, A::ObExpr) = wire_delete(spec, wires(A)...)
 
 """ A cup.
 
@@ -377,28 +372,6 @@ function cap(spec::BoxSpec, wire1::WireTikZ, wire2::WireTikZ)
   BoxTikZ(node, [], ports)
 end
 cap(spec::BoxSpec, A::ObExpr) = cap(spec, wires(A)...)
-
-""" Create a TikZ node for a (co)monoid morphism.
-
-Uses a small, visible node for the point and a big, invisible node as a spacer.
-FIXME: Is there a more elegant way to achieve the desired margin?
-"""
-function monoid_node_tikz(name::String, style::Dict, ports::Int)::TikZ.Node
-  pic = TikZ.Picture(
-    TikZ.Node("$name box"; props=[
-      TikZ.Property("minimum height", "$(box_size(ports,style))em"),
-    ]),
-    TikZ.Node("$name point"; props=[
-      TikZ.Property("draw"),
-      TikZ.Property("fill"),
-      TikZ.Property("circle"),
-      TikZ.Property("minimum size", "0.333em"),
-      TikZ.Property("above", "0 of $name box.center"),
-      TikZ.Property("anchor", "center"),
-    ]),
-  )
-  TikZ.Node(name; content=pic, props=[TikZ.Property("container")])
-end
 
 # Helper functions
 ##################
@@ -446,13 +419,13 @@ end
 # they will rarely be changed.
 
 wires(A::ObExpr{:generator}) = [ WireTikZ(string(first(A))) ]
-wires(A::ObExpr{:munit}) = []
+wires(A::ObExpr{:munit}) = WireTikZ[]
 wires(A::ObExpr{:otimes}) = vcat(map(wires, args(A))...)
 
 box(f::HomExpr{:id}, spec::BoxSpec) = lines(spec, dom(f))
 box(f::HomExpr{:compose}, spec::BoxSpec) = sequence(spec, args(f))
 box(f::HomExpr{:otimes}, spec::BoxSpec) = parallel(spec, args(f))
-box(f::HomExpr{:braid}, spec::BoxSpec) = wire_cross(spec, dom(f))
+box(f::HomExpr{:braid}, spec::BoxSpec) = crossing(spec, dom(f))
 
 """ Default renderers for specific syntax systems.
 """
@@ -472,19 +445,19 @@ module Defaults
 
   # (Co)cartesian category
   box(f::FreeCartesianCategory.Hom{:generator}, spec::BoxSpec) = rect(spec, f)
-  box(f::FreeCartesianCategory.Hom{:mcopy}, spec::BoxSpec) = wire_split(spec, dom(f))
-  box(f::FreeCartesianCategory.Hom{:delete}, spec::BoxSpec) = wire_delete(spec, dom(f))
+  box(f::FreeCartesianCategory.Hom{:mcopy}, spec::BoxSpec) = junction_circle(spec, f)
+  box(f::FreeCartesianCategory.Hom{:delete}, spec::BoxSpec) = junction_circle(spec, f)
   
   box(f::FreeCocartesianCategory.Hom{:generator}, spec::BoxSpec) = rect(spec, f)
-  box(f::FreeCocartesianCategory.Hom{:mmerge}, spec::BoxSpec) = wire_merge(spec, codom(f))
-  box(f::FreeCocartesianCategory.Hom{:create}, spec::BoxSpec) = wire_create(spec, codom(f))
+  box(f::FreeCocartesianCategory.Hom{:mmerge}, spec::BoxSpec) = junction_circle(spec, f)
+  box(f::FreeCocartesianCategory.Hom{:create}, spec::BoxSpec) = junction_circle(spec, f)
   
   # Biproduct category
   box(f::FreeBiproductCategory.Hom{:generator}, spec::BoxSpec) = rect(spec, f)
-  box(f::FreeBiproductCategory.Hom{:mcopy}, spec::BoxSpec) = wire_split(spec, dom(f))
-  box(f::FreeBiproductCategory.Hom{:delete}, spec::BoxSpec) = wire_delete(spec, dom(f))
-  box(f::FreeBiproductCategory.Hom{:mmerge}, spec::BoxSpec) = wire_merge(spec, codom(f))
-  box(f::FreeBiproductCategory.Hom{:create}, spec::BoxSpec) = wire_create(spec, codom(f))
+  box(f::FreeBiproductCategory.Hom{:mcopy}, spec::BoxSpec) = junction_circle(spec, f)
+  box(f::FreeBiproductCategory.Hom{:delete}, spec::BoxSpec) = junction_circle(spec, f)
+  box(f::FreeBiproductCategory.Hom{:mmerge}, spec::BoxSpec) = junction_circle(spec, f)
+  box(f::FreeBiproductCategory.Hom{:create}, spec::BoxSpec) = junction_circle(spec, f)
   
   # Compact closed category
   # Assumes that duals are fully distributed (as in this syntax system).
