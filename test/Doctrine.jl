@@ -199,8 +199,8 @@ I = munit(Syntax.Ob)
 @test codom(coev(A)) == otimes(dual(A), A)
 
 # Duals
-@test dual(I) == I
 @test dual(otimes(A,B)) == otimes(dual(B),dual(A))
+@test dual(I) == I
 @test dual(dual(A)) == A
 
 # Infix notation (LaTeX)
@@ -208,10 +208,10 @@ I = munit(Syntax.Ob)
 @test latex(ev(A)) == "\\mathrm{ev}_{A}"
 @test latex(coev(A)) == "\\mathrm{coev}_{A}"
 
-# Dagger compact category
-#########################
+# Dagger category
+#################
 
-Syntax = FreeDaggerCompactCategory
+Syntax = FreeDaggerCategory
 A, B = Syntax.ob(:A), Syntax.ob(:B)
 f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
 
@@ -219,8 +219,13 @@ f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
 @test dom(dagger(f)) == B
 @test codom(dagger(f)) == A
 
+# Dagger
+@test dagger(compose(f,g)) == compose(dagger(g),dagger(f))
+@test dagger(id(A)) == id(A)
+@test dagger(dagger(f)) == f
+
 # Infix notation (LaTeX)
 @test latex(dagger(f)) == "f^\\dagger"
-@test latex(dagger(compose(f,g))) == "\\left(f \\cdot g\\right)^\\dagger"
+#@test latex(dagger(compose(f,g))) == "\\left(f \\cdot g\\right)^\\dagger"
 
 end

@@ -18,6 +18,12 @@ f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
 @test ispic(wiring_diagram(compose(f,g)))
 @test ispic(wiring_diagram(compose(id(A), f, id(B))))
 
+Syntax = FreeDaggerCategory
+A, B = Syntax.ob(:A), Syntax.ob(:B)
+f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
+@test ispic(wiring_diagram(dagger(f)))
+@test ispic(wiring_diagram(dagger(compose(f,g))))
+
 Syntax = FreeSymmetricMonoidalCategory
 A, B = Syntax.ob(:A), Syntax.ob(:B)
 f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)

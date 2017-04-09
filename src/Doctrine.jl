@@ -15,7 +15,8 @@ export CocartesianCategory, FreeCocartesianCategory, mmerge, create,
   copair, in1, in2, ∇, □
 export BiproductCategory, FreeBiproductCategory
 export CompactClosedCategory, FreeCompactClosedCategory, dual, ev, coev
-export DaggerCategory, DaggerCompactCategory, FreeDaggerCompactCategory, dagger
+export DaggerCategory, FreeDaggerCategory, dagger
+export DaggerCompactCategory, FreeDaggerCompactCategory
 
 export BicategoryRelations, FreeBicategoryRelations
 export AbelianBicategoryRelations, FreeAbelianBicategoryRelations,

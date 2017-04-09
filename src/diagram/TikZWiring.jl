@@ -1,8 +1,8 @@
 """ Draw wiring diagrams (aka string diagrams) in various formats.
 """
 module TikZWiring
-export WireDirection, WireForward, WireBackward, WireTikZ, WiresTikZ, PortTikZ,
-  BoxTikZ, BoxSpec, wiring_diagram, wires, box, sequence, parallel,
+export WireTikZ, WiresTikZ, PortTikZ, BoxTikZ, BoxSpec,
+  wiring_diagram, wires, box, sequence, parallel,
   rect, trapezium, lines, crossing, junction_circle, cup, cap
 
 import Formatting: format
@@ -14,11 +14,10 @@ import ..TikZ
 # Data types
 ############
 
-@enum WireDirection WireForward WireBackward
 immutable WireTikZ
   label::String
-  dir::WireDirection
-  WireTikZ(label::String; dir::WireDirection=WireForward) = new(label, dir)
+  reverse::Bool
+  WireTikZ(label::String; reverse::Bool=false) = new(label, reverse)
 end
 
 """ Object in a TikZ wiring diagram.
@@ -234,7 +233,7 @@ function sequence(spec::BoxSpec, homs::Vector)::BoxTikZ
       end
       
       # Create path operation and draw edge.
-      if wire.dir == WireBackward
+      if wire.reverse
         src_port, tgt_port = tgt_port, src_port
       end
       op = TikZ.PathOperation("to"; props=[
@@ -440,6 +439,12 @@ module Defaults
   
   # Category
   box(spec::BoxSpec, f::FreeCategory.Hom{:generator}) = rect(spec, f)
+  
+  # Dagger category
+  # Assumes that daggers are fully distributed (as in this syntax system).
+  Syntax = FreeDaggerCategory
+  box(spec::BoxSpec, f::Syntax.Hom{:generator}) = trapezium(spec, f)
+  box(spec::BoxSpec, f::Syntax.Hom{:dagger}) = trapezium(spec, first(f); reverse=true)
 
   # Symmetric monoidal category
   Syntax = FreeSymmetricMonoidalCategory
@@ -470,7 +475,7 @@ module Defaults
   function wires(A::Syntax.Ob{:dual})
     gen = first(A)
     @assert head(gen) == :generator
-    [ WireTikZ(string(first(gen)); dir=WireBackward) ]
+    [ WireTikZ(string(first(gen)); reverse=true) ]
   end
   box(spec::BoxSpec, f::Syntax.Hom{:generator}) = rect(spec, f)
   box(spec::BoxSpec, f::Syntax.Hom{:ev}) = cup(spec, dom(f))

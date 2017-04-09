@@ -215,6 +215,11 @@ end
   dagger(f::Hom(A,B))::Hom(B,A) <= (A::Ob,B::Ob)
 end
 
+@syntax FreeDaggerCategory(ObExpr,HomExpr) DaggerCategory begin
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+  dagger(f::Hom) = anti_involute(dagger, compose, id, Super.dagger(f))
+end
+
 """ Doctrine of *dagger compact category*
 
 FIXME: This signature should extend both `DaggerCategory` and
