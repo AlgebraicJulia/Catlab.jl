@@ -437,6 +437,8 @@ module Defaults
   using CompCat.Doctrine
   using CompCat.Syntax
   
+  generator(expr::BaseExpr)::BaseExpr{:generator} = first(expr)
+  
   # Category
   box(spec::BoxSpec, f::FreeCategory.Hom{:generator}) = rect(spec, f)
   
@@ -444,7 +446,8 @@ module Defaults
   # Assumes that daggers are fully distributed (as in this syntax system).
   Syntax = FreeDaggerCategory
   box(spec::BoxSpec, f::Syntax.Hom{:generator}) = trapezium(spec, f)
-  box(spec::BoxSpec, f::Syntax.Hom{:dagger}) = trapezium(spec, first(f); reverse=true)
+  box(spec::BoxSpec, f::Syntax.Hom{:dagger}) = trapezium(spec,
+    string(first(generator(f))), wires(dom(f)), wires(codom(f)); reverse=true)
 
   # Symmetric monoidal category
   Syntax = FreeSymmetricMonoidalCategory
@@ -472,11 +475,7 @@ module Defaults
   # Compact closed category
   # Assumes that duals are fully distributed (as in this syntax system).
   Syntax = FreeCompactClosedCategory
-  function wires(A::Syntax.Ob{:dual})
-    gen = first(A)
-    @assert head(gen) == :generator
-    [ WireTikZ(string(first(gen)); reverse=true) ]
-  end
+  wires(A::Syntax.Ob{:dual}) = [ WireTikZ(string(first(generator(A))); reverse=true) ]
   box(spec::BoxSpec, f::Syntax.Hom{:generator}) = rect(spec, f)
   box(spec::BoxSpec, f::Syntax.Hom{:ev}) = cup(spec, dom(f))
   box(spec::BoxSpec, f::Syntax.Hom{:coev}) = cap(spec, codom(f))
@@ -484,7 +483,8 @@ module Defaults
   # Bicategory of relations
   Syntax = FreeBicategoryRelations
   box(spec::BoxSpec, f::Syntax.Hom{:generator}) = trapezium(spec, f)
-  box(spec::BoxSpec, f::Syntax.Hom{:dagger}) = trapezium(spec, first(f); reverse=true)
+  box(spec::BoxSpec, f::Syntax.Hom{:dagger}) = trapezium(spec,
+    string(first(generator(f))), wires(dom(f)), wires(codom(f)); reverse=true)
   box(spec::BoxSpec, f::Syntax.Hom{:ev}) = cup(spec, dom(f))
   box(spec::BoxSpec, f::Syntax.Hom{:coev}) = cap(spec, codom(f))
   box(spec::BoxSpec, f::Syntax.Hom{:mcopy}) = junction_circle(spec, f; fill=false)
@@ -494,7 +494,8 @@ module Defaults
   
   Syntax = FreeAbelianBicategoryRelations
   box(spec::BoxSpec, f::Syntax.Hom{:generator}) = trapezium(spec, f)
-  box(spec::BoxSpec, f::Syntax.Hom{:dagger}) = trapezium(spec, first(f); reverse=true)
+  box(spec::BoxSpec, f::Syntax.Hom{:dagger}) = trapezium(spec,
+    string(first(generator(f))), wires(dom(f)), wires(codom(f)); reverse=true)
   box(spec::BoxSpec, f::Syntax.Hom{:ev}) = cup(spec, dom(f))
   box(spec::BoxSpec, f::Syntax.Hom{:coev}) = cap(spec, codom(f))
   box(spec::BoxSpec, f::Syntax.Hom{:mcopy}) = junction_circle(spec, f; fill=false)
