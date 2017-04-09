@@ -327,7 +327,7 @@ function anti_involute(inv::Function, op::Function, unit::Function,
 end
 
 # FIXME: This doesn't seem like a good idea.
-head(f::Function)::Symbol = Symbol(split(string(f),'.')[end])
+head(f::Function)::Symbol = Symbol(rsplit(string(f),'.',limit=2)[end])
 
 # Pretty-print
 ##############

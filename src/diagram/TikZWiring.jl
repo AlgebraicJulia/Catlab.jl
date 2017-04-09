@@ -1,7 +1,8 @@
 """ Draw wiring diagrams (aka string diagrams) in various formats.
 """
 module TikZWiring
-export WiresTikZ, PortTikZ, BoxTikZ, BoxSpec, wiring_diagram, wires, box,
+export WireDirection, WireForward, WireBackward, WireTikZ, WiresTikZ, PortTikZ,
+  BoxTikZ, BoxSpec, wiring_diagram, wires, box,
   sequence, parallel, rect, trapezium, lines,
   wire_cross, wire_split, wire_merge, wire_create, wire_delete, cup, cap
 
@@ -13,17 +14,24 @@ import ..TikZ
 # Data types
 ############
 
+@enum WireDirection WireForward WireBackward
+immutable WireTikZ
+  label::String
+  dir::WireDirection
+  WireTikZ(label::String; dir::WireDirection=WireForward) = new(label, dir)
+end
+
 """ Object in a TikZ wiring diagram.
 """
-typealias WiresTikZ Vector{String}
+typealias WiresTikZ Vector{WireTikZ}
 
 immutable PortTikZ
-  label::String
+  wire::WireTikZ
   anchor::String
   angle::Int
   show_label::Bool
-  PortTikZ(label::String, anchor::String; angle::Int=0, show_label::Bool=true) =
-    new(label, anchor, angle, show_label)
+  PortTikZ(wire::WireTikZ, anchor::String; angle::Int=0, show_label::Bool=true) =
+    new(wire, anchor, angle, show_label)
 end
 
 """ Morphism in a TikZ wiring diagram.
@@ -123,8 +131,8 @@ end
 function rect(spec::BoxSpec, content::String, dom::WiresTikZ, codom::WiresTikZ;
               padding::String="", rounded::Bool=true)::BoxTikZ
   name, style = spec.name, spec.style
-  dom_ports = box_anchors(dom, name, style, dir="west", angle=180)
-  codom_ports = box_anchors(codom, name, style, dir="east", angle=0)
+  dom_ports = box_ports(dom, name, style, dir="west", angle=180)
+  codom_ports = box_ports(codom, name, style, dir="east", angle=0)
   size = box_size(max(length(dom_ports), length(codom_ports)), style)
   
   padding = isempty(padding) ? spec.style[:box_padding] : padding
@@ -154,8 +162,8 @@ function trapezium(spec::BoxSpec, content::String, dom::WiresTikZ, codom::WiresT
                    padding::String="", rounded::Bool=true,
                    angle::Int=80, reverse::Bool=false)::BoxTikZ
   name, style = spec.name, spec.style
-  dom_ports = box_anchors(dom, name, style, dir="west", angle=180)
-  codom_ports = box_anchors(codom, name, style, dir="east", angle=0)
+  dom_ports = box_ports(dom, name, style, dir="west", angle=180)
+  codom_ports = box_ports(codom, name, style, dir="east", angle=0)
   size = box_size(max(length(dom_ports), length(codom_ports)), style)
   
   padding = isempty(padding) ? spec.style[:box_padding] : padding
@@ -186,8 +194,8 @@ end
 """
 function lines(spec::BoxSpec, wires::WiresTikZ)::BoxTikZ
   name, style = spec.name, spec.style
-  dom_ports = box_anchors(wires, name, style, dir="center", angle=180)
-  codom_ports = box_anchors(wires, name, style, dir="center", angle=0)
+  dom_ports = box_ports(wires, name, style, dir="center", angle=180)
+  codom_ports = box_ports(wires, name, style, dir="center", angle=0)
   height = box_size(length(wires), style)
   props = [ TikZ.Property("minimum height", "$(height)em") ]
   node = TikZ.Node(name; props=props)
@@ -218,14 +226,17 @@ function sequence(spec::BoxSpec, homs::Vector)::BoxTikZ
       tgt_port = mors[i].inputs[j]
       
       # Create edge node for label.
+      wire = tgt_port.wire # == src_port.wire
       if (style[:labels] && src_port.show_label && tgt_port.show_label)
-        content = tgt_port.label # == src_port.label
-        node = TikZ.EdgeNode(content=content, props=edge_node_props)
+        node = TikZ.EdgeNode(content=wire.label, props=edge_node_props)
       else
         node = Nullable()
       end
       
       # Create path operation and draw edge.
+      if wire.dir == WireBackward
+        src_port, tgt_port = tgt_port, src_port
+      end
       op = TikZ.PathOperation("to"; props=[
         TikZ.Property("out", string(src_port.angle)),
         TikZ.Property("in", string(tgt_port.angle)),
@@ -269,7 +280,7 @@ end
 
 Used to draw braid morphisms in symmatric monoidal categories.
 """ 
-function wire_cross(spec::BoxSpec, wire1::String, wire2::String)
+function wire_cross(spec::BoxSpec, wire1::WireTikZ, wire2::WireTikZ)
   name, style = spec.name, spec.style
   dom = [ PortTikZ(wire1, "$name.center", angle=135),
           PortTikZ(wire2, "$name.center", angle=225) ]
@@ -287,7 +298,7 @@ wire_cross(spec::BoxSpec, A::ObExpr) = wire_cross(spec, wires(A)...)
 
 Used to draw copy morphisms in internal comonoids.
 """
-function wire_split(spec::BoxSpec, wire::String)
+function wire_split(spec::BoxSpec, wire::WireTikZ)
   name, style = spec.name, spec.style
   dom = [ PortTikZ(wire, "$name point.west", angle=180) ]
   codom = [ PortTikZ(wire, "$name point.north", angle=90, show_label=false),
@@ -301,7 +312,7 @@ wire_split(spec::BoxSpec, A::ObExpr) = wire_split(spec, wires(A)...)
 
 Used to draw merge morphisms in internal monoids.
 """
-function wire_merge(spec::BoxSpec, wire::String)
+function wire_merge(spec::BoxSpec, wire::WireTikZ)
   name, style = spec.name, spec.style
   dom = [ PortTikZ(wire, "$name point.north", angle=90, show_label=false),
           PortTikZ(wire, "$name point.south", angle=270, show_label=false) ]
@@ -315,7 +326,7 @@ wire_merge(spec::BoxSpec, A::ObExpr) = wire_merge(spec, wires(A)...)
 
 Used to draw creation morphisms in internal monoids.
 """
-function wire_create(spec::BoxSpec, wire::String)
+function wire_create(spec::BoxSpec, wire::WireTikZ)
   name, style = spec.name, spec.style
   ports = [ PortTikZ(wire, "$name point.east", angle=0) ]
   node = monoid_node_tikz(name, style, 1)
@@ -327,7 +338,7 @@ wire_create(spec::BoxSpec, A::ObExpr) = wire_create(spec, wires(A)...)
 
 Used to draw deletion morphisms in internal comonoids.
 """
-function wire_delete(spec::BoxSpec, wire::String)
+function wire_delete(spec::BoxSpec, wire::WireTikZ)
   name, style = spec.name, spec.style
   ports = [ PortTikZ(wire, "$name point.west", angle=180) ]
   node = monoid_node_tikz(name, style, 1)
@@ -335,7 +346,11 @@ function wire_delete(spec::BoxSpec, wire::String)
 end
 wire_delete(spec::BoxSpec, A::ObExpr) = wire_delete(spec, wires(A)...)
 
-function cup(spec::BoxSpec, wire1::String, wire2::String)
+""" A cup.
+
+Used to draw evaluation morphisms in compact closed categories.
+"""
+function cup(spec::BoxSpec, wire1::WireTikZ, wire2::WireTikZ)
   name, style = spec.name, spec.style
   ports = [ PortTikZ(wire1, "$name.center", angle=90, show_label=false),
             PortTikZ(wire2, "$name.center", angle=270, show_label=false) ]
@@ -345,8 +360,13 @@ function cup(spec::BoxSpec, wire1::String, wire2::String)
   node = TikZ.Node(name; props=props)
   BoxTikZ(node, ports, [])
 end
+cup(spec::BoxSpec, A::ObExpr) = cup(spec, wires(A)...)
 
-function cap(spec::BoxSpec, wire1::String, wire2::String)
+""" A cap.
+
+Used to draw coevaluation morphisms in compact closed categories.
+"""
+function cap(spec::BoxSpec, wire1::WireTikZ, wire2::WireTikZ)
   name, style = spec.name, spec.style
   ports = [ PortTikZ(wire1, "$name.center", angle=90, show_label=false),
             PortTikZ(wire2, "$name.center", angle=270, show_label=false) ]
@@ -356,6 +376,7 @@ function cap(spec::BoxSpec, wire1::String, wire2::String)
   node = TikZ.Node(name; props=props)
   BoxTikZ(node, [], ports)
 end
+cap(spec::BoxSpec, A::ObExpr) = cap(spec, wires(A)...)
 
 """ Create a TikZ node for a (co)monoid morphism.
 
@@ -393,12 +414,13 @@ function box_size(ports::Int, style::Dict)::Number
   m * style[:box_size] + (m-1) * style[:parallel_sep]
 end
 
-""" Compute the locations of ports on a box.
+""" Create ports for a rectangular box.
 
-These anchors are consistent with the monoidal product (see `box_size`).
+This mainly involves computing the locations of anchors. The anchors are
+consistent with the monoidal product (see `box_size`).
 """
-function box_anchors(wires::WiresTikZ, name::String, style::Dict;
-                     dir::String="center", kwargs...)::Vector{PortTikZ}
+function box_ports(wires::WiresTikZ, name::String, style::Dict;
+                   dir::String="center", kwargs...)::Vector{PortTikZ}
   box_size, parallel_sep = style[:box_size], style[:parallel_sep]
   m = length(wires)
   if m == 0
@@ -409,10 +431,10 @@ function box_anchors(wires::WiresTikZ, name::String, style::Dict;
   
   result = []
   start = (m*box_size + (m-1)*parallel_sep) / 2
-  for (i,label) in enumerate(wires)
+  for (i,wire) in enumerate(wires)
     offset = box_size/2 + (i-1)*(box_size+parallel_sep)
     anchor = "\$($name.$dir)+(0,$(start-offset)em)\$"
-    push!(result, PortTikZ(label, anchor; kwargs...))
+    push!(result, PortTikZ(wire, anchor; kwargs...))
   end
   return result
 end
@@ -423,7 +445,7 @@ end
 # These methods are reasonable to define for the base expression types since
 # they will rarely be changed.
 
-wires(A::ObExpr{:generator}) = [ string(first(A)) ]
+wires(A::ObExpr{:generator}) = [ WireTikZ(string(first(A))) ]
 wires(A::ObExpr{:munit}) = []
 wires(A::ObExpr{:otimes}) = vcat(map(wires, args(A))...)
 
@@ -432,7 +454,7 @@ box(f::HomExpr{:compose}, spec::BoxSpec) = sequence(spec, args(f))
 box(f::HomExpr{:otimes}, spec::BoxSpec) = parallel(spec, args(f))
 box(f::HomExpr{:braid}, spec::BoxSpec) = wire_cross(spec, dom(f))
 
-""" Default renderers for specific syntaxes.
+""" Default renderers for specific syntax systems.
 """
 module Defaults
   export box, wires
@@ -440,6 +462,7 @@ module Defaults
   using ..TikZWiring
   import ..TikZWiring: box, wires
   using CompCat.Doctrine
+  using CompCat.Syntax
   
   # Category
   box(f::FreeCategory.Hom{:generator}, spec::BoxSpec) = rect(spec, f)
@@ -462,6 +485,17 @@ module Defaults
   box(f::FreeBiproductCategory.Hom{:delete}, spec::BoxSpec) = wire_delete(spec, dom(f))
   box(f::FreeBiproductCategory.Hom{:mmerge}, spec::BoxSpec) = wire_merge(spec, codom(f))
   box(f::FreeBiproductCategory.Hom{:create}, spec::BoxSpec) = wire_create(spec, codom(f))
+  
+  # Compact closed category
+  # Assumes that duals are fully distributed (as in this syntax system).
+  function wires(A::FreeCompactClosedCategory.Ob{:dual})
+    gen = first(A)
+    @assert head(gen) == :generator
+    [ WireTikZ(string(first(gen)); dir=WireBackward) ]
+  end
+  box(f::FreeCompactClosedCategory.Hom{:generator}, spec::BoxSpec) = rect(spec, f)
+  box(f::FreeCompactClosedCategory.Hom{:ev}, spec::BoxSpec) = cup(spec, dom(f))
+  box(f::FreeCompactClosedCategory.Hom{:coev}, spec::BoxSpec) = cap(spec, codom(f))
 end
 
 end

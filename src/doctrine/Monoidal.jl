@@ -1,5 +1,3 @@
-using Match
-
 using ..GAT
 using ..Syntax
 import ..Syntax: show_unicode, show_latex
