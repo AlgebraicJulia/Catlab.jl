@@ -484,6 +484,7 @@ module Defaults
   # Bicategory of relations
   Syntax = FreeBicategoryRelations
   box(spec::BoxSpec, f::Syntax.Hom{:generator}) = trapezium(spec, f)
+  box(spec::BoxSpec, f::Syntax.Hom{:dagger}) = trapezium(spec, first(f); reverse=true)
   box(spec::BoxSpec, f::Syntax.Hom{:ev}) = cup(spec, dom(f))
   box(spec::BoxSpec, f::Syntax.Hom{:coev}) = cap(spec, codom(f))
   box(spec::BoxSpec, f::Syntax.Hom{:mcopy}) = junction_circle(spec, f; fill=false)
@@ -493,6 +494,7 @@ module Defaults
   
   Syntax = FreeAbelianBicategoryRelations
   box(spec::BoxSpec, f::Syntax.Hom{:generator}) = trapezium(spec, f)
+  box(spec::BoxSpec, f::Syntax.Hom{:dagger}) = trapezium(spec, first(f); reverse=true)
   box(spec::BoxSpec, f::Syntax.Hom{:ev}) = cup(spec, dom(f))
   box(spec::BoxSpec, f::Syntax.Hom{:coev}) = cap(spec, codom(f))
   box(spec::BoxSpec, f::Syntax.Hom{:mcopy}) = junction_circle(spec, f; fill=false)
