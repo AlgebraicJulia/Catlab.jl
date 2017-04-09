@@ -442,34 +442,62 @@ module Defaults
   box(spec::BoxSpec, f::FreeCategory.Hom{:generator}) = rect(spec, f)
 
   # Symmetric monoidal category
-  box(spec::BoxSpec, f::FreeSymmetricMonoidalCategory.Hom{:generator}) = rect(spec, f)
+  Syntax = FreeSymmetricMonoidalCategory
+  box(spec::BoxSpec, f::Syntax.Hom{:generator}) = rect(spec, f)
 
   # (Co)cartesian category
-  box(spec::BoxSpec, f::FreeCartesianCategory.Hom{:generator}) = rect(spec, f)
-  box(spec::BoxSpec, f::FreeCartesianCategory.Hom{:mcopy}) = junction_circle(spec, f)
-  box(spec::BoxSpec, f::FreeCartesianCategory.Hom{:delete}) = junction_circle(spec, f)
+  Syntax = FreeCartesianCategory
+  box(spec::BoxSpec, f::Syntax.Hom{:generator}) = rect(spec, f)
+  box(spec::BoxSpec, f::Syntax.Hom{:mcopy}) = junction_circle(spec, f)
+  box(spec::BoxSpec, f::Syntax.Hom{:delete}) = junction_circle(spec, f)
   
-  box(spec::BoxSpec, f::FreeCocartesianCategory.Hom{:generator}) = rect(spec, f)
-  box(spec::BoxSpec, f::FreeCocartesianCategory.Hom{:mmerge}) = junction_circle(spec, f)
-  box(spec::BoxSpec, f::FreeCocartesianCategory.Hom{:create}) = junction_circle(spec, f)
+  Syntax = FreeCocartesianCategory
+  box(spec::BoxSpec, f::Syntax.Hom{:generator}) = rect(spec, f)
+  box(spec::BoxSpec, f::Syntax.Hom{:mmerge}) = junction_circle(spec, f)
+  box(spec::BoxSpec, f::Syntax.Hom{:create}) = junction_circle(spec, f)
   
   # Biproduct category
-  box(spec::BoxSpec, f::FreeBiproductCategory.Hom{:generator}) = rect(spec, f)
-  box(spec::BoxSpec, f::FreeBiproductCategory.Hom{:mcopy}) = junction_circle(spec, f)
-  box(spec::BoxSpec, f::FreeBiproductCategory.Hom{:delete}) = junction_circle(spec, f)
-  box(spec::BoxSpec, f::FreeBiproductCategory.Hom{:mmerge}) = junction_circle(spec, f)
-  box(spec::BoxSpec, f::FreeBiproductCategory.Hom{:create}) = junction_circle(spec, f)
+  Syntax = FreeBiproductCategory
+  box(spec::BoxSpec, f::Syntax.Hom{:generator}) = rect(spec, f)
+  box(spec::BoxSpec, f::Syntax.Hom{:mcopy}) = junction_circle(spec, f)
+  box(spec::BoxSpec, f::Syntax.Hom{:delete}) = junction_circle(spec, f)
+  box(spec::BoxSpec, f::Syntax.Hom{:mmerge}) = junction_circle(spec, f)
+  box(spec::BoxSpec, f::Syntax.Hom{:create}) = junction_circle(spec, f)
   
   # Compact closed category
   # Assumes that duals are fully distributed (as in this syntax system).
-  function wires(A::FreeCompactClosedCategory.Ob{:dual})
+  Syntax = FreeCompactClosedCategory
+  function wires(A::Syntax.Ob{:dual})
     gen = first(A)
     @assert head(gen) == :generator
     [ WireTikZ(string(first(gen)); dir=WireBackward) ]
   end
-  box(spec::BoxSpec, f::FreeCompactClosedCategory.Hom{:generator}) = rect(spec, f)
-  box(spec::BoxSpec, f::FreeCompactClosedCategory.Hom{:ev}) = cup(spec, dom(f))
-  box(spec::BoxSpec, f::FreeCompactClosedCategory.Hom{:coev}) = cap(spec, codom(f))
+  box(spec::BoxSpec, f::Syntax.Hom{:generator}) = rect(spec, f)
+  box(spec::BoxSpec, f::Syntax.Hom{:ev}) = cup(spec, dom(f))
+  box(spec::BoxSpec, f::Syntax.Hom{:coev}) = cap(spec, codom(f))
+  
+  # Bicategory of relations
+  Syntax = FreeBicategoryRelations
+  box(spec::BoxSpec, f::Syntax.Hom{:generator}) = trapezium(spec, f)
+  box(spec::BoxSpec, f::Syntax.Hom{:ev}) = cup(spec, dom(f))
+  box(spec::BoxSpec, f::Syntax.Hom{:coev}) = cap(spec, codom(f))
+  box(spec::BoxSpec, f::Syntax.Hom{:mcopy}) = junction_circle(spec, f; fill=false)
+  box(spec::BoxSpec, f::Syntax.Hom{:delete}) = junction_circle(spec, f; fill=false)
+  box(spec::BoxSpec, f::Syntax.Hom{:mmerge}) = junction_circle(spec, f; fill=false)
+  box(spec::BoxSpec, f::Syntax.Hom{:create}) = junction_circle(spec, f; fill=false)
+  
+  Syntax = FreeAbelianBicategoryRelations
+  box(spec::BoxSpec, f::Syntax.Hom{:generator}) = trapezium(spec, f)
+  box(spec::BoxSpec, f::Syntax.Hom{:ev}) = cup(spec, dom(f))
+  box(spec::BoxSpec, f::Syntax.Hom{:coev}) = cap(spec, codom(f))
+  box(spec::BoxSpec, f::Syntax.Hom{:mcopy}) = junction_circle(spec, f; fill=false)
+  box(spec::BoxSpec, f::Syntax.Hom{:delete}) = junction_circle(spec, f; fill=false)
+  box(spec::BoxSpec, f::Syntax.Hom{:mmerge}) = junction_circle(spec, f; fill=false)
+  box(spec::BoxSpec, f::Syntax.Hom{:create}) = junction_circle(spec, f; fill=false)
+  box(spec::BoxSpec, f::Syntax.Hom{:plus}) = junction_circle(spec, f; fill=true)
+  box(spec::BoxSpec, f::Syntax.Hom{:zero}) = junction_circle(spec, f; fill=true)
+  box(spec::BoxSpec, f::Syntax.Hom{:coplus}) = junction_circle(spec, f; fill=true)
+  box(spec::BoxSpec, f::Syntax.Hom{:cozero}) = junction_circle(spec, f; fill=true)
 end
 
 end
