@@ -89,7 +89,7 @@ function wiring_diagram(f::HomExpr;
   end
   
   # Create node for extended morphism.
-  box_tikz = box(f_ext, spec)
+  box_tikz = box(spec, f_ext)
   
   # Create picture with this single node.
   props = [
@@ -117,10 +117,10 @@ function wires(A::ObExpr)::WiresTikZ end
 
 """ Create box for a morphism expression.
 """
-function box(f::HomExpr, spec::BoxSpec)::BoxTikZ end
+function box(spec::BoxSpec, f::HomExpr)::BoxTikZ end
 
-function subbox(f::HomExpr, spec::BoxSpec, n::Int)::BoxTikZ
-  box(f, BoxSpec("$(spec.name)$n", spec.style))
+function subbox(spec::BoxSpec, f::HomExpr, n::Int)::BoxTikZ
+  box(BoxSpec("$(spec.name)$n", spec.style), f)
 end
 
 # Elements of wiring diagrams
@@ -215,7 +215,7 @@ function sequence(spec::BoxSpec, homs::Vector)::BoxTikZ
     TikZ.Property("midway")
   ]
   
-  mors = [ subbox(g, spec, i) for (i,g) in enumerate(homs) ]
+  mors = [ subbox(spec, g, i) for (i,g) in enumerate(homs) ]
   stmts = TikZ.Statement[ mors[1].node ]
   for i = 2:length(mors)
     push!(mors[i].node.props,
@@ -260,7 +260,7 @@ function parallel(spec::BoxSpec, homs::Vector)::BoxTikZ
   
   mors = []
   for (i,g) in enumerate(homs)
-    mor = subbox(g, spec, i)
+    mor = subbox(spec, g, i)
     if i > 1
       push!(mor.node.props,
             TikZ.Property("below=$(parallel_sep)em of $name$(i-1)"))
@@ -423,10 +423,10 @@ wires(A::ObExpr{:generator}) = [ WireTikZ(string(first(A))) ]
 wires(A::ObExpr{:munit}) = WireTikZ[]
 wires(A::ObExpr{:otimes}) = vcat(map(wires, args(A))...)
 
-box(f::HomExpr{:id}, spec::BoxSpec) = lines(spec, dom(f))
-box(f::HomExpr{:compose}, spec::BoxSpec) = sequence(spec, args(f))
-box(f::HomExpr{:otimes}, spec::BoxSpec) = parallel(spec, args(f))
-box(f::HomExpr{:braid}, spec::BoxSpec) = crossing(spec, dom(f))
+box(spec::BoxSpec, f::HomExpr{:id}) = lines(spec, dom(f))
+box(spec::BoxSpec, f::HomExpr{:compose}) = sequence(spec, args(f))
+box(spec::BoxSpec, f::HomExpr{:otimes}) = parallel(spec, args(f))
+box(spec::BoxSpec, f::HomExpr{:braid}) = crossing(spec, dom(f))
 
 """ Default renderers for specific syntax systems.
 """
@@ -439,26 +439,26 @@ module Defaults
   using CompCat.Syntax
   
   # Category
-  box(f::FreeCategory.Hom{:generator}, spec::BoxSpec) = rect(spec, f)
+  box(spec::BoxSpec, f::FreeCategory.Hom{:generator}) = rect(spec, f)
 
   # Symmetric monoidal category
-  box(f::FreeSymmetricMonoidalCategory.Hom{:generator}, spec::BoxSpec) = rect(spec, f)
+  box(spec::BoxSpec, f::FreeSymmetricMonoidalCategory.Hom{:generator}) = rect(spec, f)
 
   # (Co)cartesian category
-  box(f::FreeCartesianCategory.Hom{:generator}, spec::BoxSpec) = rect(spec, f)
-  box(f::FreeCartesianCategory.Hom{:mcopy}, spec::BoxSpec) = junction_circle(spec, f)
-  box(f::FreeCartesianCategory.Hom{:delete}, spec::BoxSpec) = junction_circle(spec, f)
+  box(spec::BoxSpec, f::FreeCartesianCategory.Hom{:generator}) = rect(spec, f)
+  box(spec::BoxSpec, f::FreeCartesianCategory.Hom{:mcopy}) = junction_circle(spec, f)
+  box(spec::BoxSpec, f::FreeCartesianCategory.Hom{:delete}) = junction_circle(spec, f)
   
-  box(f::FreeCocartesianCategory.Hom{:generator}, spec::BoxSpec) = rect(spec, f)
-  box(f::FreeCocartesianCategory.Hom{:mmerge}, spec::BoxSpec) = junction_circle(spec, f)
-  box(f::FreeCocartesianCategory.Hom{:create}, spec::BoxSpec) = junction_circle(spec, f)
+  box(spec::BoxSpec, f::FreeCocartesianCategory.Hom{:generator}) = rect(spec, f)
+  box(spec::BoxSpec, f::FreeCocartesianCategory.Hom{:mmerge}) = junction_circle(spec, f)
+  box(spec::BoxSpec, f::FreeCocartesianCategory.Hom{:create}) = junction_circle(spec, f)
   
   # Biproduct category
-  box(f::FreeBiproductCategory.Hom{:generator}, spec::BoxSpec) = rect(spec, f)
-  box(f::FreeBiproductCategory.Hom{:mcopy}, spec::BoxSpec) = junction_circle(spec, f)
-  box(f::FreeBiproductCategory.Hom{:delete}, spec::BoxSpec) = junction_circle(spec, f)
-  box(f::FreeBiproductCategory.Hom{:mmerge}, spec::BoxSpec) = junction_circle(spec, f)
-  box(f::FreeBiproductCategory.Hom{:create}, spec::BoxSpec) = junction_circle(spec, f)
+  box(spec::BoxSpec, f::FreeBiproductCategory.Hom{:generator}) = rect(spec, f)
+  box(spec::BoxSpec, f::FreeBiproductCategory.Hom{:mcopy}) = junction_circle(spec, f)
+  box(spec::BoxSpec, f::FreeBiproductCategory.Hom{:delete}) = junction_circle(spec, f)
+  box(spec::BoxSpec, f::FreeBiproductCategory.Hom{:mmerge}) = junction_circle(spec, f)
+  box(spec::BoxSpec, f::FreeBiproductCategory.Hom{:create}) = junction_circle(spec, f)
   
   # Compact closed category
   # Assumes that duals are fully distributed (as in this syntax system).
@@ -467,9 +467,9 @@ module Defaults
     @assert head(gen) == :generator
     [ WireTikZ(string(first(gen)); dir=WireBackward) ]
   end
-  box(f::FreeCompactClosedCategory.Hom{:generator}, spec::BoxSpec) = rect(spec, f)
-  box(f::FreeCompactClosedCategory.Hom{:ev}, spec::BoxSpec) = cup(spec, dom(f))
-  box(f::FreeCompactClosedCategory.Hom{:coev}, spec::BoxSpec) = cap(spec, codom(f))
+  box(spec::BoxSpec, f::FreeCompactClosedCategory.Hom{:generator}) = rect(spec, f)
+  box(spec::BoxSpec, f::FreeCompactClosedCategory.Hom{:ev}) = cup(spec, dom(f))
+  box(spec::BoxSpec, f::FreeCompactClosedCategory.Hom{:coev}) = cap(spec, codom(f))
 end
 
 end
