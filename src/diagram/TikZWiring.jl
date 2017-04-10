@@ -66,11 +66,11 @@ Sec 17.13).
 function wiring_diagram(f::HomExpr;
     font_size::Number=12, line_width::String="0.4pt", math_mode::Bool=true,
     arrowtip::String="", labels::Bool=true,
-    box_padding::String="0.333em", box_size::Number=2,
+    box_size::Number=2, box_style::Dict=Dict(),
     sequence_sep::Number=2, parallel_sep::Number=0.5)::TikZ.Picture
   # Parse arguments.
   style = Dict(:arrowtip => !isempty(arrowtip), :labels => labels,
-               :box_padding => box_padding, :box_size => box_size,
+               :box_size => box_size, :box_style => box_style,
                :sequence_sep => sequence_sep, :parallel_sep => parallel_sep)
   spec = BoxSpec("n", style)
   
@@ -128,19 +128,20 @@ end
 """ A rectangle, the default style for generators.
 """
 function rect(spec::BoxSpec, content::String, dom::WiresTikZ, codom::WiresTikZ;
-              padding::String="", rounded::Bool=true)::BoxTikZ
+              padding::String="0.333em", rounded::Bool=true)::BoxTikZ
   name, style = spec.name, spec.style
   dom_ports = box_ports(dom, name, style, dir="west", angle=180)
   codom_ports = box_ports(codom, name, style, dir="east", angle=0)
   size = box_size(max(length(dom_ports), length(codom_ports)), style)
   
-  padding = isempty(padding) ? spec.style[:box_padding] : padding
+  box_style = style[:box_style]
   props = [
     TikZ.Property("draw"),
     TikZ.Property("solid"),
-    TikZ.Property("inner sep", padding),
+    TikZ.Property("inner sep", get(box_style, :padding, padding)),
     TikZ.Property("rectangle"),
-    TikZ.Property(rounded ? "rounded corners" : "sharp corners"),
+    TikZ.Property(get(box_style, :rounded, rounded) ?
+                  "rounded corners" : "sharp corners"),
     TikZ.Property("minimum height", "$(size)em"),
   ]
   node = TikZ.Node(name; content=content, props=props)
@@ -158,23 +159,24 @@ to get a bounding box on the inner node, regardless of its shape, *before* it's
 rendered.
 """
 function trapezium(spec::BoxSpec, content::String, dom::WiresTikZ, codom::WiresTikZ;
-                   padding::String="", rounded::Bool=true,
+                   padding::String="0.333em", rounded::Bool=true,
                    angle::Int=80, reverse::Bool=false)::BoxTikZ
   name, style = spec.name, spec.style
   dom_ports = box_ports(dom, name, style, dir="west", angle=180)
   codom_ports = box_ports(codom, name, style, dir="east", angle=0)
   size = box_size(max(length(dom_ports), length(codom_ports)), style)
   
-  padding = isempty(padding) ? spec.style[:box_padding] : padding
+  box_style = style[:box_style]
   props = [
     TikZ.Property("draw"),
     TikZ.Property("solid"),
-    TikZ.Property("inner sep", padding),
+    TikZ.Property("inner sep", get(box_style, :padding, padding)),
     TikZ.Property("trapezium"),
-    TikZ.Property("trapezium angle", "$angle"),
+    TikZ.Property("trapezium angle", string(get(box_style, :angle, angle))),
     TikZ.Property("trapezium stretches body"),
     TikZ.Property("shape border rotate", reverse ? "90" : "270"),
-    TikZ.Property(rounded ? "rounded corners" : "sharp corners"),
+    TikZ.Property(get(box_style, :rounded, rounded) ?
+                  "rounded corners" : "sharp corners"),
     # Actually the height because of rotation.
     TikZ.Property("minimum width", "$(size)em"),
   ]
