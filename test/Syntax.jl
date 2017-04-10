@@ -30,6 +30,9 @@ end
 x, y, z = FreeMonoid.m(:x), FreeMonoid.m(:y), FreeMonoid.m(:z)
 @test x == FreeMonoid.m(:x)
 @test x != y
+@test FreeMonoid.m("X") == FreeMonoid.m("X")
+@test FreeMonoid.m("X") != FreeMonoid.m("Y")
+
 @test isa(mtimes(x,y), FreeMonoid.M)
 @test isa(munit(FreeMonoid.M), FreeMonoid.M)
 @test mtimes(mtimes(x,y),z) != mtimes(x,mtimes(y,z))

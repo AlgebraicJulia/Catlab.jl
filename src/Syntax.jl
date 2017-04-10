@@ -274,7 +274,7 @@ function gen_term_generator(cons::TypeConstructor)::Expr
   name_param = gensym(:sym)
   type_params = [ Expr(:(::), p, GAT.strip_type(cons.context[p]))
                   for p in cons.params ]
-  call_expr = Expr(:call, name, :($name_param::Symbol), type_params...)
+  call_expr = Expr(:call, name, :($name_param::Any), type_params...)
   body = Expr(:call,
     Expr(:curly, cons.name, QuoteNode(:generator)),
     Expr(:vect, name_param),
