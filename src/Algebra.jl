@@ -7,7 +7,7 @@ represent expressions as morphisms in a suitable monoidal category.
 """
 module Algebra
 export AlgNetwork, AlgNetworkExpr,
-  compose, id, otimes, munit, mcopy, delete, plus, zero,
+  compose, id, otimes, opow, munit, mcopy, delete, plus, zero,
   compile, compile_expr
 
 using Match
@@ -26,11 +26,16 @@ See also the doctrine of abelian bicategory of relations
 (`AbelianBicategoryRelations`).
 """
 @signature SymmetricMonoidalCategory(Ob,Hom) => AlgNetwork(Ob,Hom) begin
-  mcopy(A::Ob)::Hom(A,otimes(A,A))
+  mcopy(A::Ob, n::Int)::Hom(A,opow(A,n))
   delete(A::Ob)::Hom(A,munit())
 
-  plus(A::Ob)::Hom(otimes(A,A),A)
+  plus(A::Ob, n::Int)::Hom(opow(A,n),A)
   zero(A::Ob)::Hom(munit(),A)
+  
+  opow(A::Ob, n::Int) = otimes(repeated(A,n)...)
+  opow(f::Hom, n::Int) = otimes(repeated(f,n)...)
+  mcopy(A::Ob) = mcopy(A,2)
+  plus(A::Ob) = plus(A,2)
 end
 
 @syntax AlgNetworkExpr(ObExpr,HomExpr) AlgNetwork begin
@@ -111,7 +116,7 @@ end
 
 function compile_block(f::AlgNetworkExpr.Hom{:otimes}, inputs::Vector)::Block
   blocks = [ compile_block(b, [var]) for (b, var) in zip(args(f), inputs) ]
-  code = reduce((b1,b2) -> concat_block(b1.code, b2.code), blocks)
+  code = reduce(concat_block, (b.code for b in blocks))
   outputs = vcat([b.outputs for b in blocks]...)
   Block(code, inputs, outputs)
 end

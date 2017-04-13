@@ -23,12 +23,17 @@ f = compile(otimes(func(:cos), func(:sin)))
 
 f = compile(mcopy(R))
 @test f(x) == [x x]
+f = compile(mcopy(R,3))
+@test f(x) == [x x x]
 
 f = compile(compose(mcopy(R), otimes(func(:cos), func(:sin))))
 @test f(x) == [cos(x) sin(x)]
 
+z = linspace(-4,0,100)
 f = compile(plus(R))
 @test f(x,y) == x+y
+f = compile(plus(R,3))
+@test f(x,y,z) == x+y+z
 
 f = compile(compose(mcopy(R), otimes(func(:cos), func(:sin)), plus(R)))
 @test f(x) == cos(x) + sin(x)

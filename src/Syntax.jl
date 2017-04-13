@@ -112,8 +112,10 @@ function syntax_code(name::Symbol, base_types::Vector{Type}, mod::Module,
   signature = class.signature
   
   # Generate module with syntax types and type/term generators.
+  outer_mod = current_module()
   mod = Expr(:module, true, name,
     Expr(:block, [
+      Expr(:using, map(Symbol, split(string(outer_mod), "."))...);
       Expr(:export, [cons.name for cons in signature.types]...);  
       gen_types(signature, base_types);
       gen_type_accessors(signature);
@@ -245,7 +247,6 @@ function gen_term_constructor_expr(cons, sig)
   expr = GAT.expand_term_type(cons, sig)
   expr = replace_nullary_constructors(expr, sig)
   
-  # XXX: Is there another way? Fetching the current module seems like a hack.
   mod = current_module()
   bindings = Dict(c.name => GlobalRef(mod, c.name) for c in sig.terms)
   GAT.replace_symbols(bindings, expr)

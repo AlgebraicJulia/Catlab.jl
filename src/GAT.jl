@@ -454,6 +454,9 @@ function get_type(sig::Signature, name::Symbol)::TypeConstructor
   @assert length(indices) == 1
   sig.types[indices[1]]
 end
+function has_type(sig::Signature, name::Symbol)::Bool
+  findfirst(cons -> cons.name == name, sig.types) != 0
+end
 
 # GAT expressions in a signature
 ################################
@@ -530,6 +533,12 @@ function equations(context::Context, sig::Signature)::Vector{Pair}
   for (start, var) in enumerate(names)
     for name in names[start+1:end]
       expr = context[name]
+      if isa(expr, Symbol) && !has_type(sig, expr)
+        # If the constructor is a symbol and there isn't a matching type in
+        # the signature, assume it's a Julia type. For now, these are
+        # completely ignored by the syntax system.
+        continue
+      end
       expr = isa(expr, Symbol) ? Expr(:call, expr) : expr
       cons = get_type(sig, expr.args[1])
       accessors = cons.params[find(expr.args[2:end] .== var)]
