@@ -49,6 +49,10 @@ type Block
 end
 
 """ Compile an algebraic network into a Julia function.
+
+This method of "functorial compilation" generates simple imperative code with no
+optimizations. Still, it should be fast provided the original expression is
+properly factored (there are no duplicated computations).
 """
 function compile(f::AlgNetworkExpr.Hom; kw...)::Function
   eval(compile_expr(f; kw...))
@@ -65,20 +69,13 @@ function compile_expr(f::AlgNetworkExpr.Hom;
   args = argnames
 
   block = compile_block(f, argnames)
-  body = concat_block(block.code, Expr(:return, block.outputs...))
+  return_expr = Expr(:return, if length(block.outputs) == 1
+    block.outputs[1]
+  else 
+    Expr(:hcat, block.outputs...)
+  end)
+  body = concat_block(block.code, return_expr)
   Expr(:function, Expr(:call, name, args...), body)
-end
-
-function compile_block(f::AlgNetworkExpr.Hom{:compose}, inputs::Vector)::Block
-  code = Expr(:block)
-  vars = inputs
-  for g in args(f)
-    block = compile_block(g, vars)
-    code = concat_block(code, block.code)
-    vars = block.outputs
-  end
-  outputs = vars
-  Block(code, inputs, outputs)
 end
 
 function compile_block(f::AlgNetworkExpr.Hom{:generator}, inputs::Vector)::Block
@@ -98,6 +95,48 @@ function compile_block(f::AlgNetworkExpr.Hom{:generator}, inputs::Vector)::Block
     Expr(:call, :(*), value, Expr(:vcat, inputs...))
   end
   Block(Expr(:(=), lhs, rhs), inputs, outputs)
+end
+
+function compile_block(f::AlgNetworkExpr.Hom{:compose}, inputs::Vector)::Block
+  code = Expr(:block)
+  vars = inputs
+  for g in args(f)
+    block = compile_block(g, vars)
+    code = concat_block(code, block.code)
+    vars = block.outputs
+  end
+  outputs = vars
+  Block(code, inputs, outputs)
+end
+
+function compile_block(f::AlgNetworkExpr.Hom{:otimes}, inputs::Vector)::Block
+  blocks = [ compile_block(b, [var]) for (b, var) in zip(args(f), inputs) ]
+  code = reduce((b1,b2) -> concat_block(b1.code, b2.code), blocks)
+  outputs = vcat([b.outputs for b in blocks]...)
+  Block(code, inputs, outputs)
+end
+
+function compile_block(f::AlgNetworkExpr.Hom{:mcopy}, inputs::Vector)::Block
+  reps = div(length(vec(codom(f))), length(vec(dom(f))))
+  outputs = vcat(repeated(inputs, reps)...)
+  Block(Expr(:block), inputs, outputs)
+end
+
+function compile_block(f::AlgNetworkExpr.Hom{:delete}, inputs::Vector)::Block
+  Block(Expr(:block), inputs, [])
+end
+
+function compile_block(f::AlgNetworkExpr.Hom{:plus}, inputs::Vector)::Block
+  out = gensym()
+  code = Expr(:(=), out, Expr(:call, :(+), inputs...))
+  Block(code, inputs, [out])
+end
+
+function compile_block(f::AlgNetworkExpr.Hom{:zero}, inputs::Vector)::Block
+  nout = length(vec(codom(f)))
+  outputs = gensyms(nout)
+  code = Expr(:(=), Expr(:tuple, outputs...), Expr(:tuple, repeated(0,nout)...))
+  Block(code, inputs, outputs)
 end
 
 function concat_block(expr1::Expr, expr2::Expr)::Expr
