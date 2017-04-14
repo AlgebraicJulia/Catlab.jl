@@ -14,6 +14,7 @@ function TikzPicture(pic::TikZ.Picture; usePDF2SVG=true)::TikzPicture
   options = join((sprint(TikZ.pprint, prop) for prop in pic.props), ",")
   preamble = join([
     # FIXME: Dependencies are hard-coded!
+    "\\usepackage{amssymb}",
     "\\usetikzlibrary{arrows.meta}",
     "\\usetikzlibrary{calc}",
     "\\usetikzlibrary{decorations.markings}",
