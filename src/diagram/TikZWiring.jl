@@ -320,24 +320,14 @@ as a spacer. FIXME: Is there a more elegant way to achieve the desired margin?
 """
 function junction_circle(name::String, wires_in::WiresTikZ, wires_out::WiresTikZ;
                          fill::Bool=true)
-  m = max(length(wires_in), length(wires_out))
-  @assert m <= 2
-  dom = @match length(wires_in) begin
-    0 => []
-    1 => [ PortTikZ(wires_in[1], "$name point.west", angle=180) ]
-    2 => [ PortTikZ(wires_in[1], "$name point.north", angle=90, show_label=false),
-           PortTikZ(wires_in[2], "$name point.south", angle=270, show_label=false) ]
-  end
-  codom = @match length(wires_out) begin
-    0 => []
-    1 => [ PortTikZ(wires_out[1], "$name point.east", angle=0) ]
-    2 => [ PortTikZ(wires_out[1], "$name point.north", angle=90, show_label=false),
-           PortTikZ(wires_out[2], "$name point.south", angle=270, show_label=false) ]
-  end
-  
+  dom = circle_ports(wires_in, "$name point", "west";
+                     show_label = length(wires_in) <= 1)
+  codom = circle_ports(wires_out, "$name point", "east";
+                       show_label = length(wires_out) <= 1)
+  size = box_size(max(length(dom), length(codom)))
   pic = TikZ.Picture(
     TikZ.Node("$name box"; props=[
-      TikZ.Property("minimum height", "$(box_size(m))em"),
+      TikZ.Property("minimum height", "$(size)em"),
     ]),
     TikZ.Node("$name point"; props=[
       TikZ.Property("draw"),
@@ -408,13 +398,13 @@ This mainly involves computing the locations of anchors. The anchors are
 consistent with the monoidal product (see `box_size`).
 """
 function box_ports(wires::WiresTikZ, name::String;
-                   dir::String="center", kwargs...)::Vector{PortTikZ}
+                   dir::String="center", kw...)::Vector{PortTikZ}
   box_size, parallel_sep = style[:box_size], style[:parallel_sep]
   m = length(wires)
   if m == 0
     return []
   elseif m == 1
-    return [ PortTikZ(wires[1], "$name.$dir"; kwargs...) ]
+    return [ PortTikZ(wires[1], "$name.$dir"; kw...) ]
   end
   
   result = []
@@ -422,9 +412,25 @@ function box_ports(wires::WiresTikZ, name::String;
   for (i,wire) in enumerate(wires)
     offset = box_size/2 + (i-1)*(box_size+parallel_sep)
     anchor = "\$($name.$dir)+(0,$(start-offset)em)\$"
-    push!(result, PortTikZ(wire, anchor; kwargs...))
+    push!(result, PortTikZ(wire, anchor; kw...))
   end
   return result
+end
+
+""" Create ports for a circular node.
+"""
+function circle_ports(wires::WiresTikZ, name::String, dir::String;
+                      kw...)::Vector{PortTikZ}
+  @assert dir in ("west", "east")
+  m = length(wires)
+  angles = round(Int, linspace(0,180,m+2)[2:end-1])
+  if dir == "west"
+    angles = mod(angles + 90, 360)
+  elseif dir == "east"
+    angles = reverse(mod(angles - 90, 360))
+  end
+  PortTikZ[ PortTikZ(wire, "$name.$angle"; angle=angle, kw...)
+            for (wire, angle) in zip(wires, angles) ]
 end
 
 # Defaults
