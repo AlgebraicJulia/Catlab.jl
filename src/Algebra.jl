@@ -7,7 +7,7 @@ represent expressions as morphisms in a suitable monoidal category.
 """
 module Algebra
 export AlgNetwork, AlgNetworkExpr,
-  compose, id, dom, codom, otimes, opow, munit, mcopy, delete, plus, zero,
+  compose, id, dom, codom, otimes, opow, munit, mcopy, delete, mmerge, create,
   compile, compile_expr
 
 using Match
@@ -30,13 +30,13 @@ See also the doctrine of abelian bicategory of relations
   mcopy(A::Ob, n::Int)::Hom(A,opow(A,n))
   delete(A::Ob)::Hom(A,munit())
 
-  plus(A::Ob, n::Int)::Hom(opow(A,n),A)
-  zero(A::Ob)::Hom(munit(),A)
+  mmerge(A::Ob, n::Int)::Hom(opow(A,n),A)
+  create(A::Ob)::Hom(munit(),A)
   
   opow(A::Ob, n::Int) = otimes(repeated(A,n)...)
   opow(f::Hom, n::Int) = otimes(repeated(f,n)...)
   mcopy(A::Ob) = mcopy(A,2)
-  plus(A::Ob) = plus(A,2)
+  mmerge(A::Ob) = mmerge(A,2)
 end
 
 @syntax AlgNetworkExpr(ObExpr,HomExpr) AlgNetwork begin
@@ -142,13 +142,13 @@ function compile_block(f::AlgNetworkExpr.Hom{:delete}, inputs::Vector)::Block
   Block(Expr(:block), inputs, [])
 end
 
-function compile_block(f::AlgNetworkExpr.Hom{:plus}, inputs::Vector)::Block
+function compile_block(f::AlgNetworkExpr.Hom{:mmerge}, inputs::Vector)::Block
   out = gensym()
   code = Expr(:(=), out, Expr(:call, :(+), inputs...))
   Block(code, inputs, [out])
 end
 
-function compile_block(f::AlgNetworkExpr.Hom{:zero}, inputs::Vector)::Block
+function compile_block(f::AlgNetworkExpr.Hom{:create}, inputs::Vector)::Block
   nout = length(vec(codom(f)))
   outputs = gensyms(nout)
   code = Expr(:(=), Expr(:tuple, outputs...), Expr(:tuple, repeated(0,nout)...))

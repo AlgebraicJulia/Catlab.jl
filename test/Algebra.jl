@@ -23,7 +23,7 @@ y = linspace(0,4,100)
 f = compile(otimes(func(:cos), func(:sin)))
 @test f(x,y) == [cos(x) sin(y)]
 
-f = compile(compose(otimes(id(R),constant(1)), plus(R)))
+f = compile(compose(otimes(id(R),constant(1)), mmerge(R)))
 @test f(x) == x+1
 
 f = compile(mcopy(R))
@@ -35,12 +35,12 @@ f = compile(compose(mcopy(R), otimes(func(:cos), func(:sin))))
 @test f(x) == [cos(x) sin(x)]
 
 z = linspace(-4,0,100)
-f = compile(plus(R))
+f = compile(mmerge(R))
 @test f(x,y) == x+y
-f = compile(plus(R,3))
+f = compile(mmerge(R,3))
 @test f(x,y,z) == x+y+z
 
-f = compile(compose(mcopy(R), otimes(func(:cos), func(:sin)), plus(R)))
+f = compile(compose(mcopy(R), otimes(func(:cos), func(:sin)), mmerge(R)))
 @test f(x) == cos(x) + sin(x)
 
 end
