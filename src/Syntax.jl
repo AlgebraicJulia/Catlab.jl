@@ -359,19 +359,22 @@ codomains of morphisms) are not shown.
 Cf. the standard library function `Meta.show_sexpr`.
 """
 show_sexpr(expr::BaseExpr) = show_sexpr(STDOUT, expr)
-show_sexpr(io::IO, expr::BaseExpr) = print(io, as_sexpr(expr))
 
-function as_sexpr(expr::BaseExpr)::String
+function show_sexpr(io::IO, expr::BaseExpr)
   if head(expr) == :generator
-    repr(first(expr))
+    print(io, repr(first(expr)))
   else
-    string("(", join([head(expr), map(as_sexpr,args(expr))...], " "), ")")
+    print(io, "(")
+    join(io, [string(head(expr));
+              [sprint(show_sexpr, arg) for arg in args(expr)]], " ")
+    print(io, ")")
   end
 end
 
 """ Show the expression in infix notation using Unicode symbols.
 """
 show_unicode(expr::BaseExpr) = show_unicode(STDOUT, expr)
+show_unicode(io::IO, x::Any; kw...) = show(io, x)
 
 # By default, show in prefix notation.
 function show_unicode(io::IO, expr::BaseExpr; kw...)
@@ -394,6 +397,7 @@ end
 Does *not* include `\$` or `\\[begin|end]{equation}` delimiters.
 """
 show_latex(expr::BaseExpr) = show_latex(STDOUT, expr)
+show_latex(io::IO, x::Any; kw...) = show(io, x)
 
 # By default, show in prefix notation.
 function show_latex(io::IO, expr::BaseExpr; kw...)
