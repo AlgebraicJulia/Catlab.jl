@@ -9,6 +9,7 @@ import Formatting: format
 using Match
 
 import ...Doctrine: ObExpr, HomExpr, dom, codom, head, args, compose, id
+import ...Syntax: BaseExpr, show_latex
 import ..TikZ
 
 # Data types
@@ -65,7 +66,7 @@ function wiring_diagram(f::HomExpr;
   # XXX: Storing the style parameters as a global variable is bad practice, but
   # passing them around is really inconvenient. Is there a better approach?
   global style = Dict(
-    :arrowtip => !isempty(arrowtip), :labels => labels,
+    :math_mode => math_mode, :arrowtip => !isempty(arrowtip), :labels => labels,
     :box_size => box_size, :box_style => box_style,
     :sequence_sep => sequence_sep, :parallel_sep => parallel_sep,
   )
@@ -139,7 +140,7 @@ function rect(name::String, content::String, dom::WiresTikZ, codom::WiresTikZ;
   BoxTikZ(node, dom_ports, codom_ports)
 end
 function rect(name::String, f::HomExpr{:generator}; kw...)::BoxTikZ
-  rect(name, string(first(f)), wires(dom(f)), wires(codom(f)); kw...)
+  rect(name, label(f), wires(dom(f)), wires(codom(f)); kw...)
 end
 
 """ A trapezium node, the default style for generators in dagger categories.
@@ -178,7 +179,7 @@ function trapezium(name::String, content::String, dom::WiresTikZ, codom::WiresTi
   BoxTikZ(node, dom_ports, codom_ports)
 end
 function trapezium(name::String, f::HomExpr{:generator}; kw...)::BoxTikZ
-  trapezium(name, string(first(f)), wires(dom(f)), wires(codom(f)); kw...)
+  trapezium(name, label(f), wires(dom(f)), wires(codom(f)); kw...)
 end
 
 """ Straight lines, used to draw identity morphisms.
@@ -403,7 +404,7 @@ end
 # These methods are reasonable to define for the base expression types since
 # they will rarely be changed.
 
-wires(A::ObExpr{:generator}) = [ WireTikZ(string(first(A))) ]
+wires(A::ObExpr{:generator}) = [ WireTikZ(label(A)) ]
 wires(A::ObExpr{:munit}) = WireTikZ[]
 wires(A::ObExpr{:otimes}) = vcat(map(wires, args(A))...)
 
@@ -412,13 +413,21 @@ box(name::String, f::HomExpr{:compose}) = sequence(name, args(f))
 box(name::String, f::HomExpr{:otimes}) = parallel(name, args(f))
 box(name::String, f::HomExpr{:braid}) = crossing(name, dom(f))
 
+function label(expr::BaseExpr{:generator})::String
+  if style[:math_mode]
+    sprint(show_latex, expr)
+  else
+    string(first(expr))
+  end
+end
+
 """ Default renderers for specific syntax systems.
 """
 module Defaults
   export box, wires
   
   using ..TikZWiring
-  import ..TikZWiring: box, wires
+  import ..TikZWiring: box, wires, label
   using CompCat.Doctrine
   using CompCat.Syntax
   
@@ -432,7 +441,7 @@ module Defaults
   Syntax = FreeDaggerCategory
   box(name::String, f::Syntax.Hom{:generator}) = trapezium(name, f)
   box(name::String, f::Syntax.Hom{:dagger}) = trapezium(name,
-    string(first(generator(f))), wires(dom(f)), wires(codom(f)); reverse=true)
+    label(generator(f)), wires(dom(f)), wires(codom(f)); reverse=true)
 
   # Symmetric monoidal category
   Syntax = FreeSymmetricMonoidalCategory
@@ -460,7 +469,7 @@ module Defaults
   # Compact closed category
   # Assumes that duals are fully distributed (as in this syntax system).
   Syntax = FreeCompactClosedCategory
-  wires(A::Syntax.Ob{:dual}) = [ WireTikZ(string(first(generator(A))); reverse=true) ]
+  wires(A::Syntax.Ob{:dual}) = [ WireTikZ(label(generator(A)); reverse=true) ]
   box(name::String, f::Syntax.Hom{:generator}) = rect(name, f)
   box(name::String, f::Syntax.Hom{:ev}) = cup(name, dom(f))
   box(name::String, f::Syntax.Hom{:coev}) = cap(name, codom(f))
@@ -469,7 +478,7 @@ module Defaults
   Syntax = FreeBicategoryRelations
   box(name::String, f::Syntax.Hom{:generator}) = trapezium(name, f)
   box(name::String, f::Syntax.Hom{:dagger}) = trapezium(name,
-    string(first(generator(f))), wires(dom(f)), wires(codom(f)); reverse=true)
+    label(generator(f)), wires(dom(f)), wires(codom(f)); reverse=true)
   box(name::String, f::Syntax.Hom{:ev}) = cup(name, dom(f))
   box(name::String, f::Syntax.Hom{:coev}) = cap(name, codom(f))
   box(name::String, f::Syntax.Hom{:mcopy}) = junction_circle(name, f; fill=false)
@@ -480,7 +489,7 @@ module Defaults
   Syntax = FreeAbelianBicategoryRelations
   box(name::String, f::Syntax.Hom{:generator}) = trapezium(name, f)
   box(name::String, f::Syntax.Hom{:dagger}) = trapezium(name,
-    string(first(generator(f))), wires(dom(f)), wires(codom(f)); reverse=true)
+    label(generator(f)), wires(dom(f)), wires(codom(f)); reverse=true)
   box(name::String, f::Syntax.Hom{:ev}) = cup(name, dom(f))
   box(name::String, f::Syntax.Hom{:coev}) = cap(name, codom(f))
   box(name::String, f::Syntax.Hom{:mcopy}) = junction_circle(name, f; fill=false)
