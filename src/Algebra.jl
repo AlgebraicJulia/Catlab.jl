@@ -15,6 +15,7 @@ using Match
 using ..GAT, ..Syntax
 import ..Doctrine: SymmetricMonoidalCategory, ObExpr, HomExpr,
   compose, id, dom, codom, otimes, munit, mcopy, delete
+import ..Diagram.TikZWiring: box, rect, junction_circle
 
 # Syntax
 ########
@@ -170,5 +171,23 @@ gensyms(n::Int, tag) = [ gensym(tag) for i in 1:n ]
 vec(A::AlgNetworkExpr.Ob{:generator}) = [A]
 vec(A::AlgNetworkExpr.Ob{:otimes}) = args(A)
 vec(A::AlgNetworkExpr.Ob{:munit}) = []
+
+# Diagrams
+##########
+
+box(name::String, f::AlgNetworkExpr.Hom{:generator}) = rect(name, f)
+
+function box(name::String, f::AlgNetworkExpr.Hom{:mcopy})
+  junction_circle(name, f; fill=false)
+end
+function box(name::String, f::AlgNetworkExpr.Hom{:delete})
+  junction_circle(name, f; fill=false)
+end
+function box(name::String, f::AlgNetworkExpr.Hom{:mmerge})
+  junction_circle(name, f; fill=true)
+end
+function box(name::String, f::AlgNetworkExpr.Hom{:create})
+  junction_circle(name, f; fill=true)
+end
 
 end
