@@ -4,22 +4,27 @@ using Base.Test
 using CompCat.Algebra
 
 R = AlgNetworkExpr.ob(:Real)
-constant(x::Number) = AlgNetworkExpr.hom(x, R, R)
+I = munit(AlgNetworkExpr.Ob)
+linear(x) = AlgNetworkExpr.hom(x, R, R)
+constant(x) = AlgNetworkExpr.hom(x, I, R)
 func(name::Symbol) = AlgNetworkExpr.hom(name, R, R)
 
 x = linspace(-2,2,100)
 f = compile(func(:sin))
 @test f(x) == sin(x)
 
-f = compile(compose(constant(2), func(:sin)))
+f = compile(compose(linear(2), func(:sin)))
 @test f(x) == sin(2*x)
 
-f = compile(compose(constant(2), func(:sin), constant(2)))
+f = compile(compose(linear(2), func(:sin), linear(2)))
 @test f(x) == 2*sin(2*x)
 
 y = linspace(0,4,100)
 f = compile(otimes(func(:cos), func(:sin)))
 @test f(x,y) == [cos(x) sin(y)]
+
+f = compile(compose(otimes(id(R),constant(1)), plus(R)))
+@test f(x) == x+1
 
 f = compile(mcopy(R))
 @test f(x) == [x x]

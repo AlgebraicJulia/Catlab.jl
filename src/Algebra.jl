@@ -7,13 +7,14 @@ represent expressions as morphisms in a suitable monoidal category.
 """
 module Algebra
 export AlgNetwork, AlgNetworkExpr,
-  compose, id, otimes, opow, munit, mcopy, delete, plus, zero,
+  compose, id, dom, codom, otimes, opow, munit, mcopy, delete, plus, zero,
   compile, compile_expr
 
 using Match
 
 using ..GAT, ..Syntax
-using ..Doctrine
+import ..Doctrine: SymmetricMonoidalCategory, ObExpr, HomExpr,
+  compose, id, dom, codom, otimes, munit, mcopy, delete
 
 # Syntax
 ########
@@ -114,10 +115,20 @@ function compile_block(f::AlgNetworkExpr.Hom{:compose}, inputs::Vector)::Block
   Block(code, inputs, outputs)
 end
 
+function compile_block(f::AlgNetworkExpr.Hom{:id}, inputs::Vector)::Block
+  Block(Expr(:block), inputs, inputs)
+end
+
 function compile_block(f::AlgNetworkExpr.Hom{:otimes}, inputs::Vector)::Block
-  blocks = [ compile_block(b, [var]) for (b, var) in zip(args(f), inputs) ]
-  code = reduce(concat_block, (b.code for b in blocks))
-  outputs = vcat([b.outputs for b in blocks]...)
+  code = Expr(:block)
+  i, outputs = 1, []
+  for g in args(f)
+    nin = length(vec(dom(g)))
+    block = compile_block(g, inputs[i:i+nin-1])
+    code = concat_block(code, block.code)
+    append!(outputs, block.outputs)
+    i += nin
+  end
   Block(code, inputs, outputs)
 end
 
