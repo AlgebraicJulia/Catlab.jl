@@ -175,8 +175,9 @@ vec(A::AlgNetworkExpr.Ob{:munit}) = []
 # Diagrams
 ##########
 
-box(name::String, f::AlgNetworkExpr.Hom{:generator}) = rect(name, f)
-
+function box(name::String, f::AlgNetworkExpr.Hom{:generator})
+  rect(name, f; rounded=!isa(first(f), Symbol))
+end
 function box(name::String, f::AlgNetworkExpr.Hom{:mcopy})
   junction_circle(name, f; fill=false)
 end
