@@ -58,6 +58,10 @@ f, g = FreeCategory.hom(:f, A, B), FreeCategory.hom(:g, B, A)
 @test latex(id(A)) == "\\mathrm{id}_{A}"
 @test latex(compose(f,g)) == "f \\cdot g"
 
+@test latex(FreeCategory.ob("x")) == "x"
+@test latex(FreeCategory.ob("sin")) == "\\mathrm{sin}"
+@test latex(FreeCategory.ob("\\alpha")) == "\\alpha"
+
 # 2-category
 ############
 

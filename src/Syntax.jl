@@ -406,7 +406,16 @@ function show_latex(io::IO, expr::BaseExpr; kw...)
   join(io, [sprint(show_latex, arg) for arg in args(expr)], ",")
   print(io, "\\right]")
 end
-show_latex(io::IO, expr::BaseExpr{:generator}; kw...) = print(io, first(expr))
+
+# Try to be smart about using text or math mode.
+function show_latex(io::IO, expr::BaseExpr{:generator}; kw...)
+  content = string(first(expr))
+  if isalpha(content) && length(content) > 1
+    print(io, "\\mathrm{$content}")
+  else
+    print(io, content)
+  end
+end
 
 function show_latex_infix(io::IO, expr::BaseExpr, op::String; paren::Bool=false, kw...)
   show_latex_paren(io::IO, expr::BaseExpr) = show_latex(io, expr; paren=true, kw...)
