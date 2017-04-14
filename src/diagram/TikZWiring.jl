@@ -3,7 +3,7 @@
 module TikZWiring
 export WireTikZ, WiresTikZ, PortTikZ, BoxTikZ,
   wiring_diagram, wires, box, sequence, parallel,
-  rect, trapezium, lines, crossing, junction_circle, cup, cap
+  rect, trapezium, triangle, lines, crossing, junction_circle, cup, cap
 
 import Formatting: format
 using Match
@@ -180,6 +180,35 @@ function trapezium(name::String, content::String, dom::WiresTikZ, codom::WiresTi
 end
 function trapezium(name::String, f::HomExpr{:generator}; kw...)::BoxTikZ
   trapezium(name, label(f), wires(dom(f)), wires(codom(f)); kw...)
+end
+
+""" A triangle node.
+
+Supports any number of inputs and outputs, but looks best with at most one
+input and at most one output.
+"""
+function triangle(name::String, content::String, dom::WiresTikZ, codom::WiresTikZ;
+                  padding::String="0.333em", rounded::Bool=false,
+                  reverse::Bool=false)::BoxTikZ
+  dom_ports = [ PortTikZ(w, "$name.west", angle=180) for w in dom ]
+  codom_ports = [ PortTikZ(w, "$name.east", angle=0) for w in codom ]
+  box_style = style[:box_style]
+  props = [
+    TikZ.Property("draw"),
+    TikZ.Property("solid"),
+    TikZ.Property("inner sep", get(box_style, :padding, padding)),
+    TikZ.Property("isosceles triangle"),
+    TikZ.Property("isosceles triangle stretches"),
+    TikZ.Property("shape border rotate", reverse ? "180" : "0"),
+    TikZ.Property(get(box_style, :rounded, rounded) ?
+                  "rounded corners" : "sharp corners"),
+    TikZ.Property("minimum height", "$(box_size(1))em"),
+  ]
+  node = TikZ.Node(name; content=content, props=props)
+  BoxTikZ(node, dom_ports, codom_ports)
+end
+function triangle(name::String, f::HomExpr{:generator}; kw...)::BoxTikZ
+  triangle(name, label(f), wires(dom(f)), wires(codom(f)); kw...)
 end
 
 """ Straight lines, used to draw identity morphisms.
