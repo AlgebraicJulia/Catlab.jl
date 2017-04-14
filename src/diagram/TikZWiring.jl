@@ -1,7 +1,7 @@
 """ Draw wiring diagrams (aka string diagrams) in various formats.
 """
 module TikZWiring
-export WireTikZ, WiresTikZ, PortTikZ, BoxTikZ, BoxSpec,
+export WireTikZ, WiresTikZ, PortTikZ, BoxTikZ,
   wiring_diagram, wires, box, sequence, parallel,
   rect, trapezium, lines, crossing, junction_circle, cup, cap
 
@@ -43,13 +43,6 @@ end
 dom(box::BoxTikZ)::WiresTikZ = [ port.label for port in box.inputs ]
 codom(box::BoxTikZ)::WiresTikZ  = [ port.label for port in box.outputs ]
 
-""" Specification for a box (morphism) in a TikZ wiring diagram.
-"""
-immutable BoxSpec
-  name::String
-  style::Dict
-end
-
 # Wiring diagrams
 #################
 
@@ -69,10 +62,13 @@ function wiring_diagram(f::HomExpr;
     box_size::Number=2, box_style::Dict=Dict(),
     sequence_sep::Number=2, parallel_sep::Number=0.5)::TikZ.Picture
   # Parse arguments.
-  style = Dict(:arrowtip => !isempty(arrowtip), :labels => labels,
-               :box_size => box_size, :box_style => box_style,
-               :sequence_sep => sequence_sep, :parallel_sep => parallel_sep)
-  spec = BoxSpec("n", style)
+  # XXX: Storing the style parameters as a global variable is bad practice, but
+  # passing them around is really inconvenient. Is there a better approach?
+  global style = Dict(
+    :arrowtip => !isempty(arrowtip), :labels => labels,
+    :box_size => box_size, :box_style => box_style,
+    :sequence_sep => sequence_sep, :parallel_sep => parallel_sep,
+  )
   
   # Draw input and output arrows by adding identities on either side of f. 
   f_ext = f
@@ -88,7 +84,7 @@ function wiring_diagram(f::HomExpr;
   end
   
   # Create node for extended morphism.
-  box_tikz = box(spec, f_ext)
+  box_tikz = box("n", f_ext)
   
   # Create picture with this single node.
   props = [
@@ -116,23 +112,18 @@ function wires(A::ObExpr)::WiresTikZ end
 
 """ Create box for a morphism expression.
 """
-function box(spec::BoxSpec, f::HomExpr)::BoxTikZ end
-
-function subbox(spec::BoxSpec, f::HomExpr, n::Int)::BoxTikZ
-  box(BoxSpec("$(spec.name)$n", spec.style), f)
-end
+function box(name::String, f::HomExpr)::BoxTikZ end
 
 # Elements of wiring diagrams
 #############################
 
 """ A rectangle, the default style for generators.
 """
-function rect(spec::BoxSpec, content::String, dom::WiresTikZ, codom::WiresTikZ;
+function rect(name::String, content::String, dom::WiresTikZ, codom::WiresTikZ;
               padding::String="0.333em", rounded::Bool=true)::BoxTikZ
-  name, style = spec.name, spec.style
-  dom_ports = box_ports(dom, name, style, dir="west", angle=180)
-  codom_ports = box_ports(codom, name, style, dir="east", angle=0)
-  size = box_size(max(length(dom_ports), length(codom_ports)), style)
+  dom_ports = box_ports(dom, name, dir="west", angle=180)
+  codom_ports = box_ports(codom, name, dir="east", angle=0)
+  size = box_size(max(length(dom_ports), length(codom_ports)))
   
   box_style = style[:box_style]
   props = [
@@ -147,8 +138,8 @@ function rect(spec::BoxSpec, content::String, dom::WiresTikZ, codom::WiresTikZ;
   node = TikZ.Node(name; content=content, props=props)
   BoxTikZ(node, dom_ports, codom_ports)
 end
-function rect(spec::BoxSpec, f::HomExpr{:generator}; kw...)::BoxTikZ
-  rect(spec, string(first(f)), wires(dom(f)), wires(codom(f)); kw...)
+function rect(name::String, f::HomExpr{:generator}; kw...)::BoxTikZ
+  rect(name, string(first(f)), wires(dom(f)), wires(codom(f)); kw...)
 end
 
 """ A trapezium node, the default style for generators in dagger categories.
@@ -158,13 +149,12 @@ Nesting pictures even at this level may seem crazy, but it's the only way I know
 to get a bounding box on the inner node, regardless of its shape, *before* it's
 rendered.
 """
-function trapezium(spec::BoxSpec, content::String, dom::WiresTikZ, codom::WiresTikZ;
+function trapezium(name::String, content::String, dom::WiresTikZ, codom::WiresTikZ;
                    padding::String="0.333em", rounded::Bool=true,
                    angle::Int=80, reverse::Bool=false)::BoxTikZ
-  name, style = spec.name, spec.style
-  dom_ports = box_ports(dom, name, style, dir="west", angle=180)
-  codom_ports = box_ports(codom, name, style, dir="east", angle=0)
-  size = box_size(max(length(dom_ports), length(codom_ports)), style)
+  dom_ports = box_ports(dom, name, dir="west", angle=180)
+  codom_ports = box_ports(codom, name, dir="east", angle=0)
+  size = box_size(max(length(dom_ports), length(codom_ports)))
   
   box_style = style[:box_style]
   props = [
@@ -187,27 +177,25 @@ function trapezium(spec::BoxSpec, content::String, dom::WiresTikZ, codom::WiresT
   node = TikZ.Node(name; content=picture, props=props)
   BoxTikZ(node, dom_ports, codom_ports)
 end
-function trapezium(spec::BoxSpec, f::HomExpr{:generator}; kw...)::BoxTikZ
-  trapezium(spec, string(first(f)), wires(dom(f)), wires(codom(f)); kw...)
+function trapezium(name::String, f::HomExpr{:generator}; kw...)::BoxTikZ
+  trapezium(name, string(first(f)), wires(dom(f)), wires(codom(f)); kw...)
 end
 
 """ Straight lines, used to draw identity morphisms.
 """
-function lines(spec::BoxSpec, wires::WiresTikZ)::BoxTikZ
-  name, style = spec.name, spec.style
-  dom_ports = box_ports(wires, name, style, dir="center", angle=180)
-  codom_ports = box_ports(wires, name, style, dir="center", angle=0)
-  height = box_size(length(wires), style)
+function lines(name::String, wires::WiresTikZ)::BoxTikZ
+  dom_ports = box_ports(wires, name, dir="center", angle=180)
+  codom_ports = box_ports(wires, name, dir="center", angle=0)
+  height = box_size(length(wires))
   props = [ TikZ.Property("minimum height", "$(height)em") ]
   node = TikZ.Node(name; props=props)
   BoxTikZ(node, dom_ports, codom_ports)
 end
-lines(spec::BoxSpec, A::ObExpr) = lines(spec, wires(A))
+lines(name::String, A::ObExpr) = lines(name, wires(A))
 
 """ Boxes in sequence, used to draw compositions.
 """
-function sequence(spec::BoxSpec, homs::Vector)::BoxTikZ
-  name, style = spec.name, spec.style
+function sequence(name::String, homs::Vector)::BoxTikZ
   sequence_sep = style[:sequence_sep]
   edge_props = style[:arrowtip] ?
     [ TikZ.Property("postaction", "{decorate}") ] : []
@@ -216,7 +204,7 @@ function sequence(spec::BoxSpec, homs::Vector)::BoxTikZ
     TikZ.Property("midway")
   ]
   
-  mors = [ subbox(spec, g, i) for (i,g) in enumerate(homs) ]
+  mors = [ box("$name$i", g) for (i,g) in enumerate(homs) ]
   stmts = TikZ.Statement[ mors[1].node ]
   for i = 2:length(mors)
     push!(mors[i].node.props,
@@ -255,13 +243,12 @@ end
 
 """ Boxes in parallel, used to draw monoidal products.
 """
-function parallel(spec::BoxSpec, homs::Vector)::BoxTikZ
-  name, style = spec.name, spec.style
+function parallel(name::String, homs::Vector)::BoxTikZ
   parallel_sep = style[:parallel_sep]
   
   mors = []
   for (i,g) in enumerate(homs)
-    mor = subbox(spec, g, i)
+    mor = box("$name$i", g)
     if i > 1
       push!(mor.node.props,
             TikZ.Property("below=$(parallel_sep)em of $name$(i-1)"))
@@ -281,19 +268,18 @@ end
 
 Used to draw braid morphisms in symmatric monoidal categories.
 """ 
-function crossing(spec::BoxSpec, wire1::WireTikZ, wire2::WireTikZ)
-  name, style = spec.name, spec.style
+function crossing(name::String, wire1::WireTikZ, wire2::WireTikZ)
   dom = [ PortTikZ(wire1, "$name.center", angle=135),
           PortTikZ(wire2, "$name.center", angle=225) ]
   codom = [ PortTikZ(wire2, "$name.center", angle=45),
             PortTikZ(wire1, "$name.center", angle=315) ]
   props = [
-    TikZ.Property("minimum height", "$(box_size(2,style))em")
+    TikZ.Property("minimum height", "$(box_size(2))em")
   ]
   node = TikZ.Node(name; props=props)
   BoxTikZ(node, dom, codom)
 end
-crossing(spec::BoxSpec, A::ObExpr) = crossing(spec, wires(A)...)
+crossing(name::String, A::ObExpr) = crossing(name, wires(A)...)
 
 """ A junction of wires drawn as a circle.
 
@@ -302,11 +288,10 @@ Used to morphisms in internal monoids and comonoids.
 Implemented using a small, visible node for the point and a big, invisible node
 as a spacer. FIXME: Is there a more elegant way to achieve the desired margin?
 """
-function junction_circle(spec::BoxSpec, wires_in::WiresTikZ, wires_out::WiresTikZ;
+function junction_circle(name::String, wires_in::WiresTikZ, wires_out::WiresTikZ;
                          fill::Bool=true)
   m = max(length(wires_in), length(wires_out))
   @assert m <= 2
-  name, style = spec.name, spec.style
   dom = @match length(wires_in) begin
     0 => []
     1 => [ PortTikZ(wires_in[1], "$name point.west", angle=180) ]
@@ -322,7 +307,7 @@ function junction_circle(spec::BoxSpec, wires_in::WiresTikZ, wires_out::WiresTik
   
   pic = TikZ.Picture(
     TikZ.Node("$name box"; props=[
-      TikZ.Property("minimum height", "$(box_size(m,style))em"),
+      TikZ.Property("minimum height", "$(box_size(m))em"),
     ]),
     TikZ.Node("$name point"; props=[
       TikZ.Property("draw"),
@@ -336,44 +321,42 @@ function junction_circle(spec::BoxSpec, wires_in::WiresTikZ, wires_out::WiresTik
   node = TikZ.Node(name; content=pic, props=[TikZ.Property("container")])
   BoxTikZ(node, dom, codom)
 end
-function junction_circle(spec::BoxSpec, dom::ObExpr, codom::ObExpr; kw...)
-  junction_circle(spec, wires(dom), wires(codom); kw...)
+function junction_circle(name::String, dom::ObExpr, codom::ObExpr; kw...)
+  junction_circle(name, wires(dom), wires(codom); kw...)
 end
-function junction_circle(spec::BoxSpec, f::HomExpr; kw...)
-  junction_circle(spec, dom(f), codom(f); kw...)
+function junction_circle(name::String, f::HomExpr; kw...)
+  junction_circle(name, dom(f), codom(f); kw...)
 end
 
 """ A cup.
 
 Used to draw evaluation morphisms in compact closed categories.
 """
-function cup(spec::BoxSpec, wire1::WireTikZ, wire2::WireTikZ)
-  name, style = spec.name, spec.style
+function cup(name::String, wire1::WireTikZ, wire2::WireTikZ)
   ports = [ PortTikZ(wire1, "$name.center", angle=90, show_label=false),
             PortTikZ(wire2, "$name.center", angle=270, show_label=false) ]
   props = [
-    TikZ.Property("minimum height", "$(box_size(2,style))em")
+    TikZ.Property("minimum height", "$(box_size(2))em")
   ]
   node = TikZ.Node(name; props=props)
   BoxTikZ(node, ports, [])
 end
-cup(spec::BoxSpec, A::ObExpr) = cup(spec, wires(A)...)
+cup(name::String, A::ObExpr) = cup(name, wires(A)...)
 
 """ A cap.
 
 Used to draw coevaluation morphisms in compact closed categories.
 """
-function cap(spec::BoxSpec, wire1::WireTikZ, wire2::WireTikZ)
-  name, style = spec.name, spec.style
+function cap(name::String, wire1::WireTikZ, wire2::WireTikZ)
   ports = [ PortTikZ(wire1, "$name.center", angle=90, show_label=false),
             PortTikZ(wire2, "$name.center", angle=270, show_label=false) ]
   props = [
-    TikZ.Property("minimum height", "$(box_size(2,style))em")
+    TikZ.Property("minimum height", "$(box_size(2))em")
   ]
   node = TikZ.Node(name; props=props)
   BoxTikZ(node, [], ports)
 end
-cap(spec::BoxSpec, A::ObExpr) = cap(spec, wires(A)...)
+cap(name::String, A::ObExpr) = cap(name, wires(A)...)
 
 # Helper functions
 ##################
@@ -384,7 +367,7 @@ We use the unique formula consistent with the monoidal product, meaning that
 the size of a product of generator boxes depends only on the total number of
 ports, not the number of generators.
 """
-function box_size(ports::Int, style::Dict)::Number
+function box_size(ports::Int)::Number
   m = max(1, ports)
   m * style[:box_size] + (m-1) * style[:parallel_sep]
 end
@@ -394,7 +377,7 @@ end
 This mainly involves computing the locations of anchors. The anchors are
 consistent with the monoidal product (see `box_size`).
 """
-function box_ports(wires::WiresTikZ, name::String, style::Dict;
+function box_ports(wires::WiresTikZ, name::String;
                    dir::String="center", kwargs...)::Vector{PortTikZ}
   box_size, parallel_sep = style[:box_size], style[:parallel_sep]
   m = length(wires)
@@ -424,10 +407,10 @@ wires(A::ObExpr{:generator}) = [ WireTikZ(string(first(A))) ]
 wires(A::ObExpr{:munit}) = WireTikZ[]
 wires(A::ObExpr{:otimes}) = vcat(map(wires, args(A))...)
 
-box(spec::BoxSpec, f::HomExpr{:id}) = lines(spec, dom(f))
-box(spec::BoxSpec, f::HomExpr{:compose}) = sequence(spec, args(f))
-box(spec::BoxSpec, f::HomExpr{:otimes}) = parallel(spec, args(f))
-box(spec::BoxSpec, f::HomExpr{:braid}) = crossing(spec, dom(f))
+box(name::String, f::HomExpr{:id}) = lines(name, dom(f))
+box(name::String, f::HomExpr{:compose}) = sequence(name, args(f))
+box(name::String, f::HomExpr{:otimes}) = parallel(name, args(f))
+box(name::String, f::HomExpr{:braid}) = crossing(name, dom(f))
 
 """ Default renderers for specific syntax systems.
 """
@@ -442,72 +425,72 @@ module Defaults
   generator(expr::BaseExpr)::BaseExpr{:generator} = first(expr)
   
   # Category
-  box(spec::BoxSpec, f::FreeCategory.Hom{:generator}) = rect(spec, f)
+  box(name::String, f::FreeCategory.Hom{:generator}) = rect(name, f)
   
   # Dagger category
   # Assumes that daggers are fully distributed (as in this syntax system).
   Syntax = FreeDaggerCategory
-  box(spec::BoxSpec, f::Syntax.Hom{:generator}) = trapezium(spec, f)
-  box(spec::BoxSpec, f::Syntax.Hom{:dagger}) = trapezium(spec,
+  box(name::String, f::Syntax.Hom{:generator}) = trapezium(name, f)
+  box(name::String, f::Syntax.Hom{:dagger}) = trapezium(name,
     string(first(generator(f))), wires(dom(f)), wires(codom(f)); reverse=true)
 
   # Symmetric monoidal category
   Syntax = FreeSymmetricMonoidalCategory
-  box(spec::BoxSpec, f::Syntax.Hom{:generator}) = rect(spec, f)
+  box(name::String, f::Syntax.Hom{:generator}) = rect(name, f)
 
   # (Co)cartesian category
   Syntax = FreeCartesianCategory
-  box(spec::BoxSpec, f::Syntax.Hom{:generator}) = rect(spec, f)
-  box(spec::BoxSpec, f::Syntax.Hom{:mcopy}) = junction_circle(spec, f)
-  box(spec::BoxSpec, f::Syntax.Hom{:delete}) = junction_circle(spec, f)
+  box(name::String, f::Syntax.Hom{:generator}) = rect(name, f)
+  box(name::String, f::Syntax.Hom{:mcopy}) = junction_circle(name, f)
+  box(name::String, f::Syntax.Hom{:delete}) = junction_circle(name, f)
   
   Syntax = FreeCocartesianCategory
-  box(spec::BoxSpec, f::Syntax.Hom{:generator}) = rect(spec, f)
-  box(spec::BoxSpec, f::Syntax.Hom{:mmerge}) = junction_circle(spec, f)
-  box(spec::BoxSpec, f::Syntax.Hom{:create}) = junction_circle(spec, f)
+  box(name::String, f::Syntax.Hom{:generator}) = rect(name, f)
+  box(name::String, f::Syntax.Hom{:mmerge}) = junction_circle(name, f)
+  box(name::String, f::Syntax.Hom{:create}) = junction_circle(name, f)
   
   # Biproduct category
   Syntax = FreeBiproductCategory
-  box(spec::BoxSpec, f::Syntax.Hom{:generator}) = rect(spec, f)
-  box(spec::BoxSpec, f::Syntax.Hom{:mcopy}) = junction_circle(spec, f)
-  box(spec::BoxSpec, f::Syntax.Hom{:delete}) = junction_circle(spec, f)
-  box(spec::BoxSpec, f::Syntax.Hom{:mmerge}) = junction_circle(spec, f)
-  box(spec::BoxSpec, f::Syntax.Hom{:create}) = junction_circle(spec, f)
+  box(name::String, f::Syntax.Hom{:generator}) = rect(name, f)
+  box(name::String, f::Syntax.Hom{:mcopy}) = junction_circle(name, f)
+  box(name::String, f::Syntax.Hom{:delete}) = junction_circle(name, f)
+  box(name::String, f::Syntax.Hom{:mmerge}) = junction_circle(name, f)
+  box(name::String, f::Syntax.Hom{:create}) = junction_circle(name, f)
   
   # Compact closed category
   # Assumes that duals are fully distributed (as in this syntax system).
   Syntax = FreeCompactClosedCategory
   wires(A::Syntax.Ob{:dual}) = [ WireTikZ(string(first(generator(A))); reverse=true) ]
-  box(spec::BoxSpec, f::Syntax.Hom{:generator}) = rect(spec, f)
-  box(spec::BoxSpec, f::Syntax.Hom{:ev}) = cup(spec, dom(f))
-  box(spec::BoxSpec, f::Syntax.Hom{:coev}) = cap(spec, codom(f))
+  box(name::String, f::Syntax.Hom{:generator}) = rect(name, f)
+  box(name::String, f::Syntax.Hom{:ev}) = cup(name, dom(f))
+  box(name::String, f::Syntax.Hom{:coev}) = cap(name, codom(f))
   
   # Bicategory of relations
   Syntax = FreeBicategoryRelations
-  box(spec::BoxSpec, f::Syntax.Hom{:generator}) = trapezium(spec, f)
-  box(spec::BoxSpec, f::Syntax.Hom{:dagger}) = trapezium(spec,
+  box(name::String, f::Syntax.Hom{:generator}) = trapezium(name, f)
+  box(name::String, f::Syntax.Hom{:dagger}) = trapezium(name,
     string(first(generator(f))), wires(dom(f)), wires(codom(f)); reverse=true)
-  box(spec::BoxSpec, f::Syntax.Hom{:ev}) = cup(spec, dom(f))
-  box(spec::BoxSpec, f::Syntax.Hom{:coev}) = cap(spec, codom(f))
-  box(spec::BoxSpec, f::Syntax.Hom{:mcopy}) = junction_circle(spec, f; fill=false)
-  box(spec::BoxSpec, f::Syntax.Hom{:delete}) = junction_circle(spec, f; fill=false)
-  box(spec::BoxSpec, f::Syntax.Hom{:mmerge}) = junction_circle(spec, f; fill=false)
-  box(spec::BoxSpec, f::Syntax.Hom{:create}) = junction_circle(spec, f; fill=false)
+  box(name::String, f::Syntax.Hom{:ev}) = cup(name, dom(f))
+  box(name::String, f::Syntax.Hom{:coev}) = cap(name, codom(f))
+  box(name::String, f::Syntax.Hom{:mcopy}) = junction_circle(name, f; fill=false)
+  box(name::String, f::Syntax.Hom{:delete}) = junction_circle(name, f; fill=false)
+  box(name::String, f::Syntax.Hom{:mmerge}) = junction_circle(name, f; fill=false)
+  box(name::String, f::Syntax.Hom{:create}) = junction_circle(name, f; fill=false)
   
   Syntax = FreeAbelianBicategoryRelations
-  box(spec::BoxSpec, f::Syntax.Hom{:generator}) = trapezium(spec, f)
-  box(spec::BoxSpec, f::Syntax.Hom{:dagger}) = trapezium(spec,
+  box(name::String, f::Syntax.Hom{:generator}) = trapezium(name, f)
+  box(name::String, f::Syntax.Hom{:dagger}) = trapezium(name,
     string(first(generator(f))), wires(dom(f)), wires(codom(f)); reverse=true)
-  box(spec::BoxSpec, f::Syntax.Hom{:ev}) = cup(spec, dom(f))
-  box(spec::BoxSpec, f::Syntax.Hom{:coev}) = cap(spec, codom(f))
-  box(spec::BoxSpec, f::Syntax.Hom{:mcopy}) = junction_circle(spec, f; fill=false)
-  box(spec::BoxSpec, f::Syntax.Hom{:delete}) = junction_circle(spec, f; fill=false)
-  box(spec::BoxSpec, f::Syntax.Hom{:mmerge}) = junction_circle(spec, f; fill=false)
-  box(spec::BoxSpec, f::Syntax.Hom{:create}) = junction_circle(spec, f; fill=false)
-  box(spec::BoxSpec, f::Syntax.Hom{:plus}) = junction_circle(spec, f; fill=true)
-  box(spec::BoxSpec, f::Syntax.Hom{:zero}) = junction_circle(spec, f; fill=true)
-  box(spec::BoxSpec, f::Syntax.Hom{:coplus}) = junction_circle(spec, f; fill=true)
-  box(spec::BoxSpec, f::Syntax.Hom{:cozero}) = junction_circle(spec, f; fill=true)
+  box(name::String, f::Syntax.Hom{:ev}) = cup(name, dom(f))
+  box(name::String, f::Syntax.Hom{:coev}) = cap(name, codom(f))
+  box(name::String, f::Syntax.Hom{:mcopy}) = junction_circle(name, f; fill=false)
+  box(name::String, f::Syntax.Hom{:delete}) = junction_circle(name, f; fill=false)
+  box(name::String, f::Syntax.Hom{:mmerge}) = junction_circle(name, f; fill=false)
+  box(name::String, f::Syntax.Hom{:create}) = junction_circle(name, f; fill=false)
+  box(name::String, f::Syntax.Hom{:plus}) = junction_circle(name, f; fill=true)
+  box(name::String, f::Syntax.Hom{:zero}) = junction_circle(name, f; fill=true)
+  box(name::String, f::Syntax.Hom{:coplus}) = junction_circle(name, f; fill=true)
+  box(name::String, f::Syntax.Hom{:cozero}) = junction_circle(name, f; fill=true)
 end
 
 end
