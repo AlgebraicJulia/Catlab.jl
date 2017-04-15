@@ -2,45 +2,52 @@ module TestAlgebra
 
 using Base.Test
 using CompCat.Algebra
+using CompCat.Syntax
+
+unicode(expr::BaseExpr) = sprint(show_unicode, expr)
+latex(expr::BaseExpr) = sprint(show_latex, expr)
 
 R = ob(AlgebraicNet, :Real)
 I = munit(AlgebraicNet.Ob)
 linear(x) = hom(x, R, R)
 constant(x) = hom(x, I, R)
-func(name::Symbol) = hom(name, R, R)
 
 x = linspace(-2,2,100)
-f = compile(func(:sin))
-@test f(x) == sin(x)
+f = hom(:sin,R,R)
+@test compile(f)(x) == sin(x)
+@test unicode(f) == "sin"
+@test latex(f) == "\\mathrm{sin}"
 
-f = compile(compose(linear(2), func(:sin)))
-@test f(x) == sin(2*x)
+f = compose(linear(2), hom(:sin,R,R))
+@test compile(f)(x) == sin(2*x)
+@test unicode(f) == "2; sin"
+@test latex(f) == "2 ; \\mathrm{sin}"
 
-f = compile(compose(linear(2), func(:sin), linear(2)))
-@test f(x) == 2*sin(2*x)
+f = compose(linear(2), hom(:sin,R,R), linear(2))
+@test compile(f)(x) == 2*sin(2*x)
 
 y = linspace(0,4,100)
-f = compile(otimes(func(:cos), func(:sin)))
-@test f(x,y) == [cos(x) sin(y)]
+f = otimes(hom(:cos,R,R), hom(:sin,R,R))
+@test compile(f)(x,y) == [cos(x) sin(y)]
 
-f = compile(compose(otimes(id(R),constant(1)), mmerge(R)))
-@test f(x) == x+1
+f = compose(otimes(id(R),constant(1)), mmerge(R))
+@test compile(f)(x) == x+1
 
-f = compile(mcopy(R))
-@test f(x) == [x x]
-f = compile(mcopy(R,3))
-@test f(x) == [x x x]
+f = mcopy(R)
+@test compile(f)(x) == [x x]
+f = mcopy(R,3)
+@test compile(f)(x) == [x x x]
 
-f = compile(compose(mcopy(R), otimes(func(:cos), func(:sin))))
+f = compile(compose(mcopy(R), otimes(hom(:cos,R,R), hom(:sin,R,R))))
 @test f(x) == [cos(x) sin(x)]
 
 z = linspace(-4,0,100)
-f = compile(mmerge(R))
-@test f(x,y) == x+y
-f = compile(mmerge(R,3))
-@test f(x,y,z) == x+y+z
+f = mmerge(R)
+@test compile(f)(x,y) == x+y
+f = mmerge(R,3)
+@test compile(f)(x,y,z) == x+y+z
 
-f = compile(compose(mcopy(R), otimes(func(:cos), func(:sin)), mmerge(R)))
-@test f(x) == cos(x) + sin(x)
+f = compose(mcopy(R), otimes(hom(:cos,R,R), hom(:sin,R,R)), mmerge(R))
+@test compile(f)(x) == cos(x) + sin(x)
 
 end

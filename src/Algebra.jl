@@ -16,6 +16,7 @@ using ..GAT, ..Syntax
 import ..Doctrine: SymmetricMonoidalCategory, ObExpr, HomExpr, ob, hom,
   compose, id, dom, codom, otimes, munit, mcopy, delete
 import ..Diagram.TikZWiring: box, rect, junction_circle
+import ..Syntax: show_latex, show_unicode
 
 # Syntax
 ########
@@ -174,6 +175,18 @@ vec(A::AlgebraicNet.Ob{:munit}) = []
 
 # Display
 #########
+
+""" Denote composition by a semicolon ala the computer scientists.
+
+In this context, `⋅` is too easily confused for multiplication, ` ` (space) is
+too implicit, and `∘` has a right-to-left connotation.
+"""
+function show_latex(io::IO, expr::AlgebraicNet.Hom{:compose}; paren::Bool=false, kw...)
+  show_latex_infix(io, expr, ";"; paren=paren, kw...)
+end
+function show_unicode(io::IO, expr::AlgebraicNet.Hom{:compose}; kw...)
+  show_unicode_infix(io, expr, "; "; kw...)
+end
 
 function box(name::String, f::AlgebraicNet.Hom{:generator})
   rect(name, f; rounded=!isa(first(f), Symbol))
