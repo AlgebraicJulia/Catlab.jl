@@ -3,11 +3,11 @@ module TestAlgebra
 using Base.Test
 using CompCat.Algebra
 
-R = AlgNetworkExpr.ob(:Real)
+R = ob(AlgNetworkExpr, :Real)
 I = munit(AlgNetworkExpr.Ob)
-linear(x) = AlgNetworkExpr.hom(x, R, R)
-constant(x) = AlgNetworkExpr.hom(x, I, R)
-func(name::Symbol) = AlgNetworkExpr.hom(name, R, R)
+linear(x) = hom(x, R, R)
+constant(x) = hom(x, I, R)
+func(name::Symbol) = hom(name, R, R)
 
 x = linspace(-2,2,100)
 f = compile(func(:sin))

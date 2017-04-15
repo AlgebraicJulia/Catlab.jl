@@ -374,7 +374,7 @@ function signature_code(main_class, base_mod, base_params)
   # (We put them outside the module, so the stub type names must be qualified.)
   bindings = Dict(cons.name => Expr(:(.), class.name, QuoteNode(cons.name))
                   for cons in signature.types)
-  fns = [ interface(signature); class.functions ]
+  fns = interface(class)
   toplevel = [ gen_function(replace_symbols(bindings, f)) for f in fns ]
   
   # Modules must be at top level:
@@ -452,16 +452,12 @@ function constructor(cons::TermConstructor, sig::Signature)::JuliaFunction
   JuliaFunction(call_expr, return_type)
 end
 
-""" Complete set of Julia functions for a signature.
-"""
-function interface(sig::Signature)::Vector{JuliaFunction}
-  [ accessors(sig); constructors(sig) ]
-end
-
 """ Complete set of Julia functions for a type class.
 """
 function interface(class::Typeclass)::Vector{JuliaFunction}
-  [ interface(class.signature); class.functions ]
+  [ accessors(class.signature);
+    constructors(class.signature);
+    class.functions ]
 end
 
 """ Get type constructor by name.

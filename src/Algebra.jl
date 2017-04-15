@@ -6,14 +6,14 @@ arithmetic operations or elementary or special functions. The idea here is to
 represent expressions as morphisms in a suitable monoidal category.
 """
 module Algebra
-export AlgNetwork, AlgNetworkExpr,
+export AlgNetwork, AlgNetworkExpr, ob, hom,
   compose, id, dom, codom, otimes, opow, munit, mcopy, delete, mmerge, create,
   compile, compile_expr
 
 using Match
 
 using ..GAT, ..Syntax
-import ..Doctrine: SymmetricMonoidalCategory, ObExpr, HomExpr,
+import ..Doctrine: SymmetricMonoidalCategory, ObExpr, HomExpr, ob, hom,
   compose, id, dom, codom, otimes, munit, mcopy, delete
 import ..Diagram.TikZWiring: box, rect, junction_circle
 

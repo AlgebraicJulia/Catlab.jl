@@ -11,8 +11,8 @@ latex(expr::BaseExpr) = sprint(show_latex, expr)
 # Category
 ##########
 
-A, B = FreeCategory.ob(:A), FreeCategory.ob(:B)
-f, g = FreeCategory.hom(:f, A, B), FreeCategory.hom(:g, B, A)
+A, B = ob(FreeCategory, :A), ob(FreeCategory, :B)
+f, g = hom(:f, A, B), hom(:g, B, A)
 
 # Expression types
 @test isa(A, FreeCategory.Ob) && isa(f, FreeCategory.Hom)
@@ -58,20 +58,19 @@ f, g = FreeCategory.hom(:f, A, B), FreeCategory.hom(:g, B, A)
 @test latex(id(A)) == "\\mathrm{id}_{A}"
 @test latex(compose(f,g)) == "f \\cdot g"
 
-@test latex(FreeCategory.ob("x")) == "x"
-@test latex(FreeCategory.ob("sin")) == "\\mathrm{sin}"
-@test latex(FreeCategory.ob("\\alpha")) == "\\alpha"
+@test latex(ob(FreeCategory, "x")) == "x"
+@test latex(ob(FreeCategory, "sin")) == "\\mathrm{sin}"
+@test latex(ob(FreeCategory, "\\alpha")) == "\\alpha"
 
 # 2-category
 ############
 
-Syntax = FreeCategory2
-A, B, C, D = [ Syntax.ob(sym) for sym in [:A,:B,:C,:D] ]
-f, g, F, G = [ Syntax.hom(sym, A, B) for sym in [:f,:g,:F,:G] ]
-h, k, H, K = [ Syntax.hom(sym, B, C) for sym in [:h,:k,:H,:K] ]
+A, B, C, D = [ ob(FreeCategory2, sym) for sym in [:A,:B,:C,:D] ]
+f, g, F, G = [ hom(sym, A, B) for sym in [:f,:g,:F,:G] ]
+h, k, H, K = [ hom(sym, B, C) for sym in [:h,:k,:H,:K] ]
 
 # Domains and codomains
-α, β = Syntax.hom2(:α, f, g), Syntax.hom2(:β, g, h)
+α, β = hom2(:α, f, g), hom2(:β, g, h)
 @test dom(α) == f
 @test codom(α) == g
 @test dom(dom(α)) == A
@@ -80,24 +79,23 @@ h, k, H, K = [ Syntax.hom(sym, B, C) for sym in [:h,:k,:H,:K] ]
 @test codom(compose(α,β)) == h
 @test_throws SyntaxDomainError compose2(α,β)
 
-α, β = Syntax.hom2(:α, f, g), Syntax.hom2(:β, h, k)
+α, β = hom2(:α, f, g), hom2(:β, h, k)
 @test dom(compose2(α,β)) == compose(f,h)
 @test codom(compose2(α,β)) == compose(g,k)
 
 # Infix notation (Unicode)
-α, β = Syntax.hom2(:α, f, g), Syntax.hom2(:β, g, h)
+α, β = hom2(:α, f, g), hom2(:β, g, h)
 @test unicode(compose(f,h)) == "f⋅h"
 @test unicode(compose(α,β)) == "α⋅β"
 
-α, β = Syntax.hom2(:α, f, g), Syntax.hom2(:β, h, k)
+α, β = hom2(:α, f, g), hom2(:β, h, k)
 @test unicode(compose2(α,β)) == "α*β"
 
 # Symmetric monoidal category
 #############################
 
-Syntax = FreeSymmetricMonoidalCategory
-A, B = Syntax.ob(:A), Syntax.ob(:B)
-f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
+A, B = [ ob(FreeSymmetricMonoidalCategory, sym) for sym in [:A,:B] ]
+f, g = hom(:f, A, B), hom(:g, B, A)
 
 # Domains and codomains
 @test dom(otimes(f,g)) == otimes(dom(f),dom(g))
@@ -106,7 +104,7 @@ f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
 @test codom(braid(A,B)) == otimes(B,A)
 
 # Associativity and unit
-I = munit(Syntax.Ob)
+I = munit(FreeSymmetricMonoidalCategory.Ob)
 @test otimes(A,I) == A
 @test otimes(I,A) == A
 @test otimes(otimes(A,B),A) == otimes(A,otimes(B,A))
@@ -147,9 +145,8 @@ I = munit(Syntax.Ob)
 # Cartesian category
 ####################
 
-Syntax = FreeCartesianCategory
-A, B = Syntax.ob(:A), Syntax.ob(:B)
-f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
+A, B = [ ob(FreeCartesianCategory, sym) for sym in [:A,:B] ]
+f, g = hom(:f, A, B), hom(:g, B, A)
 
 # Domains and codomains
 @test dom(mcopy(A)) == A
@@ -169,9 +166,8 @@ f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
 # Cocartesian category
 ######################
 
-Syntax = FreeCocartesianCategory
-A, B = Syntax.ob(:A), Syntax.ob(:B)
-f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
+A, B = [ ob(FreeCocartesianCategory, sym) for sym in [:A,:B] ]
+f, g = hom(:f, A, B), hom(:g, B, A)
 
 # Domains and codomains
 @test dom(mmerge(A)) == otimes(A,A)
@@ -191,10 +187,9 @@ f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
 # Compact closed category
 #########################
 
-Syntax = FreeCompactClosedCategory
-A, B = Syntax.ob(:A), Syntax.ob(:B)
-f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
-I = munit(Syntax.Ob)
+A, B = [ ob(FreeCompactClosedCategory, sym) for sym in [:A,:B] ]
+f, g = hom(:f, A, B), hom(:g, B, A)
+I = munit(FreeCompactClosedCategory.Ob)
 
 # Domains and codomains
 @test dom(ev(A)) == otimes(A, dual(A))
@@ -215,9 +210,8 @@ I = munit(Syntax.Ob)
 # Dagger category
 #################
 
-Syntax = FreeDaggerCategory
-A, B = Syntax.ob(:A), Syntax.ob(:B)
-f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
+A, B = [ ob(FreeDaggerCategory, sym) for sym in [:A,:B] ]
+f, g = hom(:f, A, B), hom(:g, B, A)
 
 # Domains and codomains
 @test dom(dagger(f)) == B
@@ -235,9 +229,8 @@ f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
 # Dagger compact category
 #########################
 
-Syntax = FreeDaggerCompactCategory
-A, B = Syntax.ob(:A), Syntax.ob(:B)
-f, g = Syntax.hom(:f, A, B), Syntax.hom(:g, B, A)
+A, B = [ ob(FreeDaggerCompactCategory, sym) for sym in [:A,:B] ]
+f, g = hom(:f, A, B), hom(:g, B, A)
 
 # Dagger
 @test dagger(compose(f,g)) == compose(dagger(g),dagger(f))

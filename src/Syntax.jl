@@ -23,7 +23,7 @@ import Base.Meta: show_sexpr
 using Match
 
 import ..GAT
-import ..GAT: Context, Signature, TypeConstructor, TermConstructor,
+import ..GAT: Context, Signature, TypeConstructor, TermConstructor, Typeclass,
   JuliaFunction
 
 # Data types
@@ -129,13 +129,13 @@ function syntax_code(name::Symbol, base_types::Vector{Type}, mod::Module,
     c.name => Expr(:(.), name, QuoteNode(c.name)) for c in signature.types)
   bindings[:Super] = name
   syntax_fns = Dict(GAT.parse_function_sig(f) => f for f in functions)
-  for f in GAT.interface(class)
+  for f in interface(class)
     sig = GAT.parse_function_sig(f)
     if haskey(syntax_fns, sig)
       # Case 1: The method is overriden in the syntax body.
       expr = GAT.gen_function(GAT.replace_symbols(bindings, syntax_fns[sig]))
     elseif !isnull(f.impl)
-      # Case 2: The method is already implemented in signature.
+      # Case 2: The method has a default implementation in the signature.
       expr = GAT.gen_function(GAT.replace_symbols(bindings, f))
     else
       # Case 3: Call the default syntax method.
@@ -151,6 +151,14 @@ function syntax_code(name::Symbol, base_types::Vector{Type}, mod::Module,
     push!(toplevel, expr)
   end
   Expr(:toplevel, mod, toplevel...)
+end
+
+""" Complete set of Julia functions for a syntax system.
+"""
+function interface(class::Typeclass)::Vector{JuliaFunction}
+  sig = class.signature
+  [ GAT.interface(class);
+    [ GAT.constructor(term_generator(cons), sig) for cons in sig.types ] ]
 end
 
 """ Generate syntax type definitions.
@@ -195,9 +203,13 @@ end
 
 """ Generate methods for syntax term constructors.
 """
-function gen_term_constructor(cons::TermConstructor, sig::Signature)::Expr
+function gen_term_constructor(cons::TermConstructor, sig::Signature;
+                              dispatch_type::Symbol=Symbol())::Expr
   head = GAT.constructor(cons, sig)
   call_expr, return_type = head.call_expr, get(head.return_type)
+  if dispatch_type == Symbol()
+    dispatch_type = cons.name
+  end
   body = Expr(:block)
   
   # Create expression to check constructor domain.
@@ -217,14 +229,10 @@ function gen_term_constructor(cons::TermConstructor, sig::Signature)::Expr
   end
   
   # Create call to expression constructor.
-  return_expr = gen_term_constructor_expr(cons, sig)
-  type_params = @match return_expr begin
-    Expr(:call, [name::Symbol, args...], _) => args
-    _::Symbol => []
-  end
+  type_params = gen_term_constructor_params(cons, sig)
   push!(body.args,
     Expr(:call,
-      Expr(:curly, return_type, Expr(:quote, cons.name)),
+      Expr(:curly, return_type, Expr(:quote, dispatch_type)),
       Expr(:vect, cons.params...),
       Expr(:vect, type_params...)))
   
@@ -234,7 +242,7 @@ function gen_term_constructors(sig::Signature)::Vector{Expr}
   [ gen_term_constructor(cons, sig) for cons in sig.terms ]
 end
 
-""" Generate expression for return type of term constructor.
+""" Generate expressions for type parameters of term constructor.
 
 Besides expanding the implicit variables, we must handle two annoying issues:
 
@@ -245,13 +253,22 @@ Besides expanding the implicit variables, we must handle two annoying issues:
 2. Rebind the term constructors to ensure that user overrides are preferred over
    the default term constructors.
 """
-function gen_term_constructor_expr(cons, sig)
+function gen_term_constructor_params(cons, sig)::Vector
   expr = GAT.expand_term_type(cons, sig)
-  expr = replace_nullary_constructors(expr, sig)
+  raw_params = @match expr begin
+    Expr(:call, [name::Symbol, args...], _) => args
+    _::Symbol => []
+  end
   
   mod = current_module()
   bindings = Dict(c.name => GlobalRef(mod, c.name) for c in sig.terms)
-  GAT.replace_symbols(bindings, expr)
+  params = []
+  for expr in raw_params
+    expr = replace_nullary_constructors(expr, sig)
+    expr = GAT.replace_symbols(bindings, expr)
+    push!(params, expr)
+  end
+  params
 end
 function replace_nullary_constructors(expr, sig)
   @match expr begin
@@ -268,25 +285,23 @@ end
 
 """ Generate methods for term generators.
 
-Effectively, these generators are arity-zero term constructors that we allow to
-be created on the fly.
+Generators are extra term constructors created automatically for the syntax.
 """
-function gen_term_generator(cons::TypeConstructor)::Expr
-  name = Symbol(lowercase(string(cons.name)))
-  @assert name != cons.name # XXX: We are enforcing a case convention...
-  name_param = gensym(:sym)
-  type_params = [ Expr(:(::), p, GAT.strip_type(cons.context[p]))
-                  for p in cons.params ]
-  call_expr = Expr(:call, name, :($name_param::Any), type_params...)
-  body = Expr(:call,
-    Expr(:curly, cons.name, QuoteNode(:generator)),
-    Expr(:vect, name_param),
-    Expr(:vect, cons.params...),
-  )
-  GAT.gen_function(JuliaFunction(call_expr, cons.name, body))
+function gen_term_generator(cons::TypeConstructor, sig::Signature)::Expr
+  gen_term_constructor(term_generator(cons), sig; dispatch_type=:generator)
 end
 function gen_term_generators(sig::Signature)::Vector{Expr}
-  map(gen_term_generator, sig.types)
+  [ gen_term_generator(cons, sig) for cons in sig.types ]
+end
+function term_generator(cons::TypeConstructor)::TermConstructor
+  name = Symbol(lowercase(string(cons.name)))
+  @assert name != cons.name # XXX: We are enforcing a case convention...
+  
+  value_param = :__value__
+  params = [ value_param; cons.params ]
+  typ = Expr(:call, cons.name, cons.params...)
+  context = merge(Context(value_param => :Any), cons.context)
+  TermConstructor(name, params, typ, context)
 end
 
 # Simplication
