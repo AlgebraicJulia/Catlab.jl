@@ -74,6 +74,22 @@ x = elem_int(FreeMonoidNumeric.Elem, 1)
 @test isa(x, FreeMonoidNumeric.Elem)
 @test first(x) == 1
 
+""" A monoid with two distinguished elements.
+"""
+@signature Monoid(Elem) => MonoidTwo(Elem) begin
+  one()::Elem
+  two()::Elem
+end
+""" The free monoid on two generators.
+"""
+@syntax FreeMonoidTwo MonoidTwo begin
+  elem(::Type{Elem}, value) = error("No extra generators allowed!")
+end
+
+x, y = one(FreeMonoidTwo.Elem), two(FreeMonoidTwo.Elem)
+@test all(isa(expr, FreeMonoidTwo.Elem) for expr in [x, y, mtimes(x,y)])
+@test_throws ErrorException elem(FreeMonoidTwo, :x)
+
 # Category (includes dependent types)
 ##########
 
