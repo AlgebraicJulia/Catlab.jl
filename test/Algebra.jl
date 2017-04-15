@@ -3,8 +3,8 @@ module TestAlgebra
 using Base.Test
 using CompCat.Algebra
 
-R = ob(AlgNetworkExpr, :Real)
-I = munit(AlgNetworkExpr.Ob)
+R = ob(AlgebraicNet, :Real)
+I = munit(AlgebraicNet.Ob)
 linear(x) = hom(x, R, R)
 constant(x) = hom(x, I, R)
 func(name::Symbol) = hom(name, R, R)

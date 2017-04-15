@@ -6,7 +6,7 @@ arithmetic operations or elementary or special functions. The idea here is to
 represent expressions as morphisms in a suitable monoidal category.
 """
 module Algebra
-export AlgNetwork, AlgNetworkExpr, ob, hom,
+export AlgebraicNetSignature, AlgebraicNet, ob, hom,
   compose, id, dom, codom, otimes, opow, munit, mcopy, delete, mmerge, create,
   compile, compile_expr
 
@@ -27,7 +27,7 @@ TODO: Explain
 See also the doctrine of abelian bicategory of relations
 (`AbelianBicategoryRelations`).
 """
-@signature SymmetricMonoidalCategory(Ob,Hom) => AlgNetwork(Ob,Hom) begin
+@signature SymmetricMonoidalCategory(Ob,Hom) => AlgebraicNetSignature(Ob,Hom) begin
   mcopy(A::Ob, n::Int)::Hom(A,opow(A,n))
   delete(A::Ob)::Hom(A,munit())
 
@@ -40,7 +40,7 @@ See also the doctrine of abelian bicategory of relations
   mmerge(A::Ob) = mmerge(A,2)
 end
 
-@syntax AlgNetworkExpr(ObExpr,HomExpr) AlgNetwork begin
+@syntax AlgebraicNet(ObExpr,HomExpr) AlgebraicNetSignature begin
   otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
@@ -61,13 +61,13 @@ This method of "functorial compilation" generates simple imperative code with no
 optimizations. Still, it should be fast provided the original expression is
 properly factored (there are no duplicated computations).
 """
-function compile(f::AlgNetworkExpr.Hom; kw...)::Function
+function compile(f::AlgebraicNet.Hom; kw...)::Function
   eval(compile_expr(f; kw...))
 end
 
 """ Compile an algebraic network into a Julia function declaration expression.
 """
-function compile_expr(f::AlgNetworkExpr.Hom;
+function compile_expr(f::AlgebraicNet.Hom;
                       name::Symbol=Symbol(), args::Vector=[])::Expr
   name = name == Symbol() ? gensym("hom") : name
   nargs = length(vec(dom(f)))
@@ -85,7 +85,7 @@ function compile_expr(f::AlgNetworkExpr.Hom;
   Expr(:function, Expr(:call, name, args...), body)
 end
 
-function compile_block(f::AlgNetworkExpr.Hom{:generator}, inputs::Vector)::Block
+function compile_block(f::AlgebraicNet.Hom{:generator}, inputs::Vector)::Block
   nin, nout = length(vec(dom(f))), length(vec(codom(f)))
   @assert length(inputs) == nin
   outputs = gensyms(nout)
@@ -104,7 +104,7 @@ function compile_block(f::AlgNetworkExpr.Hom{:generator}, inputs::Vector)::Block
   Block(Expr(:(=), lhs, rhs), inputs, outputs)
 end
 
-function compile_block(f::AlgNetworkExpr.Hom{:compose}, inputs::Vector)::Block
+function compile_block(f::AlgebraicNet.Hom{:compose}, inputs::Vector)::Block
   code = Expr(:block)
   vars = inputs
   for g in args(f)
@@ -116,11 +116,11 @@ function compile_block(f::AlgNetworkExpr.Hom{:compose}, inputs::Vector)::Block
   Block(code, inputs, outputs)
 end
 
-function compile_block(f::AlgNetworkExpr.Hom{:id}, inputs::Vector)::Block
+function compile_block(f::AlgebraicNet.Hom{:id}, inputs::Vector)::Block
   Block(Expr(:block), inputs, inputs)
 end
 
-function compile_block(f::AlgNetworkExpr.Hom{:otimes}, inputs::Vector)::Block
+function compile_block(f::AlgebraicNet.Hom{:otimes}, inputs::Vector)::Block
   code = Expr(:block)
   i, outputs = 1, []
   for g in args(f)
@@ -133,23 +133,23 @@ function compile_block(f::AlgNetworkExpr.Hom{:otimes}, inputs::Vector)::Block
   Block(code, inputs, outputs)
 end
 
-function compile_block(f::AlgNetworkExpr.Hom{:mcopy}, inputs::Vector)::Block
+function compile_block(f::AlgebraicNet.Hom{:mcopy}, inputs::Vector)::Block
   reps = div(length(vec(codom(f))), length(vec(dom(f))))
   outputs = vcat(repeated(inputs, reps)...)
   Block(Expr(:block), inputs, outputs)
 end
 
-function compile_block(f::AlgNetworkExpr.Hom{:delete}, inputs::Vector)::Block
+function compile_block(f::AlgebraicNet.Hom{:delete}, inputs::Vector)::Block
   Block(Expr(:block), inputs, [])
 end
 
-function compile_block(f::AlgNetworkExpr.Hom{:mmerge}, inputs::Vector)::Block
+function compile_block(f::AlgebraicNet.Hom{:mmerge}, inputs::Vector)::Block
   out = gensym()
   code = Expr(:(=), out, Expr(:call, :(+), inputs...))
   Block(code, inputs, [out])
 end
 
-function compile_block(f::AlgNetworkExpr.Hom{:create}, inputs::Vector)::Block
+function compile_block(f::AlgebraicNet.Hom{:create}, inputs::Vector)::Block
   nout = length(vec(codom(f)))
   outputs = gensyms(nout)
   code = Expr(:(=), Expr(:tuple, outputs...), Expr(:tuple, repeated(0,nout)...))
@@ -168,26 +168,26 @@ end
 gensyms(n::Int) = [ gensym() for i in 1:n ]
 gensyms(n::Int, tag) = [ gensym(tag) for i in 1:n ]
 
-vec(A::AlgNetworkExpr.Ob{:generator}) = [A]
-vec(A::AlgNetworkExpr.Ob{:otimes}) = args(A)
-vec(A::AlgNetworkExpr.Ob{:munit}) = []
+vec(A::AlgebraicNet.Ob{:generator}) = [A]
+vec(A::AlgebraicNet.Ob{:otimes}) = args(A)
+vec(A::AlgebraicNet.Ob{:munit}) = []
 
-# Diagrams
-##########
+# Display
+#########
 
-function box(name::String, f::AlgNetworkExpr.Hom{:generator})
+function box(name::String, f::AlgebraicNet.Hom{:generator})
   rect(name, f; rounded=!isa(first(f), Symbol))
 end
-function box(name::String, f::AlgNetworkExpr.Hom{:mcopy})
+function box(name::String, f::AlgebraicNet.Hom{:mcopy})
   junction_circle(name, f; fill=false)
 end
-function box(name::String, f::AlgNetworkExpr.Hom{:delete})
+function box(name::String, f::AlgebraicNet.Hom{:delete})
   junction_circle(name, f; fill=false)
 end
-function box(name::String, f::AlgNetworkExpr.Hom{:mmerge})
+function box(name::String, f::AlgebraicNet.Hom{:mmerge})
   junction_circle(name, f; fill=true)
 end
-function box(name::String, f::AlgNetworkExpr.Hom{:create})
+function box(name::String, f::AlgebraicNet.Hom{:create})
   junction_circle(name, f; fill=true)
 end
 
