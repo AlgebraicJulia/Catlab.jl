@@ -418,7 +418,7 @@ show_latex(io::IO, x::Any; kw...) = show(io, x)
 
 # By default, show in prefix notation.
 function show_latex(io::IO, expr::BaseExpr; kw...)
-  print(io, "\\mathrm{$(head(expr))}")
+  print(io, "\\mathop{\\mathrm{$(head(expr))}}")
   print(io, "\\left[")
   join(io, [sprint(show_latex, arg) for arg in args(expr)], ",")
   print(io, "\\right]")

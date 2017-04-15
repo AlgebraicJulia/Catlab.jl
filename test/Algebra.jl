@@ -7,10 +7,7 @@ using CompCat.Syntax
 unicode(expr::BaseExpr) = sprint(show_unicode, expr)
 latex(expr::BaseExpr) = sprint(show_latex, expr)
 
-R = ob(AlgebraicNet, :Real)
-I = munit(AlgebraicNet.Ob)
-linear(x) = hom(x, R, R)
-constant(x) = hom(x, I, R)
+R = ob(AlgebraicNet, :R)
 
 x = linspace(-2,2,100)
 f = hom(:sin,R,R)
@@ -18,20 +15,24 @@ f = hom(:sin,R,R)
 @test unicode(f) == "sin"
 @test latex(f) == "\\mathrm{sin}"
 
-f = compose(linear(2), hom(:sin,R,R))
+f = compose(linear(2,R,R), hom(:sin,R,R))
 @test compile(f)(x) == sin(2*x)
-@test unicode(f) == "2; sin"
-@test latex(f) == "2 ; \\mathrm{sin}"
+@test unicode(f) == "linear[2]; sin"
+@test latex(f) == "\\mathop{\\mathrm{linear}}\\left[2\\right] ; \\mathrm{sin}"
 
-f = compose(linear(2), hom(:sin,R,R), linear(2))
+f = compose(linear(2,R,R), hom(:sin,R,R), linear(2,R,R))
 @test compile(f)(x) == 2*sin(2*x)
 
 y = linspace(0,4,100)
 f = otimes(hom(:cos,R,R), hom(:sin,R,R))
 @test compile(f)(x,y) == [cos(x) sin(y)]
+@test unicode(f) == "cos⊗sin"
+@test latex(f) == "\\mathrm{cos} \\otimes \\mathrm{sin}"
 
-f = compose(otimes(id(R),constant(1)), mmerge(R))
+f = compose(otimes(id(R),constant(1,R)), mmerge(R))
 @test compile(f)(x) == x+1
+@test unicode(f) == "(id[R]⊗1); mmerge[R,2]"
+@test latex(f) == "\\left(\\mathrm{id}_{R} \\otimes 1\\right) ; \\nabla_{R,2}"
 
 f = mcopy(R)
 @test compile(f)(x) == [x x]

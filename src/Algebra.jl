@@ -7,7 +7,8 @@ represent expressions as morphisms in a suitable monoidal category.
 """
 module Algebra
 export AlgebraicNetSignature, AlgebraicNet, ob, hom,
-  compose, id, dom, codom, otimes, opow, munit, mcopy, delete, mmerge, create,
+  compose, id, dom, codom, otimes, opow, munit,
+  mcopy, delete, mmerge, create, linear, constant,
   compile, compile_expr
 
 using Match
@@ -15,7 +16,7 @@ using Match
 using ..GAT, ..Syntax
 import ..Doctrine: SymmetricMonoidalCategory, ObExpr, HomExpr, ob, hom,
   compose, id, dom, codom, otimes, munit, mcopy, delete
-import ..Diagram.TikZWiring: box, rect, junction_circle
+import ..Diagram.TikZWiring: box, wires, rect, junction_circle
 import ..Syntax: show_latex, show_unicode
 
 # Syntax
@@ -34,7 +35,9 @@ See also the doctrine of abelian bicategory of relations
 
   mmerge(A::Ob, n::Int)::Hom(opow(A,n),A)
   create(A::Ob)::Hom(munit(),A)
+  linear(x::Any, A::Ob, B::Ob)::Hom(A,B)
   
+  constant(x::Any, A::Ob) = hom(x, munit(Ob), A)
   opow(A::Ob, n::Int) = otimes(repeated(A,n)...)
   opow(f::Hom, n::Int) = otimes(repeated(f,n)...)
   mcopy(A::Ob) = mcopy(A,2)
@@ -93,10 +96,23 @@ function compile_block(f::AlgebraicNet.Hom{:generator}, inputs::Vector)::Block
   
   value = first(f)
   lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
-  rhs = if isa(value, Symbol)
+  rhs = if isa(value, Symbol) && nin >= 1
     Expr(:call, value, inputs...)
-  elseif nin == 0
+  else
     value
+  end
+  Block(Expr(:(=), lhs, rhs), inputs, outputs)
+end
+
+function compile_block(f::AlgebraicNet.Hom{:linear}, inputs::Vector)::Block
+  nin, nout = length(vec(dom(f))), length(vec(codom(f)))
+  @assert length(inputs) == nin
+  outputs = gensyms(nout)
+  
+  value = first(f)
+  lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
+  rhs = if nin == 0
+    0
   elseif nin == 1
     Expr(:call, :(*), value, inputs[1])
   else
@@ -188,8 +204,20 @@ function show_unicode(io::IO, expr::AlgebraicNet.Hom{:compose}; kw...)
   show_unicode_infix(io, expr, "; "; kw...)
 end
 
+function show_latex(io::IO, expr::AlgebraicNet.Hom{:linear}; kw...)
+  value = first(expr)
+  print(io, "\\mathop{\\mathrm{linear}}\\left[$value\\right]")
+end
+function show_unicode(io::IO, expr::AlgebraicNet.Hom{:linear}; kw...)
+  value = first(expr)
+  print(io, "linear[$value]")
+end
+
 function box(name::String, f::AlgebraicNet.Hom{:generator})
-  rect(name, f; rounded=!isa(first(f), Symbol))
+  rect(name, f; rounded=false)
+end
+function box(name::String, f::AlgebraicNet.Hom{:linear})
+  rect(name, string(first(f)), wires(dom(f)), wires(codom(f)); rounded=true)
 end
 function box(name::String, f::AlgebraicNet.Hom{:mcopy})
   junction_circle(name, f; fill=false)
