@@ -9,7 +9,8 @@ using Base.Test
 using CompCat.GAT
 using CompCat.Syntax
 
-# Simple case: Monoid (no dependent types)
+# Monoid (no dependent types)
+########
 
 """ Signature of the theory of monoids.
 """
@@ -23,28 +24,28 @@ end
 """
 @syntax FreeMonoid Monoid
 
+elem(mod::Module, args...) = elem(mod.Elem, args...)
+
 @test isa(FreeMonoid, Module)
 @test contains(string(Docs.doc(FreeMonoid)), "theory of monoids")
 @test sort(names(FreeMonoid)) == sort([:FreeMonoid, :Elem])
 
-S = FreeMonoid
-x, y, z = elem(S.Elem,:x), elem(S.Elem,:y), elem(S.Elem,:z)
-@test x == elem(S.Elem,:x)
+x, y, z = elem(FreeMonoid,:x), elem(FreeMonoid,:y), elem(FreeMonoid,:z)
+@test x == elem(FreeMonoid,:x)
 @test x != y
-@test elem(S.Elem,"X") == elem(S.Elem,"X")
-@test elem(S.Elem,"X") != elem(S.Elem,"Y")
+@test elem(FreeMonoid,"X") == elem(FreeMonoid,"X")
+@test elem(FreeMonoid,"X") != elem(FreeMonoid,"Y")
 
-@test isa(mtimes(x,y), S.Elem)
-@test isa(munit(S.Elem), S.Elem)
+@test isa(mtimes(x,y), FreeMonoid.Elem)
+@test isa(munit(FreeMonoid.Elem), FreeMonoid.Elem)
 @test mtimes(mtimes(x,y),z) != mtimes(x,mtimes(y,z))
 
 @syntax FreeMonoidAssoc Monoid begin
   mtimes(x::Elem, y::Elem) = associate(Super.mtimes(x,y))
 end
 
-S = FreeMonoidAssoc
-x, y, z = elem(S.Elem,:x), elem(S.Elem,:y), elem(S.Elem,:z)
-e = munit(S.Elem)
+x, y, z = [ elem(FreeMonoidAssoc,sym) for sym in [:x,:y,:z] ]
+e = munit(FreeMonoidAssoc.Elem)
 @test mtimes(mtimes(x,y),z) == mtimes(x,mtimes(y,z))
 @test mtimes(e,x) != x && mtimes(x,e) != x
 
@@ -52,9 +53,8 @@ e = munit(S.Elem)
   mtimes(x::Elem, y::Elem) = associate_unit(Super.mtimes(x,y), munit)
 end
 
-S = FreeMonoidAssocUnit
-x, y, z = elem(S.Elem,:x), elem(S.Elem,:y), elem(S.Elem,:z)
-e = munit(S.Elem)
+x, y, z = [ elem(FreeMonoidAssocUnit,sym) for sym in [:x,:y,:z] ]
+e = munit(FreeMonoidAssocUnit.Elem)
 @test mtimes(mtimes(x,y),z) == mtimes(x,mtimes(y,z))
 @test mtimes(e,x) == x && mtimes(x,e) == x
 
@@ -65,7 +65,17 @@ x = elem(FreeMonoidTyped.Elem, :x)
 @test issubtype(FreeMonoidTyped.Elem, MonoidExpr)
 @test isa(x, FreeMonoidTyped.Elem) && isa(x, MonoidExpr)
 
+@signature Monoid(Elem) => MonoidNumeric(Elem) begin
+  elem_int(x::Int)::Elem
+end
+@syntax FreeMonoidNumeric MonoidNumeric
+
+x = elem_int(FreeMonoidNumeric.Elem, 1)
+@test isa(x, FreeMonoidNumeric.Elem)
+@test first(x) == 1
+
 # Category (includes dependent types)
+##########
 
 @signature Category(Ob,Hom) begin
   Ob::TYPE
@@ -114,14 +124,5 @@ f, g = hom(:f, X, Y), hom(:g, Y, X)
 
 @test isa(compose(f,g,f), FreeCategoryStrict.Hom)
 @test_throws SyntaxDomainError compose(f,f)
-
-@signature Monoid(Elem) => MonoidNumeric(Elem) begin
-  elem_int(x::Int)::Elem
-end
-@syntax FreeMonoidNumeric MonoidNumeric
-
-x = elem_int(FreeMonoidNumeric.Elem, 1)
-@test isa(x, FreeMonoidNumeric.Elem)
-@test first(x) == 1
 
 end
