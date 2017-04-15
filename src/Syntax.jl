@@ -196,7 +196,7 @@ end
 """ Generate methods for syntax term constructors.
 """
 function gen_term_constructor(cons::TermConstructor, sig::Signature)::Expr
-  head = GAT.constructor(cons)
+  head = GAT.constructor(cons, sig)
   call_expr, return_type = head.call_expr, get(head.return_type)
   body = Expr(:block)
   
@@ -238,8 +238,10 @@ end
 
 Besides expanding the implicit variables, we must handle two annoying issues:
 
-1. Replace nullary constructors with unary constructors per our convention, e.g.
-   munit() -> munit(Ob)
+1. Add types for method dispatch where necessary (see `GAT.add_type_dispatch`)
+   FIXME: We are currently only handling the nullary case (e.g., `munit()`).
+   To handle the general case, we need to do basic type inference.
+
 2. Rebind the term constructors to ensure that user overrides are preferred over
    the default term constructors.
 """

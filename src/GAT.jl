@@ -34,9 +34,12 @@ using Match
 """
 abstract Stub
 
+typealias Expr0 Union{Symbol,Expr}
+typealias Context OrderedDict{Symbol,Expr0}
+
 @auto_hash_equals immutable JuliaFunction
   call_expr::Expr
-  return_type::Nullable{Union{Symbol,Expr}}
+  return_type::Nullable{Expr0}
   impl::Nullable{Expr}
   
   function JuliaFunction(call_expr, return_type=Nullable(), impl=Nullable()) 
@@ -46,10 +49,8 @@ end
 
 @auto_hash_equals immutable JuliaFunctionSig
   name::Symbol
-  types::Vector{Union{Symbol,Expr}}
+  types::Vector{Expr0}
 end
-
-typealias Context OrderedDict{Symbol,Union{Symbol,Expr}}
 
 @auto_hash_equals immutable TypeConstructor
   name::Symbol
@@ -60,7 +61,7 @@ end
 @auto_hash_equals immutable TermConstructor
   name::Symbol
   params::Vector{Symbol}
-  typ::Union{Symbol,Expr}
+  typ::Expr0
   context::Context
 end
 
@@ -143,6 +144,24 @@ function gen_function(fun::JuliaFunction)::Expr
     body = impl.head == :block ? impl : Expr(:block, impl)
   end
   Expr(:function, head, body)
+end
+
+""" Add a type-valued first argument to a Julia function signature.
+
+We need this to avoid ambiguity in method dispatch when a term constructor has
+no arguments (e.g., `munit()`) or more generally has no arguments that are types
+in the signature (e.g., object generators in a category).
+
+The fundamental reason why these cases must be treated specially is that Julia
+does not (yet?) support
+[dispatching on return type](https://github.com/JuliaLang/julia/issues/19206).
+"""
+function add_type_dispatch(call_expr::Expr, type_expr::Expr0)::Expr
+  @match call_expr begin
+    (Expr(:call, [name, args...], _) =>
+      Expr(:call, name, :(::Type{$type_expr}), args...))
+    _ => throw(ParseError("Ill-formed call expression $call_expr"))
+  end
 end
 
 """ Replace types in signature of Julia function.
@@ -418,17 +437,18 @@ end
 """ Julia functions for term constructors of GAT.
 """
 function constructors(sig::Signature)::Vector{JuliaFunction}
-  map(constructor, sig.terms)
+  [ constructor(cons, sig) for cons in sig.terms ]
 end
-function constructor(cons::TermConstructor)::JuliaFunction
+function constructor(cons::TermConstructor, sig::Signature)::JuliaFunction
+  arg_names = cons.params
+  arg_types = [ strip_type(cons.context[name]) for name in arg_names ]
+  args = [ Expr(:(::), name, typ) for (name,typ) in zip(arg_names, arg_types) ]
   return_type = strip_type(cons.typ)
-  if isempty(cons.params)
-    # Special case: term constructors with no arguments dispatch on term type.
-    args = [ :(::Type{$return_type}) ]
-  else
-    args = [ Expr(:(::), p, strip_type(cons.context[p])) for p in cons.params ]
-  end
+  
   call_expr = Expr(:call, cons.name, args...)
+  if all(!has_type(sig, typ) for typ in arg_types)
+    call_expr = add_type_dispatch(call_expr, return_type)
+  end
   JuliaFunction(call_expr, return_type)
 end
 

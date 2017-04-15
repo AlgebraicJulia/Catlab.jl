@@ -115,4 +115,12 @@ g = FreeCategoryStrict.hom(:g, Y, X)
 @test isa(compose(f,g,f), FreeCategoryStrict.Hom)
 @test_throws SyntaxDomainError compose(f,f)
 
+@signature Monoid(M) => MonoidNumeric(M) begin
+  elem_int(x::Int)::M
+end
+@syntax FreeMonoidNumeric MonoidNumeric
+
+x = elem_int(FreeMonoidNumeric.M, 1)
+@test isa(x, FreeMonoidNumeric.M)
+
 end
