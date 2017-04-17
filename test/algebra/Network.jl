@@ -31,6 +31,9 @@ f = otimes(hom(:cos,R,R), hom(:sin,R,R))
 @test unicode(f) == "cos⊗sin"
 @test latex(f) == "\\mathrm{cos} \\otimes \\mathrm{sin}"
 
+f = braid(R,R)
+@test compile(f)(x,y) == [y x]
+
 f = compose(otimes(id(R),constant(1,R)), mmerge(R))
 @test compile(f)(x) == x+1
 @test unicode(f) == "(id[R]⊗1); mmerge[R,2]"

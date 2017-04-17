@@ -7,7 +7,7 @@ represent expressions as morphisms in a suitable monoidal category.
 """
 module Network
 export AlgebraicNetSignature, AlgebraicNet, ob, hom,
-  compose, id, dom, codom, otimes, opow, munit,
+  compose, id, dom, codom, otimes, opow, munit, braid,
   mcopy, delete, mmerge, create, linear, constant,
   compile, compile_expr
 
