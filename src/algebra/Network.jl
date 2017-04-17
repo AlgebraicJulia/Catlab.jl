@@ -13,7 +13,7 @@ export AlgebraicNetSignature, AlgebraicNet, ob, hom,
 
 using Match
 
-using ...GAT, ...Syntax
+using ...GAT, ...Syntax, ...Rewrite
 import ...Doctrine: SymmetricMonoidalCategory, ObExpr, HomExpr, ob, hom,
   compose, id, dom, codom, otimes, munit, mcopy, delete
 import ...Diagram.TikZWiring: box, wires, rect, junction_circle

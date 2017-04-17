@@ -6,8 +6,7 @@ tests of the Syntax module.
 module TestSyntax
 
 using Base.Test
-using CompCat.GAT
-using CompCat.Syntax
+using CompCat.GAT, CompCat.Syntax, CompCat.Rewrite
 
 # Monoid (no dependent types)
 ########

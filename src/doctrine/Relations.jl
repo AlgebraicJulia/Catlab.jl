@@ -1,7 +1,6 @@
 import Lazy: @>
 
-using ..GAT
-using ..Syntax
+using ..GAT, ..Syntax, ..Rewrite
 import ..Syntax: show_unicode, show_latex
 
 """ Doctrine of *bicategory of relations*
