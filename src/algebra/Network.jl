@@ -73,29 +73,97 @@ end
 """
 function compile_expr(f::AlgebraicNet.Hom;
                       name::Symbol=Symbol(), args::Vector=[])::Expr
+  block = functor(f; types=Dict(:Ob => Int, :Hom => Block))
+  
   name = name == Symbol() ? gensym("hom") : name
-  nargs = length(vec(dom(f)))
-  argnames = isempty(args) ? gensyms(nargs, "x") : args
-  #args = [ :($a::Float64) for a in argnames ]
-  args = argnames
+  code = block.code
+  if isempty(args)
+    args = block.inputs
+  else
+    code = substitute(code, Dict(zip(block.inputs, args)))
+  end
 
-  block = compile_block(f, argnames)
   return_expr = Expr(:return, if length(block.outputs) == 1
     block.outputs[1]
   else 
     Expr(:hcat, block.outputs...)
   end)
-  body = concat_block(block.code, return_expr)
+  body = concat(code, return_expr)
   Expr(:function, Expr(:call, name, args...), body)
 end
 
-function compile_block(f::AlgebraicNet.Hom{:generator}, inputs::Vector)::Block
-  nin, nout = length(vec(dom(f))), length(vec(codom(f)))
-  @assert length(inputs) == nin
-  outputs = gensyms(nout)
+@instance AlgebraicNetSignature(Int, Block) begin
+
+  function compose(b1::Block, b2::Block)::Block
+    code = concat(b1.code, substitute(b2.code, Dict(zip(b2.inputs, b1.outputs))))
+    Block(code, b1.inputs, b2.outputs)
+  end
+
+  function id(m::Int)::Block
+    vars = gensyms(m)
+    Block(Expr(:block), vars, vars)
+  end
+
+  dom(block::Block) = length(block.inputs)
+  codom(block::Block) = length(block.outputs)
+
+  munit(::Type{Int}) = 0
+  otimes(m1::Int, m2::Int) = m1+m2
   
-  value = first(f)
-  lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
+  function otimes(b1::Block, b2::Block)::Block
+    code = concat(b1.code, b2.code)
+    Block(code, [b1.inputs; b2.inputs], [b1.outputs; b2.outputs])
+  end
+  function braid(m1::Int, m2::Int)
+    v1, v2 = gensyms(m1), gensyms(m2)
+    Block(Expr(:block), [v1; v2], [v2; v1])
+  end
+  
+  function mcopy(m::Int, n::Int)::Block
+    inputs = gensyms(m)
+    outputs = vcat(repeated(inputs, n)...)
+    Block(Expr(:block), inputs, outputs)
+  end
+  function delete(m::Int)::Block
+    inputs = gensyms(m)
+    Block(Expr(:block), inputs, [])
+  end
+  function mmerge(m::Int, n::Int)::Block
+    @assert m == 1 # FIXME: Relax this.
+    inputs = gensyms(n)
+    out = gensym()
+    code = Expr(:(=), out, Expr(:call, :(+), inputs...))
+    Block(code, inputs, [out])
+  end
+  function create(m::Int)::Block
+    outputs = gensyms(m)
+    code = Expr(:(=), Expr(:tuple, outputs...), Expr(:tuple, repeated(0,m)...))
+    Block(code, [], outputs)
+  end
+  
+  function linear(value::Any, nin::Int, nout::Int)::Block
+    inputs, outputs = gensyms(nin), gensyms(nout)
+    lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
+    rhs = if nin == 0
+      0
+    elseif nin == 1
+      Expr(:call, :(*), value, inputs[1])
+    else
+      Expr(:call, :(*), value, Expr(:vcat, inputs...))
+    end
+    Block(Expr(:(=), lhs, rhs), inputs, outputs)
+  end
+end
+
+ob(::Type{Int}, value::Any) = 1
+
+function hom(value::Any, nin::Int, nout::Int)::Block
+  inputs, outputs = gensyms(nin), gensyms(nout)
+  lhs = if nout == 1 
+    outputs[1]
+  else
+    Expr(:tuple, outputs...)
+  end
   rhs = if isa(value, Symbol) && nin >= 1
     Expr(:call, value, inputs...)
   else
@@ -104,76 +172,9 @@ function compile_block(f::AlgebraicNet.Hom{:generator}, inputs::Vector)::Block
   Block(Expr(:(=), lhs, rhs), inputs, outputs)
 end
 
-function compile_block(f::AlgebraicNet.Hom{:linear}, inputs::Vector)::Block
-  nin, nout = length(vec(dom(f))), length(vec(codom(f)))
-  @assert length(inputs) == nin
-  outputs = gensyms(nout)
-  
-  value = first(f)
-  lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
-  rhs = if nin == 0
-    0
-  elseif nin == 1
-    Expr(:call, :(*), value, inputs[1])
-  else
-    Expr(:call, :(*), value, Expr(:vcat, inputs...))
-  end
-  Block(Expr(:(=), lhs, rhs), inputs, outputs)
-end
-
-function compile_block(f::AlgebraicNet.Hom{:compose}, inputs::Vector)::Block
-  code = Expr(:block)
-  vars = inputs
-  for g in args(f)
-    block = compile_block(g, vars)
-    code = concat_block(code, block.code)
-    vars = block.outputs
-  end
-  outputs = vars
-  Block(code, inputs, outputs)
-end
-
-function compile_block(f::AlgebraicNet.Hom{:id}, inputs::Vector)::Block
-  Block(Expr(:block), inputs, inputs)
-end
-
-function compile_block(f::AlgebraicNet.Hom{:otimes}, inputs::Vector)::Block
-  code = Expr(:block)
-  i, outputs = 1, []
-  for g in args(f)
-    nin = length(vec(dom(g)))
-    block = compile_block(g, inputs[i:i+nin-1])
-    code = concat_block(code, block.code)
-    append!(outputs, block.outputs)
-    i += nin
-  end
-  Block(code, inputs, outputs)
-end
-
-function compile_block(f::AlgebraicNet.Hom{:mcopy}, inputs::Vector)::Block
-  reps = div(length(vec(codom(f))), length(vec(dom(f))))
-  outputs = vcat(repeated(inputs, reps)...)
-  Block(Expr(:block), inputs, outputs)
-end
-
-function compile_block(f::AlgebraicNet.Hom{:delete}, inputs::Vector)::Block
-  Block(Expr(:block), inputs, [])
-end
-
-function compile_block(f::AlgebraicNet.Hom{:mmerge}, inputs::Vector)::Block
-  out = gensym()
-  code = Expr(:(=), out, Expr(:call, :(+), inputs...))
-  Block(code, inputs, [out])
-end
-
-function compile_block(f::AlgebraicNet.Hom{:create}, inputs::Vector)::Block
-  nout = length(vec(codom(f)))
-  outputs = gensyms(nout)
-  code = Expr(:(=), Expr(:tuple, outputs...), Expr(:tuple, repeated(0,nout)...))
-  Block(code, inputs, outputs)
-end
-
-function concat_block(expr1::Expr, expr2::Expr)::Expr
+""" Concatenate two Julia expressions.
+"""
+function concat(expr1::Expr, expr2::Expr)::Expr
   @match (expr1, expr2) begin
     (Expr(:block, a1, _), Expr(:block, a2, _)) => Expr(:block, [a1; a2]...)
     (Expr(:block, a1, _), _) => Expr(:block, [a1; expr2]...)
@@ -182,12 +183,19 @@ function concat_block(expr1::Expr, expr2::Expr)::Expr
   end
 end
 
+""" Simultaneous substitution of symbols in Julia expression.
+"""
+function substitute(expr::Expr, subst::Dict)
+  Expr(expr.head, [
+    if (isa(arg, Expr)) substitute(arg, subst)
+    elseif (isa(arg, Symbol)) get(subst, arg, arg)
+    else arg end
+    for arg in expr.args
+  ]...)
+end
+
 gensyms(n::Int) = [ gensym() for i in 1:n ]
 gensyms(n::Int, tag) = [ gensym(tag) for i in 1:n ]
-
-vec(A::AlgebraicNet.Ob{:generator}) = [A]
-vec(A::AlgebraicNet.Ob{:otimes}) = args(A)
-vec(A::AlgebraicNet.Ob{:munit}) = []
 
 # Display
 #########

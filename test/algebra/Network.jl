@@ -12,6 +12,7 @@ R = ob(AlgebraicNet, :R)
 x = linspace(-2,2,100)
 f = hom(:sin,R,R)
 @test compile(f)(x) == sin(x)
+@test compile(f,args=[:x])(x) == sin(x)
 @test unicode(f) == "sin"
 @test latex(f) == "\\mathrm{sin}"
 
@@ -26,6 +27,7 @@ f = compose(linear(2,R,R), hom(:sin,R,R), linear(2,R,R))
 y = linspace(0,4,100)
 f = otimes(hom(:cos,R,R), hom(:sin,R,R))
 @test compile(f)(x,y) == [cos(x) sin(y)]
+@test compile(f,args=[:x,:y])(x,y) == [cos(x) sin(y)]
 @test unicode(f) == "cos⊗sin"
 @test latex(f) == "\\mathrm{cos} \\otimes \\mathrm{sin}"
 
