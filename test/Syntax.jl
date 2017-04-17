@@ -8,7 +8,7 @@ module TestSyntax
 using Base.Test
 using CompCat.GAT, CompCat.Syntax, CompCat.Rewrite
 
-# Monoid (no dependent types)
+# Monoid
 ########
 
 """ Signature of the theory of monoids.
@@ -89,7 +89,7 @@ x, y = one(FreeMonoidTwo.Elem), two(FreeMonoidTwo.Elem)
 @test all(isa(expr, FreeMonoidTwo.Elem) for expr in [x, y, mtimes(x,y)])
 @test_throws ErrorException elem(FreeMonoidTwo, :x)
 
-# Category (includes dependent types)
+# Category
 ##########
 
 @signature Category(Ob,Hom) begin
@@ -139,5 +139,23 @@ f, g = hom(:f, X, Y), hom(:g, Y, X)
 
 @test isa(compose(f,g,f), FreeCategoryStrict.Hom)
 @test_throws SyntaxDomainError compose(f,f)
+
+# Functor
+#########
+
+@instance Monoid(String) begin
+  munit(::Type{String}) = ""
+  mtimes(x::String, y::String) = string(x,y)
+end
+
+x, y, z = elem(FreeMonoid,:x), elem(FreeMonoid,:y), elem(FreeMonoid,:z)
+gens = Dict(x => "x", y => "y", z => "z")
+types = Dict(:Elem => String)
+@test functor(mtimes(x,mtimes(y,z)); generators=gens) == "xyz"
+@test functor(mtimes(x,munit(FreeMonoid.Elem)); generators=gens, types=types) == "x"
+
+terms = Dict(:elem => (typ,val) -> string(val))
+@test functor(mtimes(x,mtimes(y,z)); terms=terms, types=types) == "xyz"
+@test functor(mtimes(x,munit(FreeMonoid.Elem)); terms=terms, types=types) == "x"
 
 end

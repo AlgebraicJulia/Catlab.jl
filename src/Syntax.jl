@@ -14,10 +14,10 @@ module to make the construction of syntax simple but flexible.
 """
 module Syntax
 export @syntax, BaseExpr, SyntaxDomainError, head, args, type_args, first, last,
-  show_sexpr, show_unicode, show_unicode_infix,
+  functor, show_sexpr, show_unicode, show_unicode_infix,
   show_latex, show_latex_infix, show_latex_script
 
-import Base: first, last, show, showerror, ==
+import Base: first, last, show, showerror, ==, hash
 import Base.Meta: show_sexpr
 using Match
 
@@ -53,6 +53,9 @@ type_args(expr::BaseExpr) = expr.type_args
 
 function ==(e1::BaseExpr, e2::BaseExpr)
   head(e1) == head(e2) && args(e1) == args(e2) && type_args(e1) == type_args(e2)
+end
+function hash(e::BaseExpr, h::UInt)
+  hash(args(e), hash(head(e), h))
 end
 
 function show(io::IO, expr::BaseExpr)
@@ -301,6 +304,49 @@ function term_generator(cons::TypeConstructor)::TermConstructor
   typ = Expr(:call, cons.name, cons.params...)
   context = merge(Context(value_param => :Any), cons.context)
   TermConstructor(name, params, typ, context)
+end
+
+# Functors
+##########
+
+""" Functor from GAT expression to GAT instance.
+
+Strictly speaking, we should call these "structure-preserving functors" or,
+better, "model homomorphisms of GATs". But this is a category theory library,
+so we'll go with the simpler "functor".
+"""
+function functor(expr::BaseExpr; generators::Dict=Dict(),
+                 terms::Dict=Dict(), types::Dict=Dict())
+  if haskey(generators, expr)
+    return generators[expr]
+  end
+  
+  # Use reflection to get the module for the syntax system (domain category).
+  type_meta = typeof(expr).name
+  syntax_module = type_meta.module
+  
+  # Get constructor for codomain category.
+  constructor_name = head(expr)
+  if constructor_name == :generator
+    constructor_name = Symbol(lowercase(string(type_meta.name)))
+  end
+  constructor = get(terms, constructor_name) do
+    getfield(module_parent(syntax_module), constructor_name)
+  end
+  
+  # Recurse and evaluate.
+  constructor_args = []
+  if !any(isa(arg,BaseExpr) for arg in args(expr))
+    # Special case: dispatch on type (e.g., nullary constructors)
+    push!(constructor_args, types[type_meta.name])
+  end
+  for arg in args(expr)
+    if isa(arg, BaseExpr)
+      arg = functor(arg; generators=generators, terms=terms, types=types)
+    end
+    push!(constructor_args, arg)
+  end
+  constructor(constructor_args...)
 end
 
 # Pretty-print
