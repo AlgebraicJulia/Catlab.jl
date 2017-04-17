@@ -3,6 +3,7 @@
 module Algebra
 
 include("algebra/Network.jl")
+include("algebra/Tree.jl")
 
 using Reexport
 @reexport using .Network

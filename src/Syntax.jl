@@ -370,9 +370,6 @@ head(f::Function)::Symbol = Symbol(rsplit(string(f),'.',limit=2)[end])
 
 """ Show the syntax expression as an S-expression.
 
-The transformation is *not* one-to-one since type arguments (e.g. domains and
-codomains of morphisms) are not shown.
-
 Cf. the standard library function `Meta.show_sexpr`.
 """
 show_sexpr(expr::BaseExpr) = show_sexpr(STDOUT, expr)
