@@ -12,8 +12,5 @@ end
   include("Doctrine.jl")
 end
 
-@testset "Algebra" begin
-  include("Algebra.jl")
-end
-
+include("Algebra.jl")
 include("Diagram.jl")
