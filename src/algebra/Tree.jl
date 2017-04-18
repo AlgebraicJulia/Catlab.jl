@@ -15,7 +15,7 @@ import Base: first, last, show
 import Base.Meta: show_sexpr
 
 using ...GAT, ...Syntax, ..Network
-import ..Network: gensyms, ob, hom,
+import ..Network: gensyms, substitute, ob, hom,
   compose, id, dom, codom, otimes, opow, munit, braid,
   mcopy, delete, mmerge, create, linear, constant
 import ...Syntax: head, args, show_latex
@@ -129,12 +129,7 @@ end
 """ Simultaneous substitution of variables in formula.
 """
 function substitute(form::Formula, subst::Dict)
-  Formula(head(form), [
-    if (isa(arg, Formula)) substitute(arg, subst)
-    elseif (isa(arg, Symbol)) get(subst, arg, arg)
-    else arg end
-    for arg in args(form)
-  ]...)
+  Formula(head(form), [substitute(arg, subst) for arg in args(form)]...)
 end
 
 gensyms(A::NFormula, args...) = gensyms(A.n, args...)

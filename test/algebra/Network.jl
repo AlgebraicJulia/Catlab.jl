@@ -9,7 +9,7 @@ latex(expr::BaseExpr) = sprint(show_latex, expr)
 
 R = ob(AlgebraicNet, :R)
 
-x = linspace(-2,2,100)
+x = collect(linspace(-2,2,100))
 f = hom(:sin,R,R)
 @test compile(f)(x) == sin(x)
 @test compile(f,args=[:x])(x) == sin(x)
@@ -24,7 +24,7 @@ f = compose(linear(2,R,R), hom(:sin,R,R))
 f = compose(linear(2,R,R), hom(:sin,R,R), linear(2,R,R))
 @test compile(f)(x) == 2*sin(2*x)
 
-y = linspace(0,4,100)
+y = collect(linspace(0,4,100))
 f = otimes(hom(:cos,R,R), hom(:sin,R,R))
 @test compile(f)(x,y) == [cos(x) sin(y)]
 @test compile(f,args=[:x,:y])(x,y) == [cos(x) sin(y)]
@@ -49,7 +49,7 @@ f = mcopy(R,3)
 f = compile(compose(mcopy(R), otimes(hom(:cos,R,R), hom(:sin,R,R))))
 @test f(x) == [cos(x) sin(x)]
 
-z = linspace(-4,0,100)
+z = collect(linspace(-4,0,100))
 f = mmerge(R)
 @test compile(f)(x,y) == x+y
 f = mmerge(R,3)
@@ -57,5 +57,8 @@ f = mmerge(R,3)
 
 f = compose(mcopy(R), otimes(hom(:cos,R,R), hom(:sin,R,R)), mmerge(R))
 @test compile(f)(x) == cos(x) + sin(x)
+
+f = compose(mcopy(R), otimes(id(R),hom(:cos,R,R)), hom(:.*,otimes(R,R),R))
+@test compile(f)(x) == x .* cos(x)
 
 end

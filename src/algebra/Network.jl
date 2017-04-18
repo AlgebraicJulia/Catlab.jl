@@ -97,7 +97,8 @@ end
 
 @instance AlgebraicNetSignature(NBlock, Block) begin
   function compose(b1::Block, b2::Block)::Block
-    code = concat(b1.code, substitute(b2.code, Dict(zip(b2.inputs, b1.outputs))))
+    b2 = substitute(b2, Dict(zip(b2.inputs, b1.outputs)))
+    code = concat(b1.code, b2.code)
     Block(code, b1.inputs, b2.outputs)
   end
 
@@ -188,12 +189,15 @@ end
 """ Simultaneous substitution of symbols in Julia expression.
 """
 function substitute(expr::Expr, subst::Dict)
-  Expr(expr.head, [
-    if (isa(arg, Expr)) substitute(arg, subst)
-    elseif (isa(arg, Symbol)) get(subst, arg, arg)
-    else arg end
-    for arg in expr.args
-  ]...)
+  Expr(expr.head, [substitute(arg, subst) for arg in expr.args]...)
+end
+substitute(sym::Symbol, subst::Dict) = get(subst, sym, sym)
+substitute(x::Any, subst::Dict) = x
+
+function substitute(block::Block, subst::Dict)
+  Block(substitute(block.code, subst), 
+        [substitute(arg, subst) for arg in block.inputs],
+        [substitute(arg, subst) for arg in block.outputs])
 end
 
 gensyms(n::Int) = [ gensym() for i in 1:n ]

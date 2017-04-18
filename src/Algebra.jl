@@ -7,5 +7,6 @@ include("algebra/Tree.jl")
 
 using Reexport
 @reexport using .Network
+@reexport using .Tree
 
 end
