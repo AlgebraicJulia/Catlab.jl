@@ -37,6 +37,7 @@ sexpr(form::Formula) = sprint(show_sexpr, form)
 @test latex(Formula(:+, :x, :y)) == "x + y"
 @test latex(Formula(:+, :x, :y, :z)) == "x + y + z"
 @test latex(Formula(:*, :x, :y)) == "x \\cdot y"
+@test latex(Formula(:*, 2, :x)) == "2 x"
 @test latex(Formula(:-, :x, :y)) == "x - y"
 @test latex(Formula(:/, :x, :y)) == "\\frac{x}{y}"
 @test latex(Formula((:*, :x, (:+, :y, :z)))) == "x \\cdot \\left(y + z\\right)"

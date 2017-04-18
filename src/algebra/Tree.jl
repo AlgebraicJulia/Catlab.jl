@@ -164,7 +164,8 @@ function show_latex_formula(io::IO, form::Formula, ::Type{Val{:+}}; kw...)
   show_latex_infix(io, form, " + "; kw...)
 end
 function show_latex_formula(io::IO, form::Formula, ::Type{Val{:*}}; kw...)
-  show_latex_infix(io, form, " \\cdot "; kw...)
+  sep = length(args(form)) == 2 && isa(first(form), Number) ? " " : " \\cdot "
+  show_latex_infix(io, form, sep; kw...)
 end
 function show_latex_formula(io::IO, form::Formula, ::Type{Val{:-}}; kw...)
   @assert length(args(form)) == 2
