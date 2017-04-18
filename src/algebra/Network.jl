@@ -53,12 +53,6 @@ end
 # Code generation
 #################
 
-type Block
-  code::Expr
-  inputs::Vector{Symbol}
-  outputs::Vector{Symbol}
-end
-
 """ Compile an algebraic network into a Julia function.
 
 This method of "functorial compilation" generates simple imperative code with no
@@ -73,7 +67,7 @@ end
 """
 function compile_expr(f::AlgebraicNet.Hom;
                       name::Symbol=Symbol(), args::Vector=[])::Expr
-  block = functor(f; types=Dict(:Ob => Int, :Hom => Block))
+  block = functor(f; types=Dict(:Ob => NBlock, :Hom => Block))
   
   name = name == Symbol() ? gensym("hom") : name
   code = block.code
@@ -92,57 +86,65 @@ function compile_expr(f::AlgebraicNet.Hom;
   Expr(:function, Expr(:call, name, args...), body)
 end
 
-@instance AlgebraicNetSignature(Int, Block) begin
+immutable NBlock
+  n::Int
+end
+immutable Block
+  code::Expr
+  inputs::Vector{Symbol}
+  outputs::Vector{Symbol}
+end
 
+@instance AlgebraicNetSignature(NBlock, Block) begin
   function compose(b1::Block, b2::Block)::Block
     code = concat(b1.code, substitute(b2.code, Dict(zip(b2.inputs, b1.outputs))))
     Block(code, b1.inputs, b2.outputs)
   end
 
-  function id(m::Int)::Block
-    vars = gensyms(m)
+  function id(A::NBlock)::Block
+    vars = gensyms(A)
     Block(Expr(:block), vars, vars)
   end
 
-  dom(block::Block) = length(block.inputs)
-  codom(block::Block) = length(block.outputs)
+  dom(block::Block) = NBlock(length(block.inputs))
+  codom(block::Block) = NBlock(length(block.outputs))
 
-  munit(::Type{Int}) = 0
-  otimes(m1::Int, m2::Int) = m1+m2
+  munit(::Type{NBlock}) = NBlock(0)
+  otimes(A::NBlock, B::NBlock) = NBlock(A.n + B.n)
   
   function otimes(b1::Block, b2::Block)::Block
     code = concat(b1.code, b2.code)
     Block(code, [b1.inputs; b2.inputs], [b1.outputs; b2.outputs])
   end
-  function braid(m1::Int, m2::Int)
-    v1, v2 = gensyms(m1), gensyms(m2)
+  function braid(A::NBlock, B::NBlock)::Block
+    v1, v2 = gensyms(A), gensyms(B)
     Block(Expr(:block), [v1; v2], [v2; v1])
   end
   
-  function mcopy(m::Int, n::Int)::Block
-    inputs = gensyms(m)
+  function mcopy(A::NBlock, n::Int)::Block
+    inputs = gensyms(A)
     outputs = vcat(repeated(inputs, n)...)
     Block(Expr(:block), inputs, outputs)
   end
-  function delete(m::Int)::Block
-    inputs = gensyms(m)
+  function delete(A::NBlock)::Block
+    inputs = gensyms(A)
     Block(Expr(:block), inputs, [])
   end
-  function mmerge(m::Int, n::Int)::Block
-    @assert m == 1 # FIXME: Relax this.
+  function mmerge(A::NBlock, n::Int)::Block
+    @assert A.n == 1 # FIXME: Relax this.
     inputs = gensyms(n)
     out = gensym()
     code = Expr(:(=), out, Expr(:call, :(+), inputs...))
     Block(code, inputs, [out])
   end
-  function create(m::Int)::Block
-    outputs = gensyms(m)
-    code = Expr(:(=), Expr(:tuple, outputs...), Expr(:tuple, repeated(0,m)...))
+  function create(A::NBlock)::Block
+    outputs = gensyms(A)
+    code = Expr(:(=), Expr(:tuple, outputs...), Expr(:tuple, repeated(0,A.n)...))
     Block(code, [], outputs)
   end
   
-  function linear(value::Any, nin::Int, nout::Int)::Block
-    inputs, outputs = gensyms(nin), gensyms(nout)
+  function linear(value::Any, A::NBlock, B::NBlock)::Block
+    nin, nout, inputs, outputs = A.n, B.n, gensyms(A), gensyms(B)
     lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
     rhs = if nin == 0
       0
@@ -155,10 +157,10 @@ end
   end
 end
 
-ob(::Type{Int}, value::Any) = 1
+ob(::Type{NBlock}, value::Any) = NBlock(1)
 
-function hom(value::Any, nin::Int, nout::Int)::Block
-  inputs, outputs = gensyms(nin), gensyms(nout)
+function hom(value::Any, A::NBlock, B::NBlock)::Block
+  nin, nout, inputs, outputs = A.n, B.n, gensyms(A), gensyms(B)
   lhs = if nout == 1 
     outputs[1]
   else
@@ -196,6 +198,7 @@ end
 
 gensyms(n::Int) = [ gensym() for i in 1:n ]
 gensyms(n::Int, tag) = [ gensym(tag) for i in 1:n ]
+gensyms(A::NBlock, args...) = gensyms(A.n, args...)
 
 # Display
 #########

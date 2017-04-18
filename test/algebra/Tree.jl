@@ -1,7 +1,30 @@
 module TestAlgebraTree
 
 using Base.Test
-using CompCat.Algebra.Tree
+using CompCat.Algebra.Network, CompCat.Algebra.Tree
+
+# Conversion
+############
+
+R = ob(AlgebraicNet.Ob, :R)
+f = hom(:sin, R, R)
+@test to_formula(f, [:x]) == Formula(:sin, :x)
+
+f = compose(linear(2,R,R), hom(:sin,R,R))
+@test to_formula(f,[:x]) == Formula(:sin, Formula(:*, 2, :x))
+f = compose(linear(2,R,R), hom(:sin,R,R), linear(2,R,R))
+@test to_formula(f,[:x]) == Formula(:*, 2, Formula(:sin, Formula(:*, 2, :x)))
+
+f = compose(hom(:cos,R,R), hom(:sin,R,R), hom(:tan,R,R))
+@test to_formula(f,[:x]) == Formula(:tan, Formula(:sin, Formula(:cos, :x)))
+
+f = compose(otimes(id(R),constant(1,R)), mmerge(R))
+@test to_formula(f,[:x]) == Formula(:+, :x, 1)
+
+f = compose(otimes(hom(:cos,R,R), hom(:sin,R,R)), mmerge(R))
+@test to_formula(f,[:x,:y]) == Formula(:+, Formula(:cos, :x), Formula(:sin, :y))
+f = compose(mcopy(R), otimes(hom(:cos,R,R), hom(:sin,R,R)), mmerge(R))
+@test to_formula(f,[:x]) == Formula(:+, Formula(:cos, :x), Formula(:sin, :x))
 
 # Pretty-print
 ##############

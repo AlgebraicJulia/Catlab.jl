@@ -43,9 +43,7 @@ convenient.
 """
 abstract BaseExpr{T}
 
-term{T}(::Type{BaseExpr{T}}) = T
 head{T}(::BaseExpr{T}) = T
-
 args(expr::BaseExpr) = expr.args
 first(expr::BaseExpr) = first(args(expr))
 last(expr::BaseExpr) = last(args(expr))
@@ -71,7 +69,7 @@ type SyntaxDomainError <: Exception
   args::Vector
 end
 
-function showerror(io::IO, exc::DomainError)
+function showerror(io::IO, exc::SyntaxDomainError)
   print(io, "Domain error in term constructor $(exc.constructor)(")
   join(io, exc.args, ",")
   print(io, ")")

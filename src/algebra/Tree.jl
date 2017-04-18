@@ -7,12 +7,17 @@ There are already many outstanding CAS's. Its goals are to
 - facilitate interop with existing CAS's
 """
 module Tree
-export Formula, head, args, first, last, show_latex, show_latex, show_sexpr
+export Formula, head, args, first, last, to_formula,
+  show_latex, show_latex, show_sexpr
 
 using AutoHashEquals
 import Base: first, last, show
 import Base.Meta: show_sexpr
 
+using ...GAT, ...Syntax, ..Network
+import ..Network: gensyms, ob, hom,
+  compose, id, dom, codom, otimes, opow, munit, braid,
+  mcopy, delete, mmerge, create, linear, constant
 import ...Syntax: head, args, show_latex
 
 # Data types
@@ -32,6 +37,105 @@ head(form::Formula) = form.head
 args(form::Formula) = form.args
 first(form::Formula) = first(args(form))
 last(form::Formula) = last(args(form))
+
+# Conversion
+############
+
+""" Convert algebraic network to formula.
+
+Assumes that the network has a single output.
+"""
+function to_formula(f::AlgebraicNet.Hom, vars::Vector{Symbol})
+  formulas = functor(f; types=Dict(:Ob => NFormula, :Hom => Formulas))
+  @assert codom(formulas).n == 1
+  substitute(formulas.terms[1], Dict(zip(formulas.vars, vars)))
+end
+
+immutable NFormula
+  n::Int
+end
+immutable Formulas
+  terms::Vector
+  vars::Vector{Symbol}
+end
+
+@instance AlgebraicNetSignature(NFormula, Formulas) begin
+  function compose(f1::Formulas, f2::Formulas)::Formulas
+    replacements = Dict(zip(f2.vars, f1.terms))
+    terms = [ substitute(term, replacements) for term in f2.terms ]
+    Formulas(terms, f1.vars)
+  end
+
+  function id(A::NFormula)::Formulas
+    vars = gensyms(A)
+    Formulas(vars, vars)
+  end
+
+  dom(f::Formulas) = NFormula(length(f.inputs))
+  codom(f::Formulas) = NFormula(length(f.terms))
+
+  munit(::Type{NFormula}) = NFormula(0)
+  otimes(A::NFormula, B::NFormula) = NFormula(A.n + B.n)
+  
+  function otimes(b1::Formulas, b2::Formulas)::Formulas
+    Formulas([b1.terms; b2.terms], [b1.vars; b2.vars])
+  end
+  function braid(A::NFormula, B::NFormula)::Formulas
+    v1, v2 = gensyms(A), gensyms(B)
+    Formulas([v2; v1], [v1; v2])
+  end
+  
+  function mcopy(A::NFormula, n::Int)::Formulas
+    vars = gensyms(A)
+    terms = vcat(repeated(vars, n)...)
+    Formulas(terms, vars)
+  end
+  function delete(A::NFormula)::Formulas
+    Formulas([], gensyms(A))
+  end
+  function mmerge(A::NFormula, n::Int)::Formulas
+    @assert A.n == 1 # FIXME: Relax this.
+    vars = gensyms(n)
+    Formulas([Formula(:+, vars...)], vars)
+  end
+  function create(A::NFormula)::Formulas
+    Formulas(repeated(0,A.n), [])
+  end
+  
+  function linear(value::Any, A::NFormula, B::NFormula)::Formulas
+    nin, nout = A.n, B.n
+    @assert nin == 1 && nout == 1 # FIXME: Relax this.
+    var = gensym()
+    Formulas([Formula(:*, value, var)], [var])
+  end
+end
+
+ob(::Type{NFormula}, value::Any) = NFormula(1)
+
+function hom(value::Any, A::NFormula, B::NFormula)::Formulas
+  nin, nout = A.n, B.n
+  @assert nout == 1
+  vars = gensyms(nin)
+  term = if isa(value, Symbol) && nin >= 1
+    Formula(value, vars...)
+  else
+    value
+  end
+  Formulas([term], vars)
+end
+
+""" Simultaneous substitution of variables in formula.
+"""
+function substitute(form::Formula, subst::Dict)
+  Formula(head(form), [
+    if (isa(arg, Formula)) substitute(arg, subst)
+    elseif (isa(arg, Symbol)) get(subst, arg, arg)
+    else arg end
+    for arg in args(form)
+  ]...)
+end
+
+gensyms(A::NFormula, args...) = gensyms(A.n, args...)
 
 # Pretty-print
 ##############
