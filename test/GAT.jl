@@ -213,6 +213,8 @@ context = GAT.Context((:X => :Ob, :Y => :Ob, :Z => :Ob,
 # Instances
 ###########
 
+""" Vectors as an instance of the theory of semigroups
+"""
 @instance Semigroup(Vector) begin
   times(x::Vector, y::Vector) = [x; y]
 end

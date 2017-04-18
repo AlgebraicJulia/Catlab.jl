@@ -597,9 +597,13 @@ macro instance(head, body)
   functions = parse_instance_body(body)
   
   # We must generate and evaluate the code at *run time* because the signature
-  # module is not defined at *parse time*.  
+  # module is not defined at *parse time*.
+  # Also, we "throw away" any docstring.
+  # FIXME: Is there a better place to put the docstring?
   expr = :(instance_code($(esc(head.name)), $(esc(head.params)), $functions))
-  Expr(:call, esc(:eval), expr)
+  Expr(:block,
+    Expr(:call, esc(:eval), expr),
+    :(Core.@__doc__ abstract $(esc(gensym(:instance_doc))))) # /dev/null
 end
 function instance_code(mod, instance_types, instance_fns)
   code = Expr(:block)
