@@ -32,6 +32,8 @@ GAT expressions (`GAT.BaseExpr`).
   head::Symbol
   args::Vector
   Formula(head::Symbol, args...) = new(head, collect(args))
+  Formula(sexp::Tuple) = new(sexp[1],
+    [ isa(x, Tuple) ? Formula(x) : x for x in sexp[2:end] ])
 end
 head(form::Formula) = form.head
 args(form::Formula) = form.args
