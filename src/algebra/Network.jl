@@ -95,6 +95,12 @@ immutable Block
   outputs::Vector{Symbol}
 end
 
+""" Algebraic networks realized by blocks of Julia code with input and 
+output variables.
+
+These methods should only be used with `gensym`-ed variables since they assume
+that any two blocks have disjoint variables.
+"""
 @instance AlgebraicNetSignature(NBlock, Block) begin
   function compose(b1::Block, b2::Block)::Block
     b2 = substitute(b2, Dict(zip(b2.inputs, b1.outputs)))

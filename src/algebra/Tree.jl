@@ -61,6 +61,11 @@ immutable Formulas
   vars::Vector{Symbol}
 end
 
+""" Algebraic networks realized by formulas with free variables.
+
+These methods should only be used with `gensym`-ed variables since they assume
+that any two formulas have disjoint variables.
+"""
 @instance AlgebraicNetSignature(NFormula, Formulas) begin
   function compose(f1::Formulas, f2::Formulas)::Formulas
     replacements = Dict(zip(f2.vars, f1.terms))
