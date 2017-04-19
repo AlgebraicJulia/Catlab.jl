@@ -393,6 +393,7 @@ end
 Does *not* include `\$` or `\\[begin|end]{equation}` delimiters.
 """
 show_latex(expr::BaseExpr) = show_latex(STDOUT, expr)
+show_latex(io::IO, sym::Symbol; kw...) = print(io, sym)
 show_latex(io::IO, x::Any; kw...) = show(io, x)
 
 # By default, show in prefix notation.
