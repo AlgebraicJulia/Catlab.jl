@@ -55,10 +55,17 @@ f = mmerge(R)
 f = mmerge(R,3)
 @test compile(f)(x,y,z) == x+y+z
 
+f = compose(mcopy(R), otimes(id(R), delete(R)))
+@test compile(f)(x) == x
+f = compose(otimes(id(R), create(R)), mmerge(R))
+@test compile(f)(x) == x
+
 f = compose(mcopy(R), otimes(hom(:cos,R,R), hom(:sin,R,R)), mmerge(R))
 @test compile(f)(x) == cos(x) + sin(x)
-
 f = compose(mcopy(R), otimes(id(R),hom(:cos,R,R)), hom(:.*,otimes(R,R),R))
 @test compile(f)(x) == x .* cos(x)
+f = compose(braid(R,R), otimes(id(R),compose(linear(2,R,R),hom(:sin,R,R))),
+            hom(:.*,otimes(R,R),R), linear(2,R,R))
+@test compile(f)(x,y) == 2y .* sin(2x)
 
 end
