@@ -26,7 +26,9 @@ import ...Syntax: head, args, show_latex
 """ An expression tree for computer algebra.
 
 We call these "formulas" to avoid confusion with Julia expressions (`Expr`) and
-GAT expressions (`GAT.BaseExpr`).
+GAT expressions (`GAT.BaseExpr`). The operations (head symbols) are interpreted
+Julia functions, e.g., `:/` is right multiplication by the matrix pseudoinverse
+while `:./` is the usual (elementwise) division.
 """
 @auto_hash_equals immutable Formula
   head::Symbol
@@ -169,14 +171,17 @@ function show_latex_formula(io::IO, form::Formula, ::Type{Val{:+}}; kw...)
   show_latex_infix(io, form, " + "; kw...)
 end
 function show_latex_formula(io::IO, form::Formula, ::Type{Val{:*}}; kw...)
-  sep = length(args(form)) == 2 && isa(first(form), Number) ? " " : " \\cdot "
-  show_latex_infix(io, form, sep; kw...)
+  show_latex_infix(io, form, " "; kw...)
+end
+function show_latex_formula(io::IO, form::Formula, ::Type{Val{:.*}}; kw...)
+  op = length(args(form)) == 2 && isa(first(form), Number) ? " " : " \\cdot "
+  show_latex_infix(io, form, op; kw...)
 end
 function show_latex_formula(io::IO, form::Formula, ::Type{Val{:-}}; kw...)
   @assert length(args(form)) == 2
   show_latex_infix(io, form, " - "; kw...)
 end
-function show_latex_formula(io::IO, form::Formula, ::Type{Val{:/}}; kw...)
+function show_latex_formula(io::IO, form::Formula, ::Type{Val{:./}}; kw...)
   @assert length(args(form)) == 2
   print(io, "\\frac{")
   show_latex_formula(io, first(form))
