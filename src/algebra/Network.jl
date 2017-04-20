@@ -69,6 +69,7 @@ function compile_expr(f::AlgebraicNet.Hom;
                       name::Symbol=Symbol(), args::Vector=[])::Expr
   block = functor(f; types=Dict(:Ob => NBlock, :Hom => Block))
   
+  # Create function header.
   name = name == Symbol() ? gensym("hom") : name
   code = block.code
   if isempty(args)
@@ -76,14 +77,17 @@ function compile_expr(f::AlgebraicNet.Hom;
   else
     code = substitute(code, Dict(zip(block.inputs, args)))
   end
+  call_expr = Expr(:call, name, args...)
 
+  # Create function body.
   return_expr = Expr(:return, if length(block.outputs) == 1
     block.outputs[1]
   else 
-    Expr(:hcat, block.outputs...)
+    Expr(:tuple, block.outputs...)
   end)
   body = concat(code, return_expr)
-  Expr(:function, Expr(:call, name, args...), body)
+  
+  Expr(:function, call_expr, body)
 end
 
 immutable NBlock

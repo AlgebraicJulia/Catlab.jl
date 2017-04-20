@@ -28,17 +28,17 @@ f = compose(linear(2,R,R), hom(:sin,R,R), linear(2,R,R))
 
 y = collect(linspace(0,4,100))
 f = otimes(hom(:cos,R,R), hom(:sin,R,R))
-@test compile(f)(x,y) == [cos(x) sin(y)]
-@test compile(f,args=[:x,:y])(x,y) == [cos(x) sin(y)]
+@test compile(f)(x,y) == (cos(x),sin(y))
+@test compile(f,args=[:x,:y])(x,y) == (cos(x),sin(y))
 @test evaluate(f,x,y) == (cos(x),sin(y))
 @test unicode(f) == "cos⊗sin"
 @test latex(f) == "\\mathrm{cos} \\otimes \\mathrm{sin}"
 
 f = braid(R,R)
-@test compile(f)(x,y) == [y x]
+@test compile(f)(x,y) == (y,x)
 @test evaluate(f,x,y) == (y,x)
 f = compose(braid(R,R), otimes(hom(:cos,R,R), hom(:sin,R,R)))
-@test compile(f)(x,y) == [cos(y) sin(x)]
+@test compile(f)(x,y) == (cos(y),sin(x))
 @test evaluate(f,x,y) == (cos(y),sin(x))
 
 f = compose(otimes(id(R),constant(1,R)), mmerge(R))
@@ -48,14 +48,14 @@ f = compose(otimes(id(R),constant(1,R)), mmerge(R))
 @test latex(f) == "\\left(\\mathrm{id}_{R} \\otimes 1\\right) ; \\nabla_{R,2}"
 
 f = mcopy(R)
-@test compile(f)(x) == [x x]
+@test compile(f)(x) == (x,x)
 @test evaluate(f,x) == (x,x)
 f = mcopy(R,3)
-@test compile(f)(x) == [x x x]
+@test compile(f)(x) == (x,x,x)
 @test evaluate(f,x) == (x,x,x)
 
 f = compose(mcopy(R), otimes(hom(:cos,R,R), hom(:sin,R,R)))
-@test compile(f)(x) == [cos(x) sin(x)]
+@test compile(f)(x) == (cos(x),sin(x))
 @test evaluate(f,x) == (cos(x),sin(x))
 
 z = collect(linspace(-4,0,100))
