@@ -9,7 +9,7 @@ module Network
 export AlgebraicNetSignature, AlgebraicNet, ob, hom,
   compose, id, dom, codom, otimes, opow, munit, braid,
   mcopy, delete, mmerge, create, linear, constant,
-  compile, compile_expr
+  compile, compile_expr, evaluate
 
 using Match
 
@@ -50,8 +50,8 @@ end
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end
 
-# Code generation
-#################
+# Compilation
+#############
 
 """ Compile an algebraic network into a Julia function.
 
@@ -210,6 +210,60 @@ gensyms(n::Int) = [ gensym() for i in 1:n ]
 gensyms(n::Int, tag) = [ gensym(tag) for i in 1:n ]
 gensyms(A::NBlock, args...) = gensyms(A.n, args...)
 
+# Evaluation
+############
+
+""" Evaluate an algebraic network without first compiling it.
+
+If the network will only be evaluated once (possibly with vectorized inputs),
+then direct evaluation will be much faster than compiling with Julia's JIT.
+"""
+function evaluate(f::AlgebraicNet.Hom, xs::Vararg)
+  ys = eval_impl(f, collect(xs))
+  length(ys) == 1 ? ys[1] : tuple(ys...)
+end
+
+function eval_impl(f::AlgebraicNet.Hom{:compose}, xs::Vector)
+  ys = xs
+  for g in args(f)
+    ys = eval_impl(g, ys)
+  end
+  ys
+end
+
+function eval_impl(f::AlgebraicNet.Hom{:otimes}, xs::Vector)
+  ys = []
+  i = 1
+  for g in args(f)
+    m = dim(dom(g))
+    append!(ys, eval_impl(g, xs[i:i+m-1]))
+    i += m
+  end
+  ys
+end
+
+eval_impl(f::AlgebraicNet.Hom{:id}, xs::Vector) = xs
+eval_impl(f::AlgebraicNet.Hom{:braid}, xs::Vector) = [xs[2], xs[1]]
+eval_impl(f::AlgebraicNet.Hom{:mcopy}, xs::Vector) = vcat(repeated(xs, last(f))...)
+eval_impl(f::AlgebraicNet.Hom{:delete}, xs::Vector) = []
+eval_impl(f::AlgebraicNet.Hom{:mmerge}, xs::Vector) = [ +(xs...) ]
+eval_impl(f::AlgebraicNet.Hom{:create}, xs::Vector) = [ 0 for i in dim(codom(f)) ]
+eval_impl(f::AlgebraicNet.Hom{:linear}, xs::Vector) = [ first(f) * x for x in xs ]
+
+function eval_impl(f::AlgebraicNet.Hom{:generator}, xs::Vector)
+  value = first(f)
+  if isa(value, Symbol) && head(dom(f)) != :munit
+    result = getfield(Main, value)(xs...)
+    isa(result, Tuple) ? collect(result) : [ result ]
+  else
+    [ value ]
+  end
+end
+
+dim(A::AlgebraicNet.Ob{:otimes}) = length(args(A))
+dim(A::AlgebraicNet.Ob{:munit}) = 0
+dim(A::AlgebraicNet.Ob{:generator}) = 1
+
 # Display
 #########
 
@@ -234,23 +288,12 @@ function show_unicode(io::IO, expr::AlgebraicNet.Hom{:linear}; kw...)
   print(io, "linear[$value]")
 end
 
-function box(name::String, f::AlgebraicNet.Hom{:generator})
-  rect(name, f; rounded=false)
-end
-function box(name::String, f::AlgebraicNet.Hom{:linear})
+box(name::String, f::AlgebraicNet.Hom{:generator}) = rect(name, f; rounded=false)
+box(name::String, f::AlgebraicNet.Hom{:linear}) =
   rect(name, string(first(f)), wires(dom(f)), wires(codom(f)); rounded=true)
-end
-function box(name::String, f::AlgebraicNet.Hom{:mcopy})
-  junction_circle(name, f; fill=false)
-end
-function box(name::String, f::AlgebraicNet.Hom{:delete})
-  junction_circle(name, f; fill=false)
-end
-function box(name::String, f::AlgebraicNet.Hom{:mmerge})
-  junction_circle(name, f; fill=true)
-end
-function box(name::String, f::AlgebraicNet.Hom{:create})
-  junction_circle(name, f; fill=true)
-end
+box(name::String, f::AlgebraicNet.Hom{:mcopy}) = junction_circle(name, f; fill=false)
+box(name::String, f::AlgebraicNet.Hom{:delete}) = junction_circle(name, f; fill=false)
+box(name::String, f::AlgebraicNet.Hom{:mmerge}) = junction_circle(name, f; fill=true)
+box(name::String, f::AlgebraicNet.Hom{:create}) = junction_circle(name, f; fill=true)
 
 end
