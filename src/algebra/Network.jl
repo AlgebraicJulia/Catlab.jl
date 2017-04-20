@@ -162,7 +162,7 @@ that any two blocks have disjoint variables.
     elseif nin == 1
       Expr(:call, :(*), value, inputs[1])
     else
-      Expr(:call, :(*), value, Expr(:vcat, inputs...))
+      Expr(:call, :(*), value, Expr(:vect, inputs...))
     end
     Block(Expr(:(=), lhs, rhs), inputs, outputs)
   end
@@ -172,15 +172,11 @@ ob(::Type{NBlock}, value::Any) = NBlock(1)
 
 function hom(value::Any, A::NBlock, B::NBlock)::Block
   nin, nout, inputs, outputs = A.n, B.n, gensyms(A), gensyms(B)
-  lhs = if nout == 1 
-    outputs[1]
-  else
-    Expr(:tuple, outputs...)
-  end
+  lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
   rhs = if isa(value, Symbol) && nin >= 1
     Expr(:call, value, inputs...)
   else
-    value
+    nout == 1 ? value : Expr(:tuple, value...)
   end
   Block(Expr(:(=), lhs, rhs), inputs, outputs)
 end
@@ -227,17 +223,15 @@ function evaluate(f::AlgebraicNet.Hom, xs::Vararg)
   length(ys) == 1 ? ys[1] : tuple(ys...)
 end
 
+# The evaluation implementation methods use a standarized input/output format:
+# a vector of the same length as the (co)domain.
+
 function eval_impl(f::AlgebraicNet.Hom{:compose}, xs::Vector)
-  ys = xs
-  for g in args(f)
-    ys = eval_impl(g, ys)
-  end
-  ys
+  foldl((ys,g) -> eval_impl(g,ys), xs, args(f))
 end
 
 function eval_impl(f::AlgebraicNet.Hom{:otimes}, xs::Vector)
-  ys = []
-  i = 1
+  ys, i = [], 1
   for g in args(f)
     m = dim(dom(g))
     append!(ys, eval_impl(g, xs[i:i+m-1]))
@@ -251,17 +245,17 @@ eval_impl(f::AlgebraicNet.Hom{:braid}, xs::Vector) = [xs[2], xs[1]]
 eval_impl(f::AlgebraicNet.Hom{:mcopy}, xs::Vector) = vcat(repeated(xs, last(f))...)
 eval_impl(f::AlgebraicNet.Hom{:delete}, xs::Vector) = []
 eval_impl(f::AlgebraicNet.Hom{:mmerge}, xs::Vector) = [ +(xs...) ]
-eval_impl(f::AlgebraicNet.Hom{:create}, xs::Vector) = [ 0 for i in dim(codom(f)) ]
-eval_impl(f::AlgebraicNet.Hom{:linear}, xs::Vector) = [ first(f) * x for x in xs ]
+eval_impl(f::AlgebraicNet.Hom{:create}, xs::Vector) = collect(repeated(0, dim(codom(f))))
+eval_impl(f::AlgebraicNet.Hom{:linear}, xs::Vector) = first(f) * xs
 
 function eval_impl(f::AlgebraicNet.Hom{:generator}, xs::Vector)
   value = first(f)
-  if isa(value, Symbol) && head(dom(f)) != :munit
-    result = getfield(Main, value)(xs...)
-    isa(result, Tuple) ? collect(result) : [ result ]
+  result = if isa(value, Symbol) && head(dom(f)) != :munit
+    getfield(Main, value)(xs...)
   else
-    [ value ]
+    value
   end
+  isa(result, Tuple) ? collect(result) : [ result ]
 end
 
 dim(A::AlgebraicNet.Ob{:otimes}) = length(args(A))

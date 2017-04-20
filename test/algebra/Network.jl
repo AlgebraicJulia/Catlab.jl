@@ -47,6 +47,10 @@ f = compose(otimes(id(R),constant(1,R)), mmerge(R))
 @test unicode(f) == "(id[R]⊗1); mmerge[R,2]"
 @test latex(f) == "\\left(\\mathrm{id}_{R} \\otimes 1\\right) ; \\nabla_{R,2}"
 
+f = compose(otimes(id(R),constant((1,1),otimes(R,R))), mmerge(R,3))
+@test compile(f)(x) ≈ x+2
+@test evaluate(f,x) ≈ x+2
+
 f = mcopy(R)
 @test compile(f)(x) == (x,x)
 @test evaluate(f,x) == (x,x)
@@ -85,5 +89,12 @@ f = compose(braid(R,R), otimes(id(R),compose(linear(2,R,R),hom(:sin,R,R))),
             hom(:.*,otimes(R,R),R), linear(2,R,R))
 @test compile(f)(x,y) == 2y .* sin(2x)
 @test evaluate(f,x,y) == 2y .* sin(2x)
+
+# Multidimensional linear maps
+A = [1 2; 3 4]
+f = compose(linear(A,otimes(R,R),otimes(R,R)), mmerge(R))
+target = squeeze(sum([x y]*A', 2), 2)
+@test compile(f)(x,y) ≈ target
+@test evaluate(f,x,y) ≈ target
 
 end
