@@ -31,6 +31,7 @@ f, g = hom(:f, A, B), hom(:g, B, A)
 
 # Extra syntax
 @test compose(f,g,f) == compose(compose(f,g),f)
+@test compose([f,g,f]) == compose(compose(f,g),f)
 @test g∘f == compose(f,g)
 @test f∘g∘f == compose(compose(f,g),f)
 
@@ -111,7 +112,10 @@ I = munit(FreeSymmetricMonoidalCategory.Ob)
 @test otimes(otimes(f,g),f) == otimes(f,otimes(g,f))
 
 # Extra syntax
+@test otimes(A,B,A) == otimes(otimes(A,B),A)
+@test otimes([A,B,A]) == otimes(otimes(A,B),A)
 @test otimes(f,f,f) == otimes(otimes(f,f),f)
+@test otimes([f,f,f]) == otimes(otimes(f,f),f)
 @test A⊗B == otimes(A,B)
 @test f⊗g == otimes(f,g)
 

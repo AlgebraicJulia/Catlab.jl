@@ -17,17 +17,17 @@ signature for weak monoidal categories later.
   otimes(f::Hom(A,B), g::Hom(C,D))::Hom(otimes(A,C),otimes(B,D)) <=
     (A::Ob, B::Ob, C::Ob, D::Ob)
   munit()::Ob
-
-  # Extra syntax
-  otimes(As::Vararg{Ob}) = foldl(otimes, As)
-  otimes(fs::Vararg{Hom}) = foldl(otimes, fs)
-
+  
   # Unicode syntax
   ⊗(A::Ob, B::Ob) = otimes(A, B)
   ⊗(f::Hom, g::Hom) = otimes(f, g)
   ⊗(As::Vararg{Ob}) = otimes(As...)
   ⊗(fs::Vararg{Hom}) = otimes(fs...)
 end
+
+# Convenience constructors for monoidal category
+otimes(xs::Vector) = foldl(otimes, xs)
+otimes(xs...) = foldl(otimes, xs)
 
 function show_unicode(io::IO, expr::ObExpr{:otimes}; kw...)
   show_unicode_infix(io, expr, "⊗"; kw...)
