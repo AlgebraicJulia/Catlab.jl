@@ -463,8 +463,8 @@ module Defaults
   
   using ..TikZWiring
   import ..TikZWiring: box, wires, label
-  using CompCat.Doctrine
-  using CompCat.Syntax
+  using Catlab.Doctrine
+  using Catlab.Syntax
   
   generator(expr::BaseExpr)::BaseExpr{:generator} = first(expr)
   

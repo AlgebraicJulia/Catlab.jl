@@ -1,4 +1,4 @@
-The CompCat.jl package is licensed under the Simplified "2-clause" BSD License:
+The Catlab.jl package is licensed under the Simplified "2-clause" BSD License:
 
 > Copyright (c) 2017: Evan Patterson.
 > All rights reserved.

@@ -3,8 +3,8 @@ module TestGAT
 using Base.Test
 import DataStructures: OrderedDict
 
-import CompCat: GAT
-using CompCat.GAT
+import Catlab: GAT
+using Catlab.GAT
   
 # Julia expressions
 ###################

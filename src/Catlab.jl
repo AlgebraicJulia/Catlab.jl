@@ -1,4 +1,4 @@
-module CompCat
+module Catlab
 
 include("GAT.jl")
 include("Syntax.jl")

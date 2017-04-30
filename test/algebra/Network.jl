@@ -1,8 +1,8 @@
 module TestAlgebraicNetwork
 
 using Base.Test
-using CompCat.Algebra
-using CompCat.Syntax
+using Catlab.Algebra
+using Catlab.Syntax
 
 unicode(expr::BaseExpr) = sprint(show_unicode, expr)
 latex(expr::BaseExpr) = sprint(show_latex, expr)

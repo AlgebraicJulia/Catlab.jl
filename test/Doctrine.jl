@@ -1,8 +1,8 @@
 module TestDoctrine
 
 using Base.Test
-using CompCat.Doctrine
-using CompCat.Syntax
+using Catlab.Doctrine
+using Catlab.Syntax
 
 sexpr(expr::BaseExpr) = sprint(show_sexpr, expr)
 unicode(expr::BaseExpr) = sprint(show_unicode, expr)

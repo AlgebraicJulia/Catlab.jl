@@ -2,10 +2,10 @@ module TestTikZWiring
 
 using Base.Test
 
-using CompCat.Doctrine
-using CompCat.Diagram.TikZWiring
-using CompCat.Diagram.TikZWiring.Defaults
-import CompCat.Diagram: TikZ
+using Catlab.Doctrine
+using Catlab.Diagram.TikZWiring
+using Catlab.Diagram.TikZWiring.Defaults
+import Catlab.Diagram: TikZ
 
 # We can't test that these pictures look right, but we can at least test that
 # they exist!

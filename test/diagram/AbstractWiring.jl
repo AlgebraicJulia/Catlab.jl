@@ -1,6 +1,6 @@
 module TestAbstractWiring
 
-using CompCat.Diagram.AbstractWiring
+using Catlab.Diagram.AbstractWiring
 using Base.Test
 
 A, B = wires(:A), wires(:B)
