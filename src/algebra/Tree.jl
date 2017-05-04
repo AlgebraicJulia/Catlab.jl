@@ -15,8 +15,7 @@ import Base: first, last, show
 import Base.Meta: show_sexpr
 
 using ...GAT, ...Syntax, ..Network
-import ..Network: gensyms, ob, hom,
-  compose, id, dom, codom, otimes, opow, munit, braid,
+import ..Network: ob, hom, compose, id, dom, codom, otimes, opow, munit, braid,
   mcopy, delete, mmerge, create, linear, constant
 import ...Syntax: head, args, show_latex
 
@@ -133,6 +132,10 @@ function hom(value::Any, A::NFormula, B::NFormula)::Formulas
   Formulas([term], vars)
 end
 
+gensyms(n::Int) = [ gensym() for i in 1:n ]
+gensyms(n::Int, tag) = [ gensym(tag) for i in 1:n ]
+gensyms(A::NFormula, args...) = gensyms(A.n, args...)
+
 """ Simultaneous substitution of variables in formula.
 """
 function substitute(form::Formula, subst::Dict)
@@ -146,8 +149,6 @@ function substitute(expr::Expr, subst::Dict)
 end
 substitute(sym::Symbol, subst::Dict) = get(subst, sym, sym)
 substitute(x::Any, subst::Dict) = x
-
-gensyms(A::NFormula, args...) = gensyms(A.n, args...)
 
 # Pretty-print
 ##############
