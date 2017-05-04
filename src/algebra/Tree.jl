@@ -15,7 +15,7 @@ import Base: first, last, show
 import Base.Meta: show_sexpr
 
 using ...GAT, ...Syntax, ..Network
-import ..Network: gensyms, substitute, ob, hom,
+import ..Network: gensyms, ob, hom,
   compose, id, dom, codom, otimes, opow, munit, braid,
   mcopy, delete, mmerge, create, linear, constant
 import ...Syntax: head, args, show_latex
@@ -138,6 +138,14 @@ end
 function substitute(form::Formula, subst::Dict)
   Formula(head(form), [substitute(arg, subst) for arg in args(form)]...)
 end
+
+""" Simultaneous substitution of symbols in Julia expression.
+"""
+function substitute(expr::Expr, subst::Dict)
+  Expr(expr.head, [substitute(arg, subst) for arg in expr.args]...)
+end
+substitute(sym::Symbol, subst::Dict) = get(subst, sym, sym)
+substitute(x::Any, subst::Dict) = x
 
 gensyms(A::NFormula, args...) = gensyms(A.n, args...)
 

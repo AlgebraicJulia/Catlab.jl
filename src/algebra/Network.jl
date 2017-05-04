@@ -67,123 +67,119 @@ end
 """
 function compile_expr(f::AlgebraicNet.Hom;
                       name::Symbol=Symbol(), args::Vector=[])::Expr
-  block = functor(f; types=Dict(:Ob => NBlock, :Hom => Block))
-  
-  # Create function header.
   name = name == Symbol() ? gensym("hom") : name
-  code = block.code
-  if isempty(args)
-    args = block.inputs
-  else
-    code = substitute(code, Dict(zip(block.inputs, args)))
-  end
-  call_expr = Expr(:call, name, args...)
+  nargs = dim(dom(f))
+  argnames = isempty(args) ? gensyms(nargs, "x") : args
+  #args = [ :($a::Float64) for a in argnames ]
+  args = argnames
 
-  # Create function body.
+  block = compile_block(f, argnames)
   return_expr = Expr(:return, if length(block.outputs) == 1
     block.outputs[1]
   else 
     Expr(:tuple, block.outputs...)
   end)
-  body = concat(code, return_expr)
-  
-  Expr(:function, call_expr, body)
+  body = concat_block(block.code, return_expr)
+  Expr(:function, Expr(:call, name, args...), body)
 end
 
-immutable NBlock
-  n::Int
-end
-immutable Block
+type Block
   code::Expr
   inputs::Vector{Symbol}
   outputs::Vector{Symbol}
 end
 
-""" Algebraic networks realized by blocks of Julia code with input and 
-output variables.
-
-These methods should only be used with `gensym`-ed variables since they assume
-that any two blocks have disjoint variables.
-"""
-@instance AlgebraicNetSignature(NBlock, Block) begin
-  function compose(b1::Block, b2::Block)::Block
-    b2 = substitute(b2, Dict(zip(b2.inputs, b1.outputs)))
-    code = concat(b1.code, b2.code)
-    Block(code, b1.inputs, b2.outputs)
-  end
-
-  function id(A::NBlock)::Block
-    vars = gensyms(A)
-    Block(Expr(:block), vars, vars)
-  end
-
-  dom(block::Block) = NBlock(length(block.inputs))
-  codom(block::Block) = NBlock(length(block.outputs))
-
-  munit(::Type{NBlock}) = NBlock(0)
-  otimes(A::NBlock, B::NBlock) = NBlock(A.n + B.n)
+function compile_block(f::AlgebraicNet.Hom{:generator}, inputs::Vector)::Block
+  nin, nout = dim(dom(f)), dim(codom(f))
+  @assert length(inputs) == nin
+  outputs = gensyms(nout)
   
-  function otimes(b1::Block, b2::Block)::Block
-    code = concat(b1.code, b2.code)
-    Block(code, [b1.inputs; b2.inputs], [b1.outputs; b2.outputs])
-  end
-  function braid(A::NBlock, B::NBlock)::Block
-    v1, v2 = gensyms(A), gensyms(B)
-    Block(Expr(:block), [v1; v2], [v2; v1])
-  end
-  
-  function mcopy(A::NBlock, n::Int)::Block
-    inputs = gensyms(A)
-    outputs = vcat(repeated(inputs, n)...)
-    Block(Expr(:block), inputs, outputs)
-  end
-  function delete(A::NBlock)::Block
-    inputs = gensyms(A)
-    Block(Expr(:block), inputs, [])
-  end
-  function mmerge(A::NBlock, n::Int)::Block
-    @assert A.n == 1 # FIXME: Relax this.
-    inputs = gensyms(n)
-    out = gensym()
-    code = Expr(:(=), out, Expr(:call, :(+), inputs...))
-    Block(code, inputs, [out])
-  end
-  function create(A::NBlock)::Block
-    outputs = gensyms(A)
-    code = Expr(:(=), Expr(:tuple, outputs...), Expr(:tuple, repeated(0,A.n)...))
-    Block(code, [], outputs)
-  end
-  
-  function linear(value::Any, A::NBlock, B::NBlock)::Block
-    nin, nout, inputs, outputs = A.n, B.n, gensyms(A), gensyms(B)
-    lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
-    rhs = if nin == 0
-      0
-    elseif nin == 1
-      Expr(:call, :(*), value, inputs[1])
-    else
-      Expr(:call, :(*), value, Expr(:vect, inputs...))
-    end
-    Block(Expr(:(=), lhs, rhs), inputs, outputs)
-  end
-end
-
-ob(::Type{NBlock}, value::Any) = NBlock(1)
-
-function hom(value::Any, A::NBlock, B::NBlock)::Block
-  nin, nout, inputs, outputs = A.n, B.n, gensyms(A), gensyms(B)
+  value = first(f)
   lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
   rhs = if isa(value, Symbol) && nin >= 1
     Expr(:call, value, inputs...)
   else
-    nout == 1 ? value : Expr(:tuple, value...)
+    value
   end
   Block(Expr(:(=), lhs, rhs), inputs, outputs)
 end
 
-""" Concatenate two Julia expressions.
-"""
-function concat(expr1::Expr, expr2::Expr)::Expr
+function compile_block(f::AlgebraicNet.Hom{:linear}, inputs::Vector)::Block
+  nin, nout = dim(dom(f)), dim(codom(f))
+  @assert length(inputs) == nin
+  outputs = gensyms(nout)
+  
+  value = first(f)
+  lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
+  rhs = if nin == 0
+    0
+  elseif nin == 1
+    Expr(:call, :(*), value, inputs[1])
+  else
+    Expr(:call, :(*), value, Expr(:vect, inputs...))
+  end
+  Block(Expr(:(=), lhs, rhs), inputs, outputs)
+end
+
+function compile_block(f::AlgebraicNet.Hom{:compose}, inputs::Vector)::Block
+  code = Expr(:block)
+  vars = inputs
+  for g in args(f)
+    block = compile_block(g, vars)
+    code = concat_block(code, block.code)
+    vars = block.outputs
+  end
+  outputs = vars
+  Block(code, inputs, outputs)
+end
+
+function compile_block(f::AlgebraicNet.Hom{:id}, inputs::Vector)::Block
+  Block(Expr(:block), inputs, inputs)
+end
+
+function compile_block(f::AlgebraicNet.Hom{:otimes}, inputs::Vector)::Block
+  code = Expr(:block)
+  i, outputs = 1, []
+  for g in args(f)
+    nin = dim(dom(g))
+    block = compile_block(g, inputs[i:i+nin-1])
+    code = concat_block(code, block.code)
+    append!(outputs, block.outputs)
+    i += nin
+  end
+  Block(code, inputs, outputs)
+end
+
+function compile_block(f::AlgebraicNet.Hom{:braid}, inputs::Vector)::Block
+  m = dim(first(f))
+  outputs = [inputs[m+1:end]; inputs[1:m]]
+  Block(Expr(:block), inputs, outputs)
+end
+
+function compile_block(f::AlgebraicNet.Hom{:mcopy}, inputs::Vector)::Block
+  reps = div(dim(codom(f)), dim(dom(f)))
+  outputs = vcat(repeated(inputs, reps)...)
+  Block(Expr(:block), inputs, outputs)
+end
+
+function compile_block(f::AlgebraicNet.Hom{:delete}, inputs::Vector)::Block
+  Block(Expr(:block), inputs, [])
+end
+
+function compile_block(f::AlgebraicNet.Hom{:mmerge}, inputs::Vector)::Block
+  out = gensym()
+  code = Expr(:(=), out, Expr(:call, :(+), inputs...))
+  Block(code, inputs, [out])
+end
+
+function compile_block(f::AlgebraicNet.Hom{:create}, inputs::Vector)::Block
+  nout = dim(codom(f))
+  outputs = gensyms(nout)
+  code = Expr(:(=), Expr(:tuple, outputs...), Expr(:tuple, repeated(0,nout)...))
+  Block(code, inputs, outputs)
+end
+
+function concat_block(expr1::Expr, expr2::Expr)::Expr
   @match (expr1, expr2) begin
     (Expr(:block, a1, _), Expr(:block, a2, _)) => Expr(:block, [a1; a2]...)
     (Expr(:block, a1, _), _) => Expr(:block, [a1; expr2]...)
@@ -192,23 +188,12 @@ function concat(expr1::Expr, expr2::Expr)::Expr
   end
 end
 
-""" Simultaneous substitution of symbols in Julia expression.
-"""
-function substitute(expr::Expr, subst::Dict)
-  Expr(expr.head, [substitute(arg, subst) for arg in expr.args]...)
-end
-substitute(sym::Symbol, subst::Dict) = get(subst, sym, sym)
-substitute(x::Any, subst::Dict) = x
-
-function substitute(block::Block, subst::Dict)
-  Block(substitute(block.code, subst), 
-        [substitute(arg, subst) for arg in block.inputs],
-        [substitute(arg, subst) for arg in block.outputs])
-end
-
 gensyms(n::Int) = [ gensym() for i in 1:n ]
 gensyms(n::Int, tag) = [ gensym(tag) for i in 1:n ]
-gensyms(A::NBlock, args...) = gensyms(A.n, args...)
+
+dim(A::AlgebraicNet.Ob{:otimes}) = length(args(A))
+dim(A::AlgebraicNet.Ob{:munit}) = 0
+dim(A::AlgebraicNet.Ob{:generator}) = 1
 
 # Evaluation
 ############
@@ -257,10 +242,6 @@ function eval_impl(f::AlgebraicNet.Hom{:generator}, xs::Vector)
   end
   isa(result, Tuple) ? collect(result) : [ result ]
 end
-
-dim(A::AlgebraicNet.Ob{:otimes}) = length(args(A))
-dim(A::AlgebraicNet.Ob{:munit}) = 0
-dim(A::AlgebraicNet.Ob{:generator}) = 1
 
 # Display
 #########
