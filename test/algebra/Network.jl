@@ -9,10 +9,12 @@ latex(expr::BaseExpr) = sprint(show_latex, expr)
 
 R = ob(AlgebraicNet, :R)
 
-x = collect(linspace(-2,2,100))
+x = collect(linspace(-2,2))
 f = hom(:sin,R,R)
 @test compile(f)(x) == sin(x)
 @test compile(f,args=[:x])(x) == sin(x)
+@test compile(f,name=:myfun)(x) == sin(x)
+@test compile(f,name=:myfun2,args=[:x])(x) == sin(x)
 @test evaluate(f,x) == sin(x)
 @test unicode(f) == "sin"
 @test latex(f) == "\\mathrm{sin}"
@@ -26,7 +28,7 @@ f = compose(linear(2,R,R), hom(:sin,R,R))
 f = compose(linear(2,R,R), hom(:sin,R,R), linear(2,R,R))
 @test compile(f)(x) == 2*sin(2*x)
 
-y = collect(linspace(0,4,100))
+y = collect(linspace(0,4))
 f = otimes(hom(:cos,R,R), hom(:sin,R,R))
 @test compile(f)(x,y) == (cos(x),sin(y))
 @test compile(f,args=[:x,:y])(x,y) == (cos(x),sin(y))
@@ -62,7 +64,7 @@ f = compose(mcopy(R), otimes(hom(:cos,R,R), hom(:sin,R,R)))
 @test compile(f)(x) == (cos(x),sin(x))
 @test evaluate(f,x) == (cos(x),sin(x))
 
-z = collect(linspace(-4,0,100))
+z = collect(linspace(-4,0))
 f = mmerge(R)
 @test compile(f)(x,y) == x+y
 @test evaluate(f,x,y) == x+y

@@ -80,8 +80,11 @@ function compile_expr(f::AlgebraicNet.Hom;
                       name::Symbol=Symbol(), args::Vector=[])::Expr
   block = compile_block(f; inputs=args)
   
-  name = name == Symbol() ? gensym("network") : name
-  call_expr = Expr(:call, name, block.inputs...)
+  call_expr = if name == Symbol()
+    Expr(:tuple, block.inputs...) # Anonymous function
+  else
+    Expr(:call, name, block.inputs...) # Named function
+  end
   return_expr = Expr(:return, if length(block.outputs) == 1
     block.outputs[1]
   else 
