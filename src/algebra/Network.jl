@@ -57,11 +57,15 @@ type Block
   code::Expr
   inputs::Vector{Symbol}
   outputs::Vector{Symbol}
+  constants::Vector{Pair} # Vector{Pair{Symbol,Tuple}}
+  Block(code, inputs, outputs) = new(code, inputs, outputs, Pair[])
+  Block(code, inputs, outputs, constants) = new(code, inputs, outputs, constants)
 end
 
 type State
   inputs::Vector{Symbol}
   nvars::Int
+  State(inputs::Vector{Symbol}; nvars::Int=0) = new(inputs, nvars)
 end
 
 """ Compile an algebraic network into a Julia function.
@@ -80,16 +84,28 @@ function compile_expr(f::AlgebraicNet.Hom;
                       name::Symbol=Symbol(), args::Vector=[])::Expr
   block = compile_block(f; inputs=args)
   
-  call_expr = if name == Symbol()
-    Expr(:tuple, block.inputs...) # Anonymous function
-  else
-    Expr(:call, name, block.inputs...) # Named function
+  parameters = Expr(:parameters,
+    (Expr(:kw, sym, nothing) for (sym,dim) in block.constants)...)
+  call_expr = if name == Symbol() # Anonymous function
+    if isempty(block.constants)
+      Expr(:tuple, block.inputs...) 
+    else
+      Expr(:tuple, parameters, block.inputs...)
+    end
+  else # Named function
+    if isempty(block.constants)
+      Expr(:call, name, block.inputs...)
+    else
+      Expr(:call, name, parameters, block.inputs...)
+    end
   end
+  
   return_expr = Expr(:return, if length(block.outputs) == 1
     block.outputs[1]
   else 
     Expr(:tuple, block.outputs...)
   end)
+  
   body = concat_expr(block.code, return_expr)
   Expr(:function, call_expr, body)
 end
@@ -103,7 +119,7 @@ function compile_block(f::AlgebraicNet.Hom; inputs::Vector=[])::Block
   else
     @assert length(inputs) == nin
   end
-  compile_block(f, State(inputs, 0))
+  compile_block(f, State(inputs))
 end
 
 function compile_block(f::AlgebraicNet.Hom{:generator}, state::State)::Block
@@ -113,12 +129,13 @@ function compile_block(f::AlgebraicNet.Hom{:generator}, state::State)::Block
   
   value = first(f)
   lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
-  rhs = if isa(value, Symbol) && nin >= 1
-    Expr(:call, value, inputs...)
-  else
+  rhs = if nin == 0
     value
+  else
+    Expr(:call, value, inputs...)
   end
-  Block(Expr(:(=), lhs, rhs), inputs, outputs)
+  constants = nin == 0 && isa(value, Symbol) ? [ value => (nout,) ] : Pair[]
+  Block(Expr(:(=), lhs, rhs), inputs, outputs, constants)
 end
 
 function compile_block(f::AlgebraicNet.Hom{:linear}, state::State)::Block
@@ -135,21 +152,23 @@ function compile_block(f::AlgebraicNet.Hom{:linear}, state::State)::Block
   else
     Expr(:call, :(*), value, Expr(:vect, inputs...))
   end
-  Block(Expr(:(=), lhs, rhs), inputs, outputs)
+  constants = isa(value, Symbol) ? [ value => (nout,nin) ] : Pair[]
+  Block(Expr(:(=), lhs, rhs), inputs, outputs, constants)
 end
 
 function compile_block(f::AlgebraicNet.Hom{:compose}, state::State)::Block
   code = Expr(:block)
-  inputs = state.inputs
+  inputs, constants = state.inputs, Pair[]
   vars = inputs
   for g in args(f)
     state.inputs = vars
     block = compile_block(g, state)
     code = concat_expr(code, block.code)
+    append!(constants, block.constants)
     vars = block.outputs
   end
   outputs = vars
-  Block(code, inputs, outputs)
+  Block(code, inputs, outputs, constants)
 end
 
 function compile_block(f::AlgebraicNet.Hom{:id}, state::State)::Block
@@ -159,7 +178,7 @@ end
 
 function compile_block(f::AlgebraicNet.Hom{:otimes}, state::State)::Block
   code = Expr(:block)
-  inputs, outputs = state.inputs, Symbol[]
+  inputs, outputs, constants = state.inputs, Symbol[], Pair[]
   i = 1
   for g in args(f)
     nin = dim(dom(g))
@@ -167,9 +186,10 @@ function compile_block(f::AlgebraicNet.Hom{:otimes}, state::State)::Block
     block = compile_block(g, state)
     code = concat_expr(code, block.code)
     append!(outputs, block.outputs)
+    append!(constants, block.constants)
     i += nin
   end
-  Block(code, inputs, outputs)
+  Block(code, inputs, outputs, constants)
 end
 
 function compile_block(f::AlgebraicNet.Hom{:braid}, state::State)::Block

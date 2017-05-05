@@ -79,6 +79,7 @@ f = compose(otimes(id(R), create(R)), mmerge(R))
 @test compile(f)(x) == x
 @test evaluate(f,x) == x
 
+# Deeper compositions
 f = compose(mcopy(R), otimes(hom(:cos,R,R), hom(:sin,R,R)), mmerge(R))
 @test compile(f)(x) == cos(x) + sin(x)
 @test evaluate(f,x) == cos(x) + sin(x)
@@ -98,5 +99,20 @@ f = compose(linear(A,otimes(R,R),otimes(R,R)), mmerge(R))
 target = squeeze(sum([x y]*A', 2), 2)
 @test compile(f)(x,y) ≈ target
 @test evaluate(f,x,y) ≈ target
+
+# Symbolic constants
+f = linear(:c, R, R)
+f_comp = compile(f)
+@test f_comp(x,c=1) == x
+@test f_comp(x,c=2) == 2x
+
+f = compose(linear(:k,R,R), hom(:sin,R,R), linear(:A,R,R))
+f_comp = compile(f)
+@test f_comp(x,k=1,A=2) == 2 .* sin(x)
+@test f_comp(x,k=2,A=1) == sin(2x)
+
+f = compose(otimes(id(R),constant(:c,R)), mmerge(R))
+f_comp = compile(f,name=:myfun3)
+@test f_comp(x,c=2) ≈ x+2
 
 end
