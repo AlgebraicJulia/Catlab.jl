@@ -53,6 +53,8 @@ end
 # Compilation
 #############
 
+""" A block of Julia code with input and output variables.
+"""
 type Block
   code::Expr
   inputs::Vector{Symbol}
@@ -62,12 +64,14 @@ type Block
     new(code, inputs, outputs, constants)
 end
 
-type State
+""" Internal state for compilation of algebraic network into Julia function.
+"""
+type CompileState
   inputs::Vector{Symbol}
   nvars::Int
   constants::Dict{Symbol,Int}
   coef::Symbol
-  State(inputs::Vector{Symbol};
+  CompileState(inputs::Vector{Symbol};
         nvars=0, constants=Dict{Symbol,Int}(), coef=Symbol()) =
     new(inputs, nvars, constants, coef)
 end
@@ -122,13 +126,13 @@ function compile_block(f::AlgebraicNet.Hom;
     @assert length(inputs) == nin
   end
   
-  state = State(inputs, coef=coef)
+  state = CompileState(inputs, coef=coef)
   block = compile_block(f, state)
   block.constants = [ k for (k,v) in sort(collect(state.constants), by=x->x[2]) ]
   return block
 end
 
-function compile_block(f::AlgebraicNet.Hom{:generator}, state::State)::Block
+function compile_block(f::AlgebraicNet.Hom{:generator}, state::CompileState)::Block
   nin, nout = dim(dom(f)), dim(codom(f))
   inputs, outputs = state.inputs, genvars(state, nout)
   @assert length(inputs) == nin
@@ -143,7 +147,7 @@ function compile_block(f::AlgebraicNet.Hom{:generator}, state::State)::Block
   Block(Expr(:(=), lhs, rhs), inputs, outputs)
 end
 
-function compile_block(f::AlgebraicNet.Hom{:linear}, state::State)::Block
+function compile_block(f::AlgebraicNet.Hom{:linear}, state::CompileState)::Block
   nin, nout = dim(dom(f)), dim(codom(f))
   inputs, outputs = state.inputs, genvars(state, nout)
   @assert length(inputs) == nin
@@ -161,7 +165,7 @@ function compile_block(f::AlgebraicNet.Hom{:linear}, state::State)::Block
   Block(Expr(:(=), lhs, rhs), inputs, outputs)
 end
 
-function compile_block(f::AlgebraicNet.Hom{:compose}, state::State)::Block
+function compile_block(f::AlgebraicNet.Hom{:compose}, state::CompileState)::Block
   code = Expr(:block)
   vars = inputs = state.inputs
   for g in args(f)
@@ -174,12 +178,12 @@ function compile_block(f::AlgebraicNet.Hom{:compose}, state::State)::Block
   Block(code, inputs, outputs)
 end
 
-function compile_block(f::AlgebraicNet.Hom{:id}, state::State)::Block
+function compile_block(f::AlgebraicNet.Hom{:id}, state::CompileState)::Block
   inputs = state.inputs
   Block(Expr(:block), inputs, inputs)
 end
 
-function compile_block(f::AlgebraicNet.Hom{:otimes}, state::State)::Block
+function compile_block(f::AlgebraicNet.Hom{:otimes}, state::CompileState)::Block
   code = Expr(:block)
   inputs, outputs = state.inputs, Symbol[]
   i = 1
@@ -194,31 +198,31 @@ function compile_block(f::AlgebraicNet.Hom{:otimes}, state::State)::Block
   Block(code, inputs, outputs)
 end
 
-function compile_block(f::AlgebraicNet.Hom{:braid}, state::State)::Block
+function compile_block(f::AlgebraicNet.Hom{:braid}, state::CompileState)::Block
   m = dim(first(f))
   inputs = state.inputs
   outputs = [inputs[m+1:end]; inputs[1:m]]
   Block(Expr(:block), inputs, outputs)
 end
 
-function compile_block(f::AlgebraicNet.Hom{:mcopy}, state::State)::Block
+function compile_block(f::AlgebraicNet.Hom{:mcopy}, state::CompileState)::Block
   reps = div(dim(codom(f)), dim(dom(f)))
   inputs = state.inputs
   outputs = vcat(repeated(inputs, reps)...)
   Block(Expr(:block), inputs, outputs)
 end
 
-function compile_block(f::AlgebraicNet.Hom{:delete}, state::State)::Block
+function compile_block(f::AlgebraicNet.Hom{:delete}, state::CompileState)::Block
   Block(Expr(:block), state.inputs, [])
 end
 
-function compile_block(f::AlgebraicNet.Hom{:mmerge}, state::State)::Block
+function compile_block(f::AlgebraicNet.Hom{:mmerge}, state::CompileState)::Block
   inputs, out = state.inputs, genvar(state)
   code = Expr(:(=), out, Expr(:call, :(+), inputs...))
   Block(code, inputs, [out])
 end
 
-function compile_block(f::AlgebraicNet.Hom{:create}, state::State)::Block
+function compile_block(f::AlgebraicNet.Hom{:create}, state::CompileState)::Block
   nout = dim(codom(f))
   inputs, outputs = state.inputs, genvars(state, nout)
   lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
@@ -240,10 +244,10 @@ end
 
 This is basically `gensym` with local, not global, symbol counting.
 """
-function genvar(state::State)::Symbol
+function genvar(state::CompileState)::Symbol
   genvars(state,1)[1]
 end
-function genvars(state::State, n::Int)::Vector{Symbol}
+function genvars(state::CompileState, n::Int)::Vector{Symbol}
   nvars = state.nvars
   vars = [ Symbol("v$(nvars+i)") for i in 1:n ]
   state.nvars = nvars + n
@@ -252,7 +256,7 @@ end
 
 """ Generate a constant (symbol or expression).
 """
-function genconst(state::State, name::Symbol)
+function genconst(state::CompileState, name::Symbol)
   i = get!(state.constants, name, length(state.constants)+1)
   state.coef == Symbol() ? name : :($(state.coef)[$i])
 end
