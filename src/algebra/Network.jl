@@ -57,15 +57,19 @@ type Block
   code::Expr
   inputs::Vector{Symbol}
   outputs::Vector{Symbol}
-  constants::Vector{Pair} # Vector{Pair{Symbol,Tuple}}
-  Block(code, inputs, outputs) = new(code, inputs, outputs, Pair[])
-  Block(code, inputs, outputs, constants) = new(code, inputs, outputs, constants)
+  constants::Vector{Symbol}
+  Block(code, inputs, outputs; constants=Symbol[]) =
+    new(code, inputs, outputs, constants)
 end
 
 type State
   inputs::Vector{Symbol}
   nvars::Int
-  State(inputs::Vector{Symbol}; nvars::Int=0) = new(inputs, nvars)
+  constants::Dict{Symbol,Int}
+  coef::Symbol
+  State(inputs::Vector{Symbol};
+        nvars=0, constants=Dict{Symbol,Int}(), coef=Symbol()) =
+    new(inputs, nvars, constants, coef)
 end
 
 """ Compile an algebraic network into a Julia function.
@@ -80,24 +84,21 @@ end
 
 """ Compile an algebraic network into a Julia function expression.
 """
-function compile_expr(f::AlgebraicNet.Hom;
-                      name::Symbol=Symbol(), args::Vector=[])::Expr
-  block = compile_block(f; inputs=args)
+function compile_expr(f::AlgebraicNet.Hom; name::Symbol=Symbol(),
+                      args::Vector=[], coef::Bool=false)::Expr
+  coef_name = coef ? :coef : Symbol()
+  block = compile_block(f; inputs=args, coef=coef_name)
   
-  parameters = Expr(:parameters,
-    (Expr(:kw, sym, nothing) for (sym,dim) in block.constants)...)
+  coef_arg = if coef; :($coef_name::Vector)
+  elseif isempty(block.constants); []
+  else Expr(:parameters,
+            (Expr(:kw,sym,nothing) for sym in block.constants)...)
+  end
+  call_args = [coef_arg; block.inputs]
   call_expr = if name == Symbol() # Anonymous function
-    if isempty(block.constants)
-      Expr(:tuple, block.inputs...) 
-    else
-      Expr(:tuple, parameters, block.inputs...)
-    end
+    Expr(:tuple, call_args...)
   else # Named function
-    if isempty(block.constants)
-      Expr(:call, name, block.inputs...)
-    else
-      Expr(:call, name, parameters, block.inputs...)
-    end
+    Expr(:call, name, call_args...)
   end
   
   return_expr = Expr(:return, if length(block.outputs) == 1
@@ -112,14 +113,19 @@ end
 
 """ Compile an algebraic network into a block of Julia code.
 """
-function compile_block(f::AlgebraicNet.Hom; inputs::Vector=[])::Block
+function compile_block(f::AlgebraicNet.Hom;
+                       inputs::Vector=[], coef::Symbol=Symbol())::Block
   nin = dim(dom(f))
   if isempty(inputs)
     inputs = [ Symbol("x$i") for i in 1:nin ]
   else
     @assert length(inputs) == nin
   end
-  compile_block(f, State(inputs))
+  
+  state = State(inputs, coef=coef)
+  block = compile_block(f, state)
+  block.constants = [ k for (k,v) in sort(collect(state.constants), by=x->x[2]) ]
+  return block
 end
 
 function compile_block(f::AlgebraicNet.Hom{:generator}, state::State)::Block
@@ -130,12 +136,11 @@ function compile_block(f::AlgebraicNet.Hom{:generator}, state::State)::Block
   value = first(f)
   lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
   rhs = if nin == 0
-    value
+    isa(value, Symbol) ? genconst(state, value) : value
   else
     Expr(:call, value, inputs...)
   end
-  constants = nin == 0 && isa(value, Symbol) ? [ value => (nout,) ] : Pair[]
-  Block(Expr(:(=), lhs, rhs), inputs, outputs, constants)
+  Block(Expr(:(=), lhs, rhs), inputs, outputs)
 end
 
 function compile_block(f::AlgebraicNet.Hom{:linear}, state::State)::Block
@@ -144,6 +149,7 @@ function compile_block(f::AlgebraicNet.Hom{:linear}, state::State)::Block
   @assert length(inputs) == nin
   
   value = first(f)
+  value = isa(value, Symbol) ? genconst(state, value) : value
   lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
   rhs = if nin == 0
     0
@@ -152,23 +158,20 @@ function compile_block(f::AlgebraicNet.Hom{:linear}, state::State)::Block
   else
     Expr(:call, :(*), value, Expr(:vect, inputs...))
   end
-  constants = isa(value, Symbol) ? [ value => (nout,nin) ] : Pair[]
-  Block(Expr(:(=), lhs, rhs), inputs, outputs, constants)
+  Block(Expr(:(=), lhs, rhs), inputs, outputs)
 end
 
 function compile_block(f::AlgebraicNet.Hom{:compose}, state::State)::Block
   code = Expr(:block)
-  inputs, constants = state.inputs, Pair[]
-  vars = inputs
+  vars = inputs = state.inputs
   for g in args(f)
     state.inputs = vars
     block = compile_block(g, state)
     code = concat_expr(code, block.code)
-    append!(constants, block.constants)
     vars = block.outputs
   end
   outputs = vars
-  Block(code, inputs, outputs, constants)
+  Block(code, inputs, outputs)
 end
 
 function compile_block(f::AlgebraicNet.Hom{:id}, state::State)::Block
@@ -178,7 +181,7 @@ end
 
 function compile_block(f::AlgebraicNet.Hom{:otimes}, state::State)::Block
   code = Expr(:block)
-  inputs, outputs, constants = state.inputs, Symbol[], Pair[]
+  inputs, outputs = state.inputs, Symbol[]
   i = 1
   for g in args(f)
     nin = dim(dom(g))
@@ -186,10 +189,9 @@ function compile_block(f::AlgebraicNet.Hom{:otimes}, state::State)::Block
     block = compile_block(g, state)
     code = concat_expr(code, block.code)
     append!(outputs, block.outputs)
-    append!(constants, block.constants)
     i += nin
   end
-  Block(code, inputs, outputs, constants)
+  Block(code, inputs, outputs)
 end
 
 function compile_block(f::AlgebraicNet.Hom{:braid}, state::State)::Block
@@ -248,6 +250,13 @@ function genvars(state::State, n::Int)::Vector{Symbol}
   return vars
 end
 
+""" Generate a constant (symbol or expression).
+"""
+function genconst(state::State, name::Symbol)
+  i = get!(state.constants, name, length(state.constants)+1)
+  state.coef == Symbol() ? name : :($(state.coef)[$i])
+end
+
 dim(A::AlgebraicNet.Ob{:otimes}) = length(args(A))
 dim(A::AlgebraicNet.Ob{:munit}) = 0
 dim(A::AlgebraicNet.Ob{:generator}) = 1
@@ -259,6 +268,8 @@ dim(A::AlgebraicNet.Ob{:generator}) = 1
 
 If the network will only be evaluated once (possibly with vectorized inputs),
 then direct evaluation will be much faster than compiling with Julia's JIT.
+
+TODO: Does not support symbolic constants.
 """
 function evaluate(f::AlgebraicNet.Hom, xs::Vararg)
   ys = eval_impl(f, collect(xs))
