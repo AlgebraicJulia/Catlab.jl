@@ -1,7 +1,11 @@
 julia 0.5
+
 DataStructures
-AutoHashEquals 0.0.10
-Formatting 0.2.0
+AutoHashEquals
+Formatting
 Lazy
 Match
 Reexport
+
+# Optional:
+# ReverseDiffSource

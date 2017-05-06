@@ -12,6 +12,9 @@ export AlgebraicNetSignature, AlgebraicNet, ob, hom,
   compile, compile_expr, evaluate
 
 using Match
+if Pkg.installed("ReverseDiffSource") != nothing
+  using ReverseDiffSource
+end
 
 using ...GAT, ...Syntax, ...Rewrite
 import ...Doctrine: SymmetricMonoidalCategory, ObExpr, HomExpr, ob, hom,
@@ -89,10 +92,11 @@ end
 """ Compile an algebraic network into a Julia function expression.
 """
 function compile_expr(f::AlgebraicNet.Hom; name::Symbol=Symbol(),
-                      args::Vector=[], coef::Bool=false)::Expr
+                      args::Vector=[], coef::Bool=false, coef_diff::Int=0)::Expr
   coef_name = coef ? :coef : Symbol()
   block = compile_block(f; inputs=args, coef=coef_name)
   
+  # Create call expression (function header).
   coef_arg = if coef; :($coef_name::Vector)
   elseif isempty(block.constants); []
   else Expr(:parameters,
@@ -105,14 +109,22 @@ function compile_expr(f::AlgebraicNet.Hom; name::Symbol=Symbol(),
     Expr(:call, name, call_args...)
   end
   
+  # Create function body.
   return_expr = Expr(:return, if length(block.outputs) == 1
     block.outputs[1]
   else 
     Expr(:tuple, block.outputs...)
   end)
+  body_expr = concat_expr(block.code, return_expr)
   
-  body = concat_expr(block.code, return_expr)
-  Expr(:function, call_expr, body)
+  # Automatic differentiation with respect to coefficients.
+  if coef && coef_diff > 0
+    vars = Dict(sym => Float64 for sym in block.inputs)
+    vars[coef_name] = Vector{Float64}
+    body_expr = rdiff(body_expr; order=coef_diff, ignore=block.inputs, vars...)
+  end
+  
+  Expr(:function, call_expr, body_expr)
 end
 
 """ Compile an algebraic network into a block of Julia code.

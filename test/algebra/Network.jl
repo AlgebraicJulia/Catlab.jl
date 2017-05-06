@@ -100,7 +100,7 @@ target = squeeze(sum([x y]*A', 2), 2)
 @test compile(f)(x,y) ≈ target
 @test evaluate(f,x,y) ≈ target
 
-# Symbolic constants
+# Symbolic coefficients
 f = linear(:c, R, R)
 f_comp = compile(f)
 @test f_comp(x,c=1) == x
@@ -119,5 +119,20 @@ f_comp = compile(f, coef=true)
 f = compose(otimes(id(R),constant(:c,R)), mmerge(R))
 f_comp = compile(f,name=:myfun3)
 @test f_comp(x,c=2) ≈ x+2
+
+# Automatic differentiation of symbolic coefficients
+# Note: Vectorized evaluation not allowed.
+x0 = 2.0
+f = compose(linear(:a,R,R), hom(:sin,R,R))
+f_comp = compile(f, coef=true, coef_diff=1)
+@test f_comp([1],x0) == (sin(x0), [x0 * cos(x0)])
+f_comp = compile(f, coef=true, coef_diff=2)
+@test f_comp([1],x0) == (sin(x0), [x0 * cos(x0)], reshape([-x0^2 * sin(x0)],(1,1)))
+
+f = compose(linear(:k,R,R), hom(:sin,R,R), linear(:A,R,R))
+f_comp = compile(f, coef=true, coef_diff=2)
+@test f_comp([1,1],x0) == (sin(x0),
+                           [x0 * cos(x0), sin(x0)],
+                           [-x0^2 * sin(x0) x0*cos(x0); x0*cos(x0) 0])
 
 end
