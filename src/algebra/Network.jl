@@ -143,9 +143,9 @@ function compile_expr_vector(block::Block; name::Symbol=Symbol(),
                              order::Int=0, allorders::Bool=true)
   # Create call expression (function header).
   call_expr = if name == Symbol() # Anonymous function
-    :(($inputs::Vector), ($constants::Vector))
+    Expr(:tuple, inputs, constants)
   else # Named function
-    Expr(:call, name, :($inputs::Vector), :($constants::Vector))
+    Expr(:call, name, inputs, constants)
   end                           
                              
   # Create function body.
