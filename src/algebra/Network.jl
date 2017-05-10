@@ -134,12 +134,12 @@ supports gradients, Hessians, and higher order derivatives (with respect to the
 coefficients) via reverse-mode automatic differentiation.
 """
 function compile_expr_vector(f::AlgebraicNet.Hom; name::Symbol=Symbol(),
-                             inputs::Symbol=:x, constants::Symbol=:coef, kw...)
+                             inputs::Symbol=:x, constants::Symbol=:c, kw...)
   block = compile_block(f; inputs=inputs, constants=constants)
   compile_expr_vector(block; name=name, inputs=inputs, constants=constants, kw...)
 end
 function compile_expr_vector(block::Block; name::Symbol=Symbol(),
-                             inputs::Symbol=:x, constants::Symbol=:coef,
+                             inputs::Symbol=:x, constants::Symbol=:c,
                              order::Int=0, allorders::Bool=true)
   # Create call expression (function header).
   call_expr = if name == Symbol() # Anonymous function
