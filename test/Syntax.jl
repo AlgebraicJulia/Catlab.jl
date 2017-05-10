@@ -6,7 +6,7 @@ tests of the Syntax module.
 module TestSyntax
 
 using Base.Test
-using Catlab.GAT, Catlab.Syntax, Catlab.Rewrite
+using Catlab
 
 # Monoid
 ########

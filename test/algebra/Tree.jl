@@ -1,7 +1,7 @@
 module TestAlgebraTree
 
 using Base.Test
-using Catlab.Algebra.Network, Catlab.Algebra.Tree
+using Catlab.Algebra
 
 # Conversion
 ############
