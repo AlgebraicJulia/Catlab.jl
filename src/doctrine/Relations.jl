@@ -1,8 +1,5 @@
 import Lazy: @>
 
-using ..GAT, ..Syntax, ..Rewrite
-import ..Syntax: show_unicode, show_latex
-
 """ Doctrine of *bicategory of relations*
 
 TODO: The 2-morphisms are missing. I haven't decided how to handle them yet.

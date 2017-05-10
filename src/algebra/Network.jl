@@ -13,11 +13,13 @@ export AlgebraicNetSignature, AlgebraicNet, ob, hom,
 
 using Match
 
-using ...GAT, ...Syntax, ...Rewrite
+using ...Catlab
 import ...Doctrine: SymmetricMonoidalCategory, ObExpr, HomExpr, ob, hom,
   compose, id, dom, codom, otimes, munit, mcopy, delete
 import ...Diagram.TikZWiring: box, wires, rect, junction_circle
 import ...Syntax: show_latex, show_unicode
+
+@optional_import using ReverseDiffSource
 
 # Syntax
 ########

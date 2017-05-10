@@ -1,6 +1,4 @@
 module Doctrine
-import ..Syntax: BaseExpr
-
 export CategoryExpr, ObExpr, HomExpr, Hom2Expr
 
 # TODO: Generate these automatically from signature?
@@ -21,6 +19,9 @@ export DaggerCompactCategory, FreeDaggerCompactCategory
 export BicategoryRelations, FreeBicategoryRelations
 export AbelianBicategoryRelations, FreeAbelianBicategoryRelations,
   plus, coplus, zero, cozero
+
+using ..Catlab
+import ..Syntax: BaseExpr, show_unicode, show_latex
 
 abstract CategoryExpr{T} <: BaseExpr{T}
 abstract ObExpr{T} <: CategoryExpr{T}

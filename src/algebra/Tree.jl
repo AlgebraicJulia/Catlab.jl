@@ -14,7 +14,7 @@ using AutoHashEquals
 import Base: first, last, show
 import Base.Meta: show_sexpr
 
-using ...GAT, ...Syntax, ..Network
+using ...Catlab, ..Network
 import ..Network: ob, hom, compose, id, dom, codom, otimes, opow, munit, braid,
   mcopy, delete, mmerge, create, linear, constant
 import ...Syntax: head, args, show_latex

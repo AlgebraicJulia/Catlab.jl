@@ -2,10 +2,11 @@
 """
 module Algebra
 
+using Reexport
+
 include("algebra/Network.jl")
 include("algebra/Tree.jl")
 
-using Reexport
 @reexport using .Network
 @reexport using .Tree
 

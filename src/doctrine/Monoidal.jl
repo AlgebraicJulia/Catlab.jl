@@ -1,8 +1,5 @@
 import Lazy: @>
 
-using ..GAT, ..Syntax, ..Rewrite
-import ..Syntax: show_unicode, show_latex
-
 # Monoidal category
 ###################
 
