@@ -84,11 +84,11 @@ This method of "functorial compilation" generates simple imperative code with no
 optimizations. Still, the code should be fast provided the original expression
 is properly factored (there are no duplicated computations).
 """
-function compile(f::AlgebraicNet.Hom;
-                 constants::Bool=false, vector::Bool=false, kw...)
+function compile(f::Union{AlgebraicNet.Hom,Block};
+                 return_constants::Bool=false, vector::Bool=false, kw...)
   expr, consts = vector ? compile_expr_vector(f; kw...) : compile_expr(f; kw...)
   compiled = eval(expr)
-  constants ? (compiled, consts) : compiled
+  return_constants ? (compiled, consts) : compiled
 end
 
 """ Compile an algebraic network into a Julia function expression.
@@ -100,7 +100,9 @@ The function signature is:
 function compile_expr(f::AlgebraicNet.Hom; name::Symbol=Symbol(),
                       args::Vector{Symbol}=Symbol[])
   block = compile_block(f; inputs=args)
-  
+  compile_expr(block; name=name)
+end
+function compile_expr(block::Block; name::Symbol=Symbol())
   # Create call expression (function header).
   kw = Expr(:parameters,
             (Expr(:kw,sym,nothing) for sym in block.constants)...)
@@ -132,14 +134,18 @@ supports gradients, Hessians, and higher order derivatives (with respect to the
 coefficients) via reverse-mode automatic differentiation.
 """
 function compile_expr_vector(f::AlgebraicNet.Hom; name::Symbol=Symbol(),
+                             inputs::Symbol=:x, constants::Symbol=:coef, kw...)
+  block = compile_block(f; inputs=inputs, constants=constants)
+  compile_expr_vector(block; name=name, inputs=inputs, constants=constants, kw...)
+end
+function compile_expr_vector(block::Block; name::Symbol=Symbol(),
+                             inputs::Symbol=:x, constants::Symbol=:coef,
                              order::Int=0, allorders::Bool=true)
-  block = compile_block(f; inputs=:x, constants=:coef)
-  
   # Create call expression (function header).
   call_expr = if name == Symbol() # Anonymous function
-    :((x::Vector), (coef::Vector))
+    :(($inputs::Vector), ($constants::Vector))
   else # Named function
-    Expr(:call, name, :(x::Vector), :(coef::Vector))
+    Expr(:call, name, :($inputs::Vector), :($constants::Vector))
   end                           
                              
   # Create function body.
@@ -149,8 +155,9 @@ function compile_expr_vector(f::AlgebraicNet.Hom; name::Symbol=Symbol(),
   
   # Automatic differentiation with respect to coefficients.
   if order > 0
+    vars = Dict(inputs => Vector{Float64}, constants => Vector{Float64})
     body_expr = rdiff(body_expr; order=order, allorders=allorders, 
-                      ignore=[:x], x=Vector{Float64}, coef=Vector{Float64})
+                      ignore=[inputs], vars...)
   end
   
   (Expr(:function, call_expr, body_expr), block.constants)
