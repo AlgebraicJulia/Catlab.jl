@@ -57,8 +57,8 @@ end
 """
 type Block
   code::Expr
-  inputs::Vector{Symbol}
-  outputs::Vector{Symbol}
+  inputs::Vector
+  outputs::Vector
   constants::Vector{Symbol}
   Block(code, inputs, outputs; constants=Symbol[]) =
     new(code, inputs, outputs, constants)
@@ -67,43 +67,45 @@ end
 """ Internal state for compilation of algebraic network into Julia function.
 """
 type CompileState
-  inputs::Vector{Symbol}
+  inputs::Vector
   nvars::Int
   constants::Dict{Symbol,Int}
-  coef::Symbol
-  CompileState(inputs::Vector{Symbol};
-        nvars=0, constants=Dict{Symbol,Int}(), coef=Symbol()) =
-    new(inputs, nvars, constants, coef)
+  constants_sym::Symbol
+  CompileState(inputs::Vector; nvars=0,
+               constants=Dict{Symbol,Int}(), constants_sym=Symbol()) =
+    new(inputs, nvars, constants, constants_sym)
 end
 
 """ Compile an algebraic network into a Julia function.
 
 This method of "functorial compilation" generates simple imperative code with no
-optimizations. Still, it should be fast provided the original expression is
-properly factored (there are no duplicated computations).
+optimizations. Still, the code should be fast provided the original expression
+is properly factored (there are no duplicated computations).
 """
-function compile(f::AlgebraicNet.Hom; kw...)::Function
-  eval(compile_expr(f; kw...))
+function compile(f::AlgebraicNet.Hom;
+                 constants::Bool=false, vector::Bool=false, kw...)
+  expr, consts = vector ? compile_expr_vector(f; kw...) : compile_expr(f; kw...)
+  compiled = eval(expr)
+  constants ? (compiled, consts) : compiled
 end
 
 """ Compile an algebraic network into a Julia function expression.
+
+The function signature is:
+  - arguments = inputs (domain) of network
+  - keyword arguments = symbolic constants (coefficients) of network, if any
 """
 function compile_expr(f::AlgebraicNet.Hom; name::Symbol=Symbol(),
-                      args::Vector=[], coef::Bool=false)::Expr
-  coef_name = coef ? :coef : Symbol()
-  block = compile_block(f; inputs=args, coef=coef_name)
+                      args::Vector{Symbol}=Symbol[])
+  block = compile_block(f; inputs=args)
   
   # Create call expression (function header).
-  coef_arg = if coef; :($coef_name::Vector)
-  elseif isempty(block.constants); []
-  else Expr(:parameters,
+  kw = Expr(:parameters,
             (Expr(:kw,sym,nothing) for sym in block.constants)...)
-  end
-  call_args = [coef_arg; block.inputs]
   call_expr = if name == Symbol() # Anonymous function
-    Expr(:tuple, call_args...)
+    Expr(:tuple, kw, block.inputs...)
   else # Named function
-    Expr(:call, name, call_args...)
+    Expr(:call, name, kw, block.inputs...)
   end
   
   # Create function body.
@@ -114,21 +116,59 @@ function compile_expr(f::AlgebraicNet.Hom; name::Symbol=Symbol(),
   end)
   body_expr = concat_expr(block.code, return_expr)
   
-  Expr(:function, call_expr, body_expr)
+  (Expr(:function, call_expr, body_expr), block.constants)
+end
+
+""" Compile an algebraic network into a Julia function expression.
+
+The function signature is:
+  - first argument = input vector
+  - second argument = constant (coefficients) vector
+  
+Unlike `compile_expr`, this method assumes the network has a single output, and
+supports gradients, Hessians, and higher order derivatives (with respect to the
+coefficients) via reverse-mode automatic differentiation.
+"""
+function compile_expr_vector(f::AlgebraicNet.Hom; name::Symbol=Symbol(),
+                             order::Int=0, allorders::Bool=true)
+  block = compile_block(f; inputs=:x, constants=:coef)
+  
+  # Create call expression (function header).
+  call_expr = if name == Symbol() # Anonymous function
+    :((x::Vector), (coef::Vector))
+  else # Named function
+    Expr(:call, name, :(x::Vector), :(coef::Vector))
+  end                           
+                             
+  # Create function body.
+  @assert length(block.outputs) == 1
+  return_expr = Expr(:return, block.outputs[1])
+  body_expr = concat_expr(block.code, return_expr)
+  
+  # Automatic differentiation with respect to coefficients.
+  if order > 0
+    body_expr = rdiff(body_expr; order=order, allorders=allorders, 
+                      ignore=[:x], x=Vector{Float64}, coef=Vector{Float64})
+  end
+  
+  (Expr(:function, call_expr, body_expr), block.constants)
 end
 
 """ Compile an algebraic network into a block of Julia code.
 """
 function compile_block(f::AlgebraicNet.Hom;
-                       inputs::Vector=[], coef::Symbol=Symbol())::Block
+                       inputs::Union{Symbol,Vector}=Symbol(),
+                       constants::Symbol=Symbol())::Block
   nin = dim(dom(f))
-  if isempty(inputs)
+  if inputs == Symbol() || inputs == []
     inputs = [ Symbol("x$i") for i in 1:nin ]
+  elseif isa(inputs, Symbol)
+    inputs = [ :($inputs[$i]) for i in 1:nin ]
   else
     @assert length(inputs) == nin
   end
   
-  state = CompileState(inputs, coef=coef)
+  state = CompileState(inputs, constants_sym=constants)
   block = compile_block(f, state)
   block.constants = [ k for (k,v) in sort(collect(state.constants), by=x->x[2]) ]
   return block
@@ -260,7 +300,7 @@ end
 """
 function genconst(state::CompileState, name::Symbol)
   i = get!(state.constants, name, length(state.constants)+1)
-  state.coef == Symbol() ? name : :($(state.coef)[$i])
+  state.constants_sym == Symbol() ? name : :($(state.constants_sym)[$i])
 end
 
 dim(A::AlgebraicNet.Ob{:otimes}) = length(args(A))

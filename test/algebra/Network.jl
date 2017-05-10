@@ -105,16 +105,18 @@ f = linear(:c, R, R)
 f_comp = compile(f)
 @test f_comp(x,c=1) == x
 @test f_comp(x,c=2) == 2x
-f_comp = compile(f, coef=true)
-@test f_comp([2],x) == 2x
+f_comp, f_const = compile(f, constants=true, vector=true)
+@test f_const == [:c]
+@test f_comp([x],[2]) == 2x
 
 f = compose(linear(:k,R,R), hom(:sin,R,R), linear(:A,R,R))
 f_comp = compile(f)
 @test f_comp(x,k=1,A=2) == 2 .* sin(x)
 @test f_comp(x,k=2,A=1) == sin(2x)
-f_comp = compile(f, coef=true)
-@test f_comp([1,2],x) == 2 .* sin(x)
-@test f_comp([2,1],x) == sin(2x)
+f_comp, f_const = compile(f, constants=true, vector=true)
+@test f_const == [:k,:A]
+@test f_comp([x],[1,2]) == 2 .* sin(x)
+@test f_comp([x],[2,1]) == sin(2x)
 
 f = compose(otimes(id(R),constant(:c,R)), mmerge(R))
 f_comp = compile(f,name=:myfun3)
