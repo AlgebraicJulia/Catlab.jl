@@ -236,7 +236,7 @@ end
 
 function compile_block(f::AlgebraicNet.Hom{:otimes}, state::CompileState)::Block
   code = Expr(:block)
-  inputs, outputs = state.inputs, Symbol[]
+  inputs, outputs = state.inputs, []
   i = 1
   for g in args(f)
     nin = dim(dom(g))
