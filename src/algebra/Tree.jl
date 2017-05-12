@@ -178,18 +178,18 @@ end
 function show_latex_formula(io::IO, form::Formula, ::Type{Val{:+}}; kw...)
   show_latex_infix(io, form, " + "; kw...)
 end
-function show_latex_formula(io::IO, form::Formula, ::Type{Val{:*}}; kw...)
-  show_latex_infix(io, form, " "; kw...)
-end
-function show_latex_formula(io::IO, form::Formula, ::Type{Val{:.*}}; kw...)
-  op = length(args(form)) == 2 && isa(first(form), Number) ? " " : " \\cdot "
-  show_latex_infix(io, form, op; kw...)
-end
 function show_latex_formula(io::IO, form::Formula, ::Type{Val{:-}}; kw...)
   @assert length(args(form)) == 2
   show_latex_infix(io, form, " - "; kw...)
 end
-function show_latex_formula(io::IO, form::Formula, ::Type{Val{:./}}; kw...)
+function show_latex_formula(io::IO, form::Formula, ::Type{Val{:*}}; kw...)
+  op = any(isa(x,Number) for x in args(form)[2:end]) ? " \\cdot " : " "
+  show_latex_infix(io, form, op; kw...)
+end
+function show_latex_formula(io::IO, form::Formula, ::Type{Val{:.*}}; kw...)
+  show_latex_formula(io, form, Val{:*}; kw...)
+end
+function show_latex_formula(io::IO, form::Formula, ::Type{Val{:/}}; kw...)
   @assert length(args(form)) == 2
   print(io, "\\frac{")
   show_latex_formula(io, first(form))
@@ -197,12 +197,18 @@ function show_latex_formula(io::IO, form::Formula, ::Type{Val{:./}}; kw...)
   show_latex_formula(io, last(form))
   print(io, "}")
 end
+function show_latex_formula(io::IO, form::Formula, ::Type{Val{:./}}; kw...)
+  show_latex_formula(io, form, Val{:/}; kw...)
+end
 function show_latex_formula(io::IO, form::Formula, ::Type{Val{:^}}; kw...)
   @assert length(args(form)) == 2
   show_latex_formula(io, first(form); paren=true, kw...)
   print(io, "^{")
   show_latex_formula(io, last(form))
   print(io, "}")
+end
+function show_latex_formula(io::IO, form::Formula, ::Type{Val{:.^}}; kw...)
+  show_latex_formula(io, form, Val{:^}; kw...)
 end
 
 function show_latex_infix(io::IO, form::Formula, op::String;

@@ -20,13 +20,14 @@ f = hom(:sin,R,R)
 @test latex(f) == "\\mathrm{sin}"
 
 f = compose(linear(2,R,R), hom(:sin,R,R))
-@test compile(f)(x) == sin(2*x)
-@test evaluate(f,x) == sin(2*x)
+@test compile(f)(x) == sin(2x)
+@test evaluate(f,x) == sin(2x)
 @test unicode(f) == "linear[2]; sin"
 @test latex(f) == "\\mathop{\\mathrm{linear}}\\left[2\\right] ; \\mathrm{sin}"
 
 f = compose(linear(2,R,R), hom(:sin,R,R), linear(2,R,R))
-@test compile(f)(x) == 2*sin(2*x)
+@test compile(f)(x) == 2*sin(2x)
+@test evaluate(f,x) == 2*sin(2x)
 
 y = collect(linspace(0,4))
 f = otimes(hom(:cos,R,R), hom(:sin,R,R))
