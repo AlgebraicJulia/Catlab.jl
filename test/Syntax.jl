@@ -30,14 +30,21 @@ elem(mod::Module, args...) = elem(mod.Elem, args...)
 @test sort(names(FreeMonoid)) == sort([:FreeMonoid, :Elem])
 
 x, y, z = elem(FreeMonoid,:x), elem(FreeMonoid,:y), elem(FreeMonoid,:z)
+@test isa(mtimes(x,y), FreeMonoid.Elem)
+@test isa(munit(FreeMonoid.Elem), FreeMonoid.Elem)
+@test mtimes(mtimes(x,y),z) != mtimes(x,mtimes(y,z))
+
+# Test equality
 @test x == elem(FreeMonoid,:x)
 @test x != y
 @test elem(FreeMonoid,"X") == elem(FreeMonoid,"X")
 @test elem(FreeMonoid,"X") != elem(FreeMonoid,"Y")
 
-@test isa(mtimes(x,y), FreeMonoid.Elem)
-@test isa(munit(FreeMonoid.Elem), FreeMonoid.Elem)
-@test mtimes(mtimes(x,y),z) != mtimes(x,mtimes(y,z))
+# Test hash
+@test hash(x) == hash(x)
+@test hash(x) != hash(y)
+@test hash(mtimes(x,y)) == hash(mtimes(x,y))
+@test hash(mtimes(x,y)) != hash(mtimes(x,z))
 
 @syntax FreeMonoidAssoc Monoid begin
   mtimes(x::Elem, y::Elem) = associate(Super.mtimes(x,y))
