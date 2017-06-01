@@ -9,12 +9,13 @@ import ..TikZ
 
 """ Convert our TikZ picture type to `TikzPicture`'s picture type. 
 """
-function TikzPicture(pic::TikZ.Picture; usePDF2SVG=true)::TikzPicture
+function TikzPicture(pic::TikZ.Picture; preamble::String="", usePDF2SVG=true)::TikzPicture
   data = join(sprint(TikZ.pprint, stmt) for stmt in pic.stmts)
   options = join((sprint(TikZ.pprint, prop) for prop in pic.props), ",")
   preamble = join([
-    # FIXME: Dependencies are hard-coded!
+    preamble,
     "\\usepackage{amssymb}",
+    # FIXME: These TikZ library dependencies should be stored in TikZ.Picture.
     "\\usetikzlibrary{arrows.meta}",
     "\\usetikzlibrary{calc}",
     "\\usetikzlibrary{decorations.markings}",
