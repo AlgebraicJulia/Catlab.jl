@@ -124,20 +124,21 @@ f_comp = compile(f,name=:myfun3)
 @test f_comp(x,c=2) ≈ x+2
 
 # Automatic differentiation of symbolic coefficients
-# Note: Vectorized evaluation not allowed.
-x0 = 2.0
-f = compose(linear(:a,R,R), hom(:sin,R,R))
-f_comp = compile(f, vector=true, order=1)
-@test f_comp([x0],[1]) == (sin(x0), [x0 * cos(x0)])
-f_grad = compile(f, vector=true, order=1, allorders=false)
-f_hess = compile(f, vector=true, order=2, allorders=false)
-@test f_grad([x0],[1]) == [x0 * cos(x0)]
-@test f_hess([x0],[1]) == reshape([-x0^2 * sin(x0)],(1,1))
+if Pkg.installed("ReverseDiffSource") != nothing
+  x0 = 2.0 # Vectorized evaluation not allowed.
+  f = compose(linear(:a,R,R), hom(:sin,R,R))
+  f_comp = compile(f, vector=true, order=1)
+  @test f_comp([x0],[1]) == (sin(x0), [x0 * cos(x0)])
+  f_grad = compile(f, vector=true, order=1, allorders=false)
+  f_hess = compile(f, vector=true, order=2, allorders=false)
+  @test f_grad([x0],[1]) == [x0 * cos(x0)]
+  @test f_hess([x0],[1]) == reshape([-x0^2 * sin(x0)],(1,1))
 
-f = compose(linear(:k,R,R), hom(:sin,R,R), linear(:A,R,R))
-f_grad = compile(f, vector=true, order=1, allorders=false)
-f_hess = compile(f, vector=true, order=2, allorders=false)
-@test f_grad([x0],[1,1]) == [x0 * cos(x0), sin(x0)]
-@test f_hess([x0],[1,1]) == [-x0^2 * sin(x0)  x0*cos(x0); x0*cos(x0)  0]
+  f = compose(linear(:k,R,R), hom(:sin,R,R), linear(:A,R,R))
+  f_grad = compile(f, vector=true, order=1, allorders=false)
+  f_hess = compile(f, vector=true, order=2, allorders=false)
+  @test f_grad([x0],[1,1]) == [x0 * cos(x0), sin(x0)]
+  @test f_hess([x0],[1,1]) == [-x0^2 * sin(x0)  x0*cos(x0); x0*cos(x0)  0]
+end
 
 end
