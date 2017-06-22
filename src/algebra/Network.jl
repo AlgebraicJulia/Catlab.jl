@@ -168,7 +168,7 @@ end
 function compile_block(f::AlgebraicNet.Hom;
                        inputs::Union{Symbol,Vector}=Symbol(),
                        constants::Symbol=Symbol())::Block
-  nin = dim(dom(f))
+  nin = ndims(dom(f))
   if inputs == Symbol() || inputs == []
     inputs = [ Symbol("x$i") for i in 1:nin ]
   elseif isa(inputs, Symbol)
@@ -184,7 +184,7 @@ function compile_block(f::AlgebraicNet.Hom;
 end
 
 function compile_block(f::AlgebraicNet.Hom{:generator}, state::CompileState)::Block
-  nin, nout = dim(dom(f)), dim(codom(f))
+  nin, nout = ndims(dom(f)), ndims(codom(f))
   inputs, outputs = state.inputs, genvars(state, nout)
   @assert length(inputs) == nin
   
@@ -199,7 +199,7 @@ function compile_block(f::AlgebraicNet.Hom{:generator}, state::CompileState)::Bl
 end
 
 function compile_block(f::AlgebraicNet.Hom{:linear}, state::CompileState)::Block
-  nin, nout = dim(dom(f)), dim(codom(f))
+  nin, nout = ndims(dom(f)), ndims(codom(f))
   inputs, outputs = state.inputs, genvars(state, nout)
   @assert length(inputs) == nin
   
@@ -239,7 +239,7 @@ function compile_block(f::AlgebraicNet.Hom{:otimes}, state::CompileState)::Block
   inputs, outputs = state.inputs, []
   i = 1
   for g in args(f)
-    nin = dim(dom(g))
+    nin = ndims(dom(g))
     state.inputs = inputs[i:i+nin-1]
     block = compile_block(g, state)
     code = concat_expr(code, block.code)
@@ -250,14 +250,14 @@ function compile_block(f::AlgebraicNet.Hom{:otimes}, state::CompileState)::Block
 end
 
 function compile_block(f::AlgebraicNet.Hom{:braid}, state::CompileState)::Block
-  m = dim(first(f))
+  m = ndims(first(f))
   inputs = state.inputs
   outputs = [inputs[m+1:end]; inputs[1:m]]
   Block(Expr(:block), inputs, outputs)
 end
 
 function compile_block(f::AlgebraicNet.Hom{:mcopy}, state::CompileState)::Block
-  reps = div(dim(codom(f)), dim(dom(f)))
+  reps = div(ndims(codom(f)), ndims(dom(f)))
   inputs = state.inputs
   outputs = vcat(repeated(inputs, reps)...)
   Block(Expr(:block), inputs, outputs)
@@ -274,7 +274,7 @@ function compile_block(f::AlgebraicNet.Hom{:mmerge}, state::CompileState)::Block
 end
 
 function compile_block(f::AlgebraicNet.Hom{:create}, state::CompileState)::Block
-  nout = dim(codom(f))
+  nout = ndims(codom(f))
   inputs, outputs = state.inputs, genvars(state, nout)
   lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
   rhs = nout == 1 ? 0.0 : Expr(:tuple, repeated(0.0, nout)...)
@@ -312,10 +312,6 @@ function genconst(state::CompileState, name::Symbol)
   state.constants_sym == Symbol() ? name : :($(state.constants_sym)[$i])
 end
 
-dim(A::AlgebraicNet.Ob{:otimes}) = length(args(A))
-dim(A::AlgebraicNet.Ob{:munit}) = 0
-dim(A::AlgebraicNet.Ob{:generator}) = 1
-
 # Evaluation
 ############
 
@@ -341,7 +337,7 @@ end
 function eval_impl(f::AlgebraicNet.Hom{:otimes}, xs::Vector)
   ys, i = [], 1
   for g in args(f)
-    m = dim(dom(g))
+    m = ndims(dom(g))
     append!(ys, eval_impl(g, xs[i:i+m-1]))
     i += m
   end
@@ -353,7 +349,7 @@ eval_impl(f::AlgebraicNet.Hom{:braid}, xs::Vector) = [xs[2], xs[1]]
 eval_impl(f::AlgebraicNet.Hom{:mcopy}, xs::Vector) = vcat(repeated(xs, last(f))...)
 eval_impl(f::AlgebraicNet.Hom{:delete}, xs::Vector) = []
 eval_impl(f::AlgebraicNet.Hom{:mmerge}, xs::Vector) = [ +(xs...) ]
-eval_impl(f::AlgebraicNet.Hom{:create}, xs::Vector) = collect(repeated(0, dim(codom(f))))
+eval_impl(f::AlgebraicNet.Hom{:create}, xs::Vector) = collect(repeated(0, ndims(codom(f))))
 eval_impl(f::AlgebraicNet.Hom{:linear}, xs::Vector) = first(f) * xs
 
 function eval_impl(f::AlgebraicNet.Hom{:generator}, xs::Vector)

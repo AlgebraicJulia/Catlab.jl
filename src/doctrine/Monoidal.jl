@@ -1,3 +1,4 @@
+import Base: collect, ndims
 import Lazy: @>
 
 # Monoidal category
@@ -25,6 +26,19 @@ end
 # Convenience constructors for monoidal category
 otimes(xs::Vector) = foldl(otimes, xs)
 otimes(xs...) = foldl(otimes, xs)
+
+""" Collect generators of object in monoidal category as a vector.
+"""
+collect(expr::ObExpr) = [ expr ]
+collect(expr::ObExpr{:otimes}) = vcat(map(collect, args(expr))...)
+collect(expr::ObExpr{:munit}) = roottypeof(expr)[]
+roottypeof(x) = typeof(x).name.primary
+
+""" Number of "dimensions" of object in monoidal category.
+"""
+ndims(expr::ObExpr) = 1
+ndims(expr::ObExpr{:otimes}) = sum(map(ndims, args(expr)))
+ndims(expr::ObExpr{:munit}) = 0
 
 function show_unicode(io::IO, expr::ObExpr{:otimes}; kw...)
   show_unicode_infix(io, expr, "⊗"; kw...)

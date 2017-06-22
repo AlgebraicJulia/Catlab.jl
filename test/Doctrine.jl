@@ -119,6 +119,15 @@ I = munit(FreeSymmetricMonoidalCategory.Ob)
 @test A⊗B == otimes(A,B)
 @test f⊗g == otimes(f,g)
 
+# Extra functions
+@test collect(A) == [A]
+@test collect(otimes(A,B)) == [A,B]
+@test collect(I) == []
+@test typeof(collect(I)) == Vector{FreeSymmetricMonoidalCategory.Ob}
+@test ndims(A) == 1
+@test ndims(otimes(A,B)) == 2
+@test ndims(I) == 0
+
 # String format
 @test string(otimes(f,g)) == "otimes(f,g)"
 @test string(compose(otimes(f,f),otimes(g,g))) == "compose(otimes(f,f),otimes(g,g))"
