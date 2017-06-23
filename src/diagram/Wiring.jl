@@ -12,26 +12,35 @@ intermediate representation that can be straightforwardly translated into
 Graphviz or other declarative diagram languages.
 """
 module Wiring
-export WiringDiagram, Node, ExprNode, Wire, WireTypes,
-  Connector, ConnectorKind, Input, Output,
-  add_node!, add_wire!, rem_node!, rem_wire!, has_node, has_wire
+export Box, HomBox, WiringDiagram, Wire, WireTypes, Connector, ConnectorKind,
+  Input, Output, nboxes, box, wires,
+  add_box!, add_wire!, rem_box!, rem_wire!, has_wire
 
 using AutoHashEquals
 using LightGraphs, Networks
-import LightGraphs: Edge
 using ...Syntax
 import ...Doctrine: ObExpr, HomExpr
 
 # Data types
 ############
 
-""" Base type for any node (vertex) in a wiring diagram.
+""" Base type for any box (node) in a wiring diagram.
 """
-abstract Node
+abstract Box
+
+""" A box representing a morphism expression, often a generator.
+
+These boxes have no internal structure.
+"""
+@auto_hash_equals immutable HomBox <: Box
+  expr::HomExpr
+end
+inputs(box::HomBox) = WireTypes(dom(box.expr))
+outputs(box::HomBox) = WireTypes(codom(box.expr))
 
 @enum ConnectorKind Input Output
 immutable Connector
-  node::Node
+  box::Int
   kind::ConnectorKind
   port::Int
 end
@@ -52,63 +61,55 @@ end
   WireTypes(expr::ObExpr) = new(collect(expr))
 end
 
-""" Node representing a morphism expression, often a generator.
-
-These nodes have no internal structure.
-"""
-immutable ExprNode <: Node
-  expr::HomExpr
-end
-dom(node::ExprNode) = WireTypes(dom(node.expr))
-codom(node::ExprNode) = WireTypes(codom(node.expr))
-
 """ Morphism in the category of wiring diagrams.
 """
-type WiringDiagram <: Node
+type WiringDiagram <: Box
   inputs::WireTypes
   outputs::WireTypes
-  network::DiNetwork{Node,Vector{Wire},Void}
-  vertices::Dict{Node,Int}
+  network::DiNetwork{Box,Vector{Wire},Void}
   
   function WiringDiagram(inputs::WireTypes, outputs::WireTypes)
-    network = DiNetwork(DiGraph(), Dict{Int,Node}(),
+    network = DiNetwork(DiGraph(), Dict{Int,Box}(),
                         Dict{Edge,Vector{Wire}}(), Void())
-    diagram = new(inputs, outputs, network, Dict{Node,Int}())
-    add_node!(diagram, diagram)
+    diagram = new(inputs, outputs, network)
+    add_box!(diagram, diagram)
     return diagram
   end
   function WiringDiagram(inputs::ObExpr, outputs::ObExpr)
     WiringDiagram(WireTypes(inputs), WireTypes(outputs))
   end
 end
+inputs(diagram::WiringDiagram) = diagram.inputs
+outputs(diagram::WiringDiagram) = diagram.outputs
 
 # Low-level graph interface
 ###########################
 
-function add_node!(f::WiringDiagram, node::Node)
-  v = add_vertex!(f.network, node)
-  f.vertices[node] = v
-  return node
+nboxes(f::WiringDiagram) = nv(f.network.graph)
+box(f::WiringDiagram, v::Int) = f.network.vprops[v]
+wires(f::WiringDiagram, edge::Edge) = f.network.eprops[edge]
+wires(f::WiringDiagram, src::Int, tgt::Int) = wires(f, Edge(src,tgt))
+
+function add_box!(f::WiringDiagram, box::Box)
+  add_vertex!(f.network, box)
 end
-function add_node!(f::WiringDiagram, expr::HomExpr)
-  add_node!(f, ExprNode(expr))
-end
+add_box!(f::WiringDiagram, expr::HomExpr) = add_box!(f, HomBox(expr))
 
 function add_wire!(f::WiringDiagram, wire::Wire)
-  edge = Edge(f, wire)
-  if !has_edge(f.graph, edge)
-    add_edge!(f, edge, Wire[])
+  # TODO: Check for compatible inputs/outputs.
+  edge = Edge(wire.source.box, wire.target.box)
+  if !has_edge(f.network.graph, edge)
+    add_edge!(f.network, edge, Wire[])
   end
-  push!(f.eprops[edge], wire)
+  push!(f.network.eprops[edge], wire)
 end
 
-function rem_node!(f::WiringDiagram, node::Node)
-  rem_vertex!(f.network, f.vertices[node])
-  delete!(f.vertices, node)
+function rem_box!(f::WiringDiagram, v::Int)
+  rem_vertex!(f.network, v)
 end
 
 function rem_wire!(f::WiringDiagram, wire::Wire)
-  edge = Edge(f, wire)
+  edge = Edge(wire.source.box, wire.target.box)
   wires = f.eprops[edge]
   deleteat!(wires, findfirst(wires, wire))
   if isempty(wires)
@@ -116,24 +117,16 @@ function rem_wire!(f::WiringDiagram, wire::Wire)
   end
 end
 
-function has_node(f::WiringDiagram, node::Node)
-  haskey(f.vertices, node)
+function has_wire(f::WiringDiagram, src::Int, tgt::Int)
+  has_edge(f.network.graph, Edge(src, tgt))
 end
-
-function has_wire(f::WiringDiagram, src::Node, tgt::Node)
-  has_edge(f.network.graph, Edge(f, src, tgt))
-end
-
-Edge(f::WiringDiagram, wire::Wire) = Edge(f, wire.source, wire.target)
-Edge(f::WiringDiagram, src::Node, tgt::Node) = 
-  Edge(f.vertices[src], f.vertices[wire.target])
 
 # High-level categorical interface
 ##################################
 
 # @instance SymmetricMonoidalCategory(WireTypes, WiringDiagram) begin
-#   dom(g::WiringDiagram) = f.inputs
-#   codom(g::WiringDiagram) = f.outputs
+#   dom(f::WiringDiagram) = f.inputs
+#   codom(f::WiringDiagram) = f.outputs
 # end
 
 end

@@ -12,11 +12,14 @@ f = hom(:f, A, B)
 g = hom(:g, B, C)
 
 diagram = WiringDiagram(A, C)
-@test has_node(diagram, diagram)
+@test nboxes(diagram) == 1
+@test box(diagram,1) == diagram
 
-f_node = add_node!(diagram, f)
-@test has_node(diagram, f_node)
-rem_node!(diagram, f_node)
-@test !has_node(diagram, f_node)
+fv = add_box!(diagram, f)
+@test nboxes(diagram) == 2
+@test box(diagram, 2) == HomBox(f)
+
+rem_box!(diagram, 2)
+@test nboxes(diagram) == 1
 
 end
