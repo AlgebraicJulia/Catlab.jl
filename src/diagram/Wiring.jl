@@ -14,9 +14,10 @@ Graphviz or other declarative diagram languages.
 module Wiring
 export Box, HomBox, WiringDiagram, Wire, WireTypes, Connector, ConnectorKind,
   Input, Output, inputs, outputs, input_id, output_id,
-  nboxes, nwires, box, wires, has_wire,
+  boxes, box_ids, nboxes, nwires, box, wires, has_wire, graph,
   add_box!, add_boxes!, add_wire!, add_wires!, rem_box!, rem_wire!, rem_wires!,
-  graph, all_neighbors, neighbors, out_neighbors, in_neighbors
+  all_neighbors, neighbors, out_neighbors, in_neighbors, in_wires, out_wires,
+  substitute!
 
 import Base: eachindex, length
 using AutoHashEquals
@@ -111,9 +112,17 @@ output_id(diagram::WiringDiagram) = diagram.output_id
 # Basic accessors.
 
 box(f::WiringDiagram, v::Int) = f.network.vprops[v]
+boxes(f::WiringDiagram) = [ box(f,v) for v in box_ids(f) ]
+nboxes(f::WiringDiagram) = nv(graph(f)) - 2
+
+function box_ids(f::WiringDiagram)
+  skip = (input_id(f), output_id(f))
+  filter(v -> !(v in skip), 1:nv(graph(f)))
+end
+
 wires(f::WiringDiagram, edge::Edge) = get(f.network.eprops, edge, Wire[])
 wires(f::WiringDiagram, src::Int, tgt::Int) = wires(f, Edge(src,tgt))
-nboxes(f::WiringDiagram) = nv(f.network.graph) - 2
+wires(f::WiringDiagram) = vcat((wires(f,e) for e in edges(graph(f)))...)
 nwires(f::WiringDiagram) = sum(Int[length(w) for w in values(f.network.eprops)])
 
 function has_wire(f::WiringDiagram, src::Int, tgt::Int)
@@ -182,6 +191,89 @@ neighbors(d::WiringDiagram, v::Int) = neighbors(graph(d), v)
 out_neighbors(d::WiringDiagram, v::Int) = out_neighbors(graph(d), v)
 in_neighbors(d::WiringDiagram, v::Int) = in_neighbors(graph(d), v)
 
+""" Get all wires coming into the connector.
+"""
+function in_wires(d::WiringDiagram, conn::Connector)
+  result = Wires[]
+  for v in in_neighbors(conn.box)
+    for wire in wires(d,v,conn.box)
+      if wire.target == conn
+        push!(result, wire)
+      end
+    end
+  end
+  result
+end
+
+""" Get all wires coming out of the connector.
+"""
+function out_wires(d::WiringDiagram, conn::Connector)
+  result = Wires[]
+  for v in out_neighbors(conn.box)
+    for wire in wires(d,conn.box,v)
+      if wire.source == conn
+        push!(result, wire)
+      end
+    end
+  end
+  result
+end
+
+# Diagram substitution.
+
+""" Substitute a vertex with a wiring diagram.
+
+This operation is the operadic composition of wiring diagrams.
+"""
+function substitute!(d::WiringDiagram, v::Int, sub::WiringDiagram)
+  d_in, d_out = input_id(d), output_id(d)
+  
+  # Add new boxes from sub-diagram.
+  sub_map = Dict{Int,Int}{}
+  for u in box_ids(sub)
+    sub_map[u] = add_box!(d, box(sub,u))
+  end
+  
+  # Add new wires from sub-diagram.
+  for wire in wires(sub)
+    src = get(sub_map, wire.source.box, 0)
+    tgt = get(sub_map, wire.target.box, 0)
+    
+    # Special case: wire from input port to output port.
+    if wire.source.box == input_id(sub) && wire.target.box == output_id(sub)
+      for in_wire in in_wires(d, Connector(v,Input,wire.source.port))
+        for out_wire in out_wires(d, Connector(v,Output,wire.target.port))
+          add_wire!(d, Wire(in_wire.source, out_wire.target))
+        end
+      end
+    # Special case: wire from input port to internal box.
+    elseif wire.source.box == input_id(sub)
+      for in_wire in in_wires(d, Connector(v,Input,wire.source.port))
+        add_wire!(d, Wire(in_wire.source, set_box(wire.target, tgt)))
+      end  
+    # Special case: wire from internal box to output port.
+    elseif wire.target.box == output_id(sub)
+      for out_wire in out_wires(d, Connector(v,Output,wire.target.port))
+        add_wire!(d, Wire(set_box(wire.source, src), out_wire.target))
+      end
+    # Default case: wire between two internal boxes.
+    else
+      add_wire!(d, Wire(set_box(wire.source, src), set_box(wire.target, tgt)))
+    end
+  end
+  
+  # Remove original vertex.
+  rem_box!(d, v)
+  return d
+end
+function substitute!(d::WiringDiagram, v::Int)
+  substitute!(d, v, box(d,v))
+end
+
+function set_box(conn::Connector, box::Int)::Connector
+  Connector(box, conn.kind, conn.port)
+end
+
 # High-level categorical interface
 ##################################
 
@@ -191,9 +283,7 @@ in_neighbors(d::WiringDiagram, v::Int) = in_neighbors(graph(d), v)
   
   function id(A::WireTypes)
     f = WiringDiagram(A, A)
-    for i in eachindex(A)
-      add_wire!(f, (input_id(f),Output,i) => (output_id(f),Input,i))
-    end
+    add_wires!(f, ((input_id(f),i) => (output_id(f),i) for i in eachindex(A)))
     return f
   end
   
@@ -204,7 +294,8 @@ in_neighbors(d::WiringDiagram, v::Int) = in_neighbors(graph(d), v)
     add_wires!(h, ((input_id(h),i) => (fv,i) for i in eachindex(dom(f))))
     add_wires!(h, ((fv,i) => (gv,i) for i in eachindex(codom(f))))
     add_wires!(h, ((gv,i) => (output_id(h),i) for i in eachindex(dom(g))))
-    # TODO: Substitute
+    substitute!(h, fv)
+    substitute!(h, gv)
     return h
   end
   
@@ -220,7 +311,8 @@ in_neighbors(d::WiringDiagram, v::Int) = in_neighbors(graph(d), v)
     add_wires!(h, (input_id(h),i+m) => (gv,i) for i in eachindex(dom(g)))
     add_wires!(h, (fv,i) => (output_id(h),i) for i in eachindex(codom(f)))
     add_wires!(h, (gv,i) => (output_id(h),i+n) for i in eachindex(codom(g)))
-    # TODO: Substitute
+    substitute!(h, fv)
+    substitute!(h, gv)
     return h
   end
   
