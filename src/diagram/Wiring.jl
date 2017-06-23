@@ -15,14 +15,17 @@ module Wiring
 export Box, HomBox, WiringDiagram, Wire, WireTypes, Connector, ConnectorKind,
   Input, Output, inputs, outputs, input_id, output_id,
   nboxes, nwires, box, wires, has_wire,
-  add_box!, add_boxes!, add_wire!, rem_box!, rem_wire!, rem_wires!,
+  add_box!, add_boxes!, add_wire!, add_wires!, rem_box!, rem_wire!, rem_wires!,
   graph, all_neighbors, neighbors, out_neighbors, in_neighbors
 
+import Base: eachindex, length
 using AutoHashEquals
 using LightGraphs, Networks
 import LightGraphs: all_neighbors, neighbors, out_neighbors, in_neighbors
-using ...Syntax
-import ...Doctrine: ObExpr, HomExpr
+
+using ...GAT, ...Syntax
+import ...Doctrine: ObExpr, HomExpr, SymmetricMonoidalCategory, 
+  dom, codom, id, compose, otimes, munit, braid
 
 # Data types
 ############
@@ -54,8 +57,12 @@ end
 @auto_hash_equals immutable Wire
   source::Connector
   target::Connector
+  
   Wire(src::Connector, tgt::Connector) = new(src, tgt)
-  Wire(src::Tuple, tgt::Tuple) = new(Connector(src...), Connector(tgt...))
+  Wire(src::Tuple{Int,ConnectorKind,Int}, tgt::Tuple{Int,ConnectorKind,Int}) =
+    Wire(Connector(src[1],src[2],src[3]), Connector(tgt[1],tgt[2],tgt[3]))
+  Wire(src::Tuple{Int,Int}, tgt::Tuple{Int,Int}) =
+    Wire(Connector(src[1],Output,src[2]), Connector(tgt[1],Input,tgt[2]))
   Wire(pair::Pair) = Wire(first(pair), last(pair))
 end
 
@@ -64,6 +71,8 @@ end
 @auto_hash_equals immutable WireTypes
   types::Vector
 end
+eachindex(A::WireTypes) = eachindex(A.types)
+length(A::WireTypes) = length(A.types)
 
 """ Morphism in the category of wiring diagrams.
 
@@ -83,6 +92,9 @@ type WiringDiagram <: Box
     diagram.input_id = add_box!(diagram, diagram)
     diagram.output_id = add_box!(diagram, diagram)
     return diagram
+  end
+  function WiringDiagram(inputs::WireTypes, outputs::WireTypes)
+    WiringDiagram(inputs.types, outputs.types)
   end
   function WiringDiagram(inputs::ObExpr, outputs::ObExpr)
     WiringDiagram(collect(inputs), collect(outputs))
@@ -136,6 +148,12 @@ function add_wire!(f::WiringDiagram, wire::Wire)
 end
 add_wire!(f::WiringDiagram, pair::Pair) = add_wire!(f, Wire(pair))
 
+function add_wires!(f::WiringDiagram, wires)
+  for wire in wires
+    add_wire!(f, wire)
+  end
+end
+
 function rem_wire!(f::WiringDiagram, wire::Wire)
   edge = Edge(wire.source.box, wire.target.box)
   wires = f.eprops[edge]
@@ -167,9 +185,52 @@ in_neighbors(d::WiringDiagram, v::Int) = in_neighbors(graph(d), v)
 # High-level categorical interface
 ##################################
 
-# @instance SymmetricMonoidalCategory(WireTypes, WiringDiagram) begin
-#   dom(f::WiringDiagram) = WireTypes(f.inputs)
-#   codom(f::WiringDiagram) = WireTypes(f.outputs)
-# end
+@instance SymmetricMonoidalCategory(WireTypes, WiringDiagram) begin
+  dom(f::WiringDiagram) = WireTypes(f.inputs)
+  codom(f::WiringDiagram) = WireTypes(f.outputs)
+  
+  function id(A::WireTypes)
+    f = WiringDiagram(A, A)
+    for i in eachindex(A)
+      add_wire!(f, (input_id(f),Output,i) => (output_id(f),Input,i))
+    end
+    return f
+  end
+  
+  function compose(f::WiringDiagram, g::WiringDiagram)
+    h = WiringDiagram(dom(f), codom(g))
+    fv = add_box!(h, f)
+    gv = add_box!(h, g)
+    add_wires!(h, ((input_id(h),i) => (fv,i) for i in eachindex(dom(f))))
+    add_wires!(h, ((fv,i) => (gv,i) for i in eachindex(codom(f))))
+    add_wires!(h, ((gv,i) => (output_id(h),i) for i in eachindex(dom(g))))
+    # TODO: Substitute
+    return h
+  end
+  
+  otimes(A::WireTypes, B::WireTypes) = WireTypes([A.types; B.types])
+  munit(::Type{WireTypes}) = WireTypes([])
+  
+  function otimes(f::WiringDiagram, g::WiringDiagram)
+    h = WiringDiagram(otimes(dom(f),dom(g)), otimes(codom(f),codom(g)))
+    m, n = length(dom(f)), length(codom(f))
+    fv = add_box!(h, f)
+    gv = add_box!(h, g)
+    add_wires!(h, (input_id(h),i) => (fv,i) for i in eachindex(dom(f)))
+    add_wires!(h, (input_id(h),i+m) => (gv,i) for i in eachindex(dom(g)))
+    add_wires!(h, (fv,i) => (output_id(h),i) for i in eachindex(codom(f)))
+    add_wires!(h, (gv,i) => (output_id(h),i+n) for i in eachindex(codom(g)))
+    # TODO: Substitute
+    return h
+  end
+  
+  function braid(A::WireTypes, B::WireTypes)
+    h = WiringDiagram(otimes(A,B), otimes(B,A))
+    m, n = length(A), length(B)
+    add_wires!(h, ((input_id(h),i) => (output_id(h),i+n) for i in 1:m))
+    add_wires!(h, ((input_id(h),i+m) => (output_id(h),i) for i in 1:n))
+    return h
+  end
+end
 
 end
