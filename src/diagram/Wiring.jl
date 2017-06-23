@@ -70,15 +70,18 @@ end
 TODO: Document internal representation.
 """
 type WiringDiagram <: Box
+  network::DiNetwork{Box,Vector{Wire},Void}
   inputs::Vector
   outputs::Vector
-  network::DiNetwork{Box,Vector{Wire},Void}
+  input_id::Int
+  output_id::Int
   
   function WiringDiagram(inputs::Vector, outputs::Vector)
     network = DiNetwork(DiGraph(), Dict{Int,Box}(),
                         Dict{Edge,Vector{Wire}}(), Void())
-    diagram = new(inputs, outputs, network)
-    add_boxes!(diagram, [diagram, diagram])
+    diagram = new(network, inputs, outputs, 0, 0)
+    diagram.input_id = add_box!(diagram, diagram)
+    diagram.output_id = add_box!(diagram, diagram)
     return diagram
   end
   function WiringDiagram(inputs::ObExpr, outputs::ObExpr)
@@ -87,6 +90,8 @@ type WiringDiagram <: Box
 end
 inputs(diagram::WiringDiagram) = diagram.inputs
 outputs(diagram::WiringDiagram) = diagram.outputs
+input_id(diagram::WiringDiagram) = diagram.input_id
+output_id(diagram::WiringDiagram) = diagram.output_id
 
 # Low-level graph interface
 ###########################
@@ -102,14 +107,6 @@ nwires(f::WiringDiagram) = sum(Int[length(w) for w in values(f.network.eprops)])
 function has_wire(f::WiringDiagram, src::Int, tgt::Int)
   has_edge(f.network.graph, Edge(src, tgt))
 end
-
-""" Vertex representing the input ports of the wiring diagram.
-"""
-input_id(f::WiringDiagram) = 1
-
-""" Vertex representing the output ports of the wiring diagram.
-"""
-output_id(f::WiringDiagram) = 2
 
 # Graph mutation.
 
