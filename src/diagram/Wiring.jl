@@ -12,7 +12,7 @@ intermediate representation that can be straightforwardly translated into
 Graphviz or other declarative diagram languages.
 """
 module Wiring
-export Box, HomBox, WiringDiagram, Wire, WireTypes, Connector, ConnectorKind,
+export Box, HomBox, WiringDiagram, Wire, WireTypes, Port, PortKind,
   Input, Output, inputs, outputs, input_id, output_id,
   boxes, box_ids, nboxes, nwires, box, wires, has_wire, graph,
   add_box!, add_boxes!, add_wire!, add_wires!, rem_box!, rem_wire!, rem_wires!,
@@ -48,23 +48,49 @@ end
 inputs(box::HomBox) = collect(dom(box.expr))
 outputs(box::HomBox) = collect(codom(box.expr))
 
-@enum ConnectorKind Input Output
-@auto_hash_equals immutable Connector
+""" Kind of port: input or output.
+"""
+@enum PortKind Input Output
+
+""" A port on a box to which wires can be connected.
+"""
+@auto_hash_equals immutable Port
   box::Int
-  kind::ConnectorKind
+  kind::PortKind
   port::Int
 end
 
+""" A wire connecting one port to another.
+"""
 @auto_hash_equals immutable Wire
-  source::Connector
-  target::Connector
+  source::Port
+  target::Port
   
-  Wire(src::Connector, tgt::Connector) = new(src, tgt)
-  Wire(src::Tuple{Int,ConnectorKind,Int}, tgt::Tuple{Int,ConnectorKind,Int}) =
-    Wire(Connector(src[1],src[2],src[3]), Connector(tgt[1],tgt[2],tgt[3]))
+  Wire(src::Port, tgt::Port) = new(src, tgt)
+  Wire(src::Tuple{Int,PortKind,Int}, tgt::Tuple{Int,PortKind,Int}) =
+    Wire(Port(src[1],src[2],src[3]), Port(tgt[1],tgt[2],tgt[3]))
   Wire(src::Tuple{Int,Int}, tgt::Tuple{Int,Int}) =
-    Wire(Connector(src[1],Output,src[2]), Connector(tgt[1],Input,tgt[2]))
+    Wire(Port(src[1],Output,src[2]), Port(tgt[1],Input,tgt[2]))
   Wire(pair::Pair) = Wire(first(pair), last(pair))
+end
+
+@auto_hash_equals immutable PortEdgeData
+  kind::PortKind
+  port::Int
+end
+to_edge_data(conn::Port) = PortEdgeData(conn.kind, conn.port)
+from_edge_data(conn::PortEdgeData, v::Int) = Port(v, conn.kind, conn.port)
+
+@auto_hash_equals immutable WireEdgeData
+  source::PortEdgeData
+  target::PortEdgeData
+end
+function to_edge_data(wire::Wire)
+  WireEdgeData(to_edge_data(wire.source), to_edge_data(wire.target))
+end
+function from_edge_data(wire::WireEdgeData, edge::Edge)
+  Wire(from_edge_data(wire.source, first(edge)),
+       from_edge_data(wire.target, last(edge)))
 end
 
 """ Object in the category of wiring diagrams.
@@ -80,7 +106,7 @@ length(A::WireTypes) = length(A.types)
 TODO: Document internal representation.
 """
 type WiringDiagram <: Box
-  network::DiNetwork{Box,Vector{Wire},Void}
+  network::DiNetwork{Box,Vector{WireEdgeData},Void}
   inputs::Vector
   outputs::Vector
   input_id::Int
@@ -88,7 +114,7 @@ type WiringDiagram <: Box
   
   function WiringDiagram(inputs::Vector, outputs::Vector)
     network = DiNetwork(DiGraph(), Dict{Int,Box}(),
-                        Dict{Edge,Vector{Wire}}(), Void())
+                        Dict{Edge,Vector{WireEdgeData}}(), Void())
     diagram = new(network, inputs, outputs, 0, 0)
     diagram.input_id = add_box!(diagram, diagram)
     diagram.output_id = add_box!(diagram, diagram)
@@ -120,7 +146,10 @@ function box_ids(f::WiringDiagram)
   Int[ v for v in 1:nv(graph(f)) if !(v in skip) ]
 end
 
-wires(f::WiringDiagram, edge::Edge) = get(f.network.eprops, edge, Wire[])
+function wires(f::WiringDiagram, edge::Edge)
+  Wire[ from_edge_data(wire_data, edge)
+        for wire_data in get(f.network.eprops, edge, WireEdgeData[]) ]
+end
 wires(f::WiringDiagram, src::Int, tgt::Int) = wires(f, Edge(src,tgt))
 wires(f::WiringDiagram) = vcat((wires(f,e) for e in edges(graph(f)))...)
 nwires(f::WiringDiagram) = sum(Int[length(w) for w in values(f.network.eprops)])
@@ -151,9 +180,9 @@ function add_wire!(f::WiringDiagram, wire::Wire)
   # TODO: Check for compatible inputs/outputs.
   edge = Edge(wire.source.box, wire.target.box)
   if !has_edge(f.network.graph, edge)
-    add_edge!(f.network, edge, Wire[])
+    add_edge!(f.network, edge, WireEdgeData[])
   end
-  push!(f.network.eprops[edge], wire)
+  push!(f.network.eprops[edge], to_edge_data(wire))
 end
 add_wire!(f::WiringDiagram, pair::Pair) = add_wire!(f, Wire(pair))
 
@@ -166,7 +195,7 @@ end
 function rem_wire!(f::WiringDiagram, wire::Wire)
   edge = Edge(wire.source.box, wire.target.box)
   wires = f.eprops[edge]
-  deleteat!(wires, findfirst(wires, wire))
+  deleteat!(wires, findfirst(wires, to_wire_data(wire)))
   if isempty(wires)
     rem_edge!(f.network, edge)
   end
@@ -193,7 +222,7 @@ in_neighbors(d::WiringDiagram, v::Int) = in_neighbors(graph(d), v)
 
 """ Get all wires coming into the connector.
 """
-function in_wires(d::WiringDiagram, conn::Connector)
+function in_wires(d::WiringDiagram, conn::Port)
   result = Wire[]
   for v in in_neighbors(d, conn.box)
     for wire in wires(d, v, conn.box)
@@ -207,7 +236,7 @@ end
 
 """ Get all wires coming out of the connector.
 """
-function out_wires(d::WiringDiagram, conn::Connector)
+function out_wires(d::WiringDiagram, conn::Port)
   result = Wire[]
   for v in out_neighbors(d, conn.box)
     for wire in wires(d, conn.box, v)
@@ -239,19 +268,19 @@ function substitute!(d::WiringDiagram, v::Int, sub::WiringDiagram)
     
     # Special case: wire from input port to output port.
     if wire.source.box == input_id(sub) && wire.target.box == output_id(sub)
-      for in_wire in in_wires(d, Connector(v,Input,wire.source.port))
-        for out_wire in out_wires(d, Connector(v,Output,wire.target.port))
+      for in_wire in in_wires(d, Port(v,Input,wire.source.port))
+        for out_wire in out_wires(d, Port(v,Output,wire.target.port))
           add_wire!(d, Wire(in_wire.source, out_wire.target))
         end
       end
     # Special case: wire from input port to internal box.
     elseif wire.source.box == input_id(sub)
-      for in_wire in in_wires(d, Connector(v,Input,wire.source.port))
+      for in_wire in in_wires(d, Port(v,Input,wire.source.port))
         add_wire!(d, Wire(in_wire.source, set_box(wire.target, tgt)))
       end  
     # Special case: wire from internal box to output port.
     elseif wire.target.box == output_id(sub)
-      for out_wire in out_wires(d, Connector(v,Output,wire.target.port))
+      for out_wire in out_wires(d, Port(v,Output,wire.target.port))
         add_wire!(d, Wire(set_box(wire.source, src), out_wire.target))
       end
     # Default case: wire between two internal boxes.
@@ -268,8 +297,8 @@ function substitute!(d::WiringDiagram, v::Int)
   substitute!(d, v, box(d,v))
 end
 
-function set_box(conn::Connector, box::Int)::Connector
-  Connector(box, conn.kind, conn.port)
+function set_box(conn::Port, box::Int)::Port
+  Port(box, conn.kind, conn.port)
 end
 
 # High-level categorical interface
