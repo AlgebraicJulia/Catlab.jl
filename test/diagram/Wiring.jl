@@ -65,7 +65,7 @@ add_wires!(sub, Pair[
 d = WiringDiagram(A,D)
 fv = add_box!(d, f)
 subv = add_box!(d, sub)
-add_wires!(sub, Pair[
+add_wires!(d, Pair[
   (input_id(d),1) => (fv,1),
   (fv,1) => (subv,1),
   (subv,1) => (output_id(d),1),
