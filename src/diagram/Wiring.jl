@@ -117,7 +117,7 @@ nboxes(f::WiringDiagram) = nv(graph(f)) - 2
 
 function box_ids(f::WiringDiagram)
   skip = (input_id(f), output_id(f))
-  filter(v -> !(v in skip), 1:nv(graph(f)))
+  Int[ v for v in 1:nv(graph(f)) if !(v in skip) ]
 end
 
 wires(f::WiringDiagram, edge::Edge) = get(f.network.eprops, edge, Wire[])
@@ -194,9 +194,9 @@ in_neighbors(d::WiringDiagram, v::Int) = in_neighbors(graph(d), v)
 """ Get all wires coming into the connector.
 """
 function in_wires(d::WiringDiagram, conn::Connector)
-  result = Wires[]
-  for v in in_neighbors(conn.box)
-    for wire in wires(d,v,conn.box)
+  result = Wire[]
+  for v in in_neighbors(d, conn.box)
+    for wire in wires(d, v, conn.box)
       if wire.target == conn
         push!(result, wire)
       end
@@ -208,9 +208,9 @@ end
 """ Get all wires coming out of the connector.
 """
 function out_wires(d::WiringDiagram, conn::Connector)
-  result = Wires[]
-  for v in out_neighbors(conn.box)
-    for wire in wires(d,conn.box,v)
+  result = Wire[]
+  for v in out_neighbors(d, conn.box)
+    for wire in wires(d, conn.box, v)
       if wire.source == conn
         push!(result, wire)
       end
@@ -226,10 +226,8 @@ end
 This operation is the operadic composition of wiring diagrams.
 """
 function substitute!(d::WiringDiagram, v::Int, sub::WiringDiagram)
-  d_in, d_out = input_id(d), output_id(d)
-  
   # Add new boxes from sub-diagram.
-  sub_map = Dict{Int,Int}{}
+  sub_map = Dict{Int,Int}()
   for u in box_ids(sub)
     sub_map[u] = add_box!(d, box(sub,u))
   end

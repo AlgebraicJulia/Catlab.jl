@@ -16,7 +16,7 @@ d = WiringDiagram(A, C)
 @test box(d,input_id(d)) == d
 @test box(d,output_id(d)) == d
 
-# Mutations on boxes
+# Operations on boxes
 fv = add_box!(d, f)
 @test nboxes(d) == 1
 @test box(d, fv) == HomBox(f)
@@ -28,7 +28,7 @@ gv = add_box!(d, g)
 @test nboxes(d) == 2
 @test boxes(d) == [HomBox(f),HomBox(g)]
 
-# Mutations on wires
+# Operations on wires
 @test nwires(d) == 0
 @test !has_wire(d, fv, gv)
 add_wire!(d, (input_id(d),1) => (fv,1))
@@ -41,11 +41,42 @@ add_wire!(d, (gv,1) => (output_id(d),1))
 @test neighbors(d, fv) == [gv]
 @test out_neighbors(d, fv) == [gv]
 @test in_neighbors(d, gv) == [fv]
+@test out_wires(d, Connector(fv,Output,1)) == [ Wire((fv,1) => (gv,1)) ]
+@test in_wires(d, Connector(gv,Input,1)) == [ Wire((fv,1) => (gv,1)) ]
 rem_wires!(d, fv, gv)
 @test nwires(d) == 2
 @test !has_wire(d, fv, gv)
 
 # Substitution
-# TODO
+f, g, h = hom(:f,A,B), hom(:g,B,C), hom(:h,C,D)
+sub = WiringDiagram(B,D)
+gv = add_box!(sub, g)
+hv = add_box!(sub, h)
+add_wires!(sub, Pair[
+  (input_id(sub),1) => (gv,1),
+  (gv,1) => (hv,1),
+  (hv,1) => (output_id(sub),1),
+])
+d = WiringDiagram(A,D)
+fv = add_box!(d, f)
+subv = add_box!(d, sub)
+add_wires!(sub, Pair[
+  (input_id(d),1) => (fv,1),
+  (fv,1) => (subv,1),
+  (subv,1) => (output_id(d),1),
+])
+@test boxes(d) == [ HomBox(f), sub ]
+@test boxes(sub) == [ HomBox(g), HomBox(h) ]
+substitute!(d, subv)
+@test nboxes(d) == 3
+@test Set(boxes(d)) == Set([ HomBox(f), HomBox(g), HomBox(h) ])
+box_map = Dict(box(d,v).expr => v for v in box_ids(d))
+@test nwires(d) == 4
+@test Set(wires(d)) == Set(map(Wire, [
+  (input_id(d),1) => (box_map[f],1),
+  (box_map[f],1) => (box_map[g],1),
+  (box_map[g],1) => (box_map[h],1),
+  (box_map[h],1) => (output_id(d),1),
+]))
 
 end
