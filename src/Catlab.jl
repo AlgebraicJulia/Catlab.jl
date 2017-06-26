@@ -26,8 +26,8 @@ include("Rewrite.jl")
 @reexport using .Rewrite
 
 # Additional modules
-include("Doctrine.jl")
-include("Diagram.jl")
-include("Algebra.jl")
+include("doctrine/Doctrine.jl")
+include("diagram/Diagram.jl")
+include("algebra/Algebra.jl")
 
 end

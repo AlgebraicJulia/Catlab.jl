@@ -31,8 +31,8 @@ abstract Hom2Expr{T} <: CategoryExpr{T}
 # Convenience method: generate this automatically?
 ob(mod::Module, args...) = ob(mod.Ob, args...)
 
-include("doctrine/Category.jl")
-include("doctrine/Monoidal.jl")
-include("doctrine/Relations.jl")
+include("Category.jl")
+include("Monoidal.jl")
+include("Relations.jl")
 
 end

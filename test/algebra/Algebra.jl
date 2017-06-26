@@ -1,7 +1,7 @@
 @testset "Algebra.Network" begin
-  include("algebra/Network.jl")
+  include("Network.jl")
 end
 
 @testset "Algebra.Tree" begin
-  include("algebra/Tree.jl")
+  include("Tree.jl")
 end

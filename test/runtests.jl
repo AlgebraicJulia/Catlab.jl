@@ -12,5 +12,5 @@ end
   include("Doctrine.jl")
 end
 
-include("Diagram.jl")
-include("Algebra.jl")
+include("diagram/Diagram.jl")
+include("algebra/Algebra.jl")
