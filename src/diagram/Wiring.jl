@@ -132,8 +132,7 @@ function Base.:(==)(d1::WiringDiagram, d2::WiringDiagram)
   (inputs(d1) == inputs(d2) && outputs(d1) == outputs(d2) &&
    input_id(d1) == input_id(d2) && output_id(d1) == output_id(d2) &&
    graph(d1) == graph(d2) &&
-   boxes(d1) == boxes(d2) &&
-   all(getprop(d1.network,e) == getprop(d2.network,e) for e in edges(graph(d1))))
+   boxes(d1) == boxes(d2) && Set(wires(d1)) == Set(wires(d2)))
 end
 
 # Low-level graph interface
@@ -199,15 +198,15 @@ function add_wires!(f::WiringDiagram, wires)
   end
 end
 
-# TODO: Test function!
 function rem_wire!(f::WiringDiagram, wire::Wire)
   edge = Edge(wire.source.box, wire.target.box)
   wires = getprop(f.network, edge)
-  deleteat!(wires, findfirst(wires, to_wire_data(wire)))
+  delete!(wires, to_edge_data(wire))
   if isempty(wires)
     rem_edge!(f.network, edge)
   end
 end
+rem_wire!(f::WiringDiagram, pair::Pair) = rem_wire!(f, Wire(pair))
 
 function rem_wires!(f::WiringDiagram, src::Int, tgt::Int)
   rem_edge!(f.network, Edge(src, tgt))

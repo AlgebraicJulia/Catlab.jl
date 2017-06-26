@@ -51,6 +51,8 @@ add_wire!(d, (gv,1) => (output_id(d),1))
 rem_wires!(d, fv, gv)
 @test nwires(d) == 2
 @test !has_wire(d, fv, gv)
+rem_wire!(d, (input_id(d),1) => (fv,1))
+@test wires(d) == [ Wire((gv,1) => (output_id(d),1)) ]
 
 # Substitution
 f, g, h = hom(:f,A,B), hom(:g,B,C), hom(:h,C,D)
