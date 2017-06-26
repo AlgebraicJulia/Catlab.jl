@@ -19,8 +19,8 @@ export Box, HomBox, WiringDiagram, Wire, WireTypes, Port, PortKind,
   all_neighbors, neighbors, out_neighbors, in_neighbors, in_wires, out_wires,
   substitute!
 
-import Base: eachindex, length
 using AutoHashEquals
+import DataStructures: OrderedSet
 using LightGraphs, Networks
 import LightGraphs: all_neighbors, neighbors, out_neighbors, in_neighbors
 
@@ -84,8 +84,8 @@ end
 @auto_hash_equals immutable WireTypes
   types::Vector
 end
-eachindex(A::WireTypes) = eachindex(A.types)
-length(A::WireTypes) = length(A.types)
+Base.eachindex(A::WireTypes) = eachindex(A.types)
+Base.length(A::WireTypes) = length(A.types)
 
 """ Base type for any box (node) in a wiring diagram.
 
@@ -99,7 +99,7 @@ abstract Box
 TODO: Document internal representation.
 """
 type WiringDiagram <: Box
-  network::DiNetwork{Box,Vector{WireEdgeData},Void}
+  network::DiNetwork{Box,OrderedSet{WireEdgeData},Void}
   inputs::Vector
   outputs::Vector
   input_id::Int
@@ -107,7 +107,7 @@ type WiringDiagram <: Box
   
   function WiringDiagram(inputs::Vector, outputs::Vector)
     network = DiNetwork(DiGraph(), Dict{Int,Box}(),
-                        Dict{Edge,Vector{WireEdgeData}}(), Void())
+                        Dict{Edge,OrderedSet{WireEdgeData}}(), Void())
     diagram = new(network, inputs, outputs, 0, 0)
     diagram.input_id = add_box!(diagram, diagram)
     diagram.output_id = add_box!(diagram, diagram)
@@ -182,7 +182,7 @@ function add_wire!(f::WiringDiagram, wire::Wire)
   # TODO: Check for compatible inputs/outputs.
   edge = Edge(wire.source.box, wire.target.box)
   if !has_edge(f.network.graph, edge)
-    add_edge!(f.network, edge, WireEdgeData[])
+    add_edge!(f.network, edge, OrderedSet{WireEdgeData}())
   end
   push!(f.network.eprops[edge], to_edge_data(wire))
 end
