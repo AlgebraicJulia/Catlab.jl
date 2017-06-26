@@ -120,4 +120,19 @@ g = WiringDiagram(hom(:g,B,A))
 # Symmetric monoidal category
 #----------------------------
 
+# Domains and codomains
+@test dom(otimes(f,g)) == otimes(dom(f),dom(g))
+@test codom(otimes(f,g)) == otimes(codom(f),codom(g))
+
+# Associativity and unit
+X, Y = WireTypes([A,B]), WireTypes([C,D])
+I = munit(WireTypes)
+@test otimes(X,I) == X
+@test otimes(I,X) == X
+@test otimes(otimes(X,Y),X) == otimes(X,otimes(Y,X))
+@test otimes(otimes(f,g),f) == otimes(f,otimes(g,f))
+
+# Braiding
+@test compose(braid(X,Y),braid(Y,X)) == id(otimes(X,Y))
+
 end
