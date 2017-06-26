@@ -8,6 +8,10 @@ end
   include("Syntax.jl")
 end
 
+@testset "Presentation" begin
+  include("Presentation.jl")
+end
+
 @testset "Doctrine" begin
   include("Doctrine.jl")
 end

@@ -9,11 +9,13 @@ future we may allow *axioms* to be expressed as well. Regardless, we will
 persist in calling this module "GAT". Signatures are defined using the
 `@signature` macro.
 
-There are two useful things to do with a GAT signature:
+There are several useful things to do with a GAT signature:
 
-1. Define *instances* of the signature (models of the theory) using the
-  `@instance` macro
+1. Define *instances* of the signature (models of the theory) in Julia code
+   using the `@instance` macro
 2. Define *syntax* systems using the `@syntax` macro (see `Syntax` module)
+3. Define models of the theory by finite *presentation* using a syntax system
+   and the `@presentation` macro (see `Presentation` module)
 
 References:
 

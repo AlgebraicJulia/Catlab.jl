@@ -1,7 +1,4 @@
-@testset "Algebra.Network" begin
+@testset "Algebra" begin
   include("Network.jl")
-end
-
-@testset "Algebra.Tree" begin
   include("Tree.jl")
 end
