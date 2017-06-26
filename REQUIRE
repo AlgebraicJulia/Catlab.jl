@@ -1,10 +1,12 @@
 julia 0.5
 
 AutoHashEquals
-DataStructures
 Formatting
 Match
 Reexport
+
+DataStructures
+LightGraphs
 
 # Optional:
 # ReverseDiffSource

@@ -21,12 +21,14 @@ export Box, HomBox, WiringDiagram, Wire, WireTypes, Port, PortKind,
 
 using AutoHashEquals
 import DataStructures: OrderedSet
-using LightGraphs, Networks
+using LightGraphs
 import LightGraphs: all_neighbors, neighbors, out_neighbors, in_neighbors
 
 using ...GAT, ...Syntax
 import ...Doctrine: ObExpr, HomExpr, SymmetricMonoidalCategory, 
   dom, codom, id, compose, otimes, munit, braid
+using ..Networks
+import ..Networks: graph
 
 # Data types
 ############
