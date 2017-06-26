@@ -111,7 +111,7 @@ g = WiringDiagram(hom(:g,B,A))
 @test codom(compose(f,g)) == WireTypes([A])
 
 # Associativity
-#@test compose(compose(f,g),f) == compose(f,compose(g,f))
+@test compose(compose(f,g),f) == compose(f,compose(g,f))
 
 # Identity
 @test compose(id(dom(f)), f) == f

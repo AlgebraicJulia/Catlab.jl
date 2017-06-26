@@ -257,6 +257,30 @@ end
 This operation is the operadic composition of wiring diagrams.
 """
 function substitute!(d::WiringDiagram, v::Int, sub::WiringDiagram)
+  substitute_impl!(d, v, sub)
+  rem_box!(d, v)
+  return d
+end
+function substitute!(d::WiringDiagram, v::Int)
+  substitute!(d, v, box(d,v))
+end
+
+""" Simultaneous substitution of vertices with wiring diagrams.
+"""
+function substitute!(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagram})
+  for (v,sub) in zip(vs, subs)
+    substitute_impl!(d, v, sub)
+  end
+  for v in reverse(vs)
+    rem_box!(d,v)
+  end
+  return d
+end
+function substitute!(d::WiringDiagram, vs::Vector{Int})
+  substitute!(d, vs, WiringDiagram[ box(d,v) for v in vs ])
+end
+
+function substitute_impl!(d::WiringDiagram, v::Int, sub::WiringDiagram)
   # Add new boxes from sub-diagram.
   sub_map = Dict{Int,Int}()
   for u in box_ids(sub)
@@ -290,13 +314,7 @@ function substitute!(d::WiringDiagram, v::Int, sub::WiringDiagram)
       add_wire!(d, Wire(set_box(wire.source, src), set_box(wire.target, tgt)))
     end
   end
-  
-  # Remove original vertex.
-  rem_box!(d, v)
   return d
-end
-function substitute!(d::WiringDiagram, v::Int)
-  substitute!(d, v, box(d,v))
 end
 
 # High-level categorical interface
@@ -347,8 +365,7 @@ add_box!(f::WiringDiagram, expr::HomExpr) = add_box!(f, HomBox(expr))
     add_wires!(h, ((input_id(h),i) => (fv,i) for i in eachindex(dom(f))))
     add_wires!(h, ((fv,i) => (gv,i) for i in eachindex(codom(f))))
     add_wires!(h, ((gv,i) => (output_id(h),i) for i in eachindex(dom(g))))
-    substitute!(h, gv)
-    substitute!(h, fv)
+    substitute!(h, [fv,gv])
     return h
   end
   
@@ -364,8 +381,7 @@ add_box!(f::WiringDiagram, expr::HomExpr) = add_box!(f, HomBox(expr))
     add_wires!(h, (input_id(h),i+m) => (gv,i) for i in eachindex(dom(g)))
     add_wires!(h, (fv,i) => (output_id(h),i) for i in eachindex(codom(f)))
     add_wires!(h, (gv,i) => (output_id(h),i+n) for i in eachindex(codom(g)))
-    substitute!(h, gv)
-    substitute!(h, fv)
+    substitute!(h, [fv,gv])
     return h
   end
   
