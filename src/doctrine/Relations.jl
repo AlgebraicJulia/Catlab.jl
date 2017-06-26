@@ -1,4 +1,5 @@
-import Lazy: @>
+# Bicategory of relations
+#########################
 
 """ Doctrine of *bicategory of relations*
 
@@ -29,9 +30,10 @@ end
   otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
-  dagger(f::Hom) = @>(Super.dagger(f),
-    anti_involute(dagger, compose, id),
-    distribute_unary(dagger, otimes))
+  function dagger(f::Hom)
+    f = anti_involute(Super.dagger(f), dagger, compose, id)
+    distribute_unary(f, dagger, otimes)
+  end
 end
 
 """ Doctrine of *abelian bicategory of relations*
@@ -55,9 +57,10 @@ end
   otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
-  dagger(f::Hom) = @>(Super.dagger(f),
-    anti_involute(dagger, compose, id),
-    distribute_unary(dagger, otimes))
+  function dagger(f::Hom)
+    f = anti_involute(Super.dagger(f), dagger, compose, id)
+    distribute_unary(f, dagger, otimes)
+  end
 end
 
 function show_latex(io::IO, expr::FreeAbelianBicategoryRelations.Ob{:otimes}; kw...)
