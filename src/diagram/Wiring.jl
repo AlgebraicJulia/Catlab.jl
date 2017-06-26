@@ -132,8 +132,8 @@ function Base.:(==)(d1::WiringDiagram, d2::WiringDiagram)
   (inputs(d1) == inputs(d2) && outputs(d1) == outputs(d2) &&
    input_id(d1) == input_id(d2) && output_id(d1) == output_id(d2) &&
    graph(d1) == graph(d2) &&
-   boxes(d1) == boxes(d2) && # using d.network.vprops gives infinite loop
-   d1.network.eprops == d2.network.eprops)
+   boxes(d1) == boxes(d2) &&
+   all(getprop(d1.network,e) == getprop(d2.network,e) for e in edges(graph(d1))))
 end
 
 # Low-level graph interface
@@ -141,7 +141,7 @@ end
 
 # Basic accessors.
 
-box(f::WiringDiagram, v::Int) = f.network.vprops[v]
+box(f::WiringDiagram, v::Int) = getprop(f.network, v)
 boxes(f::WiringDiagram) = [ box(f,v) for v in box_ids(f) ]
 nboxes(f::WiringDiagram) = nv(graph(f)) - 2
 
@@ -151,15 +151,19 @@ function box_ids(f::WiringDiagram)
 end
 
 function wires(f::WiringDiagram, edge::Edge)
-  Wire[ from_edge_data(wire_data, edge)
-        for wire_data in get(f.network.eprops, edge, WireEdgeData[]) ]
+  if hasprop(f.network, edge)
+    Wire[ from_edge_data(data, edge) for data in getprop(f.network, edge) ]
+  else
+    Wire[]
+  end
 end
 wires(f::WiringDiagram, src::Int, tgt::Int) = wires(f, Edge(src,tgt))
 wires(f::WiringDiagram) = vcat((wires(f,e) for e in edges(graph(f)))...)
-nwires(f::WiringDiagram) = sum(Int[length(w) for w in values(f.network.eprops)])
+nwires(f::WiringDiagram) =
+  sum(Int[ length(getprop(f.network,e)) for e in edges(graph(f)) ])
 
 function has_wire(f::WiringDiagram, src::Int, tgt::Int)
-  has_edge(f.network.graph, Edge(src, tgt))
+  has_edge(graph(f), Edge(src, tgt))
 end
 
 # Graph mutation.
@@ -185,7 +189,7 @@ function add_wire!(f::WiringDiagram, wire::Wire)
   if !has_edge(f.network.graph, edge)
     add_edge!(f.network, edge, OrderedSet{WireEdgeData}())
   end
-  push!(f.network.eprops[edge], to_edge_data(wire))
+  push!(getprop(f.network, edge), to_edge_data(wire))
 end
 add_wire!(f::WiringDiagram, pair::Pair) = add_wire!(f, Wire(pair))
 
@@ -195,9 +199,10 @@ function add_wires!(f::WiringDiagram, wires)
   end
 end
 
+# TODO: Test function!
 function rem_wire!(f::WiringDiagram, wire::Wire)
   edge = Edge(wire.source.box, wire.target.box)
-  wires = f.eprops[edge]
+  wires = getprop(f.network, edge)
   deleteat!(wires, findfirst(wires, to_wire_data(wire)))
   if isempty(wires)
     rem_edge!(f.network, edge)
