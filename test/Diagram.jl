@@ -1,4 +1,5 @@
 @testset "Diagram.Wiring" begin
+  include("diagram/Networks.jl")
   include("diagram/Wiring.jl")
 end
 
