@@ -57,11 +57,11 @@ Network{V,E}(g::Graph, ::Type{V}, ::Type{E}) = Network(g, Dict{Int,V}(), Dict{Ed
 Network{V}(g::Graph, ::Type{V}) = Network(g, Dict{Int,V}(), Dict{Edge,Void}(), Void())
 Network(g::Graph) = Network(g, Dict{Int,Void}(), Dict{Edge,Void}(), Void())
 
-DiNetwork{V,E}(::Type{V}, ::Type{E}) = DiNetwork(DiGraph(), Dict{Int,V}(), Dict{Edge,E}(), Void)
-DiNetwork{V}(::Type{V}) = DiNetwork(DiGraph(), Dict{Int,V}(), Dict{Edge,Void}(), Void)
+DiNetwork{V,E}(::Type{V}, ::Type{E}) = DiNetwork(DiGraph(), Dict{Int,V}(), Dict{Edge,E}(), Void())
+DiNetwork{V}(::Type{V}) = DiNetwork(DiGraph(), Dict{Int,V}(), Dict{Edge,Void}(), Void())
 
-DiNetwork{V,E}(g::DiGraph, ::Type{V}, ::Type{E}) = DiNetwork(g, Dict{Int,V}(), Dict{Edge,E}(), Void)
-DiNetwork{V}(g::DiGraph, ::Type{V}) = DiNetwork(g, Dict{Int,V}(), Dict{Edge,Void}(), Void)
+DiNetwork{V,E}(g::DiGraph, ::Type{V}, ::Type{E}) = DiNetwork(g, Dict{Int,V}(), Dict{Edge,E}(), Void())
+DiNetwork{V}(g::DiGraph, ::Type{V}) = DiNetwork(g, Dict{Int,V}(), Dict{Edge,Void}(), Void())
 
 #### core functions ###########
 

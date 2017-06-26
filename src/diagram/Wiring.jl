@@ -108,8 +108,7 @@ type WiringDiagram <: Box
   output_id::Int
   
   function WiringDiagram(inputs::Vector, outputs::Vector)
-    network = DiNetwork(DiGraph(), Dict{Int,Box}(),
-                        Dict{Edge,OrderedSet{WireEdgeData}}(), Void())
+    network = DiNetwork(Box, OrderedSet{WireEdgeData})
     diagram = new(network, inputs, outputs, 0, 0)
     diagram.input_id = add_box!(diagram, diagram)
     diagram.output_id = add_box!(diagram, diagram)
