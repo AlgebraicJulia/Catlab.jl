@@ -84,4 +84,40 @@ box_map = Dict(box(d,v).expr => v for v in box_ids(d))
   (box_map[h],1) => (output_id(d),1),
 ]))
 
+# High-level categorical interface
+##################################
+
+# Category
+#---------
+
+# Generators
+f = WiringDiagram(hom(:f,A,B))
+g = WiringDiagram(hom(:g,B,A))
+@test nboxes(f) == 1
+@test boxes(f) == [ HomBox(hom(:f,A,B)) ]
+@test nwires(f) == 2
+@test WireTypes([A]) == WireTypes([A])
+@test WiringDiagram(hom(:f,A,B)) == WiringDiagram(hom(:f,A,B))
+
+# Composition
+@test nboxes(compose(f,g)) == 2
+@test boxes(compose(f,g)) == [ HomBox(hom(:f,A,B)), HomBox(hom(:g,B,A)) ]
+@test nwires(compose(f,g)) == 3
+
+# Domains and codomains
+@test dom(f) == WireTypes([A])
+@test codom(f) == WireTypes([B])
+@test dom(compose(f,g)) == WireTypes([A])
+@test codom(compose(f,g)) == WireTypes([A])
+
+# Associativity
+#@test compose(compose(f,g),f) == compose(f,compose(g,f))
+
+# Identity
+@test compose(id(dom(f)), f) == f
+@test compose(f, id(codom(f))) == f
+
+# Symmetric monoidal category
+#----------------------------
+
 end

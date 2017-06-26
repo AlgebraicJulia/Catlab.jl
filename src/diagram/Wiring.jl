@@ -31,23 +31,6 @@ import ...Doctrine: ObExpr, HomExpr, SymmetricMonoidalCategory,
 # Data types
 ############
 
-""" Base type for any box (node) in a wiring diagram.
-
-This type represents an arbitrary black box with (possibly empty) lists of
-inputs and outputs.
-"""
-abstract Box
-
-""" A box representing a morphism expression, often a generator.
-
-These boxes have no internal structure.
-"""
-@auto_hash_equals immutable HomBox <: Box
-  expr::HomExpr
-end
-inputs(box::HomBox) = collect(dom(box.expr))
-outputs(box::HomBox) = collect(codom(box.expr))
-
 """ Kind of port: input or output.
 """
 @enum PortKind Input Output
@@ -58,6 +41,9 @@ outputs(box::HomBox) = collect(codom(box.expr))
   box::Int
   kind::PortKind
   port::Int
+end
+function set_box(conn::Port, box::Int)::Port
+  Port(box, conn.kind, conn.port)
 end
 
 """ A wire connecting one port to another.
@@ -101,6 +87,13 @@ end
 eachindex(A::WireTypes) = eachindex(A.types)
 length(A::WireTypes) = length(A.types)
 
+""" Base type for any box (node) in a wiring diagram.
+
+This type represents an arbitrary black box with (possibly empty) lists of
+inputs and outputs.
+"""
+abstract Box
+
 """ Morphism in the category of wiring diagrams.
 
 TODO: Document internal representation.
@@ -123,14 +116,24 @@ type WiringDiagram <: Box
   function WiringDiagram(inputs::WireTypes, outputs::WireTypes)
     WiringDiagram(inputs.types, outputs.types)
   end
-  function WiringDiagram(inputs::ObExpr, outputs::ObExpr)
-    WiringDiagram(collect(inputs), collect(outputs))
-  end
 end
 inputs(diagram::WiringDiagram) = diagram.inputs
 outputs(diagram::WiringDiagram) = diagram.outputs
 input_id(diagram::WiringDiagram) = diagram.input_id
 output_id(diagram::WiringDiagram) = diagram.output_id
+
+""" Check equality of wiring diagrams.
+
+Warning: This method checks exact equality of the underlying graph
+representation, not mathematical equality which involves graph isomorphism.
+"""
+function Base.:(==)(d1::WiringDiagram, d2::WiringDiagram)
+  (inputs(d1) == inputs(d2) && outputs(d1) == outputs(d2) &&
+   input_id(d1) == input_id(d2) && output_id(d1) == output_id(d2) &&
+   graph(d1) == graph(d2) &&
+   boxes(d1) == boxes(d2) && # using d.network.vprops gives infinite loop
+   d1.network.eprops == d2.network.eprops)
+end
 
 # Low-level graph interface
 ###########################
@@ -163,7 +166,6 @@ end
 function add_box!(f::WiringDiagram, box::Box)
   add_vertex!(f.network, box)
 end
-add_box!(f::WiringDiagram, expr::HomExpr) = add_box!(f, HomBox(expr))
 
 function add_boxes!(f::WiringDiagram, boxes)
   for box in boxes
@@ -297,12 +299,36 @@ function substitute!(d::WiringDiagram, v::Int)
   substitute!(d, v, box(d,v))
 end
 
-function set_box(conn::Port, box::Int)::Port
-  Port(box, conn.kind, conn.port)
-end
-
 # High-level categorical interface
 ##################################
+
+""" A box representing a morphism expression, often a generator.
+
+These boxes have no internal structure.
+"""
+@auto_hash_equals immutable HomBox <: Box
+  expr::HomExpr
+end
+inputs(box::HomBox) = collect(dom(box.expr))
+outputs(box::HomBox) = collect(codom(box.expr))
+
+""" Create empty wiring diagram with given domain and codomain objects.
+"""
+function WiringDiagram(inputs::ObExpr, outputs::ObExpr)
+  WiringDiagram(collect(inputs), collect(outputs))
+end
+
+""" Create wiring diagram with a single morphism box.
+"""
+function WiringDiagram(f::HomExpr)
+  d = WiringDiagram(dom(f), codom(f))
+  fv = add_box!(d, f)
+  add_wires!(d, ((input_id(d),i) => (fv,i) for i in eachindex(dom(d))))
+  add_wires!(d, ((fv,i) => (output_id(d),i) for i in eachindex(codom(d))))
+  return d
+end
+
+add_box!(f::WiringDiagram, expr::HomExpr) = add_box!(f, HomBox(expr))
 
 @instance SymmetricMonoidalCategory(WireTypes, WiringDiagram) begin
   dom(f::WiringDiagram) = WireTypes(f.inputs)
@@ -321,8 +347,8 @@ end
     add_wires!(h, ((input_id(h),i) => (fv,i) for i in eachindex(dom(f))))
     add_wires!(h, ((fv,i) => (gv,i) for i in eachindex(codom(f))))
     add_wires!(h, ((gv,i) => (output_id(h),i) for i in eachindex(dom(g))))
-    substitute!(h, fv)
     substitute!(h, gv)
+    substitute!(h, fv)
     return h
   end
   
@@ -338,8 +364,8 @@ end
     add_wires!(h, (input_id(h),i+m) => (gv,i) for i in eachindex(dom(g)))
     add_wires!(h, (fv,i) => (output_id(h),i) for i in eachindex(codom(f)))
     add_wires!(h, (gv,i) => (output_id(h),i+n) for i in eachindex(codom(g)))
-    substitute!(h, fv)
     substitute!(h, gv)
+    substitute!(h, fv)
     return h
   end
   
