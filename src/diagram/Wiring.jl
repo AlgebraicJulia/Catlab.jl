@@ -364,6 +364,9 @@ add_box!(f::WiringDiagram, expr::HomExpr) = add_box!(f, HomBox(expr))
   end
   
   function compose(f::WiringDiagram, g::WiringDiagram)
+    if codom(f) != dom(g)
+      error("Incompatible domains $(codom(f)) and $(dom(g))")
+    end
     h = WiringDiagram(dom(f), codom(g))
     fv = add_box!(h, f)
     gv = add_box!(h, g)
