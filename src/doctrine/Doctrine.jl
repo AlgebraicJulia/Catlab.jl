@@ -28,8 +28,9 @@ abstract ObExpr{T} <: CategoryExpr{T}
 abstract HomExpr{T} <: CategoryExpr{T}
 abstract Hom2Expr{T} <: CategoryExpr{T}
 
-# Convenience method: generate this automatically?
+# Convenience methods
 ob(mod::Module, args...) = ob(mod.Ob, args...)
+ob(typ::Type, args...) = [ ob(typ, arg) for arg in args ]
 
 include("Category.jl")
 include("Monoidal.jl")

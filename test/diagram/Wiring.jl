@@ -7,7 +7,7 @@ using Base.Test
 # Low-level graph interface
 ###########################
 
-A,B,C,D = [ ob(FreeSymmetricMonoidalCategory, sym) for sym in [:A,:B,:C,:D] ]
+A, B, C, D = ob(FreeSymmetricMonoidalCategory, :A, :B, :C, :D)
 f = hom(:f, A, B)
 g = hom(:g, B, C)
 

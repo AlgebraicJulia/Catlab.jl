@@ -66,7 +66,7 @@ f, g = hom(:f, A, B), hom(:g, B, A)
 # 2-category
 ############
 
-A, B, C, D = [ ob(FreeCategory2, sym) for sym in [:A,:B,:C,:D] ]
+A, B, C, D = ob(FreeCategory2, :A, :B, :C, :D)
 f, g, F, G = [ hom(sym, A, B) for sym in [:f,:g,:F,:G] ]
 h, k, H, K = [ hom(sym, B, C) for sym in [:h,:k,:H,:K] ]
 
@@ -95,7 +95,7 @@ h, k, H, K = [ hom(sym, B, C) for sym in [:h,:k,:H,:K] ]
 # Symmetric monoidal category
 #############################
 
-A, B = [ ob(FreeSymmetricMonoidalCategory, sym) for sym in [:A,:B] ]
+A, B = ob(FreeSymmetricMonoidalCategory, :A, :B)
 f, g = hom(:f, A, B), hom(:g, B, A)
 
 # Domains and codomains
@@ -158,7 +158,7 @@ I = munit(FreeSymmetricMonoidalCategory.Ob)
 # Cartesian category
 ####################
 
-A, B = [ ob(FreeCartesianCategory, sym) for sym in [:A,:B] ]
+A, B = ob(FreeCartesianCategory, :A, :B)
 f, g = hom(:f, A, B), hom(:g, B, A)
 
 # Domains and codomains
@@ -179,7 +179,7 @@ f, g = hom(:f, A, B), hom(:g, B, A)
 # Cocartesian category
 ######################
 
-A, B = [ ob(FreeCocartesianCategory, sym) for sym in [:A,:B] ]
+A, B = ob(FreeCocartesianCategory, :A, :B)
 f, g = hom(:f, A, B), hom(:g, B, A)
 
 # Domains and codomains
@@ -200,7 +200,7 @@ f, g = hom(:f, A, B), hom(:g, B, A)
 # Compact closed category
 #########################
 
-A, B = [ ob(FreeCompactClosedCategory, sym) for sym in [:A,:B] ]
+A, B = ob(FreeCompactClosedCategory, :A, :B)
 f, g = hom(:f, A, B), hom(:g, B, A)
 I = munit(FreeCompactClosedCategory.Ob)
 
@@ -223,7 +223,7 @@ I = munit(FreeCompactClosedCategory.Ob)
 # Dagger category
 #################
 
-A, B = [ ob(FreeDaggerCategory, sym) for sym in [:A,:B] ]
+A, B = ob(FreeDaggerCategory, :A, :B)
 f, g = hom(:f, A, B), hom(:g, B, A)
 
 # Domains and codomains
@@ -242,7 +242,7 @@ f, g = hom(:f, A, B), hom(:g, B, A)
 # Dagger compact category
 #########################
 
-A, B = [ ob(FreeDaggerCompactCategory, sym) for sym in [:A,:B] ]
+A, B = ob(FreeDaggerCompactCategory, :A, :B)
 f, g = hom(:f, A, B), hom(:g, B, A)
 
 # Dagger
