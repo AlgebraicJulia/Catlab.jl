@@ -8,11 +8,11 @@ Presentations define small categories by generators and relations and are useful
 for applications like knowledge representation.
 """
 module Present
-export @present
+export @present, Presentation, Equation, generators, equations
 
 import DataStructures: OrderedDict
 using Match
-using ..Syntax
+using ..Meta, ..Syntax
 
 # Data types
 ############
@@ -28,17 +28,6 @@ Presentation() = Presentation(OrderedDict{Symbol,GeneratorExpr}(), Equation[])
 generators(pres::Presentation) = pres.generators
 equations(pres::Presentation) = pres.equations
 
-function push_generator!(pres::Presentation, expr::GeneratorExpr)
-  name = first(expr)
-  if haskey(pres, name)
-    error("Name $name already defined in presentation")
-  end
-  pres[name] = expr
-end
-function push_equation!(pres::Presentation, lhs::BaseExpr, rhs::BaseExpr)
-  push!(pres, Equation(lhs, rhs))
-end
-
 # Presentations
 ###############
 
@@ -47,7 +36,37 @@ macro present(head, body)
     Expr(:call, [name::Symbol, arg::Symbol], _) => (name, arg)
     _ => throw(ParseError("Ill-formed presentation header $head"))
   end
-  Expr(:(=), :name, Expr(:let, translate_presentation(syntax_name, body)))
+  code = Expr(:(=), name, Expr(:let, translate_presentation(syntax_name, body)))
+  esc(code)
+end
+
+""" Add a generator to a presentation.
+"""
+function add_generator!(pres::Presentation, expr::GeneratorExpr)
+  name = first(expr)
+  if haskey(pres.generators, name)
+    error("Name $name already defined in presentation")
+  end
+  pres.generators[name] = expr
+  return expr
+end
+function add_generator!(pres::Presentation, name::Symbol, typ::Type, args...)
+  add_generator!(pres, make_generator(typ, name, args...))
+end
+
+""" Add an equation between terms to a presentation.
+"""
+function add_equation!(pres::Presentation, lhs::BaseExpr, rhs::BaseExpr)
+  push!(pres.equations, Equation(lhs, rhs))
+end
+
+""" Add a generator defined by an equation.
+"""
+function add_definition!(pres::Presentation, name::Symbol, rhs::BaseExpr)
+  generator = make_generator_like(rhs, name)
+  add_generator!(pres, generator)
+  add_equation!(pres, generator, rhs)
+  return generator
 end
 
 """ Translate a presentation in the DSL to a block of Julia code.
@@ -55,14 +74,14 @@ end
 function translate_presentation(syntax_name::Symbol, body::Expr)::Expr
   @assert body.head == :block
   code = Expr(:block)
-  concat_block!(code, :(_presentation = $(module_ref(:Presentation))()))
-  for expr in GAT.strip_lines(body).args
-    concat_block!(code, translate_expr(syntax_name, expr))
+  append_expr!(code, :(_presentation = $(module_ref(:Presentation))()))
+  for expr in strip_lines(body).args
+    append_expr!(code, translate_expr(syntax_name, expr))
   end
-  concat_block!(code, :(_presentation))
+  append_expr!(code, :(_presentation))
   return code
 end
-module_ref(sym::Symbol) = GlobalRef(Present, :sym)
+module_ref(sym::Symbol) = GlobalRef(Present, sym)
 
 """ Translate a single statement in the presentation DSL to Julia code.
 """
@@ -73,7 +92,7 @@ function translate_expr(syntax_name::Symbol, expr::Expr)::Expr
     Expr(:(:=), [name::Symbol, def_expr], _) =>
       translate_definition(name, def_expr)
     Expr(:(=), _, _) => expr
-    Expr(:(==), [lhs, rhs], _) => translate_equation(lhs, rhs)
+    Expr(:call, [:(==), lhs, rhs], _) => translate_equation(lhs, rhs)
     _ => throw(ParseError("Ill-formed presentation statement $expr"))
   end
 end
@@ -83,31 +102,26 @@ end
 function translate_generator(syntax_name::Symbol, name::Symbol, type_expr)::Expr
   type_name, args = @match type_expr begin
     sym::Symbol => (sym, [])
-    Expr(:call, [sym::Symbols, args...], _) => (sym, args)
+    Expr(:call, [sym::Symbol, args...], _) => (sym, args)
     _ => throw(ParseError("Ill-formed type expression $type_expr"))
   end
-  call_expr = Expr(:call, GlobalRef(Present, :make_generator),
-                   :($syntax_name.$type_name), args...)
-  quote
-    const $name = $call_expr
-    push_generator!(_presentation, $name)
-  end
+  call_expr = Expr(:call, module_ref(:add_generator!), :_presentation,
+                   QuoteNode(name), :($syntax_name.$type_name), args...)
+  :(const $name = $call_expr)
 end
 
 """ Translate definition of generator in terms of other generators.
 """
 function translate_definition(name::Symbol, def_expr)::Expr
-  quote
-    const $name = $(GlobalRef(Present,:make_generator_like))($def_expr)
-    push_generator!(_presentation, $name)
-    push_equation!(_presentation, $name, $def_expr)
-  end
+  call_expr = Expr(:call, module_ref(:add_definition!), :_presentation,
+                   QuoteNode(name), def_expr)
+  :(const $name = $call_expr)
 end
 
-""" Translate declaration of equality.
+""" Translate declaration of equality between terms.
 """
-function translate_equality(lhs, rhs)::Expr
-  :(push_equation!(_presentation, $lhs, $rhs))
+function translate_equation(lhs, rhs)::Expr
+  Expr(:call, module_ref(:add_equation!), :_presentation, lhs, rhs)
 end
 
 # FIXME: Put these functions in `Syntax` module? These don't belong here.
@@ -117,7 +131,7 @@ function make_generator(cons_type::Type, value, args...)
   isempty(args) ? cons(cons_type, value) : cons(value, args...)
 end
 function make_generator_like(expr::BaseExpr, value)::GeneratorExpr
-  make_generator(typeof(expr), value, args(expr)[2:end]...)
+  make_generator(typeof(expr), value, type_args(expr)...)
 end
 
 end

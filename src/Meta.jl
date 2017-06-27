@@ -2,7 +2,8 @@
 """
 module Meta
 export Expr0, JuliaFunction, JuliaFunctionSig, parse_function,
-  parse_function_sig, generate_function, replace_symbols, strip_lines
+  parse_function_sig, generate_function, append_expr!, concat_expr,
+  replace_symbols, strip_lines
 
 using AutoHashEquals
 using Match
@@ -83,6 +84,17 @@ end
 
 # Operations on Julia expressions
 #################################
+
+""" Append a Julia expression to a block expression.
+"""
+function append_expr!(block::Expr, expr)::Expr
+  @assert block.head == :block
+  @match expr begin
+    Expr(:block, args, _) => append!(block.args, args)
+    _ => push!(block.args, expr)
+  end
+  block
+end
 
 """ Concatenate two Julia expressions into a block expression.
 """
