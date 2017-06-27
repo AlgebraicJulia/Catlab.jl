@@ -324,24 +324,16 @@ function functor(expr::BaseExpr; generators::Dict=Dict(),
     return generators[expr]
   end
   
-  # Use reflection to get the module for the syntax system (domain category).
-  type_meta = typeof(expr).name
-  syntax_module = type_meta.module
-  
   # Get constructor for codomain category.
-  constructor_name = head(expr)
-  if constructor_name == :generator
-    constructor_name = Symbol(lowercase(string(type_meta.name)))
-  end
-  constructor = get(terms, constructor_name) do
-    getfield(module_parent(syntax_module), constructor_name)
-  end
+  type_name = typeof(expr).name.name
+  constructor_name, constructor = term_constructor(expr)
+  constructor = get(terms, constructor_name, constructor)
   
   # Recurse and evaluate.
   constructor_args = []
   if !any(isa(arg,BaseExpr) for arg in args(expr))
     # Special case: dispatch on type (e.g., nullary constructors)
-    push!(constructor_args, types[type_meta.name])
+    push!(constructor_args, types[type_name])
   end
   for arg in args(expr)
     if isa(arg, BaseExpr)
@@ -350,6 +342,20 @@ function functor(expr::BaseExpr; generators::Dict=Dict(),
     push!(constructor_args, arg)
   end
   constructor(constructor_args...)
+end
+
+""" Get Julia function that constructs a syntax term of the given type.
+"""
+function term_constructor(typ::Type, constructor_name::Symbol)
+  syntax_module = typ.name.module
+  if constructor_name == :generator
+    constructor_name = constructor_name_for_generator(typ.name.name)
+  end
+  constructor = getfield(module_parent(syntax_module), constructor_name)
+  (constructor_name, constructor)
+end
+function term_constructor(expr::BaseExpr)
+  term_constructor(typeof(expr), head(expr))
 end
 
 # Pretty-print

@@ -51,7 +51,9 @@ function add_generator!(pres::Presentation, expr::GeneratorExpr)
   return expr
 end
 function add_generator!(pres::Presentation, name::Symbol, typ::Type, args...)
-  add_generator!(pres, make_generator(typ, name, args...))
+  _, constructor = Syntax.term_constructor(typ, :generator)
+  generator = isempty(args) ? constructor(typ, name) : constructor(name, args...)
+  add_generator!(pres, generator)
 end
 
 """ Add an equation between terms to a presentation.
@@ -63,8 +65,7 @@ end
 """ Add a generator defined by an equation.
 """
 function add_definition!(pres::Presentation, name::Symbol, rhs::BaseExpr)
-  generator = make_generator_like(rhs, name)
-  add_generator!(pres, generator)
+  generator = add_generator!(pres, name, typeof(rhs), type_args(rhs)...)
   add_equation!(pres, generator, rhs)
   return generator
 end
@@ -122,16 +123,6 @@ end
 """
 function translate_equation(lhs, rhs)::Expr
   Expr(:call, module_ref(:add_equation!), :_presentation, lhs, rhs)
-end
-
-# FIXME: Put these functions in `Syntax` module? These don't belong here.
-function make_generator(cons_type::Type, value, args...)
-  cons = getfield(module_parent(cons_type.name.module),
-                  Syntax.constructor_name_for_generator(cons_type.name.name))
-  isempty(args) ? cons(cons_type, value) : cons(value, args...)
-end
-function make_generator_like(expr::BaseExpr, value)::GeneratorExpr
-  make_generator(typeof(expr), value, type_args(expr)...)
 end
 
 end
