@@ -1,4 +1,4 @@
-""" Draw wiring diagrams (aka string diagrams) in various formats.
+""" Draw wiring diagrams (aka string diagrams) using TikZ.
 """
 module TikZWiring
 export WireTikZ, WiresTikZ, PortTikZ, BoxTikZ,
