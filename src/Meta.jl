@@ -1,4 +1,4 @@
-""" Metaprogramming utilities.
+""" General-purpose tools for metaprogramming in Julia.
 """
 module Meta
 export Expr0, JuliaFunction, JuliaFunctionSig, parse_function,
@@ -83,6 +83,17 @@ end
 
 # Operations on Julia expressions
 #################################
+
+""" Concatenate two Julia expressions into a block expression.
+"""
+function concat_expr(expr1::Expr, expr2::Expr)::Expr
+  @match (expr1, expr2) begin
+    (Expr(:block, a1, _), Expr(:block, a2, _)) => Expr(:block, [a1; a2]...)
+    (Expr(:block, a1, _), _) => Expr(:block, [a1; expr2]...)
+    (_, Expr(:block, a2, _)) => Expr(:block, [expr1; a2]...)
+    _ => Expr(:block, expr1, expr2)
+  end
+end
 
 """ Replace symbols occurring anywhere in a Julia function.
 """

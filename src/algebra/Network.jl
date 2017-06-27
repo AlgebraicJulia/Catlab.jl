@@ -17,6 +17,7 @@ using ...Catlab
 import ...Doctrine: SymmetricMonoidalCategory, ObExpr, HomExpr, ob, hom,
   compose, id, dom, codom, otimes, munit, mcopy, delete
 import ...Diagram.TikZWiring: box, wires, rect, junction_circle
+import ...Meta: concat_expr
 import ...Syntax: show_latex, show_unicode
 
 @optional_import using ReverseDiffSource
@@ -280,15 +281,6 @@ function compile_block(f::AlgebraicNet.Hom{:create}, state::CompileState)::Block
   rhs = nout == 1 ? 0.0 : Expr(:tuple, repeated(0.0, nout)...)
   code = Expr(:(=), lhs, rhs)
   Block(code, inputs, outputs)
-end
-
-function concat_expr(expr1::Expr, expr2::Expr)::Expr
-  @match (expr1, expr2) begin
-    (Expr(:block, a1, _), Expr(:block, a2, _)) => Expr(:block, [a1; a2]...)
-    (Expr(:block, a1, _), _) => Expr(:block, [a1; expr2]...)
-    (_, Expr(:block, a2, _)) => Expr(:block, [expr1; a2]...)
-    _ => Expr(:block, expr1, expr2)
-  end
 end
 
 """ Generate a fresh variable (symbol).
