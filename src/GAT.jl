@@ -15,7 +15,7 @@ There are several useful things to do with a GAT signature:
    using the `@instance` macro
 2. Define *syntax* systems using the `@syntax` macro (see `Syntax` module)
 3. Define models of the theory by finite *presentation* using a syntax system
-   and the `@presentation` macro (see `Presentation` module)
+   and the `@present` macro (see `Present` module)
 
 References:
 

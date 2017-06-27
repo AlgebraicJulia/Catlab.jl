@@ -20,12 +20,12 @@ end
 include("GAT.jl")
 include("Syntax.jl")
 include("Rewrite.jl")
-include("Presentation.jl")
+include("Present.jl")
 
 @reexport using .GAT
 @reexport using .Syntax
 @reexport using .Rewrite
-@reexport using .Presentation
+@reexport using .Present
 
 # Additional modules
 include("doctrine/Doctrine.jl")

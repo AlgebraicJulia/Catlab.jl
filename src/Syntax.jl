@@ -31,7 +31,7 @@ import ..GAT: Context, Signature, TypeConstructor, TermConstructor, Typeclass,
 """ Base type for expression in the syntax of a GAT.
 
 We define Julia types for each *type constructor* in the theory, e.g., object,
-morphism*, and 2-morphism in the theory of 2-categories. Of course, Julia's
+morphism, and 2-morphism in the theory of 2-categories. Of course, Julia's
 type system does not support dependent types, so the type parameters are
 incorporated in the Julia types. (They are stored as extra data in the
 expression instances.)
@@ -158,7 +158,8 @@ end
 function interface(class::Typeclass)::Vector{JuliaFunction}
   sig = class.signature
   [ GAT.interface(class);
-    [ GAT.constructor(term_generator(cons), sig) for cons in sig.types ] ]
+    [ GAT.constructor(constructor_for_generator(cons), sig)
+      for cons in sig.types ]; ]
 end
 
 """ Generate syntax type definitions.
@@ -288,20 +289,24 @@ end
 Generators are extra term constructors created automatically for the syntax.
 """
 function gen_term_generator(cons::TypeConstructor, sig::Signature)::Expr
-  gen_term_constructor(term_generator(cons), sig; dispatch_type=:generator)
+  gen_term_constructor(constructor_for_generator(cons), sig;
+                       dispatch_type = :generator)
 end
 function gen_term_generators(sig::Signature)::Vector{Expr}
   [ gen_term_generator(cons, sig) for cons in sig.types ]
 end
-function term_generator(cons::TypeConstructor)::TermConstructor
-  name = Symbol(lowercase(string(cons.name)))
-  @assert name != cons.name # XXX: We are enforcing a case convention...
-  
+function constructor_for_generator(cons::TypeConstructor)::TermConstructor
+  name = constructor_name_for_generator(cons.name)
   value_param = :__value__
   params = [ value_param; cons.params ]
   typ = Expr(:call, cons.name, cons.params...)
   context = merge(Context(value_param => :Any), cons.context)
   TermConstructor(name, params, typ, context)
+end
+function constructor_name_for_generator(type_name::Symbol)
+  name = Symbol(lowercase(string(type_name)))
+  @assert name != type_name # XXX: We are enforcing a case convention...
+  return name
 end
 
 # Functors
