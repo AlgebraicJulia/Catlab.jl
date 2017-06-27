@@ -1,6 +1,7 @@
 using Base.Test
 
 @testset "GAT" begin
+  include("Meta.jl")
   include("GAT.jl")
 end
 

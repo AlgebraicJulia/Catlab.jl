@@ -17,6 +17,7 @@ macro optional_import(expr)
 end
 
 # Core modules
+include("Meta.jl")
 include("GAT.jl")
 include("Syntax.jl")
 include("Rewrite.jl")

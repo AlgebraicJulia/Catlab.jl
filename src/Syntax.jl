@@ -22,8 +22,8 @@ import Base.Meta: show_sexpr
 using Match
 
 import ..GAT
-import ..GAT: Context, Signature, TypeConstructor, TermConstructor, Typeclass,
-  JuliaFunction
+import ..GAT: Context, Signature, TypeConstructor, TermConstructor, Typeclass
+using ..Meta
 
 # Data types
 ############
@@ -98,7 +98,7 @@ macro syntax(syntax_head, mod_name, body=Expr(:block))
     name::Symbol => (name, [])
     _ => throw(ParseError("Ill-formed syntax signature $syntax_head"))
   end
-  functions = map(GAT.parse_function, GAT.strip_lines(body).args)
+  functions = map(parse_function, strip_lines(body).args)
   
   expr = Expr(:call, :syntax_code, Expr(:quote, syntax_name),
               esc(Expr(:ref, :Type, base_types...)), esc(mod_name), functions)
@@ -128,15 +128,15 @@ function syntax_code(name::Symbol, base_types::Vector{Type}, mod::Module,
   bindings = Dict{Symbol,Any}(
     c.name => Expr(:(.), name, QuoteNode(c.name)) for c in signature.types)
   bindings[:Super] = name
-  syntax_fns = Dict(GAT.parse_function_sig(f) => f for f in functions)
+  syntax_fns = Dict(parse_function_sig(f) => f for f in functions)
   for f in interface(class)
-    sig = GAT.parse_function_sig(f)
+    sig = parse_function_sig(f)
     if haskey(syntax_fns, sig)
       # Case 1: The method is overriden in the syntax body.
-      expr = GAT.gen_function(GAT.replace_symbols(bindings, syntax_fns[sig]))
+      expr = generate_function(replace_symbols(bindings, syntax_fns[sig]))
     elseif !isnull(f.impl)
       # Case 2: The method has a default implementation in the signature.
-      expr = GAT.gen_function(GAT.replace_symbols(bindings, f))
+      expr = generate_function(replace_symbols(bindings, f))
     else
       # Case 3: Call the default syntax method.
       params = [ gensym("x$i") for i in eachindex(sig.types) ]
@@ -146,7 +146,7 @@ function syntax_code(name::Symbol, base_types::Vector{Type}, mod::Module,
       f_impl = JuliaFunction(call_expr, f.return_type, body)
       # Inline these very short functions.
       expr = Expr(:macrocall, Symbol("@inline"),
-                  GAT.gen_function(GAT.replace_symbols(bindings, f_impl)))
+                  generate_function(replace_symbols(bindings, f_impl)))
     end
     push!(toplevel, expr)
   end
@@ -175,7 +175,7 @@ function gen_type(cons::TypeConstructor, base_type::Type=Any)::Expr
     args::Vector
     type_args::Vector{$base_expr}
   end)
-  GAT.strip_lines(expr, recurse=true)
+  strip_lines(expr, recurse=true)
 end
 function gen_types(sig::Signature, base_types::Vector{Type})::Vector{Expr}
   if isempty(base_types)
@@ -194,7 +194,7 @@ function gen_type_accessors(cons::TypeConstructor)::Vector{Expr}
     call_expr = Expr(:call, param, Expr(:(::), sym, cons.name))
     return_type = GAT.strip_type(cons.context[param])
     body = Expr(:ref, Expr(:(.), sym, QuoteNode(:type_args)), i)
-    push!(fns, GAT.gen_function(JuliaFunction(call_expr, return_type, body)))
+    push!(fns, generate_function(JuliaFunction(call_expr, return_type, body)))
   end
   fns
 end
@@ -237,7 +237,7 @@ function gen_term_constructor(cons::TermConstructor, sig::Signature;
       Expr(:vect, cons.params...),
       Expr(:vect, type_params...)))
   
-  GAT.gen_function(JuliaFunction(call_expr, return_type, body))
+  generate_function(JuliaFunction(call_expr, return_type, body))
 end
 function gen_term_constructors(sig::Signature)::Vector{Expr}
   [ gen_term_constructor(cons, sig) for cons in sig.terms ]
@@ -266,7 +266,7 @@ function gen_term_constructor_params(cons, sig)::Vector
   params = []
   for expr in raw_params
     expr = replace_nullary_constructors(expr, sig)
-    expr = GAT.replace_symbols(bindings, expr)
+    expr = replace_symbols(bindings, expr)
     push!(params, expr)
   end
   params

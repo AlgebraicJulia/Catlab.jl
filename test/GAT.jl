@@ -5,38 +5,6 @@ import DataStructures: OrderedDict
 
 import Catlab: GAT
 using Catlab.GAT
-  
-# Julia expressions
-###################
-
-# Function generation
-strip_lines(expr) = GAT.strip_lines(expr, recurse=true)
-@test (GAT.gen_function(GAT.JuliaFunction(:(f(x,y)))) ==
-       strip_lines(:(function f(x,y) end)))
-@test (GAT.gen_function(GAT.JuliaFunction(:(f(x::Int,y::Int)), :Int)) ==
-       strip_lines(:(function f(x::Int,y::Int)::Int end)))
-@test (GAT.gen_function(GAT.JuliaFunction(:(f(x)), :Bool, :(isnull(x)))) ==
-       strip_lines(:(function f(x)::Bool isnull(x) end)))
-
-# Function parsing
-parse_fun(expr) = GAT.parse_function(strip_lines(expr))
-@test (parse_fun(:(function f(x,y) x end)) == 
-       GAT.JuliaFunction(:(f(x,y)), Nullable(), quote x end))
-@test (parse_fun(:(function f(x::Int,y::Int)::Int x end)) == 
-       GAT.JuliaFunction(:(f(x::Int,y::Int)), :Int, quote x end))
-@test (parse_fun(:(f(x,y) = x)) == 
-       GAT.JuliaFunction(:(f(x,y)), Nullable(), quote x end))
-@test_throws ParseError parse_fun(:(f(x,y)))
-
-sig = GAT.JuliaFunctionSig(:f, [:Int,:Int])
-@test GAT.parse_function_sig(:(f(x::Int,y::Int))) == sig
-@test GAT.parse_function_sig(:(f(::Int,::Int))) == sig
-@test GAT.parse_function_sig(:(f(x,y))) == GAT.JuliaFunctionSig(:f, [:Any,:Any])
-
-# Type transformations
-bindings = Dict((:r => :R, :s => :S, :t => :T))
-@test GAT.replace_symbols(bindings, :(foo(x::r,y::s)::t)) == :(foo(x::R,y::S)::T)
-@test GAT.replace_symbols(bindings, :(foo(xs::Vararg{r}))) == :(foo(xs::Vararg{R}))
 
 # GAT expressions
 #################
