@@ -1,6 +1,6 @@
 module Diagram
 
-include("Networks.jl")
+include("external/Networks.jl")
 include("Wiring.jl")
 include("TikZ.jl")
 include("TikZWiring.jl")

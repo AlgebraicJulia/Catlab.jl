@@ -1,5 +1,5 @@
 # Third-party tests.
-include("Networks.jl")
+include("external/Networks.jl")
 
 @testset "Diagram.Wiring" begin
   include("Wiring.jl")
