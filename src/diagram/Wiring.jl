@@ -459,4 +459,7 @@ function mmerge(A::WireTypes, n::Int=2)::WiringDiagram
   return f
 end
 
+delete(A::WireTypes) = WiringDiagram(A, munit(WireTypes))
+create(A::WireTypes) = WiringDiagram(munit(WireTypes), A)
+
 end

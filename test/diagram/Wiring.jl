@@ -164,6 +164,12 @@ X = WireTypes([A])
 @test compose(mcopy(X), otimes(id(X),mcopy(X))) == mcopy(X,3)
 @test compose(mcopy(X), otimes(mcopy(X),id(X))) == mcopy(X,3)
 
+# Commutativity
+@test compose(mcopy(X), braid(X,X)) == mcopy(X)
+
+# Unit
+@test compose(mcopy(X), otimes(id(X),delete(X))) == id(X)
+
 # Codiagonals
 #----------
 
@@ -177,5 +183,11 @@ X = WireTypes([A])
 X = WireTypes([A])
 @test compose(otimes(id(X),mmerge(X)), mmerge(X)) == mmerge(X,3)
 @test compose(otimes(mmerge(X),id(X)), mmerge(X)) == mmerge(X,3)
+
+# Commutativity
+@test compose(braid(X,X), mmerge(X)) == mmerge(X)
+
+# Unit
+@test compose(otimes(id(X),create(X)), mmerge(X)) == id(X)
 
 end
