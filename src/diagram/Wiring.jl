@@ -43,8 +43,16 @@ import ..Networks: graph
   kind::PortKind
   port::Int
 end
+
 function set_box(conn::Port, box::Int)::Port
   Port(box, conn.kind, conn.port)
+end
+
+function Base.isless(p1::Port, p2::Port)::Bool
+  # Lexicographic order.
+  p1.box < p2.box ||
+    (p1.box == p2.box &&
+      (p1.kind < p2.kind || (p1.kind == p2.kind && p1.port < p2.port)))
 end
 
 """ A wire connecting one port to another.
@@ -75,6 +83,12 @@ function Base.show(io::IO, wire::Wire)
   print(io, " => ")
   show_port(io, wire.target)
   print(io, ")")
+end
+
+function Base.isless(w1::Wire, w2::Wire)::Bool
+  # Lexicographic order.
+  isless(w1.source, w2.source) ||
+    (w1.source == w2.source && isless(w1.target, w2.target))
 end
 
 """ Internal data structure corresponding to `Port`. Do not use directly.
@@ -151,7 +165,7 @@ function Base.:(==)(d1::WiringDiagram, d2::WiringDiagram)
   (inputs(d1) == inputs(d2) && outputs(d1) == outputs(d2) &&
    input_id(d1) == input_id(d2) && output_id(d1) == output_id(d2) &&
    graph(d1) == graph(d2) &&
-   boxes(d1) == boxes(d2) && Set(wires(d1)) == Set(wires(d2)))
+   boxes(d1) == boxes(d2) && sort!(wires(d1)) == sort!(wires(d2)))
 end
 
 # Low-level graph interface
