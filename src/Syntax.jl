@@ -324,19 +324,17 @@ so we'll go with the simpler "functor".
 """
 function functor(expr::BaseExpr; generators::Dict=Dict(),
                  terms::Dict=Dict(), types::Dict=Dict())
+  # Special case: look up a generator.
   if haskey(generators, expr)
     return generators[expr]
   end
   
-  # Get constructor for codomain category.
-  type_name = typeof(expr).name.name
-  constructor_name, constructor = term_constructor(expr)
-  constructor = get(terms, constructor_name, constructor)
-  
-  # Recurse and evaluate.
+  # If not found, need to call a constructor (possibly for a generator).
+  # Recursively evalute the arguments.
   constructor_args = []
   if !any(isa(arg,BaseExpr) for arg in args(expr))
     # Special case: dispatch on type (e.g., nullary constructors)
+    type_name = datatype_name(typeof(expr))
     push!(constructor_args, types[type_name])
   end
   for arg in args(expr)
@@ -345,6 +343,10 @@ function functor(expr::BaseExpr; generators::Dict=Dict(),
     end
     push!(constructor_args, arg)
   end
+  
+  # Retrieve and invoke the constructor for functor's codomain category.
+  constructor_name, constructor = term_constructor(expr)
+  constructor = get(terms, constructor_name, constructor)
   constructor(constructor_args...)
 end
 
