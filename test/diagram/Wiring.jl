@@ -171,7 +171,7 @@ X = WireTypes([A])
 @test compose(mcopy(X), otimes(id(X),delete(X))) == id(X)
 
 # Codiagonals
-#----------
+#------------
 
 # Domains and codomains
 @test dom(mmerge(WireTypes([A]))) == WireTypes([A,A])
@@ -189,5 +189,16 @@ X = WireTypes([A])
 
 # Unit
 @test compose(otimes(id(X),create(X)), mmerge(X)) == id(X)
+
+# Expression conversion
+#----------------------
+
+# Functorality
+f, g = hom(:f,A,B), hom(:g,B,A)
+fd, gd = WiringDiagram(f), WiringDiagram(g)
+@test to_wiring_diagram(f) == fd
+@test to_wiring_diagram(compose(f,g)) == compose(fd,gd)
+@test to_wiring_diagram(otimes(f,g)) == otimes(fd,gd)
+@test to_wiring_diagram(munit(FreeSymmetricMonoidalCategory.Ob)) == munit(WireTypes)
 
 end

@@ -17,14 +17,14 @@ export Box, HomBox, WiringDiagram, Wire, WireTypes, Port, PortKind,
   boxes, box_ids, nboxes, nwires, box, wires, has_wire, graph,
   add_box!, add_boxes!, add_wire!, add_wires!, rem_box!, rem_wire!, rem_wires!,
   all_neighbors, neighbors, out_neighbors, in_neighbors, in_wires, out_wires,
-  substitute!
+  substitute!, to_wiring_diagram
 
 using AutoHashEquals
 using LightGraphs
 import LightGraphs: all_neighbors, neighbors, out_neighbors, in_neighbors
 
 using ...GAT, ...Syntax
-import ...Doctrine: ObExpr, HomExpr, SymmetricMonoidalCategory, 
+import ...Doctrine: CategoryExpr, ObExpr, HomExpr, SymmetricMonoidalCategory,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create
 using ..Networks
 import ..Networks: graph
@@ -461,5 +461,21 @@ end
 
 delete(A::WireTypes) = WiringDiagram(A, munit(WireTypes))
 create(A::WireTypes) = WiringDiagram(munit(WireTypes), A)
+
+""" Convert a syntactic expression into a wiring diagram.
+
+The morphism expression should belong to the doctrine of symmetric monoidal
+categories, possibly with diagonals and codiagonals. Thus, the doctrines of
+cartesian, cocartesian, and biproduct categories are supported.
+"""
+function to_wiring_diagram(expr::CategoryExpr)
+  functor(expr;
+    generator_terms=Dict(
+      :ob => (expr) -> WireTypes(collect(expr)),
+      :hom => (expr) -> WiringDiagram(expr),
+    ),
+    types=Dict(:Ob => WireTypes, :Hom => WiringDiagram),
+  )
+end
 
 end
