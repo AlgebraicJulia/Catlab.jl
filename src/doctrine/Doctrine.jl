@@ -23,6 +23,7 @@ export AbelianBicategoryRelations, FreeAbelianBicategoryRelations,
 using ..Catlab
 import ..Syntax: BaseExpr, show_unicode, show_latex
 
+# Base types for expressions in a category.
 abstract type CategoryExpr{T} <: BaseExpr{T} end
 abstract type ObExpr{T} <: CategoryExpr{T} end
 abstract type HomExpr{T} <: CategoryExpr{T} end
@@ -30,7 +31,15 @@ abstract type Hom2Expr{T} <: CategoryExpr{T} end
 
 # Convenience methods
 ob(mod::Module, args...) = ob(mod.Ob, args...)
-ob(typ::Type, args...) = [ ob(typ, arg) for arg in args ]
+
+function ob(typ::Type, args...)
+  if length(args) <= 1
+    # Throw an error to avoid infinite recursion.
+    # FIXME: Maybe this method should be called `obs` instead?
+    throw(MethodError(ob, [typ, args...]))
+  end
+  [ ob(typ, arg) for arg in args ]
+end
 
 include("Category.jl")
 include("Monoidal.jl")
