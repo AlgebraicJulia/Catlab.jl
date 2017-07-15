@@ -29,7 +29,7 @@ GAT expressions (`GAT.BaseExpr`). The operations (head symbols) are interpreted
 Julia functions, e.g., `:/` is right multiplication by the matrix pseudoinverse
 while `:./` is the usual (elementwise) division.
 """
-@auto_hash_equals immutable Formula
+@auto_hash_equals struct Formula
   head::Symbol
   args::Vector
   Formula(head::Symbol, args...) = new(head, collect(args))
@@ -54,10 +54,10 @@ function to_formula(f::AlgebraicNet.Hom, vars::Vector{Symbol})
   substitute(formulas.terms[1], Dict(zip(formulas.vars, vars)))
 end
 
-immutable NFormula
+struct NFormula
   n::Int
 end
-immutable Formulas
+struct Formulas
   terms::Vector
   vars::Vector{Symbol}
 end

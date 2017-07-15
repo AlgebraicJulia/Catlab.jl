@@ -13,7 +13,7 @@ using Match
 
 const Expr0 = Union{Symbol,Expr}
 
-@auto_hash_equals immutable JuliaFunction
+@auto_hash_equals struct JuliaFunction
   call_expr::Expr
   return_type::Nullable{Expr0}
   impl::Nullable{Expr}
@@ -23,7 +23,7 @@ const Expr0 = Union{Symbol,Expr}
   end
 end
 
-@auto_hash_equals immutable JuliaFunctionSig
+@auto_hash_equals struct JuliaFunctionSig
   name::Symbol
   types::Vector{Expr0}
 end

@@ -26,7 +26,7 @@ abstract type Expression end
 abstract type Statement <: Expression end
 abstract type GraphStatement <: Expression end
 
-@auto_hash_equals immutable Coordinate <: Expression
+@auto_hash_equals struct Coordinate <: Expression
   x::AbstractString
   y::AbstractString
   
@@ -34,7 +34,7 @@ abstract type GraphStatement <: Expression end
   Coordinate(x::Number, y::Number) = new(string(x), string(y))
 end
 
-@auto_hash_equals immutable Property <: Expression
+@auto_hash_equals struct Property <: Expression
   key::AbstractString
   value::Nullable{AbstractString}
   
@@ -42,28 +42,28 @@ end
   Property(key::AbstractString, value::AbstractString) = new(key, Nullable(value))
 end
 
-@auto_hash_equals immutable PathOperation <: Expression
+@auto_hash_equals struct PathOperation <: Expression
   op::AbstractString
   props::Vector{Property}
   
   PathOperation(op::AbstractString; props=Property[]) = new(op, props)
 end
 
-@auto_hash_equals immutable Picture <: Expression
+@auto_hash_equals struct Picture <: Expression
   stmts::Vector{Statement}
   props::Vector{Property}
   
   Picture(stmts::Vararg{Statement}; props=Property[]) = new([stmts...], props)
 end
 
-@auto_hash_equals immutable Scope <: Statement
+@auto_hash_equals struct Scope <: Statement
   stmts::Vector{Statement}
   props::Vector{Property}
   
   Scope(stmts::Vararg{Statement}; props=Property[]) = new([stmts...], props)
 end
 
-@auto_hash_equals immutable Node <: Statement
+@auto_hash_equals struct Node <: Statement
   # FIXME: Name is optional, according to TikZ manual.
   name::AbstractString
   props::Vector{Property}
@@ -75,14 +75,14 @@ end
     new(name, props, coord, content)
 end
 
-@auto_hash_equals immutable EdgeNode <: Expression
+@auto_hash_equals struct EdgeNode <: Expression
   props::Vector{Property}
   content::Nullable{AbstractString}
   
   EdgeNode(; props=Property[], content=Nullable()) = new(props, content)
 end
 
-@auto_hash_equals immutable Edge <: Statement
+@auto_hash_equals struct Edge <: Statement
   src::AbstractString
   tgt::AbstractString
   op::PathOperation
@@ -94,7 +94,7 @@ end
     new(src, tgt, op, props, node)
 end
 
-@auto_hash_equals immutable Graph <: Statement
+@auto_hash_equals struct Graph <: Statement
   stmts::Vector{GraphStatement}
   props::Vector{Property}
   
@@ -102,7 +102,7 @@ end
     new([stmts...], props)
 end
 
-@auto_hash_equals immutable GraphScope <: GraphStatement
+@auto_hash_equals struct GraphScope <: GraphStatement
   stmts::Vector{GraphStatement}
   props::Vector{Property}
   
@@ -110,7 +110,7 @@ end
     new([stmts...], props)
 end
 
-@auto_hash_equals immutable GraphNode <: GraphStatement
+@auto_hash_equals struct GraphNode <: GraphStatement
   name::AbstractString
   props::Vector{Property}
   content::Nullable{AbstractString}
@@ -119,7 +119,7 @@ end
     new(name, props, content)
 end
 
-@auto_hash_equals immutable GraphEdge <: GraphStatement
+@auto_hash_equals struct GraphEdge <: GraphStatement
   src::AbstractString
   tgt::AbstractString
   props::Vector{Property}
@@ -128,7 +128,7 @@ end
     new(src, tgt, props)
 end
 
-@auto_hash_equals immutable MatrixNode <: Statement
+@auto_hash_equals struct MatrixNode <: Statement
   stmts::Matrix{Vector{Statement}}
   props::Vector{Property}
   

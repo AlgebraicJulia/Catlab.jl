@@ -68,7 +68,7 @@ function show(io::IO, expr::BaseExpr)
 end
 show(io::IO, expr::BaseExpr{:generator}) = print(io, first(expr))
 
-type SyntaxDomainError <: Exception
+struct SyntaxDomainError <: Exception
   constructor::Symbol
   args::Vector
 end
@@ -175,7 +175,7 @@ function gen_type(cons::TypeConstructor, base_type::Type=Any)::Expr
   else
     GlobalRef(datatype_module(base_type), datatype_name(base_type))
   end
-  expr = :(immutable $(cons.name){T} <: $base_name{T}
+  expr = :(struct $(cons.name){T} <: $base_name{T}
     args::Vector
     type_args::Vector{$base_expr}
   end)

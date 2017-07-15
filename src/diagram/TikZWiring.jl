@@ -14,7 +14,7 @@ import ..TikZ
 # Data types
 ############
 
-immutable WireTikZ
+struct WireTikZ
   label::String
   reverse::Bool
   WireTikZ(label::String; reverse::Bool=false) = new(label, reverse)
@@ -24,7 +24,7 @@ end
 """
 const WiresTikZ = Vector{WireTikZ}
 
-immutable PortTikZ
+struct PortTikZ
   wire::WireTikZ
   anchor::String
   angle::Int
@@ -35,7 +35,7 @@ end
 
 """ Morphism in a TikZ wiring diagram.
 """
-immutable BoxTikZ
+struct BoxTikZ
   node::TikZ.Node
   inputs::Vector{PortTikZ}
   outputs::Vector{PortTikZ}

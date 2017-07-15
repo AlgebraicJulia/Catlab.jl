@@ -59,7 +59,7 @@ end
 
 """ A block of Julia code with input and output variables.
 """
-type Block
+mutable struct Block
   code::Expr
   inputs::Vector
   outputs::Vector
@@ -70,7 +70,7 @@ end
 
 """ Internal state for compilation of algebraic network into Julia function.
 """
-type CompileState
+mutable struct CompileState
   inputs::Vector
   nvars::Int
   constants::Dict{Symbol,Int}

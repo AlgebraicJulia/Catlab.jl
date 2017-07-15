@@ -20,7 +20,7 @@ using ..Meta, ..Syntax
 const GeneratorExpr = BaseExpr{:generator}
 const Equation = Pair{<:BaseExpr}{<:BaseExpr}
 
-type Presentation
+mutable struct Presentation
   generators::OrderedDict{Symbol,GeneratorExpr}
   equations::Vector{Equation}
 end

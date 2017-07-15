@@ -39,7 +39,7 @@ import ..Networks: graph
 
 """ A port on a box to which wires can be connected.
 """
-@auto_hash_equals immutable Port
+@auto_hash_equals struct Port
   box::Int
   kind::PortKind
   port::Int
@@ -50,7 +50,7 @@ end
 
 """ A wire connecting one port to another.
 """
-@auto_hash_equals immutable Wire
+@auto_hash_equals struct Wire
   source::Port
   target::Port
   
@@ -62,14 +62,14 @@ end
   Wire(pair::Pair) = Wire(first(pair), last(pair))
 end
 
-@auto_hash_equals immutable PortEdgeData
+@auto_hash_equals struct PortEdgeData
   kind::PortKind
   port::Int
 end
 to_edge_data(conn::Port) = PortEdgeData(conn.kind, conn.port)
 from_edge_data(conn::PortEdgeData, v::Int) = Port(v, conn.kind, conn.port)
 
-@auto_hash_equals immutable WireEdgeData
+@auto_hash_equals struct WireEdgeData
   source::PortEdgeData
   target::PortEdgeData
 end
@@ -83,7 +83,7 @@ end
 
 """ Object in the category of wiring diagrams.
 """
-@auto_hash_equals immutable WireTypes
+@auto_hash_equals struct WireTypes
   types::Vector
 end
 Base.eachindex(A::WireTypes) = eachindex(A.types)
@@ -100,7 +100,7 @@ abstract type Box end
 
 TODO: Document internal representation.
 """
-type WiringDiagram <: Box
+mutable struct WiringDiagram <: Box
   network::DiNetwork{Box,OrderedSet{WireEdgeData},Void}
   inputs::Vector
   outputs::Vector
@@ -329,7 +329,7 @@ end
 
 These boxes have no internal structure.
 """
-@auto_hash_equals immutable HomBox <: Box
+@auto_hash_equals struct HomBox <: Box
   expr::HomExpr
 end
 inputs(box::HomBox) = collect(dom(box.expr))

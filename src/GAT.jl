@@ -41,7 +41,7 @@ const Context = OrderedDict{Symbol,Expr0}
 
 """ Type constructor in a GAT.
 """
-@auto_hash_equals immutable TypeConstructor
+@auto_hash_equals struct TypeConstructor
   name::Symbol
   params::Vector{Symbol}
   context::Context
@@ -49,7 +49,7 @@ end
 
 """ Term constructor in a GAT.
 """
-@auto_hash_equals immutable TermConstructor
+@auto_hash_equals struct TermConstructor
   name::Symbol
   params::Vector{Symbol}
   typ::Expr0
@@ -58,25 +58,25 @@ end
 
 """ Signature for a generalized algebraic theory (GAT).
 """
-@auto_hash_equals immutable Signature
+@auto_hash_equals struct Signature
   types::Vector{TypeConstructor}
   terms::Vector{TermConstructor}
 end
 
 """ Typeclass = GAT signature + Julia-specific content.
 """
-immutable Typeclass
+struct Typeclass
   name::Symbol
   type_params::Vector{Symbol}
   signature::Signature
   functions::Vector{JuliaFunction}
 end
 
-immutable SignatureBinding
+struct SignatureBinding
   name::Symbol
   params::Vector{Symbol}
 end
-immutable SignatureHead
+struct SignatureHead
   main::SignatureBinding
   base::Vector{SignatureBinding}
   SignatureHead(main, base=[]) = new(main, base)

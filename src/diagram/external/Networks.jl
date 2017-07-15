@@ -30,14 +30,14 @@ edges(net::AbstractNetwork) = edges(net.graph)
 `G` is the type of the underlying graph; the vertex properties are of type `V`,
 and the edge properties are of type `E`.
 """
-type Network{V,E,H} <: AbstractNetwork
+mutable struct Network{V,E,H} <: AbstractNetwork
   graph::Graph
   vprops::Dict{Int, V}
   eprops::Dict{Edge, E}
   gprops::H
 end
 
-type DiNetwork{V,E,H} <: AbstractNetwork
+mutable struct DiNetwork{V,E,H} <: AbstractNetwork
   graph::DiGraph
   vprops::Dict{Int, V}
   eprops::Dict{Edge, E}
