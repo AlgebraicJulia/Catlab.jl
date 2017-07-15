@@ -161,8 +161,12 @@ types = Dict(:Elem => String)
 @test functor(mtimes(x,mtimes(y,z)); generators=gens) == "xyz"
 @test functor(mtimes(x,munit(FreeMonoid.Elem)); generators=gens, types=types) == "x"
 
-terms = Dict(:elem => (typ,val) -> string(val))
-@test functor(mtimes(x,mtimes(y,z)); terms=terms, types=types) == "xyz"
-@test functor(mtimes(x,munit(FreeMonoid.Elem)); terms=terms, types=types) == "x"
+gen_terms = Dict(:elem => (x) -> string(first(x)))
+@test functor(mtimes(x,mtimes(y,z)); generator_terms=gen_terms) == "xyz"
+@test functor(mtimes(x,munit(FreeMonoid.Elem)); generator_terms=gen_terms, types=types) == "x"
+
+constructors = Dict(:elem => (typ,val) -> string(val))
+@test functor(mtimes(x,mtimes(y,z)); constructors=constructors, types=types) == "xyz"
+@test functor(mtimes(x,munit(FreeMonoid.Elem)); constructors=constructors, types=types) == "x"
 
 end

@@ -321,16 +321,46 @@ end
 Strictly speaking, we should call these "structure-preserving functors" or,
 better, "model homomorphisms of GATs". But this is a category theory library,
 so we'll go with the simpler "functor".
+
+A functor is completely determined by its action on the generators. There are
+several ways to specify this mapping:
+
+  1. Explicitly map each generator term to an instance value, using the
+    `generators` dictionary.
+  
+  2. For each doctrine type (e.g., object and morphism), specify a function
+     mapping generator terms of that type to an instance value, using the
+     `generator_terms` dictionary.
+  
+  3. For each doctrine type, simply specify a Julia instance type, using the
+     `types` dictionary. For this to work, the generator constructors must be
+     defined for the instance types.
+  
+It is also possible to override the term constructors (e.g., composition or
+monoidal product), using the `constructors` dictionary. That should only be
+necessary if the instance types do not actually implement the GAT signature, say
+because they are primitive Julia types. If this mechanism is used, the `types`
+mapping should be supplied as well.
 """
-function functor(expr::BaseExpr; generators::Dict=Dict(),
-                 terms::Dict=Dict(), types::Dict=Dict())
-  # Special case: look up a generator.
-  if haskey(generators, expr)
+function functor(expr::BaseExpr;
+                 generators::Dict=Dict(), generator_terms::Dict=Dict(),
+                 constructors::Dict=Dict(), types::Dict=Dict())
+  # Special case: look up a specific generator.
+  if head(expr) == :generator && haskey(generators, expr)
     return generators[expr]
   end
   
-  # If not found, need to call a constructor (possibly for a generator).
-  # Recursively evalute the arguments.
+  # Retrieve the constructor for functor's codomain category.
+  constructor_name, constructor = term_constructor(expr)
+  constructor = get(constructors, constructor_name, constructor)
+  
+  # Special case: look up a type of generator.
+  if head(expr) == :generator && haskey(generator_terms, constructor_name)
+    return generator_terms[constructor_name](expr)
+  end
+  
+  # Otherwise, we need to call a term constructor (possibly for a generator).
+  # Recursively evalute the arguments, then invoke the constructor.
   constructor_args = []
   if !any(isa(arg,BaseExpr) for arg in args(expr))
     # Special case: dispatch on type (e.g., nullary constructors)
@@ -339,14 +369,11 @@ function functor(expr::BaseExpr; generators::Dict=Dict(),
   end
   for arg in args(expr)
     if isa(arg, BaseExpr)
-      arg = functor(arg; generators=generators, terms=terms, types=types)
+      arg = functor(arg; generators=generators, generator_terms=generator_terms,
+                         constructors=constructors, types=types)
     end
     push!(constructor_args, arg)
   end
-  
-  # Retrieve and invoke the constructor for functor's codomain category.
-  constructor_name, constructor = term_constructor(expr)
-  constructor = get(terms, constructor_name, constructor)
   constructor(constructor_args...)
 end
 
