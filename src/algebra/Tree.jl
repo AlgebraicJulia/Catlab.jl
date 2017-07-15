@@ -12,6 +12,7 @@ export Formula, head, args, first, last, to_formula,
 
 using AutoHashEquals
 import Base: first, last, show
+import Base.Iterators: repeated
 import Base.Meta: show_sexpr
 
 using ...Catlab

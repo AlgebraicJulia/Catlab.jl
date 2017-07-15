@@ -10,21 +10,18 @@ export setprop!, getprop, rmprop!, hasprop, graph
 
 import Base: convert, promote_rule, ==, sort
 using LightGraphs
-import LightGraphs: Graph, DiGraph, SimpleGraph, Edge, fadj, nv, ne, edges,
+import LightGraphs: Graph, DiGraph, Edge, nv, ne, edges,
   add_vertex!, add_vertices!, add_edge!, rem_edge!, rem_vertex!
+import LightGraphs.SimpleGraphs: SimpleGraph, SimpleDiGraph
 
 # Here we should define a minimal interface
 # One requirement could be the presence of
 # a `graph` member, of type LightGraphs.Graph or DiGraph
-abstract AbstractNetwork
+abstract type AbstractNetwork end
 
 nv(net::AbstractNetwork) = nv(net.graph)
 ne(net::AbstractNetwork) = ne(net.graph)
 edges(net::AbstractNetwork) = edges(net.graph)
-
-# this is how one could define methods in LightGraphs
-# to make everything work for types that embed a graph
-fadj(g::Any) = fadj(convert(SimpleGraph, g))
 
 """
     `Network{V,E,H}`
@@ -47,7 +44,7 @@ type DiNetwork{V,E,H} <: AbstractNetwork
   gprops::H
 end
 
-typealias ComplexNetwork{V,E,H} Union{Network{V,E,H},DiNetwork{V,E,H}}
+ComplexNetwork{V,E,H} = Union{Network{V,E,H},DiNetwork{V,E,H}}
 
 # convenience constructors for empty `Network`s with given types:
 Network{V,E}(::Type{V}, ::Type{E}) = Network(Graph(), Dict{Int,V}(), Dict{Edge,E}(), Void())
@@ -118,9 +115,9 @@ function rem_vertex!(net::ComplexNetwork, v::Int)
     v in vertices(g) || return false
     n = nv(g)
 
-    edgs = in_edges(g, v)
-    for e in edgs
-        rem_edge!(net, e)
+    srcs = copy(in_neighbors(g, v))
+    for s in srcs
+        rem_edge!(net, Edge(s, v))
     end
 
     neigs = copy(in_neighbors(g, n))
@@ -141,9 +138,9 @@ function rem_vertex!(net::ComplexNetwork, v::Int)
     end
 
     if is_directed(g)
-        edgs = out_edges(g, v)
-        for e in edgs
-            rem_edge!(net, e)
+        dsts = copy(out_neighbors(g, v))
+        for d in dsts
+            rem_edge!(net, Edge(v, d))
         end
         neigs = copy(out_neighbors(g, n))
         for i in neigs
@@ -168,7 +165,6 @@ function rem_vertex!(net::ComplexNetwork, v::Int)
         rmprop!(net, n)
         setprop!(net, v, p)
     end
-    g.vertices = 1:n-1
     pop!(g.fadjlist)
     if is_directed(g)
         pop!(g.badjlist)
@@ -214,7 +210,7 @@ hasprop(net::ComplexNetwork, i::Int, j::Int) = hasprop(net, Edge(i,j))
 ==(n::ComplexNetwork, m::ComplexNetwork) = (n.graph == m.graph) && (n.vprops == m.vprops) && (n.eprops == m.eprops)
 # Integration with LightGraphs package
 
-sort(g::Network, e::Edge) = e[1] <= e[2] ? e : reverse(e)
+sort(g::Network, e::Edge) = src(e) <= dst(e) ? e : reverse(e)
 sort(g::DiNetwork, e::Edge) = e
 graph(net::ComplexNetwork) = net.graph
 

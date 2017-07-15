@@ -31,7 +31,7 @@ otimes(xs...) = foldl(otimes, xs)
 collect(expr::ObExpr) = [ expr ]
 collect(expr::ObExpr{:otimes}) = vcat(map(collect, args(expr))...)
 collect(expr::ObExpr{:munit}) = roottypeof(expr)[]
-roottypeof(x) = typeof(x).name.primary
+roottypeof(x) = typeof(x).name.wrapper
 
 """ Number of "dimensions" of object in monoidal category.
 """

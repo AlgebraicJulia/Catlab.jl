@@ -41,8 +41,8 @@ add_wire!(d, (gv,1) => (output_id(d),1))
   (fv,1) => (gv,1),
   (gv,1) => (output_id(d),1),
 ])
-@test all_neighbors(d, fv) == [input_id(d),gv]
-@test all_neighbors(d, gv) == [fv,output_id(d)]
+@test Set(all_neighbors(d, fv)) == Set([input_id(d),gv])
+@test Set(all_neighbors(d, gv)) == Set([fv,output_id(d)])
 @test neighbors(d, fv) == [gv]
 @test out_neighbors(d, fv) == [gv]
 @test in_neighbors(d, gv) == [fv]

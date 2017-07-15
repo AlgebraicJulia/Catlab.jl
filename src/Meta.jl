@@ -11,7 +11,7 @@ using Match
 # Data types
 ############
 
-typealias Expr0 Union{Symbol,Expr}
+const Expr0 = Union{Symbol,Expr}
 
 @auto_hash_equals immutable JuliaFunction
   call_expr::Expr

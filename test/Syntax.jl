@@ -64,7 +64,7 @@ e = munit(FreeMonoidAssocUnit.Elem)
 @test mtimes(mtimes(x,y),z) == mtimes(x,mtimes(y,z))
 @test mtimes(e,x) == x && mtimes(x,e) == x
 
-abstract MonoidExpr{T} <: BaseExpr{T}
+abstract type MonoidExpr{T} <: BaseExpr{T} end
 @syntax FreeMonoidTyped(MonoidExpr) Monoid
 
 x = elem(FreeMonoidTyped.Elem, :x)

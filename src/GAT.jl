@@ -35,9 +35,9 @@ using ..Meta
 
 """ Base type for method stubs in GAT signature.
 """
-abstract Stub
+abstract type Stub end
 
-typealias Context OrderedDict{Symbol,Expr0}
+const Context = OrderedDict{Symbol,Expr0}
 
 """ Type constructor in a GAT.
 """
@@ -161,9 +161,9 @@ end
 function parse_signature_head(expr::Expr)::SignatureHead
   parse = parse_signature_binding
   @match expr begin
-    (Expr(:(=>), [Expr(:tuple, bases, _), main], _)
+    (Expr(:call, [:(=>), Expr(:tuple, bases, _), main], _)
       => SignatureHead(parse(main), map(parse, bases)))
-    Expr(:(=>), [base, main], _) => SignatureHead(parse(main), [parse(base)])
+    Expr(:call, [:(=>), base, main], _) => SignatureHead(parse(main), [parse(base)])
     _ => SignatureHead(parse(expr))
   end
 end
@@ -341,7 +341,7 @@ end
 """
 function gen_abstract_type(cons::TypeConstructor)::Expr
   stub_name = GlobalRef(GAT, :Stub)
-  :(abstract $(cons.name) <: $stub_name)
+  :(abstract type $(cons.name) <: $stub_name end)
 end
 
 """ Replace names of type constructors in a GAT.
@@ -471,13 +471,13 @@ end
 """
 function equations(params::Vector{Symbol}, context::Context,
                    sig::Signature)::Vector{Pair}
-  eqs = ((expand_in_context(lhs, params, context, sig) =>
-          expand_in_context(rhs, params, context, sig))
-         for (lhs, rhs) in equations(context, sig))
+  eqs = [ (expand_in_context(lhs, params, context, sig) =>
+           expand_in_context(rhs, params, context, sig))
+          for (lhs, rhs) in equations(context, sig) ]
   # Remove tautologies (expr == expr) resulting from expansions.
   # FIXME: Should we worry about redundancies from the symmetry of equality,
   # i.e., (expr1 == expr2) && (expr2 == expr1)?
-  collect(filter(eq -> eq.first != eq.second, eqs))
+  filter(eq -> eq.first != eq.second, eqs)
 end
 
 """ Implicit equations for term constructor.
@@ -506,7 +506,7 @@ macro instance(head, body)
   expr = :(instance_code($(esc(head.name)), $(esc(head.params)), $functions))
   Expr(:block,
     Expr(:call, esc(:eval), expr),
-    :(Core.@__doc__ abstract $(esc(gensym(:instance_doc))))) # /dev/null
+    :(Core.@__doc__ abstract type $(esc(gensym(:instance_doc))) end)) # /dev/null
 end
 function instance_code(mod, instance_types, instance_fns)
   code = Expr(:block)

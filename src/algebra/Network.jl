@@ -11,6 +11,7 @@ export AlgebraicNetSignature, AlgebraicNet, ob, hom,
   mcopy, delete, mmerge, create, linear, constant,
   Block, compile, compile_expr, compile_block, evaluate
 
+import Base.Iterators: repeated
 using Match
 
 using ...Catlab
@@ -194,7 +195,8 @@ function compile_block(f::AlgebraicNet.Hom{:generator}, state::CompileState)::Bl
   rhs = if nin == 0
     isa(value, Symbol) ? genconst(state, value) : value
   else
-    Expr(:call, value, inputs...)
+    # FIXME: Broadcast by default?
+    Expr(:(.), value, Expr(:tuple, inputs...))
   end
   Block(Expr(:(=), lhs, rhs), inputs, outputs)
 end
@@ -347,7 +349,8 @@ eval_impl(f::AlgebraicNet.Hom{:linear}, xs::Vector) = first(f) * xs
 function eval_impl(f::AlgebraicNet.Hom{:generator}, xs::Vector)
   value = first(f)
   result = if isa(value, Symbol) && head(dom(f)) != :munit
-    getfield(Main, value)(xs...)
+    # FIXME: Broadcast by default? See also `compile`.
+    getfield(Main, value).(xs...)
   else
     value
   end

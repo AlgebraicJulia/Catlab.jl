@@ -77,8 +77,8 @@ function to_edge_data(wire::Wire)
   WireEdgeData(to_edge_data(wire.source), to_edge_data(wire.target))
 end
 function from_edge_data(wire::WireEdgeData, edge::Edge)
-  Wire(from_edge_data(wire.source, first(edge)),
-       from_edge_data(wire.target, last(edge)))
+  Wire(from_edge_data(wire.source, src(edge)),
+       from_edge_data(wire.target, dst(edge)))
 end
 
 """ Object in the category of wiring diagrams.
@@ -94,7 +94,7 @@ Base.length(A::WireTypes) = length(A.types)
 This type represents an arbitrary black box with (possibly empty) lists of
 inputs and outputs.
 """
-abstract Box
+abstract type Box end
 
 """ Morphism in the category of wiring diagrams.
 

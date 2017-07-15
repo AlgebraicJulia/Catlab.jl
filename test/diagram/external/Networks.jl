@@ -81,8 +81,8 @@ n = Network(CompleteGraph(5), Dict{Symbol,Any}, Dict{Symbol,Any})
 for i=1:5
     @test hasprop(n, i) == false
 end
-for (i,j) in edges(g)
-    @test hasprop(n, i, j) == false
+for e in edges(g)
+    @test hasprop(n, src(e), dst(e)) == false
 end
 setprop!(n, 2, Dict{Symbol,Any}(:lab=>"a"))
 @test hasprop(n, 2) == true

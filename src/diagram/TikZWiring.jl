@@ -5,7 +5,6 @@ export WireTikZ, WiresTikZ, PortTikZ, BoxTikZ,
   wiring_diagram, wires, box, sequence, parallel,
   rect, trapezium, triangle, lines, crossing, junction_circle, cup, cap
 
-import Formatting: format
 using Match
 
 import ...Doctrine: ObExpr, HomExpr, dom, codom, head, args, compose, id
@@ -23,7 +22,7 @@ end
 
 """ Object in a TikZ wiring diagram.
 """
-typealias WiresTikZ Vector{WireTikZ}
+const WiresTikZ = Vector{WireTikZ}
 
 immutable PortTikZ
   wire::WireTikZ
@@ -91,7 +90,7 @@ function wiring_diagram(f::HomExpr;
   props = [
     TikZ.Property("remember picture"),
     TikZ.Property("font", 
-                  "{\\fontsize{$(format(font_size))}{$(format(1.2*font_size))}}"),
+                  "{\\fontsize{$font_size}{$(round(1.2*font_size,2))}}"),
     TikZ.Property("container/.style", "{inner sep=0}"),
     TikZ.Property("every path/.style",
                   "{solid, line width=$line_width}"),
@@ -423,11 +422,11 @@ function circle_ports(wires::WiresTikZ, name::String, dir::String;
                       kw...)::Vector{PortTikZ}
   @assert dir in ("west", "east")
   m = length(wires)
-  angles = round(Int, linspace(0,180,m+2)[2:end-1])
+  angles = round.(Int, linspace(0,180,m+2)[2:end-1])
   if dir == "west"
-    angles = mod(angles + 90, 360)
+    angles = mod.(angles + 90, 360)
   elseif dir == "east"
-    angles = reverse(mod(angles - 90, 360))
+    angles = reverse(mod.(angles - 90, 360))
   end
   PortTikZ[ PortTikZ(wire, "$name.$angle"; angle=angle, kw...)
             for (wire, angle) in zip(wires, angles) ]

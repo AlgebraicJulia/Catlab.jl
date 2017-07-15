@@ -22,9 +22,9 @@ The AST is incomplete! It supports:
 The AST is adapted from the (also incomplete) BNF grammar for TikZ in
 [TikZit](http://tikzit.sourceforge.net/manual.html).
 """
-abstract Expression
-abstract Statement <: Expression
-abstract GraphStatement <: Expression
+abstract type Expression end
+abstract type Statement <: Expression end
+abstract type GraphStatement <: Expression end
 
 @auto_hash_equals immutable Coordinate <: Expression
   x::AbstractString

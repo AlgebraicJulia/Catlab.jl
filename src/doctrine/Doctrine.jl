@@ -23,10 +23,10 @@ export AbelianBicategoryRelations, FreeAbelianBicategoryRelations,
 using ..Catlab
 import ..Syntax: BaseExpr, show_unicode, show_latex
 
-abstract CategoryExpr{T} <: BaseExpr{T}
-abstract ObExpr{T} <: CategoryExpr{T}
-abstract HomExpr{T} <: CategoryExpr{T}
-abstract Hom2Expr{T} <: CategoryExpr{T}
+abstract type CategoryExpr{T} <: BaseExpr{T} end
+abstract type ObExpr{T} <: CategoryExpr{T} end
+abstract type HomExpr{T} <: CategoryExpr{T} end
+abstract type Hom2Expr{T} <: CategoryExpr{T} end
 
 # Convenience methods
 ob(mod::Module, args...) = ob(mod.Ob, args...)

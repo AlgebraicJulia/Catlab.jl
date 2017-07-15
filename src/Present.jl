@@ -17,8 +17,8 @@ using ..Meta, ..Syntax
 # Data types
 ############
 
-typealias GeneratorExpr BaseExpr{:generator}
-typealias Equation{T<:BaseExpr} Pair{T}{T}
+const GeneratorExpr = BaseExpr{:generator}
+const Equation = Pair{<:BaseExpr}{<:BaseExpr}
 
 type Presentation
   generators::OrderedDict{Symbol,GeneratorExpr}
@@ -59,7 +59,7 @@ end
 """ Add an equation between terms to a presentation.
 """
 function add_equation!(pres::Presentation, lhs::BaseExpr, rhs::BaseExpr)
-  push!(pres.equations, Equation(lhs, rhs))
+  push!(pres.equations, lhs => rhs)
 end
 
 """ Add a generator defined by an equation.

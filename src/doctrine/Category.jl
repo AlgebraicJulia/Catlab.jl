@@ -1,4 +1,4 @@
-import Base: show
+import Base: show, ∘
 
 # Category
 ##########

@@ -17,13 +17,17 @@ export @syntax, BaseExpr, SyntaxDomainError, head, args, type_args, first, last,
   functor, show_sexpr, show_unicode, show_unicode_infix,
   show_latex, show_latex_infix, show_latex_script
 
-import Base: first, last, show, showerror, ==, hash
+import Base: first, last, show, showerror, datatype_name, datatype_module
 import Base.Meta: show_sexpr
 using Match
 
 import ..GAT
 import ..GAT: Context, Signature, TypeConstructor, TermConstructor, Typeclass
 using ..Meta
+
+# XXX: The special case for `UnionAll` wrappers is handled in `datatype_name`
+# but not in `datatype_module`.
+datatype_module(typ::UnionAll) = datatype_module(typ.body)
 
 # Data types
 ############
@@ -41,7 +45,7 @@ However, the *term constructor* is represented as a type parameter, rather than
 as a `head` field. This makes dispatch using Julia's type system more
 convenient.
 """
-abstract BaseExpr{T}
+abstract type BaseExpr{T} end
 
 head{T}(::BaseExpr{T}) = T
 args(expr::BaseExpr) = expr.args
@@ -49,10 +53,10 @@ first(expr::BaseExpr) = first(args(expr))
 last(expr::BaseExpr) = last(args(expr))
 type_args(expr::BaseExpr) = expr.type_args
 
-function ==(e1::BaseExpr, e2::BaseExpr)
+function Base.:(==)(e1::BaseExpr, e2::BaseExpr)
   head(e1) == head(e2) && args(e1) == args(e2) && type_args(e1) == type_args(e2)
 end
-function hash(e::BaseExpr, h::UInt)
+function Base.hash(e::BaseExpr, h::UInt)
   hash(args(e), hash(head(e), h))
 end
 
@@ -169,7 +173,7 @@ function gen_type(cons::TypeConstructor, base_type::Type=Any)::Expr
   base_name = if base_type == Any
     base_expr
   else
-    GlobalRef(base_type.name.module, base_type.name.name)
+    GlobalRef(datatype_module(base_type), datatype_name(base_type))
   end
   expr = :(immutable $(cons.name){T} <: $base_name{T}
     args::Vector
@@ -347,9 +351,9 @@ end
 """ Get Julia function that constructs a syntax term of the given type.
 """
 function term_constructor(typ::Type, constructor_name::Symbol)
-  syntax_module = typ.name.module
+  syntax_module = datatype_module(typ)
   if constructor_name == :generator
-    constructor_name = constructor_name_for_generator(typ.name.name)
+    constructor_name = constructor_name_for_generator(datatype_name(typ))
   end
   constructor = getfield(module_parent(syntax_module), constructor_name)
   (constructor_name, constructor)
@@ -418,7 +422,7 @@ end
 # Try to be smart about using text or math mode.
 function show_latex(io::IO, expr::BaseExpr{:generator}; kw...)
   content = string(first(expr))
-  if isalpha(content) && length(content) > 1
+  if all(isalpha, content) && length(content) > 1
     print(io, "\\mathrm{$content}")
   else
     print(io, content)
