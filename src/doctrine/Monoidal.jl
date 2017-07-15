@@ -167,6 +167,9 @@ end
 """ Doctrine of *bicategory category*
 
 Also known as a *semiadditive category*.
+
+FIXME: This signature should extend both `CartesianCategory` and
+`CocartesianCategory`, but we don't support multiple inheritance yet.
 """
 @signature SymmetricMonoidalCategory(Ob,Hom) => BiproductCategory(Ob,Hom) begin
   mcopy(A::Ob)::Hom(A,otimes(A,A))

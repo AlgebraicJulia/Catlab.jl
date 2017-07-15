@@ -138,4 +138,44 @@ I = munit(WireTypes)
 # Braiding
 @test compose(braid(X,Y),braid(Y,X)) == id(otimes(X,Y))
 
+# Diagonals
+#----------
+
+# Basic composition
+d = WiringDiagram(dom(f), otimes(codom(f),codom(f)))
+fv1 = add_box!(d, first(boxes(f)))
+fv2 = add_box!(d, first(boxes(f)))
+add_wires!(d, [
+  (input_id(d),1) => (fv1,1),
+  (input_id(d),1) => (fv2,1),
+  (fv1,1) => (output_id(d),1),
+  (fv2,1) => (output_id(d),2),
+])
+@test compose(mcopy(dom(f)), otimes(f,f)) == d
+
+# Domains and codomains
+@test dom(mcopy(WireTypes([A]))) == WireTypes([A])
+@test codom(mcopy(WireTypes([A]))) == WireTypes([A,A])
+@test dom(mcopy(WireTypes([A,B]),3)) == WireTypes([A,B])
+@test codom(mcopy(WireTypes([A,B]),3)) == WireTypes([A,B,A,B,A,B])
+
+# Associativity
+X = WireTypes([A])
+@test compose(mcopy(X), otimes(id(X),mcopy(X))) == mcopy(X,3)
+@test compose(mcopy(X), otimes(mcopy(X),id(X))) == mcopy(X,3)
+
+# Codiagonals
+#----------
+
+# Domains and codomains
+@test dom(mmerge(WireTypes([A]))) == WireTypes([A,A])
+@test codom(mmerge(WireTypes([A]))) == WireTypes([A])
+@test dom(mmerge(WireTypes([A,B]),3)) == WireTypes([A,B,A,B,A,B])
+@test codom(mmerge(WireTypes([A,B]),3)) == WireTypes([A,B])
+
+# Associativity
+X = WireTypes([A])
+@test compose(otimes(id(X),mmerge(X)), mmerge(X)) == mmerge(X,3)
+@test compose(otimes(mmerge(X),id(X)), mmerge(X)) == mmerge(X,3)
+
 end

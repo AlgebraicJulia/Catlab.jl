@@ -20,13 +20,12 @@ export Box, HomBox, WiringDiagram, Wire, WireTypes, Port, PortKind,
   substitute!
 
 using AutoHashEquals
-import DataStructures: OrderedSet
 using LightGraphs
 import LightGraphs: all_neighbors, neighbors, out_neighbors, in_neighbors
 
 using ...GAT, ...Syntax
 import ...Doctrine: ObExpr, HomExpr, SymmetricMonoidalCategory, 
-  dom, codom, id, compose, otimes, munit, braid
+  dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create
 using ..Networks
 import ..Networks: graph
 
@@ -62,6 +61,24 @@ end
   Wire(pair::Pair) = Wire(first(pair), last(pair))
 end
 
+function Base.show(io::IO, wire::Wire)
+  skip_kind = wire.source.kind == Output && wire.target.kind == Input
+  show_port = (io::IO, port::Port) -> begin
+    if skip_kind
+      print(io, "($(port.box),$(port.port))")
+    else
+      print(io, "($(port.box),$(string(port.kind)),$(port.port)")
+    end
+  end
+  print(io, "Wire(")
+  show_port(io, wire.source)
+  print(io, " => ")
+  show_port(io, wire.target)
+  print(io, ")")
+end
+
+""" Internal data structure corresponding to `Port`. Do not use directly.
+"""
 @auto_hash_equals struct PortEdgeData
   kind::PortKind
   port::Int
@@ -69,6 +86,8 @@ end
 to_edge_data(conn::Port) = PortEdgeData(conn.kind, conn.port)
 from_edge_data(conn::PortEdgeData, v::Int) = Port(v, conn.kind, conn.port)
 
+""" Internal data structure corresponding to `Wire`. Do not use directly.
+"""
 @auto_hash_equals struct WireEdgeData
   source::PortEdgeData
   target::PortEdgeData
@@ -101,14 +120,14 @@ abstract type Box end
 TODO: Document internal representation.
 """
 mutable struct WiringDiagram <: Box
-  network::DiNetwork{Box,OrderedSet{WireEdgeData},Void}
+  network::DiNetwork{Box,Vector{WireEdgeData},Void}
   inputs::Vector
   outputs::Vector
   input_id::Int
   output_id::Int
   
   function WiringDiagram(inputs::Vector, outputs::Vector)
-    network = DiNetwork(Box, OrderedSet{WireEdgeData})
+    network = DiNetwork(Box, Vector{WireEdgeData})
     diagram = new(network, inputs, outputs, 0, 0)
     diagram.input_id = add_box!(diagram, diagram)
     diagram.output_id = add_box!(diagram, diagram)
@@ -186,7 +205,7 @@ function add_wire!(f::WiringDiagram, wire::Wire)
   # TODO: Check for compatible inputs/outputs.
   edge = Edge(wire.source.box, wire.target.box)
   if !has_edge(f.network.graph, edge)
-    add_edge!(f.network, edge, OrderedSet{WireEdgeData}())
+    add_edge!(f.network, edge, WireEdgeData[])
   end
   push!(getprop(f.network, edge), to_edge_data(wire))
 end
@@ -200,8 +219,9 @@ end
 
 function rem_wire!(f::WiringDiagram, wire::Wire)
   edge = Edge(wire.source.box, wire.target.box)
+  edge_data = to_edge_data(wire)
   wires = getprop(f.network, edge)
-  delete!(wires, to_edge_data(wire))
+  deleteat!(wires, findlast(d -> d == edge_data, wires))
   if isempty(wires)
     rem_edge!(f.network, edge)
   end
@@ -277,7 +297,7 @@ function substitute!(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagr
     substitute_impl!(d, v, sub)
   end
   for v in reverse(vs)
-    rem_box!(d,v)
+    rem_box!(d, v)
   end
   return d
 end
@@ -353,6 +373,11 @@ end
 
 add_box!(f::WiringDiagram, expr::HomExpr) = add_box!(f, HomBox(expr))
 
+""" Wiring diagram as *symmetric monoidal category*.
+
+Wiring diagrams also have *diagonals* and *codiagonals* (see extra methods),
+but we don't have doctrines for those yet.
+"""
 @instance SymmetricMonoidalCategory(WireTypes, WiringDiagram) begin
   dom(f::WiringDiagram) = WireTypes(f.inputs)
   codom(f::WiringDiagram) = WireTypes(f.outputs)
@@ -372,7 +397,7 @@ add_box!(f::WiringDiagram, expr::HomExpr) = add_box!(f, HomBox(expr))
     gv = add_box!(h, g)
     add_wires!(h, ((input_id(h),i) => (fv,i) for i in eachindex(dom(f))))
     add_wires!(h, ((fv,i) => (gv,i) for i in eachindex(codom(f))))
-    add_wires!(h, ((gv,i) => (output_id(h),i) for i in eachindex(dom(g))))
+    add_wires!(h, ((gv,i) => (output_id(h),i) for i in eachindex(codom(g))))
     substitute!(h, [fv,gv])
     return h
   end
@@ -400,6 +425,24 @@ add_box!(f::WiringDiagram, expr::HomExpr) = add_box!(f, HomBox(expr))
     add_wires!(h, ((input_id(h),i+m) => (output_id(h),i) for i in 1:n))
     return h
   end
+end
+
+function mcopy(A::WireTypes, n::Int=2)::WiringDiagram
+  f = WiringDiagram(A, otimes([A for j in 1:n]))
+  m = length(A)
+  for j in 1:n
+    add_wires!(f, ((input_id(f),i) => (output_id(f),i+m*(j-1)) for i in 1:m))
+  end
+  return f
+end
+
+function mmerge(A::WireTypes, n::Int=2)::WiringDiagram
+  f = WiringDiagram(otimes([A for j in 1:n]), A)
+  m = length(A)
+  for j in 1:n
+    add_wires!(f, ((input_id(f),i+m*(j-1)) => (output_id(f),i) for i in 1:m))
+  end
+  return f
 end
 
 end
