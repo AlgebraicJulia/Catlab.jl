@@ -1,8 +1,7 @@
 """ Draw wiring diagrams (aka string diagrams) using TikZ.
 """
 module TikZWiring
-export WireTikZ, WiresTikZ, PortTikZ, BoxTikZ,
-  wiring_diagram, wires, box, sequence, parallel,
+export wiring_diagram, wires, box, sequence, parallel,
   rect, trapezium, triangle, lines, crossing, junction_circle, cup, cap
 
 using Match
@@ -14,34 +13,38 @@ import ..TikZ
 # Data types
 ############
 
-struct WireTikZ
+""" A wire (edge) in a TikZ wiring diagram.
+"""
+struct Wire
   label::String
   reverse::Bool
-  WireTikZ(label::String; reverse::Bool=false) = new(label, reverse)
+  Wire(label::String; reverse::Bool=false) = new(label, reverse)
 end
 
 """ Object in a TikZ wiring diagram.
 """
-const WiresTikZ = Vector{WireTikZ}
+const Wires = Vector{Wire}
 
-struct PortTikZ
-  wire::WireTikZ
+""" A port on a box in a TikZ wiring diagram.
+"""
+struct Port
+  wire::Wire
   anchor::String
   angle::Int
   show_label::Bool
-  PortTikZ(wire::WireTikZ, anchor::String; angle::Int=0, show_label::Bool=true) =
+  Port(wire::Wire, anchor::String; angle::Int=0, show_label::Bool=true) =
     new(wire, anchor, angle, show_label)
 end
 
 """ Morphism in a TikZ wiring diagram.
 """
-struct BoxTikZ
+struct Box
   node::TikZ.Node
-  inputs::Vector{PortTikZ}
-  outputs::Vector{PortTikZ}
+  inputs::Vector{Port}
+  outputs::Vector{Port}
 end
-dom(box::BoxTikZ)::WiresTikZ = [ port.label for port in box.inputs ]
-codom(box::BoxTikZ)::WiresTikZ  = [ port.label for port in box.outputs ]
+dom(box::Box)::Wires = [ port.label for port in box.inputs ]
+codom(box::Box)::Wires  = [ port.label for port in box.outputs ]
 
 # Wiring diagrams
 #################
@@ -108,19 +111,19 @@ end
 
 """ Create wires for an object expression.
 """
-function wires(A::ObExpr)::WiresTikZ end
+function wires(A::ObExpr)::Wires end
 
 """ Create box for a morphism expression.
 """
-function box(name::String, f::HomExpr)::BoxTikZ end
+function box(name::String, f::HomExpr)::Box end
 
 # Elements of wiring diagrams
 #############################
 
 """ A rectangle, the default style for generators.
 """
-function rect(name::String, content::String, dom::WiresTikZ, codom::WiresTikZ;
-              padding::String="0.333em", rounded::Bool=true)::BoxTikZ
+function rect(name::String, content::String, dom::Wires, codom::Wires;
+              padding::String="0.333em", rounded::Bool=true)::Box
   dom_ports = box_ports(dom, name, dir="west", angle=180)
   codom_ports = box_ports(codom, name, dir="east", angle=0)
   size = box_size(max(length(dom_ports), length(codom_ports)))
@@ -136,9 +139,9 @@ function rect(name::String, content::String, dom::WiresTikZ, codom::WiresTikZ;
     TikZ.Property("minimum height", "$(size)em"),
   ]
   node = TikZ.Node(name; content=content, props=props)
-  BoxTikZ(node, dom_ports, codom_ports)
+  Box(node, dom_ports, codom_ports)
 end
-function rect(name::String, f::HomExpr{:generator}; kw...)::BoxTikZ
+function rect(name::String, f::HomExpr{:generator}; kw...)::Box
   rect(name, label(f), wires(dom(f)), wires(codom(f)); kw...)
 end
 
@@ -149,9 +152,9 @@ Nesting pictures even at this level may seem crazy, but it's the only way I know
 to get a bounding box on the inner node, regardless of its shape, *before* it's
 rendered.
 """
-function trapezium(name::String, content::String, dom::WiresTikZ, codom::WiresTikZ;
+function trapezium(name::String, content::String, dom::Wires, codom::Wires;
                    padding::String="0.333em", rounded::Bool=true,
-                   angle::Int=80, reverse::Bool=false)::BoxTikZ
+                   angle::Int=80, reverse::Bool=false)::Box
   dom_ports = box_ports(dom, name, dir="west", angle=180)
   codom_ports = box_ports(codom, name, dir="east", angle=0)
   size = box_size(max(length(dom_ports), length(codom_ports)))
@@ -175,9 +178,9 @@ function trapezium(name::String, content::String, dom::WiresTikZ, codom::WiresTi
   
   props = [ TikZ.Property("container") ]
   node = TikZ.Node(name; content=picture, props=props)
-  BoxTikZ(node, dom_ports, codom_ports)
+  Box(node, dom_ports, codom_ports)
 end
-function trapezium(name::String, f::HomExpr{:generator}; kw...)::BoxTikZ
+function trapezium(name::String, f::HomExpr{:generator}; kw...)::Box
   trapezium(name, label(f), wires(dom(f)), wires(codom(f)); kw...)
 end
 
@@ -186,11 +189,11 @@ end
 Supports any number of inputs and outputs, but looks best with at most one
 input and at most one output.
 """
-function triangle(name::String, content::String, dom::WiresTikZ, codom::WiresTikZ;
+function triangle(name::String, content::String, dom::Wires, codom::Wires;
                   padding::String="0.333em", rounded::Bool=false,
-                  reverse::Bool=false)::BoxTikZ
-  dom_ports = [ PortTikZ(w, "$name.west", angle=180) for w in dom ]
-  codom_ports = [ PortTikZ(w, "$name.east", angle=0) for w in codom ]
+                  reverse::Bool=false)::Box
+  dom_ports = [ Port(w, "$name.west", angle=180) for w in dom ]
+  codom_ports = [ Port(w, "$name.east", angle=0) for w in codom ]
   box_style = style[:box_style]
   props = [
     TikZ.Property("draw"),
@@ -204,27 +207,27 @@ function triangle(name::String, content::String, dom::WiresTikZ, codom::WiresTik
     TikZ.Property("minimum height", "$(box_size(1))em"),
   ]
   node = TikZ.Node(name; content=content, props=props)
-  BoxTikZ(node, dom_ports, codom_ports)
+  Box(node, dom_ports, codom_ports)
 end
-function triangle(name::String, f::HomExpr{:generator}; kw...)::BoxTikZ
+function triangle(name::String, f::HomExpr{:generator}; kw...)::Box
   triangle(name, label(f), wires(dom(f)), wires(codom(f)); kw...)
 end
 
 """ Straight lines, used to draw identity morphisms.
 """
-function lines(name::String, wires::WiresTikZ)::BoxTikZ
+function lines(name::String, wires::Wires)::Box
   dom_ports = box_ports(wires, name, dir="center", angle=180)
   codom_ports = box_ports(wires, name, dir="center", angle=0)
   height = box_size(length(wires))
   props = [ TikZ.Property("minimum height", "$(height)em") ]
   node = TikZ.Node(name; props=props)
-  BoxTikZ(node, dom_ports, codom_ports)
+  Box(node, dom_ports, codom_ports)
 end
 lines(name::String, A::ObExpr) = lines(name, wires(A))
 
 """ Boxes in sequence, used to draw compositions.
 """
-function sequence(name::String, homs::Vector)::BoxTikZ
+function sequence(name::String, homs::Vector)::Box
   sequence_sep = style[:sequence_sep]
   edge_props = style[:arrowtip] ?
     [ TikZ.Property("postaction", "{decorate}") ] : []
@@ -267,12 +270,12 @@ function sequence(name::String, homs::Vector)::BoxTikZ
 
   props = [ TikZ.Property("container") ]
   node = TikZ.Node(name; content=TikZ.Picture(stmts...), props=props)
-  BoxTikZ(node, first(mors).inputs, last(mors).outputs)
+  Box(node, first(mors).inputs, last(mors).outputs)
 end
 
 """ Boxes in parallel, used to draw monoidal products.
 """
-function parallel(name::String, homs::Vector)::BoxTikZ
+function parallel(name::String, homs::Vector)::Box
   parallel_sep = style[:parallel_sep]
   
   mors = []
@@ -290,23 +293,23 @@ function parallel(name::String, homs::Vector)::BoxTikZ
   node = TikZ.Node(name; content=TikZ.Picture(stmts...), props=props)
   inputs = vcat([ mor.inputs for mor in mors]...)
   outputs = vcat([ mor.outputs for mor in mors]...)
-  BoxTikZ(node, inputs, outputs)
+  Box(node, inputs, outputs)
 end
 
 """ Cross two wires.
 
 Used to draw braid morphisms in symmatric monoidal categories.
 """ 
-function crossing(name::String, wire1::WireTikZ, wire2::WireTikZ)
-  dom = [ PortTikZ(wire1, "$name.center", angle=135),
-          PortTikZ(wire2, "$name.center", angle=225) ]
-  codom = [ PortTikZ(wire2, "$name.center", angle=45),
-            PortTikZ(wire1, "$name.center", angle=315) ]
+function crossing(name::String, wire1::Wire, wire2::Wire)
+  dom = [ Port(wire1, "$name.center", angle=135),
+          Port(wire2, "$name.center", angle=225) ]
+  codom = [ Port(wire2, "$name.center", angle=45),
+            Port(wire1, "$name.center", angle=315) ]
   props = [
     TikZ.Property("minimum height", "$(box_size(2))em")
   ]
   node = TikZ.Node(name; props=props)
-  BoxTikZ(node, dom, codom)
+  Box(node, dom, codom)
 end
 crossing(name::String, A::ObExpr) = crossing(name, wires(A)...)
 
@@ -317,7 +320,7 @@ Used to morphisms in internal monoids and comonoids.
 Implemented using a small, visible node for the point and a big, invisible node
 as a spacer. FIXME: Is there a more elegant way to achieve the desired margin?
 """
-function junction_circle(name::String, wires_in::WiresTikZ, wires_out::WiresTikZ;
+function junction_circle(name::String, wires_in::Wires, wires_out::Wires;
                          fill::Bool=true)
   dom = circle_ports(wires_in, "$name point", "west";
                      show_label = length(wires_in) <= 1)
@@ -338,7 +341,7 @@ function junction_circle(name::String, wires_in::WiresTikZ, wires_out::WiresTikZ
     ]),
   )
   node = TikZ.Node(name; content=pic, props=[TikZ.Property("container")])
-  BoxTikZ(node, dom, codom)
+  Box(node, dom, codom)
 end
 function junction_circle(name::String, dom::ObExpr, codom::ObExpr; kw...)
   junction_circle(name, wires(dom), wires(codom); kw...)
@@ -351,14 +354,14 @@ end
 
 Used to draw evaluation morphisms in compact closed categories.
 """
-function cup(name::String, wire1::WireTikZ, wire2::WireTikZ)
-  ports = [ PortTikZ(wire1, "$name.center", angle=90, show_label=false),
-            PortTikZ(wire2, "$name.center", angle=270, show_label=false) ]
+function cup(name::String, wire1::Wire, wire2::Wire)
+  ports = [ Port(wire1, "$name.center", angle=90, show_label=false),
+            Port(wire2, "$name.center", angle=270, show_label=false) ]
   props = [
     TikZ.Property("minimum height", "$(box_size(2))em")
   ]
   node = TikZ.Node(name; props=props)
-  BoxTikZ(node, ports, [])
+  Box(node, ports, [])
 end
 cup(name::String, A::ObExpr) = cup(name, wires(A)...)
 
@@ -366,14 +369,14 @@ cup(name::String, A::ObExpr) = cup(name, wires(A)...)
 
 Used to draw coevaluation morphisms in compact closed categories.
 """
-function cap(name::String, wire1::WireTikZ, wire2::WireTikZ)
-  ports = [ PortTikZ(wire1, "$name.center", angle=90, show_label=false),
-            PortTikZ(wire2, "$name.center", angle=270, show_label=false) ]
+function cap(name::String, wire1::Wire, wire2::Wire)
+  ports = [ Port(wire1, "$name.center", angle=90, show_label=false),
+            Port(wire2, "$name.center", angle=270, show_label=false) ]
   props = [
     TikZ.Property("minimum height", "$(box_size(2))em")
   ]
   node = TikZ.Node(name; props=props)
-  BoxTikZ(node, [], ports)
+  Box(node, [], ports)
 end
 cap(name::String, A::ObExpr) = cap(name, wires(A)...)
 
@@ -396,14 +399,14 @@ end
 This mainly involves computing the locations of anchors. The anchors are
 consistent with the monoidal product (see `box_size`).
 """
-function box_ports(wires::WiresTikZ, name::String;
-                   dir::String="center", kw...)::Vector{PortTikZ}
+function box_ports(wires::Wires, name::String;
+                   dir::String="center", kw...)::Vector{Port}
   box_size, parallel_sep = style[:box_size], style[:parallel_sep]
   m = length(wires)
   if m == 0
     return []
   elseif m == 1
-    return [ PortTikZ(wires[1], "$name.$dir"; kw...) ]
+    return [ Port(wires[1], "$name.$dir"; kw...) ]
   end
   
   result = []
@@ -411,15 +414,15 @@ function box_ports(wires::WiresTikZ, name::String;
   for (i,wire) in enumerate(wires)
     offset = box_size/2 + (i-1)*(box_size+parallel_sep)
     anchor = "\$($name.$dir)+(0,$(start-offset)em)\$"
-    push!(result, PortTikZ(wire, anchor; kw...))
+    push!(result, Port(wire, anchor; kw...))
   end
   return result
 end
 
 """ Create ports for a circular node.
 """
-function circle_ports(wires::WiresTikZ, name::String, dir::String;
-                      kw...)::Vector{PortTikZ}
+function circle_ports(wires::Wires, name::String, dir::String;
+                      kw...)::Vector{Port}
   @assert dir in ("west", "east")
   m = length(wires)
   angles = round.(Int, linspace(0,180,m+2)[2:end-1])
@@ -428,7 +431,7 @@ function circle_ports(wires::WiresTikZ, name::String, dir::String;
   elseif dir == "east"
     angles = reverse(mod.(angles - 90, 360))
   end
-  PortTikZ[ PortTikZ(wire, "$name.$angle"; angle=angle, kw...)
+  Port[ Port(wire, "$name.$angle"; angle=angle, kw...)
             for (wire, angle) in zip(wires, angles) ]
 end
 
@@ -438,8 +441,8 @@ end
 # These methods are reasonable to define for the base expression types since
 # they will rarely be changed.
 
-wires(A::ObExpr{:generator}) = [ WireTikZ(label(A)) ]
-wires(A::ObExpr{:munit}) = WireTikZ[]
+wires(A::ObExpr{:generator}) = [ Wire(label(A)) ]
+wires(A::ObExpr{:munit}) = Wire[]
 wires(A::ObExpr{:otimes}) = vcat(map(wires, args(A))...)
 
 box(name::String, f::HomExpr{:id}) = lines(name, dom(f))
@@ -461,7 +464,7 @@ module Defaults
   export box, wires
   
   using ..TikZWiring
-  import ..TikZWiring: box, wires, label
+  import ..TikZWiring: Wire, box, wires, label
   using Catlab.Doctrine
   using Catlab.Syntax
   
@@ -503,7 +506,7 @@ module Defaults
   # Compact closed category
   # Assumes that duals are fully distributed (as in this syntax system).
   Syntax = FreeCompactClosedCategory
-  wires(A::Syntax.Ob{:dual}) = [ WireTikZ(label(generator(A)); reverse=true) ]
+  wires(A::Syntax.Ob{:dual}) = [ Wire(label(generator(A)); reverse=true) ]
   box(name::String, f::Syntax.Hom{:generator}) = rect(name, f)
   box(name::String, f::Syntax.Hom{:ev}) = cup(name, dom(f))
   box(name::String, f::Syntax.Hom{:coev}) = cap(name, codom(f))
