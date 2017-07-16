@@ -1,8 +1,7 @@
 """ Draw wiring diagrams (aka string diagrams) using TikZ.
 """
 module TikZWiring
-export wiring_diagram, wires, box, sequence, parallel,
-  rect, trapezium, triangle, lines, crossing, junction_circle, cup, cap
+export to_tikz
 
 using Match
 
@@ -59,7 +58,7 @@ Warning: Since our implementation uses the `remember picture` option, LaTeX must
 be run at least *twice* to fully render the picture. See (TikZ Manual,
 Sec 17.13).
 """
-function wiring_diagram(f::HomExpr;
+function to_tikz(f::HomExpr;
     font_size::Number=12, line_width::String="0.4pt", math_mode::Bool=true,
     arrowtip::String="", labels::Bool=false,
     box_size::Number=2, box_style::Dict=Dict(),
@@ -461,10 +460,8 @@ end
 """ Default renderers for specific syntax systems.
 """
 module Defaults
-  export box, wires
-  
-  using ..TikZWiring
-  import ..TikZWiring: Wire, box, wires, label
+  import ..TikZWiring: Wire, box, wires, label, rect, trapezium,
+    junction_circle, cup, cap
   using Catlab.Doctrine
   using Catlab.Syntax
   
