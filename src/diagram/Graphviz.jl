@@ -12,6 +12,7 @@ module Graphviz
 export Expression, Statement, Graph, Digraph, Subgraph, Node, Edge, pprint
 
 using DataStructures: OrderedDict
+using Parameters
 
 # AST
 #####
@@ -20,29 +21,38 @@ abstract type Expression end
 abstract type Statement <: Expression end
 
 const Attributes = OrderedDict{Symbol,String}
+const Statements = Vector{Statement}
 
-struct Graph <: Expression
+@with_kw struct Graph <: Expression
   name::String
   directed::Bool
-  stmts::Vector{Statement}
-  attrs::Attributes
+  stmts::Statements=Statements()
+  graph_attrs::Attributes=Attributes()
+  node_attrs::Attributes=Attributes()
+  edge_attrs::Attributes=Attributes()
 end
-Graph(name::String, stmts::Vector{Statement}, attrs::Attributes) = 
-  Graph(name, false, stmts, attrs)
-Digraph(name::String, stmts::Vector{Statement}, attrs::Attributes) =
-  Graph(name, true, stmts, attrs)
-Graph(name::String, stmts::Vararg{Statement}; attrs...) =
-  Graph(name, false, collect(stmts), Attributes(attrs))
-Digraph(name::String, stmts::Vararg{Statement}; attrs...) =
-  Graph(name, true, collect(stmts), Attributes(attrs))
 
-struct Subgraph <: Statement
+Graph(name::String, stmts::Statements; kw...) =
+  Graph(name=name, directed=false, stmts=stmts; kw...)
+Digraph(name::String, stmts::Statements; kw...) =
+  Graph(name=name, directed=true, stmts=stmts; kw...)
+Graph(name::String, stmts::Vararg{Statement}; kw...) =
+  Graph(name, collect(stmts); kw...)
+Digraph(name::String, stmts::Vararg{Statement}; kw...) =
+  Digraph(name, collect(stmts); kw...)
+
+@with_kw struct Subgraph <: Statement
   name::String
-  stmts::Vector{Statement}
-  attrs::Attributes
+  stmts::Statements=Statements()
+  graph_attrs::Attributes=Attributes()
+  node_attrs::Attributes=Attributes()
+  edge_attrs::Attributes=Attributes()
 end
-Subgraph(name::String, stmts::Vararg{Statement}; attrs...) =
-  Subgraph(name, collect(stmts), Attributes(attrs))
+
+Subgraph(name::String, stmts::Statements; kw...) =
+  Subgraph(name=name, stmts=stmts, kw...)
+Subgraph(name::String, stmts::Vararg{Statement}; kw...) =
+  Subgraph(name, collect(stmts); kw...)
 
 struct Node <: Statement
   name::String
@@ -70,7 +80,9 @@ function pprint(io::IO, graph::Graph, n::Int)
   print(io, graph.directed ? "digraph " : "graph ")
   print(io, graph.name)
   println(io, " {")
-  pprint_attrs_long(io, graph.attrs, n+2)
+  pprint_attrs(io, graph.graph_attrs, n+2; pre="graph", post=";\n")
+  pprint_attrs(io, graph.node_attrs, n+2; pre="node", post=";\n")
+  pprint_attrs(io, graph.edge_attrs, n+2; pre="edge", post=";\n")
   for stmt in graph.stmts
     pprint(io, stmt, n+2, directed=graph.directed)
     println(io)
@@ -84,7 +96,9 @@ function pprint(io::IO, subgraph::Subgraph, n::Int; directed::Bool=false)
   print(io, "subgraph ")
   print(io, subgraph.name)
   println(io, " {")
-  pprint_attrs_long(io, subgraph.attrs, n+2)
+  pprint_attrs(io, subgraph.graph_attrs, n+2; pre="graph", post=";\n")
+  pprint_attrs(io, subgraph.node_attrs, n+2; pre="node", post=";\n")
+  pprint_attrs(io, subgraph.edge_attrs, n+2; pre="edge", post=";\n")
   for stmt in subgraph.stmts
     pprint(io, stmt, n+2, directed=directed)
     println(io)
@@ -96,11 +110,7 @@ end
 function pprint(io::IO, node::Node, n::Int; directed::Bool=false)
   indent(io, n)
   print(io, node.name)
-  if !isempty(node.attrs)
-    print(io, " [")
-    pprint_attrs_short(io, node.attrs)
-    print(io, "]")
-  end
+  pprint_attrs(io, node.attrs)
   print(io, ";")
 end
 
@@ -109,31 +119,25 @@ function pprint(io::IO, edge::Edge, n::Int; directed::Bool=false)
   print(io, edge.src)
   print(io, directed ? " -> " : " -- ")
   print(io, edge.tgt)
-  if !isempty(edge.attrs)
-    print(io, " [")
-    pprint_attrs_short(io, edge.attrs)
-    print(io, "]")
-  end
+  pprint_attrs(io, edge.attrs)
   print(io, ";")
 end
 
-function pprint_attrs_long(io::IO, attrs::Attributes, n::Int)
-  for (key, value) in attrs
+function pprint_attrs(io::IO, attrs::Attributes, n::Int=0;
+                      pre::String="", post::String="")
+  if !isempty(attrs)
     indent(io, n)
-    print(io, key)
-    print(io, " = \"")
-    print(io, value)
-    println(io, "\";")
-  end
-end
-
-function pprint_attrs_short(io::IO, attrs::Attributes)
-  for (i, (key, value)) in enumerate(attrs)
-    if (i > 1) print(io, ",") end
-    print(io, key)
-    print(io, "=\"")
-    print(io, value)
-    print(io, "\"")
+    print(io, pre)
+    print(io, " [")
+    for (i, (key, value)) in enumerate(attrs)
+      if (i > 1) print(io, ",") end
+      print(io, key)
+      print(io, "=\"")
+      print(io, value)
+      print(io, "\"")
+    end
+    print(io, "]")
+    print(io, post)
   end
 end
 
