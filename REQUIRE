@@ -8,6 +8,7 @@ Reexport
 DataStructures
 LightGraphs
 
-# Optional:
+# Optional dependencies:
+# GraphViz
 # TikzPictures
 # ReverseDiffSource

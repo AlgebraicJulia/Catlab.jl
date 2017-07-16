@@ -1,8 +1,38 @@
 module Interactive
-export TikzPicture
+export Graph, TikzPicture
 
-import Base: show
 using ...Catlab
+
+# Graphviz diagrams
+###################
+
+import ..Graphviz
+@optional_import import GraphViz
+@optional_import import GraphViz: Graph
+
+""" Convert our Graphviz graph type to `GraphViz`'s graph type.
+"""
+function Graph(graph::Graphviz.Graph; engine::String="dot")::Graph
+  gv = Graph(sprint(Graphviz.pprint, graph))
+  if !isempty(engine)
+    GraphViz.layout!(gv, engine=engine)
+  end
+  return gv
+end
+
+function Base.show(io::IO, ::MIME"image/svg+xml", graph::Graphviz.Graph)
+  show(io, MIME"image/svg+xml"(), Graph(graph))
+end
+
+# Graphviz PNG output requires Cairo.
+if Pkg.installed("Cairo") != nothing
+  function Base.show(io::IO, ::MIME"image/png", graph::Graphviz.Graph)
+    show(io, MIME"image/png"(), Graph(graph))
+  end
+end
+
+# TikZ diagrams
+###############
 
 import ..TikZ
 @optional_import import TikzPictures: TikzPicture
@@ -25,7 +55,7 @@ function TikzPicture(pic::TikZ.Picture; preamble::String="", usePDF2SVG=true)::T
   TikzPicture(data; options=options, preamble=preamble, usePDF2SVG=usePDF2SVG)
 end
 
-function show(io::IO, ::MIME"image/svg+xml", pic::TikZ.Picture)
+function Base.show(io::IO, ::MIME"image/svg+xml", pic::TikZ.Picture)
   show(io, MIME"image/svg+xml"(), TikzPicture(pic))
 end
 

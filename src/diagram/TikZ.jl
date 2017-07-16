@@ -1,4 +1,18 @@
 """ AST and pretty printer for TikZ.
+
+This module does not provide bindings to the TikZ LaTeX package. For that, see
+the TikzPictures.jl package: https://github.com/sisl/TikzPictures.jl
+
+The AST is large but still incomplete! It supports:
+
+- Nodes (`\\node`) and edges (`\\draw`)
+- Nodes along edges (`\\draw ... node ...`)
+- Graphs (`\\graph`)
+- Matrices (`\\matrix`)
+- Scopes and nested pictures
+
+The AST is adapted from the (also incomplete) BNF grammar for TikZ in
+[TikZit](http://tikzit.sourceforge.net/manual.html).
 """
 module TikZ
 export Expression, Statement, GraphStatement, Coordinate, Property,
@@ -10,18 +24,6 @@ using AutoHashEquals
 # AST
 #####
 
-""" Base class for TikZ abstract syntax tree.
-
-The AST is incomplete! It supports:
-- Nodes (`\\node`) and edges (`\\draw`)
-- Nodes along edges (`\\draw ... node ...`)
-- Graphs (`\\graph`)
-- Matrices (`\\matrix`)
-- Scopes and nested pictures
-
-The AST is adapted from the (also incomplete) BNF grammar for TikZ in
-[TikZit](http://tikzit.sourceforge.net/manual.html).
-"""
 abstract type Expression end
 abstract type Statement <: Expression end
 abstract type GraphStatement <: Expression end
