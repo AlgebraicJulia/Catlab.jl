@@ -2,10 +2,10 @@ module Interactive
 export TikzPicture
 
 import Base: show
-import TikzPictures: TikzPicture
+using ...Catlab
 
-using ...Syntax
 import ..TikZ
+@optional_import import TikzPictures: TikzPicture
 
 """ Convert our TikZ picture type to `TikzPicture`'s picture type. 
 """
