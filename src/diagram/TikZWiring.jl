@@ -61,7 +61,7 @@ Sec 17.13).
 """
 function wiring_diagram(f::HomExpr;
     font_size::Number=12, line_width::String="0.4pt", math_mode::Bool=true,
-    arrowtip::String="", labels::Bool=true,
+    arrowtip::String="", labels::Bool=false,
     box_size::Number=2, box_style::Dict=Dict(),
     sequence_sep::Number=2, parallel_sep::Number=0.5)::TikZ.Picture
   # Parse arguments.

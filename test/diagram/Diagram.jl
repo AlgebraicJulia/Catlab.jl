@@ -7,6 +7,7 @@ end
 
 @testset "Diagram.Graphivz" begin
   include("Graphviz.jl")
+  include("GraphvizWiring.jl")
 end
 
 @testset "Diagram.TikZ" begin
