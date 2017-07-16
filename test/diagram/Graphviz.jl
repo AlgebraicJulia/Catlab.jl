@@ -1,8 +1,6 @@
 module TestGraphviz
 
 using Base.Test
-using DataStructures: OrderedDict
-
 using Catlab.Diagram.Graphviz
 
 # Pretty-print
@@ -61,9 +59,9 @@ graph = Digraph("G",
   Node("n1"; label="foo"),
   Node("n2"; label="bar"),
   Edge("n1","n2");
-  graph_attrs = OrderedDict(:rankdir => "LR"),
-  node_attrs = OrderedDict(:shape => "box", :style => "filled"),
-  edge_attrs = OrderedDict(:style => "dotted")
+  graph_attrs = Attributes(:rankdir => "LR"),
+  node_attrs = Attributes(:shape => "box", :style => "filled"),
+  edge_attrs = Attributes(:style => "dotted")
 )
 @test spprint(graph) == """
 digraph G {

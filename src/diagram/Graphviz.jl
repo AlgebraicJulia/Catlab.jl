@@ -9,7 +9,8 @@ References:
 - DOT language guide: http://www.graphviz.org/pdf/dotguide.pdf
 """
 module Graphviz
-export Expression, Statement, Graph, Digraph, Subgraph, Node, Edge, pprint
+export Expression, Statement, Attributes, Graph, Digraph, Subgraph, Node, Edge,
+  pprint
 
 using DataStructures: OrderedDict
 using Parameters
@@ -21,20 +22,19 @@ abstract type Expression end
 abstract type Statement <: Expression end
 
 const Attributes = OrderedDict{Symbol,String}
-const Statements = Vector{Statement}
 
 @with_kw struct Graph <: Expression
   name::String
   directed::Bool
-  stmts::Statements=Statements()
+  stmts::Vector{Statement}=Statement[]
   graph_attrs::Attributes=Attributes()
   node_attrs::Attributes=Attributes()
   edge_attrs::Attributes=Attributes()
 end
 
-Graph(name::String, stmts::Statements; kw...) =
+Graph(name::String, stmts::Vector{Statement}; kw...) =
   Graph(name=name, directed=false, stmts=stmts; kw...)
-Digraph(name::String, stmts::Statements; kw...) =
+Digraph(name::String, stmts::Vector{Statement}; kw...) =
   Graph(name=name, directed=true, stmts=stmts; kw...)
 Graph(name::String, stmts::Vararg{Statement}; kw...) =
   Graph(name, collect(stmts); kw...)
@@ -43,13 +43,13 @@ Digraph(name::String, stmts::Vararg{Statement}; kw...) =
 
 @with_kw struct Subgraph <: Statement
   name::String
-  stmts::Statements=Statements()
+  stmts::Vector{Statement}=Statement[]
   graph_attrs::Attributes=Attributes()
   node_attrs::Attributes=Attributes()
   edge_attrs::Attributes=Attributes()
 end
 
-Subgraph(name::String, stmts::Statements; kw...) =
+Subgraph(name::String, stmts::Vector{Statement}; kw...) =
   Subgraph(name=name, stmts=stmts, kw...)
 Subgraph(name::String, stmts::Vararg{Statement}; kw...) =
   Subgraph(name, collect(stmts); kw...)
