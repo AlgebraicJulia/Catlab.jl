@@ -18,9 +18,17 @@ spprint(expr::Expression) = sprint(pprint, expr)
 
 # Edge statement
 @test spprint(Edge("n1","n2")) == "n1 -- n2;"
-@test spprint(Edge("n1","n2"; label="bar")) == "n1 -- n2 [label=\"bar\"];"
+@test spprint(Edge("n1","n2"; label="foo")) == "n1 -- n2 [label=\"foo\"];"
 @test spprint(Edge("n1","n2"; style="dotted", weight="10")) ==
   "n1 -- n2 [style=\"dotted\",weight=\"10\"];"
+@test spprint(Edge("n1","p1","n2","p2")) == "n1:p1 -- n2:p2;"
+@test spprint(Edge("n1","p1","n2","p2"; label="bar")) ==
+  "n1:p1 -- n2:p2 [label=\"bar\"];"
+@test spprint(Edge(src="n1", src_port="p1", tgt="n2", tgt_port="p2")) ==
+  "n1:p1 -- n2:p2;"
+@test spprint(Edge(src="n1", src_port="p1", src_anchor="w",
+                   tgt="n2", tgt_port="p2", tgt_anchor="e")) ==
+  "n1:p1:w -- n2:p2:e;"
 
 # Graph statement
 graph = Graph("G",

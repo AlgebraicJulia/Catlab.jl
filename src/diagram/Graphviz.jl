@@ -54,18 +54,25 @@ Subgraph(name::String, stmts::Statements; kw...) =
 Subgraph(name::String, stmts::Vararg{Statement}; kw...) =
   Subgraph(name, collect(stmts); kw...)
 
-struct Node <: Statement
+@with_kw struct Node <: Statement
   name::String
-  attrs::Attributes
+  attrs::Attributes=Attributes()
 end
 Node(name::String; attrs...) = Node(name, Attributes(attrs))
 
-struct Edge <: Statement
+@with_kw struct Edge <: Statement
   src::String
+  src_port::String=""
+  src_anchor::String=""
   tgt::String
-  attrs::Attributes
+  tgt_port::String=""
+  tgt_anchor::String=""
+  attrs::Attributes=Attributes()
 end
-Edge(src::String, tgt::String; attrs...) = Edge(src, tgt, Attributes(attrs))
+Edge(src::String, tgt::String; attrs...) =
+  Edge(src=src, tgt=tgt, attrs=Attributes(attrs))
+Edge(src::String, src_port::String, tgt::String, tgt_port::String; attrs...) =
+  Edge(src=src, src_port=src_port, tgt=tgt, tgt_port=tgt_port, attrs=Attributes(attrs))
 
 # Pretty-print
 ##############
@@ -116,9 +123,24 @@ end
 
 function pprint(io::IO, edge::Edge, n::Int; directed::Bool=false)
   indent(io, n)
+  
+  # Source
   print(io, edge.src)
+  print(io, isempty(edge.src_port) ? "" : ":")
+  print(io, edge.src_port)
+  print(io, isempty(edge.src_anchor) ? "" : ":")
+  print(io, edge.src_anchor)
+  
+  # Edge
   print(io, directed ? " -> " : " -- ")
+  
+  # Target
   print(io, edge.tgt)
+  print(io, isempty(edge.tgt_port) ? "" : ":")
+  print(io, edge.tgt_port)
+  print(io, isempty(edge.tgt_anchor) ? "" : ":")
+  print(io, edge.tgt_anchor)
+  
   pprint_attrs(io, edge.attrs)
   print(io, ";")
 end
