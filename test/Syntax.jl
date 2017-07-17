@@ -155,18 +155,19 @@ f, g = hom(:f, X, Y), hom(:g, Y, X)
   mtimes(x::String, y::String) = string(x,y)
 end
 
+F(expr; kw...) = functor(Dict(:Elem => String), expr; kw...)
+
 x, y, z = elem(FreeMonoid,:x), elem(FreeMonoid,:y), elem(FreeMonoid,:z)
 gens = Dict(x => "x", y => "y", z => "z")
-types = Dict(:Elem => String)
-@test functor(types, mtimes(x,mtimes(y,z)); generators=gens) == "xyz"
-@test functor(types, mtimes(x,munit(FreeMonoid.Elem)); generators=gens) == "x"
+@test F(mtimes(x,mtimes(y,z)); generators=gens) == "xyz"
+@test F(mtimes(x,munit(FreeMonoid.Elem)); generators=gens) == "x"
 
 gen_terms = Dict(:elem => (x) -> string(first(x)))
-@test functor(types, mtimes(x,mtimes(y,z)); generator_terms=gen_terms) == "xyz"
-@test functor(types, mtimes(x,munit(FreeMonoid.Elem)); generator_terms=gen_terms) == "x"
+@test F(mtimes(x,mtimes(y,z)); generator_terms=gen_terms) == "xyz"
+@test F(mtimes(x,munit(FreeMonoid.Elem)); generator_terms=gen_terms) == "x"
 
 constructors = Dict(:elem => (typ,val) -> string(val))
-@test functor(types, mtimes(x,mtimes(y,z)); constructors=constructors) == "xyz"
-@test functor(types, mtimes(x,munit(FreeMonoid.Elem)); constructors=constructors) == "x"
+@test F(mtimes(x,mtimes(y,z)); constructors=constructors) == "xyz"
+@test F(mtimes(x,munit(FreeMonoid.Elem)); constructors=constructors) == "x"
 
 end
