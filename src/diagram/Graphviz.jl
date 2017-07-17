@@ -84,6 +84,7 @@ struct Edge <: Statement
   attrs::Attributes
 end
 Edge(path::Vararg{String}; attrs...) = Edge(map(NodeID, collect(path)), Attributes(attrs))
+Edge(path::Vector{String}; attrs...) = Edge(map(NodeID, path), Attributes(attrs))
 Edge(path::Vararg{NodeID}; attrs...) = Edge(collect(path), Attributes(attrs))
 Edge(path::Vector{NodeID}; attrs...) = Edge(path, Attributes(attrs))
 

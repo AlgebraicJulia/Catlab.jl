@@ -34,32 +34,24 @@ function to_graphviz(f::WiringDiagram;
   # Nodes
   stmts = Graphviz.Statement[
     # Invisible nodes for incoming and outgoing wires.
-    Graphviz.Node(node_name(input_id(f)),
-                  label=ports_label(Output, length(inputs(f)))),
-    Graphviz.Node(node_name(output_id(f)),
-                  label=ports_label(Input, length(outputs(f))))
+    port_nodes(input_id(f), length(inputs(f))),
+    port_nodes(output_id(f), length(outputs(f))),
   ]
   for v in box_ids(f)
     # Visible nodes for boxes.
-    label = node_label(v, box(f, v))
-    push!(stmts, Graphviz.Node(node_name(v), label=label))
+    label = node_label(box(f, v))
+    push!(stmts, Graphviz.Node("n$v", label=label))
   end
   
   # Edges
+  const node_id = (p::Port) -> begin
+    if p.box in (input_id(f), output_id(f))
+      return Graphviz.NodeID("n$(p.box)p$(p.port)", port_anchor(p.kind))
+    end
+    Graphviz.NodeID("n$(p.box)", port_name(p.kind, p.port), port_anchor(p.kind))
+  end
   for wire in wires(f)
-    src, tgt = wire.source, wire.target
-    edge = Graphviz.Edge(
-      Graphviz.NodeID(
-        node_name(src.box),
-        port_name(src.kind, src.port),
-        port_anchor(src.kind)
-      ),
-      Graphviz.NodeID(
-        node_name(tgt.box),
-        port_name(tgt.kind, tgt.port),
-        port_anchor(tgt.kind)
-      ),
-    )
+    edge = Graphviz.Edge(node_id(wire.source), node_id(wire.target))
     push!(stmts, edge)
   end
   
@@ -75,13 +67,9 @@ function to_graphviz(f::HomExpr; kw...)::Graphviz.Graph
   to_graphviz(to_wiring_diagram(f); kw...)
 end
 
-node_name(v::Int) = "n$v"
-port_name(kind::PortKind, port::Int) = string(kind == Input ? "in" : "out", port)
-port_anchor(kind::PortKind) = kind == Input ? "n" : "s"
-
 """ Create an "HTML-like" node label for a box.
 """
-function node_label(v::Int, box::Box)::Graphviz.Html
+function node_label(box::Box)::Graphviz.Html
   nin, nout = length(inputs(box)), length(outputs(box))
   Graphviz.Html("""
     <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
@@ -108,5 +96,20 @@ end
 function label(box::HomBox)::String
   string(box.expr)
 end
+
+""" Create invisible nodes for the input or output ports of an outer box.
+"""
+function port_nodes(v::Int, nports::Int)::Graphviz.Subgraph
+  nodes = [ "n$(v)p$(i)" for i in 1:nports ]
+  Graphviz.Subgraph(
+    Graphviz.Edge(nodes),
+    graph_attrs=Graphviz.Attributes(:rank => "same", :rankdir => "LR"),
+    node_attrs=Graphviz.Attributes(:style => "invis"),
+    edge_attrs=Graphviz.Attributes(:style => "invis"),
+  )
+end
+
+port_name(kind::PortKind, port::Int) = string(kind == Input ? "in" : "out", port)
+port_anchor(kind::PortKind) = kind == Input ? "n" : "s"
 
 end
