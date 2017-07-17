@@ -49,12 +49,16 @@ function to_graphviz(f::WiringDiagram;
   for wire in wires(f)
     src, tgt = wire.source, wire.target
     edge = Graphviz.Edge(
-      src = node_name(src.box),
-      src_port = port_name(src.kind, src.port),
-      src_anchor = port_anchor(src.kind),
-      tgt = node_name(tgt.box),
-      tgt_port = port_name(tgt.kind, tgt.port),
-      tgt_anchor = port_anchor(tgt.kind),
+      Graphviz.NodeID(
+        node_name(src.box),
+        port_name(src.kind, src.port),
+        port_anchor(src.kind)
+      ),
+      Graphviz.NodeID(
+        node_name(tgt.box),
+        port_name(tgt.kind, tgt.port),
+        port_anchor(tgt.kind)
+      ),
     )
     push!(stmts, edge)
   end

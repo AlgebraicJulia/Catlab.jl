@@ -19,14 +19,14 @@ spprint(expr::Expression) = sprint(pprint, expr)
 @test spprint(Edge("n1","n2"; label="foo")) == "n1 -- n2 [label=\"foo\"];"
 @test spprint(Edge("n1","n2"; style="dotted", weight="10")) ==
   "n1 -- n2 [style=\"dotted\",weight=\"10\"];"
-@test spprint(Edge("n1","p1","n2","p2")) == "n1:p1 -- n2:p2;"
-@test spprint(Edge("n1","p1","n2","p2"; label="bar")) ==
+@test spprint(Edge(NodeID("n1","p1"), NodeID("n2","p2"))) == "n1:p1 -- n2:p2;"
+@test spprint(Edge(NodeID("n1","p1"), NodeID("n2","p2"); label="bar")) ==
   "n1:p1 -- n2:p2 [label=\"bar\"];"
-@test spprint(Edge(src="n1", src_port="p1", tgt="n2", tgt_port="p2")) ==
-  "n1:p1 -- n2:p2;"
-@test spprint(Edge(src="n1", src_port="p1", src_anchor="w",
-                   tgt="n2", tgt_port="p2", tgt_anchor="e")) ==
+@test spprint(Edge(NodeID("n1","p1","w"), NodeID("n2", "p2", "e"))) ==
   "n1:p1:w -- n2:p2:e;"
+@test spprint(Edge("n1","n2","n3")) == "n1 -- n2 -- n3;"
+@test spprint(Edge(NodeID("n1"), NodeID("n2"), NodeID("n3"))) ==
+  "n1 -- n2 -- n3;"
 
 # Graph statement
 graph = Graph("G",

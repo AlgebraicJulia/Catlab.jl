@@ -9,8 +9,8 @@ References:
 - DOT language guide: http://www.graphviz.org/pdf/dotguide.pdf
 """
 module Graphviz
-export Expression, Statement, Attributes, Graph, Digraph, Subgraph, Node, Edge,
-  pprint
+export Expression, Statement, Attributes, Graph, Digraph, Subgraph,
+  Node, NodeID, Edge, pprint
 
 using DataStructures: OrderedDict
 using Parameters
@@ -65,25 +65,26 @@ Subgraph(name::String, stmts::Vector{Statement}; kw...) =
 Subgraph(name::String, stmts::Vararg{Statement}; kw...) =
   Subgraph(; name=name, stmts=collect(stmts), kw...)
 
-@with_kw struct Node <: Statement
+struct Node <: Statement
   name::String
-  attrs::Attributes=Attributes()
+  attrs::Attributes
 end
 Node(name::String; attrs...) = Node(name, Attributes(attrs))
 
-@with_kw struct Edge <: Statement
-  src::String
-  src_port::String=""
-  src_anchor::String=""
-  tgt::String
-  tgt_port::String=""
-  tgt_anchor::String=""
-  attrs::Attributes=Attributes()
+struct NodeID <: Expression
+  name::String
+  port::String
+  anchor::String
+  NodeID(name::String, port::String="", anchor::String="") = new(name, port, anchor)
 end
-Edge(src::String, tgt::String; attrs...) =
-  Edge(src=src, tgt=tgt, attrs=Attributes(attrs))
-Edge(src::String, src_port::String, tgt::String, tgt_port::String; attrs...) =
-  Edge(src=src, src_port=src_port, tgt=tgt, tgt_port=tgt_port, attrs=Attributes(attrs))
+
+struct Edge <: Statement
+  path::Vector{NodeID}
+  attrs::Attributes
+end
+Edge(path::Vararg{String}; attrs...) = Edge(map(NodeID, collect(path)), Attributes(attrs))
+Edge(path::Vararg{NodeID}; attrs...) = Edge(collect(path), Attributes(attrs))
+Edge(path::Vector{NodeID}; attrs...) = Edge(path, Attributes(attrs))
 
 # Pretty-print
 ##############
@@ -136,26 +137,26 @@ function pprint(io::IO, node::Node, n::Int; directed::Bool=false)
   print(io, ";")
 end
 
+function pprint(io::IO, node::NodeID, n::Int)
+  print(io, node.name)
+  if !isempty(node.port)
+    print(io, ":")
+    print(io, node.port)
+  end
+  if !isempty(node.anchor)
+    print(io, ":")
+    print(io, node.anchor)
+  end
+end
+
 function pprint(io::IO, edge::Edge, n::Int; directed::Bool=false)
   indent(io, n)
-  
-  # Source
-  print(io, edge.src)
-  print(io, isempty(edge.src_port) ? "" : ":")
-  print(io, edge.src_port)
-  print(io, isempty(edge.src_anchor) ? "" : ":")
-  print(io, edge.src_anchor)
-  
-  # Edge
-  print(io, directed ? " -> " : " -- ")
-  
-  # Target
-  print(io, edge.tgt)
-  print(io, isempty(edge.tgt_port) ? "" : ":")
-  print(io, edge.tgt_port)
-  print(io, isempty(edge.tgt_anchor) ? "" : ":")
-  print(io, edge.tgt_anchor)
-  
+  for (i, node) in enumerate(edge.path)
+    if i > 1
+      print(io, directed ? " -> " : " -- ")
+    end
+    pprint(io, node, n)
+  end
   pprint_attrs(io, edge.attrs)
   print(io, ";")
 end
