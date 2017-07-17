@@ -21,7 +21,16 @@ using Parameters
 abstract type Expression end
 abstract type Statement <: Expression end
 
-const Attributes = OrderedDict{Symbol,String}
+""" AST type for Graphviz's "HTML-like" node labels.
+
+The HTML is represented as an atomic string, for now.
+"""
+struct Html
+  content::String
+end
+
+const AttributeValue = Union{String,Html}
+const Attributes = OrderedDict{Symbol,AttributeValue}
 
 @with_kw struct Graph <: Expression
   name::String
@@ -154,13 +163,23 @@ function pprint_attrs(io::IO, attrs::Attributes, n::Int=0;
     for (i, (key, value)) in enumerate(attrs)
       if (i > 1) print(io, ",") end
       print(io, key)
-      print(io, "=\"")
-      print(io, value)
-      print(io, "\"")
+      print(io, "=")
+      pprint_attr_value(io, value)
     end
     print(io, "]")
     print(io, post)
   end
+end
+
+function pprint_attr_value(io::IO, value::String)
+  print(io, "\"")
+  print(io, value)
+  print(io, "\"")
+end
+function pprint_attr_value(io::IO, value::Html)
+  print(io, "<")
+  print(io, value.content)
+  print(io, ">")
 end
 
 indent(io::IO, n::Int) = print(io, " "^n)
