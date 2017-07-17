@@ -87,4 +87,16 @@ subgraph sub {
   n1 -- n2;
 }"""
 
+subgraph = Subgraph(
+  Node("n1"),
+  Node("n2"),
+  graph_attrs = Attributes(:rank => "same")
+)
+@test spprint(subgraph) == """
+{
+  graph [rank="same"];
+  n1;
+  n2;
+}"""
+
 end

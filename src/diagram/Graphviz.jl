@@ -42,26 +42,28 @@ const Attributes = OrderedDict{Symbol,AttributeValue}
 end
 
 Graph(name::String, stmts::Vector{Statement}; kw...) =
-  Graph(name=name, directed=false, stmts=stmts; kw...)
-Digraph(name::String, stmts::Vector{Statement}; kw...) =
-  Graph(name=name, directed=true, stmts=stmts; kw...)
+  Graph(; name=name, directed=false, stmts=stmts, kw...)
 Graph(name::String, stmts::Vararg{Statement}; kw...) =
-  Graph(name, collect(stmts); kw...)
+  Graph(; name=name, directed=false, stmts=collect(stmts), kw...)
+Digraph(name::String, stmts::Vector{Statement}; kw...) =
+  Graph(; name=name, directed=true, stmts=stmts, kw...)
 Digraph(name::String, stmts::Vararg{Statement}; kw...) =
-  Digraph(name, collect(stmts); kw...)
+  Graph(; name=name, directed=true, stmts=collect(stmts), kw...)
 
 @with_kw struct Subgraph <: Statement
-  name::String
+  name::String="" # Subgraphs can be anonymous
   stmts::Vector{Statement}=Statement[]
   graph_attrs::Attributes=Attributes()
   node_attrs::Attributes=Attributes()
   edge_attrs::Attributes=Attributes()
 end
 
+Subgraph(stmts::Vector{Statement}; kw...) = Subgraph(; stmts=stmts, kw...)
+Subgraph(stmts::Vararg{Statement}; kw...) = Subgraph(; stmts=collect(stmts), kw...)
 Subgraph(name::String, stmts::Vector{Statement}; kw...) =
-  Subgraph(name=name, stmts=stmts, kw...)
+  Subgraph(; name=name, stmts=stmts, kw...)
 Subgraph(name::String, stmts::Vararg{Statement}; kw...) =
-  Subgraph(name, collect(stmts); kw...)
+  Subgraph(; name=name, stmts=collect(stmts), kw...)
 
 @with_kw struct Node <: Statement
   name::String
@@ -109,9 +111,13 @@ end
 
 function pprint(io::IO, subgraph::Subgraph, n::Int; directed::Bool=false)
   indent(io, n)
-  print(io, "subgraph ")
-  print(io, subgraph.name)
-  println(io, " {")
+  if isempty(subgraph.name)
+    println(io, "{")
+  else
+    print(io, "subgraph ")
+    print(io, subgraph.name)
+    println(io, " {")
+  end
   pprint_attrs(io, subgraph.graph_attrs, n+2; pre="graph", post=";\n")
   pprint_attrs(io, subgraph.node_attrs, n+2; pre="node", post=";\n")
   pprint_attrs(io, subgraph.edge_attrs, n+2; pre="edge", post=";\n")
