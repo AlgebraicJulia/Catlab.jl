@@ -469,13 +469,11 @@ categories, possibly with diagonals and codiagonals. Thus, the doctrines of
 cartesian, cocartesian, and biproduct categories are supported.
 """
 function to_wiring_diagram(expr::CategoryExpr)
-  functor(expr;
-    generator_terms=Dict(
-      :ob => (expr) -> WireTypes(collect(expr)),
-      :hom => (expr) -> WiringDiagram(expr),
-    ),
-    types=Dict(:Ob => WireTypes, :Hom => WiringDiagram),
-  )
+  functor(Dict(:Ob => WireTypes, :Hom => WiringDiagram), expr;
+          generator_terms = Dict(
+            :ob => (expr) -> WireTypes(collect(expr)),
+            :hom => (expr) -> WiringDiagram(expr),
+          ))
 end
 
 end

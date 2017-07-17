@@ -158,15 +158,15 @@ end
 x, y, z = elem(FreeMonoid,:x), elem(FreeMonoid,:y), elem(FreeMonoid,:z)
 gens = Dict(x => "x", y => "y", z => "z")
 types = Dict(:Elem => String)
-@test functor(mtimes(x,mtimes(y,z)); generators=gens) == "xyz"
-@test functor(mtimes(x,munit(FreeMonoid.Elem)); generators=gens, types=types) == "x"
+@test functor(types, mtimes(x,mtimes(y,z)); generators=gens) == "xyz"
+@test functor(types, mtimes(x,munit(FreeMonoid.Elem)); generators=gens) == "x"
 
 gen_terms = Dict(:elem => (x) -> string(first(x)))
-@test functor(mtimes(x,mtimes(y,z)); generator_terms=gen_terms) == "xyz"
-@test functor(mtimes(x,munit(FreeMonoid.Elem)); generator_terms=gen_terms, types=types) == "x"
+@test functor(types, mtimes(x,mtimes(y,z)); generator_terms=gen_terms) == "xyz"
+@test functor(types, mtimes(x,munit(FreeMonoid.Elem)); generator_terms=gen_terms) == "x"
 
 constructors = Dict(:elem => (typ,val) -> string(val))
-@test functor(mtimes(x,mtimes(y,z)); constructors=constructors, types=types) == "xyz"
-@test functor(mtimes(x,munit(FreeMonoid.Elem)); constructors=constructors, types=types) == "x"
+@test functor(types, mtimes(x,mtimes(y,z)); constructors=constructors) == "xyz"
+@test functor(types, mtimes(x,munit(FreeMonoid.Elem)); constructors=constructors) == "x"
 
 end
