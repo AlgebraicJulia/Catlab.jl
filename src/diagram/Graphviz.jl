@@ -28,6 +28,7 @@ The HTML is represented as an atomic string, for now.
 struct Html
   content::String
 end
+Base.print(io::IO, html::Html) = print(io, html.content)
 
 const AttributeValue = Union{String,Html}
 const Attributes = OrderedDict{Symbol,AttributeValue}
@@ -171,22 +172,13 @@ function pprint_attrs(io::IO, attrs::Attributes, n::Int=0;
       if (i > 1) print(io, ",") end
       print(io, key)
       print(io, "=")
-      pprint_attr_value(io, value)
+      print(io, isa(value, Html) ? "<" : "\"")
+      print(io, value)
+      print(io, isa(value, Html) ? ">" : "\"")
     end
     print(io, "]")
     print(io, post)
   end
-end
-
-function pprint_attr_value(io::IO, value::String)
-  print(io, "\"")
-  print(io, value)
-  print(io, "\"")
-end
-function pprint_attr_value(io::IO, value::Html)
-  print(io, "<")
-  print(io, value.content)
-  print(io, ">")
 end
 
 indent(io::IO, n::Int) = print(io, " "^n)

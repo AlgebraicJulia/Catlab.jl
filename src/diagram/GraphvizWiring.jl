@@ -85,9 +85,9 @@ function node_label(v::Int, box::Box)::Graphviz.Html
   nin, nout = length(inputs(box)), length(outputs(box))
   Graphviz.Html("""
     <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-    <TR><TD>$(ports_label(Input,nin).content)</TD></TR>
+    <TR><TD>$(ports_label(Input,nin))</TD></TR>
     <TR><TD BORDER="1" CELLPADDING="4">$(label(box))</TD></TR>
-    <TR><TD>$(ports_label(Output,nout).content)</TD></TR>
+    <TR><TD>$(ports_label(Output,nout))</TD></TR>
     </TABLE>""")
 end
 
