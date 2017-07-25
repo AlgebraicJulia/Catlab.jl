@@ -185,4 +185,18 @@ g = Hom(:g, Y, Z)
   [:Hom, "g", [:Ob, "Y"], [:Ob, "Z"]],
 ]
 
+# From JSON
+@test parse_json(FreeMonoid, [:Elem, "x"]) == Elem(FreeMonoid, :x)
+@test_skip parse_json(FreeMonoid, [:munit]) == munit(FreeMonoid.Elem)
+@test parse_json(FreeCategory, [:Ob, "X"]) == X
+@test parse_json(FreeCategory, [:Ob, "X"]; symbols=false) ==
+  Ob(FreeCategory.Ob, "X")
+@test parse_json(FreeCategory, [:Hom, "f", [:Ob, "X"], [:Ob, "Y"]]) == f
+@test parse_json(FreeCategory, [:Hom, "f", [:Ob, "X"], [:Ob, "Y"]]; symbols=false) ==
+  Hom("f", Ob(FreeCategory.Ob, "X"), Ob(FreeCategory.Ob, "Y"))
+
+# Round trip
+@test parse_json(FreeCategory, to_json(compose(f,g))) == compose(f,g)
+@test parse_json(FreeCategory, to_json(id(X))) == id(X)
+
 end

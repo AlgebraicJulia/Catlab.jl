@@ -14,7 +14,7 @@ module to make the construction of syntax simple but flexible.
 """
 module Syntax
 export @syntax, BaseExpr, SyntaxDomainError, head, args, type_args, first, last,
-  functor, to_json, show_sexpr, show_unicode, show_unicode_infix,
+  functor, to_json, parse_json, show_sexpr, show_unicode, show_unicode_infix,
   show_latex, show_latex_infix, show_latex_script
 
 import Base: first, last, show, showerror, datatype_name, datatype_module
@@ -400,6 +400,23 @@ function to_json(expr::BaseExpr)
 end
 to_json(x::Real) = x
 to_json(x) = string(x)
+
+""" Deserialize expression from JSON-able Julia object.
+
+If `symbols` is true (the default), strings are converted to symbols.
+"""
+function parse_json(syntax_module::Module, sexpr::Vector; kw...)
+  constructor_name = Symbol(first(sexpr))
+  constructor = getfield(module_parent(syntax_module), constructor_name)
+  args = Any[ parse_json(syntax_module, x; kw...) for x in sexpr[2:end] ]
+  if !any(isa(arg, BaseExpr) for arg in args)
+    # Special case: dispatch on type (e.g., nullary constructors)
+    insert!(args, 1, getfield(syntax_module, constructor_name))
+  end
+  constructor(args...)
+end
+parse_json(::Module, x::String; symbols=true) = symbols ? Symbol(x) : x
+parse_json(::Module, x::Real; kw...) = x
 
 # Pretty-print
 ##############
