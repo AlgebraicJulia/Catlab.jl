@@ -213,4 +213,9 @@ end
 @test times("a", "b") == "ab"
 @test times("a", "b", "c") == "abc"
 
+# Reflection
+@test invoke_term(Monoid, (String,), :munit) == ""
+@test invoke_term(Monoid, (String,), :times, "a", "b") == "ab"
+@test invoke_term(Monoid, (String,), :times, "a", "b", "c") == "abc"
+
 end

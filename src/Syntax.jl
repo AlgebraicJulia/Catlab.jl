@@ -14,15 +14,16 @@ module to make the construction of syntax simple but flexible.
 """
 module Syntax
 export @syntax, BaseExpr, SyntaxDomainError, head, args, type_args, first, last,
-  functor, to_json, parse_json, show_sexpr, show_unicode, show_unicode_infix,
-  show_latex, show_latex_infix, show_latex_script
+  invoke_term, functor, to_json, parse_json, show_sexpr, show_unicode,
+  show_unicode_infix, show_latex, show_latex_infix, show_latex_script
 
 import Base: first, last, show, showerror, datatype_name, datatype_module
 import Base.Meta: show_sexpr
 using Match
 
+using ..GAT: Context, Signature, TypeConstructor, TermConstructor, Typeclass
 import ..GAT
-import ..GAT: Context, Signature, TypeConstructor, TermConstructor, Typeclass
+import ..GAT: invoke_term
 using ..Meta
 
 # XXX: The special case for `UnionAll` wrappers is handled in `datatype_name`
@@ -121,6 +122,7 @@ function syntax_code(name::Symbol, base_types::Vector{Type}, mod::Module,
     Expr(:block, [
       Expr(:using, map(Symbol, split(string(outer_mod), "."))...);
       Expr(:export, [cons.name for cons in signature.types]...);  
+      :(signature() = $(GlobalRef(module_parent(mod), module_name(mod))));
       gen_types(signature, base_types);
       gen_type_accessors(signature);
       gen_term_generators(signature);
@@ -307,6 +309,42 @@ function constructor_for_generator(cons::TypeConstructor)::TermConstructor
   TermConstructor(cons.name, params, typ, context)
 end
 
+# Reflection
+############
+
+""" Invoke a term constructor by name in a syntax system.
+
+This method provides reflection for syntax systems. In everyday use the generic
+method for the constructor should be called directly, not through this function.
+"""
+function invoke_term(syntax_module::Module, constructor_name::Symbol, args...)
+  signature_module = syntax_module.signature()
+  signature = signature_module.class().signature
+  syntax_types = Tuple(getfield(syntax_module, cons.name) for cons in signature.types)
+  invoke_term(signature_module, syntax_types, constructor_name, args...)
+end
+
+""" Name of constructor that created expression.
+"""
+function constructor_name(expr::BaseExpr)::Symbol
+  if head(expr) == :generator
+    datatype_name(typeof(expr))
+  else
+    head(expr)
+  end
+end
+
+""" Create generator of the same type as the given expression.
+"""
+function generator_like(expr::BaseExpr, value)::BaseExpr
+  invoke_term(
+    datatype_module(typeof(expr)),
+    datatype_name(typeof(expr)),
+    value,
+    type_args(expr)...
+  )
+end
+
 # Functors
 ##########
 
@@ -320,7 +358,7 @@ A functor is completely determined by its action on the generators. There are
 several ways to specify this mapping:
 
   1. Simply specify a Julia instance type for each doctrine type, using the
-     required `types` mapping. For this to work, the generator constructors
+     required `types` tuple. For this to work, the generator constructors
      must be defined for the instance types.
 
   2. Explicitly map each generator term to an instance value, using the
@@ -329,60 +367,36 @@ several ways to specify this mapping:
   3. For each doctrine type (e.g., object and morphism), specify a function
      mapping generator terms of that type to an instance value, using the
      `generator_terms` dictionary.
-  
-It is also possible to override the term constructors (e.g., composition or
-monoidal product), using the `constructors` dictionary. That should only be
-necessary if the instance types do not actually implement the GAT signature, say
-because they are primitive Julia types.
 """
-function functor(types::Associative, expr::BaseExpr;
+function functor(types::Tuple, expr::BaseExpr;
                  generators::Associative=Dict(),
-                 generator_terms::Associative=Dict(),
-                 constructors::Associative=Dict())
+                 generator_terms::Associative=Dict())
   # Special case: look up a specific generator.
   if head(expr) == :generator && haskey(generators, expr)
     return generators[expr]
   end
   
-  # Retrieve the constructor for functor's codomain category.
-  constructor_name, constructor = term_constructor(expr)
-  constructor = get(constructors, constructor_name, constructor)
-  
   # Special case: look up a type of generator.
-  if head(expr) == :generator && haskey(generator_terms, constructor_name)
-    return generator_terms[constructor_name](expr)
+  name = constructor_name(expr)
+  if head(expr) == :generator && haskey(generator_terms, name)
+    return generator_terms[name](expr)
   end
   
   # Otherwise, we need to call a term constructor (possibly for a generator).
-  # Recursively evalute the arguments, then invoke the constructor.
-  constructor_args = []
-  if !any(isa(arg, BaseExpr) for arg in args(expr))
-    # Special case: dispatch on type (e.g., nullary constructors)
-    type_name = datatype_name(typeof(expr))
-    push!(constructor_args, types[type_name])
-  end
+  # Recursively evalute the arguments.
+  term_args = []
   for arg in args(expr)
     if isa(arg, BaseExpr)
       arg = functor(types, arg; generators=generators,
-                    generator_terms=generator_terms, constructors=constructors)
+                    generator_terms=generator_terms)
     end
-    push!(constructor_args, arg)
+    push!(term_args, arg)
   end
-  constructor(constructor_args...)
-end
-
-""" Get Julia function that constructs a syntax term of the given type.
-"""
-function term_constructor(typ::Type, constructor_name::Symbol)
-  syntax_module = datatype_module(typ)
-  if constructor_name == :generator
-    constructor_name = datatype_name(typ)
-  end
-  constructor = getfield(module_parent(syntax_module), constructor_name)
-  (constructor_name, constructor)
-end
-function term_constructor(expr::BaseExpr)
-  term_constructor(typeof(expr), head(expr))
+  
+  # Invoke the constructor in the codomain category!
+  syntax_module = datatype_module(typeof(expr))
+  signature_module = syntax_module.signature()
+  invoke_term(signature_module, types, name, term_args...)
 end
 
 # Serialization
@@ -396,7 +410,7 @@ represented as [:compose, f, g].
 Generator values should be symbols, strings, or numbers.
 """
 function to_json(expr::BaseExpr)
-  [term_constructor(expr)[1]; map(to_json, args(expr))]
+  [string(constructor_name(expr)); map(to_json, args(expr))]
 end
 to_json(x::Real) = x
 to_json(x) = string(x)
@@ -406,14 +420,9 @@ to_json(x) = string(x)
 If `symbols` is true (the default), strings are converted to symbols.
 """
 function parse_json(syntax_module::Module, sexpr::Vector; kw...)
-  constructor_name = Symbol(first(sexpr))
-  constructor = getfield(module_parent(syntax_module), constructor_name)
-  args = Any[ parse_json(syntax_module, x; kw...) for x in sexpr[2:end] ]
-  if !any(isa(arg, BaseExpr) for arg in args)
-    # Special case: dispatch on type (e.g., nullary constructors)
-    insert!(args, 1, getfield(syntax_module, constructor_name))
-  end
-  constructor(args...)
+  name = Symbol(first(sexpr))
+  args = [ parse_json(syntax_module, x; kw...) for x in sexpr[2:end] ]
+  invoke_term(syntax_module, name, args...)
 end
 parse_json(::Module, x::String; symbols=true) = symbols ? Symbol(x) : x
 parse_json(::Module, x::Real; kw...) = x

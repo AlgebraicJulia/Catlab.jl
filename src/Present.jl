@@ -48,12 +48,6 @@ function add_generator!(pres::Presentation, expr::GeneratorExpr)
     error("Name $name already defined in presentation")
   end
   pres.generators[name] = expr
-  return expr
-end
-function add_generator!(pres::Presentation, name::Symbol, typ::Type, args...)
-  _, constructor = Syntax.term_constructor(typ, :generator)
-  generator = isempty(args) ? constructor(typ, name) : constructor(name, args...)
-  add_generator!(pres, generator)
 end
 
 """ Add an equation between terms to a presentation.
@@ -65,7 +59,8 @@ end
 """ Add a generator defined by an equation.
 """
 function add_definition!(pres::Presentation, name::Symbol, rhs::BaseExpr)
-  generator = add_generator!(pres, name, typeof(rhs), type_args(rhs)...)
+  generator = Syntax.generator_like(rhs, name)
+  add_generator!(pres, generator)
   add_equation!(pres, generator, rhs)
   return generator
 end
@@ -106,8 +101,10 @@ function translate_generator(syntax_name::Symbol, name::Symbol, type_expr)::Expr
     Expr(:call, [sym::Symbol, args...], _) => (sym, args)
     _ => throw(ParseError("Ill-formed type expression $type_expr"))
   end
-  call_expr = Expr(:call, module_ref(:add_generator!), :_presentation,
-                   QuoteNode(name), :($syntax_name.$type_name), args...)
+  call_expr = Expr(:call, module_ref(:add_generator!),
+    :_presentation,
+    Expr(:call, GlobalRef(Syntax, :invoke_term),
+         syntax_name, QuoteNode(type_name), QuoteNode(name), args...))
   :(const $name = $call_expr)
 end
 

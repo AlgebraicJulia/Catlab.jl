@@ -49,7 +49,7 @@ last(form::Formula) = last(args(form))
 Assumes that the network has a single output.
 """
 function to_formula(f::AlgebraicNet.Hom, vars::Vector{Symbol})
-  formulas = functor(Dict(:Ob => NFormula, :Hom => Formulas), f)
+  formulas = functor((NFormula, Formulas), f)
   @assert codom(formulas).n == 1
   substitute(formulas.terms[1], Dict(zip(formulas.vars, vars)))
 end

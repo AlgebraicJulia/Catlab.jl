@@ -23,10 +23,10 @@ References:
 - (Pitts, 1995, "Categorical logic", Sec 6: "Dependent types")
 """
 module GAT
-export @signature, @instance
+export @signature, @instance, invoke_term
 
 using AutoHashEquals
-import DataStructures: OrderedDict
+using DataStructures: OrderedDict
 using Match
 using ..Meta
 
@@ -222,7 +222,7 @@ function constructor(cons::TermConstructor, sig::Signature)::JuliaFunction
   return_type = strip_type(cons.typ)
   
   call_expr = Expr(:call, cons.name, args...)
-  if all(!has_type(sig, typ) for typ in arg_types)
+  if !any(has_type(sig, typ) for typ in arg_types)
     call_expr = add_type_dispatch(call_expr, return_type)
   end
   JuliaFunction(call_expr, return_type)
@@ -535,6 +535,42 @@ function parse_instance_body(expr::Expr)::Vector{JuliaFunction}
     Expr(:block, args, _) => map(parse_function, args)
     _ => throw(ParseEror("Ill-formed instance definition"))
   end  
+end
+
+""" Invoke a term constructor by name on an instance.
+
+This method provides reflection for GAT signatures. In everyday use the generic
+method for the constructor should be called directly, not through this function.
+
+Cf. Julia's builtin `invoke()` function.
+"""
+function invoke_term(signature_module::Module, instance_types::Tuple,
+                     constructor_name::Symbol, args...)
+  # Get the corresponding Julia method from the parent module.
+  method = getfield(module_parent(signature_module), constructor_name)
+  args = collect(Any, args)
+  
+  # Add dispatch on return type, if necessary.
+  if !any(issubtype(typeof(arg), typ) for typ in instance_types for arg in args)
+    # Case 1: Name refers to type constructor, e.g., generator constructor 
+    # in syntax system.
+    signature = signature_module.class().signature
+    index = findfirst(cons -> cons.name == constructor_name, signature.types)
+    if index == 0
+      # Case 2: Name refers to term constructor.
+      # FIXME: Terms constructors can be overloaded, so there may be multiple
+      # term constructors with the same name. Distinguishing them requires type
+      # inference. I am punting on that right now.
+      constructor = signature.terms[
+        findfirst(cons -> cons.name == constructor_name, signature.terms)]
+      return_name = strip_type(constructor.typ)
+      index = findfirst(cons -> cons.name == return_name, signature.types)
+    end
+    insert!(args, 1, instance_types[index])
+  end
+  
+  # Invoke the method!
+  method(args...)
 end
 
 end

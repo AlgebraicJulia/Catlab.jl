@@ -155,7 +155,7 @@ f, g = Hom(:f, X, Y), Hom(:g, Y, X)
   mtimes(x::String, y::String) = string(x,y)
 end
 
-F(expr; kw...) = functor(Dict(:Elem => String), expr; kw...)
+F(expr; kw...) = functor((String,), expr; kw...)
 
 x, y, z = Elem(FreeMonoid,:x), Elem(FreeMonoid,:y), Elem(FreeMonoid,:z)
 gens = Dict(x => "x", y => "y", z => "z")
@@ -166,10 +166,6 @@ gen_terms = Dict(:Elem => (x) -> string(first(x)))
 @test F(mtimes(x,mtimes(y,z)); generator_terms=gen_terms) == "xyz"
 @test F(mtimes(x,munit(FreeMonoid.Elem)); generator_terms=gen_terms) == "x"
 
-constructors = Dict(:Elem => (typ,val) -> string(val))
-@test F(mtimes(x,mtimes(y,z)); constructors=constructors) == "xyz"
-@test F(mtimes(x,munit(FreeMonoid.Elem)); constructors=constructors) == "x"
-
 # Serialization
 ###############
 
@@ -177,22 +173,22 @@ constructors = Dict(:Elem => (typ,val) -> string(val))
 X, Y, Z = [ Ob(FreeCategory.Ob, sym) for sym in [:X, :Y, :Z] ]
 f = Hom(:f, X, Y)
 g = Hom(:g, Y, Z)
-@test to_json(X) == [:Ob, "X"]
-@test to_json(f) == [:Hom, "f", [:Ob, "X"], [:Ob, "Y"]]
+@test to_json(X) == ["Ob", "X"]
+@test to_json(f) == ["Hom", "f", ["Ob", "X"], ["Ob", "Y"]]
 @test to_json(compose(f,g)) == [
-  :compose,
-  [:Hom, "f", [:Ob, "X"], [:Ob, "Y"]],
-  [:Hom, "g", [:Ob, "Y"], [:Ob, "Z"]],
+  "compose",
+  ["Hom", "f", ["Ob", "X"], ["Ob", "Y"]],
+  ["Hom", "g", ["Ob", "Y"], ["Ob", "Z"]],
 ]
 
 # From JSON
 @test parse_json(FreeMonoid, [:Elem, "x"]) == Elem(FreeMonoid, :x)
-@test_skip parse_json(FreeMonoid, [:munit]) == munit(FreeMonoid.Elem)
-@test parse_json(FreeCategory, [:Ob, "X"]) == X
-@test parse_json(FreeCategory, [:Ob, "X"]; symbols=false) ==
+@test parse_json(FreeMonoid, [:munit]) == munit(FreeMonoid.Elem)
+@test parse_json(FreeCategory, ["Ob", "X"]) == X
+@test parse_json(FreeCategory, ["Ob", "X"]; symbols=false) ==
   Ob(FreeCategory.Ob, "X")
-@test parse_json(FreeCategory, [:Hom, "f", [:Ob, "X"], [:Ob, "Y"]]) == f
-@test parse_json(FreeCategory, [:Hom, "f", [:Ob, "X"], [:Ob, "Y"]]; symbols=false) ==
+@test parse_json(FreeCategory, ["Hom", "f", ["Ob", "X"], ["Ob", "Y"]]) == f
+@test parse_json(FreeCategory, ["Hom", "f", ["Ob", "X"], ["Ob", "Y"]]; symbols=false) ==
   Hom("f", Ob(FreeCategory.Ob, "X"), Ob(FreeCategory.Ob, "Y"))
 
 # Round trip
