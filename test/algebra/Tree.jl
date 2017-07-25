@@ -6,24 +6,24 @@ using Catlab.Algebra
 # Conversion
 ############
 
-R = ob(AlgebraicNet.Ob, :R)
-f = hom(:sin, R, R)
+R = Ob(AlgebraicNet, :R)
+f = Hom(:sin, R, R)
 @test to_formula(f, [:x]) == Formula(:sin, :x)
 
-f = compose(linear(2,R,R), hom(:sin,R,R))
+f = compose(linear(2,R,R), Hom(:sin,R,R))
 @test to_formula(f,[:x]) == Formula((:sin, (:*, 2, :x)))
-f = compose(linear(2,R,R), hom(:sin,R,R), linear(2,R,R))
+f = compose(linear(2,R,R), Hom(:sin,R,R), linear(2,R,R))
 @test to_formula(f,[:x]) == Formula((:*, 2, (:sin, (:*, 2, :x))))
 
-f = compose(hom(:cos,R,R), hom(:sin,R,R), hom(:tan,R,R))
+f = compose(Hom(:cos,R,R), Hom(:sin,R,R), Hom(:tan,R,R))
 @test to_formula(f,[:x]) == Formula((:tan, (:sin, (:cos, :x))))
 
 f = compose(otimes(id(R),constant(1,R)), mmerge(R))
 @test to_formula(f,[:x]) == Formula(:+, :x, 1)
 
-f = compose(otimes(hom(:cos,R,R), hom(:sin,R,R)), mmerge(R))
+f = compose(otimes(Hom(:cos,R,R), Hom(:sin,R,R)), mmerge(R))
 @test to_formula(f,[:x,:y]) == Formula((:+, (:cos, :x), (:sin, :y)))
-f = compose(mcopy(R), otimes(hom(:cos,R,R), hom(:sin,R,R)), mmerge(R))
+f = compose(mcopy(R), otimes(Hom(:cos,R,R), Hom(:sin,R,R)), mmerge(R))
 @test to_formula(f,[:x]) == Formula((:+, (:cos, :x), (:sin, :x)))
 
 # Pretty-print

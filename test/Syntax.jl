@@ -23,22 +23,22 @@ end
 """
 @syntax FreeMonoid Monoid
 
-elem(mod::Module, args...) = elem(mod.Elem, args...)
+Elem(mod::Module, args...) = Elem(mod.Elem, args...)
 
 @test isa(FreeMonoid, Module)
 @test contains(string(Docs.doc(FreeMonoid)), "theory of monoids")
 @test sort(names(FreeMonoid)) == sort([:FreeMonoid, :Elem])
 
-x, y, z = elem(FreeMonoid,:x), elem(FreeMonoid,:y), elem(FreeMonoid,:z)
+x, y, z = Elem(FreeMonoid,:x), Elem(FreeMonoid,:y), Elem(FreeMonoid,:z)
 @test isa(mtimes(x,y), FreeMonoid.Elem)
 @test isa(munit(FreeMonoid.Elem), FreeMonoid.Elem)
 @test mtimes(mtimes(x,y),z) != mtimes(x,mtimes(y,z))
 
 # Test equality
-@test x == elem(FreeMonoid,:x)
+@test x == Elem(FreeMonoid,:x)
 @test x != y
-@test elem(FreeMonoid,"X") == elem(FreeMonoid,"X")
-@test elem(FreeMonoid,"X") != elem(FreeMonoid,"Y")
+@test Elem(FreeMonoid,"X") == Elem(FreeMonoid,"X")
+@test Elem(FreeMonoid,"X") != Elem(FreeMonoid,"Y")
 
 # Test hash
 @test hash(x) == hash(x)
@@ -50,7 +50,7 @@ x, y, z = elem(FreeMonoid,:x), elem(FreeMonoid,:y), elem(FreeMonoid,:z)
   mtimes(x::Elem, y::Elem) = associate(Super.mtimes(x,y))
 end
 
-x, y, z = [ elem(FreeMonoidAssoc,sym) for sym in [:x,:y,:z] ]
+x, y, z = [ Elem(FreeMonoidAssoc,sym) for sym in [:x,:y,:z] ]
 e = munit(FreeMonoidAssoc.Elem)
 @test mtimes(mtimes(x,y),z) == mtimes(x,mtimes(y,z))
 @test mtimes(e,x) != x && mtimes(x,e) != x
@@ -59,7 +59,7 @@ e = munit(FreeMonoidAssoc.Elem)
   mtimes(x::Elem, y::Elem) = associate_unit(Super.mtimes(x,y), munit)
 end
 
-x, y, z = [ elem(FreeMonoidAssocUnit,sym) for sym in [:x,:y,:z] ]
+x, y, z = [ Elem(FreeMonoidAssocUnit,sym) for sym in [:x,:y,:z] ]
 e = munit(FreeMonoidAssocUnit.Elem)
 @test mtimes(mtimes(x,y),z) == mtimes(x,mtimes(y,z))
 @test mtimes(e,x) == x && mtimes(x,e) == x
@@ -67,7 +67,7 @@ e = munit(FreeMonoidAssocUnit.Elem)
 abstract type MonoidExpr{T} <: BaseExpr{T} end
 @syntax FreeMonoidTyped(MonoidExpr) Monoid
 
-x = elem(FreeMonoidTyped.Elem, :x)
+x = Elem(FreeMonoidTyped.Elem, :x)
 @test issubtype(FreeMonoidTyped.Elem, MonoidExpr)
 @test isa(x, FreeMonoidTyped.Elem) && isa(x, MonoidExpr)
 
@@ -89,12 +89,12 @@ end
 """ The free monoid on two generators.
 """
 @syntax FreeMonoidTwo MonoidTwo begin
-  elem(::Type{Elem}, value) = error("No extra generators allowed!")
+  Elem(::Type{Elem}, value) = error("No extra generators allowed!")
 end
 
 x, y = one(FreeMonoidTwo.Elem), two(FreeMonoidTwo.Elem)
 @test all(isa(expr, FreeMonoidTwo.Elem) for expr in [x, y, mtimes(x,y)])
-@test_throws ErrorException elem(FreeMonoidTwo, :x)
+@test_throws ErrorException Elem(FreeMonoidTwo, :x)
 
 # Category
 ##########
@@ -116,10 +116,10 @@ end
 @test isa(FreeCategory, Module)
 @test sort(names(FreeCategory)) == sort([:FreeCategory, :Ob, :Hom])
 
-X, Y, Z, W = [ ob(FreeCategory.Ob, sym) for sym in [:X, :Y, :Z, :W] ]
-f, g, h = hom(:f, X, Y), hom(:g, Y, Z), hom(:h, Z, W)
+X, Y, Z, W = [ Ob(FreeCategory.Ob, sym) for sym in [:X, :Y, :Z, :W] ]
+f, g, h = Hom(:f, X, Y), Hom(:g, Y, Z), Hom(:h, Z, W)
 @test isa(X, FreeCategory.Ob) && isa(f, FreeCategory.Hom)
-@test_throws MethodError FreeCategory.hom(:f)
+@test_throws MethodError FreeCategory.Hom(:f)
 @test dom(f) == X
 @test codom(f) == Y
 
@@ -141,8 +141,8 @@ f, g, h = hom(:f, X, Y), hom(:g, Y, Z), hom(:h, Z, W)
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end
 
-X, Y = ob(FreeCategoryStrict.Ob, :X), ob(FreeCategoryStrict.Ob, :Y)
-f, g = hom(:f, X, Y), hom(:g, Y, X)
+X, Y = Ob(FreeCategoryStrict.Ob, :X), Ob(FreeCategoryStrict.Ob, :Y)
+f, g = Hom(:f, X, Y), Hom(:g, Y, X)
 
 @test isa(compose(f,g,f), FreeCategoryStrict.Hom)
 @test_throws SyntaxDomainError compose(f,f)
@@ -157,16 +157,16 @@ end
 
 F(expr; kw...) = functor(Dict(:Elem => String), expr; kw...)
 
-x, y, z = elem(FreeMonoid,:x), elem(FreeMonoid,:y), elem(FreeMonoid,:z)
+x, y, z = Elem(FreeMonoid,:x), Elem(FreeMonoid,:y), Elem(FreeMonoid,:z)
 gens = Dict(x => "x", y => "y", z => "z")
 @test F(mtimes(x,mtimes(y,z)); generators=gens) == "xyz"
 @test F(mtimes(x,munit(FreeMonoid.Elem)); generators=gens) == "x"
 
-gen_terms = Dict(:elem => (x) -> string(first(x)))
+gen_terms = Dict(:Elem => (x) -> string(first(x)))
 @test F(mtimes(x,mtimes(y,z)); generator_terms=gen_terms) == "xyz"
 @test F(mtimes(x,munit(FreeMonoid.Elem)); generator_terms=gen_terms) == "x"
 
-constructors = Dict(:elem => (typ,val) -> string(val))
+constructors = Dict(:Elem => (typ,val) -> string(val))
 @test F(mtimes(x,mtimes(y,z)); constructors=constructors) == "xyz"
 @test F(mtimes(x,munit(FreeMonoid.Elem)); constructors=constructors) == "x"
 
@@ -174,15 +174,15 @@ constructors = Dict(:elem => (typ,val) -> string(val))
 ###############
 
 # To JSON
-X, Y, Z = [ ob(FreeCategory.Ob, sym) for sym in [:X, :Y, :Z] ]
-f = hom(:f, X, Y)
-g = hom(:g, Y, Z)
-@test to_json(X) == [:ob, "X"]
-@test to_json(f) == [:hom, "f", [:ob, "X"], [:ob, "Y"]]
+X, Y, Z = [ Ob(FreeCategory.Ob, sym) for sym in [:X, :Y, :Z] ]
+f = Hom(:f, X, Y)
+g = Hom(:g, Y, Z)
+@test to_json(X) == [:Ob, "X"]
+@test to_json(f) == [:Hom, "f", [:Ob, "X"], [:Ob, "Y"]]
 @test to_json(compose(f,g)) == [
   :compose,
-  [:hom, "f", [:ob, "X"], [:ob, "Y"]],
-  [:hom, "g", [:ob, "Y"], [:ob, "Z"]],
+  [:Hom, "f", [:Ob, "X"], [:Ob, "Y"]],
+  [:Hom, "g", [:Ob, "Y"], [:Ob, "Z"]],
 ]
 
 end

@@ -107,11 +107,12 @@ function concat_expr(expr1::Expr, expr2::Expr)::Expr
   end
 end
 
-""" Replace symbols occurring anywhere in a Julia function.
+""" Replace symbols occurring anywhere in a Julia function (except the name).
 """
 function replace_symbols(bindings::Dict, f::JuliaFunction)::JuliaFunction
   JuliaFunction(
-    replace_symbols(bindings, f.call_expr),
+    Expr(f.call_expr.head, f.call_expr.args[1],
+         (replace_symbols(bindings, a) for a in f.call_expr.args[2:end])...),
     isnull(f.return_type) ? Nullable() :
       replace_symbols(bindings, get(f.return_type)),
     isnull(f.impl) ? Nullable() :

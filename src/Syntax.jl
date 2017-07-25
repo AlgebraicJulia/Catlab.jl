@@ -300,17 +300,11 @@ function gen_term_generators(sig::Signature)::Vector{Expr}
   [ gen_term_generator(cons, sig) for cons in sig.types ]
 end
 function constructor_for_generator(cons::TypeConstructor)::TermConstructor
-  name = constructor_name_for_generator(cons.name)
   value_param = :__value__
   params = [ value_param; cons.params ]
   typ = Expr(:call, cons.name, cons.params...)
   context = merge(Context(value_param => :Any), cons.context)
-  TermConstructor(name, params, typ, context)
-end
-function constructor_name_for_generator(type_name::Symbol)
-  name = Symbol(lowercase(string(type_name)))
-  @assert name != type_name # XXX: We are enforcing a case convention...
-  return name
+  TermConstructor(cons.name, params, typ, context)
 end
 
 # Functors
@@ -382,7 +376,7 @@ end
 function term_constructor(typ::Type, constructor_name::Symbol)
   syntax_module = datatype_module(typ)
   if constructor_name == :generator
-    constructor_name = constructor_name_for_generator(datatype_name(typ))
+    constructor_name = datatype_name(typ)
   end
   constructor = getfield(module_parent(syntax_module), constructor_name)
   (constructor_name, constructor)

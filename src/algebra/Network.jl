@@ -6,7 +6,7 @@ arithmetic operations or elementary or special functions. The idea here is to
 represent expressions as morphisms in a suitable monoidal category.
 """
 module Network
-export AlgebraicNetSignature, AlgebraicNet, ob, hom,
+export AlgebraicNetSignature, AlgebraicNet, Ob, Hom,
   compose, id, dom, codom, otimes, opow, munit, braid,
   mcopy, delete, mmerge, create, linear, constant,
   Block, compile, compile_expr, compile_block, evaluate
@@ -15,7 +15,7 @@ import Base.Iterators: repeated
 using Match
 
 using ...Catlab
-import ...Doctrine: SymmetricMonoidalCategory, ObExpr, HomExpr, ob, hom,
+import ...Doctrine: SymmetricMonoidalCategory, ObExpr, HomExpr, Ob, Hom,
   compose, id, dom, codom, otimes, munit, mcopy, delete
 import ...Diagram.TikZWiring: box, wires, rect, junction_circle
 import ...Meta: concat_expr
@@ -41,7 +41,7 @@ See also the doctrine of abelian bicategory of relations
   create(A::Ob)::Hom(munit(),A)
   linear(x::Any, A::Ob, B::Ob)::Hom(A,B)
   
-  constant(x::Any, A::Ob) = hom(x, munit(Ob), A)
+  constant(x::Any, A::Ob) = Hom(x, munit(Ob), A)
   opow(A::Ob, n::Int) = otimes(repeated(A,n)...)
   opow(f::Hom, n::Int) = otimes(repeated(f,n)...)
   mcopy(A::Ob) = mcopy(A,2)

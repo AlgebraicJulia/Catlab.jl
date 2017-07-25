@@ -2,8 +2,8 @@ module Doctrine
 export CategoryExpr, ObExpr, HomExpr, Hom2Expr
 
 # TODO: Generate these automatically from signature?
-export Category, FreeCategory, ob, hom, dom, codom, id, compose, ∘
-export Category2, FreeCategory2, hom2, compose2
+export Category, FreeCategory, Ob, Hom, dom, codom, id, compose, ∘
+export Category2, FreeCategory2, Hom2, compose2
 
 export MonoidalCategory, otimes, munit, ⊗, collect, ndims
 export SymmetricMonoidalCategory, FreeSymmetricMonoidalCategory, braid
@@ -30,15 +30,15 @@ abstract type HomExpr{T} <: CategoryExpr{T} end
 abstract type Hom2Expr{T} <: CategoryExpr{T} end
 
 # Convenience methods
-ob(mod::Module, args...) = ob(mod.Ob, args...)
+Ob(mod::Module, args...) = Ob(mod.Ob, args...)
 
-function ob(typ::Type, args...)
+function Ob(typ::Type, args...)
   if length(args) <= 1
     # Throw an error to avoid infinite recursion.
     # FIXME: Maybe this method should be called `obs` instead?
-    throw(MethodError(ob, [typ, args...]))
+    throw(MethodError(Ob, [typ, args...]))
   end
-  [ ob(typ, arg) for arg in args ]
+  [ Ob(typ, arg) for arg in args ]
 end
 
 include("Category.jl")

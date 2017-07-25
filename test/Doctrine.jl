@@ -11,8 +11,8 @@ latex(expr::BaseExpr) = sprint(show_latex, expr)
 # Category
 ##########
 
-A, B = ob(FreeCategory, :A), ob(FreeCategory, :B)
-f, g = hom(:f, A, B), hom(:g, B, A)
+A, B = Ob(FreeCategory, :A), Ob(FreeCategory, :B)
+f, g = Hom(:f, A, B), Hom(:g, B, A)
 
 # Expression types
 @test isa(A, FreeCategory.Ob) && isa(f, FreeCategory.Hom)
@@ -59,19 +59,19 @@ f, g = hom(:f, A, B), hom(:g, B, A)
 @test latex(id(A)) == "\\mathrm{id}_{A}"
 @test latex(compose(f,g)) == "f \\cdot g"
 
-@test latex(ob(FreeCategory, "x")) == "x"
-@test latex(ob(FreeCategory, "sin")) == "\\mathrm{sin}"
-@test latex(ob(FreeCategory, "\\alpha")) == "\\alpha"
+@test latex(Ob(FreeCategory, "x")) == "x"
+@test latex(Ob(FreeCategory, "sin")) == "\\mathrm{sin}"
+@test latex(Ob(FreeCategory, "\\alpha")) == "\\alpha"
 
 # 2-category
 ############
 
-A, B, C, D = ob(FreeCategory2, :A, :B, :C, :D)
-f, g, F, G = [ hom(sym, A, B) for sym in [:f,:g,:F,:G] ]
-h, k, H, K = [ hom(sym, B, C) for sym in [:h,:k,:H,:K] ]
+A, B, C, D = Ob(FreeCategory2, :A, :B, :C, :D)
+f, g, F, G = [ Hom(sym, A, B) for sym in [:f,:g,:F,:G] ]
+h, k, H, K = [ Hom(sym, B, C) for sym in [:h,:k,:H,:K] ]
 
 # Domains and codomains
-α, β = hom2(:α, f, g), hom2(:β, g, h)
+α, β = Hom2(:α, f, g), Hom2(:β, g, h)
 @test dom(α) == f
 @test codom(α) == g
 @test dom(dom(α)) == A
@@ -80,23 +80,23 @@ h, k, H, K = [ hom(sym, B, C) for sym in [:h,:k,:H,:K] ]
 @test codom(compose(α,β)) == h
 @test_throws SyntaxDomainError compose2(α,β)
 
-α, β = hom2(:α, f, g), hom2(:β, h, k)
+α, β = Hom2(:α, f, g), Hom2(:β, h, k)
 @test dom(compose2(α,β)) == compose(f,h)
 @test codom(compose2(α,β)) == compose(g,k)
 
 # Infix notation (Unicode)
-α, β = hom2(:α, f, g), hom2(:β, g, h)
+α, β = Hom2(:α, f, g), Hom2(:β, g, h)
 @test unicode(compose(f,h)) == "f⋅h"
 @test unicode(compose(α,β)) == "α⋅β"
 
-α, β = hom2(:α, f, g), hom2(:β, h, k)
+α, β = Hom2(:α, f, g), Hom2(:β, h, k)
 @test unicode(compose2(α,β)) == "α*β"
 
 # Symmetric monoidal category
 #############################
 
-A, B = ob(FreeSymmetricMonoidalCategory, :A, :B)
-f, g = hom(:f, A, B), hom(:g, B, A)
+A, B = Ob(FreeSymmetricMonoidalCategory, :A, :B)
+f, g = Hom(:f, A, B), Hom(:g, B, A)
 
 # Domains and codomains
 @test dom(otimes(f,g)) == otimes(dom(f),dom(g))
@@ -158,8 +158,8 @@ I = munit(FreeSymmetricMonoidalCategory.Ob)
 # Cartesian category
 ####################
 
-A, B = ob(FreeCartesianCategory, :A, :B)
-f, g = hom(:f, A, B), hom(:g, B, A)
+A, B = Ob(FreeCartesianCategory, :A, :B)
+f, g = Hom(:f, A, B), Hom(:g, B, A)
 
 # Domains and codomains
 @test dom(mcopy(A)) == A
@@ -179,8 +179,8 @@ f, g = hom(:f, A, B), hom(:g, B, A)
 # Cocartesian category
 ######################
 
-A, B = ob(FreeCocartesianCategory, :A, :B)
-f, g = hom(:f, A, B), hom(:g, B, A)
+A, B = Ob(FreeCocartesianCategory, :A, :B)
+f, g = Hom(:f, A, B), Hom(:g, B, A)
 
 # Domains and codomains
 @test dom(mmerge(A)) == otimes(A,A)
@@ -200,8 +200,8 @@ f, g = hom(:f, A, B), hom(:g, B, A)
 # Compact closed category
 #########################
 
-A, B = ob(FreeCompactClosedCategory, :A, :B)
-f, g = hom(:f, A, B), hom(:g, B, A)
+A, B = Ob(FreeCompactClosedCategory, :A, :B)
+f, g = Hom(:f, A, B), Hom(:g, B, A)
 I = munit(FreeCompactClosedCategory.Ob)
 
 # Domains and codomains
@@ -223,8 +223,8 @@ I = munit(FreeCompactClosedCategory.Ob)
 # Dagger category
 #################
 
-A, B = ob(FreeDaggerCategory, :A, :B)
-f, g = hom(:f, A, B), hom(:g, B, A)
+A, B = Ob(FreeDaggerCategory, :A, :B)
+f, g = Hom(:f, A, B), Hom(:g, B, A)
 
 # Domains and codomains
 @test dom(dagger(f)) == B
@@ -242,8 +242,8 @@ f, g = hom(:f, A, B), hom(:g, B, A)
 # Dagger compact category
 #########################
 
-A, B = ob(FreeDaggerCompactCategory, :A, :B)
-f, g = hom(:f, A, B), hom(:g, B, A)
+A, B = Ob(FreeDaggerCompactCategory, :A, :B)
+f, g = Hom(:f, A, B), Hom(:g, B, A)
 
 # Dagger
 @test dagger(compose(f,g)) == compose(dagger(g),dagger(f))

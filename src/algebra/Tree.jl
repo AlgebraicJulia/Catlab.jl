@@ -118,9 +118,9 @@ that any two formulas have disjoint variables.
   end
 end
 
-ob(::Type{NFormula}, value::Any) = NFormula(1)
+Ob(::Type{NFormula}, value::Any) = NFormula(1)
 
-function hom(value::Any, A::NFormula, B::NFormula)::Formulas
+function Hom(value::Any, A::NFormula, B::NFormula)::Formulas
   nin, nout = A.n, B.n
   @assert nout == 1
   vars = gensyms(nin)

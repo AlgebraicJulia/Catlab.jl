@@ -7,9 +7,9 @@ using Base.Test
 # Low-level graph interface
 ###########################
 
-A, B, C, D = ob(FreeSymmetricMonoidalCategory, :A, :B, :C, :D)
-f = hom(:f, A, B)
-g = hom(:g, B, C)
+A, B, C, D = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C, :D)
+f = Hom(:f, A, B)
+g = Hom(:g, B, C)
 
 d = WiringDiagram(A, C)
 @test nboxes(d) == 0
@@ -55,7 +55,7 @@ rem_wire!(d, (input_id(d),1) => (fv,1))
 @test wires(d) == [ Wire((gv,1) => (output_id(d),1)) ]
 
 # Substitution
-f, g, h = hom(:f,A,B), hom(:g,B,C), hom(:h,C,D)
+f, g, h = Hom(:f,A,B), Hom(:g,B,C), Hom(:h,C,D)
 sub = WiringDiagram(B,D)
 gv = add_box!(sub, g)
 hv = add_box!(sub, h)
@@ -93,17 +93,17 @@ box_map = Dict(box(d,v).expr => v for v in box_ids(d))
 #---------
 
 # Generators
-f = WiringDiagram(hom(:f,A,B))
-g = WiringDiagram(hom(:g,B,A))
+f = WiringDiagram(Hom(:f,A,B))
+g = WiringDiagram(Hom(:g,B,A))
 @test nboxes(f) == 1
-@test boxes(f) == [ HomBox(hom(:f,A,B)) ]
+@test boxes(f) == [ HomBox(Hom(:f,A,B)) ]
 @test nwires(f) == 2
 @test WireTypes([A]) == WireTypes([A])
-@test WiringDiagram(hom(:f,A,B)) == WiringDiagram(hom(:f,A,B))
+@test WiringDiagram(Hom(:f,A,B)) == WiringDiagram(Hom(:f,A,B))
 
 # Composition
 @test nboxes(compose(f,g)) == 2
-@test boxes(compose(f,g)) == [ HomBox(hom(:f,A,B)), HomBox(hom(:g,B,A)) ]
+@test boxes(compose(f,g)) == [ HomBox(Hom(:f,A,B)), HomBox(Hom(:g,B,A)) ]
 @test nwires(compose(f,g)) == 3
 
 # Domains and codomains
@@ -194,7 +194,7 @@ X = WireTypes([A])
 #----------------------
 
 # Functorality
-f, g = hom(:f,A,B), hom(:g,B,A)
+f, g = Hom(:f,A,B), Hom(:g,B,A)
 fd, gd = WiringDiagram(f), WiringDiagram(g)
 @test to_wiring_diagram(f) == fd
 @test to_wiring_diagram(compose(f,g)) == compose(fd,gd)

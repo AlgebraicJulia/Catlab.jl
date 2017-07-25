@@ -7,11 +7,11 @@ using Catlab.Syntax
 unicode(expr::BaseExpr) = sprint(show_unicode, expr)
 latex(expr::BaseExpr) = sprint(show_latex, expr)
 
-R = ob(AlgebraicNet, :R)
+R = Ob(AlgebraicNet, :R)
 
 # Generator
 x = collect(linspace(-2,2))
-f = hom(:sin,R,R)
+f = Hom(:sin,R,R)
 f_comp = compile(f)
 @test f_comp(x) == sin.(x)
 f_comp = compile(f,args=[:x])
@@ -25,21 +25,21 @@ f_comp = compile(f,name=:myfun2,args=[:x])
 @test latex(f) == "\\mathrm{sin}"
 
 # Composition
-f = compose(linear(2,R,R), hom(:sin,R,R))
+f = compose(linear(2,R,R), Hom(:sin,R,R))
 f_comp = compile(f)
 @test f_comp(x) == sin.(2x)
 @test evaluate(f,x) == sin.(2x)
 @test unicode(f) == "linear[2]; sin"
 @test latex(f) == "\\mathop{\\mathrm{linear}}\\left[2\\right] ; \\mathrm{sin}"
 
-f = compose(linear(2,R,R), hom(:sin,R,R), linear(2,R,R))
+f = compose(linear(2,R,R), Hom(:sin,R,R), linear(2,R,R))
 f_comp = compile(f)
 @test f_comp(x) == 2*sin.(2x)
 @test evaluate(f,x) == 2*sin.(2x)
 
 # Monoidal product
 y = collect(linspace(0,4))
-f = otimes(hom(:cos,R,R), hom(:sin,R,R))
+f = otimes(Hom(:cos,R,R), Hom(:sin,R,R))
 f_comp = compile(f)
 @test f_comp(x,y) == (cos.(x),sin.(y))
 f_comp = compile(f,args=[:x,:y])
@@ -53,7 +53,7 @@ f = braid(R,R)
 f_comp = compile(f)
 @test f_comp(x,y) == (y,x)
 @test evaluate(f,x,y) == (y,x)
-f = compose(braid(R,R), otimes(hom(:cos,R,R), hom(:sin,R,R)))
+f = compose(braid(R,R), otimes(Hom(:cos,R,R), Hom(:sin,R,R)))
 f_comp = compile(f)
 @test f_comp(x,y) == (cos.(y),sin.(x))
 @test evaluate(f,x,y) == (cos.(y),sin.(x))
@@ -80,7 +80,7 @@ f_comp = compile(f)
 @test f_comp(x) == (x,x,x)
 @test evaluate(f,x) == (x,x,x)
 
-f = compose(mcopy(R), otimes(hom(:cos,R,R), hom(:sin,R,R)))
+f = compose(mcopy(R), otimes(Hom(:cos,R,R), Hom(:sin,R,R)))
 f_comp = compile(f)
 @test f_comp(x) == (cos.(x),sin.(x))
 @test evaluate(f,x) == (cos.(x),sin.(x))
@@ -106,18 +106,18 @@ f_comp = compile(f)
 @test evaluate(f,x) == x
 
 # Deeper compositions
-f = compose(mcopy(R), otimes(hom(:cos,R,R), hom(:sin,R,R)), mmerge(R))
+f = compose(mcopy(R), otimes(Hom(:cos,R,R), Hom(:sin,R,R)), mmerge(R))
 f_comp = compile(f)
 @test f_comp(x) == @. cos(x) + sin(x)
 @test evaluate(f,x) == @. cos(x) + sin(x)
 
-f = compose(mcopy(R), otimes(id(R),hom(:cos,R,R)), hom(:*,otimes(R,R),R))
+f = compose(mcopy(R), otimes(id(R),Hom(:cos,R,R)), Hom(:*,otimes(R,R),R))
 f_comp = compile(f)
 @test f_comp(x) == @. x * cos(x)
 @test evaluate(f,x) == @. x * cos(x)
 
-f = compose(braid(R,R), otimes(id(R),compose(linear(2,R,R),hom(:sin,R,R))),
-            hom(:*,otimes(R,R),R), linear(2,R,R))
+f = compose(braid(R,R), otimes(id(R),compose(linear(2,R,R),Hom(:sin,R,R))),
+            Hom(:*,otimes(R,R),R), linear(2,R,R))
 f_comp = compile(f)
 @test f_comp(x,y) == @. 2y * sin(2x)
 @test evaluate(f,x,y) == @. 2y * sin(2x)
@@ -139,7 +139,7 @@ f_comp, f_const = compile(f, return_constants=true, vector=true)
 @test f_const == [:c]
 @test f_comp([x],[2]) == 2x
 
-f = compose(linear(:k,R,R), hom(:sin,R,R), linear(:A,R,R))
+f = compose(linear(:k,R,R), Hom(:sin,R,R), linear(:A,R,R))
 f_comp = compile(f)
 @test f_comp(x,k=1,A=2) == @. 2 * sin(x)
 @test f_comp(x,k=2,A=1) == @. sin(2x)
@@ -155,7 +155,7 @@ f_comp = compile(f,name=:myfun3)
 # Automatic differentiation of symbolic coefficients
 if Pkg.installed("ReverseDiffSource") != nothing
   x0 = 2.0 # Vectorized evaluation not allowed.
-  f = compose(linear(:a,R,R), hom(:sin,R,R))
+  f = compose(linear(:a,R,R), Hom(:sin,R,R))
   f_comp = compile(f, vector=true, order=1)
   @test f_comp([x0],[1]) == (sin(x0), [x0 * cos(x0)])
   f_grad = compile(f, vector=true, order=1, allorders=false)
@@ -163,7 +163,7 @@ if Pkg.installed("ReverseDiffSource") != nothing
   @test f_grad([x0],[1]) == [x0 * cos(x0)]
   @test f_hess([x0],[1]) == reshape([-x0^2 * sin(x0)],(1,1))
 
-  f = compose(linear(:k,R,R), hom(:sin,R,R), linear(:A,R,R))
+  f = compose(linear(:k,R,R), Hom(:sin,R,R), linear(:A,R,R))
   f_grad = compile(f, vector=true, order=1, allorders=false)
   f_hess = compile(f, vector=true, order=2, allorders=false)
   @test f_grad([x0],[1,1]) == [x0 * cos(x0), sin(x0)]

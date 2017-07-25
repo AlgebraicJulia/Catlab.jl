@@ -26,29 +26,29 @@ using Catlab, Catlab.Doctrine
 end
 
 # Check generators.
-Employee, Department, Str = ob(FreeCategory, :Employee, :Department, :Str)
+Employee, Department, Str = Ob(FreeCategory, :Employee, :Department, :Str)
 @test collect(values(generators(Company))) == [
   Employee,
   Department,
   Str,
-  hom(:first_name, Employee, Str),
-  hom(:last_name, Employee, Str),
-  hom(:manager, Employee, Employee),
-  hom(:works_in, Employee, Department),
-  hom(:secretary, Department, Employee),
-  hom(:boss, Employee, Employee),
-  hom(:second_level_manager, Employee, Employee),
-  hom(:third_level_manager, Employee, Employee),
+  Hom(:first_name, Employee, Str),
+  Hom(:last_name, Employee, Str),
+  Hom(:manager, Employee, Employee),
+  Hom(:works_in, Employee, Department),
+  Hom(:secretary, Department, Employee),
+  Hom(:boss, Employee, Employee),
+  Hom(:second_level_manager, Employee, Employee),
+  Hom(:third_level_manager, Employee, Employee),
 ]
 
 # Check equations.
-manager = hom(:manager, Employee, Employee)
-works_in = hom(:works_in, Employee, Department)
-secretary = hom(:secretary, Department, Employee)
+manager = Hom(:manager, Employee, Employee)
+works_in = Hom(:works_in, Employee, Department)
+secretary = Hom(:secretary, Department, Employee)
 @test collect(equations(Company)) == Equation[
-  hom(:boss, Employee, Employee) => manager,
-  hom(:second_level_manager, Employee, Employee) => compose(manager, manager),
-  hom(:third_level_manager, Employee, Employee) => compose(manager, manager, manager),
+  Hom(:boss, Employee, Employee) => manager,
+  Hom(:second_level_manager, Employee, Employee) => compose(manager, manager),
+  Hom(:third_level_manager, Employee, Employee) => compose(manager, manager, manager),
   compose(manager, works_in) => works_in,
   compose(secretary, works_in) => id(Department),
 ]
