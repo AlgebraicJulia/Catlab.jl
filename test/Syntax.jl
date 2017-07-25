@@ -170,4 +170,19 @@ constructors = Dict(:elem => (typ,val) -> string(val))
 @test F(mtimes(x,mtimes(y,z)); constructors=constructors) == "xyz"
 @test F(mtimes(x,munit(FreeMonoid.Elem)); constructors=constructors) == "x"
 
+# Serialization
+###############
+
+# To JSON
+X, Y, Z = [ ob(FreeCategory.Ob, sym) for sym in [:X, :Y, :Z] ]
+f = hom(:f, X, Y)
+g = hom(:g, Y, Z)
+@test to_json(X) == [:ob, "X"]
+@test to_json(f) == [:hom, "f", [:ob, "X"], [:ob, "Y"]]
+@test to_json(compose(f,g)) == [
+  :compose,
+  [:hom, "f", [:ob, "X"], [:ob, "Y"]],
+  [:hom, "g", [:ob, "Y"], [:ob, "Z"]],
+]
+
 end

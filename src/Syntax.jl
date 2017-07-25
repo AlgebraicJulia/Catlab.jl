@@ -14,7 +14,7 @@ module to make the construction of syntax simple but flexible.
 """
 module Syntax
 export @syntax, BaseExpr, SyntaxDomainError, head, args, type_args, first, last,
-  functor, show_sexpr, show_unicode, show_unicode_infix,
+  functor, to_json, show_sexpr, show_unicode, show_unicode_infix,
   show_latex, show_latex_infix, show_latex_script
 
 import Base: first, last, show, showerror, datatype_name, datatype_module
@@ -362,7 +362,7 @@ function functor(types::Associative, expr::BaseExpr;
   # Otherwise, we need to call a term constructor (possibly for a generator).
   # Recursively evalute the arguments, then invoke the constructor.
   constructor_args = []
-  if !any(isa(arg,BaseExpr) for arg in args(expr))
+  if !any(isa(arg, BaseExpr) for arg in args(expr))
     # Special case: dispatch on type (e.g., nullary constructors)
     type_name = datatype_name(typeof(expr))
     push!(constructor_args, types[type_name])
@@ -390,6 +390,22 @@ end
 function term_constructor(expr::BaseExpr)
   term_constructor(typeof(expr), head(expr))
 end
+
+# Serialization
+###############
+
+""" Serialize expression as JSON-able Julia object.
+
+The format is an S-expression encoded as JSON, e.g., "compose(f,g)" is
+represented as [:compose, f, g].
+
+Generator values should be symbols, strings, or numbers.
+"""
+function to_json(expr::BaseExpr)
+  [term_constructor(expr)[1]; map(to_json, args(expr))]
+end
+to_json(x::Real) = x
+to_json(x) = string(x)
 
 # Pretty-print
 ##############
