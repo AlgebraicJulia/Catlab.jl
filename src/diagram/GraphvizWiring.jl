@@ -26,7 +26,7 @@ const default_edge_attrs = Graphviz.Attributes(
 """ Render a wiring diagram using Graphviz.
 """
 function to_graphviz(f::WiringDiagram;
-    graph_name::String="G", labels::Bool=false,
+    graph_name::String="G", labels::Bool=false, xlabel::Bool=false,
     graph_attrs::Graphviz.Attributes=Graphviz.Attributes(),
     node_attrs::Graphviz.Attributes=Graphviz.Attributes(),
     edge_attrs::Graphviz.Attributes=Graphviz.Attributes())::Graphviz.Graph
@@ -39,19 +39,26 @@ function to_graphviz(f::WiringDiagram;
   ]
   for v in box_ids(f)
     # Visible nodes for boxes.
-    label = node_label(box(f, v))
-    push!(stmts, Graphviz.Node("n$v", label=label))
+    box = Wiring.box(f, v)
+    node = Graphviz.Node("n$v", label=node_label(box), id=node_id(box))
+    push!(stmts, node)
   end
   
   # Edges
-  const node_id = (p::Port) -> begin
+  const graphviz_port = (p::Port) -> begin
     if p.box in (input_id(f), output_id(f))
       return Graphviz.NodeID("n$(p.box)p$(p.port)", port_anchor(p.kind))
     end
     Graphviz.NodeID("n$(p.box)", port_name(p.kind, p.port), port_anchor(p.kind))
   end
   for wire in wires(f)
-    edge = Graphviz.Edge(node_id(wire.source), node_id(wire.target))
+    typ = wire_type(f, wire)
+    attrs = Graphviz.Attributes(:id => edge_id(typ))
+    if labels
+      attrs[xlabel ? :xlabel : :label] = edge_label(typ)
+    end
+    edge = Graphviz.Edge(graphviz_port(wire.source),
+                         graphviz_port(wire.target); attrs...)
     push!(stmts, edge)
   end
   
@@ -66,6 +73,11 @@ end
 function to_graphviz(f::HomExpr; kw...)::Graphviz.Graph
   to_graphviz(to_wiring_diagram(f); kw...)
 end
+
+""" Create a label for the main content of a box.
+"""
+label(box::Box) = string(box)
+label(box::HomBox) = string(box.expr)
 
 """ Create an "HTML-like" node label for a box.
 """
@@ -88,15 +100,6 @@ function ports_label(kind::PortKind, nports::Int)::Graphviz.Html
     <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0"><TR>$rows</TR></TABLE>""")
 end
 
-""" Create a label for the main content of a box.
-"""
-function label(box::Box)::String
-  string(box)
-end
-function label(box::HomBox)::String
-  string(box.expr)
-end
-
 """ Create invisible nodes for the input or output ports of an outer box.
 """
 function port_nodes(v::Int, nports::Int)::Graphviz.Subgraph
@@ -111,5 +114,22 @@ end
 
 port_name(kind::PortKind, port::Int) = string(kind == Input ? "in" : "out", port)
 port_anchor(kind::PortKind) = kind == Input ? "n" : "s"
+
+""" Create an identifer for a node for downstream use.
+
+It is included in the Graphviz output but is not used internally by Graphviz.
+Reference: http://www.graphviz.org/doc/info/attrs.html#d:id
+"""
+node_id(box::Box) = label(box)
+
+""" Create a label for an edge.
+"""
+edge_label(wire_type::Any) = string(wire_type)
+
+""" Create an identifier for a edge for downstream use.
+
+See also `node_id()`.
+"""
+edge_id(wire_type::Any) = edge_label(wire_type)
 
 end

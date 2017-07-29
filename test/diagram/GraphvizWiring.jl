@@ -7,15 +7,39 @@ using Catlab.Diagram.Wiring
 using Catlab.Diagram.GraphvizWiring
 import Catlab.Diagram: Graphviz
 
-# We can't test that the graphs look right, but we can test that they exist!
+
 is_digraph(obj) = isa(obj, Graphviz.Graph) && obj.directed
+
+function stmts(graph::Graphviz.Graph, stmt_type::Type, attr::Symbol)
+  [ stmt.attrs[attr] for stmt in graph.stmts
+    if isa(stmt, stmt_type) && haskey(stmt.attrs, attr) ]
+end
 
 A, B = Ob(FreeSymmetricMonoidalCategory, :A, :B)
 f = WiringDiagram(Hom(:f, A, B))
 g = WiringDiagram(Hom(:g, B, A))
 
-@test is_digraph(to_graphviz(f))
-@test is_digraph(to_graphviz(compose(f,g)))
-@test is_digraph(to_graphviz(otimes(f,g)))
+graph = to_graphviz(f)
+@test is_digraph(graph)
+@test stmts(graph, Graphviz.Node, :id) == ["f"]
+@test stmts(graph, Graphviz.Edge, :id) == ["A","B"]
+@test stmts(graph, Graphviz.Edge, :label) == []
+@test stmts(graph, Graphviz.Edge, :xlabel) == []
+
+graph = to_graphviz(f; labels=true)
+@test stmts(graph, Graphviz.Edge, :label) == ["A","B"]
+@test stmts(graph, Graphviz.Edge, :xlabel) == []
+
+graph = to_graphviz(f; labels=true, xlabel=true)
+@test stmts(graph, Graphviz.Edge, :label) == []
+@test stmts(graph, Graphviz.Edge, :xlabel) == ["A","B"]
+
+graph = to_graphviz(compose(f,g))
+@test is_digraph(graph)
+@test stmts(graph, Graphviz.Node, :id) == ["f","g"]
+
+graph = to_graphviz(otimes(f,g))
+@test is_digraph(graph)
+@test stmts(graph, Graphviz.Node, :id) == ["f","g"]
 
 end
