@@ -29,13 +29,21 @@ gv = add_box!(d, g)
 @test boxes(d) == [HomBox(f),HomBox(g)]
 
 # Operations on wires
+@test wire_type(d, Port(input_id(d),Output,1)) == A
+@test wire_type(d, Port(output_id(d),Input,1)) == C
+@test wire_type(d, Port(fv,Input,1)) == A
+@test wire_type(d, Port(fv,Output,1)) == B
 @test nwires(d) == 0
 @test !has_wire(d, fv, gv)
+@test !has_wire(d, (fv,1) => (gv,1))
 add_wire!(d, (input_id(d),1) => (fv,1))
 add_wire!(d, (fv,1) => (gv,1))
 add_wire!(d, (gv,1) => (output_id(d),1))
 @test nwires(d) == 3
 @test has_wire(d, fv, gv)
+@test has_wire(d, (fv,1) => (gv,1))
+@test wire_type(d, (fv,1) => (gv,1)) == B
+@test_throws WireTypeError add_wire!(d, (gv,1) => (fv,1))
 @test wires(d) == map(Wire, [
   (input_id(d),1) => (fv,1),
   (fv,1) => (gv,1),

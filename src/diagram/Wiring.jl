@@ -12,9 +12,9 @@ intermediate representation that can be straightforwardly translated into
 Graphviz or other declarative diagram languages.
 """
 module Wiring
-export Box, HomBox, WiringDiagram, Wire, WireTypes, Port, PortKind,
-  Input, Output, inputs, outputs, input_id, output_id,
-  boxes, box_ids, nboxes, nwires, box, wires, has_wire, graph,
+export Box, HomBox, WiringDiagram, Wire, WireTypes, WireTypeError, 
+  Port, PortKind, Input, Output, inputs, outputs, input_id, output_id,
+  boxes, box_ids, nboxes, nwires, box, wires, has_wire, wire_type, graph,
   add_box!, add_boxes!, add_wire!, add_wires!, rem_box!, rem_wire!, rem_wires!,
   all_neighbors, neighbors, out_neighbors, in_neighbors, in_wires, out_wires,
   substitute!, to_wiring_diagram
@@ -122,6 +122,16 @@ end
 Base.eachindex(A::WireTypes) = eachindex(A.types)
 Base.length(A::WireTypes) = length(A.types)
 
+""" Exception thrown when types of source and target ports are not equal.
+"""
+struct WireTypeError <: Exception
+  source_type::Any
+  target_type::Any
+end
+function Base.showerror(io::IO, exc::WireTypeError)
+  print(io, `Wire types $(exc.source_type) and $(exc.target_type) are not equal`)
+end
+
 """ Base type for any box (node) in a wiring diagram.
 
 This type represents an arbitrary black box with (possibly empty) lists of
@@ -197,6 +207,27 @@ nwires(f::WiringDiagram) =
 function has_wire(f::WiringDiagram, src::Int, tgt::Int)
   has_edge(graph(f), Edge(src, tgt))
 end
+function has_wire(f::WiringDiagram, wire::Wire)
+  wire in wires(f, wire.source.box, wire.target.box)
+end
+has_wire(f, pair::Pair) = has_wire(f, Wire(pair))
+
+function wire_type(f::WiringDiagram, port::Port)
+  if port.box == input_id(f)
+    inputs(f)[port.port]
+  elseif port.box == output_id(f)
+    outputs(f)[port.port]
+  else
+    box = Wiring.box(f, port.box)
+    types = port.kind == Input ? inputs(box) : outputs(box)
+    types[port.port]
+  end
+end
+function wire_type(f::WiringDiagram, wire::Wire)
+  @assert has_wire(f, wire)
+  wire_type(f, wire.source) # == wire_type(f, wire.target)
+end
+wire_type(f, pair::Pair) = wire_type(f, Wire(pair))
 
 # Graph mutation.
 
@@ -216,7 +247,14 @@ function rem_box!(f::WiringDiagram, v::Int)
 end
 
 function add_wire!(f::WiringDiagram, wire::Wire)
-  # TODO: Check for compatible inputs/outputs.
+  # Check for compatible types.
+  source_type = wire_type(f, wire.source)
+  target_type = wire_type(f, wire.target)
+  if source_type != target_type
+    throw(WireTypeError(source_type, target_type))
+  end
+  
+  # Add edge and edge properties.
   edge = Edge(wire.source.box, wire.target.box)
   if !has_edge(f.network.graph, edge)
     add_edge!(f.network, edge, WireEdgeData[])

@@ -412,8 +412,9 @@ Generator values should be symbols, strings, or numbers.
 function to_json(expr::BaseExpr)
   [string(constructor_name(expr)); map(to_json, args(expr))]
 end
+to_json(x::Symbol) = string(x)
+to_json(x::AbstractString) = x
 to_json(x::Real) = x
-to_json(x) = string(x)
 
 """ Deserialize expression from JSON-able Julia object.
 
@@ -424,7 +425,7 @@ function parse_json(syntax_module::Module, sexpr::Vector; kw...)
   args = [ parse_json(syntax_module, x; kw...) for x in sexpr[2:end] ]
   invoke_term(syntax_module, name, args...)
 end
-parse_json(::Module, x::String; symbols=true) = symbols ? Symbol(x) : x
+parse_json(::Module, x::AbstractString; symbols=true) = symbols ? Symbol(x) : x
 parse_json(::Module, x::Real; kw...) = x
 
 # Pretty-print
