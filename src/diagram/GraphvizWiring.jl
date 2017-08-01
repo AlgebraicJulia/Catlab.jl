@@ -34,8 +34,8 @@ function to_graphviz(f::WiringDiagram;
   # Nodes
   stmts = Graphviz.Statement[
     # Invisible nodes for incoming and outgoing wires.
-    port_nodes(input_id(f), length(inputs(f))),
-    port_nodes(output_id(f), length(outputs(f))),
+    port_nodes(input_id(f), length(input_types(f))),
+    port_nodes(output_id(f), length(output_types(f))),
   ]
   for v in box_ids(f)
     # Visible nodes for boxes.
@@ -82,7 +82,7 @@ label(box::HomBox) = string(box.expr)
 """ Create an "HTML-like" node label for a box.
 """
 function node_label(box::Box)::Graphviz.Html
-  nin, nout = length(inputs(box)), length(outputs(box))
+  nin, nout = length(input_types(box)), length(output_types(box))
   Graphviz.Html("""
     <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
     <TR><TD>$(ports_label(Input,nin))</TD></TR>

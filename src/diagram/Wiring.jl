@@ -13,7 +13,7 @@ Graphviz or other declarative diagram languages.
 """
 module Wiring
 export Box, HomBox, WiringDiagram, Wire, WireTypes, WireTypeError, 
-  Port, PortKind, Input, Output, inputs, outputs, input_id, output_id,
+  Port, PortKind, Input, Output, input_types, output_types, input_id, output_id,
   boxes, box_ids, nboxes, nwires, box, wires, has_wire, wire_type, graph,
   add_box!, add_boxes!, add_wire!, add_wires!, rem_box!, rem_wire!, rem_wires!,
   all_neighbors, neighbors, out_neighbors, in_neighbors, in_wires, out_wires,
@@ -43,10 +43,7 @@ import ..Networks: graph
   kind::PortKind
   port::Int
 end
-
-function set_box(conn::Port, box::Int)::Port
-  Port(box, conn.kind, conn.port)
-end
+set_box(conn::Port, box::Int) = Port(box, conn.kind, conn.port)
 
 function Base.isless(p1::Port, p2::Port)::Bool
   # Lexicographic order.
@@ -145,14 +142,14 @@ TODO: Document internal representation.
 """
 mutable struct WiringDiagram <: Box
   network::DiNetwork{Box,Vector{WireEdgeData},Void}
-  inputs::Vector
-  outputs::Vector
+  input_types::Vector
+  output_types::Vector
   input_id::Int
   output_id::Int
   
-  function WiringDiagram(inputs::Vector, outputs::Vector)
+  function WiringDiagram(input_types::Vector, output_types::Vector)
     network = DiNetwork(Box, Vector{WireEdgeData})
-    diagram = new(network, inputs, outputs, 0, 0)
+    diagram = new(network, input_types, output_types, 0, 0)
     diagram.input_id = add_box!(diagram, diagram)
     diagram.output_id = add_box!(diagram, diagram)
     return diagram
@@ -161,8 +158,8 @@ mutable struct WiringDiagram <: Box
     WiringDiagram(inputs.types, outputs.types)
   end
 end
-inputs(diagram::WiringDiagram) = diagram.inputs
-outputs(diagram::WiringDiagram) = diagram.outputs
+input_types(diagram::WiringDiagram) = diagram.input_types
+output_types(diagram::WiringDiagram) = diagram.output_types
 input_id(diagram::WiringDiagram) = diagram.input_id
 output_id(diagram::WiringDiagram) = diagram.output_id
 
@@ -172,7 +169,7 @@ Warning: This method checks exact equality of the underlying graph
 representation, not mathematical equality which involves graph isomorphism.
 """
 function Base.:(==)(d1::WiringDiagram, d2::WiringDiagram)
-  (inputs(d1) == inputs(d2) && outputs(d1) == outputs(d2) &&
+  (input_types(d1) == input_types(d2) && output_types(d1) == output_types(d2) &&
    input_id(d1) == input_id(d2) && output_id(d1) == output_id(d2) &&
    graph(d1) == graph(d2) &&
    boxes(d1) == boxes(d2) && sort!(wires(d1)) == sort!(wires(d2)))
@@ -214,12 +211,12 @@ has_wire(f, pair::Pair) = has_wire(f, Wire(pair))
 
 function wire_type(f::WiringDiagram, port::Port)
   if port.box == input_id(f)
-    inputs(f)[port.port]
+    input_types(f)[port.port]
   elseif port.box == output_id(f)
-    outputs(f)[port.port]
+    output_types(f)[port.port]
   else
     box = Wiring.box(f, port.box)
-    types = port.kind == Input ? inputs(box) : outputs(box)
+    types = port.kind == Input ? input_types(box) : output_types(box)
     types[port.port]
   end
 end
@@ -329,7 +326,7 @@ end
 
 # Diagram substitution.
 
-""" Substitute a vertex with a wiring diagram.
+""" Substitute a wiring diagram for a vertex.
 
 This operation is the operadic composition of wiring diagrams.
 """
@@ -342,7 +339,7 @@ function substitute!(d::WiringDiagram, v::Int)
   substitute!(d, v, box(d,v))
 end
 
-""" Simultaneous substitution of vertices with wiring diagrams.
+""" Simultaneous substitution of wiring diagrams for vertices.
 """
 function substitute!(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagram})
   for (v,sub) in zip(vs, subs)
@@ -404,8 +401,8 @@ These boxes have no internal structure.
 @auto_hash_equals struct HomBox <: Box
   expr::HomExpr
 end
-inputs(box::HomBox) = collect(dom(box.expr))
-outputs(box::HomBox) = collect(codom(box.expr))
+input_types(box::HomBox) = collect(dom(box.expr))
+output_types(box::HomBox) = collect(codom(box.expr))
 
 """ Create empty wiring diagram with given domain and codomain objects.
 """
@@ -431,8 +428,8 @@ Wiring diagrams also have *diagonals* and *codiagonals* (see extra methods),
 but we don't have doctrines for those yet.
 """
 @instance SymmetricMonoidalCategory(WireTypes, WiringDiagram) begin
-  dom(f::WiringDiagram) = WireTypes(f.inputs)
-  codom(f::WiringDiagram) = WireTypes(f.outputs)
+  dom(f::WiringDiagram) = WireTypes(f.input_types)
+  codom(f::WiringDiagram) = WireTypes(f.output_types)
   
   function id(A::WireTypes)
     f = WiringDiagram(A, A)
