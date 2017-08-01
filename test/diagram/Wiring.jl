@@ -19,6 +19,7 @@ d = WiringDiagram(A, C)
 # Operations on boxes
 fv = add_box!(d, f)
 @test nboxes(d) == 1
+@test box(d, fv).value == :f
 @test box(d, fv) == Box(f)
 rem_box!(d, fv)
 @test nboxes(d) == 0
@@ -26,13 +27,14 @@ rem_box!(d, fv)
 fv = add_box!(d, f)
 gv = add_box!(d, g)
 @test nboxes(d) == 2
+@test [b.value for b in boxes(d)] == [:f,:g]
 @test boxes(d) == [Box(f),Box(g)]
 
 # Operations on wires
-@test wire_type(d, Port(input_id(d),Output,1)) == A
-@test wire_type(d, Port(output_id(d),Input,1)) == C
-@test wire_type(d, Port(fv,Input,1)) == A
-@test wire_type(d, Port(fv,Output,1)) == B
+@test wire_type(d, Port(input_id(d),Output,1)) == :A
+@test wire_type(d, Port(output_id(d),Input,1)) == :C
+@test wire_type(d, Port(fv,Input,1)) == :A
+@test wire_type(d, Port(fv,Output,1)) == :B
 @test nwires(d) == 0
 @test !has_wire(d, fv, gv)
 @test !has_wire(d, (fv,1) => (gv,1))
@@ -42,7 +44,7 @@ add_wire!(d, (gv,1) => (output_id(d),1))
 @test nwires(d) == 3
 @test has_wire(d, fv, gv)
 @test has_wire(d, (fv,1) => (gv,1))
-@test wire_type(d, (fv,1) => (gv,1)) == B
+@test wire_type(d, (fv,1) => (gv,1)) == :B
 @test_throws WireTypeError add_wire!(d, (gv,1) => (fv,1))
 @test wires(d) == map(Wire, [
   (input_id(d),1) => (fv,1),
@@ -88,10 +90,10 @@ substitute!(d, subv)
 box_map = Dict(box(d,v).value => v for v in box_ids(d))
 @test nwires(d) == 4
 @test Set(wires(d)) == Set(map(Wire, [
-  (input_id(d),1) => (box_map[f],1),
-  (box_map[f],1) => (box_map[g],1),
-  (box_map[g],1) => (box_map[h],1),
-  (box_map[h],1) => (output_id(d),1),
+  (input_id(d),1) => (box_map[:f],1),
+  (box_map[:f],1) => (box_map[:g],1),
+  (box_map[:g],1) => (box_map[:h],1),
+  (box_map[:h],1) => (output_id(d),1),
 ]))
 
 # High-level categorical interface
@@ -106,7 +108,7 @@ g = WiringDiagram(Hom(:g,B,A))
 @test nboxes(f) == 1
 @test boxes(f) == [ Box(Hom(:f,A,B)) ]
 @test nwires(f) == 2
-@test WireTypes([A]) == WireTypes([A])
+@test WireTypes([:A]) == WireTypes([:A])
 @test WiringDiagram(Hom(:f,A,B)) == WiringDiagram(Hom(:f,A,B))
 
 # Composition
@@ -115,10 +117,10 @@ g = WiringDiagram(Hom(:g,B,A))
 @test nwires(compose(f,g)) == 3
 
 # Domains and codomains
-@test dom(f) == WireTypes([A])
-@test codom(f) == WireTypes([B])
-@test dom(compose(f,g)) == WireTypes([A])
-@test codom(compose(f,g)) == WireTypes([A])
+@test dom(f) == WireTypes([:A])
+@test codom(f) == WireTypes([:B])
+@test dom(compose(f,g)) == WireTypes([:A])
+@test codom(compose(f,g)) == WireTypes([:A])
 @test_throws Exception compose(f,f)
 
 # Associativity
@@ -136,7 +138,7 @@ g = WiringDiagram(Hom(:g,B,A))
 @test codom(otimes(f,g)) == otimes(codom(f),codom(g))
 
 # Associativity and unit
-X, Y = WireTypes([A,B]), WireTypes([C,D])
+X, Y = WireTypes([:A,:B]), WireTypes([:C,:D])
 I = munit(WireTypes)
 @test otimes(X,I) == X
 @test otimes(I,X) == X
@@ -162,13 +164,13 @@ add_wires!(d, [
 @test compose(mcopy(dom(f)), otimes(f,f)) == d
 
 # Domains and codomains
-@test dom(mcopy(WireTypes([A]))) == WireTypes([A])
-@test codom(mcopy(WireTypes([A]))) == WireTypes([A,A])
-@test dom(mcopy(WireTypes([A,B]),3)) == WireTypes([A,B])
-@test codom(mcopy(WireTypes([A,B]),3)) == WireTypes([A,B,A,B,A,B])
+@test dom(mcopy(WireTypes([:A]))) == WireTypes([:A])
+@test codom(mcopy(WireTypes([:A]))) == WireTypes([:A,:A])
+@test dom(mcopy(WireTypes([:A,:B]),3)) == WireTypes([:A,:B])
+@test codom(mcopy(WireTypes([:A,:B]),3)) == WireTypes([:A,:B,:A,:B,:A,:B])
 
 # Associativity
-X = WireTypes([A])
+X = WireTypes([:A])
 @test compose(mcopy(X), otimes(id(X),mcopy(X))) == mcopy(X,3)
 @test compose(mcopy(X), otimes(mcopy(X),id(X))) == mcopy(X,3)
 
@@ -182,13 +184,13 @@ X = WireTypes([A])
 #------------
 
 # Domains and codomains
-@test dom(mmerge(WireTypes([A]))) == WireTypes([A,A])
-@test codom(mmerge(WireTypes([A]))) == WireTypes([A])
-@test dom(mmerge(WireTypes([A,B]),3)) == WireTypes([A,B,A,B,A,B])
-@test codom(mmerge(WireTypes([A,B]),3)) == WireTypes([A,B])
+@test dom(mmerge(WireTypes([:A]))) == WireTypes([:A,:A])
+@test codom(mmerge(WireTypes([:A]))) == WireTypes([:A])
+@test dom(mmerge(WireTypes([:A,:B]),3)) == WireTypes([:A,:B,:A,:B,:A,:B])
+@test codom(mmerge(WireTypes([:A,:B]),3)) == WireTypes([:A,:B])
 
 # Associativity
-X = WireTypes([A])
+X = WireTypes([:A])
 @test compose(otimes(id(X),mmerge(X)), mmerge(X)) == mmerge(X,3)
 @test compose(otimes(mmerge(X),id(X)), mmerge(X)) == mmerge(X,3)
 

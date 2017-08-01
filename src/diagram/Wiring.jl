@@ -425,22 +425,22 @@ end
 # High-level categorical interface
 ##################################
 
-""" Create box for a morphim expression, typically a generator.
+""" Create box for a morphism generator.
 """
-function Box(expr::HomExpr)
-  Box(expr, collect(dom(expr)), collect(codom(expr)))
+function Box(expr::HomExpr{:generator})
+  Box(first(expr), collect_values(dom(expr)), collect_values(codom(expr)))
 end
 add_box!(f::WiringDiagram, expr::HomExpr) = add_box!(f, Box(expr))
 
 """ Create empty wiring diagram with given domain and codomain objects.
 """
 function WiringDiagram(inputs::ObExpr, outputs::ObExpr)
-  WiringDiagram(collect(inputs), collect(outputs))
+  WiringDiagram(collect_values(inputs), collect_values(outputs))
 end
 
 """ Create wiring diagram with a single morphism box.
 """
-function WiringDiagram(f::HomExpr)
+function WiringDiagram(f::HomExpr{:generator})
   d = WiringDiagram(dom(f), codom(f))
   fv = add_box!(d, Box(f))
   add_wires!(d, ((input_id(d),i) => (fv,i) for i in eachindex(dom(d))))
@@ -532,10 +532,16 @@ cartesian, cocartesian, and biproduct categories are supported.
 function to_wiring_diagram(expr::CategoryExpr)
   functor((WireTypes, WiringDiagram), expr;
     generator_terms = Dict(
-      :Ob => (expr) -> WireTypes(collect(expr)),
+      :Ob => (expr) -> WireTypes(collect_values(expr)),
       :Hom => (expr) -> WiringDiagram(expr),
     )
   )
+end
+
+function collect_values(ob::ObExpr)::Vector
+  exprs = collect(ob)
+  @assert all(head(expr) == :generator for expr in exprs)
+  return map(first, exprs)
 end
 
 end
