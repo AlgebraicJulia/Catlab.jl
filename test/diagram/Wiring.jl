@@ -19,14 +19,14 @@ d = WiringDiagram(A, C)
 # Operations on boxes
 fv = add_box!(d, f)
 @test nboxes(d) == 1
-@test box(d, fv) == HomBox(f)
+@test box(d, fv) == Box(f)
 rem_box!(d, fv)
 @test nboxes(d) == 0
 
 fv = add_box!(d, f)
 gv = add_box!(d, g)
 @test nboxes(d) == 2
-@test boxes(d) == [HomBox(f),HomBox(g)]
+@test boxes(d) == [Box(f),Box(g)]
 
 # Operations on wires
 @test wire_type(d, Port(input_id(d),Output,1)) == A
@@ -80,12 +80,12 @@ add_wires!(d, Pair[
   (fv,1) => (subv,1),
   (subv,1) => (output_id(d),1),
 ])
-@test boxes(d) == [ HomBox(f), sub ]
-@test boxes(sub) == [ HomBox(g), HomBox(h) ]
+@test boxes(d) == [ Box(f), sub ]
+@test boxes(sub) == [ Box(g), Box(h) ]
 substitute!(d, subv)
 @test nboxes(d) == 3
-@test Set(boxes(d)) == Set([ HomBox(f), HomBox(g), HomBox(h) ])
-box_map = Dict(box(d,v).expr => v for v in box_ids(d))
+@test Set(boxes(d)) == Set([ Box(f), Box(g), Box(h) ])
+box_map = Dict(box(d,v).value => v for v in box_ids(d))
 @test nwires(d) == 4
 @test Set(wires(d)) == Set(map(Wire, [
   (input_id(d),1) => (box_map[f],1),
@@ -104,14 +104,14 @@ box_map = Dict(box(d,v).expr => v for v in box_ids(d))
 f = WiringDiagram(Hom(:f,A,B))
 g = WiringDiagram(Hom(:g,B,A))
 @test nboxes(f) == 1
-@test boxes(f) == [ HomBox(Hom(:f,A,B)) ]
+@test boxes(f) == [ Box(Hom(:f,A,B)) ]
 @test nwires(f) == 2
 @test WireTypes([A]) == WireTypes([A])
 @test WiringDiagram(Hom(:f,A,B)) == WiringDiagram(Hom(:f,A,B))
 
 # Composition
 @test nboxes(compose(f,g)) == 2
-@test boxes(compose(f,g)) == [ HomBox(Hom(:f,A,B)), HomBox(Hom(:g,B,A)) ]
+@test boxes(compose(f,g)) == [ Box(Hom(:f,A,B)), Box(Hom(:g,B,A)) ]
 @test nwires(compose(f,g)) == 3
 
 # Domains and codomains

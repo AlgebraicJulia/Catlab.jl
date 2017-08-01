@@ -12,7 +12,7 @@ intermediate representation that can be straightforwardly serialized into
 GraphML or translated into Graphviz or other declarative diagram languages.
 """
 module Wiring
-export Box, HomBox, WiringDiagram, Wire, WireTypes, WireTypeError, 
+export AbstractBox, Box, WiringDiagram, Wire, WireTypes, WireTypeError, 
   Port, PortKind, Input, Output, input_types, output_types, input_id, output_id,
   boxes, box_ids, nboxes, nwires, box, wires, has_wire, wire_type, graph,
   add_box!, add_boxes!, add_wire!, add_wires!, rem_box!, rem_wire!, rem_wires!,
@@ -54,17 +54,21 @@ end
 
 """ A wire connecting one port to another.
 """
-@auto_hash_equals struct Wire
+@auto_hash_equals struct Wire{ValueType}
+  value::ValueType
   source::Port
   target::Port
-  
-  Wire(src::Port, tgt::Port) = new(src, tgt)
-  Wire(src::Tuple{Int,PortKind,Int}, tgt::Tuple{Int,PortKind,Int}) =
-    Wire(Port(src[1],src[2],src[3]), Port(tgt[1],tgt[2],tgt[3]))
-  Wire(src::Tuple{Int,Int}, tgt::Tuple{Int,Int}) =
-    Wire(Port(src[1],Output,src[2]), Port(tgt[1],Input,tgt[2]))
-  Wire(pair::Pair) = Wire(first(pair), last(pair))
 end
+
+Wire(value, src::Tuple{Int,PortKind,Int}, tgt::Tuple{Int,PortKind,Int}) =
+  Wire(value, Port(src[1],src[2],src[3]), Port(tgt[1],tgt[2],tgt[3]))
+Wire(value, src::Tuple{Int,Int}, tgt::Tuple{Int,Int}) =
+  Wire(value, Port(src[1],Output,src[2]), Port(tgt[1],Input,tgt[2]))
+Wire(value, pair::Pair) = Wire(value, first(pair), last(pair))
+
+Wire(src::Port, tgt::Port) = Wire(nothing, src, tgt)
+Wire(src::Tuple, tgt::Tuple) = Wire(nothing, src, tgt)
+Wire(pair::Pair) = Wire(nothing, first(pair), last(pair))
 
 function Base.show(io::IO, wire::Wire)
   skip_kind = wire.source.kind == Output && wire.target.kind == Input
@@ -76,6 +80,10 @@ function Base.show(io::IO, wire::Wire)
     end
   end
   print(io, "Wire(")
+  if wire.value != nothing
+    print(io, wire.value)
+    print(io, ", ")
+  end
   show_port(io, wire.source)
   print(io, " => ")
   show_port(io, wire.target)
@@ -99,15 +107,17 @@ from_edge_data(conn::PortEdgeData, v::Int) = Port(v, conn.kind, conn.port)
 
 """ Internal data structure corresponding to `Wire`. Do not use directly.
 """
-@auto_hash_equals struct WireEdgeData
+@auto_hash_equals struct WireEdgeData{ValueType}
+  value::ValueType
   source::PortEdgeData
   target::PortEdgeData
 end
 function to_edge_data(wire::Wire)
-  WireEdgeData(to_edge_data(wire.source), to_edge_data(wire.target))
+  WireEdgeData(wire.value, to_edge_data(wire.source), to_edge_data(wire.target))
 end
 function from_edge_data(wire::WireEdgeData, edge::Edge)
-  Wire(from_edge_data(wire.source, src(edge)),
+  Wire(wire.value,
+       from_edge_data(wire.source, src(edge)),
        from_edge_data(wire.target, dst(edge)))
 end
 
@@ -131,10 +141,22 @@ end
 
 """ Base type for any box (node) in a wiring diagram.
 
-This type represents an arbitrary black box with (possibly empty) lists of
-inputs and outputs.
+This type represents an arbitrary black box with inputs and outputs.
 """
-abstract type Box end
+abstract type AbstractBox end
+
+input_types(box::AbstractBox)::Vector = box.input_types
+output_types(box::AbstractBox)::Vector = box.output_types
+
+""" An atomic box in a wiring diagram.
+
+These boxes have no internal structure.
+"""
+@auto_hash_equals struct Box{ValueType} <: AbstractBox
+  value::ValueType
+  input_types::Vector
+  output_types::Vector
+end
 
 """ Morphism in the category of wiring diagrams.
 
@@ -151,15 +173,15 @@ Julia community has no standard graph data structure supporting aribtrary
 graph/vertex/edge properties ala NetworkX in Python.) For each edge, an edge
 property is used to store a list of wires between the source and target boxes.
 """
-mutable struct WiringDiagram <: Box
-  network::DiNetwork{Box,Vector{WireEdgeData},Void}
+mutable struct WiringDiagram <: AbstractBox
+  network::DiNetwork{AbstractBox,Vector{WireEdgeData},Void}
   input_types::Vector
   output_types::Vector
   input_id::Int
   output_id::Int
   
   function WiringDiagram(input_types::Vector, output_types::Vector)
-    network = DiNetwork(Box, Vector{WireEdgeData})
+    network = DiNetwork(AbstractBox, Vector{WireEdgeData})
     diagram = new(network, input_types, output_types, 0, 0)
     diagram.input_id = add_box!(diagram, diagram)
     diagram.output_id = add_box!(diagram, diagram)
@@ -169,8 +191,6 @@ mutable struct WiringDiagram <: Box
     WiringDiagram(inputs.types, outputs.types)
   end
 end
-input_types(diagram::WiringDiagram) = diagram.input_types
-output_types(diagram::WiringDiagram) = diagram.output_types
 input_id(diagram::WiringDiagram) = diagram.input_id
 output_id(diagram::WiringDiagram) = diagram.output_id
 
@@ -239,7 +259,7 @@ wire_type(f, pair::Pair) = wire_type(f, Wire(pair))
 
 # Graph mutation.
 
-function add_box!(f::WiringDiagram, box::Box)
+function add_box!(f::WiringDiagram, box::AbstractBox)
   add_vertex!(f.network, box)
 end
 
@@ -405,15 +425,12 @@ end
 # High-level categorical interface
 ##################################
 
-""" A box representing a morphism expression, often a generator.
-
-These boxes have no internal structure.
+""" Create box for a morphim expression, typically a generator.
 """
-@auto_hash_equals struct HomBox <: Box
-  expr::HomExpr
+function Box(expr::HomExpr)
+  Box(expr, collect(dom(expr)), collect(codom(expr)))
 end
-input_types(box::HomBox) = collect(dom(box.expr))
-output_types(box::HomBox) = collect(codom(box.expr))
+add_box!(f::WiringDiagram, expr::HomExpr) = add_box!(f, Box(expr))
 
 """ Create empty wiring diagram with given domain and codomain objects.
 """
@@ -425,13 +442,11 @@ end
 """
 function WiringDiagram(f::HomExpr)
   d = WiringDiagram(dom(f), codom(f))
-  fv = add_box!(d, f)
+  fv = add_box!(d, Box(f))
   add_wires!(d, ((input_id(d),i) => (fv,i) for i in eachindex(dom(d))))
   add_wires!(d, ((fv,i) => (output_id(d),i) for i in eachindex(codom(d))))
   return d
 end
-
-add_box!(f::WiringDiagram, expr::HomExpr) = add_box!(f, HomBox(expr))
 
 """ Wiring diagram as *symmetric monoidal category*.
 

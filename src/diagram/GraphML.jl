@@ -17,6 +17,8 @@ using ..Wiring
 function to_graphml(diagram::WiringDiagram)::XMLDocument
   # Create XML document and top-level graph element.
   xdoc = XMLDocument()
+  finalizer(xdoc, free)
+  
   xroot = create_root(xdoc, "graphml")
   set_attributes(xroot, Pair[
     "xmlns" => "http://graphml.graphdrawing.org/xmlns",
@@ -60,7 +62,7 @@ function add_graphml_box!(xgraph::XMLElement, id::String, box::Box)
   add_graphml_node!(xgraph, id, box)
 end
 
-function add_graphml_node!(xgraph::XMLElement, id::String, box::Box)
+function add_graphml_node!(xgraph::XMLElement, id::String, box::AbstractBox)
   # Create node element for box.
   xnode = new_child(xgraph, "node")
   set_attribute(xnode, "id", id)

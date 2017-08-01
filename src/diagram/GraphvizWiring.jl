@@ -74,11 +74,6 @@ function to_graphviz(f::HomExpr; kw...)::Graphviz.Graph
   to_graphviz(to_wiring_diagram(f); kw...)
 end
 
-""" Create a label for the main content of a box.
-"""
-label(box::Box) = string(box)
-label(box::HomBox) = string(box.expr)
-
 """ Create an "HTML-like" node label for a box.
 """
 function node_label(box::Box)::Graphviz.Html
@@ -114,6 +109,10 @@ end
 
 port_name(kind::PortKind, port::Int) = string(kind == Input ? "in" : "out", port)
 port_anchor(kind::PortKind) = kind == Input ? "n" : "s"
+
+""" Create a label for the main content of a box.
+"""
+label(box::Box) = string(box.value)
 
 """ Create an identifer for a node for downstream use.
 
