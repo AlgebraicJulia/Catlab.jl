@@ -3,6 +3,7 @@ include("external/Networks.jl")
 
 @testset "Diagram" begin
   include("Wiring.jl")
+  include("GraphML.jl")
 end
 
 @testset "Diagram.Graphivz" begin

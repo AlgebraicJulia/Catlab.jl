@@ -8,8 +8,8 @@ syntactic expressions.
 
 The wiring diagrams in this module are "abstract" in the sense that they cannot
 be directly rendered as raster or vector graphics. However, they form a useful
-intermediate representation that can be straightforwardly translated into
-Graphviz or other declarative diagram languages.
+intermediate representation that can be straightforwardly serialized into
+GraphML or translated into Graphviz or other declarative diagram languages.
 """
 module Wiring
 export Box, HomBox, WiringDiagram, Wire, WireTypes, WireTypeError, 
