@@ -138,7 +138,18 @@ abstract type Box end
 
 """ Morphism in the category of wiring diagrams.
 
-TODO: Document internal representation.
+A wiring diagram is represented using the following data structures. A
+LightGraphs `DiGraph` stores the "skeleton" of the diagram: a simple directed
+graph with the boxes as vertices and with an edge between two vertices iff there
+is at least one wire between the corresponding boxes. There are two special
+vertices, accessible via `input_id` and `output_id`, representing the input and
+output ports, respectively.
+
+The `DiGraph` is wrapped inside a `DiNetwork` (borrowed from Networks.jl) to
+attach properties to the vertices and edges. (At the time of this writing, the
+Julia community has no standard graph data structure supporting aribtrary
+graph/vertex/edge properties ala NetworkX in Python.) For each edge, an edge
+property is used to store a list of wires between the source and target boxes.
 """
 mutable struct WiringDiagram <: Box
   network::DiNetwork{Box,Vector{WireEdgeData},Void}
@@ -505,10 +516,11 @@ cartesian, cocartesian, and biproduct categories are supported.
 """
 function to_wiring_diagram(expr::CategoryExpr)
   functor((WireTypes, WiringDiagram), expr;
-          generator_terms = Dict(
-            :Ob => (expr) -> WireTypes(collect(expr)),
-            :Hom => (expr) -> WiringDiagram(expr),
-          ))
+    generator_terms = Dict(
+      :Ob => (expr) -> WireTypes(collect(expr)),
+      :Hom => (expr) -> WiringDiagram(expr),
+    )
+  )
 end
 
 end
