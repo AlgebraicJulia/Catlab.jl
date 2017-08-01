@@ -1,9 +1,8 @@
 module TestTikZWiring
 
 using Base.Test
-
 using Catlab.Doctrine
-using Catlab.Diagram.TikZWiring
+using Catlab.Diagram
 import Catlab.Diagram.TikZWiring.Defaults
 import Catlab.Diagram: TikZ
 

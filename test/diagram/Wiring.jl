@@ -1,8 +1,8 @@
 module TestWiring
 
-using Catlab.Doctrine
-using Catlab.Diagram.Wiring
 using Base.Test
+using Catlab.Doctrine
+using Catlab.Diagram
 
 # Low-level graph interface
 ###########################

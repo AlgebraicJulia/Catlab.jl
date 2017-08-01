@@ -2,10 +2,8 @@ module TestGraphML
 
 using Base.Test
 using LightXML
-
 using Catlab.Doctrine
-using Catlab.Diagram.Wiring
-using Catlab.Diagram.GraphML
+using Catlab.Diagram
 
 A, B, C = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C)
 f = WiringDiagram(Hom(:f, A, B))

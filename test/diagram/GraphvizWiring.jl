@@ -2,8 +2,7 @@ module TestGraphvizWiring
 
 using Base.Test
 using Catlab.Doctrine
-using Catlab.Diagram.Wiring
-using Catlab.Diagram.GraphvizWiring
+using Catlab.Diagram
 import Catlab.Diagram: Graphviz
 
 is_digraph(obj) = isa(obj, Graphviz.Graph) && obj.directed
