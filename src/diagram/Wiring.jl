@@ -54,8 +54,8 @@ end
 
 """ A wire connecting one port to another.
 """
-@auto_hash_equals struct Wire{ValueType}
-  value::ValueType
+@auto_hash_equals struct Wire{Value}
+  value::Value
   source::Port
   target::Port
 end
@@ -107,8 +107,8 @@ from_edge_data(conn::PortEdgeData, v::Int) = Port(v, conn.kind, conn.port)
 
 """ Internal data structure corresponding to `Wire`. Do not use directly.
 """
-@auto_hash_equals struct WireEdgeData{ValueType}
-  value::ValueType
+@auto_hash_equals struct WireEdgeData{Value}
+  value::Value
   source::PortEdgeData
   target::PortEdgeData
 end
@@ -152,8 +152,8 @@ output_types(box::AbstractBox)::Vector = box.output_types
 
 These boxes have no internal structure.
 """
-@auto_hash_equals struct Box{ValueType} <: AbstractBox
-  value::ValueType
+@auto_hash_equals struct Box{Value} <: AbstractBox
+  value::Value
   input_types::Vector
   output_types::Vector
 end
@@ -532,7 +532,7 @@ cartesian, cocartesian, and biproduct categories are supported.
 function to_wiring_diagram(expr::CategoryExpr)
   functor((WireTypes, WiringDiagram), expr;
     generator_terms = Dict(
-      :Ob => (expr) -> WireTypes(collect_values(expr)),
+      :Ob => (expr) -> WireTypes([first(expr)]),
       :Hom => (expr) -> WiringDiagram(expr),
     )
   )
