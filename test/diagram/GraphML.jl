@@ -5,14 +5,17 @@ using LightXML
 using Catlab.Doctrine
 using Catlab.Diagram
 
-to_gml(f::WiringDiagram) = to_graphml(Symbol, Void, Symbol, f)
+function roundtrip(f::WiringDiagram)
+  xdoc = write_graphml(Symbol, Void, Symbol, f)
+  read_graphml(Symbol, Void, Symbol, xdoc)
+end
 
 A, B, C = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C)
 f = WiringDiagram(Hom(:f, A, B))
 g = WiringDiagram(Hom(:g, B, C))
 
-@test isa(to_gml(f), XMLDocument)
-@test isa(to_gml(compose(f,g)), XMLDocument)
-@test isa(to_gml(otimes(f,g)), XMLDocument)
+@test roundtrip(f) == f
+@test roundtrip(compose(f,g)) == compose(f,g)
+@test roundtrip(otimes(f,g)) == otimes(f,g)
 
 end

@@ -6,17 +6,28 @@ References:
 - GraphML DTD: http://graphml.graphdrawing.org/specification/dtd.html
 """
 module GraphML
-export to_graphml
+export read_graphml, write_graphml
 
 using LightXML
 using ..Wiring
+import ..Wiring: PortEdgeData
+
+const graphml_attribute_types = Dict(
+  Bool => "boolean",
+  Int32 => "int",
+  Int64 => "int",
+  Float32 => "double",
+  Float64 => "double",
+  String => "string",
+  Symbol => "string",
+)
 
 # Serialization
 ###############
 
 """ Serialize a wiring diagram to GraphML.
 """
-function to_graphml{BoxValue,WireValue,WireType}(
+function write_graphml{BoxValue,WireValue,WireType}(
     ::Type{BoxValue}, ::Type{WireValue}, ::Type{WireType},
     diagram::WiringDiagram)::XMLDocument
   # FIXME: The type parameters should be attached to both `WireTypes` and 
@@ -33,20 +44,88 @@ function to_graphml{BoxValue,WireValue,WireType}(
   ])
   
   # Add attribute keys (data declarations).
-  add_graphml_keys(xroot, "node", BoxValue)
-  add_graphml_keys(xroot, "edge", WireValue)
-  add_graphml_keys(xroot, "port", WireType)
+  xkey = new_child(xroot, "key")
+  set_attributes(xkey, Pair[
+    "id" => "input",
+    "for" => "port",
+    "attr.name" => "input",
+    "attr.type" => "boolean"
+  ])
+  write_graphml_keys(xroot, "node", BoxValue)
+  write_graphml_keys(xroot, "edge", WireValue)
+  write_graphml_keys(xroot, "port", WireType)
   
   # Add top-level graph element.
   xgraph = new_child(xroot, "graph")
   set_attribute(xgraph, "edgedefault", "directed")
   
   # Recursively create nodes.
-  add_graphml_box(xgraph, "d", diagram)
+  write_graphml_node(xgraph, "n", diagram)
   return xdoc
 end
 
-function add_graphml_keys(xroot::XMLElement, domain::String, typ::Type)
+function write_graphml_node(xgraph::XMLElement, id::String, diagram::WiringDiagram)
+  # Create node element for wiring diagram and graph subelement to contain 
+  # boxes and wires.
+  xnode = new_child(xgraph, "node")
+  set_attribute(xnode, "id", id)
+  write_graphml_ports(xnode, diagram)
+  
+  xsubgraph = new_child(xnode, "graph")
+  set_attribute(xsubgraph, "id", "$id:")
+  
+  # Add node elements for boxes.
+  for v in box_ids(diagram)
+    write_graphml_node(xsubgraph, "$id:n$v", box(diagram, v))
+  end
+  
+  # Add edge elements for wires.
+  in_id, out_id = input_id(diagram), output_id(diagram)
+  node_id(port::Port) = port.box in (in_id, out_id) ? id : "$id:n$(port.box)"
+  port_name(port::Port) = begin
+    is_input = port.box in (in_id, out_id) ? port.box == in_id : port.kind == Input
+    is_input ? "in:$(port.port)" : "out:$(port.port)"
+  end
+  for wire in wires(diagram)
+    xedge = new_child(xsubgraph, "edge")
+    set_attributes(xedge, Pair[
+      "source"     => node_id(wire.source),
+      "sourceport" => port_name(wire.source),
+      "target"     => node_id(wire.target),
+      "targetport" => port_name(wire.target),
+    ])
+    write_graphml_data(xedge, wire.value)
+  end
+end
+function write_graphml_node(xgraph::XMLElement, id::String, box::Box)
+  xnode = new_child(xgraph, "node")
+  set_attribute(xnode, "id", id)
+  write_graphml_data(xnode, box.value)
+  write_graphml_ports(xnode, box)
+end
+
+function write_graphml_ports(xnode::XMLElement, box::AbstractBox)
+  for (i, wire_type) in enumerate(input_types(box))
+    xport = new_child(xnode, "port")
+    set_attribute(xport, "name", "in:$i")
+    
+    xdata = new_child(xport, "data")
+    set_attribute(xdata, "key", "input")
+    set_content(xdata, string(true))
+    write_graphml_data(xport, wire_type)
+  end
+  for (i, wire_type) in enumerate(output_types(box))
+    xport = new_child(xnode, "port")
+    set_attribute(xport, "name", "out:$i")
+    
+    xdata = new_child(xport, "data")
+    set_attribute(xdata, "key", "input")
+    set_content(xdata, string(false))
+    write_graphml_data(xport, wire_type)
+  end
+end
+
+function write_graphml_keys(xroot::XMLElement, domain::String, typ::Type)
   xkey = new_child(xroot, "key")
   set_attributes(xkey, Pair[
     "id" => "value",
@@ -55,87 +134,118 @@ function add_graphml_keys(xroot::XMLElement, domain::String, typ::Type)
     "attr.type" => graphml_attribute_types[typ]
   ])
 end
-add_graphml_keys(xgraph::XMLElement, domain::String, ::Type{Void}) = nothing
+write_graphml_keys(xgraph::XMLElement, domain::String, ::Type{Void}) = nothing
 
-function add_graphml_data(xelem::XMLElement, value)
+function write_graphml_data(xelem::XMLElement, value)
   xdata = new_child(xelem, "data")
   set_attribute(xdata, "key", "value")
   set_content(xdata, string(value))
 end
-add_graphml_data(xelem::XMLElement, value::Void) = nothing
-
-function add_graphml_box(xgraph::XMLElement, id::String, diagram::WiringDiagram)
-  # Create node element for wiring diagram and graph subelement to contain 
-  # boxes and wires.
-  xnode = new_child(xgraph, "node")
-  set_attribute(xnode, "id", id)
-  add_graphml_ports(xnode, diagram)
-  
-  xsubgraph = new_child(xnode, "graph")
-  set_attribute(xsubgraph, "id", "$id:")
-  
-  # Add node elements for boxes.
-  for v in box_ids(diagram)
-    add_graphml_box(xsubgraph, "$id:n$v", box(diagram, v))
-  end
-  
-  # Add edge elements for wires.
-  outer_ids = (input_id(diagram), output_id(diagram))
-  for wire in wires(diagram)
-    src, tgt = wire.source, wire.target
-    xedge = new_child(xsubgraph, "edge")
-    set_attributes(xedge, Pair[
-      "source"     => src.box in outer_ids ? id : "$id:n$(src.box)",
-      "sourceport" => src.kind == Input ? "in:$(src.port)" : "out:$(src.port)",
-      "target"     => tgt.box in outer_ids ? id : "$id:n$(tgt.box)",
-      "targetport" => tgt.kind == Input ? "in:$(tgt.port)" : "out:$(tgt.port)",
-    ])
-    add_graphml_data(xedge, wire.value)
-  end
-end
-function add_graphml_box(xgraph::XMLElement, id::String, box::Box)
-  xnode = new_child(xgraph, "node")
-  set_attribute(xnode, "id", id)
-  add_graphml_data(xnode, box.value)
-  add_graphml_ports(xnode, box)
-end
-
-function add_graphml_ports(xnode::XMLElement, box::AbstractBox)
-  for (i, wire_type) in enumerate(input_types(box))
-    xport = new_child(xnode, "port")
-    set_attribute(xport, "name", "in:$i")
-    add_graphml_data(xport, wire_type)
-  end
-  for (i, wire_type) in enumerate(output_types(box))
-    xport = new_child(xnode, "port")
-    set_attribute(xport, "name", "out:$i")
-    add_graphml_data(xport, wire_type)
-  end
-end
+write_graphml_data(xelem::XMLElement, value::Void) = nothing
 
 # Deserialization
 #################
 
-# Constants
-###########
+struct ReadState
+  BoxValue::Type
+  WireValue::Type
+  WireType::Type
+end
 
-const graphml_attribute_types = Dict(
-  Bool => "boolean",
-  Int32 => "int",
-  Int64 => "int",
-  Float32 => "double",
-  Float64 => "double",
-  String => "string",
-  Symbol => "string",
-)
+""" Deserialize a wiring diagram from GraphML.
+"""
+function read_graphml{BoxValue,WireValue,WireType}(
+    ::Type{BoxValue}, ::Type{WireValue}, ::Type{WireType},
+    xdoc::XMLDocument)::WiringDiagram
+  xroot = root(xdoc)
+  @assert name(xroot) == "graphml" "Root element of GraphML document must be <graphml>"
+  xgraphs = xroot["graph"]
+  @assert length(xgraphs) == 1 "Root element of GraphML document must contain exactly one <graph>"
+  xgraph = xgraphs[1]
+  xnodes = xgraph["node"]
+  @assert length(xnodes) == 1 "Root graph of GraphML document must contain exactly one <node>"
+  xnode = xnodes[1]
+  
+  state = ReadState(BoxValue, WireValue, WireType)
+  diagram, ports = read_graphml_node(state, xnode)
+  return diagram
+end
 
-const graphml_attribute_types_rev = Dict(
-  "boolean" => Bool,
-  "int" => Int,
-  "long" => Int,
-  "float" => Float32,
-  "double" => Float64,
-  "string" => String,
-)
+function read_graphml_node(state::ReadState, xnode::XMLElement)
+  # Parse all the port elements.
+  ports, input_types, output_types = read_graphml_ports(state, xnode)
+  
+  # Handle special cases: atomic boxes and malformed elements.
+  xgraphs = xnode["graph"]
+  if length(xgraphs) > 1
+    error("Node element can contain at most one <graph> (subgraph element)")
+  elseif isempty(xgraphs)
+    value = read_graphml_data(xnode, state.BoxValue)
+    return (Box(value, input_types, output_types), ports)
+  end
+  xgraph = xgraphs[1] 
+  
+  # If we get here, we're reading a wiring diagram.
+  diagram = WiringDiagram(input_types, output_types)
+  diagram_ports = Dict{Tuple{String,String},Port}()
+  for (key, port_data) in ports
+    diagram_ports[key] = port_data.kind == Input ?
+      Port(input_id(diagram), Output, port_data.port) : 
+      Port(output_id(diagram), Input, port_data.port)
+  end
+  
+  # Read the node elements.
+  for xsubnode in xgraph["node"]
+    box, subports = read_graphml_node(state, xsubnode)
+    v = add_box!(diagram, box)
+    for (key, port_data) in subports
+      diagram_ports[key] = Port(v, port_data.kind, port_data.port)
+    end
+  end
+  
+  # Read the edge elements.
+  for xedge in xgraph["edge"]
+    value = read_graphml_data(xedge, state.WireValue)
+    xsource = (attribute(xedge, "source"), attribute(xedge, "sourceport"))
+    xtarget = (attribute(xedge, "target"), attribute(xedge, "targetport"))
+    source, target = diagram_ports[xsource], diagram_ports[xtarget]
+    add_wire!(diagram, Wire(value, source, target))
+  end
+  
+  return (diagram, ports)
+end
+
+function read_graphml_ports(state::ReadState, xnode::XMLElement)
+  ports = Dict{Tuple{String,String},PortEdgeData}()
+  input_types, output_types = state.WireType[], state.WireType[]
+  xnode_id = attribute(xnode, "id")
+  xports = xnode["port"]
+  for xport in xports
+    xport_name = attribute(xport, "name")
+    value = read_graphml_data(xport, state.WireType)
+    is_input = parse(Bool, get_data(xport, "input"))
+    if is_input
+      push!(input_types, value)
+      ports[(xnode_id, xport_name)] = PortEdgeData(Input, length(input_types))
+    else
+      push!(output_types, value)
+      ports[(xnode_id, xport_name)] = PortEdgeData(Output, length(output_types))
+    end
+  end
+  (ports, input_types, output_types)
+end
+
+function read_graphml_data(xelem::XMLElement, Value::Type)
+  parse(Value, get_data(xelem, "value"))
+end
+read_graphml_data(xelem::XMLElement, ::Type{String}) = get_data(xelem, "value")
+read_graphml_data(xelem::XMLElement, ::Type{Symbol}) = Symbol(get_data(xelem, "value"))
+read_graphml_data(xelem::XMLElement, ::Type{Void}) = nothing
+
+function get_data(xelem::XMLElement, key::String)::String
+  xdata = [ x for x in xelem["data"] if attribute(x,"key") == key ]
+  @assert length(xdata) == 1 "Element must contain exactly one <data> with key=\"$key\""
+  return content(xdata[1])
+end
 
 end
