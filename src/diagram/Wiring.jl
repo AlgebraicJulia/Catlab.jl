@@ -43,7 +43,7 @@ import ..Networks: graph
   kind::PortKind
   port::Int
 end
-set_box(conn::Port, box::Int) = Port(box, conn.kind, conn.port)
+set_box(port::Port, box::Int) = Port(box, port.kind, port.port)
 
 function Base.isless(p1::Port, p2::Port)::Bool
   # Lexicographic order.
@@ -102,8 +102,8 @@ end
   kind::PortKind
   port::Int
 end
-to_edge_data(conn::Port) = PortEdgeData(conn.kind, conn.port)
-from_edge_data(conn::PortEdgeData, v::Int) = Port(v, conn.kind, conn.port)
+to_edge_data(port::Port) = PortEdgeData(port.kind, port.port)
+from_edge_data(port::PortEdgeData, v::Int) = Port(v, port.kind, port.port)
 
 """ Internal data structure corresponding to `Wire`. Do not use directly.
 """
@@ -327,13 +327,13 @@ neighbors(d::WiringDiagram, v::Int) = neighbors(graph(d), v)
 out_neighbors(d::WiringDiagram, v::Int) = out_neighbors(graph(d), v)
 in_neighbors(d::WiringDiagram, v::Int) = in_neighbors(graph(d), v)
 
-""" Get all wires coming into the connector.
+""" Get all wires coming into the port.
 """
-function in_wires(d::WiringDiagram, conn::Port)
+function in_wires(d::WiringDiagram, port::Port)
   result = Wire[]
-  for v in in_neighbors(d, conn.box)
-    for wire in wires(d, v, conn.box)
-      if wire.target == conn
+  for v in in_neighbors(d, port.box)
+    for wire in wires(d, v, port.box)
+      if wire.target == port
         push!(result, wire)
       end
     end
@@ -341,13 +341,13 @@ function in_wires(d::WiringDiagram, conn::Port)
   result
 end
 
-""" Get all wires coming out of the connector.
+""" Get all wires coming out of the port.
 """
-function out_wires(d::WiringDiagram, conn::Port)
+function out_wires(d::WiringDiagram, port::Port)
   result = Wire[]
-  for v in out_neighbors(d, conn.box)
-    for wire in wires(d, conn.box, v)
-      if wire.source == conn
+  for v in out_neighbors(d, port.box)
+    for wire in wires(d, port.box, v)
+      if wire.source == port
         push!(result, wire)
       end
     end
