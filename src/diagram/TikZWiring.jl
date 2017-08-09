@@ -351,7 +351,7 @@ end
 
 """ A cup.
 
-Used to draw evaluation morphisms in compact closed categories.
+Used to draw counit morphisms in compact closed categories.
 """
 function cup(name::String, wire1::Wire, wire2::Wire)
   ports = [ Port(wire1, "$name.center", angle=90, show_label=false),
@@ -366,7 +366,7 @@ cup(name::String, A::ObExpr) = cup(name, wires(A)...)
 
 """ A cap.
 
-Used to draw coevaluation morphisms in compact closed categories.
+Used to draw unit morphisms in compact closed categories.
 """
 function cap(name::String, wire1::Wire, wire2::Wire)
   ports = [ Port(wire1, "$name.center", angle=90, show_label=false),
@@ -505,16 +505,16 @@ module Defaults
   Syntax = FreeCompactClosedCategory
   wires(A::Syntax.Ob{:dual}) = [ Wire(label(generator(A)); reverse=true) ]
   box(name::String, f::Syntax.Hom{:generator}) = rect(name, f)
-  box(name::String, f::Syntax.Hom{:ev}) = cup(name, dom(f))
-  box(name::String, f::Syntax.Hom{:coev}) = cap(name, codom(f))
+  box(name::String, f::Syntax.Hom{:dunit}) = cap(name, codom(f))
+  box(name::String, f::Syntax.Hom{:dcounit}) = cup(name, dom(f))
   
   # Bicategory of relations
   Syntax = FreeBicategoryRelations
   box(name::String, f::Syntax.Hom{:generator}) = trapezium(name, f)
   box(name::String, f::Syntax.Hom{:dagger}) = trapezium(name,
     label(generator(f)), wires(dom(f)), wires(codom(f)); reverse=true)
-  box(name::String, f::Syntax.Hom{:ev}) = cup(name, dom(f))
-  box(name::String, f::Syntax.Hom{:coev}) = cap(name, codom(f))
+  box(name::String, f::Syntax.Hom{:dunit}) = cap(name, codom(f))
+  box(name::String, f::Syntax.Hom{:dcounit}) = cup(name, dom(f))
   box(name::String, f::Syntax.Hom{:mcopy}) = junction_circle(name, f; fill=false)
   box(name::String, f::Syntax.Hom{:delete}) = junction_circle(name, f; fill=false)
   box(name::String, f::Syntax.Hom{:mmerge}) = junction_circle(name, f; fill=false)
@@ -524,8 +524,8 @@ module Defaults
   box(name::String, f::Syntax.Hom{:generator}) = trapezium(name, f)
   box(name::String, f::Syntax.Hom{:dagger}) = trapezium(name,
     label(generator(f)), wires(dom(f)), wires(codom(f)); reverse=true)
-  box(name::String, f::Syntax.Hom{:ev}) = cup(name, dom(f))
-  box(name::String, f::Syntax.Hom{:coev}) = cap(name, codom(f))
+  box(name::String, f::Syntax.Hom{:dunit}) = cap(name, codom(f))
+  box(name::String, f::Syntax.Hom{:dcounit}) = cup(name, dom(f))
   box(name::String, f::Syntax.Hom{:mcopy}) = junction_circle(name, f; fill=false)
   box(name::String, f::Syntax.Hom{:delete}) = junction_circle(name, f; fill=false)
   box(name::String, f::Syntax.Hom{:mmerge}) = junction_circle(name, f; fill=false)

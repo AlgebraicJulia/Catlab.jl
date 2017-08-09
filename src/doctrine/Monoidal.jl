@@ -228,7 +228,7 @@ function show_latex(io::IO, expr::ObExpr{:hom}; kw...)
   show_latex(io, first(expr))
   print(io, "}")
 end
-function show_latex(io::IO, expr::FreeCartesianClosedCategory.Hom{:ev}; kw...)
+function show_latex(io::IO, expr::HomExpr{:ev}; kw...)
   show_latex_script(io, expr, "\\mathrm{eval}")
 end
 function show_latex(io::IO, expr::HomExpr{:curry}; kw...)
@@ -242,10 +242,14 @@ end
 """ Doctrine of *compact closed category*
 """
 @signature SymmetricMonoidalCategory(Ob,Hom) => CompactClosedCategory(Ob,Hom) begin
+  # Dual A^* of object A
   dual(A::Ob)::Ob
   
-  ev(A::Ob)::Hom(otimes(A,dual(A)), munit())
-  coev(A::Ob)::Hom(munit(), otimes(dual(A),A))
+  # Unit of duality, aka the coevaluation map
+  dunit(A::Ob)::Hom(munit(), otimes(dual(A),A))
+  
+  # Counit of duality, aka the evaluation map
+  dcounit(A::Ob)::Hom(otimes(A,dual(A)), munit())
 end
 
 @syntax FreeCompactClosedCategory(ObExpr,HomExpr) CompactClosedCategory begin
@@ -259,11 +263,11 @@ function show_latex(io::IO, expr::ObExpr{:dual}; kw...)
   show_latex(io, first(expr))
   print(io, "^*")
 end
-function show_latex(io::IO, expr::FreeCompactClosedCategory.Hom{:ev}; kw...)
-  show_latex_script(io, expr, "\\mathrm{ev}")
+function show_latex(io::IO, expr::HomExpr{:dunit}; kw...)
+  show_latex_script(io, expr, "\\eta")
 end
-function show_latex(io::IO, expr::FreeCompactClosedCategory.Hom{:coev}; kw...)
-  show_latex_script(io, expr, "\\mathrm{coev}")
+function show_latex(io::IO, expr::HomExpr{:dcounit}; kw...)
+  show_latex_script(io, expr, "\\varepsilon")
 end
 
 # Dagger category

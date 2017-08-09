@@ -16,8 +16,8 @@ References:
   dagger(f::Hom(A,B))::Hom(B,A) <= (A::Ob,B::Ob)
   
   # Self-dual compact closed category.
-  ev(A::Ob)::Hom(otimes(A,A), munit())
-  coev(A::Ob)::Hom(munit(), otimes(A,A))
+  dunit(A::Ob)::Hom(munit(), otimes(A,A))
+  dcounit(A::Ob)::Hom(otimes(A,A), munit())
   
   # Diagonal and codiagonal.
   mcopy(A::Ob)::Hom(A,otimes(A,A))

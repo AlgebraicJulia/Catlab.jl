@@ -222,10 +222,10 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 I = munit(FreeCompactClosedCategory.Ob)
 
 # Domains and codomains
-@test dom(ev(A)) == otimes(A, dual(A))
-@test codom(ev(A)) == I
-@test dom(coev(A)) == I
-@test codom(coev(A)) == otimes(dual(A), A)
+@test dom(dunit(A)) == I
+@test codom(dunit(A)) == otimes(dual(A), A)
+@test dom(dcounit(A)) == otimes(A, dual(A))
+@test codom(dcounit(A)) == I
 
 # Duals
 @test dual(otimes(A,B)) == otimes(dual(B),dual(A))
@@ -234,8 +234,8 @@ I = munit(FreeCompactClosedCategory.Ob)
 
 # Infix notation (LaTeX)
 @test latex(dual(A)) == "A^*"
-@test latex(ev(A)) == "\\mathrm{ev}_{A}"
-@test latex(coev(A)) == "\\mathrm{coev}_{A}"
+@test latex(dunit(A)) == "\\eta_{A}"
+@test latex(dcounit(A)) == "\\varepsilon_{A}"
 
 # Dagger category
 #################

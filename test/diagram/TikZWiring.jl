@@ -33,14 +33,14 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 A, B = Ob(FreeCompactClosedCategory, :A, :B)
 f, g = Hom(:f, A, B), Hom(:g, B, A)
 h = Hom(:h, otimes(A,B), otimes(A,B))
-@test is_pic(to_tikz(ev(A)))
-@test is_pic(to_tikz(coev(A)))
+@test is_pic(to_tikz(dunit(A)))
+@test is_pic(to_tikz(dcounit(A)))
 trace = compose(
   f,
-  otimes(coev(A), id(B)),
+  otimes(dunit(A), id(B)),
   otimes(id(dual(A)), h),
   otimes(braid(dual(A),A), id(B)),
-  otimes(ev(A), id(B)),
+  otimes(dcounit(A), id(B)),
   g,
 )
 @test is_pic(to_tikz(trace))
