@@ -287,9 +287,9 @@ end
 """ Parse context for term or type in a GAT.
 """
 function parse_context(expr::Expr)::Context
-  @assert expr.head == :tuple
   context = Context()
-  for arg in expr.args
+  args = expr.head == :tuple ? expr.args : [ expr ]
+  for arg in args
     name, typ = @match arg begin
       Expr(:(::), [name::Symbol, typ], _) => (name, parse_raw_expr(typ))
       _ => throw(ParseError("Ill-formed context expression $expr"))
