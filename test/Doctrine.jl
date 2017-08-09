@@ -217,9 +217,14 @@ f = Hom(:f, otimes(A,B), C)
 # Compact closed category
 #########################
 
-A, B = Ob(FreeCompactClosedCategory, :A, :B)
-f, g = Hom(:f, A, B), Hom(:g, B, A)
+A, B, C = Ob(FreeCompactClosedCategory, :A, :B, :C)
 I = munit(FreeCompactClosedCategory.Ob)
+f = Hom(:f, otimes(A,B), C)
+
+# Duals
+@test dual(otimes(A,B)) == otimes(dual(B),dual(A))
+@test dual(I) == I
+@test dual(dual(A)) == A
 
 # Domains and codomains
 @test dom(dunit(A)) == I
@@ -227,10 +232,10 @@ I = munit(FreeCompactClosedCategory.Ob)
 @test dom(dcounit(A)) == otimes(A, dual(A))
 @test codom(dcounit(A)) == I
 
-# Duals
-@test dual(otimes(A,B)) == otimes(dual(B),dual(A))
-@test dual(I) == I
-@test dual(dual(A)) == A
+@test dom(ev(A,B)) == otimes(hom(A,B),A)
+@test codom(ev(A,B)) == B
+@test dom(curry(A,B,f)) == A
+@test codom(curry(A,B,f)) == hom(B,C)
 
 # Infix notation (LaTeX)
 @test latex(dual(A)) == "A^*"

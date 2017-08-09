@@ -195,7 +195,7 @@ end
 
 """ Doctrine of *cartesian closed category* (aka, CCC)
 
-A CCC is cartesian category with internal homs (aka, exponential objects).
+A CCC is a cartesian category with internal homs (aka, exponential objects).
 """
 @signature CartesianCategory(Ob,Hom) => CartesianClosedCategory(Ob,Hom) begin
   # Internal hom of A and B, an object representing Hom(A,B)
@@ -250,6 +250,14 @@ end
   
   # Counit of duality, aka the evaluation map
   dcounit(A::Ob)::Hom(otimes(A,dual(A)), munit())
+  
+  # Closed monoidal category
+  hom(A::Ob, B::Ob) = otimes(B, dual(A))
+  ev(A::Ob, B::Ob) = otimes(id(B), compose(braid(dual(A),A), dcounit(A)))
+  curry(A::Ob, B::Ob, f::Hom) = compose(
+    otimes(id(A), compose(dunit(B), braid(dual(B),B))),
+    otimes(f, id(dual(B)))
+  )
 end
 
 @syntax FreeCompactClosedCategory(ObExpr,HomExpr) CompactClosedCategory begin
