@@ -190,6 +190,52 @@ end
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end
 
+# Cartesian closed category
+###########################
+
+""" Doctrine of *cartesian closed category* (aka, CCC)
+
+A CCC is cartesian category with internal homs (aka, exponential objects).
+"""
+@signature CartesianCategory(Ob,Hom) => CartesianClosedCategory(Ob,Hom) begin
+  # Internal hom of A and B, an object representing Hom(A,B)
+  hom(A::Ob, B::Ob)::Ob
+  
+  # Evaluation map
+  ev(A::Ob, B::Ob)::Hom(otimes(hom(A,B),A),B)
+  
+  # Currying (aka, lambda abstraction)
+  curry(A::Ob, B::Ob, f::Hom(otimes(A,B),C))::Hom(A,hom(B,C)) <= (C::Ob)
+end
+
+""" Syntax for a free cartesian closed category.
+
+See also `FreeCartesianCategory`.
+"""
+@syntax FreeCartesianClosedCategory(ObExpr,HomExpr) CartesianClosedCategory begin
+  otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
+  otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+  
+  pair(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g))
+  proj1(A::Ob, B::Ob) = otimes(id(A), delete(B))
+  proj2(A::Ob, B::Ob) = otimes(delete(A), id(B))
+end
+
+function show_latex(io::IO, expr::ObExpr{:hom}; kw...)
+  show_latex(io, last(expr))
+  print(io, "^{")
+  show_latex(io, first(expr))
+  print(io, "}")
+end
+function show_latex(io::IO, expr::FreeCartesianClosedCategory.Hom{:ev}; kw...)
+  show_latex_script(io, expr, "\\mathrm{eval}")
+end
+function show_latex(io::IO, expr::HomExpr{:curry}; kw...)
+  print(io, "\\lambda ")
+  show_latex(io, last(expr))
+end
+
 # Compact closed category
 #########################
 
@@ -213,10 +259,10 @@ function show_latex(io::IO, expr::ObExpr{:dual}; kw...)
   show_latex(io, first(expr))
   print(io, "^*")
 end
-function show_latex(io::IO, expr::HomExpr{:ev}; kw...)
+function show_latex(io::IO, expr::FreeCompactClosedCategory.Hom{:ev}; kw...)
   show_latex_script(io, expr, "\\mathrm{ev}")
 end
-function show_latex(io::IO, expr::HomExpr{:coev}; kw...)
+function show_latex(io::IO, expr::FreeCompactClosedCategory.Hom{:coev}; kw...)
   show_latex_script(io, expr, "\\mathrm{coev}")
 end
 

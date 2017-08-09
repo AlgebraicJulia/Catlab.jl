@@ -12,6 +12,7 @@ export CartesianCategory, FreeCartesianCategory, mcopy, delete,
 export CocartesianCategory, FreeCocartesianCategory, mmerge, create,
   copair, in1, in2, ∇, □
 export BiproductCategory, FreeBiproductCategory
+export CartesianClosedCategory, FreeCartesianClosedCategory, hom, ev, curry
 export CompactClosedCategory, FreeCompactClosedCategory, dual, ev, coev
 export DaggerCategory, FreeDaggerCategory, dagger
 export DaggerCompactCategory, FreeDaggerCompactCategory

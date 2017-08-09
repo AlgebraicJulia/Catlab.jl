@@ -197,6 +197,23 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 @test latex(mmerge(A)) == "\\nabla_{A}"
 @test latex(create(A)) == "\\square_{A}"
 
+# Cartesian closed category
+###########################
+
+A, B, C = Ob(FreeCartesianClosedCategory, :A, :B, :C)
+f = Hom(:f, otimes(A,B), C)
+
+# Domains and codomains
+@test dom(ev(A,B)) == otimes(hom(A,B),A)
+@test codom(ev(A,B)) == B
+@test dom(curry(A,B,f)) == A
+@test codom(curry(A,B,f)) == hom(B,C)
+
+# Infix notation (LaTeX)
+@test latex(hom(A,B)) == "B^{A}"
+@test latex(ev(A,B)) == "\\mathrm{eval}_{A,B}"
+@test latex(curry(A,B,f)) == "\\lambda f"
+
 # Compact closed category
 #########################
 
