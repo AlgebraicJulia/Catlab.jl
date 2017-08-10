@@ -39,7 +39,7 @@ cons = GAT.TermConstructor(:unit, [], :Ob, GAT.Context())
 @test GAT.parse_constructor(expr) == cons
 
 cons = GAT.TermConstructor(:id, [:X], :(Hom(X,X)), GAT.Context(:X => :Ob))
-@test GAT.parse_constructor(:(id(X)::Hom(X,X) <= (X::Ob,))) == cons
+@test GAT.parse_constructor(:(id(X)::Hom(X,X) <= (X::Ob))) == cons
 @test GAT.parse_constructor(:(id(X::Ob)::Hom(X,X))) == cons
 
 expr = :(compose(f,g)::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob, f::Hom(X,Y), g::Hom(Y,Z)))
@@ -79,7 +79,7 @@ target = GAT.TermConstructor(:compose, [:f,:g], :(Mor(X,Z)),
   Ob::TYPE
   Hom(dom, codom)::TYPE <= (dom::Ob, codom::Ob)
   
-  id(X)::Hom(X,X) <= (X::Ob,)
+  id(X)::Hom(X,X) <= (X::Ob)
   compose(f,g)::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob, f::Hom(X,Y), g::Hom(Y,Z))
 end
 
@@ -116,7 +116,12 @@ category_signature = GAT.Signature(types, terms)
   Ob::TYPE
   Hom(dom::Ob, codom::Ob)::TYPE
   
+  """ Identity morphism
+  """
   id(X::Ob)::Hom(X,X)
+  
+  """ Composition of morphisms
+  """
   compose(f::Hom(X,Y),g::Hom(Y,Z))::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob)
 end
 
