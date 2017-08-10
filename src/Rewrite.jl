@@ -65,6 +65,6 @@ function anti_involute(raw_expr::BaseExpr, inv::Function, op::Function,
 end
 
 # FIXME: This doesn't seem like a good idea.
-head(f::Function)::Symbol = Symbol(rsplit(string(f),'.',limit=2)[end])
+head(f::Function)::Symbol = Symbol(string(typeof(f).name.name)[2:end])
 
 end
