@@ -101,9 +101,20 @@ function port_nodes(v::Int, nports::Int)::Graphviz.Subgraph
   nodes = [ "n$(v)p$(i)" for i in 1:nports ]
   Graphviz.Subgraph(
     Graphviz.Edge(nodes),
-    graph_attrs=Graphviz.Attributes(:rank => "same", :rankdir => "LR"),
-    node_attrs=Graphviz.Attributes(:style => "invis"),
-    edge_attrs=Graphviz.Attributes(:style => "invis"),
+    graph_attrs=Graphviz.Attributes(
+      :rank => "same",
+      :rankdir => "LR",
+    ),
+    node_attrs=Graphviz.Attributes(
+      :style => "invis",
+      :shape => "none",
+      :label => "",
+      :width => "0.333", # == 24/72, the port width in inches
+      :height => "0",
+    ),
+    edge_attrs=Graphviz.Attributes(
+      :style => "invis",
+    ),
   )
 end
 
