@@ -15,7 +15,8 @@ module Wiring
 export AbstractBox, Box, WiringDiagram, Wire, WireTypes, WireTypeError, 
   Port, PortKind, Input, Output, input_types, output_types, input_id, output_id,
   boxes, box_ids, nboxes, nwires, box, wires, has_wire, wire_type, graph,
-  add_box!, add_boxes!, add_wire!, add_wires!, rem_box!, rem_wire!, rem_wires!,
+  add_box!, add_boxes!, add_wire!, add_wires!, validate_wire_types,
+  rem_box!, rem_wire!, rem_wires!,
   all_neighbors, neighbors, out_neighbors, in_neighbors, in_wires, out_wires,
   substitute!, to_wiring_diagram
 
@@ -278,9 +279,7 @@ function add_wire!(f::WiringDiagram, wire::Wire)
   # Check for compatible types.
   source_type = wire_type(f, wire.source)
   target_type = wire_type(f, wire.target)
-  if source_type != target_type
-    throw(WireTypeError(source_type, target_type))
-  end
+  validate_wire_types(source_type, target_type)
   
   # Add edge and edge properties.
   edge = Edge(wire.source.box, wire.target.box)
@@ -294,6 +293,12 @@ add_wire!(f::WiringDiagram, pair::Pair) = add_wire!(f, Wire(pair))
 function add_wires!(f::WiringDiagram, wires)
   for wire in wires
     add_wire!(f, wire)
+  end
+end
+
+function validate_wire_types(source_type, target_type)
+  if source_type != target_type
+    throw(WireTypeError(source_type, target_type))
   end
 end
 
