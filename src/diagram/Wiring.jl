@@ -469,9 +469,12 @@ but we don't have doctrines for those yet.
   end
   
   function compose(f::WiringDiagram, g::WiringDiagram)
-    if codom(f) != dom(g)
+    # Check only that f and g have the same number of ports.
+    # The port types will be checked when the wires are added.
+    if length(codom(f)) != length(dom(g))
       error("Incompatible domains $(codom(f)) and $(dom(g))")
     end
+    
     h = WiringDiagram(dom(f), codom(g))
     fv = add_box!(h, f)
     gv = add_box!(h, g)
