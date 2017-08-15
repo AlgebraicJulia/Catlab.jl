@@ -162,9 +162,9 @@ gens = Dict(x => "x", y => "y", z => "z")
 @test F(mtimes(x,mtimes(y,z)); generators=gens) == "xyz"
 @test F(mtimes(x,munit(FreeMonoid.Elem)); generators=gens) == "x"
 
-gen_terms = Dict(:Elem => (x) -> string(first(x)))
-@test F(mtimes(x,mtimes(y,z)); generator_terms=gen_terms) == "xyz"
-@test F(mtimes(x,munit(FreeMonoid.Elem)); generator_terms=gen_terms) == "x"
+terms = Dict(:Elem => (x) -> string(first(x)))
+@test F(mtimes(x,mtimes(y,z)); terms=terms) == "xyz"
+@test F(mtimes(x,munit(FreeMonoid.Elem)); terms=terms) == "x"
 
 # Serialization
 ###############

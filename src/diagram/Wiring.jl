@@ -531,7 +531,7 @@ cartesian, cocartesian, and biproduct categories are supported.
 """
 function to_wiring_diagram(expr::CategoryExpr)
   functor((WireTypes, WiringDiagram), expr;
-    generator_terms = Dict(
+    terms = Dict(
       :Ob => (expr) -> WireTypes([first(expr)]),
       :Hom => (expr) -> WiringDiagram(expr),
     )

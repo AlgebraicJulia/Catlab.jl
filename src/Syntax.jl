@@ -366,20 +366,23 @@ several ways to specify this mapping:
   
   3. For each doctrine type (e.g., object and morphism), specify a function
      mapping generator terms of that type to an instance value, using the
-     `generator_terms` dictionary.
+     `terms` dictionary.
+
+The `terms` dictionary can also be used for special handling of non-generator
+expressions. One use case for this capability is defining forgetful functors,
+which map non-generators to generators.
 """
 function functor(types::Tuple, expr::BaseExpr;
-                 generators::Associative=Dict(),
-                 generator_terms::Associative=Dict())
+                 generators::Associative=Dict(), terms::Associative=Dict())
   # Special case: look up a specific generator.
   if head(expr) == :generator && haskey(generators, expr)
     return generators[expr]
   end
   
-  # Special case: look up a type of generator.
+  # Special case: look up by type of term (usually a generator).
   name = constructor_name(expr)
-  if head(expr) == :generator && haskey(generator_terms, name)
-    return generator_terms[name](expr)
+  if haskey(terms, name)
+    return terms[name](expr)
   end
   
   # Otherwise, we need to call a term constructor (possibly for a generator).
@@ -387,8 +390,7 @@ function functor(types::Tuple, expr::BaseExpr;
   term_args = []
   for arg in args(expr)
     if isa(arg, BaseExpr)
-      arg = functor(types, arg; generators=generators,
-                    generator_terms=generator_terms)
+      arg = functor(types, arg; generators=generators, terms=terms)
     end
     push!(term_args, arg)
   end
