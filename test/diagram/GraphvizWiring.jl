@@ -5,23 +5,26 @@ using Catlab.Doctrine
 using Catlab.Diagram
 import Catlab.Diagram: Graphviz
 
-is_digraph(obj) = isa(obj, Graphviz.Graph) && obj.directed
-
+function stmts(graph::Graphviz.Graph, stmt_type::Type)
+  [ stmt for stmt in graph.stmts if isa(stmt, stmt_type) ]
+end
 function stmts(graph::Graphviz.Graph, stmt_type::Type, attr::Symbol)
   [ stmt.attrs[attr] for stmt in graph.stmts
     if isa(stmt, stmt_type) && haskey(stmt.attrs, attr) ]
 end
 
 A, B = Ob(FreeSymmetricMonoidalCategory, :A, :B)
+I = munit(FreeSymmetricMonoidalCategory.Ob)
 f = WiringDiagram(Hom(:f, A, B))
 g = WiringDiagram(Hom(:g, B, A))
 
 graph = to_graphviz(f)
-@test is_digraph(graph)
+@test isa(graph, Graphviz.Graph) && graph.directed
 @test stmts(graph, Graphviz.Node, :id) == ["f"]
 @test stmts(graph, Graphviz.Edge, :id) == ["A","B"]
 @test stmts(graph, Graphviz.Edge, :label) == []
 @test stmts(graph, Graphviz.Edge, :xlabel) == []
+@test length(stmts(graph, Graphviz.Subgraph)) == 2
 
 graph = to_graphviz(f; labels=true)
 @test stmts(graph, Graphviz.Edge, :label) == ["A","B"]
@@ -31,12 +34,18 @@ graph = to_graphviz(f; labels=true, xlabel=true)
 @test stmts(graph, Graphviz.Edge, :label) == []
 @test stmts(graph, Graphviz.Edge, :xlabel) == ["A","B"]
 
+graph = to_graphviz(WiringDiagram(Hom(:h, I, A)))
+@test stmts(graph, Graphviz.Node, :id) == ["h"]
+@test length(stmts(graph, Graphviz.Subgraph)) == 1
+
+graph = to_graphviz(WiringDiagram(Hom(:h, I, I)))
+@test stmts(graph, Graphviz.Node, :id) == ["h"]
+@test length(stmts(graph, Graphviz.Subgraph)) == 0
+
 graph = to_graphviz(compose(f,g))
-@test is_digraph(graph)
 @test stmts(graph, Graphviz.Node, :id) == ["f","g"]
 
 graph = to_graphviz(otimes(f,g))
-@test is_digraph(graph)
 @test stmts(graph, Graphviz.Node, :id) == ["f","g"]
 
 end

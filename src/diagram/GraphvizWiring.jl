@@ -32,13 +32,17 @@ function to_graphviz(f::WiringDiagram;
     edge_attrs::Graphviz.Attributes=Graphviz.Attributes())::Graphviz.Graph
   
   # Nodes
-  stmts = Graphviz.Statement[
-    # Invisible nodes for incoming and outgoing wires.
-    port_nodes(input_id(f), length(input_types(f))),
-    port_nodes(output_id(f), length(output_types(f))),
-  ]
+  stmts = Graphviz.Statement[]
+  # Invisible nodes for incoming and outgoing wires.
+  n_inputs, n_outputs = length(input_types(f)), length(output_types(f))
+  if n_inputs > 0
+    push!(stmts, port_nodes(input_id(f), n_inputs))
+  end
+  if n_outputs > 0
+    push!(stmts, port_nodes(output_id(f), n_outputs))
+  end
+  # Visible nodes for boxes.
   for v in box_ids(f)
-    # Visible nodes for boxes.
     box = Wiring.box(f, v)
     node = Graphviz.Node("n$v", label=node_label(box), id=node_id(box))
     push!(stmts, node)
@@ -89,15 +93,20 @@ end
 """ Create an "HTML-like" label for the input or output ports of a box.
 """
 function ports_label(kind::PortKind, nports::Int)::Graphviz.Html
-  rows = join("""<TD HEIGHT="0" WIDTH="24" PORT="$(port_name(kind,i))"></TD>"""
-              for i in 1:nports)
+  cells = if nports > 0
+    join("""<TD HEIGHT="0" WIDTH="24" PORT="$(port_name(kind,i))"></TD>"""
+         for i in 1:nports)
+  else
+    """<TD HEIGHT="0" WIDTH="24"></TD>"""
+  end
   Graphviz.Html("""
-    <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0"><TR>$rows</TR></TABLE>""")
+    <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0"><TR>$cells</TR></TABLE>""")
 end
 
 """ Create invisible nodes for the input or output ports of an outer box.
 """
 function port_nodes(v::Int, nports::Int)::Graphviz.Subgraph
+  @assert nports > 0
   nodes = [ "n$(v)p$(i)" for i in 1:nports ]
   Graphviz.Subgraph(
     Graphviz.Edge(nodes),
