@@ -123,8 +123,8 @@ end
 
 """ Object in the category of wiring diagrams.
 """
-@auto_hash_equals struct WireTypes
-  types::Vector
+@auto_hash_equals struct WireTypes{WireType}
+  types::Vector{WireType}
 end
 Base.eachindex(A::WireTypes) = eachindex(A.types)
 Base.length(A::WireTypes) = length(A.types)
@@ -438,9 +438,9 @@ function WiringDiagram(inputs::ObExpr, outputs::ObExpr)
   WiringDiagram(collect_values(inputs), collect_values(outputs))
 end
 
-""" Create wiring diagram with a single morphism box.
+""" Create wiring diagram with a single box containing a morphism expression.
 """
-function WiringDiagram(f::HomExpr{:generator})
+function WiringDiagram(f::HomExpr)
   d = WiringDiagram(dom(f), codom(f))
   fv = add_box!(d, Box(f))
   add_wires!(d, ((input_id(d),i) => (fv,i) for i in eachindex(dom(d))))
