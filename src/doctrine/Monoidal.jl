@@ -15,6 +15,10 @@ signature for weak monoidal categories later.
     (A::Ob, B::Ob, C::Ob, D::Ob)
   munit()::Ob
   
+  # Convenience constructors
+  otimes(xs::Vararg{Ob}) = foldl(otimes, xs)
+  otimes(fs::Vararg{Hom}) = foldl(otimes, fs)
+  
   # Unicode syntax
   ⊗(A::Ob, B::Ob) = otimes(A, B)
   ⊗(f::Hom, g::Hom) = otimes(f, g)
@@ -22,9 +26,8 @@ signature for weak monoidal categories later.
   ⊗(fs::Vararg{Hom}) = otimes(fs...)
 end
 
-# Convenience constructors for monoidal category
+# Convenience constructors not requiring type dispatch
 otimes(xs::Vector) = foldl(otimes, xs)
-otimes(xs...) = foldl(otimes, xs)
 
 """ Collect generators of object in monoidal category as a vector.
 """

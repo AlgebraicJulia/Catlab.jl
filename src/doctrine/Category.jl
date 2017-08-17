@@ -19,14 +19,16 @@ This usage is too entrenched to overturn, however inconvenient it may be.
   id(A::Ob)::Hom(A,A)
   compose(f::Hom(A,B), g::Hom(B,C))::Hom(A,C) <= (A::Ob, B::Ob, C::Ob)
   
+  # Convenience constructors
+  compose(fs::Vararg{Hom}) = foldl(compose, fs)
+  
   # Unicode syntax
   ∘(f::Hom, g::Hom) = compose(g, f)
   ∘(fs::Vararg{Hom}) = foldl(∘, fs)
 end
 
-# Convenience constructors for category
+# Convenience constructors not requiring type dispatch
 compose(fs::Vector) = foldl(compose, fs)
-compose(fs...) = foldl(compose, fs)
 
 @syntax FreeCategory(ObExpr,HomExpr) Category begin
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
@@ -76,14 +78,17 @@ end
   compose2(α::Hom2(f,g), β::Hom2(h,k))::Hom2(compose(f,h),compose(g,k)) <=
     (A::Ob, B::Ob, C::Ob, f::Hom(A,B), g::Hom(A,B), h::Hom(B,C), k::Hom(B,C))
   
+  # Convenience constructors
+  compose(αs::Vararg{Hom2}) = foldl(compose, αs)
+  compose2(αs::Vararg{Hom2}) = foldl(compose2, αs)
+  
   # Unicode syntax
   ∘(α::Hom2, β::Hom2) = compose(β, α)
   ∘(αs::Vararg{Hom2}) = foldl(∘, αs)
 end
 
-# Convenience constructors for 2-category
+# Convenience constructors not requiring type dispatch
 compose2(αs::Vector) = foldl(compose2, αs)
-compose2(αs...) = foldl(compose2, αs)
 
 """ Syntax for a 2-category.
 
