@@ -3,6 +3,30 @@ module TestPresentation
 using Base.Test
 using Catlab, Catlab.Doctrine
 
+# Presentation
+##############
+
+A, B, C = Ob(FreeCategory, :A, :B, :C)
+f = Hom(:f, A, B)
+g = Hom(:g, B, C)
+
+# Generators
+pres = Presentation()
+add_generator!(pres, A)
+@test generators(pres) == [ A ]
+@test generator(pres, :A) == A
+add_generator!(pres, B)
+@test generators(pres) == [ A, B ]
+@test_throws Exception add_generator!(pres, A)
+
+add_generators!(pres, (f,g))
+@test generators(pres) == [ A, B, f, g ]
+@test generators(pres, FreeCategory.Ob) == [ A, B ]
+@test generators(pres, FreeCategory.Hom) == [ f, g ]
+
+# Presentation macro
+####################
+
 @present Company(FreeCategory) begin
   Employee::Ob
   Department::Ob
@@ -27,7 +51,7 @@ end
 
 # Check generators.
 Employee, Department, Str = Ob(FreeCategory, :Employee, :Department, :Str)
-@test collect(values(generators(Company))) == [
+@test collect(generators(Company)) == [
   Employee,
   Department,
   Str,

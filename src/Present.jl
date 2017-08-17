@@ -8,7 +8,8 @@ Presentations define small categories by generators and relations and are useful
 for applications like knowledge representation.
 """
 module Present
-export @present, Presentation, Equation, generators, equations
+export @present, Presentation, Equation, generator, generators, equations,
+  add_generator!, add_generators!, add_definition!, add_equation!
 
 import DataStructures: OrderedDict
 using Match
@@ -17,37 +18,45 @@ using ..Meta, ..Syntax
 # Data types
 ############
 
-const GeneratorExpr = BaseExpr{:generator}
+const GenExpr = BaseExpr{:generator}
 const Equation = Pair{<:BaseExpr}{<:BaseExpr}
 
 mutable struct Presentation
-  generators::OrderedDict{Symbol,GeneratorExpr}
+  generators::Vector{GenExpr}
+  generators_by_name::OrderedDict{Symbol,GenExpr}
   equations::Vector{Equation}
 end
-Presentation() = Presentation(OrderedDict{Symbol,GeneratorExpr}(), Equation[])
+Presentation() = Presentation(GenExpr[], OrderedDict{Symbol,GenExpr}(), Equation[])
+
 generators(pres::Presentation) = pres.generators
+generators(pres::Presentation, typ::Type) = 
+  filter(x -> isa(x,typ), pres.generators)
+generator(pres::Presentation, name::Symbol) = pres.generators_by_name[name]
 equations(pres::Presentation) = pres.equations
 
-# Presentations
-###############
-
-macro present(head, body)
-  name, syntax_name = @match head begin
-    Expr(:call, [name::Symbol, arg::Symbol], _) => (name, arg)
-    _ => throw(ParseError("Ill-formed presentation header $head"))
-  end
-  code = Expr(:(=), name, Expr(:let, translate_presentation(syntax_name, body)))
-  esc(code)
-end
+# Presentation
+##############
 
 """ Add a generator to a presentation.
 """
-function add_generator!(pres::Presentation, expr::GeneratorExpr)
+function add_generator!(pres::Presentation, expr::GenExpr)
   name = first(expr)
-  if haskey(pres.generators, name)
-    error("Name $name already defined in presentation")
+  if name != nothing
+    if haskey(pres.generators_by_name, name)
+      error("Name $name already defined in presentation")
+    end
+    pres.generators_by_name[name] = expr
   end
-  pres.generators[name] = expr
+  push!(pres.generators, expr)
+  return expr
+end
+
+""" Add multiple generators to a presentation.
+"""
+function add_generators!(pres::Presentation, exprs)
+  for expr in exprs
+    add_generator!(pres, expr)
+  end
 end
 
 """ Add an equation between terms to a presentation.
@@ -65,6 +74,20 @@ function add_definition!(pres::Presentation, name::Symbol, rhs::BaseExpr)
   return generator
 end
 
+# Presentation macro
+####################
+
+""" Define a presentation using a convenient syntax.
+"""
+macro present(head, body)
+  name, syntax_name = @match head begin
+    Expr(:call, [name::Symbol, arg::Symbol], _) => (name, arg)
+    _ => throw(ParseError("Ill-formed presentation header $head"))
+  end
+  code = Expr(:(=), name, Expr(:let, translate_presentation(syntax_name, body)))
+  esc(code)
+end
+
 """ Translate a presentation in the DSL to a block of Julia code.
 """
 function translate_presentation(syntax_name::Symbol, body::Expr)::Expr
@@ -77,7 +100,6 @@ function translate_presentation(syntax_name::Symbol, body::Expr)::Expr
   append_expr!(code, :(_presentation))
   return code
 end
-module_ref(sym::Symbol) = GlobalRef(Present, sym)
 
 """ Translate a single statement in the presentation DSL to Julia code.
 """
@@ -121,5 +143,7 @@ end
 function translate_equation(lhs, rhs)::Expr
   Expr(:call, module_ref(:add_equation!), :_presentation, lhs, rhs)
 end
+
+module_ref(sym::Symbol) = GlobalRef(Present, sym)
 
 end
