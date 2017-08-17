@@ -16,6 +16,11 @@ strip_all(expr) = strip_lines(expr, recurse=true)
 parse_fun(expr) = parse_function(strip_all(expr))
 @test (parse_fun(:(function f(x,y) x end)) == 
        JuliaFunction(:(f(x,y)), Nullable(), quote x end))
+@test parse_fun((quote
+  """ My docstring
+  """
+  function f(x,y) x end
+end).args[1]) == JuliaFunction(:(f(x,y)), Nullable(), quote x end)
 @test (parse_fun(:(function f(x::Int,y::Int)::Int x end)) == 
        JuliaFunction(:(f(x::Int,y::Int)), :Int, quote x end))
 @test (parse_fun(:(f(x,y) = x)) == 

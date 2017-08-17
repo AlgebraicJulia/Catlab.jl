@@ -1,7 +1,7 @@
 """ General-purpose tools for metaprogramming in Julia.
 """
 module Meta
-export Expr0, JuliaFunction, JuliaFunctionSig, parse_function,
+export Expr0, JuliaFunction, JuliaFunctionSig, parse_docstring, parse_function,
   parse_function_sig, generate_function, append_expr!, concat_expr,
   replace_symbols, strip_lines
 
@@ -31,9 +31,24 @@ end
 # Parsing Julia functions
 #########################
 
+""" Parse Julia expression that is (possibly) annotated with docstring.
+"""
+function parse_docstring(expr::Expr)
+  if expr.head == :macrocall && (
+      # XXX: It seems that the @doc macro can show up in two forms.
+      expr.args[1] == GlobalRef(Core, Symbol("@doc")) ||
+      expr.args[1] == Expr(:core, Symbol("@doc")))
+    (expr.args[2], expr.args[3])
+  else
+    (nothing, expr)
+  end
+end
+
 """ Parse Julia function definition into standardized form.
 """
 function parse_function(expr::Expr)::JuliaFunction
+  # FIXME: Don't discard this docstring: store it somewhere!
+  doc, expr = parse_docstring(expr)
   fun_expr, impl = @match expr begin
     Expr(:(=), args, _) => args
     Expr(:function, args, _) => args
@@ -109,7 +124,7 @@ end
 
 """ Replace symbols occurring anywhere in a Julia function (except the name).
 """
-function replace_symbols(bindings::Dict, f::JuliaFunction)::JuliaFunction
+function replace_symbols(bindings::Associative, f::JuliaFunction)::JuliaFunction
   JuliaFunction(
     Expr(f.call_expr.head, f.call_expr.args[1],
          (replace_symbols(bindings, a) for a in f.call_expr.args[2:end])...),
@@ -122,7 +137,7 @@ end
 
 """ Replace symbols occuring anywhere in a Julia expression.
 """
-function replace_symbols(bindings::Dict, expr)
+function replace_symbols(bindings::Associative, expr)
   recurse(expr) = replace_symbols(bindings, expr)
   @match expr begin
     Expr(head, args, _) => Expr(head, map(recurse,args)...)

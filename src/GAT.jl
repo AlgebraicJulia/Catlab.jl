@@ -181,10 +181,8 @@ function parse_signature_body(expr::Expr)
   @assert expr.head == :block
   types, terms, funs = OrderedDict(), [], []
   for elem in strip_lines(expr).args
-    if elem.head == :macrocall && elem.args[1] == Expr(:core, Symbol("@doc"))
-      # FIXME: Don't discard this docstring: store it somewhere!
-      doc, elem = elem.args[2:3]
-    end
+    # FIXME: Don't discard this docstring: store it somewhere!
+    doc, elem = parse_docstring(elem)
     if elem.head in (:(::), :call)
       cons = parse_constructor(elem)
       if isa(cons, TypeConstructor)
