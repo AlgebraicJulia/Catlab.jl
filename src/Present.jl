@@ -8,8 +8,8 @@ Presentations define small categories by generators and relations and are useful
 for applications like knowledge representation.
 """
 module Present
-export @present, Presentation, Equation, generator, generators, equations,
-  add_generator!, add_generators!, add_definition!, add_equation!
+export @present, Presentation, Equation, generator, generators, has_generator,
+  equations, add_generator!, add_generators!, add_definition!, add_equation!
 
 import DataStructures: OrderedDict
 using Match
@@ -34,12 +34,20 @@ generators(pres::Presentation, typ::Type) =
   filter(x -> isa(x,typ), pres.generators)
 equations(pres::Presentation) = pres.equations
 
+# Presentation
+##############
+
+""" Retrieve a generator by name.
+"""
 function generator{T}(pres::Presentation{T}, name)
   pres.generators_by_name[convert(T, name)]
 end
 
-# Presentation
-##############
+""" Does the presentation contain a generator with the given name?
+"""
+function has_generator{T}(pres::Presentation{T}, name)
+  haskey(pres.generators_by_name, convert(T, name))
+end
 
 """ Add a generator to a presentation.
 """

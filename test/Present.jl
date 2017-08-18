@@ -12,9 +12,11 @@ g = Hom(:g, B, C)
 
 # Generators
 pres = Presentation()
+@test !has_generator(pres, :A)
 add_generator!(pres, A)
 @test generators(pres) == [ A ]
 @test generator(pres, :A) == A
+@test has_generator(pres, :A)
 add_generator!(pres, B)
 @test generators(pres) == [ A, B ]
 @test_throws Exception add_generator!(pres, A)
