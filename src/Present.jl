@@ -21,27 +21,32 @@ using ..Meta, ..Syntax
 const GenExpr = BaseExpr{:generator}
 const Equation = Pair{<:BaseExpr}{<:BaseExpr}
 
-mutable struct Presentation
+mutable struct Presentation{T}
   generators::Vector{GenExpr}
-  generators_by_name::OrderedDict{Symbol,GenExpr}
+  generators_by_name::OrderedDict{T,GenExpr}
   equations::Vector{Equation}
 end
-Presentation() = Presentation(GenExpr[], OrderedDict{Symbol,GenExpr}(), Equation[])
+Presentation(T::Type) = Presentation{T}(GenExpr[], OrderedDict{T,GenExpr}(), Equation[])
+Presentation() = Presentation(Symbol)
 
 generators(pres::Presentation) = pres.generators
 generators(pres::Presentation, typ::Type) = 
   filter(x -> isa(x,typ), pres.generators)
-generator(pres::Presentation, name::Symbol) = pres.generators_by_name[name]
 equations(pres::Presentation) = pres.equations
+
+function generator{T}(pres::Presentation{T}, name)
+  pres.generators_by_name[convert(T, name)]
+end
 
 # Presentation
 ##############
 
 """ Add a generator to a presentation.
 """
-function add_generator!(pres::Presentation, expr::GenExpr)
+function add_generator!{T}(pres::Presentation{T}, expr::GenExpr)
   name = first(expr)
   if name != nothing
+    name = convert(T, name)
     if haskey(pres.generators_by_name, name)
       error("Name $name already defined in presentation")
     end
