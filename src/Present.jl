@@ -106,7 +106,9 @@ end
 function translate_expr(syntax_name::Symbol, expr::Expr)::Expr
   @match expr begin
     Expr(:(::), [name::Symbol, type_expr], _) =>
-      translate_generator(syntax_name, name, type_expr)
+      translate_generator(syntax_name, Nullable(name), type_expr)
+    Expr(:(::), [type_expr], _) =>
+      translate_generator(syntax_name, Nullable{Symbol}(), type_expr)
     Expr(:(:=), [name::Symbol, def_expr], _) =>
       translate_definition(name, def_expr)
     Expr(:(=), _, _) => expr
@@ -117,17 +119,21 @@ end
 
 """ Translate declaration of a generator.
 """
-function translate_generator(syntax_name::Symbol, name::Symbol, type_expr)::Expr
+function translate_generator(syntax_name::Symbol, name::Nullable{Symbol}, type_expr)::Expr
   type_name, args = @match type_expr begin
     sym::Symbol => (sym, [])
     Expr(:call, [sym::Symbol, args...], _) => (sym, args)
     _ => throw(ParseError("Ill-formed type expression $type_expr"))
   end
-  call_expr = Expr(:call, module_ref(:add_generator!),
+  call_expr = Expr(
+    :call, module_ref(:add_generator!),
     :_presentation,
     Expr(:call, GlobalRef(Syntax, :invoke_term),
-         syntax_name, QuoteNode(type_name), QuoteNode(name), args...))
-  :(const $name = $call_expr)
+         syntax_name,
+         QuoteNode(type_name),
+         isnull(name) ? :nothing : QuoteNode(get(name)),
+         args...))
+  isnull(name) ? call_expr : :(const $(get(name)) = $call_expr)
 end
 
 """ Translate definition of generator in terms of other generators.
