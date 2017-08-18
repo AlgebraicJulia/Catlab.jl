@@ -28,6 +28,7 @@ add_generators!(pres, (f,g))
 ####################
 
 @present Company(FreeCategory) begin
+  # Primitive concepts.
   Employee::Ob
   Department::Ob
   Str::Ob
@@ -38,13 +39,15 @@ add_generators!(pres, (f,g))
   works_in::Hom(Employee, Department)
   secretary::Hom(Department, Employee)
   
-  # Extra terminology.
-  boss := manager
+  # Defined concepts.
   second_level_manager := compose(manager, manager)
   third_level_manager := compose(manager, manager, manager)
   
+  # Abbreviations (no syntactic term for LHS).
+  boss = manager
+  
   # Managers work in the same department as their employees.
-  compose(manager, works_in) == works_in
+  compose(boss, works_in) == works_in
   # The secretary of a department works in that department.
   compose(secretary, works_in) == id(Department)
 end
@@ -60,7 +63,6 @@ Employee, Department, Str = Ob(FreeCategory, :Employee, :Department, :Str)
   Hom(:manager, Employee, Employee),
   Hom(:works_in, Employee, Department),
   Hom(:secretary, Department, Employee),
-  Hom(:boss, Employee, Employee),
   Hom(:second_level_manager, Employee, Employee),
   Hom(:third_level_manager, Employee, Employee),
 ]
@@ -70,7 +72,6 @@ manager = Hom(:manager, Employee, Employee)
 works_in = Hom(:works_in, Employee, Department)
 secretary = Hom(:secretary, Department, Employee)
 @test collect(equations(Company)) == Equation[
-  Hom(:boss, Employee, Employee) => manager,
   Hom(:second_level_manager, Employee, Employee) => compose(manager, manager),
   Hom(:third_level_manager, Employee, Employee) => compose(manager, manager, manager),
   compose(manager, works_in) => works_in,
