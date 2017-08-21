@@ -13,10 +13,10 @@ GraphML or translated into Graphviz or other declarative diagram languages.
 """
 module Wiring
 export AbstractBox, Box, WiringDiagram, Wire, WireTypes, WireTypeError, 
-  Port, PortKind, Input, Output, input_types, output_types, input_id, output_id,
-  boxes, box_ids, nboxes, nwires, box, wires, has_wire, wire_type, graph,
-  add_box!, add_boxes!, add_wire!, add_wires!, validate_wire_types,
-  rem_box!, rem_wire!, rem_wires!,
+  Port, PortKind, InputPort, OutputPort, input_types, output_types,
+  input_id, output_id, boxes, box_ids, nboxes, nwires, box, wires, has_wire,
+  wire_type, graph, add_box!, add_boxes!, add_wire!, add_wires!,
+  validate_wire_types, rem_box!, rem_wire!, rem_wires!,
   all_neighbors, neighbors, out_neighbors, in_neighbors, in_wires, out_wires,
   substitute!, to_wiring_diagram
 
@@ -35,7 +35,7 @@ import ..Networks: graph
 
 """ Kind of port: input or output.
 """
-@enum PortKind Input Output
+@enum PortKind InputPort OutputPort
 
 """ A port on a box to which wires can be connected.
 """
@@ -64,7 +64,7 @@ end
 Wire(value, src::Tuple{Int,PortKind,Int}, tgt::Tuple{Int,PortKind,Int}) =
   Wire(value, Port(src[1],src[2],src[3]), Port(tgt[1],tgt[2],tgt[3]))
 Wire(value, src::Tuple{Int,Int}, tgt::Tuple{Int,Int}) =
-  Wire(value, Port(src[1],Output,src[2]), Port(tgt[1],Input,tgt[2]))
+  Wire(value, Port(src[1],OutputPort,src[2]), Port(tgt[1],InputPort,tgt[2]))
 Wire(value, pair::Pair) = Wire(value, first(pair), last(pair))
 
 Wire(src::Port, tgt::Port) = Wire(nothing, src, tgt)
@@ -72,7 +72,7 @@ Wire(src::Tuple, tgt::Tuple) = Wire(nothing, src, tgt)
 Wire(pair::Pair) = Wire(nothing, first(pair), last(pair))
 
 function Base.show(io::IO, wire::Wire)
-  skip_kind = wire.source.kind == Output && wire.target.kind == Input
+  skip_kind = wire.source.kind == OutputPort && wire.target.kind == InputPort
   show_port = (io::IO, port::Port) -> begin
     if skip_kind
       print(io, "($(port.box),$(port.port))")
@@ -248,7 +248,7 @@ function wire_type(f::WiringDiagram, port::Port)
     output_types(f)[port.port]
   else
     box = Wiring.box(f, port.box)
-    types = port.kind == Input ? input_types(box) : output_types(box)
+    types = port.kind == InputPort ? input_types(box) : output_types(box)
     types[port.port]
   end
 end
@@ -404,19 +404,19 @@ function substitute_impl!(d::WiringDiagram, v::Int, sub::WiringDiagram)
     
     # Special case: wire from input port to output port.
     if wire.source.box == input_id(sub) && wire.target.box == output_id(sub)
-      for in_wire in in_wires(d, Port(v,Input,wire.source.port))
-        for out_wire in out_wires(d, Port(v,Output,wire.target.port))
+      for in_wire in in_wires(d, Port(v,InputPort,wire.source.port))
+        for out_wire in out_wires(d, Port(v,OutputPort,wire.target.port))
           add_wire!(d, Wire(in_wire.source, out_wire.target))
         end
       end
     # Special case: wire from input port to internal box.
     elseif wire.source.box == input_id(sub)
-      for in_wire in in_wires(d, Port(v,Input,wire.source.port))
+      for in_wire in in_wires(d, Port(v,InputPort,wire.source.port))
         add_wire!(d, Wire(in_wire.source, set_box(wire.target, tgt)))
       end  
     # Special case: wire from internal box to output port.
     elseif wire.target.box == output_id(sub)
-      for out_wire in out_wires(d, Port(v,Output,wire.target.port))
+      for out_wire in out_wires(d, Port(v,OutputPort,wire.target.port))
         add_wire!(d, Wire(set_box(wire.source, src), out_wire.target))
       end
     # Default case: wire between two internal boxes.

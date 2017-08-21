@@ -31,10 +31,10 @@ gv = add_box!(d, g)
 @test boxes(d) == [Box(f),Box(g)]
 
 # Operations on wires
-@test wire_type(d, Port(input_id(d),Output,1)) == :A
-@test wire_type(d, Port(output_id(d),Input,1)) == :C
-@test wire_type(d, Port(fv,Input,1)) == :A
-@test wire_type(d, Port(fv,Output,1)) == :B
+@test wire_type(d, Port(input_id(d),OutputPort,1)) == :A
+@test wire_type(d, Port(output_id(d),InputPort,1)) == :C
+@test wire_type(d, Port(fv,InputPort,1)) == :A
+@test wire_type(d, Port(fv,OutputPort,1)) == :B
 @test nwires(d) == 0
 @test !has_wire(d, fv, gv)
 @test !has_wire(d, (fv,1) => (gv,1))
@@ -56,8 +56,8 @@ add_wire!(d, (gv,1) => (output_id(d),1))
 @test neighbors(d, fv) == [gv]
 @test out_neighbors(d, fv) == [gv]
 @test in_neighbors(d, gv) == [fv]
-@test out_wires(d, Port(fv,Output,1)) == [ Wire((fv,1) => (gv,1)) ]
-@test in_wires(d, Port(gv,Input,1)) == [ Wire((fv,1) => (gv,1)) ]
+@test out_wires(d, Port(fv,OutputPort,1)) == [ Wire((fv,1) => (gv,1)) ]
+@test in_wires(d, Port(gv,InputPort,1)) == [ Wire((fv,1) => (gv,1)) ]
 rem_wires!(d, fv, gv)
 @test nwires(d) == 2
 @test !has_wire(d, fv, gv)

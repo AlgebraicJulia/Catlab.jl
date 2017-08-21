@@ -83,7 +83,8 @@ function write_graphml_node(xgraph::XMLElement, id::String, diagram::WiringDiagr
   in_id, out_id = input_id(diagram), output_id(diagram)
   node_id(port::Port) = port.box in (in_id, out_id) ? id : "$id:n$(port.box)"
   port_name(port::Port) = begin
-    is_input = port.box in (in_id, out_id) ? port.box == in_id : port.kind == Input
+    is_input = port.box in (in_id, out_id) ?
+      port.box == in_id : port.kind == InputPort
     is_input ? "in:$(port.port)" : "out:$(port.port)"
   end
   for wire in wires(diagram)
@@ -189,9 +190,9 @@ function read_graphml_node(state::ReadState, xnode::XMLElement)
   diagram = WiringDiagram(input_types, output_types)
   diagram_ports = Dict{Tuple{String,String},Port}()
   for (key, port_data) in ports
-    diagram_ports[key] = port_data.kind == Input ?
-      Port(input_id(diagram), Output, port_data.port) : 
-      Port(output_id(diagram), Input, port_data.port)
+    diagram_ports[key] = port_data.kind == InputPort ?
+      Port(input_id(diagram), OutputPort, port_data.port) : 
+      Port(output_id(diagram), InputPort, port_data.port)
   end
   
   # Read the node elements.
@@ -226,10 +227,10 @@ function read_graphml_ports(state::ReadState, xnode::XMLElement)
     is_input = parse(Bool, get_data(xport, "input"))
     if is_input
       push!(input_types, value)
-      ports[(xnode_id, xport_name)] = PortEdgeData(Input, length(input_types))
+      ports[(xnode_id, xport_name)] = PortEdgeData(InputPort, length(input_types))
     else
       push!(output_types, value)
-      ports[(xnode_id, xport_name)] = PortEdgeData(Output, length(output_types))
+      ports[(xnode_id, xport_name)] = PortEdgeData(OutputPort, length(output_types))
     end
   end
   (ports, input_types, output_types)

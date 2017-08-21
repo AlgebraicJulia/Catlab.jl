@@ -84,9 +84,9 @@ function node_label(box::Box)::Graphviz.Html
   nin, nout = length(input_types(box)), length(output_types(box))
   Graphviz.Html("""
     <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-    <TR><TD>$(ports_label(Input,nin))</TD></TR>
+    <TR><TD>$(ports_label(InputPort,nin))</TD></TR>
     <TR><TD BORDER="1" CELLPADDING="4">$(label(box))</TD></TR>
-    <TR><TD>$(ports_label(Output,nout))</TD></TR>
+    <TR><TD>$(ports_label(OutputPort,nout))</TD></TR>
     </TABLE>""")
 end
 
@@ -127,8 +127,8 @@ function port_nodes(v::Int, nports::Int)::Graphviz.Subgraph
   )
 end
 
-port_name(kind::PortKind, port::Int) = string(kind == Input ? "in" : "out", port)
-port_anchor(kind::PortKind) = kind == Input ? "n" : "s"
+port_name(kind::PortKind, port::Int) = string(kind == InputPort ? "in" : "out", port)
+port_anchor(kind::PortKind) = kind == InputPort ? "n" : "s"
 
 """ Create a label for the main content of a box.
 """
