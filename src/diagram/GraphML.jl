@@ -46,10 +46,10 @@ function write_graphml{BoxValue,WireValue,WireType}(
   # Add attribute keys (data declarations).
   xkey = new_child(xroot, "key")
   set_attributes(xkey, Pair[
-    "id" => "input",
+    "id" => "portkind",
     "for" => "port",
-    "attr.name" => "input",
-    "attr.type" => "boolean"
+    "attr.name" => "portkind",
+    "attr.type" => "string"
   ])
   write_graphml_keys(xroot, "node", BoxValue)
   write_graphml_keys(xroot, "edge", WireValue)
@@ -111,8 +111,8 @@ function write_graphml_ports(xnode::XMLElement, box::AbstractBox)
     set_attribute(xport, "name", "in:$i")
     
     xdata = new_child(xport, "data")
-    set_attribute(xdata, "key", "input")
-    set_content(xdata, string(true))
+    set_attribute(xdata, "key", "portkind")
+    set_content(xdata, "input")
     write_graphml_data(xport, wire_type)
   end
   for (i, wire_type) in enumerate(output_types(box))
@@ -120,8 +120,8 @@ function write_graphml_ports(xnode::XMLElement, box::AbstractBox)
     set_attribute(xport, "name", "out:$i")
     
     xdata = new_child(xport, "data")
-    set_attribute(xdata, "key", "input")
-    set_content(xdata, string(false))
+    set_attribute(xdata, "key", "portkind")
+    set_content(xdata, "output")
     write_graphml_data(xport, wire_type)
   end
 end
@@ -224,13 +224,15 @@ function read_graphml_ports(state::ReadState, xnode::XMLElement)
   for xport in xports
     xport_name = attribute(xport, "name")
     value = read_graphml_data(xport, state.WireType)
-    is_input = parse(Bool, get_data(xport, "input"))
-    if is_input
+    port_kind = get_data(xport, "portkind")
+    if port_kind == "input"
       push!(input_types, value)
       ports[(xnode_id, xport_name)] = PortEdgeData(InputPort, length(input_types))
-    else
+    elseif port_kind == "output"
       push!(output_types, value)
       ports[(xnode_id, xport_name)] = PortEdgeData(OutputPort, length(output_types))
+    else
+      error("Invalid port kind: $portkind")
     end
   end
   (ports, input_types, output_types)
