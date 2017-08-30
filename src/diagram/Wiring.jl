@@ -1,14 +1,28 @@
-""" Wiring diagram for monoidal categories.
+""" Generic data structure for wiring diagrams (aka, string diagrams).
 
-A wiring diagram a graphical representation of a morphism in a monoidal
-category. It is intermediate between a morphism (as an mathematical entity) and
-an expression in the textual syntax: a single morphism may be represented by
-many wiring diagrams, and a single wiring diagram may be represented by many
-syntactic expressions.
+A (directed) wiring diagram consists of a collection of boxes with input and
+output ports connected by wires. A box can be atomic (possessing no internal
+structure) or can itself be a wiring diagram. Thus, wiring diagrams can be
+nested recursively. Wiring diagrams are closely related to what the CS
+literature calls "directed graphs with ports" or more simply "port graphs". The
+main difference is that a wiring diagram has an "outer box": a wiring diagram
+has its own ports that can be connected to the ports of its boxes.
+
+Wiring diagrams are a graphical syntax for morphisms in a monoidal category.
+As mathematical objects, they are intermediate between morphisms (viewed
+abstractly) and expressions in the textual syntax: a single morphism may
+correspond to many wiring diagrams, and a single wiring diagram may correspond
+to many syntactic expressions. This module provides functions to translate
+syntactic expressions to wiring diagrams (TODO: and back again?).
+
+This module offers a generic data structure for wiring diagrams. Arbitrary data
+can be attached to the boxes, ports, and wires of a wiring diagram. There is a
+low-level interface for direct manipulation of boxes and wires and a high-level
+interface based on the theory of symmetric monoidal categories. 
 
 The wiring diagrams in this module are "abstract" in the sense that they cannot
 be directly rendered as raster or vector graphics. However, they form a useful
-intermediate representation that can be straightforwardly serialized into
+intermediate representation that can be straightforwardly serialized to and from
 GraphML or translated into Graphviz or other declarative diagram languages.
 """
 module Wiring
@@ -161,8 +175,8 @@ end
 
 """ Wiring diagram: morphism in the category of wiring diagrams.
 
-A wiring diagram is represented using the following data structures. A
-LightGraphs `DiGraph` stores the "skeleton" of the diagram: a simple directed
+The wiring diagram is implemented using the following internal data structures.
+A LightGraphs `DiGraph` stores the "skeleton" of the diagram: a simple directed
 graph with the boxes as vertices and with an edge between two vertices iff there
 is at least one wire between the corresponding boxes. There are two special
 vertices, accessible via `input_id` and `output_id`, representing the input and
