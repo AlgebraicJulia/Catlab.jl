@@ -56,7 +56,11 @@ function to_graphviz(f::WiringDiagram;
     Graphviz.NodeID("n$(p.box)", port_name(p.kind, p.port), port_anchor(p.kind))
   end
   for wire in wires(f)
-    port = port_value(f, wire)
+    # Use the port value to label the wire. We arbitrarily choose the target
+    # port. In a well-formed diagram, the source and target ports should
+    # yield the same label, but that is not guaranteed.
+    # FIXME: Should we start with the wire value instead, if present?
+    port = port_value(f, wire.target)
     attrs = Graphviz.Attributes(:id => edge_id(port))
     if labels
       attrs[xlabel ? :xlabel : :label] = edge_label(port)

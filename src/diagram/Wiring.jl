@@ -159,7 +159,7 @@ These boxes have no internal structure.
   output_ports::Vector
 end
 
-""" Morphism in the category of wiring diagrams.
+""" Wiring diagram: morphism in the category of wiring diagrams.
 
 A wiring diagram is represented using the following data structures. A
 LightGraphs `DiGraph` stores the "skeleton" of the diagram: a simple directed
@@ -252,11 +252,6 @@ function port_value(f::WiringDiagram, port::Port)
     ports[port.port]
   end
 end
-function port_value(f::WiringDiagram, wire::Wire)
-  @assert has_wire(f, wire)
-  port_value(f, wire.source) # == port_value(f, wire.target)
-end
-port_value(f, pair::Pair) = port_value(f, Wire(pair))
 
 # Graph mutation.
 

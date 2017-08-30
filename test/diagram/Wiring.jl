@@ -44,7 +44,6 @@ add_wire!(d, (gv,1) => (output_id(d),1))
 @test nwires(d) == 3
 @test has_wire(d, fv, gv)
 @test has_wire(d, (fv,1) => (gv,1))
-@test port_value(d, (fv,1) => (gv,1)) == :B
 @test_throws PortTypeError add_wire!(d, (gv,1) => (fv,1))
 @test wires(d) == map(Wire, [
   (input_id(d),1) => (fv,1),
