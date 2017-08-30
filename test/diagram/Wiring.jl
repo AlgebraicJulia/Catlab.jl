@@ -31,10 +31,10 @@ gv = add_box!(d, g)
 @test boxes(d) == [Box(f),Box(g)]
 
 # Operations on wires
-@test wire_type(d, Port(input_id(d),OutputPort,1)) == :A
-@test wire_type(d, Port(output_id(d),InputPort,1)) == :C
-@test wire_type(d, Port(fv,InputPort,1)) == :A
-@test wire_type(d, Port(fv,OutputPort,1)) == :B
+@test port_value(d, Port(input_id(d),OutputPort,1)) == :A
+@test port_value(d, Port(output_id(d),InputPort,1)) == :C
+@test port_value(d, Port(fv,InputPort,1)) == :A
+@test port_value(d, Port(fv,OutputPort,1)) == :B
 @test nwires(d) == 0
 @test !has_wire(d, fv, gv)
 @test !has_wire(d, (fv,1) => (gv,1))
@@ -44,8 +44,8 @@ add_wire!(d, (gv,1) => (output_id(d),1))
 @test nwires(d) == 3
 @test has_wire(d, fv, gv)
 @test has_wire(d, (fv,1) => (gv,1))
-@test wire_type(d, (fv,1) => (gv,1)) == :B
-@test_throws WireTypeError add_wire!(d, (gv,1) => (fv,1))
+@test port_value(d, (fv,1) => (gv,1)) == :B
+@test_throws PortTypeError add_wire!(d, (gv,1) => (fv,1))
 @test wires(d) == map(Wire, [
   (input_id(d),1) => (fv,1),
   (fv,1) => (gv,1),
@@ -108,7 +108,7 @@ g = WiringDiagram(Hom(:g,B,A))
 @test nboxes(f) == 1
 @test boxes(f) == [ Box(Hom(:f,A,B)) ]
 @test nwires(f) == 2
-@test WireTypes([:A]) == WireTypes([:A])
+@test Ports([:A]) == Ports([:A])
 @test WiringDiagram(Hom(:f,A,B)) == WiringDiagram(Hom(:f,A,B))
 
 # Composition
@@ -117,10 +117,10 @@ g = WiringDiagram(Hom(:g,B,A))
 @test nwires(compose(f,g)) == 3
 
 # Domains and codomains
-@test dom(f) == WireTypes([:A])
-@test codom(f) == WireTypes([:B])
-@test dom(compose(f,g)) == WireTypes([:A])
-@test codom(compose(f,g)) == WireTypes([:A])
+@test dom(f) == Ports([:A])
+@test codom(f) == Ports([:B])
+@test dom(compose(f,g)) == Ports([:A])
+@test codom(compose(f,g)) == Ports([:A])
 @test_throws Exception compose(f,f)
 
 # Associativity
@@ -138,8 +138,8 @@ g = WiringDiagram(Hom(:g,B,A))
 @test codom(otimes(f,g)) == otimes(codom(f),codom(g))
 
 # Associativity and unit
-X, Y = WireTypes([:A,:B]), WireTypes([:C,:D])
-I = munit(WireTypes)
+X, Y = Ports([:A,:B]), Ports([:C,:D])
+I = munit(Ports)
 @test otimes(X,I) == X
 @test otimes(I,X) == X
 @test otimes(otimes(X,Y),X) == otimes(X,otimes(Y,X))
@@ -164,13 +164,13 @@ add_wires!(d, [
 @test compose(mcopy(dom(f)), otimes(f,f)) == d
 
 # Domains and codomains
-@test dom(mcopy(WireTypes([:A]))) == WireTypes([:A])
-@test codom(mcopy(WireTypes([:A]))) == WireTypes([:A,:A])
-@test dom(mcopy(WireTypes([:A,:B]),3)) == WireTypes([:A,:B])
-@test codom(mcopy(WireTypes([:A,:B]),3)) == WireTypes([:A,:B,:A,:B,:A,:B])
+@test dom(mcopy(Ports([:A]))) == Ports([:A])
+@test codom(mcopy(Ports([:A]))) == Ports([:A,:A])
+@test dom(mcopy(Ports([:A,:B]),3)) == Ports([:A,:B])
+@test codom(mcopy(Ports([:A,:B]),3)) == Ports([:A,:B,:A,:B,:A,:B])
 
 # Associativity
-X = WireTypes([:A])
+X = Ports([:A])
 @test compose(mcopy(X), otimes(id(X),mcopy(X))) == mcopy(X,3)
 @test compose(mcopy(X), otimes(mcopy(X),id(X))) == mcopy(X,3)
 
@@ -184,13 +184,13 @@ X = WireTypes([:A])
 #------------
 
 # Domains and codomains
-@test dom(mmerge(WireTypes([:A]))) == WireTypes([:A,:A])
-@test codom(mmerge(WireTypes([:A]))) == WireTypes([:A])
-@test dom(mmerge(WireTypes([:A,:B]),3)) == WireTypes([:A,:B,:A,:B,:A,:B])
-@test codom(mmerge(WireTypes([:A,:B]),3)) == WireTypes([:A,:B])
+@test dom(mmerge(Ports([:A]))) == Ports([:A,:A])
+@test codom(mmerge(Ports([:A]))) == Ports([:A])
+@test dom(mmerge(Ports([:A,:B]),3)) == Ports([:A,:B,:A,:B,:A,:B])
+@test codom(mmerge(Ports([:A,:B]),3)) == Ports([:A,:B])
 
 # Associativity
-X = WireTypes([:A])
+X = Ports([:A])
 @test compose(otimes(id(X),mmerge(X)), mmerge(X)) == mmerge(X,3)
 @test compose(otimes(mmerge(X),id(X)), mmerge(X)) == mmerge(X,3)
 
@@ -209,6 +209,6 @@ fd, gd = WiringDiagram(f), WiringDiagram(g)
 @test to_wiring_diagram(f) == fd
 @test to_wiring_diagram(compose(f,g)) == compose(fd,gd)
 @test to_wiring_diagram(otimes(f,g)) == otimes(fd,gd)
-@test to_wiring_diagram(munit(FreeSymmetricMonoidalCategory.Ob)) == munit(WireTypes)
+@test to_wiring_diagram(munit(FreeSymmetricMonoidalCategory.Ob)) == munit(Ports)
 
 end

@@ -34,7 +34,7 @@ function to_graphviz(f::WiringDiagram;
   # Nodes
   stmts = Graphviz.Statement[]
   # Invisible nodes for incoming and outgoing wires.
-  n_inputs, n_outputs = length(input_types(f)), length(output_types(f))
+  n_inputs, n_outputs = length(input_ports(f)), length(output_ports(f))
   if n_inputs > 0
     push!(stmts, port_nodes(input_id(f), n_inputs))
   end
@@ -56,10 +56,10 @@ function to_graphviz(f::WiringDiagram;
     Graphviz.NodeID("n$(p.box)", port_name(p.kind, p.port), port_anchor(p.kind))
   end
   for wire in wires(f)
-    typ = wire_type(f, wire)
-    attrs = Graphviz.Attributes(:id => edge_id(typ))
+    port = port_value(f, wire)
+    attrs = Graphviz.Attributes(:id => edge_id(port))
     if labels
-      attrs[xlabel ? :xlabel : :label] = edge_label(typ)
+      attrs[xlabel ? :xlabel : :label] = edge_label(port)
     end
     edge = Graphviz.Edge(graphviz_port(wire.source),
                          graphviz_port(wire.target); attrs...)
@@ -81,7 +81,7 @@ end
 """ Create an "HTML-like" node label for a box.
 """
 function node_label(box::Box)::Graphviz.Html
-  nin, nout = length(input_types(box)), length(output_types(box))
+  nin, nout = length(input_ports(box)), length(output_ports(box))
   Graphviz.Html("""
     <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
     <TR><TD>$(ports_label(InputPort,nin))</TD></TR>
@@ -143,12 +143,12 @@ node_id(box::Box) = label(box)
 
 """ Create a label for an edge.
 """
-edge_label(wire_type::Any) = string(wire_type)
+edge_label(port_value::Any) = string(port_value)
 
-""" Create an identifier for a edge for downstream use.
+""" Create an identifier for an edge for downstream use.
 
 See also `node_id()`.
 """
-edge_id(wire_type::Any) = edge_label(wire_type)
+edge_id(port_value::Any) = edge_label(port_value)
 
 end

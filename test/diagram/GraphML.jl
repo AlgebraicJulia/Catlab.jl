@@ -6,8 +6,8 @@ using Catlab.Doctrine
 using Catlab.Diagram
 
 function roundtrip(f::WiringDiagram)
-  xdoc = write_graphml(Symbol, Void, Symbol, f)
-  read_graphml(Symbol, Void, Symbol, xdoc)
+  xdoc = write_graphml(Symbol, Symbol, Void, f)
+  read_graphml(Symbol, Symbol, Void, xdoc)
 end
 
 A, B, C = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C)

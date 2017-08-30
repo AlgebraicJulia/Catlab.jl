@@ -12,11 +12,11 @@ intermediate representation that can be straightforwardly serialized into
 GraphML or translated into Graphviz or other declarative diagram languages.
 """
 module Wiring
-export AbstractBox, Box, WiringDiagram, Wire, WireTypes, WireTypeError, 
-  Port, PortKind, InputPort, OutputPort, input_types, output_types,
+export AbstractBox, Box, WiringDiagram, Wire, Ports, PortTypeError, Port,
+  PortKind, InputPort, OutputPort, input_ports, output_ports, port_value,
   input_id, output_id, boxes, box_ids, nboxes, nwires, box, wires, has_wire,
-  wire_type, graph, add_box!, add_boxes!, add_wire!, add_wires!,
-  validate_wire_types, rem_box!, rem_wire!, rem_wires!,
+  graph, add_box!, add_boxes!, add_wire!, add_wires!, validate_ports,
+  rem_box!, rem_wire!, rem_wires!,
   all_neighbors, neighbors, out_neighbors, in_neighbors, in_wires, out_wires,
   substitute!, to_wiring_diagram
 
@@ -122,22 +122,22 @@ function from_edge_data(wire::WireEdgeData, edge::Edge)
        from_edge_data(wire.target, dst(edge)))
 end
 
-""" Object in the category of wiring diagrams.
+""" List of ports: object in the category of wiring diagrams.
 """
-@auto_hash_equals struct WireTypes{WireType}
-  types::Vector{WireType}
+@auto_hash_equals struct Ports{Value}
+  ports::Vector{Value}
 end
-Base.eachindex(A::WireTypes) = eachindex(A.types)
-Base.length(A::WireTypes) = length(A.types)
+Base.eachindex(A::Ports) = eachindex(A.ports)
+Base.length(A::Ports) = length(A.ports)
 
 """ Exception thrown when types of source and target ports are not equal.
 """
-struct WireTypeError <: Exception
-  source_type::Any
-  target_type::Any
+struct PortTypeError <: Exception
+  source_port::Any
+  target_port::Any
 end
-function Base.showerror(io::IO, exc::WireTypeError)
-  print(io, `Wire types $(exc.source_type) and $(exc.target_type) are not equal`)
+function Base.showerror(io::IO, exc::PortTypeError)
+  print(io, `Ports $(exc.source_port) and $(exc.target_port) are not compatible`)
 end
 
 """ Base type for any box (node) in a wiring diagram.
@@ -146,8 +146,8 @@ This type represents an arbitrary black box with inputs and outputs.
 """
 abstract type AbstractBox end
 
-input_types(box::AbstractBox)::Vector = box.input_types
-output_types(box::AbstractBox)::Vector = box.output_types
+input_ports(box::AbstractBox)::Vector = box.input_ports
+output_ports(box::AbstractBox)::Vector = box.output_ports
 
 """ An atomic box in a wiring diagram.
 
@@ -155,8 +155,8 @@ These boxes have no internal structure.
 """
 @auto_hash_equals struct Box{Value} <: AbstractBox
   value::Value
-  input_types::Vector
-  output_types::Vector
+  input_ports::Vector
+  output_ports::Vector
 end
 
 """ Morphism in the category of wiring diagrams.
@@ -176,20 +176,20 @@ property is used to store a list of wires between the source and target boxes.
 """
 mutable struct WiringDiagram <: AbstractBox
   network::DiNetwork{AbstractBox,Vector{WireEdgeData},Void}
-  input_types::Vector
-  output_types::Vector
+  input_ports::Vector
+  output_ports::Vector
   input_id::Int
   output_id::Int
   
-  function WiringDiagram(input_types::Vector, output_types::Vector)
+  function WiringDiagram(input_ports::Vector, output_ports::Vector)
     network = DiNetwork(AbstractBox, Vector{WireEdgeData})
-    diagram = new(network, input_types, output_types, 0, 0)
+    diagram = new(network, input_ports, output_ports, 0, 0)
     diagram.input_id = add_box!(diagram, diagram)
     diagram.output_id = add_box!(diagram, diagram)
     return diagram
   end
-  function WiringDiagram(inputs::WireTypes, outputs::WireTypes)
-    WiringDiagram(inputs.types, outputs.types)
+  function WiringDiagram(inputs::Ports, outputs::Ports)
+    WiringDiagram(inputs.ports, outputs.ports)
   end
 end
 input_id(diagram::WiringDiagram) = diagram.input_id
@@ -201,7 +201,7 @@ Warning: This method checks exact equality of the underlying graph
 representation, not mathematical equality which involves graph isomorphism.
 """
 function Base.:(==)(d1::WiringDiagram, d2::WiringDiagram)
-  (input_types(d1) == input_types(d2) && output_types(d1) == output_types(d2) &&
+  (input_ports(d1) == input_ports(d2) && output_ports(d1) == output_ports(d2) &&
    input_id(d1) == input_id(d2) && output_id(d1) == output_id(d2) &&
    graph(d1) == graph(d2) &&
    boxes(d1) == boxes(d2) && sort!(wires(d1)) == sort!(wires(d2)))
@@ -241,22 +241,22 @@ function has_wire(f::WiringDiagram, wire::Wire)
 end
 has_wire(f, pair::Pair) = has_wire(f, Wire(pair))
 
-function wire_type(f::WiringDiagram, port::Port)
+function port_value(f::WiringDiagram, port::Port)
   if port.box == input_id(f)
-    input_types(f)[port.port]
+    input_ports(f)[port.port]
   elseif port.box == output_id(f)
-    output_types(f)[port.port]
+    output_ports(f)[port.port]
   else
     box = Wiring.box(f, port.box)
-    types = port.kind == InputPort ? input_types(box) : output_types(box)
-    types[port.port]
+    ports = port.kind == InputPort ? input_ports(box) : output_ports(box)
+    ports[port.port]
   end
 end
-function wire_type(f::WiringDiagram, wire::Wire)
+function port_value(f::WiringDiagram, wire::Wire)
   @assert has_wire(f, wire)
-  wire_type(f, wire.source) # == wire_type(f, wire.target)
+  port_value(f, wire.source) # == port_value(f, wire.target)
 end
-wire_type(f, pair::Pair) = wire_type(f, Wire(pair))
+port_value(f, pair::Pair) = port_value(f, Wire(pair))
 
 # Graph mutation.
 
@@ -276,10 +276,8 @@ function rem_box!(f::WiringDiagram, v::Int)
 end
 
 function add_wire!(f::WiringDiagram, wire::Wire)
-  # Check for compatible types.
-  source_type = wire_type(f, wire.source)
-  target_type = wire_type(f, wire.target)
-  validate_wire_types(source_type, target_type)
+  # Check compatibility of port types.
+  validate_ports(port_value(f, wire.source), port_value(f, wire.target))
   
   # Add edge and edge properties.
   edge = Edge(wire.source.box, wire.target.box)
@@ -296,9 +294,9 @@ function add_wires!(f::WiringDiagram, wires)
   end
 end
 
-function validate_wire_types(source_type, target_type)
-  if source_type != target_type
-    throw(WireTypeError(source_type, target_type))
+function validate_ports(source_port, target_port)
+  if source_port != target_port
+    throw(PortTypeError(source_port, target_port))
   end
 end
 
@@ -430,7 +428,7 @@ end
 # High-level categorical interface
 ##################################
 
-""" Create box for a morphism generator.
+""" Create box for a morphism generator expression.
 """
 function Box(expr::HomExpr{:generator})
   Box(first(expr), collect_values(dom(expr)), collect_values(codom(expr)))
@@ -458,11 +456,11 @@ end
 Wiring diagrams also have *diagonals* and *codiagonals* (see extra methods),
 but we don't have doctrines for those yet.
 """
-@instance SymmetricMonoidalCategory(WireTypes, WiringDiagram) begin
-  dom(f::WiringDiagram) = WireTypes(f.input_types)
-  codom(f::WiringDiagram) = WireTypes(f.output_types)
+@instance SymmetricMonoidalCategory(Ports, WiringDiagram) begin
+  dom(f::WiringDiagram) = Ports(f.input_ports)
+  codom(f::WiringDiagram) = Ports(f.output_ports)
   
-  function id(A::WireTypes)
+  function id(A::Ports)
     f = WiringDiagram(A, A)
     add_wires!(f, ((input_id(f),i) => (output_id(f),i) for i in eachindex(A)))
     return f
@@ -485,8 +483,8 @@ but we don't have doctrines for those yet.
     return h
   end
   
-  otimes(A::WireTypes, B::WireTypes) = WireTypes([A.types; B.types])
-  munit(::Type{WireTypes}) = WireTypes([])
+  otimes(A::Ports, B::Ports) = Ports([A.ports; B.ports])
+  munit(::Type{Ports}) = Ports([])
   
   function otimes(f::WiringDiagram, g::WiringDiagram)
     h = WiringDiagram(otimes(dom(f),dom(g)), otimes(codom(f),codom(g)))
@@ -501,7 +499,7 @@ but we don't have doctrines for those yet.
     return h
   end
   
-  function braid(A::WireTypes, B::WireTypes)
+  function braid(A::Ports, B::Ports)
     h = WiringDiagram(otimes(A,B), otimes(B,A))
     m, n = length(A), length(B)
     add_wires!(h, ((input_id(h),i) => (output_id(h),i+n) for i in 1:m))
@@ -510,7 +508,7 @@ but we don't have doctrines for those yet.
   end
 end
 
-function mcopy(A::WireTypes, n::Int=2)::WiringDiagram
+function mcopy(A::Ports, n::Int=2)::WiringDiagram
   f = WiringDiagram(A, otimes([A for j in 1:n]))
   m = length(A)
   for j in 1:n
@@ -519,7 +517,7 @@ function mcopy(A::WireTypes, n::Int=2)::WiringDiagram
   return f
 end
 
-function mmerge(A::WireTypes, n::Int=2)::WiringDiagram
+function mmerge(A::Ports, n::Int=2)::WiringDiagram
   f = WiringDiagram(otimes([A for j in 1:n]), A)
   m = length(A)
   for j in 1:n
@@ -528,8 +526,8 @@ function mmerge(A::WireTypes, n::Int=2)::WiringDiagram
   return f
 end
 
-delete(A::WireTypes) = WiringDiagram(A, munit(WireTypes))
-create(A::WireTypes) = WiringDiagram(munit(WireTypes), A)
+delete(A::Ports) = WiringDiagram(A, munit(Ports))
+create(A::Ports) = WiringDiagram(munit(Ports), A)
 
 """ Convert a syntactic expression into a wiring diagram.
 
@@ -538,9 +536,9 @@ categories, possibly with diagonals and codiagonals. Thus, the doctrines of
 cartesian, cocartesian, and biproduct categories are supported.
 """
 function to_wiring_diagram(expr::CategoryExpr)
-  functor((WireTypes, WiringDiagram), expr;
+  functor((Ports, WiringDiagram), expr;
     terms = Dict(
-      :Ob => (expr) -> WireTypes([first(expr)]),
+      :Ob => (expr) -> Ports([first(expr)]),
       :Hom => (expr) -> WiringDiagram(expr),
     )
   )
