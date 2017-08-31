@@ -8,31 +8,42 @@ References:
 module GraphML
 export read_graphml, write_graphml
 
+using DataStructures: OrderedDict
 using LightXML
 using ..Wiring
 import ..Wiring: PortEdgeData
 
-const graphml_attribute_types = Dict(
-  Bool => "boolean",
-  Int32 => "int",
-  Int64 => "int",
-  Float32 => "double",
-  Float64 => "double",
-  String => "string",
-  Symbol => "string",
-)
+# Data types
+############
+
+struct GraphMLKey
+  id::String
+  attr_name::String
+  attr_type::String
+  scope::String
+  default::Nullable{Any}
+end
+GraphMLKey(id::String, attr_name::String, attr_type::String, scope::String) =
+  GraphMLKey(id, attr_name, attr_type, scope, Nullable{Any}())
+
+struct WriteState
+  keys::OrderedDict{Tuple{String,String},GraphMLKey}
+  WriteState() = new(OrderedDict{Tuple{String,String},GraphMLKey}())
+end
+
+struct ReadState
+  keys::OrderedDict{String,GraphMLKey}
+  BoxValue::Type
+  PortValue::Type
+  WireValue::Type
+end
 
 # Serialization
 ###############
 
 """ Serialize a wiring diagram to GraphML.
 """
-function write_graphml{BoxValue,PortValue,WireValue}(
-    ::Type{BoxValue}, ::Type{PortValue}, ::Type{WireValue},
-    diagram::WiringDiagram)::XMLDocument
-  # FIXME: The type parameters should be attached to `WiringDiagram`,
-  # not this method, but that change will require some effort.
-  
+function write_graphml(diagram::WiringDiagram)::XMLDocument
   # Create XML document.
   xdoc = XMLDocument()
   finalizer(xdoc, free) # Destroy all children when document is GC-ed.
@@ -43,40 +54,38 @@ function write_graphml{BoxValue,PortValue,WireValue}(
     "xsi:schemaLocation" => "http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd"
   ])
   
-  # Add attribute keys (data declarations).
-  xkey = new_child(xroot, "key")
-  set_attributes(xkey, Pair[
-    "id" => "portkind",
-    "for" => "port",
-    "attr.name" => "portkind",
-    "attr.type" => "string"
-  ])
-  write_graphml_keys(xroot, "node", BoxValue)
-  write_graphml_keys(xroot, "edge", WireValue)
-  write_graphml_keys(xroot, "port", PortValue)
-  
-  # Add top-level graph element.
-  xgraph = new_child(xroot, "graph")
+  # Create top-level graph element.
+  xgraph = new_element("graph")
   set_attribute(xgraph, "edgedefault", "directed")
   
   # Recursively create nodes.
-  write_graphml_node(xgraph, "n", diagram)
+  state = WriteState()
+  write_graphml_node(state, xgraph, "n", diagram)
+  
+  # Add attribute keys (data declarations). The keys are collected while
+  # writing the nodes and are stored in the state object.
+  for key in values(state.keys)
+    write_graphml_key(xroot, key)
+  end
+  
+  add_child(xroot, xgraph)
   return xdoc
 end
 
-function write_graphml_node(xgraph::XMLElement, id::String, diagram::WiringDiagram)
+function write_graphml_node(
+    state::WriteState, xgraph::XMLElement, id::String, diagram::WiringDiagram)
   # Create node element for wiring diagram and graph subelement to contain 
   # boxes and wires.
   xnode = new_child(xgraph, "node")
   set_attribute(xnode, "id", id)
-  write_graphml_ports(xnode, diagram)
+  write_graphml_ports(state, xnode, diagram)
   
   xsubgraph = new_child(xnode, "graph")
   set_attribute(xsubgraph, "id", "$id:")
   
   # Add node elements for boxes.
   for v in box_ids(diagram)
-    write_graphml_node(xsubgraph, "$id:n$v", box(diagram, v))
+    write_graphml_node(state, xsubgraph, "$id:n$v", box(diagram, v))
   end
   
   # Add edge elements for wires.
@@ -95,63 +104,82 @@ function write_graphml_node(xgraph::XMLElement, id::String, diagram::WiringDiagr
       "target"     => node_id(wire.target),
       "targetport" => port_name(wire.target),
     ])
-    write_graphml_data(xedge, wire.value)
+    write_graphml_data(state, xedge, "edge", wire.value)
   end
 end
-function write_graphml_node(xgraph::XMLElement, id::String, box::Box)
+
+function write_graphml_node(state::WriteState, xgraph::XMLElement, id::String, box::Box)
   xnode = new_child(xgraph, "node")
   set_attribute(xnode, "id", id)
-  write_graphml_data(xnode, box.value)
-  write_graphml_ports(xnode, box)
+  write_graphml_data(state, xnode, "node", box.value)
+  write_graphml_ports(state, xnode, box)
 end
 
-function write_graphml_ports(xnode::XMLElement, box::AbstractBox)
+function write_graphml_ports(state::WriteState, xnode::XMLElement, box::AbstractBox)
+  # Write input ports.
   for (i, port) in enumerate(input_ports(box))
     xport = new_child(xnode, "port")
     set_attribute(xport, "name", "in:$i")
-    
-    xdata = new_child(xport, "data")
-    set_attribute(xdata, "key", "portkind")
-    set_content(xdata, "input")
-    write_graphml_data(xport, port)
+    write_graphml_data(state, xport, "port", Dict("portkind" => "input"))
+    write_graphml_data(state, xport, "port", port)
   end
+  # Write output ports.
   for (i, port) in enumerate(output_ports(box))
     xport = new_child(xnode, "port")
     set_attribute(xport, "name", "out:$i")
-    
-    xdata = new_child(xport, "data")
-    set_attribute(xdata, "key", "portkind")
-    set_content(xdata, "output")
-    write_graphml_data(xport, port)
+    write_graphml_data(state, xport, "port", Dict("portkind" => "output"))
+    write_graphml_data(state, xport, "port", port)
   end
 end
 
-function write_graphml_keys(xroot::XMLElement, domain::String, typ::Type)
+function write_graphml_key(xroot::XMLElement, key::GraphMLKey)
   xkey = new_child(xroot, "key")
   set_attributes(xkey, Pair[
-    "id" => "value",
-    "for" => domain,
-    "attr.name" => "value",
-    "attr.type" => graphml_attribute_types[typ]
+    "id" => key.id,
+    "for" => key.scope,
+    "attr.name" => key.attr_name,
+    "attr.type" => key.attr_type,
   ])
+  if !isnull(key.default)
+    xdefault = new_child(xkey, "default")
+    set_content(xdefault, write_graphml_data_value(get(key.default)))
+  end
 end
-write_graphml_keys(xgraph::XMLElement, domain::String, ::Type{Void}) = nothing
 
-function write_graphml_data(xelem::XMLElement, value)
-  xdata = new_child(xelem, "data")
-  set_attribute(xdata, "key", "value")
-  set_content(xdata, string(value))
+function write_graphml_data(state::WriteState, xelem::XMLElement, scope::String, value)
+  data = convert_to_graphml_data(value)
+  for (attr_name, attr_value) in data
+    # Retrieve or create key from state object.
+    key = get!(state.keys, (attr_name, scope)) do
+      nkeys = length(state.keys)
+      id = "d$(nkeys+1)"
+      attr_type = write_graphml_data_type(typeof(attr_value))
+      GraphMLKey(id, attr_name, attr_type, scope)
+    end
+    
+    # Write attribute data to <key> element.
+    xdata = new_child(xelem, "data")
+    set_attribute(xdata, "key", key.id)
+    set_content(xdata, write_graphml_data_value(attr_value))
+  end
 end
-write_graphml_data(xelem::XMLElement, value::Void) = nothing
+
+write_graphml_data_type(::Type{Bool}) = "boolean"
+write_graphml_data_type(::Type{<:Integer}) = "integer"
+write_graphml_data_type(::Type{<:Real}) = "double"
+write_graphml_data_type(::Type{String}) = "string"
+write_graphml_data_type(::Type{Symbol}) = "string"
+
+write_graphml_data_value(x::Number) = string(x)
+write_graphml_data_value(x::String) = x
+write_graphml_data_value(x::Symbol) = string(x)
+
+convert_to_graphml_data{T}(value::Dict{String,T}) = value
+convert_to_graphml_data(value) = Dict("value" => value)
+convert_to_graphml_data(::Void) = Dict()
 
 # Deserialization
 #################
-
-struct ReadState
-  BoxValue::Type
-  PortValue::Type
-  WireValue::Type
-end
 
 """ Deserialize a wiring diagram from GraphML.
 """
@@ -167,7 +195,8 @@ function read_graphml{BoxValue,PortValue,WireValue}(
   @assert length(xnodes) == 1 "Root graph of GraphML document must contain exactly one <node>"
   xnode = xnodes[1]
   
-  state = ReadState(BoxValue, PortValue, WireValue)
+  keys = read_graphml_keys(xroot)
+  state = ReadState(keys, BoxValue, PortValue, WireValue)
   diagram, ports = read_graphml_node(state, xnode)
   return diagram
 end
@@ -181,7 +210,8 @@ function read_graphml_node(state::ReadState, xnode::XMLElement)
   if length(xgraphs) > 1
     error("Node element can contain at most one <graph> (subgraph element)")
   elseif isempty(xgraphs)
-    value = read_graphml_data(xnode, state.BoxValue)
+    data = read_graphml_data(state, xnode)
+    value = convert_from_graphml_data(state.BoxValue, data)
     return (Box(value, input_ports, output_ports), ports)
   end
   xgraph = xgraphs[1] 
@@ -206,7 +236,8 @@ function read_graphml_node(state::ReadState, xnode::XMLElement)
   
   # Read the edge elements.
   for xedge in xgraph["edge"]
-    value = read_graphml_data(xedge, state.WireValue)
+    data = read_graphml_data(state, xedge)
+    value = convert_from_graphml_data(state.WireValue, data)
     xsource = (attribute(xedge, "source"), attribute(xedge, "sourceport"))
     xtarget = (attribute(xedge, "target"), attribute(xedge, "targetport"))
     source, target = diagram_ports[xsource], diagram_ports[xtarget]
@@ -223,8 +254,9 @@ function read_graphml_ports(state::ReadState, xnode::XMLElement)
   xports = xnode["port"]
   for xport in xports
     xport_name = attribute(xport, "name")
-    value = read_graphml_data(xport, state.PortValue)
-    port_kind = get_data(xport, "portkind")
+    data = read_graphml_data(state, xport)
+    port_kind = pop!(data, "portkind")
+    value = convert_from_graphml_data(state.PortValue, data)
     if port_kind == "input"
       push!(input_ports, value)
       ports[(xnode_id, xport_name)] = PortEdgeData(InputPort, length(input_ports))
@@ -238,17 +270,57 @@ function read_graphml_ports(state::ReadState, xnode::XMLElement)
   (ports, input_ports, output_ports)
 end
 
-function read_graphml_data(xelem::XMLElement, Value::Type)
-  parse(Value, get_data(xelem, "value"))
+function read_graphml_keys(xroot::XMLElement)
+  keys = OrderedDict{String,GraphMLKey}()
+  for xkey in xroot["key"]
+    # Read attribute ID, name, type, and scope.
+    attrs = attributes_dict(xkey)
+    id = attrs["id"]
+    attr_name = attrs["attr.name"]
+    attr_type = get(attrs, "attr.type", "string")
+    scope = get(attrs, "for", "all")
+    
+    # Read attribute default value.
+    xdefaults = xkey["default"]
+    default = if isempty(xdefaults)
+      Nullable{Any}()
+    else
+      @assert length(xdefaults) == 1 "GraphML key can have at most one <default>"
+      xdefault = xdefaults[1]
+      Nullable(read_graphml_data_value(Val{Symbol(attr_type)}, content(xdefault)))
+    end
+    
+    keys[id] = GraphMLKey(id, attr_name, attr_type, scope, default)
+  end
+  keys
 end
-read_graphml_data(xelem::XMLElement, ::Type{String}) = get_data(xelem, "value")
-read_graphml_data(xelem::XMLElement, ::Type{Symbol}) = Symbol(get_data(xelem, "value"))
-read_graphml_data(xelem::XMLElement, ::Type{Void}) = nothing
 
-function get_data(xelem::XMLElement, key::String)::String
-  xdata = [ x for x in xelem["data"] if attribute(x,"key") == key ]
-  @assert length(xdata) == 1 "Element must contain exactly one <data> with key=\"$key\""
-  return content(xdata[1])
+function read_graphml_data(state::ReadState, xelem::XMLElement)
+  # FIXME: We are not using the default values for the keys.
+  data = Dict{String,Any}()
+  for xdata in xelem["data"]
+    key = state.keys[attribute(xdata, "key")]
+    data[key.attr_name] = read_graphml_data_value(
+      Val{Symbol(key.attr_type)}, content(xdata))
+  end
+  data
+end
+
+read_graphml_data_value(::Type{Val{:boolean}}, s::String) = parse(Bool, s)
+read_graphml_data_value(::Type{Val{:int}}, s::String) = parse(Int, s)
+read_graphml_data_value(::Type{Val{:double}}, s::String) = parse(Float64, s)
+read_graphml_data_value(::Type{Val{:string}}, s::String) = s
+
+convert_from_graphml_data(::Type{Dict}, data::Dict) = data
+convert_from_graphml_data(::Type{Void}, data::Dict) = nothing
+
+function convert_from_graphml_data(Value::Type, data::Dict)
+  @assert length(data) == 1
+  first(values(data))::Value
+end
+function convert_from_graphml_data(::Type{Symbol}, data::Dict)
+  @assert length(data) == 1
+  Symbol(first(values(data)))
 end
 
 end
