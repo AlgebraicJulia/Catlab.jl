@@ -189,17 +189,17 @@ graph/vertex/edge properties ala NetworkX in Python.) For each edge, an edge
 property is used to store a list of wires between the source and target boxes.
 """
 mutable struct WiringDiagram <: AbstractBox
-  network::DiNetwork{AbstractBox,Vector{WireEdgeData},Void}
+  network::DiNetwork{Nullable{<:AbstractBox},Vector{WireEdgeData},Void}
   input_ports::Vector
   output_ports::Vector
   input_id::Int
   output_id::Int
   
   function WiringDiagram(input_ports::Vector, output_ports::Vector)
-    network = DiNetwork(AbstractBox, Vector{WireEdgeData})
+    network = DiNetwork(Nullable{<:AbstractBox}, Vector{WireEdgeData})
     diagram = new(network, input_ports, output_ports, 0, 0)
-    diagram.input_id = add_box!(diagram, diagram)
-    diagram.output_id = add_box!(diagram, diagram)
+    diagram.input_id = add_vertex!(network, Nullable{AbstractBox}())
+    diagram.output_id = add_vertex!(network, Nullable{AbstractBox}())
     return diagram
   end
   function WiringDiagram(inputs::Ports, outputs::Ports)
@@ -226,7 +226,7 @@ end
 
 # Basic accessors.
 
-box(f::WiringDiagram, v::Int) = getprop(f.network, v)
+box(f::WiringDiagram, v::Int) = get(getprop(f.network, v))
 boxes(f::WiringDiagram) = [ box(f,v) for v in box_ids(f) ]
 nboxes(f::WiringDiagram) = nv(graph(f)) - 2
 
@@ -270,7 +270,7 @@ end
 # Graph mutation.
 
 function add_box!(f::WiringDiagram, box::AbstractBox)
-  add_vertex!(f.network, box)
+  add_vertex!(f.network, Nullable(box))
 end
 
 function add_boxes!(f::WiringDiagram, boxes)

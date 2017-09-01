@@ -13,8 +13,8 @@ g = Hom(:g, B, C)
 
 d = WiringDiagram(A, C)
 @test nboxes(d) == 0
-@test box(d,input_id(d)) == d
-@test box(d,output_id(d)) == d
+@test_throws NullException box(d,input_id(d))
+@test_throws NullException box(d,output_id(d))
 
 # Operations on boxes
 fv = add_box!(d, f)
