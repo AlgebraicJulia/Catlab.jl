@@ -72,21 +72,21 @@ function to_tikz(f::HomExpr;
     :sequence_sep => sequence_sep, :parallel_sep => parallel_sep,
   )
   
-  # Draw input and output arrows by adding identities on either side of f. 
-  f_ext = f
+  # Draw input and output arrows by composing identities on either side of f. 
+  f_seq = collect(HomExpr, head(f) == :compose ? args(f) : [f])
   if head(f) == :id
-    f_ext = compose(id(dom(f)), f_ext)
+    insert!(f_seq, 1, id(dom(f)))
   else
     if head(dom(f)) != :munit
-      f_ext = compose(id(dom(f)), f_ext)
+      insert!(f_seq, 1, id(dom(f)))
     end
     if head(codom(f)) != :munit
-      f_ext = compose(f_ext, id(codom(f)))
+      push!(f_seq, id(codom(f)))
     end
   end
   
   # Create node for extended morphism.
-  box_tikz = box("n", f_ext)
+  box_tikz = length(f_seq) == 1 ? box("n", first(f_seq)) : sequence("n", f_seq)
   
   # Create picture with this single node.
   props = [
