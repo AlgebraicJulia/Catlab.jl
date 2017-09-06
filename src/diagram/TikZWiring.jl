@@ -110,11 +110,15 @@ end
 
 """ Create wires for an object expression.
 """
-function wires(A::ObExpr)::Wires end
+function wires(A::ObExpr)::Wires
+  error("TikZ wires not implement for $(typeof(A))")
+end
 
 """ Create box for a morphism expression.
 """
-function box(name::String, f::HomExpr)::Box end
+function box(name::String, f::HomExpr)::Box
+  error("TikZ box not implement for $(typeof(f))")
+end
 
 # Elements of wiring diagrams
 #############################
