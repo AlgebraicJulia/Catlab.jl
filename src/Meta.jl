@@ -144,6 +144,7 @@ function replace_symbols(bindings::Associative, f::JuliaFunction)::JuliaFunction
       replace_symbols(bindings, get(f.return_type)),
     isnull(f.impl) ? Nullable() :
       replace_symbols(bindings, get(f.impl)),
+    f.doc
   )
 end
 
