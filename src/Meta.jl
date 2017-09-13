@@ -17,9 +17,11 @@ const Expr0 = Union{Symbol,Expr}
   call_expr::Expr
   return_type::Nullable{Expr0}
   impl::Nullable{Expr}
+  doc::Nullable{String}
   
-  function JuliaFunction(call_expr, return_type=Nullable(), impl=Nullable()) 
-    new(call_expr, return_type, impl)
+  function JuliaFunction(call_expr::Expr, return_type=Nullable(),
+                         impl=Nullable(), doc=Nullable())
+    new(call_expr, return_type, impl, doc)
   end
 end
 
@@ -33,21 +35,20 @@ end
 
 """ Parse Julia expression that is (possibly) annotated with docstring.
 """
-function parse_docstring(expr::Expr)
+function parse_docstring(expr::Expr)::Tuple{Nullable{String},Expr}
   if expr.head == :macrocall && (
       # XXX: It seems that the @doc macro can show up in two forms.
       expr.args[1] == GlobalRef(Core, Symbol("@doc")) ||
       expr.args[1] == Expr(:core, Symbol("@doc")))
-    (expr.args[2], expr.args[3])
+    (Nullable(expr.args[2]), expr.args[3])
   else
-    (nothing, expr)
+    (Nullable{String}(), expr)
   end
 end
 
 """ Parse Julia function definition into standardized form.
 """
 function parse_function(expr::Expr)::JuliaFunction
-  # FIXME: Don't discard this docstring: store it somewhere!
   doc, expr = parse_docstring(expr)
   fun_expr, impl = @match expr begin
     Expr(:(=), args, _) => args
@@ -56,9 +57,9 @@ function parse_function(expr::Expr)::JuliaFunction
   end
   @match fun_expr begin
     (Expr(:(::), [Expr(:call, args, _), return_type], _) => 
-      JuliaFunction(Expr(:call, args...), return_type, impl))
+      JuliaFunction(Expr(:call, args...), return_type, impl, doc))
     (Expr(:call, args, _) =>
-      JuliaFunction(Expr(:call, args...), Nullable(), impl))
+      JuliaFunction(Expr(:call, args...), Nullable(), impl, doc))
     _ => throw(ParseError("Ill-formed function header $fun_expr"))
   end
 end
@@ -94,7 +95,13 @@ function generate_function(fun::JuliaFunction)::Expr
     impl = get(fun.impl)
     body = impl.head == :block ? impl : Expr(:block, impl)
   end
-  Expr(:function, head, body)
+  
+  # Create function definition expression, possibly with docstring.
+  expr = Expr(:function, head, body)
+  if !isnull(fun.doc)
+    expr = Expr(:macrocall, GlobalRef(Core, Symbol("@doc")), get(fun.doc), expr)
+  end
+  expr
 end
 
 # Operations on Julia expressions
