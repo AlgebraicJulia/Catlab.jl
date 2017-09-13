@@ -179,7 +179,9 @@ end
 """
 function parse_signature_body(expr::Expr)
   @assert expr.head == :block
-  types, terms, funs = OrderedDict(), [], []
+  types = OrderedDict{Symbol,TypeConstructor}()
+  terms = TermConstructor[]
+  funs = JuliaFunction[]
   for elem in strip_lines(expr).args
     # FIXME: Don't discard this docstring: store it somewhere!
     doc, elem = parse_docstring(elem)
@@ -189,9 +191,11 @@ function parse_signature_body(expr::Expr)
         if haskey(types, cons.name)
           throw(ParseError("Duplicate type constructor $elem"))
         else
-          types[cons.name] = cons end
+          types[cons.name] = cons
+        end
       else
-        push!(terms, cons) end
+        push!(terms, cons)
+      end
     elseif elem.head in (:(=), :function)
       push!(funs, parse_function(elem))
     else
@@ -317,24 +321,25 @@ function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor}
   end
   
   # Allow abbreviated syntax where tail of context is included in parameters.
-  function parse_params(params)::Vector{Symbol}
-    [ @match param begin
-        Expr(:(::), [name::Symbol, typ], _) => begin
-          push_context!(context, name, parse_raw_expr(typ))
-          name
-        end
-        name::Symbol => name
-        _ => throw(ParseError("Ill-formed type/term parameter $param"))
-      end for param in params ]
+  function parse_param(param::Expr0)::Symbol
+    @match param begin
+      Expr(:(::), [name::Symbol, typ], _) => begin
+        push_context!(context, name, parse_raw_expr(typ))
+        name
+      end
+      name::Symbol => name
+      _ => throw(ParseError("Ill-formed type/term parameter $param"))
+    end
   end
   
   @match cons_expr begin
     (Expr(:(::), [name::Symbol, :TYPE], _)
       => TypeConstructor(name, [], context))
     (Expr(:(::), [Expr(:call, [name::Symbol, params...], _), :TYPE], _)
-      => TypeConstructor(name, parse_params(params), context))
+      => TypeConstructor(name, map(parse_param, params), context))
     (Expr(:(::), [Expr(:call, [name::Symbol, params...], _), typ], _)
-      => TermConstructor(name, parse_params(params), parse_raw_expr(typ), context))
+      => TermConstructor(name, map(parse_param, params), parse_raw_expr(typ),
+                         context))
     _ => throw(ParseError("Ill-formed type/term constructor $cons_expr"))
   end
 end
