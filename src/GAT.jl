@@ -45,6 +45,12 @@ const Context = OrderedDict{Symbol,Expr0}
   name::Symbol
   params::Vector{Symbol}
   context::Context
+  doc::Nullable{String}
+  
+  function TypeConstructor(name::Symbol, params::Vector,
+                           context::Context, doc=Nullable{String}())
+    new(name, params, context, doc)
+  end
 end
 
 """ Term constructor in a GAT.
@@ -54,6 +60,12 @@ end
   params::Vector{Symbol}
   typ::Expr0
   context::Context
+  doc::Nullable{String}
+  
+  function TermConstructor(name::Symbol, params::Vector, typ::Expr0,
+                           context::Context, doc=Nullable{String}())
+    new(name, params, typ, context, doc)
+  end
 end
 
 """ Signature for a generalized algebraic theory (GAT).
@@ -183,9 +195,8 @@ function parse_signature_body(expr::Expr)
   terms = TermConstructor[]
   funs = JuliaFunction[]
   for elem in strip_lines(expr).args
-    # FIXME: Don't discard this docstring: store it somewhere!
-    doc, elem = parse_docstring(elem)
-    if elem.head in (:(::), :call)
+    head = last(parse_docstring(elem)).head
+    if head in (:(::), :call)
       cons = parse_constructor(elem)
       if isa(cons, TypeConstructor)
         if haskey(types, cons.name)
@@ -196,7 +207,7 @@ function parse_signature_body(expr::Expr)
       else
         push!(terms, cons)
       end
-    elseif elem.head in (:(=), :function)
+    elseif head in (:(=), :function)
       push!(funs, parse_function(elem))
     else
       throw(ParseError("Ill-formed signature element $elem"))
@@ -315,6 +326,7 @@ end
 """
 function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor}
   # Context is optional.
+  doc, expr = parse_docstring(expr)
   cons_expr, context = @match expr begin
     Expr(:call, [:<=, inner, context], _) => (inner, parse_context(context))
     _ => (expr, Context())
@@ -334,12 +346,12 @@ function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor}
   
   @match cons_expr begin
     (Expr(:(::), [name::Symbol, :TYPE], _)
-      => TypeConstructor(name, [], context))
+      => TypeConstructor(name, [], context, doc))
     (Expr(:(::), [Expr(:call, [name::Symbol, params...], _), :TYPE], _)
-      => TypeConstructor(name, map(parse_param, params), context))
+      => TypeConstructor(name, map(parse_param, params), context, doc))
     (Expr(:(::), [Expr(:call, [name::Symbol, params...], _), typ], _)
       => TermConstructor(name, map(parse_param, params), parse_raw_expr(typ),
-                         context))
+                         context, doc))
     _ => throw(ParseError("Ill-formed type/term constructor $cons_expr"))
   end
 end
@@ -358,14 +370,13 @@ function replace_types(bindings::Dict, sig::Signature)::Signature
             [ replace_types(bindings, t) for t in sig.terms ])
 end
 function replace_types(bindings::Dict, cons::TypeConstructor)::TypeConstructor
-  TypeConstructor(replace_symbols(bindings, cons.name),
-                  cons.params,
-                  replace_types(bindings, cons.context))
+  TypeConstructor(replace_symbols(bindings, cons.name), cons.params,
+                  replace_types(bindings, cons.context), cons.doc)
 end
 function replace_types(bindings::Dict, cons::TermConstructor)::TermConstructor
   TermConstructor(cons.name, cons.params,
                   replace_symbols(bindings, cons.typ),
-                  replace_types(bindings, cons.context))
+                  replace_types(bindings, cons.context), cons.doc)
 end
 function replace_types(bindings::Dict, context::Context)::Context
   GAT.Context(((name => @match expr begin
