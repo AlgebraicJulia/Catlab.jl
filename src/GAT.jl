@@ -360,7 +360,8 @@ end
 """
 function gen_abstract_type(cons::TypeConstructor)::Expr
   stub_name = GlobalRef(GAT, :Stub)
-  :(abstract type $(cons.name) <: $stub_name end)
+  expr = :(abstract type $(cons.name) <: $stub_name end)
+  generate_docstring(expr, cons.doc)
 end
 
 """ Replace names of type constructors in a GAT.

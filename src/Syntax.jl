@@ -181,7 +181,7 @@ function gen_type(cons::TypeConstructor, base_type::Type=Any)::Expr
     args::Vector
     type_args::Vector{$base_expr}
   end)
-  strip_lines(expr, recurse=true)
+  generate_docstring(strip_lines(expr, recurse=true), cons.doc)
 end
 function gen_types(sig::Signature, base_types::Vector{Type})::Vector{Expr}
   if isempty(base_types)

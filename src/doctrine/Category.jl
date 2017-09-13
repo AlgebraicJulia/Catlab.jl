@@ -13,7 +13,10 @@ We retain the usual meaning of the symbol ∘, i.e., g∘f = compose(f,g).
 This usage is too entrenched to overturn, however inconvenient it may be.
 """
 @signature Category(Ob,Hom) begin
+  """ Object in a category """
   Ob::TYPE
+  
+  """ Morphism in a category """
   Hom(dom::Ob,codom::Ob)::TYPE
   
   id(A::Ob)::Hom(A,A)
@@ -67,6 +70,7 @@ end
 """ Doctrine of (strict) *2-category*
 """
 @signature Category(Ob,Hom) => Category2(Ob,Hom,Hom2) begin
+  """ 2-morphism in a 2-category """
   Hom2(dom::Hom(A,B), codom::Hom(A,B))::TYPE <= (A::Ob, B::Ob)
   
   # Hom categories: Vertical composition

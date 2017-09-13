@@ -2,8 +2,8 @@
 """
 module Meta
 export Expr0, JuliaFunction, JuliaFunctionSig, parse_docstring, parse_function,
-  parse_function_sig, generate_function, append_expr!, concat_expr,
-  replace_symbols, strip_lines
+  parse_function_sig, generate_docstring, generate_function,
+  append_expr!, concat_expr, replace_symbols, strip_lines
 
 using AutoHashEquals
 using Match
@@ -80,6 +80,16 @@ function parse_function_sig(call_expr::Expr)::JuliaFunctionSig
 end
 parse_function_sig(fun::JuliaFunction) = parse_function_sig(fun.call_expr)
 
+""" Wrap Julia expression with docstring.
+"""
+function generate_docstring(expr::Expr, doc::Nullable{String})::Expr
+  if isnull(doc)
+    expr
+  else
+    Expr(:macrocall, GlobalRef(Core, Symbol("@doc")), get(doc), expr)
+  end
+end
+
 """ Generate Julia expression for function definition.
 """
 function generate_function(fun::JuliaFunction)::Expr
@@ -95,13 +105,8 @@ function generate_function(fun::JuliaFunction)::Expr
     impl = get(fun.impl)
     body = impl.head == :block ? impl : Expr(:block, impl)
   end
-  
-  # Create function definition expression, possibly with docstring.
   expr = Expr(:function, head, body)
-  if !isnull(fun.doc)
-    expr = Expr(:macrocall, GlobalRef(Core, Symbol("@doc")), get(fun.doc), expr)
-  end
-  expr
+  generate_docstring(expr, fun.doc)
 end
 
 # Operations on Julia expressions
