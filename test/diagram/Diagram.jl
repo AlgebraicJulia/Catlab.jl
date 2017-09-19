@@ -6,7 +6,7 @@ include("external/Networks.jl")
   include("GraphML.jl")
 end
 
-@testset "Diagram.Graphivz" begin
+@testset "Diagram.Graphviz" begin
   include("Graphviz.jl")
   include("GraphvizWiring.jl")
 end

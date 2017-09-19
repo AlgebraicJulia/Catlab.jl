@@ -238,9 +238,12 @@ function read_graphml_node(state::ReadState, xnode::XMLElement)
   for xedge in xgraph["edge"]
     data = read_graphml_data(state, xedge)
     value = convert_from_graphml_data(state.WireValue, data)
-    xsource = (attribute(xedge, "source"), attribute(xedge, "sourceport"))
-    xtarget = (attribute(xedge, "target"), attribute(xedge, "targetport"))
-    source, target = diagram_ports[xsource], diagram_ports[xtarget]
+    xsource = attribute(xedge, "source", required=true)
+    xtarget = attribute(xedge, "target", required=true)
+    xsourceport = attribute(xedge, "sourceport", required=true)
+    xtargetport = attribute(xedge, "targetport", required=true)
+    source = diagram_ports[(xsource, xsourceport)]
+    target = diagram_ports[(xtarget, xtargetport)]
     add_wire!(diagram, Wire(value, source, target))
   end
   
@@ -250,10 +253,10 @@ end
 function read_graphml_ports(state::ReadState, xnode::XMLElement)
   ports = Dict{Tuple{String,String},PortEdgeData}()
   input_ports, output_ports = state.PortValue[], state.PortValue[]
-  xnode_id = attribute(xnode, "id")
+  xnode_id = attribute(xnode, "id", required=true)
   xports = xnode["port"]
   for xport in xports
-    xport_name = attribute(xport, "name")
+    xport_name = attribute(xport, "name", required=true)
     data = read_graphml_data(state, xport)
     port_kind = pop!(data, "portkind")
     value = convert_from_graphml_data(state.PortValue, data)
@@ -299,7 +302,8 @@ function read_graphml_data(state::ReadState, xelem::XMLElement)
   # FIXME: We are not using the default values for the keys.
   data = Dict{String,Any}()
   for xdata in xelem["data"]
-    key = state.keys[attribute(xdata, "key")]
+    xkey = attribute(xdata, "key", required=true)
+    key = state.keys[xkey]
     data[key.attr_name] = read_graphml_data_value(
       Val{Symbol(key.attr_type)}, content(xdata))
   end
