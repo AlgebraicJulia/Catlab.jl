@@ -165,7 +165,7 @@ function write_graphml_data(state::WriteState, xelem::XMLElement, scope::String,
 end
 
 write_graphml_data_type(::Type{Bool}) = "boolean"
-write_graphml_data_type(::Type{<:Integer}) = "integer"
+write_graphml_data_type(::Type{<:Integer}) = "int"
 write_graphml_data_type(::Type{<:Real}) = "double"
 write_graphml_data_type(::Type{String}) = "string"
 write_graphml_data_type(::Type{Symbol}) = "string"
@@ -308,6 +308,8 @@ end
 
 read_graphml_data_value(::Type{Val{:boolean}}, s::String) = parse(Bool, s)
 read_graphml_data_value(::Type{Val{:int}}, s::String) = parse(Int, s)
+read_graphml_data_value(::Type{Val{:long}}, s::String) = parse(Int, s)
+read_graphml_data_value(::Type{Val{:float}}, s::String) = parse(Float32, s)
 read_graphml_data_value(::Type{Val{:double}}, s::String) = parse(Float64, s)
 read_graphml_data_value(::Type{Val{:string}}, s::String) = s
 
