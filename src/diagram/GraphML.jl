@@ -306,7 +306,7 @@ function read_graphml_data(state::ReadState, xelem::XMLElement)
   data
 end
 
-read_graphml_data_value(::Type{Val{:boolean}}, s::String) = parse(Bool, s)
+read_graphml_data_value(::Type{Val{:boolean}}, s::String) = parse(Bool, lowercase(s))
 read_graphml_data_value(::Type{Val{:int}}, s::String) = parse(Int, s)
 read_graphml_data_value(::Type{Val{:long}}, s::String) = parse(Int, s)
 read_graphml_data_value(::Type{Val{:float}}, s::String) = parse(Float32, s)
