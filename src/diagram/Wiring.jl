@@ -30,10 +30,12 @@ export AbstractBox, Box, WiringDiagram, Wire, Ports, PortTypeError, Port,
   PortKind, InputPort, OutputPort, input_ports, output_ports, port_value,
   input_id, output_id, boxes, box_ids, nboxes, nwires, box, wires, has_wire,
   graph, add_box!, add_boxes!, add_wire!, add_wires!, validate_ports,
-  rem_box!, rem_wire!, rem_wires!,
-  all_neighbors, neighbors, out_neighbors, in_neighbors, in_wires, out_wires,
-  substitute!, to_wiring_diagram
+  rem_box!, rem_wire!, rem_wires!, substitute!, all_neighbors, neighbors,
+  out_neighbors, in_neighbors, in_wires, out_wires,
+  dom, codom, id, compose, otimes, munit, braid, permute, mcopy, delete,
+  mmerge, create, to_wiring_diagram
 
+import Base: permute
 using AutoHashEquals
 using LightGraphs
 import LightGraphs: all_neighbors, neighbors, out_neighbors, in_neighbors
@@ -514,6 +516,20 @@ but we don't have doctrines for those yet.
     add_wires!(h, ((input_id(h),i) => (output_id(h),i+n) for i in 1:m))
     add_wires!(h, ((input_id(h),i+m) => (output_id(h),i) for i in 1:n))
     return h
+  end
+end
+
+function permute(A::Ports, σ::Vector{Int}; inverse::Bool=false)
+  @assert length(A) == length(σ)
+  B = Ports([ A.ports[σ[i]] for i in eachindex(σ) ])
+  if inverse
+    f = WiringDiagram(B, A)
+    add_wires!(f, ((input_id(f),σ[i]) => (output_id(f),i) for i in eachindex(σ)))
+    return f
+  else
+    f = WiringDiagram(A, B)
+    add_wires!(f, ((input_id(f),i) => (output_id(f),σ[i]) for i in eachindex(σ)))
+    return f
   end
 end
 

@@ -147,6 +147,14 @@ I = munit(Ports)
 # Braiding
 @test compose(braid(X,Y),braid(Y,X)) == id(otimes(X,Y))
 
+# Permutations
+W = otimes(X,Y)
+@test permute(W, [1,2,3,4]) == id(W)
+@test permute(W, [1,2,3,4], inverse=true) == id(W)
+@test permute(W, [3,4,1,2]) == braid(X,Y)
+@test permute(W, [3,4,1,2], inverse=true) == braid(Y,X)
+@test_throws AssertionError permute(W, [1,2])
+
 # Diagonals
 #----------
 
