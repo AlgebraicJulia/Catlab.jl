@@ -4,6 +4,13 @@ using Base.Test
 using Catlab.Doctrine
 using Catlab.Diagram
 
+# For testing purposes, check equality of port symbols.
+function Wiring.validate_ports(source_port::Symbol, target_port::Symbol)
+  if source_port != target_port
+    throw(PortValueError(source_port, target_port))
+  end
+end
+
 # Low-level graph interface
 ###########################
 
@@ -44,7 +51,7 @@ add_wire!(d, (gv,1) => (output_id(d),1))
 @test nwires(d) == 3
 @test has_wire(d, fv, gv)
 @test has_wire(d, (fv,1) => (gv,1))
-@test_throws PortTypeError add_wire!(d, (gv,1) => (fv,1))
+@test_throws PortValueError add_wire!(d, (gv,1) => (fv,1))
 @test wires(d) == map(Wire, [
   (input_id(d),1) => (fv,1),
   (fv,1) => (gv,1),

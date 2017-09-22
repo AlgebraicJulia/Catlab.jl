@@ -26,7 +26,7 @@ intermediate representation that can be straightforwardly serialized to and from
 GraphML or translated into Graphviz or other declarative diagram languages.
 """
 module Wiring
-export AbstractBox, Box, WiringDiagram, Wire, Ports, PortTypeError, Port,
+export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
   PortKind, InputPort, OutputPort, input_ports, output_ports, port_value,
   input_id, output_id, boxes, box_ids, nboxes, nwires, box, wires, has_wire,
   graph, add_box!, add_boxes!, add_wire!, add_wires!, validate_ports,
@@ -146,14 +146,14 @@ end
 Base.eachindex(A::Ports) = eachindex(A.ports)
 Base.length(A::Ports) = length(A.ports)
 
-""" Exception thrown when types of source and target ports are not equal.
+""" Error thrown when the source and target ports of a wire are incompatible.
 """
-struct PortTypeError <: Exception
+struct PortValueError <: Exception
   source_port::Any
   target_port::Any
 end
-function Base.showerror(io::IO, exc::PortTypeError)
-  print(io, `Ports $(exc.source_port) and $(exc.target_port) are not compatible`)
+function Base.showerror(io::IO, exc::PortValueError)
+  print(io, `Ports $(exc.source_port) and $(exc.target_port) are incompatible`)
 end
 
 """ Base type for any box (node) in a wiring diagram.
@@ -305,12 +305,6 @@ function add_wires!(f::WiringDiagram, wires)
   end
 end
 
-function validate_ports(source_port, target_port)
-  if source_port != target_port
-    throw(PortTypeError(source_port, target_port))
-  end
-end
-
 function rem_wire!(f::WiringDiagram, wire::Wire)
   edge = Edge(wire.source.box, wire.target.box)
   edge_data = to_edge_data(wire)
@@ -325,6 +319,13 @@ rem_wire!(f::WiringDiagram, pair::Pair) = rem_wire!(f, Wire(pair))
 function rem_wires!(f::WiringDiagram, src::Int, tgt::Int)
   rem_edge!(f.network, Edge(src, tgt))
 end
+
+""" Check compatibility of source and target ports.
+
+Throws a `PortValueError` when the ports are incompatible. The default
+implementation of this method is a no-op.
+"""
+function validate_ports(source_port, target_port) end
 
 # Graph properties.
 
