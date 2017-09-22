@@ -204,10 +204,13 @@ mutable struct WiringDiagram <: AbstractBox
     diagram.output_id = add_vertex!(network, Nullable{AbstractBox}())
     return diagram
   end
-  function WiringDiagram(inputs::Ports, outputs::Ports)
-    WiringDiagram(inputs.ports, outputs.ports)
-  end
 end
+
+function WiringDiagram(inputs::Ports, outputs::Ports)
+  WiringDiagram(inputs.ports, outputs.ports)
+end
+WiringDiagram() = WiringDiagram([], [])
+
 input_id(diagram::WiringDiagram) = diagram.input_id
 output_id(diagram::WiringDiagram) = diagram.output_id
 
