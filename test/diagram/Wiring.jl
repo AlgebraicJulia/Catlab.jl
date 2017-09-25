@@ -67,13 +67,23 @@ add_wire!(d, (gv,1) => (output_id(d),1))
   (fv,1) => (gv,1),
   (gv,1) => (output_id(d),1),
 ])
+
+# Graph properties.
 @test Set(all_neighbors(d, fv)) == Set([input_id(d),gv])
 @test Set(all_neighbors(d, gv)) == Set([fv,output_id(d)])
 @test neighbors(d, fv) == [gv]
 @test out_neighbors(d, fv) == [gv]
 @test in_neighbors(d, gv) == [fv]
+@test wires(d, input_id(d)) == [ Wire((input_id(d),1) => (fv,1)) ]
+@test wires(d, fv) == map(Wire, [
+  ((input_id(d),1) => (fv,1)),
+  ((fv,1) => (gv,1))
+])
+@test out_wires(d, fv) == [ Wire((fv,1) => (gv,1)) ]
 @test out_wires(d, Port(fv,OutputPort,1)) == [ Wire((fv,1) => (gv,1)) ]
+@test in_wires(d, gv) == [ Wire((fv,1) => (gv,1)) ]
 @test in_wires(d, Port(gv,InputPort,1)) == [ Wire((fv,1) => (gv,1)) ]
+
 rem_wires!(d, fv, gv)
 @test nwires(d) == 2
 @test !has_wire(d, fv, gv)

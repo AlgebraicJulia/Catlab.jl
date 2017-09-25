@@ -352,6 +352,18 @@ neighbors(d::WiringDiagram, v::Int) = neighbors(graph(d), v)
 out_neighbors(d::WiringDiagram, v::Int) = out_neighbors(graph(d), v)
 in_neighbors(d::WiringDiagram, v::Int) = in_neighbors(graph(d), v)
 
+wires(d::WiringDiagram, v::Int) = append!(in_wires(d, v), out_wires(d, v))
+
+""" Get all wires coming into the box.
+"""
+function in_wires(d::WiringDiagram, v::Int)
+  result = Wire[]
+  for u in in_neighbors(d, v)
+    append!(result, wires(d, u, v))
+  end
+  result
+end
+
 """ Get all wires coming into the port.
 """
 function in_wires(d::WiringDiagram, port::Port)
@@ -362,6 +374,16 @@ function in_wires(d::WiringDiagram, port::Port)
         push!(result, wire)
       end
     end
+  end
+  result
+end
+
+""" Get all wires coming out of the box.
+"""
+function out_wires(d::WiringDiagram, v::Int)
+  result = Wire[]
+  for u in out_neighbors(d, v)
+    append!(result, wires(d, v, u))
   end
   result
 end
