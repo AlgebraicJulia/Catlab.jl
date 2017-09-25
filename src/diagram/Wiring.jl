@@ -30,8 +30,8 @@ export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
   PortKind, InputPort, OutputPort, input_ports, output_ports, port_value,
   input_id, output_id, boxes, box_ids, nboxes, nwires, box, wires, has_wire,
   graph, add_box!, add_boxes!, add_wire!, add_wires!, validate_ports,
-  rem_box!, rem_wire!, rem_wires!, substitute!, all_neighbors, neighbors,
-  out_neighbors, in_neighbors, in_wires, out_wires,
+  rem_box!, rem_boxes!, rem_wire!, rem_wires!, substitute!, all_neighbors,
+  neighbors, out_neighbors, in_neighbors, in_wires, out_wires,
   dom, codom, id, compose, otimes, munit, braid, permute, mcopy, delete,
   mmerge, create, to_wiring_diagram
 
@@ -232,7 +232,7 @@ end
 # Basic accessors.
 
 box(f::WiringDiagram, v::Int) = get(getprop(f.network, v))
-boxes(f::WiringDiagram) = [ box(f,v) for v in box_ids(f) ]
+boxes(f::WiringDiagram) = AbstractBox[ box(f,v) for v in box_ids(f) ]
 nboxes(f::WiringDiagram) = nv(graph(f)) - 2
 
 function box_ids(f::WiringDiagram)
@@ -287,6 +287,13 @@ end
 function rem_box!(f::WiringDiagram, v::Int)
   @assert !(v in (input_id(f), output_id(f)))
   rem_vertex!(f.network, v)
+end
+
+function rem_boxes!(f::WiringDiagram, vs::Vector{Int})
+  # Remove boxes in descending order of vertex ID to maintain ID stability.
+  for v in sort(vs, rev=true)
+    rem_box!(f, v)
+  end
 end
 
 function add_wire!(f::WiringDiagram, wire::Wire)
@@ -394,9 +401,7 @@ function substitute!(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagr
   for (v,sub) in zip(vs, subs)
     substitute_impl!(d, v, sub)
   end
-  for v in reverse(vs)
-    rem_box!(d, v)
-  end
+  rem_boxes!(d, vs)
   return d
 end
 function substitute!(d::WiringDiagram, vs::Vector{Int})

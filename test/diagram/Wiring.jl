@@ -17,13 +17,14 @@ end
 A, B, C, D = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C, :D)
 f = Hom(:f, A, B)
 g = Hom(:g, B, C)
+h = Hom(:h, C, D)
 
+# Operations on boxes
 d = WiringDiagram(A, C)
 @test nboxes(d) == 0
 @test_throws NullException box(d,input_id(d))
 @test_throws NullException box(d,output_id(d))
 
-# Operations on boxes
 fv = add_box!(d, f)
 @test nboxes(d) == 1
 @test box(d, fv).value == :f
@@ -33,15 +34,24 @@ rem_box!(d, fv)
 
 fv = add_box!(d, f)
 gv = add_box!(d, g)
-@test nboxes(d) == 2
-@test [b.value for b in boxes(d)] == [:f,:g]
-@test boxes(d) == [Box(f),Box(g)]
+hv = add_box!(d, h)
+@test nboxes(d) == 3
+@test [b.value for b in boxes(d)] == [:f,:g,:h]
+@test boxes(d) == [Box(f),Box(g),Box(h)]
+rem_boxes!(d, [fv,hv])
+@test nboxes(d) == 1
+@test boxes(d) == [Box(g)]
 
 # Operations on wires
+d = WiringDiagram(A, C)
+fv = add_box!(d, f)
+gv = add_box!(d, g)
+
 @test port_value(d, Port(input_id(d),OutputPort,1)) == :A
 @test port_value(d, Port(output_id(d),InputPort,1)) == :C
 @test port_value(d, Port(fv,InputPort,1)) == :A
 @test port_value(d, Port(fv,OutputPort,1)) == :B
+
 @test nwires(d) == 0
 @test !has_wire(d, fv, gv)
 @test !has_wire(d, (fv,1) => (gv,1))
