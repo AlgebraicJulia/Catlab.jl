@@ -487,87 +487,46 @@ end
 This operation is a (one-sided) inverse to subsitution (see `substitute!`).
 """
 function encapsulate!(d::WiringDiagram, vs::Vector{Int})
-  encapsulate!(d, vs, WiringDiagram())
-end
-
-function encapsulate!(d::WiringDiagram, vs::Vector{Int}, sub::AbstractBox)
   # Add encapsulating box to original diagram.
+  sub = WiringDiagram()
   sub_vertex = add_box!(d, sub)
   
-  # Add boxes to encapsulating box, if it's a wiring diagram.
-  vertex_map = Dict{Int,Int}(
-    if isa(sub, WiringDiagram)
-      (v => add_box!(sub, box(d, v)) for v in vs)
-    else
-      (v => 0 for v in vs)
-    end)
+  # Add boxes to encapsulating diagram.
+  vertex_map = Dict{Int,Int}((v => add_box!(sub, box(d, v)) for v in vs))
   
   # Add ports to encapsulating box.
-  #
-  # Any port of the boxes `vs` that has an incoming (resp. outgoing) wire
-  # from a box outside of `vs` will become an input (resp. output) port of the
-  # encapsulating diagram.
-  port_map = Dict{Port,Port}()
-  for v in vs
-    for wire in in_wires(d, v)
-      src, tgt = wire.source, wire.target
-      if !haskey(vertex_map, src.box) && !haskey(port_map, tgt)
-        push!(sub.input_ports, port_value(d, tgt))
-        port_map[tgt] = Port(sub_vertex, InputPort, length(input_ports(sub)))
-      end
-    end
-    for wire in out_wires(d, v)
-      src, tgt = wire.source, wire.target
-      if !haskey(vertex_map, tgt.box) && !haskey(port_map, src)
-        push!(sub.output_ports, port_value(d, src))
-        port_map[src] = Port(sub_vertex, OutputPort, length(output_ports(sub)))
-      end
-    end
-  end
+  port_map = set_encapsulated_ports!(d, vs, sub, sub_vertex)
   
   # Add wires to original and encapsulating diagram.
   consumed = Set()
   for v in vs
     for wire in wires(d, v)
+      # Check if wire has already been processed.
       src, tgt = wire.source, wire.target
-      if src.box in consumed || tgt.box in consumed
-        # This wire has already been processed.
-        continue
-      end
+      if src.box in consumed || tgt.box in consumed; continue end
       
-      if isa(sub, WiringDiagram)
-        # Case 1: Add wire inside encapsulating diagram.
-        if haskey(vertex_map, src.box) && haskey(vertex_map, tgt.box)
-          add_wire!(sub, Wire(
-            set_box(src, vertex_map[src.box]),
-            set_box(tgt, vertex_map[tgt.box])
-          ))
-        
-        # Case 2: Add wire from encapsulating box to another box.
-        elseif haskey(vertex_map, src.box)
-          add_wire!(d, Wire(port_map[src], tgt))
-          add_wire!(sub, Wire(
-            set_box(src, vertex_map[src.box]),
-            Port(output_id(sub), InputPort, port_map[src].port)
-          ))
-        
-        # Case 3: Add wire to encapsulating box from another box.
-        elseif haskey(vertex_map, tgt.box)
-          add_wire!(d, Wire(src, port_map[tgt]))
-          add_wire!(sub, Wire(
-            Port(input_id(sub), OutputPort, port_map[tgt].port),
-            set_box(tgt, vertex_map[tgt.box]),
-          ))
-        end
-      else
-        # Case 2: Add wire from encapsulating box to another box.
-        if haskey(vertex_map, src.box) && !haskey(vertex_map, tgt.box)
-          add_wire!(d, Wire(port_map[src], tgt))
-        
-        # Case 3: Add wire to encapsulating box from another box.
-        elseif !haskey(vertex_map, src.box) && haskey(vertex_map, tgt.box)
-          add_wire!(d, Wire(src, port_map[tgt]))
-        end
+      # Case 1: Add wire inside encapsulating diagram.
+      if haskey(vertex_map, src.box) && haskey(vertex_map, tgt.box)
+        add_wire!(sub, Wire(
+          set_box(src, vertex_map[src.box]),
+          set_box(tgt, vertex_map[tgt.box])
+        ))
+      
+      # Case 2: Add wire from encapsulating box to another box.
+      elseif haskey(vertex_map, src.box)
+        add_wire!(sub, Wire(
+          set_box(src, vertex_map[src.box]),
+          Port(output_id(sub), InputPort, port_map[src].port)
+        ))
+        add_wire!(d, Wire(port_map[src], tgt))
+      
+      # Case 3: Add wire to encapsulating box from another box.
+      elseif haskey(vertex_map, tgt.box)
+        add_wire!(sub, Wire(
+          Port(input_id(sub), OutputPort, port_map[tgt].port),
+          set_box(tgt, vertex_map[tgt.box]),
+        ))
+        add_wire!(d, Wire(src, port_map[tgt]))
       end
     end
     push!(consumed, v)
@@ -576,6 +535,72 @@ function encapsulate!(d::WiringDiagram, vs::Vector{Int}, sub::AbstractBox)
   # Remove vertices from original diagram.
   rem_boxes!(d, vs)
   return d
+end
+
+function encapsulate!(d::WiringDiagram, vs::Vector{Int}, sub_value::Any)
+  # Add encapsulating box to original diagram.
+  sub = Box(sub_value, [], [])
+  sub_vertex = add_box!(d, sub)
+  
+  # Add ports to encapsulating box.
+  port_map = set_encapsulated_ports!(d, vs, sub, sub_vertex)
+  
+  # Add wires to original and encapsulating diagram.
+  vertex_set = Set(vs)
+  consumed = Set()
+  for v in vs
+    for wire in wires(d, v)
+      # Check if wire has already been processed.
+      src, tgt = wire.source, wire.target
+      if src.box in consumed || tgt.box in consumed; continue end
+      
+      # Case 1: Add wire from encapsulating box to another box.
+      if (src.box in vertex_set) && !(tgt.box in vertex_set)
+        add_wire!(d, Wire(port_map[src], tgt))
+      
+      # Case 2: Add wire to encapsulating box from another box.
+      elseif !(src.box in vertex_set) && (tgt.box in vertex_set)
+        add_wire!(d, Wire(src, port_map[tgt]))
+      end
+    end
+    push!(consumed, v)
+  end
+  
+  # Remove vertices from original diagram.
+  rem_boxes!(d, vs)
+  return d
+end
+
+""" Add ports to encapsulating box.
+
+Any port of the boxes `vs` that has an incoming (resp. outgoing) wire
+from a box outside of `vs` will become an input (resp. output) port of the
+encapsulating diagram.
+"""
+function set_encapsulated_ports!(d::WiringDiagram, vs::Vector{Int},
+                                 sub::AbstractBox, sub_vertex::Int)
+  vertex_set = Set(vs)
+  port_map = Dict{Port,Port}()
+  for v in vs
+    # Add ports for incoming wires.
+    for wire in in_wires(d, v)
+      src, tgt = wire.source, wire.target
+      if !(src.box in vertex_set) && !haskey(port_map, tgt)
+        push!(sub.input_ports, port_value(d, tgt))
+        port_map[tgt] = Port(sub_vertex, InputPort, length(input_ports(sub)))
+      end
+    end
+    
+    # Add ports for outgoing wires.
+    for wire in out_wires(d, v)
+      src, tgt = wire.source, wire.target
+      if !(tgt.box in vertex_set) && !haskey(port_map, src)
+        push!(sub.output_ports, port_value(d, src))
+        port_map[src] = Port(sub_vertex, OutputPort, length(output_ports(sub)))
+      end
+    end
+  end
+  port_map
 end
 
 # High-level categorical interface
