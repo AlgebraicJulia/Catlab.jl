@@ -289,9 +289,9 @@ function rem_box!(f::WiringDiagram, v::Int)
   rem_vertex!(f.network, v)
 end
 
-function rem_boxes!(f::WiringDiagram, vs::Vector{Int})
+function rem_boxes!(f::WiringDiagram, vs)
   # Remove boxes in descending order of vertex ID to maintain ID stability.
-  for v in sort(vs, rev=true)
+  for v in sort!(collect(vs), rev=true)
     rem_box!(f, v)
   end
 end
@@ -486,7 +486,29 @@ end
 
 This operation is a (one-sided) inverse to subsitution (see `substitute!`).
 """
-function encapsulate!(d::WiringDiagram, vs::Vector{Int})
+function encapsulate!(d::WiringDiagram, vs::Vector{Int}, args...)
+  if isempty(vs)
+    error("Cannot encapsulate an empty set of boxes")
+  end
+  encapsulate_impl!(d, vs, args...)
+  rem_boxes!(d, vs)
+  return d
+end
+
+""" Simultaneous encapsulation of boxes.
+"""
+function encapsulate!(d::WiringDiagram, vss::Vector{Vector{Int}}, args...)
+  if any(isempty(vs) for vs in vss)
+    error("Cannot encapsulate an empty set of boxes")
+  end
+  for vs in vss
+    encapsulate_impl!(d, vs, args...)
+  end
+  rem_boxes!(d, vcat(vss...))
+  return d
+end
+  
+function encapsulate_impl!(d::WiringDiagram, vs::Vector{Int})
   # Add encapsulating box to original diagram.
   sub = WiringDiagram()
   sub_vertex = add_box!(d, sub)
@@ -531,13 +553,10 @@ function encapsulate!(d::WiringDiagram, vs::Vector{Int})
     end
     push!(consumed, v)
   end
-  
-  # Remove vertices from original diagram.
-  rem_boxes!(d, vs)
   return d
 end
 
-function encapsulate!(d::WiringDiagram, vs::Vector{Int}, sub_value::Any)
+function encapsulate_impl!(d::WiringDiagram, vs::Vector{Int}, sub_value::Any)
   # Add encapsulating box to original diagram.
   sub = Box(sub_value, [], [])
   sub_vertex = add_box!(d, sub)
@@ -565,9 +584,6 @@ function encapsulate!(d::WiringDiagram, vs::Vector{Int}, sub_value::Any)
     end
     push!(consumed, v)
   end
-  
-  # Remove vertices from original diagram.
-  rem_boxes!(d, vs)
   return d
 end
 
