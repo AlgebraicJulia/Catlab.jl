@@ -453,30 +453,36 @@ function substitute_impl!(d::WiringDiagram, v::Int, sub::WiringDiagram)
   end
   
   # Add new wires from sub-diagram.
+  # Prefer wire values from the main diagram, not the sub-diagram.
   for wire in wires(sub)
     src = get(sub_map, wire.source.box, 0)
     tgt = get(sub_map, wire.target.box, 0)
     
     # Special case: wire from input port to output port.
     if wire.source.box == input_id(sub) && wire.target.box == output_id(sub)
-      for in_wire in in_wires(d, Port(v,InputPort,wire.source.port))
-        for out_wire in out_wires(d, Port(v,OutputPort,wire.target.port))
-          add_wire!(d, Wire(in_wire.source, out_wire.target))
+      for in_wire in in_wires(d, Port(v, InputPort, wire.source.port))
+        for out_wire in out_wires(d, Port(v, OutputPort, wire.target.port))
+          # XXX: Enforce in_wire.value == out_wire.value?
+          # Or should we just take wire.value?
+          add_wire!(d, Wire(in_wire.value, in_wire.source, out_wire.target))
         end
       end
     # Special case: wire from input port to internal box.
     elseif wire.source.box == input_id(sub)
-      for in_wire in in_wires(d, Port(v,InputPort,wire.source.port))
-        add_wire!(d, Wire(in_wire.source, set_box(wire.target, tgt)))
+      for in_wire in in_wires(d, Port(v, InputPort, wire.source.port))
+        add_wire!(d,
+          Wire(in_wire.value, in_wire.source, set_box(wire.target, tgt)))
       end  
     # Special case: wire from internal box to output port.
     elseif wire.target.box == output_id(sub)
-      for out_wire in out_wires(d, Port(v,OutputPort,wire.target.port))
-        add_wire!(d, Wire(set_box(wire.source, src), out_wire.target))
+      for out_wire in out_wires(d, Port(v, OutputPort, wire.target.port))
+        add_wire!(d,
+          Wire(out_wire.value, set_box(wire.source, src), out_wire.target))
       end
     # Default case: wire between two internal boxes.
     else
-      add_wire!(d, Wire(set_box(wire.source, src), set_box(wire.target, tgt)))
+      add_wire!(d,
+        Wire(wire.value, set_box(wire.source, src), set_box(wire.target, tgt)))
     end
   end
   return d
@@ -524,31 +530,31 @@ function encapsulate_impl!(d::WiringDiagram, vs::Vector{Int})
   for v in vs
     for wire in wires(d, v)
       # Check if wire has already been processed.
-      src, tgt = wire.source, wire.target
+      value, src, tgt = wire.value, wire.source, wire.target
       if src.box in consumed || tgt.box in consumed; continue end
       
       # Case 1: Add wire inside encapsulating diagram.
       if haskey(vertex_map, src.box) && haskey(vertex_map, tgt.box)
-        add_wire!(sub, Wire(
+        add_wire!(sub, Wire(value,
           set_box(src, vertex_map[src.box]),
           set_box(tgt, vertex_map[tgt.box])
         ))
       
       # Case 2: Add wire from encapsulating box to another box.
       elseif haskey(vertex_map, src.box)
-        add_wire!(sub, Wire(
+        add_wire!(sub, Wire(value,
           set_box(src, vertex_map[src.box]),
           Port(output_id(sub), InputPort, port_map[src].port)
         ))
-        add_wire!(d, Wire(port_map[src], tgt))
+        add_wire!(d, Wire(value, port_map[src], tgt))
       
       # Case 3: Add wire to encapsulating box from another box.
       elseif haskey(vertex_map, tgt.box)
-        add_wire!(sub, Wire(
+        add_wire!(sub, Wire(value,
           Port(input_id(sub), OutputPort, port_map[tgt].port),
-          set_box(tgt, vertex_map[tgt.box]),
+          set_box(tgt, vertex_map[tgt.box])
         ))
-        add_wire!(d, Wire(src, port_map[tgt]))
+        add_wire!(d, Wire(value, src, port_map[tgt]))
       end
     end
     push!(consumed, v)
@@ -570,16 +576,16 @@ function encapsulate_impl!(d::WiringDiagram, vs::Vector{Int}, sub_value::Any)
   for v in vs
     for wire in wires(d, v)
       # Check if wire has already been processed.
-      src, tgt = wire.source, wire.target
+      value, src, tgt = wire.value, wire.source, wire.target
       if src.box in consumed || tgt.box in consumed; continue end
       
       # Case 1: Add wire from encapsulating box to another box.
       if (src.box in vertex_set) && !(tgt.box in vertex_set)
-        add_wire!(d, Wire(port_map[src], tgt))
+        add_wire!(d, Wire(value, port_map[src], tgt))
       
       # Case 2: Add wire to encapsulating box from another box.
       elseif !(src.box in vertex_set) && (tgt.box in vertex_set)
-        add_wire!(d, Wire(src, port_map[tgt]))
+        add_wire!(d, Wire(value, src, port_map[tgt]))
       end
     end
     push!(consumed, v)
