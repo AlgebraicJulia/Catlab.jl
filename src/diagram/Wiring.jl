@@ -224,7 +224,6 @@ end
 function WiringDiagram(inputs::Ports, outputs::Ports)
   WiringDiagram(inputs.ports, outputs.ports)
 end
-WiringDiagram() = WiringDiagram([], [])
 
 input_id(diagram::WiringDiagram) = diagram.input_id
 output_id(diagram::WiringDiagram) = diagram.output_id
@@ -239,6 +238,26 @@ function Base.:(==)(d1::WiringDiagram, d2::WiringDiagram)
    input_id(d1) == input_id(d2) && output_id(d1) == output_id(d2) &&
    graph(d1) == graph(d2) &&
    boxes(d1) == boxes(d2) && sort!(wires(d1)) == sort!(wires(d2)))
+end
+
+function Base.show(io::IO, diagram::WiringDiagram)
+  print(io, "WiringDiagram([")
+  join(io, input_ports(diagram), ",")
+  print(io, "], [")
+  join(io, output_ports(diagram), ",")
+  print(io, "], ")
+  if get(io, :compact, false)
+    print(io, "{$(nboxes(diagram)) boxes}, {$(nwires(diagram)) wires}")
+  else
+    print(io, "\n[ $(input_id(diagram)) => {inputs},\n  ")
+    print(io, "$(output_id(diagram)) => {outputs},\n  ")
+    join(io, [ "$v => $(sprint(showcompact, box(diagram, v)))"
+               for v in box_ids(diagram) ], ",\n  ")
+    print(io, " ],\n[ ")
+    join(io, wires(diagram), ",\n  ")
+    print(io, " ]")
+  end
+  print(io, ")")
 end
 
 # Low-level graph interface
