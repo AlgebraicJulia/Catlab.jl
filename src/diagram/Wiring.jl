@@ -515,15 +515,16 @@ function encapsulate!(d::WiringDiagram, vss::Vector{Vector{Int}}, args...)
 end
   
 function encapsulate_impl!(d::WiringDiagram, vs::Vector{Int})
-  # Add encapsulating box to original diagram.
-  sub = WiringDiagram()
-  sub_vertex = add_box!(d, sub)
+  # Create ports for encapsulating box.
+  sub_vertex = nv(graph(d)) + 1
+  inputs, outputs, port_map = encapsulated_ports(d, vs, sub_vertex)
+  
+  # Add encapsulating diagram to original diagram.
+  sub = WiringDiagram(inputs, outputs)
+  @assert add_box!(d, sub) == sub_vertex
   
   # Add boxes to encapsulating diagram.
   vertex_map = Dict{Int,Int}((v => add_box!(sub, box(d, v)) for v in vs))
-  
-  # Add ports to encapsulating box.
-  port_map = set_encapsulated_ports!(d, vs, sub, sub_vertex)
   
   # Add wires to original and encapsulating diagram.
   consumed = Set()
@@ -563,12 +564,13 @@ function encapsulate_impl!(d::WiringDiagram, vs::Vector{Int})
 end
 
 function encapsulate_impl!(d::WiringDiagram, vs::Vector{Int}, sub_value::Any)
-  # Add encapsulating box to original diagram.
-  sub = Box(sub_value, [], [])
-  sub_vertex = add_box!(d, sub)
+  # Create ports for encapsulating box.
+  sub_vertex = nv(graph(d)) + 1
+  inputs, outputs, port_map = encapsulated_ports(d, vs, sub_vertex)
   
-  # Add ports to encapsulating box.
-  port_map = set_encapsulated_ports!(d, vs, sub, sub_vertex)
+  # Add encapsulating box to original diagram.
+  sub = Box(sub_value, inputs, outputs)
+  @assert add_box!(d, sub) == sub_vertex
   
   # Add wires to original and encapsulating diagram.
   vertex_set = Set(vs)
@@ -593,23 +595,23 @@ function encapsulate_impl!(d::WiringDiagram, vs::Vector{Int}, sub_value::Any)
   return d
 end
 
-""" Add ports to encapsulating box.
+""" Create input and output ports for encapsulating box.
 
 Any port of the boxes `vs` that has an incoming (resp. outgoing) wire
 from a box outside of `vs` will become an input (resp. output) port of the
 encapsulating diagram.
 """
-function set_encapsulated_ports!(d::WiringDiagram, vs::Vector{Int},
-                                 sub::AbstractBox, sub_vertex::Int)
-  vertex_set = Set(vs)
+function encapsulated_ports(d::WiringDiagram, vs::Vector{Int}, sub_vertex::Int)
+  inputs, outputs = [], []
   port_map = Dict{Port,Port}()
+  vertex_set = Set(vs)
   for v in vs
     # Add ports for incoming wires.
     for wire in in_wires(d, v)
       src, tgt = wire.source, wire.target
       if !(src.box in vertex_set) && !haskey(port_map, tgt)
-        push!(sub.input_ports, port_value(d, tgt))
-        port_map[tgt] = Port(sub_vertex, InputPort, length(input_ports(sub)))
+        push!(inputs, port_value(d, tgt))
+        port_map[tgt] = Port(sub_vertex, InputPort, length(inputs))
       end
     end
     
@@ -617,12 +619,18 @@ function set_encapsulated_ports!(d::WiringDiagram, vs::Vector{Int},
     for wire in out_wires(d, v)
       src, tgt = wire.source, wire.target
       if !(tgt.box in vertex_set) && !haskey(port_map, src)
-        push!(sub.output_ports, port_value(d, src))
-        port_map[src] = Port(sub_vertex, OutputPort, length(output_ports(sub)))
+        push!(outputs, port_value(d, src))
+        port_map[src] = Port(sub_vertex, OutputPort, length(outputs))
       end
     end
   end
-  port_map
+  
+  # Return input and output port values with the tightest possible types.
+  return (
+    isempty(inputs)  ? [] : collect(promote(inputs...)),
+    isempty(outputs) ? [] : collect(promote(outputs...)),
+    port_map
+  )
 end
 
 # High-level categorical interface
