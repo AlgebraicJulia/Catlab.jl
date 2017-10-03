@@ -175,6 +175,21 @@ These boxes have no internal structure.
   output_ports::Vector
 end
 
+Box(inputs::Vector, outputs::Vector) = Box(nothing, inputs, outputs)
+
+function Base.show(io::IO, box::Box)
+  print(io, "Box(")
+  if box.value != nothing
+    print(io, box.value)
+    print(io, ", ")
+  end
+  print(io, "[")
+  join(io, box.input_ports, ",")
+  print(io, "], [")
+  join(io, box.output_ports, ",")
+  print(io, "])")
+end
+
 """ Wiring diagram: morphism in the category of wiring diagrams.
 
 The wiring diagram is implemented using the following internal data structures.
