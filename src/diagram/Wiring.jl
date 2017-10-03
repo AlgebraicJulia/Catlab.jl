@@ -606,8 +606,8 @@ function encapsulated_ports(d::WiringDiagram, vs::Vector{Int}, sub_vertex::Int)
   port_map = Dict{Port,Port}()
   vertex_set = Set(vs)
   for v in vs
-    # Add ports for incoming wires.
-    for wire in in_wires(d, v)
+    # Add ports for incoming wires, preserving port order.
+    for wire in sort!(in_wires(d, v), by = wire -> wire.target.port)
       src, tgt = wire.source, wire.target
       if !(src.box in vertex_set) && !haskey(port_map, tgt)
         push!(inputs, port_value(d, tgt))
@@ -615,8 +615,8 @@ function encapsulated_ports(d::WiringDiagram, vs::Vector{Int}, sub_vertex::Int)
       end
     end
     
-    # Add ports for outgoing wires.
-    for wire in out_wires(d, v)
+    # Add ports for outgoing wires, preserving port order.
+    for wire in sort!(out_wires(d, v), by = wire -> wire.source.port)
       src, tgt = wire.source, wire.target
       if !(tgt.box in vertex_set) && !haskey(port_map, src)
         push!(outputs, port_value(d, src))
