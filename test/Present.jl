@@ -26,6 +26,17 @@ add_generators!(pres, (f,g))
 @test generators(pres, FreeCategory.Ob) == [ A, B ]
 @test generators(pres, FreeCategory.Hom) == [ f, g ]
 
+# Merge presentations
+pres = Presentation()
+add_generators!(pres, (A, B, f))
+other = Presentation()
+add_generators!(other, (B, C, g))
+merge_presentation!(pres, other)
+@test generator(pres, :f) == f
+@test generator(pres, :g) == g
+@test generators(pres, FreeCategory.Ob) == [ A, B, C ]
+@test generators(pres, FreeCategory.Hom) == [ f, g ]
+
 # Presentation macro
 ####################
 

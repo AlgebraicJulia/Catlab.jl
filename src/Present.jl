@@ -9,7 +9,8 @@ for applications like knowledge representation.
 """
 module Present
 export @present, Presentation, Equation, generator, generators, has_generator,
-  equations, add_generator!, add_generators!, add_definition!, add_equation!
+  equations, add_generator!, add_generators!, add_definition!, add_equation!,
+  merge_presentation!
 
 import DataStructures: OrderedSet
 using Match
@@ -96,6 +97,17 @@ function add_definition!(pres::Presentation, name::Symbol, rhs::BaseExpr)
   add_generator!(pres, generator)
   add_equation!(pres, generator, rhs)
   return generator
+end
+
+""" Merge the second presentation into the first.
+
+The first presentation is mutated and returned; the second is not.
+"""
+function merge_presentation!{T}(pres::Presentation{T}, other::Presentation{T})
+  union!(pres.generators, other.generators)
+  merge!(pres.generators_by_name, other.generators_by_name)
+  union!(pres.equations, other.equations)
+  return pres
 end
 
 # Presentation macro
