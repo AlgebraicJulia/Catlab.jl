@@ -11,7 +11,7 @@ module Present
 export @present, Presentation, Equation, generator, generators, has_generator,
   equations, add_generator!, add_generators!, add_definition!, add_equation!
 
-import DataStructures: OrderedDict
+import DataStructures: OrderedSet
 using Match
 using ..Meta, ..Syntax
 
@@ -22,20 +22,25 @@ const GenExpr = BaseExpr{:generator}
 const Equation = Pair{<:BaseExpr}{<:BaseExpr}
 
 mutable struct Presentation{T}
-  generators::Vector{GenExpr}
-  generators_by_name::OrderedDict{T,GenExpr}
-  equations::Vector{Equation}
+  generators::OrderedSet{GenExpr}
+  generators_by_name::Dict{T,GenExpr}
+  equations::OrderedSet{Equation}
 end
-Presentation(T::Type) = Presentation{T}(GenExpr[], OrderedDict{T,GenExpr}(), Equation[])
+Presentation(T::Type) = Presentation{T}(
+  OrderedSet{GenExpr}(), Dict{T,GenExpr}(), OrderedSet{Equation}())
 Presentation() = Presentation(Symbol)
-
-generators(pres::Presentation) = pres.generators
-generators(pres::Presentation, typ::Type) = 
-  filter(x -> isa(x,typ), pres.generators)
-equations(pres::Presentation) = pres.equations
 
 # Presentation
 ##############
+
+""" Get all generators of a presentation.
+"""
+function generators(pres::Presentation)::Vector
+  collect(pres.generators)
+end
+function generators(pres::Presentation, typ::Type)::Vector
+  filter(x -> isa(x,typ), collect(pres.generators))
+end
 
 """ Retrieve a generator by name.
 """
@@ -70,6 +75,12 @@ function add_generators!(pres::Presentation, exprs)
   for expr in exprs
     add_generator!(pres, expr)
   end
+end
+
+""" Get all equations of a presentation.
+"""
+function equations(pres::Presentation)::Vector
+  collect(pres.equations)
 end
 
 """ Add an equation between terms to a presentation.
