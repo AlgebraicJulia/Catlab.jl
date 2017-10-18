@@ -173,26 +173,26 @@ terms = Dict(:Elem => (x) -> string(first(x)))
 X, Y, Z = [ Ob(FreeCategory.Ob, sym) for sym in [:X, :Y, :Z] ]
 f = Hom(:f, X, Y)
 g = Hom(:g, Y, Z)
-@test to_json(X) == ["Ob", "X"]
-@test to_json(f) == ["Hom", "f", ["Ob", "X"], ["Ob", "Y"]]
-@test to_json(compose(f,g)) == [
+@test to_json_sexpr(X) == ["Ob", "X"]
+@test to_json_sexpr(f) == ["Hom", "f", ["Ob", "X"], ["Ob", "Y"]]
+@test to_json_sexpr(compose(f,g)) == [
   "compose",
   ["Hom", "f", ["Ob", "X"], ["Ob", "Y"]],
   ["Hom", "g", ["Ob", "Y"], ["Ob", "Z"]],
 ]
 
 # From JSON
-@test parse_json(FreeMonoid, [:Elem, "x"]) == Elem(FreeMonoid, :x)
-@test parse_json(FreeMonoid, [:munit]) == munit(FreeMonoid.Elem)
-@test parse_json(FreeCategory, ["Ob", "X"]) == X
-@test parse_json(FreeCategory, ["Ob", "X"]; symbols=false) ==
+@test parse_json_sexpr(FreeMonoid, [:Elem, "x"]) == Elem(FreeMonoid, :x)
+@test parse_json_sexpr(FreeMonoid, [:munit]) == munit(FreeMonoid.Elem)
+@test parse_json_sexpr(FreeCategory, ["Ob", "X"]) == X
+@test parse_json_sexpr(FreeCategory, ["Ob", "X"]; symbols=false) ==
   Ob(FreeCategory.Ob, "X")
-@test parse_json(FreeCategory, ["Hom", "f", ["Ob", "X"], ["Ob", "Y"]]) == f
-@test parse_json(FreeCategory, ["Hom", "f", ["Ob", "X"], ["Ob", "Y"]]; symbols=false) ==
+@test parse_json_sexpr(FreeCategory, ["Hom", "f", ["Ob", "X"], ["Ob", "Y"]]) == f
+@test parse_json_sexpr(FreeCategory, ["Hom", "f", ["Ob", "X"], ["Ob", "Y"]]; symbols=false) ==
   Hom("f", Ob(FreeCategory.Ob, "X"), Ob(FreeCategory.Ob, "Y"))
 
 # Round trip
-@test parse_json(FreeCategory, to_json(compose(f,g))) == compose(f,g)
-@test parse_json(FreeCategory, to_json(id(X))) == id(X)
+@test parse_json_sexpr(FreeCategory, to_json_sexpr(compose(f,g))) == compose(f,g)
+@test parse_json_sexpr(FreeCategory, to_json_sexpr(id(X))) == id(X)
 
 end

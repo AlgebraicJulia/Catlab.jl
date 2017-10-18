@@ -14,8 +14,9 @@ module to make the construction of syntax simple but flexible.
 """
 module Syntax
 export @syntax, GATExpr, SyntaxDomainError, head, args, type_args, first, last,
-  invoke_term, functor, to_json, parse_json, show_sexpr, show_unicode,
-  show_unicode_infix, show_latex, show_latex_infix, show_latex_script
+  invoke_term, functor, to_json_sexpr, parse_json_sexpr, show_sexpr,
+  show_unicode, show_unicode_infix, show_latex, show_latex_infix,
+  show_latex_script
 
 import Base: first, last, show, showerror, datatype_name, datatype_module
 import Base.Meta: show_sexpr
@@ -404,31 +405,52 @@ end
 # Serialization
 ###############
 
-""" Serialize expression as JSON-able Julia object.
+""" Serialize expression as JSON-able S-expression.
 
 The format is an S-expression encoded as JSON, e.g., "compose(f,g)" is
-represented as [:compose, f, g].
-
-Generator values should be symbols, strings, or numbers.
+represented as ["compose", f, g].
 """
-function to_json(expr::GATExpr)
-  [string(constructor_name(expr)); map(to_json, args(expr))]
+function to_json_sexpr(expr::GATExpr)
+  [ string(constructor_name(expr)); map(to_json_sexpr, args(expr)) ]
 end
-to_json(x::Symbol) = string(x)
-to_json(x::AbstractString) = x
-to_json(x::Real) = x
+to_json_sexpr(::Void) = nothing
+to_json_sexpr(x::String) = x
+to_json_sexpr(x::Real) = x
+to_json_sexpr(x::Bool) = x
+to_json_sexpr(x) = string(x)
 
-""" Deserialize expression from JSON-able Julia object.
+""" Deserialize expression from JSON-able S-expression.
 
 If `symbols` is true (the default), strings are converted to symbols.
 """
-function parse_json(syntax_module::Module, sexpr::Vector; kw...)
-  name = Symbol(first(sexpr))
-  args = [ parse_json(syntax_module, x; kw...) for x in sexpr[2:end] ]
-  invoke_term(syntax_module, name, args...)
+function parse_json_sexpr(syntax_module::Module, sexpr;
+    load_value::Function = default_load_json_value,
+    load_term::Function = default_load_json_term,
+    symbols::Bool = true,
+  )
+  typeclass = syntax_module.signature().class()
+  typelens = Dict(cons.name => length(cons.params)
+                  for cons in typeclass.signature.types)
+  
+  function parse_impl(sexpr::Vector, ::Type{Val{true}})
+    name = Symbol(sexpr[1])
+    nargs = length(sexpr) - 1
+    args = [
+      parse_impl(arg, Val{!(i == 1 && nargs-1 == get(typelens, name, nothing))})
+      for (i, arg) in enumerate(sexpr[2:end])
+    ]
+    invoke_term(syntax_module, name, args...)
+  end
+  parse_impl(x, ::Type{Val{true}}) = load_term(x)
+  parse_impl(x, ::Type{Val{false}}) = load_value(x)
+  parse_impl(x::String, ::Type{Val{true}}) = load_term(symbols ? Symbol(x) : x)
+  parse_impl(x::String, ::Type{Val{false}}) = load_value(symbols ? Symbol(x) : x)
+  
+  parse_impl(sexpr, Val{true})
 end
-parse_json(::Module, x::AbstractString; symbols=true) = symbols ? Symbol(x) : x
-parse_json(::Module, x::Real; kw...) = x
+
+default_load_json_value(x) = x
+default_load_json_term(x) = error("Loading terms by name is not enabled")
 
 # Pretty-print
 ##############
