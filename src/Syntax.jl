@@ -455,17 +455,21 @@ end
 show_unicode(expr::BaseExpr) = show_unicode(STDOUT, expr)
 show_unicode(io::IO, x::Any; kw...) = show(io, x)
 
-# By default, show in prefix notation.
 function show_unicode(io::IO, expr::BaseExpr; kw...)
+  # By default, show in prefix notation.
   print(io, head(expr))
   print(io, "[")
   join(io, [sprint(show_unicode, arg) for arg in args(expr)], ",")
   print(io, "]")
 end
-show_unicode(io::IO, expr::BaseExpr{:generator}; kw...) = print(io, first(expr))
 
-function show_unicode_infix(io::IO, expr::BaseExpr, op::String; paren::Bool=false)
-  show_unicode_paren(io::IO, expr::BaseExpr) = show_unicode(io, expr; paren=true)
+function show_unicode(io::IO, expr::BaseExpr{:generator}; kw...)
+  print(io, first(expr))
+end
+
+function show_unicode_infix(io::IO, expr::BaseExpr, op::String;
+                            paren::Bool=false)
+  show_unicode_paren(io, expr) = show_unicode(io, expr; paren=true)
   if (paren) print(io, "(") end
   join(io, [sprint(show_unicode_paren, arg) for arg in args(expr)], op)
   if (paren) print(io, ")") end
@@ -479,16 +483,16 @@ show_latex(expr::BaseExpr) = show_latex(STDOUT, expr)
 show_latex(io::IO, sym::Symbol; kw...) = print(io, sym)
 show_latex(io::IO, x::Any; kw...) = show(io, x)
 
-# By default, show in prefix notation.
 function show_latex(io::IO, expr::BaseExpr; kw...)
+  # By default, show in prefix notation.
   print(io, "\\mathop{\\mathrm{$(head(expr))}}")
   print(io, "\\left[")
   join(io, [sprint(show_latex, arg) for arg in args(expr)], ",")
   print(io, "\\right]")
 end
 
-# Try to be smart about using text or math mode.
 function show_latex(io::IO, expr::BaseExpr{:generator}; kw...)
+  # Try to be smart about using text or math mode.
   content = string(first(expr))
   if all(isalpha, content) && length(content) > 1
     print(io, "\\mathrm{$content}")
@@ -497,15 +501,17 @@ function show_latex(io::IO, expr::BaseExpr{:generator}; kw...)
   end
 end
 
-function show_latex_infix(io::IO, expr::BaseExpr, op::String; paren::Bool=false, kw...)
-  show_latex_paren(io::IO, expr::BaseExpr) = show_latex(io, expr; paren=true, kw...)
+function show_latex_infix(io::IO, expr::BaseExpr, op::String;
+                          paren::Bool=false, kw...)
+  show_latex_paren(io, expr) = show_latex(io, expr; paren=true, kw...)
   sep = op == " " ? op : " $op "
   if (paren) print(io, "\\left(") end
   join(io, [sprint(show_latex_paren, arg) for arg in args(expr)], sep)
   if (paren) print(io, "\\right)") end
 end
 
-function show_latex_script(io::IO, expr::BaseExpr, head::String; super::Bool=false, kw...)
+function show_latex_script(io::IO, expr::BaseExpr, head::String;
+                           super::Bool=false, kw...)
   print(io, head, super ? "^" : "_", "{")
   join(io, [sprint(show_latex, arg) for arg in args(expr)], ",")
   print(io, "}")
