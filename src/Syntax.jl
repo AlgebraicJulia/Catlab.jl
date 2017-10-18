@@ -15,10 +15,9 @@ module to make the construction of syntax simple but flexible.
 module Syntax
 export @syntax, GATExpr, SyntaxDomainError, head, args, type_args, first, last,
   invoke_term, functor, to_json_sexpr, parse_json_sexpr, show_sexpr,
-  show_unicode, show_unicode_infix, show_latex, show_latex_infix,
-  show_latex_script
+  show_unicode, show_latex
 
-import Base: first, last, show, showerror, datatype_name, datatype_module
+import Base: first, last, datatype_name, datatype_module
 import Base.Meta: show_sexpr
 using Match
 
@@ -62,20 +61,22 @@ function Base.hash(e::GATExpr, h::UInt)
   hash(args(e), hash(head(e), h))
 end
 
-function show(io::IO, expr::GATExpr)
+function Base.show(io::IO, expr::GATExpr)
   print(io, head(expr))
   print(io, "(")
   join(io, args(expr), ",")
   print(io, ")")
 end
-show(io::IO, expr::GATExpr{:generator}) = print(io, first(expr))
+function Base.show(io::IO, expr::GATExpr{:generator})
+  print(io, first(expr))
+end
 
 struct SyntaxDomainError <: Exception
   constructor::Symbol
   args::Vector
 end
 
-function showerror(io::IO, exc::SyntaxDomainError)
+function Base.showerror(io::IO, exc::SyntaxDomainError)
   print(io, "Domain error in term constructor $(exc.constructor)(")
   join(io, exc.args, ",")
   print(io, ")")

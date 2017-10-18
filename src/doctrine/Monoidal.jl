@@ -43,18 +43,18 @@ ndims(expr::ObExpr{:otimes}) = sum(map(ndims, args(expr)))
 ndims(expr::ObExpr{:munit}) = 0
 
 function show_unicode(io::IO, expr::ObExpr{:otimes}; kw...)
-  show_unicode_infix(io, expr, "⊗"; kw...)
+  Syntax.show_unicode_infix(io, expr, "⊗"; kw...)
 end
 function show_unicode(io::IO, expr::HomExpr{:otimes}; kw...)
-  show_unicode_infix(io, expr, "⊗"; kw...)
+  Syntax.show_unicode_infix(io, expr, "⊗"; kw...)
 end
 show_unicode(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
 
 function show_latex(io::IO, expr::ObExpr{:otimes}; kw...)
-  show_latex_infix(io, expr, "\\otimes"; kw...)
+  Syntax.show_latex_infix(io, expr, "\\otimes"; kw...)
 end
 function show_latex(io::IO, expr::HomExpr{:otimes}; kw...)
-  show_latex_infix(io, expr, "\\otimes"; kw...)
+  Syntax.show_latex_infix(io, expr, "\\otimes"; kw...)
 end
 show_latex(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
 
@@ -76,7 +76,7 @@ end
 end
 
 function show_latex(io::IO, expr::HomExpr{:braid}; kw...)
-  show_latex_script(io, expr, "\\sigma")
+  Syntax.show_latex_script(io, expr, "\\sigma")
 end
 
 # (Co)cartesian category
@@ -117,10 +117,10 @@ Of course, this convention could be reversed.
 end
 
 function show_latex(io::IO, expr::HomExpr{:mcopy}; kw...)
-  show_latex_script(io, expr, "\\Delta")
+  Syntax.show_latex_script(io, expr, "\\Delta")
 end
 function show_latex(io::IO, expr::HomExpr{:delete}; kw...)
-  show_latex_script(io, expr, "\\lozenge")
+  Syntax.show_latex_script(io, expr, "\\lozenge")
 end
 
 """ Doctrine of *cocartesian category*
@@ -158,10 +158,10 @@ Of course, this convention could be reversed.
 end
 
 function show_latex(io::IO, expr::HomExpr{:mmerge}; kw...)
-  show_latex_script(io, expr, "\\nabla")
+  Syntax.show_latex_script(io, expr, "\\nabla")
 end
 function show_latex(io::IO, expr::HomExpr{:create}; kw...)
-  show_latex_script(io, expr, "\\square")
+  Syntax.show_latex_script(io, expr, "\\square")
 end
 
 # Biproduct category
@@ -232,7 +232,7 @@ function show_latex(io::IO, expr::ObExpr{:hom}; kw...)
   print(io, "}")
 end
 function show_latex(io::IO, expr::HomExpr{:ev}; kw...)
-  show_latex_script(io, expr, "\\mathrm{eval}")
+  Syntax.show_latex_script(io, expr, "\\mathrm{eval}")
 end
 function show_latex(io::IO, expr::HomExpr{:curry}; kw...)
   print(io, "\\lambda ")
@@ -275,10 +275,10 @@ function show_latex(io::IO, expr::ObExpr{:dual}; kw...)
   print(io, "^*")
 end
 function show_latex(io::IO, expr::HomExpr{:dunit}; kw...)
-  show_latex_script(io, expr, "\\eta")
+  Syntax.show_latex_script(io, expr, "\\eta")
 end
 function show_latex(io::IO, expr::HomExpr{:dcounit}; kw...)
-  show_latex_script(io, expr, "\\varepsilon")
+  Syntax.show_latex_script(io, expr, "\\varepsilon")
 end
 
 # Dagger category

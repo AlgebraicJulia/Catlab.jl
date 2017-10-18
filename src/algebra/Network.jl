@@ -366,10 +366,10 @@ In this context, `⋅` is too easily confused for multiplication, ` ` (space) is
 too implicit, and `∘` has a right-to-left connotation.
 """
 function show_latex(io::IO, expr::AlgebraicNet.Hom{:compose}; paren::Bool=false, kw...)
-  show_latex_infix(io, expr, ";"; paren=paren, kw...)
+  Syntax.show_latex_infix(io, expr, ";"; paren=paren, kw...)
 end
 function show_unicode(io::IO, expr::AlgebraicNet.Hom{:compose}; kw...)
-  show_unicode_infix(io, expr, "; "; kw...)
+  Syntax.show_unicode_infix(io, expr, "; "; kw...)
 end
 
 function show_latex(io::IO, expr::AlgebraicNet.Hom{:linear}; kw...)

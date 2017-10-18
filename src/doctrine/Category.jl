@@ -38,14 +38,14 @@ compose(fs::Vector) = foldl(compose, fs)
 end
 
 function show_unicode(io::IO, expr::HomExpr{:compose}; kw...)
-  show_unicode_infix(io, expr, "⋅"; kw...)
+  Syntax.show_unicode_infix(io, expr, "⋅"; kw...)
 end
 
 function show_latex(io::IO, expr::HomExpr{:id}; kw...)
-  show_latex_script(io, expr, "\\mathrm{id}")
+  Syntax.show_latex_script(io, expr, "\\mathrm{id}")
 end
 function show_latex(io::IO, expr::HomExpr{:compose}; paren::Bool=false, kw...)
-  show_latex_infix(io, expr, "\\cdot"; paren=paren)
+  Syntax.show_latex_infix(io, expr, "\\cdot"; paren=paren)
 end
 
 function show(io::IO, ::MIME"text/latex", expr::GATExpr)
@@ -105,15 +105,15 @@ Checks domains of morphisms but not 2-morphisms.
 end
 
 function show_unicode(io::IO, expr::Hom2Expr{:compose}; kw...)
-  show_unicode_infix(io, expr, "⋅"; kw...)
+  Syntax.show_unicode_infix(io, expr, "⋅"; kw...)
 end
 function show_unicode(io::IO, expr::Hom2Expr{:compose2}; kw...)
-  show_unicode_infix(io, expr, "*"; kw...)
+  Syntax.show_unicode_infix(io, expr, "*"; kw...)
 end
 
 function show_latex(io::IO, expr::Hom2Expr{:compose}; kw...)
-  show_latex_infix(io, expr, "\\cdot"; kw...)
+  Syntax.show_latex_infix(io, expr, "\\cdot"; kw...)
 end
 function show_latex(io::IO, expr::Hom2Expr{:compose2}; kw...)
-  show_latex_infix(io, expr, "*"; kw...)
+  Syntax.show_latex_infix(io, expr, "*"; kw...)
 end
