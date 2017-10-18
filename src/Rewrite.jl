@@ -14,7 +14,7 @@ import ..Syntax: head
 Maintains the normal form `op(e1,e2,...)` where `e1`,`e2`,... are expressions
 that are *not* applications of `op()`
 """
-function associate{E<:BaseExpr}(expr::E)::E
+function associate{E<:GATExpr}(expr::E)::E
   op, e1, e2 = head(expr), first(expr), last(expr)
   args1 = head(e1) == op ? args(e1) : [e1]
   args2 = head(e2) == op ? args(e2) : [e2]
@@ -25,7 +25,7 @@ end
 
 Reduces a freely generated (typed) monoid to normal form.
 """
-function associate_unit(expr::BaseExpr, unit::Function)::BaseExpr
+function associate_unit(expr::GATExpr, unit::Function)::GATExpr
   e1, e2 = first(expr), last(expr)
   if (head(e1) == head(unit)) e2
   elseif (head(e2) == head(unit)) e1
@@ -34,8 +34,8 @@ end
 
 """ Distribute unary operation over a binary operation.
 """
-function distribute_unary(raw_expr::BaseExpr, un_op::Function,
-                          bin_op::Function)::BaseExpr
+function distribute_unary(raw_expr::GATExpr, un_op::Function,
+                          bin_op::Function)::GATExpr
   if head(raw_expr) != head(un_op)
     return raw_expr
   end
@@ -49,8 +49,8 @@ end
 
 """ Simplify unary operation that is an anti-involution on a (typed) monoid.
 """ 
-function anti_involute(raw_expr::BaseExpr, inv::Function, op::Function,
-                       unit::Function)::BaseExpr
+function anti_involute(raw_expr::GATExpr, inv::Function, op::Function,
+                       unit::Function)::GATExpr
   if head(raw_expr) != head(inv)
     return raw_expr
   end

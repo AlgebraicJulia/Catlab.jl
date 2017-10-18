@@ -48,7 +48,7 @@ function show_latex(io::IO, expr::HomExpr{:compose}; paren::Bool=false, kw...)
   show_latex_infix(io, expr, "\\cdot"; paren=paren)
 end
 
-function show(io::IO, ::MIME"text/latex", expr::BaseExpr)
+function show(io::IO, ::MIME"text/latex", expr::GATExpr)
   print(io, "\$")
   show_latex(io, expr)
   print(io, "\$")

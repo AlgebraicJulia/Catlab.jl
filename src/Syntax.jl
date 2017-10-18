@@ -13,7 +13,7 @@ general, a single theory may have many different syntaxes. The purpose of this
 module to make the construction of syntax simple but flexible.
 """
 module Syntax
-export @syntax, BaseExpr, SyntaxDomainError, head, args, type_args, first, last,
+export @syntax, GATExpr, SyntaxDomainError, head, args, type_args, first, last,
   invoke_term, functor, to_json, parse_json, show_sexpr, show_unicode,
   show_unicode_infix, show_latex, show_latex_infix, show_latex_script
 
@@ -46,28 +46,28 @@ However, the *term constructor* is represented as a type parameter, rather than
 as a `head` field. This makes dispatch using Julia's type system more
 convenient.
 """
-abstract type BaseExpr{T} end
+abstract type GATExpr{T} end
 
-head{T}(::BaseExpr{T}) = T
-args(expr::BaseExpr) = expr.args
-first(expr::BaseExpr) = first(args(expr))
-last(expr::BaseExpr) = last(args(expr))
-type_args(expr::BaseExpr) = expr.type_args
+head{T}(::GATExpr{T}) = T
+args(expr::GATExpr) = expr.args
+first(expr::GATExpr) = first(args(expr))
+last(expr::GATExpr) = last(args(expr))
+type_args(expr::GATExpr) = expr.type_args
 
-function Base.:(==)(e1::BaseExpr, e2::BaseExpr)
+function Base.:(==)(e1::GATExpr, e2::GATExpr)
   head(e1) == head(e2) && args(e1) == args(e2) && type_args(e1) == type_args(e2)
 end
-function Base.hash(e::BaseExpr, h::UInt)
+function Base.hash(e::GATExpr, h::UInt)
   hash(args(e), hash(head(e), h))
 end
 
-function show(io::IO, expr::BaseExpr)
+function show(io::IO, expr::GATExpr)
   print(io, head(expr))
   print(io, "(")
   join(io, args(expr), ",")
   print(io, ")")
 end
-show(io::IO, expr::BaseExpr{:generator}) = print(io, first(expr))
+show(io::IO, expr::GATExpr{:generator}) = print(io, first(expr))
 
 struct SyntaxDomainError <: Exception
   constructor::Symbol
@@ -85,7 +85,7 @@ end
 
 """ Define a *syntax* system for a generalized algebraic theory (GAT).
 
-A syntax system consists of Julia types (with top type `BaseExpr`) for each type
+A syntax system consists of Julia types (with top type `GATExpr`) for each type
 constructor in the signature, plus Julia functions for
 
 1. *Generators*: creating new generator terms, e.g., objects or morphisms
@@ -171,7 +171,7 @@ end
 """ Generate syntax type definitions.
 """
 function gen_type(cons::TypeConstructor, base_type::Type=Any)::Expr
-  base_expr = GlobalRef(Syntax, :BaseExpr)
+  base_expr = GlobalRef(Syntax, :GATExpr)
   base_name = if base_type == Any
     base_expr
   else
@@ -326,7 +326,7 @@ end
 
 """ Name of constructor that created expression.
 """
-function constructor_name(expr::BaseExpr)::Symbol
+function constructor_name(expr::GATExpr)::Symbol
   if head(expr) == :generator
     datatype_name(typeof(expr))
   else
@@ -336,7 +336,7 @@ end
 
 """ Create generator of the same type as the given expression.
 """
-function generator_like(expr::BaseExpr, value)::BaseExpr
+function generator_like(expr::GATExpr, value)::GATExpr
   invoke_term(
     datatype_module(typeof(expr)),
     datatype_name(typeof(expr)),
@@ -372,7 +372,7 @@ The `terms` dictionary can also be used for special handling of non-generator
 expressions. One use case for this capability is defining forgetful functors,
 which map non-generators to generators.
 """
-function functor(types::Tuple, expr::BaseExpr;
+function functor(types::Tuple, expr::GATExpr;
                  generators::Associative=Dict(), terms::Associative=Dict())
   # Special case: look up a specific generator.
   if head(expr) == :generator && haskey(generators, expr)
@@ -389,7 +389,7 @@ function functor(types::Tuple, expr::BaseExpr;
   # Recursively evalute the arguments.
   term_args = []
   for arg in args(expr)
-    if isa(arg, BaseExpr)
+    if isa(arg, GATExpr)
       arg = functor(types, arg; generators=generators, terms=terms)
     end
     push!(term_args, arg)
@@ -411,7 +411,7 @@ represented as [:compose, f, g].
 
 Generator values should be symbols, strings, or numbers.
 """
-function to_json(expr::BaseExpr)
+function to_json(expr::GATExpr)
   [string(constructor_name(expr)); map(to_json, args(expr))]
 end
 to_json(x::Symbol) = string(x)
@@ -437,9 +437,9 @@ parse_json(::Module, x::Real; kw...) = x
 
 Cf. the standard library function `Meta.show_sexpr`.
 """
-show_sexpr(expr::BaseExpr) = show_sexpr(STDOUT, expr)
+show_sexpr(expr::GATExpr) = show_sexpr(STDOUT, expr)
 
-function show_sexpr(io::IO, expr::BaseExpr)
+function show_sexpr(io::IO, expr::GATExpr)
   if head(expr) == :generator
     print(io, repr(first(expr)))
   else
@@ -452,10 +452,10 @@ end
 
 """ Show the expression in infix notation using Unicode symbols.
 """
-show_unicode(expr::BaseExpr) = show_unicode(STDOUT, expr)
+show_unicode(expr::GATExpr) = show_unicode(STDOUT, expr)
 show_unicode(io::IO, x::Any; kw...) = show(io, x)
 
-function show_unicode(io::IO, expr::BaseExpr; kw...)
+function show_unicode(io::IO, expr::GATExpr; kw...)
   # By default, show in prefix notation.
   print(io, head(expr))
   print(io, "[")
@@ -463,11 +463,11 @@ function show_unicode(io::IO, expr::BaseExpr; kw...)
   print(io, "]")
 end
 
-function show_unicode(io::IO, expr::BaseExpr{:generator}; kw...)
+function show_unicode(io::IO, expr::GATExpr{:generator}; kw...)
   print(io, first(expr))
 end
 
-function show_unicode_infix(io::IO, expr::BaseExpr, op::String;
+function show_unicode_infix(io::IO, expr::GATExpr, op::String;
                             paren::Bool=false)
   show_unicode_paren(io, expr) = show_unicode(io, expr; paren=true)
   if (paren) print(io, "(") end
@@ -479,11 +479,11 @@ end
 
 Does *not* include `\$` or `\\[begin|end]{equation}` delimiters.
 """
-show_latex(expr::BaseExpr) = show_latex(STDOUT, expr)
+show_latex(expr::GATExpr) = show_latex(STDOUT, expr)
 show_latex(io::IO, sym::Symbol; kw...) = print(io, sym)
 show_latex(io::IO, x::Any; kw...) = show(io, x)
 
-function show_latex(io::IO, expr::BaseExpr; kw...)
+function show_latex(io::IO, expr::GATExpr; kw...)
   # By default, show in prefix notation.
   print(io, "\\mathop{\\mathrm{$(head(expr))}}")
   print(io, "\\left[")
@@ -491,7 +491,7 @@ function show_latex(io::IO, expr::BaseExpr; kw...)
   print(io, "\\right]")
 end
 
-function show_latex(io::IO, expr::BaseExpr{:generator}; kw...)
+function show_latex(io::IO, expr::GATExpr{:generator}; kw...)
   # Try to be smart about using text or math mode.
   content = string(first(expr))
   if all(isalpha, content) && length(content) > 1
@@ -501,7 +501,7 @@ function show_latex(io::IO, expr::BaseExpr{:generator}; kw...)
   end
 end
 
-function show_latex_infix(io::IO, expr::BaseExpr, op::String;
+function show_latex_infix(io::IO, expr::GATExpr, op::String;
                           paren::Bool=false, kw...)
   show_latex_paren(io, expr) = show_latex(io, expr; paren=true, kw...)
   sep = op == " " ? op : " $op "
@@ -510,7 +510,7 @@ function show_latex_infix(io::IO, expr::BaseExpr, op::String;
   if (paren) print(io, "\\right)") end
 end
 
-function show_latex_script(io::IO, expr::BaseExpr, head::String;
+function show_latex_script(io::IO, expr::GATExpr, head::String;
                            super::Bool=false, kw...)
   print(io, head, super ? "^" : "_", "{")
   join(io, [sprint(show_latex, arg) for arg in args(expr)], ",")

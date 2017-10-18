@@ -4,9 +4,9 @@ using Base.Test
 using Catlab.Doctrine
 using Catlab.Syntax
 
-sexpr(expr::BaseExpr) = sprint(show_sexpr, expr)
-unicode(expr::BaseExpr) = sprint(show_unicode, expr)
-latex(expr::BaseExpr) = sprint(show_latex, expr)
+sexpr(expr::GATExpr) = sprint(show_sexpr, expr)
+unicode(expr::GATExpr) = sprint(show_unicode, expr)
+latex(expr::GATExpr) = sprint(show_latex, expr)
 
 # Category
 ##########

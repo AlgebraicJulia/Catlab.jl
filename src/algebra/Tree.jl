@@ -24,10 +24,10 @@ importall ..Network
 
 """ An expression tree for computer algebra.
 
-We call these "formulas" to avoid confusion with Julia expressions (`Expr`) and
-GAT expressions (`GAT.BaseExpr`). The operations (head symbols) are interpreted
-Julia functions, e.g., `:/` is right multiplication by the matrix pseudoinverse
-while `:./` is the usual (elementwise) division.
+We call these "formulas" to avoid confusion with Julia expressions (`Base.Expr`)
+and GAT expressions (`Catlab.Syntax.GATExpr`). The operations (head symbols)
+are interpreted Julia functions, e.g., `:/` is right multiplication by the
+matrix pseudoinverse while `:./` is the usual (elementwise) division.
 """
 @auto_hash_equals struct Formula
   head::Symbol

@@ -22,10 +22,10 @@ export AbelianBicategoryRelations, FreeAbelianBicategoryRelations,
   plus, coplus, zero, cozero
 
 using ..Catlab
-import ..Syntax: BaseExpr, show_unicode, show_latex
+import ..Syntax: GATExpr, show_unicode, show_latex
 
 # Base types for expressions in a category.
-abstract type CategoryExpr{T} <: BaseExpr{T} end
+abstract type CategoryExpr{T} <: GATExpr{T} end
 abstract type ObExpr{T} <: CategoryExpr{T} end
 abstract type HomExpr{T} <: CategoryExpr{T} end
 abstract type Hom2Expr{T} <: CategoryExpr{T} end

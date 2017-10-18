@@ -6,7 +6,7 @@ export to_tikz
 using Match
 
 import ...Doctrine: ObExpr, HomExpr, dom, codom, head, args, compose, id
-import ...Syntax: BaseExpr, show_latex
+import ...Syntax: GATExpr, show_latex
 import ..TikZ
 
 # Data types
@@ -455,7 +455,7 @@ box(name::String, f::HomExpr{:compose}) = sequence(name, args(f))
 box(name::String, f::HomExpr{:otimes}) = parallel(name, args(f))
 box(name::String, f::HomExpr{:braid}) = crossing(name, dom(f))
 
-function label(expr::BaseExpr{:generator})::String
+function label(expr::GATExpr{:generator})::String
   if style[:math_mode]
     sprint(show_latex, expr)
   else
@@ -471,7 +471,7 @@ module Defaults
   using Catlab.Doctrine
   using Catlab.Syntax
   
-  generator(expr::BaseExpr)::BaseExpr{:generator} = first(expr)
+  generator(expr::GATExpr)::GATExpr{:generator} = first(expr)
   
   # Category
   box(name::String, f::FreeCategory.Hom{:generator}) = rect(name, f)

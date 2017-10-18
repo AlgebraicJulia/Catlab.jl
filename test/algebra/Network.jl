@@ -4,8 +4,8 @@ using Base.Test
 using Catlab.Algebra
 using Catlab.Syntax
 
-unicode(expr::BaseExpr) = sprint(show_unicode, expr)
-latex(expr::BaseExpr) = sprint(show_latex, expr)
+unicode(expr::GATExpr) = sprint(show_unicode, expr)
+latex(expr::GATExpr) = sprint(show_latex, expr)
 
 R = Ob(AlgebraicNet, :R)
 

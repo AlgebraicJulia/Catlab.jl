@@ -19,8 +19,8 @@ using ..Meta, ..Syntax
 # Data types
 ############
 
-const GenExpr = BaseExpr{:generator}
-const Equation = Pair{<:BaseExpr}{<:BaseExpr}
+const GenExpr = GATExpr{:generator}
+const Equation = Pair{<:GATExpr}{<:GATExpr}
 
 mutable struct Presentation{T}
   generators::OrderedSet{GenExpr}
@@ -86,13 +86,13 @@ end
 
 """ Add an equation between terms to a presentation.
 """
-function add_equation!(pres::Presentation, lhs::BaseExpr, rhs::BaseExpr)
+function add_equation!(pres::Presentation, lhs::GATExpr, rhs::GATExpr)
   push!(pres.equations, lhs => rhs)
 end
 
 """ Add a generator defined by an equation.
 """
-function add_definition!(pres::Presentation, name::Symbol, rhs::BaseExpr)
+function add_definition!(pres::Presentation, name::Symbol, rhs::GATExpr)
   generator = Syntax.generator_like(rhs, name)
   add_generator!(pres, generator)
   add_equation!(pres, generator, rhs)
