@@ -14,7 +14,9 @@ export @present, Presentation, Equation, generator, generators, has_generator,
 
 import DataStructures: OrderedSet
 using Match
+
 using ..Meta, ..Syntax
+import ..Syntax: parse_json_sexpr, to_json_sexpr
 
 # Data types
 ############
@@ -187,5 +189,23 @@ function translate_equation(lhs, rhs)::Expr
 end
 
 module_ref(sym::Symbol) = GlobalRef(Present, sym)
+
+# Serialization
+###############
+
+function to_json_sexpr(pres::Presentation, expr::GATExpr)
+  to_json_sexpr(expr;
+    by_reference = name -> has_generator(pres, name))
+end
+
+function parse_json_sexpr(pres::Presentation, syntax_module::Module, sexpr)
+  parse_json_sexpr(syntax_module, sexpr;
+    parse_reference = name -> generator(pres, name))
+end
+function parse_json_sexpr(pres::Presentation{Symbol}, syntax_module::Module, sexpr)
+  parse_json_sexpr(syntax_module, sexpr;
+    symbols = true,
+    parse_reference = name -> generator(pres, name))
+end
 
 end

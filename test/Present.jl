@@ -91,4 +91,22 @@ secretary = Hom(:secretary, Department, Employee)
   compose(secretary, works_in) => id(Department),
 ]
 
+# Serialization
+###############
+
+to_json(expr) = to_json_sexpr(Company, expr)
+from_json(sexpr) = parse_json_sexpr(Company, FreeCategory, sexpr)
+
+# To JSON
+to_json(generator(Company, :Employee)) == "Employee"
+to_json(generator(Company, :manager)) == "manager"
+to_json(compose(generator(Company, :manager), generator(Company, :manager))) ==
+  ["compose", "manager", "manager"]
+
+# From JSON
+@test from_json("Employee") == generator(Company, :Employee)
+@test from_json("manager") == generator(Company, :manager)
+@test from_json(["compose", "manager", "manager"]) ==
+  compose(generator(Company, :manager), generator(Company, :manager))
+
 end

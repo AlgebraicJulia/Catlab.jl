@@ -410,8 +410,14 @@ end
 The format is an S-expression encoded as JSON, e.g., "compose(f,g)" is
 represented as ["compose", f, g].
 """
-function to_json_sexpr(expr::GATExpr)
-  [ string(constructor_name(expr)); map(to_json_sexpr, args(expr)) ]
+function to_json_sexpr(expr::GATExpr;
+    by_reference::Function = default_to_json_by_reference
+  )
+  if head(expr) == :generator && by_reference(first(expr))
+    to_json_sexpr(first(expr))
+  else
+    [ string(constructor_name(expr)); map(to_json_sexpr, args(expr)) ]
+  end
 end
 to_json_sexpr(::Void) = nothing
 to_json_sexpr(x::String) = x
@@ -419,13 +425,15 @@ to_json_sexpr(x::Real) = x
 to_json_sexpr(x::Bool) = x
 to_json_sexpr(x) = string(x)
 
+default_to_json_by_reference(x) = false
+
 """ Deserialize expression from JSON-able S-expression.
 
 If `symbols` is true (the default), strings are converted to symbols.
 """
 function parse_json_sexpr(syntax_module::Module, sexpr;
-    load_value::Function = default_load_json_value,
-    load_term::Function = default_load_json_term,
+    parse_reference::Function = default_parse_json_reference,
+    parse_value::Function = default_parse_json_value,
     symbols::Bool = true,
   )
   typeclass = syntax_module.signature().class()
@@ -441,16 +449,16 @@ function parse_json_sexpr(syntax_module::Module, sexpr;
     ]
     invoke_term(syntax_module, name, args...)
   end
-  parse_impl(x, ::Type{Val{true}}) = load_term(x)
-  parse_impl(x, ::Type{Val{false}}) = load_value(x)
-  parse_impl(x::String, ::Type{Val{true}}) = load_term(symbols ? Symbol(x) : x)
-  parse_impl(x::String, ::Type{Val{false}}) = load_value(symbols ? Symbol(x) : x)
+  parse_impl(x, ::Type{Val{true}}) = parse_reference(x)
+  parse_impl(x, ::Type{Val{false}}) = parse_term(x)
+  parse_impl(x::String, ::Type{Val{true}}) = parse_reference(symbols ? Symbol(x) : x)
+  parse_impl(x::String, ::Type{Val{false}}) = parse_value(symbols ? Symbol(x) : x)
   
   parse_impl(sexpr, Val{true})
 end
 
-default_load_json_value(x) = x
-default_load_json_term(x) = error("Loading terms by name is not enabled")
+default_parse_json_reference(x) = error("Loading terms by name is not enabled")
+default_parse_json_value(x) = x
 
 # Pretty-print
 ##############
