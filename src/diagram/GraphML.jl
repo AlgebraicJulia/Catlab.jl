@@ -1,5 +1,9 @@
 """ Serialize abstract wiring diagrams as GraphML.
 
+Custom serialization of box, port, and wire values is supported. We depart
+mildly from the GraphML spec by supporting JSON data attributes for GraphML
+nodes, ports, and edges.
+
 References:
 
 - GraphML Primer: http://graphml.graphdrawing.org/primer/graphml-primer.html
@@ -9,7 +13,9 @@ module GraphML
 export read_graphml, write_graphml
 
 using DataStructures: OrderedDict
+import JSON
 using LightXML
+
 using ..Wiring
 import ..Wiring: PortEdgeData
 
@@ -169,10 +175,14 @@ write_graphml_data_type(::Type{<:Integer}) = "int"
 write_graphml_data_type(::Type{<:Real}) = "double"
 write_graphml_data_type(::Type{String}) = "string"
 write_graphml_data_type(::Type{Symbol}) = "string"
+write_graphml_data_type{T}(::Type{Dict{String,T}}) = "json"
+write_graphml_data_type{T}(::Type{Vector{T}}) = "json"
 
 write_graphml_data_value(x::Number) = string(x)
 write_graphml_data_value(x::String) = x
 write_graphml_data_value(x::Symbol) = string(x)
+write_graphml_data_value(x::Dict) = JSON.json(x)
+write_graphml_data_value(x::Vector) = JSON.json(x)
 
 convert_to_graphml_data{T}(value::Dict{String,T}) = value
 convert_to_graphml_data(value) = Dict("value" => value)
@@ -316,6 +326,7 @@ read_graphml_data_value(::Type{Val{:long}}, s::String) = parse(Int, s)
 read_graphml_data_value(::Type{Val{:float}}, s::String) = parse(Float32, s)
 read_graphml_data_value(::Type{Val{:double}}, s::String) = parse(Float64, s)
 read_graphml_data_value(::Type{Val{:string}}, s::String) = s
+read_graphml_data_value(::Type{Val{:json}}, s::String) = JSON.parse(s)
 
 convert_from_graphml_data(::Type{Dict}, data::Dict) = data
 convert_from_graphml_data(::Type{Void}, data::Dict) = nothing

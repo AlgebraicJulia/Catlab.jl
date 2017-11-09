@@ -8,6 +8,7 @@ Reexport
 DataStructures
 LightGraphs
 LightXML
+JSON
 
 # Optional dependencies:
 # GraphViz
