@@ -44,7 +44,7 @@ function to_graphviz(f::WiringDiagram;
   # Visible nodes for boxes.
   for v in box_ids(f)
     box = Wiring.box(f, v)
-    node = Graphviz.Node("n$v", label=node_label(box), id=node_id(box))
+    node = Graphviz.Node("n$v", label=node_html_label(box), id=node_id(box.value))
     push!(stmts, node)
   end
   
@@ -84,19 +84,19 @@ end
 
 """ Create an "HTML-like" node label for a box.
 """
-function node_label(box::Box)::Graphviz.Html
+function node_html_label(box::Box)::Graphviz.Html
   nin, nout = length(input_ports(box)), length(output_ports(box))
   Graphviz.Html("""
     <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-    <TR><TD>$(ports_label(InputPort,nin))</TD></TR>
-    <TR><TD BORDER="1" CELLPADDING="4">$(label(box))</TD></TR>
-    <TR><TD>$(ports_label(OutputPort,nout))</TD></TR>
+    <TR><TD>$(ports_html_label(InputPort,nin))</TD></TR>
+    <TR><TD BORDER="1" CELLPADDING="4">$(node_label(box.value))</TD></TR>
+    <TR><TD>$(ports_html_label(OutputPort,nout))</TD></TR>
     </TABLE>""")
 end
 
 """ Create an "HTML-like" label for the input or output ports of a box.
 """
-function ports_label(kind::PortKind, nports::Int)::Graphviz.Html
+function ports_html_label(kind::PortKind, nports::Int)::Graphviz.Html
   cells = if nports > 0
     join("""<TD HEIGHT="0" WIDTH="24" PORT="$(port_name(kind,i))"></TD>"""
          for i in 1:nports)
@@ -136,14 +136,14 @@ port_anchor(kind::PortKind) = kind == InputPort ? "n" : "s"
 
 """ Create a label for the main content of a box.
 """
-label(box::Box) = string(box.value)
+node_label(box_value::Any) = string(box_value)
 
 """ Create an identifer for a node for downstream use.
 
 It is included in the Graphviz output but is not used internally by Graphviz.
 Reference: http://www.graphviz.org/doc/info/attrs.html#d:id
 """
-node_id(box::Box) = label(box)
+node_id(box_value::Any) = node_label(box_value)
 
 """ Create a label for an edge.
 """
