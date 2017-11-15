@@ -439,16 +439,17 @@ function parse_json_sexpr(syntax_module::Module, sexpr;
   )
   signature_module = syntax_module.signature()
   signature = signature_module.class().signature
-  type_names = Set(cons.name for cons in signature.types)
+  type_lens = Dict(cons.name => length(cons.params) for cons in signature.types)
   
   # The "value" type is
   # - false if the sexpr should be parsed as a term (GAT expression)
   # - true if the sexpr should be parsed as a value (Julia object)
   function parse_impl(sexpr::Vector, ::Type{Val{false}})
     name = Symbol(sexpr[1])
+    nargs = length(sexpr) - 1
     args = [
       parse_impl(arg, Val{
-        (name in type_names && i==1) ||
+        (i == 1 && get(type_lens, name, nothing) == nargs-1) ||
         isa(arg, Bool) || isa(arg, Number) || isa(arg, Void)
       })
       for (i, arg) in enumerate(sexpr[2:end])
