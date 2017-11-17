@@ -31,13 +31,17 @@ wiring diagram.
 # Arguments
 - `graph_name="G"`: name of Graphviz digraph
 - `labels=false`: whether to label the wires
-- `xlabel=false`: whether to use Graphviz xlabels for the wires (if `labels` is true)
+- `xlabel=false`: whether to use Graphviz xlabels for the wires
+  (if `labels` is true)
+- `anchor_outer_ports=true`: whether to enforce ordering of input and output
+  ports of the outer box (i.e., ordering of incoming and outgoing wires)
 - `graph_attrs=default_graph_attrs`: top-level graph attributes
 - `node_attrs=default_node_attrs`: top-level node attributes
 - `edge_attrs=default_edge_attrs`: top-level edge attributes
 """
 function to_graphviz(f::WiringDiagram;
     graph_name::String="G", labels::Bool=false, xlabel::Bool=false,
+    anchor_outer_ports::Bool=true,
     graph_attrs::Graphviz.Attributes=Graphviz.Attributes(),
     node_attrs::Graphviz.Attributes=Graphviz.Attributes(),
     edge_attrs::Graphviz.Attributes=Graphviz.Attributes())::Graphviz.Graph
@@ -47,10 +51,12 @@ function to_graphviz(f::WiringDiagram;
   # Invisible nodes for incoming and outgoing wires.
   n_inputs, n_outputs = length(input_ports(f)), length(output_ports(f))
   if n_inputs > 0
-    push!(stmts, port_nodes(input_id(f), InputPort, n_inputs))
+    push!(stmts, port_nodes(
+      input_id(f), InputPort, n_inputs; anchor=anchor_outer_ports))
   end
   if n_outputs > 0
-    push!(stmts, port_nodes(output_id(f), OutputPort, n_outputs))
+    push!(stmts, port_nodes(
+      output_id(f), OutputPort, n_outputs; anchor=anchor_outer_ports))
   end
   # Visible nodes for boxes.
   for v in box_ids(f)
@@ -118,11 +124,17 @@ end
 
 """ Create invisible nodes for the input or output ports of an outer box.
 """
-function port_nodes(v::Int, kind::PortKind, nports::Int)::Graphviz.Subgraph
+function port_nodes(v::Int, kind::PortKind, nports::Int;
+                    anchor::Bool=true)::Graphviz.Subgraph
   @assert nports > 0
   nodes = [ "n$(v)p$(i)" for i in 1:nports ]
+  stmts = if anchor
+    Graphviz.Statement[ Graphviz.Edge(nodes) ]
+  else
+    Graphviz.Statement[ Graphviz.Node(node) for node in nodes ]
+  end
   Graphviz.Subgraph(
-    Graphviz.Edge(nodes),
+    stmts,
     graph_attrs=Graphviz.Attributes(
       :rank => kind == InputPort ? "source" : "sink",
       :rankdir => "LR",

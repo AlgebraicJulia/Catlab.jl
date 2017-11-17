@@ -45,7 +45,9 @@ graph = to_graphviz(WiringDiagram(Hom(:h, I, I)))
 graph = to_graphviz(compose(f,g))
 @test stmts(graph, Graphviz.Node, :id) == ["f","g"]
 
-graph = to_graphviz(otimes(f,g))
+graph = to_graphviz(otimes(f,g); anchor_outer_ports=true)
+@test stmts(graph, Graphviz.Node, :id) == ["f","g"]
+graph = to_graphviz(otimes(f,g); anchor_outer_ports=false)
 @test stmts(graph, Graphviz.Node, :id) == ["f","g"]
 
 end
