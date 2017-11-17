@@ -24,6 +24,17 @@ const default_edge_attrs = Graphviz.Attributes(
 )
 
 """ Render a wiring diagram using Graphviz.
+
+The input `f` can also be a morphism expression, which is converted into a
+wiring diagram.
+
+# Arguments
+- `graph_name="G"`: name of Graphviz digraph
+- `labels=false`: whether to label the wires
+- `xlabel=false`: whether to use Graphviz xlabels for the wires (if `labels` is true)
+- `graph_attrs=default_graph_attrs`: top-level graph attributes
+- `node_attrs=default_node_attrs`: top-level node attributes
+- `edge_attrs=default_edge_attrs`: top-level edge attributes
 """
 function to_graphviz(f::WiringDiagram;
     graph_name::String="G", labels::Bool=false, xlabel::Bool=false,
@@ -76,8 +87,6 @@ function to_graphviz(f::WiringDiagram;
     edge_attrs=merge(default_edge_attrs, edge_attrs))
 end
 
-""" Render a morphism expression as a wiring diagram using Graphviz.
-"""
 function to_graphviz(f::HomExpr; kw...)::Graphviz.Graph
   to_graphviz(to_wiring_diagram(f); kw...)
 end
