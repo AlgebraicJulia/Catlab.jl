@@ -36,10 +36,10 @@ function to_graphviz(f::WiringDiagram;
   # Invisible nodes for incoming and outgoing wires.
   n_inputs, n_outputs = length(input_ports(f)), length(output_ports(f))
   if n_inputs > 0
-    push!(stmts, port_nodes(input_id(f), n_inputs))
+    push!(stmts, port_nodes(input_id(f), InputPort, n_inputs))
   end
   if n_outputs > 0
-    push!(stmts, port_nodes(output_id(f), n_outputs))
+    push!(stmts, port_nodes(output_id(f), OutputPort, n_outputs))
   end
   # Visible nodes for boxes.
   for v in box_ids(f)
@@ -109,13 +109,13 @@ end
 
 """ Create invisible nodes for the input or output ports of an outer box.
 """
-function port_nodes(v::Int, nports::Int)::Graphviz.Subgraph
+function port_nodes(v::Int, kind::PortKind, nports::Int)::Graphviz.Subgraph
   @assert nports > 0
   nodes = [ "n$(v)p$(i)" for i in 1:nports ]
   Graphviz.Subgraph(
     Graphviz.Edge(nodes),
     graph_attrs=Graphviz.Attributes(
-      :rank => "same",
+      :rank => kind == InputPort ? "source" : "sink",
       :rankdir => "LR",
     ),
     node_attrs=Graphviz.Attributes(
