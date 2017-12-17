@@ -249,10 +249,9 @@ function sequence(name::String, homs::Vector)::Box
       src_port = mors[i-1].outputs[j]
       tgt_port = mors[i].inputs[j]
       
-      # Create edge node for label.
-      # We arbitrarily choose the target port, not the source port
+      # Create edge node for label. We use the source port, not the target port
       # (see also `GraphvizWiring`).
-      wire = tgt_port.wire
+      wire = src_port.wire
       if (style[:labels] && src_port.show_label && tgt_port.show_label)
         node = TikZ.EdgeNode(content=wire.label, props=edge_node_props)
       else
