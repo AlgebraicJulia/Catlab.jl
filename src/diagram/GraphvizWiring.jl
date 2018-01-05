@@ -102,10 +102,11 @@ end
 """
 function node_html_label(box::Box)::Graphviz.Html
   nin, nout = length(input_ports(box)), length(output_ports(box))
+  text_label = node_label(box.value)
   Graphviz.Html("""
     <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
     <TR><TD>$(ports_html_label(InputPort,nin))</TD></TR>
-    <TR><TD BORDER="1" CELLPADDING="4">$(node_label(box.value))</TD></TR>
+    <TR><TD BORDER="1" CELLPADDING="4">$(escape_html(text_label))</TD></TR>
     <TR><TD>$(ports_html_label(OutputPort,nout))</TD></TR>
     </TABLE>""")
 end
@@ -176,5 +177,18 @@ edge_label(port_value::Any) = string(port_value)
 See also `node_id()`.
 """
 edge_id(port_value::Any) = edge_label(port_value)
+
+""" Escape special HTML characters: &, <, >, ", '
+
+Borrowed from HttpCommon package: https://github.com/JuliaWeb/HttpCommon.jl
+"""
+function escape_html(s::AbstractString)
+  s = replace(s, "&", "&amp;")
+  s = replace(s, "\"", "&quot;")
+  s = replace(s, "'", "&#39;")
+  s = replace(s, "<", "&lt;")
+  s = replace(s, ">", "&gt;")
+  return s
+end
 
 end
