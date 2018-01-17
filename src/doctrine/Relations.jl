@@ -47,8 +47,8 @@ References:
 """
 @signature BicategoryRelations(Ob,Hom) => AbelianBicategoryRelations(Ob,Hom) begin
   # Second diagonal and codiagonal.
-  plus(A::Ob)::Hom(otimes(A,A),A)
-  zero(A::Ob)::Hom(munit(),A)
+  mplus(A::Ob)::Hom(otimes(A,A),A)
+  mzero(A::Ob)::Hom(munit(),A)
   coplus(A::Ob)::Hom(A,otimes(A,A))
   cozero(A::Ob)::Hom(A,munit())
 end
@@ -71,13 +71,13 @@ function show_latex(io::IO, expr::FreeAbelianBicategoryRelations.Hom{:otimes}; k
 end
 show_latex(io::IO, expr::FreeAbelianBicategoryRelations.Ob{:munit}; kw...) = print(io, "O")
 
-function show_latex(io::IO, expr::FreeAbelianBicategoryRelations.Hom{:plus}; kw...)
+function show_latex(io::IO, expr::FreeAbelianBicategoryRelations.Hom{:mplus}; kw...)
   Syntax.show_latex_script(io, expr, "\\blacktriangledown")
 end
 function show_latex(io::IO, expr::FreeAbelianBicategoryRelations.Hom{:coplus}; kw...)
   Syntax.show_latex_script(io, expr, "\\blacktriangle")
 end
-function show_latex(io::IO, expr::FreeAbelianBicategoryRelations.Hom{:zero}; kw...)
+function show_latex(io::IO, expr::FreeAbelianBicategoryRelations.Hom{:mzero}; kw...)
   Syntax.show_latex_script(io, expr, "\\blacksquare")
 end
 function show_latex(io::IO, expr::FreeAbelianBicategoryRelations.Hom{:cozero}; kw...)

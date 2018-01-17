@@ -1,7 +1,6 @@
 module Doctrine
 export CategoryExpr, ObExpr, HomExpr, Hom2Expr
 
-# TODO: Generate these automatically from signature?
 export Category, FreeCategory, Ob, Hom, dom, codom, id, compose, ∘
 export Category2, FreeCategory2, Hom2, compose2
 
@@ -19,7 +18,7 @@ export DaggerCompactCategory, FreeDaggerCompactCategory
 
 export BicategoryRelations, FreeBicategoryRelations
 export AbelianBicategoryRelations, FreeAbelianBicategoryRelations,
-  plus, coplus, zero, cozero
+  mplus, mzero, coplus, cozero
 
 using ..Catlab
 import ..Syntax: GATExpr, show_unicode, show_latex
