@@ -1,3 +1,15 @@
+export MonoidalCategory, otimes, munit, ⊗, collect, ndims,
+  SymmetricMonoidalCategory, FreeSymmetricMonoidalCategory, braid,
+  CartesianCategory, FreeCartesianCategory,
+  mcopy, delete, pair, proj1, proj2, Δ, ◇,
+  CocartesianCategory, FreeCocartesianCategory,
+  mmerge, create, copair, in1, in2, ∇, □,
+  BiproductCategory, FreeBiproductCategory,
+  CartesianClosedCategory, FreeCartesianClosedCategory, hom, ev, curry,
+  CompactClosedCategory, FreeCompactClosedCategory, dual, dunit, dcounit,
+  DaggerCategory, FreeDaggerCategory, dagger,
+  DaggerCompactCategory, FreeDaggerCompactCategory
+
 import Base: collect, ndims
 
 # Monoidal category

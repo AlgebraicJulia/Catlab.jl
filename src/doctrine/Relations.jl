@@ -1,3 +1,7 @@
+export BicategoryRelations, FreeBicategoryRelations,
+  AbelianBicategoryRelations, FreeAbelianBicategoryRelations,
+  mplus, mzero, coplus, cozero
+
 # Bicategory of relations
 #########################
 
