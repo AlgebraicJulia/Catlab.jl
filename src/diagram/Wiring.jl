@@ -31,14 +31,14 @@ export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
   input_id, output_id, boxes, box_ids, nboxes, nwires, box, wires, has_wire,
   graph, add_box!, add_boxes!, add_wire!, add_wires!, validate_ports,
   rem_box!, rem_boxes!, rem_wire!, rem_wires!, substitute!, encapsulate!,
-  all_neighbors, neighbors, out_neighbors, in_neighbors, in_wires, out_wires,
+  all_neighbors, neighbors, outneighbors, inneighbors, in_wires, out_wires,
   dom, codom, id, compose, otimes, munit, braid, permute, mcopy, delete,
   mmerge, create, to_wiring_diagram
 
 import Base: permute
 using AutoHashEquals
 using LightGraphs
-import LightGraphs: all_neighbors, neighbors, out_neighbors, in_neighbors
+import LightGraphs: all_neighbors, neighbors, outneighbors, inneighbors
 
 using ...GAT, ...Syntax
 import ...Doctrine: CategoryExpr, ObExpr, HomExpr, SymmetricMonoidalCategory,
@@ -383,19 +383,19 @@ graph(diagram::WiringDiagram) = diagram.network.graph
 # Convenience methods delegated to LightGraphs.
 all_neighbors(d::WiringDiagram, v::Int) = all_neighbors(graph(d), v)
 neighbors(d::WiringDiagram, v::Int) = neighbors(graph(d), v)
-out_neighbors(d::WiringDiagram, v::Int) = out_neighbors(graph(d), v)
-in_neighbors(d::WiringDiagram, v::Int) = in_neighbors(graph(d), v)
+outneighbors(d::WiringDiagram, v::Int) = outneighbors(graph(d), v)
+inneighbors(d::WiringDiagram, v::Int) = inneighbors(graph(d), v)
 
 """ Get all wires coming into or out of the box.
 """
 function wires(d::WiringDiagram, v::Int)
   result = wires(d, v, v)
-  for u in in_neighbors(d, v)
+  for u in inneighbors(d, v)
     if u != v
       append!(result, wires(d, u, v))
     end
   end
-  for u in out_neighbors(d, v)
+  for u in outneighbors(d, v)
     if u != v
       append!(result, wires(d, v, u))
     end
@@ -407,7 +407,7 @@ end
 """
 function in_wires(d::WiringDiagram, v::Int)
   result = Wire[]
-  for u in in_neighbors(d, v)
+  for u in inneighbors(d, v)
     append!(result, wires(d, u, v))
   end
   result
@@ -417,7 +417,7 @@ end
 """
 function in_wires(d::WiringDiagram, port::Port)
   result = Wire[]
-  for v in in_neighbors(d, port.box)
+  for v in inneighbors(d, port.box)
     for wire in wires(d, v, port.box)
       if wire.target == port
         push!(result, wire)
@@ -431,7 +431,7 @@ end
 """
 function out_wires(d::WiringDiagram, v::Int)
   result = Wire[]
-  for u in out_neighbors(d, v)
+  for u in outneighbors(d, v)
     append!(result, wires(d, v, u))
   end
   result
@@ -441,7 +441,7 @@ end
 """
 function out_wires(d::WiringDiagram, port::Port)
   result = Wire[]
-  for v in out_neighbors(d, port.box)
+  for v in outneighbors(d, port.box)
     for wire in wires(d, port.box, v)
       if wire.source == port
         push!(result, wire)

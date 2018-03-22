@@ -115,12 +115,12 @@ function rem_vertex!(net::ComplexNetwork, v::Int)
     v in vertices(g) || return false
     n = nv(g)
 
-    srcs = copy(in_neighbors(g, v))
+    srcs = copy(inneighbors(g, v))
     for s in srcs
         rem_edge!(net, Edge(s, v))
     end
 
-    neigs = copy(in_neighbors(g, n))
+    neigs = copy(inneighbors(g, n))
     for i in neigs
         rem_edge!(g, Edge(i, n))
     end
@@ -138,11 +138,11 @@ function rem_vertex!(net::ComplexNetwork, v::Int)
     end
 
     if is_directed(g)
-        dsts = copy(out_neighbors(g, v))
+        dsts = copy(outneighbors(g, v))
         for d in dsts
             rem_edge!(net, Edge(v, d))
         end
-        neigs = copy(out_neighbors(g, n))
+        neigs = copy(outneighbors(g, n))
         for i in neigs
             rem_edge!(g, Edge(n, i))
         end
