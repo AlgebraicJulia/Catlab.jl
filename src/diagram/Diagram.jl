@@ -2,7 +2,6 @@ module Diagram
 
 using Reexport
 
-include("external/Networks.jl")
 include("Wiring.jl")
 include("GraphML.jl")
 

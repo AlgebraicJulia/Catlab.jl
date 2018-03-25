@@ -37,14 +37,12 @@ export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
 
 import Base: permute
 using AutoHashEquals
-using LightGraphs
+using LightGraphs, MetaGraphs
 import LightGraphs: all_neighbors, neighbors, outneighbors, inneighbors
 
 using ...GAT, ...Syntax
 import ...Doctrine: CategoryExpr, ObExpr, HomExpr, SymmetricMonoidalCategory,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create
-using ..Networks
-import ..Networks: graph
 
 # Data types
 ############
@@ -199,24 +197,21 @@ is at least one wire between the corresponding boxes. There are two special
 vertices, accessible via `input_id` and `output_id`, representing the input and
 output ports, respectively.
 
-The `DiGraph` is wrapped inside a `DiNetwork` (borrowed from Networks.jl) to
-attach properties to the vertices and edges. (At the time of this writing, the
-Julia community has no standard graph data structure supporting aribtrary
-graph/vertex/edge properties ala NetworkX in Python.) For each edge, an edge
-property is used to store a list of wires between the source and target boxes.
+The `DiGraph` is wrapped inside a `MetaDiGraph` to attach properties to the
+vertices and edges. For each edge, an edge property stores the list of wires
+between the source and target boxes.
 """
 mutable struct WiringDiagram <: AbstractBox
-  network::DiNetwork{Nullable{<:AbstractBox},Vector{WireEdgeData},Void}
+  graph::MetaDiGraph
   input_ports::Vector
   output_ports::Vector
   input_id::Int
   output_id::Int
   
   function WiringDiagram(input_ports::Vector, output_ports::Vector)
-    network = DiNetwork(Nullable{<:AbstractBox}, Vector{WireEdgeData})
-    diagram = new(network, input_ports, output_ports, 0, 0)
-    diagram.input_id = add_vertex!(network, Nullable{AbstractBox}())
-    diagram.output_id = add_vertex!(network, Nullable{AbstractBox}())
+    graph = MetaDiGraph()
+    diagram = new(graph, input_ports, output_ports, 1, 2)
+    add_vertices!(graph, 2)
     return diagram
   end
 end
@@ -265,7 +260,7 @@ end
 
 # Basic accessors.
 
-box(f::WiringDiagram, v::Int) = get(getprop(f.network, v))
+box(f::WiringDiagram, v::Int) = get_prop(f.graph, v, :box)
 boxes(f::WiringDiagram) = AbstractBox[ box(f,v) for v in box_ids(f) ]
 nboxes(f::WiringDiagram) = nv(graph(f)) - 2
 
@@ -275,8 +270,8 @@ function box_ids(f::WiringDiagram)
 end
 
 function wires(f::WiringDiagram, edge::Edge)
-  if hasprop(f.network, edge)
-    Wire[ from_edge_data(data, edge) for data in getprop(f.network, edge) ]
+  if has_edge(f.graph, edge)
+    Wire[ from_edge_data(data, edge) for data in get_prop(f.graph,edge,:wires) ]
   else
     Wire[]
   end
@@ -284,7 +279,7 @@ end
 wires(f::WiringDiagram, src::Int, tgt::Int) = wires(f, Edge(src,tgt))
 wires(f::WiringDiagram) = vcat((wires(f,e) for e in edges(graph(f)))...)
 nwires(f::WiringDiagram) =
-  sum(Int[ length(getprop(f.network,e)) for e in edges(graph(f)) ])
+  sum(Int[ length(get_prop(f.graph,e,:wires)) for e in edges(graph(f)) ])
 
 function has_wire(f::WiringDiagram, src::Int, tgt::Int)
   has_edge(graph(f), Edge(src, tgt))
@@ -309,7 +304,8 @@ end
 # Graph mutation.
 
 function add_box!(f::WiringDiagram, box::AbstractBox)
-  add_vertex!(f.network, Nullable(box))
+  @assert add_vertex!(f.graph, :box, box)
+  return nv(f.graph)
 end
 
 function add_boxes!(f::WiringDiagram, boxes)
@@ -320,7 +316,7 @@ end
 
 function rem_box!(f::WiringDiagram, v::Int)
   @assert !(v in (input_id(f), output_id(f)))
-  rem_vertex!(f.network, v)
+  rem_vertex!(f.graph, v)
 end
 
 function rem_boxes!(f::WiringDiagram, vs)
@@ -336,10 +332,10 @@ function add_wire!(f::WiringDiagram, wire::Wire)
   
   # Add edge and edge properties.
   edge = Edge(wire.source.box, wire.target.box)
-  if !has_edge(f.network.graph, edge)
-    add_edge!(f.network, edge, WireEdgeData[])
+  if !has_edge(f.graph, edge)
+    add_edge!(f.graph, src(edge), dst(edge), :wires, WireEdgeData[])
   end
-  push!(getprop(f.network, edge), to_edge_data(wire))
+  push!(get_prop(f.graph, edge, :wires), to_edge_data(wire))
 end
 add_wire!(f::WiringDiagram, pair::Pair) = add_wire!(f, Wire(pair))
 
@@ -352,16 +348,16 @@ end
 function rem_wire!(f::WiringDiagram, wire::Wire)
   edge = Edge(wire.source.box, wire.target.box)
   edge_data = to_edge_data(wire)
-  wires = getprop(f.network, edge)
+  wires = get_prop(f.graph, edge, :wires)
   deleteat!(wires, findlast(d -> d == edge_data, wires))
   if isempty(wires)
-    rem_edge!(f.network, edge)
+    rem_edge!(f.graph, edge)
   end
 end
 rem_wire!(f::WiringDiagram, pair::Pair) = rem_wire!(f, Wire(pair))
 
 function rem_wires!(f::WiringDiagram, src::Int, tgt::Int)
-  rem_edge!(f.network, Edge(src, tgt))
+  rem_edge!(f.graph, Edge(src, tgt))
 end
 
 """ Check compatibility of source and target ports.
@@ -378,7 +374,7 @@ function validate_ports(source_port, target_port) end
 Do not mutate it! All mutations should pass through the `WiringDiagram` methods:
 `add_box!`, `rem_box!`, etc.
 """
-graph(diagram::WiringDiagram) = diagram.network.graph
+graph(diagram::WiringDiagram) = diagram.graph.graph
 
 # Convenience methods delegated to LightGraphs.
 all_neighbors(d::WiringDiagram, v::Int) = all_neighbors(graph(d), v)

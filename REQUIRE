@@ -6,9 +6,10 @@ Parameters
 Reexport
 
 DataStructures
-LightGraphs
-LightXML
 JSON
+LightXML
+LightGraphs 0.12
+MetaGraphs
 
 # Optional dependencies:
 # GraphViz

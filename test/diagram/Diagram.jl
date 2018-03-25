@@ -1,10 +1,5 @@
 using Base.Test
 
-# Third-party tests.
-@testset "External" begin
-  include("external/Networks.jl")
-end
-
 @testset "Wiring" begin
   include("Wiring.jl")
   include("GraphML.jl")

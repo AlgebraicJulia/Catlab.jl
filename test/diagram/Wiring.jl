@@ -22,8 +22,8 @@ h = Hom(:h, C, D)
 # Operations on boxes
 d = WiringDiagram(A, C)
 @test nboxes(d) == 0
-@test_throws NullException box(d,input_id(d))
-@test_throws NullException box(d,output_id(d))
+@test_throws KeyError box(d,input_id(d))
+@test_throws KeyError box(d,output_id(d))
 
 fv = add_box!(d, f)
 @test nboxes(d) == 1
