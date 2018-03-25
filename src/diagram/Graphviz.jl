@@ -10,9 +10,12 @@ References:
 """
 module Graphviz
 export Expression, Statement, Attributes, Graph, Digraph, Subgraph,
-  Node, NodeID, Edge, pprint
+  Node, NodeID, Edge, pprint, to_graphviz
 
 using DataStructures: OrderedDict
+import LightGraphs, MetaGraphs
+using LightGraphs: edges, vertices, src, dst
+using MetaGraphs: get_prop, props
 using Parameters
 
 # AST
@@ -32,6 +35,8 @@ Base.print(io::IO, html::Html) = print(io, html.content)
 
 const AttributeValue = Union{String,Html}
 const Attributes = OrderedDict{Symbol,AttributeValue}
+
+sorted_attrs(d::Associative) = Attributes(k => d[k] for k in sort!(collect(keys(d))))
 
 @with_kw struct Graph <: Expression
   name::String
@@ -70,6 +75,7 @@ struct Node <: Statement
   name::String
   attrs::Attributes
 end
+Node(name::String, attrs::Dict) = Node(name, sorted_attrs(attrs))
 Node(name::String; attrs...) = Node(name, Attributes(attrs))
 
 struct NodeID <: Expression
@@ -83,10 +89,55 @@ struct Edge <: Statement
   path::Vector{NodeID}
   attrs::Attributes
 end
+Edge(path::Vector{String}, attrs) = Edge(map(NodeID, path), attrs)
+Edge(path::Vector{NodeID}, attrs::Dict) = Edge(path, sorted_attrs(attrs))
 Edge(path::Vararg{String}; attrs...) = Edge(map(NodeID, collect(path)), Attributes(attrs))
 Edge(path::Vector{String}; attrs...) = Edge(map(NodeID, path), Attributes(attrs))
 Edge(path::Vararg{NodeID}; attrs...) = Edge(collect(path), Attributes(attrs))
 Edge(path::Vector{NodeID}; attrs...) = Edge(path, Attributes(attrs))
+
+# MetaGraphs
+############
+
+""" Convert an attributed graph (MetaGraph) to a Graphviz graph.
+
+This method is usually more convenient than direct AST manipulation for creating
+Graphviz graphs. It supports graphs that are directed or undirected, simple or
+multi-edged. For more advanced features, like nested subgraphs, you must use
+the Graphviz AST directly.
+"""
+function to_graphviz(g::MetaGraphs.AbstractMetaGraph; multigraph::Bool=false)::Graph
+  gv_name(v::Int) = "n$v"
+  gv_path(e::LightGraphs.Edge) = [gv_name(src(e)), gv_name(dst(e))]
+
+  # Add Graphviz node for each vertex.
+  stmts = Graphviz.Statement[]
+  for v in vertices(g)
+    push!(stmts, Node(gv_name(v), props(g, v)))
+  end
+
+  # Add Graphviz edge for each (multi)edge.
+  if multigraph
+    for e in edges(g)
+      path = gv_path(e)
+      append!(stmts, [ Edge(path, attrs) for attrs in get_prop(g, e, :edges) ])
+    end
+  else
+    for e in edges(g)
+      push!(stmts, Edge(gv_path(e), props(g, e)))
+    end
+  end
+
+  attrs = props(g)
+  Graph(
+    name = get(attrs, :name, "G"),
+    directed = LightGraphs.is_directed(g),
+    stmts = stmts,
+    graph_attrs = Graphviz.Attributes(get(attrs, :graph, Dict())),
+    node_attrs = Graphviz.Attributes(get(attrs, :node, Dict())),
+    edge_attrs = Graphviz.Attributes(get(attrs, :edge, Dict())),
+  )
+end
 
 # Pretty-print
 ##############

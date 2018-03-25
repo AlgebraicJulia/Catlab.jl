@@ -1,7 +1,49 @@
 module TestGraphviz
 
 using Base.Test
+import LightGraphs, MetaGraphs
+using LightGraphs: add_vertex!, add_vertices!, add_edge!
+using MetaGraphs: MetaGraph, MetaDiGraph
+
 using Catlab.Diagram.Graphviz
+
+# MetaGraphs
+############
+
+# Undirected simple graph
+g = MetaGraph()
+add_vertex!(g, :label, "v")
+add_vertices!(g, 2)
+add_edge!(g, 1, 2, :xlabel, "e")
+gv = to_graphviz(g)::Graph
+@test !gv.directed
+nodes = filter(s -> isa(s,Node), gv.stmts)
+edges = filter(s -> isa(s,Edge), gv.stmts)
+@test length(nodes) == 3
+@test length(edges) == 1
+@test nodes[1].attrs[:label] == "v"
+@test edges[1].attrs[:xlabel] == "e"
+
+# Directed simple graph
+g = MetaDiGraph()
+add_vertices!(g, 3); add_edge!(g, 1, 2); add_edge!(g, 2, 3)
+gv = to_graphviz(g)::Graph
+@test gv.directed
+@test length(filter(s -> isa(s,Node), gv.stmts)) == 3
+@test length(filter(s -> isa(s,Edge), gv.stmts)) == 2
+
+# Directed multigraph
+g = MetaDiGraph()
+add_vertices!(g, 2)
+add_edge!(g, 1, 2, :edges, [Dict(:label => "e1"), Dict(:label => "e2")])
+gv = to_graphviz(g; multigraph=true)::Graph
+@test gv.directed
+nodes = filter(s -> isa(s,Node), gv.stmts)
+edges = filter(s -> isa(s,Edge), gv.stmts)
+@test length(nodes) == 2
+@test length(edges) == 2
+@test edges[1].attrs[:label] == "e1"
+@test edges[2].attrs[:label] == "e2"
 
 # Pretty-print
 ##############

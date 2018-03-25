@@ -5,6 +5,7 @@ export to_graphviz
 
 import ...Doctrine: HomExpr
 import ..Graphviz
+import ..Graphviz: to_graphviz
 using ..Wiring
 
 # Default Graphviz font. Reference: http://www.graphviz.org/doc/fontfaq.txt
