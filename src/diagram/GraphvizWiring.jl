@@ -24,7 +24,6 @@ const default_node_attrs = Graphviz.Attributes(
 )
 const default_edge_attrs = Graphviz.Attributes(
   :fontname => default_font,
-  :arrowsize => "0.5",
 )
 
 """ Render a wiring diagram using Graphviz.
