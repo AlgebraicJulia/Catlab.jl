@@ -17,7 +17,10 @@ const default_graph_attrs = Graphviz.Attributes(
 )
 const default_node_attrs = Graphviz.Attributes(
   :fontname => default_font,
-  :shape => "plain",
+  :shape => "rect",
+  :width => "0",
+  :height => "0",
+  :margin => "0",
 )
 const default_edge_attrs = Graphviz.Attributes(
   :fontname => default_font,
@@ -108,7 +111,7 @@ function node_html_label(box::Box)::Graphviz.Html
   Graphviz.Html("""
     <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
     <TR><TD>$(ports_html_label(InputPort,nin))</TD></TR>
-    <TR><TD BORDER="1" CELLPADDING="4">$(escape_html(text_label))</TD></TR>
+    <TR><TD CELLPADDING="4">$(escape_html(text_label))</TD></TR>
     <TR><TD>$(ports_html_label(OutputPort,nout))</TD></TR>
     </TABLE>""")
 end
