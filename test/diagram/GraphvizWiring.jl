@@ -30,7 +30,7 @@ graph = to_graphviz(f; labels=true)
 @test stmts(graph, Graphviz.Edge, :label) == ["A","B"]
 @test stmts(graph, Graphviz.Edge, :xlabel) == []
 
-graph = to_graphviz(f; labels=true, xlabel=true)
+graph = to_graphviz(f; labels=true, label_attr=:xlabel)
 @test stmts(graph, Graphviz.Edge, :label) == []
 @test stmts(graph, Graphviz.Edge, :xlabel) == ["A","B"]
 

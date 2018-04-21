@@ -32,8 +32,8 @@ wiring diagram.
 # Arguments
 - `graph_name="G"`: name of Graphviz digraph
 - `labels=false`: whether to label the wires
-- `xlabel=false`: whether to use Graphviz xlabels for the wires
-  (if `labels` is true)
+- `label_attr=:label`: what kind of wire label to use (if `labels` is true).
+  One of `:label`, `:xlabel`, `:headlabel`, or `:taillabel`.
 - `anchor_outer_ports=true`: whether to enforce ordering of input and output
   ports of the outer box (i.e., ordering of incoming and outgoing wires)
 - `graph_attrs=default_graph_attrs`: top-level graph attributes
@@ -41,11 +41,12 @@ wiring diagram.
 - `edge_attrs=default_edge_attrs`: top-level edge attributes
 """
 function to_graphviz(f::WiringDiagram;
-    graph_name::String="G", labels::Bool=false, xlabel::Bool=false,
+    graph_name::String="G", labels::Bool=false, label_attr::Symbol=:label,
     anchor_outer_ports::Bool=true,
     graph_attrs::Graphviz.Attributes=Graphviz.Attributes(),
     node_attrs::Graphviz.Attributes=Graphviz.Attributes(),
     edge_attrs::Graphviz.Attributes=Graphviz.Attributes())::Graphviz.Graph
+  @assert label_attr in [:label, :xlabel, :headlabel, :taillabel]
   
   # Nodes
   stmts = Graphviz.Statement[]
@@ -82,7 +83,7 @@ function to_graphviz(f::WiringDiagram;
     port = port_value(f, wire.source)
     attrs = Graphviz.Attributes(:id => edge_id(port))
     if labels
-      attrs[xlabel ? :xlabel : :label] = edge_label(port)
+      attrs[label_attr] = edge_label(port)
     end
     edge = Graphviz.Edge(graphviz_port(wire.source),
                          graphviz_port(wire.target); attrs...)
