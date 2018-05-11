@@ -77,6 +77,9 @@ function write_graphml(diagram::WiringDiagram)::XMLDocument
   add_child(xroot, xgraph)
   return xdoc
 end
+function write_graphml(diagram::WiringDiagram, filename::String)
+  LightXML.save_file(write_graphml(diagram), filename)
+end
 
 function write_graphml_node(
     state::WriteState, xgraph::XMLElement, id::String, diagram::WiringDiagram)
@@ -211,6 +214,10 @@ function read_graphml{BoxValue,PortValue,WireValue}(
   state = ReadState(keys, BoxValue, PortValue, WireValue)
   diagram, ports = read_graphml_node(state, xnode)
   return diagram
+end
+function read_graphml(
+    BoxValue::Type, PortValue::Type, WireValue::Type, filename::String)
+  read_graphml(BoxValue, PortValue, WireValue, LightXML.parse_file(filename))
 end
 
 function read_graphml_node(state::ReadState, xnode::XMLElement)
