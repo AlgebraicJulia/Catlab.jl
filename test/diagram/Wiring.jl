@@ -139,7 +139,7 @@ encapsulate!(d, [fv,gv])
 @test nboxes(d) == 2
 @test sum(isa(b, WiringDiagram) for b in boxes(d)) == 1
 @test nwires(d) == 3
-sub = first((b for b in boxes(d) if isa(b, WiringDiagram)))
+sub = first(b for b in boxes(d) if isa(b, WiringDiagram))
 @test nboxes(sub) == 2
 @test Set(boxes(sub)) == Set([ Box(f), Box(g) ])
 box_map = Dict(box(sub,v).value => v for v in box_ids(sub))
@@ -158,6 +158,22 @@ box_map = Dict(box(d,v).value => v for v in box_ids(d))
   (box_map[:e],1) => (box_map[:h],1),
   (box_map[:h],1) => (output_id(d),1),
 ]))
+
+d0 = WiringDiagram(A,B)
+v1 = add_box!(d0, f)
+v2 = add_box!(d0, f)
+add_wires!(d0, Pair[
+  (input_id(d),1) => (v1,1),
+  (input_id(d),1) => (v2,1),
+  (v1,1) => (output_id(d),1),
+  (v2,1) => (output_id(d),1),
+])
+d = deepcopy(d0)
+encapsulate!(d, [v1,v2])
+@test nboxes(d) == 1
+@test nwires(d) == 2
+sub = first(boxes(d))
+@test sub == d0
 
 # High-level categorical interface
 ##################################
