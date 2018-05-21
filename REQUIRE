@@ -6,6 +6,7 @@ Parameters
 Reexport
 
 DataStructures
+UnionFind
 JSON
 LightXML
 LightGraphs 0.12

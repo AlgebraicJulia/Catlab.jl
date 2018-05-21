@@ -3,6 +3,7 @@ module Diagram
 using Reexport
 
 include("Wiring.jl")
+include("Algorithms.jl")
 include("GraphML.jl")
 
 include("Graphviz.jl")

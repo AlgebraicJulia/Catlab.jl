@@ -2,6 +2,10 @@ using Base.Test
 
 @testset "Wiring" begin
   include("Wiring.jl")
+  include("Algorithms.jl")
+end
+
+@testset "GraphML" begin
   include("GraphML.jl")
 end
 
