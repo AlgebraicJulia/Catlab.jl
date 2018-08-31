@@ -1,5 +1,7 @@
 # Catlab
 
+[![Build Status](https://travis-ci.org/epatters/Catlab.svg?branch=master)](https://travis-ci.org/epatters/Catlab)
+
 Catlab is an experimental library for computational category theory, written in [Julia](https://julialang.org). It aims to provide a programming library and interactive interface for applications of category theory to the mathematical sciences. It emphasizes monoidal categories due to their wide applicability but can support any categorical doctrine that is formalizable as a generalized algebraic theory. An early inspiration for Catlab is the Julia library [Cateno](https://github.com/jasonmorton/Cateno).
 
 **Warning**: This is experimental software. Important features are missing, the API is unstable, and the documentation and examples are sparse. However, it is already useable for some purposes. Contributions are welcome!
