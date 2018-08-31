@@ -5,7 +5,7 @@ tests of the Syntax module.
 """
 module TestSyntax
 
-using Base.Test
+using Test
 using Catlab
 
 # Monoid
@@ -26,7 +26,7 @@ end
 Elem(mod::Module, args...) = Elem(mod.Elem, args...)
 
 @test isa(FreeMonoid, Module)
-@test contains(string(Docs.doc(FreeMonoid)), "theory of monoids")
+@test occursin("theory of monoids", string(Docs.doc(FreeMonoid)))
 @test sort(names(FreeMonoid)) == sort([:FreeMonoid, :Elem])
 
 x, y, z = Elem(FreeMonoid,:x), Elem(FreeMonoid,:y), Elem(FreeMonoid,:z)
@@ -68,7 +68,7 @@ abstract type MonoidExpr{T} <: GATExpr{T} end
 @syntax FreeMonoidTyped(MonoidExpr) Monoid
 
 x = Elem(FreeMonoidTyped.Elem, :x)
-@test issubtype(FreeMonoidTyped.Elem, MonoidExpr)
+@test FreeMonoidTyped.Elem <: MonoidExpr
 @test isa(x, FreeMonoidTyped.Elem) && isa(x, MonoidExpr)
 
 @signature Monoid(Elem) => MonoidNumeric(Elem) begin

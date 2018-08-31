@@ -1,6 +1,6 @@
 module TestAlgebraTree
 
-using Base.Test
+using Test
 using Catlab.Algebra
 
 # Conversion

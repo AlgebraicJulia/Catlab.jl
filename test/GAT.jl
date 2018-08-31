@@ -1,7 +1,8 @@
 module TestGAT
 
-using Base.Test
-import DataStructures: OrderedDict
+using Base.Meta: ParseError
+using Test
+using DataStructures: OrderedDict
 
 import Catlab: GAT
 using Catlab.GAT
@@ -92,15 +93,11 @@ target = GAT.TermConstructor(:compose, [:f,:g], :(Mor(X,Z)),
 end
 
 @test isa(Category, Module)
-@test contains(string(Docs.doc(Category)), "theory of categories")
+@test occursin("theory of categories", string(Docs.doc(Category)))
 @test sort(names(Category)) == sort([:Category, :Ob, :Hom])
 @test isa(Category.Ob, Type) && isa(Category.Hom, Type)
 @test isa(dom, Function) && isa(codom, Function)
 @test isa(id, Function) && isa(compose, Function)
-
-export dom, codom, id, compose
-@test length(methodswith(Category.Ob)) == 1 # id
-@test length(methodswith(Category.Hom)) == 3 # compose, dom, codom
 
 # Manually constructed signature of theory of categories
 types = [

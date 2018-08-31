@@ -1,7 +1,8 @@
-julia 0.6
+julia 0.7
 
 AutoHashEquals
 Match
+Nullables
 Parameters
 Reexport
 
@@ -9,7 +10,7 @@ DataStructures
 UnionFind
 JSON
 LightXML
-LightGraphs 0.12
+LightGraphs
 MetaGraphs
 
 # Optional dependencies:

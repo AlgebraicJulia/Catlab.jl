@@ -1,4 +1,4 @@
-using Base.Test
+using Test
 
 @testset "Wiring" begin
   include("Wiring.jl")

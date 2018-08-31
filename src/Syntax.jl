@@ -17,18 +17,15 @@ export @syntax, GATExpr, SyntaxDomainError, head, args, type_args, first, last,
   invoke_term, functor, to_json_sexpr, parse_json_sexpr, show_sexpr,
   show_unicode, show_latex
 
-import Base: first, last, datatype_name, datatype_module
-import Base.Meta: show_sexpr
+import Base: first, last
+import Base.Meta: ParseError, show_sexpr
 using Match
+using Nullables
 
 using ..GAT: Context, Signature, TypeConstructor, TermConstructor, Typeclass
 import ..GAT
 import ..GAT: invoke_term
 using ..Meta
-
-# XXX: The special case for `UnionAll` wrappers is handled in `datatype_name`
-# but not in `datatype_module`.
-datatype_module(typ::UnionAll) = datatype_module(typ.body)
 
 # Data types
 ############
@@ -48,7 +45,7 @@ convenient.
 """
 abstract type GATExpr{T} end
 
-head{T}(::GATExpr{T}) = T
+head(::GATExpr{T}) where T = T
 args(expr::GATExpr) = expr.args
 first(expr::GATExpr) = first(args(expr))
 last(expr::GATExpr) = last(args(expr))
@@ -101,7 +98,7 @@ overriden with custom simplification logic.
 macro syntax(syntax_head, mod_name, body=Expr(:block))
   @assert body.head == :block
   syntax_name, base_types = @match syntax_head begin
-    Expr(:call, [name::Symbol, args...], _) => (name, args)
+    Expr(:call, [name::Symbol, args...]) => (name, args)
     name::Symbol => (name, [])
     _ => throw(ParseError("Ill-formed syntax signature $syntax_head"))
   end
@@ -122,9 +119,12 @@ function syntax_code(name::Symbol, base_types::Vector{Type}, mod::Module,
   outer_mod = current_module()
   mod = Expr(:module, true, name,
     Expr(:block, [
+      # Prevents error about export not being at toplevel.
+      # https://github.com/JuliaLang/julia/issues/28991
+      LineNumberNode(0);
+      Expr(:export, [cons.name for cons in signature.types]...);
       Expr(:using, map(Symbol, split(string(outer_mod), "."))...);
-      Expr(:export, [cons.name for cons in signature.types]...);  
-      :(signature() = $(GlobalRef(module_parent(mod), module_name(mod))));
+      :(signature() = $(GlobalRef(parentmodule(mod), nameof(mod))));
       gen_types(signature, base_types);
       gen_type_accessors(signature);
       gen_term_generators(signature);
@@ -152,9 +152,7 @@ function syntax_code(name::Symbol, base_types::Vector{Type}, mod::Module,
         [ Expr(:(::), p, t) for (p,t) in zip(params, sig.types) ]...)
       body = Expr(:call, Expr(:(.), name, QuoteNode(sig.name)), params...)
       f_impl = JuliaFunction(call_expr, f.return_type, body)
-      # Inline these very short functions.
-      expr = Expr(:macrocall, Symbol("@inline"),
-                  generate_function(replace_symbols(bindings, f_impl)))
+      expr = generate_function(replace_symbols(bindings, f_impl))
     end
     push!(toplevel, expr)
   end
@@ -177,7 +175,7 @@ function gen_type(cons::TypeConstructor, base_type::Type=Any)::Expr
   base_name = if base_type == Any
     base_expr
   else
-    GlobalRef(datatype_module(base_type), datatype_name(base_type))
+    GlobalRef(parentmodule(base_type), nameof(base_type))
   end
   expr = :(struct $(cons.name){T} <: $base_name{T}
     args::Vector
@@ -265,7 +263,7 @@ Besides expanding the implicit variables, we must handle two annoying issues:
 function gen_term_constructor_params(cons, sig)::Vector
   expr = GAT.expand_term_type(cons, sig)
   raw_params = @match expr begin
-    Expr(:call, [name::Symbol, args...], _) => args
+    Expr(:call, [name::Symbol, args...]) => args
     _::Symbol => []
   end
   
@@ -281,12 +279,12 @@ function gen_term_constructor_params(cons, sig)::Vector
 end
 function replace_nullary_constructors(expr, sig)
   @match expr begin
-    Expr(:call, [name::Symbol], _) => begin
-      terms = sig.terms[find(cons -> cons.name == name, sig.terms)]
+    Expr(:call, [name::Symbol]) => begin
+      terms = sig.terms[findall(cons -> cons.name == name, sig.terms)]
       @assert length(terms) == 1
       Expr(:call, name, terms[1].typ)
     end
-    Expr(:call, [name::Symbol, args...], _) =>
+    Expr(:call, [name::Symbol, args...]) =>
       Expr(:call, name, [replace_nullary_constructors(a,sig) for a in args]...)
     _ => expr
   end
@@ -330,7 +328,7 @@ end
 """
 function constructor_name(expr::GATExpr)::Symbol
   if head(expr) == :generator
-    datatype_name(typeof(expr))
+    nameof(typeof(expr))
   else
     head(expr)
   end
@@ -340,8 +338,8 @@ end
 """
 function generator_like(expr::GATExpr, value)::GATExpr
   invoke_term(
-    datatype_module(typeof(expr)),
-    datatype_name(typeof(expr)),
+    parentmodule(typeof(expr)),
+    nameof(typeof(expr)),
     value,
     type_args(expr)...
   )
@@ -375,7 +373,7 @@ expressions. One use case for this capability is defining forgetful functors,
 which map non-generators to generators.
 """
 function functor(types::Tuple, expr::GATExpr;
-                 generators::Associative=Dict(), terms::Associative=Dict())
+                 generators::AbstractDict=Dict(), terms::AbstractDict=Dict())
   # Special case: look up a specific generator.
   if head(expr) == :generator && haskey(generators, expr)
     return generators[expr]
@@ -398,7 +396,7 @@ function functor(types::Tuple, expr::GATExpr;
   end
   
   # Invoke the constructor in the codomain category!
-  syntax_module = datatype_module(typeof(expr))
+  syntax_module = parentmodule(typeof(expr))
   signature_module = syntax_module.signature()
   invoke_term(signature_module, types, name, term_args...)
 end
@@ -420,7 +418,7 @@ function to_json_sexpr(expr::GATExpr;
     [ string(constructor_name(expr)); map(to_json_sexpr, args(expr)) ]
   end
 end
-to_json_sexpr(::Void) = nothing
+to_json_sexpr(::Nothing) = nothing
 to_json_sexpr(x::String) = x
 to_json_sexpr(x::Real) = x
 to_json_sexpr(x::Bool) = x
@@ -450,7 +448,7 @@ function parse_json_sexpr(syntax_module::Module, sexpr;
     args = [
       parse_impl(arg, Val{
         (i == 1 && get(type_lens, name, nothing) == nargs-1) ||
-        isa(arg, Bool) || isa(arg, Number) || isa(arg, Void)
+        isa(arg, Bool) || isa(arg, Number) || isa(arg, Nothing)
       })
       for (i, arg) in enumerate(sexpr[2:end])
     ]
@@ -530,7 +528,7 @@ end
 function show_latex(io::IO, expr::GATExpr{:generator}; kw...)
   # Try to be smart about using text or math mode.
   content = string(first(expr))
-  if all(isalpha, content) && length(content) > 1
+  if all(isletter, content) && length(content) > 1
     print(io, "\\mathrm{$content}")
   else
     print(io, content)

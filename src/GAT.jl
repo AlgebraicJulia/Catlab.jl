@@ -25,9 +25,12 @@ References:
 module GAT
 export @signature, @instance, invoke_term
 
+using Base.Meta: ParseError
 using AutoHashEquals
 using DataStructures: OrderedDict
 using Match
+using Nullables
+
 using ..Meta
 
 # Data types
@@ -153,6 +156,9 @@ function signature_code(main_class, base_mod, base_params)
   # Generate module with stub types.
   mod = Expr(:module, true, class.name, 
     Expr(:block, [
+      # Prevents error about export not being at toplevel.
+      # https://github.com/JuliaLang/julia/issues/28991
+      LineNumberNode(0);
       Expr(:export, [cons.name for cons in signature.types]...);
       map(gen_abstract_type, signature.types);      
       :(class() = $(class));
@@ -173,16 +179,16 @@ end
 function parse_signature_head(expr::Expr)::SignatureHead
   parse = parse_signature_binding
   @match expr begin
-    (Expr(:call, [:(=>), Expr(:tuple, bases, _), main], _)
+    (Expr(:call, [:(=>), Expr(:tuple, bases), main])
       => SignatureHead(parse(main), map(parse, bases)))
-    Expr(:call, [:(=>), base, main], _) => SignatureHead(parse(main), [parse(base)])
+    Expr(:call, [:(=>), base, main]) => SignatureHead(parse(main), [parse(base)])
     _ => SignatureHead(parse(expr))
   end
 end
 
 function parse_signature_binding(expr::Expr)::SignatureBinding
   @match expr begin
-    Expr(:call, [name::Symbol, params...], _) => SignatureBinding(name, params)
+    Expr(:call, [name::Symbol, params...]) => SignatureBinding(name, params)
     _ => throw(ParseError("Ill-formed signature binding $expr"))
   end
 end
@@ -259,12 +265,12 @@ Unlike term constructors, type constructors cannot be overloaded, so there is at
 most one type constructor with a given name.
 """
 function get_type(sig::Signature, name::Symbol)::TypeConstructor
-  indices = find(cons -> cons.name == name, sig.types)
+  indices = findall(cons -> cons.name == name, sig.types)
   @assert length(indices) == 1
   sig.types[indices[1]]
 end
 function has_type(sig::Signature, name::Symbol)::Bool
-  findfirst(cons -> cons.name == name, sig.types) != 0
+  findfirst(cons -> cons.name == name, sig.types) != nothing
 end
 
 """ Add a type-valued first argument to a Julia function signature.
@@ -279,7 +285,7 @@ does not (yet?) support
 """
 function add_type_dispatch(call_expr::Expr, type_expr::Expr0)::Expr
   @match call_expr begin
-    (Expr(:call, [name, args...], _) =>
+    (Expr(:call, [name, args...]) =>
       Expr(:call, name, :(::Type{$type_expr}), args...))
     _ => throw(ParseError("Ill-formed call expression $call_expr"))
   end
@@ -294,7 +300,7 @@ A "raw expression" is a just composition of function and constant symbols.
 """
 function parse_raw_expr(expr)
   @match expr begin
-    Expr(:call, args, _) => map(parse_raw_expr, args)
+    Expr(:call, args) => map(parse_raw_expr, args)
     head::Symbol => nothing
     _ => throw(ParseError("Ill-formed raw expression $expr"))
   end
@@ -308,7 +314,7 @@ function parse_context(expr::Expr)::Context
   args = expr.head == :tuple ? expr.args : [ expr ]
   for arg in args
     name, typ = @match arg begin
-      Expr(:(::), [name::Symbol, typ], _) => (name, parse_raw_expr(typ))
+      Expr(:(::), [name::Symbol, typ]) => (name, parse_raw_expr(typ))
       _ => throw(ParseError("Ill-formed context expression $expr"))
     end
     push_context!(context, name, typ)
@@ -328,14 +334,14 @@ function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor}
   # Context is optional.
   doc, expr = parse_docstring(expr)
   cons_expr, context = @match expr begin
-    Expr(:call, [:<=, inner, context], _) => (inner, parse_context(context))
+    Expr(:call, [:<=, inner, context]) => (inner, parse_context(context))
     _ => (expr, Context())
   end
   
   # Allow abbreviated syntax where tail of context is included in parameters.
   function parse_param(param::Expr0)::Symbol
     @match param begin
-      Expr(:(::), [name::Symbol, typ], _) => begin
+      Expr(:(::), [name::Symbol, typ]) => begin
         push_context!(context, name, parse_raw_expr(typ))
         name
       end
@@ -345,11 +351,11 @@ function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor}
   end
   
   @match cons_expr begin
-    (Expr(:(::), [name::Symbol, :TYPE], _)
+    (Expr(:(::), [name::Symbol, :TYPE])
       => TypeConstructor(name, [], context, doc))
-    (Expr(:(::), [Expr(:call, [name::Symbol, params...], _), :TYPE], _)
+    (Expr(:(::), [Expr(:call, [name::Symbol, params...]), :TYPE])
       => TypeConstructor(name, map(parse_param, params), context, doc))
-    (Expr(:(::), [Expr(:call, [name::Symbol, params...], _), typ], _)
+    (Expr(:(::), [Expr(:call, [name::Symbol, params...]), typ])
       => TermConstructor(name, map(parse_param, params), parse_raw_expr(typ),
                          context, doc))
     _ => throw(ParseError("Ill-formed type/term constructor $cons_expr"))
@@ -381,7 +387,7 @@ function replace_types(bindings::Dict, cons::TermConstructor)::TermConstructor
 end
 function replace_types(bindings::Dict, context::Context)::Context
   GAT.Context(((name => @match expr begin
-    (Expr(:call, [sym::Symbol, args...], _) => 
+    (Expr(:call, [sym::Symbol, args...]) => 
       Expr(:call, replace_symbols(bindings, sym), args...))
     sym::Symbol => replace_symbols(bindings, sym)
   end) for (name, expr) in context))
@@ -391,7 +397,7 @@ end
 """
 function strip_type(expr)::Symbol
   @match expr begin
-    Expr(:call, [head::Symbol, args...], _) => head
+    Expr(:call, [head::Symbol, args...]) => head
     sym::Symbol => sym
   end
 end
@@ -406,7 +412,7 @@ Reference: (Cartmell, 1986, Sec 10: 'Informal syntax').
 function expand_in_context(expr, params::Vector{Symbol},
                            context::Context, sig::Signature)
   @match expr begin
-    Expr(:call, [name::Symbol, args...], _) => begin
+    Expr(:call, [name::Symbol, args...]) => begin
       expanded = [expand_in_context(e, params, context, sig) for e in args]
       Expr(:call, name, expanded...)
     end
@@ -479,7 +485,7 @@ function equations(context::Context, sig::Signature)::Vector{Pair}
       end
       expr = isa(expr, Symbol) ? Expr(:call, expr) : expr
       cons = get_type(sig, expr.args[1])
-      accessors = cons.params[find(expr.args[2:end] .== var)]
+      accessors = cons.params[findall(expr.args[2:end] .== var)]
       append!(eqs, (Expr(:call, a, name) => var for a in accessors))
     end
   end
@@ -551,7 +557,7 @@ end
 """
 function parse_instance_body(expr::Expr)::Vector{JuliaFunction}
   @match strip_lines(expr) begin
-    Expr(:block, args, _) => map(parse_function, args)
+    Expr(:block, args) => map(parse_function, args)
     _ => throw(ParseEror("Ill-formed instance definition"))
   end  
 end
@@ -566,16 +572,16 @@ Cf. Julia's builtin `invoke()` function.
 function invoke_term(signature_module::Module, instance_types::Tuple,
                      constructor_name::Symbol, args...)
   # Get the corresponding Julia method from the parent module.
-  method = getfield(module_parent(signature_module), constructor_name)
+  method = getfield(parentmodule(signature_module), constructor_name)
   args = collect(Any, args)
   
   # Add dispatch on return type, if necessary.
-  if !any(issubtype(typeof(arg), typ) for typ in instance_types for arg in args)
+  if !any(typeof(arg) <: typ for typ in instance_types for arg in args)
     # Case 1: Name refers to type constructor, e.g., generator constructor 
     # in syntax system.
     signature = signature_module.class().signature
     index = findfirst(cons -> cons.name == constructor_name, signature.types)
-    if index == 0
+    if index == nothing
       # Case 2: Name refers to term constructor.
       # FIXME: Terms constructors can be overloaded, so there may be multiple
       # term constructors with the same name. Distinguishing them requires type

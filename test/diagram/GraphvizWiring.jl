@@ -1,6 +1,6 @@
 module TestGraphvizWiring
 
-using Base.Test
+using Test
 using Catlab.Doctrine
 using Catlab.Diagram
 import Catlab.Diagram: Graphviz

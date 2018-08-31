@@ -1,6 +1,6 @@
 module TestAlgebraicNetwork
 
-using Base.Test
+using Test
 using Catlab.Algebra
 using Catlab.Syntax
 

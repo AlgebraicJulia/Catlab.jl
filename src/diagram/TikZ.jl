@@ -20,6 +20,7 @@ export Expression, Statement, GraphStatement, Coordinate, Property,
        GraphNode, GraphEdge, MatrixNode, pprint
 
 using AutoHashEquals
+using Nullables
 
 # AST
 #####

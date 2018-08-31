@@ -15,6 +15,7 @@ export read_graphml, write_graphml
 using DataStructures: OrderedDict
 import JSON
 using LightXML
+using Nullables
 
 using ..Wiring
 import ..Wiring: PortEdgeData

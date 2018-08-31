@@ -1,4 +1,4 @@
-using Base.Test
+using Test
 
 @testset "GATs" begin
   include("Meta.jl")

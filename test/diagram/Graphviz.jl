@@ -1,6 +1,6 @@
 module TestGraphviz
 
-using Base.Test
+using Test
 import LightGraphs, MetaGraphs
 using LightGraphs: add_vertex!, add_vertices!, add_edge!
 using MetaGraphs: MetaGraph, MetaDiGraph

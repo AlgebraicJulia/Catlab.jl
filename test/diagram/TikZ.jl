@@ -1,6 +1,6 @@
 module TestTikZ
 
-using Base.Test
+using Test
 using Catlab.Diagram.TikZ
 
 # Pretty-print

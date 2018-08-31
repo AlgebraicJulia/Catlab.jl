@@ -1,6 +1,6 @@
 module TestPresentation
 
-using Base.Test
+using Test
 using Catlab, Catlab.Doctrine
 
 # Presentation

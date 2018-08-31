@@ -1,6 +1,6 @@
 module TestDoctrine
 
-using Base.Test
+using Test
 using Catlab.Doctrine
 using Catlab.Syntax
 

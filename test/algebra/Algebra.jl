@@ -1,4 +1,4 @@
-using Base.Test
+using Test
 
 @testset "Networks" begin
   include("Network.jl")

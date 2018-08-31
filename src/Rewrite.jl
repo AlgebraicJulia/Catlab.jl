@@ -14,7 +14,7 @@ import ..Syntax: head
 Maintains the normal form `op(e1,e2,...)` where `e1`,`e2`,... are expressions
 that are *not* applications of `op()`
 """
-function associate{E<:GATExpr}(expr::E)::E
+function associate(expr::E)::E where E <: GATExpr
   op, e1, e2 = head(expr), first(expr), last(expr)
   args1 = head(e1) == op ? args(e1) : [e1]
   args2 = head(e2) == op ? args(e2) : [e2]

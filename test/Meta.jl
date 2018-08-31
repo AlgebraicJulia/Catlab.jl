@@ -1,6 +1,9 @@
 module TestMeta
 
-using Base.Test
+using Base.Meta: ParseError
+using Nullables
+using Test
+
 using Catlab.Meta
 
 strip_all(expr) = strip_lines(expr, recurse=true)
@@ -13,13 +16,16 @@ parse_fun(expr) = parse_function(strip_all(expr))
        strip_all(:(function f(x::Int,y::Int)::Int end)))
 @test (generate_function(JuliaFunction(:(f(x)), :Bool, :(isnull(x)))) ==
        strip_all(:(function f(x)::Bool isnull(x) end)))
-@test (generate_function(JuliaFunction(:(f(x)), :Bool, :(isnull(x)), "Is null")) ==
-       strip_all(quote
-       """Is null"""
-       function f(x)::Bool
-         isnull(x)
-       end
-     end).args[1])
+
+fun_with_docstring_expr = quote
+  """Is null"""
+  function f(x)::Bool
+    isnull(x)
+  end
+end
+@test (strip_all(generate_function(
+        JuliaFunction(:(f(x)), :Bool, :(isnull(x)), "Is null"))) ==
+       strip_all(fun_with_docstring_expr).args[1])
 
 # Function parsing
 @test_throws ParseError parse_fun(:(f(x,y)))

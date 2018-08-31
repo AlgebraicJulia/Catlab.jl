@@ -12,8 +12,10 @@ export @present, Presentation, Equation, generator, generators, has_generator,
   equations, add_generator!, add_generators!, add_definition!, add_equation!,
   merge_presentation!
 
+using Base.Meta: ParseError
 import DataStructures: OrderedSet
 using Match
+using Nullables
 
 using ..Meta, ..Syntax
 import ..Syntax: parse_json_sexpr, to_json_sexpr
@@ -47,19 +49,19 @@ end
 
 """ Retrieve a generator by name.
 """
-function generator{T}(pres::Presentation{T}, name)
+function generator(pres::Presentation{T}, name) where T
   pres.generators_by_name[convert(T, name)]
 end
 
 """ Does the presentation contain a generator with the given name?
 """
-function has_generator{T}(pres::Presentation{T}, name)
+function has_generator(pres::Presentation{T}, name) where T
   haskey(pres.generators_by_name, convert(T, name))
 end
 
 """ Add a generator to a presentation.
 """
-function add_generator!{T}(pres::Presentation{T}, expr::GenExpr)
+function add_generator!(pres::Presentation{T}, expr::GenExpr) where T
   name = first(expr)
   if name != nothing
     name = convert(T, name)
@@ -105,7 +107,7 @@ end
 
 The first presentation is mutated and returned; the second is not.
 """
-function merge_presentation!{T}(pres::Presentation{T}, other::Presentation{T})
+function merge_presentation!(pres::Presentation{T}, other::Presentation{T}) where T
   union!(pres.generators, other.generators)
   merge!(pres.generators_by_name, other.generators_by_name)
   union!(pres.equations, other.equations)
@@ -119,11 +121,11 @@ end
 """
 macro present(head, body)
   name, syntax_name = @match head begin
-    Expr(:call, [name::Symbol, arg::Symbol], _) => (name, arg)
+    Expr(:call, [name::Symbol, arg::Symbol]) => (name, arg)
     _ => throw(ParseError("Ill-formed presentation header $head"))
   end
-  code = Expr(:(=), name, Expr(:let, translate_presentation(syntax_name, body)))
-  esc(code)
+  let_expr = Expr(:let, Expr(:block), translate_presentation(syntax_name, body))
+  esc(Expr(:(=), name, let_expr))
 end
 
 """ Translate a presentation in the DSL to a block of Julia code.
@@ -143,14 +145,14 @@ end
 """
 function translate_expr(syntax_name::Symbol, expr::Expr)::Expr
   @match expr begin
-    Expr(:(::), [name::Symbol, type_expr], _) =>
+    Expr(:(::), [name::Symbol, type_expr]) =>
       translate_generator(syntax_name, Nullable(name), type_expr)
-    Expr(:(::), [type_expr], _) =>
+    Expr(:(::), [type_expr]) =>
       translate_generator(syntax_name, Nullable{Symbol}(), type_expr)
-    Expr(:(:=), [name::Symbol, def_expr], _) =>
+    Expr(:(:=), [name::Symbol, def_expr]) =>
       translate_definition(name, def_expr)
-    Expr(:(=), _, _) => expr
-    Expr(:call, [:(==), lhs, rhs], _) => translate_equation(lhs, rhs)
+    Expr(:(=), _) => expr
+    Expr(:call, [:(==), lhs, rhs]) => translate_equation(lhs, rhs)
     _ => throw(ParseError("Ill-formed presentation statement $expr"))
   end
 end
@@ -160,7 +162,7 @@ end
 function translate_generator(syntax_name::Symbol, name::Nullable{Symbol}, type_expr)::Expr
   type_name, args = @match type_expr begin
     sym::Symbol => (sym, [])
-    Expr(:call, [sym::Symbol, args...], _) => (sym, args)
+    Expr(:call, [sym::Symbol, args...]) => (sym, args)
     _ => throw(ParseError("Ill-formed type expression $type_expr"))
   end
   call_expr = Expr(
@@ -171,7 +173,7 @@ function translate_generator(syntax_name::Symbol, name::Nullable{Symbol}, type_e
          QuoteNode(type_name),
          isnull(name) ? :nothing : QuoteNode(get(name)),
          args...))
-  isnull(name) ? call_expr : :(const $(get(name)) = $call_expr)
+  isnull(name) ? call_expr : :($(get(name)) = $call_expr)
 end
 
 """ Translate definition of generator in terms of other generators.
@@ -179,7 +181,7 @@ end
 function translate_definition(name::Symbol, def_expr)::Expr
   call_expr = Expr(:call, module_ref(:add_definition!), :_presentation,
                    QuoteNode(name), def_expr)
-  :(const $name = $call_expr)
+  :($name = $call_expr)
 end
 
 """ Translate declaration of equality between terms.

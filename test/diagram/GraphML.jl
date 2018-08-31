@@ -1,6 +1,6 @@
 module TestGraphML
 
-using Base.Test
+using Test
 using LightXML
 using Catlab.Doctrine
 using Catlab.Diagram
