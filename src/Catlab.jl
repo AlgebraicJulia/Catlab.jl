@@ -1,5 +1,3 @@
-__precompile__()
-
 module Catlab
 export @optional_import
 
