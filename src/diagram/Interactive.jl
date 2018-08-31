@@ -1,6 +1,8 @@
 module Interactive
 export Graph, TikzPicture
 
+import Pkg
+
 using ...Catlab
 
 # Graphviz diagrams
@@ -25,7 +27,7 @@ function Base.show(io::IO, ::MIME"image/svg+xml", graph::Graphviz.Graph)
 end
 
 # Graphviz PNG output requires Cairo.
-if Pkg.installed("Cairo") != nothing
+if haskey(Pkg.installed(), "Cairo")
   function Base.show(io::IO, ::MIME"image/png", graph::Graphviz.Graph)
     show(io, MIME"image/png"(), Graph(graph))
   end

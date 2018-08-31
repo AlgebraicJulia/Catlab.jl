@@ -53,7 +53,7 @@ end
 function write_graphml(diagram::WiringDiagram)::XMLDocument
   # Create XML document.
   xdoc = XMLDocument()
-  finalizer(xdoc, free) # Destroy all children when document is GC-ed.
+  finalizer(free, xdoc) # Destroy all children when document is GC-ed.
   xroot = create_root(xdoc, "graphml")
   set_attributes(xroot, Pair[
     "xmlns" => "http://graphml.graphdrawing.org/xmlns",
@@ -179,8 +179,8 @@ write_graphml_data_type(::Type{<:Integer}) = "int"
 write_graphml_data_type(::Type{<:Real}) = "double"
 write_graphml_data_type(::Type{String}) = "string"
 write_graphml_data_type(::Type{Symbol}) = "string"
-write_graphml_data_type{T}(::Type{Dict{String,T}}) = "json"
-write_graphml_data_type{T}(::Type{Vector{T}}) = "json"
+write_graphml_data_type(::Type{Dict{String,T}}) where T = "json"
+write_graphml_data_type(::Type{Vector{T}}) where T = "json"
 
 write_graphml_data_value(x::Number) = string(x)
 write_graphml_data_value(x::String) = x
@@ -188,9 +188,9 @@ write_graphml_data_value(x::Symbol) = string(x)
 write_graphml_data_value(x::Dict) = JSON.json(x)
 write_graphml_data_value(x::Vector) = JSON.json(x)
 
-convert_to_graphml_data{T}(value::Dict{String,T}) = value
+convert_to_graphml_data(value::Dict{String,T}) where T = value
 convert_to_graphml_data(value) = Dict("value" => value)
-convert_to_graphml_data(::Void) = Dict()
+convert_to_graphml_data(::Nothing) = Dict()
 convert_to_graphml_data(value::Nullable) =
   isnull(value) ? Dict() : convert_to_graphml_data(get(value))
 
@@ -199,9 +199,8 @@ convert_to_graphml_data(value::Nullable) =
 
 """ Deserialize a wiring diagram from GraphML.
 """
-function read_graphml{BoxValue,PortValue,WireValue}(
-    ::Type{BoxValue}, ::Type{PortValue}, ::Type{WireValue},
-    xdoc::XMLDocument)::WiringDiagram
+function read_graphml(::Type{BoxValue}, ::Type{PortValue}, ::Type{WireValue},
+    xdoc::XMLDocument)::WiringDiagram where {BoxValue, PortValue, WireValue}
   xroot = root(xdoc)
   @assert name(xroot) == "graphml" "Root element of GraphML document must be <graphml>"
   xgraphs = xroot["graph"]
@@ -339,7 +338,7 @@ read_graphml_data_value(::Type{Val{:string}}, s::String) = s
 read_graphml_data_value(::Type{Val{:json}}, s::String) = JSON.parse(s)
 
 convert_from_graphml_data(::Type{Dict}, data::Dict) = data
-convert_from_graphml_data(::Type{Void}, data::Dict) = nothing
+convert_from_graphml_data(::Type{Nothing}, data::Dict) = nothing
 
 function convert_from_graphml_data(Value::Type, data::Dict)
   @assert length(data) == 1
@@ -349,7 +348,7 @@ function convert_from_graphml_data(::Type{Symbol}, data::Dict)
   @assert length(data) == 1
   Symbol(first(values(data)))
 end
-function convert_from_graphml_data{T}(::Type{Nullable{T}}, data::Dict)
+function convert_from_graphml_data(::Type{Nullable{T}}, data::Dict) where T
   if isempty(data)
     Nullable{T}()
   else

@@ -4,6 +4,7 @@ module TikZWiring
 export to_tikz
 
 using Match
+using Nullables
 
 import ...Doctrine: ObExpr, HomExpr, dom, codom, head, args, compose, id
 import ...Syntax: GATExpr, show_latex
@@ -92,7 +93,7 @@ function to_tikz(f::HomExpr;
   props = [
     TikZ.Property("remember picture"),
     TikZ.Property("font", 
-                  "{\\fontsize{$font_size}{$(round(1.2*font_size,2))}}"),
+                  "{\\fontsize{$font_size}{$(round(1.2*font_size;digits=2))}}"),
     TikZ.Property("container/.style", "{inner sep=0}"),
     TikZ.Property("every path/.style",
                   "{solid, line width=$line_width}"),
@@ -429,11 +430,11 @@ function circle_ports(wires::Wires, name::String, dir::String;
                       kw...)::Vector{Port}
   @assert dir in ("west", "east")
   m = length(wires)
-  angles = round.(Int, linspace(0,180,m+2)[2:end-1])
+  angles = round.(Int, range(0,stop=180,length=m+2)[2:end-1])
   if dir == "west"
-    angles = mod.(angles + 90, 360)
+    angles = mod.(angles .+ 90, 360)
   elseif dir == "east"
-    angles = reverse(mod.(angles - 90, 360))
+    angles = reverse(mod.(angles .- 90, 360))
   end
   Port[ Port(wire, "$name.$angle"; angle=angle, kw...)
             for (wire, angle) in zip(wires, angles) ]

@@ -9,10 +9,10 @@ using Catlab.Diagram
 
 function roundtrip(f::WiringDiagram)
   xdoc = write_graphml(f)
-  read_graphml(Dict, Void, Dict, xdoc)
+  read_graphml(Dict, Nothing, Dict, xdoc)
 end
 
-ports(n) = Void[ nothing for i in 1:n ]
+ports(n) = Nothing[ nothing for i in 1:n ]
 diagram = WiringDiagram(ports(1), ports(1))
 f = Box(Dict("name" => "f", "type" => "foo"), ports(1), ports(1))
 fv = add_box!(diagram, f)
@@ -28,7 +28,7 @@ add_wires!(diagram, [
 
 function roundtrip_symbolic(f::WiringDiagram)
   xdoc = write_graphml(f)
-  read_graphml(Symbol, Symbol, Void, xdoc)
+  read_graphml(Symbol, Symbol, Nothing, xdoc)
 end
 
 A, B, C = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C)

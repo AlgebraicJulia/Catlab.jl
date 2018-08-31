@@ -3,6 +3,7 @@ __precompile__()
 module Catlab
 export @optional_import
 
+import Pkg
 using Match
 using Reexport
 
@@ -13,7 +14,7 @@ macro optional_import(expr)
     Expr(:toplevel, [Expr(:using, [name, _...]), _...]) => name
     Expr(:toplevel, [Expr(:import, [name, _...]), _...]) => name
   end
-  cond = :(Pkg.installed($(string(pkg))) != nothing)
+  cond = :(haskey($(GlobalRef(Pkg, :installed))(), $(string(pkg))))
   esc(Expr(:toplevel, Expr(:if, cond, expr)))
 end
 

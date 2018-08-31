@@ -70,7 +70,7 @@ function to_graphviz(f::WiringDiagram;
   end
   
   # Edges
-  const graphviz_port = (p::Port) -> begin
+  graphviz_port = (p::Port) -> begin
     if p.box in (input_id(f), output_id(f))
       return Graphviz.NodeID("n$(p.box)p$(p.port)", port_anchor(p.kind))
     end
@@ -187,11 +187,11 @@ edge_id(port_value::Any) = edge_label(port_value)
 Borrowed from HttpCommon package: https://github.com/JuliaWeb/HttpCommon.jl
 """
 function escape_html(s::AbstractString)
-  s = replace(s, "&", "&amp;")
-  s = replace(s, "\"", "&quot;")
-  s = replace(s, "'", "&#39;")
-  s = replace(s, "<", "&lt;")
-  s = replace(s, ">", "&gt;")
+  s = replace(s, "&" => "&amp;")
+  s = replace(s, "\"" => "&quot;")
+  s = replace(s, "'" => "&#39;")
+  s = replace(s, "<" => "&lt;")
+  s = replace(s, ">" => "&gt;")
   return s
 end
 

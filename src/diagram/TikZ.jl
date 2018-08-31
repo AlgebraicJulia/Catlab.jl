@@ -135,8 +135,7 @@ end
   stmts::Matrix{Vector{Statement}}
   props::Vector{Property}
   
-  MatrixNode(stmts::Matrix{Vector{Statement}}; props=Property[]) =
-    new(stmts, props)
+  MatrixNode(stmts::Matrix; props=Property[]) = new(stmts, props)
 end
 
 # Pretty-print

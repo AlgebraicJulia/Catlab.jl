@@ -36,7 +36,7 @@ Base.print(io::IO, html::Html) = print(io, html.content)
 const AttributeValue = Union{String,Html}
 const Attributes = OrderedDict{Symbol,AttributeValue}
 
-sorted_attrs(d::Associative) = Attributes(k => d[k] for k in sort!(collect(keys(d))))
+sorted_attrs(d::AbstractDict) = Attributes(k => d[k] for k in sort!(collect(keys(d))))
 
 @with_kw struct Graph <: Expression
   name::String

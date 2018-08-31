@@ -134,8 +134,8 @@ Graph(
 # Matrix statement
 @test spprint(
 MatrixNode(
-  vcat(hcat( [[Node("f")]],             [[Edge("g1","g2")]] ),
-       hcat( [[Node("h1"),Node("h2")]], [[Node("i1"),Node("i2")]] )),
+  [ [[Node("f")]]              [[Edge("g1","g2")]]; 
+    [[Node("h1"),Node("h2")]]  [[Node("i1"),Node("i2")]] ];
   props=[Property("draw","red")]
 )) == """
 \\matrix[draw=red]{

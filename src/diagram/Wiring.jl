@@ -35,7 +35,6 @@ export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
   dom, codom, id, compose, otimes, munit, braid, permute, mcopy, delete,
   mmerge, create, to_wiring_diagram
 
-import Base: permute
 using AutoHashEquals
 using LightGraphs, MetaGraphs
 import LightGraphs: all_neighbors, neighbors, outneighbors, inneighbors
