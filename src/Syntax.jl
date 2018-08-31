@@ -105,30 +105,33 @@ macro syntax(syntax_head, mod_name, body=Expr(:block))
   functions = map(parse_function, strip_lines(body).args)
   
   expr = Expr(:call, :syntax_code, Expr(:quote, syntax_name),
-              esc(Expr(:ref, :Type, base_types...)), esc(mod_name), functions)
+              esc(Expr(:ref, :Type, base_types...)),
+              esc(mod_name), esc(nameof(__module__)), functions)
   Expr(:block,
     Expr(:call, esc(:eval), expr),
     :(Core.@__doc__ $(esc(syntax_name))))
 end
-function syntax_code(name::Symbol, base_types::Vector{Type}, mod::Module,
+function syntax_code(name::Symbol, base_types::Vector{Type},
+                     signature_module::Module, outer_module::Module,
                      functions::Vector)
-  class = mod.class()
+  class = signature_module.class()
   signature = class.signature
+  signature_ref = GlobalRef(parentmodule(signature_module),
+                            nameof(signature_module))
   
   # Generate module with syntax types and type/term generators.
-  outer_mod = current_module()
   mod = Expr(:module, true, name,
     Expr(:block, [
       # Prevents error about export not being at toplevel.
       # https://github.com/JuliaLang/julia/issues/28991
       LineNumberNode(0);
       Expr(:export, [cons.name for cons in signature.types]...);
-      Expr(:using, map(Symbol, split(string(outer_mod), "."))...);
-      :(signature() = $(GlobalRef(parentmodule(mod), nameof(mod))));
+      Expr(:using, map(Symbol, split(string(outer_module), "."))...);
+      :(signature() = $signature_ref);
       gen_types(signature, base_types);
       gen_type_accessors(signature);
-      gen_term_generators(signature);
-      gen_term_constructors(signature);
+      gen_term_generators(signature, outer_module);
+      gen_term_constructors(signature, outer_module);
     ]...))
   
   # Generate toplevel functions.
@@ -210,8 +213,8 @@ end
 
 """ Generate methods for syntax term constructors.
 """
-function gen_term_constructor(cons::TermConstructor, sig::Signature;
-                              dispatch_type::Symbol=Symbol())::Expr
+function gen_term_constructor(cons::TermConstructor, sig::Signature,
+                              mod::Module; dispatch_type::Symbol=Symbol())::Expr
   head = GAT.constructor(cons, sig)
   call_expr, return_type = head.call_expr, get(head.return_type)
   if dispatch_type == Symbol()
@@ -236,7 +239,7 @@ function gen_term_constructor(cons::TermConstructor, sig::Signature;
   end
   
   # Create call to expression constructor.
-  type_params = gen_term_constructor_params(cons, sig)
+  type_params = gen_term_constructor_params(cons, sig, mod)
   push!(body.args,
     Expr(:call,
       Expr(:curly, return_type, Expr(:quote, dispatch_type)),
@@ -245,8 +248,8 @@ function gen_term_constructor(cons::TermConstructor, sig::Signature;
   
   generate_function(JuliaFunction(call_expr, return_type, body))
 end
-function gen_term_constructors(sig::Signature)::Vector{Expr}
-  [ gen_term_constructor(cons, sig) for cons in sig.terms ]
+function gen_term_constructors(sig::Signature, mod::Module)::Vector{Expr}
+  [ gen_term_constructor(cons, sig, mod) for cons in sig.terms ]
 end
 
 """ Generate expressions for type parameters of term constructor.
@@ -260,14 +263,13 @@ Besides expanding the implicit variables, we must handle two annoying issues:
 2. Rebind the term constructors to ensure that user overrides are preferred over
    the default term constructors.
 """
-function gen_term_constructor_params(cons, sig)::Vector
+function gen_term_constructor_params(cons, sig, mod)::Vector
   expr = GAT.expand_term_type(cons, sig)
   raw_params = @match expr begin
     Expr(:call, [name::Symbol, args...]) => args
     _::Symbol => []
   end
   
-  mod = current_module()
   bindings = Dict(c.name => GlobalRef(mod, c.name) for c in sig.terms)
   params = []
   for expr in raw_params
@@ -294,12 +296,12 @@ end
 
 Generators are extra term constructors created automatically for the syntax.
 """
-function gen_term_generator(cons::TypeConstructor, sig::Signature)::Expr
-  gen_term_constructor(constructor_for_generator(cons), sig;
+function gen_term_generator(cons::TypeConstructor, sig::Signature, mod::Module)::Expr
+  gen_term_constructor(constructor_for_generator(cons), sig, mod;
                        dispatch_type = :generator)
 end
-function gen_term_generators(sig::Signature)::Vector{Expr}
-  [ gen_term_generator(cons, sig) for cons in sig.types ]
+function gen_term_generators(sig::Signature, mod::Module)::Vector{Expr}
+  [ gen_term_generator(cons, sig, mod) for cons in sig.types ]
 end
 function constructor_for_generator(cons::TypeConstructor)::TermConstructor
   value_param = :__value__
