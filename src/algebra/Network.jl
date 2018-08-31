@@ -34,6 +34,8 @@ See also the doctrine of abelian bicategory of relations
 (`AbelianBicategoryRelations`).
 """
 @signature SymmetricMonoidalCategory(Ob,Hom) => AlgebraicNetSignature(Ob,Hom) begin
+  opow(A::Ob, n::Int)::Ob
+
   mcopy(A::Ob, n::Int)::Hom(A,opow(A,n))
   delete(A::Ob)::Hom(A,munit())
 
@@ -42,8 +44,6 @@ See also the doctrine of abelian bicategory of relations
   linear(x::Any, A::Ob, B::Ob)::Hom(A,B)
   
   constant(x::Any, A::Ob) = Hom(x, munit(Ob), A)
-  opow(A::Ob, n::Int) = otimes(repeated(A,n)...)
-  opow(f::Hom, n::Int) = otimes(repeated(f,n)...)
   mcopy(A::Ob) = mcopy(A,2)
   mmerge(A::Ob) = mmerge(A,2)
 end
@@ -51,6 +51,7 @@ end
 @syntax AlgebraicNet(ObExpr,HomExpr) AlgebraicNetSignature begin
   otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
+  opow(A::Ob, n::Int) = otimes(repeated(A,n)...)
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
 end
 
@@ -272,7 +273,7 @@ end
 
 function compile_block(f::AlgebraicNet.Hom{:mmerge}, state::CompileState)::Block
   inputs, out = state.inputs, genvar(state)
-  code = Expr(:(=), out, Expr(:call, :(+), inputs...))
+  code = Expr(:(=), out, Expr(:call, :(.+), inputs...))
   Block(code, inputs, [out])
 end
 
@@ -325,7 +326,7 @@ end
 # a vector of the same length as the (co)domain.
 
 function eval_impl(f::AlgebraicNet.Hom{:compose}, xs::Vector)
-  foldl((ys,g) -> eval_impl(g,ys), xs, args(f))
+  foldl((ys,g) -> eval_impl(g,ys), args(f); init=xs)
 end
 
 function eval_impl(f::AlgebraicNet.Hom{:otimes}, xs::Vector)
@@ -342,7 +343,7 @@ eval_impl(f::AlgebraicNet.Hom{:id}, xs::Vector) = xs
 eval_impl(f::AlgebraicNet.Hom{:braid}, xs::Vector) = [xs[2], xs[1]]
 eval_impl(f::AlgebraicNet.Hom{:mcopy}, xs::Vector) = vcat(repeated(xs, last(f))...)
 eval_impl(f::AlgebraicNet.Hom{:delete}, xs::Vector) = []
-eval_impl(f::AlgebraicNet.Hom{:mmerge}, xs::Vector) = [ +(xs...) ]
+eval_impl(f::AlgebraicNet.Hom{:mmerge}, xs::Vector) = [ .+(xs...) ]
 eval_impl(f::AlgebraicNet.Hom{:create}, xs::Vector) = collect(repeated(0, ndims(codom(f))))
 eval_impl(f::AlgebraicNet.Hom{:linear}, xs::Vector) = first(f) * xs
 

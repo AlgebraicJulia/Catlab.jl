@@ -1,6 +1,8 @@
 module TestAlgebraicNetwork
 
+import Pkg
 using Test
+
 using Catlab.Algebra
 using Catlab.Syntax
 
@@ -10,7 +12,7 @@ latex(expr::GATExpr) = sprint(show_latex, expr)
 R = Ob(AlgebraicNet, :R)
 
 # Generator
-x = collect(linspace(-2,2))
+x = collect(range(-2,stop=2,length=50))
 f = Hom(:sin,R,R)
 f_comp = compile(f)
 @test f_comp(x) == sin.(x)
@@ -38,7 +40,7 @@ f_comp = compile(f)
 @test evaluate(f,x) == 2*sin.(2x)
 
 # Monoidal product
-y = collect(linspace(0,4))
+y = collect(range(0,stop=4,length=50))
 f = otimes(Hom(:cos,R,R), Hom(:sin,R,R))
 f_comp = compile(f)
 @test f_comp(x,y) == (cos.(x),sin.(y))
@@ -60,15 +62,15 @@ f_comp = compile(f)
 
 f = compose(otimes(id(R),constant(1,R)), mmerge(R))
 f_comp = compile(f)
-@test f_comp(x) == x+1
-@test evaluate(f,x) == x+1
+@test f_comp(x) == @. x+1
+@test evaluate(f,x) == @. x+1
 @test unicode(f) == "(id[R]⊗1); mmerge[R,2]"
 @test latex(f) == "\\left(\\mathrm{id}_{R} \\otimes 1\\right) ; \\nabla_{R,2}"
 
 f = compose(otimes(id(R),constant((1,1),otimes(R,R))), mmerge(R,3))
 f_comp = compile(f)
-@test f_comp(x) ≈ x+2
-@test evaluate(f,x) ≈ x+2
+@test f_comp(x) ≈ @. x+2
+@test evaluate(f,x) ≈ @. x+2
 
 # Copy
 f = mcopy(R)
@@ -86,15 +88,15 @@ f_comp = compile(f)
 @test evaluate(f,x) == (cos.(x),sin.(x))
 
 # Merge
-z = collect(linspace(-4,0))
+z = collect(range(-4,stop=0,length=50))
 f = mmerge(R)
 f_comp = compile(f)
-@test f_comp(x,y) == x+y
-@test evaluate(f,x,y) == x+y
+@test f_comp(x,y) == @. x+y
+@test evaluate(f,x,y) == @. x+y
 f = mmerge(R,3)
 f_comp = compile(f)
-@test f_comp(x,y,z) == x+y+z
-@test evaluate(f,x,y,z) == x+y+z
+@test f_comp(x,y,z) == @. x+y+z
+@test evaluate(f,x,y,z) == @. x+y+z
 
 f = compose(mcopy(R), otimes(id(R), delete(R)))
 f_comp = compile(f)
@@ -126,7 +128,7 @@ f_comp = compile(f)
 A = [1 2; 3 4]
 f = compose(linear(A,otimes(R,R),otimes(R,R)), mmerge(R))
 f_comp = compile(f)
-target = squeeze(sum([x y]*A', 2), 2)
+target = dropdims(sum([x y]*A', dims=2), dims=2)
 @test f_comp(x,y) ≈ target
 @test evaluate(f,x,y) ≈ target
 
@@ -150,10 +152,10 @@ f_comp, f_const = compile(f, return_constants=true, vector=true)
 
 f = compose(otimes(id(R),constant(:c,R)), mmerge(R))
 f_comp = compile(f,name=:myfun3)
-@test f_comp(x,c=2) ≈ x+2
+@test f_comp(x,c=2) ≈ @. x+2
 
 # Automatic differentiation of symbolic coefficients
-if Pkg.installed("ReverseDiffSource") != nothing
+if haskey(Pkg.installed(), "ReverseDiffSource")
   x0 = 2.0 # Vectorized evaluation not allowed.
   f = compose(linear(:a,R,R), Hom(:sin,R,R))
   f_comp = compile(f, vector=true, order=1)

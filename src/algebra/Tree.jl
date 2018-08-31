@@ -17,7 +17,9 @@ import Base.Meta: show_sexpr
 
 using ...Catlab
 import ...Syntax: head, args, show_latex
-importall ..Network
+using ..Network
+import ..Network: Ob, Hom, compose, id, dom, codom, otimes, opow, munit, braid,
+  mcopy, delete, mmerge, create, linear, constant
 
 # Data types
 ############
@@ -84,6 +86,7 @@ that any two formulas have disjoint variables.
 
   munit(::Type{NFormula}) = NFormula(0)
   otimes(A::NFormula, B::NFormula) = NFormula(A.n + B.n)
+  opow(A::NFormula, n::Int) = NFormula(A.n * n)
   
   function otimes(b1::Formulas, b2::Formulas)::Formulas
     Formulas([b1.terms; b2.terms], [b1.vars; b2.vars])
