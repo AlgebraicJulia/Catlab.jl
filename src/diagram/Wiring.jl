@@ -683,8 +683,8 @@ function encapsulated_ports(d::WiringDiagram, vs::Vector{Int}, subv::Int)
   end
   
   # Return input and output port values with the tightest possible types.
-  promote_vec(xs::Vector) = isempty(xs) ? [] : collect(promote(xs...))
-  (promote_vec(inputs), promote_vec(outputs), outer_port_map, inner_port_map)
+  inputs, outputs = [ x for x in inputs ], [ x for x in outputs ]
+  (inputs, outputs, outer_port_map, inner_port_map)
 end
 
 # High-level categorical interface
