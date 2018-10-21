@@ -1,4 +1,4 @@
-""" Draw wiring diagrams (aka string diagrams) using Graphivz.
+""" Draw wiring diagrams (aka string diagrams) using Graphviz.
 """
 module GraphvizWiring
 export to_graphviz
@@ -11,19 +11,23 @@ using ..Wiring
 # Default Graphviz font. Reference: http://www.graphviz.org/doc/fontfaq.txt
 const default_font = "Serif"
 
-# Default node, graph, and edge attributes.
+# Default graph, node, edge, and cell attributes.
 const default_graph_attrs = Graphviz.Attributes(
   :fontname => default_font,
 )
 const default_node_attrs = Graphviz.Attributes(
   :fontname => default_font,
-  :shape => "rect",
+  :shape => "none",
   :width => "0",
   :height => "0",
   :margin => "0",
 )
 const default_edge_attrs = Graphviz.Attributes(
   :fontname => default_font,
+)
+const default_cell_attrs = Graphviz.Attributes(
+  :border => "1",
+  :cellpadding => "4",
 )
 
 """ Render a wiring diagram using Graphviz.
@@ -41,13 +45,15 @@ wiring diagram.
 - `graph_attrs=default_graph_attrs`: top-level graph attributes
 - `node_attrs=default_node_attrs`: top-level node attributes
 - `edge_attrs=default_edge_attrs`: top-level edge attributes
+- `cell_attrs=default_cell_attrs`: main cell attributes in node HTML-like label
 """
 function to_graphviz(f::WiringDiagram;
     graph_name::String="G", labels::Bool=false, label_attr::Symbol=:label,
     anchor_outer_ports::Bool=true,
     graph_attrs::Graphviz.Attributes=Graphviz.Attributes(),
     node_attrs::Graphviz.Attributes=Graphviz.Attributes(),
-    edge_attrs::Graphviz.Attributes=Graphviz.Attributes())::Graphviz.Graph
+    edge_attrs::Graphviz.Attributes=Graphviz.Attributes(),
+    cell_attrs::Graphviz.Attributes=Graphviz.Attributes())::Graphviz.Graph
   @assert label_attr in [:label, :xlabel, :headlabel, :taillabel]
   
   # Nodes
@@ -63,9 +69,12 @@ function to_graphviz(f::WiringDiagram;
       output_id(f), OutputPort, n_outputs; anchor=anchor_outer_ports))
   end
   # Visible nodes for boxes.
+  cell_attrs = merge(default_cell_attrs, cell_attrs)
   for v in box_ids(f)
     box = Wiring.box(f, v)
-    node = Graphviz.Node("n$v", label=node_html_label(box), id=node_id(box.value))
+    node = Graphviz.Node("n$v",
+      label = node_html_label(box, cell_attrs),
+      id = node_id(box.value))
     push!(stmts, node)
   end
   
@@ -104,15 +113,18 @@ end
 
 """ Create an "HTML-like" node label for a box.
 """
-function node_html_label(box::Box)::Graphviz.Html
+function node_html_label(box::Box, attrs::Graphviz.Attributes)::Graphviz.Html
   nin, nout = length(input_ports(box)), length(output_ports(box))
   text_label = node_label(box.value)
   Graphviz.Html("""
     <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
     <TR><TD>$(ports_html_label(InputPort,nin))</TD></TR>
-    <TR><TD CELLPADDING="4">$(escape_html(text_label))</TD></TR>
+    <TR><TD $(html_attributes(attrs))>$(escape_html(text_label))</TD></TR>
     <TR><TD>$(ports_html_label(OutputPort,nout))</TD></TR>
     </TABLE>""")
+end
+function html_attributes(attrs::Graphviz.Attributes)::String
+  join(["$(uppercase(string(k)))=\"$v\"" for (k,v) in attrs], " ")
 end
 
 """ Create an "HTML-like" label for the input or output ports of a box.
