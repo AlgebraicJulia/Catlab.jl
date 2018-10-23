@@ -191,8 +191,6 @@ write_graphml_data_value(x::Vector) = JSON.json(x)
 convert_to_graphml_data(value::Dict{String,T}) where T = value
 convert_to_graphml_data(value) = Dict("value" => value)
 convert_to_graphml_data(::Nothing) = Dict()
-convert_to_graphml_data(value::Nullable) =
-  isnull(value) ? Dict() : convert_to_graphml_data(get(value))
 
 # Deserialization
 #################
@@ -347,13 +345,6 @@ end
 function convert_from_graphml_data(::Type{Symbol}, data::Dict)
   @assert length(data) == 1
   Symbol(first(values(data)))
-end
-function convert_from_graphml_data(::Type{Nullable{T}}, data::Dict) where T
-  if isempty(data)
-    Nullable{T}()
-  else
-    Nullable{T}(convert_from_graphml_data(T, data))
-  end
 end
 
 end
