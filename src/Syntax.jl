@@ -433,8 +433,9 @@ default_to_json_by_reference(x) = false
 If `symbols` is true (the default), strings are converted to symbols.
 """
 function parse_json_sexpr(syntax_module::Module, sexpr;
-    parse_reference::Function = default_parse_json_reference,
-    parse_value::Function = default_parse_json_value,
+    parse_head::Function = identity,
+    parse_reference::Function = disable_parse_json_reference,
+    parse_value::Function = identity,
     symbols::Bool = true,
   )
   signature_module = syntax_module.signature()
@@ -445,7 +446,7 @@ function parse_json_sexpr(syntax_module::Module, sexpr;
   # - false if the sexpr should be parsed as a term (GAT expression)
   # - true if the sexpr should be parsed as a value (Julia object)
   function parse_impl(sexpr::Vector, ::Type{Val{false}})
-    name = Symbol(sexpr[1])
+    name = Symbol(parse_head(symbols ? Symbol(sexpr[1]) : sexpr[1]))
     nargs = length(sexpr) - 1
     args = [
       parse_impl(arg, Val{
@@ -463,8 +464,7 @@ function parse_json_sexpr(syntax_module::Module, sexpr;
   parse_impl(sexpr, Val{false})
 end
 
-default_parse_json_reference(x) = error("Loading terms by name is not enabled")
-default_parse_json_value(x) = x
+disable_parse_json_reference(x) = error("Loading terms by name is not enabled")
 
 # Pretty-print
 ##############
