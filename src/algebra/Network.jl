@@ -21,8 +21,6 @@ import ...Diagram.TikZWiring: box, wires, rect, junction_circle
 import ...Meta: concat_expr
 import ...Syntax: show_latex, show_unicode
 
-@optional_import using ReverseDiffSource
-
 # Syntax
 ########
 
@@ -88,8 +86,8 @@ optimizations. Still, the code should be fast provided the original expression
 is properly factored (there are no duplicated computations).
 """
 function compile(f::Union{AlgebraicNet.Hom,Block};
-                 return_constants::Bool=false, vector::Bool=false, kw...)
-  expr, consts = vector ? compile_expr_vector(f; kw...) : compile_expr(f; kw...)
+                 return_constants::Bool=false, kw...)
+  expr, consts = compile_expr(f; kw...)
   compiled = eval(expr)
   return_constants ? (compiled, consts) : compiled
 end
@@ -122,46 +120,6 @@ function compile_expr(block::Block; name::Symbol=Symbol())
     Expr(:tuple, block.outputs...)
   end)
   body_expr = concat_expr(block.code, return_expr)
-  
-  (Expr(:function, call_expr, body_expr), block.constants)
-end
-
-""" Compile an algebraic network into a Julia function expression.
-
-The function signature is:
-  - first argument = input vector
-  - second argument = constant (coefficients) vector
-  
-Unlike `compile_expr`, this method assumes the network has a single output, and
-supports gradients, Hessians, and higher order derivatives (with respect to the
-coefficients) via reverse-mode automatic differentiation.
-"""
-function compile_expr_vector(f::AlgebraicNet.Hom; name::Symbol=Symbol(),
-                             inputs::Symbol=:x, constants::Symbol=:c, kw...)
-  block = compile_block(f; inputs=inputs, constants=constants)
-  compile_expr_vector(block; name=name, inputs=inputs, constants=constants, kw...)
-end
-function compile_expr_vector(block::Block; name::Symbol=Symbol(),
-                             inputs::Symbol=:x, constants::Symbol=:c,
-                             order::Int=0, allorders::Bool=true)
-  # Create call expression (function header).
-  call_expr = if name == Symbol() # Anonymous function
-    Expr(:tuple, inputs, constants)
-  else # Named function
-    Expr(:call, name, inputs, constants)
-  end                           
-                             
-  # Create function body.
-  @assert length(block.outputs) == 1
-  return_expr = Expr(:return, block.outputs[1])
-  body_expr = concat_expr(block.code, return_expr)
-  
-  # Automatic differentiation with respect to coefficients.
-  if order > 0
-    vars = Dict(inputs => Vector{Float64}, constants => Vector{Float64})
-    body_expr = rdiff(body_expr; order=order, allorders=allorders, 
-                      ignore=[inputs], vars...)
-  end
   
   (Expr(:function, call_expr, body_expr), block.constants)
 end
