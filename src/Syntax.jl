@@ -473,7 +473,7 @@ disable_parse_json_reference(x) = error("Loading terms by name is not enabled")
 
 Cf. the standard library function `Meta.show_sexpr`.
 """
-show_sexpr(expr::GATExpr) = show_sexpr(STDOUT, expr)
+show_sexpr(expr::GATExpr) = show_sexpr(stdout, expr)
 
 function show_sexpr(io::IO, expr::GATExpr)
   if head(expr) == :generator
@@ -488,7 +488,7 @@ end
 
 """ Show the expression in infix notation using Unicode symbols.
 """
-show_unicode(expr::GATExpr) = show_unicode(STDOUT, expr)
+show_unicode(expr::GATExpr) = show_unicode(stdout, expr)
 show_unicode(io::IO, x::Any; kw...) = show(io, x)
 
 function show_unicode(io::IO, expr::GATExpr; kw...)
@@ -515,7 +515,7 @@ end
 
 Does *not* include `\$` or `\\[begin|end]{equation}` delimiters.
 """
-show_latex(expr::GATExpr) = show_latex(STDOUT, expr)
+show_latex(expr::GATExpr) = show_latex(stdout, expr)
 show_latex(io::IO, sym::Symbol; kw...) = print(io, sym)
 show_latex(io::IO, x::Any; kw...) = show(io, x)
 

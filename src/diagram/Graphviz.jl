@@ -144,7 +144,7 @@ end
 
 """ Pretty-print the Graphviz expression.
 """
-pprint(expr::Expression) = pprint(STDOUT, expr)
+pprint(expr::Expression) = pprint(stdout, expr)
 pprint(io::IO, expr::Expression) = pprint(io, expr, 0)
 
 function pprint(io::IO, graph::Graph, n::Int)

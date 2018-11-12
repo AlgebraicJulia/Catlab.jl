@@ -160,7 +160,7 @@ substitute(x::Any, subst::Dict) = x
 
 Does *not* include `\$` or `\\[begin|end]{equation}` delimiters.
 """
-show_latex(form::Formula) = show_latex(STDOUT, form)
+show_latex(form::Formula) = show_latex(stdout, form)
 show_latex(io::IO, form::Formula) = show_latex_formula(io, form)
 
 show_latex_formula(io::IO, num::Number; kw...) = print(io, num)
@@ -233,7 +233,7 @@ end
 
 Cf. the standard library function `Meta.show_sexpr`.
 """
-show_sexpr(form::Formula) = show_sexpr(STDOUT, form)
+show_sexpr(form::Formula) = show_sexpr(stdout, form)
 
 function show_sexpr(io::IO, form::Formula)
   print(io, "(")
