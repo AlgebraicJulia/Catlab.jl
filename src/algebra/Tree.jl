@@ -180,6 +180,12 @@ substitute(x::Any, subst::Dict) = x
 # Pretty-print
 ##############
 
+function show(io::IO, form::Formula)
+  print(io, "Formula(")
+  join(io, [ sprint(show, x) for x in [head(form); args(form)] ], ", ")
+  print(io, ")")
+end
+
 function show(io::IO, ::MIME"text/latex", form::Formula)
   print(io, "\$")
   show_latex(io, form)
