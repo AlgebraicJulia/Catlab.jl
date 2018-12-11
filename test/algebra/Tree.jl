@@ -6,6 +6,12 @@ using Catlab.Algebra
 # Conversion
 ############
 
+@test to_formula(:(sin(x))) == Formula(:sin, :x)
+@test to_formula(:(sin(2x))) == Formula((:sin, (:*, 2, :x)))
+@test to_formula(:(2*sin(2x))) == Formula((:*, 2, (:sin, (:*, 2, :x))))
+@test to_formula(:(x == y)) == Formula(:(==), :x, :y)
+@test to_formula(:(x -> 2x)) == Formula((:->, :x, (:*, 2, :x)))
+
 R = Ob(AlgebraicNet, :R)
 f = Hom(:sin, R, R)
 @test to_formula(f, [:x]) == Formula(:sin, :x)

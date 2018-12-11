@@ -10,12 +10,15 @@ module Tree
 export Formula, head, args, first, last, to_formula,
   show_latex, show_latex, show_sexpr
 
-using AutoHashEquals
 import Base: first, last, show
 import Base.Iterators: repeated
 import Base.Meta: show_sexpr
 
+using AutoHashEquals
+using Match
+
 using ...Catlab
+import ...Meta: strip_lines
 import ...Syntax: head, args, show_latex
 using ..Network
 import ..Network: Ob, Hom, compose, id, dom, codom, otimes, opow, munit, braid,
@@ -26,17 +29,18 @@ import ..Network: Ob, Hom, compose, id, dom, codom, otimes, opow, munit, braid,
 
 """ An expression tree for computer algebra.
 
-We call these "formulas" to avoid confusion with Julia expressions (`Base.Expr`)
-and GAT expressions (`Catlab.Syntax.GATExpr`). The operations (head symbols)
-are interpreted Julia functions, e.g., `:/` is right multiplication by the
-matrix pseudoinverse while `:./` is the usual (elementwise) division.
+We call these "formulas" to avoid confusion with Julia expressions
+(`Base.Expr`) and GAT expressions (`Catlab.Syntax.GATExpr`). The operations
+(head symbols) are interpreted as Julia functions, e.g., `:/` is right
+multiplication by the matrix pseudoinverse while `:./` is the elementwise
+division.
 """
 @auto_hash_equals struct Formula
   head::Symbol
   args::Vector
   Formula(head::Symbol, args...) = new(head, collect(args))
   Formula(sexp::Tuple) = new(sexp[1],
-    [ isa(x, Tuple) ? Formula(x) : x for x in sexp[2:end] ])
+    [ x isa Tuple ? Formula(x) : x for x in sexp[2:end] ])
 end
 head(form::Formula) = form.head
 args(form::Formula) = form.args
@@ -45,6 +49,26 @@ last(form::Formula) = last(args(form))
 
 # Conversion
 ############
+
+""" Convert Julia expression to formula.
+
+Only a subset of the Julia syntax is supported.
+"""
+function to_formula(expr::Expr)
+  expr_to_formula(strip_lines(expr, recurse=true))
+end
+
+function expr_to_formula(expr)
+  @match expr begin
+    Expr(:call, [args...]) => Formula(map(expr_to_formula, args)...)
+    Expr(:->, [var::Symbol, body]) => Formula(:->, var, expr_to_formula(body))
+    Expr(:block, [arg]) => expr_to_formula(arg)
+    Expr(:block, _) => error("Cannot parse multiline block as formula")
+    symbol::Symbol => symbol
+    literal::Number => literal
+    _ => error("Cannot parse expression as formula: $expr")
+  end
+end
 
 """ Convert algebraic network to formula.
 
