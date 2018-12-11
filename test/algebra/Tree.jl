@@ -54,6 +54,9 @@ sexpr(form::Formula) = sprint(show_sexpr, form)
 @test latex(Formula((:^, (:+, :x, :y), 2))) == "\\left(x + y\\right)^{2}"
 @test latex(Formula((:^, 2, (:+, :x, :y)))) == "2^{x + y}"
 @test latex(Formula(:.^, :x, :y)) == "x^{y}"
+@test latex(Formula(:(==), :x, :y)) == "x = y"
+@test latex(Formula(:<, :x, :y)) == "x < y"
+@test latex(Formula(:<=, :x, :y)) == "x \\leq y"
 
 @test sexpr(Formula(:f)) == "(:f)"
 @test sexpr(Formula(:+, :x, :y)) == "(:+ :x :y)"

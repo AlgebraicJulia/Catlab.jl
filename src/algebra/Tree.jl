@@ -180,6 +180,12 @@ substitute(x::Any, subst::Dict) = x
 # Pretty-print
 ##############
 
+function show(io::IO, ::MIME"text/latex", form::Formula)
+  print(io, "\$")
+  show_latex(io, form)
+  print(io, "\$")
+end
+
 """ Show the expression in infix notation using LaTeX math.
 
 Does *not* include `\$` or `\\[begin|end]{equation}` delimiters.
@@ -189,8 +195,19 @@ show_latex(io::IO, form::Formula) = show_latex_formula(io, form)
 
 show_latex_formula(io::IO, num::Number; kw...) = print(io, num)
 show_latex_formula(io::IO, sym::Symbol; kw...) = print(io, sym)
-show_latex_formula(io::IO, form::Formula; kw...) =
+
+function show_latex_formula(io::IO, form::Formula; kw...)
+  # Special case: Dispatch on infix operators which are simple to print.
+  infix_op = get(simple_latex_infix_table, head(form), nothing)
+  if infix_op != nothing
+    return show_latex_infix(io, form, " $infix_op "; kw...)
+  end
+
+  # General case: Dispatch on head symbol as value type.
   show_latex_formula(io, form, Val{head(form)}; kw...)
+end
+
+# General LaTeX pretty-printer.
 
 function show_latex_formula(io::IO, form::Formula, ::Type; kw...)
   if length(string(head(form))) == 1
@@ -203,13 +220,8 @@ function show_latex_formula(io::IO, form::Formula, ::Type; kw...)
   print(io, "\\right)")
 end
 
-function show_latex_formula(io::IO, form::Formula, ::Type{Val{:+}}; kw...)
-  show_latex_infix(io, form, " + "; kw...)
-end
-function show_latex_formula(io::IO, form::Formula, ::Type{Val{:-}}; kw...)
-  @assert length(args(form)) == 2
-  show_latex_infix(io, form, " - "; kw...)
-end
+# Special LaTeX pretty-printers.
+
 function show_latex_formula(io::IO, form::Formula, ::Type{Val{:*}}; kw...)
   op = any(isa(x,Number) for x in args(form)[2:end]) ? " \\cdot " : " "
   show_latex_infix(io, form, op; kw...)
@@ -247,11 +259,15 @@ function show_latex_infix(io::IO, form::Formula, op::String;
   if (paren) print(io, "\\right)") end
 end
 
-function show(io::IO, ::MIME"text/latex", form::Formula)
-  print(io, "\$")
-  show_latex(io, form)
-  print(io, "\$")
-end
+const simple_latex_infix_table = Dict{Symbol,String}(
+  :+ => "+",
+  :- => "-",
+  :(==) => "=",
+  :< => "<",
+  :> => ">",
+  :<= => "\\leq",
+  :>= => "\\geq",
+)
 
 """ Show the formula as an S-expression.
 
