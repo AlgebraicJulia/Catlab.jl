@@ -32,6 +32,19 @@ f = compose(otimes(Hom(:cos,R,R), Hom(:sin,R,R)), mmerge(R))
 f = compose(mcopy(R), otimes(Hom(:cos,R,R), Hom(:sin,R,R)), mmerge(R))
 @test to_formula(f,[:x]) == Formula((:+, (:cos, :x), (:sin, :x)))
 
+# Evaluation
+############
+
+# Standard evaluation.
+@test evaluate(Formula(:sin, :x), Dict(:x => pi/2)) == sin(pi/2)
+@test evaluate(Formula(:(==), :x, :y), Dict(:x => 1, :y => 1)) == true
+
+# Vectorized evaluation.
+x = collect(range(0, stop=2pi, length=10))
+@test evaluate(Formula(:sin, :x), Dict(:x => x)) == sin.(x)
+@test evaluate(Formula((:*, (:sin, :x), (:cos, :x))), Dict(:x => x)) ==
+  @. sin(x) * cos(x)
+
 # Pretty-print
 ##############
 

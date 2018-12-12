@@ -303,8 +303,6 @@ end
 
 If the network will only be evaluated once (possibly with vectorized inputs),
 then direct evaluation will be much faster than compiling with Julia's JIT.
-
-TODO: Does not support symbolic constants.
 """
 function evaluate(f::AlgebraicNet.Hom, xs::Vararg)
   ys = eval_impl(f, collect(xs))

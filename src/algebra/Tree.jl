@@ -22,7 +22,7 @@ import ...Meta: strip_lines
 import ...Syntax: head, args, show_latex
 using ..Network
 import ..Network: Ob, Hom, compose, id, dom, codom, otimes, opow, munit, braid,
-  mcopy, delete, mmerge, create, linear, constant
+  mcopy, delete, mmerge, create, linear, constant, evaluate
 
 # Data types
 ############
@@ -176,6 +176,32 @@ function substitute(expr::Expr, subst::Dict)
 end
 substitute(sym::Symbol, subst::Dict) = get(subst, sym, sym)
 substitute(x::Any, subst::Dict) = x
+
+# Evaluation
+############
+
+""" Evaluate a formula, optionally with vectorization.
+"""
+function evaluate(form::Formula, env::Dict; vector::Bool=true)
+  evaluate_formula(form, env; vector=vector)
+end
+
+function evaluate_formula(form::Formula, env::Dict; vector::Bool=true)
+  f = evaluate_formula(head(form), env)
+  f_args = (evaluate_formula(arg, env) for arg in args(form))
+  vector ? f.(f_args...) : f(f_args...)
+end
+
+function evaluate_formula(name::Symbol, env::Dict; kw...)
+  # Look up name in formula environment.
+  get(env, name) do
+    # Failing that, look up name as field of Julia module.
+    # XXX: Should the module always be Main?
+    getfield(Main, name)
+  end
+end
+
+evaluate_formula(literal::Number, env; kw...) = literal
 
 # Pretty-print
 ##############
