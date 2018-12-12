@@ -274,12 +274,15 @@ end
 function show_latex_formula(io::IO, form::Formula, ::Type{Val{:./}}; kw...)
   show_latex_formula(io, form, Val{:/}; kw...)
 end
-function show_latex_formula(io::IO, form::Formula, ::Type{Val{:^}}; kw...)
+function show_latex_formula(io::IO, form::Formula, ::Type{Val{:^}};
+                            paren::Bool=false, kw...)
   @assert length(args(form)) == 2
+  if (paren) print(io, "\\left(") end
   show_latex_formula(io, first(form); paren=true, kw...)
   print(io, "^{")
   show_latex_formula(io, last(form))
   print(io, "}")
+  if (paren) print(io, "\\right)") end
 end
 function show_latex_formula(io::IO, form::Formula, ::Type{Val{:.^}}; kw...)
   show_latex_formula(io, form, Val{:^}; kw...)
