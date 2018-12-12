@@ -11,6 +11,8 @@ using Catlab.Algebra
 @test to_formula(:(2*sin(2x))) == Formula((:*, 2, (:sin, (:*, 2, :x))))
 @test to_formula(:(x == y)) == Formula(:(==), :x, :y)
 @test to_formula(:(x -> 2x)) == Formula((:->, :x, (:*, 2, :x)))
+@test to_formula(:(A && B)) == Formula(:&, :A, :B)
+@test to_formula(:(A || B)) == Formula(:|, :A, :B)
 
 R = Ob(AlgebraicNet, :R)
 f = Hom(:sin, R, R)
@@ -70,6 +72,8 @@ sexpr(form::Formula) = sprint(show_sexpr, form)
 @test latex(Formula(:(==), :x, :y)) == "x = y"
 @test latex(Formula(:<, :x, :y)) == "x < y"
 @test latex(Formula(:<=, :x, :y)) == "x \\leq y"
+@test latex(Formula(:&, :A, :B)) == "A \\wedge B"
+@test latex(Formula(:|, :A, :B)) == "A \\vee B"
 
 @test sexpr(Formula(:f)) == "(:f)"
 @test sexpr(Formula(:+, :x, :y)) == "(:+ :x :y)"

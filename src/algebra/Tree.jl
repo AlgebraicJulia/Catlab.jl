@@ -62,6 +62,8 @@ function expr_to_formula(expr)
   @match expr begin
     Expr(:call, [args...]) => Formula(map(expr_to_formula, args)...)
     Expr(:->, [var::Symbol, body]) => Formula(:->, var, expr_to_formula(body))
+    Expr(:&&, [args...]) => Formula(:&, map(expr_to_formula, args)...)
+    Expr(:||, [args...]) => Formula(:|, map(expr_to_formula, args)...)
     Expr(:block, [arg]) => expr_to_formula(arg)
     Expr(:block, _) => error("Cannot parse multiline block as formula")
     symbol::Symbol => symbol
@@ -299,6 +301,8 @@ const simple_latex_infix_table = Dict{Symbol,String}(
   :> => ">",
   :<= => "\\leq",
   :>= => "\\geq",
+  :& => "\\wedge",
+  :| => "\\vee",
 )
 
 """ Show the formula as an S-expression.
