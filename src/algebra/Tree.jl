@@ -227,23 +227,38 @@ Does *not* include `\$` or `\\[begin|end]{equation}` delimiters.
 show_latex(form::Formula) = show_latex(stdout, form)
 show_latex(io::IO, form::Formula) = show_latex_formula(io, form)
 
-show_latex_formula(io::IO, num::Number; kw...) = print(io, num)
-show_latex_formula(io::IO, sym::Symbol; kw...) = print(io, sym)
+function show_latex_formula(io::IO, num::Number; kw...)
+  if isinf(num)
+    show_latex_formula(io, num > 0 ? :Inf : Formula(:-, :Inf))
+  else
+    print(io, num)
+  end
+end
+
+function show_latex_formula(io::IO, sym::Symbol; kw...)
+  print(io, get(latex_symbol_table, sym) do
+    length(string(sym)) == 1 ? sym : "\\mathrm{$sym}"
+  end)
+end
 
 function show_latex_formula(io::IO, form::Formula; kw...)
-  # Special case: Dispatch on operators which are simple to print.
+  # Special case: Dispatch on operators with standard print protocol.
+  cmd = get(latex_command_table, head(form), nothing)
+  if cmd != nothing
+    return show_latex_command(io, form, cmd; kw...)
+  end
   nargs = length(args(form))
   if nargs == 1
-    op = get(simple_latex_prefix_table, head(form), nothing)
+    op = get(latex_prefix_table, head(form), nothing)
     if op != nothing
       return show_latex_prefix(io, form, "$op "; kw...)
     end
-    op = get(simple_latex_postfix_table, head(form), nothing)
+    op = get(latex_postfix_table, head(form), nothing)
     if op != nothing
       return show_latex_postfix(io, form, " $op"; kw...)
     end
   elseif nargs > 1
-    op = get(simple_latex_infix_table, head(form), nothing)
+    op = get(latex_infix_table, head(form), nothing)
     if op != nothing
       return show_latex_infix(io, form, " $op "; kw...)
     end
@@ -256,11 +271,7 @@ end
 # Default LaTeX pretty-printer.
 
 function show_latex_formula(io::IO, form::Formula, ::Type; kw...)
-  if length(string(head(form))) == 1
-    print(io, head(form))
-  else
-    print(io, "\\mathop{\\mathrm{$(head(form))}}")
-  end
+  show_latex_formula(io, head(form))
   print(io, "\\left(")
   join(io, [sprint(show_latex_formula, arg) for arg in args(form)], ",")
   print(io, "\\right)")
@@ -274,18 +285,6 @@ function show_latex_formula(io::IO, form::Formula, ::Type{Val{:*}}; kw...)
 end
 function show_latex_formula(io::IO, form::Formula, ::Type{Val{:.*}}; kw...)
   show_latex_formula(io, form, Val{:*}; kw...)
-end
-
-function show_latex_formula(io::IO, form::Formula, ::Type{Val{:/}}; kw...)
-  @assert length(args(form)) == 2
-  print(io, "\\frac{")
-  show_latex_formula(io, first(form))
-  print(io, "}{")
-  show_latex_formula(io, last(form))
-  print(io, "}")
-end
-function show_latex_formula(io::IO, form::Formula, ::Type{Val{:./}}; kw...)
-  show_latex_formula(io, form, Val{:/}; kw...)
 end
 
 function show_latex_formula(io::IO, form::Formula, ::Type{Val{:^}};
@@ -324,7 +323,13 @@ function show_latex_postfix(io::IO, form::Formula, op::String; kw...)
   print(io, op)
 end
 
-const simple_latex_infix_table = Dict{Symbol,String}(
+function show_latex_command(io::IO, form::Formula, cmd::String; kw...)
+  print(io, "$(cmd){")
+  join(io, [sprint(show_latex_formula, arg) for arg in args(form)], "}{")
+  print(io, "}")
+end
+
+const latex_infix_table = Dict{Symbol,String}(
   :+ => "+",
   :- => "-",
   :(==) => "=",
@@ -336,13 +341,25 @@ const simple_latex_infix_table = Dict{Symbol,String}(
   :& => "\\wedge",
   :| => "\\vee",
   :isa => ":",
+  :-> => "\\to",
 )
-const simple_latex_prefix_table = Dict{Symbol,String}(
+const latex_prefix_table = Dict{Symbol,String}(
   :- => "-",
   :! => "\\neg",
 )
-const simple_latex_postfix_table = Dict{Symbol,String}(
+const latex_postfix_table = Dict{Symbol,String}(
   :factorial => "!",
+)
+const latex_command_table = Dict{Symbol,String}(
+  :/ => "\\frac",
+  :./ => "\\frac",
+  :binomial => "\\binom",
+  :sqrt => "\\sqrt",
+)
+const latex_symbol_table = Dict{Symbol,String}(
+  :pi => "\\pi", :Inf => "\\infty",
+  :sin => "\\sin", :cos => "\\cos", :tan => "\\tan",
+  :exp => "\\exp", :log => "\\log",
 )
 
 """ Show the formula as an S-expression.

@@ -53,8 +53,9 @@ x = collect(range(0, stop=2pi, length=10))
 latex(form::Formula) = sprint(show_latex, form)
 sexpr(form::Formula) = sprint(show_sexpr, form)
 
+# LaTeX pretty-print.
 @test latex(Formula(:f, :x , :y)) == "f\\left(x,y\\right)"
-@test latex(Formula(:cos, :x)) == "\\mathop{\\mathrm{cos}}\\left(x\\right)"
+@test latex(Formula(:cos, :x)) == "\\cos\\left(x\\right)"
 @test latex(Formula(:+, :x, :y)) == "x + y"
 @test latex(Formula(:+, :x, :y, :z)) == "x + y + z"
 @test latex(Formula(:-, :x, :y)) == "x - y"
@@ -69,6 +70,7 @@ sexpr(form::Formula) = sprint(show_sexpr, form)
 @test latex(Formula((:*, :x, (:+, :y, :z)))) == "x \\left(y + z\\right)"
 @test latex(Formula(:^, :x, :y)) == "x^{y}"
 @test latex(Formula(:.^, :x, :y)) == "x^{y}"
+@test latex(Formula(:+, Inf, 1)) == "\\infty + 1"
 @test latex(Formula((:^, (:+, :x, :y), 2))) == "\\left(x + y\\right)^{2}"
 @test latex(Formula((:^, 2, (:+, :x, :y)))) == "2^{x + y}"
 @test latex(Formula((:^, (:^, :x, :a), :b))) == "\\left(x^{a}\\right)^{b}"
@@ -80,6 +82,7 @@ sexpr(form::Formula) = sprint(show_sexpr, form)
 @test latex(Formula(:|, :A, :B)) == "A \\vee B"
 @test latex(Formula(:!, :A)) == "\\neg A"
 
+# S-expression pretty-print.
 @test sexpr(Formula(:f)) == "(:f)"
 @test sexpr(Formula(:+, :x, :y)) == "(:+ :x :y)"
 @test sexpr(Formula((:*, :x, (:+, :y, 1)))) == "(:* :x (:+ :y 1))"
