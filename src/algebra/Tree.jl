@@ -231,17 +231,29 @@ show_latex_formula(io::IO, num::Number; kw...) = print(io, num)
 show_latex_formula(io::IO, sym::Symbol; kw...) = print(io, sym)
 
 function show_latex_formula(io::IO, form::Formula; kw...)
-  # Special case: Dispatch on infix operators which are simple to print.
-  infix_op = get(simple_latex_infix_table, head(form), nothing)
-  if infix_op != nothing
-    return show_latex_infix(io, form, " $infix_op "; kw...)
+  # Special case: Dispatch on operators which are simple to print.
+  nargs = length(args(form))
+  if nargs == 1
+    op = get(simple_latex_prefix_table, head(form), nothing)
+    if op != nothing
+      return show_latex_prefix(io, form, "$op "; kw...)
+    end
+    op = get(simple_latex_postfix_table, head(form), nothing)
+    if op != nothing
+      return show_latex_postfix(io, form, " $op"; kw...)
+    end
+  elseif nargs > 1
+    op = get(simple_latex_infix_table, head(form), nothing)
+    if op != nothing
+      return show_latex_infix(io, form, " $op "; kw...)
+    end
   end
 
   # General case: Dispatch on head symbol as value type.
   show_latex_formula(io, form, Val{head(form)}; kw...)
 end
 
-# General LaTeX pretty-printer.
+# Default LaTeX pretty-printer.
 
 function show_latex_formula(io::IO, form::Formula, ::Type; kw...)
   if length(string(head(form))) == 1
@@ -263,6 +275,7 @@ end
 function show_latex_formula(io::IO, form::Formula, ::Type{Val{:.*}}; kw...)
   show_latex_formula(io, form, Val{:*}; kw...)
 end
+
 function show_latex_formula(io::IO, form::Formula, ::Type{Val{:/}}; kw...)
   @assert length(args(form)) == 2
   print(io, "\\frac{")
@@ -274,6 +287,7 @@ end
 function show_latex_formula(io::IO, form::Formula, ::Type{Val{:./}}; kw...)
   show_latex_formula(io, form, Val{:/}; kw...)
 end
+
 function show_latex_formula(io::IO, form::Formula, ::Type{Val{:^}};
                             paren::Bool=false, kw...)
   @assert length(args(form)) == 2
@@ -288,6 +302,8 @@ function show_latex_formula(io::IO, form::Formula, ::Type{Val{:.^}}; kw...)
   show_latex_formula(io, form, Val{:^}; kw...)
 end
 
+# LaTeX pretty-printers for unary and binary operators.
+
 function show_latex_infix(io::IO, form::Formula, op::String;
                           paren::Bool=false, kw...)
   show_latex_paren(io, form) = show_latex_formula(io, form; paren=true, kw...)
@@ -296,16 +312,37 @@ function show_latex_infix(io::IO, form::Formula, op::String;
   if (paren) print(io, "\\right)") end
 end
 
+function show_latex_prefix(io::IO, form::Formula, op::String; kw...)
+  @assert length(args(form)) == 1
+  print(io, op)
+  show_latex_formula(io, first(form); paren=true, kw...)
+end
+
+function show_latex_postfix(io::IO, form::Formula, op::String; kw...)
+  @assert length(args(form)) == 1
+  show_latex_formula(io, first(form); paren=true, kw...)
+  print(io, op)
+end
+
 const simple_latex_infix_table = Dict{Symbol,String}(
   :+ => "+",
   :- => "-",
   :(==) => "=",
+  :!= => "\\neq",
   :< => "<",
   :> => ">",
   :<= => "\\leq",
   :>= => "\\geq",
   :& => "\\wedge",
   :| => "\\vee",
+  :isa => ":",
+)
+const simple_latex_prefix_table = Dict{Symbol,String}(
+  :- => "-",
+  :! => "\\neg",
+)
+const simple_latex_postfix_table = Dict{Symbol,String}(
+  :factorial => "!",
 )
 
 """ Show the formula as an S-expression.
