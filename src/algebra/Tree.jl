@@ -227,6 +227,12 @@ Does *not* include `\$` or `\\[begin|end]{equation}` delimiters.
 show_latex(form::Formula) = show_latex(stdout, form)
 show_latex(io::IO, form::Formula) = show_latex_formula(io, form)
 
+# Show terminal nodes as LaTeX.
+
+function show_latex_formula(io::IO, bool::Bool; kw...)
+  print(io, bool ? "\\top" : "\\bot")
+end
+
 function show_latex_formula(io::IO, num::Number; kw...)
   if isinf(num)
     show_latex_formula(io, num > 0 ? :Inf : Formula(:-, :Inf))
@@ -240,6 +246,8 @@ function show_latex_formula(io::IO, sym::Symbol; kw...)
     length(string(sym)) == 1 ? sym : "\\mathrm{$sym}"
   end)
 end
+
+# Show non-terminal nodes as LaTeX.
 
 function show_latex_formula(io::IO, form::Formula; kw...)
   # Special case: Dispatch on operators with standard print protocol.
@@ -340,8 +348,9 @@ const latex_infix_table = Dict{Symbol,String}(
   :>= => "\\geq",
   :& => "\\wedge",
   :| => "\\vee",
+  :in => "\\in",
   :isa => ":",
-  :-> => "\\to",
+  :-> => "\\mapsto",
 )
 const latex_prefix_table = Dict{Symbol,String}(
   :- => "-",
@@ -357,9 +366,13 @@ const latex_command_table = Dict{Symbol,String}(
   :sqrt => "\\sqrt",
 )
 const latex_symbol_table = Dict{Symbol,String}(
-  :pi => "\\pi", :Inf => "\\infty",
+  :Inf => "\\infty",
+  :pi => "\\pi",
   :sin => "\\sin", :cos => "\\cos", :tan => "\\tan",
   :exp => "\\exp", :log => "\\log",
+  :Int => "\\mathbb{Z}", :Integer => "\\mathbb{Z}",
+  :Signed => "\\mmathbb{Z}", :Unsigned => "\\mathbb{N}",
+  :Real => "\\mathbb{R}", :Complex => "\\mathbb{C}",
 )
 
 """ Show the formula as an S-expression.

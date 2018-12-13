@@ -79,7 +79,7 @@ sexpr(form::Formula) = sprint(show_sexpr, form)
 @test latex(Formula(:<, :x, :y)) == "x < y"
 @test latex(Formula(:<=, :x, :y)) == "x \\leq y"
 @test latex(Formula(:&, :A, :B)) == "A \\wedge B"
-@test latex(Formula(:|, :A, :B)) == "A \\vee B"
+@test latex(Formula(:|, true, false)) == "\\top \\vee \\bot"
 @test latex(Formula(:!, :A)) == "\\neg A"
 
 # S-expression pretty-print.
