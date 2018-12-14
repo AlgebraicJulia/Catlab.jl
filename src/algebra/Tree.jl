@@ -250,30 +250,29 @@ end
 # Show non-terminal nodes as LaTeX.
 
 function show_latex_formula(io::IO, form::Formula; kw...)
-  # Special case: Dispatch on operators with standard print protocol.
-  cmd = get(latex_command_table, head(form), nothing)
-  if cmd != nothing
-    return show_latex_command(io, form, cmd; kw...)
+  # Special case: Dispatch on special LaTeX commands (e.g., \frac).
+  headsym = head(form)
+  if haskey(latex_command_table, headsym)
+    return show_latex_command(io, form, headsym; kw...)
   end
+
+  # Special case: Dispatch on operators (prefix, infix, and postfix).
   nargs = length(args(form))
   if nargs == 1
-    op = get(latex_prefix_table, head(form), nothing)
-    if op != nothing
-      return show_latex_prefix(io, form, "$op "; kw...)
+    if haskey(latex_prefix_table, headsym)
+      return show_latex_prefix(io, form, headsym; kw...)
     end
-    op = get(latex_postfix_table, head(form), nothing)
-    if op != nothing
-      return show_latex_postfix(io, form, " $op"; kw...)
+    if haskey(latex_postfix_table, headsym)
+      return show_latex_postfix(io, form, headsym; kw...)
     end
   elseif nargs > 1
-    op = get(latex_infix_table, head(form), nothing)
-    if op != nothing
-      return show_latex_infix(io, form, " $op "; kw...)
+    if haskey(latex_infix_table, headsym)
+      return show_latex_infix(io, form, headsym; kw...)
     end
   end
 
   # General case: Dispatch on head symbol as value type.
-  show_latex_formula(io, form, Val{head(form)}; kw...)
+  show_latex_formula(io, form, Val{headsym}; kw...)
 end
 
 # Default LaTeX pretty-printer.
@@ -286,14 +285,6 @@ function show_latex_formula(io::IO, form::Formula, ::Type; kw...)
 end
 
 # Special LaTeX pretty-printers.
-
-function show_latex_formula(io::IO, form::Formula, ::Type{Val{:*}}; kw...)
-  op = any(isa(x,Number) for x in args(form)[2:end]) ? " \\cdot " : " "
-  show_latex_infix(io, form, op; kw...)
-end
-function show_latex_formula(io::IO, form::Formula, ::Type{Val{:.*}}; kw...)
-  show_latex_formula(io, form, Val{:*}; kw...)
-end
 
 function show_latex_formula(io::IO, form::Formula, ::Type{Val{:^}};
                             paren::Bool=false, kw...)
@@ -311,28 +302,37 @@ end
 
 # LaTeX pretty-printers for unary and binary operators.
 
-function show_latex_infix(io::IO, form::Formula, op::String;
+function show_latex_infix(io::IO, form::Formula, sym::Symbol;
                           paren::Bool=false, kw...)
-  show_latex_paren(io, form) = show_latex_formula(io, form; paren=true, kw...)
+  show_latex_paren = (io, form) -> show_latex_formula(io, form; paren=true, kw...)
+  op = latex_infix_table[sym]
+  sep = if isempty(op)
+      any(isa(x,Number) for x in args(form)[2:end]) ? " \\cdot " : " "
+    else
+      " $op "
+  end
   if (paren) print(io, "\\left(") end
-  join(io, [sprint(show_latex_paren, arg) for arg in args(form)], op)
+  join(io, [sprint(show_latex_paren, arg) for arg in args(form)], sep)
   if (paren) print(io, "\\right)") end
 end
 
-function show_latex_prefix(io::IO, form::Formula, op::String; kw...)
+function show_latex_prefix(io::IO, form::Formula, sym::Symbol; kw...)
   @assert length(args(form)) == 1
-  print(io, op)
+  op = latex_prefix_table[sym]
+  print(io, op, " ")
   show_latex_formula(io, first(form); paren=true, kw...)
 end
 
-function show_latex_postfix(io::IO, form::Formula, op::String; kw...)
+function show_latex_postfix(io::IO, form::Formula, sym::Symbol; kw...)
   @assert length(args(form)) == 1
+  op = latex_postfix_table[sym]
   show_latex_formula(io, first(form); paren=true, kw...)
-  print(io, op)
+  print(io, " ", op)
 end
 
-function show_latex_command(io::IO, form::Formula, cmd::String; kw...)
-  print(io, "$(cmd){")
+function show_latex_command(io::IO, form::Formula, sym::Symbol; kw...)
+  cmd = latex_command_table[sym]
+  print(io, cmd, "{")
   join(io, [sprint(show_latex_formula, arg) for arg in args(form)], "}{")
   print(io, "}")
 end
@@ -340,6 +340,8 @@ end
 const latex_infix_table = Dict{Symbol,String}(
   :+ => "+",
   :- => "-",
+  :* => "",
+  :.* => "",
   :(==) => "=",
   :!= => "\\neq",
   :< => "<",
