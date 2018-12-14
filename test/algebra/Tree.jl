@@ -92,6 +92,7 @@ sexpr(form::Formula) = sprint(show_sexpr, form)
 @test latex(Formula((:-, (:+, :x, :y)))) == "- \\left(x + y\\right)"
 @test_skip latex(Formula((:+, :x, (:-, :y)))) == "x + \\left(- y\\right)"
 @test latex(Formula((:factorial, (:*, :m, :n)))) == "\\left(m n\\right) !"
+@test latex(Formula(:^, -1, :n)) == "\\left(- 1\\right)^{n}"
 
 # S-expression pretty-print.
 @test sexpr(Formula(:f)) == "(:f)"

@@ -247,10 +247,11 @@ function show_latex_formula(io::IO, bool::Bool; kw...)
 end
 
 function show_latex_formula(io::IO, num::Number; kw...)
-  if isinf(num)
-    show_latex_formula(io, num > 0 ? :Inf : Formula(:-, :Inf))
+  if num < 0
+    # Treat negative literals as compound expressions.
+    show_latex_formula(io, Formula(:-, abs(num)); kw...)
   else
-    print(io, num)
+    print(io, isinf(num) ? "\\infty" : num)
   end
 end
 
