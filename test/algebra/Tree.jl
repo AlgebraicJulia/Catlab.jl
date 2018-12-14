@@ -60,7 +60,6 @@ sexpr(form::Formula) = sprint(show_sexpr, form)
 @test latex(Formula(:+, :x, :y, :z)) == "x + y + z"
 @test latex(Formula(:-, :x, :y)) == "x - y"
 @test latex(Formula(:-, :x)) == "- x"
-@test latex(Formula((:-, (:+, :x, :y)))) == "- \\left(x + y\\right)"
 @test latex(Formula(:*, :x, :y)) == "x y"
 @test latex(Formula(:.*, :x, :y)) == "x y"
 @test latex(Formula(:*, 2, :x)) == "2 x"
@@ -81,6 +80,17 @@ sexpr(form::Formula) = sprint(show_sexpr, form)
 @test latex(Formula(:&, :A, :B)) == "A \\wedge B"
 @test latex(Formula(:|, true, false)) == "\\top \\vee \\bot"
 @test latex(Formula(:!, :A)) == "\\neg A"
+
+# Operator precedence in LaTeX pretty-print.
+@test latex(Formula((:+, (:*, :a, :b), (:*, :c, :d)))) == "a b + c d"
+@test latex(Formula((:*, (:+, :a, :b), (:+, :c, :d)))) ==
+  "\\left(a + b\\right) \\left(c + d\\right)"
+@test latex(Formula((:(==), (:+, :x, :y), (:+, :y, :x)))) == "x + y = y + x"
+@test latex(Formula((:&, (:(==), :x, :y), (:(==), :z, :w)))) ==
+  "x = y \\wedge z = w"
+@test latex(Formula((:-, (:+, :x, :y)))) == "- \\left(x + y\\right)"
+@test_skip latex(Formula((:+, :x, (:-, :y)))) == "x + \\left(- y\\right)"
+@test latex(Formula((:factorial, (:*, :m, :n)))) == "\\left(m n\\right) !"
 
 # S-expression pretty-print.
 @test sexpr(Formula(:f)) == "(:f)"

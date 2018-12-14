@@ -227,6 +227,19 @@ Does *not* include `\$` or `\\[begin|end]{equation}` delimiters.
 show_latex(form::Formula) = show_latex(stdout, form)
 show_latex(io::IO, form::Formula) = show_latex_formula(io, form)
 
+""" Show the formula as an S-expression.
+
+Cf. the standard library function `Meta.show_sexpr`.
+"""
+show_sexpr(form::Formula) = show_sexpr(stdout, form)
+
+function show_sexpr(io::IO, form::Formula)
+  print(io, "(")
+  join(io, [sprint(show, head(form));
+            [sprint(show_sexpr, arg) for arg in args(form)]], " ")
+  print(io, ")")
+end
+
 # Show terminal nodes as LaTeX.
 
 function show_latex_formula(io::IO, bool::Bool; kw...)
@@ -287,14 +300,15 @@ end
 # Special LaTeX pretty-printers.
 
 function show_latex_formula(io::IO, form::Formula, ::Type{Val{:^}};
-                            paren::Bool=false, kw...)
+                            parent_precedence::Int=typemax(Int), kw...)
   @assert length(args(form)) == 2
-  if (paren) print(io, "\\left(") end
-  show_latex_formula(io, first(form); paren=true, kw...)
-  print(io, "^{")
-  show_latex_formula(io, last(form))
-  print(io, "}")
-  if (paren) print(io, "\\right)") end
+  precedence = 2
+  latex_paren_when(io, precedence >= parent_precedence) do
+    show_latex_formula(io, first(form); parent_precedence=precedence, kw...)
+    print(io, "^{")
+    show_latex_formula(io, last(form))
+    print(io, "}")
+  end
 end
 function show_latex_formula(io::IO, form::Formula, ::Type{Val{:.^}}; kw...)
   show_latex_formula(io, form, Val{:^}; kw...)
@@ -303,31 +317,38 @@ end
 # LaTeX pretty-printers for unary and binary operators.
 
 function show_latex_infix(io::IO, form::Formula, sym::Symbol;
-                          paren::Bool=false, kw...)
-  show_latex_paren = (io, form) -> show_latex_formula(io, form; paren=true, kw...)
-  op = latex_infix_table[sym]
+                          parent_precedence::Int=typemax(Int), kw...)
+  op, precedence = latex_infix_table[sym]
   sep = if isempty(op)
       any(isa(x,Number) for x in args(form)[2:end]) ? " \\cdot " : " "
     else
       " $op "
   end
-  if (paren) print(io, "\\left(") end
-  join(io, [sprint(show_latex_paren, arg) for arg in args(form)], sep)
-  if (paren) print(io, "\\right)") end
+  show_child = (io, form) ->
+    show_latex_formula(io, form; parent_precedence=precedence, kw...)
+  latex_paren_when(io, precedence >= parent_precedence) do
+    join(io, [sprint(show_child, arg) for arg in args(form)], sep)
+  end
 end
 
-function show_latex_prefix(io::IO, form::Formula, sym::Symbol; kw...)
+function show_latex_prefix(io::IO, form::Formula, sym::Symbol;
+                           parent_precedence::Int=typemax(Int), kw...)
   @assert length(args(form)) == 1
-  op = latex_prefix_table[sym]
-  print(io, op, " ")
-  show_latex_formula(io, first(form); paren=true, kw...)
+  op, precedence = latex_prefix_table[sym]
+  latex_paren_when(io, precedence >= parent_precedence) do
+    print(io, op, " ")
+    show_latex_formula(io, first(form); parent_precedence=precedence, kw...)
+  end
 end
 
-function show_latex_postfix(io::IO, form::Formula, sym::Symbol; kw...)
+function show_latex_postfix(io::IO, form::Formula, sym::Symbol;
+                            parent_precedence::Int=typemax(Int), kw...)
   @assert length(args(form)) == 1
-  op = latex_postfix_table[sym]
-  show_latex_formula(io, first(form); paren=true, kw...)
-  print(io, " ", op)
+  op, precedence = latex_postfix_table[sym]
+  latex_paren_when(io, precedence >= parent_precedence) do
+    show_latex_formula(io, first(form); parent_precedence=precedence, kw...)
+    print(io, " ", op)
+  end
 end
 
 function show_latex_command(io::IO, form::Formula, sym::Symbol; kw...)
@@ -337,30 +358,44 @@ function show_latex_command(io::IO, form::Formula, sym::Symbol; kw...)
   print(io, "}")
 end
 
-const latex_infix_table = Dict{Symbol,String}(
-  :+ => "+",
-  :- => "-",
-  :* => "",
-  :.* => "",
-  :(==) => "=",
-  :!= => "\\neq",
-  :< => "<",
-  :> => ">",
-  :<= => "\\leq",
-  :>= => "\\geq",
-  :& => "\\wedge",
-  :| => "\\vee",
-  :in => "\\in",
-  :isa => ":",
-  :-> => "\\mapsto",
+function latex_paren_when(f::Function, io::IO, paren::Bool)
+  if (paren) print(io, "\\left(") end
+  f()
+  if (paren) print(io, "\\right)") end
+end
+
+# Operator precedence follows the usual conventions of mathematics.
+#
+# https://en.wikipedia.org/wiki/Order_of_operations
+# https://rosettacode.org/wiki/Operator_precedence#Mathematica
+
+const latex_infix_table = Dict{Symbol,Tuple{String,Int}}(
+  #:^ => ("^", 2),
+  #:.^ => ("^", 2),
+  :* => ("", 4),
+  :.* => ("", 4),
+  :+ => ("+", 5),
+  :- => ("-", 5),
+  :(==) => ("=", 6),
+  :!= => ("\\neq", 6),
+  :< => ("<", 6),
+  :> => (">", 6),
+  :<= => ("\\leq", 6),
+  :>= => ("\\geq", 6),
+  :in => ("\\in", 6),
+  :isa => (":", 6),
+  :& => ("\\wedge", 8),
+  :| => ("\\vee", 8),
+  :-> => ("\\mapsto", 9),
 )
-const latex_prefix_table = Dict{Symbol,String}(
-  :- => "-",
-  :! => "\\neg",
+const latex_prefix_table = Dict{Symbol,Tuple{String,Int}}(
+  :- => ("-", 3),
+  :! => ("\\neg", 3),
 )
-const latex_postfix_table = Dict{Symbol,String}(
-  :factorial => "!",
+const latex_postfix_table = Dict{Symbol,Tuple{String,Int}}(
+  :factorial => ("!", 2),
 )
+
 const latex_command_table = Dict{Symbol,String}(
   :/ => "\\frac",
   :./ => "\\frac",
@@ -376,18 +411,5 @@ const latex_symbol_table = Dict{Symbol,String}(
   :Signed => "\\mmathbb{Z}", :Unsigned => "\\mathbb{N}",
   :Real => "\\mathbb{R}", :Complex => "\\mathbb{C}",
 )
-
-""" Show the formula as an S-expression.
-
-Cf. the standard library function `Meta.show_sexpr`.
-"""
-show_sexpr(form::Formula) = show_sexpr(stdout, form)
-
-function show_sexpr(io::IO, form::Formula)
-  print(io, "(")
-  join(io, [sprint(show, head(form));
-            [sprint(show_sexpr, arg) for arg in args(form)]], " ")
-  print(io, ")")
-end
 
 end
