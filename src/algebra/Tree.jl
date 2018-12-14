@@ -8,7 +8,7 @@ There are already many outstanding CAS's. Its goals are to
 """
 module Tree
 export Formula, head, args, first, last, to_formula,
-  show_latex, show_latex, show_sexpr
+  show_latex, show_latex, show_latex_formula, show_sexpr
 
 import Base: first, last, show
 import Base.Iterators: repeated
