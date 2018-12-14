@@ -255,9 +255,13 @@ function show_latex_formula(io::IO, num::Number; kw...)
 end
 
 function show_latex_formula(io::IO, sym::Symbol; kw...)
-  print(io, get(latex_symbol_table, sym) do
-    length(string(sym)) == 1 ? sym : "\\mathrm{$sym}"
-  end)
+  if sym in latex_symbol_aliases
+    print(io, "\\", sym)
+  else
+    print(io, get(latex_symbol_table, sym) do
+      length(string(sym)) == 1 ? sym : "\\mathrm{$sym}"
+    end)
+  end
 end
 
 # Show non-terminal nodes as LaTeX.
@@ -404,12 +408,16 @@ const latex_command_table = Dict{Symbol,String}(
 )
 const latex_symbol_table = Dict{Symbol,String}(
   :Inf => "\\infty",
-  :pi => "\\pi",
-  :sin => "\\sin", :cos => "\\cos", :tan => "\\tan",
-  :exp => "\\exp", :log => "\\log",
   :Int => "\\mathbb{Z}", :Integer => "\\mathbb{Z}",
   :Signed => "\\mmathbb{Z}", :Unsigned => "\\mathbb{N}",
   :Real => "\\mathbb{R}", :Complex => "\\mathbb{C}",
 )
+const latex_symbol_aliases = Set{Symbol}([
+  :alpha, :beta, :gamma, :Gamma, :delta, :Delta, :epsilon, :varepsilon,
+  :zeta, :eta, :theta, :vartheta, :Theta, :iota, :kappa, :lambda, :Lambda,
+  :mu, :nu, :xi, :Xi, :pi, :Pi, :rho, :varrho, :sigma, :Sigma, :tau,
+  :upsilon, :Upsilon, :phi, :varphi, :Phi, :chi, :psi, :Psi, :omega, :Omega,
+  :exp, :log, :sin, :cos, :tan,
+])
 
 end

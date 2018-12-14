@@ -58,6 +58,7 @@ sexpr(form::Formula) = sprint(show_sexpr, form)
 @test latex(Formula(:cos, :x)) == "\\cos\\left(x\\right)"
 @test latex(Formula(:+, :x, :y)) == "x + y"
 @test latex(Formula(:+, :x, :y, :z)) == "x + y + z"
+@test latex(Formula(:+, :alpha, :beta)) == "\\alpha + \\beta"
 @test latex(Formula(:-, :x, :y)) == "x - y"
 @test latex(Formula(:-, :x)) == "- x"
 @test latex(Formula(:*, :x, :y)) == "x y"
