@@ -95,7 +95,7 @@ function Base.show(io::IO, wire::Wire)
   end
   print(io, "Wire(")
   if wire.value != nothing
-    print(io, wire.value)
+    show(io, wire.value)
     print(io, ", ")
   end
   show_port(io, wire.source)
@@ -177,13 +177,13 @@ Box(inputs::Vector, outputs::Vector) = Box(nothing, inputs, outputs)
 function Base.show(io::IO, box::Box)
   print(io, "Box(")
   if box.value != nothing
-    print(io, box.value)
+    show(io, box.value)
     print(io, ", ")
   end
   print(io, "[")
-  join(io, box.input_ports, ",")
+  join(io, [sprint(show, port) for port in box.input_ports], ",")
   print(io, "], [")
-  join(io, box.output_ports, ",")
+  join(io, [sprint(show, port) for port in box.output_ports], ",")
   print(io, "])")
 end
 
@@ -235,20 +235,21 @@ function Base.:(==)(d1::WiringDiagram, d2::WiringDiagram)
 end
 
 function Base.show(io::IO, diagram::WiringDiagram)
+  sshowcompact = x -> sprint(show, x, context=:compact => true)
   print(io, "WiringDiagram([")
-  join(io, input_ports(diagram), ",")
+  join(io, map(sshowcompact, input_ports(diagram)), ",")
   print(io, "], [")
-  join(io, output_ports(diagram), ",")
+  join(io, map(sshowcompact, output_ports(diagram)), ",")
   print(io, "], ")
   if get(io, :compact, false)
     print(io, "{$(nboxes(diagram)) boxes}, {$(nwires(diagram)) wires}")
   else
     print(io, "\n[ $(input_id(diagram)) => {inputs},\n  ")
     print(io, "$(output_id(diagram)) => {outputs},\n  ")
-    join(io, [ "$v => $(sprint(showcompact, box(diagram, v)))"
+    join(io, [ "$v => $(sshowcompact(box(diagram, v)))"
                for v in box_ids(diagram) ], ",\n  ")
     print(io, " ],\n[ ")
-    join(io, wires(diagram), ",\n  ")
+    join(io, map(sshowcompact, wires(diagram)), ",\n  ")
     print(io, " ]")
   end
   print(io, ")")
