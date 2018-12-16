@@ -1,13 +1,7 @@
 using Test
 
-@testset "GATs" begin
-  include("Meta.jl")
-  include("GAT.jl")
-end
-
-@testset "Syntax" begin
-  include("Syntax.jl")
-  include("Present.jl")
+@testset "Core" begin
+  include("core/Core.jl")
 end
 
 @testset "Doctrines" begin
