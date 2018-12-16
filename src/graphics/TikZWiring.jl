@@ -6,7 +6,7 @@ export to_tikz
 using Match
 using Nullables
 
-import ...Doctrine: ObExpr, HomExpr, dom, codom, head, args, compose, id
+import ...Doctrines: ObExpr, HomExpr, dom, codom, head, args, compose, id
 import ...Syntax: GATExpr, show_latex
 using ...WiringDiagrams
 import ..TikZ
@@ -469,7 +469,7 @@ end
 module Defaults
   import ..TikZWiring: Wire, box, wires, label, rect, trapezium,
     junction_circle, cup, cap
-  using Catlab.Doctrine
+  using Catlab.Doctrines
   using Catlab.Syntax
   
   generator(expr::GATExpr)::GATExpr{:generator} = first(expr)

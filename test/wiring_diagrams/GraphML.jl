@@ -2,7 +2,7 @@ module TestGraphML
 
 using Test
 using LightXML
-using Catlab.Doctrine
+using Catlab.Doctrines
 using Catlab.WiringDiagrams
 
 # Test round trip of wiring diagrams with dictionary data.

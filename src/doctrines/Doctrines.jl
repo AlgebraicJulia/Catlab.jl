@@ -1,4 +1,4 @@
-module Doctrine
+module Doctrines
 export CategoryExpr, ObExpr, HomExpr, Hom2Expr
 
 using ..Catlab

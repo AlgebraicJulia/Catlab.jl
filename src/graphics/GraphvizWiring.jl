@@ -3,7 +3,7 @@
 module GraphvizWiring
 export to_graphviz
 
-import ...Doctrine: HomExpr
+import ...Doctrines: HomExpr
 using ...WiringDiagrams
 import ..Graphviz
 import ..Graphviz: to_graphviz

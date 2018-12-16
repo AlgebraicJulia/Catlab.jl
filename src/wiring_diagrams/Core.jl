@@ -41,7 +41,7 @@ using LightGraphs, MetaGraphs
 import LightGraphs: all_neighbors, neighbors, outneighbors, inneighbors
 
 using ...GAT, ...Syntax
-import ...Doctrine: CategoryExpr, ObExpr, HomExpr, SymmetricMonoidalCategory,
+import ...Doctrines: CategoryExpr, ObExpr, HomExpr, SymmetricMonoidalCategory,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create
 
 # Data types

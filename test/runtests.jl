@@ -11,7 +11,7 @@ end
 end
 
 @testset "Doctrines" begin
-  include("Doctrine.jl")
+  include("Doctrines.jl")
 end
 
 @testset "WiringDiagrams" begin

@@ -15,7 +15,7 @@ import Base.Iterators: repeated
 using Match
 
 using ...Catlab
-import ...Doctrine: SymmetricMonoidalCategory, ObExpr, HomExpr, Ob, Hom,
+import ...Doctrines: SymmetricMonoidalCategory, ObExpr, HomExpr, Ob, Hom,
   compose, id, dom, codom, otimes, munit, mcopy, delete, mmerge, create
 import ...Meta: concat_expr
 import ...Syntax: show_latex, show_unicode

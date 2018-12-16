@@ -2,7 +2,7 @@ module TestTikZWiring
 
 using Test
 
-using Catlab.Doctrine
+using Catlab.Doctrines
 using Catlab.WiringDiagrams
 using Catlab.Graphics
 import Catlab.Graphics: TikZ

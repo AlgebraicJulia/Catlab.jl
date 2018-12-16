@@ -1,7 +1,7 @@
 module TestWiringCore
 
 using Test
-using Catlab.Doctrine
+using Catlab.Doctrines
 using Catlab.WiringDiagrams
 
 # For testing purposes, check equality of port symbols.

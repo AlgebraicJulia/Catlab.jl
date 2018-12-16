@@ -1,7 +1,7 @@
 module TestWiringAlgorithms
 
 using Test
-using Catlab.Doctrine
+using Catlab.Doctrines
 using Catlab.WiringDiagrams
 
 A, B, C, D = Ob(FreeCartesianCategory, :A, :B, :C, :D)
