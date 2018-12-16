@@ -14,10 +14,14 @@ end
   include("Doctrine.jl")
 end
 
-@testset "Diagrams" begin
-  include("diagram/Diagram.jl")
+@testset "WiringDiagrams" begin
+  include("wiring_diagrams/WiringDiagrams.jl")
 end
 
 @testset "Algebra" begin
   include("algebra/Algebra.jl")
+end
+
+@testset "Graphics" begin
+  include("graphics/Graphics.jl")
 end

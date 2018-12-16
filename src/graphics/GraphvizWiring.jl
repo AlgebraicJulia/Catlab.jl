@@ -4,9 +4,9 @@ module GraphvizWiring
 export to_graphviz
 
 import ...Doctrine: HomExpr
+using ...WiringDiagrams
 import ..Graphviz
 import ..Graphviz: to_graphviz
-using ..Wiring
 
 # Default Graphviz font. Reference: http://www.graphviz.org/doc/fontfaq.txt
 const default_font = "Serif"
@@ -71,7 +71,7 @@ function to_graphviz(f::WiringDiagram;
   # Visible nodes for boxes.
   cell_attrs = merge(default_cell_attrs, cell_attrs)
   for v in box_ids(f)
-    box = Wiring.box(f, v)
+    box = WiringDiagrams.box(f, v)
     node = Graphviz.Node("n$v",
       label = node_html_label(box, cell_attrs),
       id = node_id(box.value))

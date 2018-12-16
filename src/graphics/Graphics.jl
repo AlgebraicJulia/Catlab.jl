@@ -1,19 +1,13 @@
-module Diagram
+module Graphics
 
 using Reexport
 using Requires
-
-include("Wiring.jl")
-include("Algorithms.jl")
-include("GraphML.jl")
 
 include("Graphviz.jl")
 include("GraphvizWiring.jl")
 include("TikZ.jl")
 include("TikZWiring.jl")
 
-@reexport using .Wiring
-@reexport using .GraphML
 @reexport using .GraphvizWiring
 @reexport using .TikZWiring
 

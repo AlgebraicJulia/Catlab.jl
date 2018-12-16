@@ -17,8 +17,8 @@ import JSON
 using LightXML
 using Nullables
 
-using ..Wiring
-import ..Wiring: PortEdgeData
+using ..WiringCore
+import ..WiringCore: PortEdgeData
 
 # Data types
 ############

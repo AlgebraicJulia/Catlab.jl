@@ -1,8 +1,8 @@
-module TestAlgorithms
+module TestWiringAlgorithms
 
 using Test
 using Catlab.Doctrine
-using Catlab.Diagram, Catlab.Diagram.Algorithms
+using Catlab.WiringDiagrams
 
 A, B, C, D = Ob(FreeCartesianCategory, :A, :B, :C, :D)
 I = munit(FreeCartesianCategory.Ob)

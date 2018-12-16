@@ -1,9 +1,11 @@
 module TestGraphvizWiring
 
 using Test
+
 using Catlab.Doctrine
-using Catlab.Diagram
-import Catlab.Diagram: Graphviz
+using Catlab.WiringDiagrams
+using Catlab.Graphics
+import Catlab.Graphics: Graphviz
 
 function stmts(graph::Graphviz.Graph, stmt_type::Type)
   [ stmt for stmt in graph.stmts if isa(stmt, stmt_type) ]

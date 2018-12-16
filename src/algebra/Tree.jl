@@ -20,8 +20,8 @@ using Match
 using ...Catlab
 import ...Meta: strip_lines
 import ...Syntax: head, args, show_latex
-using ...Diagram
-import ...Diagram.Wiring: to_wiring_diagram
+using ...WiringDiagrams
+import ...WiringDiagrams: to_wiring_diagram
 
 using ..Network
 import ..Network: Ob, Hom, compose, id, dom, codom, otimes, opow, munit, braid,

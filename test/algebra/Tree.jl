@@ -3,7 +3,7 @@ module TestAlgebraTree
 using Test
 
 using Catlab.Algebra
-using Catlab.Diagram.Wiring
+using Catlab.WiringDiagrams
 
 # Conversion
 ############

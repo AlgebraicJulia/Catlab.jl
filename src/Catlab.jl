@@ -16,7 +16,8 @@ include("Present.jl")
 
 # Additional modules
 include("doctrine/Doctrine.jl")
-include("diagram/Diagram.jl")
+include("wiring_diagrams/WiringDiagrams.jl")
+include("graphics/Graphics.jl")
 include("algebra/Algebra.jl")
 
 end

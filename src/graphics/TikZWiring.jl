@@ -8,6 +8,7 @@ using Nullables
 
 import ...Doctrine: ObExpr, HomExpr, dom, codom, head, args, compose, id
 import ...Syntax: GATExpr, show_latex
+using ...WiringDiagrams
 import ..TikZ
 
 # Data types

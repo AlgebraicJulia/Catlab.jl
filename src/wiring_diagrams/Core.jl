@@ -25,7 +25,8 @@ be directly rendered as raster or vector graphics. However, they form a useful
 intermediate representation that can be straightforwardly serialized to and from
 GraphML or translated into Graphviz or other declarative diagram languages.
 """
-module Wiring
+module WiringCore
+
 export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
   PortKind, InputPort, OutputPort, input_ports, output_ports, port_value,
   input_id, output_id, boxes, box_ids, nboxes, nwires, box, wires, has_wire,
@@ -295,8 +296,8 @@ function port_value(f::WiringDiagram, port::Port)
   elseif port.box == output_id(f)
     output_ports(f)[port.port]
   else
-    box = Wiring.box(f, port.box)
-    ports = port.kind == InputPort ? input_ports(box) : output_ports(box)
+    b = box(f, port.box)
+    ports = port.kind == InputPort ? input_ports(b) : output_ports(b)
     ports[port.port]
   end
 end
