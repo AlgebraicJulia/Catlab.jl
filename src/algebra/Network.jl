@@ -16,7 +16,7 @@ using Match
 
 using ...Catlab
 import ...Doctrine: SymmetricMonoidalCategory, ObExpr, HomExpr, Ob, Hom,
-  compose, id, dom, codom, otimes, munit, mcopy, delete
+  compose, id, dom, codom, otimes, munit, mcopy, delete, mmerge, create
 import ...Diagram.TikZWiring: box, wires, rect, junction_circle
 import ...Meta: concat_expr
 import ...Syntax: show_latex, show_unicode

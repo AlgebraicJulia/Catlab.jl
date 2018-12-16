@@ -7,8 +7,8 @@ There are already many outstanding CAS's. Its goals are to
 - facilitate interop with existing CAS's
 """
 module Tree
-export Formula, head, args, first, last, to_formula,
-  show_latex, show_latex, show_latex_formula, show_sexpr
+export Formula, head, args, first, last, to_formula, to_wiring_diagram,
+  show_latex, show_latex_formula, show_sexpr
 
 import Base: first, last, show
 import Base.Iterators: repeated
@@ -20,6 +20,9 @@ using Match
 using ...Catlab
 import ...Meta: strip_lines
 import ...Syntax: head, args, show_latex
+using ...Diagram
+import ...Diagram.Wiring: to_wiring_diagram
+
 using ..Network
 import ..Network: Ob, Hom, compose, id, dom, codom, otimes, opow, munit, braid,
   mcopy, delete, mmerge, create, linear, constant, evaluate
@@ -178,6 +181,58 @@ function substitute(expr::Expr, subst::Dict)
 end
 substitute(sym::Symbol, subst::Dict) = get(subst, sym, sym)
 substitute(x::Any, subst::Dict) = x
+
+""" Convert a formula, or formulas, to a wiring diagram.
+
+The wiring diagram has an input for each symbol in `vars` and an output for
+each given formula. All terminal symbols not appearing in `vars` are treated as
+symbolic constants.
+
+The algorithm creates wiring diagrams in normal form for a cartesian category,
+meaning that subformulas are maximally shared (cf. `normalize_copy!` for wiring
+diagrams and the congruence closure algorithm).
+"""
+function to_wiring_diagram(formula::Formula, vars::Vector{Symbol}; kw...)
+  to_wiring_diagram([formula], vars; kw...)
+end
+
+function to_wiring_diagram(formulas::Vector{Formula}, vars::Vector{Symbol};
+                           to_box::Function=to_untyped_box,
+                           to_port::Function=to_untyped_port)
+  diagram = WiringDiagram(map(to_port, vars), map(to_port, formulas))
+
+  term_map = Dict{Union{Formula,Symbol},Tuple{Int,Int}}((
+    var => (input_id(diagram), i) for (i, var) in enumerate(vars)
+  ))
+  function visit(term::Formula)
+    get!(term_map, term) do
+      preds = map(visit, args(term))
+      v = add_box!(diagram, to_box(term))
+      add_wires!(diagram, (pred => (v, i) for (i, pred) in enumerate(preds)))
+      (v,1)
+    end
+  end
+  function visit(sym::Symbol)
+    get!(term_map, sym) do
+      v = add_box!(diagram, to_box(sym))
+      (v,1)
+    end
+  end
+  function visit(num::Number)
+    v = add_box!(diagram, to_box(num))
+    (v,1)
+  end
+
+  outs = map(visit, formulas)
+  add_wires!(diagram,
+    (out => (output_id(diagram), i) for (i, out) in enumerate(outs)))
+  diagram
+end
+
+to_untyped_box(form::Formula) =
+  Box(head(form), repeat([nothing], length(args(form))), [nothing])
+to_untyped_box(x) = Box(x, Nothing[], [nothing])
+to_untyped_port(x) = nothing
 
 # Evaluation
 ############

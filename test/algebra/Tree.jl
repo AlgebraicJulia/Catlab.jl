@@ -1,11 +1,14 @@
 module TestAlgebraTree
 
 using Test
+
 using Catlab.Algebra
+using Catlab.Diagram.Wiring
 
 # Conversion
 ############
 
+# Convert Julia expressions to formulas.
 @test to_formula(:(sin(x))) == Formula(:sin, :x)
 @test to_formula(:(sin(2x))) == Formula((:sin, (:*, 2, :x)))
 @test to_formula(:(2*sin(2x))) == Formula((:*, 2, (:sin, (:*, 2, :x))))
@@ -14,6 +17,7 @@ using Catlab.Algebra
 @test to_formula(:(A && B)) == Formula(:&, :A, :B)
 @test to_formula(:(A || B)) == Formula(:|, :A, :B)
 
+# Convert algebraic networks to formulas.
 R = Ob(AlgebraicNet, :R)
 f = Hom(:sin, R, R)
 @test to_formula(f, [:x]) == Formula(:sin, :x)
@@ -33,6 +37,39 @@ f = compose(otimes(Hom(:cos,R,R), Hom(:sin,R,R)), mmerge(R))
 @test to_formula(f,[:x,:y]) == Formula((:+, (:cos, :x), (:sin, :y)))
 f = compose(mcopy(R), otimes(Hom(:cos,R,R), Hom(:sin,R,R)), mmerge(R))
 @test to_formula(f,[:x]) == Formula((:+, (:cos, :x), (:sin, :x)))
+
+# Convert formulas to wiring diagrams.
+make_box = (value, arity) -> Box(value, repeat([nothing], arity), [nothing])
+
+d = to_wiring_diagram(Formula(:*, :x, :y), [:x, :y])
+@test boxes(d) == [ make_box(:*, 2) ]
+v_times, = box_ids(d)
+@test wires(d) == map(Wire, [
+  (input_id(d), 1) => (v_times, 1),
+  (input_id(d), 2) => (v_times, 2),
+  (v_times, 1) => (output_id(d), 1),
+])
+
+d = to_wiring_diagram(Formula((:+, (:cos, :x), (:sin, :x))), [:x])
+@test boxes(d) == [ make_box(:cos, 1), make_box(:sin, 1), make_box(:+, 2) ]
+v_cos, v_sin, v_plus = box_ids(d)
+@test wires(d) == map(Wire, [
+  (input_id(d), 1) => (v_cos, 1),
+  (input_id(d), 1) => (v_sin, 1),
+  (v_cos, 1) => (v_plus, 1),
+  (v_sin, 1) => (v_plus, 2),
+  (v_plus, 1) => (output_id(d), 1),
+])
+
+d = to_wiring_diagram(Formula((:*, (:cos, :x), (:cos, :x))), [:x])
+@test boxes(d) == [ make_box(:cos, 1), make_box(:*, 2) ]
+v_cos, v_times = box_ids(d)
+@test wires(d) == map(Wire, [
+  (input_id(d), 1) => (v_cos, 1),
+  (v_cos, 1) => (v_times, 1),
+  (v_cos, 1) => (v_times, 2),
+  (v_times, 1) => (output_id(d), 1),
+])
 
 # Evaluation
 ############
