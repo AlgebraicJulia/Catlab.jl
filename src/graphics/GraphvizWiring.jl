@@ -38,6 +38,8 @@ wiring diagram.
 
 # Arguments
 - `graph_name="G"`: name of Graphviz digraph
+- `direction=:vertical`: layout direction.
+  Either `:vertical` (top to bottom) or `:horizontal` (left to right).
 - `labels=false`: whether to label the wires
 - `label_attr=:label`: what kind of wire label to use (if `labels` is true).
   One of `:label`, `:xlabel`, `:headlabel`, or `:taillabel`.
@@ -49,28 +51,38 @@ wiring diagram.
 - `cell_attrs=default_cell_attrs`: main cell attributes in node HTML-like label
 """
 function to_graphviz(f::WiringDiagram;
-    graph_name::String="G", labels::Bool=false, label_attr::Symbol=:label,
+    graph_name::String="G", direction::Symbol=:vertical,
+    labels::Bool=false, label_attr::Symbol=:label,
     anchor_outer_ports::Bool=true,
     graph_attrs::Graphviz.Attributes=Graphviz.Attributes(),
     node_attrs::Graphviz.Attributes=Graphviz.Attributes(),
     edge_attrs::Graphviz.Attributes=Graphviz.Attributes(),
     cell_attrs::Graphviz.Attributes=Graphviz.Attributes())::Graphviz.Graph
-  @assert label_attr in [:label, :xlabel, :headlabel, :taillabel]
+  @assert direction in (:vertical, :horizontal)
+  @assert label_attr in (:label, :xlabel, :headlabel, :taillabel)
+
+  # Graph
+  graph_attrs = merge(graph_attrs, Graphviz.Attributes(
+    :rankdir => direction == :horizontal ? "LR" : "TB"
+  ))
   
   # Nodes
   stmts = Graphviz.Statement[]
   # Invisible nodes for incoming and outgoing wires.
   n_inputs, n_outputs = length(input_ports(f)), length(output_ports(f))
+  outer_ports_dir = direction == :vertical ? "LR" : "TB"
   if n_inputs > 0
-    push!(stmts, port_nodes(
-      input_id(f), InputPort, n_inputs; anchor=anchor_outer_ports))
+    push!(stmts, port_nodes(input_id(f), InputPort, n_inputs;
+      anchor=anchor_outer_ports, dir=outer_ports_dir))
   end
   if n_outputs > 0
-    push!(stmts, port_nodes(
-      output_id(f), OutputPort, n_outputs; anchor=anchor_outer_ports))
+    push!(stmts, port_nodes(output_id(f), OutputPort, n_outputs;
+      anchor=anchor_outer_ports, dir=outer_ports_dir))
   end
   # Visible nodes for boxes.
   cell_attrs = merge(default_cell_attrs, cell_attrs)
+  node_html_label = direction == :vertical ?
+    node_top_bottom_html_label : node_left_right_html_label
   for v in box_ids(f)
     box = WiringDiagrams.box(f, v)
     node = Graphviz.Node("n$v",
@@ -81,10 +93,15 @@ function to_graphviz(f::WiringDiagram;
   
   # Edges
   graphviz_port = (p::Port) -> begin
-    if p.box in (input_id(f), output_id(f))
-      return Graphviz.NodeID("n$(p.box)p$(p.port)", port_anchor(p.kind))
+    anchor = if direction == :vertical
+      p.kind == InputPort ? "n" : "s"
+    else
+      p.kind == InputPort ? "w" : "e"
     end
-    Graphviz.NodeID("n$(p.box)", port_name(p.kind, p.port), port_anchor(p.kind))
+    if p.box in (input_id(f), output_id(f))
+      return Graphviz.NodeID("n$(p.box)p$(p.port)", anchor)
+    end
+    Graphviz.NodeID("n$(p.box)", port_name(p.kind, p.port), anchor)
   end
   for wire in wires(f)
     # Use the port value to label the wire. We take the source port.
@@ -112,40 +129,70 @@ function to_graphviz(f::HomExpr; kw...)::Graphviz.Graph
   to_graphviz(to_wiring_diagram(f); kw...)
 end
 
-""" Create an "HTML-like" node label for a box.
+""" Create a top-to-bottom "HTML-like" node label for a box.
 """
-function node_html_label(box::Box, attrs::Graphviz.Attributes)::Graphviz.Html
+function node_top_bottom_html_label(box::Box, attrs::Graphviz.Attributes)::Graphviz.Html
   nin, nout = length(input_ports(box)), length(output_ports(box))
   text_label = node_label(box.value)
   Graphviz.Html("""
     <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-    <TR><TD>$(ports_html_label(InputPort,nin))</TD></TR>
+    <TR><TD>$(ports_horizontal_html_label(InputPort,nin))</TD></TR>
     <TR><TD $(html_attributes(attrs))>$(escape_html(text_label))</TD></TR>
-    <TR><TD>$(ports_html_label(OutputPort,nout))</TD></TR>
+    <TR><TD>$(ports_horizontal_html_label(OutputPort,nout))</TD></TR>
     </TABLE>""")
 end
+
+""" Create a left-to-right "HTML-like" node label for a box.
+"""
+function node_left_right_html_label(box::Box, attrs::Graphviz.Attributes)::Graphviz.Html
+  nin, nout = length(input_ports(box)), length(output_ports(box))
+  text_label = node_label(box.value)
+  Graphviz.Html("""
+    <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
+    <TR>
+    <TD>$(ports_vertical_html_label(InputPort,nin))</TD>
+    <TD $(html_attributes(attrs))>$(escape_html(text_label))</TD>
+    <TD>$(ports_vertical_html_label(OutputPort,nout))</TD>
+    </TR>
+    </TABLE>""")
+end
+
 function html_attributes(attrs::Graphviz.Attributes)::String
   join(["$(uppercase(string(k)))=\"$v\"" for (k,v) in attrs], " ")
 end
 
-""" Create an "HTML-like" label for the input or output ports of a box.
+""" Create horizontal "HTML-like" label for the input or output ports of a box.
 """
-function ports_html_label(kind::PortKind, nports::Int)::Graphviz.Html
-  cells = if nports > 0
+function ports_horizontal_html_label(kind::PortKind, nports::Int)::Graphviz.Html
+  cols = if nports > 0
     join("""<TD HEIGHT="0" WIDTH="24" PORT="$(port_name(kind,i))"></TD>"""
          for i in 1:nports)
   else
     """<TD HEIGHT="0" WIDTH="24"></TD>"""
   end
   Graphviz.Html("""
-    <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0"><TR>$cells</TR></TABLE>""")
+    <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0"><TR>$cols</TR></TABLE>""")
+end
+
+""" Create vertical "HTML-like" label for the input or output ports of a box.
+"""
+function ports_vertical_html_label(kind::PortKind, nports::Int)::Graphviz.Html
+  rows = if nports > 0
+    join("""<TR><TD HEIGHT="24" WIDTH="0" PORT="$(port_name(kind,i))"></TD></TR>"""
+         for i in 1:nports)
+  else
+    """<TR><TD HEIGHT="24" WIDTH="0"></TD></TR>"""
+  end
+  Graphviz.Html("""
+    <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">$rows</TABLE>""")
 end
 
 """ Create invisible nodes for the input or output ports of an outer box.
 """
 function port_nodes(v::Int, kind::PortKind, nports::Int;
-                    anchor::Bool=true)::Graphviz.Subgraph
+                    anchor::Bool=true, dir::String="LR")::Graphviz.Subgraph
   @assert nports > 0
+  port_width = "$(round(24/72,digits=3))" # port width in inches
   nodes = [ "n$(v)p$(i)" for i in 1:nports ]
   stmts = if anchor
     Graphviz.Statement[ Graphviz.Edge(nodes) ]
@@ -156,14 +203,14 @@ function port_nodes(v::Int, kind::PortKind, nports::Int;
     stmts,
     graph_attrs=Graphviz.Attributes(
       :rank => kind == InputPort ? "source" : "sink",
-      :rankdir => "LR",
+      :rankdir => dir,
     ),
     node_attrs=Graphviz.Attributes(
       :style => "invis",
       :shape => "none",
       :label => "",
-      :width => "0.333", # == 24/72, the port width in inches
-      :height => "0",
+      :width => dir == "LR" ? port_width : "0",
+      :height => dir == "TB" ? port_width : "0",
     ),
     edge_attrs=Graphviz.Attributes(
       :style => "invis",
@@ -172,7 +219,6 @@ function port_nodes(v::Int, kind::PortKind, nports::Int;
 end
 
 port_name(kind::PortKind, port::Int) = string(kind == InputPort ? "in" : "out", port)
-port_anchor(kind::PortKind) = kind == InputPort ? "n" : "s"
 
 """ Create a label for the main content of a box.
 """

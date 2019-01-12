@@ -28,6 +28,9 @@ graph = to_graphviz(f)
 @test stmts(graph, Graphviz.Edge, :xlabel) == []
 @test length(stmts(graph, Graphviz.Subgraph)) == 2
 
+graph = to_graphviz(f; direction=:horizontal)
+@test stmts(graph, Graphviz.Node, :id) == ["f"]
+
 graph = to_graphviz(f; labels=true)
 @test stmts(graph, Graphviz.Edge, :label) == ["A","B"]
 @test stmts(graph, Graphviz.Edge, :xlabel) == []
