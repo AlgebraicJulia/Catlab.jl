@@ -1,8 +1,5 @@
 """ AST and pretty printer for Graphviz's DOT language.
 
-This module does not provide bindings to the Graphviz library. For that, see
-the GraphViz.jl package: https://github.com/Keno/GraphViz.jl
-
 References:
 
 - DOT grammar: http://www.graphviz.org/doc/info/lang.html
@@ -10,7 +7,7 @@ References:
 """
 module Graphviz
 export Expression, Statement, Attributes, Graph, Digraph, Subgraph,
-  Node, NodeID, Edge, pprint, to_graphviz
+  Node, NodeID, Edge, pprint, run_graphviz, to_graphviz
 
 using DataStructures: OrderedDict
 import LightGraphs, MetaGraphs
@@ -38,7 +35,7 @@ const Attributes = OrderedDict{Symbol,AttributeValue}
 
 sorted_attrs(d::AbstractDict) = Attributes(k => d[k] for k in sort!(collect(keys(d))))
 
-@with_kw struct Graph <: Expression
+@with_kw_noshow struct Graph <: Expression
   name::String
   directed::Bool
   stmts::Vector{Statement}=Statement[]
@@ -56,7 +53,7 @@ Digraph(name::String, stmts::Vector{Statement}; kw...) =
 Digraph(name::String, stmts::Vararg{Statement}; kw...) =
   Graph(; name=name, directed=true, stmts=collect(stmts), kw...)
 
-@with_kw struct Subgraph <: Statement
+@with_kw_noshow struct Subgraph <: Statement
   name::String="" # Subgraphs can be anonymous
   stmts::Vector{Statement}=Statement[]
   graph_attrs::Attributes=Attributes()
@@ -95,6 +92,29 @@ Edge(path::Vararg{String}; attrs...) = Edge(map(NodeID, collect(path)), Attribut
 Edge(path::Vector{String}; attrs...) = Edge(map(NodeID, path), Attributes(attrs))
 Edge(path::Vararg{NodeID}; attrs...) = Edge(collect(path), Attributes(attrs))
 Edge(path::Vector{NodeID}; attrs...) = Edge(path, Attributes(attrs))
+
+# Bindings
+##########
+
+""" Run a Graphviz program
+
+Assumes that Graphviz is installed on the local system. Invokes Graphviz
+through its command-line interface.
+
+For bindings to the Graphviz C API, see the the GraphViz.jl package
+(https://github.com/Keno/GraphViz.jl). GraphViz.jl is unmaintained at the time
+of this writing.
+"""
+function run_graphviz(graph::Graph; prog::String="dot", format::String="json0")
+  gv = open(`$prog -T$format`, "r+")
+  pprint(gv.in, graph)
+  close(gv.in)
+  read(gv.out, String)
+end
+
+function Base.show(io::IO, ::MIME"image/svg+xml", graph::Graph)
+  println(io, run_graphviz(graph, format="svg"))
+end
 
 # MetaGraphs
 ############
