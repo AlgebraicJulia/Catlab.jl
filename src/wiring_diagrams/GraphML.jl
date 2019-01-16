@@ -1,8 +1,12 @@
 """ Serialize abstract wiring diagrams as GraphML.
 
-Custom serialization of box, port, and wire values is supported. We depart
-mildly from the GraphML spec by supporting JSON data attributes for GraphML
-nodes, ports, and edges.
+Serialization of box, port, and wire values can be overloaded by data type
+(see `convert_to_graphml_data` and `convert_from_graphml_data`).
+
+GraphML is the closest thing to a de jure and de facto standard in the space of
+graph data formats, supported by a variety of graph applications and libraries.
+We depart mildly from the GraphML spec by allowing JSON data attributes for
+GraphML nodes, ports, and edges.
 
 References:
 
@@ -10,7 +14,8 @@ References:
 - GraphML DTD: http://graphml.graphdrawing.org/specification/dtd.html
 """
 module GraphMLWiringDiagrams
-export read_graphml, write_graphml
+export read_graphml, write_graphml,
+  convert_from_graphml_data, convert_to_graphml_data
 
 using DataStructures: OrderedDict
 import JSON
@@ -48,7 +53,7 @@ end
 # Serialization
 ###############
 
-""" Serialize a wiring diagram to GraphML.
+""" Serialize a wiring diagram as GraphML.
 """
 function write_graphml(diagram::WiringDiagram)::XMLDocument
   # Create XML document.
@@ -104,7 +109,7 @@ function write_graphml_node(
   port_name(port::Port) = begin
     is_input = port.box in (in_id, out_id) ?
       port.box == in_id : port.kind == InputPort
-    is_input ? "in:$(port.port)" : "out:$(port.port)"
+    string(is_input ? "in" : "out", ":", port.port)
   end
   for wire in wires(diagram)
     xedge = new_child(xsubgraph, "edge")
@@ -211,7 +216,7 @@ function read_graphml(::Type{BoxValue}, ::Type{PortValue}, ::Type{WireValue},
   keys = read_graphml_keys(xroot)
   state = ReadState(keys, BoxValue, PortValue, WireValue)
   diagram, ports = read_graphml_node(state, xnode)
-  return diagram
+  diagram
 end
 function read_graphml(
     BoxValue::Type, PortValue::Type, WireValue::Type, filename::String)
@@ -235,9 +240,9 @@ function read_graphml_node(state::ReadState, xnode::XMLElement)
   
   # If we get here, we're reading a wiring diagram.
   diagram = WiringDiagram(input_ports, output_ports)
-  diagram_ports = Dict{Tuple{String,String},Port}()
+  all_ports = Dict{Tuple{String,String},Port}()
   for (key, port_data) in ports
-    diagram_ports[key] = port_data.kind == InputPort ?
+    all_ports[key] = port_data.kind == InputPort ?
       Port(input_id(diagram), OutputPort, port_data.port) : 
       Port(output_id(diagram), InputPort, port_data.port)
   end
@@ -247,7 +252,7 @@ function read_graphml_node(state::ReadState, xnode::XMLElement)
     box, subports = read_graphml_node(state, xsubnode)
     v = add_box!(diagram, box)
     for (key, port_data) in subports
-      diagram_ports[key] = Port(v, port_data.kind, port_data.port)
+      all_ports[key] = Port(v, port_data.kind, port_data.port)
     end
   end
   
@@ -259,12 +264,12 @@ function read_graphml_node(state::ReadState, xnode::XMLElement)
     xtarget = attribute(xedge, "target", required=true)
     xsourceport = attribute(xedge, "sourceport", required=true)
     xtargetport = attribute(xedge, "targetport", required=true)
-    source = diagram_ports[(xsource, xsourceport)]
-    target = diagram_ports[(xtarget, xtargetport)]
+    source = all_ports[(xsource, xsourceport)]
+    target = all_ports[(xtarget, xtargetport)]
     add_wire!(diagram, Wire(value, source, target))
   end
   
-  return (diagram, ports)
+  (diagram, ports)
 end
 
 function read_graphml_ports(state::ReadState, xnode::XMLElement)
