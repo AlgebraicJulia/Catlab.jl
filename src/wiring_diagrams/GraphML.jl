@@ -9,7 +9,7 @@ References:
 - GraphML Primer: http://graphml.graphdrawing.org/primer/graphml-primer.html
 - GraphML DTD: http://graphml.graphdrawing.org/specification/dtd.html
 """
-module GraphML
+module GraphMLWiringDiagrams
 export read_graphml, write_graphml
 
 using DataStructures: OrderedDict
@@ -17,8 +17,8 @@ import JSON
 using LightXML
 using Nullables
 
-using ..WiringCore
-import ..WiringCore: PortEdgeData
+using ..WiringDiagramCore
+import ..WiringDiagramCore: PortEdgeData
 
 # Data types
 ############

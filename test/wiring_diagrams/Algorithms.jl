@@ -1,4 +1,4 @@
-module TestWiringAlgorithms
+module TestWiringDiagramAlgorithms
 
 using Test
 using Catlab.Doctrines

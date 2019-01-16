@@ -1,4 +1,4 @@
-module TestTikZWiring
+module TestTikZWiringDiagrams
 
 using Test
 
@@ -6,7 +6,7 @@ using Catlab.Doctrines
 using Catlab.WiringDiagrams
 using Catlab.Graphics
 import Catlab.Graphics: TikZ
-import Catlab.Graphics.TikZWiring.Defaults
+import Catlab.Graphics.TikZWiringDiagrams.Defaults
 
 # We can't test that the pictures look right, but we can test that they exist!
 is_pic(obj) = isa(obj, TikZ.Picture)

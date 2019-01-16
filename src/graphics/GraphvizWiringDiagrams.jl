@@ -1,6 +1,6 @@
 """ Draw wiring diagrams (aka string diagrams) using Graphviz.
 """
-module GraphvizWiring
+module GraphvizWiringDiagrams
 export to_graphviz
 
 import ...Doctrines: HomExpr

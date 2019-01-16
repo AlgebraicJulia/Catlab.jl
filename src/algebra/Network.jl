@@ -19,7 +19,7 @@ import ...Doctrines: SymmetricMonoidalCategory, ObExpr, HomExpr, Ob, Hom,
   compose, id, dom, codom, otimes, munit, mcopy, delete, mmerge, create
 import ...Meta: concat_expr
 import ...Syntax: show_latex, show_unicode
-import ...Graphics.TikZWiring: box, wires, rect, junction_circle
+import ...Graphics.TikZWiringDiagrams: box, wires, rect, junction_circle
 
 # Syntax
 ########

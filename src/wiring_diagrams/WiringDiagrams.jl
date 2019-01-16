@@ -6,8 +6,8 @@ include("Core.jl")
 include("Algorithms.jl")
 include("GraphML.jl")
 
-@reexport using .WiringCore
-@reexport using .WiringAlgorithms
-@reexport using .GraphML
+@reexport using .WiringDiagramCore
+@reexport using .WiringDiagramAlgorithms
+@reexport using .GraphMLWiringDiagrams
 
 end

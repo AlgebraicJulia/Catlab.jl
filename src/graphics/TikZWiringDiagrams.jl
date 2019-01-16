@@ -1,6 +1,6 @@
 """ Draw wiring diagrams (aka string diagrams) using TikZ.
 """
-module TikZWiring
+module TikZWiringDiagrams
 export to_tikz
 
 using Match
@@ -467,7 +467,7 @@ end
 """ Default renderers for specific syntax systems.
 """
 module Defaults
-  import ..TikZWiring: Wire, box, wires, label, rect, trapezium,
+  import ..TikZWiringDiagrams: Wire, box, wires, label, rect, trapezium,
     junction_circle, cup, cap
   using Catlab.Doctrines
   using Catlab.Syntax

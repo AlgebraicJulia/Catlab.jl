@@ -2,10 +2,10 @@ using Test
 
 @testset "Graphviz" begin
   include("Graphviz.jl")
-  include("GraphvizWiring.jl")
+  include("GraphvizWiringDiagrams.jl")
 end
 
 @testset "TikZ" begin
   include("TikZ.jl")
-  include("TikZWiring.jl")
+  include("TikZWiringDiagrams.jl")
 end

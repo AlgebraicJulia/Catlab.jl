@@ -1,4 +1,4 @@
-module TestGraphvizWiring
+module TestGraphvizWiringDiagrams
 
 using Test
 

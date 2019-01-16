@@ -1,4 +1,4 @@
-module TestGraphML
+module TestGraphMLWiringDiagrams
 
 using Test
 using LightXML

@@ -1,10 +1,10 @@
 using Test
 
-@testset "WiringCore" begin
+@testset "Core" begin
   include("Core.jl")
 end
 
-@testset "WiringAlgorithms" begin
+@testset "Algorithms" begin
   include("Algorithms.jl")
 end
 

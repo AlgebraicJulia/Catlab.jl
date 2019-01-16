@@ -25,7 +25,7 @@ be directly rendered as raster or vector graphics. However, they form a useful
 intermediate representation that can be straightforwardly serialized to and from
 GraphML or translated into Graphviz or other declarative diagram languages.
 """
-module WiringCore
+module WiringDiagramCore
 
 export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
   PortKind, InputPort, OutputPort, input_ports, output_ports, port_value,

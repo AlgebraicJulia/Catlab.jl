@@ -1,13 +1,13 @@
 """ Algorithms operating on wiring diagrams.
 """
-module WiringAlgorithms
+module WiringDiagramAlgorithms
 export normalize_cartesian!, normalize_copy!, normalize_delete!
 
 using LightGraphs: topological_sort_by_dfs
 using UnionFind
 
-using ..WiringCore
-import ..WiringCore: set_box
+using ..WiringDiagramCore
+import ..WiringDiagramCore: set_box
 
 # Normal forms
 ##############
