@@ -4,7 +4,7 @@ module GraphvizWiringDiagrams
 export to_graphviz
 
 import ...Doctrines: HomExpr
-using ...WiringDiagrams
+using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
 import ..Graphviz
 import ..Graphviz: to_graphviz
 
@@ -80,14 +80,19 @@ function to_graphviz(f::WiringDiagram;
       anchor=anchor_outer_ports, dir=outer_ports_dir))
   end
   # Visible nodes for boxes.
+  # Note: The `id` attribute is included in the Graphviz output but is not used
+  # internally by Graphviz. It is for use by downstream applications.
+  # Reference: http://www.graphviz.org/doc/info/attrs.html#d:id
   cell_attrs = merge(default_cell_attrs, cell_attrs)
   node_html_label = direction == :vertical ?
     node_top_bottom_html_label : node_left_right_html_label
   for v in box_ids(f)
     box = WiringDiagrams.box(f, v)
-    node = Graphviz.Node("n$v",
-      label = node_html_label(box, cell_attrs),
-      id = node_id(box.value))
+    node = Graphviz.Node(box_id([v]),
+      id = box_id([v]),
+      comment = node_label(box.value),
+      label = node_html_label(box, cell_attrs)
+    )
     push!(stmts, node)
   end
   
@@ -99,18 +104,22 @@ function to_graphviz(f::WiringDiagram;
       p.kind == InputPort ? "w" : "e"
     end
     if p.box in (input_id(f), output_id(f))
-      return Graphviz.NodeID("n$(p.box)p$(p.port)", anchor)
+      Graphviz.NodeID(port_node_name(p.box, p.port), anchor)
+    else
+      Graphviz.NodeID(box_id([p.box]), port_name(p.kind, p.port), anchor)
     end
-    Graphviz.NodeID("n$(p.box)", port_name(p.kind, p.port), anchor)
   end
-  for wire in wires(f)
+  for (i, wire) in enumerate(wires(f))
     # Use the port value to label the wire. We take the source port.
     # In most wiring diagrams, the source and target ports should yield the
     # same label, but that is not guaranteed. An advantage of choosing the
     # source port over the target port is that it will carry the
     # "more specific" type when implicit conversions are allowed.
     port = port_value(f, wire.source)
-    attrs = Graphviz.Attributes(:id => edge_id(port))
+    attrs = Graphviz.Attributes(
+      :id => wire_id(Int[], i),
+      :comment => edge_label(port),
+    )
     if labels
       attrs[label_attr] = edge_label(port)
     end
@@ -193,7 +202,7 @@ function port_nodes(v::Int, kind::PortKind, nports::Int;
                     anchor::Bool=true, dir::String="LR")::Graphviz.Subgraph
   @assert nports > 0
   port_width = "$(round(24/72,digits=3))" # port width in inches
-  nodes = [ "n$(v)p$(i)" for i in 1:nports ]
+  nodes = [ port_node_name(v, i) for i in 1:nports ]
   stmts = if anchor
     Graphviz.Statement[ Graphviz.Edge(nodes) ]
   else
@@ -217,29 +226,15 @@ function port_nodes(v::Int, kind::PortKind, nports::Int;
     ),
   )
 end
-
-port_name(kind::PortKind, port::Int) = string(kind == InputPort ? "in" : "out", port)
+port_node_name(v::Int, port::Int) = string(box_id([v]), "p", port)
 
 """ Create a label for the main content of a box.
 """
 node_label(box_value::Any) = string(box_value)
 
-""" Create an identifer for a node for downstream use.
-
-It is included in the Graphviz output but is not used internally by Graphviz.
-Reference: http://www.graphviz.org/doc/info/attrs.html#d:id
-"""
-node_id(box_value::Any) = node_label(box_value)
-
 """ Create a label for an edge.
 """
 edge_label(port_value::Any) = string(port_value)
-
-""" Create an identifier for an edge for downstream use.
-
-See also `node_id()`.
-"""
-edge_id(port_value::Any) = edge_label(port_value)
 
 """ Escape special HTML characters: &, <, >, ", '
 

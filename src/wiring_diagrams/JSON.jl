@@ -20,7 +20,7 @@ export read_json_graph, write_json_graph,
 
 using DataStructures: OrderedDict
 
-using ..WiringDiagramCore
+using ..WiringDiagramCore, ..WiringDiagramSerialization
 import ..WiringDiagramCore: PortEdgeData
 
 const JSONObject = OrderedDict{String,Any}
@@ -31,42 +31,32 @@ const JSONObject = OrderedDict{String,Any}
 """ Serialize a wiring diagram in JSON graph format.
 """
 function write_json_graph(diagram::WiringDiagram)::AbstractDict
-  write_json_box(diagram, "n")
+  write_json_box(diagram, Int[])
 end
 
-function write_json_box(diagram::WiringDiagram, id::String)
-  # Define node, port, and edge IDs.
-  in_id, out_id = input_id(diagram), output_id(diagram)
-  node_id(v::Int) = v in (in_id, out_id) ? id : "$id:n$v"
-  port_id(port::Port) = begin
-    is_input = port.box in (in_id, out_id) ?
-      port.box == in_id : port.kind == InputPort
-    string(is_input ? "in" : "out", ":", port.port)
-  end
-  #edge_id(i::Int) = "$id:e$i"
-
+function write_json_box(diagram::WiringDiagram, path::Vector{Int})
   JSONObject(
-    "id" => id,
+    "id" => box_id(path),
     "ports" => write_json_ports(diagram),
     "children" => [
-      write_json_box(box(diagram, v), node_id(v)) for v in box_ids(diagram)
+      write_json_box(box(diagram, v), [path; v]) for v in box_ids(diagram)
     ],
     "edges" => [
       json_object_with_value(wire.value,
-        #"id" => edge_id(i),
-        "source" => node_id(wire.source.box),
-        "sourcePort" => port_id(wire.source),
-        "target" => node_id(wire.target.box),
-        "targetPort" => port_id(wire.target),
+        "id" => wire_id(path, i),
+        "source" => box_id(diagram, [path; wire.source.box]),
+        "sourcePort" => port_name(diagram, wire.source),
+        "target" => box_id(diagram, [path; wire.target.box]),
+        "targetPort" => port_name(diagram, wire.target),
       )
       for (i, wire) in enumerate(wires(diagram))
     ],
   )
 end
 
-function write_json_box(box::Box, id::String)
+function write_json_box(box::Box, path::Vector{Int})
   json_object_with_value(box.value,
-    "id" => id,
+    "id" => box_id(path),
     "ports" => write_json_ports(box),
   )
 end
@@ -75,14 +65,14 @@ function write_json_ports(box::AbstractBox)::AbstractArray
   [
     [
       json_object_with_value(port,
-        "id" => "in:$i",
+        "id" => port_name(InputPort, i),
         "portkind" => "input",
       )
       for (i, port) in enumerate(input_ports(box))
     ];
     [
       json_object_with_value(port,
-        "id" => "out:$i",
+        "id" => port_name(OutputPort, i),
         "portkind" => "output",
       )
       for (i, port) in enumerate(output_ports(box))

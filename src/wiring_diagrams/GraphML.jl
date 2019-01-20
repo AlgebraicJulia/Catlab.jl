@@ -22,7 +22,7 @@ import JSON
 using LightXML
 using Nullables
 
-using ..WiringDiagramCore
+using ..WiringDiagramCore, ..WiringDiagramSerialization
 import ..WiringDiagramCore: PortEdgeData
 
 # Data types
@@ -72,7 +72,7 @@ function write_graphml(diagram::WiringDiagram)::XMLDocument
   
   # Recursively create nodes.
   state = WriteState()
-  write_graphml_node(state, xgraph, "n", diagram)
+  write_graphml_node(state, xgraph, diagram, Int[])
   
   # Add attribute keys (data declarations). The keys are collected while
   # writing the nodes and are stored in the state object.
@@ -88,44 +88,39 @@ function write_graphml(diagram::WiringDiagram, filename::String)
 end
 
 function write_graphml_node(
-    state::WriteState, xgraph::XMLElement, id::String, diagram::WiringDiagram)
+    state::WriteState, xgraph::XMLElement, diagram::WiringDiagram, path::Vector{Int})
   # Create node element for wiring diagram and graph subelement to contain 
   # boxes and wires.
   xnode = new_child(xgraph, "node")
-  set_attribute(xnode, "id", id)
+  set_attribute(xnode, "id", box_id(path))
   write_graphml_ports(state, xnode, diagram)
   
   xsubgraph = new_child(xnode, "graph")
-  set_attribute(xsubgraph, "id", "$id:")
+  set_attribute(xsubgraph, "id", string(box_id(path), ":graph"))
   
   # Add node elements for boxes.
   for v in box_ids(diagram)
-    write_graphml_node(state, xsubgraph, "$id:n$v", box(diagram, v))
+    write_graphml_node(state, xsubgraph, box(diagram, v), [path; v])
   end
   
   # Add edge elements for wires.
-  in_id, out_id = input_id(diagram), output_id(diagram)
-  node_id(port::Port) = port.box in (in_id, out_id) ? id : "$id:n$(port.box)"
-  port_name(port::Port) = begin
-    is_input = port.box in (in_id, out_id) ?
-      port.box == in_id : port.kind == InputPort
-    string(is_input ? "in" : "out", ":", port.port)
-  end
-  for wire in wires(diagram)
+  for (i, wire) in enumerate(wires(diagram))
     xedge = new_child(xsubgraph, "edge")
     set_attributes(xedge, Pair[
-      "source"     => node_id(wire.source),
-      "sourceport" => port_name(wire.source),
-      "target"     => node_id(wire.target),
-      "targetport" => port_name(wire.target),
+      "id"         => wire_id(path, i),
+      "source"     => box_id(diagram, [path; wire.source.box]),
+      "sourceport" => port_name(diagram, wire.source),
+      "target"     => box_id(diagram, [path; wire.target.box]),
+      "targetport" => port_name(diagram, wire.target),
     ])
     write_graphml_data(state, xedge, "edge", wire.value)
   end
 end
 
-function write_graphml_node(state::WriteState, xgraph::XMLElement, id::String, box::Box)
+function write_graphml_node(
+    state::WriteState, xgraph::XMLElement, box::Box, path::Vector{Int})
   xnode = new_child(xgraph, "node")
-  set_attribute(xnode, "id", id)
+  set_attribute(xnode, "id", box_id(path))
   write_graphml_data(state, xnode, "node", box.value)
   write_graphml_ports(state, xnode, box)
 end
@@ -134,14 +129,14 @@ function write_graphml_ports(state::WriteState, xnode::XMLElement, box::Abstract
   # Write input ports.
   for (i, port) in enumerate(input_ports(box))
     xport = new_child(xnode, "port")
-    set_attribute(xport, "name", "in:$i")
+    set_attribute(xport, "name", port_name(InputPort, i))
     write_graphml_data(state, xport, "port", Dict("portkind" => "input"))
     write_graphml_data(state, xport, "port", port)
   end
   # Write output ports.
   for (i, port) in enumerate(output_ports(box))
     xport = new_child(xnode, "port")
-    set_attribute(xport, "name", "out:$i")
+    set_attribute(xport, "name", port_name(OutputPort, i))
     write_graphml_data(state, xport, "port", Dict("portkind" => "output"))
     write_graphml_data(state, xport, "port", port)
   end

@@ -4,6 +4,7 @@ using Reexport
 
 include("Core.jl")
 include("Algorithms.jl")
+include("Serialization.jl")
 include("GraphML.jl")
 include("JSON.jl")
 
