@@ -1,5 +1,5 @@
 name = "Catlab"
-uuid = "fe5c7674-9d0d-11e8-2f75-77422a24ba09"
+uuid = "134e5e36-593f-5add-ad60-77f754baafbe"
 license = "BSD2"
 authors = ["Evan Patterson <epatters@stanford.edu>"]
 version = "0.1.0"
