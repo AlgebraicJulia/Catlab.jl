@@ -1,8 +1,8 @@
 export MonoidalCategory, otimes, munit, ⊗, collect, ndims,
   SymmetricMonoidalCategory, FreeSymmetricMonoidalCategory, braid,
-  CartesianCategory, FreeCartesianCategory,
+  MonoidalCategoryWithDiagonals, CartesianCategory, FreeCartesianCategory,
   mcopy, delete, pair, proj1, proj2, Δ, ◇,
-  CocartesianCategory, FreeCocartesianCategory,
+  MonoidalCategoryWithCodiagonals, CocartesianCategory, FreeCocartesianCategory,
   mmerge, create, copair, in1, in2, ∇, □,
   BiproductCategory, FreeBiproductCategory,
   CartesianClosedCategory, FreeCartesianClosedCategory, hom, ev, curry,
@@ -91,25 +91,39 @@ function show_latex(io::IO, expr::HomExpr{:braid}; kw...)
   Syntax.show_latex_script(io, expr, "\\sigma")
 end
 
-# (Co)cartesian category
-########################
+# Cartesian category
+####################
+
+""" Doctrine of *monoidal category with diagonals*
+
+A monoidal category with diagonals is a symmetric monoidal category equipped
+with coherent collections of copying and deleting morphisms (comonoids).
+Unlike in a cartesian category, the naturality axioms need not be satisfied.
+
+References:
+
+- Selinger, 2010, "A survey of graphical languages for monoidal categories",
+  Section 6.6: "Cartesian center"
+- Selinger, 1999, "Categorical structure of asynchrony"
+"""
+@signature SymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithDiagonals(Ob,Hom) begin
+  mcopy(A::Ob)::Hom(A,otimes(A,A))
+  delete(A::Ob)::Hom(A,munit())
+  
+  # Unicode syntax
+  Δ(A::Ob) = mcopy(A)
+  ◇(A::Ob) = delete(A)
+end
 
 """ Doctrine of *cartesian category*
 
 Actually, this is a cartesian *symmetric monoidal* category but we omit these
 qualifiers for brevity.
 """
-@signature SymmetricMonoidalCategory(Ob,Hom) => CartesianCategory(Ob,Hom) begin
-  mcopy(A::Ob)::Hom(A,otimes(A,A))
-  delete(A::Ob)::Hom(A,munit())
-  
+@signature MonoidalCategoryWithDiagonals(Ob,Hom) => CartesianCategory(Ob,Hom) begin
   pair(f::Hom(A,B), g::Hom(A,C))::Hom(A,otimes(B,C)) <= (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::Hom(otimes(A,B),A)
   proj2(A::Ob, B::Ob)::Hom(otimes(A,B),B)
-  
-  # Unicode syntax
-  Δ(A::Ob) = mcopy(A)
-  ◇(A::Ob) = delete(A)
 end
 
 """ Syntax for a free cartesian category.
@@ -135,22 +149,35 @@ function show_latex(io::IO, expr::HomExpr{:delete}; kw...)
   Syntax.show_latex_script(io, expr, "\\lozenge")
 end
 
+# Cocartesian category
+######################
+
+""" Doctrine of *monoidal category with codiagonals*
+
+A monoidal category with codiagonals is a symmetric monoidal category equipped
+with coherent collections of merging and creating morphisms (monoids).
+Unlike in a cocartesian category, the naturality axioms need not be satisfied.
+
+For references, see `MonoidalCategoryWithDiagonals`.
+"""
+@signature SymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithCodiagonals(Ob,Hom) begin
+  mmerge(A::Ob)::Hom(otimes(A,A),A)
+  create(A::Ob)::Hom(munit(),A)
+
+  # Unicode syntax
+  ∇(A::Ob) = mmerge(A)
+  □(A::Ob) = create(A)
+end
+
 """ Doctrine of *cocartesian category*
 
 Actually, this is a cocartesian *symmetric monoidal* category but we omit these
 qualifiers for brevity.
 """
-@signature SymmetricMonoidalCategory(Ob,Hom) => CocartesianCategory(Ob,Hom) begin
-  mmerge(A::Ob)::Hom(otimes(A,A),A)
-  create(A::Ob)::Hom(munit(),A)
-  
+@signature MonoidalCategoryWithCodiagonals(Ob,Hom) => CocartesianCategory(Ob,Hom) begin
   copair(f::Hom(A,C), g::Hom(B,C))::Hom(otimes(A,B),C) <= (A::Ob, B::Ob, C::Ob)
   in1(A::Ob, B::Ob)::Hom(A,otimes(A,B))
   in2(A::Ob, B::Ob)::Hom(B,otimes(A,B))
-  
-  # Unicode syntax
-  ∇(A::Ob) = mmerge(A)
-  □(A::Ob) = create(A)
 end
 
 """ Syntax for a free cocartesian category.
