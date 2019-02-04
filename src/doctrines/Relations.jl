@@ -11,29 +11,24 @@ TODO: The 2-morphisms are missing. I haven't decided how to handle them yet.
 
 References:
 
-- (Carboni & Walters, 1987, "Cartesian bicategories I")
-- (Walters, 2009, blog post, "Categorical algebras of relations",
-   http://rfcwalters.blogspot.com/2009/10/categorical-algebras-of-relations.html)
+- Carboni & Walters, 1987, "Cartesian bicategories I"
+- Walters, 2009, blog post, "Categorical algebras of relations",
+  http://rfcwalters.blogspot.com/2009/10/categorical-algebras-of-relations.html
 """
-@signature SymmetricMonoidalCategory(Ob,Hom) => BicategoryRelations(Ob,Hom) begin
+@signature MonoidalCategoryWithDiagonals(Ob,Hom) => BicategoryRelations(Ob,Hom) begin
   # Dagger category.
   dagger(f::Hom(A,B))::Hom(B,A) <= (A::Ob,B::Ob)
   
   # Self-dual compact closed category.
   dunit(A::Ob)::Hom(munit(), otimes(A,A))
   dcounit(A::Ob)::Hom(otimes(A,A), munit())
-  
-  # Diagonal and codiagonal.
-  mcopy(A::Ob)::Hom(A,otimes(A,A))
-  delete(A::Ob)::Hom(A,munit())
-  mmerge(A::Ob)::Hom(otimes(A,A),A)
-  create(A::Ob)::Hom(munit(),A)
 end
 
 @syntax FreeBicategoryRelations(ObExpr,HomExpr) BicategoryRelations begin
   otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+
   function dagger(f::Hom)
     f = anti_involute(Super.dagger(f), dagger, compose, id)
     distribute_unary(f, dagger, otimes)
@@ -46,8 +41,8 @@ Unlike Carboni & Walters, we use additive notation and nomenclature.
 
 References:
 
-- (Carboni & Walters, 1987, "Cartesian bicategories I", Sec. 5)
-- (Baez & Erbele, 2015, "Categories in control")
+- Carboni & Walters, 1987, "Cartesian bicategories I", Sec. 5
+- Baez & Erbele, 2015, "Categories in control"
 """
 @signature BicategoryRelations(Ob,Hom) => AbelianBicategoryRelations(Ob,Hom) begin
   # Second diagonal and codiagonal.
@@ -61,6 +56,7 @@ end
   otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+  
   function dagger(f::Hom)
     f = anti_involute(Super.dagger(f), dagger, compose, id)
     distribute_unary(f, dagger, otimes)

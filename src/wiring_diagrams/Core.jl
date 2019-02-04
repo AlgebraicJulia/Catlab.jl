@@ -41,7 +41,8 @@ using LightGraphs, MetaGraphs
 import LightGraphs: all_neighbors, neighbors, outneighbors, inneighbors
 
 using ...GAT, ...Syntax
-import ...Doctrines: CategoryExpr, ObExpr, HomExpr, SymmetricMonoidalCategory,
+import ...Doctrines:
+  CategoryExpr, ObExpr, HomExpr, MonoidalCategoryWithBidiagonals,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create
 
 # Data types
@@ -715,12 +716,9 @@ function WiringDiagram(f::HomExpr)
   return d
 end
 
-""" Wiring diagram as *symmetric monoidal category*.
-
-Wiring diagrams also have *diagonals* and *codiagonals* (see extra methods),
-but we don't have doctrines for those yet.
+""" Wiring diagram as *monoidal category with diagonals and codiagonals*.
 """
-@instance SymmetricMonoidalCategory(Ports, WiringDiagram) begin
+@instance MonoidalCategoryWithBidiagonals(Ports, WiringDiagram) begin
   dom(f::WiringDiagram) = Ports(f.input_ports)
   codom(f::WiringDiagram) = Ports(f.output_ports)
   
@@ -770,6 +768,11 @@ but we don't have doctrines for those yet.
     add_wires!(h, ((input_id(h),i+m) => (output_id(h),i) for i in 1:n))
     return h
   end
+
+  mcopy(A::Ports) = mcopy(A, 2)
+  mmerge(A::Ports) = mmerge(A, 2)
+  delete(A::Ports) = WiringDiagram(A, munit(Ports))
+  create(A::Ports) = WiringDiagram(munit(Ports), A)
 end
 
 function permute(A::Ports, σ::Vector{Int}; inverse::Bool=false)
@@ -786,7 +789,7 @@ function permute(A::Ports, σ::Vector{Int}; inverse::Bool=false)
   end
 end
 
-function mcopy(A::Ports, n::Int=2)::WiringDiagram
+function mcopy(A::Ports, n::Int)::WiringDiagram
   f = WiringDiagram(A, otimes([A for j in 1:n]))
   m = length(A)
   for j in 1:n
@@ -795,7 +798,7 @@ function mcopy(A::Ports, n::Int=2)::WiringDiagram
   return f
 end
 
-function mmerge(A::Ports, n::Int=2)::WiringDiagram
+function mmerge(A::Ports, n::Int)::WiringDiagram
   f = WiringDiagram(otimes([A for j in 1:n]), A)
   m = length(A)
   for j in 1:n
@@ -803,9 +806,6 @@ function mmerge(A::Ports, n::Int=2)::WiringDiagram
   end
   return f
 end
-
-delete(A::Ports) = WiringDiagram(A, munit(Ports))
-create(A::Ports) = WiringDiagram(munit(Ports), A)
 
 """ Convert a syntactic expression into a wiring diagram.
 

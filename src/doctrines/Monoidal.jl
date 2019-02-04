@@ -4,7 +4,7 @@ export MonoidalCategory, otimes, munit, ⊗, collect, ndims,
   mcopy, delete, pair, proj1, proj2, Δ, ◇,
   MonoidalCategoryWithCodiagonals, CocartesianCategory, FreeCocartesianCategory,
   mmerge, create, copair, incl1, incl2, ∇, □,
-  BiproductCategory, FreeBiproductCategory,
+  MonoidalCategoryWithBidiagonals, BiproductCategory, FreeBiproductCategory,
   CartesianClosedCategory, FreeCartesianClosedCategory, hom, ev, curry,
   CompactClosedCategory, FreeCompactClosedCategory, dual, dunit, dcounit,
   DaggerCategory, FreeDaggerCategory, dagger,
@@ -206,14 +206,16 @@ end
 # Biproduct category
 ####################
 
-""" Doctrine of *bicategory category*
+""" Doctrine of *monoidal category with bidiagonals*
 
-Also known as a *semiadditive category*.
+The terminology is nonstandard (is there any standard terminology?) but is
+intended to mean a monoidal category with coherent diagonals and codiagonals.
+Unlike in a biproduct category, the naturality axioms need not be satisfied.
 
-FIXME: This signature should extend both `CartesianCategory` and
-`CocartesianCategory`, but we don't support multiple inheritance yet.
+FIXME: This signature should extend both `MonoidalCategoryWithDiagonals` and
+`MonoidalCategoryWithCodiagonals`, but we don't support multiple inheritance.
 """
-@signature SymmetricMonoidalCategory(Ob,Hom) => BiproductCategory(Ob,Hom) begin
+@signature SymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithBidiagonals(Ob,Hom) begin
   mcopy(A::Ob)::Hom(A,otimes(A,A))
   mmerge(A::Ob)::Hom(otimes(A,A),A)
   delete(A::Ob)::Hom(A,munit())
@@ -226,10 +228,34 @@ FIXME: This signature should extend both `CartesianCategory` and
   □(A::Ob) = create(A)
 end
 
+""" Doctrine of *bicategory category*
+
+Also known as a *semiadditive category*.
+
+FIXME: This signature should extend `MonoidalCategoryWithBidiagonals`,
+`CartesianCategory`, and `CocartesianCategory`, but we don't support multiple
+inheritance.
+"""
+@signature MonoidalCategoryWithBidiagonals(Ob,Hom) => BiproductCategory(Ob,Hom) begin
+  pair(f::Hom(A,B), g::Hom(A,C))::Hom(A,otimes(B,C)) <= (A::Ob, B::Ob, C::Ob)
+  copair(f::Hom(A,C), g::Hom(B,C))::Hom(otimes(A,B),C) <= (A::Ob, B::Ob, C::Ob)
+  proj1(A::Ob, B::Ob)::Hom(otimes(A,B),A)
+  proj2(A::Ob, B::Ob)::Hom(otimes(A,B),B)
+  incl1(A::Ob, B::Ob)::Hom(A,otimes(A,B))
+  incl2(A::Ob, B::Ob)::Hom(B,otimes(A,B))
+end
+
 @syntax FreeBiproductCategory(ObExpr,HomExpr) BiproductCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+
+  pair(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g))
+  copair(f::Hom, g::Hom) = compose(otimes(f,g), mmerge(codom(f)))
+  proj1(A::Ob, B::Ob) = otimes(id(A), delete(B))
+  proj2(A::Ob, B::Ob) = otimes(delete(A), id(B))
+  incl1(A::Ob, B::Ob) = otimes(id(A), create(B))
+  incl2(A::Ob, B::Ob) = otimes(create(A), id(B))
 end
 
 # Cartesian closed category
