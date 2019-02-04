@@ -1,8 +1,7 @@
 module TestWiringDiagramCore
 
 using Test
-using Catlab.Doctrines
-using Catlab.WiringDiagrams
+using Catlab.Doctrines, Catlab.WiringDiagrams
 
 # For testing purposes, check equality of port symbols.
 function WiringDiagramCore.validate_ports(source_port::Symbol, target_port::Symbol)

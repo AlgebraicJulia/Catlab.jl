@@ -33,8 +33,8 @@ export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
   graph, add_box!, add_boxes!, add_wire!, add_wires!, validate_ports,
   rem_box!, rem_boxes!, rem_wire!, rem_wires!, substitute!, encapsulate!,
   all_neighbors, neighbors, outneighbors, inneighbors, in_wires, out_wires,
-  dom, codom, id, compose, otimes, munit, braid, permute, mcopy, delete,
-  mmerge, create, to_wiring_diagram
+  dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create,
+  permute, to_wiring_diagram
 
 using AutoHashEquals
 using LightGraphs, MetaGraphs
@@ -289,7 +289,7 @@ end
 function has_wire(f::WiringDiagram, wire::Wire)
   wire in wires(f, wire.source.box, wire.target.box)
 end
-has_wire(f, pair::Pair) = has_wire(f, Wire(pair))
+has_wire(f::WiringDiagram, pair::Pair) = has_wire(f, Wire(pair))
 
 function port_value(f::WiringDiagram, port::Port)
   if port.box == input_id(f)
