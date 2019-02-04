@@ -3,7 +3,7 @@ export MonoidalCategory, otimes, munit, ⊗, collect, ndims,
   MonoidalCategoryWithDiagonals, CartesianCategory, FreeCartesianCategory,
   mcopy, delete, pair, proj1, proj2, Δ, ◇,
   MonoidalCategoryWithCodiagonals, CocartesianCategory, FreeCocartesianCategory,
-  mmerge, create, copair, in1, in2, ∇, □,
+  mmerge, create, copair, incl1, incl2, ∇, □,
   BiproductCategory, FreeBiproductCategory,
   CartesianClosedCategory, FreeCartesianClosedCategory, hom, ev, curry,
   CompactClosedCategory, FreeCompactClosedCategory, dual, dunit, dcounit,
@@ -176,8 +176,8 @@ qualifiers for brevity.
 """
 @signature MonoidalCategoryWithCodiagonals(Ob,Hom) => CocartesianCategory(Ob,Hom) begin
   copair(f::Hom(A,C), g::Hom(B,C))::Hom(otimes(A,B),C) <= (A::Ob, B::Ob, C::Ob)
-  in1(A::Ob, B::Ob)::Hom(A,otimes(A,B))
-  in2(A::Ob, B::Ob)::Hom(B,otimes(A,B))
+  incl1(A::Ob, B::Ob)::Hom(A,otimes(A,B))
+  incl2(A::Ob, B::Ob)::Hom(B,otimes(A,B))
 end
 
 """ Syntax for a free cocartesian category.
@@ -192,8 +192,8 @@ Of course, this convention could be reversed.
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
   
   copair(f::Hom, g::Hom) = compose(otimes(f,g), mmerge(codom(f)))
-  in1(A::Ob, B::Ob) = otimes(id(A), create(B))
-  in2(A::Ob, B::Ob) = otimes(create(A), id(B))
+  incl1(A::Ob, B::Ob) = otimes(id(A), create(B))
+  incl2(A::Ob, B::Ob) = otimes(create(A), id(B))
 end
 
 function show_latex(io::IO, expr::HomExpr{:mmerge}; kw...)
