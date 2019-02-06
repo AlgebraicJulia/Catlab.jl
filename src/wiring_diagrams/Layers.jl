@@ -19,6 +19,7 @@ export WiringLayer, Layer, input_ports, output_ports, nwires, wires, has_wire,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create
 
 using AutoHashEquals
+using DataStructures: OrderedDict
 
 using ...GAT, ...Syntax
 import ...Doctrines: ObExpr, HomExpr, MonoidalCategoryWithBidiagonals,
@@ -37,12 +38,13 @@ import ..WiringDiagramCore: input_ports, output_ports, nwires, wires, has_wire,
 Morphism in the category of wiring layers.
 """
 @auto_hash_equals struct WiringLayer{T}
-  wires::Dict{Int}{Dict{Int}{Int}} # src -> tgt -> multiplicity
+  wires::OrderedDict{Int}{OrderedDict{Int}{Int}} # src -> tgt -> multiplicity
   input_ports::Vector{T}
   output_ports::Vector{T}
 
   function WiringLayer(inputs::Vector{T}, outputs::Vector{S}) where {T,S}
-    new{promote_type(T,S)}(Dict{Int}{Dict{Int}{Int}}(), inputs, outputs)
+    wires = OrderedDict{Int}{OrderedDict{Int}{Int}}()
+    new{promote_type(T,S)}(wires, inputs, outputs)
   end
 end
 
@@ -72,25 +74,26 @@ has_wire(f::WiringLayer, wire) = nwires(f, wire) > 0
 
 function nwires(f::WiringLayer, wire)
   src, tgt = wire
-  get(get(f.wires, src, Dict()), tgt, 0)
+  tgts = get(f.wires, src) do; Dict() end
+  get(tgts, tgt, 0)
 end
 
 nwires(f::WiringLayer) = sum(Int[ sum(values(d)) for d in values(f.wires) ])
 wires(f::WiringLayer) = vcat((out_wires(f, src) for src in keys(f.wires))...)
 
 function out_wires(f::WiringLayer, src::Int)
-  tgts = get(f.wires, src, Dict())
+  tgts = get(f.wires, src) do; Dict() end
   vcat((repeat([src => tgt], n) for (tgt, n) in tgts)...)
 end
 
 function add_wire!(f::WiringLayer, wire)
   check_wire_bounds(f, wire)
   src, tgt = wire
-  counts = get!(f.wires, src, Dict{Int}{Int}())
-  if haskey(counts, tgt)
-    counts[tgt] += 1
+  tgts = get!(f.wires, src) do; OrderedDict{Int}{Int}() end
+  if haskey(tgts, tgt)
+    tgts[tgt] += 1
   else
-    counts[tgt] = 1
+    tgts[tgt] = 1
   end
 end
 
@@ -102,22 +105,22 @@ end
 
 function rem_wire!(f::WiringLayer, wire)
   src, tgt = wire
-  counts = f.wires[src]
-  if counts[tgt] > 1
-    counts[tgt] -= 1
+  tgts = f.wires[src]
+  if tgts[tgt] > 1
+    tgts[tgt] -= 1
   else
-    delete!(counts, tgt)
+    delete!(tgts, tgt)
   end
-  if isempty(counts)
+  if isempty(tgts)
     delete!(f.wires, src)
   end
 end
 
 function rem_wires!(f::WiringLayer, wire)
   src, tgt = wire
-  counts = get(f.wires, src, Dict())
-  pop!(counts, tgt, nothing)
-  if isempty(counts)
+  tgts = get(f.wires, src) do; Dict() end
+  pop!(tgts, tgt, nothing)
+  if isempty(tgts)
     pop!(f.wires, src, nothing)
   end
 end

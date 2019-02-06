@@ -22,19 +22,19 @@ add_wire!(f, 1 => 3)
 
 add_wires!(f, [2 => 2, 3 => 1])
 @test nwires(f) == 3
-@test sort!(wires(f)) == [1 => 3, 2 => 2, 3 => 1]
+@test wires(f) == [1 => 3, 2 => 2, 3 => 1]
 
 @test nwires(f, 1 => 3) == 1
 add_wires!(f, [1 => 3, 1 => 3])
 @test nwires(f, 1 => 3) == 3
-@test sort!(wires(f)) == [1 => 3, 1 => 3, 1 => 3, 2 => 2, 3 => 1]
+@test wires(f) == [1 => 3, 1 => 3, 1 => 3, 2 => 2, 3 => 1]
 @test out_wires(f, 1) == [1 => 3, 1 => 3, 1 => 3]
 rem_wire!(f, 1 => 3)
 @test nwires(f, 1 => 3) == 2
 rem_wires!(f, 1 => 3)
 @test !has_wire(f, f => 3)
 @test nwires(f, 1 => 3) == 0
-@test sort!(wires(f)) == [2 => 2, 3 => 1]
+@test wires(f) == [2 => 2, 3 => 1]
 
 # High-level categorical interface
 ##################################
