@@ -8,7 +8,7 @@ represent expressions as morphisms in a monoidal category.
 module Network
 export AlgebraicNetSignature, AlgebraicNet, Ob, Hom,
   compose, id, dom, codom, otimes, munit, braid, mcopy, delete, mmerge, create,
-  linear, constant,
+  linear, constant, to_algebraic_net,
   Block, compile, compile_expr, compile_block, evaluate
 
 using Match
@@ -18,6 +18,7 @@ import ...Doctrines: MonoidalCategoryWithBidiagonals, ObExpr, HomExpr, Ob, Hom,
   compose, id, dom, codom, otimes, munit, braid, mcopy, delete, mmerge, create
 import ...Meta: concat_expr
 import ...Syntax: show_latex, show_unicode
+using ...WiringDiagrams: Layer, WiringLayer
 import ...Graphics.TikZWiringDiagrams: box, wires, rect, junction_circle
 
 # Syntax
@@ -47,6 +48,12 @@ function mcopy(A::AlgebraicNet.Ob, n::Int)
 end
 function mmerge(A::AlgebraicNet.Ob, n::Int)
   AlgebraicNet.Hom{:mmerge}([A, n], [otimes(fill(A, n)), A])
+end
+
+to_algebraic_net(A::Layer) = otimes([Ob(AlgebraicNet, x) for x in A.ports])
+
+function to_algebraic_net(f::WiringLayer)
+  AlgebraicNet.Hom{:wiring}([f], map(to_algebraic_net, [dom(f), codom(f)]))
 end
 
 # Compilation
@@ -79,7 +86,7 @@ end
 
 This method of "functorial compilation" generates simple imperative code with no
 optimizations. Still, the code should be fast provided the original expression
-is properly factored (there are no duplicated computations).
+is properly factored, with no duplicate computations.
 """
 function compile(f::Union{AlgebraicNet.Hom,Block};
                  return_constants::Bool=false, vector::Bool=false, kw...)
@@ -317,6 +324,18 @@ function eval_impl(f::AlgebraicNet.Hom{:otimes}, xs::Vector)
     m = ndims(dom(g))
     append!(ys, eval_impl(g, xs[i:i+m-1]))
     i += m
+  end
+  ys
+end
+
+function eval_impl(f::AlgebraicNet.Hom{:wiring}, xs::Vector)
+  # XXX: We can't properly preallocate the y's because we don't their dims.
+  ys = repeat(Any[0.0], ndims(codom(f)))
+  for (src, tgts) in first(f).wires
+    for (tgt, c) in tgts
+      y = c * xs[src]
+      ys[tgt] == 0 ? (ys[tgt] = y) : (ys[tgt] += y)
+    end
   end
   ys
 end

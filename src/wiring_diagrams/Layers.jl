@@ -21,9 +21,10 @@ export WiringLayer, Layer, input_ports, output_ports, nwires, wires, has_wire,
 using AutoHashEquals
 
 using ...GAT, ...Syntax
-import ...Doctrines: MonoidalCategoryWithBidiagonals,
+import ...Doctrines: ObExpr, HomExpr, MonoidalCategoryWithBidiagonals,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create
 using ..WiringDiagramCore
+using ..WiringDiagramCore: collect_values
 import ..WiringDiagramCore: input_ports, output_ports, nwires, wires, has_wire,
   add_wire!, add_wires!, rem_wire!, rem_wires!, in_wires, out_wires,
   to_wiring_diagram
@@ -134,6 +135,11 @@ end
 # High-level categorical interface
 ##################################
 
+Layer(ob::ObExpr) = Layer(collect_values(ob))
+
+function WiringLayer(inputs::ObExpr, outputs::ObExpr)
+  WiringLayer(collect_values(inputs), collect_values(outputs))
+end
 function WiringLayer(inputs::Layer, outputs::Layer)
   WiringLayer(inputs.ports, outputs.ports)
 end
