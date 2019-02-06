@@ -96,7 +96,9 @@ f_comp = compile(f)
 # Wiring layers
 wires = [ 1 => 3, 1 => 2, 2 => 2, 3 => 2, 3 => 1 ]
 f = to_algebraic_net(WiringLayer(wires, otimes(R,R,R), otimes(R,R,R)))
-@test collect(evaluate(f,x,y,z)) ≈ [z, x+y+z, x]
+f_comp = compile(f)
+@test f_comp(x,y,z) == (z, x+y+z, x)
+@test evaluate(f,x,y,z) == (z, x+y+z, x)
 
 # More complex expressions
 f = compose(otimes(id(R),constant(1,R)), mmerge(R))

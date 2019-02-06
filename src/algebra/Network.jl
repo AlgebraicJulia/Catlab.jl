@@ -245,6 +245,20 @@ function compile_block(f::AlgebraicNet.Hom{:otimes}, state::CompileState)::Block
   Block(code, inputs, outputs)
 end
 
+function compile_block(f::AlgebraicNet.Hom{:wiring}, state::CompileState)::Block
+  nout = ndims(codom(f))
+  inputs, outputs = state.inputs, genvars(state, nout)
+  terms = [ [] for i in 1:nout ]
+  for (src, tgts) in first(f).wires
+    x = inputs[src]
+    for (tgt, c) in tgts
+      push!(terms[tgt], c == 1 ? x : Expr(:call, :(.*), c, x))
+    end
+  end
+  code = multiple_assign_expr(outputs, map(sum_expr, terms))
+  Block(code, inputs, outputs)
+end
+
 function compile_block(f::AlgebraicNet.Hom{:braid}, state::CompileState)::Block
   m = ndims(first(f))
   inputs = state.inputs
@@ -265,16 +279,14 @@ end
 
 function compile_block(f::AlgebraicNet.Hom{:mmerge}, state::CompileState)::Block
   inputs, out = state.inputs, genvar(state)
-  code = Expr(:(=), out, Expr(:call, :(.+), inputs...))
+  code = Expr(:(=), out, sum_expr(inputs))
   Block(code, inputs, [out])
 end
 
 function compile_block(f::AlgebraicNet.Hom{:create}, state::CompileState)::Block
   nout = ndims(codom(f))
   inputs, outputs = state.inputs, genvars(state, nout)
-  lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
-  rhs = nout == 1 ? 0.0 : Expr(:tuple, zeros(nout)...)
-  code = Expr(:(=), lhs, rhs)
+  code = multiple_assign_expr(outputs, zeros(nout))
   Block(code, inputs, outputs)
 end
 
@@ -298,6 +310,30 @@ function genconst(state::CompileState, name::Symbol)
   i = get!(state.constants, name, length(state.constants)+1)
   state.constants_sym == Symbol() ? name : :($(state.constants_sym)[$i])
 end
+
+""" Generate Julia expression for single or multiple assignment.
+"""
+function multiple_assign_expr(lhs::Vector, rhs::Vector)::Expr
+  @assert length(lhs) == length(rhs)
+  if length(lhs) == 1
+    Expr(:(=), lhs[1], rhs[1])
+  else
+    Expr(:(=), Expr(:tuple, lhs...), Expr(:tuple, rhs...))
+  end
+end
+
+""" Generate Julia expression for sum of zero, one, or more terms.
+"""
+function sum_expr(T::Type, terms::Vector)
+  if length(terms) == 0
+    zero(T)
+  elseif length(terms) == 1
+    terms[1]
+  else
+    Expr(:call, :(.+), terms...)
+  end
+end
+sum_expr(terms::Vector) = sum_expr(Float64, terms)
 
 # Evaluation
 ############
