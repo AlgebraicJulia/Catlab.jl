@@ -3,20 +3,19 @@
 In a conventional computer algebra system, algebraic expressions are represented
 as *trees* whose leaves are variables or constants and whose internal nodes are
 arithmetic operations or elementary or special functions. The idea here is to
-represent expressions as morphisms in a suitable monoidal category.
+represent expressions as morphisms in a monoidal category.
 """
 module Network
 export AlgebraicNetSignature, AlgebraicNet, Ob, Hom,
-  compose, id, dom, codom, otimes, opow, munit, braid,
-  mcopy, delete, mmerge, create, linear, constant,
+  compose, id, dom, codom, otimes, munit, braid, mcopy, delete, mmerge, create,
+  linear, constant,
   Block, compile, compile_expr, compile_block, evaluate
 
-import Base.Iterators: repeated
 using Match
 
 using ...Catlab
-import ...Doctrines: SymmetricMonoidalCategory, ObExpr, HomExpr, Ob, Hom,
-  compose, id, dom, codom, otimes, munit, mcopy, delete, mmerge, create
+import ...Doctrines: MonoidalCategoryWithBidiagonals, ObExpr, HomExpr, Ob, Hom,
+  compose, id, dom, codom, otimes, munit, braid, mcopy, delete, mmerge, create
 import ...Meta: concat_expr
 import ...Syntax: show_latex, show_unicode
 import ...Graphics.TikZWiringDiagrams: box, wires, rect, junction_circle
@@ -27,30 +26,27 @@ import ...Graphics.TikZWiringDiagrams: box, wires, rect, junction_circle
 """ Doctrine of *algebraic networks*
 
 TODO: Explain
-
-See also the doctrine of abelian bicategory of relations
-(`AbelianBicategoryRelations`).
 """
-@signature SymmetricMonoidalCategory(Ob,Hom) => AlgebraicNetSignature(Ob,Hom) begin
-  opow(A::Ob, n::Int)::Ob
-
-  mcopy(A::Ob, n::Int)::Hom(A,opow(A,n))
-  delete(A::Ob)::Hom(A,munit())
-
-  mmerge(A::Ob, n::Int)::Hom(opow(A,n),A)
-  create(A::Ob)::Hom(munit(),A)
+@signature MonoidalCategoryWithBidiagonals(Ob,Hom) => AlgebraicNetSignature(Ob,Hom) begin
   linear(x::Any, A::Ob, B::Ob)::Hom(A,B)
-  
   constant(x::Any, A::Ob) = Hom(x, munit(Ob), A)
-  mcopy(A::Ob) = mcopy(A,2)
-  mmerge(A::Ob) = mmerge(A,2)
 end
 
 @syntax AlgebraicNet(ObExpr,HomExpr) AlgebraicNetSignature begin
+  # FIXME: `compose` and `otimes` should delegate to wiring layer when possible.
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
   otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
-  opow(A::Ob, n::Int) = otimes(repeated(A,n)...)
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+
+  mcopy(A::Ob) = mcopy(A, 2)
+  mmerge(A::Ob) = mmerge(A, 2)
+end
+
+function mcopy(A::AlgebraicNet.Ob, n::Int)
+  AlgebraicNet.Hom{:mcopy}([A, n], [A, otimes(fill(A, n))])
+end
+function mmerge(A::AlgebraicNet.Ob, n::Int)
+  AlgebraicNet.Hom{:mmerge}([A, n], [otimes(fill(A, n)), A])
 end
 
 # Compilation
@@ -252,7 +248,7 @@ end
 function compile_block(f::AlgebraicNet.Hom{:mcopy}, state::CompileState)::Block
   reps = div(ndims(codom(f)), ndims(dom(f)))
   inputs = state.inputs
-  outputs = vcat(repeated(inputs, reps)...)
+  outputs = reduce(vcat, fill(inputs, reps))
   Block(Expr(:block), inputs, outputs)
 end
 
@@ -270,7 +266,7 @@ function compile_block(f::AlgebraicNet.Hom{:create}, state::CompileState)::Block
   nout = ndims(codom(f))
   inputs, outputs = state.inputs, genvars(state, nout)
   lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
-  rhs = nout == 1 ? 0.0 : Expr(:tuple, repeated(0.0, nout)...)
+  rhs = nout == 1 ? 0.0 : Expr(:tuple, zeros(nout)...)
   code = Expr(:(=), lhs, rhs)
   Block(code, inputs, outputs)
 end
@@ -305,12 +301,11 @@ If the network will only be evaluated once (possibly with vectorized inputs),
 then direct evaluation will be much faster than compiling with Julia's JIT.
 """
 function evaluate(f::AlgebraicNet.Hom, xs::Vararg)
+  # The `eval_impl` methods use a standarized input/output format:
+  # a vector of the same length as the (co)domain.
   ys = eval_impl(f, collect(xs))
   length(ys) == 1 ? ys[1] : tuple(ys...)
 end
-
-# The evaluation implementation methods use a standarized input/output format:
-# a vector of the same length as the (co)domain.
 
 function eval_impl(f::AlgebraicNet.Hom{:compose}, xs::Vector)
   foldl((ys,g) -> eval_impl(g,ys), args(f); init=xs)
@@ -328,10 +323,10 @@ end
 
 eval_impl(f::AlgebraicNet.Hom{:id}, xs::Vector) = xs
 eval_impl(f::AlgebraicNet.Hom{:braid}, xs::Vector) = [xs[2], xs[1]]
-eval_impl(f::AlgebraicNet.Hom{:mcopy}, xs::Vector) = vcat(repeated(xs, last(f))...)
+eval_impl(f::AlgebraicNet.Hom{:mcopy}, xs::Vector) = reduce(vcat, fill(xs, last(f)))
 eval_impl(f::AlgebraicNet.Hom{:delete}, xs::Vector) = []
 eval_impl(f::AlgebraicNet.Hom{:mmerge}, xs::Vector) = [ .+(xs...) ]
-eval_impl(f::AlgebraicNet.Hom{:create}, xs::Vector) = collect(repeated(0, ndims(codom(f))))
+eval_impl(f::AlgebraicNet.Hom{:create}, xs::Vector) = zeros(ndims(codom(f)))
 eval_impl(f::AlgebraicNet.Hom{:linear}, xs::Vector) = first(f) * xs
 
 function eval_impl(f::AlgebraicNet.Hom{:generator}, xs::Vector)
