@@ -26,9 +26,9 @@ version = "0.5.1"
 
 [[Compat]]
 deps = ["Base64", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils", "LibGit2", "Libdl", "LinearAlgebra", "Markdown", "Mmap", "Pkg", "Printf", "REPL", "Random", "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "UUIDs", "Unicode"]
-git-tree-sha1 = "ec61a16eed883ad0cfa002d7489b3ce6d039bb9a"
+git-tree-sha1 = "49269e311ffe11ac5b334681d212329002a9832a"
 uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
-version = "1.4.0"
+version = "1.5.1"
 
 [[DataStructures]]
 deps = ["InteractiveUtils", "OrderedCollections", "Random", "Serialization", "Test"]
@@ -119,9 +119,9 @@ version = "1.0.2"
 
 [[MetaGraphs]]
 deps = ["Base64", "JLD2", "LightGraphs", "Random", "Test"]
-git-tree-sha1 = "82533eb68e57a1f39e4d371b43de24fd81a3b567"
+git-tree-sha1 = "da4cee2e6e22ff3b44087db96b27a4a094259112"
 uuid = "626554b9-1ddb-594c-aa3c-2596fe9399a5"
-version = "0.6.0"
+version = "0.6.1"
 
 [[Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
@@ -224,8 +224,8 @@ uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
 [[UnionFind]]
 deps = ["Printf", "Test"]
-git-tree-sha1 = "64f96e46ce1be3431b4bc58dfa08cd3a558b123d"
+git-tree-sha1 = "8830ae3d26179ed6fc177335b4c252158192c0e5"
 repo-rev = "master"
 repo-url = "https://github.com/epatters/UnionFind.jl"
-uuid = "8c74da80-9c34-11e8-3e46-f3719fd9c73c"
+uuid = "99c6138d-4661-531e-8606-19bf1ec96588"
 version = "0.1.0"
