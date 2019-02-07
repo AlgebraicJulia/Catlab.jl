@@ -89,9 +89,7 @@ function json_object_with_value(value, args...)
   obj
 end
 
-convert_to_json_graph_data(value::AbstractDict) = value
-convert_to_json_graph_data(value) = Dict("value" => value)
-convert_to_json_graph_data(::Nothing) = Dict()
+convert_to_json_graph_data(x) = convert_to_graph_data(x)
 
 # Deserialization
 #################
@@ -170,16 +168,6 @@ function read_json_graph_data(Value::Type, obj::AbstractDict)
   convert_from_json_graph_data(Value, get(obj, "properties", Dict()))
 end
 
-convert_from_json_graph_data(::Type{T}, data::AbstractDict) where T <: AbstractDict = convert(T, data)
-convert_from_json_graph_data(::Type{Nothing}, data::AbstractDict) = nothing
-
-function convert_from_json_graph_data(Value::Type, data::AbstractDict)
-  @assert length(data) == 1
-  first(values(data))::Value
-end
-function convert_from_json_graph_data(::Type{Symbol}, data::AbstractDict)
-  @assert length(data) == 1
-  Symbol(first(values(data)))
-end
+convert_from_json_graph_data(T::Type, data) = convert_from_graph_data(T, data)
 
 end

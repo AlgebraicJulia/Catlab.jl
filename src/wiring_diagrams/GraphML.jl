@@ -188,9 +188,7 @@ write_graphml_data_value(x::Symbol) = string(x)
 write_graphml_data_value(x::Dict) = JSON.json(x)
 write_graphml_data_value(x::Vector) = JSON.json(x)
 
-convert_to_graphml_data(value::Dict{String,T}) where T = value
-convert_to_graphml_data(value) = Dict("value" => value)
-convert_to_graphml_data(::Nothing) = Dict()
+convert_to_graphml_data(x) = convert_to_graph_data(x)
 
 # Deserialization
 #################
@@ -335,16 +333,6 @@ read_graphml_data_value(::Type{Val{:double}}, s::String) = parse(Float64, s)
 read_graphml_data_value(::Type{Val{:string}}, s::String) = s
 read_graphml_data_value(::Type{Val{:json}}, s::String) = JSON.parse(s)
 
-convert_from_graphml_data(::Type{Dict}, data::Dict) = data
-convert_from_graphml_data(::Type{Nothing}, data::Dict) = nothing
-
-function convert_from_graphml_data(Value::Type, data::Dict)
-  @assert length(data) == 1
-  first(values(data))::Value
-end
-function convert_from_graphml_data(::Type{Symbol}, data::Dict)
-  @assert length(data) == 1
-  Symbol(first(values(data)))
-end
+convert_from_graphml_data(T::Type, data) = convert_from_graph_data(T, data)
 
 end
