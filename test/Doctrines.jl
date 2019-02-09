@@ -196,8 +196,8 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 
 # Derived syntax
 @test copair(f,f) == compose(otimes(f,f), mmerge(B))
-@test in1(A,B) == otimes(id(A), create(B))
-@test in2(A,B) == otimes(create(A), id(B))
+@test incl1(A,B) == otimes(id(A), create(B))
+@test incl2(A,B) == otimes(create(A), id(B))
 
 # Infix notation (LaTeX)
 @test latex(mmerge(A)) == "\\nabla_{A}"

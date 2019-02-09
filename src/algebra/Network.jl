@@ -3,22 +3,22 @@
 In a conventional computer algebra system, algebraic expressions are represented
 as *trees* whose leaves are variables or constants and whose internal nodes are
 arithmetic operations or elementary or special functions. The idea here is to
-represent expressions as morphisms in a suitable monoidal category.
+represent expressions as morphisms in a monoidal category.
 """
 module Network
 export AlgebraicNetSignature, AlgebraicNet, Ob, Hom,
-  compose, id, dom, codom, otimes, opow, munit, braid,
-  mcopy, delete, mmerge, create, linear, constant,
+  compose, id, dom, codom, otimes, munit, braid, mcopy, delete, mmerge, create,
+  linear, constant, to_algebraic_net,
   Block, compile, compile_expr, compile_block, evaluate
 
-import Base.Iterators: repeated
 using Match
 
 using ...Catlab
-import ...Doctrines: SymmetricMonoidalCategory, ObExpr, HomExpr, Ob, Hom,
-  compose, id, dom, codom, otimes, munit, mcopy, delete, mmerge, create
+import ...Doctrines: MonoidalCategoryWithBidiagonals, ObExpr, HomExpr, Ob, Hom,
+  compose, id, dom, codom, otimes, munit, braid, mcopy, delete, mmerge, create
 import ...Meta: concat_expr
 import ...Syntax: show_latex, show_unicode
+using ...WiringDiagrams: Layer, WiringLayer
 import ...Graphics.TikZWiringDiagrams: box, wires, rect, junction_circle
 
 # Syntax
@@ -27,30 +27,33 @@ import ...Graphics.TikZWiringDiagrams: box, wires, rect, junction_circle
 """ Doctrine of *algebraic networks*
 
 TODO: Explain
-
-See also the doctrine of abelian bicategory of relations
-(`AbelianBicategoryRelations`).
 """
-@signature SymmetricMonoidalCategory(Ob,Hom) => AlgebraicNetSignature(Ob,Hom) begin
-  opow(A::Ob, n::Int)::Ob
-
-  mcopy(A::Ob, n::Int)::Hom(A,opow(A,n))
-  delete(A::Ob)::Hom(A,munit())
-
-  mmerge(A::Ob, n::Int)::Hom(opow(A,n),A)
-  create(A::Ob)::Hom(munit(),A)
+@signature MonoidalCategoryWithBidiagonals(Ob,Hom) => AlgebraicNetSignature(Ob,Hom) begin
   linear(x::Any, A::Ob, B::Ob)::Hom(A,B)
-  
   constant(x::Any, A::Ob) = Hom(x, munit(Ob), A)
-  mcopy(A::Ob) = mcopy(A,2)
-  mmerge(A::Ob) = mmerge(A,2)
 end
 
 @syntax AlgebraicNet(ObExpr,HomExpr) AlgebraicNetSignature begin
+  # FIXME: `compose` and `otimes` should delegate to wiring layer when possible.
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
   otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
-  opow(A::Ob, n::Int) = otimes(repeated(A,n)...)
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+
+  mcopy(A::Ob) = mcopy(A, 2)
+  mmerge(A::Ob) = mmerge(A, 2)
+end
+
+function mcopy(A::AlgebraicNet.Ob, n::Int)
+  AlgebraicNet.Hom{:mcopy}([A, n], [A, otimes(fill(A, n))])
+end
+function mmerge(A::AlgebraicNet.Ob, n::Int)
+  AlgebraicNet.Hom{:mmerge}([A, n], [otimes(fill(A, n)), A])
+end
+
+to_algebraic_net(A::Layer) = otimes([Ob(AlgebraicNet, x) for x in A.ports])
+
+function to_algebraic_net(f::WiringLayer)
+  AlgebraicNet.Hom{:wiring}([f], map(to_algebraic_net, [dom(f), codom(f)]))
 end
 
 # Compilation
@@ -83,7 +86,7 @@ end
 
 This method of "functorial compilation" generates simple imperative code with no
 optimizations. Still, the code should be fast provided the original expression
-is properly factored (there are no duplicated computations).
+is properly factored, with no duplicate computations.
 """
 function compile(f::Union{AlgebraicNet.Hom,Block};
                  return_constants::Bool=false, vector::Bool=false, kw...)
@@ -242,6 +245,20 @@ function compile_block(f::AlgebraicNet.Hom{:otimes}, state::CompileState)::Block
   Block(code, inputs, outputs)
 end
 
+function compile_block(f::AlgebraicNet.Hom{:wiring}, state::CompileState)::Block
+  nout = ndims(codom(f))
+  inputs, outputs = state.inputs, genvars(state, nout)
+  terms = [ [] for i in 1:nout ]
+  for (src, tgts) in first(f).wires
+    x = inputs[src]
+    for (tgt, c) in tgts
+      push!(terms[tgt], c == 1 ? x : Expr(:call, :(.*), c, x))
+    end
+  end
+  code = multiple_assign_expr(outputs, map(sum_expr, terms))
+  Block(code, inputs, outputs)
+end
+
 function compile_block(f::AlgebraicNet.Hom{:braid}, state::CompileState)::Block
   m = ndims(first(f))
   inputs = state.inputs
@@ -252,7 +269,7 @@ end
 function compile_block(f::AlgebraicNet.Hom{:mcopy}, state::CompileState)::Block
   reps = div(ndims(codom(f)), ndims(dom(f)))
   inputs = state.inputs
-  outputs = vcat(repeated(inputs, reps)...)
+  outputs = reduce(vcat, fill(inputs, reps))
   Block(Expr(:block), inputs, outputs)
 end
 
@@ -262,16 +279,14 @@ end
 
 function compile_block(f::AlgebraicNet.Hom{:mmerge}, state::CompileState)::Block
   inputs, out = state.inputs, genvar(state)
-  code = Expr(:(=), out, Expr(:call, :(.+), inputs...))
+  code = Expr(:(=), out, sum_expr(inputs))
   Block(code, inputs, [out])
 end
 
 function compile_block(f::AlgebraicNet.Hom{:create}, state::CompileState)::Block
   nout = ndims(codom(f))
   inputs, outputs = state.inputs, genvars(state, nout)
-  lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
-  rhs = nout == 1 ? 0.0 : Expr(:tuple, repeated(0.0, nout)...)
-  code = Expr(:(=), lhs, rhs)
+  code = multiple_assign_expr(outputs, zeros(nout))
   Block(code, inputs, outputs)
 end
 
@@ -296,6 +311,30 @@ function genconst(state::CompileState, name::Symbol)
   state.constants_sym == Symbol() ? name : :($(state.constants_sym)[$i])
 end
 
+""" Generate Julia expression for single or multiple assignment.
+"""
+function multiple_assign_expr(lhs::Vector, rhs::Vector)::Expr
+  @assert length(lhs) == length(rhs)
+  if length(lhs) == 1
+    Expr(:(=), lhs[1], rhs[1])
+  else
+    Expr(:(=), Expr(:tuple, lhs...), Expr(:tuple, rhs...))
+  end
+end
+
+""" Generate Julia expression for sum of zero, one, or more terms.
+"""
+function sum_expr(T::Type, terms::Vector)
+  if length(terms) == 0
+    zero(T)
+  elseif length(terms) == 1
+    terms[1]
+  else
+    Expr(:call, :(.+), terms...)
+  end
+end
+sum_expr(terms::Vector) = sum_expr(Float64, terms)
+
 # Evaluation
 ############
 
@@ -305,12 +344,11 @@ If the network will only be evaluated once (possibly with vectorized inputs),
 then direct evaluation will be much faster than compiling with Julia's JIT.
 """
 function evaluate(f::AlgebraicNet.Hom, xs::Vararg)
+  # The `eval_impl` methods use a standarized input/output format:
+  # a vector of the same length as the (co)domain.
   ys = eval_impl(f, collect(xs))
   length(ys) == 1 ? ys[1] : tuple(ys...)
 end
-
-# The evaluation implementation methods use a standarized input/output format:
-# a vector of the same length as the (co)domain.
 
 function eval_impl(f::AlgebraicNet.Hom{:compose}, xs::Vector)
   foldl((ys,g) -> eval_impl(g,ys), args(f); init=xs)
@@ -326,12 +364,24 @@ function eval_impl(f::AlgebraicNet.Hom{:otimes}, xs::Vector)
   ys
 end
 
+function eval_impl(f::AlgebraicNet.Hom{:wiring}, xs::Vector)
+  # XXX: We can't properly preallocate the y's because we don't their dims.
+  ys = repeat(Any[0.0], ndims(codom(f)))
+  for (src, tgts) in first(f).wires
+    for (tgt, c) in tgts
+      y = c * xs[src]
+      ys[tgt] == 0 ? (ys[tgt] = y) : (ys[tgt] += y)
+    end
+  end
+  ys
+end
+
 eval_impl(f::AlgebraicNet.Hom{:id}, xs::Vector) = xs
 eval_impl(f::AlgebraicNet.Hom{:braid}, xs::Vector) = [xs[2], xs[1]]
-eval_impl(f::AlgebraicNet.Hom{:mcopy}, xs::Vector) = vcat(repeated(xs, last(f))...)
+eval_impl(f::AlgebraicNet.Hom{:mcopy}, xs::Vector) = reduce(vcat, fill(xs, last(f)))
 eval_impl(f::AlgebraicNet.Hom{:delete}, xs::Vector) = []
 eval_impl(f::AlgebraicNet.Hom{:mmerge}, xs::Vector) = [ .+(xs...) ]
-eval_impl(f::AlgebraicNet.Hom{:create}, xs::Vector) = collect(repeated(0, ndims(codom(f))))
+eval_impl(f::AlgebraicNet.Hom{:create}, xs::Vector) = zeros(ndims(codom(f)))
 eval_impl(f::AlgebraicNet.Hom{:linear}, xs::Vector) = first(f) * xs
 
 function eval_impl(f::AlgebraicNet.Hom{:generator}, xs::Vector)

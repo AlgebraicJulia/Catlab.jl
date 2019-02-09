@@ -11,7 +11,6 @@ export Formula, head, args, first, last, to_formula, to_wiring_diagram,
   show_latex, show_latex_formula, show_sexpr
 
 import Base: first, last, show
-import Base.Iterators: repeated
 import Base.Meta: show_sexpr
 
 using AutoHashEquals
@@ -24,7 +23,7 @@ using ...WiringDiagrams
 import ...WiringDiagrams: to_wiring_diagram
 
 using ..Network
-import ..Network: Ob, Hom, compose, id, dom, codom, otimes, opow, munit, braid,
+import ..Network: Ob, Hom, compose, id, dom, codom, otimes, munit, braid,
   mcopy, delete, mmerge, create, linear, constant, evaluate
 
 # Data types
@@ -99,6 +98,9 @@ These methods should only be used with `gensym`-ed variables since they assume
 that any two formulas have disjoint variables.
 """
 @instance AlgebraicNetSignature(NFormula, Formulas) begin
+  dom(f::Formulas) = NFormula(length(f.inputs))
+  codom(f::Formulas) = NFormula(length(f.terms))
+
   function compose(f1::Formulas, f2::Formulas)::Formulas
     replacements = Dict(zip(f2.vars, f1.terms))
     terms = [ substitute(term, replacements) for term in f2.terms ]
@@ -110,12 +112,8 @@ that any two formulas have disjoint variables.
     Formulas(vars, vars)
   end
 
-  dom(f::Formulas) = NFormula(length(f.inputs))
-  codom(f::Formulas) = NFormula(length(f.terms))
-
   munit(::Type{NFormula}) = NFormula(0)
   otimes(A::NFormula, B::NFormula) = NFormula(A.n + B.n)
-  opow(A::NFormula, n::Int) = NFormula(A.n * n)
   
   function otimes(b1::Formulas, b2::Formulas)::Formulas
     Formulas([b1.terms; b2.terms], [b1.vars; b2.vars])
@@ -125,22 +123,10 @@ that any two formulas have disjoint variables.
     Formulas([v2; v1], [v1; v2])
   end
   
-  function mcopy(A::NFormula, n::Int)::Formulas
-    vars = gensyms(A)
-    terms = vcat(repeated(vars, n)...)
-    Formulas(terms, vars)
-  end
-  function delete(A::NFormula)::Formulas
-    Formulas([], gensyms(A))
-  end
-  function mmerge(A::NFormula, n::Int)::Formulas
-    @assert A.n == 1 # FIXME: Relax this.
-    vars = gensyms(n)
-    Formulas([Formula(:+, vars...)], vars)
-  end
-  function create(A::NFormula)::Formulas
-    Formulas(repeated(0,A.n), [])
-  end
+  mcopy(A::NFormula) = mcopy(A, 2)
+  mmerge(A::NFormula) = mmerge(A, 2)
+  delete(A::NFormula) = Formulas([], gensyms(A))
+  create(A::NFormula) = Formulas(zeros(Int, A.n), [])
   
   function linear(value::Any, A::NFormula, B::NFormula)::Formulas
     nin, nout = A.n, B.n
@@ -148,6 +134,18 @@ that any two formulas have disjoint variables.
     var = gensym()
     Formulas([Formula(:*, value, var)], [var])
   end
+end
+
+function mcopy(A::NFormula, n::Int)::Formulas
+  vars = gensyms(A)
+  terms = reduce(vcat, fill(vars, n))
+  Formulas(terms, vars)
+end
+
+function mmerge(A::NFormula, n::Int)::Formulas
+  @assert A.n == 1 # FIXME: Relax this.
+  vars = gensyms(n)
+  Formulas([Formula(:+, vars...)], vars)
 end
 
 Ob(::Type{NFormula}, value::Any) = NFormula(1)
