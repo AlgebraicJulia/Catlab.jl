@@ -19,6 +19,7 @@ export read_json_graph, write_json_graph,
   convert_from_json_graph_data, convert_to_json_graph_data
 
 using DataStructures: OrderedDict
+import JSON
 
 using ..WiringDiagramCore, ..WiringDiagramSerialization
 import ..WiringDiagramCore: PortEdgeData
@@ -32,6 +33,12 @@ const JSONObject = OrderedDict{String,Any}
 """
 function write_json_graph(diagram::WiringDiagram)::AbstractDict
   write_json_box(diagram, Int[])
+end
+function write_json_graph(diagram::WiringDiagram, filename::String;
+                          indent::Union{Int,Nothing}=nothing)
+  open(filename, "w") do io
+    JSON.print(io, write_json_graph(diagram), indent)
+  end
 end
 
 function write_json_box(diagram::WiringDiagram, path::Vector{Int})
@@ -101,6 +108,10 @@ function read_json_graph(
     node::AbstractDict)::WiringDiagram where {BoxValue, PortValue, WireValue}
   diagram, ports = read_json_box(BoxValue, PortValue, WireValue, node)
   diagram
+end
+function read_json_graph(
+    BoxValue::Type, PortValue::Type, WireValue::Type, filename::String)
+  read_json_graph(BoxValue, PortValue, WireValue, JSON.parsefile(filename))
 end
 
 function read_json_box(
