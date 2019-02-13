@@ -122,6 +122,8 @@ I = munit(FreeSymmetricMonoidalCategory.Ob)
 @test otimes([A,B,A]) == otimes(otimes(A,B),A)
 @test otimes(f,f,f) == otimes(otimes(f,f),f)
 @test otimes([f,f,f]) == otimes(otimes(f,f),f)
+@test otimes(FreeSymmetricMonoidalCategory.Ob[]) == I
+@test_throws MethodError otimes([])
 @test A⊗B == otimes(A,B)
 @test f⊗g == otimes(f,g)
 @test A⊗B⊗A == otimes(A,B,A)

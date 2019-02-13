@@ -33,7 +33,7 @@ signature for weak monoidal categories later.
 end
 
 # Convenience constructors
-otimes(xs::Vector) = foldl(otimes, xs)
+otimes(xs::Vector{T}) where T = isempty(xs) ? munit(T) : foldl(otimes, xs)
 otimes(x, y, z, xs...) = otimes([x, y, z, xs...])
 
 """ Collect generators of object in monoidal category as a vector.
