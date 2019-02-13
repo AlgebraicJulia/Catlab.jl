@@ -134,6 +134,11 @@ that any two formulas have disjoint variables.
     var = gensym()
     Formulas([Formula(:*, value, var)], [var])
   end
+
+  function wiring(f::Any, A::NFormula, B::NFormula)::Formulas
+    # FIXME: Not implemented.
+    Formulas([], [])
+  end
 end
 
 function mcopy(A::NFormula, n::Int)::Formulas

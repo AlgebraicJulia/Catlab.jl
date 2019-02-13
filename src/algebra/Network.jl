@@ -8,7 +8,7 @@ represent expressions as morphisms in a monoidal category.
 module Network
 export AlgebraicNetSignature, AlgebraicNet, Ob, Hom,
   compose, id, dom, codom, otimes, munit, braid, mcopy, delete, mmerge, create,
-  linear, constant, to_algebraic_net,
+  linear, constant, wiring,
   Block, compile, compile_expr, compile_block, evaluate
 
 using Match
@@ -18,7 +18,7 @@ import ...Doctrines: MonoidalCategoryWithBidiagonals, ObExpr, HomExpr, Ob, Hom,
   compose, id, dom, codom, otimes, munit, braid, mcopy, delete, mmerge, create
 import ...Meta: concat_expr
 import ...Syntax: show_latex, show_unicode
-using ...WiringDiagrams: Layer, WiringLayer
+using ...WiringDiagrams: WiringLayer
 import ...Graphics.TikZWiringDiagrams: box, wires, rect, junction_circle
 
 # Syntax
@@ -31,6 +31,9 @@ TODO: Explain
 @signature MonoidalCategoryWithBidiagonals(Ob,Hom) => AlgebraicNetSignature(Ob,Hom) begin
   linear(x::Any, A::Ob, B::Ob)::Hom(A,B)
   constant(x::Any, A::Ob) = Hom(x, munit(Ob), A)
+
+  # FIXME: Should be `f::WiringLayer`, but doesn't work.
+  wiring(f::Any, A::Ob, B::Ob)::Hom(A,B)
 end
 
 @syntax AlgebraicNet(ObExpr,HomExpr) AlgebraicNetSignature begin
@@ -41,6 +44,15 @@ end
 
   mcopy(A::Ob) = mcopy(A, 2)
   mmerge(A::Ob) = mmerge(A, 2)
+  
+  function wiring(f::Any, A::Ob, B::Ob)
+    if f isa WiringLayer
+      @assert ndims(A) == f.ninputs && ndims(B) == f.noutputs
+    else
+      f = WiringLayer(f, ndims(A), ndims(B))
+    end
+    Super.wiring(f::WiringLayer, A, B)
+  end
 end
 
 function mcopy(A::AlgebraicNet.Ob, n::Int)
@@ -48,12 +60,6 @@ function mcopy(A::AlgebraicNet.Ob, n::Int)
 end
 function mmerge(A::AlgebraicNet.Ob, n::Int)
   AlgebraicNet.Hom{:mmerge}([A, n], [otimes(fill(A, n)), A])
-end
-
-to_algebraic_net(A::Layer) = otimes([Ob(AlgebraicNet, x) for x in A.ports])
-
-function to_algebraic_net(f::WiringLayer)
-  AlgebraicNet.Hom{:wiring}([f], map(to_algebraic_net, [dom(f), codom(f)]))
 end
 
 # Compilation

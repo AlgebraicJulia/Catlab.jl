@@ -1,16 +1,12 @@
 module TestWiringLayers
 
 using Test
-using Catlab.Doctrines, Catlab.WiringDiagrams
+using Catlab.WiringDiagrams
 
 # Low-level graph interface
 ###########################
 
-a, b, c = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C)
-
-f = WiringLayer([a, b, c], [c, b, a])
-@test input_ports(f) == [a, b, c]
-@test output_ports(f) == [c, b, a]
+f = WiringLayer(3, 3)
 @test nwires(f) == 0
 @test wires(f) == []
 
@@ -32,14 +28,14 @@ add_wires!(f, [1 => 3, 1 => 3])
 rem_wire!(f, 1 => 3)
 @test nwires(f, 1 => 3) == 2
 rem_wires!(f, 1 => 3)
-@test !has_wire(f, f => 3)
+@test !has_wire(f, 1 => 3)
 @test nwires(f, 1 => 3) == 0
 @test wires(f) == [2 => 2, 3 => 1]
 
 # High-level categorical interface
 ##################################
 
-A, B, C = Layer([a]), Layer([b]), Layer([c])
+A, B, C = NLayer(1), NLayer(1), NLayer(1)
 
 # Category
 @test compose(id(A), id(A)) == id(A)

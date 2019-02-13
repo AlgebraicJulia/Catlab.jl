@@ -13,9 +13,8 @@ have identities, braidings, copies, etc.) and a wiring diagram, which is purely
 graphical.
 """
 module WiringLayers
-export WiringLayer, Layer, input_ports, output_ports, nwires, wires, has_wire,
+export WiringLayer, NLayer, nwires, wires, has_wire,
   add_wire!, add_wires!, rem_wire!, rem_wires!, in_wires, out_wires,
-  to_wiring_diagram,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create
 
 using AutoHashEquals
@@ -25,10 +24,8 @@ using ...GAT, ...Syntax
 import ...Doctrines: ObExpr, HomExpr, MonoidalCategoryWithBidiagonals,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create
 using ..WiringDiagramCore
-using ..WiringDiagramCore: collect_values
-import ..WiringDiagramCore: input_ports, output_ports, nwires, wires, has_wire,
-  add_wire!, add_wires!, rem_wire!, rem_wires!, in_wires, out_wires,
-  to_wiring_diagram
+import ..WiringDiagramCore: WiringDiagram, nwires, wires, has_wire,
+  add_wire!, add_wires!, rem_wire!, rem_wires!, in_wires, out_wires
 
 # Data types
 ############
@@ -37,38 +34,33 @@ import ..WiringDiagramCore: input_ports, output_ports, nwires, wires, has_wire,
 
 Morphism in the category of wiring layers.
 """
-@auto_hash_equals struct WiringLayer{T}
+@auto_hash_equals struct WiringLayer
   wires::OrderedDict{Int}{OrderedDict{Int}{Int}} # src -> tgt -> multiplicity
-  input_ports::Vector{T}
-  output_ports::Vector{T}
-
-  function WiringLayer(inputs::Vector{T}, outputs::Vector{S}) where {T,S}
-    wires = OrderedDict{Int}{OrderedDict{Int}{Int}}()
-    new{promote_type(T,S)}(wires, inputs, outputs)
+  ninputs::Int
+  noutputs::Int
+  function WiringLayer(ninputs::Int, noutputs::Int)
+    new(OrderedDict{Int}{OrderedDict{Int}{Int}}(), ninputs, noutputs)
   end
 end
 
-""" A layer, constituted by a list of ports.
+""" Number of input or output ports in a layer.
 
 Object in the category of wiring layers.
 """
-@auto_hash_equals struct Layer{T}
-  ports::Vector{T}
+@auto_hash_equals struct NLayer
+  n::Int
 end
-Base.eachindex(layer::Layer) = eachindex(layer.ports)
-Base.length(layer::Layer) = length(layer.ports)
+
+WiringLayer(inputs::NLayer, outputs::NLayer) = WiringLayer(inputs.n, outputs.n)
 
 # Low-level graph interface
 ###########################
 
-function WiringLayer(wires, inputs, outputs)
-  f = WiringLayer(inputs, outputs)
+function WiringLayer(wires, ninputs, noutputs)
+  f = WiringLayer(ninputs, noutputs)
   add_wires!(f, wires)
   f
 end
-
-input_ports(f::WiringLayer) = f.input_ports
-output_ports(f::WiringLayer) = f.output_ports
 
 has_wire(f::WiringLayer, wire) = nwires(f, wire) > 0
 
@@ -127,35 +119,30 @@ end
 
 function check_wire_bounds(f::WiringLayer, wire)
   src, tgt = wire
-  if !(1 <= src <= length(f.input_ports))
-    throw(BoundsError("layer inputs $(f.input_ports)", src))
+  if !(1 <= src <= f.ninputs)
+    throw(BoundsError("layer inputs 1:$(f.ninputs)", src))
   end
-  if !(1 <= tgt <= length(f.output_ports))
-    throw(BoundsError("layer outputs $(f.output_ports)", tgt))
+  if !(1 <= tgt <= f.noutputs)
+    throw(BoundsError("layer outputs 1:$(f.noutputs)", tgt))
   end
 end
 
 # High-level categorical interface
 ##################################
 
-Layer(ob::ObExpr) = Layer(collect_values(ob))
-
-function WiringLayer(inputs::ObExpr, outputs::ObExpr)
-  WiringLayer(collect_values(inputs), collect_values(outputs))
-end
-function WiringLayer(inputs::Layer, outputs::Layer)
-  WiringLayer(inputs.ports, outputs.ports)
-end
+NLayer(ob::ObExpr) = NLayer(ndims(ob))
+WiringLayer(inputs::ObExpr, outputs::ObExpr) =
+  WiringLayer(ndims(inputs), ndims(outputs))
 
 """ Wiring layers as *monoidal category with diagonals and codiagonals*.
 """
-@instance MonoidalCategoryWithBidiagonals(Layer, WiringLayer) begin
-  dom(f::WiringLayer) = Layer(f.input_ports)
-  codom(f::WiringLayer) = Layer(f.output_ports)
+@instance MonoidalCategoryWithBidiagonals(NLayer, WiringLayer) begin
+  dom(f::WiringLayer) = NLayer(f.ninputs)
+  codom(f::WiringLayer) = NLayer(f.noutputs)
 
-  function id(A::Layer)
+  function id(A::NLayer)
     f = WiringLayer(A, A)
-    add_wires!(f, i=>i for i in eachindex(A))
+    add_wires!(f, i=>i for i in 1:A.n)
     f
   end
   
@@ -172,50 +159,48 @@ end
     h
   end
   
-  otimes(A::Layer, B::Layer) = Layer([A.ports; B.ports])
-  munit(::Type{Layer}) = Layer([])
+  otimes(A::NLayer, B::NLayer) = NLayer(A.n + B.n)
+  munit(::Type{NLayer}) = NLayer(0)
   
   function otimes(f::WiringLayer, g::WiringLayer)
     h = WiringLayer(otimes(dom(f),dom(g)), otimes(codom(f),codom(g)))
-    m, n = length(dom(f)), length(codom(f))
+    m, n = dom(f).n, codom(f).n
     add_wires!(h, wires(f))
     add_wires!(h, src+m => tgt+n for (src, tgt) in wires(g))
     h
   end
   
-  function braid(A::Layer, B::Layer)
+  function braid(A::NLayer, B::NLayer)
     f = WiringLayer(otimes(A,B), otimes(B,A))
-    m, n = length(A), length(B)
-    add_wires!(f, i => i+n for i in 1:m)
-    add_wires!(f, i+m => i for i in 1:n)
+    add_wires!(f, i => i+B.n for i in 1:A.n)
+    add_wires!(f, i+A.n => i for i in 1:B.n)
     f
   end
 
-  mcopy(A::Layer) = mcopy(A, 2)
-  mmerge(A::Layer) = mmerge(A, 2)
-  delete(A::Layer) = WiringLayer(A, munit(Layer))
-  create(A::Layer) = WiringLayer(munit(Layer), A)
+  mcopy(A::NLayer) = mcopy(A, 2)
+  mmerge(A::NLayer) = mmerge(A, 2)
+  delete(A::NLayer) = WiringLayer(A, munit(NLayer))
+  create(A::NLayer) = WiringLayer(munit(NLayer), A)
 end
 
-function mcopy(A::Layer, n::Int)
+function mcopy(A::NLayer, n::Int)
   f = WiringLayer(A, otimes([A for j in 1:n]))
-  m = length(A)
-  add_wires!(f, i => i+m*(j-1) for i in 1:m, j in 1:n)
+  add_wires!(f, i => i+A.n*(j-1) for i in 1:A.n, j in 1:n)
   f
 end
 
-function mmerge(A::Layer, n::Int)
+function mmerge(A::NLayer, n::Int)
   f = WiringLayer(otimes([A for j in 1:n]), A)
-  m = length(A)
-  add_wires!(f, i+m*(j-1) => i for i in 1:m, j in 1:n)
+  add_wires!(f, i+A.n*(j-1) => i for i in 1:A.n, j in 1:n)
   f
 end
 
 # Conversion
 ############
 
-function to_wiring_diagram(f::WiringLayer)
-  diagram = WiringDiagram(input_ports(f), output_ports(f))
+function WiringDiagram(f::WiringLayer, inputs::Vector, outputs::Vector)
+  @assert length(inputs) == f.ninputs && length(outputs) == f.noutputs
+  diagram = WiringDiagram(inputs, outputs)
   add_wires!(diagram, ((input_id(diagram), src) => (output_id(diagram), tgt)
                        for (src, tgt) in sort!(wires(f))))
   diagram
