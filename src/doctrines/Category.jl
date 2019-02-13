@@ -26,11 +26,11 @@ This usage is too entrenched to overturn, however inconvenient it may be.
   compose(f::Hom(A,B), g::Hom(B,C))::Hom(A,C) <= (A::Ob, B::Ob, C::Ob)
   
   # Convenience constructors
-  compose(fs::Vararg{Hom}) = foldl(compose, fs)
+  compose(fs::Hom...) = foldl(compose, fs)
   
   # Unicode syntax
   ∘(f::Hom, g::Hom) = compose(g, f)
-  ∘(fs::Vararg{Hom}) = foldl(∘, fs)
+  ∘(fs::Hom...) = foldl(∘, fs)
 end
 
 # Convenience constructors not requiring type dispatch
@@ -86,12 +86,12 @@ end
     (A::Ob, B::Ob, C::Ob, f::Hom(A,B), g::Hom(A,B), h::Hom(B,C), k::Hom(B,C))
   
   # Convenience constructors
-  compose(αs::Vararg{Hom2}) = foldl(compose, αs)
-  compose2(αs::Vararg{Hom2}) = foldl(compose2, αs)
+  compose(αs::Hom2...) = foldl(compose, αs)
+  compose2(αs::Hom2...) = foldl(compose2, αs)
   
   # Unicode syntax
   ∘(α::Hom2, β::Hom2) = compose(β, α)
-  ∘(αs::Vararg{Hom2}) = foldl(∘, αs)
+  ∘(αs::Hom2...) = foldl(∘, αs)
 end
 
 # Convenience constructors not requiring type dispatch

@@ -28,14 +28,14 @@ signature for weak monoidal categories later.
   munit()::Ob
   
   # Convenience constructors
-  otimes(xs::Vararg{Ob}) = foldl(otimes, xs)
-  otimes(fs::Vararg{Hom}) = foldl(otimes, fs)
+  otimes(xs::Ob...) = foldl(otimes, xs)
+  otimes(fs::Hom...) = foldl(otimes, fs)
   
   # Unicode syntax
   ⊗(A::Ob, B::Ob) = otimes(A, B)
   ⊗(f::Hom, g::Hom) = otimes(f, g)
-  ⊗(As::Vararg{Ob}) = otimes(As...)
-  ⊗(fs::Vararg{Hom}) = otimes(fs...)
+  ⊗(As::Ob...) = otimes(As...)
+  ⊗(fs::Hom...) = otimes(fs...)
 end
 
 # Convenience constructors not requiring type dispatch

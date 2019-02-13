@@ -343,7 +343,7 @@ sum_expr(terms::Vector) = sum_expr(Float64, terms)
 If the network will only be evaluated once (possibly with vectorized inputs),
 then direct evaluation will be much faster than compiling with Julia's JIT.
 """
-function evaluate(f::AlgebraicNet.Hom, xs::Vararg)
+function evaluate(f::AlgebraicNet.Hom, xs...)
   # The `eval_impl` methods use a standarized input/output format:
   # a vector of the same length as the (co)domain.
   ys = eval_impl(f, collect(xs))
