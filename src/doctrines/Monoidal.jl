@@ -27,17 +27,14 @@ signature for weak monoidal categories later.
     (A::Ob, B::Ob, C::Ob, D::Ob)
   munit()::Ob
   
-  # Convenience constructors
-  otimes(xs::Ob...) = foldl(otimes, xs)
-  otimes(fs::Hom...) = foldl(otimes, fs)
-  
   # Unicode syntax
   ⊗(A::Ob, B::Ob) = otimes(A, B)
   ⊗(f::Hom, g::Hom) = otimes(f, g)
 end
 
-# Convenience constructors not requiring type dispatch
+# Convenience constructors
 otimes(xs::Vector) = foldl(otimes, xs)
+otimes(x, y, z, xs...) = otimes([x, y, z, xs...])
 
 """ Collect generators of object in monoidal category as a vector.
 """
