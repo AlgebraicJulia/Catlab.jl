@@ -32,8 +32,10 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 # Extra syntax
 @test compose(f,g,f) == compose(compose(f,g),f)
 @test compose([f,g,f]) == compose(compose(f,g),f)
+@test f⋅g == compose(f,g)
+@test f⋅g⋅f⋅g == compose(f,g,f,g)
 @test g∘f == compose(f,g)
-@test f∘g∘f == compose(compose(f,g),f)
+@test g∘f∘g∘f == compose(f,g,f,g)
 
 # String format
 @test string(A) == "A"

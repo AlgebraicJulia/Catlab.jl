@@ -1,4 +1,4 @@
-export Category, FreeCategory, Ob, Hom, dom, codom, id, compose, ∘,
+export Category, FreeCategory, Ob, Hom, dom, codom, id, compose, ⋅, ∘,
   Category2, FreeCategory2, Hom2, compose2
 
 import Base: show, ∘
@@ -12,8 +12,9 @@ import Base: show, ∘
 then compose(f,g):A→C. Under this convention function are applied on the right,
 e.g., if a∈A then af∈B.
 
-We retain the usual meaning of the symbol ∘, i.e., g∘f = compose(f,g).
-This usage is too entrenched to overturn, however inconvenient it may be.
+We retain the usual meaning of the symbol ∘ (\\circ), i.e., g∘f = compose(f,g).
+This usage is too entrenched to overturn, inconvenient though it may be.
+We use symbol ⋅ (\\cdot) for diagrammatic composition: f⋅g = compose(f,g).
 """
 @signature Category(Ob,Hom) begin
   """ Object in a category """
@@ -26,6 +27,7 @@ This usage is too entrenched to overturn, however inconvenient it may be.
   compose(f::Hom(A,B), g::Hom(B,C))::Hom(A,C) <= (A::Ob, B::Ob, C::Ob)
   
   # Unicode syntax
+  ⋅(f::Hom, g::Hom) = compose(f, g)
   ∘(f::Hom, g::Hom) = compose(g, f)
 end
 
@@ -83,6 +85,7 @@ end
     (A::Ob, B::Ob, C::Ob, f::Hom(A,B), g::Hom(A,B), h::Hom(B,C), k::Hom(B,C))
   
   # Unicode syntax
+  ⋅(α::Hom2, β::Hom2) = compose(α, β)
   ∘(α::Hom2, β::Hom2) = compose(β, α)
 end
 
