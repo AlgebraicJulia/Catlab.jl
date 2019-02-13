@@ -30,7 +30,6 @@ This usage is too entrenched to overturn, however inconvenient it may be.
   
   # Unicode syntax
   ∘(f::Hom, g::Hom) = compose(g, f)
-  ∘(fs::Hom...) = foldl(∘, fs)
 end
 
 # Convenience constructors not requiring type dispatch

@@ -124,6 +124,7 @@ I = munit(FreeSymmetricMonoidalCategory.Ob)
 @test otimes([f,f,f]) == otimes(otimes(f,f),f)
 @test A⊗B == otimes(A,B)
 @test f⊗g == otimes(f,g)
+@test A⊗B⊗A == otimes(A,B,A)
 
 # Extra functions
 @test collect(A) == [A]

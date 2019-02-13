@@ -34,8 +34,6 @@ signature for weak monoidal categories later.
   # Unicode syntax
   ⊗(A::Ob, B::Ob) = otimes(A, B)
   ⊗(f::Hom, g::Hom) = otimes(f, g)
-  ⊗(As::Ob...) = otimes(As...)
-  ⊗(fs::Hom...) = otimes(fs...)
 end
 
 # Convenience constructors not requiring type dispatch
