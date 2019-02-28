@@ -103,9 +103,9 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[MacroTools]]
 deps = ["Compat"]
-git-tree-sha1 = "c443e1c8d58a4e9f61b708ad0a88286c7042145b"
+git-tree-sha1 = "3fd1a3022952128935b449c33552eb65895380c1"
 uuid = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
-version = "0.4.4"
+version = "0.4.5"
 
 [[Markdown]]
 deps = ["Base64"]
@@ -197,9 +197,9 @@ uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[StaticArrays]]
 deps = ["InteractiveUtils", "LinearAlgebra", "Random", "Statistics", "Test"]
-git-tree-sha1 = "1eb114d6e23a817cd3e99abc3226190876d7c898"
+git-tree-sha1 = "3841b39ed5f047db1162627bf5f80a9cd3e39ae2"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "0.10.2"
+version = "0.10.3"
 
 [[Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
@@ -225,7 +225,5 @@ uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 [[UnionFind]]
 deps = ["Printf", "Test"]
 git-tree-sha1 = "8830ae3d26179ed6fc177335b4c252158192c0e5"
-repo-rev = "master"
-repo-url = "https://github.com/epatters/UnionFind.jl"
 uuid = "99c6138d-4661-531e-8606-19bf1ec96588"
 version = "0.1.0"
