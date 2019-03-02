@@ -40,8 +40,9 @@ wiring diagram.
 - `graph_name="G"`: name of Graphviz digraph
 - `direction=:vertical`: layout direction.
   Either `:vertical` (top to bottom) or `:horizontal` (left to right).
-- `labels=false`: whether to label the wires
-- `label_attr=:label`: what kind of wire label to use (if `labels` is true).
+- `node_labels=true`: whether to label the nodes
+- `labels=false`: whether to label the edges
+- `label_attr=:label`: what kind of edge label to use (if `labels` is true).
   One of `:label`, `:xlabel`, `:headlabel`, or `:taillabel`.
 - `anchor_outer_ports=true`: whether to enforce ordering of input and output
   ports of the outer box (i.e., ordering of incoming and outgoing wires)
@@ -52,7 +53,7 @@ wiring diagram.
 """
 function to_graphviz(f::WiringDiagram;
     graph_name::String="G", direction::Symbol=:vertical,
-    labels::Bool=false, label_attr::Symbol=:label,
+    node_labels::Bool=true, labels::Bool=false, label_attr::Symbol=:label,
     anchor_outer_ports::Bool=true,
     graph_attrs::Graphviz.Attributes=Graphviz.Attributes(),
     node_attrs::Graphviz.Attributes=Graphviz.Attributes(),
@@ -88,10 +89,12 @@ function to_graphviz(f::WiringDiagram;
     node_top_bottom_html_label : node_left_right_html_label
   for v in box_ids(f)
     box = WiringDiagrams.box(f, v)
+    nin, nout = length(input_ports(box)), length(output_ports(box))
+    text_label = node_labels ? node_label(box.value) : ""
     node = Graphviz.Node(box_id([v]),
       id = box_id([v]),
       comment = node_label(box.value),
-      label = node_html_label(box, cell_attrs)
+      label = node_html_label(nin, nout, text_label, attrs=cell_attrs)
     )
     push!(stmts, node)
   end
@@ -140,9 +143,8 @@ end
 
 """ Create a top-to-bottom "HTML-like" node label for a box.
 """
-function node_top_bottom_html_label(box::Box, attrs::Graphviz.Attributes)::Graphviz.Html
-  nin, nout = length(input_ports(box)), length(output_ports(box))
-  text_label = node_label(box.value)
+function node_top_bottom_html_label(nin::Int, nout::Int, text_label::String;
+    attrs::Graphviz.Attributes=Graphviz.Attributes())::Graphviz.Html
   Graphviz.Html("""
     <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
     <TR><TD>$(ports_horizontal_html_label(InputPort,nin))</TD></TR>
@@ -153,9 +155,8 @@ end
 
 """ Create a left-to-right "HTML-like" node label for a box.
 """
-function node_left_right_html_label(box::Box, attrs::Graphviz.Attributes)::Graphviz.Html
-  nin, nout = length(input_ports(box)), length(output_ports(box))
-  text_label = node_label(box.value)
+function node_left_right_html_label(nin::Int, nout::Int, text_label::String;
+    attrs::Graphviz.Attributes=Graphviz.Attributes())::Graphviz.Html
   Graphviz.Html("""
     <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
     <TR>
