@@ -44,6 +44,7 @@ wiring diagram.
 - `labels=false`: whether to label the edges
 - `label_attr=:label`: what kind of edge label to use (if `labels` is true).
   One of `:label`, `:xlabel`, `:headlabel`, or `:taillabel`.
+- `port_size="24"`: minimum size of ports on box, in points
 - `anchor_outer_ports=true`: whether to enforce ordering of input and output
   ports of the outer box (i.e., ordering of incoming and outgoing wires)
 - `graph_attrs=default_graph_attrs`: top-level graph attributes
@@ -54,7 +55,7 @@ wiring diagram.
 function to_graphviz(f::WiringDiagram;
     graph_name::String="G", direction::Symbol=:vertical,
     node_labels::Bool=true, labels::Bool=false, label_attr::Symbol=:label,
-    anchor_outer_ports::Bool=true,
+    port_size::String="24", anchor_outer_ports::Bool=true,
     graph_attrs::Graphviz.Attributes=Graphviz.Attributes(),
     node_attrs::Graphviz.Attributes=Graphviz.Attributes(),
     edge_attrs::Graphviz.Attributes=Graphviz.Attributes(),
@@ -94,7 +95,10 @@ function to_graphviz(f::WiringDiagram;
     node = Graphviz.Node(box_id([v]),
       id = box_id([v]),
       comment = node_label(box.value),
-      label = node_html_label(nin, nout, text_label, attrs=cell_attrs)
+      label = node_html_label(nin, nout, text_label,
+        attrs = cell_attrs,
+        port_size = port_size
+      )
     )
     push!(stmts, node)
   end
@@ -144,25 +148,27 @@ end
 """ Create a top-to-bottom "HTML-like" node label for a box.
 """
 function node_top_bottom_html_label(nin::Int, nout::Int, text_label::String;
-    attrs::Graphviz.Attributes=Graphviz.Attributes())::Graphviz.Html
+    attrs::Graphviz.Attributes=Graphviz.Attributes(),
+    port_size::String="0")::Graphviz.Html
   Graphviz.Html("""
     <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-    <TR><TD>$(ports_horizontal_html_label(InputPort,nin))</TD></TR>
+    <TR><TD>$(ports_horizontal_html_label(InputPort,nin,port_size))</TD></TR>
     <TR><TD $(html_attributes(attrs))>$(escape_html(text_label))</TD></TR>
-    <TR><TD>$(ports_horizontal_html_label(OutputPort,nout))</TD></TR>
+    <TR><TD>$(ports_horizontal_html_label(OutputPort,nout,port_size))</TD></TR>
     </TABLE>""")
 end
 
 """ Create a left-to-right "HTML-like" node label for a box.
 """
 function node_left_right_html_label(nin::Int, nout::Int, text_label::String;
-    attrs::Graphviz.Attributes=Graphviz.Attributes())::Graphviz.Html
+    attrs::Graphviz.Attributes=Graphviz.Attributes(),
+    port_size::String="0")::Graphviz.Html
   Graphviz.Html("""
     <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
     <TR>
-    <TD>$(ports_vertical_html_label(InputPort,nin))</TD>
+    <TD>$(ports_vertical_html_label(InputPort,nin,port_size))</TD>
     <TD $(html_attributes(attrs))>$(escape_html(text_label))</TD>
-    <TD>$(ports_vertical_html_label(OutputPort,nout))</TD>
+    <TD>$(ports_vertical_html_label(OutputPort,nout,port_size))</TD>
     </TR>
     </TABLE>""")
 end
@@ -173,12 +179,13 @@ end
 
 """ Create horizontal "HTML-like" label for the input or output ports of a box.
 """
-function ports_horizontal_html_label(kind::PortKind, nports::Int)::Graphviz.Html
+function ports_horizontal_html_label(kind::PortKind, nports::Int,
+    port_size::String="0")::Graphviz.Html
   cols = if nports > 0
-    join("""<TD HEIGHT="0" WIDTH="24" PORT="$(port_name(kind,i))"></TD>"""
+    join("""<TD HEIGHT="0" WIDTH="$port_size" PORT="$(port_name(kind,i))"></TD>"""
          for i in 1:nports)
   else
-    """<TD HEIGHT="0" WIDTH="24"></TD>"""
+    """<TD HEIGHT="0" WIDTH="$port_size"></TD>"""
   end
   Graphviz.Html("""
     <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0"><TR>$cols</TR></TABLE>""")
@@ -186,12 +193,13 @@ end
 
 """ Create vertical "HTML-like" label for the input or output ports of a box.
 """
-function ports_vertical_html_label(kind::PortKind, nports::Int)::Graphviz.Html
+function ports_vertical_html_label(kind::PortKind, nports::Int,
+    port_size::String="0")::Graphviz.Html
   rows = if nports > 0
-    join("""<TR><TD HEIGHT="24" WIDTH="0" PORT="$(port_name(kind,i))"></TD></TR>"""
+    join("""<TR><TD HEIGHT="$port_size" WIDTH="0" PORT="$(port_name(kind,i))"></TD></TR>"""
          for i in 1:nports)
   else
-    """<TR><TD HEIGHT="24" WIDTH="0"></TD></TR>"""
+    """<TR><TD HEIGHT="$port_size" WIDTH="0"></TD></TR>"""
   end
   Graphviz.Html("""
     <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">$rows</TABLE>""")
