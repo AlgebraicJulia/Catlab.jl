@@ -45,6 +45,7 @@ end
   mcopy(A::Ob) = mcopy(A, 2)
   mmerge(A::Ob) = mmerge(A, 2)
   
+  # FIXME: Should be two methods (`f::WiringLayer` and `f::Any`) but see above.
   function wiring(f::Any, A::Ob, B::Ob)
     if f isa WiringLayer
       @assert ndims(A) == f.ninputs && ndims(B) == f.noutputs

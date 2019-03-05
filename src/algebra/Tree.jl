@@ -24,7 +24,7 @@ import ...WiringDiagrams: to_wiring_diagram
 
 using ..Network
 import ..Network: Ob, Hom, compose, id, dom, codom, otimes, munit, braid,
-  mcopy, delete, mmerge, create, linear, constant, evaluate
+  mcopy, delete, mmerge, create, linear, constant, wiring, evaluate
 
 # Data types
 ############
@@ -136,21 +136,26 @@ that any two formulas have disjoint variables.
   end
 
   function wiring(f::Any, A::NFormula, B::NFormula)::Formulas
-    # FIXME: Not implemented.
-    Formulas([], [])
+    vars = gensyms(A)
+    terms = [ [] for i in 1:B.n ]
+    for (src, tgts) in (f::WiringLayer).wires
+      x = vars[src]
+      for (tgt, c) in tgts
+        push!(terms[tgt], c == 1 ? x : Formula(:*, c, x))
+      end
+    end
+    Formulas(map(sum_formulas, terms), vars)
   end
 end
 
 function mcopy(A::NFormula, n::Int)::Formulas
   vars = gensyms(A)
-  terms = reduce(vcat, fill(vars, n))
-  Formulas(terms, vars)
+  Formulas(reduce(vcat, fill(vars, n)), vars)
 end
 
 function mmerge(A::NFormula, n::Int)::Formulas
-  @assert A.n == 1 # FIXME: Relax this.
-  vars = gensyms(n)
-  Formulas([Formula(:+, vars...)], vars)
+  vars = gensyms(A.n * n)
+  Formulas([sum_formulas(vars[i:A.n:end]) for i in 1:A.n], vars)
 end
 
 Ob(::Type{NFormula}, value::Any) = NFormula(1)
@@ -184,6 +189,19 @@ function substitute(expr::Expr, subst::Dict)
 end
 substitute(sym::Symbol, subst::Dict) = get(subst, sym, sym)
 substitute(x::Any, subst::Dict) = x
+
+""" Create formula for sum of zero, one, or more terms.
+"""
+function sum_formulas(T::Type, terms::Vector)
+  if length(terms) == 0
+    zero(T)
+  elseif length(terms) == 1
+    terms[1]
+  else
+    Formula(:+, terms...)
+  end
+end
+sum_formulas(terms::Vector) = sum_formulas(Int, terms)
 
 """ Convert a formula, or formulas, to a wiring diagram.
 

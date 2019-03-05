@@ -32,11 +32,20 @@ f = compose(Hom(:cos,R,R), Hom(:sin,R,R), Hom(:tan,R,R))
 
 f = compose(otimes(id(R),constant(1,R)), mmerge(R))
 @test to_formula(f,[:x]) == Formula(:+, :x, 1)
+@test to_formula(mmerge(R,1),[:x]) == :x
+@test to_formula(mmerge(R,3),[:x,:y,:z]) == Formula(:+, :x, :y, :z)
 
 f = compose(otimes(Hom(:cos,R,R), Hom(:sin,R,R)), mmerge(R))
 @test to_formula(f,[:x,:y]) == Formula((:+, (:cos, :x), (:sin, :y)))
 f = compose(mcopy(R), otimes(Hom(:cos,R,R), Hom(:sin,R,R)), mmerge(R))
 @test to_formula(f,[:x]) == Formula((:+, (:cos, :x), (:sin, :x)))
+
+w = [ 1 => 1, 2 => 2, 3 => 1, 4 => 2 ]
+f = compose(wiring(w, otimes(R,R,R,R), otimes(R,R)), Hom(:*, otimes(R,R), R))
+@test to_formula(f,[:w,:x,:y,:z]) == Formula((:*, (:+, :w, :y), (:+, :x, :z)))
+
+f = wiring([ 1 => 1, 1 => 1, 2 => 1 ], otimes(R,R), R)
+@test to_formula(f,[:x,:y]) == Formula((:+, (:*, 2, :x), :y))
 
 # Convert formulas to wiring diagrams.
 make_box = (value, arity) -> Box(value, repeat([nothing], arity), [nothing])
