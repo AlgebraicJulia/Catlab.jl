@@ -212,10 +212,11 @@ function port_nodes(v::Int, kind::PortKind, nports::Int;
   @assert nports > 0
   port_width = "$(round(24/72,digits=3))" # port width in inches
   nodes = [ port_node_name(v, i) for i in 1:nports ]
-  stmts = if anchor
-    Graphviz.Statement[ Graphviz.Edge(nodes) ]
-  else
-    Graphviz.Statement[ Graphviz.Node(node) for node in nodes ]
+  stmts = Graphviz.Statement[
+    Graphviz.Node(nodes[i], id=port_name(kind, i)) for i in 1:nports
+  ]
+  if anchor
+    push!(stmts, Graphviz.Edge(nodes))
   end
   Graphviz.Subgraph(
     stmts,
