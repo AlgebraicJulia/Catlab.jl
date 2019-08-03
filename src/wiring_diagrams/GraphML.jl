@@ -20,7 +20,6 @@ export read_graphml, write_graphml,
 using DataStructures: OrderedDict
 import JSON
 using LightXML
-using Nullables
 
 using ..WiringDiagramCore, ..WiringDiagramSerialization
 import ..WiringDiagramCore: PortEdgeData
@@ -33,10 +32,10 @@ struct GraphMLKey
   attr_name::String
   attr_type::String
   scope::String
-  default::Nullable{Any}
+  default::Union{Some,Nothing}
 end
 GraphMLKey(id::String, attr_name::String, attr_type::String, scope::String) =
-  GraphMLKey(id, attr_name, attr_type, scope, Nullable{Any}())
+  GraphMLKey(id, attr_name, attr_type, scope, nothing)
 
 struct WriteState
   keys::OrderedDict{Tuple{String,String},GraphMLKey}
@@ -150,9 +149,9 @@ function write_graphml_key(xroot::XMLElement, key::GraphMLKey)
     "attr.name" => key.attr_name,
     "attr.type" => key.attr_type,
   ])
-  if !isnull(key.default)
+  if !isnothing(key.default)
     xdefault = new_child(xkey, "default")
-    set_content(xdefault, write_graphml_data_value(get(key.default)))
+    set_content(xdefault, write_graphml_data_value(something(key.default)))
   end
 end
 
@@ -301,11 +300,11 @@ function read_graphml_keys(xroot::XMLElement)
     # Read attribute default value.
     xdefaults = xkey["default"]
     default = if isempty(xdefaults)
-      Nullable{Any}()
+      nothing
     else
       @assert length(xdefaults) == 1 "GraphML key can have at most one <default>"
       xdefault = xdefaults[1]
-      Nullable(read_graphml_data_value(Val{Symbol(attr_type)}, content(xdefault)))
+      Some(read_graphml_data_value(Val{Symbol(attr_type)}, content(xdefault)))
     end
     
     keys[id] = GraphMLKey(id, attr_name, attr_type, scope, default)

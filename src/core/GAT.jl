@@ -138,7 +138,7 @@ macro signature(head, body)
 end
 function signature_code(main_class, base_mod, base_params)
   # Add types/terms/functions from base class, if provided.
-  if base_mod == nothing
+  if isnothing(base_mod)
     class = main_class
   else
     base_class = base_mod.class()
@@ -581,7 +581,7 @@ function invoke_term(signature_module::Module, instance_types::Tuple,
     # in syntax system.
     signature = signature_module.class().signature
     index = findfirst(cons -> cons.name == constructor_name, signature.types)
-    if index == nothing
+    if isnothing(index)
       # Case 2: Name refers to term constructor.
       # FIXME: Terms constructors can be overloaded, so there may be multiple
       # term constructors with the same name. Distinguishing them requires type
