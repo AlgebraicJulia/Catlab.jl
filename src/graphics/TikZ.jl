@@ -20,7 +20,6 @@ export Expression, Statement, GraphStatement, Coordinate, Property,
        GraphNode, GraphEdge, MatrixNode, pprint
 
 using AutoHashEquals
-using Nullables
 
 # AST
 #####
@@ -39,10 +38,9 @@ end
 
 @auto_hash_equals struct Property <: Expression
   key::AbstractString
-  value::Nullable{AbstractString}
+  value::Union{AbstractString,Nothing}
   
-  Property(key::AbstractString) = new(key, Nullable())
-  Property(key::AbstractString, value::AbstractString) = new(key, Nullable(value))
+  Property(key::AbstractString, value=nothing) = new(key, value)
 end
 
 @auto_hash_equals struct PathOperation <: Expression
@@ -70,19 +68,19 @@ end
   # FIXME: Name is optional, according to TikZ manual.
   name::AbstractString
   props::Vector{Property}
-  coord::Nullable{Coordinate}
+  coord::Union{Coordinate,Nothing}
   # Allow nested pictures even though TikZ does not "officially" support them.
   content::Union{AbstractString,Picture}
   
-  Node(name::AbstractString; props=Property[], coord=Nullable(), content="") =
+  Node(name::AbstractString; props=Property[], coord=nothing, content="") =
     new(name, props, coord, content)
 end
 
 @auto_hash_equals struct EdgeNode <: Expression
   props::Vector{Property}
-  content::Nullable{AbstractString}
+  content::Union{AbstractString,Nothing}
   
-  EdgeNode(; props=Property[], content=Nullable()) = new(props, content)
+  EdgeNode(; props=Property[], content=nothing) = new(props, content)
 end
 
 @auto_hash_equals struct Edge <: Statement
@@ -90,10 +88,10 @@ end
   tgt::AbstractString
   op::PathOperation
   props::Vector{Property}
-  node::Nullable{EdgeNode}
+  node::Union{EdgeNode,Nothing}
   
   Edge(src::AbstractString, tgt::AbstractString;
-       op=PathOperation("to"), props=Property[], node=Nullable()) =
+       op=PathOperation("to"), props=Property[], node=nothing) =
     new(src, tgt, op, props, node)
 end
 
@@ -116,9 +114,9 @@ end
 @auto_hash_equals struct GraphNode <: GraphStatement
   name::AbstractString
   props::Vector{Property}
-  content::Nullable{AbstractString}
+  content::Union{AbstractString,Nothing}
   
-  GraphNode(name::AbstractString; props=Property[], content=Nullable()) =
+  GraphNode(name::AbstractString; props=Property[], content=nothing) =
     new(name, props, content)
 end
 
@@ -177,9 +175,9 @@ function pprint(io::IO, node::Node, n::Int)
   print(io, "\\node")
   pprint(io, node.props)
   print(io, " ($(node.name))")
-  if !isnull(node.coord)
+  if !isnothing(node.coord)
     print(io, " at ")
-    pprint(io, get(node.coord))
+    pprint(io, node.coord)
   end
   if isa(node.content, Picture)
     println(io, " {")
@@ -199,9 +197,9 @@ function pprint(io::IO, edge::Edge, n::Int)
   pprint(io, edge.props)
   print(io, " ($(edge.src)) ")
   pprint(io, edge.op)
-  if !isnull(edge.node)
+  if !isnothing(edge.node)
     print(io, " ")
-    pprint(io, get(edge.node))
+    pprint(io, edge.node)
   end
   print(io, " ($(edge.tgt));")
 end
@@ -209,8 +207,8 @@ end
 function pprint(io::IO, node::EdgeNode, n::Int)
   print(io, "node")
   pprint(io, node.props)
-  if !isnull(node.content)
-    print(io, " {$(get(node.content))}")
+  if !isnothing(node.content)
+    print(io, " {$(node.content)}")
   end
 end
 
@@ -243,8 +241,8 @@ end
 function pprint(io::IO, node::GraphNode, n::Int)
   indent(io, n)
   print(io, node.name)
-  if !isnull(node.content)
-    print(io, "/\"$(get(node.content))\"")
+  if !isnothing(node.content)
+    print(io, "/\"$(node.content)\"")
   end
   if !isempty(node.props)
     print(io, " ")
@@ -292,9 +290,9 @@ end
 
 function pprint(io::IO, prop::Property, n::Int)
   print(io, prop.key)
-  if !isnull(prop.value)
+  if !isnothing(prop.value)
     print(io, "=")
-    print(io, get(prop.value))
+    print(io, prop.value)
   end
 end
 

@@ -4,10 +4,9 @@ module TikZWiringDiagrams
 export to_tikz
 
 using Match
-using Nullables
 
-import ...Doctrines: ObExpr, HomExpr, dom, codom, head, args, compose, id
-import ...Syntax: GATExpr, show_latex
+using ...Doctrines: ObExpr, HomExpr, dom, codom, head, args, compose, id
+using ...Syntax: GATExpr, show_latex
 using ...WiringDiagrams
 import ..TikZ
 
@@ -22,7 +21,9 @@ struct Wire
   Wire(label::String; reverse::Bool=false) = new(label, reverse)
 end
 
-""" Object in a TikZ wiring diagram.
+""" A bundle of wires in a TikZ wiring diagram.
+
+A graphical representation of an object.
 """
 const Wires = Vector{Wire}
 
@@ -37,15 +38,16 @@ struct Port
     new(wire, anchor, angle, show_label)
 end
 
-""" Morphism in a TikZ wiring diagram.
+""" A box in a TikZ wiring diagram.
+
+A `Box` is a graphical representation of a morphism, and need not be rendered
+as a geometric box (rectangle).
 """
 struct Box
   node::TikZ.Node
   inputs::Vector{Port}
   outputs::Vector{Port}
 end
-dom(box::Box)::Wires = [ port.label for port in box.inputs ]
-codom(box::Box)::Wires  = [ port.label for port in box.outputs ]
 
 # Wiring diagrams
 #################
@@ -96,8 +98,7 @@ function to_tikz(f::HomExpr;
     TikZ.Property("font", 
                   "{\\fontsize{$font_size}{$(round(1.2*font_size;digits=2))}}"),
     TikZ.Property("container/.style", "{inner sep=0}"),
-    TikZ.Property("every path/.style",
-                  "{solid, line width=$line_width}"),
+    TikZ.Property("every path/.style", "{solid, line width=$line_width}"),
   ]
   if !isempty(arrowtip)
     decoration = "{markings, mark=at position 0.5 with {\\arrow{$arrowtip}}}"
@@ -254,10 +255,10 @@ function sequence(name::String, homs::Vector)::Box
       # Create edge node for label. We use the source port, not the target port
       # (see also `GraphvizWiring`).
       wire = src_port.wire
-      if (style[:labels] && src_port.show_label && tgt_port.show_label)
-        node = TikZ.EdgeNode(content=wire.label, props=edge_node_props)
+      node = if (style[:labels] && src_port.show_label && tgt_port.show_label)
+        TikZ.EdgeNode(content=wire.label, props=edge_node_props)
       else
-        node = Nullable()
+        nothing
       end
       
       # Create path operation and draw edge.
