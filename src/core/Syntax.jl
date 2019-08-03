@@ -20,7 +20,6 @@ export @syntax, GATExpr, SyntaxDomainError, head, args, type_args, first, last,
 import Base: first, last
 import Base.Meta: ParseError, show_sexpr
 using Match
-using Nullables
 
 using ..GAT: Context, Signature, TypeConstructor, TermConstructor, Typeclass
 import ..GAT
@@ -145,7 +144,7 @@ function syntax_code(name::Symbol, base_types::Vector{Type},
     if haskey(syntax_fns, sig)
       # Case 1: The method is overriden in the syntax body.
       expr = generate_function(replace_symbols(bindings, syntax_fns[sig]))
-    elseif !isnull(f.impl)
+    elseif !isnothing(f.impl)
       # Case 2: The method has a default implementation in the signature.
       expr = generate_function(replace_symbols(bindings, f))
     else
@@ -216,7 +215,7 @@ end
 function gen_term_constructor(cons::TermConstructor, sig::Signature,
                               mod::Module; dispatch_type::Symbol=Symbol())::Expr
   head = GAT.constructor(cons, sig)
-  call_expr, return_type = head.call_expr, get(head.return_type)
+  call_expr, return_type = head.call_expr, head.return_type
   if dispatch_type == Symbol()
     dispatch_type = cons.name
   end

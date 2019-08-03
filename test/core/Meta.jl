@@ -1,7 +1,6 @@
 module TestMeta
 
 using Base.Meta: ParseError
-using Nullables
 using Test
 
 using Catlab.Meta
@@ -14,35 +13,35 @@ parse_fun(expr) = parse_function(strip_all(expr))
        strip_all(:(function f(x,y) end)))
 @test (generate_function(JuliaFunction(:(f(x::Int,y::Int)), :Int)) ==
        strip_all(:(function f(x::Int,y::Int)::Int end)))
-@test (generate_function(JuliaFunction(:(f(x)), :Bool, :(isnull(x)))) ==
-       strip_all(:(function f(x)::Bool isnull(x) end)))
+@test (generate_function(JuliaFunction(:(f(x)), :Bool, :(isnothing(x)))) ==
+       strip_all(:(function f(x)::Bool isnothing(x) end)))
 
 fun_with_docstring_expr = quote
-  """Is null"""
+  """Is nothing"""
   function f(x)::Bool
-    isnull(x)
+    isnothing(x)
   end
 end
 @test (strip_all(generate_function(
-        JuliaFunction(:(f(x)), :Bool, :(isnull(x)), "Is null"))) ==
+        JuliaFunction(:(f(x)), :Bool, :(isnothing(x)), "Is nothing"))) ==
        strip_all(fun_with_docstring_expr).args[1])
 
 # Function parsing
 @test_throws ParseError parse_fun(:(f(x,y)))
 @test (parse_fun(:(function f(x,y) x end)) == 
-       JuliaFunction(:(f(x,y)), Nullable(), quote x end))
+       JuliaFunction(:(f(x,y)), nothing, quote x end))
 
 @test parse_fun((quote
   """ My docstring
   """
   function f(x,y) x end
-end).args[1]) == JuliaFunction(:(f(x,y)), Nullable(), quote x end, " My docstring\n")
+end).args[1]) == JuliaFunction(:(f(x,y)), nothing, quote x end, " My docstring\n")
 
 @test (parse_fun(:(function f(x::Int,y::Int)::Int x end)) == 
        JuliaFunction(:(f(x::Int,y::Int)), :Int, quote x end))
 
 @test (parse_fun(:(f(x,y) = x)) == 
-       JuliaFunction(:(f(x,y)), Nullable(), quote x end))
+       JuliaFunction(:(f(x,y)), nothing, quote x end))
 
 sig = JuliaFunctionSig(:f, [:Int,:Int])
 @test parse_function_sig(:(f(x::Int,y::Int))) == sig

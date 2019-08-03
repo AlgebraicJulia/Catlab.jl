@@ -8,7 +8,6 @@ export Expr0, JuliaFunction, JuliaFunctionSig, parse_docstring, parse_function,
 using Base.Meta: ParseError
 using AutoHashEquals
 using Match
-using Nullables
 
 # Data types
 ############
@@ -17,12 +16,12 @@ const Expr0 = Union{Symbol,Expr}
 
 @auto_hash_equals struct JuliaFunction
   call_expr::Expr
-  return_type::Nullable{Expr0}
-  impl::Nullable{Expr}
-  doc::Nullable{String}
+  return_type::Union{Expr0,Nothing}
+  impl::Union{Expr,Nothing}
+  doc::Union{String,Nothing}
   
-  function JuliaFunction(call_expr::Expr, return_type=Nullable(),
-                         impl=Nullable(), doc=Nullable())
+  function JuliaFunction(call_expr::Expr, return_type=nothing,
+                         impl=nothing, doc=nothing)
     new(call_expr, return_type, impl, doc)
   end
 end
@@ -37,15 +36,15 @@ end
 
 """ Parse Julia expression that is (possibly) annotated with docstring.
 """
-function parse_docstring(expr::Expr)::Tuple{Nullable{String},Expr}
+function parse_docstring(expr::Expr)::Tuple{Union{String,Nothing},Expr}
   expr = strip_lines(expr)
   if expr.head == :macrocall && (
       # XXX: It seems that the @doc macro can show up in two forms.
       expr.args[1] == GlobalRef(Core, Symbol("@doc")) ||
       expr.args[1] == Expr(:core, Symbol("@doc")))
-    (Nullable(expr.args[2]), expr.args[3])
+    (expr.args[2], expr.args[3])
   else
-    (Nullable{String}(), expr)
+    (nothing, expr)
   end
 end
 
@@ -62,7 +61,7 @@ function parse_function(expr::Expr)::JuliaFunction
     (Expr(:(::), [Expr(:call, args), return_type]) => 
       JuliaFunction(Expr(:call, args...), return_type, impl, doc))
     (Expr(:call, args) =>
-      JuliaFunction(Expr(:call, args...), Nullable(), impl, doc))
+      JuliaFunction(Expr(:call, args...), nothing, impl, doc))
     _ => throw(ParseError("Ill-formed function header $fun_expr"))
   end
 end
@@ -85,29 +84,29 @@ parse_function_sig(fun::JuliaFunction) = parse_function_sig(fun.call_expr)
 
 """ Wrap Julia expression with docstring.
 """
-function generate_docstring(expr::Expr, doc::Nullable{String})::Expr
-  if isnull(doc)
+function generate_docstring(expr::Expr, doc::Union{String,Nothing})::Expr
+  if isnothing(doc)
     expr
   else
     Expr(:macrocall, GlobalRef(Core, Symbol("@doc")),
-         LineNumberNode(0), get(doc), expr)
+         LineNumberNode(0), doc, expr)
   end
 end
 
 """ Generate Julia expression for function definition.
 """
 function generate_function(fun::JuliaFunction)::Expr
-  if isnull(fun.return_type)
-    head = fun.call_expr
+  head = if isnothing(fun.return_type)
+    fun.call_expr
   else 
-    head = Expr(:(::), fun.call_expr, get(fun.return_type))
+    Expr(:(::), fun.call_expr, fun.return_type)
   end
-  if isnull(fun.impl)
-    body = Expr(:block)
+  body = if isnothing(fun.impl)
+    Expr(:block)
   else
     # Wrap implementation inside block if not already.
-    impl = get(fun.impl)
-    body = impl.head == :block ? impl : Expr(:block, impl)
+    impl = fun.impl
+    impl.head == :block ? impl : Expr(:block, impl)
   end
   expr = Expr(:function, head, body)
   generate_docstring(expr, fun.doc)
@@ -144,10 +143,8 @@ function replace_symbols(bindings::AbstractDict, f::JuliaFunction)::JuliaFunctio
   JuliaFunction(
     Expr(f.call_expr.head, f.call_expr.args[1],
          (replace_symbols(bindings, a) for a in f.call_expr.args[2:end])...),
-    isnull(f.return_type) ? Nullable() :
-      replace_symbols(bindings, get(f.return_type)),
-    isnull(f.impl) ? Nullable() :
-      replace_symbols(bindings, get(f.impl)),
+    isnothing(f.return_type) ? nothing : replace_symbols(bindings, f.return_type),
+    isnothing(f.impl) ? nothing : replace_symbols(bindings, f.impl),
     f.doc
   )
 end

@@ -15,7 +15,6 @@ export @present, Presentation, Equation, generator, generators, has_generator,
 using Base.Meta: ParseError
 import DataStructures: OrderedSet
 using Match
-using Nullables
 
 using ..Meta, ..Syntax
 import ..Syntax: parse_json_sexpr, to_json_sexpr
@@ -146,9 +145,9 @@ end
 function translate_expr(syntax_name::Symbol, expr::Expr)::Expr
   @match expr begin
     Expr(:(::), [name::Symbol, type_expr]) =>
-      translate_generator(syntax_name, Nullable(name), type_expr)
+      translate_generator(syntax_name, name, type_expr)
     Expr(:(::), [type_expr]) =>
-      translate_generator(syntax_name, Nullable{Symbol}(), type_expr)
+      translate_generator(syntax_name, nothing, type_expr)
     Expr(:(:=), [name::Symbol, def_expr]) =>
       translate_definition(name, def_expr)
     Expr(:(=), _) => expr
@@ -159,7 +158,8 @@ end
 
 """ Translate declaration of a generator.
 """
-function translate_generator(syntax_name::Symbol, name::Nullable{Symbol}, type_expr)::Expr
+function translate_generator(syntax_name::Symbol, name::Union{Symbol,Nothing},
+                             type_expr)::Expr
   type_name, args = @match type_expr begin
     sym::Symbol => (sym, [])
     Expr(:call, [sym::Symbol, args...]) => (sym, args)
@@ -171,9 +171,9 @@ function translate_generator(syntax_name::Symbol, name::Nullable{Symbol}, type_e
     Expr(:call, GlobalRef(Syntax, :invoke_term),
          syntax_name,
          QuoteNode(type_name),
-         isnull(name) ? :nothing : QuoteNode(get(name)),
+         isnothing(name) ? :nothing : QuoteNode(name),
          args...))
-  isnull(name) ? call_expr : :($(get(name)) = $call_expr)
+  isnothing(name) ? call_expr : :($(name) = $call_expr)
 end
 
 """ Translate definition of generator in terms of other generators.
