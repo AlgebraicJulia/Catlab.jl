@@ -5,12 +5,11 @@ layer of input ports and another layer of output ports. A wiring layer forms a
 bipartite graph with independent edge sets the input ports and the output ports.
 
 Unlike wiring diagrams, wiring layers are an auxillary data structure. They are
-not terribly interesting in their own right, but they are a useful intermediate
-representation in some circumstances. For example, a morphism expression
-comprised of generators, compositions, products, and wiring layers is
-intermediate between a pure GAT expression (which has no wiring layers, but may
-have identities, braidings, copies, etc.) and a wiring diagram, which is purely
-graphical.
+not very interesting in their own right, but they can be a useful intermediate
+representation. For example, a morphism expression comprising generators,
+compositions, products, and wiring layers is intermediate between a pure GAT
+expression (which has no wiring layers, but may have identities, braidings,
+copies, etc.) and a wiring diagram, which is purely graphical.
 """
 module WiringLayers
 export WiringLayer, NLayer, nwires, wires, has_wire,
@@ -145,7 +144,7 @@ WiringLayer(inputs::ObExpr, outputs::ObExpr) =
     add_wires!(f, i=>i for i in 1:A.n)
     f
   end
-  
+
   function compose(f::WiringLayer, g::WiringLayer)
     if codom(f) != dom(g)
       error("Incompatible domains $(codom(f)) and $(dom(g))")
@@ -158,10 +157,10 @@ WiringLayer(inputs::ObExpr, outputs::ObExpr) =
     end
     h
   end
-  
+
   otimes(A::NLayer, B::NLayer) = NLayer(A.n + B.n)
   munit(::Type{NLayer}) = NLayer(0)
-  
+
   function otimes(f::WiringLayer, g::WiringLayer)
     h = WiringLayer(otimes(dom(f),dom(g)), otimes(codom(f),codom(g)))
     m, n = dom(f).n, codom(f).n
@@ -169,7 +168,7 @@ WiringLayer(inputs::ObExpr, outputs::ObExpr) =
     add_wires!(h, src+m => tgt+n for (src, tgt) in wires(g))
     h
   end
-  
+
   function braid(A::NLayer, B::NLayer)
     f = WiringLayer(otimes(A,B), otimes(B,A))
     add_wires!(f, i => i+B.n for i in 1:A.n)

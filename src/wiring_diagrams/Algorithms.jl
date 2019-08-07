@@ -1,13 +1,27 @@
 """ Algorithms operating on wiring diagrams.
 """
 module WiringDiagramAlgorithms
-export normalize_cartesian!, normalize_copy!, normalize_delete!
+export topological_sort, normalize_cartesian!, normalize_copy!,
+  normalize_delete!
 
-using LightGraphs: topological_sort_by_dfs
+import LightGraphs
 using UnionFind
 
 using ..WiringDiagramCore
 import ..WiringDiagramCore: set_box
+
+# Traversal
+###########
+
+""" Topological sort of boxes in wiring diagram.
+
+Returns a list of box IDs, excluding the special input and output IDs.
+"""
+function topological_sort(d::WiringDiagram)::Vector{Int}
+  vs = LightGraphs.topological_sort_by_dfs(graph(d))
+  skip = (input_id(d), output_id(d))
+  filter(v -> !(v in skip), vs)
+end
 
 # Normal forms
 ##############
@@ -15,7 +29,7 @@ import ..WiringDiagramCore: set_box
 """ Put a wiring diagram for a cartesian category into normal form.
 
 This function puts a wiring diagram representing a morphism in a free cartesian
-category into normal form. Copies and deletions are simplified as much as 
+category into normal form. Copies and deletions are simplified as much as
 possible.
 """
 function normalize_cartesian!(d::WiringDiagram)
@@ -91,10 +105,8 @@ where deletion is natural.
 """
 function normalize_delete!(d::WiringDiagram)
   unused = Set{Int}()
-  skip = (input_id(d), output_id(d))
-  # TODO: Define topological sort for wiring diagrams.
-  for v in reverse(topological_sort_by_dfs(graph(d)))
-    if !(v in skip) && all(wire.target.box in unused for wire in out_wires(d, v))
+  for v in reverse(topological_sort(d))
+    if all(wire.target.box in unused for wire in out_wires(d, v))
       push!(unused, v)
     end
   end
