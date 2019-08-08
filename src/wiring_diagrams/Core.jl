@@ -18,7 +18,7 @@ syntactic expressions to wiring diagrams (TODO: and back again?).
 This module offers a generic data structure for wiring diagrams. Arbitrary data
 can be attached to the boxes, ports, and wires of a wiring diagram. There is a
 low-level interface for direct manipulation of boxes and wires and a high-level
-interface based on the theory of symmetric monoidal categories. 
+interface based on the theory of symmetric monoidal categories.
 
 The wiring diagrams in this module are "abstract" in the sense that they cannot
 be directly rendered as raster or vector graphics. However, they form a useful
@@ -29,8 +29,8 @@ module WiringDiagramCore
 
 export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
   PortKind, InputPort, OutputPort, input_ports, output_ports, port_value,
-  input_id, output_id, boxes, box_ids, nboxes, nwires, box, wires, has_wire,
-  graph, add_box!, add_boxes!, add_wire!, add_wires!, validate_ports,
+  input_id, output_id, boxes, box_ids, nboxes, nwires, box, wirenames, wires,
+  has_wire, graph, add_box!, add_boxes!, add_wire!, add_wires!, validate_ports,
   rem_box!, rem_boxes!, rem_wire!, rem_wires!, substitute!, encapsulate!,
   all_neighbors, neighbors, outneighbors, inneighbors, in_wires, out_wires,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create,
@@ -208,7 +208,7 @@ mutable struct WiringDiagram <: AbstractBox
   output_ports::Vector
   input_id::Int
   output_id::Int
-  
+
   function WiringDiagram(input_ports::Vector, output_ports::Vector)
     graph = MetaDiGraph()
     diagram = new(graph, input_ports, output_ports, 1, 2)
@@ -265,6 +265,10 @@ end
 box(f::WiringDiagram, v::Int) = get_prop(f.graph, v, :box)
 boxes(f::WiringDiagram) = AbstractBox[ box(f,v) for v in box_ids(f) ]
 nboxes(f::WiringDiagram) = nv(graph(f)) - 2
+
+wirenames(f::WiringDiagram) = foldr(union,
+    map(box->union(input_ports(box), output_ports(box)),
+        boxes(f)))
 
 function box_ids(f::WiringDiagram)
   skip = (input_id(f), output_id(f))
@@ -331,7 +335,7 @@ end
 function add_wire!(f::WiringDiagram, wire::Wire)
   # Check compatibility of port types.
   validate_ports(port_value(f, wire.source), port_value(f, wire.target))
-  
+
   # Add edge and edge properties.
   edge = Edge(wire.source.box, wire.target.box)
   if !has_edge(f.graph, edge)
@@ -492,12 +496,12 @@ function substitute_impl!(d::WiringDiagram, v::Int, sub::WiringDiagram)
   for u in box_ids(sub)
     sub_map[u] = add_box!(d, box(sub,u))
   end
-  
+
   # Add new wires from sub-diagram.
   for wire in wires(sub)
     src = get(sub_map, wire.source.box, 0)
     tgt = get(sub_map, wire.target.box, 0)
-    
+
     # Special case: wire from input port to output port.
     if wire.source.box == input_id(sub) && wire.target.box == output_id(sub)
       for in_wire in in_wires(d, v, wire.source.port)
@@ -509,7 +513,7 @@ function substitute_impl!(d::WiringDiagram, v::Int, sub::WiringDiagram)
     elseif wire.source.box == input_id(sub)
       for in_wire in in_wires(d, v, wire.source.port)
         add_wire!(d, Wire(in_wire.source, set_box(wire.target, tgt)))
-      end  
+      end
     # Special case: wire from internal box to output port.
     elseif wire.target.box == output_id(sub)
       for out_wire in out_wires(d, v, wire.target.port)
@@ -550,20 +554,20 @@ function encapsulate!(d::WiringDiagram, vss::Vector{Vector{Int}}, args...)
   rem_boxes!(d, vcat(vss...))
   return d
 end
-  
+
 function encapsulate_impl!(d::WiringDiagram, vs::Vector{Int})
   # Create ports for encapsulating box.
   sub_vertex = nv(graph(d)) + 1
   inputs, outputs, port_map, sub_port_map =
     encapsulated_ports(d, vs, sub_vertex)
-  
+
   # Add encapsulating diagram to original diagram.
   sub = WiringDiagram(inputs, outputs)
   @assert add_box!(d, sub) == sub_vertex
-  
+
   # Add boxes to encapsulating diagram.
   vertex_map = Dict{Int,Int}((v => add_box!(sub, box(d, v)) for v in vs))
-  
+
   # Add wires to original and encapsulating diagram.
   consumed = Set()
   for v in vs
@@ -571,14 +575,14 @@ function encapsulate_impl!(d::WiringDiagram, vs::Vector{Int})
       # Check if wire has already been processed.
       src, tgt = wire.source, wire.target
       if src.box in consumed || tgt.box in consumed; continue end
-      
+
       # Case 1: Add wire inside encapsulating diagram.
       if haskey(vertex_map, src.box) && haskey(vertex_map, tgt.box)
         add_wire!(sub, Wire(
           set_box(src, vertex_map[src.box]),
           set_box(tgt, vertex_map[tgt.box])
         ))
-      
+
       # Case 2: Add wire from encapsulating box to another box.
       elseif haskey(vertex_map, src.box)
         add_wire!(sub, Wire(
@@ -588,7 +592,7 @@ function encapsulate_impl!(d::WiringDiagram, vs::Vector{Int})
         if haskey(port_map, src)
           add_wire!(d, Wire(port_map[src], tgt))
         end
-      
+
       # Case 3: Add wire to encapsulating box from another box.
       elseif haskey(vertex_map, tgt.box)
         if haskey(port_map, tgt)
@@ -609,11 +613,11 @@ function encapsulate_impl!(d::WiringDiagram, vs::Vector{Int}, sub_value::Any)
   # Create ports for encapsulating box.
   sub_vertex = nv(graph(d)) + 1
   inputs, outputs, port_map, _ = encapsulated_ports(d, vs, sub_vertex)
-  
+
   # Add encapsulating box to original diagram.
   sub = Box(sub_value, inputs, outputs)
   @assert add_box!(d, sub) == sub_vertex
-  
+
   # Add wires to original and encapsulating diagram.
   vertex_set = Set(vs)
   consumed = Set()
@@ -622,11 +626,11 @@ function encapsulate_impl!(d::WiringDiagram, vs::Vector{Int}, sub_value::Any)
       # Check if wire has already been processed.
       src, tgt = wire.source, wire.target
       if src.box in consumed || tgt.box in consumed; continue end
-      
+
       # Case 1: Add wire from encapsulating box to another box.
       if haskey(port_map, src) && !(tgt.box in vertex_set)
         add_wire!(d, Wire(port_map[src], tgt))
-      
+
       # Case 2: Add wire to encapsulating box from another box.
       elseif !(src.box in vertex_set) && haskey(port_map, tgt)
         add_wire!(d, Wire(src, port_map[tgt]))
@@ -669,7 +673,7 @@ function encapsulated_ports(d::WiringDiagram, vs::Vector{Int}, subv::Int)
         end
       end
     end
-    
+
     # Add ports for outgoing wires, preserving port order.
     for port in eachindex(output_ports(box(d, v)))
       src = Port(v, OutputPort, port)
@@ -684,7 +688,7 @@ function encapsulated_ports(d::WiringDiagram, vs::Vector{Int}, subv::Int)
       end
     end
   end
-  
+
   # Return input and output port values with the tightest possible types.
   inputs, outputs = [ x for x in inputs ], [ x for x in outputs ]
   (inputs, outputs, outer_port_map, inner_port_map)
@@ -721,20 +725,20 @@ end
 @instance MonoidalCategoryWithBidiagonals(Ports, WiringDiagram) begin
   dom(f::WiringDiagram) = Ports(f.input_ports)
   codom(f::WiringDiagram) = Ports(f.output_ports)
-  
+
   function id(A::Ports)
     f = WiringDiagram(A, A)
     add_wires!(f, ((input_id(f),i) => (output_id(f),i) for i in eachindex(A)))
     return f
   end
-  
+
   function compose(f::WiringDiagram, g::WiringDiagram)
     # Check only that f and g have the same number of ports.
     # The port types will be checked when the wires are added.
     if length(codom(f)) != length(dom(g))
       error("Incompatible domains $(codom(f)) and $(dom(g))")
     end
-    
+
     h = WiringDiagram(dom(f), codom(g))
     fv = add_box!(h, f)
     gv = add_box!(h, g)
@@ -744,10 +748,10 @@ end
     substitute!(h, [fv,gv])
     return h
   end
-  
+
   otimes(A::Ports, B::Ports) = Ports([A.ports; B.ports])
   munit(::Type{Ports}) = Ports([])
-  
+
   function otimes(f::WiringDiagram, g::WiringDiagram)
     h = WiringDiagram(otimes(dom(f),dom(g)), otimes(codom(f),codom(g)))
     m, n = length(dom(f)), length(codom(f))
@@ -760,7 +764,7 @@ end
     substitute!(h, [fv,gv])
     return h
   end
-  
+
   function braid(A::Ports, B::Ports)
     h = WiringDiagram(otimes(A,B), otimes(B,A))
     m, n = length(A), length(B)
