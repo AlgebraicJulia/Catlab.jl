@@ -169,7 +169,8 @@ function write_graphml_data(state::WriteState, xelem::XMLElement, scope::String,
     # Write attribute data to <key> element.
     xdata = new_child(xelem, "data")
     set_attribute(xdata, "key", key.id)
-    set_content(xdata, write_graphml_data_value(attr_value))
+    xvalue = write_graphml_data_value(attr_value)
+    (xvalue isa AbstractString ? set_content : add_child)(xdata, xvalue)
   end
 end
 
@@ -290,10 +291,10 @@ end
 function read_graphml_keys(xroot::XMLElement)
   keys = OrderedDict{String,GraphMLKey}()
   for xkey in xroot["key"]
-    # Read attribute ID, name, type, and scope.
+    # Read attribute ID, name, type, and scope. Both name and type are optional.
     attrs = attributes_dict(xkey)
     id = attrs["id"]
-    attr_name = attrs["attr.name"]
+    attr_name = get(attrs, "attr.name", id)
     attr_type = get(attrs, "attr.type", "string")
     scope = get(attrs, "for", "all")
     
@@ -312,18 +313,22 @@ function read_graphml_keys(xroot::XMLElement)
   keys
 end
 
-function read_graphml_data(state::ReadState, xelem::XMLElement)
+function read_graphml_data(keys::AbstractDict, xelem::XMLElement)
   # FIXME: We are not using the default values for the keys.
   data = Dict{String,Any}()
   for xdata in xelem["data"]
     xkey = attribute(xdata, "key", required=true)
-    key = state.keys[xkey]
+    key = keys[xkey]
     data[key.attr_name] = read_graphml_data_value(
-      Val{Symbol(key.attr_type)}, content(xdata))
+      Val{Symbol(key.attr_type)}, xdata)
   end
   data
 end
+read_graphml_data(state::ReadState, xelem::XMLElement) =
+  read_graphml_data(state.keys, xelem)
 
+read_graphml_data_value(type::Type, xdata::XMLElement) =
+  read_graphml_data_value(type, content(xdata))
 read_graphml_data_value(::Type{Val{:boolean}}, s::String) = parse(Bool, lowercase(s))
 read_graphml_data_value(::Type{Val{:int}}, s::String) = parse(Int, s)
 read_graphml_data_value(::Type{Val{:long}}, s::String) = parse(Int, s)

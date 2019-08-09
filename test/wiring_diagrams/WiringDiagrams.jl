@@ -19,3 +19,7 @@ end
 @testset "JSON" begin
   include("JSON.jl")
 end
+
+@testset "yFiles" begin
+  include("YFiles.jl")
+end
