@@ -20,6 +20,7 @@ export read_graphml, write_graphml,
 using DataStructures: OrderedDict
 import JSON
 using LightXML
+using LightGraphs, MetaGraphs
 
 using ..WiringDiagramCore, ..WiringDiagramSerialization
 import ..WiringDiagramCore: PortEdgeData
@@ -169,7 +170,8 @@ function write_graphml_data(state::WriteState, xelem::XMLElement, scope::String,
     # Write attribute data to <key> element.
     xdata = new_child(xelem, "data")
     set_attribute(xdata, "key", key.id)
-    set_content(xdata, write_graphml_data_value(attr_value))
+    xvalue = write_graphml_data_value(attr_value)
+    (xvalue isa AbstractString ? set_content : add_child)(xdata, xvalue)
   end
 end
 
@@ -287,13 +289,65 @@ function read_graphml_ports(state::ReadState, xnode::XMLElement)
   (ports, input_ports, output_ports)
 end
 
+""" Read attributed graph (`MetaGraph`) from GraphML.
+
+TODO: This function belongs elsewhere, perhaps in MetaGraphs.jl itself.
+It is the equivalent of NetworkX's `read_graphml` function.
+"""
+function read_graphml_metagraph(xdoc::XMLDocument; directed::Bool=false,
+                                multigraph::Bool=false)::AbstractMetaGraph
+  xroot = root(xdoc)
+  @assert name(xroot) == "graphml" "Root element of GraphML document must be <graphml>"
+  xgraphs = xroot["graph"]
+  @assert length(xgraphs) == 1 "Root element of GraphML document must contain exactly one <graph>"
+  xgraph = xgraphs[1]
+  
+  # Read the GraphML keys.
+  keys = read_graphml_keys(xroot)
+  read_props = xnode::XMLElement ->
+    Dict(Symbol(k) => v for (k,v) in read_graphml_data(keys, xnode))
+  
+  # Create attributed graph.
+  graph = if directed || attribute(xgraph, "edgedefault") == "directed"
+    MetaDiGraph()
+  else
+    MetaGraph()
+  end
+  set_props!(graph, read_props(xgraph))
+  
+  # Read the node elements.
+  vertices = Dict{String,Int}()
+  for (i, xnode) in enumerate(xgraph["node"])
+    node_id = attribute(xnode, "id", required=true)
+    vertices[node_id] = i
+    add_vertex!(graph, read_props(xnode))
+  end
+  
+  # Read the edge elements.
+  for xedge in xgraph["edge"]
+    source_id = attribute(xedge, "source", required=true)
+    target_id = attribute(xedge, "target", required=true)
+    source, target = vertices[source_id], vertices[target_id]
+    if multigraph
+      if !has_edge(graph, source, target)
+        add_edge!(graph, source, target, Dict(:edges => Dict{Symbol,Any}[]))
+      end
+      push!(get_prop(graph, source, target, :edges), read_props(xedge))
+    else
+      add_edge!(graph, source, target, read_props(xedge))
+    end
+  end
+  
+  graph
+end
+
 function read_graphml_keys(xroot::XMLElement)
   keys = OrderedDict{String,GraphMLKey}()
   for xkey in xroot["key"]
-    # Read attribute ID, name, type, and scope.
+    # Read attribute ID, name, type, and scope. Both name and type are optional.
     attrs = attributes_dict(xkey)
     id = attrs["id"]
-    attr_name = attrs["attr.name"]
+    attr_name = get(attrs, "attr.name", id)
     attr_type = get(attrs, "attr.type", "string")
     scope = get(attrs, "for", "all")
     
@@ -312,18 +366,22 @@ function read_graphml_keys(xroot::XMLElement)
   keys
 end
 
-function read_graphml_data(state::ReadState, xelem::XMLElement)
+function read_graphml_data(keys::AbstractDict, xelem::XMLElement)
   # FIXME: We are not using the default values for the keys.
   data = Dict{String,Any}()
   for xdata in xelem["data"]
     xkey = attribute(xdata, "key", required=true)
-    key = state.keys[xkey]
+    key = keys[xkey]
     data[key.attr_name] = read_graphml_data_value(
-      Val{Symbol(key.attr_type)}, content(xdata))
+      Val{Symbol(key.attr_type)}, xdata)
   end
   data
 end
+read_graphml_data(state::ReadState, xelem::XMLElement) =
+  read_graphml_data(state.keys, xelem)
 
+read_graphml_data_value(type::Type, xdata::XMLElement) =
+  read_graphml_data_value(type, content(xdata))
 read_graphml_data_value(::Type{Val{:boolean}}, s::String) = parse(Bool, lowercase(s))
 read_graphml_data_value(::Type{Val{:int}}, s::String) = parse(Int, s)
 read_graphml_data_value(::Type{Val{:long}}, s::String) = parse(Int, s)
