@@ -17,15 +17,27 @@ using LightXML
 using LightGraphs, MetaGraphs
 
 using ..WiringDiagramCore
-using ..GraphMLWiringDiagrams: read_graphml_keys, read_graphml_data
+using ..GraphMLWiringDiagrams: read_graphml_metagraph
 import ..GraphMLWiringDiagrams: read_graphml_data_value
+
+# Data types
+############
+
+struct BoxLayout
+  box::Int
+  input_coord_map::Dict  # Map from coordinates to input ports
+  output_coord_map::Dict # Map from coordinates to output ports
+end
 
 # Deserialization
 #################
 
 """ Read a wiring diagram in the GraphML dialect of yEd and yFiles.
 """
-function read_yfiles_diagram(xdoc::XMLDocument)::WiringDiagram
+function read_yfiles_diagram(xdoc::XMLDocument; direction::Symbol=:vertical,
+                             keep_labels::Bool=true)::WiringDiagram
+  @assert direction in (:horizontal, :vertical)
+  
   # Clean up GraphML keys before reading.
   xroot = root(xdoc)
   for xkey in xroot["key"]
@@ -40,91 +52,122 @@ function read_yfiles_diagram(xdoc::XMLDocument)::WiringDiagram
     end
   end
   
-  # Read an attributed graph with the diagram's underlying graph structure.
-  graph = read_graphml_metagraph(xdoc, directed=true)
+  # Read the diagram's underlying graph as an attributed graph.
+  graph = read_graphml_metagraph(xdoc, directed=true, multigraph=true)
   
-  # XXX: Debug
-  println(props(graph))
+  # Extract needed information from yFiles' "nodegraphics" and "edgegraphics"
+  # and discard the rest.
   for v in 1:nv(graph)
-    println(props(graph, v))
+    node_graphics = pop!(props(graph, v), :nodegraphics)
+    if keep_labels & haskey(node_graphics, :label)
+      set_prop!(graph, v, :label, node_graphics[:label])
+    end
   end
   for edge in edges(graph)
-    println(props(graph, edge))
+    for wire_data in get_prop(graph, edge, :edges)
+      edge_graphics = pop!(wire_data, :edgegraphics)
+      wire_data[:source_coord] = round(Int,
+        edge_graphics[direction == :vertical ? :source_x : :source_y])
+      wire_data[:target_coord] = round(Int,
+        edge_graphics[direction == :vertical ? :target_x : :target_y])
+      if keep_labels & haskey(edge_graphics, :label)
+        wire_data[:label] = edge_graphics[:label]
+      end
+    end
   end
   
-  WiringDiagram([], [])
+  # Add boxes and their ports to diagram, including the outer box.
+  diagram = WiringDiagram([], [])
+  boxes = BoxLayout[]
+  for v in 1:nv(graph)
+    box_layout = if pop!(props(graph, v), :input, false)
+      # Special case: diagram inputs.
+      ports, coord_map = infer_output_ports(graph, v)
+      diagram.input_ports = ports
+      BoxLayout(input_id(diagram), Dict(), coord_map)
+    elseif pop!(props(graph, v), :output, false)
+      # Special case: diagram outputs.
+      ports, coord_map = infer_input_ports(graph, v)
+      diagram.output_ports = ports
+      BoxLayout(output_id(diagram), coord_map, Dict())
+    else
+      # Generic case: a box.
+      input_ports, input_coord_map = infer_input_ports(graph, v)
+      output_ports, output_coord_map = infer_output_ports(graph, v)
+      box_id = add_box!(diagram, Box(props(graph, v), input_ports, output_ports))
+      BoxLayout(box_id, input_coord_map, output_coord_map)
+    end
+    push!(boxes, box_layout)
+  end
+  
+  # Add wires to diagram.
+  for edge in edges(graph)
+    source, target = boxes[src(edge)], boxes[dst(edge)]
+    for wire_data in get_prop(graph, edge, :edges)
+      source_port = source.output_coord_map[pop!(wire_data, :source_coord)]
+      target_port = target.input_coord_map[pop!(wire_data, :target_coord)]
+      add_wire!(diagram, Wire(wire_data,
+        (source.box, source_port) => (target.box, target_port)))
+    end
+  end
+  
+  diagram
 end
-function read_yfiles_diagram(filename::String)
-  read_yfiles_diagram(LightXML.parse_file(filename))
+function read_yfiles_diagram(filename::String; kw...)
+  read_yfiles_diagram(LightXML.parse_file(filename); kw...)
+end
+
+function infer_input_ports(graph::MetaDiGraph, v::Int)
+  in_edges = reduce(vcat, get_prop(graph, u, v, :edges) for u in inneighbors(graph, v))
+  in_coords = [ edge[:target_coord] for edge in in_edges ]
+  infer_ports_from_coordinates(in_coords)
+end
+function infer_output_ports(graph::MetaDiGraph, v::Int)
+  out_edges = reduce(vcat, get_prop(graph, v, u, :edges) for u in outneighbors(graph, v))
+  out_coords = [ edge[:source_coord] for edge in out_edges ]
+  infer_ports_from_coordinates(out_coords)
+end
+
+function infer_ports_from_coordinates(coords::Vector{T}) where T
+  unique_coords = sort(unique(coords))
+  ports = repeat([nothing], length(unique_coords))
+  coord_map = Dict{T,Int}(x => i for (i, x) in enumerate(unique_coords))
+  (ports, coord_map)
 end
 
 function read_graphml_data_value(::Type{Val{:yfiles_nodegraphics}}, xdata::XMLElement)
-  ynode = first(child_elements(xdata))
+  ynode = first(child_elements(xdata)) # e.g., ShapeNode
   ygeom = find_element(ynode, "Geometry")
-  ylabel = find_element(ynode, "NodeLabel")
-  Dict(
-    :label => content(ylabel),
+  data = Dict{Symbol,Any}(
     :x => float_attribute(ygeom, "x"),
     :y => float_attribute(ygeom, "y"),
     :width => float_attribute(ygeom, "width"),
     :height => float_attribute(ygeom, "height"),
   )
+  ylabel = find_element(ynode, "NodeLabel")
+  if !isnothing(ylabel)
+    data[:label] = content(ylabel)
+  end
+  data
 end
 
 function read_graphml_data_value(::Type{Val{:yfiles_edgegraphics}}, xdata::XMLElement)
-  yedge = first(child_elements(xdata))
+  yedge = first(child_elements(xdata)) # e.g., PolyLineEdge
   ypath = find_element(yedge, "Path")
-  Dict(
+  data = Dict{Symbol,Any}(
     :source_x => float_attribute(ypath, "sx"),
     :source_y => float_attribute(ypath, "sy"),
     :target_x => float_attribute(ypath, "tx"),
     :target_y => float_attribute(ypath, "ty"),
   )
+  ylabel = find_element(yedge, "EdgeLabel")
+  if !isnothing(ylabel)
+    data[:label] = content(ylabel)
+  end
+  data
 end
 
-float_attribute(xelem, attr) = parse(Float64, attribute(xelem, attr, required=true))
-
-""" Read attributed graph (`MetaGraph`) from GraphML.
-
-FIXME: This function belongs somewhere else, perhaps in MetaGraphs.jl itself.
-"""
-function read_graphml_metagraph(xdoc::XMLDocument; directed::Bool=true)::AbstractMetaGraph
-  xroot = root(xdoc)
-  @assert name(xroot) == "graphml" "Root element of GraphML document must be <graphml>"
-  xgraphs = xroot["graph"]
-  @assert length(xgraphs) == 1 "Root element of GraphML document must contain exactly one <graph>"
-  xgraph = xgraphs[1]
-  
-  # Read the GraphML keys.
-  keys = read_graphml_keys(xroot)
-  read_props = xnode::XMLElement ->
-    Dict(Symbol(k) => v for (k,v) in read_graphml_data(keys, xnode))
-  
-  # Create attributed graph.
-  graph = if directed || attribute(xgraph, "edgedefault") == "directed"
-    MetaDiGraph()
-  else
-    MetaGraph()
-  end
-  set_props!(graph, read_props(xgraph))
-  
-  # Read the node elements.
-  vertices = Dict{String,Int}()
-  for (i, xnode) in enumerate(xgraph["node"])
-    node_id = attribute(xnode, "id", required=true)
-    vertices[node_id] = i
-    add_vertex!(graph, read_props(xnode))
-  end
-  
-  # Read the edge elements.
-  for xedge in xgraph["edge"]
-    source_id = attribute(xedge, "source", required=true)
-    target_id = attribute(xedge, "target", required=true)
-    add_edge!(graph, vertices[source_id], vertices[target_id],
-              read_props(xedge))
-  end
-  
-  graph
-end
+float_attribute(xelem::XMLElement, name::AbstractString) =
+  parse(Float64, attribute(xelem, name, required=true))
 
 end
