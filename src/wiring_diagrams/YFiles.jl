@@ -17,7 +17,7 @@ using LightXML
 using LightGraphs, MetaGraphs
 
 using ..WiringDiagramCore
-using ..GraphMLWiringDiagrams: read_graphml_metagraph
+using ..GraphMLWiringDiagrams: convert_from_graphml_data, read_graphml_metagraph
 import ..GraphMLWiringDiagrams: read_graphml_data_value
 
 # Data types
@@ -34,8 +34,8 @@ end
 
 """ Read a wiring diagram in the GraphML dialect of yEd and yFiles.
 """
-function read_yfiles_diagram(xdoc::XMLDocument; direction::Symbol=:vertical,
-                             keep_labels::Bool=true)::WiringDiagram
+function read_yfiles_diagram(BoxValue::Type, WireValue::Type, xdoc::XMLDocument;
+    direction::Symbol=:vertical, keep_labels::Bool=true)::WiringDiagram
   @assert direction in (:horizontal, :vertical)
   
   # Clean up GraphML keys before reading.
@@ -94,7 +94,8 @@ function read_yfiles_diagram(xdoc::XMLDocument; direction::Symbol=:vertical,
       # Generic case: a box.
       input_ports, input_coord_map = infer_input_ports(graph, v)
       output_ports, output_coord_map = infer_output_ports(graph, v)
-      box_id = add_box!(diagram, Box(props(graph, v), input_ports, output_ports))
+      value = convert_from_graphml_data(BoxValue, props(graph, v))
+      box_id = add_box!(diagram, Box(value, input_ports, output_ports))
       BoxLayout(box_id, input_coord_map, output_coord_map)
     end
     push!(boxes, box_layout)
@@ -106,15 +107,16 @@ function read_yfiles_diagram(xdoc::XMLDocument; direction::Symbol=:vertical,
     for wire_data in get_prop(graph, edge, :edges)
       source_port = source.output_coord_map[pop!(wire_data, :source_coord)]
       target_port = target.input_coord_map[pop!(wire_data, :target_coord)]
-      add_wire!(diagram, Wire(wire_data,
+      value = convert_from_graphml_data(WireValue, wire_data)
+      add_wire!(diagram, Wire(value,
         (source.box, source_port) => (target.box, target_port)))
     end
   end
   
   diagram
 end
-function read_yfiles_diagram(filename::String; kw...)
-  read_yfiles_diagram(LightXML.parse_file(filename); kw...)
+function read_yfiles_diagram(BoxValue::Type, WireValue::Type, filename::String; kw...)
+  read_yfiles_diagram(BoxValue, WireValue, LightXML.parse_file(filename); kw...)
 end
 
 function infer_input_ports(graph::MetaDiGraph, v::Int)

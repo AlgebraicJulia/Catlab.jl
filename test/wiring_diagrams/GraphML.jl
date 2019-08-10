@@ -12,7 +12,7 @@ function roundtrip(f::WiringDiagram)
   read_graphml(Dict, Nothing, Dict, xdoc)
 end
 
-ports(n) = Nothing[ nothing for i in 1:n ]
+ports(n::Int) = repeat([nothing], n)
 diagram = WiringDiagram(ports(1), ports(1))
 f = Box(Dict("name" => "f", "type" => "foo"), ports(1), ports(1))
 fv = add_box!(diagram, f)

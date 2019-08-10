@@ -34,7 +34,7 @@ export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
   rem_box!, rem_boxes!, rem_wire!, rem_wires!, substitute!, encapsulate!,
   all_neighbors, neighbors, outneighbors, inneighbors, in_wires, out_wires,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create,
-  permute, to_wiring_diagram
+  permute, is_permuted_equal, to_wiring_diagram
 
 using AutoHashEquals
 using LightGraphs, MetaGraphs
@@ -228,12 +228,36 @@ output_id(diagram::WiringDiagram) = diagram.output_id
 
 Warning: This method checks exact equality of the underlying graph
 representation, not mathematical equality which involves graph isomorphism.
+
+See also: `is_permuted_equal`
 """
 function Base.:(==)(d1::WiringDiagram, d2::WiringDiagram)
   (input_ports(d1) == input_ports(d2) && output_ports(d1) == output_ports(d2) &&
    input_id(d1) == input_id(d2) && output_id(d1) == output_id(d2) &&
    graph(d1) == graph(d2) &&
    boxes(d1) == boxes(d2) && sort!(wires(d1)) == sort!(wires(d2)))
+end
+
+""" Check equality of wiring diagram under permutation of boxes.
+
+When the boxes in the first diagram `d1` are permuted according to `perm`,
+does it become identical to the second diagram `d2`?
+"""
+function is_permuted_equal(d1::WiringDiagram, d2::WiringDiagram, perm::Vector{Int})
+  @assert nboxes(d1) == length(perm) && nboxes(d2) == length(perm)
+  d1_ids, d2_ids = box_ids(d1), box_ids(d2)
+  box_map = Dict{Int,Int}(d1_ids[perm[i]] => d2_ids[i] for i in eachindex(perm))
+  is_induced_equal(d1, d2, box_map)
+end
+function is_induced_equal(d1::WiringDiagram, d2::WiringDiagram, box_map::Dict{Int,Int})
+  box_map[input_id(d1)] = input_id(d2)
+  box_map[output_id(d1)] = output_id(d2)
+  map_wire = wire::Wire -> Wire(wire.value,
+    set_box(wire.source, box_map[wire.source.box]),
+    set_box(wire.target, box_map[wire.target.box]))
+  (input_ports(d1) == input_ports(d2) && output_ports(d1) == output_ports(d2) &&
+   all(box(d1,v) == box(d2,box_map[v]) for v in box_ids(d1)) &&
+   sort!(map(map_wire, wires(d1))) == sort!(wires(d2)))
 end
 
 function Base.show(io::IO, diagram::WiringDiagram)
