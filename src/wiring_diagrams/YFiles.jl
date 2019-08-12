@@ -120,12 +120,14 @@ function read_yfiles_diagram(BoxValue::Type, WireValue::Type, filename::String; 
 end
 
 function infer_input_ports(graph::MetaDiGraph, v::Int)
-  in_edges = reduce(vcat, get_prop(graph, u, v, :edges) for u in inneighbors(graph, v))
+  in_edges = (get_prop(graph, u, v, :edges) for u in inneighbors(graph, v))
+  in_edges = reduce(vcat, in_edges; init=[])
   in_coords = [ edge[:target_coord] for edge in in_edges ]
   infer_ports_from_coordinates(in_coords)
 end
 function infer_output_ports(graph::MetaDiGraph, v::Int)
-  out_edges = reduce(vcat, get_prop(graph, v, u, :edges) for u in outneighbors(graph, v))
+  out_edges = (get_prop(graph, v, u, :edges) for u in outneighbors(graph, v))
+  out_edges = reduce(vcat, out_edges; init=[])
   out_coords = [ edge[:source_coord] for edge in out_edges ]
   infer_ports_from_coordinates(out_coords)
 end
