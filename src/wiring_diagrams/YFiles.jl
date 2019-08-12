@@ -56,15 +56,23 @@ function read_yfiles_diagram(BoxValue::Type, WireValue::Type, xdoc::XMLDocument;
   graph = read_graphml_metagraph(xdoc, directed=true, multigraph=true)
   
   # Extract needed information from yFiles' "nodegraphics" and "edgegraphics"
-  # and discard the rest.
+  # and discard the rest. Keep custom data properties, except the blank
+  # "description" property inserted by yEd.
   for v in 1:nv(graph)
-    node_graphics = pop!(props(graph, v), :nodegraphics)
+    v_data = props(graph, v)
+    if haskey(v_data, :description) && isempty(v_data[:description])
+      delete!(v_data, :description)
+    end
+    node_graphics = pop!(v_data, :nodegraphics)
     if keep_labels & haskey(node_graphics, :label)
-      set_prop!(graph, v, :label, node_graphics[:label])
+      v_data[:label] = node_graphics[:label]
     end
   end
   for edge in edges(graph)
     for wire_data in get_prop(graph, edge, :edges)
+      if haskey(wire_data, :description) && isempty(wire_data[:description])
+        delete!(wire_data, :description)
+      end
       edge_graphics = pop!(wire_data, :edgegraphics)
       wire_data[:source_coord] = round(Int,
         edge_graphics[direction == :vertical ? :source_x : :source_y])
