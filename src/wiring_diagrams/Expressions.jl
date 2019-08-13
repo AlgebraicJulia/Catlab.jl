@@ -48,9 +48,22 @@ function to_hom_expr(diagram::WiringDiagram)::HomExpr
   # TODO
 end
 
+""" Find parallel compositions in a graph.
+"""
+function parallel_in_graph(g::DiGraph)::Dict{Pair{Int,Int},Vector{Int}}
+  parallel = Dict{Pair{Int,Int},Vector{Int}}()
+  for v in 1:nv(g)
+    if length(inneighbors(g,v)) == 1 && length(outneighbors(g,v)) == 1
+      src, tgt = first(inneighbors(g,v)), first(outneighbors(g,v))
+      push!(get!(parallel, src => tgt, Int[]), v)
+    end
+  end
+  filter(pair -> length(last(pair)) > 1, parallel)
+end
+
 """ Find series compositions in a graph.
 """
-function series_in_graph(g::DiGraph)::Set{Vector{Int}}
+function series_in_graph(g::DiGraph)::Vector{Vector{Int}}
   reduced = DiGraph(nv(g))
   for edge in edges(g)
     if (length(outneighbors(g,src(edge))) == 1 &&
@@ -58,7 +71,7 @@ function series_in_graph(g::DiGraph)::Set{Vector{Int}}
       add_edge!(reduced, edge)
     end
   end
-  series = Set{Vector{Int}}()
+  series = Vector{Int}[]
   for component in weakly_connected_components(reduced)
     if length(component) > 1
       sub, vmap = induced_subgraph(reduced, component)
