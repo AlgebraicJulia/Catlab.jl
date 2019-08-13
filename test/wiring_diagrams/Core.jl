@@ -149,7 +149,7 @@ box_map = Dict(box(sub,v).value => v for v in box_ids(sub))
 ]))
 
 d = deepcopy(d0)
-encapsulate!(d, [fv,gv], :e)
+encapsulate!(d, [fv,gv], discard_boxes=true, value=:e)
 @test Set(boxes(d)) == Set([ Box(:e, [:A], [:C]), Box(h) ])
 box_map = Dict(box(d,v).value => v for v in box_ids(d))
 @test Set(wires(d)) == Set(map(Wire, [

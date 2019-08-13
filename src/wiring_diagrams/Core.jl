@@ -482,19 +482,19 @@ end
 This operation is the operadic composition of wiring diagrams.
 """
 function substitute!(d::WiringDiagram, v::Int, sub::WiringDiagram)
-  substitute_impl!(d, v, sub)
+  _substitute_insert!(d, v, sub)
   rem_box!(d, v)
   return d
 end
 function substitute!(d::WiringDiagram, v::Int)
-  substitute!(d, v, box(d,v))
+  substitute!(d, v, box(d,v)::WiringDiagram)
 end
 
 """ Simultaneous substitution of wiring diagrams for vertices.
 """
 function substitute!(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagram})
   for (v,sub) in zip(vs, subs)
-    substitute_impl!(d, v, sub)
+    _substitute_insert!(d, v, sub)
   end
   rem_boxes!(d, vs)
   return d
@@ -503,7 +503,9 @@ function substitute!(d::WiringDiagram, vs::Vector{Int})
   substitute!(d, vs, WiringDiagram[ box(d,v) for v in vs ])
 end
 
-function substitute_impl!(d::WiringDiagram, v::Int, sub::WiringDiagram)
+""" The insertion phase of a substitution operation.
+"""
+function _substitute_insert!(d::WiringDiagram, v::Int, sub::WiringDiagram)
   # Add new boxes from sub-diagram.
   sub_map = Dict{Int,Int}()
   for u in box_ids(sub)
@@ -546,35 +548,37 @@ end
 
 This operation is a (one-sided) inverse to subsitution (see `substitute!`).
 """
-function encapsulate!(d::WiringDiagram, vs::Vector{Int}, args...)
-  if isempty(vs)
-    error("Cannot encapsulate an empty set of boxes")
-  end
-  encapsulate_impl!(d, vs, args...)
-  rem_boxes!(d, vs)
-  return d
+function encapsulate!(d::WiringDiagram, vs::Vector{Int};
+                      discard_boxes::Bool=false, value::Any=nothing)
+  encapsulate!(d, [vs]; discard_boxes=discard_boxes, values=[value])
 end
 
 """ Simultaneous encapsulation of boxes.
 """
-function encapsulate!(d::WiringDiagram, vss::Vector{Vector{Int}}, args...)
+function encapsulate!(d::WiringDiagram, vss::Vector{Vector{Int}};
+                      discard_boxes::Bool=false, values::Union{Nothing,Vector}=nothing)
   if any(isempty(vs) for vs in vss)
     error("Cannot encapsulate an empty set of boxes")
   end
-  for vs in vss
-    encapsulate_impl!(d, vs, args...)
+  if isnothing(values)
+    values = repeat([nothing], length(vss))
+  end
+  encapsulate_insert! = discard_boxes ? _encapsulate_in_box! : _encapsulate_in_diagram!
+  for (vs, value) in zip(vss, values)
+    encapsulate_insert!(d, vs, value)
   end
   rem_boxes!(d, vcat(vss...))
   return d
 end
   
-function encapsulate_impl!(d::WiringDiagram, vs::Vector{Int})
+function _encapsulate_in_diagram!(d::WiringDiagram, vs::Vector{Int}, value::Any)
   # Create ports for encapsulating box.
   sub_vertex = nv(graph(d)) + 1
   inputs, outputs, port_map, sub_port_map =
     encapsulated_ports(d, vs, sub_vertex)
   
   # Add encapsulating diagram to original diagram.
+  # FIXME: Diagram value not currently supported, so `value` is ignored.
   sub = WiringDiagram(inputs, outputs)
   @assert add_box!(d, sub) == sub_vertex
   
@@ -622,13 +626,13 @@ function encapsulate_impl!(d::WiringDiagram, vs::Vector{Int})
   return d
 end
 
-function encapsulate_impl!(d::WiringDiagram, vs::Vector{Int}, sub_value::Any)
+function _encapsulate_in_box!(d::WiringDiagram, vs::Vector{Int}, value::Any)
   # Create ports for encapsulating box.
   sub_vertex = nv(graph(d)) + 1
   inputs, outputs, port_map, _ = encapsulated_ports(d, vs, sub_vertex)
   
   # Add encapsulating box to original diagram.
-  sub = Box(sub_value, inputs, outputs)
+  sub = Box(value, inputs, outputs)
   @assert add_box!(d, sub) == sub_vertex
   
   # Add wires to original and encapsulating diagram.
