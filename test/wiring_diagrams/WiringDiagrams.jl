@@ -12,6 +12,10 @@ end
   include("Algorithms.jl")
 end
 
+@testset "Expressions" begin
+  include("Expressions.jl")
+end
+
 @testset "GraphML" begin
   include("GraphML.jl")
 end

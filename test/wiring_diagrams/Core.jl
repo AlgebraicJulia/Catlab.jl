@@ -286,15 +286,4 @@ X = Ports([:A])
 # Unit
 @test compose(otimes(id(X),create(X)), mmerge(X)) == id(X)
 
-# Expression conversion
-#----------------------
-
-# Functorality
-f, g = Hom(:f,A,B), Hom(:g,B,A)
-fd, gd = WiringDiagram(f), WiringDiagram(g)
-@test to_wiring_diagram(f) == fd
-@test to_wiring_diagram(compose(f,g)) == compose(fd,gd)
-@test to_wiring_diagram(otimes(f,g)) == otimes(fd,gd)
-@test to_wiring_diagram(munit(FreeSymmetricMonoidalCategory.Ob)) == munit(Ports)
-
 end
