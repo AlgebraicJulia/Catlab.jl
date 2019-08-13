@@ -4,12 +4,12 @@ This module defines a generic data structure to represent a wiring between one
 layer of input ports and another layer of output ports. A wiring layer forms a
 bipartite graph with independent edge sets the input ports and the output ports.
 
-Unlike wiring diagrams, wiring layers are an auxillary data structure. They are
-not very interesting in their own right, but they can be a useful intermediate
-representation. For example, a morphism expression comprising generators,
-compositions, products, and wiring layers is intermediate between a pure GAT
-expression (which has no wiring layers, but may have identities, braidings,
-copies, etc.) and a wiring diagram, which is purely graphical.
+Wiring layers are an auxillary data structure. They are not very interesting in
+their own right, but they can be a useful intermediate representation. For
+example, a morphism expression comprising generators, compositions, products,
+and wiring layers is intermediate between a pure GAT expression (which has no
+wiring layers, but may have identities, braidings, copies, etc.) and a wiring
+diagram, which is purely graphical.
 """
 module WiringLayers
 export WiringLayer, NLayer, nwires, wires, has_wire,

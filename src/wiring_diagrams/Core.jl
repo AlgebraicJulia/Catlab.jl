@@ -8,13 +8,6 @@ literature calls "directed graphs with ports" or more simply "port graphs". The
 main difference is that a wiring diagram has an "outer box": a wiring diagram
 has its own ports that can be connected to the ports of its boxes.
 
-Wiring diagrams are a graphical syntax for morphisms in a monoidal category.
-As mathematical objects, they are intermediate between morphisms (viewed
-abstractly) and expressions in the textual syntax: a single morphism may
-correspond to many wiring diagrams, and a single wiring diagram may correspond
-to many syntactic expressions. This module provides functions to translate
-syntactic expressions to wiring diagrams (TODO: and back again?).
-
 This module offers a generic data structure for wiring diagrams. Arbitrary data
 can be attached to the boxes, ports, and wires of a wiring diagram. There is a
 low-level interface for direct manipulation of boxes and wires and a high-level
@@ -34,7 +27,7 @@ export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
   rem_box!, rem_boxes!, rem_wire!, rem_wires!, substitute!, encapsulate!,
   all_neighbors, neighbors, outneighbors, inneighbors, in_wires, out_wires,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create,
-  permute, is_permuted_equal, to_wiring_diagram
+  permute, is_permuted_equal
 
 using AutoHashEquals
 using LightGraphs, MetaGraphs
@@ -829,21 +822,6 @@ function mmerge(A::Ports, n::Int)::WiringDiagram
     add_wires!(f, ((input_id(f),i+m*(j-1)) => (output_id(f),i) for i in 1:m))
   end
   return f
-end
-
-""" Convert a syntactic expression into a wiring diagram.
-
-The morphism expression should belong to the doctrine of symmetric monoidal
-categories, possibly with diagonals and codiagonals. Thus, the doctrines of
-cartesian, cocartesian, and biproduct categories are supported.
-"""
-function to_wiring_diagram(expr::CategoryExpr)
-  functor((Ports, WiringDiagram), expr;
-    terms = Dict(
-      :Ob => (expr) -> Ports([first(expr)]),
-      :Hom => (expr) -> WiringDiagram(expr),
-    )
-  )
 end
 
 function collect_values(ob::ObExpr)::Vector
