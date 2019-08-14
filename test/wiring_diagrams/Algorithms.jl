@@ -14,29 +14,20 @@ h = Hom(:h, C, D)
 ##############
 
 # Copies.
-original = compose(mcopy(A), otimes(f,f))
-normal = compose(f, mcopy(B))
-@test normalize_copy!(to_wiring_diagram(original)) == to_wiring_diagram(normal)
+d = to_wiring_diagram(compose(mcopy(A), otimes(f,f)))
+normal = to_wiring_diagram(compose(f, mcopy(B)))
+@test normalize_copy!(d) == normal
 
-original = compose(f, mcopy(B), otimes(g,g))
-# XXX: Need wiring diagram isomorphism.
-#normal = compose(f, g, mcopy(C))
-#@test normalize_copy!(to_wiring_diagram(original)) == to_wiring_diagram(normal)
-normal = WiringDiagram(A, otimes(C,C))
-gv = add_box!(normal, g)
-fv = add_box!(normal, f)
-add_wires!(normal, Pair[
-  (input_id(normal),1) => (fv,1),
-  (fv,1) => (gv,1),
-  (gv,1) => (output_id(normal),1),
-  (gv,1) => (output_id(normal),2),
-])
-@test normalize_copy!(to_wiring_diagram(original)) == normal
+d = to_wiring_diagram(compose(f, mcopy(B), otimes(g,g)))
+normalize_copy!(d)
+normal = to_wiring_diagram(compose(f, g, mcopy(C)))
+perm = sortperm(boxes(d); by=box->box.value)
+@test is_permuted_equal(d, normal, perm)
 
-original = compose(mcopy(A), otimes(f,f), otimes(g,g))
-#normal = compose(f, g, mcopy(C))
-#@test normalize_copy!(to_wiring_diagram(original)) == to_wiring_diagram(normal)
-@test normalize_copy!(to_wiring_diagram(original)) == normal
+d = to_wiring_diagram(compose(mcopy(A), otimes(f,f), otimes(g,g)))
+normalize_copy!(d)
+perm = sortperm(boxes(d); by=box->box.value)
+@test is_permuted_equal(d, normal, perm)
 
 # Deletions.
 d = WiringDiagram(f)
@@ -59,14 +50,13 @@ add_wires!(d, [
 @test normalize_delete!(d) == WiringDiagram(f)
 
 # Cartesian morphisms.
-original = compose(
+d = to_wiring_diagram(compose(
   mcopy(A),
   otimes(id(A),mcopy(A)),
   otimes(f,f,f),
   otimes(id(B), id(B), compose(g, delete(C)))
-)
-normal = compose(f, mcopy(B))
-@test normalize_cartesian!(to_wiring_diagram(original)) == 
-  to_wiring_diagram(normal)
+))
+normal = to_wiring_diagram(compose(f, mcopy(B)))
+@test normalize_cartesian!(d) == normal
 
 end
