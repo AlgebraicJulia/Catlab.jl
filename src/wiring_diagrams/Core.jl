@@ -208,6 +208,10 @@ mutable struct WiringDiagram <: AbstractBox
     add_vertices!(graph, 2)
     return diagram
   end
+  function WiringDiagram(d::WiringDiagram)
+    # Copy constructor for shallow copy.
+    new(copy(d.graph), d.input_ports, d.output_ports, d.input_id, d.output_id)
+  end
 end
 
 function WiringDiagram(inputs::Ports, outputs::Ports)
@@ -252,6 +256,8 @@ function is_induced_equal(d1::WiringDiagram, d2::WiringDiagram, box_map::Dict{In
    all(box(d1,v) == box(d2,box_map[v]) for v in box_ids(d1)) &&
    sort!(map(map_wire, wires(d1))) == sort!(wires(d2)))
 end
+
+Base.copy(diagram::WiringDiagram) = WiringDiagram(diagram)
 
 function Base.show(io::IO, diagram::WiringDiagram)
   sshowcompact = x -> sprint(show, x, context=:compact => true)

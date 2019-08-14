@@ -75,6 +75,12 @@ add_wire!(d, (gv,1) => (output_id(d),1))
   (gv,1) => (output_id(d),1),
 ])
 
+# Shallow copies.
+d_copy = copy(d)
+rem_boxes!(d_copy, [fv,gv])
+@test nboxes(d) == 2
+@test nwires(d) == 3
+
 # Graph properties.
 @test Set(all_neighbors(d, fv)) == Set([input_id(d),gv])
 @test Set(all_neighbors(d, gv)) == Set([fv,output_id(d)])
