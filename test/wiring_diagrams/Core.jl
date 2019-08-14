@@ -41,16 +41,24 @@ rem_boxes!(d, [fv,hv])
 @test nboxes(d) == 1
 @test boxes(d) == [Box(g)]
 
-# Operations on wires
+# Operations on ports
 d = WiringDiagram(A, C)
 fv = add_box!(d, f)
 gv = add_box!(d, g)
+
+@test input_ports(d, fv) == [:A]
+@test output_ports(d, fv) == [:B]
+@test input_ports(d, output_id(d)) == [:C]
+@test output_ports(d, input_id(d)) == [:A]
+@test_throws ErrorException input_ports(d, input_id(d))
+@test_throws ErrorException output_ports(d, output_id(d))
 
 @test port_value(d, Port(input_id(d),OutputPort,1)) == :A
 @test port_value(d, Port(output_id(d),InputPort,1)) == :C
 @test port_value(d, Port(fv,InputPort,1)) == :A
 @test port_value(d, Port(fv,OutputPort,1)) == :B
 
+# Operations on wires
 @test nwires(d) == 0
 @test !has_wire(d, fv, gv)
 @test !has_wire(d, (fv,1) => (gv,1))

@@ -308,16 +308,29 @@ function has_wire(f::WiringDiagram, wire::Wire)
 end
 has_wire(f::WiringDiagram, pair::Pair) = has_wire(f, Wire(pair))
 
-function port_value(f::WiringDiagram, port::Port)
-  if port.box == input_id(f)
-    input_ports(f)[port.port]
-  elseif port.box == output_id(f)
-    output_ports(f)[port.port]
+function input_ports(f::WiringDiagram, v::Int)
+  if v == input_id(f)
+    error("Input vertex does not have input ports within wiring diagram")
+  elseif v == output_id(f)
+    output_ports(f)
   else
-    b = box(f, port.box)
-    ports = port.kind == InputPort ? input_ports(b) : output_ports(b)
-    ports[port.port]
+    input_ports(box(f, v))
   end
+end
+
+function output_ports(f::WiringDiagram, v::Int)
+  if v == input_id(f)
+    input_ports(f)
+  elseif v == output_id(f)
+    error("Output vertex does not have output ports within wiring diagram")
+  else
+    output_ports(box(f, v))
+  end
+end
+
+function port_value(f::WiringDiagram, port::Port)
+  get_ports = port.kind == InputPort ? input_ports : output_ports
+  get_ports(f, port.box)[port.port]
 end
 
 # Graph mutation.
