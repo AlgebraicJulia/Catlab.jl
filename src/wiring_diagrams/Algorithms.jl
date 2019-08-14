@@ -1,11 +1,12 @@
 """ Algorithms operating on wiring diagrams.
 """
 module WiringDiagramAlgorithms
-export topological_sort, normalize_cartesian!, normalize_copy!,
-  normalize_delete!
+export topological_sort, crossing_minimization_by_sort,
+  normalize_cartesian!, normalize_copy!, normalize_delete!
 
 import LightGraphs
 using UnionFind
+using Statistics: mean
 
 using ..WiringDiagramCore
 import ..WiringDiagramCore: set_box
@@ -112,6 +113,43 @@ function normalize_delete!(d::WiringDiagram)
   end
   rem_boxes!(d, unused)
   d
+end
+
+# Layout
+########
+
+""" One-sided crossing minimization by sorting a univariate statistic.
+
+The boxes in `sources` are fixed and the boxes in `targets` are permuted.
+A permutation `σ` of the latter is returned, such that `targets[σ]` are the
+sorted box IDs.
+
+In this popular heuristic algorithm, the boxes are permuted by sorting a
+univariate statistic of the positions of incoming wires. Typical choices are:
+
+- `mean`: the sample mean, yielding the "barycenter method"
+- `median`: the sample median
+
+In both cases, this algorithm has the property that if there is a permutation
+with no crossings, it will find it.
+"""
+function crossing_minimization_by_sort(
+    d::WiringDiagram, sources::Vector{Int}, targets::Vector{Int};
+    statistic::Function=mean)::Vector{Int}
+  @assert allunique(sources) && allunique(targets)
+  
+  index = Dict(sources[i] => i for i in eachindex(sources))
+  sizes = [ length(output_ports(d,v)) for v in sources ]
+  offsets = cumsum(vcat([0], sizes))
+  source_coord(port::Port) = offsets[index[port.box]] + port.port
+  
+  stats = map(targets) do target
+    coords = mapreduce(vcat, sources; init=[]) do source
+      [ source_coord(wire.source) for wire in wires(d, source, target) ]
+    end
+    statistic(coords)
+  end
+  sortperm(stats)
 end
 
 end
