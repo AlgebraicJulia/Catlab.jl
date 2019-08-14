@@ -12,8 +12,8 @@ wiring layers, but may have identities, braidings, copies, etc.) and a wiring
 diagram, which is purely graphical.
 """
 module WiringLayers
-export WiringLayer, NLayer, nwires, wires, has_wire,
-  add_wire!, add_wires!, rem_wire!, rem_wires!, in_wires, out_wires,
+export WiringLayer, NLayer, nwires, wires, has_wire, add_wire!, add_wires!,
+  rem_wire!, rem_wires!, in_wires, out_wires, wiring_layer_between,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create
 
 using AutoHashEquals
@@ -194,15 +194,25 @@ function mmerge(A::NLayer, n::Int)
   f
 end
 
-# Conversion
-############
+# Wiring diagrams
+#################
 
-function WiringDiagram(f::WiringLayer, inputs::Vector, outputs::Vector)
-  @assert length(inputs) == f.ninputs && length(outputs) == f.noutputs
+function WiringDiagram(layer::WiringLayer, inputs::Vector, outputs::Vector)
+  @assert length(inputs) == layer.ninputs && length(outputs) == layer.noutputs
   diagram = WiringDiagram(inputs, outputs)
   add_wires!(diagram, ((input_id(diagram), src) => (output_id(diagram), tgt)
-                       for (src, tgt) in sort!(wires(f))))
+                       for (src, tgt) in sort!(wires(layer))))
   diagram
+end
+
+""" Wiring layer representing the wires between two boxes in a wiring diagram.
+"""
+function wiring_layer_between(diagram::WiringDiagram, v1::Int, v2::Int)::WiringLayer
+  nin, nout = length(output_ports(diagram, v1)), length(input_ports(diagram, v2))
+  layer = WiringLayer(nin, nout)
+  add_wires!(layer, (wire.source.port => wire.target.port
+                     for wire in wires(diagram, v1, v2)))
+  layer
 end
 
 end
