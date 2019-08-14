@@ -14,9 +14,10 @@ export to_hom_expr, to_wiring_diagram
 
 using LightGraphs
 
-using ...Syntax, ...Rewrite
+using ...Syntax
 using ...Doctrines: id, compose, otimes, munit
 using ..WiringDiagramCore, ..WiringLayers
+using ..WiringDiagramAlgorithms: crossing_minimization_by_sort
 
 # Expression -> Diagram
 #######################
@@ -43,9 +44,11 @@ end
 """
 function to_hom_expr(Ob::Type, Hom::Type, d::WiringDiagram)
   box_to_expr(box::Box) = to_hom_expr(Ob, Type, box)
+  
   d = copy(d)
   n = nboxes(d)
   while true
+    parallel_reduce!(Ob, Hom, d)
     series_reduce!(Ob, Hom, d)
     
     # Repeat until the box count stops decreasing.
@@ -64,21 +67,35 @@ function to_hom_expr(Syntax::Module, d::WiringDiagram)
   to_hom_expr(Syntax.Ob, Syntax.Hom, d)
 end
 
+""" Perform all possible parallel reductions in wiring diagram.
+"""
+function parallel_reduce!(Ob::Type, Hom::Type, d::WiringDiagram)
+  parallel = collect(parallel_in_graph(graph(d)))
+  groups = map(parallel) do ((source, target), vs)
+    exprs = Hom[ to_hom_expr(Ob, Hom, box(d,v)) for v in vs ]
+    # FIXME: Do two-sided crossing minimization, not one-sided.
+    σ = crossing_minimization_by_sort(d, [source], vs)
+    vs[σ] => otimes(exprs[σ])
+  end
+  if !isempty(groups)
+    encapsulate!(d, map(first, groups),
+                 discard_boxes=true, values=map(last, groups))
+  end
+end
+
 """ Perform all possible series reductions in wiring diagram.
 """
 function series_reduce!(Ob::Type, Hom::Type, d::WiringDiagram)
   box_to_expr(v::Int) = to_hom_expr(Ob, Hom, box(d,v))
   
   series = series_in_graph(graph(d), source=input_id(d), sink=output_id(d))
-  composites = Hom[]
-  for vs in series
+  composites = map(series) do vs
     exprs = Hom[ box_to_expr(vs[1]) ]
     for i in 2:length(vs)
       layer_expr = hom_expr_between(Ob, d, vs[i-1], vs[i])
       append!(exprs, [layer_expr, box_to_expr(vs[i])])
     end
-    println(exprs)
-    push!(composites, foldl(compose_simplify_id, exprs))
+    foldl(compose_simplify_id, exprs)
   end
   
   if !isempty(series)

@@ -36,9 +36,23 @@ function roundtrip(f::HomExpr)
   to_hom_expr(FreeSymmetricMonoidalCategory, to_wiring_diagram(f))
 end
 
+# Base cases.
 @test roundtrip(f) == f
+
+# Series reduction.
 @test roundtrip(compose(f,g)) == compose(f,g)
 @test roundtrip(compose(f,g,h)) == compose(f,g,h)
+
+# Parallel reduction.
+@test roundtrip(otimes(f,g)) == otimes(f,g)
+@test roundtrip(otimes(f,g,h)) == otimes(f,g,h)
+
+# Series-parallel reduction.
+@test roundtrip(otimes(compose(f,g),compose(h,k))) ==
+  # roundtrip(compose(otimes(f,h),otimes(g,k))) ==
+  otimes(compose(f,g),compose(h,k))
+@test roundtrip(otimes(compose(f,g),h)) == otimes(compose(f,g),h)
+@test roundtrip(otimes(f,compose(g,h))) == otimes(f,compose(g,h))
 
 # Layer -> Expression
 #####################
