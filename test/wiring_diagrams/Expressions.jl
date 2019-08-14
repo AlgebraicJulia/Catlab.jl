@@ -7,11 +7,11 @@ using Catlab.Doctrines, Catlab.WiringDiagrams
 using Catlab.WiringDiagrams.WiringDiagramExpressions: parallel_in_graph,
   series_in_graph
 
+A, B, C, D = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C, :D)
+f, g, h, k = Hom(:f,A,B), Hom(:g,B,C), Hom(:h,C,D), Hom(:k,D,C)
+
 # Expression -> Diagram
 #######################
-
-A, B, C, D = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C, :D)
-f, g = Hom(:f,A,B), Hom(:g,B,A)
 
 # Functorality of conversion.
 fd, gd = WiringDiagram(f), WiringDiagram(g)
@@ -23,14 +23,28 @@ fd, gd = WiringDiagram(f), WiringDiagram(g)
 # Diagram -> Expression
 #######################
 
-g = union(DiGraph(10), PathDiGraph(3))
-add_edge!(g,5,6); add_edge!(g,8,9); add_edge!(g,9,10)
-@test Set(series_in_graph(g)) == Set([[1,2,3],[5,6],[8,9,10]])
+# Find series compositions in graphs.
+graph = union(DiGraph(10), PathDiGraph(3))
+add_edge!(graph,5,6); add_edge!(graph,8,9); add_edge!(graph,9,10)
+@test Set(series_in_graph(graph)) == Set([[1,2,3],[5,6],[8,9,10]])
 
-g = DiGraph([Edge(1,2),Edge(2,3),Edge(3,4),Edge(3,5),Edge(4,6),Edge(5,6)])
-@test parallel_in_graph(g) == Dict((3 => 6) => [4,5])
+# Find parallel compositions in graphs.
+graph = DiGraph([Edge(1,2),Edge(2,3),Edge(3,4),Edge(3,5),Edge(4,6),Edge(5,6)])
+@test parallel_in_graph(graph) == Dict((3 => 6) => [4,5])
+
+function roundtrip(f::HomExpr)
+  to_hom_expr(FreeSymmetricMonoidalCategory, to_wiring_diagram(f))
+end
+
+@test roundtrip(f) == f
+@test roundtrip(compose(f,g)) == compose(f,g)
+@test roundtrip(compose(f,g,h)) == compose(f,g,h)
 
 # Layer -> Expression
 #####################
+
+# Identity.
+layer = id(NLayer(3))
+@test to_hom_expr(layer, repeat([A],3), repeat([A],3)) == id(otimes(A,A,A))
 
 end
