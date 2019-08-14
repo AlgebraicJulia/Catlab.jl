@@ -15,13 +15,13 @@ export to_hom_expr, to_wiring_diagram
 using LightGraphs
 
 using ...Syntax
-using ...Doctrines: CategoryExpr, ObExpr, HomExpr
-using ..WiringDiagramCore
+using ...Doctrines: CategoryExpr, ObExpr, HomExpr, id, compose, otimes, munit
+using ..WiringDiagramCore, ..WiringLayers
 
 # Expression -> Diagram
 #######################
 
-""" Convert a syntactic expression into a wiring diagram.
+""" Convert a morphism expression into a wiring diagram.
 
 The morphism expression should belong to the doctrine of symmetric monoidal
 categories, possibly with diagonals and codiagonals. Thus, the doctrines of
@@ -39,13 +39,38 @@ end
 # Diagram -> Expression
 #######################
 
-""" Convert a wiring diagram to a syntactic expression.
+""" Convert a wiring diagram into a morphism expression.
 
 The boxes are assumed to carry morphism expressions (`HomExpr`) and the ports to
 carry object expressions (`ObExpr`).
 """
-function to_hom_expr(diagram::WiringDiagram)::HomExpr
-  # TODO
+function to_hom_expr(d::WiringDiagram)::HomExpr
+  n = nboxes(d)
+  while true
+    # Parallel reduction.
+    # TODO
+    
+    # Series reduction.
+    series = series_in_graph(graph(d))
+    composites = HomExpr[]
+    for vs in series
+      exprs = HomExpr[ box(d,vs[1]).value ]
+      for i in 2:length(vs)
+        layer = wiring_layer_between(diagram, vs[i-1], vs[i])
+        layer_expr = to_hom_expr(
+          layer, output_ports(d, vs[i-1]), input_ports(d, vs[i]))
+        append!(exprs, [layer_expr, box(d,vs[i]).value])
+      end
+      push!(composites, compose(expr))
+    end
+    if !isempty(series)
+      encapsulate!(d, series, discard_boxes=true, values=composites)
+    end
+    
+    # Repeat until the box count stops decreasing.
+    nboxes(d) >= n && break
+    n = nboxes(d)
+  end
 end
 
 """ Find parallel compositions in a graph.
@@ -79,6 +104,44 @@ function series_in_graph(g::DiGraph)::Vector{Vector{Int}}
     end
   end
   series
+end
+
+# Layer -> Expression
+#####################
+
+""" Convert a wiring layer into a morphism expression.
+"""
+function to_hom_expr(layer::WiringLayer, inputs::Vector, outputs::Vector)
+  σ = to_permutation(layer)
+  @assert !isnothing(σ) "Conversion of non-permutation not implemented"
+  @assert inputs == outputs
+  permutation_to_hom_expr(layer, inputs)
+end
+
+""" Convert a typed permutation into a morphism expression.
+"""
+function permutation_to_hom_expr(σ::Vector{Int}, types::Vector)
+  @assert all(σ[i] == i for i in eachindex(σ)) "Conversion of non-identity not implemented"
+  id(otimes(types))
+end
+
+""" Convert a wiring layer into a permutation, if it is one.
+
+Otherwise, return nothing.
+"""
+function to_permutation(layer::WiringLayer)::Union{Nothing,Vector{Int}}
+  nin, nout = layer.ninputs, layer.noutputs
+  if nin != nout; return nothing end
+  σ = zeros(Int, nin)
+  for i in 1:nin
+    wires = out_wires(layer, i)
+    if length(wires) == 1
+      σ[i] = last(first(wires))
+    else
+      return nothing
+    end
+  end
+  return σ
 end
 
 end

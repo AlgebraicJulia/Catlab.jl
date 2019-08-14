@@ -208,8 +208,8 @@ end
 """ Wiring layer representing the wires between two boxes in a wiring diagram.
 """
 function wiring_layer_between(diagram::WiringDiagram, v1::Int, v2::Int)::WiringLayer
-  nin, nout = length(output_ports(diagram, v1)), length(input_ports(diagram, v2))
-  layer = WiringLayer(nin, nout)
+  inputs, outputs = output_ports(diagram, v1), input_ports(diagram, v2)
+  layer = WiringLayer(length(inputs), length(outputs))
   add_wires!(layer, (wire.source.port => wire.target.port
                      for wire in wires(diagram, v1, v2)))
   layer

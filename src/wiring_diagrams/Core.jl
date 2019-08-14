@@ -233,13 +233,13 @@ end
 
 """ Check equality of wiring diagram under permutation of boxes.
 
-When the boxes in the first diagram `d1` are permuted according to `perm`,
+When the boxes in the first diagram `d1` are permuted according to `σ`,
 does it become identical to the second diagram `d2`?
 """
-function is_permuted_equal(d1::WiringDiagram, d2::WiringDiagram, perm::Vector{Int})
-  @assert nboxes(d1) == length(perm) && nboxes(d2) == length(perm)
+function is_permuted_equal(d1::WiringDiagram, d2::WiringDiagram, σ::Vector{Int})
+  @assert nboxes(d1) == length(σ) && nboxes(d2) == length(σ)
   d1_ids, d2_ids = box_ids(d1), box_ids(d2)
-  box_map = Dict{Int,Int}(d1_ids[perm[i]] => d2_ids[i] for i in eachindex(perm))
+  box_map = Dict{Int,Int}(d1_ids[σ[i]] => d2_ids[i] for i in eachindex(σ))
   is_induced_equal(d1, d2, box_map)
 end
 function is_induced_equal(d1::WiringDiagram, d2::WiringDiagram, box_map::Dict{Int,Int})
