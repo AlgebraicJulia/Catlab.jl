@@ -13,6 +13,7 @@ interactive and exploratory work, it should not be used in a production system.
 module YFilesWiringDiagrams
 export read_yfiles_diagram
 
+using Compat
 using LightXML
 using LightGraphs, MetaGraphs
 

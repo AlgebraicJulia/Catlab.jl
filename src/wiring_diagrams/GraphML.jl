@@ -17,6 +17,7 @@ module GraphMLWiringDiagrams
 export read_graphml, write_graphml,
   convert_from_graphml_data, convert_to_graphml_data
 
+using Compat
 using DataStructures: OrderedDict
 import JSON
 using LightXML

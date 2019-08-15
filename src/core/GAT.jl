@@ -26,6 +26,7 @@ module GAT
 export @signature, @instance, invoke_term
 
 using Base.Meta: ParseError
+using Compat
 using AutoHashEquals
 using DataStructures: OrderedDict
 using Match

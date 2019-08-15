@@ -19,6 +19,7 @@ export @syntax, GATExpr, SyntaxDomainError, head, args, type_args, first, last,
 
 import Base: first, last
 import Base.Meta: ParseError, show_sexpr
+using Compat
 using Match
 
 using ..GAT: Context, Signature, TypeConstructor, TermConstructor, Typeclass

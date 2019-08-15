@@ -13,6 +13,7 @@ export @present, Presentation, Equation, generator, generators, has_generator,
   merge_presentation!
 
 using Base.Meta: ParseError
+using Compat
 import DataStructures: OrderedSet
 using Match
 

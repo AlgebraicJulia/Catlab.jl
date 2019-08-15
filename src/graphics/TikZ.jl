@@ -19,6 +19,7 @@ export Expression, Statement, GraphStatement, Coordinate, Property,
        PathOperation, Picture, Scope, Node, Edge, EdgeNode, Graph, GraphScope,
        GraphNode, GraphEdge, MatrixNode, pprint
 
+using Compat
 using AutoHashEquals
 
 # AST
