@@ -46,6 +46,8 @@ function to_hom_expr(Ob::Type, Hom::Type, d::WiringDiagram)
   box_to_expr(box::Box) = to_hom_expr(Ob, Type, box)
   
   d = copy(d)
+  transitive_reduction!(Ob, d)
+
   n = nboxes(d)
   while true
     parallel_reduction!(Ob, Hom, d)
@@ -67,23 +69,25 @@ function to_hom_expr(Syntax::Module, d::WiringDiagram)
   to_hom_expr(Syntax.Ob, Syntax.Hom, d)
 end
 
-""" Perform all possible parallel reductions in wiring diagram.
+""" All possible parallel reductions of a wiring diagram.
 """
 function parallel_reduction!(Ob::Type, Hom::Type, d::WiringDiagram)
-  parallel = collect(find_parallel(graph(d)))
-  groups = map(parallel) do ((source, target), vs)
+  parallel = Vector{Int}[]
+  products = map(collect(find_parallel(graph(d)))) do ((source, target), vs)
     exprs = Hom[ to_hom_expr(Ob, Hom, box(d,v)) for v in vs ]
     # FIXME: Do two-sided crossing minimization, not one-sided.
     σ = crossing_minimization_by_sort(d, [source], vs)
-    vs[σ] => foldl(otimes_simplify_id, exprs[σ])
+    push!(parallel, vs[σ])
+    otimes(exprs[σ])
   end
-  if !isempty(groups)
-    encapsulate!(d, map(first, groups),
-                 discard_boxes=true, values=map(last, groups))
+  
+  if !isempty(parallel)
+    encapsulate!(d, parallel, discard_boxes=true, values=products)
   end
+  return d
 end
 
-""" Perform all possible series reductions in wiring diagram.
+""" All possible series reductions of a wiring diagram.
 """
 function series_reduction!(Ob::Type, Hom::Type, d::WiringDiagram)
   box_to_expr(v::Int) = to_hom_expr(Ob, Hom, box(d,v))
@@ -101,6 +105,25 @@ function series_reduction!(Ob::Type, Hom::Type, d::WiringDiagram)
   if !isempty(series)
     encapsulate!(d, series, discard_boxes=true, values=composites)
   end
+  return d
+end
+
+""" All possible transitive reductions of a wiring diagram.
+"""
+function transitive_reduction!(Ob::Type, d::WiringDiagram)
+  reduced = transitive_reduction!(copy(graph(d)))
+  for edge in collect(edges(graph(d)))
+    if !has_edge(reduced, edge)
+      for wire in wires(d, edge)
+        value = port_value(d, wire.source) # =?= port_value(d, wire.target)
+        v = add_box!(d, Box(id(coerce_ob(Ob, value)), [value], [value]))
+        add_wire!(d, Wire(wire.source => Port(v,InputPort,1)))
+        add_wire!(d, Wire(Port(v,OutputPort,1) => wire.target))
+        rem_wire!(d, wire)
+      end
+    end
+  end
+  return d
 end
 
 function hom_expr_between(Ob::Type, diagram::WiringDiagram, v1::Int, v2::Int)
@@ -127,10 +150,6 @@ function compose_simplify_id(f::GATExpr, g::GATExpr)
   if head(f) == :id; g
   elseif head(g) == :id; f
   else compose(f,g) end
-end
-function otimes_simplify_id(f::GATExpr, g::GATExpr)
-  if head(f) == :id && head(g) == :id; id(otimes(dom(f),dom(g)))
-  else otimes(f,g) end
 end
 
 # Layer -> Expression
@@ -176,7 +195,7 @@ end
 # Graph operations
 ##################
 
-""" Find parallel compositions in a graph.
+""" Find parallel compositions in a directed graph.
 """
 function find_parallel(g::DiGraph)::Dict{Pair{Int,Int},Vector{Int}}
   parallel = Dict{Pair{Int,Int},Vector{Int}}()
@@ -189,7 +208,7 @@ function find_parallel(g::DiGraph)::Dict{Pair{Int,Int},Vector{Int}}
   filter(pair -> length(last(pair)) > 1, parallel)
 end
 
-""" Find series compositions in a graph.
+""" Find series compositions in a directed graph.
 """
 function find_series(g::DiGraph; source=nothing, sink=nothing)::Vector{Vector{Int}}
   reduced = DiGraph(nv(g))

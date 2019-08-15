@@ -7,11 +7,11 @@ using Catlab.Doctrines, Catlab.WiringDiagrams
 using Catlab.WiringDiagrams.WiringDiagramExpressions: find_parallel,
   find_series, transitive_reduction!
 
-A, B, C, D = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C, :D)
-f, g, h, k = Hom(:f,A,B), Hom(:g,B,C), Hom(:h,C,D), Hom(:k,D,C)
-
 # Expression -> Diagram
 #######################
+
+A, B, C, D = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C, :D)
+f, g = Hom(:f,A,B), Hom(:g,B,C)
 
 # Functorality of conversion.
 fd, gd = WiringDiagram(f), WiringDiagram(g)
@@ -26,6 +26,8 @@ fd, gd = WiringDiagram(f), WiringDiagram(g)
 function roundtrip(f::HomExpr)
   to_hom_expr(FreeSymmetricMonoidalCategory, to_wiring_diagram(f))
 end
+
+f, g, h, k = Hom(:f,A,B), Hom(:g,B,C), Hom(:h,C,D), Hom(:k,D,C)
 
 # Base cases.
 @test roundtrip(f) == f
@@ -45,6 +47,21 @@ end
 @test roundtrip(otimes(compose(f,g),h)) == otimes(compose(f,g),h)
 @test roundtrip(otimes(f,compose(g,h))) == otimes(f,compose(g,h))
 
+m = Hom(:m, otimes(B,B), otimes(C,C))
+expr = compose(otimes(f,f),m,otimes(h,h))
+@test roundtrip(expr) == expr
+
+# Transitive reduction.
+@test roundtrip(otimes(f,id(C))) == otimes(f,id(C))
+@test roundtrip(otimes(id(A),g)) == otimes(id(A),g)
+
+expr = compose(otimes(f,id(B)),m,otimes(id(C),h))
+@test roundtrip(expr) == expr
+
+m = Hom(:m, otimes(B,B,B), C)
+@test roundtrip(compose(otimes(f,id(otimes(B,B))),m)) ==
+  compose(otimes(f,id(B),id(B)),m)
+
 # Layer -> Expression
 #####################
 
@@ -55,11 +72,11 @@ layer = id(NLayer(3))
 # Graph operations
 ##################
 
-# Parallel compositions in graph.
+# Parallel compositions in digraph.
 graph = DiGraph([Edge(1,2),Edge(2,3),Edge(3,4),Edge(3,5),Edge(4,6),Edge(5,6)])
 @test find_parallel(graph) == Dict((3 => 6) => [4,5])
 
-# Series compositions in graph.
+# Series compositions in digraph.
 graph = union(DiGraph(10), PathDiGraph(3))
 add_edge!(graph,5,6); add_edge!(graph,8,9); add_edge!(graph,9,10)
 @test Set(find_series(graph)) == Set([[1,2,3],[5,6],[8,9,10]])
