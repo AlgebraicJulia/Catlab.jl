@@ -10,4 +10,5 @@ jobs:
     - stage: "Documentation"
       script:
         - julia --project -e 'using Pkg; Pkg.instantiate()'
+        - julia --project -e 'using Pkg; ps=Pkg.PackageSpec(name="Documenter", version="0.23.2"); Pkg.add(ps); Pkg.pin(ps)'
         - julia --project doc/make.jl
