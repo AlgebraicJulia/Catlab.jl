@@ -51,16 +51,28 @@ m = Hom(:m, otimes(B,B), otimes(C,C))
 expr = compose(otimes(f,f),m,otimes(h,h))
 @test roundtrip(expr) == expr
 
-# Transitive reduction.
+m, n = Hom(:m, A, otimes(A,B)), Hom(:n, otimes(B,C), C)
+@test roundtrip(compose(m,otimes(f,g),n))  == compose(m,otimes(f,g),n)
+
+m, n = Hom(:m ,A, otimes(B,B)), Hom(:n, otimes(B,B), C)
+expr = compose(otimes(m,f),otimes(g,n))
+@test_skip roundtrip(expr) == expr
+
+# Transitive reduction (necessarily with series and/or parallel reduction).
 @test roundtrip(otimes(f,id(C))) == otimes(f,id(C))
 @test roundtrip(otimes(id(A),g)) == otimes(id(A),g)
 
+m = Hom(:m, otimes(B,B), otimes(C,C))
 expr = compose(otimes(f,id(B)),m,otimes(id(C),h))
 @test roundtrip(expr) == expr
 
 m = Hom(:m, otimes(B,B,B), C)
 @test roundtrip(compose(otimes(f,id(otimes(B,B))),m)) ==
   compose(otimes(f,id(B),id(B)),m)
+
+m, n = Hom(:m, A, otimes(A,B)), Hom(:n, otimes(B,B), C)
+expr = compose(m,otimes(f,id(B)),n)
+@test roundtrip(expr) == expr
 
 # Layer -> Expression
 #####################

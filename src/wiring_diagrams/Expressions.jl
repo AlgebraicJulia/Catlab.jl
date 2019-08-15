@@ -211,18 +211,18 @@ end
 """ Find series compositions in a directed graph.
 """
 function find_series(g::DiGraph; source=nothing, sink=nothing)::Vector{Vector{Int}}
-  reduced = DiGraph(nv(g))
+  series_graph = DiGraph(nv(g))
   for edge in edges(g)
     if (length(outneighbors(g,src(edge))) == 1 &&
         length(inneighbors(g,dst(edge))) == 1 &&
         src(edge) != source && dst(edge) != sink)
-      add_edge!(reduced, edge)
+      add_edge!(series_graph, edge)
     end
   end
   series = Vector{Int}[]
-  for component in weakly_connected_components(reduced)
+  for component in weakly_connected_components(series_graph)
     if length(component) > 1
-      sub, vmap = induced_subgraph(reduced, component)
+      sub, vmap = induced_subgraph(series_graph, component)
       push!(series, Int[ vmap[v] for v in topological_sort_by_dfs(sub) ])
     end
   end
