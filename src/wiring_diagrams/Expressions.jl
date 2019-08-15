@@ -48,8 +48,8 @@ function to_hom_expr(Ob::Type, Hom::Type, d::WiringDiagram)
   d = copy(d)
   n = nboxes(d)
   while true
-    parallel_reduce!(Ob, Hom, d)
-    series_reduce!(Ob, Hom, d)
+    parallel_reduction!(Ob, Hom, d)
+    series_reduction!(Ob, Hom, d)
     
     # Repeat until the box count stops decreasing.
     nboxes(d) >= n && break
@@ -69,13 +69,13 @@ end
 
 """ Perform all possible parallel reductions in wiring diagram.
 """
-function parallel_reduce!(Ob::Type, Hom::Type, d::WiringDiagram)
-  parallel = collect(parallel_in_graph(graph(d)))
+function parallel_reduction!(Ob::Type, Hom::Type, d::WiringDiagram)
+  parallel = collect(find_parallel(graph(d)))
   groups = map(parallel) do ((source, target), vs)
     exprs = Hom[ to_hom_expr(Ob, Hom, box(d,v)) for v in vs ]
     # FIXME: Do two-sided crossing minimization, not one-sided.
     σ = crossing_minimization_by_sort(d, [source], vs)
-    vs[σ] => otimes(exprs[σ])
+    vs[σ] => foldl(otimes_simplify_id, exprs[σ])
   end
   if !isempty(groups)
     encapsulate!(d, map(first, groups),
@@ -85,10 +85,10 @@ end
 
 """ Perform all possible series reductions in wiring diagram.
 """
-function series_reduce!(Ob::Type, Hom::Type, d::WiringDiagram)
+function series_reduction!(Ob::Type, Hom::Type, d::WiringDiagram)
   box_to_expr(v::Int) = to_hom_expr(Ob, Hom, box(d,v))
   
-  series = series_in_graph(graph(d), source=input_id(d), sink=output_id(d))
+  series = find_series(graph(d), source=input_id(d), sink=output_id(d))
   composites = map(series) do vs
     exprs = Hom[ box_to_expr(vs[1]) ]
     for i in 2:length(vs)
@@ -101,40 +101,6 @@ function series_reduce!(Ob::Type, Hom::Type, d::WiringDiagram)
   if !isempty(series)
     encapsulate!(d, series, discard_boxes=true, values=composites)
   end
-end
-
-""" Find parallel compositions in a graph.
-"""
-function parallel_in_graph(g::DiGraph)::Dict{Pair{Int,Int},Vector{Int}}
-  parallel = Dict{Pair{Int,Int},Vector{Int}}()
-  for v in 1:nv(g)
-    if length(inneighbors(g,v)) == 1 && length(outneighbors(g,v)) == 1
-      src, tgt = first(inneighbors(g,v)), first(outneighbors(g,v))
-      push!(get!(parallel, src => tgt, Int[]), v)
-    end
-  end
-  filter(pair -> length(last(pair)) > 1, parallel)
-end
-
-""" Find series compositions in a graph.
-"""
-function series_in_graph(g::DiGraph; source=nothing, sink=nothing)::Vector{Vector{Int}}
-  reduced = DiGraph(nv(g))
-  for edge in edges(g)
-    if (length(outneighbors(g,src(edge))) == 1 &&
-        length(inneighbors(g,dst(edge))) == 1 &&
-        src(edge) != source && dst(edge) != sink)
-      add_edge!(reduced, edge)
-    end
-  end
-  series = Vector{Int}[]
-  for component in weakly_connected_components(reduced)
-    if length(component) > 1
-      sub, vmap = induced_subgraph(reduced, component)
-      push!(series, Int[ vmap[v] for v in topological_sort_by_dfs(sub) ])
-    end
-  end
-  series
 end
 
 function hom_expr_between(Ob::Type, diagram::WiringDiagram, v1::Int, v2::Int)
@@ -161,6 +127,10 @@ function compose_simplify_id(f::GATExpr, g::GATExpr)
   if head(f) == :id; g
   elseif head(g) == :id; f
   else compose(f,g) end
+end
+function otimes_simplify_id(f::GATExpr, g::GATExpr)
+  if head(f) == :id && head(g) == :id; id(otimes(dom(f),dom(g)))
+  else otimes(f,g) end
 end
 
 # Layer -> Expression
@@ -201,6 +171,60 @@ function to_permutation(layer::WiringLayer)::Union{Nothing,Vector{Int}}
     end
   end
   return σ
+end
+
+# Graph operations
+##################
+
+""" Find parallel compositions in a graph.
+"""
+function find_parallel(g::DiGraph)::Dict{Pair{Int,Int},Vector{Int}}
+  parallel = Dict{Pair{Int,Int},Vector{Int}}()
+  for v in 1:nv(g)
+    if length(inneighbors(g,v)) == 1 && length(outneighbors(g,v)) == 1
+      src, tgt = first(inneighbors(g,v)), first(outneighbors(g,v))
+      push!(get!(parallel, src => tgt, Int[]), v)
+    end
+  end
+  filter(pair -> length(last(pair)) > 1, parallel)
+end
+
+""" Find series compositions in a graph.
+"""
+function find_series(g::DiGraph; source=nothing, sink=nothing)::Vector{Vector{Int}}
+  reduced = DiGraph(nv(g))
+  for edge in edges(g)
+    if (length(outneighbors(g,src(edge))) == 1 &&
+        length(inneighbors(g,dst(edge))) == 1 &&
+        src(edge) != source && dst(edge) != sink)
+      add_edge!(reduced, edge)
+    end
+  end
+  series = Vector{Int}[]
+  for component in weakly_connected_components(reduced)
+    if length(component) > 1
+      sub, vmap = induced_subgraph(reduced, component)
+      push!(series, Int[ vmap[v] for v in topological_sort_by_dfs(sub) ])
+    end
+  end
+  series
+end
+
+""" Transitive reduction of a directed acyclic graph.
+
+Algorithm described at CS.SE: https://cs.stackexchange.com/a/29133
+"""
+function transitive_reduction!(g::DiGraph)::DiGraph
+  for u in 1:nv(g)
+    for v in outneighbors(g, u)
+      for w in findall(!iszero, LightGraphs.dfs_parents(g, v))
+        if w != v
+          rem_edge!(g, u, w)
+        end
+      end
+    end
+  end
+  return g
 end
 
 end

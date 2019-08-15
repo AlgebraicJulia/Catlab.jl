@@ -4,8 +4,8 @@ using Test
 using LightGraphs
 
 using Catlab.Doctrines, Catlab.WiringDiagrams
-using Catlab.WiringDiagrams.WiringDiagramExpressions: parallel_in_graph,
-  series_in_graph
+using Catlab.WiringDiagrams.WiringDiagramExpressions: find_parallel,
+  find_series, transitive_reduction!
 
 A, B, C, D = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C, :D)
 f, g, h, k = Hom(:f,A,B), Hom(:g,B,C), Hom(:h,C,D), Hom(:k,D,C)
@@ -22,15 +22,6 @@ fd, gd = WiringDiagram(f), WiringDiagram(g)
 
 # Diagram -> Expression
 #######################
-
-# Find series compositions in graphs.
-graph = union(DiGraph(10), PathDiGraph(3))
-add_edge!(graph,5,6); add_edge!(graph,8,9); add_edge!(graph,9,10)
-@test Set(series_in_graph(graph)) == Set([[1,2,3],[5,6],[8,9,10]])
-
-# Find parallel compositions in graphs.
-graph = DiGraph([Edge(1,2),Edge(2,3),Edge(3,4),Edge(3,5),Edge(4,6),Edge(5,6)])
-@test parallel_in_graph(graph) == Dict((3 => 6) => [4,5])
 
 function roundtrip(f::HomExpr)
   to_hom_expr(FreeSymmetricMonoidalCategory, to_wiring_diagram(f))
@@ -60,5 +51,23 @@ end
 # Identity.
 layer = id(NLayer(3))
 @test to_hom_expr(layer, repeat([A],3), repeat([A],3)) == id(otimes(A,A,A))
+
+# Graph operations
+##################
+
+# Parallel compositions in graph.
+graph = DiGraph([Edge(1,2),Edge(2,3),Edge(3,4),Edge(3,5),Edge(4,6),Edge(5,6)])
+@test find_parallel(graph) == Dict((3 => 6) => [4,5])
+
+# Series compositions in graph.
+graph = union(DiGraph(10), PathDiGraph(3))
+add_edge!(graph,5,6); add_edge!(graph,8,9); add_edge!(graph,9,10)
+@test Set(find_series(graph)) == Set([[1,2,3],[5,6],[8,9,10]])
+
+# Transitive reduction of DAG.
+graph = DiGraph([ Edge(1,2),Edge(1,3),Edge(1,4),Edge(1,5),
+                  Edge(2,4),Edge(3,4),Edge(3,5),Edge(4,5) ])
+transitive_reduction!(graph)
+@test graph == DiGraph([Edge(1,2),Edge(1,3),Edge(2,4),Edge(3,4),Edge(4,5)])
 
 end
