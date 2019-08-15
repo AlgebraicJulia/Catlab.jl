@@ -4,3 +4,10 @@ language: julia
 julia:
   - 1.0
   - 1.1
+
+jobs:
+  include:
+    - stage: "Documentation"
+      script:
+        - julia --project -e 'using Pkg; Pkg.instantiate()'
+        - julia --project doc/make.jl
