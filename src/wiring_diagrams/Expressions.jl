@@ -241,7 +241,7 @@ Algorithm described at CS.SE: https://cs.stackexchange.com/a/29133
 function transitive_reduction!(g::DiGraph)::DiGraph
   for u in 1:nv(g)
     for v in outneighbors(g, u)
-      for w in findall(!iszero, LightGraphs.dfs_parents(g, v))
+      for w in neighborhood(g, v, nv(g))
         if w != v
           rem_edge!(g, u, w)
         end
