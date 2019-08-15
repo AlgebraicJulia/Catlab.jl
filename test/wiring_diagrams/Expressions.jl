@@ -56,7 +56,7 @@ m, n = Hom(:m, A, otimes(A,B)), Hom(:n, otimes(B,C), C)
 
 m, n = Hom(:m ,A, otimes(B,B)), Hom(:n, otimes(B,B), C)
 expr = compose(otimes(m,f),otimes(g,n))
-@test_skip roundtrip(expr) == expr
+@test roundtrip(expr) == expr
 
 # Transitive reduction (necessarily with series and/or parallel reduction).
 @test roundtrip(otimes(f,id(C))) == otimes(f,id(C))
