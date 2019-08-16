@@ -5,7 +5,7 @@ using Test
 end
 
 @testset "Doctrines" begin
-  include("Doctrines.jl")
+  include("doctrines/Doctrines.jl")
 end
 
 @testset "WiringDiagrams" begin
