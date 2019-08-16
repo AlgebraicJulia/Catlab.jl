@@ -6,6 +6,7 @@ doctrine, but I'm thinking the `Doctrines` top-level module should be renamed.
 module Permutations
 export decompose_permutation_by_bubble_sort!, permutation_to_expr
 
+using Compat
 using ...Syntax
 using ..Doctrines: dom, codom, compose, id, otimes, munit, braid
 
