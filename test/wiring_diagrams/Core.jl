@@ -41,16 +41,24 @@ rem_boxes!(d, [fv,hv])
 @test nboxes(d) == 1
 @test boxes(d) == [Box(g)]
 
-# Operations on wires
+# Operations on ports
 d = WiringDiagram(A, C)
 fv = add_box!(d, f)
 gv = add_box!(d, g)
+
+@test input_ports(d, fv) == [:A]
+@test output_ports(d, fv) == [:B]
+@test input_ports(d, output_id(d)) == [:C]
+@test output_ports(d, input_id(d)) == [:A]
+@test_throws ErrorException input_ports(d, input_id(d))
+@test_throws ErrorException output_ports(d, output_id(d))
 
 @test port_value(d, Port(input_id(d),OutputPort,1)) == :A
 @test port_value(d, Port(output_id(d),InputPort,1)) == :C
 @test port_value(d, Port(fv,InputPort,1)) == :A
 @test port_value(d, Port(fv,OutputPort,1)) == :B
 
+# Operations on wires
 @test nwires(d) == 0
 @test !has_wire(d, fv, gv)
 @test !has_wire(d, (fv,1) => (gv,1))
@@ -66,6 +74,12 @@ add_wire!(d, (gv,1) => (output_id(d),1))
   (fv,1) => (gv,1),
   (gv,1) => (output_id(d),1),
 ])
+
+# Shallow copies.
+d_copy = copy(d)
+rem_boxes!(d_copy, [fv,gv])
+@test nboxes(d) == 2
+@test nwires(d) == 3
 
 # Graph properties.
 @test Set(all_neighbors(d, fv)) == Set([input_id(d),gv])
@@ -149,7 +163,7 @@ box_map = Dict(box(sub,v).value => v for v in box_ids(sub))
 ]))
 
 d = deepcopy(d0)
-encapsulate!(d, [fv,gv], :e)
+encapsulate!(d, [fv,gv], discard_boxes=true, value=:e)
 @test Set(boxes(d)) == Set([ Box(:e, [:A], [:C]), Box(h) ])
 box_map = Dict(box(d,v).value => v for v in box_ids(d))
 @test Set(wires(d)) == Set(map(Wire, [
@@ -285,16 +299,5 @@ X = Ports([:A])
 
 # Unit
 @test compose(otimes(id(X),create(X)), mmerge(X)) == id(X)
-
-# Expression conversion
-#----------------------
-
-# Functorality
-f, g = Hom(:f,A,B), Hom(:g,B,A)
-fd, gd = WiringDiagram(f), WiringDiagram(g)
-@test to_wiring_diagram(f) == fd
-@test to_wiring_diagram(compose(f,g)) == compose(fd,gd)
-@test to_wiring_diagram(otimes(f,g)) == otimes(fd,gd)
-@test to_wiring_diagram(munit(FreeSymmetricMonoidalCategory.Ob)) == munit(Ports)
 
 end

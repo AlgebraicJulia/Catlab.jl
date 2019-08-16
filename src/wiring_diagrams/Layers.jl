@@ -4,16 +4,16 @@ This module defines a generic data structure to represent a wiring between one
 layer of input ports and another layer of output ports. A wiring layer forms a
 bipartite graph with independent edge sets the input ports and the output ports.
 
-Unlike wiring diagrams, wiring layers are an auxillary data structure. They are
-not very interesting in their own right, but they can be a useful intermediate
-representation. For example, a morphism expression comprising generators,
-compositions, products, and wiring layers is intermediate between a pure GAT
-expression (which has no wiring layers, but may have identities, braidings,
-copies, etc.) and a wiring diagram, which is purely graphical.
+Wiring layers are an auxillary data structure. They are not very interesting in
+their own right, but they can be a useful intermediate representation. For
+example, a morphism expression comprising generators, compositions, products,
+and wiring layers is intermediate between a pure GAT expression (which has no
+wiring layers, but may have identities, braidings, copies, etc.) and a wiring
+diagram, which is purely graphical.
 """
 module WiringLayers
-export WiringLayer, NLayer, nwires, wires, has_wire,
-  add_wire!, add_wires!, rem_wire!, rem_wires!, in_wires, out_wires,
+export WiringLayer, NLayer, nwires, wires, has_wire, add_wire!, add_wires!,
+  rem_wire!, rem_wires!, in_wires, out_wires, wiring_layer_between,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create
 
 using AutoHashEquals
@@ -194,15 +194,25 @@ function mmerge(A::NLayer, n::Int)
   f
 end
 
-# Conversion
-############
+# Wiring diagrams
+#################
 
-function WiringDiagram(f::WiringLayer, inputs::Vector, outputs::Vector)
-  @assert length(inputs) == f.ninputs && length(outputs) == f.noutputs
+function WiringDiagram(layer::WiringLayer, inputs::Vector, outputs::Vector)
+  @assert length(inputs) == layer.ninputs && length(outputs) == layer.noutputs
   diagram = WiringDiagram(inputs, outputs)
   add_wires!(diagram, ((input_id(diagram), src) => (output_id(diagram), tgt)
-                       for (src, tgt) in sort!(wires(f))))
+                       for (src, tgt) in sort!(wires(layer))))
   diagram
+end
+
+""" Wiring layer representing the wires between two boxes in a wiring diagram.
+"""
+function wiring_layer_between(diagram::WiringDiagram, v1::Int, v2::Int)::WiringLayer
+  inputs, outputs = output_ports(diagram, v1), input_ports(diagram, v2)
+  layer = WiringLayer(length(inputs), length(outputs))
+  add_wires!(layer, (wire.source.port => wire.target.port
+                     for wire in wires(diagram, v1, v2)))
+  layer
 end
 
 end

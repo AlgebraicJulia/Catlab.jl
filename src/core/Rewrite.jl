@@ -7,7 +7,6 @@ module Rewrite
 export associate, associate_unit, distribute_unary, anti_involute
 
 using ..Syntax
-import ..Syntax: head
 
 """ Simplify associative binary operation.
 
@@ -27,8 +26,8 @@ Reduces a freely generated (typed) monoid to normal form.
 """
 function associate_unit(expr::GATExpr, unit::Function)::GATExpr
   e1, e2 = first(expr), last(expr)
-  if (head(e1) == head(unit)) e2
-  elseif (head(e2) == head(unit)) e1
+  if (head(e1) == nameof(unit)) e2
+  elseif (head(e2) == nameof(unit)) e1
   else associate(expr) end
 end
 
@@ -36,11 +35,11 @@ end
 """
 function distribute_unary(raw_expr::GATExpr, un_op::Function,
                           bin_op::Function)::GATExpr
-  if head(raw_expr) != head(un_op)
+  if head(raw_expr) != nameof(un_op)
     return raw_expr
   end
   expr = first(raw_expr)
-  if head(expr) == head(bin_op)
+  if head(expr) == nameof(bin_op)
     bin_op([un_op(A) for A in args(expr)]...)
   else
     raw_expr
@@ -51,20 +50,17 @@ end
 """ 
 function anti_involute(raw_expr::GATExpr, inv::Function, op::Function,
                        unit::Function)::GATExpr
-  if head(raw_expr) != head(inv)
+  if head(raw_expr) != nameof(inv)
     return raw_expr
   end
   expr = first(raw_expr)
-  if head(expr) == head(inv)
+  if head(expr) == nameof(inv)
     first(expr)
-  elseif head(expr) == head(op)
+  elseif head(expr) == nameof(op)
     op([inv(A) for A in reverse(args(expr))]...)
-  elseif head(expr) == head(unit)
+  elseif head(expr) == nameof(unit)
     expr
   else raw_expr end
 end
-
-# FIXME: This doesn't seem like a good idea.
-head(f::Function)::Symbol = Symbol(string(typeof(f).name.name)[2:end])
 
 end

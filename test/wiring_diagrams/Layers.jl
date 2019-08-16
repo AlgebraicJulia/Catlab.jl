@@ -58,4 +58,17 @@ A, B, C = NLayer(1), NLayer(1), NLayer(1)
 @test compose(otimes(id(A), mmerge(A)), mmerge(A)) == mmerge(A, 3)
 @test compose(otimes(id(A), create(A)), mmerge(A)) == id(A)
 
+# Wiring diagrams
+#################
+
+function roundtrip(layer::WiringLayer)::WiringLayer
+  ports = n::Int -> repeat([nothing], n)
+  diagram = WiringDiagram(layer, ports(layer.ninputs), ports(layer.noutputs))
+  wiring_layer_between(diagram, input_id(diagram), output_id(diagram))
+end
+
+layer = WiringLayer(3, 3)
+add_wires!(layer, [1 => 1, 1 => 2, 2 => 3, 3 => 1, 3 => 3])
+@test roundtrip(layer) == layer
+
 end

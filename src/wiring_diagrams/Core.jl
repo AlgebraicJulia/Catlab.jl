@@ -8,13 +8,6 @@ literature calls "directed graphs with ports" or more simply "port graphs". The
 main difference is that a wiring diagram has an "outer box": a wiring diagram
 has its own ports that can be connected to the ports of its boxes.
 
-Wiring diagrams are a graphical syntax for morphisms in a monoidal category.
-As mathematical objects, they are intermediate between morphisms (viewed
-abstractly) and expressions in the textual syntax: a single morphism may
-correspond to many wiring diagrams, and a single wiring diagram may correspond
-to many syntactic expressions. This module provides functions to translate
-syntactic expressions to wiring diagrams (TODO: and back again?).
-
 This module offers a generic data structure for wiring diagrams. Arbitrary data
 can be attached to the boxes, ports, and wires of a wiring diagram. There is a
 low-level interface for direct manipulation of boxes and wires and a high-level
@@ -34,7 +27,7 @@ export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
   rem_box!, rem_boxes!, rem_wire!, rem_wires!, substitute!, encapsulate!,
   all_neighbors, neighbors, outneighbors, inneighbors, in_wires, out_wires,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create,
-  permute, is_permuted_equal, to_wiring_diagram
+  permute, is_permuted_equal
 
 using AutoHashEquals
 using LightGraphs, MetaGraphs
@@ -215,6 +208,10 @@ mutable struct WiringDiagram <: AbstractBox
     add_vertices!(graph, 2)
     return diagram
   end
+  function WiringDiagram(d::WiringDiagram)
+    # Copy constructor for shallow copy.
+    new(copy(d.graph), d.input_ports, d.output_ports, d.input_id, d.output_id)
+  end
 end
 
 function WiringDiagram(inputs::Ports, outputs::Ports)
@@ -240,13 +237,13 @@ end
 
 """ Check equality of wiring diagram under permutation of boxes.
 
-When the boxes in the first diagram `d1` are permuted according to `perm`,
+When the boxes in the first diagram `d1` are permuted according to `σ`,
 does it become identical to the second diagram `d2`?
 """
-function is_permuted_equal(d1::WiringDiagram, d2::WiringDiagram, perm::Vector{Int})
-  @assert nboxes(d1) == length(perm) && nboxes(d2) == length(perm)
+function is_permuted_equal(d1::WiringDiagram, d2::WiringDiagram, σ::Vector{Int})
+  @assert nboxes(d1) == length(σ) && nboxes(d2) == length(σ)
   d1_ids, d2_ids = box_ids(d1), box_ids(d2)
-  box_map = Dict{Int,Int}(d1_ids[perm[i]] => d2_ids[i] for i in eachindex(perm))
+  box_map = Dict{Int,Int}(d1_ids[σ[i]] => d2_ids[i] for i in eachindex(σ))
   is_induced_equal(d1, d2, box_map)
 end
 function is_induced_equal(d1::WiringDiagram, d2::WiringDiagram, box_map::Dict{Int,Int})
@@ -259,6 +256,8 @@ function is_induced_equal(d1::WiringDiagram, d2::WiringDiagram, box_map::Dict{In
    all(box(d1,v) == box(d2,box_map[v]) for v in box_ids(d1)) &&
    sort!(map(map_wire, wires(d1))) == sort!(wires(d2)))
 end
+
+Base.copy(diagram::WiringDiagram) = WiringDiagram(diagram)
 
 function Base.show(io::IO, diagram::WiringDiagram)
   sshowcompact = x -> sprint(show, x, context=:compact => true)
@@ -315,16 +314,29 @@ function has_wire(f::WiringDiagram, wire::Wire)
 end
 has_wire(f::WiringDiagram, pair::Pair) = has_wire(f, Wire(pair))
 
-function port_value(f::WiringDiagram, port::Port)
-  if port.box == input_id(f)
-    input_ports(f)[port.port]
-  elseif port.box == output_id(f)
-    output_ports(f)[port.port]
+function input_ports(f::WiringDiagram, v::Int)
+  if v == input_id(f)
+    error("Input vertex does not have input ports within wiring diagram")
+  elseif v == output_id(f)
+    output_ports(f)
   else
-    b = box(f, port.box)
-    ports = port.kind == InputPort ? input_ports(b) : output_ports(b)
-    ports[port.port]
+    input_ports(box(f, v))
   end
+end
+
+function output_ports(f::WiringDiagram, v::Int)
+  if v == input_id(f)
+    input_ports(f)
+  elseif v == output_id(f)
+    error("Output vertex does not have output ports within wiring diagram")
+  else
+    output_ports(box(f, v))
+  end
+end
+
+function port_value(f::WiringDiagram, port::Port)
+  get_ports = port.kind == InputPort ? input_ports : output_ports
+  get_ports(f, port.box)[port.port]
 end
 
 # Graph mutation.
@@ -489,19 +501,19 @@ end
 This operation is the operadic composition of wiring diagrams.
 """
 function substitute!(d::WiringDiagram, v::Int, sub::WiringDiagram)
-  substitute_impl!(d, v, sub)
+  _substitute_insert!(d, v, sub)
   rem_box!(d, v)
   return d
 end
 function substitute!(d::WiringDiagram, v::Int)
-  substitute!(d, v, box(d,v))
+  substitute!(d, v, box(d,v)::WiringDiagram)
 end
 
 """ Simultaneous substitution of wiring diagrams for vertices.
 """
 function substitute!(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagram})
   for (v,sub) in zip(vs, subs)
-    substitute_impl!(d, v, sub)
+    _substitute_insert!(d, v, sub)
   end
   rem_boxes!(d, vs)
   return d
@@ -510,7 +522,9 @@ function substitute!(d::WiringDiagram, vs::Vector{Int})
   substitute!(d, vs, WiringDiagram[ box(d,v) for v in vs ])
 end
 
-function substitute_impl!(d::WiringDiagram, v::Int, sub::WiringDiagram)
+""" The insertion phase of a substitution operation.
+"""
+function _substitute_insert!(d::WiringDiagram, v::Int, sub::WiringDiagram)
   # Add new boxes from sub-diagram.
   sub_map = Dict{Int,Int}()
   for u in box_ids(sub)
@@ -553,35 +567,37 @@ end
 
 This operation is a (one-sided) inverse to subsitution (see `substitute!`).
 """
-function encapsulate!(d::WiringDiagram, vs::Vector{Int}, args...)
-  if isempty(vs)
-    error("Cannot encapsulate an empty set of boxes")
-  end
-  encapsulate_impl!(d, vs, args...)
-  rem_boxes!(d, vs)
-  return d
+function encapsulate!(d::WiringDiagram, vs::Vector{Int};
+                      discard_boxes::Bool=false, value::Any=nothing)
+  encapsulate!(d, [vs]; discard_boxes=discard_boxes, values=[value])
 end
 
 """ Simultaneous encapsulation of boxes.
 """
-function encapsulate!(d::WiringDiagram, vss::Vector{Vector{Int}}, args...)
+function encapsulate!(d::WiringDiagram, vss::Vector{Vector{Int}};
+                      discard_boxes::Bool=false, values::Union{Nothing,Vector}=nothing)
   if any(isempty(vs) for vs in vss)
     error("Cannot encapsulate an empty set of boxes")
   end
-  for vs in vss
-    encapsulate_impl!(d, vs, args...)
+  if isnothing(values)
+    values = repeat([nothing], length(vss))
+  end
+  encapsulate_insert! = discard_boxes ? _encapsulate_in_box! : _encapsulate_in_diagram!
+  for (vs, value) in zip(vss, values)
+    encapsulate_insert!(d, vs, value)
   end
   rem_boxes!(d, vcat(vss...))
   return d
 end
   
-function encapsulate_impl!(d::WiringDiagram, vs::Vector{Int})
+function _encapsulate_in_diagram!(d::WiringDiagram, vs::Vector{Int}, value::Any)
   # Create ports for encapsulating box.
   sub_vertex = nv(graph(d)) + 1
   inputs, outputs, port_map, sub_port_map =
     encapsulated_ports(d, vs, sub_vertex)
   
   # Add encapsulating diagram to original diagram.
+  # FIXME: Diagram value not currently supported, so `value` is ignored.
   sub = WiringDiagram(inputs, outputs)
   @assert add_box!(d, sub) == sub_vertex
   
@@ -629,13 +645,13 @@ function encapsulate_impl!(d::WiringDiagram, vs::Vector{Int})
   return d
 end
 
-function encapsulate_impl!(d::WiringDiagram, vs::Vector{Int}, sub_value::Any)
+function _encapsulate_in_box!(d::WiringDiagram, vs::Vector{Int}, value::Any)
   # Create ports for encapsulating box.
   sub_vertex = nv(graph(d)) + 1
   inputs, outputs, port_map, _ = encapsulated_ports(d, vs, sub_vertex)
   
   # Add encapsulating box to original diagram.
-  sub = Box(sub_value, inputs, outputs)
+  sub = Box(value, inputs, outputs)
   @assert add_box!(d, sub) == sub_vertex
   
   # Add wires to original and encapsulating diagram.
@@ -829,21 +845,6 @@ function mmerge(A::Ports, n::Int)::WiringDiagram
     add_wires!(f, ((input_id(f),i+m*(j-1)) => (output_id(f),i) for i in 1:m))
   end
   return f
-end
-
-""" Convert a syntactic expression into a wiring diagram.
-
-The morphism expression should belong to the doctrine of symmetric monoidal
-categories, possibly with diagonals and codiagonals. Thus, the doctrines of
-cartesian, cocartesian, and biproduct categories are supported.
-"""
-function to_wiring_diagram(expr::CategoryExpr)
-  functor((Ports, WiringDiagram), expr;
-    terms = Dict(
-      :Ob => (expr) -> Ports([first(expr)]),
-      :Hom => (expr) -> WiringDiagram(expr),
-    )
-  )
 end
 
 function collect_values(ob::ObExpr)::Vector
