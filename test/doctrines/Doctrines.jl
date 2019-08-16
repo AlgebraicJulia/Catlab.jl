@@ -8,7 +8,16 @@ sexpr(expr::GATExpr) = sprint(show_sexpr, expr)
 unicode(expr::GATExpr) = sprint(show_unicode, expr)
 latex(expr::GATExpr) = sprint(show_latex, expr)
 
-include("Category.jl")
-include("Monoidal.jl")
+@testset "Categories" begin
+  include("Category.jl")
+end
+
+@testset "MonoidalCategories" begin
+  include("Monoidal.jl")
+end
+
+@testset "Permutations" begin
+  include("Permutations.jl")
+end
 
 end
