@@ -72,9 +72,8 @@ end
 """ All possible parallel reductions of a wiring diagram.
 """
 function parallel_reduction!(Ob::Type, Hom::Type, d::WiringDiagram)
-  parallel_dict = find_parallel(graph(d), strict=false)
   parallel = Vector{Int}[]
-  products = map(collect(parallel_dict)) do ((source, target), vs)
+  products = map(collect(find_parallel(graph(d)))) do ((source, target), vs)
     exprs = Hom[ to_hom_expr(Ob, Hom, box(d,v)) for v in vs ]
     # FIXME: Do two-sided crossing minimization, not one-sided.
     σ = crossing_minimization_by_sort(d, [source], vs)
@@ -198,11 +197,16 @@ end
 
 """ Find parallel compositions in a directed graph.
 """
-function find_parallel(g::DiGraph; strict::Bool=true)::Dict{Pair{Int,Int},Vector{Int}}
+function find_parallel(g::DiGraph)::Dict{Pair{Int,Int},Vector{Int}}
   parallel = Dict{Pair{Int,Int},Vector{Int}}()
   for v in 1:nv(g)
+    # Note: The definition in the literature on series-parallel digraphs
+    # requires that `length(v_in) == 1 && length(v_out) == 1`.
+    # Replacing the conjunction with a disjunction allows more general
+    # parallel reductions while still ensuring that no vertex is counted as
+    # parallel in more than one place.
     v_in, v_out = inneighbors(g,v), outneighbors(g,v)
-    if !strict || (length(v_in) == 1 && length(v_out) == 1)
+    if length(v_in) == 1 || length(v_out) == 1
       for u in v_in
         for w in v_out
           push!(get!(parallel, u => w, Int[]), v)

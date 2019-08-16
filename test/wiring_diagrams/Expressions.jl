@@ -54,8 +54,13 @@ expr = compose(otimes(f,f),m,otimes(h,h))
 m, n = Hom(:m, A, otimes(A,B)), Hom(:n, otimes(B,C), C)
 @test roundtrip(compose(m,otimes(f,g),n))  == compose(m,otimes(f,g),n)
 
-m, n = Hom(:m ,A, otimes(B,B)), Hom(:n, otimes(B,B), C)
+m, n = Hom(:m, A, otimes(B,B)), Hom(:n, otimes(B,B), C)
 expr = compose(otimes(m,f),otimes(g,n))
+@test roundtrip(expr) == expr
+
+m, n = Hom(:m, A, otimes(B,B)), Hom(:n, otimes(C,C), D)
+l = Hom(:l, otimes(B,B), otimes(C,C))
+expr = compose(otimes(m,m),otimes(g,l,g),otimes(n,n))
 @test roundtrip(expr) == expr
 
 # Transitive reduction (necessarily with series and/or parallel reduction).
