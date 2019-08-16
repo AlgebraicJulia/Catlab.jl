@@ -12,6 +12,7 @@ go the other way around.
 module WiringDiagramExpressions
 export to_hom_expr, to_wiring_diagram
 
+using Compat
 using LightGraphs
 
 using ...Syntax

@@ -29,6 +29,7 @@ export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create,
   permute, is_permuted_equal
 
+using Compat
 using AutoHashEquals
 using LightGraphs, MetaGraphs
 import LightGraphs: all_neighbors, neighbors, outneighbors, inneighbors
