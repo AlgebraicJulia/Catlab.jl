@@ -83,8 +83,15 @@ expr = compose(m,otimes(f,id(B)),n)
 #####################
 
 # Identity.
-layer = id(NLayer(3))
-@test to_hom_expr(layer, repeat([A],3), repeat([A],3)) == id(otimes(A,A,A))
+layer = id(NLayer(2))
+@test to_hom_expr(layer, [A,B], [A,B]) == id(otimes(A,B))
+
+# Braidings.
+layer = braid(NLayer(1),NLayer(1))
+@test to_hom_expr(layer, [A,B], [B,A]) == braid(A,B)
+
+layer = otimes(id(NLayer(1)), braid(NLayer(1),NLayer(1)))
+@test to_hom_expr(layer, [A,B,C], [A,C,B]) == otimes(id(A),braid(B,C))
 
 # Graph operations
 ##################

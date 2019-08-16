@@ -26,4 +26,6 @@ include("Category.jl")
 include("Monoidal.jl")
 include("Relations.jl")
 
+include("Permutations.jl")
+
 end

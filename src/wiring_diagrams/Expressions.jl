@@ -17,6 +17,7 @@ using LightGraphs
 
 using ...Syntax
 using ...Doctrines: id, compose, otimes, munit
+using ...Doctrines.Permutations
 using ..WiringDiagramCore, ..WiringLayers
 using ..WiringDiagramAlgorithms: crossing_minimization_by_sort
 
@@ -163,15 +164,8 @@ The `inputs` and `outputs` are corresponding vectors of object expressions.
 function to_hom_expr(layer::WiringLayer, inputs::Vector, outputs::Vector)
   σ = to_permutation(layer)
   @assert !isnothing(σ) "Conversion of non-permutation not implemented"
-  @assert inputs == outputs
-  permutation_to_hom_expr(σ, inputs)
-end
-
-""" Convert a typed permutation into a morphism expression.
-"""
-function permutation_to_hom_expr(σ::Vector{Int}, objects::Vector)
-  @assert all(σ[i] == i for i in eachindex(σ)) "Conversion of non-identity not implemented"
-  id(otimes(objects))
+  @assert inputs[σ] == outputs
+  permutation_to_expr(σ, inputs)
 end
 
 """ Convert a wiring layer into a permutation, if it is one.
