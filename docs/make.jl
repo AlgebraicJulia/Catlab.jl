@@ -5,7 +5,6 @@ using Catlab
 @info "Making docs"
 makedocs(
 modules     = [Catlab],
-root        = "doc",
 format      = Documenter.HTML(),
 sitename    = "Catlab",
 doctest     = false,
