@@ -33,7 +33,7 @@ Pages = [
      "apis/index.md",
      "apis/catlab.md",
      "apis/algebra.md",
-     "apis/doctorines.md",
+     "apis/doctrines.md",
      "apis/graphics.md",
      "apis/wiringdiagrams.md",
      ]

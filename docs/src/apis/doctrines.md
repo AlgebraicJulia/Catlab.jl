@@ -1,4 +1,4 @@
-# Catlab.Doctorines API
+# Catlab.Doctrines API
 ```@meta
 CurrentModule = Catlab
 ```
