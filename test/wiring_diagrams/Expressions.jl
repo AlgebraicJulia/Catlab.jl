@@ -101,7 +101,7 @@ graph = DiGraph([Edge(1,2),Edge(2,3),Edge(3,4),Edge(3,5),Edge(4,6),Edge(5,6)])
 @test find_parallel(graph) == Dict((3 => 6) => [4,5])
 
 # Series compositions in digraph.
-graph = union(DiGraph(10), PathDiGraph(3))
+graph = union(DiGraph(10), path_digraph(3))
 add_edge!(graph,5,6); add_edge!(graph,8,9); add_edge!(graph,9,10)
 @test Set(find_series(graph)) == Set([[1,2,3],[5,6],[8,9,10]])
 
