@@ -22,9 +22,11 @@ makedocs(
   ]
 )
 
-#deploydocs(
-#target      = "build",
-#deps        = nothing,
-#make        = nothing,
-#repo        = "https://github.com/epatters/Catlab.jl",
-#)
+@info "Deploying docs"
+deploydocs(
+  target = "build",
+  repo   = "github.com/epatters/Catlab.jl.git",
+  branch = "gh-pages",
+  deps   = nothing,
+  make   = nothing
+)
