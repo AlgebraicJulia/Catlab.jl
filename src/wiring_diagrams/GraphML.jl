@@ -395,5 +395,8 @@ function read_graphml_metagraph(xdoc::XMLDocument; directed::Bool=false,
   
   graph
 end
+function read_graphml_metagraph(filename::String; kw...)
+  read_graphml_metagraph(LightXML.parse_file(filename); kw...)
+end
 
 end
