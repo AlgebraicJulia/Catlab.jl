@@ -290,58 +290,6 @@ function read_graphml_ports(state::ReadState, xnode::XMLElement)
   (ports, input_ports, output_ports)
 end
 
-""" Read attributed graph (`MetaGraph`) from GraphML.
-
-TODO: This function belongs elsewhere, perhaps in MetaGraphs.jl itself.
-It is the equivalent of NetworkX's `read_graphml` function.
-"""
-function read_graphml_metagraph(xdoc::XMLDocument; directed::Bool=false,
-                                multigraph::Bool=false)::AbstractMetaGraph
-  xroot = root(xdoc)
-  @assert name(xroot) == "graphml" "Root element of GraphML document must be <graphml>"
-  xgraphs = xroot["graph"]
-  @assert length(xgraphs) == 1 "Root element of GraphML document must contain exactly one <graph>"
-  xgraph = xgraphs[1]
-  
-  # Read the GraphML keys.
-  keys = read_graphml_keys(xroot)
-  read_props = xnode::XMLElement ->
-    Dict(Symbol(k) => v for (k,v) in read_graphml_data(keys, xnode))
-  
-  # Create attributed graph.
-  graph = if directed || attribute(xgraph, "edgedefault") == "directed"
-    MetaDiGraph()
-  else
-    MetaGraph()
-  end
-  set_props!(graph, read_props(xgraph))
-  
-  # Read the node elements.
-  vertices = Dict{String,Int}()
-  for (i, xnode) in enumerate(xgraph["node"])
-    node_id = attribute(xnode, "id", required=true)
-    vertices[node_id] = i
-    add_vertex!(graph, read_props(xnode))
-  end
-  
-  # Read the edge elements.
-  for xedge in xgraph["edge"]
-    source_id = attribute(xedge, "source", required=true)
-    target_id = attribute(xedge, "target", required=true)
-    source, target = vertices[source_id], vertices[target_id]
-    if multigraph
-      if !has_edge(graph, source, target)
-        add_edge!(graph, source, target, Dict(:edges => Dict{Symbol,Any}[]))
-      end
-      push!(get_prop(graph, source, target, :edges), read_props(xedge))
-    else
-      add_edge!(graph, source, target, read_props(xedge))
-    end
-  end
-  
-  graph
-end
-
 function read_graphml_keys(xroot::XMLElement)
   keys = OrderedDict{String,GraphMLKey}()
   for xkey in xroot["key"]
@@ -392,5 +340,60 @@ read_graphml_data_value(::Type{Val{:string}}, s::String) = s
 read_graphml_data_value(::Type{Val{:json}}, s::String) = JSON.parse(s)
 
 convert_from_graphml_data(T::Type, data) = convert_from_graph_data(T, data)
+
+# MetaGraphs
+############
+
+""" Read attributed graph (`MetaGraph`) from GraphML.
+
+XXX: This function really belongs elsewhere, perhaps in MetaGraphs.jl itself.
+It is the equivalent of NetworkX's `read_graphml` function.
+"""
+function read_graphml_metagraph(xdoc::XMLDocument; directed::Bool=false,
+                                multigraph::Bool=false)::AbstractMetaGraph
+  xroot = root(xdoc)
+  @assert name(xroot) == "graphml" "Root element of GraphML document must be <graphml>"
+  xgraphs = xroot["graph"]
+  @assert length(xgraphs) == 1 "Root element of GraphML document must contain exactly one <graph>"
+  xgraph = xgraphs[1]
+  
+  # Read the GraphML keys.
+  keys = read_graphml_keys(xroot)
+  read_props = xnode::XMLElement ->
+    Dict(Symbol(k) => v for (k,v) in read_graphml_data(keys, xnode))
+  
+  # Create attributed graph.
+  graph = if directed || attribute(xgraph, "edgedefault") == "directed"
+    MetaDiGraph()
+  else
+    MetaGraph()
+  end
+  set_props!(graph, read_props(xgraph))
+  
+  # Read the node elements.
+  vertices = Dict{String,Int}()
+  for (i, xnode) in enumerate(xgraph["node"])
+    node_id = attribute(xnode, "id", required=true)
+    vertices[node_id] = i
+    add_vertex!(graph, read_props(xnode))
+  end
+  
+  # Read the edge elements.
+  for xedge in xgraph["edge"]
+    source_id = attribute(xedge, "source", required=true)
+    target_id = attribute(xedge, "target", required=true)
+    source, target = vertices[source_id], vertices[target_id]
+    if multigraph
+      if !has_edge(graph, source, target)
+        add_edge!(graph, source, target, Dict(:edges => Dict{Symbol,Any}[]))
+      end
+      push!(get_prop(graph, source, target, :edges), read_props(xedge))
+    else
+      add_edge!(graph, source, target, read_props(xedge))
+    end
+  end
+  
+  graph
+end
 
 end
