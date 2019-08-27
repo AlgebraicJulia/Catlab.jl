@@ -29,7 +29,7 @@ const JSONObject = OrderedDict{String,Any}
 # Serialization
 ###############
 
-""" Serialize a wiring diagram in JSON graph format.
+""" Write a wiring diagram to a file as JSON.
 """
 function write_json_graph(diagram::WiringDiagram, filename::String;
                           indent::Union{Int,Nothing}=nothing)
@@ -38,6 +38,8 @@ function write_json_graph(diagram::WiringDiagram, filename::String;
   end
 end
 
+""" Generate a JSON dict representing a wiring diagram.
+"""
 function generate_json_graph(diagram::WiringDiagram)::AbstractDict
   generate_json_box(diagram, Int[])
 end
@@ -102,13 +104,15 @@ convert_to_json_graph_data(x) = convert_to_graph_data(x)
 # Deserialization
 #################
 
-""" Deserialize a wiring diagram from JSON graph format.
+""" Read a wiring diagram from a JSON file.
 """
 function read_json_graph(
     BoxValue::Type, PortValue::Type, WireValue::Type, filename::String)
   parse_json_graph(BoxValue, PortValue, WireValue, JSON.parsefile(filename))
 end
 
+""" Parse a wiring diagram from a JSON string or dict.
+"""
 function parse_json_graph(
     BoxValue::Type, PortValue::Type, WireValue::Type, s::Union{AbstractString,IO})
   parse_json_graph(BoxValue, PortValue, WireValue, JSON.parse(s))

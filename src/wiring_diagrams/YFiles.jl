@@ -33,12 +33,14 @@ end
 # Deserialization
 #################
 
-""" Read a wiring diagram in the GraphML dialect of yEd and yFiles.
+""" Read a wiring diagram from a GraphML file created by yEd and yFiles.
 """
 function read_yfiles_diagram(BoxValue::Type, WireValue::Type, filename::String; kw...)
   parse_yfiles_diagram(BoxValue, WireValue, LightXML.parse_file(filename); kw...)
 end
 
+""" Parse a wiring diagram from a GraphML string or XML doc created by yFiles.
+"""
 function parse_yfiles_diagram(BoxValue::Type, WireValue::Type, s::AbstractString; kw...)
   parse_yfiles_diagram(BoxValue, WireValue, LightXML.parse_string(s); kw...)
 end

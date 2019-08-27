@@ -54,12 +54,14 @@ end
 # Serialization
 ###############
 
-""" Serialize a wiring diagram as GraphML.
+""" Write a wiring diagram to a file as GraphML.
 """
 function write_graphml(diagram::WiringDiagram, filename::String)
   LightXML.save_file(generate_graphml(diagram), filename)
 end
 
+""" Generate GraphML representing a wiring diagram.
+"""
 function generate_graphml(diagram::WiringDiagram)::XMLDocument
   # Create XML document.
   xdoc = XMLDocument()
@@ -196,13 +198,15 @@ convert_to_graphml_data(x) = convert_to_graph_data(x)
 # Deserialization
 #################
 
-""" Deserialize a wiring diagram from GraphML.
+""" Read a wiring diagram from a GraphML file.
 """
 function read_graphml(
     BoxValue::Type, PortValue::Type, WireValue::Type, filename::String)
   parse_graphml(BoxValue, PortValue, WireValue, LightXML.parse_file(filename))
 end
 
+""" Parse a wiring diagram from a GraphML string or XML document.
+"""
 function parse_graphml(
     BoxValue::Type, PortValue::Type, WireValue::Type, s::AbstractString)
   parse_graphml(BoxValue, PortValue, WireValue, LightXML.parse_string(s))
@@ -350,15 +354,18 @@ convert_from_graphml_data(T::Type, data) = convert_from_graph_data(T, data)
 # MetaGraphs
 ############
 
-""" Read attributed graph (`MetaGraph`) from GraphML.
+""" Read an attributed graph (`MetaGraph`) from a GraphML file.
 
-XXX: This function really belongs elsewhere, perhaps in MetaGraphs.jl itself.
-It is the equivalent of NetworkX's `read_graphml` function.
+The equivalent of NetworkX's `read_graphml` function.
 """
 function read_graphml_metagraph(filename::String; kw...)
   parse_graphml_metagraph(LightXML.parse_file(filename); kw...)
 end
 
+""" Parse an attributed graph from a GraphML string or XML document.
+
+The equivalent of NetworkX's `parse_graphml` function.
+"""
 function parse_graphml_metagraph(s::AbstractString; kw...)
   parse_graphml_metagraph(LightXML.parse_string(s); kw...)
 end
