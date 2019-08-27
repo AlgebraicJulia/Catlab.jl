@@ -8,8 +8,8 @@ using Catlab.WiringDiagrams
 # Test round trip of wiring diagrams with dictionary box and wire data.
 
 function roundtrip(f::WiringDiagram)
-  xdoc = write_graphml(f)
-  read_graphml(Dict, Nothing, Dict, xdoc)
+  xdoc = generate_graphml(f)
+  parse_graphml(Dict, Nothing, Dict, xdoc)
 end
 
 ports(n::Int) = repeat([nothing], n)
@@ -27,8 +27,8 @@ add_wires!(diagram, [
 # Test round trip of wiring diagrams with symbolic box and port values.
 
 function roundtrip_symbolic(f::WiringDiagram)
-  xdoc = write_graphml(f)
-  read_graphml(Symbol, Symbol, Nothing, xdoc)
+  xdoc = generate_graphml(f)
+  parse_graphml(Symbol, Symbol, Nothing, xdoc)
 end
 
 A, B, C = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C)

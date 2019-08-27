@@ -8,8 +8,8 @@ using Catlab.WiringDiagrams
 # Test round trip of wiring diagrams with dictionary box and wire data.
 
 function roundtrip(f::WiringDiagram)
-  json = sprint(JSON.print, write_json_graph(f), 2)
-  read_json_graph(Dict, Nothing, Dict, JSON.parse(json))
+  json = sprint(JSON.print, generate_json_graph(f), 2)
+  parse_json_graph(Dict, Nothing, Dict, JSON.parse(json))
 end
 
 ports(n) = Nothing[ nothing for i in 1:n ]
@@ -27,8 +27,8 @@ add_wires!(diagram, [
 # Test round trip of wiring diagrams with symbolic box and port values.
 
 function roundtrip_symbolic(f::WiringDiagram)
-  json = sprint(JSON.print, write_json_graph(f), 2)
-  read_json_graph(Symbol, Symbol, Nothing, JSON.parse(json))
+  json = sprint(JSON.print, generate_json_graph(f), 2)
+  parse_json_graph(Symbol, Symbol, Nothing, JSON.parse(json))
 end
 
 A, B, C = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C)
