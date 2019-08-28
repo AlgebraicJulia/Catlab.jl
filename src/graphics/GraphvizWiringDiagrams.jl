@@ -241,10 +241,12 @@ port_node_name(v::Int, port::Int) = string(box_id([v]), "p", port)
 """ Create a label for the main content of a box.
 """
 node_label(box_value::Any) = string(box_value)
+node_label(::Nothing) = ""
 
 """ Create a label for an edge.
 """
 edge_label(port_value::Any) = string(port_value)
+edge_label(::Nothing) = ""
 
 """ Escape special HTML characters: &, <, >, ", '
 
