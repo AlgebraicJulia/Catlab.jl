@@ -198,6 +198,7 @@ between the source and target boxes.
 """
 mutable struct WiringDiagram <: AbstractBox
   graph::MetaDiGraph
+  value::Any
   input_ports::Vector
   output_ports::Vector
   input_id::Int
@@ -205,13 +206,14 @@ mutable struct WiringDiagram <: AbstractBox
   
   function WiringDiagram(input_ports::Vector, output_ports::Vector)
     graph = MetaDiGraph()
-    diagram = new(graph, input_ports, output_ports, 1, 2)
+    diagram = new(graph, nothing, input_ports, output_ports, 1, 2)
     add_vertices!(graph, 2)
     return diagram
   end
   function WiringDiagram(d::WiringDiagram)
     # Copy constructor for shallow copy.
-    new(copy(d.graph), d.input_ports, d.output_ports, d.input_id, d.output_id)
+    graph = copy(d.graph)
+    new(graph, d.value, d.input_ports, d.output_ports, d.input_id, d.output_id)
   end
 end
 
@@ -232,7 +234,7 @@ See also: `is_permuted_equal`
 function Base.:(==)(d1::WiringDiagram, d2::WiringDiagram)
   (input_ports(d1) == input_ports(d2) && output_ports(d1) == output_ports(d2) &&
    input_id(d1) == input_id(d2) && output_id(d1) == output_id(d2) &&
-   graph(d1) == graph(d2) &&
+   d1.value == d2.value && graph(d1) == graph(d2) &&
    boxes(d1) == boxes(d2) && sort!(wires(d1)) == sort!(wires(d2)))
 end
 
