@@ -126,7 +126,7 @@ function syntax_code(name::Symbol, base_types::Vector{Type},
       # https://github.com/JuliaLang/julia/issues/28991
       LineNumberNode(0);
       Expr(:export, [cons.name for cons in signature.types]...);
-      Expr(:using, Expr(:., map(Symbol, split(string(outer_module), "."))...));
+      Expr(:using, Expr(:., :., :., nameof(outer_module)));
       :(signature() = $signature_ref);
       gen_types(signature, base_types);
       gen_type_accessors(signature);
