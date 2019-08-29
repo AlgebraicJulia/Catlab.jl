@@ -164,7 +164,7 @@ The `inputs` and `outputs` are corresponding vectors of object expressions.
 function to_hom_expr(layer::WiringLayer, inputs::Vector, outputs::Vector)
   σ = to_permutation(layer)
   @assert !isnothing(σ) "Conversion of non-permutation not implemented"
-  @assert inputs[σ] == outputs
+  @assert inputs == outputs[σ]
   permutation_to_expr(σ, inputs)
 end
 
