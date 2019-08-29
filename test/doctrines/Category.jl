@@ -34,6 +34,7 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 @test string(f) == "f"
 @test string(compose(f,g)) == "compose(f,g)"
 @test string(compose(f,g,f)) == "compose(f,g,f)"
+@test string(Ob(FreeCategory, nothing)) != ""
 
 # S-expressions
 @test sexpr(A) == ":A"

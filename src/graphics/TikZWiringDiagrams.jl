@@ -458,11 +458,7 @@ box(name::String, f::HomExpr{:otimes}) = parallel(name, args(f))
 box(name::String, f::HomExpr{:braid}) = crossing(name, dom(f))
 
 function label(expr::GATExpr{:generator})::String
-  if style[:math_mode]
-    sprint(show_latex, expr)
-  else
-    string(first(expr))
-  end
+  sprint(style[:math_mode] ? show_latex : show, expr)
 end
 
 """ Default renderers for specific syntax systems.
