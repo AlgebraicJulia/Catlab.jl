@@ -96,9 +96,9 @@ Edge(path::Vector{NodeID}; attrs...) = Edge(path, Attributes(attrs))
 # Bindings
 ##########
 
-""" Run a Graphviz program
+""" Run a Graphviz program.
 
-Assumes that Graphviz is installed on the local system. Invokes Graphviz
+Assumes that Graphviz is installed on the local system and invokes Graphviz
 through its command-line interface.
 
 For bindings to the Graphviz C API, see the the GraphViz.jl package
@@ -109,7 +109,11 @@ function run_graphviz(graph::Graph; prog::String="dot", format::String="json0")
   gv = open(`$prog -T$format`, "r+")
   pprint(gv.in, graph)
   close(gv.in)
-  read(gv.out, String)
+  result = read(gv.out, String)
+  if !success(gv)
+    error("Graphviz $prog failed with exit code $(gv.exitcode) and signal $(gv.termsignal)")
+  end
+  result
 end
 
 function Base.show(io::IO, ::MIME"image/svg+xml", graph::Graph)
