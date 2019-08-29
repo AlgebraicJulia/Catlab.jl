@@ -97,11 +97,11 @@ function generate_graphml_node(
   # boxes and wires.
   xnode = new_child(xgraph, "node")
   set_attribute(xnode, "id", box_id(path))
-  generate_graphml_data(state, xnode, "node", diagram.value)
   generate_graphml_ports(state, xnode, diagram)
   
   xsubgraph = new_child(xnode, "graph")
   set_attribute(xsubgraph, "id", string(box_id(path), ":graph"))
+  generate_graphml_data(state, xsubgraph, "graph", diagram.value)
   
   # Add node elements for boxes.
   for v in box_ids(diagram)
@@ -230,8 +230,7 @@ function parse_graphml(::Type{BoxValue}, ::Type{PortValue}, ::Type{WireValue},
 end
 
 function parse_graphml_node(state::ReadState, xnode::XMLElement)
-  # Parse all data and port elements.
-  data = parse_graphml_data(state, xnode)
+  # Parse all port elements.
   ports, input_ports, output_ports = parse_graphml_ports(state, xnode)
   
   # Handle special cases: atomic boxes and malformed elements.
@@ -239,6 +238,7 @@ function parse_graphml_node(state::ReadState, xnode::XMLElement)
   if length(xgraphs) > 1
     error("Node element can contain at most one <graph> (subgraph element)")
   elseif isempty(xgraphs)
+    data = parse_graphml_data(state, xnode)
     value = convert_from_graphml_data(state.BoxValue, data)
     return (Box(value, input_ports, output_ports), ports)
   end
@@ -246,6 +246,7 @@ function parse_graphml_node(state::ReadState, xnode::XMLElement)
   
   # If we get here, we're reading a wiring diagram.
   # FIXME: We should not assume that diagram data has same type as box data.
+  data = parse_graphml_data(state, xgraph)
   value = isempty(data) ? nothing : convert_from_graph_data(state.BoxValue, data)
   diagram = WiringDiagram(value, input_ports, output_ports)
   all_ports = Dict{Tuple{String,String},Port}()
