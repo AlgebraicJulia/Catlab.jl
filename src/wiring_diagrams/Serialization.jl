@@ -33,7 +33,7 @@ function wire_id(path::Vector{Int}, wire::Int)::String
   if isempty(path)
     string("e", wire)
   else
-    string(box_index(path), "e", wire)
+    string(box_id(path), "e", wire)
   end
 end
 

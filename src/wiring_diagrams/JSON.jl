@@ -45,7 +45,7 @@ function generate_json_graph(diagram::WiringDiagram)::AbstractDict
 end
 
 function generate_json_box(diagram::WiringDiagram, path::Vector{Int})
-  JSONObject(
+  json_object_with_value(diagram.value,
     "id" => box_id(path),
     "ports" => generate_json_ports(diagram),
     "children" => [
@@ -136,7 +136,9 @@ function parse_json_box(
   end
 
   # If we get here, we're reading a wiring diagram.
-  diagram = WiringDiagram(input_ports, output_ports)
+  # FIXME: We should not assume that diagram data has same type as box data.
+  value = haskey(node, "properties") ? parse_json_graph_data(BoxValue, node) : nothing
+  diagram = WiringDiagram(value, input_ports, output_ports)
   all_ports = Dict{Tuple{String,String},Port}()
   for (key, port_data) in ports
     all_ports[key] = port_data.kind == InputPort ?
