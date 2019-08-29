@@ -45,8 +45,10 @@ wiring diagram.
 - `label_attr=:label`: what kind of edge label to use (if `labels` is true).
   One of `:label`, `:xlabel`, `:headlabel`, or `:taillabel`.
 - `port_size="24"`: minimum size of ports on box, in points
-- `anchor_outer_ports=true`: whether to enforce ordering of input and output
-  ports of the outer box (i.e., ordering of incoming and outgoing wires)
+- 'outer_ports=true': whether to display the outer box's input and output ports.
+  If disabled, no incoming or outgoing wires will be shown either!
+- `anchor_outer_ports=true`: whether to enforce ordering of the outer box's
+  input and output, i.e., ordering of the incoming and outgoing wires
 - `graph_attrs=default_graph_attrs`: top-level graph attributes
 - `node_attrs=default_node_attrs`: top-level node attributes
 - `edge_attrs=default_edge_attrs`: top-level edge attributes
@@ -55,7 +57,8 @@ wiring diagram.
 function to_graphviz(f::WiringDiagram;
     graph_name::String="G", direction::Symbol=:vertical,
     node_labels::Bool=true, labels::Bool=false, label_attr::Symbol=:label,
-    port_size::String="24", anchor_outer_ports::Bool=true,
+    port_size::String="24",
+    outer_ports::Bool=true, anchor_outer_ports::Bool=true,
     graph_attrs::Graphviz.Attributes=Graphviz.Attributes(),
     node_attrs::Graphviz.Attributes=Graphviz.Attributes(),
     edge_attrs::Graphviz.Attributes=Graphviz.Attributes(),
@@ -73,11 +76,11 @@ function to_graphviz(f::WiringDiagram;
   # Invisible nodes for incoming and outgoing wires.
   n_inputs, n_outputs = length(input_ports(f)), length(output_ports(f))
   outer_ports_dir = direction == :vertical ? "LR" : "TB"
-  if n_inputs > 0
+  if outer_ports && n_inputs > 0
     push!(stmts, port_nodes(input_id(f), InputPort, n_inputs;
       anchor=anchor_outer_ports, dir=outer_ports_dir))
   end
-  if n_outputs > 0
+  if outer_ports && n_outputs > 0
     push!(stmts, port_nodes(output_id(f), OutputPort, n_outputs;
       anchor=anchor_outer_ports, dir=outer_ports_dir))
   end
@@ -104,25 +107,30 @@ function to_graphviz(f::WiringDiagram;
   end
   
   # Edges
+  outer_ids = (input_id(f), output_id(f))
   graphviz_port = (p::Port) -> begin
     anchor = if direction == :vertical
       p.kind == InputPort ? "n" : "s"
     else
       p.kind == InputPort ? "w" : "e"
     end
-    if p.box in (input_id(f), output_id(f))
+    if p.box in outer_ids
       Graphviz.NodeID(port_node_name(p.box, p.port), anchor)
     else
       Graphviz.NodeID(box_id([p.box]), port_name(p.kind, p.port), anchor)
     end
   end
   for (i, wire) in enumerate(wires(f))
+    source, target = wire.source, wire.target
+    if !outer_ports && (source.box in outer_ids || target.box in outer_ids)
+      continue
+    end
     # Use the port value to label the wire. We take the source port.
     # In most wiring diagrams, the source and target ports should yield the
     # same label, but that is not guaranteed. An advantage of choosing the
     # source port over the target port is that it will carry the
     # "more specific" type when implicit conversions are allowed.
-    port = port_value(f, wire.source)
+    port = port_value(f, source)
     attrs = Graphviz.Attributes(
       :id => wire_id(Int[], i),
       :comment => edge_label(port),
@@ -130,8 +138,7 @@ function to_graphviz(f::WiringDiagram;
     if labels
       attrs[label_attr] = edge_label(port)
     end
-    edge = Graphviz.Edge(graphviz_port(wire.source),
-                         graphviz_port(wire.target); attrs...)
+    edge = Graphviz.Edge(graphviz_port(source), graphviz_port(target); attrs...)
     push!(stmts, edge)
   end
   
