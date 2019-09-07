@@ -8,6 +8,9 @@ using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
 import ..Graphviz
 import ..Graphviz: to_graphviz
 
+# Constants and data types
+##########################
+
 # Default Graphviz font. Reference: http://www.graphviz.org/doc/fontfaq.txt
 const default_font = "Serif"
 
@@ -30,6 +33,15 @@ const default_cell_attrs = Graphviz.Attributes(
   :border => "1",
   :cellpadding => "4",
 )
+
+struct GraphvizBox
+  stmts::Vector{Graphviz.Statement} # Usually Graphviz.Node
+  input_ports::Vector{Graphviz.NodeID}
+  output_ports::Vector{Graphviz.NodeID}
+end
+
+# Conversion
+############
 
 """ Render a wiring diagram using Graphviz.
 
@@ -66,51 +78,40 @@ function to_graphviz(f::WiringDiagram;
     cell_attrs::Graphviz.Attributes=Graphviz.Attributes())::Graphviz.Graph
   @assert direction in (:vertical, :horizontal)
   @assert label_attr in (:label, :xlabel, :headlabel, :taillabel)
+  vertical = direction == :vertical
 
-  # Graph
-  graph_attrs = merge(graph_attrs, Graphviz.Attributes(
-    :rankdir => direction == :horizontal ? "LR" : "TB"
-  ))
-  
-  # Nodes
+  # State variables.
   stmts = Graphviz.Statement[]
+  port_map = Dict{Port,Graphviz.NodeID}()
+  update_port_map! = (v::Int, kind::PortKind, node_ids) -> begin
+    for (i, node_id) in enumerate(node_ids)
+      port_map[Port(v,kind,i)] = node_id
+    end
+  end
+  
   # Invisible nodes for incoming and outgoing wires.
-  n_inputs, n_outputs = length(input_ports(f)), length(output_ports(f))
-  outer_ports_dir = direction == :vertical ? "LR" : "TB"
-  if outer_ports && n_inputs > 0
-    push!(stmts, port_nodes(input_id(f), InputPort, n_inputs;
-      anchor=anchor_outer_ports, dir=outer_ports_dir))
+  if outer_ports
+    gv_box = graphviz_outer_box(f; anchor=anchor_outer_ports, vertical=vertical)
+    append!(stmts, gv_box.stmts)
+    update_port_map!(input_id(f), OutputPort, gv_box.input_ports)
+    update_port_map!(output_id(f), InputPort, gv_box.output_ports)
   end
-  if outer_ports && n_outputs > 0
-    push!(stmts, port_nodes(output_id(f), OutputPort, n_outputs;
-      anchor=anchor_outer_ports, dir=outer_ports_dir))
-  end
+  
   # Visible nodes for boxes.
   cell_attrs = merge(default_cell_attrs, cell_attrs)
   for v in box_ids(f)
-    node = node_for_box(box(f,v), box_id([v]),
-      direction=direction, labels=node_labels,
-      port_size=port_size, junction_size=junction_size, cell_attrs=cell_attrs)
-    push!(stmts, node)
+    gv_box = graphviz_box(box(f,v), box_id([v]),
+      vertical=vertical, labels=node_labels, port_size=port_size,
+      junction_size=junction_size, cell_attrs=cell_attrs)
+    append!(stmts, gv_box.stmts)
+    update_port_map!(v, InputPort, gv_box.input_ports)
+    update_port_map!(v, OutputPort, gv_box.output_ports)
   end
   
-  # Edges
-  outer_ids = (input_id(f), output_id(f))
-  graphviz_port = (p::Port) -> begin
-    anchor = if direction == :vertical
-      p.kind == InputPort ? "n" : "s"
-    else
-      p.kind == InputPort ? "w" : "e"
-    end
-    if p.box in outer_ids
-      Graphviz.NodeID(port_node_name(p.box, p.port), anchor)
-    else
-      Graphviz.NodeID(box_id([p.box]), port_name(p.kind, p.port), anchor)
-    end
-  end
+  # Edges.
   for (i, wire) in enumerate(wires(f))
     source, target = wire.source, wire.target
-    if !outer_ports && (source.box in outer_ids || target.box in outer_ids)
+    if !(haskey(port_map, source) && haskey(port_map, target))
       continue
     end
     # Use the port value to label the wire. We take the source port.
@@ -126,10 +127,14 @@ function to_graphviz(f::WiringDiagram;
     if labels
       attrs[label_attr] = edge_label(port)
     end
-    edge = Graphviz.Edge(graphviz_port(source), graphviz_port(target); attrs...)
+    edge = Graphviz.Edge(port_map[source], port_map[target]; attrs...)
     push!(stmts, edge)
   end
   
+  # Graph.
+  graph_attrs = merge(graph_attrs, Graphviz.Attributes(
+    :rankdir => vertical ? "TB" : "LR"
+  ))
   Graphviz.Digraph(graph_name, stmts;
     graph_attrs=merge(default_graph_attrs, graph_attrs),
     node_attrs=merge(default_node_attrs, node_attrs),
@@ -140,12 +145,13 @@ function to_graphviz(f::HomExpr; kw...)::Graphviz.Graph
   to_graphviz(to_wiring_diagram(f); kw...)
 end
 
-""" Create Graphviz node for generic box.
+""" Graphviz box for a generic box.
 """
-function node_for_box(box::AbstractBox, node_id::String;
-    direction::Symbol=:vertical, labels::Bool=true, port_size::String="0",
-    cell_attrs::Graphviz.Attributes=Graphviz.Attributes(), kw...)::Graphviz.Node
-  node_html_label = direction == :vertical ?
+function graphviz_box(box::AbstractBox, node_id::String;
+    vertical::Bool=true, labels::Bool=true, port_size::String="0",
+    cell_attrs::Graphviz.Attributes=Graphviz.Attributes(), kw...)
+  # Main node.
+  node_html_label = vertical ?
     node_top_bottom_html_label : node_left_right_html_label
   nin, nout = length(input_ports(box)), length(output_ports(box))
   text_label = labels ? node_label(box.value) : ""
@@ -156,18 +162,27 @@ function node_for_box(box::AbstractBox, node_id::String;
   # Note: The `id` attribute is included in the Graphviz output but is not used
   # internally by Graphviz. It is for use by downstream applications.
   # Reference: http://www.graphviz.org/doc/info/attrs.html#d:id
-  Graphviz.Node(node_id,
+  node = Graphviz.Node(node_id,
     id = node_id,
     comment = node_label(box.value),
     label = html_label,
   )
+  
+  # Input and output ports.
+  graphviz_port = (kind::PortKind, port::Int) -> begin
+    Graphviz.NodeID(node_id, port_name(kind, port), port_anchor(kind, vertical))
+  end
+  inputs = [ graphviz_port(InputPort, i) for i in 1:nin ]
+  outputs = [ graphviz_port(OutputPort, i) for i in 1:nout ]
+  
+  GraphvizBox([node], inputs, outputs)
 end
 
-""" Create Graphviz node for junction.
+""" Graphviz box for a junction.
 """
-function node_for_box(junction::Junction, node_id::String;
+function graphviz_box(junction::Junction, node_id::String;
     junction_size::String="0", kw...)
-  Graphviz.Node(node_id,
+  node = Graphviz.Node(node_id,
     id = node_id,
     comment = "junction",
     label = "",
@@ -177,6 +192,9 @@ function node_for_box(junction::Junction, node_id::String;
     width = junction_size,
     height = junction_size,
   )
+  inputs = repeat([Graphviz.NodeID(node_id)], junction.ninputs)
+  outputs = repeat([Graphviz.NodeID(node_id)], junction.noutputs)
+  GraphvizBox([node], inputs, outputs)
 end
 
 """ Create a top-to-bottom "HTML-like" node label for a box.
@@ -207,6 +225,8 @@ function node_left_right_html_label(nin::Int, nout::Int, text_label::String;
     </TABLE>""")
 end
 
+""" Encode attributes for Graphviz HTML-like labels.
+"""
 function html_attributes(attrs::Graphviz.Attributes)::String
   join(["$(uppercase(string(k)))=\"$v\"" for (k,v) in attrs], " ")
 end
@@ -239,11 +259,39 @@ function ports_vertical_html_label(kind::PortKind, nports::Int,
     <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">$rows</TABLE>""")
 end
 
+""" Graphviz box for the outer box of a wiring diagram.
+"""
+function graphviz_outer_box(f::WiringDiagram;
+    anchor::Bool=true, vertical::Bool=true)
+  # Subgraphs containing invisible nodes.
+  stmts = Graphviz.Statement[]
+  ninputs, noutputs = length(input_ports(f)), length(output_ports(f))
+  if ninputs > 0
+    push!(stmts, graphviz_outer_ports(
+      input_id(f), InputPort, ninputs; anchor=anchor, vertical=vertical))
+  end
+  if noutputs > 0
+    push!(stmts, graphviz_outer_ports(
+      output_id(f), OutputPort, noutputs; anchor=anchor, vertical=vertical))
+  end
+  
+  # Input and output ports.
+  graphviz_port = (port::Port) -> Graphviz.NodeID(
+    port_node_name(port.box, port.port),
+    port_anchor(port.kind, vertical)
+  )
+  inputs = [ graphviz_port(Port(input_id(f), OutputPort, i)) for i in 1:ninputs ]
+  outputs = [ graphviz_port(Port(output_id(f), InputPort, i)) for i in 1:noutputs ]
+  
+  GraphvizBox(stmts, inputs, outputs)
+end
+
 """ Create invisible nodes for the input or output ports of an outer box.
 """
-function port_nodes(v::Int, kind::PortKind, nports::Int;
-                    anchor::Bool=true, dir::String="LR")::Graphviz.Subgraph
+function graphviz_outer_ports(v::Int, kind::PortKind, nports::Int;
+    anchor::Bool=true, vertical::Bool=true)::Graphviz.Subgraph
   @assert nports > 0
+  dir = vertical ? "LR" : "TB"
   port_width = "$(round(24/72,digits=3))" # port width in inches
   nodes = [ port_node_name(v, i) for i in 1:nports ]
   stmts = Graphviz.Statement[
@@ -271,6 +319,16 @@ function port_nodes(v::Int, kind::PortKind, nports::Int;
   )
 end
 port_node_name(v::Int, port::Int) = string(box_id([v]), "p", port)
+
+""" Graphviz anchor for port.
+"""
+function port_anchor(kind::PortKind, vertical::Bool)
+  if vertical
+    kind == InputPort ? "n" : "s"
+  else
+    kind == InputPort ? "w" : "e"
+  end
+end
 
 """ Create a label for the main content of a box.
 """
