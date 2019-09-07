@@ -15,8 +15,8 @@ function stmts(graph::Graphviz.Graph, stmt_type::Type, attr::Symbol)
     if isa(stmt, stmt_type) && haskey(stmt.attrs, attr) ]
 end
 
-A, B = Ob(FreeSymmetricMonoidalCategory, :A, :B)
-I = munit(FreeSymmetricMonoidalCategory.Ob)
+A, B = Ob(FreeBiproductCategory, :A, :B)
+I = munit(FreeBiproductCategory.Ob)
 f = to_wiring_diagram(Hom(:f, A, B))
 g = to_wiring_diagram(Hom(:g, B, A))
 
@@ -43,6 +43,10 @@ graph = to_graphviz(compose(f,g))
 # Layout direction.
 graph = to_graphviz(f; direction=:horizontal)
 @test stmts(graph, Graphviz.Node, :comment) == ["f"]
+
+# Junction nodes.
+graph = to_graphviz(add_junctions!(compose(f, mcopy(Ports(B)))))
+@test stmts(graph, Graphviz.Node, :comment) == ["f","junction"]
 
 # Edge labels.
 graph = to_graphviz(f; labels=true)

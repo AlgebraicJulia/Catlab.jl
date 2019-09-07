@@ -45,7 +45,8 @@ wiring diagram.
 - `label_attr=:label`: what kind of edge label to use (if `labels` is true).
   One of `:label`, `:xlabel`, `:headlabel`, or `:taillabel`.
 - `port_size="24"`: minimum size of ports on box, in points
-- 'outer_ports=true': whether to display the outer box's input and output ports.
+- `junction_size="0.05"`: size of junction nodes, in inches
+- `outer_ports=true`: whether to display the outer box's input and output ports.
   If disabled, no incoming or outgoing wires will be shown either!
 - `anchor_outer_ports=true`: whether to enforce ordering of the outer box's
   input and output, i.e., ordering of the incoming and outgoing wires
@@ -57,7 +58,7 @@ wiring diagram.
 function to_graphviz(f::WiringDiagram;
     graph_name::String="G", direction::Symbol=:vertical,
     node_labels::Bool=true, labels::Bool=false, label_attr::Symbol=:label,
-    port_size::String="24",
+    port_size::String="24", junction_size::String="0.05",
     outer_ports::Bool=true, anchor_outer_ports::Bool=true,
     graph_attrs::Graphviz.Attributes=Graphviz.Attributes(),
     node_attrs::Graphviz.Attributes=Graphviz.Attributes(),
@@ -88,8 +89,8 @@ function to_graphviz(f::WiringDiagram;
   cell_attrs = merge(default_cell_attrs, cell_attrs)
   for v in box_ids(f)
     node = node_for_box(box(f,v), box_id([v]),
-      direction=direction, labels=node_labels, port_size=port_size,
-      cell_attrs=cell_attrs)
+      direction=direction, labels=node_labels,
+      port_size=port_size, junction_size=junction_size, cell_attrs=cell_attrs)
     push!(stmts, node)
   end
   
@@ -139,11 +140,11 @@ function to_graphviz(f::HomExpr; kw...)::Graphviz.Graph
   to_graphviz(to_wiring_diagram(f); kw...)
 end
 
-""" Create Graphviz node for atomic box.
+""" Create Graphviz node for generic box.
 """
-function node_for_box(box::Box, node_id::String;
+function node_for_box(box::AbstractBox, node_id::String;
     direction::Symbol=:vertical, labels::Bool=true, port_size::String="0",
-    cell_attrs::Graphviz.Attributes=Graphviz.Attributes())::Graphviz.Node
+    cell_attrs::Graphviz.Attributes=Graphviz.Attributes(), kw...)::Graphviz.Node
   node_html_label = direction == :vertical ?
     node_top_bottom_html_label : node_left_right_html_label
   nin, nout = length(input_ports(box)), length(output_ports(box))
@@ -159,6 +160,22 @@ function node_for_box(box::Box, node_id::String;
     id = node_id,
     comment = node_label(box.value),
     label = html_label,
+  )
+end
+
+""" Create Graphviz node for junction.
+"""
+function node_for_box(junction::Junction, node_id::String;
+    junction_size::String="0", kw...)
+  Graphviz.Node(node_id,
+    id = node_id,
+    comment = "junction",
+    label = "",
+    shape = "circle",
+    style = "filled",
+    fillcolor = "black",
+    width = junction_size,
+    height = junction_size,
   )
 end
 
