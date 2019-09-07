@@ -85,24 +85,11 @@ function to_graphviz(f::WiringDiagram;
       anchor=anchor_outer_ports, dir=outer_ports_dir))
   end
   # Visible nodes for boxes.
-  # Note: The `id` attribute is included in the Graphviz output but is not used
-  # internally by Graphviz. It is for use by downstream applications.
-  # Reference: http://www.graphviz.org/doc/info/attrs.html#d:id
   cell_attrs = merge(default_cell_attrs, cell_attrs)
-  node_html_label = direction == :vertical ?
-    node_top_bottom_html_label : node_left_right_html_label
   for v in box_ids(f)
-    box = WiringDiagrams.box(f, v)
-    nin, nout = length(input_ports(box)), length(output_ports(box))
-    text_label = node_labels ? node_label(box.value) : ""
-    node = Graphviz.Node(box_id([v]),
-      id = box_id([v]),
-      comment = node_label(box.value),
-      label = node_html_label(nin, nout, text_label,
-        attrs = cell_attrs,
-        port_size = port_size
-      )
-    )
+    node = node_for_box(box(f,v), box_id([v]),
+      direction=direction, labels=node_labels, port_size=port_size,
+      cell_attrs=cell_attrs)
     push!(stmts, node)
   end
   
@@ -150,6 +137,29 @@ end
 
 function to_graphviz(f::HomExpr; kw...)::Graphviz.Graph
   to_graphviz(to_wiring_diagram(f); kw...)
+end
+
+""" Create Graphviz node for atomic box.
+"""
+function node_for_box(box::Box, node_id::String;
+    direction::Symbol=:vertical, labels::Bool=true, port_size::String="0",
+    cell_attrs::Graphviz.Attributes=Graphviz.Attributes())::Graphviz.Node
+  node_html_label = direction == :vertical ?
+    node_top_bottom_html_label : node_left_right_html_label
+  nin, nout = length(input_ports(box)), length(output_ports(box))
+  text_label = labels ? node_label(box.value) : ""
+  html_label = node_html_label(nin, nout, text_label,
+    attrs = cell_attrs,
+    port_size = port_size
+  )
+  # Note: The `id` attribute is included in the Graphviz output but is not used
+  # internally by Graphviz. It is for use by downstream applications.
+  # Reference: http://www.graphviz.org/doc/info/attrs.html#d:id
+  Graphviz.Node(node_id,
+    id = node_id,
+    comment = node_label(box.value),
+    label = html_label,
+  )
 end
 
 """ Create a top-to-bottom "HTML-like" node label for a box.

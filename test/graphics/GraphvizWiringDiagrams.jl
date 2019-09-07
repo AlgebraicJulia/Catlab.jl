@@ -20,6 +20,7 @@ I = munit(FreeSymmetricMonoidalCategory.Ob)
 f = to_wiring_diagram(Hom(:f, A, B))
 g = to_wiring_diagram(Hom(:g, B, A))
 
+# Simple wiring diagrams, with default settings.
 graph = to_graphviz(f)
 @test isa(graph, Graphviz.Graph) && graph.directed
 @test stmts(graph, Graphviz.Node, :comment) == ["f"]
@@ -27,17 +28,6 @@ graph = to_graphviz(f)
 @test stmts(graph, Graphviz.Edge, :label) == []
 @test stmts(graph, Graphviz.Edge, :xlabel) == []
 @test length(stmts(graph, Graphviz.Subgraph)) == 2
-
-graph = to_graphviz(f; direction=:horizontal)
-@test stmts(graph, Graphviz.Node, :comment) == ["f"]
-
-graph = to_graphviz(f; labels=true)
-@test stmts(graph, Graphviz.Edge, :label) == ["A","B"]
-@test stmts(graph, Graphviz.Edge, :xlabel) == []
-
-graph = to_graphviz(f; labels=true, label_attr=:xlabel)
-@test stmts(graph, Graphviz.Edge, :label) == []
-@test stmts(graph, Graphviz.Edge, :xlabel) == ["A","B"]
 
 graph = to_graphviz(to_wiring_diagram(Hom(:h, I, A)))
 @test stmts(graph, Graphviz.Node, :comment) == ["h"]
@@ -50,6 +40,20 @@ graph = to_graphviz(to_wiring_diagram(Hom(:h, I, I)))
 graph = to_graphviz(compose(f,g))
 @test stmts(graph, Graphviz.Node, :comment) == ["f","g"]
 
+# Layout direction.
+graph = to_graphviz(f; direction=:horizontal)
+@test stmts(graph, Graphviz.Node, :comment) == ["f"]
+
+# Edge labels.
+graph = to_graphviz(f; labels=true)
+@test stmts(graph, Graphviz.Edge, :label) == ["A","B"]
+@test stmts(graph, Graphviz.Edge, :xlabel) == []
+
+graph = to_graphviz(f; labels=true, label_attr=:xlabel)
+@test stmts(graph, Graphviz.Edge, :label) == []
+@test stmts(graph, Graphviz.Edge, :xlabel) == ["A","B"]
+
+# Anchoring of outer ports.
 graph = to_graphviz(otimes(f,g); anchor_outer_ports=true)
 @test stmts(graph, Graphviz.Node, :comment) == ["f","g"]
 graph = to_graphviz(otimes(f,g); anchor_outer_ports=false)
