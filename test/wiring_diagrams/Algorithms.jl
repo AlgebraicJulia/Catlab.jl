@@ -30,8 +30,8 @@ perm = sortperm(boxes(d); by=box->box.value)
 @test is_permuted_equal(d, normal, perm)
 
 # Deletions.
-d = WiringDiagram(f)
-@test normalize_delete!(d) == d
+d = to_wiring_diagram(f)
+@test normalize_delete!(d) == to_wiring_diagram(f)
 
 d = WiringDiagram(I,I)
 add_box!(d, f)
@@ -47,7 +47,7 @@ add_wires!(d, [
   (gv,1) => (hv,1),
   (fv,1) => (output_id(d),1),
 ])
-@test normalize_delete!(d) == WiringDiagram(f)
+@test normalize_delete!(d) == to_wiring_diagram(f)
 
 # Cartesian morphisms.
 d = to_wiring_diagram(compose(

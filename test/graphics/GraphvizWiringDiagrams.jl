@@ -17,8 +17,8 @@ end
 
 A, B = Ob(FreeSymmetricMonoidalCategory, :A, :B)
 I = munit(FreeSymmetricMonoidalCategory.Ob)
-f = WiringDiagram(Hom(:f, A, B))
-g = WiringDiagram(Hom(:g, B, A))
+f = to_wiring_diagram(Hom(:f, A, B))
+g = to_wiring_diagram(Hom(:g, B, A))
 
 graph = to_graphviz(f)
 @test isa(graph, Graphviz.Graph) && graph.directed
@@ -39,11 +39,11 @@ graph = to_graphviz(f; labels=true, label_attr=:xlabel)
 @test stmts(graph, Graphviz.Edge, :label) == []
 @test stmts(graph, Graphviz.Edge, :xlabel) == ["A","B"]
 
-graph = to_graphviz(WiringDiagram(Hom(:h, I, A)))
+graph = to_graphviz(to_wiring_diagram(Hom(:h, I, A)))
 @test stmts(graph, Graphviz.Node, :comment) == ["h"]
 @test length(stmts(graph, Graphviz.Subgraph)) == 1
 
-graph = to_graphviz(WiringDiagram(Hom(:h, I, I)))
+graph = to_graphviz(to_wiring_diagram(Hom(:h, I, I)))
 @test stmts(graph, Graphviz.Node, :comment) == ["h"]
 @test length(stmts(graph, Graphviz.Subgraph)) == 0
 

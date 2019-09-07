@@ -765,12 +765,6 @@ function Box(expr::HomExpr{:generator})
 end
 add_box!(f::WiringDiagram, expr::HomExpr) = add_box!(f, Box(expr))
 
-""" Create wiring diagram with a single box containing a morphism generator.
-"""
-function WiringDiagram(f::HomExpr{:generator})
-  to_wiring_diagram(Box(f))
-end
-
 """ Create empty wiring diagram with given domain and codomain objects.
 """
 function WiringDiagram(inputs::ObExpr, outputs::ObExpr)

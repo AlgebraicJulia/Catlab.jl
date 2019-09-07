@@ -195,13 +195,11 @@ sub = first(boxes(d))
 #---------
 
 # Generators
-f = WiringDiagram(Hom(:f,A,B))
-g = WiringDiagram(Hom(:g,B,A))
+f = to_wiring_diagram(Box(Hom(:f,A,B)))
+g = to_wiring_diagram(Box(Hom(:g,B,A)))
 @test nboxes(f) == 1
 @test boxes(f) == [ Box(Hom(:f,A,B)) ]
 @test nwires(f) == 2
-@test Ports([:A]) == Ports([:A])
-@test WiringDiagram(Hom(:f,A,B)) == WiringDiagram(Hom(:f,A,B))
 
 # Composition
 @test nboxes(compose(f,g)) == 2

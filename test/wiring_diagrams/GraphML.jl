@@ -32,8 +32,8 @@ function roundtrip_symbolic(f::WiringDiagram)
 end
 
 A, B, C = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C)
-f = WiringDiagram(Hom(:f, A, B))
-g = WiringDiagram(Hom(:g, B, C))
+f = to_wiring_diagram(Hom(:f, A, B))
+g = to_wiring_diagram(Hom(:g, B, C))
 
 @test roundtrip_symbolic(f) == f
 @test roundtrip_symbolic(compose(f,g)) == compose(f,g)
@@ -41,7 +41,7 @@ g = WiringDiagram(Hom(:g, B, C))
 
 # Round trip nested, symbolic wiring diagrams.
 
-f = WiringDiagram(Hom(:f, A, B))
+f = to_wiring_diagram(Hom(:f, A, B))
 diagram = WiringDiagram(:outer, [:A], [:B])
 fv = add_box!(diagram, f)
 add_wires!(diagram, [

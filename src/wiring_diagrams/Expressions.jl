@@ -35,7 +35,7 @@ function to_wiring_diagram(expr::GATExpr)
   functor((Ports, WiringDiagram), expr;
     terms = Dict(
       :Ob => expr -> Ports([first(expr)]),
-      :Hom => expr -> WiringDiagram(expr),
+      :Hom => expr -> to_wiring_diagram(Box(expr)),
     )
   )
 end
