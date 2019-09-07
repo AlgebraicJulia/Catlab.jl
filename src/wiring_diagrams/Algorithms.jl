@@ -47,21 +47,32 @@ Transforms from implicit to explicit representation of (co)diagonals.
 """
 function add_junctions!(d::WiringDiagram)
   add_output_junctions!(d, input_id(d))
-  #add_input_junctions!(d, output_id(d))
+  add_input_junctions!(d, output_id(d))
   for v in box_ids(d)
-    #add_input_junctions!(d, v)
+    add_input_junctions!(d, v)
     add_output_junctions!(d, v)
   end
   return d
+end
+function add_input_junctions!(d::WiringDiagram, v::Int)
+  for (port, port_value) in enumerate(input_ports(d, v))
+    wires = in_wires(d, v, port)
+    nwires = length(wires)
+    if nwires != 1
+      for neighbor in inneighbors(d, v); rem_wires!(d, neighbor, v) end
+      jv = add_box!(d, Junction(port_value, nwires, 1))
+      add_wire!(d, Port(jv, OutputPort, 1) => Port(v, InputPort, port))
+      add_wires!(d, [ wire.source => Port(jv, InputPort, i)
+                      for (i, wire) in enumerate(wires) ])
+    end
+  end
 end
 function add_output_junctions!(d::WiringDiagram, v::Int)
   for (port, port_value) in enumerate(output_ports(d, v))
     wires = out_wires(d, v, port)
     nwires = length(wires)
     if nwires != 1
-      for neighbor in outneighbors(d, v)
-        rem_wires!(d, v, neighbor)
-      end
+      for neighbor in outneighbors(d, v); rem_wires!(d, v, neighbor) end
       jv = add_box!(d, Junction(port_value, 1, nwires))
       add_wire!(d, Port(v, OutputPort, port) => Port(jv, InputPort, 1))
       add_wires!(d, [ Port(jv, OutputPort, i) => wire.target

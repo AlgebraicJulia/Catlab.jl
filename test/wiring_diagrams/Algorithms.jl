@@ -4,8 +4,8 @@ using Test
 using Catlab.Doctrines
 using Catlab.WiringDiagrams
 
-A, B, C, D = Ob(FreeCartesianCategory, :A, :B, :C, :D)
-I = munit(FreeCartesianCategory.Ob)
+A, B, C, D = Ob(FreeBiproductCategory, :A, :B, :C, :D)
+I = munit(FreeBiproductCategory.Ob)
 f = Hom(:f, A, B)
 g = Hom(:g, B, C)
 h = Hom(:h, C, D)
@@ -20,10 +20,35 @@ d = to_wiring_diagram(compose(f, mcopy(B)))
 junctioned = compose(to_wiring_diagram(f), junction_diagram(:B,1,2))
 @test add_junctions!(d) == junctioned
 
+# Add junctions for merges.
+d = to_wiring_diagram(compose(mmerge(A), f))
+junctioned = compose(junction_diagram(:A,2,1), to_wiring_diagram(f))
+@test is_permuted_equal(add_junctions!(d), junctioned, [2,1])
+
 # Add junctions for deletions.
 d = to_wiring_diagram(compose(f, delete(B)))
 junctioned = compose(to_wiring_diagram(f), junction_diagram(:B,1,0))
 @test add_junctions!(d) == junctioned
+
+# Add junctions for creations.
+d = to_wiring_diagram(compose(create(A), f))
+junctioned = compose(junction_diagram(:A,0,1), to_wiring_diagram(f))
+@test is_permuted_equal(add_junctions!(d), junctioned, [2,1])
+
+# Add junctions for copies, merges, deletions, and creations, all at once.
+d = to_wiring_diagram(compose(create(A),f,mcopy(B),mmerge(B),g,delete(C)))
+junctioned = compose(
+  junction_diagram(:A,0,1),
+  to_wiring_diagram(f),
+  junction_diagram(:B,1,2),
+  junction_diagram(:B,2,1),
+  to_wiring_diagram(g),
+  junction_diagram(:C,1,0)
+)
+d = add_junctions!(d)
+# XXX: An isomorphism test would be more convenient.
+perm = [ findfirst([b] .== boxes(d)) for b in boxes(junctioned) ]
+@test is_permuted_equal(d, junctioned, perm)
 
 # Normalize copies.
 d = to_wiring_diagram(compose(mcopy(A), otimes(f,f)))
