@@ -38,6 +38,7 @@ rem_wires!(f, 1 => 3)
 A, B, C = NLayer(1), NLayer(1), NLayer(1)
 
 # Category
+@test id(A) == complete_layer(1,1)
 @test compose(id(A), id(A)) == id(A)
 
 # Symmetric monoidal category
@@ -45,6 +46,8 @@ A, B, C = NLayer(1), NLayer(1), NLayer(1)
 @test compose(braid(A,B), braid(B,A)) == id(otimes(A,B))
 
 # Diagonals
+@test mcopy(A) == complete_layer(1,2)
+@test delete(A) == complete_layer(1,0)
 @test compose(otimes(mcopy(A), mcopy(B)), otimes(id(A), braid(A,B), id(B))) ==
   mcopy(otimes(A,B))
 @test compose(mcopy(A), otimes(mcopy(A), id(A))) == mcopy(A, 3)
@@ -52,6 +55,8 @@ A, B, C = NLayer(1), NLayer(1), NLayer(1)
 @test compose(mcopy(A), otimes(id(A), delete(A))) == id(A)
 
 # Codiagonals
+@test mmerge(A) == complete_layer(2,1)
+@test create(A) == complete_layer(0,1)
 @test compose(otimes(id(A), braid(B,A), id(B)), otimes(mmerge(A), mmerge(B))) ==
   mmerge(otimes(A,B))
 @test compose(otimes(mmerge(A), id(A)), mmerge(A)) == mmerge(A, 3)

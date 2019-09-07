@@ -14,7 +14,7 @@ diagram, which is purely graphical.
 module WiringLayers
 export WiringLayer, NLayer, nwires, wires, has_wire, add_wire!, add_wires!,
   rem_wire!, rem_wires!, in_wires, out_wires,
-  to_wiring_diagram, wiring_layer_between,
+  complete_layer, to_wiring_diagram, wiring_layer_between,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create
 
 using AutoHashEquals
@@ -51,16 +51,30 @@ Object in the category of wiring layers.
   n::Int
 end
 
-WiringLayer(inputs::NLayer, outputs::NLayer) = WiringLayer(inputs.n, outputs.n)
-
 # Low-level graph interface
 ###########################
+
+# Constructors.
+
+WiringLayer(inputs::NLayer, outputs::NLayer) = WiringLayer(inputs.n, outputs.n)
 
 function WiringLayer(wires, ninputs, noutputs)
   f = WiringLayer(ninputs, noutputs)
   add_wires!(f, wires)
   f
 end
+
+""" Completely connected wiring layer.
+
+The layer's underlying graph is the complete bipartite graph.
+"""
+function complete_layer(ninputs::Int, noutputs::Int)
+  f = WiringLayer(ninputs, noutputs)
+  add_wires!(f, i=>j for j in 1:noutputs for i in 1:ninputs)
+  f
+end
+
+# Basic accessors.
 
 has_wire(f::WiringLayer, wire) = nwires(f, wire) > 0
 
@@ -77,6 +91,8 @@ function out_wires(f::WiringLayer, src::Int)
   tgts = get(f.wires, src) do; Dict() end
   vcat((repeat([src => tgt], n) for (tgt, n) in tgts)...)
 end
+
+# Layer mutation.
 
 function add_wire!(f::WiringLayer, wire)
   check_wire_bounds(f, wire)
