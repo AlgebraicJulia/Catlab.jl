@@ -151,14 +151,10 @@ function graphviz_box(box::AbstractBox, node_id::String;
     vertical::Bool=true, labels::Bool=true, port_size::String="0",
     cell_attrs::Graphviz.Attributes=Graphviz.Attributes(), kw...)
   # Main node.
-  node_html_label = vertical ?
-    node_top_bottom_html_label : node_left_right_html_label
   nin, nout = length(input_ports(box)), length(output_ports(box))
   text_label = labels ? node_label(box.value) : ""
-  html_label = node_html_label(nin, nout, text_label,
-    attrs = cell_attrs,
-    port_size = port_size
-  )
+  html_label = node_html_label(nin, nout, text_label;
+    vertical=vertical, port_size=port_size, attrs=cell_attrs)
   # Note: The `id` attribute is included in the Graphviz output but is not used
   # internally by Graphviz. It is for use by downstream applications.
   # Reference: http://www.graphviz.org/doc/info/attrs.html#d:id
@@ -197,38 +193,28 @@ function graphviz_box(junction::Junction, node_id::String;
   GraphvizBox([node], inputs, outputs)
 end
 
-""" Create a top-to-bottom "HTML-like" node label for a box.
+""" Create "HTML-like" node label for a box.
 """
-function node_top_bottom_html_label(nin::Int, nout::Int, text_label::String;
-    attrs::Graphviz.Attributes=Graphviz.Attributes(),
-    port_size::String="0")::Graphviz.Html
-  Graphviz.Html("""
-    <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-    <TR><TD>$(ports_horizontal_html_label(InputPort,nin,port_size))</TD></TR>
-    <TR><TD $(html_attributes(attrs))>$(escape_html(text_label))</TD></TR>
-    <TR><TD>$(ports_horizontal_html_label(OutputPort,nout,port_size))</TD></TR>
-    </TABLE>""")
-end
-
-""" Create a left-to-right "HTML-like" node label for a box.
-"""
-function node_left_right_html_label(nin::Int, nout::Int, text_label::String;
-    attrs::Graphviz.Attributes=Graphviz.Attributes(),
-    port_size::String="0")::Graphviz.Html
-  Graphviz.Html("""
-    <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-    <TR>
-    <TD>$(ports_vertical_html_label(InputPort,nin,port_size))</TD>
-    <TD $(html_attributes(attrs))>$(escape_html(text_label))</TD>
-    <TD>$(ports_vertical_html_label(OutputPort,nout,port_size))</TD>
-    </TR>
-    </TABLE>""")
-end
-
-""" Encode attributes for Graphviz HTML-like labels.
-"""
-function html_attributes(attrs::Graphviz.Attributes)::String
-  join(["$(uppercase(string(k)))=\"$v\"" for (k,v) in attrs], " ")
+function node_html_label(nin::Int, nout::Int, text_label::String;
+    vertical::Bool=true, port_size::String="0",
+    attrs::Graphviz.Attributes=Graphviz.Attributes())::Graphviz.Html
+  if vertical
+    Graphviz.Html("""
+      <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
+      <TR><TD>$(ports_horizontal_html_label(InputPort,nin,port_size))</TD></TR>
+      <TR><TD $(html_attributes(attrs))>$(escape_html(text_label))</TD></TR>
+      <TR><TD>$(ports_horizontal_html_label(OutputPort,nout,port_size))</TD></TR>
+      </TABLE>""")
+  else
+    Graphviz.Html("""
+      <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
+      <TR>
+      <TD>$(ports_vertical_html_label(InputPort,nin,port_size))</TD>
+      <TD $(html_attributes(attrs))>$(escape_html(text_label))</TD>
+      <TD>$(ports_vertical_html_label(OutputPort,nout,port_size))</TD>
+      </TR>
+      </TABLE>""")
+  end
 end
 
 """ Create horizontal "HTML-like" label for the input or output ports of a box.
@@ -267,12 +253,12 @@ function graphviz_outer_box(f::WiringDiagram;
   stmts = Graphviz.Statement[]
   ninputs, noutputs = length(input_ports(f)), length(output_ports(f))
   if ninputs > 0
-    push!(stmts, graphviz_outer_ports(
-      input_id(f), InputPort, ninputs; anchor=anchor, vertical=vertical))
+    push!(stmts, graphviz_outer_ports(input_id(f), InputPort, ninputs;
+      anchor=anchor, vertical=vertical))
   end
   if noutputs > 0
-    push!(stmts, graphviz_outer_ports(
-      output_id(f), OutputPort, noutputs; anchor=anchor, vertical=vertical))
+    push!(stmts, graphviz_outer_ports(output_id(f), OutputPort, noutputs;
+      anchor=anchor, vertical=vertical))
   end
   
   # Input and output ports.
@@ -339,6 +325,12 @@ node_label(::Nothing) = ""
 """
 edge_label(port_value::Any) = string(port_value)
 edge_label(::Nothing) = ""
+
+""" Encode attributes for Graphviz HTML-like labels.
+"""
+function html_attributes(attrs::Graphviz.Attributes)::String
+  join(["$(uppercase(string(k)))=\"$v\"" for (k,v) in attrs], " ")
+end
 
 """ Escape special HTML characters: &, <, >, ", '
 
