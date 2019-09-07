@@ -14,7 +14,7 @@ A, B, C, D = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C, :D)
 f, g = Hom(:f,A,B), Hom(:g,B,C)
 
 # Functorality of conversion.
-fd, gd = to_wiring_diagram(Box(f)), to_wiring_diagram(Box(g))
+fd, gd = singleton_diagram(Box(f)), singleton_diagram(Box(g))
 @test to_wiring_diagram(f) == fd
 @test to_wiring_diagram(compose(f,g)) == compose(fd,gd)
 @test to_wiring_diagram(otimes(f,g)) == otimes(fd,gd)

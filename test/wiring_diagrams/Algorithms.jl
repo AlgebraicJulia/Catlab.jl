@@ -13,7 +13,7 @@ h = Hom(:h, C, D)
 # Diagonals and codiagonals
 ###########################
 
-junction_diagram(args...) = to_wiring_diagram(Junction(args...))
+junction_diagram(args...) = singleton_diagram(Junction(args...))
 
 # Add junctions for copies.
 d = to_wiring_diagram(compose(f, mcopy(B)))

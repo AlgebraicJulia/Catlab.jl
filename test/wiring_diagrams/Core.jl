@@ -195,8 +195,8 @@ sub = first(boxes(d))
 #---------
 
 # Generators
-f = to_wiring_diagram(Box(Hom(:f,A,B)))
-g = to_wiring_diagram(Box(Hom(:g,B,A)))
+f = singleton_diagram(Box(Hom(:f,A,B)))
+g = singleton_diagram(Box(Hom(:g,B,A)))
 @test nboxes(f) == 1
 @test boxes(f) == [ Box(Hom(:f,A,B)) ]
 @test nwires(f) == 2

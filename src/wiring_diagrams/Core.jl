@@ -22,7 +22,7 @@ module WiringDiagramCore
 
 export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
   PortKind, InputPort, OutputPort, input_ports, output_ports, port_value,
-  input_id, output_id, to_wiring_diagram, boxes, box_ids, nboxes, nwires, box,
+  input_id, output_id, singleton_diagram, boxes, box_ids, nboxes, nwires, box,
   wires, has_wire, graph, add_box!, add_boxes!, add_wire!, add_wires!,
   rem_box!, rem_boxes!, rem_wire!, rem_wires!, validate_ports,
   all_neighbors, neighbors, outneighbors, inneighbors, in_wires, out_wires,
@@ -298,9 +298,11 @@ end
 # Low-level graph interface
 ###########################
 
-""" Create wiring diagram with a single box connected to outer ports.
+# Constructors.
+
+""" Create wiring diagram with a single box connected to the outer ports.
 """
-function to_wiring_diagram(box::AbstractBox)
+function singleton_diagram(box::AbstractBox)
   inputs, outputs = input_ports(box), output_ports(box)
   d = WiringDiagram(inputs, outputs)
   v = add_box!(d, box)
