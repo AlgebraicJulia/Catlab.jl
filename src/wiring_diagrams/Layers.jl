@@ -13,7 +13,8 @@ diagram, which is purely graphical.
 """
 module WiringLayers
 export WiringLayer, NLayer, nwires, wires, has_wire, add_wire!, add_wires!,
-  rem_wire!, rem_wires!, in_wires, out_wires, wiring_layer_between,
+  rem_wire!, rem_wires!, in_wires, out_wires,
+  to_wiring_diagram, wiring_layer_between,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create
 
 using AutoHashEquals
@@ -23,8 +24,8 @@ using ...GAT, ...Syntax
 import ...Doctrines: ObExpr, HomExpr, MonoidalCategoryWithBidiagonals,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create
 using ..WiringDiagramCore
-import ..WiringDiagramCore: WiringDiagram, nwires, wires, has_wire,
-  add_wire!, add_wires!, rem_wire!, rem_wires!, in_wires, out_wires
+import ..WiringDiagramCore: nwires, wires, has_wire, add_wire!, add_wires!,
+  rem_wire!, rem_wires!, in_wires, out_wires
 
 # Data types
 ############
@@ -197,7 +198,9 @@ end
 # Wiring diagrams
 #################
 
-function WiringDiagram(layer::WiringLayer, inputs::Vector, outputs::Vector)
+""" Convert a wiring layer into a wiring diagram.
+"""
+function to_wiring_diagram(layer::WiringLayer, inputs::Vector, outputs::Vector)
   @assert length(inputs) == layer.ninputs && length(outputs) == layer.noutputs
   diagram = WiringDiagram(inputs, outputs)
   add_wires!(diagram, ((input_id(diagram), src) => (output_id(diagram), tgt)

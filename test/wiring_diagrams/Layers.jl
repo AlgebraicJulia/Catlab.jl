@@ -63,7 +63,7 @@ A, B, C = NLayer(1), NLayer(1), NLayer(1)
 
 function roundtrip(layer::WiringLayer)::WiringLayer
   ports = n::Int -> repeat([nothing], n)
-  diagram = WiringDiagram(layer, ports(layer.ninputs), ports(layer.noutputs))
+  diagram = to_wiring_diagram(layer, ports(layer.ninputs), ports(layer.noutputs))
   wiring_layer_between(diagram, input_id(diagram), output_id(diagram))
 end
 
