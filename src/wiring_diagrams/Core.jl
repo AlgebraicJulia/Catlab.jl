@@ -22,10 +22,11 @@ module WiringDiagramCore
 
 export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
   PortKind, InputPort, OutputPort, input_ports, output_ports, port_value,
-  input_id, output_id, boxes, box_ids, nboxes, nwires, box, wires, has_wire,
-  graph, add_box!, add_boxes!, add_wire!, add_wires!, validate_ports,
-  rem_box!, rem_boxes!, rem_wire!, rem_wires!, substitute!, encapsulate!,
+  input_id, output_id, to_wiring_diagram, boxes, box_ids, nboxes, nwires, box,
+  wires, has_wire, graph, add_box!, add_boxes!, add_wire!, add_wires!,
+  rem_box!, rem_boxes!, rem_wire!, rem_wires!, validate_ports,
   all_neighbors, neighbors, outneighbors, inneighbors, in_wires, out_wires,
+  substitute!, encapsulate!,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create,
   permute, is_permuted_equal
 
@@ -296,6 +297,17 @@ end
 
 # Low-level graph interface
 ###########################
+
+""" Create wiring diagram with a single box connected to outer ports.
+"""
+function to_wiring_diagram(box::AbstractBox)
+  inputs, outputs = input_ports(box), output_ports(box)
+  d = WiringDiagram(inputs, outputs)
+  v = add_box!(d, box)
+  add_wires!(d, ((input_id(d),i) => (v,i) for i in eachindex(inputs)))
+  add_wires!(d, ((v,i) => (output_id(d),i) for i in eachindex(outputs)))
+  return d
+end
 
 # Basic accessors.
 
@@ -746,27 +758,23 @@ end
 # High-level categorical interface
 ##################################
 
-""" Create box for a morphism generator expression.
+""" Create box for a morphism generator.
 """
 function Box(expr::HomExpr{:generator})
   Box(first(expr), collect_values(dom(expr)), collect_values(codom(expr)))
 end
 add_box!(f::WiringDiagram, expr::HomExpr) = add_box!(f, Box(expr))
 
+""" Create wiring diagram with a single box containing a morphism generator.
+"""
+function WiringDiagram(f::HomExpr{:generator})
+  to_wiring_diagram(Box(f))
+end
+
 """ Create empty wiring diagram with given domain and codomain objects.
 """
 function WiringDiagram(inputs::ObExpr, outputs::ObExpr)
   WiringDiagram(collect_values(inputs), collect_values(outputs))
-end
-
-""" Create wiring diagram with a single box containing a morphism expression.
-"""
-function WiringDiagram(f::HomExpr)
-  d = WiringDiagram(dom(f), codom(f))
-  fv = add_box!(d, Box(f))
-  add_wires!(d, ((input_id(d),i) => (fv,i) for i in eachindex(dom(d))))
-  add_wires!(d, ((fv,i) => (output_id(d),i) for i in eachindex(codom(d))))
-  return d
 end
 
 """ Wiring diagram as *monoidal category with diagonals and codiagonals*.

@@ -19,6 +19,7 @@ using ...Syntax
 using ...Doctrines: id, compose, otimes, munit
 using ...Doctrines.Permutations
 using ..WiringDiagramCore, ..WiringLayers
+import ..WiringDiagramCore: to_wiring_diagram
 using ..WiringDiagramAlgorithms: crossing_minimization_by_sort
 
 # Expression -> Diagram
