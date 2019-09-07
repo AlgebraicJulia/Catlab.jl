@@ -10,26 +10,38 @@ f = Hom(:f, A, B)
 g = Hom(:g, B, C)
 h = Hom(:h, C, D)
 
-# Normal forms
-##############
+# Diagonals and codiagonals
+###########################
 
-# Copies.
+junction_diagram(args...) = to_wiring_diagram(Junction(args...))
+
+# Add junctions for copies.
+d = to_wiring_diagram(compose(f, mcopy(B)))
+junctioned = compose(to_wiring_diagram(f), junction_diagram(:B,1,2))
+@test add_junctions!(d) == junctioned
+
+# Add junctions for deletions.
+d = to_wiring_diagram(compose(f, delete(B)))
+junctioned = compose(to_wiring_diagram(f), junction_diagram(:B,1,0))
+@test add_junctions!(d) == junctioned
+
+# Normalize copies.
 d = to_wiring_diagram(compose(mcopy(A), otimes(f,f)))
-normal = to_wiring_diagram(compose(f, mcopy(B)))
-@test normalize_copy!(d) == normal
+normalized = to_wiring_diagram(compose(f, mcopy(B)))
+@test normalize_copy!(d) == normalized
 
 d = to_wiring_diagram(compose(f, mcopy(B), otimes(g,g)))
 normalize_copy!(d)
-normal = to_wiring_diagram(compose(f, g, mcopy(C)))
+normalized = to_wiring_diagram(compose(f, g, mcopy(C)))
 perm = sortperm(boxes(d); by=box->box.value)
-@test is_permuted_equal(d, normal, perm)
+@test is_permuted_equal(d, normalized, perm)
 
 d = to_wiring_diagram(compose(mcopy(A), otimes(f,f), otimes(g,g)))
 normalize_copy!(d)
 perm = sortperm(boxes(d); by=box->box.value)
-@test is_permuted_equal(d, normal, perm)
+@test is_permuted_equal(d, normalized, perm)
 
-# Deletions.
+# Normalize deletions.
 d = to_wiring_diagram(f)
 @test normalize_delete!(d) == to_wiring_diagram(f)
 
@@ -49,15 +61,15 @@ add_wires!(d, [
 ])
 @test normalize_delete!(d) == to_wiring_diagram(f)
 
-# Cartesian morphisms.
+# Normalize wiring diagrams representing morphisms in a cartesian category.
 d = to_wiring_diagram(compose(
   mcopy(A),
   otimes(id(A),mcopy(A)),
   otimes(f,f,f),
   otimes(id(B), id(B), compose(g, delete(C)))
 ))
-normal = to_wiring_diagram(compose(f, mcopy(B)))
-@test normalize_cartesian!(d) == normal
+normalized = to_wiring_diagram(compose(f, mcopy(B)))
+@test normalize_cartesian!(d) == normalized
 
 # Layout
 ########

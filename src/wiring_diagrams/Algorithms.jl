@@ -1,31 +1,74 @@
 """ Algorithms operating on wiring diagrams.
 """
 module WiringDiagramAlgorithms
-export topological_sort, crossing_minimization_by_sort,
-  normalize_cartesian!, normalize_copy!, normalize_delete!
+export Junction, add_junctions!,
+  normalize_cartesian!, normalize_copy!, normalize_delete!,
+  topological_sort, crossing_minimization_by_sort
 
+using AutoHashEquals
 import LightGraphs
 using UnionFind
 using Statistics: mean
 
 using ..WiringDiagramCore
-import ..WiringDiagramCore: set_box
+import ..WiringDiagramCore: input_ports, output_ports, set_box
 
 # Traversal
 ###########
 
 """ Topological sort of boxes in wiring diagram.
 
-Returns a list of box IDs, excluding the special input and output IDs.
+Returns a list of box IDs, excluding the outer box's input and output IDs.
 """
 function topological_sort(d::WiringDiagram)::Vector{Int}
   vs = LightGraphs.topological_sort_by_dfs(graph(d))
-  skip = (input_id(d), output_id(d))
-  filter(v -> !(v in skip), vs)
+  outer_ids = (input_id(d), output_id(d))
+  filter(v -> v ∉ outer_ids, vs)
 end
 
-# Normal forms
-##############
+# Diagonals and codiagonals
+###########################
+
+""" Junction node in a wiring diagram.
+
+Used to explicitly represent copies, merges, deletions, and creations.
+"""
+@auto_hash_equals struct Junction{Value} <: AbstractBox
+  value::Value
+  ninputs::Int
+  noutputs::Int
+end
+input_ports(junction::Junction) = repeat([junction.value], junction.ninputs)
+output_ports(junction::Junction) = repeat([junction.value], junction.noutputs)
+
+""" Add junction nodes to wiring diagram.
+
+Transforms from implicit to explicit representation of (co)diagonals.
+"""
+function add_junctions!(d::WiringDiagram)
+  add_output_junctions!(d, input_id(d))
+  #add_input_junctions!(d, output_id(d))
+  for v in box_ids(d)
+    #add_input_junctions!(d, v)
+    add_output_junctions!(d, v)
+  end
+  return d
+end
+function add_output_junctions!(d::WiringDiagram, v::Int)
+  for (port, port_value) in enumerate(output_ports(d, v))
+    wires = out_wires(d, v, port)
+    nwires = length(wires)
+    if nwires != 1
+      for neighbor in outneighbors(d, v)
+        rem_wires!(d, v, neighbor)
+      end
+      jv = add_box!(d, Junction(port_value, 1, nwires))
+      add_wire!(d, Port(v, OutputPort, port) => Port(jv, InputPort, 1))
+      add_wires!(d, [ Port(jv, OutputPort, i) => wire.target
+                      for (i, wire) in enumerate(wires) ])
+    end
+  end
+end
 
 """ Put a wiring diagram for a cartesian category into normal form.
 
