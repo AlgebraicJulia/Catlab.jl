@@ -1,7 +1,7 @@
 """ Algorithms operating on wiring diagrams.
 """
 module WiringDiagramAlgorithms
-export Junction, add_junctions!,
+export Junction, add_junctions!, remove_junctions!,
   normalize_cartesian!, normalize_copy!, normalize_delete!,
   topological_sort, crossing_minimization_by_sort
 
@@ -10,7 +10,7 @@ import LightGraphs
 using UnionFind
 using Statistics: mean
 
-using ..WiringDiagramCore
+using ..WiringDiagramCore, ..WiringLayers
 import ..WiringDiagramCore: input_ports, output_ports, set_box
 
 # Traversal
@@ -79,6 +79,21 @@ function add_output_junctions!(d::WiringDiagram, v::Int)
                       for (i, wire) in enumerate(wires) ])
     end
   end
+end
+
+""" Remove junction nodes from wiring diagram.
+
+Transforms from explicit to implicit representation of (co)diagonals.
+"""
+function remove_junctions!(d::WiringDiagram)
+  junction_ids = filter(v -> box(d,v) isa Junction, box_ids(d))
+  junction_diagrams = map(junction_ids) do v
+    junction = box(d,v)::Junction
+    layer = complete_layer(junction.ninputs, junction.noutputs)
+    to_wiring_diagram(layer, input_ports(junction), output_ports(junction))
+  end
+  substitute!(d, junction_ids, junction_diagrams)
+  return d
 end
 
 """ Put a wiring diagram for a cartesian category into normal form.
