@@ -20,28 +20,40 @@ d = to_wiring_diagram(compose(f, mcopy(B)))
 original = copy(d)
 junctioned = compose(to_wiring_diagram(f), junction_diagram(:B,1,2))
 @test add_junctions!(d) == junctioned
-@test remove_junctions!(d) == original
+@test rem_junctions!(d) == original
+
+d = to_wiring_diagram(compose(mcopy(A), otimes(f,f)))
+original = copy(d)
+junctioned = compose(junction_diagram(:A,1,2), to_wiring_diagram(otimes(f,f)))
+@test add_junctions!(d) == junctioned
+@test rem_junctions!(d) == original
 
 # Add junctions for merges.
 d = to_wiring_diagram(compose(mmerge(A), f))
 original = copy(d)
 junctioned = compose(junction_diagram(:A,2,1), to_wiring_diagram(f))
 @test is_permuted_equal(add_junctions!(d), junctioned, [2,1])
-@test remove_junctions!(d) == original
+@test rem_junctions!(d) == original
+
+d = to_wiring_diagram(compose(otimes(f,f), mmerge(B)))
+original = copy(d)
+junctioned = compose(to_wiring_diagram(otimes(f,f)), junction_diagram(:B,2,1))
+@test is_permuted_equal(add_junctions!(d), junctioned, [2,3,1])
+@test rem_junctions!(d) == original
 
 # Add junctions for deletions.
 d = to_wiring_diagram(compose(f, delete(B)))
 original = copy(d)
 junctioned = compose(to_wiring_diagram(f), junction_diagram(:B,1,0))
 @test add_junctions!(d) == junctioned
-@test remove_junctions!(d) == original
+@test rem_junctions!(d) == original
 
 # Add junctions for creations.
 d = to_wiring_diagram(compose(create(A), f))
 original = copy(d)
 junctioned = compose(junction_diagram(:A,0,1), to_wiring_diagram(f))
 @test is_permuted_equal(add_junctions!(d), junctioned, [2,1])
-@test remove_junctions!(d) == original
+@test rem_junctions!(d) == original
 
 # Add junctions for copies, merges, deletions, and creations, all at once.
 d = to_wiring_diagram(compose(create(A),f,mcopy(B),mmerge(B),g,delete(C)))
@@ -58,7 +70,7 @@ d = add_junctions!(d)
 # XXX: An isomorphism test would be more convenient.
 perm = [ findfirst([b] .== boxes(d)) for b in boxes(junctioned) ]
 @test is_permuted_equal(d, junctioned, perm)
-@test remove_junctions!(d) == original
+@test rem_junctions!(d) == original
 
 # Normalize copies.
 d = to_wiring_diagram(compose(mcopy(A), otimes(f,f)))

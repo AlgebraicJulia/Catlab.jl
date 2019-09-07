@@ -422,6 +422,12 @@ function rem_wire!(f::WiringDiagram, wire::Wire)
 end
 rem_wire!(f::WiringDiagram, pair::Pair) = rem_wire!(f, Wire(pair))
 
+function rem_wires!(f::WiringDiagram, wires)
+  for wire in wires
+    rem_wire!(f, wire)
+  end
+end
+
 function rem_wires!(f::WiringDiagram, src::Int, tgt::Int)
   rem_edge!(f.graph, Edge(src, tgt))
 end
@@ -770,8 +776,9 @@ add_box!(f::WiringDiagram, expr::HomExpr) = add_box!(f, Box(expr))
 """ Create empty wiring diagram with given domain and codomain objects.
 """
 function WiringDiagram(inputs::ObExpr, outputs::ObExpr)
-  WiringDiagram(collect_values(inputs), collect_values(outputs))
+  WiringDiagram(Ports(inputs), Ports(outputs))
 end
+Ports(expr::ObExpr) = Ports(collect_values(expr))
 
 """ Wiring diagram as *monoidal category with diagonals and codiagonals*.
 """

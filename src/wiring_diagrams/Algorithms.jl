@@ -1,7 +1,7 @@
 """ Algorithms operating on wiring diagrams.
 """
 module WiringDiagramAlgorithms
-export Junction, add_junctions!, remove_junctions!,
+export Junction, add_junctions!, rem_junctions!,
   normalize_cartesian!, normalize_copy!, normalize_delete!,
   topological_sort, crossing_minimization_by_sort
 
@@ -59,7 +59,7 @@ function add_input_junctions!(d::WiringDiagram, v::Int)
     wires = in_wires(d, v, port)
     nwires = length(wires)
     if nwires != 1
-      for neighbor in inneighbors(d, v); rem_wires!(d, neighbor, v) end
+      rem_wires!(d, wires)
       jv = add_box!(d, Junction(port_value, nwires, 1))
       add_wire!(d, Port(jv, OutputPort, 1) => Port(v, InputPort, port))
       add_wires!(d, [ wire.source => Port(jv, InputPort, i)
@@ -72,7 +72,7 @@ function add_output_junctions!(d::WiringDiagram, v::Int)
     wires = out_wires(d, v, port)
     nwires = length(wires)
     if nwires != 1
-      for neighbor in outneighbors(d, v); rem_wires!(d, v, neighbor) end
+      rem_wires!(d, wires)
       jv = add_box!(d, Junction(port_value, 1, nwires))
       add_wire!(d, Port(v, OutputPort, port) => Port(jv, InputPort, 1))
       add_wires!(d, [ Port(jv, OutputPort, i) => wire.target
@@ -85,7 +85,7 @@ end
 
 Transforms from explicit to implicit representation of (co)diagonals.
 """
-function remove_junctions!(d::WiringDiagram)
+function rem_junctions!(d::WiringDiagram)
   junction_ids = filter(v -> box(d,v) isa Junction, box_ids(d))
   junction_diagrams = map(junction_ids) do v
     junction = box(d,v)::Junction
