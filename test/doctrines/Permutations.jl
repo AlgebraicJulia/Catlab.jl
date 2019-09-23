@@ -6,22 +6,32 @@ using Catlab.Doctrines, Catlab.Doctrines.Permutations
 # Decomposition
 ###############
 
-const bubble = decompose_permutation_by_bubble_sort!
+const bubble_sort = decompose_permutation_by_bubble_sort!
+const insertion_sort = decompose_permutation_by_insertion_sort!
 
 # Permutations in S(1)
-@test bubble([1]) == []
+@test bubble_sort([1]) == []
+@test insertion_sort([1]) == []
 
 # Permutations in S(2)
-@test bubble([1,2]) == []
-@test bubble([2,1]) == [1]
+@test bubble_sort([1,2]) == []
+@test bubble_sort([2,1]) == [1]
+@test insertion_sort([1,2]) == []
+@test insertion_sort([2,1]) == [1]
 
 # Permutations in S(3)
-@test bubble([1,2,3]) == []
-@test bubble([2,1,3]) == [1]
-@test bubble([1,3,2]) == [2]
-@test bubble([2,3,1]) == [2,1]
-@test bubble([3,1,2]) == [1,2]
-@test bubble([3,2,1]) == [2,1,2]
+@test bubble_sort([1,2,3]) == []
+@test bubble_sort([2,1,3]) == [1]
+@test bubble_sort([1,3,2]) == [2]
+@test bubble_sort([2,3,1]) == [2,1]
+@test bubble_sort([3,1,2]) == [1,2]
+@test bubble_sort([3,2,1]) == [2,1,2]
+@test insertion_sort([1,2,3]) == []
+@test insertion_sort([2,1,3]) == [1]
+@test insertion_sort([1,3,2]) == [2]
+@test insertion_sort([2,3,1]) == [2,1]
+@test insertion_sort([3,1,2]) == [1,2]
+@test insertion_sort([3,2,1]) == [1,2,1]
 
 # Converson to expression
 #########################
