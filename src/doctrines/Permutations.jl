@@ -66,16 +66,22 @@ end
 
 """ Convert a typed permutation into a morphism expression.
 
-FIXME: The resulting expression is not simplified.
+Warning: The morphism expression is not simplified.
 """
-function permutation_to_expr(σ::Vector{Int}, xs::Vector)
-  permutation_to_expr!(copy(σ), copy(xs))
+function permutation_to_expr(σ::Vector{Int}, xs::Vector; sort::Symbol=:insertion)
+  permutation_to_expr!(copy(σ), copy(xs); sort=sort)
 end
-function permutation_to_expr!(σ::Vector{Int}, xs::Vector)
+function permutation_to_expr!(σ::Vector{Int}, xs::Vector; sort::Symbol=:insertion)
   n = length(σ)
   @assert length(xs) == n
   
-  transpositions = decompose_permutation_by_bubble_sort!(σ)
+  transpositions = if sort == :bubble
+    decompose_permutation_by_bubble_sort!(σ)
+  elseif sort == :insertion
+    decompose_permutation_by_insertion_sort!(σ)
+  else
+    error("Sorting algorithm not supported: $sort")
+  end
   if isempty(transpositions)
     return id(otimes(xs))
   end
