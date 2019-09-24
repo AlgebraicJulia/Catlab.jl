@@ -118,6 +118,7 @@ expr = compose(otimes(m,id(otimes(A,A))), otimes(m,id(A)), m)
 @test roundtrip(compose(mcopy(A),otimes(f,f))) == compose(mcopy(A),otimes(f,f))
 @test roundtrip(compose(f,delete(B))) == compose(f,delete(B))
 @test roundtrip(mcopy(A⊗B)) == (mcopy(A)⊗mcopy(B))⋅(id(A)⊗braid(A,B)⊗id(B))
+@test roundtrip(delete(A⊗B)) == delete(A)⊗delete(B)
 @test roundtrip(braid(A,B)⋅(mcopy(B)⊗mcopy(A))) == braid(A,B)⋅(mcopy(B)⊗mcopy(A))
 
 # Graph operations

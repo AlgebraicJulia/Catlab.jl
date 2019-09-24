@@ -101,7 +101,9 @@ function parallel_reduction!(Ob::Type, Hom::Type, d::WiringDiagram)
   parallel = Vector{Int}[]
   products = map(collect(find_parallel(graph(d)))) do ((source, target), vs)
     exprs = Hom[ to_hom_expr(Ob, Hom, box(d,v)) for v in vs ]
-    σ = crossing_minimization_by_sort(d, vs, sources=[source], targets=[target])
+    σ = crossing_minimization_by_sort(d, vs,
+      sources = isnothing(source) ? Int[] : [source],
+      targets = isnothing(target) ? Int[] : [target])
     push!(parallel, vs[σ])
     otimes(exprs[σ])
   end
@@ -141,7 +143,7 @@ function transitive_reduction!(Ob::Type, d::WiringDiagram)
     if !has_edge(reduced, edge)
       for wire in wires(d, edge)
         value = port_value(d, wire.source) # =?= port_value(d, wire.target)
-        v = add_box!(d, Box(id(coerce_ob(Ob, value)), [value], [value]))
+        v = add_box!(d, Junction(value, 1, 1))
         add_wire!(d, Wire(wire.source => Port(v,InputPort,1)))
         add_wire!(d, Wire(Port(v,OutputPort,1) => wire.target))
         rem_wire!(d, wire)
@@ -235,8 +237,8 @@ end
 
 """ Find parallel compositions in a directed graph.
 """
-function find_parallel(g::DiGraph)::Dict{Pair{Int,Int},Vector{Int}}
-  parallel = Dict{Pair{Int,Int},Vector{Int}}()
+function find_parallel(g::DiGraph)
+  parallel = Dict{Pair{Union{Int,Nothing},Union{Int,Nothing}},Vector{Int}}()
   for v in 1:nv(g)
     # Note: The definition in the literature on series-parallel digraphs
     # requires that `length(v_in) == 1 && length(v_out) == 1`.
@@ -245,8 +247,8 @@ function find_parallel(g::DiGraph)::Dict{Pair{Int,Int},Vector{Int}}
     # parallel in more than one place.
     v_in, v_out = inneighbors(g,v), outneighbors(g,v)
     if length(v_in) == 1 || length(v_out) == 1
-      for u in v_in
-        for w in v_out
+      for u in (isempty(v_in) ? [nothing] : v_in)
+        for w in (isempty(v_out) ? [nothing] : v_out)
           push!(get!(parallel, u => w, Int[]), v)
         end
       end
