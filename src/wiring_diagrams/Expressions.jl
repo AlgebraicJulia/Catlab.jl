@@ -46,7 +46,10 @@ end
 """ Convert a wiring diagram into a morphism expression.
 """
 function to_hom_expr(Ob::Type, Hom::Type, d::WiringDiagram)
-  box_to_expr(box::Box) = to_hom_expr(Ob, Type, box)
+  # Special case: no boxes.
+  if nboxes(d) == 0
+    return hom_expr_between(Ob, d, input_id(d), output_id(d))
+  end
   
   d = copy(d)
   transitive_reduction!(Ob, d)
@@ -55,7 +58,6 @@ function to_hom_expr(Ob::Type, Hom::Type, d::WiringDiagram)
   while true
     parallel_reduction!(Ob, Hom, d)
     series_reduction!(Ob, Hom, d)
-    
     # Repeat until the box count stops decreasing.
     nboxes(d) >= n && break
     n = nboxes(d)
@@ -129,11 +131,19 @@ function transitive_reduction!(Ob::Type, d::WiringDiagram)
   return d
 end
 
+""" Morphism expression for wires between two boxes.
+
+Assumes that the wires form a permutation morphism.
+"""
 function hom_expr_between(Ob::Type, diagram::WiringDiagram, v1::Int, v2::Int)
   layer = wiring_layer_between(diagram, v1, v2)
   inputs = ports_to_obs(Ob, output_ports(diagram, v1))
   outputs = ports_to_obs(Ob, input_ports(diagram, v2))
-  to_hom_expr(layer, inputs, outputs)
+  
+  σ = to_permutation(layer)
+  @assert !isnothing(σ) "Conversion of non-permutation not implemented"
+  @assert inputs == outputs[σ]
+  permutation_to_expr(σ, inputs)
 end
 
 function to_hom_expr(Ob::Type, Hom::Type, box::Box)
@@ -153,20 +163,6 @@ function compose_simplify_id(f::GATExpr, g::GATExpr)
   if head(f) == :id; g
   elseif head(g) == :id; f
   else compose(f,g) end
-end
-
-# Layer -> Expression
-#####################
-
-""" Convert a wiring layer into a morphism expression.
-
-The `inputs` and `outputs` are corresponding vectors of object expressions.
-"""
-function to_hom_expr(layer::WiringLayer, inputs::Vector, outputs::Vector)
-  σ = to_permutation(layer)
-  @assert !isnothing(σ) "Conversion of non-permutation not implemented"
-  @assert inputs == outputs[σ]
-  permutation_to_expr(σ, inputs)
 end
 
 """ Convert a wiring layer into a permutation, if it is one.

@@ -29,7 +29,14 @@ end
 
 f, g, h, k = Hom(:f,A,B), Hom(:g,B,C), Hom(:h,C,D), Hom(:k,D,C)
 
-# Base cases.
+# Monoidal category
+#------------------
+
+# Identities.
+@test roundtrip(id(A)) == id(A)
+@test roundtrip(otimes(id(A),id(B))) == id(otimes(A,B))
+
+# Base case.
 @test roundtrip(f) == f
 
 # Series reduction.
@@ -83,19 +90,12 @@ m = Hom(:m, otimes(A,A), A)
 expr = compose(otimes(m,id(otimes(A,A))), otimes(m,id(A)), m)
 @test roundtrip(expr) == ((((m ⊗ id(A)) ⋅ m) ⊗ id(A)) ⋅ m)
 
-# Layer -> Expression
-#####################
-
-# Identity.
-layer = id(NLayer(2))
-@test to_hom_expr(layer, [A,B], [A,B]) == id(otimes(A,B))
+# Symmetric monoidal category
+#----------------------------
 
 # Braidings.
-layer = braid(NLayer(1),NLayer(1))
-@test to_hom_expr(layer, [A,B], [B,A]) == braid(A,B)
-
-layer = otimes(id(NLayer(1)), braid(NLayer(1),NLayer(1)))
-@test to_hom_expr(layer, [A,B,C], [A,C,B]) == otimes(id(A),braid(B,C))
+@test roundtrip(braid(A,B)) == braid(A,B)
+@test roundtrip(otimes(id(A),braid(B,C))) == otimes(id(A),braid(B,C))
 
 # Graph operations
 ##################
