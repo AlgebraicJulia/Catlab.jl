@@ -122,15 +122,16 @@ normalized = to_wiring_diagram(compose(f, mcopy(B)))
 ########
 
 d = to_wiring_diagram(f)
-@test crossing_minimization_by_sort(d, [input_id(d)], box_ids(d)) == [1]
+@test crossing_minimization_by_sort(d, box_ids(d), sources=[input_id(d)]) == [1]
 
 d = to_wiring_diagram(otimes(f,g))
-@test crossing_minimization_by_sort(d, [input_id(d)], box_ids(d)) == [1,2]
+@test crossing_minimization_by_sort(d, box_ids(d), sources=[input_id(d)]) == [1,2]
 
 d = WiringDiagram(I,I)
 fv1, fv2 = add_box!(d, f), add_box!(d, f)
 gv1, gv2 = add_box!(d, g), add_box!(d, g)
 add_wires!(d, [ Wire((fv1,1) => (gv1,1)), Wire((fv2,1),(gv2,1)) ])
-@test crossing_minimization_by_sort(d, [fv1,fv2], [gv1,gv2]) == [1,2]
+@test crossing_minimization_by_sort(d, [gv1,gv2], sources=[fv1,fv2]) == [1,2]
+@test crossing_minimization_by_sort(d, [fv1,fv2], targets=[gv1,gv2]) == [1,2]
 
 end

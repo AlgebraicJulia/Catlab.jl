@@ -187,14 +187,17 @@ end
 # Layout
 ########
 
-""" One-sided crossing minimization by sorting a univariate statistic.
+""" Crossing minimization by sorting a univariate statistic.
 
-The boxes in `sources` are fixed and the boxes in `targets` are permuted.
-A permutation `σ` of the latter is returned, such that `targets[σ]` are the
-sorted box IDs.
+The boxes in `sources` and/or `targets` are fixed and the boxes in `vs` are
+permuted. A permutation `σ` of the latter is returned, such that `vs[σ]` are the
+sorted box IDs. Both one-sided and two-sided crossing minimization are
+supported, depending on whether just one, or both, of `sources` and `targets`
+are given. At least one `sources` and `targets` must be given.
 
-In this popular heuristic algorithm, the boxes are permuted by sorting a
-univariate statistic of the positions of incoming wires. Typical choices are:
+In this simple but popular heuristic algorithm, the boxes are permuted by
+sorting a univariate statistic of the positions of incoming and/or outgoing
+wires. Typical choices are:
 
 - `mean`: the sample mean, yielding the "barycenter method"
 - `median`: the sample median
@@ -202,23 +205,34 @@ univariate statistic of the positions of incoming wires. Typical choices are:
 In both cases, this algorithm has the property that if there is a permutation
 with no crossings, it will find it.
 """
-function crossing_minimization_by_sort(
-    d::WiringDiagram, sources::Vector{Int}, targets::Vector{Int};
+function crossing_minimization_by_sort(d::WiringDiagram, vs::Vector{Int};
+    sources::Vector{Int}=Int[], targets::Vector{Int}=Int[],
     statistic::Function=mean)::Vector{Int}
-  @assert allunique(sources) && allunique(targets)
+  @assert allunique(vs) && allunique(sources) && allunique(targets)
+  @assert !isempty(sources) || !isempty(targets)
   
-  index = Dict(sources[i] => i for i in eachindex(sources))
-  sizes = [ length(output_ports(d,v)) for v in sources ]
-  offsets = cumsum(vcat([0], sizes))
-  source_coord(port::Port) = offsets[index[port.box]] + port.port
-  
-  stats = map(targets) do target
-    coords = mapreduce(vcat, sources; init=[]) do source
-      [ source_coord(wire.source) for wire in wires(d, source, target) ]
+  source_coord = port_coords(d, sources, OutputPort)
+  target_coord = port_coords(d, targets, InputPort)
+  stats = map(vs) do v
+    source_coords = mapreduce(vcat, sources; init=[]) do source
+      [ source_coord(wire.source) for wire in wires(d, source, v) ]
     end
-    statistic(coords)
+    target_coords = mapreduce(vcat, targets; init=[]) do target
+      [ target_coord(wire.target) for wire in wires(d, v, target) ]
+    end
+    statistic(vcat(source_coords, target_coords))
   end
   sortperm(stats)
+end
+
+""" Make function mapping ports to logical coordinates.
+"""
+function port_coords(d::WiringDiagram, vs::Vector{Int}, kind::PortKind)
+  get_ports = kind == InputPort ? input_ports : output_ports
+  index = Dict(vs[i] => i for i in eachindex(vs))
+  sizes = [ length(get_ports(d,v)) for v in vs ]
+  offsets = cumsum(vcat([0], sizes))
+  (port::Port -> offsets[index[port.box]] + port.port)
 end
 
 end

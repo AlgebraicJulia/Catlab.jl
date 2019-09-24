@@ -101,8 +101,7 @@ function parallel_reduction!(Ob::Type, Hom::Type, d::WiringDiagram)
   parallel = Vector{Int}[]
   products = map(collect(find_parallel(graph(d)))) do ((source, target), vs)
     exprs = Hom[ to_hom_expr(Ob, Hom, box(d,v)) for v in vs ]
-    # FIXME: Do two-sided crossing minimization, not one-sided.
-    σ = crossing_minimization_by_sort(d, [source], vs)
+    σ = crossing_minimization_by_sort(d, vs, sources=[source], targets=[target])
     push!(parallel, vs[σ])
     otimes(exprs[σ])
   end
