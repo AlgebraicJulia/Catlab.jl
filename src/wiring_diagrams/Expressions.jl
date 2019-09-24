@@ -16,11 +16,12 @@ using Compat
 using LightGraphs
 
 using ...Syntax
-using ...Doctrines: id, compose, otimes, munit
+using ...Doctrines: id, compose, otimes, munit, mcopy, mmerge, create, delete
 using ...Doctrines.Permutations
 using ..WiringDiagramCore, ..WiringLayers
 import ..WiringLayers: to_wiring_diagram
-using ..WiringDiagramAlgorithms: crossing_minimization_by_sort
+using ..WiringDiagramAlgorithms: Junction, add_junctions!,
+  crossing_minimization_by_sort
 
 # Expression -> Diagram
 #######################
@@ -46,14 +47,20 @@ end
 """ Convert a wiring diagram into a morphism expression.
 """
 function to_hom_expr(Ob::Type, Hom::Type, d::WiringDiagram)
+  # Step 0: Reduction: Add junction nodes to ensure any wiring layer between
+  # two boxes is a permutation.
+  d = copy(d)
+  add_junctions!(d)
+  
   # Special case: no boxes.
   if nboxes(d) == 0
     return hom_expr_between(Ob, d, input_id(d), output_id(d))
   end
   
-  d = copy(d)
+  # Step 1. Transitive reduction.
   transitive_reduction!(Ob, d)
 
+  # Step 2. Alternating series- and parallel-reduction.
   n = nboxes(d)
   while true
     parallel_reduction!(Ob, Hom, d)
@@ -63,6 +70,7 @@ function to_hom_expr(Ob::Type, Hom::Type, d::WiringDiagram)
     n = nboxes(d)
   end
   
+  # Termination: process the sole remaining box.
   @assert nboxes(d) == 1
   v = first(box_ids(d))
   f = to_hom_expr(Ob, Hom, box(d,v))
@@ -72,6 +80,19 @@ function to_hom_expr(Ob::Type, Hom::Type, d::WiringDiagram)
 end
 function to_hom_expr(Syntax::Module, d::WiringDiagram)
   to_hom_expr(Syntax.Ob, Syntax.Hom, d)
+end
+
+function to_hom_expr(Ob::Type, Hom::Type, box::Box)
+  if box.value isa Hom
+    box.value
+  else
+    dom = otimes(ports_to_obs(Ob, input_ports(box)))
+    codom = otimes(ports_to_obs(Ob, output_ports(box)))
+    Hom(box.value, dom, codom)
+  end
+end
+function to_hom_expr(Ob::Type, Hom::Type, junction::Junction)
+  junction_to_expr(Ob, junction)
 end
 
 """ All possible parallel reductions of a wiring diagram.
@@ -146,16 +167,6 @@ function hom_expr_between(Ob::Type, diagram::WiringDiagram, v1::Int, v2::Int)
   permutation_to_expr(σ, inputs)
 end
 
-function to_hom_expr(Ob::Type, Hom::Type, box::Box)
-  if box.value isa Hom
-    box.value
-  else
-    dom = otimes(ports_to_obs(Ob, input_ports(box)))
-    codom = otimes(ports_to_obs(Ob, output_ports(box)))
-    Hom(box.value, dom, codom)
-  end
-end
-
 coerce_ob(Ob::Type, x) = x isa Ob ? x : Ob(Ob,x)
 ports_to_obs(Ob::Type, ports) = Ob[ coerce_ob(Ob, port) for port in ports ]
 
@@ -182,6 +193,42 @@ function to_permutation(layer::WiringLayer)::Union{Nothing,Vector{Int}}
     end
   end
   return σ
+end
+
+""" Convert a junction node to a morphism expression.
+"""
+function junction_to_expr(Ob::Type, junction::Junction)
+  ob = coerce_ob(Ob, junction.value)
+  compose_simplify_id(
+    mmerge_foldl(ob, junction.ninputs),
+    mcopy_foldl(ob, junction.noutputs)
+  )
+end
+
+# FIXME: These functions belong elsewhere, probably in the standard library.
+function mcopy_foldl(A, n::Int)
+  @assert n >= 0
+  if n > 2
+    compose(mcopy(A), otimes(mcopy_foldl(A, n-1), id(A)))
+  elseif n == 2
+    mcopy(A)
+  elseif n == 1
+    id(A)
+  else # n == 0
+    delete(A)
+  end
+end
+function mmerge_foldl(A, n::Int)
+  @assert n >= 0
+  if n > 2
+    compose(otimes(mmerge_foldl(A, n-1), id(A)), mmerge(A))
+  elseif n == 2
+    mmerge(A)
+  elseif n == 1
+    id(A)
+  else # n == 0
+    create(A)
+  end
 end
 
 # Graph operations

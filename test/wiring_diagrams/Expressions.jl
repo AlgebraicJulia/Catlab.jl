@@ -10,7 +10,7 @@ using Catlab.WiringDiagrams.WiringDiagramExpressions: find_parallel,
 # Expression -> Diagram
 #######################
 
-A, B, C, D = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C, :D)
+A, B, C = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C)
 f, g = Hom(:f,A,B), Hom(:g,B,C)
 
 # Functorality of conversion.
@@ -24,9 +24,10 @@ fd, gd = singleton_diagram(Box(f)), singleton_diagram(Box(g))
 #######################
 
 function roundtrip(f::HomExpr)
-  to_hom_expr(FreeSymmetricMonoidalCategory, to_wiring_diagram(f))
+  to_hom_expr(FreeBiproductCategory, to_wiring_diagram(f))
 end
 
+A, B, C, D = Ob(FreeBiproductCategory, :A, :B, :C, :D)
 f, g, h, k = Hom(:f,A,B), Hom(:g,B,C), Hom(:h,C,D), Hom(:k,D,C)
 
 # Monoidal category
@@ -96,6 +97,29 @@ expr = compose(otimes(m,id(otimes(A,A))), otimes(m,id(A)), m)
 # Braidings.
 @test roundtrip(braid(A,B)) == braid(A,B)
 @test roundtrip(otimes(id(A),braid(B,C))) == otimes(id(A),braid(B,C))
+
+# Diagonals and codiagonals
+#--------------------------
+
+# Diagonals.
+@test roundtrip(mcopy(A)) == mcopy(A)
+@test roundtrip(delete(A)) == delete(A)
+@test roundtrip(mcopy(A)⋅(mcopy(A)⊗id(A))) == mcopy(A)⋅(mcopy(A)⊗id(A))
+@test roundtrip(mcopy(A)⋅(id(A)⊗mcopy(A))) == mcopy(A)⋅(mcopy(A) ⊗ id(A))
+
+# Codiagonals.
+@test roundtrip(mmerge(A)) == mmerge(A)
+@test roundtrip(create(A)) == create(A)
+@test roundtrip((mmerge(A)⊗id(A)⋅mmerge(A))) == (mmerge(A)⊗id(A))⋅mmerge(A)
+@test roundtrip((id(A)⊗mmerge(A))⋅mmerge(A)) == (mmerge(A)⊗id(A))⋅mmerge(A)
+
+# Compound morphisms.
+@test roundtrip(compose(f,mcopy(B))) == compose(f,mcopy(B))
+@test roundtrip(compose(mcopy(A),otimes(f,f))) == compose(mcopy(A),otimes(f,f))
+@test roundtrip(compose(f,delete(B))) == compose(f,delete(B))
+@test roundtrip(mcopy(A⊗B)) == (mcopy(A)⊗mcopy(B))⋅(id(A)⊗braid(A,B)⊗id(B))
+# XXX: Complicated, but correct, expression!
+#@test roundtrip(braid(A,B)⋅(mcopy(B)⊗mcopy(A))) == braid(A,B)⋅(mcopy(B)⊗mcopy(A))
 
 # Graph operations
 ##################
