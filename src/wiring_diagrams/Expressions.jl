@@ -47,6 +47,8 @@ end
 """ Convert a wiring diagram into a morphism expression.
 """
 function to_hom_expr(Ob::Type, Hom::Type, d::WiringDiagram)
+  box_to_expr(v::Int) = to_hom_expr(Ob, Hom, box(d,v))
+  
   # Step 0: Reduction: Add junction nodes to ensure any wiring layer between
   # two boxes is a permutation.
   d = copy(d)
@@ -70,13 +72,18 @@ function to_hom_expr(Ob::Type, Hom::Type, d::WiringDiagram)
     n = nboxes(d)
   end
   
-  # Termination: process the sole remaining box.
-  @assert nboxes(d) == 1
+  # Termination: process all remaining boxes (always at least one, and exactly
+  # one if there is no creation or deletion).
+  if nboxes(d) > 1
+    product = otimes(map(box_to_expr, box_ids(d)))
+    encapsulate!(d, box_ids(d), discard_boxes=true, value=product)
+  end
   v = first(box_ids(d))
-  f = to_hom_expr(Ob, Hom, box(d,v))
-  in_expr = hom_expr_between(Ob, d, input_id(d), v)
-  out_expr = hom_expr_between(Ob, d, v, output_id(d))
-  foldl(compose_simplify_id, [in_expr, f, out_expr])
+  foldl(compose_simplify_id, [
+    hom_expr_between(Ob, d, input_id(d), v),
+    box_to_expr(v),
+    hom_expr_between(Ob, d, v, output_id(d)),
+  ])
 end
 function to_hom_expr(Syntax::Module, d::WiringDiagram)
   to_hom_expr(Syntax.Ob, Syntax.Hom, d)
@@ -99,7 +106,8 @@ end
 """
 function parallel_reduction!(Ob::Type, Hom::Type, d::WiringDiagram)
   parallel = Vector{Int}[]
-  products = map(collect(find_parallel(graph(d)))) do ((source, target), vs)
+  parallel_unsorted = find_parallel(graph(d), source=input_id(d), sink=output_id(d))
+  products = map(collect(parallel_unsorted)) do ((source, target), vs)
     exprs = Hom[ to_hom_expr(Ob, Hom, box(d,v)) for v in vs ]
     σ = crossing_minimization_by_sort(d, vs,
       sources = isnothing(source) ? Int[] : [source],
@@ -237,9 +245,10 @@ end
 
 """ Find parallel compositions in a directed graph.
 """
-function find_parallel(g::DiGraph)
+function find_parallel(g::DiGraph; source=nothing, sink=nothing)
   parallel = Dict{Pair{Union{Int,Nothing},Union{Int,Nothing}},Vector{Int}}()
   for v in 1:nv(g)
+    if v in (source, sink); continue end
     # Note: The definition in the literature on series-parallel digraphs
     # requires that `length(v_in) == 1 && length(v_out) == 1`.
     # Replacing the conjunction with a disjunction allows more general

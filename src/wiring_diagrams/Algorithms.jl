@@ -193,7 +193,7 @@ The boxes in `sources` and/or `targets` are fixed and the boxes in `vs` are
 permuted. A permutation `σ` of the latter is returned, such that `vs[σ]` are the
 sorted box IDs. Both one-sided and two-sided crossing minimization are
 supported, depending on whether just one, or both, of `sources` and `targets`
-are given. At least one `sources` and `targets` must be given.
+are given.
 
 In this simple but popular heuristic algorithm, the boxes are permuted by
 sorting a univariate statistic of the positions of incoming and/or outgoing
@@ -209,7 +209,10 @@ function crossing_minimization_by_sort(d::WiringDiagram, vs::Vector{Int};
     sources::Vector{Int}=Int[], targets::Vector{Int}=Int[],
     statistic::Function=mean)::Vector{Int}
   @assert allunique(vs) && allunique(sources) && allunique(targets)
-  @assert !isempty(sources) || !isempty(targets)
+  if isempty(sources) && isempty(targets)
+    # Degenerate case: nothing to sort, so preserve original order.
+    return collect(eachindex(vs))
+  end
   
   source_coord = port_coords(d, sources, OutputPort)
   target_coord = port_coords(d, targets, InputPort)

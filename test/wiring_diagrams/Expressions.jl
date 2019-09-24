@@ -28,14 +28,11 @@ function roundtrip(f::HomExpr)
 end
 
 A, B, C, D = Ob(FreeBiproductCategory, :A, :B, :C, :D)
+I = munit(FreeBiproductCategory.Ob)
 f, g, h, k = Hom(:f,A,B), Hom(:g,B,C), Hom(:h,C,D), Hom(:k,D,C)
 
 # Monoidal category
 #------------------
-
-# Identities.
-@test roundtrip(id(A)) == id(A)
-@test roundtrip(otimes(id(A),id(B))) == id(otimes(A,B))
 
 # Base case.
 @test roundtrip(f) == f
@@ -91,6 +88,18 @@ m = Hom(:m, otimes(A,A), A)
 expr = compose(otimes(m,id(otimes(A,A))), otimes(m,id(A)), m)
 @test roundtrip(expr) == ((((m ⊗ id(A)) ⋅ m) ⊗ id(A)) ⋅ m)
 
+# Identities.
+@test roundtrip(id(A)) == id(A)
+@test roundtrip(otimes(id(A),id(B))) == id(otimes(A,B))
+
+# Monoidal units.
+@test roundtrip(Hom(:m,A,I)) == Hom(:m,A,I)
+@test roundtrip(Hom(:m,I,B)) == Hom(:m,I,B)
+@test roundtrip(Hom(:m,I,I)) == Hom(:m,I,I)
+@test roundtrip(Hom(:m,I,B)⋅Hom(:n,B,I)) == Hom(:m,I,B)⋅Hom(:n,B,I)
+@test roundtrip(Hom(:m,A,I)⋅Hom(:n,I,B)) == Hom(:m,A,I)⊗Hom(:n,I,B)
+@test roundtrip(Hom(:m,I,I)⊗Hom(:n,I,I)) == Hom(:m,I,I)⊗Hom(:n,I,I)
+
 # Symmetric monoidal category
 #----------------------------
 
@@ -106,6 +115,8 @@ expr = compose(otimes(m,id(otimes(A,A))), otimes(m,id(A)), m)
 @test roundtrip(delete(A)) == delete(A)
 @test roundtrip(mcopy(A)⋅(mcopy(A)⊗id(A))) == mcopy(A)⋅(mcopy(A)⊗id(A))
 @test roundtrip(mcopy(A)⋅(id(A)⊗mcopy(A))) == mcopy(A)⋅(mcopy(A) ⊗ id(A))
+@test roundtrip(mcopy(A⊗B)) == (mcopy(A)⊗mcopy(B))⋅(id(A)⊗braid(A,B)⊗id(B))
+@test roundtrip(delete(A⊗B)) == delete(A)⊗delete(B)
 
 # Codiagonals.
 @test roundtrip(mmerge(A)) == mmerge(A)
@@ -117,8 +128,6 @@ expr = compose(otimes(m,id(otimes(A,A))), otimes(m,id(A)), m)
 @test roundtrip(compose(f,mcopy(B))) == compose(f,mcopy(B))
 @test roundtrip(compose(mcopy(A),otimes(f,f))) == compose(mcopy(A),otimes(f,f))
 @test roundtrip(compose(f,delete(B))) == compose(f,delete(B))
-@test roundtrip(mcopy(A⊗B)) == (mcopy(A)⊗mcopy(B))⋅(id(A)⊗braid(A,B)⊗id(B))
-@test roundtrip(delete(A⊗B)) == delete(A)⊗delete(B)
 @test roundtrip(braid(A,B)⋅(mcopy(B)⊗mcopy(A))) == braid(A,B)⋅(mcopy(B)⊗mcopy(A))
 
 # Graph operations
