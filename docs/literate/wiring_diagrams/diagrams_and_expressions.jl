@@ -1,5 +1,7 @@
 # # Wiring diagrams and syntactic expressions
 #
+#md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/wiring_diagrams/diagrams_and_expressions.ipynb)
+#
 # Morphisms in a monoidal category can be represented as syntactic expressions,
 # such as $f \cdot g$ and $f \otimes g$, and also as [wiring
 # diagrams](wiring_basics.ipynb), aka *string diagrams*. Catlab provides

@@ -1,5 +1,7 @@
 # # Wiring diagrams in TikZ
 #
+#md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/graphics/tikz_wiring_diagrams.ipynb)
+#
 # Catlab can draw morphism expressions as TikZ pictures. To use this feature,
 # you must import the [TikzPictures.jl](https://github.com/sisl/TikzPictures.jl)
 # package before loading `Catlab.Graphics`.

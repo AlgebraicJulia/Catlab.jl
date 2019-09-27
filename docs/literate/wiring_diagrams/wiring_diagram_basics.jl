@@ -1,4 +1,6 @@
 # # Wiring diagrams in Catlab
+#
+#md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/wiring_diagrams/wiring_diagram_basics.ipynb)
 # 
 # Using Catlab, you can create, manipulate, serialize, and visualize *wiring
 # diagrams*, also known as [string
