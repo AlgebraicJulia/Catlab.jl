@@ -1,31 +1,26 @@
 using Documenter
 using Literate
 
-const literate_dir = Dict(
-  :jl => joinpath(@__DIR__, "literate"),
-  :md => joinpath(@__DIR__, "src", "tutorials"),
-  :nb => joinpath(@__DIR__, "notebooks"),
-)
+const literate_dir = joinpath(@__DIR__, "literate")
+const generated_dir = joinpath(@__DIR__, "src", "generated")
 
-@info "Loading module"
+@info "Loading Catlab.jl"
 using Catlab
 
-@info "Building tutorial docs"
-for (root, dirs, files) in walkdir(literate_dir[:jl])
-  relroot = relpath(root, literate_dir[:jl])
-  md_dir = joinpath(literate_dir[:md], relroot)
-  nb_dir = joinpath(literate_dir[:nb], relroot)
+@info "Building Literate.jl docs"
+for (root, dirs, files) in walkdir(literate_dir)
+  out_dir = joinpath(generated_dir, relpath(root, literate_dir))
   for file in files
     if last(splitext(file)) == ".jl"
-      Literate.markdown(joinpath(root, file), md_dir;
+      Literate.markdown(joinpath(root, file), out_dir;
         documenter=true, credit=false)
-      Literate.notebook(joinpath(root, file), nb_dir;
+      Literate.notebook(joinpath(root, file), out_dir;
         execute=true, documenter=true, credit=false)
     end
   end
 end
 
-@info "Building API docs"
+@info "Building Documenter.jl docs"
 makedocs(
   modules     = [Catlab],
   format      = Documenter.HTML(),
@@ -34,11 +29,11 @@ makedocs(
   pages       = Any[
     "Catlab.jl" => "index.md",
     "Tutorials" => Any[
-      "tutorials/wiring_diagrams/wiring_diagram_basics.md",
-      "tutorials/wiring_diagrams/diagrams_and_expressions.md",
-      "tutorials/graphics/graphviz_wiring_diagrams.md",
-      "tutorials/graphics/tikz_wiring_diagrams.md",
-      "tutorials/algebra/algebraic_nets.md",
+      "generated/wiring_diagrams/wiring_diagram_basics.md",
+      "generated/wiring_diagrams/diagrams_and_expressions.md",
+      "generated/graphics/graphviz_wiring_diagrams.md",
+      "generated/graphics/tikz_wiring_diagrams.md",
+      "generated/algebra/algebraic_nets.md",
     ],
     "APIs"      => Any[
       "apis/index.md",
