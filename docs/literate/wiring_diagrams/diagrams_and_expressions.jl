@@ -63,9 +63,9 @@ roundtrip_expr((f ⊗ h) ⋅ (g ⊗ k))
 
 # The equality of these two expressions,
 #
-# $$
+# ```math
 # (f \cdot g) \otimes (h \cdot k) = (f \otimes h) \cdot (g \otimes k),
-# $$
+# ```
 #
 # is the *interchange law* in a monoidal category. It says that composition and
 # monoidal products can be interchanged. As this example shows, the conversion
@@ -75,7 +75,7 @@ roundtrip_expr((f ⊗ h) ⋅ (g ⊗ k))
 # [cartesian monoidal
 # category](https://ncatlab.org/nlab/show/cartesian+monoidal+category),
 # operations of copying, $\Delta_A: A \to A \otimes A$, and deleting,
-# $\diamond_A: A \to I$, are available.
+# $\lozenge_A: A \to I$, are available.
 #
 # Consider the operation of copying the product $A \otimes B$.
 
@@ -87,17 +87,17 @@ roundtrip_expr(expr)
 
 # The equation just witnessed,
 #
-# $$
+# ```math
 # \Delta_{A \otimes B} = (\Delta_A \otimes \Delta_B) \cdot (1_A \otimes \sigma_{A,B} \otimes 1_B),
-# $$
+# ```
 #
 # is one of the *coherence laws* for cartesian products
 # ([arXiv:0908.3347](https://arxiv.org/abs/0908.3347), Table 7). Another
 # coherence law for products is
 #
-# $$
-# \diamond_{A \otimes B} = \diamond_A \otimes \diamond_B.
-# $$
+# ```math
+# \lozenge_{A \otimes B} = \lozenge_A \otimes \lozenge_B.
+# ```
 
 expr = delete(A ⊗ B)
 #-
