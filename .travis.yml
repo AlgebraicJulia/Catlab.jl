@@ -10,6 +10,10 @@ jobs:
   include:
     - stage: Documentation
       julia: 1.2
+      before_install:
+        - sudo apt-get -qq update
+        - sudo apt-get install -y graphviz pdf2svg
+        - sudo apt-get install -y texlive-latex-base texlive-binaries texlive-pictures texlive-latex-extra
       script:
         - julia --project=docs -e 'using Pkg; Pkg.instantiate()'
         - julia --project=docs --color=yes docs/make.jl
