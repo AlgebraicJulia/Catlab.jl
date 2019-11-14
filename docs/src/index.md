@@ -32,10 +32,10 @@ Pages = [
      "index.md",
      "apis/index.md",
      "apis/catlab.md",
-     "apis/algebra.md",
      "apis/doctrines.md",
+     "apis/wiring_diagrams.md",
      "apis/graphics.md",
-     "apis/wiringdiagrams.md",
+     "apis/programs.md",
      ]
 Depth = 3
 ```

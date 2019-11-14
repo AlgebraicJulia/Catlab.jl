@@ -5,7 +5,7 @@ as *trees* whose leaves are variables or constants and whose internal nodes are
 arithmetic operations or elementary or special functions. The idea here is to
 represent expressions as morphisms in a monoidal category.
 """
-module Network
+module AlgebraicNets
 export AlgebraicNetSignature, AlgebraicNet, Ob, Hom,
   compose, id, dom, codom, otimes, munit, braid, mcopy, delete, mmerge, create,
   linear, constant, wiring,

@@ -1,9 +1,9 @@
 # # Algebraic networks
 #
-#md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/algebra/algebraic_nets.ipynb)
+#md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/programs/algebraic_nets.ipynb)
 #
 
-using Catlab.Algebra
+using Catlab.Programs
 
 import TikzPictures
 using Catlab.Graphics

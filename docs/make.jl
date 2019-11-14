@@ -33,15 +33,15 @@ makedocs(
       "generated/wiring_diagrams/diagrams_and_expressions.md",
       "generated/graphics/graphviz_wiring_diagrams.md",
       "generated/graphics/tikz_wiring_diagrams.md",
-      "generated/algebra/algebraic_nets.md",
+      "generated/programs/algebraic_nets.md",
     ],
     "APIs"      => Any[
       "apis/index.md",
       "apis/catlab.md",
       "apis/doctrines.md",
-      "apis/wiringdiagrams.md",
+      "apis/wiring_diagrams.md",
       "apis/graphics.md",
-      "apis/algebra.md",
+      "apis/programs.md",
     ]
   ]
 )

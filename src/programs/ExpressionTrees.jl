@@ -1,12 +1,13 @@
-""" Expression trees for computer algebra.
+""" Expression trees (formulas) for computer algebra.
 
 This module is *not* an implementation of a conventional, general-purpose CAS.
-There are already many outstanding CAS's. Its goals are to
+There are already many outstanding computer algebra systems. Its goals are to
 
-- display formulas in conventional notation with free variables
-- facilitate interop with existing CAS's
+- represent formulas as expression tree, when that is convenient
+- display formulas in conventional mathematical notation with free variables
+- allow interoperation with existing computer algebra systems
 """
-module Tree
+module ExpressionTrees
 export Formula, head, args, first, last, to_formula, to_wiring_diagram,
   show_latex, show_latex_formula, show_sexpr
 
@@ -22,8 +23,8 @@ import ...Syntax: head, args, show_latex
 using ...WiringDiagrams
 import ...WiringDiagrams: to_wiring_diagram
 
-using ..Network
-import ..Network: Ob, Hom, compose, id, dom, codom, otimes, munit, braid,
+using ..AlgebraicNets
+import ..AlgebraicNets: Ob, Hom, compose, id, dom, codom, otimes, munit, braid,
   mcopy, delete, mmerge, create, linear, constant, wiring, evaluate
 
 # Data types
@@ -31,10 +32,10 @@ import ..Network: Ob, Hom, compose, id, dom, codom, otimes, munit, braid,
 
 """ An expression tree for computer algebra.
 
-We call these "formulas" to avoid confusion with Julia expressions
-(`Base.Expr`) and GAT expressions (`Catlab.Syntax.GATExpr`). The operations
-(head symbols) are interpreted as Julia functions, e.g., `:/` is right
-multiplication by the matrix pseudoinverse while `:./` is the elementwise
+We call the expression trees "formulas" to avoid confusion with Julia
+expressions (`Base.Expr`) or GAT expressions (`Catlab.Syntax.GATExpr`). Usually
+the operations (head symbols) are interpreted as Julia functions, e.g., `:/` is
+right multiplication by the matrix pseudoinverse while `:./` is the elementwise
 division.
 """
 @auto_hash_equals struct Formula

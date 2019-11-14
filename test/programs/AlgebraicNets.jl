@@ -1,10 +1,10 @@
-module TestAlgebraicNetwork
+module TestAlgebraicNets
 
 import Pkg
 using Test
 
 using Catlab.Syntax
-using Catlab.Algebra, Catlab.WiringDiagrams.WiringLayers
+using Catlab.Programs.AlgebraicNets, Catlab.WiringDiagrams.WiringLayers
 
 R = Ob(AlgebraicNet, :R)
 

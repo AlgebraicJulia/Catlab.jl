@@ -1,8 +1,8 @@
-module TestAlgebraTree
+module TestExpressionTrees
 
 using Test
 
-using Catlab.Algebra
+using Catlab.Programs
 using Catlab.WiringDiagrams
 
 # Conversion
