@@ -9,7 +9,7 @@ module AlgebraicNets
 export AlgebraicNetSignature, AlgebraicNet, Ob, Hom,
   compose, id, dom, codom, otimes, munit, braid, mcopy, delete, mmerge, create,
   linear, constant, wiring,
-  Block, compile, compile_expr, compile_block, evaluate
+  compile, compile_expr, compile_expr_vector, compile_block, evaluate
 
 using Match
 
@@ -20,6 +20,8 @@ import ...Meta: concat_expr
 import ...Syntax: show_latex, show_unicode
 using ...WiringDiagrams: WiringLayer
 import ...Graphics.TikZWiringDiagrams: box, wires, rect, junction_circle
+using ..JuliaPrograms
+import ..JuliaPrograms: compile_block, genvar, genvars
 
 # Syntax
 ########
@@ -66,27 +68,21 @@ end
 # Compilation
 #############
 
-""" A block of Julia code with input and output variables.
-"""
-mutable struct Block
-  code::Expr
-  inputs::Vector
-  outputs::Vector
-  constants::Vector{Symbol}
-  Block(code, inputs, outputs; constants=Symbol[]) =
-    new(code, inputs, outputs, constants)
-end
-
 """ Internal state for compilation of algebraic network into Julia function.
 """
-mutable struct CompileState
-  inputs::Vector
+mutable struct AlgebraicNetState <: CompileState
   nvars::Int
   constants::Dict{Symbol,Int}
   constants_sym::Symbol
-  CompileState(inputs::Vector; nvars=0,
-               constants=Dict{Symbol,Int}(), constants_sym=Symbol()) =
-    new(inputs, nvars, constants, constants_sym)
+  AlgebraicNetState(; nvars=0, constants=Dict{Symbol,Int}(), constants_sym=Symbol()) =
+    new(nvars, constants, constants_sym)
+end
+
+""" Generate a constant (symbol or expression).
+"""
+function genconst(state::AlgebraicNetState, name::Symbol)
+  i = get!(state.constants, name, length(state.constants)+1)
+  state.constants_sym == Symbol() ? name : :($(state.constants_sym)[$i])
 end
 
 """ Compile an algebraic network into a Julia function.
@@ -110,13 +106,11 @@ The function signature is:
 """
 function compile_expr(f::AlgebraicNet.Hom; name::Symbol=Symbol(),
                       args::Vector{Symbol}=Symbol[])
-  block = compile_block(f; inputs=args)
-  compile_expr(block; name=name)
-end
-function compile_expr(block::Block; name::Symbol=Symbol())
+  # Compile algebraic network into block.
+  block, constants = compile_block(f; inputs=args)
+
   # Create call expression (function header).
-  kw = Expr(:parameters,
-            (Expr(:kw,sym,nothing) for sym in block.constants)...)
+  kw = Expr(:parameters, (Expr(:kw,sym,nothing) for sym in constants)...)
   call_expr = if name == Symbol() # Anonymous function
     Expr(:tuple, kw, block.inputs...)
   else # Named function
@@ -131,7 +125,7 @@ function compile_expr(block::Block; name::Symbol=Symbol())
   end)
   body_expr = concat_expr(block.code, return_expr)
   
-  (Expr(:function, call_expr, body_expr), block.constants)
+  (Expr(:function, call_expr, body_expr), constants)
 end
 
 """ Compile an algebraic network into a Julia function expression.
@@ -143,13 +137,10 @@ The function signature is:
 Unlike `compile_expr`, this method assumes the network has a single output.
 """
 function compile_expr_vector(f::AlgebraicNet.Hom; name::Symbol=Symbol(),
-                             inputs::Symbol=:x, constants::Symbol=:c, kw...)
-  block = compile_block(f; inputs=inputs, constants=constants)
-  compile_expr_vector(block; name=name, inputs=inputs, constants=constants, kw...)
-end
-function compile_expr_vector(block::Block; name::Symbol=Symbol(),
-                             inputs::Symbol=:x, constants::Symbol=:c,
-                             order::Int=0, allorders::Bool=true)
+                             inputs::Symbol=:x, constants::Symbol=:c)
+  # Compile algebraic network in block.
+  block, block_constants = compile_block(f; inputs=inputs, constants=constants)
+
   # Create call expression (function header).
   call_expr = if name == Symbol() # Anonymous function
     Expr(:tuple, inputs, constants)
@@ -162,33 +153,34 @@ function compile_expr_vector(block::Block; name::Symbol=Symbol(),
   return_expr = Expr(:return, block.outputs[1])
   body_expr = concat_expr(block.code, return_expr)
   
-  (Expr(:function, call_expr, body_expr), block.constants)
+  (Expr(:function, call_expr, body_expr), block_constants)
 end
 
 """ Compile an algebraic network into a block of Julia code.
 """
 function compile_block(f::AlgebraicNet.Hom;
                        inputs::Union{Symbol,Vector}=Symbol(),
-                       constants::Symbol=Symbol())::Block
+                       constants::Symbol=Symbol())::Tuple{Block,Vector}
   nin = ndims(dom(f))
   if inputs == Symbol() || inputs == []
     inputs = [ Symbol("x$i") for i in 1:nin ]
-  elseif isa(inputs, Symbol)
+  elseif inputs isa Symbol
     inputs = [ :($inputs[$i]) for i in 1:nin ]
   else
     @assert length(inputs) == nin
   end
   
-  state = CompileState(inputs, constants_sym=constants)
-  block = compile_block(f, state)
-  block.constants = [ k for (k,v) in sort(collect(state.constants), by=x->x[2]) ]
-  return block
+  state = AlgebraicNetState(constants_sym=constants)
+  block = compile_block(f, inputs, state)
+  constants = [ k for (k,v) in sort(collect(state.constants), by=x->x[2]) ]
+  return (block, constants)
 end
 
-function compile_block(f::AlgebraicNet.Hom{:generator}, state::CompileState)::Block
+function compile_block(f::AlgebraicNet.Hom{:generator}, inputs::Vector,
+                       state::AlgebraicNetState)::Block
   nin, nout = ndims(dom(f)), ndims(codom(f))
-  inputs, outputs = state.inputs, genvars(state, nout)
   @assert length(inputs) == nin
+  outputs = genvars(state, nout)
   
   value = first(f)
   lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
@@ -201,9 +193,10 @@ function compile_block(f::AlgebraicNet.Hom{:generator}, state::CompileState)::Bl
   Block(Expr(:(=), lhs, rhs), inputs, outputs)
 end
 
-function compile_block(f::AlgebraicNet.Hom{:linear}, state::CompileState)::Block
+function compile_block(f::AlgebraicNet.Hom{:linear}, inputs::Vector,
+                       state::AlgebraicNetState)::Block
   nin, nout = ndims(dom(f)), ndims(codom(f))
-  inputs, outputs = state.inputs, genvars(state, nout)
+  outputs = genvars(state, nout)
   @assert length(inputs) == nin
   
   value = first(f)
@@ -219,42 +212,10 @@ function compile_block(f::AlgebraicNet.Hom{:linear}, state::CompileState)::Block
   Block(Expr(:(=), lhs, rhs), inputs, outputs)
 end
 
-function compile_block(f::AlgebraicNet.Hom{:compose}, state::CompileState)::Block
-  code = Expr(:block)
-  vars = inputs = state.inputs
-  for g in args(f)
-    state.inputs = vars
-    block = compile_block(g, state)
-    code = concat_expr(code, block.code)
-    vars = block.outputs
-  end
-  outputs = vars
-  Block(code, inputs, outputs)
-end
-
-function compile_block(f::AlgebraicNet.Hom{:id}, state::CompileState)::Block
-  inputs = state.inputs
-  Block(Expr(:block), inputs, inputs)
-end
-
-function compile_block(f::AlgebraicNet.Hom{:otimes}, state::CompileState)::Block
-  code = Expr(:block)
-  inputs, outputs = state.inputs, []
-  i = 1
-  for g in args(f)
-    nin = ndims(dom(g))
-    state.inputs = inputs[i:i+nin-1]
-    block = compile_block(g, state)
-    code = concat_expr(code, block.code)
-    append!(outputs, block.outputs)
-    i += nin
-  end
-  Block(code, inputs, outputs)
-end
-
-function compile_block(f::AlgebraicNet.Hom{:wiring}, state::CompileState)::Block
+function compile_block(f::AlgebraicNet.Hom{:wiring}, inputs::Vector,
+                       state::CompileState)::Block
   nout = ndims(codom(f))
-  inputs, outputs = state.inputs, genvars(state, nout)
+  outputs = genvars(state, nout)
   terms = [ [] for i in 1:nout ]
   for (src, tgts) in first(f).wires
     x = inputs[src]
@@ -266,56 +227,19 @@ function compile_block(f::AlgebraicNet.Hom{:wiring}, state::CompileState)::Block
   Block(code, inputs, outputs)
 end
 
-function compile_block(f::AlgebraicNet.Hom{:braid}, state::CompileState)::Block
-  m = ndims(first(f))
-  inputs = state.inputs
-  outputs = [inputs[m+1:end]; inputs[1:m]]
-  Block(Expr(:block), inputs, outputs)
-end
-
-function compile_block(f::AlgebraicNet.Hom{:mcopy}, state::CompileState)::Block
-  reps = div(ndims(codom(f)), ndims(dom(f)))
-  inputs = state.inputs
-  outputs = reduce(vcat, fill(inputs, reps))
-  Block(Expr(:block), inputs, outputs)
-end
-
-function compile_block(f::AlgebraicNet.Hom{:delete}, state::CompileState)::Block
-  Block(Expr(:block), state.inputs, [])
-end
-
-function compile_block(f::AlgebraicNet.Hom{:mmerge}, state::CompileState)::Block
-  inputs, out = state.inputs, genvar(state)
+function compile_block(f::AlgebraicNet.Hom{:mmerge}, inputs::Vector,
+                       state::CompileState)::Block
+  out = genvar(state)
   code = Expr(:(=), out, sum_expr(inputs))
   Block(code, inputs, [out])
 end
 
-function compile_block(f::AlgebraicNet.Hom{:create}, state::CompileState)::Block
+function compile_block(f::AlgebraicNet.Hom{:create}, inputs::Vector,
+                       state::CompileState)::Block
   nout = ndims(codom(f))
-  inputs, outputs = state.inputs, genvars(state, nout)
+  outputs = genvars(state, nout)
   code = multiple_assign_expr(outputs, zeros(nout))
   Block(code, inputs, outputs)
-end
-
-""" Generate a fresh variable (symbol).
-
-This is basically `gensym` with local, not global, symbol counting.
-"""
-function genvar(state::CompileState)::Symbol
-  genvars(state,1)[1]
-end
-function genvars(state::CompileState, n::Int)::Vector{Symbol}
-  nvars = state.nvars
-  vars = [ Symbol("v$(nvars+i)") for i in 1:n ]
-  state.nvars = nvars + n
-  return vars
-end
-
-""" Generate a constant (symbol or expression).
-"""
-function genconst(state::CompileState, name::Symbol)
-  i = get!(state.constants, name, length(state.constants)+1)
-  state.constants_sym == Symbol() ? name : :($(state.constants_sym)[$i])
 end
 
 """ Generate Julia expression for single or multiple assignment.
