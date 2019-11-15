@@ -21,7 +21,8 @@ import ...Syntax: show_latex, show_unicode
 using ...WiringDiagrams: WiringLayer
 import ...Graphics.TikZWiringDiagrams: box, wires, rect, junction_circle
 using ..JuliaPrograms
-import ..JuliaPrograms: compile_block, genvar, genvars, generator_expr, input_exprs
+import ..JuliaPrograms: compile, compile_block, genvar, genvars,
+  to_function_expr, generator_expr, input_exprs
 
 # Syntax
 ########
@@ -99,27 +100,10 @@ The function signature is:
 """
 function compile_expr(f::AlgebraicNet.Hom; name::Symbol=Symbol(),
                       args::Vector{Symbol}=Symbol[])
-  # Compile algebraic network into block.
   inputs = isempty(args) ? input_exprs(ndims(dom(f)), kind=:variables) : args
   block, constants = compile_block(f, inputs)
-
-  # Create call expression (function header).
-  kw = Expr(:parameters, (Expr(:kw,sym,nothing) for sym in constants)...)
-  call_expr = if name == Symbol() # Anonymous function
-    Expr(:tuple, kw, block.inputs...)
-  else # Named function
-    Expr(:call, name, kw, block.inputs...)
-  end
-  
-  # Create function body.
-  return_expr = Expr(:return, if length(block.outputs) == 1
-    block.outputs[1]
-  else 
-    Expr(:tuple, block.outputs...)
-  end)
-  body_expr = concat_expr(block.code, return_expr)
-  
-  (Expr(:function, call_expr, body_expr), constants)
+  function_expr = to_function_expr(block; name=name, kwargs=constants)
+  (function_expr, constants)
 end
 
 """ Compile an algebraic network into a Julia function expression.

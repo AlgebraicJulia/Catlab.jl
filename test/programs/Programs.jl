@@ -1,5 +1,9 @@
 using Test
 
+@testset "JuliaPrograms" begin
+  include("JuliaPrograms.jl")
+end
+
 @testset "AlgebraicNets" begin
   include("AlgebraicNets.jl")
 end

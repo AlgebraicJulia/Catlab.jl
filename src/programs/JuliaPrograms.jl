@@ -4,7 +4,7 @@ This module allows morphisms in a symmetric monoidal category to be converted to
 and from programs in a subset of the Julia language.
 """
 module JuliaPrograms
-export Block, CompileState, compile_expr, compile_block
+export Block, CompileState, compile, compile_expr, compile_block
 
 using ...Catlab
 using ...Doctrines: ObExpr, HomExpr, dom, codom
@@ -28,6 +28,15 @@ abstract type CompileState end
 mutable struct SimpleCompileState <: CompileState
   nvars::Int
   SimpleCompileState(; nvars::Int=0) = new(nvars)
+end
+
+""" Compile a morphism expression into a Julia function expression.
+"""
+function compile_expr(f::HomExpr; name::Symbol=Symbol(),
+                      args::Vector{Symbol}=Symbol[])
+  inputs = isempty(args) ? input_exprs(ndims(dom(f)), kind=:variables) : args
+  block = compile_block(f, inputs)
+  to_function_expr(block; name=name)
 end
 
 """ Compile a morphism expression into a block of Julia code.
@@ -97,6 +106,33 @@ end
 function compile_block(f::HomExpr{:delete}, inputs::Vector,
                        state::CompileState)::Block
   Block(Expr(:block), inputs, empty(inputs))
+end
+
+""" Convert a block of Julia code into a Julia function expression.
+"""
+function to_function_expr(block::Block; name::Symbol=Symbol(), kwargs::Vector=[])
+  # Create call expression (function header).
+  arguments = if isempty(kwargs)
+    block.inputs
+  else
+    kwargs = [ (kw isa Expr ? kw : Expr(:kw, kw, nothing)) for kw in kwargs ]
+    [ Expr(:parameters, kwargs...); block.inputs ]
+  end
+  call_expr = if name == Symbol() # Anonymous function
+    Expr(:tuple, arguments...)
+  else # Named function
+    Expr(:call, name, arguments...)
+  end
+  
+  # Create function body.
+  return_expr = Expr(:return, if length(block.outputs) == 1
+    block.outputs[1]
+  else
+    Expr(:tuple, block.outputs...)
+  end)
+  body_expr = concat_expr(block.code, return_expr)
+  
+  Expr(:function, call_expr, body_expr)
 end
 
 """ Generate Julia expression for evaluation of morphism generator.
