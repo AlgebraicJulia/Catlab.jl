@@ -30,6 +30,12 @@ mutable struct SimpleCompileState <: CompileState
   SimpleCompileState(; nvars::Int=0) = new(nvars)
 end
 
+""" Compile a morphism expression into a Julia function.
+"""
+function compile(f::HomExpr; kw...)
+  eval(compile_expr(f; kw...))
+end
+
 """ Compile a morphism expression into a Julia function expression.
 """
 function compile_expr(f::HomExpr; name::Symbol=Symbol(),

@@ -21,7 +21,7 @@ import ...Syntax: show_latex, show_unicode
 using ...WiringDiagrams: WiringLayer
 import ...Graphics.TikZWiringDiagrams: box, wires, rect, junction_circle
 using ..JuliaPrograms
-import ..JuliaPrograms: compile, compile_block, genvar, genvars,
+import ..JuliaPrograms: compile, compile_expr, compile_block, genvar, genvars,
   to_function_expr, generator_expr, input_exprs
 
 # Syntax
