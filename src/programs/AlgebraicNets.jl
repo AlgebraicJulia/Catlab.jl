@@ -21,7 +21,7 @@ import ...Syntax: show_latex, show_unicode
 using ...WiringDiagrams: WiringLayer
 import ...Graphics.TikZWiringDiagrams: box, wires, rect, junction_circle
 using ..JuliaPrograms
-import ..JuliaPrograms: compile_block, genvar, genvars, generator_expr
+import ..JuliaPrograms: compile_block, genvar, genvars, generator_expr, input_exprs
 
 # Syntax
 ########
@@ -86,9 +86,9 @@ is properly factored, with no duplicate computations.
 """
 function compile(f::Union{AlgebraicNet.Hom,Block};
                  return_constants::Bool=false, vector::Bool=false, kw...)
-  expr, consts = vector ? compile_expr_vector(f; kw...) : compile_expr(f; kw...)
+  expr, constants = vector ? compile_expr_vector(f; kw...) : compile_expr(f; kw...)
   compiled = eval(expr)
-  return_constants ? (compiled, consts) : compiled
+  return_constants ? (compiled, constants) : compiled
 end
 
 """ Compile an algebraic network into a Julia function expression.
@@ -100,7 +100,8 @@ The function signature is:
 function compile_expr(f::AlgebraicNet.Hom; name::Symbol=Symbol(),
                       args::Vector{Symbol}=Symbol[])
   # Compile algebraic network into block.
-  block, constants = compile_block(f; inputs=args)
+  inputs = isempty(args) ? input_exprs(ndims(dom(f)), kind=:variables) : args
+  block, constants = compile_block(f, inputs)
 
   # Create call expression (function header).
   kw = Expr(:parameters, (Expr(:kw,sym,nothing) for sym in constants)...)
@@ -130,15 +131,16 @@ The function signature is:
 Unlike `compile_expr`, this method assumes the network has a single output.
 """
 function compile_expr_vector(f::AlgebraicNet.Hom; name::Symbol=Symbol(),
-                             inputs::Symbol=:x, constants::Symbol=:c)
+                             inputs_sym::Symbol=:x, constants_sym::Symbol=:c)
   # Compile algebraic network in block.
-  block, block_constants = compile_block(f; inputs=inputs, constants=constants)
+  inputs = input_exprs(ndims(dom(f)), prefix=inputs_sym, kind=:array)
+  block, constants = compile_block(f, inputs, constants_sym=constants_sym)
 
   # Create call expression (function header).
   call_expr = if name == Symbol() # Anonymous function
-    Expr(:tuple, inputs, constants)
+    Expr(:tuple, inputs_sym, constants_sym)
   else # Named function
-    Expr(:call, name, inputs, constants)
+    Expr(:call, name, inputs_sym, constants_sym)
   end                           
                              
   # Create function body.
@@ -146,24 +148,13 @@ function compile_expr_vector(f::AlgebraicNet.Hom; name::Symbol=Symbol(),
   return_expr = Expr(:return, block.outputs[1])
   body_expr = concat_expr(block.code, return_expr)
   
-  (Expr(:function, call_expr, body_expr), block_constants)
+  (Expr(:function, call_expr, body_expr), constants)
 end
 
 """ Compile an algebraic network into a block of Julia code.
 """
-function compile_block(f::AlgebraicNet.Hom;
-                       inputs::Union{Symbol,Vector}=Symbol(),
-                       constants::Symbol=Symbol())::Tuple{Block,Vector}
-  nin = ndims(dom(f))
-  if inputs == Symbol() || inputs == []
-    inputs = [ Symbol("x$i") for i in 1:nin ]
-  elseif inputs isa Symbol
-    inputs = [ :($inputs[$i]) for i in 1:nin ]
-  else
-    @assert length(inputs) == nin
-  end
-  
-  state = AlgebraicNetState(constants_sym=constants)
+function compile_block(f::AlgebraicNet.Hom, inputs::Vector; kw...)::Tuple{Block,Vector}
+  state = AlgebraicNetState(; kw...)
   block = compile_block(f, inputs, state)
   constants = [ k for (k,v) in sort(collect(state.constants), by=x->x[2]) ]
   return (block, constants)

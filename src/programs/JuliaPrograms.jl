@@ -30,6 +30,12 @@ mutable struct SimpleCompileState <: CompileState
   SimpleCompileState(; nvars::Int=0) = new(nvars)
 end
 
+""" Compile a morphism expression into a block of Julia code.
+"""
+function compile_block(f::HomExpr, inputs::Vector)
+  compile_block(f, inputs, SimpleCompileState())
+end
+
 function compile_block(f::HomExpr{:generator}, inputs::Vector,
                        state::CompileState)::Block
   nin, nout = ndims(dom(f)), ndims(codom(f))
@@ -102,15 +108,27 @@ function generator_expr(f::HomExpr{:generator}, inputs::Vector,
   Expr(:call, value::Symbol, inputs...)
 end
 
+""" Generate expressions for inputs to Julia code.
+"""
+function input_exprs(n::Int; kind::Symbol=:variables, prefix::Symbol=:x)
+  if kind == :variables
+    [ Symbol(string(prefix, i)) for i in 1:n ]
+  elseif kind == :array
+    [ :($prefix[$i]) for i in 1:n ]
+  else
+    error("Unknown input kind: $kind")
+  end
+end
+
 """ Generate a fresh variable (symbol).
 
 This is basically `gensym` with local, not global, symbol counting.
 """
-function genvar(state::CompileState)::Symbol
-  Symbol(string("v", state.nvars += 1))
+function genvar(state::CompileState; prefix::Symbol=:v)::Symbol
+  Symbol(string(prefix, state.nvars += 1))
 end
-function genvars(state::CompileState, n::Int)::Vector{Symbol}
-  Symbol[ genvar(state) for i in 1:n ]
+function genvars(state::CompileState, n::Int; prefix::Symbol=:v)::Vector{Symbol}
+  Symbol[ genvar(state; prefix=prefix) for i in 1:n ]
 end
 
 end
