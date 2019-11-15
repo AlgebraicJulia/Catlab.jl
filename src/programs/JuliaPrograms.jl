@@ -4,11 +4,11 @@ This module allows morphisms in a symmetric monoidal category to be converted to
 and from programs in a subset of the Julia language.
 """
 module JuliaPrograms
-export Block, CompileState, compile_block
+export Block, CompileState, compile_expr, compile_block
 
 using ...Catlab
 using ...Doctrines: ObExpr, HomExpr, dom, codom
-import ...Meta: concat_expr
+import ...Meta: Expr0, concat_expr
 
 # Compilation
 #############
@@ -17,8 +17,8 @@ import ...Meta: concat_expr
 """
 mutable struct Block
   code::Expr
-  inputs::Vector
-  outputs::Vector
+  inputs::Vector{<:Expr0}
+  outputs::Vector{<:Expr0}
 end
 
 """ Internal state for compilation of morphism into Julia code.
@@ -29,29 +29,14 @@ struct SimpleCompileState
   nvars::Int 
 end
 
-""" Generate a fresh variable (symbol).
-
-This is basically `gensym` with local, not global, symbol counting.
-"""
-function genvar(state::CompileState)::Symbol
-  first(genvars(state, 1))
-end
-function genvars(state::CompileState, n::Int)::Vector{Symbol}
-  nvars = state.nvars
-  vars = [ Symbol("v$(nvars+i)") for i in 1:n ]
-  state.nvars = nvars + n
-  return vars
-end
-
 function compile_block(f::HomExpr{:generator}, inputs::Vector,
                        state::CompileState)::Block
   nin, nout = ndims(dom(f)), ndims(codom(f))
   @assert length(inputs) == nin
   outputs = genvars(state, nout)
   
-  value = first(f)
   lhs = nout == 1 ? first(outputs) : Expr(:tuple, outputs...)
-  rhs = nin == 0 ? value : Expr(:call, value, inputs...)
+  rhs = generator_expr(f, inputs, state)
   Block(Expr(:(=), lhs, rhs), inputs, outputs)
 end
 
@@ -76,7 +61,7 @@ end
 function compile_block(f::HomExpr{:otimes}, inputs::Vector,
                        state::CompileState)::Block
   code = Expr(:block)
-  outputs = []
+  outputs = empty(inputs)
   i = 1
   for g in args(f)
     nin = ndims(dom(g))
@@ -104,7 +89,30 @@ end
 
 function compile_block(f::HomExpr{:delete}, inputs::Vector,
                        state::CompileState)::Block
-  Block(Expr(:block), inputs, [])
+  Block(Expr(:block), inputs, empty(inputs))
+end
+
+""" Generate Julia expression for evaluation of morphism generator.
+"""
+function generator_expr(f::HomExpr{:generator}, inputs::Vector,
+                        state::CompileState)
+  # By default, treat even nullary generators as functions, not constants.
+  value = first(f)
+  Expr(:call, value::Symbol, inputs...)
+end
+
+""" Generate a fresh variable (symbol).
+
+This is basically `gensym` with local, not global, symbol counting.
+"""
+function genvar(state::CompileState)::Symbol
+  first(genvars(state, 1))
+end
+function genvars(state::CompileState, n::Int)::Vector{Symbol}
+  nvars = state.nvars
+  vars = [ Symbol("v$(nvars+i)") for i in 1:n ]
+  state.nvars = nvars + n
+  return vars
 end
 
 end

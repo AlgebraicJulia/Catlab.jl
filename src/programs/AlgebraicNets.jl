@@ -21,7 +21,7 @@ import ...Syntax: show_latex, show_unicode
 using ...WiringDiagrams: WiringLayer
 import ...Graphics.TikZWiringDiagrams: box, wires, rect, junction_circle
 using ..JuliaPrograms
-import ..JuliaPrograms: compile_block, genvar, genvars
+import ..JuliaPrograms: compile_block, genvar, genvars, generator_expr
 
 # Syntax
 ########
@@ -76,13 +76,6 @@ mutable struct AlgebraicNetState <: CompileState
   constants_sym::Symbol
   AlgebraicNetState(; nvars=0, constants=Dict{Symbol,Int}(), constants_sym=Symbol()) =
     new(nvars, constants, constants_sym)
-end
-
-""" Generate a constant (symbol or expression).
-"""
-function genconst(state::AlgebraicNetState, name::Symbol)
-  i = get!(state.constants, name, length(state.constants)+1)
-  state.constants_sym == Symbol() ? name : :($(state.constants_sym)[$i])
 end
 
 """ Compile an algebraic network into a Julia function.
@@ -176,23 +169,6 @@ function compile_block(f::AlgebraicNet.Hom;
   return (block, constants)
 end
 
-function compile_block(f::AlgebraicNet.Hom{:generator}, inputs::Vector,
-                       state::AlgebraicNetState)::Block
-  nin, nout = ndims(dom(f)), ndims(codom(f))
-  @assert length(inputs) == nin
-  outputs = genvars(state, nout)
-  
-  value = first(f)
-  lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
-  rhs = if nin == 0
-    isa(value, Symbol) ? genconst(state, value) : value
-  else
-    # FIXME: Broadcast by default?
-    Expr(:(.), value, Expr(:tuple, inputs...))
-  end
-  Block(Expr(:(=), lhs, rhs), inputs, outputs)
-end
-
 function compile_block(f::AlgebraicNet.Hom{:linear}, inputs::Vector,
                        state::AlgebraicNetState)::Block
   nin, nout = ndims(dom(f)), ndims(codom(f))
@@ -242,6 +218,20 @@ function compile_block(f::AlgebraicNet.Hom{:create}, inputs::Vector,
   Block(code, inputs, outputs)
 end
 
+""" Generate Julia expression for morphism generator in algebraic net.
+"""
+function generator_expr(f::AlgebraicNet.Hom{:generator}, inputs::Vector,
+                        state::AlgebraicNetState)
+  value = first(f)
+  if isempty(inputs)
+    # If nullary, a constant, possibly symbolic.
+    isa(value, Symbol) ? genconst(state, value) : value
+  else
+    # Otherwise, a broadcasting function call.
+    Expr(:(.), value, Expr(:tuple, inputs...))
+  end
+end
+
 """ Generate Julia expression for single or multiple assignment.
 """
 function multiple_assign_expr(lhs::Vector, rhs::Vector)::Expr
@@ -265,6 +255,15 @@ function sum_expr(T::Type, terms::Vector)
   end
 end
 sum_expr(terms::Vector) = sum_expr(Float64, terms)
+
+""" Generate a constant (symbol or expression).
+
+See also `gensym` and `genvar`.
+"""
+function genconst(state::AlgebraicNetState, name::Symbol)
+  i = get!(state.constants, name, length(state.constants)+1)
+  state.constants_sym == Symbol() ? name : :($(state.constants_sym)[$i])
+end
 
 # Evaluation
 ############
