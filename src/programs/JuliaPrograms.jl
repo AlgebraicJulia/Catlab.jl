@@ -25,8 +25,9 @@ end
 """
 abstract type CompileState end
 
-struct SimpleCompileState
-  nvars::Int 
+mutable struct SimpleCompileState <: CompileState
+  nvars::Int
+  SimpleCompileState(; nvars::Int=0) = new(nvars)
 end
 
 function compile_block(f::HomExpr{:generator}, inputs::Vector,
@@ -106,13 +107,10 @@ end
 This is basically `gensym` with local, not global, symbol counting.
 """
 function genvar(state::CompileState)::Symbol
-  first(genvars(state, 1))
+  Symbol(string("v", state.nvars += 1))
 end
 function genvars(state::CompileState, n::Int)::Vector{Symbol}
-  nvars = state.nvars
-  vars = [ Symbol("v$(nvars+i)") for i in 1:n ]
-  state.nvars = nvars + n
-  return vars
+  Symbol[ genvar(state) for i in 1:n ]
 end
 
 end
