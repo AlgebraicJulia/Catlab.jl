@@ -4,11 +4,15 @@ This module allows morphisms in a symmetric monoidal category to be converted to
 and from programs in a subset of the Julia language.
 """
 module JuliaPrograms
-export Block, CompileState, compile, compile_expr, compile_block
+export Block, CompileState, compile, compile_expr, compile_block,
+  @parse_wiring_diagram, parse_wiring_diagram
+
+using Match
 
 using ...Catlab
 using ...Doctrines: ObExpr, HomExpr, dom, codom
 import ...Meta: Expr0, concat_expr
+using ...WiringDiagrams: WiringDiagram, Box, Port, add_box!, add_wires!
 
 # Compilation
 #############
@@ -120,7 +124,7 @@ end
 function to_function_expr(block::Block; name::Symbol=Symbol(),
                           arg_types::Vector{<:Expr0}=Symbol[],
                           kwargs::Vector{<:Expr0}=Symbol[])
-  # Create call expression (function header).
+  # Create list of call arguments.
   args = block.inputs
   if !isempty(arg_types)
     @assert length(args) == length(arg_types)
@@ -130,6 +134,8 @@ function to_function_expr(block::Block; name::Symbol=Symbol(),
     kwargs = [ (kw isa Expr ? kw : Expr(:kw, kw, nothing)) for kw in kwargs ]
     args = [ Expr(:parameters, kwargs...); args ]
   end
+  
+  # Create call expression (function header).
   call_expr = if name == Symbol() # Anonymous function
     Expr(:tuple, args...)
   else # Named function
@@ -177,6 +183,45 @@ function genvar(state::CompileState; prefix::Symbol=:v)::Symbol
 end
 function genvars(state::CompileState, n::Int; prefix::Symbol=:v)::Vector{Symbol}
   Symbol[ genvar(state; prefix=prefix) for i in 1:n ]
+end
+
+# Parsing
+#########
+
+""" Parse a wiring diagram from Julia code.
+"""
+macro parse_wiring_diagram(pres, call, body)
+  Expr(:call, GlobalRef(JuliaPrograms, :parse_wiring_diagram),
+       esc(pres), esc(Expr(:quote, call)), esc(Expr(:quote, body)))
+end
+
+""" Parse a wiring diagram from a Julia function expression.
+"""
+function parse_wiring_diagram(pres::Presentation, expr::Expr)::WiringDiagram
+  @match expr begin
+    Expr(:function, [call, body]) => parse_wiring_diagram(pres, call, body)
+    Expr(:->, [call, body]) => parse_wiring_diagram(pres, call, body)
+    _ => error("Not a function or lambda expression")
+  end
+end
+
+function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::WiringDiagram
+  args = @match call begin
+    Expr(:call, [name, args...]) => args
+    Expr(:tuple, args) => args
+    Expr(:(::), _) => [call]
+    _::Symbol => [call]
+    _ => error("Invalid function signature: $call")
+  end
+  inputs = map(args) do arg
+    name = @match arg begin
+      Expr(:(::), [name::Symbol, type::Symbol]) => type
+      _ => error("Argument $arg is not simply typed")
+    end
+    generator(pres, name)
+  end
+  diagram = WiringDiagram(inputs, empty(inputs))
+  diagram
 end
 
 end
