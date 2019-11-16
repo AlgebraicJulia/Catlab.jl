@@ -39,10 +39,11 @@ end
 """ Compile a morphism expression into a Julia function expression.
 """
 function compile_expr(f::HomExpr; name::Symbol=Symbol(),
-                      args::Vector{Symbol}=Symbol[])
+                      args::Vector{Symbol}=Symbol[],
+                      arg_types::Vector{<:Expr0}=Symbol[])
   inputs = isempty(args) ? input_exprs(ndims(dom(f)), kind=:variables) : args
   block = compile_block(f, inputs)
-  to_function_expr(block; name=name)
+  to_function_expr(block; name=name, arg_types=arg_types)
 end
 
 """ Compile a morphism expression into a block of Julia code.
@@ -116,18 +117,23 @@ end
 
 """ Convert a block of Julia code into a Julia function expression.
 """
-function to_function_expr(block::Block; name::Symbol=Symbol(), kwargs::Vector=[])
+function to_function_expr(block::Block; name::Symbol=Symbol(),
+                          arg_types::Vector{<:Expr0}=Symbol[],
+                          kwargs::Vector{<:Expr0}=Symbol[])
   # Create call expression (function header).
-  arguments = if isempty(kwargs)
-    block.inputs
-  else
+  args = block.inputs
+  if !isempty(arg_types)
+    @assert length(args) == length(arg_types)
+    args = [ Expr(:(::), arg, type) for (arg, type) in zip(args, arg_types) ]
+  end
+  if !isempty(kwargs)
     kwargs = [ (kw isa Expr ? kw : Expr(:kw, kw, nothing)) for kw in kwargs ]
-    [ Expr(:parameters, kwargs...); block.inputs ]
+    args = [ Expr(:parameters, kwargs...); args ]
   end
   call_expr = if name == Symbol() # Anonymous function
-    Expr(:tuple, arguments...)
+    Expr(:tuple, args...)
   else # Named function
-    Expr(:call, name, arguments...)
+    Expr(:call, name, args...)
   end
   
   # Create function body.
