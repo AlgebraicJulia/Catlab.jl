@@ -47,10 +47,13 @@ function generators(pres::Presentation, typ::Type)::Vector
   filter(x -> isa(x,typ), collect(pres.generators))
 end
 
-""" Retrieve a generator by name.
+""" Retrieve generators by name.
 """
 function generator(pres::Presentation{T}, name) where T
   pres.generators_by_name[convert(T, name)]
+end
+function generators(pres::Presentation, names)::Vector
+  [ generator(pres, name) for name in names ]
 end
 
 """ Does the presentation contain a generator with the given name?
