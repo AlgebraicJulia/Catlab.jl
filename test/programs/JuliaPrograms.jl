@@ -12,7 +12,7 @@ using Catlab.Programs.JuliaPrograms
   Z::Ob
   f::Hom(X,Y)
   g::Hom(Y,Z)
-  h::Hom(W,Z)
+  h::Hom(Z,W)
   l::Hom(otimes(Z,W),otimes(Y,X))
   m::Hom(otimes(X,Y),otimes(W,Z))
   n::Hom(otimes(W,Z),otimes(X,Y))
@@ -45,6 +45,14 @@ diagram = @parse_wiring_diagram C (x::X) begin
   return z
 end
 @test diagram == to_wiring_diagram(compose(f,g))
+
+diagram = @parse_wiring_diagram C (v::X) begin
+  v = f(v)
+  v = g(v)
+  v = h(v)
+  v
+end
+@test is_permuted_equal(diagram, to_wiring_diagram(compose(f,g,h)), [2,3,1])
 
 diagram = @parse_wiring_diagram C (x::X, y::Y) begin
   w, z = m(x, y)
@@ -94,6 +102,8 @@ test_roundtrip(otimes(f,h))
 test_roundtrip(compose(m,n))
 test_roundtrip(compose(l, braid(Y,X), m))
 test_roundtrip(compose(mcopy(X), otimes(f,f)))
-#test_roundtrip(compose(f, mcopy(Y), otimes(g,g))) # XXX: Isomorphic, not equal
+
+f = compose(f, mcopy(Y), otimes(g,g))
+@test is_permuted_equal(roundtrip(f), to_wiring_diagram(f), [2,3,1])
 
 end
