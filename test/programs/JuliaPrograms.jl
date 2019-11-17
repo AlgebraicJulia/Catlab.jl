@@ -82,4 +82,28 @@ diagram = @parse_wiring_diagram C (x::X) begin
 end
 @test diagram == to_wiring_diagram(compose(d,c))
 
+# Roundtrip
+###########
+
+""" Convert morphism expression to Julia code and then back to wiring diagram.
+"""
+function roundtrip(f::HomExpr)::WiringDiagram
+  expr = compile_expr(f, arg_types=first.(collect(dom(f))))
+  parse_wiring_diagram(C, expr)
+end
+
+function test_roundtrip(f::HomExpr)
+  @test roundtrip(f) == to_wiring_diagram(f)
+end
+
+f, g, h, l, m, n = generators(C, [:f, :g, :h, :l, :m, :n])
+
+test_roundtrip(f)
+test_roundtrip(compose(f,g))
+test_roundtrip(otimes(f,h))
+test_roundtrip(compose(m,n))
+test_roundtrip(compose(l, braid(Y,X), m))
+test_roundtrip(compose(mcopy(X), otimes(f,f)))
+#test_roundtrip(compose(f, mcopy(Y), otimes(g,g))) # XXX: Isomorphic, not equal
+
 end

@@ -8,6 +8,7 @@ export Block, CompileState, compile, compile_expr, compile_block,
   @parse_wiring_diagram, parse_wiring_diagram
 
 using Base: invokelatest
+using Compat
 using Match
 
 using ...Catlab
