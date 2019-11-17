@@ -33,14 +33,10 @@ X, Y, f, g, h = generators(C, [:X, :Y, :f, :g, :h])
 
 f, g, m, n = generators(C, [:f, :g, :m, :n])
 
-diagram = @parse_wiring_diagram C (x::X) begin
-  f(x)
-end
+diagram = @parse_wiring_diagram(C, (x::X) -> f(x))
 @test diagram == to_wiring_diagram(f)
 
-diagram = @parse_wiring_diagram C (x::X) begin
-  g(f(x))
-end
+diagram = @parse_wiring_diagram(C, (x::X) -> g(f(x)))
 @test diagram == to_wiring_diagram(compose(f,g))
 
 diagram = @parse_wiring_diagram C (x::X) begin
@@ -57,28 +53,22 @@ diagram = @parse_wiring_diagram C (x::X, y::Y) begin
 end
 @test diagram == to_wiring_diagram(compose(m,n))
 
-diagram = @parse_wiring_diagram C (x::X, y::Y) begin
-  n(m(x,y))
-end
+diagram = @parse_wiring_diagram(C, (x::X, y::Y) -> n(m(x,y)))
 @test diagram == to_wiring_diagram(compose(m,n))
 
 I = munit(FreeCartesianCategory.Ob)
 c = add_generator!(C, Hom(:c, I, X))
 d = add_generator!(C, Hom(:d, X, I))
 
-diagram = @parse_wiring_diagram C () begin
-  c()
-end
+diagram = @parse_wiring_diagram(C, () -> c())
 @test diagram == to_wiring_diagram(c)
+
+diagram = @parse_wiring_diagram(C, (x::X) -> c(d(x)))
+@test diagram == to_wiring_diagram(compose(d,c))
 
 diagram = @parse_wiring_diagram C (x::X) begin
   d(x)
   c()
-end
-@test diagram == to_wiring_diagram(compose(d,c))
-
-diagram = @parse_wiring_diagram C (x::X) begin
-  c(d(x))
 end
 @test diagram == to_wiring_diagram(compose(d,c))
 

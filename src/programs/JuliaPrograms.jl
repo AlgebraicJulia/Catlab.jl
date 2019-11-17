@@ -192,6 +192,11 @@ end
 
 """ Parse a wiring diagram from Julia code.
 """
+macro parse_wiring_diagram(pres, expr)
+  Expr(:call, GlobalRef(JuliaPrograms, :parse_wiring_diagram),
+       esc(pres), esc(Expr(:quote, expr)))
+end
+
 macro parse_wiring_diagram(pres, call, body)
   Expr(:call, GlobalRef(JuliaPrograms, :parse_wiring_diagram),
        esc(pres), esc(Expr(:quote, call)), esc(Expr(:quote, body)))
