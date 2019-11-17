@@ -7,12 +7,13 @@ module JuliaPrograms
 export Block, CompileState, compile, compile_expr, compile_block,
   @parse_wiring_diagram, parse_wiring_diagram
 
+using Base: invokelatest
 using Match
 
 using ...Catlab
 using ...Doctrines: ObExpr, HomExpr, dom, codom
 import ...Meta: Expr0, concat_expr
-using ...WiringDiagrams: WiringDiagram, Box, Port, add_box!, add_wires!
+using ...WiringDiagrams
 
 # Compilation
 #############
@@ -206,22 +207,107 @@ function parse_wiring_diagram(pres::Presentation, expr::Expr)::WiringDiagram
 end
 
 function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::WiringDiagram
-  args = @match call begin
+  # Parse argument names and types from call expression.
+  call_args = @match call begin
     Expr(:call, [name, args...]) => args
     Expr(:tuple, args) => args
     Expr(:(::), _) => [call]
     _::Symbol => [call]
     _ => error("Invalid function signature: $call")
   end
-  inputs = map(args) do arg
-    name = @match arg begin
-      Expr(:(::), [name::Symbol, type::Symbol]) => type
+  parsed_args = map(call_args) do arg
+    @match arg begin
+      Expr(:(::), [name::Symbol, type::Symbol]) => (name, type)
       _ => error("Argument $arg is not simply typed")
     end
-    generator(pres, name)
   end
+  
+  # Compile a new function with rewritten function calls.
+  new_call = Expr(:tuple, recorder_symbol, first.(parsed_args)...)
+  new_body = rename_calls(body) do name
+    Expr(:call, recorder_symbol, QuoteNode(name))
+  end
+  func_expr = Expr(:function, new_call, new_body)
+  func = eval(func_expr)
+  
+  # Evaluate the function and record the function calls.
+  inputs = last.(parsed_args)
+  @assert all(has_generator(pres, name) for name in inputs)
   diagram = WiringDiagram(inputs, empty(inputs))
+  v_in, v_out = input_id(diagram), output_id(diagram)
+  in_ports = [ Port(v_in, OutputPort, i) for i in eachindex(inputs) ]
+  recorder = name ->
+    (args...) -> record_call!(diagram, generator(pres, name), args...)
+  value = invokelatest(func, recorder, in_ports...)
+  
+  # Add outgoing wires for return values.
+  out_ports = collect_call_args(Port, [value])
+  diagram.output_ports = [ port_value(diagram, port) for port in out_ports ]
+  add_wires!(diagram, [
+    port => Port(v_out, InputPort, i) for (i, port) in enumerate(out_ports)
+  ])
   diagram
 end
+
+""" Recursively rename functions in function calls.
+"""
+function rename_calls(rename::Function, expr)
+  @match expr begin
+    Expr(:call, [name::Symbol, args...]) =>
+      Expr(:call, rename(name), (rename_calls(rename, arg) for arg in args)...)
+    Expr(head, args) =>
+      Expr(head, (rename_calls(rename, arg) for arg in args)...)
+    _ => expr
+  end
+end
+
+""" Record a Julia function call as a box in a wiring diagram.
+"""
+function record_call!(diagram::WiringDiagram, f::HomExpr, args...)
+  # Add a new box for the call.
+  box = Box(f)
+  v = add_box!(diagram, box)
+
+  # Adding incoming wires.
+  inputs = input_ports(box)
+  arg_ports = collect_call_args(Port, args)
+  @assert length(arg_ports) == length(inputs)
+  add_wires!(diagram, [
+    Wire(port => Port(v, InputPort, i)) for (i, port) in enumerate(arg_ports)
+  ])
+  
+  # Return output ports.
+  outputs = output_ports(box)
+  return_ports = [ Port(v, OutputPort, i) for i in eachindex(outputs) ]
+  make_return_value(return_ports)
+end
+
+""" Collect all arguments into vector, allowing for multiplicity.
+"""
+function collect_call_args(T::Type, args)::Vector
+  reduce(vcat, map(args) do arg
+    if isnothing(arg)  # Nullary case.
+      T[]
+    elseif arg isa T   # Unary case.
+      [arg]
+    else               # General case.
+      collect(arg)
+    end
+  end; init=T[])
+end
+
+""" Return a zero, one, or more values, following Julia conventions.
+"""
+function make_return_value(values)
+  if isempty(values)          # Nullary case.
+    nothing
+  elseif length(values) == 1  # Unary case.
+    first(values)
+  else
+    Tuple(values)             # General case.
+  end
+end
+
+const recorder_symbol = Symbol("##recorder")
 
 end
