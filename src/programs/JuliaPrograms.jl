@@ -228,15 +228,10 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
     end
   end
   
-  # Compile a new function with rewritten function calls.
-  new_call = Expr(:tuple, recorder_symbol, first.(parsed_args)...)
-  new_body = rename_calls(body) do name
-    Expr(:call, recorder_symbol, QuoteNode(name))
-  end
-  func_expr = Expr(:function, new_call, new_body)
+  # Compile...
+  func_expr = compile_recording_expr(first.(parsed_args), body)
   func = eval(func_expr)
-  
-  # Evaluate the function and record the function calls.
+  # ...and then evaluate function that records the function calls.
   inputs = last.(parsed_args)
   @assert all(has_generator(pres, name) for name in inputs)
   diagram = WiringDiagram(inputs, empty(inputs))
@@ -255,14 +250,26 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
   diagram
 end
 
-""" Recursively rename functions in function calls.
+""" Generate a Julia function expression that will record function calls.
 """
-function rename_calls(rename::Function, expr)
+function compile_recording_expr(args::Vector{Symbol}, body::Expr;
+                                recorder::Symbol=Symbol("##recorder"))::Expr
+  Expr(:function,
+    Expr(:tuple, recorder, args...),
+    rewrite_function_names(body) do name
+      Expr(:call, recorder, QuoteNode(name))
+    end)
+end
+
+""" Recursively rewrite function names in function call expressions.
+"""
+function rewrite_function_names(rewrite::Function, expr)
   @match expr begin
     Expr(:call, [name::Symbol, args...]) =>
-      Expr(:call, rename(name), (rename_calls(rename, arg) for arg in args)...)
+      Expr(:call, rewrite(name),
+           (rewrite_function_names(rewrite, arg) for arg in args)...)
     Expr(head, args) =>
-      Expr(head, (rename_calls(rename, arg) for arg in args)...)
+      Expr(head, (rewrite_function_names(rewrite, arg) for arg in args)...)
     _ => expr
   end
 end
@@ -313,7 +320,5 @@ function make_return_value(values)
     Tuple(values)             # General case.
   end
 end
-
-const recorder_symbol = Symbol("##recorder")
 
 end
