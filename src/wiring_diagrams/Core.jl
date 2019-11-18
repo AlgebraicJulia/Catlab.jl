@@ -26,7 +26,7 @@ export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
   wires, has_wire, graph, add_box!, add_boxes!, add_wire!, add_wires!,
   rem_box!, rem_boxes!, rem_wire!, rem_wires!, validate_ports,
   all_neighbors, neighbors, outneighbors, inneighbors, in_wires, out_wires,
-  substitute!, encapsulate!,
+  substitute, substitute!, encapsulate!,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create,
   permute, is_permuted_equal
 
@@ -432,6 +432,32 @@ function rem_wires!(f::WiringDiagram, src::Int, tgt::Int)
   rem_edge!(f.graph, Edge(src, tgt))
 end
 
+""" Add the contents of one wiring diagram into another wiring diagram.
+
+By the "contents" of the inserted diagram we mean its interior boxes and wires.
+Thus, the inserted diagram's outer box, and any wires going in or out of it, are
+ignored.
+"""
+function add_diagram_contents!(d::WiringDiagram, other::WiringDiagram)
+  # Add all boxes in second diagram.
+  vmap = Dict{Int,Int}()
+  for v in box_ids(other)
+    vmap[v] = add_box!(d, box(other, v))
+  end
+  
+  # Add all non-boundary wires in second diagram.
+  boundary = (input_id(other), output_id(other))
+  for wire in wires(other)
+    src, tgt = wire.source.box, wire.target.box
+    if src ∉ boundary && tgt ∉ boundary
+      src_port = set_box(wire.source, vmap[src])
+      tgt_port = set_box(wire.target, vmap[tgt])
+      add_wire!(d, Wire(src_port, tgt_port))
+    end
+  end
+  vmap
+end
+
 """ Check compatibility of source and target ports.
 
 Throws a `PortValueError` when the ports are incompatible. The default
@@ -530,69 +556,101 @@ end
 
 # Substition.
 
-""" Substitute a wiring diagram for a vertex.
+""" Substitute wiring diagrams for boxes.
+
+Performs one or more substitutions. When performing multiple substitutions, the
+substitutions are simultaneous.
 
 This operation is the operadic composition of wiring diagrams.
 """
-function substitute!(d::WiringDiagram, v::Int, sub::WiringDiagram)
-  _substitute_insert!(d, v, sub)
-  rem_box!(d, v)
-  return d
-end
-function substitute!(d::WiringDiagram, v::Int)
-  substitute!(d, v, box(d,v)::WiringDiagram)
+function substitute(d::WiringDiagram, v::Int)
+  substitute(d, v, box(d,v)::WiringDiagram)
 end
 
-""" Simultaneous substitution of wiring diagrams for vertices.
-"""
-function substitute!(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagram})
-  for (v,sub) in zip(vs, subs)
-    _substitute_insert!(d, v, sub)
+function substitute(d::WiringDiagram, v::Int, sub::WiringDiagram)
+  substitute(d, [v], [sub])
+end
+
+function substitute(d::WiringDiagram, vs::Vector{Int})
+  substitute(d, vs, WiringDiagram[ box(d,v) for v in vs ])
+end
+
+function substitute(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagram})
+  @assert length(vs) == length(subs)
+  σ = sortperm(vs)
+  vs, subs = vs[σ], subs[σ]
+  
+  #
+  substituted = WiringDiagram(input_ports(d), output_ports(d))
+  vmap = Dict{Int,Tuple{Bool,Int}}(
+    input_id(d) => (false, input_id(substituted)),
+    output_id(d) => (false, output_id(substituted)),
+  )
+  sub_maps = Vector{Dict{Int,Int}}(undef, length(subs))
+  pending_vs = sort!(box_ids(d))
+  for (i, (v, sub)) in enumerate(zip(vs, subs))
+    k = searchsortedfirst(pending_vs, v)
+    for u in pending_vs[1:k-1]
+      vmap[u] = (false, add_box!(substituted, box(d, u)))
+    end
+    @assert pending_vs[k] == v
+    vmap[v] = (true, i)
+    sub_maps[i] = add_diagram_contents!(substituted, sub)
+    pending_vs = pending_vs[k+1:end]
   end
-  rem_boxes!(d, vs)
-  return d
-end
-function substitute!(d::WiringDiagram, vs::Vector{Int})
-  substitute!(d, vs, WiringDiagram[ box(d,v) for v in vs ])
-end
-
-""" The insertion phase of a substitution operation.
-"""
-function _substitute_insert!(d::WiringDiagram, v::Int, sub::WiringDiagram)
-  # Add new boxes from sub-diagram.
-  sub_map = Dict{Int,Int}()
-  for u in box_ids(sub)
-    sub_map[u] = add_box!(d, box(sub,u))
+  for u in pending_vs
+    vmap[u] = (false, add_box!(substituted, box(d, u)))
   end
   
-  # Add new wires from sub-diagram.
-  for wire in wires(sub)
-    src = get(sub_map, wire.source.box, 0)
-    tgt = get(sub_map, wire.target.box, 0)
-    
-    # Special case: wire from input port to output port.
-    if wire.source.box == input_id(sub) && wire.target.box == output_id(sub)
-      for in_wire in in_wires(d, v, wire.source.port)
-        for out_wire in out_wires(d, v, wire.target.port)
-          add_wire!(d, Wire(in_wire.source, out_wire.target))
+  #
+  for wire in wires(d)
+    is_src_sub, src = vmap[wire.source.box]
+    is_tgt_sub, tgt = vmap[wire.target.box]
+    # Case 1: 
+    if is_src_sub && is_tgt_sub
+      src_sub, src_map = subs[src], sub_maps[src]
+      tgt_sub, tgt_map = subs[tgt], sub_maps[tgt]
+      for in_wire in in_wires(src_sub, output_id(src_sub), wire.source.port)
+        src_port = set_box(in_wire.source, src_map[in_wire.source.box])
+        for out_wire in out_wires(tgt_sub, input_id(tgt_sub), wire.target.port)
+          tgt_port = set_box(out_wire.target, tgt_map[out_wire.target.box])
+          add_wire!(substituted, Wire(src_port, tgt_port))
         end
       end
-    # Special case: wire from input port to internal box.
-    elseif wire.source.box == input_id(sub)
-      for in_wire in in_wires(d, v, wire.source.port)
-        add_wire!(d, Wire(in_wire.source, set_box(wire.target, tgt)))
-      end  
-    # Special case: wire from internal box to output port.
-    elseif wire.target.box == output_id(sub)
-      for out_wire in out_wires(d, v, wire.target.port)
-        add_wire!(d, Wire(set_box(wire.source, src), out_wire.target))
+    # Case 2: 
+    elseif is_src_sub
+      src_sub, src_map = subs[src], sub_maps[src]
+      tgt_port = set_box(wire.target, tgt)
+      for in_wire in in_wires(src_sub, output_id(src_sub), wire.source.port)
+        src_port = set_box(in_wire.source, src_map[in_wire.source.box])
+        add_wire!(substituted, Wire(src_port, tgt_port))
       end
-    # Default case: wire between two internal boxes.
+    # Case 3: 
+    elseif is_tgt_sub
+      src_port = set_box(wire.source, src)
+      tgt_sub, tgt_map = subs[tgt], sub_maps[tgt]
+      for out_wire in out_wires(tgt_sub, input_id(tgt_sub), wire.target.port)
+        tgt_port = set_box(out_wire.target, tgt_map[out_wire.target.box])
+        add_wire!(substituted, Wire(src_port, tgt_port))
+      end
+    # Case 4: 
     else
-      add_wire!(d, Wire(set_box(wire.source, src), set_box(wire.target, tgt)))
+      src_port = set_box(wire.source, src)
+      tgt_port = set_box(wire.target, tgt)
+      add_wire!(substituted, Wire(src_port, tgt_port))
     end
   end
-  return d
+  
+  substituted
+end
+
+""" Mutating variant of `substitute`.
+
+Note: At this time, this function does not actually mutate its argument.
+However, that is subject to change.
+"""
+function substitute!(d::WiringDiagram, args...)
+  substitute(d, args...)
 end
 
 # Encapsulation.
@@ -806,7 +864,6 @@ Ports(expr::ObExpr) = Ports(collect_values(expr))
     add_wires!(h, ((fv,i) => (gv,i) for i in eachindex(codom(f))))
     add_wires!(h, ((gv,i) => (output_id(h),i) for i in eachindex(codom(g))))
     substitute!(h, [fv,gv])
-    return h
   end
   
   otimes(A::Ports, B::Ports) = Ports([A.ports; B.ports])
@@ -822,7 +879,6 @@ Ports(expr::ObExpr) = Ports(collect_values(expr))
     add_wires!(h, (fv,i) => (output_id(h),i) for i in eachindex(codom(f)))
     add_wires!(h, (gv,i) => (output_id(h),i+n) for i in eachindex(codom(g)))
     substitute!(h, [fv,gv])
-    return h
   end
   
   function braid(A::Ports, B::Ports)
@@ -830,7 +886,7 @@ Ports(expr::ObExpr) = Ports(collect_values(expr))
     m, n = length(A), length(B)
     add_wires!(h, ((input_id(h),i) => (output_id(h),i+n) for i in 1:m))
     add_wires!(h, ((input_id(h),i+m) => (output_id(h),i) for i in 1:n))
-    return h
+    h
   end
 
   mcopy(A::Ports) = mcopy(A, 2)

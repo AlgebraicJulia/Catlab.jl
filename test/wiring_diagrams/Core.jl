@@ -123,7 +123,7 @@ add_wires!(d, Pair[
 ])
 @test boxes(d) == [ Box(f), sub ]
 @test boxes(sub) == [ Box(g), Box(h) ]
-substitute!(d, subv)
+d = substitute!(d, subv)
 @test nboxes(d) == 3
 @test Set(boxes(d)) == Set([ Box(f), Box(g), Box(h) ])
 box_map = Dict(box(d,v).value => v for v in box_ids(d))
