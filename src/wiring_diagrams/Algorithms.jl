@@ -93,7 +93,6 @@ function rem_junctions!(d::WiringDiagram)
     to_wiring_diagram(layer, input_ports(junction), output_ports(junction))
   end
   substitute!(d, junction_ids, junction_diagrams)
-  return d
 end
 
 """ Put a wiring diagram for a cartesian category into normal form.

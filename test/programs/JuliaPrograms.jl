@@ -52,7 +52,7 @@ diagram = @parse_wiring_diagram C (v::X) begin
   v = h(v)
   v
 end
-@test is_permuted_equal(diagram, to_wiring_diagram(compose(f,g,h)), [2,3,1])
+@test diagram == to_wiring_diagram(compose(f,g,h))
 
 diagram = @parse_wiring_diagram C (x::X, y::Y) begin
   w, z = m(x, y)
@@ -102,8 +102,6 @@ test_roundtrip(otimes(f,h))
 test_roundtrip(compose(m,n))
 test_roundtrip(compose(l, braid(Y,X), m))
 test_roundtrip(compose(mcopy(X), otimes(f,f)))
-
-f = compose(f, mcopy(Y), otimes(g,g))
-@test is_permuted_equal(roundtrip(f), to_wiring_diagram(f), [2,3,1])
+test_roundtrip(compose(f, mcopy(Y), otimes(g,g)))
 
 end
