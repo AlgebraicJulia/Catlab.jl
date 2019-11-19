@@ -553,9 +553,9 @@ function substitute(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagra
   # In outline, the algorithm is:
   #
   # 1. Create an empty wiring diagram.
-  # 2. Add *all* boxes of original diagram and diagrams to be substituted
+  # 2. Add *all* boxes of original diagram and the diagrams to be substituted
   #    (in the appropriate order).
-  # 3. Add *all* wires of original diagram and diagrams to be substituted.
+  # 3. Add *all* wires of original diagram and the diagrams to be substituted.
   # 4. Remove the boxes that were substituted (hence also removing extraneous
   #    wires from step 3).
   #
@@ -563,29 +563,25 @@ function substitute(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagra
   # problem of *instantaneous wires*. Some authors ban instantaneous wires, but
   # want to allow them because they can represent the identity, braidings, etc.
   @assert length(vs) == length(subs)
-  σ = sortperm(vs)
-  vs, subs = vs[σ], subs[σ]
   result = WiringDiagram(input_ports(d), output_ports(d))
   
   # Add boxes by interleaving, in the correct order, the non-substituted boxes
   # of the original diagram and the internal boxes of the substituted diagrams.
   # At the very end, add the substituted boxes too.
   vmap = Dict(input_id(d) => input_id(result), output_id(d) => output_id(result))
-  sub_maps = [ Dict{Int,Int}() for i in eachindex(subs) ]
-  pending_vs = box_ids(d) # Already sorted.
-  for (v, sub, sub_map) in zip(vs, subs, sub_maps)
-    k = searchsortedfirst(pending_vs, v)
-    @assert pending_vs[k] == v
-    for u in pending_vs[1:k-1]
-      vmap[u] = add_box!(result, box(d, u))
+  sub_maps = Dict(zip(vs, ((sub, Dict{Int,Int}()) for sub in subs)))
+  for v in box_ids(d)
+    if haskey(sub_maps, v)
+      sub, sub_map = sub_maps[v]
+      for u in box_ids(sub)
+        sub_map[u] = add_box!(result, box(sub, u))
+      end
+    else
+      vmap[v] = add_box!(result, box(d, v))
     end
-    for u in box_ids(sub)
-      sub_map[u] = add_box!(result, box(sub, u))
-    end
-    pending_vs = pending_vs[k+1:end]
   end
-  for u in [pending_vs; vs]
-    vmap[u] = add_box!(result, box(d, u))
+  for v in vs
+    vmap[v] = add_box!(result, box(d, v))
   end
   
   # Add the wires of the original diagram, then add the internal wires of the
@@ -595,8 +591,8 @@ function substitute(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagra
       set_box(wire.source, vmap[wire.source.box]),
       set_box(wire.target, vmap[wire.target.box])))
   end
-  for (v, sub, sub_map) in zip(vs, subs, sub_maps)
-    _substitute_wires!(result, vmap[v], sub, sub_map)
+  for v in vs
+    _substitute_wires!(result, vmap[v], sub_maps[v]...)
   end
   
   # Finally, remove the substituted boxes. Because they were added last, this
