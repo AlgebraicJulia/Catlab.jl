@@ -22,7 +22,7 @@ using DataStructures: OrderedDict
 import JSON
 
 using ..WiringDiagramCore, ..WiringDiagramSerialization
-import ..WiringDiagramCore: PortEdgeData
+import ..WiringDiagramCore: PortData
 
 const JSONObject = OrderedDict{String,Any}
 
@@ -167,7 +167,7 @@ function parse_json_box(
 end
 
 function parse_json_ports(PortValue::Type, node::AbstractDict)
-  ports = Dict{Tuple{String,String},PortEdgeData}()
+  ports = Dict{Tuple{String,String},PortData}()
   input_ports, output_ports = PortValue[], PortValue[]
   node_id = node["id"]
   for port in node["ports"]
@@ -176,10 +176,10 @@ function parse_json_ports(PortValue::Type, node::AbstractDict)
     value = parse_json_graph_data(PortValue, port)
     if port_kind == "input"
       push!(input_ports, value)
-      ports[(node_id, port_id)] = PortEdgeData(InputPort, length(input_ports))
+      ports[(node_id, port_id)] = PortData(InputPort, length(input_ports))
     elseif port_kind == "output"
       push!(output_ports, value)
-      ports[(node_id, port_id)] = PortEdgeData(OutputPort, length(output_ports))
+      ports[(node_id, port_id)] = PortData(OutputPort, length(output_ports))
     else
       error("Invalid port kind: $portkind")
     end
