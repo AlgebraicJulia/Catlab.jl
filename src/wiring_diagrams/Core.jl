@@ -19,14 +19,14 @@ intermediate representation that can be straightforwardly serialized to and from
 GraphML or translated into Graphviz or other declarative diagram languages.
 """
 module WiringDiagramCore
-
 export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
   PortKind, InputPort, OutputPort, input_ports, output_ports, port_value,
-  input_id, output_id, singleton_diagram, boxes, box_ids, nboxes, nwires, box,
-  wires, has_wire, graph, add_box!, add_boxes!, add_wire!, add_wires!,
-  rem_box!, rem_boxes!, rem_wire!, rem_wires!, validate_ports,
+  input_id, output_id, boxes, box_ids, nboxes, nwires, box, wires, has_wire,
+  graph, add_box!, add_boxes!, add_wire!, add_wires!, rem_box!, rem_boxes!,
+  rem_wire!, rem_wires!, validate_ports,
   all_neighbors, neighbors, outneighbors, inneighbors, in_wires, out_wires,
-  substitute, encapsulate, encapsulated_subdiagram,
+  singleton_diagram, induced_subdiagram, encapsulated_subdiagram,
+  substitute, encapsulate,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create,
   permute, is_permuted_equal
 
@@ -298,19 +298,6 @@ end
 # Low-level graph interface
 ###########################
 
-# Constructors.
-
-""" Create wiring diagram with a single box connected to the outer ports.
-"""
-function singleton_diagram(box::AbstractBox)
-  inputs, outputs = input_ports(box), output_ports(box)
-  d = WiringDiagram(inputs, outputs)
-  v = add_box!(d, box)
-  add_wires!(d, ((input_id(d),i) => (v,i) for i in eachindex(inputs)))
-  add_wires!(d, ((v,i) => (output_id(d),i) for i in eachindex(outputs)))
-  return d
-end
-
 # Basic accessors.
 
 box(f::WiringDiagram, v::Int) = get_prop(f.graph, v, :box)
@@ -525,6 +512,39 @@ function out_wires(d::WiringDiagram, v::Int, port::Int)
   out_wires(d, Port(v, OutputPort, port))
 end
 
+# Other constructors.
+
+""" A wiring diagram with a single box connected to its outer ports.
+"""
+function singleton_diagram(box::AbstractBox)
+  inputs, outputs = input_ports(box), output_ports(box)
+  d = WiringDiagram(inputs, outputs)
+  v = add_box!(d, box)
+  add_wires!(d, ((input_id(d),i) => (v,i) for i in eachindex(inputs)))
+  add_wires!(d, ((v,i) => (output_id(d),i) for i in eachindex(outputs)))
+  return d
+end
+
+""" The wiring diagram induced by a subset of its boxes.
+
+See also `encapsulated_subdiagram`.
+"""
+function induced_subdiagram(d::WiringDiagram, vs::Vector{Int})
+  sub = WiringDiagram(input_ports(d), output_ports(d))
+  vmap = Dict(input_id(d) => input_id(sub), output_id(d) => output_id(sub))
+  for v in vs
+    vmap[v] = add_box!(sub, box(d, v))
+  end
+  for wire in wires(d)
+    src, tgt = wire.source, wire.target
+    if haskey(vmap, src.box) && haskey(vmap, tgt.box)
+      add_wire!(sub,
+        Wire(set_box(src, vmap[src.box]), set_box(tgt, vmap[tgt.box])))
+    end
+  end
+  return sub
+end
+
 # Substitution and encapulsation
 ################################
 
@@ -703,6 +723,8 @@ will have at most one outgoing wire to the encapsulating outer box.
 
 2. A set of ports connected to the same outside (non-encapsulated) ports will be
 simplified into a single port of the encapsulating box.
+
+See also `induced_subdiagram`.
 """
 function encapsulated_subdiagram(d::WiringDiagram, vs::Vector{Int};
                                  discard_boxes::Bool=false, value::Any=nothing)

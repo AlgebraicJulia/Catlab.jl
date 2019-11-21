@@ -103,6 +103,26 @@ rem_wires!(d, fv, gv)
 rem_wire!(d, (input_id(d),1) => (fv,1))
 @test wires(d) == [ Wire((gv,1) => (output_id(d),1)) ]
 
+# Induced subgraph.
+d = WiringDiagram(A,D)
+fv, gv, hv = add_box!(d, f), add_box!(d, g), add_box!(d, h)
+add_wires!(d, Pair[
+  (input_id(d),1) => (fv,1),
+  (fv,1) => (gv,1),
+  (gv,1) => (hv,1),
+  (hv,1) => (output_id(d),1),
+])
+sub = WiringDiagram(A, D)
+fv, gv = add_box!(sub, f), add_box!(sub, g)
+add_wires!(sub, Pair[
+  (input_id(sub),1) => (fv,1),
+  (fv,1) => (gv,1),
+])
+@test induced_subdiagram(d, [fv, gv]) == sub
+
+# Substitution and encapulsation
+################################
+
 # Substitution
 f, g, h = Hom(:f,A,B), Hom(:g,B,C), Hom(:h,C,D)
 sub = WiringDiagram(B,D)
