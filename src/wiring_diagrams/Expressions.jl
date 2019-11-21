@@ -65,8 +65,8 @@ function to_hom_expr(Ob::Type, Hom::Type, d::WiringDiagram)
   # Step 2. Alternating series- and parallel-reduction.
   n = nboxes(d)
   while true
-    d = parallel_reduction!(Ob, Hom, d)
-    d = series_reduction!(Ob, Hom, d)
+    d = parallel_reduction(Ob, Hom, d)
+    d = series_reduction(Ob, Hom, d)
     # Repeat until the box count stops decreasing.
     nboxes(d) >= n && break
     n = nboxes(d)
@@ -76,7 +76,7 @@ function to_hom_expr(Ob::Type, Hom::Type, d::WiringDiagram)
   # one if there is no creation or deletion).
   if nboxes(d) > 1
     product = otimes(map(box_to_expr, box_ids(d)))
-    d = encapsulate!(d, box_ids(d), discard_boxes=true, value=product)
+    d = encapsulate(d, box_ids(d), discard_boxes=true, value=product)
   end
   v = first(box_ids(d))
   foldl(compose_simplify_id, [
@@ -104,7 +104,7 @@ end
 
 """ All possible parallel reductions of a wiring diagram.
 """
-function parallel_reduction!(Ob::Type, Hom::Type, d::WiringDiagram)
+function parallel_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
   parallel = Vector{Int}[]
   parallel_unsorted = find_parallel(graph(d), source=input_id(d), sink=output_id(d))
   products = map(collect(parallel_unsorted)) do ((source, target), vs)
@@ -115,16 +115,13 @@ function parallel_reduction!(Ob::Type, Hom::Type, d::WiringDiagram)
     push!(parallel, vs[σ])
     otimes(exprs[σ])
   end
-  
-  if !isempty(parallel)
-    d = encapsulate!(d, parallel, discard_boxes=true, values=products)
-  end
-  return d
+  isempty(parallel) ? d :
+    encapsulate(d, parallel, discard_boxes=true, values=products)
 end
 
 """ All possible series reductions of a wiring diagram.
 """
-function series_reduction!(Ob::Type, Hom::Type, d::WiringDiagram)
+function series_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
   box_to_expr(v::Int) = to_hom_expr(Ob, Hom, box(d,v))
   
   series = find_series(graph(d), source=input_id(d), sink=output_id(d))
@@ -136,11 +133,8 @@ function series_reduction!(Ob::Type, Hom::Type, d::WiringDiagram)
     end
     foldl(compose_simplify_id, exprs)
   end
-  
-  if !isempty(series)
-    d = encapsulate!(d, series, discard_boxes=true, values=composites)
-  end
-  return d
+  isempty(series) ? d :
+    encapsulate(d, series, discard_boxes=true, values=composites)
 end
 
 """ All possible transitive reductions of a wiring diagram.

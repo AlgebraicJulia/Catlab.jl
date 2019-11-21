@@ -84,6 +84,9 @@ end
 """ Remove junction nodes from wiring diagram.
 
 Transforms from explicit to implicit representation of (co)diagonals.
+
+Note: This function currently does not actually mutate its argument. However,
+this is subject to change in the future.
 """
 function rem_junctions!(d::WiringDiagram)
   junction_ids = filter(v -> box(d,v) isa Junction, box_ids(d))
@@ -92,7 +95,7 @@ function rem_junctions!(d::WiringDiagram)
     layer = complete_layer(junction.ninputs, junction.noutputs)
     to_wiring_diagram(layer, input_ports(junction), output_ports(junction))
   end
-  substitute!(d, junction_ids, junction_diagrams)
+  substitute(d, junction_ids, junction_diagrams)
 end
 
 """ Put a wiring diagram for a cartesian category into normal form.

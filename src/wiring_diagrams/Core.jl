@@ -26,7 +26,7 @@ export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
   wires, has_wire, graph, add_box!, add_boxes!, add_wire!, add_wires!,
   rem_box!, rem_boxes!, rem_wire!, rem_wires!, validate_ports,
   all_neighbors, neighbors, outneighbors, inneighbors, in_wires, out_wires,
-  substitute, substitute!, encapsulate, encapsulate!,
+  substitute, encapsulate, encapsulated_subdiagram,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create,
   permute, is_permuted_equal
 
@@ -601,15 +601,6 @@ function substitute(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagra
   result
 end
 
-""" Mutating variant of `substitute`.
-
-Note: Currently the function does not actually mutate its argument. However,
-that is subject to change in the future.
-"""
-function substitute!(d::WiringDiagram, args...)
-  substitute(d, args...)
-end
-
 """ Substitute wires inside sub-diagram of a wiring diagram.
 """
 function _substitute_wires!(d::WiringDiagram, v::Int,
@@ -645,7 +636,7 @@ end
 
 """ Encapsulate multiple boxes within a single sub-diagram.
 
-This operation is a (one-sided) inverse to subsitution (see `substitute!`).
+This operation is a (one-sided) inverse to subsitution (see `substitute`).
 """
 function encapsulate(d::WiringDiagram, vs::Vector{Int};
                      discard_boxes::Bool=false, value::Any=nothing)
@@ -693,15 +684,6 @@ function encapsulate(d::WiringDiagram, vss::Vector{Vector{Int}};
     add_wire!(result, Wire(new_src, new_tgt))
   end
   result
-end
-
-""" Mutating variant of `encapsulate`.
-
-Note: Currently the function does not actually mutate its argument. However,
-that is subject to change in the future.
-"""
-function encapsulate!(d::WiringDiagram, args...; kw...)
-  encapsulate(d, args...; kw...)
 end
 
 """ Create an encapsulating box for a set of boxes in a wiring diagram.
@@ -831,7 +813,7 @@ Ports(expr::ObExpr) = Ports(collect_values(expr))
     add_wires!(h, ((input_id(h),i) => (fv,i) for i in eachindex(dom(f))))
     add_wires!(h, ((fv,i) => (gv,i) for i in eachindex(codom(f))))
     add_wires!(h, ((gv,i) => (output_id(h),i) for i in eachindex(codom(g))))
-    substitute!(h, [fv,gv])
+    substitute(h, [fv,gv])
   end
   
   otimes(A::Ports, B::Ports) = Ports([A.ports; B.ports])
@@ -846,7 +828,7 @@ Ports(expr::ObExpr) = Ports(collect_values(expr))
     add_wires!(h, (input_id(h),i+m) => (gv,i) for i in eachindex(dom(g)))
     add_wires!(h, (fv,i) => (output_id(h),i) for i in eachindex(codom(f)))
     add_wires!(h, (gv,i) => (output_id(h),i+n) for i in eachindex(codom(g)))
-    substitute!(h, [fv,gv])
+    substitute(h, [fv,gv])
   end
   
   function braid(A::Ports, B::Ports)
