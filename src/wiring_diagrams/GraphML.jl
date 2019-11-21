@@ -24,7 +24,7 @@ using LightXML
 using LightGraphs, MetaGraphs
 
 using ..WiringDiagramCore, ..WiringDiagramSerialization
-import ..WiringDiagramCore: PortEdgeData
+import ..WiringDiagramCore: PortData
 
 # Data types
 ############
@@ -282,7 +282,7 @@ function parse_graphml_node(state::ReadState, xnode::XMLElement)
 end
 
 function parse_graphml_ports(state::ReadState, xnode::XMLElement)
-  ports = Dict{Tuple{String,String},PortEdgeData}()
+  ports = Dict{Tuple{String,String},PortData}()
   input_ports, output_ports = state.PortValue[], state.PortValue[]
   xnode_id = attribute(xnode, "id", required=true)
   xports = xnode["port"]
@@ -293,10 +293,10 @@ function parse_graphml_ports(state::ReadState, xnode::XMLElement)
     value = convert_from_graphml_data(state.PortValue, data)
     if port_kind == "input"
       push!(input_ports, value)
-      ports[(xnode_id, xport_name)] = PortEdgeData(InputPort, length(input_ports))
+      ports[(xnode_id, xport_name)] = PortData(InputPort, length(input_ports))
     elseif port_kind == "output"
       push!(output_ports, value)
-      ports[(xnode_id, xport_name)] = PortEdgeData(OutputPort, length(output_ports))
+      ports[(xnode_id, xport_name)] = PortData(OutputPort, length(output_ports))
     else
       error("Invalid port kind: $portkind")
     end

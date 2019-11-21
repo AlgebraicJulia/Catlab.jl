@@ -19,14 +19,14 @@ intermediate representation that can be straightforwardly serialized to and from
 GraphML or translated into Graphviz or other declarative diagram languages.
 """
 module WiringDiagramCore
-
 export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
   PortKind, InputPort, OutputPort, input_ports, output_ports, port_value,
-  input_id, output_id, singleton_diagram, boxes, box_ids, nboxes, nwires, box,
-  wires, has_wire, graph, add_box!, add_boxes!, add_wire!, add_wires!,
-  rem_box!, rem_boxes!, rem_wire!, rem_wires!, validate_ports,
+  input_id, output_id, boxes, box_ids, nboxes, nwires, box, wires, has_wire,
+  graph, add_box!, add_boxes!, add_wire!, add_wires!, rem_box!, rem_boxes!,
+  rem_wire!, rem_wires!, validate_ports,
   all_neighbors, neighbors, outneighbors, inneighbors, in_wires, out_wires,
-  substitute!, encapsulate!,
+  singleton_diagram, induced_subdiagram, encapsulated_subdiagram,
+  substitute, encapsulate,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create,
   permute, is_permuted_equal
 
@@ -107,29 +107,29 @@ function Base.isless(w1::Wire, w2::Wire)::Bool
     (w1.source == w2.source && isless(w1.target, w2.target))
 end
 
-""" Internal data structure corresponding to `Port`. Do not use directly.
+""" Internal wiring diagram data corresponding to `Port`. Do not use directly.
 """
-@auto_hash_equals struct PortEdgeData
+@auto_hash_equals struct PortData
   kind::PortKind
   port::Int
 end
-to_edge_data(port::Port) = PortEdgeData(port.kind, port.port)
-from_edge_data(port::PortEdgeData, v::Int) = Port(v, port.kind, port.port)
+to_port_data(port::Port) = PortData(port.kind, port.port)
+from_port_data(port::PortData, v::Int) = Port(v, port.kind, port.port)
 
-""" Internal data structure corresponding to `Wire`. Do not use directly.
+""" Internal wiring diagram data corresponding to `Wire`. Do not use directly.
 """
-@auto_hash_equals struct WireEdgeData{Value}
+@auto_hash_equals struct WireData{Value}
   value::Value
-  source::PortEdgeData
-  target::PortEdgeData
+  source::PortData
+  target::PortData
 end
-function to_edge_data(wire::Wire)
-  WireEdgeData(wire.value, to_edge_data(wire.source), to_edge_data(wire.target))
+function to_wire_data(wire::Wire)
+  WireData(wire.value, to_port_data(wire.source), to_port_data(wire.target))
 end
-function from_edge_data(wire::WireEdgeData, edge::Edge)
+function from_wire_data(wire::WireData, edge::Edge)
   Wire(wire.value,
-       from_edge_data(wire.source, src(edge)),
-       from_edge_data(wire.target, dst(edge)))
+       from_port_data(wire.source, src(edge)),
+       from_port_data(wire.target, dst(edge)))
 end
 
 """ List of ports: object in the category of wiring diagrams.
@@ -298,19 +298,6 @@ end
 # Low-level graph interface
 ###########################
 
-# Constructors.
-
-""" Create wiring diagram with a single box connected to the outer ports.
-"""
-function singleton_diagram(box::AbstractBox)
-  inputs, outputs = input_ports(box), output_ports(box)
-  d = WiringDiagram(inputs, outputs)
-  v = add_box!(d, box)
-  add_wires!(d, ((input_id(d),i) => (v,i) for i in eachindex(inputs)))
-  add_wires!(d, ((v,i) => (output_id(d),i) for i in eachindex(outputs)))
-  return d
-end
-
 # Basic accessors.
 
 box(f::WiringDiagram, v::Int) = get_prop(f.graph, v, :box)
@@ -324,7 +311,7 @@ end
 
 function wires(f::WiringDiagram, edge::Edge)
   if has_edge(f.graph, edge)
-    Wire[ from_edge_data(data, edge) for data in get_prop(f.graph,edge,:wires) ]
+    Wire[ from_wire_data(data, edge) for data in get_prop(f.graph,edge,:wires) ]
   else
     Wire[]
   end
@@ -399,9 +386,9 @@ function add_wire!(f::WiringDiagram, wire::Wire)
   # Add edge and edge properties.
   edge = Edge(wire.source.box, wire.target.box)
   if !has_edge(f.graph, edge)
-    add_edge!(f.graph, src(edge), dst(edge), :wires, WireEdgeData[])
+    add_edge!(f.graph, src(edge), dst(edge), :wires, WireData[])
   end
-  push!(get_prop(f.graph, edge, :wires), to_edge_data(wire))
+  push!(get_prop(f.graph, edge, :wires), to_wire_data(wire))
 end
 add_wire!(f::WiringDiagram, pair::Pair) = add_wire!(f, Wire(pair))
 
@@ -413,7 +400,7 @@ end
 
 function rem_wire!(f::WiringDiagram, wire::Wire)
   edge = Edge(wire.source.box, wire.target.box)
-  edge_data = to_edge_data(wire)
+  edge_data = to_wire_data(wire)
   wires = get_prop(f.graph, edge, :wires)
   deleteat!(wires, findlast(d -> d == edge_data, wires))
   if isempty(wires)
@@ -525,51 +512,122 @@ function out_wires(d::WiringDiagram, v::Int, port::Int)
   out_wires(d, Port(v, OutputPort, port))
 end
 
+# Other constructors.
+
+""" A wiring diagram with a single box connected to its outer ports.
+"""
+function singleton_diagram(box::AbstractBox)
+  inputs, outputs = input_ports(box), output_ports(box)
+  d = WiringDiagram(inputs, outputs)
+  v = add_box!(d, box)
+  add_wires!(d, ((input_id(d),i) => (v,i) for i in eachindex(inputs)))
+  add_wires!(d, ((v,i) => (output_id(d),i) for i in eachindex(outputs)))
+  return d
+end
+
+""" The wiring diagram induced by a subset of its boxes.
+
+See also `encapsulated_subdiagram`.
+"""
+function induced_subdiagram(d::WiringDiagram, vs::Vector{Int})
+  sub = WiringDiagram(input_ports(d), output_ports(d))
+  vmap = Dict(input_id(d) => input_id(sub), output_id(d) => output_id(sub))
+  for v in vs
+    vmap[v] = add_box!(sub, box(d, v))
+  end
+  for wire in wires(d)
+    src, tgt = wire.source, wire.target
+    if haskey(vmap, src.box) && haskey(vmap, tgt.box)
+      add_wire!(sub,
+        Wire(set_box(src, vmap[src.box]), set_box(tgt, vmap[tgt.box])))
+    end
+  end
+  return sub
+end
+
 # Substitution and encapulsation
 ################################
 
 # Substition.
 
-""" Substitute a wiring diagram for a vertex.
+""" Substitute wiring diagrams for boxes.
+
+Performs one or more substitutions. When performing multiple substitutions, the
+substitutions are simultaneous.
 
 This operation is the operadic composition of wiring diagrams.
 """
-function substitute!(d::WiringDiagram, v::Int, sub::WiringDiagram)
-  _substitute_insert!(d, v, sub)
-  rem_box!(d, v)
-  return d
-end
-function substitute!(d::WiringDiagram, v::Int)
-  substitute!(d, v, box(d,v)::WiringDiagram)
+function substitute(d::WiringDiagram, v::Int)
+  substitute(d, v, box(d,v)::WiringDiagram)
 end
 
-""" Simultaneous substitution of wiring diagrams for vertices.
-"""
-function substitute!(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagram})
-  for (v,sub) in zip(vs, subs)
-    _substitute_insert!(d, v, sub)
+function substitute(d::WiringDiagram, vs::Vector{Int})
+  substitute(d, vs, WiringDiagram[ box(d,v) for v in vs ])
+end
+
+function substitute(d::WiringDiagram, v::Int, sub::WiringDiagram)
+  substitute(d, [v], [sub])
+end
+
+function substitute(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagram})
+  # In outline, the algorithm is:
+  #
+  # 1. Create an empty wiring diagram.
+  # 2. Add *all* boxes of original diagram and the diagrams to be substituted
+  #    (in the appropriate order).
+  # 3. Add *all* wires of original diagram and the diagrams to be substituted.
+  # 4. Remove the boxes that were substituted (hence also removing extraneous
+  #    wires from step 3).
+  #
+  # This may seem convoluted, but it is the simplest way I know to handle the
+  # problem of *instantaneous wires*. Some authors ban instantaneous wires, but
+  # want to allow them because they can represent the identity, braidings, etc.
+  @assert length(vs) == length(subs)
+  result = WiringDiagram(input_ports(d), output_ports(d))
+  
+  # Add boxes by interleaving, in the correct order, the non-substituted boxes
+  # of the original diagram and the internal boxes of the substituted diagrams.
+  # At the very end, add the substituted boxes too.
+  vmap = Dict(input_id(d) => input_id(result), output_id(d) => output_id(result))
+  sub_maps = Dict(zip(vs, ((sub, Dict{Int,Int}()) for sub in subs)))
+  for v in box_ids(d)
+    if haskey(sub_maps, v)
+      sub, sub_map = sub_maps[v]
+      for u in box_ids(sub)
+        sub_map[u] = add_box!(result, box(sub, u))
+      end
+    else
+      vmap[v] = add_box!(result, box(d, v))
+    end
   end
-  rem_boxes!(d, vs)
-  return d
-end
-function substitute!(d::WiringDiagram, vs::Vector{Int})
-  substitute!(d, vs, WiringDiagram[ box(d,v) for v in vs ])
-end
-
-""" The insertion phase of a substitution operation.
-"""
-function _substitute_insert!(d::WiringDiagram, v::Int, sub::WiringDiagram)
-  # Add new boxes from sub-diagram.
-  sub_map = Dict{Int,Int}()
-  for u in box_ids(sub)
-    sub_map[u] = add_box!(d, box(sub,u))
+  for v in vs
+    vmap[v] = add_box!(result, box(d, v))
   end
   
-  # Add new wires from sub-diagram.
+  # Add the wires of the original diagram, then add the internal wires of the
+  # substituted diagrams.
+  for wire in wires(d)
+    add_wire!(result, Wire(
+      set_box(wire.source, vmap[wire.source.box]),
+      set_box(wire.target, vmap[wire.target.box])))
+  end
+  for v in vs
+    _substitute_wires!(result, vmap[v], sub_maps[v]...)
+  end
+  
+  # Finally, remove the substituted boxes. Because they were added last, this
+  # will not change the IDs of the other boxes.
+  rem_boxes!(result, (vmap[v] for v in vs))
+  result
+end
+
+""" Substitute wires inside sub-diagram of a wiring diagram.
+"""
+function _substitute_wires!(d::WiringDiagram, v::Int,
+                            sub::WiringDiagram, sub_map::Dict{Int,Int})
   for wire in wires(sub)
     src = get(sub_map, wire.source.box, 0)
     tgt = get(sub_map, wire.target.box, 0)
-    
     # Special case: wire from input port to output port.
     if wire.source.box == input_id(sub) && wire.target.box == output_id(sub)
       for in_wire in in_wires(d, v, wire.source.port)
@@ -581,7 +639,7 @@ function _substitute_insert!(d::WiringDiagram, v::Int, sub::WiringDiagram)
     elseif wire.source.box == input_id(sub)
       for in_wire in in_wires(d, v, wire.source.port)
         add_wire!(d, Wire(in_wire.source, set_box(wire.target, tgt)))
-      end  
+      end
     # Special case: wire from internal box to output port.
     elseif wire.target.box == output_id(sub)
       for out_wire in out_wires(d, v, wire.target.port)
@@ -592,175 +650,148 @@ function _substitute_insert!(d::WiringDiagram, v::Int, sub::WiringDiagram)
       add_wire!(d, Wire(set_box(wire.source, src), set_box(wire.target, tgt)))
     end
   end
-  return d
 end
 
 # Encapsulation.
 
-""" Encapsulate multiple boxes within a single sub wiring diagram.
+""" Encapsulate multiple boxes within a single sub-diagram.
 
-This operation is a (one-sided) inverse to subsitution (see `substitute!`).
+This operation is a (one-sided) inverse to subsitution (see `substitute`).
 """
-function encapsulate!(d::WiringDiagram, vs::Vector{Int};
-                      discard_boxes::Bool=false, value::Any=nothing)
-  encapsulate!(d, [vs]; discard_boxes=discard_boxes, values=[value])
+function encapsulate(d::WiringDiagram, vs::Vector{Int};
+                     discard_boxes::Bool=false, value::Any=nothing)
+  encapsulate(d, [vs]; discard_boxes=discard_boxes, values=[value])
 end
 
-""" Simultaneous encapsulation of boxes.
-"""
-function encapsulate!(d::WiringDiagram, vss::Vector{Vector{Int}};
-                      discard_boxes::Bool=false, values::Union{Nothing,Vector}=nothing)
+function encapsulate(d::WiringDiagram, vss::Vector{Vector{Int}};
+                     discard_boxes::Bool=false, values::Union{Nothing,Vector}=nothing)
+  if isempty(vss); return d end
   if any(isempty(vs) for vs in vss)
     error("Cannot encapsulate an empty set of boxes")
   end
   if isnothing(values)
     values = repeat([nothing], length(vss))
   end
-  encapsulate_insert! = discard_boxes ? _encapsulate_in_box! : _encapsulate_in_diagram!
-  for (vs, value) in zip(vss, values)
-    encapsulate_insert!(d, vs, value)
-  end
-  rem_boxes!(d, vcat(vss...))
-  return d
-end
+  result = WiringDiagram(input_ports(d), output_ports(d))
   
-function _encapsulate_in_diagram!(d::WiringDiagram, vs::Vector{Int}, value::Any)
-  # Create ports for encapsulating box.
-  sub_vertex = nv(graph(d)) + 1
-  inputs, outputs, port_map, sub_port_map =
-    encapsulated_ports(d, vs, sub_vertex)
-  
-  # Add encapsulating diagram to original diagram.
-  sub = WiringDiagram(value, inputs, outputs)
-  @assert add_box!(d, sub) == sub_vertex
-  
-  # Add boxes to encapsulating diagram.
-  vertex_map = Dict{Int,Int}((v => add_box!(sub, box(d, v)) for v in vs))
-  
-  # Add wires to original and encapsulating diagram.
-  consumed = Set()
-  for v in vs
-    for wire in wires(d, v)
-      # Check if wire has already been processed.
-      src, tgt = wire.source, wire.target
-      if src.box in consumed || tgt.box in consumed; continue end
-      
-      # Case 1: Add wire inside encapsulating diagram.
-      if haskey(vertex_map, src.box) && haskey(vertex_map, tgt.box)
-        add_wire!(sub, Wire(
-          set_box(src, vertex_map[src.box]),
-          set_box(tgt, vertex_map[tgt.box])
-        ))
-      
-      # Case 2: Add wire from encapsulating box to another box.
-      elseif haskey(vertex_map, src.box)
-        add_wire!(sub, Wire(
-          set_box(src, vertex_map[src.box]),
-          Port(output_id(sub), InputPort, sub_port_map[src])
-        ))
-        if haskey(port_map, src)
-          add_wire!(d, Wire(port_map[src], tgt))
-        end
-      
-      # Case 3: Add wire to encapsulating box from another box.
-      elseif haskey(vertex_map, tgt.box)
-        if haskey(port_map, tgt)
-          add_wire!(d, Wire(src, port_map[tgt]))
-        end
-        add_wire!(sub, Wire(
-          Port(input_id(sub), OutputPort, sub_port_map[tgt]),
-          set_box(tgt, vertex_map[tgt.box])
-        ))
-      end
+  # Add boxes, both encapsulated and non-encapsulated, to new wiring diagram.
+  encapsulated_representatives = Dict(
+    minimum(vs) => (vs, value) for (vs, value) in zip(vss, values))
+  all_encapsulated = Set(v for vs in vss for v in vs)
+  vmap = Dict(input_id(d) => input_id(result), output_id(d) => output_id(result))
+  port_map = Dict{Port,Port}()
+  for v in box_ids(d)
+    if haskey(encapsulated_representatives, v)
+      vs, value = encapsulated_representatives[v]
+      sub, sub_map = encapsulated_subdiagram(d, vs;
+        discard_boxes=discard_boxes, value=value)
+      subv = add_box!(result, sub)
+      merge!(port_map, Dict(
+        port => from_port_data(data, subv) for (port, data) in sub_map))
+    elseif v ∉ all_encapsulated
+      vmap[v] = add_box!(result, box(d, v))
     end
-    push!(consumed, v)
   end
-  return d
+  
+  # Add wires to new wiring diagram.
+  for wire in wires(d)
+    src, tgt = wire.source, wire.target
+    new_src = if haskey(vmap, src.box); set_box(src, vmap[src.box])
+      elseif haskey(port_map, src); port_map[src]
+      else; continue end
+    new_tgt = if haskey(vmap, tgt.box); set_box(tgt, vmap[tgt.box])
+      elseif haskey(port_map, tgt); port_map[tgt]
+      else; continue end
+    add_wire!(result, Wire(new_src, new_tgt))
+  end
+  result
 end
 
-function _encapsulate_in_box!(d::WiringDiagram, vs::Vector{Int}, value::Any)
-  # Create ports for encapsulating box.
-  sub_vertex = nv(graph(d)) + 1
-  inputs, outputs, port_map, _ = encapsulated_ports(d, vs, sub_vertex)
-  
-  # Add encapsulating box to original diagram.
-  sub = Box(value, inputs, outputs)
-  @assert add_box!(d, sub) == sub_vertex
-  
-  # Add wires to original and encapsulating diagram.
-  vertex_set = Set(vs)
-  consumed = Set()
-  for v in vs
-    for wire in wires(d, v)
-      # Check if wire has already been processed.
-      src, tgt = wire.source, wire.target
-      if src.box in consumed || tgt.box in consumed; continue end
-      
-      # Case 1: Add wire from encapsulating box to another box.
-      if haskey(port_map, src) && !(tgt.box in vertex_set)
-        add_wire!(d, Wire(port_map[src], tgt))
-      
-      # Case 2: Add wire to encapsulating box from another box.
-      elseif !(src.box in vertex_set) && haskey(port_map, tgt)
-        add_wire!(d, Wire(src, port_map[tgt]))
-      end
-    end
-    push!(consumed, v)
-  end
-  return d
-end
+""" Create an encapsulating box for a set of boxes in a wiring diagram.
 
-""" Create input and output ports for encapsulating box.
-
-Any port of the boxes `vs` that has an incoming (resp. outgoing) wire
-from a box outside of `vs` will become an input (resp. output) port of the
+To a first approximation, the union of input ports of the given boxes will
+become the inputs ports of the encapsulating box and likewise for the output
+ports. However, when copies or merges occur, as in a cartesian or cocartesian
+category, a simplification procedure may reduce the number of ports on the
 encapsulating box.
 
-A set of box ports connected to the same (set of) outside ports will be
-simplified into a single port of the encapsulating box. This simplification
-is only relevant when duplication or merging is used, as in a cartesian or
-cocartesian category.
-"""
-function encapsulated_ports(d::WiringDiagram, vs::Vector{Int}, subv::Int)
-  inputs, outputs = [], []
-  outer_port_map = Dict{Port,Port}()
-  inner_port_map = Dict{Port,Int}()
-  neighbor_map = Dict{Tuple{Set{Port},Any},Int}()
+Specifically:
 
-  vertex_set = Set(vs)
+1. Each input port of an encapsulated box will have at most one incoming wire
+from the encapsulating outer box, and each output port of an encapsulated box
+will have at most one outgoing wire to the encapsulating outer box.
+
+2. A set of ports connected to the same outside (non-encapsulated) ports will be
+simplified into a single port of the encapsulating box.
+
+See also `induced_subdiagram`.
+"""
+function encapsulated_subdiagram(d::WiringDiagram, vs::Vector{Int};
+                                 discard_boxes::Bool=false, value::Any=nothing)
+  # Add encapsulated box to new wiring diagram.
+  inputs, outputs = [], []
+  result = discard_boxes ? nothing : WiringDiagram(value, inputs, outputs)
+  vmap = if discard_boxes
+    Dict(v => nothing for v in vs)
+  else
+    Dict(v => add_box!(result, box(d, v)) for v in vs)
+  end
+  
+  # Process wires into, or out of, encapsulated boxes.
+  port_map = Dict{Port,PortData}()
+  inner_port_map = Dict{Tuple{Vector{Port},Any},Int}()
   for v in vs
-    # Add ports for incoming wires, preserving port order.
-    for port in eachindex(input_ports(box(d, v)))
+    # Add input ports to encapsulating box and corresponding wire.
+    for (port, value) in enumerate(input_ports(d, v))
       tgt = Port(v, InputPort, port)
-      srcs = Set(wire.source for wire in in_wires(d, tgt)
-                 if !(wire.source.box in vertex_set))
-      if !isempty(srcs)
-        value = port_value(d, tgt)
-        inner_port_map[tgt] = get!(neighbor_map, (srcs, value)) do
-          push!(inputs, value)
-          (outer_port_map[tgt] = Port(subv, InputPort, length(inputs))).port
-        end
+      srcs = sort!([ wire.source for wire in in_wires(d, tgt)
+                     if !haskey(vmap, wire.source.box) ])
+      if isempty(srcs) continue end
+      src = get!(inner_port_map, (srcs, value)) do
+        push!(inputs, value)
+        port_data = port_map[tgt] = PortData(InputPort, length(inputs))
+        port_data.port
       end
+      if discard_boxes; continue end
+      add_wire!(result,
+        Wire(Port(input_id(result), OutputPort, src), set_box(tgt, vmap[v])))
     end
     
-    # Add ports for outgoing wires, preserving port order.
-    for port in eachindex(output_ports(box(d, v)))
+    # Add output ports to encapsulating box and corresponding wire.
+    for (port, value) in enumerate(output_ports(d, v))
       src = Port(v, OutputPort, port)
-      tgts = Set(wire.target for wire in out_wires(d, src)
-                 if !(wire.target.box in vertex_set))
-      if !isempty(tgts)
-        value = port_value(d, src)
-        inner_port_map[src] = get!(neighbor_map, (tgts, value)) do
-          push!(outputs, value)
-          (outer_port_map[src] = Port(subv, OutputPort, length(outputs))).port
-        end
+      tgts = sort([ wire.target for wire in out_wires(d, src)
+                    if !haskey(vmap, wire.target.box) ])
+      if isempty(tgts) continue end
+      tgt = get!(inner_port_map, (tgts, value)) do
+        push!(outputs, value)
+        port_data = port_map[src] = PortData(OutputPort, length(outputs))
+        port_data.port
+      end
+      if discard_boxes; continue end
+      add_wire!(result,
+        Wire(set_box(src, vmap[v]), Port(output_id(result), InputPort, tgt)))
+    end
+    
+    # Add wires between two encapsulated boxes.
+    if discard_boxes; continue end
+    for wire in out_wires(d, v)
+      src, tgt = wire.source, wire.target
+      if haskey(vmap, src.box) && haskey(vmap, tgt.box) # Clause #1 always true.
+        add_wire!(result,
+          Wire(set_box(src, vmap[src.box]), set_box(tgt, vmap[tgt.box])))
       end
     end
   end
   
-  # Return input and output port values with the tightest possible types.
+  # Yield input and output port lists with the tightest possible types.
   inputs, outputs = [ x for x in inputs ], [ x for x in outputs ]
-  (inputs, outputs, outer_port_map, inner_port_map)
+  if discard_boxes
+    result = Box(value, inputs, outputs)
+  else
+    result.input_ports, result.output_ports = inputs, outputs
+  end
+  (result, port_map)
 end
 
 # High-level categorical interface
@@ -805,8 +836,7 @@ Ports(expr::ObExpr) = Ports(collect_values(expr))
     add_wires!(h, ((input_id(h),i) => (fv,i) for i in eachindex(dom(f))))
     add_wires!(h, ((fv,i) => (gv,i) for i in eachindex(codom(f))))
     add_wires!(h, ((gv,i) => (output_id(h),i) for i in eachindex(codom(g))))
-    substitute!(h, [fv,gv])
-    return h
+    substitute(h, [fv,gv])
   end
   
   otimes(A::Ports, B::Ports) = Ports([A.ports; B.ports])
@@ -821,8 +851,7 @@ Ports(expr::ObExpr) = Ports(collect_values(expr))
     add_wires!(h, (input_id(h),i+m) => (gv,i) for i in eachindex(dom(g)))
     add_wires!(h, (fv,i) => (output_id(h),i) for i in eachindex(codom(f)))
     add_wires!(h, (gv,i) => (output_id(h),i+n) for i in eachindex(codom(g)))
-    substitute!(h, [fv,gv])
-    return h
+    substitute(h, [fv,gv])
   end
   
   function braid(A::Ports, B::Ports)
@@ -830,7 +859,7 @@ Ports(expr::ObExpr) = Ports(collect_values(expr))
     m, n = length(A), length(B)
     add_wires!(h, ((input_id(h),i) => (output_id(h),i+n) for i in 1:m))
     add_wires!(h, ((input_id(h),i+m) => (output_id(h),i) for i in 1:n))
-    return h
+    h
   end
 
   mcopy(A::Ports) = mcopy(A, 2)

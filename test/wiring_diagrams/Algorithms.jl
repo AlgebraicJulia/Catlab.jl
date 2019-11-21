@@ -25,7 +25,7 @@ junctioned = compose(to_wiring_diagram(f), junction_diagram(:B,1,2))
 d = to_wiring_diagram(compose(mcopy(A), otimes(f,f)))
 original = copy(d)
 junctioned = compose(junction_diagram(:A,1,2), to_wiring_diagram(otimes(f,f)))
-@test add_junctions!(d) == junctioned
+@test is_permuted_equal(add_junctions!(d), junctioned, [3,1,2])
 @test rem_junctions!(d) == original
 
 # Add junctions for merges.
@@ -38,7 +38,7 @@ junctioned = compose(junction_diagram(:A,2,1), to_wiring_diagram(f))
 d = to_wiring_diagram(compose(otimes(f,f), mmerge(B)))
 original = copy(d)
 junctioned = compose(to_wiring_diagram(otimes(f,f)), junction_diagram(:B,2,1))
-@test is_permuted_equal(add_junctions!(d), junctioned, [2,3,1])
+@test add_junctions!(d) == junctioned
 @test rem_junctions!(d) == original
 
 # Add junctions for deletions.
