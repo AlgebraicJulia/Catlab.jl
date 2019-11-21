@@ -115,8 +115,7 @@ function parallel_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
     push!(parallel, vs[σ])
     otimes(exprs[σ])
   end
-  isempty(parallel) ? d :
-    encapsulate(d, parallel, discard_boxes=true, values=products)
+  encapsulate(d, parallel, discard_boxes=true, values=products)
 end
 
 """ All possible series reductions of a wiring diagram.
@@ -133,8 +132,7 @@ function series_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
     end
     foldl(compose_simplify_id, exprs)
   end
-  isempty(series) ? d :
-    encapsulate(d, series, discard_boxes=true, values=composites)
+  encapsulate(d, series, discard_boxes=true, values=composites)
 end
 
 """ All possible transitive reductions of a wiring diagram.

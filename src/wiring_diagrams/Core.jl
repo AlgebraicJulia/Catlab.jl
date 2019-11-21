@@ -645,6 +645,7 @@ end
 
 function encapsulate(d::WiringDiagram, vss::Vector{Vector{Int}};
                      discard_boxes::Bool=false, values::Union{Nothing,Vector}=nothing)
+  if isempty(vss); return d end
   if any(isempty(vs) for vs in vss)
     error("Cannot encapsulate an empty set of boxes")
   end
