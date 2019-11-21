@@ -28,7 +28,7 @@ export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
   singleton_diagram, induced_subdiagram, encapsulated_subdiagram,
   substitute, encapsulate,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create,
-  permute, is_permuted_equal
+  ocompose, permute, is_permuted_equal
 
 using Compat
 using AutoHashEquals
@@ -555,7 +555,8 @@ end
 Performs one or more substitutions. When performing multiple substitutions, the
 substitutions are simultaneous.
 
-This operation is the operadic composition of wiring diagrams.
+This operation implements the operadic composition of wiring diagrams
+(`ocompose`).
 """
 function substitute(d::WiringDiagram, v::Int)
   substitute(d, v, box(d,v)::WiringDiagram)
@@ -898,6 +899,23 @@ function mmerge(A::Ports, n::Int)::WiringDiagram
     add_wires!(f, ((input_id(f),i+m*(j-1)) => (output_id(f),i) for i in 1:m))
   end
   return f
+end
+
+""" Operadic composition of wiring diagrams.
+
+This generic function has two different signatures, corresponding to the two
+standard definitions of an operad (Yau, 2018, Operads of Wiring Diagrams,
+Definitions 2.3 and 2.10).
+
+This operation is a simple wrapper around substitution (`substitute`).
+"""
+function ocompose(f::WiringDiagram, gs::Vector{WiringDiagram})
+  @assert length(gs) == nboxes(f)
+  substitute(f, box_ids(f), gs)
+end
+function ocompose(f::WiringDiagram, i::Int, g::WiringDiagram)
+  @assert 1 <= i <= nboxes(f)
+  substitute(f, box_ids(f)[i], g)
 end
 
 function collect_values(ob::ObExpr)::Vector
