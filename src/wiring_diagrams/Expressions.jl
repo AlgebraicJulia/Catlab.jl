@@ -60,13 +60,13 @@ function to_hom_expr(Ob::Type, Hom::Type, d::WiringDiagram)
   end
   
   # Step 1. Transitive reduction.
-  transitive_reduction!(Ob, d)
+  d = transitive_reduction!(Ob, d)
 
   # Step 2. Alternating series- and parallel-reduction.
   n = nboxes(d)
   while true
-    parallel_reduction!(Ob, Hom, d)
-    series_reduction!(Ob, Hom, d)
+    d = parallel_reduction!(Ob, Hom, d)
+    d = series_reduction!(Ob, Hom, d)
     # Repeat until the box count stops decreasing.
     nboxes(d) >= n && break
     n = nboxes(d)
@@ -76,7 +76,7 @@ function to_hom_expr(Ob::Type, Hom::Type, d::WiringDiagram)
   # one if there is no creation or deletion).
   if nboxes(d) > 1
     product = otimes(map(box_to_expr, box_ids(d)))
-    encapsulate!(d, box_ids(d), discard_boxes=true, value=product)
+    d = encapsulate!(d, box_ids(d), discard_boxes=true, value=product)
   end
   v = first(box_ids(d))
   foldl(compose_simplify_id, [
@@ -117,7 +117,7 @@ function parallel_reduction!(Ob::Type, Hom::Type, d::WiringDiagram)
   end
   
   if !isempty(parallel)
-    encapsulate!(d, parallel, discard_boxes=true, values=products)
+    d = encapsulate!(d, parallel, discard_boxes=true, values=products)
   end
   return d
 end
@@ -138,7 +138,7 @@ function series_reduction!(Ob::Type, Hom::Type, d::WiringDiagram)
   end
   
   if !isempty(series)
-    encapsulate!(d, series, discard_boxes=true, values=composites)
+    d = encapsulate!(d, series, discard_boxes=true, values=composites)
   end
   return d
 end
