@@ -24,7 +24,7 @@ UnionFind = "99c6138d-4661-531e-8606-19bf1ec96588"
 [compat]
 julia = "1.0"
 AutoHashEquals = "^0"
-Compat = "^3"
+Compat = "^1, ^2, ^3"
 DataStructures = "^0"
 JSON = "^0"
 LightGraphs = "^1.3"
