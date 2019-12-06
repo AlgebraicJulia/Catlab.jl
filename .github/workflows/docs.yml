@@ -1,0 +1,24 @@
+name: Documentation
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1.0.0
+      - name: "Set up Julia"
+        uses: julia-actions/setup-julia@latest
+        with:
+          version: '1.3'
+      - name: "Install system dependencies"
+        run: |
+          sudo apt-get update
+          sudo apt-get install graphviz pdf2svg
+          sudo apt-get install texlive-latex-base texlive-latex-extra texlive-binaries texlive-pictures texlive-luatex
+      - name: "Install Julia dependencies"
+        run: julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+      - name: "Build and deploy docs"
+        env:
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
+        run: julia --project=docs docs/make.jl
