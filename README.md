@@ -19,6 +19,18 @@ Feel free to ask questions! In addition to GitHub issues, we have a
 [#catlab](https://julialang.slack.com/archives/CQNUDDF5L) channel on the [Julia
 Slack](https://slackinvite.julialang.org/).
 
+### Contributing
+
+Catlab is experimental software and is missing many features, big and small.
+Moreover, the computational aspects of category theory are generally
+underdeveloped, both theoretically and practically. On the flip side, this means
+that there are lots of opportunities to do new and interesting things! Applied
+category theory is a young field and is likely to grow significantly.
+
+We welcome contributions and are committed to supporting prospective
+contributors, regardless of experience level with category theory. If you are
+interested in contributing, please let us know.
+
 ## What is Catlab?
 
 Catlab is, or will eventually be, the following things.
@@ -43,7 +55,7 @@ implement core algorithms for solving word problems and reducing expressions in
 normal form, with respect to several important doctrines, such as the doctrine
 of categories and the doctrine of symmetric monoidal categories.
 
-### What is it not?
+### What is Catlab not?
 
 Catlab is *not* currently any of the following things, although we do not rule
 out that it could eventually evolve in these directions.

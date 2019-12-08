@@ -35,7 +35,7 @@ implement core algorithms for solving word problems and reducing expressions in
 normal form, with respect to several important doctrines, such as the doctrine
 of categories and the doctrine of symmetric monoidal categories.
 
-### What is it not?
+### What is Catlab not?
 
 Catlab is *not* currently any of the following things, although we do not rule
 out that it could eventually evolve in these directions.
