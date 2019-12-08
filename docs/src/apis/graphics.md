@@ -1,4 +1,5 @@
-# Catlab.Graphics API
+# Graphics
+
 ```@meta
 CurrentModule = Catlab.Graphics
 ```
@@ -8,6 +9,5 @@ Modules = [Graphviz,
            GraphvizWiringDiagrams,
            TikZ,
            TikZWiringDiagrams,
-           TikZWiringDiagrams.Defaults,
           ]
 ```

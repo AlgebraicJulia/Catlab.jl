@@ -41,9 +41,8 @@ makedocs(
         "generated/programs/algebraic_nets.md",
       ],
     ],
-    "APIs" => Any[
-      "apis/index.md",
-      "apis/catlab.md",
+    "Modules" => Any[
+      "apis/core.md",
       "apis/doctrines.md",
       "apis/wiring_diagrams.md",
       "apis/graphics.md",

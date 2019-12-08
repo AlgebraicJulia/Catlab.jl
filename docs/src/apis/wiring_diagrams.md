@@ -1,4 +1,5 @@
-# Catlab.WiringDiagrams API
+# Wiring diagrams
+
 ```@meta
 CurrentModule = Catlab.WiringDiagrams
 ```
@@ -7,8 +8,8 @@ CurrentModule = Catlab.WiringDiagrams
 Modules = [WiringDiagramCore,
            WiringLayers,
            WiringDiagramAlgorithms,
-           GraphMLWiringDiagrams,
            WiringDiagramSerialization,
+           GraphMLWiringDiagrams,
            JSONWiringDiagrams,
            YFilesWiringDiagrams,
           ]

@@ -1,11 +1,12 @@
-# Catlab.Algebra API
+# Programs
+
 ```@meta
-CurrentModule = Catlab
+CurrentModule = Catlab.Programs
 ```
 
 ```@autodocs
-Modules = [Algebra,
-           Algebra.AlgebraicNets,
-           Algebra.ExpressionTrees,
+Modules = [JuliaPrograms,
+           AlgebraicNets,
+           ExpressionTrees,
           ]
 ```

@@ -55,11 +55,10 @@ user-facing application. However, it could be used as the backend for such an
 application.
 
 ## Table of Contents
+
 ```@contents
 Pages = [
-     "index.md",
-     "apis/index.md",
-     "apis/catlab.md",
+     "apis/core.md",
      "apis/doctrines.md",
      "apis/wiring_diagrams.md",
      "apis/graphics.md",

@@ -1,4 +1,5 @@
-# Catlab API
+# Syntax and expressions
+
 ```@meta
 CurrentModule = Catlab
 ```
