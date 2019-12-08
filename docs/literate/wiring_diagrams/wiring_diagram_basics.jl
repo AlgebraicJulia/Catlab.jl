@@ -1,4 +1,4 @@
-# # Wiring diagrams in Catlab
+# # Basics of wiring diagrams
 #
 #md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/wiring_diagrams/wiring_diagram_basics.ipynb)
 # 
@@ -12,12 +12,12 @@
 # interfaces:
 # 
 # 1. **Categorical**: A high-level, functional interface expressed in terms of
-# categorical concepts, such as composition (`compose`), monoidal products
-# (`otimes`), duplication (`mcopy`), and deletion (`delete`).
+#    categorical concepts, such as composition (`compose`), monoidal products
+#    (`otimes`), duplication (`mcopy`), and deletion (`delete`).
 # 
 # 2. **Imperative**: A lower-level, mutating interface to directly manipulate
-# boxes, ports, and wires, via operations like adding boxes (`add_box`) and
-# wires (`add_wire`).
+#    boxes, ports, and wires, via operations like adding boxes (`add_box`) and
+#    wires (`add_wire`).
 # 
 # In this notebook, we introduce both interfaces. We do not explicitly cover the
 # visualization API, although for illustrative purposes we will draw wiring

@@ -28,14 +28,20 @@ makedocs(
   doctest     = false,
   pages       = Any[
     "Catlab.jl" => "index.md",
-    "Tutorials" => Any[
-      "generated/wiring_diagrams/wiring_diagram_basics.md",
-      "generated/wiring_diagrams/diagrams_and_expressions.md",
-      "generated/graphics/graphviz_wiring_diagrams.md",
-      "generated/graphics/tikz_wiring_diagrams.md",
-      "generated/programs/algebraic_nets.md",
+    "Vignettes" => Any[
+      "Wiring diagrams" => Any[
+        "generated/wiring_diagrams/wiring_diagram_basics.md",
+        "generated/wiring_diagrams/diagrams_and_expressions.md",
+      ],
+      "Graphics" => Any[
+        "generated/graphics/graphviz_wiring_diagrams.md",
+        "generated/graphics/tikz_wiring_diagrams.md",
+      ],
+      "Experimental features" => Any[
+        "generated/programs/algebraic_nets.md",
+      ],
     ],
-    "APIs"      => Any[
+    "APIs" => Any[
       "apis/index.md",
       "apis/catlab.md",
       "apis/doctrines.md",
