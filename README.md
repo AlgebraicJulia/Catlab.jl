@@ -10,6 +10,15 @@ engineering fields. It emphasizes monoidal categories due to their wide
 applicability but can support any categorical doctrine that is formalizable as a
 generalized algebraic theory.
 
+## Getting started
+
+The [documentation](https://epatters.github.io/Catlab.jl/latest) contains
+several example notebooks, as well as partial API docs. However, we readily
+acknowledge that the documentation is not as well developed as it should be.
+Feel free to ask questions! In addition to GitHub issues, we have a
+[#catlab](https://julialang.slack.com/archives/CQNUDDF5L) channel on the [Julia
+Slack](https://slackinvite.julialang.org/).
+
 ## What is Catlab?
 
 Catlab is, or will eventually be, the following things.
@@ -34,10 +43,10 @@ implement core algorithms for solving word problems and reducing expressions in
 normal form, with respect to several important doctrines, such as the doctrine
 of categories and the doctrine of symmetric monoidal categories.
 
-## What is Catlab not?
+### What is it not?
 
-Catlab is *not* currently any of the following, although we do not rule that it
-could eventually evolve in these directions.
+Catlab is *not* currently any of the following things, although we do not rule
+out that it could eventually evolve in these directions.
 
 **Automated theorem prover**: Although there is some overlap between computer
 algebra systems and automated theorem provers, Catlab cannot be considered a
@@ -50,5 +59,5 @@ of the project.
 
 **Graphical user interface**: Catlab does not provide a wiring diagram editor
 or other graphical user interface. It is primarily a programming library, not a
-user-facing application, although it could be used as the backend for such an
+user-facing application. However, it could be used as the backend for such an
 application.

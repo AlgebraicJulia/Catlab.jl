@@ -35,10 +35,10 @@ implement core algorithms for solving word problems and reducing expressions in
 normal form, with respect to several important doctrines, such as the doctrine
 of categories and the doctrine of symmetric monoidal categories.
 
-## What is Catlab not?
+### What is it not?
 
-Catlab is *not* currently any of the following, although we do not rule that it
-could eventually evolve in these directions.
+Catlab is *not* currently any of the following things, although we do not rule
+out that it could eventually evolve in these directions.
 
 **Automated theorem prover**: Although there is some overlap between computer
 algebra systems and automated theorem provers, Catlab cannot be considered a
@@ -51,7 +51,7 @@ of the project.
 
 **Graphical user interface**: Catlab does not provide a wiring diagram editor
 or other graphical user interface. It is primarily a programming library, not a
-user-facing application, although it could be used as the backend for such an
+user-facing application. However, it could be used as the backend for such an
 application.
 
 ## Table of Contents
