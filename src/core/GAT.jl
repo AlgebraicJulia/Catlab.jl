@@ -1,26 +1,9 @@
 """ Generalized algebraic theories (GATs) in Julia.
 
-GATs generalize (multisorted) algebraic theories by incorporating a fragment of
-dependent type theory. They allow type and term constructors to be partially
-defined. GATs provide a convenient formal syntax for categorical structures.
-
 At present, this module only supports defining the *signature* of a GAT. In the
 future we may allow *axioms* to be expressed as well. Regardless, we will
 persist in calling this module "GAT". Signatures are defined using the
 `@signature` macro.
-
-There are several useful things to do with a GAT signature:
-
-1. Define *instances* of the signature (models of the theory) in Julia code
-   using the `@instance` macro
-2. Define *syntax* systems using the `@syntax` macro (see `Syntax` module)
-3. Define models of the theory by finite *presentation* using a syntax system
-   and the `@present` macro (see `Present` module)
-
-References:
-
-- (Cartmell, 1986, "Generalized algebraic theories and contextual categoies")
-- (Pitts, 1995, "Categorical logic", Sec 6: "Dependent types")
 """
 module GAT
 export @signature, @instance, invoke_term

@@ -1,16 +1,7 @@
-""" Syntax for a generalized algebraic theory (GAT).
+""" Syntax systems for generalized algebraic theories (GATs).
 
-Unlike instances of a theory, syntactic expressions don't necessarily satisfy
-the equations of the theory. For example, the default syntax operations for the
-`Category` theory don't form a category because they don't satisfy the category
-laws, e.g.,
-```
-compose(f, id(A)) != compose(f)
-```
-Whether dependent types are enforced at runtime and whether expressions are
-automatically brought to normal form depends on the particular syntax. In
-general, a single theory may have many different syntaxes. The purpose of this
-module to make the construction of syntax simple but flexible.
+In general, a single theory may have many different syntaxes. The purpose of
+this module to enable the simple but flexible construction of syntax systems.
 """
 module Syntax
 export @syntax, GATExpr, SyntaxDomainError, head, args, type_args, first, last,

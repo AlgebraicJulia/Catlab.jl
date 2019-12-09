@@ -4,8 +4,8 @@
 CurrentModule = Catlab
 ```
 
-Catlab.jl is an experimental package for computational category theory, written
-in [Julia](https://julialang.org). It provides a programming library and
+Catlab.jl is an experimental framework for applied category theory, written in
+[Julia](https://julialang.org). It provides a programming library and
 interactive interface for applications of category theory to the sciences and
 engineering fields. It emphasizes monoidal categories due to their wide
 applicability but can support any categorical doctrine that is formalizable as a

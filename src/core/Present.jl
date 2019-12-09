@@ -5,7 +5,7 @@ We support two methods for defining models of a GAT: as Julia objects using the
 Instances are useful for casting generic data structures, such as matrices,
 abstract tensor systems, and wiring diagrams, in categorical language.
 Presentations define small categories by generators and relations and are useful
-for applications like knowledge representation.
+in applications like knowledge representation.
 """
 module Present
 export @present, Presentation, Equation, generator, generators, has_generator,
