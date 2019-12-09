@@ -149,9 +149,11 @@ TODO
 ## API
 
 ```@autodocs
-Modules = [GAT,
-           Present,
-           Rewrite,
-           Syntax,
-          ]
+Modules = [
+  GAT,
+  Present,
+  Rewrite,
+  Syntax,
+]
+Private = false
 ```

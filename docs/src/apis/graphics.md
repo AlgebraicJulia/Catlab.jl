@@ -5,9 +5,11 @@ CurrentModule = Catlab.Graphics
 ```
 
 ```@autodocs
-Modules = [Graphviz,
-           GraphvizWiringDiagrams,
-           TikZ,
-           TikZWiringDiagrams,
-          ]
+Modules = [
+  Graphviz,
+  GraphvizWiringDiagrams,
+  TikZ,
+  TikZWiringDiagrams,
+]
+Private = false
 ```

@@ -5,8 +5,10 @@ CurrentModule = Catlab.Programs
 ```
 
 ```@autodocs
-Modules = [JuliaPrograms,
-           AlgebraicNets,
-           ExpressionTrees,
-          ]
+Modules = [
+  JuliaPrograms,
+  AlgebraicNets,
+  ExpressionTrees,
+]
+Private = false
 ```

@@ -5,12 +5,14 @@ CurrentModule = Catlab.WiringDiagrams
 ```
 
 ```@autodocs
-Modules = [WiringDiagramCore,
-           WiringLayers,
-           WiringDiagramAlgorithms,
-           WiringDiagramSerialization,
-           GraphMLWiringDiagrams,
-           JSONWiringDiagrams,
-           YFilesWiringDiagrams,
-          ]
+Modules = [
+  WiringDiagramCore,
+  WiringLayers,
+  WiringDiagramAlgorithms,
+  WiringDiagramSerialization,
+  GraphMLWiringDiagrams,
+  JSONWiringDiagrams,
+  YFilesWiringDiagrams,
+]
+Private = false
 ```

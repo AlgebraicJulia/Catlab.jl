@@ -35,4 +35,5 @@ Modules = [Doctrines,
           Catlab.Doctrines.MonoidalCategoryWithDiagonals,
           Catlab.Doctrines.SymmetricMonoidalCategory,
           ]
+Private = false
 ```
