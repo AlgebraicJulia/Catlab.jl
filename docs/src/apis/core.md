@@ -1,4 +1,4 @@
-# Syntax and expressions
+# Symbolic expressions
 
 ```@meta
 CurrentModule = Catlab
@@ -49,6 +49,7 @@ For example, the signature of the theory of categories could be defined by:
 
 ```@setup category
 using Catlab
+import Catlab.Doctrines: Ob, Hom, ObExpr, HomExpr, dom, codom, compose, id
 ```
 
 ```@example category
@@ -100,11 +101,10 @@ Julia types and functions. This feature builds on Julia's support for generic
 functions with [multiple
 dispatch](https://docs.julialang.org/en/v1/manual/methods/).
 
-In an instance of a signature, each signature type corresponds to a Julia type
-and each term corresponds to a Julia method of that name. For example, the
-category of matrices could be defined as the following instance of `Category`,
-where the objects are element types $k$ together with a natural number $n$,
-representing the $n$-dimensional vector space $k^n$.
+Instances are declared using the [`@instance`](@ref) macro. In an instance of a
+signature, each signature type is mapped to a Julia type and each term is mapped
+to a Julia method of the same name. For example, the category of matrices could
+be defined as an instance of the signature `Category` defined above:
 
 ```@example category
 using LinearAlgebra: I
@@ -128,19 +128,73 @@ A = Matrix{Float64}([0 1; 1 0])
 id(dom(A))
 ```
 
+In this instance, the signature type `Ob` is mapped to the custom Julia type
+`MatrixDomain`. The latter type has two fields, a Julia type `eltype`
+representing a field $k$ and an integer `dim` representing the dimensionality
+$n$, and so can be interpreted as the $n$-dimensional vector space $k^n$. The
+signature `Hom` is mapped to the standard Julia type `Matrix`.
+
 ## Syntax systems
 
-TODO
+Signatures can also be instantiated as systems of symbolic expressions, using
+the [`@syntax`](@ref) macro. The symbolic expressions are expression trees, as
+commonly used in computer algebra systems. They are similar to Julia's `Expr`
+type but they are instead subtyped from Catlab's [`GATExpr`](@ref) type and they
+have a more refined type hierarchy.
 
-Unlike instances of a theory, syntactic expressions don't necessarily satisfy
-the equations of the theory. For example, the default syntax operations for the
-`Category` theory don't form a category because they don't satisfy the category
-laws, e.g.,
+A single signature can have different syntax systems, treating different terms
+as primitive or performing different simplication or normalization procedures.
+Catlab tries to make it easy to define new syntax systems. Many of the
+signatures included with Catlab have default syntax systems, but the user is
+encouraged to define their own to suit their needs.
+
+To get started, you can always call the `@syntax` macro with an empty body.
+Below, we subtype from Catlab's abstract types `ObExpr` and `HomExpr` to enable
+LaTeX pretty-printing and other convenient features, but this is not required.
+
+```@example category
+@syntax CategoryExprs(ObExpr, HomExpr) Category begin
+end
+
+A, B, C, D = [ Ob(CategoryExprs.Ob, X) for X in [:A, :B, :C, :D] ]
+f, g, h = Hom(:f, A, B), Hom(:g, B, C), Hom(:h, C, D)
+
+compose(compose(f,g),h)
 ```
-compose(f, id(A)) != compose(f)
+
+The resulting symbolic expressions perform no simplification. For example, the
+associativity law is not satisfied:
+
+```@example category
+compose(compose(f,g),h) == compose(f,compose(g,h))
 ```
-Whether dependent types are enforced at runtime and whether expressions are
-automatically brought to normal form depends on the particular syntax.
+
+Thus, unlike instances of a theory, syntactic expressions are not expected to
+obey all the axioms of the theory.
+
+However, the user may supply logic in the body of the `@syntax` macro to enforce
+the axioms or perform other kinds of simplification. Below, we use the
+[`associate`](@ref) function provided by Catlab to convert the binary
+expressions representing composition into $n$-ary expressions for any number
+$n$. The option `strict=true` tells Catlab to check that the domain and codomain
+objects are strictly equal and throw an error if they are not.
+
+```@example category
+@syntax SimplifyingCategoryExprs(ObExpr, HomExpr) Category begin
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+end
+
+A, B, C, D = [ Ob(SimplifyingCategoryExprs.Ob, X) for X in [:A, :B, :C, :D] ]
+f, g, h = Hom(:f, A, B), Hom(:g, B, C), Hom(:h, C, D)
+
+compose(compose(f,g),h)
+```
+
+Now the associativity law *is* satisfied:
+
+```@example category
+compose(compose(f,g),h) == compose(f,compose(g,h))
+```
 
 ## Presentations
 
@@ -151,9 +205,9 @@ TODO
 ```@autodocs
 Modules = [
   GAT,
-  Present,
-  Rewrite,
   Syntax,
+  Rewrite,
+  Present,
 ]
 Private = false
 ```
