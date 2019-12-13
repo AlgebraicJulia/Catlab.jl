@@ -196,6 +196,61 @@ Now the associativity law *is* satisfied:
 compose(compose(f,g),h) == compose(f,compose(g,h))
 ```
 
+### Primitive versus derived operations
+
+In some algebraic structures, there is a choice as to which operations should be
+considered primitive and which should be derived. For example, in a [cartesian
+monoidal category](https://ncatlab.org/nlab/show/cartesian+monoidal+category),
+the copy operation $\Delta_X: X \to X \otimes X$ can be defined in terms of the
+pairing operation $\langle f, g \rangle$, or vice versa. In addition, the
+projections $\pi_{X,Y}: X \otimes Y \to X$ and $\pi_{X,Y}': X \otimes Y \to Y$
+can be defined in terms of the deleting operation (terminal morphism) or left as
+primitive.
+
+In Catlab, the recommended way to deal with such situations is to define *all*
+the operations in the signature and then allow particular syntax systems to
+determine which operations, if any, will be derived from others. In the case of
+the cartesian monoidal category, we could define a signature `CartesianCategory`
+by inheriting from the builtin signature `SymmetricMonoidalCategory`.
+
+```@setup cartesian-monoidal-category
+using Catlab
+import Catlab.Doctrines: ObExpr, HomExpr, SymmetricMonoidalCategory
+```
+
+```@example cartesian-monoidal-category
+@signature SymmetricMonoidalCategory(Ob,Hom) => CartesianCategory(Ob,Hom) begin
+  mcopy(A::Ob)::Hom(A,otimes(A,A))
+  delete(A::Ob)::Hom(A,munit())
+  
+  pair(f::Hom(A,B), g::Hom(A,C))::Hom(A,otimes(B,C)) <= (A::Ob, B::Ob, C::Ob)
+  proj1(A::Ob, B::Ob)::Hom(otimes(A,B),A)
+  proj2(A::Ob, B::Ob)::Hom(otimes(A,B),B)
+end
+nothing # hide
+```
+
+We could then define the copying operation in terms of the pairing.
+
+```@example cartesian-monoidal-category
+@syntax CartesianCategoryExprsV1(ObExpr,HomExpr) CartesianCategory begin
+  mcopy(A::Ob) = pair(id(A), id(A))
+end
+nothing # hide
+```
+
+Alternatively, we could define the pairing and projections in terms of the
+copying and deleting operations.
+
+```@example cartesian-monoidal-category
+@syntax CartesianCategoryExprsV2(ObExpr,HomExpr) CartesianCategory begin
+  pair(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g))
+  proj1(A::Ob, B::Ob) = otimes(id(A), delete(B))
+  proj2(A::Ob, B::Ob) = otimes(delete(A), id(B))
+end
+nothing # hide
+```
+
 ## Presentations
 
 TODO
