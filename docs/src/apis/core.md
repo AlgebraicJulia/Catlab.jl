@@ -215,7 +215,8 @@ by inheriting from the builtin signature `SymmetricMonoidalCategory`.
 
 ```@setup cartesian-monoidal-category
 using Catlab
-import Catlab.Doctrines: ObExpr, HomExpr, SymmetricMonoidalCategory
+import Catlab.Doctrines: Ob, Hom, ObExpr, HomExpr, SymmetricMonoidalCategory,
+  dom, codom, compose, id, otimes, munit, braid
 ```
 
 ```@example cartesian-monoidal-category
@@ -236,7 +237,9 @@ We could then define the copying operation in terms of the pairing.
 @syntax CartesianCategoryExprsV1(ObExpr,HomExpr) CartesianCategory begin
   mcopy(A::Ob) = pair(id(A), id(A))
 end
-nothing # hide
+
+A = Ob(CartesianCategoryExprsV1.Ob, :A)
+mcopy(A)
 ```
 
 Alternatively, we could define the pairing and projections in terms of the
@@ -248,7 +251,10 @@ copying and deleting operations.
   proj1(A::Ob, B::Ob) = otimes(id(A), delete(B))
   proj2(A::Ob, B::Ob) = otimes(delete(A), id(B))
 end
-nothing # hide
+
+A, B, C = [ Ob(CartesianCategoryExprsV2.Ob, X) for X in [:A, :B, :C] ]
+f, g = Hom(:f, A, B), Hom(:g, A, C)
+pair(f, g)
 ```
 
 ## Presentations
