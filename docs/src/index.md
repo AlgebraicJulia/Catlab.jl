@@ -64,5 +64,5 @@ Pages = [
      "apis/graphics.md",
      "apis/programs.md",
      ]
-Depth = 3
+Depth = 2
 ```

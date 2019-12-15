@@ -40,8 +40,8 @@ graph = to_graphviz(to_wiring_diagram(Hom(:h, I, I)))
 graph = to_graphviz(compose(f,g))
 @test stmts(graph, Graphviz.Node, :comment) == ["f","g"]
 
-# Layout direction.
-graph = to_graphviz(f; direction=:horizontal)
+# Layout orientation.
+graph = to_graphviz(f; orientation=LeftToRight)
 @test stmts(graph, Graphviz.Node, :comment) == ["f"]
 
 # Junction nodes.

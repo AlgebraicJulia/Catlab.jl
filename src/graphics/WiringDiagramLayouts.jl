@@ -7,7 +7,8 @@ wiring diagram (of type `WiringDiagram`) you must first convert to it to an
 expression, using `WiringDiagrams.to_hom_expr` or by some other means.
 """
 module WiringDiagramLayouts
-export BoxLayout, LayoutOptions, layout_hom_expr
+export LayoutOrientation, LeftToRight, RightToLeft, TopToBottom, BottomToTop,
+  LayoutOptions, BoxLayout, layout_hom_expr
 
 using AutoHashEquals
 using Parameters
@@ -20,23 +21,30 @@ using ...WiringDiagrams
 # Data types
 ############
 
+""" Orientation of wiring diagram.
+"""
+@enum LayoutOrientation LeftToRight RightToLeft TopToBottom BottomToTop
+
+is_horizontal(orient::LayoutOrientation) = orient in (LeftToRight, RightToLeft)
+is_vertical(orient::LayoutOrientation) = orient in (TopToBottom, BottomToTop)
+
+""" Internal data type for configurable options of wiring diagram layout.
+"""
+@with_kw struct LayoutOptions
+  orientation::LayoutOrientation = TopToBottom
+  junctions::Bool = true
+  base_box_size::Real = 2
+  min_box_size::StaticVector{2,<:Real} = SVector(1, 1)
+  sequence_pad::Real = 2
+  parallel_pad::Real = 1
+end
+
 """ Layout for box in a wiring diagram.
 """
 @auto_hash_equals struct BoxLayout{Value,T}
   value::Value
   position::MVector{2,T}
   size::MVector{2,T}
-end
-
-""" Internal data type for configurable options of wiring diagram layout.
-"""
-@with_kw struct LayoutOptions
-  direction::Symbol = :vertical
-  junctions::Bool = true
-  base_box_size::Real = 2
-  min_box_size::StaticVector{2,<:Real} = SVector(1, 1)
-  sequence_pad::Real = 2
-  parallel_pad::Real = 1
 end
 
 # Layout
@@ -52,7 +60,7 @@ positions and sizes are dimensionless (unitless).
 """
 function layout_hom_expr(expr::HomExpr; kw...)::WiringDiagram
   opts = LayoutOptions(; kw...)
-  @assert opts.direction in (:vertical, :horizontal)
+  layout_hom_expr(expr, opts)
 end
 
 function layout_hom_expr(expr::HomExpr, opts::LayoutOptions)
@@ -65,14 +73,14 @@ end
 
 function layout_hom_expr(expr::HomExpr{:compose}, opts::LayoutOptions)
   diagrams = [ layout_hom_expr(arg, opts) for arg in args(expr) ]
-  dim = opts.direction == :horizontal ? 1 : 2
+  dim = is_horizontal(opts.orientation) ? 1 : 2
   layout_sequential!(diagrams; dim=dim, pad=opts.sequence_pad)
   compose(diagrams)
 end
 
 function layout_hom_expr(expr::HomExpr{:otimes}, opts::LayoutOptions)
   diagrams = [ layout_hom_expr(arg, opts) for arg in args(expr) ]
-  dim = opts.direction == :vertical ? 1 : 2
+  dim = is_vertical(opts.orientation) ? 1 : 2
   layout_sequential!(diagrams; dim=dim, pad=opts.parallel_pad)
   otimes(diagrams)
 end

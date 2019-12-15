@@ -21,12 +21,12 @@ add_wires!(d, [
   Wire(:F, (gv,1) => (output_id(d),1)),
 ])
 
-d_vertical = read_yfiles("yed_vertical.graphml", direction=:vertical)
+d_vertical = read_yfiles("yed_vertical.graphml", orientation=TopToBottom)
 @test nboxes(d_vertical) == nboxes(d)
 perm = sortperm(boxes(d_vertical); by=box->box.value)
 @test is_permuted_equal(d_vertical, d, perm)
 
-d_horizontal = read_yfiles("yed_horizontal.graphml", direction=:horizontal)
+d_horizontal = read_yfiles("yed_horizontal.graphml", orientation=LeftToRight)
 @test nboxes(d_horizontal) == nboxes(d)
 perm = sortperm(boxes(d_horizontal); by=box->box.value)
 @test is_permuted_equal(d_horizontal, d, perm)

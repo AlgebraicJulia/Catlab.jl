@@ -11,7 +11,7 @@ using Catlab.Doctrines, Catlab.WiringDiagrams
 using Catlab.Graphics
 
 function show_diagram(d::WiringDiagram)
-  to_graphviz(d, direction=:horizontal, labels=false)
+  to_graphviz(d, orientation=LeftToRight, labels=false)
 end
 
 # ## Expressions to diagrams

@@ -38,7 +38,7 @@ to_graphviz(composite)
 # We can tell Graphviz to lay out the diagrams in the horizontal (left-to-right)
 # direction.
 
-to_graphviz(composite, direction=:horizontal)
+to_graphviz(composite, orientation=LeftToRight)
 
 # When working with very large diagrams (larger than the ones shown here), it is
 # sometimes convenient to omit the ports of the outer box and any wires attached

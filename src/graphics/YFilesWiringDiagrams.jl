@@ -20,6 +20,7 @@ using LightGraphs, MetaGraphs
 using ...WiringDiagrams
 import ...WiringDiagrams.GraphMLWiringDiagrams: parse_graphml_data_value,
   parse_graphml_metagraph
+using ..WiringDiagramLayouts: LayoutOrientation, TopToBottom, is_vertical
 
 # Data types
 ############
@@ -45,9 +46,7 @@ function parse_yfiles_diagram(BoxValue::Type, WireValue::Type, s::AbstractString
   parse_yfiles_diagram(BoxValue, WireValue, LightXML.parse_string(s); kw...)
 end
 function parse_yfiles_diagram(BoxValue::Type, WireValue::Type, xdoc::XMLDocument;
-    direction::Symbol=:vertical, keep_labels::Bool=true)::WiringDiagram
-  @assert direction in (:horizontal, :vertical)
-  
+    orientation::LayoutOrientation=TopToBottom, keep_labels::Bool=true)::WiringDiagram  
   # Clean up GraphML keys before reading.
   xroot = root(xdoc)
   for xkey in xroot["key"]
@@ -85,9 +84,9 @@ function parse_yfiles_diagram(BoxValue::Type, WireValue::Type, xdoc::XMLDocument
       end
       edge_graphics = pop!(wire_data, :edgegraphics)
       wire_data[:source_coord] = round(Int,
-        edge_graphics[direction == :vertical ? :source_x : :source_y])
+        edge_graphics[is_vertical(orientation) ? :source_x : :source_y])
       wire_data[:target_coord] = round(Int,
-        edge_graphics[direction == :vertical ? :target_x : :target_y])
+        edge_graphics[is_vertical(orientation) ? :target_x : :target_y])
       if keep_labels & haskey(edge_graphics, :label)
         wire_data[:label] = edge_graphics[:label]
       end
