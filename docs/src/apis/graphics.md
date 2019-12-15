@@ -10,6 +10,7 @@ Modules = [
   GraphvizWiringDiagrams,
   TikZ,
   TikZWiringDiagrams,
+  YFilesWiringDiagrams,
 ]
 Private = false
 ```

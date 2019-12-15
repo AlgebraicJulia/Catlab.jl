@@ -1,7 +1,7 @@
 module TestYFilesWiringDiagrams
 
 using Test
-using Catlab.WiringDiagrams
+using Catlab.WiringDiagrams, Catlab.Graphics
 
 function read_yfiles(name::String; kw...)
   filename = joinpath(@__DIR__, "data", name)

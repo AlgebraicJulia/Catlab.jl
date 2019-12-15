@@ -9,3 +9,7 @@ end
   include("TikZ.jl")
   include("TikZWiringDiagrams.jl")
 end
+
+@testset "yFiles" begin
+  include("YFilesWiringDiagrams.jl")
+end

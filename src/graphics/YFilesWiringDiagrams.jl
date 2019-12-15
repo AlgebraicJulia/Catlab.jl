@@ -17,9 +17,9 @@ using Compat
 using LightXML
 using LightGraphs, MetaGraphs
 
-using ..WiringDiagramCore
-using ..GraphMLWiringDiagrams: convert_from_graphml_data, parse_graphml_metagraph
-import ..GraphMLWiringDiagrams: parse_graphml_data_value
+using ...WiringDiagrams
+import ...WiringDiagrams.GraphMLWiringDiagrams: parse_graphml_data_value,
+  parse_graphml_metagraph
 
 # Data types
 ############
