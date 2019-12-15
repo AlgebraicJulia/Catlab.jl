@@ -3,11 +3,13 @@ module Graphics
 using Reexport
 using Requires
 
+include("WiringDiagramLayouts.jl")
 include("Graphviz.jl")
 include("GraphvizWiringDiagrams.jl")
 include("TikZ.jl")
 include("TikZWiringDiagrams.jl")
 
+@reexport using. WiringDiagramLayouts
 @reexport using .GraphvizWiringDiagrams
 @reexport using .TikZWiringDiagrams
 
