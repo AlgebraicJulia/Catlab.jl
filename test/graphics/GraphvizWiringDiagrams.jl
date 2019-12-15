@@ -41,8 +41,10 @@ graph = to_graphviz(compose(f,g))
 @test stmts(graph, Graphviz.Node, :comment) == ["f","g"]
 
 # Layout orientation.
-graph = to_graphviz(f; orientation=LeftToRight)
-@test stmts(graph, Graphviz.Node, :comment) == ["f"]
+for orientation in instances(LayoutOrientation)
+  graph = to_graphviz(compose(f,g); orientation=orientation)
+  @test stmts(graph, Graphviz.Node, :comment) == ["f","g"]
+end
 
 # Junction nodes.
 graph = to_graphviz(add_junctions!(compose(f, mcopy(Ports(B)))))

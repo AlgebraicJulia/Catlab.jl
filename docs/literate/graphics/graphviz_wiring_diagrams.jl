@@ -35,10 +35,12 @@ to_graphviz(compose(braid(A,A), otimes(f,f), braid(B,B)))
 composite = compose(otimes(g,f), h, otimes(f,g))
 to_graphviz(composite)
 
-# We can tell Graphviz to lay out the diagrams in the horizontal (left-to-right)
-# direction.
+# By default, the wiring diagram is laid out from top to bottom. Other layout
+# orientations can be requested, such as left-to-right or bottom-to-top:
 
 to_graphviz(composite, orientation=LeftToRight)
+#-
+to_graphviz(composite, orientation=BottomToTop)
 
 # When working with very large diagrams (larger than the ones shown here), it is
 # sometimes convenient to omit the ports of the outer box and any wires attached

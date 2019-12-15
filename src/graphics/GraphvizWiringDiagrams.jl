@@ -134,7 +134,7 @@ function to_graphviz(f::WiringDiagram;
   
   # Graph.
   graph_attrs = merge(graph_attrs, Graphviz.Attributes(
-    :rankdir => is_vertical(orientation) ? "TB" : "LR"
+    :rankdir => rank_dir(orientation)
   ))
   Graphviz.Digraph(graph_name, stmts;
     graph_attrs=merge(default_graph_attrs, graph_attrs),
@@ -201,19 +201,23 @@ function node_html_label(nin::Int, nout::Int, text_label::String;
     orientation::LayoutOrientation=TopToBottom, port_size::String="0",
     attrs::Graphviz.Attributes=Graphviz.Attributes())::Graphviz.Html
   if is_vertical(orientation)
+    input_label = ports_horizontal_html_label(InputPort, nin, port_size)
+    output_label = ports_horizontal_html_label(OutputPort, nout, port_size)
     Graphviz.Html("""
       <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-      <TR><TD>$(ports_horizontal_html_label(InputPort,nin,port_size))</TD></TR>
+      <TR><TD>$(orientation == TopToBottom ? input_label : output_label)</TD></TR>
       <TR><TD $(html_attributes(attrs))>$(escape_html(text_label))</TD></TR>
-      <TR><TD>$(ports_horizontal_html_label(OutputPort,nout,port_size))</TD></TR>
+      <TR><TD>$(orientation == BottomToTop ? input_label : output_label)</TD></TR>
       </TABLE>""")
   else
+    input_label = ports_vertical_html_label(InputPort, nin, port_size)
+    output_label = ports_vertical_html_label(OutputPort, nout, port_size)
     Graphviz.Html("""
       <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
       <TR>
-      <TD>$(ports_vertical_html_label(InputPort,nin,port_size))</TD>
+      <TD>$(orientation == LeftToRight ? input_label : output_label)</TD>
       <TD $(html_attributes(attrs))>$(escape_html(text_label))</TD>
-      <TD>$(ports_vertical_html_label(OutputPort,nout,port_size))</TD>
+      <TD>$(orientation == RightToLeft ? input_label : output_label)</TD>
       </TR>
       </TABLE>""")
   end
@@ -279,7 +283,6 @@ end
 function graphviz_outer_ports(v::Int, kind::PortKind, nports::Int;
     anchor::Bool=true, orientation::LayoutOrientation=TopToBottom)::Graphviz.Subgraph
   @assert nports > 0
-  dir = is_vertical(orientation) ? "LR" : "TB"
   port_width = "$(round(24/72,digits=3))" # port width in inches
   nodes = [ port_node_name(v, i) for i in 1:nports ]
   stmts = Graphviz.Statement[
@@ -292,14 +295,14 @@ function graphviz_outer_ports(v::Int, kind::PortKind, nports::Int;
     stmts,
     graph_attrs=Graphviz.Attributes(
       :rank => kind == InputPort ? "source" : "sink",
-      :rankdir => dir,
+      :rankdir => is_vertical(orientation) ? "LR" : "TB"
     ),
     node_attrs=Graphviz.Attributes(
       :style => "invis",
       :shape => "none",
       :label => "",
-      :width => dir == "LR" ? port_width : "0",
-      :height => dir == "TB" ? port_width : "0",
+      :width => is_horizontal(orientation) ? port_width : "0",
+      :height => is_vertical(orientation) ? port_width : "0",
     ),
     edge_attrs=Graphviz.Attributes(
       :style => "invis",
@@ -307,6 +310,16 @@ function graphviz_outer_ports(v::Int, kind::PortKind, nports::Int;
   )
 end
 port_node_name(v::Int, port::Int) = string(box_id([v]), "p", port)
+
+""" Graphviz rank direction (`rankdir`) for layout orientation.
+
+Reference: https://www.graphviz.org/doc/info/attrs.html#k:rankdir
+"""
+rank_dir(orientation::LayoutOrientation) = rank_dir(Val(orientation))
+rank_dir(::Val{TopToBottom}) = "TB"
+rank_dir(::Val{BottomToTop}) = "BT"
+rank_dir(::Val{LeftToRight}) = "LR"
+rank_dir(::Val{RightToLeft}) = "RL"
 
 """ Graphviz anchor for port.
 """
@@ -340,15 +353,16 @@ end
 
 """ Escape special HTML characters: &, <, >, ", '
 
-Borrowed from HttpCommon package: https://github.com/JuliaWeb/HttpCommon.jl
+Adapted from [HttpCommon.jl](https://github.com/JuliaWeb/HttpCommon.jl).
 """
 function escape_html(s::AbstractString)
-  s = replace(s, "&" => "&amp;")
-  s = replace(s, "\"" => "&quot;")
-  s = replace(s, "'" => "&#39;")
-  s = replace(s, "<" => "&lt;")
-  s = replace(s, ">" => "&gt;")
-  return s
+  reduce(replace, [
+    "&" => "&amp;",
+    "\"" => "&quot;",
+    "'" => "&#39;",
+    "<" => "&lt;",
+    ">" => "&gt;",
+  ], init=s)
 end
 
 end
