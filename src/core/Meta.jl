@@ -71,14 +71,17 @@ end
 """
 function parse_function_sig(call_expr::Expr)::JuliaFunctionSig
   name, args = @match call_expr begin
+    Expr(:call, [name::Symbol, Expr(:parameters, kw...), args...]) => (name, args)
     Expr(:call, [name::Symbol, args...]) => (name, args)
     _ => throw(ParseError("Ill-formed function signature $call_expr"))
   end
-  types = [ @match expr begin
+  types = map(args) do expr
+    @match expr begin
       Expr(:(::), [_, typ]) => typ
       Expr(:(::), [typ]) => typ
       _ => :Any
-    end for expr in args ]
+    end
+  end
   JuliaFunctionSig(name, types)
 end
 parse_function_sig(fun::JuliaFunction) = parse_function_sig(fun.call_expr)
