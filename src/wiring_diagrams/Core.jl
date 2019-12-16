@@ -586,7 +586,7 @@ function substitute(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagra
   # problem of *instantaneous wires*. Some authors ban instantaneous wires, but
   # want to allow them because they can represent the identity, braidings, etc.
   @assert length(vs) == length(subs)
-  result = WiringDiagram(input_ports(d), output_ports(d))
+  result = WiringDiagram(d.value, input_ports(d), output_ports(d))
   
   # Add boxes by interleaving, in the correct order, the non-substituted boxes
   # of the original diagram and the internal boxes of the substituted diagrams.
@@ -675,7 +675,7 @@ function encapsulate(d::WiringDiagram, vss::Vector{Vector{Int}};
   if isnothing(values)
     values = repeat([nothing], length(vss))
   end
-  result = WiringDiagram(input_ports(d), output_ports(d))
+  result = WiringDiagram(d.value, input_ports(d), output_ports(d))
   
   # Add boxes, both encapsulated and non-encapsulated, to new wiring diagram.
   encapsulated_representatives = Dict(
