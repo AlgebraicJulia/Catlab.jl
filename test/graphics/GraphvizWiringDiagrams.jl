@@ -2,8 +2,7 @@ module TestGraphvizWiringDiagrams
 
 using Test
 
-using Catlab.Doctrines
-using Catlab.WiringDiagrams
+using Catlab.Doctrines, Catlab.WiringDiagrams
 using Catlab.Graphics
 import Catlab.Graphics: Graphviz
 

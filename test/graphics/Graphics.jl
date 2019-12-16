@@ -1,5 +1,9 @@
 using Test
 
+@testset "Layouts" begin
+  include("WiringDiagramLayouts.jl")
+end
+
 @testset "Graphviz" begin
   include("Graphviz.jl")
   include("GraphvizWiringDiagrams.jl")

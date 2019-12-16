@@ -826,26 +826,25 @@ Ports(expr::ObExpr) = Ports(collect_values(expr))
     return f
   end
   
-  function compose(f::WiringDiagram, g::WiringDiagram)
-    # Check only that f and g have the same number of ports.
-    # The port types will be checked when the wires are added.
+  function compose(f::WiringDiagram, g::WiringDiagram; unsubstituted::Bool=false)
     if length(codom(f)) != length(dom(g))
+      # Check only that f and g have the same number of ports.
+      # The port types will be checked when the wires are added.
       error("Incompatible domains $(codom(f)) and $(dom(g))")
     end
-    
     h = WiringDiagram(dom(f), codom(g))
     fv = add_box!(h, f)
     gv = add_box!(h, g)
     add_wires!(h, ((input_id(h),i) => (fv,i) for i in eachindex(dom(f))))
     add_wires!(h, ((fv,i) => (gv,i) for i in eachindex(codom(f))))
     add_wires!(h, ((gv,i) => (output_id(h),i) for i in eachindex(codom(g))))
-    substitute(h, [fv,gv])
+    unsubstituted ? h : substitute(h, [fv,gv])
   end
   
   otimes(A::Ports, B::Ports) = Ports([A.ports; B.ports])
   munit(::Type{Ports}) = Ports([])
   
-  function otimes(f::WiringDiagram, g::WiringDiagram)
+  function otimes(f::WiringDiagram, g::WiringDiagram; unsubstituted::Bool=false)
     h = WiringDiagram(otimes(dom(f),dom(g)), otimes(codom(f),codom(g)))
     m, n = length(dom(f)), length(codom(f))
     fv = add_box!(h, f)
@@ -854,7 +853,7 @@ Ports(expr::ObExpr) = Ports(collect_values(expr))
     add_wires!(h, (input_id(h),i+m) => (gv,i) for i in eachindex(dom(g)))
     add_wires!(h, (fv,i) => (output_id(h),i) for i in eachindex(codom(f)))
     add_wires!(h, (gv,i) => (output_id(h),i+n) for i in eachindex(codom(g)))
-    substitute(h, [fv,gv])
+    unsubstituted ? h : substitute(h, [fv,gv])
   end
   
   function braid(A::Ports, B::Ports)

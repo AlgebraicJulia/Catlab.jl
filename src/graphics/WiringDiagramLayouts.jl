@@ -10,9 +10,8 @@ module WiringDiagramLayouts
 export LayoutOrientation, LeftToRight, RightToLeft, TopToBottom, BottomToTop,
   LayoutOptions, BoxLayout, layout_hom_expr
 
-using AutoHashEquals
 using Parameters
-using StaticArrays: StaticVector, SVector, MVector
+using StaticArrays: StaticVector, SVector
 
 using ...Syntax
 using ...Doctrines: ObExpr, HomExpr, dom, codom, compose, id, otimes, braid
@@ -27,25 +26,35 @@ using ...WiringDiagrams
 
 is_horizontal(orient::LayoutOrientation) = orient in (LeftToRight, RightToLeft)
 is_vertical(orient::LayoutOrientation) = orient in (TopToBottom, BottomToTop)
+is_positive(orient::LayoutOrientation) = orient in (LeftToRight, BottomToTop)
+is_negative(orient::LayoutOrientation) = orient in (RightToLeft, TopToBottom)
+
+function svector(orient::LayoutOrientation, first, second)
+  is_horizontal(orient) ? SVector(first, second) : SVector(second, first)
+end
 
 """ Internal data type for configurable options of wiring diagram layout.
 """
 @with_kw struct LayoutOptions
-  orientation::LayoutOrientation = TopToBottom
+  orientation::LayoutOrientation = LeftToRight
   junctions::Bool = true
-  base_box_size::Real = 2
-  min_box_size::StaticVector{2,<:Real} = SVector(1, 1)
-  sequence_pad::Real = 2
-  parallel_pad::Real = 1
+  base_box_size::Float64 = 2
+  sequence_pad::Float64 = 2
+  parallel_pad::Float64 = 1
 end
 
 """ Layout for box in a wiring diagram.
 """
-@auto_hash_equals struct BoxLayout{Value,T}
-  value::Value
-  position::MVector{2,T}
-  size::MVector{2,T}
+@with_kw mutable struct BoxLayout{Value}
+  value::Value = nothing
+  position::SVector{2,Float64} = zeros(SVector{2})
+  size::SVector{2,Float64} = zeros(SVector{2})
 end
+
+lower_corner(layout::BoxLayout) = layout.position - layout.size/2
+upper_corner(layout::BoxLayout) = layout.position + layout.size/2
+lower_corner(box::AbstractBox) = lower_corner(box.value)
+upper_corner(box::AbstractBox) = upper_corner(box.value)
 
 # Layout
 ########
@@ -54,9 +63,10 @@ end
 
 Returns a wiring diagram with `BoxLayout`s assigned to every box in the diagram.
 
-The layout is calculated with respect to a cartesian coordinate system with
-origin in the top-left corner. Box positions are relative to their centers. All
-positions and sizes are dimensionless (unitless).
+The layout is calculated with respect to a right-handed cartesian coordinate
+system with origin in the bottom-left corner, consistent with Graphviz, TikZ,
+and standard mathematical notation. Box positions are relative to their centers.
+All positions and sizes are dimensionless (unitless).
 """
 function layout_hom_expr(expr::HomExpr; kw...)::WiringDiagram
   opts = LayoutOptions(; kw...)
@@ -66,70 +76,108 @@ end
 function layout_hom_expr(expr::HomExpr, opts::LayoutOptions)
   # Default method: singleton diagram.
   inputs, outputs = collect(dom(expr)), collect(codom(expr))
-  #size = 
-  #layout = 
-  singleton_diagram(Box(BoxLayout(expr, position, size), inputs, outputs))
+  size = default_box_size(length(inputs), length(outputs), opts)
+  box = Box(BoxLayout(value=expr, size=size), inputs, outputs)
+  size_to_fit!(singleton_diagram(box), opts)
 end
 
 function layout_hom_expr(expr::HomExpr{:compose}, opts::LayoutOptions)
-  diagrams = [ layout_hom_expr(arg, opts) for arg in args(expr) ]
-  dim = is_horizontal(opts.orientation) ? 1 : 2
-  layout_sequential!(diagrams; dim=dim, pad=opts.sequence_pad)
-  compose(diagrams)
+  subdiagrams = [ layout_hom_expr(arg, opts) for arg in args(expr) ]
+  foldl((d1,d2) -> compose_with_layout!(d1, d2, opts), subdiagrams)
 end
 
 function layout_hom_expr(expr::HomExpr{:otimes}, opts::LayoutOptions)
-  diagrams = [ layout_hom_expr(arg, opts) for arg in args(expr) ]
-  dim = is_vertical(opts.orientation) ? 1 : 2
-  layout_sequential!(diagrams; dim=dim, pad=opts.parallel_pad)
-  otimes(diagrams)
+  subdiagrams = [ layout_hom_expr(arg, opts) for arg in args(expr) ]
+  foldl((d1,d2) -> otimes_with_layout!(d1, d2, opts), subdiagrams)
 end
 
-layout_hom_expr(expr::HomExpr{:id}, opts::LayoutOptions) = layout_wires(expr, opts)
-layout_hom_expr(expr::HomExpr{:braid}, opts::LayoutOptions) = layout_wires(expr, opts)
-
-function layout_wires(expr::HomExpr, opts::LayoutOptions)
-  functor((Ports, WiringDiagram), expr;
-    terms = Dict(
-      :Ob => expr -> Ports([expr]),
-      :Hom => expr -> error("Found morphism generator $expr during wire layout"),
-    ))
+function compose_with_layout!(d1::WiringDiagram, d2::WiringDiagram, opts::LayoutOptions)
+  # Compare with `WiringDiagram.compose`.
+  diagram = compose(d1, d2; unsubstituted=true)
+  sgn = is_positive(opts.orientation) ? +1 : -1
+  dir = svector(opts.orientation, sgn, 0)
+  place_adjacent!(d1, d2; dir=dir)
+  substitute_with_layout!(size_to_fit!(diagram, opts))
 end
 
-""" Lay out a sequence of wiring diagrams one after the other.
+function otimes_with_layout!(d1::WiringDiagram, d2::WiringDiagram, opts::LayoutOptions)
+  # Compare with `WiringDiagrams.otimes`.
+  diagram = otimes(d1, d2; unsubstituted=true)
+  sgn = is_horizontal(opts.orientation) ? +1 : -1
+  dir = svector(opts.orientation, 0, sgn)
+  place_adjacent!(d1, d2; dir=dir)
+  substitute_with_layout!(size_to_fit!(diagram, opts))
+end
+
+""" Size a wiring diagram to fit its contents.
+
+The inner boxes are also shifted to be centered within the new bounds.
 """
-function layout_sequential!(diagrams::Vector{WiringDiagram};
-                            dim::Int=1, pad::Real=0)
-  @assert dim == 1 || dim == 2
-  alt_dim = 3 - dim
-  offset = pad
-  for diagram in diagrams
-    lower, upper = lower_corner(diagram), upper_corner(diagram)
-    center = (lower + upper) / 2
-    size = upper - lower
-    for box in boxes(diagram)
-      layout = box.value::BoxLayout
-      # Offset along primary dimension.
-      layout.position[dim] += (offset - lower[dim])
-      # Re-center along alternate dimension. Has no effect if already centered.
-      layout.position[alt_dim] -= center[alt_dim]
-    end
-    offset += size[dim] + pad
-  end
+function size_to_fit!(diagram::WiringDiagram, opts::LayoutOptions)
+  nin, nout = length(input_ports(diagram)), length(output_ports(diagram))
+  minimum_size = default_box_size(nin, nout, opts)
+  
+  lower, upper = contents_lower_corner(diagram), contents_upper_corner(diagram)
+  content_size = upper - lower
+  pad = svector(opts.orientation, opts.sequence_pad, opts.parallel_pad)
+  size = max.(minimum_size, content_size + pad)
+  
+  shift_boxes!(diagram, (size-content_size)/2 - lower)
+  diagram.value = BoxLayout(size=size)
+  diagram
 end
 
-function lower_corner(diagram::WiringDiagram)
-  mapreduce((c,d) -> min.(c,d), boxes(diagram)) do box
-    lower_corner(box.value)
-  end
+""" Substitute sub-wiring diagrams, preserving their layouts.
+"""
+function substitute_with_layout!(diagram::WiringDiagram)
+  substitute_with_layout!(diagram, box_ids(diagram))
 end
-function upper_corner(diagram::WiringDiagram)
-  mapreduce((c,d) -> max.(c,d), boxes(diagram)) do box
-    upper_corner(box.value)
+function substitute_with_layout!(diagram::WiringDiagram, vs::Vector{Int})
+  for v in vs
+    subdiagram = box(diagram, v)::WiringDiagram
+    shift_boxes!(subdiagram, lower_corner(subdiagram))
   end
+  substitute(diagram, vs)
 end
 
-lower_corner(layout::BoxLayout) = layout.position - layout.size/2
-upper_corner(layout::BoxLayout) = layout.position + layout.size/2
+""" Place one box adjacent to another.
+
+The absolute positions are undefined; only relative positions are guaranteed.
+"""
+function place_adjacent!(box1::AbstractBox, box2::AbstractBox;
+                         dir::StaticVector{2,<:Real}=SVector(1,0))
+  layout1, layout2 = box1.value::BoxLayout, box2.value::BoxLayout
+  layout1.position = -layout1.size/2 .* dir
+  layout2.position = layout2.size/2 .* dir
+end
+
+""" Shift all boxes within wiring diagram by a fixed offset.
+"""
+function shift_boxes!(diagram::WiringDiagram, offset::StaticVector{2,<:Real})
+  for box in boxes(diagram)
+    layout = box.value::BoxLayout
+    layout.position += offset
+  end
+  diagram
+end
+
+function contents_lower_corner(diagram::WiringDiagram)
+  mapreduce(lower_corner, (c,d) -> min.(c,d), boxes(diagram))
+end
+function contents_upper_corner(diagram::WiringDiagram)
+  mapreduce(upper_corner, (c,d) -> max.(c,d), boxes(diagram))
+end
+
+""" Compute the default size of a box based on the number of its ports.
+
+We use the unique formula consistent with the padding for monoidal products,
+ensuring that the size of a product of boxes depends only on the total number of
+ports, not on the number of boxes.
+"""
+function default_box_size(nin::Int, nout::Int, opts::LayoutOptions)
+  base_size = opts.base_box_size
+  n = max(1, nin, nout)
+  svector(opts.orientation, base_size, n*base_size + (n-1)*opts.parallel_pad)
+end
 
 end
