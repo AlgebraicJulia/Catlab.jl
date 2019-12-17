@@ -242,7 +242,7 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
   value = invokelatest(func, recorder, in_ports...)
   
   # Add outgoing wires for return values.
-  out_ports = normalize_args(value)
+  out_ports = normalize_return_value(value)
   diagram.output_ports = [ port_value(diagram, port) for port in out_ports ]
   add_wires!(diagram, [
     port => Port(v_out, InputPort, i) for (i, port) in enumerate(out_ports)
@@ -283,11 +283,11 @@ function record_call!(diagram::WiringDiagram, f::HomExpr, args...)
 
   # Adding incoming wires.
   inputs = input_ports(box)
-  args = normalize_args(args...)
-  @assert all(arg isa Port for arg in args)
-  @assert length(args) == length(inputs)
+  arg_ports = normalize_arguments(Tuple(args))
+  @assert length(arg_ports) == length(inputs)
   add_wires!(diagram, [
-    Wire(port => Port(v, InputPort, i)) for (i, port) in enumerate(args)
+    Wire(port => Port(v, InputPort, i))
+    for (i, ports) in enumerate(arg_ports) for port in ports
   ])
   
   # Return output ports.
@@ -296,19 +296,32 @@ function record_call!(diagram::WiringDiagram, f::HomExpr, args...)
   make_return_value(return_ports)
 end
 
-""" Normalize arguments given as (possibly nested) tuples.
+""" Normalize arguments given as (possibly nested) tuples or vectors of values.
 """
-function normalize_args(args...)::Tuple
-  mapreduce((xs,ys) -> (xs..., ys...), args; init=()) do arg
-    if isnothing(arg)
-      ()
-    elseif arg isa Tuple
-      normalize_args(arg...)
-    else
-      (arg,)
-    end
+function normalize_arguments(xs::Tuple)
+  mapreduce(normalize_arguments, (xs,ys) -> (xs..., ys...), xs; init=())
+end
+function normalize_arguments(xs::Vector)
+  xss = map(normalize_arguments, flatten_vec(xs)) # Vector of lists of vectors
+  if isempty(xss)
+    ([],) # Degenerate case
+  else
+    @assert length(unique!(length.(xss))) == 1 # Don't allow `zip` to truncate.
+    Tuple(reduce(vcat, xs) for xs in zip(xss...))
   end
 end
+normalize_arguments(::Nothing) = ()
+normalize_arguments(x) = ([x],)
+
+flatten_vec(xs::Vector) = mapreduce(flatten_vec, vcat, xs; init=[])
+flatten_vec(x) = [x]
+
+""" Normalize return value as vector, following Julia conventions.
+"""
+normalize_return_value(::Nothing) = []
+normalize_return_value(xs::Tuple) = collect(xs)
+normalize_return_value(xs::Vector) = xs
+normalize_return_value(x) = [x]
 
 """ Return a zero, one, or more values, following Julia conventions.
 """

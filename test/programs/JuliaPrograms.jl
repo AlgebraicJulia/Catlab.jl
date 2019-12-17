@@ -4,9 +4,9 @@ using Test
 
 using Catlab, Catlab.Doctrines, Catlab.WiringDiagrams
 using Catlab.Programs.JuliaPrograms
-using Catlab.Programs.JuliaPrograms: normalize_args
+using Catlab.Programs.JuliaPrograms: normalize_arguments
 
-@present C(FreeCartesianCategory) begin
+@present C(FreeBiproductCategory) begin
   W::Ob
   X::Ob
   Y::Ob
@@ -34,75 +34,96 @@ X, Y, f, g, h = generators(C, [:X, :Y, :f, :g, :h])
 
 f, g, m, n = generators(C, [:f, :g, :m, :n])
 
-diagram = @parse_wiring_diagram(C, (x::X) -> f(x))
-@test diagram == to_wiring_diagram(f)
+parsed = @parse_wiring_diagram(C, (x::X) -> f(x))
+@test parsed == to_wiring_diagram(f)
 
 # Compositions in one dimension.
 
-diagram = @parse_wiring_diagram(C, (x::X) -> g(f(x)))
-@test diagram == to_wiring_diagram(compose(f,g))
+parsed = @parse_wiring_diagram(C, (x::X) -> g(f(x)))
+@test parsed == to_wiring_diagram(compose(f,g))
 
-diagram = @parse_wiring_diagram C (x::X) begin
+parsed = @parse_wiring_diagram C (x::X) begin
   y = f(x)
   z = g(y)
   return z
 end
-@test diagram == to_wiring_diagram(compose(f,g))
+@test parsed == to_wiring_diagram(compose(f,g))
 
-diagram = @parse_wiring_diagram C (v::X) begin
+parsed = @parse_wiring_diagram C (v::X) begin
   v = f(v)
   v = g(v)
   v = h(v)
   v
 end
-@test diagram == to_wiring_diagram(compose(f,g,h))
+@test parsed == to_wiring_diagram(compose(f,g,h))
 
 # Compositions in multiple dimensions.
 
-diagram = @parse_wiring_diagram C (x::X, y::Y) begin
+parsed = @parse_wiring_diagram C (x::X, y::Y) begin
   w, z = m(x, y)
   x2, y2 = n(w, z)
   return (x2, y2)
 end
-@test diagram == to_wiring_diagram(compose(m,n))
+@test parsed == to_wiring_diagram(compose(m,n))
 
-diagram = @parse_wiring_diagram(C, (x::X, y::Y) -> n(m(x,y)))
-@test diagram == to_wiring_diagram(compose(m,n))
+parsed = @parse_wiring_diagram(C, (x::X, y::Y) -> n(m(x,y)))
+@test parsed == to_wiring_diagram(compose(m,n))
 
 # Constants and co-constants.
 
-I = munit(FreeCartesianCategory.Ob)
+I = munit(FreeBiproductCategory.Ob)
 c = add_generator!(C, Hom(:c, I, X))
 d = add_generator!(C, Hom(:d, X, I))
 
-diagram = @parse_wiring_diagram(C, () -> c())
-@test diagram == to_wiring_diagram(c)
+parsed = @parse_wiring_diagram(C, () -> c())
+@test parsed == to_wiring_diagram(c)
 
-diagram = @parse_wiring_diagram(C, (x::X) -> c(d(x)))
-@test diagram == to_wiring_diagram(compose(d,c))
+parsed = @parse_wiring_diagram(C, (x::X) -> c(d(x)))
+@test parsed == to_wiring_diagram(compose(d,c))
 
-diagram = @parse_wiring_diagram C (x::X) begin
+parsed = @parse_wiring_diagram C (x::X) begin
   d(x)
   c()
 end
-@test diagram == to_wiring_diagram(compose(d,c))
+@test parsed == to_wiring_diagram(compose(d,c))
 
 # Diagonals: implicit syntax.
 
-diagram = @parse_wiring_diagram(C, (x::X) -> (f(x),f(x)))
-@test diagram == to_wiring_diagram(compose(mcopy(X),otimes(f,f)))
+parsed = @parse_wiring_diagram(C, (x::X) -> (f(x),f(x)))
+@test parsed == to_wiring_diagram(compose(mcopy(X),otimes(f,f)))
 
-diagram = @parse_wiring_diagram(C, (x::X) -> nothing)
-@test diagram == to_wiring_diagram(delete(X))
+parsed = @parse_wiring_diagram(C, (x::X) -> nothing)
+@test parsed == to_wiring_diagram(delete(X))
+
+# Codiagonals: special syntax.
+
+parsed = @parse_wiring_diagram(C, (x1::X, x2::X) -> f([x1,x2]))
+@test parsed == to_wiring_diagram(compose(mmerge(X),f))
+
+parsed = @parse_wiring_diagram(C, (x1::X, x2::X) -> [f(x1),f(x2)])
+@test_skip parsed == to_wiring_diagram(compose(otimes(f,f),mmerge(Y)))
+
+parsed = @parse_wiring_diagram(C, () -> f([]))
+@test parsed == to_wiring_diagram(compose(create(X),f))
 
 # Helper function: normalization of arguments.
 
-@test normalize_args(nothing) == ()
-@test normalize_args(1,nothing,2) == (1,2)
-@test normalize_args(1,2,3) == (1,2,3)
-@test normalize_args((1,2,3)) == (1,2,3)
-@test normalize_args((1,2),3) == (1,2,3)
-@test normalize_args(((1,2),3)) == (1,2,3)
+normalize(args...) = normalize_arguments(Tuple(args))
+
+@test normalize(nothing) == ()
+@test normalize(1) == ([1],)
+@test normalize(1,nothing,2) == ([1],[2])
+@test normalize(1,2,3) == ([1],[2],[3])
+@test normalize((1,2,3)) == ([1],[2],[3])
+@test normalize((1,2),3) == ([1],[2],[3])
+@test normalize(((1,2),3)) == ([1],[2],[3])
+
+@test normalize([]) == ([],)
+@test normalize([1]) == ([1],)
+@test normalize([1,2]) == ([1,2],)
+@test normalize([1,2],[3,4]) == ([1,2],[3,4])
+@test normalize([(1,2),(3,4)]) == ([1,3],[2,4])
+@test normalize([[(1,2),(3,4)],(5,6)]) == ([1,3,5],[2,4,6])
 
 # Roundtrip
 ###########
