@@ -191,6 +191,29 @@ end
 #########
 
 """ Parse a wiring diagram from Julia code.
+
+For the most part, this is standard Julia but we take a few liberties with the
+syntax. Products are represented as tuples. So if `x` and `y` are variables of
+type \$X\$ and \$Y\$, then `(x,y)` has type \$X \\otimes Y\$. Also, both `()`
+and `nothing` are interpreted as the monoidal unit \$I\$.
+
+Unlike in standard Julia, the call expressions `f(x,y)` and `f((x,y))` are
+equivalent. Consequently, given morphisms \$f: W \\to X \\otimes Y\$ and \$g: X
+\\otimes Y \\to Z\$, the code
+
+```julia
+x, y = f(w)
+g(x,y)
+```
+
+is equivalent to `g(f(w))`. In standard Julia, at most one of these calls to `g`
+would be valid.
+
+The diagonals (copying and deleting) are implicit in the Julia syntax: copying
+is variable reuse and deleting is variable non-use. For the codiagonals, a
+special syntax is provided, reinterpreting Julia's vector literals. Merging of
+`x1` and `x2` is represented as the vector `[x1,x2]` and creation as the empty
+vector `[]`. For example, `f([x1,x2])` translates to `compose(mmerge(X),f)`.
 """
 macro parse_wiring_diagram(pres, expr)
   Expr(:call, GlobalRef(JuliaPrograms, :parse_wiring_diagram),
@@ -203,6 +226,8 @@ macro parse_wiring_diagram(pres, call, body)
 end
 
 """ Parse a wiring diagram from a Julia function expression.
+
+See also: [`@parse_wiring_diagram`](@ref)
 """
 function parse_wiring_diagram(pres::Presentation, expr::Expr)::WiringDiagram
   @match expr begin
