@@ -22,7 +22,8 @@ end
 # Compilation
 #############
 
-X, Y, f, g, h = generators(C, [:X, :Y, :f, :g, :h])
+W, X, Y, Z = generators(C, [:W, :X, :Y, :Z])
+f, g, h = generators(C, [:f, :g, :h])
 
 @test compile(f) isa Function
 @test compile(compose(f,g)) isa Function
@@ -102,6 +103,10 @@ parsed = @parse_wiring_diagram(C, (x1::X, x2::X) -> f([x1,x2]))
 
 parsed = @parse_wiring_diagram(C, (x1::X, x2::X) -> [f(x1),f(x2)])
 @test parsed == to_wiring_diagram(compose(otimes(f,f),mmerge(Y)))
+
+parsed = @parse_wiring_diagram(C, (x::X, y::Y) -> n([m(x,y), m(x,y)]))
+@test parsed == to_wiring_diagram(compose(
+  mcopy(otimes(X,Y)), otimes(m,m), mmerge(otimes(W,Z)), n))
 
 parsed = @parse_wiring_diagram(C, () -> f([]))
 @test parsed == to_wiring_diagram(compose(create(X),f))

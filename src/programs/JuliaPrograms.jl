@@ -210,10 +210,11 @@ is equivalent to `g(f(w))`. In standard Julia, at most one of these calls to `g`
 would be valid.
 
 The diagonals (copying and deleting) are implicit in the Julia syntax: copying
-is variable reuse and deleting is variable non-use. For the codiagonals, a
-special syntax is provided, reinterpreting Julia's vector literals. Merging of
-`x1` and `x2` is represented as the vector `[x1,x2]` and creation as the empty
-vector `[]`. For example, `f([x1,x2])` translates to `compose(mmerge(X),f)`.
+is variable reuse and deleting is variable non-use. For the codiagonals (merging
+and creating), a special syntax is provided, reinterpreting Julia's vector
+literals. The merge of `x1` and `x2` is represented by the vector `[x1,x2]` and
+creation by the empty vector `[]`. For example, `f([x1,x2])` translates to
+`compose(mmerge(X),f)`.
 """
 macro parse_wiring_diagram(pres, expr)
   Expr(:call, GlobalRef(JuliaPrograms, :parse_wiring_diagram),
