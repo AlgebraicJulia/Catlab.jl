@@ -242,10 +242,14 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
   value = invokelatest(func, recorder, in_ports...)
   
   # Add outgoing wires for return values.
-  out_ports = normalize_return_value(value)
-  diagram.output_ports = [ port_value(diagram, port) for port in out_ports ]
+  out_ports = normalize_arguments((value,))
+  diagram.output_ports = [
+    # XXX: Inferring the output port types is not reliable.
+    port_value(diagram, first(ports)) for ports in out_ports
+  ]
   add_wires!(diagram, [
-    port => Port(v_out, InputPort, i) for (i, port) in enumerate(out_ports)
+    port => Port(v_out, InputPort, i)
+    for (i, ports) in enumerate(out_ports) for port in ports
   ])
   diagram
 end
@@ -312,16 +316,8 @@ function normalize_arguments(xs::Vector)
 end
 normalize_arguments(::Nothing) = ()
 normalize_arguments(x) = ([x],)
-
 flatten_vec(xs::Vector) = mapreduce(flatten_vec, vcat, xs; init=[])
 flatten_vec(x) = [x]
-
-""" Normalize return value as vector, following Julia conventions.
-"""
-normalize_return_value(::Nothing) = []
-normalize_return_value(xs::Tuple) = collect(xs)
-normalize_return_value(xs::Vector) = xs
-normalize_return_value(x) = [x]
 
 """ Return a zero, one, or more values, following Julia conventions.
 """

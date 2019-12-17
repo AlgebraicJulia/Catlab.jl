@@ -101,7 +101,7 @@ parsed = @parse_wiring_diagram(C, (x1::X, x2::X) -> f([x1,x2]))
 @test parsed == to_wiring_diagram(compose(mmerge(X),f))
 
 parsed = @parse_wiring_diagram(C, (x1::X, x2::X) -> [f(x1),f(x2)])
-@test_skip parsed == to_wiring_diagram(compose(otimes(f,f),mmerge(Y)))
+@test parsed == to_wiring_diagram(compose(otimes(f,f),mmerge(Y)))
 
 parsed = @parse_wiring_diagram(C, () -> f([]))
 @test parsed == to_wiring_diagram(compose(create(X),f))
