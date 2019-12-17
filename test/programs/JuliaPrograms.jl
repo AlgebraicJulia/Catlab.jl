@@ -4,6 +4,7 @@ using Test
 
 using Catlab, Catlab.Doctrines, Catlab.WiringDiagrams
 using Catlab.Programs.JuliaPrograms
+using Catlab.Programs.JuliaPrograms: normalize_args
 
 @present C(FreeCartesianCategory) begin
   W::Ob
@@ -93,6 +94,15 @@ diagram = @parse_wiring_diagram(C, (x::X) -> (f(x),f(x)))
 
 diagram = @parse_wiring_diagram(C, (x::X) -> nothing)
 @test diagram == to_wiring_diagram(delete(X))
+
+# Helper function: normalization of arguments.
+
+@test normalize_args(nothing) == ()
+@test normalize_args(1,nothing,2) == (1,2)
+@test normalize_args(1,2,3) == (1,2,3)
+@test normalize_args((1,2,3)) == (1,2,3)
+@test normalize_args((1,2),3) == (1,2,3)
+@test normalize_args(((1,2),3)) == (1,2,3)
 
 # Roundtrip
 ###########

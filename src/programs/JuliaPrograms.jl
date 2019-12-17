@@ -242,7 +242,7 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
   value = invokelatest(func, recorder, in_ports...)
   
   # Add outgoing wires for return values.
-  out_ports = collect_call_args(Port, [value])
+  out_ports = normalize_args(value)
   diagram.output_ports = [ port_value(diagram, port) for port in out_ports ]
   add_wires!(diagram, [
     port => Port(v_out, InputPort, i) for (i, port) in enumerate(out_ports)
@@ -283,10 +283,11 @@ function record_call!(diagram::WiringDiagram, f::HomExpr, args...)
 
   # Adding incoming wires.
   inputs = input_ports(box)
-  arg_ports = collect_call_args(Port, args)
-  @assert length(arg_ports) == length(inputs)
+  args = normalize_args(args...)
+  @assert all(arg isa Port for arg in args)
+  @assert length(args) == length(inputs)
   add_wires!(diagram, [
-    Wire(port => Port(v, InputPort, i)) for (i, port) in enumerate(arg_ports)
+    Wire(port => Port(v, InputPort, i)) for (i, port) in enumerate(args)
   ])
   
   # Return output ports.
@@ -295,18 +296,18 @@ function record_call!(diagram::WiringDiagram, f::HomExpr, args...)
   make_return_value(return_ports)
 end
 
-""" Collect all arguments into vector, allowing for multiplicity.
+""" Normalize arguments given as (possibly nested) tuples.
 """
-function collect_call_args(T::Type, args)::Vector
-  reduce(vcat, map(args) do arg
-    if isnothing(arg)  # Nullary case.
-      T[]
-    elseif arg isa T   # Unary case.
-      [arg]
-    else               # General case.
-      collect(arg)
+function normalize_args(args...)::Tuple
+  mapreduce((xs,ys) -> (xs..., ys...), args; init=()) do arg
+    if isnothing(arg)
+      ()
+    elseif arg isa Tuple
+      normalize_args(arg...)
+    else
+      (arg,)
     end
-  end; init=T[])
+  end
 end
 
 """ Return a zero, one, or more values, following Julia conventions.
