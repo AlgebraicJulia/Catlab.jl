@@ -36,6 +36,8 @@ f, g, m, n = generators(C, [:f, :g, :m, :n])
 diagram = @parse_wiring_diagram(C, (x::X) -> f(x))
 @test diagram == to_wiring_diagram(f)
 
+# Compositions in one dimension.
+
 diagram = @parse_wiring_diagram(C, (x::X) -> g(f(x)))
 @test diagram == to_wiring_diagram(compose(f,g))
 
@@ -54,6 +56,8 @@ diagram = @parse_wiring_diagram C (v::X) begin
 end
 @test diagram == to_wiring_diagram(compose(f,g,h))
 
+# Compositions in multiple dimensions.
+
 diagram = @parse_wiring_diagram C (x::X, y::Y) begin
   w, z = m(x, y)
   x2, y2 = n(w, z)
@@ -63,6 +67,8 @@ end
 
 diagram = @parse_wiring_diagram(C, (x::X, y::Y) -> n(m(x,y)))
 @test diagram == to_wiring_diagram(compose(m,n))
+
+# Constants and co-constants.
 
 I = munit(FreeCartesianCategory.Ob)
 c = add_generator!(C, Hom(:c, I, X))
@@ -79,6 +85,14 @@ diagram = @parse_wiring_diagram C (x::X) begin
   c()
 end
 @test diagram == to_wiring_diagram(compose(d,c))
+
+# Diagonals: implicit syntax.
+
+diagram = @parse_wiring_diagram(C, (x::X) -> (f(x),f(x)))
+@test diagram == to_wiring_diagram(compose(mcopy(X),otimes(f,f)))
+
+diagram = @parse_wiring_diagram(C, (x::X) -> nothing)
+@test diagram == to_wiring_diagram(delete(X))
 
 # Roundtrip
 ###########
