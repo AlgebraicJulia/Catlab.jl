@@ -1,14 +1,14 @@
-""" Backend-agnostic layout of wiring diagrams.
+""" Backend-agnostic layout of wiring diagrams based on morphism expressions.
 
-This module lays out morphism expressions as wiring diagrams, assigning
-positions and sizes to all the boxes. It uses the structure of the morphism
-expression to determine the layout. Thus, if you want to lay out an abstract
-wiring diagram (of type `WiringDiagram`) you must first convert to it to an
-expression, using `WiringDiagrams.to_hom_expr` or by some other means.
+This module lays out wiring diagrams for visualization, independent of any
+specific graphics system. It uses the structure of a morphism expression to
+determine the layout. Thus, the first step of the algorithm is to convert the
+wiring diagram to a symbolic expression, using the submodule
+`WiringDiagrams.Expressions`. Morphism expressions may also be given directly.
 """
 module WiringDiagramLayouts
 export LayoutOrientation, LeftToRight, RightToLeft, TopToBottom, BottomToTop,
-  LayoutOptions, BoxLayout, layout_hom_expr
+  BoxLayout, layout_diagram
 
 using Parameters
 using StaticArrays: StaticVector, SVector
@@ -56,23 +56,40 @@ upper_corner(layout::BoxLayout) = layout.position + layout.size/2
 lower_corner(box::AbstractBox) = lower_corner(box.value)
 upper_corner(box::AbstractBox) = upper_corner(box.value)
 
-# Layout
-########
+contents_lower_corner(diagram::WiringDiagram) =
+  mapreduce(lower_corner, (c,d) -> min.(c,d), boxes(diagram))
+contents_upper_corner(diagram::WiringDiagram) =
+  mapreduce(upper_corner, (c,d) -> max.(c,d), boxes(diagram))
 
-""" Lay out a morphism expression as a wiring diagram.
+# Main entry point
+##################
 
-Returns a wiring diagram with `BoxLayout`s assigned to every box in the diagram.
+""" Lay out a wiring diagram or morphism expression for visualization.
+
+If a wiring diagram is given, it is first to converted to a morphism expression.
 
 The layout is calculated with respect to a right-handed cartesian coordinate
 system with origin in the bottom-left corner, consistent with Graphviz, TikZ,
 and standard mathematical notation. Box positions are relative to their centers.
 All positions and sizes are dimensionless (unitless).
 """
-function layout_hom_expr(expr::HomExpr; kw...)::WiringDiagram
+function layout_diagram(Syntax::Module, diagram::WiringDiagram; kw...)
+  layout_wiring_diagram(to_hom_expr(Syntax, diagram); kw...)
+end
+function layout_diagram(Ob::Type, Hom::Type, diagram::WiringDiagram; kw...)
+  layout_wiring_diagram(to_hom_expr(Ob, Hom, diagram); kw...)
+end
+
+function layout_diagram(expr::HomExpr; kw...)::WiringDiagram
   opts = LayoutOptions(; kw...)
   layout_hom_expr(expr, opts)
 end
 
+# Layout of boxes
+#################
+
+""" Lay out a morphism expression as a wiring diagram.
+"""
 function layout_hom_expr(expr::HomExpr, opts::LayoutOptions)
   # Default method: singleton diagram.
   inputs, outputs = collect(dom(expr)), collect(codom(expr))
@@ -129,15 +146,15 @@ end
 
 """ Substitute sub-wiring diagrams, preserving their layouts.
 """
-function substitute_with_layout!(diagram::WiringDiagram)
-  substitute_with_layout!(diagram, box_ids(diagram))
+function substitute_with_layout!(d::WiringDiagram)
+  substitute_with_layout!(d, filter(v -> box(d,v) isa WiringDiagram, box_ids(d)))
 end
-function substitute_with_layout!(diagram::WiringDiagram, vs::Vector{Int})
+function substitute_with_layout!(d::WiringDiagram, vs::Vector{Int})
   for v in vs
-    subdiagram = box(diagram, v)::WiringDiagram
-    shift_boxes!(subdiagram, lower_corner(subdiagram))
+    sub = box(d, v)::WiringDiagram
+    shift_boxes!(sub, lower_corner(sub))
   end
-  substitute(diagram, vs)
+  substitute(d, vs)
 end
 
 """ Place one box adjacent to another.
@@ -159,13 +176,6 @@ function shift_boxes!(diagram::WiringDiagram, offset::StaticVector{2,<:Real})
     layout.position += offset
   end
   diagram
-end
-
-function contents_lower_corner(diagram::WiringDiagram)
-  mapreduce(lower_corner, (c,d) -> min.(c,d), boxes(diagram))
-end
-function contents_upper_corner(diagram::WiringDiagram)
-  mapreduce(upper_corner, (c,d) -> max.(c,d), boxes(diagram))
 end
 
 """ Compute the default size of a box based on the number of its ports.
