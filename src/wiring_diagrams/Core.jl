@@ -558,10 +558,12 @@ substitutions are simultaneous.
 This operation implements the operadic composition of wiring diagrams
 (`ocompose`).
 """
+function substitute(d::WiringDiagram)
+  substitute(d, filter(v -> box(d,v) isa WiringDiagram, box_ids(d)))
+end
 function substitute(d::WiringDiagram, v::Int)
   substitute(d, v, box(d,v)::WiringDiagram)
 end
-
 function substitute(d::WiringDiagram, vs::Vector{Int})
   substitute(d, vs, WiringDiagram[ box(d,v) for v in vs ])
 end

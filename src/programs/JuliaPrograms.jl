@@ -280,9 +280,7 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
     port => Port(v_out, InputPort, i)
     for (i, ports) in enumerate(out_ports) for port in ports
   ])
-  
-  # Substitute all sub-diagrams.
-  substitute(diagram, box_ids(diagram))
+  substitute(diagram)
 end
 
 """ Make a lookup table assigning names to generators or term constructors.
