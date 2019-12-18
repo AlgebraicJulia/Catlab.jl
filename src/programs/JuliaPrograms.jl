@@ -256,9 +256,9 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
   
   # Compile...
   args = first.(parsed_args)
-  kwargs = sort!(collect(filter(
-    name -> has_generator(pres, name), unique_symbols(body))))
-  func_expr = compile_recording_expr(body, args, kwargs=kwargs)
+  kwargs = make_lookup_table(pres, unique_symbols(body))
+  func_expr = compile_recording_expr(body, args,
+    kwargs = sort!(collect(keys(kwargs))))
   func = eval(func_expr)
   
   # ...and then evaluate function that records the function calls.
@@ -268,8 +268,7 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
   v_in, v_out = input_id(diagram), output_id(diagram)
   in_ports = [ Port(v_in, OutputPort, i) for i in eachindex(inputs) ]
   recorder = f -> (args...) -> record_call!(diagram, f, args...)
-  value = invokelatest(func, recorder, in_ports...;
-    (name => generator(pres, name) for name in kwargs)...)
+  value = invokelatest(func, recorder, in_ports...; kwargs...)
   
   # Add outgoing wires for return values.
   out_ports = normalize_arguments((value,))
@@ -281,18 +280,48 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
     port => Port(v_out, InputPort, i)
     for (i, ports) in enumerate(out_ports) for port in ports
   ])
-  diagram
+  
+  # Substitute all sub-diagrams.
+  substitute(diagram, box_ids(diagram))
+end
+
+""" Make a lookup table assigning names to generators or term constructors.
+"""
+function make_lookup_table(pres::Presentation, names)::Dict{Symbol,Any}
+  # FIXME: Presentations should be uniquely associated with syntax systems.
+  syntax_module = parentmodule(typeof(first(pres.generators)))
+  signature = syntax_module.signature().class().signature
+  terms = Set([ term.name for term in signature.terms ])
+  
+  table = Dict{Symbol,Any}()
+  for name in names
+    if has_generator(pres, name)
+      table[name] = generator(pres, name)
+    elseif name in terms
+      table[name] = (args...) -> invoke_term(syntax_module, name, args...)
+    end
+  end
+  table
 end
 
 """ Generate a Julia function expression that will record function calls.
+
+Rewrites the function body so that:
+  
+  1. Ordinary function calls are mapped to recorded calls, e.g.,
+     `f(x,y)` becomes `recorder(f,x,y)`
+  2. "Curly" function calls are mapped to ordinary function calls, e.g.,
+     `f{X,Y}` becomes `f(X,Y)`
 """
 function compile_recording_expr(body::Expr, args::Vector{Symbol};
     kwargs::Vector{Symbol}=Symbol[],
     recorder::Symbol=Symbol("##recorder"))::Expr
   function rewrite(expr)
     @match expr begin
-      Expr(:call, [name::Symbol, args...]) =>
-        Expr(:call, Expr(:call, recorder, name), map(rewrite, args)...)
+      Expr(:call, [f, args...]) =>
+        Expr(:call, Expr(:call, recorder, rewrite(f)), map(rewrite, args)...)
+      Expr(:curly, [f, args...]) =>
+        Expr(:call, rewrite(f), map(rewrite, args)...)
       Expr(head, args) => Expr(head, map(rewrite, args)...)
       _ => expr
     end
@@ -307,12 +336,12 @@ end
 """ Record a Julia function call as a box in a wiring diagram.
 """
 function record_call!(diagram::WiringDiagram, f::HomExpr, args...)
-  # Add a new box for the call.
-  box = Box(f)
-  v = add_box!(diagram, box)
+  # Add a new box, itself a wiring diagram, for the call.
+  subdiagram = to_wiring_diagram(f)
+  v = add_box!(diagram, subdiagram)
 
   # Adding incoming wires.
-  inputs = input_ports(box)
+  inputs = input_ports(subdiagram)
   arg_ports = normalize_arguments(Tuple(args))
   @assert length(arg_ports) == length(inputs)
   add_wires!(diagram, [
@@ -321,7 +350,7 @@ function record_call!(diagram::WiringDiagram, f::HomExpr, args...)
   ])
   
   # Return output ports.
-  outputs = output_ports(box)
+  outputs = output_ports(subdiagram)
   return_ports = [ Port(v, OutputPort, i) for i in eachindex(outputs) ]
   make_return_value(return_ports)
 end

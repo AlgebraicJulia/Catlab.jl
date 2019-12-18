@@ -35,10 +35,12 @@ f, g, h = generators(C, [:f, :g, :h])
 
 f, g, m, n = generators(C, [:f, :g, :m, :n])
 
+# Generator.
+
 parsed = @parse_wiring_diagram(C, (x::X) -> f(x))
 @test parsed == to_wiring_diagram(f)
 
-# Compositions in one dimension.
+# Composition: one-dimensional.
 
 parsed = @parse_wiring_diagram(C, (x::X) -> g(f(x)))
 @test parsed == to_wiring_diagram(compose(f,g))
@@ -58,7 +60,7 @@ parsed = @parse_wiring_diagram C (v::X) begin
 end
 @test parsed == to_wiring_diagram(compose(f,g,h))
 
-# Compositions in multiple dimensions.
+# Composition: multidimensional.
 
 parsed = @parse_wiring_diagram C (x::X, y::Y) begin
   w, z = m(x, y)
@@ -111,6 +113,23 @@ parsed = @parse_wiring_diagram(C, (x::X, y::Y) -> n([m(x,y), m(x,y)]))
 parsed = @parse_wiring_diagram(C, () -> f([]))
 @test parsed == to_wiring_diagram(compose(create(X),f))
 
+# Special morphisms: explicit syntax.
+
+parsed = @parse_wiring_diagram(C, (x::X) -> id{X}(x))
+@test parsed == to_wiring_diagram(id(X))
+
+parsed = @parse_wiring_diagram(C, (x::X) -> mcopy{X}(x))
+@test parsed == to_wiring_diagram(mcopy(X))
+
+parsed = @parse_wiring_diagram(C, (x::X) -> delete{X}(x))
+@test parsed == to_wiring_diagram(delete(X))
+
+parsed = @parse_wiring_diagram(C, (x1::X, x2::X) -> mmerge{X}(x1,x2))
+@test parsed == to_wiring_diagram(mmerge(X))
+
+parsed = @parse_wiring_diagram(C, () -> create{X}())
+@test parsed == to_wiring_diagram(create(X))
+
 # Helper function: normalization of arguments.
 
 normalize(args...) = normalize_arguments(Tuple(args))
@@ -147,6 +166,7 @@ end
 f, g, h, l, m, n = generators(C, [:f, :g, :h, :l, :m, :n])
 
 test_roundtrip(f)
+test_roundtrip(id(X))
 test_roundtrip(compose(f,g))
 test_roundtrip(otimes(f,h))
 test_roundtrip(compose(m,n))
