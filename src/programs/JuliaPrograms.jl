@@ -256,9 +256,8 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
   
   # Compile...
   args = first.(parsed_args)
-  kwargs = filter(unique!(sort!(collect_symbols(body)))) do name
-    has_generator(pres, name)
-  end
+  kwargs = sort!(collect(filter(
+    name -> has_generator(pres, name), unique_symbols(body))))
   func_expr = compile_recording_expr(body, args, kwargs=kwargs)
   func = eval(func_expr)
   
@@ -358,11 +357,11 @@ function make_return_value(values)
   end
 end
 
-""" Collect all symbols in Julia expression.
+""" Set of all symbols occuring in a Julia expression.
 """
-collect_symbols(expr::Expr) =
-  reduce(vcat, map(collect_symbols, expr.args); init=Symbol[])
-collect_symbols(x::Symbol) = [x]
-collect_symbols(x) = Symbol[]
+unique_symbols(expr::Expr) =
+  reduce(union!, map(unique_symbols, expr.args); init=Set{Symbol}())
+unique_symbols(x::Symbol) = Set([x])
+unique_symbols(x) = Set{Symbol}()
 
 end
