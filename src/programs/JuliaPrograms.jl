@@ -255,17 +255,22 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
   end
   
   # Compile...
-  func_expr = compile_recording_expr(first.(parsed_args), body)
+  args = first.(parsed_args)
+  kwargs = filter(unique!(sort!(collect_symbols(body)))) do name
+    has_generator(pres, name)
+  end
+  func_expr = compile_recording_expr(body, args, kwargs=kwargs)
   func = eval(func_expr)
+  
   # ...and then evaluate function that records the function calls.
   inputs = last.(parsed_args)
   @assert all(has_generator(pres, name) for name in inputs)
   diagram = WiringDiagram(inputs, empty(inputs))
   v_in, v_out = input_id(diagram), output_id(diagram)
   in_ports = [ Port(v_in, OutputPort, i) for i in eachindex(inputs) ]
-  recorder = name ->
-    (args...) -> record_call!(diagram, generator(pres, name), args...)
-  value = invokelatest(func, recorder, in_ports...)
+  recorder = f -> (args...) -> record_call!(diagram, f, args...)
+  value = invokelatest(func, recorder, in_ports...;
+    (name => generator(pres, name) for name in kwargs)...)
   
   # Add outgoing wires for return values.
   out_ports = normalize_arguments((value,))
@@ -282,26 +287,22 @@ end
 
 """ Generate a Julia function expression that will record function calls.
 """
-function compile_recording_expr(args::Vector{Symbol}, body::Expr;
-                                recorder::Symbol=Symbol("##recorder"))::Expr
-  Expr(:function,
-    Expr(:tuple, recorder, args...),
-    rewrite_function_names(body) do name
-      Expr(:call, recorder, QuoteNode(name))
-    end)
-end
-
-""" Recursively rewrite function names in function call expressions.
-"""
-function rewrite_function_names(rewrite::Function, expr)
-  @match expr begin
-    Expr(:call, [name::Symbol, args...]) =>
-      Expr(:call, rewrite(name),
-           (rewrite_function_names(rewrite, arg) for arg in args)...)
-    Expr(head, args) =>
-      Expr(head, (rewrite_function_names(rewrite, arg) for arg in args)...)
-    _ => expr
+function compile_recording_expr(body::Expr, args::Vector{Symbol};
+    kwargs::Vector{Symbol}=Symbol[],
+    recorder::Symbol=Symbol("##recorder"))::Expr
+  function rewrite(expr)
+    @match expr begin
+      Expr(:call, [name::Symbol, args...]) =>
+        Expr(:call, Expr(:call, recorder, name), map(rewrite, args)...)
+      Expr(head, args) => Expr(head, map(rewrite, args)...)
+      _ => expr
+    end
   end
+  Expr(:function,
+    Expr(:tuple,
+      Expr(:parameters, (Expr(:kw, kw, nothing) for kw in kwargs)...),
+      recorder, args...),
+    rewrite(body))
 end
 
 """ Record a Julia function call as a box in a wiring diagram.
@@ -356,5 +357,12 @@ function make_return_value(values)
     Tuple(values)             # General case.
   end
 end
+
+""" Collect all symbols in Julia expression.
+"""
+collect_symbols(expr::Expr) =
+  reduce(vcat, map(collect_symbols, expr.args); init=Symbol[])
+collect_symbols(x::Symbol) = [x]
+collect_symbols(x) = Symbol[]
 
 end
