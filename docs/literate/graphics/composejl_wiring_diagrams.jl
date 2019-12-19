@@ -3,7 +3,7 @@
 #md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/graphics/composejl_wiring_diagrams.ipynb)
 #
 # Catlab can draw wiring diagrams using the Julia package
-# [Compose.jl](https://github.com/GiovineItalia/Compose.jl)
+# [Compose.jl](https://github.com/GiovineItalia/Compose.jl).
 
 using Catlab.WiringDiagrams, Catlab.Graphics
 

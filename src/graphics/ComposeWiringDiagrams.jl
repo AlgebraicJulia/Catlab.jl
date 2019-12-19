@@ -84,9 +84,9 @@ end
 
 function to_composejl_context(box::Box)::Compose.Context
   layout = box.value::BoxLayout
-  C.compose(C.context(),
-    C.rectangle(lower_corner(layout)..., layout.size...),
-    C.text(layout.position..., string(layout.value), C.hcenter, C.vcenter),
+  C.compose(C.context(lower_corner(layout)..., layout.size..., units=C.UnitBox()),
+    C.rectangle(),
+    C.text(0.5, 0.5, string(layout.value), C.hcenter, C.vcenter),
   )
 end
 
