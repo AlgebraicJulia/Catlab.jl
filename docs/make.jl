@@ -34,6 +34,7 @@ makedocs(
         "generated/wiring_diagrams/diagrams_and_expressions.md",
       ],
       "Graphics" => Any[
+        "generated/graphics/composejl_wiring_diagrams.md",
         "generated/graphics/graphviz_wiring_diagrams.md",
         "generated/graphics/tikz_wiring_diagrams.md",
       ],

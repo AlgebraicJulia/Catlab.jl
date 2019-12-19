@@ -4,6 +4,10 @@ using Test
   include("WiringDiagramLayouts.jl")
 end
 
+@testset "Compose" begin
+  include("ComposeWiringDiagrams.jl")
+end
+
 @testset "Graphviz" begin
   include("Graphviz.jl")
   include("GraphvizWiringDiagrams.jl")

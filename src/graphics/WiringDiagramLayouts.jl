@@ -1,4 +1,4 @@
-""" Backend-agnostic layout of wiring diagrams based on morphism expressions.
+""" Backend-agnostic layout of wiring diagrams via morphism expressions.
 
 This module lays out wiring diagrams for visualization, independent of any
 specific graphics system. It uses the structure of a morphism expression to
@@ -32,8 +32,8 @@ angle(v::AbstractVector2D) = angle(v[1] + v[2]*im)
 
 is_horizontal(orient::LayoutOrientation) = orient in (LeftToRight, RightToLeft)
 is_vertical(orient::LayoutOrientation) = orient in (TopToBottom, BottomToTop)
-is_positive(orient::LayoutOrientation) = orient in (LeftToRight, BottomToTop)
-is_negative(orient::LayoutOrientation) = orient in (RightToLeft, TopToBottom)
+is_positive(orient::LayoutOrientation) = orient in (LeftToRight, TopToBottom)
+is_negative(orient::LayoutOrientation) = orient in (RightToLeft, BottomToTop)
 sign(orient::LayoutOrientation) = is_positive(orient) ? +1 : -1
 
 svector(orient::LayoutOrientation) = svector(orient, sign(orient), 0)
@@ -83,10 +83,9 @@ end
 
 If a wiring diagram is given, it is first to converted to a morphism expression.
 
-The layout is calculated with respect to a right-handed cartesian coordinate
-system with origin in the bottom-left corner, consistent with Graphviz, TikZ,
-and standard mathematical notation. Box positions are relative to their centers.
-All positions and sizes are dimensionless (unitless).
+The layout is calculated with respect to a cartesian coordinate system with
+origin in the top-left corner. Box positions are relative to their centers. All
+positions and sizes are dimensionless (unitless).
 """
 function layout_diagram(Syntax::Module, diagram::WiringDiagram; kw...)
   layout_wiring_diagram(to_hom_expr(Syntax, diagram); kw...)
@@ -138,7 +137,7 @@ end
 function otimes_with_layout!(d1::WiringDiagram, d2::WiringDiagram, opts::LayoutOptions)
   # Compare with `WiringDiagrams.otimes`.
   diagram = otimes(d1, d2; unsubstituted=true)
-  dir = svector(opts.orientation, 0, is_horizontal(opts.orientation) ? +1 : -1)
+  dir = svector(opts.orientation, 0, 1)
   place_adjacent!(d1, d2; dir=dir)
   substitute_with_layout!(size_to_fit!(diagram, opts))
 end
@@ -220,7 +219,7 @@ function layout_ports(port_values::Vector, box_size::Vector2D;
   start = box_size/2 .* main_dir
   θ = angle(main_dir)
   
-  offset_dir = svector(orientation, 0, is_horizontal(orientation) ? +1 : -1)
+  offset_dir = svector(orientation, 0, 1)
   offset = box_size/2 .* offset_dir
   n = length(port_values)
   coeffs = range(-1, 1, length=n+2)[2:n+1]

@@ -1,4 +1,4 @@
-""" Draw wiring diagrams (aka string diagrams) using Graphviz.
+""" Draw wiring diagrams using Graphviz.
 """
 module GraphvizWiringDiagrams
 export to_graphviz
@@ -45,7 +45,7 @@ end
 # Conversion
 ############
 
-""" Render a wiring diagram using Graphviz.
+""" Draw a wiring diagram using Graphviz.
 
 The input `f` can also be a morphism expression, which is converted into a
 wiring diagram.
