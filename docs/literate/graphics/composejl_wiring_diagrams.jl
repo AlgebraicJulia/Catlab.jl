@@ -12,8 +12,7 @@ using Catlab.WiringDiagrams, Catlab.Graphics
 using Catlab.Doctrines
 
 A, B, C, D = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C, :D)
-f = Hom(:f, A, B)
-g = Hom(:g, B, A)
+f, g = Hom(:f, A, B), Hom(:g, B, A);
 
 # To start, here are a few very simple examples.
 

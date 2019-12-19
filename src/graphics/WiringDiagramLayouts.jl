@@ -112,7 +112,8 @@ function layout_hom_expr(expr::HomExpr, opts::LayoutOptions)
     BoxLayout(value=expr, size=size),
     layout_ports(InputPort, inputs, size, opts),
     layout_ports(OutputPort, outputs, size, opts))
-  size_to_fit!(singleton_diagram(box), opts)
+  pad = svector(opts.orientation, opts.sequence_pad, opts.parallel_pad)
+  size_to_fit!(singleton_diagram(box), opts, pad=pad)
 end
 
 function layout_hom_expr(expr::HomExpr{:compose}, opts::LayoutOptions)
@@ -129,7 +130,7 @@ function compose_with_layout!(d1::WiringDiagram, d2::WiringDiagram, opts::Layout
   # Compare with `WiringDiagram.compose`.
   diagram = compose(d1, d2; unsubstituted=true)
   dir = svector(opts.orientation)
-  place_adjacent!(d1, d2; dir=dir)
+  place_adjacent!(d1, d2; dir=dir, pad=-opts.sequence_pad)
   substitute_with_layout!(size_to_fit!(diagram, opts))
 end
 
@@ -137,7 +138,7 @@ function otimes_with_layout!(d1::WiringDiagram, d2::WiringDiagram, opts::LayoutO
   # Compare with `WiringDiagrams.otimes`.
   diagram = otimes(d1, d2; unsubstituted=true)
   dir = svector(opts.orientation, 0, 1)
-  place_adjacent!(d1, d2; dir=dir)
+  place_adjacent!(d1, d2; dir=dir, pad=-opts.parallel_pad)
   substitute_with_layout!(size_to_fit!(diagram, opts))
 end
 
@@ -145,14 +146,14 @@ end
 
 The inner boxes are also shifted to be centered within the new bounds.
 """
-function size_to_fit!(diagram::WiringDiagram, opts::LayoutOptions)
+function size_to_fit!(diagram::WiringDiagram, opts::LayoutOptions;
+                      pad::AbstractVector2D=SVector(0,0))
   nin, nout = length(input_ports(diagram)), length(output_ports(diagram))
   minimum_size = default_box_size(nin, nout, opts)
   
   lower, upper = contents_lower_corner(diagram), contents_upper_corner(diagram)
   content_size = upper - lower
-  pad = svector(opts.orientation, opts.sequence_pad, opts.parallel_pad)
-  size = max.(minimum_size, content_size + pad)
+  size = max.(minimum_size, content_size + 2*pad)
   
   shift_boxes!(diagram, (size-content_size)/2 - lower)
   diagram.value = BoxLayout(size=size)
@@ -177,10 +178,10 @@ end
 The absolute positions are undefined; only relative positions are guaranteed.
 """
 function place_adjacent!(box1::AbstractBox, box2::AbstractBox;
-                         dir::AbstractVector2D=SVector(1,0))
+                         dir::AbstractVector2D=SVector(1,0), pad::Real=0)
   layout1, layout2 = box1.value::BoxLayout, box2.value::BoxLayout
-  layout1.position = -layout1.size/2 .* dir
-  layout2.position = layout2.size/2 .* dir
+  layout1.position = -(pad .+ layout1.size)/2 .* dir
+  layout2.position = (pad .+ layout2.size)/2 .* dir
 end
 
 """ Shift all boxes within wiring diagram by a fixed offset.
