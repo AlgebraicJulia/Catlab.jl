@@ -8,8 +8,9 @@ wiring diagram to a symbolic expression, using the submodule
 """
 module WiringDiagramLayouts
 export LayoutOrientation, LeftToRight, RightToLeft, TopToBottom, BottomToTop,
-  BoxLayout, layout_diagram
+  BoxLayout, PortLayout, layout_diagram
 
+import Base: angle, sign
 using Parameters
 using StaticArrays: StaticVector, SVector
 
@@ -20,6 +21,11 @@ using ...WiringDiagrams
 # Data types
 ############
 
+const AbstractVector2D = StaticVector{2,<:Real}
+const Vector2D = SVector{2,Float64}
+
+angle(v::AbstractVector2D) = angle(v[1] + v[2]*im)
+
 """ Orientation of wiring diagram.
 """
 @enum LayoutOrientation LeftToRight RightToLeft TopToBottom BottomToTop
@@ -28,10 +34,11 @@ is_horizontal(orient::LayoutOrientation) = orient in (LeftToRight, RightToLeft)
 is_vertical(orient::LayoutOrientation) = orient in (TopToBottom, BottomToTop)
 is_positive(orient::LayoutOrientation) = orient in (LeftToRight, BottomToTop)
 is_negative(orient::LayoutOrientation) = orient in (RightToLeft, TopToBottom)
+sign(orient::LayoutOrientation) = is_positive(orient) ? +1 : -1
 
-function svector(orient::LayoutOrientation, first, second)
+svector(orient::LayoutOrientation) = svector(orient, sign(orient), 0)
+svector(orient::LayoutOrientation, first, second) =
   is_horizontal(orient) ? SVector(first, second) : SVector(second, first)
-end
 
 """ Internal data type for configurable options of wiring diagram layout.
 """
@@ -47,8 +54,8 @@ end
 """
 @with_kw mutable struct BoxLayout{Value}
   value::Value = nothing
-  position::SVector{2,Float64} = zeros(SVector{2})
-  size::SVector{2,Float64} = zeros(SVector{2})
+  position::Vector2D = zeros(Vector2D)
+  size::Vector2D = zeros(Vector2D)
 end
 
 lower_corner(layout::BoxLayout) = layout.position - layout.size/2
@@ -60,6 +67,14 @@ contents_lower_corner(diagram::WiringDiagram) =
   mapreduce(lower_corner, (c,d) -> min.(c,d), boxes(diagram))
 contents_upper_corner(diagram::WiringDiagram) =
   mapreduce(upper_corner, (c,d) -> max.(c,d), boxes(diagram))
+
+""" Layout for port in a wiring diagram.
+"""
+struct PortLayout{Value}
+  value::Value
+  position::Vector2D     # Position relative to box center.
+  angle::Float64         # Angle of normal vector in radians.
+end
 
 # Main entry point
 ##################
@@ -82,7 +97,8 @@ end
 
 function layout_diagram(expr::HomExpr; kw...)::WiringDiagram
   opts = LayoutOptions(; kw...)
-  layout_hom_expr(expr, opts)
+  diagram = layout_hom_expr(expr, opts)
+  layout_ports!(diagram, orientation=opts.orientation)
 end
 
 # Layout of boxes
@@ -94,7 +110,10 @@ function layout_hom_expr(expr::HomExpr, opts::LayoutOptions)
   # Default method: singleton diagram.
   inputs, outputs = collect(dom(expr)), collect(codom(expr))
   size = default_box_size(length(inputs), length(outputs), opts)
-  box = Box(BoxLayout(value=expr, size=size), inputs, outputs)
+  box = Box(
+    BoxLayout(value=expr, size=size),
+    layout_ports(inputs, size, kind=InputPort, orientation=opts.orientation),
+    layout_ports(outputs, size, kind=OutputPort, orientation=opts.orientation))
   size_to_fit!(singleton_diagram(box), opts)
 end
 
@@ -111,8 +130,7 @@ end
 function compose_with_layout!(d1::WiringDiagram, d2::WiringDiagram, opts::LayoutOptions)
   # Compare with `WiringDiagram.compose`.
   diagram = compose(d1, d2; unsubstituted=true)
-  sgn = is_positive(opts.orientation) ? +1 : -1
-  dir = svector(opts.orientation, sgn, 0)
+  dir = svector(opts.orientation)
   place_adjacent!(d1, d2; dir=dir)
   substitute_with_layout!(size_to_fit!(diagram, opts))
 end
@@ -120,8 +138,7 @@ end
 function otimes_with_layout!(d1::WiringDiagram, d2::WiringDiagram, opts::LayoutOptions)
   # Compare with `WiringDiagrams.otimes`.
   diagram = otimes(d1, d2; unsubstituted=true)
-  sgn = is_horizontal(opts.orientation) ? +1 : -1
-  dir = svector(opts.orientation, 0, sgn)
+  dir = svector(opts.orientation, 0, is_horizontal(opts.orientation) ? +1 : -1)
   place_adjacent!(d1, d2; dir=dir)
   substitute_with_layout!(size_to_fit!(diagram, opts))
 end
@@ -162,7 +179,7 @@ end
 The absolute positions are undefined; only relative positions are guaranteed.
 """
 function place_adjacent!(box1::AbstractBox, box2::AbstractBox;
-                         dir::StaticVector{2,<:Real}=SVector(1,0))
+                         dir::AbstractVector2D=SVector(1,0))
   layout1, layout2 = box1.value::BoxLayout, box2.value::BoxLayout
   layout1.position = -layout1.size/2 .* dir
   layout2.position = layout2.size/2 .* dir
@@ -170,7 +187,7 @@ end
 
 """ Shift all boxes within wiring diagram by a fixed offset.
 """
-function shift_boxes!(diagram::WiringDiagram, offset::StaticVector{2,<:Real})
+function shift_boxes!(diagram::WiringDiagram, offset::AbstractVector2D)
   for box in boxes(diagram)
     layout = box.value::BoxLayout
     layout.position += offset
@@ -188,6 +205,36 @@ function default_box_size(nin::Int, nout::Int, opts::LayoutOptions)
   base_size = opts.base_box_size
   n = max(1, nin, nout)
   svector(opts.orientation, base_size, n*base_size + (n-1)*opts.parallel_pad)
+end
+
+# Layout of ports
+#################
+
+""" Lay out ports for a rectangular box.
+
+The ports are evenly spaced within the available area.
+"""
+function layout_ports(port_values::Vector, box_size::Vector2D;
+    kind::PortKind=input, orientation::LayoutOrientation=LeftToRight)::Vector{PortLayout}
+  main_dir = (kind == InputPort ? -1 : +1) * svector(orientation)
+  start = box_size/2 .* main_dir
+  θ = angle(main_dir)
+  
+  offset_dir = svector(orientation, 0, is_horizontal(orientation) ? +1 : -1)
+  offset = box_size/2 .* offset_dir
+  n = length(port_values)
+  coeffs = range(-1, 1, length=n+2)[2:n+1]
+  PortLayout[ PortLayout(value, start + coeff .* offset, θ)
+              for (value, coeff) in zip(port_values, coeffs) ]
+end
+
+function layout_ports!(diagram::WiringDiagram; kw...)
+  layout = diagram.value::BoxLayout
+  diagram.input_ports = layout_ports(
+    input_ports(diagram), layout.size; kind=InputPort, kw...)
+  diagram.output_ports = layout_ports(
+    output_ports(diagram), layout.size; kind=OutputPort, kw...)
+  diagram
 end
 
 end

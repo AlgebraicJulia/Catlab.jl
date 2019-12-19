@@ -12,7 +12,13 @@ A, B = Ob(FreeSymmetricMonoidalCategory, :A, :B)
 f, g = Hom(:f, A, B), Hom(:g, B, A)
 
 # Generators
-@test box_values(layout_diagram(f)) == [f]
+d = layout_diagram(f, orientation=LeftToRight)
+@test box_values(d) == [f]
+fv = first(box_ids(d))
+((f_in_x, f_in_y),) = map(p -> p.position, input_ports(box(d,fv)))
+((f_out_x, f_out_y),) = map(p -> p.position, output_ports(box(d,fv)))
+@test f_in_x < f_out_x
+@test f_in_y == f_out_y
 
 # Composition
 d = layout_diagram(compose(f,g), orientation=LeftToRight)
