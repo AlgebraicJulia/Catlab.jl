@@ -11,15 +11,22 @@ using Catlab.WiringDiagrams, Catlab.Graphics
 
 using Catlab.Doctrines
 
-A, B = Ob(FreeSymmetricMonoidalCategory, :A, :B)
+A, B, C, D = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C, :D)
 f = Hom(:f, A, B)
 g = Hom(:g, B, A)
-h = Hom(:h, otimes(A,B), otimes(A,B));
 
 # To start, here are a few very simple examples.
 
 to_composejl(f)
 #-
-to_composejl(compose(f,g))
+to_composejl(f⋅g)
 #-
-to_composejl(otimes(f,g))
+to_composejl(f⊗g)
+
+# A more complex example, using generators with compound domains and codomains.
+
+h, k = Hom(:h, C, D),  Hom(:k, D, C)
+m, n = Hom(:m, B⊗A, A⊗B), Hom(:n, D⊗C, C⊗D)
+q = Hom(:l, A⊗B⊗C⊗D, D⊗C⊗B⊗A)
+
+to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))

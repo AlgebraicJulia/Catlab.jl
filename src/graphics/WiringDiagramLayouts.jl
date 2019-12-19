@@ -96,8 +96,7 @@ end
 
 function layout_diagram(expr::HomExpr; kw...)::WiringDiagram
   opts = LayoutOptions(; kw...)
-  diagram = layout_hom_expr(expr, opts)
-  layout_ports!(diagram, orientation=opts.orientation)
+  layout_ports!(layout_hom_expr(expr, opts), opts)
 end
 
 # Layout of boxes
@@ -111,8 +110,8 @@ function layout_hom_expr(expr::HomExpr, opts::LayoutOptions)
   size = default_box_size(length(inputs), length(outputs), opts)
   box = Box(
     BoxLayout(value=expr, size=size),
-    layout_ports(inputs, size, kind=InputPort, orientation=opts.orientation),
-    layout_ports(outputs, size, kind=OutputPort, orientation=opts.orientation))
+    layout_ports(InputPort, inputs, size, opts),
+    layout_ports(OutputPort, outputs, size, opts))
   size_to_fit!(singleton_diagram(box), opts)
 end
 
@@ -211,26 +210,27 @@ end
 
 """ Lay out ports for a rectangular box.
 
-The ports are evenly spaced within the available area.
+Assumes the box is at least as large as `default_box_size()`.
 """
-function layout_ports(port_values::Vector, box_size::Vector2D;
-    kind::PortKind=input, orientation::LayoutOrientation=LeftToRight)::Vector{PortLayout}
-  normal_dir = (kind == InputPort ? -1.0 : +1.0) * svector(orientation)
+function layout_ports(port_kind::PortKind, port_values::Vector,
+                      box_size::Vector2D, opts::LayoutOptions)::Vector{PortLayout}
+  normal_dir = (port_kind == InputPort ? -1.0 : +1.0) * svector(opts.orientation)
   start = box_size/2 .* normal_dir
   
-  offset = box_size/2 .* svector(orientation, 0, 1)
+  offset_length = opts.base_box_size + opts.parallel_pad
+  offset = offset_length .* svector(opts.orientation, 0, 1)
   n = length(port_values)
-  coeffs = range(-1, 1, length=n+2)[2:n+1]
+  coeffs = range(-(n-1), n-1, step=2) / 2 # Always length n
   PortLayout[ PortLayout(value, start + coeff .* offset, normal_dir)
               for (value, coeff) in zip(port_values, coeffs) ]
 end
 
-function layout_ports!(diagram::WiringDiagram; kw...)
+function layout_ports!(diagram::WiringDiagram, opts::LayoutOptions)
   layout = diagram.value::BoxLayout
   diagram.input_ports = layout_ports(
-    input_ports(diagram), layout.size; kind=InputPort, kw...)
+    InputPort, input_ports(diagram), layout.size, opts)
   diagram.output_ports = layout_ports(
-    output_ports(diagram), layout.size; kind=OutputPort, kw...)
+    OutputPort, output_ports(diagram), layout.size, opts)
   diagram
 end
 
