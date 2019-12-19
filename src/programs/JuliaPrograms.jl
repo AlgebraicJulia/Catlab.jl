@@ -363,7 +363,6 @@ function normalize_arguments(xs::Vector)
   if isempty(xss)
     ([],) # Degenerate case
   else
-    @assert length(unique!(length.(xss))) == 1 # Don't allow `zip` to truncate.
     Tuple(reduce(vcat, xs) for xs in zip(xss...))
   end
 end
