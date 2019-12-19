@@ -72,8 +72,8 @@ contents_upper_corner(diagram::WiringDiagram) =
 """
 struct PortLayout{Value}
   value::Value
-  position::Vector2D     # Position relative to box center.
-  angle::Float64         # Angle of normal vector in radians.
+  position::Vector2D     # Position of port relative to box center.
+  normal::Vector2D       # Unit normal vector out of port.
 end
 
 # Main entry point
@@ -215,15 +215,13 @@ The ports are evenly spaced within the available area.
 """
 function layout_ports(port_values::Vector, box_size::Vector2D;
     kind::PortKind=input, orientation::LayoutOrientation=LeftToRight)::Vector{PortLayout}
-  main_dir = (kind == InputPort ? -1 : +1) * svector(orientation)
-  start = box_size/2 .* main_dir
-  θ = angle(main_dir)
+  normal_dir = (kind == InputPort ? -1.0 : +1.0) * svector(orientation)
+  start = box_size/2 .* normal_dir
   
-  offset_dir = svector(orientation, 0, 1)
-  offset = box_size/2 .* offset_dir
+  offset = box_size/2 .* svector(orientation, 0, 1)
   n = length(port_values)
   coeffs = range(-1, 1, length=n+2)[2:n+1]
-  PortLayout[ PortLayout(value, start + coeff .* offset, θ)
+  PortLayout[ PortLayout(value, start + coeff .* offset, normal_dir)
               for (value, coeff) in zip(port_values, coeffs) ]
 end
 

@@ -68,11 +68,16 @@ function to_composejl_context(diagram::WiringDiagram;
     box_props::ComposeProperties=default_box_props,
     wire_props::ComposeProperties=default_wire_props)::Compose.Context
   layout = diagram.value::BoxLayout
+  box_contexts = map(to_composejl_context, boxes(diagram))
+  wire_contexts = map(wires(diagram)) do wire
+    C.line([
+      Tuple(abs_position(diagram, wire.source)),
+      Tuple(abs_position(diagram, wire.target)),
+    ])
+  end
   C.compose(C.context(units=C.UnitBox(0, 0, layout.size...)),
-    [C.context();
-      map(to_composejl_context, boxes(diagram));
-      box_props;
-    ],
+    [C.context(); box_contexts; box_props],
+    [C.context(); wire_contexts; wire_props],
     root_props...,
   )
 end
@@ -83,6 +88,18 @@ function to_composejl_context(box::Box)::Compose.Context
     C.rectangle(lower_corner(layout)..., layout.size...),
     C.text(layout.position..., string(layout.value), C.hcenter, C.vcenter),
   )
+end
+
+function abs_position(diagram::WiringDiagram, port::Port)
+  offset = if port.box in (input_id(diagram), output_id(diagram))
+    diagram_layout = diagram.value::BoxLayout
+    diagram_layout.size/2
+  else
+    box_layout = box(diagram, port.box).value::BoxLayout
+    box_layout.position
+  end
+  port_layout = port_value(diagram, port)::PortLayout
+  port_layout.position + offset
 end
 
 end
