@@ -75,7 +75,10 @@ function to_composejl_context(diagram::WiringDiagram;
       Tuple(abs_position(diagram, wire.target)),
     ])
   end
-  C.compose(C.context(units=C.UnitBox(0, 0, layout.size...)),
+  # The origin of the Compose.jl coordinate system is in the top-left corner,
+  # while the origin of wiring diagram layout is at the diagram center, so we
+  # need to translate the coordinates using the `UnitBox`.
+  C.compose(C.context(units=C.UnitBox(-layout.size/2..., layout.size...)),
     [C.context(); box_contexts; box_props],
     [C.context(); wire_contexts; wire_props],
     root_props...,
@@ -91,15 +94,11 @@ function to_composejl_context(box::Box)::Compose.Context
 end
 
 function abs_position(diagram::WiringDiagram, port::Port)
-  offset = if port.box in (input_id(diagram), output_id(diagram))
-    diagram_layout = diagram.value::BoxLayout
-    diagram_layout.size/2
-  else
-    box_layout = box(diagram, port.box).value::BoxLayout
-    box_layout.position
-  end
+  parent = port.box in (input_id(diagram), output_id(diagram)) ?
+    diagram : box(diagram, port.box)
+  parent_layout = parent.value::BoxLayout
   port_layout = port_value(diagram, port)::PortLayout
-  port_layout.position + offset
+  parent_layout.position + port_layout.position
 end
 
 end

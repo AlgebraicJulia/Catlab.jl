@@ -84,8 +84,9 @@ end
 If a wiring diagram is given, it is first to converted to a morphism expression.
 
 The layout is calculated with respect to a cartesian coordinate system with
-origin in the top-left corner. Box positions are relative to their centers. All
-positions and sizes are dimensionless (unitless).
+origin at the center of the diagram and the positive y-axis pointing
+*downwards*. Box positions are relative to their centers. All positions and
+sizes are dimensionless (unitless).
 """
 function layout_diagram(Syntax::Module, diagram::WiringDiagram; kw...)
   layout_wiring_diagram(to_hom_expr(Syntax, diagram); kw...)
@@ -155,7 +156,8 @@ function size_to_fit!(diagram::WiringDiagram, opts::LayoutOptions;
   content_size = upper - lower
   size = max.(minimum_size, content_size + 2*pad)
   
-  shift_boxes!(diagram, (size-content_size)/2 - lower)
+  content_center = (lower + upper)/2
+  shift_boxes!(diagram, -content_center)
   diagram.value = BoxLayout(size=size)
   diagram
 end
@@ -168,7 +170,7 @@ end
 function substitute_with_layout!(d::WiringDiagram, vs::Vector{Int})
   for v in vs
     sub = box(d, v)::WiringDiagram
-    shift_boxes!(sub, lower_corner(sub))
+    shift_boxes!(sub, sub.value.position)
   end
   substitute(d, vs)
 end
