@@ -51,6 +51,7 @@ end
 """
 function to_composejl(args...;
     base_unit::Compose.Measure=5*C.mm,
+    corner_radius::Compose.Measure=C.mm,
     root_props::ComposeProperties=default_root_props,
     box_props::ComposeProperties=default_box_props,
     wire_props::ComposeProperties=default_wire_props, kw...)::ComposePicture
@@ -63,10 +64,13 @@ end
 """ Draw a wiring diagram in Compose.jl using the given layout.
 """
 function to_composejl_context(diagram::WiringDiagram;
+    corner_radius::Compose.Measure=0.05*C.w,
     root_props::ComposeProperties=default_root_props,
     box_props::ComposeProperties=default_box_props,
     wire_props::ComposeProperties=default_wire_props)::Compose.Context
-  box_contexts = map(to_composejl_context, boxes(diagram))
+  box_contexts = map(boxes(diagram)) do box
+    to_composejl_context(box, corner_radius=corner_radius)
+  end
   wire_contexts = map(wires(diagram)) do wire
     C.line([
       Tuple(abs_position(diagram, wire.source)),
@@ -83,9 +87,9 @@ function to_composejl_context(diagram::WiringDiagram;
   )
 end
 
-function to_composejl_context(box::Box)::Compose.Context
+function to_composejl_context(box::Box; kw...)::Compose.Context
   C.compose(C.context(lower_corner(box)..., size(box)..., units=C.UnitBox()),
-    C.rectangle(),
+    rounded_rectangle(; kw...),
     C.text(0.5, 0.5, string(box.value.value), C.hcenter, C.vcenter),
   )
 end
@@ -94,6 +98,25 @@ function abs_position(diagram::WiringDiagram, port::Port)
   parent = port.box in (input_id(diagram), output_id(diagram)) ?
     diagram : box(diagram, port.box)
   position(parent) + position(port_value(diagram, port))
+end
+
+""" Draw a rounded rectangle in Compose.jl.
+"""
+function rounded_rectangle(args...; corner_radius::Compose.Measure=0.05*C.w)
+  w, h = Compose.w, Compose.h
+  r = corner_radius
+  C.compose(C.context(args...),
+    C.line([
+      [ (r, 0h), (1w-r, 0h) ],
+      [ (0w, r), (0w, 1h-r) ],
+      [ (r, 1h), (1w-r, 1h) ],
+      [ (1w, r), (1w, 1h-r) ],
+    ]),
+    C.arc(r,    r,    r, π,    3π/2, false),
+    C.arc(1w-r, r,    r, 3π/2, 0,    false),
+    C.arc(r,    1h-r, r, π/2,  π,    false),
+    C.arc(1w-r, 1h-r, r, 0,    π/2,  false),
+  )
 end
 
 end
