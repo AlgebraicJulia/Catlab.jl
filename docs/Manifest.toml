@@ -21,7 +21,7 @@ uuid = "b99e7846-7c00-51b0-8f62-c81ae34c0232"
 version = "0.5.8"
 
 [[Catlab]]
-deps = ["AutoHashEquals", "Compat", "Compose", "DataStructures", "JSON", "LightGraphs", "LightXML", "Match", "MetaGraphs", "Parameters", "Pkg", "Reexport", "Requires", "StaticArrays", "Statistics", "Test", "UnionFind"]
+deps = ["AutoHashEquals", "Compat", "Compose", "DataStructures", "JSON", "LightGraphs", "LightXML", "LinearAlgebra", "Match", "MetaGraphs", "Parameters", "Pkg", "Reexport", "Requires", "StaticArrays", "Statistics", "Test", "UnionFind"]
 path = ".."
 uuid = "134e5e36-593f-5add-ad60-77f754baafbe"
 version = "0.4.0"
@@ -52,7 +52,7 @@ version = "2.2.0"
 
 [[Compose]]
 deps = ["Base64", "Colors", "DataStructures", "Dates", "IterTools", "JSON", "LinearAlgebra", "Measures", "Printf", "Random", "Requires", "UUIDs"]
-git-tree-sha1 = "9c6dd9116b2e715caac50b8020162b31b1d52734"
+git-tree-sha1 = "1224bcb68e948b1774f136615f2995c82969e4e9"
 repo-rev = "master"
 repo-url = "https://github.com/GiovineItalia/Compose.jl"
 uuid = "a81c6b42-2e10-5240-aca2-a61377ecd94b"

@@ -7,6 +7,8 @@
 
 using Catlab.WiringDiagrams, Catlab.Graphics
 
+# ## Examples
+
 # ### Symmetric monoidal category
 
 using Catlab.Doctrines
@@ -36,6 +38,11 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))
 to_composejl(id(A))
 #-
 to_composejl(braid(A,B))
+
+# The isomorphism $A \otimes B \otimes C \to C \otimes B \otimes A$ induced by
+# the permutation $(3\ 2\ 1)$ is a composite of braidings and identities.
+
+to_composejl((braid(A,B) ⊗ id(C)) ⋅ (id(B) ⊗ braid(A,C) ⋅ (braid(B,C) ⊗ id(A))))
 
 # ## Custom styles
 

@@ -80,6 +80,7 @@ struct PortLayout{Value}
 end
 
 position(layout::PortLayout) = layout.position
+normal(layout::PortLayout) = layout.normal
 
 # Main entry point
 ##################
@@ -266,7 +267,8 @@ end
 function layout_pure_wiring(diagram::WiringDiagram, opts::LayoutOptions)
   @assert nboxes(diagram) == 0
   inputs, outputs = input_ports(diagram), output_ports(diagram)
-  size = default_box_size(length(inputs), length(outputs), opts)
+  size = default_box_size(length(inputs), length(outputs), opts) +
+    2*svector(opts.orientation, opts.sequence_pad, opts.parallel_pad)
   result = WiringDiagram(BoxLayout(size=size), inputs, outputs)
   # For now, wires get no layout data at all!
   add_wires!(result, wires(diagram))

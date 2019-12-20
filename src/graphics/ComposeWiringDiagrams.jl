@@ -3,12 +3,13 @@
 module ComposeWiringDiagrams
 export ComposePicture, to_composejl, to_composejl_context
 
+using LinearAlgebra: dot
 import Compose
 const C = Compose
 
 using ...WiringDiagrams
 using ..WiringDiagramLayouts
-using ..WiringDiagramLayouts: position, size, lower_corner, upper_corner
+using ..WiringDiagramLayouts: position, size, lower_corner, normal
 
 # Constants and data types
 ##########################
@@ -66,19 +67,8 @@ function to_composejl_context(diagram::WiringDiagram;
     root_props::ComposeProperties=default_root_props,
     box_props::ComposeProperties=default_box_props,
     wire_props::ComposeProperties=default_wire_props)::Compose.Context
-  box_contexts = map(boxes(diagram)) do box
-    C.compose(C.context(tag=:box),
-      to_composejl_context(box)
-    )
-  end
-  wire_contexts = map(wires(diagram)) do wire
-    C.compose(C.context(tag=:wire),
-      C.line([
-        Tuple(abs_position(diagram, wire.source)),
-        Tuple(abs_position(diagram, wire.target)),
-      ])
-    )
-  end
+  box_contexts = map(to_composejl_context, boxes(diagram))
+  wire_contexts = map(w -> to_composejl_context(diagram, w), wires(diagram))
   # The origin of the Compose.jl coordinate system is in the top-left corner,
   # while the origin of wiring diagram layout is at the diagram center, so we
   # need to translate the coordinates using the `UnitBox`.
@@ -91,7 +81,8 @@ function to_composejl_context(diagram::WiringDiagram;
 end
 
 function to_composejl_context(box::Box)::Compose.Context
-  C.compose(C.context(lower_corner(box)..., size(box)..., units=C.UnitBox()),
+  C.compose(C.context(lower_corner(box)..., size(box)...,
+                      units=C.UnitBox(), tag=:box),
     (C.context(order=1),
      rounded_rectangle()),
     (C.context(order=2),
@@ -99,9 +90,19 @@ function to_composejl_context(box::Box)::Compose.Context
   )
 end
 
-function abs_position(d::WiringDiagram, port::Port)
-  parent = port.box in (input_id(d), output_id(d)) ? d : box(d, port.box)
-  position(parent) + position(port_value(d, port))
+function to_composejl_context(d::WiringDiagram, wire::Wire)
+  src, tgt = port_value(d, wire.source), port_value(d, wire.target)
+  start = position(parent_box(d, wire.source)) + position(src)
+  stop = position(parent_box(d, wire.target)) + position(tgt)
+  v = stop - start
+  C.compose(C.context(tag=:wire),
+    C.curve(Tuple(start), Tuple(start + dot(v,normal(src))/2 * normal(src)),
+            Tuple(stop - dot(v,normal(tgt))/2 * normal(tgt)), Tuple(stop))
+  )
+end
+
+function parent_box(d::WiringDiagram, port::Port)
+  port.box in (input_id(d), output_id(d)) ? d : box(d, port.box)
 end
 
 # Compose.jl forms
