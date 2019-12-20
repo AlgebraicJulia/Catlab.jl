@@ -29,3 +29,12 @@ m, n = Hom(:m, B⊗A, A⊗B), Hom(:n, D⊗C, C⊗D)
 q = Hom(:l, A⊗B⊗C⊗D, D⊗C⊗B⊗A)
 
 to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))
+
+# ## Styling
+
+# The style of wiring diagrams can be customized by passing Compose
+# [properties](http://giovineitalia.github.io/Compose.jl/latest/gallery/properties/).
+
+using Compose: fill
+
+to_composejl(f⋅g, box_props=[fill("lavender")])

@@ -13,7 +13,7 @@ using ..WiringDiagramLayouts: position, size, lower_corner, upper_corner
 # Constants and data types
 ##########################
 
-const ComposeProperties = AbstractVector{Compose.Property}
+const ComposeProperties = AbstractVector{<:Compose.Property}
 
 # Default properties for root context, box context, and wire context.
 const default_root_props = Compose.Property[
@@ -21,7 +21,7 @@ const default_root_props = Compose.Property[
   C.stroke("black"),
 ]
 const default_box_props = Compose.Property[
-  C.fill("transparent"),
+  C.fill(nothing),
 ]
 const default_wire_props = Compose.Property[]
 
@@ -51,7 +51,6 @@ end
 """
 function to_composejl(args...;
     base_unit::Compose.Measure=5*C.mm,
-    corner_radius::Compose.Measure=C.mm,
     root_props::ComposeProperties=default_root_props,
     box_props::ComposeProperties=default_box_props,
     wire_props::ComposeProperties=default_wire_props, kw...)::ComposePicture
@@ -64,13 +63,10 @@ end
 """ Draw a wiring diagram in Compose.jl using the given layout.
 """
 function to_composejl_context(diagram::WiringDiagram;
-    corner_radius::Compose.Measure=0.05*C.w,
     root_props::ComposeProperties=default_root_props,
     box_props::ComposeProperties=default_box_props,
     wire_props::ComposeProperties=default_wire_props)::Compose.Context
-  box_contexts = map(boxes(diagram)) do box
-    to_composejl_context(box, corner_radius=corner_radius)
-  end
+  box_contexts = map(to_composejl_context, boxes(diagram))
   wire_contexts = map(wires(diagram)) do wire
     C.line([
       Tuple(abs_position(diagram, wire.source)),
@@ -89,8 +85,10 @@ end
 
 function to_composejl_context(box::Box; kw...)::Compose.Context
   C.compose(C.context(lower_corner(box)..., size(box)..., units=C.UnitBox()),
-    rounded_rectangle(; kw...),
-    C.text(0.5, 0.5, string(box.value.value), C.hcenter, C.vcenter),
+    (C.context(order=1),
+     rounded_rectangle()),
+    (C.context(order=2),
+     C.text(0.5, 0.5, string(box.value.value), C.hcenter, C.vcenter)),
   )
 end
 
@@ -102,20 +100,35 @@ end
 
 """ Draw a rounded rectangle in Compose.jl.
 """
-function rounded_rectangle(args...; corner_radius::Compose.Measure=0.05*C.w)
-  w, h = Compose.w, Compose.h
+function rounded_rectangle(args...; corner_radius::Compose.Measure=C.mm)
+  w, h, px = Compose.w, Compose.h, Compose.px
   r = corner_radius
   C.compose(C.context(args...),
-    C.line([
-      [ (r, 0h), (1w-r, 0h) ],
-      [ (0w, r), (0w, 1h-r) ],
-      [ (r, 1h), (1w-r, 1h) ],
-      [ (1w, r), (1w, 1h-r) ],
-    ]),
-    C.arc(r,    r,    r, π,    3π/2, false),
-    C.arc(1w-r, r,    r, 3π/2, 0,    false),
-    C.arc(r,    1h-r, r, π/2,  π,    false),
-    C.arc(1w-r, 1h-r, r, 0,    π/2,  false),
+    C.compose(C.context(order=1),
+      # Layer 1: fill.
+      # Since we cannot use a stroke here, we add a single pixel fudge factor to
+      # prevent a small but visible gap between the different fill regions.
+      C.rectangle(r-1px, 0h, 1w-2r+2px, 1h),
+      C.rectangle(0w, r-1px, 1w, 1h-2r+2px),
+      C.sector(r,    r,    r, π,    3π/2),
+      C.sector(1w-r, r,    r, 3π/2, 0),
+      C.sector(r,    1h-r, r, π/2,  π),
+      C.sector(1w-r, 1h-r, r, 0,    π/2),
+      C.stroke(nothing),
+    ),
+    C.compose(C.context(order=2),
+      # Layer 2: stroke.
+      C.line([
+        [ (r, 0h), (1w-r, 0h) ],
+        [ (0w, r), (0w, 1h-r) ],
+        [ (r, 1h), (1w-r, 1h) ],
+        [ (1w, r), (1w, 1h-r) ],
+      ]),
+      C.arc(r,    r,    r, π,    3π/2),
+      C.arc(1w-r, r,    r, 3π/2, 0),
+      C.arc(r,    1h-r, r, π/2,  π),
+      C.arc(1w-r, 1h-r, r, 0,    π/2),
+    ),
   )
 end
 
