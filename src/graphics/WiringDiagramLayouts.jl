@@ -10,7 +10,7 @@ module WiringDiagramLayouts
 export LayoutOrientation, LeftToRight, RightToLeft, TopToBottom, BottomToTop,
   BoxLayout, PortLayout, layout_diagram
 
-import Base: angle, sign
+import Base: sign
 using Parameters
 using StaticArrays: StaticVector, SVector
 
@@ -23,8 +23,6 @@ using ...WiringDiagrams
 
 const AbstractVector2D = StaticVector{2,<:Real}
 const Vector2D = SVector{2,Float64}
-
-angle(v::AbstractVector2D) = angle(v[1] + v[2]*im)
 
 """ Orientation of wiring diagram.
 """
@@ -58,8 +56,13 @@ end
   size::Vector2D = zeros(Vector2D)
 end
 
-lower_corner(layout::BoxLayout) = layout.position - layout.size/2
-upper_corner(layout::BoxLayout) = layout.position + layout.size/2
+position(layout::BoxLayout) = layout.position
+size(layout::BoxLayout) = layout.size
+lower_corner(layout::BoxLayout) = position(layout) - size(layout)/2
+upper_corner(layout::BoxLayout) = position(layout) + size(layout)/2
+
+size(box::AbstractBox) = size(box.value)
+position(box::AbstractBox) = position(box.value)
 lower_corner(box::AbstractBox) = lower_corner(box.value)
 upper_corner(box::AbstractBox) = upper_corner(box.value)
 
@@ -75,6 +78,8 @@ struct PortLayout{Value}
   position::Vector2D     # Position of port relative to box center.
   normal::Vector2D       # Unit normal vector out of port.
 end
+
+position(layout::PortLayout) = layout.position
 
 # Main entry point
 ##################
@@ -170,7 +175,7 @@ end
 function substitute_with_layout!(d::WiringDiagram, vs::Vector{Int})
   for v in vs
     sub = box(d, v)::WiringDiagram
-    shift_boxes!(sub, sub.value.position)
+    shift_boxes!(sub, position(sub))
   end
   substitute(d, vs)
 end
@@ -182,8 +187,8 @@ The absolute positions are undefined; only relative positions are guaranteed.
 function place_adjacent!(box1::AbstractBox, box2::AbstractBox;
                          dir::AbstractVector2D=SVector(1,0), pad::Real=0)
   layout1, layout2 = box1.value::BoxLayout, box2.value::BoxLayout
-  layout1.position = -(pad .+ layout1.size)/2 .* dir
-  layout2.position = (pad .+ layout2.size)/2 .* dir
+  layout1.position = -(pad .+ size(layout1))/2 .* dir
+  layout2.position = (pad .+ size(layout2))/2 .* dir
 end
 
 """ Shift all boxes within wiring diagram by a fixed offset.
@@ -229,11 +234,10 @@ function layout_ports(port_kind::PortKind, port_values::Vector,
 end
 
 function layout_ports!(diagram::WiringDiagram, opts::LayoutOptions)
-  layout = diagram.value::BoxLayout
   diagram.input_ports = layout_ports(
-    InputPort, input_ports(diagram), layout.size, opts)
+    InputPort, input_ports(diagram), size(diagram), opts)
   diagram.output_ports = layout_ports(
-    OutputPort, output_ports(diagram), layout.size, opts)
+    OutputPort, output_ports(diagram), size(diagram), opts)
   diagram
 end
 

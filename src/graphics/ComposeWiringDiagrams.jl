@@ -8,7 +8,7 @@ const C = Compose
 
 using ...WiringDiagrams
 using ..WiringDiagramLayouts
-using ..WiringDiagramLayouts: lower_corner
+using ..WiringDiagramLayouts: position, size, lower_corner, upper_corner
 
 # Constants and data types
 ##########################
@@ -57,8 +57,7 @@ function to_composejl(args...;
   diagram = layout_diagram(args...; kw...)
   context = to_composejl_context(diagram;
     root_props=root_props, box_props=box_props, wire_props=wire_props)
-  size = diagram.value.size
-  ComposePicture(context, size[1] * base_unit, size[2] * base_unit)
+  ComposePicture(context, (base_unit .* size(diagram))...)
 end
 
 """ Draw a wiring diagram in Compose.jl using the given layout.
@@ -67,7 +66,6 @@ function to_composejl_context(diagram::WiringDiagram;
     root_props::ComposeProperties=default_root_props,
     box_props::ComposeProperties=default_box_props,
     wire_props::ComposeProperties=default_wire_props)::Compose.Context
-  layout = diagram.value::BoxLayout
   box_contexts = map(to_composejl_context, boxes(diagram))
   wire_contexts = map(wires(diagram)) do wire
     C.line([
@@ -78,7 +76,7 @@ function to_composejl_context(diagram::WiringDiagram;
   # The origin of the Compose.jl coordinate system is in the top-left corner,
   # while the origin of wiring diagram layout is at the diagram center, so we
   # need to translate the coordinates using the `UnitBox`.
-  C.compose(C.context(units=C.UnitBox(-layout.size/2..., layout.size...)),
+  C.compose(C.context(units=C.UnitBox(-size(diagram)/2..., size(diagram)...)),
     [C.context(); box_contexts; box_props],
     [C.context(); wire_contexts; wire_props],
     root_props...,
@@ -86,19 +84,16 @@ function to_composejl_context(diagram::WiringDiagram;
 end
 
 function to_composejl_context(box::Box)::Compose.Context
-  layout = box.value::BoxLayout
-  C.compose(C.context(lower_corner(layout)..., layout.size..., units=C.UnitBox()),
+  C.compose(C.context(lower_corner(box)..., size(box)..., units=C.UnitBox()),
     C.rectangle(),
-    C.text(0.5, 0.5, string(layout.value), C.hcenter, C.vcenter),
+    C.text(0.5, 0.5, string(box.value.value), C.hcenter, C.vcenter),
   )
 end
 
 function abs_position(diagram::WiringDiagram, port::Port)
   parent = port.box in (input_id(diagram), output_id(diagram)) ?
     diagram : box(diagram, port.box)
-  parent_layout = parent.value::BoxLayout
-  port_layout = port_value(diagram, port)::PortLayout
-  parent_layout.position + port_layout.position
+  position(parent) + position(port_value(diagram, port))
 end
 
 end
