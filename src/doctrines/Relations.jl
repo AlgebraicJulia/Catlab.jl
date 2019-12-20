@@ -15,13 +15,27 @@ References:
 - Walters, 2009, blog post, "Categorical algebras of relations",
   http://rfcwalters.blogspot.com/2009/10/categorical-algebras-of-relations.html
 """
-@signature MonoidalCategoryWithDiagonals(Ob,Hom) => BicategoryRelations(Ob,Hom) begin
+@signature MonoidalCategoryWithBidiagonals(Ob,Hom) => BicategoryRelations(Ob,Hom) begin
+  # We inherit the following special morphisms:
+  #   mcopy(A::Ob)::Hom(A,otimes(A,A))
+  #   mmerge(A::Ob)::Hom(otimes(A,A),A)
+  #   delete(A::Ob)::Hom(A,munit())
+  #   create(A::Ob)::Hom(munit(),A)
   # Dagger category.
   dagger(f::Hom(A,B))::Hom(B,A) <= (A::Ob,B::Ob)
-  
+
   # Self-dual compact closed category.
+  # the objects in Rel (sets) satisfy dual(X) = X
+
   dunit(A::Ob)::Hom(munit(), otimes(A,A))
   dcounit(A::Ob)::Hom(otimes(A,A), munit())
+  # logical primitives
+  intersection(f::Hom(A,B), g::Hom(A,B))::Hom(A,B) <= (A::Ob, B::Ob)
+  # intersection(f,g) = compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f))
+  ltrue()::Hom(munit(),munit())
+  # ltrue() = compose(mdelete(munit()), mcreate(munit())
+  # lmax(A::Ob,B::Ob)::Hom(A,B)
+  # lmax(A,B) = compose(mdelete(A), mcreate(B)
 end
 
 @syntax FreeBicategoryRelations(ObExpr,HomExpr) BicategoryRelations begin
@@ -33,6 +47,7 @@ end
     f = anti_involute(Super.dagger(f), dagger, compose, id)
     distribute_unary(f, dagger, otimes)
   end
+  pair(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g))
 end
 
 """ Doctrine of *abelian bicategory of relations*
