@@ -42,8 +42,8 @@ struct GraphvizBox
   output_ports::Vector{Graphviz.NodeID}
 end
 
-# Conversion
-############
+# Wiring diagrams
+#################
 
 """ Draw a wiring diagram using Graphviz.
 

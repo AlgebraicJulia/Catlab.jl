@@ -44,8 +44,8 @@ function Base.show(io::IO, ::MIME"image/svg+xml", pic::ComposePicture)
   C.draw(C.SVG(io, pic.width, pic.height, false), pic.context)
 end
 
-# Drawing
-#########
+# Wiring diagrams
+#################
 
 """ Draw a wiring diagram in Compose.jl.
 """
@@ -66,24 +66,31 @@ function to_composejl_context(diagram::WiringDiagram;
     root_props::ComposeProperties=default_root_props,
     box_props::ComposeProperties=default_box_props,
     wire_props::ComposeProperties=default_wire_props)::Compose.Context
-  box_contexts = map(to_composejl_context, boxes(diagram))
+  box_contexts = map(boxes(diagram)) do box
+    C.compose(C.context(tag=:box),
+      to_composejl_context(box)
+    )
+  end
   wire_contexts = map(wires(diagram)) do wire
-    C.line([
-      Tuple(abs_position(diagram, wire.source)),
-      Tuple(abs_position(diagram, wire.target)),
-    ])
+    C.compose(C.context(tag=:wire),
+      C.line([
+        Tuple(abs_position(diagram, wire.source)),
+        Tuple(abs_position(diagram, wire.target)),
+      ])
+    )
   end
   # The origin of the Compose.jl coordinate system is in the top-left corner,
   # while the origin of wiring diagram layout is at the diagram center, so we
   # need to translate the coordinates using the `UnitBox`.
-  C.compose(C.context(units=C.UnitBox(-size(diagram)/2..., size(diagram)...)),
-    [C.context(); box_contexts; box_props],
-    [C.context(); wire_contexts; wire_props],
+  units = C.UnitBox(-size(diagram)/2..., size(diagram)...)
+  C.compose(C.context(units=units, tag=:diagram),
+    [C.context(tag=:boxes); box_contexts; box_props],
+    [C.context(tag=:wires); wire_contexts; wire_props],
     root_props...,
   )
 end
 
-function to_composejl_context(box::Box; kw...)::Compose.Context
+function to_composejl_context(box::Box)::Compose.Context
   C.compose(C.context(lower_corner(box)..., size(box)..., units=C.UnitBox()),
     (C.context(order=1),
      rounded_rectangle()),
@@ -92,11 +99,13 @@ function to_composejl_context(box::Box; kw...)::Compose.Context
   )
 end
 
-function abs_position(diagram::WiringDiagram, port::Port)
-  parent = port.box in (input_id(diagram), output_id(diagram)) ?
-    diagram : box(diagram, port.box)
-  position(parent) + position(port_value(diagram, port))
+function abs_position(d::WiringDiagram, port::Port)
+  parent = port.box in (input_id(d), output_id(d)) ? d : box(d, port.box)
+  position(parent) + position(port_value(d, port))
 end
+
+# Compose.jl forms
+##################
 
 """ Draw a rounded rectangle in Compose.jl.
 """
