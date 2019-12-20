@@ -22,7 +22,8 @@ to_composejl(f⋅g)
 #-
 to_composejl(f⊗g)
 
-# A more complex example, using generators with compound domains and codomains.
+# Here is a more complex example, involving generators with compound domains and
+# codomains.
 
 h, k = Hom(:h, C, D),  Hom(:k, D, C)
 m, n = Hom(:m, B⊗A, A⊗B), Hom(:n, D⊗C, C⊗D)
@@ -30,7 +31,13 @@ q = Hom(:l, A⊗B⊗C⊗D, D⊗C⊗B⊗A)
 
 to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))
 
-# ## Styling
+# Identities and braidings appear as wires.
+
+to_composejl(id(A))
+#-
+to_composejl(braid(A,B))
+
+# ## Custom styles
 
 # The style of wiring diagrams can be customized by passing Compose
 # [properties](http://giovineitalia.github.io/Compose.jl/latest/gallery/properties/).

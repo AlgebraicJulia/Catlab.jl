@@ -34,7 +34,8 @@ d = layout_diagram(otimes(f,g), orientation=LeftToRight)
 @test fx == gx
 @test fy < gy
 
-# Identities
-@test box_values(layout_diagram(id(A))) == [id(A)]
+# Identities and braidings
+@test box_values(layout_diagram(id(A))) == []
+@test box_values(layout_diagram(braid(A,B))) == []
 
 end
