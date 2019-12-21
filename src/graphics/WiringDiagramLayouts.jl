@@ -35,7 +35,6 @@ is_positive(orient::LayoutOrientation) = orient in (LeftToRight, TopToBottom)
 is_negative(orient::LayoutOrientation) = orient in (RightToLeft, BottomToTop)
 sign(orient::LayoutOrientation) = is_positive(orient) ? +1 : -1
 
-svector(orient::LayoutOrientation) = svector(orient, sign(orient), 0)
 svector(orient::LayoutOrientation, first, second) =
   is_horizontal(orient) ? SVector(first, second) : SVector(second, first)
 
@@ -48,6 +47,8 @@ svector(orient::LayoutOrientation, first, second) =
   sequence_pad::Float64 = 2
   parallel_pad::Float64 = 1
 end
+
+svector(opts::LayoutOptions, args...) = svector(opts.orientation, args...)
 
 """ Layout for box in a wiring diagram.
 """
@@ -150,7 +151,7 @@ function layout_box(value::Any, inputs::Vector, outputs::Vector, opts::LayoutOpt
   box = Box(BoxLayout(value=value, size=size),
             layout_ports(InputPort, inputs, size, opts),
             layout_ports(OutputPort, outputs, size, opts))
-  pad = svector(opts.orientation, opts.sequence_pad, opts.parallel_pad)
+  pad = svector(opts, opts.sequence_pad, opts.parallel_pad)
   size_to_fit!(singleton_diagram(box), opts, pad=pad)
 end
 
@@ -160,7 +161,7 @@ Compare with: `WiringDiagram.compose`.
 """
 function compose_with_layout!(d1::WiringDiagram, d2::WiringDiagram, opts::LayoutOptions)
   diagram = compose(d1, d2; unsubstituted=true)
-  dir = svector(opts.orientation)
+  dir = svector(opts, sign(opts.orientation), 0)
   place_adjacent!(d1, d2; dir=dir, pad=-opts.sequence_pad)
   substitute_with_layout!(size_to_fit!(diagram, opts))
 end
@@ -175,7 +176,7 @@ Compare with: `WiringDiagram.otimes`.
 function otimes_with_layout!(d1::WiringDiagram, d2::WiringDiagram, opts::LayoutOptions)
   # Compare with `WiringDiagrams.otimes`.
   diagram = otimes(d1, d2; unsubstituted=true)
-  dir = svector(opts.orientation, 0, 1)
+  dir = svector(opts, 0, 1)
   place_adjacent!(d1, d2; dir=dir, pad=-opts.parallel_pad)
   substitute_with_layout!(size_to_fit!(diagram, opts))
 end
@@ -250,7 +251,7 @@ ports, not on the number of boxes.
 function default_box_size(nin::Int, nout::Int, opts::LayoutOptions)
   base_size = opts.base_box_size
   n = max(1, nin, nout)
-  svector(opts.orientation, base_size, n*base_size + (n-1)*opts.parallel_pad)
+  svector(opts, base_size, n*base_size + (n-1)*opts.parallel_pad)
 end
 
 # Port layout
@@ -262,11 +263,11 @@ Assumes the box is at least as large as `default_box_size()`.
 """
 function layout_ports(port_kind::PortKind, port_values::Vector,
                       box_size::Vector2D, opts::LayoutOptions)::Vector{PortLayout}
-  normal_dir = (port_kind == InputPort ? -1.0 : +1.0) * svector(opts.orientation)
+  port_sign = port_kind == InputPort ? -1 : +1
+  normal_dir = float(port_sign) * svector(opts, sign(opts.orientation), 0)
   start = box_size/2 .* normal_dir
   
-  offset_length = opts.base_box_size + opts.parallel_pad
-  offset = offset_length .* svector(opts.orientation, 0, 1)
+  offset = (opts.base_box_size + opts.parallel_pad) .* svector(opts, 0, 1)
   n = length(port_values)
   coeffs = range(-(n-1), n-1, step=2) / 2 # Always length n
   PortLayout[ PortLayout(value, start + coeff .* offset, normal_dir)
@@ -288,7 +289,7 @@ function layout_pure_wiring(diagram::WiringDiagram, opts::LayoutOptions)
   @assert nboxes(diagram) == 0
   inputs, outputs = input_ports(diagram), output_ports(diagram)
   size = default_box_size(length(inputs), length(outputs), opts) +
-    2*svector(opts.orientation, opts.sequence_pad, opts.parallel_pad)
+    2*svector(opts, opts.sequence_pad, opts.parallel_pad)
   result = WiringDiagram(BoxLayout(size=size), inputs, outputs)
   
   result = layout_ports!(result, opts)
@@ -296,7 +297,7 @@ function layout_pure_wiring(diagram::WiringDiagram, opts::LayoutOptions)
     src, tgt = port_value(result, wire.source), port_value(result, wire.target)
     midpoint = (position(src) + position(tgt)) / 2
     v = position(tgt) - position(src)
-    point = WirePoint(midpoint .* svector(opts.orientation, 0, 1), v / norm(v))
+    point = WirePoint(midpoint .* svector(opts, 0, 1), v / norm(v))
     add_wire!(result, Wire([point], wire.source, wire.target))
   end
   result
