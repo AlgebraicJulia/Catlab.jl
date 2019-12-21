@@ -558,21 +558,21 @@ substitutions are simultaneous.
 This operation implements the operadic composition of wiring diagrams
 (`ocompose`).
 """
-function substitute(d::WiringDiagram)
-  substitute(d, filter(v -> box(d,v) isa WiringDiagram, box_ids(d)))
+function substitute(d::WiringDiagram; kw...)
+  substitute(d, filter(v -> box(d,v) isa WiringDiagram, box_ids(d)); kw...)
 end
-function substitute(d::WiringDiagram, v::Int)
-  substitute(d, v, box(d,v)::WiringDiagram)
+function substitute(d::WiringDiagram, v::Int; kw...)
+  substitute(d, v, box(d,v)::WiringDiagram; kw...)
 end
-function substitute(d::WiringDiagram, vs::Vector{Int})
-  substitute(d, vs, WiringDiagram[ box(d,v) for v in vs ])
+function substitute(d::WiringDiagram, vs::Vector{Int}; kw...)
+  substitute(d, vs, WiringDiagram[ box(d,v) for v in vs ]; kw...)
+end
+function substitute(d::WiringDiagram, v::Int, sub::WiringDiagram; kw...)
+  substitute(d, [v], [sub]; kw...)
 end
 
-function substitute(d::WiringDiagram, v::Int, sub::WiringDiagram)
-  substitute(d, [v], [sub])
-end
-
-function substitute(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagram})
+function substitute(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagram};
+                    merge_wire_values=default_merge_wire_values)
   # In outline, the algorithm is:
   #
   # 1. Create an empty wiring diagram.
@@ -610,12 +610,13 @@ function substitute(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagra
   # Add the wires of the original diagram, then add the internal wires of the
   # substituted diagrams.
   for wire in wires(d)
-    add_wire!(result, Wire(
+    add_wire!(result, Wire(wire.value,
       set_box(wire.source, vmap[wire.source.box]),
       set_box(wire.target, vmap[wire.target.box])))
   end
   for v in vs
-    _substitute_wires!(result, vmap[v], sub_maps[v]...)
+    substitute_wires!(result, vmap[v], sub_maps[v]...;
+      merge_wire_values=merge_wire_values)
   end
   
   # Finally, remove the substituted boxes. Because they were added last, this
@@ -624,10 +625,11 @@ function substitute(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagra
   result
 end
 
-""" Substitute wires inside sub-diagram of a wiring diagram.
+""" Substitute wires of sub-diagram into containing wiring diagram.
 """
-function _substitute_wires!(d::WiringDiagram, v::Int,
-                            sub::WiringDiagram, sub_map::Dict{Int,Int})
+function substitute_wires!(d::WiringDiagram, v::Int,
+                           sub::WiringDiagram, sub_map::Dict{Int,Int};
+                           merge_wire_values=default_merge_wire_values)
   for wire in wires(sub)
     src = get(sub_map, wire.source.box, 0)
     tgt = get(sub_map, wire.target.box, 0)
@@ -635,25 +637,35 @@ function _substitute_wires!(d::WiringDiagram, v::Int,
     if wire.source.box == input_id(sub) && wire.target.box == output_id(sub)
       for in_wire in in_wires(d, v, wire.source.port)
         for out_wire in out_wires(d, v, wire.target.port)
-          add_wire!(d, Wire(in_wire.source, out_wire.target))
+          add_wire!(d, Wire(
+            merge_wire_values(in_wire.value, wire.value, out_wire.value),
+            in_wire.source, out_wire.target))
         end
       end
     # Special case: wire from input port to internal box.
     elseif wire.source.box == input_id(sub)
       for in_wire in in_wires(d, v, wire.source.port)
-        add_wire!(d, Wire(in_wire.source, set_box(wire.target, tgt)))
+        add_wire!(d, Wire(
+          merge_wire_values(in_wire.value, wire.value, nothing),
+          in_wire.source, set_box(wire.target, tgt)))
       end
     # Special case: wire from internal box to output port.
     elseif wire.target.box == output_id(sub)
       for out_wire in out_wires(d, v, wire.target.port)
-        add_wire!(d, Wire(set_box(wire.source, src), out_wire.target))
+        add_wire!(d, Wire(
+          merge_wire_values(nothing, wire.value, out_wire.value),
+          set_box(wire.source, src), out_wire.target))
       end
     # Default case: wire between two internal boxes.
     else
-      add_wire!(d, Wire(set_box(wire.source, src), set_box(wire.target, tgt)))
+      add_wire!(d, Wire(
+        merge_wire_values(nothing, wire.value, nothing),
+        set_box(wire.source, src), set_box(wire.target, tgt)))
     end
   end
 end
+
+default_merge_wire_values(::Any, middle::Any, ::Any) = middle
 
 # Encapsulation.
 
