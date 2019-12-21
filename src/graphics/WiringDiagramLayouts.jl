@@ -42,7 +42,6 @@ svector(orient::LayoutOrientation, first, second) =
 """
 @with_kw struct LayoutOptions
   orientation::LayoutOrientation = LeftToRight
-  junctions::Bool = true
   base_box_size::Float64 = 2
   sequence_pad::Float64 = 2
   parallel_pad::Float64 = 1
@@ -50,10 +49,19 @@ end
 
 svector(opts::LayoutOptions, args...) = svector(opts.orientation, args...)
 
+""" General shape of box.
+
+Specific features of the shape are determined by the graphics backend. For
+example, a rectangle could be rendered with or without rounded corners or even
+as another, similar shape, such as a rotated isosceles trapezoid.
+"""
+@enum BoxShape RectangleShape CircleShape ForwardTriangleShape BackwardTriangleShape
+
 """ Layout for box in a wiring diagram.
 """
 @with_kw mutable struct BoxLayout{Value}
   value::Value = nothing
+  shape::BoxShape = RectangleShape
   position::Vector2D = zeros(Vector2D)
   size::Vector2D = zeros(Vector2D)
 end
