@@ -9,7 +9,8 @@ const C = Compose
 
 using ...WiringDiagrams
 using ..WiringDiagramLayouts
-using ..WiringDiagramLayouts: position, size, lower_corner, normal
+using ..WiringDiagramLayouts: AbstractVector2D, Vector2D, position, size,
+  lower_corner, upper_corner, normal, tangent, wire_points
 
 # Constants and data types
 ##########################
@@ -92,13 +93,29 @@ end
 
 function to_composejl_context(d::WiringDiagram, wire::Wire)
   src, tgt = port_value(d, wire.source), port_value(d, wire.target)
-  start = position(parent_box(d, wire.source)) + position(src)
-  stop = position(parent_box(d, wire.target)) + position(tgt)
-  v = stop - start
-  C.compose(C.context(tag=:wire),
-    C.curve(Tuple(start), Tuple(start + dot(v,normal(src))/2 * normal(src)),
-            Tuple(stop - dot(v,normal(tgt))/2 * normal(tgt)), Tuple(stop))
-  )
+  src_point = position(parent_box(d, wire.source)) + position(src)
+  tgt_point = position(parent_box(d, wire.target)) + position(tgt)
+  
+  points = [ src_point ]
+  prev = (src_point, normal(src))
+  for point in wire_points(wire)
+    p, v = position(point), tangent(point)
+    append!(points, tangents_to_controls(prev..., -v, p))
+    push!(points, p)
+    prev = (p, v)
+  end
+  append!(points, tangents_to_controls(prev..., normal(tgt), tgt_point))
+  push!(points, tgt_point)
+  
+  piecewise_curve(map(Tuple, points), tag=:wire)
+end
+
+""" Control points for Bezier curve from endpoints and unit tangent vectors.
+"""
+function tangents_to_controls(p1::AbstractVector2D, v1::AbstractVector2D,
+    v2::AbstractVector2D, p2::AbstractVector2D; weight::Float64=0.5)
+  v = p2 - p1
+  (p1 + weight * dot(v,v1) * v1, p2 - weight * dot(v,v2) * v2)
 end
 
 function parent_box(d::WiringDiagram, port::Port)
@@ -108,12 +125,12 @@ end
 # Compose.jl forms
 ##################
 
-""" Draw a rounded rectangle in Compose.jl.
+""" Draw a rounded rectangle in Compose.
 """
-function rounded_rectangle(args...; corner_radius::Compose.Measure=C.mm)
+function rounded_rectangle(args...; corner_radius::Compose.Measure=C.mm, kw...)
   w, h, px = Compose.w, Compose.h, Compose.px
   r = corner_radius
-  C.compose(C.context(args...),
+  C.compose(C.context(args...; kw...),
     C.compose(C.context(order=1),
       # Layer 1: fill.
       # Since we cannot use a stroke here, we add a single pixel fudge factor to
@@ -139,6 +156,18 @@ function rounded_rectangle(args...; corner_radius::Compose.Measure=C.mm)
       C.arc(r,    1h-r, r, π/2,  π),
       C.arc(1w-r, 1h-r, r, 0,    π/2),
     ),
+  )
+end
+
+""" Draw a continuous piecewise cubic Bezier curve in Compose.
+
+The points are given by a vector [p1, c1, c2, p2, c3, c4, p3, ...] of length
+3n+1 where n >=1 is the number of Bezier curves.
+"""
+function piecewise_curve(points::Vector{<:Tuple}; kw...)
+  @assert length(points) % 3 == 1
+  C.compose(C.context(; kw...),
+    (C.curve(points[i:i+3]...) for i in range(1, length(points)-1, step=3))...
   )
 end
 

@@ -8,9 +8,10 @@ wiring diagram to a symbolic expression, using the submodule
 """
 module WiringDiagramLayouts
 export LayoutOrientation, LeftToRight, RightToLeft, TopToBottom, BottomToTop,
-  BoxLayout, PortLayout, layout_diagram
+  layout_diagram
 
 import Base: sign
+using LinearAlgebra: norm
 using Parameters
 using StaticArrays: StaticVector, SVector
 
@@ -81,6 +82,22 @@ end
 
 position(layout::PortLayout) = layout.position
 normal(layout::PortLayout) = layout.normal
+
+""" Interior point of wire in a wiring diagram.
+"""
+mutable struct WirePoint
+  position::Vector2D     # Position of wire at point.
+  tangent::Vector2D      # Unit tangent vector along wire at point.
+end
+
+position(point::WirePoint) = point.position
+tangent(point::WirePoint) = point.tangent
+
+const WireLayout = Union{Vector{WirePoint},Nothing}
+
+wire_points(points::Vector{WirePoint}) = points
+wire_points(::Nothing) = WirePoint[]
+wire_points(wire::Wire) = wire_points(wire.value)
 
 # Main entry point
 ##################
@@ -180,7 +197,7 @@ function size_to_fit!(diagram::WiringDiagram, opts::LayoutOptions;
   size = max.(minimum_size, content_size + 2*pad)
   
   content_center = (lower + upper)/2
-  shift_boxes!(diagram, -content_center)
+  shift_contents!(diagram, -content_center)
   diagram.value = BoxLayout(size=size)
   diagram
 end
@@ -193,9 +210,9 @@ end
 function substitute_with_layout!(d::WiringDiagram, vs::Vector{Int})
   for v in vs
     sub = box(d, v)::WiringDiagram
-    shift_boxes!(sub, position(sub))
+    shift_contents!(sub, position(sub))
   end
-  substitute(d, vs)
+  substitute(d, vs; merge_wire_values=merge_wire_layouts)
 end
 
 """ Place one box adjacent to another.
@@ -209,12 +226,17 @@ function place_adjacent!(box1::AbstractBox, box2::AbstractBox;
   layout2.position = (pad .+ size(layout2))/2 .* dir
 end
 
-""" Shift all boxes within wiring diagram by a fixed offset.
+""" Shift all boxes and wires within wiring diagram by a fixed offset.
 """
-function shift_boxes!(diagram::WiringDiagram, offset::AbstractVector2D)
+function shift_contents!(diagram::WiringDiagram, offset::AbstractVector2D)
   for box in boxes(diagram)
     layout = box.value::BoxLayout
     layout.position += offset
+  end
+  for wire in wires(diagram)
+    for point in wire_points(wire)
+      point.position += offset
+    end
   end
   diagram
 end
@@ -251,12 +273,10 @@ function layout_ports(port_kind::PortKind, port_values::Vector,
               for (value, coeff) in zip(port_values, coeffs) ]
 end
 
-function layout_ports!(diagram::WiringDiagram, opts::LayoutOptions)
-  diagram.input_ports = layout_ports(
-    InputPort, input_ports(diagram), size(diagram), opts)
-  diagram.output_ports = layout_ports(
-    OutputPort, output_ports(diagram), size(diagram), opts)
-  diagram
+function layout_ports!(d::WiringDiagram, opts::LayoutOptions)
+  d.input_ports = layout_ports(InputPort, input_ports(d), size(d), opts)
+  d.output_ports = layout_ports(OutputPort, output_ports(d), size(d), opts)
+  return d
 end
 
 # Wire layout
@@ -270,9 +290,19 @@ function layout_pure_wiring(diagram::WiringDiagram, opts::LayoutOptions)
   size = default_box_size(length(inputs), length(outputs), opts) +
     2*svector(opts.orientation, opts.sequence_pad, opts.parallel_pad)
   result = WiringDiagram(BoxLayout(size=size), inputs, outputs)
-  # For now, wires get no layout data at all!
-  add_wires!(result, wires(diagram))
+  
+  result = layout_ports!(result, opts)
+  for wire in wires(diagram)
+    src, tgt = port_value(result, wire.source), port_value(result, wire.target)
+    midpoint = (position(src) + position(tgt)) / 2
+    v = position(tgt) - position(src)
+    point = WirePoint(midpoint .* svector(opts.orientation, 0, 1), v / norm(v))
+    add_wire!(result, Wire([point], wire.source, wire.target))
+  end
   result
 end
+
+merge_wire_layouts(left::WireLayout, middle::WireLayout, right::WireLayout) =
+  vcat(wire_points(left), wire_points(middle), wire_points(right))
 
 end
