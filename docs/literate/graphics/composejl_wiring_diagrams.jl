@@ -1,4 +1,4 @@
-# # Drawing wiring diagrams using Compose.jl
+# # Wiring diagrams in Compose.jl
 #
 #md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/graphics/composejl_wiring_diagrams.ipynb)
 #
@@ -38,6 +38,8 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))
 to_composejl(id(A))
 #-
 to_composejl(braid(A,B))
+#-
+to_composejl(braid(A,B) ⋅ (g⊗f) ⋅ braid(A,B))
 
 # The isomorphism $A \otimes B \otimes C \to C \otimes B \otimes A$ induced by
 # the permutation $(3\ 2\ 1)$ is a composite of braidings and identities.

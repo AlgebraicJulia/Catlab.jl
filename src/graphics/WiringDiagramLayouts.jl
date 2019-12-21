@@ -293,12 +293,14 @@ function layout_pure_wiring(diagram::WiringDiagram, opts::LayoutOptions)
   result = WiringDiagram(BoxLayout(size=size), inputs, outputs)
   
   result = layout_ports!(result, opts)
+  e1, e2 = svector(opts, 1, 0), svector(opts, 0, 1)
   for wire in wires(diagram)
-    src, tgt = port_value(result, wire.source), port_value(result, wire.target)
-    midpoint = (position(src) + position(tgt)) / 2
-    v = position(tgt) - position(src)
-    point = WirePoint(midpoint .* svector(opts, 0, 1), v / norm(v))
-    add_wire!(result, Wire([point], wire.source, wire.target))
+    src, tgt = wire.source, wire.target
+    src_pos, tgt_pos = (position(port_value(result, p)) for p in (src, tgt))
+    mid_pos = (src_pos + tgt_pos) / 2
+    v = sign.((tgt_pos - src_pos) .* e1) + (tgt.port - src.port) .* e2
+    point = WirePoint(mid_pos .* e2, v / norm(v))
+    add_wire!(result, Wire([point], src, tgt))
   end
   result
 end
