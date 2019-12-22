@@ -34,6 +34,8 @@ is_vertical(orient::LayoutOrientation) = orient in (TopToBottom, BottomToTop)
 is_positive(orient::LayoutOrientation) = orient in (LeftToRight, TopToBottom)
 is_negative(orient::LayoutOrientation) = orient in (RightToLeft, BottomToTop)
 sign(orient::LayoutOrientation) = is_positive(orient) ? +1 : -1
+port_sign(kind::PortKind, orient::LayoutOrientation) =
+  (kind == InputPort ? -1 : +1) * sign(orient)
 
 svector(orient::LayoutOrientation, first, second) =
   is_horizontal(orient) ? SVector(first, second) : SVector(second, first)
@@ -45,6 +47,7 @@ svector(orient::LayoutOrientation, first, second) =
   base_box_size::Float64 = 2
   sequence_pad::Float64 = 2
   parallel_pad::Float64 = 1
+  junction_size::Float64 = 0.25
 end
 
 svector(opts::LayoutOptions, args...) = svector(opts.orientation, args...)
@@ -71,8 +74,8 @@ size(layout::BoxLayout) = layout.size
 lower_corner(layout::BoxLayout) = position(layout) - size(layout)/2
 upper_corner(layout::BoxLayout) = position(layout) + size(layout)/2
 
-size(box::AbstractBox) = size(box.value)
 position(box::AbstractBox) = position(box.value)
+size(box::AbstractBox) = size(box.value)
 lower_corner(box::AbstractBox) = lower_corner(box.value)
 upper_corner(box::AbstractBox) = upper_corner(box.value)
 
@@ -134,33 +137,30 @@ end
 
 """ Lay out a morphism expression as a wiring diagram.
 """
-layout_hom_expr(expr::HomExpr, opts::LayoutOptions) =
-  layout_box(expr, collect(dom(expr)), collect(codom(expr)), opts)
+layout_hom_expr(f::HomExpr, opts) = layout_box_expr(f, opts)
 
-layout_hom_expr(expr::HomExpr{:compose}, opts::LayoutOptions) =
-  compose_with_layout!(map(arg -> layout_hom_expr(arg, opts), args(expr)), opts)
+layout_hom_expr(f::HomExpr{:compose}, opts) =
+  compose_with_layout!(map(arg -> layout_hom_expr(arg, opts), args(f)), opts)
+layout_hom_expr(f::HomExpr{:otimes}, opts) =
+  otimes_with_layout!(map(arg -> layout_hom_expr(arg, opts), args(f)), opts)
 
-layout_hom_expr(expr::HomExpr{:otimes}, opts::LayoutOptions) =
-  otimes_with_layout!(map(arg -> layout_hom_expr(arg, opts), args(expr)), opts)
+layout_hom_expr(f::HomExpr{:id}, opts) = layout_wires_expr(f, opts)
+layout_hom_expr(f::HomExpr{:braid}, opts) = layout_wires_expr(f, opts)
 
-layout_hom_expr(expr::HomExpr{:id}, opts::LayoutOptions) =
-  layout_pure_wiring(to_wiring_diagram(expr), opts)
+layout_hom_expr(f::HomExpr{:mcopy}, opts) = layout_junction_expr(f, opts)
+layout_hom_expr(f::HomExpr{:delete}, opts) = layout_junction_expr(f, opts)
+layout_hom_expr(f::HomExpr{:mmerge}, opts) = layout_junction_expr(f, opts)
+layout_hom_expr(f::HomExpr{:create}, opts) = layout_junction_expr(f, opts)
 
-layout_hom_expr(expr::HomExpr{:braid}, opts::LayoutOptions) =
-  layout_pure_wiring(to_wiring_diagram(expr), opts)
+layout_box_expr(f::HomExpr, opts) =
+  layout_box(f, collect(dom(f)), collect(codom(f)), opts)
+layout_junction_expr(f::HomExpr, opts) =
+  layout_junction(f, collect(dom(f)), collect(codom(f)), opts)
+layout_wires_expr(f::HomExpr, opts) =
+  layout_pure_wiring(to_wiring_diagram(f), opts)
 
-# Box layout
-############
-
-""" Create a box and its layout.
-"""
-function layout_box(value::Any, inputs::Vector, outputs::Vector, opts::LayoutOptions)
-  size = default_box_size(length(inputs), length(outputs), opts)
-  box = Box(BoxLayout(value=value, size=size),
-            layout_ports(InputPort, inputs, size, opts),
-            layout_ports(OutputPort, outputs, size, opts))
-  size_to_fit!(singleton_diagram(box), opts)
-end
+# Diagram layout
+################
 
 """ Compose wiring diagrams and their layouts.
 
@@ -249,7 +249,42 @@ function shift_contents!(diagram::WiringDiagram, offset::AbstractVector2D)
   diagram
 end
 
-""" Compute the default size of a box from the number of its ports.
+""" Compute the default size of a wiring diagram from the number of its ports.
+"""
+function default_diagram_size(nin::Int, nout::Int, opts::LayoutOptions)
+  default_box_size(nin, nout, opts) + 2*diagram_padding(opts)
+end
+function diagram_padding(opts::LayoutOptions)
+  svector(opts, opts.sequence_pad, opts.parallel_pad)
+end
+
+# Box layout
+############
+
+""" Lay out a rectangular box and its ports.
+"""
+function layout_box(value::Any, inputs::Vector, outputs::Vector,
+                    opts::LayoutOptions)
+  size = default_box_size(length(inputs), length(outputs), opts)
+  box = Box(BoxLayout(value=value, shape=RectangleShape, size=size),
+            layout_linear_ports(InputPort, inputs, size, opts),
+            layout_linear_ports(OutputPort, outputs, size, opts))
+  size_to_fit!(singleton_diagram(box), opts)
+end
+
+""" Lay out a circular junction and its ports.
+"""
+function layout_junction(value::Any, inputs::Vector, outputs::Vector,
+                         opts::LayoutOptions)
+  radius = opts.junction_size
+  size = SVector(radius, radius)
+  box = Box(BoxLayout(value=value, shape=CircleShape, size=size),
+            layout_circular_ports(InputPort, inputs, radius, opts),
+            layout_circular_ports(OutputPort, outputs, radius, opts))
+  size_to_fit!(singleton_diagram(box), opts)
+end
+
+""" Compute the default size of a rectangular box from the number of its ports.
 
 We use the unique formula consistent with the padding for monoidal products,
 ensuring that the size of a product of boxes depends only on the total number of
@@ -261,39 +296,44 @@ function default_box_size(nin::Int, nout::Int, opts::LayoutOptions)
   svector(opts, base_size, n*base_size + (n-1)*opts.parallel_pad)
 end
 
-""" Compute the default size of a wiring diagram from the number of its ports.
-"""
-function default_diagram_size(nin::Int, nout::Int, opts::LayoutOptions)
-  default_box_size(nin, nout, opts) + 2*diagram_padding(opts)
-end
-function diagram_padding(opts::LayoutOptions)
-  svector(opts, opts.sequence_pad, opts.parallel_pad)
-end
-
 # Port layout
 #############
 
-""" Lay out ports for a rectangular box.
+""" Lay out ports linearly, for use with a rectangular box.
 
 Assumes the box is at least as large as `default_box_size()`.
 """
-function layout_ports(port_kind::PortKind, port_values::Vector,
-                      box_size::Vector2D, opts::LayoutOptions)::Vector{PortLayout}
-  port_sign = port_kind == InputPort ? -1 : +1
-  normal_dir = float(port_sign) * svector(opts, sign(opts.orientation), 0)
+function layout_linear_ports(port_kind::PortKind, port_values::Vector,
+                             box_size::AbstractVector2D, opts::LayoutOptions)
+  normal_dir = svector(opts, float(port_sign(port_kind, opts.orientation)), 0)
   start = box_size/2 .* normal_dir
-  
   offset = (opts.base_box_size + opts.parallel_pad) .* svector(opts, 0, 1)
+  
   n = length(port_values)
   coeffs = range(-(n-1), n-1, step=2) / 2 # Always length n
   PortLayout[ PortLayout(value, start + coeff .* offset, normal_dir)
               for (value, coeff) in zip(port_values, coeffs) ]
 end
 
-function layout_ports!(d::WiringDiagram, opts::LayoutOptions)
-  d.input_ports = layout_ports(InputPort, input_ports(d), size(d), opts)
-  d.output_ports = layout_ports(OutputPort, output_ports(d), size(d), opts)
-  return d
+""" Lay out ports along a circular arc.
+"""
+function layout_circular_ports(port_kind::PortKind, port_values::Vector,
+                               radius::Real, opts::LayoutOptions)
+  n = length(port_values)
+  θ1, θ2 = is_horizontal(opts.orientation) ? (π/2, -π/2) : (-π, 0)
+  θs = range(θ1, θ2, length=n+2)[2:n+1]
+  θs = port_sign(port_kind, opts.orientation) == -1 ? reverse(θs) : θs
+  dirs = [ SVector(cos(θ),sin(θ)) for θ in θs ]
+  PortLayout[ PortLayout(value, radius * dir, dir)
+              for (value, dir) in zip(port_values, dirs) ]
+end
+
+function layout_ports!(diagram::WiringDiagram, opts::LayoutOptions)
+  diagram.input_ports = layout_linear_ports(
+    InputPort, input_ports(diagram), size(diagram), opts)
+  diagram.output_ports = layout_linear_ports(
+    OutputPort, output_ports(diagram), size(diagram), opts)
+  diagram
 end
 
 # Wire layout
