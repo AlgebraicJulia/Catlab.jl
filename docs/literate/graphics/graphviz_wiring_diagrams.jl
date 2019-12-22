@@ -95,3 +95,26 @@ to_graphviz(compose(f,g),
     :bgcolor => "lavender",
   )
 )
+
+# ## Output formats
+
+# The function `to_graphviz` returns an object of a type `Graphviz.Graph`,
+# representing a Graphviz graph as an abstract syntax tree. When displayed
+# interactively, this object is automatically run through Graphviz and rendered
+# as an SVG image. Sometimes it is convenient to perform this process manually,
+# to change the output format or further customize the generated dot file.
+
+# To generate a dot file, use Catlab's pretty-printer. Note that this does not
+# require Graphviz to be installed.
+
+using Catlab.Graphics: Graphviz
+
+graph = to_graphviz(compose(f,g))
+Graphviz.pprint(graph)
+
+# Catlab provides a simple wrapper around the Graphviz command-line programs.
+# For example, here the JSON output for the graph.
+
+import JSON
+
+JSON.parse(Graphviz.run_graphviz(graph, format="json0"))
