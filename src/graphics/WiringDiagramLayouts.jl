@@ -159,8 +159,7 @@ function layout_box(value::Any, inputs::Vector, outputs::Vector, opts::LayoutOpt
   box = Box(BoxLayout(value=value, size=size),
             layout_ports(InputPort, inputs, size, opts),
             layout_ports(OutputPort, outputs, size, opts))
-  pad = svector(opts, opts.sequence_pad, opts.parallel_pad)
-  size_to_fit!(singleton_diagram(box), opts, pad=pad)
+  size_to_fit!(singleton_diagram(box), opts)
 end
 
 """ Compose wiring diagrams and their layouts.
@@ -171,7 +170,7 @@ function compose_with_layout!(d1::WiringDiagram, d2::WiringDiagram, opts::Layout
   diagram = compose(d1, d2; unsubstituted=true)
   dir = svector(opts, sign(opts.orientation), 0)
   place_adjacent!(d1, d2; dir=dir, pad=-opts.sequence_pad)
-  substitute_with_layout!(size_to_fit!(diagram, opts))
+  substitute_with_layout!(size_to_fit!(diagram, opts, pad=false))
 end
 function compose_with_layout!(diagrams::Vector{WiringDiagram}, opts::LayoutOptions)
   foldl((d1,d2) -> compose_with_layout!(d1, d2, opts), diagrams)
@@ -186,7 +185,7 @@ function otimes_with_layout!(d1::WiringDiagram, d2::WiringDiagram, opts::LayoutO
   diagram = otimes(d1, d2; unsubstituted=true)
   dir = svector(opts, 0, 1)
   place_adjacent!(d1, d2; dir=dir, pad=-opts.parallel_pad)
-  substitute_with_layout!(size_to_fit!(diagram, opts))
+  substitute_with_layout!(size_to_fit!(diagram, opts, pad=false))
 end
 function otimes_with_layout!(diagrams::Vector{WiringDiagram}, opts::LayoutOptions)
   foldl((d1,d2) -> otimes_with_layout!(d1, d2, opts), diagrams)
@@ -196,14 +195,14 @@ end
 
 The inner boxes are also shifted to be centered within the new bounds.
 """
-function size_to_fit!(diagram::WiringDiagram, opts::LayoutOptions;
-                      pad::AbstractVector2D=SVector(0,0))
+function size_to_fit!(diagram::WiringDiagram, opts::LayoutOptions; pad::Bool=true)
   nin, nout = length(input_ports(diagram)), length(output_ports(diagram))
-  minimum_size = default_box_size(nin, nout, opts)
+  minimum_size = default_diagram_size(nin, nout, opts)
   
   lower, upper = contents_lower_corner(diagram), contents_upper_corner(diagram)
   content_size = upper - lower
-  size = max.(minimum_size, content_size + 2*pad)
+  if pad; content_size += 2 * diagram_padding(opts) end
+  size = max.(minimum_size, content_size)
   
   content_center = (lower + upper)/2
   shift_contents!(diagram, -content_center)
@@ -250,7 +249,7 @@ function shift_contents!(diagram::WiringDiagram, offset::AbstractVector2D)
   diagram
 end
 
-""" Compute the default size of a box based on the number of its ports.
+""" Compute the default size of a box from the number of its ports.
 
 We use the unique formula consistent with the padding for monoidal products,
 ensuring that the size of a product of boxes depends only on the total number of
@@ -260,6 +259,15 @@ function default_box_size(nin::Int, nout::Int, opts::LayoutOptions)
   base_size = opts.base_box_size
   n = max(1, nin, nout)
   svector(opts, base_size, n*base_size + (n-1)*opts.parallel_pad)
+end
+
+""" Compute the default size of a wiring diagram from the number of its ports.
+"""
+function default_diagram_size(nin::Int, nout::Int, opts::LayoutOptions)
+  default_box_size(nin, nout, opts) + 2*diagram_padding(opts)
+end
+function diagram_padding(opts::LayoutOptions)
+  svector(opts, opts.sequence_pad, opts.parallel_pad)
 end
 
 # Port layout
@@ -296,8 +304,7 @@ end
 function layout_pure_wiring(diagram::WiringDiagram, opts::LayoutOptions)
   @assert nboxes(diagram) == 0
   inputs, outputs = input_ports(diagram), output_ports(diagram)
-  size = default_box_size(length(inputs), length(outputs), opts) +
-    2*svector(opts, opts.sequence_pad, opts.parallel_pad)
+  size = default_diagram_size(length(inputs), length(outputs), opts)
   result = WiringDiagram(BoxLayout(size=size), inputs, outputs)
   
   result = layout_ports!(result, opts)
