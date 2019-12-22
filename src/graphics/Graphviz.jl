@@ -23,7 +23,7 @@ abstract type Statement <: Expression end
 
 """ AST type for Graphviz's "HTML-like" node labels.
 
-The HTML is represented as an atomic string, for now.
+For now, the HTML content is just a string.
 """
 struct Html
   content::String
@@ -33,7 +33,10 @@ Base.print(io::IO, html::Html) = print(io, html.content)
 const AttributeValue = Union{String,Html}
 const Attributes = OrderedDict{Symbol,AttributeValue}
 
-sorted_attrs(d::AbstractDict) = Attributes(k => d[k] for k in sort!(collect(keys(d))))
+as_attributes(attrs::Attributes) = attrs
+as_attributes(d::OrderedDict) = Attributes(Symbol(k) => d[k] for k in keys(d))
+as_attributes(d::AbstractDict) =
+  Attributes(Symbol(k) => d[k] for k in sort!(collect(keys(d))))
 
 @with_kw_noshow struct Graph <: Expression
   name::String
@@ -72,8 +75,8 @@ struct Node <: Statement
   name::String
   attrs::Attributes
 end
-Node(name::String, attrs::Dict) = Node(name, sorted_attrs(attrs))
-Node(name::String; attrs...) = Node(name, Attributes(attrs))
+Node(name::String, attrs::AbstractDict) = Node(name, as_attributes(attrs))
+Node(name::String; attrs...) = Node(name, attrs)
 
 struct NodeID <: Expression
   name::String
@@ -86,12 +89,12 @@ struct Edge <: Statement
   path::Vector{NodeID}
   attrs::Attributes
 end
+Edge(path::Vector{NodeID}, attrs::AbstractDict) = Edge(path, as_attributes(attrs))
+Edge(path::Vector{NodeID}; attrs...) = Edge(path, attrs)
+Edge(path::Vararg{NodeID}; attrs...) = Edge(collect(path), attrs)
 Edge(path::Vector{String}, attrs) = Edge(map(NodeID, path), attrs)
-Edge(path::Vector{NodeID}, attrs::Dict) = Edge(path, sorted_attrs(attrs))
-Edge(path::Vararg{String}; attrs...) = Edge(map(NodeID, collect(path)), Attributes(attrs))
-Edge(path::Vector{String}; attrs...) = Edge(map(NodeID, path), Attributes(attrs))
-Edge(path::Vararg{NodeID}; attrs...) = Edge(collect(path), Attributes(attrs))
-Edge(path::Vector{NodeID}; attrs...) = Edge(path, Attributes(attrs))
+Edge(path::Vector{String}; attrs...) = Edge(map(NodeID, path), attrs)
+Edge(path::Vararg{String}; attrs...) = Edge(map(NodeID, collect(path)), attrs)
 
 # Bindings
 ##########
@@ -157,9 +160,9 @@ function to_graphviz(g::MetaGraphs.AbstractMetaGraph; multigraph::Bool=false)::G
     name = get(attrs, :name, "G"),
     directed = LightGraphs.is_directed(g),
     stmts = stmts,
-    graph_attrs = Graphviz.Attributes(get(attrs, :graph, Dict())),
-    node_attrs = Graphviz.Attributes(get(attrs, :node, Dict())),
-    edge_attrs = Graphviz.Attributes(get(attrs, :edge, Dict())),
+    graph_attrs = as_attributes(get(attrs, :graph, Dict())),
+    node_attrs = as_attributes(get(attrs, :node, Dict())),
+    edge_attrs = as_attributes(get(attrs, :edge, Dict())),
   )
 end
 

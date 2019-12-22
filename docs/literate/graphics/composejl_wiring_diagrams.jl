@@ -48,7 +48,7 @@ to_composejl((braid(A,B) ⊗ id(C)) ⋅ (id(B) ⊗ braid(A,C) ⋅ (braid(B,C) �
 
 # ## Custom styles
 
-# The style of wiring diagrams can be customized by passing Compose
+# The visual appearance of wiring diagrams can be customized by passing Compose
 # [properties](http://giovineitalia.github.io/Compose.jl/latest/gallery/properties/).
 
 using Compose: fill

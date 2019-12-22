@@ -74,10 +74,8 @@ function to_graphviz(f::WiringDiagram;
     node_labels::Bool=true, labels::Bool=false, label_attr::Symbol=:label,
     port_size::String="24", junction_size::String="0.05",
     outer_ports::Bool=true, anchor_outer_ports::Bool=true,
-    graph_attrs::Graphviz.Attributes=Graphviz.Attributes(),
-    node_attrs::Graphviz.Attributes=Graphviz.Attributes(),
-    edge_attrs::Graphviz.Attributes=Graphviz.Attributes(),
-    cell_attrs::Graphviz.Attributes=Graphviz.Attributes())::Graphviz.Graph
+    graph_attrs::AbstractDict=Dict(), node_attrs::AbstractDict=Dict(),
+    edge_attrs::AbstractDict=Dict(), cell_attrs::AbstractDict=Dict())::Graphviz.Graph
   @assert label_attr in (:label, :xlabel, :headlabel, :taillabel)
 
   # State variables.
@@ -99,7 +97,7 @@ function to_graphviz(f::WiringDiagram;
   end
   
   # Visible nodes for boxes.
-  cell_attrs = merge(default_cell_attrs, cell_attrs)
+  cell_attrs = merge(default_cell_attrs, Graphviz.as_attributes(cell_attrs))
   for v in box_ids(f)
     gv_box = graphviz_box(box(f,v), box_id([v]),
       orientation=orientation, labels=node_labels, port_size=port_size,
@@ -133,13 +131,13 @@ function to_graphviz(f::WiringDiagram;
   end
   
   # Graph.
-  graph_attrs = merge(graph_attrs, Graphviz.Attributes(
-    :rankdir => rank_dir(orientation)
-  ))
   Graphviz.Digraph(graph_name, stmts;
-    graph_attrs=merge(default_graph_attrs, graph_attrs),
-    node_attrs=merge(default_node_attrs, node_attrs),
-    edge_attrs=merge(default_edge_attrs, edge_attrs))
+    graph_attrs=merge(default_graph_attrs, Graphviz.as_attributes(graph_attrs),
+      Graphviz.Attributes(
+        :rankdir => rank_dir(orientation)
+      )),
+    node_attrs=merge(default_node_attrs, Graphviz.as_attributes(node_attrs)),
+    edge_attrs=merge(default_edge_attrs, Graphviz.as_attributes(edge_attrs)))
 end
 
 function to_graphviz(f::HomExpr; kw...)::Graphviz.Graph
@@ -151,7 +149,7 @@ end
 function graphviz_box(box::AbstractBox, node_id::String;
     orientation::LayoutOrientation=TopToBottom,
     labels::Bool=true, port_size::String="0",
-    cell_attrs::Graphviz.Attributes=Graphviz.Attributes(), kw...)
+    cell_attrs::AbstractDict=Dict(), kw...)
   # Main node.
   nin, nout = length(input_ports(box)), length(output_ports(box))
   text_label = labels ? node_label(box.value) : ""
@@ -199,7 +197,7 @@ end
 """
 function node_html_label(nin::Int, nout::Int, text_label::String;
     orientation::LayoutOrientation=TopToBottom, port_size::String="0",
-    attrs::Graphviz.Attributes=Graphviz.Attributes())::Graphviz.Html
+    attrs::AbstractDict=Dict())::Graphviz.Html
   if is_vertical(orientation)
     input_label = ports_horizontal_html_label(InputPort, nin, port_size)
     output_label = ports_horizontal_html_label(OutputPort, nout, port_size)
@@ -347,8 +345,9 @@ edge_label(::Nothing) = ""
 
 """ Encode attributes for Graphviz HTML-like labels.
 """
-function html_attributes(attrs::Graphviz.Attributes)::String
-  join(["$(uppercase(string(k)))=\"$v\"" for (k,v) in attrs], " ")
+function html_attributes(attrs::AbstractDict)::String
+  join([ "$(uppercase(string(k)))=\"$v\""
+         for (k,v) in Graphviz.as_attributes(attrs) ], " ")
 end
 
 """ Escape special HTML characters: &, <, >, ", '

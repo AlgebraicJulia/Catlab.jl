@@ -9,6 +9,8 @@
 import TikzPictures
 using Catlab.Graphics
 
+# ## Examples
+
 # ### Symmetric monoidal category
 
 using Catlab.Doctrines

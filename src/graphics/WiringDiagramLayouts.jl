@@ -59,7 +59,7 @@ as another, similar shape, such as a rotated isosceles trapezoid.
 
 """ Layout for box in a wiring diagram.
 """
-@with_kw mutable struct BoxLayout{Value}
+@with_kw_noshow mutable struct BoxLayout{Value}
   value::Value = nothing
   shape::BoxShape = RectangleShape
   position::Vector2D = zeros(Vector2D)

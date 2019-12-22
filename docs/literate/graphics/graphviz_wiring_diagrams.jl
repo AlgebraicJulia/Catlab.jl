@@ -8,6 +8,8 @@
 
 using Catlab.WiringDiagrams, Catlab.Graphics
 
+# ## Examples
+
 # ### Symmetric monoidal category
 
 using Catlab.Doctrines
@@ -69,3 +71,27 @@ to_graphviz(f2)
 to_graphviz(add_junctions!(to_wiring_diagram(f1)))
 #-
 to_graphviz(add_junctions!(to_wiring_diagram(f2)))
+
+# ## Custom styles
+
+# The visual appearance of wiring diagrams can be customized by setting Graphviz
+# [attributes](https://www.graphviz.org/doc/info/attrs.html) at the graph, node,
+# edge, and cell levels. Graph, node, and edge attributes are described in the
+# Graphviz documentation. Cell attributes are passed to the primary cell of the
+# [HTML-like label](https://www.graphviz.org/doc/info/shapes.html#html) used for
+# the boxes.
+
+to_graphviz(compose(f,g),
+  labels = true, label_attr=:headlabel,
+  node_attrs = Dict(
+    :fontname => "Courier",
+  ),
+  edge_attrs = Dict(
+    :fontname => "Courier",
+    :labelangle => "25",
+    :labeldistance => "2",
+  ),
+  cell_attrs = Dict(
+    :bgcolor => "lavender",
+  )
+)
