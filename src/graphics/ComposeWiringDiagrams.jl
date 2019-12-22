@@ -43,6 +43,7 @@ const ComposeProperties = AbstractVector{<:Compose.Property}
   box_props::ComposeProperties = [ C.stroke("black"), C.fill(nothing) ]
   wire_props::ComposeProperties = [ C.stroke("black") ]
   text_props::ComposeProperties = [ C.fill("black") ]
+  rounded_boxes::Bool = true
 end
 
 # Wiring diagrams
@@ -88,7 +89,7 @@ function to_composejl_context(box::Box, opts::ComposeOptions)::Compose.Context
   C.compose(C.context(lower_corner(box)..., size(box)...,
                       units=C.UnitBox(), tag=:box),
     (C.context(order=1),
-     rounded_rectangle(),
+     opts.rounded_boxes ? rounded_rectangle() : C.rectangle(),
      opts.box_props...),
     (C.context(order=2),
      C.text(0.5, 0.5, string(box.value.value), C.hcenter, C.vcenter),
