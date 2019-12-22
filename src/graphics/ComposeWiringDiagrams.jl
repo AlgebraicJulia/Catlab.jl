@@ -4,6 +4,7 @@ module ComposeWiringDiagrams
 export ComposePicture, to_composejl, to_composejl_context
 
 using LinearAlgebra: dot
+using Parameters
 import Compose
 const C = Compose
 
@@ -12,20 +13,8 @@ using ..WiringDiagramLayouts
 using ..WiringDiagramLayouts: AbstractVector2D, Vector2D, position, size,
   lower_corner, upper_corner, normal, tangent, wire_points
 
-# Constants and data types
-##########################
-
-const ComposeProperties = AbstractVector{<:Compose.Property}
-
-# Default properties for root context, box context, and wire context.
-const default_root_props = Compose.Property[
-  C.font("Serif"),
-  C.stroke("black"),
-]
-const default_box_props = Compose.Property[
-  C.fill(nothing),
-]
-const default_wire_props = Compose.Property[]
+# Data types
+############
 
 """ A Compose context together with a given width and height.
 
@@ -46,52 +35,68 @@ function Base.show(io::IO, ::MIME"image/svg+xml", pic::ComposePicture)
   C.draw(C.SVG(io, pic.width, pic.height, false), pic.context)
 end
 
+const ComposeProperties = AbstractVector{<:Compose.Property}
+
+""" Internal data type for configurable options of Compose.jl wiring diagrams.
+"""
+@with_kw_noshow struct ComposeOptions
+  box_props::ComposeProperties = [ C.stroke("black"), C.fill(nothing) ]
+  wire_props::ComposeProperties = [ C.stroke("black") ]
+  text_props::ComposeProperties = [ C.fill("black") ]
+end
+
 # Wiring diagrams
 #################
 
 """ Draw a wiring diagram in Compose.jl.
 """
 function to_composejl(args...;
-    base_unit::Compose.Measure=5*C.mm,
-    root_props::ComposeProperties=default_root_props,
-    box_props::ComposeProperties=default_box_props,
-    wire_props::ComposeProperties=default_wire_props, kw...)::ComposePicture
-  diagram = layout_diagram(args...; kw...)
-  context = to_composejl_context(diagram;
-    root_props=root_props, box_props=box_props, wire_props=wire_props)
+    base_unit::Compose.Measure = 5*C.mm, kw...)::ComposePicture
+  compose_kw = filter(p -> first(p) ∈ fieldnames(ComposeOptions), kw)
+  layout_kw = filter(p -> first(p) ∉ fieldnames(ComposeOptions), kw)
+  diagram = layout_diagram(args...; layout_kw...)
+  context = to_composejl_context(diagram; compose_kw...)
   ComposePicture(context, (base_unit .* size(diagram))...)
 end
 
 """ Draw a wiring diagram in Compose.jl using the given layout.
 """
-function to_composejl_context(diagram::WiringDiagram;
-    root_props::ComposeProperties=default_root_props,
-    box_props::ComposeProperties=default_box_props,
-    wire_props::ComposeProperties=default_wire_props)::Compose.Context
-  box_contexts = map(to_composejl_context, boxes(diagram))
-  wire_contexts = map(w -> to_composejl_context(diagram, w), wires(diagram))
+function to_composejl_context(diagram::WiringDiagram; kw...)::Compose.Context
+  to_composejl_context(diagram, ComposeOptions(; kw...))
+end
+
+function to_composejl_context(diagram::WiringDiagram, opts::ComposeOptions)
   # The origin of the Compose.jl coordinate system is in the top-left corner,
   # while the origin of wiring diagram layout is at the diagram center, so we
   # need to translate the coordinates using the `UnitBox`.
   units = C.UnitBox(-size(diagram)/2..., size(diagram)...)
   C.compose(C.context(units=units, tag=:diagram),
-    [C.context(tag=:boxes); box_contexts; box_props],
-    [C.context(tag=:wires); wire_contexts; wire_props],
-    root_props...,
+    C.compose(C.context(tag=:boxes),
+      map(boxes(diagram)) do box
+        to_composejl_context(box, opts)
+      end...
+    ),
+    C.compose(C.context(tag=:wires),
+      map(wires(diagram)) do wire
+        to_composejl_context(diagram, wire, opts)
+      end...
+    ),
   )
 end
 
-function to_composejl_context(box::Box)::Compose.Context
+function to_composejl_context(box::Box, opts::ComposeOptions)::Compose.Context
   C.compose(C.context(lower_corner(box)..., size(box)...,
                       units=C.UnitBox(), tag=:box),
     (C.context(order=1),
-     rounded_rectangle()),
+     rounded_rectangle(),
+     opts.box_props...),
     (C.context(order=2),
-     C.text(0.5, 0.5, string(box.value.value), C.hcenter, C.vcenter)),
+     C.text(0.5, 0.5, string(box.value.value), C.hcenter, C.vcenter),
+     opts.text_props...),
   )
 end
 
-function to_composejl_context(d::WiringDiagram, wire::Wire)
+function to_composejl_context(d::WiringDiagram, wire::Wire, opts::ComposeOptions)
   src, tgt = port_value(d, wire.source), port_value(d, wire.target)
   src_point = position(parent_box(d, wire.source)) + position(src)
   tgt_point = position(parent_box(d, wire.target)) + position(tgt)
@@ -107,7 +112,10 @@ function to_composejl_context(d::WiringDiagram, wire::Wire)
   append!(points, tangents_to_controls(prev..., normal(tgt), tgt_point))
   push!(points, tgt_point)
   
-  piecewise_curve(map(Tuple, points), tag=:wire)
+  C.compose(C.context(tag=:wire),
+    piecewise_curve(map(Tuple, points)),
+    opts.wire_props...
+  )
 end
 
 """ Control points for Bezier curve from endpoints and unit tangent vectors.
@@ -127,10 +135,10 @@ end
 
 """ Draw a rounded rectangle in Compose.
 """
-function rounded_rectangle(args...; corner_radius::Compose.Measure=C.mm, kw...)
+function rounded_rectangle(args...; corner_radius::Compose.Measure=C.mm)
   w, h, px = Compose.w, Compose.h, Compose.px
   r = corner_radius
-  C.compose(C.context(args...; kw...),
+  C.compose(C.context(args...),
     C.compose(C.context(order=1),
       # Layer 1: fill.
       # Since we cannot use a stroke here, we add a single pixel fudge factor to
@@ -164,9 +172,9 @@ end
 The points are given by a vector [p1, c1, c2, p2, c3, c4, p3, ...] of length
 3n+1 where n >=1 is the number of Bezier curves.
 """
-function piecewise_curve(points::Vector{<:Tuple}; kw...)
+function piecewise_curve(points::Vector{<:Tuple})
   @assert length(points) % 3 == 1
-  C.compose(C.context(; kw...),
+  C.compose(C.context(),
     (C.curve(points[i:i+3]...) for i in range(1, length(points)-1, step=3))...
   )
 end

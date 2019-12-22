@@ -40,7 +40,7 @@ svector(orient::LayoutOrientation, first, second) =
 
 """ Internal data type for configurable options of wiring diagram layout.
 """
-@with_kw struct LayoutOptions
+@with_kw_noshow struct LayoutOptions
   orientation::LayoutOrientation = LeftToRight
   base_box_size::Float64 = 2
   sequence_pad::Float64 = 2
