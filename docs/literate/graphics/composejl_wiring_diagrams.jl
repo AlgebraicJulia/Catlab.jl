@@ -54,3 +54,23 @@ to_composejl((braid(A,B) ⊗ id(C)) ⋅ (id(B) ⊗ braid(A,C) ⋅ (braid(B,C) �
 using Compose: fill, stroke
 
 to_composejl(f⋅g, box_props=[fill("lavender"), stroke("black")])
+
+# ## Output formats
+
+# The function `to_composejl` returns a `ComposePicture` object, which contains
+# a Compose.jl context as well as a recommended width and height. When displayed
+# interactively, this object is rendered using Compose's SVG backend.
+
+# Any backend can be used by calling Compose's `draw` function. The SVG and
+# [PGF](https://ctan.org/pkg/pgf) (LaTeX) backends are always available. To use
+# the PNG or PDF backends, the extra packages
+# [Cairo.jl](https://github.com/JuliaGraphics/Cairo.jl) and
+# [Fontconfig.jl](https://github.com/JuliaGraphics/Fontconfig.jl) must be
+# installed.
+
+# For example, here is how to use the PGF backend.
+
+using Compose: draw, PGF
+
+pic = to_composejl(f⋅g, rounded_boxes=false)
+draw(PGF(stdout, pic.width, pic.height), pic.context)
