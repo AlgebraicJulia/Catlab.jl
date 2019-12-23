@@ -826,7 +826,7 @@ function WiringDiagram(inputs::ObExpr, outputs::ObExpr)
 end
 Ports(expr::ObExpr) = Ports(collect_values(expr))
 
-""" Wiring diagram as *monoidal category with diagonals and codiagonals*.
+""" Wiring diagrams as a monoidal category with diagonals and codiagonals.
 """
 @instance MonoidalCategoryWithBidiagonals(Ports, WiringDiagram) begin
   dom(f::WiringDiagram) = Ports(f.input_ports)
@@ -882,18 +882,19 @@ Ports(expr::ObExpr) = Ports(collect_values(expr))
   create(A::Ports) = WiringDiagram(munit(Ports), A)
 end
 
+# Unbiased variants of braiding (permutation), copying, and merging.
+
 function permute(A::Ports, σ::Vector{Int}; inverse::Bool=false)
   @assert length(A) == length(σ)
   B = Ports([ A.ports[σ[i]] for i in eachindex(σ) ])
   if inverse
     f = WiringDiagram(B, A)
     add_wires!(f, ((input_id(f),σ[i]) => (output_id(f),i) for i in eachindex(σ)))
-    return f
   else
     f = WiringDiagram(A, B)
     add_wires!(f, ((input_id(f),i) => (output_id(f),σ[i]) for i in eachindex(σ)))
-    return f
   end
+  return f
 end
 
 function mcopy(A::Ports, n::Int)::WiringDiagram

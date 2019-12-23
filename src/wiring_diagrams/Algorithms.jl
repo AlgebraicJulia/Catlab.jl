@@ -1,7 +1,7 @@
 """ Algorithms operating on wiring diagrams.
 """
 module WiringDiagramAlgorithms
-export Junction, add_junctions!, rem_junctions!,
+export Junction, add_junctions!, rem_junctions!, dunit, dcounit,
   normalize_cartesian!, normalize_copy!, normalize_delete!,
   topological_sort, crossing_minimization_by_sort
 
@@ -10,6 +10,7 @@ import LightGraphs
 using UnionFind
 using Statistics: mean
 
+import ...Doctrines: dunit, dcounit
 using ..WiringDiagramCore, ..WiringLayers
 import ..WiringDiagramCore: input_ports, output_ports, set_box
 
@@ -26,12 +27,13 @@ function topological_sort(d::WiringDiagram)::Vector{Int}
   filter(v -> v ∉ outer_ids, vs)
 end
 
-# Diagonals and codiagonals
-###########################
+# Junctions
+###########
 
 """ Junction node in a wiring diagram.
 
-Used to explicitly represent copies, merges, deletions, and creations.
+Junction nodes are used to explicitly represent copies, merges, deletions,
+creations, caps, and cups.
 """
 @auto_hash_equals struct Junction{Value} <: AbstractBox
   value::Value
@@ -43,7 +45,8 @@ output_ports(junction::Junction) = repeat([junction.value], junction.noutputs)
 
 """ Add junction nodes to wiring diagram.
 
-Transforms from implicit to explicit representation of (co)diagonals.
+Transforms from the implicit to the explicit representation of diagonals and
+codiagonals. This operation is inverse to `rem_junctions!`.
 """
 function add_junctions!(d::WiringDiagram)
   add_output_junctions!(d, input_id(d))
@@ -83,10 +86,11 @@ end
 
 """ Remove junction nodes from wiring diagram.
 
-Transforms from explicit to implicit representation of (co)diagonals.
+Transforms from the explicit to the implicit representation of diagonals and
+codiagonals. This operation is inverse to `add_junctions!`.
 
-Note: This function currently does not actually mutate its argument. However,
-this is subject to change in the future.
+Note: This function does not actually mutate its argument. However, this is
+subject to change in the future.
 """
 function rem_junctions!(d::WiringDiagram)
   junction_ids = filter(v -> box(d,v) isa Junction, box_ids(d))
@@ -97,6 +101,32 @@ function rem_junctions!(d::WiringDiagram)
   end
   substitute(d, junction_ids, junction_diagrams)
 end
+
+# Wiring diagrams as self-dual compact closed category.
+# FIXME: What about compact categories that are not self-dual?
+
+function dunit(A::Ports)
+  f = WiringDiagram(munit(Ports), otimes(A,A))
+  n = length(A)
+  for (i, port) in enumerate(A.ports)
+    v = add_box!(f, Junction(port, 0, 2))
+    add_wires!(f, ((v,1) => (output_id(f),i), (v,2) => (output_id(f),i+n)))
+  end
+  return f
+end
+
+function dcounit(A::Ports)
+  f = WiringDiagram(otimes(A,A), munit(Ports))
+  n = length(A)
+  for (i, port) in enumerate(A.ports)
+    v = add_box!(f, Junction(port, 2, 0))
+    add_wires!(f, ((input_id(f),i) => (v,1), (input_id(f),i+n) => (v,2)))
+  end
+  return f
+end
+
+# Normalization
+###############
 
 """ Put a wiring diagram for a cartesian category into normal form.
 

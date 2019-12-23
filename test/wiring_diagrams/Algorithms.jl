@@ -10,8 +10,8 @@ f = Hom(:f, A, B)
 g = Hom(:g, B, C)
 h = Hom(:h, C, D)
 
-# Diagonals and codiagonals
-###########################
+# Junctions
+###########
 
 junction_diagram(args...) = singleton_diagram(Junction(args...))
 
@@ -71,6 +71,9 @@ d = add_junctions!(d)
 perm = [ findfirst([b] .== boxes(d)) for b in boxes(junctioned) ]
 @test is_permuted_equal(d, junctioned, perm)
 @test rem_junctions!(d) == original
+
+# Normalization
+###############
 
 # Normalize copies.
 d = to_wiring_diagram(compose(mcopy(A), otimes(f,f)))
