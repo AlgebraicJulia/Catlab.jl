@@ -321,7 +321,7 @@ function show_latex(io::IO, expr::AlgebraicNet.Hom{:linear}; kw...)
 end
 function show_unicode(io::IO, expr::AlgebraicNet.Hom{:linear}; kw...)
   value = first(expr)
-  print(io, "linear[$value]")
+  print(io, "linear{$value}")
 end
 
 box(name::String, f::AlgebraicNet.Hom{:generator}) = rect(name, f; rounded=false)

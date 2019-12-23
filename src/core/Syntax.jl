@@ -491,9 +491,9 @@ show_unicode(io::IO, x::Any; kw...) = show(io, x)
 function show_unicode(io::IO, expr::GATExpr; kw...)
   # By default, show in prefix notation.
   print(io, head(expr))
-  print(io, "[")
+  print(io, "{")
   join(io, [sprint(show_unicode, arg) for arg in args(expr)], ",")
-  print(io, "]")
+  print(io, "}")
 end
 
 function show_unicode(io::IO, expr::GATExpr{:generator}; kw...)

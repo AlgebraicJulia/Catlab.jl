@@ -45,7 +45,7 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 # Infix notation (Unicode)
 @test unicode(A) == "A"
 @test unicode(f) == "f"
-@test unicode(id(A)) == "id[A]"
+@test unicode(id(A)) == "id{A}"
 @test unicode(compose(f,g)) == "f⋅g"
 
 # Infix notation (LaTeX)

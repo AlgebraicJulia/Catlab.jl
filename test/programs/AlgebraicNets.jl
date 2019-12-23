@@ -170,7 +170,7 @@ f = Hom(:sin,R,R)
 
 # Composition
 f = compose(linear(2,R,R), Hom(:sin,R,R))
-@test unicode(f) == "linear[2]; sin"
+@test unicode(f) == "linear{2}; sin"
 @test latex(f) == "\\mathop{\\mathrm{linear}}\\left[2\\right] ; \\mathrm{sin}"
 
 # Monoidal product
@@ -180,7 +180,7 @@ f = otimes(Hom(:cos,R,R), Hom(:sin,R,R))
 
 # Diagonals and codiagonals
 f = compose(otimes(id(R),constant(1,R)), mmerge(R))
-@test unicode(f) == "(id[R]⊗1); mmerge[R,2]"
+@test unicode(f) == "(id{R}⊗1); mmerge{R,2}"
 @test latex(f) == "\\left(\\mathrm{id}_{R} \\otimes 1\\right) ; \\nabla_{R,2}"
 
 end
