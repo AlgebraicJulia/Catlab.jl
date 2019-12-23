@@ -30,7 +30,7 @@ using Catlab.Graphics
 import Catlab.Graphics: Graphviz
 
 show_diagram(d::WiringDiagram) = to_graphviz(d,
-  direction=:horizontal,
+  orientation=LeftToRight,
   labels=true, label_attr=:xlabel,
   node_attrs=Graphviz.Attributes(
     :fontname => "Courier",

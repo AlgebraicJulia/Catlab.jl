@@ -12,7 +12,6 @@ Modules = [
   WiringDiagramSerialization,
   GraphMLWiringDiagrams,
   JSONWiringDiagrams,
-  YFilesWiringDiagrams,
 ]
 Private = false
 ```

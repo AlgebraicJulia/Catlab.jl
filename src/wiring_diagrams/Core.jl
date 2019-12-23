@@ -558,21 +558,21 @@ substitutions are simultaneous.
 This operation implements the operadic composition of wiring diagrams
 (`ocompose`).
 """
-function substitute(d::WiringDiagram)
-  substitute(d, filter(v -> box(d,v) isa WiringDiagram, box_ids(d)))
+function substitute(d::WiringDiagram; kw...)
+  substitute(d, filter(v -> box(d,v) isa WiringDiagram, box_ids(d)); kw...)
 end
-function substitute(d::WiringDiagram, v::Int)
-  substitute(d, v, box(d,v)::WiringDiagram)
+function substitute(d::WiringDiagram, v::Int; kw...)
+  substitute(d, v, box(d,v)::WiringDiagram; kw...)
 end
-function substitute(d::WiringDiagram, vs::Vector{Int})
-  substitute(d, vs, WiringDiagram[ box(d,v) for v in vs ])
+function substitute(d::WiringDiagram, vs::Vector{Int}; kw...)
+  substitute(d, vs, WiringDiagram[ box(d,v) for v in vs ]; kw...)
+end
+function substitute(d::WiringDiagram, v::Int, sub::WiringDiagram; kw...)
+  substitute(d, [v], [sub]; kw...)
 end
 
-function substitute(d::WiringDiagram, v::Int, sub::WiringDiagram)
-  substitute(d, [v], [sub])
-end
-
-function substitute(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagram})
+function substitute(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagram};
+                    merge_wire_values=default_merge_wire_values)
   # In outline, the algorithm is:
   #
   # 1. Create an empty wiring diagram.
@@ -586,7 +586,7 @@ function substitute(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagra
   # problem of *instantaneous wires*. Some authors ban instantaneous wires, but
   # want to allow them because they can represent the identity, braidings, etc.
   @assert length(vs) == length(subs)
-  result = WiringDiagram(input_ports(d), output_ports(d))
+  result = WiringDiagram(d.value, input_ports(d), output_ports(d))
   
   # Add boxes by interleaving, in the correct order, the non-substituted boxes
   # of the original diagram and the internal boxes of the substituted diagrams.
@@ -610,12 +610,13 @@ function substitute(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagra
   # Add the wires of the original diagram, then add the internal wires of the
   # substituted diagrams.
   for wire in wires(d)
-    add_wire!(result, Wire(
+    add_wire!(result, Wire(wire.value,
       set_box(wire.source, vmap[wire.source.box]),
       set_box(wire.target, vmap[wire.target.box])))
   end
   for v in vs
-    _substitute_wires!(result, vmap[v], sub_maps[v]...)
+    substitute_wires!(result, vmap[v], sub_maps[v]...;
+      merge_wire_values=merge_wire_values)
   end
   
   # Finally, remove the substituted boxes. Because they were added last, this
@@ -624,10 +625,11 @@ function substitute(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagra
   result
 end
 
-""" Substitute wires inside sub-diagram of a wiring diagram.
+""" Substitute wires of sub-diagram into containing wiring diagram.
 """
-function _substitute_wires!(d::WiringDiagram, v::Int,
-                            sub::WiringDiagram, sub_map::Dict{Int,Int})
+function substitute_wires!(d::WiringDiagram, v::Int,
+                           sub::WiringDiagram, sub_map::Dict{Int,Int};
+                           merge_wire_values=default_merge_wire_values)
   for wire in wires(sub)
     src = get(sub_map, wire.source.box, 0)
     tgt = get(sub_map, wire.target.box, 0)
@@ -635,25 +637,35 @@ function _substitute_wires!(d::WiringDiagram, v::Int,
     if wire.source.box == input_id(sub) && wire.target.box == output_id(sub)
       for in_wire in in_wires(d, v, wire.source.port)
         for out_wire in out_wires(d, v, wire.target.port)
-          add_wire!(d, Wire(in_wire.source, out_wire.target))
+          add_wire!(d, Wire(
+            merge_wire_values(in_wire.value, wire.value, out_wire.value),
+            in_wire.source, out_wire.target))
         end
       end
     # Special case: wire from input port to internal box.
     elseif wire.source.box == input_id(sub)
       for in_wire in in_wires(d, v, wire.source.port)
-        add_wire!(d, Wire(in_wire.source, set_box(wire.target, tgt)))
+        add_wire!(d, Wire(
+          merge_wire_values(in_wire.value, wire.value, nothing),
+          in_wire.source, set_box(wire.target, tgt)))
       end
     # Special case: wire from internal box to output port.
     elseif wire.target.box == output_id(sub)
       for out_wire in out_wires(d, v, wire.target.port)
-        add_wire!(d, Wire(set_box(wire.source, src), out_wire.target))
+        add_wire!(d, Wire(
+          merge_wire_values(nothing, wire.value, out_wire.value),
+          set_box(wire.source, src), out_wire.target))
       end
     # Default case: wire between two internal boxes.
     else
-      add_wire!(d, Wire(set_box(wire.source, src), set_box(wire.target, tgt)))
+      add_wire!(d, Wire(
+        merge_wire_values(nothing, wire.value, nothing),
+        set_box(wire.source, src), set_box(wire.target, tgt)))
     end
   end
 end
+
+default_merge_wire_values(::Any, middle::Any, ::Any) = middle
 
 # Encapsulation.
 
@@ -675,7 +687,7 @@ function encapsulate(d::WiringDiagram, vss::Vector{Vector{Int}};
   if isnothing(values)
     values = repeat([nothing], length(vss))
   end
-  result = WiringDiagram(input_ports(d), output_ports(d))
+  result = WiringDiagram(d.value, input_ports(d), output_ports(d))
   
   # Add boxes, both encapsulated and non-encapsulated, to new wiring diagram.
   encapsulated_representatives = Dict(
@@ -826,26 +838,25 @@ Ports(expr::ObExpr) = Ports(collect_values(expr))
     return f
   end
   
-  function compose(f::WiringDiagram, g::WiringDiagram)
-    # Check only that f and g have the same number of ports.
-    # The port types will be checked when the wires are added.
+  function compose(f::WiringDiagram, g::WiringDiagram; unsubstituted::Bool=false)
     if length(codom(f)) != length(dom(g))
+      # Check only that f and g have the same number of ports.
+      # The port types will be checked when the wires are added.
       error("Incompatible domains $(codom(f)) and $(dom(g))")
     end
-    
     h = WiringDiagram(dom(f), codom(g))
     fv = add_box!(h, f)
     gv = add_box!(h, g)
     add_wires!(h, ((input_id(h),i) => (fv,i) for i in eachindex(dom(f))))
     add_wires!(h, ((fv,i) => (gv,i) for i in eachindex(codom(f))))
     add_wires!(h, ((gv,i) => (output_id(h),i) for i in eachindex(codom(g))))
-    substitute(h, [fv,gv])
+    unsubstituted ? h : substitute(h, [fv,gv])
   end
   
   otimes(A::Ports, B::Ports) = Ports([A.ports; B.ports])
   munit(::Type{Ports}) = Ports([])
   
-  function otimes(f::WiringDiagram, g::WiringDiagram)
+  function otimes(f::WiringDiagram, g::WiringDiagram; unsubstituted::Bool=false)
     h = WiringDiagram(otimes(dom(f),dom(g)), otimes(codom(f),codom(g)))
     m, n = length(dom(f)), length(codom(f))
     fv = add_box!(h, f)
@@ -854,7 +865,7 @@ Ports(expr::ObExpr) = Ports(collect_values(expr))
     add_wires!(h, (input_id(h),i+m) => (gv,i) for i in eachindex(dom(g)))
     add_wires!(h, (fv,i) => (output_id(h),i) for i in eachindex(codom(f)))
     add_wires!(h, (gv,i) => (output_id(h),i+n) for i in eachindex(codom(g)))
-    substitute(h, [fv,gv])
+    unsubstituted ? h : substitute(h, [fv,gv])
   end
   
   function braid(A::Ports, B::Ports)

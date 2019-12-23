@@ -16,8 +16,8 @@ The AST is adapted from the (also incomplete) BNF grammar for TikZ in
 """
 module TikZ
 export Expression, Statement, GraphStatement, Coordinate, Property,
-       PathOperation, Picture, Scope, Node, Edge, EdgeNode, Graph, GraphScope,
-       GraphNode, GraphEdge, MatrixNode, pprint
+  PathOperation, Picture, Scope, Node, Edge, EdgeNode, Graph, GraphScope,
+  GraphNode, GraphEdge, MatrixNode, pprint
 
 using Compat
 using AutoHashEquals

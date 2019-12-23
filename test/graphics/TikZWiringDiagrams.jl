@@ -2,14 +2,13 @@ module TestTikZWiringDiagrams
 
 using Test
 
-using Catlab.Doctrines
-using Catlab.WiringDiagrams
+using Catlab.Doctrines, Catlab.WiringDiagrams
 using Catlab.Graphics
 import Catlab.Graphics: TikZ
 import Catlab.Graphics.TikZWiringDiagrams.Defaults
 
 # We can't test that the pictures look right, but we can test that they exist!
-is_pic(obj) = isa(obj, TikZ.Picture)
+is_pic(obj) = obj isa TikZ.Picture
 
 A, B = Ob(FreeCategory, :A, :B)
 f, g = Hom(:f, A, B), Hom(:g, B, A)

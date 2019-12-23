@@ -17,7 +17,7 @@ jobs:
           sudo apt-get install graphviz pdf2svg
           sudo apt-get install texlive-latex-base texlive-latex-extra texlive-binaries texlive-pictures texlive-luatex
       - name: "Install Julia dependencies"
-        run: julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+        run: julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.add(PackageSpec(path=pwd()));'
       - name: "Build and deploy docs"
         env:
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
