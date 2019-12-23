@@ -1,6 +1,6 @@
 export BicategoryRelations, FreeBicategoryRelations,
   AbelianBicategoryRelations, FreeAbelianBicategoryRelations,
-  mplus, mzero, coplus, cozero
+  meet, top, mplus, mzero, coplus, cozero
 
 # Bicategory of relations
 #########################
@@ -15,13 +15,17 @@ References:
 - Walters, 2009, blog post, "Categorical algebras of relations",
   http://rfcwalters.blogspot.com/2009/10/categorical-algebras-of-relations.html
 """
-@signature MonoidalCategoryWithDiagonals(Ob,Hom) => BicategoryRelations(Ob,Hom) begin
+@signature MonoidalCategoryWithBidiagonals(Ob,Hom) => BicategoryRelations(Ob,Hom) begin
   # Dagger category.
   dagger(f::Hom(A,B))::Hom(B,A) <= (A::Ob,B::Ob)
   
   # Self-dual compact closed category.
   dunit(A::Ob)::Hom(munit(), otimes(A,A))
   dcounit(A::Ob)::Hom(otimes(A,A), munit())
+  
+  # Logical operations.
+  meet(f::Hom(A,B), g::Hom(A,B))::Hom(A,B) <= (A::Ob, B::Ob)
+  top(A::Ob, B::Ob)::Hom(A,B)
 end
 
 @syntax FreeBicategoryRelations(ObExpr,HomExpr) BicategoryRelations begin
@@ -33,6 +37,9 @@ end
     f = anti_involute(Super.dagger(f), dagger, compose, id)
     distribute_unary(f, dagger, otimes)
   end
+  
+  meet(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
+  top(A::Ob, B::Ob) = compose(delete(A), create(B))
 end
 
 """ Doctrine of *abelian bicategory of relations*
@@ -61,6 +68,9 @@ end
     f = anti_involute(Super.dagger(f), dagger, compose, id)
     distribute_unary(f, dagger, otimes)
   end
+  
+  meet(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
+  top(A::Ob, B::Ob) = compose(delete(A), create(B))
 end
 
 function show_latex(io::IO, expr::FreeAbelianBicategoryRelations.Ob{:otimes}; kw...)
