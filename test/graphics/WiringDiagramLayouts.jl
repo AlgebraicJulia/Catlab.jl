@@ -4,8 +4,7 @@ using Test
 
 using Catlab.Doctrines, Catlab.WiringDiagrams
 using Catlab.Graphics
-using Catlab.Graphics.WiringDiagramLayouts: RectangleShape, CircleShape,
-  position
+using Catlab.Graphics.WiringDiagramLayouts: JunctionShape, position
 
 box_layouts(d::WiringDiagram) = map(box -> box.value, boxes(d))
 box_values(d::WiringDiagram) = map(layout -> layout.value, box_layouts(d))
@@ -44,7 +43,7 @@ d = layout_diagram(otimes(f,g), orientation=LeftToRight)
 A, B = Ob(FreeBiproductCategory, :A, :B)
 
 for expr in (mcopy(A), delete(A), mmerge(A), create(A))
-  @test map(l -> l.shape, box_layouts(layout_diagram(expr))) == [CircleShape]
+  @test map(l -> l.shape, box_layouts(layout_diagram(expr))) == [JunctionShape]
 end
 
 end

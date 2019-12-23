@@ -35,4 +35,11 @@ pic = to_composejl(braid(A,B))
 @test length(tagged(pic, :box)) == 0
 @test length(tagged(pic, :wire)) == 2
 
+A, B = Ob(FreeBiproductCategory, :A, :B)
+
+for expr in (mcopy(A), delete(A), mmerge(A), create(A))
+  pic = to_composejl(expr)
+  @test length(tagged(pic, :box)) == 1
+end
+
 end

@@ -47,7 +47,7 @@ svector(orient::LayoutOrientation, first, second) =
   base_box_size::Float64 = 2
   sequence_pad::Float64 = 2
   parallel_pad::Float64 = 1
-  junction_size::Float64 = 0.25
+  junction_size::Float64 = 0.2
 end
 
 svector(opts::LayoutOptions, args...) = svector(opts.orientation, args...)
@@ -58,7 +58,7 @@ Specific features of the shape are determined by the graphics backend. For
 example, a rectangle could be rendered with or without rounded corners or even
 as another, similar shape, such as a rotated isosceles trapezoid.
 """
-@enum BoxShape RectangleShape CircleShape ForwardTriangleShape BackwardTriangleShape
+@enum BoxShape RectangleShape CircleShape JunctionShape
 
 """ Layout for box in a wiring diagram.
 """
@@ -277,8 +277,8 @@ end
 function layout_junction(value::Any, inputs::Vector, outputs::Vector,
                          opts::LayoutOptions)
   radius = opts.junction_size
-  size = SVector(radius, radius)
-  box = Box(BoxLayout(value=value, shape=CircleShape, size=size),
+  size = 2*SVector(radius, radius)
+  box = Box(BoxLayout(value=value, shape=JunctionShape, size=size),
             layout_circular_ports(InputPort, inputs, radius, opts),
             layout_circular_ports(OutputPort, outputs, radius, opts))
   size_to_fit!(singleton_diagram(box), opts)
@@ -321,9 +321,9 @@ function layout_circular_ports(port_kind::PortKind, port_values::Vector,
                                radius::Real, opts::LayoutOptions)
   n = length(port_values)
   θ1, θ2 = is_horizontal(opts.orientation) ? (π/2, -π/2) : (-π, 0)
-  θs = range(θ1, θ2, length=n+2)[2:n+1]
+  θs = collect(range(θ1, θ2, length=n+2)[2:n+1])
   θs = port_sign(port_kind, opts.orientation) == -1 ? reverse(θs) : θs
-  dirs = [ SVector(cos(θ),sin(θ)) for θ in θs ]
+  dirs = [ SVector(cos(θ),-sin(θ)) for θ in θs ] # positive y-axis downwards
   PortLayout[ PortLayout(value, radius * dir, dir)
               for (value, dir) in zip(port_values, dirs) ]
 end

@@ -46,6 +46,17 @@ to_composejl(braid(A,B) ⋅ (g⊗f) ⋅ braid(A,B))
 
 to_composejl((braid(A,B) ⊗ id(C)) ⋅ (id(B) ⊗ braid(A,C) ⋅ (braid(B,C) ⊗ id(A))))
 
+# ### Biproduct category
+
+A, B = Ob(FreeBiproductCategory, :A, :B)
+f, g = Hom(:f, A, B), Hom(:g, B, A)
+
+to_composejl(mcopy(A))
+#-
+to_composejl(delete(A))
+#-
+to_composejl(mcopy(A)⋅(f⊗f)⋅mmerge(B))
+
 # ## Custom styles
 
 # The visual appearance of wiring diagrams can be customized by passing Compose

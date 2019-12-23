@@ -10,8 +10,9 @@ const C = Compose
 
 using ...WiringDiagrams
 using ..WiringDiagramLayouts
-using ..WiringDiagramLayouts: AbstractVector2D, Vector2D, position, size,
-  lower_corner, upper_corner, normal, tangent, wire_points
+using ..WiringDiagramLayouts: AbstractVector2D, Vector2D, BoxShape,
+  RectangleShape, JunctionShape, position, size, lower_corner, upper_corner,
+  normal, tangent, wire_points
 
 # Data types
 ############
@@ -41,8 +42,10 @@ const ComposeProperties = AbstractVector{<:Compose.Property}
 """
 @with_kw_noshow struct ComposeOptions
   box_props::ComposeProperties = [ C.stroke("black"), C.fill(nothing) ]
+  junction_props::ComposeProperties = [ C.stroke("black") ]
   wire_props::ComposeProperties = [ C.stroke("black") ]
   text_props::ComposeProperties = [ C.fill("black") ]
+  box_renderer::Function = render_box
   rounded_boxes::Bool = true
 end
 
@@ -88,12 +91,7 @@ end
 function to_composejl_context(box::Box, opts::ComposeOptions)::Compose.Context
   C.compose(C.context(lower_corner(box)..., size(box)...,
                       units=C.UnitBox(), tag=:box),
-    (C.context(order=1),
-     opts.rounded_boxes ? rounded_rectangle() : C.rectangle(),
-     opts.box_props...),
-    (C.context(order=2),
-     C.text(0.5, 0.5, string(box.value.value), C.hcenter, C.vcenter),
-     opts.text_props...),
+    opts.box_renderer(box.value.shape, box.value.value, opts)
   )
 end
 
@@ -131,8 +129,35 @@ function parent_box(d::WiringDiagram, port::Port)
   port.box in (input_id(d), output_id(d)) ? d : box(d, port.box)
 end
 
+""" Draw an atomic box in Compose.jl.
+"""
+function render_box(shape::BoxShape, value::Any, opts::ComposeOptions)
+  render_box(Val(shape), value, opts)
+end
+function render_box(::Val{RectangleShape}, value::Any, opts::ComposeOptions)
+  labeled_rectangle(string(value), rounded=opts.rounded_boxes,
+    rect_props=opts.box_props, text_props=opts.text_props)
+end
+function render_box(::Val{JunctionShape}, ::Any, opts::ComposeOptions)
+  C.compose(C.context(), C.circle(), opts.junction_props...)
+end
+
 # Compose.jl forms
 ##################
+
+""" Draw a rectangle with text label in Compose.
+"""
+function labeled_rectangle(label::String; rounded::Bool=true,
+    rect_props::ComposeProperties=[], text_props::ComposeProperties=[])
+  C.compose(C.context(),
+    (C.context(order=1),
+     rounded ? rounded_rectangle() : C.rectangle(),
+     rect_props...),
+    (C.context(order=2),
+     C.text(0.5, 0.5, label, C.hcenter, C.vcenter),
+     text_props...),
+  )
+end
 
 """ Draw a rounded rectangle in Compose.
 """
