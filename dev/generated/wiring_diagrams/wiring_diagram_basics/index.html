@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Basics of wiring diagrams · Catlab.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">Catlab.jl</span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox" checked/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Wiring diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li class="is-active"><a class="tocitem" href>Basics of wiring diagrams</a><ul class="internal"><li><a class="tocitem" href="#Data-structures-1"><span>Data structures</span></a></li><li><a class="tocitem" href="#Categorical-interface-1"><span>Categorical interface</span></a></li><li><a class="tocitem" href="#Imperative-interface-1"><span>Imperative interface</span></a></li></ul></li><li><a class="tocitem" href="../diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphics/graphviz_wiring_diagrams/">Drawing wiring diagrams using Graphviz</a></li><li><a class="tocitem" href="../../graphics/tikz_wiring_diagrams/">Drawing wiring diagrams using TikZ</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox"/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">Experimental features</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../programs/algebraic_nets/">Algebraic networks</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/core/">Symbolic expressions</a></li><li><a class="tocitem" href="../../../apis/doctrines/">Doctrines</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Wiring diagrams</a></li><li class="is-active"><a href>Basics of wiring diagrams</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Basics of wiring diagrams</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/epatters/Catlab.jl/blob/master/docs/literate/wiring_diagrams/wiring_diagram_basics.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Basics-of-wiring-diagrams-1"><a class="docs-heading-anchor" href="#Basics-of-wiring-diagrams-1">Basics of wiring diagrams</a><a class="docs-heading-anchor-permalink" href="#Basics-of-wiring-diagrams-1" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/epatters/Catlab.jl/blob/gh-pages/dev/generated/wiring_diagrams/wiring_diagram_basics.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><p>Using Catlab, you can create, manipulate, serialize, and visualize <em>wiring diagrams</em>, also known as <a href="https://ncatlab.org/nlab/show/string+diagram">string diagrams</a>. The flexible data structure for wiring diagrams allows arbitrary data to be attached to boxes, ports, and wires, and supports recursively nested diagrams.</p><p>You can interact with wiring diagrams using two different progamming interfaces:</p><ol><li><p><strong>Categorical</strong>: A high-level, functional interface expressed in terms of categorical concepts, such as composition (<code>compose</code>), monoidal products (<code>otimes</code>), duplication (<code>mcopy</code>), and deletion (<code>delete</code>).</p></li><li><p><strong>Imperative</strong>: A lower-level, mutating interface to directly manipulate boxes, ports, and wires, via operations like adding boxes (<code>add_box</code>) and wires (<code>add_wire</code>).</p></li></ol><p>In this notebook, we introduce both interfaces. We do not explicitly cover the visualization API, although for illustrative purposes we will draw wiring diagrams using Graphviz. Thus, you should install <a href="https://www.graphviz.org/">Graphviz</a> if you wish to run this notebook.</p><pre><code class="language-julia">using Catlab.WiringDiagrams
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Basics of wiring diagrams · Catlab.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">Catlab.jl</span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox" checked/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Wiring diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li class="is-active"><a class="tocitem" href>Basics of wiring diagrams</a><ul class="internal"><li><a class="tocitem" href="#Data-structures-1"><span>Data structures</span></a></li><li><a class="tocitem" href="#Categorical-interface-1"><span>Categorical interface</span></a></li><li><a class="tocitem" href="#Imperative-interface-1"><span>Imperative interface</span></a></li></ul></li><li><a class="tocitem" href="../diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphics/composejl_wiring_diagrams/">Wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../../graphics/graphviz_wiring_diagrams/">Wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../../graphics/tikz_wiring_diagrams/">Wiring diagrams in TikZ</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox"/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">Experimental features</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../programs/algebraic_nets/">Algebraic networks</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/core/">Symbolic expressions</a></li><li><a class="tocitem" href="../../../apis/doctrines/">Doctrines</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Wiring diagrams</a></li><li class="is-active"><a href>Basics of wiring diagrams</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Basics of wiring diagrams</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/epatters/Catlab.jl/blob/master/docs/literate/wiring_diagrams/wiring_diagram_basics.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Basics-of-wiring-diagrams-1"><a class="docs-heading-anchor" href="#Basics-of-wiring-diagrams-1">Basics of wiring diagrams</a><a class="docs-heading-anchor-permalink" href="#Basics-of-wiring-diagrams-1" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/epatters/Catlab.jl/blob/gh-pages/dev/generated/wiring_diagrams/wiring_diagram_basics.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><p>Using Catlab, you can create, manipulate, serialize, and visualize <em>wiring diagrams</em>, also known as <a href="https://ncatlab.org/nlab/show/string+diagram">string diagrams</a>. The flexible data structure for wiring diagrams allows arbitrary data to be attached to boxes, ports, and wires, and supports recursively nested diagrams.</p><p>You can interact with wiring diagrams using two different progamming interfaces:</p><ol><li><p><strong>Categorical</strong>: A high-level, functional interface expressed in terms of categorical concepts, such as composition (<code>compose</code>), monoidal products (<code>otimes</code>), duplication (<code>mcopy</code>), and deletion (<code>delete</code>).</p></li><li><p><strong>Imperative</strong>: A lower-level, mutating interface to directly manipulate boxes, ports, and wires, via operations like adding boxes (<code>add_box</code>) and wires (<code>add_wire</code>).</p></li></ol><p>In this notebook, we introduce both interfaces. We do not explicitly cover the visualization API, although for illustrative purposes we will draw wiring diagrams using Graphviz. Thus, you should install <a href="https://www.graphviz.org/">Graphviz</a> if you wish to run this notebook.</p><pre><code class="language-julia">using Catlab.WiringDiagrams
 
 using Catlab.Graphics
 import Catlab.Graphics: Graphviz
 
 show_diagram(d::WiringDiagram) = to_graphviz(d,
-  direction=:horizontal,
+  orientation=LeftToRight,
   labels=true, label_attr=:xlabel,
   node_attrs=Graphviz.Attributes(
     :fontname =&gt; &quot;Courier&quot;,
@@ -32,35 +32,35 @@ f</code></pre><pre><code class="language-none">WiringDiagram([:A], [:B],
 <!-- Generated by graphviz version 2.40.1 (20161225.0304)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="101pt" height="37pt"
- viewBox="0.00 0.00 101.00 36.50" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg width="147pt" height="37pt"
+ viewBox="0.00 0.00 147.00 36.50" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 32.5)">
 <title>G</title>
-<polygon fill="#ffffff" stroke="transparent" points="-4,4 -4,-32.5 97,-32.5 97,4 -4,4"/>
+<polygon fill="#ffffff" stroke="transparent" points="-4,4 -4,-32.5 143,-32.5 143,4 -4,4"/>
 <!-- n1p1 -->
 <!-- n3 -->
 <!-- f -->
 <g id="n3" class="node">
 <title>n3</title>
-<polygon fill="none" stroke="#000000" points="37.5,-3 37.5,-28 56.5,-28 56.5,-3 37.5,-3"/>
-<text text-anchor="start" x="42.5" y="-11.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">f</text>
+<polygon fill="none" stroke="#000000" points="60.5,-3 60.5,-28 79.5,-28 79.5,-3 60.5,-3"/>
+<text text-anchor="start" x="65.5" y="-11.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">f</text>
 </g>
 <!-- n1p1&#45;&gt;n3 -->
 <!-- A -->
 <g id="e1" class="edge">
 <title>n1p1:e&#45;&gt;n3:w</title>
-<path fill="none" stroke="#000000" d="M1,-15C15.3212,-15 20.1602,-15 32.259,-15"/>
-<polygon fill="#000000" stroke="#000000" points="32.5,-16.7501 37.5,-15 32.5,-13.2501 32.5,-16.7501"/>
-<text text-anchor="middle" x="14.646" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">A</text>
+<path fill="none" stroke="#000000" d="M24,-15C38.3212,-15 43.1602,-15 55.259,-15"/>
+<polygon fill="#000000" stroke="#000000" points="55.5,-16.7501 60.5,-15 55.5,-13.2501 55.5,-16.7501"/>
+<text text-anchor="middle" x="37.646" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">A</text>
 </g>
 <!-- n2p1 -->
 <!-- n3&#45;&gt;n2p1 -->
 <!-- B -->
 <g id="e2" class="edge">
 <title>n3:e&#45;&gt;n2p1:w</title>
-<path fill="none" stroke="#000000" d="M56,-15C70.125,-15 74.8977,-15 86.8308,-15"/>
-<polygon fill="#000000" stroke="#000000" points="87,-16.7501 92,-15 87,-13.2501 87,-16.7501"/>
-<text text-anchor="middle" x="69.3975" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
+<path fill="none" stroke="#000000" d="M79,-15C93.125,-15 97.8977,-15 109.8308,-15"/>
+<polygon fill="#000000" stroke="#000000" points="110,-16.7501 115,-15 110,-13.2501 110,-16.7501"/>
+<text text-anchor="middle" x="92.3975" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
 </g>
 </g>
 </svg>
@@ -78,50 +78,50 @@ f</code></pre><pre><code class="language-none">WiringDiagram([:A], [:B],
 <!-- Generated by graphviz version 2.40.1 (20161225.0304)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="156pt" height="37pt"
- viewBox="0.00 0.00 156.00 36.50" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg width="202pt" height="37pt"
+ viewBox="0.00 0.00 202.00 36.50" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 32.5)">
 <title>G</title>
-<polygon fill="#ffffff" stroke="transparent" points="-4,4 -4,-32.5 152,-32.5 152,4 -4,4"/>
+<polygon fill="#ffffff" stroke="transparent" points="-4,4 -4,-32.5 198,-32.5 198,4 -4,4"/>
 <!-- n1p1 -->
 <!-- n3 -->
 <!-- f -->
 <g id="n3" class="node">
 <title>n3</title>
-<polygon fill="none" stroke="#000000" points="37.5,-3 37.5,-28 56.5,-28 56.5,-3 37.5,-3"/>
-<text text-anchor="start" x="42.5" y="-11.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">f</text>
+<polygon fill="none" stroke="#000000" points="60.5,-3 60.5,-28 79.5,-28 79.5,-3 60.5,-3"/>
+<text text-anchor="start" x="65.5" y="-11.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">f</text>
 </g>
 <!-- n1p1&#45;&gt;n3 -->
 <!-- A -->
 <g id="e1" class="edge">
 <title>n1p1:e&#45;&gt;n3:w</title>
-<path fill="none" stroke="#000000" d="M1,-15C15.3212,-15 20.1602,-15 32.259,-15"/>
-<polygon fill="#000000" stroke="#000000" points="32.5,-16.7501 37.5,-15 32.5,-13.2501 32.5,-16.7501"/>
-<text text-anchor="middle" x="14.646" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">A</text>
+<path fill="none" stroke="#000000" d="M24,-15C38.3212,-15 43.1602,-15 55.259,-15"/>
+<polygon fill="#000000" stroke="#000000" points="55.5,-16.7501 60.5,-15 55.5,-13.2501 55.5,-16.7501"/>
+<text text-anchor="middle" x="37.646" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">A</text>
 </g>
 <!-- n2p1 -->
 <!-- n4 -->
 <!-- g -->
 <g id="n4" class="node">
 <title>n4</title>
-<polygon fill="none" stroke="#000000" points="92.5,-3 92.5,-28 111.5,-28 111.5,-3 92.5,-3"/>
-<text text-anchor="start" x="97.5" y="-11.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">g</text>
+<polygon fill="none" stroke="#000000" points="115.5,-3 115.5,-28 134.5,-28 134.5,-3 115.5,-3"/>
+<text text-anchor="start" x="120.5" y="-11.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">g</text>
 </g>
 <!-- n3&#45;&gt;n4 -->
 <!-- B -->
 <g id="e2" class="edge">
 <title>n3:e&#45;&gt;n4:w</title>
-<path fill="none" stroke="#000000" d="M56,-15C70.3212,-15 75.1602,-15 87.259,-15"/>
-<polygon fill="#000000" stroke="#000000" points="87.5,-16.7501 92.5,-15 87.5,-13.2501 87.5,-16.7501"/>
-<text text-anchor="middle" x="69.646" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
+<path fill="none" stroke="#000000" d="M79,-15C93.3212,-15 98.1602,-15 110.259,-15"/>
+<polygon fill="#000000" stroke="#000000" points="110.5,-16.7501 115.5,-15 110.5,-13.2501 110.5,-16.7501"/>
+<text text-anchor="middle" x="92.646" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
 </g>
 <!-- n4&#45;&gt;n2p1 -->
 <!-- C -->
 <g id="e3" class="edge">
 <title>n4:e&#45;&gt;n2p1:w</title>
-<path fill="none" stroke="#000000" d="M111,-15C125.125,-15 129.8977,-15 141.8308,-15"/>
-<polygon fill="#000000" stroke="#000000" points="142,-16.7501 147,-15 142,-13.2501 142,-16.7501"/>
-<text text-anchor="middle" x="124.3975" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">C</text>
+<path fill="none" stroke="#000000" d="M134,-15C148.125,-15 152.8977,-15 164.8308,-15"/>
+<polygon fill="#000000" stroke="#000000" points="165,-16.7501 170,-15 165,-13.2501 165,-16.7501"/>
+<text text-anchor="middle" x="147.3975" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">C</text>
 </g>
 </g>
 </svg>
@@ -140,11 +140,11 @@ f</code></pre><pre><code class="language-none">WiringDiagram([:A], [:B],
 <!-- Generated by graphviz version 2.40.1 (20161225.0304)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="101pt" height="79pt"
- viewBox="0.00 0.00 101.00 79.01" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 75.0051)">
+<svg width="147pt" height="77pt"
+ viewBox="0.00 0.00 147.00 76.53" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 72.5308)">
 <title>G</title>
-<polygon fill="#ffffff" stroke="transparent" points="-4,4 -4,-75.0051 97,-75.0051 97,4 -4,4"/>
+<polygon fill="#ffffff" stroke="transparent" points="-4,4 -4,-72.5308 143,-72.5308 143,4 -4,4"/>
 <!-- n1p1 -->
 <!-- n1p2 -->
 <!-- n1p1&#45;&gt;n1p2 -->
@@ -152,31 +152,31 @@ f</code></pre><pre><code class="language-none">WiringDiagram([:A], [:B],
 <!-- f -->
 <g id="n3" class="node">
 <title>n3</title>
-<polygon fill="none" stroke="#000000" points="37.5,-45.5051 37.5,-70.5051 56.5,-70.5051 56.5,-45.5051 37.5,-45.5051"/>
-<text text-anchor="start" x="42.5" y="-54.3051" font-family="Courier,monospace" font-size="14.00" fill="#000000">f</text>
+<polygon fill="none" stroke="#000000" points="60.5,-43.0308 60.5,-68.0308 79.5,-68.0308 79.5,-43.0308 60.5,-43.0308"/>
+<text text-anchor="start" x="65.5" y="-51.8308" font-family="Courier,monospace" font-size="14.00" fill="#000000">f</text>
 </g>
 <!-- n1p1&#45;&gt;n3 -->
 <!-- A -->
 <g id="e1" class="edge">
 <title>n1p1:e&#45;&gt;n3:w</title>
-<path fill="none" stroke="#000000" d="M1,-57.5051C15.3212,-57.5051 20.1602,-57.5051 32.259,-57.5051"/>
-<polygon fill="#000000" stroke="#000000" points="32.5,-59.2552 37.5,-57.5051 32.5,-55.7552 32.5,-59.2552"/>
-<text text-anchor="middle" x="14.646" y="-46.3051" font-family="Courier,monospace" font-size="14.00" fill="#000000">A</text>
+<path fill="none" stroke="#000000" d="M24,-49.0308C38.5134,-49.0308 43.0355,-53.7069 55.2072,-54.8029"/>
+<polygon fill="#000000" stroke="#000000" points="55.4293,-56.564 60.5,-55.0308 55.5799,-53.0672 55.4293,-56.564"/>
+<text text-anchor="middle" x="37.6472" y="-40.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">A</text>
 </g>
 <!-- n4 -->
 <!-- h -->
 <g id="n4" class="node">
 <title>n4</title>
-<polygon fill="none" stroke="#000000" points="37.5,-2.5051 37.5,-27.5051 56.5,-27.5051 56.5,-2.5051 37.5,-2.5051"/>
-<text text-anchor="start" x="42.5" y="-11.3051" font-family="Courier,monospace" font-size="14.00" fill="#000000">h</text>
+<polygon fill="none" stroke="#000000" points="60.5,-.0308 60.5,-25.0308 79.5,-25.0308 79.5,-.0308 60.5,-.0308"/>
+<text text-anchor="start" x="65.5" y="-8.8308" font-family="Courier,monospace" font-size="14.00" fill="#000000">h</text>
 </g>
 <!-- n1p2&#45;&gt;n4 -->
 <!-- C -->
 <g id="e2" class="edge">
 <title>n1p2:e&#45;&gt;n4:w</title>
-<path fill="none" stroke="#000000" d="M1,-15.5051C15.3266,-15.5051 20.1567,-14.7258 32.2575,-14.5431"/>
-<polygon fill="#000000" stroke="#000000" points="32.5128,-16.2914 37.5,-14.5051 32.4874,-12.7915 32.5128,-16.2914"/>
-<text text-anchor="middle" x="14.6461" y="-3.8103" font-family="Courier,monospace" font-size="14.00" fill="#000000">C</text>
+<path fill="none" stroke="#000000" d="M24,-18.0308C38.5134,-18.0308 43.0355,-13.3546 55.2072,-12.2586"/>
+<polygon fill="#000000" stroke="#000000" points="55.5799,-13.9943 60.5,-12.0308 55.4293,-10.4975 55.5799,-13.9943"/>
+<text text-anchor="middle" x="37.6472" y="-3.8615" font-family="Courier,monospace" font-size="14.00" fill="#000000">C</text>
 </g>
 <!-- n2p1 -->
 <!-- n2p2 -->
@@ -185,17 +185,17 @@ f</code></pre><pre><code class="language-none">WiringDiagram([:A], [:B],
 <!-- B -->
 <g id="e3" class="edge">
 <title>n3:e&#45;&gt;n2p1:w</title>
-<path fill="none" stroke="#000000" d="M56,-57.5051C70.125,-57.5051 74.8977,-57.5051 86.8308,-57.5051"/>
-<polygon fill="#000000" stroke="#000000" points="87,-59.2552 92,-57.5051 87,-55.7552 87,-59.2552"/>
-<text text-anchor="middle" x="69.3975" y="-46.3051" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
+<path fill="none" stroke="#000000" d="M79,-55.0308C93.3198,-55.0308 97.7714,-50.3546 109.7783,-49.2586"/>
+<polygon fill="#000000" stroke="#000000" points="110.0811,-50.9972 115,-49.0308 109.9284,-47.5005 110.0811,-50.9972"/>
+<text text-anchor="middle" x="92.3986" y="-40.8615" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
 </g>
 <!-- n4&#45;&gt;n2p2 -->
 <!-- D -->
 <g id="e4" class="edge">
 <title>n4:e&#45;&gt;n2p2:w</title>
-<path fill="none" stroke="#000000" d="M56,-14.5051C70.1304,-14.5051 74.8942,-15.2845 86.8293,-15.4671"/>
-<polygon fill="#000000" stroke="#000000" points="86.9872,-17.2183 92,-15.5051 87.013,-13.7184 86.9872,-17.2183"/>
-<text text-anchor="middle" x="69.3975" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">D</text>
+<path fill="none" stroke="#000000" d="M79,-12.0308C93.3198,-12.0308 97.7714,-16.7069 109.7783,-17.8029"/>
+<polygon fill="#000000" stroke="#000000" points="109.9284,-19.561 115,-18.0308 110.0811,-16.0643 109.9284,-19.561"/>
+<text text-anchor="middle" x="92.3986" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">D</text>
 </g>
 </g>
 </svg>
@@ -211,29 +211,29 @@ f</code></pre><pre><code class="language-none">WiringDiagram([:A], [:B],
 <!-- Generated by graphviz version 2.40.1 (20161225.0304)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="46pt" height="74pt"
- viewBox="0.00 0.00 46.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
+<svg width="92pt" height="38pt"
+ viewBox="0.00 0.00 92.00 37.95" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 33.9539)">
 <title>G</title>
-<polygon fill="#ffffff" stroke="transparent" points="-4,4 -4,-70 42,-70 42,4 -4,4"/>
+<polygon fill="#ffffff" stroke="transparent" points="-4,4 -4,-33.9539 88,-33.9539 88,4 -4,4"/>
 <!-- n1p1 -->
 <!-- n2p1 -->
 <!-- n1p1&#45;&gt;n2p1 -->
 <!-- B -->
 <g id="e1" class="edge">
 <title>n1p1:e&#45;&gt;n2p1:w</title>
-<path fill="none" stroke="#000000" d="M1,-33C17.642,-33 18.4875,-49.951 31.9208,-53.3942"/>
-<polygon fill="#000000" stroke="#000000" points="31.8279,-55.1454 37,-54 32.2425,-51.67 31.8279,-55.1454"/>
-<text text-anchor="middle" x="14.2728" y="-32.027" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
+<path fill="none" stroke="#000000" d="M24,-19.4539C38.7896,-19.4539 42.6189,-27.386 55.0109,-29.1211"/>
+<polygon fill="#000000" stroke="#000000" points="54.8946,-30.8672 60,-29.4539 55.1276,-27.3749 54.8946,-30.8672"/>
+<text text-anchor="middle" x="46.5284" y="-13.2685" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
 </g>
 <!-- n2p2 -->
 <!-- n1p1&#45;&gt;n2p2 -->
 <!-- B -->
 <g id="e2" class="edge">
 <title>n1p1:e&#45;&gt;n2p2:w</title>
-<path fill="none" stroke="#000000" d="M1,-33C17.642,-33 18.4875,-16.049 31.9208,-12.6058"/>
-<polygon fill="#000000" stroke="#000000" points="32.2425,-14.33 37,-12 31.8279,-10.8546 32.2425,-14.33"/>
-<text text-anchor="middle" x="14.2728" y="-11.573" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
+<path fill="none" stroke="#000000" d="M24,-19.4539C38.5597,-19.4539 42.6158,-12.4396 54.7138,-10.7957"/>
+<polygon fill="#000000" stroke="#000000" points="55.1234,-12.5229 60,-10.4539 54.8975,-9.0302 55.1234,-12.5229"/>
+<text text-anchor="middle" x="37.4" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
 </g>
 <!-- n2p1&#45;&gt;n2p2 -->
 </g>
@@ -245,26 +245,26 @@ f</code></pre><pre><code class="language-none">WiringDiagram([:A], [:B],
 <!-- Generated by graphviz version 2.40.1 (20161225.0304)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="101pt" height="74pt"
- viewBox="0.00 0.00 101.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
+<svg width="147pt" height="41pt"
+ viewBox="0.00 0.00 147.00 40.95" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 36.9539)">
 <title>G</title>
-<polygon fill="#ffffff" stroke="transparent" points="-4,4 -4,-70 97,-70 97,4 -4,4"/>
+<polygon fill="#ffffff" stroke="transparent" points="-4,4 -4,-36.9539 143,-36.9539 143,4 -4,4"/>
 <!-- n1p1 -->
 <!-- n3 -->
 <!-- f -->
 <g id="n3" class="node">
 <title>n3</title>
-<polygon fill="none" stroke="#000000" points="37.5,-21 37.5,-46 56.5,-46 56.5,-21 37.5,-21"/>
-<text text-anchor="start" x="42.5" y="-29.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">f</text>
+<polygon fill="none" stroke="#000000" points="60.5,-7.4539 60.5,-32.4539 79.5,-32.4539 79.5,-7.4539 60.5,-7.4539"/>
+<text text-anchor="start" x="65.5" y="-16.2539" font-family="Courier,monospace" font-size="14.00" fill="#000000">f</text>
 </g>
 <!-- n1p1&#45;&gt;n3 -->
 <!-- A -->
 <g id="e1" class="edge">
 <title>n1p1:e&#45;&gt;n3:w</title>
-<path fill="none" stroke="#000000" d="M1,-33C15.3212,-33 20.1602,-33 32.259,-33"/>
-<polygon fill="#000000" stroke="#000000" points="32.5,-34.7501 37.5,-33 32.5,-31.2501 32.5,-34.7501"/>
-<text text-anchor="middle" x="14.646" y="-21.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">A</text>
+<path fill="none" stroke="#000000" d="M24,-19.4539C38.3212,-19.4539 43.1602,-19.4539 55.259,-19.4539"/>
+<polygon fill="#000000" stroke="#000000" points="55.5,-21.204 60.5,-19.4539 55.5,-17.704 55.5,-21.204"/>
+<text text-anchor="middle" x="37.646" y="-8.2539" font-family="Courier,monospace" font-size="14.00" fill="#000000">A</text>
 </g>
 <!-- n2p1 -->
 <!-- n2p2 -->
@@ -273,17 +273,17 @@ f</code></pre><pre><code class="language-none">WiringDiagram([:A], [:B],
 <!-- B -->
 <g id="e2" class="edge">
 <title>n3:e&#45;&gt;n2p1:w</title>
-<path fill="none" stroke="#000000" d="M56,-33C72.642,-33 73.4875,-49.951 86.9208,-53.3942"/>
-<polygon fill="#000000" stroke="#000000" points="86.8279,-55.1454 92,-54 87.2425,-51.67 86.8279,-55.1454"/>
-<text text-anchor="middle" x="69.2728" y="-32.027" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
+<path fill="none" stroke="#000000" d="M79,-19.4539C93.7896,-19.4539 97.6189,-27.386 110.0109,-29.1211"/>
+<polygon fill="#000000" stroke="#000000" points="109.8946,-30.8672 115,-29.4539 110.1276,-27.3749 109.8946,-30.8672"/>
+<text text-anchor="middle" x="101.5284" y="-13.2685" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
 </g>
 <!-- n3&#45;&gt;n2p2 -->
 <!-- B -->
 <g id="e3" class="edge">
 <title>n3:e&#45;&gt;n2p2:w</title>
-<path fill="none" stroke="#000000" d="M56,-33C72.642,-33 73.4875,-16.049 86.9208,-12.6058"/>
-<polygon fill="#000000" stroke="#000000" points="87.2425,-14.33 92,-12 86.8279,-10.8546 87.2425,-14.33"/>
-<text text-anchor="middle" x="69.2728" y="-11.573" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
+<path fill="none" stroke="#000000" d="M79,-19.4539C93.5597,-19.4539 97.6158,-12.4396 109.7138,-10.7957"/>
+<polygon fill="#000000" stroke="#000000" points="110.1234,-12.5229 115,-10.4539 109.8975,-9.0302 110.1234,-12.5229"/>
+<text text-anchor="middle" x="92.4" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
 </g>
 </g>
 </svg>
@@ -294,41 +294,41 @@ f</code></pre><pre><code class="language-none">WiringDiagram([:A], [:B],
 <!-- Generated by graphviz version 2.40.1 (20161225.0304)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="101pt" height="79pt"
- viewBox="0.00 0.00 101.00 79.01" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 75.0051)">
+<svg width="147pt" height="77pt"
+ viewBox="0.00 0.00 147.00 76.53" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 72.5308)">
 <title>G</title>
-<polygon fill="#ffffff" stroke="transparent" points="-4,4 -4,-75.0051 97,-75.0051 97,4 -4,4"/>
+<polygon fill="#ffffff" stroke="transparent" points="-4,4 -4,-72.5308 143,-72.5308 143,4 -4,4"/>
 <!-- n1p1 -->
 <!-- n3 -->
 <!-- f -->
 <g id="n3" class="node">
 <title>n3</title>
-<polygon fill="none" stroke="#000000" points="37.5,-45.5051 37.5,-70.5051 56.5,-70.5051 56.5,-45.5051 37.5,-45.5051"/>
-<text text-anchor="start" x="42.5" y="-54.3051" font-family="Courier,monospace" font-size="14.00" fill="#000000">f</text>
+<polygon fill="none" stroke="#000000" points="60.5,-43.0308 60.5,-68.0308 79.5,-68.0308 79.5,-43.0308 60.5,-43.0308"/>
+<text text-anchor="start" x="65.5" y="-51.8308" font-family="Courier,monospace" font-size="14.00" fill="#000000">f</text>
 </g>
 <!-- n1p1&#45;&gt;n3 -->
 <!-- A -->
 <g id="e1" class="edge">
 <title>n1p1:e&#45;&gt;n3:w</title>
-<path fill="none" stroke="#000000" d="M1,-35.5051C18.0174,-35.5051 18.63,-53.2633 32.3152,-56.8704"/>
-<polygon fill="#000000" stroke="#000000" points="32.3244,-58.6345 37.5,-57.5051 32.7497,-55.1605 32.3244,-58.6345"/>
-<text text-anchor="middle" x="14.5217" y="-35.0191" font-family="Courier,monospace" font-size="14.00" fill="#000000">A</text>
+<path fill="none" stroke="#000000" d="M24,-33.0308C41.0174,-33.0308 41.63,-50.7889 55.3152,-54.3961"/>
+<polygon fill="#000000" stroke="#000000" points="55.3244,-56.1602 60.5,-55.0308 55.7497,-52.6861 55.3244,-56.1602"/>
+<text text-anchor="middle" x="37.5217" y="-32.5448" font-family="Courier,monospace" font-size="14.00" fill="#000000">A</text>
 </g>
 <!-- n4 -->
 <!-- f -->
 <g id="n4" class="node">
 <title>n4</title>
-<polygon fill="none" stroke="#000000" points="37.5,-2.5051 37.5,-27.5051 56.5,-27.5051 56.5,-2.5051 37.5,-2.5051"/>
-<text text-anchor="start" x="42.5" y="-11.3051" font-family="Courier,monospace" font-size="14.00" fill="#000000">f</text>
+<polygon fill="none" stroke="#000000" points="60.5,-.0308 60.5,-25.0308 79.5,-25.0308 79.5,-.0308 60.5,-.0308"/>
+<text text-anchor="start" x="65.5" y="-8.8308" font-family="Courier,monospace" font-size="14.00" fill="#000000">f</text>
 </g>
 <!-- n1p1&#45;&gt;n4 -->
 <!-- A -->
 <g id="e2" class="edge">
 <title>n1p1:e&#45;&gt;n4:w</title>
-<path fill="none" stroke="#000000" d="M1,-35.5051C17.8147,-35.5051 18.7709,-18.5541 32.3644,-15.111"/>
-<polygon fill="#000000" stroke="#000000" points="32.7395,-16.8289 37.5,-14.5051 32.3294,-13.353 32.7395,-16.8289"/>
-<text text-anchor="middle" x="14.5188" y="-14.0781" font-family="Courier,monospace" font-size="14.00" fill="#000000">A</text>
+<path fill="none" stroke="#000000" d="M24,-33.0308C40.8147,-33.0308 41.7709,-16.0798 55.3644,-12.6366"/>
+<polygon fill="#000000" stroke="#000000" points="55.7395,-14.3546 60.5,-12.0308 55.3294,-10.8787 55.7395,-14.3546"/>
+<text text-anchor="middle" x="37.5188" y="-11.6037" font-family="Courier,monospace" font-size="14.00" fill="#000000">A</text>
 </g>
 <!-- n2p1 -->
 <!-- n2p2 -->
@@ -337,17 +337,17 @@ f</code></pre><pre><code class="language-none">WiringDiagram([:A], [:B],
 <!-- B -->
 <g id="e3" class="edge">
 <title>n3:e&#45;&gt;n2p1:w</title>
-<path fill="none" stroke="#000000" d="M56,-57.5051C70.125,-57.5051 74.8977,-57.5051 86.8308,-57.5051"/>
-<polygon fill="#000000" stroke="#000000" points="87,-59.2552 92,-57.5051 87,-55.7552 87,-59.2552"/>
-<text text-anchor="middle" x="69.3975" y="-46.3051" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
+<path fill="none" stroke="#000000" d="M79,-55.0308C93.3198,-55.0308 97.7714,-50.3546 109.7783,-49.2586"/>
+<polygon fill="#000000" stroke="#000000" points="110.0811,-50.9972 115,-49.0308 109.9284,-47.5005 110.0811,-50.9972"/>
+<text text-anchor="middle" x="92.3986" y="-40.8615" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
 </g>
 <!-- n4&#45;&gt;n2p2 -->
 <!-- B -->
 <g id="e4" class="edge">
 <title>n4:e&#45;&gt;n2p2:w</title>
-<path fill="none" stroke="#000000" d="M56,-14.5051C70.1304,-14.5051 74.8942,-15.2845 86.8293,-15.4671"/>
-<polygon fill="#000000" stroke="#000000" points="86.9872,-17.2183 92,-15.5051 87.013,-13.7184 86.9872,-17.2183"/>
-<text text-anchor="middle" x="69.3975" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
+<path fill="none" stroke="#000000" d="M79,-12.0308C93.3198,-12.0308 97.7714,-16.7069 109.7783,-17.8029"/>
+<polygon fill="#000000" stroke="#000000" points="109.9284,-19.561 115,-18.0308 110.0811,-16.0643 109.9284,-19.561"/>
+<text text-anchor="middle" x="92.3986" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
 </g>
 </g>
 </svg>
@@ -380,50 +380,50 @@ nboxes(d)</code></pre><pre><code class="language-none">2</code></pre><pre><code 
 <!-- Generated by graphviz version 2.40.1 (20161225.0304)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="156pt" height="37pt"
- viewBox="0.00 0.00 156.00 36.50" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg width="202pt" height="37pt"
+ viewBox="0.00 0.00 202.00 36.50" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 32.5)">
 <title>G</title>
-<polygon fill="#ffffff" stroke="transparent" points="-4,4 -4,-32.5 152,-32.5 152,4 -4,4"/>
+<polygon fill="#ffffff" stroke="transparent" points="-4,4 -4,-32.5 198,-32.5 198,4 -4,4"/>
 <!-- n1p1 -->
 <!-- n3 -->
 <!-- f -->
 <g id="n3" class="node">
 <title>n3</title>
-<polygon fill="none" stroke="#000000" points="37.5,-3 37.5,-28 56.5,-28 56.5,-3 37.5,-3"/>
-<text text-anchor="start" x="42.5" y="-11.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">f</text>
+<polygon fill="none" stroke="#000000" points="60.5,-3 60.5,-28 79.5,-28 79.5,-3 60.5,-3"/>
+<text text-anchor="start" x="65.5" y="-11.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">f</text>
 </g>
 <!-- n1p1&#45;&gt;n3 -->
 <!-- A -->
 <g id="e1" class="edge">
 <title>n1p1:e&#45;&gt;n3:w</title>
-<path fill="none" stroke="#000000" d="M1,-15C15.3212,-15 20.1602,-15 32.259,-15"/>
-<polygon fill="#000000" stroke="#000000" points="32.5,-16.7501 37.5,-15 32.5,-13.2501 32.5,-16.7501"/>
-<text text-anchor="middle" x="14.646" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">A</text>
+<path fill="none" stroke="#000000" d="M24,-15C38.3212,-15 43.1602,-15 55.259,-15"/>
+<polygon fill="#000000" stroke="#000000" points="55.5,-16.7501 60.5,-15 55.5,-13.2501 55.5,-16.7501"/>
+<text text-anchor="middle" x="37.646" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">A</text>
 </g>
 <!-- n2p1 -->
 <!-- n4 -->
 <!-- g -->
 <g id="n4" class="node">
 <title>n4</title>
-<polygon fill="none" stroke="#000000" points="92.5,-3 92.5,-28 111.5,-28 111.5,-3 92.5,-3"/>
-<text text-anchor="start" x="97.5" y="-11.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">g</text>
+<polygon fill="none" stroke="#000000" points="115.5,-3 115.5,-28 134.5,-28 134.5,-3 115.5,-3"/>
+<text text-anchor="start" x="120.5" y="-11.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">g</text>
 </g>
 <!-- n3&#45;&gt;n4 -->
 <!-- B -->
 <g id="e2" class="edge">
 <title>n3:e&#45;&gt;n4:w</title>
-<path fill="none" stroke="#000000" d="M56,-15C70.3212,-15 75.1602,-15 87.259,-15"/>
-<polygon fill="#000000" stroke="#000000" points="87.5,-16.7501 92.5,-15 87.5,-13.2501 87.5,-16.7501"/>
-<text text-anchor="middle" x="69.646" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
+<path fill="none" stroke="#000000" d="M79,-15C93.3212,-15 98.1602,-15 110.259,-15"/>
+<polygon fill="#000000" stroke="#000000" points="110.5,-16.7501 115.5,-15 110.5,-13.2501 110.5,-16.7501"/>
+<text text-anchor="middle" x="92.646" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
 </g>
 <!-- n4&#45;&gt;n2p1 -->
 <!-- C -->
 <g id="e3" class="edge">
 <title>n4:e&#45;&gt;n2p1:w</title>
-<path fill="none" stroke="#000000" d="M111,-15C125.125,-15 129.8977,-15 141.8308,-15"/>
-<polygon fill="#000000" stroke="#000000" points="142,-16.7501 147,-15 142,-13.2501 142,-16.7501"/>
-<text text-anchor="middle" x="124.3975" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">C</text>
+<path fill="none" stroke="#000000" d="M134,-15C148.125,-15 152.8977,-15 164.8308,-15"/>
+<polygon fill="#000000" stroke="#000000" points="165,-16.7501 170,-15 165,-13.2501 165,-16.7501"/>
+<text text-anchor="middle" x="147.3975" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">C</text>
 </g>
 </g>
 </svg>
@@ -454,11 +454,11 @@ d</code></pre><pre><code class="language-none">WiringDiagram([:A,:C], [:B,:D],
 <!-- Generated by graphviz version 2.40.1 (20161225.0304)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="101pt" height="79pt"
- viewBox="0.00 0.00 101.00 79.01" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 75.0051)">
+<svg width="147pt" height="77pt"
+ viewBox="0.00 0.00 147.00 76.53" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 72.5308)">
 <title>G</title>
-<polygon fill="#ffffff" stroke="transparent" points="-4,4 -4,-75.0051 97,-75.0051 97,4 -4,4"/>
+<polygon fill="#ffffff" stroke="transparent" points="-4,4 -4,-72.5308 143,-72.5308 143,4 -4,4"/>
 <!-- n1p1 -->
 <!-- n1p2 -->
 <!-- n1p1&#45;&gt;n1p2 -->
@@ -466,31 +466,31 @@ d</code></pre><pre><code class="language-none">WiringDiagram([:A,:C], [:B,:D],
 <!-- f -->
 <g id="n3" class="node">
 <title>n3</title>
-<polygon fill="none" stroke="#000000" points="37.5,-45.5051 37.5,-70.5051 56.5,-70.5051 56.5,-45.5051 37.5,-45.5051"/>
-<text text-anchor="start" x="42.5" y="-54.3051" font-family="Courier,monospace" font-size="14.00" fill="#000000">f</text>
+<polygon fill="none" stroke="#000000" points="60.5,-43.0308 60.5,-68.0308 79.5,-68.0308 79.5,-43.0308 60.5,-43.0308"/>
+<text text-anchor="start" x="65.5" y="-51.8308" font-family="Courier,monospace" font-size="14.00" fill="#000000">f</text>
 </g>
 <!-- n1p1&#45;&gt;n3 -->
 <!-- A -->
 <g id="e1" class="edge">
 <title>n1p1:e&#45;&gt;n3:w</title>
-<path fill="none" stroke="#000000" d="M1,-57.5051C15.3212,-57.5051 20.1602,-57.5051 32.259,-57.5051"/>
-<polygon fill="#000000" stroke="#000000" points="32.5,-59.2552 37.5,-57.5051 32.5,-55.7552 32.5,-59.2552"/>
-<text text-anchor="middle" x="14.646" y="-46.3051" font-family="Courier,monospace" font-size="14.00" fill="#000000">A</text>
+<path fill="none" stroke="#000000" d="M24,-49.0308C38.5134,-49.0308 43.0355,-53.7069 55.2072,-54.8029"/>
+<polygon fill="#000000" stroke="#000000" points="55.4293,-56.564 60.5,-55.0308 55.5799,-53.0672 55.4293,-56.564"/>
+<text text-anchor="middle" x="37.6472" y="-40.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">A</text>
 </g>
 <!-- n4 -->
 <!-- h -->
 <g id="n4" class="node">
 <title>n4</title>
-<polygon fill="none" stroke="#000000" points="37.5,-2.5051 37.5,-27.5051 56.5,-27.5051 56.5,-2.5051 37.5,-2.5051"/>
-<text text-anchor="start" x="42.5" y="-11.3051" font-family="Courier,monospace" font-size="14.00" fill="#000000">h</text>
+<polygon fill="none" stroke="#000000" points="60.5,-.0308 60.5,-25.0308 79.5,-25.0308 79.5,-.0308 60.5,-.0308"/>
+<text text-anchor="start" x="65.5" y="-8.8308" font-family="Courier,monospace" font-size="14.00" fill="#000000">h</text>
 </g>
 <!-- n1p2&#45;&gt;n4 -->
 <!-- C -->
 <g id="e2" class="edge">
 <title>n1p2:e&#45;&gt;n4:w</title>
-<path fill="none" stroke="#000000" d="M1,-15.5051C15.3266,-15.5051 20.1567,-14.7258 32.2575,-14.5431"/>
-<polygon fill="#000000" stroke="#000000" points="32.5128,-16.2914 37.5,-14.5051 32.4874,-12.7915 32.5128,-16.2914"/>
-<text text-anchor="middle" x="14.6461" y="-3.8103" font-family="Courier,monospace" font-size="14.00" fill="#000000">C</text>
+<path fill="none" stroke="#000000" d="M24,-18.0308C38.5134,-18.0308 43.0355,-13.3546 55.2072,-12.2586"/>
+<polygon fill="#000000" stroke="#000000" points="55.5799,-13.9943 60.5,-12.0308 55.4293,-10.4975 55.5799,-13.9943"/>
+<text text-anchor="middle" x="37.6472" y="-3.8615" font-family="Courier,monospace" font-size="14.00" fill="#000000">C</text>
 </g>
 <!-- n2p1 -->
 <!-- n2p2 -->
@@ -499,19 +499,19 @@ d</code></pre><pre><code class="language-none">WiringDiagram([:A,:C], [:B,:D],
 <!-- B -->
 <g id="e3" class="edge">
 <title>n3:e&#45;&gt;n2p1:w</title>
-<path fill="none" stroke="#000000" d="M56,-57.5051C70.125,-57.5051 74.8977,-57.5051 86.8308,-57.5051"/>
-<polygon fill="#000000" stroke="#000000" points="87,-59.2552 92,-57.5051 87,-55.7552 87,-59.2552"/>
-<text text-anchor="middle" x="69.3975" y="-46.3051" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
+<path fill="none" stroke="#000000" d="M79,-55.0308C93.3198,-55.0308 97.7714,-50.3546 109.7783,-49.2586"/>
+<polygon fill="#000000" stroke="#000000" points="110.0811,-50.9972 115,-49.0308 109.9284,-47.5005 110.0811,-50.9972"/>
+<text text-anchor="middle" x="92.3986" y="-40.8615" font-family="Courier,monospace" font-size="14.00" fill="#000000">B</text>
 </g>
 <!-- n4&#45;&gt;n2p2 -->
 <!-- D -->
 <g id="e4" class="edge">
 <title>n4:e&#45;&gt;n2p2:w</title>
-<path fill="none" stroke="#000000" d="M56,-14.5051C70.1304,-14.5051 74.8942,-15.2845 86.8293,-15.4671"/>
-<polygon fill="#000000" stroke="#000000" points="86.9872,-17.2183 92,-15.5051 87.013,-13.7184 86.9872,-17.2183"/>
-<text text-anchor="middle" x="69.3975" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">D</text>
+<path fill="none" stroke="#000000" d="M79,-12.0308C93.3198,-12.0308 97.7714,-16.7069 109.7783,-17.8029"/>
+<polygon fill="#000000" stroke="#000000" points="109.9284,-19.561 115,-18.0308 110.0811,-16.0643 109.9284,-19.561"/>
+<text text-anchor="middle" x="92.3986" y="-3.8" font-family="Courier,monospace" font-size="14.00" fill="#000000">D</text>
 </g>
 </g>
 </svg>
 
-</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../../">« Catlab.jl</a><a class="docs-footer-nextpage" href="../diagrams_and_expressions/">Wiring diagrams and syntactic expressions »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Monday 23 December 2019 03:39">Monday 23 December 2019</span>. Using Julia version 1.3.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../../">« Catlab.jl</a><a class="docs-footer-nextpage" href="../diagrams_and_expressions/">Wiring diagrams and syntactic expressions »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Monday 23 December 2019 04:52">Monday 23 December 2019</span>. Using Julia version 1.3.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
