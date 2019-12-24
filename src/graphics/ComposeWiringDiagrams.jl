@@ -10,9 +10,9 @@ const C = Compose
 
 using ...WiringDiagrams
 using ..WiringDiagramLayouts
-using ..WiringDiagramLayouts: AbstractVector2D, Vector2D, BoxShape,
-  RectangleShape, JunctionShape, position, size, lower_corner, upper_corner,
-  normal, tangent, wire_points
+using ..WiringDiagramLayouts: AbstractVector2D, Vector2D,
+  BoxShape, RectangleShape, JunctionShape, NoShape,
+  position, size, lower_corner, upper_corner, normal, tangent, wire_points
 
 # Data types
 ############
@@ -141,6 +141,7 @@ end
 function render_box(::Val{JunctionShape}, ::Any, opts::ComposeOptions)
   C.compose(C.context(), C.circle(), opts.junction_props...)
 end
+render_box(::Val{NoShape}, ::Any, ::ComposeOptions) = C.context()
 
 # Compose.jl forms
 ##################

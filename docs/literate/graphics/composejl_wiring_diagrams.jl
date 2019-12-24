@@ -57,6 +57,23 @@ to_composejl(delete(A))
 #-
 to_composejl(mcopy(A)⋅(f⊗f)⋅mmerge(B))
 
+# ### Compact closed category
+
+# The unit and co-unit of a compact closed category appear as caps and cups.
+
+A, B = Ob(FreeBicategoryRelations, :A, :B)
+f, g = Hom(:f, A, B), Hom(:g, B, A)
+
+to_composejl(dunit(A))
+#-
+to_composejl(dcounit(A))
+
+# In a self-dual compact closed category, such as a bicategory of relations,
+# every morphism $f: A \to B$ has a transpose $f^\dagger: B \to A$ given by
+# bending wires:
+
+to_composejl((dunit(A) ⊗ id(B)) ⋅ (id(A) ⊗ f ⊗ id(B)) ⋅ (id(A) ⊗ dcounit(B)))
+
 # ## Custom styles
 
 # The visual appearance of wiring diagrams can be customized by passing Compose
@@ -84,4 +101,7 @@ to_composejl(f⋅g, box_props=[fill("lavender"), stroke("black")])
 using Compose: draw, PGF
 
 pic = to_composejl(f⋅g, rounded_boxes=false)
-draw(PGF(stdout, pic.width, pic.height), pic.context)
+pgf = sprint() do io
+  draw(PGF(io, pic.width, pic.height, false, true, texfonts=true), pic.context)
+end
+println(pgf)

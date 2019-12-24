@@ -58,7 +58,7 @@ Specific features of the shape are determined by the graphics backend. For
 example, a rectangle could be rendered with or without rounded corners or even
 as another, similar shape, such as a rotated isosceles trapezoid.
 """
-@enum BoxShape RectangleShape CircleShape JunctionShape
+@enum BoxShape RectangleShape CircleShape JunctionShape NoShape
 
 """ Layout for box in a wiring diagram.
 """
@@ -151,13 +151,17 @@ layout_hom_expr(f::HomExpr{:mcopy}, opts) = layout_junction_expr(f, opts)
 layout_hom_expr(f::HomExpr{:delete}, opts) = layout_junction_expr(f, opts)
 layout_hom_expr(f::HomExpr{:mmerge}, opts) = layout_junction_expr(f, opts)
 layout_hom_expr(f::HomExpr{:create}, opts) = layout_junction_expr(f, opts)
+layout_hom_expr(f::HomExpr{:dunit}, opts) =
+  layout_junction_expr(f, opts; visible=false, pad=false)
+layout_hom_expr(f::HomExpr{:dcounit}, opts) =
+  layout_junction_expr(f, opts; visible=false, pad=false)
 
-layout_box_expr(f::HomExpr, opts) =
-  layout_box(f, collect(dom(f)), collect(codom(f)), opts)
-layout_junction_expr(f::HomExpr, opts) =
-  layout_junction(f, collect(dom(f)), collect(codom(f)), opts)
-layout_wires_expr(f::HomExpr, opts) =
-  layout_pure_wiring(to_wiring_diagram(f), opts)
+layout_box_expr(f::HomExpr, opts; kw...) =
+  layout_box(f, collect(dom(f)), collect(codom(f)), opts; kw...)
+layout_junction_expr(f::HomExpr, opts; kw...) =
+  layout_junction(f, collect(dom(f)), collect(codom(f)), opts; kw...)
+layout_wires_expr(f::HomExpr, opts; kw...) =
+  layout_pure_wiring(to_wiring_diagram(f), opts; kw...)
 
 # Diagram layout
 ################
@@ -275,12 +279,12 @@ end
 """ Lay out a circular junction and its ports.
 """
 function layout_junction(value::Any, inputs::Vector, outputs::Vector,
-                         opts::LayoutOptions)
-  radius = opts.junction_size
+                         opts::LayoutOptions; visible::Bool=true, pad::Bool=true)
+  shape, radius = visible ? (JunctionShape, opts.junction_size) : (NoShape, 0)
   size = 2*SVector(radius, radius)
-  box = Box(BoxLayout(value=value, shape=JunctionShape, size=size),
-            layout_circular_ports(InputPort, inputs, radius, opts),
-            layout_circular_ports(OutputPort, outputs, radius, opts))
+  box = Box(BoxLayout(value=value, shape=shape, size=size),
+            layout_circular_ports(InputPort, inputs, radius, opts; pad=pad),
+            layout_circular_ports(OutputPort, outputs, radius, opts; pad=pad))
   size_to_fit!(singleton_diagram(box), opts)
 end
 
@@ -318,10 +322,10 @@ end
 """ Lay out ports along a circular arc.
 """
 function layout_circular_ports(port_kind::PortKind, port_values::Vector,
-                               radius::Real, opts::LayoutOptions)
+                               radius::Real, opts::LayoutOptions; pad::Bool=true)
   n = length(port_values)
   θ1, θ2 = is_horizontal(opts.orientation) ? (π/2, -π/2) : (-π, 0)
-  θs = collect(range(θ1, θ2, length=n+2)[2:n+1])
+  θs = collect(pad ? range(θ1,θ2,length=n+2)[2:n+1] : range(θ1,θ2,length=n))
   θs = port_sign(port_kind, opts.orientation) == -1 ? reverse(θs) : θs
   dirs = [ SVector(cos(θ),-sin(θ)) for θ in θs ] # positive y-axis downwards
   PortLayout[ PortLayout(value, radius * dir, dir)
