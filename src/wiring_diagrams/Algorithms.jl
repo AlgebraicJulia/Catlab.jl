@@ -1,18 +1,15 @@
 """ Algorithms operating on wiring diagrams.
 """
 module WiringDiagramAlgorithms
-export Junction, add_junctions!, rem_junctions!, dunit, dcounit,
-  normalize_cartesian!, normalize_copy!, normalize_delete!,
-  topological_sort, crossing_minimization_by_sort
+export topological_sort, normalize_cartesian!, normalize_copy!,
+  normalize_delete!, crossing_minimization_by_sort
 
-using AutoHashEquals
 import LightGraphs
 using UnionFind
 using Statistics: mean
 
-import ...Doctrines: dunit, dcounit
 using ..WiringDiagramCore, ..WiringLayers
-import ..WiringDiagramCore: input_ports, output_ports, set_box
+import ..WiringDiagramCore: set_box
 
 # Traversal
 ###########
@@ -25,104 +22,6 @@ function topological_sort(d::WiringDiagram)::Vector{Int}
   vs = LightGraphs.topological_sort_by_dfs(graph(d))
   outer_ids = (input_id(d), output_id(d))
   filter(v -> v ∉ outer_ids, vs)
-end
-
-# Junctions
-###########
-
-""" Junction node in a wiring diagram.
-
-Junction nodes are used to explicitly represent copies, merges, deletions,
-creations, caps, and cups.
-"""
-@auto_hash_equals struct Junction{Value} <: AbstractBox
-  value::Value
-  ninputs::Int
-  noutputs::Int
-end
-input_ports(junction::Junction) = repeat([junction.value], junction.ninputs)
-output_ports(junction::Junction) = repeat([junction.value], junction.noutputs)
-
-""" Add junction nodes to wiring diagram.
-
-Transforms from the implicit to the explicit representation of diagonals and
-codiagonals. This operation is inverse to `rem_junctions!`.
-"""
-function add_junctions!(d::WiringDiagram)
-  add_output_junctions!(d, input_id(d))
-  add_input_junctions!(d, output_id(d))
-  for v in box_ids(d)
-    add_input_junctions!(d, v)
-    add_output_junctions!(d, v)
-  end
-  return d
-end
-function add_input_junctions!(d::WiringDiagram, v::Int)
-  for (port, port_value) in enumerate(input_ports(d, v))
-    wires = in_wires(d, v, port)
-    nwires = length(wires)
-    if nwires != 1
-      rem_wires!(d, wires)
-      jv = add_box!(d, Junction(port_value, nwires, 1))
-      add_wire!(d, Port(jv, OutputPort, 1) => Port(v, InputPort, port))
-      add_wires!(d, [ wire.source => Port(jv, InputPort, i)
-                      for (i, wire) in enumerate(wires) ])
-    end
-  end
-end
-function add_output_junctions!(d::WiringDiagram, v::Int)
-  for (port, port_value) in enumerate(output_ports(d, v))
-    wires = out_wires(d, v, port)
-    nwires = length(wires)
-    if nwires != 1
-      rem_wires!(d, wires)
-      jv = add_box!(d, Junction(port_value, 1, nwires))
-      add_wire!(d, Port(v, OutputPort, port) => Port(jv, InputPort, 1))
-      add_wires!(d, [ Port(jv, OutputPort, i) => wire.target
-                      for (i, wire) in enumerate(wires) ])
-    end
-  end
-end
-
-""" Remove junction nodes from wiring diagram.
-
-Transforms from the explicit to the implicit representation of diagonals and
-codiagonals. This operation is inverse to `add_junctions!`.
-
-Note: This function does not actually mutate its argument. However, this is
-subject to change in the future.
-"""
-function rem_junctions!(d::WiringDiagram)
-  junction_ids = filter(v -> box(d,v) isa Junction, box_ids(d))
-  junction_diagrams = map(junction_ids) do v
-    junction = box(d,v)::Junction
-    layer = complete_layer(junction.ninputs, junction.noutputs)
-    to_wiring_diagram(layer, input_ports(junction), output_ports(junction))
-  end
-  substitute(d, junction_ids, junction_diagrams)
-end
-
-# Wiring diagrams as self-dual compact closed category.
-# FIXME: What about compact categories that are not self-dual?
-
-function dunit(A::Ports)
-  f = WiringDiagram(munit(Ports), otimes(A,A))
-  n = length(A)
-  for (i, port) in enumerate(A.ports)
-    v = add_box!(f, Junction(port, 0, 2))
-    add_wires!(f, ((v,1) => (output_id(f),i), (v,2) => (output_id(f),i+n)))
-  end
-  return f
-end
-
-function dcounit(A::Ports)
-  f = WiringDiagram(otimes(A,A), munit(Ports))
-  n = length(A)
-  for (i, port) in enumerate(A.ports)
-    v = add_box!(f, Junction(port, 2, 0))
-    add_wires!(f, ((input_id(f),i) => (v,1), (input_id(f),i+n) => (v,2)))
-  end
-  return f
 end
 
 # Normalization

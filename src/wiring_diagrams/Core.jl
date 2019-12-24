@@ -8,15 +8,12 @@ literature calls "directed graphs with ports" or more simply "port graphs". The
 main difference is that a wiring diagram has an "outer box": a wiring diagram
 has its own ports that can be connected to the ports of its boxes.
 
-This module offers a generic data structure for wiring diagrams. Arbitrary data
-can be attached to the boxes, ports, and wires of a wiring diagram. There is a
-low-level interface for direct manipulation of boxes and wires and a high-level
-interface based on the theory of symmetric monoidal categories. 
-
-The wiring diagrams in this module are "abstract" in the sense that they cannot
-be directly rendered as raster or vector graphics. However, they form a useful
-intermediate representation that can be straightforwardly serialized to and from
-GraphML or translated into Graphviz or other declarative diagram languages.
+This module provides a generic data structure for wiring diagrams. Arbitrary
+data can be attached to the boxes, ports, and wires of a wiring diagram. The
+diagrams are "abstract" in the sense that they cannot be directly rendered as
+raster or vector graphics. However, they form a useful intermediate
+representation that can be serialized to and from GraphML or translated into
+Graphviz or other declarative diagram languages.
 """
 module WiringDiagramCore
 export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
@@ -26,19 +23,12 @@ export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
   rem_wire!, rem_wires!, validate_ports,
   all_neighbors, neighbors, outneighbors, inneighbors, in_wires, out_wires,
   singleton_diagram, induced_subdiagram, encapsulated_subdiagram,
-  substitute, encapsulate,
-  dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create,
-  ocompose, permute, is_permuted_equal
+  substitute, encapsulate, is_permuted_equal
 
 using Compat
 using AutoHashEquals
 using LightGraphs, MetaGraphs
 import LightGraphs: all_neighbors, neighbors, outneighbors, inneighbors
-
-using ...GAT, ...Syntax
-import ...Doctrines:
-  CategoryExpr, ObExpr, HomExpr, MonoidalCategoryWithBidiagonals,
-  dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create
 
 # Data types
 ############
@@ -295,8 +285,8 @@ function Base.show(io::IO, diagram::WiringDiagram)
   print(io, ")")
 end
 
-# Low-level graph interface
-###########################
+# Imperative interface
+######################
 
 # Basic accessors.
 
@@ -545,10 +535,8 @@ function induced_subdiagram(d::WiringDiagram, vs::Vector{Int})
   return sub
 end
 
-# Substitution and encapulsation
-################################
-
-# Substition.
+# Substitution
+##############
 
 """ Substitute wiring diagrams for boxes.
 
@@ -667,7 +655,8 @@ end
 
 default_merge_wire_values(::Any, middle::Any, ::Any) = middle
 
-# Encapsulation.
+# Encapsulation
+###############
 
 """ Encapsulate multiple boxes within a single sub-diagram.
 
@@ -807,135 +796,6 @@ function encapsulated_subdiagram(d::WiringDiagram, vs::Vector{Int};
     result.input_ports, result.output_ports = inputs, outputs
   end
   (result, port_map)
-end
-
-# High-level categorical interface
-##################################
-
-""" Create box for a morphism generator.
-"""
-function Box(expr::HomExpr{:generator})
-  Box(first(expr), collect_values(dom(expr)), collect_values(codom(expr)))
-end
-add_box!(f::WiringDiagram, expr::HomExpr) = add_box!(f, Box(expr))
-
-""" Create empty wiring diagram with given domain and codomain objects.
-"""
-function WiringDiagram(inputs::ObExpr, outputs::ObExpr)
-  WiringDiagram(Ports(inputs), Ports(outputs))
-end
-Ports(expr::ObExpr) = Ports(collect_values(expr))
-
-""" Wiring diagrams as a monoidal category with diagonals and codiagonals.
-"""
-@instance MonoidalCategoryWithBidiagonals(Ports, WiringDiagram) begin
-  dom(f::WiringDiagram) = Ports(f.input_ports)
-  codom(f::WiringDiagram) = Ports(f.output_ports)
-  
-  function id(A::Ports)
-    f = WiringDiagram(A, A)
-    add_wires!(f, ((input_id(f),i) => (output_id(f),i) for i in eachindex(A)))
-    return f
-  end
-  
-  function compose(f::WiringDiagram, g::WiringDiagram; unsubstituted::Bool=false)
-    if length(codom(f)) != length(dom(g))
-      # Check only that f and g have the same number of ports.
-      # The port types will be checked when the wires are added.
-      error("Incompatible domains $(codom(f)) and $(dom(g))")
-    end
-    h = WiringDiagram(dom(f), codom(g))
-    fv = add_box!(h, f)
-    gv = add_box!(h, g)
-    add_wires!(h, ((input_id(h),i) => (fv,i) for i in eachindex(dom(f))))
-    add_wires!(h, ((fv,i) => (gv,i) for i in eachindex(codom(f))))
-    add_wires!(h, ((gv,i) => (output_id(h),i) for i in eachindex(codom(g))))
-    unsubstituted ? h : substitute(h, [fv,gv])
-  end
-  
-  otimes(A::Ports, B::Ports) = Ports([A.ports; B.ports])
-  munit(::Type{Ports}) = Ports([])
-  
-  function otimes(f::WiringDiagram, g::WiringDiagram; unsubstituted::Bool=false)
-    h = WiringDiagram(otimes(dom(f),dom(g)), otimes(codom(f),codom(g)))
-    m, n = length(dom(f)), length(codom(f))
-    fv = add_box!(h, f)
-    gv = add_box!(h, g)
-    add_wires!(h, (input_id(h),i) => (fv,i) for i in eachindex(dom(f)))
-    add_wires!(h, (input_id(h),i+m) => (gv,i) for i in eachindex(dom(g)))
-    add_wires!(h, (fv,i) => (output_id(h),i) for i in eachindex(codom(f)))
-    add_wires!(h, (gv,i) => (output_id(h),i+n) for i in eachindex(codom(g)))
-    unsubstituted ? h : substitute(h, [fv,gv])
-  end
-  
-  function braid(A::Ports, B::Ports)
-    h = WiringDiagram(otimes(A,B), otimes(B,A))
-    m, n = length(A), length(B)
-    add_wires!(h, ((input_id(h),i) => (output_id(h),i+n) for i in 1:m))
-    add_wires!(h, ((input_id(h),i+m) => (output_id(h),i) for i in 1:n))
-    h
-  end
-
-  mcopy(A::Ports) = mcopy(A, 2)
-  mmerge(A::Ports) = mmerge(A, 2)
-  delete(A::Ports) = WiringDiagram(A, munit(Ports))
-  create(A::Ports) = WiringDiagram(munit(Ports), A)
-end
-
-# Unbiased variants of braiding (permutation), copying, and merging.
-
-function permute(A::Ports, σ::Vector{Int}; inverse::Bool=false)
-  @assert length(A) == length(σ)
-  B = Ports([ A.ports[σ[i]] for i in eachindex(σ) ])
-  if inverse
-    f = WiringDiagram(B, A)
-    add_wires!(f, ((input_id(f),σ[i]) => (output_id(f),i) for i in eachindex(σ)))
-  else
-    f = WiringDiagram(A, B)
-    add_wires!(f, ((input_id(f),i) => (output_id(f),σ[i]) for i in eachindex(σ)))
-  end
-  return f
-end
-
-function mcopy(A::Ports, n::Int)::WiringDiagram
-  f = WiringDiagram(A, otimes([A for j in 1:n]))
-  m = length(A)
-  for j in 1:n
-    add_wires!(f, ((input_id(f),i) => (output_id(f),i+m*(j-1)) for i in 1:m))
-  end
-  return f
-end
-
-function mmerge(A::Ports, n::Int)::WiringDiagram
-  f = WiringDiagram(otimes([A for j in 1:n]), A)
-  m = length(A)
-  for j in 1:n
-    add_wires!(f, ((input_id(f),i+m*(j-1)) => (output_id(f),i) for i in 1:m))
-  end
-  return f
-end
-
-""" Operadic composition of wiring diagrams.
-
-This generic function has two different signatures, corresponding to the two
-standard definitions of an operad (Yau, 2018, Operads of Wiring Diagrams,
-Definitions 2.3 and 2.10).
-
-This operation is a simple wrapper around substitution (`substitute`).
-"""
-function ocompose(f::WiringDiagram, gs::Vector{WiringDiagram})
-  @assert length(gs) == nboxes(f)
-  substitute(f, box_ids(f), gs)
-end
-function ocompose(f::WiringDiagram, i::Int, g::WiringDiagram)
-  @assert 1 <= i <= nboxes(f)
-  substitute(f, box_ids(f)[i], g)
-end
-
-function collect_values(ob::ObExpr)::Vector
-  exprs = collect(ob)
-  @assert all(head(expr) == :generator for expr in exprs)
-  return map(first, exprs)
 end
 
 end

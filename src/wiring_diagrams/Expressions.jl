@@ -18,10 +18,9 @@ using LightGraphs
 using ...Syntax
 using ...Doctrines: id, compose, otimes, munit, mcopy, mmerge, create, delete
 using ...Doctrines.Permutations
-using ..WiringDiagramCore, ..WiringLayers
+using ..WiringDiagramCore, ..WiringLayers, ..AlgebraicWiringDiagrams
 import ..WiringLayers: to_wiring_diagram
-using ..WiringDiagramAlgorithms: Junction, add_junctions!,
-  crossing_minimization_by_sort
+using ..WiringDiagramAlgorithms: crossing_minimization_by_sort
 
 # Expression -> Diagram
 #######################

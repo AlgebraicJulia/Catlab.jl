@@ -8,6 +8,7 @@ CurrentModule = Catlab.WiringDiagrams
 Modules = [
   WiringDiagramCore,
   WiringLayers,
+  AlgebraicWiringDiagrams,
   WiringDiagramAlgorithms,
   WiringDiagramSerialization,
   GraphMLWiringDiagrams,
