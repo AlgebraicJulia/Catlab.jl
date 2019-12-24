@@ -1,51 +1,36 @@
 """ Wiring diagrams as a symmetric monoidal category and as an operad.
 
 This module provides a high-level functional and algebraic interface to wiring
-diagrams, built on top of the lower-level imperative interface.
+diagrams, building on the low-level imperative interface. It also defines data
+types and functions to represent diagonals, codiagonals, units, and counits in
+wiring diagrams as special *junction nodes*.
 """
 module AlgebraicWiringDiagrams
-export dom, codom, id, compose, otimes, munit, braid, permute, mcopy, delete,
-  mmerge, create, dunit, dcounit, ocompose,
-  Junction, add_junctions, add_junctions!, rem_junctions
+export dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid, permute,
+  mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dunit, dcounit, ocompose,
+  Junction, add_junctions, add_junctions!, rem_junctions, merge_junctions
 
 using AutoHashEquals
+using LightGraphs
 
 using ...GAT, ...Syntax
-import ...Doctrines:
-  ObExpr, HomExpr, MonoidalCategoryWithBidiagonals, dom, codom, id, compose,
-  otimes, munit, braid, mcopy, delete, mmerge, create, dunit, dcounit
+import ...Doctrines: ObExpr, HomExpr, MonoidalCategoryWithBidiagonals,
+  dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid,
+  mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dunit, dcounit
 using ..WiringDiagramCore, ..WiringLayers
 import ..WiringDiagramCore: Box, WiringDiagram, Ports,
   input_ports, output_ports, add_box!
 
-# Data types
-############
-
-""" Junction node in a wiring diagram.
-
-Junction nodes are used to explicitly represent copies, merges, deletions,
-creations, caps, and cups.
-"""
-@auto_hash_equals struct Junction{Value} <: AbstractBox
-  value::Value
-  ninputs::Int
-  noutputs::Int
-end
-input_ports(junction::Junction) = repeat([junction.value], junction.ninputs)
-output_ports(junction::Junction) = repeat([junction.value], junction.noutputs)
-
 # Categorical interface
 #######################
 
-""" Create box for a morphism generator.
-"""
+# Constructors.
+
 function Box(expr::HomExpr{:generator})
   Box(first(expr), collect_values(dom(expr)), collect_values(codom(expr)))
 end
 add_box!(f::WiringDiagram, expr::HomExpr) = add_box!(f, Box(expr))
 
-""" Create empty wiring diagram with given domain and codomain objects.
-"""
 function WiringDiagram(inputs::ObExpr, outputs::ObExpr)
   WiringDiagram(Ports(inputs), Ports(outputs))
 end
@@ -56,6 +41,8 @@ function collect_values(ob::ObExpr)::Vector
   @assert all(head(expr) == :generator for expr in exprs)
   return map(first, exprs)
 end
+
+# Instances.
 
 """ Wiring diagrams as a monoidal category with diagonals and codiagonals.
 """
@@ -152,8 +139,8 @@ end
 function dunit(A::Ports)
   f = WiringDiagram(munit(Ports), otimes(A,A))
   n = length(A)
-  for (i, port) in enumerate(A.ports)
-    v = add_box!(f, Junction(port, 0, 2))
+  for (i, value) in enumerate(A.ports)
+    v = add_box!(f, Junction(value, 0, 2))
     add_wires!(f, ((v,1) => (output_id(f),i), (v,2) => (output_id(f),i+n)))
   end
   return f
@@ -162,8 +149,8 @@ end
 function dcounit(A::Ports)
   f = WiringDiagram(otimes(A,A), munit(Ports))
   n = length(A)
-  for (i, port) in enumerate(A.ports)
-    v = add_box!(f, Junction(port, 2, 0))
+  for (i, value) in enumerate(A.ports)
+    v = add_box!(f, Junction(value, 2, 0))
     add_wires!(f, ((input_id(f),i) => (v,1), (input_id(f),i+n) => (v,2)))
   end
   return f
@@ -175,7 +162,7 @@ end
 """ Operadic composition of wiring diagrams.
 
 This generic function has two different signatures, corresponding to the two
-standard definitions of an operad (Yau, 2018, Operads of Wiring Diagrams,
+standard definitions of an operad (Yau, 2018, *Operads of Wiring Diagrams*,
 Definitions 2.3 and 2.10).
 
 This operation is a simple wrapper around substitution (`substitute`).
@@ -191,6 +178,19 @@ end
 
 # Junctions
 ###########
+
+""" Junction node in a wiring diagram.
+
+Junction nodes are used to explicitly represent copies, merges, deletions,
+creations, caps, and cups.
+"""
+@auto_hash_equals struct Junction{Value} <: AbstractBox
+  value::Value
+  ninputs::Int
+  noutputs::Int
+end
+input_ports(junction::Junction) = repeat([junction.value], junction.ninputs)
+output_ports(junction::Junction) = repeat([junction.value], junction.noutputs)
 
 """ Add junction nodes to wiring diagram.
 
@@ -209,6 +209,7 @@ function add_junctions!(d::WiringDiagram)
   end
   return d
 end
+
 function add_input_junctions!(d::WiringDiagram, v::Int)
   for (port, port_value) in enumerate(input_ports(d, v))
     wires = in_wires(d, v, port)
@@ -222,6 +223,7 @@ function add_input_junctions!(d::WiringDiagram, v::Int)
     end
   end
 end
+
 function add_output_junctions!(d::WiringDiagram, v::Int)
   for (port, port_value) in enumerate(output_ports(d, v))
     wires = out_wires(d, v, port)
@@ -249,6 +251,23 @@ function rem_junctions(d::WiringDiagram)
     to_wiring_diagram(layer, input_ports(junction), output_ports(junction))
   end
   substitute(d, junction_ids, junction_diagrams)
+end
+
+""" Merge adjacent junction nodes into single junctions.
+"""
+function merge_junctions(d::WiringDiagram)
+  junction_ids = filter(v -> box(d,v) isa Junction, box_ids(d))
+  junction_graph, vmap = induced_subgraph(graph(d), junction_ids)
+  components = [ [ vmap[v] for v in component ]
+    for component in weakly_connected_components(junction_graph)
+    if length(component) > 1 ]
+  values = map(components) do component
+    values = unique(box(d,v).value for v in component)
+    @assert length(values) == 1
+    first(values)
+  end
+  encapsulate(d, components; discard_boxes=true, values=values,
+    make_box = (value, in, out) -> Junction(value, length(in), length(out)))
 end
 
 end

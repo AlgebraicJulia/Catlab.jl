@@ -27,7 +27,6 @@ g = singleton_diagram(Box(Hom(:g,B,A)))
 @test codom(f) == Ports([:B])
 @test dom(compose(f,g)) == Ports([:A])
 @test codom(compose(f,g)) == Ports([:A])
-@test_throws Exception compose(f,f)
 
 # Associativity
 @test compose(compose(f,g),f) == compose(f,compose(g,f))
@@ -193,18 +192,32 @@ junctioned = compose(junction_diagram(:A,0,1), f)
 
 # Copies, merges, deletions, and creations, all at once.
 d = compose(create(A), f, mcopy(B), mmerge(B), g, delete(C))
-junctioned = compose(
-  junction_diagram(:A,0,1),
-  f,
-  junction_diagram(:B,1,2),
-  junction_diagram(:B,2,1),
-  g,
-  junction_diagram(:C,1,0)
-)
+junctioned = compose(junction_diagram(:A,0,1), f, junction_diagram(:B,1,2),
+                     junction_diagram(:B,2,1), g, junction_diagram(:C,1,0))
 actual = add_junctions(d)
 # XXX: An isomorphism test would be more convenient.
 perm = [ findfirst([b] .== boxes(actual)) for b in boxes(junctioned) ]
 @test is_permuted_equal(actual, junctioned, perm)
 @test rem_junctions(junctioned) == d
+
+# Simplify junctions
+#-------------------
+
+j = junction_diagram
+
+# Comonoid laws.
+@test merge_junctions(j(:A,1,2)⋅(j(:A,1,2)⊗id(A))) ==
+  j(:A,1,3)⋅permute(A⊗A⊗A,[3,1,2]) # FIXME: Shouldn't need permutation.
+@test merge_junctions(j(:A,1,2)⋅(id(A)⊗j(:A,1,2))) == j(:A,1,3)
+@test merge_junctions(j(:A,1,2)⋅(j(:A,1,0)⊗id(A))) == j(:A,1,1)
+@test merge_junctions(j(:A,1,2)⋅(id(A)⊗j(:A,1,0))) == j(:A,1,1)
+
+# Caps and cups.
+@test merge_junctions(j(:A,0,1)⋅j(:A,1,2)) == j(:A,0,2)
+@test merge_junctions(j(:A,2,1)⋅j(:A,1,0)) == j(:A,2,0)
+
+# Zigzag laws.
+@test merge_junctions((id(A)⊗j(:A,0,2))⋅(j(:A,2,0)⊗id(A))) == j(:A,1,1)
+@test merge_junctions((j(:A,0,2)⊗id(A))⋅(id(A)⊗j(:A,2,0))) == j(:A,1,1)
 
 end

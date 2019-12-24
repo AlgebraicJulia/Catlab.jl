@@ -572,7 +572,7 @@ function substitute(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagra
   #
   # This may seem convoluted, but it is the simplest way I know to handle the
   # problem of *instantaneous wires*. Some authors ban instantaneous wires, but
-  # want to allow them because they can represent the identity, braidings, etc.
+  # we need them to represent identities, braidings, etc.
   @assert length(vs) == length(subs)
   result = WiringDiagram(d.value, input_ports(d), output_ports(d))
   
@@ -662,13 +662,12 @@ default_merge_wire_values(::Any, middle::Any, ::Any) = middle
 
 This operation is a (one-sided) inverse to subsitution (see `substitute`).
 """
-function encapsulate(d::WiringDiagram, vs::Vector{Int};
-                     discard_boxes::Bool=false, value::Any=nothing)
-  encapsulate(d, [vs]; discard_boxes=discard_boxes, values=[value])
+function encapsulate(d::WiringDiagram, vs::Vector{Int}; value=nothing, kw...)
+  encapsulate(d, [vs]; values=[value], kw...)
 end
 
 function encapsulate(d::WiringDiagram, vss::Vector{Vector{Int}};
-                     discard_boxes::Bool=false, values::Union{Nothing,Vector}=nothing)
+    discard_boxes::Bool=false, make_box=Box, values=nothing)
   if isempty(vss); return d end
   if any(isempty(vs) for vs in vss)
     error("Cannot encapsulate an empty set of boxes")
@@ -688,7 +687,7 @@ function encapsulate(d::WiringDiagram, vss::Vector{Vector{Int}};
     if haskey(encapsulated_representatives, v)
       vs, value = encapsulated_representatives[v]
       sub, sub_map = encapsulated_subdiagram(d, vs;
-        discard_boxes=discard_boxes, value=value)
+        discard_boxes=discard_boxes, make_box=make_box, value=value)
       subv = add_box!(result, sub)
       merge!(port_map, Dict(
         port => from_port_data(data, subv) for (port, data) in sub_map))
@@ -731,7 +730,7 @@ simplified into a single port of the encapsulating box.
 See also `induced_subdiagram`.
 """
 function encapsulated_subdiagram(d::WiringDiagram, vs::Vector{Int};
-                                 discard_boxes::Bool=false, value::Any=nothing)
+    discard_boxes::Bool=false, make_box=Box, value=nothing)
   # Add encapsulated box to new wiring diagram.
   inputs, outputs = [], []
   result = discard_boxes ? nothing : WiringDiagram(value, inputs, outputs)
@@ -791,7 +790,7 @@ function encapsulated_subdiagram(d::WiringDiagram, vs::Vector{Int};
   # Yield input and output port lists with the tightest possible types.
   inputs, outputs = [ x for x in inputs ], [ x for x in outputs ]
   if discard_boxes
-    result = Box(value, inputs, outputs)
+    result = make_box(value, inputs, outputs)
   else
     result.input_ports, result.output_ports = inputs, outputs
   end
