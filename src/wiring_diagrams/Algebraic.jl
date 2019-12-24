@@ -4,8 +4,9 @@ This module provides a high-level functional and algebraic interface to wiring
 diagrams, built on top of the lower-level imperative interface.
 """
 module AlgebraicWiringDiagrams
-export Junction, dom, codom, id, compose, otimes, munit, braid, mcopy, delete,
-  mmerge, create, permute, ocompose, add_junctions!, rem_junctions!
+export dom, codom, id, compose, otimes, munit, braid, permute, mcopy, delete,
+  mmerge, create, dunit, dcounit, ocompose,
+  Junction, add_junctions, add_junctions!, rem_junctions
 
 using AutoHashEquals
 
@@ -194,8 +195,11 @@ end
 """ Add junction nodes to wiring diagram.
 
 Transforms from the implicit to the explicit representation of diagonals and
-codiagonals. This operation is inverse to `rem_junctions!`.
+codiagonals. This operation is inverse to `rem_junctions`.
 """
+function add_junctions(d::WiringDiagram)
+  add_junctions!(copy(d))
+end
 function add_junctions!(d::WiringDiagram)
   add_output_junctions!(d, input_id(d))
   add_input_junctions!(d, output_id(d))
@@ -235,12 +239,9 @@ end
 """ Remove junction nodes from wiring diagram.
 
 Transforms from the explicit to the implicit representation of diagonals and
-codiagonals. This operation is inverse to `add_junctions!`.
-
-Note: This function does not actually mutate its argument. However, this is
-subject to change in the future.
+codiagonals. This operation is inverse to `add_junctions`.
 """
-function rem_junctions!(d::WiringDiagram)
+function rem_junctions(d::WiringDiagram)
   junction_ids = filter(v -> box(d,v) isa Junction, box_ids(d))
   junction_diagrams = map(junction_ids) do v
     junction = box(d,v)::Junction

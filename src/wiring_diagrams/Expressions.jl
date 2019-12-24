@@ -50,10 +50,9 @@ function to_hom_expr(Ob::Type, Hom::Type, d::WiringDiagram)
   
   # Step 0: Reduction: Add junction nodes to ensure any wiring layer between
   # two boxes is a permutation.
-  d = copy(d)
-  add_junctions!(d)
+  d = add_junctions(d)
   
-  # Special case: no boxes.
+  # Dispatch special case: no boxes.
   if nboxes(d) == 0
     return hom_expr_between(Ob, d, input_id(d), output_id(d))
   end
