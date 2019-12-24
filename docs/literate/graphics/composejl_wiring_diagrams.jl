@@ -49,7 +49,7 @@ to_composejl((braid(A,B) ⊗ id(C)) ⋅ (id(B) ⊗ braid(A,C) ⋅ (braid(B,C) �
 # ### Biproduct category
 
 A, B = Ob(FreeBiproductCategory, :A, :B)
-f, g = Hom(:f, A, B), Hom(:g, B, A)
+f = Hom(:f, A, B)
 
 to_composejl(mcopy(A))
 #-
@@ -62,7 +62,7 @@ to_composejl(mcopy(A)⋅(f⊗f)⋅mmerge(B))
 # The unit and co-unit of a compact closed category appear as caps and cups.
 
 A, B = Ob(FreeBicategoryRelations, :A, :B)
-f, g = Hom(:f, A, B), Hom(:g, B, A)
+f = Hom(:f, A, B)
 
 to_composejl(dunit(A))
 #-
@@ -80,6 +80,9 @@ to_composejl((dunit(A) ⊗ id(B)) ⋅ (id(A) ⊗ f ⊗ id(B)) ⋅ (id(A) ⊗ dco
 # [properties](http://giovineitalia.github.io/Compose.jl/latest/gallery/properties/).
 
 using Compose: fill, stroke
+
+A, B, = Ob(FreeSymmetricMonoidalCategory, :A, :B)
+f, g = Hom(:f, A, B), Hom(:g, B, A)
 
 to_composejl(f⋅g, box_props=[fill("lavender"), stroke("black")])
 
@@ -102,6 +105,10 @@ using Compose: draw, PGF
 
 pic = to_composejl(f⋅g, rounded_boxes=false)
 pgf = sprint() do io
-  draw(PGF(io, pic.width, pic.height, false, true, texfonts=true), pic.context)
+  pgf_backend = PGF(io, pic.width, pic.height,
+    false, # emit_on_finish
+    true,  # only_tikz
+    texfonts=true)
+  draw(pgf_backend, pic.context)
 end
 println(pgf)
