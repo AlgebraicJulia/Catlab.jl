@@ -70,8 +70,7 @@ end
   name::String
   props::Vector{Property}
   coord::Union{Coordinate,Nothing}
-  # Allow nested pictures even though TikZ does not "officially" support them.
-  content::Union{String,Picture}
+  content::String
   
   Node(name::String; props=Property[], coord=nothing, content="") =
     new(name, props, coord, content)
@@ -180,16 +179,7 @@ function pprint(io::IO, node::Node, n::Int)
     print(io, " at ")
     pprint(io, node.coord)
   end
-  if isa(node.content, Picture)
-    println(io, " {")
-    pprint(io, node.content, n+2)
-    println(io)
-    indent(io, n)
-    print(io, "}")
-  else
-    print(io, " {$(node.content)}")
-  end
-  print(io, ";")
+  print(io, " {$(node.content)};")
 end
 
 function pprint(io::IO, edge::Edge, n::Int)
