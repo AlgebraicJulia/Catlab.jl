@@ -11,8 +11,8 @@ using StaticArrays: StaticVector, SVector
 using ...Syntax: GATExpr, show_latex
 using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
 using ..WiringDiagramLayouts
-using ..WiringDiagramLayouts: AbstractVector2D, Vector2D, BoxLayout, PortLayout,
-  BoxShape, RectangleShape, CircleShape, JunctionShape, NoShape
+using ..WiringDiagramLayouts: AbstractVector2D, Vector2D, BoxLayout, BoxShape,
+  RectangleShape, CircleShape, JunctionShape, NoShape, position, normal
 import ..TikZ
 
 # Data types
@@ -95,11 +95,10 @@ end
 """
 function tikz_port(diagram::WiringDiagram, port::Port)
   name = box_id(diagram, [port.box])
-  layout = port_value(diagram, port)::PortLayout
-  x, y = tikz_position(layout.position)
+  x, y = tikz_position(position(port_value(diagram, port)))
   location = "\$($name.center)+($(x)em,$(y)em)\$"
-  normal = rad2deg(angle(layout.normal))
-  (location, normal)
+  normal_angle = rad2deg(angle(normal(diagram, port)))
+  (location, normal_angle)
 end
 
 function tikz_label(x, opts::TikZOptions)

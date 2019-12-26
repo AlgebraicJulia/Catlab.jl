@@ -96,21 +96,19 @@ function layout_to_composejl(box::Box, opts::ComposeOptions)::Compose.Context
   )
 end
 
-function layout_to_composejl(d::WiringDiagram, wire::Wire, opts::ComposeOptions)
-  src, tgt = port_value(d, wire.source), port_value(d, wire.target)
-  src_point = position(parent_box(d, wire.source)) + position(src)
-  tgt_point = position(parent_box(d, wire.target)) + position(tgt)
-  
-  points = [ src_point ]
-  prev = (src_point, normal(src))
+function layout_to_composejl(diagram::WiringDiagram, wire::Wire, opts::ComposeOptions)
+  src, tgt = wire.source, wire.target
+  src_pos, tgt_pos = position(diagram, src), position(diagram, tgt)
+  points = [ src_pos ]
+  prev = (src_pos, normal(diagram, src))
   for point in wire_points(wire)
     p, v = position(point), tangent(point)
     append!(points, tangents_to_controls(prev..., -v, p))
     push!(points, p)
     prev = (p, v)
   end
-  append!(points, tangents_to_controls(prev..., normal(tgt), tgt_point))
-  push!(points, tgt_point)
+  append!(points, tangents_to_controls(prev..., normal(diagram, tgt), tgt_pos))
+  push!(points, tgt_pos)
   
   C.compose(C.context(tag=:wire),
     piecewise_curve(map(Tuple, points)),
@@ -124,10 +122,6 @@ function tangents_to_controls(p1::AbstractVector2D, v1::AbstractVector2D,
     v2::AbstractVector2D, p2::AbstractVector2D; weight::Float64=0.5)
   v = p2 - p1
   (p1 + weight * dot(v,v1) * v1, p2 - weight * dot(v,v2) * v2)
-end
-
-function parent_box(d::WiringDiagram, port::Port)
-  port.box in (input_id(d), output_id(d)) ? d : box(d, port.box)
 end
 
 """ Draw an atomic box in Compose.jl.

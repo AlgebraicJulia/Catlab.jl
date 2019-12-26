@@ -340,6 +340,19 @@ function layout_ports!(diagram::WiringDiagram, opts::LayoutOptions)
   diagram
 end
 
+function position(diagram::WiringDiagram, port::Port)
+  pos = position(port_value(diagram, port))
+  if !(port.box in (input_id(diagram), output_id(diagram)))
+    pos += position(box(diagram, port.box))
+  end
+  pos
+end
+
+function normal(diagram::WiringDiagram, port::Port)
+  sgn = port.box in (input_id(diagram), output_id(diagram)) ? -1 : +1
+  sgn * normal(port_value(diagram, port))
+end
+
 # Wire layout
 #############
 
