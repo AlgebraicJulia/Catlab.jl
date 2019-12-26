@@ -4,14 +4,15 @@ module TikZWiringDiagrams
 export to_tikz, layout_to_tikz
 
 using Compat
+using DataStructures: OrderedDict
 using Parameters
 using StaticArrays: StaticVector, SVector
 
 using ...Syntax: GATExpr, show_latex
 using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
 using ..WiringDiagramLayouts
-using ..WiringDiagramLayouts: AbstractVector2D, Vector2D, BoxLayout, BoxShape,
-  RectangleShape, CircleShape, JunctionShape, NoShape
+using ..WiringDiagramLayouts: AbstractVector2D, Vector2D, BoxLayout, PortLayout,
+  BoxShape, RectangleShape, CircleShape, JunctionShape, NoShape
 import ..TikZ
 
 # Data types
@@ -36,7 +37,10 @@ function to_tikz(args...;
   
   tikz_kw = filter(p -> first(p) ∈ fieldnames(TikZOptions), kw)
   stmts = layout_to_tikz(diagram; tikz_kw...)
-  props = copy(picture_props)
+  props = [ picture_props;
+    [ TikZ.Property("x","1em"), TikZ.Property("y","1em") ];
+    [ TikZ.Property("$name/.style", props) for (name, props) in tikz_styles ];
+  ]
   if !isnothing(arrowtip)
     push!(props, TikZ.Property("decoration", 
       "{markings, mark=at position 0.5 with {\\arrow{$arrowtip}}}"))
@@ -56,10 +60,21 @@ function layout_to_tikz(diagram::WiringDiagram, opts::TikZOptions)
     tikz_node(diagram, opts, name=name(input_id(diagram)), style="outer box");
     [ tikz_node(box(diagram, v), opts, name=name(v)) for v in box_ids(diagram) ]
   ]
-  # TODO: Edges.
+  for wire in wires(diagram)
+    src, src_angle = tikz_port(diagram, wire.source)
+    tgt, tgt_angle = tikz_port(diagram, wire.target)
+    push!(stmts, TikZ.Edge(src, tgt, op=
+      TikZ.PathOperation("to"; props=[
+        TikZ.Property("out", string(src_angle)),
+        TikZ.Property("in", string(tgt_angle)),
+      ])
+    ))
+  end
   stmts
 end
 
+""" Make TikZ node for a box.
+"""
 function tikz_node(box::AbstractBox, opts::TikZOptions; kw...)
   tikz_node(box.value::BoxLayout, opts; kw...)
 end
@@ -76,19 +91,16 @@ function tikz_node(layout::BoxLayout, opts::TikZOptions;
     content=content)
 end
 
-const tikz_shapes = Dict(
-  RectangleShape => "box",
-  CircleShape => "circular box",
-  JunctionShape => "junction",
-  NoShape => "invisible",
-)
-const tikz_content_shapes = Set([
-  RectangleShape,
-  CircleShape,
-])
-
-# TikZ helpers
-##############
+""" Make TikZ location and angle for a port.
+"""
+function tikz_port(diagram::WiringDiagram, port::Port)
+  name = box_id(diagram, [port.box])
+  layout = port_value(diagram, port)::PortLayout
+  x, y = tikz_position(layout.position)
+  location = "\$($name.center)+($(x)em,$(y)em)\$"
+  normal = rad2deg(angle(layout.normal))
+  (location, normal)
+end
 
 function tikz_label(x, opts::TikZOptions)
   text = sprint(show, x)
@@ -102,6 +114,9 @@ function tikz_label(expr::GATExpr, opts::TikZOptions)
   end
 end
 tikz_label(::Nothing, opts::TikZOptions) = ""
+
+# TikZ geometry
+###############
 
 function tikz_position(position::AbstractVector2D)::AbstractVector2D
   # TikZ's default coordinate system has the positive y-axis going upwards.
@@ -123,5 +138,42 @@ function tikz_size(size::AbstractVector2D)::Vector{TikZ.Property}
       TikZ.Property("minimum height", "$(height)em") ]
   end
 end
+
+angle(v::AbstractVector2D) = Base.angle(v[1] + v[2]*im)
+
+# TikZ shapes and styles
+########################
+
+const tikz_shapes = Dict(
+  RectangleShape => "box",
+  CircleShape => "circular box",
+  JunctionShape => "junction",
+  NoShape => "invisible",
+)
+const tikz_content_shapes = Set([
+  RectangleShape,
+  CircleShape,
+])
+
+const tikz_styles = OrderedDict(
+  "outer box" => [
+    TikZ.Property("draw", "none"),
+  ],
+  "box" => [
+    TikZ.Property("rectangle"),
+    TikZ.Property("draw"), TikZ.Property("solid"),
+  ],
+  "circular box" => [
+    TikZ.Property("circle"),
+    TikZ.Property("draw"), TikZ.Property("solid"),
+  ],
+  "junction" => [
+    TikZ.Property("circle"),
+    TikZ.Property("draw"), TikZ.Property("fill"),
+  ],
+  "invisible" => [
+    TikZ.Property("draw", "none"),
+  ],
+)
 
 end
