@@ -138,7 +138,7 @@ function tikz_size(size::AbstractVector2D)::Vector{TikZ.Property}
   end
 end
 
-angle(v::AbstractVector2D) = Base.angle(v[1] + v[2]*im)
+angle(v::AbstractVector2D) = Base.angle(v[1] - v[2]*im)
 
 # TikZ shapes and styles
 ########################
@@ -169,9 +169,11 @@ const tikz_styles = OrderedDict(
   "junction" => [
     TikZ.Property("circle"),
     TikZ.Property("draw"), TikZ.Property("fill"),
+    TikZ.Property("inner sep", "0"),
   ],
   "invisible" => [
     TikZ.Property("draw", "none"),
+    TikZ.Property("inner sep", "0"),
   ],
 )
 
