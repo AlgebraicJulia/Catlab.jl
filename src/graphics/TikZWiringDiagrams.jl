@@ -98,25 +98,28 @@ function tikz_port(diagram::WiringDiagram, port::Port)
   parent_box = port.box in (input_id(diagram), output_id(diagram)) ?
     diagram : box(diagram, port.box)
   shape = parent_box.value.shape
+  
   x, y = tikz_position(position(port_value(diagram, port)))
-  normal_angle = rad2deg(tikz_angle(normal(diagram, port)))
-  location = if shape == RectangleShape
+  normal_angle = tikz_angle(normal(diagram, port))
+  anchor, (x, y) = if shape == RectangleShape
     nx, ny = normal(port_value(diagram, port))
     i = last(findmax((ny, nx, -ny, -nx)))
     anchor = ("north", "east", "south", "west")[i]
-    if anchor in ("north", "south")
-      "\$($name.$anchor)+($(x)em,0)\$"
-    else
-      "\$($name.$anchor)+(0,$(y)em)\$"
-    end
+    (anchor, anchor in ("north", "south") ? (x,0) : (0,y))
   elseif shape in (CircleShape, JunctionShape)
-    "$name.$normal_angle"
+    (normal_angle, (0,0))
   elseif shape == NoShape
-    "$name.center"
+    ("center", (0,0))
   else
-    # Fallback method. Always works when TikZ uses the layout's requested box
-    # size, but is the least robust to node resizing.
-    "\$($name.center)+($(x)em,$(y)em)\$"
+    # Fallback method. Always works when TikZ follows the layout's box size, but
+    # is the least robust to changes in node size.
+    ("center", (x,y))
+  end
+  
+  location = if x == 0 && y == 0
+    "$name.$anchor"
+  else
+    "\$($name.$anchor)+($(x)em,$(y)em)\$"
   end
   (location, normal_angle)
 end
@@ -137,19 +140,21 @@ tikz_label(::Nothing, opts::TikZOptions) = ""
 # TikZ geometry
 ###############
 
-tikz_angle(v::AbstractVector2D) = angle(v[1] - v[2]*im)
+function tikz_angle(v::AbstractVector2D)
+  tikz_number(rad2deg(angle(v[1] - v[2]*im)))
+end
 
-function tikz_position(position::AbstractVector2D)::AbstractVector2D
+function tikz_position(position::AbstractVector2D)::Tuple
   # TikZ's default coordinate system has the positive y-axis going upwards.
   x, y = position
-  SVector(x, -y)
+  (tikz_number(x), tikz_number(-y))
 end
 function tikz_coordinate(position::AbstractVector2D)::TikZ.Coordinate
   TikZ.Coordinate(tikz_position(position)...)
 end
 
 function tikz_size(size::AbstractVector2D)::Vector{TikZ.Property}
-  width, height = size
+  width, height = tikz_number(size[1]), tikz_number(size[2])
   if width == 0 && height == 0
     TikZ.Property[]
   elseif width == height
@@ -158,6 +163,11 @@ function tikz_size(size::AbstractVector2D)::Vector{TikZ.Property}
     [ TikZ.Property("minimum width", "$(width)em"), 
       TikZ.Property("minimum height", "$(height)em") ]
   end
+end
+
+function tikz_number(x::Number; sigdigits=3)
+  x = round(x, sigdigits=sigdigits)
+  isinteger(x) ? Integer(x) : x
 end
 
 # TikZ shapes and styles
