@@ -95,9 +95,29 @@ end
 """
 function tikz_port(diagram::WiringDiagram, port::Port)
   name = box_id(diagram, [port.box])
+  parent_box = port.box in (input_id(diagram), output_id(diagram)) ?
+    diagram : box(diagram, port.box)
+  shape = parent_box.value.shape
   x, y = tikz_position(position(port_value(diagram, port)))
-  location = "\$($name.center)+($(x)em,$(y)em)\$"
-  normal_angle = rad2deg(angle(normal(diagram, port)))
+  normal_angle = rad2deg(tikz_angle(normal(diagram, port)))
+  location = if shape == RectangleShape
+    nx, ny = normal(port_value(diagram, port))
+    i = last(findmax((ny, nx, -ny, -nx)))
+    anchor = ("north", "east", "south", "west")[i]
+    if anchor in ("north", "south")
+      "\$($name.$anchor)+($(x)em,0)\$"
+    else
+      "\$($name.$anchor)+(0,$(y)em)\$"
+    end
+  elseif shape in (CircleShape, JunctionShape)
+    "$name.$normal_angle"
+  elseif shape == NoShape
+    "$name.center"
+  else
+    # Fallback method. Always works when TikZ uses the layout's requested box
+    # size, but is the least robust to node resizing.
+    "\$($name.center)+($(x)em,$(y)em)\$"
+  end
   (location, normal_angle)
 end
 
@@ -116,6 +136,8 @@ tikz_label(::Nothing, opts::TikZOptions) = ""
 
 # TikZ geometry
 ###############
+
+tikz_angle(v::AbstractVector2D) = angle(v[1] - v[2]*im)
 
 function tikz_position(position::AbstractVector2D)::AbstractVector2D
   # TikZ's default coordinate system has the positive y-axis going upwards.
@@ -137,8 +159,6 @@ function tikz_size(size::AbstractVector2D)::Vector{TikZ.Property}
       TikZ.Property("minimum height", "$(height)em") ]
   end
 end
-
-angle(v::AbstractVector2D) = Base.angle(v[1] - v[2]*im)
 
 # TikZ shapes and styles
 ########################
