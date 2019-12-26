@@ -51,8 +51,8 @@ Object in the category of wiring layers.
   n::Int
 end
 
-# Low-level graph interface
-###########################
+# Imperative interface
+######################
 
 # Constructors.
 
@@ -143,8 +143,8 @@ function check_wire_bounds(f::WiringLayer, wire)
   end
 end
 
-# High-level categorical interface
-##################################
+# Categorical interface
+#######################
 
 NLayer(ob::ObExpr) = NLayer(ndims(ob))
 WiringLayer(inputs::ObExpr, outputs::ObExpr) =

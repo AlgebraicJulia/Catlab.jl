@@ -8,6 +8,10 @@ end
   include("Layers.jl")
 end
 
+@testset "Algebraic" begin
+  include("Algebraic.jl")
+end
+
 @testset "Algorithms" begin
   include("Algorithms.jl")
 end

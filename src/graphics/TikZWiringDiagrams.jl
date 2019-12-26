@@ -3,8 +3,6 @@
 module TikZWiringDiagrams
 export to_tikz
 
-using Match
-
 using ...Doctrines: ObExpr, HomExpr, dom, codom, head, args, compose, id
 using ...Syntax: GATExpr, show_latex
 using ...WiringDiagrams

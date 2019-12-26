@@ -1,17 +1,15 @@
 """ Algorithms operating on wiring diagrams.
 """
 module WiringDiagramAlgorithms
-export Junction, add_junctions!, rem_junctions!,
-  normalize_cartesian!, normalize_copy!, normalize_delete!,
-  topological_sort, crossing_minimization_by_sort
+export topological_sort, normalize_cartesian!, normalize_copy!,
+  normalize_delete!, crossing_minimization_by_sort
 
-using AutoHashEquals
 import LightGraphs
 using UnionFind
 using Statistics: mean
 
 using ..WiringDiagramCore, ..WiringLayers
-import ..WiringDiagramCore: input_ports, output_ports, set_box
+import ..WiringDiagramCore: set_box
 
 # Traversal
 ###########
@@ -26,77 +24,8 @@ function topological_sort(d::WiringDiagram)::Vector{Int}
   filter(v -> v ∉ outer_ids, vs)
 end
 
-# Diagonals and codiagonals
-###########################
-
-""" Junction node in a wiring diagram.
-
-Used to explicitly represent copies, merges, deletions, and creations.
-"""
-@auto_hash_equals struct Junction{Value} <: AbstractBox
-  value::Value
-  ninputs::Int
-  noutputs::Int
-end
-input_ports(junction::Junction) = repeat([junction.value], junction.ninputs)
-output_ports(junction::Junction) = repeat([junction.value], junction.noutputs)
-
-""" Add junction nodes to wiring diagram.
-
-Transforms from implicit to explicit representation of (co)diagonals.
-"""
-function add_junctions!(d::WiringDiagram)
-  add_output_junctions!(d, input_id(d))
-  add_input_junctions!(d, output_id(d))
-  for v in box_ids(d)
-    add_input_junctions!(d, v)
-    add_output_junctions!(d, v)
-  end
-  return d
-end
-function add_input_junctions!(d::WiringDiagram, v::Int)
-  for (port, port_value) in enumerate(input_ports(d, v))
-    wires = in_wires(d, v, port)
-    nwires = length(wires)
-    if nwires != 1
-      rem_wires!(d, wires)
-      jv = add_box!(d, Junction(port_value, nwires, 1))
-      add_wire!(d, Port(jv, OutputPort, 1) => Port(v, InputPort, port))
-      add_wires!(d, [ wire.source => Port(jv, InputPort, i)
-                      for (i, wire) in enumerate(wires) ])
-    end
-  end
-end
-function add_output_junctions!(d::WiringDiagram, v::Int)
-  for (port, port_value) in enumerate(output_ports(d, v))
-    wires = out_wires(d, v, port)
-    nwires = length(wires)
-    if nwires != 1
-      rem_wires!(d, wires)
-      jv = add_box!(d, Junction(port_value, 1, nwires))
-      add_wire!(d, Port(v, OutputPort, port) => Port(jv, InputPort, 1))
-      add_wires!(d, [ Port(jv, OutputPort, i) => wire.target
-                      for (i, wire) in enumerate(wires) ])
-    end
-  end
-end
-
-""" Remove junction nodes from wiring diagram.
-
-Transforms from explicit to implicit representation of (co)diagonals.
-
-Note: This function currently does not actually mutate its argument. However,
-this is subject to change in the future.
-"""
-function rem_junctions!(d::WiringDiagram)
-  junction_ids = filter(v -> box(d,v) isa Junction, box_ids(d))
-  junction_diagrams = map(junction_ids) do v
-    junction = box(d,v)::Junction
-    layer = complete_layer(junction.ninputs, junction.noutputs)
-    to_wiring_diagram(layer, input_ports(junction), output_ports(junction))
-  end
-  substitute(d, junction_ids, junction_diagrams)
-end
+# Normalization
+###############
 
 """ Put a wiring diagram for a cartesian category into normal form.
 
