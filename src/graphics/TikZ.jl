@@ -39,7 +39,7 @@ end
 
 @auto_hash_equals struct Property <: Expression
   key::String
-  value::Union{String,Nothing}
+  value::Union{String,Vector{Property},Nothing}
   
   Property(key::String, value=nothing) = new(key, value)
 end
@@ -141,8 +141,8 @@ end
 
 """ Pretty-print the TikZ expression.
 """
-pprint(expr::Expression) = pprint(stdout, expr)
-pprint(io::IO, expr::Expression) = pprint(io, expr, 0)
+pprint(expr::Expression; kw...) = pprint(stdout, expr; kw...)
+pprint(io::IO, expr::Expression; kw...) = pprint(io, expr, 0; kw...)
 
 function pprint(io::IO, pic::Picture, n::Int)
   indent(io, n)
@@ -283,18 +283,22 @@ function pprint(io::IO, prop::Property, n::Int)
   print(io, prop.key)
   if !isnothing(prop.value)
     print(io, "=")
-    print(io, prop.value)
+    if prop.value isa Vector{Property}
+      pprint(io, prop.value, nested=true)
+    else
+      print(io, prop.value)
+    end
   end
 end
 
-function pprint(io::IO, props::Vector{Property}, n::Int=0)
+function pprint(io::IO, props::Vector{Property}, n::Int=0; nested::Bool=false)
   if !isempty(props)
-    print(io, "[")
+    print(io, nested ? "{" : "[")
     for (i, prop) in enumerate(props)
       pprint(io, prop)
       if (i < length(props)) print(io, ",") end
     end
-    print(io, "]")
+    print(io, nested ? "}" : "]")
   end
 end
 

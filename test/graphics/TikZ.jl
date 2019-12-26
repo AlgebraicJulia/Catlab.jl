@@ -8,6 +8,12 @@ using Catlab.Graphics.TikZ
 
 spprint(expr::Expression) = sprint(pprint, expr)
 
+# Properties
+@test spprint(Property("circle")) == "circle"
+@test spprint(Property("fill","red")) == "fill=red"
+@test spprint(Property("style",[Property("circle"),Property("fill","red")])) ==
+  "style={circle,fill=red}"
+
 # Node statement
 @test spprint(Node("f")) == "\\node (f) {};"
 @test spprint(Node("f"; props=[Property("circle")])) == 
@@ -63,7 +69,7 @@ Picture(
   \\draw (f) to (g);
 \\end{tikzpicture}"""
 
-# Graph, GraphScope, GraphNode, GraphEdge statements
+# Graph statements
 @test spprint(
 Graph(
   GraphNode("f";content="fun"),
