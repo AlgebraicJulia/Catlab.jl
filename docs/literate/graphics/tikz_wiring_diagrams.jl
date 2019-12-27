@@ -76,3 +76,20 @@ to_tikz(dcounit(A))
 # bending wires:
 
 to_tikz((dunit(A) ⊗ id(B)) ⋅ (id(A) ⊗ f ⊗ id(B)) ⋅ (id(A) ⊗ dcounit(B)))
+
+# ## Output formats
+
+# The function `to_tikz` returns an object of type `TikZ.Picture`, representing
+# a TikZ picture has an abstract syntax tree. When displayed interactively, this
+# object is compiled by LaTeX to PDF and then converted to SVG.
+
+# To generate the LaTeX source code, use the builtin pretty-printer. This
+# feature does not require LaTeX or TikzPictures.jl to be installed.
+
+import Catlab.Graphics: TikZ
+
+A, B, = Ob(FreeSymmetricMonoidalCategory, :A, :B)
+f, g = Hom(:f, A, B), Hom(:g, B, A)
+
+pic = to_tikz(f⋅g)
+TikZ.pprint(pic)

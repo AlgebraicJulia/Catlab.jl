@@ -104,7 +104,7 @@ to_graphviz(compose(f,g),
 # as an SVG image. Sometimes it is convenient to perform this process manually,
 # to change the output format or further customize the generated dot file.
 
-# To generate a dot file, use Catlab's pretty-printer. Note that this does not
+# To generate a dot file, use the builtin pretty-printer. This feature does not
 # require Graphviz to be installed.
 
 using Catlab.Graphics: Graphviz
