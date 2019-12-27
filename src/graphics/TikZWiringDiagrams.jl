@@ -12,7 +12,8 @@ using ...Syntax: GATExpr, show_latex
 using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
 using ..WiringDiagramLayouts
 using ..WiringDiagramLayouts: AbstractVector2D, Vector2D, BoxLayout, BoxShape,
-  RectangleShape, CircleShape, JunctionShape, NoShape, position, normal
+  RectangleShape, CircleShape, JunctionShape, NoShape,
+  position, normal, tangent, wire_points
 import ..TikZ
 
 # Data types
@@ -56,23 +57,11 @@ end
 
 function layout_to_tikz(diagram::WiringDiagram, opts::TikZOptions)
   name(v::Int) = box_id(diagram, [v])
-  stmts = TikZ.Statement[
+  TikZ.Statement[
     tikz_node(diagram, opts, name=name(input_id(diagram)), style="outer box");
-    [ tikz_node(box(diagram, v), opts, name=name(v)) for v in box_ids(diagram) ]
+    [ tikz_node(box(diagram, v), opts, name=name(v)) for v in box_ids(diagram) ];
+    [ tikz_wire(diagram, wire, opts) for wire in wires(diagram) ];
   ]
-  for wire in wires(diagram)
-    src, src_angle = tikz_port(diagram, wire.source)
-    tgt, tgt_angle = tikz_port(diagram, wire.target)
-    push!(stmts, TikZ.Edge(
-      src,
-      TikZ.PathOperation("to"; props=[
-        TikZ.Property("out", string(src_angle)),
-        TikZ.Property("in", string(tgt_angle)),
-      ]),
-      tgt,
-    ))
-  end
-  stmts
 end
 
 """ Make TikZ node for a box.
@@ -93,7 +82,30 @@ function tikz_node(layout::BoxLayout, opts::TikZOptions;
     content=content)
 end
 
-""" Make TikZ location and angle for a port.
+""" Make a TikZ edge/path for a wire.
+"""
+function tikz_wire(diagram::WiringDiagram, wire::Wire, opts::TikZOptions)::TikZ.Edge
+  src, src_angle = tikz_port(diagram, wire.source)
+  tgt, tgt_angle = tikz_port(diagram, wire.target)
+  exprs, prev_angle = TikZ.PathExpression[ src ], src_angle
+  for point in wire_points(wire)
+    v = tangent(point)
+    push!(exprs, TikZ.PathOperation("to"; props=[
+      TikZ.Property("out", string(prev_angle)),
+      TikZ.Property("in", string(tikz_angle(-v))),
+    ]))
+    push!(exprs, tikz_coordinate(position(point)))
+    prev_angle = tikz_angle(v)
+  end
+  push!(exprs, TikZ.PathOperation("to"; props=[
+    TikZ.Property("out", string(prev_angle)),
+    TikZ.Property("in", string(tgt_angle)),
+  ]))
+  push!(exprs, tgt)
+  TikZ.Edge(exprs...)
+end
+
+""" Make TikZ coordinate and angle for a port.
 """
 function tikz_port(diagram::WiringDiagram, port::Port)
   name = box_id(diagram, [port.box])
@@ -118,12 +130,12 @@ function tikz_port(diagram::WiringDiagram, port::Port)
     ("center", (x,y))
   end
   
-  location = if x == 0 && y == 0
+  coord = if x == 0 && y == 0
     "$name.$anchor"
   else
     "\$($name.$anchor)+($(x)em,$(y)em)\$"
   end
-  (location, normal_angle)
+  (TikZ.NodeCoordinate(coord), normal_angle)
 end
 
 function tikz_label(x, opts::TikZOptions)
