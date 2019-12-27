@@ -63,11 +63,13 @@ function layout_to_tikz(diagram::WiringDiagram, opts::TikZOptions)
   for wire in wires(diagram)
     src, src_angle = tikz_port(diagram, wire.source)
     tgt, tgt_angle = tikz_port(diagram, wire.target)
-    push!(stmts, TikZ.Edge(src, tgt, op=
+    push!(stmts, TikZ.Edge(
+      src,
       TikZ.PathOperation("to"; props=[
         TikZ.Property("out", string(src_angle)),
         TikZ.Property("in", string(tgt_angle)),
-      ])
+      ]),
+      tgt,
     ))
   end
   stmts

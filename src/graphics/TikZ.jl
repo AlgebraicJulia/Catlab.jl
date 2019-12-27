@@ -16,8 +16,8 @@ The AST is adapted from the (also incomplete) BNF grammar for TikZ in
 """
 module TikZ
 export Expression, Statement, GraphStatement, Coordinate, Property,
-  PathOperation, Picture, Scope, Node, Edge, EdgeNode, Graph, GraphScope,
-  GraphNode, GraphEdge, MatrixNode, pprint
+  PathOperation, Picture, Scope, Node, NodeCoordinate, Edge, EdgeNode,
+  Graph, GraphScope, GraphNode, GraphEdge, MatrixNode, pprint
 
 using Compat
 using AutoHashEquals
@@ -27,14 +27,19 @@ using AutoHashEquals
 
 abstract type Expression end
 abstract type Statement <: Expression end
+abstract type PathExpression <: Expression end
 abstract type GraphStatement <: Expression end
 
-@auto_hash_equals struct Coordinate <: Expression
+@auto_hash_equals struct Coordinate <: PathExpression
   x::String
   y::String
   
   Coordinate(x::String, y::String) = new(x, y)
   Coordinate(x::Number, y::Number) = new(string(x), string(y))
+end
+
+@auto_hash_equals struct NodeCoordinate <: PathExpression
+  name::String
 end
 
 @auto_hash_equals struct Property <: Expression
@@ -44,7 +49,7 @@ end
   Property(key::String, value=nothing) = new(key, value)
 end
 
-@auto_hash_equals struct PathOperation <: Expression
+@auto_hash_equals struct PathOperation <: PathExpression
   op::String
   props::Vector{Property}
   
@@ -76,7 +81,7 @@ end
     new(name, props, coord, content)
 end
 
-@auto_hash_equals struct EdgeNode <: Expression
+@auto_hash_equals struct EdgeNode <: PathExpression
   props::Vector{Property}
   content::Union{String,Nothing}
   
@@ -84,15 +89,11 @@ end
 end
 
 @auto_hash_equals struct Edge <: Statement
-  src::String
-  tgt::String
-  op::PathOperation
+  exprs::Vector{PathExpression}
   props::Vector{Property}
-  node::Union{EdgeNode,Nothing}
   
-  Edge(src::String, tgt::String;
-       op=PathOperation("to"), props=Property[], node=nothing) =
-    new(src, tgt, op, props, node)
+  Edge(args...; props=Property[]) =
+    new([arg isa String ? NodeCoordinate(arg) : arg for arg in args], props)
 end
 
 @auto_hash_equals struct Graph <: Statement
@@ -186,13 +187,11 @@ function pprint(io::IO, edge::Edge, n::Int)
   indent(io, n)
   print(io, "\\draw")
   pprint(io, edge.props)
-  print(io, " ($(edge.src)) ")
-  pprint(io, edge.op)
-  if !isnothing(edge.node)
+  for expr in edge.exprs
     print(io, " ")
-    pprint(io, edge.node)
+    pprint(io, expr)
   end
-  print(io, " ($(edge.tgt));")
+  print(io, ";")
 end
 
 function pprint(io::IO, node::EdgeNode, n::Int)
@@ -272,6 +271,10 @@ end
 
 function pprint(io::IO, coord::Coordinate, n::Int)
   print(io, "($(coord.x),$(coord.y))")
+end
+
+function pprint(io::IO, node::NodeCoordinate, n::Int)
+  print(io, "($(node.name))")
 end
 
 function pprint(io::IO, op::PathOperation, n::Int)
