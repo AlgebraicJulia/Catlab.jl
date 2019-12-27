@@ -1,7 +1,7 @@
-This is LuaTeX, Version 1.0.4 (TeX Live 2017/Debian)  (format=lualatex 2019.12.26)  26 DEC 2019 18:07
+This is LuaTeX, Version 1.0.4 (TeX Live 2017/Debian)  (format=lualatex 2019.12.27)  27 DEC 2019 05:50
  system commands enabled.
-**./jl_igDkiB/tikzpicture.tex
-(./jl_igDkiB/tikzpicture.tex
+**./jl_ULT4id/tikzpicture.tex
+(./jl_ULT4id/tikzpicture.tex
 LaTeX2e <2017-04-15>
 Lua module: luaotfload-main 2017/01/29 2.80001 OpenType layout system.
 Lua module: lualibs 2017-02-01 2.5 ConTeXt Lua standard libraries.
@@ -35,7 +35,7 @@ Inserting `luaotfload.aux.set_capheight' at position 3 in `luaotfload.patch_font
 '.
 Inserting `luaotfload.rewrite_fontname' at position 4 in `luaotfload.patch_font'
 .
-luaotfload | main : initialization completed in 0.112 seconds
+luaotfload | main : initialization completed in 0.155 seconds
 Babel <3.18> and hyphenation patterns for 1 language(s) loaded.
 (/usr/share/texlive/texmf-dist/tex/latex/standalone/standalone.cls
 Document Class: standalone 2015/07/15 v1.2 Class to compile TeX sub-files standa
@@ -527,32 +527,30 @@ LaTeX Font Info:    Try loading font information for U+msb on input line 11.
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
-)(save: /home/runner/.texlive2017/texmf-var/luatex-cache/generic/fonts/otl/lmrom
-an12-regular.lua)(save: /home/runner/.texlive2017/texmf-var/luatex-cache/generic
-/fonts/otl/lmroman12-regular.luc)
+)
 ! Undefined control sequence.
 \sa@placebox ->\newpage \global \pdfpagewidth 
                                               =\wd \sa@box \global \pdfpageh...
-l.20 \end{tikzpicture}
+l.12 \end{tikzpicture}
                     
 ? 
 ! Emergency stop.
 \sa@placebox ->\newpage \global \pdfpagewidth 
                                               =\wd \sa@box \global \pdfpageh...
-l.20 \end{tikzpicture}
+l.12 \end{tikzpicture}
                     
 End of file on the terminal!
 
 
 
 Here is how much of LuaTeX's memory you used:
- 13853 strings out of 494480
- 100000,383344 words of node,token memory allocated 3261 words of node memory still in use:
-   53 hlist, 1 rule, 1 dir, 12 math, 129 glue, 2 kern, 5 glyph, 246 attribute, 4
-5 glue_spec, 246 attribute_list, 2 if_stack, 3 write, 2 save_pos, 144 pdf_litera
-l, 5 pdf_colorstack nodes
-   avail lists: 2:3,3:1,5:19,7:2,8:4
- 17411 multiletter control sequences out of 65536+600000
- 34 fonts using 1971655 bytes
- 62i,12n,67p,407b,1420s stack positions out of 5000i,500n,10000p,200000b,100000s
+ 13798 strings out of 494480
+ 100000,383344 words of node,token memory allocated 1237 words of node memory still in use:
+   18 hlist, 1 rule, 1 dir, 2 math, 45 glue, 1 kern, 1 glyph, 73 attribute, 45 g
+lue_spec, 73 attribute_list, 2 if_stack, 1 write, 38 pdf_literal, 5 pdf_colorsta
+ck nodes
+   avail lists: 2:3,3:1,5:11,7:2,8:1
+ 17357 multiletter control sequences out of 65536+600000
+ 33 fonts using 1839967 bytes
+ 62i,7n,67p,407b,563s stack positions out of 5000i,500n,10000p,200000b,100000s
 !  ==> Fatal error occurred, no output PDF file produced!
