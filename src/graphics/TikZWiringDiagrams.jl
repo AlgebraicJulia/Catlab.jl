@@ -22,7 +22,9 @@ import ..TikZ
 """ Internal data type for configurable options of Compose.jl wiring diagrams.
 """
 @with_kw_noshow struct TikZOptions
+  arrowtip::Union{String,Nothing} = nothing
   math_mode::Bool = true
+  picture_props::Vector{TikZ.Property}=TikZ.Property[]
 end
 
 # Wiring diagrams
@@ -30,47 +32,53 @@ end
 
 """ Draw a wiring diagram in TikZ.
 """
-function to_tikz(args...;
-    arrowtip::Union{String,Nothing}=nothing,
-    picture_props::Vector{TikZ.Property}=TikZ.Property[], kw...)
+function to_tikz(args...; kw...)
   layout_kw = filter(p -> first(p) ∉ fieldnames(TikZOptions), kw)
   diagram = layout_diagram(args...; layout_kw...)
   
   tikz_kw = filter(p -> first(p) ∈ fieldnames(TikZOptions), kw)
-  stmts = layout_to_tikz(diagram; tikz_kw...)
-  props = [ picture_props;
+  layout_to_tikz(diagram; tikz_kw...)
+end
+
+""" Draw a wiring diagram in TikZ using the given layout.
+"""
+function layout_to_tikz(diagram::WiringDiagram; kw...)::TikZ.Picture
+  layout_to_tikz(diagram, TikZOptions(; kw...))
+end
+
+function layout_to_tikz(diagram::WiringDiagram, opts::TikZOptions)
+  stmts = tikz_box(diagram, Int[], opts)
+  props = [ opts.picture_props;
     [ TikZ.Property("x","1em"), TikZ.Property("y","1em") ];
     [ TikZ.Property("$name/.style", props) for (name, props) in tikz_styles ];
   ]
-  if !isnothing(arrowtip)
+  if !isnothing(opts.arrowtip)
     push!(props, TikZ.Property("decoration", 
       "{markings, mark=at position 0.5 with {\\arrow{$arrowtip}}}"))
   end
   TikZ.Picture(stmts...; props=props)
 end
 
-""" Draw a wiring diagram in TikZ using the given layout.
+""" Make TikZ node for a box.
 """
-function layout_to_tikz(diagram::WiringDiagram; kw...)::Vector{<:TikZ.Statement}
-  layout_to_tikz(diagram, TikZOptions(; kw...))
-end
-
-function layout_to_tikz(diagram::WiringDiagram, opts::TikZOptions)
-  name(v::Int) = box_id(diagram, [v])
+function tikz_box(diagram::WiringDiagram, vpath::Vector{Int}, opts::TikZOptions)
   TikZ.Statement[
-    tikz_node(diagram, opts, name=name(input_id(diagram)), style="outer box");
-    [ tikz_node(box(diagram, v), opts, name=name(v)) for v in box_ids(diagram) ];
+    tikz_node(diagram.value, opts, name=box_id(vpath), style="outer box");
+    reduce(vcat, [ tikz_box(box(diagram, v), [vpath; v], opts)
+                   for v in box_ids(diagram) ], init=[]);
     [ tikz_wire(diagram, wire, opts) for wire in wires(diagram) ];
   ]
 end
 
-""" Make TikZ node for a box.
-"""
-function tikz_node(box::AbstractBox, opts::TikZOptions; kw...)
-  tikz_node(box.value::BoxLayout, opts; kw...)
+function tikz_box(box::AbstractBox, vpath::Vector{Int}, opts::TikZOptions)
+  TikZ.Statement[
+    tikz_node(box.value::BoxLayout, opts; name=box_id(vpath))
+  ]
 end
+
 function tikz_node(layout::BoxLayout, opts::TikZOptions;
-    name::Union{String,Nothing}=nothing, style::Union{String,Nothing}=nothing)
+    name::Union{String,Nothing}=nothing,
+    style::Union{String,Nothing}=nothing)::TikZ.Node
   if isnothing(style)
     style = tikz_shapes[layout.shape]
   end
