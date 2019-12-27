@@ -41,19 +41,22 @@ const PathOp = PathOperation
   "\\draw (f) -- (g) -- (h);"
 
 # Picture statement
-@test spprint(
-Picture(
-  Node("f"),
-  Node("g"),
-  Edge("f",PathOp("to"),"g")
-)) == """
+@test spprint(Picture(Node("f"), Node("g"), Edge("f",PathOp("to"),"g"))) == """
 \\begin{tikzpicture}
   \\node (f) {};
   \\node (g) {};
   \\draw (f) to (g);
 \\end{tikzpicture}"""
 
-@test spprint(Picture(Node("f");props=[Property("node distance","1cm")])) == """
+@test spprint(Picture(Edge("f",PathOp("--"),"g"; props=[Property(">-Stealth")]),
+  libraries=["arrows.meta"])) == """
+\\usetikzlibrary{arrows.meta}
+\\begin{tikzpicture}
+  \\draw[>-Stealth] (f) -- (g);
+\\end{tikzpicture}"""
+
+@test spprint(Picture(Node("f");
+  props=[Property("node distance","1cm")])) == """
 \\begin{tikzpicture}[node distance=1cm]
   \\node (f) {};
 \\end{tikzpicture}"""

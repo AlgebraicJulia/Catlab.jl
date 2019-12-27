@@ -24,7 +24,8 @@ import ..TikZ
 @with_kw_noshow struct TikZOptions
   arrowtip::Union{String,Nothing} = nothing
   math_mode::Bool = true
-  picture_props::Vector{TikZ.Property}=TikZ.Property[]
+  picture_props::Vector{TikZ.Property} = TikZ.Property[]
+  libraries::Vector{String} = String[]
 end
 
 # Wiring diagrams
@@ -52,11 +53,13 @@ function layout_to_tikz(diagram::WiringDiagram, opts::TikZOptions)
     [ TikZ.Property("x","1em"), TikZ.Property("y","1em") ];
     [ TikZ.Property("$name/.style", props) for (name, props) in tikz_styles ];
   ]
+  libraries = [ opts.libraries; "calc" ]
   if !isnothing(opts.arrowtip)
     push!(props, TikZ.Property("decoration", 
       "{markings, mark=at position 0.5 with {\\arrow{$arrowtip}}}"))
+    append!(libraries, ["arrows.meta", "decorations.markings"])
   end
-  TikZ.Picture(stmts...; props=props)
+  TikZ.Picture(stmts...; props=props, libraries=unique!(libraries))
 end
 
 """ Make TikZ node for a box.

@@ -59,8 +59,10 @@ end
 @auto_hash_equals struct Picture <: Expression
   stmts::Vector{Statement}
   props::Vector{Property}
+  libraries::Vector{String}
   
-  Picture(stmts::Vararg{Statement}; props=Property[]) = new([stmts...], props)
+  Picture(stmts::Vararg{Statement}; props=Property[], libraries=String[]) =
+    new([stmts...], props, libraries)
 end
 
 @auto_hash_equals struct Scope <: Statement
@@ -146,6 +148,10 @@ pprint(expr::Expression; kw...) = pprint(stdout, expr; kw...)
 pprint(io::IO, expr::Expression; kw...) = pprint(io, expr, 0; kw...)
 
 function pprint(io::IO, pic::Picture, n::Int)
+  for library in pic.libraries
+    indent(io, n)
+    println(io, "\\usetikzlibrary{$library}")
+  end
   indent(io, n)
   print(io, "\\begin{tikzpicture}")
   pprint(io, pic.props)
