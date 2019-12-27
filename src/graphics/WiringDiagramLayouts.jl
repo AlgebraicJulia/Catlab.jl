@@ -324,9 +324,12 @@ end
 function layout_circular_ports(port_kind::PortKind, port_values::Vector,
                                radius::Real, opts::LayoutOptions; pad::Bool=true)
   n = length(port_values)
-  θ1, θ2 = is_horizontal(opts.orientation) ? (π/2, -π/2) : (-π, 0)
+  port_dir = svector(opts, port_sign(port_kind, opts.orientation), 0)
+  θ1, θ2 = if port_dir == SVector(1,0); (π/2, -π/2)
+    elseif port_dir == SVector(0,1); (-π, 0)
+    elseif port_dir == SVector(-1,0); (π/2, 3π/2)
+    elseif port_dir == SVector(0,-1); (0, π) end
   θs = collect(pad ? range(θ1,θ2,length=n+2)[2:n+1] : range(θ1,θ2,length=n))
-  θs = port_sign(port_kind, opts.orientation) == -1 ? reverse(θs) : θs
   dirs = [ SVector(cos(θ),-sin(θ)) for θ in θs ] # positive y-axis downwards
   PortLayout[ PortLayout(value, radius * dir, dir)
               for (value, dir) in zip(port_values, dirs) ]
@@ -338,6 +341,19 @@ function layout_ports!(diagram::WiringDiagram, opts::LayoutOptions)
   diagram.output_ports = layout_linear_ports(
     OutputPort, output_ports(diagram), size(diagram), opts)
   diagram
+end
+
+function position(diagram::WiringDiagram, port::Port)
+  pos = position(port_value(diagram, port))
+  if !(port.box in (input_id(diagram), output_id(diagram)))
+    pos += position(box(diagram, port.box))
+  end
+  pos
+end
+
+function normal(diagram::WiringDiagram, port::Port)
+  sgn = port.box in (input_id(diagram), output_id(diagram)) ? -1 : +1
+  sgn * normal(port_value(diagram, port))
 end
 
 # Wire layout

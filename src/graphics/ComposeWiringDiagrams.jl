@@ -1,7 +1,7 @@
 """ Draw wiring diagrams using Compose.jl.
 """
 module ComposeWiringDiagrams
-export ComposePicture, to_composejl, to_composejl_context
+export ComposePicture, to_composejl, layout_to_composejl
 
 using LinearAlgebra: dot
 using Parameters
@@ -56,20 +56,21 @@ end
 """
 function to_composejl(args...;
     base_unit::Compose.Measure = 5*C.mm, kw...)::ComposePicture
-  compose_kw = filter(p -> first(p) ∈ fieldnames(ComposeOptions), kw)
   layout_kw = filter(p -> first(p) ∉ fieldnames(ComposeOptions), kw)
   diagram = layout_diagram(args...; layout_kw...)
-  context = to_composejl_context(diagram; compose_kw...)
+  
+  compose_kw = filter(p -> first(p) ∈ fieldnames(ComposeOptions), kw)
+  context = layout_to_composejl(diagram; compose_kw...)
   ComposePicture(context, (base_unit .* size(diagram))...)
 end
 
 """ Draw a wiring diagram in Compose.jl using the given layout.
 """
-function to_composejl_context(diagram::WiringDiagram; kw...)::Compose.Context
-  to_composejl_context(diagram, ComposeOptions(; kw...))
+function layout_to_composejl(diagram::WiringDiagram; kw...)::Compose.Context
+  layout_to_composejl(diagram, ComposeOptions(; kw...))
 end
 
-function to_composejl_context(diagram::WiringDiagram, opts::ComposeOptions)
+function layout_to_composejl(diagram::WiringDiagram, opts::ComposeOptions)
   # The origin of the Compose.jl coordinate system is in the top-left corner,
   # while the origin of wiring diagram layout is at the diagram center, so we
   # need to translate the coordinates using the `UnitBox`.
@@ -77,39 +78,37 @@ function to_composejl_context(diagram::WiringDiagram, opts::ComposeOptions)
   C.compose(C.context(units=units, tag=:diagram),
     C.compose(C.context(tag=:boxes),
       map(boxes(diagram)) do box
-        to_composejl_context(box, opts)
+        layout_to_composejl(box, opts)
       end...
     ),
     C.compose(C.context(tag=:wires),
       map(wires(diagram)) do wire
-        to_composejl_context(diagram, wire, opts)
+        layout_to_composejl(diagram, wire, opts)
       end...
     ),
   )
 end
 
-function to_composejl_context(box::Box, opts::ComposeOptions)::Compose.Context
+function layout_to_composejl(box::Box, opts::ComposeOptions)::Compose.Context
   C.compose(C.context(lower_corner(box)..., size(box)...,
                       units=C.UnitBox(), tag=:box),
     opts.box_renderer(box.value.shape, box.value.value, opts)
   )
 end
 
-function to_composejl_context(d::WiringDiagram, wire::Wire, opts::ComposeOptions)
-  src, tgt = port_value(d, wire.source), port_value(d, wire.target)
-  src_point = position(parent_box(d, wire.source)) + position(src)
-  tgt_point = position(parent_box(d, wire.target)) + position(tgt)
-  
-  points = [ src_point ]
-  prev = (src_point, normal(src))
+function layout_to_composejl(diagram::WiringDiagram, wire::Wire, opts::ComposeOptions)
+  src, tgt = wire.source, wire.target
+  src_pos, tgt_pos = position(diagram, src), position(diagram, tgt)
+  points = [ src_pos ]
+  prev = (src_pos, normal(diagram, src))
   for point in wire_points(wire)
     p, v = position(point), tangent(point)
     append!(points, tangents_to_controls(prev..., -v, p))
     push!(points, p)
     prev = (p, v)
   end
-  append!(points, tangents_to_controls(prev..., normal(tgt), tgt_point))
-  push!(points, tgt_point)
+  append!(points, tangents_to_controls(prev..., normal(diagram, tgt), tgt_pos))
+  push!(points, tgt_pos)
   
   C.compose(C.context(tag=:wire),
     piecewise_curve(map(Tuple, points)),
@@ -123,10 +122,6 @@ function tangents_to_controls(p1::AbstractVector2D, v1::AbstractVector2D,
     v2::AbstractVector2D, p2::AbstractVector2D; weight::Float64=0.5)
   v = p2 - p1
   (p1 + weight * dot(v,v1) * v1, p2 - weight * dot(v,v2) * v2)
-end
-
-function parent_box(d::WiringDiagram, port::Port)
-  port.box in (input_id(d), output_id(d)) ? d : box(d, port.box)
 end
 
 """ Draw an atomic box in Compose.jl.

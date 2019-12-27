@@ -16,7 +16,7 @@ display(f_cos)
 #-
 f = compose(mcopy(R),otimes(f_sin,f_cos),mmerge(R))
 #-
-to_tikz(f; labels=true)
+to_tikz(f)
 #-
 compile_expr(f; args=[:x])
 #-

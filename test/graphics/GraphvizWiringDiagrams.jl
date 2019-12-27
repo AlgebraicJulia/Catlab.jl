@@ -6,12 +6,12 @@ using Catlab.Doctrines, Catlab.WiringDiagrams
 using Catlab.Graphics
 import Catlab.Graphics: Graphviz
 
-function stmts(graph::Graphviz.Graph, stmt_type::Type)
-  [ stmt for stmt in graph.stmts if stmt isa stmt_type ]
+function stmts(graph::Graphviz.Graph, type::Type)
+  [ stmt for stmt in graph.stmts if stmt isa type ]
 end
-function stmts(graph::Graphviz.Graph, stmt_type::Type, attr::Symbol)
+function stmts(graph::Graphviz.Graph, type::Type, attr::Symbol)
   [ stmt.attrs[attr] for stmt in graph.stmts
-    if stmt isa stmt_type && haskey(stmt.attrs, attr) ]
+    if stmt isa type && haskey(stmt.attrs, attr) ]
 end
 
 A, B = Ob(FreeBiproductCategory, :A, :B)

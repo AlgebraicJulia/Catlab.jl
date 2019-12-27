@@ -16,8 +16,8 @@ The AST is adapted from the (also incomplete) BNF grammar for TikZ in
 """
 module TikZ
 export Expression, Statement, GraphStatement, Coordinate, Property,
-  PathOperation, Picture, Scope, Node, Edge, EdgeNode, Graph, GraphScope,
-  GraphNode, GraphEdge, MatrixNode, pprint
+  PathOperation, Picture, Scope, Node, NodeCoordinate, Edge, EdgeNode,
+  Graph, GraphScope, GraphNode, GraphEdge, MatrixNode, pprint
 
 using Compat
 using AutoHashEquals
@@ -27,28 +27,33 @@ using AutoHashEquals
 
 abstract type Expression end
 abstract type Statement <: Expression end
+abstract type PathExpression <: Expression end
 abstract type GraphStatement <: Expression end
 
-@auto_hash_equals struct Coordinate <: Expression
-  x::AbstractString
-  y::AbstractString
+@auto_hash_equals struct Coordinate <: PathExpression
+  x::String
+  y::String
   
-  Coordinate(x::AbstractString, y::AbstractString) = new(x, y)
+  Coordinate(x::String, y::String) = new(x, y)
   Coordinate(x::Number, y::Number) = new(string(x), string(y))
 end
 
-@auto_hash_equals struct Property <: Expression
-  key::AbstractString
-  value::Union{AbstractString,Nothing}
-  
-  Property(key::AbstractString, value=nothing) = new(key, value)
+@auto_hash_equals struct NodeCoordinate <: PathExpression
+  name::String
 end
 
-@auto_hash_equals struct PathOperation <: Expression
-  op::AbstractString
+@auto_hash_equals struct Property <: Expression
+  key::String
+  value::Union{String,Vector{Property},Nothing}
+  
+  Property(key::String, value=nothing) = new(key, value)
+end
+
+@auto_hash_equals struct PathOperation <: PathExpression
+  op::String
   props::Vector{Property}
   
-  PathOperation(op::AbstractString; props=Property[]) = new(op, props)
+  PathOperation(op::String; props=Property[]) = new(op, props)
 end
 
 @auto_hash_equals struct Picture <: Expression
@@ -67,33 +72,28 @@ end
 
 @auto_hash_equals struct Node <: Statement
   # FIXME: Name is optional, according to TikZ manual.
-  name::AbstractString
+  name::String
   props::Vector{Property}
   coord::Union{Coordinate,Nothing}
-  # Allow nested pictures even though TikZ does not "officially" support them.
-  content::Union{AbstractString,Picture}
+  content::String
   
-  Node(name::AbstractString; props=Property[], coord=nothing, content="") =
+  Node(name::String; props=Property[], coord=nothing, content="") =
     new(name, props, coord, content)
 end
 
-@auto_hash_equals struct EdgeNode <: Expression
+@auto_hash_equals struct EdgeNode <: PathExpression
   props::Vector{Property}
-  content::Union{AbstractString,Nothing}
+  content::Union{String,Nothing}
   
   EdgeNode(; props=Property[], content=nothing) = new(props, content)
 end
 
 @auto_hash_equals struct Edge <: Statement
-  src::AbstractString
-  tgt::AbstractString
-  op::PathOperation
+  exprs::Vector{PathExpression}
   props::Vector{Property}
-  node::Union{EdgeNode,Nothing}
   
-  Edge(src::AbstractString, tgt::AbstractString;
-       op=PathOperation("to"), props=Property[], node=nothing) =
-    new(src, tgt, op, props, node)
+  Edge(args...; props=Property[]) =
+    new([arg isa String ? NodeCoordinate(arg) : arg for arg in args], props)
 end
 
 @auto_hash_equals struct Graph <: Statement
@@ -113,20 +113,20 @@ end
 end
 
 @auto_hash_equals struct GraphNode <: GraphStatement
-  name::AbstractString
+  name::String
   props::Vector{Property}
-  content::Union{AbstractString,Nothing}
+  content::Union{String,Nothing}
   
-  GraphNode(name::AbstractString; props=Property[], content=nothing) =
+  GraphNode(name::String; props=Property[], content=nothing) =
     new(name, props, content)
 end
 
 @auto_hash_equals struct GraphEdge <: GraphStatement
-  src::AbstractString
-  tgt::AbstractString
+  src::String
+  tgt::String
   props::Vector{Property}
   
-  GraphEdge(src::AbstractString, tgt::AbstractString; props=Property[]) =
+  GraphEdge(src::String, tgt::String; props=Property[]) =
     new(src, tgt, props)
 end
 
@@ -142,8 +142,8 @@ end
 
 """ Pretty-print the TikZ expression.
 """
-pprint(expr::Expression) = pprint(stdout, expr)
-pprint(io::IO, expr::Expression) = pprint(io, expr, 0)
+pprint(expr::Expression; kw...) = pprint(stdout, expr; kw...)
+pprint(io::IO, expr::Expression; kw...) = pprint(io, expr, 0; kw...)
 
 function pprint(io::IO, pic::Picture, n::Int)
   indent(io, n)
@@ -180,29 +180,18 @@ function pprint(io::IO, node::Node, n::Int)
     print(io, " at ")
     pprint(io, node.coord)
   end
-  if isa(node.content, Picture)
-    println(io, " {")
-    pprint(io, node.content, n+2)
-    println(io)
-    indent(io, n)
-    print(io, "}")
-  else
-    print(io, " {$(node.content)}")
-  end
-  print(io, ";")
+  print(io, " {$(node.content)};")
 end
 
 function pprint(io::IO, edge::Edge, n::Int)
   indent(io, n)
   print(io, "\\draw")
   pprint(io, edge.props)
-  print(io, " ($(edge.src)) ")
-  pprint(io, edge.op)
-  if !isnothing(edge.node)
+  for expr in edge.exprs
     print(io, " ")
-    pprint(io, edge.node)
+    pprint(io, expr)
   end
-  print(io, " ($(edge.tgt));")
+  print(io, ";")
 end
 
 function pprint(io::IO, node::EdgeNode, n::Int)
@@ -284,6 +273,10 @@ function pprint(io::IO, coord::Coordinate, n::Int)
   print(io, "($(coord.x),$(coord.y))")
 end
 
+function pprint(io::IO, node::NodeCoordinate, n::Int)
+  print(io, "($(node.name))")
+end
+
 function pprint(io::IO, op::PathOperation, n::Int)
   print(io, op.op)
   pprint(io, op.props)
@@ -293,18 +286,22 @@ function pprint(io::IO, prop::Property, n::Int)
   print(io, prop.key)
   if !isnothing(prop.value)
     print(io, "=")
-    print(io, prop.value)
+    if prop.value isa Vector{Property}
+      pprint(io, prop.value, nested=true)
+    else
+      print(io, prop.value)
+    end
   end
 end
 
-function pprint(io::IO, props::Vector{Property}, n::Int=0)
+function pprint(io::IO, props::Vector{Property}, n::Int=0; nested::Bool=false)
   if !isempty(props)
-    print(io, "[")
+    print(io, nested ? "{" : "[")
     for (i, prop) in enumerate(props)
       pprint(io, prop)
       if (i < length(props)) print(io, ",") end
     end
-    print(io, "]")
+    print(io, nested ? "}" : "]")
   end
 end
 

@@ -1,49 +1,46 @@
 module TestTikZWiringDiagrams
 
+using Compat
 using Test
 
 using Catlab.Doctrines, Catlab.WiringDiagrams
 using Catlab.Graphics
 import Catlab.Graphics: TikZ
-import Catlab.Graphics.TikZWiringDiagrams.Defaults
 
-# We can't test that the pictures look right, but we can test that they exist!
-is_pic(obj) = obj isa TikZ.Picture
-
-A, B = Ob(FreeCategory, :A, :B)
-f, g = Hom(:f, A, B), Hom(:g, B, A)
-@test is_pic(to_tikz(f))
-@test is_pic(to_tikz(compose(f,g)))
-@test is_pic(to_tikz(compose(id(A), f, id(B))))
-
-A, B = Ob(FreeDaggerCategory, :A, :B)
-f, g = Hom(:f, A, B), Hom(:g, B, A)
-@test is_pic(to_tikz(dagger(f)))
-@test is_pic(to_tikz(dagger(compose(f,g))))
+function stmts(expr::TikZ.Expression, type::Type)
+  children = hasfield(typeof(expr), :stmts) ? expr.stmts : []
+  vcat(expr isa type ? [expr] : [],
+       mapreduce(expr -> stmts(expr, type), vcat, children; init=[]))
+end
 
 A, B = Ob(FreeSymmetricMonoidalCategory, :A, :B)
 f, g = Hom(:f, A, B), Hom(:g, B, A)
-@test is_pic(to_tikz(otimes(f,g)))
-@test is_pic(to_tikz(compose(otimes(f,g),braid(B,A))))
+
+pic = to_tikz(f)
+@test length(stmts(pic, TikZ.Node)) == 2 # Includes outer box
+@test length(stmts(pic, TikZ.Edge)) == 2
+
+pic = to_tikz(id(A))
+@test length(stmts(pic, TikZ.Node)) == 1
+@test length(stmts(pic, TikZ.Edge)) == 1
+
+pic = to_tikz(compose(f,g))
+@test length(stmts(pic, TikZ.Node)) == 3
+@test length(stmts(pic, TikZ.Edge)) == 3
+
+pic = to_tikz(otimes(f,g))
+@test length(stmts(pic, TikZ.Node)) == 3
+@test length(stmts(pic, TikZ.Edge)) == 4
+
+pic = to_tikz(braid(A,B))
+@test length(stmts(pic, TikZ.Node)) == 1
+@test length(stmts(pic, TikZ.Edge)) == 2
 
 A, B = Ob(FreeBiproductCategory, :A, :B)
-f, g = Hom(:f, A, B), Hom(:g, B, A)
-@test is_pic(to_tikz(compose(mcopy(A), otimes(f,f), mmerge(B))))
-@test is_pic(to_tikz(compose(create(A), f, g, delete(A))))
 
-A, B = Ob(FreeCompactClosedCategory, :A, :B)
-f, g = Hom(:f, A, B), Hom(:g, B, A)
-h = Hom(:h, otimes(A,B), otimes(A,B))
-@test is_pic(to_tikz(dunit(A)))
-@test is_pic(to_tikz(dcounit(A)))
-trace = compose(
-  f,
-  otimes(dunit(A), id(B)),
-  otimes(id(dual(A)), h),
-  otimes(braid(dual(A),A), id(B)),
-  otimes(dcounit(A), id(B)),
-  g,
-)
-@test is_pic(to_tikz(trace))
+for expr in (mcopy(A), delete(A), mmerge(A), create(A))
+  pic = to_tikz(expr)
+  @test length(stmts(pic, TikZ.Node)) == 2
+end
 
 end

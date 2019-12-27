@@ -19,7 +19,6 @@ import ...Doctrines: MonoidalCategoryWithBidiagonals, ObExpr, HomExpr, Ob, Hom,
 import ...Meta: concat_expr
 import ...Syntax: show_latex, show_unicode
 using ...WiringDiagrams: WiringLayer
-import ...Graphics.TikZWiringDiagrams: box, wires, rect, junction_circle
 using ..JuliaPrograms
 import ..JuliaPrograms: compile, compile_expr, compile_block, genvar, genvars,
   to_function_expr, generator_expr, input_exprs
@@ -323,13 +322,5 @@ function show_unicode(io::IO, expr::AlgebraicNet.Hom{:linear}; kw...)
   value = first(expr)
   print(io, "linear{$value}")
 end
-
-box(name::String, f::AlgebraicNet.Hom{:generator}) = rect(name, f; rounded=false)
-box(name::String, f::AlgebraicNet.Hom{:linear}) =
-  rect(name, string(first(f)), wires(dom(f)), wires(codom(f)); rounded=true)
-box(name::String, f::AlgebraicNet.Hom{:mcopy}) = junction_circle(name, f; fill=false)
-box(name::String, f::AlgebraicNet.Hom{:delete}) = junction_circle(name, f; fill=false)
-box(name::String, f::AlgebraicNet.Hom{:mmerge}) = junction_circle(name, f; fill=true)
-box(name::String, f::AlgebraicNet.Hom{:create}) = junction_circle(name, f; fill=true)
 
 end

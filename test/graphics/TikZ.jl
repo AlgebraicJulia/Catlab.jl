@@ -8,6 +8,12 @@ using Catlab.Graphics.TikZ
 
 spprint(expr::Expression) = sprint(pprint, expr)
 
+# Properties
+@test spprint(Property("circle")) == "circle"
+@test spprint(Property("fill","red")) == "fill=red"
+@test spprint(Property("style",[Property("circle"),Property("fill","red")])) ==
+  "style={circle,fill=red}"
+
 # Node statement
 @test spprint(Node("f")) == "\\node (f) {};"
 @test spprint(Node("f"; props=[Property("circle")])) == 
@@ -20,20 +26,26 @@ spprint(expr::Expression) = sprint(pprint, expr)
   "\\node (f) at (1,0) {fun};"
 
 # Edge statement
-@test spprint(Edge("f","g")) == "\\draw (f) to (g);"
-@test spprint(Edge("f","g"; props=[Property("red")])) == "\\draw[red] (f) to (g);"
-@test spprint(Edge("f","g"; node=EdgeNode())) == "\\draw (f) to node (g);"
-@test spprint(Edge("f","g"; node=EdgeNode(;props=[Property("circle")],content="e"))) ==
+const PathOp = PathOperation
+@test spprint(Edge("f", PathOp("to"), "g")) == "\\draw (f) to (g);"
+@test spprint(Edge("f", PathOp("to"), "g"; props=[Property("red")])) ==
+  "\\draw[red] (f) to (g);"
+@test spprint(Edge("f", PathOp("to"), EdgeNode(), "g")) ==
+  "\\draw (f) to node (g);"
+@test spprint(Edge("f", PathOp("to"),
+              EdgeNode(; props=[Property("circle")], content="e"), "g")) ==
   "\\draw (f) to node[circle] {e} (g);"
-@test spprint(Edge("f","g"; op=PathOperation("to"; props=[Property("out","0")]))) ==
+@test spprint(Edge("f", PathOp("to"; props=[Property("out","0")]), "g")) ==
   "\\draw (f) to[out=0] (g);"
+@test spprint(Edge("f", PathOp("--"), "g", PathOp("--"), "h")) ==
+  "\\draw (f) -- (g) -- (h);"
 
 # Picture statement
 @test spprint(
 Picture(
   Node("f"),
   Node("g"),
-  Edge("f","g")
+  Edge("f",PathOp("to"),"g")
 )) == """
 \\begin{tikzpicture}
   \\node (f) {};
@@ -46,41 +58,12 @@ Picture(
   \\node (f) {};
 \\end{tikzpicture}"""
 
-@test spprint( # Nested pictures
-Picture(
-  Node("outer1"; content=
-    Picture(
-      Node("inner1"),
-      Node("inner2")
-    )),
-  Node("outer2"; content=
-    Picture(
-      Node("inner3"),
-      Node("inner4")
-    ));
-  props=[Property("remember picture")]
-)) == """
-\\begin{tikzpicture}[remember picture]
-  \\node (outer1) {
-    \\begin{tikzpicture}
-      \\node (inner1) {};
-      \\node (inner2) {};
-    \\end{tikzpicture}
-  };
-  \\node (outer2) {
-    \\begin{tikzpicture}
-      \\node (inner3) {};
-      \\node (inner4) {};
-    \\end{tikzpicture}
-  };
-\\end{tikzpicture}"""
-
 # Scope statement
 @test spprint(
 Picture(
   Scope(Node("f"); props=[Property("red")]),
   Scope(Node("g"); props=[Property("blue")]),
-  Edge("f","g")
+  Edge("f",PathOp("to"),"g")
 )) == """
 \\begin{tikzpicture}
   \\begin{scope}[red]
@@ -92,7 +75,7 @@ Picture(
   \\draw (f) to (g);
 \\end{tikzpicture}"""
 
-# Graph, GraphScope, GraphNode, GraphEdge statements
+# Graph statements
 @test spprint(
 Graph(
   GraphNode("f";content="fun"),
@@ -134,7 +117,7 @@ Graph(
 # Matrix statement
 @test spprint(
 MatrixNode(
-  [ [[Node("f")]]              [[Edge("g1","g2")]]; 
+  [ [[Node("f")]]              [[Edge("g1",PathOp("to"),"g2")]];
     [[Node("h1"),Node("h2")]]  [[Node("i1"),Node("i2")]] ];
   props=[Property("draw","red")]
 )) == """
