@@ -132,7 +132,7 @@ function tikz_port(diagram::WiringDiagram, port::Port)
   normal_angle = tikz_angle(normal(diagram, port))
   anchor, (x, y) = if shape == RectangleShape
     nx, ny = normal(port_value(diagram, port))
-    i = last(findmax((ny, nx, -ny, -nx)))
+    i = last(findmax((-ny, nx, ny, -nx)))
     anchor = ("north", "east", "south", "west")[i]
     (anchor, anchor in ("north", "south") ? (x,0) : (0,y))
   elseif shape in (CircleShape, JunctionShape)
