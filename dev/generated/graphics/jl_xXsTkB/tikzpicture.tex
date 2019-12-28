@@ -4,6 +4,6 @@
 \usetikzlibrary{calc}
 \begin{document}
 \begin{tikzpicture}[x=1em,y=1em,outer box/.style={draw=none},box/.style={rectangle,draw,solid,rounded corners},circular box/.style={circle,draw,solid},junction/.style={circle,draw,fill,inner sep=0},invisible/.style={draw=none,inner sep=0},wire/.style={draw}]
-\node[outer box,minimum width=6em,minimum height=4em] (root) at (0,0) {};\node[box,minimum size=2em] (n3) at (0,0) {$f$};\path[wire] (root.east) to[out=0,in=-180] (n3.west);\path[wire] (n3.east) to[out=0,in=180] (root.west);
+\node[outer box,minimum width=6em,minimum height=4em] (root) at (0,0) {};\node[box,minimum size=2em] (n3) at (0,0) {$f$};\path[wire] (root.west) to[out=0,in=-180] (n3.west);\path[wire] (n3.east) to[out=0,in=180] (root.east);
 \end{tikzpicture}
 \end{document}

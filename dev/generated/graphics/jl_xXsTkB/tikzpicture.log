@@ -1,7 +1,7 @@
-This is LuaTeX, Version 1.0.4 (TeX Live 2017/Debian)  (format=lualatex 2019.12.28)  28 DEC 2019 22:44
+This is LuaTeX, Version 1.0.4 (TeX Live 2017/Debian)  (format=lualatex 2019.12.28)  28 DEC 2019 22:56
  system commands enabled.
-**./jl_k01Zlb/tikzpicture.tex
-(./jl_k01Zlb/tikzpicture.tex
+**./jl_xXsTkB/tikzpicture.tex
+(./jl_xXsTkB/tikzpicture.tex
 LaTeX2e <2017-04-15>
 Lua module: luaotfload-main 2017/01/29 2.80001 OpenType layout system.
 Lua module: lualibs 2017-02-01 2.5 ConTeXt Lua standard libraries.
@@ -35,7 +35,7 @@ Inserting `luaotfload.aux.set_capheight' at position 3 in `luaotfload.patch_font
 '.
 Inserting `luaotfload.rewrite_fontname' at position 4 in `luaotfload.patch_font'
 .
-luaotfload | main : initialization completed in 0.152 seconds
+luaotfload | main : initialization completed in 0.117 seconds
 Babel <3.18> and hyphenation patterns for 1 language(s) loaded.
 (/usr/share/texlive/texmf-dist/tex/latex/standalone/standalone.cls
 Document Class: standalone 2015/07/15 v1.2 Class to compile TeX sub-files standa
@@ -504,13 +504,13 @@ End of file on the terminal!
 
 
 Here is how much of LuaTeX's memory you used:
- 12463 strings out of 494480
- 100000,319454 words of node,token memory allocated 1329 words of node memory still in use:
-   18 hlist, 1 rule, 1 dir, 2 math, 47 glue, 1 kern, 1 glyph, 85 attribute, 45 g
-lue_spec, 85 attribute_list, 2 if_stack, 1 write, 48 pdf_literal, 5 pdf_colorsta
+ 12465 strings out of 494480
+ 100000,319454 words of node,token memory allocated 1307 words of node memory still in use:
+   18 hlist, 1 rule, 1 dir, 2 math, 45 glue, 1 kern, 1 glyph, 83 attribute, 45 g
+lue_spec, 83 attribute_list, 2 if_stack, 1 write, 48 pdf_literal, 5 pdf_colorsta
 ck nodes
    avail lists: 2:3,3:1,5:11,7:2,8:1
- 16080 multiletter control sequences out of 65536+600000
+ 16082 multiletter control sequences out of 65536+600000
  33 fonts using 1839967 bytes
  62i,7n,56p,407b,615s stack positions out of 5000i,500n,10000p,200000b,100000s
 !  ==> Fatal error occurred, no output PDF file produced!
