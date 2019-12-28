@@ -80,7 +80,7 @@ to_tikz((dunit(A) ⊗ id(B)) ⋅ (id(A) ⊗ f ⊗ id(B)) ⋅ (id(A) ⊗ dcounit(
 # ## Custom styles
 
 # The visual appearance of wiring diagrams can be customized using the builtin
-# options or by entirely redefining the TikZ styles for the boxes and wires.
+# options or by redefining the TikZ styles for the boxes or wires.
 
 import Catlab.Graphics: TikZ
 

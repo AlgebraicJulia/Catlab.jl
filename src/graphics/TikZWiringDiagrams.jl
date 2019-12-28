@@ -24,6 +24,7 @@ import ..TikZ
 @with_kw_noshow struct TikZOptions
   arrowtip::Union{String,Nothing} = nothing
   math_mode::Bool = true
+  rounded_boxes::Bool = true
   props::Vector{TikZ.Property} = TikZ.Property[]
   styles::AbstractDict = Dict()
   libraries::Vector{String} = String[]
@@ -227,6 +228,9 @@ function tikz_styles(opts::TikZOptions)
       TikZ.Property("draw"),
     ],
   )
+  if opts.rounded_boxes
+    push!(styles["box"], TikZ.Property("rounded corners"))
+  end
   if !isnothing(opts.arrowtip)
     push!(styles["wire"],
       TikZ.Property("postaction", [ TikZ.Property("decorate") ]))
