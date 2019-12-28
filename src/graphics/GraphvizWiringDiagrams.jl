@@ -313,25 +313,31 @@ port_node_name(v::Int, port::Int) = string(box_id([v]), "p", port)
 
 Reference: https://www.graphviz.org/doc/info/attrs.html#k:rankdir
 """
-rank_dir(orientation::LayoutOrientation) = rank_dir(Val(orientation))
-rank_dir(::Val{TopToBottom}) = "TB"
-rank_dir(::Val{BottomToTop}) = "BT"
-rank_dir(::Val{LeftToRight}) = "LR"
-rank_dir(::Val{RightToLeft}) = "RL"
+rank_dir(orientation::LayoutOrientation) = rank_dirs[orientation]
+
+const rank_dirs = Dict{LayoutOrientation,String}(
+  TopToBottom => "TB",
+  BottomToTop => "BT",
+  LeftToRight => "LR",
+  RightToLeft => "RL",
+)
 
 """ Graphviz anchor for port.
 """
 function port_anchor(kind::PortKind, orientation::LayoutOrientation)
-  port_anchor(Val(kind), Val(orientation))
+  port_anchors[(kind, orientation)]
 end
-port_anchor(::Val{InputPort}, ::Val{TopToBottom}) = "n"
-port_anchor(::Val{OutputPort}, ::Val{TopToBottom}) = "s"
-port_anchor(::Val{InputPort}, ::Val{BottomToTop}) = "s"
-port_anchor(::Val{OutputPort}, ::Val{BottomToTop}) = "n"
-port_anchor(::Val{InputPort}, ::Val{LeftToRight}) = "w"
-port_anchor(::Val{OutputPort}, ::Val{LeftToRight}) = "e"
-port_anchor(::Val{InputPort}, ::Val{RightToLeft}) = "e"
-port_anchor(::Val{OutputPort}, ::Val{RightToLeft}) = "w"
+
+const port_anchors = Dict{Tuple{PortKind,LayoutOrientation},String}(
+  (InputPort, TopToBottom) => "n",
+  (OutputPort, TopToBottom) => "s",
+  (InputPort, BottomToTop) => "s",
+  (OutputPort, BottomToTop) => "n",
+  (InputPort, LeftToRight) => "w",
+  (OutputPort, LeftToRight) => "e",
+  (InputPort, RightToLeft) => "e",
+  (OutputPort, RightToLeft) => "w",
+)
 
 """ Create a label for the main content of a box.
 """
