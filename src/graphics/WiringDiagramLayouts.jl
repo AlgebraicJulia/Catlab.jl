@@ -33,9 +33,12 @@ is_horizontal(orient::LayoutOrientation) = orient in (LeftToRight, RightToLeft)
 is_vertical(orient::LayoutOrientation) = orient in (TopToBottom, BottomToTop)
 is_positive(orient::LayoutOrientation) = orient in (LeftToRight, TopToBottom)
 is_negative(orient::LayoutOrientation) = orient in (RightToLeft, BottomToTop)
+
 sign(orient::LayoutOrientation) = is_positive(orient) ? +1 : -1
 port_sign(kind::PortKind, orient::LayoutOrientation) =
   (kind == InputPort ? -1 : +1) * sign(orient)
+port_sign(d::WiringDiagram, port::Port, orient::LayoutOrientation) =
+  (port.box in (input_id(d), output_id(d)) ? -1 : +1) * port_sign(port.kind, orient)
 
 svector(orient::LayoutOrientation, first, second) =
   is_horizontal(orient) ? SVector(first, second) : SVector(second, first)

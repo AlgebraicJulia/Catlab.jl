@@ -6,14 +6,14 @@ export to_tikz, layout_to_tikz
 using Compat
 using DataStructures: OrderedDict
 using Parameters
-using StaticArrays: StaticVector, SVector
 
 using ...Syntax: GATExpr, show_latex
 using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
 using ..WiringDiagramLayouts
 using ..WiringDiagramLayouts: AbstractVector2D, Vector2D, BoxLayout, BoxShape,
   RectangleShape, CircleShape, JunctionShape, NoShape,
-  position, normal, tangent, wire_points
+  position, normal, tangent, port_sign, wire_points
+import ..WiringDiagramLayouts: svector
 import ..TikZ
 
 # Data types
@@ -22,6 +22,7 @@ import ..TikZ
 """ Internal data type for configurable options of Compose.jl wiring diagrams.
 """
 @with_kw_noshow struct TikZOptions
+  orientation::LayoutOrientation = LeftToRight
   math_mode::Bool = true
   arrowtip::Union{String,Nothing} = nothing
   arrowtip_pos::Float64 = 0.5 # ∈ [0,1]
@@ -31,17 +32,19 @@ import ..TikZ
   libraries::Vector{String} = String[]
 end
 
+svector(opts::TikZOptions, args...) = svector(opts.orientation, args...)
+
 # Wiring diagrams
 #################
 
 """ Draw a wiring diagram in TikZ.
 """
-function to_tikz(args...; kw...)
+function to_tikz(args...; orientation::LayoutOrientation=LeftToRight, kw...)
   layout_kw = filter(p -> first(p) ∉ fieldnames(TikZOptions), kw)
-  diagram = layout_diagram(args...; layout_kw...)
+  diagram = layout_diagram(args...; orientation=orientation, layout_kw...)
   
   tikz_kw = filter(p -> first(p) ∈ fieldnames(TikZOptions), kw)
-  layout_to_tikz(diagram; tikz_kw...)
+  layout_to_tikz(diagram; orientation=orientation, tikz_kw...)
 end
 
 """ Draw a wiring diagram in TikZ using the given layout.
@@ -102,8 +105,8 @@ end
 """ Make a TikZ edge/path for a wire.
 """
 function tikz_wire(diagram::WiringDiagram, wire::Wire, opts::TikZOptions)::TikZ.Edge
-  src, src_angle = tikz_port(diagram, wire.source)
-  tgt, tgt_angle = tikz_port(diagram, wire.target)
+  src, src_angle = tikz_port(diagram, wire.source, opts)
+  tgt, tgt_angle = tikz_port(diagram, wire.target, opts)
   exprs, prev_angle = TikZ.PathExpression[ src ], src_angle
   for point in wire_points(wire)
     v = tangent(point)
@@ -124,7 +127,7 @@ end
 
 """ Make TikZ coordinate and angle for a port.
 """
-function tikz_port(diagram::WiringDiagram, port::Port)
+function tikz_port(diagram::WiringDiagram, port::Port, opts::TikZOptions)
   name = box_id(diagram, [port.box])
   parent_box = port.box in (input_id(diagram), output_id(diagram)) ?
     diagram : box(diagram, port.box)
@@ -133,10 +136,9 @@ function tikz_port(diagram::WiringDiagram, port::Port)
   x, y = tikz_position(position(port_value(diagram, port)))
   normal_angle = tikz_angle(normal(diagram, port))
   anchor, (x, y) = if shape == RectangleShape
-    nx, ny = normal(port_value(diagram, port))
-    i = last(findmax((-ny, nx, ny, -nx)))
-    anchor = ("north", "east", "south", "west")[i]
-    (anchor, anchor in ("north", "south") ? (x,0) : (0,y))
+    port_dir = svector(opts, port_sign(diagram, port, opts.orientation), 0)
+    e2 = svector(opts, 0, 1)
+    (tikz_anchor(port_dir), (e2[1]*x, e2[2]*y))
   elseif shape in (CircleShape, JunctionShape)
     (normal_angle, (0,0))
   elseif shape == NoShape
@@ -195,6 +197,20 @@ function tikz_size(size::AbstractVector2D)::Vector{TikZ.Property}
       TikZ.Property("minimum height", "$(height)em") ]
   end
 end
+
+tikz_anchor(v::AbstractVector2D) = tikz_anchors[Tuple(v)]
+
+const tikz_anchors = Dict{Tuple{Int,Int},String}(
+  (0,0)   => "center",
+  (1,0)   => "east",
+  (-1,0)  => "west",
+  (0,1)   => "south",
+  (0,-1)  => "north",
+  (1,1)   => "south east",
+  (-1,1)  => "south west",
+  (1,-1)  => "north east",
+  (-1,-1) => "north west",
+)
 
 function tikz_number(x::Number; sigdigits=3)
   x = round(x, sigdigits=sigdigits)
