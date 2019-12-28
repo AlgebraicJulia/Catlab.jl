@@ -25,6 +25,7 @@ import ..TikZ
   arrowtip::Union{String,Nothing} = nothing
   math_mode::Bool = true
   props::Vector{TikZ.Property} = TikZ.Property[]
+  styles::AbstractDict = Dict()
   libraries::Vector{String} = String[]
 end
 
@@ -52,7 +53,7 @@ function layout_to_tikz(diagram::WiringDiagram, opts::TikZOptions)
   props = [
     [ TikZ.Property("x", "1em"), TikZ.Property("y", "1em") ];
     [ TikZ.Property("$name/.style", props)
-      for (name, props) in tikz_styles(opts) ];
+      for (name, props) in merge(tikz_styles(opts), opts.styles) ];
     opts.props;
   ]
   libraries = [ opts.libraries; "calc" ]

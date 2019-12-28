@@ -77,6 +77,23 @@ to_tikz(dcounit(A))
 
 to_tikz((dunit(A) ⊗ id(B)) ⋅ (id(A) ⊗ f ⊗ id(B)) ⋅ (id(A) ⊗ dcounit(B)))
 
+# ## Custom styles
+
+# The visual appearance of wiring diagrams can be customized using the builtin
+# options or by entirely redefining the TikZ styles for the boxes and wires.
+
+import Catlab.Graphics: TikZ
+
+A, B, = Ob(FreeSymmetricMonoidalCategory, :A, :B)
+f, g = Hom(:f, A, B), Hom(:g, B, A)
+
+pic = to_tikz(f⋅g, styles=Dict(
+  "box" => [
+    TikZ.Property("draw"),
+    TikZ.Property("fill", "{rgb,255: red,230; green,230; blue,250}"),
+  ],
+))
+
 # ## Output formats
 
 # The function `to_tikz` returns an object of type `TikZ.Picture`, representing
@@ -85,11 +102,6 @@ to_tikz((dunit(A) ⊗ id(B)) ⋅ (id(A) ⊗ f ⊗ id(B)) ⋅ (id(A) ⊗ dcounit(
 
 # To generate the LaTeX source code, use the builtin pretty-printer. This
 # feature does not require LaTeX or TikzPictures.jl to be installed.
-
-import Catlab.Graphics: TikZ
-
-A, B, = Ob(FreeSymmetricMonoidalCategory, :A, :B)
-f, g = Hom(:f, A, B), Hom(:g, B, A)
 
 pic = to_tikz(f⋅g)
 TikZ.pprint(pic)
