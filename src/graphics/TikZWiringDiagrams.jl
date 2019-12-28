@@ -24,7 +24,7 @@ import ..TikZ
 @with_kw_noshow struct TikZOptions
   arrowtip::Union{String,Nothing} = nothing
   math_mode::Bool = true
-  picture_props::Vector{TikZ.Property} = TikZ.Property[]
+  props::Vector{TikZ.Property} = TikZ.Property[]
   libraries::Vector{String} = String[]
 end
 
@@ -49,14 +49,16 @@ end
 
 function layout_to_tikz(diagram::WiringDiagram, opts::TikZOptions)
   stmts = tikz_box(diagram, Int[], opts)
-  props = [ opts.picture_props;
-    [ TikZ.Property("x","1em"), TikZ.Property("y","1em") ];
-    [ TikZ.Property("$name/.style", props) for (name, props) in tikz_styles ];
+  props = [
+    [ TikZ.Property("x", "1em"), TikZ.Property("y", "1em") ];
+    [ TikZ.Property("$name/.style", props)
+      for (name, props) in tikz_styles(opts) ];
+    opts.props;
   ]
   libraries = [ opts.libraries; "calc" ]
   if !isnothing(opts.arrowtip)
     push!(props, TikZ.Property("decoration", 
-      "{markings, mark=at position 0.5 with {\\arrow{$arrowtip}}}"))
+      "{markings, mark=at position 0.5 with {\\arrow{$(opts.arrowtip)}}}"))
     append!(libraries, ["arrows.meta", "decorations.markings"])
   end
   TikZ.Picture(stmts...; props=props, libraries=unique!(libraries))
@@ -113,7 +115,7 @@ function tikz_wire(diagram::WiringDiagram, wire::Wire, opts::TikZOptions)::TikZ.
     TikZ.Property("in", string(tgt_angle)),
   ]))
   push!(exprs, tgt)
-  TikZ.Edge(exprs...)
+  TikZ.Edge(exprs...; props=[TikZ.Property("wire")])
 end
 
 """ Make TikZ coordinate and angle for a port.
@@ -198,6 +200,39 @@ end
 # TikZ shapes and styles
 ########################
 
+function tikz_styles(opts::TikZOptions)
+  styles = OrderedDict(
+    "outer box" => [
+      TikZ.Property("draw", "none"),
+    ],
+    "box" => [
+      TikZ.Property("rectangle"),
+      TikZ.Property("draw"), TikZ.Property("solid"),
+    ],
+    "circular box" => [
+      TikZ.Property("circle"),
+      TikZ.Property("draw"), TikZ.Property("solid"),
+    ],
+    "junction" => [
+      TikZ.Property("circle"),
+      TikZ.Property("draw"), TikZ.Property("fill"),
+      TikZ.Property("inner sep", "0"),
+    ],
+    "invisible" => [
+      TikZ.Property("draw", "none"),
+      TikZ.Property("inner sep", "0"),
+    ],
+    "wire" => [
+      TikZ.Property("draw"),
+    ],
+  )
+  if !isnothing(opts.arrowtip)
+    push!(styles["wire"],
+      TikZ.Property("postaction", [ TikZ.Property("decorate") ]))
+  end
+  styles
+end
+
 const tikz_shapes = Dict(
   RectangleShape => "box",
   CircleShape => "circular box",
@@ -208,28 +243,5 @@ const tikz_content_shapes = Set([
   RectangleShape,
   CircleShape,
 ])
-
-const tikz_styles = OrderedDict(
-  "outer box" => [
-    TikZ.Property("draw", "none"),
-  ],
-  "box" => [
-    TikZ.Property("rectangle"),
-    TikZ.Property("draw"), TikZ.Property("solid"),
-  ],
-  "circular box" => [
-    TikZ.Property("circle"),
-    TikZ.Property("draw"), TikZ.Property("solid"),
-  ],
-  "junction" => [
-    TikZ.Property("circle"),
-    TikZ.Property("draw"), TikZ.Property("fill"),
-    TikZ.Property("inner sep", "0"),
-  ],
-  "invisible" => [
-    TikZ.Property("draw", "none"),
-    TikZ.Property("inner sep", "0"),
-  ],
-)
 
 end

@@ -27,32 +27,32 @@ spprint(expr::Expression) = sprint(pprint, expr)
 
 # Edge statement
 const PathOp = PathOperation
-@test spprint(Edge("f", PathOp("to"), "g")) == "\\draw (f) to (g);"
+@test spprint(Edge("f", PathOp("to"), "g")) == "\\path (f) to (g);"
 @test spprint(Edge("f", PathOp("to"), "g"; props=[Property("red")])) ==
-  "\\draw[red] (f) to (g);"
+  "\\path[red] (f) to (g);"
 @test spprint(Edge("f", PathOp("to"), EdgeNode(), "g")) ==
-  "\\draw (f) to node (g);"
+  "\\path (f) to node (g);"
 @test spprint(Edge("f", PathOp("to"),
               EdgeNode(; props=[Property("circle")], content="e"), "g")) ==
-  "\\draw (f) to node[circle] {e} (g);"
+  "\\path (f) to node[circle] {e} (g);"
 @test spprint(Edge("f", PathOp("to"; props=[Property("out","0")]), "g")) ==
-  "\\draw (f) to[out=0] (g);"
+  "\\path (f) to[out=0] (g);"
 @test spprint(Edge("f", PathOp("--"), "g", PathOp("--"), "h")) ==
-  "\\draw (f) -- (g) -- (h);"
+  "\\path (f) -- (g) -- (h);"
 
 # Picture statement
 @test spprint(Picture(Node("f"), Node("g"), Edge("f",PathOp("to"),"g"))) == """
 \\begin{tikzpicture}
   \\node (f) {};
   \\node (g) {};
-  \\draw (f) to (g);
+  \\path (f) to (g);
 \\end{tikzpicture}"""
 
 @test spprint(Picture(Edge("f",PathOp("--"),"g"; props=[Property(">-Stealth")]),
   libraries=["arrows.meta"])) == """
 \\usetikzlibrary{arrows.meta}
 \\begin{tikzpicture}
-  \\draw[>-Stealth] (f) -- (g);
+  \\path[>-Stealth] (f) -- (g);
 \\end{tikzpicture}"""
 
 @test spprint(Picture(Node("f");
@@ -75,7 +75,7 @@ Picture(
   \\begin{scope}[blue]
     \\node (g) {};
   \\end{scope}
-  \\draw (f) to (g);
+  \\path (f) to (g);
 \\end{tikzpicture}"""
 
 # Graph statements
@@ -126,7 +126,7 @@ MatrixNode(
 )) == """
 \\matrix[draw=red]{
   \\node (f) {}; &
-  \\draw (g1) to (g2); \\\\
+  \\path (g1) to (g2); \\\\
   \\node (h1) {};
   \\node (h2) {}; &
   \\node (i1) {};

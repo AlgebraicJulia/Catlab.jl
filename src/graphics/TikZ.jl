@@ -191,7 +191,7 @@ end
 
 function pprint(io::IO, edge::Edge, n::Int)
   indent(io, n)
-  print(io, "\\draw")
+  print(io, "\\path")
   pprint(io, edge.props)
   for expr in edge.exprs
     print(io, " ")
