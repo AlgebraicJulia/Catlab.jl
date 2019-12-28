@@ -18,9 +18,9 @@ Graphviz or other declarative diagram languages.
 module WiringDiagramCore
 export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
   PortKind, InputPort, OutputPort, input_ports, output_ports, port_value,
-  input_id, output_id, boxes, box_ids, nboxes, nwires, box, wires, has_wire,
-  graph, add_box!, add_boxes!, add_wire!, add_wires!, rem_box!, rem_boxes!,
-  rem_wire!, rem_wires!, validate_ports,
+  input_id, output_id, outer_ids, boxes, box_ids, nboxes, nwires, box, wires,
+  has_wire, graph, add_box!, add_boxes!, add_wire!, add_wires!, rem_box!,
+  rem_boxes!, rem_wire!, rem_wires!, validate_ports,
   all_neighbors, neighbors, outneighbors, inneighbors, in_wires, out_wires,
   singleton_diagram, induced_subdiagram, encapsulated_subdiagram,
   substitute, encapsulate, is_permuted_equal
@@ -218,6 +218,7 @@ end
 
 input_id(::WiringDiagram) = 1
 output_id(::WiringDiagram) = 2
+outer_ids(::WiringDiagram) = (1,2)
 
 """ Check equality of wiring diagrams.
 
@@ -292,8 +293,7 @@ boxes(f::WiringDiagram) = AbstractBox[ box(f,v) for v in box_ids(f) ]
 nboxes(f::WiringDiagram) = nv(graph(f)) - 2
 
 function box_ids(f::WiringDiagram)
-  skip = (input_id(f), output_id(f))
-  Int[ v for v in 1:nv(graph(f)) if !(v in skip) ]
+  Int[ v for v in 1:nv(graph(f)) if !(v in outer_ids(f)) ]
 end
 
 function wires(f::WiringDiagram, edge::Edge)
@@ -355,7 +355,7 @@ function add_boxes!(f::WiringDiagram, boxes)
 end
 
 function rem_box!(f::WiringDiagram, v::Int)
-  @assert !(v in (input_id(f), output_id(f)))
+  @assert !(v in outer_ids(f))
   rem_vertex!(f.graph, v)
 end
 

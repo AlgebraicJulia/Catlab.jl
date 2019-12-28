@@ -129,8 +129,7 @@ end
 """
 function tikz_port(diagram::WiringDiagram, port::Port, opts::TikZOptions)
   name = box_id(diagram, [port.box])
-  parent_box = port.box in (input_id(diagram), output_id(diagram)) ?
-    diagram : box(diagram, port.box)
+  parent_box = port.box in outer_ids(diagram) ? diagram : box(diagram, port.box)
   shape = parent_box.value.shape
   
   x, y = tikz_position(position(port_value(diagram, port)))

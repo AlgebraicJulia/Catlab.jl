@@ -38,7 +38,7 @@ sign(orient::LayoutOrientation) = is_positive(orient) ? +1 : -1
 port_sign(kind::PortKind, orient::LayoutOrientation) =
   (kind == InputPort ? -1 : +1) * sign(orient)
 port_sign(d::WiringDiagram, port::Port, orient::LayoutOrientation) =
-  (port.box in (input_id(d), output_id(d)) ? -1 : +1) * port_sign(port.kind, orient)
+  (port.box in outer_ids(d) ? -1 : +1) * port_sign(port.kind, orient)
 
 svector(orient::LayoutOrientation, first, second) =
   is_horizontal(orient) ? SVector(first, second) : SVector(second, first)
@@ -348,15 +348,14 @@ end
 
 function position(diagram::WiringDiagram, port::Port)
   pos = position(port_value(diagram, port))
-  if !(port.box in (input_id(diagram), output_id(diagram)))
+  if !(port.box in outer_ids(diagram))
     pos += position(box(diagram, port.box))
   end
   pos
 end
 
 function normal(diagram::WiringDiagram, port::Port)
-  sgn = port.box in (input_id(diagram), output_id(diagram)) ? -1 : +1
-  sgn * normal(port_value(diagram, port))
+  (port.box in outer_ids(diagram) ? -1 : +1) * normal(port_value(diagram, port))
 end
 
 # Wire layout

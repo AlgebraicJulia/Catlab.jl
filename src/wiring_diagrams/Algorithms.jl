@@ -20,8 +20,7 @@ Returns a list of box IDs, excluding the outer box's input and output IDs.
 """
 function topological_sort(d::WiringDiagram)::Vector{Int}
   vs = LightGraphs.topological_sort_by_dfs(graph(d))
-  outer_ids = (input_id(d), output_id(d))
-  filter(v -> v ∉ outer_ids, vs)
+  filter(v -> !(v in outer_ids(d)), vs)
 end
 
 # Normalization
