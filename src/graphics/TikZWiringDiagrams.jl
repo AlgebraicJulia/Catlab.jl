@@ -22,8 +22,9 @@ import ..TikZ
 """ Internal data type for configurable options of Compose.jl wiring diagrams.
 """
 @with_kw_noshow struct TikZOptions
-  arrowtip::Union{String,Nothing} = nothing
   math_mode::Bool = true
+  arrowtip::Union{String,Nothing} = nothing
+  arrowtip_pos::Float64 = 0.5 # ∈ [0,1]
   rounded_boxes::Bool = true
   props::Vector{TikZ.Property} = TikZ.Property[]
   styles::AbstractDict = Dict()
@@ -59,8 +60,9 @@ function layout_to_tikz(diagram::WiringDiagram, opts::TikZOptions)
   ]
   libraries = [ opts.libraries; "calc" ]
   if !isnothing(opts.arrowtip)
+    arrowtip, pos = opts.arrowtip, opts.arrowtip_pos
     push!(props, TikZ.Property("decoration", 
-      "{markings, mark=at position 0.5 with {\\arrow{$(opts.arrowtip)}}}"))
+      "{markings, mark=at position $pos with {\\arrow{$arrowtip}}}"))
     append!(libraries, ["arrows.meta", "decorations.markings"])
   end
   TikZ.Picture(stmts...; props=props, libraries=unique!(libraries))
