@@ -339,10 +339,11 @@ function layout_circular_ports(port_kind::PortKind, port_values::Vector,
 end
 
 function layout_ports!(diagram::WiringDiagram, opts::LayoutOptions)
+  original_value = x -> x isa PortLayout ? x.value : x # XXX: This is ugly.
   diagram.input_ports = layout_linear_ports(
-    InputPort, input_ports(diagram), size(diagram), opts)
+    InputPort, map(original_value, input_ports(diagram)), size(diagram), opts)
   diagram.output_ports = layout_linear_ports(
-    OutputPort, output_ports(diagram), size(diagram), opts)
+    OutputPort, map(original_value, output_ports(diagram)), size(diagram), opts)
   diagram
 end
 

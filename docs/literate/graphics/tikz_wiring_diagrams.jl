@@ -21,11 +21,11 @@ f, g = Hom(:f, A, B), Hom(:g, B, A);
 
 # To start, here are a few very simple examples.
 
-to_tikz(f)
+to_tikz(f, labels=true)
 #-
-to_tikz(f⋅g)
+to_tikz(f⋅g, labels=true)
 #-
-to_tikz(f⊗g)
+to_tikz(f⊗g, labels=true, orientation=TopToBottom)
 
 # Here is a more complex example, involving generators with compound domains and
 # codomains.
@@ -38,16 +38,17 @@ to_tikz((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))
 
 # Identities and braidings appear as wires.
 
-to_tikz(id(A))
+to_tikz(id(A), labels=true)
 #-
-to_tikz(braid(A,B))
+to_tikz(braid(A,B), labels=true, labels_pos=0.25)
 #-
 to_tikz(braid(A,B) ⋅ (g⊗f) ⋅ braid(A,B))
 
 # The isomorphism $A \otimes B \otimes C \to C \otimes B \otimes A$ induced by
 # the permutation $(3\ 2\ 1)$ is a composite of braidings and identities.
 
-to_tikz((braid(A,B) ⊗ id(C)) ⋅ (id(B) ⊗ braid(A,C) ⋅ (braid(B,C) ⊗ id(A))))
+to_tikz((braid(A,B) ⊗ id(C)) ⋅ (id(B) ⊗ braid(A,C) ⋅ (braid(B,C) ⊗ id(A))),
+        arrowtip="Stealth", arrowtip_pos=1.0, labels=true, labels_pos=0.0)
 
 # ### Biproduct category
 
