@@ -55,11 +55,11 @@ to_tikz((braid(A,B) ⊗ id(C)) ⋅ (id(B) ⊗ braid(A,C) ⋅ (braid(B,C) ⊗ id(
 A, B = Ob(FreeBiproductCategory, :A, :B)
 f = Hom(:f, A, B)
 
-to_tikz(mcopy(A))
+to_tikz(mcopy(A), labels=true)
 #-
-to_tikz(delete(A))
+to_tikz(delete(A), labels=true)
 #-
-to_tikz(mcopy(A)⋅(f⊗f)⋅mmerge(B))
+to_tikz(mcopy(A)⋅(f⊗f)⋅mmerge(B), labels=true)
 
 # ### Compact closed category
 

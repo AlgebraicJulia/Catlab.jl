@@ -121,8 +121,10 @@ function tikz_wire(diagram::WiringDiagram, wire::Wire, opts::TikZOptions)::TikZ.
   push!(exprs, tgt)
   
   # Use source port for wire label, following the Graphviz wiring diagrams.
-  src_value = port_value(diagram, wire.source).value
-  label = opts.labels ? tikz_label(src_value, opts) : nothing
+  src_layout = port_value(diagram, wire.source)
+  tgt_layout = port_value(diagram, wire.target)
+  label = opts.labels && src_layout.wire_labels && tgt_layout.wire_labels ?
+    tikz_label(src_layout.value, opts) : nothing
   props = [ TikZ.Property("wire", label) ]
   
   TikZ.Edge(exprs...; props=props)
@@ -222,32 +224,7 @@ end
 ########################
 
 function tikz_styles(opts::TikZOptions)
-  # Default styles.
-  styles = OrderedDict(
-    "outer box" => [
-      TikZ.Property("draw", "none"),
-    ],
-    "box" => [
-      TikZ.Property("rectangle"),
-      TikZ.Property("draw"), TikZ.Property("solid"),
-    ],
-    "circular box" => [
-      TikZ.Property("circle"),
-      TikZ.Property("draw"), TikZ.Property("solid"),
-    ],
-    "junction" => [
-      TikZ.Property("circle"),
-      TikZ.Property("draw"), TikZ.Property("fill"),
-      TikZ.Property("inner sep", "0"),
-    ],
-    "invisible" => [
-      TikZ.Property("draw", "none"),
-      TikZ.Property("inner sep", "0"),
-    ],
-    "wire" => [
-      TikZ.Property("draw"),
-    ],
-  )
+  styles = deepcopy(default_tikz_styles)
   libraries = String[]
   
   # Options for box styles.
@@ -277,6 +254,32 @@ function tikz_styles(opts::TikZOptions)
   
   (styles, libraries)
 end
+
+const default_tikz_styles = OrderedDict{String,Vector{TikZ.Property}}(
+  "outer box" => [
+    TikZ.Property("draw", "none"),
+  ],
+  "box" => [
+    TikZ.Property("rectangle"),
+    TikZ.Property("draw"), TikZ.Property("solid"),
+  ],
+  "circular box" => [
+    TikZ.Property("circle"),
+    TikZ.Property("draw"), TikZ.Property("solid"),
+  ],
+  "junction" => [
+    TikZ.Property("circle"),
+    TikZ.Property("draw"), TikZ.Property("fill"),
+    TikZ.Property("inner sep", "0"),
+  ],
+  "invisible" => [
+    TikZ.Property("draw", "none"),
+    TikZ.Property("inner sep", "0"),
+  ],
+  "wire" => [
+    TikZ.Property("draw"),
+  ],
+)
 
 const tikz_shapes = Dict(
   RectangleShape => "box",

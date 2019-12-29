@@ -89,10 +89,11 @@ contents_upper_corner(diagram::WiringDiagram) =
 
 """ Layout for port in a wiring diagram.
 """
-struct PortLayout{Value}
-  value::Value
-  position::Vector2D     # Position of port relative to box center.
-  normal::Vector2D       # Unit normal vector out of port.
+@with_kw_noshow struct PortLayout{Value}
+  value::Value = nothing
+  position::Vector2D = zeros(Vector2D) # Position relative to box center.
+  normal::Vector2D = zeros(Vector2D)   # Outward unit normal vector.
+  wire_labels::Bool = true             # Show labels for wires into/out of port?
 end
 
 position(layout::PortLayout) = layout.position
@@ -286,8 +287,10 @@ function layout_junction(value::Any, inputs::Vector, outputs::Vector,
   shape, radius = visible ? (JunctionShape, opts.junction_size) : (NoShape, 0)
   size = 2*SVector(radius, radius)
   box = Box(BoxLayout(value=value, shape=shape, size=size),
-            layout_circular_ports(InputPort, inputs, radius, opts; pad=pad),
-            layout_circular_ports(OutputPort, outputs, radius, opts; pad=pad))
+            layout_circular_ports(InputPort, inputs, radius, opts;
+                                  pad=pad, wire_labels=length(inputs) <= 1),
+            layout_circular_ports(OutputPort, outputs, radius, opts;
+                                  pad=pad, wire_labels=length(outputs) <= 1))
   size_to_fit!(singleton_diagram(box), opts)
 end
 
@@ -311,21 +314,23 @@ end
 Assumes the box is at least as large as `default_box_size()`.
 """
 function layout_linear_ports(port_kind::PortKind, port_values::Vector,
-                             box_size::AbstractVector2D, opts::LayoutOptions)
+                             box_size::AbstractVector2D, opts::LayoutOptions; kw...)
   normal_dir = svector(opts, float(port_sign(port_kind, opts.orientation)), 0)
   start = box_size/2 .* normal_dir
   offset = (opts.base_box_size + opts.parallel_pad) .* svector(opts, 0, 1)
   
   n = length(port_values)
   coeffs = range(-(n-1), n-1, step=2) / 2 # Always length n
-  PortLayout[ PortLayout(value, start + coeff .* offset, normal_dir)
-              for (value, coeff) in zip(port_values, coeffs) ]
+  positions = [ start + coeff .* offset for coeff in coeffs ]
+  PortLayout[ PortLayout(value=value, position=pos, normal=normal_dir; kw...)
+              for (value, pos) in zip(port_values, positions) ]
 end
 
 """ Lay out ports along a circular arc.
 """
 function layout_circular_ports(port_kind::PortKind, port_values::Vector,
-                               radius::Real, opts::LayoutOptions; pad::Bool=true)
+                               radius::Real, opts::LayoutOptions;
+                               pad::Bool=true, kw...)
   n = length(port_values)
   port_dir = svector(opts, port_sign(port_kind, opts.orientation), 0)
   θ1, θ2 = if port_dir == SVector(1,0); (π/2, -π/2)
@@ -334,7 +339,7 @@ function layout_circular_ports(port_kind::PortKind, port_values::Vector,
     elseif port_dir == SVector(0,-1); (0, π) end
   θs = collect(pad ? range(θ1,θ2,length=n+2)[2:n+1] : range(θ1,θ2,length=n))
   dirs = [ SVector(cos(θ),-sin(θ)) for θ in θs ] # positive y-axis downwards
-  PortLayout[ PortLayout(value, radius * dir, dir)
+  PortLayout[ PortLayout(value=value, position=radius*dir, normal=dir; kw...)
               for (value, dir) in zip(port_values, dirs) ]
 end
 
