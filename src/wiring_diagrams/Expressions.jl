@@ -73,6 +73,8 @@ function to_hom_expr(Ob::Type, Hom::Type, d::WiringDiagram)
   # Termination: process all remaining boxes (always at least one, and exactly
   # one if there is no creation or deletion).
   if nboxes(d) > 1
+    @assert all(wire.source.box == input_id(d) || wire.target.box == output_id(d)
+                for wire in wires(d))
     product = otimes(map(box_to_expr, box_ids(d)))
     d = encapsulate(d, box_ids(d), discard_boxes=true, value=product)
   end
