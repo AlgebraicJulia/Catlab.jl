@@ -88,6 +88,13 @@ m = Hom(:m, otimes(A,A), A)
 expr = compose(otimes(m,id(otimes(A,A))), otimes(m,id(A)), m)
 @test roundtrip(expr) == ((((m ⊗ id(A)) ⋅ m) ⊗ id(A)) ⋅ m)
 
+m, n = Hom(:m, A, otimes(B,B)), Hom(:n, otimes(B,B), C)
+expr = compose(otimes(m,id(B)), otimes(id(B),n))
+@test roundtrip(expr) == expr
+b = Hom(:b, B, B)
+expr = compose(otimes(m,id(B)), otimes(id(B),b,id(B)), otimes(id(B),n))
+@test_skip roundtrip(expr) == expr
+
 # Identities.
 @test roundtrip(id(A)) == id(A)
 @test roundtrip(otimes(id(A),id(B))) == id(otimes(A,B))
