@@ -48,8 +48,8 @@ end
 function to_hom_expr(Ob::Type, Hom::Type, d::WiringDiagram)
   box_to_expr(v::Int) = to_hom_expr(Ob, Hom, box(d,v))
   
-  # Step 0: Reduction: Add junction nodes to ensure any wiring layer between
-  # two boxes is a permutation.
+  # Initial reduction: Add junction nodes to ensure any wiring layer between two
+  # boxes is a permutation.
   d = add_junctions(d)
   
   # Dispatch special case: no boxes.
@@ -57,17 +57,21 @@ function to_hom_expr(Ob::Type, Hom::Type, d::WiringDiagram)
     return hom_expr_between(Ob, d, input_id(d), output_id(d))
   end
   
-  # Step 1. Transitive reduction.
-  d = transitive_reduction!(Ob, d)
-
-  # Step 2. Alternating series- and parallel-reduction.
-  n = nboxes(d)
-  while true
-    d = parallel_reduction(Ob, Hom, d)
-    d = series_reduction(Ob, Hom, d)
-    # Repeat until the box count stops decreasing.
-    nboxes(d) >= n && break
-    n = nboxes(d)
+  # Main loop: reduce until no further reduction is possible.
+  n, changed = nboxes(d), true
+  while changed
+    # Transtive reduction: can only increase box count.
+    d = transitive_reduction!(Ob, d)
+    n, changed = nboxes(d), false
+    while true
+      # Alternating series/parallel reduction: can only decrease box count.
+      d = series_reduction(Ob, Hom, d)
+      d = parallel_reduction(Ob, Hom, d)
+      d = input_parallel_reduction(Ob, Hom, d)
+      d = output_parallel_reduction(Ob, Hom, d)
+      nboxes(d) == n && break
+      n, changed = nboxes(d), true
+    end
   end
   
   # Termination: process all remaining boxes (always at least one, and exactly
@@ -105,15 +109,42 @@ end
 """ All possible parallel reductions of a wiring diagram.
 """
 function parallel_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
-  parallel = Vector{Int}[]
-  parallel_unsorted = find_parallel(graph(d), source=input_id(d), sink=output_id(d))
-  products = map(collect(parallel_unsorted)) do ((source, target), vs)
+  parallel = find_parallel(graph(d), skip=outer_ids(d))
+  encapsulate_parallel(Ob, Hom, d, [
+    (vs, [src], [tgt]) for ((src, tgt), vs) in parallel
+  ])
+end
+
+""" Input-sided parallel reduction of a wiring diagram.
+
+Because these reductions are not necessarily unique, only one is performed.
+"""
+function input_parallel_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
+  parallel = find_one_sided_parallel(graph(d), input=true, skip=outer_ids(d))
+  if isempty(parallel); return d end
+  src, vs = first(parallel)
+  encapsulate_parallel(Ob, Hom, d, [ (vs, [src], Int[]) ])
+end
+
+""" Output-sided parallel reduction of a wiring diagram.
+
+Because these reductions are not necessarily unique, only one is performed.
+"""
+function output_parallel_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
+  parallel = find_one_sided_parallel(graph(d), input=false, skip=outer_ids(d))
+  if isempty(parallel); return d end
+  tgt, vs = first(parallel)
+  encapsulate_parallel(Ob, Hom, d, [ (vs, Int[], [tgt]) ])
+end
+
+function encapsulate_parallel(Ob::Type, Hom::Type, d::WiringDiagram, parallel)
+  parallel = Vector{Int}[
+    vs[crossing_minimization_by_sort(d, vs, sources=sources, targets=targets)]
+    for (vs, sources, targets) in parallel
+  ]
+  products = map(parallel) do vs
     exprs = Hom[ to_hom_expr(Ob, Hom, box(d,v)) for v in vs ]
-    σ = crossing_minimization_by_sort(d, vs,
-      sources = isnothing(source) ? Int[] : [source],
-      targets = isnothing(target) ? Int[] : [target])
-    push!(parallel, vs[σ])
-    otimes(exprs[σ])
+    otimes(exprs)
   end
   encapsulate(d, parallel, discard_boxes=true, values=products)
 end
@@ -236,23 +267,35 @@ end
 ##################
 
 """ Find parallel compositions in a directed graph.
+
+This two-sided notion of parallel composition is standard in the literature on
+series-parallel digraphs.
 """
-function find_parallel(g::DiGraph; source=nothing, sink=nothing)
-  parallel = Dict{Pair{Union{Int,Nothing},Union{Int,Nothing}},Vector{Int}}()
+function find_parallel(g::DiGraph; skip=())
+  parallel = Dict{Pair{Int,Int},Vector{Int}}()
   for v in 1:nv(g)
-    if v in (source, sink); continue end
-    # Note: The definition in the literature on series-parallel digraphs
-    # requires that `length(v_in) == 1 && length(v_out) == 1`.
-    # Replacing the conjunction with a disjunction allows more general
-    # parallel reductions while still ensuring that no vertex is counted as
-    # parallel in more than one place.
+    if v in skip; continue end
     v_in, v_out = inneighbors(g,v), outneighbors(g,v)
-    if length(v_in) == 1 || length(v_out) == 1
-      for u in (isempty(v_in) ? [nothing] : v_in)
-        for w in (isempty(v_out) ? [nothing] : v_out)
-          push!(get!(parallel, u => w, Int[]), v)
-        end
-      end
+    if length(v_in) == 1 && length(v_out) == 1
+      u, w = first(v_in), first(v_out)
+      push!(get!(parallel, u => w, Int[]), v)
+    end
+  end
+  filter(pair -> length(last(pair)) > 1, parallel)
+end
+
+""" Find one-sided parallel compositions in a directed graph.
+
+Finds either input-sided or output-sided compositions. This weaker notion of
+parallel composition seems to be nonstandard.
+"""
+function find_one_sided_parallel(g::DiGraph; input::Bool=true, skip=())
+  parallel = Dict{Int,Vector{Int}}()
+  for v in 1:nv(g)
+    if v in skip; continue end
+    vs = input ? inneighbors(g,v) : outneighbors(g,v)
+    if length(vs) == 1
+      push!(get!(parallel, first(vs), Int[]), v)
     end
   end
   filter(pair -> length(last(pair)) > 1, parallel)

@@ -85,15 +85,15 @@ expr = compose(m,otimes(f,id(B)),n)
 @test roundtrip(expr) == expr
 
 m = Hom(:m, otimes(A,A), A)
-expr = compose(otimes(m,id(otimes(A,A))), otimes(m,id(A)), m)
-@test roundtrip(expr) == ((((m ⊗ id(A)) ⋅ m) ⊗ id(A)) ⋅ m)
+expr = compose(otimes(m,id(A),id(A)), otimes(m,id(A)), m)
+@test roundtrip(expr) == expr
 
 m, n = Hom(:m, A, otimes(B,B)), Hom(:n, otimes(B,B), C)
 expr = compose(otimes(m,id(B)), otimes(id(B),n))
 @test roundtrip(expr) == expr
 b = Hom(:b, B, B)
 expr = compose(otimes(m,id(B)), otimes(id(B),b,id(B)), otimes(id(B),n))
-@test_skip roundtrip(expr) == expr
+@test roundtrip(expr) == ((m ⋅ (id(B)⊗b)) ⊗ id(B)) ⋅ (id(B)⊗n)
 
 # Identities.
 @test roundtrip(id(A)) == id(A)
