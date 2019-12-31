@@ -144,7 +144,7 @@ add_wires!(d0, Pair[
 @test boxes(sub) == [ g, h ]
 d = substitute(d0, subv)
 @test nboxes(d) == 3
-@test Set(boxes(d)) == Set([ f, g, h ])
+@test boxes(d) == [f, g, h]
 box_map = Dict(box(d,v).value => v for v in box_ids(d))
 @test nwires(d) == 4
 @test Set(wires(d)) == Set(map(Wire, [
@@ -174,7 +174,7 @@ d = encapsulate(d0, [fv,gv])
 @test nwires(d) == 3
 sub = first(b for b in boxes(d) if isa(b, WiringDiagram))
 @test nboxes(sub) == 2
-@test Set(boxes(sub)) == Set([ f, g ])
+@test boxes(sub) == [f, g]
 box_map = Dict(box(sub,v).value => v for v in box_ids(sub))
 @test Set(wires(sub)) == Set(map(Wire, [
   (input_id(sub),1) => (box_map[:f],1),
@@ -183,7 +183,7 @@ box_map = Dict(box(sub,v).value => v for v in box_ids(sub))
 ]))
 
 d = encapsulate(d0, [fv,gv], discard_boxes=true, value=:e)
-@test Set(boxes(d)) == Set([ Box(:e, [:A], [:C]), h ])
+@test boxes(d) == [ Box(:e, [:A], [:C]), h ]
 box_map = Dict(box(d,v).value => v for v in box_ids(d))
 @test Set(wires(d)) == Set(map(Wire, [
   (input_id(d),1) => (box_map[:e],1),
