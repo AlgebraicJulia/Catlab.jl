@@ -93,7 +93,7 @@ expr = compose(otimes(m,id(B)), otimes(id(B),n))
 @test roundtrip(expr) == expr
 b = Hom(:b, B, B)
 expr = compose(otimes(m,id(B)), otimes(id(B),b,id(B)), otimes(id(B),n))
-@test roundtrip(expr) == ((m ⋅ (id(B)⊗b)) ⊗ id(B)) ⋅ (id(B)⊗n)
+@test roundtrip(expr) == expr
 
 # Identities.
 @test roundtrip(id(A)) == id(A)

@@ -117,24 +117,28 @@ end
 
 """ Input-sided parallel reduction of a wiring diagram.
 
-Because these reductions are not necessarily unique, only one is performed.
+Because these reductions are not necessarily unique, only one is performed,
+the first one in topological sort order.
 """
 function input_parallel_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
   parallel = find_one_sided_parallel(graph(d), input=true, skip=outer_ids(d))
   if isempty(parallel); return d end
-  src, vs = first(parallel)
-  encapsulate_parallel(Ob, Hom, d, [ (vs, [src], Int[]) ])
+  sub, vmap = induced_subgraph(graph(d), collect(keys(parallel)))
+  src = vmap[first(topological_sort_by_dfs(sub))]
+  encapsulate_parallel(Ob, Hom, d, [ (parallel[src], [src], Int[]) ])
 end
 
 """ Output-sided parallel reduction of a wiring diagram.
 
-Because these reductions are not necessarily unique, only one is performed.
+Because these reductions are not necessarily unique, only one is performed,
+the last one in topological sort order.
 """
 function output_parallel_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
   parallel = find_one_sided_parallel(graph(d), input=false, skip=outer_ids(d))
   if isempty(parallel); return d end
-  tgt, vs = first(parallel)
-  encapsulate_parallel(Ob, Hom, d, [ (vs, Int[], [tgt]) ])
+  sub, vmap = induced_subgraph(graph(d), collect(keys(parallel)))
+  tgt = vmap[last(topological_sort_by_dfs(sub))]
+  encapsulate_parallel(Ob, Hom, d, [ (parallel[tgt], Int[], [tgt]) ])
 end
 
 function encapsulate_parallel(Ob::Type, Hom::Type, d::WiringDiagram, parallel)
