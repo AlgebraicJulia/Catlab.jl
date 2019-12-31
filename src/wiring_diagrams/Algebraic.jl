@@ -29,7 +29,6 @@ import ..WiringDiagramCore: Box, WiringDiagram, Ports,
 function Box(expr::HomExpr{:generator})
   Box(first(expr), collect_values(dom(expr)), collect_values(codom(expr)))
 end
-add_box!(f::WiringDiagram, expr::HomExpr) = add_box!(f, Box(expr))
 
 function WiringDiagram(inputs::ObExpr, outputs::ObExpr)
   WiringDiagram(Ports(inputs), Ports(outputs))

@@ -33,13 +33,13 @@ d = to_wiring_diagram(f)
 @test normalize_delete!(d) == to_wiring_diagram(f)
 
 d = WiringDiagram(I,I)
-add_box!(d, f)
+add_box!(d, Box(f))
 @test normalize_delete!(d) == WiringDiagram(I,I)
 
 d = WiringDiagram(A, B)
-fv = add_box!(d, f)
-gv = add_box!(d, g)
-hv = add_box!(d, h)
+fv = add_box!(d, Box(f))
+gv = add_box!(d, Box(g))
+hv = add_box!(d, Box(h))
 add_wires!(d, [
   (input_id(d),1) => (fv,1),
   (fv,1) => (gv,1),
@@ -68,8 +68,8 @@ d = to_wiring_diagram(otimes(f,g))
 @test crossing_minimization_by_sort(d, box_ids(d), sources=[input_id(d)]) == [1,2]
 
 d = WiringDiagram(I,I)
-fv1, fv2 = add_box!(d, f), add_box!(d, f)
-gv1, gv2 = add_box!(d, g), add_box!(d, g)
+fv1, fv2 = add_box!(d, Box(f)), add_box!(d, Box(f))
+gv1, gv2 = add_box!(d, Box(g)), add_box!(d, Box(g))
 add_wires!(d, [ Wire((fv1,1) => (gv1,1)), Wire((fv2,1),(gv2,1)) ])
 @test crossing_minimization_by_sort(d, [gv1,gv2], sources=[fv1,fv2]) == [1,2]
 @test crossing_minimization_by_sort(d, [fv1,fv2], targets=[gv1,gv2]) == [1,2]
