@@ -1,7 +1,7 @@
 module TestWiringDiagramCore
 using Test
 
-using Catlab.Doctrines, Catlab.WiringDiagrams
+using Catlab.WiringDiagrams
 import Catlab.WiringDiagrams.WiringDiagramCore: validate_ports
 
 # For testing purposes, check equality of port symbols.
@@ -11,13 +11,13 @@ function validate_ports(source_port::Symbol, target_port::Symbol)
   end
 end
 
+A, B, C, D = [ Ports([sym]) for sym in [:A, :B, :C, :D] ]
+f = Box(:f, [:A], [:B])
+g = Box(:g, [:B], [:C])
+h = Box(:h, [:C], [:D])
+
 # Imperative interface
 ######################
-
-A, B, C, D = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C, :D)
-f = Hom(:f, A, B)
-g = Hom(:g, B, C)
-h = Hom(:h, C, D)
 
 # Operations on boxes
 d = WiringDiagram(A, C)
@@ -28,7 +28,7 @@ d = WiringDiagram(A, C)
 fv = add_box!(d, f)
 @test nboxes(d) == 1
 @test box(d, fv).value == :f
-@test box(d, fv) == Box(f)
+@test box(d, fv) == f
 rem_box!(d, fv)
 @test nboxes(d) == 0
 
@@ -37,10 +37,10 @@ gv = add_box!(d, g)
 hv = add_box!(d, h)
 @test nboxes(d) == 3
 @test [b.value for b in boxes(d)] == [:f,:g,:h]
-@test boxes(d) == [Box(f),Box(g),Box(h)]
+@test boxes(d) == [f,g,h]
 rem_boxes!(d, [fv,hv])
 @test nboxes(d) == 1
-@test boxes(d) == [Box(g)]
+@test boxes(d) == [g]
 
 # Operations on ports
 d = WiringDiagram(A, C)
@@ -124,7 +124,6 @@ add_wires!(sub, Pair[
 # Substitution
 ##############
 
-f, g, h = Hom(:f,A,B), Hom(:g,B,C), Hom(:h,C,D)
 sub = WiringDiagram(B,D)
 gv = add_box!(sub, g)
 hv = add_box!(sub, h)
@@ -141,11 +140,11 @@ add_wires!(d0, Pair[
   (fv,1) => (subv,1),
   (subv,1) => (output_id(d0),1),
 ])
-@test boxes(d0) == [ Box(f), sub ]
-@test boxes(sub) == [ Box(g), Box(h) ]
+@test boxes(d0) == [ f, sub ]
+@test boxes(sub) == [ g, h ]
 d = substitute(d0, subv)
 @test nboxes(d) == 3
-@test Set(boxes(d)) == Set([ Box(f), Box(g), Box(h) ])
+@test Set(boxes(d)) == Set([ f, g, h ])
 box_map = Dict(box(d,v).value => v for v in box_ids(d))
 @test nwires(d) == 4
 @test Set(wires(d)) == Set(map(Wire, [
@@ -175,7 +174,7 @@ d = encapsulate(d0, [fv,gv])
 @test nwires(d) == 3
 sub = first(b for b in boxes(d) if isa(b, WiringDiagram))
 @test nboxes(sub) == 2
-@test Set(boxes(sub)) == Set([ Box(f), Box(g) ])
+@test Set(boxes(sub)) == Set([ f, g ])
 box_map = Dict(box(sub,v).value => v for v in box_ids(sub))
 @test Set(wires(sub)) == Set(map(Wire, [
   (input_id(sub),1) => (box_map[:f],1),
@@ -184,7 +183,7 @@ box_map = Dict(box(sub,v).value => v for v in box_ids(sub))
 ]))
 
 d = encapsulate(d0, [fv,gv], discard_boxes=true, value=:e)
-@test Set(boxes(d)) == Set([ Box(:e, [:A], [:C]), Box(h) ])
+@test Set(boxes(d)) == Set([ Box(:e, [:A], [:C]), h ])
 box_map = Dict(box(d,v).value => v for v in box_ids(d))
 @test Set(wires(d)) == Set(map(Wire, [
   (input_id(d),1) => (box_map[:e],1),
