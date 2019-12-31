@@ -669,6 +669,9 @@ function encapsulate(d::WiringDiagram, vss::Vector{Vector{Int}};
   if any(isempty(vs) for vs in vss)
     error("Cannot encapsulate an empty set of boxes")
   end
+  if !allunique(reduce(vcat, vss))
+    error("Cannot encapsulate overlapping sets of boxes")
+  end
   if isnothing(values)
     values = repeat([nothing], length(vss))
   end
