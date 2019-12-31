@@ -147,11 +147,11 @@ function crossing_minimization_by_sort(d::WiringDiagram, vs::Vector{Int};
   source_coord = port_coords(d, sources, OutputPort)
   target_coord = port_coords(d, targets, InputPort)
   stats = map(vs) do v
-    source_coords = mapreduce(vcat, sources; init=[]) do source
-      [ source_coord(wire.source) for wire in wires(d, source, v) ]
+    source_coords = mapreduce(vcat, sources; init=Int[]) do source
+      Int[ source_coord(wire.source) for wire in wires(d, source, v) ]
     end
-    target_coords = mapreduce(vcat, targets; init=[]) do target
-      [ target_coord(wire.target) for wire in wires(d, v, target) ]
+    target_coords = mapreduce(vcat, targets; init=Int[]) do target
+      Int[ target_coord(wire.target) for wire in wires(d, v, target) ]
     end
     statistic(vcat(source_coords, target_coords))
   end
