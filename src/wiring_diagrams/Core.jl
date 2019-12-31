@@ -16,8 +16,8 @@ representation that can be serialized to and from GraphML or translated into
 Graphviz or other declarative diagram languages.
 """
 module WiringDiagramCore
-export AbstractBox, Box, WiringDiagram, Wire, Ports, PortValueError, Port,
-  PortKind, InputPort, OutputPort, input_ports, output_ports, port_value,
+export AbstractBox, Box, WiringDiagram, Wire, Ports, Port, PortKind,
+  InputPort, OutputPort, input_ports, output_ports, port_value,
   input_id, output_id, outer_ids, boxes, box_ids, nboxes, nwires, box, wires,
   has_wire, graph, add_box!, add_boxes!, add_wire!, add_wires!, rem_box!,
   rem_boxes!, rem_wire!, rem_wires!, validate_ports,
@@ -129,16 +129,6 @@ end
 end
 Base.eachindex(A::Ports) = eachindex(A.ports)
 Base.length(A::Ports) = length(A.ports)
-
-""" Error thrown when the source and target ports of a wire are incompatible.
-"""
-struct PortValueError <: Exception
-  source_port::Any
-  target_port::Any
-end
-function Base.showerror(io::IO, exc::PortValueError)
-  print(io, `Ports $(exc.source_port) and $(exc.target_port) are incompatible`)
-end
 
 """ Base type for any box (node) in a wiring diagram.
 
@@ -408,8 +398,7 @@ end
 
 """ Check compatibility of source and target ports.
 
-Throws a `PortValueError` when the ports are incompatible. The default
-implementation of this method is a no-op.
+The default implementation is a no-op.
 """
 function validate_ports(source_port, target_port) end
 

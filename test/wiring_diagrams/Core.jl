@@ -1,13 +1,13 @@
 module TestWiringDiagramCore
 using Test
 
-using Catlab.WiringDiagrams
+using Catlab.WiringDiagrams.WiringDiagramCore
 import Catlab.WiringDiagrams.WiringDiagramCore: validate_ports
 
 # For testing purposes, check equality of port symbols.
 function validate_ports(source_port::Symbol, target_port::Symbol)
   if source_port != target_port
-    throw(PortValueError(source_port, target_port))
+    error("Source port $source_port does not equal target port $target_port")
   end
 end
 
@@ -69,7 +69,7 @@ add_wire!(d, (gv,1) => (output_id(d),1))
 @test nwires(d) == 3
 @test has_wire(d, fv, gv)
 @test has_wire(d, (fv,1) => (gv,1))
-@test_throws PortValueError add_wire!(d, (gv,1) => (fv,1))
+@test_throws ErrorException add_wire!(d, (gv,1) => (fv,1))
 @test wires(d) == map(Wire, [
   (input_id(d),1) => (fv,1),
   (fv,1) => (gv,1),
