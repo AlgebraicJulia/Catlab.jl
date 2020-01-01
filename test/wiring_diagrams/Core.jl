@@ -11,10 +11,10 @@ function validate_ports(source_port::Symbol, target_port::Symbol)
   end
 end
 
-A, B, C, D = [ Ports([sym]) for sym in [:A, :B, :C, :D] ]
-f = Box(:f, [:A], [:B])
-g = Box(:g, [:B], [:C])
-h = Box(:h, [:C], [:D])
+A, B, C, D = [:A], [:B], [:C], [:D]
+f = Box(:f, A, B)
+g = Box(:g, B, C)
+h = Box(:h, C, D)
 
 # Imperative interface
 ######################
@@ -47,10 +47,10 @@ d = WiringDiagram(A, C)
 fv = add_box!(d, f)
 gv = add_box!(d, g)
 
-@test input_ports(d, fv) == [:A]
-@test output_ports(d, fv) == [:B]
-@test input_ports(d, output_id(d)) == [:C]
-@test output_ports(d, input_id(d)) == [:A]
+@test input_ports(d, fv) == A
+@test output_ports(d, fv) == B
+@test input_ports(d, output_id(d)) == C
+@test output_ports(d, input_id(d)) == A
 @test_throws ErrorException input_ports(d, input_id(d))
 @test_throws ErrorException output_ports(d, output_id(d))
 
@@ -183,7 +183,7 @@ box_map = Dict(box(sub,v).value => v for v in box_ids(sub))
 ]))
 
 d = encapsulate(d0, [fv,gv], discard_boxes=true, value=:e)
-@test boxes(d) == [ Box(:e, [:A], [:C]), h ]
+@test boxes(d) == [ Box(:e, A, C), h ]
 box_map = Dict(box(d,v).value => v for v in box_ids(d))
 @test Set(wires(d)) == Set(map(Wire, [
   (input_id(d),1) => (box_map[:e],1),

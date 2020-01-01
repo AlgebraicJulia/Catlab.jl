@@ -6,7 +6,7 @@ types and functions to represent diagonals, codiagonals, units, and counits in
 wiring diagrams as special *junction nodes*.
 """
 module AlgebraicWiringDiagrams
-export dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid, permute,
+export Ports, dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid, permute,
   mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dunit, dcounit, ocompose,
   Junction, add_junctions, add_junctions!, rem_junctions, merge_junctions
 
@@ -18,13 +18,29 @@ import ...Doctrines: ObExpr, HomExpr, MonoidalCategoryWithBidiagonals,
   dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid,
   mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dunit, dcounit
 using ..WiringDiagramCore, ..WiringLayers
-import ..WiringDiagramCore: Box, WiringDiagram, Ports,
-  input_ports, output_ports, add_box!
+import ..WiringDiagramCore: Box, WiringDiagram, input_ports, output_ports
 
 # Categorical interface
 #######################
 
+""" A list of ports.
+
+The objects in categories of wiring diagrams.
+"""
+@auto_hash_equals struct Ports{Value}
+  ports::Vector{Value}
+end
+Base.eachindex(A::Ports) = eachindex(A.ports)
+Base.length(A::Ports) = length(A.ports)
+
 # Constructors.
+
+function WiringDiagram(value::Any, inputs::Ports, outputs::Ports)
+  WiringDiagram(value, inputs.ports, outputs.ports)
+end
+function WiringDiagram(inputs::Ports, outputs::Ports)
+  WiringDiagram(inputs.ports, outputs.ports)
+end
 
 function Box(expr::HomExpr{:generator})
   Box(first(expr), collect_values(dom(expr)), collect_values(codom(expr)))

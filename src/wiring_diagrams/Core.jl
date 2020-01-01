@@ -1,4 +1,4 @@
-""" Generic data structure for wiring diagrams (aka, string diagrams).
+""" Generic data structures for wiring diagrams (aka, string diagrams).
 
 A (directed) wiring diagram consists of a collection of boxes with input and
 output ports connected by wires. A box can be atomic (possessing no internal
@@ -16,14 +16,14 @@ representation that can be serialized to and from GraphML or translated into
 Graphviz or other declarative diagram languages.
 """
 module WiringDiagramCore
-export AbstractBox, Box, WiringDiagram, Wire, Ports, Port, PortKind,
-  InputPort, OutputPort, input_ports, output_ports, port_value,
-  input_id, output_id, outer_ids, boxes, box_ids, nboxes, nwires, box, wires,
-  has_wire, graph, add_box!, add_boxes!, add_wire!, add_wires!, rem_box!,
-  rem_boxes!, rem_wire!, rem_wires!, validate_ports,
+export AbstractBox, Box, WiringDiagram, Wire, Port, PortKind,
+  InputPort, OutputPort, input_ports, output_ports, input_id, output_id,
+  outer_ids, boxes, box_ids, nboxes, nwires, box, wires, has_wire, graph,
+  add_box!, add_boxes!, add_wire!, add_wires!, rem_box!, rem_boxes!, rem_wire!,
+  rem_wires!, port_value, validate_ports, is_permuted_equal,
   all_neighbors, neighbors, outneighbors, inneighbors, in_wires, out_wires,
   singleton_diagram, induced_subdiagram, encapsulated_subdiagram,
-  substitute, encapsulate, is_permuted_equal
+  substitute, encapsulate
 
 using Compat
 using AutoHashEquals
@@ -122,14 +122,6 @@ function from_wire_data(wire::WireData, edge::Edge)
        from_port_data(wire.target, dst(edge)))
 end
 
-""" List of ports: object in the category of wiring diagrams.
-"""
-@auto_hash_equals struct Ports{Value}
-  ports::Vector{Value}
-end
-Base.eachindex(A::Ports) = eachindex(A.ports)
-Base.length(A::Ports) = length(A.ports)
-
 """ Base type for any box (node) in a wiring diagram.
 
 This type represents an arbitrary black box with inputs and outputs.
@@ -164,7 +156,7 @@ function Base.show(io::IO, box::Box)
   print(io, "])")
 end
 
-""" Wiring diagram: morphism in the category of wiring diagrams.
+""" A directed wiring diagram, aka a string diagram.
 
 The wiring diagram is implemented using the following internal data structures.
 A LightGraphs `DiGraph` stores the "skeleton" of the diagram: a simple directed
@@ -198,12 +190,6 @@ end
 
 function WiringDiagram(input_ports::Vector, output_ports::Vector)
   WiringDiagram(nothing, input_ports, output_ports)
-end
-function WiringDiagram(value::Any, inputs::Ports, outputs::Ports)
-  WiringDiagram(value, inputs.ports, outputs.ports)
-end
-function WiringDiagram(inputs::Ports, outputs::Ports)
-  WiringDiagram(inputs.ports, outputs.ports)
 end
 
 input_id(::WiringDiagram) = 1

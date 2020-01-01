@@ -1,7 +1,8 @@
 module TestAlgebraicWiringDiagrams
 using Test
 
-using Catlab.Doctrines, Catlab.WiringDiagrams
+using Catlab.Doctrines: Ob, Hom, FreeSymmetricMonoidalCategory
+using Catlab.WiringDiagrams
 
 # Categorical interface
 #######################
