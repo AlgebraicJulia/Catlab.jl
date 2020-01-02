@@ -30,16 +30,18 @@ The objects in categories of wiring diagrams.
 @auto_hash_equals struct Ports{Value}
   ports::Vector{Value}
 end
-Base.eachindex(A::Ports) = eachindex(A.ports)
+Base.iterate(A::Ports, args...) = iterate(A.ports, args...)
+Base.keys(A::Ports) = keys(A.ports)
 Base.length(A::Ports) = length(A.ports)
+Base.eltype(A::Ports{Value}) where Value = Value
 
 # Constructors.
 
 function WiringDiagram(value::Any, inputs::Ports, outputs::Ports)
-  WiringDiagram(value, inputs.ports, outputs.ports)
+  WiringDiagram(value, collect(ports), collect(outputs))
 end
 function WiringDiagram(inputs::Ports, outputs::Ports)
-  WiringDiagram(inputs.ports, outputs.ports)
+  WiringDiagram(collect(inputs), collect(outputs))
 end
 
 function Box(expr::HomExpr{:generator})
@@ -115,6 +117,8 @@ end
   create(A::Ports) = WiringDiagram(munit(Ports), A)
 end
 
+munit(::Type{Ports{Value}}) where Value = Ports(Value[])
+
 # Unbiased variants of braiding (permutation), copying, and merging.
 
 function permute(A::Ports, σ::Vector{Int}; inverse::Bool=false)
@@ -154,7 +158,7 @@ end
 function dunit(A::Ports)
   f = WiringDiagram(munit(Ports), otimes(A,A))
   n = length(A)
-  for (i, value) in enumerate(A.ports)
+  for (i, value) in enumerate(A)
     v = add_box!(f, Junction(value, 0, 2))
     add_wires!(f, ((v,1) => (output_id(f),i), (v,2) => (output_id(f),i+n)))
   end
@@ -164,7 +168,7 @@ end
 function dcounit(A::Ports)
   f = WiringDiagram(otimes(A,A), munit(Ports))
   n = length(A)
-  for (i, value) in enumerate(A.ports)
+  for (i, value) in enumerate(A)
     v = add_box!(f, Junction(value, 2, 0))
     add_wires!(f, ((input_id(f),i) => (v,1), (input_id(f),i+n) => (v,2)))
   end
