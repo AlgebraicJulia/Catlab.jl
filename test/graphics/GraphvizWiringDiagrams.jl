@@ -2,8 +2,7 @@ module TestGraphvizWiringDiagrams
 
 using Test
 
-using Catlab.Doctrines, Catlab.WiringDiagrams
-using Catlab.Graphics
+using Catlab.WiringDiagrams, Catlab.Graphics
 import Catlab.Graphics: Graphviz
 
 function stmts(graph::Graphviz.Graph, type::Type)
@@ -14,10 +13,8 @@ function stmts(graph::Graphviz.Graph, type::Type, attr::Symbol)
     if stmt isa type && haskey(stmt.attrs, attr) ]
 end
 
-A, B = Ob(FreeBiproductCategory, :A, :B)
-I = munit(FreeBiproductCategory.Ob)
-f = to_wiring_diagram(Hom(:f, A, B))
-g = to_wiring_diagram(Hom(:g, B, A))
+f = singleton_diagram(Box(:f, [:A], [:B]))
+g = singleton_diagram(Box(:g, [:B], [:A]))
 
 # Simple wiring diagrams, with default settings.
 graph = to_graphviz(f)
@@ -28,11 +25,11 @@ graph = to_graphviz(f)
 @test stmts(graph, Graphviz.Edge, :xlabel) == []
 @test length(stmts(graph, Graphviz.Subgraph)) == 2
 
-graph = to_graphviz(to_wiring_diagram(Hom(:h, I, A)))
+graph = to_graphviz(singleton_diagram(Box(:h, Symbol[], [:A])))
 @test stmts(graph, Graphviz.Node, :comment) == ["h"]
 @test length(stmts(graph, Graphviz.Subgraph)) == 1
 
-graph = to_graphviz(to_wiring_diagram(Hom(:h, I, I)))
+graph = to_graphviz(singleton_diagram(Box(:h, Symbol[], Symbol[])))
 @test stmts(graph, Graphviz.Node, :comment) == ["h"]
 @test length(stmts(graph, Graphviz.Subgraph)) == 0
 
@@ -46,7 +43,7 @@ for orientation in instances(LayoutOrientation)
 end
 
 # Junction nodes.
-graph = to_graphviz(add_junctions!(compose(f, mcopy(Ports(B)))))
+graph = to_graphviz(add_junctions!(compose(f, mcopy(Ports([:B])))))
 @test stmts(graph, Graphviz.Node, :comment) == ["f","junction"]
 
 # Edge labels.
