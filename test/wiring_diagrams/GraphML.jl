@@ -2,7 +2,6 @@ module TestGraphMLWiringDiagrams
 
 using Test
 using LightXML
-using Catlab.Doctrines
 using Catlab.WiringDiagrams
 
 # Round trip wiring diagrams with dictionary box and wire data.
@@ -31,9 +30,8 @@ function roundtrip_symbolic(f::WiringDiagram)
   parse_graphml(Symbol, Symbol, Nothing, xdoc)
 end
 
-A, B, C = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C)
-f = to_wiring_diagram(Hom(:f, A, B))
-g = to_wiring_diagram(Hom(:g, B, C))
+f = singleton_diagram(Box(:f, [:A], [:B]))
+g = singleton_diagram(Box(:g, [:B], [:C]))
 
 @test roundtrip_symbolic(f) == f
 @test roundtrip_symbolic(compose(f,g)) == compose(f,g)
@@ -41,13 +39,10 @@ g = to_wiring_diagram(Hom(:g, B, C))
 
 # Round trip nested, symbolic wiring diagrams.
 
-f = to_wiring_diagram(Hom(:f, A, B))
-diagram = WiringDiagram(:outer, [:A], [:B])
-fv = add_box!(diagram, f)
-add_wires!(diagram, [
-  Wire((input_id(diagram),1) => (fv,1)),
-  Wire((fv,1) => (output_id(diagram),1))
-])
-@test roundtrip_symbolic(diagram) == diagram
+inner = copy(f)
+inner.value = :inner
+outer = singleton_diagram(f)
+outer.value = :outer
+@test roundtrip_symbolic(outer) == outer
 
 end
