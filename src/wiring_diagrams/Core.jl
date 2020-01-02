@@ -169,28 +169,28 @@ The `DiGraph` is wrapped inside a `MetaDiGraph` to attach properties to the
 vertices and edges. For each edge, an edge property stores the list of wires
 between the source and target boxes.
 """
-mutable struct WiringDiagram <: AbstractBox
+mutable struct WiringDiagram{Theory} <: AbstractBox
   graph::MetaDiGraph
   value::Any
   input_ports::Vector
   output_ports::Vector
   
-  function WiringDiagram(value::Any, input_ports::Vector, output_ports::Vector)
+  function WiringDiagram{T}(value, inputs::Vector, outputs::Vector) where T
     graph = MetaDiGraph()
-    diagram = new(graph, value, input_ports, output_ports)
+    diagram = new{T}(graph, value, inputs, outputs)
     add_vertices!(graph, 2)
     return diagram
   end
-  function WiringDiagram(d::WiringDiagram)
+  function WiringDiagram(d::WiringDiagram{T}) where T
     # Copy constructor for shallow copy.
-    graph = copy(d.graph)
-    new(graph, d.value, d.input_ports, d.output_ports)
+    new{T}(copy(d.graph), d.value, d.input_ports, d.output_ports)
   end
 end
 
-function WiringDiagram(input_ports::Vector, output_ports::Vector)
-  WiringDiagram(nothing, input_ports, output_ports)
+function WiringDiagram{T}(inputs::Vector, outputs::Vector) where T
+  WiringDiagram{T}(nothing, inputs, outputs)
 end
+WiringDiagram(args...) = WiringDiagram{Any}(args...)
 
 input_id(::WiringDiagram) = 1
 output_id(::WiringDiagram) = 2
@@ -233,9 +233,13 @@ end
 
 Base.copy(diagram::WiringDiagram) = WiringDiagram(diagram)
 
-function Base.show(io::IO, diagram::WiringDiagram)
+function Base.show(io::IO, diagram::WiringDiagram{T}) where T
   sshowcompact = x -> sprint(show, x, context=:compact => true)
-  print(io, "WiringDiagram(")
+  print(io, "WiringDiagram")
+  if T != Any
+    print(io, "{$T}")
+  end
+  print(io, "(")
   if !isnothing(diagram.value)
     show(io, diagram.value)
     print(io, ", ")
@@ -478,21 +482,22 @@ end
 
 """ A wiring diagram with a single box connected to its outer ports.
 """
-function singleton_diagram(box::AbstractBox)
+function singleton_diagram(T::Type, box::AbstractBox)
   inputs, outputs = input_ports(box), output_ports(box)
-  d = WiringDiagram(inputs, outputs)
+  d = WiringDiagram{T}(inputs, outputs)
   v = add_box!(d, box)
   add_wires!(d, ((input_id(d),i) => (v,i) for i in eachindex(inputs)))
   add_wires!(d, ((v,i) => (output_id(d),i) for i in eachindex(outputs)))
   return d
 end
+singleton_diagram(box::AbstractBox) = singleton_diagram(Any, box)
 
 """ The wiring diagram induced by a subset of its boxes.
 
 See also `encapsulated_subdiagram`.
 """
-function induced_subdiagram(d::WiringDiagram, vs::Vector{Int})
-  sub = WiringDiagram(input_ports(d), output_ports(d))
+function induced_subdiagram(d::WiringDiagram{T}, vs::Vector{Int}) where T
+  sub = WiringDiagram{T}(input_ports(d), output_ports(d))
   vmap = Dict(input_id(d) => input_id(sub), output_id(d) => output_id(sub))
   for v in vs
     vmap[v] = add_box!(sub, box(d, v))
@@ -531,8 +536,8 @@ function substitute(d::WiringDiagram, v::Int, sub::WiringDiagram; kw...)
   substitute(d, [v], [sub]; kw...)
 end
 
-function substitute(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagram};
-                    merge_wire_values=default_merge_wire_values)
+function substitute(d::WiringDiagram{T}, vs::Vector{Int}, subs::Vector{<:WiringDiagram};
+                    merge_wire_values=default_merge_wire_values) where T
   # In outline, the algorithm is:
   #
   # 1. Create an empty wiring diagram.
@@ -546,7 +551,7 @@ function substitute(d::WiringDiagram, vs::Vector{Int}, subs::Vector{WiringDiagra
   # problem of *instantaneous wires*. Some authors ban instantaneous wires, but
   # we need them to represent identities, braidings, etc.
   @assert length(vs) == length(subs)
-  result = WiringDiagram(d.value, input_ports(d), output_ports(d))
+  result = WiringDiagram{T}(d.value, input_ports(d), output_ports(d))
   
   # Add boxes by interleaving, in the correct order, the non-substituted boxes
   # of the original diagram and the internal boxes of the substituted diagrams.
@@ -638,8 +643,8 @@ function encapsulate(d::WiringDiagram, vs::Vector{Int}; value=nothing, kw...)
   encapsulate(d, [vs]; values=[value], kw...)
 end
 
-function encapsulate(d::WiringDiagram, vss::Vector{Vector{Int}};
-    discard_boxes::Bool=false, make_box=Box, values=nothing)
+function encapsulate(d::WiringDiagram{T}, vss::Vector{Vector{Int}};
+    discard_boxes::Bool=false, make_box=Box, values=nothing) where T
   if isempty(vss); return d end
   if any(isempty(vs) for vs in vss)
     error("Cannot encapsulate an empty set of boxes")
@@ -650,7 +655,7 @@ function encapsulate(d::WiringDiagram, vss::Vector{Vector{Int}};
   if isnothing(values)
     values = repeat([nothing], length(vss))
   end
-  result = WiringDiagram(d.value, input_ports(d), output_ports(d))
+  result = WiringDiagram{T}(d.value, input_ports(d), output_ports(d))
   
   # Add boxes, both encapsulated and non-encapsulated, to new wiring diagram.
   encapsulated_representatives = Dict(
@@ -704,11 +709,11 @@ simplified into a single port of the encapsulating box.
 
 See also `induced_subdiagram`.
 """
-function encapsulated_subdiagram(d::WiringDiagram, vs::Vector{Int};
-    discard_boxes::Bool=false, make_box=Box, value=nothing)
+function encapsulated_subdiagram(d::WiringDiagram{T}, vs::Vector{Int};
+    discard_boxes::Bool=false, make_box=Box, value=nothing) where T
   # Add encapsulated box to new wiring diagram.
   inputs, outputs = [], []
-  result = discard_boxes ? nothing : WiringDiagram(value, inputs, outputs)
+  result = discard_boxes ? nothing : WiringDiagram{T}(value, inputs, outputs)
   vmap = if discard_boxes
     Dict(v => nothing for v in vs)
   else

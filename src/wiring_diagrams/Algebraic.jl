@@ -14,7 +14,7 @@ using AutoHashEquals
 using LightGraphs
 
 using ...GAT, ...Syntax
-import ...Doctrines: ObExpr, HomExpr, MonoidalCategoryWithBidiagonals,
+import ...Doctrines: SymmetricMonoidalCategory,
   dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid,
   mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dunit, dcounit
 using ..WiringDiagramCore, ..WiringLayers
@@ -23,56 +23,59 @@ import ..WiringDiagramCore: Box, WiringDiagram, input_ports, output_ports
 # Categorical interface
 #######################
 
+# Ports
+#------
+
 """ A list of ports.
 
 The objects in categories of wiring diagrams.
 """
-@auto_hash_equals struct Ports{Value}
+@auto_hash_equals struct Ports{Theory,Value}
   ports::Vector{Value}
+  Ports{T}(ports::Vector{V}) where {T,V} = new{T,V}(ports)
 end
+Ports(ports::Vector) = Ports{Any}(ports)
+
+# Iterator interface.
 Base.iterate(A::Ports, args...) = iterate(A.ports, args...)
 Base.keys(A::Ports) = keys(A.ports)
 Base.length(A::Ports) = length(A.ports)
-Base.eltype(A::Ports{Value}) where Value = Value
+Base.eltype(A::Ports{T,V}) where {T,V} = V
 
-# Constructors.
+Base.cat(A::Ports{T}, B::Ports{T}) where T = Ports{T}([A.ports; B.ports])
 
-function WiringDiagram(value::Any, inputs::Ports, outputs::Ports)
-  WiringDiagram(value, collect(ports), collect(outputs))
-end
-function WiringDiagram(inputs::Ports, outputs::Ports)
-  WiringDiagram(collect(inputs), collect(outputs))
-end
+Box(value, inputs::Ports, outputs::Ports) =
+  Box(value, collect(inputs), collect(outputs))
+Box(inputs::Ports, outputs::Ports) = Box(collect(inputs), collect(outputs))
 
-function Box(expr::HomExpr{:generator})
-  Box(first(expr), collect_values(dom(expr)), collect_values(codom(expr)))
-end
+WiringDiagram(value, inputs::Ports{T}, outputs::Ports{T}) where T =
+  WiringDiagram{T}(value, collect(inputs), collect(outputs))
 
-function WiringDiagram(inputs::ObExpr, outputs::ObExpr)
-  WiringDiagram(Ports(inputs), Ports(outputs))
-end
-Ports(expr::ObExpr) = Ports(collect_values(expr))
+WiringDiagram(inputs::Ports{T}, outputs::Ports{T}) where T =
+  WiringDiagram{T}(collect(inputs), collect(outputs))
 
-function collect_values(ob::ObExpr)::Vector
-  exprs = collect(ob)
-  @assert all(head(expr) == :generator for expr in exprs)
-  return map(first, exprs)
-end
+input_ports(::Type{Ports}, d::WiringDiagram{T}) where T = Ports{T}(input_ports(d))
+output_ports(::Type{Ports}, d::WiringDiagram{T}) where T = Ports{T}(output_ports(d))
 
-# Instances.
+# Symmetric monoidal category
+#----------------------------
 
-""" Wiring diagrams as a monoidal category with diagonals and codiagonals.
+""" Wiring diagrams as a symmetric monoidal category.
+
+Extra structure, such as copying or merging, can be added to wiring diagrams in
+different ways, but wiring diagrams always form a symmetric monoidal category in
+the same way.
 """
-@instance MonoidalCategoryWithBidiagonals(Ports, WiringDiagram) begin
-  dom(f::WiringDiagram) = Ports(f.input_ports)
-  codom(f::WiringDiagram) = Ports(f.output_ports)
-  
+@instance SymmetricMonoidalCategory(Ports, WiringDiagram) begin
+  dom(f::WiringDiagram) = input_ports(Ports, f)
+  codom(f::WiringDiagram) = output_ports(Ports, f)
+
   function id(A::Ports)
     f = WiringDiagram(A, A)
     add_wires!(f, ((input_id(f),i) => (output_id(f),i) for i in eachindex(A)))
     return f
   end
-  
+
   function compose(f::WiringDiagram, g::WiringDiagram; unsubstituted::Bool=false)
     if length(codom(f)) != length(dom(g))
       # Check only that f and g have the same number of ports.
@@ -87,10 +90,10 @@ end
     add_wires!(h, ((gv,i) => (output_id(h),i) for i in eachindex(codom(g))))
     unsubstituted ? h : substitute(h, [fv,gv])
   end
-  
-  otimes(A::Ports, B::Ports) = Ports([A.ports; B.ports])
+
+  otimes(A::Ports, B::Ports) = cat(A, B)
   munit(::Type{Ports}) = Ports([])
-  
+
   function otimes(f::WiringDiagram, g::WiringDiagram; unsubstituted::Bool=false)
     h = WiringDiagram(otimes(dom(f),dom(g)), otimes(codom(f),codom(g)))
     m, n = length(dom(f)), length(codom(f))
@@ -102,7 +105,7 @@ end
     add_wires!(h, (gv,i) => (output_id(h),i+n) for i in eachindex(codom(g)))
     unsubstituted ? h : substitute(h, [fv,gv])
   end
-  
+
   function braid(A::Ports, B::Ports)
     h = WiringDiagram(otimes(A,B), otimes(B,A))
     m, n = length(A), length(B)
@@ -110,16 +113,12 @@ end
     add_wires!(h, ((input_id(h),i+m) => (output_id(h),i) for i in 1:n))
     h
   end
-
-  mcopy(A::Ports) = mcopy(A, 2)
-  mmerge(A::Ports) = mmerge(A, 2)
-  delete(A::Ports) = WiringDiagram(A, munit(Ports))
-  create(A::Ports) = WiringDiagram(munit(Ports), A)
 end
 
-munit(::Type{Ports{Value}}) where Value = Ports(Value[])
+munit(::Type{Ports{T}}) where T = Ports{T}([])
+munit(::Type{Ports{T,V}}) where {T,V} = Ports{T}(V[])
 
-# Unbiased variants of braiding (permutation), copying, and merging.
+# Unbiased version of braiding (permutation).
 
 function permute(A::Ports, σ::Vector{Int}; inverse::Bool=false)
   @assert length(A) == length(σ)
@@ -133,6 +132,14 @@ function permute(A::Ports, σ::Vector{Int}; inverse::Bool=false)
   end
   return f
 end
+
+# Diagonals and codiagonals
+#--------------------------
+
+mcopy(A::Ports) = mcopy(A, 2)
+mmerge(A::Ports) = mmerge(A, 2)
+delete(A::Ports) = WiringDiagram(A, munit(typeof(A)))
+create(A::Ports) = WiringDiagram(munit(typeof(A)), A)
 
 function mcopy(A::Ports, n::Int)::WiringDiagram
   f = WiringDiagram(A, otimes([A for j in 1:n]))
@@ -156,7 +163,7 @@ end
 # FIXME: What about compact categories that are not self-dual?
 
 function dunit(A::Ports)
-  f = WiringDiagram(munit(Ports), otimes(A,A))
+  f = WiringDiagram(munit(typeof(A)), otimes(A,A))
   n = length(A)
   for (i, value) in enumerate(A)
     v = add_box!(f, Junction(value, 0, 2))
@@ -166,7 +173,7 @@ function dunit(A::Ports)
 end
 
 function dcounit(A::Ports)
-  f = WiringDiagram(otimes(A,A), munit(Ports))
+  f = WiringDiagram(otimes(A,A), munit(typeof(A)))
   n = length(A)
   for (i, value) in enumerate(A)
     v = add_box!(f, Junction(value, 2, 0))
@@ -186,7 +193,7 @@ Definitions 2.3 and 2.10).
 
 This operation is a simple wrapper around substitution (`substitute`).
 """
-function ocompose(f::WiringDiagram, gs::Vector{WiringDiagram})
+function ocompose(f::WiringDiagram, gs::Vector{<:WiringDiagram})
   @assert length(gs) == nboxes(f)
   substitute(f, box_ids(f), gs)
 end

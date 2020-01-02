@@ -1,7 +1,6 @@
 module TestAlgebraicWiringDiagrams
 using Test
 
-using Catlab.Doctrines: Ob, Hom, FreeSymmetricMonoidalCategory
 using Catlab.WiringDiagrams
 
 # Categorical interface
@@ -11,16 +10,16 @@ using Catlab.WiringDiagrams
 #---------
 
 # Generators
-A, B = Ob(FreeSymmetricMonoidalCategory, :A, :B)
-f = singleton_diagram(Box(Hom(:f,A,B)))
-g = singleton_diagram(Box(Hom(:g,B,A)))
+A, B = Ports([:A]), Ports([:B])
+f = singleton_diagram(Box(:f,A,B))
+g = singleton_diagram(Box(:g,B,A))
 @test nboxes(f) == 1
-@test boxes(f) == [ Box(Hom(:f,A,B)) ]
+@test boxes(f) == [ Box(:f,A,B) ]
 @test nwires(f) == 2
 
 # Composition
 @test nboxes(compose(f,g)) == 2
-@test boxes(compose(f,g)) == [ Box(Hom(:f,A,B)), Box(Hom(:g,B,A)) ]
+@test boxes(compose(f,g)) == [ Box(:f,A,B), Box(:g,B,A) ]
 @test nwires(compose(f,g)) == 3
 
 # Domains and codomains
@@ -118,7 +117,7 @@ X = Ports([:A])
 ####################
 
 f, g, h = map([:f, :g, :h]) do sym
-  (i::Int) -> singleton_diagram(Box(Hom(Symbol("$sym$i"), A, A)))
+  (i::Int) -> singleton_diagram(Box(Symbol("$sym$i"), A, A))
 end
 
 # Identity
