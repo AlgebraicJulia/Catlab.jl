@@ -287,7 +287,7 @@ end
 """
 function make_lookup_table(pres::Presentation, names)::Dict{Symbol,Any}
   # FIXME: Presentations should be uniquely associated with syntax systems.
-  syntax_module = parentmodule(typeof(first(pres.generators)))
+  syntax_module = Syntax.syntax_module(first(pres.generators))
   signature = syntax_module.signature().class().signature
   terms = Set([ term.name for term in signature.terms ])
   
