@@ -60,7 +60,7 @@ convert_from_graph_data(::Type{T}, data::AbstractDict) where T <: AbstractDict =
 
 function convert_from_graph_data(Value::Type, data::AbstractDict)
   @assert length(data) == 1
-  first(values(data))::Value
+  convert(Value, first(values(data)))
 end
 function convert_from_graph_data(::Type{Symbol}, data::AbstractDict)
   @assert length(data) == 1

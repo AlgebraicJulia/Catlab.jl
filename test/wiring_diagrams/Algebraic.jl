@@ -10,16 +10,16 @@ using Catlab.Doctrines, Catlab.WiringDiagrams
 #---------
 
 # Generators
-A, B = Ob(FreeSymmetricMonoidalCategory, :A, :B)
-f = singleton_diagram(Box(Hom(:f,A,B)))
-g = singleton_diagram(Box(Hom(:g,B,A)))
+A, B = Ports([:A]), Ports([:B])
+f = singleton_diagram(Box(:f,A,B))
+g = singleton_diagram(Box(:g,B,A))
 @test nboxes(f) == 1
-@test boxes(f) == [ Box(Hom(:f,A,B)) ]
+@test boxes(f) == [ Box(:f,A,B) ]
 @test nwires(f) == 2
 
 # Composition
 @test nboxes(compose(f,g)) == 2
-@test boxes(compose(f,g)) == [ Box(Hom(:f,A,B)), Box(Hom(:g,B,A)) ]
+@test boxes(compose(f,g)) == [ Box(:f,A,B), Box(:g,B,A) ]
 @test nwires(compose(f,g)) == 3
 
 # Domains and codomains
@@ -83,15 +83,22 @@ add_wires!(d, [
 @test codom(mcopy(Ports([:A,:B]),3)) == Ports([:A,:B,:A,:B,:A,:B])
 
 # Associativity
-X = Ports([:A])
-@test compose(mcopy(X), otimes(id(X),mcopy(X))) == mcopy(X,3)
-@test compose(mcopy(X), otimes(mcopy(X),id(X))) == mcopy(X,3)
+A = Ports([:A])
+@test compose(mcopy(A), otimes(id(A),mcopy(A))) == mcopy(A,3)
+@test compose(mcopy(A), otimes(mcopy(A),id(A))) == mcopy(A,3)
 
 # Commutativity
-@test compose(mcopy(X), braid(X,X)) == mcopy(X)
+@test compose(mcopy(A), braid(A,A)) == mcopy(A)
 
-# Unit
-@test compose(mcopy(X), otimes(id(X),delete(X))) == id(X)
+# Unitality
+@test compose(mcopy(A), otimes(id(A),delete(A))) == id(A)
+
+# Cartesian categories
+A = Ports{CartesianCategory.Hom}([:A])
+@test mcopy(A) == mcopy(Ports([:A]))
+@test delete(A) == delete(Ports([:A]))
+@test_throws MethodError mmerge(A)
+@test_throws MethodError create(A)
 
 # Codiagonals
 #------------
@@ -103,21 +110,44 @@ X = Ports([:A])
 @test codom(mmerge(Ports([:A,:B]),3)) == Ports([:A,:B])
 
 # Associativity
-X = Ports([:A])
-@test compose(otimes(id(X),mmerge(X)), mmerge(X)) == mmerge(X,3)
-@test compose(otimes(mmerge(X),id(X)), mmerge(X)) == mmerge(X,3)
+A = Ports([:A])
+@test compose(otimes(id(A),mmerge(A)), mmerge(A)) == mmerge(A,3)
+@test compose(otimes(mmerge(A),id(A)), mmerge(A)) == mmerge(A,3)
 
 # Commutativity
-@test compose(braid(X,X), mmerge(X)) == mmerge(X)
+@test compose(braid(A,A), mmerge(A)) == mmerge(A)
 
-# Unit
-@test compose(otimes(id(X),create(X)), mmerge(X)) == id(X)
+# Unitality
+@test compose(otimes(id(A),create(A)), mmerge(A)) == id(A)
+
+# Cocartesian categories
+A = Ports{CocartesianCategory.Hom}([:A])
+@test mmerge(A) == mmerge(Ports([:A]))
+@test create(A) == create(Ports([:A]))
+@test_throws MethodError mcopy(A)
+@test_throws MethodError delete(A)
+
+# Bidiagonals
+#------------
+
+# Monoidal categories with bidiagonals, and non-naturality of explicit
+# representation.
+A = Ports{MonoidalCategoryWithBidiagonals.Hom}([:A])
+@test boxes(mcopy(A)) == [ Junction(:A,1,2) ]
+@test boxes(mcopy(otimes(A,A))) == repeat([ Junction(:A,1,2) ], 2)
+@test compose(create(A), mcopy(A)) != create(otimes(A,A))
+@test compose(mmerge(A), delete(A)) != delete(otimes(A,A))
+
+# Biproduct categories, and naturality of implicit representation.
+A = Ports{BiproductCategory.Hom}([:A])
+@test compose(create(A), mcopy(A)) == create(otimes(A,A))
+@test compose(mmerge(A), delete(A)) == delete(otimes(A,A))
 
 # Operadic interface
 ####################
 
 f, g, h = map([:f, :g, :h]) do sym
-  (i::Int) -> singleton_diagram(Box(Hom(Symbol("$sym$i"), A, A)))
+  (i::Int) -> singleton_diagram(Box(Symbol("$sym$i"), [:A], [:A]))
 end
 
 # Identity
@@ -147,53 +177,51 @@ d = compose(f(1),f(2))
 # Junctions
 ###########
 
+# Add and remove junctions
+#-------------------------
+
 A, B, C = [ Ports([sym]) for sym in [:A, :B, :C] ]
 f = singleton_diagram(Box(:f, [:A], [:B]))
 g = singleton_diagram(Box(:g, [:B], [:C]))
 
-junction_diagram(args...) = singleton_diagram(Junction(args...))
-
-# Add and remove junctions
-#-------------------------
-
 # Copies.
 d = compose(f, mcopy(B))
-junctioned = compose(f, junction_diagram(:B,1,2))
+junctioned = compose(f, junction_diagram(B,1,2))
 @test add_junctions(d) == junctioned
 @test rem_junctions(junctioned) == d
 
 d = compose(mcopy(A), otimes(f,f))
-junctioned = compose(junction_diagram(:A,1,2), otimes(f,f))
+junctioned = compose(junction_diagram(A,1,2), otimes(f,f))
 @test is_permuted_equal(add_junctions(d), junctioned, [3,1,2])
 @test rem_junctions(junctioned) == d
 
 # Merges.
 d = compose(mmerge(A), f)
-junctioned = compose(junction_diagram(:A,2,1), f)
+junctioned = compose(junction_diagram(A,2,1), f)
 @test is_permuted_equal(add_junctions(d), junctioned, [2,1])
 @test rem_junctions(junctioned) == d
 
 d = compose(otimes(f,f), mmerge(B))
-junctioned = compose(otimes(f,f), junction_diagram(:B,2,1))
+junctioned = compose(otimes(f,f), junction_diagram(B,2,1))
 @test add_junctions(d) == junctioned
 @test rem_junctions(junctioned) == d
 
 # Deletions.
 d = compose(f, delete(B))
-junctioned = compose(f, junction_diagram(:B,1,0))
+junctioned = compose(f, junction_diagram(B,1,0))
 @test add_junctions(d) == junctioned
 @test rem_junctions(junctioned) == d
 
 # Creations.
 d = compose(create(A), f)
-junctioned = compose(junction_diagram(:A,0,1), f)
+junctioned = compose(junction_diagram(A,0,1), f)
 @test is_permuted_equal(add_junctions(d), junctioned, [2,1])
 @test rem_junctions(junctioned) == d
 
 # Copies, merges, deletions, and creations, all at once.
 d = compose(create(A), f, mcopy(B), mmerge(B), g, delete(C))
-junctioned = compose(junction_diagram(:A,0,1), f, junction_diagram(:B,1,2),
-                     junction_diagram(:B,2,1), g, junction_diagram(:C,1,0))
+junctioned = compose(junction_diagram(A,0,1), f, junction_diagram(B,1,2),
+                     junction_diagram(B,2,1), g, junction_diagram(C,1,0))
 actual = add_junctions(d)
 # XXX: An isomorphism test would be more convenient.
 perm = [ findfirst([b] .== boxes(actual)) for b in boxes(junctioned) ]
@@ -203,21 +231,22 @@ perm = [ findfirst([b] .== boxes(actual)) for b in boxes(junctioned) ]
 # Simplify junctions
 #-------------------
 
+A = Ports([:A])
 j = junction_diagram
 
 # Comonoid laws.
-@test merge_junctions(j(:A,1,2)⋅(j(:A,1,2)⊗id(A))) ==
-  j(:A,1,3)⋅permute(A⊗A⊗A,[3,1,2]) # FIXME: Shouldn't need permutation.
-@test merge_junctions(j(:A,1,2)⋅(id(A)⊗j(:A,1,2))) == j(:A,1,3)
-@test merge_junctions(j(:A,1,2)⋅(j(:A,1,0)⊗id(A))) == j(:A,1,1)
-@test merge_junctions(j(:A,1,2)⋅(id(A)⊗j(:A,1,0))) == j(:A,1,1)
+@test merge_junctions(j(A,1,2)⋅(j(A,1,2)⊗id(A))) ==
+  j(A,1,3)⋅permute(A⊗A⊗A,[3,1,2]) # FIXME: Shouldn't need permutation.
+@test merge_junctions(j(A,1,2)⋅(id(A)⊗j(A,1,2))) == j(A,1,3)
+@test merge_junctions(j(A,1,2)⋅(j(A,1,0)⊗id(A))) == j(A,1,1)
+@test merge_junctions(j(A,1,2)⋅(id(A)⊗j(A,1,0))) == j(A,1,1)
 
 # Caps and cups.
-@test merge_junctions(j(:A,0,1)⋅j(:A,1,2)) == j(:A,0,2)
-@test merge_junctions(j(:A,2,1)⋅j(:A,1,0)) == j(:A,2,0)
+@test merge_junctions(j(A,0,1)⋅j(A,1,2)) == j(A,0,2)
+@test merge_junctions(j(A,2,1)⋅j(A,1,0)) == j(A,2,0)
 
 # Zigzag laws.
-@test merge_junctions((id(A)⊗j(:A,0,2))⋅(j(:A,2,0)⊗id(A))) == j(:A,1,1)
-@test merge_junctions((j(:A,0,2)⊗id(A))⋅(id(A)⊗j(:A,2,0))) == j(:A,1,1)
+@test merge_junctions((id(A)⊗j(A,0,2))⋅(j(A,2,0)⊗id(A))) == j(A,1,1)
+@test merge_junctions((j(A,0,2)⊗id(A))⋅(id(A)⊗j(A,2,0))) == j(A,1,1)
 
 end

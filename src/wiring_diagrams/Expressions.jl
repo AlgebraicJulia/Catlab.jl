@@ -15,8 +15,8 @@ export to_hom_expr, to_wiring_diagram
 using Compat
 using LightGraphs
 
-using ...Syntax
-using ...Doctrines: id, compose, otimes, munit, mcopy, mmerge, create, delete
+using ...Syntax, ...Doctrines
+using ...Syntax: syntax_module
 using ...Doctrines.Permutations
 using ..WiringDiagramCore, ..WiringLayers, ..AlgebraicWiringDiagrams
 import ..WiringLayers: to_wiring_diagram
@@ -26,16 +26,19 @@ using ..WiringDiagramAlgorithms: crossing_minimization_by_sort
 #######################
 
 """ Convert a morphism expression into a wiring diagram.
-
-The morphism expression should belong to the doctrine of symmetric monoidal
-categories, possibly with diagonals and codiagonals. Thus, the doctrines of
-cartesian, cocartesian, and biproduct categories are supported.
 """
 function to_wiring_diagram(expr::GATExpr)
+  signature = syntax_module(expr).signature()
+  to_wiring_diagram(signature.Hom, expr)
+end
+function to_wiring_diagram(T::Type, expr::GATExpr)
   functor((Ports, WiringDiagram), expr;
     terms = Dict(
-      :Ob => expr -> Ports([first(expr)]),
-      :Hom => expr -> singleton_diagram(Box(expr)),
+      :Ob => expr -> Ports{T}([first(expr)]),
+      :Hom => expr -> singleton_diagram(T,
+        Box(first(expr),
+            to_wiring_diagram(T, dom(expr)),
+            to_wiring_diagram(T, codom(expr))))
     )
   )
 end

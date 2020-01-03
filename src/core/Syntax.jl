@@ -337,12 +337,12 @@ end
 """
 function generator_like(expr::GATExpr, value)::GATExpr
   invoke_term(
-    parentmodule(typeof(expr)),
-    nameof(typeof(expr)),
-    value,
-    type_args(expr)...
-  )
+    syntax_module(expr), nameof(typeof(expr)), value, type_args(expr)...)
 end
+
+""" Get syntax module of given expression.
+"""
+syntax_module(expr::GATExpr) = parentmodule(typeof(expr))
 
 # Functors
 ##########
@@ -395,8 +395,7 @@ function functor(types::Tuple, expr::GATExpr;
   end
   
   # Invoke the constructor in the codomain category!
-  syntax_module = parentmodule(typeof(expr))
-  signature_module = syntax_module.signature()
+  signature_module = syntax_module(expr).signature()
   invoke_term(signature_module, types, name, term_args...)
 end
 

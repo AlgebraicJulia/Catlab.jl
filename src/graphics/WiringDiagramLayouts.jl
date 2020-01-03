@@ -180,7 +180,7 @@ function compose_with_layout!(d1::WiringDiagram, d2::WiringDiagram, opts::Layout
   place_adjacent!(d1, d2; dir=dir, pad=-opts.sequence_pad)
   substitute_with_layout!(size_to_fit!(diagram, opts, pad=false))
 end
-function compose_with_layout!(diagrams::Vector{WiringDiagram}, opts::LayoutOptions)
+function compose_with_layout!(diagrams::Vector{<:WiringDiagram}, opts::LayoutOptions)
   foldl((d1,d2) -> compose_with_layout!(d1, d2, opts), diagrams)
 end
 
@@ -195,7 +195,7 @@ function otimes_with_layout!(d1::WiringDiagram, d2::WiringDiagram, opts::LayoutO
   place_adjacent!(d1, d2; dir=dir, pad=-opts.parallel_pad)
   substitute_with_layout!(size_to_fit!(diagram, opts, pad=false))
 end
-function otimes_with_layout!(diagrams::Vector{WiringDiagram}, opts::LayoutOptions)
+function otimes_with_layout!(diagrams::Vector{<:WiringDiagram}, opts::LayoutOptions)
   foldl((d1,d2) -> otimes_with_layout!(d1, d2, opts), diagrams)
 end
 
