@@ -8,7 +8,8 @@ wiring diagrams as special *junction nodes*.
 module AlgebraicWiringDiagrams
 export Ports, dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid, permute,
   mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dunit, dcounit, ocompose,
-  Junction, add_junctions, add_junctions!, rem_junctions, merge_junctions
+  Junction, junction_diagram, add_junctions, add_junctions!, rem_junctions,
+  merge_junctions
 
 using AutoHashEquals
 using LightGraphs
@@ -135,26 +136,29 @@ end
 # Diagonals and codiagonals
 #--------------------------
 
-function implicit_mcopy(A::Ports, n::Int)::WiringDiagram
-  f = WiringDiagram(A, otimes([A for j in 1:n]))
+function implicit_mcopy(A::Ports, n::Int)
+  f = WiringDiagram(A, otimes(repeat([A], n)))
   m = length(A)
-  for j in 1:n
-    add_wires!(f, ((input_id(f),i) => (output_id(f),i+m*(j-1)) for i in 1:m))
-  end
+  add_wires!(f, ((input_id(f),i) => (output_id(f),i+m*(j-1))
+                  for i in 1:m for j in 1:n))
   return f
 end
 
-function implicit_mmerge(A::Ports, n::Int)::WiringDiagram
-  f = WiringDiagram(otimes([A for j in 1:n]), A)
+function implicit_mmerge(A::Ports, n::Int)
+  f = WiringDiagram(otimes(repeat([A],n)), A)
   m = length(A)
-  for j in 1:n
-    add_wires!(f, ((input_id(f),i+m*(j-1)) => (output_id(f),i) for i in 1:m))
-  end
+  add_wires!(f, ((input_id(f),i+m*(j-1)) => (output_id(f),i)
+                  for i in 1:m for j in 1:n))
   return f
 end
 
 implicit_delete(A::Ports) = WiringDiagram(A, munit(typeof(A)))
 implicit_create(A::Ports) = WiringDiagram(munit(typeof(A)), A)
+
+junctioned_mcopy(A::Ports, n::Int) = junction_diagram(A, 1, n)
+junctioned_mmerge(A::Ports, n::Int) = junction_diagram(A, n, 1)
+junctioned_delete(A::Ports) = junction_diagram(A, 1, 0)
+junctioned_create(A::Ports) = junction_diagram(A, 0, 1)
 
 # Implicit diagonals and codiagonals are the default in untyped wiring diagrams.
 mcopy(A::Ports{Any}, n::Int) = implicit_mcopy(A, n)
@@ -186,6 +190,13 @@ create(A::Ports{CocartesianCategory.Hom}) = implicit_create(A)
 # Biproduct category
 #-------------------
 
+# The coherence laws relating diagonal to codiagonal do not hold for general
+# bidiagonals, so an explicit representation is needed.
+mcopy(A::Ports{MonoidalCategoryWithBidiagonals.Hom}, n::Int) = junctioned_mcopy(A, n)
+mmerge(A::Ports{MonoidalCategoryWithBidiagonals.Hom}, n::Int) = junctioned_mmerge(A, n)
+delete(A::Ports{MonoidalCategoryWithBidiagonals.Hom}) = junctioned_delete(A)
+create(A::Ports{MonoidalCategoryWithBidiagonals.Hom}) = junctioned_create(A)
+
 mcopy(A::Ports{BiproductCategory.Hom}, n::Int) = implicit_mcopy(A, n)
 mmerge(A::Ports{BiproductCategory.Hom}, n::Int) = implicit_mmerge(A, n)
 delete(A::Ports{BiproductCategory.Hom}) = implicit_delete(A)
@@ -197,25 +208,8 @@ create(A::Ports{BiproductCategory.Hom}) = implicit_create(A)
 # Wiring diagrams as self-dual compact closed category.
 # FIXME: What about compact categories that are not self-dual?
 
-function dunit(A::Ports)
-  f = WiringDiagram(munit(typeof(A)), otimes(A,A))
-  n = length(A)
-  for (i, value) in enumerate(A)
-    v = add_box!(f, Junction(value, 0, 2))
-    add_wires!(f, ((v,1) => (output_id(f),i), (v,2) => (output_id(f),i+n)))
-  end
-  return f
-end
-
-function dcounit(A::Ports)
-  f = WiringDiagram(otimes(A,A), munit(typeof(A)))
-  n = length(A)
-  for (i, value) in enumerate(A)
-    v = add_box!(f, Junction(value, 2, 0))
-    add_wires!(f, ((input_id(f),i) => (v,1), (input_id(f),i+n) => (v,2)))
-  end
-  return f
-end
+dunit(A::Ports) = junction_diagram(A, 0, 2)
+dcounit(A::Ports) = junction_diagram(A, 2, 0)
 
 # Operadic interface
 ####################
@@ -252,6 +246,19 @@ creations, caps, and cups.
 end
 input_ports(junction::Junction) = repeat([junction.value], junction.ninputs)
 output_ports(junction::Junction) = repeat([junction.value], junction.noutputs)
+
+""" Wiring diagram with a junction node for each port.
+"""
+function junction_diagram(A::Ports, nin::Int, nout::Int)
+  f = WiringDiagram(otimes(repeat([A], nin)), otimes(repeat([A], nout)))
+  m = length(A)
+  for (i, value) in enumerate(A)
+    v = add_box!(f, Junction(value, nin, nout))
+    add_wires!(f, ((input_id(f),i+m*(j-1)) => (v,j) for j in 1:nin))
+    add_wires!(f, ((v,j) => (output_id(f),i+m*(j-1)) for j in 1:nout))
+  end
+  return f
+end
 
 """ Add junction nodes to wiring diagram.
 
