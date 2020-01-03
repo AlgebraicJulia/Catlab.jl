@@ -4,6 +4,7 @@ using Test
 using LightGraphs
 
 using Catlab.Doctrines, Catlab.WiringDiagrams
+using Catlab.Syntax: syntax_module
 using Catlab.WiringDiagrams.WiringDiagramExpressions: find_parallel,
   find_series, transitive_reduction!
 
@@ -23,15 +24,15 @@ fd, gd = to_wiring_diagram(f), to_wiring_diagram(g)
 #######################
 
 function roundtrip(f::HomExpr)
-  to_hom_expr(FreeBiproductCategory, to_wiring_diagram(f))
+  to_hom_expr(syntax_module(f), to_wiring_diagram(f))
 end
 
-A, B, C, D = Ob(FreeBiproductCategory, :A, :B, :C, :D)
-I = munit(FreeBiproductCategory.Ob)
-f, g, h, k = Hom(:f,A,B), Hom(:g,B,C), Hom(:h,C,D), Hom(:k,D,C)
+# Symmetric monoidal category
+#----------------------------
 
-# Monoidal category
-#------------------
+A, B, C, D = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C, :D)
+I = munit(FreeSymmetricMonoidalCategory.Ob)
+f, g, h, k = Hom(:f,A,B), Hom(:g,B,C), Hom(:h,C,D), Hom(:k,D,C)
 
 # Base case.
 @test roundtrip(f) == f
@@ -106,15 +107,15 @@ expr = compose(otimes(m,id(B)), otimes(id(B),b,id(B)), otimes(id(B),n))
 @test roundtrip(Hom(:m,A,I)⋅Hom(:n,I,B)) == Hom(:m,A,I)⊗Hom(:n,I,B)
 @test roundtrip(Hom(:m,I,I)⊗Hom(:n,I,I)) == Hom(:m,I,I)⊗Hom(:n,I,I)
 
-# Symmetric monoidal category
-#----------------------------
-
 # Braidings.
 @test roundtrip(braid(A,B)) == braid(A,B)
 @test roundtrip(otimes(id(A),braid(B,C))) == otimes(id(A),braid(B,C))
 
 # Diagonals and codiagonals
 #--------------------------
+
+A, B, C, D = Ob(FreeBiproductCategory, :A, :B, :C, :D)
+f, g = Hom(:f,A,B), Hom(:g,B,C)
 
 # Diagonals.
 @test roundtrip(mcopy(A)) == mcopy(A)

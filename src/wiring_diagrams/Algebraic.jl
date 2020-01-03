@@ -13,9 +13,8 @@ export Ports, dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid, perm
 using AutoHashEquals
 using LightGraphs
 
-using ...GAT, ...Syntax
-import ...Doctrines: SymmetricMonoidalCategory,
-  dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid,
+using ...GAT, ...Doctrines
+import ...Doctrines: dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid,
   mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dunit, dcounit
 using ..WiringDiagramCore, ..WiringLayers
 import ..WiringDiagramCore: Box, WiringDiagram, input_ports, output_ports
@@ -23,8 +22,8 @@ import ..WiringDiagramCore: Box, WiringDiagram, input_ports, output_ports
 # Categorical interface
 #######################
 
-# Ports
-#------
+# Ports as objects
+#-----------------
 
 """ A list of ports.
 
@@ -136,12 +135,7 @@ end
 # Diagonals and codiagonals
 #--------------------------
 
-mcopy(A::Ports) = mcopy(A, 2)
-mmerge(A::Ports) = mmerge(A, 2)
-delete(A::Ports) = WiringDiagram(A, munit(typeof(A)))
-create(A::Ports) = WiringDiagram(munit(typeof(A)), A)
-
-function mcopy(A::Ports, n::Int)::WiringDiagram
+function implicit_mcopy(A::Ports, n::Int)::WiringDiagram
   f = WiringDiagram(A, otimes([A for j in 1:n]))
   m = length(A)
   for j in 1:n
@@ -150,7 +144,7 @@ function mcopy(A::Ports, n::Int)::WiringDiagram
   return f
 end
 
-function mmerge(A::Ports, n::Int)::WiringDiagram
+function implicit_mmerge(A::Ports, n::Int)::WiringDiagram
   f = WiringDiagram(otimes([A for j in 1:n]), A)
   m = length(A)
   for j in 1:n
@@ -158,6 +152,47 @@ function mmerge(A::Ports, n::Int)::WiringDiagram
   end
   return f
 end
+
+implicit_delete(A::Ports) = WiringDiagram(A, munit(typeof(A)))
+implicit_create(A::Ports) = WiringDiagram(munit(typeof(A)), A)
+
+# Implicit diagonals and codiagonals are the default in untyped wiring diagrams.
+mcopy(A::Ports{Any}, n::Int) = implicit_mcopy(A, n)
+mmerge(A::Ports{Any}, n::Int) = implicit_mmerge(A, n)
+delete(A::Ports{Any}) = implicit_delete(A)
+create(A::Ports{Any}) = implicit_create(A)
+
+mcopy(A::Ports) = mcopy(A, 2)
+mmerge(A::Ports) = mmerge(A, 2)
+
+# Cartesian category
+#-------------------
+
+mcopy(A::Ports{MonoidalCategoryWithDiagonals.Hom}, n::Int) = implicit_mcopy(A, n)
+delete(A::Ports{MonoidalCategoryWithDiagonals.Hom}) = implicit_delete(A)
+
+mcopy(A::Ports{CartesianCategory.Hom}, n::Int) = implicit_mcopy(A, n)
+delete(A::Ports{CartesianCategory.Hom}) = implicit_delete(A)
+
+# Cocartesian category
+#---------------------
+
+mmerge(A::Ports{MonoidalCategoryWithCodiagonals.Hom}, n::Int) = implicit_mmerge(A, n)
+create(A::Ports{MonoidalCategoryWithCodiagonals.Hom}) = implicit_create(A)
+
+mmerge(A::Ports{CocartesianCategory.Hom}, n::Int) = implicit_mmerge(A, n)
+create(A::Ports{CocartesianCategory.Hom}) = implicit_create(A)
+
+# Biproduct category
+#-------------------
+
+mcopy(A::Ports{BiproductCategory.Hom}, n::Int) = implicit_mcopy(A, n)
+mmerge(A::Ports{BiproductCategory.Hom}, n::Int) = implicit_mmerge(A, n)
+delete(A::Ports{BiproductCategory.Hom}) = implicit_delete(A)
+create(A::Ports{BiproductCategory.Hom}) = implicit_create(A)
+
+# Compact closed category
+#------------------------
 
 # Wiring diagrams as self-dual compact closed category.
 # FIXME: What about compact categories that are not self-dual?

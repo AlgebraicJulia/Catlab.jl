@@ -1,7 +1,7 @@
 module TestAlgebraicWiringDiagrams
 using Test
 
-using Catlab.WiringDiagrams
+using Catlab.Doctrines, Catlab.WiringDiagrams
 
 # Categorical interface
 #######################
@@ -83,15 +83,22 @@ add_wires!(d, [
 @test codom(mcopy(Ports([:A,:B]),3)) == Ports([:A,:B,:A,:B,:A,:B])
 
 # Associativity
-X = Ports([:A])
-@test compose(mcopy(X), otimes(id(X),mcopy(X))) == mcopy(X,3)
-@test compose(mcopy(X), otimes(mcopy(X),id(X))) == mcopy(X,3)
+A = Ports([:A])
+@test compose(mcopy(A), otimes(id(A),mcopy(A))) == mcopy(A,3)
+@test compose(mcopy(A), otimes(mcopy(A),id(A))) == mcopy(A,3)
 
 # Commutativity
-@test compose(mcopy(X), braid(X,X)) == mcopy(X)
+@test compose(mcopy(A), braid(A,A)) == mcopy(A)
 
-# Unit
-@test compose(mcopy(X), otimes(id(X),delete(X))) == id(X)
+# Unitality
+@test compose(mcopy(A), otimes(id(A),delete(A))) == id(A)
+
+# Instances
+A = Ports{CartesianCategory.Hom}([:A])
+@test mcopy(A) == mcopy(Ports([:A]))
+@test delete(A) == delete(Ports([:A]))
+@test_throws MethodError mmerge(A)
+@test_throws MethodError create(A)
 
 # Codiagonals
 #------------
@@ -103,21 +110,28 @@ X = Ports([:A])
 @test codom(mmerge(Ports([:A,:B]),3)) == Ports([:A,:B])
 
 # Associativity
-X = Ports([:A])
-@test compose(otimes(id(X),mmerge(X)), mmerge(X)) == mmerge(X,3)
-@test compose(otimes(mmerge(X),id(X)), mmerge(X)) == mmerge(X,3)
+A = Ports([:A])
+@test compose(otimes(id(A),mmerge(A)), mmerge(A)) == mmerge(A,3)
+@test compose(otimes(mmerge(A),id(A)), mmerge(A)) == mmerge(A,3)
 
 # Commutativity
-@test compose(braid(X,X), mmerge(X)) == mmerge(X)
+@test compose(braid(A,A), mmerge(A)) == mmerge(A)
 
-# Unit
-@test compose(otimes(id(X),create(X)), mmerge(X)) == id(X)
+# Unitality
+@test compose(otimes(id(A),create(A)), mmerge(A)) == id(A)
+
+# Instances
+A = Ports{CocartesianCategory.Hom}([:A])
+@test mmerge(A) == mmerge(Ports([:A]))
+@test create(A) == create(Ports([:A]))
+@test_throws MethodError mcopy(A)
+@test_throws MethodError delete(A)
 
 # Operadic interface
 ####################
 
 f, g, h = map([:f, :g, :h]) do sym
-  (i::Int) -> singleton_diagram(Box(Symbol("$sym$i"), A, A))
+  (i::Int) -> singleton_diagram(Box(Symbol("$sym$i"), [:A], [:A]))
 end
 
 # Identity
