@@ -6,7 +6,7 @@ export MonoidalCategory, otimes, munit, ⊗, collect, ndims,
   mmerge, create, copair, incl1, incl2, ∇, □,
   MonoidalCategoryWithBidiagonals, BiproductCategory, FreeBiproductCategory,
   CartesianClosedCategory, FreeCartesianClosedCategory, hom, ev, curry,
-  CompactClosedCategory, FreeCompactClosedCategory, dual, dunit, dcounit,
+  CompactClosedCategory, FreeCompactClosedCategory, dual, dunit, dcounit, mate,
   DaggerCategory, FreeDaggerCategory, dagger,
   DaggerCompactCategory, FreeDaggerCompactCategory
 
@@ -289,8 +289,9 @@ See also `FreeCartesianCategory`.
 end
 
 function show_latex(io::IO, expr::ObExpr{:hom}; kw...)
-  show_latex(io, last(expr))
-  print(io, "^{")
+  print(io, "{")
+  show_latex(io, last(expr), paren=true)
+  print(io, "}^{")
   show_latex(io, first(expr))
   print(io, "}")
 end
@@ -317,13 +318,15 @@ end
   # Counit of duality, aka the evaluation map
   dcounit(A::Ob)::Hom(otimes(A,dual(A)), munit())
   
+  # Adjoint mate of morphism f.
+  mate(f::Hom(A,B))::Hom(dual(B),dual(A)) <= (A::Ob, B::Ob)
+  
   # Closed monoidal category
   hom(A::Ob, B::Ob) = otimes(B, dual(A))
   ev(A::Ob, B::Ob) = otimes(id(B), compose(braid(dual(A),A), dcounit(A)))
   curry(A::Ob, B::Ob, f::Hom) = compose(
     otimes(id(A), compose(dunit(B), braid(dual(B),B))),
-    otimes(f, id(dual(B)))
-  )
+    otimes(f, id(dual(B))))
 end
 
 @syntax FreeCompactClosedCategory(ObExpr,HomExpr) CompactClosedCategory begin
@@ -334,14 +337,16 @@ end
 end
 
 function show_latex(io::IO, expr::ObExpr{:dual}; kw...)
-  show_latex(io, first(expr))
-  print(io, "^*")
+  Syntax.show_latex_postfix(io, expr, "^*")
 end
 function show_latex(io::IO, expr::HomExpr{:dunit}; kw...)
   Syntax.show_latex_script(io, expr, "\\eta")
 end
 function show_latex(io::IO, expr::HomExpr{:dcounit}; kw...)
   Syntax.show_latex_script(io, expr, "\\varepsilon")
+end
+function show_latex(io::IO, expr::HomExpr{:mate}; kw...)
+  Syntax.show_latex_postfix(io, expr, "^*")
 end
 
 # Dagger category
@@ -350,7 +355,7 @@ end
 """ Doctrine of *dagger category*
 """
 @signature Category(Ob,Hom) => DaggerCategory(Ob,Hom) begin
-  dagger(f::Hom(A,B))::Hom(B,A) <= (A::Ob,B::Ob)
+  dagger(f::Hom(A,B))::Hom(B,A) <= (A::Ob, B::Ob)
 end
 
 @syntax FreeDaggerCategory(ObExpr,HomExpr) DaggerCategory begin
@@ -364,7 +369,7 @@ FIXME: This signature should extend both `DaggerCategory` and
 `CompactClosedCategory`, but we don't support multiple inheritance yet.
 """
 @signature CompactClosedCategory(Ob,Hom) => DaggerCompactCategory(Ob,Hom) begin
-  dagger(f::Hom(A,B))::Hom(B,A) <= (A::Ob,B::Ob)
+  dagger(f::Hom(A,B))::Hom(B,A) <= (A::Ob, B::Ob)
 end
 
 @syntax FreeDaggerCompactCategory(ObExpr,HomExpr) DaggerCompactCategory begin
@@ -379,9 +384,5 @@ end
 end
 
 function show_latex(io::IO, expr::HomExpr{:dagger}; kw...)
-  f = first(expr)
-  if (head(f) != :generator) print(io, "\\left(") end
-  show_latex(io, f)
-  if (head(f) != :generator) print(io, "\\right)") end
-  print(io, "^\\dagger")
+  Syntax.show_latex_postfix(io, expr, "^\\dagger")
 end

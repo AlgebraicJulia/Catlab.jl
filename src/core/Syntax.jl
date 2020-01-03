@@ -535,11 +535,19 @@ end
 
 function show_latex_infix(io::IO, expr::GATExpr, op::String;
                           paren::Bool=false, kw...)
-  show_latex_paren(io, expr) = show_latex(io, expr; paren=true, kw...)
+  show_latex_paren(io, expr) = show_latex(io, expr, paren=true)
   sep = op == " " ? op : " $op "
   if (paren) print(io, "\\left(") end
   join(io, [sprint(show_latex_paren, arg) for arg in args(expr)], sep)
   if (paren) print(io, "\\right)") end
+end
+
+function show_latex_postfix(io::IO, expr::GATExpr, op::String; kw...)
+  @assert length(args(expr)) == 1
+  print(io, "{")
+  show_latex(io, first(expr), paren=true)
+  print(io, "}")
+  print(io, op)
 end
 
 function show_latex_script(io::IO, expr::GATExpr, head::String;
