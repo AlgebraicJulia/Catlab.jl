@@ -67,9 +67,9 @@ to_tikz(mcopy(A)⋅(f⊗f)⋅mmerge(B), labels=true)
 
 A, B = Ob(FreeCompactClosedCategory, :A, :B)
 
-to_tikz(dunit(A), arrowtip="Stealth")
+to_tikz(dunit(A), arrowtip="Stealth", labels=true)
 #-
-to_tikz(dcounit(A), arrowtip="Stealth")
+to_tikz(dcounit(A), arrowtip="Stealth", labels=true)
 
 # In a self-dual compact closed category, such as a bicategory of relations,
 # every morphism $f: A \to B$ has a transpose $f^\dagger: B \to A$ given by

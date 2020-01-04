@@ -288,13 +288,14 @@ end
 """
 function layout_junction(value::Any, inputs::Vector, outputs::Vector,
                          opts::LayoutOptions; visible::Bool=true, pad::Bool=true)
+  nin, nout = length(inputs), length(outputs)
   shape, radius = visible ? (JunctionShape, opts.junction_size) : (NoShape, 0)
   size = 2*SVector(radius, radius)
   box = Box(BoxLayout(value=value, shape=shape, size=size),
             layout_circular_ports(InputPort, inputs, radius, opts;
-                                  pad=pad, label_wires=length(inputs) <= 1),
+                                  pad=pad, label_wires = nin == 1 || nout == 0),
             layout_circular_ports(OutputPort, outputs, radius, opts;
-                                  pad=pad, label_wires=length(outputs) <= 1))
+                                  pad=pad, label_wires = nin == 0 || nout == 1))
   size_to_fit!(singleton_diagram(box), opts)
 end
 
