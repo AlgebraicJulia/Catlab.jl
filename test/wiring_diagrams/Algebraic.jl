@@ -143,6 +143,23 @@ A = Ports{BiproductCategory.Hom}([:A])
 @test compose(create(A), mcopy(A)) == create(otimes(A,A))
 @test compose(mmerge(A), delete(A)) == delete(otimes(A,A))
 
+# Duals
+#------
+
+A, B = [ Ports{CompactClosedCategory.Hom}([sym]) for sym in [:A, :B] ]
+I = munit(typeof(A))
+
+@test boxes(dunit(A)) == [ Junction(:A, [], [DualPort(:A), :A]) ]
+@test boxes(dcounit(A)) == [ Junction(:A, [:A, DualPort(:A)], []) ]
+
+# Domains and codomains
+@test dom(dunit(A)) == I
+@test codom(dunit(A)) == otimes(dual(A),A)
+@test dom(dcounit(A)) == otimes(A,dual(A))
+@test codom(dcounit(A)) == I
+@test codom(dunit(otimes(A,B))) == otimes(dual(B),dual(A),A,B)
+@test dom(dcounit(otimes(A,B))) == otimes(A,B,dual(B),dual(A))
+
 # Operadic interface
 ####################
 

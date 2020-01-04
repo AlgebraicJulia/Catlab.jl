@@ -2,21 +2,21 @@
 
 This module provides a high-level functional and algebraic interface to wiring
 diagrams, building on the low-level imperative interface. It also defines data
-types and functions to represent diagonals, codiagonals, units, and counits in
-wiring diagrams as special *junction nodes*.
+types and functions to represent diagonals, codiagonals, duals, caps, cups,
+daggers, and other structures in wiring diagrams.
 """
 module AlgebraicWiringDiagrams
 export Ports, dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid, permute,
-  mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dunit, dcounit, ocompose,
-  Junction, junction_diagram, add_junctions, add_junctions!, rem_junctions,
-  merge_junctions
+  mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit, ocompose,
+  Junction, junction_diagram, junction_caps, junction_cups, add_junctions,
+  add_junctions!, rem_junctions, merge_junctions, DualPort
 
 using AutoHashEquals
 using LightGraphs
 
 using ...GAT, ...Doctrines
 import ...Doctrines: dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid,
-  mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dunit, dcounit
+  mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit
 using ..WiringDiagramCore, ..WiringLayers
 import ..WiringDiagramCore: Box, WiringDiagram, input_ports, output_ports
 
@@ -205,11 +205,12 @@ create(A::Ports{BiproductCategory.Hom}) = implicit_create(A)
 # Compact closed category
 #------------------------
 
-# Wiring diagrams as self-dual compact closed category.
-# FIXME: What about compact categories that are not self-dual?
+junctioned_dunit(A::Ports) = junction_caps(A, otimes(dual(A),A))
+junctioned_dcounit(A::Ports) = junction_cups(A, otimes(A,dual(A)))
 
-dunit(A::Ports) = junction_diagram(A, 0, 2)
-dcounit(A::Ports) = junction_diagram(A, 2, 0)
+dual(A::Ports{CompactClosedCategory.Hom}) = dual_ports(A)
+dunit(A::Ports{CompactClosedCategory.Hom}) = junctioned_dunit(A)
+dcounit(A::Ports{CompactClosedCategory.Hom}) = junctioned_dcounit(A)
 
 # Operadic interface
 ####################
@@ -248,7 +249,7 @@ end
 Junction(value, ninputs::Int, noutputs::Int) =
   Junction(value, repeat([value], ninputs), repeat([value], noutputs))
 
-""" Wiring diagram with a junction node for each port.
+""" Wiring diagram with a junction node for each of the given ports.
 """
 function junction_diagram(A::Ports, nin::Int, nout::Int)
   f = WiringDiagram(otimes(repeat([A], nin)), otimes(repeat([A], nout)))
@@ -257,6 +258,38 @@ function junction_diagram(A::Ports, nin::Int, nout::Int)
     v = add_box!(f, Junction(value, nin, nout))
     add_wires!(f, ((input_id(f),i+m*(j-1)) => (v,j) for j in 1:nin))
     add_wires!(f, ((v,j) => (output_id(f),i+m*(j-1)) for j in 1:nout))
+  end
+  return f
+end
+
+""" Wiring diagram of nested cups made out of junction nodes.
+"""
+junction_cups(A::Ports) = junction_cups(A, cat(A,A))
+
+function junction_cups(A::Ports, inputs::Ports)
+  @assert length(inputs) == 2*length(A)
+  f = WiringDiagram(inputs, munit(typeof(inputs)))
+  m, ports = length(A), collect(inputs)
+  for (i, value) in enumerate(A)
+    j1, j2 = m-i+1, m+i
+    v = add_box!(f, Junction(value, ports[[j1,j2]], empty(ports)))
+    add_wires!(f, [(input_id(f),j1) => (v,1), (input_id(f),j2) => (v,2)])
+  end
+  return f
+end
+
+""" Wiring diagram of nested caps made out of junction nodes.
+"""
+junction_caps(A::Ports) = junction_caps(A, cat(A,A))
+
+function junction_caps(A::Ports, outputs::Ports)
+  @assert length(outputs) == 2*length(A)
+  f = WiringDiagram(munit(typeof(outputs)), outputs)
+  m, ports = length(A), collect(outputs)
+  for (i, value) in enumerate(A)
+    j1, j2 = m-i+1, m+i
+    v = add_box!(f, Junction(value, empty(ports), ports[[j1,j2]]))
+    add_wires!(f, [(v,1) => (output_id(f),j1), (v,2) => (output_id(f),j2)])
   end
   return f
 end
@@ -340,5 +373,18 @@ function merge_junctions(d::WiringDiagram)
   values = [ box(d, first(component)).value for component in components ]
   encapsulate(d, components; discard_boxes=true, values=values, make_box=Junction)
 end
+
+# Duals and daggers
+###################
+
+""" Dual of port value in wiring diagram.
+"""
+@auto_hash_equals struct DualPort{Value}
+  value::Value
+end
+DualPort(dual::DualPort) = dual.value
+
+dual_ports(ports::Vector) = [ DualPort(x) for x in Iterators.reverse(ports) ]
+dual_ports(ports::Ports{T}) where T = Ports{T}(dual_ports(collect(ports)))
 
 end
