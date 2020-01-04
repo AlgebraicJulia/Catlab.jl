@@ -211,7 +211,8 @@ intended to mean a monoidal category with coherent diagonals and codiagonals.
 Unlike in a biproduct category, the naturality axioms need not be satisfied.
 
 FIXME: This signature should extend both `MonoidalCategoryWithDiagonals` and
-`MonoidalCategoryWithCodiagonals`, but we don't support multiple inheritance.
+`MonoidalCategoryWithCodiagonals`, but multiple inheritance is not yet
+supported.
 """
 @signature SymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithBidiagonals(Ob,Hom) begin
   mcopy(A::Ob)::Hom(A,otimes(A,A))
@@ -231,8 +232,8 @@ end
 Also known as a *semiadditive category*.
 
 FIXME: This signature should extend `MonoidalCategoryWithBidiagonals`,
-`CartesianCategory`, and `CocartesianCategory`, but we don't support multiple
-inheritance.
+`CartesianCategory`, and `CocartesianCategory`, but multiple inheritance is not
+yet supported.
 """
 @signature MonoidalCategoryWithBidiagonals(Ob,Hom) => BiproductCategory(Ob,Hom) begin
   pair(f::Hom(A,B), g::Hom(A,C))::Hom(A,otimes(B,C)) <= (A::Ob, B::Ob, C::Ob)
@@ -335,6 +336,15 @@ end
   otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+  mate(f::Hom) = distribute_mate(involute(Super.mate(f)))
+end
+
+""" Distribute adjoint mates over composition and products.
+"""
+function distribute_mate(f::HomExpr)
+  distribute_unary(
+    distribute_unary(f, mate, compose, contravariant=true),
+    mate, otimes, contravariant=true)
 end
 
 function show_latex(io::IO, expr::ObExpr{:dual}; kw...)
@@ -372,8 +382,17 @@ end
 
 """ Doctrine of *dagger compact category*
 
+In a dagger compact category, there are two kinds of adjoints of a morphism
+`f::Hom(A,B)`, the adjoint mate `mate(f)::Hom(dual(B),dual(A))` and the dagger
+adjoint `dagger(f)::Hom(B,A)`. In the category of Hilbert spaces, these are
+respectively the Banach space adjoint and the Hilbert space adjoint (Reed-Simon,
+Vol I, Sec VI.2). In Julia, they would correspond to `transpose` and `adjoint`
+in the official `LinearAlegbra` module. For the general relationship between
+mates and daggers, see Selinger's survey of graphical languages for monoidal
+categories.
+
 FIXME: This signature should extend both `DaggerCategory` and
-`CompactClosedCategory`, but we don't support multiple inheritance yet.
+`CompactClosedCategory`, but multiple inheritance is not yet supported.
 """
 @signature CompactClosedCategory(Ob,Hom) => DaggerCompactCategory(Ob,Hom) begin
   dagger(f::Hom(A,B))::Hom(B,A) <= (A::Ob, B::Ob)
@@ -387,6 +406,7 @@ end
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
   dagger(f::Hom) = distribute_unary(distribute_dagger(involute(Super.dagger(f))),
                                     dagger, otimes)
+  mate(f::Hom) = distribute_mate(involute(Super.mate(f)))
 end
 
 function show_latex(io::IO, expr::HomExpr{:dagger}; kw...)
