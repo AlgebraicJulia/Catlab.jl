@@ -328,16 +328,17 @@ end
 function merge_junctions(d::WiringDiagram)
   junction_ids = filter(v -> box(d,v) isa Junction, box_ids(d))
   junction_graph, vmap = induced_subgraph(graph(d), junction_ids)
-  components = [ [ vmap[v] for v in component ]
+  for edge in edges(junction_graph)
+    # Only merge junctions with equal values.
+    if box(d, vmap[src(edge)]).value != box(d, vmap[dst(edge)]).value
+      rem_edge!(junction_graph, edge)
+    end
+  end
+  components = [ [vmap[v] for v in component]
     for component in weakly_connected_components(junction_graph)
     if length(component) > 1 ]
-  values = map(components) do component
-    values = unique(box(d,v).value for v in component)
-    @assert length(values) == 1
-    first(values)
-  end
-  encapsulate(d, components; discard_boxes=true, values=values,
-    make_box = (value, in, out) -> Junction(value, length(in), length(out)))
+  values = [ box(d, first(component)).value for component in components ]
+  encapsulate(d, components; discard_boxes=true, values=values, make_box=Junction)
 end
 
 end
