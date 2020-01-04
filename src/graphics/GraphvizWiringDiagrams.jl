@@ -188,9 +188,10 @@ function graphviz_box(junction::Junction, node_id::String;
     width = junction_size,
     height = junction_size,
   )
-  inputs = repeat([Graphviz.NodeID(node_id)], junction.ninputs)
-  outputs = repeat([Graphviz.NodeID(node_id)], junction.noutputs)
-  GraphvizBox([node], inputs, outputs)
+  nin, nout = length(input_ports(junction)), length(output_ports(junction))
+  GraphvizBox([node],
+    repeat([Graphviz.NodeID(node_id)], nin),
+    repeat([Graphviz.NodeID(node_id)], nout))
 end
 
 """ Create "HTML-like" node label for a box.

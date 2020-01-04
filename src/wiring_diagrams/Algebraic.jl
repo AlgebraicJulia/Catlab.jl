@@ -241,11 +241,12 @@ creations, caps, and cups.
 """
 @auto_hash_equals struct Junction{Value} <: AbstractBox
   value::Value
-  ninputs::Int
-  noutputs::Int
+  input_ports::Vector
+  output_ports::Vector
 end
-input_ports(junction::Junction) = repeat([junction.value], junction.ninputs)
-output_ports(junction::Junction) = repeat([junction.value], junction.noutputs)
+
+Junction(value, ninputs::Int, noutputs::Int) =
+  Junction(value, repeat([value], ninputs), repeat([value], noutputs))
 
 """ Wiring diagram with a junction node for each port.
 """
@@ -315,8 +316,9 @@ function rem_junctions(d::WiringDiagram)
   junction_ids = filter(v -> box(d,v) isa Junction, box_ids(d))
   junction_diagrams = map(junction_ids) do v
     junction = box(d,v)::Junction
-    layer = complete_layer(junction.ninputs, junction.noutputs)
-    to_wiring_diagram(layer, input_ports(junction), output_ports(junction))
+    inputs, outputs = input_ports(junction), output_ports(junction)
+    layer = complete_layer(length(inputs), length(outputs))
+    to_wiring_diagram(layer, inputs, outputs)
   end
   substitute(d, junction_ids, junction_diagrams)
 end
