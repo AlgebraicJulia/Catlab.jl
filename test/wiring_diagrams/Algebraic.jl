@@ -149,8 +149,8 @@ A = Ports{BiproductCategory.Hom}([:A])
 A, B = [ Ports{CompactClosedCategory.Hom}([sym]) for sym in [:A, :B] ]
 I = munit(typeof(A))
 
-@test boxes(dunit(A)) == [ Junction(:A, [], [DualPort(:A), :A]) ]
-@test boxes(dcounit(A)) == [ Junction(:A, [:A, DualPort(:A)], []) ]
+@test boxes(dunit(A)) == [ Junction(:A, [], [PortOp{:dual}(:A), :A]) ]
+@test boxes(dcounit(A)) == [ Junction(:A, [:A, PortOp{:dual}(:A)], []) ]
 
 # Domains and codomains
 @test dom(dunit(A)) == I

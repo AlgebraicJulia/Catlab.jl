@@ -6,17 +6,18 @@ types and functions to represent diagonals, codiagonals, duals, caps, cups,
 daggers, and other structures in wiring diagrams.
 """
 module AlgebraicWiringDiagrams
-export Ports, dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid, permute,
-  mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit, ocompose,
-  Junction, junction_diagram, junction_caps, junction_cups, add_junctions,
-  add_junctions!, rem_junctions, merge_junctions, DualPort
+export Ports, Junction, PortOp, BoxOp,
+  dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid, permute,
+  mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
+  ocompose, junction_diagram, junction_caps, junction_cups, add_junctions,
+  add_junctions!, rem_junctions, merge_junctions
 
 using AutoHashEquals
 using LightGraphs
 
 using ...GAT, ...Doctrines
 import ...Doctrines: dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid,
-  mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit
+  mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger
 using ..WiringDiagramCore, ..WiringLayers
 import ..WiringDiagramCore: Box, WiringDiagram, input_ports, output_ports
 
@@ -374,17 +375,63 @@ function merge_junctions(d::WiringDiagram)
   encapsulate(d, components; discard_boxes=true, values=values, make_box=Junction)
 end
 
-# Duals and daggers
-###################
+# Operations on ports and boxes
+###############################
 
-""" Dual of port value in wiring diagram.
+""" Port value wrapping another value.
+
+Represents unary operations on ports in wiring diagrams.
 """
-@auto_hash_equals struct DualPort{Value}
-  value::Value
+@auto_hash_equals struct PortOp{T}
+  value::Any
 end
-DualPort(dual::DualPort) = dual.value
 
-dual_ports(ports::Vector) = [ DualPort(x) for x in Iterators.reverse(ports) ]
+""" Box wrapping another box.
+
+Represents unary operations on boxes in wiring diagrams.
+"""
+@auto_hash_equals struct BoxOp{T} <: AbstractBox
+  box::AbstractBox
+end
+
+input_ports(op::BoxOp) = input_ports(op.box)
+output_ports(op::BoxOp) = output_ports(op.box)
+
+# Duals
+#------
+
+const DualPort = PortOp{:dual}
+
+dual_port(x) = DualPort(x)
+dual_port(dual::DualPort) = dual.x
+
+dual_ports(ports::Vector) = [ dual_port(x) for x in Iterators.reverse(ports) ]
 dual_ports(ports::Ports{T}) where T = Ports{T}(dual_ports(collect(ports)))
+
+# Adjoints
+#---------
+
+const DaggerBox = BoxOp{:dagger}
+
+input_ports(dagger::DaggerBox) = output_ports(dagger.box)
+output_ports(dagger::DaggerBox) = input_ports(dagger.box)
+
+dagger(box::Box) = DaggerBox(box)
+dagger(dagger::DaggerBox) = dagger.box
+dagger(junction::Junction) = Junction(
+  junction.value, output_ports(junction), input_ports(junction))
+
+const MateBox = BoxOp{:mate}
+
+input_ports(mate::MateBox) = dual_ports(output_ports(mate.box))
+output_ports(mate::MateBox) = dual_ports(input_ports(mate.box))
+
+mate(box::Box) = MateBox(box)
+mate(mate::MateBox) = mate.box
+
+# Assume that mates and daggers commute, as in a dagger compact category.
+# Normalize to apply mates before daggers.
+dagger(mate::MateBox) = DaggerBox(mate)
+mate(dagger::DaggerBox) = dagger(mate(dagger.box))
 
 end
