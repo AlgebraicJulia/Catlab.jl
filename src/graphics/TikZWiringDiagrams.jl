@@ -123,9 +123,13 @@ function tikz_wire(diagram::WiringDiagram, wire::Wire, opts::TikZOptions)::TikZ.
   # Use source port for wire label, following the Graphviz wiring diagrams.
   src_layout = port_value(diagram, wire.source)
   tgt_layout = port_value(diagram, wire.target)
-  label = opts.labels && src_layout.wire_labels && tgt_layout.wire_labels ?
+  label = opts.labels && src_layout.label_wires && tgt_layout.label_wires ?
     tikz_label(src_layout.value, opts) : nothing
   props = [ TikZ.Property("wire", label) ]
+  if !isnothing(opts.arrowtip)
+    reversed = src_layout.reverse_wires && tgt_layout.reverse_wires
+    push!(props, TikZ.Property(reversed ? "<-" : "->"))
+  end
   
   TikZ.Edge(exprs...; props=props)
 end
@@ -227,29 +231,30 @@ function tikz_styles(opts::TikZOptions)
   styles = deepcopy(default_tikz_styles)
   libraries = String[]
   
-  # Options for box styles.
+  # Box style options.
   if opts.rounded_boxes
     push!(styles["box"], TikZ.Property("rounded corners"))
   end
   
-  # Options for wire style.
-  decorations = TikZ.Property[]
+  # Wire style options.
   if opts.labels
     anchor = tikz_anchor(svector(opts, 0, 1))
-    push!(decorations, TikZ.Property("mark",
-      "at position $(opts.labels_pos) with {\\node[anchor=$anchor] {#1};}"))
+    append!(styles["wire"], tikz_decorate_markings([
+      "at position $(opts.labels_pos) with {\\node[anchor=$anchor] {#1};}"
+    ]))
+    push!(libraries, "decorations.markings")
   end
   if !isnothing(opts.arrowtip)
-    push!(decorations, TikZ.Property("mark",
-      "at position $(opts.arrowtip_pos) with {\\arrow{$(opts.arrowtip)}}"))
-    push!(libraries, "arrows.meta")
-  end
-  if !isempty(decorations)
-    append!(styles["wire"], [
-      TikZ.Property("postaction", [ TikZ.Property("decorate") ]),
-      TikZ.Property("decoration", [ TikZ.Property("markings"); decorations ]),
-    ])
-    push!(libraries, "decorations.markings")
+    pos, arrowtip = opts.arrowtip_pos, opts.arrowtip
+    merge!(styles, OrderedDict(
+      "->" => tikz_decorate_markings([
+        "at position $pos with {\\arrow{$arrowtip}}"
+      ]),
+      "<-" => tikz_decorate_markings([
+        "at position $pos with {\\arrow{$arrowtip[reversed]}}"
+      ]),
+    ))
+    append!(libraries, ["arrows.meta", "decorations.markings"])
   end
   
   (styles, libraries)
@@ -280,6 +285,14 @@ const default_tikz_styles = OrderedDict{String,Vector{TikZ.Property}}(
     TikZ.Property("draw"),
   ],
 )
+
+function tikz_decorate_markings(marks::Vector{TikZ.Property})
+  [ TikZ.Property("postaction", [ TikZ.Property("decorate") ]),
+    TikZ.Property("decoration", [ TikZ.Property("markings"); marks ]) ]
+end
+function tikz_decorate_markings(marks::Vector{String})
+  tikz_decorate_markings([ TikZ.Property("mark", mark) for mark in marks ])
+end
 
 const tikz_shapes = Dict(
   RectangleShape => "box",

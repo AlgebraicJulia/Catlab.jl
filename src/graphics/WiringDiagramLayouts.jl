@@ -93,7 +93,8 @@ contents_upper_corner(diagram::WiringDiagram) =
   value::Value = nothing
   position::Vector2D = zeros(Vector2D) # Position relative to box center.
   normal::Vector2D = zeros(Vector2D)   # Outward unit normal vector.
-  wire_labels::Bool = true             # Show labels for wires into/out of port?
+  label_wires::Bool = true             # Show labels for wires into/out of port?
+  reverse_wires::Bool = false          # Reverse wires into/out of port?
 end
 
 position(layout::PortLayout) = layout.position
@@ -155,6 +156,9 @@ layout_hom_expr(f::HomExpr{:mcopy}, opts) = layout_junction_expr(f, opts)
 layout_hom_expr(f::HomExpr{:delete}, opts) = layout_junction_expr(f, opts)
 layout_hom_expr(f::HomExpr{:mmerge}, opts) = layout_junction_expr(f, opts)
 layout_hom_expr(f::HomExpr{:create}, opts) = layout_junction_expr(f, opts)
+
+layout_port(A::ObExpr{:dual}; kw...) =
+  PortLayout(; value=A, reverse_wires=true, kw...)
 layout_hom_expr(f::HomExpr{:dunit}, opts) =
   layout_junction_expr(f, opts; visible=false, pad=false)
 layout_hom_expr(f::HomExpr{:dcounit}, opts) =
@@ -288,9 +292,9 @@ function layout_junction(value::Any, inputs::Vector, outputs::Vector,
   size = 2*SVector(radius, radius)
   box = Box(BoxLayout(value=value, shape=shape, size=size),
             layout_circular_ports(InputPort, inputs, radius, opts;
-                                  pad=pad, wire_labels=length(inputs) <= 1),
+                                  pad=pad, label_wires=length(inputs) <= 1),
             layout_circular_ports(OutputPort, outputs, radius, opts;
-                                  pad=pad, wire_labels=length(outputs) <= 1))
+                                  pad=pad, label_wires=length(outputs) <= 1))
   size_to_fit!(singleton_diagram(box), opts)
 end
 
@@ -322,7 +326,7 @@ function layout_linear_ports(port_kind::PortKind, port_values::Vector,
   n = length(port_values)
   coeffs = range(-(n-1), n-1, step=2) / 2 # Always length n
   positions = [ start + coeff .* offset for coeff in coeffs ]
-  PortLayout[ PortLayout(value=value, position=pos, normal=normal_dir; kw...)
+  PortLayout[ layout_port(value, position=pos, normal=normal_dir; kw...)
               for (value, pos) in zip(port_values, positions) ]
 end
 
@@ -339,7 +343,7 @@ function layout_circular_ports(port_kind::PortKind, port_values::Vector,
     elseif port_dir == SVector(0,-1); (0, π) end
   θs = collect(pad ? range(θ1,θ2,length=n+2)[2:n+1] : range(θ1,θ2,length=n))
   dirs = [ SVector(cos(θ),-sin(θ)) for θ in θs ] # positive y-axis downwards
-  PortLayout[ PortLayout(value=value, position=radius*dir, normal=dir; kw...)
+  PortLayout[ layout_port(value, position=radius*dir, normal=dir; kw...)
               for (value, dir) in zip(port_values, dirs) ]
 end
 
@@ -351,6 +355,8 @@ function layout_ports!(diagram::WiringDiagram, opts::LayoutOptions)
     OutputPort, map(original_value, output_ports(diagram)), size(diagram), opts)
   diagram
 end
+
+layout_port(value; kw...) = PortLayout(; value=value, kw...)
 
 function position(diagram::WiringDiagram, port::Port)
   pos = position(port_value(diagram, port))
