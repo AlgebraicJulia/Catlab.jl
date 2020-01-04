@@ -12,7 +12,7 @@ using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
 using ..WiringDiagramLayouts
 using ..WiringDiagramLayouts: AbstractVector2D, Vector2D, BoxLayout, BoxShape,
   RectangleShape, CircleShape, JunctionShape, NoShape,
-  position, normal, tangent, port_sign, wire_points
+  box_label, wire_label, position, normal, tangent, port_sign, wire_points
 import ..WiringDiagramLayouts: svector
 import ..TikZ
 
@@ -75,7 +75,7 @@ function tikz_box(diagram::WiringDiagram, vpath::Vector{Int}, opts::TikZOptions)
     tikz_node(diagram.value, opts, name=box_id(vpath), style="outer box");
     reduce(vcat, [ tikz_box(box(diagram, v), [vpath; v], opts)
                    for v in box_ids(diagram) ], init=[]);
-    [ tikz_wire(diagram, wire, opts) for wire in wires(diagram) ];
+    [ tikz_edge(diagram, wire, opts) for wire in wires(diagram) ];
   ]
 end
 
@@ -92,7 +92,7 @@ function tikz_node(layout::BoxLayout, opts::TikZOptions;
     style = tikz_shapes[layout.shape]
   end
   content = layout.shape in tikz_content_shapes ?
-    tikz_label(layout.value, opts) : ""
+    tikz_node_label(layout.value, opts) : ""
   TikZ.Node(name,
     props=[TikZ.Property(style); tikz_size(layout.size)],
     coord=tikz_coordinate(layout.position),
@@ -101,7 +101,7 @@ end
 
 """ Make a TikZ edge/path for a wire.
 """
-function tikz_wire(diagram::WiringDiagram, wire::Wire, opts::TikZOptions)::TikZ.Edge
+function tikz_edge(diagram::WiringDiagram, wire::Wire, opts::TikZOptions)::TikZ.Edge
   src, src_angle = tikz_port(diagram, wire.source, opts)
   tgt, tgt_angle = tikz_port(diagram, wire.target, opts)
   exprs, prev_angle = TikZ.PathExpression[ src ], src_angle
@@ -124,7 +124,7 @@ function tikz_wire(diagram::WiringDiagram, wire::Wire, opts::TikZOptions)::TikZ.
   src_layout = port_value(diagram, wire.source)
   tgt_layout = port_value(diagram, wire.target)
   label = opts.labels && src_layout.label_wires && tgt_layout.label_wires ?
-    tikz_label(src_layout.value, opts) : nothing
+    tikz_edge_label(src_layout.value, opts) : nothing
   props = [ TikZ.Property("wire", label) ]
   if !isnothing(opts.arrowtip)
     reversed = src_layout.reverse_wires && tgt_layout.reverse_wires
@@ -165,17 +165,12 @@ function tikz_port(diagram::WiringDiagram, port::Port, opts::TikZOptions)
   (TikZ.NodeCoordinate(coord), normal_angle)
 end
 
-function tikz_label(x, opts::TikZOptions)
-  opts.math_mode ? string("\$", x, "\$") : string(x)
+function tikz_node_label(value, opts::TikZOptions)
+  box_label(MIME(opts.math_mode ? "text/latex" : "text/plain"), value)
 end
-function tikz_label(expr::GATExpr, opts::TikZOptions)
-  if opts.math_mode
-    string("\$", sprint(show_latex, expr), "\$")
-  else
-    sprint(show, expr)
-  end
+function tikz_edge_label(value, opts::TikZOptions)
+  wire_label(MIME(opts.math_mode ? "text/latex" : "text/plain"), value)
 end
-tikz_label(::Nothing, opts::TikZOptions) = ""
 
 # TikZ geometry
 ###############

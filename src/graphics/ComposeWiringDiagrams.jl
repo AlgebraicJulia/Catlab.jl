@@ -10,9 +10,9 @@ const C = Compose
 
 using ...WiringDiagrams
 using ..WiringDiagramLayouts
-using ..WiringDiagramLayouts: AbstractVector2D, Vector2D,
-  BoxShape, RectangleShape, JunctionShape, NoShape,
-  position, size, lower_corner, upper_corner, normal, tangent, wire_points
+using ..WiringDiagramLayouts: AbstractVector2D, Vector2D, BoxShape,
+  RectangleShape, JunctionShape, NoShape, box_label, position, size,
+  lower_corner, upper_corner, normal, tangent, wire_points
 
 # Data types
 ############
@@ -130,7 +130,7 @@ function render_box(shape::BoxShape, value::Any, opts::ComposeOptions)
   render_box(Val(shape), value, opts)
 end
 function render_box(::Val{RectangleShape}, value::Any, opts::ComposeOptions)
-  labeled_rectangle(string(value), rounded=opts.rounded_boxes,
+  labeled_rectangle(box_label(value), rounded=opts.rounded_boxes,
     rect_props=opts.box_props, text_props=opts.text_props)
 end
 function render_box(::Val{JunctionShape}, ::Any, opts::ComposeOptions)

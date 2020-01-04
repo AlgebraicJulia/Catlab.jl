@@ -8,7 +8,7 @@ using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
 import ..Graphviz
 import ..Graphviz: to_graphviz
 using ..WiringDiagramLayouts: LayoutOrientation, LeftToRight, RightToLeft,
-  TopToBottom, BottomToTop, is_horizontal, is_vertical
+  TopToBottom, BottomToTop, is_horizontal, is_vertical, box_label, wire_label
 
 # Constants and data types
 ##########################
@@ -342,13 +342,11 @@ const port_anchors = Dict{Tuple{PortKind,LayoutOrientation},String}(
 
 """ Create a label for the main content of a box.
 """
-node_label(box_value::Any) = string(box_value)
-node_label(::Nothing) = ""
+node_label(box_value) = box_label(box_value)
 
 """ Create a label for an edge.
 """
-edge_label(port_value::Any) = string(port_value)
-edge_label(::Nothing) = ""
+edge_label(port_value) = wire_label(port_value)
 
 """ Encode attributes for Graphviz HTML-like labels.
 """

@@ -156,13 +156,14 @@ layout_hom_expr(f::HomExpr{:mcopy}, opts) = layout_junction_expr(f, opts)
 layout_hom_expr(f::HomExpr{:delete}, opts) = layout_junction_expr(f, opts)
 layout_hom_expr(f::HomExpr{:mmerge}, opts) = layout_junction_expr(f, opts)
 layout_hom_expr(f::HomExpr{:create}, opts) = layout_junction_expr(f, opts)
-
-layout_port(A::ObExpr{:dual}; kw...) =
-  PortLayout(; value=A, reverse_wires=true, kw...)
 layout_hom_expr(f::HomExpr{:dunit}, opts) =
   layout_junction_expr(f, opts; visible=false, pad=false)
 layout_hom_expr(f::HomExpr{:dcounit}, opts) =
   layout_junction_expr(f, opts; visible=false, pad=false)
+  
+layout_port(A::ObExpr{:dual}; kw...) =
+  PortLayout(; value=A, reverse_wires=true, kw...)
+wire_label(mime::MIME, A::ObExpr{:dual}) = wire_label(mime, first(A))
 
 layout_box_expr(f::HomExpr, opts; kw...) =
   layout_box(f, collect(dom(f)), collect(codom(f)), opts; kw...)
@@ -397,5 +398,27 @@ end
 
 merge_wire_layouts(left::WireLayout, middle::WireLayout, right::WireLayout) =
   vcat(wire_points(left), wire_points(middle), wire_points(right))
+
+# Labels
+########
+
+""" Label for box in wiring diagram.
+"""
+box_label(value) = box_label(MIME("text/plain"), value)
+box_label(mime::MIME, value) = diagram_element_label(mime, value)
+
+""" Label for wire in wiring diagram.
+
+Note: This function takes a port value, not a wire value.
+"""
+wire_label(value) = wire_label(MIME("text/plain"), value)
+wire_label(mime::MIME, value) = diagram_element_label(mime, value)
+
+diagram_element_label(::MIME, value) = string(value)
+diagram_element_label(::MIME, ::Nothing) = ""
+
+function diagram_element_label(::MIME"text/latex", expr::GATExpr)
+  string("\$", sprint(show_latex, expr), "\$")
+end
 
 end
