@@ -330,7 +330,8 @@ end
 end
 
 @syntax FreeCompactClosedCategory(ObExpr,HomExpr) CompactClosedCategory begin
-  dual(A::Ob) = anti_involute(Super.dual(A), dual, otimes, munit)
+  dual(A::Ob) = distribute_unary(involute(Super.dual(A)), dual, otimes,
+                                 unit=munit, contravariant=true)
   otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
@@ -360,7 +361,13 @@ end
 
 @syntax FreeDaggerCategory(ObExpr,HomExpr) DaggerCategory begin
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
-  dagger(f::Hom) = anti_involute(Super.dagger(f), dagger, compose, id)
+  dagger(f::Hom) = distribute_dagger(involute(Super.dagger(f)))
+end
+
+""" Distribute dagger over composition.
+"""
+function distribute_dagger(f::HomExpr)
+  distribute_unary(f, dagger, compose, unit=id, contravariant=true)
 end
 
 """ Doctrine of *dagger compact category*
@@ -373,14 +380,13 @@ FIXME: This signature should extend both `DaggerCategory` and
 end
 
 @syntax FreeDaggerCompactCategory(ObExpr,HomExpr) DaggerCompactCategory begin
-  dual(A::Ob) = anti_involute(Super.dual(A), dual, otimes, munit)
+  dual(A::Ob) = distribute_unary(involute(Super.dual(A)), dual, otimes,
+                                 unit=munit, contravariant=true)
   otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
-  function dagger(f::Hom)
-    f = anti_involute(Super.dagger(f), dagger, compose, id)
-    distribute_unary(f, dagger, otimes)
-  end
+  dagger(f::Hom) = distribute_unary(distribute_dagger(involute(Super.dagger(f))),
+                                    dagger, otimes)
 end
 
 function show_latex(io::IO, expr::HomExpr{:dagger}; kw...)

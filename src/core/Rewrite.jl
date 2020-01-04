@@ -4,8 +4,9 @@ The current content of this module is just a stopgap until I can implement
 a generic term rewriting system.
 """
 module Rewrite
-export associate, associate_unit, distribute_unary, anti_involute
+export associate, associate_unit, distribute_unary, involute
 
+using Compat
 using ..Syntax
 
 """ Simplify associative binary operation.
@@ -31,36 +32,29 @@ function associate_unit(expr::GATExpr, unit::Function)::GATExpr
   else associate(expr) end
 end
 
-""" Distribute unary operation over a binary operation.
+""" Distribute unary operation over binary operation.
 """
-function distribute_unary(raw_expr::GATExpr, un_op::Function,
-                          bin_op::Function)::GATExpr
-  if head(raw_expr) != nameof(un_op)
-    return raw_expr
-  end
-  expr = first(raw_expr)
-  if head(expr) == nameof(bin_op)
-    bin_op([un_op(A) for A in args(expr)]...)
+function distribute_unary(expr::GATExpr, unary::Function, binary::Function;
+                          unit::Union{Function,Nothing}=nothing,
+                          contravariant::Bool=false)::GATExpr
+  if (head(expr) != nameof(unary)) return expr end
+  @assert length(args(expr)) == 1
+  arg = first(expr)
+  if head(arg) == nameof(binary)
+    binary(map(unary, (contravariant ? reverse : identity)(args(arg))))
+  elseif !isnothing(unit) && head(arg) == nameof(unit)
+    arg
   else
-    raw_expr
+    expr
   end
 end
 
-""" Simplify unary operation that is an anti-involution on a (typed) monoid.
-""" 
-function anti_involute(raw_expr::GATExpr, inv::Function, op::Function,
-                       unit::Function)::GATExpr
-  if head(raw_expr) != nameof(inv)
-    return raw_expr
-  end
-  expr = first(raw_expr)
-  if head(expr) == nameof(inv)
-    first(expr)
-  elseif head(expr) == nameof(op)
-    op([inv(A) for A in reverse(args(expr))]...)
-  elseif head(expr) == nameof(unit)
-    expr
-  else raw_expr end
+""" Simplify involutive unary operation.
+"""
+function involute(expr::GATExpr)
+  @assert length(args(expr)) == 1
+  arg = first(expr)
+  head(expr) == head(arg) ? first(arg) : expr
 end
 
 end

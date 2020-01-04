@@ -138,6 +138,7 @@ f = Hom(:f, otimes(A,B), C)
 @test dual(otimes(A,B)) == otimes(dual(B),dual(A))
 @test dual(I) == I
 @test dual(dual(A)) == A
+@test dual(otimes(dual(A),dual(B))) == otimes(B,A)
 
 # Domains and codomains
 @test dom(dunit(A)) == I
