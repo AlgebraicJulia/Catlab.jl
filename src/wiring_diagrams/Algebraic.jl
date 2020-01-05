@@ -19,7 +19,7 @@ using ...GAT, ...Doctrines
 import ...Doctrines: dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid,
   mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
   meet, top
-import ...Syntax: functor
+import ...Syntax: functor, head
 using ..WiringDiagramCore, ..WiringLayers
 import ..WiringDiagramCore: Box, WiringDiagram, input_ports, output_ports
 
@@ -317,14 +317,19 @@ end
 Junction nodes are used to explicitly represent copies, merges, deletions,
 creations, caps, and cups.
 """
-@auto_hash_equals struct Junction{Value} <: AbstractBox
+@auto_hash_equals struct Junction{Op,Value} <: AbstractBox
   value::Value
   input_ports::Vector
   output_ports::Vector
+  Junction{Op}(value::Value, inputs::Vector, outputs::Vector) where {Op,Value} =
+    new{Op,Value}(value, inputs, outputs)
 end
 
-Junction(value, ninputs::Int, noutputs::Int) =
-  Junction(value, repeat([value], ninputs), repeat([value], noutputs))
+Junction(args...) = Junction{nothing}(args...)
+Junction{Op}(value, ninputs::Int, noutputs::Int) where Op =
+  Junction{Op}(value, repeat([value], ninputs), repeat([value], noutputs))
+
+head(junction::Junction{Op}) where Op = Op
 
 """ Wiring diagram with a junction node for each of the given ports.
 """
@@ -435,8 +440,8 @@ end
 
 """ Merge adjacent junction nodes into single junctions.
 """
-function merge_junctions(d::WiringDiagram)
-  junction_ids = filter(v -> box(d,v) isa Junction, box_ids(d))
+function merge_junctions(d::WiringDiagram; op=nothing)
+  junction_ids = filter(v -> box(d,v) isa Junction{op}, box_ids(d))
   junction_graph, vmap = induced_subgraph(graph(d), junction_ids)
   for edge in edges(junction_graph)
     # Only merge junctions with equal values.
@@ -448,7 +453,8 @@ function merge_junctions(d::WiringDiagram)
     for component in weakly_connected_components(junction_graph)
     if length(component) > 1 ]
   values = [ box(d, first(component)).value for component in components ]
-  encapsulate(d, components; discard_boxes=true, values=values, make_box=Junction)
+  encapsulate(d, components;
+    discard_boxes=true, values=values, make_box=Junction{op})
 end
 
 # Operations on ports and boxes
@@ -458,18 +464,21 @@ end
 
 Represents unary operations on ports in wiring diagrams.
 """
-@auto_hash_equals struct PortOp{T}
+@auto_hash_equals struct PortOp{Op}
   value::Any
 end
+
+head(::PortOp{Op}) where Op = Op
 
 """ Box wrapping another box.
 
 Represents unary operations on boxes in wiring diagrams.
 """
-@auto_hash_equals struct BoxOp{T} <: AbstractBox
+@auto_hash_equals struct BoxOp{op} <: AbstractBox
   box::AbstractBox
 end
 
+head(::BoxOp{Op}) where Op = Op
 input_ports(op::BoxOp) = input_ports(op.box)
 output_ports(op::BoxOp) = output_ports(op.box)
 
