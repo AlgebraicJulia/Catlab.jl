@@ -203,6 +203,23 @@ g = singleton_diagram(CompactClosedCategory.Hom, Box(:g,[:B],[:A]))
 @test mate(mate(compose(f,g))) == compose(f,g)
 @test mate(mate(otimes(f,g))) == otimes(f,g)
 
+# Bicategory of relations
+#------------------------
+
+A, B = [ Ports{BicategoryRelations.Hom}([sym]) for sym in [:A, :B] ]
+R = singleton_diagram(BicategoryRelations.Hom, Box(:R,[:A],[:B]))
+S = singleton_diagram(BicategoryRelations.Hom, Box(:S,[:A],[:B]))
+
+# Domains and codomains
+@test dom(meet(R,S)) == A
+@test codom(meet(R,S)) == B
+@test dom(top(A,B)) == A
+@test codom(top(A,B)) == B
+
+# Units and counits
+@test dunit(A) == merge_junctions(compose(create(A), mcopy(A)))
+@test dcounit(A) == merge_junctions(compose(mmerge(A), delete(A)))
+
 # Operadic interface
 ####################
 

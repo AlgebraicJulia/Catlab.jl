@@ -9,15 +9,16 @@ module AlgebraicWiringDiagrams
 export Ports, Junction, PortOp, BoxOp,
   functor, dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid, permute,
   mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
-  ocompose, junction_diagram, junction_caps, junction_cups, add_junctions,
-  add_junctions!, rem_junctions, merge_junctions
+  meet, top, ocompose, junction_diagram, junction_caps, junction_cups,
+  add_junctions, add_junctions!, rem_junctions, merge_junctions
 
 using AutoHashEquals
 using LightGraphs
 
 using ...GAT, ...Doctrines
 import ...Doctrines: dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid,
-  mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger
+  mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
+  meet, top
 import ...Syntax: functor
 using ..WiringDiagramCore, ..WiringLayers
 import ..WiringDiagramCore: Box, WiringDiagram, input_ports, output_ports
@@ -268,6 +269,25 @@ dagger(f::WiringDiagram{DaggerCompactCategory.Hom}) =
   functor(f, identity, dagger, contravariant=true)
 mate(f::WiringDiagram{DaggerCompactCategory.Hom}) =
   functor(f, dual, mate, contravariant=true, monoidal_contravariant=true)
+
+# Bicategory of relations
+#------------------------
+
+mcopy(A::Ports{BicategoryRelations.Hom}, n::Int) = junctioned_mcopy(A, n)
+mmerge(A::Ports{BicategoryRelations.Hom}, n::Int) = junctioned_mmerge(A, n)
+delete(A::Ports{BicategoryRelations.Hom}) = junctioned_delete(A)
+create(A::Ports{BicategoryRelations.Hom}) = junctioned_create(A)
+
+dagger(f::WiringDiagram{BicategoryRelations.Hom}) =
+  functor(f, identity, dagger, contravariant=true)
+
+dunit(A::Ports{BicategoryRelations.Hom}) = junction_caps(A)
+dcounit(A::Ports{BicategoryRelations.Hom}) = junction_cups(A)
+
+meet(f::WiringDiagram{BicategoryRelations.Hom}, g::WiringDiagram{BicategoryRelations.Hom}) =
+  compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
+top(A::Ports{BicategoryRelations.Hom}, B::Ports{BicategoryRelations.Hom}) =
+  compose(delete(A), create(B))
 
 # Operadic interface
 ####################
