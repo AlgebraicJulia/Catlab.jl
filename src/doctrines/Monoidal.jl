@@ -8,6 +8,7 @@ export MonoidalCategory, otimes, munit, ⊗, collect, ndims,
   CartesianClosedCategory, FreeCartesianClosedCategory, hom, ev, curry,
   CompactClosedCategory, FreeCompactClosedCategory, dual, dunit, dcounit, mate,
   DaggerCategory, FreeDaggerCategory, dagger,
+  DaggerSymmetricMonoidalCategory, FreeDaggerSymmetricMonoidalCategory,
   DaggerCompactCategory, FreeDaggerCompactCategory
 
 import Base: collect, ndims
@@ -378,6 +379,26 @@ end
 """
 function distribute_dagger(f::HomExpr)
   distribute_unary(f, dagger, compose, unit=id, contravariant=true)
+end
+
+""" Doctrine of *dagger symmetric monoidal category*
+
+Also known as a [symmetric monoidal dagger
+category](https://ncatlab.org/nlab/show/symmetric+monoidal+dagger-category).
+
+FIXME: This signature should extend both `DaggerCategory` and
+`SymmetricMonoidalCategory`, but multiple inheritance is not yet supported.
+"""
+@signature SymmetricMonoidalCategory(Ob,Hom) => DaggerSymmetricMonoidalCategory(Ob,Hom) begin
+  dagger(f::Hom(A,B))::Hom(B,A) <= (A::Ob, B::Ob)
+end
+
+@syntax FreeDaggerSymmetricMonoidalCategory(ObExpr,HomExpr) DaggerSymmetricMonoidalCategory begin
+  otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
+  otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
+  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+  dagger(f::Hom) = distribute_unary(distribute_dagger(involute(Super.dagger(f))),
+                                    dagger, otimes)
 end
 
 """ Doctrine of *dagger compact category*

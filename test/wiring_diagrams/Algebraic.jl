@@ -143,8 +143,31 @@ A = Ports{BiproductCategory.Hom}([:A])
 @test compose(create(A), mcopy(A)) == create(otimes(A,A))
 @test compose(mmerge(A), delete(A)) == delete(otimes(A,A))
 
-# Duals
-#------
+# Dagger category
+#----------------
+
+f = singleton_diagram(DaggerSymmetricMonoidalCategory.Hom, Box(:f,[:A],[:B]))
+g = singleton_diagram(DaggerSymmetricMonoidalCategory.Hom, Box(:g,[:B],[:A]))
+
+@test boxes(dagger(f)) == [ BoxOp{:dagger}(Box(:f,[:A],[:B])) ]
+
+# Domain and codomain
+@test dom(dagger(f)) == codom(f)
+@test codom(dagger(f)) == dom(f)
+
+# Functoriality
+@test is_permuted_equal(dagger(compose(f,g)), compose(dagger(g),dagger(f)), [2,1])
+@test dagger(otimes(f,g)) == otimes(dagger(f),dagger(g))
+
+# Involutivity
+@test dagger(dagger(f)) == f
+@test dagger(dagger(compose(f,g))) == compose(f,g)
+@test dagger(dagger(otimes(f,g))) == otimes(f,g)
+
+# Compact closed category
+#------------------------
+
+### Duals
 
 A, B = [ Ports{CompactClosedCategory.Hom}([sym]) for sym in [:A, :B] ]
 I = munit(typeof(A))
@@ -159,6 +182,26 @@ I = munit(typeof(A))
 @test codom(dcounit(A)) == I
 @test codom(dunit(otimes(A,B))) == otimes(dual(B),dual(A),A,B)
 @test dom(dcounit(otimes(A,B))) == otimes(A,B,dual(B),dual(A))
+
+### Adjoint mates
+
+f = singleton_diagram(CompactClosedCategory.Hom, Box(:f,[:A],[:B]))
+g = singleton_diagram(CompactClosedCategory.Hom, Box(:g,[:B],[:A]))
+
+@test boxes(mate(f)) == [ BoxOp{:mate}(Box(:f,[:A],[:B])) ]
+
+# Domain and codomain
+@test dom(mate(f)) == dual(codom(f))
+@test codom(mate(f)) == dual(dom(f))
+
+# Functoriality
+@test is_permuted_equal(mate(compose(f,g)), compose(mate(g),mate(f)), [2,1])
+@test is_permuted_equal(mate(otimes(f,g)), otimes(mate(g),mate(f)), [2,1])
+
+# Involutivity
+@test mate(mate(f)) == f
+@test mate(mate(compose(f,g))) == compose(f,g)
+@test mate(mate(otimes(f,g))) == otimes(f,g)
 
 # Operadic interface
 ####################
