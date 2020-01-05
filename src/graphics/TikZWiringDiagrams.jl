@@ -12,7 +12,7 @@ using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
 using ..WiringDiagramLayouts
 using ..WiringDiagramLayouts: AbstractVector2D, Vector2D, BoxLayout, BoxShape,
   RectangleShape, CircleShape, JunctionShape, NoShape,
-  position, normal, tangent, port_sign, wire_points
+  box_label, wire_label, position, normal, tangent, port_sign, wire_points
 import ..WiringDiagramLayouts: svector
 import ..TikZ
 
@@ -75,7 +75,7 @@ function tikz_box(diagram::WiringDiagram, vpath::Vector{Int}, opts::TikZOptions)
     tikz_node(diagram.value, opts, name=box_id(vpath), style="outer box");
     reduce(vcat, [ tikz_box(box(diagram, v), [vpath; v], opts)
                    for v in box_ids(diagram) ], init=[]);
-    [ tikz_wire(diagram, wire, opts) for wire in wires(diagram) ];
+    [ tikz_edge(diagram, wire, opts) for wire in wires(diagram) ];
   ]
 end
 
@@ -92,7 +92,7 @@ function tikz_node(layout::BoxLayout, opts::TikZOptions;
     style = tikz_shapes[layout.shape]
   end
   content = layout.shape in tikz_content_shapes ?
-    tikz_label(layout.value, opts) : ""
+    tikz_node_label(layout.value, opts) : ""
   TikZ.Node(name,
     props=[TikZ.Property(style); tikz_size(layout.size)],
     coord=tikz_coordinate(layout.position),
@@ -101,7 +101,7 @@ end
 
 """ Make a TikZ edge/path for a wire.
 """
-function tikz_wire(diagram::WiringDiagram, wire::Wire, opts::TikZOptions)::TikZ.Edge
+function tikz_edge(diagram::WiringDiagram, wire::Wire, opts::TikZOptions)::TikZ.Edge
   src, src_angle = tikz_port(diagram, wire.source, opts)
   tgt, tgt_angle = tikz_port(diagram, wire.target, opts)
   exprs, prev_angle = TikZ.PathExpression[ src ], src_angle
@@ -123,9 +123,13 @@ function tikz_wire(diagram::WiringDiagram, wire::Wire, opts::TikZOptions)::TikZ.
   # Use source port for wire label, following the Graphviz wiring diagrams.
   src_layout = port_value(diagram, wire.source)
   tgt_layout = port_value(diagram, wire.target)
-  label = opts.labels && src_layout.wire_labels && tgt_layout.wire_labels ?
-    tikz_label(src_layout.value, opts) : nothing
+  label = opts.labels && src_layout.label_wires && tgt_layout.label_wires ?
+    tikz_edge_label(src_layout.value, opts) : nothing
   props = [ TikZ.Property("wire", label) ]
+  if !isnothing(opts.arrowtip)
+    reversed = src_layout.reverse_wires && tgt_layout.reverse_wires
+    push!(props, TikZ.Property(reversed ? "<-" : "->"))
+  end
   
   TikZ.Edge(exprs...; props=props)
 end
@@ -161,17 +165,12 @@ function tikz_port(diagram::WiringDiagram, port::Port, opts::TikZOptions)
   (TikZ.NodeCoordinate(coord), normal_angle)
 end
 
-function tikz_label(x, opts::TikZOptions)
-  opts.math_mode ? string("\$", x, "\$") : string(x)
+function tikz_node_label(value, opts::TikZOptions)
+  box_label(MIME(opts.math_mode ? "text/latex" : "text/plain"), value)
 end
-function tikz_label(expr::GATExpr, opts::TikZOptions)
-  if opts.math_mode
-    string("\$", sprint(show_latex, expr), "\$")
-  else
-    sprint(show, expr)
-  end
+function tikz_edge_label(value, opts::TikZOptions)
+  wire_label(MIME(opts.math_mode ? "text/latex" : "text/plain"), value)
 end
-tikz_label(::Nothing, opts::TikZOptions) = ""
 
 # TikZ geometry
 ###############
@@ -227,29 +226,30 @@ function tikz_styles(opts::TikZOptions)
   styles = deepcopy(default_tikz_styles)
   libraries = String[]
   
-  # Options for box styles.
+  # Box style options.
   if opts.rounded_boxes
     push!(styles["box"], TikZ.Property("rounded corners"))
   end
   
-  # Options for wire style.
-  decorations = TikZ.Property[]
+  # Wire style options.
   if opts.labels
     anchor = tikz_anchor(svector(opts, 0, 1))
-    push!(decorations, TikZ.Property("mark",
-      "at position $(opts.labels_pos) with {\\node[anchor=$anchor] {#1};}"))
+    append!(styles["wire"], tikz_decorate_markings([
+      "at position $(opts.labels_pos) with {\\node[anchor=$anchor] {#1};}"
+    ]))
+    push!(libraries, "decorations.markings")
   end
   if !isnothing(opts.arrowtip)
-    push!(decorations, TikZ.Property("mark",
-      "at position $(opts.arrowtip_pos) with {\\arrow{$(opts.arrowtip)}}"))
-    push!(libraries, "arrows.meta")
-  end
-  if !isempty(decorations)
-    append!(styles["wire"], [
-      TikZ.Property("postaction", [ TikZ.Property("decorate") ]),
-      TikZ.Property("decoration", [ TikZ.Property("markings"); decorations ]),
-    ])
-    push!(libraries, "decorations.markings")
+    pos, arrowtip = opts.arrowtip_pos, opts.arrowtip
+    merge!(styles, OrderedDict(
+      "->" => tikz_decorate_markings([
+        "at position $pos with {\\arrow{$arrowtip}}"
+      ]),
+      "<-" => tikz_decorate_markings([
+        "at position $pos with {\\arrow{$arrowtip[reversed]}}"
+      ]),
+    ))
+    append!(libraries, ["arrows.meta", "decorations.markings"])
   end
   
   (styles, libraries)
@@ -280,6 +280,14 @@ const default_tikz_styles = OrderedDict{String,Vector{TikZ.Property}}(
     TikZ.Property("draw"),
   ],
 )
+
+function tikz_decorate_markings(marks::Vector{TikZ.Property})
+  [ TikZ.Property("postaction", [ TikZ.Property("decorate") ]),
+    TikZ.Property("decoration", [ TikZ.Property("markings"); marks ]) ]
+end
+function tikz_decorate_markings(marks::Vector{String})
+  tikz_decorate_markings([ TikZ.Property("mark", mark) for mark in marks ])
+end
 
 const tikz_shapes = Dict(
   RectangleShape => "box",

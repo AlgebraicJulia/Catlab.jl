@@ -32,12 +32,8 @@ end
   otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
-
-  function dagger(f::Hom)
-    f = anti_involute(Super.dagger(f), dagger, compose, id)
-    distribute_unary(f, dagger, otimes)
-  end
-  
+  dagger(f::Hom) = distribute_unary(distribute_dagger(involute(Super.dagger(f))),
+                                    dagger, otimes)
   meet(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
   top(A::Ob, B::Ob) = compose(delete(A), create(B))
 end
@@ -63,12 +59,8 @@ end
   otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
   compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
-  
-  function dagger(f::Hom)
-    f = anti_involute(Super.dagger(f), dagger, compose, id)
-    distribute_unary(f, dagger, otimes)
-  end
-  
+  dagger(f::Hom) = distribute_unary(distribute_dagger(involute(Super.dagger(f))),
+                                    dagger, otimes)
   meet(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
   top(A::Ob, B::Ob) = compose(delete(A), create(B))
 end

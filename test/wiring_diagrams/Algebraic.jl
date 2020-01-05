@@ -143,6 +143,83 @@ A = Ports{BiproductCategory.Hom}([:A])
 @test compose(create(A), mcopy(A)) == create(otimes(A,A))
 @test compose(mmerge(A), delete(A)) == delete(otimes(A,A))
 
+# Dagger category
+#----------------
+
+f = singleton_diagram(DaggerSymmetricMonoidalCategory.Hom, Box(:f,[:A],[:B]))
+g = singleton_diagram(DaggerSymmetricMonoidalCategory.Hom, Box(:g,[:B],[:A]))
+
+@test boxes(dagger(f)) == [ BoxOp{:dagger}(Box(:f,[:A],[:B])) ]
+
+# Domain and codomain
+@test dom(dagger(f)) == codom(f)
+@test codom(dagger(f)) == dom(f)
+
+# Functoriality
+@test is_permuted_equal(dagger(compose(f,g)), compose(dagger(g),dagger(f)), [2,1])
+@test dagger(otimes(f,g)) == otimes(dagger(f),dagger(g))
+
+# Involutivity
+@test dagger(dagger(f)) == f
+@test dagger(dagger(compose(f,g))) == compose(f,g)
+@test dagger(dagger(otimes(f,g))) == otimes(f,g)
+
+# Compact closed category
+#------------------------
+
+### Duals
+
+A, B = [ Ports{CompactClosedCategory.Hom}([sym]) for sym in [:A, :B] ]
+I = munit(typeof(A))
+
+@test boxes(dunit(A)) == [ Junction(:A, [], [PortOp{:dual}(:A), :A]) ]
+@test boxes(dcounit(A)) == [ Junction(:A, [:A, PortOp{:dual}(:A)], []) ]
+
+# Domains and codomains
+@test dom(dunit(A)) == I
+@test codom(dunit(A)) == otimes(dual(A),A)
+@test dom(dcounit(A)) == otimes(A,dual(A))
+@test codom(dcounit(A)) == I
+@test codom(dunit(otimes(A,B))) == otimes(dual(B),dual(A),A,B)
+@test dom(dcounit(otimes(A,B))) == otimes(A,B,dual(B),dual(A))
+
+### Adjoint mates
+
+f = singleton_diagram(CompactClosedCategory.Hom, Box(:f,[:A],[:B]))
+g = singleton_diagram(CompactClosedCategory.Hom, Box(:g,[:B],[:A]))
+
+@test boxes(mate(f)) == [ BoxOp{:mate}(Box(:f,[:A],[:B])) ]
+
+# Domain and codomain
+@test dom(mate(f)) == dual(codom(f))
+@test codom(mate(f)) == dual(dom(f))
+
+# Functoriality
+@test is_permuted_equal(mate(compose(f,g)), compose(mate(g),mate(f)), [2,1])
+@test is_permuted_equal(mate(otimes(f,g)), otimes(mate(g),mate(f)), [2,1])
+
+# Involutivity
+@test mate(mate(f)) == f
+@test mate(mate(compose(f,g))) == compose(f,g)
+@test mate(mate(otimes(f,g))) == otimes(f,g)
+
+# Bicategory of relations
+#------------------------
+
+A, B = [ Ports{BicategoryRelations.Hom}([sym]) for sym in [:A, :B] ]
+R = singleton_diagram(BicategoryRelations.Hom, Box(:R,[:A],[:B]))
+S = singleton_diagram(BicategoryRelations.Hom, Box(:S,[:A],[:B]))
+
+# Domains and codomains
+@test dom(meet(R,S)) == A
+@test codom(meet(R,S)) == B
+@test dom(top(A,B)) == A
+@test codom(top(A,B)) == B
+
+# Units and counits
+@test dunit(A) == merge_junctions(compose(create(A), mcopy(A)))
+@test dcounit(A) == merge_junctions(compose(mmerge(A), delete(A)))
+
 # Operadic interface
 ####################
 

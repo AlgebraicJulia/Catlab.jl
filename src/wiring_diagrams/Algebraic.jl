@@ -2,21 +2,24 @@
 
 This module provides a high-level functional and algebraic interface to wiring
 diagrams, building on the low-level imperative interface. It also defines data
-types and functions to represent diagonals, codiagonals, units, and counits in
-wiring diagrams as special *junction nodes*.
+types and functions to represent diagonals, codiagonals, duals, caps, cups,
+daggers, and other structures in wiring diagrams.
 """
 module AlgebraicWiringDiagrams
-export Ports, dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid, permute,
-  mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dunit, dcounit, ocompose,
-  Junction, junction_diagram, add_junctions, add_junctions!, rem_junctions,
-  merge_junctions
+export Ports, Junction, PortOp, BoxOp,
+  functor, dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid, permute,
+  mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
+  meet, top, ocompose, junction_diagram, junction_caps, junction_cups,
+  add_junctions, add_junctions!, rem_junctions, merge_junctions
 
 using AutoHashEquals
 using LightGraphs
 
 using ...GAT, ...Doctrines
 import ...Doctrines: dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid,
-  mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dunit, dcounit
+  mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
+  meet, top
+import ...Syntax: functor
 using ..WiringDiagramCore, ..WiringLayers
 import ..WiringDiagramCore: Box, WiringDiagram, input_ports, output_ports
 
@@ -133,6 +136,45 @@ function permute(A::Ports, σ::Vector{Int}; inverse::Bool=false)
   return f
 end
 
+# Functors
+#---------
+
+""" Apply functor in a category of wiring diagrams.
+
+Defined by compatible mappings of ports and boxes.
+"""
+function functor(d::WiringDiagram, f_ports, f_box; contravariant::Bool=false, kw...)
+  functor_impl = contravariant ? contravariant_functor : covariant_functor
+  functor_impl(d, f_ports, f_box; kw...)
+end
+
+function covariant_functor(d::WiringDiagram, f_ports, f_box)
+  result = WiringDiagram(f_ports(dom(d)), f_ports(codom(d)))
+  add_boxes!(result, (f_box(box(d, v)) for v in box_ids(d)))
+  add_wires!(result, wires(d))
+  result
+end
+
+function contravariant_functor(d::WiringDiagram, f_ports, f_box;
+                               monoidal_contravariant::Bool=false)
+  result = WiringDiagram(f_ports(codom(d)), f_ports(dom(d)))
+  add_boxes!(result, (f_box(box(d, v)) for v in box_ids(d)))
+  
+  nports = (port::Port) -> length(
+    (port.kind == InputPort ? input_ports : output_ports)(d, port.box))
+  map_port = (port::Port) -> Port(
+    if (port.box == input_id(d)) output_id(d)
+    elseif (port.box == output_id(d)) input_id(d)
+    else port.box end,
+    port.kind == InputPort ? OutputPort : InputPort,
+    monoidal_contravariant ? nports(port) - port.port + 1 : port.port
+  )
+  add_wires!(result, map(wires(d)) do wire
+    Wire(wire.value, map_port(wire.target), map_port(wire.source))
+  end)
+  result
+end
+
 # Diagonals and codiagonals
 #--------------------------
 
@@ -202,14 +244,50 @@ mmerge(A::Ports{BiproductCategory.Hom}, n::Int) = implicit_mmerge(A, n)
 delete(A::Ports{BiproductCategory.Hom}) = implicit_delete(A)
 create(A::Ports{BiproductCategory.Hom}) = implicit_create(A)
 
+# Dagger category
+#----------------
+
+dagger(f::WiringDiagram{DaggerSymmetricMonoidalCategory.Hom}) =
+  functor(f, identity, dagger, contravariant=true)
+
 # Compact closed category
 #------------------------
 
-# Wiring diagrams as self-dual compact closed category.
-# FIXME: What about compact categories that are not self-dual?
+junctioned_dunit(A::Ports) = junction_caps(A, otimes(dual(A),A))
+junctioned_dcounit(A::Ports) = junction_cups(A, otimes(A,dual(A)))
 
-dunit(A::Ports) = junction_diagram(A, 0, 2)
-dcounit(A::Ports) = junction_diagram(A, 2, 0)
+dual(A::Ports{CompactClosedCategory.Hom}) = dual_ports(A)
+dunit(A::Ports{CompactClosedCategory.Hom}) = junctioned_dunit(A)
+dcounit(A::Ports{CompactClosedCategory.Hom}) = junctioned_dcounit(A)
+mate(f::WiringDiagram{CompactClosedCategory.Hom}) =
+  functor(f, dual, mate, contravariant=true, monoidal_contravariant=true)
+
+dual(A::Ports{DaggerCompactCategory.Hom}) = dual_ports(A)
+dunit(A::Ports{DaggerCompactCategory.Hom}) = junctioned_dunit(A)
+dcounit(A::Ports{DaggerCompactCategory.Hom}) = junctioned_dcounit(A)
+dagger(f::WiringDiagram{DaggerCompactCategory.Hom}) =
+  functor(f, identity, dagger, contravariant=true)
+mate(f::WiringDiagram{DaggerCompactCategory.Hom}) =
+  functor(f, dual, mate, contravariant=true, monoidal_contravariant=true)
+
+# Bicategory of relations
+#------------------------
+
+mcopy(A::Ports{BicategoryRelations.Hom}, n::Int) = junctioned_mcopy(A, n)
+mmerge(A::Ports{BicategoryRelations.Hom}, n::Int) = junctioned_mmerge(A, n)
+delete(A::Ports{BicategoryRelations.Hom}) = junctioned_delete(A)
+create(A::Ports{BicategoryRelations.Hom}) = junctioned_create(A)
+
+dagger(f::WiringDiagram{BicategoryRelations.Hom}) =
+  functor(f, identity, dagger, contravariant=true)
+
+dunit(A::Ports{BicategoryRelations.Hom}) = junction_caps(A)
+dcounit(A::Ports{BicategoryRelations.Hom}) = junction_cups(A)
+
+meet(f::WiringDiagram{BicategoryRelations.Hom}, g::WiringDiagram{BicategoryRelations.Hom}) =
+  compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
+top(A::Ports{BicategoryRelations.Hom}, B::Ports{BicategoryRelations.Hom}) =
+  compose(delete(A), create(B))
 
 # Operadic interface
 ####################
@@ -241,13 +319,14 @@ creations, caps, and cups.
 """
 @auto_hash_equals struct Junction{Value} <: AbstractBox
   value::Value
-  ninputs::Int
-  noutputs::Int
+  input_ports::Vector
+  output_ports::Vector
 end
-input_ports(junction::Junction) = repeat([junction.value], junction.ninputs)
-output_ports(junction::Junction) = repeat([junction.value], junction.noutputs)
 
-""" Wiring diagram with a junction node for each port.
+Junction(value, ninputs::Int, noutputs::Int) =
+  Junction(value, repeat([value], ninputs), repeat([value], noutputs))
+
+""" Wiring diagram with a junction node for each of the given ports.
 """
 function junction_diagram(A::Ports, nin::Int, nout::Int)
   f = WiringDiagram(otimes(repeat([A], nin)), otimes(repeat([A], nout)))
@@ -256,6 +335,38 @@ function junction_diagram(A::Ports, nin::Int, nout::Int)
     v = add_box!(f, Junction(value, nin, nout))
     add_wires!(f, ((input_id(f),i+m*(j-1)) => (v,j) for j in 1:nin))
     add_wires!(f, ((v,j) => (output_id(f),i+m*(j-1)) for j in 1:nout))
+  end
+  return f
+end
+
+""" Wiring diagram of nested cups made out of junction nodes.
+"""
+junction_cups(A::Ports) = junction_cups(A, cat(A,A))
+
+function junction_cups(A::Ports, inputs::Ports)
+  @assert length(inputs) == 2*length(A)
+  f = WiringDiagram(inputs, munit(typeof(inputs)))
+  m, ports = length(A), collect(inputs)
+  for (i, value) in enumerate(A)
+    j1, j2 = m-i+1, m+i
+    v = add_box!(f, Junction(value, ports[[j1,j2]], empty(ports)))
+    add_wires!(f, [(input_id(f),j1) => (v,1), (input_id(f),j2) => (v,2)])
+  end
+  return f
+end
+
+""" Wiring diagram of nested caps made out of junction nodes.
+"""
+junction_caps(A::Ports) = junction_caps(A, cat(A,A))
+
+function junction_caps(A::Ports, outputs::Ports)
+  @assert length(outputs) == 2*length(A)
+  f = WiringDiagram(munit(typeof(outputs)), outputs)
+  m, ports = length(A), collect(outputs)
+  for (i, value) in enumerate(A)
+    j1, j2 = m-i+1, m+i
+    v = add_box!(f, Junction(value, empty(ports), ports[[j1,j2]]))
+    add_wires!(f, [(v,1) => (output_id(f),j1), (v,2) => (output_id(f),j2)])
   end
   return f
 end
@@ -315,8 +426,9 @@ function rem_junctions(d::WiringDiagram)
   junction_ids = filter(v -> box(d,v) isa Junction, box_ids(d))
   junction_diagrams = map(junction_ids) do v
     junction = box(d,v)::Junction
-    layer = complete_layer(junction.ninputs, junction.noutputs)
-    to_wiring_diagram(layer, input_ports(junction), output_ports(junction))
+    inputs, outputs = input_ports(junction), output_ports(junction)
+    layer = complete_layer(length(inputs), length(outputs))
+    to_wiring_diagram(layer, inputs, outputs)
   end
   substitute(d, junction_ids, junction_diagrams)
 end
@@ -326,16 +438,76 @@ end
 function merge_junctions(d::WiringDiagram)
   junction_ids = filter(v -> box(d,v) isa Junction, box_ids(d))
   junction_graph, vmap = induced_subgraph(graph(d), junction_ids)
-  components = [ [ vmap[v] for v in component ]
+  for edge in edges(junction_graph)
+    # Only merge junctions with equal values.
+    if box(d, vmap[src(edge)]).value != box(d, vmap[dst(edge)]).value
+      rem_edge!(junction_graph, edge)
+    end
+  end
+  components = [ [vmap[v] for v in component]
     for component in weakly_connected_components(junction_graph)
     if length(component) > 1 ]
-  values = map(components) do component
-    values = unique(box(d,v).value for v in component)
-    @assert length(values) == 1
-    first(values)
-  end
-  encapsulate(d, components; discard_boxes=true, values=values,
-    make_box = (value, in, out) -> Junction(value, length(in), length(out)))
+  values = [ box(d, first(component)).value for component in components ]
+  encapsulate(d, components; discard_boxes=true, values=values, make_box=Junction)
 end
+
+# Operations on ports and boxes
+###############################
+
+""" Port value wrapping another value.
+
+Represents unary operations on ports in wiring diagrams.
+"""
+@auto_hash_equals struct PortOp{T}
+  value::Any
+end
+
+""" Box wrapping another box.
+
+Represents unary operations on boxes in wiring diagrams.
+"""
+@auto_hash_equals struct BoxOp{T} <: AbstractBox
+  box::AbstractBox
+end
+
+input_ports(op::BoxOp) = input_ports(op.box)
+output_ports(op::BoxOp) = output_ports(op.box)
+
+# Duals
+#------
+
+const DualPort = PortOp{:dual}
+
+dual_port(x) = DualPort(x)
+dual_port(dual::DualPort) = dual.value
+
+dual_ports(ports::Vector) = [ dual_port(x) for x in Iterators.reverse(ports) ]
+dual_ports(ports::Ports{T}) where T = Ports{T}(dual_ports(collect(ports)))
+
+# Adjoints
+#---------
+
+const DaggerBox = BoxOp{:dagger}
+
+input_ports(dagger::DaggerBox) = output_ports(dagger.box)
+output_ports(dagger::DaggerBox) = input_ports(dagger.box)
+
+dagger(box::Box) = DaggerBox(box)
+dagger(dagger::DaggerBox) = dagger.box
+dagger(junction::Junction) = Junction(
+  junction.value, output_ports(junction), input_ports(junction))
+
+const MateBox = BoxOp{:mate}
+
+input_ports(mate::MateBox) = dual_ports(output_ports(mate.box))
+output_ports(mate::MateBox) = dual_ports(input_ports(mate.box))
+
+mate(box::Box) = MateBox(box)
+mate(mate::MateBox) = mate.box
+
+# Assume that mates and daggers commute, as in a dagger compact category.
+# Normalize to apply mates before daggers.
+dagger(mate::MateBox) = DaggerBox(mate)
+mate(dagger::DaggerBox) = dagger(mate(dagger.box))
 
 end

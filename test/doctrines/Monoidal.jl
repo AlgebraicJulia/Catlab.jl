@@ -121,7 +121,9 @@ f = Hom(:f, otimes(A,B), C)
 @test codom(curry(A,B,f)) == hom(B,C)
 
 # Infix notation (LaTeX)
-@test latex(hom(A,B)) == "B^{A}"
+@test latex(hom(A,B)) == "{B}^{A}"
+@test latex(hom(otimes(A,B),C)) == "{C}^{A \\otimes B}"
+@test latex(hom(A,otimes(B,C))) == "{\\left(B \\otimes C\\right)}^{A}"
 @test latex(ev(A,B)) == "\\mathrm{eval}_{A,B}"
 @test latex(curry(A,B,f)) == "\\lambda f"
 
@@ -130,28 +132,38 @@ f = Hom(:f, otimes(A,B), C)
 
 A, B, C = Ob(FreeCompactClosedCategory, :A, :B, :C)
 I = munit(FreeCompactClosedCategory.Ob)
-f = Hom(:f, otimes(A,B), C)
+f, g = Hom(:f, A, B), Hom(:g, B, A)
 
 # Duals
 @test dual(otimes(A,B)) == otimes(dual(B),dual(A))
 @test dual(I) == I
 @test dual(dual(A)) == A
+@test dual(otimes(dual(A),dual(B))) == otimes(B,A)
+
+# Mates
+@test mate(mate(f)) == f
+@test mate(compose(f,g)) == compose(mate(g),mate(f))
+@test mate(otimes(f,g)) == otimes(mate(g),mate(f))
 
 # Domains and codomains
 @test dom(dunit(A)) == I
 @test codom(dunit(A)) == otimes(dual(A), A)
 @test dom(dcounit(A)) == otimes(A, dual(A))
 @test codom(dcounit(A)) == I
+@test dom(mate(f)) == dual(B)
+@test codom(mate(f)) == dual(A)
 
+f = Hom(:f, otimes(A,B), C)
 @test dom(ev(A,B)) == otimes(hom(A,B),A)
 @test codom(ev(A,B)) == B
 @test dom(curry(A,B,f)) == A
 @test codom(curry(A,B,f)) == hom(B,C)
 
 # Infix notation (LaTeX)
-@test latex(dual(A)) == "A^*"
+@test latex(dual(A)) == "{A}^*"
 @test latex(dunit(A)) == "\\eta_{A}"
 @test latex(dcounit(A)) == "\\varepsilon_{A}"
+@test latex(mate(f)) == "{f}^*"
 
 # Dagger category
 #################
@@ -169,8 +181,8 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 @test dagger(dagger(f)) == f
 
 # Infix notation (LaTeX)
-@test latex(dagger(f)) == "f^\\dagger"
-#@test latex(dagger(compose(f,g))) == "\\left(f \\cdot g\\right)^\\dagger"
+@test latex(dagger(f)) == "{f}^\\dagger"
+#@test latex(dagger(compose(f,g))) == "{\\left(f \\cdot g\\right)}^\\dagger"
 
 # Dagger compact category
 #########################

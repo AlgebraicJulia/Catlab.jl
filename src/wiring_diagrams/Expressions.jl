@@ -239,8 +239,8 @@ end
 function junction_to_expr(Ob::Type, junction::Junction)
   ob = coerce_ob(Ob, junction.value)
   compose_simplify_id(
-    mmerge_foldl(ob, junction.ninputs),
-    mcopy_foldl(ob, junction.noutputs)
+    mmerge_foldl(ob, length(input_ports(junction))),
+    mcopy_foldl(ob, length(output_ports(junction)))
   )
 end
 
