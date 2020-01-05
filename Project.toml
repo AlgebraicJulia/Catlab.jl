@@ -22,7 +22,6 @@ Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-UnionFind = "99c6138d-4661-531e-8606-19bf1ec96588"
 
 [compat]
 AutoHashEquals = "^0"
@@ -38,7 +37,6 @@ Parameters = "^0"
 Reexport = "^0"
 Requires = "^0"
 StaticArrays = "^0"
-UnionFind = "^0"
 julia = "1.0"
 
 [extras]

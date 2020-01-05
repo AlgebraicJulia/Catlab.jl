@@ -4,8 +4,8 @@ module WiringDiagramAlgorithms
 export topological_sort, normalize_cartesian!, normalize_copy!,
   normalize_delete!, crossing_minimization_by_sort
 
+using DataStructures
 import LightGraphs
-using UnionFind
 using Statistics: mean
 
 using ..WiringDiagramCore, ..WiringLayers
@@ -50,20 +50,20 @@ The main difference is the possibility of zero or many function outputs.
 """
 function normalize_copy!(d::WiringDiagram)
   # Compute equivalence classes of boxes (without modifying the diagram).
-  uf = UnionFinder(nboxes(d)+2)
+  sets = IntDisjointSets(nboxes(d)+2)
   initial = filter(box_ids(d)) do v
     all(u == input_id(d) for u in inneighbors(d,v))
   end
   for v1 in initial
     for v2 in initial
-      merge_if_congruent!(d, uf, v1, v2)
+      merge_if_congruent!(d, sets, v1, v2)
     end
   end
 
   # Keep only the designated representative of each equivalence class.
   extra = Int[]
   for v in box_ids(d)
-    rep = find!(uf, v)
+    rep = find_root(sets, v)
     if v != rep
       for wire in out_wires(d, v)
         add_wire!(d, Wire(set_box(wire.source, rep), wire.target))
@@ -75,25 +75,26 @@ function normalize_copy!(d::WiringDiagram)
   d
 end
 
-function merge_if_congruent!(d::WiringDiagram, uf::UnionFinder, v1::Int, v2::Int)
-  if v1 == v2 || (find!(uf, v1) != find!(uf, v2) && is_congruent(d, uf, v1, v2))
-    union!(uf, v1, v2)
+function merge_if_congruent!(d::WiringDiagram, sets::IntDisjointSets, v1::Int, v2::Int)
+  if v1 == v2 || (!in_same_set(sets, v1, v2) && is_congruent(d, sets, v1, v2))
+    union!(sets, v1, v2)
     for out1 in filter(v -> v != output_id(d), outneighbors(d, v1))
       for out2 in filter(v -> v != output_id(d), outneighbors(d, v2))
-        merge_if_congruent!(d, uf, out1, out2)
+        merge_if_congruent!(d, sets, out1, out2)
       end
     end
   end
 end
 
-function is_congruent(d::WiringDiagram, uf::UnionFinder, v1::Int, v2::Int)::Bool
+function is_congruent(d::WiringDiagram, sets::IntDisjointSets, v1::Int, v2::Int)::Bool
   box(d, v1) == box(d, v2) && all(eachindex(input_ports(box(d,v1)))) do port
     wires1, wires2 = in_wires(d,v1,port), in_wires(d,v2,port)
     n1, n2 = length(wires1), length(wires2)
     @assert n1 <= 1 && n2 <= 1 # TODO: Handle merges?
     n1 == n2 && all(zip(wires1, wires2)) do pair
       src1, src2 = pair[1].source, pair[2].source
-      set_box(src1, find!(uf, src1.box)) == set_box(src2, find!(uf, src2.box))
+      rep1, rep2 = find_root(sets, src1.box), find_root(sets, src2.box)
+      set_box(src1, rep1) == set_box(src2, rep2)
     end
   end
 end
