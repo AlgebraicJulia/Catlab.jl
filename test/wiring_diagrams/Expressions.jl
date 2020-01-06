@@ -24,9 +24,8 @@ fd, gd = to_wiring_diagram(f), to_wiring_diagram(g)
 # Diagram -> Expression
 #######################
 
-function roundtrip(f::HomExpr)
-  to_hom_expr(syntax_module(f), to_wiring_diagram(f))
-end
+roundtrip(A::ObExpr) = to_ob_expr(syntax_module(f), to_wiring_diagram(A))
+roundtrip(f::HomExpr) = to_hom_expr(syntax_module(f), to_wiring_diagram(f))
 
 # Symmetric monoidal category
 #----------------------------
@@ -115,7 +114,7 @@ expr = compose(otimes(m,id(B)), otimes(id(B),b,id(B)), otimes(id(B),n))
 # Diagonals and codiagonals
 #--------------------------
 
-A, B, C, D = Ob(FreeBiproductCategory, :A, :B, :C, :D)
+A, B, C = Ob(FreeBiproductCategory, :A, :B, :C)
 f, g = Hom(:f,A,B), Hom(:g,B,C)
 
 # Diagonals.
@@ -137,6 +136,27 @@ f, g = Hom(:f,A,B), Hom(:g,B,C)
 @test roundtrip(compose(mcopy(A),otimes(f,f))) == compose(mcopy(A),otimes(f,f))
 @test roundtrip(compose(f,delete(B))) == compose(f,delete(B))
 @test roundtrip(braid(A,B)⋅(mcopy(B)⊗mcopy(A))) == braid(A,B)⋅(mcopy(B)⊗mcopy(A))
+
+# Duals and adjoints
+#-------------------
+
+A, B, C = Ob(FreeDaggerSymmetricMonoidalCategory, :A, :B, :C)
+f, g = Hom(:f,A,B), Hom(:g,B,C)
+
+# Dagger adjoints.
+@test roundtrip(dagger(f)) == dagger(f)
+@test roundtrip(dagger(compose(f,g))) == compose(dagger(g),dagger(f))
+
+A, B, C = Ob(FreeCompactClosedCategory, :A, :B, :C)
+f, g = Hom(:f,A,B), Hom(:g,B,C)
+
+# Duals.
+@test roundtrip(dual(A)) == dual(A)
+@test roundtrip(dual(otimes(A,B))) == otimes(dual(B),dual(A))
+
+# Adjoint mates.
+@test roundtrip(mate(f)) == mate(f)
+@test roundtrip(mate(compose(f,g))) == compose(mate(g),mate(f))
 
 # Graph operations
 ##################

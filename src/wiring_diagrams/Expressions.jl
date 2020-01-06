@@ -10,7 +10,7 @@ It is trivial to convert a morphism expression to a wiring diagram, but not to
 go the other way around.
 """
 module WiringDiagramExpressions
-export to_hom_expr, to_wiring_diagram
+export to_ob_expr, to_hom_expr, to_wiring_diagram
 
 using Compat
 using LightGraphs
@@ -97,11 +97,13 @@ end
 to_hom_expr(::Type{Ob}, ::Type{Hom}, box::Box{<:Hom}) where {Ob,Hom} = box.value
 
 function to_hom_expr(Ob::Type, Hom::Type, box::Box)
-  dom = otimes(ports_to_obs(Ob, input_ports(box)))
-  codom = otimes(ports_to_obs(Ob, output_ports(box)))
+  dom = otimes(to_ob_exprs(Ob, input_ports(box)))
+  codom = otimes(to_ob_exprs(Ob, output_ports(box)))
   Hom(box.value, dom, codom)
 end
-
+function to_hom_expr(Ob::Type, Hom::Type, op::BoxOp)
+  invoke_term(parentmodule(Hom), head(op), to_hom_expr(Ob, Hom, op.box))
+end
 function to_hom_expr(Ob::Type, Hom::Type, junction::Junction)
   junction_to_expr(Ob, junction)
 end
@@ -194,8 +196,8 @@ Assumes that the wires form a permutation morphism.
 """
 function hom_expr_between(Ob::Type, diagram::WiringDiagram, v1::Int, v2::Int)
   layer = wiring_layer_between(diagram, v1, v2)
-  inputs = ports_to_obs(Ob, output_ports(diagram, v1))
-  outputs = ports_to_obs(Ob, input_ports(diagram, v2))
+  inputs = to_ob_exprs(Ob, output_ports(diagram, v1))
+  outputs = to_ob_exprs(Ob, input_ports(diagram, v2))
   
   σ = to_permutation(layer)
   @assert !isnothing(σ) "Conversion of non-permutation not implemented"
@@ -203,10 +205,20 @@ function hom_expr_between(Ob::Type, diagram::WiringDiagram, v1::Int, v2::Int)
   permutation_to_expr(σ, inputs)
 end
 
-coerce_ob(::Type{Ob}, ob::Ob) where Ob = ob
-coerce_ob(Ob::Type, value) = Ob(Ob, value)
-ports_to_obs(Ob::Type, ports) = Ob[ coerce_ob(Ob, port) for port in ports ]
+""" Convert a port value into an object expression.
+"""
+to_ob_expr(Syntax::Module, x) = to_ob_expr(Syntax.Ob, x)
+to_ob_expr(::Type{Ob}, ob::Ob) where Ob = ob
+to_ob_expr(Ob::Type, value) = Ob(Ob, value)
 
+to_ob_expr(Ob::Type, ports::Ports) = otimes(to_ob_exprs(Ob, ports))
+to_ob_expr(Ob::Type, op::PortOp) =
+  invoke_term(parentmodule(Ob), head(op), to_ob_expr(Ob, op.value))
+
+to_ob_exprs(Ob::Type, values) = Ob[ to_ob_expr(Ob, value) for value in values ]
+
+""" Compose morphism expressions, eliminating identities.
+"""
 function compose_simplify_id(f::GATExpr, g::GATExpr)
   if head(f) == :id; g
   elseif head(g) == :id; f
@@ -235,7 +247,7 @@ end
 """ Convert a junction node to a morphism expression.
 """
 function junction_to_expr(Ob::Type, junction::Junction)
-  ob = coerce_ob(Ob, junction.value)
+  ob = to_ob_expr(Ob, junction.value)
   compose_simplify_id(
     mmerge_foldl(ob, length(input_ports(junction))),
     mcopy_foldl(ob, length(output_ports(junction)))
