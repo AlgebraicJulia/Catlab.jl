@@ -137,15 +137,17 @@ f, g = Hom(:f,A,B), Hom(:g,B,C)
 @test roundtrip(compose(f,delete(B))) == compose(f,delete(B))
 @test roundtrip(braid(A,B)⋅(mcopy(B)⊗mcopy(A))) == braid(A,B)⋅(mcopy(B)⊗mcopy(A))
 
-# Duals and adjoints
-#-------------------
+# Dagger category
+#----------------
 
 A, B, C = Ob(FreeDaggerSymmetricMonoidalCategory, :A, :B, :C)
 f, g = Hom(:f,A,B), Hom(:g,B,C)
 
-# Dagger adjoints.
 @test roundtrip(dagger(f)) == dagger(f)
 @test roundtrip(dagger(compose(f,g))) == compose(dagger(g),dagger(f))
+
+# Compact closed category
+#------------------------
 
 A, B, C = Ob(FreeCompactClosedCategory, :A, :B, :C)
 f, g = Hom(:f,A,B), Hom(:g,B,C)
@@ -153,6 +155,10 @@ f, g = Hom(:f,A,B), Hom(:g,B,C)
 # Duals.
 @test roundtrip(dual(A)) == dual(A)
 @test roundtrip(dual(otimes(A,B))) == otimes(dual(B),dual(A))
+
+# Units and counits.
+@test roundtrip(dunit(A)) == dunit(A)
+@test roundtrip(dcounit(A)) == dcounit(A)
 
 # Adjoint mates.
 @test roundtrip(mate(f)) == mate(f)

@@ -248,36 +248,26 @@ end
 """
 function junction_to_expr(Ob::Type, junction::Junction)
   ob = to_ob_expr(Ob, junction.value)
-  compose_simplify_id(
-    mmerge_foldl(ob, length(input_ports(junction))),
-    mcopy_foldl(ob, length(output_ports(junction)))
-  )
+  nin, nout = length(input_ports(junction)), length(output_ports(junction))
+  if (nin == 2 && nout == 0) dcounit(ob)
+  elseif (nin == 0 && nout == 2) dunit(ob)
+  else compose_simplify_id(mmerge_foldl(ob, nin), mcopy_foldl(ob, nout)) end
 end
 
 # FIXME: These functions belong elsewhere, probably in the standard library.
 function mcopy_foldl(A, n::Int)
   @assert n >= 0
-  if n > 2
-    compose(mcopy(A), otimes(mcopy_foldl(A, n-1), id(A)))
-  elseif n == 2
-    mcopy(A)
-  elseif n == 1
-    id(A)
-  else # n == 0
-    delete(A)
-  end
+  if (n > 2) compose(mcopy(A), otimes(mcopy_foldl(A, n-1), id(A)))
+  elseif (n == 2) mcopy(A)
+  elseif (n == 1) id(A)
+  else delete(A) end
 end
 function mmerge_foldl(A, n::Int)
   @assert n >= 0
-  if n > 2
-    compose(otimes(mmerge_foldl(A, n-1), id(A)), mmerge(A))
-  elseif n == 2
-    mmerge(A)
-  elseif n == 1
-    id(A)
-  else # n == 0
-    create(A)
-  end
+  if (n > 2) compose(otimes(mmerge_foldl(A, n-1), id(A)), mmerge(A))
+  elseif (n == 2) mmerge(A)
+  elseif (n == 1) id(A)
+  else create(A) end
 end
 
 # Graph operations
