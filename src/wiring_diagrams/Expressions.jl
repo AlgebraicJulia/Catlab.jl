@@ -32,15 +32,13 @@ function to_wiring_diagram(expr::GATExpr)
   to_wiring_diagram(signature.Hom, expr)
 end
 function to_wiring_diagram(T::Type, expr::GATExpr)
-  functor((Ports, WiringDiagram), expr;
-    terms = Dict(
-      :Ob => expr -> Ports{T}([first(expr)]),
-      :Hom => expr -> singleton_diagram(T,
-        Box(first(expr),
-            to_wiring_diagram(T, dom(expr)),
-            to_wiring_diagram(T, codom(expr))))
-    )
-  )
+  functor((Ports, WiringDiagram), expr; terms=Dict(
+    :Ob => expr -> Ports{T}([first(expr)]),
+    :Hom => expr -> singleton_diagram(T,
+      Box(first(expr),
+          to_wiring_diagram(T, dom(expr)),
+          to_wiring_diagram(T, codom(expr))))
+  ))
 end
 
 # Diagram -> Expression
@@ -96,15 +94,14 @@ function to_hom_expr(Syntax::Module, d::WiringDiagram)
   to_hom_expr(Syntax.Ob, Syntax.Hom, d)
 end
 
+to_hom_expr(::Type{Ob}, ::Type{Hom}, box::Box{<:Hom}) where {Ob,Hom} = box.value
+
 function to_hom_expr(Ob::Type, Hom::Type, box::Box)
-  if box.value isa Hom
-    box.value
-  else
-    dom = otimes(ports_to_obs(Ob, input_ports(box)))
-    codom = otimes(ports_to_obs(Ob, output_ports(box)))
-    Hom(box.value, dom, codom)
-  end
+  dom = otimes(ports_to_obs(Ob, input_ports(box)))
+  codom = otimes(ports_to_obs(Ob, output_ports(box)))
+  Hom(box.value, dom, codom)
 end
+
 function to_hom_expr(Ob::Type, Hom::Type, junction::Junction)
   junction_to_expr(Ob, junction)
 end
@@ -206,7 +203,8 @@ function hom_expr_between(Ob::Type, diagram::WiringDiagram, v1::Int, v2::Int)
   permutation_to_expr(σ, inputs)
 end
 
-coerce_ob(Ob::Type, x) = x isa Ob ? x : Ob(Ob,x)
+coerce_ob(::Type{Ob}, ob::Ob) where Ob = ob
+coerce_ob(Ob::Type, value) = Ob(Ob, value)
 ports_to_obs(Ob::Type, ports) = Ob[ coerce_ob(Ob, port) for port in ports ]
 
 function compose_simplify_id(f::GATExpr, g::GATExpr)

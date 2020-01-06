@@ -12,13 +12,14 @@ using Catlab.WiringDiagrams.WiringDiagramExpressions: find_parallel,
 #######################
 
 A, B, C = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C)
+I = munit(FreeSymmetricMonoidalCategory.Ob)
 f, g = Hom(:f,A,B), Hom(:g,B,C)
 
 # Functorality of conversion.
 fd, gd = to_wiring_diagram(f), to_wiring_diagram(g)
 @test to_wiring_diagram(compose(f,g)) == compose(fd,gd)
 @test to_wiring_diagram(otimes(f,g)) == otimes(fd,gd)
-@test to_wiring_diagram(munit(FreeSymmetricMonoidalCategory.Ob)) == munit(Ports)
+@test to_wiring_diagram(I) == munit(Ports)
 
 # Diagram -> Expression
 #######################
