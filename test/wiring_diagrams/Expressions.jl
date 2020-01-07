@@ -159,6 +159,16 @@ f, g = Hom(:f,A,B), Hom(:g,B,C)
 # Units and counits.
 @test roundtrip(dunit(A)) == dunit(A)
 @test roundtrip(dcounit(A)) == dcounit(A)
+# TODO: The following expressions are correct, but it would be nice to return
+# them in the commented simplified form.
+@test roundtrip(dunit(otimes(A,B))) ==
+  #dunit(B) ⋅ (id(dual(B)) ⊗ dunit(A) ⊗ id(B))
+  (dunit(A) ⊗ dunit(B)) ⋅
+    (id(dual(A))⊗braid(A,dual(B))⊗id(B)) ⋅ (braid(dual(A),dual(B))⊗id(A⊗B))
+@test roundtrip(dcounit(otimes(A,B))) ==
+  #(id(A) ⊗ dcounit(B) ⊗ id(dual(A))) ⋅ dcounit(A)
+  (id(A⊗B)⊗braid(dual(B),dual(A))) ⋅ (id(A)⊗braid(B,dual(A))⊗id(dual(B))) ⋅
+    (dcounit(A) ⊗ dcounit(B))
 
 # Adjoint mates.
 @test roundtrip(mate(f)) == mate(f)
