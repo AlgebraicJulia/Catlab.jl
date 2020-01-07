@@ -180,8 +180,12 @@ I = munit(typeof(A))
 @test codom(dunit(A)) == otimes(dual(A),A)
 @test dom(dcounit(A)) == otimes(A,dual(A))
 @test codom(dcounit(A)) == I
-@test codom(dunit(otimes(A,B))) == otimes(dual(B),dual(A),A,B)
-@test dom(dcounit(otimes(A,B))) == otimes(A,B,dual(B),dual(A))
+
+# Coherence relations
+@test is_permuted_equal(dunit(otimes(A,B)),
+  compose(dunit(B), otimes(id(dual(B)), dunit(A), id(B))), [2,1])
+@test is_permuted_equal(dcounit(otimes(A,B)),
+  compose(otimes(id(A), dcounit(B), id(dual(A))), dcounit(A)), [2,1])
 
 ### Adjoint mates
 

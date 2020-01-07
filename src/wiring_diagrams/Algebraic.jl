@@ -46,6 +46,7 @@ Base.length(A::Ports) = length(A.ports)
 Base.eltype(A::Ports{T,V}) where {T,V} = V
 
 Base.cat(A::Ports{T}, B::Ports{T}) where T = Ports{T}([A.ports; B.ports])
+Base.reverse(A::Ports{T}) where T = Ports{T}(reverse(A.ports))
 
 Box(value, inputs::Ports, outputs::Ports) =
   Box(value, collect(inputs), collect(outputs))
@@ -346,14 +347,14 @@ end
 
 """ Wiring diagram of nested cups made out of junction nodes.
 """
-junction_cups(A::Ports) = junction_cups(A, cat(A,A))
+junction_cups(A::Ports) = junction_cups(A, cat(A,reverse(A)))
 
 function junction_cups(A::Ports, inputs::Ports)
   @assert length(inputs) == 2*length(A)
   f = WiringDiagram(inputs, munit(typeof(inputs)))
   m, ports = length(A), collect(inputs)
   for (i, value) in enumerate(A)
-    j1, j2 = m-i+1, m+i
+    j1, j2 = i, 2m-i+1 # Outer cups to inner cups
     v = add_box!(f, Junction(value, ports[[j1,j2]], empty(ports)))
     add_wires!(f, [(input_id(f),j1) => (v,1), (input_id(f),j2) => (v,2)])
   end
@@ -362,14 +363,14 @@ end
 
 """ Wiring diagram of nested caps made out of junction nodes.
 """
-junction_caps(A::Ports) = junction_caps(A, cat(A,A))
+junction_caps(A::Ports) = junction_caps(A, cat(reverse(A),A))
 
 function junction_caps(A::Ports, outputs::Ports)
   @assert length(outputs) == 2*length(A)
   f = WiringDiagram(munit(typeof(outputs)), outputs)
   m, ports = length(A), collect(outputs)
   for (i, value) in enumerate(A)
-    j1, j2 = m-i+1, m+i
+    j1, j2 = m-i+1, m+i # Inner caps to outer caps
     v = add_box!(f, Junction(value, empty(ports), ports[[j1,j2]]))
     add_wires!(f, [(v,1) => (output_id(f),j1), (v,2) => (output_id(f),j2)])
   end
