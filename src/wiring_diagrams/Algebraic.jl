@@ -318,7 +318,7 @@ end
 Junction nodes are used to explicitly represent copies, merges, deletions,
 creations, caps, and cups.
 """
-@auto_hash_equals struct Junction{Op,Value} <: AbstractBox
+struct Junction{Op,Value} <: AbstractBox
   value::Value
   input_ports::Vector
   output_ports::Vector
@@ -331,6 +331,10 @@ Junction{Op}(value, ninputs::Int, noutputs::Int) where Op =
   Junction{Op}(value, repeat([value], ninputs), repeat([value], noutputs))
 
 head(junction::Junction{Op}) where Op = Op
+
+Base.:(==)(j1::Junction, j2::Junction) =
+  head(j1) == head(j2) && j1.value == j2.value &&
+  input_ports(j1) == input_ports(j2) && output_ports(j1) == output_ports(j2)
 
 """ Wiring diagram with a junction node for each of the given ports.
 """
@@ -465,23 +469,29 @@ end
 
 Represents unary operations on ports in wiring diagrams.
 """
-@auto_hash_equals struct PortOp{Op}
+struct PortOp{Op}
   value::Any
 end
 
 head(::PortOp{Op}) where Op = Op
 
+Base.:(==)(op1::PortOp, op2::PortOp) =
+  head(op1) == head(op2) && op1.value == op2.value
+
 """ Box wrapping another box.
 
 Represents unary operations on boxes in wiring diagrams.
 """
-@auto_hash_equals struct BoxOp{op} <: AbstractBox
+struct BoxOp{op} <: AbstractBox
   box::AbstractBox
 end
 
 head(::BoxOp{Op}) where Op = Op
 input_ports(op::BoxOp) = input_ports(op.box)
 output_ports(op::BoxOp) = output_ports(op.box)
+
+Base.:(==)(op1::BoxOp, op2::BoxOp) =
+  head(op1) == head(op2) && op1.box == op2.box
 
 # Duals
 #------
