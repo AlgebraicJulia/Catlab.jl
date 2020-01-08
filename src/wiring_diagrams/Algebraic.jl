@@ -9,9 +9,9 @@ module AlgebraicWiringDiagrams
 export Ports, Junction, PortOp, BoxOp,
   functor, dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid, permute,
   mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
-  mplus, mzero, coplus, cozero, meet, top, ocompose, junction_diagram,
-  junction_caps, junction_cups, add_junctions, add_junctions!, rem_junctions,
-  merge_junctions
+  mplus, mzero, coplus, cozero, meet, join, top, bottom, ocompose,
+  junction_diagram, junction_caps, junction_cups, add_junctions, add_junctions!,
+  rem_junctions, merge_junctions
 
 using AutoHashEquals
 using LightGraphs
@@ -19,7 +19,7 @@ using LightGraphs
 using ...GAT, ...Doctrines
 import ...Doctrines: dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid,
   mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
-  mplus, mzero, coplus, cozero, meet, top
+  mplus, mzero, coplus, cozero, meet, join, top, bottom
 import ...Syntax: functor, head
 using ..WiringDiagramCore, ..WiringLayers
 import ..WiringDiagramCore: Box, WiringDiagram, input_ports, output_ports
@@ -318,8 +318,12 @@ dagger(f::WiringDiagram{AbBiRel.Hom}) =
 
 meet(f::WiringDiagram{AbBiRel.Hom}, g::WiringDiagram{AbBiRel.Hom}) =
   compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
+join(f::WiringDiagram{AbBiRel.Hom}, g::WiringDiagram{AbBiRel.Hom}) =
+  compose(coplus(dom(f)), otimes(f,g), mplus(codom(f)))
 top(A::Ports{AbBiRel.Hom}, B::Ports{AbBiRel.Hom}) =
   compose(delete(A), create(B))
+bottom(A::Ports{AbBiRel.Hom}, B::Ports{AbBiRel.Hom}) =
+  compose(cozero(A), mzero(B))
 
 # Operadic interface
 ####################

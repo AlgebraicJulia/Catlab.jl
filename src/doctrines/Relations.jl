@@ -1,6 +1,8 @@
 export BicategoryRelations, FreeBicategoryRelations,
   AbelianBicategoryRelations, FreeAbelianBicategoryRelations,
-  meet, top, mplus, mzero, coplus, cozero
+  meet, join, top, bottom, mplus, mzero, coplus, cozero
+
+import Base: join
 
 # Bicategory of relations
 #########################
@@ -53,6 +55,10 @@ References:
   mzero(A::Ob)::Hom(munit(),A)
   coplus(A::Ob)::Hom(A,otimes(A,A))
   cozero(A::Ob)::Hom(A,munit())
+  
+  # Logical operations.
+  join(f::Hom(A,B), g::Hom(A,B))::Hom(A,B) <= (A::Ob, B::Ob)
+  bottom(A::Ob, B::Ob)::Hom(A,B)
 end
 
 @syntax FreeAbelianBicategoryRelations(ObExpr,HomExpr) AbelianBicategoryRelations begin
@@ -62,7 +68,9 @@ end
   dagger(f::Hom) = distribute_unary(distribute_dagger(involute(Super.dagger(f))),
                                     dagger, otimes)
   meet(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
+  join(f::Hom, g::Hom) = compose(coplus(dom(f)), otimes(f,g), mplus(codom(f)))
   top(A::Ob, B::Ob) = compose(delete(A), create(B))
+  bottom(A::Ob, B::Ob) = compose(cozero(A), mzero(B))
 end
 
 function show_latex(io::IO, expr::HomExpr{:mplus}; kw...)

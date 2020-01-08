@@ -228,12 +228,19 @@ S = singleton_diagram(BicategoryRelations.Hom, Box(:S,[:A],[:B]))
 #--------------------------------
 
 A, B = [ Ports{AbelianBicategoryRelations.Hom}([sym]) for sym in [:A, :B] ]
+R = singleton_diagram(AbelianBicategoryRelations.Hom, Box(:R,[:A],[:B]))
+S = singleton_diagram(AbelianBicategoryRelations.Hom, Box(:S,[:A],[:B]))
 
 # Domains and codomains.
 @test dom(mplus(A)) == dom(mmerge(A)) && codom(mplus(A)) == codom(mmerge(A))
 @test dom(coplus(A)) == dom(mcopy(A)) && codom(coplus(A)) == codom(mcopy(A))
 @test dom(mzero(A)) == dom(create(A)) && codom(mzero(A)) == codom(create(A))
 @test dom(cozero(A)) == dom(delete(A)) && codom(cozero(A)) == codom(delete(A))
+
+@test dom(join(R,S)) == A
+@test codom(join(R,S)) == B
+@test dom(bottom(A,B)) == A
+@test codom(bottom(A,B)) == B
 
 # Distinctness of "multiplicative" and "additive" (co)diagonals.
 @test mplus(A) != mmerge(A)
