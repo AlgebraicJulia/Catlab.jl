@@ -9,8 +9,9 @@ module AlgebraicWiringDiagrams
 export Ports, Junction, PortOp, BoxOp,
   functor, dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid, permute,
   mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
-  meet, top, ocompose, junction_diagram, junction_caps, junction_cups,
-  add_junctions, add_junctions!, rem_junctions, merge_junctions
+  mplus, mzero, coplus, cozero, meet, top, ocompose, junction_diagram,
+  junction_caps, junction_cups, add_junctions, add_junctions!, rem_junctions,
+  merge_junctions
 
 using AutoHashEquals
 using LightGraphs
@@ -18,7 +19,7 @@ using LightGraphs
 using ...GAT, ...Doctrines
 import ...Doctrines: dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid,
   mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
-  meet, top
+  mplus, mzero, coplus, cozero, meet, top
 import ...Syntax: functor, head
 using ..WiringDiagramCore, ..WiringLayers
 import ..WiringDiagramCore: Box, WiringDiagram, input_ports, output_ports
@@ -198,10 +199,10 @@ end
 implicit_delete(A::Ports) = WiringDiagram(A, munit(typeof(A)))
 implicit_create(A::Ports) = WiringDiagram(munit(typeof(A)), A)
 
-junctioned_mcopy(A::Ports, n::Int) = junction_diagram(A, 1, n)
-junctioned_mmerge(A::Ports, n::Int) = junction_diagram(A, n, 1)
-junctioned_delete(A::Ports) = junction_diagram(A, 1, 0)
-junctioned_create(A::Ports) = junction_diagram(A, 0, 1)
+junctioned_mcopy(A::Ports, n::Int; kw...) = junction_diagram(A, 1, n; kw...)
+junctioned_mmerge(A::Ports, n::Int; kw...) = junction_diagram(A, n, 1; kw...)
+junctioned_delete(A::Ports; kw...) = junction_diagram(A, 1, 0; kw...)
+junctioned_create(A::Ports; kw...) = junction_diagram(A, 0, 1; kw...)
 
 # Implicit diagonals and codiagonals are the default in untyped wiring diagrams.
 mcopy(A::Ports{Any}, n::Int) = implicit_mcopy(A, n)
@@ -211,6 +212,8 @@ create(A::Ports{Any}) = implicit_create(A)
 
 mcopy(A::Ports) = mcopy(A, 2)
 mmerge(A::Ports) = mmerge(A, 2)
+mplus(A::Ports) = mplus(A, 2)
+coplus(A::Ports) = coplus(A, 2)
 
 # Cartesian category
 #-------------------
@@ -279,15 +282,49 @@ mmerge(A::Ports{BicategoryRelations.Hom}, n::Int) = junctioned_mmerge(A, n)
 delete(A::Ports{BicategoryRelations.Hom}) = junctioned_delete(A)
 create(A::Ports{BicategoryRelations.Hom}) = junctioned_create(A)
 
-dagger(f::WiringDiagram{BicategoryRelations.Hom}) =
-  functor(f, identity, dagger, contravariant=true)
-
 dunit(A::Ports{BicategoryRelations.Hom}) = junction_caps(A)
 dcounit(A::Ports{BicategoryRelations.Hom}) = junction_cups(A)
+
+dagger(f::WiringDiagram{BicategoryRelations.Hom}) =
+  functor(f, identity, dagger, contravariant=true)
 
 meet(f::WiringDiagram{BicategoryRelations.Hom}, g::WiringDiagram{BicategoryRelations.Hom}) =
   compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
 top(A::Ports{BicategoryRelations.Hom}, B::Ports{BicategoryRelations.Hom}) =
+  compose(delete(A), create(B))
+
+# Abelian bicategory of relations
+#--------------------------------
+
+mcopy(A::Ports{AbelianBicategoryRelations.Hom}, n::Int) =
+  junctioned_mcopy(A, n; op=:times)
+mmerge(A::Ports{AbelianBicategoryRelations.Hom}, n::Int) =
+  junctioned_mmerge(A, n; op=:times)
+delete(A::Ports{AbelianBicategoryRelations.Hom}) =
+  junctioned_delete(A; op=:times)
+create(A::Ports{AbelianBicategoryRelations.Hom}) =
+  junctioned_create(A; op=:times)
+
+dunit(A::Ports{AbelianBicategoryRelations.Hom}) = junction_caps(A; op=:times)
+dcounit(A::Ports{AbelianBicategoryRelations.Hom}) = junction_cups(A; op=:times)
+
+mplus(A::Ports{AbelianBicategoryRelations.Hom}, n::Int) =
+  junctioned_mmerge(A, n, op=:plus)
+coplus(A::Ports{AbelianBicategoryRelations.Hom}, n::Int) =
+  junctioned_mcopy(A, n, op=:plus)
+mzero(A::Ports{AbelianBicategoryRelations.Hom}) =
+  junctioned_create(A, op=:plus)
+cozero(A::Ports{AbelianBicategoryRelations.Hom}) =
+  junctioned_delete(A, op=:plus)
+
+dagger(f::WiringDiagram{AbelianBicategoryRelations.Hom}) =
+  functor(f, identity, dagger, contravariant=true)
+
+meet(f::WiringDiagram{AbelianBicategoryRelations.Hom},
+     g::WiringDiagram{AbelianBicategoryRelations.Hom}) =
+  compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
+top(A::Ports{AbelianBicategoryRelations.Hom},
+    B::Ports{AbelianBicategoryRelations.Hom}) =
   compose(delete(A), create(B))
 
 # Operadic interface
@@ -338,11 +375,11 @@ Base.:(==)(j1::Junction, j2::Junction) =
 
 """ Wiring diagram with a junction node for each of the given ports.
 """
-function junction_diagram(A::Ports, nin::Int, nout::Int)
+function junction_diagram(A::Ports, nin::Int, nout::Int; op=nothing)
   f = WiringDiagram(otimes(repeat([A], nin)), otimes(repeat([A], nout)))
   m = length(A)
   for (i, value) in enumerate(A)
-    v = add_box!(f, Junction(value, nin, nout))
+    v = add_box!(f, Junction{op}(value, nin, nout))
     add_wires!(f, ((input_id(f),i+m*(j-1)) => (v,j) for j in 1:nin))
     add_wires!(f, ((v,j) => (output_id(f),i+m*(j-1)) for j in 1:nout))
   end
@@ -351,15 +388,15 @@ end
 
 """ Wiring diagram of nested cups made out of junction nodes.
 """
-junction_cups(A::Ports) = junction_cups(A, cat(A,reverse(A)))
+junction_cups(A::Ports; kw...) = junction_cups(A, cat(A,reverse(A)); kw...)
 
-function junction_cups(A::Ports, inputs::Ports)
+function junction_cups(A::Ports, inputs::Ports; op=nothing)
   @assert length(inputs) == 2*length(A)
   f = WiringDiagram(inputs, munit(typeof(inputs)))
   m, ports = length(A), collect(inputs)
   for (i, value) in enumerate(A)
     j1, j2 = i, 2m-i+1 # Outer cups to inner cups
-    v = add_box!(f, Junction(value, ports[[j1,j2]], empty(ports)))
+    v = add_box!(f, Junction{op}(value, ports[[j1,j2]], empty(ports)))
     add_wires!(f, [(input_id(f),j1) => (v,1), (input_id(f),j2) => (v,2)])
   end
   return f
@@ -367,15 +404,15 @@ end
 
 """ Wiring diagram of nested caps made out of junction nodes.
 """
-junction_caps(A::Ports) = junction_caps(A, cat(reverse(A),A))
+junction_caps(A::Ports; kw...) = junction_caps(A, cat(reverse(A),A); kw...)
 
-function junction_caps(A::Ports, outputs::Ports)
+function junction_caps(A::Ports, outputs::Ports; op=nothing)
   @assert length(outputs) == 2*length(A)
   f = WiringDiagram(munit(typeof(outputs)), outputs)
   m, ports = length(A), collect(outputs)
   for (i, value) in enumerate(A)
     j1, j2 = m-i+1, m+i # Inner caps to outer caps
-    v = add_box!(f, Junction(value, empty(ports), ports[[j1,j2]]))
+    v = add_box!(f, Junction{op}(value, empty(ports), ports[[j1,j2]]))
     add_wires!(f, [(v,1) => (output_id(f),j1), (v,2) => (output_id(f),j2)])
   end
   return f
@@ -432,8 +469,8 @@ end
 Transforms from the explicit to the implicit representation of diagonals and
 codiagonals. This operation is inverse to `add_junctions`.
 """
-function rem_junctions(d::WiringDiagram)
-  junction_ids = filter(v -> box(d,v) isa Junction, box_ids(d))
+function rem_junctions(d::WiringDiagram; op=nothing)
+  junction_ids = filter(v -> box(d,v) isa Junction{op}, box_ids(d))
   junction_diagrams = map(junction_ids) do v
     junction = box(d,v)::Junction
     inputs, outputs = input_ports(junction), output_ports(junction)

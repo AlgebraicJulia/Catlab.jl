@@ -224,6 +224,23 @@ S = singleton_diagram(BicategoryRelations.Hom, Box(:S,[:A],[:B]))
 @test dunit(A) == merge_junctions(compose(create(A), mcopy(A)))
 @test dcounit(A) == merge_junctions(compose(mmerge(A), delete(A)))
 
+# Abelian bicategory of relations
+#--------------------------------
+
+A, B = [ Ports{AbelianBicategoryRelations.Hom}([sym]) for sym in [:A, :B] ]
+
+# Domains and codomains.
+@test dom(mplus(A)) == dom(mmerge(A)) && codom(mplus(A)) == codom(mmerge(A))
+@test dom(coplus(A)) == dom(mcopy(A)) && codom(coplus(A)) == codom(mcopy(A))
+@test dom(mzero(A)) == dom(create(A)) && codom(mzero(A)) == codom(create(A))
+@test dom(cozero(A)) == dom(delete(A)) && codom(cozero(A)) == codom(delete(A))
+
+# Distinctness of "multiplicative" and "additive" (co)diagonals.
+@test mplus(A) != mmerge(A)
+@test coplus(A) != mcopy(A)
+@test mzero(A) != create(A)
+@test cozero(A) != delete(A)
+
 # Operadic interface
 ####################
 
