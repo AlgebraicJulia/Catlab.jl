@@ -65,23 +65,15 @@ end
   top(A::Ob, B::Ob) = compose(delete(A), create(B))
 end
 
-function show_latex(io::IO, expr::FreeAbelianBicategoryRelations.Ob{:otimes}; kw...)
-  Syntax.show_latex_infix(io, expr, "\\oplus"; kw...)
-end
-function show_latex(io::IO, expr::FreeAbelianBicategoryRelations.Hom{:otimes}; kw...)
-  Syntax.show_latex_infix(io, expr, "\\oplus"; kw...)
-end
-show_latex(io::IO, expr::FreeAbelianBicategoryRelations.Ob{:munit}; kw...) = print(io, "O")
-
-function show_latex(io::IO, expr::FreeAbelianBicategoryRelations.Hom{:mplus}; kw...)
+function show_latex(io::IO, expr::HomExpr{:mplus}; kw...)
   Syntax.show_latex_script(io, expr, "\\blacktriangledown")
 end
-function show_latex(io::IO, expr::FreeAbelianBicategoryRelations.Hom{:coplus}; kw...)
+function show_latex(io::IO, expr::HomExpr{:coplus}; kw...)
   Syntax.show_latex_script(io, expr, "\\blacktriangle")
 end
-function show_latex(io::IO, expr::FreeAbelianBicategoryRelations.Hom{:mzero}; kw...)
+function show_latex(io::IO, expr::HomExpr{:mzero}; kw...)
   Syntax.show_latex_script(io, expr, "\\blacksquare")
 end
-function show_latex(io::IO, expr::FreeAbelianBicategoryRelations.Hom{:cozero}; kw...)
+function show_latex(io::IO, expr::HomExpr{:cozero}; kw...)
   Syntax.show_latex_script(io, expr, "\\blacklozenge")
 end
