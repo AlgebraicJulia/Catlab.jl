@@ -277,54 +277,48 @@ mate(f::WiringDiagram{DaggerCompactCategory.Hom}) =
 # Bicategory of relations
 #------------------------
 
-mcopy(A::Ports{BicategoryRelations.Hom}, n::Int) = junctioned_mcopy(A, n)
-mmerge(A::Ports{BicategoryRelations.Hom}, n::Int) = junctioned_mmerge(A, n)
-delete(A::Ports{BicategoryRelations.Hom}) = junctioned_delete(A)
-create(A::Ports{BicategoryRelations.Hom}) = junctioned_create(A)
+const BiRel = BicategoryRelations
 
-dunit(A::Ports{BicategoryRelations.Hom}) = junction_caps(A)
-dcounit(A::Ports{BicategoryRelations.Hom}) = junction_cups(A)
+mcopy(A::Ports{BiRel.Hom}, n::Int) = junctioned_mcopy(A, n)
+mmerge(A::Ports{BiRel.Hom}, n::Int) = junctioned_mmerge(A, n)
+delete(A::Ports{BiRel.Hom}) = junctioned_delete(A)
+create(A::Ports{BiRel.Hom}) = junctioned_create(A)
 
-dagger(f::WiringDiagram{BicategoryRelations.Hom}) =
+dunit(A::Ports{BiRel.Hom}) = junction_caps(A)
+dcounit(A::Ports{BiRel.Hom}) = junction_cups(A)
+
+dagger(f::WiringDiagram{BiRel.Hom}) =
   functor(f, identity, dagger, contravariant=true)
 
-meet(f::WiringDiagram{BicategoryRelations.Hom}, g::WiringDiagram{BicategoryRelations.Hom}) =
+meet(f::WiringDiagram{BiRel.Hom}, g::WiringDiagram{BiRel.Hom}) =
   compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
-top(A::Ports{BicategoryRelations.Hom}, B::Ports{BicategoryRelations.Hom}) =
+top(A::Ports{BiRel.Hom}, B::Ports{BiRel.Hom}) =
   compose(delete(A), create(B))
 
 # Abelian bicategory of relations
 #--------------------------------
 
-mcopy(A::Ports{AbelianBicategoryRelations.Hom}, n::Int) =
-  junctioned_mcopy(A, n; op=:times)
-mmerge(A::Ports{AbelianBicategoryRelations.Hom}, n::Int) =
-  junctioned_mmerge(A, n; op=:times)
-delete(A::Ports{AbelianBicategoryRelations.Hom}) =
-  junctioned_delete(A; op=:times)
-create(A::Ports{AbelianBicategoryRelations.Hom}) =
-  junctioned_create(A; op=:times)
+const AbBiRel = AbelianBicategoryRelations
 
-dunit(A::Ports{AbelianBicategoryRelations.Hom}) = junction_caps(A; op=:times)
-dcounit(A::Ports{AbelianBicategoryRelations.Hom}) = junction_cups(A; op=:times)
+mcopy(A::Ports{AbBiRel.Hom}, n::Int) = junctioned_mcopy(A, n; op=:times)
+mmerge(A::Ports{AbBiRel.Hom}, n::Int) = junctioned_mmerge(A, n; op=:times)
+delete(A::Ports{AbBiRel.Hom}) = junctioned_delete(A; op=:times)
+create(A::Ports{AbBiRel.Hom}) = junctioned_create(A; op=:times)
 
-mplus(A::Ports{AbelianBicategoryRelations.Hom}, n::Int) =
-  junctioned_mmerge(A, n, op=:plus)
-coplus(A::Ports{AbelianBicategoryRelations.Hom}, n::Int) =
-  junctioned_mcopy(A, n, op=:plus)
-mzero(A::Ports{AbelianBicategoryRelations.Hom}) =
-  junctioned_create(A, op=:plus)
-cozero(A::Ports{AbelianBicategoryRelations.Hom}) =
-  junctioned_delete(A, op=:plus)
+dunit(A::Ports{AbBiRel.Hom}) = junction_caps(A; op=:times)
+dcounit(A::Ports{AbBiRel.Hom}) = junction_cups(A; op=:times)
 
-dagger(f::WiringDiagram{AbelianBicategoryRelations.Hom}) =
+mplus(A::Ports{AbBiRel.Hom}, n::Int) = junctioned_mmerge(A, n, op=:plus)
+coplus(A::Ports{AbBiRel.Hom}, n::Int) = junctioned_mcopy(A, n, op=:plus)
+mzero(A::Ports{AbBiRel.Hom}) = junctioned_create(A, op=:plus)
+cozero(A::Ports{AbBiRel.Hom}) = junctioned_delete(A, op=:plus)
+
+dagger(f::WiringDiagram{AbBiRel.Hom}) =
   functor(f, identity, dagger, contravariant=true)
 
-meet(f::WiringDiagram{AbelianBicategoryRelations.Hom},
-     g::WiringDiagram{AbelianBicategoryRelations.Hom}) =
+meet(f::WiringDiagram{AbBiRel.Hom}, g::WiringDiagram{AbBiRel.Hom}) =
   compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
-top(A::Ports{AbelianBicategoryRelations.Hom},
-    B::Ports{AbelianBicategoryRelations.Hom}) =
+top(A::Ports{AbBiRel.Hom}, B::Ports{AbBiRel.Hom}) =
   compose(delete(A), create(B))
 
 # Operadic interface
