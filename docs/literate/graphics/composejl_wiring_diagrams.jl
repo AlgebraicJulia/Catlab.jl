@@ -101,6 +101,13 @@ A, B, = Ob(FreeSymmetricMonoidalCategory, :A, :B)
 f, g = Hom(:f, A, B), Hom(:g, B, A)
 
 to_composejl(f⋅g, box_props=[fill("lavender"), stroke("black")])
+#-
+X = Ob(FreeAbelianBicategoryRelations, :X)
+
+to_composejl(mplus(X) ⋅ mcopy(X),
+    junction_props=[fill("red"), stroke("black")],
+    junction_variant_props=[fill("blue"), stroke("black")],
+)
 
 # ## Output formats
 

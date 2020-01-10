@@ -110,6 +110,21 @@ pic = to_tikz(f⋅g, styles=Dict(
     TikZ.Property("fill", "{rgb,255: red,230; green,230; blue,250}"),
   ],
 ))
+#-
+X = Ob(FreeAbelianBicategoryRelations, :X)
+
+to_tikz(mplus(X) ⋅ mcopy(X), styles=Dict(
+  "junction" => [
+    TikZ.Property("circle"), TikZ.Property("draw"),
+    TikZ.Property("fill", "red"),
+    TikZ.Property("inner sep", "0"),
+  ],
+  "variant junction" => [
+    TikZ.Property("circle"), TikZ.Property("draw"),
+    TikZ.Property("fill", "blue"),
+    TikZ.Property("inner sep", "0"),
+  ]
+))
 
 # ## Output formats
 
