@@ -88,10 +88,8 @@ end
 function tikz_node(layout::BoxLayout, opts::TikZOptions;
     name::Union{String,Nothing}=nothing,
     style::Union{String,Nothing}=nothing)::TikZ.Node
-  if isnothing(style)
-    style = tikz_shapes[layout.shape]
-  end
-  content = layout.shape in tikz_content_shapes ?
+  style = isnothing(style) ? tikz_style(layout) : style
+  content = layout.shape in (RectangleShape, CircleShape) ?
     tikz_node_label(layout.value, opts) : ""
   TikZ.Node(name,
     props=[TikZ.Property(style); tikz_size(layout.size)],
@@ -219,9 +217,11 @@ function tikz_number(x::Number; sigdigits=3)
   isinteger(x) ? Integer(x) : x
 end
 
-# TikZ shapes and styles
-########################
+# TikZ styles
+#############
 
+""" Make TikZ style definitions for wiring diagram.
+"""
 function tikz_styles(opts::TikZOptions)
   styles = deepcopy(default_tikz_styles)
   libraries = String[]
@@ -272,6 +272,11 @@ const default_tikz_styles = OrderedDict{String,Vector{TikZ.Property}}(
     TikZ.Property("draw"), TikZ.Property("fill"),
     TikZ.Property("inner sep", "0"),
   ],
+  "variant junction" => [
+    TikZ.Property("circle"),
+    TikZ.Property("draw"), TikZ.Property("solid"),
+    TikZ.Property("inner sep", "0"),
+  ],
   "invisible" => [
     TikZ.Property("draw", "none"),
     TikZ.Property("inner sep", "0"),
@@ -289,15 +294,18 @@ function tikz_decorate_markings(marks::Vector{String})
   tikz_decorate_markings([ TikZ.Property("mark", mark) for mark in marks ])
 end
 
+""" Get TikZ style for box.
+"""
+function tikz_style(layout::BoxLayout)
+  style = tikz_shapes[layout.shape]
+  :variant in layout.hints ? "variant $style" : style
+end
+
 const tikz_shapes = Dict(
   RectangleShape => "box",
   CircleShape => "circular box",
   JunctionShape => "junction",
   NoShape => "invisible",
 )
-const tikz_content_shapes = Set([
-  RectangleShape,
-  CircleShape,
-])
 
 end

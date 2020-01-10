@@ -10,7 +10,7 @@ const C = Compose
 
 using ...WiringDiagrams
 using ..WiringDiagramLayouts
-using ..WiringDiagramLayouts: AbstractVector2D, Vector2D, BoxShape,
+using ..WiringDiagramLayouts: AbstractVector2D, Vector2D, BoxLayout, BoxShape,
   RectangleShape, JunctionShape, NoShape, box_label, position, size,
   lower_corner, upper_corner, normal, tangent, wire_points
 
@@ -43,6 +43,7 @@ const ComposeProperties = AbstractVector{<:Compose.Property}
 @with_kw_noshow struct ComposeOptions
   box_props::ComposeProperties = [ C.stroke("black"), C.fill(nothing) ]
   junction_props::ComposeProperties = [ C.stroke("black") ]
+  junction_variant_props::ComposeProperties = [ C.stroke("black"), C.fill(nothing) ]
   wire_props::ComposeProperties = [ C.stroke("black") ]
   text_props::ComposeProperties = [ C.fill("black") ]
   box_renderer::Function = render_box
@@ -92,7 +93,7 @@ end
 function layout_to_composejl(box::Box, opts::ComposeOptions)::Compose.Context
   C.compose(C.context(lower_corner(box)..., size(box)...,
                       units=C.UnitBox(), tag=:box),
-    opts.box_renderer(box.value.shape, box.value.value, opts)
+    opts.box_renderer(box.value, opts)
   )
 end
 
@@ -126,17 +127,19 @@ end
 
 """ Draw an atomic box in Compose.jl.
 """
-function render_box(shape::BoxShape, value::Any, opts::ComposeOptions)
-  render_box(Val(shape), value, opts)
+function render_box(layout::BoxLayout, opts::ComposeOptions)
+  render_box(Val(layout.shape), layout, opts)
 end
-function render_box(::Val{RectangleShape}, value::Any, opts::ComposeOptions)
-  labeled_rectangle(box_label(value), rounded=opts.rounded_boxes,
+function render_box(::Val{RectangleShape}, layout::BoxLayout, opts::ComposeOptions)
+  labeled_rectangle(box_label(layout.value), rounded=opts.rounded_boxes,
     rect_props=opts.box_props, text_props=opts.text_props)
 end
-function render_box(::Val{JunctionShape}, ::Any, opts::ComposeOptions)
-  C.compose(C.context(), C.circle(), opts.junction_props...)
+function render_box(::Val{JunctionShape}, layout::BoxLayout, opts::ComposeOptions)
+  props = :variant in layout.hints ?
+    opts.junction_variant_props : opts.junction_props
+  C.compose(C.context(), C.circle(), props...)
 end
-render_box(::Val{NoShape}, ::Any, ::ComposeOptions) = C.context()
+render_box(::Val{NoShape}, ::BoxLayout, ::ComposeOptions) = C.context()
 
 # Compose.jl forms
 ##################

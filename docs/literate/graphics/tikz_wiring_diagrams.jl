@@ -80,6 +80,20 @@ f = Hom(:f, A, B)
 
 to_tikz((dunit(A) ⊗ id(B)) ⋅ (id(A) ⊗ f ⊗ id(B)) ⋅ (id(A) ⊗ dcounit(B)))
 
+# ### Abelian bicategory of relations
+
+# In an abelian bicategory of relations, such as the category of linear
+# relations, the duplication morphisms $\Delta_X: X \to X \otimes X$ and
+# addition morphisms $\blacktriangledown_X: X \otimes X \to X$ belong to a
+# bimonoid. Among other things, this means that the following two morphisms are
+# equal.
+
+X = Ob(FreeAbelianBicategoryRelations, :X)
+
+to_tikz(mplus(X) ⋅ mcopy(X))
+#-
+to_tikz((mcopy(X)⊗mcopy(X)) ⋅ (id(X)⊗braid(X,X)⊗id(X)) ⋅ (mplus(X)⊗mplus(X)))
+
 # ## Custom styles
 
 # The visual appearance of wiring diagrams can be customized using the builtin

@@ -64,12 +64,17 @@ as another, similar shape, such as a rotated isosceles trapezoid.
 @enum BoxShape RectangleShape CircleShape JunctionShape NoShape
 
 """ Layout for box in a wiring diagram.
+
+Suggests a shape, size, and position for the box. Also includes the box's value,
+typically used for labels, and a list of style hints, which do not affect the
+layout but are interpreted by graphics backends to adjust the visual style.
 """
 @with_kw_noshow mutable struct BoxLayout{Value}
   value::Value = nothing
   shape::BoxShape = RectangleShape
   position::Vector2D = zeros(Vector2D)
   size::Vector2D = zeros(Vector2D)
+  hints::Vector{Symbol} = Symbol[]
 end
 
 position(layout::BoxLayout) = layout.position
@@ -156,6 +161,12 @@ layout_hom_expr(f::HomExpr{:mcopy}, opts) = layout_junction_expr(f, opts)
 layout_hom_expr(f::HomExpr{:delete}, opts) = layout_junction_expr(f, opts)
 layout_hom_expr(f::HomExpr{:mmerge}, opts) = layout_junction_expr(f, opts)
 layout_hom_expr(f::HomExpr{:create}, opts) = layout_junction_expr(f, opts)
+
+layout_hom_expr(f::HomExpr{:mplus}, opts) = layout_junction_expr(f, opts, hints=[:variant])
+layout_hom_expr(f::HomExpr{:mzero}, opts) = layout_junction_expr(f, opts, hints=[:variant])
+layout_hom_expr(f::HomExpr{:coplus}, opts) = layout_junction_expr(f, opts, hints=[:variant])
+layout_hom_expr(f::HomExpr{:cozero}, opts) = layout_junction_expr(f, opts, hints=[:variant])
+
 layout_hom_expr(f::HomExpr{:dunit}, opts) =
   layout_junction_expr(f, opts; visible=false, pad=false)
 layout_hom_expr(f::HomExpr{:dcounit}, opts) =
@@ -277,9 +288,9 @@ end
 """ Lay out a rectangular box and its ports.
 """
 function layout_box(value::Any, inputs::Vector, outputs::Vector,
-                    opts::LayoutOptions)
+                    opts::LayoutOptions; hints::Vector{Symbol}=Symbol[])
   size = default_box_size(length(inputs), length(outputs), opts)
-  box = Box(BoxLayout(value=value, shape=RectangleShape, size=size),
+  box = Box(BoxLayout(value=value, shape=RectangleShape, size=size, hints=hints),
             layout_linear_ports(InputPort, inputs, size, opts),
             layout_linear_ports(OutputPort, outputs, size, opts))
   size_to_fit!(singleton_diagram(box), opts)
@@ -288,11 +299,12 @@ end
 """ Lay out a circular junction and its ports.
 """
 function layout_junction(value::Any, inputs::Vector, outputs::Vector,
-                         opts::LayoutOptions; visible::Bool=true, pad::Bool=true)
+                         opts::LayoutOptions; visible::Bool=true,
+                         pad::Bool=true, hints::Vector{Symbol}=Symbol[])
   nin, nout = length(inputs), length(outputs)
   shape, radius = visible ? (JunctionShape, opts.junction_size) : (NoShape, 0)
   size = 2*SVector(radius, radius)
-  box = Box(BoxLayout(value=value, shape=shape, size=size),
+  box = Box(BoxLayout(value=value, shape=shape, size=size, hints=hints),
             layout_circular_ports(InputPort, inputs, radius, opts;
                                   pad=pad, label_wires = nin == 1 || nout == 0),
             layout_circular_ports(OutputPort, outputs, radius, opts;
