@@ -31,10 +31,10 @@ References:
 end
 
 @syntax FreeBicategoryRelations(ObExpr,HomExpr) BicategoryRelations begin
-  otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
-  dagger(f::Hom) = distribute_unary(distribute_dagger(involute(Super.dagger(f))),
+  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f,g))
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  dagger(f::Hom) = distribute_unary(distribute_dagger(involute(new(f))),
                                     dagger, otimes)
   meet(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
   top(A::Ob, B::Ob) = compose(delete(A), create(B))
@@ -62,10 +62,10 @@ References:
 end
 
 @syntax FreeAbelianBicategoryRelations(ObExpr,HomExpr) AbelianBicategoryRelations begin
-  otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
-  dagger(f::Hom) = distribute_unary(distribute_dagger(involute(Super.dagger(f))),
+  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f,g))
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  dagger(f::Hom) = distribute_unary(distribute_dagger(involute(new(f))),
                                     dagger, otimes)
   meet(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
   join(f::Hom, g::Hom) = compose(coplus(dom(f)), otimes(f,g), mplus(codom(f)))

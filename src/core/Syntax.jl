@@ -135,10 +135,10 @@ function syntax_code(name::Symbol, base_types::Vector{Type},
   toplevel = []
   bindings = Dict{Symbol,Any}(
     c.name => Expr(:(.), name, QuoteNode(c.name)) for c in signature.types)
-  bindings[:Super] = name
   syntax_fns = Dict(parse_function_sig(f) => f for f in functions)
   for f in interface(class)
     sig = parse_function_sig(f)
+    bindings[:new] = Expr(:(.), name, QuoteNode(sig.name))
     if haskey(syntax_fns, sig)
       # Case 1: The method is overriden in the syntax body.
       expr = generate_function(replace_symbols(bindings, syntax_fns[sig]))
@@ -149,8 +149,8 @@ function syntax_code(name::Symbol, base_types::Vector{Type},
       # Case 3: Call the default syntax method.
       params = [ gensym("x$i") for i in eachindex(sig.types) ]
       call_expr = Expr(:call, sig.name, 
-        [ Expr(:(::), p, t) for (p,t) in zip(params, sig.types) ]...)
-      body = Expr(:call, Expr(:(.), name, QuoteNode(sig.name)), params...)
+        [ Expr(:(::), pair...) for pair in zip(params, sig.types) ]...)
+      body = Expr(:call, :new, params...)
       f_impl = JuliaFunction(call_expr, f.return_type, body)
       expr = generate_function(replace_symbols(bindings, f_impl))
     end

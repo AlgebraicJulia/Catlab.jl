@@ -81,9 +81,9 @@ The signature (but not the axioms) is the same as a braided monoidal category.
 end
 
 @syntax FreeSymmetricMonoidalCategory(ObExpr,HomExpr) SymmetricMonoidalCategory begin
-  otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f,g))
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
 end
 
 function show_latex(io::IO, expr::HomExpr{:braid}; kw...)
@@ -132,9 +132,9 @@ duplication and deletion, and do not have their own syntactic elements.
 Of course, this convention could be reversed.
 """
 @syntax FreeCartesianCategory(ObExpr,HomExpr) CartesianCategory begin
-  otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f,g))
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
   
   pair(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g))
   proj1(A::Ob, B::Ob) = otimes(id(A), delete(B))
@@ -186,9 +186,9 @@ merging and creation, and do not have their own syntactic elements.
 Of course, this convention could be reversed.
 """
 @syntax FreeCocartesianCategory(ObExpr,HomExpr) CocartesianCategory begin
-  otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f,g))
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
   
   copair(f::Hom, g::Hom) = compose(otimes(f,g), mmerge(codom(f)))
   incl1(A::Ob, B::Ob) = otimes(id(A), create(B))
@@ -246,9 +246,9 @@ yet supported.
 end
 
 @syntax FreeBiproductCategory(ObExpr,HomExpr) BiproductCategory begin
-  otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f,g))
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
 
   pair(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g))
   copair(f::Hom, g::Hom) = compose(otimes(f,g), mmerge(codom(f)))
@@ -281,9 +281,9 @@ end
 See also `FreeCartesianCategory`.
 """
 @syntax FreeCartesianClosedCategory(ObExpr,HomExpr) CartesianClosedCategory begin
-  otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f,g))
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
   
   pair(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g))
   proj1(A::Ob, B::Ob) = otimes(id(A), delete(B))
@@ -332,12 +332,12 @@ end
 end
 
 @syntax FreeCompactClosedCategory(ObExpr,HomExpr) CompactClosedCategory begin
-  dual(A::Ob) = distribute_unary(involute(Super.dual(A)), dual, otimes,
+  dual(A::Ob) = distribute_unary(involute(new(A)), dual, otimes,
                                  unit=munit, contravariant=true)
-  otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
-  mate(f::Hom) = distribute_mate(involute(Super.mate(f)))
+  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f,g))
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  mate(f::Hom) = distribute_mate(involute(new(f)))
 end
 
 """ Distribute adjoint mates over composition and products.
@@ -371,8 +371,8 @@ end
 end
 
 @syntax FreeDaggerCategory(ObExpr,HomExpr) DaggerCategory begin
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
-  dagger(f::Hom) = distribute_dagger(involute(Super.dagger(f)))
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  dagger(f::Hom) = distribute_dagger(involute(new(f)))
 end
 
 """ Distribute dagger over composition.
@@ -394,10 +394,10 @@ FIXME: This signature should extend both `DaggerCategory` and
 end
 
 @syntax FreeDaggerSymmetricMonoidalCategory(ObExpr,HomExpr) DaggerSymmetricMonoidalCategory begin
-  otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
-  dagger(f::Hom) = distribute_unary(distribute_dagger(involute(Super.dagger(f))),
+  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f,g))
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  dagger(f::Hom) = distribute_unary(distribute_dagger(involute(new(f))),
                                     dagger, otimes)
 end
 
@@ -420,14 +420,14 @@ FIXME: This signature should extend both `DaggerCategory` and
 end
 
 @syntax FreeDaggerCompactCategory(ObExpr,HomExpr) DaggerCompactCategory begin
-  dual(A::Ob) = distribute_unary(involute(Super.dual(A)), dual, otimes,
+  dual(A::Ob) = distribute_unary(involute(new(A)), dual, otimes,
                                  unit=munit, contravariant=true)
-  otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
-  dagger(f::Hom) = distribute_unary(distribute_dagger(involute(Super.dagger(f))),
+  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f,g))
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  dagger(f::Hom) = distribute_unary(distribute_dagger(involute(new(f))),
                                     dagger, otimes)
-  mate(f::Hom) = distribute_mate(involute(Super.mate(f)))
+  mate(f::Hom) = distribute_mate(involute(new(f)))
 end
 
 function show_latex(io::IO, expr::HomExpr{:dagger}; kw...)

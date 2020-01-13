@@ -40,9 +40,9 @@ end
 
 @syntax AlgebraicNet(ObExpr,HomExpr) AlgebraicNetSignature begin
   # FIXME: `compose` and `otimes` should delegate to wiring layer when possible.
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
-  otimes(A::Ob, B::Ob) = associate_unit(Super.otimes(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(Super.otimes(f,g))
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f,g))
 
   mcopy(A::Ob) = mcopy(A, 2)
   mmerge(A::Ob) = mmerge(A, 2)
@@ -54,7 +54,7 @@ end
     else
       f = WiringLayer(f, ndims(A), ndims(B))
     end
-    Super.wiring(f::WiringLayer, A, B)
+    new(f::WiringLayer, A, B)
   end
 end
 

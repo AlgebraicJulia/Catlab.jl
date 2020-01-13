@@ -181,7 +181,7 @@ objects are strictly equal and throw an error if they are not.
 
 ```@example category
 @syntax SimplifyingCategoryExprs(ObExpr, HomExpr) Category begin
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
 end
 
 A, B, C, D = [ Ob(SimplifyingCategoryExprs.Ob, X) for X in [:A, :B, :C, :D] ]

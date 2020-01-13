@@ -47,7 +47,7 @@ x, y, z = Elem(FreeMonoid,:x), Elem(FreeMonoid,:y), Elem(FreeMonoid,:z)
 @test hash(mtimes(x,y)) != hash(mtimes(x,z))
 
 @syntax FreeMonoidAssoc Monoid begin
-  mtimes(x::Elem, y::Elem) = associate(Super.mtimes(x,y))
+  mtimes(x::Elem, y::Elem) = associate(new(x,y))
 end
 
 x, y, z = [ Elem(FreeMonoidAssoc,sym) for sym in [:x,:y,:z] ]
@@ -56,7 +56,7 @@ e = munit(FreeMonoidAssoc.Elem)
 @test mtimes(e,x) != x && mtimes(x,e) != x
 
 @syntax FreeMonoidAssocUnit Monoid begin
-  mtimes(x::Elem, y::Elem) = associate_unit(Super.mtimes(x,y), munit)
+  mtimes(x::Elem, y::Elem) = associate_unit(new(x,y), munit)
 end
 
 x, y, z = [ Elem(FreeMonoidAssocUnit,sym) for sym in [:x,:y,:z] ]
@@ -110,7 +110,7 @@ x, y = one(FreeMonoidTwo.Elem), two(FreeMonoidTwo.Elem)
 end
 
 @syntax FreeCategory Category begin
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g))
+  compose(f::Hom, g::Hom) = associate(new(f,g))
 end
 
 @test isa(FreeCategory, Module)
@@ -138,7 +138,7 @@ f, g, h = Hom(:f, X, Y), Hom(:g, Y, Z), Hom(:h, Z, W)
 @test codom(compose(f,g,h)) == W
 
 @syntax FreeCategoryStrict Category begin
-  compose(f::Hom, g::Hom) = associate(Super.compose(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
 end
 
 X, Y = Ob(FreeCategoryStrict.Ob, :X), Ob(FreeCategoryStrict.Ob, :Y)
