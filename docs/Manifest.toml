@@ -24,7 +24,7 @@ version = "0.5.8"
 deps = ["AutoHashEquals", "Compat", "Compose", "DataStructures", "JSON", "LightGraphs", "LightXML", "LinearAlgebra", "Match", "MetaGraphs", "Parameters", "Pkg", "Reexport", "Requires", "StaticArrays", "Statistics", "Test"]
 path = ".."
 uuid = "134e5e36-593f-5add-ad60-77f754baafbe"
-version = "0.5.0"
+version = "0.5.1"
 
 [[CodecZlib]]
 deps = ["BinaryProvider", "Libdl", "TranscodingStreams"]
