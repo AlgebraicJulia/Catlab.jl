@@ -134,10 +134,10 @@ origin at the center of the diagram and the positive y-axis pointing
 sizes are dimensionless (unitless).
 """
 function layout_diagram(Syntax::Module, diagram::WiringDiagram; kw...)
-  layout_wiring_diagram(to_hom_expr(Syntax, diagram); kw...)
+  layout_diagram(to_hom_expr(Syntax, diagram); kw...)
 end
 function layout_diagram(Ob::Type, Hom::Type, diagram::WiringDiagram; kw...)
-  layout_wiring_diagram(to_hom_expr(Ob, Hom, diagram); kw...)
+  layout_diagram(to_hom_expr(Ob, Hom, diagram); kw...)
 end
 
 function layout_diagram(expr::HomExpr; kw...)::WiringDiagram
