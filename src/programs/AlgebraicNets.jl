@@ -6,18 +6,19 @@ arithmetic operations or elementary or special functions. The idea here is to
 represent expressions as morphisms in a monoidal category.
 """
 module AlgebraicNets
-export AlgebraicNetSignature, AlgebraicNet, Ob, Hom,
-  compose, id, dom, codom, otimes, munit, braid, mcopy, delete, mmerge, create,
+export AlgebraicNetSignature, AlgebraicNet, Ob, Hom, dom, codom,
+  id, compose, ⋅, ∘, otimes, ⊗, munit, braid, mcopy, delete, mmerge, create,
   linear, constant, wiring,
   compile, compile_expr, compile_expr_vector, compile_block, evaluate
 
 using Match
 
 using ...Catlab
-import ...Doctrines: MonoidalCategoryWithBidiagonals, ObExpr, HomExpr, Ob, Hom,
-  compose, id, dom, codom, otimes, munit, braid, mcopy, delete, mmerge, create
-import ...Meta: concat_expr
+using ...Meta: concat_expr
 import ...Syntax: show_latex, show_unicode
+using ...Doctrines: MonoidalCategoryWithBidiagonals, ObExpr, HomExpr
+import ...Doctrines: Ob, Hom, dom, codom,
+  id, compose, ⋅, ∘, otimes, ⊗, munit, braid, mcopy, delete, mmerge, create
 using ...WiringDiagrams: WiringLayer
 using ..JuliaPrograms
 import ..JuliaPrograms: compile, compile_expr, compile_block, genvar, genvars,
