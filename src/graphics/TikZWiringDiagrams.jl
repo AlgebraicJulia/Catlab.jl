@@ -29,7 +29,7 @@ import ..TikZ
   arrowtip::Union{String,Nothing} = nothing
   arrowtip_pos::Float64 = 0.5 # ∈ [0,1]
   rounded_boxes::Bool = true
-  props::Vector{TikZ.Property} = TikZ.Property[]
+  props::AbstractVector = []
   styles::AbstractDict = Dict()
   libraries::Vector{String} = String[]
 end
@@ -60,9 +60,9 @@ function layout_to_tikz(diagram::WiringDiagram, opts::TikZOptions)
   styles, libraries = tikz_styles(opts)
   props = [
     [ TikZ.Property("x", "1em"), TikZ.Property("y", "1em") ];
-    [ TikZ.Property("$name/.style", props)
+    [ TikZ.Property("$name/.style", TikZ.as_properties(props))
       for (name, props) in merge(styles, opts.styles) ];
-    opts.props;
+    TikZ.as_properties(opts.props);
   ]
   libraries = unique!([ "calc"; libraries; opts.libraries ])
   TikZ.Picture(stmts...; props=props, libraries=libraries)

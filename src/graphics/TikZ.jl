@@ -30,6 +30,21 @@ abstract type Statement <: Expression end
 abstract type PathExpression <: Expression end
 abstract type GraphStatement <: Expression end
 
+@auto_hash_equals struct Property <: Expression
+  key::String
+  value::Union{String,Vector{Property},Nothing}
+  
+  Property(key::String, value=nothing) = new(key, value)
+end
+
+as_property(prop::Property) = prop
+as_property(pair::Pair) = as_property(first(pair), last(pair))
+as_property(key::String, value::Union{String,Nothing}=nothing) = Property(key, value)
+as_property(key::String, values::AbstractVector) = Property(key, as_properties(values))
+
+as_properties(props::Vector{Property}) = props
+as_properties(props) = Property[ as_property(prop) for prop in props ]
+
 @auto_hash_equals struct Coordinate <: PathExpression
   x::String
   y::String
@@ -40,13 +55,6 @@ end
 
 @auto_hash_equals struct NodeCoordinate <: PathExpression
   name::String
-end
-
-@auto_hash_equals struct Property <: Expression
-  key::String
-  value::Union{String,Vector{Property},Nothing}
-  
-  Property(key::String, value=nothing) = new(key, value)
 end
 
 @auto_hash_equals struct PathOperation <: PathExpression

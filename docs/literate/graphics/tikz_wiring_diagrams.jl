@@ -99,31 +99,18 @@ to_tikz((mcopy(X)⊗mcopy(X)) ⋅ (id(X)⊗braid(X,X)⊗id(X)) ⋅ (mplus(X)⊗m
 # The visual appearance of wiring diagrams can be customized using the builtin
 # options or by redefining the TikZ styles for the boxes or wires.
 
-import Catlab.Graphics: TikZ
-
 A, B, = Ob(FreeSymmetricMonoidalCategory, :A, :B)
 f, g = Hom(:f, A, B), Hom(:g, B, A)
 
 pic = to_tikz(f⋅g, styles=Dict(
-  "box" => [
-    TikZ.Property("draw"),
-    TikZ.Property("fill", "{rgb,255: red,230; green,230; blue,250}"),
-  ],
+  "box" => ["draw", "fill"=>"{rgb,255: red,230; green,230; blue,250}"],
 ))
 #-
 X = Ob(FreeAbelianBicategoryRelations, :X)
 
 to_tikz(mplus(X) ⋅ mcopy(X), styles=Dict(
-  "junction" => [
-    TikZ.Property("circle"), TikZ.Property("draw"),
-    TikZ.Property("fill", "red"),
-    TikZ.Property("inner sep", "0"),
-  ],
-  "variant junction" => [
-    TikZ.Property("circle"), TikZ.Property("draw"),
-    TikZ.Property("fill", "blue"),
-    TikZ.Property("inner sep", "0"),
-  ]
+  "junction" => ["circle", "draw", "fill"=>"red", "inner sep"=>"0"],
+  "variant junction" => ["circle", "draw", "fill"=>"blue", "inner sep"=>"0"],
 ))
 
 # ## Output formats
@@ -134,6 +121,8 @@ to_tikz(mplus(X) ⋅ mcopy(X), styles=Dict(
 
 # To generate the LaTeX source code, use the builtin pretty-printer. This
 # feature does not require LaTeX or TikzPictures.jl to be installed.
+
+import Catlab.Graphics: TikZ
 
 pic = to_tikz(f⋅g)
 TikZ.pprint(pic)
