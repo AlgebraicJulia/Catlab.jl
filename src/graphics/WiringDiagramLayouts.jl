@@ -50,7 +50,7 @@ svector(orient::LayoutOrientation, first, second) =
   base_box_size::Float64 = 2
   sequence_pad::Float64 = 2
   parallel_pad::Float64 = 1
-  junction_size::Float64 = 0.2
+  junction_size::Float64 = 0.25
 end
 
 svector(opts::LayoutOptions, args...) = svector(opts.orientation, args...)
