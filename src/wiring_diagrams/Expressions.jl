@@ -27,15 +27,15 @@ using ..WiringDiagramAlgorithms: crossing_minimization_by_sort
 
 """ Convert a morphism expression into a wiring diagram.
 """
-function to_wiring_diagram(expr::GATExpr)
+function to_wiring_diagram(expr::GATExpr; kw...)
   signature = syntax_module(expr).signature()
-  to_wiring_diagram(signature.Hom, expr)
+  to_wiring_diagram(signature.Hom, expr; kw...)
 end
-function to_wiring_diagram(T::Type, expr::GATExpr)
+function to_wiring_diagram(T::Type, expr::GATExpr; keep_exprs::Bool=false)
   functor((Ports, WiringDiagram), expr; terms=Dict(
-    :Ob => expr -> Ports{T}([first(expr)]),
+    :Ob => expr -> Ports{T}([keep_exprs ? expr : first(expr)]),
     :Hom => expr -> singleton_diagram(T,
-      Box(first(expr),
+      Box(keep_exprs ? expr : first(expr),
           to_wiring_diagram(T, dom(expr)),
           to_wiring_diagram(T, codom(expr))))
   ))
