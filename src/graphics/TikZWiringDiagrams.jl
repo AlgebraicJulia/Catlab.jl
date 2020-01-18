@@ -51,11 +51,11 @@ end
 
 """ Draw a wiring diagram in TikZ using the given layout.
 """
-function layout_to_tikz(diagram::WiringDiagram; kw...)::TikZ.Picture
+function layout_to_tikz(diagram::WiringDiagram; kw...)::TikZ.Document
   layout_to_tikz(diagram, TikZOptions(; kw...))
 end
 
-function layout_to_tikz(diagram::WiringDiagram, opts::TikZOptions)
+function layout_to_tikz(diagram::WiringDiagram, opts::TikZOptions)::TikZ.Document
   stmts = tikz_box(diagram, Int[], opts)
   styles, libraries = tikz_styles(opts)
   props = [
@@ -65,7 +65,7 @@ function layout_to_tikz(diagram::WiringDiagram, opts::TikZOptions)
     TikZ.as_properties(opts.props);
   ]
   libraries = unique!([ "calc"; libraries; opts.libraries ])
-  TikZ.Picture(stmts...; props=props, libraries=libraries)
+  TikZ.Document(TikZ.Picture(stmts...; props=props); libraries=libraries)
 end
 
 """ Make TikZ node for a box.

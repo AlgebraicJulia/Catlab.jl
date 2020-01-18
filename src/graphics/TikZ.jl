@@ -15,9 +15,9 @@ The AST is adapted from the (also incomplete) BNF grammar for TikZ in
 [TikZit](http://tikzit.sourceforge.net/manual.html).
 """
 module TikZ
-export Expression, Statement, GraphStatement, Coordinate, Property,
-  PathOperation, Picture, Scope, Node, NodeCoordinate, Edge, EdgeNode,
-  Graph, GraphScope, GraphNode, GraphEdge, MatrixNode, pprint
+export Expression, PathExpression, Statement, GraphStatement, Property,
+  Document, Picture, Scope, Coordinate, Node, NodeCoordinate, Edge, EdgeNode,
+  PathOperation, Graph, GraphScope, GraphNode, GraphEdge, MatrixNode, pprint
 
 using Compat
 using AutoHashEquals
@@ -26,8 +26,8 @@ using AutoHashEquals
 #####
 
 abstract type Expression end
-abstract type Statement <: Expression end
 abstract type PathExpression <: Expression end
+abstract type Statement <: Expression end
 abstract type GraphStatement <: Expression end
 
 @auto_hash_equals struct Property <: Expression
@@ -45,32 +45,18 @@ as_property(key::String, values::AbstractVector) = Property(key, as_properties(v
 as_properties(props::Vector{Property}) = props
 as_properties(props) = Property[ as_property(prop) for prop in props ]
 
-@auto_hash_equals struct Coordinate <: PathExpression
-  x::String
-  y::String
-  
-  Coordinate(x::String, y::String) = new(x, y)
-  Coordinate(x::Number, y::Number) = new(string(x), string(y))
-end
-
-@auto_hash_equals struct NodeCoordinate <: PathExpression
-  name::String
-end
-
-@auto_hash_equals struct PathOperation <: PathExpression
-  op::String
-  props::Vector{Property}
-  
-  PathOperation(op::String; props=Property[]) = new(op, props)
-end
-
 @auto_hash_equals struct Picture <: Expression
   stmts::Vector{Statement}
   props::Vector{Property}
+  
+  Picture(stmts::Vararg{Statement}; props=Property[]) = new([stmts...], props)
+end
+
+@auto_hash_equals struct Document <: Expression
+  picture::Picture
   libraries::Vector{String}
   
-  Picture(stmts::Vararg{Statement}; props=Property[], libraries=String[]) =
-    new([stmts...], props, libraries)
+  Document(picture::Picture; libraries=String[]) = new(picture, libraries)
 end
 
 @auto_hash_equals struct Scope <: Statement
@@ -78,6 +64,14 @@ end
   props::Vector{Property}
   
   Scope(stmts::Vararg{Statement}; props=Property[]) = new([stmts...], props)
+end
+
+@auto_hash_equals struct Coordinate <: PathExpression
+  x::String
+  y::String
+  
+  Coordinate(x::String, y::String) = new(x, y)
+  Coordinate(x::Number, y::Number) = new(string(x), string(y))
 end
 
 @auto_hash_equals struct Node <: Statement
@@ -89,6 +83,10 @@ end
   
   Node(name::String; props=Property[], coord=nothing, content="") =
     new(name, props, coord, content)
+end
+
+@auto_hash_equals struct NodeCoordinate <: PathExpression
+  name::String
 end
 
 @auto_hash_equals struct EdgeNode <: PathExpression
@@ -104,6 +102,13 @@ end
   
   Edge(args...; props=Property[]) =
     new([arg isa String ? NodeCoordinate(arg) : arg for arg in args], props)
+end
+
+@auto_hash_equals struct PathOperation <: PathExpression
+  op::String
+  props::Vector{Property}
+  
+  PathOperation(op::String; props=Property[]) = new(op, props)
 end
 
 @auto_hash_equals struct Graph <: Statement
@@ -155,11 +160,15 @@ end
 pprint(expr::Expression; kw...) = pprint(stdout, expr; kw...)
 pprint(io::IO, expr::Expression; kw...) = pprint(io, expr, 0; kw...)
 
-function pprint(io::IO, pic::Picture, n::Int)
-  for library in pic.libraries
+function pprint(io::IO, doc::Document, n::Int)
+  for library in doc.libraries
     indent(io, n)
     println(io, "\\usetikzlibrary{$library}")
   end
+  pprint(io, doc.picture, n)
+end
+
+function pprint(io::IO, pic::Picture, n::Int)
   indent(io, n)
   print(io, "\\begin{tikzpicture}")
   pprint(io, pic.props)

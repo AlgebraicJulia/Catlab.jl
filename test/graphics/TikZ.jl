@@ -48,17 +48,19 @@ const PathOp = PathOperation
   \\path (f) to (g);
 \\end{tikzpicture}"""
 
-@test spprint(Picture(Edge("f",PathOp("--"),"g"; props=[Property(">-Stealth")]),
-  libraries=["arrows.meta"])) == """
-\\usetikzlibrary{arrows.meta}
-\\begin{tikzpicture}
-  \\path[>-Stealth] (f) -- (g);
-\\end{tikzpicture}"""
-
 @test spprint(Picture(Node("f");
   props=[Property("node distance","1cm")])) == """
 \\begin{tikzpicture}[node distance=1cm]
   \\node (f) {};
+\\end{tikzpicture}"""
+
+# Document statement
+@test spprint(Document(
+  Picture(Edge("f",PathOp("--"),"g"; props=[Property(">-Stealth")])),
+  libraries=["arrows.meta"])) == """
+\\usetikzlibrary{arrows.meta}
+\\begin{tikzpicture}
+  \\path[>-Stealth] (f) -- (g);
 \\end{tikzpicture}"""
 
 # Scope statement

@@ -115,14 +115,15 @@ to_tikz(mplus(X) ⋅ mcopy(X), styles=Dict(
 
 # ## Output formats
 
-# The function `to_tikz` returns an object of type `TikZ.Picture`, representing
-# a TikZ picture has an abstract syntax tree. When displayed interactively, this
-# object is compiled by LaTeX to PDF and then converted to SVG.
+# The function `to_tikz` returns an object of type `TikZ.Document`, representing
+# a TikZ picture and its TikZ library dependencies as an abstract syntax tree.
+# When displayed interactively, this object is compiled by LaTeX to PDF and then
+# converted to SVG.
 
 # To generate the LaTeX source code, use the builtin pretty-printer. This
 # feature does not require LaTeX or TikzPictures.jl to be installed.
 
 import Catlab.Graphics: TikZ
 
-pic = to_tikz(f⋅g)
-TikZ.pprint(pic)
+doc = to_tikz(f⋅g)
+TikZ.pprint(doc)

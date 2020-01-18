@@ -12,6 +12,7 @@ function stmts(expr::TikZ.Expression, type::Type)
   vcat(expr isa type ? [expr] : [],
        mapreduce(expr -> stmts(expr, type), vcat, children; init=[]))
 end
+stmts(doc::TikZ.Document, type::Type) = stmts(doc.picture, type)
 
 A, B = Ob(FreeSymmetricMonoidalCategory, :A, :B)
 f, g = Hom(:f, A, B), Hom(:g, B, A)
