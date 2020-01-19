@@ -30,7 +30,7 @@ import ..TikZ
   arrowtip::Union{String,Nothing} = nothing
   arrowtip_pos::Float64 = 0.5 # ∈ [0,1]
   rounded_boxes::Bool = true
-  props::AbstractVector = []
+  props::AbstractVector = ["semithick"]
   styles::AbstractDict = Dict()
   libraries::Vector{String} = String[]
 end
@@ -60,14 +60,16 @@ function layout_to_tikz(diagram::WiringDiagram, opts::TikZOptions)::TikZ.Documen
   stmts = tikz_box(diagram, Int[], opts)
   styles, libraries = tikz_styles(opts)
   props = [
-    [ TikZ.Property("unit length/.code",
+    [ # Define a unit length to be used for both TikZ coordinates and lengths.
+      # https://tex.stackexchange.com/a/454598
+      TikZ.Property("unit length/.code",
         "{{\\newdimen\\$tikz_unit_command}\\setlength{\\$tikz_unit_command}{#1}}"),
       TikZ.Property("unit length", opts.base_unit),
       TikZ.Property("x", "\\$tikz_unit_command"),
       TikZ.Property("y", "\\$tikz_unit_command") ];
-    [ TikZ.Property("$name/.style", TikZ.as_properties(props))
-      for (name, props) in merge(styles, opts.styles) ];
     TikZ.as_properties(opts.props);
+    [ TikZ.Property("$name/.style", TikZ.as_properties(props))
+      for (name, props) in merge!(styles, opts.styles) ];
   ]
   libraries = unique!([ "calc"; libraries; opts.libraries ])
   TikZ.Document(TikZ.Picture(stmts...; props=props); libraries=libraries)
