@@ -56,7 +56,7 @@ end
 """ Draw a wiring diagram in Compose.jl.
 """
 function to_composejl(args...;
-    base_unit::Compose.Measure = 5*C.mm, kw...)::ComposePicture
+    base_unit::Compose.Measure = 4*C.mm, kw...)::ComposePicture
   layout_kw = filter(p -> first(p) ∉ fieldnames(ComposeOptions), kw)
   diagram = layout_diagram(args...; layout_kw...)
   

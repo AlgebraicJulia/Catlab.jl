@@ -23,6 +23,7 @@ import ..TikZ
 """
 @with_kw_noshow struct TikZOptions
   orientation::LayoutOrientation = LeftToRight
+  base_unit::String = "4mm"
   labels::Bool = false
   labels_pos::Float64 = 0.5 # ∈ [0,1]
   math_mode::Bool = true
@@ -59,7 +60,11 @@ function layout_to_tikz(diagram::WiringDiagram, opts::TikZOptions)::TikZ.Documen
   stmts = tikz_box(diagram, Int[], opts)
   styles, libraries = tikz_styles(opts)
   props = [
-    [ TikZ.Property("x", "1em"), TikZ.Property("y", "1em") ];
+    [ TikZ.Property("unit length/.code",
+        "{{\\newdimen\\$tikz_unit_command}\\setlength{\\$tikz_unit_command}{#1}}"),
+      TikZ.Property("unit length", opts.base_unit),
+      TikZ.Property("x", "\\$tikz_unit_command"),
+      TikZ.Property("y", "\\$tikz_unit_command") ];
     [ TikZ.Property("$name/.style", TikZ.as_properties(props))
       for (name, props) in merge(styles, opts.styles) ];
     TikZ.as_properties(opts.props);
@@ -158,7 +163,7 @@ function tikz_port(diagram::WiringDiagram, port::Port, opts::TikZOptions)
   coord = if x == 0 && y == 0
     "$name.$anchor"
   else
-    "\$($name.$anchor)+($(x)em,$(y)em)\$"
+    "\$($name.$anchor)+($x,$y)\$"
   end
   (TikZ.NodeCoordinate(coord), normal_angle)
 end
@@ -191,12 +196,13 @@ function tikz_size(size::AbstractVector2D)::Vector{TikZ.Property}
   if width == 0 && height == 0
     TikZ.Property[]
   elseif width == height
-    [ TikZ.Property("minimum size", "$(width)em") ]
+    [ TikZ.Property("minimum size", "$width\\$tikz_unit_command") ]
   else
-    [ TikZ.Property("minimum width", "$(width)em"), 
-      TikZ.Property("minimum height", "$(height)em") ]
+    [ TikZ.Property("minimum width", "$width\\$tikz_unit_command"),
+      TikZ.Property("minimum height", "$height\\$tikz_unit_command") ]
   end
 end
+const tikz_unit_command = "tikzunit"
 
 tikz_anchor(v::AbstractVector2D) = tikz_anchors[Tuple(v)]
 
@@ -212,7 +218,7 @@ const tikz_anchors = Dict{Tuple{Int,Int},String}(
   (-1,-1) => "north west",
 )
 
-function tikz_number(x::Number; sigdigits=3)
+function tikz_number(x::Number; sigdigits=3)::Number
   x = round(x, sigdigits=sigdigits)
   isinteger(x) ? Integer(x) : x
 end
