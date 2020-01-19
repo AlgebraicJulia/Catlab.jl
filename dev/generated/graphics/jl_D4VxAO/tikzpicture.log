@@ -1,7 +1,7 @@
-This is LuaTeX, Version 1.0.4 (TeX Live 2017/Debian)  (format=lualatex 2020.1.18)  18 JAN 2020 20:46
+This is LuaTeX, Version 1.0.4 (TeX Live 2017/Debian)  (format=lualatex 2020.1.19)  19 JAN 2020 20:49
  system commands enabled.
-**./jl_PTMput/tikzpicture.tex
-(./jl_PTMput/tikzpicture.tex
+**./jl_D4VxAO/tikzpicture.tex
+(./jl_D4VxAO/tikzpicture.tex
 LaTeX2e <2017-04-15>
 Lua module: luaotfload-main 2017/01/29 2.80001 OpenType layout system.
 Lua module: lualibs 2017-02-01 2.5 ConTeXt Lua standard libraries.
@@ -35,7 +35,7 @@ Inserting `luaotfload.aux.set_capheight' at position 3 in `luaotfload.patch_font
 '.
 Inserting `luaotfload.rewrite_fontname' at position 4 in `luaotfload.patch_font'
 .
-luaotfload | main : initialization completed in 0.141 seconds
+luaotfload | main : initialization completed in 0.123 seconds
 Babel <3.18> and hyphenation patterns for 1 language(s) loaded.
 (/usr/share/texlive/texmf-dist/tex/latex/standalone/standalone.cls
 Document Class: standalone 2015/07/15 v1.2 Class to compile TeX sub-files standa
@@ -497,6 +497,7 @@ Package grfext Info: Graphics extension search list:
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Live
 
 ))
+\tikzunit=\dimen160
 LaTeX Font Info:    Try loading font information for U+msa on input line 8.
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd
@@ -523,13 +524,13 @@ End of file on the terminal!
 
 
 Here is how much of LuaTeX's memory you used:
- 12949 strings out of 494480
- 100000,319454 words of node,token memory allocated 1954 words of node memory still in use:
-   30 hlist, 1 rule, 1 dir, 6 math, 77 glue, 2 kern, 3 glyph, 131 attribute, 45 
-glue_spec, 131 attribute_list, 2 if_stack, 1 write, 74 pdf_literal, 5 pdf_colors
+ 12957 strings out of 494480
+ 100000,319454 words of node,token memory allocated 1950 words of node memory still in use:
+   30 hlist, 1 rule, 1 dir, 6 math, 76 glue, 2 kern, 3 glyph, 131 attribute, 45 
+glue_spec, 131 attribute_list, 2 if_stack, 1 write, 75 pdf_literal, 5 pdf_colors
 tack nodes
    avail lists: 2:3,3:1,5:11,7:2,8:1
- 16540 multiletter control sequences out of 65536+600000
+ 16548 multiletter control sequences out of 65536+600000
  33 fonts using 1839967 bytes
- 62i,7n,69p,482b,915s stack positions out of 5000i,500n,10000p,200000b,100000s
+ 62i,7n,69p,586b,931s stack positions out of 5000i,500n,10000p,200000b,100000s
 !  ==> Fatal error occurred, no output PDF file produced!
