@@ -69,7 +69,7 @@ function layout_to_tikz(diagram::WiringDiagram, opts::TikZOptions)::TikZ.Documen
       TikZ.Property("y", "\\$tikz_unit_command") ];
     TikZ.as_properties(opts.props);
     [ TikZ.Property("$name/.style", TikZ.as_properties(props))
-      for (name, props) in merge!(styles, opts.styles) ];
+      for (name, props) in merge(styles, opts.styles) ];
   ]
   libraries = unique!([ "calc"; libraries; opts.libraries ])
   TikZ.Document(TikZ.Picture(stmts...; props=props); libraries=libraries)
