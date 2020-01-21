@@ -354,7 +354,7 @@ function layout_circular_ports(port_kind::PortKind, port_values::Vector,
   θ1, θ2 = if port_dir == SVector(1,0); (π/2, -π/2)
     elseif port_dir == SVector(0,1); (-π, 0)
     elseif port_dir == SVector(-1,0); (π/2, 3π/2)
-    elseif port_dir == SVector(0,-1); (0, π) end
+    elseif port_dir == SVector(0,-1); (π, 0) end
   θs = collect(pad ? range(θ1,θ2,length=n+2)[2:n+1] : range(θ1,θ2,length=n))
   dirs = [ SVector(cos(θ),-sin(θ)) for θ in θs ] # positive y-axis downwards
   PortLayout[ layout_port(value, position=radius*dir, normal=dir; kw...)
