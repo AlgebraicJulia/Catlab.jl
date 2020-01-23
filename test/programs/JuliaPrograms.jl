@@ -130,6 +130,12 @@ parsed = @parse_wiring_diagram(C, (x1::X, x2::X) -> mmerge{X}(x1,x2))
 parsed = @parse_wiring_diagram(C, () -> create{X}())
 @test parsed == to_wiring_diagram(create(X))
 
+parsed = @parse_wiring_diagram(C, (x::X, y::Y) -> mcopy{otimes{X,Y}}(x,y))
+@test parsed == to_wiring_diagram(mcopy(otimes(X,Y)))
+
+parsed = @parse_wiring_diagram(C, (x::X, y::Y) -> delete{otimes{X,Y}}(x,y))
+@test parsed == to_wiring_diagram(delete(otimes(X,Y)))
+
 # Helper function: normalization of arguments.
 
 normalize(args...) = normalize_arguments(Tuple(args))
