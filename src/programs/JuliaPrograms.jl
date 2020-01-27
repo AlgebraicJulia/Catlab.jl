@@ -253,10 +253,14 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
       _ => error("Argument $arg is not simply typed")
     end
   end
+
+  # FIXME: Presentations should be uniquely associated with syntax systems.
+  syntax_module = Syntax.syntax_module(first(pres.generators))
+  signature_module = syntax_module.signature()
   
   # Compile...
   args = first.(parsed_args)
-  kwargs = make_lookup_table(pres, unique_symbols(body))
+  kwargs = make_lookup_table(pres, syntax_module, unique_symbols(body))
   func_expr = compile_recording_expr(body, args,
     kwargs = sort!(collect(keys(kwargs))))
   func = eval(func_expr)
@@ -264,7 +268,7 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
   # ...and then evaluate function that records the function calls.
   inputs = last.(parsed_args)
   @assert all(has_generator(pres, name) for name in inputs)
-  diagram = WiringDiagram(inputs, empty(inputs))
+  diagram = WiringDiagram{signature_module.Hom}(inputs, empty(inputs))
   v_in, v_out = input_id(diagram), output_id(diagram)
   in_ports = [ Port(v_in, OutputPort, i) for i in eachindex(inputs) ]
   recorder = f -> (args...) -> record_call!(diagram, f, args...)
@@ -285,9 +289,7 @@ end
 
 """ Make a lookup table assigning names to generators or term constructors.
 """
-function make_lookup_table(pres::Presentation, names)::Dict{Symbol,Any}
-  # FIXME: Presentations should be uniquely associated with syntax systems.
-  syntax_module = Syntax.syntax_module(first(pres.generators))
+function make_lookup_table(pres::Presentation, syntax_module::Module, names)
   signature = syntax_module.signature().class().signature
   terms = Set([ term.name for term in signature.terms ])
   

@@ -39,6 +39,7 @@ f, g, m, n = generators(C, [:f, :g, :m, :n])
 
 parsed = @parse_wiring_diagram(C, (x::X) -> f(x))
 @test parsed == to_wiring_diagram(f)
+@test parsed isa WiringDiagram{BiproductCategory.Hom}
 
 # Composition: one-dimensional.
 
