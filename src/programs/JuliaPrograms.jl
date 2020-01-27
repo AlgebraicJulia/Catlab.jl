@@ -256,7 +256,6 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
 
   # FIXME: Presentations should be uniquely associated with syntax systems.
   syntax_module = Syntax.syntax_module(first(pres.generators))
-  signature_module = syntax_module.signature()
   
   # Compile...
   args = first.(parsed_args)
@@ -266,9 +265,10 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
   func = eval(func_expr)
   
   # ...and then evaluate function that records the function calls.
-  inputs = last.(parsed_args)
-  @assert all(has_generator(pres, name) for name in inputs)
-  diagram = WiringDiagram{signature_module.Hom}(inputs, empty(inputs))
+  arg_types = last.(parsed_args)
+  arg_obs = syntax_module.Ob[ generator(pres, name) for name in arg_types ]
+  inputs = to_wiring_diagram(otimes(arg_obs))
+  diagram = WiringDiagram(inputs, munit(typeof(inputs)))
   v_in, v_out = input_id(diagram), output_id(diagram)
   in_ports = [ Port(v_in, OutputPort, i) for i in eachindex(inputs) ]
   recorder = f -> (args...) -> record_call!(diagram, f, args...)
