@@ -181,7 +181,7 @@ layout_box_expr(f::HomExpr, opts; kw...) =
 layout_junction_expr(f::HomExpr, opts; kw...) =
   layout_junction(f, collect(dom(f)), collect(codom(f)), opts; kw...)
 layout_wires_expr(f::HomExpr, opts; kw...) =
-  layout_pure_wiring(to_wiring_diagram(f, keep_exprs=true), opts; kw...)
+  layout_pure_wiring(to_wiring_diagram(f, identity, identity), opts; kw...)
 
 # Diagram layout
 ################
