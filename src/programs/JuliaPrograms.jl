@@ -239,6 +239,9 @@ function parse_wiring_diagram(pres::Presentation, expr::Expr)::WiringDiagram
 end
 
 function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::WiringDiagram
+  # FIXME: Presentations should be uniquely associated with syntax systems.
+  syntax_module = Syntax.syntax_module(first(pres.generators))
+  
   # Parse argument names and types from call expression.
   call_args = @match call begin
     Expr(:call, [name, args...]) => args
@@ -249,13 +252,11 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
   end
   parsed_args = map(call_args) do arg
     @match arg begin
-      Expr(:(::), [name::Symbol, type::Symbol]) => (name, type)
-      _ => error("Argument $arg is not simply typed")
+      Expr(:(::), [name::Symbol, type_expr::Expr0]) =>
+        (name, eval_type_expr(pres, syntax_module, type_expr))
+      _ => error("Argument $arg is missing name or type")
     end
   end
-
-  # FIXME: Presentations should be uniquely associated with syntax systems.
-  syntax_module = Syntax.syntax_module(first(pres.generators))
   
   # Compile...
   args = first.(parsed_args)
@@ -265,14 +266,15 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
   func = eval(func_expr)
   
   # ...and then evaluate function that records the function calls.
-  arg_types = last.(parsed_args)
-  arg_obs = syntax_module.Ob[ generator(pres, name) for name in arg_types ]
+  arg_obs = syntax_module.Ob[ last(arg) for arg in parsed_args ]
+  arg_blocks = Int[ length(to_wiring_diagram(ob)) for ob in arg_obs ]
   inputs = to_wiring_diagram(otimes(arg_obs))
   diagram = WiringDiagram(inputs, munit(typeof(inputs)))
   v_in, v_out = input_id(diagram), output_id(diagram)
-  in_ports = [ Port(v_in, OutputPort, i) for i in eachindex(inputs) ]
+  arg_ports = [ Tuple(Port(v_in, OutputPort, i) for i in (stop-len+1):stop)
+                for (len, stop) in zip(arg_blocks, cumsum(arg_blocks)) ]
   recorder = f -> (args...) -> record_call!(diagram, f, args...)
-  value = invokelatest(func, recorder, in_ports...; kwargs...)
+  value = invokelatest(func, recorder, arg_ports...; kwargs...)
   
   # Add outgoing wires for return values.
   out_ports = normalize_arguments((value,))
@@ -302,6 +304,20 @@ function make_lookup_table(pres::Presentation, syntax_module::Module, names)
     end
   end
   table
+end
+
+""" Evaluate pseudo-Julia type expression, such as `X` or `otimes{X,Y}`.
+"""
+function eval_type_expr(pres::Presentation, syntax_module::Module, expr::Expr0)
+  function eval(expr)
+    @match expr begin
+      Expr(:curly, [name, args...]) =>
+        invoke_term(syntax_module, name, map(eval, args)...)
+      name::Symbol => generator(pres, name)
+      _ => error("Invalid type expression $expr")
+    end
+  end
+  eval(expr)
 end
 
 """ Generate a Julia function expression that will record function calls.

@@ -114,7 +114,7 @@ parsed = @parse_wiring_diagram(C, (x::X, y::Y) -> n([m(x,y), m(x,y)]))
 parsed = @parse_wiring_diagram(C, () -> f([]))
 @test parsed == to_wiring_diagram(compose(create(X),f))
 
-# Special morphisms: explicit syntax.
+# Explicit syntax for special objects and morphisms.
 
 parsed = @parse_wiring_diagram(C, (x::X) -> id{X}(x))
 @test parsed == to_wiring_diagram(id(X))
@@ -136,6 +136,20 @@ parsed = @parse_wiring_diagram(C, (x::X, y::Y) -> mcopy{otimes{X,Y}}(x,y))
 
 parsed = @parse_wiring_diagram(C, (x::X, y::Y) -> delete{otimes{X,Y}}(x,y))
 @test parsed == to_wiring_diagram(delete(otimes(X,Y)))
+
+parsed = @parse_wiring_diagram(C, (xy::otimes{X,Y}) -> m(xy))
+@test parsed == to_wiring_diagram(m)
+
+parsed = @parse_wiring_diagram C (xy::otimes{X,Y}) begin
+  x, y = xy
+  (f(x), g(y))
+end
+@test parsed == to_wiring_diagram(otimes(f,g))
+
+parsed = @parse_wiring_diagram C (xy::otimes{X,Y}, wz::otimes{W,Z}) begin
+  (m(xy), n(wz))
+end
+@test parsed == to_wiring_diagram(otimes(m,n))
 
 # Helper function: normalization of arguments.
 
