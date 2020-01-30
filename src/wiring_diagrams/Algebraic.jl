@@ -10,10 +10,9 @@ export Ports, Junction, PortOp, BoxOp,
   functor, dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid, permute,
   mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
   mplus, mzero, coplus, cozero, meet, join, top, bottom, ocompose,
-  implicit_mcopy, implicit_delete, implicit_mmerge, implicit_create,
+  implicit_mcopy, implicit_mmerge, junctioned_mcopy, junctioned_mmerge,
   junction_diagram, add_junctions, add_junctions!, rem_junctions, merge_junctions,
-  junction_caps, junction_cups, junctioned_dunit, junctioned_dcounit,
-  junctioned_mcopy, junctioned_delete, junctioned_mmerge, junctioned_create
+  junction_caps, junction_cups, junctioned_dunit, junctioned_dcounit
 
 using AutoHashEquals
 using LightGraphs
@@ -182,6 +181,11 @@ end
 # Diagonals and codiagonals
 #--------------------------
 
+""" Implicit copy in wiring diagram.
+
+Copies are represented by multiple outgoing wires from a single port and
+deletions by no outgoing wires.
+"""
 function implicit_mcopy(A::Ports, n::Int)
   f = WiringDiagram(A, otimes(repeat([A], n)))
   m = length(A)
@@ -190,6 +194,11 @@ function implicit_mcopy(A::Ports, n::Int)
   return f
 end
 
+""" Implicit merge in wiring diagram.
+
+Merges are represented by multiple incoming wires into a single port and
+creations by no incoming wires.
+"""
 function implicit_mmerge(A::Ports, n::Int)
   f = WiringDiagram(otimes(repeat([A],n)), A)
   m = length(A)
@@ -198,42 +207,46 @@ function implicit_mmerge(A::Ports, n::Int)
   return f
 end
 
-implicit_delete(A::Ports) = WiringDiagram(A, munit(typeof(A)))
-implicit_create(A::Ports) = WiringDiagram(munit(typeof(A)), A)
+""" Explicit copy in wiring diagram.
 
+Copies and deletions are represented by junctions (boxes of type `Junction`).
+"""
 junctioned_mcopy(A::Ports, n::Int; kw...) = junction_diagram(A, 1, n; kw...)
+
+""" Explicit merge in wiring diagram.
+
+Merges and creations are represented by junctions (boxes of type `Junction`).
+"""
 junctioned_mmerge(A::Ports, n::Int; kw...) = junction_diagram(A, n, 1; kw...)
-junctioned_delete(A::Ports; kw...) = junction_diagram(A, 1, 0; kw...)
-junctioned_create(A::Ports; kw...) = junction_diagram(A, 0, 1; kw...)
 
 # Implicit diagonals and codiagonals are the default in untyped wiring diagrams.
 mcopy(A::Ports{Any}, n::Int) = implicit_mcopy(A, n)
 mmerge(A::Ports{Any}, n::Int) = implicit_mmerge(A, n)
-delete(A::Ports{Any}) = implicit_delete(A)
-create(A::Ports{Any}) = implicit_create(A)
 
+# Default implementation for biased (co)diagonals fall backs to unbiased
+# (co)diagonals, if they are defined.
 mcopy(A::Ports) = mcopy(A, 2)
+delete(A::Ports) = mcopy(A, 0)
 mmerge(A::Ports) = mmerge(A, 2)
+create(A::Ports) = mmerge(A, 0)
 mplus(A::Ports) = mplus(A, 2)
+mzero(A::Ports) = mplus(A, 0)
 coplus(A::Ports) = coplus(A, 2)
+cozero(A::Ports) = coplus(A, 0)
 
 # Cartesian category
 #-------------------
 
 mcopy(A::Ports{MonoidalCategoryWithDiagonals.Hom}, n::Int) = implicit_mcopy(A, n)
-delete(A::Ports{MonoidalCategoryWithDiagonals.Hom}) = implicit_delete(A)
 
 mcopy(A::Ports{CartesianCategory.Hom}, n::Int) = implicit_mcopy(A, n)
-delete(A::Ports{CartesianCategory.Hom}) = implicit_delete(A)
 
 # Cocartesian category
 #---------------------
 
 mmerge(A::Ports{MonoidalCategoryWithCodiagonals.Hom}, n::Int) = implicit_mmerge(A, n)
-create(A::Ports{MonoidalCategoryWithCodiagonals.Hom}) = implicit_create(A)
 
 mmerge(A::Ports{CocartesianCategory.Hom}, n::Int) = implicit_mmerge(A, n)
-create(A::Ports{CocartesianCategory.Hom}) = implicit_create(A)
 
 # Biproduct category
 #-------------------
@@ -242,13 +255,9 @@ create(A::Ports{CocartesianCategory.Hom}) = implicit_create(A)
 # bidiagonals, so an explicit representation is needed.
 mcopy(A::Ports{MonoidalCategoryWithBidiagonals.Hom}, n::Int) = junctioned_mcopy(A, n)
 mmerge(A::Ports{MonoidalCategoryWithBidiagonals.Hom}, n::Int) = junctioned_mmerge(A, n)
-delete(A::Ports{MonoidalCategoryWithBidiagonals.Hom}) = junctioned_delete(A)
-create(A::Ports{MonoidalCategoryWithBidiagonals.Hom}) = junctioned_create(A)
 
 mcopy(A::Ports{BiproductCategory.Hom}, n::Int) = implicit_mcopy(A, n)
 mmerge(A::Ports{BiproductCategory.Hom}, n::Int) = implicit_mmerge(A, n)
-delete(A::Ports{BiproductCategory.Hom}) = implicit_delete(A)
-create(A::Ports{BiproductCategory.Hom}) = implicit_create(A)
 
 # Dagger category
 #----------------
@@ -283,8 +292,6 @@ const BiRel = BicategoryRelations
 
 mcopy(A::Ports{BiRel.Hom}, n::Int) = junctioned_mcopy(A, n)
 mmerge(A::Ports{BiRel.Hom}, n::Int) = junctioned_mmerge(A, n)
-delete(A::Ports{BiRel.Hom}) = junctioned_delete(A)
-create(A::Ports{BiRel.Hom}) = junctioned_create(A)
 
 dunit(A::Ports{BiRel.Hom}) = junction_caps(A)
 dcounit(A::Ports{BiRel.Hom}) = junction_cups(A)
@@ -304,16 +311,12 @@ const AbBiRel = AbelianBicategoryRelations
 
 mcopy(A::Ports{AbBiRel.Hom}, n::Int) = junctioned_mcopy(A, n; op=:times)
 mmerge(A::Ports{AbBiRel.Hom}, n::Int) = junctioned_mmerge(A, n; op=:times)
-delete(A::Ports{AbBiRel.Hom}) = junctioned_delete(A; op=:times)
-create(A::Ports{AbBiRel.Hom}) = junctioned_create(A; op=:times)
 
 dunit(A::Ports{AbBiRel.Hom}) = junction_caps(A; op=:times)
 dcounit(A::Ports{AbBiRel.Hom}) = junction_cups(A; op=:times)
 
 mplus(A::Ports{AbBiRel.Hom}, n::Int) = junctioned_mmerge(A, n, op=:plus)
 coplus(A::Ports{AbBiRel.Hom}, n::Int) = junctioned_mcopy(A, n, op=:plus)
-mzero(A::Ports{AbBiRel.Hom}) = junctioned_create(A, op=:plus)
-cozero(A::Ports{AbBiRel.Hom}) = junctioned_delete(A, op=:plus)
 
 dagger(f::WiringDiagram{AbBiRel.Hom}) =
   functor(f, identity, dagger, contravariant=true)
