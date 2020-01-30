@@ -10,8 +10,10 @@ export Ports, Junction, PortOp, BoxOp,
   functor, dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid, permute,
   mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
   mplus, mzero, coplus, cozero, meet, join, top, bottom, ocompose,
-  junction_diagram, junction_caps, junction_cups, add_junctions, add_junctions!,
-  rem_junctions, merge_junctions
+  implicit_mcopy, implicit_delete, implicit_mmerge, implicit_create,
+  junction_diagram, add_junctions, add_junctions!, rem_junctions, merge_junctions,
+  junction_caps, junction_cups, junctioned_dunit, junctioned_dcounit,
+  junctioned_mcopy, junctioned_delete, junctioned_mmerge, junctioned_create
 
 using AutoHashEquals
 using LightGraphs
