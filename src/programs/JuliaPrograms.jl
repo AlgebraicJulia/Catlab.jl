@@ -4,8 +4,8 @@ This module allows morphisms in a symmetric monoidal category to be converted to
 and from programs in a subset of the Julia language.
 """
 module JuliaPrograms
-export Block, CompileState, compile, compile_expr, compile_block,
-  @parse_wiring_diagram, parse_wiring_diagram
+export @program, Block, CompileState, compile, compile_expr, compile_block,
+  parse_wiring_diagram
 
 using Base: invokelatest
 using Compat
@@ -190,7 +190,7 @@ end
 # Parsing
 #########
 
-""" Parse a wiring diagram from Julia code.
+""" Parse a wiring diagram from a Julia program.
 
 For the most part, this is standard Julia but we take a few liberties with the
 syntax. Products are represented as tuples. So if `x` and `y` are variables of
@@ -215,20 +215,21 @@ and creating), a special syntax is provided, reinterpreting Julia's vector
 literals. The merge of `x1` and `x2` is represented by the vector `[x1,x2]` and
 creation by the empty vector `[]`. For example, `f([x1,x2])` translates to
 `compose(mmerge(X),f)`.
+
+This macro is a wrapper around [`parse_wiring_diagram`](@ref).
 """
-macro parse_wiring_diagram(pres, expr)
+macro program(pres, expr)
   Expr(:call, GlobalRef(JuliaPrograms, :parse_wiring_diagram),
        esc(pres), esc(Expr(:quote, expr)))
 end
-
-macro parse_wiring_diagram(pres, call, body)
+macro program(pres, call, body)
   Expr(:call, GlobalRef(JuliaPrograms, :parse_wiring_diagram),
        esc(pres), esc(Expr(:quote, call)), esc(Expr(:quote, body)))
 end
 
 """ Parse a wiring diagram from a Julia function expression.
 
-See also: [`@parse_wiring_diagram`](@ref)
+The macro version of this function is [`@program`](@ref).
 """
 function parse_wiring_diagram(pres::Presentation, expr::Expr)::WiringDiagram
   @match expr begin

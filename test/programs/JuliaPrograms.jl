@@ -37,23 +37,23 @@ f, g, m, n = generators(C, [:f, :g, :m, :n])
 
 # Generator.
 
-parsed = @parse_wiring_diagram(C, (x::X) -> f(x))
+parsed = @program(C, (x::X) -> f(x))
 @test parsed == to_wiring_diagram(f)
 @test parsed isa WiringDiagram{BiproductCategory.Hom}
 
 # Composition: one-dimensional.
 
-parsed = @parse_wiring_diagram(C, (x::X) -> g(f(x)))
+parsed = @program(C, (x::X) -> g(f(x)))
 @test parsed == to_wiring_diagram(compose(f,g))
 
-parsed = @parse_wiring_diagram C (x::X) begin
+parsed = @program C (x::X) begin
   y = f(x)
   z = g(y)
   return z
 end
 @test parsed == to_wiring_diagram(compose(f,g))
 
-parsed = @parse_wiring_diagram C (v::X) begin
+parsed = @program C (v::X) begin
   v = f(v)
   v = g(v)
   v = h(v)
@@ -63,14 +63,14 @@ end
 
 # Composition: multidimensional.
 
-parsed = @parse_wiring_diagram C (x::X, y::Y) begin
+parsed = @program C (x::X, y::Y) begin
   w, z = m(x, y)
   x2, y2 = n(w, z)
   return (x2, y2)
 end
 @test parsed == to_wiring_diagram(compose(m,n))
 
-parsed = @parse_wiring_diagram(C, (x::X, y::Y) -> n(m(x,y)))
+parsed = @program(C, (x::X, y::Y) -> n(m(x,y)))
 @test parsed == to_wiring_diagram(compose(m,n))
 
 # Constants and co-constants.
@@ -79,13 +79,13 @@ I = munit(FreeBiproductCategory.Ob)
 c = add_generator!(C, Hom(:c, I, X))
 d = add_generator!(C, Hom(:d, X, I))
 
-parsed = @parse_wiring_diagram(C, () -> c())
+parsed = @program(C, () -> c())
 @test parsed == to_wiring_diagram(c)
 
-parsed = @parse_wiring_diagram(C, (x::X) -> c(d(x)))
+parsed = @program(C, (x::X) -> c(d(x)))
 @test parsed == to_wiring_diagram(compose(d,c))
 
-parsed = @parse_wiring_diagram C (x::X) begin
+parsed = @program C (x::X) begin
   d(x)
   c()
 end
@@ -93,62 +93,60 @@ end
 
 # Diagonals: implicit syntax.
 
-parsed = @parse_wiring_diagram(C, (x::X) -> (f(x),f(x)))
+parsed = @program(C, (x::X) -> (f(x),f(x)))
 @test parsed == to_wiring_diagram(compose(mcopy(X),otimes(f,f)))
 
-parsed = @parse_wiring_diagram(C, (x::X) -> nothing)
+parsed = @program(C, (x::X) -> nothing)
 @test parsed == to_wiring_diagram(delete(X))
 
 # Codiagonals: special syntax.
 
-parsed = @parse_wiring_diagram(C, (x1::X, x2::X) -> f([x1,x2]))
+parsed = @program(C, (x1::X, x2::X) -> f([x1,x2]))
 @test parsed == to_wiring_diagram(compose(mmerge(X),f))
 
-parsed = @parse_wiring_diagram(C, (x1::X, x2::X) -> [f(x1),f(x2)])
+parsed = @program(C, (x1::X, x2::X) -> [f(x1),f(x2)])
 @test parsed == to_wiring_diagram(compose(otimes(f,f),mmerge(Y)))
 
-parsed = @parse_wiring_diagram(C, (x::X, y::Y) -> n([m(x,y), m(x,y)]))
+parsed = @program(C, (x::X, y::Y) -> n([m(x,y), m(x,y)]))
 @test parsed == to_wiring_diagram(compose(
   mcopy(otimes(X,Y)), otimes(m,m), mmerge(otimes(W,Z)), n))
 
-parsed = @parse_wiring_diagram(C, () -> f([]))
+parsed = @program(C, () -> f([]))
 @test parsed == to_wiring_diagram(compose(create(X),f))
 
 # Explicit syntax for special objects and morphisms.
 
-parsed = @parse_wiring_diagram(C, (x::X) -> id{X}(x))
+parsed = @program(C, (x::X) -> id{X}(x))
 @test parsed == to_wiring_diagram(id(X))
 
-parsed = @parse_wiring_diagram(C, (x::X) -> mcopy{X}(x))
+parsed = @program(C, (x::X) -> mcopy{X}(x))
 @test parsed == to_wiring_diagram(mcopy(X))
 
-parsed = @parse_wiring_diagram(C, (x::X) -> delete{X}(x))
+parsed = @program(C, (x::X) -> delete{X}(x))
 @test parsed == to_wiring_diagram(delete(X))
 
-parsed = @parse_wiring_diagram(C, (x1::X, x2::X) -> mmerge{X}(x1,x2))
+parsed = @program(C, (x1::X, x2::X) -> mmerge{X}(x1,x2))
 @test parsed == to_wiring_diagram(mmerge(X))
 
-parsed = @parse_wiring_diagram(C, () -> create{X}())
+parsed = @program(C, () -> create{X}())
 @test parsed == to_wiring_diagram(create(X))
 
-parsed = @parse_wiring_diagram(C, (x::X, y::Y) -> mcopy{otimes{X,Y}}(x,y))
+parsed = @program(C, (x::X, y::Y) -> mcopy{otimes{X,Y}}(x,y))
 @test parsed == to_wiring_diagram(mcopy(otimes(X,Y)))
 
-parsed = @parse_wiring_diagram(C, (x::X, y::Y) -> delete{otimes{X,Y}}(x,y))
+parsed = @program(C, (x::X, y::Y) -> delete{otimes{X,Y}}(x,y))
 @test parsed == to_wiring_diagram(delete(otimes(X,Y)))
 
-parsed = @parse_wiring_diagram(C, (xy::otimes{X,Y}) -> m(xy))
+parsed = @program(C, (xy::otimes{X,Y}) -> m(xy))
 @test parsed == to_wiring_diagram(m)
 
-parsed = @parse_wiring_diagram C (xy::otimes{X,Y}) begin
+parsed = @program C (xy::otimes{X,Y}) begin
   x, y = xy
   (f(x), g(y))
 end
 @test parsed == to_wiring_diagram(otimes(f,g))
 
-parsed = @parse_wiring_diagram C (xy::otimes{X,Y}, wz::otimes{W,Z}) begin
-  (m(xy), n(wz))
-end
+parsed = @program(C, (xy::otimes{X,Y}, wz::otimes{W,Z}) -> (m(xy), n(wz)))
 @test parsed == to_wiring_diagram(otimes(m,n))
 
 # Helper function: normalization of arguments.
