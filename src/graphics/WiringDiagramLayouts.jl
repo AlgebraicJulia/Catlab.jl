@@ -380,9 +380,15 @@ function layout_outer_ports!(diagram::WiringDiagram, opts::LayoutOptions;
     layout_outer_ports(diagram, opts, Val(method); kw...)
   diagram
 end
-function layout_outer_ports(diagram::WiringDiagram, opts::LayoutOptions, ::Val{:fixed})
+function layout_outer_ports(diagram::WiringDiagram, opts::LayoutOptions,
+                            ::Val{:fixed})
   (layout_linear_ports(InputPort, input_ports(diagram), size(diagram), opts),
    layout_linear_ports(OutputPort, output_ports(diagram), size(diagram), opts))
+end
+function layout_outer_ports(diagram::WiringDiagram, opts::LayoutOptions,
+                            ::Val{method}) where method
+  # Fallback method.
+  layout_outer_ports(diagram, opts, Val(:fixed))
 end
 
 layout_port(value; kw...) = PortLayout(; value=value, kw...)
