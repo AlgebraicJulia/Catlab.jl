@@ -39,10 +39,10 @@ uuid = "5ae59095-9a9b-59fe-a467-6f913c188581"
 version = "0.11.2"
 
 [[Compat]]
-deps = ["Base64", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils", "LibGit2", "Libdl", "LinearAlgebra", "Markdown", "Mmap", "Pkg", "Printf", "REPL", "Random", "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "UUIDs", "Unicode"]
-git-tree-sha1 = "3819f476b6b37ef8ea837070ed831b4ebadfa1e9"
+deps = ["Base64", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils", "LibGit2", "Libdl", "LinearAlgebra", "Markdown", "Mmap", "Pkg", "Printf", "REPL", "Random", "SHA", "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "UUIDs", "Unicode"]
+git-tree-sha1 = "a4839bd26e3e7f4869a4cf6c31f9f93f47aac7c5"
 uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
-version = "3.2.0"
+version = "3.5.0"
 
 [[Compose]]
 deps = ["Base64", "Colors", "DataStructures", "Dates", "IterTools", "JSON", "LinearAlgebra", "Measures", "Printf", "Random", "Requires", "UUIDs"]
@@ -70,9 +70,9 @@ uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
 [[FileIO]]
 deps = ["Pkg"]
-git-tree-sha1 = "74585bf1f7ed7259e166011e89f49363d7fa89a6"
+git-tree-sha1 = "2c84c57aced468fa21763c66d3bef33adcd09ec7"
 uuid = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
-version = "1.2.1"
+version = "1.2.2"
 
 [[FixedPointNumbers]]
 git-tree-sha1 = "4aaea64dd0c30ad79037084f8ca2b94348e65eaa"
@@ -133,9 +133,9 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[MacroTools]]
 deps = ["DataStructures", "Markdown", "Random"]
-git-tree-sha1 = "e2fc7a55bb2224e203bbd8b59f72b91323233458"
+git-tree-sha1 = "07ee65e03e28ca88bc9a338a3726ae0c3efaa94b"
 uuid = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
-version = "0.5.3"
+version = "0.5.4"
 
 [[Markdown]]
 deps = ["Base64"]
@@ -201,10 +201,10 @@ uuid = "189a3867-3050-52da-a836-e630ba90ab69"
 version = "0.2.0"
 
 [[Requires]]
-deps = ["Test"]
-git-tree-sha1 = "f6fbf4ba64d295e146e49e021207993b6b48c7d1"
+deps = ["UUIDs"]
+git-tree-sha1 = "d37400976e98018ee840e0ca4f9d20baa231dc6b"
 uuid = "ae029012-a4dd-5104-9daa-d747884805df"
-version = "0.5.2"
+version = "1.0.1"
 
 [[SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"

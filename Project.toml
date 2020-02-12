@@ -35,7 +35,7 @@ Match = "^1"
 MetaGraphs = "^0.6"
 Parameters = "^0"
 Reexport = "^0"
-Requires = "^0"
+Requires = "^1"
 StaticArrays = "^0"
 julia = "1.0"
 
