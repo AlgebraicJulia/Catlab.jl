@@ -4,11 +4,10 @@
 #
 # Catlab can draw morphism expressions as TikZ pictures. To use this feature,
 # LaTeX must be installed and the Julia package
-# [TikzPictures.jl](https://github.com/sisl/TikzPictures.jl) must be imported
-# before Catlab is loaded.
+# [TikzPictures.jl](https://github.com/sisl/TikzPictures.jl) must be imported.
 
-import TikzPictures
 using Catlab.WiringDiagrams, Catlab.Graphics
+import TikzPictures
 
 # ## Examples
 
