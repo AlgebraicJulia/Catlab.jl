@@ -10,10 +10,12 @@ module WiringDiagramLayouts
 export LayoutOrientation, LeftToRight, RightToLeft, TopToBottom, BottomToTop,
   layout_diagram
 
+using Compat
 import Base: sign
-using LinearAlgebra: norm
+using LinearAlgebra: dot, norm
 using Parameters
 using StaticArrays: StaticVector, SVector
+using Statistics: mean
 
 using ...Syntax
 using ...Doctrines: ObExpr, HomExpr, dom, codom, compose, id, otimes, braid
@@ -47,7 +49,7 @@ svector(orient::LayoutOrientation, first, second) =
 """
 @with_kw_noshow struct LayoutOptions
   orientation::LayoutOrientation = LeftToRight
-  outer_ports_layout::Symbol = :isotonic
+  outer_ports_layout::Symbol = :fixed
   base_box_size::Float64 = 2
   sequence_pad::Float64 = 2
   parallel_pad::Float64 = 1
@@ -371,25 +373,67 @@ end
 
 """ Lay out outer ports of wiring diagram.
 """
-function layout_outer_ports!(diagram::WiringDiagram, opts::LayoutOptions;
-                             method::Symbol=:fixed, kw...)
+function layout_outer_ports!(diagram::WiringDiagram, opts::LayoutOptions; kw...)
   original_value = x -> x isa PortLayout ? x.value : x # XXX: This is ugly.
   diagram.input_ports = map(original_value, input_ports(diagram))
   diagram.output_ports = map(original_value, output_ports(diagram))
   diagram.input_ports, diagram.output_ports =
-    layout_outer_ports(diagram, opts, Val(method); kw...)
+    layout_outer_ports(diagram, opts; kw...)
   diagram
 end
+function layout_outer_ports(diagram::WiringDiagram, opts::LayoutOptions;
+                            method::Symbol=:fixed, kw...)
+  layout_outer_ports(diagram, opts, Val(method); kw...)
+end
+
 function layout_outer_ports(diagram::WiringDiagram, opts::LayoutOptions,
                             ::Val{:fixed})
   (layout_linear_ports(InputPort, input_ports(diagram), size(diagram), opts),
    layout_linear_ports(OutputPort, output_ports(diagram), size(diagram), opts))
 end
+
 function layout_outer_ports(diagram::WiringDiagram, opts::LayoutOptions,
-                            ::Val{method}) where method
-  # Fallback method.
-  layout_outer_ports(diagram, opts, Val(:fixed))
+                            ::Val{:isotonic})
+  inputs, outputs = input_ports(diagram), output_ports(diagram)
+  diagram_size = diagram.value.size
+  port_dir = svector(opts, 0, 1)
+  port_coord = v -> dot(v, port_dir)
+  upper = port_coord(diagram_size)/2
+  lower = -upper
+  pad = opts.base_box_size + opts.parallel_pad
+  
+  # Solve optimization problem for input ports.
+  # Note that we are minimizing distance only along the port axis, not in the
+  # full Euclidean plan.
+  ys = [ Float64[] for i in eachindex(inputs) ]
+  for wire in out_wires(diagram, input_id(diagram))
+    i, layout = wire.source.port, wire.value::WireLayout
+    if !(isnothing(layout) || isempty(layout))
+      push!(ys[i], port_coord(position(first(layout))))
+    elseif wire.target.box != output_id(diagram)
+      push!(ys[i], port_coord(position(diagram, wire.target)))
+    end
+  end
+  y = Float64[ isempty(y) ? 0.0 : mean(y) for y in ys ]
+  in_coords = solve_isotonic(y; lower=lower, upper=upper, pad=pad)
+  
+  # Solve optimization problem for output ports.
+  ys = [ Float64[] for i in eachindex(outputs) ]
+  for wire in in_wires(diagram, output_id(diagram))
+    i, layout = wire.target.port, wire.value::WireLayout
+    if !(isnothing(layout) || isempty(layout))
+      push!(ys[i], port_coord(position(last(layout))))
+    elseif wire.source.box != input_id(diagram)
+      push!(ys[i], port_coord(position(diagram, wire.source)))
+    end
+  end
+  y = Float64[ isempty(y) ? 0.0 : mean(y) for y in ys ]
+  out_coords = solve_isotonic(y; lower=lower, upper=upper, pad=pad)
+  
+  (layout_linear_ports(InputPort, inputs, in_coords, diagram_size, opts),
+   layout_linear_ports(OutputPort, outputs, out_coords, diagram_size, opts))
 end
+solve_isotonic(y::Vector; kw...) = solve_isotonic(y, Val(:convexjl); kw...)
 
 layout_port(value; kw...) = PortLayout(; value=value, kw...)
 
