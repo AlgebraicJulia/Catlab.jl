@@ -1,6 +1,6 @@
+# External packages.
 import .TikzPictures: TikzPicture
 
-# External library import.
 import .TikZ
 
 """ Convert TikZ document to `TikzPicture` object (from `TikzPictures.jl`).

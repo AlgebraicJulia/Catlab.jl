@@ -47,6 +47,7 @@ svector(orient::LayoutOrientation, first, second) =
 """
 @with_kw_noshow struct LayoutOptions
   orientation::LayoutOrientation = LeftToRight
+  outer_ports_layout::Symbol = :isotonic
   base_box_size::Float64 = 2
   sequence_pad::Float64 = 2
   parallel_pad::Float64 = 1
@@ -142,7 +143,8 @@ end
 
 function layout_diagram(expr::HomExpr; kw...)::WiringDiagram
   opts = LayoutOptions(; kw...)
-  layout_ports!(layout_hom_expr(expr, opts), opts)
+  diagram = layout_hom_expr(expr, opts)
+  layout_outer_ports!(diagram, opts, method=opts.outer_ports_layout)
 end
 
 """ Lay out a morphism expression as a wiring diagram.
@@ -333,13 +335,19 @@ Assumes the box is at least as large as `default_box_size()`.
 """
 function layout_linear_ports(port_kind::PortKind, port_values::Vector,
                              box_size::AbstractVector2D, opts::LayoutOptions; kw...)
-  normal_dir = svector(opts, float(port_sign(port_kind, opts.orientation)), 0)
-  start = box_size/2 .* normal_dir
-  offset = (opts.base_box_size + opts.parallel_pad) .* svector(opts, 0, 1)
-  
   n = length(port_values)
   coeffs = range(-(n-1), n-1, step=2) / 2 # Always length n
-  positions = [ start + coeff .* offset for coeff in coeffs ]
+  coords = (opts.base_box_size + opts.parallel_pad) .* collect(coeffs)
+  layout_linear_ports(port_kind, port_values, coords, box_size, opts, kw...)
+end
+
+function layout_linear_ports(port_kind::PortKind, port_values::Vector, 
+                             port_coords::Vector, box_size::AbstractVector2D,
+                             opts::LayoutOptions; kw...)
+  normal_dir = svector(opts, port_sign(port_kind, opts.orientation), 0.0)
+  port_dir = svector(opts, 0.0, 1.0)
+  start = box_size/2 .* normal_dir
+  positions = [ start + coord .* port_dir for coord in port_coords ]
   PortLayout[ layout_port(value, position=pos, normal=normal_dir; kw...)
               for (value, pos) in zip(port_values, positions) ]
 end
@@ -361,13 +369,20 @@ function layout_circular_ports(port_kind::PortKind, port_values::Vector,
               for (value, dir) in zip(port_values, dirs) ]
 end
 
-function layout_ports!(diagram::WiringDiagram, opts::LayoutOptions)
+""" Lay out outer ports of wiring diagram.
+"""
+function layout_outer_ports!(diagram::WiringDiagram, opts::LayoutOptions;
+                             method::Symbol=:fixed, kw...)
   original_value = x -> x isa PortLayout ? x.value : x # XXX: This is ugly.
-  diagram.input_ports = layout_linear_ports(
-    InputPort, map(original_value, input_ports(diagram)), size(diagram), opts)
-  diagram.output_ports = layout_linear_ports(
-    OutputPort, map(original_value, output_ports(diagram)), size(diagram), opts)
+  diagram.input_ports = map(original_value, input_ports(diagram))
+  diagram.output_ports = map(original_value, output_ports(diagram))
+  diagram.input_ports, diagram.output_ports =
+    layout_outer_ports(diagram, opts, Val(method); kw...)
   diagram
+end
+function layout_outer_ports(diagram::WiringDiagram, opts::LayoutOptions, ::Val{:fixed})
+  (layout_linear_ports(InputPort, input_ports(diagram), size(diagram), opts),
+   layout_linear_ports(OutputPort, output_ports(diagram), size(diagram), opts))
 end
 
 layout_port(value; kw...) = PortLayout(; value=value, kw...)
@@ -395,7 +410,7 @@ function layout_pure_wiring(diagram::WiringDiagram, opts::LayoutOptions)
   size = default_diagram_size(length(inputs), length(outputs), opts)
   result = WiringDiagram(BoxLayout(size=size), inputs, outputs)
   
-  result = layout_ports!(result, opts)
+  result = layout_outer_ports!(result, opts, method=:fixed)
   e1, e2 = svector(opts, 1, 0), svector(opts, 0, 1)
   for wire in wires(diagram)
     src, tgt = wire.source, wire.target
