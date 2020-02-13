@@ -220,8 +220,8 @@ const tikz_anchors = Dict{Tuple{Int,Int},String}(
   (-1,-1) => "north west",
 )
 
-function tikz_number(x::Number; sigdigits=3)::Number
-  x = round(x, sigdigits=sigdigits)
+function tikz_number(x::Number; digits=3)::Number
+  x = round(x, digits=digits)
   isinteger(x) ? Integer(x) : x
 end
 
