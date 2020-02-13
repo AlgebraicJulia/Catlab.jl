@@ -4,9 +4,16 @@
 #
 # Catlab can draw morphism expressions as TikZ pictures. To use this feature,
 # LaTeX must be installed and the Julia package
-# [TikzPictures.jl](https://github.com/sisl/TikzPictures.jl) must be imported.
+# [TikzPictures.jl](https://github.com/sisl/TikzPictures.jl) must be loaded.
+#
+# For best results, it is recommended to load the packages
+# [Convex.j](https://github.com/JuliaOpt/Convex.jl) and
+# [SCS.jl](https://github.com/JuliaOpt/SCS.jl). When available they are used to
+# optimize the layout of the outer ports.
 
 using Catlab.WiringDiagrams, Catlab.Graphics
+
+import Convex, SCS
 import TikzPictures
 
 # ## Examples

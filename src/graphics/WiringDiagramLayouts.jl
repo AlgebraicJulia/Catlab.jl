@@ -390,7 +390,7 @@ function layout_outer_ports(diagram::WiringDiagram, opts::LayoutOptions;
   if !has_port_layout_method(method)
     if method == :isotonic
       @warn """
-        Both Convex.jl and SCS must be loaded in order to use isotonic
+        Both Convex.jl and SCS.jl must be loaded to use isotonic
         regression for port layout. Falling back to fixed layout.
         """ maxlog=1
     else
@@ -413,8 +413,8 @@ function layout_outer_ports(diagram::WiringDiagram, opts::LayoutOptions,
   diagram_size = diagram.value.size
   port_dir = svector(opts, 0, 1)
   port_coord = v -> dot(v, port_dir)
-  upper = port_coord(diagram_size)/2
-  lower = -upper
+  max_range = port_coord(diagram_size)
+  lower, upper = -max_range/2, max_range/2
   pad = opts.base_box_size + opts.parallel_pad
   
   # Solve optimization problem for input ports.

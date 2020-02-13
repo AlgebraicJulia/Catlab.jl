@@ -4,8 +4,15 @@
 #
 # Catlab can draw wiring diagrams using the Julia package
 # [Compose.jl](https://github.com/GiovineItalia/Compose.jl).
+#
+# For best results, it is recommended to load the packages
+# [Convex.j](https://github.com/JuliaOpt/Convex.jl) and
+# [SCS.jl](https://github.com/JuliaOpt/SCS.jl). When available they are used to
+# optimize the layout of the outer ports.
 
 using Catlab.WiringDiagrams, Catlab.Graphics
+
+import Convex, SCS
 
 # ## Examples
 
