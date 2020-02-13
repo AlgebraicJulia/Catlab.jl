@@ -1,7 +1,9 @@
 [deps]
 Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
 Compose = "a81c6b42-2e10-5240-aca2-a61377ecd94b"
+Convex = "f65535da-76fb-5f13-bab9-19810c17039a"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
+SCS = "c946c3f1-0d1f-5ce8-9dea-7daa1f7e2d13"
 TikzPictures = "37f6aa50-8035-52d0-81c2-5a1d08754b2d"
