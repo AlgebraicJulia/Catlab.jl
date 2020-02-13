@@ -4,13 +4,15 @@ using Test
 import Compose
 
 using Catlab.Doctrines, Catlab.WiringDiagrams
-using Catlab.Graphics
+using Catlab: Graphics
+
+to_composejl(f; kw...) = Graphics.to_composejl(f; outer_ports_layout=:fixed, kw...)
 
 function tagged(ctx::Compose.Context, tag::Symbol)
   vcat(ctx.tag == tag ? [ctx] : [],
        mapreduce(c -> tagged(c, tag), vcat, ctx.container_children; init=[]))
 end
-tagged(pic::ComposePicture, tag::Symbol) = tagged(pic.context, tag)
+tagged(pic::Graphics.ComposePicture, tag::Symbol) = tagged(pic.context, tag)
 
 A, B = Ob(FreeSymmetricMonoidalCategory, :A, :B)
 f, g = Hom(:f, A, B), Hom(:g, B, A)

@@ -4,8 +4,10 @@ using Compat
 using Test
 
 using Catlab.Doctrines, Catlab.WiringDiagrams
-using Catlab.Graphics
-import Catlab.Graphics: TikZ
+using Catlab: Graphics
+using Catlab.Graphics: TikZ
+
+to_tikz(f; kw...) = Graphics.to_tikz(f; outer_ports_layout=:fixed, kw...)
 
 function stmts(expr::TikZ.Expression, type::Type)
   children = hasfield(typeof(expr), :stmts) ? expr.stmts : []

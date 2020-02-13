@@ -13,6 +13,7 @@ export LayoutOrientation, LeftToRight, RightToLeft, TopToBottom, BottomToTop,
 using Compat
 import Base: sign
 using LinearAlgebra: dot, norm
+using Logging
 using Parameters
 using StaticArrays: StaticVector, SVector
 using Statistics: mean
@@ -49,7 +50,7 @@ svector(orient::LayoutOrientation, first, second) =
 """
 @with_kw_noshow struct LayoutOptions
   orientation::LayoutOrientation = LeftToRight
-  outer_ports_layout::Symbol = :fixed
+  outer_ports_layout::Symbol = :isotonic
   base_box_size::Float64 = 2
   sequence_pad::Float64 = 2
   parallel_pad::Float64 = 1
@@ -381,8 +382,22 @@ function layout_outer_ports!(diagram::WiringDiagram, opts::LayoutOptions; kw...)
     layout_outer_ports(diagram, opts; kw...)
   diagram
 end
+
+""" Lay out outer ports of wiring diagram.
+"""
 function layout_outer_ports(diagram::WiringDiagram, opts::LayoutOptions;
                             method::Symbol=:fixed, kw...)
+  if !has_port_layout_method(method)
+    if method == :isotonic
+      @warn """
+        Both Convex.jl and SCS must be loaded in order to use isotonic
+        regression for port layout. Falling back to fixed layout.
+        """ maxlog=1
+    else
+      error("Unknown port layout method: $method")
+    end
+    method = :fixed
+  end
   layout_outer_ports(diagram, opts, Val(method); kw...)
 end
 
@@ -433,7 +448,11 @@ function layout_outer_ports(diagram::WiringDiagram, opts::LayoutOptions,
   (layout_linear_ports(InputPort, inputs, in_coords, diagram_size, opts),
    layout_linear_ports(OutputPort, outputs, out_coords, diagram_size, opts))
 end
-solve_isotonic(y::Vector; kw...) = solve_isotonic(y, Val(:convexjl); kw...)
+solve_isotonic(args...; kw...) = error("Isotonic regression backend not available")
+
+has_port_layout_method(method::Symbol) = has_port_layout_method(Val(method))
+has_port_layout_method(::Val) = false
+has_port_layout_method(::Val{:fixed}) = true
 
 layout_port(value; kw...) = PortLayout(; value=value, kw...)
 

@@ -21,7 +21,7 @@ uuid = "b99e7846-7c00-51b0-8f62-c81ae34c0232"
 version = "0.5.8"
 
 [[Catlab]]
-deps = ["AutoHashEquals", "Compat", "Compose", "DataStructures", "JSON", "LightGraphs", "LightXML", "LinearAlgebra", "Match", "MetaGraphs", "Parameters", "Pkg", "Reexport", "Requires", "StaticArrays", "Statistics", "Test"]
+deps = ["AutoHashEquals", "Compat", "Compose", "DataStructures", "JSON", "LightGraphs", "LightXML", "LinearAlgebra", "Logging", "Match", "MetaGraphs", "Parameters", "Pkg", "Reexport", "Requires", "StaticArrays", "Statistics", "Test"]
 path = ".."
 uuid = "134e5e36-593f-5add-ad60-77f754baafbe"
 version = "0.5.2"

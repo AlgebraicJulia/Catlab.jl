@@ -3,9 +3,10 @@ module TestWiringDiagramLayouts
 using Test
 
 using Catlab.Doctrines, Catlab.WiringDiagrams
-using Catlab.Graphics
-using Catlab.Graphics.WiringDiagramLayouts: JunctionShape, position
+using Catlab: Graphics
+using Catlab.Graphics.WiringDiagramLayouts: LeftToRight, JunctionShape, position
 
+layout_diagram(f; kw...) = Graphics.layout_diagram(f; outer_ports_layout=:fixed, kw...)
 box_layouts(d::WiringDiagram) = map(box -> box.value, boxes(d))
 box_values(d::WiringDiagram) = map(layout -> layout.value, box_layouts(d))
 

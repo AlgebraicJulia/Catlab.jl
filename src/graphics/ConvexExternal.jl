@@ -1,11 +1,11 @@
 # External packages.
 using .Convex, .SCS
 
-using Compat
-import .WiringDiagramLayouts: solve_isotonic
+import .WiringDiagramLayouts: has_port_layout_method, solve_isotonic
 
-function solve_isotonic(y::Vector, ::Val{:convexjl};
-                        solver=SCSSolver(verbose=0), loss=sumsquares,
+has_port_layout_method(::Val{:isotonic}) = true
+
+function solve_isotonic(y::Vector; solver=SCSSolver(verbose=0), loss=sumsquares,
                         lower::Number=-Inf, upper::Number=Inf, pad::Number=0)
   if isempty(y)
     return empty(y)
