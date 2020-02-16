@@ -116,6 +116,11 @@ to_composejl(mplus(X) ⋅ mcopy(X),
     junction_variant_props=[fill("blue"), stroke("black")],
 )
 
+# By default, the boxes are rectangular (`RectangleShape`). Other available
+# shapes include circles (`CircleShape`).
+
+to_composejl(f⋅g, box_shape=CircleShape)
+
 # ## Output formats
 
 # The function `to_composejl` returns a `ComposePicture` object, which contains

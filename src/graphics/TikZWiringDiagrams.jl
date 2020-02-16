@@ -10,9 +10,8 @@ using Parameters
 using ...Syntax: GATExpr, show_latex
 using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
 using ..WiringDiagramLayouts
-using ..WiringDiagramLayouts: AbstractVector2D, Vector2D, BoxLayout, BoxShape,
-  RectangleShape, CircleShape, JunctionShape, NoShape,
-  box_label, wire_label, position, normal, tangent, port_sign, wire_points
+using ..WiringDiagramLayouts: AbstractVector2D, Vector2D, BoxLayout, box_label,
+  wire_label, position, normal, tangent, port_sign, wire_points
 import ..WiringDiagramLayouts: svector
 import ..TikZ
 

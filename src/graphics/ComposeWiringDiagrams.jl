@@ -10,9 +10,8 @@ const C = Compose
 
 using ...WiringDiagrams
 using ..WiringDiagramLayouts
-using ..WiringDiagramLayouts: AbstractVector2D, Vector2D, BoxLayout, BoxShape,
-  RectangleShape, JunctionShape, NoShape, box_label, position, size,
-  lower_corner, upper_corner, normal, tangent, wire_points
+using ..WiringDiagramLayouts: AbstractVector2D, Vector2D, BoxLayout, box_label,
+  position, size, lower_corner, upper_corner, normal, tangent, wire_points
 
 # Data types
 ############
@@ -132,7 +131,11 @@ function render_box(layout::BoxLayout, opts::ComposeOptions)
 end
 function render_box(::Val{RectangleShape}, layout::BoxLayout, opts::ComposeOptions)
   labeled_rectangle(box_label(layout.value), rounded=opts.rounded_boxes,
-    rect_props=opts.box_props, text_props=opts.text_props)
+    rectangle_props=opts.box_props, text_props=opts.text_props)
+end
+function render_box(::Val{CircleShape}, layout::BoxLayout, opts::ComposeOptions)
+  labeled_circle(box_label(layout.value),
+    circle_props=opts.box_props, text_props=opts.text_props)
 end
 function render_box(::Val{JunctionShape}, layout::BoxLayout, opts::ComposeOptions)
   props = :variant in layout.hints ?
@@ -144,14 +147,26 @@ render_box(::Val{NoShape}, ::BoxLayout, ::ComposeOptions) = C.context()
 # Compose.jl forms
 ##################
 
+""" Draw a circle with text label in Compose.
+"""
+function labeled_circle(label::String;
+    circle_props::ComposeProperties=[], text_props::ComposeProperties=[])
+  C.compose(C.context(),
+    (C.context(order=1), C.circle(), circle_props...),
+    (C.context(order=2),
+     C.text(0.5, 0.5, label, C.hcenter, C.vcenter),
+     text_props...),
+  )
+end
+
 """ Draw a rectangle with text label in Compose.
 """
 function labeled_rectangle(label::String; rounded::Bool=true,
-    rect_props::ComposeProperties=[], text_props::ComposeProperties=[])
+    rectangle_props::ComposeProperties=[], text_props::ComposeProperties=[])
   C.compose(C.context(),
     (C.context(order=1),
      rounded ? rounded_rectangle() : C.rectangle(),
-     rect_props...),
+     rectangle_props...),
     (C.context(order=2),
      C.text(0.5, 0.5, label, C.hcenter, C.vcenter),
      text_props...),
