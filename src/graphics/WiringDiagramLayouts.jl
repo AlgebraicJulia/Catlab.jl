@@ -152,40 +152,40 @@ end
 
 """ Lay out a morphism expression as a wiring diagram.
 """
-layout_hom_expr(f::HomExpr, opts) = layout_box_expr(f, opts)
+layout_hom_expr(f::HomExpr, opts) = layout_box(f, opts)
 
 layout_hom_expr(f::HomExpr{:compose}, opts) =
   compose_with_layout!(map(arg -> layout_hom_expr(arg, opts), args(f)), opts)
 layout_hom_expr(f::HomExpr{:otimes}, opts) =
   otimes_with_layout!(map(arg -> layout_hom_expr(arg, opts), args(f)), opts)
 
-layout_hom_expr(f::HomExpr{:id}, opts) = layout_wires_expr(f, opts)
-layout_hom_expr(f::HomExpr{:braid}, opts) = layout_wires_expr(f, opts)
+layout_hom_expr(f::HomExpr{:id}, opts) = layout_pure_wiring(f, opts)
+layout_hom_expr(f::HomExpr{:braid}, opts) = layout_pure_wiring(f, opts)
 
-layout_hom_expr(f::HomExpr{:mcopy}, opts) = layout_junction_expr(f, opts)
-layout_hom_expr(f::HomExpr{:delete}, opts) = layout_junction_expr(f, opts)
-layout_hom_expr(f::HomExpr{:mmerge}, opts) = layout_junction_expr(f, opts)
-layout_hom_expr(f::HomExpr{:create}, opts) = layout_junction_expr(f, opts)
+layout_hom_expr(f::HomExpr{:mcopy}, opts) = layout_junction(f, opts)
+layout_hom_expr(f::HomExpr{:delete}, opts) = layout_junction(f, opts)
+layout_hom_expr(f::HomExpr{:mmerge}, opts) = layout_junction(f, opts)
+layout_hom_expr(f::HomExpr{:create}, opts) = layout_junction(f, opts)
 
-layout_hom_expr(f::HomExpr{:mplus}, opts) = layout_junction_expr(f, opts, hints=[:variant])
-layout_hom_expr(f::HomExpr{:mzero}, opts) = layout_junction_expr(f, opts, hints=[:variant])
-layout_hom_expr(f::HomExpr{:coplus}, opts) = layout_junction_expr(f, opts, hints=[:variant])
-layout_hom_expr(f::HomExpr{:cozero}, opts) = layout_junction_expr(f, opts, hints=[:variant])
+layout_hom_expr(f::HomExpr{:mplus}, opts) = layout_junction(f, opts, hints=[:variant])
+layout_hom_expr(f::HomExpr{:mzero}, opts) = layout_junction(f, opts, hints=[:variant])
+layout_hom_expr(f::HomExpr{:coplus}, opts) = layout_junction(f, opts, hints=[:variant])
+layout_hom_expr(f::HomExpr{:cozero}, opts) = layout_junction(f, opts, hints=[:variant])
 
 layout_hom_expr(f::HomExpr{:dunit}, opts) =
-  layout_junction_expr(f, opts; visible=false, pad=false)
+  layout_junction(f, opts; visible=false, pad=false)
 layout_hom_expr(f::HomExpr{:dcounit}, opts) =
-  layout_junction_expr(f, opts; visible=false, pad=false)
+  layout_junction(f, opts; visible=false, pad=false)
   
 layout_port(A::ObExpr{:dual}; kw...) =
   PortLayout(; value=A, reverse_wires=true, kw...)
 wire_label(mime::MIME, A::ObExpr{:dual}) = wire_label(mime, first(A))
 
-layout_box_expr(f::HomExpr, opts; kw...) =
-  layout_box(f, collect(dom(f)), collect(codom(f)), opts; kw...)
-layout_junction_expr(f::HomExpr, opts; kw...) =
-  layout_junction(f, collect(dom(f)), collect(codom(f)), opts; kw...)
-layout_wires_expr(f::HomExpr, opts; kw...) =
+layout_box(f::HomExpr, opts::LayoutOptions; shape::BoxShape=RectangleShape, kw...) =
+  layout_box(collect(dom(f)), collect(codom(f)), opts; shape=shape, value=f, kw...)
+layout_junction(f::HomExpr, opts::LayoutOptions; kw...) =
+  layout_box(f, opts; shape=JunctionShape, kw...)
+layout_pure_wiring(f::HomExpr, opts::LayoutOptions; kw...) =
   layout_pure_wiring(to_wiring_diagram(f, identity, identity), opts; kw...)
 
 # Diagram layout
@@ -290,10 +290,18 @@ end
 # Box layout
 ############
 
-""" Lay out a rectangular box and its ports.
+""" Lay out a box and its ports.
+
+By default the box is rectangular, but other shapes are also supported.
 """
-function layout_box(value::Any, inputs::Vector, outputs::Vector,
-                    opts::LayoutOptions; hints::Vector{Symbol}=Symbol[])
+function layout_box(inputs::Vector, outputs::Vector, opts::LayoutOptions;
+                    shape::BoxShape=RectangleShape, kw...)
+  layout_box(Val(shape), inputs, outputs, opts; kw...)
+end
+
+function layout_box(::Val{RectangleShape}, inputs::Vector, outputs::Vector,
+                    opts::LayoutOptions; value=nothing,
+                    hints::Vector{Symbol}=Symbol[])
   size = default_box_size(length(inputs), length(outputs), opts)
   box = Box(BoxLayout(value=value, shape=RectangleShape, size=size, hints=hints),
             layout_linear_ports(InputPort, inputs, size, opts),
@@ -301,11 +309,9 @@ function layout_box(value::Any, inputs::Vector, outputs::Vector,
   size_to_fit!(singleton_diagram(box), opts)
 end
 
-""" Lay out a circular junction and its ports.
-"""
-function layout_junction(value::Any, inputs::Vector, outputs::Vector,
-                         opts::LayoutOptions; visible::Bool=true,
-                         pad::Bool=true, hints::Vector{Symbol}=Symbol[])
+function layout_box(::Val{JunctionShape}, inputs::Vector, outputs::Vector,
+                    opts::LayoutOptions; value=nothing, visible::Bool=true,
+                    pad::Bool=true, hints::Vector{Symbol}=Symbol[])
   nin, nout = length(inputs), length(outputs)
   shape, radius = visible ? (JunctionShape, opts.junction_size) : (NoShape, 0)
   size = 2*SVector(radius, radius)
