@@ -148,7 +148,7 @@ function tikz_port(diagram::WiringDiagram, port::Port, opts::TikZOptions)
   
   x, y = tikz_position(position(port_value(diagram, port)))
   normal_angle = tikz_angle(normal(diagram, port))
-  anchor, (x, y) = if shape == :rectangle
+  anchor, (x, y) = if shape in (:rectangle, :triangle)
     port_dir = svector(opts, port_sign(diagram, port, opts.orientation), 0)
     e2 = svector(opts, 0, 1)
     (tikz_anchor(port_dir), (e2[1]*x, e2[2]*y))
@@ -237,10 +237,12 @@ function tikz_styles(opts::TikZOptions)
     for style in sort!(["outer box"; collect(opts.used_node_styles)])
     if haskey(default_tikz_node_styles, style)
   )
-  libraries = String[]
+  libraries = [ "shapes.geometric" ] # FIXME: Should use library only if needed.
   if opts.rounded_boxes
-    if haskey(styles, "box")
-      push!(styles["box"], TikZ.Property("rounded corners"))
+    for style in ("box", "triangular box")
+      if haskey(styles, style)
+        push!(styles[style], TikZ.Property("rounded corners"))
+      end
     end
   end
   
@@ -281,6 +283,12 @@ const default_tikz_node_styles = Dict{String,Vector{TikZ.Property}}(
     TikZ.Property("circle"),
     TikZ.Property("draw"), TikZ.Property("solid"),
   ],
+  "triangular box" => [
+    TikZ.Property("isosceles triangle"),
+    TikZ.Property("isosceles triangle stretches"),
+    TikZ.Property("draw"), TikZ.Property("solid"),
+    TikZ.Property("inner sep", "0"),
+  ],
   "junction" => [
     TikZ.Property("circle"),
     TikZ.Property("draw"), TikZ.Property("fill"),
@@ -320,6 +328,7 @@ end
 const tikz_shapes = Dict(
   :rectangle => "box",
   :circle => "circular box",
+  :triangle => "triangular box",
   :junction => "junction",
   :invisible => "invisible",
 )

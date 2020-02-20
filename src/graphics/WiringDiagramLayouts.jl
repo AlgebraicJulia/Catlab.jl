@@ -332,9 +332,9 @@ function layout_box(inputs::Vector, outputs::Vector, opts::LayoutOptions;
 end
 
 function layout_box(::Val{:rectangle}, inputs::Vector, outputs::Vector,
-                    opts::LayoutOptions; kw...)
+                    opts::LayoutOptions; shape::Symbol=:rectangle, kw...)
   size = default_box_size(length(inputs), length(outputs), opts)
-  box = Box(BoxLayout(; shape=:rectangle, size=size, kw...),
+  box = Box(BoxLayout(; shape=shape, size=size, kw...),
             layout_linear_ports(InputPort, inputs, size, opts),
             layout_linear_ports(OutputPort, outputs, size, opts))
   size_to_fit!(singleton_diagram(box), opts)
@@ -348,6 +348,12 @@ function layout_box(::Val{:circle}, inputs::Vector, outputs::Vector,
             layout_circular_ports(InputPort, inputs, radius, opts; pad=pad),
             layout_circular_ports(OutputPort, outputs, radius, opts; pad=pad))
   size_to_fit!(singleton_diagram(box), opts)
+end
+
+function layout_box(::Val{:triangle}, inputs::Vector, outputs::Vector,
+                    opts::LayoutOptions; kw...)
+  @assert length(outputs) <= 1 "Cannot use triangle layout with multiple outputs"
+  layout_box(Val(:rectangle), inputs, outputs, opts; shape=:triangle, kw...)
 end
 
 function layout_box(::Val{:junction}, inputs::Vector, outputs::Vector,
