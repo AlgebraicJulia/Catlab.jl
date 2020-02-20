@@ -138,7 +138,7 @@ function render_box(::Val{:circle}, layout::BoxLayout, opts::ComposeOptions)
     circle_props=opts.box_props, text_props=opts.text_props)
 end
 function render_box(::Val{:junction}, layout::BoxLayout, opts::ComposeOptions)
-  props = :variant in layout.hints ?
+  props = layout.style == :variant_junction ?
     opts.junction_variant_props : opts.junction_props
   C.compose(C.context(), C.circle(), props...)
 end

@@ -235,6 +235,7 @@ function tikz_styles(opts::TikZOptions)
   styles = OrderedDict(
     style => copy(default_tikz_node_styles[style])
     for style in sort!(["outer box"; collect(opts.used_node_styles)])
+    if haskey(default_tikz_node_styles, style)
   )
   libraries = String[]
   if opts.rounded_boxes
@@ -307,8 +308,11 @@ end
 """ Get TikZ style for box.
 """
 function tikz_node_style(layout::BoxLayout, opts::TikZOptions)
-  style = tikz_shapes[layout.shape]
-  style = :variant in layout.hints ? "variant $style" : style
+  style = if isnothing(layout.style)
+    tikz_shapes[layout.shape]
+  else
+    replace(string(layout.style), "_" => " ")
+  end
   push!(opts.used_node_styles, style)
   style
 end

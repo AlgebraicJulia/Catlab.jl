@@ -62,9 +62,9 @@ svector(opts::LayoutOptions, args...) = svector(opts.orientation, args...)
 
 """ Layout for box in a wiring diagram.
 
-Suggests a shape, size, and position for the box. Also includes the box's value,
-typically used for labels, and a list of style hints, which do not affect the
-layout but are interpreted by graphics backends to adjust the visual style.
+Suggests a shape, size, and position for the box. Also includes the box's
+value, typically used for labels, and a style name, which does not affect the
+layout but is interpreted by graphics backends to adjust the visual style.
 
 Specific features of the shape are determined by the graphics backend. For
 example, a rectangle could be rendered with or without rounded corners or even
@@ -75,7 +75,7 @@ as another, similar shape, such as a parallelogram.
   shape::Symbol = :rectangle
   position::Vector2D = zeros(Vector2D)
   size::Vector2D = zeros(Vector2D)
-  hints::Vector{Symbol} = Symbol[]
+  style::Union{Symbol,Nothing} = nothing
 end
 
 position(layout::BoxLayout) = layout.position
@@ -159,20 +159,24 @@ layout_hom_expr(f::HomExpr{:otimes}, opts) =
 layout_hom_expr(f::HomExpr{:id}, opts) = layout_pure_wiring(f, opts)
 layout_hom_expr(f::HomExpr{:braid}, opts) = layout_pure_wiring(f, opts)
 
-layout_hom_expr(f::HomExpr{:mcopy}, opts) = layout_junction(f, opts)
-layout_hom_expr(f::HomExpr{:delete}, opts) = layout_junction(f, opts)
-layout_hom_expr(f::HomExpr{:mmerge}, opts) = layout_junction(f, opts)
-layout_hom_expr(f::HomExpr{:create}, opts) = layout_junction(f, opts)
+layout_hom_expr(f::HomExpr{:mcopy}, opts) = layout_box(f, opts, shape=:junction)
+layout_hom_expr(f::HomExpr{:delete}, opts) = layout_box(f, opts, shape=:junction)
+layout_hom_expr(f::HomExpr{:mmerge}, opts) = layout_box(f, opts, shape=:junction)
+layout_hom_expr(f::HomExpr{:create}, opts) = layout_box(f, opts, shape=:junction)
 
-layout_hom_expr(f::HomExpr{:mplus}, opts) = layout_junction(f, opts, hints=[:variant])
-layout_hom_expr(f::HomExpr{:mzero}, opts) = layout_junction(f, opts, hints=[:variant])
-layout_hom_expr(f::HomExpr{:coplus}, opts) = layout_junction(f, opts, hints=[:variant])
-layout_hom_expr(f::HomExpr{:cozero}, opts) = layout_junction(f, opts, hints=[:variant])
+layout_hom_expr(f::HomExpr{:mplus}, opts) =
+  layout_box(f, opts, shape=:junction, style=:variant_junction)
+layout_hom_expr(f::HomExpr{:mzero}, opts) =
+  layout_box(f, opts, shape=:junction, style=:variant_junction)
+layout_hom_expr(f::HomExpr{:coplus}, opts) =
+  layout_box(f, opts, shape=:junction, style=:variant_junction)
+layout_hom_expr(f::HomExpr{:cozero}, opts) =
+  layout_box(f, opts, shape=:junction, style=:variant_junction)
 
 layout_hom_expr(f::HomExpr{:dunit}, opts) =
-  layout_junction(f, opts; visible=false, pad=false)
+  layout_box(f, opts, shape=:junction, visible=false, pad=false)
 layout_hom_expr(f::HomExpr{:dcounit}, opts) =
-  layout_junction(f, opts; visible=false, pad=false)
+  layout_box(f, opts, shape=:junction, visible=false, pad=false)
   
 layout_port(A::ObExpr{:dual}; kw...) =
   PortLayout(; value=A, reverse_wires=true, kw...)
@@ -180,8 +184,6 @@ wire_label(mime::MIME, A::ObExpr{:dual}) = wire_label(mime, first(A))
 
 layout_box(f::HomExpr, opts::LayoutOptions; kw...) =
   layout_box(collect(dom(f)), collect(codom(f)), opts; value=f, kw...)
-layout_junction(f::HomExpr, opts::LayoutOptions; kw...) =
-  layout_box(f, opts; shape=:junction, kw...)
 layout_pure_wiring(f::HomExpr, opts::LayoutOptions; kw...) =
   layout_pure_wiring(to_wiring_diagram(f, identity, identity), opts; kw...)
 
@@ -298,33 +300,30 @@ function layout_box(inputs::Vector, outputs::Vector, opts::LayoutOptions;
 end
 
 function layout_box(::Val{:rectangle}, inputs::Vector, outputs::Vector,
-                    opts::LayoutOptions; value=nothing,
-                    hints::Vector{Symbol}=Symbol[])
+                    opts::LayoutOptions; kw...)
   size = default_box_size(length(inputs), length(outputs), opts)
-  box = Box(BoxLayout(value=value, shape=:rectangle, size=size, hints=hints),
+  box = Box(BoxLayout(; shape=:rectangle, size=size, kw...),
             layout_linear_ports(InputPort, inputs, size, opts),
             layout_linear_ports(OutputPort, outputs, size, opts))
   size_to_fit!(singleton_diagram(box), opts)
 end
 
 function layout_box(::Val{:circle}, inputs::Vector, outputs::Vector,
-                    opts::LayoutOptions; value=nothing, pad::Bool=true,
-                    hints::Vector{Symbol}=Symbol[])
+                    opts::LayoutOptions; pad::Bool=true, kw...)
   size = default_box_size(1, 1, opts)
   radius = first(size) / 2
-  box = Box(BoxLayout(value=value, shape=:circle, size=size, hints=hints),
+  box = Box(BoxLayout(; shape=:circle, size=size, kw...),
             layout_circular_ports(InputPort, inputs, radius, opts; pad=pad),
             layout_circular_ports(OutputPort, outputs, radius, opts; pad=pad))
   size_to_fit!(singleton_diagram(box), opts)
 end
 
 function layout_box(::Val{:junction}, inputs::Vector, outputs::Vector,
-                    opts::LayoutOptions; value=nothing, visible::Bool=true,
-                    pad::Bool=true, hints::Vector{Symbol}=Symbol[])
+                    opts::LayoutOptions; visible::Bool=true, pad::Bool=true, kw...)
   nin, nout = length(inputs), length(outputs)
   shape, radius = visible ? (:junction, opts.junction_size) : (:invisible, 0)
   size = 2*SVector(radius, radius)
-  box = Box(BoxLayout(value=value, shape=shape, size=size, hints=hints),
+  box = Box(BoxLayout(; shape=shape, size=size, kw...),
             layout_circular_ports(InputPort, inputs, radius, opts;
                                   pad=pad, label_wires = nin == 1 || nout == 0),
             layout_circular_ports(OutputPort, outputs, radius, opts;
