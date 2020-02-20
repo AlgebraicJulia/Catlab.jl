@@ -32,6 +32,7 @@ import ..TikZ
   props::AbstractVector = ["semithick"]
   styles::AbstractDict = Dict()
   libraries::Vector{String} = String[]
+  used_node_styles::AbstractSet = Set{String}()
 end
 
 svector(opts::TikZOptions, args...) = svector(opts.orientation, args...)
@@ -94,7 +95,7 @@ end
 function tikz_node(layout::BoxLayout, opts::TikZOptions;
     name::Union{String,Nothing}=nothing,
     style::Union{String,Nothing}=nothing)::TikZ.Node
-  style = isnothing(style) ? tikz_style(layout) : style
+  style = isnothing(style) ? tikz_node_style(layout, opts) : style
   content = layout.shape in (:junction, :invisible) ? "" :
     tikz_node_label(layout.value, opts)
   TikZ.Node(name,
@@ -230,15 +231,20 @@ end
 """ Make TikZ style definitions for wiring diagram.
 """
 function tikz_styles(opts::TikZOptions)
-  styles = deepcopy(default_tikz_styles)
-  libraries = String[]
-  
   # Box style options.
+  styles = OrderedDict(
+    style => copy(default_tikz_node_styles[style])
+    for style in sort!(["outer box"; collect(opts.used_node_styles)])
+  )
+  libraries = String[]
   if opts.rounded_boxes
-    push!(styles["box"], TikZ.Property("rounded corners"))
+    if haskey(styles, "box")
+      push!(styles["box"], TikZ.Property("rounded corners"))
+    end
   end
   
   # Wire style options.
+  styles["wire"] = [ TikZ.Property("draw") ]
   if opts.labels
     anchor = tikz_anchor(svector(opts, 0, 1))
     append!(styles["wire"], tikz_decorate_markings([
@@ -262,7 +268,7 @@ function tikz_styles(opts::TikZOptions)
   (styles, libraries)
 end
 
-const default_tikz_styles = OrderedDict{String,Vector{TikZ.Property}}(
+const default_tikz_node_styles = Dict{String,Vector{TikZ.Property}}(
   "outer box" => [
     TikZ.Property("draw", "none"),
   ],
@@ -288,9 +294,6 @@ const default_tikz_styles = OrderedDict{String,Vector{TikZ.Property}}(
     TikZ.Property("draw", "none"),
     TikZ.Property("inner sep", "0"),
   ],
-  "wire" => [
-    TikZ.Property("draw"),
-  ],
 )
 
 function tikz_decorate_markings(marks::Vector{TikZ.Property})
@@ -303,9 +306,11 @@ end
 
 """ Get TikZ style for box.
 """
-function tikz_style(layout::BoxLayout)
+function tikz_node_style(layout::BoxLayout, opts::TikZOptions)
   style = tikz_shapes[layout.shape]
-  :variant in layout.hints ? "variant $style" : style
+  style = :variant in layout.hints ? "variant $style" : style
+  push!(opts.used_node_styles, style)
+  style
 end
 
 const tikz_shapes = Dict(
