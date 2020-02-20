@@ -129,20 +129,20 @@ end
 function render_box(layout::BoxLayout, opts::ComposeOptions)
   render_box(Val(layout.shape), layout, opts)
 end
-function render_box(::Val{RectangleShape}, layout::BoxLayout, opts::ComposeOptions)
+function render_box(::Val{:rectangle}, layout::BoxLayout, opts::ComposeOptions)
   labeled_rectangle(box_label(layout.value), rounded=opts.rounded_boxes,
     rectangle_props=opts.box_props, text_props=opts.text_props)
 end
-function render_box(::Val{CircleShape}, layout::BoxLayout, opts::ComposeOptions)
+function render_box(::Val{:circle}, layout::BoxLayout, opts::ComposeOptions)
   labeled_circle(box_label(layout.value),
     circle_props=opts.box_props, text_props=opts.text_props)
 end
-function render_box(::Val{JunctionShape}, layout::BoxLayout, opts::ComposeOptions)
+function render_box(::Val{:junction}, layout::BoxLayout, opts::ComposeOptions)
   props = :variant in layout.hints ?
     opts.junction_variant_props : opts.junction_props
   C.compose(C.context(), C.circle(), props...)
 end
-render_box(::Val{NoShape}, ::BoxLayout, ::ComposeOptions) = C.context()
+render_box(::Val{:invisible}, ::BoxLayout, ::ComposeOptions) = C.context()
 
 # Compose.jl forms
 ##################

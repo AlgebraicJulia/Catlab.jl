@@ -95,8 +95,8 @@ function tikz_node(layout::BoxLayout, opts::TikZOptions;
     name::Union{String,Nothing}=nothing,
     style::Union{String,Nothing}=nothing)::TikZ.Node
   style = isnothing(style) ? tikz_style(layout) : style
-  content = layout.shape in (RectangleShape, CircleShape) ?
-    tikz_node_label(layout.value, opts) : ""
+  content = layout.shape in (:junction, :invisible) ? "" :
+    tikz_node_label(layout.value, opts)
   TikZ.Node(name,
     props=[TikZ.Property(style); tikz_size(layout.size)],
     coord=tikz_coordinate(layout.position),
@@ -147,13 +147,13 @@ function tikz_port(diagram::WiringDiagram, port::Port, opts::TikZOptions)
   
   x, y = tikz_position(position(port_value(diagram, port)))
   normal_angle = tikz_angle(normal(diagram, port))
-  anchor, (x, y) = if shape == RectangleShape
+  anchor, (x, y) = if shape == :rectangle
     port_dir = svector(opts, port_sign(diagram, port, opts.orientation), 0)
     e2 = svector(opts, 0, 1)
     (tikz_anchor(port_dir), (e2[1]*x, e2[2]*y))
-  elseif shape in (CircleShape, JunctionShape)
+  elseif shape in (:circle, :junction)
     (normal_angle, (0,0))
-  elseif shape == NoShape
+  elseif shape == :invisible
     ("center", (0,0))
   else
     # Fallback method. Always works when TikZ follows the layout's box size, but
@@ -309,10 +309,10 @@ function tikz_style(layout::BoxLayout)
 end
 
 const tikz_shapes = Dict(
-  RectangleShape => "box",
-  CircleShape => "circular box",
-  JunctionShape => "junction",
-  NoShape => "invisible",
+  :rectangle => "box",
+  :circle => "circular box",
+  :junction => "junction",
+  :invisible => "invisible",
 )
 
 end

@@ -119,10 +119,10 @@ to_tikz(mplus(X) ⋅ mcopy(X), styles=Dict(
   "variant junction" => ["circle", "draw", "fill"=>"blue", "inner sep"=>"0"],
 ))
 
-# By default, the boxes are rectangular (`RectangleShape`). Other available
-# shapes include circles (`CircleShape`).
+# By default, the boxes are rectangular (`:rectangle`). Other available shapes
+# include circles (`:circle`).
 
-to_tikz(f⋅g, box_shape=CircleShape)
+to_tikz(f⋅g, box_shape=:circle)
 
 # ## Output formats
 

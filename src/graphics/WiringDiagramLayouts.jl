@@ -8,7 +8,6 @@ wiring diagram to a symbolic expression, using the submodule
 """
 module WiringDiagramLayouts
 export LayoutOrientation, LeftToRight, RightToLeft, TopToBottom, BottomToTop,
-  BoxShape, RectangleShape, CircleShape, JunctionShape, NoShape,
   layout_diagram, layout_box
 
 using Compat
@@ -47,19 +46,11 @@ port_sign(d::WiringDiagram, port::Port, orient::LayoutOrientation) =
 svector(orient::LayoutOrientation, first, second) =
   is_horizontal(orient) ? SVector(first, second) : SVector(second, first)
 
-""" General shape of box.
-
-Specific features of the shape are determined by the graphics backend. For
-example, a rectangle could be rendered with or without rounded corners or even
-as another, similar shape, such as a rotated isosceles trapezoid.
-"""
-@enum BoxShape RectangleShape CircleShape JunctionShape NoShape
-
 """ Internal data type for configurable options of wiring diagram layout.
 """
 @with_kw_noshow struct LayoutOptions
   orientation::LayoutOrientation = LeftToRight
-  box_shape::BoxShape = RectangleShape
+  box_shape::Symbol = :rectangle
   outer_ports_layout::Symbol = :isotonic
   base_box_size::Float64 = 2
   sequence_pad::Float64 = 2
@@ -74,10 +65,14 @@ svector(opts::LayoutOptions, args...) = svector(opts.orientation, args...)
 Suggests a shape, size, and position for the box. Also includes the box's value,
 typically used for labels, and a list of style hints, which do not affect the
 layout but are interpreted by graphics backends to adjust the visual style.
+
+Specific features of the shape are determined by the graphics backend. For
+example, a rectangle could be rendered with or without rounded corners or even
+as another, similar shape, such as a parallelogram.
 """
 @with_kw_noshow mutable struct BoxLayout{Value}
   value::Value = nothing
-  shape::BoxShape = RectangleShape
+  shape::Symbol = :rectangle
   position::Vector2D = zeros(Vector2D)
   size::Vector2D = zeros(Vector2D)
   hints::Vector{Symbol} = Symbol[]
@@ -186,7 +181,7 @@ wire_label(mime::MIME, A::ObExpr{:dual}) = wire_label(mime, first(A))
 layout_box(f::HomExpr, opts::LayoutOptions; kw...) =
   layout_box(collect(dom(f)), collect(codom(f)), opts; value=f, kw...)
 layout_junction(f::HomExpr, opts::LayoutOptions; kw...) =
-  layout_box(f, opts; shape=JunctionShape, kw...)
+  layout_box(f, opts; shape=:junction, kw...)
 layout_pure_wiring(f::HomExpr, opts::LayoutOptions; kw...) =
   layout_pure_wiring(to_wiring_diagram(f, identity, identity), opts; kw...)
 
@@ -297,37 +292,37 @@ end
 By default the box is rectangular, but other shapes are also supported.
 """
 function layout_box(inputs::Vector, outputs::Vector, opts::LayoutOptions;
-                    shape::Union{BoxShape,Nothing}=nothing, kw...)
+                    shape::Union{Symbol,Nothing}=nothing, kw...)
   layout_box(Val(isnothing(shape) ? opts.box_shape : shape),
              inputs, outputs, opts; kw...)
 end
 
-function layout_box(::Val{RectangleShape}, inputs::Vector, outputs::Vector,
+function layout_box(::Val{:rectangle}, inputs::Vector, outputs::Vector,
                     opts::LayoutOptions; value=nothing,
                     hints::Vector{Symbol}=Symbol[])
   size = default_box_size(length(inputs), length(outputs), opts)
-  box = Box(BoxLayout(value=value, shape=RectangleShape, size=size, hints=hints),
+  box = Box(BoxLayout(value=value, shape=:rectangle, size=size, hints=hints),
             layout_linear_ports(InputPort, inputs, size, opts),
             layout_linear_ports(OutputPort, outputs, size, opts))
   size_to_fit!(singleton_diagram(box), opts)
 end
 
-function layout_box(::Val{CircleShape}, inputs::Vector, outputs::Vector,
+function layout_box(::Val{:circle}, inputs::Vector, outputs::Vector,
                     opts::LayoutOptions; value=nothing, pad::Bool=true,
                     hints::Vector{Symbol}=Symbol[])
   size = default_box_size(1, 1, opts)
   radius = first(size) / 2
-  box = Box(BoxLayout(value=value, shape=CircleShape, size=size, hints=hints),
+  box = Box(BoxLayout(value=value, shape=:circle, size=size, hints=hints),
             layout_circular_ports(InputPort, inputs, radius, opts; pad=pad),
             layout_circular_ports(OutputPort, outputs, radius, opts; pad=pad))
   size_to_fit!(singleton_diagram(box), opts)
 end
 
-function layout_box(::Val{JunctionShape}, inputs::Vector, outputs::Vector,
+function layout_box(::Val{:junction}, inputs::Vector, outputs::Vector,
                     opts::LayoutOptions; value=nothing, visible::Bool=true,
                     pad::Bool=true, hints::Vector{Symbol}=Symbol[])
   nin, nout = length(inputs), length(outputs)
-  shape, radius = visible ? (JunctionShape, opts.junction_size) : (NoShape, 0)
+  shape, radius = visible ? (:junction, opts.junction_size) : (:invisible, 0)
   size = 2*SVector(radius, radius)
   box = Box(BoxLayout(value=value, shape=shape, size=size, hints=hints),
             layout_circular_ports(InputPort, inputs, radius, opts;

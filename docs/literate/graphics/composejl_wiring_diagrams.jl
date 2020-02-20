@@ -116,10 +116,10 @@ to_composejl(mplus(X) ⋅ mcopy(X),
     junction_variant_props=[fill("blue"), stroke("black")],
 )
 
-# By default, the boxes are rectangular (`RectangleShape`). Other available
-# shapes include circles (`CircleShape`).
+# By default, the boxes are rectangular (`:rectangle`). Other available shapes
+# include circles (`:circle`).
 
-to_composejl(f⋅g, box_shape=CircleShape)
+to_composejl(f⋅g, box_shape=:circle)
 
 # ## Output formats
 
