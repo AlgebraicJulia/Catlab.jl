@@ -3,6 +3,7 @@
 module ComposeWiringDiagrams
 export ComposePicture, to_composejl, layout_to_composejl
 
+using Compat
 using LinearAlgebra: dot
 using Parameters
 import Compose
@@ -40,11 +41,7 @@ const ComposeProperties = AbstractVector{<:Compose.Property}
 """ Internal data type for configurable options of Compose.jl wiring diagrams.
 """
 @with_kw_noshow struct ComposeOptions
-  box_props::ComposeProperties = [ C.stroke("black"), C.fill(nothing) ]
-  junction_props::ComposeProperties = [ C.stroke("black") ]
-  junction_variant_props::ComposeProperties = [ C.stroke("black"), C.fill(nothing) ]
-  wire_props::ComposeProperties = [ C.stroke("black") ]
-  text_props::ComposeProperties = [ C.fill("black") ]
+  props::AbstractDict = Dict()
   box_renderer::Function = render_box
   rounded_boxes::Bool = true
 end
@@ -66,8 +63,9 @@ end
 
 """ Draw a wiring diagram in Compose.jl using the given layout.
 """
-function layout_to_composejl(diagram::WiringDiagram; kw...)::Compose.Context
-  layout_to_composejl(diagram, ComposeOptions(; kw...))
+function layout_to_composejl(diagram::WiringDiagram; props=Dict(), kw...)::Compose.Context
+  props = merge(default_props, props)
+  layout_to_composejl(diagram, ComposeOptions(; props=props, kw...))
 end
 
 function layout_to_composejl(diagram::WiringDiagram, opts::ComposeOptions)
@@ -112,7 +110,7 @@ function layout_to_composejl(diagram::WiringDiagram, wire::Wire, opts::ComposeOp
   
   C.compose(C.context(tag=:wire),
     piecewise_curve(map(Tuple, points)),
-    opts.wire_props...
+    opts.props[:wire]...
   )
 end
 
@@ -131,18 +129,27 @@ function render_box(layout::BoxLayout, opts::ComposeOptions)
 end
 function render_box(::Val{:rectangle}, layout::BoxLayout, opts::ComposeOptions)
   labeled_rectangle(box_label(layout.value), rounded=opts.rounded_boxes,
-    rectangle_props=opts.box_props, text_props=opts.text_props)
+    rectangle_props=box_props(layout, opts), text_props=opts.props[:text])
 end
 function render_box(::Val{:circle}, layout::BoxLayout, opts::ComposeOptions)
   labeled_circle(box_label(layout.value),
-    circle_props=opts.box_props, text_props=opts.text_props)
+    circle_props=box_props(layout, opts), text_props=opts.props[:text])
 end
 function render_box(::Val{:junction}, layout::BoxLayout, opts::ComposeOptions)
-  props = layout.style == :variant_junction ?
-    opts.junction_variant_props : opts.junction_props
-  C.compose(C.context(), C.circle(), props...)
+  C.compose(C.context(), C.circle(), box_props(layout, opts)...)
 end
 render_box(::Val{:invisible}, ::BoxLayout, ::ComposeOptions) = C.context()
+
+""" Get Compose.jl properties for box.
+"""
+function box_props(layout::BoxLayout, opts::ComposeOptions)
+  style = if isnothing(layout.style)
+    layout.shape in (:junction, :invisible) ? layout.shape : :box
+  else
+    layout.style
+  end
+  opts.props[style]
+end
 
 # Compose.jl forms
 ##################
@@ -218,5 +225,16 @@ function piecewise_curve(points::Vector{<:Tuple})
     (C.curve(points[i:i+3]...) for i in range(1, length(points)-1, step=3))...
   )
 end
+
+# Compose.jl properties
+#######################
+
+const default_props = Dict{Symbol,Vector{Compose.Property}}(
+  :box => [ C.stroke("black"), C.fill(nothing) ],
+  :junction => [ C.stroke("black") ],
+  :variant_junction => [ C.stroke("black"), C.fill(nothing) ],
+  :wire => [ C.stroke("black") ],
+  :text => [ C.fill("black") ],
+)
 
 end

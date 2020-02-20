@@ -107,14 +107,16 @@ using Compose: fill, stroke
 A, B, = Ob(FreeSymmetricMonoidalCategory, :A, :B)
 f, g = Hom(:f, A, B), Hom(:g, B, A)
 
-to_composejl(f⋅g, box_props=[fill("lavender"), stroke("black")])
+to_composejl(f⋅g, props=Dict(
+  :box => [fill("lavender"), stroke("black")],
+))
 #-
 X = Ob(FreeAbelianBicategoryRelations, :X)
 
-to_composejl(mplus(X) ⋅ mcopy(X),
-    junction_props=[fill("red"), stroke("black")],
-    junction_variant_props=[fill("blue"), stroke("black")],
-)
+to_composejl(mplus(X) ⋅ mcopy(X), props=Dict(
+  :junction => [fill("red"), stroke("black")],
+  :variant_junction => [fill("blue"), stroke("black")],
+))
 
 # By default, the boxes are rectangular (`:rectangle`). Other available shapes
 # include circles (`:circle`).
