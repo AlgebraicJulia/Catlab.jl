@@ -53,7 +53,15 @@ to_tikz(braid(A,B) ⋅ (g⊗f) ⋅ braid(A,B))
 # The isomorphism $A \otimes B \otimes C \to C \otimes B \otimes A$ induced by
 # the permutation $(3\ 2\ 1)$ is a composite of braidings and identities.
 
-to_tikz((braid(A,B) ⊗ id(C)) ⋅ (id(B) ⊗ braid(A,C) ⋅ (braid(B,C) ⊗ id(A))),
+σ = (braid(A,B) ⊗ id(C)) ⋅ (id(B) ⊗ braid(A,C) ⋅ (braid(B,C) ⊗ id(A)))
+
+to_tikz(σ, arrowtip="Stealth", arrowtip_pos=1.0, labels=true, labels_pos=0.0)
+
+# By default, anchor points are added along identity and braiding wires to
+# reproduce the expression structure in the layout. The anchors can be disabled
+# to get a more "unbiased" layout.
+
+to_tikz(σ, anchor_wires=false,
         arrowtip="Stealth", arrowtip_pos=1.0, labels=true, labels_pos=0.0)
 
 # ### Biproduct category

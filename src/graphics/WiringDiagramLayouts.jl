@@ -52,6 +52,7 @@ svector(orient::LayoutOrientation, first, second) =
   orientation::LayoutOrientation = LeftToRight
   box_shape::Symbol = :rectangle
   outer_ports_layout::Symbol = :isotonic
+  anchor_wires::Bool = true
   base_box_size::Float64 = 2
   sequence_pad::Float64 = 2
   parallel_pad::Float64 = 1
@@ -492,16 +493,19 @@ function layout_pure_wiring(diagram::WiringDiagram, opts::LayoutOptions)
   inputs, outputs = input_ports(diagram), output_ports(diagram)
   size = default_diagram_size(length(inputs), length(outputs), opts)
   result = WiringDiagram(BoxLayout(size=size), inputs, outputs)
-  
-  result = layout_outer_ports!(result, opts, method=:fixed)
-  e1, e2 = svector(opts, 1, 0), svector(opts, 0, 1)
-  for wire in wires(diagram)
-    src, tgt = wire.source, wire.target
-    src_pos, tgt_pos = (position(port_value(result, p)) for p in (src, tgt))
-    mid_pos = (src_pos + tgt_pos) / 2
-    v = sign.((tgt_pos - src_pos) .* e1) + (tgt.port - src.port) .* e2
-    point = WirePoint(mid_pos .* e2, v / norm(v))
-    add_wire!(result, Wire([point], src, tgt))
+  if opts.anchor_wires
+    result = layout_outer_ports!(result, opts, method=:fixed)
+    e1, e2 = svector(opts, 1, 0), svector(opts, 0, 1)
+    for wire in wires(diagram)
+      src, tgt = wire.source, wire.target
+      src_pos, tgt_pos = (position(port_value(result, p)) for p in (src, tgt))
+      mid_pos = (src_pos + tgt_pos) / 2
+      v = sign.((tgt_pos - src_pos) .* e1) + (tgt.port - src.port) .* e2
+      point = WirePoint(mid_pos .* e2, v / norm(v))
+      add_wire!(result, Wire([point], src, tgt))
+    end
+  else
+    add_wires!(result, wires(diagram))
   end
   result
 end
