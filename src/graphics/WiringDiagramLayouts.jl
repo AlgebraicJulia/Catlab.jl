@@ -226,7 +226,7 @@ The inner boxes are also shifted to be centered within the new bounds.
 """
 function size_to_fit!(diagram::WiringDiagram, opts::LayoutOptions; pad::Bool=true)
   nin, nout = length(input_ports(diagram)), length(output_ports(diagram))
-  minimum_size = default_diagram_size(nin, nout, opts)
+  minimum_size = minimum_diagram_size(nin, nout, opts)
   
   lower, upper = contents_lower_corner(diagram), contents_upper_corner(diagram)
   content_size = upper - lower
@@ -278,10 +278,10 @@ function shift_contents!(diagram::WiringDiagram, offset::AbstractVector2D)
   diagram
 end
 
-""" Compute the default size of a wiring diagram from the number of its ports.
+""" Compute the minimum size of a wiring diagram from the number of its ports.
 """
-function default_diagram_size(nin::Int, nout::Int, opts::LayoutOptions)
-  default_box_size(nin, nout, opts) + 2*diagram_padding(opts)
+function minimum_diagram_size(nin::Int, nout::Int, opts::LayoutOptions)
+  default_box_size(nin, nout, opts, length=0) + 2*diagram_padding(opts)
 end
 function diagram_padding(opts::LayoutOptions)
   svector(opts, opts.sequence_pad, opts.parallel_pad)
@@ -338,10 +338,10 @@ We use the unique formula consistent with the padding for monoidal products,
 ensuring that the size of a product of boxes depends only on the total number of
 ports, not on the number of boxes.
 """
-function default_box_size(nin::Int, nout::Int, opts::LayoutOptions)
+function default_box_size(nin::Int, nout::Int, opts::LayoutOptions; length=1)
   base_size = opts.base_box_size
   n = max(1, nin, nout)
-  svector(opts, base_size, n*base_size + (n-1)*opts.parallel_pad)
+  svector(opts, length*base_size, n*base_size + (n-1)*opts.parallel_pad)
 end
 
 # Port layout
@@ -491,7 +491,7 @@ end
 function layout_pure_wiring(diagram::WiringDiagram, opts::LayoutOptions)
   @assert nboxes(diagram) == 0
   inputs, outputs = input_ports(diagram), output_ports(diagram)
-  size = default_diagram_size(length(inputs), length(outputs), opts)
+  size = minimum_diagram_size(length(inputs), length(outputs), opts)
   result = WiringDiagram(BoxLayout(size=size), inputs, outputs)
   if opts.anchor_wires
     result = layout_outer_ports!(result, opts, method=:fixed)
