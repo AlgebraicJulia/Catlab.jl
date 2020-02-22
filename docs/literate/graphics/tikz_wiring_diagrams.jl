@@ -55,14 +55,15 @@ to_tikz(braid(A,B) ⋅ (g⊗f) ⋅ braid(A,B))
 
 σ = (braid(A,B) ⊗ id(C)) ⋅ (id(B) ⊗ braid(A,C) ⋅ (braid(B,C) ⊗ id(A)))
 
-to_tikz(σ, arrowtip="Stealth", arrowtip_pos=1.0, labels=true, labels_pos=0.0)
+to_tikz(σ, arrowtip="Stealth", arrowtip_pos="-0.1pt",
+        labels=true, labels_pos="0.1pt")
 
 # By default, anchor points are added along identity and braiding wires to
 # reproduce the expression structure in the layout. The anchors can be disabled
 # to get a more "unbiased" layout.
 
-to_tikz(σ, anchor_wires=false,
-        arrowtip="Stealth", arrowtip_pos=1.0, labels=true, labels_pos=0.0)
+to_tikz(σ, anchor_wires=false, arrowtip="Stealth", arrowtip_pos="-0.1pt",
+        labels=true, labels_pos="0.1pt")
 
 # ### Biproduct category
 

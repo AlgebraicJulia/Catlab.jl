@@ -24,10 +24,10 @@ import ..TikZ
   orientation::LayoutOrientation = LeftToRight
   base_unit::String = "4mm"
   labels::Bool = false
-  labels_pos::Float64 = 0.5 # ∈ [0,1]
+  labels_pos::Union{String,Float64} = 0.5
   math_mode::Bool = true
   arrowtip::Union{String,Nothing} = nothing
-  arrowtip_pos::Float64 = 0.5 # ∈ [0,1]
+  arrowtip_pos::Union{String,Float64} = 0.5
   rounded_boxes::Bool = true
   props::AbstractVector = ["semithick"]
   styles::AbstractDict = Dict()
