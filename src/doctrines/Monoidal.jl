@@ -438,6 +438,8 @@ end
 # Traced monoidal category
 ##########################
 
+""" Doctrine of *traced monoidal category*
+"""
 @signature SymmetricMonoidalCategory(Ob,Hom) => TracedMonoidalCategory(Ob,Hom) begin
   trace(X::Ob, A::Ob, B::Ob, f::Hom(otimes(X,A),otimes(X,B)))::Hom(A,B)
 end
