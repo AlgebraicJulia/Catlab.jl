@@ -212,6 +212,7 @@ g = singleton_diagram(CompactClosedCategory.Hom, Box(:g,[:B],[:A]))
 
 const TracedMon = TracedMonoidalCategory
 A, B, X, Y = [ Ports{TracedMon.Hom}([sym]) for sym in [:A,:B,:X,:Y] ]
+I = munit(typeof(A))
 f = singleton_diagram(TracedMon.Hom, Box(:f, [:X,:A], [:X,:B]))
 
 # Domain and codomain
@@ -223,7 +224,7 @@ g = singleton_diagram(TracedMon.Hom, Box(:g, [:A], [:A]))
 h = singleton_diagram(TracedMon.Hom, Box(:h, [:B], [:B]))
 @test trace(X, compose(id(X)⊗g, f, id(X)⊗h)) == compose(g, trace(X,f), h)
 
-# Superposing, aka strength
+# Stength, aka superposing
 g = singleton_diagram(TracedMon.Hom, Box(:g, [:C], [:C]))
 @test trace(X, otimes(f,g)) == otimes(trace(X,f), g)
 
@@ -231,6 +232,12 @@ g = singleton_diagram(TracedMon.Hom, Box(:g, [:C], [:C]))
 f = singleton_diagram(TracedMon.Hom, Box(:f, [:X,:Y,:A], [:Y,:X,:B]))
 @test trace(X⊗Y, compose(f, braid(Y,X)⊗id(B))) ==
   trace(Y⊗X, compose(braid(Y,X)⊗id(A), f))
+
+# Vanishing
+f = singleton_diagram(TracedMon.Hom, Box(:f, [:X,:Y,:A], [:X,:Y,:B]))
+@test trace(X⊗Y, f) == trace(Y, trace(X, f))
+f = singleton_diagram(TracedMon.Hom, Box(:f, [:A], [:B]))
+@test trace(I, f) == f
 
 # Yanking
 @test trace(X, braid(X,X)) == id(X)
