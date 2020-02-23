@@ -9,7 +9,7 @@ module AlgebraicWiringDiagrams
 export Ports, Junction, PortOp, BoxOp,
   functor, dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid, permute,
   mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
-  mplus, mzero, coplus, cozero, meet, join, top, bottom, ocompose,
+  mplus, mzero, coplus, cozero, meet, join, top, bottom, trace, ocompose,
   implicit_mcopy, implicit_mmerge, junctioned_mcopy, junctioned_mmerge,
   junction_diagram, add_junctions, add_junctions!, rem_junctions, merge_junctions,
   junction_caps, junction_cups, junctioned_dunit, junctioned_dcounit
@@ -20,7 +20,7 @@ using LightGraphs
 using ...GAT, ...Doctrines
 import ...Doctrines: dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid,
   mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
-  mplus, mzero, coplus, cozero, meet, join, top, bottom
+  mplus, mzero, coplus, cozero, meet, join, top, bottom, trace
 import ...Syntax: functor, head
 using ..WiringDiagramCore, ..WiringLayers
 import ..WiringDiagramCore: Box, WiringDiagram, input_ports, output_ports
@@ -46,6 +46,12 @@ Base.iterate(A::Ports, args...) = iterate(A.ports, args...)
 Base.keys(A::Ports) = keys(A.ports)
 Base.length(A::Ports) = length(A.ports)
 Base.eltype(A::Ports{T,V}) where {T,V} = V
+
+# Indexing interface.
+Base.getindex(A::Ports, i::Int) = A.ports[i]
+Base.getindex(A::Ports{T}, i::UnitRange) where T = Ports{T}(A.ports[i])
+Base.firstindex(A::Ports) = 1
+Base.lastindex(A::Ports) = length(A)
 
 Base.cat(A::Ports{T}, B::Ports{T}) where T = Ports{T}([A.ports; B.ports])
 Base.reverse(A::Ports{T}) where T = Ports{T}(reverse(A.ports))
@@ -128,7 +134,7 @@ munit(::Type{Ports{T,V}}) where {T,V} = Ports{T}(V[])
 
 function permute(A::Ports, σ::Vector{Int}; inverse::Bool=false)
   @assert length(A) == length(σ)
-  B = Ports([ A.ports[σ[i]] for i in eachindex(σ) ])
+  B = Ports([ A[σ[i]] for i in eachindex(σ) ])
   if inverse
     f = WiringDiagram(B, A)
     add_wires!(f, ((input_id(f),σ[i]) => (output_id(f),i) for i in eachindex(σ)))
@@ -284,6 +290,28 @@ dagger(f::WiringDiagram{DaggerCompactCategory.Hom}) =
   functor(f, identity, dagger, contravariant=true)
 mate(f::WiringDiagram{DaggerCompactCategory.Hom}) =
   functor(f, dual, mate, contravariant=true, monoidal_contravariant=true)
+
+# Traced monoidal category
+#-------------------------
+
+""" Trace (feedback loop) in a wiring diagram.
+"""
+function trace(X::Ports, f::WiringDiagram; unsubstituted::Bool=false)
+  n = length(X)
+  @assert dom(f)[1:n] == X && codom(f)[1:n] == X
+  A, B = dom(f)[n+1:end], codom(f)[n+1:end]
+  h = WiringDiagram(A, B)
+  fv = add_box!(h, f)
+  add_wires!(h, (fv,i) => (fv,i) for i in 1:n)
+  add_wires!(h, (input_id(h),i) => (fv,i+n) for i in eachindex(A))
+  add_wires!(h, (fv,i+n) => (output_id(h),i) for i in eachindex(B))
+  unsubstituted ? h : substitute(h)
+end
+
+const TracedMon = TracedMonoidalCategory
+
+trace(X::Ports{TracedMon.Hom}, A::Ports{TracedMon.Hom},
+      B::Ports{TracedMon.Hom}, f::WiringDiagram{TracedMon.Hom}) = trace(X, f)
 
 # Bicategory of relations
 #------------------------

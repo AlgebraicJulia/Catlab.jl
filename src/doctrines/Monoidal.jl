@@ -9,7 +9,8 @@ export MonoidalCategory, otimes, munit, ⊗, collect, ndims,
   CompactClosedCategory, FreeCompactClosedCategory, dual, dunit, dcounit, mate,
   DaggerCategory, FreeDaggerCategory, dagger,
   DaggerSymmetricMonoidalCategory, FreeDaggerSymmetricMonoidalCategory,
-  DaggerCompactCategory, FreeDaggerCompactCategory
+  DaggerCompactCategory, FreeDaggerCompactCategory,
+  TracedMonoidalCategory, FreeTracedMonoidalCategory, trace
 
 import Base: collect, ndims
 
@@ -432,4 +433,26 @@ end
 
 function show_latex(io::IO, expr::HomExpr{:dagger}; kw...)
   Syntax.show_latex_postfix(io, expr, "^\\dagger")
+end
+
+# Traced monoidal category
+##########################
+
+""" Doctrine of *traced monoidal category*
+"""
+@signature SymmetricMonoidalCategory(Ob,Hom) => TracedMonoidalCategory(Ob,Hom) begin
+  trace(X::Ob, A::Ob, B::Ob, f::Hom(otimes(X,A),otimes(X,B)))::Hom(A,B)
+end
+
+@syntax FreeTracedMonoidalCategory(ObExpr,HomExpr) TracedMonoidalCategory begin
+  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f,g))
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  # FIXME: `GAT.equations` fails to identify the implicit equation.
+  #trace(X::Ob, A::Ob, B::Ob, f::Hom) = new(X,A,B,f; strict=true)
+end
+
+function show_latex(io::IO, expr::HomExpr{:trace}; kw...)
+  X, A, B, f = args(expr)
+  print(io, "\\operatorname{Tr}_{$A,$B}^{$X} \\left($f\\right)")
 end

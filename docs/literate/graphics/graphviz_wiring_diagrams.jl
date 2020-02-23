@@ -72,6 +72,20 @@ to_graphviz(add_junctions!(to_wiring_diagram(f1)))
 #-
 to_graphviz(add_junctions!(to_wiring_diagram(f2)))
 
+# ### Traced monoidal category
+
+A, B, X, Y = Ob(FreeTracedMonoidalCategory, :A, :B, :X, :Y)
+f = Hom(:f, otimes(X,A), otimes(X,B))
+
+to_graphviz(trace(X, A, B, f))
+#-
+to_graphviz(trace(X, A, B, f), orientation=LeftToRight)
+#-
+g, h = Hom(:g, A, A), Hom(:h, B, B)
+
+trace_naturality = trace(X, A, B, compose(otimes(id(X),g), f, otimes(id(X),h)))
+to_graphviz(trace_naturality, orientation=LeftToRight)
+
 # ## Custom styles
 
 # The visual appearance of wiring diagrams can be customized by setting Graphviz
@@ -80,6 +94,9 @@ to_graphviz(add_junctions!(to_wiring_diagram(f2)))
 # Graphviz documentation. Cell attributes are passed to the primary cell of the
 # [HTML-like label](https://www.graphviz.org/doc/info/shapes.html#html) used for
 # the boxes.
+
+A, B, C = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C)
+f, g = Hom(:f, A, B), Hom(:g, B, C)
 
 to_graphviz(compose(f,g),
   labels = true, label_attr=:headlabel,
