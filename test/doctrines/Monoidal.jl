@@ -83,7 +83,7 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 @test proj1(A,B) == otimes(id(A), delete(B))
 @test proj2(A,B) == otimes(delete(A), id(B))
 
-# Infix notation (LaTeX)
+# LaTeX notation
 @test latex(mcopy(A)) == "\\Delta_{A}"
 @test latex(delete(A)) == "\\lozenge_{A}" 
 
@@ -104,7 +104,7 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 @test incl1(A,B) == otimes(id(A), create(B))
 @test incl2(A,B) == otimes(create(A), id(B))
 
-# Infix notation (LaTeX)
+# LaTeX notation
 @test latex(mmerge(A)) == "\\nabla_{A}"
 @test latex(create(A)) == "\\square_{A}"
 
@@ -120,7 +120,7 @@ f = Hom(:f, otimes(A,B), C)
 @test dom(curry(A,B,f)) == A
 @test codom(curry(A,B,f)) == hom(B,C)
 
-# Infix notation (LaTeX)
+# LaTeX notation
 @test latex(hom(A,B)) == "{B}^{A}"
 @test latex(hom(otimes(A,B),C)) == "{C}^{A \\otimes B}"
 @test latex(hom(A,otimes(B,C))) == "{\\left(B \\otimes C\\right)}^{A}"
@@ -159,7 +159,7 @@ f = Hom(:f, otimes(A,B), C)
 @test dom(curry(A,B,f)) == A
 @test codom(curry(A,B,f)) == hom(B,C)
 
-# Infix notation (LaTeX)
+# LaTeX notation
 @test latex(dual(A)) == "{A}^*"
 @test latex(dunit(A)) == "\\eta_{A}"
 @test latex(dcounit(A)) == "\\varepsilon_{A}"
@@ -180,7 +180,7 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 @test dagger(id(A)) == id(A)
 @test dagger(dagger(f)) == f
 
-# Infix notation (LaTeX)
+# LaTeX notation
 @test latex(dagger(f)) == "{f}^\\dagger"
 #@test latex(dagger(compose(f,g))) == "{\\left(f \\cdot g\\right)}^\\dagger"
 
@@ -197,3 +197,17 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 @test dagger(otimes(f,g)) == otimes(dagger(f),dagger(g))
 @test (dagger(otimes(compose(f,g),compose(g,f))) == 
        otimes(compose(dagger(g),dagger(f)),compose(dagger(f),dagger(g))))
+
+# Traced monoidal category
+##########################
+
+A, B, X, Y = Ob(FreeTracedMonoidalCategory, :A, :B, :X, :Y)
+f = Hom(:f, X⊗A, X⊗B)
+
+# Domains and codomains
+@test dom(trace(X, A, B, f)) == A
+@test codom(trace(X, A, B, f)) == B
+#@test_throws SyntaxDomainError trace(X, A, B, Hom(:g, A⊗X, B⊗X))
+
+# LaTeX notation
+@test latex(trace(X, A, B, f)) == "\\operatorname{Tr}_{A,B}^{X} \\left(f\\right)"
