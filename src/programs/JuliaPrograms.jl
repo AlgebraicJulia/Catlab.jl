@@ -21,7 +21,7 @@ using ...WiringDiagrams
 
 """ A block of Julia code with input and output variables.
 """
-mutable struct Block
+struct Block
   code::Expr
   inputs::Vector{<:Expr0}
   outputs::Vector{<:Expr0}
