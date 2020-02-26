@@ -44,7 +44,13 @@ d = layout_diagram(otimes(f,g), orientation=LeftToRight)
 A, B = Ob(FreeBiproductCategory, :A, :B)
 
 for expr in (mcopy(A), delete(A), mmerge(A), create(A))
-  @test map(l -> l.shape, box_layouts(layout_diagram(expr))) == [:junction]
+  d = layout_diagram(expr)
+  @test map(l -> l.shape, box_layouts(d)) == [:junction]
+end
+
+for expr in (mcopy(A⊗B), delete(A⊗B), mmerge(A⊗B), create(A⊗B))
+  d = layout_diagram(expr)
+  @test map(l -> l.shape, box_layouts(d)) == [:junction, :junction]
 end
 
 end

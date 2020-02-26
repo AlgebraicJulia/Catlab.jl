@@ -148,6 +148,9 @@ function layout_diagram(expr::HomExpr; kw...)::WiringDiagram
   layout_outer_ports!(diagram, opts, method=opts.outer_ports_layout)
 end
 
+# Morphism expression layout
+############################
+
 """ Lay out a morphism expression as a wiring diagram.
 """
 layout_hom_expr(f::HomExpr, opts) = layout_box(f, opts)
@@ -157,27 +160,29 @@ layout_hom_expr(f::HomExpr{:compose}, opts) =
 layout_hom_expr(f::HomExpr{:otimes}, opts) =
   otimes_with_layout!(map(arg -> layout_hom_expr(arg, opts), args(f)), opts)
 
-layout_hom_expr(f::HomExpr{:id}, opts) = layout_pure_wiring(f, opts)
-layout_hom_expr(f::HomExpr{:braid}, opts) = layout_pure_wiring(f, opts)
+layout_hom_expr(f::HomExpr{:id}, opts) =
+  layout_pure_wiring(f, opts, anchor_wires=opts.anchor_wires)
+layout_hom_expr(f::HomExpr{:braid}, opts) =
+  layout_pure_wiring(f, opts, anchor_wires=opts.anchor_wires)
 
-layout_hom_expr(f::HomExpr{:mcopy}, opts) = layout_box(f, opts, shape=:junction)
-layout_hom_expr(f::HomExpr{:delete}, opts) = layout_box(f, opts, shape=:junction)
-layout_hom_expr(f::HomExpr{:mmerge}, opts) = layout_box(f, opts, shape=:junction)
-layout_hom_expr(f::HomExpr{:create}, opts) = layout_box(f, opts, shape=:junction)
+layout_hom_expr(f::HomExpr{:mcopy}, opts) = layout_supply(f, opts, shape=:junction)
+layout_hom_expr(f::HomExpr{:delete}, opts) = layout_supply(f, opts, shape=:junction)
+layout_hom_expr(f::HomExpr{:mmerge}, opts) = layout_supply(f, opts, shape=:junction)
+layout_hom_expr(f::HomExpr{:create}, opts) = layout_supply(f, opts, shape=:junction)
 
 layout_hom_expr(f::HomExpr{:mplus}, opts) =
-  layout_box(f, opts, shape=:junction, style=:variant_junction)
+  layout_supply(f, opts, shape=:junction, style=:variant_junction)
 layout_hom_expr(f::HomExpr{:mzero}, opts) =
-  layout_box(f, opts, shape=:junction, style=:variant_junction)
+  layout_supply(f, opts, shape=:junction, style=:variant_junction)
 layout_hom_expr(f::HomExpr{:coplus}, opts) =
-  layout_box(f, opts, shape=:junction, style=:variant_junction)
+  layout_supply(f, opts, shape=:junction, style=:variant_junction)
 layout_hom_expr(f::HomExpr{:cozero}, opts) =
-  layout_box(f, opts, shape=:junction, style=:variant_junction)
+  layout_supply(f, opts, shape=:junction, style=:variant_junction)
 
 layout_hom_expr(f::HomExpr{:dunit}, opts) =
-  layout_box(f, opts, shape=:junction, visible=false, pad=false)
+  layout_supply(f, opts, shape=:junction, visible=false, pad=false)
 layout_hom_expr(f::HomExpr{:dcounit}, opts) =
-  layout_box(f, opts, shape=:junction, visible=false, pad=false)
+  layout_supply(f, opts, shape=:junction, visible=false, pad=false)
   
 layout_port(A::ObExpr{:dual}; kw...) =
   PortLayout(; value=A, reverse_wires=true, kw...)
@@ -185,8 +190,31 @@ wire_label(mime::MIME, A::ObExpr{:dual}) = wire_label(mime, first(A))
 
 layout_box(f::HomExpr, opts::LayoutOptions; kw...) =
   layout_box(collect(dom(f)), collect(codom(f)), opts; value=f, kw...)
+
 layout_pure_wiring(f::HomExpr, opts::LayoutOptions; kw...) =
   layout_pure_wiring(to_wiring_diagram(f, identity, identity), opts; kw...)
+
+function layout_supply(f::HomExpr, opts::LayoutOptions; kw...)
+  obs = collect(first(f))
+  n = length(obs)
+  ndom, ncodom = ndims(dom(f)) ÷ n, ndims(codom(f)) ÷ n
+  diagram = otimes_with_layout!(map(obs) do ob
+    layout_box(repeat([ob], ndom), repeat([ob], ncodom), opts; value=ob, kw...)
+  end, opts)
+  if n > 1 && ndom > 1
+    σ = reshape(permutedims(reshape(1:ndom*n, n, :)), :)
+    σ_diagram = permute(dom(diagram), σ, inverse=true)
+    σ_diagram = layout_pure_wiring(σ_diagram, opts, anchor_wires=false)
+    diagram = compose_with_layout!(σ_diagram, diagram, opts)
+  end
+  if n > 1 && ncodom > 1
+    σ = reshape(permutedims(reshape(1:ncodom*n, n, :)), :)
+    σ_diagram = permute(codom(diagram), σ)
+    σ_diagram = layout_pure_wiring(σ_diagram, opts, anchor_wires=false)
+    diagram = compose_with_layout!(diagram, σ_diagram, opts)
+  end
+  diagram
+end
 
 # Diagram layout
 ################
@@ -488,12 +516,13 @@ end
 
 """ Lay out the wires in a wiring diagram with no boxes.
 """
-function layout_pure_wiring(diagram::WiringDiagram, opts::LayoutOptions)
+function layout_pure_wiring(diagram::WiringDiagram, opts::LayoutOptions;
+                            anchor_wires::Bool=true)
   @assert nboxes(diagram) == 0
   inputs, outputs = input_ports(diagram), output_ports(diagram)
   size = minimum_diagram_size(length(inputs), length(outputs), opts)
   result = WiringDiagram(BoxLayout(size=size), inputs, outputs)
-  if opts.anchor_wires
+  if anchor_wires
     result = layout_outer_ports!(result, opts, method=:fixed)
     e1, e2 = svector(opts, 1, 0), svector(opts, 0, 1)
     for wire in wires(diagram)
