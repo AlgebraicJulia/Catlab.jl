@@ -63,7 +63,7 @@ to_composejl(σ, anchor_wires=false)
 
 # ### Biproduct category
 
-A, B = Ob(FreeBiproductCategory, :A, :B)
+A, B, C = Ob(FreeBiproductCategory, :A, :B, :C)
 f = Hom(:f, A, B)
 
 to_composejl(mcopy(A))
@@ -71,6 +71,10 @@ to_composejl(mcopy(A))
 to_composejl(delete(A))
 #-
 to_composejl(mcopy(A)⋅(f⊗f)⋅mmerge(B))
+#-
+to_composejl(mcopy(A⊗B), orientation=TopToBottom)
+#-
+to_composejl(mcopy(A⊗B⊗C), orientation=TopToBottom)
 
 # ### Compact closed category
 

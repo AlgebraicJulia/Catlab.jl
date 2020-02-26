@@ -67,7 +67,7 @@ to_tikz(σ, anchor_wires=false, arrowtip="Stealth", arrowtip_pos="-0.1pt",
 
 # ### Biproduct category
 
-A, B = Ob(FreeBiproductCategory, :A, :B)
+A, B, C = Ob(FreeBiproductCategory, :A, :B, :C)
 f = Hom(:f, A, B)
 
 to_tikz(mcopy(A), labels=true)
@@ -75,6 +75,10 @@ to_tikz(mcopy(A), labels=true)
 to_tikz(delete(A), labels=true)
 #-
 to_tikz(mcopy(A)⋅(f⊗f)⋅mmerge(B), labels=true)
+#-
+to_tikz(mcopy(A⊗B), orientation=TopToBottom, labels=true)
+#-
+to_tikz(mcopy(A⊗B⊗C), orientation=TopToBottom, labels=true)
 
 # ### Compact closed category
 

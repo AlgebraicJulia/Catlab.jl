@@ -41,16 +41,20 @@ d = layout_diagram(otimes(f,g), orientation=LeftToRight)
 @test box_values(layout_diagram(braid(A,B))) == []
 
 # Diagonals and codiagonals
-A, B = Ob(FreeBiproductCategory, :A, :B)
+A, B, C = Ob(FreeBiproductCategory, :A, :B, :C)
 
 for expr in (mcopy(A), delete(A), mmerge(A), create(A))
-  d = layout_diagram(expr)
-  @test map(l -> l.shape, box_layouts(d)) == [:junction]
+  @test map(l -> l.shape, box_layouts(layout_diagram(expr))) == [:junction]
 end
 
 for expr in (mcopy(A⊗B), delete(A⊗B), mmerge(A⊗B), create(A⊗B))
   d = layout_diagram(expr)
-  @test map(l -> l.shape, box_layouts(d)) == [:junction, :junction]
+  @test map(l -> l.shape, box_layouts(d)) == repeat([:junction], 2)
+end
+
+for expr in (mcopy(A⊗B⊗C), delete(A⊗B⊗C), mmerge(A⊗B⊗C), create(A⊗B⊗C))
+  d = layout_diagram(expr)
+  @test map(l -> l.shape, box_layouts(d)) == repeat([:junction], 3)
 end
 
 end

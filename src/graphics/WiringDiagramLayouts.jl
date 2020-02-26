@@ -52,7 +52,7 @@ svector(orient::LayoutOrientation, first, second) =
   orientation::LayoutOrientation = LeftToRight
   box_shape::Symbol = :rectangle
   outer_ports_layout::Symbol = :isotonic
-  anchor_wires::Bool = true
+  anchor_wires::Union{Bool,AbstractSet,AbstractVector} = [:id,:braid]
   base_box_size::Float64 = 2
   sequence_pad::Float64 = 2
   parallel_pad::Float64 = 1
@@ -160,10 +160,8 @@ layout_hom_expr(f::HomExpr{:compose}, opts) =
 layout_hom_expr(f::HomExpr{:otimes}, opts) =
   otimes_with_layout!(map(arg -> layout_hom_expr(arg, opts), args(f)), opts)
 
-layout_hom_expr(f::HomExpr{:id}, opts) =
-  layout_pure_wiring(f, opts, anchor_wires=opts.anchor_wires)
-layout_hom_expr(f::HomExpr{:braid}, opts) =
-  layout_pure_wiring(f, opts, anchor_wires=opts.anchor_wires)
+layout_hom_expr(f::HomExpr{:id}, opts) = layout_pure_wiring(f, opts)
+layout_hom_expr(f::HomExpr{:braid}, opts) = layout_pure_wiring(f, opts)
 
 layout_hom_expr(f::HomExpr{:mcopy}, opts) = layout_supply(f, opts, shape=:junction)
 layout_hom_expr(f::HomExpr{:delete}, opts) = layout_supply(f, opts, shape=:junction)
@@ -188,29 +186,34 @@ layout_port(A::ObExpr{:dual}; kw...) =
   PortLayout(; value=A, reverse_wires=true, kw...)
 wire_label(mime::MIME, A::ObExpr{:dual}) = wire_label(mime, first(A))
 
-layout_box(f::HomExpr, opts::LayoutOptions; kw...) =
+function layout_box(f::HomExpr, opts::LayoutOptions; kw...)
   layout_box(collect(dom(f)), collect(codom(f)), opts; value=f, kw...)
+end
 
-layout_pure_wiring(f::HomExpr, opts::LayoutOptions; kw...) =
-  layout_pure_wiring(to_wiring_diagram(f, identity, identity), opts; kw...)
+function layout_pure_wiring(f::HomExpr, opts::LayoutOptions; kw...)
+  layout_pure_wiring(to_wiring_diagram(f, identity, identity), opts;
+    anchor_wires=head(f) in opts.anchor_wires, kw...)
+end
 
-function layout_supply(f::HomExpr, opts::LayoutOptions; kw...)
-  obs = collect(first(f))
+function layout_supply(f::HomExpr, opts::LayoutOptions;
+                       ob::Union{ObExpr,Nothing}=nothing, kw...)
+  obs = collect(isnothing(ob) ? first(f)::ObExpr : ob)
   n = length(obs)
   ndom, ncodom = ndims(dom(f)) ÷ n, ndims(codom(f)) ÷ n
   diagram = otimes_with_layout!(map(obs) do ob
-    layout_box(repeat([ob], ndom), repeat([ob], ncodom), opts; value=ob, kw...)
+    layout_box(repeat([ob], ndom), repeat([ob], ncodom), opts; kw...)
   end, opts)
+  anchor_wires = head(f) in opts.anchor_wires
   if n > 1 && ndom > 1
     σ = reshape(permutedims(reshape(1:ndom*n, n, :)), :)
     σ_diagram = permute(dom(diagram), σ, inverse=true)
-    σ_diagram = layout_pure_wiring(σ_diagram, opts, anchor_wires=false)
+    σ_diagram = layout_pure_wiring(σ_diagram, opts, anchor_wires=anchor_wires)
     diagram = compose_with_layout!(σ_diagram, diagram, opts)
   end
   if n > 1 && ncodom > 1
     σ = reshape(permutedims(reshape(1:ncodom*n, n, :)), :)
     σ_diagram = permute(codom(diagram), σ)
-    σ_diagram = layout_pure_wiring(σ_diagram, opts, anchor_wires=false)
+    σ_diagram = layout_pure_wiring(σ_diagram, opts, anchor_wires=anchor_wires)
     diagram = compose_with_layout!(diagram, σ_diagram, opts)
   end
   diagram
