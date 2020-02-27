@@ -107,6 +107,14 @@ expr = compose(otimes(m,id(B)), otimes(id(B),b,id(B)), otimes(id(B),n))
 @test roundtrip(Hom(:m,A,I)⋅Hom(:n,I,B)) == Hom(:m,A,I)⊗Hom(:n,I,B)
 @test roundtrip(Hom(:m,I,I)⊗Hom(:n,I,I)) == Hom(:m,I,I)⊗Hom(:n,I,I)
 
+# Monoidal units with transitive reduction.
+@test roundtrip(Hom(:m,A,I)⊗id(B)) == Hom(:m,A,I)⊗id(B)
+@test roundtrip(id(A)⊗Hom(:m,I,B)) == id(A)⊗Hom(:m,I,B)
+@test roundtrip(id(A)⊗Hom(:m,I,I)) == id(A)⊗Hom(:m,I,I)
+
+expr = compose(id(A)⊗Hom(:m,I,A), Hom(:l, A⊗A, B⊗B), Hom(:n,B,I)⊗id(B))
+@test roundtrip(expr) == expr
+
 # Braidings.
 @test roundtrip(braid(A,B)) == braid(A,B)
 @test roundtrip(otimes(id(A),braid(B,C))) == otimes(id(A),braid(B,C))

@@ -178,7 +178,21 @@ end
 """ All possible transitive reductions of a wiring diagram.
 """
 function transitive_reduction!(Ob::Type, d::WiringDiagram)
-  reduced = transitive_reduction!(copy(graph(d)))
+  # Compute transitive reduction of underlying graph.
+  # First add extra edges for the "invisible wires" corresponding to monoidal
+  # units, since transitive reduction can be needed even in this case.
+  reduced = copy(graph(d))
+  for v in box_ids(d)
+    if isempty(input_ports(d, v))
+      add_edge!(reduced, input_id(d), v)
+    end
+    if isempty(output_ports(d, v))
+      add_edge!(reduced, v, output_id(d))
+    end
+  end
+  reduced = transitive_reduction!(reduced)
+  
+  # Add junction node for each wire removed by transitive reduction.
   for edge in collect(edges(graph(d)))
     if !has_edge(reduced, edge)
       for wire in wires(d, edge)
