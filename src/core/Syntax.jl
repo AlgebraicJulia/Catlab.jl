@@ -438,26 +438,21 @@ function parse_json_sexpr(syntax_module::Module, sexpr;
   signature = signature_module.class().signature
   type_lens = Dict(cons.name => length(cons.params) for cons in signature.types)
   
-  # The "value" type is
-  # - false if the sexpr should be parsed as a term (GAT expression)
-  # - true if the sexpr should be parsed as a value (Julia object)
-  function parse_impl(sexpr::Vector, ::Type{Val{false}})
+  function parse_impl(sexpr::Vector, ::Val{:expr})
     name = Symbol(parse_head(symbols ? Symbol(sexpr[1]) : sexpr[1]))
     nargs = length(sexpr) - 1
-    args = [
-      parse_impl(arg, Val{
-        (i == 1 && get(type_lens, name, nothing) == nargs-1) ||
-        isa(arg, Bool) || isa(arg, Number) || isa(arg, Nothing)
-      })
-      for (i, arg) in enumerate(sexpr[2:end])
-    ]
+    args = map(enumerate(sexpr[2:end])) do (i, arg)
+      arg_kind = ((i == 1 && get(type_lens, name, nothing) == nargs-1) ||
+                  arg isa Union{Bool,Number,Nothing}) ? :value : :expr
+      parse_impl(arg, Val(arg_kind))
+    end
     invoke_term(syntax_module, name, args...)
   end
-  parse_impl(x, ::Type{Val{true}}) = parse_value(x)
-  parse_impl(x::String, ::Type{Val{false}}) = parse_reference(symbols ? Symbol(x) : x)
-  parse_impl(x::String, ::Type{Val{true}}) = parse_value(symbols ? Symbol(x) : x)
+  parse_impl(x, ::Val{:value}) = parse_value(x)
+  parse_impl(x::String, ::Val{:expr}) = parse_reference(symbols ? Symbol(x) : x)
+  parse_impl(x::String, ::Val{:value}) = parse_value(symbols ? Symbol(x) : x)
   
-  parse_impl(sexpr, Val{false})
+  parse_impl(sexpr, Val(:expr))
 end
 
 disable_parse_json_reference(x) = error("Loading terms by name is not enabled")
