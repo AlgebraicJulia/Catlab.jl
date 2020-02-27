@@ -180,6 +180,8 @@ g = Hom(:g, Y, Z)
   ["Hom", "f", ["Ob", "X"], ["Ob", "Y"]],
   ["Hom", "g", ["Ob", "Y"], ["Ob", "Z"]],
 ]
+@test to_json_sexpr(f, by_reference=x->true) == "f"
+@test to_json_sexpr(compose(f,g), by_reference=x->true) == ["compose","f","g"]
 
 # From JSON
 @test parse_json_sexpr(FreeMonoid, [:Elem, "x"]) == Elem(FreeMonoid, :x)

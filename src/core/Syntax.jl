@@ -407,22 +407,16 @@ end
 The format is an S-expression encoded as JSON, e.g., "compose(f,g)" is
 represented as ["compose", f, g].
 """
-function to_json_sexpr(expr::GATExpr;
-    by_reference::Function = default_to_json_by_reference
-  )
+function to_json_sexpr(expr::GATExpr; by_reference::Function = x->false)
   if head(expr) == :generator && by_reference(first(expr))
     to_json_sexpr(first(expr))
   else
-    [ string(constructor_name(expr)); map(to_json_sexpr, args(expr)) ]
+    [ string(constructor_name(expr));
+      [ to_json_sexpr(arg; by_reference=by_reference) for arg in args(expr) ] ]
   end
 end
-to_json_sexpr(::Nothing) = nothing
-to_json_sexpr(x::String) = x
-to_json_sexpr(x::Real) = x
-to_json_sexpr(x::Bool) = x
-to_json_sexpr(x) = string(x)
-
-default_to_json_by_reference(x) = false
+to_json_sexpr(x::Union{Bool,Real,String,Nothing}; kw...) = x
+to_json_sexpr(x; kw...) = string(x)
 
 """ Deserialize expression from JSON-able S-expression.
 
@@ -430,7 +424,7 @@ If `symbols` is true (the default), strings are converted to symbols.
 """
 function parse_json_sexpr(syntax_module::Module, sexpr;
     parse_head::Function = identity,
-    parse_reference::Function = disable_parse_json_reference,
+    parse_reference::Function = x->error("Loading terms by name is disabled"),
     parse_value::Function = identity,
     symbols::Bool = true,
   )
@@ -454,8 +448,6 @@ function parse_json_sexpr(syntax_module::Module, sexpr;
   
   parse_impl(sexpr, Val(:expr))
 end
-
-disable_parse_json_reference(x) = error("Loading terms by name is not enabled")
 
 # Pretty-print
 ##############
