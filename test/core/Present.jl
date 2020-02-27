@@ -93,6 +93,18 @@ secretary = Hom(:secretary, Department, Employee)
   compose(secretary, works_in) => id(Department),
 ]
 
+# Check generators with compound type arguments.
+@present C(FreeSymmetricMonoidalCategory) begin
+  A::Ob
+  B::Ob
+  f::Hom(otimes(A,B),otimes(B,A))
+  scalar::Hom(munit(),munit()) # Nullary case.
+end
+A, B = Ob(FreeSymmetricMonoidalCategory, :A, :B)
+I = munit(FreeSymmetricMonoidalCategory.Ob)
+@test generator(C, :f) == Hom(:f, otimes(A,B), otimes(B,A))
+@test generator(C, :scalar) == Hom(:scalar, I, I)
+
 # Serialization
 ###############
 

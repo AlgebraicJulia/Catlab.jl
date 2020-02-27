@@ -164,6 +164,14 @@ end
 """
 function translate_generator(syntax_name::Symbol, name::Union{Symbol,Nothing},
                              type_expr)::Expr
+  invoke_ref = GlobalRef(Syntax, :invoke_term)
+  function rewrite(expr)
+    @match expr begin
+      Expr(:call, [name::Symbol, args...]) =>
+        Expr(:call, invoke_ref, syntax_name, QuoteNode(name), map(rewrite, args)...)
+      _ => expr
+    end
+  end
   type_name, args = @match type_expr begin
     sym::Symbol => (sym, [])
     Expr(:call, [sym::Symbol, args...]) => (sym, args)
@@ -172,11 +180,9 @@ function translate_generator(syntax_name::Symbol, name::Union{Symbol,Nothing},
   call_expr = Expr(
     :call, module_ref(:add_generator!),
     :_presentation,
-    Expr(:call, GlobalRef(Syntax, :invoke_term),
-         syntax_name,
-         QuoteNode(type_name),
+    Expr(:call, invoke_ref, syntax_name, QuoteNode(type_name),
          isnothing(name) ? :nothing : QuoteNode(name),
-         args...))
+         map(rewrite, args)...))
   isnothing(name) ? call_expr : :($(name) = $call_expr)
 end
 
