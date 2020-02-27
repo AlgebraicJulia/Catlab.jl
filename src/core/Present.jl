@@ -164,25 +164,23 @@ end
 """
 function translate_generator(syntax_name::Symbol, name::Union{Symbol,Nothing},
                              type_expr)::Expr
-  invoke_ref = GlobalRef(Syntax, :invoke_term)
   function rewrite(expr)
     @match expr begin
       Expr(:call, [name::Symbol, args...]) =>
-        Expr(:call, invoke_ref, syntax_name, QuoteNode(name), map(rewrite, args)...)
+        Expr(:call, GlobalRef(Syntax, :invoke_term), syntax_name,
+             QuoteNode(name), map(rewrite, args)...)
       _ => expr
     end
   end
   type_name, args = @match type_expr begin
-    sym::Symbol => (sym, [])
-    Expr(:call, [sym::Symbol, args...]) => (sym, args)
+    name::Symbol => (name, [])
+    Expr(:call, [name::Symbol, args...]) => (name, args)
     _ => throw(ParseError("Ill-formed type expression $type_expr"))
   end
   call_expr = Expr(
-    :call, module_ref(:add_generator!),
-    :_presentation,
-    Expr(:call, invoke_ref, syntax_name, QuoteNode(type_name),
-         isnothing(name) ? :nothing : QuoteNode(name),
-         map(rewrite, args)...))
+    :call, module_ref(:add_generator!), :_presentation,
+    rewrite(Expr(:call, type_name,
+                 isnothing(name) ? :nothing : QuoteNode(name), args...)))
   isnothing(name) ? call_expr : :($(name) = $call_expr)
 end
 
