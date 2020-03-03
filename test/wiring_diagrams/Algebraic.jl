@@ -283,6 +283,16 @@ S = singleton_diagram(AbelianBicategoryRelations.Hom, Box(:S,[:A],[:B]))
 @test mzero(A) != create(A)
 @test cozero(A) != delete(A)
 
+# Markov category
+#----------------
+
+A, B, C = [ Ports{MarkovCategory.Hom}([sym]) for sym in [:A, :B, :C] ]
+M = singleton_diagram(MarkovCategory.Hom, Box(:M,[:A],[:B]))
+N = singleton_diagram(MarkovCategory.Hom, Box(:N,[:B],[:C]))
+
+# Non-functoriality of expectation.
+@test expectation(compose(M,N)) != compose(expectation(M),expectation(N))
+
 # Operadic interface
 ####################
 

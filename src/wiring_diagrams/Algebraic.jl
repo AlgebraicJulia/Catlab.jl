@@ -20,7 +20,7 @@ using LightGraphs
 using ...GAT, ...Doctrines
 import ...Doctrines: dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid,
   mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
-  mplus, mzero, coplus, cozero, meet, join, top, bottom, trace
+  mplus, mzero, coplus, cozero, meet, join, top, bottom, trace, expectation
 import ...Syntax: functor, head
 using ..WiringDiagramCore, ..WiringLayers
 import ..WiringDiagramCore: Box, WiringDiagram, input_ports, output_ports
@@ -358,6 +358,19 @@ top(A::Ports{AbBiRel.Hom}, B::Ports{AbBiRel.Hom}) =
 bottom(A::Ports{AbBiRel.Hom}, B::Ports{AbBiRel.Hom}) =
   compose(cozero(A), mzero(B))
 
+# Markov category
+#----------------
+
+mcopy(A::Ports{MarkovCategory.Hom}, n::Int) = implicit_mcopy(A, n)
+
+function expectation(M::WiringDiagram{MarkovCategory.Hom})
+  if nboxes(M) <= 1
+    functor(M, identity, expectation_box)
+  else
+    singleton_diagram(MarkovCategory.Hom, expectation_box(M))
+  end
+end
+
 # Operadic interface
 ####################
 
@@ -597,5 +610,12 @@ mate(mate::MateBox) = mate.box
 # Normalize to apply mates before daggers.
 dagger(mate::MateBox) = DaggerBox(mate)
 mate(dagger::DaggerBox) = dagger(mate(dagger.box))
+
+# Expectations
+#-------------
+
+expectation_box(box::AbstractBox) = BoxOp{:expectation}(box)
+expectation_box(exp::BoxOp{:expectation}) = exp
+expectation_box(junction::Junction) = junction
 
 end
