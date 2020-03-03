@@ -264,7 +264,7 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
   kwargs = make_lookup_table(pres, syntax_module, unique_symbols(body))
   func_expr = compile_recording_expr(body, args,
     kwargs = sort!(collect(keys(kwargs))))
-  func = eval(func_expr)
+  func = parentmodule(syntax_module).eval(func_expr)
   
   # ...and then evaluate function that records the function calls.
   arg_obs = syntax_module.Ob[ last(arg) for arg in parsed_args ]

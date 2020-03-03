@@ -137,6 +137,12 @@ parsed = @program(C, (x::X, y::Y) -> mcopy{otimes{X,Y}}(x,y))
 parsed = @program(C, (x::X, y::Y) -> delete{otimes{X,Y}}(x,y))
 @test parsed == to_wiring_diagram(delete(otimes(X,Y)))
 
+parsed = @program(C, (x::X) -> Δ{X}(x))
+@test parsed == to_wiring_diagram(mcopy(X))
+
+parsed = @program(C, (x1::X, x2::X) -> ∇{X}(x1,x2))
+@test parsed == to_wiring_diagram(mmerge(X))
+
 parsed = @program(C, (xy::otimes{X,Y}) -> m(xy))
 @test parsed == to_wiring_diagram(m)
 
