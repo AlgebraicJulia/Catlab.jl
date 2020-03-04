@@ -25,7 +25,6 @@ end
 include("Category.jl")
 include("Monoidal.jl")
 include("Relations.jl")
-include("Markov.jl")
 
 include("Permutations.jl")
 

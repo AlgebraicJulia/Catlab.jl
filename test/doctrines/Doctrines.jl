@@ -16,10 +16,6 @@ end
   include("Monoidal.jl")
 end
 
-@testset "MarkovCategories" begin
-  include("Markov.jl")
-end
-
 @testset "Permutations" begin
   include("Permutations.jl")
 end
