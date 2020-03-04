@@ -14,6 +14,7 @@ end
 
 @testset "MonoidalCategories" begin
   include("Monoidal.jl")
+  include("AdditiveMonoidal.jl")
 end
 
 @testset "Permutations" begin
