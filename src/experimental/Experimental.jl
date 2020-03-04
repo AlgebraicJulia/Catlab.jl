@@ -1,7 +1,7 @@
 module Experimental
 
 include("AlgebraicNets.jl")
-include("ExpressionTrees.jl")
+include("MathFormulas.jl")
 include("Markov.jl")
 
 end

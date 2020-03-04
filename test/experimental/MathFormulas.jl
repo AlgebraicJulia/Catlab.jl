@@ -1,10 +1,10 @@
-module TestExpressionTrees
+module TestMathFormulas
 
 using Test
 
 using Catlab.WiringDiagrams
 using Catlab.Experimental.AlgebraicNets
-using Catlab.Experimental.ExpressionTrees
+using Catlab.Experimental.MathFormulas
 
 # Conversion
 ############

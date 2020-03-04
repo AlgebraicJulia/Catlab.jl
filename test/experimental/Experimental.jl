@@ -4,8 +4,8 @@ using Test
   include("AlgebraicNets.jl")
 end
 
-@testset "ExpressionTrees" begin
-  include("ExpressionTrees.jl")
+@testset "MathFormulas" begin
+  include("MathFormulas.jl")
 end
 
 @testset "MarkovCategories" begin
