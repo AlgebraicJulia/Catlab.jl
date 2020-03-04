@@ -87,27 +87,6 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 @test latex(mcopy(A)) == "\\Delta_{A}"
 @test latex(delete(A)) == "\\lozenge_{A}" 
 
-# Cocartesian category
-######################
-
-A, B = Ob(FreeCocartesianCategory, :A, :B)
-f, g = Hom(:f, A, B), Hom(:g, B, A)
-
-# Domains and codomains
-@test dom(mmerge(A)) == otimes(A,A)
-@test codom(mmerge(A)) == A
-@test dom(create(A)) == I
-@test codom(create(A)) == A
-
-# Derived syntax
-@test copair(f,f) == compose(otimes(f,f), mmerge(B))
-@test incl1(A,B) == otimes(id(A), create(B))
-@test incl2(A,B) == otimes(create(A), id(B))
-
-# LaTeX notation
-@test latex(mmerge(A)) == "\\nabla_{A}"
-@test latex(create(A)) == "\\square_{A}"
-
 # Cartesian closed category
 ###########################
 
