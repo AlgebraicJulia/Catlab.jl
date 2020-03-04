@@ -2,7 +2,6 @@ export MonoidalCategory, otimes, munit, ⊗, collect, ndims,
   SymmetricMonoidalCategory, FreeSymmetricMonoidalCategory, braid,
   MonoidalCategoryWithDiagonals, CartesianCategory, FreeCartesianCategory,
   mcopy, delete, pair, proj1, proj2, Δ, ◇,
-  MonoidalCategoryWithCodiagonals, CocartesianCategory, FreeCocartesianCategory,
   mmerge, create, copair, incl1, incl2, ∇, □,
   MonoidalCategoryWithBidiagonals, BiproductCategory, FreeBiproductCategory,
   CartesianClosedCategory, FreeCartesianClosedCategory, hom, ev, curry,
@@ -147,60 +146,6 @@ function show_latex(io::IO, expr::HomExpr{:mcopy}; kw...)
 end
 function show_latex(io::IO, expr::HomExpr{:delete}; kw...)
   Syntax.show_latex_script(io, expr, "\\lozenge")
-end
-
-# Cocartesian category
-######################
-
-""" Doctrine of *monoidal category with codiagonals*
-
-A monoidal category with codiagonals is a symmetric monoidal category equipped
-with coherent collections of merging and creating morphisms (monoids).
-Unlike in a cocartesian category, the naturality axioms need not be satisfied.
-
-For references, see `MonoidalCategoryWithDiagonals`.
-"""
-@signature SymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithCodiagonals(Ob,Hom) begin
-  mmerge(A::Ob)::Hom(otimes(A,A),A)
-  create(A::Ob)::Hom(munit(),A)
-
-  # Unicode syntax
-  ∇(A::Ob) = mmerge(A)
-  □(A::Ob) = create(A)
-end
-
-""" Doctrine of *cocartesian category*
-
-Actually, this is a cocartesian *symmetric monoidal* category but we omit these
-qualifiers for brevity.
-"""
-@signature MonoidalCategoryWithCodiagonals(Ob,Hom) => CocartesianCategory(Ob,Hom) begin
-  copair(f::Hom(A,C), g::Hom(B,C))::Hom(otimes(A,B),C) <= (A::Ob, B::Ob, C::Ob)
-  incl1(A::Ob, B::Ob)::Hom(A,otimes(A,B))
-  incl2(A::Ob, B::Ob)::Hom(B,otimes(A,B))
-end
-
-""" Syntax for a free cocartesian category.
-
-In this syntax, the copairing and inclusion operations are defined using
-merging and creation, and do not have their own syntactic elements.
-Of course, this convention could be reversed.
-"""
-@syntax FreeCocartesianCategory(ObExpr,HomExpr) CocartesianCategory begin
-  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
-  
-  copair(f::Hom, g::Hom) = compose(otimes(f,g), mmerge(codom(f)))
-  incl1(A::Ob, B::Ob) = otimes(id(A), create(B))
-  incl2(A::Ob, B::Ob) = otimes(create(A), id(B))
-end
-
-function show_latex(io::IO, expr::HomExpr{:mmerge}; kw...)
-  Syntax.show_latex_script(io, expr, "\\nabla")
-end
-function show_latex(io::IO, expr::HomExpr{:create}; kw...)
-  Syntax.show_latex_script(io, expr, "\\square")
 end
 
 # Biproduct category
