@@ -174,6 +174,9 @@ function signature_code(main_class, base_mod, base_params)
   fns = interface(class)
   toplevel = [ generate_function(replace_symbols(bindings, f)) for f in fns ]
 
+  # add to toplevel
+  toplevel = [toplevel; [Expr(:(=), Expr(:call, a, Expr(:..., :args)), Expr(:call, signature.aliases[a], Expr(:..., :args))) for a in keys(signature.aliases)]]
+
   # Modules must be at top level:
   # https://github.com/JuliaLang/julia/issues/21009
   Expr(:toplevel, mod, toplevel...)
