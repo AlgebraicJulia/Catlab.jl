@@ -62,8 +62,8 @@ bicategory of relations (`AbelianBicategoryRelations`), written additively.
   dagger(f::Hom(A,B))::Hom(A,B) <= (A::Ob, B::Ob)
 
   # Self-dual compact closed category.
-  dunit(A::Ob)::Hom(munit(), otimes(A,A))
-  dcounit(A::Ob)::Hom(otimes(A,A), munit())
+  dunit(A::Ob)::Hom(ozero(), oplus(A,A))
+  dcounit(A::Ob)::Hom(oplus(A,A), ozero())
 
   # Merging and creating relations (converses of copying and deleting maps).
   mmerge(A::Ob)::Hom(oplus(A,A),A)
