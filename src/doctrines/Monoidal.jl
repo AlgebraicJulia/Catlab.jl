@@ -24,10 +24,10 @@ signature for weak monoidal categories later.
 """
 @signature Category(Ob,Hom) => MonoidalCategory(Ob,Hom) begin
   otimes(A::Ob, B::Ob)::Ob
-  otimes(f::Hom(A,B), g::Hom(C,D))::Hom(otimes(A,C),otimes(B,D)) <=
+  otimes(f::Hom(A,B), g::Hom(C,D))::Hom(otimes(A,C),otimes(B,D)) ⊣
     (A::Ob, B::Ob, C::Ob, D::Ob)
   munit()::Ob
-  
+
   # Unicode syntax
   ⊗(A::Ob, B::Ob) = otimes(A, B)
   ⊗(f::Hom, g::Hom) = otimes(f, g)
@@ -108,7 +108,7 @@ References:
 @signature SymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithDiagonals(Ob,Hom) begin
   mcopy(A::Ob)::Hom(A,otimes(A,A))
   delete(A::Ob)::Hom(A,munit())
-  
+
   # Unicode syntax
   Δ(A::Ob) = mcopy(A)
   ◇(A::Ob) = delete(A)
@@ -120,7 +120,7 @@ Actually, this is a cartesian *symmetric monoidal* category but we omit these
 qualifiers for brevity.
 """
 @signature MonoidalCategoryWithDiagonals(Ob,Hom) => CartesianCategory(Ob,Hom) begin
-  pair(f::Hom(A,B), g::Hom(A,C))::Hom(A,otimes(B,C)) <= (A::Ob, B::Ob, C::Ob)
+  pair(f::Hom(A,B), g::Hom(A,C))::Hom(A,otimes(B,C)) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::Hom(otimes(A,B),A)
   proj2(A::Ob, B::Ob)::Hom(otimes(A,B),B)
 end
@@ -135,7 +135,7 @@ Of course, this convention could be reversed.
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
-  
+
   pair(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g))
   proj1(A::Ob, B::Ob) = otimes(id(A), delete(B))
   proj2(A::Ob, B::Ob) = otimes(delete(A), id(B))
@@ -166,7 +166,7 @@ supported.
   mmerge(A::Ob)::Hom(otimes(A,A),A)
   delete(A::Ob)::Hom(A,munit())
   create(A::Ob)::Hom(munit(),A)
-  
+
   # Unicode syntax
   ∇(A::Ob) = mmerge(A)
   Δ(A::Ob) = mcopy(A)
@@ -183,8 +183,8 @@ FIXME: This signature should extend `MonoidalCategoryWithBidiagonals`,
 yet supported.
 """
 @signature MonoidalCategoryWithBidiagonals(Ob,Hom) => BiproductCategory(Ob,Hom) begin
-  pair(f::Hom(A,B), g::Hom(A,C))::Hom(A,otimes(B,C)) <= (A::Ob, B::Ob, C::Ob)
-  copair(f::Hom(A,C), g::Hom(B,C))::Hom(otimes(A,B),C) <= (A::Ob, B::Ob, C::Ob)
+  pair(f::Hom(A,B), g::Hom(A,C))::Hom(A,otimes(B,C)) ⊣ (A::Ob, B::Ob, C::Ob)
+  copair(f::Hom(A,C), g::Hom(B,C))::Hom(otimes(A,B),C) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::Hom(otimes(A,B),A)
   proj2(A::Ob, B::Ob)::Hom(otimes(A,B),B)
   incl1(A::Ob, B::Ob)::Hom(A,otimes(A,B))
@@ -214,12 +214,12 @@ A CCC is a cartesian category with internal homs (aka, exponential objects).
 @signature CartesianCategory(Ob,Hom) => CartesianClosedCategory(Ob,Hom) begin
   # Internal hom of A and B, an object representing Hom(A,B)
   hom(A::Ob, B::Ob)::Ob
-  
+
   # Evaluation map
   ev(A::Ob, B::Ob)::Hom(otimes(hom(A,B),A),B)
-  
+
   # Currying (aka, lambda abstraction)
-  curry(A::Ob, B::Ob, f::Hom(otimes(A,B),C))::Hom(A,hom(B,C)) <= (C::Ob)
+  curry(A::Ob, B::Ob, f::Hom(otimes(A,B),C))::Hom(A,hom(B,C)) ⊣ (C::Ob)
 end
 
 """ Syntax for a free cartesian closed category.
@@ -230,7 +230,7 @@ See also `FreeCartesianCategory`.
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
-  
+
   pair(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g))
   proj1(A::Ob, B::Ob) = otimes(id(A), delete(B))
   proj2(A::Ob, B::Ob) = otimes(delete(A), id(B))
@@ -259,16 +259,16 @@ end
 @signature SymmetricMonoidalCategory(Ob,Hom) => CompactClosedCategory(Ob,Hom) begin
   # Dual A^* of object A
   dual(A::Ob)::Ob
-  
+
   # Unit of duality, aka the coevaluation map
   dunit(A::Ob)::Hom(munit(), otimes(dual(A),A))
-  
+
   # Counit of duality, aka the evaluation map
   dcounit(A::Ob)::Hom(otimes(A,dual(A)), munit())
-  
+
   # Adjoint mate of morphism f.
-  mate(f::Hom(A,B))::Hom(dual(B),dual(A)) <= (A::Ob, B::Ob)
-  
+  mate(f::Hom(A,B))::Hom(dual(B),dual(A)) ⊣ (A::Ob, B::Ob)
+
   # Closed monoidal category
   hom(A::Ob, B::Ob) = otimes(B, dual(A))
   ev(A::Ob, B::Ob) = otimes(id(B), compose(braid(dual(A),A), dcounit(A)))
@@ -313,7 +313,7 @@ end
 """ Doctrine of *dagger category*
 """
 @signature Category(Ob,Hom) => DaggerCategory(Ob,Hom) begin
-  dagger(f::Hom(A,B))::Hom(B,A) <= (A::Ob, B::Ob)
+  dagger(f::Hom(A,B))::Hom(B,A) ⊣ (A::Ob, B::Ob)
 end
 
 @syntax FreeDaggerCategory(ObExpr,HomExpr) DaggerCategory begin
@@ -336,7 +336,7 @@ FIXME: This signature should extend both `DaggerCategory` and
 `SymmetricMonoidalCategory`, but multiple inheritance is not yet supported.
 """
 @signature SymmetricMonoidalCategory(Ob,Hom) => DaggerSymmetricMonoidalCategory(Ob,Hom) begin
-  dagger(f::Hom(A,B))::Hom(B,A) <= (A::Ob, B::Ob)
+  dagger(f::Hom(A,B))::Hom(B,A) ⊣ (A::Ob, B::Ob)
 end
 
 @syntax FreeDaggerSymmetricMonoidalCategory(ObExpr,HomExpr) DaggerSymmetricMonoidalCategory begin
@@ -362,7 +362,7 @@ FIXME: This signature should extend both `DaggerCategory` and
 `CompactClosedCategory`, but multiple inheritance is not yet supported.
 """
 @signature CompactClosedCategory(Ob,Hom) => DaggerCompactCategory(Ob,Hom) begin
-  dagger(f::Hom(A,B))::Hom(B,A) <= (A::Ob, B::Ob)
+  dagger(f::Hom(A,B))::Hom(B,A) ⊣ (A::Ob, B::Ob)
 end
 
 @syntax FreeDaggerCompactCategory(ObExpr,HomExpr) DaggerCompactCategory begin

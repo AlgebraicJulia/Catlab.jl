@@ -1,4 +1,4 @@
-# Programs
+# [Programs](@id programs)
 
 ```@meta
 CurrentModule = Catlab.Programs
