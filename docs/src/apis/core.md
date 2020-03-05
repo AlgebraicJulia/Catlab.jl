@@ -9,7 +9,7 @@ expressions in typed algebraic structures, including categories and monoidal
 categories. Objects, morphisms, and even higher-order morphisms are represented
 as typed symbolic expressions. The expressions can be manipulated abstractly or
 transformed, usually functorially, into more concrete representations, such as
-[wiring diagrams](/apis/wiring_diagrams) or [Julia functions](/apis/programs).
+[wiring diagrams](@ref wiring_diagrams) or [Julia functions](@ref programs).
 
 The basic elements of this system are:
 
