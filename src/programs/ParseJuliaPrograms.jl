@@ -11,6 +11,7 @@ using ...Catlab
 import ...Meta: Expr0
 using ...Doctrines: ObExpr, HomExpr
 using ...WiringDiagrams
+using ..GenerateJuliaPrograms: make_return_value
 
 
 """ Parse a wiring diagram from a Julia program.
@@ -212,18 +213,6 @@ normalize_arguments(::Nothing) = ()
 normalize_arguments(x) = ([x],)
 flatten_vec(xs::Vector) = mapreduce(flatten_vec, vcat, xs; init=[])
 flatten_vec(x) = [x]
-
-""" Return a zero, one, or more values, following Julia conventions.
-"""
-function make_return_value(values)
-  if isempty(values)          # Nullary case.
-    nothing
-  elseif length(values) == 1  # Unary case.
-    first(values)
-  else
-    Tuple(values)             # General case.
-  end
-end
 
 """ Set of all symbols occuring in a Julia expression.
 """

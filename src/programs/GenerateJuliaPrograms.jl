@@ -1,7 +1,8 @@
 """ Compile or evaluate morphisms as Julia programs.
 """
 module GenerateJuliaPrograms
-export Block, CompileState, compile, compile_expr, compile_block
+export Block, CompileState, compile, compile_expr, compile_block,
+  evaluate, evaluate_hom
 
 using Compat
 
@@ -178,6 +179,62 @@ function genvar(state::CompileState; prefix::Symbol=:v)::Symbol
 end
 function genvars(state::CompileState, n::Int; prefix::Symbol=:v)::Vector{Symbol}
   Symbol[ genvar(state; prefix=prefix) for i in 1:n ]
+end
+
+# Evaluation
+############
+
+""" Evaluate a morphism as a function.
+
+If the morphism will be evaluated only once (possibly with vectorized inputs),
+then direct evaluation will be much faster than compiling (via `compile`) and
+evaluating a standard Julia function.
+
+Compare with [`functor`](@ref).
+"""
+function evaluate(f::HomExpr, xs...; kw...)
+  make_return_value(evaluate_hom(f, collect(xs); kw...))
+end
+
+function evaluate_hom(f::HomExpr{:generator}, xs::Vector;
+                      generators::AbstractDict=Dict(), broadcast::Bool=false)
+  fun = generators[first(f)]
+  y = broadcast ? fun.(xs...) : fun(xs...)
+  y isa Tuple ? collect(y) : [y]
+end
+
+function evaluate_hom(f::HomExpr{:compose}, xs::Vector; kw...)
+  foldl((ys, g) -> evaluate_hom(g, ys; kw...), args(f); init=xs)
+end
+
+function evaluate_hom(f::HomExpr{:otimes}, xs::Vector; kw...)
+  i = 1
+  mapreduce(vcat, args(f); init=[]) do g
+    m = ndims(dom(g))
+    ys = evaluate_hom(g, xs[i:i+m-1]; kw...)
+    i += m
+    ys
+  end
+end
+
+evaluate_hom(f::HomExpr{:id}, xs::Vector; kw...) = xs
+evaluate_hom(f::HomExpr{:braid}, xs::Vector; kw...) = [xs[2], xs[1]]
+
+evaluate_hom(f::HomExpr{:mcopy}, xs::Vector; kw...) = begin
+  reduce(vcat, fill(xs, ndims(codom(f)) ÷ ndims(dom(f))); init=[])
+end
+evaluate_hom(f::HomExpr{:delete}, xs::Vector; kw...) = []
+
+""" Return a zero, one, or more values, following Julia conventions.
+"""
+function make_return_value(values)
+  if isempty(values)          # Nullary case.
+    nothing
+  elseif length(values) == 1  # Unary case.
+    first(values)
+  else                        # General case.
+    Tuple(values)
+  end
 end
 
 end
