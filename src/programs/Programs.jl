@@ -1,11 +1,13 @@
-""" Generating and parsing expression trees and Julia programs.
+""" Generate and parse computer programs representing morphisms.
 """
 module Programs
 
 using Reexport
 
-include("JuliaPrograms.jl")
+include("GenerateJuliaPrograms.jl")
+include("ParseJuliaPrograms.jl")
 
-@reexport using .JuliaPrograms
+@reexport using .GenerateJuliaPrograms
+@reexport using .ParseJuliaPrograms
 
 end

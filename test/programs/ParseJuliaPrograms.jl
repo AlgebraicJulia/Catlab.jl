@@ -1,10 +1,10 @@
-module TestJuliaPrograms
+module TestParseJuliaPrograms
 
 using Test
 
 using Catlab, Catlab.Doctrines, Catlab.WiringDiagrams
-using Catlab.Programs.JuliaPrograms
-using Catlab.Programs.JuliaPrograms: normalize_arguments
+using Catlab.Programs
+using Catlab.Programs.ParseJuliaPrograms: normalize_arguments
 
 @present C(FreeBiproductCategory) begin
   W::Ob
@@ -19,21 +19,11 @@ using Catlab.Programs.JuliaPrograms: normalize_arguments
   n::Hom(otimes(W,Z),otimes(X,Y))
 end
 
-# Compilation
-#############
-
-W, X, Y, Z = generators(C, [:W, :X, :Y, :Z])
-f, g, h = generators(C, [:f, :g, :h])
-
-@test compile(f) isa Function
-@test compile(compose(f,g)) isa Function
-@test compile(otimes(f,h)) isa Function
-@test compile(compose(f, mcopy(Y), otimes(g,g))) isa Function
-
 # Parsing
 #########
 
-f, g, m, n = generators(C, [:f, :g, :m, :n])
+W, X, Y, Z = generators(C, [:W, :X, :Y, :Z])
+f, g, h, m, n = generators(C, [:f, :g, :h, :m, :n])
 
 # Generator.
 

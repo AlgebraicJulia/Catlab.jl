@@ -1,5 +1,9 @@
 using Test
 
-@testset "JuliaPrograms" begin
-  include("JuliaPrograms.jl")
+@testset "GenerateJuliaPrograms" begin
+  include("GenerateJuliaPrograms.jl")
+end
+
+@testset "ParseJuliaPrograms" begin
+  include("ParseJuliaPrograms.jl")
 end

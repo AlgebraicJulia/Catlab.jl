@@ -21,8 +21,8 @@ import ...Doctrines: Ob, Hom, dom, codom,
   id, compose, ⋅, ∘, otimes, ⊗, munit, braid, mcopy, delete, mmerge, create
 using ...WiringDiagrams: WiringLayer
 using ...Programs
-import ...Programs: compile, compile_expr, compile_block
-import ...Programs.JuliaPrograms: genvar, genvars, to_function_expr,
+import ...Programs: compile, compile_expr, compile_block, evaluate_hom
+import ...Programs.GenerateJuliaPrograms: genvar, genvars, to_function_expr,
   generator_expr, input_exprs
 
 # Syntax
@@ -244,33 +244,18 @@ end
 # Evaluation
 ############
 
-""" Evaluate an algebraic network without first compiling it.
-
-If the network will only be evaluated once (possibly with vectorized inputs),
-then direct evaluation will be much faster than compiling with Julia's JIT.
-"""
-function evaluate(f::AlgebraicNet.Hom, xs...)
-  # The `eval_impl` methods use a standarized input/output format:
-  # a vector of the same length as the (co)domain.
-  ys = eval_impl(f, collect(xs))
-  length(ys) == 1 ? ys[1] : tuple(ys...)
-end
-
-function eval_impl(f::AlgebraicNet.Hom{:compose}, xs::Vector)
-  foldl((ys,g) -> eval_impl(g,ys), args(f); init=xs)
-end
-
-function eval_impl(f::AlgebraicNet.Hom{:otimes}, xs::Vector)
-  ys, i = [], 1
-  for g in args(f)
-    m = ndims(dom(g))
-    append!(ys, eval_impl(g, xs[i:i+m-1]))
-    i += m
+function evaluate_hom(f::AlgebraicNet.Hom{:generator}, xs::Vector; kw...)
+  value = first(f)
+  y = if value isa Symbol && head(dom(f)) != :munit
+    # Broadcasting function call.
+    getfield(Main, value).(xs...)
+  else
+    value
   end
-  ys
+  y isa Tuple ? collect(y) : [y]
 end
 
-function eval_impl(f::AlgebraicNet.Hom{:wiring}, xs::Vector)
+function evaluate_hom(f::AlgebraicNet.Hom{:wiring}, xs::Vector; kw...)
   # XXX: We can't properly preallocate the y's because we don't their dims.
   ys = repeat(Any[0.0], ndims(codom(f)))
   for (src, tgts) in first(f).wires
@@ -282,24 +267,9 @@ function eval_impl(f::AlgebraicNet.Hom{:wiring}, xs::Vector)
   ys
 end
 
-eval_impl(f::AlgebraicNet.Hom{:id}, xs::Vector) = xs
-eval_impl(f::AlgebraicNet.Hom{:braid}, xs::Vector) = [xs[2], xs[1]]
-eval_impl(f::AlgebraicNet.Hom{:mcopy}, xs::Vector) = reduce(vcat, fill(xs, last(f)))
-eval_impl(f::AlgebraicNet.Hom{:delete}, xs::Vector) = []
-eval_impl(f::AlgebraicNet.Hom{:mmerge}, xs::Vector) = [ .+(xs...) ]
-eval_impl(f::AlgebraicNet.Hom{:create}, xs::Vector) = zeros(ndims(codom(f)))
-eval_impl(f::AlgebraicNet.Hom{:linear}, xs::Vector) = first(f) * xs
-
-function eval_impl(f::AlgebraicNet.Hom{:generator}, xs::Vector)
-  value = first(f)
-  result = if isa(value, Symbol) && head(dom(f)) != :munit
-    # FIXME: Broadcast by default? See also `compile`.
-    getfield(Main, value).(xs...)
-  else
-    value
-  end
-  isa(result, Tuple) ? collect(result) : [ result ]
-end
+evaluate_hom(f::AlgebraicNet.Hom{:mmerge}, xs::Vector; kw...) = [reduce(+, xs)]
+evaluate_hom(f::AlgebraicNet.Hom{:create}, xs::Vector; kw...) = zeros(ndims(codom(f)))
+evaluate_hom(f::AlgebraicNet.Hom{:linear}, xs::Vector; kw...) = first(f) * xs
 
 # Display
 #########
