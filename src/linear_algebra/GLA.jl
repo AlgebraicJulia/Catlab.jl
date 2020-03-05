@@ -3,16 +3,18 @@ export LinearMaps, FreeLinearMaps, LinearRelations,
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, ozero, braid,
   dagger, dunit, docunit, mcopy, Δ, delete, ◇, mmerge, ∇, create, □,
   mplus, ⊞, mzero, coplus, cozero, plus, meet, top, join, bottom,
-  scalar, antipode, ⊟, adjoint
+  scalar, antipode, ⊟, adjoint, evaluate
 
 import Base: +
 import LinearAlgebra: adjoint
 
-using ...GAT, ...Syntax, ...Doctrines
+using ...Catlab, ...Doctrines
 import ...Doctrines:
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, ozero, braid,
   dagger, dunit, dcounit, mcopy, Δ, delete, ◇, mmerge, ∇, create, □,
   mplus, mzero, coplus, cozero, meet, top, join, bottom
+using ...Programs
+import ...Programs: evaluate_hom
 
 # Doctrines
 ###########
@@ -81,5 +83,35 @@ bicategory of relations (`AbelianBicategoryRelations`), written additively.
   ∇(A::Ob) = mmerge(A)
   □(A::Ob) = create(A)
 end
+
+# Evaluation
+############
+
+function evaluate_hom(f::FreeLinearMaps.Hom{:generator}, xs::Vector;
+                      generators::AbstractDict=Dict())
+  M = generators[f]
+  x = reduce(vcat, xs; init=eltype(M)[])
+  [ M*x ]
+end
+
+function evaluate_hom(f::FreeLinearMaps.Hom{:mplus}, xs::Vector; kw...)
+  [ reduce(+, xs) ]
+end
+function evaluate_hom(f::FreeLinearMaps.Hom{:mzero}, xs::Vector;
+                      generators::AbstractDict=Dict())
+  map(collect(codom(f))) do A
+    dims = generators[A]
+    zeros(dims...)
+  end
+end
+
+function evaluate_hom(f::FreeLinearMaps.Hom{:plus}, xs::Vector; kw...)
+  mapreduce(+, args(f)) do g
+    evaluate_hom(g, xs; kw...)
+  end
+end
+
+evaluate_hom(f::FreeLinearMaps.Hom{:scalar}, xs::Vector; kw...) = last(f) .* xs
+evaluate_hom(f::FreeLinearMaps.Hom{:antipode}, xs::Vector; kw...) = -1 .* xs
 
 end
