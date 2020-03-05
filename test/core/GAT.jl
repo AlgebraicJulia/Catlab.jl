@@ -154,14 +154,12 @@ category_signature = GAT.Signature(types, terms, axioms, aliases)
   @op Hom :→
 
   id(X::Ob)::Hom(X,X)
-  compose(f::Hom(X,Y),g::Hom(Y,Z))::Hom(X,Z) ⊣ (X::Ob, Y::Ob, Z::Ob)
+  (compose(f::Hom(X,Y),g::Hom(Y,Z))::Hom(X,Z)) where (X::Ob, Y::Ob, Z::Ob)
 
-  # TODO: Fix abbreviation for axioms
-  # compose(f,id(B)) == compose(f,id(B::Ob))
-  compose(compose(f,g),h) == compose(f,compose(g,h)) ⊣ (
+  (compose(compose(f,g),h) == compose(f,compose(g,h))) where (
     A::Ob, B::Ob, C::Ob, D::Ob, f::Hom(A,B), g::Hom(B,C), h::Hom(C,D))
-  compose(f,id(B)) == f ⊣ (A::Ob, B::Ob, f::Hom(A,B))
-  compose(id(A),f) == f ⊣ (A::Ob, B::Ob, f::Hom(A,B))
+  (compose(f,id(B)) == f) where (A::Ob, B::Ob, f::Hom(A,B))
+  (compose(id(A),f) == f) where (A::Ob, B::Ob, f::Hom(A,B))
 end
 
 @test CategoryAbbrev.class().signature == category_signature

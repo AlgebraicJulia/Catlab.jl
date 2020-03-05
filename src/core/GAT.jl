@@ -209,7 +209,7 @@ function parse_signature_body(expr::Expr)
   axioms = AxiomConstructor[]
   funs = JuliaFunction[]
   for elem in strip_lines(expr).args
-    elem = replace_symbols(aliases, elem)
+    elem = replace_symbols(aliases, strip_lines(elem))
     head = last(parse_docstring(elem)).head
     if head in (:(::), :call, :comparison, :where)
       cons = parse_constructor(elem)
@@ -227,7 +227,7 @@ function parse_signature_body(expr::Expr)
     elseif head in (:(=), :function)
       push!(funs, parse_function(elem))
     elseif head == :macrocall && elem.args[1] == Symbol("@op")
-      aliases[elem.args[4].value] = elem.args[3]
+      aliases[elem.args[3].value] = elem.args[2]
     else
       throw(ParseError("Ill-formed signature element $elem"))
     end
