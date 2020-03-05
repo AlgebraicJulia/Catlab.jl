@@ -72,7 +72,7 @@ constructors*, `id` (identity) and `compose` (composition).
 Notice how the return types of the term constructors depend on the argument
 values. For example, the term `id(A)` has type `Hom(A,A)`. The term constructor
 `compose` also uses *context variables*, listed to the right of the `⊣`
-symbol. These context variables can also be defined after the `where` clause,
+symbol. These context variables can also be defined after a `where` clause,
 but the left hand side must be surrounded by parentheses. This allows us to
 write `compose(f,g)`, instead of the more verbose `compose(A,B,C,f,g)` (for
 discussion, see Cartmell, 1986, Sec 10: Informal syntax).
