@@ -139,12 +139,12 @@ end
 function signature_code(main_class, base_mod, base_params)
   # TODO: Generate code to do something with main_class.signature.axioms
   # Add types/terms/functions from base class, if provided.
+  main_sig = main_class.signature
   if isnothing(base_mod)
     class = main_class
   else
     base_class = base_mod.class()
     bindings = Dict(zip(base_class.type_params, base_params))
-    main_sig = main_class.signature
     base_sig = replace_types(bindings, base_class.signature)
     sig = Signature([base_sig.types; main_sig.types],
                     [base_sig.terms; main_sig.terms],
@@ -154,7 +154,8 @@ function signature_code(main_class, base_mod, base_params)
                   main_class.functions ]
     class = Typeclass(main_class.name, main_class.type_params, sig, functions)
   end
-  signature = class.signature
+  signature = replace_types(class.signature.aliases, class.signature)
+  class = Typeclass(class.name, class.type_params, signature, class.functions)
 
   # Generate module with stub types.
   mod = Expr(:module, true, class.name,
@@ -175,7 +176,10 @@ function signature_code(main_class, base_mod, base_params)
   toplevel = [ generate_function(replace_symbols(bindings, f)) for f in fns ]
 
   # add to toplevel
-  toplevel = [toplevel; [Expr(:(=), Expr(:call, a, Expr(:..., :args)), Expr(:call, signature.aliases[a], Expr(:..., :args))) for a in keys(signature.aliases)]]
+  toplevel = [ toplevel; map(collect(main_sig.aliases)) do a
+    Expr(:(=), Expr(:call, first(a), Expr(:..., :args)),
+         Expr(:call, last(a), Expr(:..., :args)))
+  end ]
 
   # Modules must be at top level:
   # https://github.com/JuliaLang/julia/issues/21009
@@ -203,13 +207,13 @@ end
 """
 function parse_signature_body(expr::Expr)
   @assert expr.head == :block
-  aliases = Dict{Symbol,Symbol}()
+  aliases = Dict{Symbol, Symbol}()
   types = OrderedDict{Symbol,TypeConstructor}()
   terms = TermConstructor[]
   axioms = AxiomConstructor[]
   funs = JuliaFunction[]
   for elem in strip_lines(expr).args
-    elem = replace_symbols(aliases, strip_lines(elem))
+    elem = strip_lines(elem)
     head = last(parse_docstring(elem)).head
     if head in (:(::), :call, :comparison, :where)
       cons = parse_constructor(elem)
