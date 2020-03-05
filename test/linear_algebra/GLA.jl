@@ -87,4 +87,29 @@ end
 
 @test_skip codom(A) == generator(Mat, :V)
 
+
+# Structured Matrices
+# ===================
+
+A, B = Ob(FreeStructuredLinearMaps, :A, :B)
+f, g = Hom(:f, A, B), Hom(:g, A, B)
+u, v = Hom(:u, ℝ(), A), Hom(:g, ℝ(), B)
+
+# Domains and codomains
+@test dom(plus(f,g)) == A
+@test codom(plus(f,g)) == B
+
+# Unicode syntax
+@test f+g == plus(f,g)
+
+# Banded Matrices
+Dᵤ = diag(u)
+@show Dᵤ
+@show dom(Dᵤ) == A
+@show codom(Dᵤ) == A
+
+Dᵥ = diag(v)
+@show Dᵥ
+@show dom(Dᵥ) == B
+@show codom(Dᵥ) == B
 end
