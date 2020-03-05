@@ -90,6 +90,10 @@ target = GAT.TermConstructor(:compose, [:f,:g], :(Mor(X,Z)),
 
   id(X)::Hom(X,X) where (X::Ob)
   compose(f,g)::Hom(X,Z) where (X::Ob, Y::Ob, Z::Ob, f::Hom(X,Y), g::Hom(Y,Z))
+
+  compose(compose(f,g),h) == compose(f,compose(g,h)) where (A::Ob, B::Ob, C::Ob, D::Ob, f::Hom(A,B), g::Hom(B,C), h::Hom(C,D))
+  compose(f,id(B)) == f where (A::Ob, B::Ob, f::Hom(A,B))
+  compose(id(A),f) == f where (A::Ob, B::Ob, f::Hom(A,B))
 end
 
 @test isa(Category, Module)
@@ -111,7 +115,17 @@ terms = [
     GAT.Context((:X => :Ob, :Y => :Ob, :Z => :Ob,
                  :f => :(Hom(X,Y)), :g => :(Hom(Y,Z))))),
 ]
-category_signature = GAT.Signature(types, terms)
+axioms = [
+  GAT.AxiomConstructor(:(==), Meta.parse("compose(compose(f,g),h)"),
+    Meta.parse("compose(f,compose(g,h))"),
+    GAT.Context((:A => :Ob, :B => :Ob, :C => :Ob, :D => :Ob,
+                 :f => :(Hom(A,B)), :g => :(Hom(B,C)), :h => :(Hom(C,D))))),
+  GAT.AxiomConstructor(:(==), Meta.parse("compose(f,id(B))"), :f,
+    GAT.Context((:A => :Ob, :B => :Ob, :f => :(Hom(A,B))))),
+  GAT.AxiomConstructor(:(==), :f, Meta.parse("compose(id(A),f)"),
+    GAT.Context((:A => :Ob, :B => :Ob, :f => :(Hom(A,B))))),
+]
+category_signature = GAT.Signature(types, terms, axioms)
 
 @test Category.class().signature == category_signature
 
@@ -123,6 +137,10 @@ category_signature = GAT.Signature(types, terms)
 
   id(X::Ob)::Hom(X,X)
   compose(f::Hom(X,Y),g::Hom(Y,Z))::Hom(X,Z) where (X::Ob, Y::Ob, Z::Ob)
+
+  compose(compose(f,g),h) == compose(f,compose(g,h)) where (A::Ob, B::Ob, C::Ob, D::Ob, f::Hom(A,B), g::Hom(B,C), h::Hom(C,D))
+  compose(f,id(B)) == f where (A::Ob, B::Ob, f::Hom(A,B))
+  compose(id(A),f) == f where (A::Ob, B::Ob, f::Hom(A,B))
 end
 
 @test CategoryAbbrev.class().signature == category_signature
@@ -155,7 +173,9 @@ signature = GAT.Signature(
   [ GAT.TermConstructor(:times, [:x,:y], :M,
       GAT.Context((:x => :M, :y => :M))),
     GAT.TermConstructor(:munit, [], :M, GAT.Context()) ],
+  []
 )
+
 @test MonoidExt.class().signature == signature
 
 # GAT expressions in a signature

@@ -63,7 +63,8 @@ end
   context::Context
   doc::Union{String,Nothing}
 
-  function AxiomConstructor(name::Symbol, left::Expr0, right::Expr0, context::Context, doc=nothing)
+  function AxiomConstructor(name::Symbol, left::Expr0, right::Expr0,
+                            context::Context, doc=nothing)
     new(name, left, right, context, doc)
   end
 end
@@ -73,6 +74,7 @@ end
 @auto_hash_equals struct Signature
   types::Vector{TypeConstructor}
   terms::Vector{TermConstructor}
+  axioms::Vector{AxiomConstructor}
 end
 
 """ Typeclass = GAT signature + Julia-specific content.
@@ -123,7 +125,7 @@ macro signature(head, body)
 
   # Parse signature body: GAT types/terms and extra Julia functions.
   types, terms, functions, axioms = parse_signature_body(body)
-  signature = Signature(types, terms)
+  signature = Signature(types, terms, axioms)
   class = Typeclass(head.main.name, head.main.params, signature, functions)
 
   # We must generate and evaluate the code at *run time* because the base
@@ -134,6 +136,7 @@ macro signature(head, body)
     :(Core.@__doc__ $(esc(head.main.name))))
 end
 function signature_code(main_class, base_mod, base_params)
+  # TODO: Generate code to do something with main_class.signature.axioms
   # Add types/terms/functions from base class, if provided.
   if isnothing(base_mod)
     class = main_class
@@ -143,7 +146,8 @@ function signature_code(main_class, base_mod, base_params)
     main_sig = main_class.signature
     base_sig = replace_types(bindings, base_class.signature)
     sig = Signature([base_sig.types; main_sig.types],
-                    [base_sig.terms; main_sig.terms])
+                    [base_sig.terms; main_sig.terms],
+                    [base_sig.axioms; main_sig.axioms])
     functions = [ [ replace_symbols(bindings, f) for f in base_class.functions ];
                   main_class.functions ]
     class = Typeclass(main_class.name, main_class.type_params, sig, functions)
@@ -339,6 +343,8 @@ function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor,
     Expr(:where, [inner, context]) => (inner, parse_context(context))
     Expr(cons_sym, [cons_left, Expr(:where, [cons_right, context])]) => (
       Expr(cons_sym, cons_left, cons_right), parse_context(context))
+    Expr(:call, [cons_sym, cons_left, Expr(:where, [cons_right, context])]) => (
+      Expr(:call, cons_sym, cons_left, cons_right), parse_context(context))
     _ => (expr, Context())
   end
 
@@ -380,7 +386,8 @@ end
 """
 function replace_types(bindings::Dict, sig::Signature)::Signature
   Signature([ replace_types(bindings, t) for t in sig.types ],
-            [ replace_types(bindings, t) for t in sig.terms ])
+            [ replace_types(bindings, t) for t in sig.terms ],
+            sig.axioms) # TODO: Create replace_types for axioms
 end
 function replace_types(bindings::Dict, cons::TypeConstructor)::TypeConstructor
   TypeConstructor(replace_symbols(bindings, cons.name), cons.params,
