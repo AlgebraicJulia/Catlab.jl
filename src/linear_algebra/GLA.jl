@@ -1,18 +1,19 @@
 module GraphicalLinearAlgebra
-export LinearMaps, FreeLinearMaps, LinearRelations,
+export LinearMaps, FreeLinearMaps, LinearRelations, FreeLinearRelations,
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, ozero, braid,
   dagger, dunit, docunit, mcopy, Δ, delete, ◇, mmerge, ∇, create, □,
   mplus, ⊞, mzero, coplus, cozero, plus, meet, top, join, bottom,
-  scalar, antipode, ⊟, adjoint, evaluate
+  scalar, antipode, ⊟, adjoint, evaluate,
+  StructuredLinearMaps, FreeStructuredLinearMaps, ℝ, munit, →, diag
 
 import Base: +
-import LinearAlgebra: adjoint
+import LinearAlgebra: adjoint, diag
 
 using ...Catlab, ...Doctrines
 import ...Doctrines:
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, ozero, braid,
   dagger, dunit, dcounit, mcopy, Δ, delete, ◇, mmerge, ∇, create, □,
-  mplus, mzero, coplus, cozero, meet, top, join, bottom
+  mplus, mzero, coplus, cozero, meet, top, join, bottom, munit
 using ...Programs
 import ...Programs: evaluate_hom
 
@@ -130,6 +131,7 @@ evaluate_hom(f::FreeLinearMaps.Hom{:antipode}, xs::Vector; kw...) = -1 .* xs
     @op Hom :→
     @op compose :⋅
     @op oplus :⊕
+    munit()::Ob
     @op munit :ℝ
     diag(v)::(A→A) ⊣ (A::Ob, v::(ℝ()→A))
     upperdiag(v)::(A⊕ℝ() → A⊕ℝ()) ⊣ (A::Ob, v::(ℝ() → A))
@@ -156,10 +158,10 @@ evaluate_hom(f::FreeLinearMaps.Hom{:antipode}, xs::Vector; kw...) = -1 .* xs
     symtridiag(a,b) == tridiagonal(a,b,b) ⊣ (A::Ob, a::(ℝ()→A⊗ℝ()), b::(ℝ()→A))
 end
 
-# @syntax FreeStructuredLinearMaps(ObExpr,HomExpr) StructuredLinearMaps begin
-#   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), ozero)
-#   oplus(f::Hom, g::Hom) = associate(new(f,g))
-#   compose(f::Hom, g::Hom) = new(f,g; strict=true) # No normalization!
-# end
+@syntax FreeStructuredLinearMaps(ObExpr,HomExpr) StructuredLinearMaps begin
+  oplus(A::Ob, B::Ob) = associate_unit(new(A,B), ozero)
+  oplus(f::Hom, g::Hom) = associate(new(f,g))
+  compose(f::Hom, g::Hom) = new(f,g; strict=true) # No normalization!
+end
 
 end

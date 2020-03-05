@@ -91,9 +91,10 @@ end
 # Structured Matrices
 # ===================
 
+R = ℝ(FreeStructuredLinearMaps.Ob)
 A, B = Ob(FreeStructuredLinearMaps, :A, :B)
 f, g = Hom(:f, A, B), Hom(:g, A, B)
-u, v = Hom(:u, ℝ(), A), Hom(:g, ℝ(), B)
+u, v = Hom(:u, R, A), Hom(:g, R, B)
 
 # Domains and codomains
 @test dom(plus(f,g)) == A
@@ -105,11 +106,22 @@ u, v = Hom(:u, ℝ(), A), Hom(:g, ℝ(), B)
 # Banded Matrices
 Dᵤ = diag(u)
 @show Dᵤ
-@show dom(Dᵤ) == A
-@show codom(Dᵤ) == A
+@test dom(Dᵤ) == A
+@test codom(Dᵤ) == A
 
 Dᵥ = diag(v)
 @show Dᵥ
-@show dom(Dᵥ) == B
-@show codom(Dᵥ) == B
+@test dom(Dᵥ) == B
+@test codom(Dᵥ) == B
+
+@show Dᵥ⋅Dᵥ
+@test dom(Dᵥ⋅Dᵥ) == B
+@test codom(Dᵥ⋅Dᵥ) == B
+
+@show Dᵥ⊕Dᵥ
+@test dom(Dᵥ⊕Dᵥ) == B⊕B
+@test codom(Dᵥ⊕Dᵥ) == B⊕B
+@show Dᵤ⊕Dᵥ
+@test dom(Dᵤ⊕Dᵥ) == A⊕B
+@test codom(Dᵤ⊕Dᵥ) == A⊕B
 end
