@@ -84,6 +84,12 @@ bicategory of relations (`AbelianBicategoryRelations`), written additively.
   □(A::Ob) = create(A)
 end
 
+@syntax FreeLinearRelations(ObExpr,HomExpr) LinearRelations begin
+  oplus(A::Ob, B::Ob) = associate_unit(new(A,B), ozero)
+  oplus(f::Hom, g::Hom) = associate(new(f,g))
+  compose(f::Hom, g::Hom) = new(f,g; strict=true) # No normalization!
+end
+
 # Evaluation
 ############
 
