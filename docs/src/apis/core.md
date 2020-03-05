@@ -58,7 +58,7 @@ import Catlab.Doctrines: Ob, Hom, ObExpr, HomExpr, dom, codom, compose, id
   Hom(dom::Ob, codom::Ob)::TYPE
 
   id(A::Ob)::Hom(A,A)
-  compose(f::Hom(A,B), g::Hom(B,C))::Hom(A,C) where (A::Ob, B::Ob, C::Ob)
+  compose(f::Hom(A,B), g::Hom(B,C))::Hom(A,C) ⊣ (A::Ob, B::Ob, C::Ob)
 end
 nothing # hide
 ```
@@ -71,10 +71,11 @@ constructors*, `id` (identity) and `compose` (composition).
 
 Notice how the return types of the term constructors depend on the argument
 values. For example, the term `id(A)` has type `Hom(A,A)`. The term constructor
-`compose` also uses *context variables*, listed to the right of the `where`
-clause. This allows us to write `compose(f,g)`, instead of the more verbose
-`compose(A,B,C,f,g)` (for discussion, see Cartmell, 1986, Sec 10: Informal
-syntax).
+`compose` also uses *context variables*, listed to the right of the `⊣`
+symbol. These context variables can also be defined after the `where` clause,
+but the left hand side must be surrounded by parentheses. This allows us to
+write `compose(f,g)`, instead of the more verbose `compose(A,B,C,f,g)` (for
+discussion, see Cartmell, 1986, Sec 10: Informal syntax).
 
 !!! note
 
@@ -224,7 +225,7 @@ import Catlab.Doctrines: Ob, Hom, ObExpr, HomExpr, SymmetricMonoidalCategory,
   mcopy(A::Ob)::Hom(A,otimes(A,A))
   delete(A::Ob)::Hom(A,munit())
 
-  pair(f::Hom(A,B), g::Hom(A,C))::Hom(A,otimes(B,C)) where (A::Ob, B::Ob, C::Ob)
+  pair(f::Hom(A,B), g::Hom(A,C))::Hom(A,otimes(B,C)) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::Hom(otimes(A,B),A)
   proj2(A::Ob, B::Ob)::Hom(otimes(A,B),B)
 end

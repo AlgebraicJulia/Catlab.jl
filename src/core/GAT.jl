@@ -75,6 +75,7 @@ end
   types::Vector{TypeConstructor}
   terms::Vector{TermConstructor}
   axioms::Vector{AxiomConstructor}
+  aliases::Dict{Symbol, Symbol}
 end
 
 """ Typeclass = GAT signature + Julia-specific content.
@@ -124,8 +125,8 @@ macro signature(head, body)
   end
 
   # Parse signature body: GAT types/terms and extra Julia functions.
-  types, terms, functions, axioms = parse_signature_body(body)
-  signature = Signature(types, terms, axioms)
+  types, terms, functions, axioms, aliases = parse_signature_body(body)
+  signature = Signature(types, terms, axioms, aliases)
   class = Typeclass(head.main.name, head.main.params, signature, functions)
 
   # We must generate and evaluate the code at *run time* because the base
@@ -147,7 +148,8 @@ function signature_code(main_class, base_mod, base_params)
     base_sig = replace_types(bindings, base_class.signature)
     sig = Signature([base_sig.types; main_sig.types],
                     [base_sig.terms; main_sig.terms],
-                    [base_sig.axioms; main_sig.axioms])
+                    [base_sig.axioms; main_sig.axioms],
+                    merge(base_sig.aliases, main_sig.aliases))
     functions = [ [ replace_symbols(bindings, f) for f in base_class.functions ];
                   main_class.functions ]
     class = Typeclass(main_class.name, main_class.type_params, sig, functions)
@@ -198,13 +200,15 @@ end
 """
 function parse_signature_body(expr::Expr)
   @assert expr.head == :block
+  aliases = Dict{Symbol,Symbol}()
   types = OrderedDict{Symbol,TypeConstructor}()
   terms = TermConstructor[]
   axioms = AxiomConstructor[]
   funs = JuliaFunction[]
   for elem in strip_lines(expr).args
+    elem = replace_symbols(aliases, elem)
     head = last(parse_docstring(elem)).head
-    if head in (:(::), :call, :where)
+    if head in (:(::), :call, :comparison, :where)
       cons = parse_constructor(elem)
       if isa(cons, TypeConstructor)
         if haskey(types, cons.name)
@@ -219,11 +223,13 @@ function parse_signature_body(expr::Expr)
       end
     elseif head in (:(=), :function)
       push!(funs, parse_function(elem))
+    elseif head == :macrocall && elem.args[1] == Symbol("@op")
+      aliases[elem.args[4].value] = elem.args[3]
     else
       throw(ParseError("Ill-formed signature element $elem"))
     end
   end
-  return (collect(values(types)), terms, funs, axioms)
+  return (collect(values(types)), terms, funs, axioms, aliases)
 end
 
 """ Julia functions for type parameter accessors.
@@ -340,11 +346,10 @@ function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor,
   doc, expr = parse_docstring(expr)
   cons_expr, context = @match expr begin
     Expr(:call, [:<=, inner, context]) => (inner, parse_context(context))
-    Expr(:where, [inner, context]) => (inner, parse_context(context))
-    Expr(cons_sym, [cons_left, Expr(:where, [cons_right, context])]) => (
-      Expr(cons_sym, cons_left, cons_right), parse_context(context))
-    Expr(:call, [cons_sym, cons_left, Expr(:where, [cons_right, context])]) => (
+    Expr(:call, [:⊣, inner, context]) => (inner, parse_context(context))
+    Expr(:comparison, [cons_left, cons_sym, cons_right, :⊣, context]) => (
       Expr(:call, cons_sym, cons_left, cons_right), parse_context(context))
+    Expr(:where, [inner, context]) => (inner, parse_context(context))
     _ => (expr, Context())
   end
 
@@ -387,7 +392,8 @@ end
 function replace_types(bindings::Dict, sig::Signature)::Signature
   Signature([ replace_types(bindings, t) for t in sig.types ],
             [ replace_types(bindings, t) for t in sig.terms ],
-            [ replace_types(bindings, t) for t in sig.axioms ])
+            [ replace_types(bindings, t) for t in sig.axioms ],
+            replace_types(bindings, sig.aliases))
 end
 function replace_types(bindings::Dict, cons::TypeConstructor)::TypeConstructor
   TypeConstructor(replace_symbols(bindings, cons.name), cons.params,
@@ -403,6 +409,10 @@ function replace_types(bindings::Dict, cons::AxiomConstructor)::AxiomConstructor
                    replace_symbols(bindings, cons.left),
                    replace_symbols(bindings, cons.right),
                    replace_types(bindings, cons.context), cons.doc)
+end
+function replace_types(bindings::Dict, aliases::Dict)::Dict
+  Dict(a => replace_symbols(bindings, aliases[a])
+       for a in keys(aliases))
 end
 function replace_types(bindings::Dict, context::Context)::Context
   GAT.Context(((name => @match expr begin

@@ -19,14 +19,14 @@ References:
 """
 @signature MonoidalCategoryWithBidiagonals(Ob,Hom) => BicategoryRelations(Ob,Hom) begin
   # Dagger category.
-  dagger(f::Hom(A,B))::Hom(B,A) where (A::Ob,B::Ob)
+  dagger(f::Hom(A,B))::Hom(B,A) ⊣ (A::Ob,B::Ob)
 
   # Self-dual compact closed category.
   dunit(A::Ob)::Hom(munit(), otimes(A,A))
   dcounit(A::Ob)::Hom(otimes(A,A), munit())
 
   # Logical operations.
-  meet(f::Hom(A,B), g::Hom(A,B))::Hom(A,B) where (A::Ob, B::Ob)
+  meet(f::Hom(A,B), g::Hom(A,B))::Hom(A,B) ⊣ (A::Ob, B::Ob)
   top(A::Ob, B::Ob)::Hom(A,B)
 end
 
@@ -57,7 +57,7 @@ References:
   cozero(A::Ob)::Hom(A,munit())
 
   # Logical operations.
-  join(f::Hom(A,B), g::Hom(A,B))::Hom(A,B) where (A::Ob, B::Ob)
+  join(f::Hom(A,B), g::Hom(A,B))::Hom(A,B) ⊣ (A::Ob, B::Ob)
   bottom(A::Ob, B::Ob)::Hom(A,B)
 end
 
