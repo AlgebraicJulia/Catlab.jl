@@ -102,10 +102,10 @@ x, y = one(FreeMonoidTwo.Elem), two(FreeMonoidTwo.Elem)
 @signature Category(Ob,Hom) begin
   Ob::TYPE
   Hom(dom::Ob, codom::Ob)::TYPE
-  
+
   id(X::Ob)::Hom(X,X)
-  compose(f::Hom(X,Y), g::Hom(Y,Z))::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob)
-  
+  compose(f::Hom(X,Y), g::Hom(Y,Z))::Hom(X,Z) where (X::Ob, Y::Ob, Z::Ob)
+
   compose(fs::Vararg{Hom}) = foldl(compose, fs)
 end
 

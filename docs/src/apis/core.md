@@ -13,13 +13,13 @@ transformed, usually functorially, into more concrete representations, such as
 
 The basic elements of this system are:
 
-1. **Signatures** of generalized algebraic theories (GATs), defined using the 
+1. **Signatures** of generalized algebraic theories (GATs), defined using the
    [`@signature`](@ref) macro. Categories and other typed (multisorted)
    algebraic structures can be defined as GATs.
-   
+
 2. **Instances**, or concrete implementations, of signatures, asserted using the
    [`@instance`](@ref) macro.
-   
+
 3. **Syntax systems** for signatures, defined using the [`@syntax`](@ref) macro.
    These are type-safe expression trees constructed using ordinary Julia
    functions.
@@ -56,9 +56,9 @@ import Catlab.Doctrines: Ob, Hom, ObExpr, HomExpr, dom, codom, compose, id
 @signature Category(Ob,Hom) begin
   Ob::TYPE
   Hom(dom::Ob, codom::Ob)::TYPE
-  
+
   id(A::Ob)::Hom(A,A)
-  compose(f::Hom(A,B), g::Hom(B,C))::Hom(A,C) <= (A::Ob, B::Ob, C::Ob)
+  compose(f::Hom(A,B), g::Hom(B,C))::Hom(A,C) where (A::Ob, B::Ob, C::Ob)
 end
 nothing # hide
 ```
@@ -71,13 +71,13 @@ constructors*, `id` (identity) and `compose` (composition).
 
 Notice how the return types of the term constructors depend on the argument
 values. For example, the term `id(A)` has type `Hom(A,A)`. The term constructor
-`compose` also uses *context variables*, listed to the right of the `<=` symbol.
-This allows us to write `compose(f,g)`, instead of the more verbose
+`compose` also uses *context variables*, listed to the right of the `where`
+clause. This allows us to write `compose(f,g)`, instead of the more verbose
 `compose(A,B,C,f,g)` (for discussion, see Cartmell, 1986, Sec 10: Informal
 syntax).
 
 !!! note
-    
+
     In general, a GAT consists of a *signature*, defining the types and terms of
     the theory, and a set of *axioms*, the equational laws satisfied by models
     of the theory. The theory of categories, for example, has axioms of
@@ -117,7 +117,7 @@ end
 @instance Category(MatrixDomain, Matrix) begin
   dom(M::Matrix) = MatrixDomain(eltype(M), size(M,1))
   codom(M::Matrix) = MatrixDomain(eltype(M), size(M,2))
-  
+
   id(m::MatrixDomain) = Matrix{m.eltype}(I, m.dim, m.dim)
   compose(M::Matrix, N::Matrix) = M*N
 end
@@ -223,8 +223,8 @@ import Catlab.Doctrines: Ob, Hom, ObExpr, HomExpr, SymmetricMonoidalCategory,
 @signature SymmetricMonoidalCategory(Ob,Hom) => CartesianCategory(Ob,Hom) begin
   mcopy(A::Ob)::Hom(A,otimes(A,A))
   delete(A::Ob)::Hom(A,munit())
-  
-  pair(f::Hom(A,B), g::Hom(A,C))::Hom(A,otimes(B,C)) <= (A::Ob, B::Ob, C::Ob)
+
+  pair(f::Hom(A,B), g::Hom(A,C))::Hom(A,otimes(B,C)) where (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::Hom(otimes(A,B),A)
   proj2(A::Ob, B::Ob)::Hom(otimes(A,B),B)
 end

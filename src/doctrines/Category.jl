@@ -78,15 +78,15 @@ end
 """
 @signature Category(Ob,Hom) => Category2(Ob,Hom,Hom2) begin
   """ 2-morphism in a 2-category """
-  Hom2(dom::Hom(A,B), codom::Hom(A,B))::TYPE <= (A::Ob, B::Ob)
+  Hom2(dom::Hom(A,B), codom::Hom(A,B))::TYPE where (A::Ob, B::Ob)
 
   # Hom categories: Vertical composition
-  id(f)::Hom2(f,f) <= (A::Ob, B::Ob, f::Hom(A,B))
-  compose(α::Hom2(f,g), β::Hom2(g,h))::Hom2(f,h) <=
+  id(f)::Hom2(f,f) where (A::Ob, B::Ob, f::Hom(A,B))
+  compose(α::Hom2(f,g), β::Hom2(g,h))::Hom2(f,h) where
     (A::Ob, B::Ob, f::Hom(A,B), g::Hom(A,B), h::Hom(A,B))
 
   # Horizontal compostion
-  compose2(α::Hom2(f,g), β::Hom2(h,k))::Hom2(compose(f,h),compose(g,k)) <=
+  compose2(α::Hom2(f,g), β::Hom2(h,k))::Hom2(compose(f,h),compose(g,k)) where
     (A::Ob, B::Ob, C::Ob, f::Hom(A,B), g::Hom(A,B), h::Hom(B,C), k::Hom(B,C))
 
   # Unicode syntax

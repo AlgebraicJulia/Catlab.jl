@@ -17,9 +17,9 @@ using Catlab.GAT
 @test_throws ParseError GAT.parse_raw_expr(:(Hom(X,0)))
 
 # Contexts
-@test (GAT.parse_context(:((X::Ob, Y::Ob))) == 
+@test (GAT.parse_context(:((X::Ob, Y::Ob))) ==
        GAT.Context((:X => :Ob, :Y => :Ob)))
-@test (GAT.parse_context(:((X::Ob, Y::Ob, f::Hom(X,Y)))) == 
+@test (GAT.parse_context(:((X::Ob, Y::Ob, f::Hom(X,Y)))) ==
        GAT.Context((:X => :Ob, :Y => :Ob, :f => :(Hom(X,Y)))))
 @test GAT.parse_context(:(())) == GAT.Context()
 @test_throws ParseError GAT.parse_context(:((X::Ob, X::Ob))) # Repeat variables
@@ -33,7 +33,7 @@ expr = (quote "Object" Ob::TYPE end).args[2]
 cons = GAT.TypeConstructor(:Ob, [], GAT.Context(), "Object")
 @test GAT.parse_constructor(expr) == cons
 
-expr = :(Hom(X,Y)::TYPE <= (X::Ob, Y::Ob))
+expr = :(Hom(X,Y)::TYPE where (X::Ob, Y::Ob))
 context = GAT.Context((:X => :Ob, :Y => :Ob))
 cons = GAT.TypeConstructor(:Hom, [:X,:Y], context)
 @test GAT.parse_constructor(expr) == cons
@@ -48,15 +48,15 @@ cons = GAT.TermConstructor(:munit, [], :Ob, GAT.Context(), "Monoidal unit")
 @test GAT.parse_constructor(expr) == cons
 
 cons = GAT.TermConstructor(:id, [:X], :(Hom(X,X)), GAT.Context(:X => :Ob))
-@test GAT.parse_constructor(:(id(X)::Hom(X,X) <= (X::Ob))) == cons
+@test GAT.parse_constructor(:(id(X)::Hom(X,X) where (X::Ob))) == cons
 @test GAT.parse_constructor(:(id(X::Ob)::Hom(X,X))) == cons
 
-expr = :(compose(f,g)::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob, f::Hom(X,Y), g::Hom(Y,Z)))
+expr = :(compose(f,g)::Hom(X,Z) where (X::Ob, Y::Ob, Z::Ob, f::Hom(X,Y), g::Hom(Y,Z)))
 context = GAT.Context((:X => :Ob, :Y => :Ob, :Z => :Ob,
                        :f => :(Hom(X,Y)), :g => :(Hom(Y,Z))))
 cons = GAT.TermConstructor(:compose, [:f,:g], :(Hom(X,Z)), context)
 @test GAT.parse_constructor(expr) == cons
-expr = :(compose(f::Hom(X,Y), g::Hom(Y,Z))::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob))
+expr = :(compose(f::Hom(X,Y), g::Hom(Y,Z))::Hom(X,Z) where (X::Ob, Y::Ob, Z::Ob))
 @test GAT.parse_constructor(expr) == cons
 
 # Type transformations
@@ -67,10 +67,10 @@ target = GAT.TypeConstructor(:Mor, [:X,:Y],
   GAT.Context((:X => :Obj, :Y => :Obj)))
 @test GAT.replace_types(bindings, cons) == target
 
-cons = GAT.TermConstructor(:compose, [:f,:g], :(Hom(X,Z)), 
+cons = GAT.TermConstructor(:compose, [:f,:g], :(Hom(X,Z)),
   GAT.Context((:X => :Obj, :Y => :Obj, :Z => :Obj,
                :f => :(Hom(X,Y)), :g => :(Hom(Y,Z)))))
-target = GAT.TermConstructor(:compose, [:f,:g], :(Mor(X,Z)), 
+target = GAT.TermConstructor(:compose, [:f,:g], :(Mor(X,Z)),
   GAT.Context((:X => :Obj, :Y => :Obj, :Z => :Obj,
                :f => :(Mor(X,Y)), :g => :(Mor(Y,Z)))))
 @test GAT.replace_types(bindings, cons) == target
@@ -86,10 +86,10 @@ target = GAT.TermConstructor(:compose, [:f,:g], :(Mor(X,Z)),
 """
 @signature Category(Ob,Hom) begin
   Ob::TYPE
-  Hom(dom, codom)::TYPE <= (dom::Ob, codom::Ob)
-  
-  id(X)::Hom(X,X) <= (X::Ob)
-  compose(f,g)::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob, f::Hom(X,Y), g::Hom(Y,Z))
+  Hom(dom, codom)::TYPE where (dom::Ob, codom::Ob)
+
+  id(X)::Hom(X,X) where (X::Ob)
+  compose(f,g)::Hom(X,Z) where (X::Ob, Y::Ob, Z::Ob, f::Hom(X,Y), g::Hom(Y,Z))
 end
 
 @test isa(Category, Module)
@@ -102,7 +102,7 @@ end
 # Manually constructed signature of theory of categories
 types = [
   GAT.TypeConstructor(:Ob, [], GAT.Context()),
-  GAT.TypeConstructor(:Hom, [:dom,:codom], 
+  GAT.TypeConstructor(:Hom, [:dom,:codom],
     GAT.Context((:dom => :Ob, :codom => :Ob))),
 ]
 terms = [
@@ -120,9 +120,9 @@ category_signature = GAT.Signature(types, terms)
 @signature CategoryAbbrev(Ob,Hom) begin
   Ob::TYPE
   Hom(dom::Ob, codom::Ob)::TYPE
-  
+
   id(X::Ob)::Hom(X,X)
-  compose(f::Hom(X,Y),g::Hom(Y,Z))::Hom(X,Z) <= (X::Ob, Y::Ob, Z::Ob)
+  compose(f::Hom(X,Y),g::Hom(Y,Z))::Hom(X,Z) where (X::Ob, Y::Ob, Z::Ob)
 end
 
 @test CategoryAbbrev.class().signature == category_signature
@@ -198,7 +198,7 @@ end
   M::TYPE
   munit()::M
   times(x::M,y::M)::M
-  
+
   times(xs::Vararg{M}) = foldl(times, xs)
 end
 
