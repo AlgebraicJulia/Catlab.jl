@@ -207,7 +207,7 @@ function evaluate_hom(f::HomExpr{:compose}, xs::Vector; kw...)
   foldl((ys, g) -> evaluate_hom(g, ys; kw...), args(f); init=xs)
 end
 
-function evaluate_hom(f::HomExpr{:otimes}, xs::Vector; kw...)
+function evaluate_hom(f::Union{HomExpr{:otimes},HomExpr{:oplus}}, xs::Vector; kw...)
   i = 1
   mapreduce(vcat, args(f); init=[]) do g
     m = ndims(dom(g))
