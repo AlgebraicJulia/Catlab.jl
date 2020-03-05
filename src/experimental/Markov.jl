@@ -1,12 +1,12 @@
 module MarkovCategories
 export MarkovCategory, FreeMarkovCategory,
-  Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, braid, mcopy, Δ, delete, ◇,
+  Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, braid, mcopy, Δ, delete, ◊,
   expectation, 𝔼
 
 using ...GAT, ...Syntax, ...Doctrines, ...WiringDiagrams
 import ...Syntax: show_latex
 import ...Doctrines: Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, braid,
-  mcopy, Δ, delete, ◇
+  mcopy, Δ, delete, ◊
 
 # Doctrines
 ###########

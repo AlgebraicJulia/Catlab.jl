@@ -1,7 +1,7 @@
 export MonoidalCategory, otimes, munit, ⊗, collect, ndims,
   SymmetricMonoidalCategory, FreeSymmetricMonoidalCategory, braid,
   MonoidalCategoryWithDiagonals, CartesianCategory, FreeCartesianCategory,
-  mcopy, delete, pair, proj1, proj2, Δ, ◇,
+  mcopy, delete, pair, proj1, proj2, Δ, ◊,
   MonoidalCategoryWithCodiagonals, CocartesianCategory, FreeCocartesianCategory,
   mmerge, create, copair, incl1, incl2, ∇, □,
   MonoidalCategoryWithBidiagonals, BiproductCategory, FreeBiproductCategory,
@@ -25,13 +25,10 @@ signature for weak monoidal categories later.
 """
 @signature Category(Ob,Hom) => MonoidalCategory(Ob,Hom) begin
   otimes(A::Ob, B::Ob)::Ob
-  otimes(f::Hom(A,B), g::Hom(C,D))::Hom(otimes(A,C),otimes(B,D)) ⊣
+  @op otimes :⊗
+  otimes(f::(A → B), g::(C → D))::((A ⊗ C) →(B ⊗ D)) ⊣
     (A::Ob, B::Ob, C::Ob, D::Ob)
   munit()::Ob
-
-  # Unicode syntax
-  ⊗(A::Ob, B::Ob) = otimes(A, B)
-  ⊗(f::Hom, g::Hom) = otimes(f, g)
 end
 
 # Convenience constructors
@@ -78,7 +75,8 @@ show_latex(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
 The signature (but not the axioms) is the same as a braided monoidal category.
 """
 @signature MonoidalCategory(Ob,Hom) => SymmetricMonoidalCategory(Ob,Hom) begin
-  braid(A::Ob, B::Ob)::Hom(otimes(A,B),otimes(B,A))
+  braid(A::Ob, B::Ob)::((A ⊗ B) →(B ⊗ A))
+  @op braid :σ
 end
 
 @syntax FreeSymmetricMonoidalCategory(ObExpr,HomExpr) SymmetricMonoidalCategory begin
@@ -107,12 +105,10 @@ References:
 - Selinger, 1999, "Categorical structure of asynchrony"
 """
 @signature SymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithDiagonals(Ob,Hom) begin
-  mcopy(A::Ob)::Hom(A,otimes(A,A))
-  delete(A::Ob)::Hom(A,munit())
-
-  # Unicode syntax
-  Δ(A::Ob) = mcopy(A)
-  ◇(A::Ob) = delete(A)
+  mcopy(A::Ob)::(A → (A ⊗ A))
+  @op mcopy :Δ
+  delete(A::Ob)::(A → munit())
+  @op delete :◊
 end
 
 """ Doctrine of *cartesian category*
@@ -121,9 +117,9 @@ Actually, this is a cartesian *symmetric monoidal* category but we omit these
 qualifiers for brevity.
 """
 @signature MonoidalCategoryWithDiagonals(Ob,Hom) => CartesianCategory(Ob,Hom) begin
-  pair(f::Hom(A,B), g::Hom(A,C))::Hom(A,otimes(B,C)) ⊣ (A::Ob, B::Ob, C::Ob)
-  proj1(A::Ob, B::Ob)::Hom(otimes(A,B),A)
-  proj2(A::Ob, B::Ob)::Hom(otimes(A,B),B)
+  pair(f::(A → B), g::(A → C))::(A →(B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
+  proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
+  proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
 end
 
 """ Syntax for a free cartesian category.
@@ -217,16 +213,12 @@ FIXME: This signature should extend both `MonoidalCategoryWithDiagonals` and
 supported.
 """
 @signature SymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithBidiagonals(Ob,Hom) begin
-  mcopy(A::Ob)::Hom(A,otimes(A,A))
-  mmerge(A::Ob)::Hom(otimes(A,A),A)
+  mcopy(A::Ob)::(A → (A ⊗ A))
+  mmerge(A::Ob)::((A ⊗ A) → A)
+  @op mmerge :∇
   delete(A::Ob)::Hom(A,munit())
   create(A::Ob)::Hom(munit(),A)
-
-  # Unicode syntax
-  ∇(A::Ob) = mmerge(A)
-  Δ(A::Ob) = mcopy(A)
-  ◇(A::Ob) = delete(A)
-  □(A::Ob) = create(A)
+  @op create :□
 end
 
 """ Doctrine of *bicategory category*
@@ -238,12 +230,12 @@ FIXME: This signature should extend `MonoidalCategoryWithBidiagonals`,
 yet supported.
 """
 @signature MonoidalCategoryWithBidiagonals(Ob,Hom) => BiproductCategory(Ob,Hom) begin
-  pair(f::Hom(A,B), g::Hom(A,C))::Hom(A,otimes(B,C)) ⊣ (A::Ob, B::Ob, C::Ob)
-  copair(f::Hom(A,C), g::Hom(B,C))::Hom(otimes(A,B),C) ⊣ (A::Ob, B::Ob, C::Ob)
-  proj1(A::Ob, B::Ob)::Hom(otimes(A,B),A)
-  proj2(A::Ob, B::Ob)::Hom(otimes(A,B),B)
-  incl1(A::Ob, B::Ob)::Hom(A,otimes(A,B))
-  incl2(A::Ob, B::Ob)::Hom(B,otimes(A,B))
+  pair(f::(A → B), g::(A → C))::(A →(B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
+  copair(f::(A → C), g::(B → C))::((A ⊗ B) → C) ⊣ (A::Ob, B::Ob, C::Ob)
+  proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
+  proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
+  incl1(A::Ob, B::Ob)::(A → (A ⊗ B))
+  incl2(A::Ob, B::Ob)::(B → (A ⊗ B))
 end
 
 @syntax FreeBiproductCategory(ObExpr,HomExpr) BiproductCategory begin

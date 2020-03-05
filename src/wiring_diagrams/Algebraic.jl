@@ -8,7 +8,7 @@ daggers, and other structures in wiring diagrams.
 module AlgebraicWiringDiagrams
 export Ports, Junction, PortOp, BoxOp,
   functor, dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid, permute,
-  mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
+  mcopy, delete, Δ, ◊, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
   mplus, mzero, coplus, cozero, meet, join, top, bottom, trace, ocompose,
   implicit_mcopy, implicit_mmerge, junctioned_mcopy, junctioned_mmerge,
   junction_diagram, add_junctions, add_junctions!, rem_junctions, merge_junctions,
@@ -19,7 +19,7 @@ using LightGraphs
 
 using ...GAT, ...Doctrines
 import ...Doctrines: dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid,
-  mcopy, delete, Δ, ◇, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
+  mcopy, delete, Δ, ◊, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
   mplus, mzero, coplus, cozero, meet, join, top, bottom, trace
 import ...Syntax: functor, head
 using ..WiringDiagramCore, ..WiringLayers
@@ -168,7 +168,7 @@ function contravariant_functor(d::WiringDiagram, f_ports, f_box;
                                monoidal_contravariant::Bool=false)
   result = WiringDiagram(f_ports(codom(d)), f_ports(dom(d)))
   add_boxes!(result, (f_box(box(d, v)) for v in box_ids(d)))
-  
+
   nports = (port::Port) -> length(
     (port.kind == InputPort ? input_ports : output_ports)(d, port.box))
   map_port = (port::Port) -> Port(
