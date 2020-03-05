@@ -19,16 +19,21 @@ We use symbol ⋅ (\\cdot) for diagrammatic composition: f⋅g = compose(f,g).
 @signature Category(Ob,Hom) begin
   """ Object in a category """
   Ob::TYPE
-  
+
   """ Morphism in a category """
   Hom(dom::Ob,codom::Ob)::TYPE
-  
+
   id(A::Ob)::Hom(A,A)
-  compose(f::Hom(A,B), g::Hom(B,C))::Hom(A,C) <= (A::Ob, B::Ob, C::Ob)
-  
+  compose(f::Hom(A,B), g::Hom(B,C))::Hom(A,C) where (A::Ob, B::Ob, C::Ob)
+
   # Unicode syntax
   ⋅(f::Hom, g::Hom) = compose(f, g)
   ∘(f::Hom, g::Hom) = compose(g, f)
+
+  # Equivalency Axioms in a category
+  compose(compose(f,g),h) == compose(f,compose(g,h)) where (A::Ob, B::Ob, C::Ob, D::Ob, f::Hom(A,B), g::Hom(B,C), h::Hom(C,D))
+  compose(f,id(B)) == f where (A::Ob, B::Ob, f::Hom(A,B))
+  compose(id(A),f) == f where (A::Ob, B::Ob, f::Hom(A,B))
 end
 
 # Convenience constructors
@@ -74,16 +79,16 @@ end
 @signature Category(Ob,Hom) => Category2(Ob,Hom,Hom2) begin
   """ 2-morphism in a 2-category """
   Hom2(dom::Hom(A,B), codom::Hom(A,B))::TYPE <= (A::Ob, B::Ob)
-  
+
   # Hom categories: Vertical composition
   id(f)::Hom2(f,f) <= (A::Ob, B::Ob, f::Hom(A,B))
   compose(α::Hom2(f,g), β::Hom2(g,h))::Hom2(f,h) <=
     (A::Ob, B::Ob, f::Hom(A,B), g::Hom(A,B), h::Hom(A,B))
-  
+
   # Horizontal compostion
   compose2(α::Hom2(f,g), β::Hom2(h,k))::Hom2(compose(f,h),compose(g,k)) <=
     (A::Ob, B::Ob, C::Ob, f::Hom(A,B), g::Hom(A,B), h::Hom(B,C), k::Hom(B,C))
-  
+
   # Unicode syntax
   ⋅(α::Hom2, β::Hom2) = compose(α, β)
   ∘(α::Hom2, β::Hom2) = compose(β, α)

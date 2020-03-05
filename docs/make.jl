@@ -39,7 +39,7 @@ makedocs(
         "generated/graphics/tikz_wiring_diagrams.md",
       ],
       "Experimental features" => Any[
-        "generated/programs/algebraic_nets.md",
+        "generated/experimental/algebraic_nets.md",
       ],
     ],
     "Modules" => Any[

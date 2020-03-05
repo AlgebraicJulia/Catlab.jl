@@ -32,7 +32,7 @@ const Context = OrderedDict{Symbol,Expr0}
   params::Vector{Symbol}
   context::Context
   doc::Union{String,Nothing}
-  
+
   function TypeConstructor(name::Symbol, params::Vector,
                            context::Context, doc=nothing)
     new(name, params, context, doc)
@@ -47,10 +47,24 @@ end
   typ::Expr0
   context::Context
   doc::Union{String,Nothing}
-  
+
   function TermConstructor(name::Symbol, params::Vector, typ::Expr0,
                            context::Context, doc=nothing)
     new(name, params, typ, context, doc)
+  end
+end
+
+""" Axiom constructor in a GAT.
+"""
+@auto_hash_equals struct AxiomConstructor
+  name::Symbol
+  left::Expr0
+  right::Expr0
+  context::Context
+  doc::Union{String,Nothing}
+
+  function AxiomConstructor(name::Symbol, left::Expr0, right::Expr0, context::Context, doc=nothing)
+    new(name, left, right, context, doc)
   end
 end
 
@@ -103,15 +117,15 @@ macro signature(head, body)
   if length(head.base) == 1
     base_name, base_params = head.base[1].name, head.base[1].params
     @assert all(p in head.main.params for p in base_params)
-  else 
+  else
     base_name, base_params = nothing, []
   end
-    
+
   # Parse signature body: GAT types/terms and extra Julia functions.
-  types, terms, functions = parse_signature_body(body)
+  types, terms, functions, axioms = parse_signature_body(body)
   signature = Signature(types, terms)
   class = Typeclass(head.main.name, head.main.params, signature, functions)
-  
+
   # We must generate and evaluate the code at *run time* because the base
   # signature, if specified, is not available at *parse time*.
   expr = :(signature_code($class, $(esc(base_name)), $base_params))
@@ -135,25 +149,25 @@ function signature_code(main_class, base_mod, base_params)
     class = Typeclass(main_class.name, main_class.type_params, sig, functions)
   end
   signature = class.signature
-  
+
   # Generate module with stub types.
-  mod = Expr(:module, true, class.name, 
+  mod = Expr(:module, true, class.name,
     Expr(:block, [
       # Prevents error about export not being at toplevel.
       # https://github.com/JuliaLang/julia/issues/28991
       LineNumberNode(0);
       Expr(:export, [cons.name for cons in signature.types]...);
-      map(gen_abstract_type, signature.types);      
+      map(gen_abstract_type, signature.types);
       :(class() = $(class));
     ]...))
-  
+
   # Generate method stubs.
   # (We put them outside the module, so the stub type names must be qualified.)
   bindings = Dict(cons.name => Expr(:(.), class.name, QuoteNode(cons.name))
                   for cons in signature.types)
   fns = interface(class)
   toplevel = [ generate_function(replace_symbols(bindings, f)) for f in fns ]
-  
+
   # Modules must be at top level:
   # https://github.com/JuliaLang/julia/issues/21009
   Expr(:toplevel, mod, toplevel...)
@@ -182,10 +196,11 @@ function parse_signature_body(expr::Expr)
   @assert expr.head == :block
   types = OrderedDict{Symbol,TypeConstructor}()
   terms = TermConstructor[]
+  axioms = AxiomConstructor[]
   funs = JuliaFunction[]
   for elem in strip_lines(expr).args
     head = last(parse_docstring(elem)).head
-    if head in (:(::), :call)
+    if head in (:(::), :call, :where)
       cons = parse_constructor(elem)
       if isa(cons, TypeConstructor)
         if haskey(types, cons.name)
@@ -193,8 +208,10 @@ function parse_signature_body(expr::Expr)
         else
           types[cons.name] = cons
         end
-      else
+      elseif isa(cons, TermConstructor)
         push!(terms, cons)
+      else
+        push!(axioms, cons)
       end
     elseif head in (:(=), :function)
       push!(funs, parse_function(elem))
@@ -202,7 +219,7 @@ function parse_signature_body(expr::Expr)
       throw(ParseError("Ill-formed signature element $elem"))
     end
   end
-  return (collect(values(types)), terms, funs)
+  return (collect(values(types)), terms, funs, axioms)
 end
 
 """ Julia functions for type parameter accessors.
@@ -226,7 +243,7 @@ function constructor(cons::TermConstructor, sig::Signature)::JuliaFunction
   arg_types = [ strip_type(cons.context[name]) for name in arg_names ]
   args = [ Expr(:(::), name, typ) for (name,typ) in zip(arg_names, arg_types) ]
   return_type = strip_type(cons.typ)
-  
+
   call_expr = Expr(:call, cons.name, args...)
   if !any(has_type(sig, typ) for typ in arg_types)
     call_expr = add_type_dispatch(call_expr, return_type)
@@ -313,14 +330,18 @@ end
 
 """ Parse type or term constructor in a GAT.
 """
-function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor}
+function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor,
+                                              AxiomConstructor}
   # Context is optional.
   doc, expr = parse_docstring(expr)
   cons_expr, context = @match expr begin
     Expr(:call, [:<=, inner, context]) => (inner, parse_context(context))
+    Expr(:where, [inner, context]) => (inner, parse_context(context))
+    Expr(cons_sym, [cons_left, Expr(:where, [cons_right, context])]) => (
+      Expr(cons_sym, cons_left, cons_right), parse_context(context))
     _ => (expr, Context())
   end
-  
+
   # Allow abbreviated syntax where tail of context is included in parameters.
   function parse_param(param::Expr0)::Symbol
     @match param begin
@@ -332,7 +353,7 @@ function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor}
       _ => throw(ParseError("Ill-formed type/term parameter $param"))
     end
   end
-  
+
   @match cons_expr begin
     (Expr(:(::), [name::Symbol, :TYPE])
       => TypeConstructor(name, [], context, doc))
@@ -340,6 +361,8 @@ function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor}
       => TypeConstructor(name, map(parse_param, params), context, doc))
     (Expr(:(::), [Expr(:call, [name::Symbol, params...]), typ])
       => TermConstructor(name, map(parse_param, params), parse_raw_expr(typ),
+                         context, doc))
+    (Expr(:call, [:(==), left, right]) => AxiomConstructor(:(==), left, right,
                          context, doc))
     _ => throw(ParseError("Ill-formed type/term constructor $cons_expr"))
   end
@@ -370,7 +393,7 @@ function replace_types(bindings::Dict, cons::TermConstructor)::TermConstructor
 end
 function replace_types(bindings::Dict, context::Context)::Context
   GAT.Context(((name => @match expr begin
-    (Expr(:call, [sym::Symbol, args...]) => 
+    (Expr(:call, [sym::Symbol, args...]) =>
       Expr(:call, replace_symbols(bindings, sym), args...))
     sym::Symbol => replace_symbols(bindings, sym)
   end) for (name, expr) in context))
@@ -434,7 +457,7 @@ function expand_symbol_in_context(sym::Symbol, params::Vector{Symbol},
   error("Name $sym does not occur explicitly among $params in context $context")
 end
 
-""" Expand context variables that occur implicitly in the type expression 
+""" Expand context variables that occur implicitly in the type expression
 of a term constructor.
 """
 function expand_term_type(cons::TermConstructor, sig::Signature)
@@ -449,7 +472,7 @@ an essentially algebraic theory, i.e., as partial functions whose domains are
 defined by equations.
 
 References:
- - (Cartmell, 1986, Sec 6: "Essentially algebraic theories and categories with 
+ - (Cartmell, 1986, Sec 6: "Essentially algebraic theories and categories with
     finite limits")
  - (Freyd, 1972, "Aspects of topoi")
 """
@@ -506,7 +529,7 @@ macro instance(head, body)
   # Parse the instance definition.
   head = parse_signature_binding(head)
   functions = parse_instance_body(body)
-  
+
   # We must generate and evaluate the code at *run time* because the signature
   # module is not defined at *parse time*.
   # Also, we "throw away" any docstring.
@@ -542,7 +565,7 @@ function parse_instance_body(expr::Expr)::Vector{JuliaFunction}
   @match strip_lines(expr) begin
     Expr(:block, args) => map(parse_function, args)
     _ => throw(ParseEror("Ill-formed instance definition"))
-  end  
+  end
 end
 
 """ Invoke a term constructor by name on an instance.
@@ -557,10 +580,10 @@ function invoke_term(signature_module::Module, instance_types::Tuple,
   # Get the corresponding Julia method from the parent module.
   method = getfield(parentmodule(signature_module), constructor_name)
   args = collect(Any, args)
-  
+
   # Add dispatch on return type, if necessary.
   if !any(typeof(arg) <: typ for typ in instance_types for arg in args)
-    # Case 1: Name refers to type constructor, e.g., generator constructor 
+    # Case 1: Name refers to type constructor, e.g., generator constructor
     # in syntax system.
     signature = signature_module.class().signature
     index = findfirst(cons -> cons.name == constructor_name, signature.types)
@@ -576,7 +599,7 @@ function invoke_term(signature_module::Module, instance_types::Tuple,
     end
     insert!(args, 1, instance_types[index])
   end
-  
+
   # Invoke the method!
   method(args...)
 end

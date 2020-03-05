@@ -20,9 +20,10 @@ using ...Doctrines: MonoidalCategoryWithBidiagonals, ObExpr, HomExpr
 import ...Doctrines: Ob, Hom, dom, codom,
   id, compose, ⋅, ∘, otimes, ⊗, munit, braid, mcopy, delete, mmerge, create
 using ...WiringDiagrams: WiringLayer
-using ..JuliaPrograms
-import ..JuliaPrograms: compile, compile_expr, compile_block, genvar, genvars,
-  to_function_expr, generator_expr, input_exprs
+using ...Programs
+import ...Programs: compile, compile_expr, compile_block
+import ...Programs.JuliaPrograms: genvar, genvars, to_function_expr,
+  generator_expr, input_exprs
 
 # Syntax
 ########

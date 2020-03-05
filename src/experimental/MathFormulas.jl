@@ -1,13 +1,14 @@
-""" Expression trees (formulas) for computer algebra.
+""" Formulas (expression trees) for computer algebra.
 
 This module is *not* an implementation of a conventional, general-purpose CAS.
-There are already many outstanding computer algebra systems. Its goals are to
+There are already many highly developed computer algebra systems. The
+objectives are to:
 
-- represent formulas as expression tree, when that is convenient
+- represent formulas as expression trees, whenever that is convenient
 - display formulas in conventional mathematical notation with free variables
 - allow interoperation with existing computer algebra systems
 """
-module ExpressionTrees
+module MathFormulas
 export Formula, head, args, first, last, to_formula, to_wiring_diagram,
   show_latex, show_latex_formula, show_sexpr
 
