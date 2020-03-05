@@ -16,7 +16,7 @@ env_set = haskey(ENV, "HAS_JOSH_K_SEAL_OF_APPROVAL") ||
    haskey(ENV, "GITLAB_CI")
 
 if !env_set
-    config["nbviewer_root_url"] = "https://nbviewer.jupyter.org/github/epatters/Catlab.jl/blob/gh-pages/v0.5.2"
+    config["nbviewer_root_url"] = "https://nbviewer.jupyter.org/github/epatters/Catlab.jl/blob/gh-pages/dev"
     config["repo_root_url"] = "https://github.com/epatters/Catlab.jl/blob/master/docs"
 end
 
