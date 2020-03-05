@@ -387,7 +387,7 @@ end
 function replace_types(bindings::Dict, sig::Signature)::Signature
   Signature([ replace_types(bindings, t) for t in sig.types ],
             [ replace_types(bindings, t) for t in sig.terms ],
-            sig.axioms) # TODO: Create replace_types for axioms
+            [ replace_types(bindings, t) for t in sig.axioms ])
 end
 function replace_types(bindings::Dict, cons::TypeConstructor)::TypeConstructor
   TypeConstructor(replace_symbols(bindings, cons.name), cons.params,
@@ -397,6 +397,12 @@ function replace_types(bindings::Dict, cons::TermConstructor)::TermConstructor
   TermConstructor(cons.name, cons.params,
                   replace_symbols(bindings, cons.typ),
                   replace_types(bindings, cons.context), cons.doc)
+end
+function replace_types(bindings::Dict, cons::AxiomConstructor)::AxiomConstructor
+  AxiomConstructor(cons.name,
+                   replace_symbols(bindings, cons.left),
+                   replace_symbols(bindings, cons.right),
+                   replace_types(bindings, cons.context), cons.doc)
 end
 function replace_types(bindings::Dict, context::Context)::Context
   GAT.Context(((name => @match expr begin
