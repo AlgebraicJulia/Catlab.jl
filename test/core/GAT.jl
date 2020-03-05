@@ -68,11 +68,21 @@ target = GAT.TypeConstructor(:Mor, [:X,:Y],
 @test GAT.replace_types(bindings, cons) == target
 
 cons = GAT.TermConstructor(:compose, [:f,:g], :(Hom(X,Z)),
-  GAT.Context((:X => :Obj, :Y => :Obj, :Z => :Obj,
+  GAT.Context((:X => :Ob, :Y => :Ob, :Z => :Ob,
                :f => :(Hom(X,Y)), :g => :(Hom(Y,Z)))))
 target = GAT.TermConstructor(:compose, [:f,:g], :(Mor(X,Z)),
   GAT.Context((:X => :Obj, :Y => :Obj, :Z => :Obj,
                :f => :(Mor(X,Y)), :g => :(Mor(Y,Z)))))
+@test GAT.replace_types(bindings, cons) == target
+
+cons = GAT.AxiomConstructor(:(==), Meta.parse("compose(compose(f,g),Hom(C,D))"),
+  Meta.parse("compose(f,compose(g,Hom(C,D)))"),
+  GAT.Context((:A => :Ob, :B => :Ob, :C => :Ob, :D => :Ob,
+               :f => :(Hom(A,B)), :g => :(Hom(B,C)))))
+target = GAT.AxiomConstructor(:(==), Meta.parse("compose(compose(f,g),Mor(C,D))"),
+  Meta.parse("compose(f,compose(g,Mor(C,D)))"),
+  GAT.Context((:A => :Obj, :B => :Obj, :C => :Obj, :D => :Obj,
+               :f => :(Mor(A,B)), :g => :(Mor(B,C)))))
 @test GAT.replace_types(bindings, cons) == target
 
 @test GAT.strip_type(:Ob) == :Ob
@@ -138,6 +148,8 @@ category_signature = GAT.Signature(types, terms, axioms)
   id(X::Ob)::Hom(X,X)
   compose(f::Hom(X,Y),g::Hom(Y,Z))::Hom(X,Z) where (X::Ob, Y::Ob, Z::Ob)
 
+  # TODO: Fix abbreviation for axioms
+  # compose(f,id(B)) == compose(f,id(B::Ob))
   compose(compose(f,g),h) == compose(f,compose(g,h)) where (A::Ob, B::Ob, C::Ob, D::Ob, f::Hom(A,B), g::Hom(B,C), h::Hom(C,D))
   compose(f,id(B)) == f where (A::Ob, B::Ob, f::Hom(A,B))
   compose(id(A),f) == f where (A::Ob, B::Ob, f::Hom(A,B))
