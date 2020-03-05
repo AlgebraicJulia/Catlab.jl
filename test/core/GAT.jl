@@ -101,7 +101,8 @@ target = GAT.AxiomConstructor(:(==), Meta.parse("compose(compose(f,g),Mor(C,D))"
   id(X)::Hom(X,X) where (X::Ob)
   compose(f,g)::Hom(X,Z) where (X::Ob, Y::Ob, Z::Ob, f::Hom(X,Y), g::Hom(Y,Z))
 
-  compose(compose(f,g),h) == compose(f,compose(g,h)) where (A::Ob, B::Ob, C::Ob, D::Ob, f::Hom(A,B), g::Hom(B,C), h::Hom(C,D))
+  compose(compose(f,g),h) == compose(f,compose(g,h)) where (
+    A::Ob, B::Ob, C::Ob, D::Ob, f::Hom(A,B), g::Hom(B,C), h::Hom(C,D))
   compose(f,id(B)) == f where (A::Ob, B::Ob, f::Hom(A,B))
   compose(id(A),f) == f where (A::Ob, B::Ob, f::Hom(A,B))
 end
@@ -150,7 +151,8 @@ category_signature = GAT.Signature(types, terms, axioms)
 
   # TODO: Fix abbreviation for axioms
   # compose(f,id(B)) == compose(f,id(B::Ob))
-  compose(compose(f,g),h) == compose(f,compose(g,h)) where (A::Ob, B::Ob, C::Ob, D::Ob, f::Hom(A,B), g::Hom(B,C), h::Hom(C,D))
+  compose(compose(f,g),h) == compose(f,compose(g,h)) where (
+    A::Ob, B::Ob, C::Ob, D::Ob, f::Hom(A,B), g::Hom(B,C), h::Hom(C,D))
   compose(f,id(B)) == f where (A::Ob, B::Ob, f::Hom(A,B))
   compose(id(A),f) == f where (A::Ob, B::Ob, f::Hom(A,B))
 end
