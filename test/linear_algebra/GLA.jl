@@ -1,8 +1,10 @@
 module TestGraphicalLinearAlgebra
 using Test
 
-using Catlab.LinearAlgebra
-
+using Catlab, Catlab.LinearAlgebra
+using Catlab, Catlab.Doctrines, Catlab.WiringDiagrams
+using Catlab.Programs
+using Catlab.Programs.ParseJuliaPrograms: normalize_arguments
 # Doctrines
 ###########
 
@@ -43,5 +45,46 @@ x, y = [2, 1], [7, 3, 5]
 @test ev(h+k, x) == val(h)*x + val(k)*x
 @test ev(scalar(A,3),x) == 3*x
 @test ev(antipode(A),x) == -1*x
+
+
+A, B = Ob(FreeLinearMaps, :A, :B)
+f, g, h, k = Hom(:f, A, A), Hom(:g, B, B), Hom(:h, A, B), Hom(:k, A, B)
+
+d = to_wiring_diagram(f⋅h⋅g)
+@test nboxes(d) == 3
+@test dom(d) == Ports([:A])
+@test codom(d) == Ports([:B])
+
+
+@present Mat(FreeLinearMaps) begin
+    X::Ob
+    Y::Ob
+    Z::Ob
+    V::Ob
+    W::Ob
+
+    f::Hom(X,Y)
+    g::Hom(Y,Z)
+    h::Hom(Y⊕Z, V)
+    fˣ::Hom(X,X)
+    fʸ::Hom(Y,Y)
+    fᶻ::Hom(Z,Z)
+    fᵛ::Hom(V,V)
+    fʷ::Hom(W,W)
+end
+
+@test_skip A = @program Mat (x::X,y::Y) begin
+    v = h(f(x),g(y))
+    return v
+end
+
+@test_skip codom(A) == generator(Mat, :V)
+
+@test_skip A = @program Mat (x::X,y::Y) begin
+    v = h(f(x),g(y))
+    return fᵛ(v)
+end
+
+@test_skip codom(A) == generator(Mat, :V)
 
 end
