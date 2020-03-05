@@ -122,7 +122,7 @@ axioms = [
                  :f => :(Hom(A,B)), :g => :(Hom(B,C)), :h => :(Hom(C,D))))),
   GAT.AxiomConstructor(:(==), Meta.parse("compose(f,id(B))"), :f,
     GAT.Context((:A => :Ob, :B => :Ob, :f => :(Hom(A,B))))),
-  GAT.AxiomConstructor(:(==), :f, Meta.parse("compose(id(A),f)"),
+  GAT.AxiomConstructor(:(==), Meta.parse("compose(id(A),f)"), :f,
     GAT.Context((:A => :Ob, :B => :Ob, :f => :(Hom(A,B))))),
 ]
 category_signature = GAT.Signature(types, terms, axioms)
