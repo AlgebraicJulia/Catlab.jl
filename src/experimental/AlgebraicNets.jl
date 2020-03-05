@@ -22,7 +22,7 @@ import ...Doctrines: Ob, Hom, dom, codom,
 using ...WiringDiagrams: WiringLayer
 using ...Programs
 import ...Programs: compile, compile_expr, compile_block
-import ...Programs.JuliaPrograms: genvar, genvars, to_function_expr,
+import ...Programs.GenerateJuliaPrograms: genvar, genvars, to_function_expr,
   generator_expr, input_exprs
 
 # Syntax
