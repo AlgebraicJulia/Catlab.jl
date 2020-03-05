@@ -8,12 +8,24 @@ const generated_dir = joinpath(@__DIR__, "src", "generated")
 using Catlab
 
 @info "Building Literate.jl docs"
+
+# Define config if not being compiled on recognized service
+config = Dict{String,String}()
+env_set = haskey(ENV, "HAS_JOSH_K_SEAL_OF_APPROVAL") ||
+   haskey(ENV, "GITHUB_ACTIONS") ||
+   haskey(ENV, "GITLAB_CI")
+
+if !env_set
+    config["nbviewer_root_url"] = "https://nbviewer.jupyter.org/github/epatters/Catlab.jl/blob/gh-pages/v0.5.2"
+    config["repo_root_url"] = "https://github.com/epatters/Catlab.jl/blob/master/docs"
+end
+
 for (root, dirs, files) in walkdir(literate_dir)
   out_dir = joinpath(generated_dir, relpath(root, literate_dir))
   for file in files
     if last(splitext(file)) == ".jl"
       Literate.markdown(joinpath(root, file), out_dir;
-        documenter=true, credit=false)
+        config=config, documenter=true, credit=false)
       Literate.notebook(joinpath(root, file), out_dir;
         execute=true, documenter=true, credit=false)
     end

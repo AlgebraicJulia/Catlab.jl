@@ -4,7 +4,7 @@
 #
 # Morphisms in a monoidal category can be represented as syntactic expressions,
 # such as $f \cdot g$ and $f \otimes g$, and also as [wiring
-# diagrams](wiring_basics.ipynb), aka *string diagrams*. Catlab provides
+# diagrams](@ref wiring_diagram_basics), aka *string diagrams*. Catlab provides
 # facilities for transforming between these two representations.
 
 using Catlab.Doctrines, Catlab.WiringDiagrams

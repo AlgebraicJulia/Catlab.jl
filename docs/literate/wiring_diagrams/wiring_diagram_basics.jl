@@ -1,4 +1,4 @@
-# # Basics of wiring diagrams
+# # [Basics of wiring diagrams](@id wiring_diagram_basics)
 #
 #md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/wiring_diagrams/wiring_diagram_basics.ipynb)
 # 

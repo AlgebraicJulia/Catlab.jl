@@ -1,4 +1,4 @@
-# Wiring diagrams
+# [Wiring diagrams](@id wiring_diagrams)
 
 ```@meta
 CurrentModule = Catlab.WiringDiagrams
