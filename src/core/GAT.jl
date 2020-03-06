@@ -266,26 +266,39 @@ end
 """ Julia functions for term and type aliases of GAT.
 """
 function alias_functions(sig::Signature)::Vector{JuliaFunction}
+  # collect all of the types and terms from the signature
   terms_types = [sig.types; sig.terms]
+  # iterate over the specified aliases
   collect(Iterators.flatten(map(collect(sig.aliases)) do alias
+    # collect all of the destination function definitions to alias
+    # allows an alias to overite all the type definitions of a function
     dests = filter(i -> i.name == last(alias), map(x -> x, terms_types))
+    # If there are no matching functions, throw a parse error
     if length(dests) == 0
       throw(ParseError("Cannot alias unknown term or type $dest"))
     end
+    # for each destination, create a Julia function
     map(dests) do dest
+      # Create the skeleton of the function
       ex = Expr(:(=), Expr(:call, first(alias)), Expr(:call, dest.name))
-      left = ex.args[1]
-      left.args = [left.args; map(dest.params) do param
-                     Expr(:(::), param, @match dest.context[param] begin
-                       sym::Symbol => sym
-                       Expr(:call, [name, args...]) => name
-                       _ => throw(ParseError(
-                                  "Cannot parse the type of parameter $param"))
-                     end)
-                   end]
+      # Append the parameters to the left side, with the correct types
+      append!(ex.args[1].args, map(dest.params) do param
+          # get the types of the parameters from
+          # the destination function context
+          Expr(:(::), param, @match dest.context[param] begin
+            # handle the single type case like :Ob
+            sym::Symbol => sym
+            # handle the compount type case like :Hom(A, A) -> :Hom
+            Expr(:call, [name, args...]) => name
+            # throw a parse error if the context doesn't match
+            _ => throw(ParseError(
+                       "Cannot parse the type of parameter $param"))
+          end)
+        end)
 
-      right = ex.args[2]
-      right.args = [right.args; dest.params]
+      # add the parameters to the right side
+      append!(ex.args[2].args, dest.params)
+      # parse the expression into the standardized JuliaFunction type
       parse_function(ex)
     end
   end))
