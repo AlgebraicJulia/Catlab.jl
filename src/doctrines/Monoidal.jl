@@ -1,5 +1,5 @@
 export MonoidalCategory, otimes, munit, ⊗, collect, ndims,
-  SymmetricMonoidalCategory, FreeSymmetricMonoidalCategory, braid,
+  SymmetricMonoidalCategory, FreeSymmetricMonoidalCategory, braid, σ,
   MonoidalCategoryWithDiagonals, CartesianCategory, FreeCartesianCategory,
   mcopy, delete, pair, proj1, proj2, Δ, ◊,
   MonoidalCategoryWithCodiagonals, CocartesianCategory, FreeCocartesianCategory,

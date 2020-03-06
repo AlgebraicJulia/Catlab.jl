@@ -11,6 +11,7 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 @test codom(otimes(f,g)) == otimes(codom(f),codom(g))
 @test dom(braid(A,B)) == otimes(A,B)
 @test codom(braid(A,B)) == otimes(B,A)
+@test σ(A, B) == braid(A,B)
 
 # Associativity and unit
 I = munit(FreeSymmetricMonoidalCategory.Ob)
@@ -60,11 +61,12 @@ I = munit(FreeSymmetricMonoidalCategory.Ob)
 @test latex(I) == "I"
 @test latex(otimes(A,B)) == "A \\otimes B"
 @test latex(otimes(f,g)) == "f \\otimes g"
-@test latex(compose(otimes(f,f),otimes(g,g))) == 
+@test latex(compose(otimes(f,f),otimes(g,g))) ==
   "\\left(f \\otimes f\\right) \\cdot \\left(g \\otimes g\\right)"
-@test latex(otimes(compose(f,g),compose(g,f))) == 
+@test latex(otimes(compose(f,g),compose(g,f))) ==
   "\\left(f \\cdot g\\right) \\otimes \\left(g \\cdot f\\right)"
 @test latex(braid(A,B)) == "\\sigma_{A,B}"
+@test latex(σ(A,B)) == "\\sigma_{A,B}"
 
 # Cartesian category
 ####################
@@ -85,7 +87,7 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 
 # LaTeX notation
 @test latex(mcopy(A)) == "\\Delta_{A}"
-@test latex(delete(A)) == "\\lozenge_{A}" 
+@test latex(delete(A)) == "\\lozenge_{A}"
 
 # Cocartesian category
 ######################
@@ -195,7 +197,7 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 @test dagger(id(A)) == id(A)
 @test dagger(dagger(f)) == f
 @test dagger(otimes(f,g)) == otimes(dagger(f),dagger(g))
-@test (dagger(otimes(compose(f,g),compose(g,f))) == 
+@test (dagger(otimes(compose(f,g),compose(g,f))) ==
        otimes(compose(dagger(g),dagger(f)),compose(dagger(f),dagger(g))))
 
 # Traced monoidal category
