@@ -14,7 +14,8 @@ import ...Doctrines: Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, braid,
 """ Doctrine of *Markov category*
 """
 @signature MonoidalCategoryWithDiagonals(Ob,Hom) => MarkovCategory(Ob,Hom) begin
-  expectation(M::Hom(A,B))::Hom(A,B) <= (A::Ob, B::Ob)
+  expectation(M::(A → B))::(A → B) <= (A::Ob, B::Ob)
+  @op expectation :𝔼
 
   # Unicode syntax
   𝔼(M::Hom) = expectation(M)

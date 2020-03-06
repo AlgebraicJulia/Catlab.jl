@@ -56,9 +56,11 @@ import Catlab.Doctrines: Ob, Hom, ObExpr, HomExpr, dom, codom, compose, id
 @signature Category(Ob,Hom) begin
   Ob::TYPE
   Hom(dom::Ob, codom::Ob)::TYPE
+  @op Hom :→
 
-  id(A::Ob)::Hom(A,A)
-  compose(f::Hom(A,B), g::Hom(B,C))::Hom(A,C) ⊣ (A::Ob, B::Ob, C::Ob)
+  id(A::Ob)::(A → A)
+  compose(f::(A → B), g::(B → C))::(A → C) ⊣ (A::Ob, B::Ob, C::Ob)
+  @op compose :·
 end
 nothing # hide
 ```
@@ -76,6 +78,13 @@ symbol. These context variables can also be defined after a `where` clause,
 but the left hand side must be surrounded by parentheses. This allows us to
 write `compose(f,g)`, instead of the more verbose `compose(A,B,C,f,g)` (for
 discussion, see Cartmell, 1986, Sec 10: Informal syntax).
+
+Notice the `@op` call where we can create method aliases that can
+then be used throughout the rest of the signature and outside of definition.
+Here we utilize this functionality by replacing the `Hom` and `compose` methods
+with their equivalent unicode characters, `→` and `·` respectively. These
+aliases are also automatically available to definitions that inherit a doctrine
+that already has the alias defined.
 
 !!! note
 
@@ -222,12 +231,12 @@ import Catlab.Doctrines: Ob, Hom, ObExpr, HomExpr, SymmetricMonoidalCategory,
 
 ```@example cartesian-monoidal-category
 @signature SymmetricMonoidalCategory(Ob,Hom) => CartesianCategory(Ob,Hom) begin
-  mcopy(A::Ob)::Hom(A,otimes(A,A))
-  delete(A::Ob)::Hom(A,munit())
+  mcopy(A::Ob)::(A → (A ⊗ A))
+  delete(A::Ob)::(A → munit())
 
-  pair(f::Hom(A,B), g::Hom(A,C))::Hom(A,otimes(B,C)) ⊣ (A::Ob, B::Ob, C::Ob)
-  proj1(A::Ob, B::Ob)::Hom(otimes(A,B),A)
-  proj2(A::Ob, B::Ob)::Hom(otimes(A,B),B)
+  pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
+  proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
+  proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
 end
 nothing # hide
 ```

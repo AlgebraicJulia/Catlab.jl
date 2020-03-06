@@ -19,15 +19,15 @@ References:
 """
 @signature MonoidalCategoryWithBidiagonals(Ob,Hom) => BicategoryRelations(Ob,Hom) begin
   # Dagger category.
-  dagger(f::Hom(A,B))::Hom(B,A) ⊣ (A::Ob,B::Ob)
+  dagger(f::(A → B))::(B → A) ⊣ (A::Ob,B::Ob)
 
   # Self-dual compact closed category.
-  dunit(A::Ob)::Hom(munit(), otimes(A,A))
-  dcounit(A::Ob)::Hom(otimes(A,A), munit())
+  dunit(A::Ob)::(munit() → (A ⊗ A))
+  dcounit(A::Ob)::((A ⊗ A) → munit())
 
   # Logical operations.
-  meet(f::Hom(A,B), g::Hom(A,B))::Hom(A,B) ⊣ (A::Ob, B::Ob)
-  top(A::Ob, B::Ob)::Hom(A,B)
+  meet(f::(A → B), g::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
+  top(A::Ob, B::Ob)::(A → B)
 end
 
 @syntax FreeBicategoryRelations(ObExpr,HomExpr) BicategoryRelations begin
@@ -51,14 +51,14 @@ References:
 """
 @signature BicategoryRelations(Ob,Hom) => AbelianBicategoryRelations(Ob,Hom) begin
   # Second diagonal and codiagonal.
-  mplus(A::Ob)::Hom(otimes(A,A),A)
-  mzero(A::Ob)::Hom(munit(),A)
-  coplus(A::Ob)::Hom(A,otimes(A,A))
-  cozero(A::Ob)::Hom(A,munit())
+  mplus(A::Ob)::((A ⊗ A) → A)
+  mzero(A::Ob)::(munit() → A)
+  coplus(A::Ob)::(A → (A ⊗ A))
+  cozero(A::Ob)::(A → munit())
 
   # Logical operations.
-  join(f::Hom(A,B), g::Hom(A,B))::Hom(A,B) ⊣ (A::Ob, B::Ob)
-  bottom(A::Ob, B::Ob)::Hom(A,B)
+  join(f::(A → B), g::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
+  bottom(A::Ob, B::Ob)::(A → B)
 end
 
 @syntax FreeAbelianBicategoryRelations(ObExpr,HomExpr) AbelianBicategoryRelations begin

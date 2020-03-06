@@ -33,11 +33,11 @@ import ...Programs.GenerateJuliaPrograms: genvar, genvars, to_function_expr,
 TODO: Explain
 """
 @signature MonoidalCategoryWithBidiagonals(Ob,Hom) => AlgebraicNetSignature(Ob,Hom) begin
-  linear(x::Any, A::Ob, B::Ob)::Hom(A,B)
-  constant(x::Any, A::Ob) = Hom(x, munit(Ob), A)
+  linear(x::Any, A::Ob, B::Ob)::(A → B)
+  constant(x::Any, A::Ob) = (x → munit(Ob) → A)
 
   # FIXME: Should be `f::WiringLayer`, but doesn't work.
-  wiring(f::Any, A::Ob, B::Ob)::Hom(A,B)
+  wiring(f::Any, A::Ob, B::Ob)::(A → B)
 end
 
 @syntax AlgebraicNet(ObExpr,HomExpr) AlgebraicNetSignature begin
@@ -48,7 +48,7 @@ end
 
   mcopy(A::Ob) = mcopy(A, 2)
   mmerge(A::Ob) = mmerge(A, 2)
-  
+
   # FIXME: Should be two methods (`f::WiringLayer` and `f::Any`) but see above.
   function wiring(f::Any, A::Ob, B::Ob)
     if f isa WiringLayer
@@ -112,7 +112,7 @@ end
 The function signature is:
   - first argument = input vector
   - second argument = constant (coefficients) vector
-  
+
 Unlike `compile_expr`, this method assumes the network has a single output.
 """
 function compile_expr_vector(f::AlgebraicNet.Hom; name::Symbol=Symbol(),
@@ -126,13 +126,13 @@ function compile_expr_vector(f::AlgebraicNet.Hom; name::Symbol=Symbol(),
     Expr(:tuple, inputs_sym, constants_sym)
   else # Named function
     Expr(:call, name, inputs_sym, constants_sym)
-  end                           
-                             
+  end
+
   # Create function body.
   @assert length(block.outputs) == 1
   return_expr = Expr(:return, block.outputs[1])
   body_expr = concat_expr(block.code, return_expr)
-  
+
   (Expr(:function, call_expr, body_expr), constants)
 end
 
@@ -150,7 +150,7 @@ function compile_block(f::AlgebraicNet.Hom{:linear}, inputs::Vector,
   nin, nout = ndims(dom(f)), ndims(codom(f))
   outputs = genvars(state, nout)
   @assert length(inputs) == nin
-  
+
   value = first(f)
   value = isa(value, Symbol) ? genconst(state, value) : value
   lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
