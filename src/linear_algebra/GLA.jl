@@ -1,7 +1,7 @@
 module GraphicalLinearAlgebra
 export LinearMaps, FreeLinearMaps, LinearRelations, FreeLinearRelations,
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, ozero, braid,
-  dagger, dunit, docunit, mcopy, Δ, delete, ◇, mmerge, ∇, create, □,
+  dagger, dunit, docunit, mcopy, Δ, delete, ◊, mmerge, ∇, create, □,
   mplus, ⊞, mzero, coplus, cozero, plus, meet, top, join, bottom,
   scalar, antipode, ⊟, adjoint, evaluate
 
@@ -11,7 +11,7 @@ import LinearAlgebra: adjoint
 using ...Catlab, ...Doctrines
 import ...Doctrines:
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, ozero, braid,
-  dagger, dunit, dcounit, mcopy, Δ, delete, ◇, mmerge, ∇, create, □,
+  dagger, dunit, dcounit, mcopy, Δ, delete, ◊, mmerge, ∇, create, □,
   mplus, mzero, coplus, cozero, meet, top, join, bottom
 using ...Programs
 import ...Programs: evaluate_hom
