@@ -103,13 +103,14 @@ target = Dict(:→ => :Mor)
   Hom(dom, codom)::TYPE ⊣ (dom::Ob, codom::Ob)
   @op Hom :→
 
-  id(X)::Hom(X,X) ⊣ (X::Ob)
-  compose(f,g)::Hom(X,Z) ⊣ (X::Ob, Y::Ob, Z::Ob, f::Hom(X,Y), g::Hom(Y,Z))
+  id(X)::(X → X) ⊣ (X::Ob)
+  compose(f,g)::(X → Z) ⊣ (X::Ob, Y::Ob, Z::Ob, f::(X → Y), g::(Y → Z))
+  @op compose :⋅
 
-  compose(compose(f,g),h) == compose(f,compose(g,h)) ⊣ (
-    A::Ob, B::Ob, C::Ob, D::Ob, f::Hom(A,B), g::Hom(B,C), h::Hom(C,D))
-  compose(f,id(B)) == f ⊣ (A::Ob, B::Ob, f::Hom(A,B))
-  compose(id(A),f) == f ⊣ (A::Ob, B::Ob, f::Hom(A,B))
+  (f ⋅ g) ⋅ h == f ⋅ (g ⋅ h) ⊣ ( A::Ob, B::Ob, C::Ob, D::Ob,
+                                f::(A → B), g::(B → C), h::(C → D))
+  f ⋅ id(B) == f ⊣ (A::Ob, B::Ob, f::(A → B))
+  id(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 
 @test isa(Category, Module)
@@ -141,7 +142,7 @@ axioms = [
   GAT.AxiomConstructor(:(==), Meta.parse("compose(id(A),f)"), :f,
     GAT.Context((:A => :Ob, :B => :Ob, :f => :(Hom(A,B))))),
 ]
-aliases = Dict(:→ => :Hom)
+aliases = Dict(:⋅ => :compose, :→ => :Hom)
 category_signature = GAT.Signature(types, terms, axioms, aliases)
 
 @test Category.class().signature == category_signature
@@ -153,13 +154,14 @@ category_signature = GAT.Signature(types, terms, axioms, aliases)
   Hom(dom::Ob, codom::Ob)::TYPE
   @op Hom :→
 
-  id(X::Ob)::Hom(X,X)
-  (compose(f::Hom(X,Y),g::Hom(Y,Z))::Hom(X,Z)) where (X::Ob, Y::Ob, Z::Ob)
+  id(X::Ob)::(X → X)
+  (compose(f::(X → Y),g::(Y → Z))::(X → Z)) where (X::Ob, Y::Ob, Z::Ob)
+  @op compose :⋅
 
-  (compose(compose(f,g),h) == compose(f,compose(g,h))) where (
-    A::Ob, B::Ob, C::Ob, D::Ob, f::Hom(A,B), g::Hom(B,C), h::Hom(C,D))
-  (compose(f,id(B)) == f) where (A::Ob, B::Ob, f::Hom(A,B))
-  (compose(id(A),f) == f) where (A::Ob, B::Ob, f::Hom(A,B))
+  (f ⋅ g) ⋅ h == f ⋅ (g ⋅ h) ⊣ ( A::Ob, B::Ob, C::Ob, D::Ob,
+                                f::(A → B), g::(B → C), h::(C → D))
+  f ⋅ id(B) == f ⊣ (A::Ob, B::Ob, f::(A → B))
+  id(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 
 @test CategoryAbbrev.class().signature == category_signature

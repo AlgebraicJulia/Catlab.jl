@@ -1,12 +1,12 @@
 module MarkovCategories
 export MarkovCategory, FreeMarkovCategory,
-  Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, braid, mcopy, Δ, delete, ◇,
+  Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, braid, mcopy, Δ, delete, ◊,
   expectation, 𝔼
 
 using ...GAT, ...Syntax, ...Doctrines, ...WiringDiagrams
 import ...Syntax: show_latex
 import ...Doctrines: Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, braid,
-  mcopy, Δ, delete, ◇
+  mcopy, Δ, delete, ◊
 
 # Doctrines
 ###########
@@ -14,7 +14,8 @@ import ...Doctrines: Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, braid,
 """ Doctrine of *Markov category*
 """
 @signature MonoidalCategoryWithDiagonals(Ob,Hom) => MarkovCategory(Ob,Hom) begin
-  expectation(M::Hom(A,B))::Hom(A,B) <= (A::Ob, B::Ob)
+  expectation(M::(A → B))::(A → B) <= (A::Ob, B::Ob)
+  @op expectation :𝔼
 
   # Unicode syntax
   𝔼(M::Hom) = expectation(M)
