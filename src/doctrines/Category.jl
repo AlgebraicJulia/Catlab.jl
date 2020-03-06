@@ -28,7 +28,7 @@ We use symbol ⋅ (\\cdot) for diagrammatic composition: f⋅g = compose(f,g).
   compose(f::(A → B), g::(B → C))::(A → C) ⊣ (A::Ob, B::Ob, C::Ob)
   @op compose :⋅
 
-  ∘(f::Hom, g::Hom) = compose(g, f)
+  ∘(f::Hom, g::Hom) = g ⋅ f
 
   # Equivalency Axioms in a category
   (f ⋅ g) ⋅ h == f ⋅ (g ⋅ h) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, f::(A → B), g::(B → C), h::(C → D))
@@ -89,9 +89,8 @@ end
   # Horizontal compostion
   compose2(α::(f ⇒ g), β::(h ⇒ k))::((f ⋅ h) ⇒ (g ⋅ k)) ⊣
     (A::Ob, B::Ob, C::Ob, f::(A → B), g::(A → B), h::(B → C), k::(B → C))
-  @op compose2 :✽
 
-  ∘(α::Hom2, β::Hom2) = compose(β, α)
+  ∘(α::Hom2, β::Hom2) = β ⋅ α
 end
 
 # Convenience constructors
