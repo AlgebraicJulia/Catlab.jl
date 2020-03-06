@@ -5,6 +5,9 @@ using IterativeSolvers
 
 using Catlab, Catlab.Doctrines, Catlab.WiringDiagrams, Catlab.Programs
 using Catlab.LinearAlgebra.GraphicalLinearAlgebra
+import LinearAlgebra: norm
+
+import LinearMaps: BlockDiagonalMap
 
 # Doctrines
 ###########
@@ -51,7 +54,7 @@ A, B = Ob(FreeLinearFunctions, :A, :B)
 f, g, h = Hom(:f, A, B), Hom(:g, A, B), Hom(:h, B, B)
 
 M = plus(f,g)⋅h
-#M = plus(f,g)
+# M = plus(f,g)
 
 M′ = M⊕id(A) + id(A)⊕M
 #M₂ = M′⋅M′
@@ -61,15 +64,31 @@ d = Dict(f=>LinearMap([1 1 1 1; 2 2 2 2; 3 3 3 3.0]),
          h=>LinearMap([1 0 -1; -1 1 0; 1 1 -1.0]))
 F(ex) = functor((LinearMapDom, LinearMap), ex, generators=d)
 
+
 n = 4
 m = 3
 x = ones(Float64, n)
 b = F(M)*x
 x̂ᴰ = Matrix(F(M))\b
-#x̂ = gmres(F(M), b)
-#b̂ = F(M)*x̂
-#@test norm(b̂-b) < 1e-8
-#@test norm(x̂-x) < 1e-8
+
+# x̂ = gmres(F(M), b)
+# b̂ = F(M)*x̂
+@test_skip norm(b̂-b) < 1e-8
+@test_skip norm(x̂-x) < 1e-8
+
+# Eigensystem tests
+A = BlockDiagonalMap(LinearMap(identity, 3), LinearMap(identity, 3))
+@test norm( (A+A)*gmres(A+A, ones(6)) .- ones(6) ) < 1e-4
+
+λ, V = powm(F(M)'*F(M))
+norm((F(M)'*F(M))*V - λ*V) < 1e-4
+λ, V = powm(F(M⋅adjoint(M)))
+norm(F(M⋅adjoint(M))*V - λ*V) < 1e-4
+
+Σ, L = svdl(F(M))
+@test all(Σ .>= 0)
+
+
 
 #x₂ = vcat(x,-x)
 #b₂= F(M₂)*x₂
