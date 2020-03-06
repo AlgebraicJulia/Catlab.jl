@@ -43,7 +43,7 @@ Functional fragment of graphical linear algebra.
   scalar(A::Ob, c::Number)::Hom(A,A)
   antipode(A::Ob)::Hom(A,A) # == scalar(A, -1)
 
-  adjoint(f::Hom(A,B))::Hom(A,B) <= (A::Ob, B::Ob)
+  adjoint(f::Hom(A,B))::Hom(B,A) <= (A::Ob, B::Ob)
 
   # Unicode syntax
   Δ(A::Ob) = mcopy(A)
