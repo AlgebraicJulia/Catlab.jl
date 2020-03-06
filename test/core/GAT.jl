@@ -257,9 +257,10 @@ end
 end
 
 # Incomplete instance of Monoid
-@test_throws ErrorException @instance Monoid(String) begin
-  times(x::AbsStringtractString, y::String) = string(x,y)
-end
+# XXX: Cannot use `@test_warn` since generated code won't be at toplevel.
+#@test_warn "not implemented" @instance Monoid(String) begin
+#  times(x::AbsStringtractString, y::String) = string(x,y)
+#end
 
 # Complete instance of Monoid
 @instance Monoid(String) begin

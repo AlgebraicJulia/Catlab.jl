@@ -1,5 +1,5 @@
 module StructuredGraphicalLinearAlgebra
-export StructuredLinearMaps, FreeStructuredLinearMaps,
+export StructuredLinearFunctions, FreeStructuredLinearFunctions,
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, ozero, braid,
   mcopy, Δ, delete, ◊, mplus, ⊞, mzero, plus, scalar, antipode, ⊟, adjoint,
   ℝ, munit, →, diag
@@ -22,7 +22,7 @@ import ..GraphicalLinearAlgebra:
 Structured matrices have some properties that allow us to compute with them faster
 than general dense matrices. Morphisms in this category represent structured matrices.
 """
-@signature LinearMaps(Ob,Hom) => StructuredLinearMaps(Ob, Hom) begin
+@signature LinearFunctions(Ob,Hom) => StructuredLinearFunctions(Ob, Hom) begin
   @op oplus :⊕
   munit()::Ob
   @op munit :ℝ
@@ -51,10 +51,12 @@ than general dense matrices. Morphisms in this category represent structured mat
   symtridiag(a,b) == tridiagonal(a,b,b) ⊣ (A::Ob, a::(ℝ()→A⊗ℝ()), b::(ℝ()→A))
 end
 
-@syntax FreeStructuredLinearMaps(ObExpr,HomExpr) StructuredLinearMaps begin
+@syntax FreeStructuredLinearFunctions(ObExpr,HomExpr) StructuredLinearFunctions begin
   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), ozero)
   oplus(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = new(f,g; strict=true) # No normalization!
 end
+
++(f::FreeStructuredLinearFunctions.Hom, g::FreeStructuredLinearFunctions.Hom) = plus(f,g)
 
 end
