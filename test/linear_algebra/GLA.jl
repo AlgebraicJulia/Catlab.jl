@@ -81,14 +81,12 @@ A = BlockDiagonalMap(LinearMap(identity, 3), LinearMap(identity, 3))
 @test norm( (A+A)*gmres(A+A, ones(6)) .- ones(6) ) < 1e-4
 
 λ, V = powm(F(M)'*F(M))
-norm((F(M)'*F(M))*V - λ*V) < 1e-4
+@test norm((F(M)'*F(M))*V - λ*V) < 1e-4
 λ, V = powm(F(M⋅adjoint(M)))
-norm(F(M⋅adjoint(M))*V - λ*V) < 1e-4
+@test norm(F(M⋅adjoint(M))*V - λ*V) < 1e-4
 
 Σ, L = svdl(F(M))
 @test all(Σ .>= 0)
-
-
 
 #x₂ = vcat(x,-x)
 #b₂= F(M₂)*x₂
