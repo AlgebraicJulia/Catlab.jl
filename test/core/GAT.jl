@@ -171,13 +171,21 @@ accessors = [ GAT.JuliaFunction(:(dom(::Hom)), :Ob),
               GAT.JuliaFunction(:(codom(::Hom)), :Ob) ]
 constructors = [ GAT.JuliaFunction(:(id(X::Ob)), :Hom),
                  GAT.JuliaFunction(:(compose(f::Hom, g::Hom)), :Hom) ]
-alias_functions = [ GAT.parse_function(Expr(:(=), Expr(:call, :⋅, Expr(:(::), :f, :Hom), Expr(:(::), :g, :Hom)), Expr(:call, :compose, :f, :g))),
-                   GAT.parse_function(Expr(:(=), Expr(:call, :→, Expr(:(::), :dom, :Ob), Expr(:(::), :codom, :Ob)), Expr(:call, :Hom, :dom, :codom)))]
+alias_functions = [
+    GAT.parse_function(Expr(:(=),
+        Expr(:call, :⋅, Expr(:(::), :f, :Hom), Expr(:(::), :g, :Hom)),
+        Expr(:call, :compose, :f, :g))),
+    GAT.parse_function(Expr(:(=),
+        Expr(:call, :→, Expr(:(::), :dom, :Ob), Expr(:(::), :codom, :Ob)),
+        Expr(:call, :Hom, :dom, :codom)))
+]
 
 @test GAT.accessors(Category.class().signature) == accessors
 @test GAT.constructors(Category.class().signature) == constructors
 @test GAT.alias_functions(Category.class().signature) == alias_functions
-@test GAT.interface(Category.class()) == [accessors; constructors; alias_functions]
+@test GAT.interface(Category.class()) == [accessors;
+                                          constructors;
+                                          alias_functions]
 
 # Signature extension
 @signature Semigroup(S) begin
