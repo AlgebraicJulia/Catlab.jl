@@ -173,13 +173,8 @@ function signature_code(main_class, base_mod, base_params)
   bindings = Dict(cons.name => Expr(:(.), class.name, QuoteNode(cons.name))
                   for cons in signature.types)
   fns = interface(class)
-  toplevel = [ generate_function(replace_symbols(bindings, f)) for f in fns ]
 
-  # add to toplevel
-  toplevel = [ toplevel; map(collect(main_sig.aliases)) do a
-    Expr(:(=), Expr(:call, first(a), Expr(:..., :args)),
-         Expr(:call, last(a), Expr(:..., :args)))
-  end ]
+  toplevel = [ generate_function(replace_symbols(bindings, f)) for f in fns ]
 
   # Modules must be at top level:
   # https://github.com/JuliaLang/julia/issues/21009
@@ -268,11 +263,53 @@ function constructor(cons::TermConstructor, sig::Signature)::JuliaFunction
   JuliaFunction(call_expr, return_type)
 end
 
+""" Julia functions for term and type aliases of GAT.
+"""
+function alias_functions(sig::Signature)::Vector{JuliaFunction}
+  # collect all of the types and terms from the signature
+  terms_types = [sig.types; sig.terms]
+  # iterate over the specified aliases
+  collect(Iterators.flatten(map(collect(sig.aliases)) do alias
+    # collect all of the destination function definitions to alias
+    # allows an alias to overite all the type definitions of a function
+    dests = filter(i -> i.name == last(alias), map(x -> x, terms_types))
+    # If there are no matching functions, throw a parse error
+    if length(dests) == 0
+      throw(ParseError("Cannot alias unknown term or type $dest"))
+    end
+    # for each destination, create a Julia function
+    map(dests) do dest
+      # Create the skeleton of the function
+      ex = Expr(:(=), Expr(:call, first(alias)), Expr(:call, dest.name))
+      # Append the parameters to the left side, with the correct types
+      append!(ex.args[1].args, map(dest.params) do param
+          # get the types of the parameters from
+          # the destination function context
+          Expr(:(::), param, @match dest.context[param] begin
+            # handle the single type case like :Ob
+            sym::Symbol => sym
+            # handle the compount type case like :Hom(A, A) -> :Hom
+            Expr(:call, [name, args...]) => name
+            # throw a parse error if the context doesn't match
+            _ => throw(ParseError(
+                       "Cannot parse the type of parameter $param"))
+          end)
+        end)
+
+      # add the parameters to the right side
+      append!(ex.args[2].args, dest.params)
+      # parse the expression into the standardized JuliaFunction type
+      parse_function(ex)
+    end
+  end))
+end
+
 """ Complete set of Julia functions for a type class.
 """
 function interface(class::Typeclass)::Vector{JuliaFunction}
   [ accessors(class.signature);
     constructors(class.signature);
+    alias_functions(class.signature);
     class.functions ]
 end
 

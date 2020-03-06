@@ -214,9 +214,11 @@ supported.
 """
 @signature SymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithBidiagonals(Ob,Hom) begin
   mcopy(A::Ob)::(A → (A ⊗ A))
+  @op mcopy :Δ
   mmerge(A::Ob)::((A ⊗ A) → A)
   @op mmerge :∇
   delete(A::Ob)::Hom(A,munit())
+  @op delete :◊
   create(A::Ob)::Hom(munit(),A)
   @op create :□
 end

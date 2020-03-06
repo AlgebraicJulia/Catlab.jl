@@ -16,9 +16,6 @@ import ...Doctrines: Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, braid,
 @signature MonoidalCategoryWithDiagonals(Ob,Hom) => MarkovCategory(Ob,Hom) begin
   expectation(M::(A → B))::(A → B) <= (A::Ob, B::Ob)
   @op expectation :𝔼
-
-  # Unicode syntax
-  𝔼(M::Hom) = expectation(M)
 end
 
 @syntax FreeMarkovCategory(ObExpr,HomExpr) MarkovCategory begin
