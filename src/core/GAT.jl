@@ -173,13 +173,8 @@ function signature_code(main_class, base_mod, base_params)
   bindings = Dict(cons.name => Expr(:(.), class.name, QuoteNode(cons.name))
                   for cons in signature.types)
   fns = interface(class)
-  toplevel = [ generate_function(replace_symbols(bindings, f)) for f in fns ]
 
-  # add to toplevel
-  toplevel = [ toplevel; map(collect(main_sig.aliases)) do a
-    Expr(:(=), Expr(:call, first(a), Expr(:..., :args)),
-         Expr(:call, last(a), Expr(:..., :args)))
-  end ]
+  toplevel = [ generate_function(replace_symbols(bindings, f)) for f in fns ]
 
   # Modules must be at top level:
   # https://github.com/JuliaLang/julia/issues/21009
@@ -268,11 +263,40 @@ function constructor(cons::TermConstructor, sig::Signature)::JuliaFunction
   JuliaFunction(call_expr, return_type)
 end
 
+""" Julia functions for term and type aliases of GAT.
+"""
+function alias_functions(sig::Signature)::Vector{JuliaFunction}
+  terms_types = [sig.types; sig.terms]
+  collect(Iterators.flatten(map(collect(sig.aliases)) do alias
+    dests = filter(i -> i.name == last(alias), map(x -> x, terms_types))
+    if length(dests) == 0
+      throw(ParseError("Cannot alias unknown term or type $dest"))
+    end
+    map(dests) do dest
+      ex = Expr(:(=), Expr(:call, first(alias)), Expr(:call, dest.name))
+      left = ex.args[1]
+      left.args = [left.args; map(dest.params) do param
+                     Expr(:(::), param, @match dest.context[param] begin
+                       sym::Symbol => sym
+                       Expr(:call, [name, args...]) => name
+                       _ => throw(ParseError(
+                                  "Cannot parse the type of parameter $param"))
+                     end)
+                   end]
+
+      right = ex.args[2]
+      right.args = [right.args; dest.params]
+      parse_function(ex)
+    end
+  end))
+end
+
 """ Complete set of Julia functions for a type class.
 """
 function interface(class::Typeclass)::Vector{JuliaFunction}
   [ accessors(class.signature);
     constructors(class.signature);
+    alias_functions(class.signature);
     class.functions ]
 end
 
