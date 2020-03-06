@@ -8,8 +8,8 @@ export LinearFunctions, FreeLinearFunctions, LinearRelations,
 
 import Base: +
 using AutoHashEquals
-import LinearAlgebra: adjoint
 using LinearMaps
+import LinearMaps: adjoint
 const LMs = LinearMaps
 
 using ...Catlab, ...Doctrines
@@ -145,8 +145,8 @@ mplus_lm(x::AbstractVector) = begin
 end
 mzero_lm(n::Int) = x::AbstractVector -> zeros(eltype(x), n)
 
-# Evaluate interface
-#-------------------
+# Catlab evaluate
+#----------------
 
 function evaluate_hom(f::FreeLinearFunctions.Hom{:generator}, xs::Vector;
                       generators::AbstractDict=Dict())

@@ -1,6 +1,8 @@
 module TestGraphicalLinearAlgebra
 using Test
 
+using IterativeSolvers
+
 using Catlab, Catlab.Doctrines, Catlab.WiringDiagrams, Catlab.Programs
 using Catlab.LinearAlgebra.GraphicalLinearAlgebra
 
@@ -42,8 +44,42 @@ x, y = [2, 1], [7, 3, 5]
 @test antipode(dom(f))*x == -1*x
 @test adjoint(g)*y == g'*y
 
-# Evaluate interface
-#-------------------
+# GMRES with LinearMaps
+#----------------------
+
+A, B = Ob(FreeLinearFunctions, :A, :B)
+f, g, h = Hom(:f, A, B), Hom(:g, A, B), Hom(:h, B, B)
+
+M = plus(f,g)⋅h
+#M = plus(f,g)
+
+M′ = M⊕id(A) + id(A)⊕M
+#M₂ = M′⋅M′
+
+d = Dict(f=>LinearMap([1 1 1 1; 2 2 2 2; 3 3 3 3.0]),
+         g=>LinearMap([1 1 1 1; -1 -1 -1 -1; 0 0 0 0.0]),
+         h=>LinearMap([1 0 -1; -1 1 0; 1 1 -1.0]))
+F(ex) = functor((LinearMapDom, LinearMap), ex, generators=d)
+
+n = 4
+m = 3
+x = ones(Float64, n)
+b = F(M)*x
+x̂ᴰ = Matrix(F(M))\b
+#x̂ = gmres(F(M), b)
+#b̂ = F(M)*x̂
+#@test norm(b̂-b) < 1e-8
+#@test norm(x̂-x) < 1e-8
+
+#x₂ = vcat(x,-x)
+#b₂= F(M₂)*x₂
+#x̂₂ = gmres(F(M₂), b₂)
+#b̂₂ = F(M₂)*x̂₂
+#@test norm(b̂₂-b₂) < 1e-4
+#@test norm(x̂₂-x₂) < 1e-4
+
+# Catlab evaluate
+#----------------
 
 A, B = Ob(FreeLinearFunctions, :A, :B)
 f, g, h, k = Hom(:f, A, A), Hom(:g, B, B), Hom(:h, A, B), Hom(:k, A, B)
@@ -57,7 +93,7 @@ generators = Dict(
 ev = (args...) -> evaluate(args...; generators=generators)
 
 val = arg -> generators[arg]
-
+x, y = [2, 1], [7, 3, 5]
 @test ev(f, x) == val(f)*x
 
 @test ev(f⋅f, x) == val(f)*(val(f)*x)
