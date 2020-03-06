@@ -26,7 +26,7 @@ signature for weak monoidal categories later.
 @signature Category(Ob,Hom) => MonoidalCategory(Ob,Hom) begin
   otimes(A::Ob, B::Ob)::Ob
   @op otimes :⊗
-  otimes(f::(A → B), g::(C → D))::((A ⊗ C) →(B ⊗ D)) ⊣
+  otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣
     (A::Ob, B::Ob, C::Ob, D::Ob)
   munit()::Ob
 end
@@ -75,7 +75,7 @@ show_latex(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
 The signature (but not the axioms) is the same as a braided monoidal category.
 """
 @signature MonoidalCategory(Ob,Hom) => SymmetricMonoidalCategory(Ob,Hom) begin
-  braid(A::Ob, B::Ob)::((A ⊗ B) →(B ⊗ A))
+  braid(A::Ob, B::Ob)::((A ⊗ B) → (B ⊗ A))
   @op braid :σ
 end
 
@@ -117,7 +117,7 @@ Actually, this is a cartesian *symmetric monoidal* category but we omit these
 qualifiers for brevity.
 """
 @signature MonoidalCategoryWithDiagonals(Ob,Hom) => CartesianCategory(Ob,Hom) begin
-  pair(f::(A → B), g::(A → C))::(A →(B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
+  pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
 end
@@ -230,7 +230,7 @@ FIXME: This signature should extend `MonoidalCategoryWithBidiagonals`,
 yet supported.
 """
 @signature MonoidalCategoryWithBidiagonals(Ob,Hom) => BiproductCategory(Ob,Hom) begin
-  pair(f::(A → B), g::(A → C))::(A →(B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
+  pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
   copair(f::(A → C), g::(B → C))::((A ⊗ B) → C) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
