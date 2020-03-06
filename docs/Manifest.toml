@@ -33,7 +33,7 @@ uuid = "b99e7846-7c00-51b0-8f62-c81ae34c0232"
 version = "0.5.8"
 
 [[Catlab]]
-deps = ["AutoHashEquals", "Compat", "Compose", "DataStructures", "JSON", "LightGraphs", "LightXML", "LinearAlgebra", "Logging", "Match", "MetaGraphs", "Parameters", "Pkg", "Reexport", "Requires", "StaticArrays", "Statistics", "Test"]
+deps = ["AutoHashEquals", "Compat", "Compose", "DataStructures", "JSON", "LightGraphs", "LightXML", "LinearAlgebra", "LinearMaps", "Logging", "Match", "MetaGraphs", "Parameters", "Pkg", "Reexport", "Requires", "StaticArrays", "Statistics", "Test"]
 path = ".."
 uuid = "134e5e36-593f-5add-ad60-77f754baafbe"
 version = "0.5.3"
@@ -192,6 +192,12 @@ version = "0.8.1"
 [[LinearAlgebra]]
 deps = ["Libdl"]
 uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+
+[[LinearMaps]]
+deps = ["LinearAlgebra", "SparseArrays"]
+git-tree-sha1 = "e204a96dbb8d49fbca24086c586734435d7bf5b5"
+uuid = "7a12625a-238d-50fd-b39a-03d52299707e"
+version = "2.6.1"
 
 [[Literate]]
 deps = ["Base64", "JSON", "REPL"]

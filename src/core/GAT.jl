@@ -582,7 +582,9 @@ function instance_code(mod, instance_types, instance_fns)
     elseif !isnothing(f.impl)
       f_impl = f
     else
-      error("Method $(f.call_expr) not implemented in $(class.name) instance")
+      # FIXME: Can we check whether the method has already been defined?
+      @warn "Method $(f.call_expr) not implemented in $(class.name) instance"
+      continue
     end
     push!(code.args, generate_function(f_impl))
   end

@@ -4,8 +4,8 @@ using Test
 using Catlab, Catlab.Doctrines
 using Catlab.LinearAlgebra.StructuredGraphicalLinearAlgebra
 
-R = ℝ(FreeStructuredLinearMaps.Ob)
-A, B = Ob(FreeStructuredLinearMaps, :A, :B)
+R = ℝ(FreeStructuredLinearFunctions.Ob)
+A, B = Ob(FreeStructuredLinearFunctions, :A, :B)
 f, g = Hom(:f, A, B), Hom(:g, A, B)
 u, v = Hom(:u, R, A), Hom(:g, R, B)
 
