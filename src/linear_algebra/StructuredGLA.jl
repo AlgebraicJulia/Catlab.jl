@@ -1,7 +1,7 @@
 module StructuredGraphicalLinearAlgebra
 export StructuredLinearMaps, FreeStructuredLinearMaps,
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, ozero, braid,
-  mcopy, Δ, delete, ◇, mplus, ⊞, mzero, plus, scalar, antipode, ⊟, adjoint,
+  mcopy, Δ, delete, ◊, mplus, ⊞, mzero, plus, scalar, antipode, ⊟, adjoint,
   ℝ, munit, →, diag
 
 import Base: +
@@ -12,7 +12,7 @@ import ...Doctrines:
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, ozero, braid, munit
 using ..GraphicalLinearAlgebra
 import ..GraphicalLinearAlgebra:
-  mcopy, Δ, delete, ◇, mplus, mzero, plus, scalar, antipode, ⊟, adjoint
+  mcopy, Δ, delete, ◊, mplus, mzero, plus, scalar, antipode, ⊟, adjoint
 
 # Doctrines
 ###########
