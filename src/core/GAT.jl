@@ -590,7 +590,7 @@ the Typeclass.jl library for Julia.
 macro instance(head, body)
   # Parse the instance definition.
   head = parse_signature_binding(head)
-  functions = parse_instance_body(body)
+  functions, imports = parse_instance_body(body)
 
   # We must generate and evaluate the code at *run time* because the signature
   # module is not defined at *parse time*.
@@ -625,11 +625,23 @@ end
 
 """ Parse the body of a GAT instance definition.
 """
-function parse_instance_body(expr::Expr)::Vector{JuliaFunction}
-  @match strip_lines(expr) begin
-    Expr(:block, args) => map(parse_function, args)
-    _ => throw(ParseEror("Ill-formed instance definition"))
+function parse_instance_body(expr::Expr)
+  @assert expr.head == :block
+  funs = JuliaFunction[]
+  imports = Symbol[]
+  for elem in strip_lines(expr).args
+    elem = strip_lines(elem)
+    head = elem.head
+    if head == :macrocall && elem.args[1] == Symbol("@import")
+      @match elem.args[2] begin
+        sym::Symbol => push!(imports, sym)
+        Expr(:tuple, arr) => (imports = [imports; Symbol[arr...]])
+      end
+    else
+      push!(funs, parse_function(elem))
+    end
   end
+  return (funs, imports)
 end
 
 """ Invoke a term constructor by name on an instance.
