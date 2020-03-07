@@ -5,9 +5,9 @@ using IterativeSolvers
 
 using Catlab, Catlab.Doctrines, Catlab.WiringDiagrams, Catlab.Programs
 using Catlab.LinearAlgebra.GraphicalLinearAlgebra
-import LinearAlgebra: norm
+import LinearAlgebra: norm, svd
 
-import LinearMaps: BlockDiagonalMap
+import LinearMaps: BlockDiagonalMap, UniformScaling
 
 # Doctrines
 ###########
@@ -50,45 +50,75 @@ x, y = [2, 1], [7, 3, 5]
 # GMRES with LinearMaps
 #----------------------
 
-A, B = Ob(FreeLinearFunctions, :A, :B)
-f, g, h = Hom(:f, A, B), Hom(:g, A, B), Hom(:h, B, B)
+V, W = Ob(FreeLinearFunctions, :V, :W)
+f, g, h = Hom(:f, V, W), Hom(:g, V, W), Hom(:h, W, W)
 
 M = plus(f,g)⋅h
 # M = plus(f,g)
 
-M′ = M⊕id(A) + id(A)⊕M
-#M₂ = M′⋅M′
 
-d = Dict(f=>LinearMap([1 1 1 1; 2 2 2 2; 3 3 3 3.0]),
-         g=>LinearMap([1 1 1 1; -1 -1 -1 -1; 0 0 0 0.0]),
-         h=>LinearMap([1 0 -1; -1 1 0; 1 1 -1.0]))
+d = Dict(f=>LinearMap([1 1 1 1; 2 2 2 3; 3 3 3 3.0]),
+         g=>LinearMap([3 1 1 1; -1 -1 -1 -1; 0 2 0 0.0]),
+         h=>LinearMap([1 4 -1; -1 1 0; 1 1 -1.0]),
+         V=>LinearMapDom(4),
+         W=>LinearMapDom(3))
 F(ex) = functor((LinearMapDom, LinearMap), ex, generators=d)
 
 
 n = 4
 m = 3
 x = ones(Float64, n)
-b = F(M)*x
-x̂ᴰ = Matrix(F(M))\b
+A = F(M)'*F(M)
+b = A*x
+x̂ᴰ = Matrix(A)\b
 
-# x̂ = gmres(F(M), b)
-# b̂ = F(M)*x̂
-@test_skip norm(b̂-b) < 1e-8
-@test_skip norm(x̂-x) < 1e-8
+@test IterativeSolvers.zerox(F(M), b) == IterativeSolvers.zerox(Matrix(F(M)), b)
+x̂ = gmres(A, b; maxiter=20)
+
+b̂ = A*x̂
+@test norm(b̂-b) < 1e-8
+
+n = 32
+M = plus(f,g)⋅h
+M₄ = ⊕(M, M, M, M, M, M, M, M)
+x = ones(Float64, n)
+# A needs to be square and nonsingular
+A = ( F(M₄)'*F(M₄) ) + UniformScaling(n)
+b = A*x
+x̂ᴰ = Matrix(A)\b
+
+x̂, h = gmres(A, b; tol=1e-12, maxiter=160, log=true, verbose=false)
+
+b̂ = A*x̂
+@test norm(b̂-b) < 1e-8
+@test norm(x̂-x)/norm(x) < 1e-8
+
+Σ = svdl(A; k=10)[1]
 
 # Eigensystem tests
-A = BlockDiagonalMap(LinearMap(identity, 3), LinearMap(identity, 3))
-@test norm( (A+A)*gmres(A+A, ones(6)) .- ones(6) ) < 1e-4
 
-λ, V = powm(F(M)'*F(M))
-norm((F(M)'*F(M))*V - λ*V) < 1e-4
-λ, V = powm(F(M⋅adjoint(M)))
-norm(F(M⋅adjoint(M))*V - λ*V) < 1e-4
+λ, Q = powm(F(M)'*F(M))
+@test norm((F(M)'*F(M))*Q - λ*Q) < 1e-3
+λ, Q = powm(F(M⋅adjoint(M)))
+@test norm(F(M⋅adjoint(M))*Q - λ*Q) < 1e-3
 
 Σ, L = svdl(F(M))
 @test all(Σ .>= 0)
 
 
+λ, Q = powm(A)
+@test norm(A*Q - λ*Q) < 1e-8
+
+Σ, L = svdl(A)
+@test all(Σ .>= 0)
+
+M′ = ( M⊕id(V) ) + ( id(V)⊕M )
+M₂ = ( M′⋅adjoint(M′) ) + id(V⊕V)
+@test all(svd(Matrix(F(M₂))).S .> 1e-10)
+b = ones(size(F(M₂), 1))
+x̂ = gmres(F(M₂), b)
+b̂ = F(M₂)*x̂
+@test norm(b̂ .- 1) < 1e-12
 
 #x₂ = vcat(x,-x)
 #b₂= F(M₂)*x₂
