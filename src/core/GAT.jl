@@ -590,18 +590,18 @@ the Typeclass.jl library for Julia.
 macro instance(head, body)
   # Parse the instance definition.
   head = parse_signature_binding(head)
-  functions, imports = parse_instance_body(body)
+  functions, ext_functions = parse_instance_body(body)
 
   # We must generate and evaluate the code at *run time* because the signature
   # module is not defined at *parse time*.
   # Also, we "throw away" any docstring.
   # FIXME: Is there a better place to put the docstring?
-  expr = :(instance_code($(esc(head.name)), $(esc(head.params)), $functions))
+  expr = :(instance_code($(esc(head.name)), $(esc(head.params)), $functions, $ext_functions))
   Expr(:block,
     Expr(:call, esc(:eval), expr),
     :(Core.@__doc__ abstract type $(esc(gensym(:instance_doc))) end)) # /dev/null
 end
-function instance_code(mod, instance_types, instance_fns)
+function instance_code(mod, instance_types, instance_fns, external_fns)
   code = Expr(:block)
   class = mod.class()
   bindings = Dict(zip(class.type_params, instance_types))
@@ -628,20 +628,20 @@ end
 function parse_instance_body(expr::Expr)
   @assert expr.head == :block
   funs = JuliaFunction[]
-  imports = Symbol[]
+  ext_funs = Symbol[]
   for elem in strip_lines(expr).args
     elem = strip_lines(elem)
     head = elem.head
     if head == :macrocall && elem.args[1] == Symbol("@import")
       @match elem.args[2] begin
-        sym::Symbol => push!(imports, sym)
-        Expr(:tuple, arr) => (imports = [imports; Symbol[arr...]])
+        sym::Symbol => push!(ext_funs, sym)
+        Expr(:tuple, arr) => (ext_funs = [ext_funs; Symbol[arr...]])
       end
     else
       push!(funs, parse_function(elem))
     end
   end
-  return (funs, imports)
+  return (funs, ext_funs)
 end
 
 """ Invoke a term constructor by name on an instance.
