@@ -16,11 +16,8 @@ The same as `MonoidalCategory` mathematically but with different notation.
   oplus(A::Ob, B::Ob)::Ob
   oplus(f::Hom(A,B), g::Hom(C,D))::Hom(oplus(A,C),oplus(B,D)) <=
     (A::Ob, B::Ob, C::Ob, D::Ob)
+  @op oplus :⊕
   ozero()::Ob
-  
-  # Unicode syntax
-  ⊕(A::Ob, B::Ob) = oplus(A, B)
-  ⊕(f::Hom, g::Hom) = oplus(f, g)
 end
 
 # Convenience constructors
@@ -86,11 +83,9 @@ For references, see `MonoidalCategoryWithDiagonals`.
 """
 @signature AdditiveSymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithCodiagonals(Ob,Hom) begin
   mmerge(A::Ob)::Hom(oplus(A,A),A)
+  @op mmerge :∇
   create(A::Ob)::Hom(ozero(),A)
-
-  # Unicode syntax
-  ∇(A::Ob) = mmerge(A)
-  □(A::Ob) = create(A)
+  @op create :□
 end
 
 """ Doctrine of *cocartesian category*

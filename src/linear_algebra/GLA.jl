@@ -30,10 +30,13 @@ Functional fragment of graphical linear algebra.
 @signature AdditiveSymmetricMonoidalCategory(Ob,Hom) => LinearFunctions(Ob,Hom) begin
   # Copying and deleting maps.
   mcopy(A::Ob)::Hom(A,oplus(A,A))
+  @op mcopy :Δ
   delete(A::Ob)::Hom(A,ozero())
+  @op delete :◊
 
   # Addition and zero maps.
   mplus(A::Ob)::Hom(oplus(A,A),A)
+  @op mplus :⊞
   mzero(A::Ob)::Hom(ozero(),A)
 
   plus(f::Hom(A,B), g::Hom(A,B))::Hom(A,B) <= (A::Ob, B::Ob)
@@ -42,14 +45,9 @@ Functional fragment of graphical linear algebra.
 
   scalar(A::Ob, c::Number)::Hom(A,A)
   antipode(A::Ob)::Hom(A,A) # == scalar(A, -1)
+  @op antipode :⊟
 
   adjoint(f::Hom(A,B))::Hom(B,A) <= (A::Ob, B::Ob)
-
-  # Unicode syntax
-  Δ(A::Ob) = mcopy(A)
-  ◇(A::Ob) = delete(A)
-  ⊞(A::Ob) = mplus(A)
-  ⊟(A::Ob) = antipode(A)
 end
 
 @syntax FreeLinearFunctions(ObExpr,HomExpr) LinearFunctions begin
@@ -75,7 +73,9 @@ bicategory of relations (`AbelianBicategoryRelations`), written additively.
 
   # Merging and creating relations (converses of copying and deleting maps).
   mmerge(A::Ob)::Hom(oplus(A,A),A)
+  @op mmerge :∇
   create(A::Ob)::Hom(ozero(),A)
+  @op create :□
 
   # Co-addition and co-zero relations (converses of addition and zero maps)
   coplus(A::Ob)::Hom(A,oplus(A,A))
@@ -86,10 +86,6 @@ bicategory of relations (`AbelianBicategoryRelations`), written additively.
   top(A::Ob, B::Ob)::Hom(A,B)
   join(f::Hom(A,B), g::Hom(A,B))::Hom(A,B) <= (A::Ob, B::Ob)
   bottom(A::Ob, B::Ob)::Hom(A,B)
-
-  # Unicode syntax
-  ∇(A::Ob) = mmerge(A)
-  □(A::Ob) = create(A)
 end
 
 @syntax FreeLinearRelations(ObExpr,HomExpr) LinearRelations begin

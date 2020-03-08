@@ -64,7 +64,6 @@ d = Dict(f=>LinearMap([1 1 1 1; 2 2 2 3; 3 3 3 3.0]),
          W=>LinearMapDom(3))
 F(ex) = functor((LinearMapDom, LinearMap), ex, generators=d)
 
-
 n = 4
 m = 3
 x = ones(Float64, n)
@@ -80,7 +79,7 @@ b̂ = A*x̂
 
 n = 32
 M = plus(f,g)⋅h
-M₄ = ⊕(M, M, M, M, M, M, M, M)
+M₄ = foldl(⊕, [M, M, M, M, M, M, M, M])
 x = ones(Float64, n)
 # A needs to be square and nonsingular
 A = ( F(M₄)'*F(M₄) ) + UniformScaling(n)
