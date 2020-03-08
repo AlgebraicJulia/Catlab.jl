@@ -250,11 +250,12 @@ end
 function constructors(sig::Signature)::Vector{JuliaFunction}
   [ constructor(cons, sig) for cons in sig.terms ]
 end
-function constructor(cons::TermConstructor, sig::Signature)::JuliaFunction
+function constructor(cons::Union{TypeConstructor,TermConstructor},
+                     sig::Signature)::JuliaFunction
   arg_names = cons.params
   arg_types = [ strip_type(cons.context[name]) for name in arg_names ]
   args = [ Expr(:(::), name, typ) for (name,typ) in zip(arg_names, arg_types) ]
-  return_type = strip_type(cons.typ)
+  return_type = cons isa TermConstructor ? strip_type(cons.typ) : cons.name
 
   call_expr = Expr(:call, cons.name, args...)
   if !any(has_type(sig, typ) for typ in arg_types)
@@ -274,32 +275,26 @@ function alias_functions(sig::Signature)::Vector{JuliaFunction}
     # allows an alias to overite all the type definitions of a function
     dests = filter(i -> i.name == last(alias), map(x -> x, terms_types))
     # If there are no matching functions, throw a parse error
-    if length(dests) == 0
-      throw(ParseError("Cannot alias unknown term or type $dest"))
+    if isempty(dests)
+      throw(ParseError("Cannot alias undefined type or term $dest"))
     end
-    # for each destination, create a Julia function
+    # For each destination, create a Julia function
     map(dests) do dest
-      # Create the skeleton of the function
-      ex = Expr(:(=), Expr(:call, first(alias)), Expr(:call, dest.name))
-      # Append the parameters to the left side, with the correct types
-      append!(ex.args[1].args, map(dest.params) do param
-          # get the types of the parameters from
-          # the destination function context
-          Expr(:(::), param, @match dest.context[param] begin
-            # handle the single type case like :Ob
-            sym::Symbol => sym
-            # handle the compount type case like :Hom(A, A) -> :Hom
-            Expr(:call, [name, args...]) => name
-            # throw a parse error if the context doesn't match
-            _ => throw(ParseError(
-                       "Cannot parse the type of parameter $param"))
-          end)
-        end)
-
-      # add the parameters to the right side
-      append!(ex.args[2].args, dest.params)
-      # parse the expression into the standardized JuliaFunction type
-      parse_function(ex)
+      fun = constructor(dest, sig)
+      fun.call_expr.args[1] = first(alias)
+      # Extract arguments from function header, handling special case of
+      # created by `add_type_dispatch`.
+      args = map(fun.call_expr.args[2:end]) do arg
+        @match arg begin
+          # Special case: dispatch on return type.
+          Expr(:(::), [ Expr(:curly, [:Type, type]) ]) => type
+          # Main case: typed parameter.
+          Expr(:(::), [ param, type ]) => param
+          _ => throw(ParseError("Cannot parse argument $arg for alias $alias"))
+        end
+      end
+      body = Expr(:call, dest.name, args...)
+      JuliaFunction(fun.call_expr, fun.return_type, body)
     end
   end))
 end
