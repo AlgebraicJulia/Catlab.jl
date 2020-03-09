@@ -1,7 +1,7 @@
 export AdditiveMonoidalCategory, oplus, ⊕, ozero,
   AdditiveSymmetricMonoidalCategory, FreeAdditiveSymmetricMonoidalCategory,
   MonoidalCategoryWithCodiagonals, CocartesianCategory, FreeCocartesianCategory,
-  mmerge, create, copair, incl1, incl2, ∇, □
+  mmerge, create, copair, incl1, incl2, ∇, □, braid, σ
 
 import Base: collect, ndims
 
@@ -62,6 +62,7 @@ notation.
 """
 @signature AdditiveMonoidalCategory(Ob,Hom) => AdditiveSymmetricMonoidalCategory(Ob,Hom) begin
   braid(A::Ob, B::Ob)::Hom(oplus(A,B),oplus(B,A))
+  @op braid :σ
 end
 
 @syntax FreeAdditiveSymmetricMonoidalCategory(ObExpr,HomExpr) AdditiveSymmetricMonoidalCategory begin

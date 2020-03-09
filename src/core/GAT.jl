@@ -647,12 +647,12 @@ function instance_code(mod, instance_types, instance_fns, external_fns)
   bound_fns = OrderedDict(parse_function_sig(f) => f for f in bound_fns)
   instance_fns = Dict(parse_function_sig(f) => f for f in instance_fns)
   for (theory, f) in bound_fns
-    if haskey(instance_fns, theory)
+    if theory.name in external_fns
+      continue
+    elseif haskey(instance_fns, theory)
       f_impl = instance_fns[theory]
     elseif !isnothing(f.impl)
       f_impl = f
-    elseif f.call_expr.args[1] in external_fns
-      continue
     else
       error("Method $(f.call_expr) not implemented in $(class.name) instance")
     end

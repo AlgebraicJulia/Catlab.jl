@@ -27,7 +27,7 @@ import ...Programs: evaluate_hom
 
 Functional fragment of graphical linear algebra.
 """
-@signature AdditiveSymmetricMonoidalCategory(Ob,Hom) => LinearFunctions(Ob,Hom) begin
+@theory AdditiveSymmetricMonoidalCategory(Ob,Hom) => LinearFunctions(Ob,Hom) begin
   # Copying and deleting maps.
   mcopy(A::Ob)::Hom(A,oplus(A,A))
   @op mcopy :Δ
@@ -40,14 +40,37 @@ Functional fragment of graphical linear algebra.
   mzero(A::Ob)::Hom(ozero(),A)
 
   plus(f::Hom(A,B), g::Hom(A,B))::Hom(A,B) <= (A::Ob, B::Ob)
-  # FIXME: Conflicts with LinearMap's definitin of `+`. Need to fix!
-  # @op plus :+
+  @op plus :+
 
   scalar(A::Ob, c::Number)::Hom(A,A)
-  antipode(A::Ob)::Hom(A,A) # == scalar(A, -1)
+  antipode(A::Ob)::Hom(A,A)
   @op antipode :⊟
 
   adjoint(f::Hom(A,B))::Hom(B,A) <= (A::Ob, B::Ob)
+
+  # Axioms
+  ⊟(A) == scalar(A, -1) ⊣ (A::Ob)
+
+  Δ(A) == Δ(A) ⋅ σ(A, A) ⊣ (A::Ob)
+  Δ(A) ⋅ (Δ(A) ⊗ id(A)) == Δ(A) ⋅ (id(A) ⊗ Δ(A)) ⊣ (A::Ob)
+  Δ(A) ⋅ (◊(A) ⊗ id(A)) == id(A) ⊣ (A::Ob)
+  ⊞(A) == σ(A, A) ⋅ ⊞(A) ⊣ (A::Ob)
+  (⊞(A) ⊗ id(A)) ⋅ ⊞(A) == (id(A) ⊗ ⊞(A)) ⋅ ⊞(A) ⊣ (A::Ob)
+  (mzero(A) ⊗ id(A)) ⋅ ⊞(A) == id(A) ⊣ (A::Ob)
+  ⊞(A) ⋅ Δ(A) == ((Δ(A) ⊗ Δ(A)) ⋅ (id(A) ⊗ (σ(A, A) ⊗ id(A)))) ⋅ (⊞(A) ⊗ ⊞(A)) ⊣ (A::Ob)
+  ⊞(A) ⋅ ◊(A) == ◊(A) ⊗ ◊(A) ⊣ (A::Ob)
+  mzero(A) ⋅ Δ(A) == mzero(A) ⊗ mzero(A) ⊣ (A::Ob)
+  mzero(A) ⋅ ◊(A) == munit() ⊣ (A::Ob)
+  scalar(A, a) ⋅ scalar(A, b) == scalar(A, a*b) ⊣ (A::Ob, a::Number, b::Number)
+  scalar(A, 1) == id(A) ⊣ (A::Ob)
+  scalar(A, a) ⋅ Δ(A) == Δ(A) ⋅ (scalar(A, a) ⊗ scalar(A, a)) ⊣ (A::Ob, a::Number)
+  scalar(A, a) ⋅ ◊(A) == ◊(A) ⊣ (A::Ob, a::Number)
+  (Δ(A) ⋅ (scalar(A, a) ⊗ scalar(A, b))) ⋅ ⊞(A) == scalar(A, a+b) ⊣ (A::Ob, a::Number, b::Number)
+  scalar(A, 0) == ◊(A) ⋅ mzero(A) ⊣ (A::Ob)
+  mzero(A) ⋅ scalar(A, a) == mzero(A) ⊣ (A::Ob, a::Number)
+
+  ⊞(A) ⋅ f == (f ⊕ f) ⋅ ⊞(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  scalar(A, c) ⋅ f == f ⋅ scalar(B, c) ⊣ (A::Ob, B::Ob, c::Number, f::(A → B))
 end
 
 @syntax FreeLinearFunctions(ObExpr,HomExpr) LinearFunctions begin
@@ -55,8 +78,6 @@ end
   oplus(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = new(f,g; strict=true) # No normalization!
 end
-
-+(f::FreeLinearFunctions.Hom, g::FreeLinearFunctions.Hom) = plus(f,g)
 
 """ Doctrine of *linear relations*
 
@@ -94,8 +115,6 @@ end
   compose(f::Hom, g::Hom) = new(f,g; strict=true) # No normalization!
 end
 
-+(f::FreeLinearRelations.Hom, g::FreeLinearRelations.Hom) = plus(f,g)
-
 # Evaluation
 ############
 
@@ -107,7 +126,7 @@ end
 end
 
 @instance LinearFunctions(LinearMapDom, LinearMap) begin
-  @import adjoint
+  @import adjoint, +
 
   dom(f::LinearMap) = LinearMapDom(size(f,2))
   codom(f::LinearMap) = LinearMapDom(size(f,1))

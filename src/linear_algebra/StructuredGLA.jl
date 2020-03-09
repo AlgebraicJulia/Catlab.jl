@@ -57,6 +57,4 @@ end
   compose(f::Hom, g::Hom) = new(f,g; strict=true) # No normalization!
 end
 
-+(f::FreeStructuredLinearFunctions.Hom, g::FreeStructuredLinearFunctions.Hom) = plus(f,g)
-
 end
