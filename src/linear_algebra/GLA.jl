@@ -3,8 +3,8 @@ export LinearFunctions, FreeLinearFunctions, LinearRelations,
   FreeLinearRelations, LinearMapDom, LinearMap,
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, ozero, braid,
   dagger, dunit, docunit, mcopy, Δ, delete, ◊, mmerge, ∇, create, □,
-  mplus, ⊞, mzero, coplus, cozero, plus, meet, top, join, bottom,
-  scalar, antipode, ⊟, adjoint, evaluate
+  mplus, mplus, mzero, coplus, cozero, plus, +, meet, top, join, bottom,
+  scalar, antipode, antipode, adjoint, evaluate
 
 import Base: +
 using AutoHashEquals
@@ -36,7 +36,6 @@ Functional fragment of graphical linear algebra.
 
   # Addition and zero maps.
   mplus(A::Ob)::((A ⊕ A) → A)
-  @op mplus :⊞
   mzero(A::Ob)::(ozero() → A)
 
   plus(f::(A → B), g::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
@@ -44,32 +43,31 @@ Functional fragment of graphical linear algebra.
 
   scalar(A::Ob, c::Number)::(A → A)
   antipode(A::Ob)::(A → A)
-  @op antipode :⊟
 
   adjoint(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
 
   # Axioms
-  ⊟(A) == scalar(A, -1) ⊣ (A::Ob)
+  antipode(A) == scalar(A, -1) ⊣ (A::Ob)
 
   Δ(A) == Δ(A) ⋅ σ(A, A) ⊣ (A::Ob)
   Δ(A) ⋅ (Δ(A) ⊗ id(A)) == Δ(A) ⋅ (id(A) ⊗ Δ(A)) ⊣ (A::Ob)
   Δ(A) ⋅ (◊(A) ⊗ id(A)) == id(A) ⊣ (A::Ob)
-  ⊞(A) == σ(A, A) ⋅ ⊞(A) ⊣ (A::Ob)
-  (⊞(A) ⊗ id(A)) ⋅ ⊞(A) == (id(A) ⊗ ⊞(A)) ⋅ ⊞(A) ⊣ (A::Ob)
-  (mzero(A) ⊗ id(A)) ⋅ ⊞(A) == id(A) ⊣ (A::Ob)
-  ⊞(A) ⋅ Δ(A) == ((Δ(A) ⊗ Δ(A)) ⋅ (id(A) ⊗ (σ(A, A) ⊗ id(A)))) ⋅ (⊞(A) ⊗ ⊞(A)) ⊣ (A::Ob)
-  ⊞(A) ⋅ ◊(A) == ◊(A) ⊗ ◊(A) ⊣ (A::Ob)
+  mplus(A) == σ(A, A) ⋅ mplus(A) ⊣ (A::Ob)
+  (mplus(A) ⊗ id(A)) ⋅ mplus(A) == (id(A) ⊗ mplus(A)) ⋅ mplus(A) ⊣ (A::Ob)
+  (mzero(A) ⊗ id(A)) ⋅ mplus(A) == id(A) ⊣ (A::Ob)
+  mplus(A) ⋅ Δ(A) == ((Δ(A) ⊗ Δ(A)) ⋅ (id(A) ⊗ (σ(A, A) ⊗ id(A)))) ⋅ (mplus(A) ⊗ mplus(A)) ⊣ (A::Ob)
+  mplus(A) ⋅ ◊(A) == ◊(A) ⊗ ◊(A) ⊣ (A::Ob)
   mzero(A) ⋅ Δ(A) == mzero(A) ⊗ mzero(A) ⊣ (A::Ob)
-  mzero(A) ⋅ ◊(A) == munit() ⊣ (A::Ob)
+  mzero(A) ⋅ ◊(A) == id(ozero()) ⊣ (A::Ob)
   scalar(A, a) ⋅ scalar(A, b) == scalar(A, a*b) ⊣ (A::Ob, a::Number, b::Number)
   scalar(A, 1) == id(A) ⊣ (A::Ob)
   scalar(A, a) ⋅ Δ(A) == Δ(A) ⋅ (scalar(A, a) ⊗ scalar(A, a)) ⊣ (A::Ob, a::Number)
   scalar(A, a) ⋅ ◊(A) == ◊(A) ⊣ (A::Ob, a::Number)
-  (Δ(A) ⋅ (scalar(A, a) ⊗ scalar(A, b))) ⋅ ⊞(A) == scalar(A, a+b) ⊣ (A::Ob, a::Number, b::Number)
+  (Δ(A) ⋅ (scalar(A, a) ⊗ scalar(A, b))) ⋅ mplus(A) == scalar(A, a+b) ⊣ (A::Ob, a::Number, b::Number)
   scalar(A, 0) == ◊(A) ⋅ mzero(A) ⊣ (A::Ob)
   mzero(A) ⋅ scalar(A, a) == mzero(A) ⊣ (A::Ob, a::Number)
 
-  ⊞(A) ⋅ f == (f ⊕ f) ⋅ ⊞(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  mplus(A) ⋅ f == (f ⊕ f) ⋅ mplus(B) ⊣ (A::Ob, B::Ob, f::(A → B))
   scalar(A, c) ⋅ f == f ⋅ scalar(B, c) ⊣ (A::Ob, B::Ob, c::Number, f::(A → B))
 end
 

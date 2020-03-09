@@ -646,11 +646,11 @@ function instance_code(mod, instance_types, instance_fns, external_fns)
   bound_fns = [ replace_symbols(bindings, f) for f in interface(class) ]
   bound_fns = OrderedDict(parse_function_sig(f) => f for f in bound_fns)
   instance_fns = Dict(parse_function_sig(f) => f for f in instance_fns)
-  for (theory, f) in bound_fns
-    if theory.name in external_fns
+  for (sig, f) in bound_fns
+    if sig.name in external_fns
       continue
-    elseif haskey(instance_fns, theory)
-      f_impl = instance_fns[theory]
+    elseif haskey(instance_fns, sig)
+      f_impl = instance_fns[sig]
     elseif !isnothing(f.impl)
       f_impl = f
     else
