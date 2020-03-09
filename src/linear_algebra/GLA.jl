@@ -29,24 +29,24 @@ Functional fragment of graphical linear algebra.
 """
 @theory AdditiveSymmetricMonoidalCategory(Ob,Hom) => LinearFunctions(Ob,Hom) begin
   # Copying and deleting maps.
-  mcopy(A::Ob)::Hom(A,oplus(A,A))
+  mcopy(A::Ob)::(A → (A ⊕ A))
   @op mcopy :Δ
-  delete(A::Ob)::Hom(A,ozero())
+  delete(A::Ob)::(A → ozero())
   @op delete :◊
 
   # Addition and zero maps.
-  mplus(A::Ob)::Hom(oplus(A,A),A)
+  mplus(A::Ob)::((A ⊕ A) → A)
   @op mplus :⊞
-  mzero(A::Ob)::Hom(ozero(),A)
+  mzero(A::Ob)::(ozero() → A)
 
-  plus(f::Hom(A,B), g::Hom(A,B))::Hom(A,B) <= (A::Ob, B::Ob)
+  plus(f::(A → B), g::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
   @op plus :+
 
-  scalar(A::Ob, c::Number)::Hom(A,A)
-  antipode(A::Ob)::Hom(A,A)
+  scalar(A::Ob, c::Number)::(A → A)
+  antipode(A::Ob)::(A → A)
   @op antipode :⊟
 
-  adjoint(f::Hom(A,B))::Hom(B,A) <= (A::Ob, B::Ob)
+  adjoint(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
 
   # Axioms
   ⊟(A) == scalar(A, -1) ⊣ (A::Ob)
@@ -86,27 +86,27 @@ bicategory of relations (`AbelianBicategoryRelations`), written additively.
 """
 @signature LinearFunctions(Ob,Hom) => LinearRelations(Ob,Hom) begin
   # Dagger category.
-  dagger(f::Hom(A,B))::Hom(A,B) <= (A::Ob, B::Ob)
+  dagger(f::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
 
   # Self-dual compact closed category.
-  dunit(A::Ob)::Hom(ozero(), oplus(A,A))
-  dcounit(A::Ob)::Hom(oplus(A,A), ozero())
+  dunit(A::Ob)::(ozero() → (A ⊕ A))
+  dcounit(A::Ob)::((A ⊕ A) → ozero())
 
   # Merging and creating relations (converses of copying and deleting maps).
-  mmerge(A::Ob)::Hom(oplus(A,A),A)
+  mmerge(A::Ob)::((A ⊕ A) → A)
   @op mmerge :∇
-  create(A::Ob)::Hom(ozero(),A)
+  create(A::Ob)::(ozero() → A)
   @op create :□
 
   # Co-addition and co-zero relations (converses of addition and zero maps)
-  coplus(A::Ob)::Hom(A,oplus(A,A))
-  cozero(A::Ob)::Hom(A,ozero())
+  coplus(A::Ob)::(A → (A ⊕ A))
+  cozero(A::Ob)::(A → ozero())
 
   # Lattice of linear relations.
-  meet(f::Hom(A,B), g::Hom(A,B))::Hom(A,B) <= (A::Ob, B::Ob)
-  top(A::Ob, B::Ob)::Hom(A,B)
-  join(f::Hom(A,B), g::Hom(A,B))::Hom(A,B) <= (A::Ob, B::Ob)
-  bottom(A::Ob, B::Ob)::Hom(A,B)
+  meet(f::(A → B), g::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
+  top(A::Ob, B::Ob)::(A → B)
+  join(f::(A → B), g::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
+  bottom(A::Ob, B::Ob)::(A → B)
 end
 
 @syntax FreeLinearRelations(ObExpr,HomExpr) LinearRelations begin

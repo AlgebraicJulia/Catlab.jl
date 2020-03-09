@@ -38,16 +38,16 @@ than general dense matrices. Morphisms in this category represent structured mat
   # A is n-k and b is k in a n×n matrix with v on the kth lower diagonal
   lowerdiag(A, v)::(A⊕B→A⊕B) ⊣ (A::Ob, B::Ob, v::(ℝ()→B))
   # Axioms
-  lowerdiag == adjoint(upperdiag)
-  upperdiag(A,b) == delete(A) ⊕ diag(b) ⊕ mzero(A)  ⊣ (A::Ob, b::(ℝ()→B))
-  lowerdiag(A,b) == mzero(A)  ⊕ diag(b) ⊕ delete(A) ⊣ (A::Ob, b::(ℝ()→B))
+  lowerdiag == ⊟(upperdiag)
+  upperdiag(A,b) == ◊(A) ⊕ diag(b) ⊕ mzero(A)  ⊣ (A::Ob, b::(ℝ()→B))
+  lowerdiag(A,b) == mzero(A)  ⊕ diag(b) ⊕ ◊(A) ⊣ (A::Ob, b::(ℝ()→B))
   # by default upperdiagonal means 1-upperdiagonal
   upperdiag(b) == upperdiag(ℝ(), b) ⊣ (b::(ℝ()→B))
   # by default lowerdiagonal means 1-lowerdiagonal
   lowerdiag(b) == lowerdiag(ℝ(), b) ⊣ (b::(ℝ()→B))
 
-  bidiag(a,b) == plus(diag(a), upperdiag(b)) ⊣ (A::Ob, a::(ℝ()→A⊗ℝ()), b::(ℝ()→A))
-  tridiag(a,b,c) == plus(diag(a), lowerdiag(b), upperdiag(c)) ⊣ (A::Ob, a::(ℝ()→A⊗ℝ()), b::(ℝ()→A), c::(ℝ()→A))
+  bidiag(a,b) == diag(a) + upperdiag(b) ⊣ (A::Ob, a::(ℝ()→A⊗ℝ()), b::(ℝ()→A))
+  tridiag(a,b,c) == diag(a) + lowerdiag(b) + upperdiag(c) ⊣ (A::Ob, a::(ℝ()→A⊗ℝ()), b::(ℝ()→A), c::(ℝ()→A))
   symtridiag(a,b) == tridiagonal(a,b,b) ⊣ (A::Ob, a::(ℝ()→A⊗ℝ()), b::(ℝ()→A))
 end
 
