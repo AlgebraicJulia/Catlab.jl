@@ -76,7 +76,7 @@ end
 
 """ Doctrine of (strict) *2-category*
 """
-@theory Category(Ob,Hom) => Category2(Ob,Hom,Hom2) begin
+@signature Category(Ob,Hom) => Category2(Ob,Hom,Hom2) begin
   """ 2-morphism in a 2-category """
   Hom2(dom::Hom(A,B), codom::Hom(A,B))::TYPE ⊣ (A::Ob, B::Ob)
   @op Hom2 :⇒

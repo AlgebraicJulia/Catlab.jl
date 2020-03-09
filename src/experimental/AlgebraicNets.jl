@@ -32,7 +32,7 @@ import ...Programs.GenerateJuliaPrograms: genvar, genvars, to_function_expr,
 
 TODO: Explain
 """
-@theory MonoidalCategoryWithBidiagonals(Ob,Hom) => AlgebraicNetTheory(Ob,Hom) begin
+@signature MonoidalCategoryWithBidiagonals(Ob,Hom) => AlgebraicNetTheory(Ob,Hom) begin
   linear(x::Any, A::Ob, B::Ob)::(A → B)
   constant(x::Any, A::Ob) = (x → munit(Ob) → A)
 

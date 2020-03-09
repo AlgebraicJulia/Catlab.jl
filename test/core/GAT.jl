@@ -202,12 +202,12 @@ alias_functions = [
   [accessors; constructors; alias_functions]
 
 # Theory extension
-@theory Semigroup(S) begin
+@signature Semigroup(S) begin
   S::TYPE
   times(x::S,y::S)::S
 end
 
-@theory Semigroup(M) => MonoidExt(M) begin
+@signature Semigroup(M) => MonoidExt(M) begin
   munit()::M
 end
 
@@ -262,7 +262,7 @@ end
 
 @test times([1,2],[3,4]) == [1,2,3,4]
 
-@theory Monoid(M) begin
+@signature Monoid(M) begin
   M::TYPE
   munit()::M
   times(x::M,y::M)::M

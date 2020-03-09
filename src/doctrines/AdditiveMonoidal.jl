@@ -12,7 +12,7 @@ import Base: collect, ndims
 
 The same as `MonoidalCategory` mathematically but with different notation.
 """
-@theory Category(Ob,Hom) => AdditiveMonoidalCategory(Ob,Hom) begin
+@signature Category(Ob,Hom) => AdditiveMonoidalCategory(Ob,Hom) begin
   oplus(A::Ob, B::Ob)::Ob
   oplus(f::Hom(A,B), g::Hom(C,D))::Hom(oplus(A,C),oplus(B,D)) <=
     (A::Ob, B::Ob, C::Ob, D::Ob)
@@ -60,7 +60,7 @@ show_latex(io::IO, expr::ObExpr{:ozero}; kw...) = print(io, "I")
 The same as `SymmetricMonoidalCategory` mathematically but with different
 notation.
 """
-@theory AdditiveMonoidalCategory(Ob,Hom) => AdditiveSymmetricMonoidalCategory(Ob,Hom) begin
+@signature AdditiveMonoidalCategory(Ob,Hom) => AdditiveSymmetricMonoidalCategory(Ob,Hom) begin
   braid(A::Ob, B::Ob)::Hom(oplus(A,B),oplus(B,A))
 end
 
@@ -81,7 +81,7 @@ Unlike in a cocartesian category, the naturality axioms need not be satisfied.
 
 For references, see `MonoidalCategoryWithDiagonals`.
 """
-@theory AdditiveSymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithCodiagonals(Ob,Hom) begin
+@signature AdditiveSymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithCodiagonals(Ob,Hom) begin
   mmerge(A::Ob)::Hom(oplus(A,A),A)
   @op mmerge :∇
   create(A::Ob)::Hom(ozero(),A)
@@ -93,7 +93,7 @@ end
 Actually, this is a cocartesian *symmetric monoidal* category but we omit these
 qualifiers for brevity.
 """
-@theory MonoidalCategoryWithCodiagonals(Ob,Hom) => CocartesianCategory(Ob,Hom) begin
+@signature MonoidalCategoryWithCodiagonals(Ob,Hom) => CocartesianCategory(Ob,Hom) begin
   copair(f::Hom(A,C), g::Hom(B,C))::Hom(oplus(A,B),C) <= (A::Ob, B::Ob, C::Ob)
   incl1(A::Ob, B::Ob)::Hom(A,oplus(A,B))
   incl2(A::Ob, B::Ob)::Hom(B,oplus(A,B))

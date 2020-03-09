@@ -27,7 +27,7 @@ import ...Programs: evaluate_hom
 
 Functional fragment of graphical linear algebra.
 """
-@theory AdditiveSymmetricMonoidalCategory(Ob,Hom) => LinearFunctions(Ob,Hom) begin
+@signature AdditiveSymmetricMonoidalCategory(Ob,Hom) => LinearFunctions(Ob,Hom) begin
   # Copying and deleting maps.
   mcopy(A::Ob)::Hom(A,oplus(A,A))
   @op mcopy :Δ
@@ -63,7 +63,7 @@ end
 The full relational language of graphical linear algebra. This is an abelian
 bicategory of relations (`AbelianBicategoryRelations`), written additively.
 """
-@theory LinearFunctions(Ob,Hom) => LinearRelations(Ob,Hom) begin
+@signature LinearFunctions(Ob,Hom) => LinearRelations(Ob,Hom) begin
   # Dagger category.
   dagger(f::Hom(A,B))::Hom(A,B) <= (A::Ob, B::Ob)
 

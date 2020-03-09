@@ -22,7 +22,7 @@ To avoid associators and unitors, we assume the monoidal category is *strict*.
 By the coherence theorem there is no loss of generality, but we may add a
 theory for weak monoidal categories later.
 """
-@theory Category(Ob,Hom) => MonoidalCategory(Ob,Hom) begin
+@signature Category(Ob,Hom) => MonoidalCategory(Ob,Hom) begin
   otimes(A::Ob, B::Ob)::Ob
   @op otimes :⊗
   otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣
@@ -73,7 +73,7 @@ show_latex(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
 
 The theory (but not the axioms) is the same as a braided monoidal category.
 """
-@theory MonoidalCategory(Ob,Hom) => SymmetricMonoidalCategory(Ob,Hom) begin
+@signature MonoidalCategory(Ob,Hom) => SymmetricMonoidalCategory(Ob,Hom) begin
   braid(A::Ob, B::Ob)::((A ⊗ B) → (B ⊗ A))
   @op braid :σ
 end
@@ -103,7 +103,7 @@ References:
   Section 6.6: "Cartesian center"
 - Selinger, 1999, "Categorical structure of asynchrony"
 """
-@theory SymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithDiagonals(Ob,Hom) begin
+@signature SymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithDiagonals(Ob,Hom) begin
   mcopy(A::Ob)::(A → (A ⊗ A))
   @op mcopy :Δ
   delete(A::Ob)::(A → munit())
@@ -115,7 +115,7 @@ end
 Actually, this is a cartesian *symmetric monoidal* category but we omit these
 qualifiers for brevity.
 """
-@theory MonoidalCategoryWithDiagonals(Ob,Hom) => CartesianCategory(Ob,Hom) begin
+@signature MonoidalCategoryWithDiagonals(Ob,Hom) => CartesianCategory(Ob,Hom) begin
   pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
@@ -157,7 +157,7 @@ FIXME: This theory should extend both `MonoidalCategoryWithDiagonals` and
 `MonoidalCategoryWithCodiagonals`, but multiple inheritance is not yet
 supported.
 """
-@theory SymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithBidiagonals(Ob,Hom) begin
+@signature SymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithBidiagonals(Ob,Hom) begin
   mcopy(A::Ob)::(A → (A ⊗ A))
   @op mcopy :Δ
   mmerge(A::Ob)::((A ⊗ A) → A)
@@ -176,7 +176,7 @@ FIXME: This theory should extend `MonoidalCategoryWithBidiagonals`,
 `CartesianCategory`, and `CocartesianCategory`, but multiple inheritance is not
 yet supported.
 """
-@theory MonoidalCategoryWithBidiagonals(Ob,Hom) => BiproductCategory(Ob,Hom) begin
+@signature MonoidalCategoryWithBidiagonals(Ob,Hom) => BiproductCategory(Ob,Hom) begin
   pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
   copair(f::(A → C), g::(B → C))::((A ⊗ B) → C) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
@@ -205,7 +205,7 @@ end
 
 A CCC is a cartesian category with internal homs (aka, exponential objects).
 """
-@theory CartesianCategory(Ob,Hom) => CartesianClosedCategory(Ob,Hom) begin
+@signature CartesianCategory(Ob,Hom) => CartesianClosedCategory(Ob,Hom) begin
   # Internal hom of A and B, an object representing Hom(A,B)
   hom(A::Ob, B::Ob)::Ob
 
@@ -250,7 +250,7 @@ end
 
 """ Doctrine of *compact closed category*
 """
-@theory SymmetricMonoidalCategory(Ob,Hom) => CompactClosedCategory(Ob,Hom) begin
+@signature SymmetricMonoidalCategory(Ob,Hom) => CompactClosedCategory(Ob,Hom) begin
   # Dual A^* of object A
   dual(A::Ob)::Ob
 
@@ -305,7 +305,7 @@ end
 
 """ Doctrine of *dagger category*
 """
-@theory Category(Ob,Hom) => DaggerCategory(Ob,Hom) begin
+@signature Category(Ob,Hom) => DaggerCategory(Ob,Hom) begin
   dagger(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
 end
 
@@ -328,7 +328,7 @@ category](https://ncatlab.org/nlab/show/symmetric+monoidal+dagger-category).
 FIXME: This theory should extend both `DaggerCategory` and
 `SymmetricMonoidalCategory`, but multiple inheritance is not yet supported.
 """
-@theory SymmetricMonoidalCategory(Ob,Hom) => DaggerSymmetricMonoidalCategory(Ob,Hom) begin
+@signature SymmetricMonoidalCategory(Ob,Hom) => DaggerSymmetricMonoidalCategory(Ob,Hom) begin
   dagger(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
 end
 
@@ -354,7 +354,7 @@ categories.
 FIXME: This theory should extend both `DaggerCategory` and
 `CompactClosedCategory`, but multiple inheritance is not yet supported.
 """
-@theory CompactClosedCategory(Ob,Hom) => DaggerCompactCategory(Ob,Hom) begin
+@signature CompactClosedCategory(Ob,Hom) => DaggerCompactCategory(Ob,Hom) begin
   dagger(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
 end
 
@@ -378,7 +378,7 @@ end
 
 """ Doctrine of *traced monoidal category*
 """
-@theory SymmetricMonoidalCategory(Ob,Hom) => TracedMonoidalCategory(Ob,Hom) begin
+@signature SymmetricMonoidalCategory(Ob,Hom) => TracedMonoidalCategory(Ob,Hom) begin
   trace(X::Ob, A::Ob, B::Ob, f::((X ⊗ A) → (X ⊗ B)))::(A → B)
 end
 

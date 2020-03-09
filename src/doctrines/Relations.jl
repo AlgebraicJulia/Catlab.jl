@@ -17,7 +17,7 @@ References:
 - Walters, 2009, blog post, "Categorical algebras of relations",
   http://rfcwalters.blogspot.com/2009/10/categorical-algebras-of-relations.html
 """
-@theory MonoidalCategoryWithBidiagonals(Ob,Hom) => BicategoryRelations(Ob,Hom) begin
+@signature MonoidalCategoryWithBidiagonals(Ob,Hom) => BicategoryRelations(Ob,Hom) begin
   # Dagger category.
   dagger(f::(A → B))::(B → A) ⊣ (A::Ob,B::Ob)
 
@@ -49,7 +49,7 @@ References:
 - Carboni & Walters, 1987, "Cartesian bicategories I", Sec. 5
 - Baez & Erbele, 2015, "Categories in control"
 """
-@theory BicategoryRelations(Ob,Hom) => AbelianBicategoryRelations(Ob,Hom) begin
+@signature BicategoryRelations(Ob,Hom) => AbelianBicategoryRelations(Ob,Hom) begin
   # Second diagonal and codiagonal.
   mplus(A::Ob)::((A ⊗ A) → A)
   mzero(A::Ob)::(munit() → A)

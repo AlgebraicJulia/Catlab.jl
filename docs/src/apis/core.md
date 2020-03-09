@@ -15,7 +15,9 @@ The basic elements of this system are:
 
 1. **Generalized algebraic theories** (GATs), defined using the
    [`@theory`](@ref) macro. Categories and other typed (multisorted)
-   algebraic structures can be defined as GATs.
+   algebraic structures can be defined as GATs. The [`@signature`](@ref) macro
+   can be used in cases where only the signature of the GAT is defined, and not
+   the axioms.
 
 2. **Instances**, or concrete implementations, of theories, asserted using the
    [`@instance`](@ref) macro.
@@ -226,7 +228,7 @@ primitive.
 In Catlab, the recommended way to deal with such situations is to define *all*
 the operations in the theory and then allow particular syntax systems to
 determine which operations, if any, will be derived from others. In the case of
-the cartesian monoidal category, we could define a theory `CartesianCategory`
+the cartesian monoidal category, we could define a signature `CartesianCategory`
 by inheriting from the builtin theory `SymmetricMonoidalCategory`.
 
 ```@setup cartesian-monoidal-category
@@ -236,7 +238,7 @@ import Catlab.Doctrines: Ob, Hom, ObExpr, HomExpr, SymmetricMonoidalCategory,
 ```
 
 ```@example cartesian-monoidal-category
-@theory SymmetricMonoidalCategory(Ob,Hom) => CartesianCategory(Ob,Hom) begin
+@signature SymmetricMonoidalCategory(Ob,Hom) => CartesianCategory(Ob,Hom) begin
   mcopy(A::Ob)::(A → (A ⊗ A))
   delete(A::Ob)::(A → munit())
 
