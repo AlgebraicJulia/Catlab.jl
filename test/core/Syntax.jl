@@ -11,9 +11,9 @@ using Catlab
 # Monoid
 ########
 
-""" Signature of the theory of monoids.
+""" Theory of monoids.
 """
-@signature Monoid(Elem) begin
+@theory Monoid(Elem) begin
   Elem::TYPE
   munit()::Elem
   mtimes(x::Elem,y::Elem)::Elem
@@ -71,7 +71,7 @@ x = Elem(FreeMonoidTyped.Elem, :x)
 @test FreeMonoidTyped.Elem <: MonoidExpr
 @test isa(x, FreeMonoidTyped.Elem) && isa(x, MonoidExpr)
 
-@signature Monoid(Elem) => MonoidNumeric(Elem) begin
+@theory Monoid(Elem) => MonoidNumeric(Elem) begin
   elem_int(x::Int)::Elem
 end
 @syntax FreeMonoidNumeric MonoidNumeric
@@ -82,7 +82,7 @@ x = elem_int(FreeMonoidNumeric.Elem, 1)
 
 """ A monoid with two distinguished elements.
 """
-@signature Monoid(Elem) => MonoidTwo(Elem) begin
+@theory Monoid(Elem) => MonoidTwo(Elem) begin
   one()::Elem
   two()::Elem
 end
@@ -99,7 +99,7 @@ x, y = one(FreeMonoidTwo.Elem), two(FreeMonoidTwo.Elem)
 # Category
 ##########
 
-@signature Category(Ob,Hom) begin
+@theory Category(Ob,Hom) begin
   Ob::TYPE
   Hom(dom::Ob, codom::Ob)::TYPE
 

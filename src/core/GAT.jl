@@ -1,12 +1,12 @@
 """ Generalized algebraic theories (GATs) in Julia.
 
-At present, this module only supports defining the *signature* of a GAT. In the
-future we may allow *axioms* to be expressed as well. Regardless, we will
-persist in calling this module "GAT". Signatures are defined using the
-`@signature` macro.
+At present, this module only supports defining the *signature* of a GAT and the
+defined *axioms* to be expressed as well. Regardless, we will
+persist in calling this module "GAT". Theories are defined using the `@theory`
+macro, and Signatures are defined using the `@signature` macro.
 """
 module GAT
-export @signature, @instance, invoke_term
+export @theory, @signature, @instance, invoke_term
 
 using Base.Meta: ParseError
 using Compat
@@ -69,54 +69,87 @@ end
   end
 end
 
-""" Signature for a generalized algebraic theory (GAT).
+""" Data structure for a generalized algebraic theory (GAT).
 """
-@auto_hash_equals struct Signature
+@auto_hash_equals struct Theory
   types::Vector{TypeConstructor}
   terms::Vector{TermConstructor}
   axioms::Vector{AxiomConstructor}
   aliases::Dict{Symbol, Symbol}
 end
 
-""" Typeclass = GAT signature + Julia-specific content.
+""" Typeclass = GAT + Julia-specific content.
 """
 struct Typeclass
   name::Symbol
   type_params::Vector{Symbol}
-  signature::Signature
+  theory::Theory
   functions::Vector{JuliaFunction}
 end
 
-struct SignatureBinding
+struct TheoryBinding
   name::Symbol
   params::Vector{Symbol}
 end
-struct SignatureHead
-  main::SignatureBinding
-  base::Vector{SignatureBinding}
-  SignatureHead(main, base=[]) = new(main, base)
+struct TheoryHead
+  main::TheoryBinding
+  base::Vector{TheoryBinding}
+  TheoryHead(main, base=[]) = new(main, base)
 end
 
-# Signatures
+# Theories
 ############
 
-""" Define a signature of a generalized algebraic theory (GAT).
+""" Define a generalized algebraic theory (GAT).
 
-Three kinds of things can go in the signature body:
+Five kinds of things can go in the theory body:
 
-1. Type constructors, indicated by the special type `TYPE`, e.g.
+1. Type constructors, indicated by the special type `TYPE`, e.g.,
    `Hom(X::Ob,Y::Ob)::TYPE`
 2. Term constructors, e.g.,
    `id(X::Ob)::Hom(X,X)`
 3. Julia functions operating on the term constructors to provide additional
    functionality
+4. Function aliases, e.g.,
+   `@op Hom :→`
+5. Equivalency axioms, e.g.,
+   `f ⋅ id(B) == f ⊣ (A::Ob, B::Ob, f::(A → B))`
 
-A signature can extend existing signatures (at present only one).
+
+A theory can extend existing theories (at present only one).
+"""
+macro theory(head, body)
+  theory_builder(head, body)
+end
+
+""" Define a signature for a generalized algebraic theory (GAT).
+
+A signature is the same as a theory, except may not contain axioms, and
+therefore only four kinds of things can go in the signature body:
+
+1. Type constructors, indicated by the special type `TYPE`, e.g.,
+   `Hom(X::Ob,Y::Ob)::TYPE`
+2. Term constructors, e.g.,
+   `id(X::Ob)::Hom(X,X)`
+3. Julia functions operating on the term constructors to provide additional
+   functionality
+4. Function aliases, e.g.,
+   `@op Hom :→`
+
+A signature can extend existing theories (at present only one).
 """
 macro signature(head, body)
-  # Parse signature header.
-  head = parse_signature_head(head)
-  @assert length(head.base) <= 1 "Multiple signature extension not supported"
+  theory_builder(head, body, signature=true)
+end
+
+""" Define how a theory is built, set up as a separate function to allow both
+    the signature and theory macros to share code and throw an error if any
+    axioms are defined in a signature.
+"""
+function theory_builder(head, body; signature=false)
+  # Parse theory header.
+  head = parse_theory_head(head)
+  @assert length(head.base) <= 1 "Multiple theory extension not supported"
   if length(head.base) == 1
     base_name, base_params = head.base[1].name, head.base[1].params
     @assert all(p in head.main.params for p in base_params)
@@ -124,38 +157,43 @@ macro signature(head, body)
     base_name, base_params = nothing, []
   end
 
-  # Parse signature body: GAT types/terms and extra Julia functions.
-  types, terms, functions, axioms, aliases = parse_signature_body(body)
-  signature = Signature(types, terms, axioms, aliases)
-  class = Typeclass(head.main.name, head.main.params, signature, functions)
+  # Parse theory body: GAT types/terms and extra Julia functions.
+  types, terms, functions, axioms, aliases = parse_theory_body(body)
+  if signature && length(axioms) > 0
+    throw(ParseError("@signature macro does not allow axioms to be defined: $axioms"))
+  end
+
+  theory = Theory(types, terms, axioms, aliases)
+  class = Typeclass(head.main.name, head.main.params, theory, functions)
 
   # We must generate and evaluate the code at *run time* because the base
-  # signature, if specified, is not available at *parse time*.
-  expr = :(signature_code($class, $(esc(base_name)), $base_params))
+  # theory, if specified, is not available at *parse time*.
+  expr = :(theory_code($class, $(esc(base_name)), $base_params))
   Expr(:block,
     Expr(:call, esc(:eval), expr),
     :(Core.@__doc__ $(esc(head.main.name))))
 end
-function signature_code(main_class, base_mod, base_params)
-  # TODO: Generate code to do something with main_class.signature.axioms
+
+function theory_code(main_class, base_mod, base_params)
+  # TODO: Generate code to do something with main_class.theory.axioms
   # Add types/terms/functions from base class, if provided.
-  main_sig = main_class.signature
+  main_theory = main_class.theory
   if isnothing(base_mod)
     class = main_class
   else
     base_class = base_mod.class()
     bindings = Dict(zip(base_class.type_params, base_params))
-    base_sig = replace_types(bindings, base_class.signature)
-    sig = Signature([base_sig.types; main_sig.types],
-                    [base_sig.terms; main_sig.terms],
-                    [base_sig.axioms; main_sig.axioms],
-                    merge(base_sig.aliases, main_sig.aliases))
+    base_theory = replace_types(bindings, base_class.theory)
+    theory = Theory([base_theory.types; main_theory.types],
+                    [base_theory.terms; main_theory.terms],
+                    [base_theory.axioms; main_theory.axioms],
+                    merge(base_theory.aliases, main_theory.aliases))
     functions = [ [ replace_symbols(bindings, f) for f in base_class.functions ];
                   main_class.functions ]
-    class = Typeclass(main_class.name, main_class.type_params, sig, functions)
+    class = Typeclass(main_class.name, main_class.type_params, theory, functions)
   end
-  signature = replace_types(class.signature.aliases, class.signature)
-  class = Typeclass(class.name, class.type_params, signature, class.functions)
+  theory = replace_types(class.theory.aliases, class.theory)
+  class = Typeclass(class.name, class.type_params, theory, class.functions)
 
   # Generate module with stub types.
   mod = Expr(:module, true, class.name,
@@ -163,15 +201,15 @@ function signature_code(main_class, base_mod, base_params)
       # Prevents error about export not being at toplevel.
       # https://github.com/JuliaLang/julia/issues/28991
       LineNumberNode(0);
-      Expr(:export, [cons.name for cons in signature.types]...);
-      map(gen_abstract_type, signature.types);
+      Expr(:export, [cons.name for cons in theory.types]...);
+      map(gen_abstract_type, theory.types);
       :(class() = $(class));
     ]...))
 
   # Generate method stubs.
   # (We put them outside the module, so the stub type names must be qualified.)
   bindings = Dict(cons.name => Expr(:(.), class.name, QuoteNode(cons.name))
-                  for cons in signature.types)
+                  for cons in theory.types)
   fns = interface(class)
 
   toplevel = [ generate_function(replace_symbols(bindings, f)) for f in fns ]
@@ -181,26 +219,26 @@ function signature_code(main_class, base_mod, base_params)
   Expr(:toplevel, mod, toplevel...)
 end
 
-function parse_signature_head(expr::Expr)::SignatureHead
-  parse = parse_signature_binding
+function parse_theory_head(expr::Expr)::TheoryHead
+  parse = parse_theory_binding
   @match expr begin
     (Expr(:call, [:(=>), Expr(:tuple, bases), main])
-      => SignatureHead(parse(main), map(parse, bases)))
-    Expr(:call, [:(=>), base, main]) => SignatureHead(parse(main), [parse(base)])
-    _ => SignatureHead(parse(expr))
+      => TheoryHead(parse(main), map(parse, bases)))
+    Expr(:call, [:(=>), base, main]) => TheoryHead(parse(main), [parse(base)])
+    _ => TheoryHead(parse(expr))
   end
 end
 
-function parse_signature_binding(expr::Expr)::SignatureBinding
+function parse_theory_binding(expr::Expr)::TheoryBinding
   @match expr begin
-    Expr(:call, [name::Symbol, params...]) => SignatureBinding(name, params)
-    _ => throw(ParseError("Ill-formed signature binding $expr"))
+    Expr(:call, [name::Symbol, params...]) => TheoryBinding(name, params)
+    _ => throw(ParseError("Ill-formed theory binding $expr"))
   end
 end
 
-""" Parse the body of a GAT signature declaration.
+""" Parse the body of a GAT declaration.
 """
-function parse_signature_body(expr::Expr)
+function parse_theory_body(expr::Expr)
   @assert expr.head == :block
   aliases = Dict{Symbol, Symbol}()
   types = OrderedDict{Symbol,TypeConstructor}()
@@ -228,7 +266,7 @@ function parse_signature_body(expr::Expr)
     elseif head == :macrocall && elem.args[1] == Symbol("@op")
       aliases[elem.args[3].value] = elem.args[2]
     else
-      throw(ParseError("Ill-formed signature element $elem"))
+      throw(ParseError("Ill-formed theory element $elem"))
     end
   end
   return (collect(values(types)), terms, funs, axioms, aliases)
@@ -236,8 +274,8 @@ end
 
 """ Julia functions for type parameter accessors.
 """
-function accessors(sig::Signature)::Vector{JuliaFunction}
-  vcat(map(accessors, sig.types)...)
+function accessors(theory::Theory)::Vector{JuliaFunction}
+  vcat(map(accessors, theory.types)...)
 end
 function accessors(cons::TypeConstructor)::Vector{JuliaFunction}
   [ JuliaFunction(Expr(:call, param, Expr(:(::), cons.name)),
@@ -247,18 +285,18 @@ end
 
 """ Julia functions for term constructors of GAT.
 """
-function constructors(sig::Signature)::Vector{JuliaFunction}
-  [ constructor(cons, sig) for cons in sig.terms ]
+function constructors(theory::Theory)::Vector{JuliaFunction}
+  [ constructor(cons, theory) for cons in theory.terms ]
 end
 function constructor(cons::Union{TypeConstructor,TermConstructor},
-                     sig::Signature)::JuliaFunction
+                     theory::Theory)::JuliaFunction
   arg_names = cons.params
   arg_types = [ strip_type(cons.context[name]) for name in arg_names ]
   args = [ Expr(:(::), name, typ) for (name,typ) in zip(arg_names, arg_types) ]
   return_type = cons isa TermConstructor ? strip_type(cons.typ) : cons.name
 
   call_expr = Expr(:call, cons.name, args...)
-  if !any(has_type(sig, typ) for typ in arg_types)
+  if !any(has_type(theory, typ) for typ in arg_types)
     call_expr = add_type_dispatch(call_expr, return_type)
   end
   JuliaFunction(call_expr, return_type)
@@ -266,11 +304,11 @@ end
 
 """ Julia functions for term and type aliases of GAT.
 """
-function alias_functions(sig::Signature)::Vector{JuliaFunction}
-  # collect all of the types and terms from the signature
-  terms_types = [sig.types; sig.terms]
+function alias_functions(theory::Theory)::Vector{JuliaFunction}
+  # collect all of the types and terms from the theory
+  terms_types = [theory.types; theory.terms]
   # iterate over the specified aliases
-  collect(Iterators.flatten(map(collect(sig.aliases)) do alias
+  collect(Iterators.flatten(map(collect(theory.aliases)) do alias
     # collect all of the destination function definitions to alias
     # allows an alias to overite all the type definitions of a function
     dests = filter(i -> i.name == last(alias), map(x -> x, terms_types))
@@ -280,7 +318,7 @@ function alias_functions(sig::Signature)::Vector{JuliaFunction}
     end
     # For each destination, create a Julia function
     map(dests) do dest
-      fun = constructor(dest, sig)
+      fun = constructor(dest, theory)
       fun.call_expr.args[1] = first(alias)
       # Extract arguments from function header, handling special case of
       # created by `add_type_dispatch`.
@@ -302,9 +340,9 @@ end
 """ Complete set of Julia functions for a type class.
 """
 function interface(class::Typeclass)::Vector{JuliaFunction}
-  [ accessors(class.signature);
-    constructors(class.signature);
-    alias_functions(class.signature);
+  [ accessors(class.theory);
+    constructors(class.theory);
+    alias_functions(class.theory);
     class.functions ]
 end
 
@@ -313,13 +351,13 @@ end
 Unlike term constructors, type constructors cannot be overloaded, so there is at
 most one type constructor with a given name.
 """
-function get_type(sig::Signature, name::Symbol)::TypeConstructor
-  indices = findall(cons -> cons.name == name, sig.types)
+function get_type(theory::Theory, name::Symbol)::TypeConstructor
+  indices = findall(cons -> cons.name == name, theory.types)
   @assert length(indices) == 1
-  sig.types[indices[1]]
+  theory.types[indices[1]]
 end
-function has_type(sig::Signature, name::Symbol)::Bool
-  findfirst(cons -> cons.name == name, sig.types) != nothing
+function has_type(theory::Theory, name::Symbol)::Bool
+  findfirst(cons -> cons.name == name, theory.types) != nothing
 end
 
 """ Add a type-valued first argument to a Julia function signature.
@@ -428,11 +466,11 @@ end
 
 """ Replace names of type constructors in a GAT.
 """
-function replace_types(bindings::Dict, sig::Signature)::Signature
-  Signature([ replace_types(bindings, t) for t in sig.types ],
-            [ replace_types(bindings, t) for t in sig.terms ],
-            [ replace_types(bindings, t) for t in sig.axioms ],
-            replace_types(bindings, sig.aliases))
+function replace_types(bindings::Dict, theory::Theory)::Theory
+  Theory([ replace_types(bindings, t) for t in theory.types ],
+         [ replace_types(bindings, t) for t in theory.terms ],
+         [ replace_types(bindings, t) for t in theory.axioms ],
+         replace_types(bindings, theory.aliases))
 end
 function replace_types(bindings::Dict, cons::TypeConstructor)::TypeConstructor
   TypeConstructor(replace_symbols(bindings, cons.name), cons.params,
@@ -470,25 +508,25 @@ function strip_type(expr)::Symbol
   end
 end
 
-# GAT expressions in a signature
-################################
+# GAT expressions
+#################
 
 """ Expand context variables that occur implicitly in an expression.
 
 Reference: (Cartmell, 1986, Sec 10: 'Informal syntax').
 """
 function expand_in_context(expr, params::Vector{Symbol},
-                           context::Context, sig::Signature)
+                           context::Context, theory::Theory)
   @match expr begin
     Expr(:call, [name::Symbol, args...]) => begin
-      expanded = [expand_in_context(e, params, context, sig) for e in args]
+      expanded = [expand_in_context(e, params, context, theory) for e in args]
       Expr(:call, name, expanded...)
     end
     name::Symbol => begin
       if name in params
         name
       elseif haskey(context, name)
-        expand_symbol_in_context(name, params, context, sig)
+        expand_symbol_in_context(name, params, context, theory)
       else
         error("Name $name missing from context $context")
       end
@@ -497,7 +535,7 @@ function expand_in_context(expr, params::Vector{Symbol},
   end
 end
 function expand_symbol_in_context(sym::Symbol, params::Vector{Symbol},
-                                  context::Context, sig::Signature)
+                                  context::Context, theory::Theory)
   # This code expands symbols that occur as direct arguments to type
   # constructors. If there are term constructors in between, it does not work:
   # indeed, it cannot work in general because the term constructors are not
@@ -510,10 +548,10 @@ function expand_symbol_in_context(sym::Symbol, params::Vector{Symbol},
   for name in names[start+1:end]
     expr = context[name]
     if isa(expr, Expr) && expr.head == :call && sym in expr.args[2:end]
-      cons = get_type(sig, expr.args[1])
+      cons = get_type(theory, expr.args[1])
       accessor = cons.params[findfirst(expr.args[2:end] .== sym)]
       expanded = Expr(:call, accessor, name)
-      return expand_in_context(expanded, params, context, sig)
+      return expand_in_context(expanded, params, context, theory)
     end
   end
   error("Name $sym does not occur explicitly among $params in context $context")
@@ -522,9 +560,9 @@ end
 """ Expand context variables that occur implicitly in the type expression
 of a term constructor.
 """
-function expand_term_type(cons::TermConstructor, sig::Signature)
+function expand_term_type(cons::TermConstructor, theory::Theory)
   isa(cons.typ, Symbol) ? cons.typ :
-    expand_in_context(cons.typ, cons.params, cons.context, sig)
+    expand_in_context(cons.typ, cons.params, cons.context, theory)
 end
 
 """ Implicit equations defined by a context.
@@ -538,21 +576,21 @@ References:
     finite limits")
  - (Freyd, 1972, "Aspects of topoi")
 """
-function equations(context::Context, sig::Signature)::Vector{Pair}
+function equations(context::Context, theory::Theory)::Vector{Pair}
   # The same restrictions as `expand_symbol_in_context` apply here.
   eqs = Pair[]
   names = collect(keys(context))
   for (start, var) in enumerate(names)
     for name in names[start+1:end]
       expr = context[name]
-      if isa(expr, Symbol) && !has_type(sig, expr)
+      if isa(expr, Symbol) && !has_type(theory, expr)
         # If the constructor is a symbol and there isn't a matching type in
-        # the signature, assume it's a Julia type. For now, these are
+        # the theory, assume it's a Julia type. For now, these are
         # completely ignored by the syntax system.
         continue
       end
       expr = isa(expr, Symbol) ? Expr(:call, expr) : expr
-      cons = get_type(sig, expr.args[1])
+      cons = get_type(theory, expr.args[1])
       accessors = cons.params[findall(expr.args[2:end] .== var)]
       append!(eqs, (Expr(:call, a, name) => var for a in accessors))
     end
@@ -563,10 +601,10 @@ end
 """ Implicit equations defined by context, allowing for implicit variables.
 """
 function equations(params::Vector{Symbol}, context::Context,
-                   sig::Signature)::Vector{Pair}
-  eqs = [ (expand_in_context(lhs, params, context, sig) =>
-           expand_in_context(rhs, params, context, sig))
-          for (lhs, rhs) in equations(context, sig) ]
+                   theory::Theory)::Vector{Pair}
+  eqs = [ (expand_in_context(lhs, params, context, theory) =>
+           expand_in_context(rhs, params, context, theory))
+          for (lhs, rhs) in equations(context, theory) ]
   # Remove tautologies (expr == expr) resulting from expansions.
   # FIXME: Should we worry about redundancies from the symmetry of equality,
   # i.e., (expr1 == expr2) && (expr2 == expr1)?
@@ -575,8 +613,8 @@ end
 
 """ Implicit equations for term constructor.
 """
-function equations(cons::TermConstructor, sig::Signature)::Vector{Pair}
-  equations(cons.params, cons.context, sig)
+function equations(cons::TermConstructor, theory::Theory)::Vector{Pair}
+  equations(cons.params, cons.context, theory)
 end
 
 # Instances
@@ -589,10 +627,10 @@ the Typeclass.jl library for Julia.
 """
 macro instance(head, body)
   # Parse the instance definition.
-  head = parse_signature_binding(head)
+  head = parse_theory_binding(head)
   functions, ext_functions = parse_instance_body(body)
 
-  # We must generate and evaluate the code at *run time* because the signature
+  # We must generate and evaluate the code at *run time* because the theory
   # module is not defined at *parse time*.
   # Also, we "throw away" any docstring.
   # FIXME: Is there a better place to put the docstring?
@@ -608,9 +646,9 @@ function instance_code(mod, instance_types, instance_fns, external_fns)
   bound_fns = [ replace_symbols(bindings, f) for f in interface(class) ]
   bound_fns = OrderedDict(parse_function_sig(f) => f for f in bound_fns)
   instance_fns = Dict(parse_function_sig(f) => f for f in instance_fns)
-  for (sig, f) in bound_fns
-    if haskey(instance_fns, sig)
-      f_impl = instance_fns[sig]
+  for (theory, f) in bound_fns
+    if haskey(instance_fns, theory)
+      f_impl = instance_fns[theory]
     elseif !isnothing(f.impl)
       f_impl = f
     elseif f.call_expr.args[1] in external_fns
@@ -646,32 +684,32 @@ end
 
 """ Invoke a term constructor by name on an instance.
 
-This method provides reflection for GAT signatures. In everyday use the generic
+This method provides reflection for GATs. In everyday use the generic
 method for the constructor should be called directly, not through this function.
 
 Cf. Julia's builtin `invoke()` function.
 """
-function invoke_term(signature_module::Module, instance_types::Tuple,
+function invoke_term(theory_module::Module, instance_types::Tuple,
                      constructor_name::Symbol, args...)
   # Get the corresponding Julia method from the parent module.
-  method = getfield(parentmodule(signature_module), constructor_name)
+  method = getfield(parentmodule(theory_module), constructor_name)
   args = collect(Any, args)
 
   # Add dispatch on return type, if necessary.
   if !any(typeof(arg) <: typ for typ in instance_types for arg in args)
     # Case 1: Name refers to type constructor, e.g., generator constructor
     # in syntax system.
-    signature = signature_module.class().signature
-    index = findfirst(cons -> cons.name == constructor_name, signature.types)
+    theory = theory_module.class().theory
+    index = findfirst(cons -> cons.name == constructor_name, theory.types)
     if isnothing(index)
       # Case 2: Name refers to term constructor.
       # FIXME: Terms constructors can be overloaded, so there may be multiple
       # term constructors with the same name. Distinguishing them requires type
       # inference. I am punting on that right now.
-      constructor = signature.terms[
-        findfirst(cons -> cons.name == constructor_name, signature.terms)]
+      constructor = theory.terms[
+        findfirst(cons -> cons.name == constructor_name, theory.terms)]
       return_name = strip_type(constructor.typ)
-      index = findfirst(cons -> cons.name == return_name, signature.types)
+      index = findfirst(cons -> cons.name == return_name, theory.types)
     end
     insert!(args, 1, instance_types[index])
   end

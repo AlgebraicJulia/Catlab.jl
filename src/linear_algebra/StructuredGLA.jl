@@ -22,10 +22,10 @@ import ..GraphicalLinearAlgebra:
 Structured matrices have some properties that allow us to compute with them faster
 than general dense matrices. Morphisms in this category represent structured matrices.
 """
-@signature LinearFunctions(Ob,Hom) => StructuredLinearFunctions(Ob, Hom) begin
+@theory LinearFunctions(Ob,Hom) => StructuredLinearFunctions(Ob, Hom) begin
   munit()::Ob
   @op munit :ℝ
-  
+
   diag(v)::(A→A) ⊣ (A::Ob, v::(ℝ()→A))
   upperdiag(v)::(A⊕ℝ() → A⊕ℝ()) ⊣ (A::Ob, v::(ℝ() → A))
   lowerdiag(v)::(A⊕ℝ() → A⊕ℝ()) ⊣ (A::Ob, v::(ℝ() → A))

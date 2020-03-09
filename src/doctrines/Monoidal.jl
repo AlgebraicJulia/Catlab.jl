@@ -20,9 +20,9 @@ import Base: collect, ndims
 
 To avoid associators and unitors, we assume the monoidal category is *strict*.
 By the coherence theorem there is no loss of generality, but we may add a
-signature for weak monoidal categories later.
+theory for weak monoidal categories later.
 """
-@signature Category(Ob,Hom) => MonoidalCategory(Ob,Hom) begin
+@theory Category(Ob,Hom) => MonoidalCategory(Ob,Hom) begin
   otimes(A::Ob, B::Ob)::Ob
   @op otimes :⊗
   otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣
@@ -71,9 +71,9 @@ show_latex(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
 
 """ Doctrine of *symmetric monoidal category*
 
-The signature (but not the axioms) is the same as a braided monoidal category.
+The theory (but not the axioms) is the same as a braided monoidal category.
 """
-@signature MonoidalCategory(Ob,Hom) => SymmetricMonoidalCategory(Ob,Hom) begin
+@theory MonoidalCategory(Ob,Hom) => SymmetricMonoidalCategory(Ob,Hom) begin
   braid(A::Ob, B::Ob)::((A ⊗ B) → (B ⊗ A))
   @op braid :σ
 end
@@ -103,7 +103,7 @@ References:
   Section 6.6: "Cartesian center"
 - Selinger, 1999, "Categorical structure of asynchrony"
 """
-@signature SymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithDiagonals(Ob,Hom) begin
+@theory SymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithDiagonals(Ob,Hom) begin
   mcopy(A::Ob)::(A → (A ⊗ A))
   @op mcopy :Δ
   delete(A::Ob)::(A → munit())
@@ -115,7 +115,7 @@ end
 Actually, this is a cartesian *symmetric monoidal* category but we omit these
 qualifiers for brevity.
 """
-@signature MonoidalCategoryWithDiagonals(Ob,Hom) => CartesianCategory(Ob,Hom) begin
+@theory MonoidalCategoryWithDiagonals(Ob,Hom) => CartesianCategory(Ob,Hom) begin
   pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
@@ -153,11 +153,11 @@ The terminology is nonstandard (is there any standard terminology?) but is
 intended to mean a monoidal category with coherent diagonals and codiagonals.
 Unlike in a biproduct category, the naturality axioms need not be satisfied.
 
-FIXME: This signature should extend both `MonoidalCategoryWithDiagonals` and
+FIXME: This theory should extend both `MonoidalCategoryWithDiagonals` and
 `MonoidalCategoryWithCodiagonals`, but multiple inheritance is not yet
 supported.
 """
-@signature SymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithBidiagonals(Ob,Hom) begin
+@theory SymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithBidiagonals(Ob,Hom) begin
   mcopy(A::Ob)::(A → (A ⊗ A))
   @op mcopy :Δ
   mmerge(A::Ob)::((A ⊗ A) → A)
@@ -172,11 +172,11 @@ end
 
 Also known as a *semiadditive category*.
 
-FIXME: This signature should extend `MonoidalCategoryWithBidiagonals`,
+FIXME: This theory should extend `MonoidalCategoryWithBidiagonals`,
 `CartesianCategory`, and `CocartesianCategory`, but multiple inheritance is not
 yet supported.
 """
-@signature MonoidalCategoryWithBidiagonals(Ob,Hom) => BiproductCategory(Ob,Hom) begin
+@theory MonoidalCategoryWithBidiagonals(Ob,Hom) => BiproductCategory(Ob,Hom) begin
   pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
   copair(f::(A → C), g::(B → C))::((A ⊗ B) → C) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
@@ -205,7 +205,7 @@ end
 
 A CCC is a cartesian category with internal homs (aka, exponential objects).
 """
-@signature CartesianCategory(Ob,Hom) => CartesianClosedCategory(Ob,Hom) begin
+@theory CartesianCategory(Ob,Hom) => CartesianClosedCategory(Ob,Hom) begin
   # Internal hom of A and B, an object representing Hom(A,B)
   hom(A::Ob, B::Ob)::Ob
 
@@ -250,7 +250,7 @@ end
 
 """ Doctrine of *compact closed category*
 """
-@signature SymmetricMonoidalCategory(Ob,Hom) => CompactClosedCategory(Ob,Hom) begin
+@theory SymmetricMonoidalCategory(Ob,Hom) => CompactClosedCategory(Ob,Hom) begin
   # Dual A^* of object A
   dual(A::Ob)::Ob
 
@@ -305,7 +305,7 @@ end
 
 """ Doctrine of *dagger category*
 """
-@signature Category(Ob,Hom) => DaggerCategory(Ob,Hom) begin
+@theory Category(Ob,Hom) => DaggerCategory(Ob,Hom) begin
   dagger(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
 end
 
@@ -325,10 +325,10 @@ end
 Also known as a [symmetric monoidal dagger
 category](https://ncatlab.org/nlab/show/symmetric+monoidal+dagger-category).
 
-FIXME: This signature should extend both `DaggerCategory` and
+FIXME: This theory should extend both `DaggerCategory` and
 `SymmetricMonoidalCategory`, but multiple inheritance is not yet supported.
 """
-@signature SymmetricMonoidalCategory(Ob,Hom) => DaggerSymmetricMonoidalCategory(Ob,Hom) begin
+@theory SymmetricMonoidalCategory(Ob,Hom) => DaggerSymmetricMonoidalCategory(Ob,Hom) begin
   dagger(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
 end
 
@@ -351,10 +351,10 @@ in the official `LinearAlegbra` module. For the general relationship between
 mates and daggers, see Selinger's survey of graphical languages for monoidal
 categories.
 
-FIXME: This signature should extend both `DaggerCategory` and
+FIXME: This theory should extend both `DaggerCategory` and
 `CompactClosedCategory`, but multiple inheritance is not yet supported.
 """
-@signature CompactClosedCategory(Ob,Hom) => DaggerCompactCategory(Ob,Hom) begin
+@theory CompactClosedCategory(Ob,Hom) => DaggerCompactCategory(Ob,Hom) begin
   dagger(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
 end
 
@@ -378,7 +378,7 @@ end
 
 """ Doctrine of *traced monoidal category*
 """
-@signature SymmetricMonoidalCategory(Ob,Hom) => TracedMonoidalCategory(Ob,Hom) begin
+@theory SymmetricMonoidalCategory(Ob,Hom) => TracedMonoidalCategory(Ob,Hom) begin
   trace(X::Ob, A::Ob, B::Ob, f::((X ⊗ A) → (X ⊗ B)))::(A → B)
 end
 

@@ -99,7 +99,7 @@ end
 These methods should only be used with `gensym`-ed variables since they assume
 that any two formulas have disjoint variables.
 """
-@instance AlgebraicNetSignature(NFormula, Formulas) begin
+@instance AlgebraicNetTheory(NFormula, Formulas) begin
   dom(f::Formulas) = NFormula(length(f.inputs))
   codom(f::Formulas) = NFormula(length(f.terms))
 
@@ -116,7 +116,7 @@ that any two formulas have disjoint variables.
 
   munit(::Type{NFormula}) = NFormula(0)
   otimes(A::NFormula, B::NFormula) = NFormula(A.n + B.n)
-  
+
   function otimes(b1::Formulas, b2::Formulas)::Formulas
     Formulas([b1.terms; b2.terms], [b1.vars; b2.vars])
   end
@@ -124,12 +124,12 @@ that any two formulas have disjoint variables.
     v1, v2 = gensyms(A), gensyms(B)
     Formulas([v2; v1], [v1; v2])
   end
-  
+
   mcopy(A::NFormula) = mcopy(A, 2)
   mmerge(A::NFormula) = mmerge(A, 2)
   delete(A::NFormula) = Formulas([], gensyms(A))
   create(A::NFormula) = Formulas(zeros(Int, A.n), [])
-  
+
   function linear(value::Any, A::NFormula, B::NFormula)::Formulas
     nin, nout = A.n, B.n
     @assert nin == 1 && nout == 1 # FIXME: Relax this.
