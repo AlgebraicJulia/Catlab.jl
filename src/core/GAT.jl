@@ -112,7 +112,7 @@ Five kinds of things can go in the theory body:
    functionality
 4. Function aliases, e.g.,
    `@op Hom :→`
-5. Equivalency axioms, e.g.,
+5. Equality axioms, e.g.,
    `f ⋅ id(B) == f ⊣ (A::Ob, B::Ob, f::(A → B))`
 
 
@@ -124,7 +124,7 @@ end
 
 """ Define a signature for a generalized algebraic theory (GAT).
 
-A signature is the same as a theory, except may not contain axioms, and
+A signature is the same as a theory, except it may not contain axioms, and
 therefore only four kinds of things can go in the signature body:
 
 1. Type constructors, indicated by the special type `TYPE`, e.g.,
@@ -654,7 +654,7 @@ function instance_code(mod, instance_types, instance_fns, external_fns)
     elseif f.call_expr.args[1] in external_fns
       continue
     else
-      @error "Method $(f.call_expr) not implemented in $(class.name) instance"
+      error("Method $(f.call_expr) not implemented in $(class.name) instance")
     end
     push!(code.args, generate_function(f_impl))
   end
