@@ -1,7 +1,7 @@
 module StructuredGraphicalLinearAlgebra
 export StructuredLinearFunctions, FreeStructuredLinearFunctions,
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, ozero, braid,
-  mcopy, Δ, delete, ◊, mplus, ⊞, mzero, plus, scalar, antipode, ⊟, adjoint,
+  mcopy, Δ, delete, ◊, mplus, mzero, plus, +, scalar, antipode, adjoint,
   ℝ, munit, →, diag
 
 import Base: +
@@ -12,7 +12,7 @@ import ...Doctrines:
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, ozero, braid, munit
 using ..GraphicalLinearAlgebra
 import ..GraphicalLinearAlgebra:
-  mcopy, Δ, delete, ◊, mplus, mzero, plus, scalar, antipode, ⊟, adjoint
+  mcopy, Δ, delete, ◊, mplus, mzero, plus, +, scalar, antipode, adjoint
 
 # Doctrines
 ###########
@@ -22,10 +22,10 @@ import ..GraphicalLinearAlgebra:
 Structured matrices have some properties that allow us to compute with them faster
 than general dense matrices. Morphisms in this category represent structured matrices.
 """
-@signature LinearFunctions(Ob,Hom) => StructuredLinearFunctions(Ob, Hom) begin
+@theory LinearFunctions(Ob,Hom) => StructuredLinearFunctions(Ob, Hom) begin
   munit()::Ob
   @op munit :ℝ
-  
+
   diag(v)::(A→A) ⊣ (A::Ob, v::(ℝ()→A))
   upperdiag(v)::(A⊕ℝ() → A⊕ℝ()) ⊣ (A::Ob, v::(ℝ() → A))
   lowerdiag(v)::(A⊕ℝ() → A⊕ℝ()) ⊣ (A::Ob, v::(ℝ() → A))
@@ -38,16 +38,16 @@ than general dense matrices. Morphisms in this category represent structured mat
   # A is n-k and b is k in a n×n matrix with v on the kth lower diagonal
   lowerdiag(A, v)::(A⊕B→A⊕B) ⊣ (A::Ob, B::Ob, v::(ℝ()→B))
   # Axioms
-  lowerdiag == adjoint(upperdiag)
-  upperdiag(A,b) == delete(A) ⊕ diag(b) ⊕ mzero(A)  ⊣ (A::Ob, b::(ℝ()→B))
-  lowerdiag(A,b) == mzero(A)  ⊕ diag(b) ⊕ delete(A) ⊣ (A::Ob, b::(ℝ()→B))
+  lowerdiag == ⊟(upperdiag)
+  upperdiag(A,b) == ◊(A) ⊕ diag(b) ⊕ mzero(A)  ⊣ (A::Ob, b::(ℝ()→B))
+  lowerdiag(A,b) == mzero(A)  ⊕ diag(b) ⊕ ◊(A) ⊣ (A::Ob, b::(ℝ()→B))
   # by default upperdiagonal means 1-upperdiagonal
   upperdiag(b) == upperdiag(ℝ(), b) ⊣ (b::(ℝ()→B))
   # by default lowerdiagonal means 1-lowerdiagonal
   lowerdiag(b) == lowerdiag(ℝ(), b) ⊣ (b::(ℝ()→B))
 
-  bidiag(a,b) == plus(diag(a), upperdiag(b)) ⊣ (A::Ob, a::(ℝ()→A⊗ℝ()), b::(ℝ()→A))
-  tridiag(a,b,c) == plus(diag(a), lowerdiag(b), upperdiag(c)) ⊣ (A::Ob, a::(ℝ()→A⊗ℝ()), b::(ℝ()→A), c::(ℝ()→A))
+  bidiag(a,b) == diag(a) + upperdiag(b) ⊣ (A::Ob, a::(ℝ()→A⊗ℝ()), b::(ℝ()→A))
+  tridiag(a,b,c) == diag(a) + lowerdiag(b) + upperdiag(c) ⊣ (A::Ob, a::(ℝ()→A⊗ℝ()), b::(ℝ()→A), c::(ℝ()→A))
   symtridiag(a,b) == tridiagonal(a,b,b) ⊣ (A::Ob, a::(ℝ()→A⊗ℝ()), b::(ℝ()→A))
 end
 
@@ -56,7 +56,5 @@ end
   oplus(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = new(f,g; strict=true) # No normalization!
 end
-
-+(f::FreeStructuredLinearFunctions.Hom, g::FreeStructuredLinearFunctions.Hom) = plus(f,g)
 
 end

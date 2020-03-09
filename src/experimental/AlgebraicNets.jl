@@ -6,7 +6,7 @@ arithmetic operations or elementary or special functions. The idea here is to
 represent expressions as morphisms in a monoidal category.
 """
 module AlgebraicNets
-export AlgebraicNetSignature, AlgebraicNet, Ob, Hom, dom, codom,
+export AlgebraicNetTheory, AlgebraicNet, Ob, Hom, dom, codom,
   id, compose, ⋅, ∘, otimes, ⊗, munit, braid, mcopy, delete, mmerge, create,
   linear, constant, wiring,
   compile, compile_expr, compile_expr_vector, compile_block, evaluate
@@ -32,7 +32,7 @@ import ...Programs.GenerateJuliaPrograms: genvar, genvars, to_function_expr,
 
 TODO: Explain
 """
-@signature MonoidalCategoryWithBidiagonals(Ob,Hom) => AlgebraicNetSignature(Ob,Hom) begin
+@signature MonoidalCategoryWithBidiagonals(Ob,Hom) => AlgebraicNetTheory(Ob,Hom) begin
   linear(x::Any, A::Ob, B::Ob)::(A → B)
   constant(x::Any, A::Ob) = (x → munit(Ob) → A)
 
@@ -40,7 +40,7 @@ TODO: Explain
   wiring(f::Any, A::Ob, B::Ob)::(A → B)
 end
 
-@syntax AlgebraicNet(ObExpr,HomExpr) AlgebraicNetSignature begin
+@syntax AlgebraicNet(ObExpr,HomExpr) AlgebraicNetTheory begin
   # FIXME: `compose` and `otimes` should delegate to wiring layer when possible.
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)

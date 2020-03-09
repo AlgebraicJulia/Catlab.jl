@@ -13,24 +13,26 @@ transformed, usually functorially, into more concrete representations, such as
 
 The basic elements of this system are:
 
-1. **Signatures** of generalized algebraic theories (GATs), defined using the
-   [`@signature`](@ref) macro. Categories and other typed (multisorted)
-   algebraic structures can be defined as GATs.
+1. **Generalized algebraic theories** (GATs), defined using the
+   [`@theory`](@ref) macro. Categories and other typed (multisorted)
+   algebraic structures can be defined as GATs. The [`@signature`](@ref) macro
+   can be used in cases where only the signature of the GAT is defined, and not
+   the axioms.
 
-2. **Instances**, or concrete implementations, of signatures, asserted using the
+2. **Instances**, or concrete implementations, of theories, asserted using the
    [`@instance`](@ref) macro.
 
-3. **Syntax systems** for signatures, defined using the [`@syntax`](@ref) macro.
+3. **Syntax systems** for theories, defined using the [`@syntax`](@ref) macro.
    These are type-safe expression trees constructed using ordinary Julia
    functions.
 
 We'll explain each of these elements in greater detail in the following
-sections. From the programming perspective, signatures can be thought of as
+sections. From the programming perspective, theories can be thought of as
 *interfaces* and bear some resemblance to [type
 classes](https://en.wikipedia.org/wiki/Type_class). Both instances and syntax
 systems then act as *implementations* of the interface.
 
-## Signatures
+## Theories
 
 [Generalized algebraic
 theories](https://ncatlab.org/nlab/show/generalized+algebraic+theory) (GATs) are
@@ -42,10 +44,10 @@ fragment of dependent type theory; they are perhaps the simplest dependently
 typed logics.
 
 Catlab implements a version of the GAT formalism on top of Julia's type system,
-taking advantage of Julia macros to provide a pleasant syntax. Signatures of
-GATs are defined using the [`@signature`](@ref) macro.
+taking advantage of Julia macros to provide a pleasant syntax. GATs are defined
+using the [`@theory`](@ref) macro.
 
-For example, the signature of the theory of categories could be defined by:
+For example, the theory of categories could be defined by:
 
 ```@setup category
 using Catlab
@@ -53,7 +55,7 @@ import Catlab.Doctrines: Ob, Hom, ObExpr, HomExpr, dom, codom, compose, id
 ```
 
 ```@example category
-@signature Category(Ob,Hom) begin
+@theory Category(Ob,Hom) begin
   Ob::TYPE
   Hom(dom::Ob, codom::Ob)::TYPE
   @op Hom :→
@@ -61,14 +63,19 @@ import Catlab.Doctrines: Ob, Hom, ObExpr, HomExpr, dom, codom, compose, id
   id(A::Ob)::(A → A)
   compose(f::(A → B), g::(B → C))::(A → C) ⊣ (A::Ob, B::Ob, C::Ob)
   @op compose :·
+
+  (f ⋅ g) ⋅ h == f ⋅ (g ⋅ h) ⊣ ( A::Ob, B::Ob, C::Ob, D::Ob,
+                                f::(A → B), g::(B → C), h::(C → D))
+  f ⋅ id(B) == f ⊣ (A::Ob, B::Ob, f::(A → B))
+  id(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 nothing # hide
 ```
 
 The code is simplified only slightly from the official Catlab definition of
-`Category`. The signature has two *type constructors*, `Ob` (object) and `Hom`
+`Category`. The theory has two *type constructors*, `Ob` (object) and `Hom`
 (morphism). The type `Hom` is a dependent type, depending on two objects, named
-`dom` (domain) and `codom` (codomain). The signature has two *term
+`dom` (domain) and `codom` (codomain). The theory has two *term
 constructors*, `id` (identity) and `compose` (composition).
 
 Notice how the return types of the term constructors depend on the argument
@@ -80,7 +87,7 @@ write `compose(f,g)`, instead of the more verbose `compose(A,B,C,f,g)` (for
 discussion, see Cartmell, 1986, Sec 10: Informal syntax).
 
 Notice the `@op` call where we can create method aliases that can
-then be used throughout the rest of the signature and outside of definition.
+then be used throughout the rest of the theory and outside of definition.
 Here we utilize this functionality by replacing the `Hom` and `compose` methods
 with their equivalent unicode characters, `→` and `·` respectively. These
 aliases are also automatically available to definitions that inherit a doctrine
@@ -92,9 +99,10 @@ that already has the alias defined.
     the theory, and a set of *axioms*, the equational laws satisfied by models
     of the theory. The theory of categories, for example, has axioms of
     unitality and associativity. At present, Catlab supports the specification
-    of signatures, but not of axioms, reflecting its status as a programming
-    library, not a proof assistant. It is the programmer's responsibility to
-    ensure any declared instances of an algebraic structure satisfy its axioms.
+    of both signatures and the axioms, but is not currently utilizing the axiom
+    definitions in any way, reflecting its status as a programming library, not
+    a proof assistant. It is the programmer's responsibility to ensure any
+    declared instances of an algebraic structure satisfy its axioms.
 
 #### References
 
@@ -106,15 +114,15 @@ that already has the alias defined.
 
 ## Instances
 
-A signature can have one or more *instances*, or instantiations by ordinary
+A theory can have one or more *instances*, or instantiations by ordinary
 Julia types and functions. This feature builds on Julia's support for generic
 functions with [multiple
 dispatch](https://docs.julialang.org/en/v1/manual/methods/).
 
 Instances are declared using the [`@instance`](@ref) macro. In an instance of a
-signature, each signature type is mapped to a Julia type and each term is mapped
+theory, each theory type is mapped to a Julia type and each term is mapped
 to a Julia method of the same name. For example, the category of matrices could
-be defined as an instance of the signature `Category` defined above:
+be defined as an instance of the theory `Category` defined above:
 
 ```@example category
 using LinearAlgebra: I
@@ -138,24 +146,24 @@ A = Matrix{Float64}([0 1; 1 0])
 id(dom(A))
 ```
 
-In this instance, the signature type `Ob` is mapped to the custom Julia type
+In this instance, the theory type `Ob` is mapped to the custom Julia type
 `MatrixDomain`. The latter type has two fields, a Julia type `eltype`
 representing a field $k$ and an integer `dim` representing the dimensionality
 $n$, and so can be interpreted as the $n$-dimensional vector space $k^n$. The
-signature `Hom` is mapped to the standard Julia type `Matrix`.
+theory `Hom` is mapped to the standard Julia type `Matrix`.
 
 ## Syntax systems
 
-Signatures can also be instantiated as systems of symbolic expressions, using
+Theories can also be instantiated as systems of symbolic expressions, using
 the [`@syntax`](@ref) macro. The symbolic expressions are expression trees, as
 commonly used in computer algebra systems. They are similar to Julia's `Expr`
 type but they are instead subtyped from Catlab's [`GATExpr`](@ref) type and they
 have a more refined type hierarchy.
 
-A single signature can have different syntax systems, treating different terms
+A single theory can have different syntax systems, treating different terms
 as primitive or performing different simplication or normalization procedures.
 Catlab tries to make it easy to define new syntax systems. Many of the
-signatures included with Catlab have default syntax systems, but the user is
+theories included with Catlab have default syntax systems, but the user is
 encouraged to define their own to suit their needs.
 
 To get started, you can always call the `@syntax` macro with an empty body.
@@ -218,10 +226,10 @@ can be defined in terms of the deleting operation (terminal morphism) or left as
 primitive.
 
 In Catlab, the recommended way to deal with such situations is to define *all*
-the operations in the signature and then allow particular syntax systems to
+the operations in the theory and then allow particular syntax systems to
 determine which operations, if any, will be derived from others. In the case of
 the cartesian monoidal category, we could define a signature `CartesianCategory`
-by inheriting from the builtin signature `SymmetricMonoidalCategory`.
+by inheriting from the builtin theory `SymmetricMonoidalCategory`.
 
 ```@setup cartesian-monoidal-category
 using Catlab

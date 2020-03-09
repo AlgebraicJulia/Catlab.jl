@@ -1,7 +1,7 @@
 export AdditiveMonoidalCategory, oplus, ⊕, ozero,
   AdditiveSymmetricMonoidalCategory, FreeAdditiveSymmetricMonoidalCategory,
   MonoidalCategoryWithCodiagonals, CocartesianCategory, FreeCocartesianCategory,
-  mmerge, create, copair, incl1, incl2, ∇, □
+  mmerge, create, copair, incl1, incl2, ∇, □, braid, σ
 
 import Base: collect, ndims
 
@@ -62,6 +62,7 @@ notation.
 """
 @signature AdditiveMonoidalCategory(Ob,Hom) => AdditiveSymmetricMonoidalCategory(Ob,Hom) begin
   braid(A::Ob, B::Ob)::Hom(oplus(A,B),oplus(B,A))
+  @op braid :σ
 end
 
 @syntax FreeAdditiveSymmetricMonoidalCategory(ObExpr,HomExpr) AdditiveSymmetricMonoidalCategory begin
@@ -109,7 +110,7 @@ Of course, this convention could be reversed.
   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), ozero)
   oplus(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
-  
+
   copair(f::Hom, g::Hom) = compose(oplus(f,g), mmerge(codom(f)))
   incl1(A::Ob, B::Ob) = oplus(id(A), create(B))
   incl2(A::Ob, B::Ob) = oplus(create(A), id(B))
@@ -121,4 +122,3 @@ end
 function show_latex(io::IO, expr::HomExpr{:create}; kw...)
   Syntax.show_latex_script(io, expr, "\\square")
 end
-

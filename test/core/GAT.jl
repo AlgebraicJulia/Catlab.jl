@@ -93,12 +93,32 @@ target = Dict(:→ => :Mor)
 @test GAT.strip_type(:(Hom(X,Y))) == :Hom
 @test GAT.strip_type(:(Hom(dual(X),dual(Y)))) == :Hom
 
-# Signatures
+# Theories
 ############
 
-""" Signature of the theory of categories
+# This try-catch block is a necessary work around because of a current bug
+# where test_throws doesn't catch errors thrown from inside of a macro
+@test_throws ParseError try @eval @signature Category(Ob,Hom) begin
+  Ob::TYPE
+  Hom(dom, codom)::TYPE ⊣ (dom::Ob, codom::Ob)
+  @op Hom :→
+
+  id(X)::(X → X) ⊣ (X::Ob)
+  compose(f,g)::(X → Z) ⊣ (X::Ob, Y::Ob, Z::Ob, f::(X → Y), g::(Y → Z))
+  @op compose :⋅
+
+  (f ⋅ g) ⋅ h == f ⋅ (g ⋅ h) ⊣ ( A::Ob, B::Ob, C::Ob, D::Ob,
+                                f::(A → B), g::(B → C), h::(C → D))
+  f ⋅ id(B) == f ⊣ (A::Ob, B::Ob, f::(A → B))
+  id(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
+end
+catch err;
+  throw(err.error)
+end
+
+""" Theory of the theory of categories
 """
-@signature Category(Ob,Hom) begin
+@theory Category(Ob,Hom) begin
   Ob::TYPE
   Hom(dom, codom)::TYPE ⊣ (dom::Ob, codom::Ob)
   @op Hom :→
@@ -120,7 +140,7 @@ end
 @test isa(dom, Function) && isa(codom, Function)
 @test isa(id, Function) && isa(compose, Function)
 
-# Manually constructed signature of theory of categories
+# Manually constructed theory of categories
 types = [
   GAT.TypeConstructor(:Ob, [], GAT.Context()),
   GAT.TypeConstructor(:Hom, [:dom,:codom],
@@ -143,13 +163,13 @@ axioms = [
     GAT.Context((:A => :Ob, :B => :Ob, :f => :(Hom(A,B))))),
 ]
 aliases = Dict(:⋅ => :compose, :→ => :Hom)
-category_signature = GAT.Signature(types, terms, axioms, aliases)
+category_theory = GAT.Theory(types, terms, axioms, aliases)
 
-@test Category.class().signature == category_signature
+@test Category.class().theory == category_theory
 
-""" Equivalent shorthand definition of Category signature
+""" Equivalent shorthand definition of Category theory
 """
-@signature CategoryAbbrev(Ob,Hom) begin
+@theory CategoryAbbrev(Ob,Hom) begin
   Ob::TYPE
   Hom(dom::Ob, codom::Ob)::TYPE
   @op Hom :→
@@ -164,9 +184,9 @@ category_signature = GAT.Signature(types, terms, axioms, aliases)
   id(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 
-@test CategoryAbbrev.class().signature == category_signature
+@test CategoryAbbrev.class().theory == category_theory
 
-# Methods for signature
+# Methods for theory
 accessors = [ GAT.JuliaFunction(:(dom(::Hom)), :Ob),
               GAT.JuliaFunction(:(codom(::Hom)), :Ob) ]
 constructors = [ GAT.JuliaFunction(:(id(X::Ob)), :Hom),
@@ -175,13 +195,13 @@ alias_functions = [
   GAT.JuliaFunction(:(⋅(f::Hom, g::Hom)), :Hom, :(compose(f, g))),
   GAT.JuliaFunction(:(→(dom::Ob, codom::Ob)), :Hom, :(Hom(dom, codom))),
 ]
-@test GAT.accessors(Category.class().signature) == accessors
-@test GAT.constructors(Category.class().signature) == constructors
-@test GAT.alias_functions(Category.class().signature) == alias_functions
+@test GAT.accessors(Category.class().theory) == accessors
+@test GAT.constructors(Category.class().theory) == constructors
+@test GAT.alias_functions(Category.class().theory) == alias_functions
 @test GAT.interface(Category.class()) ==
   [accessors; constructors; alias_functions]
 
-# Signature extension
+# Theory extension
 @signature Semigroup(S) begin
   S::TYPE
   times(x::S,y::S)::S
@@ -195,7 +215,7 @@ end
 @test length(methods(times)) == 2 # Semigroup.S, MonoidExt.M
 @test length(methods(munit)) == 1 # MonoidExt.M
 
-signature = GAT.Signature(
+theory = GAT.Theory(
   [ GAT.TypeConstructor(:M, [], GAT.Context()) ],
   [ GAT.TermConstructor(:times, [:x,:y], :M,
       GAT.Context((:x => :M, :y => :M))),
@@ -204,32 +224,32 @@ signature = GAT.Signature(
   Dict{Symbol,Symbol}()
 )
 
-@test MonoidExt.class().signature == signature
+@test MonoidExt.class().theory == theory
 
-# GAT expressions in a signature
+# GAT expressions in a theory
 ################################
 
-sig = Category.class().signature
+theory = Category.class().theory
 context = GAT.Context((:X => :Ob, :Y => :Ob, :Z => :Ob,
                        :f => :(Hom(X,Y)), :g => :(Hom(Y,Z))))
-@test GAT.expand_in_context(:X, [:f,:g], context, sig) == :(dom(f))
-@test (GAT.expand_in_context(:(Hom(X,Z)), [:f,:g], context, sig) ==
+@test GAT.expand_in_context(:X, [:f,:g], context, theory) == :(dom(f))
+@test (GAT.expand_in_context(:(Hom(X,Z)), [:f,:g], context, theory) ==
        :(Hom(dom(f),codom(g))))
 
 context = GAT.Context((:X => :Ob, :Y => :Ob, :Z => :Ob, :f => :(Hom(X,Y))))
-@test_throws ErrorException GAT.expand_in_context(:W, [:f], context, sig)
-@test_throws ErrorException GAT.expand_in_context(:Z, [:f], context, sig)
+@test_throws ErrorException GAT.expand_in_context(:W, [:f], context, theory)
+@test_throws ErrorException GAT.expand_in_context(:Z, [:f], context, theory)
 
 context = GAT.Context((:X => :Ob, :Y => :Ob, :f => :(Hom(X,Y))))
-@test GAT.equations(context, sig) == [ :(dom(f)) => :X, :(codom(f)) => :Y ]
-@test GAT.equations([:f], context, sig) == []
+@test GAT.equations(context, theory) == [ :(dom(f)) => :X, :(codom(f)) => :Y ]
+@test GAT.equations([:f], context, theory) == []
 
 context = GAT.Context((:X => :Ob, :Y => :Ob, :Z => :Ob,
                        :f => :(Hom(X,Y)), :g => :(Hom(Y,Z))))
-@test (GAT.equations(context, sig) ==
+@test (GAT.equations(context, theory) ==
        [ :(dom(f)) => :X, :(codom(f)) => :Y,
          :(dom(g)) => :Y, :(codom(g)) => :Z ])
-@test GAT.equations([:f,:g], context, sig) == [ :(dom(g)) => :(codom(f)) ]
+@test GAT.equations([:f,:g], context, theory) == [ :(dom(g)) => :(codom(f)) ]
 
 # Instances
 ###########

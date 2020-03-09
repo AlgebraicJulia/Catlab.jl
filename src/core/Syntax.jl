@@ -13,7 +13,7 @@ import Base.Meta: ParseError, show_sexpr
 using Compat
 using Match
 
-using ..GAT: Context, Signature, TypeConstructor, TermConstructor, Typeclass
+using ..GAT: Context, Theory, TypeConstructor, TermConstructor, Typeclass
 import ..GAT
 import ..GAT: invoke_term
 using ..Meta
@@ -28,7 +28,7 @@ morphism, and 2-morphism in the theory of 2-categories. Of course, Julia's
 type system does not support dependent types, so the type parameters are
 incorporated in the Julia types. (They are stored as extra data in the
 expression instances.)
-  
+
 The concrete types are structurally similar to the core type `Expr` in Julia.
 However, the *term constructor* is represented as a type parameter, rather than
 as a `head` field. This makes dispatch using Julia's type system more
@@ -100,7 +100,7 @@ macro syntax(syntax_head, mod_name, body=nothing)
     _ => throw(ParseError("Ill-formed syntax signature $syntax_head"))
   end
   functions = map(parse_function, strip_lines(body).args)
-  
+
   expr = Expr(:call, :syntax_code, Expr(:quote, syntax_name),
               esc(Expr(:ref, :Type, base_types...)),
               esc(mod_name), esc(nameof(__module__)), functions)
@@ -109,32 +109,32 @@ macro syntax(syntax_head, mod_name, body=nothing)
     :(Core.@__doc__ $(esc(syntax_name))))
 end
 function syntax_code(name::Symbol, base_types::Vector{Type},
-                     signature_module::Module, outer_module::Module,
+                     theory_module::Module, outer_module::Module,
                      functions::Vector)
-  class = signature_module.class()
-  signature = class.signature
-  signature_ref = GlobalRef(parentmodule(signature_module),
-                            nameof(signature_module))
-  
+  class = theory_module.class()
+  theory = class.theory
+  theory_ref = GlobalRef(parentmodule(theory_module),
+                            nameof(theory_module))
+
   # Generate module with syntax types and type/term generators.
   mod = Expr(:module, true, name,
     Expr(:block, [
       # Prevents error about export not being at toplevel.
       # https://github.com/JuliaLang/julia/issues/28991
       LineNumberNode(0);
-      Expr(:export, [cons.name for cons in signature.types]...);
+      Expr(:export, [cons.name for cons in theory.types]...);
       Expr(:using, Expr(:., :., :., nameof(outer_module)));
-      :(signature() = $signature_ref);
-      gen_types(signature, base_types);
-      gen_type_accessors(signature);
-      gen_term_generators(signature, outer_module);
-      gen_term_constructors(signature, outer_module);
+      :(theory() = $theory_ref);
+      gen_types(theory, base_types);
+      gen_type_accessors(theory);
+      gen_term_generators(theory, outer_module);
+      gen_term_constructors(theory, outer_module);
     ]...))
-  
+
   # Generate toplevel functions.
   toplevel = []
   bindings = Dict{Symbol,Any}(
-    c.name => Expr(:(.), name, QuoteNode(c.name)) for c in signature.types)
+    c.name => Expr(:(.), name, QuoteNode(c.name)) for c in theory.types)
   syntax_fns = Dict(parse_function_sig(f) => f for f in functions)
   for f in interface(class)
     sig = parse_function_sig(f)
@@ -143,12 +143,12 @@ function syntax_code(name::Symbol, base_types::Vector{Type},
       # Case 1: The method is overriden in the syntax body.
       expr = generate_function(replace_symbols(bindings, syntax_fns[sig]))
     elseif !isnothing(f.impl)
-      # Case 2: The method has a default implementation in the signature.
+      # Case 2: The method has a default implementation in the theory.
       expr = generate_function(replace_symbols(bindings, f))
     else
       # Case 3: Call the default syntax method.
       params = [ gensym("x$i") for i in eachindex(sig.types) ]
-      call_expr = Expr(:call, sig.name, 
+      call_expr = Expr(:call, sig.name,
         [ Expr(:(::), pair...) for pair in zip(params, sig.types) ]...)
       body = Expr(:call, :new, params...)
       f_impl = JuliaFunction(call_expr, f.return_type, body)
@@ -162,10 +162,10 @@ end
 """ Complete set of Julia functions for a syntax system.
 """
 function interface(class::Typeclass)::Vector{JuliaFunction}
-  sig = class.signature
+  theory = class.theory
   [ GAT.interface(class);
-    [ GAT.constructor(constructor_for_generator(cons), sig)
-      for cons in sig.types ]; ]
+    [ GAT.constructor(constructor_for_generator(cons), theory)
+      for cons in theory.types ]; ]
 end
 
 """ Generate syntax type definitions.
@@ -183,11 +183,11 @@ function gen_type(cons::TypeConstructor, base_type::Type=Any)::Expr
   end)
   generate_docstring(strip_lines(expr, recurse=true), cons.doc)
 end
-function gen_types(sig::Signature, base_types::Vector{Type})::Vector{Expr}
+function gen_types(theory::Theory, base_types::Vector{Type})::Vector{Expr}
   if isempty(base_types)
-    map(gen_type, sig.types)
+    map(gen_type, theory.types)
   else
-    map(gen_type, sig.types, base_types)
+    map(gen_type, theory.types, base_types)
   end
 end
 
@@ -204,23 +204,23 @@ function gen_type_accessors(cons::TypeConstructor)::Vector{Expr}
   end
   fns
 end
-function gen_type_accessors(sig::Signature)::Vector{Expr}
-  vcat(map(gen_type_accessors, sig.types)...)
+function gen_type_accessors(theory::Theory)::Vector{Expr}
+  vcat(map(gen_type_accessors, theory.types)...)
 end
 
 """ Generate methods for syntax term constructors.
 """
-function gen_term_constructor(cons::TermConstructor, sig::Signature,
+function gen_term_constructor(cons::TermConstructor, theory::Theory,
                               mod::Module; dispatch_type::Symbol=Symbol())::Expr
-  head = GAT.constructor(cons, sig)
+  head = GAT.constructor(cons, theory)
   call_expr, return_type = head.call_expr, head.return_type
   if dispatch_type == Symbol()
     dispatch_type = cons.name
   end
   body = Expr(:block)
-  
+
   # Create expression to check constructor domain.
-  eqs = GAT.equations(cons, sig)
+  eqs = GAT.equations(cons, theory)
   if !isempty(eqs)
     clauses = [ Expr(:call,:(==),lhs,rhs) for (lhs,rhs) in eqs ]
     conj = foldr((x,y) -> Expr(:(&&),x,y), clauses)
@@ -234,19 +234,19 @@ function gen_term_constructor(cons::TermConstructor, sig::Signature,
             Expr(:quote, cons.name),
             Expr(:vect, cons.params...)))))
   end
-  
+
   # Create call to expression constructor.
-  type_params = gen_term_constructor_params(cons, sig, mod)
+  type_params = gen_term_constructor_params(cons, theory, mod)
   push!(body.args,
     Expr(:call,
       Expr(:curly, return_type, Expr(:quote, dispatch_type)),
       Expr(:vect, cons.params...),
       Expr(:vect, type_params...)))
-  
+
   generate_function(JuliaFunction(call_expr, return_type, body))
 end
-function gen_term_constructors(sig::Signature, mod::Module)::Vector{Expr}
-  [ gen_term_constructor(cons, sig, mod) for cons in sig.terms ]
+function gen_term_constructors(theory::Theory, mod::Module)::Vector{Expr}
+  [ gen_term_constructor(cons, theory, mod) for cons in theory.terms ]
 end
 
 """ Generate expressions for type parameters of term constructor.
@@ -260,31 +260,31 @@ Besides expanding the implicit variables, we must handle two annoying issues:
 2. Rebind the term constructors to ensure that user overrides are preferred over
    the default term constructors.
 """
-function gen_term_constructor_params(cons, sig, mod)::Vector
-  expr = GAT.expand_term_type(cons, sig)
+function gen_term_constructor_params(cons, theory, mod)::Vector
+  expr = GAT.expand_term_type(cons, theory)
   raw_params = @match expr begin
     Expr(:call, [name::Symbol, args...]) => args
     _::Symbol => []
   end
-  
-  bindings = Dict(c.name => GlobalRef(mod, c.name) for c in sig.terms)
+
+  bindings = Dict(c.name => GlobalRef(mod, c.name) for c in theory.terms)
   params = []
   for expr in raw_params
-    expr = replace_nullary_constructors(expr, sig)
+    expr = replace_nullary_constructors(expr, theory)
     expr = replace_symbols(bindings, expr)
     push!(params, expr)
   end
   params
 end
-function replace_nullary_constructors(expr, sig)
+function replace_nullary_constructors(expr, theory)
   @match expr begin
     Expr(:call, [name::Symbol]) => begin
-      terms = sig.terms[findall(cons -> cons.name == name, sig.terms)]
+      terms = theory.terms[findall(cons -> cons.name == name, theory.terms)]
       @assert length(terms) == 1
       Expr(:call, name, terms[1].typ)
     end
     Expr(:call, [name::Symbol, args...]) =>
-      Expr(:call, name, [replace_nullary_constructors(a,sig) for a in args]...)
+      Expr(:call, name, [replace_nullary_constructors(a,theory) for a in args]...)
     _ => expr
   end
 end
@@ -293,12 +293,12 @@ end
 
 Generators are extra term constructors created automatically for the syntax.
 """
-function gen_term_generator(cons::TypeConstructor, sig::Signature, mod::Module)::Expr
-  gen_term_constructor(constructor_for_generator(cons), sig, mod;
+function gen_term_generator(cons::TypeConstructor, theory::Theory, mod::Module)::Expr
+  gen_term_constructor(constructor_for_generator(cons), theory, mod;
                        dispatch_type = :generator)
 end
-function gen_term_generators(sig::Signature, mod::Module)::Vector{Expr}
-  [ gen_term_generator(cons, sig, mod) for cons in sig.types ]
+function gen_term_generators(theory::Theory, mod::Module)::Vector{Expr}
+  [ gen_term_generator(cons, theory, mod) for cons in theory.types ]
 end
 function constructor_for_generator(cons::TypeConstructor)::TermConstructor
   value_param = :__value__
@@ -317,10 +317,10 @@ This method provides reflection for syntax systems. In everyday use the generic
 method for the constructor should be called directly, not through this function.
 """
 function invoke_term(syntax_module::Module, constructor_name::Symbol, args...)
-  signature_module = syntax_module.signature()
-  signature = signature_module.class().signature
-  syntax_types = Tuple(getfield(syntax_module, cons.name) for cons in signature.types)
-  invoke_term(signature_module, syntax_types, constructor_name, args...)
+  theory_module = syntax_module.theory()
+  theory = theory_module.class().theory
+  syntax_types = Tuple(getfield(syntax_module, cons.name) for cons in theory.types)
+  invoke_term(theory_module, syntax_types, constructor_name, args...)
 end
 
 """ Name of constructor that created expression.
@@ -362,7 +362,7 @@ several ways to specify this mapping:
 
   2. Explicitly map each generator term to an instance value, using the
      `generators` dictionary.
-  
+
   3. For each doctrine type (e.g., object and morphism), specify a function
      mapping generator terms of that type to an instance value, using the
      `terms` dictionary.
@@ -377,13 +377,13 @@ function functor(types::Tuple, expr::GATExpr;
   if head(expr) == :generator && haskey(generators, expr)
     return generators[expr]
   end
-  
+
   # Special case: look up by type of term (usually a generator).
   name = constructor_name(expr)
   if haskey(terms, name)
     return terms[name](expr)
   end
-  
+
   # Otherwise, we need to call a term constructor (possibly for a generator).
   # Recursively evalute the arguments.
   term_args = []
@@ -393,10 +393,10 @@ function functor(types::Tuple, expr::GATExpr;
     end
     push!(term_args, arg)
   end
-  
+
   # Invoke the constructor in the codomain category!
-  signature_module = syntax_module(expr).signature()
-  invoke_term(signature_module, types, name, term_args...)
+  theory_module = syntax_module(expr).theory()
+  invoke_term(theory_module, types, name, term_args...)
 end
 
 # Serialization
@@ -428,10 +428,10 @@ function parse_json_sexpr(syntax_module::Module, sexpr;
     parse_value::Function = identity,
     symbols::Bool = true,
   )
-  signature_module = syntax_module.signature()
-  signature = signature_module.class().signature
-  type_lens = Dict(cons.name => length(cons.params) for cons in signature.types)
-  
+  theory_module = syntax_module.theory()
+  theory = theory_module.class().theory
+  type_lens = Dict(cons.name => length(cons.params) for cons in theory.types)
+
   function parse_impl(sexpr::Vector, ::Val{:expr})
     name = Symbol(parse_head(symbols ? Symbol(sexpr[1]) : sexpr[1]))
     nargs = length(sexpr) - 1
@@ -445,7 +445,7 @@ function parse_json_sexpr(syntax_module::Module, sexpr;
   parse_impl(x, ::Val{:value}) = parse_value(x)
   parse_impl(x::String, ::Val{:expr}) = parse_reference(symbols ? Symbol(x) : x)
   parse_impl(x::String, ::Val{:value}) = parse_value(symbols ? Symbol(x) : x)
-  
+
   parse_impl(sexpr, Val(:expr))
 end
 

@@ -16,7 +16,7 @@ We retain the usual meaning of the symbol ∘ (\\circ), i.e., g∘f = compose(f,
 This usage is too entrenched to overturn, inconvenient though it may be.
 We use symbol ⋅ (\\cdot) for diagrammatic composition: f⋅g = compose(f,g).
 """
-@signature Category(Ob,Hom) begin
+@theory Category(Ob,Hom) begin
   """ Object in a category """
   Ob::TYPE
 

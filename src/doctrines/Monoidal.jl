@@ -20,7 +20,7 @@ import Base: collect, ndims
 
 To avoid associators and unitors, we assume the monoidal category is *strict*.
 By the coherence theorem there is no loss of generality, but we may add a
-signature for weak monoidal categories later.
+theory for weak monoidal categories later.
 """
 @signature Category(Ob,Hom) => MonoidalCategory(Ob,Hom) begin
   otimes(A::Ob, B::Ob)::Ob
@@ -71,7 +71,7 @@ show_latex(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
 
 """ Doctrine of *symmetric monoidal category*
 
-The signature (but not the axioms) is the same as a braided monoidal category.
+The theory (but not the axioms) is the same as a braided monoidal category.
 """
 @signature MonoidalCategory(Ob,Hom) => SymmetricMonoidalCategory(Ob,Hom) begin
   braid(A::Ob, B::Ob)::((A ⊗ B) → (B ⊗ A))
@@ -153,7 +153,7 @@ The terminology is nonstandard (is there any standard terminology?) but is
 intended to mean a monoidal category with coherent diagonals and codiagonals.
 Unlike in a biproduct category, the naturality axioms need not be satisfied.
 
-FIXME: This signature should extend both `MonoidalCategoryWithDiagonals` and
+FIXME: This theory should extend both `MonoidalCategoryWithDiagonals` and
 `MonoidalCategoryWithCodiagonals`, but multiple inheritance is not yet
 supported.
 """
@@ -172,7 +172,7 @@ end
 
 Also known as a *semiadditive category*.
 
-FIXME: This signature should extend `MonoidalCategoryWithBidiagonals`,
+FIXME: This theory should extend `MonoidalCategoryWithBidiagonals`,
 `CartesianCategory`, and `CocartesianCategory`, but multiple inheritance is not
 yet supported.
 """
@@ -325,7 +325,7 @@ end
 Also known as a [symmetric monoidal dagger
 category](https://ncatlab.org/nlab/show/symmetric+monoidal+dagger-category).
 
-FIXME: This signature should extend both `DaggerCategory` and
+FIXME: This theory should extend both `DaggerCategory` and
 `SymmetricMonoidalCategory`, but multiple inheritance is not yet supported.
 """
 @signature SymmetricMonoidalCategory(Ob,Hom) => DaggerSymmetricMonoidalCategory(Ob,Hom) begin
@@ -351,7 +351,7 @@ in the official `LinearAlegbra` module. For the general relationship between
 mates and daggers, see Selinger's survey of graphical languages for monoidal
 categories.
 
-FIXME: This signature should extend both `DaggerCategory` and
+FIXME: This theory should extend both `DaggerCategory` and
 `CompactClosedCategory`, but multiple inheritance is not yet supported.
 """
 @signature CompactClosedCategory(Ob,Hom) => DaggerCompactCategory(Ob,Hom) begin

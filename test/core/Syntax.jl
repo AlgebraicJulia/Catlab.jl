@@ -11,7 +11,7 @@ using Catlab
 # Monoid
 ########
 
-""" Signature of the theory of monoids.
+""" Theory of monoids.
 """
 @signature Monoid(Elem) begin
   Elem::TYPE

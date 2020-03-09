@@ -28,8 +28,8 @@ using ..WiringDiagramAlgorithms: crossing_minimization_by_sort
 """ Convert a morphism expression into a wiring diagram.
 """
 function to_wiring_diagram(expr::GATExpr, args...)
-  signature = syntax_module(expr).signature()
-  to_wiring_diagram(signature.Hom, expr, args...)
+  theory = syntax_module(expr).theory()
+  to_wiring_diagram(theory.Hom, expr, args...)
 end
 function to_wiring_diagram(T::Type, expr::GATExpr)
   to_wiring_diagram(T, expr, first, first)
@@ -51,16 +51,16 @@ end
 """
 function to_hom_expr(Ob::Type, Hom::Type, d::WiringDiagram)
   box_to_expr(v::Int) = to_hom_expr(Ob, Hom, box(d,v))
-  
+
   # Initial reduction: Add junction nodes to ensure any wiring layer between two
   # boxes is a permutation.
   d = add_junctions(d)
-  
+
   # Dispatch special case: no boxes.
   if nboxes(d) == 0
     return hom_expr_between(Ob, d, input_id(d), output_id(d))
   end
-  
+
   # Main loop: reduce until no further reduction is possible.
   n, changed = nboxes(d), true
   while changed
@@ -77,7 +77,7 @@ function to_hom_expr(Ob::Type, Hom::Type, d::WiringDiagram)
       n, changed = nboxes(d), true
     end
   end
-  
+
   # Termination: process all remaining boxes (always at least one, and exactly
   # one if there is no creation or deletion).
   if nboxes(d) > 1
@@ -162,7 +162,7 @@ end
 """
 function series_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
   box_to_expr(v::Int) = to_hom_expr(Ob, Hom, box(d,v))
-  
+
   series = find_series(graph(d), source=input_id(d), sink=output_id(d))
   composites = map(series) do vs
     exprs = Hom[ box_to_expr(vs[1]) ]
@@ -191,7 +191,7 @@ function transitive_reduction!(Ob::Type, d::WiringDiagram)
     end
   end
   reduced = transitive_reduction!(reduced)
-  
+
   # Add junction node for each wire removed by transitive reduction.
   for edge in collect(edges(graph(d)))
     if !has_edge(reduced, edge)
@@ -215,7 +215,7 @@ function hom_expr_between(Ob::Type, diagram::WiringDiagram, v1::Int, v2::Int)
   layer = wiring_layer_between(diagram, v1, v2)
   inputs = to_ob_exprs(Ob, output_ports(diagram, v1))
   outputs = to_ob_exprs(Ob, input_ports(diagram, v2))
-  
+
   σ = to_permutation(layer)
   @assert !isnothing(σ) "Conversion of non-permutation not implemented"
   @assert inputs == outputs[σ]
