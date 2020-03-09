@@ -613,10 +613,10 @@ function instance_code(mod, instance_types, instance_fns, external_fns)
       f_impl = instance_fns[sig]
     elseif !isnothing(f.impl)
       f_impl = f
-    else
-      # FIXME: Can we check whether the method has already been defined?
-      @warn "Method $(f.call_expr) not implemented in $(class.name) instance"
+    elseif f.call_expr.args[1] in external_fns
       continue
+    else
+      @error "Method $(f.call_expr) not implemented in $(class.name) instance"
     end
     push!(code.args, generate_function(f_impl))
   end
@@ -633,9 +633,9 @@ function parse_instance_body(expr::Expr)
     elem = strip_lines(elem)
     head = elem.head
     if head == :macrocall && elem.args[1] == Symbol("@import")
-      @match elem.args[2] begin
-        sym::Symbol => push!(ext_funs, sym)
-        Expr(:tuple, arr) => (ext_funs = [ext_funs; Symbol[arr...]])
+      ext_funs = @match elem.args[2] begin
+        sym::Symbol => [ext_funs; [sym]]
+        Expr(:tuple, arr) => [ext_funs; Symbol[arr...]]
       end
     else
       push!(funs, parse_function(elem))

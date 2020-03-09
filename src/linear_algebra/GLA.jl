@@ -107,6 +107,8 @@ end
 end
 
 @instance LinearFunctions(LinearMapDom, LinearMap) begin
+  @import adjoint
+
   dom(f::LinearMap) = LinearMapDom(size(f,2))
   codom(f::LinearMap) = LinearMapDom(size(f,1))
 
@@ -127,9 +129,6 @@ end
   plus(f::LinearMap, g::LinearMap) = f+g
   scalar(V::LinearMapDom, c::Number) = LMs.UniformScalingMap(c, V.N)
   antipode(V::LinearMapDom) = LMs.UniformScalingMap(-1, V.N)
-  
-  # FIXME: Already defined by LinearMaps.
-  #adjoint(f::LinearMap) = LMs.AdjointMap(f)
 end
 
 braid_lm(n::Int) = x::AbstractVector -> vcat(x[n+1:end], x[1:n])
