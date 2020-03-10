@@ -168,9 +168,9 @@ layout_hom_expr(f::HomExpr{:delete}, opts) = layout_supply(f, opts, shape=:junct
 layout_hom_expr(f::HomExpr{:mmerge}, opts) = layout_supply(f, opts, shape=:junction)
 layout_hom_expr(f::HomExpr{:create}, opts) = layout_supply(f, opts, shape=:junction)
 
-layout_hom_expr(f::HomExpr{:mplus}, opts) =
+layout_hom_expr(f::HomExpr{:plus}, opts) =
   layout_supply(f, opts, shape=:junction, style=:variant_junction)
-layout_hom_expr(f::HomExpr{:mzero}, opts) =
+layout_hom_expr(f::HomExpr{:zero}, opts) =
   layout_supply(f, opts, shape=:junction, style=:variant_junction)
 layout_hom_expr(f::HomExpr{:coplus}, opts) =
   layout_supply(f, opts, shape=:junction, style=:variant_junction)

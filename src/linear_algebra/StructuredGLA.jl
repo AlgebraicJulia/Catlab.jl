@@ -1,7 +1,7 @@
 module StructuredGraphicalLinearAlgebra
 export StructuredLinearFunctions, FreeStructuredLinearFunctions,
-  Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, ozero, braid,
-  mcopy, Δ, delete, ◊, mplus, mzero, plus, +, scalar, antipode, adjoint,
+  Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, braid,
+  mcopy, Δ, delete, ◊, plus, zero, plus, +, scalar, antipode, adjoint,
   ℝ, munit, →, diag
 
 import Base: +
@@ -9,10 +9,10 @@ import LinearAlgebra: adjoint, diag
 
 using ...Catlab, ...Doctrines
 import ...Doctrines:
-  Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, ozero, braid, munit
+  Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, braid, munit
 using ..GraphicalLinearAlgebra
 import ..GraphicalLinearAlgebra:
-  mcopy, Δ, delete, ◊, mplus, mzero, plus, +, scalar, antipode, adjoint
+  mcopy, Δ, delete, ◊, plus, zero, plus, +, scalar, antipode, adjoint
 
 # Doctrines
 ###########
@@ -52,7 +52,7 @@ than general dense matrices. Morphisms in this category represent structured mat
 end
 
 @syntax FreeStructuredLinearFunctions(ObExpr,HomExpr) StructuredLinearFunctions begin
-  oplus(A::Ob, B::Ob) = associate_unit(new(A,B), ozero)
+  oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
   oplus(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = new(f,g; strict=true) # No normalization!
 end

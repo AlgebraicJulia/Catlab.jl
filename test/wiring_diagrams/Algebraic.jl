@@ -267,9 +267,9 @@ R = singleton_diagram(AbelianBicategoryRelations.Hom, Box(:R,[:A],[:B]))
 S = singleton_diagram(AbelianBicategoryRelations.Hom, Box(:S,[:A],[:B]))
 
 # Domains and codomains.
-@test dom(mplus(A)) == dom(mmerge(A)) && codom(mplus(A)) == codom(mmerge(A))
+@test dom(plus(A)) == dom(mmerge(A)) && codom(plus(A)) == codom(mmerge(A))
 @test dom(coplus(A)) == dom(mcopy(A)) && codom(coplus(A)) == codom(mcopy(A))
-@test dom(mzero(A)) == dom(create(A)) && codom(mzero(A)) == codom(create(A))
+@test dom(zero(A)) == dom(create(A)) && codom(zero(A)) == codom(create(A))
 @test dom(cozero(A)) == dom(delete(A)) && codom(cozero(A)) == codom(delete(A))
 
 @test dom(join(R,S)) == A
@@ -278,9 +278,9 @@ S = singleton_diagram(AbelianBicategoryRelations.Hom, Box(:S,[:A],[:B]))
 @test codom(bottom(A,B)) == B
 
 # Distinctness of "multiplicative" and "additive" (co)diagonals.
-@test mplus(A) != mmerge(A)
+@test plus(A) != mmerge(A)
 @test coplus(A) != mcopy(A)
-@test mzero(A) != create(A)
+@test zero(A) != create(A)
 @test cozero(A) != delete(A)
 
 # Operadic interface

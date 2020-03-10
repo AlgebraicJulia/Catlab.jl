@@ -105,9 +105,9 @@ to_composejl((dunit(A) ⊗ id(B)) ⋅ (id(A) ⊗ f ⊗ id(B)) ⋅ (id(A) ⊗ dco
 
 X = Ob(FreeAbelianBicategoryRelations, :X)
 
-to_composejl(mplus(X) ⋅ mcopy(X))
+to_composejl(plus(X) ⋅ mcopy(X))
 #-
-to_composejl((mcopy(X)⊗mcopy(X)) ⋅ (id(X)⊗braid(X,X)⊗id(X)) ⋅ (mplus(X)⊗mplus(X)))
+to_composejl((mcopy(X)⊗mcopy(X)) ⋅ (id(X)⊗braid(X,X)⊗id(X)) ⋅ (plus(X)⊗plus(X)))
 
 # ## Custom styles
 
@@ -125,7 +125,7 @@ to_composejl(f⋅g, props=Dict(
 #-
 X = Ob(FreeAbelianBicategoryRelations, :X)
 
-to_composejl(mplus(X) ⋅ mcopy(X), props=Dict(
+to_composejl(plus(X) ⋅ mcopy(X), props=Dict(
   :junction => [fill("red"), stroke("black")],
   :variant_junction => [fill("blue"), stroke("black")],
 ))

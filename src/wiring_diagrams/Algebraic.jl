@@ -9,7 +9,7 @@ module AlgebraicWiringDiagrams
 export Ports, Junction, PortOp, BoxOp,
   functor, dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid, permute,
   mcopy, delete, Δ, ◊, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
-  mplus, mzero, coplus, cozero, meet, join, top, bottom, trace, ocompose,
+  plus, zero, coplus, cozero, meet, join, top, bottom, trace, ocompose,
   implicit_mcopy, implicit_mmerge, junctioned_mcopy, junctioned_mmerge,
   junction_diagram, add_junctions, add_junctions!, rem_junctions, merge_junctions,
   junction_caps, junction_cups, junctioned_dunit, junctioned_dcounit
@@ -20,7 +20,7 @@ using LightGraphs
 using ...GAT, ...Doctrines
 import ...Doctrines: dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid,
   mcopy, delete, Δ, ◊, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
-  mplus, mzero, coplus, cozero, meet, join, top, bottom, trace
+  plus, zero, coplus, cozero, meet, join, top, bottom, trace
 import ...Syntax: functor, head
 using ..WiringDiagramCore, ..WiringLayers
 import ..WiringDiagramCore: Box, WiringDiagram, input_ports, output_ports
@@ -235,8 +235,8 @@ mcopy(A::Ports) = mcopy(A, 2)
 delete(A::Ports) = mcopy(A, 0)
 mmerge(A::Ports) = mmerge(A, 2)
 create(A::Ports) = mmerge(A, 0)
-mplus(A::Ports) = mplus(A, 2)
-mzero(A::Ports) = mplus(A, 0)
+plus(A::Ports) = plus(A, 2)
+zero(A::Ports) = plus(A, 0)
 coplus(A::Ports) = coplus(A, 2)
 cozero(A::Ports) = coplus(A, 0)
 
@@ -343,7 +343,7 @@ mmerge(A::Ports{AbBiRel.Hom}, n::Int) = junctioned_mmerge(A, n; op=:times)
 dunit(A::Ports{AbBiRel.Hom}) = junction_caps(A; op=:times)
 dcounit(A::Ports{AbBiRel.Hom}) = junction_cups(A; op=:times)
 
-mplus(A::Ports{AbBiRel.Hom}, n::Int) = junctioned_mmerge(A, n, op=:plus)
+plus(A::Ports{AbBiRel.Hom}, n::Int) = junctioned_mmerge(A, n, op=:plus)
 coplus(A::Ports{AbBiRel.Hom}, n::Int) = junctioned_mcopy(A, n, op=:plus)
 
 dagger(f::WiringDiagram{AbBiRel.Hom}) =
@@ -352,11 +352,11 @@ dagger(f::WiringDiagram{AbBiRel.Hom}) =
 meet(f::WiringDiagram{AbBiRel.Hom}, g::WiringDiagram{AbBiRel.Hom}) =
   compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
 join(f::WiringDiagram{AbBiRel.Hom}, g::WiringDiagram{AbBiRel.Hom}) =
-  compose(coplus(dom(f)), otimes(f,g), mplus(codom(f)))
+  compose(coplus(dom(f)), otimes(f,g), plus(codom(f)))
 top(A::Ports{AbBiRel.Hom}, B::Ports{AbBiRel.Hom}) =
   compose(delete(A), create(B))
 bottom(A::Ports{AbBiRel.Hom}, B::Ports{AbBiRel.Hom}) =
-  compose(cozero(A), mzero(B))
+  compose(cozero(A), zero(B))
 
 # Operadic interface
 ####################
