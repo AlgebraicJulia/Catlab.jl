@@ -171,8 +171,8 @@ category_theory = GAT.Theory(types, terms, axioms, aliases)
 """
 @theory CategoryAbbrev(Ob,Hom) begin
   @op begin
-    Hom :→
-    compose :⋅
+    (→) := Hom
+    (⋅) := compose
   end
 
   Ob::TYPE

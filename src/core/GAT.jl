@@ -266,9 +266,15 @@ function parse_theory_body(expr::Expr)
     elseif head == :macrocall && elem.args[1] == Symbol("@op")
       @match elem.args begin
         [_,dest::Symbol, QuoteNode(src::Symbol)] => (aliases[src] = dest)
-        [_,block_expr::Expr] => merge!(aliases,
-                                  Dict(map(x -> x.args[3] => x.args[2],
-                                           strip_lines(block_expr).args)))
+        [_,block_expr::Expr] => begin
+          merge!(aliases, Dict(map(x -> if x.head == :(:=)
+                                          x.args[1] => x.args[2]
+                                        elseif x.head == :call && x.args[1] == :(:)
+                                          x.args[3] => x.args[2]
+                                        else
+                                          throw(ParseError("Ill-formed alias $x"))
+                                        end, strip_lines(block_expr).args)))
+        end
         _ => throw(ParseError("Ill-formed theory axiom $elem"))
       end
     else

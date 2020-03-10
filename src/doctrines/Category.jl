@@ -18,8 +18,8 @@ We use symbol ⋅ (\\cdot) for diagrammatic composition: f⋅g = compose(f,g).
 """
 @theory Category(Ob,Hom) begin
   @op begin
-    Hom :→
-    compose :⋅
+    (→) := Hom
+    (⋅) := compose
   end
 
   """ Object in a category """
