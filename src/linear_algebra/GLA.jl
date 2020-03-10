@@ -48,25 +48,25 @@ Functional fragment of graphical linear algebra.
   # Axioms
   antipode(A) == scalar(A, -1) ⊣ (A::Ob)
 
-  Δ(A) == Δ(A) ⋅ σ(A, A) ⊣ (A::Ob)
+  Δ(A) == Δ(A) ⋅ σ(A,A) ⊣ (A::Ob)
   Δ(A) ⋅ (Δ(A) ⊗ id(A)) == Δ(A) ⋅ (id(A) ⊗ Δ(A)) ⊣ (A::Ob)
   Δ(A) ⋅ (◊(A) ⊗ id(A)) == id(A) ⊣ (A::Ob)
-  plus(A) == σ(A, A) ⋅ plus(A) ⊣ (A::Ob)
-  (plus(A) ⊗ id(A)) ⋅ plus(A) == (id(A) ⊗ plus(A)) ⋅ plus(A) ⊣ (A::Ob)
-  (zero(A) ⊗ id(A)) ⋅ plus(A) == id(A) ⊣ (A::Ob)
-  plus(A) ⋅ Δ(A) == ((Δ(A) ⊗ Δ(A)) ⋅ (id(A) ⊗ (σ(A, A) ⊗ id(A)))) ⋅ (plus(A) ⊗ plus(A)) ⊣ (A::Ob)
-  plus(A) ⋅ ◊(A) == ◊(A) ⊗ ◊(A) ⊣ (A::Ob)
+  +(A) == σ(A,A) ⋅ +(A) ⊣ (A::Ob)
+  (+(A) ⊗ id(A)) ⋅ +(A) == (id(A) ⊗ +(A)) ⋅ +(A) ⊣ (A::Ob)
+  (zero(A) ⊗ id(A)) ⋅ +(A) == id(A) ⊣ (A::Ob)
+  +(A) ⋅ Δ(A) == ((Δ(A) ⊗ Δ(A)) ⋅ (id(A) ⊗ (σ(A, A) ⊗ id(A)))) ⋅ (+(A) ⊗ +(A)) ⊣ (A::Ob)
+  +(A) ⋅ ◊(A) == ◊(A) ⊗ ◊(A) ⊣ (A::Ob)
   zero(A) ⋅ Δ(A) == zero(A) ⊗ zero(A) ⊣ (A::Ob)
   zero(A) ⋅ ◊(A) == id(mzero()) ⊣ (A::Ob)
   scalar(A, a) ⋅ scalar(A, b) == scalar(A, a*b) ⊣ (A::Ob, a::Number, b::Number)
   scalar(A, 1) == id(A) ⊣ (A::Ob)
   scalar(A, a) ⋅ Δ(A) == Δ(A) ⋅ (scalar(A, a) ⊗ scalar(A, a)) ⊣ (A::Ob, a::Number)
   scalar(A, a) ⋅ ◊(A) == ◊(A) ⊣ (A::Ob, a::Number)
-  (Δ(A) ⋅ (scalar(A, a) ⊗ scalar(A, b))) ⋅ plus(A) == scalar(A, a+b) ⊣ (A::Ob, a::Number, b::Number)
+  (Δ(A) ⋅ (scalar(A, a) ⊗ scalar(A, b))) ⋅ +(A) == scalar(A, a+b) ⊣ (A::Ob, a::Number, b::Number)
   scalar(A, 0) == ◊(A) ⋅ zero(A) ⊣ (A::Ob)
   zero(A) ⋅ scalar(A, a) == zero(A) ⊣ (A::Ob, a::Number)
 
-  plus(A) ⋅ f == (f ⊕ f) ⋅ plus(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  +(A) ⋅ f == (f ⊕ f) ⋅ +(B) ⊣ (A::Ob, B::Ob, f::(A → B))
   scalar(A, c) ⋅ f == f ⋅ scalar(B, c) ⊣ (A::Ob, B::Ob, c::Number, f::(A → B))
 end
 
