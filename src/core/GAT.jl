@@ -269,8 +269,6 @@ function parse_theory_body(expr::Expr)
         [_,block_expr::Expr] => begin
           merge!(aliases, Dict(map(x -> if x.head == :(:=)
                                           x.args[1] => x.args[2]
-                                        elseif x.head == :call && x.args[1] == :(:)
-                                          x.args[3] => x.args[2]
                                         else
                                           throw(ParseError("Ill-formed alias $x"))
                                         end, strip_lines(block_expr).args)))
