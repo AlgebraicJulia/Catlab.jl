@@ -39,8 +39,8 @@ x, y = [2, 1], [7, 3, 5]
 
 @test mcopy(dom(f))*x == [x;x]
 @test delete(dom(f))*x == []
-@test mplus(dom(f))*[x;x] == 2x
-@test mzero(dom(f))*Float64[] == zero(x)
+@test plus(dom(f))*[x;x] == 2x
+@test zero(dom(f))*Float64[] == zero(x)
 
 @test (h+k)*x == h*x + k*x
 @test scalar(dom(f),3)*x == 3*x
@@ -148,8 +148,8 @@ x, y = [2, 1], [7, 3, 5]
 @test ev(f⋅h, x) == val(h)*(val(f)*x)
 @test ev(f⊕g, x, y) == (val(f)*x, val(g)*y)
 
-@test ev(mplus(A), [1,3], [2,4]) == [3,7]
-@test ev(mzero(A)) == [0,0]
+@test ev(plus(A), [1,3], [2,4]) == [3,7]
+@test ev(zero(A)) == [0,0]
 @test ev(h+k, x) == val(h)*x + val(k)*x
 @test ev(scalar(A,3),x) == 3*x
 @test ev(antipode(A),x) == -1*x

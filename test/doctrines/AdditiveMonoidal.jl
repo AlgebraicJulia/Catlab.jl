@@ -13,7 +13,7 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 @test codom(braid(A,B)) == oplus(B,A)
 
 # Associativity and unit
-I = ozero(FreeAdditiveSymmetricMonoidalCategory.Ob)
+I = mzero(FreeAdditiveSymmetricMonoidalCategory.Ob)
 @test oplus(A,I) == A
 @test oplus(I,A) == A
 @test oplus(oplus(A,B),A) == oplus(A,oplus(B,A))
@@ -44,7 +44,7 @@ I = ozero(FreeAdditiveSymmetricMonoidalCategory.Ob)
 @test string(compose(oplus(f,f),oplus(g,g))) == "compose(oplus(f,f),oplus(g,g))"
 
 # S-expressions
-@test sexpr(I) == "(ozero)"
+@test sexpr(I) == "(mzero)"
 @test sexpr(oplus(A,B)) == "(oplus :A :B)"
 @test sexpr(oplus(f,g)) == "(oplus :f :g)"
 @test sexpr(compose(oplus(f,f),oplus(g,g))) == "(compose (oplus :f :f) (oplus :g :g))"
@@ -87,4 +87,3 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 # LaTeX notation
 @test latex(mmerge(A)) == "\\nabla_{A}"
 @test latex(create(A)) == "\\square_{A}"
-

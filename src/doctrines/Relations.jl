@@ -1,8 +1,8 @@
 export BicategoryRelations, FreeBicategoryRelations,
   AbelianBicategoryRelations, FreeAbelianBicategoryRelations,
-  meet, join, top, bottom, mplus, mzero, coplus, cozero
+  meet, join, top, bottom, plus, zero, coplus, cozero
 
-import Base: join
+import Base: join, zero
 
 # Bicategory of relations
 #########################
@@ -51,8 +51,8 @@ References:
 """
 @signature BicategoryRelations(Ob,Hom) => AbelianBicategoryRelations(Ob,Hom) begin
   # Second diagonal and codiagonal.
-  mplus(A::Ob)::((A ⊗ A) → A)
-  mzero(A::Ob)::(munit() → A)
+  plus(A::Ob)::((A ⊗ A) → A)
+  zero(A::Ob)::(munit() → A)
   coplus(A::Ob)::(A → (A ⊗ A))
   cozero(A::Ob)::(A → munit())
 
@@ -68,18 +68,18 @@ end
   dagger(f::Hom) = distribute_unary(distribute_dagger(involute(new(f))),
                                     dagger, otimes)
   meet(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
-  join(f::Hom, g::Hom) = compose(coplus(dom(f)), otimes(f,g), mplus(codom(f)))
+  join(f::Hom, g::Hom) = compose(coplus(dom(f)), otimes(f,g), plus(codom(f)))
   top(A::Ob, B::Ob) = compose(delete(A), create(B))
-  bottom(A::Ob, B::Ob) = compose(cozero(A), mzero(B))
+  bottom(A::Ob, B::Ob) = compose(cozero(A), zero(B))
 end
 
-function show_latex(io::IO, expr::HomExpr{:mplus}; kw...)
+function show_latex(io::IO, expr::HomExpr{:plus}; kw...)
   Syntax.show_latex_script(io, expr, "\\blacktriangledown")
 end
 function show_latex(io::IO, expr::HomExpr{:coplus}; kw...)
   Syntax.show_latex_script(io, expr, "\\blacktriangle")
 end
-function show_latex(io::IO, expr::HomExpr{:mzero}; kw...)
+function show_latex(io::IO, expr::HomExpr{:zero}; kw...)
   Syntax.show_latex_script(io, expr, "\\blacksquare")
 end
 function show_latex(io::IO, expr::HomExpr{:cozero}; kw...)

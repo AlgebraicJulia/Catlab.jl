@@ -109,9 +109,9 @@ to_tikz((dunit(A) ⊗ id(B)) ⋅ (id(A) ⊗ f ⊗ id(B)) ⋅ (id(A) ⊗ dcounit(
 
 X = Ob(FreeAbelianBicategoryRelations, :X)
 
-to_tikz(mplus(X) ⋅ mcopy(X))
+to_tikz(plus(X) ⋅ mcopy(X))
 #-
-to_tikz((mcopy(X)⊗mcopy(X)) ⋅ (id(X)⊗braid(X,X)⊗id(X)) ⋅ (mplus(X)⊗mplus(X)))
+to_tikz((mcopy(X)⊗mcopy(X)) ⋅ (id(X)⊗braid(X,X)⊗id(X)) ⋅ (plus(X)⊗plus(X)))
 
 # ## Custom styles
 
@@ -127,7 +127,7 @@ pic = to_tikz(f⋅g, styles=Dict(
 #-
 X = Ob(FreeAbelianBicategoryRelations, :X)
 
-to_tikz(mplus(X) ⋅ mcopy(X), styles=Dict(
+to_tikz(plus(X) ⋅ mcopy(X), styles=Dict(
   "junction" => ["circle", "draw", "fill"=>"red", "inner sep"=>"0"],
   "variant junction" => ["circle", "draw", "fill"=>"blue", "inner sep"=>"0"],
 ))

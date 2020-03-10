@@ -1,4 +1,4 @@
-export AdditiveMonoidalCategory, oplus, ⊕, ozero,
+export AdditiveMonoidalCategory, oplus, ⊕, mzero,
   AdditiveSymmetricMonoidalCategory, FreeAdditiveSymmetricMonoidalCategory,
   MonoidalCategoryWithCodiagonals, CocartesianCategory, FreeCocartesianCategory,
   mmerge, create, copair, incl1, incl2, ∇, □, braid, σ
@@ -17,22 +17,22 @@ The same as `MonoidalCategory` mathematically but with different notation.
   oplus(f::Hom(A,B), g::Hom(C,D))::Hom(oplus(A,C),oplus(B,D)) <=
     (A::Ob, B::Ob, C::Ob, D::Ob)
   @op oplus :⊕
-  ozero()::Ob
+  mzero()::Ob
 end
 
 # Convenience constructors
-oplus(xs::Vector{T}) where T = isempty(xs) ? ozero(T) : foldl(oplus, xs)
+oplus(xs::Vector{T}) where T = isempty(xs) ? mzero(T) : foldl(oplus, xs)
 oplus(x, y, z, xs...) = oplus([x, y, z, xs...])
 
 """ Collect generators of object in monoidal category as a vector.
 """
 collect(expr::ObExpr{:oplus}) = vcat(map(collect, args(expr))...)
-collect(expr::ObExpr{:ozero}) = roottypeof(expr)[]
+collect(expr::ObExpr{:mzero}) = roottypeof(expr)[]
 
 """ Number of "dimensions" of object in monoidal category.
 """
 ndims(expr::ObExpr{:oplus}) = sum(map(ndims, args(expr)))
-ndims(expr::ObExpr{:ozero}) = 0
+ndims(expr::ObExpr{:mzero}) = 0
 
 
 function show_unicode(io::IO, expr::ObExpr{:oplus}; kw...)
@@ -41,7 +41,7 @@ end
 function show_unicode(io::IO, expr::HomExpr{:oplus}; kw...)
   Syntax.show_unicode_infix(io, expr, "⊕"; kw...)
 end
-show_unicode(io::IO, expr::ObExpr{:ozero}; kw...) = print(io, "I")
+show_unicode(io::IO, expr::ObExpr{:mzero}; kw...) = print(io, "I")
 
 function show_latex(io::IO, expr::ObExpr{:oplus}; kw...)
   Syntax.show_latex_infix(io, expr, "\\oplus"; kw...)
@@ -49,7 +49,7 @@ end
 function show_latex(io::IO, expr::HomExpr{:oplus}; kw...)
   Syntax.show_latex_infix(io, expr, "\\oplus"; kw...)
 end
-show_latex(io::IO, expr::ObExpr{:ozero}; kw...) = print(io, "I")
+show_latex(io::IO, expr::ObExpr{:mzero}; kw...) = print(io, "I")
 
 
 # Symmetric monoidal category
@@ -66,7 +66,7 @@ notation.
 end
 
 @syntax FreeAdditiveSymmetricMonoidalCategory(ObExpr,HomExpr) AdditiveSymmetricMonoidalCategory begin
-  oplus(A::Ob, B::Ob) = associate_unit(new(A,B), ozero)
+  oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
   oplus(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
 end
@@ -85,7 +85,7 @@ For references, see `MonoidalCategoryWithDiagonals`.
 @signature AdditiveSymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithCodiagonals(Ob,Hom) begin
   mmerge(A::Ob)::Hom(oplus(A,A),A)
   @op mmerge :∇
-  create(A::Ob)::Hom(ozero(),A)
+  create(A::Ob)::Hom(mzero(),A)
   @op create :□
 end
 
@@ -107,7 +107,7 @@ merging and creation, and do not have their own syntactic elements.
 Of course, this convention could be reversed.
 """
 @syntax FreeCocartesianCategory(ObExpr,HomExpr) CocartesianCategory begin
-  oplus(A::Ob, B::Ob) = associate_unit(new(A,B), ozero)
+  oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
   oplus(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
 
