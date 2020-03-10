@@ -264,7 +264,13 @@ function parse_theory_body(expr::Expr)
     elseif head in (:(=), :function)
       push!(funs, parse_function(elem))
     elseif head == :macrocall && elem.args[1] == Symbol("@op")
-      aliases[elem.args[3].value] = elem.args[2]
+      @match elem.args begin
+        [_,dest::Symbol, QuoteNode(src::Symbol)] => (aliases[src] = dest)
+        [_,block_expr::Expr] => merge!(aliases,
+                                  Dict(map(x -> x.args[3] => x.args[2],
+                                           strip_lines(block_expr).args)))
+        _ => throw(ParseError("Ill-formed theory axiom $elem"))
+      end
     else
       throw(ParseError("Ill-formed theory element $elem"))
     end
@@ -314,7 +320,7 @@ function alias_functions(theory::Theory)::Vector{JuliaFunction}
     dests = filter(i -> i.name == last(alias), map(x -> x, terms_types))
     # If there are no matching functions, throw a parse error
     if isempty(dests)
-      throw(ParseError("Cannot alias undefined type or term $dest"))
+      throw(ParseError("Cannot alias undefined type or term $alias"))
     end
     # For each destination, create a Julia function
     map(dests) do dest

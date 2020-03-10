@@ -170,13 +170,16 @@ category_theory = GAT.Theory(types, terms, axioms, aliases)
 """ Equivalent shorthand definition of Category theory
 """
 @theory CategoryAbbrev(Ob,Hom) begin
+  @op begin
+    Hom :→
+    compose :⋅
+  end
+
   Ob::TYPE
   Hom(dom::Ob, codom::Ob)::TYPE
-  @op Hom :→
 
   id(X::Ob)::(X → X)
   (compose(f::(X → Y),g::(Y → Z))::(X → Z)) where (X::Ob, Y::Ob, Z::Ob)
-  @op compose :⋅
 
   (f ⋅ g) ⋅ h == f ⋅ (g ⋅ h) ⊣ ( A::Ob, B::Ob, C::Ob, D::Ob,
                                 f::(A → B), g::(B → C), h::(C → D))
