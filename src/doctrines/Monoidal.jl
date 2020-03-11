@@ -51,18 +51,12 @@ ndims(expr::ObExpr) = 1
 ndims(expr::ObExpr{:otimes}) = sum(map(ndims, args(expr)))
 ndims(expr::ObExpr{:munit}) = 0
 
-function show_unicode(io::IO, expr::ObExpr{:otimes}; kw...)
-  Syntax.show_unicode_infix(io, expr, "⊗"; kw...)
-end
-function show_unicode(io::IO, expr::HomExpr{:otimes}; kw...)
+function show_unicode(io::IO, expr::Union{ObExpr{:otimes},HomExpr{:otimes}}; kw...)
   Syntax.show_unicode_infix(io, expr, "⊗"; kw...)
 end
 show_unicode(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
 
-function show_latex(io::IO, expr::ObExpr{:otimes}; kw...)
-  Syntax.show_latex_infix(io, expr, "\\otimes"; kw...)
-end
-function show_latex(io::IO, expr::HomExpr{:otimes}; kw...)
+function show_latex(io::IO, expr::Union{ObExpr{:otimes},HomExpr{:otimes}}; kw...)
   Syntax.show_latex_infix(io, expr, "\\otimes"; kw...)
 end
 show_latex(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")

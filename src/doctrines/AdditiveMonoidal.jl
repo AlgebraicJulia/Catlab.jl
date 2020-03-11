@@ -24,33 +24,21 @@ end
 oplus(xs::Vector{T}) where T = isempty(xs) ? mzero(T) : foldl(oplus, xs)
 oplus(x, y, z, xs...) = oplus([x, y, z, xs...])
 
-""" Collect generators of object in monoidal category as a vector.
-"""
+# Overload `collect` and `ndims` as for multiplicative monoidal categories.
 collect(expr::ObExpr{:oplus}) = vcat(map(collect, args(expr))...)
 collect(expr::ObExpr{:mzero}) = roottypeof(expr)[]
-
-""" Number of "dimensions" of object in monoidal category.
-"""
 ndims(expr::ObExpr{:oplus}) = sum(map(ndims, args(expr)))
 ndims(expr::ObExpr{:mzero}) = 0
 
-
-function show_unicode(io::IO, expr::ObExpr{:oplus}; kw...)
-  Syntax.show_unicode_infix(io, expr, "⊕"; kw...)
-end
-function show_unicode(io::IO, expr::HomExpr{:oplus}; kw...)
+function show_unicode(io::IO, expr::Union{ObExpr{:oplus},HomExpr{:oplus}}; kw...)
   Syntax.show_unicode_infix(io, expr, "⊕"; kw...)
 end
 show_unicode(io::IO, expr::ObExpr{:mzero}; kw...) = print(io, "I")
 
-function show_latex(io::IO, expr::ObExpr{:oplus}; kw...)
-  Syntax.show_latex_infix(io, expr, "\\oplus"; kw...)
-end
-function show_latex(io::IO, expr::HomExpr{:oplus}; kw...)
+function show_latex(io::IO, expr::Union{ObExpr{:oplus},HomExpr{:oplus}}; kw...)
   Syntax.show_latex_infix(io, expr, "\\oplus"; kw...)
 end
 show_latex(io::IO, expr::ObExpr{:mzero}; kw...) = print(io, "I")
-
 
 # Symmetric monoidal category
 #############################

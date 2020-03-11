@@ -17,6 +17,7 @@ This usage is too entrenched to overturn, inconvenient though it may be.
 We use symbol ⋅ (\\cdot) for diagrammatic composition: f⋅g = compose(f,g).
 """
 @theory Category(Ob,Hom) begin
+  # Unicode aliases.
   @op begin
     (→) := Hom
     (⋅) := compose
@@ -31,8 +32,9 @@ We use symbol ⋅ (\\cdot) for diagrammatic composition: f⋅g = compose(f,g).
   id(A::Ob)::(A → A)
   compose(f::(A → B), g::(B → C))::(A → C) ⊣ (A::Ob, B::Ob, C::Ob)
 
-  # Equivalency Axioms in a category
-  (f ⋅ g) ⋅ h == f ⋅ (g ⋅ h) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, f::(A → B), g::(B → C), h::(C → D))
+  # Category axioms.
+  ((f ⋅ g) ⋅ h == f ⋅ (g ⋅ h)
+    ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, f::(A → B), g::(B → C), h::(C → D)))
   f ⋅ id(B) == f ⊣ (A::Ob, B::Ob, f::(A → B))
   id(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
 end
