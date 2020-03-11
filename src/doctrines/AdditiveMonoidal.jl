@@ -33,12 +33,12 @@ ndims(expr::ObExpr{:mzero}) = 0
 function show_unicode(io::IO, expr::Union{ObExpr{:oplus},HomExpr{:oplus}}; kw...)
   Syntax.show_unicode_infix(io, expr, "⊕"; kw...)
 end
-show_unicode(io::IO, expr::ObExpr{:mzero}; kw...) = print(io, "I")
+show_unicode(io::IO, expr::ObExpr{:mzero}; kw...) = print(io, "O")
 
 function show_latex(io::IO, expr::Union{ObExpr{:oplus},HomExpr{:oplus}}; kw...)
   Syntax.show_latex_infix(io, expr, "\\oplus"; kw...)
 end
-show_latex(io::IO, expr::ObExpr{:mzero}; kw...) = print(io, "I")
+show_latex(io::IO, expr::ObExpr{:mzero}; kw...) = print(io, "O")
 
 # Symmetric monoidal category
 #############################

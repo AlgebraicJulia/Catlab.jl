@@ -13,9 +13,9 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 @test codom(braid(A,B)) == oplus(B,A)
 
 # Associativity and unit
-I = mzero(FreeAdditiveSymmetricMonoidalCategory.Ob)
-@test oplus(A,I) == A
-@test oplus(I,A) == A
+O = mzero(FreeAdditiveSymmetricMonoidalCategory.Ob)
+@test oplus(A,O) == A
+@test oplus(O,A) == A
 @test oplus(oplus(A,B),A) == oplus(A,oplus(B,A))
 @test oplus(oplus(f,g),f) == oplus(f,oplus(g,f))
 
@@ -24,7 +24,7 @@ I = mzero(FreeAdditiveSymmetricMonoidalCategory.Ob)
 @test oplus([A,B,A]) == oplus(oplus(A,B),A)
 @test oplus(f,f,f) == oplus(oplus(f,f),f)
 @test oplus([f,f,f]) == oplus(oplus(f,f),f)
-@test oplus(FreeAdditiveSymmetricMonoidalCategory.Ob[]) == I
+@test oplus(FreeAdditiveSymmetricMonoidalCategory.Ob[]) == O
 @test_throws MethodError oplus([])
 @test A⊕B == oplus(A,B)
 @test f⊕g == oplus(f,g)
@@ -33,31 +33,31 @@ I = mzero(FreeAdditiveSymmetricMonoidalCategory.Ob)
 # Extra functions
 @test collect(A) == [A]
 @test collect(oplus(A,B)) == [A,B]
-@test collect(I) == []
-@test typeof(collect(I)) == Vector{FreeAdditiveSymmetricMonoidalCategory.Ob}
+@test collect(O) == []
+@test typeof(collect(O)) == Vector{FreeAdditiveSymmetricMonoidalCategory.Ob}
 @test ndims(A) == 1
 @test ndims(oplus(A,B)) == 2
-@test ndims(I) == 0
+@test ndims(O) == 0
 
 # String format
 @test string(oplus(f,g)) == "oplus(f,g)"
 @test string(compose(oplus(f,f),oplus(g,g))) == "compose(oplus(f,f),oplus(g,g))"
 
 # S-expressions
-@test sexpr(I) == "(mzero)"
+@test sexpr(O) == "(mzero)"
 @test sexpr(oplus(A,B)) == "(oplus :A :B)"
 @test sexpr(oplus(f,g)) == "(oplus :f :g)"
 @test sexpr(compose(oplus(f,f),oplus(g,g))) == "(compose (oplus :f :f) (oplus :g :g))"
 
 # Infix notation (Unicode)
-@test unicode(I) == "I"
+@test unicode(O) == "O"
 @test unicode(oplus(A,B)) == "A⊕B"
 @test unicode(oplus(f,g)) == "f⊕g"
 @test unicode(compose(oplus(f,f),oplus(g,g))) == "(f⊕f)⋅(g⊕g)"
 @test unicode(oplus(compose(f,g),compose(g,f))) == "(f⋅g)⊕(g⋅f)"
 
 # Infix notation (LaTeX)
-@test latex(I) == "I"
+@test latex(O) == "O"
 @test latex(oplus(A,B)) == "A \\oplus B"
 @test latex(oplus(f,g)) == "f \\oplus g"
 @test latex(compose(oplus(f,f),oplus(g,g))) == 
@@ -76,7 +76,7 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 # Domains and codomains
 @test dom(mmerge(A)) == oplus(A,A)
 @test codom(mmerge(A)) == A
-@test dom(create(A)) == I
+@test dom(create(A)) == O
 @test codom(create(A)) == A
 
 # Derived syntax
