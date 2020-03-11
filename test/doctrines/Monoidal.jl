@@ -120,6 +120,7 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 @test dual(I) == I
 @test dual(dual(A)) == A
 @test dual(otimes(dual(A),dual(B))) == otimes(B,A)
+@test hom(A,B) == otimes(B,dual(A))
 
 # Mates
 @test mate(mate(f)) == f
@@ -135,10 +136,10 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 @test codom(mate(f)) == dual(A)
 
 f = Hom(:f, otimes(A,B), C)
-@test dom(ev(A,B)) == otimes(hom(A,B),A)
+@test dom(ev(A,B)) == otimes(B,dual(A),A)
 @test codom(ev(A,B)) == B
 @test dom(curry(A,B,f)) == A
-@test codom(curry(A,B,f)) == hom(B,C)
+@test codom(curry(A,B,f)) == otimes(C,dual(B))
 
 # LaTeX notation
 @test latex(dual(A)) == "{A}^*"

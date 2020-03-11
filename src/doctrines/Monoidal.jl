@@ -4,7 +4,7 @@ export MonoidalCategory, otimes, munit, ⊗, collect, ndims,
   mcopy, delete, pair, proj1, proj2, Δ, ◊,
   mmerge, create, copair, incl1, incl2, ∇, □,
   MonoidalCategoryWithBidiagonals, BiproductCategory, FreeBiproductCategory,
-  ClosedMonoidalCategory, hom, ev, curry,
+  ClosedMonoidalCategory, FreeClosedMonoidalCategory, hom, ev, curry,
   CartesianClosedCategory, FreeCartesianClosedCategory,
   CompactClosedCategory, FreeCompactClosedCategory, dual, dunit, dcounit, mate,
   DaggerCategory, FreeDaggerCategory, dagger,
@@ -219,6 +219,29 @@ end
   curry(A::Ob, B::Ob, f::((A ⊗ B) → C))::(A → hom(B,C)) ⊣ (C::Ob)
 end
 
+""" Syntax for a free closed monoidal category.
+"""
+@syntax FreeClosedMonoidalCategory(ObExpr,HomExpr) ClosedMonoidalCategory begin
+  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f,g))
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+end
+
+function show_latex(io::IO, expr::ObExpr{:hom}; kw...)
+  print(io, "{")
+  show_latex(io, last(expr), paren=true)
+  print(io, "}^{")
+  show_latex(io, first(expr))
+  print(io, "}")
+end
+function show_latex(io::IO, expr::HomExpr{:ev}; kw...)
+  Syntax.show_latex_script(io, expr, "\\mathrm{eval}")
+end
+function show_latex(io::IO, expr::HomExpr{:curry}; kw...)
+  print(io, "\\lambda ")
+  show_latex(io, last(expr))
+end
+
 # Cartesian closed category
 ###########################
 
@@ -247,21 +270,6 @@ See also `FreeCartesianCategory`.
   pair(f::Hom, g::Hom) = Δ(dom(f)) → (f ⊗ g)
   proj1(A::Ob, B::Ob) = id(A) ⊗ ◊(B)
   proj2(A::Ob, B::Ob) = ◊(A) ⊗ id(B)
-end
-
-function show_latex(io::IO, expr::ObExpr{:hom}; kw...)
-  print(io, "{")
-  show_latex(io, last(expr), paren=true)
-  print(io, "}^{")
-  show_latex(io, first(expr))
-  print(io, "}")
-end
-function show_latex(io::IO, expr::HomExpr{:ev}; kw...)
-  Syntax.show_latex_script(io, expr, "\\mathrm{eval}")
-end
-function show_latex(io::IO, expr::HomExpr{:curry}; kw...)
-  print(io, "\\lambda ")
-  show_latex(io, last(expr))
 end
 
 # Compact closed category
@@ -296,6 +304,10 @@ end
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
   mate(f::Hom) = distribute_mate(involute(new(f)))
+  hom(A::Ob, B::Ob) = B ⊗ dual(A)
+  ev(A::Ob, B::Ob) = id(B) ⊗ (σ(dual(A), A) ⋅ dcounit(A))
+  curry(A::Ob, B::Ob, f::Hom) =
+    (id(A) ⊗ (dunit(B) ⋅ σ(dual(B), B))) ⋅ (f ⊗ id(dual(B)))
 end
 
 """ Distribute adjoint mates over composition and products.
