@@ -26,7 +26,7 @@ import ...WiringDiagrams: to_wiring_diagram
 
 using ..AlgebraicNets
 import ..AlgebraicNets: Ob, Hom, compose, id, dom, codom, otimes, munit, braid,
-  mcopy, delete, mmerge, create, linear, constant, wiring, evaluate
+  mcopy, delete, mmerge, create, linear, wiring, evaluate
 
 # Data types
 ############

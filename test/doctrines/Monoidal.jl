@@ -134,12 +134,6 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 @test dom(mate(f)) == dual(B)
 @test codom(mate(f)) == dual(A)
 
-f = Hom(:f, otimes(A,B), C)
-@test dom(ev(A,B)) == otimes(hom(A,B),A)
-@test codom(ev(A,B)) == B
-@test dom(curry(A,B,f)) == A
-@test codom(curry(A,B,f)) == hom(B,C)
-
 # LaTeX notation
 @test latex(dual(A)) == "{A}^*"
 @test latex(dunit(A)) == "\\eta_{A}"

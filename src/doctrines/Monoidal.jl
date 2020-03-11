@@ -262,12 +262,6 @@ end
 
   # Adjoint mate of morphism f.
   mate(f::(A → B))::(dual(B) → dual(A)) ⊣ (A::Ob, B::Ob)
-
-  # Closed monoidal category
-  hom(A::Ob, B::Ob) = B ⊗ dual(A)
-  ev(A::Ob, B::Ob) = id(B) ⊗ (σ(dual(A), A) ⋅ dcounit(A))
-  curry(A::Ob, B::Ob, f::Hom) =
-    ((id(A) ⊗ (dunit(B) ⋅ σ(dual(B), B))) ⋅ (f ⊗ id(dual(B))))
 end
 
 @syntax FreeCompactClosedCategory(ObExpr,HomExpr) CompactClosedCategory begin

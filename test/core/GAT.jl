@@ -269,8 +269,6 @@ end
   M::TYPE
   munit()::M
   times(x::M,y::M)::M
-
-  times(xs::Vararg{M}) = foldl(times, xs)
 end
 
 # Incomplete instance of Monoid
@@ -288,11 +286,9 @@ end
 @test length(methods(munit)) == 3 # Monoid, MonoidExt, String
 @test munit(String) == ""
 @test times("a", "b") == "ab"
-@test times("a", "b", "c") == "abc"
 
 # Reflection
 @test invoke_term(Monoid, (String,), :munit) == ""
 @test invoke_term(Monoid, (String,), :times, "a", "b") == "ab"
-@test invoke_term(Monoid, (String,), :times, "a", "b", "c") == "abc"
 
 end

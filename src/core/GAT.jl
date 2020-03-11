@@ -84,7 +84,6 @@ struct Typeclass
   name::Symbol
   type_params::Vector{Symbol}
   theory::Theory
-  functions::Vector{JuliaFunction}
 end
 
 struct TheoryBinding
@@ -102,17 +101,15 @@ end
 
 """ Define a generalized algebraic theory (GAT).
 
-Five kinds of things can go in the theory body:
+Four kinds of things can go in the theory body:
 
 1. Type constructors, indicated by the special type `TYPE`, e.g.,
    `Hom(X::Ob,Y::Ob)::TYPE`
 2. Term constructors, e.g.,
    `id(X::Ob)::Hom(X,X)`
-3. Julia functions operating on the term constructors to provide additional
-   functionality
-4. Function aliases, e.g.,
+3. Function aliases, e.g.,
    `@op Hom :→`
-5. Equality axioms, e.g.,
+4. Equality axioms, e.g.,
    `f ⋅ id(B) == f ⊣ (A::Ob, B::Ob, f::(A → B))`
 
 
@@ -125,15 +122,13 @@ end
 """ Define a signature for a generalized algebraic theory (GAT).
 
 A signature is the same as a theory, except it may not contain axioms, and
-therefore only four kinds of things can go in the signature body:
+therefore only three kinds of things can go in the signature body:
 
 1. Type constructors, indicated by the special type `TYPE`, e.g.,
    `Hom(X::Ob,Y::Ob)::TYPE`
 2. Term constructors, e.g.,
    `id(X::Ob)::Hom(X,X)`
-3. Julia functions operating on the term constructors to provide additional
-   functionality
-4. Function aliases, e.g.,
+3. Function aliases, e.g.,
    `@op Hom :→`
 
 A signature can extend existing theories (at present only one).
@@ -157,14 +152,14 @@ function theory_builder(head, body; signature=false)
     base_name, base_params = nothing, []
   end
 
-  # Parse theory body: GAT types/terms and extra Julia functions.
-  types, terms, functions, axioms, aliases = parse_theory_body(body)
+  # Parse theory body: GAT types/terms and function aliases.
+  types, terms, axioms, aliases = parse_theory_body(body)
   if signature && length(axioms) > 0
     throw(ParseError("@signature macro does not allow axioms to be defined: $axioms"))
   end
 
   theory = Theory(types, terms, axioms, aliases)
-  class = Typeclass(head.main.name, head.main.params, theory, functions)
+  class = Typeclass(head.main.name, head.main.params, theory)
 
   # We must generate and evaluate the code at *run time* because the base
   # theory, if specified, is not available at *parse time*.
@@ -176,7 +171,7 @@ end
 
 function theory_code(main_class, base_mod, base_params)
   # TODO: Generate code to do something with main_class.theory.axioms
-  # Add types/terms/functions from base class, if provided.
+  # Add types/terms/aliases from base class, if provided.
   main_theory = main_class.theory
   if isnothing(base_mod)
     class = main_class
@@ -188,12 +183,10 @@ function theory_code(main_class, base_mod, base_params)
                     [base_theory.terms; main_theory.terms],
                     [base_theory.axioms; main_theory.axioms],
                     merge(base_theory.aliases, main_theory.aliases))
-    functions = [ [ replace_symbols(bindings, f) for f in base_class.functions ];
-                  main_class.functions ]
-    class = Typeclass(main_class.name, main_class.type_params, theory, functions)
+    class = Typeclass(main_class.name, main_class.type_params, theory)
   end
   theory = replace_types(class.theory.aliases, class.theory)
-  class = Typeclass(class.name, class.type_params, theory, class.functions)
+  class = Typeclass(class.name, class.type_params, theory)
 
   # Generate module with stub types.
   mod = Expr(:module, true, class.name,
@@ -244,7 +237,6 @@ function parse_theory_body(expr::Expr)
   types = OrderedDict{Symbol,TypeConstructor}()
   terms = TermConstructor[]
   axioms = AxiomConstructor[]
-  funs = JuliaFunction[]
   for elem in strip_lines(expr).args
     elem = strip_lines(elem)
     head = last(parse_docstring(elem)).head
@@ -261,8 +253,6 @@ function parse_theory_body(expr::Expr)
       else
         push!(axioms, cons)
       end
-    elseif head in (:(=), :function)
-      push!(funs, parse_function(elem))
     elseif head == :macrocall && elem.args[1] == Symbol("@op")
       if elem.args[2].head == :(:=)
         aliases[elem.args[2].args[1]] = elem.args[2].args[2]
@@ -279,7 +269,7 @@ function parse_theory_body(expr::Expr)
       throw(ParseError("Ill-formed theory element $elem"))
     end
   end
-  return (collect(values(types)), terms, funs, axioms, aliases)
+  return (collect(values(types)), terms, axioms, aliases)
 end
 
 """ Julia functions for type parameter accessors.
@@ -352,8 +342,7 @@ end
 function interface(class::Typeclass)::Vector{JuliaFunction}
   [ accessors(class.theory);
     constructors(class.theory);
-    alias_functions(class.theory);
-    class.functions ]
+    alias_functions(class.theory) ]
 end
 
 """ Get type constructor by name.
