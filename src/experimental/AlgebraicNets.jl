@@ -8,7 +8,7 @@ represent expressions as morphisms in a monoidal category.
 module AlgebraicNets
 export AlgebraicNetTheory, AlgebraicNet, Ob, Hom, dom, codom,
   id, compose, ⋅, ∘, otimes, ⊗, munit, braid, mcopy, delete, mmerge, create,
-  linear, wiring,
+  linear, constant, wiring,
   compile, compile_expr, compile_expr_vector, compile_block, evaluate
 
 using Match
@@ -34,6 +34,7 @@ TODO: Explain
 """
 @signature MonoidalCategoryWithBidiagonals(Ob,Hom) => AlgebraicNetTheory(Ob,Hom) begin
   linear(x::Any, A::Ob, B::Ob)::(A → B)
+  constant(x::Any, A::Ob)::(munit() → A)
 
   # FIXME: Should be `f::WiringLayer`, but doesn't work.
   wiring(f::Any, A::Ob, B::Ob)::(A → B)

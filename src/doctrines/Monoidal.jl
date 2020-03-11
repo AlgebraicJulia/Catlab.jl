@@ -115,10 +115,14 @@ end
 Actually, this is a cartesian *symmetric monoidal* category but we omit these
 qualifiers for brevity.
 """
-@signature MonoidalCategoryWithDiagonals(Ob,Hom) => CartesianCategory(Ob,Hom) begin
+@theory MonoidalCategoryWithDiagonals(Ob,Hom) => CartesianCategory(Ob,Hom) begin
   pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
+
+  pair(f, g) == Δ(A) ⋅ (f ⊗ g) ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(A → C))
+  proj1(A, B) == id(A) ⊗ ◊(B) ⊣ (A::Ob, B::Ob)
+  proj2(A, B) == ◊(A) ⊗ id(B) ⊣ (A::Ob, B::Ob)
 end
 
 """ Syntax for a free cartesian category.
@@ -250,7 +254,7 @@ end
 
 """ Doctrine of *compact closed category*
 """
-@signature SymmetricMonoidalCategory(Ob,Hom) => CompactClosedCategory(Ob,Hom) begin
+@theory SymmetricMonoidalCategory(Ob,Hom) => CompactClosedCategory(Ob,Hom) begin
   # Dual A^* of object A
   dual(A::Ob)::Ob
 
@@ -262,6 +266,11 @@ end
 
   # Adjoint mate of morphism f.
   mate(f::(A → B))::(dual(B) → dual(A)) ⊣ (A::Ob, B::Ob)
+
+  hom(A, B) == B ⊗ dual(A) ⊣ (A::Ob, B::Ob)
+  ev(A, B) == id(B) ⊗ (σ(dual(A), A) ⋅ dcounit(A)) ⊣ (A::Ob, B::Ob)
+  (curry(A, B, f) == (id(A) ⊗ (dunit(B) ⋅ σ(dual(B), B))) ⋅ (f ⊗ id(dual(B)))
+   ⊣ (A::Ob, B::Ob, C::Ob, f::((A ⊗ B) → C)))
 end
 
 @syntax FreeCompactClosedCategory(ObExpr,HomExpr) CompactClosedCategory begin

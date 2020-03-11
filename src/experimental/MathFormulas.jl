@@ -26,7 +26,7 @@ import ...WiringDiagrams: to_wiring_diagram
 
 using ..AlgebraicNets
 import ..AlgebraicNets: Ob, Hom, compose, id, dom, codom, otimes, munit, braid,
-  mcopy, delete, mmerge, create, linear, wiring, evaluate
+  mcopy, delete, mmerge, create, linear, constant, wiring, evaluate
 
 # Data types
 ############
@@ -135,6 +135,11 @@ that any two formulas have disjoint variables.
     @assert nin == 1 && nout == 1 # FIXME: Relax this.
     var = gensym()
     Formulas([Formula(:*, value, var)], [var])
+  end
+
+  function constant(x::Any, A::NFormula)::Formulas
+    @assert A.n == 1
+    Formulas([x], Symbol[])
   end
 
   function wiring(f::Any, A::NFormula, B::NFormula)::Formulas

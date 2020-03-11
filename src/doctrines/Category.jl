@@ -1,7 +1,7 @@
-export Category, FreeCategory, Ob, Hom, dom, codom, id, compose, ⋅,
+export Category, FreeCategory, Ob, Hom, dom, codom, id, compose, ⋅, ∘,
   Category2, FreeCategory2, Hom2, compose2
 
-import Base: show
+import Base: ∘, show
 
 # Category
 ##########
