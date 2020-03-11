@@ -12,7 +12,7 @@ jobs:
         os: [ubuntu-latest]
     
     steps:
-      - uses: actions/checkout@v1.0.0
+      - uses: actions/checkout@v2
       - name: "Set up Julia"
         uses: julia-actions/setup-julia@latest
         with:
