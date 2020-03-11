@@ -166,9 +166,9 @@ supported.
   @op (Δ) := mcopy
   mmerge(A::Ob)::((A ⊗ A) → A)
   @op (∇) := mmerge
-  delete(A::Ob)::Hom(A,munit())
+  delete(A::Ob)::(A → munit())
   @op (◊) := delete
-  create(A::Ob)::Hom(munit(),A)
+  create(A::Ob)::(munit() → A)
   @op (□) := create
 end
 
@@ -266,6 +266,11 @@ end
 
   # Adjoint mate of morphism f.
   mate(f::(A → B))::(dual(B) → dual(A)) ⊣ (A::Ob, B::Ob)
+
+  # MOVE TO PARENT DOCTRINE
+  hom(A::Ob, B::Ob)::Ob
+  ev(A::Ob, B::Ob)::((hom(A,B) ⊗ A) → B)
+  curry(A::Ob, B::Ob, f::((A ⊗ B) → C))::(A → hom(B,C)) ⊣ (C::Ob)
 
   hom(A, B) == B ⊗ dual(A) ⊣ (A::Ob, B::Ob)
   ev(A, B) == id(B) ⊗ (σ(dual(A), A) ⋅ dcounit(A)) ⊣ (A::Ob, B::Ob)
