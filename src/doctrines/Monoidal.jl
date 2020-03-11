@@ -267,7 +267,6 @@ end
   # Adjoint mate of morphism f.
   mate(f::(A → B))::(dual(B) → dual(A)) ⊣ (A::Ob, B::Ob)
 
-  # MOVE TO PARENT DOCTRINE
   hom(A::Ob, B::Ob)::Ob
   ev(A::Ob, B::Ob)::((hom(A,B) ⊗ A) → B)
   curry(A::Ob, B::Ob, f::((A ⊗ B) → C))::(A → hom(B,C)) ⊣ (C::Ob)
