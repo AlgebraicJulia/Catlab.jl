@@ -101,11 +101,11 @@ target = Dict(:→ => :Mor)
 @test_throws ParseError try @eval @signature Category(Ob,Hom) begin
   Ob::TYPE
   Hom(dom, codom)::TYPE ⊣ (dom::Ob, codom::Ob)
-  @op Hom :→
+  @op (→) := Hom
 
   id(X)::(X → X) ⊣ (X::Ob)
   compose(f,g)::(X → Z) ⊣ (X::Ob, Y::Ob, Z::Ob, f::(X → Y), g::(Y → Z))
-  @op compose :⋅
+  @op (⋅) := compose
 
   (f ⋅ g) ⋅ h == f ⋅ (g ⋅ h) ⊣ ( A::Ob, B::Ob, C::Ob, D::Ob,
                                 f::(A → B), g::(B → C), h::(C → D))
@@ -121,11 +121,11 @@ end
 @theory Category(Ob,Hom) begin
   Ob::TYPE
   Hom(dom, codom)::TYPE ⊣ (dom::Ob, codom::Ob)
-  @op Hom :→
+  @op (→) := Hom
 
   id(X)::(X → X) ⊣ (X::Ob)
   compose(f,g)::(X → Z) ⊣ (X::Ob, Y::Ob, Z::Ob, f::(X → Y), g::(Y → Z))
-  @op compose :⋅
+  @op (⋅) := compose
 
   (f ⋅ g) ⋅ h == f ⋅ (g ⋅ h) ⊣ ( A::Ob, B::Ob, C::Ob, D::Ob,
                                 f::(A → B), g::(B → C), h::(C → D))

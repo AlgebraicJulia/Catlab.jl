@@ -24,7 +24,7 @@ theory for weak monoidal categories later.
 """
 @signature Category(Ob,Hom) => MonoidalCategory(Ob,Hom) begin
   otimes(A::Ob, B::Ob)::Ob
-  @op otimes :⊗
+  @op (⊗) := otimes
   otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣
     (A::Ob, B::Ob, C::Ob, D::Ob)
   munit()::Ob
@@ -75,7 +75,7 @@ The theory (but not the axioms) is the same as a braided monoidal category.
 """
 @signature MonoidalCategory(Ob,Hom) => SymmetricMonoidalCategory(Ob,Hom) begin
   braid(A::Ob, B::Ob)::((A ⊗ B) → (B ⊗ A))
-  @op braid :σ
+  @op (σ) := braid
 end
 
 @syntax FreeSymmetricMonoidalCategory(ObExpr,HomExpr) SymmetricMonoidalCategory begin
@@ -105,9 +105,9 @@ References:
 """
 @signature SymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithDiagonals(Ob,Hom) begin
   mcopy(A::Ob)::(A → (A ⊗ A))
-  @op mcopy :Δ
+  @op (Δ) := mcopy
   delete(A::Ob)::(A → munit())
-  @op delete :◊
+  @op (◊) := delete
 end
 
 """ Doctrine of *cartesian category*
@@ -159,13 +159,13 @@ supported.
 """
 @signature SymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithBidiagonals(Ob,Hom) begin
   mcopy(A::Ob)::(A → (A ⊗ A))
-  @op mcopy :Δ
+  @op (Δ) := mcopy
   mmerge(A::Ob)::((A ⊗ A) → A)
-  @op mmerge :∇
+  @op (∇) := mmerge
   delete(A::Ob)::Hom(A,munit())
-  @op delete :◊
+  @op (◊) := delete
   create(A::Ob)::Hom(munit(),A)
-  @op create :□
+  @op (□) := create
 end
 
 """ Doctrine of *bicategory category*

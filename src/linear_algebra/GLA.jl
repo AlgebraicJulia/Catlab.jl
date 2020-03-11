@@ -30,15 +30,15 @@ Functional fragment of graphical linear algebra.
 @theory AdditiveSymmetricMonoidalCategory(Ob,Hom) => LinearFunctions(Ob,Hom) begin
   # Copying and deleting maps.
   mcopy(A::Ob)::(A → (A ⊕ A))
-  @op mcopy :Δ
+  @op (Δ) := mcopy
   delete(A::Ob)::(A → mzero())
-  @op delete :◊
+  @op (◊) := delete
 
   # Addition and zero maps.
   plus(A::Ob)::((A ⊕ A) → A)
-  @op plus :+
+  @op (+) := plus
   zero(A::Ob)::(mzero() → A)
-  
+
   plus(f::(A → B), g::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
   adjoint(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
 
@@ -91,9 +91,9 @@ bicategory of relations (`AbelianBicategoryRelations`), written additively.
 
   # Merging and creating relations (converses of copying and deleting maps).
   mmerge(A::Ob)::((A ⊕ A) → A)
-  @op mmerge :∇
+  @op (∇) := mmerge
   create(A::Ob)::(mzero() → A)
-  @op create :□
+  @op (□) := create
 
   # Co-addition and co-zero relations (converses of addition and zero maps)
   coplus(A::Ob)::(A → (A ⊕ A))

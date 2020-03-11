@@ -91,7 +91,7 @@ discussion, see Cartmell, 1986, Sec 10: Informal syntax).
 
 Notice the `@op` call where we can create method aliases that can then be used
 throughout the rest of the theory and outside of definition. We can either use
-this block notation, or a single line notation such as `@op compose :·` to
+this block notation, or a single line notation such as `@op (·) := compose` to
 define a single alias. Here we utilize this functionality by replacing the `Hom`
 and `compose` methods with their equivalent unicode characters, `→` and `·`
 respectively. These aliases are also automatically available to definitions that
