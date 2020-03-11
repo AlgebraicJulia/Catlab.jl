@@ -4,7 +4,8 @@ export MonoidalCategory, otimes, munit, ⊗, collect, ndims,
   mcopy, delete, pair, proj1, proj2, Δ, ◊,
   mmerge, create, copair, incl1, incl2, ∇, □,
   MonoidalCategoryWithBidiagonals, BiproductCategory, FreeBiproductCategory,
-  CartesianClosedCategory, FreeCartesianClosedCategory, hom, ev, curry,
+  ClosedMonoidalCategory, hom, ev, curry,
+  CartesianClosedCategory, FreeCartesianClosedCategory,
   CompactClosedCategory, FreeCompactClosedCategory, dual, dunit, dcounit, mate,
   DaggerCategory, FreeDaggerCategory, dagger,
   DaggerSymmetricMonoidalCategory, FreeDaggerSymmetricMonoidalCategory,
@@ -202,14 +203,12 @@ end
   incl2(A::Ob, B::Ob) = □(A) ⊗ id(B)
 end
 
-# Cartesian closed category
-###########################
+# Closed monoidal category
+##########################
 
-""" Doctrine of *cartesian closed category* (aka, CCC)
-
-A CCC is a cartesian category with internal homs (aka, exponential objects).
+""" Doctrine of *(symmetric) closed monoidal category*
 """
-@signature CartesianCategory(Ob,Hom) => CartesianClosedCategory(Ob,Hom) begin
+@signature SymmetricMonoidalCategory(Ob,Hom) => ClosedMonoidalCategory(Ob,Hom) begin
   # Internal hom of A and B, an object representing Hom(A,B)
   hom(A::Ob, B::Ob)::Ob
 
@@ -217,6 +216,22 @@ A CCC is a cartesian category with internal homs (aka, exponential objects).
   ev(A::Ob, B::Ob)::((hom(A,B) ⊗ A) → B)
 
   # Currying (aka, lambda abstraction)
+  curry(A::Ob, B::Ob, f::((A ⊗ B) → C))::(A → hom(B,C)) ⊣ (C::Ob)
+end
+
+# Cartesian closed category
+###########################
+
+""" Doctrine of *cartesian closed category* (aka, CCC)
+
+A CCC is a cartesian category with internal homs (aka, exponential objects).
+
+FIXME: This theory should extend `ClosedMonoidalCategory`, but multiple
+inheritance is not yet supported.
+"""
+@signature CartesianCategory(Ob,Hom) => CartesianClosedCategory(Ob,Hom) begin
+  hom(A::Ob, B::Ob)::Ob
+  ev(A::Ob, B::Ob)::((hom(A,B) ⊗ A) → B)
   curry(A::Ob, B::Ob, f::((A ⊗ B) → C))::(A → hom(B,C)) ⊣ (C::Ob)
 end
 
@@ -254,7 +269,7 @@ end
 
 """ Doctrine of *compact closed category*
 """
-@theory SymmetricMonoidalCategory(Ob,Hom) => CompactClosedCategory(Ob,Hom) begin
+@theory ClosedMonoidalCategory(Ob,Hom) => CompactClosedCategory(Ob,Hom) begin
   # Dual A^* of object A
   dual(A::Ob)::Ob
 
@@ -266,11 +281,8 @@ end
 
   # Adjoint mate of morphism f.
   mate(f::(A → B))::(dual(B) → dual(A)) ⊣ (A::Ob, B::Ob)
-
-  hom(A::Ob, B::Ob)::Ob
-  ev(A::Ob, B::Ob)::((hom(A,B) ⊗ A) → B)
-  curry(A::Ob, B::Ob, f::((A ⊗ B) → C))::(A → hom(B,C)) ⊣ (C::Ob)
-
+  
+  # Axioms for closed monoidal structure.
   hom(A, B) == B ⊗ dual(A) ⊣ (A::Ob, B::Ob)
   ev(A, B) == id(B) ⊗ (σ(dual(A), A) ⋅ dcounit(A)) ⊣ (A::Ob, B::Ob)
   (curry(A, B, f) == (id(A) ⊗ (dunit(B) ⋅ σ(dual(B), B))) ⋅ (f ⊗ id(dual(B)))
