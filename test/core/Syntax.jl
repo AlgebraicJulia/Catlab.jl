@@ -105,8 +105,6 @@ x, y = one(FreeMonoidTwo.Elem), two(FreeMonoidTwo.Elem)
 
   id(X::Ob)::Hom(X,X)
   compose(f::Hom(X,Y), g::Hom(Y,Z))::Hom(X,Z) ⊣ (X::Ob, Y::Ob, Z::Ob)
-
-  compose(fs::Vararg{Hom}) = foldl(compose, fs)
 end
 
 @syntax FreeCategory Category begin
@@ -131,11 +129,7 @@ f, g, h = Hom(:f, X, Y), Hom(:g, Y, Z), Hom(:h, Z, W)
 @test dom(compose(f,g)) == X
 @test codom(compose(f,g)) == Z
 @test isa(compose(f,f), FreeCategory.Hom) # Doesn't check domains.
-
 @test compose(compose(f,g),h) == compose(f,compose(g,h))
-@test compose(f,g,h) == compose(compose(f,g),h)
-@test dom(compose(f,g,h)) == X
-@test codom(compose(f,g,h)) == W
 
 @syntax FreeCategoryStrict Category begin
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
@@ -144,7 +138,7 @@ end
 X, Y = Ob(FreeCategoryStrict.Ob, :X), Ob(FreeCategoryStrict.Ob, :Y)
 f, g = Hom(:f, X, Y), Hom(:g, Y, X)
 
-@test isa(compose(f,g,f), FreeCategoryStrict.Hom)
+@test isa(compose(f,g), FreeCategoryStrict.Hom)
 @test_throws SyntaxDomainError compose(f,f)
 
 # Functor

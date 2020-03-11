@@ -137,6 +137,11 @@ that any two formulas have disjoint variables.
     Formulas([Formula(:*, value, var)], [var])
   end
 
+  function constant(x::Any, A::NFormula)::Formulas
+    @assert A.n == 1
+    Formulas([x], Symbol[])
+  end
+
   function wiring(f::Any, A::NFormula, B::NFormula)::Formulas
     vars = gensyms(A)
     terms = [ [] for i in 1:B.n ]
