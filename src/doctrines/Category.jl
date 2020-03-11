@@ -17,16 +17,19 @@ This usage is too entrenched to overturn, inconvenient though it may be.
 We use symbol ⋅ (\\cdot) for diagrammatic composition: f⋅g = compose(f,g).
 """
 @theory Category(Ob,Hom) begin
+  @op begin
+    (→) := Hom
+    (⋅) := compose
+  end
+
   """ Object in a category """
   Ob::TYPE
 
   """ Morphism in a category """
   Hom(dom::Ob,codom::Ob)::TYPE
-  @op Hom :→
 
   id(A::Ob)::(A → A)
   compose(f::(A → B), g::(B → C))::(A → C) ⊣ (A::Ob, B::Ob, C::Ob)
-  @op compose :⋅
 
   ∘(f::Hom, g::Hom) = g ⋅ f
 
@@ -79,7 +82,7 @@ end
 @signature Category(Ob,Hom) => Category2(Ob,Hom,Hom2) begin
   """ 2-morphism in a 2-category """
   Hom2(dom::Hom(A,B), codom::Hom(A,B))::TYPE ⊣ (A::Ob, B::Ob)
-  @op Hom2 :⇒
+  @op (⇒) := Hom2
 
   # Hom categories: Vertical composition
   id(f)::(f ⇒ f) ⊣ (A::Ob, B::Ob, f::(A ⇒ B))

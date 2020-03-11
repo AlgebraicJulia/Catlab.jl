@@ -16,7 +16,7 @@ The same as `MonoidalCategory` mathematically but with different notation.
   oplus(A::Ob, B::Ob)::Ob
   oplus(f::Hom(A,B), g::Hom(C,D))::Hom(oplus(A,C),oplus(B,D)) <=
     (A::Ob, B::Ob, C::Ob, D::Ob)
-  @op oplus :⊕
+    @op (⊕) := oplus
   mzero()::Ob
 end
 
@@ -62,7 +62,7 @@ notation.
 """
 @signature AdditiveMonoidalCategory(Ob,Hom) => AdditiveSymmetricMonoidalCategory(Ob,Hom) begin
   braid(A::Ob, B::Ob)::Hom(oplus(A,B),oplus(B,A))
-  @op braid :σ
+  @op (σ) := braid
 end
 
 @syntax FreeAdditiveSymmetricMonoidalCategory(ObExpr,HomExpr) AdditiveSymmetricMonoidalCategory begin
@@ -84,9 +84,9 @@ For references, see `MonoidalCategoryWithDiagonals`.
 """
 @signature AdditiveSymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithCodiagonals(Ob,Hom) begin
   mmerge(A::Ob)::Hom(oplus(A,A),A)
-  @op mmerge :∇
+  @op (∇) := mmerge
   create(A::Ob)::Hom(mzero(),A)
-  @op create :□
+  @op (□) := create
 end
 
 """ Doctrine of *cocartesian category*

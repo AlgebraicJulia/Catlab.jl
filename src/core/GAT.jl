@@ -264,7 +264,17 @@ function parse_theory_body(expr::Expr)
     elseif head in (:(=), :function)
       push!(funs, parse_function(elem))
     elseif head == :macrocall && elem.args[1] == Symbol("@op")
-      aliases[elem.args[3].value] = elem.args[2]
+      if elem.args[2].head == :(:=)
+        aliases[elem.args[2].args[1]] = elem.args[2].args[2]
+      elseif elem.args[2].head == :block
+        merge!(aliases, Dict(map(x -> if x.head == :(:=)
+                                        x.args[1] => x.args[2]
+                                      else
+                                        throw(ParseError("Ill-formed alias $x"))
+                                      end, strip_lines(elem.args[2]).args)))
+      else
+        throw(ParseError("Ill-formed alias $elem"))
+      end
     else
       throw(ParseError("Ill-formed theory element $elem"))
     end
@@ -314,7 +324,7 @@ function alias_functions(theory::Theory)::Vector{JuliaFunction}
     dests = filter(i -> i.name == last(alias), map(x -> x, terms_types))
     # If there are no matching functions, throw a parse error
     if isempty(dests)
-      throw(ParseError("Cannot alias undefined type or term $dest"))
+      throw(ParseError("Cannot alias undefined type or term $alias"))
     end
     # For each destination, create a Julia function
     map(dests) do dest

@@ -56,13 +56,16 @@ import Catlab.Doctrines: Ob, Hom, ObExpr, HomExpr, dom, codom, compose, id
 
 ```@example category
 @theory Category(Ob,Hom) begin
+  @op begin
+    (→) := Hom
+    (·) := compose
+  end
+
   Ob::TYPE
   Hom(dom::Ob, codom::Ob)::TYPE
-  @op Hom :→
 
   id(A::Ob)::(A → A)
   compose(f::(A → B), g::(B → C))::(A → C) ⊣ (A::Ob, B::Ob, C::Ob)
-  @op compose :·
 
   (f ⋅ g) ⋅ h == f ⋅ (g ⋅ h) ⊣ ( A::Ob, B::Ob, C::Ob, D::Ob,
                                 f::(A → B), g::(B → C), h::(C → D))
@@ -86,12 +89,13 @@ but the left hand side must be surrounded by parentheses. This allows us to
 write `compose(f,g)`, instead of the more verbose `compose(A,B,C,f,g)` (for
 discussion, see Cartmell, 1986, Sec 10: Informal syntax).
 
-Notice the `@op` call where we can create method aliases that can
-then be used throughout the rest of the theory and outside of definition.
-Here we utilize this functionality by replacing the `Hom` and `compose` methods
-with their equivalent unicode characters, `→` and `·` respectively. These
-aliases are also automatically available to definitions that inherit a doctrine
-that already has the alias defined.
+Notice the `@op` call where we can create method aliases that can then be used
+throughout the rest of the theory and outside of definition. We can either use
+this block notation, or a single line notation such as `@op (·) := compose` to
+define a single alias. Here we utilize this functionality by replacing the `Hom`
+and `compose` methods with their equivalent unicode characters, `→` and `·`
+respectively. These aliases are also automatically available to definitions that
+inherit a doctrine that already has the alias defined.
 
 !!! note
 

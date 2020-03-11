@@ -24,7 +24,7 @@ than general dense matrices. Morphisms in this category represent structured mat
 """
 @theory LinearFunctions(Ob,Hom) => StructuredLinearFunctions(Ob, Hom) begin
   munit()::Ob
-  @op munit :ℝ
+  @op (ℝ) := munit
 
   diag(v)::(A→A) ⊣ (A::Ob, v::(ℝ()→A))
   upperdiag(v)::(A⊕ℝ() → A⊕ℝ()) ⊣ (A::Ob, v::(ℝ() → A))
