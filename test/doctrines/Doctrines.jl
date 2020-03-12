@@ -17,6 +17,10 @@ end
   include("AdditiveMonoidal.jl")
 end
 
+@testset "Preorders" begin
+  include("Preorders.jl")
+end
+
 @testset "Permutations" begin
   include("Permutations.jl")
 end
