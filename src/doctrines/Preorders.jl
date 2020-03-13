@@ -1,7 +1,6 @@
 export Preorder, ThinCategory, MonoidalThinCategory, FreePreorder,
-  FreeThinCategory, FreeMononoidalThinCategory
-
-import Catlab.Doctrines: Ob, Hom, otimes, compose, ⋅, ⊗
+  FreeThinCategory, FreeMononoidalThinCategory,
+  Elt, Leq, ≤, reflexive, transitive
 
 """ Doctrine of *Thin category*
 
@@ -49,7 +48,7 @@ end
   transitive(f::Leq, g::Leq) = associate(new(f,g; strict=true))
 end
 
-@theory MonoidalCategory(Ob,Hom) => MonoidalThinCategory(Ob,Hom) begin
+@theory SymmetricMonoidalCategory(Ob,Hom) => MonoidalThinCategory(Ob,Hom) begin
   f == g ⊣ (A::Ob, B::Ob, f::Hom(A,B), g::Hom(A,B))
 end
 
