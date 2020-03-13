@@ -9,10 +9,10 @@ f, g = Hom(:f, x, y), Hom(:g, y, z)
 
 
 x,y,z = Ob(FreePreorder, :x, :y, :z)
-f, g = Leq(:f, x, y), Leq(:g, y, z)
+@test_throws UndefVarError f, g = Leq(:f, x, y), Leq(:g, y, z)
 # Preorder doesn't have domain and codomain defined.
-@test_throws MethodError dom(transitive(f,g)) == x
-@test_throws MethodError codom(transitive(f,g)) == z
+@test_throws UndefVarError dom(transitive(f,g)) == x
+@test_throws UndefVarError codom(transitive(f,g)) == z
 
 x,y,z,zz = Ob(FreeMonoidalThinCategory, :x, :y, :z, :zz)
 f, g, h= Hom(:f, x, y), Hom(:g, y, z), Hom(:h, otimes(y,y), z)
