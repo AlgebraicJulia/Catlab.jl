@@ -3,11 +3,11 @@
 #md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/experimental/algebraic_nets.ipynb)
 #
 
+using Catlab, Catlab.Doctrines, Catlab.Graphics
 using Catlab.Experimental.AlgebraicNets
 using Catlab.Experimental.MathFormulas
 
 import TikzPictures
-using Catlab.Graphics
 #-
 R = Ob(AlgebraicNet, "\\mathbb{R}")
 f_sin = Hom(:sin, R, R)
