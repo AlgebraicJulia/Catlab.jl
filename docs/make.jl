@@ -5,7 +5,10 @@ const literate_dir = joinpath(@__DIR__, "literate")
 const generated_dir = joinpath(@__DIR__, "src", "generated")
 
 @info "Loading Catlab.jl"
-using Catlab
+using Catlab,
+  # Must explicitly load all submodules for which docs are needed.
+  Catlab.Doctrines, Catlab.WiringDiagrams, Catlab.Graphics,
+  Catlab.Programs, Catlab.LinearAlgebra, Catlab.Experimental
 
 @info "Building Literate.jl docs"
 

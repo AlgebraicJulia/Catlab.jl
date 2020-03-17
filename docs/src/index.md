@@ -1,9 +1,5 @@
 # Catlab.jl Documentation
 
-```@meta
-CurrentModule = Catlab
-```
-
 Catlab.jl is an experimental framework for applied category theory, written in
 [Julia](https://julialang.org). It provides a programming library and
 interactive interface for applications of category theory to the sciences and

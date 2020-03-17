@@ -1,14 +1,9 @@
 # [Programs](@id programs)
 
-```@meta
-CurrentModule = Catlab.Programs
-```
-
 ```@autodocs
 Modules = [
-  JuliaPrograms,
-  AlgebraicNets,
-  ExpressionTrees,
+  Programs.GenerateJuliaPrograms,
+  Programs.ParseJuliaPrograms,
 ]
 Private = false
 ```

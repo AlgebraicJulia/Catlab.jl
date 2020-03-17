@@ -1,9 +1,5 @@
 # Symbolic expressions
 
-```@meta
-CurrentModule = Catlab
-```
-
 At the core of Catlab is a system for defining and manipulating symbolic
 expressions in typed algebraic structures, including categories and monoidal
 categories. Objects, morphisms, and even higher-order morphisms are represented
@@ -51,14 +47,14 @@ For example, the theory of categories could be defined by:
 
 ```@setup category
 using Catlab
-import Catlab.Doctrines: Ob, Hom, ObExpr, HomExpr, dom, codom, compose, id
+import Catlab.Doctrines: Ob, Hom, ObExpr, HomExpr, dom, codom, compose, ⋅, id
 ```
 
 ```@example category
 @theory Category(Ob,Hom) begin
   @op begin
     (→) := Hom
-    (·) := compose
+    (⋅) := compose
   end
 
   Ob::TYPE
@@ -67,7 +63,7 @@ import Catlab.Doctrines: Ob, Hom, ObExpr, HomExpr, dom, codom, compose, id
   id(A::Ob)::(A → A)
   compose(f::(A → B), g::(B → C))::(A → C) ⊣ (A::Ob, B::Ob, C::Ob)
 
-  (f ⋅ g) ⋅ h == f ⋅ (g ⋅ h) ⊣ ( A::Ob, B::Ob, C::Ob, D::Ob,
+  (f ⋅ g) ⋅ h == f ⋅ (g ⋅ h) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
                                 f::(A → B), g::(B → C), h::(C → D))
   f ⋅ id(B) == f ⊣ (A::Ob, B::Ob, f::(A → B))
   id(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
@@ -91,9 +87,9 @@ discussion, see Cartmell, 1986, Sec 10: Informal syntax).
 
 Notice the `@op` call where we can create method aliases that can then be used
 throughout the rest of the theory and outside of definition. We can either use
-this block notation, or a single line notation such as `@op (·) := compose` to
+this block notation, or a single line notation such as `@op (⋅) := compose` to
 define a single alias. Here we utilize this functionality by replacing the `Hom`
-and `compose` methods with their equivalent unicode characters, `→` and `·`
+and `compose` methods with their equivalent Unicode characters, `→` and `⋅`
 respectively. These aliases are also automatically available to definitions that
 inherit a doctrine that already has the alias defined.
 

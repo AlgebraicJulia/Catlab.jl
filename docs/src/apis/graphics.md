@@ -1,16 +1,12 @@
 # Graphics
 
-```@meta
-CurrentModule = Catlab.Graphics
-```
-
 ```@autodocs
 Modules = [
-  Graphviz,
-  GraphvizWiringDiagrams,
-  TikZ,
-  TikZWiringDiagrams,
-  YFilesWiringDiagrams,
+  Graphics.ComposeWiringDiagrams,
+  Graphics.GraphvizWiringDiagrams,
+  Graphics.TikZWiringDiagrams,
+  Graphics.WiringDiagramLayouts,
+  Graphics.YFilesWiringDiagrams,
 ]
 Private = false
 ```
