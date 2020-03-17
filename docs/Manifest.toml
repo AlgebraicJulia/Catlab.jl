@@ -36,7 +36,7 @@ version = "0.5.8"
 deps = ["AutoHashEquals", "Compat", "Compose", "DataStructures", "IterativeSolvers", "JSON", "LightGraphs", "LightXML", "LinearAlgebra", "LinearMaps", "Logging", "Match", "MetaGraphs", "Parameters", "Pkg", "Reexport", "Requires", "StaticArrays", "Statistics", "Test"]
 path = ".."
 uuid = "134e5e36-593f-5add-ad60-77f754baafbe"
-version = "0.5.3"
+version = "0.6.0"
 
 [[CodecBzip2]]
 deps = ["BinaryProvider", "Libdl", "TranscodingStreams"]
