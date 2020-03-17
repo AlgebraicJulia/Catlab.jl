@@ -5,8 +5,9 @@ import .WiringDiagramLayouts: has_port_layout_method, solve_isotonic
 
 has_port_layout_method(::Val{:isotonic}) = true
 
-function solve_isotonic(y::Vector; solver=SCSSolver(verbose=0), loss=sumsquares,
-                        lower::Number=-Inf, upper::Number=Inf, pad::Number=0)
+function solve_isotonic(y::Vector; solver=()->SCS.Optimizer(verbose=false),
+                        loss=sumsquares, lower::Number=-Inf, upper::Number=Inf,
+                        pad::Number=0)
   if isempty(y)
     return empty(y)
   end
