@@ -1,6 +1,7 @@
 module TestGraphicalLinearAlgebra
 using Test
 
+using Random
 using IterativeSolvers
 
 using Catlab, Catlab.Doctrines, Catlab.WiringDiagrams, Catlab.Programs
@@ -56,7 +57,6 @@ f, g, h = Hom(:f, V, W), Hom(:g, V, W), Hom(:h, W, W)
 M = plus(f,g)⋅h
 # M = plus(f,g)
 
-
 d = Dict(f=>LinearMap([1 1 1 1; 2 2 2 3; 3 3 3 3.0]),
          g=>LinearMap([3 1 1 1; -1 -1 -1 -1; 0 2 0 0.0]),
          h=>LinearMap([1 4 -1; -1 1 0; 1 1 -1.0]),
@@ -64,6 +64,7 @@ d = Dict(f=>LinearMap([1 1 1 1; 2 2 2 3; 3 3 3 3.0]),
          W=>LinearMapDom(3))
 F(ex) = functor((LinearMapDom, LinearMap), ex, generators=d)
 
+Random.seed!(1) # Set seed to avoid sporadic test failures.
 n = 4
 m = 3
 x = ones(Float64, n)
