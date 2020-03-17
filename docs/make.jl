@@ -37,6 +37,7 @@ makedocs(
   format      = Documenter.HTML(),
   sitename    = "Catlab.jl",
   doctest     = false,
+  checkdocs   = :none,
   pages       = Any[
     "Catlab.jl" => "index.md",
     "Vignettes" => Any[
