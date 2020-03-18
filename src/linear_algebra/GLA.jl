@@ -1,6 +1,7 @@
 module GraphicalLinearAlgebra
 export LinearFunctions, FreeLinearFunctions, LinearRelations,
   FreeLinearRelations, LinearMapDom, LinearMap,
+  LinearOpDom, LinearOperator,
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, braid,
   dagger, dunit, docunit, mcopy, Δ, delete, ◊, mmerge, ∇, create, □,
   pplus, zero, coplus, cozero, plus, +, meet, top, join, bottom,
@@ -12,7 +13,8 @@ using LinearMaps
 import LinearMaps: adjoint
 const LMs = LinearMaps
 using LinearOperators
-import LinearOperators: adjoint
+import LinearOperators: 
+  adjoint, opEye, opExtension, opRestriction, opZeros
 const LOs = LinearOperators
 
 using ...Catlab, ...Doctrines
@@ -173,21 +175,21 @@ end
   codom(f::LinearOperator) = LinearOpDom(size(f,1))
 
   compose(f::LinearOperator, g::LinearOperator) = g*f
-  id(V::LinearOpDom) = LOs.opEye(V.N)
+  id(V::LinearOpDom) = opEye(V.N)
 
   oplus(V::LinearOpDom, W::LinearOpDom) = LinearOpDom(V.N + W.N)
   oplus(f::LinearOperator, g::LinearOperator) = oplus_lo(f, g)
   mzero(::Type{LinearOpDom}) = LinearOpDom(0)
   braid(V::LinearOpDom, W::LinearOpDom) = braid_lo(V.N, W.N)
   mcopy(V::LinearOpDom) =
-    LOs.opExtension(1:V.N, V.N*2)+LOs.opExtension((V.N+1):(V.N*2), V.N*2)
-  delete(V::LinearOpDom) = LOs.opZeros(0, V.N)
+    opExtension(1:V.N, V.N*2)+opExtension((V.N+1):(V.N*2), V.N*2)
+  delete(V::LinearOpDom) = opZeros(0, V.N)
   plus(V::LinearOpDom) =
-    LOs.opRestriction(1:V.N, V.N*2)+LOs.opRestriction((V.N+1):(V.N*2), V.N*2)
-  zero(V::LinearOpDom) = LOs.opZeros(V.N, 0)
+    opRestriction(1:V.N, V.N*2)+opRestriction((V.N+1):(V.N*2), V.N*2)
+  zero(V::LinearOpDom) = opZeros(V.N, 0)
 
   plus(f::LinearOperator, g::LinearOperator) = f+g
-  scalar(V::LinearOpDom, c::Number) = LOs.opEye(typeof(c),V.N)*c
+  scalar(V::LinearOpDom, c::Number) = opEye(typeof(c),V.N)*c
   antipode(V::LinearOpDom) = scalar(V,-1)
 end
 
@@ -198,13 +200,13 @@ oplus_lo(f::LinearOperator, g::LinearOperator) = begin
   codom_f = 1:size(f,1)
   dom_g   = (size(f,2)+1):dom_total
   codom_g = (size(f,1)+1):codom_total
-  fOp = LOs.opExtension(codom_f, codom_total)*f*LOs.opRestriction(dom_f,dom_total)
-  gOp = LOs.opExtension(codom_g, codom_total)*g*LOs.opRestriction(dom_g,dom_total)
+  fOp = opExtension(codom_f, codom_total)*f*opRestriction(dom_f,dom_total)
+  gOp = opExtension(codom_g, codom_total)*g*opRestriction(dom_g,dom_total)
   fOp + gOp
 end
 braid_lo(v::Int, w::Int) = begin
-  upper = LOs.opExtension(1:w, v+w) * LOs.opRestriction((v+1):(v+w),v+w)
-  lower = LOs.opExtension((w+1):(v+w), v+w) * LOs.opRestriction(1:v,v+w)
+  upper = opExtension(1:w, v+w) * opRestriction((v+1):(v+w),v+w)
+  lower = opExtension((w+1):(v+w), v+w) * opRestriction(1:v,v+w)
   upper + lower
 end
 
