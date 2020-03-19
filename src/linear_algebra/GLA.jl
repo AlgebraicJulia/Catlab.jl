@@ -180,12 +180,12 @@ end
   oplus(V::LinearOpDom, W::LinearOpDom) = LinearOpDom(V.N + W.N)
   oplus(f::LinearOperator, g::LinearOperator) = oplus_lo(f, g)
   mzero(::Type{LinearOpDom}) = LinearOpDom(0)
-  braid(V::LinearOpDom, W::LinearOpDom) = braid_lo(V.N, W.N)
+  braid(V::LinearOpDom, W::LinearOpDom) = braid_lo(LinearOperator, V.N, W.N)
   mcopy(V::LinearOpDom) =
-    opExtension(1:V.N, V.N*2)+opExtension((V.N+1):(V.N*2), V.N*2)
+    opExtension(1:V.N, 2*V.N)+opExtension((V.N+1):(2*V.N), 2*V.N)
   delete(V::LinearOpDom) = opZeros(0, V.N)
   plus(V::LinearOpDom) =
-    opRestriction(1:V.N, V.N*2)+opRestriction((V.N+1):(V.N*2), V.N*2)
+    opRestriction(1:V.N, 2*V.N)+opRestriction((V.N+1):(2*V.N), 2*V.N)
   zero(V::LinearOpDom) = opZeros(V.N, 0)
 
   plus(f::LinearOperator, g::LinearOperator) = f+g
@@ -204,7 +204,7 @@ oplus_lo(f::LinearOperator, g::LinearOperator) = begin
   gOp = opExtension(codom_g, codom_total)*g*opRestriction(dom_g,dom_total)
   fOp + gOp
 end
-braid_lo(v::Int, w::Int) = begin
+braid_lo(::Type{LinearOperator}, v::Int, w::Int) = begin
   upper = opExtension(1:w, v+w) * opRestriction((v+1):(v+w),v+w)
   lower = opExtension((w+1):(v+w), v+w) * opRestriction(1:v,v+w)
   upper + lower
