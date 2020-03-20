@@ -13,7 +13,7 @@ using LinearMaps
 import LinearMaps: adjoint
 const LMs = LinearMaps
 using LinearOperators
-import LinearOperators: 
+import LinearOperators:
   adjoint, opEye, opExtension, opRestriction, opZeros
 const LOs = LinearOperators
 
@@ -180,7 +180,9 @@ end
   oplus(V::LinearOpDom, W::LinearOpDom) = LinearOpDom(V.N + W.N)
   oplus(f::LinearOperator, g::LinearOperator) = oplus_lo(f, g)
   mzero(::Type{LinearOpDom}) = LinearOpDom(0)
-  braid(V::LinearOpDom, W::LinearOpDom) = braid_lo(LinearOperator, V.N, W.N)
+  braid(V::LinearOpDom, W::LinearOpDom) =
+    opExtension(1:W.N, V.N+W.N) * opRestriction((V.N+1):(V.N+W.N),V.N+W.N) +
+    opExtension((W.N+1):(V.N+W.N), V.N+W.N) * opRestriction(1:V.N,V.N+W.N)
   mcopy(V::LinearOpDom) =
     opExtension(1:V.N, 2*V.N)+opExtension((V.N+1):(2*V.N), 2*V.N)
   delete(V::LinearOpDom) = opZeros(0, V.N)
@@ -203,11 +205,6 @@ oplus_lo(f::LinearOperator, g::LinearOperator) = begin
   fOp = opExtension(codom_f, codom_total)*f*opRestriction(dom_f,dom_total)
   gOp = opExtension(codom_g, codom_total)*g*opRestriction(dom_g,dom_total)
   fOp + gOp
-end
-braid_lo(::Type{LinearOperator}, v::Int, w::Int) = begin
-  upper = opExtension(1:w, v+w) * opRestriction((v+1):(v+w),v+w)
-  lower = opExtension((w+1):(v+w), v+w) * opRestriction(1:v,v+w)
-  upper + lower
 end
 
 
