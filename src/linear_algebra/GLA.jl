@@ -15,7 +15,6 @@ const LMs = LinearMaps
 using LinearOperators
 import LinearOperators:
   adjoint, opEye, opExtension, opRestriction, opZeros
-const LOs = LinearOperators
 
 using ...Catlab, ...Doctrines
 import ...Doctrines:
