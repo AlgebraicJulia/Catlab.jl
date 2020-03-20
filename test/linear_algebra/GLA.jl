@@ -9,6 +9,7 @@ using Catlab.LinearAlgebra.GraphicalLinearAlgebra
 import LinearAlgebra: norm, svd
 
 import LinearMaps: BlockDiagonalMap, UniformScaling
+using LinearOperators
 
 # Doctrines
 ###########
@@ -47,6 +48,7 @@ x, y = [2, 1], [7, 3, 5]
 @test scalar(dom(f),3)*x == 3*x
 @test antipode(dom(f))*x == -1*x
 @test adjoint(g)*y == g'*y
+
 
 # GMRES with LinearMaps
 #----------------------
@@ -126,6 +128,46 @@ b̂ = F(M₂)*x̂
 #b̂₂ = F(M₂)*x̂₂
 #@test norm(b̂₂-b₂) < 1e-4
 #@test norm(x̂₂-x₂) < 1e-4
+
+# LinearOps instance
+#-------------------
+
+f, g = LinearOperator([0 1; 1 0]), LinearOperator([1 2 3; 4 5 6; 7 8 9])
+h, k = LinearOperator([1 -1; -1 1; 0 1]), LinearOperator([1 1; 2 2; 3 3])
+
+x, y = [2, 1], [7, 3, 5]
+@test (f⋅f)*x == f*(f*x)
+@test (f⋅h)*x == h*(f*x)
+@test (f⊕g)*[x;y] == [f*x; g*y]
+@test braid(dom(f),dom(g)) * [x;y] == [y;x]
+
+@test mcopy(dom(f))*x == [x;x]
+@test delete(dom(f))*x == []
+@test plus(dom(f))*[x;x] == 2x
+@test zero(dom(f))*Float64[] == zero(x)
+
+@test (h+k)*x == h*x + k*x
+@test scalar(dom(f),3)*x == 3*x
+@test antipode(dom(f))*x == -1*x
+@test adjoint(g)*y == g'*y
+
+# LinearOps functor
+#------------------
+
+A, B = Ob(FreeLinearFunctions, :A, :B)
+
+f, g  = Hom(:f, A, B), Hom(:g, A, B)
+h, k  = Hom(:f, B, A), Hom(:g, B, A)
+
+fop, gop = LinearOperator([0 1 -1; -1 1 0]), LinearOperator([1 2 3; 4 5 6])
+hop, kop = LinearOperator([1 -1; -1 1; 0 1]), LinearOperator([1 1; 2 2; 3 3])
+
+d = Dict(f=>fop, h=>hop, g => gop, k => kop)
+
+F(ex)=functor((LinearOpDom, LinearOperator), ex, generators=d)
+
+@test Matrix(F(compose(f,h))*[1 1; 2 3; 4 5]) == Matrix(hop*fop*[1 1; 2 3; 4 5])
+@test Matrix(F(compose(g,k))*[1 1; 2 3; 4 5]) == Matrix(kop*gop*[1 1; 2 3; 4 5])
 
 # Catlab evaluate
 #----------------
