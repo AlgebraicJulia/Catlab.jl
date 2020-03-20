@@ -24,12 +24,15 @@ using LaTeX and wiring diagrams are visualized using
 [Graphviz](http://www.graphviz.org) or [TikZ](https://www.ctan.org/pkg/pgf).
 
 **Computer algebra system**: Catlab will serve as a computer algebra system for
-category theory. Unlike most computer algebra systems, all expressions are typed
-using fragment of dependent type theory called [generalized algebraic
+categorical algebra. Unlike most computer algebra systems, all expressions are
+typed using fragment of dependent type theory called [generalized algebraic
 theories](https://ncatlab.org/nlab/show/generalized+algebraic+theory). We will
-implement core algorithms for solving word problems and reducing expressions in
-normal form, with respect to several important doctrines, such as the doctrine
-of categories and the doctrine of symmetric monoidal categories.
+implement core algorithms for solving word problems and reducing expressions to
+normal form with respect to several important doctrines, such as those of
+categories and of symmetric monoidal categories. For computer algebra for
+classical abstract algebra, see
+[AbstractAlgebra.j](https://github.com/wbhart/AbstractAlgebra.jl) and
+[Nemo.jl](https://github.com/wbhart/Nemo.jl).
 
 ### What is Catlab not?
 
