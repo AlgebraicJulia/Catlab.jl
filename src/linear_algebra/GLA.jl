@@ -177,7 +177,17 @@ end
   id(V::LinearOpDom) = opEye(V.N)
 
   oplus(V::LinearOpDom, W::LinearOpDom) = LinearOpDom(V.N + W.N)
-  oplus(f::LinearOperator, g::LinearOperator) = oplus_lo(f, g)
+  oplus(f::LinearOperator, g::LinearOperator) = begin
+    dom_total   = size(f,2) + size(g,2)
+    codom_total = size(f,1) + size(g,1)
+    dom_f   = 1:size(f,2)
+    codom_f = 1:size(f,1)
+    dom_g   = (size(f,2)+1):dom_total
+    codom_g = (size(f,1)+1):codom_total
+    fOp = opExtension(codom_f, codom_total)*f*opRestriction(dom_f,dom_total)
+    gOp = opExtension(codom_g, codom_total)*g*opRestriction(dom_g,dom_total)
+    fOp + gOp
+  end
   mzero(::Type{LinearOpDom}) = LinearOpDom(0)
   braid(V::LinearOpDom, W::LinearOpDom) =
     opExtension(1:W.N, V.N+W.N) * opRestriction((V.N+1):(V.N+W.N),V.N+W.N) +
@@ -192,18 +202,6 @@ end
   plus(f::LinearOperator, g::LinearOperator) = f+g
   scalar(V::LinearOpDom, c::Number) = opEye(typeof(c),V.N)*c
   antipode(V::LinearOpDom) = scalar(V,-1)
-end
-
-oplus_lo(f::LinearOperator, g::LinearOperator) = begin
-  dom_total   = size(f,2) + size(g,2)
-  codom_total = size(f,1) + size(g,1)
-  dom_f   = 1:size(f,2)
-  codom_f = 1:size(f,1)
-  dom_g   = (size(f,2)+1):dom_total
-  codom_g = (size(f,1)+1):codom_total
-  fOp = opExtension(codom_f, codom_total)*f*opRestriction(dom_f,dom_total)
-  gOp = opExtension(codom_g, codom_total)*g*opRestriction(dom_g,dom_total)
-  fOp + gOp
 end
 
 
