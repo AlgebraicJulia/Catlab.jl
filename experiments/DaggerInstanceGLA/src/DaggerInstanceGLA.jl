@@ -3,7 +3,9 @@ module DaggerInstanceGLA
 import Base: +
 using AutoHashEquals
 
-export LinearMapDom, LinearMap
+export DagDom, LinearMap, MatrixThunk, matrixToThunk,
+       dom, codom, adjoint, +, compose, id, oplus, mzero,
+       braid, mcopy, delete, plus, zero, scalar, antipode
 
 using Dagger
 using LinearAlgebra
@@ -14,40 +16,45 @@ import LinearMaps: adjoint
 const LMs = LinearMaps
 
 
-@auto_hash_equals struct LinearMapDom
+@auto_hash_equals struct DagDom
   N::Int
 end
 
 struct MatrixThunk
   thunk::Thunk
-  size::Int
+  dom::Int
+  codom::Int
 end
 
-@instance LinearFunctions(LinearMapDom, MatrixThunk) begin
-  @import adjoint
+matrixToThunk(A::LinearMap) = begin
+  delayed(x->x)(A)
+end
 
-  +(f::MatrixThunk, g::MatrixThunk) = delayed(+)(f, g)
+@instance LinearFunctions(DagDom, MatrixThunk) begin
 
-  dom(f::LinearMap) = LinearMapDom(size(f,2))
-  codom(f::LinearMap) = LinearMapDom(size(f,1))
+  adjoint(f::MatrixThunk) = MatrixThunk(delayed(adjoint)(f.thunk), f.codom, f.dom)
+  +(f::MatrixThunk, g::MatrixThunk) = MatrixThunk(delayed(+)(f.thunk, g.thunk), f.dom, f.codom)
 
-  compose(f::LinearMap, g::LinearMap) = g*f
-  id(V::LinearMapDom) = LMs.UniformScalingMap(1, V.N)
+  dom(f::MatrixThunk) = f.dom
+  codom(f::MatrixThunk) = f.codom
 
-  oplus(V::LinearMapDom, W::LinearMapDom) = LinearMapDom(V.N + W.N)
-  oplus(f::LinearMap, g::LinearMap) = LMs.BlockDiagonalMap(f, g)
-  mzero(::Type{LinearMapDom}) = LinearMapDom(0)
-  braid(V::LinearMapDom, W::LinearMapDom) =
-    LinearMap(braid_lm(V.N), braid_lm(W.N), W.N+V.N, V.N+W.N)
+  compose(f::MatrixThunk, g::MatrixThunk) = MatrixThunk(delayed(*)(g.thunk,f.thunk), g.dom, f.codom)
+  id(V::DagDom) = MatrixThunk(delayed(x->x)(LMs.UniformScalingMap(1, V.N)), V.N, V.N)
 
-  mcopy(V::LinearMapDom) = LinearMap(mcopy_lm, plus_lm, 2*V.N, V.N)
-  delete(V::LinearMapDom) = LinearMap(delete_lm, zero_lm(V.N), 0, V.N)
-  plus(V::LinearMapDom) = LinearMap(plus_lm, mcopy_lm, V.N, 2*V.N)
-  zero(V::LinearMapDom) = LinearMap(zero_lm(V.N), delete_lm, V.N, 0)
+  oplus(V::DagDom, W::DagDom) = DagDom(V.N + W.N)
+  oplus(f::MatrixThunk, g::MatrixThunk) = MatrixThunk(delayed(LMs.BlockDiagonalMap)(f.thunk, g.thunk), f.dom+g.dom, f.codom+g.codom)
+  mzero(::Type{DagDom}) = DagDom(0)
+  braid(V::DagDom, W::DagDom) =
+  MatrixThunk(delayed(x->x)(LinearMap(braid_lm(V.N), braid_lm(W.N), W.N+V.N, V.N+W.N)),V.N+W.N, W.N+V.N)
 
-  plus(f::LinearMap, g::LinearMap) = f+g
-  scalar(V::LinearMapDom, c::Number) = LMs.UniformScalingMap(c, V.N)
-  antipode(V::LinearMapDom) = LMs.UniformScalingMap(-1, V.N)
+  mcopy(V::DagDom)  = MatrixThunk(delayed(x->x)(LinearMap(mcopy_lm, plus_lm, 2*V.N, V.N)), V.N, 2*V.N)
+  delete(V::DagDom) = MatrixThunk(delayed(x->x)(LinearMap(delete_lm, zero_lm(V.N), 0, V.N)), V.N, 0)
+  plus(V::DagDom)   = MatrixThunk(delayed(x->x)(LinearMap(plus_lm, mcopy_lm, V.N, 2*V.N)), 2*V.N, V.N)
+  zero(V::DagDom)   = MatrixThunk(delayed(x->x)(LinearMap(zero_lm(V.N), delete_lm, V.N, 0)), 0, V.N)
+
+  plus(f::MatrixThunk, g::MatrixThunk) = f+g
+  scalar(V::DagDom, c::Number) = MatrixThunk(delayed(x->x)(LMs.UniformScalingMap(c, V.N)), V.N, V.N)
+  antipode(V::DagDom) = scalar(V, -1)
 end
 
 braid_lm(n::Int) = x::AbstractVector -> vcat(x[n+1:end], x[1:n])
