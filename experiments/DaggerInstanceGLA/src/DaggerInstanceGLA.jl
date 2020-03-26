@@ -24,6 +24,11 @@ const LMs = LinearMaps
   N::Int
 end
 
+# This structure was created to keep track of dom and codom information.
+# This information can be updated efficiently, and keeping it here keeps
+# LinearFunctions from having to think the thunk each time the dom or codom
+# is queried
+
 struct MatrixThunk
   thunk::Thunk
   dom::Int
