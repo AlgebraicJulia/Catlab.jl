@@ -21,8 +21,8 @@ uuid = "b99e7846-7c00-51b0-8f62-c81ae34c0232"
 version = "0.5.8"
 
 [[Catlab]]
-deps = ["AutoHashEquals", "Compat", "Compose", "DataStructures", "IterativeSolvers", "JSON", "LightGraphs", "LightXML", "LinearAlgebra", "LinearMaps", "Logging", "Match", "MetaGraphs", "Parameters", "Pkg", "Reexport", "Requires", "StaticArrays", "Statistics", "Test"]
-git-tree-sha1 = "861e8ff10cb2507d444ab3d9925698bcec958c62"
+deps = ["AutoHashEquals", "Compat", "Compose", "DataStructures", "IterativeSolvers", "JSON", "LightGraphs", "LightXML", "LinearAlgebra", "LinearMaps", "LinearOperators", "Logging", "Match", "MetaGraphs", "Parameters", "Pkg", "Random", "Reexport", "Requires", "StaticArrays", "Statistics", "Test"]
+path = "/Users/abaas3/.julia/dev/Catlab"
 uuid = "134e5e36-593f-5add-ad60-77f754baafbe"
 version = "0.6.0"
 
@@ -84,6 +84,11 @@ uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 [[Distributed]]
 deps = ["Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
+
+[[FastClosures]]
+git-tree-sha1 = "acebe244d53ee1b461970f8910c235b259e772ef"
+uuid = "9aa1b823-49e4-5ca5-8b0f-3971ec8bab6a"
+version = "0.3.2"
 
 [[FileIO]]
 deps = ["Pkg"]
@@ -155,6 +160,12 @@ deps = ["LinearAlgebra", "SparseArrays"]
 git-tree-sha1 = "e204a96dbb8d49fbca24086c586734435d7bf5b5"
 uuid = "7a12625a-238d-50fd-b39a-03d52299707e"
 version = "2.6.1"
+
+[[LinearOperators]]
+deps = ["FastClosures", "LinearAlgebra", "Printf", "SparseArrays", "TimerOutputs"]
+git-tree-sha1 = "3d4043d5cc711f2fcdca545bfd4aafe5bc0b1bee"
+uuid = "5c8ed15e-5a4c-59e4-a42b-c7e8811fb125"
+version = "1.0.1"
 
 [[Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
@@ -296,13 +307,19 @@ uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [[StatsBase]]
 deps = ["DataAPI", "DataStructures", "LinearAlgebra", "Missings", "Printf", "Random", "SortingAlgorithms", "SparseArrays", "Statistics"]
-git-tree-sha1 = "19bfcb46245f69ff4013b3df3b977a289852c3a1"
+git-tree-sha1 = "a6102b1f364befdb05746f386b67c6b7e3262c45"
 uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
-version = "0.32.2"
+version = "0.33.0"
 
 [[Test]]
 deps = ["Distributed", "InteractiveUtils", "Logging", "Random"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[[TimerOutputs]]
+deps = ["Printf"]
+git-tree-sha1 = "311765af81bbb48d7bad01fb016d9c328c6ede03"
+uuid = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
+version = "0.5.3"
 
 [[TranscodingStreams]]
 deps = ["Random", "Test"]

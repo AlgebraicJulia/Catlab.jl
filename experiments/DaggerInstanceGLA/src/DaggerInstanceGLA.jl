@@ -5,12 +5,16 @@ using AutoHashEquals
 
 export DagDom, LinearMap, MatrixThunk, matrixToThunk,
        dom, codom, adjoint, +, compose, id, oplus, mzero,
-       braid, mcopy, delete, plus, zero, scalar, antipode
-
+       braid, mcopy, delete, plus, zero, scalar, antipode,
+       ⊗
 using Dagger
 using LinearAlgebra
 using Catlab.LinearAlgebra.GraphicalLinearAlgebra
-using Catlab
+using Catlab, Catlab.Doctrines
+import ...Doctrines:
+  Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, braid,
+  dagger, dunit, dcounit, mcopy, Δ, delete, ◊, mmerge, ∇, create, □,
+  plus, zero, coplus, cozero, meet, top, join, bottom
 using LinearMaps
 import LinearMaps: adjoint
 const LMs = LinearMaps
