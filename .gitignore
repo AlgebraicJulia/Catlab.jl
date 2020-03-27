@@ -8,3 +8,6 @@
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
+
+# Experiments
+experiments/*/Manifest.toml
