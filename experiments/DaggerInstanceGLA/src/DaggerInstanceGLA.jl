@@ -3,10 +3,10 @@ module DaggerInstanceGLA
 import Base: +
 using AutoHashEquals
 
-export DagDom, LinearMap, MatrixThunk, matrixToThunk,
+export DagDom, LinearMap, MatrixThunk,
        dom, codom, adjoint, +, compose, id, oplus, mzero,
        braid, mcopy, delete, plus, zero, scalar, antipode,
-       ⊗
+       ⊕
 using Dagger
 using LinearAlgebra
 using Catlab.LinearAlgebra.GraphicalLinearAlgebra
@@ -35,8 +35,8 @@ struct MatrixThunk
   codom::Int
 end
 
-matrixToThunk(A::LinearMap) = begin
-  delayed(x->x)(A)
+MatrixThunk(A::LinearMap) = begin
+  MatrixThunk(delayed(identity)(A), size(A,2), size(A,1))
 end
 
 @instance LinearFunctions(DagDom, MatrixThunk) begin
@@ -48,21 +48,21 @@ end
   codom(f::MatrixThunk) = f.codom
 
   compose(f::MatrixThunk, g::MatrixThunk) = MatrixThunk(delayed(*)(g.thunk,f.thunk), g.dom, f.codom)
-  id(V::DagDom) = MatrixThunk(delayed(x->x)(LMs.UniformScalingMap(1, V.N)), V.N, V.N)
+  id(V::DagDom) = MatrixThunk(LMs.UniformScalingMap(1, V.N))
 
   oplus(V::DagDom, W::DagDom) = DagDom(V.N + W.N)
   oplus(f::MatrixThunk, g::MatrixThunk) = MatrixThunk(delayed(LMs.BlockDiagonalMap)(f.thunk, g.thunk), f.dom+g.dom, f.codom+g.codom)
   mzero(::Type{DagDom}) = DagDom(0)
   braid(V::DagDom, W::DagDom) =
-  MatrixThunk(delayed(x->x)(LinearMap(braid_lm(V.N), braid_lm(W.N), W.N+V.N, V.N+W.N)),V.N+W.N, W.N+V.N)
+  MatrixThunk(LinearMap(braid_lm(V.N), braid_lm(W.N), W.N+V.N, V.N+W.N))
 
-  mcopy(V::DagDom)  = MatrixThunk(delayed(x->x)(LinearMap(mcopy_lm, plus_lm, 2*V.N, V.N)), V.N, 2*V.N)
-  delete(V::DagDom) = MatrixThunk(delayed(x->x)(LinearMap(delete_lm, zero_lm(V.N), 0, V.N)), V.N, 0)
-  plus(V::DagDom)   = MatrixThunk(delayed(x->x)(LinearMap(plus_lm, mcopy_lm, V.N, 2*V.N)), 2*V.N, V.N)
-  zero(V::DagDom)   = MatrixThunk(delayed(x->x)(LinearMap(zero_lm(V.N), delete_lm, V.N, 0)), 0, V.N)
+  mcopy(V::DagDom)  = MatrixThunk(LinearMap(mcopy_lm, plus_lm, 2*V.N, V.N))
+  delete(V::DagDom) = MatrixThunk(LinearMap(delete_lm, zero_lm(V.N), 0, V.N))
+  plus(V::DagDom)   = MatrixThunk(LinearMap(plus_lm, mcopy_lm, V.N, 2*V.N))
+  zero(V::DagDom)   = MatrixThunk(LinearMap(zero_lm(V.N), delete_lm, V.N, 0))
 
   plus(f::MatrixThunk, g::MatrixThunk) = f+g
-  scalar(V::DagDom, c::Number) = MatrixThunk(delayed(x->x)(LMs.UniformScalingMap(c, V.N)), V.N, V.N)
+  scalar(V::DagDom, c::Number) = MatrixThunk(LMs.UniformScalingMap(c, V.N))
   antipode(V::DagDom) = scalar(V, -1)
 end
 
