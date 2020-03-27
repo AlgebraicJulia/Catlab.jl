@@ -47,11 +47,15 @@ end
   dom(f::MatrixThunk) = f.dom
   codom(f::MatrixThunk) = f.codom
 
-  compose(f::MatrixThunk, g::MatrixThunk) = MatrixThunk(delayed(*)(g.thunk,f.thunk), g.dom, f.codom)
+  compose(f::MatrixThunk, g::MatrixThunk) = 
+    MatrixThunk(delayed(*)(g.thunk,f.thunk), g.dom, f.codom)
   id(V::DagDom) = MatrixThunk(LMs.UniformScalingMap(1, V.N))
 
   oplus(V::DagDom, W::DagDom) = DagDom(V.N + W.N)
-  oplus(f::MatrixThunk, g::MatrixThunk) = MatrixThunk(delayed(LMs.BlockDiagonalMap)(f.thunk, g.thunk), f.dom+g.dom, f.codom+g.codom)
+  oplus(f::MatrixThunk, g::MatrixThunk) = 
+    MatrixThunk(delayed((f,g)->LMs.BlockDiagonalMap(f,g))(f.thunk, g.thunk), 
+                f.dom+g.dom, f.codom+g.codom)
+  
   mzero(::Type{DagDom}) = DagDom(0)
   braid(V::DagDom, W::DagDom) =
   MatrixThunk(LinearMap(braid_lm(V.N), braid_lm(W.N), W.N+V.N, V.N+W.N))
