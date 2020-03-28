@@ -1,6 +1,9 @@
-export Preorder, ThinCategory, MonoidalThinCategory, FreePreorder,
-  FreeThinCategory, FreeMonoidalThinCategory,
-  Elt, Leq, ≤, lhs, rhs, reflexive, transitive
+export ThinCategory, FreeThinCategory,
+  ThinSymmetricMonoidalCategory, FreeThinSymmetricMonoidalCategory,
+  Preorder, FreePreorder, Elt, Leq, ≤, lhs, rhs, reflexive, transitive
+
+# Thin category
+###############
 
 """ Doctrine of *thin category*
 
@@ -13,6 +16,19 @@ end
 @syntax FreeThinCategory(ObExpr,HomExpr) ThinCategory begin
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
 end
+
+@theory SymmetricMonoidalCategory(Ob,Hom) => ThinSymmetricMonoidalCategory(Ob,Hom) begin
+  f == g ⊣ (A::Ob, B::Ob, f::Hom(A,B), g::Hom(A,B))
+end
+
+@syntax FreeThinSymmetricMonoidalCategory(ObExpr,HomExpr) ThinSymmetricMonoidalCategory begin
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f,g))
+end
+
+# Preorder
+##########
 
 """ Doctrine of *preorder*
 
@@ -36,23 +52,13 @@ end
   transitive(f::Leq, g::Leq) = associate(new(f,g; strict=true))
 end
 
-# a GAT-homomorphism between the Preorder GAT and the ThinCategory GAT
+# TODO: a GAT-homomorphism between the Preorder GAT and the ThinCategory GAT
 # this is a morphism is *Gat* the category whose objects are doctrines
 # and whose morphisms are algebraic structure preserving maps
 
-# @functor F(Preorder(Ob, Leq))::ThinCategory(Ob, Hom) begin
-#   Ob ↦ Ob
+# @functor F(Preorder(Elt, Leq))::ThinCategory(Ob, Hom) begin
+#   Elt ↦ Ob
 #   Leq ↦ Hom
 #   reflexive ↦ id
 #   transitive ↦ compose
 # end
-
-@theory SymmetricMonoidalCategory(Ob,Hom) => MonoidalThinCategory(Ob,Hom) begin
-  f == g ⊣ (A::Ob, B::Ob, f::Hom(A,B), g::Hom(A,B))
-end
-
-@syntax FreeMonoidalThinCategory(ObExpr,HomExpr) MonoidalThinCategory begin
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
-  #otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
-  #otimes(f::Hom, g::Hom) = associate(new(f,g; strict=true))
-end
