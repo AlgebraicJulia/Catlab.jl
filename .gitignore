@@ -8,3 +8,6 @@
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
+
+# Examples
+examples/*/Manifest.toml

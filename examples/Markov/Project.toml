@@ -1,0 +1,4 @@
+name = "Markov"
+uuid = "dac345a6-b16d-456a-a2c5-d9fc9368bae6"
+authors = ["Evan Patterson <evan@epatters.org>"]
+version = "0.1.0"
