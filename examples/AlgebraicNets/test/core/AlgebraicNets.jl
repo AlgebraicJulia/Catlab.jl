@@ -4,7 +4,7 @@ import Pkg
 using Test
 
 using Catlab, Catlab.WiringDiagrams.WiringLayers
-using Catlab.Experimental.AlgebraicNets
+using CompAlgebra.AlgebraicNets
 
 R = Ob(AlgebraicNet, :R)
 

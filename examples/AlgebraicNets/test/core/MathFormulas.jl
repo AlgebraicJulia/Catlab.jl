@@ -3,8 +3,8 @@ module TestMathFormulas
 using Test
 
 using Catlab.WiringDiagrams
-using Catlab.Experimental.AlgebraicNets
-using Catlab.Experimental.MathFormulas
+using CompAlgebra.AlgebraicNets
+using CompAlgebra.MathFormulas
 
 # Conversion
 ############
