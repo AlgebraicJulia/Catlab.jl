@@ -10,4 +10,4 @@
 *.jl.mem
 
 # Examples
-examples/*/Manifest.toml
+experiments/*/Manifest.toml
