@@ -164,6 +164,16 @@ function compile_block(f::AlgebraicNet.Hom{:linear}, inputs::Vector,
   Block(Expr(:(=), lhs, rhs), inputs, outputs)
 end
 
+function compile_block(f::AlgebraicNet.Hom{:constant}, inputs::Vector,
+                       state::AlgebraicNetState)::Block
+  @assert isempty(inputs)
+  outputs = genvars(state, ndims(codom(f)))
+  value = first(f)
+  value = isa(value, Symbol) ? genconst(state, value) : value
+  lhs = length(outputs) == 1 ? outputs[1] : Expr(:tuple, outputs...)
+  Block(Expr(:(=), lhs, value), inputs, outputs)
+end
+
 function compile_block(f::AlgebraicNet.Hom{:wiring}, inputs::Vector,
                        state::CompileState)::Block
   nout = ndims(codom(f))
@@ -270,6 +280,7 @@ end
 evaluate_hom(f::AlgebraicNet.Hom{:mmerge}, xs::Vector; kw...) = [.+(xs...)]
 evaluate_hom(f::AlgebraicNet.Hom{:create}, xs::Vector; kw...) = zeros(ndims(codom(f)))
 evaluate_hom(f::AlgebraicNet.Hom{:linear}, xs::Vector; kw...) = first(f) * xs
+evaluate_hom(f::AlgebraicNet.Hom{:constant}, xs::Vector; kw...) = first(f)
 
 # Display
 #########
@@ -287,12 +298,16 @@ function show_unicode(io::IO, expr::AlgebraicNet.Hom{:compose}; kw...)
 end
 
 function show_latex(io::IO, expr::AlgebraicNet.Hom{:linear}; kw...)
-  value = first(expr)
-  print(io, "\\mathop{\\mathrm{linear}}\\left[$value\\right]")
+  print(io, "\\mathop{\\mathrm{linear}}\\left[$(first(expr))\\right]")
 end
 function show_unicode(io::IO, expr::AlgebraicNet.Hom{:linear}; kw...)
-  value = first(expr)
-  print(io, "linear{$value}")
+  print(io, "linear{$(first(expr))}")
+end
+function show_latex(io::IO, expr::AlgebraicNet.Hom{:constant}; kw...)
+  print(io, first(expr))
+end
+function show_unicode(io::IO, expr::AlgebraicNet.Hom{:constant}; kw...)
+  print(io, first(expr))
 end
 
 end

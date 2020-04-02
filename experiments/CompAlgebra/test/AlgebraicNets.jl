@@ -106,7 +106,7 @@ f_comp = compile(f)
 @test f_comp(x) == @. x+1
 @test evaluate(f,x) == @. x+1
 
-f = compose(otimes(id(R),constant((1,1),otimes(R,R))), mmerge(R,3))
+f = compose(otimes(id(R),constant([1,1],otimes(R,R))), mmerge(R,3))
 f_comp = compile(f)
 @test f_comp(x) ≈ @. x+2
 @test evaluate(f,x) ≈ @. x+2
