@@ -8,7 +8,7 @@ const generated_dir = joinpath(@__DIR__, "src", "generated")
 using Catlab,
   # Must explicitly load all submodules for which docs are needed.
   Catlab.Doctrines, Catlab.WiringDiagrams, Catlab.Graphics,
-  Catlab.Programs, Catlab.LinearAlgebra, Catlab.Experimental
+  Catlab.Programs, Catlab.LinearAlgebra
 
 @info "Building Literate.jl docs"
 
@@ -49,9 +49,6 @@ makedocs(
         "generated/graphics/composejl_wiring_diagrams.md",
         "generated/graphics/graphviz_wiring_diagrams.md",
         "generated/graphics/tikz_wiring_diagrams.md",
-      ],
-      "Experimental features" => Any[
-        "generated/experimental/algebraic_nets.md",
       ],
     ],
     "Modules" => Any[
