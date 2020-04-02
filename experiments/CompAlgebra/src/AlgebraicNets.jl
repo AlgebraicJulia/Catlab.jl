@@ -267,7 +267,7 @@ function evaluate_hom(f::AlgebraicNet.Hom{:wiring}, xs::Vector; kw...)
   ys
 end
 
-evaluate_hom(f::AlgebraicNet.Hom{:mmerge}, xs::Vector; kw...) = [reduce(+, xs)]
+evaluate_hom(f::AlgebraicNet.Hom{:mmerge}, xs::Vector; kw...) = [.+(xs...)]
 evaluate_hom(f::AlgebraicNet.Hom{:create}, xs::Vector; kw...) = zeros(ndims(codom(f)))
 evaluate_hom(f::AlgebraicNet.Hom{:linear}, xs::Vector; kw...) = first(f) * xs
 
