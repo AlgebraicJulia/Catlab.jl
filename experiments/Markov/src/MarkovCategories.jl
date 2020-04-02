@@ -3,9 +3,9 @@ export MarkovCategory, FreeMarkovCategory,
   Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, braid, mcopy, Δ, delete, ◊,
   expectation, 𝔼
 
-using ...GAT, ...Syntax, ...Doctrines, ...WiringDiagrams
-import ...Syntax: show_latex
-import ...Doctrines: Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, braid,
+using Catlab.GAT, Catlab.Syntax, Catlab.Doctrines, Catlab.WiringDiagrams
+import Catlab.Syntax: show_latex
+import Catlab.Doctrines: Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, braid,
   mcopy, Δ, delete, ◊
 
 # Doctrines

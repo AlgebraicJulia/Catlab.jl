@@ -13,16 +13,16 @@ export AlgebraicNetTheory, AlgebraicNet, Ob, Hom, dom, codom,
 
 using Match
 
-using ...Catlab
-using ...Meta: concat_expr
-import ...Syntax: show_latex, show_unicode
-using ...Doctrines: MonoidalCategoryWithBidiagonals, ObExpr, HomExpr
-import ...Doctrines: Ob, Hom, dom, codom,
+using Catlab
+using Catlab.Meta: concat_expr
+import Catlab.Syntax: show_latex, show_unicode
+using Catlab.Doctrines: MonoidalCategoryWithBidiagonals, ObExpr, HomExpr
+import Catlab.Doctrines: Ob, Hom, dom, codom,
   id, compose, ⋅, ∘, otimes, ⊗, munit, braid, mcopy, delete, mmerge, create
-using ...WiringDiagrams: WiringLayer
-using ...Programs
-import ...Programs: compile, compile_expr, compile_block, evaluate_hom
-import ...Programs.GenerateJuliaPrograms: genvar, genvars, to_function_expr,
+using Catlab.WiringDiagrams: WiringLayer
+using Catlab.Programs
+import Catlab.Programs: compile, compile_expr, compile_block, evaluate_hom
+import Catlab.Programs.GenerateJuliaPrograms: genvar, genvars, to_function_expr,
   generator_expr, input_exprs
 
 # Syntax

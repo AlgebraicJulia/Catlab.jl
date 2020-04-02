@@ -1,0 +1,11 @@
+name = "CompAlgebra"
+uuid = "d77033f9-55b8-43bc-9cdc-5e0578f628dc"
+authors = ["Evan Patterson <evan@epatters.org>"]
+version = "0.1.0"
+
+[deps]
+AutoHashEquals = "15f4f7f2-30c1-5605-9d31-71845cf9641f"
+Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
+Match = "7eb4fadd-790c-5f42-8a69-bfa0b872bfbf"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

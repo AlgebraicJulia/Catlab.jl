@@ -2,7 +2,7 @@ module TestMarkovCategories
 using Test
 
 using Catlab.Syntax, Catlab.WiringDiagrams
-using Catlab.Experimental.MarkovCategories
+using Markov.MarkovCategories
 
 # Doctrines
 ###########

@@ -18,11 +18,11 @@ import Base.Meta: show_sexpr
 using AutoHashEquals
 using Match
 
-using ...Catlab
-import ...Meta: strip_lines
-import ...Syntax: head, args, show_latex
-using ...WiringDiagrams
-import ...WiringDiagrams: to_wiring_diagram
+using Catlab
+import Catlab.Meta: strip_lines
+import Catlab.Syntax: head, args, show_latex
+using Catlab.WiringDiagrams
+import Catlab.WiringDiagrams: to_wiring_diagram
 
 using ..AlgebraicNets
 import ..AlgebraicNets: Ob, Hom, compose, id, dom, codom, otimes, munit, braid,
