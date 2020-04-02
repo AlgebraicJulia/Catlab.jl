@@ -1,5 +1,5 @@
 using Test
 
 @testset "Core" begin
-  include("core/MarkovCategories.jl")
+  include("MarkovCategories.jl")
 end

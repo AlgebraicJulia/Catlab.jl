@@ -1,9 +1,9 @@
 using Test
 
 @testset "AlgebraicNets" begin
-  include("core/AlgebraicNets.jl")
+  include("AlgebraicNets.jl")
 end
 
 @testset "MathFormulas.jl" begin
-  include("core/MathFormulas.jl")
+  include("MathFormulas.jl")
 end

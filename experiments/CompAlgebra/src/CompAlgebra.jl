@@ -1,6 +1,6 @@
 module CompAlgebra
 
-include("core/AlgebraicNets.jl")
-include("core/MathFormulas.jl")
+include("AlgebraicNets.jl")
+include("MathFormulas.jl")
 
 end

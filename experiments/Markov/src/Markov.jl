@@ -1,5 +1,5 @@
 module Markov
 
-include("core/MarkovCategories.jl")
+include("MarkovCategories.jl")
 
 end
