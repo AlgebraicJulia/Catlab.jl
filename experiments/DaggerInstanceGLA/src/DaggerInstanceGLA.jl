@@ -11,7 +11,7 @@ using Dagger
 using LinearAlgebra
 using Catlab.LinearAlgebra.GraphicalLinearAlgebra
 using Catlab, Catlab.Doctrines
-import ...Doctrines:
+import Catlab.Doctrines:
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, braid,
   dagger, dunit, dcounit, mcopy, Δ, delete, ◊, mmerge, ∇, create, □,
   plus, zero, coplus, cozero, meet, top, join, bottom
