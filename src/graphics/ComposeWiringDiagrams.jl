@@ -128,17 +128,21 @@ function render_box(layout::BoxLayout, opts::ComposeOptions)
   render_box(Val(layout.shape), layout, opts)
 end
 function render_box(::Val{:rectangle}, layout::BoxLayout, opts::ComposeOptions)
-  labeled_rectangle(box_label(layout.value), rounded=opts.rounded_boxes,
-    rectangle_props=box_props(layout, opts), text_props=opts.props[:text])
+  form = opts.rounded_boxes ? rounded_rectangle() : C.rectangle()
+  labeled_box(form, layout, opts)
 end
-function render_box(::Val{:circle}, layout::BoxLayout, opts::ComposeOptions)
-  labeled_circle(box_label(layout.value),
-    circle_props=box_props(layout, opts), text_props=opts.props[:text])
-end
-function render_box(::Val{:junction}, layout::BoxLayout, opts::ComposeOptions)
+render_box(::Val{:circle}, layout::BoxLayout, opts::ComposeOptions) =
+  labeled_box(C.circle(), layout, opts)
+render_box(::Val{:ellipse}, layout::BoxLayout, opts::ComposeOptions) =
+  labeled_box(C.ellipse(), layout, opts)
+render_box(::Val{:junction}, layout::BoxLayout, opts::ComposeOptions) =
   C.compose(C.context(), C.circle(), box_props(layout, opts)...)
-end
 render_box(::Val{:invisible}, ::BoxLayout, ::ComposeOptions) = C.context()
+
+function labeled_box(form::C.ComposeNode, layout::BoxLayout, opts::ComposeOptions)
+  labeled_form(form, box_label(layout.value),
+    form_props=box_props(layout, opts), text_props=opts.props[:text])
+end
 
 """ Get Compose.jl properties for box.
 """
@@ -154,26 +158,12 @@ end
 # Compose.jl forms
 ##################
 
-""" Draw a circle with text label in Compose.
+""" Draw a form with centered text label in Compose.
 """
-function labeled_circle(label::String;
-    circle_props::ComposeProperties=[], text_props::ComposeProperties=[])
+function labeled_form(form::C.ComposeNode, label::String; rounded::Bool=true,
+    form_props::ComposeProperties=[], text_props::ComposeProperties=[])
   C.compose(C.context(),
-    (C.context(order=1), C.circle(), circle_props...),
-    (C.context(order=2),
-     C.text(0.5, 0.5, label, C.hcenter, C.vcenter),
-     text_props...),
-  )
-end
-
-""" Draw a rectangle with text label in Compose.
-"""
-function labeled_rectangle(label::String; rounded::Bool=true,
-    rectangle_props::ComposeProperties=[], text_props::ComposeProperties=[])
-  C.compose(C.context(),
-    (C.context(order=1),
-     rounded ? rounded_rectangle() : C.rectangle(),
-     rectangle_props...),
+    (C.context(order=1), form, form_props...),
     (C.context(order=2),
      C.text(0.5, 0.5, label, C.hcenter, C.vcenter),
      text_props...),
