@@ -2,6 +2,7 @@
 
 \usepackage{amssymb}
 \usetikzlibrary{calc}
+\usetikzlibrary{shapes.geometric}
 \usetikzlibrary{decorations.markings}
 \begin{document}
 \begin{tikzpicture}[unit length/.code={{\newdimen\tikzunit}\setlength{\tikzunit}{#1}},unit length=4mm,x=\tikzunit,y=\tikzunit,semithick,box/.style={rectangle,draw,solid,rounded corners},outer box/.style={draw=none},wire/.style={draw,postaction={decorate},decoration={markings,mark=at position 0.5 with {\node[anchor=south] {#1};}}}]
