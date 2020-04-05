@@ -152,7 +152,7 @@ function tikz_port(diagram::WiringDiagram, port::Port, opts::TikZOptions)
     port_dir = svector(opts, port_sign(diagram, port, opts.orientation), 0)
     e2 = svector(opts, 0, 1)
     (tikz_anchor(port_dir), (e2[1]*x, e2[2]*y))
-  elseif shape in (:circle, :junction)
+  elseif shape in (:circle, :ellipse, :junction)
     (normal_angle, (0,0))
   elseif shape == :invisible
     ("center", (0,0))
@@ -283,6 +283,10 @@ const default_tikz_node_styles = Dict{String,Vector{TikZ.Property}}(
     TikZ.Property("circle"),
     TikZ.Property("draw"), TikZ.Property("solid"),
   ],
+  "elliptical box" => [
+    TikZ.Property("ellipse"),
+    TikZ.Property("draw"), TikZ.Property("solid"),
+  ],
   "triangular box" => [
     TikZ.Property("isosceles triangle"),
     TikZ.Property("isosceles triangle stretches"),
@@ -328,6 +332,7 @@ end
 const tikz_shapes = Dict(
   :rectangle => "box",
   :circle => "circular box",
+  :ellipse => "elliptical box",
   :triangle => "triangular box",
   :junction => "junction",
   :invisible => "invisible",

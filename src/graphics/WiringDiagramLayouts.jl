@@ -350,6 +350,16 @@ function layout_box(::Val{:circle}, inputs::Vector, outputs::Vector,
   size_to_fit!(singleton_diagram(box), opts)
 end
 
+function layout_box(::Val{:ellipse}, inputs::Vector, outputs::Vector,
+                    opts::LayoutOptions; pad::Bool=true, kw...)
+  size = default_box_size(length(inputs), length(outputs), opts)
+  radii = size / 2
+  box = Box(BoxLayout(; shape=:ellipse, size=size, kw...),
+            layout_elliptical_ports(InputPort, inputs, radii, opts; pad=pad),
+            layout_elliptical_ports(OutputPort, outputs, radii, opts; pad=pad))
+  size_to_fit!(singleton_diagram(box), opts)
+end
+
 function layout_box(::Val{:triangle}, inputs::Vector, outputs::Vector,
                     opts::LayoutOptions; kw...)
   @assert length(outputs) <= 1 "Cannot use triangle layout with multiple outputs"
@@ -410,8 +420,16 @@ end
 """ Lay out ports along a circular arc.
 """
 function layout_circular_ports(port_kind::PortKind, port_values::Vector,
-                               radius::Real, opts::LayoutOptions;
-                               pad::Bool=true, kw...)
+                               radius::Real, opts::LayoutOptions; kw...)
+  radii = SVector(radius, radius)
+  layout_elliptical_ports(port_kind, port_values, radii, opts; kw...)
+end
+
+""" Lay out ports along an elliptical arc.
+"""
+function layout_elliptical_ports(port_kind::PortKind, port_values::Vector,
+                                 radii::AbstractVector2D, opts::LayoutOptions;
+                                 pad::Bool=true, kw...)
   n = length(port_values)
   port_dir = svector(opts, port_sign(port_kind, opts.orientation), 0)
   θ1, θ2 = if port_dir == SVector(1,0); (π/2, -π/2)
@@ -420,7 +438,7 @@ function layout_circular_ports(port_kind::PortKind, port_values::Vector,
     elseif port_dir == SVector(0,-1); (π, 0) end
   θs = collect(pad ? range(θ1,θ2,length=n+2)[2:n+1] : range(θ1,θ2,length=n))
   dirs = [ SVector(cos(θ),-sin(θ)) for θ in θs ] # positive y-axis downwards
-  PortLayout[ layout_port(value, position=radius*dir, normal=dir; kw...)
+  PortLayout[ layout_port(value, position=radii .* dir, normal=dir; kw...)
               for (value, dir) in zip(port_values, dirs) ]
 end
 
