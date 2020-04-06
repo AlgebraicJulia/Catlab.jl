@@ -282,6 +282,14 @@ tikz_node_style(opts::TikZOptions, name::String) = @match name begin
   "triangular box" => [
     TikZ.Property("isosceles triangle"),
     TikZ.Property("isosceles triangle stretches"),
+    TikZ.Property("shape border rotate", Dict(
+      # FIXME: Match.jl doesn't work with enums.
+        LeftToRight => "0",
+        RightToLeft => "180",
+        TopToBottom => "270",
+        BottomToTop => "90",
+      )[opts.orientation]
+    ),
     TikZ.Property("draw"), TikZ.Property("solid"),
     TikZ.Property("inner sep", "0"),
     TikZ.Property(opts.rounded_boxes ? "rounded corners" : "sharp corners"),

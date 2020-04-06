@@ -131,7 +131,7 @@ to_composejl(plus(X) ⋅ mcopy(X), props=Dict(
 ))
 
 # By default, the boxes are rectangular (`:rectangle`). Other available shapes
-# include circles (`:circle`).
+# include circles (`:circle`) and ellipses (`:ellipse`).
 
 to_composejl(f⋅g, box_shape=:circle)
 
