@@ -5,6 +5,7 @@ export to_tikz, layout_to_tikz
 
 using Compat
 using DataStructures: OrderedDict
+using Match
 using Parameters
 
 using ...Syntax: GATExpr, show_latex
@@ -232,19 +233,9 @@ end
 """
 function tikz_styles(opts::TikZOptions)
   # Box style options.
-  styles = OrderedDict(
-    style => copy(default_tikz_node_styles[style])
-    for style in sort!(["outer box"; collect(opts.used_node_styles)])
-    if haskey(default_tikz_node_styles, style)
-  )
+  used = sort!(["outer box"; collect(opts.used_node_styles)])
+  styles = OrderedDict(style => tikz_node_style(opts, style) for style in used)
   libraries = [ "shapes.geometric" ] # FIXME: Should use library only if needed.
-  if opts.rounded_boxes
-    for style in ("box", "triangular box")
-      if haskey(styles, style)
-        push!(styles[style], TikZ.Property("rounded corners"))
-      end
-    end
-  end
   
   # Wire style options.
   styles["wire"] = [ TikZ.Property("draw") ]
@@ -271,43 +262,46 @@ function tikz_styles(opts::TikZOptions)
   (styles, libraries)
 end
 
-const default_tikz_node_styles = Dict{String,Vector{TikZ.Property}}(
+tikz_node_style(opts::TikZOptions, name::String) = @match name begin
   "outer box" => [
     TikZ.Property("draw", "none"),
-  ],
+  ]
   "box" => [
     TikZ.Property("rectangle"),
     TikZ.Property("draw"), TikZ.Property("solid"),
-  ],
+    TikZ.Property(opts.rounded_boxes ? "rounded corners" : "sharp corners"),
+  ]
   "circular box" => [
     TikZ.Property("circle"),
     TikZ.Property("draw"), TikZ.Property("solid"),
-  ],
+  ]
   "elliptical box" => [
     TikZ.Property("ellipse"),
     TikZ.Property("draw"), TikZ.Property("solid"),
-  ],
+  ]
   "triangular box" => [
     TikZ.Property("isosceles triangle"),
     TikZ.Property("isosceles triangle stretches"),
     TikZ.Property("draw"), TikZ.Property("solid"),
     TikZ.Property("inner sep", "0"),
-  ],
+    TikZ.Property(opts.rounded_boxes ? "rounded corners" : "sharp corners"),
+  ]
   "junction" => [
     TikZ.Property("circle"),
     TikZ.Property("draw"), TikZ.Property("fill"),
     TikZ.Property("inner sep", "0"),
-  ],
+  ]
   "variant junction" => [
     TikZ.Property("circle"),
     TikZ.Property("draw"), TikZ.Property("solid"),
     TikZ.Property("inner sep", "0"),
-  ],
+  ]
   "invisible" => [
     TikZ.Property("draw", "none"),
     TikZ.Property("inner sep", "0"),
-  ],
-)
+  ]
+  _ => TikZ.Property[]
+end
 
 function tikz_decorate_markings(marks::Vector{TikZ.Property})
   [ TikZ.Property("postaction", [ TikZ.Property("decorate") ]),
