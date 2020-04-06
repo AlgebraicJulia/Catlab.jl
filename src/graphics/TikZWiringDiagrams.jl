@@ -149,7 +149,7 @@ function tikz_port(diagram::WiringDiagram, port::Port, opts::TikZOptions)
   
   x, y = tikz_position(position(port_value(diagram, port)))
   normal_angle = tikz_angle(normal(diagram, port))
-  anchor, (x, y) = if shape in (:rectangle, :triangle)
+  anchor, (x, y) = if shape in (:rectangle, :triangle, :invtriangle)
     port_dir = svector(opts, port_sign(diagram, port, opts.orientation), 0)
     e2 = svector(opts, 0, 1)
     (tikz_anchor(port_dir), (e2[1]*x, e2[2]*y))
@@ -284,6 +284,21 @@ tikz_node_style(opts::TikZOptions, name::String) = @match name begin
     TikZ.Property("isosceles triangle stretches"),
     TikZ.Property("shape border rotate", Dict(
       # FIXME: Match.jl doesn't work with enums.
+        LeftToRight => "180",
+        RightToLeft => "0",
+        TopToBottom => "90",
+        BottomToTop => "270",
+      )[opts.orientation]
+    ),
+    TikZ.Property("draw"), TikZ.Property("solid"),
+    TikZ.Property("inner sep", "0"),
+    TikZ.Property(opts.rounded_boxes ? "rounded corners" : "sharp corners"),
+  ]
+  "inverse triangular box" => [
+    TikZ.Property("isosceles triangle"),
+    TikZ.Property("isosceles triangle stretches"),
+    TikZ.Property("shape border rotate", Dict(
+      # FIXME: Match.jl doesn't work with enums.
         LeftToRight => "0",
         RightToLeft => "180",
         TopToBottom => "270",
@@ -336,6 +351,7 @@ const tikz_shapes = Dict(
   :circle => "circular box",
   :ellipse => "elliptical box",
   :triangle => "triangular box",
+  :invtriangle => "inverse triangular box",
   :junction => "junction",
   :invisible => "invisible",
 )

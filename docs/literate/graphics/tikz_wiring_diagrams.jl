@@ -134,13 +134,15 @@ to_tikz(plus(X) ⋅ mcopy(X), styles=Dict(
 
 # By default, the boxes are rectangular (`:rectangle`). Other available shapes
 # include circles (`:circle`), ellipses (`:ellipse`), and triangles
-# (`:triangle`).
+# (`:triangle`, `:invtriangle`).
 
 to_tikz(f⋅g, box_shape=:circle)
 #-
-to_tikz(f⋅g, box_shape=:triangle, orientation=LeftToRight, rounded_boxes=false)
+to_tikz(f⋅g, box_shape=:triangle, rounded_boxes=false)
 #-
-to_tikz(f⋅g, box_shape=:triangle, orientation=TopToBottom, rounded_boxes=false)
+to_tikz(f⋅g, box_shape=:invtriangle, rounded_boxes=false)
+#-
+to_tikz(f⋅g, box_shape=:invtriangle, orientation=TopToBottom, rounded_boxes=false)
 
 # ## Output formats
 

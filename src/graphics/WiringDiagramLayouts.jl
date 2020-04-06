@@ -362,8 +362,14 @@ end
 
 function layout_box(::Val{:triangle}, inputs::Vector, outputs::Vector,
                     opts::LayoutOptions; kw...)
-  @assert length(outputs) <= 1 "Cannot use triangle layout with multiple outputs"
+  @assert length(inputs) <= 1 "Cannot use triangle shape with multiple inputs"
   layout_box(Val(:rectangle), inputs, outputs, opts; shape=:triangle, kw...)
+end
+
+function layout_box(::Val{:invtriangle}, inputs::Vector, outputs::Vector,
+                    opts::LayoutOptions; kw...)
+  @assert length(outputs) <= 1 "Cannot use invtriangle shape with multiple outputs"
+  layout_box(Val(:rectangle), inputs, outputs, opts; shape=:invtriangle, kw...)
 end
 
 function layout_box(::Val{:junction}, inputs::Vector, outputs::Vector,
