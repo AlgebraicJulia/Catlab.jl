@@ -262,68 +262,70 @@ function tikz_styles(opts::TikZOptions)
   (styles, libraries)
 end
 
-tikz_node_style(opts::TikZOptions, name::String) = @match name begin
-  "outer box" => [
-    TikZ.Property("draw", "none"),
-  ]
-  "box" => [
-    TikZ.Property("rectangle"),
-    TikZ.Property("draw"), TikZ.Property("solid"),
-    TikZ.Property(opts.rounded_boxes ? "rounded corners" : "sharp corners"),
-  ]
-  "circular box" => [
-    TikZ.Property("circle"),
-    TikZ.Property("draw"), TikZ.Property("solid"),
-  ]
-  "elliptical box" => [
-    TikZ.Property("ellipse"),
-    TikZ.Property("draw"), TikZ.Property("solid"),
-  ]
-  "triangular box" => [
-    TikZ.Property("isosceles triangle"),
-    TikZ.Property("isosceles triangle stretches"),
-    TikZ.Property("shape border rotate", Dict(
-      # FIXME: Match.jl doesn't work with enums.
-        LeftToRight => "180",
-        RightToLeft => "0",
-        TopToBottom => "90",
-        BottomToTop => "270",
-      )[opts.orientation]
-    ),
-    TikZ.Property("draw"), TikZ.Property("solid"),
-    TikZ.Property("inner sep", "0"),
-    TikZ.Property(opts.rounded_boxes ? "rounded corners" : "sharp corners"),
-  ]
-  "inverse triangular box" => [
-    TikZ.Property("isosceles triangle"),
-    TikZ.Property("isosceles triangle stretches"),
-    TikZ.Property("shape border rotate", Dict(
-      # FIXME: Match.jl doesn't work with enums.
-        LeftToRight => "0",
-        RightToLeft => "180",
-        TopToBottom => "270",
-        BottomToTop => "90",
-      )[opts.orientation]
-    ),
-    TikZ.Property("draw"), TikZ.Property("solid"),
-    TikZ.Property("inner sep", "0"),
-    TikZ.Property(opts.rounded_boxes ? "rounded corners" : "sharp corners"),
-  ]
-  "junction" => [
-    TikZ.Property("circle"),
-    TikZ.Property("draw"), TikZ.Property("fill"),
-    TikZ.Property("inner sep", "0"),
-  ]
-  "variant junction" => [
-    TikZ.Property("circle"),
-    TikZ.Property("draw"), TikZ.Property("solid"),
-    TikZ.Property("inner sep", "0"),
-  ]
-  "invisible" => [
-    TikZ.Property("draw", "none"),
-    TikZ.Property("inner sep", "0"),
-  ]
-  _ => TikZ.Property[]
+""" Get default TikZ style for given kind of node.
+"""
+function tikz_node_style(opts::TikZOptions, name::String)
+  rounded = TikZ.Property(opts.rounded_boxes ? "rounded corners" : "sharp corners")
+  @match name begin
+    "outer box" => [
+      TikZ.Property("draw", "none"),
+    ]
+    "box" => [
+      TikZ.Property("rectangle"),
+      TikZ.Property("draw"), TikZ.Property("solid"), rounded,
+    ]
+    "circular box" => [
+      TikZ.Property("circle"),
+      TikZ.Property("draw"), TikZ.Property("solid"),
+    ]
+    "elliptical box" => [
+      TikZ.Property("ellipse"),
+      TikZ.Property("draw"), TikZ.Property("solid"),
+    ]
+    "triangular box" => [
+      TikZ.Property("isosceles triangle"),
+      TikZ.Property("isosceles triangle stretches"),
+      TikZ.Property("shape border rotate", Dict(
+        # FIXME: Match.jl doesn't work with enums.
+          LeftToRight => "180",
+          RightToLeft => "0",
+          TopToBottom => "90",
+          BottomToTop => "270",
+        )[opts.orientation]
+      ),
+      TikZ.Property("draw"), TikZ.Property("solid"), rounded,
+      TikZ.Property("inner sep", "0"),
+    ]
+    "inverse triangular box" => [
+      TikZ.Property("isosceles triangle"),
+      TikZ.Property("isosceles triangle stretches"),
+      TikZ.Property("shape border rotate", Dict(
+        # FIXME: Match.jl doesn't work with enums.
+          LeftToRight => "0",
+          RightToLeft => "180",
+          TopToBottom => "270",
+          BottomToTop => "90",
+        )[opts.orientation]
+      ),
+      TikZ.Property("draw"), TikZ.Property("solid"), rounded,
+      TikZ.Property("inner sep", "0"),
+    ]
+    "junction" => [
+      TikZ.Property("circle"),
+      TikZ.Property("draw"), TikZ.Property("fill"),
+      TikZ.Property("inner sep", "0"),
+    ]
+    "variant junction" => [
+      TikZ.Property("circle"),
+      TikZ.Property("draw"), TikZ.Property("solid"),
+      TikZ.Property("inner sep", "0"),
+    ]
+    "invisible" => [
+      TikZ.Property("draw", "none"),
+      TikZ.Property("inner sep", "0"),
+    ]
+    _ => TikZ.Property[]
+  end
 end
 
 function tikz_decorate_markings(marks::Vector{TikZ.Property})
