@@ -149,7 +149,8 @@ function tikz_port(diagram::WiringDiagram, port::Port, opts::TikZOptions)
   
   x, y = tikz_position(position(port_value(diagram, port)))
   normal_angle = tikz_angle(normal(diagram, port))
-  anchor, (x, y) = if shape in (:rectangle, :triangle, :invtriangle)
+  anchor, (x, y) = if shape in (:rectangle, :triangle, :invtriangle,
+                                :trapezium, :invtrapezium)
     port_dir = svector(opts, port_sign(diagram, port, opts.orientation), 0)
     e2 = svector(opts, 0, 1)
     (tikz_anchor(port_dir), (e2[1]*x, e2[2]*y))
@@ -300,7 +301,6 @@ function tikz_node_style(opts::TikZOptions, name::String)
       TikZ.Property("isosceles triangle"),
       TikZ.Property("isosceles triangle stretches"),
       TikZ.Property("shape border rotate", Dict(
-        # FIXME: Match.jl doesn't work with enums.
           LeftToRight => "0",
           RightToLeft => "180",
           TopToBottom => "270",
@@ -309,6 +309,30 @@ function tikz_node_style(opts::TikZOptions, name::String)
       ),
       TikZ.Property("draw"), TikZ.Property("solid"), rounded,
       TikZ.Property("inner sep", "0"),
+    ]
+    "trapezoidal box" => [
+      TikZ.Property("trapezium"), TikZ.Property("trapezium angle", "80"),
+      TikZ.Property("trapezium stretches body"),
+      TikZ.Property("shape border rotate", Dict(
+          LeftToRight => "90",
+          RightToLeft => "270",
+          TopToBottom => "0",
+          BottomToTop => "180",
+        )[opts.orientation]
+      ),
+      TikZ.Property("draw"), TikZ.Property("solid"), rounded,
+    ]
+    "inverse trapezoidal box" => [
+      TikZ.Property("trapezium"), TikZ.Property("trapezium angle", "80"),
+      TikZ.Property("trapezium stretches body"),
+      TikZ.Property("shape border rotate", Dict(
+          LeftToRight => "270",
+          RightToLeft => "90",
+          TopToBottom => "180",
+          BottomToTop => "0",
+        )[opts.orientation]
+      ),
+      TikZ.Property("draw"), TikZ.Property("solid"), rounded,
     ]
     "junction" => [
       TikZ.Property("circle"),
@@ -354,6 +378,8 @@ const tikz_shapes = Dict(
   :ellipse => "elliptical box",
   :triangle => "triangular box",
   :invtriangle => "inverse triangular box",
+  :trapezium => "trapezoidal box",
+  :invtrapezium => "inverse trapezoidal box",
   :junction => "junction",
   :invisible => "invisible",
 )

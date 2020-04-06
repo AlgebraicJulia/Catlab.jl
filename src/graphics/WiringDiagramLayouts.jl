@@ -365,11 +365,21 @@ function layout_box(::Val{:triangle}, inputs::Vector, outputs::Vector,
   @assert length(inputs) <= 1 "Cannot use triangle shape with multiple inputs"
   layout_box(Val(:rectangle), inputs, outputs, opts; shape=:triangle, kw...)
 end
-
 function layout_box(::Val{:invtriangle}, inputs::Vector, outputs::Vector,
                     opts::LayoutOptions; kw...)
   @assert length(outputs) <= 1 "Cannot use invtriangle shape with multiple outputs"
   layout_box(Val(:rectangle), inputs, outputs, opts; shape=:invtriangle, kw...)
+end
+
+# Although `trapezoid` is the standard term in North American English,
+# we use the term `trapezium` because both Graphviz and TikZ do. 
+function layout_box(::Val{:trapezium}, inputs::Vector, outputs::Vector,
+                    opts::LayoutOptions; kw...)
+  layout_box(Val(:rectangle), inputs, outputs, opts; shape=:trapezium, kw...)
+end
+function layout_box(::Val{:invtrapezium}, inputs::Vector, outputs::Vector,
+                    opts::LayoutOptions; kw...)
+  layout_box(Val(:rectangle), inputs, outputs, opts; shape=:invtrapezium, kw...)
 end
 
 function layout_box(::Val{:junction}, inputs::Vector, outputs::Vector,
