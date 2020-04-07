@@ -80,7 +80,8 @@ end
 """
 function tikz_box(diagram::WiringDiagram, vpath::Vector{Int}, opts::TikZOptions)
   TikZ.Statement[
-    tikz_node(diagram.value, opts, name=box_id(vpath), style="outer box");
+    tikz_node(diagram.value, opts, name=box_id(vpath),
+              content="", style="outer box");
     reduce(vcat, [ tikz_box(box(diagram, v), [vpath; v], opts)
                    for v in box_ids(diagram) ], init=[]);
     [ tikz_edge(diagram, wire, opts) for wire in wires(diagram) ];
@@ -94,11 +95,15 @@ function tikz_box(box::AbstractBox, vpath::Vector{Int}, opts::TikZOptions)
 end
 
 function tikz_node(layout::BoxLayout, opts::TikZOptions;
-    name::Union{String,Nothing}=nothing,
+    name::Union{String,Nothing}=nothing, content::Union{String,Nothing}=nothing,
     style::Union{String,Nothing}=nothing)::TikZ.Node
-  style = isnothing(style) ? tikz_node_style(layout, opts) : style
-  content = layout.shape in (:junction, :invisible) ? "" :
-    tikz_node_label(layout.value, opts)
+  if isnothing(content)
+    content = layout.shape in (:junction, :invisible) ? "" :
+      tikz_node_label(layout.value, opts)
+  end
+  if isnothing(style)
+    style = tikz_node_style(layout, opts)
+  end
   TikZ.Node(name,
     props=[TikZ.Property(style); tikz_size(layout.size)],
     coord=tikz_coordinate(layout.position),
