@@ -3,16 +3,16 @@ module DaggerAMC
 import Base: +
 using AutoHashEquals
 
-export DagDom, ThunkArr,
+export DagDom, ThunkArr, copy,
        dom, codom, compose, id, oplus, mzero,
-       zero, ⊕
+       zero, ⊕, braid
        # To implement
-       # braid, mcopy, delete, plus, zero,
+       # mcopy, delete, plus, zero,
        
 using Dagger
 using LinearAlgebra
 #using Catlab.Doctrines.AdditiveMonoidal
-using Catlab, Catlab.Doctrines
+using Catlab, Catlab.Doctrines, Catlab.Programs
 import Catlab.Doctrines:
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, braid,
   dagger, dunit, dcounit, mcopy, Δ, delete, ◊, mmerge, ∇, create, □,
@@ -42,9 +42,23 @@ input_nodes(f::ThunkArr) = begin
   return input_n
 end
 
-#MatrixThunk(A::LinearMap) = begin
-#  MatrixThunk(delayed(identity)(A), size(A,2), size(A,1))
-#end
+copy(A::ThunkArr) = begin
+  n_thunks = [Thunk(x.f, x.inputs...) for x in A.thunks]
+  n_input = A.input
+  n_output = A.output
+  ThunkArr(n_input, n_output, n_thunks)
+end
+
+ThunkArr(A::AbstractArray) = begin
+  id_thunks = [delayed(identity)(A[x]) for x in 1:length(A)[1]]
+  id_input = []
+  id_output = Array(1:length(A))
+  ThunkArr(id_input, id_output, id_thunks) 
+end
+
+ThunkArr(A) = begin
+  ThunkArr([A])
+end
 
 @instance AdditiveSymmetricMonoidalCategory(DagDom, ThunkArr) begin
   zero(V::DagDom)   = DagDom(0) 
@@ -54,31 +68,37 @@ end
   
   compose(f::ThunkArr,g::ThunkArr) = begin
     add_ind   = (x,n) -> x+n
-    n_output  = add_ind.(f.output,size(g.thunks)[1])
-    n_input   = g.input
+    cf = f
+    cg = g
+    n_output  = add_ind.(cf.output,size(cg.thunks)[1])
+    n_input   = cg.input
     # f_inputs stores what thunks will be passed in from g
-    f_inputs  = Dict(x => Array{Thunk}(undef, length(f.thunks[x].inputs)) for x in input_nodes(f))
+    f_inputs  = Dict(x => Array{Thunk}(undef, length(cf.thunks[x].inputs)) for x in input_nodes(cf))
     # Fill out the values that will be passed in from g
-    for port_num in 1:length(f.input)
-      port = f.input[port_num]
-      g_node = g.thunks[g.output[port_num]]
+    for port_num in 1:length(cf.input)
+      port = cf.input[port_num]
+      g_node = cg.thunks[cg.output[port_num]]
       f_inputs[port[1]][port[2]] = g_node
     end
     for (key,g_in) in f_inputs
-      f.thunks[key].inputs = Tuple(g_in)
+      cf.thunks[key].inputs = Tuple(g_in)
     end
 
-    n_thunks = vcat(g.thunks,f.thunks)
+    n_thunks = vcat(cg.thunks,cf.thunks)
     ThunkArr(n_input, n_output, n_thunks)
   end
 
   oplus(V::DagDom, W::DagDom) = DagDom(V.N + W.N)
+
+  # Make copies of thunks to keep from variable interference
   oplus(f::ThunkArr, g::ThunkArr) = begin
     add_tup = (x,n) -> (x[1]+n,x[2])
     add_ind = (x,n) -> x+n
-    n_thunks  = vcat(f.thunks, g.thunks)
-    n_input   = vcat(f.input, add_tup.(g.input,size(f.thunks)[1]))
-    n_output  = vcat(f.output, add_ind.(g.output,size(f.thunks)[1]))
+    cf = f
+    cg = g
+    n_thunks  = vcat(cf.thunks, cg.thunks)
+    n_input   = vcat(cf.input, add_tup.(cg.input,size(cf.thunks)[1]))
+    n_output  = vcat(cf.output, add_ind.(cg.output,size(cf.thunks)[1]))
     ThunkArr(n_input, n_output, n_thunks)
   end
   
@@ -91,7 +111,9 @@ end
   end
 
   braid(V::DagDom, W::DagDom) = begin
-    # Next to be implemented
+    vw_id = id(V.N + W.N)
+    vw_id.output = vcat(vw_id.output[V.N+1:end],vw_id.output[1:V.N])
+    return vw_id
   end
 
   #adjoint(f::MatrixThunk) = MatrixThunk(delayed(adjoint)(f.thunk), f.codom, f.dom)
