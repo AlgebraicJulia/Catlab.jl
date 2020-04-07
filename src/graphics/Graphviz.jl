@@ -110,19 +110,14 @@ For bindings to the Graphviz C API, see the the package
 [GraphViz.jl](https://github.com/Keno/GraphViz.jl). At the time of this writing,
 GraphViz.jl is unmaintained.
 """
-function run_graphviz(graph::Graph; prog::String="dot", format::String="json0")
-  gv = open(`$prog -T$format`, "r+")
-  pprint(gv.in, graph)
-  close(gv.in)
-  result = read(gv.out, String)
-  if !success(gv)
-    error("Graphviz $prog failed with exit code $(gv.exitcode) and signal $(gv.termsignal)")
+function run_graphviz(io::IO, graph::Graph; prog::String="dot", format::String="json0")
+  open(`$prog -T$format`, io, write=true) do gv
+    pprint(gv, graph)
   end
-  result
 end
 
 function Base.show(io::IO, ::MIME"image/svg+xml", graph::Graph)
-  println(io, run_graphviz(graph, format="svg"))
+  run_graphviz(io, graph, format="svg")
 end
 
 # MetaGraphs
