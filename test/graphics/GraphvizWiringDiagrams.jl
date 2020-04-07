@@ -5,7 +5,7 @@ import JSON
 
 using Catlab.WiringDiagrams, Catlab.Graphics
 import Catlab.Graphics: Graphviz
-using Catlab.Graphics.WiringDiagramLayouts: BoxLayout, PortLayout
+using Catlab.Graphics.WiringDiagramLayouts: position, normal
 
 # Drawing
 #########
@@ -75,9 +75,16 @@ doc = open(JSON.parse,
 graph = Graphviz.parse_graphviz(doc, multigraph=true)
 layout = graphviz_layout(diagram, graph)
 
-# Just a few sanity checks.
-@test WiringDiagrams.graph(diagram) == WiringDiagrams.graph(layout)
-@test all(box.value isa BoxLayout for box in boxes(layout))
-@test all(p isa PortLayout for p in [input_ports(layout); output_ports(layout)])
+# Is original data preserved?
+values(xs) = map(x -> x.value, xs)
+@test WiringDiagrams.graph(layout) == WiringDiagrams.graph(diagram)
+@test values(input_ports(layout)) == input_ports(diagram)
+@test values(output_ports(layout)) == output_ports(diagram)
+@test values(values(boxes(layout))) == values(boxes(diagram))
+
+# Basic geometry.
+positions = map(position, boxes(layout))
+@test positions[1][1] < positions[2][1]
+@test positions[1][2] < positions[3][2]
 
 end

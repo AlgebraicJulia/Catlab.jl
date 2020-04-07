@@ -376,6 +376,10 @@ end
 ########
 
 """ Lay out wiring diagram using Graphviz.
+
+Note: At this time, only the positions and sizes of the boxes, and the positions
+of the outer ports, are used. The positions of the box ports and the splines for
+the wires are ignored.
 """
 function graphviz_layout(diagram::WiringDiagram; kw...)
   graph = to_graphviz(diagram; kw...)
@@ -389,30 +393,30 @@ function graphviz_layout(diagram::WiringDiagram, graph::MetaDiGraph)
   # centered origin and positive y-axis pointing downwards.
   orientation = inverse_rank_dirs[get_prop(graph, :rankdir)]
   bounds, pad = get_prop(graph, :bounds), get_prop(graph, :pad)
-  transform_point(p) = SVector(p[1] + pad[1], bounds[2] - p[2] + pad[2])
+  diagram_size = bounds + 2*pad
+  transform_point(p) = SVector(1,-1) .* (p - diagram_size/2)
   
   # Assumes vertices are in same order as created by `to_graphviz`:
   # 1. Input ports of outer box
   nin, nout = length(input_ports(diagram)), length(output_ports(diagram))
-  normal = svector(orientation, +1.0, 0.0)
+  main_dir = svector(orientation, 1.0, 0.0)
   inputs = map(enumerate(input_ports(diagram))) do (i, value)
     attrs = props(graph, i)
     pos = transform_point(attrs[:position])
-    PortLayout(; value=value, position=pos, normal=normal)
+    PortLayout(; value=value, position=pos, normal=main_dir)
   end
   
   # 2. Output ports of outer box
-  normal = svector(orientation, -1.0, 0.0)
   outputs = map(enumerate(output_ports(diagram))) do (i, value)
     attrs = props(graph, nin + i)
     pos = transform_point(attrs[:position])
-    PortLayout(; value=value, position=pos, normal=normal)
+    PortLayout(; value=value, position=pos, normal=-main_dir)
   end
   
   # 3. Inner boxes
-  # FIXME: Use port positions from Graphviz layout. Obtain these from either
+  # TODO: Use port positions from Graphviz layout. Obtain these from either
   # the HTML label or, more likely, an incident edge.
-  layout = WiringDiagram(BoxLayout(size=bounds+2*pad), inputs, outputs)
+  layout = WiringDiagram(BoxLayout(size=diagram_size), inputs, outputs)
   for (i, box) in enumerate(boxes(diagram))
     attrs = props(graph, nin + nout + i)
     shape = Symbol(get(attrs, :shape, :ellipse))
@@ -426,12 +430,14 @@ function graphviz_layout(diagram::WiringDiagram, graph::MetaDiGraph)
     ))    
   end
   
-  # FIXME: Use spline points from Graphviz edge layout.
+  # TODO: Use spline points from Graphviz edge layout.
   add_wires!(layout, wires(diagram))  
   layout
 end
 
 """ Lay out ports linearly, equispaced along a rectangular box. 
+
+FIXME: Should this be in `WiringDiagramLayouts` as an alternative layout method?
 """
 function layout_linear_ports(port_kind::PortKind, port_values::Vector, 
                              box_size::StaticVector{2}, orientation::LayoutOrientation)
