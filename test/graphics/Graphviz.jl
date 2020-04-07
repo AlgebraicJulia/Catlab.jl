@@ -14,7 +14,7 @@ using Catlab.Graphics.Graphviz
 data_path(name::String) = joinpath(@__DIR__, "data", name)
 
 # Undirected simple graph.
-doc = open(JSON.parse, data_path("simple_graph.json"), "r")
+doc = open(JSON.parse, data_path("graphviz_graph.json"), "r")
 parsed = parse_graphviz(doc)
 @test parsed isa MetaGraph
 @test nv(parsed) == 10
@@ -25,7 +25,7 @@ graph = LightGraphs.DiGraph(5)
 for (src, tgt) in ((1,2),(1,3),(1,4),(2,5),(3,5),(4,5))
   add_edge!(graph, src, tgt)
 end
-doc = open(JSON.parse, data_path("simple_digraph.json"), "r")
+doc = open(JSON.parse, data_path("graphviz_digraph.json"), "r")
 parsed = parse_graphviz(doc)
 @test parsed isa MetaDiGraph
 @test parsed.graph == graph
