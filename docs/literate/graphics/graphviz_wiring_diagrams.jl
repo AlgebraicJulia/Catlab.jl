@@ -130,7 +130,7 @@ graph = to_graphviz(compose(f,g))
 Graphviz.pprint(graph)
 
 # Catlab provides a simple wrapper around the Graphviz command-line programs.
-# For example, here the JSON output for the graph.
+# For example, here is the JSON output for the graph.
 
 import JSON
 

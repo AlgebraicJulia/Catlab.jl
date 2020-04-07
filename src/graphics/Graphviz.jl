@@ -115,6 +115,11 @@ function run_graphviz(io::IO, graph::Graph; prog::String="dot", format::String="
     pprint(gv, graph)
   end
 end
+function run_graphviz(graph::Graph; kw...)
+  io = IOBuffer()
+  run_graphviz(io, graph; kw...)
+  seekstart(io)
+end
 
 function Base.show(io::IO, ::MIME"image/svg+xml", graph::Graph)
   run_graphviz(io, graph, format="svg")
