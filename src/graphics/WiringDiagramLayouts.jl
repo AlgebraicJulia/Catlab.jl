@@ -604,7 +604,10 @@ diagram_element_label(::MIME, value) = string(value)
 diagram_element_label(::MIME, ::Nothing) = ""
 
 function diagram_element_label(::MIME"text/latex", expr::GATExpr)
-  string("\$", sprint(show_latex, expr), "\$")
+  string('$', sprint(show_latex, expr), '$')
+end
+function diagram_element_label(::MIME"text/latex", s::Union{String,Symbol})
+  string('$', s, '$')
 end
 
 end

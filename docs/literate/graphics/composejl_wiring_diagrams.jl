@@ -1,4 +1,4 @@
-# # Wiring diagrams in Compose.jl
+# # Drawing wiring diagrams in Compose.jl
 #
 #md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/graphics/composejl_wiring_diagrams.ipynb)
 #

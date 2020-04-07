@@ -7,13 +7,15 @@ References:
 """
 module Graphviz
 export Expression, Statement, Attributes, Graph, Digraph, Subgraph,
-  Node, NodeID, Edge, pprint, run_graphviz, to_graphviz
+  Node, NodeID, Edge, pprint, parse_graphviz, run_graphviz, to_graphviz
 
+using Compat
 using DataStructures: OrderedDict
 import LightGraphs, MetaGraphs
-using LightGraphs: edges, vertices, src, dst
-using MetaGraphs: get_prop, props
+using LightGraphs: add_edge!, add_vertex!, edges, vertices, src, dst
+using MetaGraphs: get_prop, props, set_prop!, set_props!
 using Parameters
+using StaticArrays: StaticVector, SVector
 
 # AST
 #####
@@ -104,27 +106,121 @@ Edge(path::Vararg{String}; attrs...) = Edge(map(NodeID, collect(path)), attrs)
 Assumes that Graphviz is installed on the local system and invokes Graphviz
 through its command-line interface.
 
-For bindings to the Graphviz C API, see the the GraphViz.jl package
-(https://github.com/Keno/GraphViz.jl). GraphViz.jl is unmaintained at the time
-of this writing.
+For bindings to the Graphviz C API, see the the package
+[GraphViz.jl](https://github.com/Keno/GraphViz.jl). At the time of this writing,
+GraphViz.jl is unmaintained.
 """
-function run_graphviz(graph::Graph; prog::String="dot", format::String="json0")
-  gv = open(`$prog -T$format`, "r+")
-  pprint(gv.in, graph)
-  close(gv.in)
-  result = read(gv.out, String)
-  if !success(gv)
-    error("Graphviz $prog failed with exit code $(gv.exitcode) and signal $(gv.termsignal)")
+function run_graphviz(io::IO, graph::Graph; prog::String="dot", format::String="json0")
+  open(`$prog -T$format`, io, write=true) do gv
+    pprint(gv, graph)
   end
-  result
+end
+function run_graphviz(graph::Graph; kw...)
+  io = IOBuffer()
+  run_graphviz(io, graph; kw...)
+  seekstart(io)
 end
 
 function Base.show(io::IO, ::MIME"image/svg+xml", graph::Graph)
-  println(io, run_graphviz(graph, format="svg"))
+  run_graphviz(io, graph, format="svg")
 end
 
 # MetaGraphs
 ############
+
+""" Parse Graphviz output in JSON format.
+
+Returns a MetaGraph with graph layout and other metadata. Each node has a
+position and size.
+
+All units are in points. Note that Graphviz has 72 points per inch.
+"""
+function parse_graphviz(doc::AbstractDict;
+                        multigraph::Bool=false)::MetaGraphs.AbstractMetaGraph
+  graph = doc["directed"] ? MetaGraphs.MetaDiGraph() : MetaGraphs.MetaGraph()
+  nsubgraphs = doc["_subgraph_cnt"] # Subgraphs are ignored.
+  
+  # Graph-level layout: bounds and padding.
+  # It seems, but is not documented, that the first two numbers in the Graphviz
+  # bounding box are always zero.
+  set_props!(graph, Dict(
+    :bounds => SVector{2}(parse_vector(doc["bb"])[3:4]),
+    :pad => 72*parse_point(get(doc, "pad", "0,0")),
+    :rankdir => get(doc, "rankdir", "TB"),
+  ))
+  
+  # Add vertex for each Graphviz node.
+  node_keys = ("id", "name", "comment", "label", "shape", "style")
+  for node in doc["objects"][nsubgraphs+1:end]
+    props = Dict{Symbol,Any}(
+      Symbol(k) => node[k] for k in node_keys if haskey(node, k))
+    props[:position] = parse_point(node["pos"])
+    props[:size] = 72*SVector(
+      parse(Float64, node["width"]),
+      parse(Float64, node["height"])
+    )
+    add_vertex!(graph, props)
+  end
+  
+  # Add edge for each Graphviz edge.
+  edge_keys = ("id", "comment", "label", "xlabel", "headlabel", "taillabel",
+               "headport", "tailport")
+  for edge in doc["edges"]
+    if get(edge, "style", nothing) == "invis"
+      # Omit invisible edges, which are used to tweak the layout in Graphviz.
+      continue
+    end
+    props = Dict{Symbol,Any}(
+      Symbol(k) => edge[k] for k in edge_keys if haskey(edge, k))
+    props[:spline] = parse_spline(edge["pos"])
+    src = edge["tail"] - nsubgraphs + 1
+    tgt = edge["head"] - nsubgraphs + 1
+    if multigraph
+      if add_edge!(graph, src, tgt)
+        set_prop!(graph, src, tgt, :edges, [props])
+      else
+        push!(get_prop(graph, src, tgt, :edges), props)
+      end
+    else
+      @assert add_edge!(graph, src, tgt, props)
+    end
+  end
+  
+  graph
+end
+
+""" Parse an array of floats in Graphviz's comma-separated format.
+"""
+parse_vector(s::AbstractString) = [ parse(Float64, x) for x in split(s, ",") ]
+
+""" Parse Graphviz point.
+
+http://www.graphviz.org/doc/info/attrs.html#k:point
+"""
+parse_point(s::AbstractString) = SVector{2}(parse_vector(s))
+
+""" Parse Graphviz spline.
+
+In Graphviz, a "spline" is a cubic B-spline of overlapping cubic Bezier curves.
+It consists of 3n+1 points, where n is the number of Bezier curves.
+
+http://www.graphviz.org/doc/info/attrs.html#k:splineType
+http://www.graphviz.org/content/how-convert-b-spline-bezier
+"""
+function parse_spline(spline::AbstractString)
+  points = StaticVector{2,Float64}[]
+  start, stop = nothing, nothing
+  for s in split(spline, " ")
+    if startswith(s, "s,"); start = parse_point(s[3:end])
+    elseif startswith(s, "e,"); stop = parse_point(s[3:end])
+    else push!(points, parse_point(s)) end
+  end
+  # Prefer explicit start or end points to the spline start and end points.
+  # Thus, endpoints may pass into the node shape but should not fall short.
+  if !isnothing(start); points[0] = start end
+  if !isnothing(stop); points[end] = stop end
+  points
+end
 
 """ Convert an attributed graph (MetaGraph) to a Graphviz graph.
 

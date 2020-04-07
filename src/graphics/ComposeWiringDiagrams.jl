@@ -41,6 +41,7 @@ const ComposeProperties = AbstractVector{<:Compose.Property}
 """ Internal data type for configurable options of Compose.jl wiring diagrams.
 """
 @with_kw_noshow struct ComposeOptions
+  base_unit::Compose.Measure = 4*C.mm
   props::AbstractDict = Dict()
   box_renderer::Function = render_box
   rounded_boxes::Bool = true
@@ -51,24 +52,24 @@ end
 
 """ Draw a wiring diagram in Compose.jl.
 """
-function to_composejl(args...;
-    base_unit::Compose.Measure = 4*C.mm, kw...)::ComposePicture
+function to_composejl(args...; kw...)::ComposePicture
   layout_kw = filter(p -> first(p) ∉ fieldnames(ComposeOptions), kw)
   diagram = layout_diagram(args...; layout_kw...)
   
   compose_kw = filter(p -> first(p) ∈ fieldnames(ComposeOptions), kw)
-  context = layout_to_composejl(diagram; compose_kw...)
-  ComposePicture(context, (base_unit .* size(diagram))...)
+  layout_to_composejl(diagram; compose_kw...)
 end
 
 """ Draw a wiring diagram in Compose.jl using the given layout.
 """
-function layout_to_composejl(diagram::WiringDiagram; props=Dict(), kw...)::Compose.Context
+function layout_to_composejl(diagram::WiringDiagram; props=Dict(), kw...)
   props = merge(default_props, props)
-  layout_to_composejl(diagram, ComposeOptions(; props=props, kw...))
+  opts = ComposeOptions(; props=props, kw...)
+  context = layout_to_context(diagram, opts)
+  ComposePicture(context, (opts.base_unit .* size(diagram))...)
 end
 
-function layout_to_composejl(diagram::WiringDiagram, opts::ComposeOptions)
+function layout_to_context(diagram::WiringDiagram, opts::ComposeOptions)
   # The origin of the Compose.jl coordinate system is in the top-left corner,
   # while the origin of wiring diagram layout is at the diagram center, so we
   # need to translate the coordinates using the `UnitBox`.
@@ -76,25 +77,25 @@ function layout_to_composejl(diagram::WiringDiagram, opts::ComposeOptions)
   C.compose(C.context(units=units, tag=:diagram),
     C.compose(C.context(tag=:boxes),
       map(boxes(diagram)) do box
-        layout_to_composejl(box, opts)
+        layout_to_context(box, opts)
       end...
     ),
     C.compose(C.context(tag=:wires),
       map(wires(diagram)) do wire
-        layout_to_composejl(diagram, wire, opts)
+        layout_to_context(diagram, wire, opts)
       end...
     ),
   )
 end
 
-function layout_to_composejl(box::Box, opts::ComposeOptions)::Compose.Context
+function layout_to_context(box::Box, opts::ComposeOptions)
   C.compose(C.context(lower_corner(box)..., size(box)...,
                       units=C.UnitBox(), tag=:box),
     opts.box_renderer(box.value, opts)
   )
 end
 
-function layout_to_composejl(diagram::WiringDiagram, wire::Wire, opts::ComposeOptions)
+function layout_to_context(diagram::WiringDiagram, wire::Wire, opts::ComposeOptions)
   src, tgt = wire.source, wire.target
   src_pos, tgt_pos = position(diagram, src), position(diagram, tgt)
   points = [ src_pos ]

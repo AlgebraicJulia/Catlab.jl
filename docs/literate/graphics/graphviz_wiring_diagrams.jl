@@ -1,4 +1,4 @@
-# # Wiring diagrams in Graphviz
+# # Drawing wiring diagrams in Graphviz
 #
 #md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/graphics/graphviz_wiring_diagrams.ipynb)
 #
@@ -130,7 +130,7 @@ graph = to_graphviz(compose(f,g))
 Graphviz.pprint(graph)
 
 # Catlab provides a simple wrapper around the Graphviz command-line programs.
-# For example, here the JSON output for the graph.
+# For example, here is the JSON output for the graph.
 
 import JSON
 

@@ -1,9 +1,14 @@
 module TestGraphvizWiringDiagrams
 
 using Test
+import JSON
 
 using Catlab.WiringDiagrams, Catlab.Graphics
 import Catlab.Graphics: Graphviz
+using Catlab.Graphics.WiringDiagramLayouts: position, normal
+
+# Drawing
+#########
 
 function stmts(graph::Graphviz.Graph, type::Type)
   [ stmt for stmt in graph.stmts if stmt isa type ]
@@ -60,5 +65,26 @@ graph = to_graphviz(otimes(f,g); anchor_outer_ports=true)
 @test stmts(graph, Graphviz.Node, :comment) == ["f","g"]
 graph = to_graphviz(otimes(f,g); anchor_outer_ports=false)
 @test stmts(graph, Graphviz.Node, :comment) == ["f","g"]
+
+# Layout
+########
+
+diagram = include(joinpath("data", "graphviz_wiring_diagram.jl"))
+doc = open(JSON.parse,
+  joinpath(@__DIR__, "data", "graphviz_wiring_diagram.json"), "r")
+graph = Graphviz.parse_graphviz(doc, multigraph=true)
+layout = graphviz_layout(diagram, graph)
+
+# Is original data preserved?
+values(xs) = map(x -> x.value, xs)
+@test WiringDiagrams.graph(layout) == WiringDiagrams.graph(diagram)
+@test values(input_ports(layout)) == input_ports(diagram)
+@test values(output_ports(layout)) == output_ports(diagram)
+@test values(values(boxes(layout))) == values(boxes(diagram))
+
+# Basic geometry.
+positions = map(position, boxes(layout))
+@test positions[1][1] < positions[2][1]
+@test positions[1][2] < positions[3][2]
 
 end

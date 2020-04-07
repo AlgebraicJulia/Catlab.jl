@@ -1,14 +1,41 @@
 module TestGraphviz
 
 using Test
+import JSON
 import LightGraphs, MetaGraphs
-using LightGraphs: add_vertex!, add_vertices!, add_edge!
-using MetaGraphs: MetaGraph, MetaDiGraph
+using LightGraphs: add_vertex!, add_vertices!, add_edge!, nv, ne
+using MetaGraphs: MetaGraph, MetaDiGraph, get_prop, props
 
 using Catlab.Graphics.Graphviz
 
-# MetaGraphs
-############
+# Graphviz to MetaGraph
+#######################
+
+data_path(name::String) = joinpath(@__DIR__, "data", name)
+
+# Undirected simple graph.
+doc = open(JSON.parse, data_path("graphviz_graph.json"), "r")
+parsed = parse_graphviz(doc)
+@test parsed isa MetaGraph
+@test nv(parsed) == 10
+@test ne(parsed) == 13
+
+# Directed simple graph
+graph = LightGraphs.DiGraph(5)
+for (src, tgt) in ((1,2),(1,3),(1,4),(2,5),(3,5),(4,5))
+  add_edge!(graph, src, tgt)
+end
+doc = open(JSON.parse, data_path("graphviz_digraph.json"), "r")
+parsed = parse_graphviz(doc)
+@test parsed isa MetaDiGraph
+@test parsed.graph == graph
+@test get_prop.([parsed], 1:nv(parsed), :name) == ["A", "B", "C", "D", "F"]
+@test get_prop(parsed, 1, :position) == [99, 162]
+@test get_prop(parsed, 1, :size) == [54, 36]
+@test get_prop(parsed, 1, 2, :spline) isa Vector
+
+# MetaGraph to Graphviz
+#######################
 
 # Undirected simple graph
 g = MetaGraph()
