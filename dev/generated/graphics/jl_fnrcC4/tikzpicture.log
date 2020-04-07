@@ -1,7 +1,7 @@
-This is LuaTeX, Version 1.0.4 (TeX Live 2017/Debian)  (format=lualatex 2020.4.6)  6 APR 2020 21:58
+This is LuaTeX, Version 1.0.4 (TeX Live 2017/Debian)  (format=lualatex 2020.4.7)  7 APR 2020 20:04
  system commands enabled.
-**./jl_USqqzT/tikzpicture.tex
-(./jl_USqqzT/tikzpicture.tex
+**./jl_fnrcC4/tikzpicture.tex
+(./jl_fnrcC4/tikzpicture.tex
 LaTeX2e <2017-04-15>
 Lua module: luaotfload-main 2017/01/29 2.80001 OpenType layout system.
 Lua module: lualibs 2017-02-01 2.5 ConTeXt Lua standard libraries.
@@ -35,7 +35,7 @@ Inserting `luaotfload.aux.set_capheight' at position 3 in `luaotfload.patch_font
 '.
 Inserting `luaotfload.rewrite_fontname' at position 4 in `luaotfload.patch_font'
 .
-luaotfload | main : initialization completed in 0.098 seconds
+luaotfload | main : initialization completed in 0.117 seconds
 Babel <3.18> and hyphenation patterns for 1 language(s) loaded.
 (/usr/share/texlive/texmf-dist/tex/latex/standalone/standalone.cls
 Document Class: standalone 2015/07/15 v1.2 Class to compile TeX sub-files standa
@@ -413,55 +413,36 @@ File: tikzlibraryshapes.geometric.code.tex 2008/01/09 v3.0.1a (rcs-revision 1.1)
 s.geometric.code.tex
 File: pgflibraryshapes.geometric.code.tex 2008/06/26 v3.0.1a (rcs-revision 1.1)
 ))
-(/usr/share/texlive/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tik
-zlibrarydecorations.markings.code.tex
-(/usr/share/texlive/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tik
-zlibrarydecorations.code.tex
-(/usr/share/texlive/texmf-dist/tex/generic/pgf/modules/pgfmoduledecorations.cod
-e.tex
-\pgfdecoratedcompleteddistance=\dimen151
-\pgfdecoratedremainingdistance=\dimen152
-\pgfdecoratedinputsegmentcompleteddistance=\dimen153
-\pgfdecoratedinputsegmentremainingdistance=\dimen154
-\pgf@decorate@distancetomove=\dimen155
-\pgf@decorate@repeatstate=\count109
-\pgfdecorationsegmentamplitude=\dimen156
-\pgfdecorationsegmentlength=\dimen157
-)
-\tikz@lib@dec@box=\box38
-)
-(/usr/share/texlive/texmf-dist/tex/generic/pgf/libraries/decorations/pgflibrary
-decorations.markings.code.tex))
 No file tikzpicture.aux.
 
 \openout1 = tikzpicture.aux
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 7.
-LaTeX Font Info:    ... okay on input line 7.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 7.
-LaTeX Font Info:    ... okay on input line 7.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 7.
-LaTeX Font Info:    ... okay on input line 7.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 7.
-LaTeX Font Info:    ... okay on input line 7.
-LaTeX Font Info:    Checking defaults for TU/lmr/m/n on input line 7.
-LaTeX Font Info:    ... okay on input line 7.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 7.
-LaTeX Font Info:    ... okay on input line 7.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 7.
-LaTeX Font Info:    ... okay on input line 7.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 6.
+LaTeX Font Info:    ... okay on input line 6.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 6.
+LaTeX Font Info:    ... okay on input line 6.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 6.
+LaTeX Font Info:    ... okay on input line 6.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 6.
+LaTeX Font Info:    ... okay on input line 6.
+LaTeX Font Info:    Checking defaults for TU/lmr/m/n on input line 6.
+LaTeX Font Info:    ... okay on input line 6.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 6.
+LaTeX Font Info:    ... okay on input line 6.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 6.
+LaTeX Font Info:    ... okay on input line 6.
 ABD: EveryShipout initializing macros
 (/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count110
-\scratchdimen=\dimen158
-\scratchbox=\box39
-\nofMPsegments=\count111
-\nofMParguments=\count112
+\scratchcounter=\count109
+\scratchdimen=\dimen151
+\scratchbox=\box38
+\nofMPsegments=\count110
+\nofMParguments=\count111
 \everyMPshowfont=\toks29
-\MPscratchCnt=\count113
-\MPscratchDim=\dimen159
-\MPnumerator=\count114
-\makeMPintoPDFobject=\count115
+\MPscratchCnt=\count112
+\MPscratchDim=\dimen152
+\MPnumerator=\count113
+\makeMPintoPDFobject=\count114
 \everyMPtoPDFconversion=\toks30
 ) (/usr/share/texlive/texmf-dist/tex/latex/oberdiek/epstopdf-base.sty
 Package: epstopdf-base 2016/05/15 v2.6 Base part for package epstopdf
@@ -506,13 +487,13 @@ Package grfext Info: Graphics extension search list:
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Live
 
 ))
-\tikzunit=\dimen160
-LaTeX Font Info:    Try loading font information for U+msa on input line 9.
+\tikzunit=\dimen153
+LaTeX Font Info:    Try loading font information for U+msa on input line 8.
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 9.
+LaTeX Font Info:    Try loading font information for U+msb on input line 8.
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
@@ -520,26 +501,26 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 ! Undefined control sequence.
 \sa@placebox ->\newpage \global \pdfpagewidth 
                                               =\wd \sa@box \global \pdfpageh...
-l.10 \end{tikzpicture}
-                    
+l.9 \end{tikzpicture}
+                   
 ? 
 ! Emergency stop.
 \sa@placebox ->\newpage \global \pdfpagewidth 
                                               =\wd \sa@box \global \pdfpageh...
-l.10 \end{tikzpicture}
-                    
+l.9 \end{tikzpicture}
+                   
 End of file on the terminal!
 
 
 
 Here is how much of LuaTeX's memory you used:
- 13472 strings out of 494480
- 100000,319454 words of node,token memory allocated 1950 words of node memory still in use:
-   30 hlist, 1 rule, 1 dir, 6 math, 76 glue, 2 kern, 3 glyph, 131 attribute, 45 
-glue_spec, 131 attribute_list, 2 if_stack, 1 write, 75 pdf_literal, 5 pdf_colors
-tack nodes
+ 13040 strings out of 494480
+ 100000,319454 words of node,token memory allocated 3545 words of node memory still in use:
+   48 hlist, 1 rule, 1 dir, 12 math, 122 glue, 5 kern, 6 glyph, 300 attribute, 4
+5 glue_spec, 300 attribute_list, 2 if_stack, 1 write, 195 pdf_literal, 5 pdf_col
+orstack nodes
    avail lists: 2:3,3:1,5:11,7:2,8:1
- 17049 multiletter control sequences out of 65536+600000
+ 16643 multiletter control sequences out of 65536+600000
  33 fonts using 1839967 bytes
- 62i,7n,69p,407b,923s stack positions out of 5000i,500n,10000p,200000b,100000s
+ 62i,7n,56p,1215b,633s stack positions out of 5000i,500n,10000p,200000b,100000s
 !  ==> Fatal error occurred, no output PDF file produced!

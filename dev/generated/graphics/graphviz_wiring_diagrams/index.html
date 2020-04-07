@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Wiring diagrams in Graphviz · Catlab.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">Catlab.jl</span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox"/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Wiring diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox" checked/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../composejl_wiring_diagrams/">Wiring diagrams in Compose.jl</a></li><li class="is-active"><a class="tocitem" href>Wiring diagrams in Graphviz</a><ul class="internal"><li><a class="tocitem" href="#Examples-1"><span>Examples</span></a></li><li><a class="tocitem" href="#Custom-styles-1"><span>Custom styles</span></a></li><li><a class="tocitem" href="#Output-formats-1"><span>Output formats</span></a></li></ul></li><li><a class="tocitem" href="../tikz_wiring_diagrams/">Wiring diagrams in TikZ</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/core/">Symbolic expressions</a></li><li><a class="tocitem" href="../../../apis/doctrines/">Doctrines</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Graphics</a></li><li class="is-active"><a href>Wiring diagrams in Graphviz</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Wiring diagrams in Graphviz</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/epatters/Catlab.jl/blob/master/docs/literate/graphics/graphviz_wiring_diagrams.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Wiring-diagrams-in-Graphviz-1"><a class="docs-heading-anchor" href="#Wiring-diagrams-in-Graphviz-1">Wiring diagrams in Graphviz</a><a class="docs-heading-anchor-permalink" href="#Wiring-diagrams-in-Graphviz-1" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/epatters/Catlab.jl/blob/gh-pages/dev/generated/graphics/graphviz_wiring_diagrams.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><p>Catlab can draw wiring diagrams using the <code>dot</code> program in <a href="https://www.graphviz.org/">Graphviz</a>. This feature requires that Graphviz be installed, but does not require any additional Julia packages.</p><pre><code class="language-julia">using Catlab.WiringDiagrams, Catlab.Graphics</code></pre><h2 id="Examples-1"><a class="docs-heading-anchor" href="#Examples-1">Examples</a><a class="docs-heading-anchor-permalink" href="#Examples-1" title="Permalink"></a></h2><h3 id="Symmetric-monoidal-category-1"><a class="docs-heading-anchor" href="#Symmetric-monoidal-category-1">Symmetric monoidal category</a><a class="docs-heading-anchor-permalink" href="#Symmetric-monoidal-category-1" title="Permalink"></a></h3><pre><code class="language-julia">using Catlab.Doctrines
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Drawing wiring diagrams in Graphviz · Catlab.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">Catlab.jl</span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox"/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Wiring diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox" checked/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li class="is-active"><a class="tocitem" href>Drawing wiring diagrams in Graphviz</a><ul class="internal"><li><a class="tocitem" href="#Examples-1"><span>Examples</span></a></li><li><a class="tocitem" href="#Custom-styles-1"><span>Custom styles</span></a></li><li><a class="tocitem" href="#Output-formats-1"><span>Output formats</span></a></li></ul></li><li><a class="tocitem" href="../tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/core/">Symbolic expressions</a></li><li><a class="tocitem" href="../../../apis/doctrines/">Doctrines</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Graphics</a></li><li class="is-active"><a href>Drawing wiring diagrams in Graphviz</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Drawing wiring diagrams in Graphviz</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/epatters/Catlab.jl/blob/master/docs/literate/graphics/graphviz_wiring_diagrams.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Drawing-wiring-diagrams-in-Graphviz-1"><a class="docs-heading-anchor" href="#Drawing-wiring-diagrams-in-Graphviz-1">Drawing wiring diagrams in Graphviz</a><a class="docs-heading-anchor-permalink" href="#Drawing-wiring-diagrams-in-Graphviz-1" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/epatters/Catlab.jl/blob/gh-pages/dev/generated/graphics/graphviz_wiring_diagrams.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><p>Catlab can draw wiring diagrams using the <code>dot</code> program in <a href="https://www.graphviz.org/">Graphviz</a>. This feature requires that Graphviz be installed, but does not require any additional Julia packages.</p><pre><code class="language-julia">using Catlab.WiringDiagrams, Catlab.Graphics</code></pre><h2 id="Examples-1"><a class="docs-heading-anchor" href="#Examples-1">Examples</a><a class="docs-heading-anchor-permalink" href="#Examples-1" title="Permalink"></a></h2><h3 id="Symmetric-monoidal-category-1"><a class="docs-heading-anchor" href="#Symmetric-monoidal-category-1">Symmetric monoidal category</a><a class="docs-heading-anchor-permalink" href="#Symmetric-monoidal-category-1" title="Permalink"></a></h3><pre><code class="language-julia">using Catlab.Doctrines
 
 A, B = Ob(FreeSymmetricMonoidalCategory, :A, :B)
 f = Hom(:f, A, B)
@@ -40,7 +40,6 @@ h = Hom(:h, otimes(A,B), otimes(A,B));</code></pre><p>To start, here are a few v
 </g>
 </g>
 </svg>
-
 <pre><code class="language-julia">to_graphviz(compose(f,g))</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
@@ -91,7 +90,6 @@ h = Hom(:h, otimes(A,B), otimes(A,B));</code></pre><p>To start, here are a few v
 </g>
 </g>
 </svg>
-
 <pre><code class="language-julia">to_graphviz(otimes(f,g))</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
@@ -153,7 +151,6 @@ h = Hom(:h, otimes(A,B), otimes(A,B));</code></pre><p>To start, here are a few v
 </g>
 </g>
 </svg>
-
 <p>In the next example, notice how Graphviz automatically &quot;untwists&quot; the double braiding to minimize edge crossings.</p><pre><code class="language-julia">to_graphviz(compose(braid(A,A), otimes(f,f), braid(B,B)))</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
@@ -215,7 +212,6 @@ h = Hom(:h, otimes(A,B), otimes(A,B));</code></pre><p>To start, here are a few v
 </g>
 </g>
 </svg>
-
 <p>Here is a larger composite morphism.</p><pre><code class="language-julia">composite = compose(otimes(g,f), h, otimes(f,g))
 to_graphviz(composite)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
@@ -327,7 +323,6 @@ to_graphviz(composite)</code></pre><?xml version="1.0" encoding="UTF-8" standalo
 </g>
 </g>
 </svg>
-
 <p>By default, the wiring diagram is laid out from top to bottom. Other layout orientations can be requested, such as left-to-right or bottom-to-top:</p><pre><code class="language-julia">to_graphviz(composite, orientation=LeftToRight)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
@@ -438,7 +433,6 @@ to_graphviz(composite)</code></pre><?xml version="1.0" encoding="UTF-8" standalo
 </g>
 </g>
 </svg>
-
 <pre><code class="language-julia">to_graphviz(composite, orientation=BottomToTop)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
@@ -549,7 +543,6 @@ to_graphviz(composite)</code></pre><?xml version="1.0" encoding="UTF-8" standalo
 </g>
 </g>
 </svg>
-
 <p>When working with very large diagrams (larger than the ones shown here), it is sometimes convenient to omit the ports of the outer box and any wires attached to them.</p><pre><code class="language-julia">to_graphviz(composite, outer_ports=false)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
@@ -626,7 +619,6 @@ to_graphviz(composite)</code></pre><?xml version="1.0" encoding="UTF-8" standalo
 </g>
 </g>
 </svg>
-
 <h3 id="Biproduct-category-1"><a class="docs-heading-anchor" href="#Biproduct-category-1">Biproduct category</a><a class="docs-heading-anchor-permalink" href="#Biproduct-category-1" title="Permalink"></a></h3><pre><code class="language-julia">A, B = Ob(FreeBiproductCategory, :A, :B)
 f = Hom(:f, A, B)
 g = Hom(:g, B, A);</code></pre><p>By default, copies and merges are drawn the way they are represented internally, as multiple wires.</p><pre><code class="language-julia">f1 = compose(mcopy(A), otimes(f,f))
@@ -689,7 +681,6 @@ to_graphviz(f1)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"
 </g>
 </g>
 </svg>
-
 <pre><code class="language-julia">f2 = compose(mcopy(A), otimes(f,f), mmerge(B))
 to_graphviz(f2)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
@@ -748,7 +739,6 @@ to_graphviz(f2)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"
 </g>
 </g>
 </svg>
-
 <p>To draw nodes for copies and merges, we need to add junctions to the wiring diagram.</p><pre><code class="language-julia">to_graphviz(add_junctions!(to_wiring_diagram(f1)))</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
@@ -821,7 +811,6 @@ to_graphviz(f2)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"
 </g>
 </g>
 </svg>
-
 <pre><code class="language-julia">to_graphviz(add_junctions!(to_wiring_diagram(f2)))</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
@@ -905,7 +894,6 @@ to_graphviz(f2)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"
 </g>
 </g>
 </svg>
-
 <h3 id="Traced-monoidal-category-1"><a class="docs-heading-anchor" href="#Traced-monoidal-category-1">Traced monoidal category</a><a class="docs-heading-anchor-permalink" href="#Traced-monoidal-category-1" title="Permalink"></a></h3><pre><code class="language-julia">A, B, X, Y = Ob(FreeTracedMonoidalCategory, :A, :B, :X, :Y)
 f = Hom(:f, otimes(X,A), otimes(X,B))
 
@@ -952,7 +940,6 @@ to_graphviz(trace(X, A, B, f))</code></pre><?xml version="1.0" encoding="UTF-8" 
 </g>
 </g>
 </svg>
-
 <pre><code class="language-julia">to_graphviz(trace(X, A, B, f), orientation=LeftToRight)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
@@ -996,7 +983,6 @@ to_graphviz(trace(X, A, B, f))</code></pre><?xml version="1.0" encoding="UTF-8" 
 </g>
 </g>
 </svg>
-
 <pre><code class="language-julia">g, h = Hom(:g, A, A), Hom(:h, B, B)
 
 trace_naturality = trace(X, A, B, compose(otimes(id(X),g), f, otimes(id(X),h)))
@@ -1071,7 +1057,6 @@ to_graphviz(trace_naturality, orientation=LeftToRight)</code></pre><?xml version
 </g>
 </g>
 </svg>
-
 <h2 id="Custom-styles-1"><a class="docs-heading-anchor" href="#Custom-styles-1">Custom styles</a><a class="docs-heading-anchor-permalink" href="#Custom-styles-1" title="Permalink"></a></h2><p>The visual appearance of wiring diagrams can be customized by setting Graphviz <a href="https://www.graphviz.org/doc/info/attrs.html">attributes</a> at the graph, node, edge, and cell levels. Graph, node, and edge attributes are described in the Graphviz documentation. Cell attributes are passed to the primary cell of the <a href="https://www.graphviz.org/doc/info/shapes.html#html">HTML-like label</a> used for the boxes.</p><pre><code class="language-julia">A, B, C = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C)
 f, g = Hom(:f, A, B), Hom(:g, B, C)
 
@@ -1143,7 +1128,6 @@ to_graphviz(compose(f,g),
 </g>
 </g>
 </svg>
-
 <h2 id="Output-formats-1"><a class="docs-heading-anchor" href="#Output-formats-1">Output formats</a><a class="docs-heading-anchor-permalink" href="#Output-formats-1" title="Permalink"></a></h2><p>The function <code>to_graphviz</code> returns an object of a type <code>Graphviz.Graph</code>, representing a Graphviz graph as an abstract syntax tree. When displayed interactively, this object is automatically run through Graphviz and rendered as an SVG image. Sometimes it is convenient to perform this process manually, to change the output format or further customize the generated dot file.</p><p>To generate a dot file, use the builtin pretty-printer. This feature does not require Graphviz to be installed.</p><pre><code class="language-julia">using Catlab.Graphics: Graphviz
 
 graph = to_graphviz(compose(f,g))
@@ -1178,7 +1162,7 @@ Graphviz.pprint(graph)</code></pre><pre><code class="language-none">digraph G {
   n1p1:s -&gt; n3:in1:n [comment=&quot;A&quot;,id=&quot;e1&quot;];
   n3:out1:s -&gt; n4:in1:n [comment=&quot;B&quot;,id=&quot;e2&quot;];
   n4:out1:s -&gt; n2p1:n [comment=&quot;C&quot;,id=&quot;e3&quot;];
-}</code></pre><p>Catlab provides a simple wrapper around the Graphviz command-line programs. For example, here the JSON output for the graph.</p><pre><code class="language-julia">import JSON
+}</code></pre><p>Catlab provides a simple wrapper around the Graphviz command-line programs. For example, here is the JSON output for the graph.</p><pre><code class="language-julia">import JSON
 
 JSON.parse(Graphviz.run_graphviz(graph, format=&quot;json0&quot;))</code></pre><pre><code class="language-none">Dict{String,Any} with 9 entries:
   &quot;name&quot;          =&gt; &quot;G&quot;
@@ -1189,4 +1173,4 @@ JSON.parse(Graphviz.run_graphviz(graph, format=&quot;json0&quot;))</code></pre><
   &quot;rankdir&quot;       =&gt; &quot;TB&quot;
   &quot;directed&quot;      =&gt; true
   &quot;edges&quot;         =&gt; Any[Dict{String,Any}(&quot;headport&quot;=&gt;&quot;in1:n&quot;,&quot;tail&quot;=&gt;2,&quot;head&quot;=…
-  &quot;_subgraph_cnt&quot; =&gt; 2</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../composejl_wiring_diagrams/">« Wiring diagrams in Compose.jl</a><a class="docs-footer-nextpage" href="../tikz_wiring_diagrams/">Wiring diagrams in TikZ »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Monday 6 April 2020 22:00">Monday 6 April 2020</span>. Using Julia version 1.4.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+  &quot;_subgraph_cnt&quot; =&gt; 2</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../composejl_wiring_diagrams/">« Drawing wiring diagrams in Compose.jl</a><a class="docs-footer-nextpage" href="../tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Tuesday 7 April 2020 20:05">Tuesday 7 April 2020</span>. Using Julia version 1.4.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
