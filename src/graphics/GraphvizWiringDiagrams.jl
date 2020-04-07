@@ -403,14 +403,14 @@ function graphviz_layout(diagram::WiringDiagram, graph::MetaDiGraph)
   inputs = map(enumerate(input_ports(diagram))) do (i, value)
     attrs = props(graph, i)
     pos = transform_point(attrs[:position])
-    PortLayout(; value=value, position=pos, normal=main_dir)
+    PortLayout(; value=value, position=pos, normal=-main_dir)
   end
   
   # 2. Output ports of outer box
   outputs = map(enumerate(output_ports(diagram))) do (i, value)
     attrs = props(graph, nin + i)
     pos = transform_point(attrs[:position])
-    PortLayout(; value=value, position=pos, normal=-main_dir)
+    PortLayout(; value=value, position=pos, normal=main_dir)
   end
   
   # 3. Inner boxes

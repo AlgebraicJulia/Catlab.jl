@@ -1,4 +1,4 @@
-# # Wiring diagrams in Graphviz
+# # Drawing wiring diagrams in Graphviz
 #
 #md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/graphics/graphviz_wiring_diagrams.ipynb)
 #

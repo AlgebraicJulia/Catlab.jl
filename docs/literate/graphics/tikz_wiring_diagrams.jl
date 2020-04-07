@@ -1,4 +1,4 @@
-# # Wiring diagrams in TikZ
+# # Drawing wiring diagrams in TikZ
 #
 #md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/graphics/tikz_wiring_diagrams.ipynb)
 #
