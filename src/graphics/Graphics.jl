@@ -4,16 +4,16 @@ using Reexport
 using Requires
 
 include("WiringDiagramLayouts.jl")
-include("ComposeWiringDiagrams.jl")
 include("Graphviz.jl")
 include("GraphvizWiringDiagrams.jl")
+include("ComposeWiringDiagrams.jl")
 include("TikZ.jl")
 include("TikZWiringDiagrams.jl")
 include("YFilesWiringDiagrams.jl")
 
 @reexport using .WiringDiagramLayouts
-@reexport using .ComposeWiringDiagrams
 @reexport using .GraphvizWiringDiagrams
+@reexport using .ComposeWiringDiagrams
 @reexport using .TikZWiringDiagrams
 @reexport using .YFilesWiringDiagrams
 

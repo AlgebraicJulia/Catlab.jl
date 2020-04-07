@@ -143,13 +143,17 @@ function parse_graphviz(doc::AbstractDict;
   # Graph-level layout: bounds and padding.
   # It seems, but is not documented, that the first two numbers in the Graphviz
   # bounding box are always zero.
-  set_prop!(graph, :bounds, SVector{2}(parse_vector(doc["bb"])[3:4]))
-  set_prop!(graph, :padding, 72*parse_point(get(doc, "pad", "0,0")))
+  set_props!(graph, Dict(
+    :bounds => SVector{2}(parse_vector(doc["bb"])[3:4]),
+    :pad => 72*parse_point(get(doc, "pad", "0,0")),
+    :rankdir => get(doc, "rankdir", "TB"),
+  ))
   
   # Add vertex for each Graphviz node.
   node_keys = ("id", "name", "comment", "label", "shape", "style")
   for node in doc["objects"][nsubgraphs+1:end]
-    props = Dict{Symbol,Any}(Symbol(k) => node[k] for k in node_keys if haskey(node, k))
+    props = Dict{Symbol,Any}(
+      Symbol(k) => node[k] for k in node_keys if haskey(node, k))
     props[:position] = parse_point(node["pos"])
     props[:size] = 72*SVector(
       parse(Float64, node["width"]),
@@ -159,13 +163,15 @@ function parse_graphviz(doc::AbstractDict;
   end
   
   # Add edge for each Graphviz edge.
-  edge_keys = ("id", "comment", "label", "xlabel", "headport", "tailport")
+  edge_keys = ("id", "comment", "label", "xlabel", "headlabel", "taillabel",
+               "headport", "tailport")
   for edge in doc["edges"]
     if get(edge, "style", nothing) == "invis"
       # Omit invisible edges, which are used to tweak the layout in Graphviz.
       continue
     end
-    props = Dict{Symbol,Any}(Symbol(k) => edge[k] for k in edge_keys if haskey(edge, k))
+    props = Dict{Symbol,Any}(
+      Symbol(k) => edge[k] for k in edge_keys if haskey(edge, k))
     props[:spline] = parse_spline(edge["pos"])
     src = edge["tail"] - nsubgraphs + 1
     tgt = edge["head"] - nsubgraphs + 1

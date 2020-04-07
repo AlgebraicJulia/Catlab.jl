@@ -1,9 +1,14 @@
 module TestGraphvizWiringDiagrams
 
 using Test
+import JSON
 
 using Catlab.WiringDiagrams, Catlab.Graphics
 import Catlab.Graphics: Graphviz
+using Catlab.Graphics.WiringDiagramLayouts: BoxLayout, PortLayout
+
+# Drawing
+#########
 
 function stmts(graph::Graphviz.Graph, type::Type)
   [ stmt for stmt in graph.stmts if stmt isa type ]
@@ -60,5 +65,19 @@ graph = to_graphviz(otimes(f,g); anchor_outer_ports=true)
 @test stmts(graph, Graphviz.Node, :comment) == ["f","g"]
 graph = to_graphviz(otimes(f,g); anchor_outer_ports=false)
 @test stmts(graph, Graphviz.Node, :comment) == ["f","g"]
+
+# Layout
+########
+
+diagram = include(joinpath("data", "graphviz_wiring_diagram.jl"))
+doc = open(JSON.parse,
+  joinpath(@__DIR__, "data", "graphviz_wiring_diagram.json"), "r")
+graph = Graphviz.parse_graphviz(doc, multigraph=true)
+layout = graphviz_layout(diagram, graph)
+
+# Just a few sanity checks.
+@test WiringDiagrams.graph(diagram) == WiringDiagrams.graph(layout)
+@test all(box.value isa BoxLayout for box in boxes(layout))
+@test all(p isa PortLayout for p in [input_ports(layout); output_ports(layout)])
 
 end

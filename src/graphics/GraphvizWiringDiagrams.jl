@@ -1,17 +1,23 @@
-""" Draw wiring diagrams using Graphviz.
+""" Lay out and draw wiring diagrams using Graphviz.
 """
 module GraphvizWiringDiagrams
-export to_graphviz
+export to_graphviz, graphviz_layout
+
+import JSON
+using LightGraphs, MetaGraphs
+using StaticArrays
 
 import ...Doctrines: HomExpr
 using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
 import ..Graphviz
 import ..Graphviz: to_graphviz
-using ..WiringDiagramLayouts: LayoutOrientation, LeftToRight, RightToLeft,
-  TopToBottom, BottomToTop, is_horizontal, is_vertical, box_label, wire_label
+using ..Graphviz: parse_graphviz, run_graphviz
+using ..WiringDiagramLayouts: BoxLayout, PortLayout, LayoutOrientation,
+  LeftToRight, RightToLeft, TopToBottom, BottomToTop,
+  is_horizontal, is_vertical, box_label, wire_label, port_sign, svector
 
-# Constants and data types
-##########################
+# Drawing
+#########
 
 # Default Graphviz font. Reference: http://www.graphviz.org/doc/fontfaq.txt
 const default_font = "Serif"
@@ -41,9 +47,6 @@ struct GraphvizBox
   input_ports::Vector{Graphviz.NodeID}
   output_ports::Vector{Graphviz.NodeID}
 end
-
-# Wiring diagrams
-#################
 
 """ Draw a wiring diagram using Graphviz.
 
@@ -368,5 +371,84 @@ function escape_html(s::AbstractString)
     ">" => "&gt;",
   ], init=s)
 end
+
+# Layout
+########
+
+""" Lay out wiring diagram using Graphviz.
+"""
+function graphviz_layout(diagram::WiringDiagram; kw...)
+  graph = to_graphviz(diagram; kw...)
+  doc = JSON.parse(run_graphviz(graph, format="json0"))
+  graphviz_layout(diagram, parse_graphviz(doc, multigraph=true))
+end
+
+function graphviz_layout(diagram::WiringDiagram, graph::MetaDiGraph)
+  # Graphviz uses the standard Cartesian coordinate system (with origin in
+  # bottom left corner), while our layout system uses a coordinate system with
+  # centered origin and positive y-axis pointing downwards.
+  orientation = inverse_rank_dirs[get_prop(graph, :rankdir)]
+  bounds, pad = get_prop(graph, :bounds), get_prop(graph, :pad)
+  transform_point(p) = SVector(p[1] + pad[1], bounds[2] - p[2] + pad[2])
+  
+  # Assumes vertices are in same order as created by `to_graphviz`:
+  # 1. Input ports of outer box
+  nin, nout = length(input_ports(diagram)), length(output_ports(diagram))
+  normal = svector(orientation, +1.0, 0.0)
+  inputs = map(enumerate(input_ports(diagram))) do (i, value)
+    attrs = props(graph, i)
+    pos = transform_point(attrs[:position])
+    PortLayout(; value=value, position=pos, normal=normal)
+  end
+  
+  # 2. Output ports of outer box
+  normal = svector(orientation, -1.0, 0.0)
+  outputs = map(enumerate(output_ports(diagram))) do (i, value)
+    attrs = props(graph, nin + i)
+    pos = transform_point(attrs[:position])
+    PortLayout(; value=value, position=pos, normal=normal)
+  end
+  
+  # 3. Inner boxes
+  # FIXME: Use port positions from Graphviz layout. Obtain these from either
+  # the HTML label or, more likely, an incident edge.
+  layout = WiringDiagram(BoxLayout(size=bounds+2*pad), inputs, outputs)
+  for (i, box) in enumerate(boxes(diagram))
+    attrs = props(graph, nin + nout + i)
+    shape = Symbol(get(attrs, :shape, :ellipse))
+    if shape == :none; shape = :rectangle end # XXX: Assume HTML label.
+    @assert shape == :rectangle "Only the rectangle shape is implemented so far"
+    pos, size = transform_point(attrs[:position]), attrs[:size]
+    add_box!(layout, Box(
+      BoxLayout(; value=box.value, shape=shape, position=pos, size=size),
+      layout_linear_ports(InputPort, input_ports(box), size, orientation),
+      layout_linear_ports(OutputPort, output_ports(box), size, orientation)
+    ))    
+  end
+  
+  # FIXME: Use spline points from Graphviz edge layout.
+  add_wires!(layout, wires(diagram))  
+  layout
+end
+
+""" Lay out ports linearly, equispaced along a rectangular box. 
+"""
+function layout_linear_ports(port_kind::PortKind, port_values::Vector, 
+                             box_size::StaticVector{2}, orientation::LayoutOrientation)
+  n = length(port_values)
+  sign = port_sign(port_kind, orientation)
+  normal = svector(orientation, sign, 0.0)
+  map(port_values, range(-1,1,length=n+2)[2:end-1]) do value, coeff
+    pos = svector(orientation, sign, coeff) .* box_size/2
+    PortLayout(; value=value, position=pos, normal=normal)
+  end
+end
+
+const inverse_rank_dirs = Dict{String,LayoutOrientation}(
+  "TB" => TopToBottom,
+  "BT" => BottomToTop,
+  "LR" => LeftToRight,
+  "RL" => RightToLeft,
+)
 
 end
