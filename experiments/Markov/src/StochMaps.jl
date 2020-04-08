@@ -84,6 +84,8 @@ struct StochCopy <: StochMap
   dom::StochDom
 end
 
+mcopy(A::StochDom) = StochCopy(A)
+
 """    StochBraid(A,B)
 
 σ(A,B):A⊗B→B⊗A is a deterministic map (a,b)↦(b,a)
@@ -92,6 +94,8 @@ struct StochBraid <: StochMap
   A::StochDom
   B::StochDom
 end
+
+braid(A::StochDom, B::StochDom) = StochBraid(A,B)
 
 # Domains and Codomains
 #######################
@@ -106,8 +110,8 @@ codom(f::StochComposite) = codom(last(f.maps))
 dom(f::StochProduct) = foldl(⊗, map(dom, f.maps))
 codom(f::StochProduct) = foldl(⊗, map(codom, f.maps))
 
-dom(f::StochCopy) = dom(f) ⊗ dom(f)
-codom(f::StochCopy) = codom(f) ⊗ codom(f)
+dom(f::StochCopy) = f.dom
+codom(f::StochCopy) = dom(f) ⊗ dom(f)
 
 dom(f::StochBraid) = f.A ⊗ f.B
 codom(f::StochBraid) = f.B ⊗ f.A

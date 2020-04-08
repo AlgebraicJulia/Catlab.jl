@@ -2,7 +2,7 @@ using Test
 using Distributions
 using Markov
 using Markov.StochMaps
-import Markov.StochMaps: compose, otimes, ⋅, ⊗, dom, codom
+import Markov.StochMaps: compose, otimes, ⋅, ⊗, dom, codom, braid, mcopy
 import Base: show
 
 @testset "Uniforms" begin
@@ -36,4 +36,19 @@ end
   @test string(StochFloat⊗StochFloat⊗StochDom([Int64])) == "StochDom(Float64×Float64×Int64)"
   @test string(StochBraid(StochFloat, StochFloat)) == "StochBraid(Float64,Float64)"
   @test string(StochBraid(StochFloat, StochFloat⊗StochFloat)) == "StochBraid(Float64,Float64×Float64)"
+end
+
+@testset "Copies" begin
+  @test dom(mcopy(StochFloat)).types == StochFloat.types
+  @test codom(mcopy(StochFloat)).types == (StochFloat⊗StochFloat).types
+  @test dom(mcopy(StochFloat⊗StochFloat)).types == (StochFloat ⊗ StochFloat).types
+  @test codom(mcopy(StochFloat⊗StochFloat)).types == (StochFloat⊗StochFloat⊗StochFloat⊗StochFloat).types
+end
+
+@testset "Braids" begin
+  @test dom(braid(StochFloat, StochFloat)).types == [Float64, Float64]
+  @test codom(braid(StochFloat, StochFloat)).types == [Float64, Float64]
+  @test dom(braid(StochDom(Int), StochFloat)).types == [Int, Float64]
+  @test codom(braid(StochDom(Int), StochFloat)).types == [Float64, Int]
+  println(mcopy(StochFloat))
 end
