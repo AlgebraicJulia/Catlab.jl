@@ -13,6 +13,10 @@ export crand, Constant, StochDom, StochMap, StochComposite, StochProduct, StochB
 # Markov Kernel Instance
 ########################
 
+"""    crand(f, args...)
+
+draw a sample from the distribution P_args(codom(f)) := f(args...)
+"""
 crand(d::Distribution) = rand(d)
 
 struct Constant{T} <: Sampleable{Univariate, Continuous}
@@ -21,6 +25,10 @@ end
 
 crand(f::Constant) = f.a
 
+"""    StochDom
+
+a vector of types to store the domain/codomain of a stochastic map
+"""
 struct StochDom
   types::Vector{DataType}
 end
@@ -32,6 +40,10 @@ const StochMunit = StochDom(DataType[])
 ⊗(a::StochDom, b::StochDom) = StochDom(vcat(a.types, b.types))
 length(a::StochDom) = length(a.types)
 
+"""    StochMap
+
+a morphism in the category of Sets with Markov Kernels.
+"""
 abstract type StochMap end
 
 struct StochGenerator <: StochMap
@@ -40,6 +52,10 @@ struct StochGenerator <: StochMap
   map::Function # this returns a distribution of taking values over codom
 end
 
+"""    StochComposite
+
+chains to markov kernels together like function composition
+"""
 struct StochComposite <: StochMap
   maps::Vector{StochMap}
 end
@@ -48,6 +64,10 @@ end
 compose(f::StochMap...) = StochComposite(collect(f))
 ⋅(f::StochMap...) = compose(f...)
 
+"""    StochProduct
+
+combines two markov kernels together by cartesian product
+"""
 struct StochProduct <: StochMap
   maps::Vector{StochMap}
 end
@@ -56,10 +76,18 @@ end
 otimes(f::StochMap...) = StochProduct(collect(f))
 ⊗(f::StochMap...) = otimes(f...)
 
+"""    StochCopy(A)
+
+Δ(A):A→A⊗A is a deterministic map a↦(a,a)
+"""
 struct StochCopy <: StochMap
   dom::StochDom
 end
 
+"""    StochBraid(A,B)
+
+σ(A,B):A⊗B→B⊗A is a deterministic map (a,b)↦(b,a)
+"""
 struct StochBraid <: StochMap
   A::StochDom
   B::StochDom
