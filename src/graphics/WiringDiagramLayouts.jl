@@ -590,16 +590,18 @@ merge_wire_layouts(left::WireLayout, middle::WireLayout, right::WireLayout) =
 
 """ Label for box in wiring diagram.
 """
-box_label(value) = box_label(MIME("text/plain"), value)
 box_label(mime::MIME, value) = diagram_element_label(mime, value)
 
 """ Label for wire in wiring diagram.
 
 Note: This function takes a port value, not a wire value.
 """
-wire_label(value) = wire_label(MIME("text/plain"), value)
 wire_label(mime::MIME, value) = diagram_element_label(mime, value)
 
+""" Label for element in wiring diagram.
+
+By default, both `box_label` and `wire_label` fall back to this function.
+"""
 diagram_element_label(::MIME, value) = string(value)
 diagram_element_label(::MIME, ::Nothing) = ""
 

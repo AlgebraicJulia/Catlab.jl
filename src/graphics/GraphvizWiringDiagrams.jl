@@ -345,11 +345,11 @@ const port_anchors = Dict{Tuple{PortKind,LayoutOrientation},String}(
 
 """ Create a label for the main content of a box.
 """
-node_label(box_value) = box_label(box_value)
+node_label(box_value) = box_label(MIME("text/plain"), box_value)
 
 """ Create a label for an edge.
 """
-edge_label(port_value) = wire_label(port_value)
+edge_label(port_value) = wire_label(MIME("text/plain"), port_value)
 
 """ Encode attributes for Graphviz HTML-like labels.
 """

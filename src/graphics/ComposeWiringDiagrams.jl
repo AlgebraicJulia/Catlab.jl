@@ -141,7 +141,7 @@ render_box(::Val{:junction}, layout::BoxLayout, opts::ComposeOptions) =
 render_box(::Val{:invisible}, ::BoxLayout, ::ComposeOptions) = C.context()
 
 function labeled_box(form::C.ComposeNode, layout::BoxLayout, opts::ComposeOptions)
-  labeled_form(form, box_label(layout.value),
+  labeled_form(form, box_label(MIME("text/plain"), layout.value),
     form_props=box_props(layout, opts), text_props=opts.props[:text])
 end
 
