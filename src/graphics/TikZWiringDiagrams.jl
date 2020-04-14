@@ -172,10 +172,32 @@ function tikz_port(diagram::WiringDiagram, port::Port, opts::TikZOptions)
 end
 
 function tikz_node_label(value, opts::TikZOptions)
-  box_label(MIME(opts.math_mode ? "text/latex" : "text/plain"), value)
+  if opts.math_mode
+    box_label(MIME("text/latex"), value)
+  else
+    escape_latex(box_label(MIME("text/plain"), value))
+  end
 end
 function tikz_edge_label(value, opts::TikZOptions)
-  wire_label(MIME(opts.math_mode ? "text/latex" : "text/plain"), value)
+  if opts.math_mode
+    wire_label(MIME("text/latex"), value)
+  else
+    escape_latex(wire_label(MIME("text/plain"), value))
+  end
+end
+
+""" Escape special LaTeX characters.
+
+Reference: https://tex.stackexchange.com/a/34586/
+"""
+function escape_latex(s::AbstractString)
+  reduce(replace, [
+    "\\" => "\\textbackslash",
+    "~" => "\\textasciitilde",
+    "^" => "\\textasciicircum",
+    "&" => "\\&", "%" => "\\%", "\$" => "\\\$", "#" => "\\#",
+    "_" => "\\_", "{" => "\\{", "}" => "\\}",
+  ], init=s)
 end
 
 # TikZ geometry
