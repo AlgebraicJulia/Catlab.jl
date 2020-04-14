@@ -303,8 +303,8 @@ function graphviz_outer_ports(v::Int, kind::PortKind, nports::Int;
       :style => "invis",
       :shape => "none",
       :label => "",
-      :width => is_horizontal(orientation) ? port_width : "0",
-      :height => is_vertical(orientation) ? port_width : "0",
+      :width => is_vertical(orientation) ? port_width : "0",
+      :height => is_horizontal(orientation) ? port_width : "0",
     ),
     edge_attrs=Graphviz.Attributes(
       :style => "invis",
