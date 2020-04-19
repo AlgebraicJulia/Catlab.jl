@@ -43,6 +43,9 @@ length(a::StochDom) = length(a.types)
 """    StochMap
 
 a morphism in the category of Sets with Markov Kernels.
+
+ie. map(x::Dom)::Distribution{Codom}
+
 """
 abstract type StochMap end
 
@@ -157,7 +160,7 @@ show(f::StochMap) = show(stdout, f)
 
 # Sampling the conditional distribution
 #######################################
-crand(f::StochGenerator, args...) = length(f.dom) == 0 ? crand(f.map()) : crand(f.map(args...))
+crand(f::StochGenerator, args...) = crand(f.map(args...))
 
 crand(f::StochComposite, args...) = begin
   length(f.maps) <= 0 && error("Sampling from empty composite")
