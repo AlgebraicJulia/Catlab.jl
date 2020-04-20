@@ -44,6 +44,7 @@ const ComposeProperties = AbstractVector{<:Compose.Property}
   base_unit::Compose.Measure = 4*C.mm
   props::AbstractDict = Dict()
   box_renderer::Function = render_box
+  background_color::Union{AbstractString,C.Colorant,Nothing} = nothing
   rounded_boxes::Bool = true
 end
 
@@ -66,6 +67,11 @@ function layout_to_composejl(diagram::WiringDiagram; props=Dict(), kw...)
   props = merge(default_props, props)
   opts = ComposeOptions(; props=props, kw...)
   context = layout_to_context(diagram, opts)
+  if !isnothing(opts.background_color)
+    context = C.compose(C.context(),
+      context,
+      (C.context(), C.rectangle(), C.fill(opts.background_color)))
+  end
   ComposePicture(context, (opts.base_unit .* size(diagram))...)
 end
 

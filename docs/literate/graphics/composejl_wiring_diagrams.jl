@@ -130,6 +130,12 @@ to_composejl(plus(X) ⋅ mcopy(X), props=Dict(
   :variant_junction => [fill("blue"), stroke("black")],
 ))
 
+# The background color can also be changed.
+
+to_composejl(f⋅g, background_color="lightgray", props=Dict(
+  :box => [fill("white"), stroke("black")],
+))
+
 # By default, the boxes are rectangular (`:rectangle`). Other available shapes
 # include circles (`:circle`) and ellipses (`:ellipse`).
 
