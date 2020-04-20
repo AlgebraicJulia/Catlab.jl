@@ -1,7 +1,11 @@
 using Catlab
 using Catlab.Doctrines
 import Base: length
+
+export crand
+
 length(::FreeCartesianCategory.Ob{:generator}) = 1
+length(::FreeCartesianCategory.Ob{:munit}) = 0
 length(f::FreeCartesianCategory.Ob{:otimes}) = sum(length.(f.args))
 
 # How do you give semantics to a stochastic map? You call it.
@@ -20,8 +24,13 @@ end
 
 # Monoidal Structure
 function crand(f::FreeCartesianCategory.Hom{:otimes}, args...)
+    dims = cumsum(map(length∘dom, f.args))
     map(1:length(f.args)) do i
-        crand(f.args[i], args[i]...)
+        if i == 1
+            crand(f.args[i], args[1:dims[1]]...)
+        else
+            crand(f.args[i], args[dims[i-1]+1:dims[i]]...)
+        end
     end |> xs->filter(xs) do x # handle the () you get from deletes
         x != ()
     end
