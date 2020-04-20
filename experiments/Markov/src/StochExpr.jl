@@ -1,12 +1,8 @@
 using Catlab
 using Catlab.Doctrines
-import Base: length
 
 export crand
 
-length(::FreeCartesianCategory.Ob{:generator}) = 1
-length(::FreeCartesianCategory.Ob{:munit}) = 0
-length(f::FreeCartesianCategory.Ob{:otimes}) = sum(length.(f.args))
 
 # How do you give semantics to a stochastic map? You call it.
 function crand(f::FreeCartesianCategory.Hom{:generator}, args...)
@@ -24,7 +20,7 @@ end
 
 # Monoidal Structure
 function crand(f::FreeCartesianCategory.Hom{:otimes}, args...)
-    dims = cumsum(map(length∘dom, f.args))
+    dims = cumsum(map(ndims∘dom, f.args))
     map(1:length(f.args)) do i
         if i == 1
             crand(f.args[i], args[1:dims[1]]...)
@@ -36,8 +32,8 @@ function crand(f::FreeCartesianCategory.Hom{:otimes}, args...)
     end
 end
 function crand(f::FreeCartesianCategory.Hom{:braid}, args...)
-    y = args[1:length(f.args[1])]
-    x = args[(length(f.args[1])+1):end]
+    y = args[1:ndims(f.args[1])]
+    x = args[(ndims(f.args[1])+1):end]
     return (x...,y...)
 end
 
