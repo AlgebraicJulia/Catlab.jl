@@ -55,8 +55,10 @@ end
 @auto_hash_equals struct Document <: Expression
   picture::Picture
   libraries::Vector{String}
+  packages::Vector{String}
   
-  Document(picture::Picture; libraries=String[]) = new(picture, libraries)
+  Document(picture::Picture; libraries=String[], packages=String[]) =
+    new(picture, libraries, packages)
 end
 
 @auto_hash_equals struct Scope <: Statement
@@ -161,6 +163,10 @@ pprint(expr::Expression; kw...) = pprint(stdout, expr; kw...)
 pprint(io::IO, expr::Expression; kw...) = pprint(io, expr, 0; kw...)
 
 function pprint(io::IO, doc::Document, n::Int)
+  for package in doc.packages
+    indent(io, n)
+    println(io, "\\usepackage{$package}")
+  end
   for library in doc.libraries
     indent(io, n)
     println(io, "\\usetikzlibrary{$library}")

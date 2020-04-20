@@ -8,8 +8,8 @@ import .TikZ
 function TikzPicture(doc::TikZ.Document; preamble::String="")::TikzPicture
   data = join(sprint(TikZ.pprint, stmt) for stmt in doc.picture.stmts)
   options = join((sprint(TikZ.pprint, prop) for prop in doc.picture.props), ",")
-  preamble = join([
-    [ preamble, "\\usepackage{amssymb}" ];
+  preamble = join([ preamble;
+    [ "\\usepackage{$package}" for package in doc.packages ];
     [ "\\usetikzlibrary{$library}" for library in doc.libraries ];
   ], "\n")
   TikzPicture(data; options=options, preamble=preamble)

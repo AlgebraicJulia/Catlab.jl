@@ -33,6 +33,7 @@ import ..TikZ
   props::AbstractVector = ["semithick"]
   styles::AbstractDict = Dict()
   libraries::Vector{String} = String[]
+  packages::Vector{String} = ["amssymb"]
   used_node_styles::AbstractSet = Set{String}()
 end
 
@@ -72,8 +73,9 @@ function layout_to_tikz(diagram::WiringDiagram, opts::TikZOptions)::TikZ.Documen
     [ TikZ.Property("$name/.style", TikZ.as_properties(props))
       for (name, props) in merge(styles, opts.styles) ];
   ]
-  libraries = unique!([ "calc"; libraries; opts.libraries ])
-  TikZ.Document(TikZ.Picture(stmts...; props=props); libraries=libraries)
+  TikZ.Document(TikZ.Picture(stmts...; props=props);
+    libraries=unique!([ "calc"; libraries; opts.libraries ]),
+    packages=opts.packages)
 end
 
 """ Make TikZ node for a box.
