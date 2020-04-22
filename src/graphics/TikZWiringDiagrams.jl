@@ -71,7 +71,7 @@ function layout_to_tikz(diagram::WiringDiagram, opts::TikZOptions)::TikZ.Documen
       TikZ.Property("y", "\\$tikz_unit_command") ];
     TikZ.as_properties(opts.props);
     [ TikZ.Property("$name/.style", TikZ.as_properties(props))
-      for (name, props) in merge(styles, opts.styles) ];
+      for (name, props) in styles ];
   ]
   TikZ.Document(TikZ.Picture(stmts...; props=props);
     libraries=unique!([ "calc"; libraries; opts.libraries ]),
@@ -257,8 +257,10 @@ end
 """
 function tikz_styles(opts::TikZOptions)
   # Box style options.
-  used = sort!(["outer box"; collect(opts.used_node_styles)])
-  styles = OrderedDict(style => tikz_node_style(opts, style) for style in used)
+  styles = OrderedDict(
+    style => get(opts.styles, style) do; tikz_node_style(opts, style) end
+    for style in sort!(["outer box"; collect(opts.used_node_styles)])
+  )
   libraries = [ "shapes.geometric" ] # FIXME: Should use library only if needed.
   
   # Wire style options.
