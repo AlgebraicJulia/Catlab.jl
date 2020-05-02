@@ -259,12 +259,11 @@ function tikz_styles(opts::TikZOptions)
   # Box style options.
   styles = OrderedDict(
     style => get(opts.styles, style) do; tikz_node_style(opts, style) end
-    for style in sort!(["outer box"; collect(opts.used_node_styles)])
+    for style in sort!([["outer box", "wire"]; collect(opts.used_node_styles)])
   )
   libraries = [ "shapes.geometric" ] # FIXME: Should use library only if needed.
   
   # Wire style options.
-  styles["wire"] = [ TikZ.Property("draw") ]
   if opts.labels
     anchor = tikz_anchor(svector(opts, 0, 1))
     append!(styles["wire"], tikz_decorate_markings([
@@ -295,6 +294,9 @@ function tikz_node_style(opts::TikZOptions, name::String)
   @match name begin
     "outer box" => [
       TikZ.Property("draw", "none"),
+    ]
+    "wire" => [
+      TikZ.Property("draw"),
     ]
     "box" => [
       TikZ.Property("rectangle"),
