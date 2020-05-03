@@ -1,11 +1,11 @@
 # Catlab.jl Documentation
 
-Catlab.jl is an experimental framework for applied category theory, written in
-[Julia](https://julialang.org). It provides a programming library and
-interactive interface for applications of category theory to the sciences and
-engineering fields. It emphasizes monoidal categories due to their wide
-applicability but can support any categorical doctrine that is formalizable as a
-generalized algebraic theory.
+Catlab.jl is a framework for applied and computational category theory, written
+in the [Julia](https://julialang.org) language. Catlab provides a programming
+library and interactive interface for applications of category theory to
+scientific and engineering fields. It emphasizes monoidal categories due to
+their wide applicability but can support any categorical structure that is
+formalizable as a generalized algebraic theory.
 
 ## What is Catlab?
 

@@ -3,12 +3,12 @@
 [![Build Status](https://github.com/epatters/Catlab.jl/workflows/Tests/badge.svg)](https://github.com/epatters/Catlab.jl/actions?query=workflow%3ATests)
 [![Latest Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://epatters.github.io/Catlab.jl/latest) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.598366.svg)](https://doi.org/10.5281/zenodo.598366)
 
-Catlab.jl is an experimental framework for applied category theory, written in
-[Julia](https://julialang.org). It provides a programming library and
-interactive interface for applications of category theory to the sciences and
-engineering fields. It emphasizes monoidal categories due to their wide
-applicability but can support any categorical doctrine that is formalizable as a
-generalized algebraic theory.
+Catlab.jl is a framework for applied and computational category theory, written
+in the [Julia](https://julialang.org) language. Catlab provides a programming
+library and interactive interface for applications of category theory to
+scientific and engineering fields. It emphasizes monoidal categories due to
+their wide applicability but can support any categorical structure that is
+formalizable as a generalized algebraic theory.
 
 ## Getting started
 
