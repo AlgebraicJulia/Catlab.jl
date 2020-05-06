@@ -430,8 +430,27 @@ function graphviz_layout(diagram::WiringDiagram, graph::MetaDiGraph)
     ))    
   end
   
-  # TODO: Use spline points from Graphviz edge layout.
-  add_wires!(layout, wires(diagram))  
+  # Add wires using spline points from Graphviz edge layout.
+  node_map = box_ids(layout)
+  function map_port(node::Int, portname::Union{String,Nothing})
+    if node <= nin
+      Port(input_id(layout), OutputPort, node)
+    elseif node <= nin + nout
+      Port(output_id(layout), InputPort, node - nin)
+    else
+      kind = startswith(portname, "out") ? OutputPort : InputPort
+      port = parse(Int, portname[findfirst(r"[0-9]+", portname)])
+      Port(node_map[node - nin - nout], kind, port)
+    end
+  end
+  for edge in edges(graph)
+    for attrs in get_prop(graph, edge, :edges)
+      add_wire!(layout, Wire(
+        map_port(src(edge), get(attrs, :tailport, nothing)),
+        map_port(dst(edge), get(attrs, :headport, nothing))
+      ))
+    end
+  end
   layout
 end
 

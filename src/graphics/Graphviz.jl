@@ -205,7 +205,7 @@ In Graphviz, a "spline" is a cubic B-spline of overlapping cubic Bezier curves.
 It consists of 3n+1 points, where n is the number of Bezier curves.
 
 http://www.graphviz.org/doc/info/attrs.html#k:splineType
-http://www.graphviz.org/content/how-convert-b-spline-bezier
+https://web.archive.org/web/20170418034924/http://www.graphviz.org/content/how-convert-b-spline-bezier
 """
 function parse_spline(spline::AbstractString)
   points = StaticVector{2,Float64}[]
