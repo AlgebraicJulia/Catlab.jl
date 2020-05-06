@@ -5,6 +5,7 @@ export to_graphviz, graphviz_layout
 
 import JSON
 using LightGraphs, MetaGraphs
+using LinearAlgebra: normalize
 using StaticArrays
 
 import ...Doctrines: HomExpr
@@ -12,8 +13,8 @@ using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
 import ..Graphviz
 import ..Graphviz: to_graphviz
 using ..Graphviz: parse_graphviz, run_graphviz
-using ..WiringDiagramLayouts: BoxLayout, PortLayout, LayoutOrientation,
-  LeftToRight, RightToLeft, TopToBottom, BottomToTop,
+using ..WiringDiagramLayouts: BoxLayout, PortLayout, WirePoint,
+  LayoutOrientation, LeftToRight, RightToLeft, TopToBottom, BottomToTop,
   is_horizontal, is_vertical, box_label, wire_label, port_sign, svector
 
 # Drawing
@@ -417,13 +418,15 @@ function graphviz_layout(diagram::WiringDiagram, graph::MetaDiGraph)
   # TODO: Use port positions from Graphviz layout. Obtain these from either
   # the HTML label or, more likely, an incident edge.
   layout = WiringDiagram(BoxLayout(size=diagram_size), inputs, outputs)
+  node_map = Dict{Int,Int}()
   for (i, box) in enumerate(boxes(diagram))
-    attrs = props(graph, nin + nout + i)
+    node = nin + nout + i
+    attrs = props(graph, node)
     shape = Symbol(get(attrs, :shape, :ellipse))
     if shape == :none; shape = :rectangle end # XXX: Assume HTML label.
     @assert shape == :rectangle "Only the rectangle shape is implemented so far"
     pos, size = transform_point(attrs[:position]), attrs[:size]
-    add_box!(layout, Box(
+    node_map[node] = add_box!(layout, Box(
       BoxLayout(; value=box.value, shape=shape, position=pos, size=size),
       layout_linear_ports(InputPort, input_ports(box), size, orientation),
       layout_linear_ports(OutputPort, output_ports(box), size, orientation)
@@ -431,21 +434,28 @@ function graphviz_layout(diagram::WiringDiagram, graph::MetaDiGraph)
   end
   
   # Add wires using spline points from Graphviz edge layout.
-  node_map = box_ids(layout)
   function map_port(node::Int, portname::Union{String,Nothing})
     if node <= nin
       Port(input_id(layout), OutputPort, node)
     elseif node <= nin + nout
       Port(output_id(layout), InputPort, node - nin)
     else
+      # XXX: Parsing the port names is hacky. The alternative is parsing the
+      # ordered ports in the HTML node label and matching the port names.
       kind = startswith(portname, "out") ? OutputPort : InputPort
       port = parse(Int, portname[findfirst(r"[0-9]+", portname)])
-      Port(node_map[node - nin - nout], kind, port)
+      Port(node_map[node], kind, port)
     end
   end
   for edge in edges(graph)
     for attrs in get_prop(graph, edge, :edges)
-      add_wire!(layout, Wire(
+      # Chop off start and end points to obtain intermediate points.
+      points = attrs[:spline][3:end-2]
+      wire_layout = map(Iterators.partition(points, 3)) do (c1, p, c2)
+        WirePoint(transform_point(p),
+                  normalize(transform_point(c2) - transform_point(c1)))
+      end
+      add_wire!(layout, Wire(wire_layout,
         map_port(src(edge), get(attrs, :tailport, nothing)),
         map_port(dst(edge), get(attrs, :headport, nothing))
       ))

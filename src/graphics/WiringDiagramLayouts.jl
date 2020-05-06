@@ -12,7 +12,7 @@ export LayoutOrientation, LeftToRight, RightToLeft, TopToBottom, BottomToTop,
 
 using Compat
 import Base: sign
-using LinearAlgebra: dot, norm
+using LinearAlgebra: dot, normalize
 using Logging
 using Parameters
 using StaticArrays: StaticVector, SVector
@@ -573,7 +573,7 @@ function layout_pure_wiring(diagram::WiringDiagram, opts::LayoutOptions;
       src_pos, tgt_pos = (position(port_value(result, p)) for p in (src, tgt))
       mid_pos = (src_pos + tgt_pos) / 2
       v = sign.((tgt_pos - src_pos) .* e1) + (tgt.port - src.port) .* e2
-      point = WirePoint(mid_pos .* e2, v / norm(v))
+      point = WirePoint(mid_pos .* e2, normalize(v))
       add_wire!(result, Wire([point], src, tgt))
     end
   else
