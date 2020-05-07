@@ -406,11 +406,15 @@ Base.:(==)(j1::Junction, j2::Junction) =
 
 """ Wiring diagram with a junction node for each of the given ports.
 """
-function junction_diagram(A::Ports, nin::Int, nout::Int; op=nothing)
+junction_diagram(A::Ports, nin::Int, nout::Int; op=nothing) =
+  junction_diagram(Junction{op}, A, nin, nout)
+
+function junction_diagram(make_junction, A::Ports, nin::Int, nout::Int)
   f = WiringDiagram(otimes(repeat([A], nin)), otimes(repeat([A], nout)))
   m = length(A)
   for (i, value) in enumerate(A)
-    v = add_box!(f, Junction{op}(value, nin, nout))
+    v = add_box!(f, make_junction(
+      value, repeat([value], nin), repeat([value], nout)))
     add_wires!(f, ((input_id(f),i+m*(j-1)) => (v,j) for j in 1:nin))
     add_wires!(f, ((v,j) => (output_id(f),i+m*(j-1)) for j in 1:nout))
   end
@@ -420,14 +424,16 @@ end
 """ Wiring diagram of nested cups made out of junction nodes.
 """
 junction_cups(A::Ports; kw...) = junction_cups(A, cat(A,reverse(A)); kw...)
+junction_cups(A::Ports, inputs::Ports; op=nothing) =
+  junction_cups(Junction{op}, A, inputs)
 
-function junction_cups(A::Ports, inputs::Ports; op=nothing)
+function junction_cups(make_junction, A::Ports, inputs::Ports)
   @assert length(inputs) == 2*length(A)
   f = WiringDiagram(inputs, munit(typeof(inputs)))
   m, ports = length(A), collect(inputs)
   for (i, value) in enumerate(A)
     j1, j2 = i, 2m-i+1 # Outer cups to inner cups
-    v = add_box!(f, Junction{op}(value, ports[[j1,j2]], empty(ports)))
+    v = add_box!(f, make_junction(value, ports[[j1,j2]], empty(ports)))
     add_wires!(f, [(input_id(f),j1) => (v,1), (input_id(f),j2) => (v,2)])
   end
   return f
@@ -436,14 +442,16 @@ end
 """ Wiring diagram of nested caps made out of junction nodes.
 """
 junction_caps(A::Ports; kw...) = junction_caps(A, cat(reverse(A),A); kw...)
+junction_caps(A::Ports, outputs::Ports; op=nothing) =
+  junction_caps(Junction{op}, A, outputs)
 
-function junction_caps(A::Ports, outputs::Ports; op=nothing)
+function junction_caps(make_junction, A::Ports, outputs::Ports)
   @assert length(outputs) == 2*length(A)
   f = WiringDiagram(munit(typeof(outputs)), outputs)
   m, ports = length(A), collect(outputs)
   for (i, value) in enumerate(A)
     j1, j2 = m-i+1, m+i # Inner caps to outer caps
-    v = add_box!(f, Junction{op}(value, empty(ports), ports[[j1,j2]]))
+    v = add_box!(f, make_junction(value, empty(ports), ports[[j1,j2]]))
     add_wires!(f, [(v,1) => (output_id(f),j1), (v,2) => (output_id(f),j2)])
   end
   return f
