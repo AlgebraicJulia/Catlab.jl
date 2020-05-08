@@ -150,7 +150,7 @@ end
 
 """ Graphviz box for a generic box.
 """
-function graphviz_box(box::AbstractBox, node_id::String;
+function graphviz_box(box::AbstractBox, node_id;
     orientation::LayoutOrientation=TopToBottom,
     labels::Bool=true, port_size::String="0",
     cell_attrs::AbstractDict=Dict(), kw...)
@@ -180,10 +180,9 @@ end
 
 """ Graphviz box for a junction.
 """
-function graphviz_box(junction::Junction, node_id::String;
+function graphviz_box(junction::Junction, node_id;
     junction_size::String="0", kw...)
-  node = Graphviz.Node(node_id,
-    id = node_id,
+  graphviz_junction(junction, node_id;
     comment = "junction",
     label = "",
     shape = "circle",
@@ -192,6 +191,10 @@ function graphviz_box(junction::Junction, node_id::String;
     width = junction_size,
     height = junction_size,
   )
+end
+
+function graphviz_junction(junction::Junction, node_id; kw...)
+  node = Graphviz.Node(node_id; id=node_id, kw...)
   nin, nout = length(input_ports(junction)), length(output_ports(junction))
   GraphvizBox([node],
     repeat([Graphviz.NodeID(node_id)], nin),
