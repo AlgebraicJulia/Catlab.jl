@@ -401,17 +401,15 @@ function parse_context(expr::Expr)::Context
   for arg in args
     name, typ = @match arg begin
       Expr(:(::), [name::Symbol, typ]) => (name, parse_raw_expr(typ))
+      name::Symbol => (name, :Any)
       _ => throw(ParseError("Ill-formed context expression $expr"))
     end
-    push_context!(context, name, typ)
+    if haskey(context, name)
+      throw(ParseError("Name $name already defined"))
+    end
+    context[name] = typ
   end
-  return context
-end
-function push_context!(context, name, expr)
-  if haskey(context, name)
-    throw(ParseError("Name $name already defined"))
-  end
-  context[name] = expr
+  context
 end
 
 """ Parse type or term constructor in a GAT.
@@ -431,14 +429,15 @@ function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor,
 
   # Allow abbreviated syntax where tail of context is included in parameters.
   function parse_param(param::Expr0)::Symbol
-    @match param begin
-      Expr(:(::), [name::Symbol, typ]) => begin
-        push_context!(context, name, parse_raw_expr(typ))
-        name
-      end
-      name::Symbol => name
+    name, typ = @match param begin
+      Expr(:(::), [name::Symbol, typ]) => (name, parse_raw_expr(typ))
+      name::Symbol => (name, :Any)
       _ => throw(ParseError("Ill-formed type/term parameter $param"))
     end
+    if !haskey(context, name)
+      context[name] = typ
+    end
+    name
   end
 
   @match cons_expr begin
