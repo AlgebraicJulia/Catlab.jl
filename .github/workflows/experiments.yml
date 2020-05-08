@@ -1,0 +1,23 @@
+name: Experiments
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        experiment: [CompAlgebra, Markov]
+    
+    steps:
+      - uses: actions/checkout@v2
+      - name: "Set up Julia"
+        uses: julia-actions/setup-julia@latest
+        with:
+          version: '1.4'
+      # XXX: Cannot change working directory for "uses" steps.
+      #- name: "Run tests"
+      #  uses: julia-actions/julia-runtest@master
+      - name: "Run tests"
+        run: |
+          cd experiments/${{ matrix.experiment }}
+          julia --color=yes --project -e 'using Pkg; Pkg.test(coverage=true)'
