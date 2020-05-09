@@ -56,6 +56,7 @@ svector(orient::LayoutOrientation, first, second) =
   outer_ports_layout::Symbol = :isotonic
   anchor_wires::Union{Bool,AbstractSet,AbstractVector} = [:id,:braid]
   base_box_size::Real = 2
+  box_stretch::Real = 1
   sequence_pad::Real = 2
   parallel_pad::Real = 1
   junction_size::Real = 0.25
@@ -314,7 +315,7 @@ end
 """ Compute the minimum size of a wiring diagram from the number of its ports.
 """
 function minimum_diagram_size(nin::Int, nout::Int, opts::LayoutOptions)
-  default_box_size(nin, nout, opts, length=0) + 2*diagram_padding(opts)
+  default_box_size(nin, nout, opts, stretch=0) + 2*diagram_padding(opts)
 end
 function diagram_padding(opts::LayoutOptions)
   svector(opts, opts.sequence_pad, opts.parallel_pad)
@@ -407,10 +408,12 @@ We use the unique formula consistent with the padding for monoidal products,
 ensuring that the size of a product of boxes depends only on the total number of
 ports, not on the number of boxes.
 """
-function default_box_size(nin::Int, nout::Int, opts::LayoutOptions; length=1)
+function default_box_size(nin::Int, nout::Int, opts::LayoutOptions;
+                          stretch::Union{Real,Nothing}=nothing)
   base_size = opts.base_box_size
+  stretch = isnothing(stretch) ? opts.box_stretch : stretch
   n = max(1, nin, nout)
-  svector(opts, length*base_size, n*base_size + (n-1)*opts.parallel_pad)
+  svector(opts, stretch*base_size, n*base_size + (n-1)*opts.parallel_pad)
 end
 
 # Port layout
