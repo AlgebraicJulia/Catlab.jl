@@ -136,17 +136,19 @@ to_tikz(plus(X) ⋅ mcopy(X), styles=Dict(
 # include circles (`:circle`), ellipses (`:ellipse`), triangles (`:triangle`,
 # `:invtriangle`), and trapezoids (`:trapezium`, `:invtrapezium`).
 
-to_tikz(f⋅g, box_shape=:circle)
+to_tikz(f⋅g, default_box_shape=:circle)
 #-
-to_tikz(f⋅g, box_shape=:triangle, rounded_boxes=false)
+to_tikz(f⋅g, rounded_boxes=false, box_shapes=Dict(
+  f => :triangle, g => :invtriangle,
+))
 #-
-to_tikz(f⋅g, box_shape=:invtriangle, rounded_boxes=false)
+to_tikz(f⋅g, orientation=TopToBottom, rounded_boxes=false, box_shapes=Dict(
+  f => :triangle, g => :invtriangle,
+))
 #-
-to_tikz(f⋅g, box_shape=:invtriangle, orientation=TopToBottom, rounded_boxes=false)
-#-
-to_tikz(f⋅g, box_shape=:trapezium)
-#-
-to_tikz(f⋅g, box_shape=:invtrapezium)
+to_tikz(f⋅g, box_shapes=Dict(
+  f => :invtrapezium, g => :trapezium,
+))
 
 # ## Output formats
 

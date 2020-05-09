@@ -50,13 +50,16 @@ svector(orient::LayoutOrientation, first, second) =
 """
 @with_kw_noshow struct LayoutOptions
   orientation::LayoutOrientation = LeftToRight
-  box_shape::Symbol = :rectangle
+  default_box_shape::Symbol = :rectangle
+  box_shapes::AbstractDict = Dict()
+  box_styles::AbstractDict = Dict()
   outer_ports_layout::Symbol = :isotonic
   anchor_wires::Union{Bool,AbstractSet,AbstractVector} = [:id,:braid]
-  base_box_size::Float64 = 2
-  sequence_pad::Float64 = 2
-  parallel_pad::Float64 = 1
-  junction_size::Float64 = 0.25
+  base_box_size::Real = 2
+  box_stretch::Real = 1
+  sequence_pad::Real = 2
+  parallel_pad::Real = 1
+  junction_size::Real = 0.25
 end
 
 svector(opts::LayoutOptions, args...) = svector(opts.orientation, args...)
@@ -312,7 +315,7 @@ end
 """ Compute the minimum size of a wiring diagram from the number of its ports.
 """
 function minimum_diagram_size(nin::Int, nout::Int, opts::LayoutOptions)
-  default_box_size(nin, nout, opts, length=0) + 2*diagram_padding(opts)
+  default_box_size(nin, nout, opts, stretch=0) + 2*diagram_padding(opts)
 end
 function diagram_padding(opts::LayoutOptions)
   svector(opts, opts.sequence_pad, opts.parallel_pad)
@@ -326,9 +329,13 @@ end
 By default the box is rectangular, but other shapes are also supported.
 """
 function layout_box(inputs::Vector, outputs::Vector, opts::LayoutOptions;
-                    shape::Union{Symbol,Nothing}=nothing, kw...)
-  layout_box(Val(isnothing(shape) ? opts.box_shape : shape),
-             inputs, outputs, opts; kw...)
+                    shape::Union{Symbol,Nothing}=nothing,
+                    style::Union{Symbol,Nothing}=nothing, value=nothing, kw...)
+  shape = get(opts.box_shapes, value) do
+    isnothing(shape) ? opts.default_box_shape : shape
+  end
+  style = get(opts.box_styles, value, style)
+  layout_box(Val(shape), inputs, outputs, opts; style=style, value=value, kw...)
 end
 
 function layout_box(::Val{:rectangle}, inputs::Vector, outputs::Vector,
@@ -401,10 +408,12 @@ We use the unique formula consistent with the padding for monoidal products,
 ensuring that the size of a product of boxes depends only on the total number of
 ports, not on the number of boxes.
 """
-function default_box_size(nin::Int, nout::Int, opts::LayoutOptions; length=1)
+function default_box_size(nin::Int, nout::Int, opts::LayoutOptions;
+                          stretch::Union{Real,Nothing}=nothing)
   base_size = opts.base_box_size
+  stretch = isnothing(stretch) ? opts.box_stretch : stretch
   n = max(1, nin, nout)
-  svector(opts, length*base_size, n*base_size + (n-1)*opts.parallel_pad)
+  svector(opts, stretch*base_size, n*base_size + (n-1)*opts.parallel_pad)
 end
 
 # Port layout
