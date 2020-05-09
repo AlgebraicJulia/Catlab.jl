@@ -55,10 +55,10 @@ svector(orient::LayoutOrientation, first, second) =
   box_styles::AbstractDict = Dict()
   outer_ports_layout::Symbol = :isotonic
   anchor_wires::Union{Bool,AbstractSet,AbstractVector} = [:id,:braid]
-  base_box_size::Float64 = 2
-  sequence_pad::Float64 = 2
-  parallel_pad::Float64 = 1
-  junction_size::Float64 = 0.25
+  base_box_size::Real = 2
+  sequence_pad::Real = 2
+  parallel_pad::Real = 1
+  junction_size::Real = 0.25
 end
 
 svector(opts::LayoutOptions, args...) = svector(opts.orientation, args...)
