@@ -51,6 +51,8 @@ svector(orient::LayoutOrientation, first, second) =
 @with_kw_noshow struct LayoutOptions
   orientation::LayoutOrientation = LeftToRight
   default_box_shape::Symbol = :rectangle
+  box_shapes::AbstractDict = Dict()
+  box_styles::AbstractDict = Dict()
   outer_ports_layout::Symbol = :isotonic
   anchor_wires::Union{Bool,AbstractSet,AbstractVector} = [:id,:braid]
   base_box_size::Float64 = 2
@@ -326,9 +328,13 @@ end
 By default the box is rectangular, but other shapes are also supported.
 """
 function layout_box(inputs::Vector, outputs::Vector, opts::LayoutOptions;
-                    shape::Union{Symbol,Nothing}=nothing, kw...)
-  layout_box(Val(isnothing(shape) ? opts.default_box_shape : shape),
-             inputs, outputs, opts; kw...)
+                    shape::Union{Symbol,Nothing}=nothing,
+                    style::Union{Symbol,Nothing}=nothing, value=nothing, kw...)
+  shape = get(opts.box_shapes, value) do
+    isnothing(shape) ? opts.default_box_shape : shape
+  end
+  style = get(opts.box_styles, value, style)
+  layout_box(Val(shape), inputs, outputs, opts; style=style, value=value, kw...)
 end
 
 function layout_box(::Val{:rectangle}, inputs::Vector, outputs::Vector,
