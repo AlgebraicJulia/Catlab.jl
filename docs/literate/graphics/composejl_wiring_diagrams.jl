@@ -139,7 +139,7 @@ to_composejl(f⋅g, background_color="lightgray", props=Dict(
 # By default, the boxes are rectangular (`:rectangle`). Other available shapes
 # include circles (`:circle`) and ellipses (`:ellipse`).
 
-to_composejl(f⋅g, box_shape=:circle)
+to_composejl(f⋅g, default_box_shape=:circle)
 
 # ## Output formats
 
