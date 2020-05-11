@@ -266,7 +266,7 @@ function tikz_styles(opts::TikZOptions)
   # Wire style options.
   if opts.labels
     anchor = tikz_anchor(svector(opts, 0, 1))
-    append!(styles["wire"], tikz_decorate_markings([
+    styles["wire"] = vcat(styles["wire"], tikz_decorate_markings([
       "at position $(opts.labels_pos) with {\\node[anchor=$anchor] {#1};}"
     ]))
     push!(libraries, "decorations.markings")
