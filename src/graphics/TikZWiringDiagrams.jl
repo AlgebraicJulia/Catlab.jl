@@ -130,9 +130,15 @@ function tikz_edge(diagram::WiringDiagram, wire::Wire, opts::TikZOptions)::TikZ.
   # Use source port for wire label, following the Graphviz wiring diagrams.
   src_layout = port_value(diagram, wire.source)
   tgt_layout = port_value(diagram, wire.target)
-  label = opts.labels && src_layout.label_wires && tgt_layout.label_wires ?
-    tikz_edge_label(src_layout.value, opts) : nothing
-  props = [ TikZ.Property("wire", label) ]
+  wire_node = if opts.labels && src_layout.label_wires && tgt_layout.label_wires
+    props = [ TikZ.Property("anchor", tikz_anchor(svector(opts, 0, 1))) ]
+    content = tikz_edge_label(src_layout.value, opts)
+    node = TikZ.Node(; props=props, content=content)
+    string("{", sprint(TikZ.pprint, node), "}")
+  else
+    nothing
+  end
+  props = [ TikZ.Property("wire", wire_node) ]
   if !isnothing(opts.arrowtip)
     reversed = src_layout.reverse_wires && tgt_layout.reverse_wires
     push!(props, TikZ.Property(reversed ? "<-" : "->"))
@@ -265,9 +271,8 @@ function tikz_styles(opts::TikZOptions)
   
   # Wire style options.
   if opts.labels
-    anchor = tikz_anchor(svector(opts, 0, 1))
     styles["wire"] = vcat(styles["wire"], tikz_decorate_markings([
-      "at position $(opts.labels_pos) with {\\node[anchor=$anchor] {#1};}"
+      "at position $(opts.labels_pos) with {#1}"
     ]))
     push!(libraries, "decorations.markings")
   end
