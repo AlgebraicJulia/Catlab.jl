@@ -24,6 +24,7 @@ spprint(expr::Expression) = sprint(pprint, expr)
   "\\node (f) at (0,1) {};"
 @test spprint(Node("f"; coord=Coordinate("1","0"), content="fun")) ==
   "\\node (f) at (1,0) {fun};"
+@test spprint(Node(; props=[Property("circle")])) == "\\node[circle] {};"
 
 # Edge statement
 const PathOp = PathOperation

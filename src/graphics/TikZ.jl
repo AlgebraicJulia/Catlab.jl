@@ -77,15 +77,15 @@ end
 end
 
 @auto_hash_equals struct Node <: Statement
-  # FIXME: Name is optional, according to TikZ manual.
-  name::String
+  name::Union{String,Nothing}
   props::Vector{Property}
   coord::Union{Coordinate,Nothing}
   content::String
   
-  Node(name::String; props=Property[], coord=nothing, content="") =
+  Node(; name=nothing, props=Property[], coord=nothing, content="") =
     new(name, props, coord, content)
 end
+Node(name::Union{String,Nothing}; kw...) = Node(; name=name, kw...)
 
 @auto_hash_equals struct NodeCoordinate <: PathExpression
   name::String
@@ -204,7 +204,9 @@ function pprint(io::IO, node::Node, n::Int)
   indent(io, n)
   print(io, "\\node")
   pprint(io, node.props)
-  print(io, " ($(node.name))")
+  if !isnothing(node.name)
+    print(io, " ($(node.name))")
+  end
   if !isnothing(node.coord)
     print(io, " at ")
     pprint(io, node.coord)
