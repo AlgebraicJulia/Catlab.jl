@@ -590,7 +590,7 @@ output_ports(dagger::DaggerBox) = input_ports(dagger.box)
 
 dagger(box::Box) = DaggerBox(box)
 dagger(dagger::DaggerBox) = dagger.box
-dagger(junction::Junction) = Junction(
+dagger(junction::Junction{Op}) where Op = Junction{Op}(
   junction.value, output_ports(junction), input_ports(junction))
 
 const MateBox = BoxOp{:mate}
