@@ -15,8 +15,8 @@ using Catlab,
 # Set Literate.jl config if not being compiled on recognized service.
 config = Dict{String,String}()
 if !(haskey(ENV, "GITHUB_ACTIONS") || haskey(ENV, "GITLAB_CI"))
-  config["nbviewer_root_url"] = "https://nbviewer.jupyter.org/github/epatters/Catlab.jl/blob/gh-pages/dev"
-  config["repo_root_url"] = "https://github.com/epatters/Catlab.jl/blob/master/docs"
+  config["nbviewer_root_url"] = "https://nbviewer.jupyter.org/github/AlgebraicJulia/Catlab.jl/blob/gh-pages/dev"
+  config["repo_root_url"] = "https://github.com/AlgebraicJulia/Catlab.jl/blob/master/docs"
 end
 
 for (root, dirs, files) in walkdir(literate_dir)
@@ -65,6 +65,6 @@ makedocs(
 @info "Deploying docs"
 deploydocs(
   target = "build",
-  repo   = "github.com/epatters/Catlab.jl.git",
+  repo   = "github.com/AlgebraicJulia/Catlab.jl.git",
   branch = "gh-pages"
 )
