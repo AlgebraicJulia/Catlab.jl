@@ -17,7 +17,7 @@ using LightGraphs
 
 using ...Syntax, ...Doctrines
 using ...Syntax: syntax_module
-using ...Doctrines.Permutations
+using ...CategoricalAlgebra.Permutations
 using ..WiringDiagramCore, ..WiringLayers, ..AlgebraicWiringDiagrams
 import ..WiringLayers: to_wiring_diagram
 using ..WiringDiagramAlgorithms: crossing_minimization_by_sort

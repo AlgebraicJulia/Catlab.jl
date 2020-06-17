@@ -8,6 +8,10 @@ end
   include("doctrines/Doctrines.jl")
 end
 
+@testset "CategoricalAlgebra" begin
+  include("categorical_algebra/CategoricalAlgebra.jl")
+end
+
 @testset "WiringDiagrams" begin
   include("wiring_diagrams/WiringDiagrams.jl")
 end

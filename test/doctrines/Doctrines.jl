@@ -21,8 +21,4 @@ end
   include("Preorders.jl")
 end
 
-@testset "Permutations" begin
-  include("Permutations.jl")
-end
-
 end

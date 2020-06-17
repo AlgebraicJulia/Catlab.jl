@@ -1,7 +1,7 @@
 module TestPermutations
 
 using Test
-using Catlab.Doctrines, Catlab.Doctrines.Permutations
+using Catlab.Doctrines, Catlab.CategoricalAlgebra.Permutations
 
 # Decomposition
 ###############

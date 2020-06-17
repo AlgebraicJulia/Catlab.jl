@@ -28,6 +28,4 @@ include("Preorders.jl")
 include("AdditiveMonoidal.jl")
 include("Relations.jl")
 
-include("Permutations.jl")
-
 end

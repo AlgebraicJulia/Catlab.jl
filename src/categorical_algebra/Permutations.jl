@@ -1,7 +1,4 @@
-""" Computer algebra of the symmetric group.
-
-FIXME: This doesn't really belong under `Doctrines`, since this isn't a
-doctrine, but I'm thinking the `Doctrines` top-level module should be renamed.
+""" Computing with permutations: the computer algebra of the symmetric group.
 """
 module Permutations
 export decompose_permutation_by_bubble_sort!,
@@ -9,7 +6,7 @@ export decompose_permutation_by_bubble_sort!,
 
 using Compat
 using ...Syntax
-using ..Doctrines: dom, codom, compose, id, otimes, munit, braid
+using ...Doctrines: dom, codom, compose, id, otimes, munit, braid
 
 # Decomposition
 ###############
