@@ -1,7 +1,8 @@
 module FinSets
-export FinOrd, FinOrdFunction
+export FinOrd, FinOrdFunction, pushout
 
 using AutoHashEquals
+using DataStructures: IntDisjointSets, union!, find_root
 
 using ...GAT
 using ...Theories: Category
@@ -54,5 +55,25 @@ compose_functions(::typeof(identity), g) = g
 compose_functions(f, ::typeof(identity)) = f
 compose_functions(::typeof(identity), ::typeof(identity)) = identity
 compose_functions(f::AbstractVector, g::AbstractVector) = g[f]
+
+
+""" Pushout of span of functions between finite sets.
+"""
+function pushout(span::Span{<:FinOrdFunction,<:FinOrdFunction})
+  f, g = left(span), right(span)
+  m, n = f.codom, g.codom
+  sets = IntDisjointSets(m+n)
+  for i in 1:f.dom
+    union!(sets, f(i), m + g(i))
+  end
+  
+  h = [ find_root(sets, i) for i in 1:m ]
+  k = [ find_root(sets, m+i) for i in 1:n ]
+  roots = unique!([h; k])
+  inv_roots = Dict(root => i for (i, root) in enumerate(roots))
+  h = FinOrdFunction([ inv_roots[root] for root in h ], length(roots))
+  k = FinOrdFunction([ inv_roots[root] for root in k ], length(roots))
+  Cospan(h, k)
+end
 
 end
