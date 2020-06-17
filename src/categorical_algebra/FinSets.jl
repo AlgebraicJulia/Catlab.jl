@@ -5,6 +5,7 @@ using AutoHashEquals
 
 using ...GAT
 using ...Theories: Category
+using ..ShapeDiagrams
 import ...Theories: dom, codom, compose, ⋅, ∘, id
 
 """ Finite ordinal (natural number).
