@@ -11,7 +11,7 @@ import Catlab.Theories: Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, bra
 # Theories
 ###########
 
-""" Theory of *Markov category*
+""" Theory of *Markov categories*
 """
 @signature MonoidalCategoryWithDiagonals(Ob,Hom) => MarkovCategory(Ob,Hom) begin
   expectation(M::(A → B))::(A → B) <= (A::Ob, B::Ob)

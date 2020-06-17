@@ -116,7 +116,7 @@ catch err;
   throw(err.error)
 end
 
-""" Theory of the theory of categories
+""" Theory of categories
 """
 @theory Category(Ob,Hom) begin
   Ob::TYPE
@@ -134,7 +134,7 @@ end
 end
 
 @test isa(Category, Module)
-@test occursin("theory of categories", string(Docs.doc(Category)))
+@test occursin("theory of categories", lowercase(string(Docs.doc(Category))))
 @test sort(names(Category)) == sort([:Category, :Ob, :Hom])
 @test isa(Category.Ob, Type) && isa(Category.Hom, Type)
 @test isa(dom, Function) && isa(codom, Function)

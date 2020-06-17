@@ -5,7 +5,7 @@ export ThinCategory, FreeThinCategory,
 # Thin category
 ###############
 
-""" Theory of *thin category*
+""" Theory of *thin categories*
 
 Thin categories have at most one morphism between any two objects.
 """
@@ -30,7 +30,7 @@ end
 # Preorder
 ##########
 
-""" Theory of *preorder*
+""" Theory of *preorders*
 
 Preorders encode the axioms of reflexivity and transitivity as term constructors.
 """
