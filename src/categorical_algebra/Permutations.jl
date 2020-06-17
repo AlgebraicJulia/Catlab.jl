@@ -6,7 +6,7 @@ export decompose_permutation_by_bubble_sort!,
 
 using Compat
 using ...Syntax
-using ...Doctrines: dom, codom, compose, id, otimes, munit, braid
+using ...Theories: dom, codom, compose, id, otimes, munit, braid
 
 # Decomposition
 ###############

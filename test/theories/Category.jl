@@ -85,7 +85,7 @@ h, k, H, K = [ Hom(sym, B, C) for sym in [:h,:k,:H,:K] ]
 α, β = Hom2(:α, f, g), Hom2(:β, h, k)
 @test unicode(compose2(α,β)) == "α*β"
 
-# Incompatible doctrines
+# Incompatible theories
 @test_throws MethodError Hom(:f, Ob(FreeCategory, :A), Ob(FreeCategory2, :B))
 f = Hom(:f, Ob(FreeCategory, :A), Ob(FreeCategory, :B))
 g = Hom(:g, Ob(FreeCategory2, :B), Ob(FreeCategory2, :C))

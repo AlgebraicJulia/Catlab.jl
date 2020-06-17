@@ -2,7 +2,7 @@ module TestWiringDiagramLayouts
 
 using Test
 
-using Catlab.Doctrines, Catlab.WiringDiagrams
+using Catlab.Theories, Catlab.WiringDiagrams
 using Catlab: Graphics
 using Catlab.Graphics.WiringDiagramLayouts: LeftToRight, position
 

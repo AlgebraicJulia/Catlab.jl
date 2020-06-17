@@ -3,15 +3,15 @@ export MarkovCategory, FreeMarkovCategory,
   Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, braid, mcopy, Δ, delete, ◊,
   expectation, 𝔼
 
-using Catlab.GAT, Catlab.Syntax, Catlab.Doctrines, Catlab.WiringDiagrams
+using Catlab.GAT, Catlab.Syntax, Catlab.Theories, Catlab.WiringDiagrams
 import Catlab.Syntax: show_latex
-import Catlab.Doctrines: Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, braid,
+import Catlab.Theories: Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, braid,
   mcopy, Δ, delete, ◊
 
-# Doctrines
+# Theories
 ###########
 
-""" Doctrine of *Markov category*
+""" Theory of *Markov category*
 """
 @signature MonoidalCategoryWithDiagonals(Ob,Hom) => MarkovCategory(Ob,Hom) begin
   expectation(M::(A → B))::(A → B) <= (A::Ob, B::Ob)

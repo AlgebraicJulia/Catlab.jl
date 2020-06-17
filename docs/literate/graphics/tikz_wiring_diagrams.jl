@@ -20,7 +20,7 @@ import TikzPictures
 
 # ### Symmetric monoidal category
 
-using Catlab.Doctrines
+using Catlab.Theories
 
 A, B, C, D = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C, :D)
 f, g = Hom(:f, A, B), Hom(:g, B, A);

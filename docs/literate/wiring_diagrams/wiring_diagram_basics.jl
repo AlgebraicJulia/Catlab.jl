@@ -73,7 +73,7 @@ show_diagram(d::WiringDiagram) = to_graphviz(d,
 # In this example, the wiring diagrams will carry symbolic expressions (of type
 # `Catlab.ObExpr` and `Catlab.HomExpr`).
 
-using Catlab.Doctrines
+using Catlab.Theories
 
 A, B, C, D = Ob(FreeBiproductCategory, :A, :B, :C, :D)
 f = Hom(:f, A, B)

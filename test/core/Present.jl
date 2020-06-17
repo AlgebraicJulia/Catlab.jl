@@ -1,7 +1,7 @@
 module TestPresentation
 
 using Test
-using Catlab, Catlab.Doctrines
+using Catlab, Catlab.Theories
 
 # Presentation
 ##############

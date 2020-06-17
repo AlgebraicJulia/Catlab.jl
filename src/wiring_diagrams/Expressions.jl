@@ -15,7 +15,7 @@ export to_ob_expr, to_hom_expr, to_wiring_diagram
 using Compat
 using LightGraphs
 
-using ...Syntax, ...Doctrines
+using ...Syntax, ...Theories
 using ...Syntax: syntax_module
 using ...CategoricalAlgebra.Permutations
 using ..WiringDiagramCore, ..WiringLayers, ..AlgebraicWiringDiagrams

@@ -6,7 +6,7 @@ import Base: show
 # Category
 ##########
 
-""" Doctrine of *category* (with no extra structure)
+""" Theory of *category* (with no extra structure)
 
 **Warning**: We compose functions from left to right, i.e., if f:A→B and g:B→C
 then compose(f,g):A→C. Under this convention function are applied on the right,
@@ -77,7 +77,7 @@ end
 # 2-category
 ############
 
-""" Doctrine of (strict) *2-category*
+""" Theory of (strict) *2-category*
 """
 @signature Category(Ob,Hom) => Category2(Ob,Hom,Hom2) begin
   """ 2-morphism in a 2-category """

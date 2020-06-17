@@ -3,7 +3,7 @@ module TestTikZWiringDiagrams
 using Compat
 using Test
 
-using Catlab.Doctrines, Catlab.WiringDiagrams
+using Catlab.Theories, Catlab.WiringDiagrams
 using Catlab: Graphics
 using Catlab.Graphics: TikZ
 

@@ -17,8 +17,8 @@ export Ports, Junction, PortOp, BoxOp,
 using AutoHashEquals
 using LightGraphs
 
-using ...GAT, ...Doctrines
-import ...Doctrines: dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid,
+using ...GAT, ...Theories
+import ...Theories: dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid,
   mcopy, delete, Δ, ◊, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
   plus, zero, coplus, cozero, meet, join, top, bottom, trace
 import ...Syntax: functor, head

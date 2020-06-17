@@ -21,7 +21,7 @@ using AutoHashEquals
 using DataStructures: OrderedDict
 
 using ...GAT, ...Syntax
-import ...Doctrines: ObExpr, HomExpr, MonoidalCategoryWithBidiagonals,
+import ...Theories: ObExpr, HomExpr, MonoidalCategoryWithBidiagonals,
   dom, codom, id, compose, otimes, munit, braid, mcopy, delete, mmerge, create
 using ..WiringDiagramCore
 import ..WiringDiagramCore: nwires, wires, has_wire, add_wire!, add_wires!,

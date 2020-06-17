@@ -8,7 +8,7 @@ using Compat
 
 using ...Catlab
 import ...Meta: Expr0, concat_expr
-using ...Doctrines: ObExpr, HomExpr, dom, codom
+using ...Theories: ObExpr, HomExpr, dom, codom
 
 # Compilation
 #############

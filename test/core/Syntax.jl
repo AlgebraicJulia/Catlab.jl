@@ -1,7 +1,7 @@
 """ Test the Syntax module.
 
-The unit tests are sparse because many of the Doctrine tests are really just
-tests of the Syntax module.
+The unit tests are sparse because many of the Theory module tests are
+effectively just tests of the Syntax module.
 """
 module TestSyntax
 

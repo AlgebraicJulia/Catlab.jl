@@ -9,7 +9,7 @@
 
 # The morphism we will visualize is:
 
-using Catlab.Doctrines
+using Catlab.Theories
 
 X = Ob(FreeSymmetricMonoidalCategory, :X)
 f, g, h = (Hom(sym, X, X) for sym in (:f, :g, :h))

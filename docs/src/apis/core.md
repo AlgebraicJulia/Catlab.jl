@@ -47,7 +47,7 @@ For example, the theory of categories could be defined by:
 
 ```@setup category
 using Catlab
-import Catlab.Doctrines: Ob, Hom, ObExpr, HomExpr, dom, codom, compose, ⋅, id
+import Catlab.Theories: Ob, Hom, ObExpr, HomExpr, dom, codom, compose, ⋅, id
 ```
 
 ```@example category
@@ -91,7 +91,7 @@ this block notation, or a single line notation such as `@op (⋅) := compose` to
 define a single alias. Here we utilize this functionality by replacing the `Hom`
 and `compose` methods with their equivalent Unicode characters, `→` and `⋅`
 respectively. These aliases are also automatically available to definitions that
-inherit a doctrine that already has the alias defined.
+inherit a theory that already has the alias defined.
 
 !!! note
 
@@ -233,7 +233,7 @@ by inheriting from the builtin theory `SymmetricMonoidalCategory`.
 
 ```@setup cartesian-monoidal-category
 using Catlab
-import Catlab.Doctrines: Ob, Hom, ObExpr, HomExpr, SymmetricMonoidalCategory,
+import Catlab.Theories: Ob, Hom, ObExpr, HomExpr, SymmetricMonoidalCategory,
   dom, codom, compose, id, otimes, munit, braid
 ```
 

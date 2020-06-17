@@ -7,17 +7,17 @@ export StructuredLinearFunctions, FreeStructuredLinearFunctions,
 import Base: +
 import LinearAlgebra: adjoint, diag
 
-using ...Catlab, ...Doctrines
-import ...Doctrines:
+using ...Catlab, ...Theories
+import ...Theories:
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, braid, munit
 using ..GraphicalLinearAlgebra
 import ..GraphicalLinearAlgebra:
   mcopy, Δ, delete, ◊, plus, zero, plus, +, scalar, antipode, adjoint
 
-# Doctrines
+# Theories
 ###########
 
-""" Doctrine of *structured linear maps*
+""" Theory of *structured linear maps*
 
 Structured matrices have some properties that allow us to compute with them faster
 than general dense matrices. Morphisms in this category represent structured matrices.

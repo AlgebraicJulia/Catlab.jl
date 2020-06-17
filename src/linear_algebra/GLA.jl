@@ -16,18 +16,18 @@ using LinearOperators
 import LinearOperators:
   adjoint, opEye, opExtension, opRestriction, opZeros
 
-using ...Catlab, ...Doctrines
-import ...Doctrines:
+using ...Catlab, ...Theories
+import ...Theories:
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, braid,
   dagger, dunit, dcounit, mcopy, Δ, delete, ◊, mmerge, ∇, create, □,
   plus, zero, coplus, cozero, meet, top, join, bottom
 using ...Programs
 import ...Programs: evaluate_hom
 
-# Doctrines
+# Theories
 ###########
 
-""" Doctrine of *linear functions*, aka linear maps
+""" Theory of *linear functions*, aka linear maps
 
 Functional fragment of graphical linear algebra.
 """
@@ -80,7 +80,7 @@ end
   compose(f::Hom, g::Hom) = new(f,g; strict=true) # No normalization!
 end
 
-""" Doctrine of *linear relations*
+""" Theory of *linear relations*
 
 The full relational language of graphical linear algebra. This is an abelian
 bicategory of relations (`AbelianBicategoryRelations`), written additively.

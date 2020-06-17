@@ -12,7 +12,7 @@ using Catlab.WiringDiagrams, Catlab.Graphics
 
 # ### Symmetric monoidal category
 
-using Catlab.Doctrines
+using Catlab.Theories
 
 A, B = Ob(FreeSymmetricMonoidalCategory, :A, :B)
 f = Hom(:f, A, B)

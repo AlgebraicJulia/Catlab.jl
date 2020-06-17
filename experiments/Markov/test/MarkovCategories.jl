@@ -4,7 +4,7 @@ using Test
 using Catlab.Syntax, Catlab.WiringDiagrams
 using Markov.MarkovCategories
 
-# Doctrines
+# Theories
 ###########
 
 A, B = Ob(FreeMarkovCategory, :A, :B)

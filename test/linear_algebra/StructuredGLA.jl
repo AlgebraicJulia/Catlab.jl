@@ -1,7 +1,7 @@
 module TestStructuredGraphicalLinearAlgebra
 using Test
 
-using Catlab, Catlab.Doctrines
+using Catlab, Catlab.Theories
 using Catlab.LinearAlgebra.StructuredGraphicalLinearAlgebra
 
 R = ℝ(FreeStructuredLinearFunctions.Ob)

@@ -19,7 +19,7 @@ using StaticArrays: StaticVector, SVector
 using Statistics: mean
 
 using ...Syntax
-using ...Doctrines: ObExpr, HomExpr, dom, codom, compose, id, otimes, braid
+using ...Theories: ObExpr, HomExpr, dom, codom, compose, id, otimes, braid
 using ...WiringDiagrams
 
 # Data types
