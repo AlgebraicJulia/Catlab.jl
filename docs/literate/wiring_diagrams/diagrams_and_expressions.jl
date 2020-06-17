@@ -7,7 +7,7 @@
 # diagrams](@ref wiring_diagram_basics), aka *string diagrams*. Catlab provides
 # facilities for transforming between these two representations.
 
-using Catlab.Doctrines, Catlab.WiringDiagrams
+using Catlab.Theories, Catlab.WiringDiagrams
 using Catlab.Graphics
 
 function show_diagram(d::WiringDiagram)

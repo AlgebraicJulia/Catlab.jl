@@ -17,7 +17,7 @@ import Base: collect, ndims
 # Monoidal category
 ###################
 
-""" Doctrine of *monoidal category*
+""" Theory of *monoidal categories*
 
 To avoid associators and unitors, we assume the monoidal category is *strict*.
 By the coherence theorem there is no loss of generality, but we may add a
@@ -64,7 +64,7 @@ show_latex(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
 # Symmetric monoidal category
 #############################
 
-""" Doctrine of *symmetric monoidal category*
+""" Theory of *symmetric monoidal categories*
 
 The theory (but not the axioms) is the same as a braided monoidal category.
 """
@@ -86,7 +86,7 @@ end
 # Cartesian category
 ####################
 
-""" Doctrine of *monoidal category with diagonals*
+""" Theory of *monoidal categories with diagonals*
 
 A monoidal category with diagonals is a symmetric monoidal category equipped
 with coherent collections of copying and deleting morphisms (comonoids).
@@ -105,7 +105,7 @@ References:
   @op (◊) := delete
 end
 
-""" Doctrine of *cartesian category*
+""" Theory of *cartesian categories*
 
 Actually, this is a cartesian *symmetric monoidal* category but we omit these
 qualifiers for brevity.
@@ -146,7 +146,7 @@ end
 # Biproduct category
 ####################
 
-""" Doctrine of *monoidal category with bidiagonals*
+""" Theory of *monoidal categories with bidiagonals*
 
 The terminology is nonstandard (is there any standard terminology?) but is
 intended to mean a monoidal category with coherent diagonals and codiagonals.
@@ -167,9 +167,9 @@ supported.
   @op (□) := create
 end
 
-""" Doctrine of *bicategory category*
+""" Theory of *biproduct categories*
 
-Also known as a *semiadditive category*.
+Also known as *semiadditive categories*.
 
 FIXME: This theory should extend `MonoidalCategoryWithBidiagonals`,
 `CartesianCategory`, and `CocartesianCategory`, but multiple inheritance is not
@@ -200,7 +200,7 @@ end
 # Closed monoidal category
 ##########################
 
-""" Doctrine of *(symmetric) closed monoidal category*
+""" Theory of (symmetric) *closed monoidal categories*
 """
 @signature SymmetricMonoidalCategory(Ob,Hom) => ClosedMonoidalCategory(Ob,Hom) begin
   # Internal hom of A and B, an object representing Hom(A,B)
@@ -239,7 +239,7 @@ end
 # Cartesian closed category
 ###########################
 
-""" Doctrine of *cartesian closed category* (aka, CCC)
+""" Theory of *cartesian closed categories*, aka CCCs
 
 A CCC is a cartesian category with internal homs (aka, exponential objects).
 
@@ -269,7 +269,7 @@ end
 # Compact closed category
 #########################
 
-""" Doctrine of *compact closed category*
+""" Theory of *compact closed categories*
 """
 @theory ClosedMonoidalCategory(Ob,Hom) => CompactClosedCategory(Ob,Hom) begin
   # Dual A^* of object A
@@ -328,7 +328,7 @@ end
 # Dagger category
 #################
 
-""" Doctrine of *dagger category*
+""" Theory of *dagger categories*
 """
 @signature Category(Ob,Hom) => DaggerCategory(Ob,Hom) begin
   dagger(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
@@ -345,7 +345,7 @@ function distribute_dagger(f::HomExpr)
   distribute_unary(f, dagger, compose, unit=id, contravariant=true)
 end
 
-""" Doctrine of *dagger symmetric monoidal category*
+""" Theory of *dagger symmetric monoidal categories*
 
 Also known as a [symmetric monoidal dagger
 category](https://ncatlab.org/nlab/show/symmetric+monoidal+dagger-category).
@@ -365,7 +365,7 @@ end
                                     dagger, otimes)
 end
 
-""" Doctrine of *dagger compact category*
+""" Theory of *dagger compact categories*
 
 In a dagger compact category, there are two kinds of adjoints of a morphism
 `f::Hom(A,B)`, the adjoint mate `mate(f)::Hom(dual(B),dual(A))` and the dagger
@@ -401,7 +401,7 @@ end
 # Traced monoidal category
 ##########################
 
-""" Doctrine of *traced monoidal category*
+""" Theory of *traced monoidal categories*
 """
 @signature SymmetricMonoidalCategory(Ob,Hom) => TracedMonoidalCategory(Ob,Hom) begin
   trace(X::Ob, A::Ob, B::Ob, f::((X ⊗ A) → (X ⊗ B)))::(A → B)

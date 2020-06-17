@@ -4,8 +4,8 @@ using Test
   include("core/Core.jl")
 end
 
-@testset "Doctrines" begin
-  include("doctrines/Doctrines.jl")
+@testset "Theories" begin
+  include("theories/Theories.jl")
 end
 
 @testset "CategoricalAlgebra" begin

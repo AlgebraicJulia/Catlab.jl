@@ -7,7 +7,7 @@ import Base: join, zero
 # Bicategory of relations
 #########################
 
-""" Doctrine of *bicategory of relations*
+""" Theory of *bicategories of relations*
 
 TODO: The 2-morphisms are missing. I haven't decided how to handle them yet.
 
@@ -40,7 +40,7 @@ end
   top(A::Ob, B::Ob) = compose(delete(A), create(B))
 end
 
-""" Doctrine of *abelian bicategory of relations*
+""" Theory of *abelian bicategories of relations*
 
 Unlike Carboni & Walters, we use additive notation and nomenclature.
 

@@ -73,7 +73,7 @@ Later, Cartmell proposed generalized algebraic theories, which solves the same p
 ```@contents
 Pages = [
      "apis/core.md",
-     "apis/doctrines.md",
+     "apis/theories.md",
      "apis/wiring_diagrams.md",
      "apis/graphics.md",
      "apis/programs.md",

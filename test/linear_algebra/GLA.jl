@@ -4,14 +4,14 @@ using Test
 using Random
 using IterativeSolvers
 
-using Catlab, Catlab.Doctrines, Catlab.WiringDiagrams, Catlab.Programs
+using Catlab, Catlab.Theories, Catlab.WiringDiagrams, Catlab.Programs
 using Catlab.LinearAlgebra.GraphicalLinearAlgebra
 import LinearAlgebra: norm, svd
 
 import LinearMaps: BlockDiagonalMap, UniformScaling
 using LinearOperators
 
-# Doctrines
+# Theories
 ###########
 
 A, B = Ob(FreeLinearFunctions, :A, :B)

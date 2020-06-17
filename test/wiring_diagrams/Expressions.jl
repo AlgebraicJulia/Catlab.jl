@@ -3,7 +3,7 @@ module TestWiringDiagramExpressions
 using Test
 using LightGraphs
 
-using Catlab.Doctrines, Catlab.WiringDiagrams
+using Catlab.Theories, Catlab.WiringDiagrams
 using Catlab.Syntax: syntax_module
 using Catlab.WiringDiagrams.WiringDiagramExpressions: find_parallel,
   find_series, transitive_reduction!

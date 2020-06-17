@@ -5,7 +5,7 @@ export ThinCategory, FreeThinCategory,
 # Thin category
 ###############
 
-""" Doctrine of *thin category*
+""" Theory of *thin categories*
 
 Thin categories have at most one morphism between any two objects.
 """
@@ -30,7 +30,7 @@ end
 # Preorder
 ##########
 
-""" Doctrine of *preorder*
+""" Theory of *preorders*
 
 Preorders encode the axioms of reflexivity and transitivity as term constructors.
 """
@@ -53,7 +53,7 @@ end
 end
 
 # TODO: a GAT-homomorphism between the Preorder GAT and the ThinCategory GAT
-# this is a morphism is *Gat* the category whose objects are doctrines
+# this is a morphism is *GAT* the category whose objects are GATs
 # and whose morphisms are algebraic structure preserving maps
 
 # @functor F(Preorder(Elt, Leq))::ThinCategory(Ob, Hom) begin

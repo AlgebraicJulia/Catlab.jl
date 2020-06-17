@@ -3,7 +3,7 @@ module TestComposeWiringDiagrams
 using Test
 import Compose
 
-using Catlab.Doctrines, Catlab.WiringDiagrams
+using Catlab.Theories, Catlab.WiringDiagrams
 using Catlab: Graphics
 
 to_composejl(f; kw...) = Graphics.to_composejl(f; outer_ports_layout=:fixed, kw...)

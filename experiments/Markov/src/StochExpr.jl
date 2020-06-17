@@ -1,5 +1,5 @@
 using Catlab
-using Catlab.Doctrines
+using Catlab.Theories
 
 export crand
 

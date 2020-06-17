@@ -8,7 +8,7 @@ import Base: collect, ndims
 # Monoidal category
 ###################
 
-""" Doctrine of *monoidal category* in additive notation
+""" Theory of *monoidal categories* in additive notation
 
 The same as `MonoidalCategory` mathematically but with different notation.
 """
@@ -43,7 +43,7 @@ show_latex(io::IO, expr::ObExpr{:mzero}; kw...) = print(io, "O")
 # Symmetric monoidal category
 #############################
 
-""" Doctrine of *symmetric monoidal category* in additive notation
+""" Theory of *symmetric monoidal categories* in additive notation
 
 The same as `SymmetricMonoidalCategory` mathematically but with different
 notation.
@@ -62,7 +62,7 @@ end
 # Cocartesian category
 ######################
 
-""" Doctrine of *monoidal category with codiagonals*
+""" Theory of *monoidal categories with codiagonals*
 
 A monoidal category with codiagonals is a symmetric monoidal category equipped
 with coherent collections of merging and creating morphisms (monoids).
@@ -77,7 +77,7 @@ For references, see `MonoidalCategoryWithDiagonals`.
   @op (□) := create
 end
 
-""" Doctrine of *cocartesian category*
+""" Theory of *cocartesian categories*
 
 Actually, this is a cocartesian *symmetric monoidal* category but we omit these
 qualifiers for brevity.

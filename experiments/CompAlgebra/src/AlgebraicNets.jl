@@ -16,8 +16,8 @@ using Match
 using Catlab
 using Catlab.Meta: concat_expr
 import Catlab.Syntax: show_latex, show_unicode
-using Catlab.Doctrines: MonoidalCategoryWithBidiagonals, ObExpr, HomExpr
-import Catlab.Doctrines: Ob, Hom, dom, codom,
+using Catlab.Theories: MonoidalCategoryWithBidiagonals, ObExpr, HomExpr
+import Catlab.Theories: Ob, Hom, dom, codom,
   id, compose, ⋅, ∘, otimes, ⊗, munit, braid, mcopy, delete, mmerge, create
 using Catlab.WiringDiagrams: WiringLayer
 using Catlab.Programs
@@ -28,7 +28,7 @@ import Catlab.Programs.GenerateJuliaPrograms: genvar, genvars, to_function_expr,
 # Syntax
 ########
 
-""" Doctrine of *algebraic networks*
+""" Theory of *algebraic networks*
 
 TODO: Explain
 """

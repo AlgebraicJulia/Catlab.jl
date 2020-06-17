@@ -2,7 +2,7 @@ module TestGenerateJuliaPrograms
 
 using Test
 
-using Catlab, Catlab.Doctrines
+using Catlab, Catlab.Theories
 using Catlab.Programs.GenerateJuliaPrograms
 
 # Compilation

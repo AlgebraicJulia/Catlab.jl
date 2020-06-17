@@ -8,7 +8,7 @@ using LightGraphs, MetaGraphs
 using LinearAlgebra: normalize
 using StaticArrays
 
-import ...Doctrines: HomExpr
+import ...Theories: HomExpr
 using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
 import ..Graphviz
 import ..Graphviz: to_graphviz

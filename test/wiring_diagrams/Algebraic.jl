@@ -1,7 +1,7 @@
 module TestAlgebraicWiringDiagrams
 using Test
 
-using Catlab.Doctrines, Catlab.WiringDiagrams
+using Catlab.Theories, Catlab.WiringDiagrams
 
 # Categorical interface
 #######################

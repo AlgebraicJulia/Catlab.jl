@@ -1,7 +1,7 @@
-module TestDoctrines
+module TestTheories
 
 using Test
-using Catlab.Doctrines
+using Catlab.Theories
 using Catlab.Syntax
 
 sexpr(expr::GATExpr) = sprint(show_sexpr, expr)
