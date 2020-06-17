@@ -1,7 +1,7 @@
 # Catlab.jl
 
-[![Build Status](https://github.com/epatters/Catlab.jl/workflows/Tests/badge.svg)](https://github.com/epatters/Catlab.jl/actions?query=workflow%3ATests)
-[![Latest Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://epatters.github.io/Catlab.jl/latest) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.598366.svg)](https://doi.org/10.5281/zenodo.598366)
+[![Build Status](https://github.com/AlgebraicJulia/Catlab.jl/workflows/Tests/badge.svg)](https://github.com/AlgebraicJulia/Catlab.jl/actions?query=workflow%3ATests)
+[![Latest Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://algebraicjulia.github.io/Catlab.jl/latest) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.598366.svg)](https://doi.org/10.5281/zenodo.598366)
 
 Catlab.jl is a framework for applied and computational category theory, written
 in the [Julia](https://julialang.org) language. Catlab provides a programming
@@ -12,7 +12,7 @@ formalizable as a generalized algebraic theory.
 
 ## Getting started
 
-The [documentation](https://epatters.github.io/Catlab.jl/latest) contains
+The [documentation](https://algebraicjulia.github.io/Catlab.jl/latest) contains
 several example notebooks, as well as partial API docs. However, we readily
 acknowledge that the documentation is not as well developed as it should be.
 Feel free to ask questions! In addition to GitHub issues, we have a
