@@ -1,5 +1,5 @@
 module FinSets
-export FinOrd, FinOrdFunction, pushout
+export FinOrd, FinOrdFunction, force, pushout
 
 using AutoHashEquals
 using DataStructures: IntDisjointSets, union!, find_root
@@ -44,6 +44,14 @@ FinOrdFunction(f::AbstractVector, codom::Integer) =
 (f::FinOrdFunction)(i::Integer) = f.func(i)
 (f::FinOrdFunction{<:AbstractVector})(i::Integer) = f.func[i]
 
+as_function(f) = f
+as_function(f::AbstractVector) = x -> f[x]
+
+""" Force evaluation of function, yielding the vector representation.
+"""
+force(f::FinOrdFunction) = FinOrdFunction(map(f, 1:f.dom), f.codom)
+force(f::FinOrdFunction{<:AbstractVector}) = f
+
 # Category of finite ordinals
 #############################
 
@@ -59,7 +67,7 @@ FinOrdFunction(f::AbstractVector, codom::Integer) =
   end
 end
 
-compose_functions(f,g) = g∘f # By default, Julia's built-in compose
+compose_functions(f,g) = as_function(g) ∘ as_function(f)
 compose_functions(::typeof(identity), g) = g
 compose_functions(f, ::typeof(identity)) = f
 compose_functions(::typeof(identity), ::typeof(identity)) = identity
@@ -68,25 +76,37 @@ compose_functions(f::AbstractVector, g::AbstractVector) = g[f]
 # Limits and colimits
 #####################
 
+function coproduct(A::FinOrd, B::FinOrd)
+  m, n = A.n, B.n
+  ι1 = FinOrdFunction(i -> i, m, m+n)
+  ι2 = FinOrdFunction(i -> m+i, n, m+n)
+  Cospan(ι1, ι2)
+end
+
+function coequalizer(f::FinOrdFunction, g::FinOrdFunction)
+  @assert dom(f) == dom(g) && codom(f) == codom(g)
+  m, n = f.dom, f.codom
+  sets = IntDisjointSets(n)
+  for i in 1:m
+    union!(sets, f(i), g(i))
+  end
+  
+  h = [ find_root(sets, i) for i in 1:n ]
+  roots = unique(h)
+  inv_roots = Dict(root => i for (i, root) in enumerate(roots))
+  FinOrdFunction([ inv_roots[root] for root in h ], length(roots))
+end
+
 """ Pushout of span of functions between finite sets.
 
 Returns a cospan whose legs are the inclusions into the quotient set.
 """
 function pushout(span::Span{<:FinOrdFunction,<:FinOrdFunction})
   f, g = left(span), right(span)
-  m, n = f.codom, g.codom
-  sets = IntDisjointSets(m+n)
-  for i in 1:f.dom
-    union!(sets, f(i), m + g(i))
-  end
-  
-  h = [ find_root(sets, i) for i in 1:m ]
-  k = [ find_root(sets, m+i) for i in 1:n ]
-  roots = unique!([h; k])
-  inv_roots = Dict(root => i for (i, root) in enumerate(roots))
-  h = FinOrdFunction([ inv_roots[root] for root in h ], length(roots))
-  k = FinOrdFunction([ inv_roots[root] for root in k ], length(roots))
-  Cospan(h, k)
+  coprod = coproduct(codom(f), codom(g))
+  ι1, ι2 = left(coprod), right(coprod)
+  coeq = coequalizer(f⋅ι1, g⋅ι2)
+  Cospan(ι1⋅coeq, ι2⋅coeq)
 end
 
 end
