@@ -28,6 +28,12 @@ h = FinOrdFunction([3,1,2], 3)
 # Limits and colimits
 #####################
 
+# Product.
+span = product(FinOrd(2), FinOrd(3))
+@test apex(span) == FinOrd(6)
+@test force(left(span)) == FinOrdFunction([1,2,1,2,1,2])
+@test force(right(span)) == FinOrdFunction([1,1,2,2,3,3])
+
 # Coproduct.
 cospan = coproduct(FinOrd(2), FinOrd(3))
 @test base(cospan) == FinOrd(5)

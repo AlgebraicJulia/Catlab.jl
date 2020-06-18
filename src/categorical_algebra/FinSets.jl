@@ -1,5 +1,5 @@
 module FinSets
-export FinOrd, FinOrdFunction, force, coproduct, coequalizer, pushout
+export FinOrd, FinOrdFunction, force, product, coproduct, coequalizer, pushout
 
 using AutoHashEquals
 using DataStructures: IntDisjointSets, union!, find_root
@@ -76,6 +76,14 @@ as_function(f::AbstractVector) = x -> f[x]
 
 # Limits and colimits
 #####################
+
+function product(A::FinOrd, B::FinOrd)
+  m, n = A.n, B.n
+  indices = CartesianIndices((m, n))
+  π1 = FinOrdFunction(i -> indices[i][1], m*n, m)
+  π2 = FinOrdFunction(i -> indices[i][2], m*n, n)
+  Span(π1, π2)
+end
 
 function coproduct(A::FinOrd, B::FinOrd)
   m, n = A.n, B.n
