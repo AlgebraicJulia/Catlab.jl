@@ -1,4 +1,4 @@
-![Catlab.jl](docs/src/assets/full-logo.png)
+![Catlab.jl](docs/src/assets/logo.png)
 
 ---
 
