@@ -15,9 +15,11 @@ formalizable as a generalized algebraic theory.
 The [documentation](https://algebraicjulia.github.io/Catlab.jl/latest) contains
 several example notebooks, as well as partial API docs. However, we readily
 acknowledge that the documentation is not as well developed as it should be.
-Feel free to ask questions! In addition to GitHub issues, we have a
-[#catlab](https://julialang.slack.com/archives/CQNUDDF5L) channel on the [Julia
-Slack](https://slackinvite.julialang.org/).
+Feel free to ask questions! Besides the GitHub issues, we have a
+[#catlab.jl](https://julialang.zulipchat.com/#narrow/stream/230248-catlab.2Ejl)
+stream on the [Julia Zulip](https://julialang.zulipchat.com/) (preferred) and
+also a [#catlab](https://julialang.slack.com/archives/CQNUDDF5L) channel on the
+[Julia Slack](https://slackinvite.julialang.org/) (less preferred).
 
 ### Contributing
 
