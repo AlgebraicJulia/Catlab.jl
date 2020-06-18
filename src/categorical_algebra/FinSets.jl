@@ -1,5 +1,5 @@
 module FinSets
-export FinOrd, FinOrdFunction, pushout
+export FinOrd, FinOrdFunction, force, coproduct, coequalizer, pushout
 
 using AutoHashEquals
 using DataStructures: IntDisjointSets, union!, find_root
@@ -7,7 +7,10 @@ using DataStructures: IntDisjointSets, union!, find_root
 using ...GAT
 using ...Theories: Category
 using ..ShapeDiagrams
-import ...Theories: dom, codom, compose, ⋅, ∘, id
+import ...Theories: dom, codom, id, compose, ⋅, ∘
+
+# Data types
+############
 
 """ Finite ordinal (natural number).
 
@@ -18,31 +21,43 @@ category of finite sets.
   n::T
 end
 
-""" Function between sets of form `1:n`.
+""" Function between sets in the form of finite ordinals.
 
 A morphism in the category of finite ordinals, which is the skeleton of the
 category of finite sets.
 
-TODO: Explain data structures: functions, vectors.
+In this data structure, the field `func` representing the function can have any
+Julia type `T`, provided that `FinOrdFunction{T}` is callable. Usually, this
+object will be an ordinary Julia function or an abstract vector. In the latter
+case, the function (1↦1, 2↦3, 3↦2, 4↦3) is represented by the vector [1,3,2,3].
 """
-@auto_hash_equals struct FinOrdFunction{T<:Integer,F}
+@auto_hash_equals struct FinOrdFunction{F,T<:Integer}
   func::F
   dom::T
   codom::T
 end
-
-FinOrdFunction(f::AbstractVector) = FinOrdFunction(f, max(f))
+FinOrdFunction(f::AbstractVector) = FinOrdFunction(f, maximum(f))
 FinOrdFunction(f::AbstractVector, codom::Integer) =
   FinOrdFunction(f, length(f), codom)
 
+# Function objects are callable.
 (f::FinOrdFunction)(i::Integer) = f.func(i)
-(f::FinOrdFunction{T,Vector{T}})(i::Integer) where T = f.func[i]
+(f::FinOrdFunction{<:AbstractVector})(i::Integer) = f.func[i]
+(f::FinOrdFunction{typeof(id)})(i::Integer) = i
+
+""" Force evaluation of function, yielding the vector representation.
+"""
+force(f::FinOrdFunction) = FinOrdFunction(map(f, 1:f.dom), f.codom)
+force(f::FinOrdFunction{<:AbstractVector}) = f
+
+# Category of finite ordinals
+#############################
 
 @instance Category(FinOrd, FinOrdFunction) begin
   dom(f::FinOrdFunction) = FinOrd(f.dom)
   codom(f::FinOrdFunction) = FinOrd(f.codom)
   
-  id(A::FinOrd) = FinOrdFunction(identity, A.n, A.n)
+  id(A::FinOrd) = FinOrdFunction(id, A.n, A.n)
   
   function compose(f::FinOrdFunction, g::FinOrdFunction)
     @assert f.codom == g.dom
@@ -50,30 +65,49 @@ FinOrdFunction(f::AbstractVector, codom::Integer) =
   end
 end
 
-compose_functions(f,g) = g∘f # Julia's built-in composition
-compose_functions(::typeof(identity), g) = g
-compose_functions(f, ::typeof(identity)) = f
-compose_functions(::typeof(identity), ::typeof(identity)) = identity
+compose_functions(f,g) = as_function(g) ∘ as_function(f)
+compose_functions(::typeof(id), g) = g
+compose_functions(f, ::typeof(id)) = f
+compose_functions(::typeof(id), ::typeof(id)) = id
 compose_functions(f::AbstractVector, g::AbstractVector) = g[f]
 
+as_function(f) = f
+as_function(f::AbstractVector) = x -> f[x]
+
+# Limits and colimits
+#####################
+
+function coproduct(A::FinOrd, B::FinOrd)
+  m, n = A.n, B.n
+  ι1 = FinOrdFunction(1:m, m, m+n)
+  ι2 = FinOrdFunction(m+1:m+n, n, m+n)
+  Cospan(ι1, ι2)
+end
+
+function coequalizer(f::FinOrdFunction, g::FinOrdFunction)
+  @assert dom(f) == dom(g) && codom(f) == codom(g)
+  m, n = f.dom, f.codom
+  sets = IntDisjointSets(n)
+  for i in 1:m
+    union!(sets, f(i), g(i))
+  end
+  h = [ find_root(sets, i) for i in 1:n ]
+  roots = unique!(sort(h))
+  FinOrdFunction([ searchsortedfirst(roots, r) for r in h], length(roots))
+end
 
 """ Pushout of span of functions between finite sets.
+
+Returns a cospan whose legs are the inclusions into the quotient set.
+
+TODO: This logic is completely generic. Make it independent of FinOrd.
 """
 function pushout(span::Span{<:FinOrdFunction,<:FinOrdFunction})
   f, g = left(span), right(span)
-  m, n = f.codom, g.codom
-  sets = IntDisjointSets(m+n)
-  for i in 1:f.dom
-    union!(sets, f(i), m + g(i))
-  end
-  
-  h = [ find_root(sets, i) for i in 1:m ]
-  k = [ find_root(sets, m+i) for i in 1:n ]
-  roots = unique!([h; k])
-  inv_roots = Dict(root => i for (i, root) in enumerate(roots))
-  h = FinOrdFunction([ inv_roots[root] for root in h ], length(roots))
-  k = FinOrdFunction([ inv_roots[root] for root in k ], length(roots))
-  Cospan(h, k)
+  coprod = coproduct(codom(f), codom(g))
+  ι1, ι2 = left(coprod), right(coprod)
+  coeq = coequalizer(f⋅ι1, g⋅ι2)
+  Cospan(ι1⋅coeq, ι2⋅coeq)
 end
 
 end
