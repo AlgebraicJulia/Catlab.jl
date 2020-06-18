@@ -9,6 +9,9 @@ using ...Theories: Category
 using ..ShapeDiagrams
 import ...Theories: dom, codom, compose, ⋅, ∘, id
 
+# Data types
+############
+
 """ Finite ordinal (natural number).
 
 An object in the category of finite ordinals, which is the skeleton of the
@@ -18,25 +21,31 @@ category of finite sets.
   n::T
 end
 
-""" Function between sets of form `1:n`.
+""" Function between sets in the form of finite ordinals.
 
 A morphism in the category of finite ordinals, which is the skeleton of the
 category of finite sets.
 
-TODO: Explain data structures: functions, vectors.
+In this data structure, the field `func` representing the function can have any
+Julia type `T`, provided that `FinOrdFunction{T}` is callable. Usually, this
+will be an ordinary Julia function or a vector. In the latter case, the function
+(1↦1, 2↦3, 3↦2, 4↦3) would be represented by the vector [1,3,2,3].
 """
-@auto_hash_equals struct FinOrdFunction{T<:Integer,F}
+@auto_hash_equals struct FinOrdFunction{F,T<:Integer}
   func::F
   dom::T
   codom::T
 end
-
 FinOrdFunction(f::AbstractVector) = FinOrdFunction(f, max(f))
 FinOrdFunction(f::AbstractVector, codom::Integer) =
   FinOrdFunction(f, length(f), codom)
 
+# Function objects are callable.
 (f::FinOrdFunction)(i::Integer) = f.func(i)
-(f::FinOrdFunction{T,Vector{T}})(i::Integer) where T = f.func[i]
+(f::FinOrdFunction{<:AbstractVector})(i::Integer) = f.func[i]
+
+# Category of finite ordinals
+#############################
 
 @instance Category(FinOrd, FinOrdFunction) begin
   dom(f::FinOrdFunction) = FinOrd(f.dom)
@@ -50,14 +59,18 @@ FinOrdFunction(f::AbstractVector, codom::Integer) =
   end
 end
 
-compose_functions(f,g) = g∘f # Julia's built-in composition
+compose_functions(f,g) = g∘f # By default, Julia's built-in compose
 compose_functions(::typeof(identity), g) = g
 compose_functions(f, ::typeof(identity)) = f
 compose_functions(::typeof(identity), ::typeof(identity)) = identity
 compose_functions(f::AbstractVector, g::AbstractVector) = g[f]
 
+# Limits and colimits
+#####################
 
 """ Pushout of span of functions between finite sets.
+
+Returns a cospan whose legs are the inclusions into the quotient set.
 """
 function pushout(span::Span{<:FinOrdFunction,<:FinOrdFunction})
   f, g = left(span), right(span)
