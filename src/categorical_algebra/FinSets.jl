@@ -93,9 +93,8 @@ function coequalizer(f::FinOrdFunction, g::FinOrdFunction)
   end
   
   h = [ find_root(sets, i) for i in 1:n ]
-  roots = unique(h)
-  inv_roots = Dict(root => i for (i, root) in enumerate(roots))
-  FinOrdFunction([ inv_roots[root] for root in h ], length(roots))
+  roots = unique!(sort(h))
+  FinOrdFunction([ searchsortedfirst(roots, r) for r in h], length(roots))
 end
 
 """ Pushout of span of functions between finite sets.
