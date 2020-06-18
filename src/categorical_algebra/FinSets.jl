@@ -1,5 +1,5 @@
 module FinSets
-export FinOrd, FinOrdFunction, force, pushout
+export FinOrd, FinOrdFunction, force, coproduct, coequalizer, pushout
 
 using AutoHashEquals
 using DataStructures: IntDisjointSets, union!, find_root
@@ -28,15 +28,15 @@ category of finite sets.
 
 In this data structure, the field `func` representing the function can have any
 Julia type `T`, provided that `FinOrdFunction{T}` is callable. Usually, this
-will be an ordinary Julia function or a vector. In the latter case, the function
-(1↦1, 2↦3, 3↦2, 4↦3) would be represented by the vector [1,3,2,3].
+object will be an ordinary Julia function or an abstract vector. In the latter
+case, the function (1↦1, 2↦3, 3↦2, 4↦3) is represented by the vector [1,3,2,3].
 """
 @auto_hash_equals struct FinOrdFunction{F,T<:Integer}
   func::F
   dom::T
   codom::T
 end
-FinOrdFunction(f::AbstractVector) = FinOrdFunction(f, max(f))
+FinOrdFunction(f::AbstractVector) = FinOrdFunction(f, maximum(f))
 FinOrdFunction(f::AbstractVector, codom::Integer) =
   FinOrdFunction(f, length(f), codom)
 
@@ -91,7 +91,6 @@ function coequalizer(f::FinOrdFunction, g::FinOrdFunction)
   for i in 1:m
     union!(sets, f(i), g(i))
   end
-  
   h = [ find_root(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   FinOrdFunction([ searchsortedfirst(roots, r) for r in h], length(roots))
@@ -100,6 +99,8 @@ end
 """ Pushout of span of functions between finite sets.
 
 Returns a cospan whose legs are the inclusions into the quotient set.
+
+TODO: This logic is completely generic. Make it independent of FinOrd.
 """
 function pushout(span::Span{<:FinOrdFunction,<:FinOrdFunction})
   f, g = left(span), right(span)
