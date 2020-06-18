@@ -1,4 +1,6 @@
-# Catlab.jl
+![Catlab.jl](docs/src/assets/full-logo.png)
+
+---
 
 [![Build Status](https://github.com/AlgebraicJulia/Catlab.jl/workflows/Tests/badge.svg)](https://github.com/AlgebraicJulia/Catlab.jl/actions?query=workflow%3ATests)
 [![Latest Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://algebraicjulia.github.io/Catlab.jl/latest) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.598366.svg)](https://doi.org/10.5281/zenodo.598366)

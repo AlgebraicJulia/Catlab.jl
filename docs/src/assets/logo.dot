@@ -1,0 +1,15 @@
+digraph G {
+    graph [bgcolor="transparent", nodesep=".3", ranksep=".3"];
+    node[shape=circle, style=filled]
+    //rankdir=LR
+    code1 [label="", color="royalblue3", fillcolor="royalblue1"]
+    code2 [label="", color="brown3", fillcolor="indianred"]
+    m1 [label="", color="forestgreen", fillcolor="mediumseagreen"]
+    m2 [label="", color="mediumorchid3", fillcolor="orchid3"]
+    {rank=same code1, m1}
+    {rank=same code2, m2}
+    code1 -> m1
+    code1 -> code2
+    code2 -> m2
+    m1 -> m2
+}

@@ -1,4 +1,4 @@
-# Catlab.jl Documentation
+![Catlab.jl](assets/full-logo.png)
 
 Catlab.jl is a framework for applied and computational category theory, written
 in the [Julia](https://julialang.org) language. Catlab provides a programming
