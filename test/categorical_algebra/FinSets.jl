@@ -7,9 +7,13 @@ using Catlab.CategoricalAlgebra.ShapeDiagrams, Catlab.CategoricalAlgebra.FinSets
 f = FinOrdFunction([1,3,4], 5)
 g = FinOrdFunction([1,1,2,2,3], 3)
 h = FinOrdFunction([3,1,2], 3)
-@test [f(1),f(2),f(3)] == [1,3,4]
 
-# Category of finite ordinals
+# Evaluation.
+@test map(f, 1:3) == [1,3,4]
+@test map(id(FinOrd(3)), 1:3) == [1,2,3]
+@test map(FinOrdFunction(x -> (x % 3) + 1, 3, 3), 1:3) == [2,3,1]
+
+# Category of finite ordinals.
 @test dom(f) == FinOrd(3)
 @test codom(f) == FinOrd(5)
 @test compose(f,g) == FinOrdFunction([1,2,2], 3)

@@ -7,7 +7,7 @@ using DataStructures: IntDisjointSets, union!, find_root
 using ...GAT
 using ...Theories: Category
 using ..ShapeDiagrams
-import ...Theories: dom, codom, compose, ⋅, ∘, id
+import ...Theories: dom, codom, id, compose, ⋅, ∘
 
 # Data types
 ############
@@ -43,9 +43,7 @@ FinOrdFunction(f::AbstractVector, codom::Integer) =
 # Function objects are callable.
 (f::FinOrdFunction)(i::Integer) = f.func(i)
 (f::FinOrdFunction{<:AbstractVector})(i::Integer) = f.func[i]
-
-as_function(f) = f
-as_function(f::AbstractVector) = x -> f[x]
+(f::FinOrdFunction{typeof(id)})(i::Integer) = i
 
 """ Force evaluation of function, yielding the vector representation.
 """
@@ -59,7 +57,7 @@ force(f::FinOrdFunction{<:AbstractVector}) = f
   dom(f::FinOrdFunction) = FinOrd(f.dom)
   codom(f::FinOrdFunction) = FinOrd(f.codom)
   
-  id(A::FinOrd) = FinOrdFunction(identity, A.n, A.n)
+  id(A::FinOrd) = FinOrdFunction(id, A.n, A.n)
   
   function compose(f::FinOrdFunction, g::FinOrdFunction)
     @assert f.codom == g.dom
@@ -68,17 +66,20 @@ force(f::FinOrdFunction{<:AbstractVector}) = f
 end
 
 compose_functions(f,g) = as_function(g) ∘ as_function(f)
-compose_functions(::typeof(identity), g) = g
-compose_functions(f, ::typeof(identity)) = f
-compose_functions(::typeof(identity), ::typeof(identity)) = identity
+compose_functions(::typeof(id), g) = g
+compose_functions(f, ::typeof(id)) = f
+compose_functions(::typeof(id), ::typeof(id)) = id
 compose_functions(f::AbstractVector, g::AbstractVector) = g[f]
+
+as_function(f) = f
+as_function(f::AbstractVector) = x -> f[x]
 
 # Limits and colimits
 #####################
 
 function coproduct(A::FinOrd, B::FinOrd)
   m, n = A.n, B.n
-  ι1 = FinOrdFunction(i -> i, m, m+n)
+  ι1 = FinOrdFunction(identity, m, m+n)
   ι2 = FinOrdFunction(i -> m+i, n, m+n)
   Cospan(ι1, ι2)
 end
