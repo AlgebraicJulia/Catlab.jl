@@ -79,8 +79,8 @@ as_function(f::AbstractVector) = x -> f[x]
 
 function coproduct(A::FinOrd, B::FinOrd)
   m, n = A.n, B.n
-  ι1 = FinOrdFunction(identity, m, m+n)
-  ι2 = FinOrdFunction(i -> m+i, n, m+n)
+  ι1 = FinOrdFunction(1:m, m, m+n)
+  ι2 = FinOrdFunction(m+1:m+n, n, m+n)
   Cospan(ι1, ι2)
 end
 
