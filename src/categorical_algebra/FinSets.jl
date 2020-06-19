@@ -1,6 +1,6 @@
 module FinSets
-export FinOrd, FinOrdFunction, force, product, equalizer, pullback,
-  coproduct, coequalizer, pushout
+export FinOrd, FinOrdFunction, force, terminal, product, equalizer, pullback,
+  initial, coproduct, coequalizer, pushout
 
 using AutoHashEquals
 using DataStructures: IntDisjointSets, union!, find_root
@@ -75,8 +75,11 @@ compose_functions(f::AbstractVector, g::AbstractVector) = g[f]
 as_function(f) = f
 as_function(f::AbstractVector) = x -> f[x]
 
-# Limits and colimits
-#####################
+# Limits
+########
+
+terminal(::Type{FinOrd}) = FinOrd(1)
+terminal(::Type{FinOrd{T}}) where T = FinOrd(one(T))
 
 function product(A::FinOrd, B::FinOrd)
   m, n = A.n, B.n
@@ -103,6 +106,12 @@ function pullback(cospan::Cospan{<:FinOrdFunction,<:FinOrdFunction})
   eq = equalizer(π1⋅f, π2⋅g)
   Span(eq⋅π1, eq⋅π2)
 end
+
+# Colimits
+##########
+
+initial(::Type{FinOrd}) = FinOrd(0)
+initial(::Type{FinOrd{T}}) where T = FinOrd(zero(T))
 
 function coproduct(A::FinOrd, B::FinOrd)
   m, n = A.n, B.n

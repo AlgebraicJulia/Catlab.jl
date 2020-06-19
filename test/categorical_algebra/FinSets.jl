@@ -28,6 +28,9 @@ h = FinOrdFunction([3,1,2], 3)
 # Limits
 ########
 
+# Terminal object.
+@test terminal(FinOrd) == FinOrd(1)
+
 # Product.
 span = product(FinOrd(2), FinOrd(3))
 @test apex(span) == FinOrd(6)
@@ -60,6 +63,9 @@ span = pullback(Cospan(FinOrdFunction([1,1]), FinOrdFunction([1,1,1])))
 
 # Colimits
 ##########
+
+# Initial object.
+@test initial(FinOrd) == FinOrd(0)
 
 # Coproduct.
 cospan = coproduct(FinOrd(2), FinOrd(3))
