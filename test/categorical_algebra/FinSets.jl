@@ -25,14 +25,29 @@ h = FinOrdFunction([3,1,2], 3)
 @test compose(id(dom(f)),f) == f
 @test compose(f,id(codom(f))) == f
 
-# Limits and colimits
-#####################
+# Limits
+########
 
 # Product.
 span = product(FinOrd(2), FinOrd(3))
 @test apex(span) == FinOrd(6)
 @test force(left(span)) == FinOrdFunction([1,2,1,2,1,2])
 @test force(right(span)) == FinOrdFunction([1,1,2,2,3,3])
+
+# Equalizer.
+f, g = FinOrdFunction([1,2,3]), FinOrdFunction([3,2,1])
+@test equalizer(f,g) == FinOrdFunction([2], 3)
+
+# Equalizer in case of identical functions.
+f = FinOrdFunction([4,2,3,1], 5)
+@test equalizer(f,f) == force(id(FinOrd(4)))
+
+# Equalizer matching nothing.
+f, g = id(FinOrd(5)), FinOrdFunction([2,3,4,5,1], 5)
+@test equalizer(f,g) == FinOrdFunction([], 5)
+
+# Colimits
+##########
 
 # Coproduct.
 cospan = coproduct(FinOrd(2), FinOrd(3))
@@ -42,18 +57,15 @@ cospan = coproduct(FinOrd(2), FinOrd(3))
 
 # Coequalizer from a singleton set.
 f, g = FinOrdFunction([1], 3), FinOrdFunction([3], 3)
-coeq = coequalizer(f,g)
-@test coeq == FinOrdFunction([1,2,1], 2)
+@test coequalizer(f,g) == FinOrdFunction([1,2,1], 2)
 
-# Coequalizer in degenerate case of identical functions.
+# Coequalizer in case of identical functions.
 f = FinOrdFunction([4,2,3,1], 5)
-coeq = coequalizer(f,f)
-@test coeq == force(id(FinOrd(5)))
+@test coequalizer(f,f) == force(id(FinOrd(5)))
 
 # Coequalizer identifying everything.
 f, g = id(FinOrd(5)), FinOrdFunction([2,3,4,5,1], 5)
-coeq = coequalizer(f,g)
-@test coeq == FinOrdFunction(repeat([1],5))
+@test coequalizer(f,g) == FinOrdFunction(repeat([1],5))
 
 # Pushout from the empty set: the degenerate case of the coproduct.
 f, g = FinOrdFunction([], 2), FinOrdFunction([], 3)

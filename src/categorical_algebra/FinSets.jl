@@ -1,5 +1,6 @@
 module FinSets
-export FinOrd, FinOrdFunction, force, product, coproduct, coequalizer, pushout
+export FinOrd, FinOrdFunction, force, product, equalizer, coproduct,
+  coequalizer, pushout
 
 using AutoHashEquals
 using DataStructures: IntDisjointSets, union!, find_root
@@ -83,6 +84,12 @@ function product(A::FinOrd, B::FinOrd)
   π1 = FinOrdFunction(i -> indices[i][1], m*n, m)
   π2 = FinOrdFunction(i -> indices[i][2], m*n, n)
   Span(π1, π2)
+end
+
+function equalizer(f::FinOrdFunction, g::FinOrdFunction)
+  @assert dom(f) == dom(g) && codom(f) == codom(g)
+  m = f.dom
+  FinOrdFunction(filter(i -> f(i) == g(i), 1:m), m)
 end
 
 function coproduct(A::FinOrd, B::FinOrd)
