@@ -2,7 +2,7 @@ export MonoidalCategory, otimes, munit, ⊗, collect, ndims,
   SymmetricMonoidalCategory, FreeSymmetricMonoidalCategory, braid, σ,
   MonoidalCategoryWithDiagonals, CartesianCategory, FreeCartesianCategory,
   mcopy, delete, pair, proj1, proj2, Δ, ◊,
-  mmerge, create, copair, incl1, incl2, ∇, □,
+  mmerge, create, copair, coproj1, coproj2, ∇, □,
   MonoidalCategoryWithBidiagonals, BiproductCategory, FreeBiproductCategory,
   ClosedMonoidalCategory, FreeClosedMonoidalCategory, hom, ev, curry,
   CartesianClosedCategory, FreeCartesianClosedCategory,
@@ -25,9 +25,9 @@ theory for weak monoidal categories later.
 """
 @signature Category(Ob,Hom) => MonoidalCategory(Ob,Hom) begin
   otimes(A::Ob, B::Ob)::Ob
-  @op (⊗) := otimes
   otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣
     (A::Ob, B::Ob, C::Ob, D::Ob)
+  @op (⊗) := otimes
   munit()::Ob
 end
 
@@ -105,10 +105,7 @@ References:
   @op (◊) := delete
 end
 
-""" Theory of *cartesian categories*
-
-Actually, this is a cartesian *symmetric monoidal* category but we omit these
-qualifiers for brevity.
+""" Theory of *cartesian (monoidal) categories*
 """
 @theory MonoidalCategoryWithDiagonals(Ob,Hom) => CartesianCategory(Ob,Hom) begin
   pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
@@ -180,8 +177,8 @@ yet supported.
   copair(f::(A → C), g::(B → C))::((A ⊗ B) → C) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
-  incl1(A::Ob, B::Ob)::(A → (A ⊗ B))
-  incl2(A::Ob, B::Ob)::(B → (A ⊗ B))
+  coproj1(A::Ob, B::Ob)::(A → (A ⊗ B))
+  coproj2(A::Ob, B::Ob)::(B → (A ⊗ B))
 end
 
 @syntax FreeBiproductCategory(ObExpr,HomExpr) BiproductCategory begin
@@ -193,8 +190,8 @@ end
   copair(f::Hom, g::Hom) = (f ⊗ g) → ∇(codom(f))
   proj1(A::Ob, B::Ob) = id(A) ⊗ ◊(B)
   proj2(A::Ob, B::Ob) = ◊(A) ⊗ id(B)
-  incl1(A::Ob, B::Ob) = id(A) ⊗ □(B)
-  incl2(A::Ob, B::Ob) = □(A) ⊗ id(B)
+  coproj1(A::Ob, B::Ob) = id(A) ⊗ □(B)
+  coproj2(A::Ob, B::Ob) = □(A) ⊗ id(B)
 end
 
 # Closed monoidal category

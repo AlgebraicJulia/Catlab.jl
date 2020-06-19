@@ -29,8 +29,8 @@ end
 
 include("Category.jl")
 include("Monoidal.jl")
-include("Preorders.jl")
 include("AdditiveMonoidal.jl")
+include("Preorders.jl")
 include("Relations.jl")
 
 end
