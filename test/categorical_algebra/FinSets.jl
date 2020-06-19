@@ -46,6 +46,18 @@ f = FinOrdFunction([4,2,3,1], 5)
 f, g = id(FinOrd(5)), FinOrdFunction([2,3,4,5,1], 5)
 @test equalizer(f,g) == FinOrdFunction([], 5)
 
+# Pullback.
+span = pullback(Cospan(FinOrdFunction([1,1,3,2],4), FinOrdFunction([1,1,4,2],4)))
+@test apex(span) == FinOrd(5)
+@test force(left(span)) == FinOrdFunction([1,2,1,2,4], 4)
+@test force(right(span)) == FinOrdFunction([1,1,2,2,4], 4)
+
+# Pullback from a singleton set: the degenerate case of a product.
+span = pullback(Cospan(FinOrdFunction([1,1]), FinOrdFunction([1,1,1])))
+@test apex(span) == FinOrd(6)
+@test force(left(span)) == FinOrdFunction([1,2,1,2,1,2])
+@test force(right(span)) == FinOrdFunction([1,1,2,2,3,3])
+
 # Colimits
 ##########
 

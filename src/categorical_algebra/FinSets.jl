@@ -1,6 +1,6 @@
 module FinSets
-export FinOrd, FinOrdFunction, force, product, equalizer, coproduct,
-  coequalizer, pushout
+export FinOrd, FinOrdFunction, force, product, equalizer, pullback,
+  coproduct, coequalizer, pushout
 
 using AutoHashEquals
 using DataStructures: IntDisjointSets, union!, find_root
@@ -92,6 +92,18 @@ function equalizer(f::FinOrdFunction, g::FinOrdFunction)
   FinOrdFunction(filter(i -> f(i) == g(i), 1:m), m)
 end
 
+""" Pullback of cospan of functions between finite ordinals.
+
+TODO: This logic is completely generic. Make it independent of FinOrd.
+"""
+function pullback(cospan::Cospan{<:FinOrdFunction,<:FinOrdFunction})
+  f, g = left(cospan), right(cospan)
+  prod = product(dom(f), dom(g))
+  π1, π2 = left(prod), right(prod)
+  eq = equalizer(π1⋅f, π2⋅g)
+  Span(eq⋅π1, eq⋅π2)
+end
+
 function coproduct(A::FinOrd, B::FinOrd)
   m, n = A.n, B.n
   ι1 = FinOrdFunction(1:m, m, m+n)
@@ -111,9 +123,7 @@ function coequalizer(f::FinOrdFunction, g::FinOrdFunction)
   FinOrdFunction([ searchsortedfirst(roots, r) for r in h], length(roots))
 end
 
-""" Pushout of span of functions between finite sets.
-
-Returns a cospan whose legs are the inclusions into the quotient set.
+""" Pushout of span of functions between finite ordinals.
 
 TODO: This logic is completely generic. Make it independent of FinOrd.
 """
