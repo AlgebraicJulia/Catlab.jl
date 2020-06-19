@@ -1,5 +1,6 @@
 module FinSets
-export FinOrd, FinOrdFunction, force, coproduct, coequalizer, pushout
+export FinOrd, FinOrdFunction, force, terminal, product, equalizer, pullback,
+  initial, coproduct, coequalizer, pushout
 
 using AutoHashEquals
 using DataStructures: IntDisjointSets, union!, find_root
@@ -74,8 +75,43 @@ compose_functions(f::AbstractVector, g::AbstractVector) = g[f]
 as_function(f) = f
 as_function(f::AbstractVector) = x -> f[x]
 
-# Limits and colimits
-#####################
+# Limits
+########
+
+terminal(::Type{FinOrd}) = FinOrd(1)
+terminal(::Type{FinOrd{T}}) where T = FinOrd(one(T))
+
+function product(A::FinOrd, B::FinOrd)
+  m, n = A.n, B.n
+  indices = CartesianIndices((m, n))
+  π1 = FinOrdFunction(i -> indices[i][1], m*n, m)
+  π2 = FinOrdFunction(i -> indices[i][2], m*n, n)
+  Span(π1, π2)
+end
+
+function equalizer(f::FinOrdFunction, g::FinOrdFunction)
+  @assert dom(f) == dom(g) && codom(f) == codom(g)
+  m = f.dom
+  FinOrdFunction(filter(i -> f(i) == g(i), 1:m), m)
+end
+
+""" Pullback of cospan of functions between finite ordinals.
+
+TODO: This logic is completely generic. Make it independent of FinOrd.
+"""
+function pullback(cospan::Cospan{<:FinOrdFunction,<:FinOrdFunction})
+  f, g = left(cospan), right(cospan)
+  prod = product(dom(f), dom(g))
+  π1, π2 = left(prod), right(prod)
+  eq = equalizer(π1⋅f, π2⋅g)
+  Span(eq⋅π1, eq⋅π2)
+end
+
+# Colimits
+##########
+
+initial(::Type{FinOrd}) = FinOrd(0)
+initial(::Type{FinOrd{T}}) where T = FinOrd(zero(T))
 
 function coproduct(A::FinOrd, B::FinOrd)
   m, n = A.n, B.n
@@ -96,9 +132,7 @@ function coequalizer(f::FinOrdFunction, g::FinOrdFunction)
   FinOrdFunction([ searchsortedfirst(roots, r) for r in h], length(roots))
 end
 
-""" Pushout of span of functions between finite sets.
-
-Returns a cospan whose legs are the inclusions into the quotient set.
+""" Pushout of span of functions between finite ordinals.
 
 TODO: This logic is completely generic. Make it independent of FinOrd.
 """
