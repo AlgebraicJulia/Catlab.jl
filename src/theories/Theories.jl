@@ -28,6 +28,7 @@ function Ob(typ::Type, args...)
 end
 
 include("Category.jl")
+include("Limits.jl")
 include("Monoidal.jl")
 include("AdditiveMonoidal.jl")
 include("Preorders.jl")
