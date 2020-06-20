@@ -1,6 +1,7 @@
 export CategoryWithProducts, ob, terminal, delete, product, proj1, proj2, pair,
   CategoryWithCoproducts, initial, create, coproduct, coproj1, coproj2, copair,
-  CompleteCategory, equalizer, incl, factorize
+  CompleteCategory, equalizer, inclusion, factorize,
+  CocompleteCategory, coequalizer, quotient
 
 # Limits
 ########
@@ -16,15 +17,15 @@ For a monoidal category axiomatization, see [`CartesianCategory`](@ref).
 """
 @theory Category(Ob,Hom) => CategoryWithProducts(Ob,Hom,Terminal,Product) begin
   Terminal()::TYPE
-  terminal()::Terminal()
-  
   Product(foot1::Ob, foot2::Ob)::TYPE
-  product(A::Ob, B::Ob)::Product(A,B)
-  #@op (×) := product
   
+  # Terminal object.
+  terminal()::Terminal()
   ob(⊤::Terminal())::Ob
   delete(⊤::Terminal(), C::Ob)::(C → ob(⊤))
   
+  # Binary products.
+  product(A::Ob, B::Ob)::Product(A,B)
   ob(Π::Product(A,B))::Ob ⊣ (A::Ob, B::Ob)
   proj1(Π::Product(A,B))::(ob(Π) → A) ⊣ (A::Ob, B::Ob)
   proj2(Π::Product(A,B))::(ob(Π) → B) ⊣ (A::Ob, B::Ob)
@@ -52,24 +53,27 @@ Scott, 1986, Section 0.5), apparently following "Burroni's pioneering ideas".
 @theory CategoryWithProducts(Ob,Hom,Terminal,Product) =>
     CompleteCategory(Ob,Hom,Terminal,Product,Equalizer) begin
   Equalizer(f::(A → B), g::(A → B))::TYPE ⊣ (A::Ob, B::Ob)
-  equalizer(f::(A → B), g::(A → B))::Equalizer(f,g) ⊣ (A::Ob, B::Ob)
   
+  # Equalizers.
+  equalizer(f::(A → B), g::(A → B))::Equalizer(f,g) ⊣ (A::Ob, B::Ob)
   ob(eq::Equalizer(f,g))::Ob ⊣ (A::Ob, B::Ob, f::(A → B), g::(A → B))
-  incl(eq::Equalizer(f,g))::(ob(eq) → A) ⊣ (A::Ob, B::Ob, f::(A → B), g::(A → B))
+  (inclusion(eq::Equalizer(f,g))::(ob(eq) → A)
+    ⊣ (A::Ob, B::Ob, f::(A → B), g::(A → B)))
   (factorize(eq::Equalizer(f,g), h::(C → A),
              eq_h::Equalizer(h⋅f,h⋅g))::(ob(eq_h) → ob(eq))
     ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(A → B)))
   
-  (incl(eq)⋅f == incl(eq)⋅g
+  # Equalizer axioms.
+  (inclusion(eq)⋅f == inclusion(eq)⋅g
     ⊣ (A::Ob, B::Ob, f::(A → B), g::(A → B), eq::Equalizer(f,g)))
-  (incl(eq) == id(A)
+  (inclusion(eq) == id(A)
     ⊣ (A::Ob, B::Ob, f::(A → B), eq::Equalizer(f,f)))
-  (factorize(eq,h,eq_h) ⋅ incl(eq) == incl(eq_h) ⋅ h
+  (factorize(eq,h,eq_h) ⋅ inclusion(eq) == inclusion(eq_h) ⋅ h
     ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(A → B), h::(C → A),
        eq::Equalizer(f,g), eq_h::Equalizer(h⋅f, h⋅g)))
-  (factorize(eq, k⋅incl(eq), eq_k) == k
+  (factorize(eq, k⋅inclusion(eq), eq_k) == k
     ⊣ (A::Ob, B::Ob, D::Ob, f::(A → B), g::(A → B), eq::Equalizer(f,g),
-       k::(D → ob(eq)), eq_k::Equalizer(k⋅incl(eq)⋅f, k⋅incl(eq)⋅g)))
+       k::(D → ob(eq)), eq_k::Equalizer(k⋅inclusion(eq)⋅f, k⋅inclusion(eq)⋅g)))
 end
 
 # Colimits
@@ -85,15 +89,15 @@ For a monoidal category axiomatization, see [`CocartesianCategory`](@ref).
 """
 @theory Category(Ob,Hom) => CategoryWithCoproducts(Ob,Hom,Initial,Coproduct) begin
   Initial()::TYPE
-  initial()::Initial()
-  
   Coproduct(foot1::Ob, foot2::Ob)::TYPE
-  coproduct(A::Ob, B::Ob)::Coproduct(A,B)
-  #@op (⊔) := coproduct
-  
+
+  # Initial object.
+  initial()::Initial()
   ob(⊥::Initial())::Ob
   create(⊥::Initial(), C::Ob)::(ob(⊥) → C)
   
+  # Binary coproducts.
+  coproduct(A::Ob, B::Ob)::Coproduct(A,B)
   ob(⨆::Coproduct(A,B))::Ob ⊣ (A::Ob, B::Ob)
   coproj1(⨆::Coproduct(A,B))::(A → ob(⨆)) ⊣ (A::Ob, B::Ob)
   coproj2(⨆::Coproduct(A,B))::(B → ob(⨆)) ⊣ (A::Ob, B::Ob)
@@ -110,4 +114,36 @@ For a monoidal category axiomatization, see [`CocartesianCategory`](@ref).
   f == g ⊣ (C::Ob, ⊥::Initial(), f::(ob(⊥) → C), g::(ob(⊥) → C))
   (copair(coproj1(⨆)⋅h, coproj2(⨆)⋅h) == h
     ⊣ (A::Ob, B::Ob, C::Ob, ⨆::Coproduct(A,B), h::(ob(⨆) → C)))
+end
+
+""" Theory of a *(finitely) cocomplete category*
+
+Finite colimits are presented in biased style, via finite coproducts and
+coequalizers. The axioms are dual to those of [`CompleteCategory`](@ref).
+"""
+@theory CategoryWithCoproducts(Ob,Hom,Initial,Coproduct) =>
+    CocompleteCategory(Ob,Hom,Initial,Coproduct,Coequalizer) begin
+  Coequalizer(f::(A → B), g::(A → B))::TYPE ⊣ (A::Ob, B::Ob)
+  
+  # Coequalizers.
+  coequalizer(f::(A → B), g::(A → B))::Coequalizer(f,g) ⊣ (A::Ob, B::Ob)
+  ob(eq::Coequalizer(f,g))::Ob ⊣ (A::Ob, B::Ob, f::(A → B), g::(A → B))
+  (quotient(eq::Coequalizer(f,g))::(B → ob(eq))
+    ⊣ (A::Ob, B::Ob, f::(A → B), g::(A → B)))
+  (factorize(coeq::Coequalizer(f,g), h::(B → C),
+             coeq_h::Coequalizer(f⋅h,g⋅h))::(ob(coeq) → ob(coeq_h))
+    ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(A → B)))
+  
+  # Coequalizer axioms.
+  (f⋅quotient(coeq) == g⋅quotient(coeq)
+    ⊣ (A::Ob, B::Ob, f::(A → B), g::(A → B), coeq::Coequalizer(f,g)))
+  (quotient(coeq) == id(B)
+    ⊣ (A::Ob, B::Ob, f::(A → B), coeq::Coequalizer(f,f)))
+  (quotient(coeq) ⋅ factorize(coeq,h,coeq_h) == h ⋅ quotient(coeq_h)
+    ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(A → B), h::(B → C),
+       coeq::Coequalizer(f,g), coeq_h::Coequalizer(f⋅h, g⋅h)))
+  (factorize(coeq, quotient(coeq)⋅k, coeq_k) == k
+    ⊣ (A::Ob, B::Ob, D::Ob, f::(A → B), g::(A → B),
+       coeq::Coequalizer(f,g), k::(ob(coeq) → D),
+       coeq_k::Coequalizer(f⋅quotient(coeq)⋅k, g⋅quotient(coeq)⋅k)))
 end
