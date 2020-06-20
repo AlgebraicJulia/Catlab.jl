@@ -107,7 +107,8 @@ end
 
 """ Theory of *cartesian (monoidal) categories*
 
-For the traditional axiomatization of products, see: [`CategoryWithProducts`](@ref)
+For the traditional axiomatization of products, see
+[`CategoryWithProducts`](@ref).
 """
 @theory MonoidalCategoryWithDiagonals(Ob,Hom) => CartesianCategory(Ob,Hom) begin
   pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)

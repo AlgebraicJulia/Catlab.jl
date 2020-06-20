@@ -78,18 +78,29 @@ For references, see `MonoidalCategoryWithDiagonals`.
 end
 
 """ Theory of *cocartesian (monoidal) categories*
+
+For the traditional axiomatization of coproducts, see
+[`CategoryWithCoproducts`](@ref).
 """
-@signature MonoidalCategoryWithCodiagonals(Ob,Hom) => CocartesianCategory(Ob,Hom) begin
+@theory MonoidalCategoryWithCodiagonals(Ob,Hom) => CocartesianCategory(Ob,Hom) begin
   copair(f::Hom(A,C), g::Hom(B,C))::Hom(oplus(A,B),C) <= (A::Ob, B::Ob, C::Ob)
   coproj1(A::Ob, B::Ob)::Hom(A,oplus(A,B))
   coproj2(A::Ob, B::Ob)::Hom(B,oplus(A,B))
+  
+  copair(f,g) == (f⊗g)⋅∇(C) ⊣ (A::Ob, B::Ob, C::Ob, f::(A → C), g::(B → C))
+  coproj1(A,B) == id(A)⊗□(B) ⊣ (A::Ob, B::Ob)
+  coproj2(A,B) == □(A)⊗id(B) ⊣ (A::Ob, B::Ob)
+  
+  # Naturality axioms.
+  ∇(A)⋅f == (f⊗f)⋅∇(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  □(A)⋅f == □(B) ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 
 """ Syntax for a free cocartesian category.
 
 In this syntax, the copairing and inclusion operations are defined using merging
-and creation, and do not have their own syntactic elements. Of course, this
-convention could be reversed.
+and creation, and do not have their own syntactic elements. This convention
+could be dropped or reversed.
 """
 @syntax FreeCocartesianCategory(ObExpr,HomExpr) CocartesianCategory begin
   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
