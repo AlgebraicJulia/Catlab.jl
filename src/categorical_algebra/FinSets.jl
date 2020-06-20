@@ -8,7 +8,8 @@ using DataStructures: IntDisjointSets, union!, find_root
 using ...GAT
 using ...Theories: Category
 using ..ShapeDiagrams
-import ...Theories: dom, codom, id, compose, ⋅, ∘
+import ...Theories: dom, codom, id, compose, ⋅, ∘,
+  terminal, product, equalizer, initial, coproduct, coequalizer
 
 # Data types
 ############
