@@ -106,22 +106,28 @@ References:
 end
 
 """ Theory of *cartesian (monoidal) categories*
+
+For the traditional axiomatization of products, see: [`CategoryWithProducts`](@ref)
 """
 @theory MonoidalCategoryWithDiagonals(Ob,Hom) => CartesianCategory(Ob,Hom) begin
   pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
 
-  pair(f, g) == Δ(A) ⋅ (f ⊗ g) ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(A → C))
-  proj1(A, B) == id(A) ⊗ ◊(B) ⊣ (A::Ob, B::Ob)
-  proj2(A, B) == ◊(A) ⊗ id(B) ⊣ (A::Ob, B::Ob)
+  pair(f,g) == Δ(C)⋅(f⊗g) ⊣ (A::Ob, B::Ob, C::Ob, f::(C → A), g::(C → B))
+  proj1(A,B) == id(A)⊗◊(B) ⊣ (A::Ob, B::Ob)
+  proj2(A,B) == ◊(A)⊗id(B) ⊣ (A::Ob, B::Ob)
+  
+  # Naturality axioms.
+  f⋅Δ(B) == Δ(A)⋅(f⊗f) ⊣ (A::Ob, B::Ob, f::(A → B))
+  f⋅◊(B) == ◊(A) ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 
 """ Syntax for a free cartesian category.
 
 In this syntax, the pairing and projection operations are defined using
 duplication and deletion, and do not have their own syntactic elements.
-Of course, this convention could be reversed.
+This convention could be dropped or reversed.
 """
 @syntax FreeCartesianCategory(ObExpr,HomExpr) CartesianCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
