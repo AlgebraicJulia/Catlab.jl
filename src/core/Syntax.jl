@@ -13,7 +13,7 @@ import Base.Meta: ParseError, show_sexpr
 using Compat
 using Match
 
-using ..GAT: Context, Theory, TypeConstructor, TermConstructor, Typeclass
+using ..GAT: Context, Theory, TypeConstructor, TermConstructor
 import ..GAT
 import ..GAT: invoke_term
 using ..Meta
@@ -112,8 +112,7 @@ end
 function syntax_code(name::Symbol, base_types::Vector{Type},
                      theory_module::Module, outer_module::Module,
                      functions::Vector)
-  class = theory_module.class()
-  theory = class.theory
+  theory = theory_module.theory()
   theory_ref = GlobalRef(parentmodule(theory_module),
                             nameof(theory_module))
 
@@ -137,7 +136,7 @@ function syntax_code(name::Symbol, base_types::Vector{Type},
   bindings = Dict{Symbol,Any}(
     c.name => Expr(:(.), name, QuoteNode(c.name)) for c in theory.types)
   syntax_fns = Dict(parse_function_sig(f) => f for f in functions)
-  for f in interface(class)
+  for f in interface(theory)
     sig = parse_function_sig(f)
     bindings[:new] = Expr(:(.), name, QuoteNode(sig.name))
     if haskey(syntax_fns, sig)
@@ -162,9 +161,8 @@ end
 
 """ Complete set of Julia functions for a syntax system.
 """
-function interface(class::Typeclass)::Vector{JuliaFunction}
-  theory = class.theory
-  [ GAT.interface(class);
+function interface(theory::Theory)::Vector{JuliaFunction}
+  [ GAT.interface(theory);
     [ GAT.constructor(constructor_for_generator(cons), theory)
       for cons in theory.types ]; ]
 end
@@ -319,7 +317,7 @@ method for the constructor should be called directly, not through this function.
 """
 function invoke_term(syntax_module::Module, constructor_name::Symbol, args...)
   theory_module = syntax_module.theory()
-  theory = theory_module.class().theory
+  theory = theory_module.theory()
   syntax_types = Tuple(getfield(syntax_module, cons.name) for cons in theory.types)
   invoke_term(theory_module, syntax_types, constructor_name, args...)
 end
@@ -425,7 +423,7 @@ function parse_json_sexpr(syntax_module::Module, sexpr;
     symbols::Bool = true,
   )
   theory_module = syntax_module.theory()
-  theory = theory_module.class().theory
+  theory = theory_module.theory()
   type_lens = Dict(cons.name => length(cons.params) for cons in theory.types)
 
   function parse_impl(sexpr::Vector, ::Val{:expr})

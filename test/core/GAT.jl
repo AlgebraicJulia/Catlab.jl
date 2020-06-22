@@ -165,7 +165,7 @@ axioms = [
 aliases = Dict(:⋅ => :compose, :→ => :Hom)
 category_theory = GAT.Theory(types, terms, axioms, aliases)
 
-@test Category.class().theory == category_theory
+@test Category.theory() == category_theory
 
 """ Equivalent shorthand definition of Category theory
 """
@@ -187,7 +187,7 @@ category_theory = GAT.Theory(types, terms, axioms, aliases)
   id(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 
-@test CategoryAbbrev.class().theory == category_theory
+@test CategoryAbbrev.theory() == category_theory
 
 # Methods for theory
 accessors = [ GAT.JuliaFunction(:(dom(::Hom)), :Ob),
@@ -198,10 +198,10 @@ alias_functions = [
   GAT.JuliaFunction(:(⋅(f::Hom, g::Hom)), :Hom, :(compose(f, g))),
   GAT.JuliaFunction(:(→(dom::Ob, codom::Ob)), :Hom, :(Hom(dom, codom))),
 ]
-@test GAT.accessors(Category.class().theory) == accessors
-@test GAT.constructors(Category.class().theory) == constructors
-@test GAT.alias_functions(Category.class().theory) == alias_functions
-@test GAT.interface(Category.class()) ==
+@test GAT.accessors(Category.theory()) == accessors
+@test GAT.constructors(Category.theory()) == constructors
+@test GAT.alias_functions(Category.theory()) == alias_functions
+@test GAT.interface(Category.theory()) ==
   [accessors; constructors; alias_functions]
 
 # Theory extension
@@ -227,12 +227,12 @@ theory = GAT.Theory(
   Dict{Symbol,Symbol}()
 )
 
-@test MonoidExt.class().theory == theory
+@test MonoidExt.theory() == theory
 
 # GAT expressions in a theory
 ################################
 
-theory = Category.class().theory
+theory = Category.theory()
 context = GAT.Context((:X => :Ob, :Y => :Ob, :Z => :Ob,
                        :f => :(Hom(X,Y)), :g => :(Hom(Y,Z))))
 @test GAT.expand_in_context(:X, [:f,:g], context, theory) == :(dom(f))

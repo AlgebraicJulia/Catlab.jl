@@ -75,15 +75,7 @@ end
   types::Vector{TypeConstructor}
   terms::Vector{TermConstructor}
   axioms::Vector{AxiomConstructor}
-  aliases::Dict{Symbol, Symbol}
-end
-
-""" Typeclass = GAT + Julia-specific content.
-"""
-struct Typeclass
-  name::Symbol
-  type_params::Vector{Symbol}
-  theory::Theory
+  aliases::Dict{Symbol,Symbol}
 end
 
 struct TheoryBinding
@@ -111,7 +103,6 @@ Four kinds of things can go in the theory body:
    `@op Hom :→`
 4. Equality axioms, e.g.,
    `f ⋅ id(B) == f ⊣ (A::Ob, B::Ob, f::(A → B))`
-
 
 A theory can extend existing theories (at present only one).
 """
@@ -144,66 +135,56 @@ end
 function theory_builder(head, body; signature=false)
   # Parse theory header.
   head = parse_theory_head(head)
+  @assert all(param in head.main.params
+              for base in head.base for param in base.params)
   @assert length(head.base) <= 1 "Multiple theory extension not supported"
-  if length(head.base) == 1
-    base_name, base_params = head.base[1].name, head.base[1].params
-    @assert all(p in head.main.params for p in base_params)
-  else
-    base_name, base_params = nothing, []
-  end
+  base_name = isempty(head.base) ? nothing : only(head.base).name
 
   # Parse theory body: GAT types/terms and function aliases.
   types, terms, axioms, aliases = parse_theory_body(body)
   if signature && length(axioms) > 0
-    throw(ParseError("@signature macro does not allow axioms to be defined: $axioms"))
+    throw(ParseError("@signature macro does not allow axioms to be defined"))
   end
-
   theory = Theory(types, terms, axioms, aliases)
-  class = Typeclass(head.main.name, head.main.params, theory)
 
   # We must generate and evaluate the code at *run time* because the base
   # theory, if specified, is not available at *parse time*.
-  expr = :(theory_code($class, $(esc(base_name)), $base_params))
+  expr = :(theory_code($head, $theory, $(esc(base_name))))
   Expr(:block,
     Expr(:call, esc(:eval), expr),
     :(Core.@__doc__ $(esc(head.main.name))))
 end
 
-function theory_code(main_class, base_mod, base_params)
-  # TODO: Generate code to do something with main_class.theory.axioms
-  # Add types/terms/aliases from base class, if provided.
-  main_theory = main_class.theory
-  if isnothing(base_mod)
-    class = main_class
-  else
-    base_class = base_mod.class()
-    bindings = Dict(zip(base_class.type_params, base_params))
-    base_theory = replace_types(bindings, base_class.theory)
-    theory = Theory([base_theory.types; main_theory.types],
-                    [base_theory.terms; main_theory.terms],
-                    [base_theory.axioms; main_theory.axioms],
-                    merge(base_theory.aliases, main_theory.aliases))
-    class = Typeclass(main_class.name, main_class.type_params, theory)
+function theory_code(head, theory, base_mod)
+  # Add types/terms/aliases from base theory, if provided.
+  if !isnothing(base_mod)
+    base_theory = base_mod.theory()
+    base_params = [ type.name for type in base_theory.types ]
+    bindings = Dict(zip(base_params, only(head.base).params))
+    base_theory = replace_types(bindings, base_theory)
+    theory = Theory([base_theory.types; theory.types],
+                    [base_theory.terms; theory.terms],
+                    [base_theory.axioms; theory.axioms],
+                    merge(base_theory.aliases, theory.aliases))
   end
-  theory = replace_types(class.theory.aliases, class.theory)
-  class = Typeclass(class.name, class.type_params, theory)
+  theory = replace_types(theory.aliases, theory)
 
   # Generate module with stub types.
-  mod = Expr(:module, true, class.name,
+  mod = Expr(:module, true, head.main.name,
     Expr(:block, [
       # Prevents error about export not being at toplevel.
       # https://github.com/JuliaLang/julia/issues/28991
       LineNumberNode(0);
       Expr(:export, [cons.name for cons in theory.types]...);
       map(gen_abstract_type, theory.types);
-      :(class() = $(class));
+      :(theory() = $(theory));
     ]...))
 
   # Generate method stubs.
   # (We put them outside the module, so the stub type names must be qualified.)
-  bindings = Dict(cons.name => Expr(:(.), class.name, QuoteNode(cons.name))
+  bindings = Dict(cons.name => Expr(:(.), head.main.name, QuoteNode(cons.name))
                   for cons in theory.types)
-  fns = interface(class)
+  fns = interface(theory)
 
   toplevel = [ generate_function(replace_symbols(bindings, f)) for f in fns ]
 
@@ -337,12 +318,12 @@ function alias_functions(theory::Theory)::Vector{JuliaFunction}
   end))
 end
 
-""" Complete set of Julia functions for a type class.
+""" Complete set of Julia functions for a theory.
 """
-function interface(class::Typeclass)::Vector{JuliaFunction}
-  [ accessors(class.theory);
-    constructors(class.theory);
-    alias_functions(class.theory) ]
+function interface(theory::Theory)::Vector{JuliaFunction}
+  [ accessors(theory);
+    constructors(theory);
+    alias_functions(theory) ]
 end
 
 """ Get type constructor by name.
@@ -619,9 +600,6 @@ end
 ###########
 
 """ Define an *instance* of a generalized algebraic theory (GAT).
-
-These are perfectly analagous to instances of a type class in Haskell. See also
-the Typeclass.jl library for Julia.
 """
 macro instance(head, body)
   # Parse the instance definition.
@@ -639,9 +617,9 @@ macro instance(head, body)
 end
 function instance_code(mod, instance_types, instance_fns, external_fns)
   code = Expr(:block)
-  class = mod.class()
-  bindings = Dict(zip(class.type_params, instance_types))
-  bound_fns = [ replace_symbols(bindings, f) for f in interface(class) ]
+  theory = mod.theory()
+  bindings = Dict(zip([type.name for type in theory.types], instance_types))
+  bound_fns = [ replace_symbols(bindings, f) for f in interface(theory) ]
   bound_fns = OrderedDict(parse_function_sig(f) => f for f in bound_fns)
   instance_fns = Dict(parse_function_sig(f) => f for f in instance_fns)
   for (sig, f) in bound_fns
@@ -652,7 +630,7 @@ function instance_code(mod, instance_types, instance_fns, external_fns)
     elseif !isnothing(f.impl)
       f_impl = f
     else
-      error("Method $(f.call_expr) not implemented in $(class.name) instance")
+      error("Method $(f.call_expr) not implemented in $(nameof(mod)) instance")
     end
     push!(code.args, generate_function(f_impl))
   end
@@ -697,7 +675,7 @@ function invoke_term(theory_module::Module, instance_types::Tuple,
   if !any(typeof(arg) <: typ for typ in instance_types for arg in args)
     # Case 1: Name refers to type constructor, e.g., generator constructor
     # in syntax system.
-    theory = theory_module.class().theory
+    theory = theory_module.theory()
     index = findfirst(cons -> cons.name == constructor_name, theory.types)
     if isnothing(index)
       # Case 2: Name refers to term constructor.
