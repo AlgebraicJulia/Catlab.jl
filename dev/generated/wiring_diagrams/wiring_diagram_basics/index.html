@@ -21,7 +21,7 @@ g = Hom(:g, B, C)
 h = Hom(:h, C, D)
 
 f</code></pre><div>\[f : A \to B\]</div><h3 id="Generators-1"><a class="docs-heading-anchor" href="#Generators-1">Generators</a><a class="docs-heading-anchor-permalink" href="#Generators-1" title="Permalink"></a></h3><p>Convert each of the morphism generators into a diagram with a single box.</p><pre><code class="language-julia">f, g, h = to_wiring_diagram(f), to_wiring_diagram(g), to_wiring_diagram(h)
-f</code></pre><pre><code class="language-none">WiringDiagram{Catlab.Theories.BiproductCategory.Hom}([:A], [:B], 
+f</code></pre><pre><code class="language-none">WiringDiagram{BiproductCategory}([:A], [:B], 
 [ 1 =&gt; {inputs},
   2 =&gt; {outputs},
   3 =&gt; Box(:f, [:A], [:B]) ],
@@ -64,7 +64,7 @@ f</code></pre><pre><code class="language-none">WiringDiagram{Catlab.Theories.Bip
 </g>
 </g>
 </svg>
-<h3 id="Composition-1"><a class="docs-heading-anchor" href="#Composition-1">Composition</a><a class="docs-heading-anchor-permalink" href="#Composition-1" title="Permalink"></a></h3><pre><code class="language-julia">compose(f,g)</code></pre><pre><code class="language-none">WiringDiagram{Catlab.Theories.BiproductCategory.Hom}([:A], [:C], 
+<h3 id="Composition-1"><a class="docs-heading-anchor" href="#Composition-1">Composition</a><a class="docs-heading-anchor-permalink" href="#Composition-1" title="Permalink"></a></h3><pre><code class="language-julia">compose(f,g)</code></pre><pre><code class="language-none">WiringDiagram{BiproductCategory}([:A], [:C], 
 [ 1 =&gt; {inputs},
   2 =&gt; {outputs},
   3 =&gt; Box(:f, [:A], [:B]),
@@ -124,7 +124,7 @@ f</code></pre><pre><code class="language-none">WiringDiagram{Catlab.Theories.Bip
 </g>
 </g>
 </svg>
-<h3 id="Monoidal-products-1"><a class="docs-heading-anchor" href="#Monoidal-products-1">Monoidal products</a><a class="docs-heading-anchor-permalink" href="#Monoidal-products-1" title="Permalink"></a></h3><pre><code class="language-julia">otimes(f,h)</code></pre><pre><code class="language-none">WiringDiagram{Catlab.Theories.BiproductCategory.Hom}([:A,:C], [:B,:D], 
+<h3 id="Monoidal-products-1"><a class="docs-heading-anchor" href="#Monoidal-products-1">Monoidal products</a><a class="docs-heading-anchor-permalink" href="#Monoidal-products-1" title="Permalink"></a></h3><pre><code class="language-julia">otimes(f,h)</code></pre><pre><code class="language-none">WiringDiagram{BiproductCategory}([:A,:C], [:B,:D], 
 [ 1 =&gt; {inputs},
   2 =&gt; {outputs},
   3 =&gt; Box(:f, [:A], [:B]),
@@ -197,7 +197,7 @@ f</code></pre><pre><code class="language-none">WiringDiagram{Catlab.Theories.Bip
 </g>
 </g>
 </svg>
-<h3 id="Copy-and-merge,-delete-and-create-1"><a class="docs-heading-anchor" href="#Copy-and-merge,-delete-and-create-1">Copy and merge, delete and create</a><a class="docs-heading-anchor-permalink" href="#Copy-and-merge,-delete-and-create-1" title="Permalink"></a></h3><pre><code class="language-julia">mcopy(codom(f),2)</code></pre><pre><code class="language-none">WiringDiagram{Catlab.Theories.BiproductCategory.Hom}([:B], [:B,:B], 
+<h3 id="Copy-and-merge,-delete-and-create-1"><a class="docs-heading-anchor" href="#Copy-and-merge,-delete-and-create-1">Copy and merge, delete and create</a><a class="docs-heading-anchor-permalink" href="#Copy-and-merge,-delete-and-create-1" title="Permalink"></a></h3><pre><code class="language-julia">mcopy(codom(f),2)</code></pre><pre><code class="language-none">WiringDiagram{BiproductCategory}([:B], [:B,:B], 
 [ 1 =&gt; {inputs},
   2 =&gt; {outputs},
    ],
@@ -506,4 +506,4 @@ d</code></pre><pre><code class="language-none">WiringDiagram([:A,:C], [:B,:D],
 </g>
 </g>
 </svg>
-</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../../">« Catlab.jl</a><a class="docs-footer-nextpage" href="../diagrams_and_expressions/">Wiring diagrams and syntactic expressions »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Monday 22 June 2020 04:07">Monday 22 June 2020</span>. Using Julia version 1.4.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../../">« Catlab.jl</a><a class="docs-footer-nextpage" href="../diagrams_and_expressions/">Wiring diagrams and syntactic expressions »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Monday 22 June 2020 20:55">Monday 22 June 2020</span>. Using Julia version 1.4.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
