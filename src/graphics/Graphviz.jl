@@ -14,7 +14,6 @@ using DataStructures: OrderedDict
 import LightGraphs, MetaGraphs
 using LightGraphs: add_edge!, add_vertex!, edges, vertices, src, dst
 using MetaGraphs: get_prop, props, set_prop!, set_props!
-using Parameters
 using StaticArrays: StaticVector, SVector
 
 # AST
@@ -40,7 +39,7 @@ as_attributes(d::OrderedDict) = Attributes(Symbol(k) => d[k] for k in keys(d))
 as_attributes(d::AbstractDict) =
   Attributes(Symbol(k) => d[k] for k in sort!(collect(keys(d))))
 
-@with_kw_noshow struct Graph <: Expression
+Base.@kwdef struct Graph <: Expression
   name::String
   directed::Bool
   stmts::Vector{Statement}=Statement[]
@@ -58,7 +57,7 @@ Digraph(name::String, stmts::Vector{Statement}; kw...) =
 Digraph(name::String, stmts::Vararg{Statement}; kw...) =
   Graph(; name=name, directed=true, stmts=collect(stmts), kw...)
 
-@with_kw_noshow struct Subgraph <: Statement
+Base.@kwdef struct Subgraph <: Statement
   name::String="" # Subgraphs can be anonymous
   stmts::Vector{Statement}=Statement[]
   graph_attrs::Attributes=Attributes()

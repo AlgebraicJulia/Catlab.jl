@@ -5,7 +5,6 @@ export ComposePicture, to_composejl, layout_to_composejl
 
 using Compat
 using LinearAlgebra: dot
-using Parameters
 import Compose
 const C = Compose
 
@@ -40,7 +39,7 @@ const ComposeProperties = AbstractVector{<:Compose.Property}
 
 """ Internal data type for configurable options of Compose.jl wiring diagrams.
 """
-@with_kw_noshow struct ComposeOptions
+Base.@kwdef struct ComposeOptions
   base_unit::Compose.Measure = 4*C.mm
   props::AbstractDict = Dict()
   box_renderer::Function = render_box
