@@ -32,6 +32,8 @@ Elem(mod::Module, args...) = Elem(mod.Elem, args...)
 x, y, z = Elem(FreeMonoid,:x), Elem(FreeMonoid,:y), Elem(FreeMonoid,:z)
 @test isa(mtimes(x,y), FreeMonoid.Elem)
 @test isa(munit(FreeMonoid.Elem), FreeMonoid.Elem)
+@test gat_typeof(x) == :Elem
+@test gat_typeof(mtimes(x,y)) == :Elem
 @test mtimes(mtimes(x,y),z) != mtimes(x,mtimes(y,z))
 
 # Test equality
@@ -86,6 +88,7 @@ x = elem_int(FreeMonoidNumeric.Elem, 1)
   one()::Elem
   two()::Elem
 end
+
 """ The free monoid on two generators.
 """
 @syntax FreeMonoidTwo MonoidTwo begin

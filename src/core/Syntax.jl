@@ -4,9 +4,9 @@ In general, a single theory may have many different syntaxes. The purpose of
 this module to enable the simple but flexible construction of syntax systems.
 """
 module Syntax
-export @syntax, GATExpr, SyntaxDomainError, head, args, gat_type_args,
-  first, last, invoke_term, functor, to_json_sexpr, parse_json_sexpr,
-  show_sexpr, show_unicode, show_latex
+export @syntax, GATExpr, SyntaxDomainError, head, args, first, last,
+  gat_typeof, gat_type_args, invoke_term, functor,
+  to_json_sexpr, parse_json_sexpr, show_sexpr, show_unicode, show_latex
 
 import Base: first, last
 import Base.Meta: ParseError, show_sexpr
@@ -40,6 +40,7 @@ head(::GATExpr{T}) where T = T
 args(expr::GATExpr) = expr.args
 first(expr::GATExpr) = first(args(expr))
 last(expr::GATExpr) = last(args(expr))
+gat_typeof(expr::GATExpr) = nameof(typeof(expr))
 gat_type_args(expr::GATExpr) = expr.type_args
 
 function Base.:(==)(e1::GATExpr{T}, e2::GATExpr{S}) where {T,S}
@@ -325,19 +326,14 @@ end
 
 """ Name of constructor that created expression.
 """
-function constructor_name(expr::GATExpr)::Symbol
-  if head(expr) == :generator
-    nameof(typeof(expr))
-  else
-    head(expr)
-  end
-end
+constructor_name(expr::GATExpr) = head(expr)
+constructor_name(expr::GATExpr{:generator}) = gat_typeof(expr)
 
 """ Create generator of the same type as the given expression.
 """
 function generator_like(expr::GATExpr, value)::GATExpr
-  invoke_term(
-    syntax_module(expr), nameof(typeof(expr)), value, gat_type_args(expr)...)
+  invoke_term(syntax_module(expr), gat_typeof(expr),
+              value, gat_type_args(expr)...)
 end
 
 """ Get syntax module of given expression.
