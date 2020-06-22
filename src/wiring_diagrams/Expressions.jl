@@ -28,8 +28,8 @@ using ..WiringDiagramAlgorithms: crossing_minimization_by_sort
 """ Convert a morphism expression into a wiring diagram.
 """
 function to_wiring_diagram(expr::GATExpr, args...)
-  theory = syntax_module(expr).theory()
-  to_wiring_diagram(theory.Hom, expr, args...)
+  T = syntax_module(expr).theory()
+  to_wiring_diagram(T, expr, args...)
 end
 function to_wiring_diagram(T::Type, expr::GATExpr)
   to_wiring_diagram(T, expr, first, first)

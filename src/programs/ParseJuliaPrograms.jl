@@ -117,7 +117,7 @@ end
 """ Make a lookup table assigning names to generators or term constructors.
 """
 function make_lookup_table(pres::Presentation, syntax_module::Module, names)
-  theory = syntax_module.theory().class().theory
+  theory = GAT.theory(syntax_module.theory())
   terms = Set([ term.name for term in theory.terms ])
 
   table = Dict{Symbol,Any}()

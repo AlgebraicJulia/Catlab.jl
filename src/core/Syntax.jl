@@ -4,16 +4,16 @@ In general, a single theory may have many different syntaxes. The purpose of
 this module to enable the simple but flexible construction of syntax systems.
 """
 module Syntax
-export @syntax, GATExpr, SyntaxDomainError, head, args, type_args, first, last,
-  invoke_term, functor, to_json_sexpr, parse_json_sexpr, show_sexpr,
-  show_unicode, show_latex
+export @syntax, GATExpr, SyntaxDomainError, head, args, first, last,
+  gat_typeof, gat_type_args, invoke_term, functor,
+  to_json_sexpr, parse_json_sexpr, show_sexpr, show_unicode, show_latex
 
 import Base: first, last
 import Base.Meta: ParseError, show_sexpr
 using Compat
 using Match
 
-using ..GAT: Context, Theory, TypeConstructor, TermConstructor, Typeclass
+using ..GAT: Context, Theory, TypeConstructor, TermConstructor
 import ..GAT
 import ..GAT: invoke_term
 using ..Meta
@@ -40,10 +40,11 @@ head(::GATExpr{T}) where T = T
 args(expr::GATExpr) = expr.args
 first(expr::GATExpr) = first(args(expr))
 last(expr::GATExpr) = last(args(expr))
-type_args(expr::GATExpr) = expr.type_args
+gat_typeof(expr::GATExpr) = nameof(typeof(expr))
+gat_type_args(expr::GATExpr) = expr.type_args
 
-function Base.:(==)(e1::GATExpr, e2::GATExpr)
-  head(e1) == head(e2) && args(e1) == args(e2) && type_args(e1) == type_args(e2)
+function Base.:(==)(e1::GATExpr{T}, e2::GATExpr{S}) where {T,S}
+  T == S && e1.args == e2.args && e1.type_args == e2.type_args
 end
 function Base.hash(e::GATExpr, h::UInt)
   hash(args(e), hash(head(e), h))
@@ -109,12 +110,10 @@ macro syntax(syntax_head, mod_name, body=nothing)
     :(Core.@__doc__ $(esc(syntax_name))))
 end
 function syntax_code(name::Symbol, base_types::Vector{Type},
-                     theory_module::Module, outer_module::Module,
+                     theory_type::Type, outer_module::Module,
                      functions::Vector)
-  class = theory_module.class()
-  theory = class.theory
-  theory_ref = GlobalRef(parentmodule(theory_module),
-                            nameof(theory_module))
+  theory = GAT.theory(theory_type)
+  theory_ref = GlobalRef(parentmodule(theory_type), nameof(theory_type))
 
   # Generate module with syntax types and type/term generators.
   mod = Expr(:module, true, name,
@@ -136,7 +135,7 @@ function syntax_code(name::Symbol, base_types::Vector{Type},
   bindings = Dict{Symbol,Any}(
     c.name => Expr(:(.), name, QuoteNode(c.name)) for c in theory.types)
   syntax_fns = Dict(parse_function_sig(f) => f for f in functions)
-  for f in interface(class)
+  for f in interface(theory)
     sig = parse_function_sig(f)
     bindings[:new] = Expr(:(.), name, QuoteNode(sig.name))
     if haskey(syntax_fns, sig)
@@ -161,9 +160,8 @@ end
 
 """ Complete set of Julia functions for a syntax system.
 """
-function interface(class::Typeclass)::Vector{JuliaFunction}
-  theory = class.theory
-  [ GAT.interface(class);
+function interface(theory::Theory)::Vector{JuliaFunction}
+  [ GAT.interface(theory);
     [ GAT.constructor(constructor_for_generator(cons), theory)
       for cons in theory.types ]; ]
 end
@@ -317,27 +315,22 @@ This method provides reflection for syntax systems. In everyday use the generic
 method for the constructor should be called directly, not through this function.
 """
 function invoke_term(syntax_module::Module, constructor_name::Symbol, args...)
-  theory_module = syntax_module.theory()
-  theory = theory_module.class().theory
+  theory_type = syntax_module.theory()
+  theory = GAT.theory(theory_type)
   syntax_types = Tuple(getfield(syntax_module, cons.name) for cons in theory.types)
-  invoke_term(theory_module, syntax_types, constructor_name, args...)
+  invoke_term(theory_type, syntax_types, constructor_name, args...)
 end
 
 """ Name of constructor that created expression.
 """
-function constructor_name(expr::GATExpr)::Symbol
-  if head(expr) == :generator
-    nameof(typeof(expr))
-  else
-    head(expr)
-  end
-end
+constructor_name(expr::GATExpr) = head(expr)
+constructor_name(expr::GATExpr{:generator}) = gat_typeof(expr)
 
 """ Create generator of the same type as the given expression.
 """
 function generator_like(expr::GATExpr, value)::GATExpr
-  invoke_term(
-    syntax_module(expr), nameof(typeof(expr)), value, type_args(expr)...)
+  invoke_term(syntax_module(expr), gat_typeof(expr),
+              value, gat_type_args(expr)...)
 end
 
 """ Get syntax module of given expression.
@@ -395,8 +388,8 @@ function functor(types::Tuple, expr::GATExpr;
   end
 
   # Invoke the constructor in the codomain category!
-  theory_module = syntax_module(expr).theory()
-  invoke_term(theory_module, types, name, term_args...)
+  theory_type = syntax_module(expr).theory()
+  invoke_term(theory_type, types, name, term_args...)
 end
 
 # Serialization
@@ -428,8 +421,8 @@ function parse_json_sexpr(syntax_module::Module, sexpr;
     parse_value::Function = identity,
     symbols::Bool = true,
   )
-  theory_module = syntax_module.theory()
-  theory = theory_module.class().theory
+  theory_type = syntax_module.theory()
+  theory = GAT.theory(theory_type)
   type_lens = Dict(cons.name => length(cons.params) for cons in theory.types)
 
   function parse_impl(sexpr::Vector, ::Val{:expr})

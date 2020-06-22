@@ -23,9 +23,9 @@ M = Hom(:M, A, B)
 # Wiring diagrams
 #################
 
-A, B, C = [ Ports{MarkovCategory.Hom}([sym]) for sym in [:A, :B, :C] ]
-M = singleton_diagram(MarkovCategory.Hom, Box(:M,[:A],[:B]))
-N = singleton_diagram(MarkovCategory.Hom, Box(:N,[:B],[:C]))
+A, B, C = [ Ports{MarkovCategory}([sym]) for sym in [:A, :B, :C] ]
+M = singleton_diagram(MarkovCategory, Box(:M,[:A],[:B]))
+N = singleton_diagram(MarkovCategory, Box(:N,[:B],[:C]))
 
 # Non-functoriality of expectation.
 @test expectation(compose(M,N)) != compose(expectation(M),expectation(N))

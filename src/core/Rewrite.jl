@@ -18,7 +18,7 @@ function associate(expr::E)::E where E <: GATExpr
   op, e1, e2 = head(expr), first(expr), last(expr)
   args1 = head(e1) == op ? args(e1) : [e1]
   args2 = head(e2) == op ? args(e2) : [e2]
-  E([args1; args2], type_args(expr))
+  E([args1; args2], gat_type_args(expr))
 end
 
 """ Simplify associative binary operation with unit.

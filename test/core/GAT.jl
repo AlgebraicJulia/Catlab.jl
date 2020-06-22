@@ -133,12 +133,10 @@ end
   id(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 
-@test isa(Category, Module)
+@test Category isa Type
 @test occursin("theory of categories", lowercase(string(Docs.doc(Category))))
-@test sort(names(Category)) == sort([:Category, :Ob, :Hom])
-@test isa(Category.Ob, Type) && isa(Category.Hom, Type)
-@test isa(dom, Function) && isa(codom, Function)
-@test isa(id, Function) && isa(compose, Function)
+@test isempty(methods(dom)) && isempty(methods(codom))
+@test isempty(methods(id)) && isempty(methods(compose))
 
 # Manually constructed theory of categories
 types = [
@@ -165,7 +163,7 @@ axioms = [
 aliases = Dict(:⋅ => :compose, :→ => :Hom)
 category_theory = GAT.Theory(types, terms, axioms, aliases)
 
-@test Category.class().theory == category_theory
+@test GAT.theory(Category) == category_theory
 
 """ Equivalent shorthand definition of Category theory
 """
@@ -187,7 +185,7 @@ category_theory = GAT.Theory(types, terms, axioms, aliases)
   id(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 
-@test CategoryAbbrev.class().theory == category_theory
+@test GAT.theory(CategoryAbbrev) == category_theory
 
 # Methods for theory
 accessors = [ GAT.JuliaFunction(:(dom(::Hom)), :Ob),
@@ -198,11 +196,11 @@ alias_functions = [
   GAT.JuliaFunction(:(⋅(f::Hom, g::Hom)), :Hom, :(compose(f, g))),
   GAT.JuliaFunction(:(→(dom::Ob, codom::Ob)), :Hom, :(Hom(dom, codom))),
 ]
-@test GAT.accessors(Category.class().theory) == accessors
-@test GAT.constructors(Category.class().theory) == constructors
-@test GAT.alias_functions(Category.class().theory) == alias_functions
-@test GAT.interface(Category.class()) ==
-  [accessors; constructors; alias_functions]
+theory = GAT.theory(Category)
+@test GAT.accessors(theory) == accessors
+@test GAT.constructors(theory) == constructors
+@test GAT.alias_functions(theory) == alias_functions
+@test GAT.interface(theory) == [accessors; constructors; alias_functions]
 
 # Theory extension
 @signature Semigroup(S) begin
@@ -214,9 +212,7 @@ end
   munit()::M
 end
 
-@test isa(Semigroup, Module) && isa(MonoidExt, Module)
-@test length(methods(times)) == 2 # Semigroup.S, MonoidExt.M
-@test length(methods(munit)) == 1 # MonoidExt.M
+@test Semigroup isa Type && MonoidExt isa Type
 
 theory = GAT.Theory(
   [ GAT.TypeConstructor(:M, [], GAT.Context()) ],
@@ -227,12 +223,12 @@ theory = GAT.Theory(
   Dict{Symbol,Symbol}()
 )
 
-@test MonoidExt.class().theory == theory
+@test GAT.theory(MonoidExt) == theory
 
 # GAT expressions in a theory
 ################################
 
-theory = Category.class().theory
+theory = GAT.theory(Category)
 context = GAT.Context((:X => :Ob, :Y => :Ob, :Z => :Ob,
                        :f => :(Hom(X,Y)), :g => :(Hom(Y,Z))))
 @test GAT.expand_in_context(:X, [:f,:g], context, theory) == :(dom(f))
@@ -283,7 +279,6 @@ end
   times(x::String, y::String) = string(x,y)
 end
 
-@test length(methods(munit)) == 3 # Monoid, MonoidExt, String
 @test munit(String) == ""
 @test times("a", "b") == "ab"
 

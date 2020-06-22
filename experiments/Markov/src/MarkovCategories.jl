@@ -33,13 +33,13 @@ end
 # Wiring diagrams
 #################
 
-mcopy(A::Ports{MarkovCategory.Hom}, n::Int) = implicit_mcopy(A, n)
+mcopy(A::Ports{MarkovCategory}, n::Int) = implicit_mcopy(A, n)
 
-function expectation(M::WiringDiagram{MarkovCategory.Hom})
+function expectation(M::WiringDiagram{MarkovCategory})
   if nboxes(M) <= 1
     functor(M, identity, expectation_box)
   else
-    singleton_diagram(MarkovCategory.Hom, expectation_box(M))
+    singleton_diagram(MarkovCategory, expectation_box(M))
   end
 end
 

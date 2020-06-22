@@ -243,32 +243,32 @@ cozero(A::Ports) = coplus(A, 0)
 # Cartesian category
 #-------------------
 
-mcopy(A::Ports{MonoidalCategoryWithDiagonals.Hom}, n::Int) = implicit_mcopy(A, n)
+mcopy(A::Ports{MonoidalCategoryWithDiagonals}, n::Int) = implicit_mcopy(A, n)
 
-mcopy(A::Ports{CartesianCategory.Hom}, n::Int) = implicit_mcopy(A, n)
+mcopy(A::Ports{CartesianCategory}, n::Int) = implicit_mcopy(A, n)
 
 # Cocartesian category
 #---------------------
 
-mmerge(A::Ports{MonoidalCategoryWithCodiagonals.Hom}, n::Int) = implicit_mmerge(A, n)
+mmerge(A::Ports{MonoidalCategoryWithCodiagonals}, n::Int) = implicit_mmerge(A, n)
 
-mmerge(A::Ports{CocartesianCategory.Hom}, n::Int) = implicit_mmerge(A, n)
+mmerge(A::Ports{CocartesianCategory}, n::Int) = implicit_mmerge(A, n)
 
 # Biproduct category
 #-------------------
 
 # The coherence laws relating diagonal to codiagonal do not hold for general
 # bidiagonals, so an explicit representation is needed.
-mcopy(A::Ports{MonoidalCategoryWithBidiagonals.Hom}, n::Int) = junctioned_mcopy(A, n)
-mmerge(A::Ports{MonoidalCategoryWithBidiagonals.Hom}, n::Int) = junctioned_mmerge(A, n)
+mcopy(A::Ports{MonoidalCategoryWithBidiagonals}, n::Int) = junctioned_mcopy(A, n)
+mmerge(A::Ports{MonoidalCategoryWithBidiagonals}, n::Int) = junctioned_mmerge(A, n)
 
-mcopy(A::Ports{BiproductCategory.Hom}, n::Int) = implicit_mcopy(A, n)
-mmerge(A::Ports{BiproductCategory.Hom}, n::Int) = implicit_mmerge(A, n)
+mcopy(A::Ports{BiproductCategory}, n::Int) = implicit_mcopy(A, n)
+mmerge(A::Ports{BiproductCategory}, n::Int) = implicit_mmerge(A, n)
 
 # Dagger category
 #----------------
 
-dagger(f::WiringDiagram{DaggerSymmetricMonoidalCategory.Hom}) =
+dagger(f::WiringDiagram{DaggerSymmetricMonoidalCategory}) =
   functor(f, identity, dagger, contravariant=true)
 
 # Compact closed category
@@ -277,18 +277,18 @@ dagger(f::WiringDiagram{DaggerSymmetricMonoidalCategory.Hom}) =
 junctioned_dunit(A::Ports) = junction_caps(A, otimes(dual(A),A))
 junctioned_dcounit(A::Ports) = junction_cups(A, otimes(A,dual(A)))
 
-dual(A::Ports{CompactClosedCategory.Hom}) = dual_ports(A)
-dunit(A::Ports{CompactClosedCategory.Hom}) = junctioned_dunit(A)
-dcounit(A::Ports{CompactClosedCategory.Hom}) = junctioned_dcounit(A)
-mate(f::WiringDiagram{CompactClosedCategory.Hom}) =
+dual(A::Ports{CompactClosedCategory}) = dual_ports(A)
+dunit(A::Ports{CompactClosedCategory}) = junctioned_dunit(A)
+dcounit(A::Ports{CompactClosedCategory}) = junctioned_dcounit(A)
+mate(f::WiringDiagram{CompactClosedCategory}) =
   functor(f, dual, mate, contravariant=true, monoidal_contravariant=true)
 
-dual(A::Ports{DaggerCompactCategory.Hom}) = dual_ports(A)
-dunit(A::Ports{DaggerCompactCategory.Hom}) = junctioned_dunit(A)
-dcounit(A::Ports{DaggerCompactCategory.Hom}) = junctioned_dcounit(A)
-dagger(f::WiringDiagram{DaggerCompactCategory.Hom}) =
+dual(A::Ports{DaggerCompactCategory}) = dual_ports(A)
+dunit(A::Ports{DaggerCompactCategory}) = junctioned_dunit(A)
+dcounit(A::Ports{DaggerCompactCategory}) = junctioned_dcounit(A)
+dagger(f::WiringDiagram{DaggerCompactCategory}) =
   functor(f, identity, dagger, contravariant=true)
-mate(f::WiringDiagram{DaggerCompactCategory.Hom}) =
+mate(f::WiringDiagram{DaggerCompactCategory}) =
   functor(f, dual, mate, contravariant=true, monoidal_contravariant=true)
 
 # Traced monoidal category
@@ -310,53 +310,50 @@ end
 
 const TracedMon = TracedMonoidalCategory
 
-trace(X::Ports{TracedMon.Hom}, A::Ports{TracedMon.Hom},
-      B::Ports{TracedMon.Hom}, f::WiringDiagram{TracedMon.Hom}) = trace(X, f)
+trace(X::Ports{TracedMon}, A::Ports{TracedMon},
+      B::Ports{TracedMon}, f::WiringDiagram{TracedMon}) = trace(X, f)
 
 # Bicategory of relations
 #------------------------
 
 const BiRel = BicategoryRelations
 
-mcopy(A::Ports{BiRel.Hom}, n::Int) = junctioned_mcopy(A, n)
-mmerge(A::Ports{BiRel.Hom}, n::Int) = junctioned_mmerge(A, n)
+mcopy(A::Ports{BiRel}, n::Int) = junctioned_mcopy(A, n)
+mmerge(A::Ports{BiRel}, n::Int) = junctioned_mmerge(A, n)
 
-dunit(A::Ports{BiRel.Hom}) = junction_caps(A)
-dcounit(A::Ports{BiRel.Hom}) = junction_cups(A)
+dunit(A::Ports{BiRel}) = junction_caps(A)
+dcounit(A::Ports{BiRel}) = junction_cups(A)
 
-dagger(f::WiringDiagram{BiRel.Hom}) =
+dagger(f::WiringDiagram{BiRel}) =
   functor(f, identity, dagger, contravariant=true)
 
-meet(f::WiringDiagram{BiRel.Hom}, g::WiringDiagram{BiRel.Hom}) =
+meet(f::WiringDiagram{BiRel}, g::WiringDiagram{BiRel}) =
   compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
-top(A::Ports{BiRel.Hom}, B::Ports{BiRel.Hom}) =
-  compose(delete(A), create(B))
+top(A::Ports{BiRel}, B::Ports{BiRel}) = compose(delete(A), create(B))
 
 # Abelian bicategory of relations
 #--------------------------------
 
 const AbBiRel = AbelianBicategoryRelations
 
-mcopy(A::Ports{AbBiRel.Hom}, n::Int) = junctioned_mcopy(A, n; op=:times)
-mmerge(A::Ports{AbBiRel.Hom}, n::Int) = junctioned_mmerge(A, n; op=:times)
+mcopy(A::Ports{AbBiRel}, n::Int) = junctioned_mcopy(A, n; op=:times)
+mmerge(A::Ports{AbBiRel}, n::Int) = junctioned_mmerge(A, n; op=:times)
 
-dunit(A::Ports{AbBiRel.Hom}) = junction_caps(A; op=:times)
-dcounit(A::Ports{AbBiRel.Hom}) = junction_cups(A; op=:times)
+dunit(A::Ports{AbBiRel}) = junction_caps(A; op=:times)
+dcounit(A::Ports{AbBiRel}) = junction_cups(A; op=:times)
 
-plus(A::Ports{AbBiRel.Hom}, n::Int) = junctioned_mmerge(A, n, op=:plus)
-coplus(A::Ports{AbBiRel.Hom}, n::Int) = junctioned_mcopy(A, n, op=:plus)
+plus(A::Ports{AbBiRel}, n::Int) = junctioned_mmerge(A, n, op=:plus)
+coplus(A::Ports{AbBiRel}, n::Int) = junctioned_mcopy(A, n, op=:plus)
 
-dagger(f::WiringDiagram{AbBiRel.Hom}) =
+dagger(f::WiringDiagram{AbBiRel}) =
   functor(f, identity, dagger, contravariant=true)
 
-meet(f::WiringDiagram{AbBiRel.Hom}, g::WiringDiagram{AbBiRel.Hom}) =
+meet(f::WiringDiagram{AbBiRel}, g::WiringDiagram{AbBiRel}) =
   compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
-join(f::WiringDiagram{AbBiRel.Hom}, g::WiringDiagram{AbBiRel.Hom}) =
+join(f::WiringDiagram{AbBiRel}, g::WiringDiagram{AbBiRel}) =
   compose(coplus(dom(f)), otimes(f,g), plus(codom(f)))
-top(A::Ports{AbBiRel.Hom}, B::Ports{AbBiRel.Hom}) =
-  compose(delete(A), create(B))
-bottom(A::Ports{AbBiRel.Hom}, B::Ports{AbBiRel.Hom}) =
-  compose(cozero(A), zero(B))
+top(A::Ports{AbBiRel}, B::Ports{AbBiRel}) = compose(delete(A), create(B))
+bottom(A::Ports{AbBiRel}, B::Ports{AbBiRel}) = compose(cozero(A), zero(B))
 
 # Operadic interface
 ####################

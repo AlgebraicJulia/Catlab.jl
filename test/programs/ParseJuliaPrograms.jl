@@ -29,7 +29,7 @@ f, g, h, m, n = generators(C, [:f, :g, :h, :m, :n])
 
 parsed = @program(C, (x::X) -> f(x))
 @test parsed == to_wiring_diagram(f)
-@test parsed isa WiringDiagram{BiproductCategory.Hom}
+@test parsed isa WiringDiagram{BiproductCategory}
 
 # Composition: one-dimensional.
 

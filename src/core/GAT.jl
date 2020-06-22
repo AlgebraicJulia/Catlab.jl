@@ -1,12 +1,7 @@
 """ Generalized algebraic theories (GATs) in Julia.
-
-At present, this module only supports defining the *signature* of a GAT and the
-defined *axioms* to be expressed as well. Regardless, we will
-persist in calling this module "GAT". Theories are defined using the `@theory`
-macro, and Signatures are defined using the `@signature` macro.
 """
 module GAT
-export @theory, @signature, @instance, invoke_term
+export @theory, @signature, @instance, theory, invoke_term
 
 using Base.Meta: ParseError
 using Compat
@@ -18,10 +13,6 @@ using ..Meta
 
 # Data types
 ############
-
-""" Base type for method stubs in GAT signature.
-"""
-abstract type Stub end
 
 const Context = OrderedDict{Symbol,Expr0}
 
@@ -75,15 +66,7 @@ end
   types::Vector{TypeConstructor}
   terms::Vector{TermConstructor}
   axioms::Vector{AxiomConstructor}
-  aliases::Dict{Symbol, Symbol}
-end
-
-""" Typeclass = GAT + Julia-specific content.
-"""
-struct Typeclass
-  name::Symbol
-  type_params::Vector{Symbol}
-  theory::Theory
+  aliases::Dict{Symbol,Symbol}
 end
 
 struct TheoryBinding
@@ -97,7 +80,7 @@ struct TheoryHead
 end
 
 # Theories
-############
+##########
 
 """ Define a generalized algebraic theory (GAT).
 
@@ -111,7 +94,6 @@ Four kinds of things can go in the theory body:
    `@op Hom :→`
 4. Equality axioms, e.g.,
    `f ⋅ id(B) == f ⊣ (A::Ob, B::Ob, f::(A → B))`
-
 
 A theory can extend existing theories (at present only one).
 """
@@ -137,6 +119,13 @@ macro signature(head, body)
   theory_builder(head, body, signature=true)
 end
 
+""" Retrieve generalized algebraic theory associated with abstract type.
+
+For example, if `Category` is imported from `Catlab.Theories`, then
+`theory(Category)`returns the theory of a category.
+"""
+function theory end
+
 """ Define how a theory is built, set up as a separate function to allow both
     the signature and theory macros to share code and throw an error if any
     axioms are defined in a signature.
@@ -144,72 +133,57 @@ end
 function theory_builder(head, body; signature=false)
   # Parse theory header.
   head = parse_theory_head(head)
+  @assert all(param in head.main.params
+              for base in head.base for param in base.params)
   @assert length(head.base) <= 1 "Multiple theory extension not supported"
-  if length(head.base) == 1
-    base_name, base_params = head.base[1].name, head.base[1].params
-    @assert all(p in head.main.params for p in base_params)
-  else
-    base_name, base_params = nothing, []
-  end
+  base_name = isempty(head.base) ? nothing : only(head.base).name
 
   # Parse theory body: GAT types/terms and function aliases.
   types, terms, axioms, aliases = parse_theory_body(body)
   if signature && length(axioms) > 0
-    throw(ParseError("@signature macro does not allow axioms to be defined: $axioms"))
+    throw(ParseError("@signature macro does not allow axioms to be defined"))
   end
-
   theory = Theory(types, terms, axioms, aliases)
-  class = Typeclass(head.main.name, head.main.params, theory)
 
   # We must generate and evaluate the code at *run time* because the base
   # theory, if specified, is not available at *parse time*.
-  expr = :(theory_code($class, $(esc(base_name)), $base_params))
+  expr = :(theory_code($head, $theory, $(esc(base_name))))
   Expr(:block,
     Expr(:call, esc(:eval), expr),
     :(Core.@__doc__ $(esc(head.main.name))))
 end
 
-function theory_code(main_class, base_mod, base_params)
-  # TODO: Generate code to do something with main_class.theory.axioms
-  # Add types/terms/aliases from base class, if provided.
-  main_theory = main_class.theory
-  if isnothing(base_mod)
-    class = main_class
-  else
-    base_class = base_mod.class()
-    bindings = Dict(zip(base_class.type_params, base_params))
-    base_theory = replace_types(bindings, base_class.theory)
-    theory = Theory([base_theory.types; main_theory.types],
-                    [base_theory.terms; main_theory.terms],
-                    [base_theory.axioms; main_theory.axioms],
-                    merge(base_theory.aliases, main_theory.aliases))
-    class = Typeclass(main_class.name, main_class.type_params, theory)
+function theory_code(head, theory, base_type)
+  # Add types/terms/aliases from base theory, if provided.
+  if !isnothing(base_type)
+    base_theory = GAT.theory(base_type)
+    base_params = [ type.name for type in base_theory.types ]
+    bindings = Dict(zip(base_params, only(head.base).params))
+    base_theory = replace_types(bindings, base_theory)
+    theory = Theory([base_theory.types; theory.types],
+                    [base_theory.terms; theory.terms],
+                    [base_theory.axioms; theory.axioms],
+                    merge(base_theory.aliases, theory.aliases))
   end
-  theory = replace_types(class.theory.aliases, class.theory)
-  class = Typeclass(class.name, class.type_params, theory)
+  theory = replace_types(theory.aliases, theory)
 
-  # Generate module with stub types.
-  mod = Expr(:module, true, class.name,
-    Expr(:block, [
-      # Prevents error about export not being at toplevel.
-      # https://github.com/JuliaLang/julia/issues/28991
-      LineNumberNode(0);
-      Expr(:export, [cons.name for cons in theory.types]...);
-      map(gen_abstract_type, theory.types);
-      :(class() = $(class));
-    ]...))
-
-  # Generate method stubs.
-  # (We put them outside the module, so the stub type names must be qualified.)
-  bindings = Dict(cons.name => Expr(:(.), class.name, QuoteNode(cons.name))
-                  for cons in theory.types)
-  fns = interface(class)
-
-  toplevel = [ generate_function(replace_symbols(bindings, f)) for f in fns ]
-
-  # Modules must be at top level:
-  # https://github.com/JuliaLang/julia/issues/21009
-  Expr(:toplevel, mod, toplevel...)
+  # Names of generic functions in interface defined by theory.
+  names = unique!(vcat(
+    [ param for type in theory.types for param in type.params ], # Accessors.
+    [ term.name for term in theory.terms ], # Term constructors.
+    collect(keys(theory.aliases)) # Unicode aliases.
+  ))  
+  
+  # Generate block with abstract type definition, registration of theory,
+  # and stubs for generic functions.
+  Expr(:block,
+    Expr(:abstract, head.main.name),
+    Expr(:(=),
+      Expr(:call, GlobalRef(GAT, :theory),
+        Expr(:(::), Expr(:curly, :Type, head.main.name))),
+      theory),
+    (Expr(:function, name) for name in names)...,
+  )
 end
 
 function parse_theory_head(expr::Expr)::TheoryHead
@@ -270,79 +244,6 @@ function parse_theory_body(expr::Expr)
     end
   end
   return (collect(values(types)), terms, axioms, aliases)
-end
-
-""" Julia functions for type parameter accessors.
-"""
-function accessors(theory::Theory)::Vector{JuliaFunction}
-  vcat(map(accessors, theory.types)...)
-end
-function accessors(cons::TypeConstructor)::Vector{JuliaFunction}
-  [ JuliaFunction(Expr(:call, param, Expr(:(::), cons.name)),
-                  strip_type(cons.context[param]))
-    for param in cons.params ]
-end
-
-""" Julia functions for term constructors of GAT.
-"""
-function constructors(theory::Theory)::Vector{JuliaFunction}
-  [ constructor(cons, theory) for cons in theory.terms ]
-end
-function constructor(cons::Union{TypeConstructor,TermConstructor},
-                     theory::Theory)::JuliaFunction
-  arg_names = cons.params
-  arg_types = [ strip_type(cons.context[name]) for name in arg_names ]
-  args = [ Expr(:(::), name, typ) for (name,typ) in zip(arg_names, arg_types) ]
-  return_type = cons isa TermConstructor ? strip_type(cons.typ) : cons.name
-
-  call_expr = Expr(:call, cons.name, args...)
-  if !any(has_type(theory, typ) for typ in arg_types)
-    call_expr = add_type_dispatch(call_expr, return_type)
-  end
-  JuliaFunction(call_expr, return_type)
-end
-
-""" Julia functions for term and type aliases of GAT.
-"""
-function alias_functions(theory::Theory)::Vector{JuliaFunction}
-  # collect all of the types and terms from the theory
-  terms_types = [theory.types; theory.terms]
-  # iterate over the specified aliases
-  collect(Iterators.flatten(map(collect(theory.aliases)) do alias
-    # collect all of the destination function definitions to alias
-    # allows an alias to overite all the type definitions of a function
-    dests = filter(i -> i.name == last(alias), map(x -> x, terms_types))
-    # If there are no matching functions, throw a parse error
-    if isempty(dests)
-      throw(ParseError("Cannot alias undefined type or term $alias"))
-    end
-    # For each destination, create a Julia function
-    map(dests) do dest
-      fun = constructor(dest, theory)
-      fun.call_expr.args[1] = first(alias)
-      # Extract arguments from function header, handling special case of
-      # created by `add_type_dispatch`.
-      args = map(fun.call_expr.args[2:end]) do arg
-        @match arg begin
-          # Special case: dispatch on return type.
-          Expr(:(::), [ Expr(:curly, [:Type, type]) ]) => type
-          # Main case: typed parameter.
-          Expr(:(::), [ param, type ]) => param
-          _ => throw(ParseError("Cannot parse argument $arg for alias $alias"))
-        end
-      end
-      body = Expr(:call, dest.name, args...)
-      JuliaFunction(fun.call_expr, fun.return_type, body)
-    end
-  end))
-end
-
-""" Complete set of Julia functions for a type class.
-"""
-function interface(class::Typeclass)::Vector{JuliaFunction}
-  [ accessors(class.theory);
-    constructors(class.theory);
-    alias_functions(class.theory) ]
 end
 
 """ Get type constructor by name.
@@ -452,14 +353,6 @@ function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor,
                          context, doc))
     _ => throw(ParseError("Ill-formed type/term constructor $cons_expr"))
   end
-end
-
-""" Generate abstract type definition from a GAT type constructor.
-"""
-function gen_abstract_type(cons::TypeConstructor)::Expr
-  stub_name = GlobalRef(GAT, :Stub)
-  expr = :(abstract type $(cons.name) <: $stub_name end)
-  generate_docstring(expr, cons.doc)
 end
 
 """ Replace names of type constructors in a GAT.
@@ -619,9 +512,6 @@ end
 ###########
 
 """ Define an *instance* of a generalized algebraic theory (GAT).
-
-These are perfectly analagous to instances of a type class in Haskell. See also
-the Typeclass.jl library for Julia.
 """
 macro instance(head, body)
   # Parse the instance definition.
@@ -629,7 +519,7 @@ macro instance(head, body)
   functions, ext_functions = parse_instance_body(body)
 
   # We must generate and evaluate the code at *run time* because the theory
-  # module is not defined at *parse time*.
+  # type is not defined at *parse time*.
   # Also, we "throw away" any docstring.
   # FIXME: Is there a better place to put the docstring?
   expr = :(instance_code($(esc(head.name)), $(esc(head.params)), $functions, $ext_functions))
@@ -637,11 +527,11 @@ macro instance(head, body)
     Expr(:call, esc(:eval), expr),
     :(Core.@__doc__ abstract type $(esc(gensym(:instance_doc))) end)) # /dev/null
 end
-function instance_code(mod, instance_types, instance_fns, external_fns)
+function instance_code(theory_type, instance_types, instance_fns, external_fns)
   code = Expr(:block)
-  class = mod.class()
-  bindings = Dict(zip(class.type_params, instance_types))
-  bound_fns = [ replace_symbols(bindings, f) for f in interface(class) ]
+  theory = GAT.theory(theory_type)
+  bindings = Dict(zip([type.name for type in theory.types], instance_types))
+  bound_fns = [ replace_symbols(bindings, f) for f in interface(theory) ]
   bound_fns = OrderedDict(parse_function_sig(f) => f for f in bound_fns)
   instance_fns = Dict(parse_function_sig(f) => f for f in instance_fns)
   for (sig, f) in bound_fns
@@ -652,7 +542,7 @@ function instance_code(mod, instance_types, instance_fns, external_fns)
     elseif !isnothing(f.impl)
       f_impl = f
     else
-      error("Method $(f.call_expr) not implemented in $(class.name) instance")
+      error("Method $(f.call_expr) not implemented in $(nameof(mod)) instance")
     end
     push!(code.args, generate_function(f_impl))
   end
@@ -680,6 +570,79 @@ function parse_instance_body(expr::Expr)
   return (funs, ext_funs)
 end
 
+""" Complete set of Julia functions for a theory.
+"""
+function interface(theory::Theory)::Vector{JuliaFunction}
+  [ accessors(theory);
+    constructors(theory);
+    alias_functions(theory) ]
+end
+
+""" Julia functions for type parameter accessors.
+"""
+function accessors(theory::Theory)::Vector{JuliaFunction}
+  vcat(map(accessors, theory.types)...)
+end
+function accessors(cons::TypeConstructor)::Vector{JuliaFunction}
+  [ JuliaFunction(Expr(:call, param, Expr(:(::), cons.name)),
+                  strip_type(cons.context[param]))
+    for param in cons.params ]
+end
+
+""" Julia functions for term constructors of GAT.
+"""
+function constructors(theory::Theory)::Vector{JuliaFunction}
+  [ constructor(cons, theory) for cons in theory.terms ]
+end
+function constructor(cons::Union{TypeConstructor,TermConstructor},
+                     theory::Theory)::JuliaFunction
+  arg_names = cons.params
+  arg_types = [ strip_type(cons.context[name]) for name in arg_names ]
+  args = [ Expr(:(::), name, typ) for (name,typ) in zip(arg_names, arg_types) ]
+  return_type = cons isa TermConstructor ? strip_type(cons.typ) : cons.name
+
+  call_expr = Expr(:call, cons.name, args...)
+  if !any(has_type(theory, typ) for typ in arg_types)
+    call_expr = add_type_dispatch(call_expr, return_type)
+  end
+  JuliaFunction(call_expr, return_type)
+end
+
+""" Julia functions for term and type aliases of GAT.
+"""
+function alias_functions(theory::Theory)::Vector{JuliaFunction}
+  # collect all of the types and terms from the theory
+  terms_types = [theory.types; theory.terms]
+  # iterate over the specified aliases
+  collect(Iterators.flatten(map(collect(theory.aliases)) do alias
+    # collect all of the destination function definitions to alias
+    # allows an alias to overite all the type definitions of a function
+    dests = filter(i -> i.name == last(alias), map(x -> x, terms_types))
+    # If there are no matching functions, throw a parse error
+    if isempty(dests)
+      throw(ParseError("Cannot alias undefined type or term $alias"))
+    end
+    # For each destination, create a Julia function
+    map(dests) do dest
+      fun = constructor(dest, theory)
+      fun.call_expr.args[1] = first(alias)
+      # Extract arguments from function header, handling special case of
+      # created by `add_type_dispatch`.
+      args = map(fun.call_expr.args[2:end]) do arg
+        @match arg begin
+          # Special case: dispatch on return type.
+          Expr(:(::), [ Expr(:curly, [:Type, type]) ]) => type
+          # Main case: typed parameter.
+          Expr(:(::), [ param, type ]) => param
+          _ => throw(ParseError("Cannot parse argument $arg for alias $alias"))
+        end
+      end
+      body = Expr(:call, dest.name, args...)
+      JuliaFunction(fun.call_expr, fun.return_type, body)
+    end
+  end))
+end
+
 """ Invoke a term constructor by name on an instance.
 
 This method provides reflection for GATs. In everyday use the generic
@@ -687,17 +650,17 @@ method for the constructor should be called directly, not through this function.
 
 Cf. Julia's builtin `invoke()` function.
 """
-function invoke_term(theory_module::Module, instance_types::Tuple,
+function invoke_term(theory_type::Type, instance_types::Tuple,
                      constructor_name::Symbol, args...)
   # Get the corresponding Julia method from the parent module.
-  method = getfield(parentmodule(theory_module), constructor_name)
+  method = getfield(parentmodule(theory_type), constructor_name)
   args = collect(Any, args)
 
   # Add dispatch on return type, if necessary.
   if !any(typeof(arg) <: typ for typ in instance_types for arg in args)
     # Case 1: Name refers to type constructor, e.g., generator constructor
     # in syntax system.
-    theory = theory_module.class().theory
+    theory = GAT.theory(theory_type)
     index = findfirst(cons -> cons.name == constructor_name, theory.types)
     if isnothing(index)
       # Case 2: Name refers to term constructor.
