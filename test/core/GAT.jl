@@ -133,12 +133,12 @@ end
   id(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 
-@test isa(Category, Module)
+@test Category isa Module
 @test occursin("theory of categories", lowercase(string(Docs.doc(Category))))
 @test sort(names(Category)) == sort([:Category, :Ob, :Hom])
-@test isa(Category.Ob, Type) && isa(Category.Hom, Type)
-@test isa(dom, Function) && isa(codom, Function)
-@test isa(id, Function) && isa(compose, Function)
+@test Category.Ob isa Type && Category.Hom isa Type
+@test isempty(methods(dom)) && isempty(methods(codom))
+@test isempty(methods(id)) && isempty(methods(compose))
 
 # Manually constructed theory of categories
 types = [
@@ -214,9 +214,7 @@ end
   munit()::M
 end
 
-@test isa(Semigroup, Module) && isa(MonoidExt, Module)
-@test length(methods(times)) == 2 # Semigroup.S, MonoidExt.M
-@test length(methods(munit)) == 1 # MonoidExt.M
+@test Semigroup isa Module && MonoidExt isa Module
 
 theory = GAT.Theory(
   [ GAT.TypeConstructor(:M, [], GAT.Context()) ],
@@ -283,7 +281,6 @@ end
   times(x::String, y::String) = string(x,y)
 end
 
-@test length(methods(munit)) == 3 # Monoid, MonoidExt, String
 @test munit(String) == ""
 @test times("a", "b") == "ab"
 
