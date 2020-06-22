@@ -94,7 +94,7 @@ A = Ports([:A])
 @test compose(mcopy(A), otimes(id(A),delete(A))) == id(A)
 
 # Cartesian categories
-A = Ports{CartesianCategory.Hom}([:A])
+A = Ports{CartesianCategory}([:A])
 @test mcopy(A) == mcopy(Ports([:A]))
 @test delete(A) == delete(Ports([:A]))
 @test_throws MethodError mmerge(A)
@@ -121,7 +121,7 @@ A = Ports([:A])
 @test compose(otimes(id(A),create(A)), mmerge(A)) == id(A)
 
 # Cocartesian categories
-A = Ports{CocartesianCategory.Hom}([:A])
+A = Ports{CocartesianCategory}([:A])
 @test mmerge(A) == mmerge(Ports([:A]))
 @test create(A) == create(Ports([:A]))
 @test_throws MethodError mcopy(A)
@@ -132,22 +132,22 @@ A = Ports{CocartesianCategory.Hom}([:A])
 
 # Monoidal categories with bidiagonals, and non-naturality of explicit
 # representation.
-A = Ports{MonoidalCategoryWithBidiagonals.Hom}([:A])
+A = Ports{MonoidalCategoryWithBidiagonals}([:A])
 @test boxes(mcopy(A)) == [ Junction(:A,1,2) ]
 @test boxes(mcopy(otimes(A,A))) == repeat([ Junction(:A,1,2) ], 2)
 @test compose(create(A), mcopy(A)) != create(otimes(A,A))
 @test compose(mmerge(A), delete(A)) != delete(otimes(A,A))
 
 # Biproduct categories, and naturality of implicit representation.
-A = Ports{BiproductCategory.Hom}([:A])
+A = Ports{BiproductCategory}([:A])
 @test compose(create(A), mcopy(A)) == create(otimes(A,A))
 @test compose(mmerge(A), delete(A)) == delete(otimes(A,A))
 
 # Dagger category
 #----------------
 
-f = singleton_diagram(DaggerSymmetricMonoidalCategory.Hom, Box(:f,[:A],[:B]))
-g = singleton_diagram(DaggerSymmetricMonoidalCategory.Hom, Box(:g,[:B],[:A]))
+f = singleton_diagram(DaggerSymmetricMonoidalCategory, Box(:f,[:A],[:B]))
+g = singleton_diagram(DaggerSymmetricMonoidalCategory, Box(:g,[:B],[:A]))
 
 @test boxes(dagger(f)) == [ BoxOp{:dagger}(Box(:f,[:A],[:B])) ]
 
@@ -169,7 +169,7 @@ g = singleton_diagram(DaggerSymmetricMonoidalCategory.Hom, Box(:g,[:B],[:A]))
 
 ### Duals
 
-A, B = [ Ports{CompactClosedCategory.Hom}([sym]) for sym in [:A, :B] ]
+A, B = [ Ports{CompactClosedCategory}([sym]) for sym in [:A, :B] ]
 I = munit(typeof(A))
 
 @test boxes(dunit(A)) == [ Junction(:A, [], [PortOp{:dual}(:A), :A]) ]
@@ -189,8 +189,8 @@ I = munit(typeof(A))
 
 ### Adjoint mates
 
-f = singleton_diagram(CompactClosedCategory.Hom, Box(:f,[:A],[:B]))
-g = singleton_diagram(CompactClosedCategory.Hom, Box(:g,[:B],[:A]))
+f = singleton_diagram(CompactClosedCategory, Box(:f,[:A],[:B]))
+g = singleton_diagram(CompactClosedCategory, Box(:g,[:B],[:A]))
 
 @test boxes(mate(f)) == [ BoxOp{:mate}(Box(:f,[:A],[:B])) ]
 
@@ -211,32 +211,32 @@ g = singleton_diagram(CompactClosedCategory.Hom, Box(:g,[:B],[:A]))
 #-------------------------
 
 const TracedMon = TracedMonoidalCategory
-A, B, X, Y = [ Ports{TracedMon.Hom}([sym]) for sym in [:A,:B,:X,:Y] ]
+A, B, X, Y = [ Ports{TracedMon}([sym]) for sym in [:A,:B,:X,:Y] ]
 I = munit(typeof(A))
-f = singleton_diagram(TracedMon.Hom, Box(:f, [:X,:A], [:X,:B]))
+f = singleton_diagram(TracedMon, Box(:f, [:X,:A], [:X,:B]))
 
 # Domain and codomain
 @test dom(trace(X, A, B, f)) == A
 @test codom(trace(X, A, B, f)) == B
 
 # Naturality
-g = singleton_diagram(TracedMon.Hom, Box(:g, [:A], [:A]))
-h = singleton_diagram(TracedMon.Hom, Box(:h, [:B], [:B]))
+g = singleton_diagram(TracedMon, Box(:g, [:A], [:A]))
+h = singleton_diagram(TracedMon, Box(:h, [:B], [:B]))
 @test trace(X, compose(id(X)⊗g, f, id(X)⊗h)) == compose(g, trace(X,f), h)
 
 # Stength, aka superposing
-g = singleton_diagram(TracedMon.Hom, Box(:g, [:C], [:C]))
+g = singleton_diagram(TracedMon, Box(:g, [:C], [:C]))
 @test trace(X, otimes(f,g)) == otimes(trace(X,f), g)
 
 # Symmetry sliding
-f = singleton_diagram(TracedMon.Hom, Box(:f, [:X,:Y,:A], [:Y,:X,:B]))
+f = singleton_diagram(TracedMon, Box(:f, [:X,:Y,:A], [:Y,:X,:B]))
 @test trace(X⊗Y, compose(f, braid(Y,X)⊗id(B))) ==
   trace(Y⊗X, compose(braid(Y,X)⊗id(A), f))
 
 # Vanishing
-f = singleton_diagram(TracedMon.Hom, Box(:f, [:X,:Y,:A], [:X,:Y,:B]))
+f = singleton_diagram(TracedMon, Box(:f, [:X,:Y,:A], [:X,:Y,:B]))
 @test trace(X⊗Y, f) == trace(Y, trace(X, f))
-f = singleton_diagram(TracedMon.Hom, Box(:f, [:A], [:B]))
+f = singleton_diagram(TracedMon, Box(:f, [:A], [:B]))
 @test trace(I, f) == f
 
 # Yanking
@@ -245,9 +245,9 @@ f = singleton_diagram(TracedMon.Hom, Box(:f, [:A], [:B]))
 # Bicategory of relations
 #------------------------
 
-A, B = [ Ports{BicategoryRelations.Hom}([sym]) for sym in [:A, :B] ]
-R = singleton_diagram(BicategoryRelations.Hom, Box(:R,[:A],[:B]))
-S = singleton_diagram(BicategoryRelations.Hom, Box(:S,[:A],[:B]))
+A, B = [ Ports{BicategoryRelations}([sym]) for sym in [:A, :B] ]
+R = singleton_diagram(BicategoryRelations, Box(:R,[:A],[:B]))
+S = singleton_diagram(BicategoryRelations, Box(:S,[:A],[:B]))
 
 # Domains and codomains
 @test dom(meet(R,S)) == A
@@ -262,9 +262,9 @@ S = singleton_diagram(BicategoryRelations.Hom, Box(:S,[:A],[:B]))
 # Abelian bicategory of relations
 #--------------------------------
 
-A, B = [ Ports{AbelianBicategoryRelations.Hom}([sym]) for sym in [:A, :B] ]
-R = singleton_diagram(AbelianBicategoryRelations.Hom, Box(:R,[:A],[:B]))
-S = singleton_diagram(AbelianBicategoryRelations.Hom, Box(:S,[:A],[:B]))
+A, B = [ Ports{AbelianBicategoryRelations}([sym]) for sym in [:A, :B] ]
+R = singleton_diagram(AbelianBicategoryRelations, Box(:R,[:A],[:B]))
+S = singleton_diagram(AbelianBicategoryRelations, Box(:S,[:A],[:B]))
 
 # Domains and codomains.
 @test dom(plus(A)) == dom(mmerge(A)) && codom(plus(A)) == codom(mmerge(A))

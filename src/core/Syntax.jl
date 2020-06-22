@@ -110,11 +110,10 @@ macro syntax(syntax_head, mod_name, body=nothing)
     :(Core.@__doc__ $(esc(syntax_name))))
 end
 function syntax_code(name::Symbol, base_types::Vector{Type},
-                     theory_module::Module, outer_module::Module,
+                     theory_type::Type, outer_module::Module,
                      functions::Vector)
-  theory = theory_module.theory()
-  theory_ref = GlobalRef(parentmodule(theory_module),
-                            nameof(theory_module))
+  theory = GAT.theory(theory_type)
+  theory_ref = GlobalRef(parentmodule(theory_type), nameof(theory_type))
 
   # Generate module with syntax types and type/term generators.
   mod = Expr(:module, true, name,
@@ -316,10 +315,10 @@ This method provides reflection for syntax systems. In everyday use the generic
 method for the constructor should be called directly, not through this function.
 """
 function invoke_term(syntax_module::Module, constructor_name::Symbol, args...)
-  theory_module = syntax_module.theory()
-  theory = theory_module.theory()
+  theory_type = syntax_module.theory()
+  theory = GAT.theory(theory_type)
   syntax_types = Tuple(getfield(syntax_module, cons.name) for cons in theory.types)
-  invoke_term(theory_module, syntax_types, constructor_name, args...)
+  invoke_term(theory_type, syntax_types, constructor_name, args...)
 end
 
 """ Name of constructor that created expression.
@@ -389,8 +388,8 @@ function functor(types::Tuple, expr::GATExpr;
   end
 
   # Invoke the constructor in the codomain category!
-  theory_module = syntax_module(expr).theory()
-  invoke_term(theory_module, types, name, term_args...)
+  theory_type = syntax_module(expr).theory()
+  invoke_term(theory_type, types, name, term_args...)
 end
 
 # Serialization
@@ -422,8 +421,8 @@ function parse_json_sexpr(syntax_module::Module, sexpr;
     parse_value::Function = identity,
     symbols::Bool = true,
   )
-  theory_module = syntax_module.theory()
-  theory = theory_module.theory()
+  theory_type = syntax_module.theory()
+  theory = GAT.theory(theory_type)
   type_lens = Dict(cons.name => length(cons.params) for cons in theory.types)
 
   function parse_impl(sexpr::Vector, ::Val{:expr})
