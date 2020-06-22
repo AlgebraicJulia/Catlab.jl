@@ -13,7 +13,6 @@ export @present, Presentation, Equation, generator, generators, has_generator,
 
 using Base.Meta: ParseError
 using Compat
-import DataStructures: OrderedSet
 using Match
 
 using ..Meta, ..Syntax
@@ -26,12 +25,11 @@ const GenExpr = GATExpr{:generator}
 const Equation = Pair{<:GATExpr}{<:GATExpr}
 
 mutable struct Presentation{T}
-  generators::OrderedSet{GenExpr}
-  generators_by_name::Dict{T,GenExpr}
-  equations::OrderedSet{Equation}
+  generators::Vector{GenExpr}
+  generator_name_index::Dict{T,Int}
+  equations::Vector{Equation}
 end
-Presentation(T::Type) = Presentation{T}(
-  OrderedSet{GenExpr}(), Dict{T,GenExpr}(), OrderedSet{Equation}())
+Presentation(T::Type) = Presentation{T}(GenExpr[], Dict{T,Int}(), Equation[])
 Presentation() = Presentation(Symbol)
 
 # Presentation
@@ -39,41 +37,41 @@ Presentation() = Presentation(Symbol)
 
 """ Get all generators of a presentation.
 """
-function generators(pres::Presentation)::Vector
-  collect(pres.generators)
+function generators(pres::Presentation)::AbstractVector
+  pres.generators
 end
-function generators(pres::Presentation, typ::Type)::Vector
-  filter(x -> isa(x,typ), collect(pres.generators))
+function generators(pres::Presentation, type::Type)::AbstractVector
+  filter(x -> isa(x, type), pres.generators)
 end
 
 """ Retrieve generators by name.
 """
 function generator(pres::Presentation{T}, name) where T
-  pres.generators_by_name[convert(T, name)]
+  pres.generators[pres.generator_name_index[convert(T, name)]]
 end
-function generators(pres::Presentation, names)::Vector
+function generators(pres::Presentation, names)::AbstractVector
   [ generator(pres, name) for name in names ]
 end
 
 """ Does the presentation contain a generator with the given name?
 """
 function has_generator(pres::Presentation{T}, name) where T
-  haskey(pres.generators_by_name, convert(T, name))
+  haskey(pres.generator_name_index, convert(T, name))
 end
 
 """ Add a generator to a presentation.
 """
 function add_generator!(pres::Presentation{T}, expr::GenExpr) where T
   name = first(expr)
-  if name != nothing
+  if !isnothing(name)
     name = convert(T, name)
-    if haskey(pres.generators_by_name, name)
+    if haskey(pres.generator_name_index, name)
       error("Name $name already defined in presentation")
     end
-    pres.generators_by_name[name] = expr
+    pres.generator_name_index[name] = length(pres.generators) + 1
   end
   push!(pres.generators, expr)
-  return expr
+  expr
 end
 
 """ Add multiple generators to a presentation.
@@ -86,8 +84,8 @@ end
 
 """ Get all equations of a presentation.
 """
-function equations(pres::Presentation)::Vector
-  collect(pres.equations)
+function equations(pres::Presentation)::AbstractVector
+  pres.equations
 end
 
 """ Add an equation between terms to a presentation.
@@ -102,7 +100,7 @@ function add_definition!(pres::Presentation, name::Symbol, rhs::GATExpr)
   generator = Syntax.generator_like(rhs, name)
   add_generator!(pres, generator)
   add_equation!(pres, generator, rhs)
-  return generator
+  generator
 end
 
 # Presentation macro
@@ -129,7 +127,7 @@ function translate_presentation(syntax_name::Symbol, body::Expr)::Expr
     append_expr!(code, translate_expr(syntax_name, expr))
   end
   append_expr!(code, :(_presentation))
-  return code
+  code
 end
 
 """ Translate a single statement in the presentation DSL to Julia code.
