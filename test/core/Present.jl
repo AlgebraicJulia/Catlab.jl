@@ -11,7 +11,7 @@ f = Hom(:f, A, B)
 g = Hom(:g, B, C)
 
 # Generators
-pres = Presentation()
+pres = Presentation{Category}()
 @test !has_generator(pres, :A)
 add_generator!(pres, A)
 @test generators(pres) == [ A ]
@@ -55,6 +55,10 @@ add_generators!(pres, (f,g))
   # The secretary of a department works in that department.
   compose(secretary, works_in) == id(Department)
 end
+
+# Check type parameter.
+presentation_theory(::Presentation{Theory}) where Theory = Theory
+@test presentation_theory(Company) == Category
 
 # Check generators.
 Employee, Department, Str = Ob(FreeCategory, :Employee, :Department, :Str)

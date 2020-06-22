@@ -24,13 +24,14 @@ import ..Syntax: parse_json_sexpr, to_json_sexpr
 const GenExpr = GATExpr{:generator}
 const Equation = Pair{<:GATExpr}{<:GATExpr}
 
-mutable struct Presentation{T}
+mutable struct Presentation{Theory,Name}
   generators::Vector{GenExpr}
-  generator_name_index::Dict{T,Int}
+  generator_name_index::Dict{Name,Int}
   equations::Vector{Equation}
 end
-Presentation(T::Type) = Presentation{T}(GenExpr[], Dict{T,Int}(), Equation[])
-Presentation() = Presentation(Symbol)
+Presentation{Theory,Name}() where {Theory,Name} =
+  Presentation{Theory,Name}(GenExpr[], Dict{Name,Int}(), Equation[])
+Presentation{Theory}() where Theory = Presentation{Theory,Symbol}()
 
 # Presentation
 ##############
@@ -46,8 +47,8 @@ end
 
 """ Retrieve generators by name.
 """
-function generator(pres::Presentation{T}, name) where T
-  pres.generators[pres.generator_name_index[convert(T, name)]]
+function generator(pres::Presentation, name)
+  pres.generators[pres.generator_name_index[name]]
 end
 function generators(pres::Presentation, names)::AbstractVector
   [ generator(pres, name) for name in names ]
@@ -55,16 +56,15 @@ end
 
 """ Does the presentation contain a generator with the given name?
 """
-function has_generator(pres::Presentation{T}, name) where T
-  haskey(pres.generator_name_index, convert(T, name))
+function has_generator(pres::Presentation, name)
+  haskey(pres.generator_name_index, name)
 end
 
 """ Add a generator to a presentation.
 """
-function add_generator!(pres::Presentation{T}, expr::GenExpr) where T
+function add_generator!(pres::Presentation, expr::GenExpr)
   name = first(expr)
   if !isnothing(name)
-    name = convert(T, name)
     if haskey(pres.generator_name_index, name)
       error("Name $name already defined in presentation")
     end
@@ -122,7 +122,8 @@ end
 function translate_presentation(syntax_name::Symbol, body::Expr)::Expr
   @assert body.head == :block
   code = Expr(:block)
-  append_expr!(code, :(_presentation = $(module_ref(:Presentation))()))
+  append_expr!(code,
+    :(_presentation = $(module_ref(:Presentation)){$syntax_name.theory()}()))
   for expr in strip_lines(body).args
     append_expr!(code, translate_expr(syntax_name, expr))
   end
