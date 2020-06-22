@@ -4,9 +4,9 @@ In general, a single theory may have many different syntaxes. The purpose of
 this module to enable the simple but flexible construction of syntax systems.
 """
 module Syntax
-export @syntax, GATExpr, SyntaxDomainError, head, args, type_args, first, last,
-  invoke_term, functor, to_json_sexpr, parse_json_sexpr, show_sexpr,
-  show_unicode, show_latex
+export @syntax, GATExpr, SyntaxDomainError, head, args, gat_type_args,
+  first, last, invoke_term, functor, to_json_sexpr, parse_json_sexpr,
+  show_sexpr, show_unicode, show_latex
 
 import Base: first, last
 import Base.Meta: ParseError, show_sexpr
@@ -40,10 +40,10 @@ head(::GATExpr{T}) where T = T
 args(expr::GATExpr) = expr.args
 first(expr::GATExpr) = first(args(expr))
 last(expr::GATExpr) = last(args(expr))
-type_args(expr::GATExpr) = expr.type_args
+gat_type_args(expr::GATExpr) = expr.type_args
 
-function Base.:(==)(e1::GATExpr, e2::GATExpr)
-  head(e1) == head(e2) && args(e1) == args(e2) && type_args(e1) == type_args(e2)
+function Base.:(==)(e1::GATExpr{T}, e2::GATExpr{S}) where {T,S}
+  T == S && e1.args == e2.args && e1.type_args == e2.type_args
 end
 function Base.hash(e::GATExpr, h::UInt)
   hash(args(e), hash(head(e), h))
@@ -337,7 +337,7 @@ end
 """
 function generator_like(expr::GATExpr, value)::GATExpr
   invoke_term(
-    syntax_module(expr), nameof(typeof(expr)), value, type_args(expr)...)
+    syntax_module(expr), nameof(typeof(expr)), value, gat_type_args(expr)...)
 end
 
 """ Get syntax module of given expression.
