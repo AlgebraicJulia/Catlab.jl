@@ -3,6 +3,8 @@ module TestPresentation
 using Test
 using Catlab, Catlab.Theories
 
+presentation_theory(::Presentation{Theory}) where Theory = Theory
+
 # Presentation
 ##############
 
@@ -11,7 +13,8 @@ f = Hom(:f, A, B)
 g = Hom(:g, B, C)
 
 # Generators
-pres = Presentation{Category}()
+pres = Presentation(FreeCategory)
+@test presentation_theory(pres) == Category
 @test !has_generator(pres, :A)
 add_generator!(pres, A)
 @test generators(pres) == [ A ]
@@ -23,10 +26,10 @@ add_generator!(pres, B)
 
 add_generators!(pres, (f,g))
 @test generators(pres) == [ A, B, f, g ]
+@test generators(pres, :Ob) == [ A, B ]
+@test generators(pres, :Hom) == [ f, g ]
 @test generators(pres, FreeCategory.Ob) == [ A, B ]
 @test generators(pres, FreeCategory.Hom) == [ f, g ]
-@test generators(pres, (:A, :B)) == [ A, B ]
-@test generators(pres, [:f, :g]) == [ f, g ]
 
 # Presentation macro
 ####################
@@ -57,12 +60,11 @@ add_generators!(pres, (f,g))
 end
 
 # Check type parameter.
-presentation_theory(::Presentation{Theory}) where Theory = Theory
 @test presentation_theory(Company) == Category
 
 # Check generators.
 Employee, Department, Str = Ob(FreeCategory, :Employee, :Department, :Str)
-@test collect(generators(Company)) == [
+@test generators(Company) == [
   Employee,
   Department,
   Str,
@@ -79,7 +81,7 @@ Employee, Department, Str = Ob(FreeCategory, :Employee, :Department, :Str)
 manager = Hom(:manager, Employee, Employee)
 works_in = Hom(:works_in, Employee, Department)
 secretary = Hom(:secretary, Department, Employee)
-@test collect(equations(Company)) == Equation[
+@test equations(Company) == [
   Hom(:second_level_manager, Employee, Employee) => compose(manager, manager),
   Hom(:third_level_manager, Employee, Employee) => compose(manager, manager, manager),
   compose(manager, works_in) => works_in,
