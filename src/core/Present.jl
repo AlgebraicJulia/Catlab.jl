@@ -23,6 +23,7 @@ import ..Syntax: parse_json_sexpr, to_json_sexpr
 ############
 
 struct Presentation{Theory,Name}
+  syntax::Module
   generators::NamedTuple
   generator_name_index::Dict{Name,Pair{Symbol,Int}}
   equations::Vector{Pair}
@@ -32,7 +33,7 @@ struct Presentation{Theory,Name}
     theory = GAT.theory(Theory)
     names = Tuple(type.name for type in theory.types)
     vectors = ((getfield(syntax, name){:generator})[] for name in names)
-    new{Theory,Name}(NamedTuple{names}(vectors),
+    new{Theory,Name}(syntax, NamedTuple{names}(vectors),
                      Dict{Name,Pair{Symbol,Int}}(), Pair[])
   end
 end
