@@ -22,8 +22,8 @@ end
 # Parsing
 #########
 
-W, X, Y, Z = generators(C, [:W, :X, :Y, :Z])
-f, g, h, m, n = generators(C, [:f, :g, :h, :m, :n])
+W, X, Y, Z = (generator(C, name) for name in [:W, :X, :Y, :Z])
+f, g, h, m, n = (generator(C, name) for name in [:f, :g, :h, :m, :n])
 
 # Generator.
 
@@ -178,7 +178,7 @@ function test_roundtrip(f::HomExpr)
   @test roundtrip(f) == to_wiring_diagram(f)
 end
 
-f, g, h, l, m, n = generators(C, [:f, :g, :h, :l, :m, :n])
+f, g, h, l, m, n = (generator(C, name) for name in [:f, :g, :h, :l, :m, :n])
 
 test_roundtrip(f)
 test_roundtrip(id(X))

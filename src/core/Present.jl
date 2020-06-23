@@ -8,76 +8,75 @@ Presentations define small categories by generators and relations and are useful
 in applications like knowledge representation.
 """
 module Present
-export @present, Presentation, Equation, generator, generators, has_generator,
-  equations, add_generator!, add_generators!, add_definition!, add_equation!,
-  merge_presentation!
+export @present, Presentation, generator, generators, has_generator, equations,
+  add_generator!, add_generators!, add_definition!, add_equation!
 
 using Base.Meta: ParseError
 using Compat
-import DataStructures: OrderedSet
 using Match
 
 using ..Meta, ..Syntax
+import ..GAT
 import ..Syntax: parse_json_sexpr, to_json_sexpr
 
 # Data types
 ############
 
-const GenExpr = GATExpr{:generator}
-const Equation = Pair{<:GATExpr}{<:GATExpr}
-
-mutable struct Presentation{T}
-  generators::OrderedSet{GenExpr}
-  generators_by_name::Dict{T,GenExpr}
-  equations::OrderedSet{Equation}
+struct Presentation{Theory,Name}
+  syntax::Module
+  generators::NamedTuple
+  generator_name_index::Dict{Name,Pair{Symbol,Int}}
+  equations::Vector{Pair}
+  
+  function Presentation{Name}(syntax::Module) where Name
+    Theory = syntax.theory()
+    theory = GAT.theory(Theory)
+    names = Tuple(type.name for type in theory.types)
+    vectors = ((getfield(syntax, name){:generator})[] for name in names)
+    new{Theory,Name}(syntax, NamedTuple{names}(vectors),
+                     Dict{Name,Pair{Symbol,Int}}(), Pair[])
+  end
 end
-Presentation(T::Type) = Presentation{T}(
-  OrderedSet{GenExpr}(), Dict{T,GenExpr}(), OrderedSet{Equation}())
-Presentation() = Presentation(Symbol)
+Presentation(syntax::Module) = Presentation{Symbol}(syntax)
 
 # Presentation
 ##############
 
 """ Get all generators of a presentation.
 """
-function generators(pres::Presentation)::Vector
-  collect(pres.generators)
-end
-function generators(pres::Presentation, typ::Type)::Vector
-  filter(x -> isa(x,typ), collect(pres.generators))
-end
+generators(pres::Presentation) = collect(Iterators.flatten(pres.generators))
+generators(pres::Presentation, type::Symbol) = pres.generators[type]
+generators(pres::Presentation, type::Type) = generators(pres, nameof(type))
 
 """ Retrieve generators by name.
 """
-function generator(pres::Presentation{T}, name) where T
-  pres.generators_by_name[convert(T, name)]
-end
-function generators(pres::Presentation, names)::Vector
-  [ generator(pres, name) for name in names ]
+function generator(pres::Presentation, name)
+  type, index = pres.generator_name_index[name]
+  pres.generators[type][index]
 end
 
 """ Does the presentation contain a generator with the given name?
 """
-function has_generator(pres::Presentation{T}, name) where T
-  haskey(pres.generators_by_name, convert(T, name))
+function has_generator(pres::Presentation, name)
+  haskey(pres.generator_name_index, name)
 end
 
 """ Add a generator to a presentation.
 """
-function add_generator!(pres::Presentation{T}, expr::GenExpr) where T
-  name = first(expr)
-  if name != nothing
-    name = convert(T, name)
-    if haskey(pres.generators_by_name, name)
+function add_generator!(pres::Presentation, expr)
+  name, type = first(expr), gat_typeof(expr)
+  generators = pres.generators[type]
+  if !isnothing(name)
+    if haskey(pres.generator_name_index, name)
       error("Name $name already defined in presentation")
     end
-    pres.generators_by_name[name] = expr
+    pres.generator_name_index[name] = type => length(generators)+1
   end
-  push!(pres.generators, expr)
-  return expr
+  push!(generators, expr)
+  expr
 end
 
-""" Add multiple generators to a presentation.
+""" Add iterable of generators to a presentation.
 """
 function add_generators!(pres::Presentation, exprs)
   for expr in exprs
@@ -87,9 +86,7 @@ end
 
 """ Get all equations of a presentation.
 """
-function equations(pres::Presentation)::Vector
-  collect(pres.equations)
-end
+equations(pres::Presentation) = pres.equations
 
 """ Add an equation between terms to a presentation.
 """
@@ -103,18 +100,7 @@ function add_definition!(pres::Presentation, name::Symbol, rhs::GATExpr)
   generator = Syntax.generator_like(rhs, name)
   add_generator!(pres, generator)
   add_equation!(pres, generator, rhs)
-  return generator
-end
-
-""" Merge the second presentation into the first.
-
-The first presentation is mutated and returned; the second is not.
-"""
-function merge_presentation!(pres::Presentation{T}, other::Presentation{T}) where T
-  union!(pres.generators, other.generators)
-  merge!(pres.generators_by_name, other.generators_by_name)
-  union!(pres.equations, other.equations)
-  return pres
+  generator
 end
 
 # Presentation macro
@@ -136,12 +122,13 @@ end
 function translate_presentation(syntax_name::Symbol, body::Expr)::Expr
   @assert body.head == :block
   code = Expr(:block)
-  append_expr!(code, :(_presentation = $(module_ref(:Presentation))()))
+  append_expr!(code,
+    :(_presentation = $(module_ref(:Presentation))($syntax_name)))
   for expr in strip_lines(body).args
     append_expr!(code, translate_expr(syntax_name, expr))
   end
   append_expr!(code, :(_presentation))
-  return code
+  code
 end
 
 """ Translate a single statement in the presentation DSL to Julia code.
@@ -208,13 +195,10 @@ function to_json_sexpr(pres::Presentation, expr::GATExpr)
     by_reference = name -> has_generator(pres, name))
 end
 
-function parse_json_sexpr(pres::Presentation, syntax_module::Module, sexpr)
-  parse_json_sexpr(syntax_module, sexpr;
-    parse_reference = name -> generator(pres, name))
-end
-function parse_json_sexpr(pres::Presentation{Symbol}, syntax_module::Module, sexpr)
-  parse_json_sexpr(syntax_module, sexpr;
-    symbols = true,
+function parse_json_sexpr(pres::Presentation{Theory,Name},
+                          syntax::Module, sexpr) where {Theory,Name}
+  parse_json_sexpr(syntax, sexpr;
+    symbols = Name == Symbol,
     parse_reference = name -> generator(pres, name))
 end
 

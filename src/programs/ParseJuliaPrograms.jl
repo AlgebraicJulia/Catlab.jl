@@ -64,10 +64,8 @@ function parse_wiring_diagram(pres::Presentation, expr::Expr)::WiringDiagram
 end
 
 function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::WiringDiagram
-  # FIXME: Presentations should be uniquely associated with syntax systems.
-  syntax_module = Syntax.syntax_module(first(pres.generators))
-
   # Parse argument names and types from call expression.
+  syntax_module = pres.syntax
   call_args = @match call begin
     Expr(:call, [name, args...]) => args
     Expr(:tuple, args) => args
