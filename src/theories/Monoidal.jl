@@ -2,7 +2,7 @@ export MonoidalCategory, otimes, munit, ⊗, collect, ndims,
   SymmetricMonoidalCategory, FreeSymmetricMonoidalCategory, braid, σ,
   MonoidalCategoryWithDiagonals, CartesianCategory, FreeCartesianCategory,
   mcopy, delete, pair, proj1, proj2, Δ, ◊,
-  mmerge, create, copair, incl1, incl2, ∇, □,
+  mmerge, create, copair, coproj1, coproj2, ∇, □,
   MonoidalCategoryWithBidiagonals, BiproductCategory, FreeBiproductCategory,
   ClosedMonoidalCategory, FreeClosedMonoidalCategory, hom, ev, curry,
   CartesianClosedCategory, FreeCartesianClosedCategory,
@@ -25,9 +25,9 @@ theory for weak monoidal categories later.
 """
 @signature Category(Ob,Hom) => MonoidalCategory(Ob,Hom) begin
   otimes(A::Ob, B::Ob)::Ob
-  @op (⊗) := otimes
   otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣
     (A::Ob, B::Ob, C::Ob, D::Ob)
+  @op (⊗) := otimes
   munit()::Ob
 end
 
@@ -105,26 +105,30 @@ References:
   @op (◊) := delete
 end
 
-""" Theory of *cartesian categories*
+""" Theory of *cartesian (monoidal) categories*
 
-Actually, this is a cartesian *symmetric monoidal* category but we omit these
-qualifiers for brevity.
+For the traditional axiomatization of products, see
+[`CategoryWithProducts`](@ref).
 """
 @theory MonoidalCategoryWithDiagonals(Ob,Hom) => CartesianCategory(Ob,Hom) begin
   pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
 
-  pair(f, g) == Δ(A) ⋅ (f ⊗ g) ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(A → C))
-  proj1(A, B) == id(A) ⊗ ◊(B) ⊣ (A::Ob, B::Ob)
-  proj2(A, B) == ◊(A) ⊗ id(B) ⊣ (A::Ob, B::Ob)
+  pair(f,g) == Δ(C)⋅(f⊗g) ⊣ (A::Ob, B::Ob, C::Ob, f::(C → A), g::(C → B))
+  proj1(A,B) == id(A)⊗◊(B) ⊣ (A::Ob, B::Ob)
+  proj2(A,B) == ◊(A)⊗id(B) ⊣ (A::Ob, B::Ob)
+  
+  # Naturality axioms.
+  f⋅Δ(B) == Δ(A)⋅(f⊗f) ⊣ (A::Ob, B::Ob, f::(A → B))
+  f⋅◊(B) == ◊(A) ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 
 """ Syntax for a free cartesian category.
 
 In this syntax, the pairing and projection operations are defined using
 duplication and deletion, and do not have their own syntactic elements.
-Of course, this convention could be reversed.
+This convention could be dropped or reversed.
 """
 @syntax FreeCartesianCategory(ObExpr,HomExpr) CartesianCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
@@ -180,8 +184,8 @@ yet supported.
   copair(f::(A → C), g::(B → C))::((A ⊗ B) → C) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
-  incl1(A::Ob, B::Ob)::(A → (A ⊗ B))
-  incl2(A::Ob, B::Ob)::(B → (A ⊗ B))
+  coproj1(A::Ob, B::Ob)::(A → (A ⊗ B))
+  coproj2(A::Ob, B::Ob)::(B → (A ⊗ B))
 end
 
 @syntax FreeBiproductCategory(ObExpr,HomExpr) BiproductCategory begin
@@ -193,8 +197,8 @@ end
   copair(f::Hom, g::Hom) = (f ⊗ g) → ∇(codom(f))
   proj1(A::Ob, B::Ob) = id(A) ⊗ ◊(B)
   proj2(A::Ob, B::Ob) = ◊(A) ⊗ id(B)
-  incl1(A::Ob, B::Ob) = id(A) ⊗ □(B)
-  incl2(A::Ob, B::Ob) = □(A) ⊗ id(B)
+  coproj1(A::Ob, B::Ob) = id(A) ⊗ □(B)
+  coproj2(A::Ob, B::Ob) = □(A) ⊗ id(B)
 end
 
 # Closed monoidal category

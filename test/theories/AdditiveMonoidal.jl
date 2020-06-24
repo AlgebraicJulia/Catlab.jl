@@ -81,8 +81,8 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 
 # Derived syntax
 @test copair(f,f) == compose(oplus(f,f), mmerge(B))
-@test incl1(A,B) == oplus(id(A), create(B))
-@test incl2(A,B) == oplus(create(A), id(B))
+@test coproj1(A,B) == oplus(id(A), create(B))
+@test coproj2(A,B) == oplus(create(A), id(B))
 
 # LaTeX notation
 @test latex(mmerge(A)) == "\\nabla_{A}"

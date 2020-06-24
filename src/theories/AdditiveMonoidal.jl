@@ -1,22 +1,22 @@
 export AdditiveMonoidalCategory, oplus, ⊕, mzero,
   AdditiveSymmetricMonoidalCategory, FreeAdditiveSymmetricMonoidalCategory,
   MonoidalCategoryWithCodiagonals, CocartesianCategory, FreeCocartesianCategory,
-  mmerge, create, copair, incl1, incl2, ∇, □, braid, σ
+  mmerge, create, copair, coproj1, coproj2, ∇, □, braid, σ
 
 import Base: collect, ndims
 
 # Monoidal category
 ###################
 
-""" Theory of *monoidal categories* in additive notation
+""" Theory of *monoidal categories*, in additive notation
 
-The same as `MonoidalCategory` mathematically but with different notation.
+Mathematically the same as `MonoidalCategory` but with different notation.
 """
 @signature Category(Ob,Hom) => AdditiveMonoidalCategory(Ob,Hom) begin
   oplus(A::Ob, B::Ob)::Ob
   oplus(f::Hom(A,B), g::Hom(C,D))::Hom(oplus(A,C),oplus(B,D)) <=
     (A::Ob, B::Ob, C::Ob, D::Ob)
-    @op (⊕) := oplus
+  @op (⊕) := oplus
   mzero()::Ob
 end
 
@@ -43,9 +43,9 @@ show_latex(io::IO, expr::ObExpr{:mzero}; kw...) = print(io, "O")
 # Symmetric monoidal category
 #############################
 
-""" Theory of *symmetric monoidal categories* in additive notation
+""" Theory of *symmetric monoidal categories*, in additive notation
 
-The same as `SymmetricMonoidalCategory` mathematically but with different
+Mathematically the same as `SymmetricMonoidalCategory` but with different
 notation.
 """
 @signature AdditiveMonoidalCategory(Ob,Hom) => AdditiveSymmetricMonoidalCategory(Ob,Hom) begin
@@ -77,22 +77,30 @@ For references, see `MonoidalCategoryWithDiagonals`.
   @op (□) := create
 end
 
-""" Theory of *cocartesian categories*
+""" Theory of *cocartesian (monoidal) categories*
 
-Actually, this is a cocartesian *symmetric monoidal* category but we omit these
-qualifiers for brevity.
+For the traditional axiomatization of coproducts, see
+[`CategoryWithCoproducts`](@ref).
 """
-@signature MonoidalCategoryWithCodiagonals(Ob,Hom) => CocartesianCategory(Ob,Hom) begin
+@theory MonoidalCategoryWithCodiagonals(Ob,Hom) => CocartesianCategory(Ob,Hom) begin
   copair(f::Hom(A,C), g::Hom(B,C))::Hom(oplus(A,B),C) <= (A::Ob, B::Ob, C::Ob)
-  incl1(A::Ob, B::Ob)::Hom(A,oplus(A,B))
-  incl2(A::Ob, B::Ob)::Hom(B,oplus(A,B))
+  coproj1(A::Ob, B::Ob)::Hom(A,oplus(A,B))
+  coproj2(A::Ob, B::Ob)::Hom(B,oplus(A,B))
+  
+  copair(f,g) == (f⊗g)⋅∇(C) ⊣ (A::Ob, B::Ob, C::Ob, f::(A → C), g::(B → C))
+  coproj1(A,B) == id(A)⊗□(B) ⊣ (A::Ob, B::Ob)
+  coproj2(A,B) == □(A)⊗id(B) ⊣ (A::Ob, B::Ob)
+  
+  # Naturality axioms.
+  ∇(A)⋅f == (f⊗f)⋅∇(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  □(A)⋅f == □(B) ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 
 """ Syntax for a free cocartesian category.
 
-In this syntax, the copairing and inclusion operations are defined using
-merging and creation, and do not have their own syntactic elements.
-Of course, this convention could be reversed.
+In this syntax, the copairing and inclusion operations are defined using merging
+and creation, and do not have their own syntactic elements. This convention
+could be dropped or reversed.
 """
 @syntax FreeCocartesianCategory(ObExpr,HomExpr) CocartesianCategory begin
   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
@@ -100,8 +108,8 @@ Of course, this convention could be reversed.
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
 
   copair(f::Hom, g::Hom) = compose(oplus(f,g), mmerge(codom(f)))
-  incl1(A::Ob, B::Ob) = oplus(id(A), create(B))
-  incl2(A::Ob, B::Ob) = oplus(create(A), id(B))
+  coproj1(A::Ob, B::Ob) = oplus(id(A), create(B))
+  coproj2(A::Ob, B::Ob) = oplus(create(A), id(B))
 end
 
 function show_latex(io::IO, expr::HomExpr{:mmerge}; kw...)
