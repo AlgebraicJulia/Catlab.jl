@@ -336,6 +336,10 @@ top(A::Ports{BiRel}, B::Ports{BiRel}) = compose(delete(A), create(B))
 
 const AbBiRel = AbelianBicategoryRelations
 
+# Additive notation.
+oplus(f::WiringDiagram{AbBiRel}, g::WiringDiagram{AbBiRel}) = otimes(f,g)
+mzero(::Type{T}) where T <: Ports{AbBiRel} = munit(T)
+
 mcopy(A::Ports{AbBiRel}, n::Int) = junctioned_mcopy(A, n; op=:times)
 mmerge(A::Ports{AbBiRel}, n::Int) = junctioned_mmerge(A, n; op=:times)
 
@@ -349,9 +353,9 @@ dagger(f::WiringDiagram{AbBiRel}) =
   functor(f, identity, dagger, contravariant=true)
 
 meet(f::WiringDiagram{AbBiRel}, g::WiringDiagram{AbBiRel}) =
-  compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
+  compose(mcopy(dom(f)), oplus(f,g), mmerge(codom(f)))
 join(f::WiringDiagram{AbBiRel}, g::WiringDiagram{AbBiRel}) =
-  compose(coplus(dom(f)), otimes(f,g), plus(codom(f)))
+  compose(coplus(dom(f)), oplus(f,g), plus(codom(f)))
 top(A::Ports{AbBiRel}, B::Ports{AbBiRel}) = compose(delete(A), create(B))
 bottom(A::Ports{AbBiRel}, B::Ports{AbBiRel}) = compose(cozero(A), zero(B))
 

@@ -45,6 +45,7 @@ Functional fragment of graphical linear algebra.
   zero(A) ⋅ scalar(A, a) == zero(A) ⊣ (A::Ob, a::Number)
   antipode(A) == scalar(A, -1) ⊣ (A::Ob)
 
+  # Homogeneity axiom. Additivity is inherited from `SemiadditiveCategory`.
   scalar(A, c) ⋅ f == f ⋅ scalar(B, c) ⊣ (A::Ob, B::Ob, c::Number, f::(A → B))
 end
 
@@ -56,38 +57,24 @@ end
 
 """ Theory of *linear relations*
 
-The full relational language of graphical linear algebra. This is an abelian
-bicategory of relations (`AbelianBicategoryRelations`), written additively.
+The full relational language of graphical linear algebra.
 """
-@signature LinearFunctions(Ob,Hom) => LinearRelations(Ob,Hom) begin
-  # Dagger category.
-  dagger(f::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
+@theory AbelianBicategoryRelations(Ob,Hom) => LinearRelations(Ob,Hom) begin
+  adjoint(R::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
 
-  # Self-dual compact closed category.
-  dunit(A::Ob)::(mzero() → (A ⊕ A))
-  dcounit(A::Ob)::((A ⊕ A) → mzero())
+  scalar(A::Ob, c::Number)::(A → A)
+  antipode(A::Ob)::(A → A)
 
-  # Merging and creating relations (converses of copying and deleting maps).
-  mmerge(A::Ob)::((A ⊕ A) → A)
-  @op (∇) := mmerge
-  create(A::Ob)::(mzero() → A)
-  @op (□) := create
-
-  # Co-addition and co-zero relations (converses of addition and zero maps)
-  coplus(A::Ob)::(A → (A ⊕ A))
-  cozero(A::Ob)::(A → mzero())
-
-  # Lattice of linear relations.
-  meet(f::(A → B), g::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
-  top(A::Ob, B::Ob)::(A → B)
-  join(f::(A → B), g::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
-  bottom(A::Ob, B::Ob)::(A → B)
+  # Linearity axioms.
+  plus(A)⋅R == (R⊕R)⋅plus(B) ⊣ (A::Ob, B::Ob, R::(A → B))
+  zero(A)⋅R == zero(B) ⊣ (A::Ob, B::Ob, R::(A → B))
+  scalar(A, c) ⋅ R == R ⋅ scalar(B, c) ⊣ (A::Ob, B::Ob, c::Number, R::(A → B))
 end
 
 @syntax FreeLinearRelations(ObExpr,HomExpr) LinearRelations begin
   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
-  oplus(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = new(f,g; strict=true) # No normalization!
+  oplus(R::Hom, S::Hom) = associate(new(R,S))
+  compose(R::Hom, S::Hom) = new(R,S; strict=true) # No normalization!
 end
 
 # Evaluation
