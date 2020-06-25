@@ -170,13 +170,25 @@ end
 
 Also known as *semiadditive categories*.
 """
-@signature MonoidalCategoryWithBidiagonals(Ob,Hom) => BiproductCategory(Ob,Hom) begin
+@theory MonoidalCategoryWithBidiagonals(Ob,Hom) => BiproductCategory(Ob,Hom) begin
   pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
   copair(f::(A → C), g::(B → C))::((A ⊗ B) → C) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
   coproj1(A::Ob, B::Ob)::(A → (A ⊗ B))
   coproj2(A::Ob, B::Ob)::(B → (A ⊗ B))
+  
+  # Naturality axioms.
+  f⋅Δ(B) == Δ(A)⋅(f⊗f) ⊣ (A::Ob, B::Ob, f::(A → B))
+  f⋅◊(B) == ◊(A) ⊣ (A::Ob, B::Ob, f::(A → B))
+  ∇(A)⋅f == (f⊗f)⋅∇(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  □(A)⋅f == □(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  
+  # Bimonoid axioms. (These follow from naturality + coherence axioms.)
+  ∇(A)⋅Δ(A) == (Δ(A)⊗Δ(A)) ⋅ (id(A)⊗σ(A,A)⊗id(A)) ⋅ (∇(A)⊗∇(A)) ⊣ (A::Ob)
+  ∇(A)⋅◊(A) == ◊(A) ⊗ ◊(A) ⊣ (A::Ob)
+  □(A)⋅Δ(A) == □(A) ⊗ □(A) ⊣ (A::Ob)
+  □(A)⋅◊(A) == id(munit()) ⊣ (A::Ob)
 end
 
 @syntax FreeBiproductCategory(ObExpr,HomExpr) BiproductCategory begin

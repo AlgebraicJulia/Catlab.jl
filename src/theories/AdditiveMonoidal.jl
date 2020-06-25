@@ -171,9 +171,15 @@ notation.
   plus(f::(A → B), g::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
   @op (+) := plus
   
-  # Bimonoid axioms.
-  plus(A) ⋅ Δ(A) == ((Δ(A) ⊕ Δ(A)) ⋅ (id(A) ⊕ (σ(A, A) ⊕ id(A)))) ⋅ (plus(A) ⊕ plus(A)) ⊣ (A::Ob)
-  plus(A) ⋅ ◊(A) == ◊(A) ⊕ ◊(A) ⊣ (A::Ob)
-  zero(A) ⋅ Δ(A) == zero(A) ⊕ zero(A) ⊣ (A::Ob)
-  zero(A) ⋅ ◊(A) == id(mzero()) ⊣ (A::Ob)
+  # Naturality axioms.
+  f⋅Δ(B) == Δ(A)⋅(f⊕f) ⊣ (A::Ob, B::Ob, f::(A → B))
+  f⋅◊(B) == ◊(A) ⊣ (A::Ob, B::Ob, f::(A → B))
+  plus(A)⋅f == (f⊕f)⋅plus(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  zero(A)⋅f == zero(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  
+  # Bimonoid axioms. (These follow from naturality + coherence axioms.)
+  plus(A)⋅Δ(A) == (Δ(A)⊕Δ(A)) ⋅ (id(A)⊕σ(A,A)⊕id(A)) ⋅ (plus(A)⊕plus(A)) ⊣ (A::Ob)
+  plus(A)⋅◊(A) == ◊(A) ⊕ ◊(A) ⊣ (A::Ob)
+  zero(A)⋅Δ(A) == zero(A) ⊕ zero(A) ⊣ (A::Ob)
+  zero(A)⋅◊(A) == id(mzero()) ⊣ (A::Ob)
 end
