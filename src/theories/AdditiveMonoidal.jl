@@ -1,7 +1,10 @@
 export AdditiveMonoidalCategory, oplus, ⊕, mzero,
   AdditiveSymmetricMonoidalCategory, FreeAdditiveSymmetricMonoidalCategory,
+  braid, σ,
   MonoidalCategoryWithCodiagonals, CocartesianCategory, FreeCocartesianCategory,
-  plus, +, zero, copair, coproj1, coproj2, braid, σ
+  plus, zero, copair, coproj1, coproj2,
+  AdditiveMonoidalCategoryWithBidiagonals, AdditiveBiproductCategory,
+  mcopy, delete, pair, proj1, proj2, Δ, ◊, +
 
 import Base: collect, ndims, +, zero
 
@@ -10,7 +13,8 @@ import Base: collect, ndims, +, zero
 
 """ Theory of *monoidal categories*, in additive notation
 
-Mathematically the same as `MonoidalCategory` but with different notation.
+Mathematically the same as [`MonoidalCategory`](@ref) but with different
+notation.
 """
 @signature Category(Ob,Hom) => AdditiveMonoidalCategory(Ob,Hom) begin
   oplus(A::Ob, B::Ob)::Ob
@@ -45,8 +49,8 @@ show_latex(io::IO, expr::ObExpr{:mzero}; kw...) = print(io, "O")
 
 """ Theory of *symmetric monoidal categories*, in additive notation
 
-Mathematically the same as `SymmetricMonoidalCategory` but with different
-notation.
+Mathematically the same as [`SymmetricMonoidalCategory`](@ref) but with
+different notation.
 """
 @signature AdditiveMonoidalCategory(Ob,Hom) => AdditiveSymmetricMonoidalCategory(Ob,Hom) begin
   braid(A::Ob, B::Ob)::Hom(oplus(A,B),oplus(B,A))
@@ -68,12 +72,17 @@ A monoidal category with codiagonals is a symmetric monoidal category equipped
 with coherent collections of merging and creating morphisms (monoids).
 Unlike in a cocartesian category, the naturality axioms need not be satisfied.
 
-For references, see `MonoidalCategoryWithDiagonals`.
+For references, see [`MonoidalCategoryWithDiagonals`](@ref).
 """
-@signature AdditiveSymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithCodiagonals(Ob,Hom) begin
+@theory AdditiveSymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithCodiagonals(Ob,Hom) begin
   plus(A::Ob)::Hom(oplus(A,A),A)
-  @op (+) := plus
   zero(A::Ob)::Hom(mzero(),A)
+  
+  # Commutative monoid axioms.
+  plus(A) == σ(A,A) ⋅ plus(A) ⊣ (A::Ob)
+  (plus(A) ⊕ id(A)) ⋅ plus(A) == (id(A) ⊕ plus(A)) ⋅ plus(A) ⊣ (A::Ob)
+  (zero(A) ⊕ id(A)) ⋅ plus(A) == id(A) ⊣ (A::Ob)
+  (id(A) ⊕ zero(A)) ⋅ plus(A) == id(A) ⊣ (A::Ob)
 end
 
 """ Theory of *cocartesian (monoidal) categories*
@@ -121,4 +130,50 @@ end
 
 function show_latex(io::IO, expr::HomExpr{:zero}; kw...)
   Syntax.show_latex_script(io, expr, "0")
+end
+
+# Biproduct category
+####################
+
+""" Theory of *monoidal categories with bidiagonals*, in additive notation
+
+Mathematically the same as [`MonoidalCategoryWithBidiagonals`](@ref) but with
+different notation.
+"""
+@theory MonoidalCategoryWithCodiagonals(Ob,Hom) =>
+    AdditiveMonoidalCategoryWithBidiagonals(Ob,Hom) begin
+  mcopy(A::Ob)::(A → (A ⊕ A))
+  @op (Δ) := mcopy
+  delete(A::Ob)::(A → mzero())
+  @op (◊) := delete
+  
+  # Commutative comonoid axioms.
+  Δ(A) == Δ(A) ⋅ σ(A,A) ⊣ (A::Ob)
+  Δ(A) ⋅ (Δ(A) ⊕ id(A)) == Δ(A) ⋅ (id(A) ⊕ Δ(A)) ⊣ (A::Ob)
+  Δ(A) ⋅ (◊(A) ⊕ id(A)) == id(A) ⊣ (A::Ob)
+  Δ(A) ⋅ (id(A) ⊕ ◊(A)) == id(A) ⊣ (A::Ob)
+end
+
+""" Theory of *biproduct categories*, in addition notation
+
+Mathematically the same as [`BiproductCategory`](@ref) but with different
+notation.
+"""
+@theory AdditiveMonoidalCategoryWithBidiagonals(Ob,Hom) =>
+    AdditiveBiproductCategory(Ob,Hom) begin
+  pair(f::(A → B), g::(A → C))::(A → (B ⊕ C)) ⊣ (A::Ob, B::Ob, C::Ob)
+  copair(f::(A → C), g::(B → C))::((A ⊕ B) → C) ⊣ (A::Ob, B::Ob, C::Ob)
+  proj1(A::Ob, B::Ob)::((A ⊕ B) → A)
+  proj2(A::Ob, B::Ob)::((A ⊕ B) → B)
+  coproj1(A::Ob, B::Ob)::(A → (A ⊕ B))
+  coproj2(A::Ob, B::Ob)::(B → (A ⊕ B))
+  
+  plus(f::(A → B), g::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
+  @op (+) := plus
+  
+  # Bimonoid axioms.
+  plus(A) ⋅ Δ(A) == ((Δ(A) ⊕ Δ(A)) ⋅ (id(A) ⊕ (σ(A, A) ⊕ id(A)))) ⋅ (plus(A) ⊕ plus(A)) ⊣ (A::Ob)
+  plus(A) ⋅ ◊(A) == ◊(A) ⊕ ◊(A) ⊣ (A::Ob)
+  zero(A) ⋅ Δ(A) == zero(A) ⊕ zero(A) ⊣ (A::Ob)
+  zero(A) ⋅ ◊(A) == id(mzero()) ⊣ (A::Ob)
 end

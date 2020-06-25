@@ -184,8 +184,8 @@ end
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
 
-  pair(f::Hom, g::Hom) = Δ(dom(f)) → (f ⊗ g)
-  copair(f::Hom, g::Hom) = (f ⊗ g) → ∇(codom(f))
+  pair(f::Hom, g::Hom) = Δ(dom(f)) ⋅ (f ⊗ g)
+  copair(f::Hom, g::Hom) = (f ⊗ g) ⋅ ∇(codom(f))
   proj1(A::Ob, B::Ob) = id(A) ⊗ ◊(B)
   proj2(A::Ob, B::Ob) = ◊(A) ⊗ id(B)
   coproj1(A::Ob, B::Ob) = id(A) ⊗ □(B)
@@ -263,7 +263,7 @@ See also `FreeCartesianCategory`.
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
 
-  pair(f::Hom, g::Hom) = Δ(dom(f)) → (f ⊗ g)
+  pair(f::Hom, g::Hom) = Δ(dom(f)) ⋅ (f ⊗ g)
   proj1(A::Ob, B::Ob) = id(A) ⊗ ◊(B)
   proj2(A::Ob, B::Ob) = ◊(A) ⊗ id(B)
 end

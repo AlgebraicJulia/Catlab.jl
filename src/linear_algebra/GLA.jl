@@ -30,37 +30,14 @@ import ...Programs: evaluate_hom
 
 Functional fragment of graphical linear algebra.
 """
-@theory AdditiveSymmetricMonoidalCategory(Ob,Hom) => LinearFunctions(Ob,Hom) begin
-  # Copying and deleting maps.
-  mcopy(A::Ob)::(A → (A ⊕ A))
-  @op (Δ) := mcopy
-  delete(A::Ob)::(A → mzero())
-  @op (◊) := delete
-
-  # Addition and zero maps.
-  plus(A::Ob)::((A ⊕ A) → A)
-  @op (+) := plus
-  zero(A::Ob)::(mzero() → A)
-
-  plus(f::(A → B), g::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
+@theory AdditiveBiproductCategory(Ob,Hom) => LinearFunctions(Ob,Hom) begin
   adjoint(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
-
+  
   scalar(A::Ob, c::Number)::(A → A)
   antipode(A::Ob)::(A → A)
 
-  # Axioms
+  # Scalar and antipode axioms.
   antipode(A) == scalar(A, -1) ⊣ (A::Ob)
-
-  Δ(A) == Δ(A) ⋅ σ(A,A) ⊣ (A::Ob)
-  Δ(A) ⋅ (Δ(A) ⊕ id(A)) == Δ(A) ⋅ (id(A) ⊕ Δ(A)) ⊣ (A::Ob)
-  Δ(A) ⋅ (◊(A) ⊕ id(A)) == id(A) ⊣ (A::Ob)
-  plus(A) == σ(A,A) ⋅ plus(A) ⊣ (A::Ob)
-  (plus(A) ⊕ id(A)) ⋅ plus(A) == (id(A) ⊕ plus(A)) ⋅ plus(A) ⊣ (A::Ob)
-  (zero(A) ⊕ id(A)) ⋅ plus(A) == id(A) ⊣ (A::Ob)
-  plus(A) ⋅ Δ(A) == ((Δ(A) ⊕ Δ(A)) ⋅ (id(A) ⊕ (σ(A, A) ⊕ id(A)))) ⋅ (plus(A) ⊕ plus(A)) ⊣ (A::Ob)
-  plus(A) ⋅ ◊(A) == ◊(A) ⊕ ◊(A) ⊣ (A::Ob)
-  zero(A) ⋅ Δ(A) == zero(A) ⊕ zero(A) ⊣ (A::Ob)
-  zero(A) ⋅ ◊(A) == id(mzero()) ⊣ (A::Ob)
   scalar(A, a) ⋅ scalar(A, b) == scalar(A, a*b) ⊣ (A::Ob, a::Number, b::Number)
   scalar(A, 1) == id(A) ⊣ (A::Ob)
   scalar(A, a) ⋅ Δ(A) == Δ(A) ⋅ (scalar(A, a) ⊕ scalar(A, a)) ⊣ (A::Ob, a::Number)
@@ -69,6 +46,7 @@ Functional fragment of graphical linear algebra.
   scalar(A, 0) == ◊(A) ⋅ zero(A) ⊣ (A::Ob)
   zero(A) ⋅ scalar(A, a) == zero(A) ⊣ (A::Ob, a::Number)
 
+  # Linearity axioms.
   plus(A) ⋅ f == (f ⊕ f) ⋅ plus(B) ⊣ (A::Ob, B::Ob, f::(A → B))
   scalar(A, c) ⋅ f == f ⋅ scalar(B, c) ⊣ (A::Ob, B::Ob, c::Number, f::(A → B))
 end
@@ -148,6 +126,13 @@ end
   plus(f::LinearMap, g::LinearMap) = f+g
   scalar(V::LinearMapDom, c::Number) = LMs.UniformScalingMap(c, V.N)
   antipode(V::LinearMapDom) = LMs.UniformScalingMap(-1, V.N)
+  
+  pair(f::LinearMap, g::LinearMap) = mcopy(dom(f)) ⋅ (f ⊕ g)
+  copair(f::LinearMap, g::LinearMap) = (f ⊕ g) ⋅ plus(codom(f))
+  proj1(A::LinearMapDom, B::LinearMapDom) = id(A) ⊕ delete(B)
+  proj2(A::LinearMapDom, B::LinearMapDom) = delete(A) ⊕ id(B)
+  coproj1(A::LinearMapDom, B::LinearMapDom) = id(A) ⊕ zero(B)
+  coproj2(A::LinearMapDom, B::LinearMapDom) = zero(A) ⊕ id(B)
 end
 
 braid_lm(n::Int) = x::AbstractVector -> vcat(x[n+1:end], x[1:n])
@@ -201,8 +186,14 @@ end
   plus(f::LinearOperator, g::LinearOperator) = f+g
   scalar(V::LinearOpDom, c::Number) = opEye(typeof(c),V.N)*c
   antipode(V::LinearOpDom) = scalar(V,-1)
+  
+  pair(f::LinearOperator, g::LinearOperator) = mcopy(dom(f)) ⋅ (f ⊕ g)
+  copair(f::LinearOperator, g::LinearOperator) = (f ⊕ g) ⋅ plus(codom(f))
+  proj1(A::LinearOpDom, B::LinearOpDom) = id(A) ⊕ delete(B)
+  proj2(A::LinearOpDom, B::LinearOpDom) = delete(A) ⊕ id(B)
+  coproj1(A::LinearOpDom, B::LinearOpDom) = id(A) ⊕ zero(B)
+  coproj2(A::LinearOpDom, B::LinearOpDom) = zero(A) ⊕ id(B)
 end
-
 
 # Catlab evaluate
 #----------------
