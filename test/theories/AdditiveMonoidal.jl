@@ -66,7 +66,6 @@ O = mzero(FreeAdditiveSymmetricMonoidalCategory.Ob)
   "\\left(f \\cdot g\\right) \\oplus \\left(g \\cdot f\\right)"
 @test latex(braid(A,B)) == "\\sigma_{A,B}"
 
-
 # Cocartesian category
 ######################
 
@@ -74,16 +73,16 @@ A, B = Ob(FreeCocartesianCategory, :A, :B)
 f, g = Hom(:f, A, B), Hom(:g, B, A)
 
 # Domains and codomains
-@test dom(mmerge(A)) == oplus(A,A)
-@test codom(mmerge(A)) == A
-@test dom(create(A)) == O
-@test codom(create(A)) == A
+@test dom(plus(A)) == oplus(A,A)
+@test codom(plus(A)) == A
+@test dom(zero(A)) == O
+@test codom(zero(A)) == A
 
 # Derived syntax
-@test copair(f,f) == compose(oplus(f,f), mmerge(B))
-@test coproj1(A,B) == oplus(id(A), create(B))
-@test coproj2(A,B) == oplus(create(A), id(B))
+@test copair(f,f) == compose(oplus(f,f), plus(B))
+@test coproj1(A,B) == oplus(id(A), zero(B))
+@test coproj2(A,B) == oplus(zero(A), id(B))
 
 # LaTeX notation
-@test latex(mmerge(A)) == "\\nabla_{A}"
-@test latex(create(A)) == "\\square_{A}"
+@test latex(plus(A)) == "\\nabla_{A}"
+@test latex(zero(A)) == "0_{A}"

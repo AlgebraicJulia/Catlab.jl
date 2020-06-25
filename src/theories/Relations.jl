@@ -73,15 +73,17 @@ end
   bottom(A::Ob, B::Ob) = compose(cozero(A), zero(B))
 end
 
-function show_latex(io::IO, expr::HomExpr{:plus}; kw...)
+const FreeAbBiRel = FreeAbelianBicategoryRelations
+
+function show_latex(io::IO, expr::FreeAbBiRel.Hom{:plus}; kw...)
   Syntax.show_latex_script(io, expr, "\\blacktriangledown")
 end
-function show_latex(io::IO, expr::HomExpr{:coplus}; kw...)
+function show_latex(io::IO, expr::FreeAbBiRel.Hom{:coplus}; kw...)
   Syntax.show_latex_script(io, expr, "\\blacktriangle")
 end
-function show_latex(io::IO, expr::HomExpr{:zero}; kw...)
+function show_latex(io::IO, expr::FreeAbBiRel.Hom{:zero}; kw...)
   Syntax.show_latex_script(io, expr, "\\blacksquare")
 end
-function show_latex(io::IO, expr::HomExpr{:cozero}; kw...)
+function show_latex(io::IO, expr::FreeAbBiRel.Hom{:cozero}; kw...)
   Syntax.show_latex_script(io, expr, "\\blacklozenge")
 end

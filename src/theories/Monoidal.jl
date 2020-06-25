@@ -192,6 +192,13 @@ end
   coproj2(A::Ob, B::Ob) = □(A) ⊗ id(B)
 end
 
+function show_latex(io::IO, expr::HomExpr{:mmerge}; kw...)
+  Syntax.show_latex_script(io, expr, "\\nabla")
+end
+function show_latex(io::IO, expr::HomExpr{:create}; kw...)
+  Syntax.show_latex_script(io, expr, "\\square")
+end
+
 # Closed monoidal category
 ##########################
 

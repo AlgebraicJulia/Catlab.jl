@@ -89,6 +89,15 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 @test latex(mcopy(A)) == "\\Delta_{A}"
 @test latex(delete(A)) == "\\lozenge_{A}"
 
+# Biproduct category
+####################
+
+A, B = Ob(FreeBiproductCategory, :A, :B)
+
+# LaTeX notation
+@test latex(mmerge(A)) == "\\nabla_{A}"
+@test latex(create(A)) == "\\square_{A}"
+
 # Cartesian closed category
 ###########################
 

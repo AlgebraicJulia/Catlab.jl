@@ -4,10 +4,9 @@ export LinearFunctions, FreeLinearFunctions, LinearRelations,
   LinearOpDom, LinearOperator,
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, braid,
   dagger, dunit, docunit, mcopy, Δ, delete, ◊, mmerge, ∇, create, □,
-  pplus, zero, coplus, cozero, plus, +, meet, top, join, bottom,
+  plus, +, zero, coplus, cozero, meet, top, join, bottom,
   scalar, antipode, antipode, adjoint, evaluate
 
-import Base: +
 using AutoHashEquals
 using LinearMaps
 import LinearMaps: adjoint
@@ -20,7 +19,7 @@ using ...Catlab, ...Theories
 import ...Theories:
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, braid,
   dagger, dunit, dcounit, mcopy, Δ, delete, ◊, mmerge, ∇, create, □,
-  plus, zero, coplus, cozero, meet, top, join, bottom
+  plus, +, zero, coplus, cozero, meet, top, join, bottom
 using ...Programs
 import ...Programs: evaluate_hom
 

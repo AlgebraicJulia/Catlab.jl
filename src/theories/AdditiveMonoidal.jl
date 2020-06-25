@@ -1,9 +1,9 @@
 export AdditiveMonoidalCategory, oplus, ⊕, mzero,
   AdditiveSymmetricMonoidalCategory, FreeAdditiveSymmetricMonoidalCategory,
   MonoidalCategoryWithCodiagonals, CocartesianCategory, FreeCocartesianCategory,
-  mmerge, create, copair, coproj1, coproj2, ∇, □, braid, σ
+  plus, +, zero, copair, coproj1, coproj2, braid, σ
 
-import Base: collect, ndims
+import Base: collect, ndims, +, zero
 
 # Monoidal category
 ###################
@@ -71,10 +71,9 @@ Unlike in a cocartesian category, the naturality axioms need not be satisfied.
 For references, see `MonoidalCategoryWithDiagonals`.
 """
 @signature AdditiveSymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithCodiagonals(Ob,Hom) begin
-  mmerge(A::Ob)::Hom(oplus(A,A),A)
-  @op (∇) := mmerge
-  create(A::Ob)::Hom(mzero(),A)
-  @op (□) := create
+  plus(A::Ob)::Hom(oplus(A,A),A)
+  @op (+) := plus
+  zero(A::Ob)::Hom(mzero(),A)
 end
 
 """ Theory of *cocartesian (monoidal) categories*
@@ -87,13 +86,13 @@ For the traditional axiomatization of coproducts, see
   coproj1(A::Ob, B::Ob)::Hom(A,oplus(A,B))
   coproj2(A::Ob, B::Ob)::Hom(B,oplus(A,B))
   
-  copair(f,g) == (f⊗g)⋅∇(C) ⊣ (A::Ob, B::Ob, C::Ob, f::(A → C), g::(B → C))
-  coproj1(A,B) == id(A)⊗□(B) ⊣ (A::Ob, B::Ob)
-  coproj2(A,B) == □(A)⊗id(B) ⊣ (A::Ob, B::Ob)
+  copair(f,g) == (f⊕g)⋅plus(C) ⊣ (A::Ob, B::Ob, C::Ob, f::(A → C), g::(B → C))
+  coproj1(A,B) == id(A)⊕zero(B) ⊣ (A::Ob, B::Ob)
+  coproj2(A,B) == zero(A)⊕id(B) ⊣ (A::Ob, B::Ob)
   
   # Naturality axioms.
-  ∇(A)⋅f == (f⊗f)⋅∇(B) ⊣ (A::Ob, B::Ob, f::(A → B))
-  □(A)⋅f == □(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  plus(A)⋅f == (f⊕f)⋅plus(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  zero(A)⋅f == zero(B) ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 
 """ Syntax for a free cocartesian category.
@@ -107,14 +106,19 @@ could be dropped or reversed.
   oplus(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
 
-  copair(f::Hom, g::Hom) = compose(oplus(f,g), mmerge(codom(f)))
-  coproj1(A::Ob, B::Ob) = oplus(id(A), create(B))
-  coproj2(A::Ob, B::Ob) = oplus(create(A), id(B))
+  copair(f::Hom, g::Hom) = compose(oplus(f,g), plus(codom(f)))
+  coproj1(A::Ob, B::Ob) = oplus(id(A), zero(B))
+  coproj2(A::Ob, B::Ob) = oplus(zero(A), id(B))
 end
 
-function show_latex(io::IO, expr::HomExpr{:mmerge}; kw...)
-  Syntax.show_latex_script(io, expr, "\\nabla")
+function show_latex(io::IO, expr::HomExpr{:plus}; kw...)
+  if length(args(expr)) >= 2
+    Syntax.show_latex_infix(io, expr, "+"; kw...)
+  else
+    Syntax.show_latex_script(io, expr, "\\nabla")
+  end
 end
-function show_latex(io::IO, expr::HomExpr{:create}; kw...)
-  Syntax.show_latex_script(io, expr, "\\square")
+
+function show_latex(io::IO, expr::HomExpr{:zero}; kw...)
+  Syntax.show_latex_script(io, expr, "0")
 end
