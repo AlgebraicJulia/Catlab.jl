@@ -6,6 +6,10 @@ using Test
   include("ShapeDiagrams.jl")
 end
 
+@testset "Matrices" begin
+  include("Matrices.jl")
+end
+
 @testset "FinSets" begin
   include("FinSets.jl")
 end

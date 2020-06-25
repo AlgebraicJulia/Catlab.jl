@@ -31,9 +31,9 @@ one(::Type{MD}) where MD <: MatrixDom = MD(1)
 
 """ Biproduct category of Julia matrices of specific type.
 
-The matrices can be dense or sparse, and the element type can be any rig
-(semiring): any Julia type implementing `+`, `*`, `zero`, `one` and obeying the
-rig axioms.
+The matrices can be dense or sparse, and the element type can be any
+[rig](https://ncatlab.org/nlab/show/rig) (semiring): any Julia type implementing
+`+`, `*`, `zero`, `one` and obeying the rig axioms.
 
 For a similar design (only for sparse matrices) by the Julia core developers,
 see [SemiringAlgebra.jl](https://github.com/JuliaComputing/SemiringAlgebra.jl)
