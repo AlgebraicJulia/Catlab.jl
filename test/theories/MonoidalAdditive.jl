@@ -3,7 +3,7 @@ using Test
 # Symmetric monoidal category
 #############################
 
-A, B = Ob(FreeAdditiveSymmetricMonoidalCategory, :A, :B)
+A, B = Ob(FreeSymmetricMonoidalCategoryAdditive, :A, :B)
 f, g = Hom(:f, A, B), Hom(:g, B, A)
 
 # Domains and codomains
@@ -13,7 +13,7 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 @test codom(braid(A,B)) == oplus(B,A)
 
 # Associativity and unit
-O = mzero(FreeAdditiveSymmetricMonoidalCategory.Ob)
+O = mzero(FreeSymmetricMonoidalCategoryAdditive.Ob)
 @test oplus(A,O) == A
 @test oplus(O,A) == A
 @test oplus(oplus(A,B),A) == oplus(A,oplus(B,A))
@@ -24,7 +24,7 @@ O = mzero(FreeAdditiveSymmetricMonoidalCategory.Ob)
 @test oplus([A,B,A]) == oplus(oplus(A,B),A)
 @test oplus(f,f,f) == oplus(oplus(f,f),f)
 @test oplus([f,f,f]) == oplus(oplus(f,f),f)
-@test oplus(FreeAdditiveSymmetricMonoidalCategory.Ob[]) == O
+@test oplus(FreeSymmetricMonoidalCategoryAdditive.Ob[]) == O
 @test_throws MethodError oplus([])
 @test A⊕B == oplus(A,B)
 @test f⊕g == oplus(f,g)
@@ -34,7 +34,7 @@ O = mzero(FreeAdditiveSymmetricMonoidalCategory.Ob)
 @test collect(A) == [A]
 @test collect(oplus(A,B)) == [A,B]
 @test collect(O) == []
-@test typeof(collect(O)) == Vector{FreeAdditiveSymmetricMonoidalCategory.Ob}
+@test typeof(collect(O)) == Vector{FreeSymmetricMonoidalCategoryAdditive.Ob}
 @test ndims(A) == 1
 @test ndims(oplus(A,B)) == 2
 @test ndims(O) == 0

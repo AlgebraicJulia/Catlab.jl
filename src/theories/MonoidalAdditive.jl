@@ -1,9 +1,9 @@
-export AdditiveMonoidalCategory, oplus, ⊕, mzero,
-  AdditiveSymmetricMonoidalCategory, FreeAdditiveSymmetricMonoidalCategory,
+export MonoidalCategoryAdditive, oplus, ⊕, mzero,
+  SymmetricMonoidalCategoryAdditive, FreeSymmetricMonoidalCategoryAdditive,
   braid, σ,
   MonoidalCategoryWithCodiagonals, CocartesianCategory, FreeCocartesianCategory,
   plus, zero, copair, coproj1, coproj2,
-  AdditiveMonoidalCategoryWithBidiagonals, AdditiveBiproductCategory,
+  MonoidalCategoryWithBidiagonalsAdditive, BiproductCategoryAdditive,
   mcopy, delete, pair, proj1, proj2, Δ, ◊, +
 
 import Base: collect, ndims, +, zero
@@ -16,7 +16,7 @@ import Base: collect, ndims, +, zero
 Mathematically the same as [`MonoidalCategory`](@ref) but with different
 notation.
 """
-@signature Category(Ob,Hom) => AdditiveMonoidalCategory(Ob,Hom) begin
+@signature Category(Ob,Hom) => MonoidalCategoryAdditive(Ob,Hom) begin
   oplus(A::Ob, B::Ob)::Ob
   oplus(f::Hom(A,B), g::Hom(C,D))::Hom(oplus(A,C),oplus(B,D)) <=
     (A::Ob, B::Ob, C::Ob, D::Ob)
@@ -52,12 +52,12 @@ show_latex(io::IO, expr::ObExpr{:mzero}; kw...) = print(io, "O")
 Mathematically the same as [`SymmetricMonoidalCategory`](@ref) but with
 different notation.
 """
-@signature AdditiveMonoidalCategory(Ob,Hom) => AdditiveSymmetricMonoidalCategory(Ob,Hom) begin
+@signature MonoidalCategoryAdditive(Ob,Hom) => SymmetricMonoidalCategoryAdditive(Ob,Hom) begin
   braid(A::Ob, B::Ob)::Hom(oplus(A,B),oplus(B,A))
   @op (σ) := braid
 end
 
-@syntax FreeAdditiveSymmetricMonoidalCategory(ObExpr,HomExpr) AdditiveSymmetricMonoidalCategory begin
+@syntax FreeSymmetricMonoidalCategoryAdditive(ObExpr,HomExpr) SymmetricMonoidalCategoryAdditive begin
   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
   oplus(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
@@ -74,7 +74,7 @@ Unlike in a cocartesian category, the naturality axioms need not be satisfied.
 
 For references, see [`MonoidalCategoryWithDiagonals`](@ref).
 """
-@theory AdditiveSymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithCodiagonals(Ob,Hom) begin
+@theory SymmetricMonoidalCategoryAdditive(Ob,Hom) => MonoidalCategoryWithCodiagonals(Ob,Hom) begin
   plus(A::Ob)::Hom(oplus(A,A),A)
   zero(A::Ob)::Hom(mzero(),A)
   
@@ -141,7 +141,7 @@ Mathematically the same as [`MonoidalCategoryWithBidiagonals`](@ref) but with
 different notation.
 """
 @theory MonoidalCategoryWithCodiagonals(Ob,Hom) =>
-    AdditiveMonoidalCategoryWithBidiagonals(Ob,Hom) begin
+    MonoidalCategoryWithBidiagonalsAdditive(Ob,Hom) begin
   mcopy(A::Ob)::(A → (A ⊕ A))
   @op (Δ) := mcopy
   delete(A::Ob)::(A → mzero())
@@ -159,8 +159,8 @@ end
 Mathematically the same as [`BiproductCategory`](@ref) but with different
 notation.
 """
-@theory AdditiveMonoidalCategoryWithBidiagonals(Ob,Hom) =>
-    AdditiveBiproductCategory(Ob,Hom) begin
+@theory MonoidalCategoryWithBidiagonalsAdditive(Ob,Hom) =>
+    BiproductCategoryAdditive(Ob,Hom) begin
   pair(f::(A → B), g::(A → C))::(A → (B ⊕ C)) ⊣ (A::Ob, B::Ob, C::Ob)
   copair(f::(A → C), g::(B → C))::((A ⊕ B) → C) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊕ B) → A)
