@@ -1,7 +1,6 @@
 module GraphicalLinearAlgebra
 export LinearFunctions, FreeLinearFunctions, LinearRelations,
-  FreeLinearRelations, LinearMapDom, LinearMap,
-  LinearOpDom, LinearOperator,
+  FreeLinearRelations, LinearMapDom, LinearMap, LinearOpDom, LinearOperator,
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, braid,
   dagger, dunit, docunit, mcopy, Δ, delete, ◊, mmerge, ∇, create, □,
   plus, +, zero, coplus, cozero, meet, top, join, bottom,
@@ -37,17 +36,15 @@ Functional fragment of graphical linear algebra.
   antipode(A::Ob)::(A → A)
 
   # Scalar and antipode axioms.
-  antipode(A) == scalar(A, -1) ⊣ (A::Ob)
   scalar(A, a) ⋅ scalar(A, b) == scalar(A, a*b) ⊣ (A::Ob, a::Number, b::Number)
   scalar(A, 1) == id(A) ⊣ (A::Ob)
   scalar(A, a) ⋅ Δ(A) == Δ(A) ⋅ (scalar(A, a) ⊕ scalar(A, a)) ⊣ (A::Ob, a::Number)
   scalar(A, a) ⋅ ◊(A) == ◊(A) ⊣ (A::Ob, a::Number)
-  (Δ(A) ⋅ (scalar(A, a) ⊕ scalar(A, b))) ⋅ plus(A) == scalar(A, a+b) ⊣ (A::Ob, a::Number, b::Number)
+  Δ(A) ⋅ (scalar(A, a) ⊕ scalar(A, b)) ⋅ plus(A) == scalar(A, a+b) ⊣ (A::Ob, a::Number, b::Number)
   scalar(A, 0) == ◊(A) ⋅ zero(A) ⊣ (A::Ob)
   zero(A) ⋅ scalar(A, a) == zero(A) ⊣ (A::Ob, a::Number)
+  antipode(A) == scalar(A, -1) ⊣ (A::Ob)
 
-  # Linearity axioms.
-  plus(A) ⋅ f == (f ⊕ f) ⋅ plus(B) ⊣ (A::Ob, B::Ob, f::(A → B))
   scalar(A, c) ⋅ f == f ⋅ scalar(B, c) ⊣ (A::Ob, B::Ob, c::Number, f::(A → B))
 end
 
