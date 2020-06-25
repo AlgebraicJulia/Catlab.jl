@@ -10,7 +10,7 @@ using SparseArrays
 import SparseArrays: blockdiag
 
 using ...GAT
-using ...Theories: BiproductCategoryAdditive
+using ...Theories: SemiadditiveCategory
 import ...Theories: dom, codom, id, compose, ⋅, ∘, oplus, ⊕, mzero, braid, σ,
   mcopy, Δ, delete, ◊, plus, zero, pair, copair, proj1, proj2, coproj1, coproj2
 
@@ -39,7 +39,7 @@ For a similar design (only for sparse matrices) by the Julia core developers,
 see [SemiringAlgebra.jl](https://github.com/JuliaComputing/SemiringAlgebra.jl)
 and [accompanying short paper](https://doi.org/10.1109/HPEC.2013.6670347).
 """
-@instance BiproductCategoryAdditive(MatrixDom, AbstractMatrix) begin
+@instance SemiadditiveCategory(MatrixDom, AbstractMatrix) begin
   # FIXME: Cannot define type-parameterized instances.
   #@instance AdditiveBiproductCategory(MatrixDom{M}, M) where M <: AbstractMatrix begin
   @import dom, codom, id, mzero

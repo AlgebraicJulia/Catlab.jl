@@ -29,7 +29,7 @@ import ...Programs: evaluate_hom
 
 Functional fragment of graphical linear algebra.
 """
-@theory BiproductCategoryAdditive(Ob,Hom) => LinearFunctions(Ob,Hom) begin
+@theory SemiadditiveCategory(Ob,Hom) => LinearFunctions(Ob,Hom) begin
   adjoint(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
   
   scalar(A::Ob, c::Number)::(A → A)

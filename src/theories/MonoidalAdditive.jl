@@ -3,7 +3,7 @@ export MonoidalCategoryAdditive, oplus, ⊕, mzero,
   braid, σ,
   MonoidalCategoryWithCodiagonals, CocartesianCategory, FreeCocartesianCategory,
   plus, zero, copair, coproj1, coproj2,
-  MonoidalCategoryWithBidiagonalsAdditive, BiproductCategoryAdditive,
+  MonoidalCategoryWithBidiagonalsAdditive, SemiadditiveCategory,
   mcopy, delete, pair, proj1, proj2, Δ, ◊, +
 
 import Base: collect, ndims, +, zero
@@ -137,8 +137,8 @@ end
 
 """ Theory of *monoidal categories with bidiagonals*, in additive notation
 
-Mathematically the same as [`MonoidalCategoryWithBidiagonals`](@ref) but with
-different notation.
+Mathematically the same as [`MonoidalCategoryWithBidiagonals`](@ref) but written
+additively, instead of multiplicatively.
 """
 @theory MonoidalCategoryWithCodiagonals(Ob,Hom) =>
     MonoidalCategoryWithBidiagonalsAdditive(Ob,Hom) begin
@@ -154,13 +154,13 @@ different notation.
   Δ(A) ⋅ (id(A) ⊕ ◊(A)) == id(A) ⊣ (A::Ob)
 end
 
-""" Theory of *biproduct categories*, in addition notation
+""" Theory of *semiadditive categories*
 
-Mathematically the same as [`BiproductCategory`](@ref) but with different
-notation.
+Mathematically the same as [`BiproductCategory`](@ref) but written additively,
+instead of multiplicatively.
 """
 @theory MonoidalCategoryWithBidiagonalsAdditive(Ob,Hom) =>
-    BiproductCategoryAdditive(Ob,Hom) begin
+    SemiadditiveCategory(Ob,Hom) begin
   pair(f::(A → B), g::(A → C))::(A → (B ⊕ C)) ⊣ (A::Ob, B::Ob, C::Ob)
   copair(f::(A → C), g::(B → C))::((A ⊕ B) → C) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊕ B) → A)

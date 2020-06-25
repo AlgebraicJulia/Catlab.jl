@@ -168,7 +168,8 @@ end
 
 """ Theory of *biproduct categories*
 
-Also known as *semiadditive categories*.
+Mathematically the same as [`SemiadditiveCategory`](@ref) but written
+multiplicatively, instead of additively.
 """
 @theory MonoidalCategoryWithBidiagonals(Ob,Hom) => BiproductCategory(Ob,Hom) begin
   pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
