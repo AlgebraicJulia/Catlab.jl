@@ -98,16 +98,15 @@ to_composejl((dunit(A) ⊗ id(B)) ⋅ (id(A) ⊗ f ⊗ id(B)) ⋅ (id(A) ⊗ dco
 # ### Abelian bicategory of relations
 
 # In an abelian bicategory of relations, such as the category of linear
-# relations, the duplication morphisms $\Delta_X: X \to X \otimes X$ and
-# addition morphisms $\blacktriangledown_X: X \otimes X \to X$ belong to a
-# bimonoid. Among other things, this means that the following two morphisms are
-# equal.
+# relations, the duplication morphisms $\Delta_X: X \to X \oplus X$ and addition
+# morphisms $\blacktriangledown_X: X \oplus X \to X$ belong to a bimonoid. Among
+# other things, this means that the following two morphisms are equal.
 
 X = Ob(FreeAbelianBicategoryRelations, :X)
 
 to_composejl(plus(X) ⋅ mcopy(X))
 #-
-to_composejl((mcopy(X)⊗mcopy(X)) ⋅ (id(X)⊗braid(X,X)⊗id(X)) ⋅ (plus(X)⊗plus(X)))
+to_composejl((mcopy(X)⊕mcopy(X)) ⋅ (id(X)⊕swap(X,X)⊕id(X)) ⋅ (plus(X)⊕plus(X)))
 
 # ## Custom styles
 

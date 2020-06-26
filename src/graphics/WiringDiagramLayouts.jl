@@ -159,11 +159,12 @@ layout_hom_expr(f::HomExpr, opts) = layout_box(f, opts)
 
 layout_hom_expr(f::HomExpr{:compose}, opts) =
   compose_with_layout!(map(arg -> layout_hom_expr(arg, opts), args(f)), opts)
-layout_hom_expr(f::HomExpr{:otimes}, opts) =
+layout_hom_expr(f::Union{HomExpr{:otimes},HomExpr{:oplus}}, opts) =
   otimes_with_layout!(map(arg -> layout_hom_expr(arg, opts), args(f)), opts)
 
 layout_hom_expr(f::HomExpr{:id}, opts) = layout_pure_wiring(f, opts)
-layout_hom_expr(f::HomExpr{:braid}, opts) = layout_pure_wiring(f, opts)
+layout_hom_expr(f::Union{HomExpr{:braid},HomExpr{:swap}}, opts) =
+  layout_pure_wiring(f, opts)
 
 layout_hom_expr(f::HomExpr{:mcopy}, opts) = layout_supply(f, opts, shape=:junction)
 layout_hom_expr(f::HomExpr{:delete}, opts) = layout_supply(f, opts, shape=:junction)
