@@ -1,5 +1,5 @@
 export RigCategory, SymmetricRigCategory, DistributiveMonoidalCategory,
-  DistributiveCategory
+  DistributiveSemiadditiveCategory, DistributiveCategory
 
 # Distributive categories
 #########################
@@ -57,10 +57,34 @@ FIXME: Should also inherit `CocartesianCategory`.
   zero(A)⋅f == zero(B) ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 
+""" Theory of a *distributive semiadditive category*
+
+This terminology is not standard but the concept occurs frequently. A
+distributive semiadditive category is a semiadditive category (or biproduct)
+category, written additively, with a tensor product that distributes over the
+biproduct.
+
+FIXME: Should also inherit `SemiadditiveCategory`
+"""
+@theory DistributiveMonoidalCategory(Ob,Hom) => DistributiveSemiadditiveCategory(Ob,Hom) begin
+  mcopy(A::Ob)::(A → (A ⊕ A))
+  @op (Δ) := mcopy
+  delete(A::Ob)::(A → mzero())
+  @op (◊) := delete
+
+  pair(f::(A → B), g::(A → C))::(A → (B ⊕ C)) ⊣ (A::Ob, B::Ob, C::Ob)
+  proj1(A::Ob, B::Ob)::((A ⊕ B) → A)
+  proj2(A::Ob, B::Ob)::((A ⊕ B) → B)
+  
+  # Naturality axioms.
+  f⋅Δ(B) == Δ(A)⋅(f⊕f) ⊣ (A::Ob, B::Ob, f::(A → B))
+  f⋅◊(B) == ◊(A) ⊣ (A::Ob, B::Ob, f::(A → B))
+end
+
 """ Theory of a *distributive category*
 
-A distributive category is a distributive *cartesian* monoidal category, see
-[`DistributiveMonoidalCategory`](@ref).
+A distributive category is a distributive monoidal category whose tensor product
+is the cartesian product, see [`DistributiveMonoidalCategory`](@ref).
 
 FIXME: Should also inherit `CartesianCategory`.
 """
