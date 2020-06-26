@@ -1,7 +1,7 @@
 """ Categories of matrices.
 """
 module Matrices
-export MatrixDom, dom, codom, id, compose, ⋅, ∘, oplus, ⊕, mzero, braid, σ,
+export MatrixDom, dom, codom, id, compose, ⋅, ∘, oplus, ⊕, mzero, swap,
   mcopy, Δ, delete, ◊, plus, zero, pair, copair, proj1, proj2, coproj1, coproj2
 
 import Base: +, *, zero, one
@@ -11,7 +11,7 @@ import SparseArrays: blockdiag
 
 using ...GAT
 using ...Theories: SemiadditiveCategory
-import ...Theories: dom, codom, id, compose, ⋅, ∘, oplus, ⊕, mzero, braid, σ,
+import ...Theories: dom, codom, id, compose, ⋅, ∘, oplus, ⊕, mzero, swap,
   mcopy, Δ, delete, ◊, plus, zero, pair, copair, proj1, proj2, coproj1, coproj2
 
 
@@ -48,7 +48,7 @@ and [accompanying short paper](https://doi.org/10.1109/HPEC.2013.6670347).
   compose(A::AbstractMatrix, B::AbstractMatrix) = B*A
   oplus(m::MatrixDom, n::MatrixDom) = m+n
   oplus(A::AbstractMatrix, B::AbstractMatrix) = blockdiag(A, B)
-  braid(m::MatrixDom, n::MatrixDom) = [zero(n,m) id(n); id(m) zero(m,n)]
+  swap(m::MatrixDom, n::MatrixDom) = [zero(n,m) id(n); id(m) zero(m,n)]
   
   mcopy(m::MatrixDom) = pair(id(m), id(m))
   delete(m::MatrixDom) = zero(zero(typeof(m)), m)

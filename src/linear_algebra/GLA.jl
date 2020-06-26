@@ -1,7 +1,7 @@
 module GraphicalLinearAlgebra
 export LinearFunctions, FreeLinearFunctions, LinearRelations,
   FreeLinearRelations, LinearMapDom, LinearMap, LinearOpDom, LinearOperator,
-  Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, braid,
+  Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, swap,
   dagger, dunit, docunit, mcopy, Δ, delete, ◊, mmerge, ∇, create, □,
   plus, +, zero, coplus, cozero, meet, top, join, bottom,
   scalar, antipode, antipode, adjoint, evaluate
@@ -16,7 +16,7 @@ import LinearOperators:
 
 using ...Catlab, ...Theories
 import ...Theories:
-  Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, braid,
+  Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, swap,
   dagger, dunit, dcounit, mcopy, Δ, delete, ◊, mmerge, ∇, create, □,
   plus, +, zero, coplus, cozero, meet, top, join, bottom
 using ...Programs
@@ -99,8 +99,8 @@ end
   oplus(V::LinearMapDom, W::LinearMapDom) = LinearMapDom(V.N + W.N)
   oplus(f::LinearMap, g::LinearMap) = LMs.BlockDiagonalMap(f, g)
   mzero(::Type{LinearMapDom}) = LinearMapDom(0)
-  braid(V::LinearMapDom, W::LinearMapDom) =
-    LinearMap(braid_lm(V.N), braid_lm(W.N), W.N+V.N, V.N+W.N)
+  swap(V::LinearMapDom, W::LinearMapDom) =
+    LinearMap(swap_lm(V.N), swap_lm(W.N), W.N+V.N, V.N+W.N)
 
   mcopy(V::LinearMapDom) = LinearMap(mcopy_lm, plus_lm, 2*V.N, V.N)
   delete(V::LinearMapDom) = LinearMap(delete_lm, zero_lm(V.N), 0, V.N)
@@ -119,7 +119,7 @@ end
   coproj2(A::LinearMapDom, B::LinearMapDom) = zero(A) ⊕ id(B)
 end
 
-braid_lm(n::Int) = x::AbstractVector -> vcat(x[n+1:end], x[1:n])
+swap_lm(n::Int) = x::AbstractVector -> vcat(x[n+1:end], x[1:n])
 mcopy_lm(x::AbstractVector) = vcat(x, x)
 delete_lm(x::AbstractVector) = eltype(x)[]
 plus_lm(x::AbstractVector) = begin
@@ -157,7 +157,7 @@ end
     fOp + gOp
   end
   mzero(::Type{LinearOpDom}) = LinearOpDom(0)
-  braid(V::LinearOpDom, W::LinearOpDom) =
+  swap(V::LinearOpDom, W::LinearOpDom) =
     opExtension(1:W.N, V.N+W.N) * opRestriction((V.N+1):(V.N+W.N),V.N+W.N) +
     opExtension((W.N+1):(V.N+W.N), V.N+W.N) * opRestriction(1:V.N,V.N+W.N)
   mcopy(V::LinearOpDom) =

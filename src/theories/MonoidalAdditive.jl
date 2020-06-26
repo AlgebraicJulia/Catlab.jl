@@ -1,6 +1,5 @@
-export MonoidalCategoryAdditive, oplus, ⊕, mzero,
-  SymmetricMonoidalCategoryAdditive, FreeSymmetricMonoidalCategoryAdditive,
-  braid, σ,
+export MonoidalCategoryAdditive, SymmetricMonoidalCategoryAdditive,
+  FreeSymmetricMonoidalCategoryAdditive, oplus, ⊕, mzero, swap,
   MonoidalCategoryWithCodiagonals, CocartesianCategory, FreeCocartesianCategory,
   plus, zero, copair, coproj1, coproj2,
   MonoidalCategoryWithBidiagonalsAdditive, SemiadditiveCategory,
@@ -53,14 +52,17 @@ Mathematically the same as [`SymmetricMonoidalCategory`](@ref) but with
 different notation.
 """
 @signature MonoidalCategoryAdditive(Ob,Hom) => SymmetricMonoidalCategoryAdditive(Ob,Hom) begin
-  braid(A::Ob, B::Ob)::Hom(oplus(A,B),oplus(B,A))
-  @op (σ) := braid
+  swap(A::Ob, B::Ob)::Hom(oplus(A,B),oplus(B,A))
 end
 
 @syntax FreeSymmetricMonoidalCategoryAdditive(ObExpr,HomExpr) SymmetricMonoidalCategoryAdditive begin
   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
   oplus(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+end
+
+function show_latex(io::IO, expr::HomExpr{:swap}; kw...)
+  Syntax.show_latex_script(io, expr, "\\sigma")
 end
 
 # Cocartesian category
@@ -79,7 +81,7 @@ For references, see [`MonoidalCategoryWithDiagonals`](@ref).
   zero(A::Ob)::Hom(mzero(),A)
   
   # Commutative monoid axioms.
-  plus(A) == σ(A,A) ⋅ plus(A) ⊣ (A::Ob)
+  plus(A) == swap(A,A) ⋅ plus(A) ⊣ (A::Ob)
   (plus(A) ⊕ id(A)) ⋅ plus(A) == (id(A) ⊕ plus(A)) ⋅ plus(A) ⊣ (A::Ob)
   (zero(A) ⊕ id(A)) ⋅ plus(A) == id(A) ⊣ (A::Ob)
   (id(A) ⊕ zero(A)) ⋅ plus(A) == id(A) ⊣ (A::Ob)
@@ -148,7 +150,7 @@ additively, instead of multiplicatively.
   @op (◊) := delete
   
   # Commutative comonoid axioms.
-  Δ(A) == Δ(A) ⋅ σ(A,A) ⊣ (A::Ob)
+  Δ(A) == Δ(A) ⋅ swap(A,A) ⊣ (A::Ob)
   Δ(A) ⋅ (Δ(A) ⊕ id(A)) == Δ(A) ⋅ (id(A) ⊕ Δ(A)) ⊣ (A::Ob)
   Δ(A) ⋅ (◊(A) ⊕ id(A)) == id(A) ⊣ (A::Ob)
   Δ(A) ⋅ (id(A) ⊕ ◊(A)) == id(A) ⊣ (A::Ob)
@@ -178,7 +180,7 @@ instead of multiplicatively.
   zero(A)⋅f == zero(B) ⊣ (A::Ob, B::Ob, f::(A → B))
   
   # Bimonoid axioms. (These follow from naturality + coherence axioms.)
-  plus(A)⋅Δ(A) == (Δ(A)⊕Δ(A)) ⋅ (id(A)⊕σ(A,A)⊕id(A)) ⋅ (plus(A)⊕plus(A)) ⊣ (A::Ob)
+  plus(A)⋅Δ(A) == (Δ(A)⊕Δ(A)) ⋅ (id(A)⊕swap(A,A)⊕id(A)) ⋅ (plus(A)⊕plus(A)) ⊣ (A::Ob)
   plus(A)⋅◊(A) == ◊(A) ⊕ ◊(A) ⊣ (A::Ob)
   zero(A)⋅Δ(A) == zero(A) ⊕ zero(A) ⊣ (A::Ob)
   zero(A)⋅◊(A) == id(mzero()) ⊣ (A::Ob)

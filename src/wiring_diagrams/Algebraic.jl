@@ -339,6 +339,7 @@ const AbBiRel = AbelianBicategoryRelations
 # Additive notation.
 oplus(f::WiringDiagram{AbBiRel}, g::WiringDiagram{AbBiRel}) = otimes(f,g)
 mzero(::Type{T}) where T <: Ports{AbBiRel} = munit(T)
+swap(A::Ports{AbBiRel}, B::Ports{AbBiRel}) = braid(A, B)
 
 mcopy(A::Ports{AbBiRel}, n::Int) = junctioned_mcopy(A, n; op=:times)
 mmerge(A::Ports{AbBiRel}, n::Int) = junctioned_mmerge(A, n; op=:times)

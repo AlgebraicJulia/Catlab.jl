@@ -9,8 +9,8 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 # Domains and codomains
 @test dom(oplus(f,g)) == oplus(dom(f),dom(g))
 @test codom(oplus(f,g)) == oplus(codom(f),codom(g))
-@test dom(braid(A,B)) == oplus(A,B)
-@test codom(braid(A,B)) == oplus(B,A)
+@test dom(swap(A,B)) == oplus(A,B)
+@test codom(swap(A,B)) == oplus(B,A)
 
 # Associativity and unit
 O = mzero(FreeSymmetricMonoidalCategoryAdditive.Ob)
@@ -64,7 +64,7 @@ O = mzero(FreeSymmetricMonoidalCategoryAdditive.Ob)
   "\\left(f \\oplus f\\right) \\cdot \\left(g \\oplus g\\right)"
 @test latex(oplus(compose(f,g),compose(g,f))) == 
   "\\left(f \\cdot g\\right) \\oplus \\left(g \\cdot f\\right)"
-@test latex(braid(A,B)) == "\\sigma_{A,B}"
+@test latex(swap(A,B)) == "\\sigma_{A,B}"
 
 # Cocartesian category
 ######################

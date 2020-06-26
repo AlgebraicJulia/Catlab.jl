@@ -17,7 +17,7 @@ A, B, C = [1 2 3; 4 5 6], [1 -1; -1 2], [0 1; 1 0]
 @test A⋅id(codom(A)) == A
 
 @test A⊕(B⊕C) == (A⊕B)⊕C
-@test braid(dom(A),dom(B)) ⋅ braid(dom(B),dom(A)) == id(dom(A)⊕dom(B))
+@test swap(dom(A),dom(B)) ⋅ swap(dom(B),dom(A)) == id(dom(A)⊕dom(B))
 @test pair(B,C) == mcopy(dom(B))⋅(B⊕C)
 @test copair(A,B) == (A⊕B)⋅plus(codom(A))
 
