@@ -1,5 +1,6 @@
 export BicategoryRelations, FreeBicategoryRelations,
   AbelianBicategoryRelations, FreeAbelianBicategoryRelations,
+  DistributiveBicategoryRelations,
   meet, join, top, bottom, plus, zero, coplus, cozero
 
 import Base: join, zero
@@ -19,7 +20,7 @@ References:
 """
 @signature MonoidalCategoryWithBidiagonals(Ob,Hom) => BicategoryRelations(Ob,Hom) begin
   # Self-dual dagger compact category.
-  dagger(R::(A → B))::(B → A) ⊣ (A::Ob,B::Ob)
+  dagger(R::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
   dunit(A::Ob)::(munit() → (A ⊗ A))
   dcounit(A::Ob)::((A ⊗ A) → munit())
 
@@ -50,7 +51,7 @@ References:
 @signature MonoidalCategoryWithBidiagonalsAdditive(Ob,Hom) =>
     AbelianBicategoryRelations(Ob,Hom) begin
   # Self-dual dagger compact category.
-  dagger(R::(A → B))::(B → A) ⊣ (A::Ob,B::Ob)
+  dagger(R::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
   dunit(A::Ob)::(mzero() → (A ⊕ A))
   dcounit(A::Ob)::((A ⊕ A) → mzero())
 
@@ -81,4 +82,44 @@ end
   join(R::Hom, S::Hom) = compose(coplus(dom(R)), oplus(R,S), plus(codom(R)))
   top(A::Ob, B::Ob) = compose(delete(A), create(B))
   bottom(A::Ob, B::Ob) = compose(cozero(A), zero(B))
+end
+
+""" Theory of a *distributive bicategory of relations*
+
+References:
+  - Carboni & Walters, 1987, "Cartesian bicategories I", Remark 3.7 (mention
+    in passing only)
+  - Patterson, 2017, "Knowledge representation in bicategories of relations",
+    Section 9.2
+
+FIXME: Should also inherit `BicategoryOfRelations`, but multiple inheritance is
+not yet supported.
+"""
+@signature DistributiveMonoidalCategoryWithDiagonals(Ob,Hom) =>
+    DistributiveBicategoryRelations(Ob,Hom) begin
+  # Self-dual dagger compact category.
+  dagger(R::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
+  dunit(A::Ob)::(munit() → (A ⊗ A))
+  dcounit(A::Ob)::((A ⊗ A) → munit())
+  
+  # Merging and creating (right adjoints of copying and deleting maps).
+  mmerge(A::Ob)::((A ⊗ A) → A)
+  @op (∇) := mmerge
+  create(A::Ob)::(munit() → A)
+  @op (□) := create
+
+  # Co-addition and co-zero (right adjoints of addition and zero maps).
+  coplus(A::Ob)::(A → (A ⊕ A))
+  cozero(A::Ob)::(A → mzero())
+  
+  # The coproduct is automatically a biproduct, due to compact closed structure.
+  pair(R::(A → B), S::(A → C))::(A → (B ⊕ C)) ⊣ (A::Ob, B::Ob, C::Ob)
+  proj1(A::Ob, B::Ob)::((A ⊕ B) → A)
+  proj2(A::Ob, B::Ob)::((A ⊕ B) → B)
+  
+  # Logical operations.
+  meet(R::(A → B), S::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
+  top(A::Ob, B::Ob)::(A → B)
+  join(R::(A → B), S::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
+  bottom(A::Ob, B::Ob)::(A → B)
 end
