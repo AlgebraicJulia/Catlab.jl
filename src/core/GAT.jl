@@ -1,7 +1,7 @@
 """ Generalized algebraic theories (GATs) in Julia.
 """
 module GAT
-export @theory, @signature, @instance, theory, invoke_term
+export @theory, @signature, @instance, theory, invoke_term, GATEquation
 
 using Base.Meta: ParseError
 using Compat
@@ -14,7 +14,10 @@ using ..Meta
 # Data types
 ############
 
-const Context = OrderedDict{Symbol,Expr0}
+""" Type for expressions used in GAT definitions
+"""
+const GATEquation = Expr0
+const Context = OrderedDict{Symbol,GATEquation}
 
 """ Type constructor in a GAT.
 """
@@ -35,11 +38,11 @@ end
 @auto_hash_equals struct TermConstructor
   name::Symbol
   params::Vector{Symbol}
-  typ::Expr0
+  typ::GATEquation
   context::Context
   doc::Union{String,Nothing}
 
-  function TermConstructor(name::Symbol, params::Vector, typ::Expr0,
+  function TermConstructor(name::Symbol, params::Vector, typ::GATEquation,
                            context::Context, doc=nothing)
     new(name, params, typ, context, doc)
   end
@@ -49,12 +52,12 @@ end
 """
 @auto_hash_equals struct AxiomConstructor
   name::Symbol
-  left::Expr0
-  right::Expr0
+  left::GATEquation
+  right::GATEquation
   context::Context
   doc::Union{String,Nothing}
 
-  function AxiomConstructor(name::Symbol, left::Expr0, right::Expr0,
+  function AxiomConstructor(name::Symbol, left::GATEquation, right::GATEquation,
                             context::Context, doc=nothing)
     new(name, left, right, context, doc)
   end
@@ -78,6 +81,10 @@ struct TheoryHead
   base::Vector{TheoryBinding}
   TheoryHead(main, base=[]) = new(main, base)
 end
+
+""" Data structure for storing all known theories
+"""
+theories = OrderedDict{Symbol,Theory}()
 
 # Theories
 ##########
@@ -133,6 +140,13 @@ function theory end
 function theory_builder(head, body; signature=false)
   # Parse theory header.
   head = parse_theory_head(head)
+
+  # check for existing theory definition
+  # for now, warn on duplicate/overwriting
+  if haskey(theories, head.main.name)
+    @warn "Category already exists: $(head.main.name)"
+  end
+
   @assert all(param in head.main.params
               for base in head.base for param in base.params)
   @assert length(head.base) <= 1 "Multiple theory extension not supported"
@@ -144,29 +158,44 @@ function theory_builder(head, body; signature=false)
     throw(ParseError("@signature macro does not allow axioms to be defined"))
   end
   theory = Theory(types, terms, axioms, aliases)
+  # If there is a base theory, merge the definitions
+  if !isnothing(base_name)
+    theory = merge_theories(head, theory, theories[base_name])
+  end
+  theory = replace_types(theory.aliases, theory)
+  # store theory in global struct for later use
+  theories[head.main.name] = theory
 
+  # this function handles running generated code
+  theory_generator(head, theory)
+end
+
+""" How to merge a subtheory definition with its parent theory's definition
+"""
+function merge_theories(head, theory, base_theory)
+  base_params = [ type.name for type in base_theory.types ]
+  bindings = Dict(zip(base_params, only(head.base).params))
+  base_theory = replace_types(bindings, base_theory)
+  Theory([base_theory.types; theory.types],
+         [base_theory.terms; theory.terms],
+         [base_theory.axioms; theory.axioms],
+         merge(base_theory.aliases, theory.aliases))
+end
+
+""" Generate Julia types by executing code generated for a theory
+"""
+function theory_generator(head, theory)
   # We must generate and evaluate the code at *run time* because the base
   # theory, if specified, is not available at *parse time*.
-  expr = :(theory_code($head, $theory, $(esc(base_name))))
+  expr = :(theory_code($head, $theory))
   Expr(:block,
     Expr(:call, esc(:eval), expr),
     :(Core.@__doc__ $(esc(head.main.name))))
 end
 
-function theory_code(head, theory, base_type)
-  # Add types/terms/aliases from base theory, if provided.
-  if !isnothing(base_type)
-    base_theory = GAT.theory(base_type)
-    base_params = [ type.name for type in base_theory.types ]
-    bindings = Dict(zip(base_params, only(head.base).params))
-    base_theory = replace_types(bindings, base_theory)
-    theory = Theory([base_theory.types; theory.types],
-                    [base_theory.terms; theory.terms],
-                    [base_theory.axioms; theory.axioms],
-                    merge(base_theory.aliases, theory.aliases))
-  end
-  theory = replace_types(theory.aliases, theory)
-
+""" Generates the Julia code for a given theory
+"""
+function theory_code(head, theory)
   # Names of generic functions in interface defined by theory.
   names = unique!(vcat(
     [ param for type in theory.types for param in type.params ], # Accessors.
