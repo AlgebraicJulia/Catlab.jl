@@ -17,7 +17,7 @@ notation.
 """
 @signature Category(Ob,Hom) => MonoidalCategoryAdditive(Ob,Hom) begin
   oplus(A::Ob, B::Ob)::Ob
-  oplus(f::Hom(A,B), g::Hom(C,D))::Hom(oplus(A,C),oplus(B,D)) <=
+  oplus(f::(A → B), g::(C → D))::((A ⊕ C) → (B ⊕ D)) <=
     (A::Ob, B::Ob, C::Ob, D::Ob)
   @op (⊕) := oplus
   mzero()::Ob
@@ -77,8 +77,8 @@ Unlike in a cocartesian category, the naturality axioms need not be satisfied.
 For references, see [`MonoidalCategoryWithDiagonals`](@ref).
 """
 @theory SymmetricMonoidalCategoryAdditive(Ob,Hom) => MonoidalCategoryWithCodiagonals(Ob,Hom) begin
-  plus(A::Ob)::Hom(oplus(A,A),A)
-  zero(A::Ob)::Hom(mzero(),A)
+  plus(A::Ob)::((A ⊕ A) → A)
+  zero(A::Ob)::(mzero() → A)
   
   # Commutative monoid axioms.
   plus(A) == swap(A,A) ⋅ plus(A) ⊣ (A::Ob)
@@ -93,9 +93,9 @@ For the traditional axiomatization of coproducts, see
 [`CategoryWithCoproducts`](@ref).
 """
 @theory MonoidalCategoryWithCodiagonals(Ob,Hom) => CocartesianCategory(Ob,Hom) begin
-  copair(f::Hom(A,C), g::Hom(B,C))::Hom(oplus(A,B),C) <= (A::Ob, B::Ob, C::Ob)
-  coproj1(A::Ob, B::Ob)::Hom(A,oplus(A,B))
-  coproj2(A::Ob, B::Ob)::Hom(B,oplus(A,B))
+  copair(f::(A → C), g::(B → C))::((A ⊕ B) → C) <= (A::Ob, B::Ob, C::Ob)
+  coproj1(A::Ob, B::Ob)::(A → (A ⊕ B))
+  coproj2(A::Ob, B::Ob)::(B → (A ⊕ B))
   
   copair(f,g) == (f⊕g)⋅plus(C) ⊣ (A::Ob, B::Ob, C::Ob, f::(A → C), g::(B → C))
   coproj1(A,B) == id(A)⊕zero(B) ⊣ (A::Ob, B::Ob)
