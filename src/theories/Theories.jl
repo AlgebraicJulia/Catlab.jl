@@ -30,7 +30,8 @@ end
 include("Category.jl")
 include("Limits.jl")
 include("Monoidal.jl")
-include("AdditiveMonoidal.jl")
+include("MonoidalAdditive.jl")
+include("MonoidalMultiple.jl")
 include("Preorders.jl")
 include("Relations.jl")
 

@@ -6,8 +6,8 @@ types and functions to represent diagonals, codiagonals, duals, caps, cups,
 daggers, and other structures in wiring diagrams.
 """
 module AlgebraicWiringDiagrams
-export Ports, Junction, PortOp, BoxOp,
-  functor, dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid, permute,
+export Ports, Junction, PortOp, BoxOp, functor, dom, codom, id, compose, ⋅, ∘,
+  otimes, ⊗, munit, braid, σ, oplus, ⊕, mzero, swap, permute,
   mcopy, delete, Δ, ◊, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
   plus, zero, coplus, cozero, meet, join, top, bottom, trace, ocompose,
   implicit_mcopy, implicit_mmerge, junctioned_mcopy, junctioned_mmerge,
@@ -18,7 +18,8 @@ using AutoHashEquals
 using LightGraphs
 
 using ...GAT, ...Theories
-import ...Theories: dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid,
+import ...Theories: dom, codom, id, compose, ⋅, ∘,
+  otimes, ⊗, munit, braid, σ, oplus, ⊕, mzero, swap,
   mcopy, delete, Δ, ◊, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
   plus, zero, coplus, cozero, meet, join, top, bottom, trace
 import ...Syntax: functor, head
@@ -336,6 +337,12 @@ top(A::Ports{BiRel}, B::Ports{BiRel}) = compose(delete(A), create(B))
 
 const AbBiRel = AbelianBicategoryRelations
 
+# Additive notation. FIXME: Use @instance.
+oplus(f::WiringDiagram{AbBiRel}, g::WiringDiagram{AbBiRel}) = otimes(f,g)
+⊕(f::WiringDiagram{AbBiRel}, g::WiringDiagram{AbBiRel}) = oplus(f,g)
+mzero(::Type{T}) where T <: Ports{AbBiRel} = munit(T)
+swap(A::Ports{AbBiRel}, B::Ports{AbBiRel}) = braid(A, B)
+
 mcopy(A::Ports{AbBiRel}, n::Int) = junctioned_mcopy(A, n; op=:times)
 mmerge(A::Ports{AbBiRel}, n::Int) = junctioned_mmerge(A, n; op=:times)
 
@@ -349,9 +356,9 @@ dagger(f::WiringDiagram{AbBiRel}) =
   functor(f, identity, dagger, contravariant=true)
 
 meet(f::WiringDiagram{AbBiRel}, g::WiringDiagram{AbBiRel}) =
-  compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
+  compose(mcopy(dom(f)), oplus(f,g), mmerge(codom(f)))
 join(f::WiringDiagram{AbBiRel}, g::WiringDiagram{AbBiRel}) =
-  compose(coplus(dom(f)), otimes(f,g), plus(codom(f)))
+  compose(coplus(dom(f)), oplus(f,g), plus(codom(f)))
 top(A::Ports{AbBiRel}, B::Ports{AbBiRel}) = compose(delete(A), create(B))
 bottom(A::Ports{AbBiRel}, B::Ports{AbBiRel}) = compose(cozero(A), zero(B))
 

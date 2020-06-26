@@ -3,17 +3,17 @@ using Test
 # Symmetric monoidal category
 #############################
 
-A, B = Ob(FreeAdditiveSymmetricMonoidalCategory, :A, :B)
+A, B = Ob(FreeSymmetricMonoidalCategoryAdditive, :A, :B)
 f, g = Hom(:f, A, B), Hom(:g, B, A)
 
 # Domains and codomains
 @test dom(oplus(f,g)) == oplus(dom(f),dom(g))
 @test codom(oplus(f,g)) == oplus(codom(f),codom(g))
-@test dom(braid(A,B)) == oplus(A,B)
-@test codom(braid(A,B)) == oplus(B,A)
+@test dom(swap(A,B)) == oplus(A,B)
+@test codom(swap(A,B)) == oplus(B,A)
 
 # Associativity and unit
-O = mzero(FreeAdditiveSymmetricMonoidalCategory.Ob)
+O = mzero(FreeSymmetricMonoidalCategoryAdditive.Ob)
 @test oplus(A,O) == A
 @test oplus(O,A) == A
 @test oplus(oplus(A,B),A) == oplus(A,oplus(B,A))
@@ -24,7 +24,7 @@ O = mzero(FreeAdditiveSymmetricMonoidalCategory.Ob)
 @test oplus([A,B,A]) == oplus(oplus(A,B),A)
 @test oplus(f,f,f) == oplus(oplus(f,f),f)
 @test oplus([f,f,f]) == oplus(oplus(f,f),f)
-@test oplus(FreeAdditiveSymmetricMonoidalCategory.Ob[]) == O
+@test oplus(FreeSymmetricMonoidalCategoryAdditive.Ob[]) == O
 @test_throws MethodError oplus([])
 @test A⊕B == oplus(A,B)
 @test f⊕g == oplus(f,g)
@@ -34,7 +34,7 @@ O = mzero(FreeAdditiveSymmetricMonoidalCategory.Ob)
 @test collect(A) == [A]
 @test collect(oplus(A,B)) == [A,B]
 @test collect(O) == []
-@test typeof(collect(O)) == Vector{FreeAdditiveSymmetricMonoidalCategory.Ob}
+@test typeof(collect(O)) == Vector{FreeSymmetricMonoidalCategoryAdditive.Ob}
 @test ndims(A) == 1
 @test ndims(oplus(A,B)) == 2
 @test ndims(O) == 0
@@ -64,8 +64,7 @@ O = mzero(FreeAdditiveSymmetricMonoidalCategory.Ob)
   "\\left(f \\oplus f\\right) \\cdot \\left(g \\oplus g\\right)"
 @test latex(oplus(compose(f,g),compose(g,f))) == 
   "\\left(f \\cdot g\\right) \\oplus \\left(g \\cdot f\\right)"
-@test latex(braid(A,B)) == "\\sigma_{A,B}"
-
+@test latex(swap(A,B)) == "\\sigma_{A,B}"
 
 # Cocartesian category
 ######################
@@ -74,16 +73,16 @@ A, B = Ob(FreeCocartesianCategory, :A, :B)
 f, g = Hom(:f, A, B), Hom(:g, B, A)
 
 # Domains and codomains
-@test dom(mmerge(A)) == oplus(A,A)
-@test codom(mmerge(A)) == A
-@test dom(create(A)) == O
-@test codom(create(A)) == A
+@test dom(plus(A)) == oplus(A,A)
+@test codom(plus(A)) == A
+@test dom(zero(A)) == O
+@test codom(zero(A)) == A
 
 # Derived syntax
-@test copair(f,f) == compose(oplus(f,f), mmerge(B))
-@test coproj1(A,B) == oplus(id(A), create(B))
-@test coproj2(A,B) == oplus(create(A), id(B))
+@test copair(f,f) == compose(oplus(f,f), plus(B))
+@test coproj1(A,B) == oplus(id(A), zero(B))
+@test coproj2(A,B) == oplus(zero(A), id(B))
 
 # LaTeX notation
-@test latex(mmerge(A)) == "\\nabla_{A}"
-@test latex(create(A)) == "\\square_{A}"
+@test latex(plus(A)) == "\\nabla_{A}"
+@test latex(zero(A)) == "0_{A}"

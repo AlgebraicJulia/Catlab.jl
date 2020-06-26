@@ -1,0 +1,187 @@
+export MonoidalCategoryAdditive, SymmetricMonoidalCategoryAdditive,
+  FreeSymmetricMonoidalCategoryAdditive, oplus, ⊕, mzero, swap,
+  MonoidalCategoryWithCodiagonals, CocartesianCategory, FreeCocartesianCategory,
+  plus, zero, copair, coproj1, coproj2,
+  MonoidalCategoryWithBidiagonalsAdditive, SemiadditiveCategory,
+  mcopy, delete, pair, proj1, proj2, Δ, ◊, +
+
+import Base: collect, ndims, +, zero
+
+# Monoidal category
+###################
+
+""" Theory of *monoidal categories*, in additive notation
+
+Mathematically the same as [`MonoidalCategory`](@ref) but with different
+notation.
+"""
+@signature Category(Ob,Hom) => MonoidalCategoryAdditive(Ob,Hom) begin
+  oplus(A::Ob, B::Ob)::Ob
+  oplus(f::(A → B), g::(C → D))::((A ⊕ C) → (B ⊕ D)) <=
+    (A::Ob, B::Ob, C::Ob, D::Ob)
+  @op (⊕) := oplus
+  mzero()::Ob
+end
+
+# Convenience constructors
+oplus(xs::Vector{T}) where T = isempty(xs) ? mzero(T) : foldl(oplus, xs)
+oplus(x, y, z, xs...) = oplus([x, y, z, xs...])
+
+# Overload `collect` and `ndims` as for multiplicative monoidal categories.
+collect(expr::ObExpr{:oplus}) = vcat(map(collect, args(expr))...)
+collect(expr::ObExpr{:mzero}) = roottypeof(expr)[]
+ndims(expr::ObExpr{:oplus}) = sum(map(ndims, args(expr)))
+ndims(expr::ObExpr{:mzero}) = 0
+
+function show_unicode(io::IO, expr::Union{ObExpr{:oplus},HomExpr{:oplus}}; kw...)
+  Syntax.show_unicode_infix(io, expr, "⊕"; kw...)
+end
+show_unicode(io::IO, expr::ObExpr{:mzero}; kw...) = print(io, "O")
+
+function show_latex(io::IO, expr::Union{ObExpr{:oplus},HomExpr{:oplus}}; kw...)
+  Syntax.show_latex_infix(io, expr, "\\oplus"; kw...)
+end
+show_latex(io::IO, expr::ObExpr{:mzero}; kw...) = print(io, "O")
+
+# Symmetric monoidal category
+#############################
+
+""" Theory of *symmetric monoidal categories*, in additive notation
+
+Mathematically the same as [`SymmetricMonoidalCategory`](@ref) but with
+different notation.
+"""
+@signature MonoidalCategoryAdditive(Ob,Hom) => SymmetricMonoidalCategoryAdditive(Ob,Hom) begin
+  swap(A::Ob, B::Ob)::Hom(oplus(A,B),oplus(B,A))
+end
+
+@syntax FreeSymmetricMonoidalCategoryAdditive(ObExpr,HomExpr) SymmetricMonoidalCategoryAdditive begin
+  oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
+  oplus(f::Hom, g::Hom) = associate(new(f,g))
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+end
+
+function show_latex(io::IO, expr::HomExpr{:swap}; kw...)
+  Syntax.show_latex_script(io, expr, "\\sigma")
+end
+
+# Cocartesian category
+######################
+
+""" Theory of *monoidal categories with codiagonals*
+
+A monoidal category with codiagonals is a symmetric monoidal category equipped
+with coherent collections of merging and creating morphisms (monoids).
+Unlike in a cocartesian category, the naturality axioms need not be satisfied.
+
+For references, see [`MonoidalCategoryWithDiagonals`](@ref).
+"""
+@theory SymmetricMonoidalCategoryAdditive(Ob,Hom) => MonoidalCategoryWithCodiagonals(Ob,Hom) begin
+  plus(A::Ob)::((A ⊕ A) → A)
+  zero(A::Ob)::(mzero() → A)
+  
+  # Commutative monoid axioms.
+  plus(A) == swap(A,A) ⋅ plus(A) ⊣ (A::Ob)
+  (plus(A) ⊕ id(A)) ⋅ plus(A) == (id(A) ⊕ plus(A)) ⋅ plus(A) ⊣ (A::Ob)
+  (zero(A) ⊕ id(A)) ⋅ plus(A) == id(A) ⊣ (A::Ob)
+  (id(A) ⊕ zero(A)) ⋅ plus(A) == id(A) ⊣ (A::Ob)
+end
+
+""" Theory of *cocartesian (monoidal) categories*
+
+For the traditional axiomatization of coproducts, see
+[`CategoryWithCoproducts`](@ref).
+"""
+@theory MonoidalCategoryWithCodiagonals(Ob,Hom) => CocartesianCategory(Ob,Hom) begin
+  copair(f::(A → C), g::(B → C))::((A ⊕ B) → C) <= (A::Ob, B::Ob, C::Ob)
+  coproj1(A::Ob, B::Ob)::(A → (A ⊕ B))
+  coproj2(A::Ob, B::Ob)::(B → (A ⊕ B))
+  
+  copair(f,g) == (f⊕g)⋅plus(C) ⊣ (A::Ob, B::Ob, C::Ob, f::(A → C), g::(B → C))
+  coproj1(A,B) == id(A)⊕zero(B) ⊣ (A::Ob, B::Ob)
+  coproj2(A,B) == zero(A)⊕id(B) ⊣ (A::Ob, B::Ob)
+  
+  # Naturality axioms.
+  plus(A)⋅f == (f⊕f)⋅plus(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  zero(A)⋅f == zero(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+end
+
+""" Syntax for a free cocartesian category.
+
+In this syntax, the copairing and inclusion operations are defined using merging
+and creation, and do not have their own syntactic elements. This convention
+could be dropped or reversed.
+"""
+@syntax FreeCocartesianCategory(ObExpr,HomExpr) CocartesianCategory begin
+  oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
+  oplus(f::Hom, g::Hom) = associate(new(f,g))
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+
+  copair(f::Hom, g::Hom) = compose(oplus(f,g), plus(codom(f)))
+  coproj1(A::Ob, B::Ob) = oplus(id(A), zero(B))
+  coproj2(A::Ob, B::Ob) = oplus(zero(A), id(B))
+end
+
+function show_latex(io::IO, expr::HomExpr{:plus}; kw...)
+  if length(args(expr)) >= 2
+    Syntax.show_latex_infix(io, expr, "+"; kw...)
+  else
+    Syntax.show_latex_script(io, expr, "\\nabla")
+  end
+end
+
+function show_latex(io::IO, expr::HomExpr{:zero}; kw...)
+  Syntax.show_latex_script(io, expr, "0")
+end
+
+# Biproduct category
+####################
+
+""" Theory of *monoidal categories with bidiagonals*, in additive notation
+
+Mathematically the same as [`MonoidalCategoryWithBidiagonals`](@ref) but written
+additively, instead of multiplicatively.
+"""
+@theory MonoidalCategoryWithCodiagonals(Ob,Hom) =>
+    MonoidalCategoryWithBidiagonalsAdditive(Ob,Hom) begin
+  mcopy(A::Ob)::(A → (A ⊕ A))
+  @op (Δ) := mcopy
+  delete(A::Ob)::(A → mzero())
+  @op (◊) := delete
+  
+  # Commutative comonoid axioms.
+  Δ(A) == Δ(A) ⋅ swap(A,A) ⊣ (A::Ob)
+  Δ(A) ⋅ (Δ(A) ⊕ id(A)) == Δ(A) ⋅ (id(A) ⊕ Δ(A)) ⊣ (A::Ob)
+  Δ(A) ⋅ (◊(A) ⊕ id(A)) == id(A) ⊣ (A::Ob)
+  Δ(A) ⋅ (id(A) ⊕ ◊(A)) == id(A) ⊣ (A::Ob)
+end
+
+""" Theory of *semiadditive categories*
+
+Mathematically the same as [`BiproductCategory`](@ref) but written additively,
+instead of multiplicatively.
+"""
+@theory MonoidalCategoryWithBidiagonalsAdditive(Ob,Hom) =>
+    SemiadditiveCategory(Ob,Hom) begin
+  pair(f::(A → B), g::(A → C))::(A → (B ⊕ C)) ⊣ (A::Ob, B::Ob, C::Ob)
+  copair(f::(A → C), g::(B → C))::((A ⊕ B) → C) ⊣ (A::Ob, B::Ob, C::Ob)
+  proj1(A::Ob, B::Ob)::((A ⊕ B) → A)
+  proj2(A::Ob, B::Ob)::((A ⊕ B) → B)
+  coproj1(A::Ob, B::Ob)::(A → (A ⊕ B))
+  coproj2(A::Ob, B::Ob)::(B → (A ⊕ B))
+  
+  plus(f::(A → B), g::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
+  @op (+) := plus
+  
+  # Naturality axioms.
+  f⋅Δ(B) == Δ(A)⋅(f⊕f) ⊣ (A::Ob, B::Ob, f::(A → B))
+  f⋅◊(B) == ◊(A) ⊣ (A::Ob, B::Ob, f::(A → B))
+  plus(A)⋅f == (f⊕f)⋅plus(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  zero(A)⋅f == zero(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  
+  # Bimonoid axioms. (These follow from naturality + coherence axioms.)
+  plus(A)⋅Δ(A) == (Δ(A)⊕Δ(A)) ⋅ (id(A)⊕swap(A,A)⊕id(A)) ⋅ (plus(A)⊕plus(A)) ⊣ (A::Ob)
+  plus(A)⋅◊(A) == ◊(A) ⊕ ◊(A) ⊣ (A::Ob)
+  zero(A)⋅Δ(A) == zero(A) ⊕ zero(A) ⊣ (A::Ob)
+  zero(A)⋅◊(A) == id(mzero()) ⊣ (A::Ob)
+end

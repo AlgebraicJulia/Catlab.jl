@@ -1,13 +1,11 @@
 module GraphicalLinearAlgebra
 export LinearFunctions, FreeLinearFunctions, LinearRelations,
-  FreeLinearRelations, LinearMapDom, LinearMap,
-  LinearOpDom, LinearOperator,
-  Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, braid,
+  FreeLinearRelations, LinearMapDom, LinearMap, LinearOpDom, LinearOperator,
+  Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, swap,
   dagger, dunit, docunit, mcopy, Δ, delete, ◊, mmerge, ∇, create, □,
-  pplus, zero, coplus, cozero, plus, +, meet, top, join, bottom,
+  plus, +, zero, coplus, cozero, meet, top, join, bottom,
   scalar, antipode, antipode, adjoint, evaluate
 
-import Base: +
 using AutoHashEquals
 using LinearMaps
 import LinearMaps: adjoint
@@ -18,9 +16,9 @@ import LinearOperators:
 
 using ...Catlab, ...Theories
 import ...Theories:
-  Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, braid,
+  Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, swap,
   dagger, dunit, dcounit, mcopy, Δ, delete, ◊, mmerge, ∇, create, □,
-  plus, zero, coplus, cozero, meet, top, join, bottom
+  plus, +, zero, coplus, cozero, meet, top, join, bottom
 using ...Programs
 import ...Programs: evaluate_hom
 
@@ -31,46 +29,23 @@ import ...Programs: evaluate_hom
 
 Functional fragment of graphical linear algebra.
 """
-@theory AdditiveSymmetricMonoidalCategory(Ob,Hom) => LinearFunctions(Ob,Hom) begin
-  # Copying and deleting maps.
-  mcopy(A::Ob)::(A → (A ⊕ A))
-  @op (Δ) := mcopy
-  delete(A::Ob)::(A → mzero())
-  @op (◊) := delete
-
-  # Addition and zero maps.
-  plus(A::Ob)::((A ⊕ A) → A)
-  @op (+) := plus
-  zero(A::Ob)::(mzero() → A)
-
-  plus(f::(A → B), g::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
+@theory SemiadditiveCategory(Ob,Hom) => LinearFunctions(Ob,Hom) begin
   adjoint(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
-
+  
   scalar(A::Ob, c::Number)::(A → A)
   antipode(A::Ob)::(A → A)
 
-  # Axioms
-  antipode(A) == scalar(A, -1) ⊣ (A::Ob)
-
-  Δ(A) == Δ(A) ⋅ σ(A,A) ⊣ (A::Ob)
-  Δ(A) ⋅ (Δ(A) ⊕ id(A)) == Δ(A) ⋅ (id(A) ⊕ Δ(A)) ⊣ (A::Ob)
-  Δ(A) ⋅ (◊(A) ⊕ id(A)) == id(A) ⊣ (A::Ob)
-  plus(A) == σ(A,A) ⋅ plus(A) ⊣ (A::Ob)
-  (plus(A) ⊕ id(A)) ⋅ plus(A) == (id(A) ⊕ plus(A)) ⋅ plus(A) ⊣ (A::Ob)
-  (zero(A) ⊕ id(A)) ⋅ plus(A) == id(A) ⊣ (A::Ob)
-  plus(A) ⋅ Δ(A) == ((Δ(A) ⊕ Δ(A)) ⋅ (id(A) ⊕ (σ(A, A) ⊕ id(A)))) ⋅ (plus(A) ⊕ plus(A)) ⊣ (A::Ob)
-  plus(A) ⋅ ◊(A) == ◊(A) ⊕ ◊(A) ⊣ (A::Ob)
-  zero(A) ⋅ Δ(A) == zero(A) ⊕ zero(A) ⊣ (A::Ob)
-  zero(A) ⋅ ◊(A) == id(mzero()) ⊣ (A::Ob)
+  # Scalar and antipode axioms.
   scalar(A, a) ⋅ scalar(A, b) == scalar(A, a*b) ⊣ (A::Ob, a::Number, b::Number)
   scalar(A, 1) == id(A) ⊣ (A::Ob)
   scalar(A, a) ⋅ Δ(A) == Δ(A) ⋅ (scalar(A, a) ⊕ scalar(A, a)) ⊣ (A::Ob, a::Number)
   scalar(A, a) ⋅ ◊(A) == ◊(A) ⊣ (A::Ob, a::Number)
-  (Δ(A) ⋅ (scalar(A, a) ⊕ scalar(A, b))) ⋅ plus(A) == scalar(A, a+b) ⊣ (A::Ob, a::Number, b::Number)
+  Δ(A) ⋅ (scalar(A, a) ⊕ scalar(A, b)) ⋅ plus(A) == scalar(A, a+b) ⊣ (A::Ob, a::Number, b::Number)
   scalar(A, 0) == ◊(A) ⋅ zero(A) ⊣ (A::Ob)
   zero(A) ⋅ scalar(A, a) == zero(A) ⊣ (A::Ob, a::Number)
+  antipode(A) == scalar(A, -1) ⊣ (A::Ob)
 
-  plus(A) ⋅ f == (f ⊕ f) ⋅ plus(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  # Homogeneity axiom. Additivity is inherited from `SemiadditiveCategory`.
   scalar(A, c) ⋅ f == f ⋅ scalar(B, c) ⊣ (A::Ob, B::Ob, c::Number, f::(A → B))
 end
 
@@ -82,38 +57,24 @@ end
 
 """ Theory of *linear relations*
 
-The full relational language of graphical linear algebra. This is an abelian
-bicategory of relations (`AbelianBicategoryRelations`), written additively.
+The full relational language of graphical linear algebra.
 """
-@signature LinearFunctions(Ob,Hom) => LinearRelations(Ob,Hom) begin
-  # Dagger category.
-  dagger(f::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
+@theory AbelianBicategoryRelations(Ob,Hom) => LinearRelations(Ob,Hom) begin
+  adjoint(R::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
 
-  # Self-dual compact closed category.
-  dunit(A::Ob)::(mzero() → (A ⊕ A))
-  dcounit(A::Ob)::((A ⊕ A) → mzero())
+  scalar(A::Ob, c::Number)::(A → A)
+  antipode(A::Ob)::(A → A)
 
-  # Merging and creating relations (converses of copying and deleting maps).
-  mmerge(A::Ob)::((A ⊕ A) → A)
-  @op (∇) := mmerge
-  create(A::Ob)::(mzero() → A)
-  @op (□) := create
-
-  # Co-addition and co-zero relations (converses of addition and zero maps)
-  coplus(A::Ob)::(A → (A ⊕ A))
-  cozero(A::Ob)::(A → mzero())
-
-  # Lattice of linear relations.
-  meet(f::(A → B), g::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
-  top(A::Ob, B::Ob)::(A → B)
-  join(f::(A → B), g::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
-  bottom(A::Ob, B::Ob)::(A → B)
+  # Linearity axioms.
+  plus(A)⋅R == (R⊕R)⋅plus(B) ⊣ (A::Ob, B::Ob, R::(A → B))
+  zero(A)⋅R == zero(B) ⊣ (A::Ob, B::Ob, R::(A → B))
+  scalar(A, c) ⋅ R == R ⋅ scalar(B, c) ⊣ (A::Ob, B::Ob, c::Number, R::(A → B))
 end
 
 @syntax FreeLinearRelations(ObExpr,HomExpr) LinearRelations begin
   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
-  oplus(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = new(f,g; strict=true) # No normalization!
+  oplus(R::Hom, S::Hom) = associate(new(R,S))
+  compose(R::Hom, S::Hom) = new(R,S; strict=true) # No normalization!
 end
 
 # Evaluation
@@ -138,8 +99,8 @@ end
   oplus(V::LinearMapDom, W::LinearMapDom) = LinearMapDom(V.N + W.N)
   oplus(f::LinearMap, g::LinearMap) = LMs.BlockDiagonalMap(f, g)
   mzero(::Type{LinearMapDom}) = LinearMapDom(0)
-  braid(V::LinearMapDom, W::LinearMapDom) =
-    LinearMap(braid_lm(V.N), braid_lm(W.N), W.N+V.N, V.N+W.N)
+  swap(V::LinearMapDom, W::LinearMapDom) =
+    LinearMap(swap_lm(V.N), swap_lm(W.N), W.N+V.N, V.N+W.N)
 
   mcopy(V::LinearMapDom) = LinearMap(mcopy_lm, plus_lm, 2*V.N, V.N)
   delete(V::LinearMapDom) = LinearMap(delete_lm, zero_lm(V.N), 0, V.N)
@@ -149,9 +110,16 @@ end
   plus(f::LinearMap, g::LinearMap) = f+g
   scalar(V::LinearMapDom, c::Number) = LMs.UniformScalingMap(c, V.N)
   antipode(V::LinearMapDom) = LMs.UniformScalingMap(-1, V.N)
+  
+  pair(f::LinearMap, g::LinearMap) = mcopy(dom(f)) ⋅ (f ⊕ g)
+  copair(f::LinearMap, g::LinearMap) = (f ⊕ g) ⋅ plus(codom(f))
+  proj1(A::LinearMapDom, B::LinearMapDom) = id(A) ⊕ delete(B)
+  proj2(A::LinearMapDom, B::LinearMapDom) = delete(A) ⊕ id(B)
+  coproj1(A::LinearMapDom, B::LinearMapDom) = id(A) ⊕ zero(B)
+  coproj2(A::LinearMapDom, B::LinearMapDom) = zero(A) ⊕ id(B)
 end
 
-braid_lm(n::Int) = x::AbstractVector -> vcat(x[n+1:end], x[1:n])
+swap_lm(n::Int) = x::AbstractVector -> vcat(x[n+1:end], x[1:n])
 mcopy_lm(x::AbstractVector) = vcat(x, x)
 delete_lm(x::AbstractVector) = eltype(x)[]
 plus_lm(x::AbstractVector) = begin
@@ -189,7 +157,7 @@ end
     fOp + gOp
   end
   mzero(::Type{LinearOpDom}) = LinearOpDom(0)
-  braid(V::LinearOpDom, W::LinearOpDom) =
+  swap(V::LinearOpDom, W::LinearOpDom) =
     opExtension(1:W.N, V.N+W.N) * opRestriction((V.N+1):(V.N+W.N),V.N+W.N) +
     opExtension((W.N+1):(V.N+W.N), V.N+W.N) * opRestriction(1:V.N,V.N+W.N)
   mcopy(V::LinearOpDom) =
@@ -202,8 +170,14 @@ end
   plus(f::LinearOperator, g::LinearOperator) = f+g
   scalar(V::LinearOpDom, c::Number) = opEye(typeof(c),V.N)*c
   antipode(V::LinearOpDom) = scalar(V,-1)
+  
+  pair(f::LinearOperator, g::LinearOperator) = mcopy(dom(f)) ⋅ (f ⊕ g)
+  copair(f::LinearOperator, g::LinearOperator) = (f ⊕ g) ⋅ plus(codom(f))
+  proj1(A::LinearOpDom, B::LinearOpDom) = id(A) ⊕ delete(B)
+  proj2(A::LinearOpDom, B::LinearOpDom) = delete(A) ⊕ id(B)
+  coproj1(A::LinearOpDom, B::LinearOpDom) = id(A) ⊕ zero(B)
+  coproj2(A::LinearOpDom, B::LinearOpDom) = zero(A) ⊕ id(B)
 end
-
 
 # Catlab evaluate
 #----------------

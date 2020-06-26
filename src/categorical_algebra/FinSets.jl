@@ -1,3 +1,5 @@
+""" Computing in the category of finite sets and functions, and its skeleton.
+"""
 module FinSets
 export FinOrd, FinOrdFunction, force, terminal, product, equalizer, pullback,
   initial, coproduct, coequalizer, pushout
@@ -7,9 +9,9 @@ using DataStructures: IntDisjointSets, union!, find_root
 
 using ...GAT
 using ...Theories: Category
-using ..ShapeDiagrams
 import ...Theories: dom, codom, id, compose, ⋅, ∘,
   terminal, product, equalizer, initial, coproduct, coequalizer
+using ..ShapeDiagrams
 
 # Data types
 ############

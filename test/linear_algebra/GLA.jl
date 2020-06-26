@@ -37,7 +37,7 @@ x, y = [2, 1], [7, 3, 5]
 @test (f⋅f)*x == f*(f*x)
 @test (f⋅h)*x == h*(f*x)
 @test (f⊕g)*[x;y] == [f*x; g*y]
-@test braid(dom(f),dom(g)) * [x;y] == [y;x]
+@test swap(dom(f),dom(g)) * [x;y] == [y;x]
 
 @test mcopy(dom(f))*x == [x;x]
 @test delete(dom(f))*x == []
@@ -139,7 +139,7 @@ x, y = [2, 1], [7, 3, 5]
 @test (f⋅f)*x == f*(f*x)
 @test (f⋅h)*x == h*(f*x)
 @test (f⊕g)*[x;y] == [f*x; g*y]
-@test braid(dom(f),dom(g)) * [x;y] == [y;x]
+@test swap(dom(f),dom(g)) * [x;y] == [y;x]
 
 @test mcopy(dom(f))*x == [x;x]
 @test delete(dom(f))*x == []

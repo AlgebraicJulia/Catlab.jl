@@ -9,7 +9,7 @@ import Base: join, zero
 
 """ Theory of *bicategories of relations*
 
-TODO: The 2-morphisms are missing. I haven't decided how to handle them yet.
+TODO: The 2-morphisms are missing.
 
 References:
 
@@ -18,70 +18,67 @@ References:
   http://rfcwalters.blogspot.com/2009/10/categorical-algebras-of-relations.html
 """
 @signature MonoidalCategoryWithBidiagonals(Ob,Hom) => BicategoryRelations(Ob,Hom) begin
-  # Dagger category.
-  dagger(f::(A → B))::(B → A) ⊣ (A::Ob,B::Ob)
-
-  # Self-dual compact closed category.
+  # Self-dual dagger compact category.
+  dagger(R::(A → B))::(B → A) ⊣ (A::Ob,B::Ob)
   dunit(A::Ob)::(munit() → (A ⊗ A))
   dcounit(A::Ob)::((A ⊗ A) → munit())
 
   # Logical operations.
-  meet(f::(A → B), g::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
+  meet(R::(A → B), S::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
   top(A::Ob, B::Ob)::(A → B)
 end
 
 @syntax FreeBicategoryRelations(ObExpr,HomExpr) BicategoryRelations begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
-  dagger(f::Hom) = distribute_unary(distribute_dagger(involute(new(f))),
+  otimes(R::Hom, S::Hom) = associate(new(R,S))
+  compose(R::Hom, S::Hom) = associate(new(R,S; strict=true))
+  dagger(R::Hom) = distribute_unary(distribute_dagger(involute(new(R))),
                                     dagger, otimes)
-  meet(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
+  meet(R::Hom, S::Hom) = compose(mcopy(dom(R)), otimes(R,S), mmerge(codom(R)))
   top(A::Ob, B::Ob) = compose(delete(A), create(B))
 end
 
 """ Theory of *abelian bicategories of relations*
 
-Unlike Carboni & Walters, we use additive notation and nomenclature.
+Unlike [`BicategoryRelations`](@ref), this theory uses additive notation.
 
 References:
 
 - Carboni & Walters, 1987, "Cartesian bicategories I", Sec. 5
 - Baez & Erbele, 2015, "Categories in control"
 """
-@signature BicategoryRelations(Ob,Hom) => AbelianBicategoryRelations(Ob,Hom) begin
-  # Second diagonal and codiagonal.
-  plus(A::Ob)::((A ⊗ A) → A)
-  zero(A::Ob)::(munit() → A)
-  coplus(A::Ob)::(A → (A ⊗ A))
-  cozero(A::Ob)::(A → munit())
+@signature MonoidalCategoryWithBidiagonalsAdditive(Ob,Hom) =>
+    AbelianBicategoryRelations(Ob,Hom) begin
+  # Self-dual dagger compact category.
+  dagger(R::(A → B))::(B → A) ⊣ (A::Ob,B::Ob)
+  dunit(A::Ob)::(mzero() → (A ⊕ A))
+  dcounit(A::Ob)::((A ⊕ A) → mzero())
+
+  # Merging and creating (right adjoints of copying and deleting maps).
+  mmerge(A::Ob)::((A ⊕ A) → A)
+  @op (∇) := mmerge
+  create(A::Ob)::(mzero() → A)
+  @op (□) := create
+
+  # Co-addition and co-zero (right adjoints of addition and zero maps).
+  coplus(A::Ob)::(A → (A ⊕ A))
+  cozero(A::Ob)::(A → mzero())
 
   # Logical operations.
-  join(f::(A → B), g::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
+  meet(R::(A → B), S::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
+  top(A::Ob, B::Ob)::(A → B)
+  join(R::(A → B), S::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
   bottom(A::Ob, B::Ob)::(A → B)
 end
 
 @syntax FreeAbelianBicategoryRelations(ObExpr,HomExpr) AbelianBicategoryRelations begin
-  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
-  dagger(f::Hom) = distribute_unary(distribute_dagger(involute(new(f))),
-                                    dagger, otimes)
-  meet(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g), mmerge(codom(f)))
-  join(f::Hom, g::Hom) = compose(coplus(dom(f)), otimes(f,g), plus(codom(f)))
+  oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
+  oplus(R::Hom, S::Hom) = associate(new(R,S))
+  compose(R::Hom, S::Hom) = associate(new(R,S; strict=true))
+  dagger(R::Hom) = distribute_unary(distribute_dagger(involute(new(R))),
+                                    dagger, oplus)
+  meet(R::Hom, S::Hom) = compose(mcopy(dom(R)), oplus(R,S), mmerge(codom(R)))
+  join(R::Hom, S::Hom) = compose(coplus(dom(R)), oplus(R,S), plus(codom(R)))
   top(A::Ob, B::Ob) = compose(delete(A), create(B))
   bottom(A::Ob, B::Ob) = compose(cozero(A), zero(B))
-end
-
-function show_latex(io::IO, expr::HomExpr{:plus}; kw...)
-  Syntax.show_latex_script(io, expr, "\\blacktriangledown")
-end
-function show_latex(io::IO, expr::HomExpr{:coplus}; kw...)
-  Syntax.show_latex_script(io, expr, "\\blacktriangle")
-end
-function show_latex(io::IO, expr::HomExpr{:zero}; kw...)
-  Syntax.show_latex_script(io, expr, "\\blacksquare")
-end
-function show_latex(io::IO, expr::HomExpr{:cozero}; kw...)
-  Syntax.show_latex_script(io, expr, "\\blacklozenge")
 end

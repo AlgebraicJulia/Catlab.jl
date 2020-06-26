@@ -89,11 +89,14 @@ end
 """ Theory of *monoidal categories with diagonals*
 
 A monoidal category with diagonals is a symmetric monoidal category equipped
-with coherent collections of copying and deleting morphisms (comonoids).
-Unlike in a cartesian category, the naturality axioms need not be satisfied.
+with coherent operations of copying and deleting, also known as a supply of
+commutative comonoids. Unlike in a cartesian category, the naturality axioms
+need not be satisfied.
 
 References:
 
+- Fong & Spivak, 2019, "Supplying bells and whistles in symmetric monoidal
+  categories" ([arxiv:1908.02633](https://arxiv.org/abs/1908.02633))
 - Selinger, 2010, "A survey of graphical languages for monoidal categories",
   Section 6.6: "Cartesian center"
 - Selinger, 1999, "Categorical structure of asynchrony"
@@ -153,39 +156,40 @@ end
 """ Theory of *monoidal categories with bidiagonals*
 
 The terminology is nonstandard (is there any standard terminology?) but is
-intended to mean a monoidal category with coherent diagonals and codiagonals.
+supposed to mean a monoidal category with coherent diagonals and codiagonals.
 Unlike in a biproduct category, the naturality axioms need not be satisfied.
-
-FIXME: This theory should extend both `MonoidalCategoryWithDiagonals` and
-`MonoidalCategoryWithCodiagonals`, but multiple inheritance is not yet
-supported.
 """
-@signature SymmetricMonoidalCategory(Ob,Hom) => MonoidalCategoryWithBidiagonals(Ob,Hom) begin
-  mcopy(A::Ob)::(A → (A ⊗ A))
-  @op (Δ) := mcopy
+@signature MonoidalCategoryWithDiagonals(Ob,Hom) => MonoidalCategoryWithBidiagonals(Ob,Hom) begin
   mmerge(A::Ob)::((A ⊗ A) → A)
   @op (∇) := mmerge
-  delete(A::Ob)::(A → munit())
-  @op (◊) := delete
   create(A::Ob)::(munit() → A)
   @op (□) := create
 end
 
 """ Theory of *biproduct categories*
 
-Also known as *semiadditive categories*.
-
-FIXME: This theory should extend `MonoidalCategoryWithBidiagonals`,
-`CartesianCategory`, and `CocartesianCategory`, but multiple inheritance is not
-yet supported.
+Mathematically the same as [`SemiadditiveCategory`](@ref) but written
+multiplicatively, instead of additively.
 """
-@signature MonoidalCategoryWithBidiagonals(Ob,Hom) => BiproductCategory(Ob,Hom) begin
+@theory MonoidalCategoryWithBidiagonals(Ob,Hom) => BiproductCategory(Ob,Hom) begin
   pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
   copair(f::(A → C), g::(B → C))::((A ⊗ B) → C) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
   coproj1(A::Ob, B::Ob)::(A → (A ⊗ B))
   coproj2(A::Ob, B::Ob)::(B → (A ⊗ B))
+  
+  # Naturality axioms.
+  f⋅Δ(B) == Δ(A)⋅(f⊗f) ⊣ (A::Ob, B::Ob, f::(A → B))
+  f⋅◊(B) == ◊(A) ⊣ (A::Ob, B::Ob, f::(A → B))
+  ∇(A)⋅f == (f⊗f)⋅∇(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  □(A)⋅f == □(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  
+  # Bimonoid axioms. (These follow from naturality + coherence axioms.)
+  ∇(A)⋅Δ(A) == (Δ(A)⊗Δ(A)) ⋅ (id(A)⊗σ(A,A)⊗id(A)) ⋅ (∇(A)⊗∇(A)) ⊣ (A::Ob)
+  ∇(A)⋅◊(A) == ◊(A) ⊗ ◊(A) ⊣ (A::Ob)
+  □(A)⋅Δ(A) == □(A) ⊗ □(A) ⊣ (A::Ob)
+  □(A)⋅◊(A) == id(munit()) ⊣ (A::Ob)
 end
 
 @syntax FreeBiproductCategory(ObExpr,HomExpr) BiproductCategory begin
@@ -193,12 +197,19 @@ end
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
 
-  pair(f::Hom, g::Hom) = Δ(dom(f)) → (f ⊗ g)
-  copair(f::Hom, g::Hom) = (f ⊗ g) → ∇(codom(f))
+  pair(f::Hom, g::Hom) = Δ(dom(f)) ⋅ (f ⊗ g)
+  copair(f::Hom, g::Hom) = (f ⊗ g) ⋅ ∇(codom(f))
   proj1(A::Ob, B::Ob) = id(A) ⊗ ◊(B)
   proj2(A::Ob, B::Ob) = ◊(A) ⊗ id(B)
   coproj1(A::Ob, B::Ob) = id(A) ⊗ □(B)
   coproj2(A::Ob, B::Ob) = □(A) ⊗ id(B)
+end
+
+function show_latex(io::IO, expr::HomExpr{:mmerge}; kw...)
+  Syntax.show_latex_script(io, expr, "\\nabla")
+end
+function show_latex(io::IO, expr::HomExpr{:create}; kw...)
+  Syntax.show_latex_script(io, expr, "\\square")
 end
 
 # Closed monoidal category
@@ -247,7 +258,7 @@ end
 
 A CCC is a cartesian category with internal homs (aka, exponential objects).
 
-FIXME: This theory should extend `ClosedMonoidalCategory`, but multiple
+FIXME: This theory should also extend `ClosedMonoidalCategory`, but multiple
 inheritance is not yet supported.
 """
 @signature CartesianCategory(Ob,Hom) => CartesianClosedCategory(Ob,Hom) begin
@@ -265,7 +276,7 @@ See also `FreeCartesianCategory`.
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
 
-  pair(f::Hom, g::Hom) = Δ(dom(f)) → (f ⊗ g)
+  pair(f::Hom, g::Hom) = Δ(dom(f)) ⋅ (f ⊗ g)
   proj1(A::Ob, B::Ob) = id(A) ⊗ ◊(B)
   proj2(A::Ob, B::Ob) = ◊(A) ⊗ id(B)
 end
@@ -354,8 +365,8 @@ end
 Also known as a [symmetric monoidal dagger
 category](https://ncatlab.org/nlab/show/symmetric+monoidal+dagger-category).
 
-FIXME: This theory should extend both `DaggerCategory` and
-`SymmetricMonoidalCategory`, but multiple inheritance is not yet supported.
+FIXME: This theory should also extend `DaggerCategory`, but multiple inheritance
+is not yet supported.
 """
 @signature SymmetricMonoidalCategory(Ob,Hom) => DaggerSymmetricMonoidalCategory(Ob,Hom) begin
   dagger(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
@@ -380,8 +391,8 @@ in the official `LinearAlegbra` module. For the general relationship between
 mates and daggers, see Selinger's survey of graphical languages for monoidal
 categories.
 
-FIXME: This theory should extend both `DaggerCategory` and
-`CompactClosedCategory`, but multiple inheritance is not yet supported.
+FIXME: This theory should also extend `DaggerCategory`, but multiple inheritance
+is not yet supported.
 """
 @signature CompactClosedCategory(Ob,Hom) => DaggerCompactCategory(Ob,Hom) begin
   dagger(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
