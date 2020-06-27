@@ -33,7 +33,8 @@ category of finite sets.
 In this data structure, the field `func` representing the function can have any
 Julia type `T`, provided that `FinOrdFunction{T}` is callable. Usually, this
 object will be an ordinary Julia function or an abstract vector. In the latter
-case, the function (1↦1, 2↦3, 3↦2, 4↦3) is represented by the vector [1,3,2,3].
+case, the function (1↦1, 2↦3, 3↦2, 4↦3), for example, is represented by the
+vector [1,3,2,3].
 """
 @auto_hash_equals struct FinOrdFunction{F,T<:Integer}
   func::F
@@ -45,9 +46,8 @@ FinOrdFunction(f::AbstractVector, codom::Integer) =
   FinOrdFunction(f, length(f), codom)
 
 # Function objects are callable.
-(f::FinOrdFunction)(i::Integer) = f.func(i)
-(f::FinOrdFunction{<:AbstractVector})(i::Integer) = f.func[i]
-(f::FinOrdFunction{typeof(id)})(i::Integer) = i
+(f::FinOrdFunction)(i) = f.func(i)
+(f::FinOrdFunction{<:AbstractVector})(i) = f.func[i]
 
 """ Force evaluation of function, yielding the vector representation.
 """
@@ -65,18 +65,21 @@ force(f::FinOrdFunction{<:AbstractVector}) = f
   
   function compose(f::FinOrdFunction, g::FinOrdFunction)
     @assert f.codom == g.dom
-    FinOrdFunction(compose_functions(f.func, g.func), f.dom, g.codom)
+    FinOrdFunction(compose_impl(f, g), f.dom, g.codom)
   end
 end
 
-compose_functions(f,g) = as_function(g) ∘ as_function(f)
-compose_functions(::typeof(id), g) = g
-compose_functions(f, ::typeof(id)) = f
-compose_functions(::typeof(id), ::typeof(id)) = id
-compose_functions(f::AbstractVector, g::AbstractVector) = g[f]
+(f::FinOrdFunction{typeof(id)})(i) = i
 
-as_function(f) = f
-as_function(f::AbstractVector) = x -> f[x]
+compose_impl(f::FinOrdFunction, g::FinOrdFunction) = as_callable(g) ∘ as_callable(f)
+compose_impl(f::FinOrdFunction{<:AbstractVector},
+             g::FinOrdFunction{<:AbstractVector}) = g.func[f.func]
+compose_impl(::FinOrdFunction{typeof(id)}, g::FinOrdFunction) = g.func
+compose_impl(f::FinOrdFunction, ::FinOrdFunction{typeof(id)}) = f.func
+compose_impl(::FinOrdFunction{typeof(id)}, ::FinOrdFunction{typeof(id)}) = id
+
+as_callable(f::FinOrdFunction) = f
+as_callable(f::FinOrdFunction{<:Function}) = f.func
 
 # Limits
 ########
