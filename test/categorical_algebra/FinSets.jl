@@ -22,8 +22,8 @@ h = FinOrdFunction([3,1,2], 3)
 @test compose(f,g) == FinOrdFunction([1,2,2], 3)
 @test compose(g,h) == FinOrdFunction([3,3,1,1,2], 3)
 @test compose(compose(f,g),h) == compose(f,compose(g,h))
-@test compose(id(dom(f)),f) == f
-@test compose(f,id(codom(f))) == f
+@test force(compose(id(dom(f)),f)) == f
+@test force(compose(f,id(codom(f)))) == f
 
 # Limits
 ########
@@ -47,7 +47,7 @@ f = FinOrdFunction([4,2,3,1], 5)
 
 # Equalizer matching nothing.
 f, g = id(FinOrd(5)), FinOrdFunction([2,3,4,5,1], 5)
-@test equalizer(f,g) == FinOrdFunction([], 5)
+@test equalizer(f,g) == FinOrdFunction(Int[], 5)
 
 # Pullback.
 span = pullback(Cospan(FinOrdFunction([1,1,3,2],4), FinOrdFunction([1,1,4,2],4)))
@@ -86,7 +86,7 @@ f, g = id(FinOrd(5)), FinOrdFunction([2,3,4,5,1], 5)
 @test coequalizer(f,g) == FinOrdFunction(repeat([1],5))
 
 # Pushout from the empty set: the degenerate case of the coproduct.
-f, g = FinOrdFunction([], 2), FinOrdFunction([], 3)
+f, g = FinOrdFunction(Int[], 2), FinOrdFunction(Int[], 3)
 cospan = pushout(Span(f,g))
 @test base(cospan) == FinOrd(5)
 @test left(cospan) == FinOrdFunction([1,2], 5)
