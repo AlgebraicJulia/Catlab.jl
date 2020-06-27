@@ -14,6 +14,10 @@ end
   include("FinSets.jl")
 end
 
+@testset "FinRelations" begin
+  include("FinRelations.jl")
+end
+
 @testset "Permutations" begin
   include("Permutations.jl")
 end

@@ -88,7 +88,7 @@ zero(m::MatrixDom{M}, n::MatrixDom{M}) where M = zero_matrix(M, m.dim, n.dim)
 blockdiag(A::AbstractMatrix...) = cat(A..., dims=(1,2))
 
 # Dense and sparse matrices have different APIs for creating zero matrices.
-zero_matrix(::Type{<:AbstractMatrix{T}}, dims...) where T = zeros(T, dims...)
+zero_matrix(::Type{Matrix{T}}, dims...) where T = zeros(T, dims...)
 zero_matrix(::Type{SparseMatrixCSC{T}}, dims...) where T = spzeros(T, dims...)
 
 function unit_vector(::Type{M}, n::Int, i::Int) where {T, M <: AbstractMatrix{T}}

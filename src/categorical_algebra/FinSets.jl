@@ -13,8 +13,8 @@ import ...Theories: dom, codom, id, compose, ⋅, ∘,
   terminal, product, equalizer, initial, coproduct, coequalizer
 using ..ShapeDiagrams
 
-# Data types
-############
+# Category of finite ordinals
+#############################
 
 """ Finite ordinal (natural number).
 
@@ -47,10 +47,10 @@ To be evaluated lazily unless forced.
   dom::Int
   codom::Int
 end
-(f::FinOrdFunctionLazy)(i) = f.func(i)
-
 FinOrdFunction(f::Function, dom::Int, codom::Int) =
   FinOrdFunctionLazy(f, dom, codom)
+
+(f::FinOrdFunctionLazy)(x) = f.func(x)
 
 """ Function in FinOrd represented explicitly by a vector.
 """
@@ -58,8 +58,6 @@ FinOrdFunction(f::Function, dom::Int, codom::Int) =
   func::T
   codom::Int
 end
-(f::FinOrdFunctionMap)(i) = f.func[i]
-
 FinOrdFunction(f::AbstractVector) = FinOrdFunctionMap(f, maximum(f))
 FinOrdFunction(f::AbstractVector, codom::Int) = FinOrdFunctionMap(f, codom)
 
@@ -68,14 +66,15 @@ function FinOrdFunction(f::AbstractVector, dom::Int, codom::Int)
   FinOrdFunctionMap(f, codom)
 end
 
-""" Force evaluation of function, yielding the vector representation.
+(f::FinOrdFunctionMap)(x) = f.func[x]
+
+""" Force evaluation of lazy function or relation.
 """
 force(f::FinOrdFunction) = FinOrdFunctionMap(map(f, 1:dom(f).n), codom(f).n)
 force(f::FinOrdFunctionMap) = f
 
-# Category of finite ordinals
-#############################
-
+""" Category of finite ordinals and functions.
+"""
 @instance Category(FinOrd, FinOrdFunction) begin
   dom(f::FinOrdFunction) = FinOrd(f.dom)
   codom(f::FinOrdFunction) = FinOrd(f.codom)
