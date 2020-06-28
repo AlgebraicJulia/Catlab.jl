@@ -7,9 +7,11 @@ import Base: +, *
 using AutoHashEquals
 
 using ...GAT
-using ...Theories: BicategoryRelations
-import ...Theories: dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid,
-  mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dagger, dunit, dcounit, meet, top
+using ...Theories: DistributiveBicategoryRelations
+import ...Theories: dom, codom, id, compose, ⋅, ∘, dagger, dunit, dcounit,
+  otimes, ⊗, munit, braid, oplus, ⊕, mzero, swap,
+  mcopy, Δ, mmerge, ∇, delete, ◊, create, □, plus, zero, coplus, cozero,
+  pair, copair, proj1, proj2, coproj1, coproj2, meet, join, top, bottom
 import ..FinSets: force
 using ..Matrices
 using ..Matrices: zero_matrix
@@ -101,20 +103,19 @@ end
 force(::Type{T}, R::FinOrdRelationMatrix{T}) where T <: AbstractMatrix{BoolRig} = R
 force(R::FinOrdRelation) = force(Matrix{BoolRig}, R)
 
-""" FinOrdRel as a bicategory of relations.
+""" FinOrdRel as a distributive bicategory of relations.
 """
-@instance BicategoryRelations(FinOrdRelOb, FinOrdRelation) begin
-  # Category structure
-  
+@instance DistributiveBicategoryRelations(FinOrdRelOb, FinOrdRelation) begin
   dom(R::FinOrdRelation) = FinOrdRelOb(R.dom)
   codom(R::FinOrdRelation) = FinOrdRelOb(R.codom)
 
-  id(A::FinOrdRelOb) = FinOrdRelation((x1,x2) -> x1 == x2, A, A)
+  id(A::FinOrdRelOb) = FinOrdRelation((x,y) -> x == y, A, A)
 
   function compose(R::FinOrdRelation, S::FinOrdRelation)
     @assert codom(R) == dom(S)
-    rel = (x,z) -> any(R(x,y) && S(y,z) for y in eachindex(codom(R)))
-    FinOrdRelation(rel, dom(R), codom(S))
+    FinOrdRelation(dom(R), codom(S)) do x,z
+      any(R(x,y) && S(y,z) for y in eachindex(codom(R)))
+    end
   end
   
   # Multiplicative monoidal structure
@@ -126,17 +127,17 @@ force(R::FinOrdRelation) = force(Matrix{BoolRig}, R)
     # Indexing is consistent with that of Kronecker products.
     dom_proj = CartesianIndices((dom(S).n, dom(R).n))
     cod_proj = CartesianIndices((codom(S).n, codom(R).n))
-    rel = (x,y) -> (R(dom_proj[x][2], cod_proj[y][2]) &&
-                    S(dom_proj[x][1], cod_proj[y][1]))
-    FinOrdRelation(rel, dom(R)⊗dom(S), codom(R)⊗codom(S))
+    FinOrdRelation(dom(R)⊗dom(S), codom(R)⊗codom(S)) do x, y
+      R(dom_proj[x][2], cod_proj[y][2]) && S(dom_proj[x][1], cod_proj[y][1])
+    end
   end
   
   function braid(A::FinOrdRelOb, B::FinOrdRelOb)
     dom_proj = CartesianIndices((B.n, A.n))
     cod_proj = CartesianIndices((A.n, B.n))
-    rel = (x,y) -> (dom_proj[x][1] == cod_proj[y][2] &&
-                    dom_proj[x][2] == cod_proj[y][1])
-    FinOrdRelation(rel, A⊗B, B⊗A)
+    FinOrdRelation(A⊗B, B⊗A) do x, y
+      dom_proj[x][1] == cod_proj[y][2] && dom_proj[x][2] == cod_proj[y][1]
+    end
   end
   
   function mcopy(A::FinOrdRelOb)
@@ -154,14 +155,49 @@ force(R::FinOrdRelation) = force(Matrix{BoolRig}, R)
   dunit(A::FinOrdRelOb) = compose(create(A), mcopy(A))
   dcounit(A::FinOrdRelOb) = compose(mmerge(A), delete(A))
   
+  # Additive monoidal structure
+  
+  oplus(A::FinOrdRelOb, B::FinOrdRelOb) = FinOrdRelOb(A.n + B.n)
+  mzero(::Type{FinOrdRelOb}) = FinOrdRelOb(0)
+  
+  function oplus(R::FinOrdRelation, S::FinOrdRelation)
+    m, n = dom(R).n, codom(R).n
+    FinOrdRelation(dom(R)⊕dom(S), codom(R)⊕codom(S)) do x, y
+      (x <= m && y <= n && R(x, y)) || (x > m && y > n && S(x-m, y-n))
+    end
+  end
+  
+  function swap(A::FinOrdRelOb, B::FinOrdRelOb)
+    FinOrdRelation((x,y) -> x == y-B.n || x-A.n == y, A⊕B, B⊕A)
+  end
+  
+  plus(A::FinOrdRelOb) = FinOrdRelation((x,y) -> x == y || x-A.n == y, A⊕A, A)
+  coplus(A::FinOrdRelOb) = FinOrdRelation((x,y) -> x == y || x == y-A.n, A, A⊕A)
+  zero(A::FinOrdRelOb) = FinOrdRelation((x,y) -> false, mzero(FinOrdRelOb), A)
+  cozero(A::FinOrdRelOb) = FinOrdRelation((x,y) -> false, A, mzero(FinOrdRelOb))
+  
+  pair(R::FinOrdRelation, S::FinOrdRelation) = coplus(dom(R))⋅(R⊕S)
+  copair(R::FinOrdRelation, S::FinOrdRelation) = (R⊕S)⋅plus(codom(R))
+  proj1(A::FinOrdRelOb, B::FinOrdRelOb) = id(A)⊕cozero(B)
+  proj2(A::FinOrdRelOb, B::FinOrdRelOb) = cozero(A)⊕id(B)
+  coproj1(A::FinOrdRelOb, B::FinOrdRelOb) = id(A)⊕zero(B)
+  coproj2(A::FinOrdRelOb, B::FinOrdRelOb) = zero(A)⊕id(B)
+  
+  # Lattice structure
+  
   function meet(R::FinOrdRelation, S::FinOrdRelation)
     @assert dom(R) == dom(S) && codom(R) == codom(S)
     FinOrdRelation((x,y) -> R(x,y) && S(x,y), dom(R), codom(R))
   end
+  function join(R::FinOrdRelation, S::FinOrdRelation)
+    @assert dom(R) == dom(S) && codom(R) == codom(S)
+    FinOrdRelation((x,y) -> R(x,y) || S(x,y), dom(R), codom(R))
+  end
   top(A::FinOrdRelOb, B::FinOrdRelOb) = FinOrdRelation((x,y) -> true, A, B)
+  bottom(A::FinOrdRelOb, B::FinOrdRelOb) = FinOrdRelation((x,y) -> false, A, B)
 end
 
-# For relation matrices, delegate to general category of matrices.
+# For relation matrices, delegate to the category of matrices.
 const RelMat = FinOrdRelationMatrix
 
 dom(R::RelMat) = FinOrdRelOb(size(R.rel, 2))
@@ -169,8 +205,12 @@ codom(R::RelMat) = FinOrdRelOb(size(R.rel, 1))
 
 compose(R::RelMat, S::RelMat) = RelMat(compose(R.rel, S.rel))
 otimes(R::RelMat, S::RelMat) = RelMat(otimes(R.rel, S.rel))
+oplus(R::RelMat, S::RelMat) = RelMat(oplus(R.rel, S.rel))
 dagger(R::RelMat) = RelMat(transpose(R.rel))
 
 meet(R::RelMat, S::RelMat) = RelMat(R.rel .* S.rel)
+join(R::RelMat, S::RelMat) = RelMat(R.rel .+ S.rel)
+pair(R::RelMat, S::RelMat) = RelMat(pair(R.rel, S.rel))
+copair(R::RelMat, S::RelMat) = RelMat(copair(R.rel, S.rel))
 
 end

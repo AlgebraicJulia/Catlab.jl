@@ -31,11 +31,22 @@ A_mat, B_mat = MatrixDom{Matrix{BoolRig}}(A.n), MatrixDom{Matrix{BoolRig}}(B.n)
 @test force(R ⊗ S) == R_mat ⊗ S_mat
 @test force(braid(A, B)) == FinOrdRelation(braid(A_mat, B_mat))
 
+@test force(R ⊕ S) == R_mat ⊕ S_mat
+@test force(swap(A, B)) == FinOrdRelation(swap(A_mat, B_mat))
+
 S = FinOrdRelation((x,y) -> (x+y) % 2 == 0, 10, 5)
 S_mat = force(S)
 @test force(meet(R, S)) == meet(R_mat, S_mat)
+@test force(join(R, S)) == join(R_mat, S_mat)
 @test force(mcopy(dom(R))⋅(R⊗S)⋅mmerge(codom(R))) == meet(R_mat, S_mat)
+@test force(coplus(dom(R))⋅(R⊕S)⋅plus(codom(R))) == join(R_mat, S_mat)
+
 @test force(top(A, B)) == FinOrdRelation(ones(BoolRig, B.n, A.n))
+@test force(bottom(A, B)) == FinOrdRelation(zeros(BoolRig, B.n, A.n))
 @test force(delete(A)⋅create(B)) == FinOrdRelation(ones(BoolRig, B.n, A.n))
+@test force(cozero(A)⋅zero(B)) == FinOrdRelation(zeros(BoolRig, B.n, A.n))
+
+@test force(pair(R, S)) == pair(R_mat, S_mat)
+@test force(copair(R, S)) == copair(R_mat, S_mat)
 
 end
