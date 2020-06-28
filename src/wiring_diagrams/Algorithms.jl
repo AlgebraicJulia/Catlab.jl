@@ -8,7 +8,7 @@ using DataStructures
 import LightGraphs
 using Statistics: mean
 
-using ..WiringDiagramCore, ..WiringLayers
+using ..WiringDiagramCore
 import ..WiringDiagramCore: set_box
 
 # Traversal
