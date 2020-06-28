@@ -3,7 +3,7 @@ module TestAlgebraicNets
 import Pkg
 using Test
 
-using Catlab, Catlab.WiringDiagrams.WiringLayers
+using Catlab
 using CompAlgebra.AlgebraicNets
 
 R = Ob(AlgebraicNet, :R)
@@ -93,12 +93,14 @@ f_comp = compile(f)
 @test f_comp(x) == x
 @test evaluate(f,x) == x
 
-# Wiring layers
+# FIXME: Wire layers have been removed.
+#=
 wires = [ 1 => 3, 1 => 2, 2 => 2, 3 => 2, 3 => 1 ]
 f = wiring(wires, otimes(R,R,R), otimes(R,R,R))
 f_comp = compile(f)
 @test f_comp(x,y,z) == (z, x+y+z, x)
 @test evaluate(f,x,y,z) == (z, x+y+z, x)
+=#
 
 # More complex expressions
 f = compose(otimes(id(R),constant(1,R)), mmerge(R))

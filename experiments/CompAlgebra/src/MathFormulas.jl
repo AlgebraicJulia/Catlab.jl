@@ -26,7 +26,7 @@ import Catlab.WiringDiagrams: to_wiring_diagram
 
 using ..AlgebraicNets
 import ..AlgebraicNets: Ob, Hom, compose, id, dom, codom, otimes, munit, braid,
-  mcopy, delete, mmerge, create, linear, constant, wiring, evaluate
+  mcopy, delete, mmerge, create, linear, constant, evaluate
 
 # Data types
 ############
@@ -141,19 +141,22 @@ that any two formulas have disjoint variables.
     @assert A.n == 1
     Formulas([x], Symbol[])
   end
-
-  function wiring(f::Any, A::NFormula, B::NFormula)::Formulas
-    vars = gensyms(A)
-    terms = [ [] for i in 1:B.n ]
-    for (src, tgts) in (f::WiringLayer).wires
-      x = vars[src]
-      for (tgt, c) in tgts
-        push!(terms[tgt], c == 1 ? x : Formula(:*, c, x))
-      end
-    end
-    Formulas(map(sum_formulas, terms), vars)
-  end
 end
+
+# FIXME: Wiring layers are gone. Migrate to another data structure?
+#=
+function wiring(f::Any, A::NFormula, B::NFormula)::Formulas
+  vars = gensyms(A)
+  terms = [ [] for i in 1:B.n ]
+  for (src, tgts) in f.wires
+    x = vars[src]
+    for (tgt, c) in tgts
+      push!(terms[tgt], c == 1 ? x : Formula(:*, c, x))
+    end
+  end
+  Formulas(map(sum_formulas, terms), vars)
+end
+=#
 
 function mcopy(A::NFormula, n::Int)::Formulas
   vars = gensyms(A)

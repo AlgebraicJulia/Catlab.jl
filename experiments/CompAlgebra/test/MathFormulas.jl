@@ -41,12 +41,15 @@ f = compose(otimes(Hom(:cos,R,R), Hom(:sin,R,R)), mmerge(R))
 f = compose(mcopy(R), otimes(Hom(:cos,R,R), Hom(:sin,R,R)), mmerge(R))
 @test to_formula(f,[:x]) == Formula((:+, (:cos, :x), (:sin, :x)))
 
+# FIXME: Wiring layers have been removed.
+#=
 w = [ 1 => 1, 2 => 2, 3 => 1, 4 => 2 ]
 f = compose(wiring(w, otimes(R,R,R,R), otimes(R,R)), Hom(:*, otimes(R,R), R))
 @test to_formula(f,[:w,:x,:y,:z]) == Formula((:*, (:+, :w, :y), (:+, :x, :z)))
 
 f = wiring([ 1 => 1, 1 => 1, 2 => 1 ], otimes(R,R), R)
 @test to_formula(f,[:x,:y]) == Formula((:+, (:*, 2, :x), :y))
+=#
 
 # Convert formulas to wiring diagrams.
 make_box = (value, arity) -> Box(value, repeat([nothing], arity), [nothing])
