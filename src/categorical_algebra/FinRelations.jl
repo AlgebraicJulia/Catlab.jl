@@ -7,8 +7,9 @@ import Base: +, *
 using AutoHashEquals
 
 using ...GAT
-using ...Theories: Category
-import ...Theories: dom, codom, id, compose, ⋅, ∘
+using ...Theories: SymmetricMonoidalCategory
+import ...Theories: dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid,
+  mcopy, Δ, mmerge, ∇, delete, ◊, create, □
 import ..FinSets: force
 using ..Matrices
 using ..Matrices: zero_matrix
@@ -100,28 +101,48 @@ end
 force(::Type{T}, R::FinOrdRelationMatrix{T}) where T <: AbstractMatrix{BoolRig} = R
 force(R::FinOrdRelation) = force(Matrix{BoolRig}, R)
 
-""" Category of finite ordinals and relations.
+""" FinOrdRel as a bicategory of relations.
 """
-@instance Category(FinOrdRelOb, FinOrdRelation) begin
+@instance SymmetricMonoidalCategory(FinOrdRelOb, FinOrdRelation) begin
   dom(R::FinOrdRelation) = FinOrdRelOb(R.dom)
   codom(R::FinOrdRelation) = FinOrdRelOb(R.codom)
 
-  id(X::FinOrdRelOb) = FinOrdRelation((x1,x2) -> x1 == x2, X, X)
+  id(A::FinOrdRelOb) = FinOrdRelation((x1,x2) -> x1 == x2, A, A)
 
   function compose(R::FinOrdRelation, S::FinOrdRelation)
     @assert codom(R) == dom(S)
-    FinOrdRelation(compose_impl(R,S), dom(R), codom(S))
+    rel = (x,z) -> any(R(x,y) && S(y,z) for y in eachindex(codom(R)))
+    FinOrdRelation(rel, dom(R), codom(S))
+  end
+  
+  otimes(A::FinOrdRelOb, B::FinOrdRelOb) = FinOrdRelOb(A.n * B.n)
+  munit(::Type{FinOrdRelOb}) = FinOrdRelOb(1)
+   
+  function otimes(R::FinOrdRelation, S::FinOrdRelation)
+    # Indexing is consistent with that of Kronecker products.
+    dom_proj = CartesianIndices((dom(S).n, dom(R).n))
+    cod_proj = CartesianIndices((codom(S).n, codom(R).n))
+    rel = (x,y) -> (R(dom_proj[x][2], cod_proj[y][2]) &&
+                    S(dom_proj[x][1], cod_proj[y][1]))
+    FinOrdRelation(rel, dom(R)⊗dom(S), codom(R)⊗codom(S))
+  end
+  
+  function braid(A::FinOrdRelOb, B::FinOrdRelOb)
+    dom_proj = CartesianIndices((B.n, A.n))
+    cod_proj = CartesianIndices((A.n, B.n))
+    rel = (x,y) -> (dom_proj[x][1] == cod_proj[y][2] &&
+                    dom_proj[x][2] == cod_proj[y][1])
+    FinOrdRelation(rel, A⊗B, B⊗A)
   end
 end
 
 dom(R::FinOrdRelationMatrix) = FinOrdRelOb(size(R.rel, 2))
 codom(R::FinOrdRelationMatrix) = FinOrdRelOb(size(R.rel, 1))
 
-function compose_impl(R::FinOrdRelation, S::FinOrdRelation)
-  (x,z) -> any(R(x,y) && S(y,z) for y in eachindex(codom(R)))
-end
-function compose_impl(R::FinOrdRelationMatrix, S::FinOrdRelationMatrix)
-  compose(R.rel, S.rel)
-end
+# For relation matrices, delegate to general category of matrices.
+compose(R::FinOrdRelationMatrix, S::FinOrdRelationMatrix) =
+  FinOrdRelationMatrix(compose(R.rel, S.rel))
+otimes(R::FinOrdRelationMatrix, S::FinOrdRelationMatrix) =
+  FinOrdRelationMatrix(otimes(R.rel, S.rel))
 
 end
