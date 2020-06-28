@@ -26,8 +26,16 @@ A_mat, B_mat = MatrixDom{Matrix{BoolRig}}(A.n), MatrixDom{Matrix{BoolRig}}(B.n)
 @test force(R ⋅ S) == R_mat ⋅ S_mat
 @test force(R ⋅ id(codom(R))) == R_mat
 @test force(id(dom(R)) ⋅ R) == R_mat
+@test force(dagger(R)) == dagger(R_mat)
 
 @test force(R ⊗ S) == R_mat ⊗ S_mat
 @test force(braid(A, B)) == FinOrdRelation(braid(A_mat, B_mat))
+
+S = FinOrdRelation((x,y) -> (x+y) % 2 == 0, 10, 5)
+S_mat = force(S)
+@test force(meet(R, S)) == meet(R_mat, S_mat)
+@test force(mcopy(dom(R))⋅(R⊗S)⋅mmerge(codom(R))) == meet(R_mat, S_mat)
+@test force(top(A, B)) == FinOrdRelation(ones(BoolRig, B.n, A.n))
+@test force(delete(A)⋅create(B)) == FinOrdRelation(ones(BoolRig, B.n, A.n))
 
 end
