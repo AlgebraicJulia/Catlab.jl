@@ -11,6 +11,8 @@ using Match
 
 using ..Meta
 
+import Base: ==, hash
+
 # Data types
 ############
 
@@ -65,12 +67,22 @@ end
 
 """ Data structure for a generalized algebraic theory (GAT).
 """
-@auto_hash_equals struct Theory
+struct Theory
+  name::Symbol
   types::Vector{TypeConstructor}
   terms::Vector{TermConstructor}
   axioms::Vector{AxiomConstructor}
   aliases::Dict{Symbol,Symbol}
 end
+
+# define hash and equals for Theory without factoring in the theory name and aliases
+# so that theories can be compared just by the type, term, and axiom definitions
+Base.hash(t::Theory, h::UInt) = foldl((h, n)->hash(n, h),
+                                      [t.types t.terms t.axioms t.aliases];
+                                      init=hash(:Theory, h))
+Base.:(==)(t_1::Theory, t_2::Theory) = isequal(t_1.types, t_2.types) &&
+                                       isequal(t_1.terms, t_2.terms) && 
+                                       isequal(t_1.axioms, t_2.axioms) &&  true
 
 struct TheoryBinding
   name::Symbol
@@ -140,11 +152,12 @@ function theory end
 function theory_builder(head, body; signature=false)
   # Parse theory header.
   head = parse_theory_head(head)
+  name = head.main.name
 
   # check for existing theory definition
   # for now, warn on duplicate/overwriting
-  if haskey(theories, head.main.name)
-    @warn "Category already exists: $(head.main.name)"
+  if haskey(theories, name)
+    @warn "Category already exists: $(name)"
   end
 
   @assert all(param in head.main.params
@@ -157,17 +170,17 @@ function theory_builder(head, body; signature=false)
   if signature && length(axioms) > 0
     throw(ParseError("@signature macro does not allow axioms to be defined"))
   end
-  theory = Theory(types, terms, axioms, aliases)
+  theory = Theory(name, types, terms, axioms, aliases)
   # If there is a base theory, merge the definitions
   if !isnothing(base_name)
     theory = merge_theories(head, theory, theories[base_name])
   end
   theory = replace_types(theory.aliases, theory)
   # store theory in global struct for later use
-  theories[head.main.name] = theory
+  theories[name] = theory
 
   # this function handles running generated code
-  theory_generator(head, theory)
+  theory_generator(theory)
 end
 
 """ How to merge a subtheory definition with its parent theory's definition
@@ -176,7 +189,8 @@ function merge_theories(head, theory, base_theory)
   base_params = [ type.name for type in base_theory.types ]
   bindings = Dict(zip(base_params, only(head.base).params))
   base_theory = replace_types(bindings, base_theory)
-  Theory([base_theory.types; theory.types],
+  Theory(theory.name,
+         [base_theory.types; theory.types],
          [base_theory.terms; theory.terms],
          [base_theory.axioms; theory.axioms],
          merge(base_theory.aliases, theory.aliases))
@@ -184,18 +198,18 @@ end
 
 """ Generate Julia types by executing code generated for a theory
 """
-function theory_generator(head, theory)
+function theory_generator(theory)
   # We must generate and evaluate the code at *run time* because the base
   # theory, if specified, is not available at *parse time*.
-  expr = :(theory_code($head, $theory))
+  expr = :(theory_code($theory))
   Expr(:block,
     Expr(:call, esc(:eval), expr),
-    :(Core.@__doc__ $(esc(head.main.name))))
+    :(Core.@__doc__ $(esc(theory.name))))
 end
 
 """ Generates the Julia code for a given theory
 """
-function theory_code(head, theory)
+function theory_code(theory)
   # Names of generic functions in interface defined by theory.
   names = unique!(vcat(
     [ param for type in theory.types for param in type.params ], # Accessors.
@@ -206,10 +220,10 @@ function theory_code(head, theory)
   # Generate block with abstract type definition, registration of theory,
   # and stubs for generic functions.
   Expr(:block,
-    Expr(:abstract, head.main.name),
+    Expr(:abstract, theory.name),
     Expr(:(=),
       Expr(:call, GlobalRef(GAT, :theory),
-        Expr(:(::), Expr(:curly, :Type, head.main.name))),
+        Expr(:(::), Expr(:curly, :Type, theory.name))),
       theory),
     (Expr(:function, name) for name in names)...,
   )
@@ -387,7 +401,8 @@ end
 """ Replace names of type constructors in a GAT.
 """
 function replace_types(bindings::Dict, theory::Theory)::Theory
-  Theory([ replace_types(bindings, t) for t in theory.types ],
+  Theory(theory.name,
+         [ replace_types(bindings, t) for t in theory.types ],
          [ replace_types(bindings, t) for t in theory.terms ],
          [ replace_types(bindings, t) for t in theory.axioms ],
          replace_types(bindings, theory.aliases))

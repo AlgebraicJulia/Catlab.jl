@@ -161,7 +161,7 @@ axioms = [
     GAT.Context((:A => :Ob, :B => :Ob, :f => :(Hom(A,B))))),
 ]
 aliases = Dict(:⋅ => :compose, :→ => :Hom)
-category_theory = GAT.Theory(types, terms, axioms, aliases)
+category_theory = GAT.Theory(:Category, types, terms, axioms, aliases)
 
 @test GAT.theory(Category) == category_theory
 
@@ -215,6 +215,7 @@ end
 @test Semigroup isa Type && MonoidExt isa Type
 
 theory = GAT.Theory(
+  :MonoidExt,
   [ GAT.TypeConstructor(:M, [], GAT.Context()) ],
   [ GAT.TermConstructor(:times, [:x,:y], :M,
       GAT.Context((:x => :M, :y => :M))),
