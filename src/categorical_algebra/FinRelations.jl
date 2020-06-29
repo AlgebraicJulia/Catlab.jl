@@ -33,6 +33,7 @@ end
 
 Base.zero(::Type{BoolRig}) = BoolRig(false)
 Base.one(::Type{BoolRig}) = BoolRig(true)
+Base.float(x::BoolRig) = float(x.value)
 Base.show(io::IO, x::BoolRig) = print(io, x.value)
 
 # Category of finite ordinals and relations
