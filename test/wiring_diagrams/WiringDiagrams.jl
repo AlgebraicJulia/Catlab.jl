@@ -4,10 +4,6 @@ using Test
   include("Core.jl")
 end
 
-@testset "Layers" begin
-  include("Layers.jl")
-end
-
 @testset "Algebraic" begin
   include("Algebraic.jl")
 end

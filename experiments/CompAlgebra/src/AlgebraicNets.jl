@@ -8,7 +8,7 @@ represent expressions as morphisms in a monoidal category.
 module AlgebraicNets
 export AlgebraicNetTheory, AlgebraicNet, Ob, Hom, dom, codom,
   id, compose, ⋅, ∘, otimes, ⊗, munit, braid, mcopy, delete, mmerge, create,
-  linear, constant, wiring,
+  linear, constant,
   compile, compile_expr, compile_expr_vector, compile_block, evaluate
 
 using Match
@@ -19,7 +19,6 @@ import Catlab.Syntax: show_latex, show_unicode
 using Catlab.Theories: MonoidalCategoryWithBidiagonals, ObExpr, HomExpr
 import Catlab.Theories: Ob, Hom, dom, codom,
   id, compose, ⋅, ∘, otimes, ⊗, munit, braid, mcopy, delete, mmerge, create
-using Catlab.WiringDiagrams: WiringLayer
 using Catlab.Programs
 import Catlab.Programs: compile, compile_expr, compile_block, evaluate_hom
 import Catlab.Programs.GenerateJuliaPrograms: genvar, genvars, to_function_expr,
@@ -35,9 +34,6 @@ TODO: Explain
 @signature MonoidalCategoryWithBidiagonals(Ob,Hom) => AlgebraicNetTheory(Ob,Hom) begin
   linear(x::Any, A::Ob, B::Ob)::(A → B)
   constant(x::Any, A::Ob)::(munit() → A)
-
-  # FIXME: Should be `f::WiringLayer`, but doesn't work.
-  wiring(f::Any, A::Ob, B::Ob)::(A → B)
 end
 
 @syntax AlgebraicNet(ObExpr,HomExpr) AlgebraicNetTheory begin
@@ -48,16 +44,6 @@ end
 
   mcopy(A::Ob) = mcopy(A, 2)
   mmerge(A::Ob) = mmerge(A, 2)
-
-  # FIXME: Should be two methods (`f::WiringLayer` and `f::Any`) but see above.
-  function wiring(f::Any, A::Ob, B::Ob)
-    if f isa WiringLayer
-      @assert ndims(A) == f.ninputs && ndims(B) == f.noutputs
-    else
-      f = WiringLayer(f, ndims(A), ndims(B))
-    end
-    new(f::WiringLayer, A, B)
-  end
 end
 
 function mcopy(A::AlgebraicNet.Ob, n::Int)
@@ -174,6 +160,8 @@ function compile_block(f::AlgebraicNet.Hom{:constant}, inputs::Vector,
   Block(Expr(:(=), lhs, value), inputs, outputs)
 end
 
+# FIXME: Wiring layers are gone. Migrate to another data structure?
+#=
 function compile_block(f::AlgebraicNet.Hom{:wiring}, inputs::Vector,
                        state::CompileState)::Block
   nout = ndims(codom(f))
@@ -188,6 +176,7 @@ function compile_block(f::AlgebraicNet.Hom{:wiring}, inputs::Vector,
   code = multiple_assign_expr(outputs, map(sum_expr, terms))
   Block(code, inputs, outputs)
 end
+=#
 
 function compile_block(f::AlgebraicNet.Hom{:mmerge}, inputs::Vector,
                        state::CompileState)::Block

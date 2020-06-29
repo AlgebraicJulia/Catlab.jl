@@ -23,7 +23,7 @@ import ...Theories: dom, codom, id, compose, ⋅, ∘,
   mcopy, delete, Δ, ◊, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
   plus, zero, coplus, cozero, meet, join, top, bottom, trace
 import ...Syntax: functor, head
-using ..WiringDiagramCore, ..WiringLayers
+using ..WiringDiagramCore
 import ..WiringDiagramCore: Box, WiringDiagram, input_ports, output_ports
 
 # Categorical interface
@@ -517,8 +517,10 @@ function rem_junctions(d::WiringDiagram; op=nothing)
   junction_diagrams = map(junction_ids) do v
     junction = box(d,v)::Junction
     inputs, outputs = input_ports(junction), output_ports(junction)
-    layer = complete_layer(length(inputs), length(outputs))
-    to_wiring_diagram(layer, inputs, outputs)
+    wiring = WiringDiagram(inputs, outputs)
+    add_wires!(wiring, (input_id(wiring), src) => (output_id(wiring), tgt)
+                        for src in eachindex(inputs), tgt in eachindex(outputs))
+    wiring
   end
   substitute(d, junction_ids, junction_diagrams)
 end

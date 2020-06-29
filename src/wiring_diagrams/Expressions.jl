@@ -18,8 +18,7 @@ using LightGraphs
 using ...Syntax, ...Theories
 using ...Syntax: syntax_module
 using ...CategoricalAlgebra.Permutations
-using ..WiringDiagramCore, ..WiringLayers, ..AlgebraicWiringDiagrams
-import ..WiringLayers: to_wiring_diagram
+using ..WiringDiagramCore, ..AlgebraicWiringDiagrams
 using ..WiringDiagramAlgorithms: crossing_minimization_by_sort
 
 # Expression -> Diagram
@@ -212,12 +211,17 @@ end
 Assumes that the wires form a permutation morphism.
 """
 function hom_expr_between(Ob::Type, diagram::WiringDiagram, v1::Int, v2::Int)
-  layer = wiring_layer_between(diagram, v1, v2)
-  inputs = to_ob_exprs(Ob, output_ports(diagram, v1))
-  outputs = to_ob_exprs(Ob, input_ports(diagram, v2))
-
-  σ = to_permutation(layer)
-  @assert !isnothing(σ) "Conversion of non-permutation not implemented"
+  inputs, outputs = output_ports(diagram, v1), input_ports(diagram, v2)
+  σ = zeros(Int, length(inputs))
+  for wire in wires(diagram, v1, v2)
+    src, tgt = wire.source.port, wire.target.port
+    @assert σ[src] == 0 "Wire mapping must be single-valued"
+    σ[src] = tgt
+  end
+  @assert 0 ∉ σ "Wire mapping must be total"
+  @assert allunique(σ) "Wiring mapping must be a permutation"
+  
+  inputs, outputs = to_ob_exprs(Ob, inputs), to_ob_exprs(Ob, outputs)
   @assert inputs == outputs[σ]
   permutation_to_expr(σ, inputs)
 end
@@ -240,25 +244,6 @@ function compose_simplify_id(f::GATExpr, g::GATExpr)
   if head(f) == :id; g
   elseif head(g) == :id; f
   else compose(f,g) end
-end
-
-""" Convert a wiring layer into a permutation, if it is one.
-
-Otherwise, return nothing.
-"""
-function to_permutation(layer::WiringLayer)::Union{Nothing,Vector{Int}}
-  nin, nout = layer.ninputs, layer.noutputs
-  if nin != nout; return nothing end
-  σ = zeros(Int, nin)
-  for i in 1:nin
-    wires = out_wires(layer, i)
-    if length(wires) == 1
-      σ[i] = last(first(wires))
-    else
-      return nothing
-    end
-  end
-  return σ
 end
 
 """ Convert a junction node to a morphism expression.
