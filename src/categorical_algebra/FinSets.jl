@@ -13,76 +13,88 @@ import ...Theories: dom, codom, id, compose, ⋅, ∘,
   terminal, product, equalizer, initial, coproduct, coequalizer
 using ..ShapeDiagrams
 
-# Data types
-############
+# Category of finite ordinals
+#############################
 
 """ Finite ordinal (natural number).
 
 An object in the category of finite ordinals, which is the skeleton of the
 category of finite sets.
 """
-@auto_hash_equals struct FinOrd{T<:Integer}
-  n::T
+@auto_hash_equals struct FinOrd
+  n::Int
 end
 
 """ Function between sets in the form of finite ordinals.
 
 A morphism in the category of finite ordinals, which is the skeleton of the
-category of finite sets.
-
-In this data structure, the field `func` representing the function can have any
-Julia type `T`, provided that `FinOrdFunction{T}` is callable. Usually, this
-object will be an ordinary Julia function or an abstract vector. In the latter
-case, the function (1↦1, 2↦3, 3↦2, 4↦3) is represented by the vector [1,3,2,3].
+category of finite sets. The function can be defined implicitly by an arbitrary
+Julia function, in which case it is evaluated lazily, or explictly by a vector
+of integers. In the latter case, the function (1↦1, 2↦3, 3↦2, 4↦3), for example,
+is represented by the vector [1,3,2,3].
 """
-@auto_hash_equals struct FinOrdFunction{F,T<:Integer}
-  func::F
-  dom::T
-  codom::T
+abstract type FinOrdFunction end
+
+FinOrdFunction(f, dom::FinOrd, codom::FinOrd) =
+  FinOrdFunction(f, dom.n, codom.n)
+
+""" Function in FinOrd defined by an arbitrary Julia function.
+
+To be evaluated lazily unless forced.
+"""
+@auto_hash_equals struct FinOrdFunctionLazy <: FinOrdFunction
+  func::Function
+  dom::Int
+  codom::Int
 end
-FinOrdFunction(f::AbstractVector) = FinOrdFunction(f, maximum(f))
-FinOrdFunction(f::AbstractVector, codom::Integer) =
-  FinOrdFunction(f, length(f), codom)
+FinOrdFunction(f::Function, dom::Int, codom::Int) =
+  FinOrdFunctionLazy(f, dom, codom)
 
-# Function objects are callable.
-(f::FinOrdFunction)(i::Integer) = f.func(i)
-(f::FinOrdFunction{<:AbstractVector})(i::Integer) = f.func[i]
-(f::FinOrdFunction{typeof(id)})(i::Integer) = i
+(f::FinOrdFunctionLazy)(x) = f.func(x)
 
-""" Force evaluation of function, yielding the vector representation.
+""" Function in FinOrd represented explicitly by a vector.
 """
-force(f::FinOrdFunction) = FinOrdFunction(map(f, 1:f.dom), f.codom)
-force(f::FinOrdFunction{<:AbstractVector}) = f
+@auto_hash_equals struct FinOrdFunctionMap{T<:AbstractVector{Int}} <: FinOrdFunction
+  func::T
+  codom::Int
+end
+FinOrdFunction(f::AbstractVector) = FinOrdFunctionMap(f, maximum(f))
+FinOrdFunction(f::AbstractVector, codom::Int) = FinOrdFunctionMap(f, codom)
 
-# Category of finite ordinals
-#############################
+function FinOrdFunction(f::AbstractVector, dom::Int, codom::Int)
+  @assert length(f) == dom
+  FinOrdFunctionMap(f, codom)
+end
 
+(f::FinOrdFunctionMap)(x) = f.func[x]
+
+""" Force evaluation of lazy function or relation.
+"""
+force(f::FinOrdFunction) = FinOrdFunctionMap(map(f, 1:dom(f).n), codom(f).n)
+force(f::FinOrdFunctionMap) = f
+
+""" Category of finite ordinals and functions.
+"""
 @instance Category(FinOrd, FinOrdFunction) begin
   dom(f::FinOrdFunction) = FinOrd(f.dom)
   codom(f::FinOrdFunction) = FinOrd(f.codom)
   
-  id(A::FinOrd) = FinOrdFunction(id, A.n, A.n)
+  id(A::FinOrd) = FinOrdFunction(identity, A, A)
   
   function compose(f::FinOrdFunction, g::FinOrdFunction)
-    @assert f.codom == g.dom
-    FinOrdFunction(compose_functions(f.func, g.func), f.dom, g.codom)
+    @assert codom(f) == dom(g)
+    FinOrdFunction(compose_impl(f,g), dom(f), codom(g))
   end
 end
 
-compose_functions(f,g) = as_function(g) ∘ as_function(f)
-compose_functions(::typeof(id), g) = g
-compose_functions(f, ::typeof(id)) = f
-compose_functions(::typeof(id), ::typeof(id)) = id
-compose_functions(f::AbstractVector, g::AbstractVector) = g[f]
-
-as_function(f) = f
-as_function(f::AbstractVector) = x -> f[x]
+dom(f::FinOrdFunctionMap) = FinOrd(length(f.func))
+compose_impl(f::FinOrdFunction, g::FinOrdFunction) = g ∘ f
+compose_impl(f::FinOrdFunctionMap, g::FinOrdFunctionMap) = g.func[f.func]
 
 # Limits
 ########
 
 terminal(::Type{FinOrd}) = FinOrd(1)
-terminal(::Type{FinOrd{T}}) where T = FinOrd(one(T))
 
 function product(A::FinOrd, B::FinOrd)
   m, n = A.n, B.n
@@ -94,7 +106,7 @@ end
 
 function equalizer(f::FinOrdFunction, g::FinOrdFunction)
   @assert dom(f) == dom(g) && codom(f) == codom(g)
-  m = f.dom
+  m = dom(f).n
   FinOrdFunction(filter(i -> f(i) == g(i), 1:m), m)
 end
 
@@ -114,7 +126,6 @@ end
 ##########
 
 initial(::Type{FinOrd}) = FinOrd(0)
-initial(::Type{FinOrd{T}}) where T = FinOrd(zero(T))
 
 function coproduct(A::FinOrd, B::FinOrd)
   m, n = A.n, B.n
@@ -125,7 +136,7 @@ end
 
 function coequalizer(f::FinOrdFunction, g::FinOrdFunction)
   @assert dom(f) == dom(g) && codom(f) == codom(g)
-  m, n = f.dom, f.codom
+  m, n = dom(f).n, codom(f).n
   sets = IntDisjointSets(n)
   for i in 1:m
     union!(sets, f(i), g(i))

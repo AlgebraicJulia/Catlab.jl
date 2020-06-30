@@ -57,6 +57,18 @@ FIXME: Should also inherit `CocartesianCategory`.
   zero(A)⋅f == zero(B) ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 
+""" Theory of a *distributive monoidal category with diagonals*
+
+FIXME: Should also inherit `MonoidalCategoryWithDiagonals`.
+"""
+@theory DistributiveMonoidalCategory(Ob,Hom) =>
+    DistributiveMonoidalCategoryWithDiagonals(Ob,Hom) begin
+  mcopy(A::Ob)::(A → (A ⊗ A))
+  @op (Δ) := mcopy
+  delete(A::Ob)::(A → munit())
+  @op (◊) := delete
+end
+
 """ Theory of a *distributive semiadditive category*
 
 This terminology is not standard but the concept occurs frequently. A
@@ -88,12 +100,7 @@ is the cartesian product, see [`DistributiveMonoidalCategory`](@ref).
 
 FIXME: Should also inherit `CartesianCategory`.
 """
-@theory DistributiveMonoidalCategory(Ob,Hom) => DistributiveCategory(Ob,Hom) begin
-  mcopy(A::Ob)::(A → (A ⊗ A))
-  @op (Δ) := mcopy
-  delete(A::Ob)::(A → munit())
-  @op (◊) := delete
-  
+@theory DistributiveMonoidalCategoryWithDiagonals(Ob,Hom) => DistributiveCategory(Ob,Hom) begin
   pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
