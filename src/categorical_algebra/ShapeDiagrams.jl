@@ -1,7 +1,7 @@
 """ Diagrams of a given shape.
 """
 module ShapeDiagrams
-export Span, Cospan, left, right, apex, base
+export Span, Cospan, DecoratedCospan, left, right, apex, base, decorator, decoration, undecorate
 
 using ...Theories: dom, codom
 
@@ -43,15 +43,15 @@ right(cospan::Cospan) = cospan.right
 
 """ Decorate Cospan of morphisms for representing open networks.
 """
-struct DecoratedCospan{Left,Right,Decoration}
-  cospan::Cospan{Left,Right}
+struct DecoratedCospan{Decorator,Decoration}
+  cospan::Cospan
+  decorator::Decorator
   decoration::Decoration
 end
 
+decorator(m::DecoratedCospan) = m.decorator
 decoration(m::DecoratedCospan) = m.decoration
 undecorate(m::DecoratedCospan) = m.cospan
-dom(m::DecoratedCospan) = dom(m.cospan)
-codom(m::DecoratedCospan) = codom(m.cospan)
 base(m::DecoratedCospan) = base(m.cospan)
 left(m::DecoratedCospan) = left(m.cospan)
 right(m::DecoratedCospan) = right(m.cospan)
