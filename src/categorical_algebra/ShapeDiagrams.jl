@@ -41,4 +41,19 @@ base(cospan::Cospan) = codom(cospan.left) # == codom(cospan.right)
 left(cospan::Cospan) = cospan.left
 right(cospan::Cospan) = cospan.right
 
+""" Decorate Cospan of morphisms for representing open networks.
+"""
+struct DecoratedCospan{Left,Right,Decoration}
+  cospan::Cospan{Left,Right}
+  decoration::Decoration
+end
+
+decoration(m::DecoratedCospan) = m.decoration
+undecorate(m::DecoratedCospan) = m.cospan
+dom(m::DecoratedCospan) = dom(m.cospan)
+codom(m::DecoratedCospan) = codom(m.cospan)
+base(m::DecoratedCospan) = base(m.cospan)
+left(m::DecoratedCospan) = left(m.cospan)
+right(m::DecoratedCospan) = right(m.cospan)
+
 end
