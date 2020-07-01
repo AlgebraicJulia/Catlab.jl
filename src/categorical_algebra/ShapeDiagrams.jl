@@ -1,16 +1,16 @@
 """ Diagrams of a given shape.
 """
 module ShapeDiagrams
-export AbstractFunctor, AbstractLaxitor, LaxMonoidalFunctor,
+export AbstractFunctor, AbstractLaxator, LaxMonoidalFunctor,
        Span, Cospan, DecoratedCospan, left, right, apex, base,
        decorator, decoration, undecorate
 
 using ...Theories: dom, codom
 
 abstract type AbstractFunctor end
-abstract type AbstractLaxitor end
+abstract type AbstractLaxator end
 
-struct LaxMonoidalFunctor{Ftr <: AbstractFunctor, Lxr <: AbstractLaxitor} <: AbstractFunctor
+struct LaxMonoidalFunctor{Ftr <: AbstractFunctor, Lxr <: AbstractLaxator} <: AbstractFunctor
   F::Ftr
   L::Lxr
 end
@@ -20,7 +20,7 @@ end
 struct Span{Left,Right}
   left::Left
   right::Right
-  
+
   function Span(left::Left, right::Right; strict::Bool=true) where {Left,Right}
     if strict && dom(left) != dom(right)
       error("Domains of legs in span do not match: $left vs $right")
@@ -38,7 +38,7 @@ right(span::Span) = span.right
 struct Cospan{Left,Right}
   left::Left
   right::Right
-  
+
   function Cospan(left::Left, right::Right; strict::Bool=true) where {Left,Right}
     if strict && codom(left) != codom(right)
       error("Codomains of legs in cospan do not match: $left vs $right")
