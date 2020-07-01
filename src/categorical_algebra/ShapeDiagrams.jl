@@ -1,9 +1,19 @@
 """ Diagrams of a given shape.
 """
 module ShapeDiagrams
-export Span, Cospan, DecoratedCospan, left, right, apex, base, decorator, decoration, undecorate
+export AbstractFunctor, AbstractLaxitor, LaxMonoidalFunctor,
+       Span, Cospan, DecoratedCospan, left, right, apex, base,
+       decorator, decoration, undecorate
 
 using ...Theories: dom, codom
+
+abstract type AbstractFunctor end
+abstract type AbstractLaxitor end
+
+struct LaxMonoidalFunctor{Ftr <: AbstractFunctor, Lxr <: AbstractLaxitor} <: AbstractFunctor
+  F::Ftr
+  L::Lxr
+end
 
 """ Span of morphisms in a category.
 """
@@ -43,7 +53,7 @@ right(cospan::Cospan) = cospan.right
 
 """ Decorate Cospan of morphisms for representing open networks.
 """
-struct DecoratedCospan{Decorator,Decoration}
+struct DecoratedCospan{Decorator <: AbstractFunctor,Decoration}
   cospan::Cospan
   decorator::Decorator
   decoration::Decoration
