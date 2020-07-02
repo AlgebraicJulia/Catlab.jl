@@ -5,5 +5,6 @@ include("Matrices.jl")
 include("FinSets.jl")
 include("FinRelations.jl")
 include("Permutations.jl")
+include("CSets.jl")
 
 end

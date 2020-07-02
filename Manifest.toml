@@ -6,6 +6,12 @@ git-tree-sha1 = "2b6845cea546604fb4dca4e31414a6a59d39ddcd"
 uuid = "ec485272-7323-5ecc-a04f-4719b315124d"
 version = "0.0.4"
 
+[[ArrayInterface]]
+deps = ["LinearAlgebra", "Requires", "SparseArrays"]
+git-tree-sha1 = "851de9a8acd7b8863aa2ec2af0a44f375502c878"
+uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
+version = "2.9.0"
+
 [[AutoHashEquals]]
 git-tree-sha1 = "45bb6705d93be619b81451bb2006b7ee5d4e4453"
 uuid = "15f4f7f2-30c1-5605-9d31-71845cf9641f"
@@ -109,6 +115,12 @@ deps = ["Dates", "Mmap", "Parsers", "Unicode"]
 git-tree-sha1 = "b34d7cef7b337321e97d22242c3c2b91f476748e"
 uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 version = "0.21.0"
+
+[[LabelledArrays]]
+deps = ["ArrayInterface", "LinearAlgebra", "MacroTools", "StaticArrays"]
+git-tree-sha1 = "f6def2c9c88908fdde81b9a39c236cf69de94450"
+uuid = "2ee39098-c373-598a-b85f-a56591580800"
+version = "1.2.2"
 
 [[LibGit2]]
 deps = ["Printf"]
