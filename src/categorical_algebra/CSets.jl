@@ -1,9 +1,10 @@
 """ Computing with C-sets (presheaves).
 """
 module CSets
-export CSet, CSetType, nparts, subpart, incident, add_part!, set_subpart!,
-  set_subparts!
+export AbstractCSet, CSet, CSetType, nparts, subpart, incident, add_part!,
+  set_subpart!, set_subparts!
 
+using Compat
 using LabelledArrays, StaticArrays
 
 using ...Syntax, ...Present
@@ -12,34 +13,41 @@ using ...Theories: Category, FreeCategory, dom, codom
 # C-sets
 ########
 
+abstract type AbstractCSet{Ob,Hom,Dom,Codom} end
+
 """ Data type for C-sets (presheaves).
 
 To ensure consistency, the fields should never be mutated directly. As in
 LightGraphs.jl, the incident vectors are maintained in sorted order.
 """
-mutable struct CSet{Ob,Hom,Dom,Codom,NOb,NHom}
+mutable struct CSet{Ob,Hom,Dom,Codom,Index,NOb,NHom,NIndex} <:
+       AbstractCSet{Ob,Hom,Dom,Codom}
   nparts::SLArray{Tuple{NOb},Int,1,NOb,Ob}
   subparts::SLArray{Tuple{NHom},Vector{Int},1,NHom,Hom}
-  incident::SLArray{Tuple{NHom},Vector{Vector{Int}},1,NHom,Hom}
+  incident::SLArray{Tuple{NIndex},Vector{Vector{Int}},1,NIndex,Index}
 end
 
 function CSet{Ob,Hom,Dom,Codom}() where {Ob,Hom,Dom,Codom}
-  NOb, NHom = length(Ob), length(Hom)
+  CSet{Ob,Hom,Dom,Codom,Hom}()
+end
+function CSet{Ob,Hom,Dom,Codom,Index}() where {Ob,Hom,Dom,Codom,Index}
+  NOb, NHom, NIndex = length(Ob), length(Hom), length(Index)
   @assert length(Dom) == NHom && length(Codom) == NHom
-  CSet{Ob,Hom,Dom,Codom,NOb,NHom}(
+  CSet{Ob,Hom,Dom,Codom,Index,NOb,NHom,NIndex}(
     SLArray{Tuple{NOb},Ob}(zeros(SVector{NOb,Int})),
     SLArray{Tuple{NHom},Hom}(copies(SVector{NHom,Vector{Int}})),
-    SLArray{Tuple{NHom},Hom}(copies(SVector{NHom,Vector{Vector{Int}}})))
+    SLArray{Tuple{NIndex},Index}(copies(SVector{NIndex,Vector{Vector{Int}}})))
 end
 
 """ Create C-set data type from presentation of category.
 """
-function CSetType(pres::Presentation{Category})
+function CSetType(pres::Presentation{Category}; index=nothing)
   obs, homs = generators(pres, :Ob), generators(pres, :Hom)
   CSet{Tuple(nameof.(obs)),
        Tuple(nameof.(homs)),
        Tuple(findfirst(obs .== dom(hom)) for hom in homs),
-       Tuple(findfirst(obs .== codom(hom)) for hom in homs)}
+       Tuple(findfirst(obs .== codom(hom)) for hom in homs),
+       Tuple(isnothing(index) ? nameof.(homs) : index)}
 end
 
 function Base.:(==)(x1::C, x2::C) where C <: CSet
@@ -61,27 +69,22 @@ incident(cset::CSet, part::Int, name) = cset.incident[name][part]
 add_part!(cset::CSet, type) = add_part!(cset, type, NamedTuple())
 add_part!(cset::CSet, type, subparts) = _add_part!(cset, Val(type), subparts)
 
-@generated function _add_part!(cset::CSet{obs,homs,doms,codoms}, ::Val{type},
-    subparts::NamedTuple{sub}) where {obs,homs,doms,codoms,type,sub}
+@generated function _add_part!(cset::CSet{obs,homs,doms,codoms,indexed},
+    ::Val{type}, subparts) where {obs,homs,doms,codoms,indexed,type}
   ob = NamedTuple{obs}(eachindex(obs))[type]
+  in_homs = Tuple(homs[i] for (i, codom) in enumerate(codoms)
+                  if codom == ob && homs[i] ∈ indexed)
   out_homs = Tuple(homs[i] for (i, dom) in enumerate(doms) if dom == ob)
-  in_homs = Tuple(homs[i] for (i, codom) in enumerate(codoms) if codom == ob)
-  @assert sub ⊆ out_homs "Given subparts $sub not among $out_homs"
-  undef_out_homs = Tuple(hom for hom in out_homs if hom ∉ sub)
-
-  return quote
+  quote
     part = cset.nparts.$type + 1
     cset.nparts = SLVector(cset.nparts; $type=part)
     for name in $(in_homs)
       push!(cset.incident[name], Int[])
     end
-    for name in $(undef_out_homs)
+    for name in $(out_homs)
       push!(cset.subparts[name], 0)
     end
-    for (name, subpart) in pairs(subparts)
-      push!(cset.subparts[name], subpart)
-      insertsorted!(cset.incident[name][subpart], part)
-    end
+    set_subparts!(cset, part, subparts)
     part
   end
 end
@@ -91,13 +94,25 @@ end
 See also: [`set_subparts!`](@ref).
 """
 function set_subpart!(cset::CSet, part, name, subpart)
-  old = cset.subparts[name][part]
-  cset.subparts[name][part] = subpart
-  if old > 0
-    deletesorted!(cset.incident[name][old], part)
-  end
-  if subpart > 0
-    insertsorted!(cset.incident[name][subpart], part)
+  _set_subpart!(cset, part, Val(name), subpart)
+end
+@generated function _set_subpart!(cset::CSet{obs,homs,doms,codoms,indexed},
+    part, ::Val{name}, subpart) where {obs,homs,doms,codoms,indexed,name}
+  if name ∈ indexed
+    quote
+      old = cset.subparts.$name[part]
+      cset.subparts.$name[part] = subpart
+      if old > 0
+        deletesorted!(cset.incident.$name[old], part)
+      end
+      if subpart > 0
+        insertsorted!(cset.incident.$name[subpart], part)
+      end
+    end
+  else
+    quote
+      cset.subparts.$name[part] = subpart
+    end
   end
 end
 
