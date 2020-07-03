@@ -2,7 +2,37 @@ module TestCSets
 using Test
 
 using LightGraphs
+
+using Catlab: @present
+using Catlab.Theories: Category, FreeCategory
 using Catlab.CategoricalAlgebra.CSets
+
+# C-sets
+########
+
+# Discrete dynamical systems as a simple example of C-sets.
+
+@present TheoryDDS(FreeCategory) begin
+  X::Ob
+  Φ::Hom(X,X)
+end
+
+const DDS = CSetType(TheoryDDS)
+
+dds = DDS()
+@test nparts(dds, :X) == 0
+@test add_part!(dds, :X) == 1
+@test nparts(dds, :X) == 1
+@test incident(dds, 1, :Φ) == []
+
+set_subpart!(dds, 1, :Φ, 1)
+@test subpart(dds, 1, :Φ) == 1
+@test incident(dds, 1, :Φ) == [1]
+
+@test add_part!(dds, :X, (Φ=1,)) == 2
+@test add_part!(dds, :X, (Φ=1,)) == 3
+@test subpart(dds, [2,3], :Φ) == [1,1]
+@test incident(dds, 1, :Φ) == [1,2,3]
 
 # Graphs
 ########
