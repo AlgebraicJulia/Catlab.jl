@@ -37,10 +37,6 @@ mutable struct CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex} <:
   data::NamedTuple{Data}
 end
 
-function CSet{Ob,Hom,Dom,Codom,Data,DataDom}(args...; kw...) where
-    {Ob,Hom,Dom,Codom,Data,DataDom}
-  CSet{Ob,Hom,Dom,Codom,Data,DataDom,()}(args...; kw...)
-end
 function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index}(; kw...) where
     {Ob,Hom,Dom,Codom,Data,DataDom,Index}
   CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index}((; kw...))
@@ -95,41 +91,56 @@ end
 incident(cset::CSet, part::Int, name) = cset.incident[name][part]
 
 """ Add part of given type to C-set, optionally setting its subparts.
-"""
-add_part!(cset::CSet, type) = add_part!(cset, type, NamedTuple())
-add_part!(cset::CSet, type, subparts) = _add_part!(cset, Val(type), subparts)
 
-@generated function _add_part!(
+See also: [`add_parts!`](@ref).
+"""
+add_part!(cset::CSet, type, args...) = add_parts!(cset, type, 1, args...)
+
+""" Add parts of given type to C-set, optionally setting their subparts.
+
+See also: [`add_part!`](@ref).
+"""
+add_parts!(cset::CSet, type, n::Int) = add_parts!(cset, type, n, NamedTuple())
+add_parts!(cset::CSet, type, n::Int, subparts) =
+  _add_parts!(cset, Val(type), n, subparts)
+
+@generated function _add_parts!(
     cset::CSet{obs,homs,doms,codoms,data,data_doms,indexed},
-    ::Val{type}, subparts) where
+    ::Val{type}, n::Int, subparts) where
     {obs,homs,doms,codoms,data,data_doms,indexed,type}
   ob = NamedTuple{obs}(eachindex(obs))[type]
   in_homs = [ homs[i] for (i, codom) in enumerate(codoms) if codom == ob ]
   out_homs = [ homs[i] for (i, dom) in enumerate(doms) if dom == ob ]
   data_homs = [ data[i] for (i, dom) in enumerate(data_doms) if dom == ob ]
   indexed_homs = filter(hom -> hom ∈ indexed, in_homs)
+  # TODO: The first three loops could (should?) be unrolled. Or is Julia's
+  # compiler smart enough to do this on its own?
   quote
-    part = cset.nparts.$type + 1
-    cset.nparts = SLVector(cset.nparts; $type=part)
+    @assert n > 0
+    nparts = cset.nparts.$type + n
+    cset.nparts = SLVector(cset.nparts; $type=nparts)
+    start = nparts - n + 1
     for name in $(Tuple(out_homs))
-      push!(cset.subparts[name], 0)
+      sub = cset.subparts[name]
+      resize!(sub, nparts)
+      @inbounds sub[start:nparts] .= 0
     end
     for name in $(Tuple(indexed_homs))
-      push!(cset.incident[name], Int[])
+      incident = cset.incident[name]
+      resize!(incident, nparts)
+      @inbounds for part in start:nparts
+        incident[part] = Int[]
+      end
     end
     for name in $(Tuple(data_homs))
-      grow!(cset.data[name], 1)
+      resize!(cset.data[name], nparts)
     end
-    set_subparts!(cset, part, subparts)
-    part
-  end
-end
-grow!(a::Vector, n::Integer) = resize!(a, length(a) + n)
-
-# TODO: Optimize
-function add_parts!(cset::CSet, type, n::Int, args...)
-  for i in 1:n
-    add_part!(cset, type, args...)
+    if !isempty(subparts)
+      for part in start:nparts
+        set_subparts!(cset, part, subparts)
+      end
+    end
+    nparts
   end
 end
 
