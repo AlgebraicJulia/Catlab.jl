@@ -59,4 +59,21 @@ add_edge!(g, 1, 2)
 @test outneighbors(g, 1) == [2,2]
 @test inneighbors(g, 1) == []
 
+# Symmetric graphs
+##################
+
+g = CSets.SymmetricGraph()
+@test keys(g.incident) == (:tgt,)
+
+add_vertices!(g, 3)
+@test nv(g) == 3
+@test ne(g) == 0
+
+add_edge!(g, 1, 2)
+add_edge!(g, 2, 3)
+@test ne(g) == 2
+@test neighbors(g, 1) == [2]
+@test neighbors(g, 2) == [1,3]
+@test neighbors(g, 3) == [2]
+
 end

@@ -8,7 +8,7 @@ using Compat
 using LabelledArrays, StaticArrays
 
 using ...Syntax, ...Present
-using ...Theories: Category, FreeCategory, dom, codom
+using ...Theories: Category, FreeCategory, dom, codom, compose, id
 
 # C-sets
 ########
@@ -171,6 +171,50 @@ neighbors(g::Graph, v::Int) = outneighbors(g, v)
 inneighbors(g::Graph, v::Int) = subpart(g, incident(g, v, :tgt), :src)
 outneighbors(g::Graph, v::Int) = subpart(g, incident(g, v, :src), :tgt)
 all_neighbors(g::Graph, v::Int) = [ inneighbors(g, v); outneighbors(g, v) ]
+
+# Symmetric graphs
+##################
+
+@present TheorySymmetricGraph(FreeCategory) begin
+  V::Ob
+  E::Ob
+  src::Hom(E,V)
+  tgt::Hom(E,V)
+  inv::Hom(E,E)
+
+  compose(inv,inv) == id(E)
+  compose(inv,src) == tgt
+  compose(inv,tgt) == src
+end
+
+# Don't index `inv` because it is self-inverse and don't index `src` due to
+# symmetry of graph.
+const SymmetricGraph = CSetType(TheorySymmetricGraph, index=[:tgt])
+
+# In implementing the LightGraphs API, regard edge pairs as a single edge.
+nv(g::SymmetricGraph) = nparts(g, :V)
+ne(g::SymmetricGraph) = nparts(g, :E) ÷ 2
+ne(g::SymmetricGraph, src::Int, tgt::Int) =
+  count(v == tgt for v in neighbors(g, src))
+has_vertex(g::SymmetricGraph, v::Int) = 1 <= v <= nparts(g, :V)
+has_edge(g::SymmetricGraph, e::Int) = 1 <= e <= nparts(g, :E)
+has_edge(g::SymmetricGraph, src::Int, tgt::Int) = tgt ∈ neighbors(g, src)
+
+add_vertex!(g::SymmetricGraph) = add_part!(g, :V)
+add_vertices!(g::SymmetricGraph, n::Int) = for i in 1:n; add_vertex!(g) end
+
+function add_edge!(g::SymmetricGraph, src::Int, tgt::Int)
+  e1 = nparts(g, :E) + 1
+  e2 = e1 + 1
+  @assert add_part!(g, :E, (src=src, tgt=tgt, inv=e2)) == e1
+  @assert add_part!(g, :E, (src=tgt, tgt=src, inv=e1)) == e2
+  (e1, e2)
+end
+
+neighbors(g::SymmetricGraph, v::Int) = subpart(g, incident(g, v, :tgt), :src)
+inneighbors(g::SymmetricGraph, v::Int) = neighbors(g, v)
+outneighbors(g::SymmetricGraph, v::Int) = neighbors(g, v)
+all_neighbors(g::SymmetricGraph, v::Int) = neighbors(g, v)
 
 # Static arrays
 ###############
