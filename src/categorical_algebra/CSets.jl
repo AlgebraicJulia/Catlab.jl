@@ -1,10 +1,9 @@
 """ Computing with C-sets (presheaves).
 """
 module CSets
-export AbstractCSet, CSet, CSetType, nparts, subpart, incident, add_part!,
-  set_subpart!, set_subparts!
+export AbstractCSet, CSet, CSetType, nparts, subpart, incident,
+  add_part!, add_parts!, set_subpart!, set_subparts!
 
-using Compat
 using LabelledArrays, StaticArrays
 
 using ...Syntax, ...Present
@@ -13,42 +12,64 @@ using ...Theories: Category, FreeCategory, dom, codom, compose, id
 # C-sets
 ########
 
-abstract type AbstractCSet{Ob,Hom,Dom,Codom} end
+""" Abstract type for C-sets (presheaves).
+
+TODO: Document type parameters
+
+See also: [`CSet`](@ref).
+"""
+abstract type AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom} end
 
 """ Data type for C-sets (presheaves).
 
-To ensure consistency, the fields of the struct should never be mutated
-directly. As in LightGraphs.jl, the incidence vectors are kept in sorted order.
+The type parameters of this generic type should be considered an implementation
+detail. Avoid instantiating them directly. Instead, use [`CSetType`](@ref) to
+generate a `CSet` type from a presentation of a category `C`.
+
+Following LightGraphs.jl, the incidence vectors are kept in sorted order. To
+ensure consistency, no field of the struct should ever be mutated directly.
 """
-mutable struct CSet{Ob,Hom,Dom,Codom,Index,NOb,NHom,NIndex} <:
-       AbstractCSet{Ob,Hom,Dom,Codom}
+mutable struct CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex} <:
+       AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom}
   nparts::SLArray{Tuple{NOb},Int,1,NOb,Ob}
   subparts::SLArray{Tuple{NHom},Vector{Int},1,NHom,Hom}
   incident::SLArray{Tuple{NIndex},Vector{Vector{Int}},1,NIndex,Index}
+  data::NamedTuple{Data}
 end
 
-function CSet{Ob,Hom,Dom,Codom}() where {Ob,Hom,Dom,Codom}
-  CSet{Ob,Hom,Dom,Codom,Hom}()
+function CSet{Ob,Hom,Dom,Codom,Data,DataDom}(args...; kw...) where
+    {Ob,Hom,Dom,Codom,Data,DataDom}
+  CSet{Ob,Hom,Dom,Codom,Data,DataDom,()}(args...; kw...)
 end
-function CSet{Ob,Hom,Dom,Codom,Index}() where {Ob,Hom,Dom,Codom,Index}
+function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index}(; kw...) where
+    {Ob,Hom,Dom,Codom,Data,DataDom,Index}
+  CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index}((; kw...))
+end
+function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index}(
+    datatypes::NamedTuple{Data}) where {Ob,Hom,Dom,Codom,Data,DataDom,Index}
   NOb, NHom, NIndex = length(Ob), length(Hom), length(Index)
   @assert length(Dom) == NHom && length(Codom) == NHom
-  CSet{Ob,Hom,Dom,Codom,Index,NOb,NHom,NIndex}(
+  @assert length(DataDom) == length(Data)
+  CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}(
     SLArray{Tuple{NOb},Ob}(zeros(SVector{NOb,Int})),
-    SLArray{Tuple{NHom},Hom}(copies(SVector{NHom,Vector{Int}})),
-    SLArray{Tuple{NIndex},Index}(copies(SVector{NIndex,Vector{Vector{Int}}})))
+    SLArray{Tuple{NHom},Hom}([ Int[] for i in 1:NHom]),
+    SLArray{Tuple{NIndex},Index}([ Vector{Int}[] for i in 1:NIndex ]),
+    NamedTuple{Data}(T[] for T in datatypes))
 end
 
-""" Create C-set data type from presentation of category.
+""" Generate a C-set data type from a presentation of a category.
 """
-function CSetType(pres::Presentation{Category}; index=nothing)
+function CSetType(pres::Presentation{Category}; data=(), index=())
   obs, homs = generators(pres, :Ob), generators(pres, :Hom)
-  CSet{Tuple(nameof.(obs)),
-       Tuple(nameof.(homs)),
-       Tuple(findfirst(obs .== dom(hom)) for hom in homs),
-       Tuple(findfirst(obs .== codom(hom)) for hom in homs),
-       Tuple(isnothing(index) ? nameof.(homs) : index)}
+  data_obs, obs = separate(ob -> nameof(ob) ∈ data, obs)
+  data_homs, homs = separate(hom -> codom(hom) ∈ data_obs, homs)
+  ob_index = ob -> findfirst(obs .== ob)::Int
+  CSet{Tuple(nameof.(obs)), Tuple(nameof.(homs)),
+       Tuple(@. ob_index(dom(homs))), Tuple(@. ob_index(codom(homs))),
+       Tuple(nameof.(data_homs)), Tuple(@. ob_index(dom(data_homs))),
+       Tuple(index)}
 end
+separate(f, a::AbstractArray) = (i = f.(a); (a[i], a[.!i]))
 
 function Base.:(==)(x1::T, x2::T) where T <: CSet
   # The incidence data is redundant, so need not be compared.
@@ -57,9 +78,18 @@ end
 
 nparts(cset::CSet, type) = cset.nparts[type]
 
-function subpart(cset::CSet, part::Union{Int,AbstractVector{Int}}, name)
+subpart(cset::CSet, part::Union{Int,AbstractVector{Int}}, name) =
+  _subpart(cset, part, Val(name))
+
+@generated function _subpart(
+    cset::CSet{obs,homs,doms,codoms,data}, part::Union{Int,AbstractVector{Int}},
+    ::Val{name}) where {obs,homs,doms,codoms,data,name}
   # Allow both single and vectorized access.
-  cset.subparts[name][part]
+  if name ∈ data
+    :(cset.data.$name[part])
+  else
+    :(cset.subparts.$name[part])
+  end
 end
 
 incident(cset::CSet, part::Int, name) = cset.incident[name][part]
@@ -69,23 +99,37 @@ incident(cset::CSet, part::Int, name) = cset.incident[name][part]
 add_part!(cset::CSet, type) = add_part!(cset, type, NamedTuple())
 add_part!(cset::CSet, type, subparts) = _add_part!(cset, Val(type), subparts)
 
-@generated function _add_part!(cset::CSet{obs,homs,doms,codoms,indexed},
-    ::Val{type}, subparts) where {obs,homs,doms,codoms,indexed,type}
+@generated function _add_part!(
+    cset::CSet{obs,homs,doms,codoms,data,data_doms,indexed},
+    ::Val{type}, subparts) where
+    {obs,homs,doms,codoms,data,data_doms,indexed,type}
   ob = NamedTuple{obs}(eachindex(obs))[type]
-  in_homs = Tuple(homs[i] for (i, codom) in enumerate(codoms)
-                  if codom == ob && homs[i] ∈ indexed)
-  out_homs = Tuple(homs[i] for (i, dom) in enumerate(doms) if dom == ob)
+  in_homs = [ homs[i] for (i, codom) in enumerate(codoms) if codom == ob ]
+  out_homs = [ homs[i] for (i, dom) in enumerate(doms) if dom == ob ]
+  data_homs = [ data[i] for (i, dom) in enumerate(data_doms) if dom == ob ]
+  indexed_homs = filter(hom -> hom ∈ indexed, in_homs)
   quote
     part = cset.nparts.$type + 1
     cset.nparts = SLVector(cset.nparts; $type=part)
-    for name in $(in_homs)
+    for name in $(Tuple(out_homs))
+      push!(cset.subparts[name], 0)
+    end
+    for name in $(Tuple(indexed_homs))
       push!(cset.incident[name], Int[])
     end
-    for name in $(out_homs)
-      push!(cset.subparts[name], 0)
+    for name in $(Tuple(data_homs))
+      grow!(cset.data[name], 1)
     end
     set_subparts!(cset, part, subparts)
     part
+  end
+end
+grow!(a::Vector, n::Integer) = resize!(a, length(a) + n)
+
+# TODO: Optimize
+function add_parts!(cset::CSet, type, n::Int, args...)
+  for i in 1:n
+    add_part!(cset, type, args...)
   end
 end
 
@@ -96,8 +140,10 @@ See also: [`set_subparts!`](@ref).
 function set_subpart!(cset::CSet, part, name, subpart)
   _set_subpart!(cset, part, Val(name), subpart)
 end
-@generated function _set_subpart!(cset::CSet{obs,homs,doms,codoms,indexed},
-    part, ::Val{name}, subpart) where {obs,homs,doms,codoms,indexed,name}
+@generated function _set_subpart!(
+    cset::CSet{obs,homs,doms,codoms,data,data_doms,indexed},
+    part, ::Val{name}, subpart) where
+    {obs,homs,doms,codoms,data,data_doms,indexed,name}
   if name ∈ indexed
     quote
       old = cset.subparts.$name[part]
@@ -109,10 +155,10 @@ end
         insertsorted!(cset.incident.$name[subpart], part)
       end
     end
+  elseif name ∈ data
+    :(cset.data.$name[part] = subpart)
   else
-    quote
-      cset.subparts.$name[part] = subpart
-    end
+    :(cset.subparts.$name[part] = subpart)
   end
 end
 
@@ -155,7 +201,7 @@ import LightGraphs: nv, ne, edges, has_edge, has_vertex,
   tgt::Hom(E,V)
 end
 
-const Graph = CSetType(TheoryGraph)
+const Graph = CSetType(TheoryGraph, index=[:src,:tgt])
 const AbstractGraph = supertype(Graph)
 
 nv(g::AbstractGraph) = nparts(g, :V)
@@ -172,12 +218,7 @@ has_edge(g::AbstractGraph, e::Int) = 1 <= e <= ne(g)
 has_edge(g::AbstractGraph, src::Int, tgt::Int) = tgt ∈ outneighbors(g, src)
 
 add_vertex!(g::AbstractGraph) = add_part!(g, :V)
-
-function add_vertices!(g::AbstractGraph, n::Int)
-  for i in 1:n
-    add_vertex!(g)
-  end
-end
+add_vertices!(g::AbstractGraph, n::Int) = add_parts!(g, :V, n)
 
 add_edge!(g::AbstractGraph, src::Int, tgt::Int) =
   add_part!(g, :E, (src=src, tgt=tgt))
@@ -231,12 +272,7 @@ has_edge(g::AbstractSymmetricGraph, e::Int) = 1 <= e <= nparts(g, :E)
 has_edge(g::AbstractSymmetricGraph, src::Int, tgt::Int) = tgt ∈ neighbors(g, src)
 
 add_vertex!(g::AbstractSymmetricGraph) = add_part!(g, :V)
-
-function add_vertices!(g::AbstractSymmetricGraph, n::Int)
-  for i in 1:n
-    add_vertex!(g)
-  end
-end
+add_vertices!(g::AbstractSymmetricGraph, n::Int) = add_parts!(g, :V, n)
 
 function add_edge!(g::AbstractSymmetricGraph, src::Int, tgt::Int)
   e1 = nparts(g, :E) + 1
@@ -258,21 +294,6 @@ function LightGraphs.SimpleGraph(g::AbstractSymmetricGraph)
     add_edge!(lg, subpart(g, e, :src), subpart(g, e, :tgt))
   end
   lg
-end
-
-# Static arrays
-###############
-
-# Make static array of copies of object, using nullary constructor.
-# Based on StaticArrays.jl/src/arraymath.jl
-@inline copies(::Type{SA}) where {SA <: StaticArray} = _copies(Size(SA), SA)
-@generated function _copies(::Size{s}, ::Type{SA}) where {s, SA <: StaticArray}
-  T = eltype(SA)
-  v = [:($T()) for i = 1:prod(s)]
-  return quote
-    Base.@_inline_meta
-    $SA(tuple($(v...)))
-  end
 end
 
 end
