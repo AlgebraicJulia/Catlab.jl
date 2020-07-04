@@ -17,8 +17,8 @@ abstract type AbstractCSet{Ob,Hom,Dom,Codom} end
 
 """ Data type for C-sets (presheaves).
 
-To ensure consistency, the fields should never be mutated directly. As in
-LightGraphs.jl, the incident vectors are maintained in sorted order.
+To ensure consistency, the fields of the struct should never be mutated
+directly. As in LightGraphs.jl, the incidence vectors are kept in sorted order.
 """
 mutable struct CSet{Ob,Hom,Dom,Codom,Index,NOb,NHom,NIndex} <:
        AbstractCSet{Ob,Hom,Dom,Codom}
@@ -50,7 +50,7 @@ function CSetType(pres::Presentation{Category}; index=nothing)
        Tuple(isnothing(index) ? nameof.(homs) : index)}
 end
 
-function Base.:(==)(x1::C, x2::C) where C <: CSet
+function Base.:(==)(x1::T, x2::T) where T <: CSet
   # The incidence data is redundant, so need not be compared.
   x1.nparts == x2.nparts && x1.subparts == x2.subparts
 end
@@ -156,31 +156,39 @@ import LightGraphs: nv, ne, edges, has_edge, has_vertex,
 end
 
 const Graph = CSetType(TheoryGraph)
+const AbstractGraph = supertype(Graph)
 
-nv(g::Graph) = nparts(g, :V)
-ne(g::Graph) = nparts(g, :E)
-ne(g::Graph, src::Int, tgt::Int) =
+nv(g::AbstractGraph) = nparts(g, :V)
+ne(g::AbstractGraph) = nparts(g, :E)
+ne(g::AbstractGraph, src::Int, tgt::Int) =
   count(subpart(g, e, :tgt) == tgt for e in incident(g, src, :src))
 
-edges(g::Graph) = 1:ne(g)
-edges(g::Graph, src::Int, tgt::Int) =
+edges(g::AbstractGraph) = 1:ne(g)
+edges(g::AbstractGraph, src::Int, tgt::Int) =
   (e for e in incident(g, src, :src) if subpart(g, e, :tgt) == tgt)
 
-has_vertex(g::Graph, v::Int) = 1 <= v <= nv(g)
-has_edge(g::Graph, e::Int) = 1 <= e <= ne(g)
-has_edge(g::Graph, src::Int, tgt::Int) = tgt ∈ outneighbors(g, src)
+has_vertex(g::AbstractGraph, v::Int) = 1 <= v <= nv(g)
+has_edge(g::AbstractGraph, e::Int) = 1 <= e <= ne(g)
+has_edge(g::AbstractGraph, src::Int, tgt::Int) = tgt ∈ outneighbors(g, src)
 
-add_vertex!(g::Graph) = add_part!(g, :V)
-add_vertices!(g::Graph, n::Int) = for i in 1:n; add_vertex!(g) end
-add_edge!(g::Graph, src::Int, tgt::Int) = add_part!(g, :E, (src=src, tgt=tgt))
+add_vertex!(g::AbstractGraph) = add_part!(g, :V)
 
-neighbors(g::Graph, v::Int) = outneighbors(g, v)
-inneighbors(g::Graph, v::Int) = subpart(g, incident(g, v, :tgt), :src)
-outneighbors(g::Graph, v::Int) = subpart(g, incident(g, v, :src), :tgt)
-all_neighbors(g::Graph, v::Int) =
+function add_vertices!(g::AbstractGraph, n::Int)
+  for i in 1:n
+    add_vertex!(g)
+  end
+end
+
+add_edge!(g::AbstractGraph, src::Int, tgt::Int) =
+  add_part!(g, :E, (src=src, tgt=tgt))
+
+neighbors(g::AbstractGraph, v::Int) = outneighbors(g, v)
+inneighbors(g::AbstractGraph, v::Int) = subpart(g, incident(g, v, :tgt), :src)
+outneighbors(g::AbstractGraph, v::Int) = subpart(g, incident(g, v, :src), :tgt)
+all_neighbors(g::AbstractGraph, v::Int) =
   Iterators.flatten((inneighbors(g, v), outneighbors(g, v)))
 
-function LightGraphs.SimpleDiGraph(g::Graph)
+function LightGraphs.SimpleDiGraph(g::AbstractGraph)
   lg = LightGraphs.SimpleDiGraph(nv(g))
   for e in edges(g)
     add_edge!(lg, subpart(g, e, :src), subpart(g, e, :tgt))
@@ -203,28 +211,34 @@ end
   compose(inv,tgt) == src
 end
 
-# Don't index `inv` because it is self-inverse and don't index `tgt` due to
-# symmetry of graph.
+# Don't index `inv` because it is self-inverse and don't index `tgt`
+# because `src` contains the same information due to symmetry of graph.
 const SymmetricGraph = CSetType(TheorySymmetricGraph, index=[:src])
+const AbstractSymmetricGraph = supertype(SymmetricGraph)
 
 # In implementing the LightGraphs API, regard edge pairs as a single edge.
-nv(g::SymmetricGraph) = nparts(g, :V)
-ne(g::SymmetricGraph) = nparts(g, :E) ÷ 2
-ne(g::SymmetricGraph, src::Int, tgt::Int) =
+nv(g::AbstractSymmetricGraph) = nparts(g, :V)
+ne(g::AbstractSymmetricGraph) = nparts(g, :E) ÷ 2
+ne(g::AbstractSymmetricGraph, src::Int, tgt::Int) =
   count(subpart(g, e, :tgt) == tgt for e in incident(g, src, :src))
 
-edges(g::SymmetricGraph) = 1:nparts(g, :E)
-edges(g::SymmetricGraph, src::Int, tgt::Int) =
+edges(g::AbstractSymmetricGraph) = 1:nparts(g, :E)
+edges(g::AbstractSymmetricGraph, src::Int, tgt::Int) =
   (e for e in incident(g, src, :src) if subpart(g, e, :tgt) == tgt)
 
-has_vertex(g::SymmetricGraph, v::Int) = 1 <= v <= nparts(g, :V)
-has_edge(g::SymmetricGraph, e::Int) = 1 <= e <= nparts(g, :E)
-has_edge(g::SymmetricGraph, src::Int, tgt::Int) = tgt ∈ neighbors(g, src)
+has_vertex(g::AbstractSymmetricGraph, v::Int) = 1 <= v <= nparts(g, :V)
+has_edge(g::AbstractSymmetricGraph, e::Int) = 1 <= e <= nparts(g, :E)
+has_edge(g::AbstractSymmetricGraph, src::Int, tgt::Int) = tgt ∈ neighbors(g, src)
 
-add_vertex!(g::SymmetricGraph) = add_part!(g, :V)
-add_vertices!(g::SymmetricGraph, n::Int) = for i in 1:n; add_vertex!(g) end
+add_vertex!(g::AbstractSymmetricGraph) = add_part!(g, :V)
 
-function add_edge!(g::SymmetricGraph, src::Int, tgt::Int)
+function add_vertices!(g::AbstractSymmetricGraph, n::Int)
+  for i in 1:n
+    add_vertex!(g)
+  end
+end
+
+function add_edge!(g::AbstractSymmetricGraph, src::Int, tgt::Int)
   e1 = nparts(g, :E) + 1
   e2 = e1 + 1
   add_part!(g, :E, (src=src, tgt=tgt, inv=e2))
@@ -232,12 +246,13 @@ function add_edge!(g::SymmetricGraph, src::Int, tgt::Int)
   (e1, e2)
 end
 
-neighbors(g::SymmetricGraph, v::Int) = subpart(g, incident(g, v, :src), :tgt)
-inneighbors(g::SymmetricGraph, v::Int) = neighbors(g, v)
-outneighbors(g::SymmetricGraph, v::Int) = neighbors(g, v)
-all_neighbors(g::SymmetricGraph, v::Int) = neighbors(g, v)
+neighbors(g::AbstractSymmetricGraph, v::Int) =
+  subpart(g, incident(g, v, :src), :tgt)
+inneighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
+outneighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
+all_neighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
 
-function LightGraphs.SimpleGraph(g::SymmetricGraph)
+function LightGraphs.SimpleGraph(g::AbstractSymmetricGraph)
   lg = LightGraphs.SimpleGraph(nv(g))
   for e in edges(g)
     add_edge!(lg, subpart(g, e, :src), subpart(g, e, :tgt))
