@@ -143,6 +143,7 @@ end
 # Graphs
 ########
 
+import LightGraphs
 import LightGraphs: nv, ne, edges, has_edge, has_vertex,
   add_edge!, add_vertex!, add_vertices!,
   neighbors, inneighbors, outneighbors, all_neighbors
@@ -158,7 +159,13 @@ const Graph = CSetType(TheoryGraph)
 
 nv(g::Graph) = nparts(g, :V)
 ne(g::Graph) = nparts(g, :E)
-ne(g::Graph, src::Int, tgt::Int) = count(v == tgt for v in outneighbors(g, src))
+ne(g::Graph, src::Int, tgt::Int) =
+  count(subpart(g, e, :tgt) == tgt for e in incident(g, src, :src))
+
+edges(g::Graph) = 1:ne(g)
+edges(g::Graph, src::Int, tgt::Int) =
+  (e for e in incident(g, src, :src) if subpart(g, e, :tgt) == tgt)
+
 has_vertex(g::Graph, v::Int) = 1 <= v <= nv(g)
 has_edge(g::Graph, e::Int) = 1 <= e <= ne(g)
 has_edge(g::Graph, src::Int, tgt::Int) = tgt ∈ outneighbors(g, src)
@@ -170,7 +177,16 @@ add_edge!(g::Graph, src::Int, tgt::Int) = add_part!(g, :E, (src=src, tgt=tgt))
 neighbors(g::Graph, v::Int) = outneighbors(g, v)
 inneighbors(g::Graph, v::Int) = subpart(g, incident(g, v, :tgt), :src)
 outneighbors(g::Graph, v::Int) = subpart(g, incident(g, v, :src), :tgt)
-all_neighbors(g::Graph, v::Int) = [ inneighbors(g, v); outneighbors(g, v) ]
+all_neighbors(g::Graph, v::Int) =
+  Iterators.flatten((inneighbors(g, v), outneighbors(g, v)))
+
+function LightGraphs.SimpleDiGraph(g::Graph)
+  lg = LightGraphs.SimpleDiGraph(nv(g))
+  for e in edges(g)
+    add_edge!(lg, subpart(g, e, :src), subpart(g, e, :tgt))
+  end
+  lg
+end
 
 # Symmetric graphs
 ##################
@@ -187,15 +203,20 @@ all_neighbors(g::Graph, v::Int) = [ inneighbors(g, v); outneighbors(g, v) ]
   compose(inv,tgt) == src
 end
 
-# Don't index `inv` because it is self-inverse and don't index `src` due to
+# Don't index `inv` because it is self-inverse and don't index `tgt` due to
 # symmetry of graph.
-const SymmetricGraph = CSetType(TheorySymmetricGraph, index=[:tgt])
+const SymmetricGraph = CSetType(TheorySymmetricGraph, index=[:src])
 
 # In implementing the LightGraphs API, regard edge pairs as a single edge.
 nv(g::SymmetricGraph) = nparts(g, :V)
 ne(g::SymmetricGraph) = nparts(g, :E) ÷ 2
 ne(g::SymmetricGraph, src::Int, tgt::Int) =
-  count(v == tgt for v in neighbors(g, src))
+  count(subpart(g, e, :tgt) == tgt for e in incident(g, src, :src))
+
+edges(g::SymmetricGraph) = 1:nparts(g, :E)
+edges(g::SymmetricGraph, src::Int, tgt::Int) =
+  (e for e in incident(g, src, :src) if subpart(g, e, :tgt) == tgt)
+
 has_vertex(g::SymmetricGraph, v::Int) = 1 <= v <= nparts(g, :V)
 has_edge(g::SymmetricGraph, e::Int) = 1 <= e <= nparts(g, :E)
 has_edge(g::SymmetricGraph, src::Int, tgt::Int) = tgt ∈ neighbors(g, src)
@@ -206,15 +227,23 @@ add_vertices!(g::SymmetricGraph, n::Int) = for i in 1:n; add_vertex!(g) end
 function add_edge!(g::SymmetricGraph, src::Int, tgt::Int)
   e1 = nparts(g, :E) + 1
   e2 = e1 + 1
-  @assert add_part!(g, :E, (src=src, tgt=tgt, inv=e2)) == e1
-  @assert add_part!(g, :E, (src=tgt, tgt=src, inv=e1)) == e2
+  add_part!(g, :E, (src=src, tgt=tgt, inv=e2))
+  add_part!(g, :E, (src=tgt, tgt=src, inv=e1))
   (e1, e2)
 end
 
-neighbors(g::SymmetricGraph, v::Int) = subpart(g, incident(g, v, :tgt), :src)
+neighbors(g::SymmetricGraph, v::Int) = subpart(g, incident(g, v, :src), :tgt)
 inneighbors(g::SymmetricGraph, v::Int) = neighbors(g, v)
 outneighbors(g::SymmetricGraph, v::Int) = neighbors(g, v)
 all_neighbors(g::SymmetricGraph, v::Int) = neighbors(g, v)
+
+function LightGraphs.SimpleGraph(g::SymmetricGraph)
+  lg = LightGraphs.SimpleGraph(nv(g))
+  for e in edges(g)
+    add_edge!(lg, subpart(g, e, :src), subpart(g, e, :tgt))
+  end
+  lg
+end
 
 # Static arrays
 ###############
