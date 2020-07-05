@@ -1,13 +1,15 @@
 """ Graphs and symmetric graphs as C-sets.
 """
 module Graphs
-export AbstractGraph, AbstractSymmetricGraph, Graph, SymmetricGraph,
-  nv, ne, edges, has_edge, has_vertex, add_edge!, add_vertex!, add_vertices!,
+export AbstractGraph, Graph, AbstractSymmetricGraph, SymmetricGraph,
+  nv, ne, edges, has_edge, has_vertex,
+  add_edge!, add_edges!, add_vertex!, add_vertices!,
   neighbors, inneighbors, outneighbors, all_neighbors
 
 import LightGraphs
-import LightGraphs: nv, ne, edges, has_edge, has_vertex, add_edge!, add_vertex!,
-  add_vertices!, neighbors, inneighbors, outneighbors, all_neighbors
+import LightGraphs: nv, ne, edges, has_edge, has_vertex,
+  add_edge!, add_vertex!, add_vertices!,
+  neighbors, inneighbors, outneighbors, all_neighbors
 
 using ...Present
 using ...Theories: Category, FreeCategory, dom, codom, compose, id
@@ -45,19 +47,17 @@ add_vertices!(g::AbstractGraph, n::Int) = add_parts!(g, :V, n)
 add_edge!(g::AbstractGraph, src::Int, tgt::Int) =
   add_part!(g, :E, (src=src, tgt=tgt))
 
+function add_edges!(g::AbstractGraph, srcs::AbstractVector{Int},
+                    tgts::AbstractVector{Int})
+  @assert length(srcs) == length(tgts)
+  add_parts!(g, :E, length(srcs), (src=srcs, tgt=tgts))
+end
+
 neighbors(g::AbstractGraph, v::Int) = outneighbors(g, v)
 inneighbors(g::AbstractGraph, v::Int) = subpart(g, incident(g, v, :tgt), :src)
 outneighbors(g::AbstractGraph, v::Int) = subpart(g, incident(g, v, :src), :tgt)
 all_neighbors(g::AbstractGraph, v::Int) =
   Iterators.flatten((inneighbors(g, v), outneighbors(g, v)))
-
-function LightGraphs.SimpleDiGraph(g::AbstractGraph)
-  lg = LightGraphs.SimpleDiGraph(nv(g))
-  for e in edges(g)
-    add_edge!(lg, subpart(g, e, :src), subpart(g, e, :tgt))
-  end
-  lg
-end
 
 # Symmetric graphs
 ##################
@@ -96,12 +96,15 @@ has_edge(g::AbstractSymmetricGraph, src::Int, tgt::Int) = tgt ∈ neighbors(g, s
 add_vertex!(g::AbstractSymmetricGraph) = add_part!(g, :V)
 add_vertices!(g::AbstractSymmetricGraph, n::Int) = add_parts!(g, :V, n)
 
-function add_edge!(g::AbstractSymmetricGraph, src::Int, tgt::Int)
-  e1 = nparts(g, :E) + 1
-  e2 = e1 + 1
-  add_part!(g, :E, (src=src, tgt=tgt, inv=e2))
-  add_part!(g, :E, (src=tgt, tgt=src, inv=e1))
-  (e1, e2)
+add_edge!(g::AbstractSymmetricGraph, src::Int, tgt::Int) =
+  add_edges!(g, src:src, tgt:tgt)
+
+function add_edges!(g::AbstractSymmetricGraph, srcs::AbstractVector{Int},
+                    tgts::AbstractVector{Int})
+  n = length(srcs)
+  @assert length(tgts) == n
+  invs = nparts(g, :E) .+ [(n+1):2n; 1:n]
+  add_parts!(g, :E, 2n, (src=[srcs; tgts], tgt=[tgts; srcs], inv=invs))
 end
 
 neighbors(g::AbstractSymmetricGraph, v::Int) =
@@ -110,7 +113,20 @@ inneighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
 outneighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
 all_neighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
 
-function LightGraphs.SimpleGraph(g::AbstractSymmetricGraph)
+# LightGraphs interop
+#####################
+
+function LightGraphs.SimpleDiGraph(
+    g::Union{AbstractGraph,AbstractSymmetricGraph})
+  lg = LightGraphs.SimpleDiGraph(nv(g))
+  for e in edges(g)
+    add_edge!(lg, subpart(g, e, :src), subpart(g, e, :tgt))
+  end
+  lg
+end
+
+function LightGraphs.SimpleGraph(
+    g::Union{AbstractGraph,AbstractSymmetricGraph})
   lg = LightGraphs.SimpleGraph(nv(g))
   for e in edges(g)
     add_edge!(lg, subpart(g, e, :src), subpart(g, e, :tgt))

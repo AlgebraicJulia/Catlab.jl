@@ -69,18 +69,23 @@ separate(f, a::AbstractArray) = (i = f.(a); (a[i], a[.!i]))
 
 function Base.:(==)(x1::T, x2::T) where T <: CSet
   # The incidence data is redundant, so need not be compared.
-  x1.nparts == x2.nparts && x1.subparts == x2.subparts
+  x1.nparts == x2.nparts && x1.subparts == x2.subparts && x1.data == x2.data
 end
 
+""" Number of parts of given type in a C-set.
+"""
 nparts(cset::CSet, type) = cset.nparts[type]
 
+""" Get subpart of part in C-set.
+
+Both single and vectorized access are supported.
+"""
 subpart(cset::CSet, part::Union{Int,AbstractVector{Int}}, name) =
   _subpart(cset, part, Val(name))
 
 @generated function _subpart(
     cset::CSet{obs,homs,doms,codoms,data}, part::Union{Int,AbstractVector{Int}},
     ::Val{name}) where {obs,homs,doms,codoms,data,name}
-  # Allow both single and vectorized access.
   if name ∈ data
     :(cset.data.$name[part])
   else
@@ -88,33 +93,46 @@ subpart(cset::CSet, part::Union{Int,AbstractVector{Int}}, name) =
   end
 end
 
+""" Get superparts incident to part in C-set.
+"""
 incident(cset::CSet, part::Int, name) = cset.incident[name][part]
 
 """ Add part of given type to C-set, optionally setting its subparts.
 
 See also: [`add_parts!`](@ref).
 """
-add_part!(cset::CSet, type, args...) = add_parts!(cset, type, 1, args...)
+add_part!(cset::CSet, type) = _add_parts!(cset, Val(type), 1)
+
+function add_part!(cset::CSet, type, subparts)
+  part = add_part!(cset, type)
+  set_subparts!(cset, part, subparts)
+  part
+end
 
 """ Add parts of given type to C-set, optionally setting their subparts.
 
 See also: [`add_part!`](@ref).
 """
-add_parts!(cset::CSet, type, n::Int) = add_parts!(cset, type, n, NamedTuple())
-add_parts!(cset::CSet, type, n::Int, subparts) =
-  _add_parts!(cset, Val(type), n, subparts)
+add_parts!(cset::CSet, type, n::Int) = _add_parts!(cset, Val(type), n)
+
+function add_parts!(cset::CSet, type, n::Int, subparts)
+  startpart = nparts(cset, type) + 1
+  endpart = add_parts!(cset, type, n)
+  set_subparts!(cset, startpart:endpart, subparts)
+  endpart
+end
 
 @generated function _add_parts!(
     cset::CSet{obs,homs,doms,codoms,data,data_doms,indexed},
-    ::Val{type}, n::Int, subparts) where
+    ::Val{type}, n::Int) where
     {obs,homs,doms,codoms,data,data_doms,indexed,type}
   ob = NamedTuple{obs}(eachindex(obs))[type]
   in_homs = [ homs[i] for (i, codom) in enumerate(codoms) if codom == ob ]
   out_homs = [ homs[i] for (i, dom) in enumerate(doms) if dom == ob ]
   data_homs = [ data[i] for (i, dom) in enumerate(data_doms) if dom == ob ]
   indexed_homs = filter(hom -> hom ∈ indexed, in_homs)
-  # TODO: The first three loops could (should?) be unrolled. Or is Julia's
-  # compiler smart enough to do this on its own?
+  # TODO: The three loops could (should?) be unrolled. Or is Julia's compiler
+  # smart enough to do this on its own?
   quote
     @assert n > 0
     nparts = cset.nparts.$type + n
@@ -135,25 +153,27 @@ add_parts!(cset::CSet, type, n::Int, subparts) =
     for name in $(Tuple(data_homs))
       resize!(cset.data[name], nparts)
     end
-    if !isempty(subparts)
-      for part in start:nparts
-        set_subparts!(cset, part, subparts)
-      end
-    end
     nparts
   end
 end
 
 """ Mutate subpart of a part in a C-set.
 
+Both single and vectorized assignment are supported.
+
 See also: [`set_subparts!`](@ref).
 """
-function set_subpart!(cset::CSet, part, name, subpart)
+function set_subpart!(cset::CSet, part::Int, name, subpart)
   _set_subpart!(cset, part, Val(name), subpart)
+end
+function set_subpart!(cset::CSet, part::AbstractVector{Int}, name, subpart)
+  broadcast(part, subpart) do part, subpart
+    _set_subpart!(cset, part, Val(name), subpart)
+  end
 end
 @generated function _set_subpart!(
     cset::CSet{obs,homs,doms,codoms,data,data_doms,indexed},
-    part, ::Val{name}, subpart) where
+    part::Int, ::Val{name}, subpart) where
     {obs,homs,doms,codoms,data,data_doms,indexed,name}
   if name ∈ indexed
     quote
@@ -175,9 +195,12 @@ end
 
 """ Mutate subparts of a part in a C-set.
 
+Both single and vectorized assignment are supported.
+
 See also: [`set_subpart!`](@ref).
 """
-function set_subparts!(cset::CSet, part, subparts)
+function set_subparts!(cset::CSet, part::Union{Int,AbstractVector{Int}},
+                       subparts)
   for (name, subpart) in pairs(subparts)
     set_subpart!(cset, part, name, subpart)
   end
