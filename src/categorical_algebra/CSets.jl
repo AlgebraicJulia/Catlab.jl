@@ -14,20 +14,32 @@ using ...Theories: Category, FreeCategory, dom, codom
 
 """ Abstract type for C-sets (presheaves).
 
-TODO: Document type parameters
+The type parameters are:
+- `Ob`: tuple of symbols naming objects
+- `Hom`: tuple of symbols naming morphims
+- `Dom`: tuple of integers giving domain of each morphism
+- `Codom`: tuple of integers giving codomain of each morphism
+- `Data`: tuple of symbols naming extra morphisms for data/attributes
+- `DataDom`: tuple of integers giving domain of each data morphism
 
-See also: [`CSet`](@ref).
+For example, a graph with one vertex attribute could be represented as
+`AbstractCSet{(:V,:E),(:src,:tgt),(2,2),(1,1),(:vattr,),(1,)}`.
+
+See also: [`CSet`](@ref) and [`CSetType`](@ref).
 """
 abstract type AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom} end
 
 """ Data type for C-sets (presheaves).
 
-The type parameters of this generic type should be considered an implementation
-detail. Avoid instantiating them directly. Instead, use [`CSetType`](@ref) to
-generate a `CSet` type from a presentation of a category `C`.
+Instead of filling out the type parameters yourself, you should use the function
+[`CSetType`](@ref) to generate a `CSet` type from a presentation of a category.
+Nevertheless, the first six type parameters are documented at
+[`AbstractCSet`](@ref). The remaining type parameters are an implementation
+detail and should be ignored.
 
-Following LightGraphs.jl, the incidence vectors are kept in sorted order. To
-ensure consistency, no field of the struct should ever be mutated directly.
+Following LightGraphs.jl, the incidence vectors, stored in the `incidence`
+field, are kept in sorted order. To ensure consistency, no field of the struct
+should ever be mutated directly.
 """
 mutable struct CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex} <:
        AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom}
@@ -43,6 +55,7 @@ function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index}(; kw...) where
 end
 function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index}(
     datatypes::NamedTuple{Data}) where {Ob,Hom,Dom,Codom,Data,DataDom,Index}
+  # This function could be `@generated` for slight performance gain.
   NOb, NHom, NIndex = length(Ob), length(Hom), length(Index)
   @assert length(Dom) == NHom && length(Codom) == NHom
   @assert length(DataDom) == length(Data)
