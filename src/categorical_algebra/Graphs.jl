@@ -32,20 +32,20 @@ end
 const Graph = CSetType(TheoryGraph, index=[:src,:tgt])
 const AbstractGraph = supertype(Graph)
 
-nv(g::AbstractGraph) = nparts(g, :V)
-ne(g::AbstractGraph) = nparts(g, :E)
-ne(g::AbstractGraph, src::Int, tgt::Int) =
+nv(g::AbstractCSet) = nparts(g, :V)
+ne(g::AbstractCSet) = nparts(g, :E)
+ne(g::AbstractCSet, src::Int, tgt::Int) =
   count(subpart(g, e, :tgt) == tgt for e in incident(g, src, :src))
 
-src(g::AbstractGraph, e) = subpart(g, e, :src)
-dst(g::AbstractGraph, e) = subpart(g, e, :tgt)
-edges(g::AbstractGraph) = 1:ne(g)
-edges(g::AbstractGraph, src::Int, tgt::Int) =
+src(g::AbstractCSet, e) = subpart(g, e, :src)
+dst(g::AbstractCSet, e) = subpart(g, e, :tgt)
+edges(g::AbstractCSet) = 1:ne(g)
+edges(g::AbstractCSet, src::Int, tgt::Int) =
   (e for e in incident(g, src, :src) if subpart(g, e, :tgt) == tgt)
 
-has_vertex(g::AbstractGraph, v::Int) = 1 <= v <= nv(g)
-has_edge(g::AbstractGraph, e::Int) = 1 <= e <= ne(g)
-has_edge(g::AbstractGraph, src::Int, tgt::Int) = tgt ∈ outneighbors(g, src)
+has_vertex(g::AbstractCSet, v::Int) = 1 <= v <= nv(g)
+has_edge(g::AbstractCSet, e::Int) = 1 <= e <= ne(g)
+has_edge(g::AbstractCSet, src::Int, tgt::Int) = tgt ∈ outneighbors(g, src)
 
 add_vertex!(g::AbstractGraph) = add_part!(g, :V)
 add_vertices!(g::AbstractGraph, n::Int) = add_parts!(g, :V, n)
@@ -84,22 +84,6 @@ end
 # because `src` contains the same information due to symmetry of graph.
 const SymmetricGraph = CSetType(TheorySymmetricGraph, index=[:src])
 const AbstractSymmetricGraph = supertype(SymmetricGraph)
-
-# In implementing the LightGraphs API, regard edge pairs as a single edge.
-nv(g::AbstractSymmetricGraph) = nparts(g, :V)
-ne(g::AbstractSymmetricGraph) = nparts(g, :E) ÷ 2
-ne(g::AbstractSymmetricGraph, src::Int, tgt::Int) =
-  count(subpart(g, e, :tgt) == tgt for e in incident(g, src, :src))
-
-src(g::AbstractSymmetricGraph, e) = subpart(g, e, :src)
-dst(g::AbstractSymmetricGraph, e) = subpart(g, e, :tgt)
-edges(g::AbstractSymmetricGraph) = 1:nparts(g, :E)
-edges(g::AbstractSymmetricGraph, src::Int, tgt::Int) =
-  (e for e in incident(g, src, :src) if subpart(g, e, :tgt) == tgt)
-
-has_vertex(g::AbstractSymmetricGraph, v::Int) = 1 <= v <= nparts(g, :V)
-has_edge(g::AbstractSymmetricGraph, e::Int) = 1 <= e <= nparts(g, :E)
-has_edge(g::AbstractSymmetricGraph, src::Int, tgt::Int) = tgt ∈ neighbors(g, src)
 
 add_vertex!(g::AbstractSymmetricGraph) = add_part!(g, :V)
 add_vertices!(g::AbstractSymmetricGraph, n::Int) = add_parts!(g, :V, n)
@@ -171,15 +155,13 @@ set_vprop!(g::PropertyGraph, v::Int, key::Symbol, value) =
 set_eprop!(g::PropertyGraph, e::Int, key::Symbol, value) =
   (eprops(g,e)[key] = value)
 
-nv(g::PropertyGraph) = nparts(g.graph, :V)
-ne(g::PropertyGraph) = nparts(g.graph, :E)
-
-src(g::PropertyGraph, e) = subpart(g.graph, e, :src)
-dst(g::PropertyGraph, e) = subpart(g.graph, e, :tgt)
-edges(g::PropertyGraph) = 1:ne(g)
-
-has_vertex(g::PropertyGraph, v::Int) = 1 <= v <= nv(g)
-has_edge(g::PropertyGraph, e::Int) = 1 <= v <= ne(g)
+@inline nv(g::PropertyGraph) = nv(g.graph)
+@inline ne(g::PropertyGraph) = ne(g.graph)
+@inline src(g::PropertyGraph, e) = src(g.graph, e)
+@inline dst(g::PropertyGraph, e) = dst(g.graph, e)
+@inline edges(g::PropertyGraph) = edges(g.graph)
+@inline has_vertex(g::PropertyGraph, v::Int) = has_vertex(g.graph, v)
+@inline has_edge(g::PropertyGraph, e::Int) = has_edge(g.graph, e)
 
 add_vertex!(g::PropertyGraph{T}; kw...) where T =
   add_vertex!(g, Dict{Symbol,T}(kw...))
