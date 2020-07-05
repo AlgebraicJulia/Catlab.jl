@@ -80,11 +80,12 @@ nparts(cset::CSet, type) = cset.nparts[type]
 
 Both single and vectorized access are supported.
 """
-subpart(cset::CSet, part::Union{Int,AbstractVector{Int}}, name) =
+subpart(cset::CSet, part::Union{Int,AbstractVector{Int},Colon}, name) =
   _subpart(cset, part, Val(name))
 
 @generated function _subpart(
-    cset::CSet{obs,homs,doms,codoms,data}, part::Union{Int,AbstractVector{Int}},
+    cset::CSet{obs,homs,doms,codoms,data},
+    part::Union{Int,AbstractVector{Int},Colon},
     ::Val{name}) where {obs,homs,doms,codoms,data,name}
   if name ∈ data
     :(cset.data.$name[part])
