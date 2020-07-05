@@ -63,4 +63,30 @@ lg = LightGraphs.DiGraph(4)
 map((src, tgt) -> add_edge!(lg, src, tgt), [1,2,3,2,3,4], [2,3,4,1,2,3])
 @test LightGraphs.DiGraph(g) == lg
 
+# Property graphs
+#################
+
+g = PropertyGraph{String}()
+add_vertex!(g, a="foo", b="bar")
+@test vprops(g, 1) == Dict(:a => "foo", :b => "bar")
+@test get_vprop(g, 1, :b) == "bar"
+set_vprop!(g, 1, :b, "baz")
+@test get_vprop(g, 1, :b) == "baz"
+add_vertices!(g, 2)
+@test vprops(g, 3) == Dict()
+
+add_edge!(g, 1, 2, c="car")
+@test src(g, 1) == 1
+@test dst(g, 1) == 2
+@test eprops(g, 1) == Dict(:c => "car")
+@test get_eprop(g, 1, :c) == "car"
+set_eprop!(g, 1, :c, "cat")
+@test get_eprop(g, 1, :c) == "cat"
+add_edges!(g, [2,2], [3,3])
+set_eprop!(g, 2, :d, "dog")
+set_eprop!(g, 3, :d, "dig")
+@test src(g, [2,3]) == [2,2]
+@test dst(g, [2,3]) == [3,3]
+@test (get_eprop(g, 2, :d), get_eprop(g, 3, :d)) == ("dog", "dig")
+
 end

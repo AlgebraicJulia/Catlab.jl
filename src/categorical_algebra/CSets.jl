@@ -1,4 +1,4 @@
-""" Computing with C-sets (presheaves).
+""" Generic data structures for C-sets (presheaves).
 """
 module CSets
 export AbstractCSet, CSet, CSetType, nparts, subpart, incident,
@@ -48,8 +48,8 @@ function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index}(
   @assert length(DataDom) == length(Data)
   CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}(
     SLArray{Tuple{NOb},Ob}(zeros(SVector{NOb,Int})),
-    SLArray{Tuple{NHom},Hom}([ Int[] for i in 1:NHom]),
-    SLArray{Tuple{NIndex},Index}([ Vector{Int}[] for i in 1:NIndex ]),
+    SLArray{Tuple{NHom},Hom}(Tuple(Int[] for i in 1:NHom)),
+    SLArray{Tuple{NIndex},Index}(Tuple(Vector{Int}[] for i in 1:NIndex)),
     NamedTuple{Data}(T[] for T in datatypes))
 end
 
