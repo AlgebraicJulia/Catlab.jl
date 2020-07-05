@@ -2,46 +2,43 @@ module TestGraphviz
 
 using Test
 import JSON
-import LightGraphs, MetaGraphs
-using LightGraphs: add_vertex!, add_vertices!, add_edge!, nv, ne
-using MetaGraphs: MetaGraph, MetaDiGraph, get_prop, props
 
+using Catlab.CategoricalAlgebra.Graphs: PropertyGraph, SymmetricPropertyGraph,
+  nv, ne, src, tgt, add_vertex!, add_vertices!, add_edge!, get_vprop, get_eprop
 using Catlab.Graphics.Graphviz
 
-# Graphviz to MetaGraph
-#######################
+# Graphviz to property graph
+############################
 
 data_path(name::String) = joinpath(@__DIR__, "data", name)
 
 # Undirected simple graph.
 doc = open(JSON.parse, data_path("graphviz_graph.json"), "r")
 parsed = parse_graphviz(doc)
-@test parsed isa MetaGraph
+@test parsed isa SymmetricPropertyGraph
 @test nv(parsed) == 10
-@test ne(parsed) == 13
+@test ne(parsed) ÷ 2 == 13
 
 # Directed simple graph
-graph = LightGraphs.DiGraph(5)
-for (src, tgt) in ((1,2),(1,3),(1,4),(2,5),(3,5),(4,5))
-  add_edge!(graph, src, tgt)
-end
 doc = open(JSON.parse, data_path("graphviz_digraph.json"), "r")
 parsed = parse_graphviz(doc)
-@test parsed isa MetaDiGraph
-@test parsed.graph == graph
-@test get_prop.([parsed], 1:nv(parsed), :name) == ["A", "B", "C", "D", "F"]
-@test get_prop(parsed, 1, :position) == [99, 162]
-@test get_prop(parsed, 1, :size) == [54, 36]
-@test get_prop(parsed, 1, 2, :spline) isa Vector
+@test parsed isa PropertyGraph
+@test nv(parsed) == 5
+@test src(parsed) == [1,1,1,2,3,4]
+@test tgt(parsed) == [2,3,4,5,5,5]
+@test get_vprop.([parsed], 1:nv(parsed), :name) == ["A", "B", "C", "D", "F"]
+@test get_vprop(parsed, 1, :position) == [99, 162]
+@test get_vprop(parsed, 1, :size) == [54, 36]
+@test get_eprop(parsed, 1, :spline) isa Vector
 
-# MetaGraph to Graphviz
-#######################
+# Property graph to Graphviz
+############################
 
 # Undirected simple graph
-g = MetaGraph()
-add_vertex!(g, :label, "v")
+g = SymmetricPropertyGraph{String}()
+add_vertex!(g, label="v")
 add_vertices!(g, 2)
-add_edge!(g, 1, 2, :xlabel, "e")
+add_edge!(g, 1, 2, xlabel="e")
 gv = to_graphviz(g)::Graph
 @test !gv.directed
 nodes = filter(s -> isa(s,Node), gv.stmts)
@@ -52,7 +49,7 @@ edges = filter(s -> isa(s,Edge), gv.stmts)
 @test edges[1].attrs[:xlabel] == "e"
 
 # Directed simple graph
-g = MetaDiGraph()
+g = PropertyGraph{String}()
 add_vertices!(g, 3); add_edge!(g, 1, 2); add_edge!(g, 2, 3)
 gv = to_graphviz(g)::Graph
 @test gv.directed
@@ -60,10 +57,11 @@ gv = to_graphviz(g)::Graph
 @test length(filter(s -> isa(s,Edge), gv.stmts)) == 2
 
 # Directed multigraph
-g = MetaDiGraph()
+g = PropertyGraph{String}()
 add_vertices!(g, 2)
-add_edge!(g, 1, 2, :edges, [Dict(:label => "e1"), Dict(:label => "e2")])
-gv = to_graphviz(g; multigraph=true)::Graph
+add_edge!(g, 1, 2, label="e1")
+add_edge!(g, 1, 2, label="e2")
+gv = to_graphviz(g)::Graph
 @test gv.directed
 nodes = filter(s -> isa(s,Node), gv.stmts)
 edges = filter(s -> isa(s,Edge), gv.stmts)

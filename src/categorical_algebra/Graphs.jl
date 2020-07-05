@@ -4,15 +4,15 @@ Support for graphs, symmetric graphs, and property graphs.
 """
 module Graphs
 export AbstractGraph, Graph, AbstractSymmetricGraph, SymmetricGraph,
-  nv, ne, src, dst, edges, has_edge, has_vertex,
+  nv, ne, src, tgt, inv, edges, vertices, has_edge, has_vertex,
   add_edge!, add_edges!, add_vertex!, add_vertices!,
   neighbors, inneighbors, outneighbors, all_neighbors,
-  AbstractProperty, PropertyGraph, SymmetricPropertyGraph,
+  AbstractPropertyGraph, PropertyGraph, SymmetricPropertyGraph,
   gprops, vprops, eprops, get_gprop, get_vprop, get_eprop,
-  set_gprop!, set_vprop!, set_eprop!
+  set_gprop!, set_vprop!, set_eprop!, set_gprops!, set_vprops!, set_eprops!
 
 import LightGraphs
-import LightGraphs: nv, ne, src, dst, edges, has_edge, has_vertex,
+import LightGraphs: nv, ne, src, dst, edges, vertices, has_edge, has_vertex,
   add_edge!, add_vertex!, add_vertices!,
   neighbors, inneighbors, outneighbors, all_neighbors
 
@@ -38,8 +38,11 @@ ne(g::AbstractCSet) = nparts(g, :E)
 ne(g::AbstractCSet, src::Int, tgt::Int) =
   count(subpart(g, e, :tgt) == tgt for e in incident(g, src, :src))
 
-src(g::AbstractCSet, e) = subpart(g, e, :src)
-dst(g::AbstractCSet, e) = subpart(g, e, :tgt)
+src(g::AbstractCSet, e=:) = subpart(g, e, :src)
+tgt(g::AbstractCSet, e=:) = subpart(g, e, :tgt)
+dst(g::AbstractCSet, args...) = tgt(g, args...) # LightGraphs compatibility
+
+vertices(g::AbstractCSet) = 1:nv(g)
 edges(g::AbstractCSet) = 1:ne(g)
 edges(g::AbstractCSet, src::Int, tgt::Int) =
   (e for e in incident(g, src, :src) if subpart(g, e, :tgt) == tgt)
@@ -85,6 +88,8 @@ end
 # because `src` contains the same information due to symmetry of graph.
 const SymmetricGraph = CSetType(TheorySymmetricGraph, index=[:src])
 const AbstractSymmetricGraph = supertype(SymmetricGraph)
+
+inv(g::AbstractCSet, e=:) = subpart(g, e, :inv)
 
 add_vertex!(g::AbstractSymmetricGraph) = add_part!(g, :V)
 add_vertices!(g::AbstractSymmetricGraph, n::Int) = add_parts!(g, :V, n)
@@ -189,9 +194,9 @@ SymmetricPropertyGraph{T,G}() where {T,G<:_AbstractSymmetricPropertyGraph} =
 SymmetricPropertyGraph{T}() where T =
   SymmetricPropertyGraph{T,_SymmetricPropertyGraph}()
 
-@inline gprops(g::AbstractPropertyGraph) = g.gprops
-@inline vprops(g::AbstractPropertyGraph, v::Int) = subpart(g.graph, v, :vprops)
-@inline eprops(g::AbstractPropertyGraph, e::Int) = subpart(g.graph, e, :eprops)
+gprops(g::AbstractPropertyGraph) = g.gprops
+vprops(g::AbstractPropertyGraph, v::Int) = subpart(g.graph, v, :vprops)
+eprops(g::AbstractPropertyGraph, e::Int) = subpart(g.graph, e, :eprops)
 
 get_gprop(g::AbstractPropertyGraph, key::Symbol) = gprops(g)[key]
 get_vprop(g::AbstractPropertyGraph, v::Int, key::Symbol) = vprops(g,v)[key]
@@ -204,10 +209,23 @@ set_vprop!(g::AbstractPropertyGraph, v::Int, key::Symbol, value) =
 set_eprop!(g::AbstractPropertyGraph, e::Int, key::Symbol, value) =
   (eprops(g,e)[key] = value)
 
+set_gprops!(g::AbstractPropertyGraph; kw...) = merge!(gprops(g), kw)
+set_vprops!(g::AbstractPropertyGraph, v::Int; kw...) = merge!(vprops(g,v), kw)
+set_eprops!(g::AbstractPropertyGraph, e::Int; kw...) = merge!(eprops(g,e), kw)
+set_gprops!(g::AbstractPropertyGraph, d::AbstractDict{Symbol}) =
+  merge!(gprops(g), d)
+set_vprops!(g::AbstractPropertyGraph, v::Int, d::AbstractDict{Symbol}) =
+  merge!(vprops(g,v), d)
+set_eprops!(g::AbstractPropertyGraph, e::Int, d::AbstractDict{Symbol}) =
+  merge!(eprops(g,e), d)
+
 @inline nv(g::AbstractPropertyGraph) = nv(g.graph)
 @inline ne(g::AbstractPropertyGraph) = ne(g.graph)
-@inline src(g::AbstractPropertyGraph, e) = src(g.graph, e)
-@inline dst(g::AbstractPropertyGraph, e) = dst(g.graph, e)
+@inline src(g::AbstractPropertyGraph, args...) = src(g.graph, args...)
+@inline tgt(g::AbstractPropertyGraph, args...) = tgt(g.graph, args...)
+@inline dst(g::AbstractPropertyGraph, args...) = dst(g.graph, args...)
+@inline inv(g::SymmetricPropertyGraph, args...) = inv(g.graph, args...)
+@inline vertices(g::AbstractPropertyGraph) = vertices(g.graph)
 @inline edges(g::AbstractPropertyGraph) = edges(g.graph)
 @inline has_vertex(g::AbstractPropertyGraph, v::Int) = has_vertex(g.graph, v)
 @inline has_edge(g::AbstractPropertyGraph, e::Int) = has_edge(g.graph, e)
@@ -261,14 +279,14 @@ end
 function LightGraphs.SimpleDiGraph(
     g::Union{AbstractGraph,AbstractSymmetricGraph})
   lg = LightGraphs.SimpleDiGraph(nv(g))
-  for e in edges(g); add_edge!(lg, src(g,e), dst(g,e)) end
+  for e in edges(g); add_edge!(lg, src(g,e), tgt(g,e)) end
   lg
 end
 
 function LightGraphs.SimpleGraph(
     g::Union{AbstractGraph,AbstractSymmetricGraph})
   lg = LightGraphs.SimpleGraph(nv(g))
-  for e in edges(g); add_edge!(lg, src(g,e), dst(g,e)) end
+  for e in edges(g); add_edge!(lg, src(g,e), tgt(g,e)) end
   lg
 end
 

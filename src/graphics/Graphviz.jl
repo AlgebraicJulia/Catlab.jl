@@ -11,10 +11,11 @@ export Expression, Statement, Attributes, Graph, Digraph, Subgraph,
 
 using Compat
 using DataStructures: OrderedDict
-import LightGraphs, MetaGraphs
-using LightGraphs: add_edge!, add_vertex!, edges, vertices, src, dst
-using MetaGraphs: get_prop, props, set_prop!, set_props!
 using StaticArrays: StaticVector, SVector
+
+using ...CategoricalAlgebra.Graphs: AbstractPropertyGraph, PropertyGraph,
+  SymmetricPropertyGraph, src, tgt, inv, vertices, edges,
+  add_vertex!, add_edge!, vprops, eprops, gprops, set_gprops!
 
 # AST
 #####
@@ -124,29 +125,28 @@ function Base.show(io::IO, ::MIME"image/svg+xml", graph::Graph)
   run_graphviz(io, graph, format="svg")
 end
 
-# MetaGraphs
-############
+# Graphs
+########
 
 """ Parse Graphviz output in JSON format.
 
-Returns a MetaGraph with graph layout and other metadata. Each node has a
+Returns a property graph with graph layout and other metadata. Each node has a
 position and size.
 
 All units are in points. Note that Graphviz has 72 points per inch.
 """
-function parse_graphviz(doc::AbstractDict;
-                        multigraph::Bool=false)::MetaGraphs.AbstractMetaGraph
-  graph = doc["directed"] ? MetaGraphs.MetaDiGraph() : MetaGraphs.MetaGraph()
+function parse_graphviz(doc::AbstractDict)::AbstractPropertyGraph
+  graph = doc["directed"] ? PropertyGraph{Any}() : SymmetricPropertyGraph{Any}()
   nsubgraphs = doc["_subgraph_cnt"] # Subgraphs are ignored.
   
   # Graph-level layout: bounds and padding.
   # It seems, but is not documented, that the first two numbers in the Graphviz
   # bounding box are always zero.
-  set_props!(graph, Dict(
-    :bounds => SVector{2}(parse_vector(doc["bb"])[3:4]),
-    :pad => 72*parse_point(get(doc, "pad", "0,0")),
-    :rankdir => get(doc, "rankdir", "TB"),
-  ))
+  set_gprops!(graph,
+    bounds = SVector{2}(parse_vector(doc["bb"])[3:4]),
+    pad = 72*parse_point(get(doc, "pad", "0,0")),
+    rankdir = get(doc, "rankdir", "TB"),
+  )
   
   # Add vertex for each Graphviz node.
   node_keys = ("id", "name", "comment", "label", "shape", "style")
@@ -174,15 +174,7 @@ function parse_graphviz(doc::AbstractDict;
     props[:spline] = parse_spline(edge["pos"])
     src = edge["tail"] - nsubgraphs + 1
     tgt = edge["head"] - nsubgraphs + 1
-    if multigraph
-      if add_edge!(graph, src, tgt)
-        set_prop!(graph, src, tgt, :edges, [props])
-      else
-        push!(get_prop(graph, src, tgt, :edges), props)
-      end
-    else
-      @assert add_edge!(graph, src, tgt, props)
-    end
+    add_edge!(graph, src, tgt, props)
   end
   
   graph
@@ -221,39 +213,35 @@ function parse_spline(spline::AbstractString)
   points
 end
 
-""" Convert an attributed graph (MetaGraph) to a Graphviz graph.
+""" Convert a property graph to a Graphviz graph.
 
 This method is usually more convenient than direct AST manipulation for creating
-Graphviz graphs. It supports graphs that are directed or undirected, simple or
-multi-edged. For more advanced features, like nested subgraphs, you must use
+Graphviz graphs. For more advanced features, like nested subgraphs, you must use
 the Graphviz AST directly.
 """
-function to_graphviz(g::MetaGraphs.AbstractMetaGraph; multigraph::Bool=false)::Graph
+function to_graphviz(g::AbstractPropertyGraph)::Graph
   gv_name(v::Int) = "n$v"
-  gv_path(e::LightGraphs.Edge) = [gv_name(src(e)), gv_name(dst(e))]
+  gv_path(e::Int) = [gv_name(src(g,e)), gv_name(tgt(g,e))]
 
-  # Add Graphviz node for each vertex.
+  # Add Graphviz node for each vertex in property graph.
   stmts = Graphviz.Statement[]
   for v in vertices(g)
-    push!(stmts, Node(gv_name(v), props(g, v)))
+    push!(stmts, Node(gv_name(v), vprops(g, v)))
   end
 
-  # Add Graphviz edge for each (multi)edge.
-  if multigraph
-    for e in edges(g)
-      path = gv_path(e)
-      append!(stmts, [ Edge(path, attrs) for attrs in get_prop(g, e, :edges) ])
-    end
-  else
-    for e in edges(g)
-      push!(stmts, Edge(gv_path(e), props(g, e)))
+  # Add Graphviz edge for each edge in property graph.
+  is_directed = !(g isa SymmetricPropertyGraph)
+  for e in edges(g)
+    # In undirected case, only include one edge from each pair.
+    if is_directed || (e <= inv(g,e))
+      push!(stmts, Edge(gv_path(e), eprops(g, e)))
     end
   end
 
-  attrs = props(g)
+  attrs = gprops(g)
   Graph(
     name = get(attrs, :name, "G"),
-    directed = LightGraphs.is_directed(g),
+    directed = !(g isa SymmetricPropertyGraph),
     stmts = stmts,
     graph_attrs = as_attributes(get(attrs, :graph, Dict())),
     node_attrs = as_attributes(get(attrs, :node, Dict())),
