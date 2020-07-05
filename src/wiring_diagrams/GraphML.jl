@@ -21,8 +21,8 @@ using Compat
 using DataStructures: OrderedDict
 import JSON
 using LightXML
-using LightGraphs, MetaGraphs
 
+using ...CategoricalAlgebra.Graphs
 using ..WiringDiagramCore, ..WiringDiagramSerialization
 import ..WiringDiagramCore: PortData
 
@@ -355,10 +355,10 @@ parse_graphml_data_value(::Type{Val{:json}}, s::String) = JSON.parse(s)
 
 convert_from_graphml_data(T::Type, data) = convert_from_graph_data(T, data)
 
-# MetaGraphs
-############
+# Graphs
+########
 
-""" Read an attributed graph (`MetaGraph`) from a GraphML file.
+""" Read a property graph from a GraphML file.
 
 The equivalent of NetworkX's `read_graphml` function.
 """
@@ -366,15 +366,15 @@ function read_graphml_metagraph(filename::String; kw...)
   parse_graphml_metagraph(LightXML.parse_file(filename); kw...)
 end
 
-""" Parse an attributed graph from a GraphML string or XML document.
+""" Parse a property graph from a GraphML string or XML document.
 
 The equivalent of NetworkX's `parse_graphml` function.
 """
 function parse_graphml_metagraph(s::AbstractString; kw...)
   parse_graphml_metagraph(LightXML.parse_string(s); kw...)
 end
-function parse_graphml_metagraph(xdoc::XMLDocument; directed::Bool=false,
-                                 multigraph::Bool=false)::AbstractMetaGraph
+function parse_graphml_metagraph(xdoc::XMLDocument;
+                                 directed::Bool=false)::AbstractPropertyGraph
   xroot = root(xdoc)
   @assert name(xroot) == "graphml" "Root element of GraphML document must be <graphml>"
   xgraphs = xroot["graph"]
@@ -383,16 +383,16 @@ function parse_graphml_metagraph(xdoc::XMLDocument; directed::Bool=false,
   
   # Read the GraphML keys.
   keys = parse_graphml_keys(xroot)
-  parse_props = xnode::XMLElement ->
-    Dict(Symbol(k) => v for (k,v) in parse_graphml_data(keys, xnode))
+  parse_props = xnode::XMLElement -> Dict{Symbol,Any}(
+    Symbol(k) => v for (k,v) in parse_graphml_data(keys, xnode))
   
   # Create attributed graph.
   graph = if directed || attribute(xgraph, "edgedefault") == "directed"
-    MetaDiGraph()
+    PropertyGraph{Any}()
   else
-    MetaGraph()
+    SymmetricPropertyGraph{Any}()
   end
-  set_props!(graph, parse_props(xgraph))
+  set_gprops!(graph, parse_props(xgraph))
   
   # Read the node elements.
   vertices = Dict{String,Int}()
@@ -407,14 +407,7 @@ function parse_graphml_metagraph(xdoc::XMLDocument; directed::Bool=false,
     source_id = attribute(xedge, "source", required=true)
     target_id = attribute(xedge, "target", required=true)
     source, target = vertices[source_id], vertices[target_id]
-    if multigraph
-      if !has_edge(graph, source, target)
-        add_edge!(graph, source, target, Dict(:edges => Dict{Symbol,Any}[]))
-      end
-      push!(get_prop(graph, source, target, :edges), parse_props(xedge))
-    else
-      add_edge!(graph, source, target, parse_props(xedge))
-    end
+    add_edge!(graph, source, target, parse_props(xedge))
   end
   
   graph

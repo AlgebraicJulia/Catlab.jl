@@ -130,9 +130,8 @@ abstract type AbstractPropertyGraph{T} end
   eprops::Hom(E,Props)
 end
 
-# By default, don't index `:src` or `:tgt` since generic property graphs are
-# often just data storage.
-const _PropertyGraph = CSetType(TheoryPropertyGraph, data=[:Props], index=[])
+const _PropertyGraph = CSetType(TheoryPropertyGraph,
+                                data=[:Props], index=[:src,:tgt])
 const _AbstractPropertyGraph = supertype(_PropertyGraph)
 
 """ Graph with properties.
@@ -172,7 +171,7 @@ PropertyGraph{T}() where T = PropertyGraph{T,_PropertyGraph}()
 end
 
 const _SymmetricPropertyGraph = CSetType(TheorySymmetricPropertyGraph,
-                                         data=[:Props], index=[])
+                                         data=[:Props], index=[:src])
 const _AbstractSymmetricPropertyGraph = supertype(_SymmetricPropertyGraph)
 
 """ Symmetric graphs with properties.
@@ -212,11 +211,10 @@ set_eprop!(g::AbstractPropertyGraph, e::Int, key::Symbol, value) =
 set_gprops!(g::AbstractPropertyGraph; kw...) = merge!(gprops(g), kw)
 set_vprops!(g::AbstractPropertyGraph, v::Int; kw...) = merge!(vprops(g,v), kw)
 set_eprops!(g::AbstractPropertyGraph, e::Int; kw...) = merge!(eprops(g,e), kw)
-set_gprops!(g::AbstractPropertyGraph, d::AbstractDict{Symbol}) =
-  merge!(gprops(g), d)
-set_vprops!(g::AbstractPropertyGraph, v::Int, d::AbstractDict{Symbol}) =
+set_gprops!(g::AbstractPropertyGraph, d::AbstractDict) = merge!(gprops(g), d)
+set_vprops!(g::AbstractPropertyGraph, v::Int, d::AbstractDict) =
   merge!(vprops(g,v), d)
-set_eprops!(g::AbstractPropertyGraph, e::Int, d::AbstractDict{Symbol}) =
+set_eprops!(g::AbstractPropertyGraph, e::Int, d::AbstractDict) =
   merge!(eprops(g,e), d)
 
 @inline nv(g::AbstractPropertyGraph) = nv(g.graph)
