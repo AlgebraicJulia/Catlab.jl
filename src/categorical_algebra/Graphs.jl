@@ -7,7 +7,8 @@ export AbstractGraph, Graph, AbstractSymmetricGraph, SymmetricGraph,
   nv, ne, src, dst, edges, has_edge, has_vertex,
   add_edge!, add_edges!, add_vertex!, add_vertices!,
   neighbors, inneighbors, outneighbors, all_neighbors,
-  PropertyGraph, gprops, vprops, eprops, get_gprop, get_vprop, get_eprop,
+  AbstractProperty, PropertyGraph, SymmetricPropertyGraph,
+  gprops, vprops, eprops, get_gprop, get_vprop, get_eprop,
   set_gprop!, set_vprop!, set_eprop!
 
 import LightGraphs
@@ -93,8 +94,7 @@ add_edge!(g::AbstractSymmetricGraph, src::Int, tgt::Int) =
 
 function add_edges!(g::AbstractSymmetricGraph, srcs::AbstractVector{Int},
                     tgts::AbstractVector{Int})
-  n = length(srcs)
-  @assert length(tgts) == n
+  @assert (n = length(srcs)) == length(tgts)
   invs = nparts(g, :E) .+ [(n+1):2n; 1:n]
   add_parts!(g, :E, 2n, (src=[srcs; tgts], tgt=[tgts; srcs], inv=invs))
 end
@@ -108,10 +108,17 @@ all_neighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
 # Property graphs
 #################
 
+""" Abstract type for graph with properties.
+
+Concrete types are [`PropertyGraph`](@ref) and [`SymmetricPropertyGraph`](@ref).
+"""
+abstract type AbstractPropertyGraph{T} end
+
 @present TheoryPropertyGraph(FreeCategory) begin
   V::Ob
   E::Ob
   Props::Ob
+
   src::Hom(E,V)
   tgt::Hom(E,V)
   vprops::Hom(V,Props)
@@ -129,59 +136,123 @@ const _AbstractPropertyGraph = supertype(_PropertyGraph)
 vertices, and edges. They are intended for applications with a large number of
 ad-hoc properties. If you have a small number of known properties, it is better
 and more efficient to create a specialized C-set type using [`CSetType`](@ref).
+
+See also: [`SymmetricPropertyGraph`](@ref).
 """
-struct PropertyGraph{T,G<:_AbstractPropertyGraph}
+struct PropertyGraph{T,G<:_AbstractPropertyGraph} <: AbstractPropertyGraph{T}
   graph::G
   gprops::Dict{Symbol,T}
 end
 
-function PropertyGraph{T,G}() where {T,G<:_AbstractPropertyGraph}
-  graph = G(vprops=Dict{Symbol,T}, eprops=Dict{Symbol,T})
-  PropertyGraph{T,G}(graph, Dict{Symbol,T}())
-end
+PropertyGraph{T,G}() where {T,G<:_AbstractPropertyGraph} =
+  PropertyGraph(G(vprops=Dict{Symbol,T}, eprops=Dict{Symbol,T}),
+                Dict{Symbol,T}())
 PropertyGraph{T}() where T = PropertyGraph{T,_PropertyGraph}()
 
-@inline gprops(g::PropertyGraph) = g.gprops
-@inline vprops(g::PropertyGraph, v::Int) = subpart(g.graph, v, :vprops)
-@inline eprops(g::PropertyGraph, e::Int) = subpart(g.graph, e, :eprops)
+@present TheorySymmetricPropertyGraph(FreeCategory) begin
+  V::Ob
+  E::Ob
+  Props::Ob
 
-get_gprop(g::PropertyGraph, key::Symbol) = gprops(g)[key]
-get_vprop(g::PropertyGraph, v::Int, key::Symbol) = vprops(g,v)[key]
-get_eprop(g::PropertyGraph, e::Int, key::Symbol) = eprops(g,e)[key]
+  src::Hom(E,V)
+  tgt::Hom(E,V)
+  inv::Hom(E,E)
+  vprops::Hom(V,Props)
+  eprops::Hom(E,Props)
 
-set_gprop!(g::PropertyGraph, key::Symbol, value) = (gprops(g)[key] = value)
-set_vprop!(g::PropertyGraph, v::Int, key::Symbol, value) =
+  compose(inv,inv) == id(E)
+  compose(inv,src) == tgt
+  compose(inv,tgt) == src
+  compose(inv,eprops) == eprops # Edge involution preserves edge properties.
+end
+
+const _SymmetricPropertyGraph = CSetType(TheorySymmetricPropertyGraph,
+                                         data=[:Props], index=[])
+const _AbstractSymmetricPropertyGraph = supertype(_SymmetricPropertyGraph)
+
+""" Symmetric graphs with properties.
+
+The edge properties are preserved under the edge involution, so these can be
+interpreted as "undirected" property (multi)graphs.
+
+See also: [`PropertyGraph`](@ref).
+"""
+struct SymmetricPropertyGraph{T,G<:_AbstractSymmetricPropertyGraph} <:
+    AbstractPropertyGraph{T}
+  graph::G
+  gprops::Dict{Symbol,T}
+end
+
+SymmetricPropertyGraph{T,G}() where {T,G<:_AbstractSymmetricPropertyGraph} =
+  SymmetricPropertyGraph(G(vprops=Dict{Symbol,T}, eprops=Dict{Symbol,T}),
+                         Dict{Symbol,T}())
+SymmetricPropertyGraph{T}() where T =
+  SymmetricPropertyGraph{T,_SymmetricPropertyGraph}()
+
+@inline gprops(g::AbstractPropertyGraph) = g.gprops
+@inline vprops(g::AbstractPropertyGraph, v::Int) = subpart(g.graph, v, :vprops)
+@inline eprops(g::AbstractPropertyGraph, e::Int) = subpart(g.graph, e, :eprops)
+
+get_gprop(g::AbstractPropertyGraph, key::Symbol) = gprops(g)[key]
+get_vprop(g::AbstractPropertyGraph, v::Int, key::Symbol) = vprops(g,v)[key]
+get_eprop(g::AbstractPropertyGraph, e::Int, key::Symbol) = eprops(g,e)[key]
+
+set_gprop!(g::AbstractPropertyGraph, key::Symbol, value) =
+  (gprops(g)[key] = value)
+set_vprop!(g::AbstractPropertyGraph, v::Int, key::Symbol, value) =
   (vprops(g,v)[key] = value)
-set_eprop!(g::PropertyGraph, e::Int, key::Symbol, value) =
+set_eprop!(g::AbstractPropertyGraph, e::Int, key::Symbol, value) =
   (eprops(g,e)[key] = value)
 
-@inline nv(g::PropertyGraph) = nv(g.graph)
-@inline ne(g::PropertyGraph) = ne(g.graph)
-@inline src(g::PropertyGraph, e) = src(g.graph, e)
-@inline dst(g::PropertyGraph, e) = dst(g.graph, e)
-@inline edges(g::PropertyGraph) = edges(g.graph)
-@inline has_vertex(g::PropertyGraph, v::Int) = has_vertex(g.graph, v)
-@inline has_edge(g::PropertyGraph, e::Int) = has_edge(g.graph, e)
+@inline nv(g::AbstractPropertyGraph) = nv(g.graph)
+@inline ne(g::AbstractPropertyGraph) = ne(g.graph)
+@inline src(g::AbstractPropertyGraph, e) = src(g.graph, e)
+@inline dst(g::AbstractPropertyGraph, e) = dst(g.graph, e)
+@inline edges(g::AbstractPropertyGraph) = edges(g.graph)
+@inline has_vertex(g::AbstractPropertyGraph, v::Int) = has_vertex(g.graph, v)
+@inline has_edge(g::AbstractPropertyGraph, e::Int) = has_edge(g.graph, e)
 
-add_vertex!(g::PropertyGraph{T}; kw...) where T =
+add_vertex!(g::AbstractPropertyGraph{T}; kw...) where T =
   add_vertex!(g, Dict{Symbol,T}(kw...))
-add_vertex!(g::PropertyGraph{T}, d::Dict{Symbol,T}) where T =
+add_vertex!(g::AbstractPropertyGraph{T}, d::Dict{Symbol,T}) where T =
   add_part!(g.graph, :V, (vprops=d,))
 
-add_vertices!(g::PropertyGraph{T}, n::Int) where T =
+add_vertices!(g::AbstractPropertyGraph{T}, n::Int) where T =
   add_parts!(g.graph, :V, n, (vprops=(Dict{Symbol,T}() for i=1:n),))
 
-add_edge!(g::PropertyGraph{T}, src::Int, tgt::Int; kw...) where T =
+add_edge!(g::AbstractPropertyGraph{T}, src::Int, tgt::Int; kw...) where T =
   add_edge!(g, src, tgt, Dict{Symbol,T}(kw...))
+
+# Non-symmetric case.
+
 add_edge!(g::PropertyGraph{T}, src::Int, tgt::Int, d::Dict{Symbol,T}) where T =
   add_part!(g.graph, :E, (src=src, tgt=tgt, eprops=d))
 
 function add_edges!(g::PropertyGraph{T}, srcs::AbstractVector{Int},
-                    tgts::AbstractVector{Int}) where T
-  n = length(srcs)
-  @assert length(tgts) == n
-  eprops = (Dict{Symbol,T}() for i=1:n)
+                    tgts::AbstractVector{Int}, eprops=nothing) where T
+  @assert (n = length(srcs)) == length(tgts)
+  if isnothing(eprops)
+    eprops = (Dict{Symbol,T}() for i=1:n)
+  end
   add_parts!(g.graph, :E, n, (src=srcs, tgt=tgts, eprops=eprops))
+end
+
+# Symmetric case.
+
+add_edge!(g::SymmetricPropertyGraph{T}, src::Int, tgt::Int,
+          d::Dict{Symbol,T}) where T =
+ add_edges!(g, src:src, tgt:tgt, [d])
+
+function add_edges!(g::SymmetricPropertyGraph{T}, srcs::AbstractVector{Int},
+                    tgts::AbstractVector{Int}, eprops=nothing) where T
+  @assert (n = length(srcs)) == length(tgts)
+  if isnothing(eprops)
+    eprops = [ Dict{Symbol,T}() for i=1:n ]
+  end
+  invs = nparts(g.graph, :E) .+ [(n+1):2n; 1:n]
+  eprops = [eprops; eprops] # Share dictionaries to ensure equal properties.
+  add_parts!(g.graph, :E, 2n, (src=[srcs; tgts], tgt=[tgts; srcs],
+                               inv=invs, eprops=eprops))
 end
 
 # LightGraphs interop
