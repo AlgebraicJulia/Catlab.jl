@@ -15,8 +15,9 @@ export read_yfiles_diagram, parse_yfiles_diagram
 
 using Compat
 using LightXML
-using LightGraphs, MetaGraphs
 
+using ...CategoricalAlgebra.CSets: incident
+using ...CategoricalAlgebra.Graphs
 using ...WiringDiagrams
 import ...WiringDiagrams.GraphMLWiringDiagrams: parse_graphml_data_value,
   parse_graphml_metagraph
@@ -62,13 +63,13 @@ function parse_yfiles_diagram(BoxValue::Type, WireValue::Type, xdoc::XMLDocument
   end
   
   # Read the diagram's underlying graph as an attributed graph.
-  graph = parse_graphml_metagraph(xdoc, directed=true, multigraph=true)
+  graph = parse_graphml_metagraph(xdoc, directed=true)
   
   # Extract needed information from yFiles' "nodegraphics" and "edgegraphics"
   # and discard the rest. Keep custom data properties, except the blank
   # "description" property inserted by yEd.
   for v in 1:nv(graph)
-    v_data = props(graph, v)
+    v_data = vprops(graph, v)
     if haskey(v_data, :description) && isempty(v_data[:description])
       delete!(v_data, :description)
     end
@@ -78,18 +79,17 @@ function parse_yfiles_diagram(BoxValue::Type, WireValue::Type, xdoc::XMLDocument
     end
   end
   for edge in edges(graph)
-    for wire_data in get_prop(graph, edge, :edges)
-      if haskey(wire_data, :description) && isempty(wire_data[:description])
-        delete!(wire_data, :description)
-      end
-      edge_graphics = pop!(wire_data, :edgegraphics)
-      wire_data[:source_coord] = round(Int,
-        edge_graphics[is_vertical(orientation) ? :source_x : :source_y])
-      wire_data[:target_coord] = round(Int,
-        edge_graphics[is_vertical(orientation) ? :target_x : :target_y])
-      if keep_labels & haskey(edge_graphics, :label)
-        wire_data[:label] = edge_graphics[:label]
-      end
+    wire_data = eprops(graph, edge)
+    if haskey(wire_data, :description) && isempty(wire_data[:description])
+      delete!(wire_data, :description)
+    end
+    edge_graphics = pop!(wire_data, :edgegraphics)
+    wire_data[:source_coord] = round(Int,
+      edge_graphics[is_vertical(orientation) ? :source_x : :source_y])
+    wire_data[:target_coord] = round(Int,
+      edge_graphics[is_vertical(orientation) ? :target_x : :target_y])
+    if keep_labels & haskey(edge_graphics, :label)
+      wire_data[:label] = edge_graphics[:label]
     end
   end
   
@@ -97,12 +97,12 @@ function parse_yfiles_diagram(BoxValue::Type, WireValue::Type, xdoc::XMLDocument
   diagram = WiringDiagram([], [])
   boxes = BoxLayout[]
   for v in 1:nv(graph)
-    box_layout = if pop!(props(graph, v), :input, false)
+    box_layout = if pop!(vprops(graph, v), :input, false)
       # Special case: diagram inputs.
       ports, coord_map = infer_output_ports(graph, v)
       diagram.input_ports = ports
       BoxLayout(input_id(diagram), Dict(), coord_map)
-    elseif pop!(props(graph, v), :output, false)
+    elseif pop!(vprops(graph, v), :output, false)
       # Special case: diagram outputs.
       ports, coord_map = infer_input_ports(graph, v)
       diagram.output_ports = ports
@@ -111,7 +111,7 @@ function parse_yfiles_diagram(BoxValue::Type, WireValue::Type, xdoc::XMLDocument
       # Generic case: a box.
       input_ports, input_coord_map = infer_input_ports(graph, v)
       output_ports, output_coord_map = infer_output_ports(graph, v)
-      value = convert_from_graphml_data(BoxValue, props(graph, v))
+      value = convert_from_graphml_data(BoxValue, vprops(graph, v))
       box_id = add_box!(diagram, Box(value, input_ports, output_ports))
       BoxLayout(box_id, input_coord_map, output_coord_map)
     end
@@ -120,29 +120,26 @@ function parse_yfiles_diagram(BoxValue::Type, WireValue::Type, xdoc::XMLDocument
   
   # Add wires to diagram.
   for edge in edges(graph)
-    source, target = boxes[src(edge)], boxes[dst(edge)]
-    for wire_data in get_prop(graph, edge, :edges)
-      source_port = source.output_coord_map[pop!(wire_data, :source_coord)]
-      target_port = target.input_coord_map[pop!(wire_data, :target_coord)]
-      value = convert_from_graphml_data(WireValue, wire_data)
-      add_wire!(diagram, Wire(value,
-        (source.box, source_port) => (target.box, target_port)))
-    end
+    wire_data = eprops(graph, edge)
+    source, target = boxes[src(graph, edge)], boxes[tgt(graph, edge)]
+    source_port = source.output_coord_map[pop!(wire_data, :source_coord)]
+    target_port = target.input_coord_map[pop!(wire_data, :target_coord)]
+    value = convert_from_graphml_data(WireValue, wire_data)
+    add_wire!(diagram, Wire(value,
+      (source.box, source_port) => (target.box, target_port)))
   end
   
   diagram
 end
 
-function infer_input_ports(graph::MetaDiGraph, v::Int)
-  in_edges = (get_prop(graph, u, v, :edges) for u in inneighbors(graph, v))
-  in_edges = reduce(vcat, in_edges; init=[])
-  in_coords = [ edge[:target_coord] for edge in in_edges ]
+function infer_input_ports(graph::PropertyGraph, v::Int)
+  in_edges = incident(graph.graph, v, :tgt)
+  in_coords = [ get_eprop(graph, edge, :target_coord) for edge in in_edges ]
   infer_ports_from_coordinates(in_coords)
 end
-function infer_output_ports(graph::MetaDiGraph, v::Int)
-  out_edges = (get_prop(graph, v, u, :edges) for u in outneighbors(graph, v))
-  out_edges = reduce(vcat, out_edges; init=[])
-  out_coords = [ edge[:source_coord] for edge in out_edges ]
+function infer_output_ports(graph::PropertyGraph, v::Int)
+  out_edges = incident(graph.graph, v, :src)
+  out_coords = [ get_eprop(graph, edge, :source_coord) for edge in out_edges ]
   infer_ports_from_coordinates(out_coords)
 end
 

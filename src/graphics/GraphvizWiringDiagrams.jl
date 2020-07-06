@@ -4,11 +4,11 @@ module GraphvizWiringDiagrams
 export to_graphviz, graphviz_layout
 
 import JSON
-using LightGraphs, MetaGraphs
 using LinearAlgebra: normalize
 using StaticArrays
 
 import ...Theories: HomExpr
+using ...CategoricalAlgebra.Graphs
 using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
 import ..Graphviz
 import ..Graphviz: to_graphviz
@@ -388,15 +388,15 @@ the wires are ignored.
 function graphviz_layout(diagram::WiringDiagram; kw...)
   graph = to_graphviz(diagram; kw...)
   doc = JSON.parse(run_graphviz(graph, format="json0"))
-  graphviz_layout(diagram, parse_graphviz(doc, multigraph=true))
+  graphviz_layout(diagram, parse_graphviz(doc))
 end
 
-function graphviz_layout(diagram::WiringDiagram, graph::MetaDiGraph)
+function graphviz_layout(diagram::WiringDiagram, graph::PropertyGraph)
   # Graphviz uses the standard Cartesian coordinate system (with origin in
   # bottom left corner), while our layout system uses a coordinate system with
   # centered origin and positive y-axis pointing downwards.
-  orientation = inverse_rank_dirs[get_prop(graph, :rankdir)]
-  bounds, pad = get_prop(graph, :bounds), get_prop(graph, :pad)
+  orientation = inverse_rank_dirs[get_gprop(graph, :rankdir)]
+  bounds, pad = get_gprop(graph, :bounds), get_gprop(graph, :pad)
   diagram_size = bounds + 2*pad
   transform_point(p) = SVector(1,-1) .* (p - diagram_size/2)
   
@@ -405,14 +405,14 @@ function graphviz_layout(diagram::WiringDiagram, graph::MetaDiGraph)
   nin, nout = length(input_ports(diagram)), length(output_ports(diagram))
   main_dir = svector(orientation, 1.0, 0.0)
   inputs = map(enumerate(input_ports(diagram))) do (i, value)
-    attrs = props(graph, i)
+    attrs = vprops(graph, i)
     pos = transform_point(attrs[:position])
     PortLayout(; value=value, position=pos, normal=-main_dir)
   end
   
   # 2. Output ports of outer box
   outputs = map(enumerate(output_ports(diagram))) do (i, value)
-    attrs = props(graph, nin + i)
+    attrs = vprops(graph, nin + i)
     pos = transform_point(attrs[:position])
     PortLayout(; value=value, position=pos, normal=main_dir)
   end
@@ -424,7 +424,7 @@ function graphviz_layout(diagram::WiringDiagram, graph::MetaDiGraph)
   node_map = Dict{Int,Int}()
   for (i, box) in enumerate(boxes(diagram))
     node = nin + nout + i
-    attrs = props(graph, node)
+    attrs = vprops(graph, node)
     shape = Symbol(get(attrs, :shape, :ellipse))
     if shape == :none; shape = :rectangle end # XXX: Assume HTML label.
     @assert shape == :rectangle "Only the rectangle shape is implemented so far"
@@ -451,18 +451,17 @@ function graphviz_layout(diagram::WiringDiagram, graph::MetaDiGraph)
     end
   end
   for edge in edges(graph)
-    for attrs in get_prop(graph, edge, :edges)
-      # Chop off start and end points to obtain intermediate points.
-      points = attrs[:spline][3:end-2]
-      wire_layout = map(Iterators.partition(points, 3)) do (c1, p, c2)
-        WirePoint(transform_point(p),
-                  normalize(transform_point(c2) - transform_point(c1)))
-      end
-      add_wire!(layout, Wire(wire_layout,
-        map_port(src(edge), get(attrs, :tailport, nothing)),
-        map_port(dst(edge), get(attrs, :headport, nothing))
-      ))
+    attrs = eprops(graph, edge)
+    # Chop off start and end points to obtain intermediate points.
+    points = attrs[:spline][3:end-2]
+    wire_layout = map(Iterators.partition(points, 3)) do (c1, p, c2)
+      WirePoint(transform_point(p),
+                normalize(transform_point(c2) - transform_point(c1)))
     end
+    add_wire!(layout, Wire(wire_layout,
+      map_port(src(graph, edge), get(attrs, :tailport, nothing)),
+      map_port(tgt(graph, edge), get(attrs, :headport, nothing))
+    ))
   end
   layout
 end

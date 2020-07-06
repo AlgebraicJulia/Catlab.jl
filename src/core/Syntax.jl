@@ -43,6 +43,15 @@ last(expr::GATExpr) = last(args(expr))
 gat_typeof(expr::GATExpr) = nameof(typeof(expr))
 gat_type_args(expr::GATExpr) = expr.type_args
 
+""" Get name of GAT generator expression as a `Symbol`.
+
+If the generator has no name, returns `nothing`.
+"""
+function Base.nameof(expr::GATExpr{:generator})
+  name = first(expr)
+  isnothing(name) ? nothing : Symbol(name)
+end
+
 function Base.:(==)(e1::GATExpr{T}, e2::GATExpr{S}) where {T,S}
   T == S && e1.args == e2.args && e1.type_args == e2.type_args
 end

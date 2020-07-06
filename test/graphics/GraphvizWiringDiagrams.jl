@@ -72,7 +72,7 @@ graph = to_graphviz(otimes(f,g); anchor_outer_ports=false)
 diagram = include(joinpath("data", "graphviz_wiring_diagram.jl"))
 doc = open(JSON.parse,
   joinpath(@__DIR__, "data", "graphviz_wiring_diagram.json"), "r")
-graph = Graphviz.parse_graphviz(doc, multigraph=true)
+graph = Graphviz.parse_graphviz(doc)
 layout = graphviz_layout(diagram, graph)
 
 # Is original data preserved?
