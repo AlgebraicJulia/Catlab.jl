@@ -8,7 +8,7 @@ module WiringDiagramSerialization
 export box_id, wire_id, port_name,
   convert_from_graph_data, convert_to_graph_data
 
-using ..WiringDiagramCore
+using ..DirectedWiringDiagrams
 
 # Identifiers
 #############

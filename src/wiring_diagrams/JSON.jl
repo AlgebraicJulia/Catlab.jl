@@ -21,8 +21,8 @@ export read_json_graph, parse_json_graph, write_json_graph, generate_json_graph,
 using DataStructures: OrderedDict
 import JSON
 
-using ..WiringDiagramCore, ..WiringDiagramSerialization
-import ..WiringDiagramCore: PortData
+using ..DirectedWiringDiagrams, ..WiringDiagramSerialization
+import ..DirectedWiringDiagrams: PortData
 
 const JSONObject = OrderedDict{String,Any}
 

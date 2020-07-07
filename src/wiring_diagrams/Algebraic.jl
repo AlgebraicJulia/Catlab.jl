@@ -20,8 +20,8 @@ import ...Theories: dom, codom, id, compose, ⋅, ∘,
   mcopy, delete, Δ, ◊, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
   plus, zero, coplus, cozero, meet, join, top, bottom, trace
 import ...Syntax: functor, head
-using ..WiringDiagramCore
-import ..WiringDiagramCore: Box, WiringDiagram, input_ports, output_ports
+using ..DirectedWiringDiagrams
+import ..DirectedWiringDiagrams: Box, WiringDiagram, input_ports, output_ports
 
 # Categorical interface
 #######################

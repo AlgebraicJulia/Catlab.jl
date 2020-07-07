@@ -23,8 +23,8 @@ import JSON
 using LightXML
 
 using ...CategoricalAlgebra.Graphs
-using ..WiringDiagramCore, ..WiringDiagramSerialization
-import ..WiringDiagramCore: PortData
+using ..DirectedWiringDiagrams, ..WiringDiagramSerialization
+import ..DirectedWiringDiagrams: PortData
 
 # Data types
 ############

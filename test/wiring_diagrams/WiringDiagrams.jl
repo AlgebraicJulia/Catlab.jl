@@ -1,7 +1,7 @@
 using Test
 
-@testset "Core" begin
-  include("Core.jl")
+@testset "Directed" begin
+  include("Directed.jl")
 end
 
 @testset "Algebraic" begin

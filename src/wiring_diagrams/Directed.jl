@@ -1,4 +1,4 @@
-""" Generic data structures for wiring diagrams (aka, string diagrams).
+""" Data structure for (directed) wiring diagrams, aka string diagrams.
 
 A (directed) wiring diagram consists of a collection of boxes with input and
 output ports connected by wires. A box can be atomic (possessing no internal
@@ -15,7 +15,7 @@ raster or vector graphics. However, they form a useful intermediate
 representation that can be serialized to and from GraphML or translated into
 Graphviz or other declarative diagram languages.
 """
-module WiringDiagramCore
+module DirectedWiringDiagrams
 export AbstractBox, Box, WiringDiagram, Wire, Port, PortKind,
   InputPort, OutputPort, input_ports, output_ports, input_id, output_id,
   outer_ids, boxes, box_ids, nboxes, nwires, box, wires, has_wire, graph,
