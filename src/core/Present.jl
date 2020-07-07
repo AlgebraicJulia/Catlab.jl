@@ -125,7 +125,7 @@ function translate_presentation(syntax_name::Symbol, body::Expr)::Expr
   append_expr!(code,
     :(_presentation = $(module_ref(:Presentation))($syntax_name)))
   for expr in strip_lines(body).args
-    append_expr!(code, translate_expr(syntax_name, expr))
+    append_expr!(code, translate_expr(expr))
   end
   append_expr!(code, :(_presentation))
   code
@@ -133,12 +133,12 @@ end
 
 """ Translate a single statement in the presentation DSL to Julia code.
 """
-function translate_expr(syntax_name::Symbol, expr::Expr)::Expr
+function translate_expr(expr::Expr)::Expr
   @match expr begin
     Expr(:(::), [name::Symbol, type_expr]) =>
-      translate_generator(syntax_name, name, type_expr)
+      translate_generator(name, type_expr)
     Expr(:(::), [type_expr]) =>
-      translate_generator(syntax_name, nothing, type_expr)
+      translate_generator(nothing, type_expr)
     Expr(:(:=), [name::Symbol, def_expr]) =>
       translate_definition(name, def_expr)
     Expr(:(=), _) => expr
@@ -149,12 +149,11 @@ end
 
 """ Translate declaration of a generator.
 """
-function translate_generator(syntax_name::Symbol, name::Union{Symbol,Nothing},
-                             type_expr)::Expr
+function translate_generator(name::Union{Symbol,Nothing}, type_expr)::Expr
   function rewrite(expr)
     @match expr begin
       Expr(:call, [name::Symbol, args...]) =>
-        Expr(:call, GlobalRef(Syntax, :invoke_term), syntax_name,
+        Expr(:call, GlobalRef(Syntax, :invoke_term), :(_presentation.syntax),
              QuoteNode(name), map(rewrite, args)...)
       _ => expr
     end
