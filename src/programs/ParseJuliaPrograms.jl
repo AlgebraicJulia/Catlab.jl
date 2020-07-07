@@ -9,7 +9,7 @@ using Match
 
 using ...Catlab
 import ...Meta: Expr0
-using ...Theories: ObExpr, HomExpr
+using ...Theories: ObExpr, HomExpr, otimes, munit
 using ...WiringDiagrams
 using ..GenerateJuliaPrograms: make_return_value
 

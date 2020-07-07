@@ -1,8 +1,8 @@
 module TestJSONWiringDiagrams
-
 using Test
+
 import JSON
-using Catlab.WiringDiagrams
+using Catlab.Theories, Catlab.WiringDiagrams
 
 # Round trip wiring diagrams with dictionary box and wire data.
 

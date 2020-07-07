@@ -6,10 +6,7 @@ types and functions to represent diagonals, codiagonals, duals, caps, cups,
 daggers, and other structures in wiring diagrams.
 """
 module AlgebraicWiringDiagrams
-export Ports, Junction, PortOp, BoxOp, functor, dom, codom, id, compose, ⋅, ∘,
-  otimes, ⊗, munit, braid, σ, oplus, ⊕, mzero, swap, permute,
-  mcopy, delete, Δ, ◊, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
-  plus, zero, coplus, cozero, meet, join, top, bottom, trace, ocompose,
+export Ports, Junction, PortOp, BoxOp, functor, ocompose, permute,
   implicit_mcopy, implicit_mmerge, junctioned_mcopy, junctioned_mmerge,
   junction_diagram, add_junctions, add_junctions!, rem_junctions, merge_junctions,
   junction_caps, junction_cups, junctioned_dunit, junctioned_dcounit
