@@ -5,9 +5,7 @@
 .ipynb_checkpoints
 
 # Julia
+Manifest.toml
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
-
-# Examples
-experiments/*/Manifest.toml
