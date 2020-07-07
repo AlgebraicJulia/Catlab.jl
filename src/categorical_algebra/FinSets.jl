@@ -2,7 +2,7 @@
 """
 module FinSets
 export FinOrd, FinOrdFunction, force, terminal, product, equalizer, pullback,
-  initial, coproduct, coequalizer, pushout
+  limit, initial, coproduct, coequalizer, pushout, colimit
 
 using AutoHashEquals
 using DataStructures: IntDisjointSets, union!, find_root
@@ -104,10 +104,27 @@ function product(A::FinOrd, B::FinOrd)
   Span(π1, π2)
 end
 
+function product(Xs::Vector{<:FinOrd})
+  ns = Int[X.n for X in Xs]
+  indices = CartesianIndices(tuple(ns...))
+  apex = prod(ns)
+  πs = [FinOrdFunction(i -> indices[i][j],apex,ns[j]) for j in 1:length(ns)]
+  Cone(FinOrd(apex),πs)
+end
+
 function equalizer(f::FinOrdFunction, g::FinOrdFunction)
   @assert dom(f) == dom(g) && codom(f) == codom(g)
   m = dom(f).n
   FinOrdFunction(filter(i -> f(i) == g(i), 1:m), m)
+end
+
+function equalizer(fs::Vector{<:FinOrdFunction})
+  @assert length(fs) >= 1
+  f1 = fs[1]
+  frest = fs[2:end]
+  @assert all(dom(f) == dom(f1) && codom(f) == codom(f1) for f in frest)
+  m = dom(f1).n
+  FinOrdFunction(filter(i -> all(f1(i) == f(i) for f in frest), 1:m),m)
 end
 
 """ Pullback of cospan of functions between finite ordinals.
@@ -122,6 +139,15 @@ function pullback(cospan::Cospan{<:FinOrdFunction,<:FinOrdFunction})
   Span(eq⋅π1, eq⋅π2)
 end
 
+function limit(d::Diagram{<:FinOrd, <:FinOrdFunction})
+  p = product(d.obs)
+  n = apex(p).n
+  satisfy((s,t,g),x) = g(leg(p,s)(x)) == leg(p,t)(x)
+  f = FinOrdFunction(filter(i -> all(satisfy(h,i) for h in d.homs), 1:n), n)
+  Cone(dom(f),[compose(f,leg(p,i)) for i in 1:length(d.obs)])
+end
+
+
 # Colimits
 ##########
 
@@ -132,6 +158,14 @@ function coproduct(A::FinOrd, B::FinOrd)
   ι1 = FinOrdFunction(1:m, m, m+n)
   ι2 = FinOrdFunction(m+1:m+n, n, m+n)
   Cospan(ι1, ι2)
+end
+
+function coproduct(Xs::Vector{<:FinOrd})
+  ns = Int[X.n for X in Xs]
+  base = sum(ns)
+  offsets = [0,cumsum(ns)...]
+  πs = [FinOrdFunction((1:ns[j]) .+ offsets[j],ns[j],base) for j in 1:length(ns)]
+  Cocone(FinOrd(base),πs)
 end
 
 function coequalizer(f::FinOrdFunction, g::FinOrdFunction)
@@ -146,6 +180,23 @@ function coequalizer(f::FinOrdFunction, g::FinOrdFunction)
   FinOrdFunction([ searchsortedfirst(roots, r) for r in h], length(roots))
 end
 
+function coequalizer(fs::Vector{<:FinOrdFunction})
+  @assert length(fs) >= 1
+  f1 = fs[1]
+  frest = fs[2:end]
+  @assert all(dom(f) == dom(f1) && codom(f) == codom(f1) for f in frest)
+  m,n = dom(f1).n, codom(f1).n
+  sets = IntDisjointSets(n)
+  for i in 1:m
+    for f in frest
+      union!(sets, f1(i), f(i))
+    end
+  end
+  h = [ find_root(sets, i) for i in 1:n ]
+  roots = unique!(sort(h))
+  FinOrdFunction([searchsortedfirst(roots, r) for r in h], length(roots))
+end
+
 """ Pushout of span of functions between finite ordinals.
 
 TODO: This logic is completely generic. Make it independent of FinOrd.
@@ -156,6 +207,22 @@ function pushout(span::Span{<:FinOrdFunction,<:FinOrdFunction})
   ι1, ι2 = left(coprod), right(coprod)
   coeq = coequalizer(f⋅ι1, g⋅ι2)
   Cospan(ι1⋅coeq, ι2⋅coeq)
+end
+
+function colimit(d::Diagram{<:FinOrd, <:FinOrdFunction})
+  cp = coproduct(d.obs)
+  n = base(cp).n
+  sets = IntDisjointSets(n)
+  for (s,t,h) in d.homs
+    for i in 1:d.obs[s].n
+      union!(sets,leg(cp,s)(i),leg(cp,t)(h(i)))
+    end
+  end
+  h = [ find_root(sets, i) for i in 1:n ]
+  roots = unique!(sort(h))
+  m = length(roots)
+  f = FinOrdFunction([searchsortedfirst(roots, r) for r in h], m)
+  Cocone(FinOrd(m),[compose(leg(cp,i),f) for i in 1:length(d.obs)])
 end
 
 end
