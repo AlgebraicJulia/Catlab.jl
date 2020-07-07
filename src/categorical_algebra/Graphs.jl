@@ -30,8 +30,8 @@ using ..CSets
   tgt::Hom(E,V)
 end
 
+const AbstractGraph = AbstractCSetType(TheoryGraph)
 const Graph = CSetType(TheoryGraph, index=[:src,:tgt])
-const AbstractGraph = supertype(Graph)
 
 nv(g::AbstractCSet) = nparts(g, :V)
 ne(g::AbstractCSet) = nparts(g, :E)
@@ -82,8 +82,8 @@ end
 
 # Don't index `inv` because it is self-inverse and don't index `tgt`
 # because `src` contains the same information due to symmetry of graph.
+const AbstractSymmetricGraph = AbstractCSetType(TheorySymmetricGraph)
 const SymmetricGraph = CSetType(TheorySymmetricGraph, index=[:src])
-const AbstractSymmetricGraph = supertype(SymmetricGraph)
 
 inv(g::AbstractCSet, e=:) = subpart(g, e, :inv)
 
@@ -121,9 +121,10 @@ abstract type AbstractPropertyGraph{T} end
   eprops::Hom(E,Props)
 end
 
-const _PropertyGraph = CSetType(TheoryPropertyGraph,
-                                data=[:Props], index=[:src,:tgt])
-const _AbstractPropertyGraph = supertype(_PropertyGraph)
+const _AbstractPropertyGraph =
+  AbstractCSetType(TheoryPropertyGraph, data=[:Props])
+const _PropertyGraph =
+  CSetType(TheoryPropertyGraph, data=[:Props], index=[:src,:tgt])
 
 """ Graph with properties.
 
@@ -152,9 +153,10 @@ PropertyGraph{T}() where T = PropertyGraph{T,_PropertyGraph}()
   compose(inv,eprops) == eprops # Edge involution preserves edge properties.
 end
 
-const _SymmetricPropertyGraph = CSetType(TheorySymmetricPropertyGraph,
-                                         data=[:Props], index=[:src])
-const _AbstractSymmetricPropertyGraph = supertype(_SymmetricPropertyGraph)
+const _AbstractSymmetricPropertyGraph =
+  AbstractCSetType(TheorySymmetricPropertyGraph, data=[:Props])
+const _SymmetricPropertyGraph =
+  CSetType(TheorySymmetricPropertyGraph, data=[:Props], index=[:src])
 
 """ Symmetric graphs with properties.
 

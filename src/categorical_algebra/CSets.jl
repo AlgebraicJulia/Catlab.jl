@@ -1,16 +1,16 @@
 """ Generic data structures for C-sets (presheaves).
 """
 module CSets
-export AbstractCSet, CSet, CSetType, nparts, subpart, incident,
-  add_part!, add_parts!, set_subpart!, set_subparts!
+export AbstractCSet, AbstractCSetType, CSet, CSetType, nparts, subpart,
+  incident, add_part!, add_parts!, set_subpart!, set_subparts!
 
 using LabelledArrays, StaticArrays
 
 using ...Present
 using ...Theories: Category, dom, codom
 
-# C-sets
-########
+# C-set data types
+##################
 
 """ Abstract type for C-sets (presheaves).
 
@@ -66,17 +66,36 @@ function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index}(
     NamedTuple{Data}(T[] for T in datatypes))
 end
 
+""" Generate an abstract C-set type from a presentation of a category.
+
+See also: [`CSetType`](@ref).
+"""
+function AbstractCSetType(pres::Presentation{Category}; data=())
+  Ob, Hom, Dom, Codom, Data, DataDom, _ = CSetTypeParams(pres, data=data)
+  if isempty(Data)
+    AbstractCSet{Ob,Hom,Dom,Codom}
+  else
+    AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom}
+  end
+end
+
 """ Generate a C-set data type from a presentation of a category.
+
+See also: [`AbstractCSetType`](@ref).
 """
 function CSetType(pres::Presentation{Category}; data=(), index=())
+  Ob, Hom, Dom, Codom, Data, DataDom, Index =
+    CSetTypeParams(pres, data=data, index=index)
+  CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index}
+end
+function CSetTypeParams(pres::Presentation{Category}; data=(), index=())
   obs, homs = generators(pres, :Ob), generators(pres, :Hom)
   data_obs, obs = separate(ob -> nameof(ob) ∈ data, obs)
   data_homs, homs = separate(hom -> codom(hom) ∈ data_obs, homs)
   ob_index = ob -> findfirst(obs .== ob)::Int
-  CSet{Tuple(nameof.(obs)), Tuple(nameof.(homs)),
-       Tuple(@. ob_index(dom(homs))), Tuple(@. ob_index(codom(homs))),
-       Tuple(nameof.(data_homs)), Tuple(@. ob_index(dom(data_homs))),
-       Tuple(index)}
+  (Tuple(nameof.(obs)), Tuple(nameof.(homs)),
+   Tuple(@. ob_index(dom(homs))), Tuple(@. ob_index(codom(homs))),
+   Tuple(nameof.(data_homs)), Tuple(@. ob_index(dom(data_homs))), Tuple(index))
 end
 separate(f, a::AbstractArray) = (i = f.(a); (a[i], a[.!i]))
 
@@ -84,6 +103,9 @@ function Base.:(==)(x1::T, x2::T) where T <: CSet
   # The incidence data is redundant, so need not be compared.
   x1.nparts == x2.nparts && x1.subparts == x2.subparts && x1.data == x2.data
 end
+
+# C-set interface
+#################
 
 """ Number of parts of given type in a C-set.
 """

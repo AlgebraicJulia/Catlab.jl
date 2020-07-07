@@ -13,7 +13,11 @@ using Catlab.CategoricalAlgebra.CSets
   Φ::Hom(X,X)
 end
 
+const AbstractDDS = AbstractCSetType(TheoryDDS)
 const DDS = CSetType(TheoryDDS, index=[:Φ])
+@test AbstractDDS <: AbstractCSet
+@test DDS <: AbstractDDS
+@test DDS <: CSet
 
 dds = DDS()
 @test keys(dds.incident) == (:Φ,)
