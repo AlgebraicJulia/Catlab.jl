@@ -4,6 +4,7 @@ module CSets
 export AbstractCSet, AbstractCSetType, CSet, CSetType, nparts, subpart,
   incident, add_part!, add_parts!, set_subpart!, set_subparts!
 
+using Compat: only
 using LabelledArrays, StaticArrays
 
 using ...Present
@@ -135,9 +136,11 @@ incident(cset::CSet, part::Int, name) = cset.incident[name][part]
 
 """ Add part of given type to C-set, optionally setting its subparts.
 
+Returns the ID of the added part.
+
 See also: [`add_parts!`](@ref).
 """
-add_part!(cset::CSet, type) = _add_parts!(cset, Val(type), 1)
+add_part!(cset::CSet, type) = only(_add_parts!(cset, Val(type), 1))
 
 function add_part!(cset::CSet, type, subparts)
   part = add_part!(cset, type)
@@ -147,15 +150,16 @@ end
 
 """ Add parts of given type to C-set, optionally setting their subparts.
 
+Returns the range of IDs for the added parts.
+
 See also: [`add_part!`](@ref).
 """
 add_parts!(cset::CSet, type, n::Int) = _add_parts!(cset, Val(type), n)
 
 function add_parts!(cset::CSet, type, n::Int, subparts)
-  startpart = nparts(cset, type) + 1
-  endpart = add_parts!(cset, type, n)
-  set_subparts!(cset, startpart:endpart, subparts)
-  endpart
+  parts = add_parts!(cset, type, n)
+  set_subparts!(cset, parts, subparts)
+  parts
 end
 
 @generated function _add_parts!(
@@ -189,7 +193,7 @@ end
     for name in $(Tuple(data_homs))
       resize!(cset.data[name], nparts)
     end
-    nparts
+    start:nparts
   end
 end
 
