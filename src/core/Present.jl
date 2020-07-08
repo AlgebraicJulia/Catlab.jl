@@ -27,17 +27,22 @@ struct Presentation{Theory,Name}
   generators::NamedTuple
   generator_name_index::Dict{Name,Pair{Symbol,Int}}
   equations::Vector{Pair}
-  
-  function Presentation{Name}(syntax::Module) where Name
-    Theory = syntax.theory()
-    theory = GAT.theory(Theory)
-    names = Tuple(type.name for type in theory.types)
-    vectors = ((getfield(syntax, name){:generator})[] for name in names)
-    new{Theory,Name}(syntax, NamedTuple{names}(vectors),
-                     Dict{Name,Pair{Symbol,Int}}(), Pair[])
-  end
+end
+
+function Presentation{Name}(syntax::Module) where Name
+  Theory = syntax.theory()
+  theory = GAT.theory(Theory)
+  names = Tuple(type.name for type in theory.types)
+  vectors = ((getfield(syntax, name){:generator})[] for name in names)
+  Presentation{Theory,Name}(syntax, NamedTuple{names}(vectors),
+                            Dict{Name,Pair{Symbol,Int}}(), Pair[])
 end
 Presentation(syntax::Module) = Presentation{Symbol}(syntax)
+
+function Base.copy(pres::Presentation{T,Name}) where {T,Name}
+  Presentation{T,Name}(pres.syntax, map(copy, pres.generators),
+                       copy(pres.generator_name_index), copy(pres.equations))
+end
 
 # Presentation
 ##############
@@ -109,23 +114,24 @@ end
 """ Define a presentation using a convenient syntax.
 """
 macro present(head, body)
-  name, syntax_name = @match head begin
-    Expr(:call, [name::Symbol, arg::Symbol]) => (name, arg)
+  name, pres = @match head begin
+    Expr(:call, [name::Symbol, syntax_name::Symbol]) =>
+      (name, :($(module_ref(:Presentation))($syntax_name)))
+    Expr(:(<:), [name::Symbol, parent::Symbol]) => (name, :(copy($parent)))
     _ => throw(ParseError("Ill-formed presentation header $head"))
   end
-  let_expr = Expr(:let, Expr(:block), translate_presentation(syntax_name, body))
+  let_expr = Expr(:let, Expr(:block), translate_presentation(pres, body))
   esc(Expr(:(=), name, let_expr))
 end
 
 """ Translate a presentation in the DSL to a block of Julia code.
 """
-function translate_presentation(syntax_name::Symbol, body::Expr)::Expr
+function translate_presentation(pres::Expr0, body::Expr)::Expr
   @assert body.head == :block
   code = Expr(:block)
-  append_expr!(code,
-    :(_presentation = $(module_ref(:Presentation))($syntax_name)))
+  append_expr!(code, :(_presentation = $pres))
   for expr in strip_lines(body).args
-    append_expr!(code, translate_expr(syntax_name, expr))
+    append_expr!(code, translate_statement(expr))
   end
   append_expr!(code, :(_presentation))
   code
@@ -133,15 +139,14 @@ end
 
 """ Translate a single statement in the presentation DSL to Julia code.
 """
-function translate_expr(syntax_name::Symbol, expr::Expr)::Expr
+function translate_statement(expr::Expr)::Expr
   @match expr begin
     Expr(:(::), [name::Symbol, type_expr]) =>
-      translate_generator(syntax_name, name, type_expr)
+      translate_generator(name, type_expr)
     Expr(:(::), [type_expr]) =>
-      translate_generator(syntax_name, nothing, type_expr)
+      translate_generator(nothing, type_expr)
     Expr(:(:=), [name::Symbol, def_expr]) =>
       translate_definition(name, def_expr)
-    Expr(:(=), _) => expr
     Expr(:call, [:(==), lhs, rhs]) => translate_equation(lhs, rhs)
     _ => throw(ParseError("Ill-formed presentation statement $expr"))
   end
@@ -149,40 +154,43 @@ end
 
 """ Translate declaration of a generator.
 """
-function translate_generator(syntax_name::Symbol, name::Union{Symbol,Nothing},
-                             type_expr)::Expr
-  function rewrite(expr)
-    @match expr begin
-      Expr(:call, [name::Symbol, args...]) =>
-        Expr(:call, GlobalRef(Syntax, :invoke_term), syntax_name,
-             QuoteNode(name), map(rewrite, args)...)
-      _ => expr
-    end
-  end
+function translate_generator(name::Union{Symbol,Nothing}, type_expr)::Expr
   type_name, args = @match type_expr begin
     name::Symbol => (name, [])
     Expr(:call, [name::Symbol, args...]) => (name, args)
     _ => throw(ParseError("Ill-formed type expression $type_expr"))
   end
-  call_expr = Expr(
-    :call, module_ref(:add_generator!), :_presentation,
-    rewrite(Expr(:call, type_name,
-                 isnothing(name) ? :nothing : QuoteNode(name), args...)))
-  isnothing(name) ? call_expr : :($(name) = $call_expr)
+  gen_expr = Expr(:call, type_name,
+                  isnothing(name) ? :nothing : QuoteNode(name), args...)
+  Expr(:call, module_ref(:add_generator!), :_presentation,
+       translate_expr(gen_expr))
 end
 
 """ Translate definition of generator in terms of other generators.
 """
 function translate_definition(name::Symbol, def_expr)::Expr
-  call_expr = Expr(:call, module_ref(:add_definition!), :_presentation,
-                   QuoteNode(name), def_expr)
-  :($name = $call_expr)
+  Expr(:call, module_ref(:add_definition!), :_presentation,
+       QuoteNode(name), translate_expr(def_expr))
 end
 
 """ Translate declaration of equality between terms.
 """
 function translate_equation(lhs, rhs)::Expr
-  Expr(:call, module_ref(:add_equation!), :_presentation, lhs, rhs)
+  Expr(:call, module_ref(:add_equation!), :_presentation,
+       translate_expr(lhs), translate_expr(rhs))
+end
+
+""" Translate GAT expression appearing in presentation.
+"""
+function translate_expr(expr)
+  @match expr begin
+    Expr(:call, [name::Symbol, args...]) =>
+      Expr(:call, GlobalRef(Syntax, :invoke_term), :(_presentation.syntax),
+           QuoteNode(name), map(translate_expr, args)...)
+    name::Symbol =>
+      Expr(:call, module_ref(:generator), :_presentation, QuoteNode(name))
+    _ => expr
+  end
 end
 
 module_ref(sym::Symbol) = GlobalRef(Present, sym)

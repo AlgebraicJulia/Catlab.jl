@@ -7,7 +7,7 @@ export AbstractCSet, CSet, CSetType, nparts, subpart, incident,
 using LabelledArrays, StaticArrays
 
 using ...Present
-using ...Theories: Category, FreeCategory, dom, codom
+using ...Theories: Category, dom, codom
 
 # C-sets
 ########

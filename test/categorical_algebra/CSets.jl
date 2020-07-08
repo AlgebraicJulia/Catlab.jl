@@ -2,7 +2,7 @@ module TestCSets
 using Test
 
 using Catlab: @present
-using Catlab.Theories: Category, FreeCategory
+using Catlab.Theories: FreeCategory
 using Catlab.CategoricalAlgebra.CSets
 
 # Discrete dynamical systems

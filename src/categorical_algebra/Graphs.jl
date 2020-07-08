@@ -17,7 +17,7 @@ import LightGraphs: nv, ne, src, dst, edges, vertices, has_edge, has_vertex,
   neighbors, inneighbors, outneighbors, all_neighbors
 
 using ...Present
-using ...Theories: Category, FreeCategory, dom, codom, compose, id
+using ...Theories: FreeCategory
 using ..CSets
 
 # Graphs
@@ -72,11 +72,7 @@ all_neighbors(g::AbstractGraph, v::Int) =
 # Symmetric graphs
 ##################
 
-@present TheorySymmetricGraph(FreeCategory) begin
-  V::Ob
-  E::Ob
-  src::Hom(E,V)
-  tgt::Hom(E,V)
+@present TheorySymmetricGraph <: TheoryGraph begin
   inv::Hom(E,E)
 
   compose(inv,inv) == id(E)
@@ -119,13 +115,8 @@ Concrete types are [`PropertyGraph`](@ref) and [`SymmetricPropertyGraph`](@ref).
 """
 abstract type AbstractPropertyGraph{T} end
 
-@present TheoryPropertyGraph(FreeCategory) begin
-  V::Ob
-  E::Ob
+@present TheoryPropertyGraph <: TheoryGraph begin
   Props::Ob
-
-  src::Hom(E,V)
-  tgt::Hom(E,V)
   vprops::Hom(V,Props)
   eprops::Hom(E,Props)
 end
@@ -153,20 +144,11 @@ PropertyGraph{T,G}() where {T,G<:_AbstractPropertyGraph} =
                 Dict{Symbol,T}())
 PropertyGraph{T}() where T = PropertyGraph{T,_PropertyGraph}()
 
-@present TheorySymmetricPropertyGraph(FreeCategory) begin
-  V::Ob
-  E::Ob
+@present TheorySymmetricPropertyGraph <: TheorySymmetricGraph begin
   Props::Ob
-
-  src::Hom(E,V)
-  tgt::Hom(E,V)
-  inv::Hom(E,E)
   vprops::Hom(V,Props)
   eprops::Hom(E,Props)
 
-  compose(inv,inv) == id(E)
-  compose(inv,src) == tgt
-  compose(inv,tgt) == src
   compose(inv,eprops) == eprops # Edge involution preserves edge properties.
 end
 

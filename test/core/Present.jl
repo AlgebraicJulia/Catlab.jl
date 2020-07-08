@@ -50,11 +50,8 @@ add_generators!(pres, (f,g))
   second_level_manager := compose(manager, manager)
   third_level_manager := compose(manager, manager, manager)
   
-  # Abbreviations (no syntactic term for LHS).
-  boss = manager
-  
   # Managers work in the same department as their employees.
-  compose(boss, works_in) == works_in
+  compose(manager, works_in) == works_in
   # The secretary of a department works in that department.
   compose(secretary, works_in) == id(Department)
 end
@@ -99,6 +96,18 @@ A, B = Ob(FreeSymmetricMonoidalCategory, :A, :B)
 I = munit(FreeSymmetricMonoidalCategory.Ob)
 @test generator(C, :f) == Hom(:f, otimes(A,B), otimes(B,A))
 @test generator(C, :scalar) == Hom(:scalar, I, I)
+
+# Inheritance.
+@present TheorySet(FreeCategory) begin
+  X::Ob
+end
+@present TheoryDDS <: TheorySet begin
+  Φ::Hom(X,X)
+end
+X = Ob(FreeCategory, :X)
+Φ = Hom(:Φ, X, X)
+@test generators(TheoryDDS, :Ob) == [X]
+@test generators(TheoryDDS, :Hom) == [Φ]
 
 # Serialization
 ###############
