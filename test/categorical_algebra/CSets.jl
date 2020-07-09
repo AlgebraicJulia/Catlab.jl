@@ -35,6 +35,9 @@ set_subpart!(dds, 1, :Φ, 1)
 @test subpart(dds, [2,3], :Φ) == [1,1]
 @test incident(dds, 1, :Φ) == [1,2,3]
 
+@test_throws KeyError subpart(dds, 1, :badname)
+@test_throws KeyError set_subpart!(dds, 1, :badname, 1)
+
 # Dendrograms
 #############
 

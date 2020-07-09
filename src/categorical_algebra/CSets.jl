@@ -123,10 +123,12 @@ subpart(cset::CSet, part::Union{Int,AbstractVector{Int},Colon}, name) =
     cset::CSet{obs,homs,doms,codoms,data},
     part::Union{Int,AbstractVector{Int},Colon},
     ::Val{name}) where {obs,homs,doms,codoms,data,name}
-  if name ∈ data
+  if name ∈ homs
+    :(cset.subparts.$name[part])
+  elseif name ∈ data
     :(cset.data.$name[part])
   else
-    :(cset.subparts.$name[part])
+    throw(KeyError(name))
   end
 end
 
@@ -226,10 +228,12 @@ end
         insertsorted!(cset.incident.$name[subpart], part)
       end
     end
+  elseif name ∈ homs
+    :(cset.subparts.$name[part] = subpart)
   elseif name ∈ data
     :(cset.data.$name[part] = subpart)
   else
-    :(cset.subparts.$name[part] = subpart)
+    throw(KeyError(name))
   end
 end
 
