@@ -2,9 +2,8 @@
 """
 module UndirectedWiringDiagrams
 export AbstractUndirectedWiringDiagram, UndirectedWiringDiagram,
-  box, link, nboxes, nlinks, boxes, links, ports, linked_ports,
-  outer_id, outer_link, outer_ports, linked_outer_ports,
-  add_box!, add_link!, add_links!, set_link!, set_outer_link!
+  outer_box, box, link, nboxes, nlinks, boxes, links, ports, linked_ports,
+  add_box!, add_link!, add_links!, set_link!
 
 using ...CategoricalAlgebra.CSets, ...Present
 using ...Theories: FreeCategory
@@ -53,9 +52,6 @@ function UndirectedWiringDiagram(nports::Int)
   return d
 end
 
-UndirectedWiringDiagram(port_types::AbstractVector{T}) where T =
-  UndirectedWiringDiagram(T, port_types)
-
 function UndirectedWiringDiagram(
     ::Type{T}, port_types::AbstractVector{S}) where {T, S<:T}
   d = TypedUWD(port_type=T, outer_port_type=T, link_type=T)
@@ -63,42 +59,48 @@ function UndirectedWiringDiagram(
   add_parts!(d, :OuterPort, nports, (outer_port_type=port_types,))
   return d
 end
+UndirectedWiringDiagram(port_types::AbstractVector{T}) where T =
+  UndirectedWiringDiagram(T, port_types)
 
+outer_box(::AbstractUWD) = 0
 box(d::AbstractUWD, port) = subpart(d, port, :box)
-link(d::AbstractUWD, port) = subpart(d, port, :link)
+link(d::AbstractUWD, port; outer::Bool=false) =
+  subpart(d, port, outer ? :outer_link : :link)
 
 function link(d::AbstractUWD, port::Tuple)
   box, nport = port
-  box == outer_id(d) ? outer_link(d, nport) : link(d, ports(d, box)[nport])
+  if box == outer_box(d)
+    link(d, nport, outer=true)
+  else
+    link(d, ports(d, box)[nport])
+  end
 end
 
 nboxes(d::AbstractUWD) = nparts(d, :Box)
 nlinks(d::AbstractUWD) = nparts(d, :Link)
 boxes(d::AbstractUWD) = 1:nboxes(d)
 links(d::AbstractUWD) = 1:nlinks(d)
-ports(d::AbstractUWD) = 1:nparts(d, :Port)
-ports(d::AbstractUWD, box) = incident(d, box, :box)
-linked_ports(d::AbstractUWD, link) = incident(d, link, :link)
 
-outer_id(::AbstractUWD) = 0
-outer_link(d::AbstractUWD, outer_port) = subpart(d, outer_port, :outer_link)
-outer_ports(d::AbstractUWD) = 1:nparts(d, :OuterPort)
-linked_outer_ports(d::AbstractUWD, outer_port) =
-  incident(d, outer_port, :outer_link)
+ports(d::AbstractUWD; outer::Bool=false) =
+  1:nparts(d, outer ? :OuterPort : :Port)
+ports(d::AbstractUWD, box) =
+  box == outer_box(d) ? (1:nparts(d, :OuterPort)) : incident(d, box, :box)
+linked_ports(d::AbstractUWD, link; outer::Bool=false) =
+  incident(d, link, outer ? :outer_link : :link)
 
 add_box!(d::AbstractUWD; data...) = add_part!(d, :Box, (; data...))
 
 function add_box!(d::AbstractUWD, nports::Int; data...)
   box = add_box!(d; data...)
   ports = add_parts!(d, :Port, nports, (box=box,))
-  (box, ports)
+  box
 end
 
 function add_box!(d::AbstractUWD, port_types::AbstractVector; data...)
   box = add_box!(d; data...)
   nports = length(port_types)
   ports = add_parts!(d, :Port, nports, (box=box, port_type=port_types))
-  (box, ports)
+  box
 end
 
 add_link!(d::AbstractUWD) = add_part!(d, :Link)
@@ -107,10 +109,16 @@ add_links!(d::AbstractUWD, nlinks::Int) = add_parts!(d, :Link, nlinks)
 add_links!(d::AbstractUWD, link_types::AbstractVector) =
   add_parts!(d, :Link, length(link_types), (link_type=link_types,))
 
-set_link!(d::AbstractUWD, port, link) = set_subpart!(d, port, :link, link)
-set_link!(d::AbstractUWD, box, port, link) =
-  set_link!(d, ports(d, box)[port], link)
-set_outer_link!(d::AbstractUWD, outer_port, link) =
-  set_subpart!(d, outer_port, :outer_link, link)
+set_link!(d::AbstractUWD, port, link; outer::Bool=false) =
+  set_subpart!(d, port, outer ? :outer_link : :link, link)
+
+function set_link!(d::AbstractUWD, port::Tuple, link)
+  box, nport = port
+  if box == outer_box(d)
+    set_link!(d, nport, link, outer=true)
+  else
+    set_link!(d, ports(d, box)[nport], link)
+  end
+end
 
 end
