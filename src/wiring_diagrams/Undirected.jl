@@ -3,7 +3,7 @@
 module UndirectedWiringDiagrams
 export AbstractUndirectedWiringDiagram, UndirectedWiringDiagram,
   outer_box, box, link, nboxes, nlinks, boxes, links, ports, linked_ports,
-  add_box!, add_link!, add_links!, set_link!
+  link_type, port_type, add_box!, add_link!, add_links!, set_link!
 
 using ...CategoricalAlgebra.CSets, ...Present
 using ...Theories: FreeCategory
@@ -88,6 +88,10 @@ ports(d::AbstractUWD, box) =
 linked_ports(d::AbstractUWD, link; outer::Bool=false) =
   incident(d, link, outer ? :outer_link : :link)
 
+link_type(d::AbstractUWD, link) = get_subpart(d, link, :link_type, nothing)
+port_type(d::AbstractUWD, port; outer::Bool=false) =
+  get_subpart(d, port, outer ? :outer_port_type : :port_type, nothing)
+
 add_box!(d::AbstractUWD; data...) = add_part!(d, :Box, (; data...))
 
 function add_box!(d::AbstractUWD, nports::Int; data...)
@@ -109,8 +113,13 @@ add_links!(d::AbstractUWD, nlinks::Int) = add_parts!(d, :Link, nlinks)
 add_links!(d::AbstractUWD, link_types::AbstractVector) =
   add_parts!(d, :Link, length(link_types), (link_type=link_types,))
 
-set_link!(d::AbstractUWD, port, link; outer::Bool=false) =
+function set_link!(d::AbstractUWD, port, link; outer::Bool=false)
+  ptype, ltype = port_type(d, port, outer=outer), link_type(d, link)
+  if !all(ptype .== ltype)
+    error("Domain error: port type $ptype and link type $ltype do not match")
+  end
   set_subpart!(d, port, outer ? :outer_link : :link, link)
+end
 
 function set_link!(d::AbstractUWD, port::Tuple, link)
   box, nport = port

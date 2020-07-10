@@ -33,14 +33,18 @@ set_link!(d, 1:3, 1:3, outer=true)
 @test linked_ports(d, 4) == [2,4,6]
 
 # Typed wiring diagrams.
-# TODO: Enforce type compatibility.
 d = UndirectedWiringDiagram([:X,:Y,:Z])
 add_box!(d, [:X,:W]); add_box!(d, [:Y,:W]); add_box!(d, [:Z,:W])
 add_links!(d, [:X,:Y,:Z,:W])
+@test port_type(d, 1) == :X
+@test port_type(d, [1,3,5]) == [:X,:Y,:Z]
+@test port_type(d, 3, outer=true) == :Z
+@test link_type(d, 3) == :Z
 set_link!(d, [1,3,5], 1:3)
 set_link!(d, [2,4,6], 4)
 set_link!(d, 1:3, 1:3, outer=true)
 @test link(d, 1:6) == [1,4,2,4,3,4]
 @test link(d, 1:3, outer=true) == [1,2,3]
+@test_throws ErrorException set_link!(d, 1, 2)
 
 end
