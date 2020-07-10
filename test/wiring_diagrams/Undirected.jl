@@ -47,4 +47,15 @@ set_link!(d, 1:3, 1:3, outer=true)
 @test link(d, 1:3, outer=true) == [1,2,3]
 @test_throws ErrorException set_link!(d, 1, 2)
 
+# Box-relative interface for ports.
+d_previous = d
+d = UndirectedWiringDiagram([:X,:Y,:Z])
+add_box!(d, [:X,:W]); add_box!(d, [:Y,:W]); add_box!(d, [:Z,:W])
+@test port_type(d, (1,1)) == :X
+@test port_type(d, (2,1)) == :Y
+add_wires!(d, (i,1) => (outer_box(d),i) for i in 1:3)
+add_wire!(d, (1,2) => (2,2))
+add_wire!(d, (2,2) => (3,2))
+@test d == d_previous
+
 end

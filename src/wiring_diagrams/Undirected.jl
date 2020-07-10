@@ -3,12 +3,13 @@
 module UndirectedWiringDiagrams
 export AbstractUndirectedWiringDiagram, UndirectedWiringDiagram,
   outer_box, box, link, nboxes, nlinks, boxes, links, ports, linked_ports,
-  link_type, port_type, add_box!, add_link!, add_links!, set_link!
+  link_type, port_type, add_box!, add_link!, add_links!, set_link!, add_wire!,
+  add_wires!
 
 using ...CategoricalAlgebra.CSets, ...Present
 using ...Theories: FreeCategory
 
-import ..DirectedWiringDiagrams: boxes, nboxes, add_box!
+import ..DirectedWiringDiagrams: boxes, nboxes, add_box!, add_wire!, add_wires!
 
 # Data types
 ############
@@ -43,6 +44,10 @@ end
 const TypedUndirectedWiringDiagram = const TypedUWD =
   CSetType(TheoryTypedUWD, data=[:Type], index=[:box, :link, :outer_link])
 
+struct NoPortType end
+
+Base.broadcastable(x::NoPortType) = Base.RefValue(x) # Broadcast like singleton.
+
 # Imperative interface
 ######################
 
@@ -67,13 +72,10 @@ box(d::AbstractUWD, port) = subpart(d, port, :box)
 link(d::AbstractUWD, port; outer::Bool=false) =
   subpart(d, port, outer ? :outer_link : :link)
 
-function link(d::AbstractUWD, port::Tuple)
+function link(d::AbstractUWD, port::Tuple{Int,Int})
   box, nport = port
-  if box == outer_box(d)
-    link(d, nport, outer=true)
-  else
-    link(d, ports(d, box)[nport])
-  end
+  box == outer_box(d) ?
+    link(d, nport, outer=true) : link(d, ports(d, box)[nport])
 end
 
 nboxes(d::AbstractUWD) = nparts(d, :Box)
@@ -88,9 +90,15 @@ ports(d::AbstractUWD, box) =
 linked_ports(d::AbstractUWD, link; outer::Bool=false) =
   incident(d, link, outer ? :outer_link : :link)
 
-link_type(d::AbstractUWD, link) = get_subpart(d, link, :link_type, nothing)
+link_type(d::AbstractUWD, link) = get_subpart(d, link, :link_type, NoPortType())
 port_type(d::AbstractUWD, port; outer::Bool=false) =
-  get_subpart(d, port, outer ? :outer_port_type : :port_type, nothing)
+  get_subpart(d, port, outer ? :outer_port_type : :port_type, NoPortType())
+
+function port_type(d::AbstractUWD, port::Tuple{Int,Int})
+  box, nport = port
+  box == outer_box(d) ?
+    port_type(d, nport, outer=true) : port_type(d, ports(d, box)[nport])
+end
 
 add_box!(d::AbstractUWD; data...) = add_part!(d, :Box, (; data...))
 
@@ -108,7 +116,8 @@ function add_box!(d::AbstractUWD, port_types::AbstractVector; data...)
 end
 
 add_link!(d::AbstractUWD) = add_part!(d, :Link)
-add_link!(d::AbstractUWD, link_type) = add_part!(d, :Link, (link_type=link_type))
+add_link!(d::AbstractUWD, ::NoPortType) = add_part!(d, :Link)
+add_link!(d::AbstractUWD, link_type) = add_part!(d, :Link, (link_type=link_type,))
 add_links!(d::AbstractUWD, nlinks::Int) = add_parts!(d, :Link, nlinks)
 add_links!(d::AbstractUWD, link_types::AbstractVector) =
   add_parts!(d, :Link, length(link_types), (link_type=link_types,))
@@ -121,12 +130,39 @@ function set_link!(d::AbstractUWD, port, link; outer::Bool=false)
   set_subpart!(d, port, outer ? :outer_link : :link, link)
 end
 
-function set_link!(d::AbstractUWD, port::Tuple, link)
+function set_link!(d::AbstractUWD, port::Tuple{Int,Int}, link)
   box, nport = port
   if box == outer_box(d)
     set_link!(d, nport, link, outer=true)
   else
     set_link!(d, ports(d, box)[nport], link)
+  end
+end
+
+""" Wire together two ports in an undirected wiring diagram.
+
+A convenience method that creates and sets links as needed. Ports are only
+allowed to have one link, so if both ports already have links, the second port
+is assigned the link of the first. The handling of the two arguments is
+otherwise symmetric.
+"""
+function add_wire!(d::AbstractUWD, port1::Tuple{Int,Int}, port2::Tuple{Int,Int})
+  link1, link2 = link(d, port1), link(d, port2)
+  if link1 > 0
+    set_link!(d, port2, link1)
+  elseif link2 > 0
+    set_link!(d, port1, link2)
+  else
+    new_link = add_link!(d, port_type(d, port1))
+    set_link!(d, port1, new_link)
+    set_link!(d, port2, new_link)
+  end
+end
+add_wire!(d, wire::Pair) = add_wire!(d, first(wire), last(wire))
+
+function add_wires!(d::AbstractUWD, wires)
+  for wire in wires
+    add_wire!(d, wire)
   end
 end
 
