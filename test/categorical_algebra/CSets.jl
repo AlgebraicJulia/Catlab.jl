@@ -37,6 +37,9 @@ set_subpart!(dds, 1, :Φ, 1)
 
 @test_throws KeyError subpart(dds, 1, :badname)
 @test_throws KeyError set_subpart!(dds, 1, :badname, 1)
+@test get_subpart(dds, 1, :Φ, nothing) == 1
+@test get_subpart(dds, 1, :badname, nothing) == nothing
+@test get_subpart(() -> nothing, dds, 1, :badname) == nothing
 
 # Dendrograms
 #############

@@ -2,7 +2,7 @@
 """
 module CSets
 export AbstractCSet, AbstractCSetType, CSet, CSetType, nparts, subpart,
-  incident, add_part!, add_parts!, set_subpart!, set_subparts!
+  get_subpart, incident, add_part!, add_parts!, set_subpart!, set_subparts!
 
 using Compat: only
 using LabelledArrays, StaticArrays
@@ -116,12 +116,10 @@ nparts(cset::CSet, type) = cset.nparts[type]
 
 Both single and vectorized access are supported.
 """
-subpart(cset::CSet, part::Union{Int,AbstractVector{Int},Colon}, name) =
-  _subpart(cset, part, Val(name))
+subpart(cset::CSet, part, name) = _subpart(cset, part, Val(name))
 
 @generated function _subpart(
-    cset::CSet{obs,homs,doms,codoms,data},
-    part::Union{Int,AbstractVector{Int},Colon},
+    cset::CSet{obs,homs,doms,codoms,data}, part,
     ::Val{name}) where {obs,homs,doms,codoms,data,name}
   if name ∈ homs
     :(cset.subparts.$name[part])
@@ -132,9 +130,34 @@ subpart(cset::CSet, part::Union{Int,AbstractVector{Int},Colon}, name) =
   end
 end
 
+""" Get subpart of part in C-set, with default if there is no such subpart.
+
+The relationship between [`subpart`](@ref) and this function is the same as that
+between `[` and `get` for dictionaries.
+"""
+function get_subpart(f, cset::CSet, part, name)
+  value = get_subpart(cset, part, name, undef)
+  value == undef ? f() : value
+end
+
+get_subpart(cset::CSet, part, name, default) =
+  _get_subpart(cset, part, Val(name), default)
+
+@generated function _get_subpart(
+    cset::CSet{obs,homs,doms,codoms,data}, part,
+    ::Val{name}, default) where {obs,homs,doms,codoms,data,name}
+  if name ∈ homs
+    :(cset.subparts.$name[part])
+  elseif name ∈ data
+    :(cset.data.$name[part])
+  else
+    :default
+  end
+end
+
 """ Get superparts incident to part in C-set.
 """
-incident(cset::CSet, part::Int, name) = cset.incident[name][part]
+incident(cset::CSet, part, name) = cset.incident[name][part]
 
 """ Add part of given type to C-set, optionally setting its subparts.
 
@@ -243,8 +266,7 @@ Both single and vectorized assignment are supported.
 
 See also: [`set_subpart!`](@ref).
 """
-function set_subparts!(cset::CSet, part::Union{Int,AbstractVector{Int}},
-                       subparts)
+function set_subparts!(cset::CSet, part, subparts)
   for (name, subpart) in pairs(subparts)
     set_subpart!(cset, part, name, subpart)
   end
