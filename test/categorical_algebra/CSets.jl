@@ -15,7 +15,7 @@ end
 
 const AbstractDDS = AbstractCSetType(TheoryDDS)
 const DDS = CSetType(TheoryDDS, index=[:Φ])
-@test AbstractDDS <: AbstractCSet
+@test AbstractDDS == AbstractCSet{(:X,),(:Φ,),(1,),(1,)}
 @test DDS <: AbstractDDS
 @test DDS <: CSet
 
@@ -56,7 +56,10 @@ set_subpart!(dds, 1, :Φ, 1)
   height::Hom(X,R)
 end
 
+const AbstractDendrogram = AbstractCSetType(TheoryDendrogram, data=[:R])
 const Dendrogram = CSetType(TheoryDendrogram, data=[:R], index=[:parent])
+@test AbstractDendrogram ==
+  AbstractCSet{(:X,),(:parent,),(1,),(1,),(:height,),(1,)}
 
 d = Dendrogram(height=Float64)
 add_parts!(d, :X, 3, (height=0,))

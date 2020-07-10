@@ -48,6 +48,15 @@ mutable struct CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex} <:
   subparts::SLArray{Tuple{NHom},Vector{Int},1,NHom,Hom}
   incident::SLArray{Tuple{NIndex},Vector{Vector{Int}},1,NIndex,Index}
   data::NamedTuple{Data}
+
+  function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}(
+      datatypes::NamedTuple{Data}) where {Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}
+    new{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}(
+      SLArray{Tuple{NOb},Ob}(zeros(SVector{NOb,Int})),
+      SLArray{Tuple{NHom},Hom}(Tuple(Int[] for i in 1:NHom)),
+      SLArray{Tuple{NIndex},Index}(Tuple(Vector{Int}[] for i in 1:NIndex)),
+      NamedTuple{Data}(T[] for T in datatypes))
+  end
 end
 
 function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index}(; kw...) where
@@ -56,15 +65,10 @@ function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index}(; kw...) where
 end
 function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index}(
     datatypes::NamedTuple{Data}) where {Ob,Hom,Dom,Codom,Data,DataDom,Index}
-  # This function could be `@generated` for slight performance gain.
   NOb, NHom, NIndex = length(Ob), length(Hom), length(Index)
   @assert length(Dom) == NHom && length(Codom) == NHom
   @assert length(DataDom) == length(Data)
-  CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}(
-    SLArray{Tuple{NOb},Ob}(zeros(SVector{NOb,Int})),
-    SLArray{Tuple{NHom},Hom}(Tuple(Int[] for i in 1:NHom)),
-    SLArray{Tuple{NIndex},Index}(Tuple(Vector{Int}[] for i in 1:NIndex)),
-    NamedTuple{Data}(T[] for T in datatypes))
+  CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}(datatypes)
 end
 
 """ Generate an abstract C-set type from a presentation of a category.
@@ -72,12 +76,9 @@ end
 See also: [`CSetType`](@ref).
 """
 function AbstractCSetType(pres::Presentation{Category}; data=())
-  Ob, Hom, Dom, Codom, Data, DataDom, _ = CSetTypeParams(pres, data=data)
-  if isempty(Data)
-    AbstractCSet{Ob,Hom,Dom,Codom}
-  else
-    AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom}
-  end
+  # Only include `Data` and `DataDom` params if there are data morphisms.
+  Ts = CSetTypeParams(pres, data=data)
+  AbstractCSet{(isempty(Ts[5]) ? Ts[1:4] : Ts[1:6])...}
 end
 
 """ Generate a C-set data type from a presentation of a category.
@@ -85,9 +86,7 @@ end
 See also: [`AbstractCSetType`](@ref).
 """
 function CSetType(pres::Presentation{Category}; data=(), index=())
-  Ob, Hom, Dom, Codom, Data, DataDom, Index =
-    CSetTypeParams(pres, data=data, index=index)
-  CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index}
+  CSet{CSetTypeParams(pres, data=data, index=index)...}
 end
 function CSetTypeParams(pres::Presentation{Category}; data=(), index=())
   obs, homs = generators(pres, :Ob), generators(pres, :Hom)
@@ -104,6 +103,8 @@ function Base.:(==)(x1::T, x2::T) where T <: CSet
   # The incidence data is redundant, so need not be compared.
   x1.nparts == x2.nparts && x1.subparts == x2.subparts && x1.data == x2.data
 end
+
+Base.empty(cset::T) where T <: CSet = T(map(eltype, cset.data))
 
 # C-set interface
 #################
