@@ -33,9 +33,9 @@ abstract type AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom} end
 
 """ Data type for C-sets (presheaves).
 
-Instead of filling out the type parameters yourself, you should use the function
-[`CSetType`](@ref) to generate a `CSet` type from a presentation of a category.
-Nevertheless, the first six type parameters are documented at
+Instead of filling out the type parameters manually, we recommend using the
+function [`CSetType`](@ref) to generate a `CSet` type from a presentation of a
+category. Nevertheless, the first six type parameters are documented at
 [`AbstractCSet`](@ref). The remaining type parameters are an implementation
 detail and should be ignored.
 
@@ -120,9 +120,8 @@ Both single and vectorized access are supported.
 """
 subpart(cset::CSet, part, name::Symbol) = _subpart(cset, part, Val(name))
 
-@generated function _subpart(
-    cset::CSet{obs,homs,doms,codoms,data}, part,
-    ::Val{name}) where {obs,homs,doms,codoms,data,name}
+@generated function _subpart(cset::T, part, ::Val{name}) where
+    {name, obs,homs,doms,codoms,data, T <: CSet{obs,homs,doms,codoms,data}}
   if name ∈ homs
     :(cset.subparts.$name[part])
   elseif name ∈ data
@@ -145,9 +144,8 @@ end
 get_subpart(cset::CSet, part, name::Symbol, default) =
   _get_subpart(cset, part, Val(name), default)
 
-@generated function _get_subpart(
-    cset::CSet{obs,homs,doms,codoms,data}, part,
-    ::Val{name}, default) where {obs,homs,doms,codoms,data,name}
+@generated function _get_subpart(cset::T, part, ::Val{name}, default) where
+    {name, obs,homs,doms,codoms,data, T<: CSet{obs,homs,doms,codoms,data}}
   if name ∈ homs
     :(cset.subparts.$name[part])
   elseif name ∈ data
@@ -189,10 +187,9 @@ function add_parts!(cset::CSet, type::Symbol, n::Int, subparts)
   parts
 end
 
-@generated function _add_parts!(
-    cset::CSet{obs,homs,doms,codoms,data,data_doms,indexed},
-    ::Val{type}, n::Int) where
-    {obs,homs,doms,codoms,data,data_doms,indexed,type}
+@generated function _add_parts!(cset::T, ::Val{type}, n::Int) where
+    {type, obs,homs,doms,codoms,data,data_doms,indexed,
+     T <: CSet{obs,homs,doms,codoms,data,data_doms,indexed}}
   ob = findfirst(obs .== type)::Int
   in_homs = [ homs[i] for (i, codom) in enumerate(codoms) if codom == ob ]
   out_homs = [ homs[i] for (i, dom) in enumerate(doms) if dom == ob ]
@@ -226,7 +223,7 @@ copy_parts!(cset::CSet, from::CSet, type::Symbol, parts) =
   _copy_parts!(cset, from, Val(type), parts)
 
 @generated function _copy_parts!(cset::T, from::T, ::Val{type}, parts) where
-    {obs,homs,doms,codoms,data,data_doms,type,
+    {type, obs,homs,doms,codoms,data,data_doms,
      T <: CSet{obs,homs,doms,codoms,data,data_doms}}
   ob = findfirst(obs .== type)::Int
   data_homs = [ data[i] for (i, dom) in enumerate(data_doms) if dom == ob ]
@@ -253,10 +250,9 @@ function set_subpart!(cset::CSet, part::AbstractVector{Int},
     _set_subpart!(cset, part, Val(name), subpart)
   end
 end
-@generated function _set_subpart!(
-    cset::CSet{obs,homs,doms,codoms,data,data_doms,indexed},
-    part::Int, ::Val{name}, subpart) where
-    {obs,homs,doms,codoms,data,data_doms,indexed,name}
+@generated function _set_subpart!(cset::T, part::Int, ::Val{name}, subpart) where
+    {name, obs,homs,doms,codoms,data,data_doms,indexed,
+     T <: CSet{obs,homs,doms,codoms,data,data_doms,indexed}}
   if name ∈ indexed
     quote
       old = cset.subparts.$name[part]
