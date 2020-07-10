@@ -1,8 +1,9 @@
 """ Generic data structures for C-sets (presheaves).
 """
 module CSets
-export AbstractCSet, AbstractCSetType, CSet, CSetType, nparts, subpart,
-  get_subpart, incident, add_part!, add_parts!, set_subpart!, set_subparts!
+export AbstractCSet, AbstractCSetType, CSet, CSetType,
+  nparts, subpart, get_subpart, incident,
+  add_part!, add_parts!, copy_parts!, set_subpart!, set_subparts!
 
 using Compat: only
 using LabelledArrays, StaticArrays
@@ -111,13 +112,13 @@ Base.empty(cset::T) where T <: CSet = T(map(eltype, cset.data))
 
 """ Number of parts of given type in a C-set.
 """
-nparts(cset::CSet, type) = cset.nparts[type]
+nparts(cset::CSet, type::Symbol) = cset.nparts[type]
 
 """ Get subpart of part in C-set.
 
 Both single and vectorized access are supported.
 """
-subpart(cset::CSet, part, name) = _subpart(cset, part, Val(name))
+subpart(cset::CSet, part, name::Symbol) = _subpart(cset, part, Val(name))
 
 @generated function _subpart(
     cset::CSet{obs,homs,doms,codoms,data}, part,
@@ -136,12 +137,12 @@ end
 The relationship between [`subpart`](@ref) and this function is the same as that
 between `[` and `get` for dictionaries.
 """
-function get_subpart(f, cset::CSet, part, name)
+function get_subpart(f, cset::CSet, part, name::Symbol)
   value = get_subpart(cset, part, name, undef)
   value == undef ? f() : value
 end
 
-get_subpart(cset::CSet, part, name, default) =
+get_subpart(cset::CSet, part, name::Symbol, default) =
   _get_subpart(cset, part, Val(name), default)
 
 @generated function _get_subpart(
@@ -158,7 +159,7 @@ end
 
 """ Get superparts incident to part in C-set.
 """
-incident(cset::CSet, part, name) = cset.incident[name][part]
+incident(cset::CSet, part, name::Symbol) = cset.incident[name][part]
 
 """ Add part of given type to C-set, optionally setting its subparts.
 
@@ -166,9 +167,9 @@ Returns the ID of the added part.
 
 See also: [`add_parts!`](@ref).
 """
-add_part!(cset::CSet, type) = only(_add_parts!(cset, Val(type), 1))
+add_part!(cset::CSet, type::Symbol) = only(_add_parts!(cset, Val(type), 1))
 
-function add_part!(cset::CSet, type, subparts)
+function add_part!(cset::CSet, type::Symbol, subparts)
   part = add_part!(cset, type)
   set_subparts!(cset, part, subparts)
   part
@@ -180,9 +181,9 @@ Returns the range of IDs for the added parts.
 
 See also: [`add_part!`](@ref).
 """
-add_parts!(cset::CSet, type, n::Int) = _add_parts!(cset, Val(type), n)
+add_parts!(cset::CSet, type::Symbol, n::Int) = _add_parts!(cset, Val(type), n)
 
-function add_parts!(cset::CSet, type, n::Int, subparts)
+function add_parts!(cset::CSet, type::Symbol, n::Int, subparts)
   parts = add_parts!(cset, type, n)
   set_subparts!(cset, parts, subparts)
   parts
@@ -192,7 +193,7 @@ end
     cset::CSet{obs,homs,doms,codoms,data,data_doms,indexed},
     ::Val{type}, n::Int) where
     {obs,homs,doms,codoms,data,data_doms,indexed,type}
-  ob = NamedTuple{obs}(eachindex(obs))[type]
+  ob = findfirst(obs .== type)::Int
   in_homs = [ homs[i] for (i, codom) in enumerate(codoms) if codom == ob ]
   out_homs = [ homs[i] for (i, dom) in enumerate(doms) if dom == ob ]
   data_homs = [ data[i] for (i, dom) in enumerate(data_doms) if dom == ob ]
@@ -212,14 +213,28 @@ end
     for name in $(Tuple(indexed_homs))
       incident = cset.incident[name]
       resize!(incident, nparts)
-      @inbounds for part in start:nparts
-        incident[part] = Int[]
-      end
+      @inbounds for part in start:nparts; incident[part] = Int[] end
     end
     for name in $(Tuple(data_homs))
       resize!(cset.data[name], nparts)
     end
     start:nparts
+  end
+end
+
+copy_parts!(cset::CSet, from::CSet, type::Symbol, parts) =
+  _copy_parts!(cset, from, Val(type), parts)
+
+@generated function _copy_parts!(cset::T, from::T, ::Val{type}, parts) where
+    {obs,homs,doms,codoms,data,data_doms,type,
+     T <: CSet{obs,homs,doms,codoms,data,data_doms}}
+  ob = findfirst(obs .== type)::Int
+  data_homs = [ data[i] for (i, dom) in enumerate(data_doms) if dom == ob ]
+  quote
+    newparts = add_parts!(cset, $(QuoteNode(type)), length(parts))
+    for name in $(Tuple(data_homs))
+      cset.data[name][newparts] .= from.data[name][parts]
+    end
   end
 end
 
@@ -229,10 +244,11 @@ Both single and vectorized assignment are supported.
 
 See also: [`set_subparts!`](@ref).
 """
-function set_subpart!(cset::CSet, part::Int, name, subpart)
+function set_subpart!(cset::CSet, part::Int, name::Symbol, subpart)
   _set_subpart!(cset, part, Val(name), subpart)
 end
-function set_subpart!(cset::CSet, part::AbstractVector{Int}, name, subpart)
+function set_subpart!(cset::CSet, part::AbstractVector{Int},
+                      name::Symbol, subpart)
   broadcast(part, subpart) do part, subpart
     _set_subpart!(cset, part, Val(name), subpart)
   end

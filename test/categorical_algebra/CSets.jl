@@ -64,7 +64,7 @@ const Dendrogram = CSetType(TheoryDendrogram, data=[:R], index=[:parent])
 d = Dendrogram(height=Float64)
 add_parts!(d, :X, 3, (height=0,))
 add_parts!(d, :X, 2, (height=[1,2],))
-for v in 1:3; set_subpart!(d, v, :parent, 4) end
+set_subpart!(d, 1:3, :parent, 4)
 set_subpart!(d, [4,5], :parent, 5)
 
 @test nparts(d, :X) == 5
@@ -75,5 +75,10 @@ set_subpart!(d, [4,5], :parent, 5)
 @test subpart(d, [1,2,3], :height)::Vector{Float64} == [0,0,0]
 @test subpart(d, 4, :height)::Float64 == 1
 @test subpart(d, :, :height) == [0,0,0,1,2]
+
+d2 = empty(d)
+copy_parts!(d2, d, :X, 5)
+@test nparts(d2, :X) == 1
+@test subpart(d2, 1, :height) == 2.0
 
 end
