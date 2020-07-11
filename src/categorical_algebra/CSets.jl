@@ -49,15 +49,6 @@ mutable struct CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex} <:
   subparts::SLArray{Tuple{NHom},Vector{Int},1,NHom,Hom}
   incident::SLArray{Tuple{NIndex},Vector{Vector{Int}},1,NIndex,Index}
   data::NamedTuple{Data}
-
-  function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}(
-      datatypes::NamedTuple{Data}) where {Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}
-    new{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}(
-      SLArray{Tuple{NOb},Ob}(zeros(SVector{NOb,Int})),
-      SLArray{Tuple{NHom},Hom}(Tuple(Int[] for i in 1:NHom)),
-      SLArray{Tuple{NIndex},Index}(Tuple(Vector{Int}[] for i in 1:NIndex)),
-      NamedTuple{Data}(T[] for T in datatypes))
-  end
 end
 
 function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index}(; kw...) where
@@ -70,6 +61,14 @@ function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index}(
   @assert length(Dom) == NHom && length(Codom) == NHom
   @assert length(DataDom) == length(Data)
   CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}(datatypes)
+end
+function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}(
+    datatypes::NamedTuple{Data}) where {Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}
+  CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}(
+    SLArray{Tuple{NOb},Ob}(zeros(SVector{NOb,Int})),
+    SLArray{Tuple{NHom},Hom}(Tuple(Int[] for i in 1:NHom)),
+    SLArray{Tuple{NIndex},Index}(Tuple(Vector{Int}[] for i in 1:NIndex)),
+    NamedTuple{Data}(T[] for T in datatypes))
 end
 
 """ Generate an abstract C-set type from a presentation of a category.
@@ -103,6 +102,11 @@ separate(f, a::AbstractArray) = (i = f.(a); (a[i], a[.!i]))
 function Base.:(==)(x1::T, x2::T) where T <: CSet
   # The incidence data is redundant, so need not be compared.
   x1.nparts == x2.nparts && x1.subparts == x2.subparts && x1.data == x2.data
+end
+
+function Base.copy(cset::T) where T <: CSet
+  T(cset.nparts, map(copy, cset.subparts),
+    map(copy, cset.incident), map(copy, cset.data))
 end
 
 Base.empty(cset::T) where T <: CSet = T(map(eltype, cset.data))
