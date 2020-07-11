@@ -5,7 +5,7 @@ export AbstractCSet, AbstractCSetType, CSet, CSetType,
   nparts, subpart, get_subpart, incident,
   add_part!, add_parts!, copy_parts!, set_subpart!, set_subparts!
 
-using Compat: only
+using Compat
 using LabelledArrays, StaticArrays
 
 using ...Present
@@ -190,10 +190,10 @@ end
 @generated function _add_parts!(cset::T, ::Val{type}, n::Int) where
     {type, obs,homs,doms,codoms,data,data_doms,indexed,
      T <: CSet{obs,homs,doms,codoms,data,data_doms,indexed}}
-  ob = findfirst(obs .== type)::Int
-  in_homs = [ homs[i] for (i, codom) in enumerate(codoms) if codom == ob ]
-  out_homs = [ homs[i] for (i, dom) in enumerate(doms) if dom == ob ]
-  data_homs = [ data[i] for (i, dom) in enumerate(data_doms) if dom == ob ]
+  obnum = findfirst(obs .== type)::Int
+  in_homs = [ homs[i] for (i, codom) in enumerate(codoms) if codom == obnum ]
+  out_homs = [ homs[i] for (i, dom) in enumerate(doms) if dom == obnum ]
+  data_homs = [ data[i] for (i, dom) in enumerate(data_doms) if dom == obnum ]
   indexed_homs = filter(hom -> hom ∈ indexed, in_homs)
   # TODO: The three loops could (should?) be unrolled. Or is Julia's compiler
   # smart enough to do this on its own?
@@ -219,19 +219,64 @@ end
   end
 end
 
-copy_parts!(cset::CSet, from::CSet, type::Symbol, parts) =
-  _copy_parts!(cset, from, Val(type), parts)
+""" Copy parts from one C-set to another.
 
-@generated function _copy_parts!(cset::T, from::T, ::Val{type}, parts) where
+All subparts between the selected parts, including any attached data, are
+preserved. Thus, if the selected parts form a sub-C-set, then the whole
+sub-C-set is preserved. On the other hand, if the selected parts do *not* form a
+sub-C-set, then some copied parts will have undefined subparts.
+"""
+copy_parts!(cset::CSet, from::CSet; kw...) = copy_parts!(cset, from, (; kw...))
+
+copy_parts!(cset::CSet, from::CSet, type::Symbol, parts) =
+  copy_parts!(cset, from, (; type => parts))
+
+@generated function copy_parts!(cset::T, from::T, parts::NamedTuple{types}) where
+    {types, obs,homs,doms,codoms, T <: CSet{obs,homs,doms,codoms}}
+  obnums = [ findfirst(obs .== type)::Int for type in types ]
+  in_obs, out_homs = Symbol[], Tuple{Symbol,Symbol,Symbol}[]
+  for (hom, dom, codom) in zip(homs, doms, codoms)
+    if dom ∈ obnums && codom ∈ obnums
+      push!(in_obs, obs[codom])
+      push!(out_homs, (hom, obs[dom], obs[codom]))
+    end
+  end
+  in_obs = Tuple(unique!(in_obs))
+  quote
+    newparts = NamedTuple{$types}(tuple($(map(types) do type
+      :(_copy_parts_data!(cset, from, Val($(QuoteNode(type))), parts.$type))
+    end...)))
+    partmaps = NamedTuple{$in_obs}(tuple($(map(in_obs) do type
+      :(Dict{Int,Int}(zip(parts.$type, newparts.$type)))
+    end...)))
+    for (name, dom, codom) in $(Tuple(out_homs))
+      for (p, newp) in zip(parts[dom], newparts[dom])
+        q = subpart(from, p, name)
+        newq = get(partmaps[codom], q, nothing)
+        if !isnothing(newq)
+          set_subpart!(cset, newp, name, newq)
+        end
+      end
+    end
+    newparts
+  end
+end
+
+""" Copy parts of a single type from one C-set to another.
+
+Any data attached to the parts is also copied.
+"""
+@generated function _copy_parts_data!(cset::T, from::T, ::Val{type}, parts) where
     {type, obs,homs,doms,codoms,data,data_doms,
      T <: CSet{obs,homs,doms,codoms,data,data_doms}}
-  ob = findfirst(obs .== type)::Int
-  data_homs = [ data[i] for (i, dom) in enumerate(data_doms) if dom == ob ]
+  obnum = findfirst(obs .== type)::Int
+  data_homs = [ data[i] for (i, dom) in enumerate(data_doms) if dom == obnum ]
   quote
     newparts = add_parts!(cset, $(QuoteNode(type)), length(parts))
     for name in $(Tuple(data_homs))
       cset.data[name][newparts] .= from.data[name][parts]
     end
+    newparts
   end
 end
 
