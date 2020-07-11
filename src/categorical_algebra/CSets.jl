@@ -118,14 +118,15 @@ nparts(cset::CSet, type::Symbol) = cset.nparts[type]
 
 Both single and vectorized access are supported.
 """
-subpart(cset::CSet, part, name::Symbol) = _subpart(cset, part, Val(name))
+subpart(cset::CSet, part, name::Symbol) = subpart(cset, name)[part]
+subpart(cset::CSet, name::Symbol) = _subpart(cset, Val(name))
 
-@generated function _subpart(cset::T, part, ::Val{name}) where
+@generated function _subpart(cset::T, ::Val{name}) where
     {name, obs,homs,doms,codoms,data, T <: CSet{obs,homs,doms,codoms,data}}
   if name ∈ homs
-    :(cset.subparts.$name[part])
+    :(cset.subparts.$name)
   elseif name ∈ data
-    :(cset.data.$name[part])
+    :(cset.data.$name)
   else
     throw(KeyError(name))
   end
@@ -183,7 +184,7 @@ end
   # TODO: The three loops could (should?) be unrolled. Or is Julia's compiler
   # smart enough to do this on its own?
   quote
-    @assert n > 0
+    if n == 0; return Int[] end
     nparts = cset.nparts.$type + n
     cset.nparts = SLVector(cset.nparts; $type=nparts)
     start = nparts - n + 1
@@ -271,15 +272,19 @@ Both single and vectorized assignment are supported.
 
 See also: [`set_subparts!`](@ref).
 """
-function set_subpart!(cset::CSet, part::Int, name::Symbol, subpart)
+set_subpart!(cset::CSet, part::Int, name::Symbol, subpart) =
   _set_subpart!(cset, part, Val(name), subpart)
-end
+
 function set_subpart!(cset::CSet, part::AbstractVector{Int},
                       name::Symbol, subpart)
   broadcast(part, subpart) do part, subpart
     _set_subpart!(cset, part, Val(name), subpart)
   end
 end
+
+set_subpart!(cset::CSet, part::Colon, name::Symbol, sub) =
+  set_subpart!(cset, 1:length(subpart(cset, name)), name, sub)
+
 @generated function _set_subpart!(cset::T, part::Int, ::Val{name}, subpart) where
     {name, obs,homs,doms,codoms,data,data_doms,indexed,
      T <: CSet{obs,homs,doms,codoms,data,data_doms,indexed}}

@@ -32,6 +32,7 @@ set_subpart!(dds, 1, :Φ, 1)
 
 @test add_part!(dds, :X, (Φ=1,)) == 2
 @test add_part!(dds, :X, (Φ=1,)) == 3
+@test subpart(dds, :Φ) == [1,1,1]
 @test subpart(dds, [2,3], :Φ) == [1,1]
 @test incident(dds, 1, :Φ) == [1,2,3]
 
