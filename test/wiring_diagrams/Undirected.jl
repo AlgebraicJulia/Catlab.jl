@@ -47,7 +47,7 @@ set_link!(d, 1:3, 1:3, outer=true)
 @test link(d, 1:3, outer=true) == [1,2,3]
 @test_throws ErrorException set_link!(d, 1, 2)
 
-# Box-relative interface for ports.
+# Interface for ports that is relative to their boxes.
 d_previous = d
 d = UndirectedWiringDiagram([:X,:Y,:Z])
 add_box!(d, [:X,:W]); add_box!(d, [:Y,:W]); add_box!(d, [:Z,:W])
@@ -57,5 +57,28 @@ add_wires!(d, (i,1) => (outer_box(d),i) for i in 1:3)
 add_wire!(d, (1,2) => (2,2))
 add_wire!(d, (2,2) => (3,2))
 @test d == d_previous
+
+# Operadic interface
+####################
+
+f = UndirectedWiringDiagram(3)
+add_box!(f, 2); add_box!(f, 2); add_box!(f, 2)
+add_links!(f, 4)
+set_link!(f, 1:6, [1,4,2,4,3,4])
+set_link!(f, 1:3, 1:3, outer=true)
+
+g = UndirectedWiringDiagram(2)
+add_box!(g, 1); add_box!(g, 1)
+add_links!(g, 2)
+set_link!(g, 1:2, 2:-1:1)
+set_link!(g, 1:2, 1:2, outer=true)
+
+h = UndirectedWiringDiagram(3)
+add_box!(h, 2); add_box!(h, 1); add_box!(h, 1); add_box!(h, 2)
+add_links!(h, 4)
+set_link!(h, 1:6, [1,4,4,2,3,4])
+set_link!(h, 1:3, 1:3, outer=true)
+@test ocompose(f,2,g) == h
+@test ocompose(ocompose(f,1,g),3,g) == ocompose(ocompose(f,2,g),1,g)
 
 end

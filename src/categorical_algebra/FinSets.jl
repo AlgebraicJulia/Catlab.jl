@@ -73,6 +73,8 @@ end
 force(f::FinOrdFunction) = FinOrdFunctionMap(map(f, 1:dom(f).n), codom(f).n)
 force(f::FinOrdFunctionMap) = f
 
+Base.collect(f::FinOrdFunction) = force(f).func
+
 """ Category of finite ordinals and functions.
 """
 @instance Category(FinOrd, FinOrdFunction) begin

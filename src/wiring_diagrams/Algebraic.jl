@@ -364,11 +364,11 @@ bottom(A::Ports{AbBiRel}, B::Ports{AbBiRel}) = compose(cozero(A), zero(B))
 
 """ Operadic composition of wiring diagrams.
 
-This generic function has two different signatures, corresponding to the two
-standard definitions of an operad (Yau, 2018, *Operads of Wiring Diagrams*,
-Definitions 2.3 and 2.10).
+This generic function has two different signatures, corresponding to the "full"
+and "partial" notions of operadic composition (Yau, 2018, *Operads of Wiring
+Diagrams*, Definitions 2.3 and 2.10).
 
-This operation is a simple wrapper around substitution (`substitute`).
+This operation is a simple wrapper around [`substitute`](@ref).
 """
 function ocompose(f::WiringDiagram, gs::Vector{<:WiringDiagram})
   @assert length(gs) == nboxes(f)
