@@ -90,9 +90,11 @@ ports(d::AbstractUWD, box) =
 linked_ports(d::AbstractUWD, link; outer::Bool=false) =
   incident(d, link, outer ? :outer_link : :link)
 
-link_type(d::AbstractUWD, link) = get_subpart(d, link, :link_type, NoPortType())
+link_type(d::AbstractUWD, link) =
+  has_subpart(d, :link_type) ? subpart(d, link, :link_type) : NoPortType()
 port_type(d::AbstractUWD, port; outer::Bool=false) =
-  get_subpart(d, port, outer ? :outer_port_type : :port_type, NoPortType())
+  has_subpart(d, :port_type) ?
+    subpart(d, port, outer ? :outer_port_type : :port_type) : NoPortType()
 
 function port_type(d::AbstractUWD, port::Tuple{Int,Int})
   box, nport = port

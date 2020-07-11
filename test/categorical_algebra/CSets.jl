@@ -35,11 +35,10 @@ set_subpart!(dds, 1, :Φ, 1)
 @test subpart(dds, [2,3], :Φ) == [1,1]
 @test incident(dds, 1, :Φ) == [1,2,3]
 
+@test has_subpart(dds, :Φ)
+@test !has_subpart(dds, :badname)
 @test_throws KeyError subpart(dds, 1, :badname)
 @test_throws KeyError set_subpart!(dds, 1, :badname, 1)
-@test get_subpart(dds, 1, :Φ, nothing) == 1
-@test get_subpart(dds, 1, :badname, nothing) == nothing
-@test get_subpart(() -> nothing, dds, 1, :badname) == nothing
 
 # Dendrograms
 #############
@@ -72,6 +71,7 @@ set_subpart!(d, [4,5], :parent, 5)
 @test subpart(d, 4, :parent) == 5
 @test subpart(d, :, :parent) == [4,4,4,5,5]
 @test incident(d, 4, :parent) == [1,2,3]
+@test has_subpart(d, :height)
 @test subpart(d, [1,2,3], :height)::Vector{Float64} == [0,0,0]
 @test subpart(d, 4, :height)::Float64 == 10
 @test subpart(d, :, :height) == [0,0,0,10,20]

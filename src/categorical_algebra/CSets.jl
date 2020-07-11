@@ -2,7 +2,7 @@
 """
 module CSets
 export AbstractCSet, AbstractCSetType, CSet, CSetType,
-  nparts, subpart, get_subpart, incident,
+  nparts, subpart, has_subpart, incident,
   add_part!, add_parts!, copy_parts!, set_subpart!, set_subparts!
 
 using Compat
@@ -131,28 +131,13 @@ subpart(cset::CSet, part, name::Symbol) = _subpart(cset, part, Val(name))
   end
 end
 
-""" Get subpart of part in C-set, with default if there is no such subpart.
-
-The relationship between [`subpart`](@ref) and this function is the same as that
-between `[` and `get` for dictionaries.
+""" Whether a C-set has a subpart with the given name.
 """
-function get_subpart(f, cset::CSet, part, name::Symbol)
-  value = get_subpart(cset, part, name, undef)
-  value == undef ? f() : value
-end
+has_subpart(cset::CSet, name::Symbol) = _has_subpart(cset, Val(name))
 
-get_subpart(cset::CSet, part, name::Symbol, default) =
-  _get_subpart(cset, part, Val(name), default)
-
-@generated function _get_subpart(cset::T, part, ::Val{name}, default) where
+@generated function _has_subpart(cset::T, ::Val{name}) where
     {name, obs,homs,doms,codoms,data, T<: CSet{obs,homs,doms,codoms,data}}
-  if name ∈ homs
-    :(cset.subparts.$name[part])
-  elseif name ∈ data
-    :(cset.data.$name[part])
-  else
-    :default
-  end
+  name ∈ homs || name ∈ data
 end
 
 """ Get superparts incident to part in C-set.
