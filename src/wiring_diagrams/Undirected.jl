@@ -2,9 +2,9 @@
 """
 module UndirectedWiringDiagrams
 export AbstractUndirectedWiringDiagram, UndirectedWiringDiagram,
-  outer_box, box, link, nboxes, nlinks, boxes, links, ports, linked_ports,
-  link_type, port_type, add_box!, add_link!, add_links!, set_link!, add_wire!,
-  add_wires!, ocompose
+  outer_box, box, junction, nboxes, njunctions, boxes, junctions, ports,
+  ports_with_junction, junction_type, port_type, add_box!, add_junction!,
+  add_junctions!, set_junction!, add_wire!, add_wires!, ocompose
 
 using ...CategoricalAlgebra.CSets, ...Present
 using ...CategoricalAlgebra.ShapeDiagrams: Span
@@ -13,7 +13,7 @@ using ...Theories: FreeCategory, dom, codom, compose, ⋅, id
 
 import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,
   add_wires!
-import ..AlgebraicWiringDiagrams: ocompose
+import ..AlgebraicWiringDiagrams: add_junctions!, ocompose
 
 # Data types
 ############
@@ -22,31 +22,32 @@ import ..AlgebraicWiringDiagrams: ocompose
   Box::Ob
   Port::Ob
   OuterPort::Ob
-  Link::Ob
+  Junction::Ob
 
   box::Hom(Port,Box)
-  link::Hom(Port,Link)
-  outer_link::Hom(OuterPort,Link)
+  junction::Hom(Port,Junction)
+  outer_junction::Hom(OuterPort,Junction)
 end
 
 const AbstractUndirectedWiringDiagram = const AbstractUWD =
   AbstractCSetType(TheoryUWD)
 const UntypedUndirectedWiringDiagram = const UntypedUWD =
-  CSetType(TheoryUWD, index=[:box, :link, :outer_link])
+  CSetType(TheoryUWD, index=[:box, :junction, :outer_junction])
 
 @present TheoryTypedUWD <: TheoryUWD begin
   Type::Ob
 
   port_type::Hom(Port,Type)
   outer_port_type::Hom(OuterPort,Type)
-  link_type::Hom(Link,Type)
+  junction_type::Hom(Junction,Type)
 
-  compose(link, link_type) == port_type
-  compose(outer_link, link_type) == outer_port_type
+  compose(junction, junction_type) == port_type
+  compose(outer_junction, junction_type) == outer_port_type
 end
 
 const TypedUndirectedWiringDiagram = const TypedUWD =
-  CSetType(TheoryTypedUWD, data=[:Type], index=[:box, :link, :outer_link])
+  CSetType(TheoryTypedUWD, data=[:Type],
+           index=[:box, :junction, :outer_junction])
 
 # Imperative interface
 ######################
@@ -59,7 +60,7 @@ end
 
 function UndirectedWiringDiagram(
     ::Type{T}, port_types::AbstractVector{S}) where {T, S<:T}
-  d = TypedUWD(port_type=T, outer_port_type=T, link_type=T)
+  d = TypedUWD(port_type=T, outer_port_type=T, junction_type=T)
   nports = length(port_types)
   add_parts!(d, :OuterPort, nports, (outer_port_type=port_types,))
   return d
@@ -69,28 +70,28 @@ UndirectedWiringDiagram(port_types::AbstractVector{T}) where T =
 
 outer_box(::AbstractUWD) = 0
 box(d::AbstractUWD, args...) = subpart(d, args..., :box)
-link(d::AbstractUWD, args...; outer::Bool=false) =
-  subpart(d, args..., outer ? :outer_link : :link)
+junction(d::AbstractUWD, args...; outer::Bool=false) =
+  subpart(d, args..., outer ? :outer_junction : :junction)
 
-function link(d::AbstractUWD, port::Tuple{Int,Int})
+function junction(d::AbstractUWD, port::Tuple{Int,Int})
   box, nport = port
   box == outer_box(d) ?
-    link(d, nport, outer=true) : link(d, ports(d, box)[nport])
+    junction(d, nport, outer=true) : junction(d, ports(d, box)[nport])
 end
 
 nboxes(d::AbstractUWD) = nparts(d, :Box)
-nlinks(d::AbstractUWD) = nparts(d, :Link)
+njunctions(d::AbstractUWD) = nparts(d, :Junction)
 boxes(d::AbstractUWD) = 1:nboxes(d)
-links(d::AbstractUWD) = 1:nlinks(d)
+junctions(d::AbstractUWD) = 1:njunctions(d)
 
 ports(d::AbstractUWD; outer::Bool=false) =
   1:nparts(d, outer ? :OuterPort : :Port)
 ports(d::AbstractUWD, box) =
   box == outer_box(d) ? (1:nparts(d, :OuterPort)) : incident(d, box, :box)
-linked_ports(d::AbstractUWD, link; outer::Bool=false) =
-  incident(d, link, outer ? :outer_link : :link)
+ports_with_junction(d::AbstractUWD, junction; outer::Bool=false) =
+  incident(d, junction, outer ? :outer_junction : :junction)
 
-link_type(d::AbstractUWD, args...) = subpart(d, args..., :link_type)
+junction_type(d::AbstractUWD, args...) = subpart(d, args..., :junction_type)
 port_type(d::AbstractUWD, args...; outer::Bool=false) =
   subpart(d, args..., outer ? :outer_port_type : :port_type)
 
@@ -115,53 +116,56 @@ function add_box!(d::AbstractUWD, port_types::AbstractVector; data...)
   box
 end
 
-add_link!(d::AbstractUWD) = add_part!(d, :Link)
-add_link!(d::AbstractUWD, link_type) = add_part!(d, :Link, (link_type=link_type,))
-add_links!(d::AbstractUWD, nlinks::Int) = add_parts!(d, :Link, nlinks)
-add_links!(d::AbstractUWD, link_types::AbstractVector) =
-  add_parts!(d, :Link, length(link_types), (link_type=link_types,))
+add_junction!(d::AbstractUWD) = add_part!(d, :Junction)
+add_junction!(d::AbstractUWD, type) =
+  add_part!(d, :Junction, (junction_type=type,))
+add_junctions!(d::AbstractUWD, njunctions::Int) =
+  add_parts!(d, :Junction, njunctions)
+add_junctions!(d::AbstractUWD, types::AbstractVector) =
+  add_parts!(d, :Junction, length(types), (junction_type=types,))
 
-function set_link!(d::AbstractUWD, port, link; outer::Bool=false)
-  if has_subpart(d, :link_type)
-    ptype, ltype = port_type(d, port, outer=outer), link_type(d, link)
-    if !all(ptype .== ltype)
-      error("Domain error: port type $ptype and link type $ltype do not match")
-    end
+function set_junction!(d::AbstractUWD, port, junction; outer::Bool=false)
+  if has_subpart(d, :junction_type)
+    ptype, jtype = port_type(d, port, outer=outer), junction_type(d, junction)
+    all(ptype .== jtype) || error(
+      "Domain error: port type $ptype and junction type $jtype do not match")
   end
-  set_subpart!(d, port, outer ? :outer_link : :link, link)
+  set_subpart!(d, port, outer ? :outer_junction : :junction, junction)
 end
-set_link!(d::AbstractUWD, link; kw...) = set_link!(d, :, link; kw...)
+set_junction!(d::AbstractUWD, junction; kw...) =
+  set_junction!(d, :, junction; kw...)
 
-function set_link!(d::AbstractUWD, port::Tuple{Int,Int}, link)
+function set_junction!(d::AbstractUWD, port::Tuple{Int,Int}, junction)
   box, nport = port
   if box == outer_box(d)
-    set_link!(d, nport, link, outer=true)
+    set_junction!(d, nport, junction, outer=true)
   else
-    set_link!(d, ports(d, box)[nport], link)
+    set_junction!(d, ports(d, box)[nport], junction)
   end
 end
 
 """ Wire together two ports in an undirected wiring diagram.
 
-A convenience method that creates and sets links as needed. Ports are only
-allowed to have one link, so if both ports already have links, then the second
-port is assigned the link of the first. The handling of the two arguments is
-otherwise symmetric.
+A convenience method that creates and sets junctions as needed. Ports are only
+allowed to have one junction, so if both ports already have junctions, then the
+second port is assigned the junction of the first. The handling of the two
+arguments is otherwise symmetric.
 
-FIXME: When both ports already have links, the two links should be *merged*.
-To do this, we must implement `merge_links!` and thus also `rem_part!`.
+FIXME: When both ports already have junctions, the two junctions should be
+*merged*. To do this, we must implement `merge_junctions!` and thus also
+`rem_part!`.
 """
 function add_wire!(d::AbstractUWD, port1::Tuple{Int,Int}, port2::Tuple{Int,Int})
-  link1, link2 = link(d, port1), link(d, port2)
-  if link1 > 0
-    set_link!(d, port2, link1)
-  elseif link2 > 0
-    set_link!(d, port1, link2)
+  j1, j2 = junction(d, port1), junction(d, port2)
+  if j1 > 0
+    set_junction!(d, port2, j1)
+  elseif j2 > 0
+    set_junction!(d, port1, j2)
   else
-    new_link = has_subpart(d, :link_type) ?
-      add_link!(d, port_type(d, port1)) : add_link!(d)
-    set_link!(d, port1, new_link)
-    set_link!(d, port2, new_link)
+    j = has_subpart(d, :junction_type) ?
+      add_junction!(d, port_type(d, port1)) : add_junction!(d)
+    set_junction!(d, port1, j)
+    set_junction!(d, port2, j)
   end
 end
 add_wire!(d, wire::Pair) = add_wire!(d, first(wire), last(wire))
@@ -183,28 +187,28 @@ function ocompose(f::AbstractUWD, gs::AbstractVector{<:AbstractUWD})
     copy_boxes!(h, g, boxes(g))
   end
 
-  f_link = FinOrdFunction(flat(link(f, ports(f, i)) for i in boxes(f)),
-                          nlinks(f))
+  f_junction = FinOrdFunction(
+    flat(junction(f, ports(f, i)) for i in boxes(f)), njunctions(f))
   # FIXME: Should use coproduct as monoidal product.
-  gs_nlinks = [0; cumsum(nlinks.(gs))]
+  gs_offset = [0; cumsum(njunctions.(gs))]
   gs_outer = FinOrdFunction(
-    flat(link(g, outer=true) .+ n for (g,n) in zip(gs, gs_nlinks[1:end-1])),
-    gs_nlinks[end])
-  cospan = pushout(Span(f_link, gs_outer))
+    flat(junction(g, outer=true) .+ n for (g,n) in zip(gs, gs_offset[1:end-1])),
+    gs_offset[end])
+  cospan = pushout(Span(f_junction, gs_outer))
   f_inc, g_inc = cospan.left, cospan.right
-  links = add_links!(h, codom(f_inc).n)
-  if has_subpart(h, :link_type)
-    set_subpart!(h, [collect(f_inc); collect(g_inc)], :link_type,
-                 [link_type(f); flat(link_type(g) for g in gs)])
+  junctions = add_junctions!(h, codom(f_inc).n)
+  if has_subpart(h, :junction_type)
+    set_subpart!(h, [collect(f_inc); collect(g_inc)], :junction_type,
+                 [junction_type(f); flat(junction_type(g) for g in gs)])
   end
 
-  f_outer = FinOrdFunction(link(f, outer=true), nlinks(f))
+  f_outer = FinOrdFunction(junction(f, outer=true), njunctions(f))
   # FIXME: Again, should use coproduct.
-  gs_link = FinOrdFunction(
-    flat(link(g) .+ n for (g,n) in zip(gs, gs_nlinks[1:end-1])),
-    gs_nlinks[end])
-  set_link!(h, collect(f_outer ⋅ f_inc), outer=true)
-  set_link!(h, collect(gs_link ⋅ g_inc))
+  gs_junction = FinOrdFunction(
+    flat(junction(g) .+ n for (g,n) in zip(gs, gs_offset[1:end-1])),
+    gs_offset[end])
+  set_junction!(h, collect(f_outer ⋅ f_inc), outer=true)
+  set_junction!(h, collect(gs_junction ⋅ g_inc))
   return h
 end
 
@@ -216,24 +220,25 @@ function ocompose(f::AbstractUWD, i::Int, g::AbstractUWD)
   copy_boxes!(h, g, boxes(g))
   copy_boxes!(h, f, (i+1):nboxes(f))
 
-  f_i = FinOrdFunction(link(f, ports(f, i)), nlinks(f))
-  g_outer = FinOrdFunction(link(g, outer=true), nlinks(g))
+  f_i = FinOrdFunction(junction(f, ports(f, i)), njunctions(f))
+  g_outer = FinOrdFunction(junction(g, outer=true), njunctions(g))
   cospan = pushout(Span(f_i, g_outer))
   f_inc, g_inc = cospan.left, cospan.right
-  links = add_links!(h, codom(f_inc).n)
-  if has_subpart(h, :link_type)
-    set_subpart!(h, [collect(f_inc); collect(g_inc)], :link_type,
-                 [link_type(f); link_type(g)])
+  junctions = add_junctions!(h, codom(f_inc).n)
+  if has_subpart(h, :junction_type)
+    set_subpart!(h, [collect(f_inc); collect(g_inc)], :junction_type,
+                 [junction_type(f); junction_type(g)])
   end
 
-  f_outer = FinOrdFunction(link(f, outer=true), nlinks(f))
-  f_start = FinOrdFunction(link(f, flat(ports(f, 1:(i-1)))), nlinks(f))
-  g_link = FinOrdFunction(link(g), nlinks(g))
-  f_end = FinOrdFunction(link(f, flat(ports(f, (i+1):nboxes(f)))), nlinks(f))
-  set_link!(h, collect(f_outer ⋅ f_inc), outer=true)
-  set_link!(h, [
+  f_outer = FinOrdFunction(junction(f, outer=true), njunctions(f))
+  f_start = FinOrdFunction(junction(f, flat(ports(f, 1:(i-1)))), njunctions(f))
+  g_junction = FinOrdFunction(junction(g), njunctions(g))
+  f_end = FinOrdFunction(
+    junction(f, flat(ports(f, (i+1):nboxes(f)))), njunctions(f))
+  set_junction!(h, collect(f_outer ⋅ f_inc), outer=true)
+  set_junction!(h, [
     collect(f_start ⋅ f_inc);
-    collect(g_link ⋅ g_inc);
+    collect(g_junction ⋅ g_inc);
     collect(f_end ⋅ f_inc);
   ])
   return h
