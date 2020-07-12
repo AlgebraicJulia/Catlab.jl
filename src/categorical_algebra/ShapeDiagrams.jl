@@ -5,8 +5,6 @@ export AbstractFunctor, AbstractLaxator, LaxMonoidalFunctor,
   Span, Cone, Cospan, DecoratedCospan, Cocone, Diagram, left, right, leg, nlegs, apex, base,
   decorator, decoration, undecorate
 
-using MetaGraphs
-using LightGraphs
 using ...Theories: dom, codom
 
 abstract type AbstractFunctor end
