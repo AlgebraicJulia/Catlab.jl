@@ -11,7 +11,8 @@ using ...CategoricalAlgebra.ShapeDiagrams: Span
 using ...CategoricalAlgebra.FinSets: FinOrdFunction, pushout
 using ...Theories: FreeCategory, dom, codom, compose, ⋅, id
 
-import ..DirectedWiringDiagrams: boxes, nboxes, add_box!, add_wire!, add_wires!
+import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,
+  add_wires!
 import ..AlgebraicWiringDiagrams: ocompose
 
 # Data types
@@ -129,6 +130,7 @@ function set_link!(d::AbstractUWD, port, link; outer::Bool=false)
   end
   set_subpart!(d, port, outer ? :outer_link : :link, link)
 end
+set_link!(d::AbstractUWD, link; kw...) = set_link!(d, :, link; kw...)
 
 function set_link!(d::AbstractUWD, port::Tuple{Int,Int}, link)
   box, nport = port
@@ -201,8 +203,8 @@ function ocompose(f::AbstractUWD, gs::AbstractVector{<:AbstractUWD})
   gs_link = FinOrdFunction(
     flat(link(g) .+ n for (g,n) in zip(gs, gs_nlinks[1:end-1])),
     gs_nlinks[end])
-  set_link!(h, :, collect(f_outer ⋅ f_inc), outer=true)
-  set_link!(h, :, collect(gs_link ⋅ g_inc))
+  set_link!(h, collect(f_outer ⋅ f_inc), outer=true)
+  set_link!(h, collect(gs_link ⋅ g_inc))
   return h
 end
 
@@ -228,8 +230,8 @@ function ocompose(f::AbstractUWD, i::Int, g::AbstractUWD)
   f_start = FinOrdFunction(link(f, flat(ports(f, 1:(i-1)))), nlinks(f))
   g_link = FinOrdFunction(link(g), nlinks(g))
   f_end = FinOrdFunction(link(f, flat(ports(f, (i+1):nboxes(f)))), nlinks(f))
-  set_link!(h, :, collect(f_outer ⋅ f_inc), outer=true)
-  set_link!(h, :, [
+  set_link!(h, collect(f_outer ⋅ f_inc), outer=true)
+  set_link!(h, [
     collect(f_start ⋅ f_inc);
     collect(g_link ⋅ g_inc);
     collect(f_end ⋅ f_inc);

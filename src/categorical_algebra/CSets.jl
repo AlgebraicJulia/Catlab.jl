@@ -286,8 +286,10 @@ function set_subpart!(cset::CSet, part::AbstractVector{Int},
   end
 end
 
-set_subpart!(cset::CSet, part::Colon, name::Symbol, sub) =
-  set_subpart!(cset, 1:length(subpart(cset, name)), name, sub)
+set_subpart!(cset::CSet, ::Colon, name::Symbol, subpart) =
+  set_subpart!(cset, name, subpart)
+set_subpart!(cset::CSet, name::Symbol, new_subpart) =
+  set_subpart!(cset, 1:length(subpart(cset, name)), name, new_subpart)
 
 @generated function _set_subpart!(cset::T, part::Int, ::Val{name}, subpart) where
     {name, obs,homs,doms,codoms,data,data_doms,indexed,
