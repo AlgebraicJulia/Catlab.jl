@@ -67,18 +67,27 @@ add_links!(f, 4)
 set_link!(f, 1:6, [1,4,2,4,3,4])
 set_link!(f, 1:3, 1:3, outer=true)
 
-g = UndirectedWiringDiagram(2)
-add_box!(g, 1); add_box!(g, 1)
-add_links!(g, 2)
-set_link!(g, 1:2, 2:-1:1)
-set_link!(g, 1:2, 1:2, outer=true)
+g1 = UndirectedWiringDiagram(2)
+add_box!(g1, 1); add_box!(g1, 1)
+add_links!(g1, 2)
+set_link!(g1, 1:2, 1:2)
+set_link!(g1, 1:2, 1:2, outer=true)
+g2 = copy(g1)
+set_link!(g2, 1:2, 2:-1:1)
 
 h = UndirectedWiringDiagram(3)
 add_box!(h, 2); add_box!(h, 1); add_box!(h, 1); add_box!(h, 2)
 add_links!(h, 4)
-set_link!(h, 1:6, [1,4,4,2,3,4])
-set_link!(h, 1:3, 1:3, outer=true)
-@test ocompose(f,2,g) == h
-@test ocompose(ocompose(f,1,g),3,g) == ocompose(ocompose(f,2,g),1,g)
+set_link!(h, :, [1,4,4,2,3,4])
+set_link!(h, :, 1:3, outer=true)
+@test ocompose(f,2,g2) == h
+@test ocompose(ocompose(f,1,g1),3,g2) == ocompose(ocompose(f,2,g2),1,g1)
+
+h = UndirectedWiringDiagram(3)
+for i in 1:6; add_box!(h, 1) end
+add_links!(h, 4)
+set_link!(h, :, [1,4,4,2,3,4])
+set_link!(h, :, 1:3, outer=true)
+@test ocompose(f, [g1,g2,g1]) == h
 
 end

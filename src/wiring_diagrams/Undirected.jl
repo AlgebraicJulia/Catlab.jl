@@ -67,9 +67,9 @@ UndirectedWiringDiagram(port_types::AbstractVector{T}) where T =
   UndirectedWiringDiagram(T, port_types)
 
 outer_box(::AbstractUWD) = 0
-box(d::AbstractUWD, port) = subpart(d, port, :box)
-link(d::AbstractUWD, port; outer::Bool=false) =
-  subpart(d, port, outer ? :outer_link : :link)
+box(d::AbstractUWD, args...) = subpart(d, args..., :box)
+link(d::AbstractUWD, args...; outer::Bool=false) =
+  subpart(d, args..., outer ? :outer_link : :link)
 
 function link(d::AbstractUWD, port::Tuple{Int,Int})
   box, nport = port
@@ -89,9 +89,9 @@ ports(d::AbstractUWD, box) =
 linked_ports(d::AbstractUWD, link; outer::Bool=false) =
   incident(d, link, outer ? :outer_link : :link)
 
-link_type(d::AbstractUWD, link) = subpart(d, link, :link_type)
-port_type(d::AbstractUWD, port; outer::Bool=false) =
-  subpart(d, port, outer ? :outer_port_type : :port_type)
+link_type(d::AbstractUWD, args...) = subpart(d, args..., :link_type)
+port_type(d::AbstractUWD, args...; outer::Bool=false) =
+  subpart(d, args..., outer ? :outer_port_type : :port_type)
 
 function port_type(d::AbstractUWD, port::Tuple{Int,Int})
   box, nport = port
@@ -173,6 +173,39 @@ end
 # Operadic interface
 ####################
 
+function ocompose(f::AbstractUWD, gs::AbstractVector{<:AbstractUWD})
+  @assert length(gs) == nboxes(f)
+  h = empty(f)
+  copy_parts!(h, f, (OuterPort=ports(f, outer=true),))
+  for g in gs
+    copy_boxes!(h, g, boxes(g))
+  end
+
+  f_link = FinOrdFunction(flat(link(f, ports(f, i)) for i in boxes(f)),
+                          nlinks(f))
+  # FIXME: Should use coproduct as monoidal product.
+  gs_nlinks = [0; cumsum(nlinks.(gs))]
+  gs_outer = FinOrdFunction(
+    flat(link(g, outer=true) .+ n for (g,n) in zip(gs, gs_nlinks[1:end-1])),
+    gs_nlinks[end])
+  cospan = pushout(Span(f_link, gs_outer))
+  f_inc, g_inc = cospan.left, cospan.right
+  links = add_links!(h, codom(f_inc).n)
+  if has_subpart(h, :link_type)
+    set_subpart!(h, [collect(f_inc); collect(g_inc)], :link_type,
+                 [link_type(f); flat(link_type(g) for g in gs)])
+  end
+
+  f_outer = FinOrdFunction(link(f, outer=true), nlinks(f))
+  # FIXME: Again, should use coproduct.
+  gs_link = FinOrdFunction(
+    flat(link(g) .+ n for (g,n) in zip(gs, gs_nlinks[1:end-1])),
+    gs_nlinks[end])
+  set_link!(h, :, collect(f_outer ⋅ f_inc), outer=true)
+  set_link!(h, :, collect(gs_link ⋅ g_inc))
+  return h
+end
+
 function ocompose(f::AbstractUWD, i::Int, g::AbstractUWD)
   @assert 1 <= i <= nboxes(f)
   h = empty(f)
@@ -182,18 +215,18 @@ function ocompose(f::AbstractUWD, i::Int, g::AbstractUWD)
   copy_boxes!(h, f, (i+1):nboxes(f))
 
   f_i = FinOrdFunction(link(f, ports(f, i)), nlinks(f))
-  g_outer = FinOrdFunction(link(g, ports(g, outer=true), outer=true), nlinks(g))
+  g_outer = FinOrdFunction(link(g, outer=true), nlinks(g))
   cospan = pushout(Span(f_i, g_outer))
   f_inc, g_inc = cospan.left, cospan.right
   links = add_links!(h, codom(f_inc).n)
   if has_subpart(h, :link_type)
-    set_subpart!(h, [collect(f_inc); collect(g_inc)]
-                 :link_type, [link_type(f, :); link_type(g, :)])
+    set_subpart!(h, [collect(f_inc); collect(g_inc)], :link_type,
+                 [link_type(f); link_type(g)])
   end
 
-  f_outer = FinOrdFunction(link(f, ports(f, outer=true), outer=true), nlinks(f))
+  f_outer = FinOrdFunction(link(f, outer=true), nlinks(f))
   f_start = FinOrdFunction(link(f, flat(ports(f, 1:(i-1)))), nlinks(f))
-  g_link = FinOrdFunction(link(g, ports(g)), nlinks(g))
+  g_link = FinOrdFunction(link(g), nlinks(g))
   f_end = FinOrdFunction(link(f, flat(ports(f, (i+1):nboxes(f)))), nlinks(f))
   set_link!(h, :, collect(f_outer ⋅ f_inc), outer=true)
   set_link!(h, :, [
