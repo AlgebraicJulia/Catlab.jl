@@ -38,8 +38,8 @@ ne(g::AbstractCSet) = nparts(g, :E)
 ne(g::AbstractCSet, src::Int, tgt::Int) =
   count(subpart(g, e, :tgt) == tgt for e in incident(g, src, :src))
 
-src(g::AbstractCSet, e=:) = subpart(g, e, :src)
-tgt(g::AbstractCSet, e=:) = subpart(g, e, :tgt)
+src(g::AbstractCSet, args...) = subpart(g, args..., :src)
+tgt(g::AbstractCSet, args...) = subpart(g, args..., :tgt)
 dst(g::AbstractCSet, args...) = tgt(g, args...) # LightGraphs compatibility
 
 vertices(g::AbstractCSet) = 1:nv(g)
@@ -85,7 +85,7 @@ end
 const AbstractSymmetricGraph = AbstractCSetType(TheorySymmetricGraph)
 const SymmetricGraph = CSetType(TheorySymmetricGraph, index=[:src])
 
-inv(g::AbstractCSet, e=:) = subpart(g, e, :inv)
+inv(g::AbstractCSet, args...) = subpart(g, args..., :inv)
 
 add_vertex!(g::AbstractSymmetricGraph) = add_part!(g, :V)
 add_vertices!(g::AbstractSymmetricGraph, n::Int) = add_parts!(g, :V, n)
