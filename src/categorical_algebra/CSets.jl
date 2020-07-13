@@ -49,7 +49,7 @@ mutable struct CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index} <:
        AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom}
   nparts::NamedStaticVector{Ob,Int}
   subparts::NamedStaticVector{Hom,Vector{Int}}
-  incident::NamedStaticVector{Index,Vector{Vector{Int}}}
+  indices::NamedStaticVector{Index,Vector{Vector{Int}}}
   data::NamedTuple{Data}
 end
 
@@ -104,7 +104,7 @@ end
 
 function Base.copy(cset::T) where T <: CSet
   T(cset.nparts, map(copy, cset.subparts),
-    map(copy, cset.incident), map(copy, cset.data))
+    map(copy, cset.indices), map(copy, cset.data))
 end
 
 Base.empty(cset::T) where T <: CSet = T(map(eltype, cset.data))
@@ -145,7 +145,7 @@ end
 
 """ Get superparts incident to part in C-set.
 """
-incident(cset::CSet, part, name::Symbol) = cset.incident[name][part]
+incident(cset::CSet, part, name::Symbol) = cset.indices[name][part]
 
 """ Add part of given type to C-set, optionally setting its subparts.
 
@@ -196,9 +196,9 @@ end
       @inbounds sub[start:nparts] .= 0
     end
     for name in $(Tuple(indexed_homs))
-      incident = cset.incident[name]
-      resize!(incident, nparts)
-      @inbounds for part in start:nparts; incident[part] = Int[] end
+      index = cset.indices[name]
+      resize!(index, nparts)
+      @inbounds for part in start:nparts; index[part] = Int[] end
     end
     for name in $(Tuple(data_homs))
       resize!(cset.data[name], nparts)
@@ -297,10 +297,10 @@ set_subpart!(cset::CSet, name::Symbol, new_subpart) =
       old = cset.subparts.$name[part]
       cset.subparts.$name[part] = subpart
       if old > 0
-        deletesorted!(cset.incident.$name[old], part)
+        deletesorted!(cset.indices.$name[old], part)
       end
       if subpart > 0
-        insertsorted!(cset.incident.$name[subpart], part)
+        insertsorted!(cset.indices.$name[subpart], part)
       end
     end
   elseif name ∈ homs
