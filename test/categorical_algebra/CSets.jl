@@ -73,8 +73,8 @@ set_subpart!(d, [4,5], :parent, 5)
 @test subpart(d, :, :parent) == [4,4,4,5,5]
 @test incident(d, 4, :parent) == [1,2,3]
 @test has_subpart(d, :height)
-@test subpart(d, [1,2,3], :height)::Vector{Float64} == [0,0,0]
-@test subpart(d, 4, :height)::Float64 == 10
+@test subpart(d, [1,2,3], :height) == [0,0,0]
+@test subpart(d, 4, :height) == 10
 @test subpart(d, :, :height) == [0,0,0,10,20]
 
 d2 = empty(d)
@@ -82,5 +82,46 @@ copy_parts!(d2, d, :X, [4,5])
 @test nparts(d2, :X) == 2
 @test subpart(d2, [1,2], :parent) == [2,2]
 @test subpart(d2, [1,2], :height) == [10,20]
+
+# Labeled sets
+##############
+
+# The simplest example of a C-set with a data attribute, to test data indexing.
+
+@present TheoryLabeledSet(FreeCategory) begin
+  X::Ob
+  Label::Ob
+  label::Hom(X,Label)
+end
+
+const IndexedLabeledSet = CSetType(
+  TheoryLabeledSet, data=[:Label], index=[:label])
+
+lset = IndexedLabeledSet(label=Symbol)
+@test keys(lset.data_indices) == (:label,)
+add_parts!(lset, :X, 2, (label=[:foo, :bar],))
+@test subpart(lset, :, :label) == [:foo, :bar]
+@test incident(lset, :foo, :label) == [1]
+
+add_part!(lset, :X, (label=:foo,))
+@test incident(lset, :foo, :label) == [1,3]
+set_subpart!(lset, 1, :label, :baz)
+@test subpart(lset, 1, :label) == :baz
+@test incident(lset, :foo, :label) == [3]
+@test incident(lset, :baz, :label) == [1]
+
+const UniqueIndexedLabeledSet = CSetType(
+  TheoryLabeledSet, data=[:Label], unique_index=[:label])
+
+lset = UniqueIndexedLabeledSet(label=Symbol)
+@test keys(lset.data_indices) == (:label,)
+add_parts!(lset, :X, 2, (label=[:foo, :bar],))
+@test subpart(lset, :, :label) == [:foo, :bar]
+@test incident(lset, :foo, :label) == 1
+
+set_subpart!(lset, 1, :label, :baz)
+@test subpart(lset, 1, :label) == :baz
+@test incident(lset, :baz, :label) == 1
+@test_throws ErrorException set_subpart!(lset, 1, :label, :bar)
 
 end
