@@ -14,6 +14,8 @@ using ...Theories: Category, dom, codom
 # C-set data types
 ##################
 
+const NamedStaticVector{Names,T,N} = SLArray{Tuple{N},T,1,N,Names}
+
 """ Abstract type for C-sets (presheaves).
 
 The type parameters are:
@@ -43,11 +45,11 @@ Following LightGraphs.jl, the incidence vectors, stored in the `incidence`
 field, are kept in sorted order. To ensure consistency, no field of the struct
 should ever be mutated directly.
 """
-mutable struct CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex} <:
+mutable struct CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index} <:
        AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom}
-  nparts::SLArray{Tuple{NOb},Int,1,NOb,Ob}
-  subparts::SLArray{Tuple{NHom},Vector{Int},1,NHom,Hom}
-  incident::SLArray{Tuple{NIndex},Vector{Vector{Int}},1,NIndex,Index}
+  nparts::NamedStaticVector{Ob,Int}
+  subparts::NamedStaticVector{Hom,Vector{Int}}
+  incident::NamedStaticVector{Index,Vector{Vector{Int}}}
   data::NamedTuple{Data}
 end
 
@@ -60,11 +62,7 @@ function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index}(
   NOb, NHom, NIndex = length(Ob), length(Hom), length(Index)
   @assert length(Dom) == NHom && length(Codom) == NHom
   @assert length(DataDom) == length(Data)
-  CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}(datatypes)
-end
-function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}(
-    datatypes::NamedTuple{Data}) where {Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}
-  CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}(
+  CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index}(
     SLArray{Tuple{NOb},Ob}(zeros(SVector{NOb,Int})),
     SLArray{Tuple{NHom},Hom}(Tuple(Int[] for i in 1:NHom)),
     SLArray{Tuple{NIndex},Index}(Tuple(Vector{Int}[] for i in 1:NIndex)),
