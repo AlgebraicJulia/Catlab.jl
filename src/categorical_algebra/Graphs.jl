@@ -30,16 +30,16 @@ using ..CSets
   tgt::Hom(E,V)
 end
 
+const AbstractGraph = AbstractCSetType(TheoryGraph)
 const Graph = CSetType(TheoryGraph, index=[:src,:tgt])
-const AbstractGraph = supertype(Graph)
 
 nv(g::AbstractCSet) = nparts(g, :V)
 ne(g::AbstractCSet) = nparts(g, :E)
 ne(g::AbstractCSet, src::Int, tgt::Int) =
   count(subpart(g, e, :tgt) == tgt for e in incident(g, src, :src))
 
-src(g::AbstractCSet, e=:) = subpart(g, e, :src)
-tgt(g::AbstractCSet, e=:) = subpart(g, e, :tgt)
+src(g::AbstractCSet, args...) = subpart(g, args..., :src)
+tgt(g::AbstractCSet, args...) = subpart(g, args..., :tgt)
 dst(g::AbstractCSet, args...) = tgt(g, args...) # LightGraphs compatibility
 
 vertices(g::AbstractCSet) = 1:nv(g)
@@ -82,10 +82,10 @@ end
 
 # Don't index `inv` because it is self-inverse and don't index `tgt`
 # because `src` contains the same information due to symmetry of graph.
+const AbstractSymmetricGraph = AbstractCSetType(TheorySymmetricGraph)
 const SymmetricGraph = CSetType(TheorySymmetricGraph, index=[:src])
-const AbstractSymmetricGraph = supertype(SymmetricGraph)
 
-inv(g::AbstractCSet, e=:) = subpart(g, e, :inv)
+inv(g::AbstractCSet, args...) = subpart(g, args..., :inv)
 
 add_vertex!(g::AbstractSymmetricGraph) = add_part!(g, :V)
 add_vertices!(g::AbstractSymmetricGraph, n::Int) = add_parts!(g, :V, n)
@@ -121,9 +121,10 @@ abstract type AbstractPropertyGraph{T} end
   eprops::Hom(E,Props)
 end
 
-const _PropertyGraph = CSetType(TheoryPropertyGraph,
-                                data=[:Props], index=[:src,:tgt])
-const _AbstractPropertyGraph = supertype(_PropertyGraph)
+const _AbstractPropertyGraph =
+  AbstractCSetType(TheoryPropertyGraph, data=[:Props])
+const _PropertyGraph =
+  CSetType(TheoryPropertyGraph, data=[:Props], index=[:src,:tgt])
 
 """ Graph with properties.
 
@@ -152,9 +153,10 @@ PropertyGraph{T}() where T = PropertyGraph{T,_PropertyGraph}()
   compose(inv,eprops) == eprops # Edge involution preserves edge properties.
 end
 
-const _SymmetricPropertyGraph = CSetType(TheorySymmetricPropertyGraph,
-                                         data=[:Props], index=[:src])
-const _AbstractSymmetricPropertyGraph = supertype(_SymmetricPropertyGraph)
+const _AbstractSymmetricPropertyGraph =
+  AbstractCSetType(TheorySymmetricPropertyGraph, data=[:Props])
+const _SymmetricPropertyGraph =
+  CSetType(TheorySymmetricPropertyGraph, data=[:Props], index=[:src])
 
 """ Symmetric graphs with properties.
 

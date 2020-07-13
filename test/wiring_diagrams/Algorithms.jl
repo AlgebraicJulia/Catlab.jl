@@ -1,7 +1,7 @@
 module TestWiringDiagramAlgorithms
 
 using Test
-using Catlab.WiringDiagrams
+using Catlab.Theories, Catlab.WiringDiagrams
 
 A, B, C, D = [ Ports([sym]) for sym in [:A, :B, :C, :D] ]
 I = munit(Ports)

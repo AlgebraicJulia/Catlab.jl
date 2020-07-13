@@ -1,8 +1,8 @@
-module TestWiringDiagramCore
+module TestDirectedWiringDiagrams
 using Test
 
-using Catlab.WiringDiagrams.WiringDiagramCore
-import Catlab.WiringDiagrams.WiringDiagramCore: validate_ports
+using Catlab.WiringDiagrams.DirectedWiringDiagrams
+import Catlab.WiringDiagrams.DirectedWiringDiagrams: validate_ports
 
 # For testing purposes, check equality of port symbols.
 function validate_ports(source_port::Symbol, target_port::Symbol)

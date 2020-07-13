@@ -2,8 +2,7 @@
 
 ```@autodocs
 Modules = [
-  WiringDiagrams.WiringDiagramCore,
-  WiringDiagrams.WiringLayers,
+  WiringDiagrams.DirectedWiringDiagrams,
   WiringDiagrams.AlgebraicWiringDiagrams,
   WiringDiagrams.WiringDiagramAlgorithms,
   WiringDiagrams.WiringDiagramSerialization,

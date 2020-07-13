@@ -6,10 +6,7 @@ types and functions to represent diagonals, codiagonals, duals, caps, cups,
 daggers, and other structures in wiring diagrams.
 """
 module AlgebraicWiringDiagrams
-export Ports, Junction, PortOp, BoxOp, functor, dom, codom, id, compose, ⋅, ∘,
-  otimes, ⊗, munit, braid, σ, oplus, ⊕, mzero, swap, permute,
-  mcopy, delete, Δ, ◊, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
-  plus, zero, coplus, cozero, meet, join, top, bottom, trace, ocompose,
+export Ports, Junction, PortOp, BoxOp, functor, ocompose, permute,
   implicit_mcopy, implicit_mmerge, junctioned_mcopy, junctioned_mmerge,
   junction_diagram, add_junctions, add_junctions!, rem_junctions, merge_junctions,
   junction_caps, junction_cups, junctioned_dunit, junctioned_dcounit
@@ -23,8 +20,8 @@ import ...Theories: dom, codom, id, compose, ⋅, ∘,
   mcopy, delete, Δ, ◊, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
   plus, zero, coplus, cozero, meet, join, top, bottom, trace
 import ...Syntax: functor, head
-using ..WiringDiagramCore
-import ..WiringDiagramCore: Box, WiringDiagram, input_ports, output_ports
+using ..DirectedWiringDiagrams
+import ..DirectedWiringDiagrams: Box, WiringDiagram, input_ports, output_ports
 
 # Categorical interface
 #######################
@@ -367,11 +364,11 @@ bottom(A::Ports{AbBiRel}, B::Ports{AbBiRel}) = compose(cozero(A), zero(B))
 
 """ Operadic composition of wiring diagrams.
 
-This generic function has two different signatures, corresponding to the two
-standard definitions of an operad (Yau, 2018, *Operads of Wiring Diagrams*,
-Definitions 2.3 and 2.10).
+This generic function has two different signatures, corresponding to the "full"
+and "partial" notions of operadic composition (Yau, 2018, *Operads of Wiring
+Diagrams*, Definitions 2.3 and 2.10).
 
-This operation is a simple wrapper around substitution (`substitute`).
+This operation is a simple wrapper around [`substitute`](@ref).
 """
 function ocompose(f::WiringDiagram, gs::Vector{<:WiringDiagram})
   @assert length(gs) == nboxes(f)

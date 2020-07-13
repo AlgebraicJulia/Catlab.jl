@@ -3,7 +3,7 @@ module TestGraphvizWiringDiagrams
 using Test
 import JSON
 
-using Catlab.WiringDiagrams, Catlab.Graphics
+using Catlab.Theories, Catlab.WiringDiagrams, Catlab.Graphics
 import Catlab.Graphics: Graphviz
 using Catlab.Graphics.WiringDiagramLayouts: position, normal
 
