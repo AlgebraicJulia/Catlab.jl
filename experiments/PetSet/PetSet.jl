@@ -12,47 +12,24 @@ using Catlab.CategoricalAlgebra.CSets
 
 @present SITOS(FreeCategory) begin
   species::Ob
-  input::Ob
+  inputs::Ob
   transitions::Ob
-  output::Ob
+  outputs::Ob
 
-  is::Hom(input,species)
-  it::Hom(input,transitions)
-  os::Hom(output,species)
-  ot::Hom(output,transitions)
+  is::Hom(inputs,species)
+  it::Hom(inputs,transitions)
+  os::Hom(outputs,species)
+  ot::Hom(outputs,transitions)
 end
 
 PetSet = CSetType(SITOS, index=[:is,:it,:os,:ot])
 
-# macro petset(head, body)
-#     name = @match head begin
-#         name::Symbol => name
-#         _ => throw(ParseError("Ill-formed petset header $head"))
-#     end
-#     let_expr = Expr(:let, Expr(:block), translate_petset(body))
-#     esc(Expr(:(=), name, let_expr))
-# end
+nspecies(ps::PetSet) = nparts(ps,:species)
+ntransitions(ps::PetSet) = nparts(ps,:transitions)
+ninputs(ps::PetSet) = nparts(ps,:inputs)
+noutputs(ps::PetSet) = nparts(ps,:outputs)
 
-# function translate_petset(body::Expr)::Expr
-#     @assert body.head == :block
-#     code = Expr(:block)
-#     append_expr!(code, :(_petset = PetSet()))
-#     for expr in strip_lines(body).args
-#         append_expr!(code, translate_expr(expr))
-#     end
-#     append_expr!(code, :(_petset))
-#     code
-# end
-
-# function translate_expr(expr::Expr)::Expr
-#     @match expr begin
-#         Expr(:(::), [name::Symbol, type::Symbol]) =>
-#             :(add_part!(_petset, $(QuoteNode(type)), []))
-#         Expr(:(::), [name::Symbol, Expr(:call, [type::Symbol, args...])])
-#         _ => throw(ParseError("Ill-formed petset declaration $expr"))
-#     end
-# end
-
+# Need a better name for this
 function from_std_petri(S,T)
     n = length(S)
     ps = PetSet()
@@ -66,14 +43,25 @@ function from_std_petri(S,T)
         for j in 1:n
             s = S[j]
             if s in keys(ins)
-                add_parts!(ps,:input,ins[s],(is=j,it=i))
+                add_parts!(ps,:inputs,ins[s],(is=j,it=i))
             end
             if s in keys(outs)
-                add_parts!(ps,:output,outs[s],(os=j,ot=i))
+                add_parts!(ps,:outputs,outs[s],(os=j,ot=i))
             end
         end
     end
-    return ps
+    ps
+end
+
+function transition_matrix(ps)
+    T = zeros(Int64,(ntransitions(ps),nspecies(ps),2))
+    for i in 1:ninputs(ps)
+        T[subpart(ps,i,:it),subpart(ps,i,:is),1] += 1
+    end
+    for i in 1:noutputs(ps)
+        T[subpart(ps,i,:ot),subpart(ps,i,:os),2] += 1
+    end
+    T
 end
 
 graph_attrs = Attributes(:rankdir=>"LR")
@@ -82,19 +70,35 @@ edge_attrs  = Attributes(:splines=>"splines")
 
 function Graph(ps)
     snodes = [Node(string("S_$s"), Attributes(:shape=>"circle", :color=>"#6C9AC3")) for s in 1:nparts(ps,:species)]
-    tnodes = [Node(string("T_$k"), Attributes(:shape=>"square", :color=>"#E28F41")) for s in 1:nparts(ps,:transitions)]
+    tnodes = [Node(string("T_$t"), Attributes(:shape=>"square", :color=>"#E28F41")) for t in 1:nparts(ps,:transitions)]
 
-    iedges = map(1:nparts(ps,:input)) do i
-        s = subpart(ps,k,:is)
-        t = subpart(ps,k,:it)
+    iedges = map(1:ninputs(ps)) do i
+        s = subpart(ps,i,:is)
+        t = subpart(ps,i,:it)
         Edge(["S_$s","T_$t"],Attributes())
     end
-    oedges = map(1:nparts(ps,:output)) do i
-        s = subpart(ps,k,:os)
-        t = subpart(ps,k,:ot)
+    oedges = map(1:noutputs(ps)) do o
+        s = subpart(ps,o,:os)
+        t = subpart(ps,o,:ot)
         Edge(["T_$t","S_$s"],Attributes())
     end
 
     stmts = vcat(snodes,tnodes,iedges,oedges)
     Graphviz.Graph("G",true,stmts,graph_attrs,node_attrs,edge_attrs)
+end
+
+function rate_eq(ps)
+    n = ntransitions(ps)
+    m = nspecies(ps)
+    rates = zeros(m)
+    T = transition_matrix(ps)
+    function f(du,u,p,t)
+        for i in 1:n
+            rates[i] = p[i] * prod(u[j] ^ T[i,j,1] for j in 1:m)
+        end
+        for j in 1:m
+            du[j] = sum(rates[i] * (T[i,j,2]-T[i,j,1]) for i in 1:n)
+        end
+    end
+    f
 end
