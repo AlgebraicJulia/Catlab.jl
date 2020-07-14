@@ -174,11 +174,9 @@ Returns the ID of the added part.
 
 See also: [`add_parts!`](@ref).
 """
-add_part!(cset::CSet, type::Symbol) = only(_add_parts!(cset, Val(type), 1))
-
-function add_part!(cset::CSet, type::Symbol, subparts)
-  part = add_part!(cset, type)
-  set_subparts!(cset, part, subparts)
+function add_part!(cset::CSet, type::Symbol, args...; kw...)
+  part = only(_add_parts!(cset, Val(type), 1))
+  set_subparts!(cset, part, args...; kw...)
   part
 end
 
@@ -188,11 +186,9 @@ Returns the range of IDs for the added parts.
 
 See also: [`add_part!`](@ref).
 """
-add_parts!(cset::CSet, type::Symbol, n::Int) = _add_parts!(cset, Val(type), n)
-
-function add_parts!(cset::CSet, type::Symbol, n::Int, subparts)
-  parts = add_parts!(cset, type, n)
-  set_subparts!(cset, parts, subparts)
+function add_parts!(cset::CSet, type::Symbol, n::Int, args...; kw...)
+  parts = _add_parts!(cset, Val(type), n)
+  set_subparts!(cset, parts, args...; kw...)
   parts
 end
 
@@ -350,6 +346,8 @@ Both single and vectorized assignment are supported.
 
 See also: [`set_subpart!`](@ref).
 """
+set_subparts!(cset::CSet, part; kw...) = set_subparts!(cset, part, (; kw...))
+
 function set_subparts!(cset::CSet, part, subparts)
   for (name, subpart) in pairs(subparts)
     set_subpart!(cset, part, name, subpart)

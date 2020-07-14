@@ -30,8 +30,8 @@ set_subpart!(dds, 1, :Φ, 1)
 @test subpart(dds, 1, :Φ) == 1
 @test incident(dds, 1, :Φ) == [1]
 
-@test add_part!(dds, :X, (Φ=1,)) == 2
-@test add_part!(dds, :X, (Φ=1,)) == 3
+@test add_part!(dds, :X, Φ=1) == 2
+@test add_part!(dds, :X, Φ=1) == 3
 @test subpart(dds, :Φ) == [1,1,1]
 @test subpart(dds, [2,3], :Φ) == [1,1]
 @test incident(dds, 1, :Φ) == [1,2,3]
@@ -62,8 +62,8 @@ const Dendrogram = CSetType(TheoryDendrogram, data=[:R], index=[:parent])
   AbstractCSet{(:X,),(:parent,),(1,),(1,),(:height,),(1,)}
 
 d = Dendrogram(height=Float64)
-add_parts!(d, :X, 3, (height=0,))
-add_parts!(d, :X, 2, (height=[10,20],))
+add_parts!(d, :X, 3, height=0)
+add_parts!(d, :X, 2, height=[10,20])
 set_subpart!(d, 1:3, :parent, 4)
 set_subpart!(d, [4,5], :parent, 5)
 
@@ -99,12 +99,12 @@ const IndexedLabeledSet = CSetType(
 
 lset = IndexedLabeledSet(label=Symbol)
 @test keys(lset.data_indices) == (:label,)
-add_parts!(lset, :X, 2, (label=[:foo, :bar],))
+add_parts!(lset, :X, 2, label=[:foo, :bar])
 @test subpart(lset, :, :label) == [:foo, :bar]
 @test incident(lset, :foo, :label) == [1]
 @test isempty(incident(lset, :nonkey, :label))
 
-add_part!(lset, :X, (label=:foo,))
+add_part!(lset, :X, label=:foo)
 @test incident(lset, :foo, :label) == [1,3]
 set_subpart!(lset, 1, :label, :baz)
 @test subpart(lset, 1, :label) == :baz
@@ -116,7 +116,7 @@ const UniqueIndexedLabeledSet = CSetType(
 
 lset = UniqueIndexedLabeledSet(label=Symbol)
 @test keys(lset.data_indices) == (:label,)
-add_parts!(lset, :X, 2, (label=[:foo, :bar],))
+add_parts!(lset, :X, 2, label=[:foo, :bar])
 @test subpart(lset, :, :label) == [:foo, :bar]
 @test incident(lset, :foo, :label) == 1
 @test incident(lset, :nonkey, :label) == nothing

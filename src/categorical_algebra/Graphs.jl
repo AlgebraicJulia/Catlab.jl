@@ -55,12 +55,12 @@ add_vertex!(g::AbstractGraph) = add_part!(g, :V)
 add_vertices!(g::AbstractGraph, n::Int) = add_parts!(g, :V, n)
 
 add_edge!(g::AbstractGraph, src::Int, tgt::Int) =
-  add_part!(g, :E, (src=src, tgt=tgt))
+  add_part!(g, :E, src=src, tgt=tgt)
 
 function add_edges!(g::AbstractGraph, srcs::AbstractVector{Int},
                     tgts::AbstractVector{Int})
   @assert length(srcs) == length(tgts)
-  add_parts!(g, :E, length(srcs), (src=srcs, tgt=tgts))
+  add_parts!(g, :E, length(srcs), src=srcs, tgt=tgts)
 end
 
 neighbors(g::AbstractGraph, v::Int) = outneighbors(g, v)
@@ -97,7 +97,7 @@ function add_edges!(g::AbstractSymmetricGraph, srcs::AbstractVector{Int},
                     tgts::AbstractVector{Int})
   @assert (n = length(srcs)) == length(tgts)
   invs = nparts(g, :E) .+ [(n+1):2n; 1:n]
-  add_parts!(g, :E, 2n, (src=[srcs; tgts], tgt=[tgts; srcs], inv=invs))
+  add_parts!(g, :E, 2n, src=[srcs; tgts], tgt=[tgts; srcs], inv=invs)
 end
 
 neighbors(g::AbstractSymmetricGraph, v::Int) =
@@ -215,10 +215,10 @@ set_eprops!(g::AbstractPropertyGraph, e::Int, d::AbstractDict) =
 add_vertex!(g::AbstractPropertyGraph{T}; kw...) where T =
   add_vertex!(g, Dict{Symbol,T}(kw...))
 add_vertex!(g::AbstractPropertyGraph{T}, d::Dict{Symbol,T}) where T =
-  add_part!(g.graph, :V, (vprops=d,))
+  add_part!(g.graph, :V, vprops=d)
 
 add_vertices!(g::AbstractPropertyGraph{T}, n::Int) where T =
-  add_parts!(g.graph, :V, n, (vprops=(Dict{Symbol,T}() for i=1:n),))
+  add_parts!(g.graph, :V, n, vprops=(Dict{Symbol,T}() for i=1:n))
 
 add_edge!(g::AbstractPropertyGraph{T}, src::Int, tgt::Int; kw...) where T =
   add_edge!(g, src, tgt, Dict{Symbol,T}(kw...))
@@ -226,7 +226,7 @@ add_edge!(g::AbstractPropertyGraph{T}, src::Int, tgt::Int; kw...) where T =
 # Non-symmetric case.
 
 add_edge!(g::PropertyGraph{T}, src::Int, tgt::Int, d::Dict{Symbol,T}) where T =
-  add_part!(g.graph, :E, (src=src, tgt=tgt, eprops=d))
+  add_part!(g.graph, :E, src=src, tgt=tgt, eprops=d)
 
 function add_edges!(g::PropertyGraph{T}, srcs::AbstractVector{Int},
                     tgts::AbstractVector{Int}, eprops=nothing) where T
@@ -234,7 +234,7 @@ function add_edges!(g::PropertyGraph{T}, srcs::AbstractVector{Int},
   if isnothing(eprops)
     eprops = (Dict{Symbol,T}() for i=1:n)
   end
-  add_parts!(g.graph, :E, n, (src=srcs, tgt=tgts, eprops=eprops))
+  add_parts!(g.graph, :E, n, src=srcs, tgt=tgts, eprops=eprops)
 end
 
 # Symmetric case.
@@ -251,8 +251,8 @@ function add_edges!(g::SymmetricPropertyGraph{T}, srcs::AbstractVector{Int},
   end
   invs = nparts(g.graph, :E) .+ [(n+1):2n; 1:n]
   eprops = [eprops; eprops] # Share dictionaries to ensure equal properties.
-  add_parts!(g.graph, :E, 2n, (src=[srcs; tgts], tgt=[tgts; srcs],
-                               inv=invs, eprops=eprops))
+  add_parts!(g.graph, :E, 2n, src=[srcs; tgts], tgt=[tgts; srcs],
+             inv=invs, eprops=eprops)
 end
 
 # LightGraphs interop
