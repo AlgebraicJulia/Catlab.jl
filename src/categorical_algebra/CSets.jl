@@ -14,6 +14,8 @@ using ...Theories: Category, dom, codom
 # C-set data types
 ##################
 
+const NamedSVector{Names,T,N} = SLArray{Tuple{N},T,1,N,Names}
+
 """ Abstract type for C-sets (presheaves).
 
 The type parameters are:
@@ -43,32 +45,32 @@ Following LightGraphs.jl, the incidence vectors, stored in the `incidence`
 field, are kept in sorted order. To ensure consistency, no field of the struct
 should ever be mutated directly.
 """
-mutable struct CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex} <:
+mutable struct CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,DataIndex,IsUnique} <:
        AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom}
-  nparts::SLArray{Tuple{NOb},Int,1,NOb,Ob}
-  subparts::SLArray{Tuple{NHom},Vector{Int},1,NHom,Hom}
-  incident::SLArray{Tuple{NIndex},Vector{Vector{Int}},1,NIndex,Index}
+  nparts::NamedSVector{Ob,Int}
+  subparts::NamedSVector{Hom,Vector{Int}}
+  indices::NamedSVector{Index,Vector{Vector{Int}}}
   data::NamedTuple{Data}
+  data_indices::NamedTuple{DataIndex}
 end
 
-function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index}(; kw...) where
-    {Ob,Hom,Dom,Codom,Data,DataDom,Index}
-  CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index}((; kw...))
+function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,DataIndex,IsUnique}(;
+    kw...) where {Ob,Hom,Dom,Codom,Data,DataDom,Index,DataIndex,IsUnique}
+  CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,DataIndex,IsUnique}((; kw...))
 end
-function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index}(
-    datatypes::NamedTuple{Data}) where {Ob,Hom,Dom,Codom,Data,DataDom,Index}
+function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,DataIndex,IsUnique}(
+    datatypes::NamedTuple{Data}) where
+    {Ob,Hom,Dom,Codom,Data,DataDom,Index,DataIndex,IsUnique}
   NOb, NHom, NIndex = length(Ob), length(Hom), length(Index)
-  @assert length(Dom) == NHom && length(Codom) == NHom
-  @assert length(DataDom) == length(Data)
-  CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}(datatypes)
-end
-function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}(
-    datatypes::NamedTuple{Data}) where {Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}
-  CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,NOb,NHom,NIndex}(
-    SLArray{Tuple{NOb},Ob}(zeros(SVector{NOb,Int})),
-    SLArray{Tuple{NHom},Hom}(Tuple(Int[] for i in 1:NHom)),
-    SLArray{Tuple{NIndex},Index}(Tuple(Vector{Int}[] for i in 1:NIndex)),
-    NamedTuple{Data}(T[] for T in datatypes))
+  CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,DataIndex,IsUnique}(
+    NamedSVector{Ob,Int,NOb}(zeros(SVector{NOb,Int})),
+    NamedSVector{Hom,Vector{Int},NHom}(Tuple(Int[] for i in 1:NHom)),
+    NamedSVector{Index,Vector{Vector{Int}},NIndex}(
+      Tuple(Vector{Int}[] for i in 1:NIndex)),
+    NamedTuple{Data}(Union{T,Missing}[] for T in datatypes),
+    NamedTuple{DataIndex}(
+      Dict{datatypes[name], is_unique ? Int : Vector{Int}}()
+      for (name, is_unique) in zip(DataIndex, IsUnique)))
 end
 
 """ Generate an abstract C-set type from a presentation of a category.
@@ -85,28 +87,33 @@ end
 
 See also: [`AbstractCSetType`](@ref).
 """
-function CSetType(pres::Presentation{Category}; data=(), index=())
-  CSet{CSetTypeParams(pres, data=data, index=index)...}
+function CSetType(pres::Presentation{Category}; kw...)
+  CSet{CSetTypeParams(pres; kw...)...}
 end
-function CSetTypeParams(pres::Presentation{Category}; data=(), index=())
+
+function CSetTypeParams(pres::Presentation{Category};
+                        data=(), index=(), unique_index=())
   obs, homs = generators(pres, :Ob), generators(pres, :Hom)
   data_obs, obs = separate(ob -> nameof(ob) ∈ data, obs)
   data_homs, homs = separate(hom -> codom(hom) ∈ data_obs, homs)
-  ob_index = ob -> findfirst(obs .== ob)::Int
+  data_index, index = separate(name -> name ∈ nameof.(data_homs),
+                               sort!(index ∪ unique_index))
+  ob_num = ob -> findfirst(obs .== ob)::Int
   (Tuple(nameof.(obs)), Tuple(nameof.(homs)),
-   Tuple(@. ob_index(dom(homs))), Tuple(@. ob_index(codom(homs))),
-   Tuple(nameof.(data_homs)), Tuple(@. ob_index(dom(data_homs))), Tuple(index))
+   Tuple(@. ob_num(dom(homs))), Tuple(@. ob_num(codom(homs))),
+   Tuple(nameof.(data_homs)), Tuple(@. ob_num(dom(data_homs))),
+   Tuple(index), Tuple(data_index), Tuple(k ∈ unique_index for k in data_index))
 end
 separate(f, a::AbstractArray) = (i = f.(a); (a[i], a[.!i]))
 
 function Base.:(==)(x1::T, x2::T) where T <: CSet
-  # The incidence data is redundant, so need not be compared.
+  # The subpart and data indices are redundant, so need not be compared.
   x1.nparts == x2.nparts && x1.subparts == x2.subparts && x1.data == x2.data
 end
 
 function Base.copy(cset::T) where T <: CSet
-  T(cset.nparts, map(copy, cset.subparts),
-    map(copy, cset.incident), map(copy, cset.data))
+  T(cset.nparts, map(copy, cset.subparts), map(copy, cset.indices),
+    map(copy, cset.data), map(copy, cset.data_indices))
 end
 
 Base.empty(cset::T) where T <: CSet = T(map(eltype, cset.data))
@@ -147,7 +154,19 @@ end
 
 """ Get superparts incident to part in C-set.
 """
-incident(cset::CSet, part, name::Symbol) = cset.incident[name][part]
+incident(cset::CSet, part, name::Symbol) = _incident(cset, part, Val(name))
+
+@generated function _incident(cset::T, part, ::Val{name}) where
+    {name, obs,homs,doms,codoms,data,data_doms,indexed,data_indexed,
+     T <: CSet{obs,homs,doms,codoms,data,data_doms,indexed,data_indexed}}
+  if name ∈ indexed
+    :(cset.indices.$name[part])
+  elseif name ∈ data_indexed
+    :(get_data_index(cset.data_indices.$name, part))
+  else
+    throw(KeyError(name))
+  end
+end
 
 """ Add part of given type to C-set, optionally setting its subparts.
 
@@ -155,11 +174,9 @@ Returns the ID of the added part.
 
 See also: [`add_parts!`](@ref).
 """
-add_part!(cset::CSet, type::Symbol) = only(_add_parts!(cset, Val(type), 1))
-
-function add_part!(cset::CSet, type::Symbol, subparts)
-  part = add_part!(cset, type)
-  set_subparts!(cset, part, subparts)
+function add_part!(cset::CSet, type::Symbol, args...; kw...)
+  part = only(_add_parts!(cset, Val(type), 1))
+  set_subparts!(cset, part, args...; kw...)
   part
 end
 
@@ -169,41 +186,39 @@ Returns the range of IDs for the added parts.
 
 See also: [`add_part!`](@ref).
 """
-add_parts!(cset::CSet, type::Symbol, n::Int) = _add_parts!(cset, Val(type), n)
-
-function add_parts!(cset::CSet, type::Symbol, n::Int, subparts)
-  parts = add_parts!(cset, type, n)
-  set_subparts!(cset, parts, subparts)
+function add_parts!(cset::CSet, type::Symbol, n::Int, args...; kw...)
+  parts = _add_parts!(cset, Val(type), n)
+  set_subparts!(cset, parts, args...; kw...)
   parts
 end
 
 @generated function _add_parts!(cset::T, ::Val{type}, n::Int) where
     {type, obs,homs,doms,codoms,data,data_doms,indexed,
      T <: CSet{obs,homs,doms,codoms,data,data_doms,indexed}}
-  obnum = findfirst(obs .== type)::Int
-  in_homs = [ homs[i] for (i, codom) in enumerate(codoms) if codom == obnum ]
-  out_homs = [ homs[i] for (i, dom) in enumerate(doms) if dom == obnum ]
-  data_homs = [ data[i] for (i, dom) in enumerate(data_doms) if dom == obnum ]
+  ob_num = findfirst(obs .== type)::Int
+  in_homs = [ homs[i] for (i, codom) in enumerate(codoms) if codom == ob_num ]
+  out_homs = [ homs[i] for (i, dom) in enumerate(doms) if dom == ob_num ]
+  data_homs = [ data[i] for (i, dom) in enumerate(data_doms) if dom == ob_num ]
   indexed_homs = filter(hom -> hom ∈ indexed, in_homs)
-  # TODO: The three loops could (should?) be unrolled. Or is Julia's compiler
-  # smart enough to do this on its own?
+  # Question: The three loops could (should?) be unrolled. Or is the Julia
+  # compiler smart enough to do this on its own?
   quote
-    if n == 0; return Int[] end
+    if n == 0; return 1:0 end
     nparts = cset.nparts.$type + n
     cset.nparts = SLVector(cset.nparts; $type=nparts)
     start = nparts - n + 1
     for name in $(Tuple(out_homs))
-      sub = cset.subparts[name]
-      resize!(sub, nparts)
-      @inbounds sub[start:nparts] .= 0
+      resize!(cset.subparts[name], nparts)
+      @inbounds cset.subparts[name][start:nparts] .= 0
     end
     for name in $(Tuple(indexed_homs))
-      incident = cset.incident[name]
-      resize!(incident, nparts)
-      @inbounds for part in start:nparts; incident[part] = Int[] end
+      index = cset.indices[name]
+      resize!(index, nparts)
+      @inbounds for part in start:nparts; index[part] = Int[] end
     end
     for name in $(Tuple(data_homs))
       resize!(cset.data[name], nparts)
+      @inbounds cset.data[name][start:nparts] .= missing
     end
     start:nparts
   end
@@ -264,7 +279,7 @@ Any data attached to the parts is also copied.
   quote
     newparts = add_parts!(cset, $(QuoteNode(type)), length(parts))
     for name in $(Tuple(data_homs))
-      cset.data[name][newparts] .= from.data[name][parts]
+      set_subpart!(cset, newparts, name, from.data[name][parts])
     end
     newparts
   end
@@ -292,21 +307,32 @@ set_subpart!(cset::CSet, name::Symbol, new_subpart) =
   set_subpart!(cset, 1:length(subpart(cset, name)), name, new_subpart)
 
 @generated function _set_subpart!(cset::T, part::Int, ::Val{name}, subpart) where
-    {name, obs,homs,doms,codoms,data,data_doms,indexed,
-     T <: CSet{obs,homs,doms,codoms,data,data_doms,indexed}}
+    {name, obs,homs,doms,codoms,data,data_doms,indexed,data_indexed,
+     T <: CSet{obs,homs,doms,codoms,data,data_doms,indexed,data_indexed}}
   if name ∈ indexed
     quote
       old = cset.subparts.$name[part]
       cset.subparts.$name[part] = subpart
       if old > 0
-        deletesorted!(cset.incident.$name[old], part)
+        deletesorted!(cset.indices.$name[old], part)
       end
       if subpart > 0
-        insertsorted!(cset.incident.$name[subpart], part)
+        insertsorted!(cset.indices.$name[subpart], part)
       end
     end
   elseif name ∈ homs
     :(cset.subparts.$name[part] = subpart)
+  elseif name ∈ data_indexed
+    quote
+      old = cset.data.$name[part]
+      cset.data.$name[part] = subpart
+      if !ismissing(old)
+        unset_data_index!(cset.data_indices.$name, old, part)
+      end
+      if !ismissing(subpart)
+        set_data_index!(cset.data_indices.$name, subpart, part)
+      end
+    end
   elseif name ∈ data
     :(cset.data.$name[part] = subpart)
   else
@@ -320,9 +346,45 @@ Both single and vectorized assignment are supported.
 
 See also: [`set_subpart!`](@ref).
 """
+set_subparts!(cset::CSet, part; kw...) = set_subparts!(cset, part, (; kw...))
+
 function set_subparts!(cset::CSet, part, subparts)
   for (name, subpart) in pairs(subparts)
     set_subpart!(cset, part, name, subpart)
+  end
+end
+
+""" Look up key in C-set data index.
+"""
+get_data_index(d::AbstractDict{K,Int}, k::K) where K =
+  get(d, k, nothing)
+get_data_index(d::AbstractDict{K,<:AbstractVector{Int}}, k::K) where K =
+  get(d, k, 1:0)
+
+""" Set key and value for C-set data index.
+"""
+function set_data_index!(d::AbstractDict{K,Int}, k::K, v::Int) where K
+  if haskey(d, k)
+    error("Key $k already defined in unique index")
+  end
+  d[k] = v
+end
+function set_data_index!(d::AbstractDict{K,<:AbstractVector{Int}},
+                         k::K, v::Int) where K
+  insertsorted!(get!(d, k) do; Int[] end, v)
+end
+
+""" Unset key and value from C-set data index.
+"""
+function unset_data_index!(d::AbstractDict{K,Int}, k::K, v::Int) where K
+  @assert pop!(d, k) == v
+end
+function unset_data_index!(d::AbstractDict{K,<:AbstractVector{Int}},
+                           k::K, v::Int) where K
+  vs = d[k]
+  deletesorted!(vs, v)
+  if isempty(vs)
+    delete!(d, k)
   end
 end
 

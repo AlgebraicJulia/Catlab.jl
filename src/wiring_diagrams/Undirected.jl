@@ -62,7 +62,7 @@ function UndirectedWiringDiagram(
     ::Type{T}, port_types::AbstractVector{S}) where {T, S<:T}
   d = TypedUWD(port_type=T, outer_port_type=T, junction_type=T)
   nports = length(port_types)
-  add_parts!(d, :OuterPort, nports, (outer_port_type=port_types,))
+  add_parts!(d, :OuterPort, nports, outer_port_type=port_types)
   return d
 end
 UndirectedWiringDiagram(port_types::AbstractVector{T}) where T =
@@ -101,28 +101,28 @@ function port_type(d::AbstractUWD, port::Tuple{Int,Int})
     port_type(d, nport, outer=true) : port_type(d, ports(d, box)[nport])
 end
 
-add_box!(d::AbstractUWD; data...) = add_part!(d, :Box, (; data...))
+add_box!(d::AbstractUWD; data...) = add_part!(d, :Box; data...)
 
 function add_box!(d::AbstractUWD, nports::Int; data...)
   box = add_box!(d; data...)
-  ports = add_parts!(d, :Port, nports, (box=box,))
+  ports = add_parts!(d, :Port, nports, box=box)
   box
 end
 
 function add_box!(d::AbstractUWD, port_types::AbstractVector; data...)
   box = add_box!(d; data...)
   nports = length(port_types)
-  ports = add_parts!(d, :Port, nports, (box=box, port_type=port_types))
+  ports = add_parts!(d, :Port, nports, box=box, port_type=port_types)
   box
 end
 
 add_junction!(d::AbstractUWD) = add_part!(d, :Junction)
 add_junction!(d::AbstractUWD, type) =
-  add_part!(d, :Junction, (junction_type=type,))
+  add_part!(d, :Junction, junction_type=type)
 add_junctions!(d::AbstractUWD, njunctions::Int) =
   add_parts!(d, :Junction, njunctions)
 add_junctions!(d::AbstractUWD, types::AbstractVector) =
-  add_parts!(d, :Junction, length(types), (junction_type=types,))
+  add_parts!(d, :Junction, length(types), junction_type=types)
 
 function set_junction!(d::AbstractUWD, port, junction; outer::Bool=false)
   if has_subpart(d, :junction_type)
@@ -182,7 +182,7 @@ end
 function ocompose(f::AbstractUWD, gs::AbstractVector{<:AbstractUWD})
   @assert length(gs) == nboxes(f)
   h = empty(f)
-  copy_parts!(h, f, (OuterPort=ports(f, outer=true),))
+  copy_parts!(h, f, OuterPort=ports(f, outer=true))
   for g in gs
     copy_boxes!(h, g, boxes(g))
   end
@@ -215,7 +215,7 @@ end
 function ocompose(f::AbstractUWD, i::Int, g::AbstractUWD)
   @assert 1 <= i <= nboxes(f)
   h = empty(f)
-  copy_parts!(h, f, (OuterPort=ports(f, outer=true),))
+  copy_parts!(h, f, OuterPort=ports(f, outer=true))
   copy_boxes!(h, f, 1:(i-1))
   copy_boxes!(h, g, boxes(g))
   copy_boxes!(h, f, (i+1):nboxes(f))
@@ -245,7 +245,7 @@ function ocompose(f::AbstractUWD, i::Int, g::AbstractUWD)
 end
 
 copy_boxes!(d::AbstractUWD, from::AbstractUWD, boxes) =
-  copy_parts!(d, from, (Box=boxes, Port=flat(ports(from, boxes))))
+  copy_parts!(d, from, Box=boxes, Port=flat(ports(from, boxes)))
 
 flat(vs) = reduce(vcat, vs, init=Int[])
 

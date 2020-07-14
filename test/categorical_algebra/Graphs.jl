@@ -8,7 +8,7 @@ using Catlab.CategoricalAlgebra.Graphs
 ########
 
 g = Graph()
-@test keys(g.incident) == (:src,:tgt)
+@test keys(g.indices) == (:src,:tgt)
 add_vertex!(g)
 add_vertices!(g, 2)
 @test nv(g) == 3
@@ -41,7 +41,7 @@ add_edges!(g, [1,2,3], [2,3,4])
 ##################
 
 g = SymmetricGraph()
-@test keys(g.incident) == (:src,)
+@test keys(g.indices) == (:src,)
 
 add_vertices!(g, 3)
 @test nv(g) == 3
