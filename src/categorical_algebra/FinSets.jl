@@ -1,8 +1,9 @@
 """ Computing in the category of finite sets and functions, and its skeleton.
 """
 module FinSets
-export FinOrd, FinOrdFunction, force, terminal, product, equalizer, pullback,
-  limit, initial, coproduct, coequalizer, pushout, colimit
+export FinOrd, FinOrdFunction, FinOrdFunc, FinOrdVector, force,
+  terminal, product, equalizer, pullback, limit,
+  initial, coproduct, coequalizer, pushout, colimit
 
 using AutoHashEquals
 using DataStructures: IntDisjointSets, union!, find_root
@@ -42,36 +43,36 @@ FinOrdFunction(f, dom::FinOrd, codom::FinOrd) =
 
 To be evaluated lazily unless forced.
 """
-@auto_hash_equals struct FinOrdFunctionLazy <: FinOrdFunction
+@auto_hash_equals struct FinOrdFunc <: FinOrdFunction
   func::Function
   dom::Int
   codom::Int
 end
 FinOrdFunction(f::Function, dom::Int, codom::Int) =
-  FinOrdFunctionLazy(f, dom, codom)
+  FinOrdFunc(f, dom, codom)
 
-(f::FinOrdFunctionLazy)(x) = f.func(x)
+(f::FinOrdFunc)(x) = f.func(x)
 
 """ Function in FinOrd represented explicitly by a vector.
 """
-@auto_hash_equals struct FinOrdFunctionMap{T<:AbstractVector{Int}} <: FinOrdFunction
+@auto_hash_equals struct FinOrdVector{T<:AbstractVector{Int}} <: FinOrdFunction
   func::T
   codom::Int
 end
-FinOrdFunction(f::AbstractVector) = FinOrdFunctionMap(f, maximum(f))
-FinOrdFunction(f::AbstractVector, codom::Int) = FinOrdFunctionMap(f, codom)
+FinOrdFunction(f::AbstractVector) = FinOrdVector(f, maximum(f))
+FinOrdFunction(f::AbstractVector, codom::Int) = FinOrdVector(f, codom)
 
 function FinOrdFunction(f::AbstractVector, dom::Int, codom::Int)
   @assert length(f) == dom
-  FinOrdFunctionMap(f, codom)
+  FinOrdVector(f, codom)
 end
 
-(f::FinOrdFunctionMap)(x) = f.func[x]
+(f::FinOrdVector)(x) = f.func[x]
 
 """ Force evaluation of lazy function or relation.
 """
-force(f::FinOrdFunction) = FinOrdFunctionMap(map(f, 1:dom(f).n), codom(f).n)
-force(f::FinOrdFunctionMap) = f
+force(f::FinOrdFunction) = FinOrdVector(map(f, 1:dom(f).n), codom(f).n)
+force(f::FinOrdVector) = f
 
 Base.collect(f::FinOrdFunction) = force(f).func
 
@@ -89,9 +90,9 @@ Base.collect(f::FinOrdFunction) = force(f).func
   end
 end
 
-dom(f::FinOrdFunctionMap) = FinOrd(length(f.func))
+dom(f::FinOrdVector) = FinOrd(length(f.func))
 compose_impl(f::FinOrdFunction, g::FinOrdFunction) = g ∘ f
-compose_impl(f::FinOrdFunctionMap, g::FinOrdFunctionMap) = g.func[f.func]
+compose_impl(f::FinOrdVector, g::FinOrdVector) = g.func[f.func]
 
 # Limits
 ########
