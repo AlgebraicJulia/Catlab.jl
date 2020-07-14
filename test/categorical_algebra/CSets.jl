@@ -102,6 +102,7 @@ lset = IndexedLabeledSet(label=Symbol)
 add_parts!(lset, :X, 2, (label=[:foo, :bar],))
 @test subpart(lset, :, :label) == [:foo, :bar]
 @test incident(lset, :foo, :label) == [1]
+@test isempty(incident(lset, :nonkey, :label))
 
 add_part!(lset, :X, (label=:foo,))
 @test incident(lset, :foo, :label) == [1,3]
@@ -118,6 +119,7 @@ lset = UniqueIndexedLabeledSet(label=Symbol)
 add_parts!(lset, :X, 2, (label=[:foo, :bar],))
 @test subpart(lset, :, :label) == [:foo, :bar]
 @test incident(lset, :foo, :label) == 1
+@test incident(lset, :nonkey, :label) == nothing
 
 set_subpart!(lset, 1, :label, :baz)
 @test subpart(lset, 1, :label) == :baz

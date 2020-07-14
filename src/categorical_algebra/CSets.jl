@@ -162,7 +162,7 @@ incident(cset::CSet, part, name::Symbol) = _incident(cset, part, Val(name))
   if name ∈ indexed
     :(cset.indices.$name[part])
   elseif name ∈ data_indexed
-    :(cset.data_indices.$name[part])
+    :(get_data_index(cset.data_indices.$name, part))
   else
     throw(KeyError(name))
   end
@@ -356,6 +356,13 @@ function set_subparts!(cset::CSet, part, subparts)
   end
 end
 
+""" Look up key in C-set data index.
+"""
+get_data_index(d::AbstractDict{K,Int}, k::K) where K =
+  get(d, k, nothing)
+get_data_index(d::AbstractDict{K,<:AbstractVector{Int}}, k::K) where K =
+  get(d, k, 1:0)
+
 """ Set key and value for C-set data index.
 """
 function set_data_index!(d::AbstractDict{K,Int}, k::K, v::Int) where K
@@ -366,7 +373,7 @@ function set_data_index!(d::AbstractDict{K,Int}, k::K, v::Int) where K
 end
 function set_data_index!(d::AbstractDict{K,<:AbstractVector{Int}},
                          k::K, v::Int) where K
-  insertsorted!(get!(() -> Int[], d, k), v)
+  insertsorted!(get!(d, k) do; Int[] end, v)
 end
 
 """ Unset key and value from C-set data index.
