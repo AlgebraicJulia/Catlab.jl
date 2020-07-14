@@ -1,7 +1,8 @@
 """ Computing in the category of finite sets and relations, and its skeleton.
 """
 module FinRelations
-export BoolRig, FinOrdRelOb, FinOrdRelation, force
+export BoolRig, FinOrdRelOb, FinOrdRelation, FinOrdPredicate, FinOrdMatrix,
+  force
 
 import Base: +, *
 using AutoHashEquals
@@ -64,32 +65,32 @@ FinOrdRelation(R, dom::FinOrdRelOb, codom::FinOrdRelOb) =
 
 """ Relation in FinOrdRel represented by an arbitrary Julia function.
 """
-@auto_hash_equals struct FinOrdRelationLazy <: FinOrdRelation
+@auto_hash_equals struct FinOrdPredicate <: FinOrdRelation
   rel::Function
   dom::Int
   codom::Int
 end
 FinOrdRelation(R::Function, dom::Int, codom::Int) =
-  FinOrdRelationLazy(R, dom, codom)
+  FinOrdPredicate(R, dom, codom)
 
-(R::FinOrdRelationLazy)(x, y) = R.rel(x, y)
+(R::FinOrdPredicate)(x, y) = R.rel(x, y)
 
 """ Relation in FinOrdRel represented by a boolean matrix.
 
 Boolean matrices are also known as logical matrices or relation matrices.
 """
-@auto_hash_equals struct FinOrdRelationMatrix{T <: AbstractMatrix{BoolRig}} <: FinOrdRelation
+@auto_hash_equals struct FinOrdMatrix{T <: AbstractMatrix{BoolRig}} <: FinOrdRelation
   rel::T
 end
 
-FinOrdRelation(R::AbstractMatrix{BoolRig}) = FinOrdRelationMatrix(R)
+FinOrdRelation(R::AbstractMatrix{BoolRig}) = FinOrdMatrix(R)
 
 function FinOrdRelation(R::AbstractMatrix{BoolRig}, dom::Int, codom::Int)
   @assert size(R,2) == dom && size(R,1) == codom
-  FinOrdRelationMatrix(R)
+  FinOrdMatrix(R)
 end
 
-(R::FinOrdRelationMatrix)(x, y) = R.rel[y, x].value
+(R::FinOrdMatrix)(x, y) = R.rel[y, x].value
 
 function force(::Type{T}, R::FinOrdRelation) where T <: AbstractMatrix{BoolRig}
   m, n = dom(R).n, codom(R).n
@@ -99,9 +100,9 @@ function force(::Type{T}, R::FinOrdRelation) where T <: AbstractMatrix{BoolRig}
       M[j,i] = BoolRig(true)
     end
   end
-  FinOrdRelationMatrix(M)
+  FinOrdMatrix(M)
 end
-force(::Type{T}, R::FinOrdRelationMatrix{T}) where T <: AbstractMatrix{BoolRig} = R
+force(::Type{T}, R::FinOrdMatrix{T}) where T <: AbstractMatrix{BoolRig} = R
 force(R::FinOrdRelation) = force(Matrix{BoolRig}, R)
 
 """ FinOrdRel as a distributive bicategory of relations.
@@ -199,19 +200,17 @@ force(R::FinOrdRelation) = force(Matrix{BoolRig}, R)
 end
 
 # For relation matrices, delegate to the category of matrices.
-const RelMat = FinOrdRelationMatrix
+dom(R::FinOrdMatrix) = FinOrdRelOb(size(R.rel, 2))
+codom(R::FinOrdMatrix) = FinOrdRelOb(size(R.rel, 1))
 
-dom(R::RelMat) = FinOrdRelOb(size(R.rel, 2))
-codom(R::RelMat) = FinOrdRelOb(size(R.rel, 1))
+compose(R::FinOrdMatrix, S::FinOrdMatrix) = FinOrdMatrix(compose(R.rel, S.rel))
+otimes(R::FinOrdMatrix, S::FinOrdMatrix) = FinOrdMatrix(otimes(R.rel, S.rel))
+oplus(R::FinOrdMatrix, S::FinOrdMatrix) = FinOrdMatrix(oplus(R.rel, S.rel))
+dagger(R::FinOrdMatrix) = FinOrdMatrix(transpose(R.rel))
 
-compose(R::RelMat, S::RelMat) = RelMat(compose(R.rel, S.rel))
-otimes(R::RelMat, S::RelMat) = RelMat(otimes(R.rel, S.rel))
-oplus(R::RelMat, S::RelMat) = RelMat(oplus(R.rel, S.rel))
-dagger(R::RelMat) = RelMat(transpose(R.rel))
-
-meet(R::RelMat, S::RelMat) = RelMat(R.rel .* S.rel)
-join(R::RelMat, S::RelMat) = RelMat(R.rel .+ S.rel)
-pair(R::RelMat, S::RelMat) = RelMat(pair(R.rel, S.rel))
-copair(R::RelMat, S::RelMat) = RelMat(copair(R.rel, S.rel))
+meet(R::FinOrdMatrix, S::FinOrdMatrix) = FinOrdMatrix(R.rel .* S.rel)
+join(R::FinOrdMatrix, S::FinOrdMatrix) = FinOrdMatrix(R.rel .+ S.rel)
+pair(R::FinOrdMatrix, S::FinOrdMatrix) = FinOrdMatrix(pair(R.rel, S.rel))
+copair(R::FinOrdMatrix, S::FinOrdMatrix) = FinOrdMatrix(copair(R.rel, S.rel))
 
 end
