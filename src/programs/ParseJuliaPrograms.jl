@@ -132,15 +132,15 @@ end
 """ Evaluate pseudo-Julia type expression, such as `X` or `otimes{X,Y}`.
 """
 function eval_type_expr(pres::Presentation, syntax_module::Module, expr::Expr0)
-  function eval(expr)
+  function _eval_type_expr(expr)
     @match expr begin
       Expr(:curly, [name, args...]) =>
-        invoke_term(syntax_module, name, map(eval, args)...)
+        invoke_term(syntax_module, name, map(_eval_type_expr, args)...)
       name::Symbol => generator(pres, name)
       _ => error("Invalid type expression $expr")
     end
   end
-  eval(expr)
+  _eval_type_expr(expr)
 end
 
 """ Generate a Julia function expression that will record function calls.

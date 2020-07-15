@@ -5,6 +5,7 @@ export Block, CompileState, compile, compile_expr, compile_block,
   evaluate, evaluate_hom
 
 using Compat
+using GeneralizedGenerated: mk_function
 
 using ...Catlab
 import ...Meta: Expr0, concat_expr
@@ -32,9 +33,10 @@ end
 
 """ Compile a morphism expression into a Julia function.
 """
-function compile(f::HomExpr; kw...)
-  eval(compile_expr(f; kw...))
+function compile(mod::Module, f::HomExpr; kw...)
+  mk_function(mod, compile_expr(f; kw...))
 end
+compile(f::HomExpr; kw...) = compile(Main, f)
 
 """ Compile a morphism expression into a Julia function expression.
 """
