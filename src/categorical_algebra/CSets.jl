@@ -162,7 +162,7 @@ incident(cset::CSet, part, name::Symbol) = _incident(cset, part, Val(name))
   if name ∈ indexed
     :(cset.indices.$name[part])
   elseif name ∈ data_indexed
-    :(get_data_index(cset.data_indices.$name, part))
+    :(get_data_index.(Ref(cset.data_indices.$name), part))
   else
     throw(KeyError(name))
   end
