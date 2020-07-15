@@ -11,7 +11,9 @@ export AlgebraicNetTheory, AlgebraicNet, Ob, Hom, dom, codom,
   linear, constant,
   compile, compile_expr, compile_expr_vector, compile_block, evaluate
 
+using GeneralizedGenerated: mk_function
 using Match
+import StaticArrays
 
 using Catlab
 using Catlab.Meta: concat_expr
@@ -75,7 +77,7 @@ is properly factored, with no duplicate computations.
 function compile(f::Union{AlgebraicNet.Hom,Block};
                  return_constants::Bool=false, vector::Bool=false, kw...)
   expr, constants = vector ? compile_expr_vector(f; kw...) : compile_expr(f; kw...)
-  compiled = eval(expr)
+  compiled = mk_function(Main, expr)
   return_constants ? (compiled, constants) : compiled
 end
 
@@ -85,11 +87,10 @@ The function signature is:
   - arguments = inputs (domain) of network
   - keyword arguments = symbolic constants (coefficients) of network, if any
 """
-function compile_expr(f::AlgebraicNet.Hom; name::Symbol=Symbol(),
-                      args::Vector{Symbol}=Symbol[])
+function compile_expr(f::AlgebraicNet.Hom; args::Vector{Symbol}=Symbol[])
   inputs = isempty(args) ? input_exprs(ndims(dom(f)), kind=:variables) : args
   block, constants = compile_block(f, inputs)
-  function_expr = to_function_expr(block; name=name, kwargs=constants)
+  function_expr = to_function_expr(block; kwargs=constants)
   (function_expr, constants)
 end
 
@@ -101,18 +102,14 @@ The function signature is:
 
 Unlike `compile_expr`, this method assumes the network has a single output.
 """
-function compile_expr_vector(f::AlgebraicNet.Hom; name::Symbol=Symbol(),
-                             inputs_sym::Symbol=:x, constants_sym::Symbol=:c)
+function compile_expr_vector(f::AlgebraicNet.Hom; inputs_sym::Symbol=:x,
+                             constants_sym::Symbol=:c)
   # Compile algebraic network in block.
   inputs = input_exprs(ndims(dom(f)), prefix=inputs_sym, kind=:array)
   block, constants = compile_block(f, inputs, constants_sym=constants_sym)
 
   # Create call expression (function header).
-  call_expr = if name == Symbol() # Anonymous function
-    Expr(:tuple, inputs_sym, constants_sym)
-  else # Named function
-    Expr(:call, name, inputs_sym, constants_sym)
-  end
+  call_expr = Expr(:tuple, inputs_sym, constants_sym)
 
   # Create function body.
   @assert length(block.outputs) == 1
@@ -138,7 +135,13 @@ function compile_block(f::AlgebraicNet.Hom{:linear}, inputs::Vector,
   @assert length(inputs) == nin
 
   value = first(f)
-  value = isa(value, Symbol) ? genconst(state, value) : value
+  if value isa Symbol
+    value = genconst(state, value)
+  elseif value isa AbstractMatrix
+    value = Expr(:call,
+      Expr(:curly, GlobalRef(StaticArrays, :SMatrix), size(value)...),
+      value...)
+  end
   lhs = nout == 1 ? outputs[1] : Expr(:tuple, outputs...)
   rhs = if nin == 0
     0
@@ -226,7 +229,7 @@ function sum_expr(T::Type, terms::Vector)
   elseif length(terms) == 1
     terms[1]
   else
-    Expr(:call, :(.+), terms...)
+    Expr(:call, GlobalRef(Base, :broadcast), :(+), terms...)
   end
 end
 sum_expr(terms::Vector) = sum_expr(Float64, terms)
