@@ -47,6 +47,11 @@ set_subpart!(dds, 1, :Φ, 1)
 @test_throws KeyError subpart(dds, 1, :nonsubpart)
 @test_throws KeyError set_subpart!(dds, 1, :nonsubpart, 1)
 
+# Error handling
+@test_throws AssertionError add_part!(dds, :X, Φ=5)
+@test subpart(dds, :Φ) == [1,1,1,0]
+@test incident(dds, 4, :Φ) == []
+
 # Dendrograms
 #############
 

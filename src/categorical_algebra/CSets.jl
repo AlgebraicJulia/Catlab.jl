@@ -320,8 +320,12 @@ set_subpart!(cset::CSet, name::Symbol, new_subpart) =
 @generated function _set_subpart!(cset::T, part::Int, ::Val{name}, subpart) where
     {name, obs,homs,doms,codoms,data,data_doms,indexed,data_indexed,
      T <: CSet{obs,homs,doms,codoms,data,data_doms,indexed,data_indexed}}
+  if name ∈ homs
+    codom = obs[codoms[findfirst(name .== homs)]]
+  end
   if name ∈ indexed
     quote
+      @assert 0 <= subpart <= cset.nparts.$codom
       old = cset.subparts.$name[part]
       cset.subparts.$name[part] = subpart
       if old > 0
@@ -332,7 +336,10 @@ set_subpart!(cset::CSet, name::Symbol, new_subpart) =
       end
     end
   elseif name ∈ homs
-    :(cset.subparts.$name[part] = subpart)
+    quote
+      @assert 0 <= subpart <= cset.nparts.$codom
+      cset.subparts.$name[part] = subpart
+    end
   elseif name ∈ data_indexed
     quote
       old = cset.data.$name[part]
