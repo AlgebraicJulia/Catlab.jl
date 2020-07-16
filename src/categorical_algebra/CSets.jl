@@ -2,7 +2,7 @@
 """
 module CSets
 export AbstractCSet, AbstractCSetType, CSet, CSetType,
-  nparts, subpart, has_subpart, incident,
+  nparts, has_part, subpart, has_subpart, incident,
   add_part!, add_parts!, copy_parts!, set_subpart!, set_subparts!
 
 using Compat
@@ -125,6 +125,17 @@ Base.empty(cset::T) where T <: CSet = T(map(eltype, cset.data))
 """
 nparts(cset::CSet, type::Symbol) = cset.nparts[type]
 
+""" Whether a C-set has a part with the given name.
+"""
+has_part(cset::CSet, type::Symbol) = _has_part(cset, Val(type))
+
+@generated _has_part(cset::CSet{obs}, ::Val{type}) where {obs,type} =
+  type ∈ obs
+
+has_part(cset::CSet, type::Symbol, part::Int) = 1 <= part <= nparts(cset, type)
+has_part(cset::CSet, type::Symbol, part::AbstractVector{Int}) =
+  let n=nparts(cset, type); [ 1 <= x <= n for x in part ] end
+
 """ Get subpart of part in C-set.
 
 Both single and vectorized access are supported.
@@ -148,7 +159,7 @@ end
 has_subpart(cset::CSet, name::Symbol) = _has_subpart(cset, Val(name))
 
 @generated function _has_subpart(cset::T, ::Val{name}) where
-    {name, obs,homs,doms,codoms,data, T<: CSet{obs,homs,doms,codoms,data}}
+    {name, obs,homs,doms,codoms,data, T <: CSet{obs,homs,doms,codoms,data}}
   name ∈ homs || name ∈ data
 end
 
