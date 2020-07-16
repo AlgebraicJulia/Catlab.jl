@@ -42,18 +42,14 @@ creation by the empty vector `[]`. For example, `f([x1,x2])` translates to
 
 This macro is a wrapper around [`parse_wiring_diagram`](@ref).
 """
-macro program(pres, expr)
+macro program(pres, exprs...)
   Expr(:call, GlobalRef(ParseJuliaPrograms, :parse_wiring_diagram),
-       esc(pres), esc(Expr(:quote, expr)))
-end
-macro program(pres, call, body)
-  Expr(:call, GlobalRef(ParseJuliaPrograms, :parse_wiring_diagram),
-       esc(pres), esc(Expr(:quote, call)), esc(Expr(:quote, body)))
+       esc(pres), (QuoteNode(expr) for expr in exprs)...)
 end
 
 """ Parse a wiring diagram from a Julia function expression.
 
-The macro version of this function is [`@program`](@ref).
+For more information, see the corresponding macro [`@program`](@ref).
 """
 function parse_wiring_diagram(pres::Presentation, expr::Expr)::WiringDiagram
   @match expr begin
