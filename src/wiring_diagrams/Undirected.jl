@@ -4,7 +4,7 @@ module UndirectedWiringDiagrams
 export UndirectedWiringDiagram, outer_box, box, junction, nboxes, njunctions,
   boxes, junctions, ports, ports_with_junction, junction_type, port_type,
   add_box!, add_junction!, add_junctions!, set_junction!, add_wire!,
-  add_wires!, ocompose
+  add_wires!, singleton_diagram, ocompose
 
 using ...CategoricalAlgebra.CSets, ...Present
 using ...CategoricalAlgebra.ShapeDiagrams: Span
@@ -12,7 +12,7 @@ using ...CategoricalAlgebra.FinSets: FinOrdFunction, pushout
 using ...Theories: FreeCategory, dom, codom, compose, ⋅, id
 
 import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,
-  add_wires!
+  add_wires!, singleton_diagram
 import ..AlgebraicWiringDiagrams: add_junctions!, ocompose
 
 # Data types
@@ -180,6 +180,17 @@ function add_wires!(d::AbstractUWD, wires)
   for wire in wires
     add_wire!(d, wire)
   end
+end
+
+function singleton_diagram(::Type{T}, port_types; data...) where T<:AbstractUWD
+  UWD = T == UndirectedWiringDiagram ?
+    UndirectedWiringDiagramType(typeof(port_types)) : T
+  d = UndirectedWiringDiagram(UWD, port_types)
+  junctions = add_junctions!(d, port_types)
+  add_box!(d, port_types; data...)
+  set_junction!(d, junctions)
+  set_junction!(d, junctions, outer=true)
+  return d
 end
 
 # Operadic interface

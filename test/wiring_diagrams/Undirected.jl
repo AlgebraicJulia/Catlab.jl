@@ -58,6 +58,13 @@ add_wire!(d, (1,2) => (2,2))
 add_wire!(d, (2,2) => (3,2))
 @test d == d_previous
 
+# Singleton diagrams.
+d = UndirectedWiringDiagram([:X,:Y,:Z])
+add_junctions!(d, [:X,:Y,:Z])
+add_box!(d, [:X,:Y,:Z])
+set_junction!(d, 1:3); set_junction!(d, 1:3, outer=true)
+@test singleton_diagram(UndirectedWiringDiagram, [:X,:Y,:Z]) == d
+
 # Operadic interface
 ####################
 
