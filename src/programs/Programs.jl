@@ -6,10 +6,10 @@ using Reexport
 
 include("GenerateJuliaPrograms.jl")
 include("ParseJuliaPrograms.jl")
-include("ParseRelations.jl")
+include("RelationalPrograms.jl")
 
 @reexport using .GenerateJuliaPrograms
 @reexport using .ParseJuliaPrograms
-@reexport using .ParseRelations
+@reexport using .RelationalPrograms
 
 end

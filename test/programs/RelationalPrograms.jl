@@ -1,9 +1,9 @@
-module TestParseRelations
+module TestRelationalPrograms
 using Test
 
 using Catlab.WiringDiagrams.UndirectedWiringDiagrams
-using Catlab.Programs.ParseRelations
-using Catlab.Programs.ParseRelations: RelationDiagram, TypedRelationDiagram
+using Catlab.Programs.RelationalPrograms
+using Catlab.Programs.RelationalPrograms: RelationDiagram, TypedRelationDiagram
 
 # Untyped relations
 

@@ -1,6 +1,6 @@
-""" Parse relations in Julia-esque syntax into undirected wiring diagrams.
+""" Parse relation expressions in Julia syntax into undirected wiring diagrams.
 """
-module ParseRelations
+module RelationalPrograms
 export @relation, parse_relation_diagram
 
 using Compat
@@ -42,10 +42,10 @@ TypedRelationDiagram(port_types::AbstractVector{Symbol}) =
   UndirectedWiringDiagram(TypedRelationDiagram, port_types,
                           name=Symbol, variable=Symbol)
 
-# Parsing
-#########
+# Relational syntax
+###################
 
-""" Parse an undirected wiring diagram from a relation in Julia-esque syntax.
+""" Parse an undirected wiring diagram from a relation.
 
 Unlike the [`@program`](@ref) macro for directed wiring diagrams, this macro
 fundamentally alters the usual semantics of the Julia language. Function calls
@@ -65,7 +65,7 @@ In general, the context in the `where` clause defines the set of junctions in
 the diagram and variable sharing defines the wiring of ports to junctions.
 """
 macro relation(exprs...)
-  Expr(:call, GlobalRef(ParseRelations, :parse_relation_diagram),
+  Expr(:call, GlobalRef(RelationalPrograms, :parse_relation_diagram),
        (QuoteNode(expr) for expr in exprs)...)
 end
 

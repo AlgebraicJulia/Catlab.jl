@@ -8,6 +8,6 @@ end
   include("ParseJuliaPrograms.jl")
 end
 
-@testset "ParseRelations" begin
-  include("ParseRelations.jl")
+@testset "RelationalPrograms" begin
+  include("RelationalPrograms.jl")
 end
