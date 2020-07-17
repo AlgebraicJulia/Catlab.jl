@@ -152,6 +152,24 @@ parse_variables(vars) = collect(Symbol, vars)
 #################
 
 """ Construct an undirected wiring diagram using tensor notation.
+
+The tensor syntax is compatible with that used by packages like
+[TensorOperations.jl](https://github.com/Jutho/TensorOperations.jl) and
+[TensorCast.jl](https://github.com/mcabbott/TensorCast.jl). For example, the
+wiring diagram for composite of two matrices (or two binary relations) is
+constructed by
+
+```julia
+@tensor_network (i,j,k) C[i,k] = A[i,j] * B[j,k]
+```
+
+The leading context, or list of variables, may be omitted, in which case it is
+inferred from the variables used in the tensor expression. So, in this example,
+an equivalent macro call is
+
+```julia
+@tensor_network C[i,k] = A[i,j] * B[j,k]
+```
 """
 macro tensor_network(exprs...)
   Expr(:call, GlobalRef(RelationalPrograms, :parse_tensor_network),
@@ -184,9 +202,9 @@ function parse_tensor_network(expr::Expr; all_vars=nothing)
   end)
 
   # Check compatibility of used variables with declared variables.
-  used_vars = unique(reduce(vcat, ([[outer_vars]; last.(names_and_vars)])))
+  used_vars = unique!(reduce(vcat, ([[outer_vars]; last.(names_and_vars)])))
   if isnothing(all_vars)
-    all_vars = used_vars
+    all_vars = sort!(used_vars)
   else
     used_vars ⊆ all_vars || error("One of variables $used_vars is not declared")
   end
