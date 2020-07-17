@@ -36,10 +36,21 @@ set_subpart!(dds, 1, :Φ, 1)
 @test subpart(dds, [2,3], :Φ) == [1,1]
 @test incident(dds, 1, :Φ) == [1,2,3]
 
+@test has_part(dds, :X)
+@test !has_part(dds, :nonpart)
+@test has_part(dds, :X, 3)
+@test !has_part(dds, :X, 4)
+@test has_part(dds, :X, 1:5) == [true, true, true, false, false]
+
 @test has_subpart(dds, :Φ)
-@test !has_subpart(dds, :badname)
-@test_throws KeyError subpart(dds, 1, :badname)
-@test_throws KeyError set_subpart!(dds, 1, :badname, 1)
+@test !has_subpart(dds, :nonsubpart)
+@test_throws KeyError subpart(dds, 1, :nonsubpart)
+@test_throws KeyError set_subpart!(dds, 1, :nonsubpart, 1)
+
+# Error handling
+@test_throws AssertionError add_part!(dds, :X, Φ=5)
+@test subpart(dds, :Φ) == [1,1,1,0]
+@test incident(dds, 4, :Φ) == []
 
 # Dendrograms
 #############

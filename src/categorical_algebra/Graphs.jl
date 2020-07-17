@@ -47,8 +47,8 @@ edges(g::AbstractCSet) = 1:ne(g)
 edges(g::AbstractCSet, src::Int, tgt::Int) =
   (e for e in incident(g, src, :src) if subpart(g, e, :tgt) == tgt)
 
-has_vertex(g::AbstractCSet, v::Int) = 1 <= v <= nv(g)
-has_edge(g::AbstractCSet, e::Int) = 1 <= e <= ne(g)
+has_vertex(g::AbstractCSet, v) = has_part(g, :V, v)
+has_edge(g::AbstractCSet, e) = has_part(g, :E, e)
 has_edge(g::AbstractCSet, src::Int, tgt::Int) = tgt ∈ outneighbors(g, src)
 
 add_vertex!(g::AbstractGraph) = add_part!(g, :V)
