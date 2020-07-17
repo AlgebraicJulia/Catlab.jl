@@ -1,7 +1,8 @@
 """ Parse relation expressions in Julia syntax into undirected wiring diagrams.
 """
 module RelationalPrograms
-export @relation, parse_relation_diagram
+export RelationDiagram, @relation, @tensor_network,
+  parse_relation_diagram, parse_tensor_network
 
 using Compat
 using Match
@@ -9,7 +10,8 @@ using Match
 using ...CategoricalAlgebra.CSets, ...Present
 using ...Theories: FreeCategory
 using ...WiringDiagrams.UndirectedWiringDiagrams
-using ...WiringDiagrams.UndirectedWiringDiagrams: TheoryUWD, TheoryTypedUWD
+import ...WiringDiagrams.UndirectedWiringDiagrams: UndirectedWiringDiagram,
+  TheoryUWD, TheoryTypedUWD
 
 # Data structures
 #################
@@ -20,13 +22,10 @@ using ...WiringDiagrams.UndirectedWiringDiagrams: TheoryUWD, TheoryTypedUWD
   variable::Hom(Junction,Name)
 end
 
-const RelationDiagram = CSetType(
+const RelationDiagram = AbstractCSetType(TheoryRelationDiagram, data=[:Name])
+const UntypedRelationDiagram = CSetType(
   TheoryRelationDiagram, data=[:Name],
   index=[:box, :junction, :outer_junction], unique_index=[:variable])
-
-RelationDiagram(nports::Int) =
-  UndirectedWiringDiagram(RelationDiagram, nports,
-                          name=Symbol, variable=Symbol)
 
 @present TheoryTypedRelationDiagram <: TheoryTypedUWD begin
   Name::Ob
@@ -38,14 +37,22 @@ const TypedRelationDiagram = CSetType(
   TheoryTypedRelationDiagram, data=[:Name, :Type],
   index=[:box, :junction, :outer_junction], unique_index=[:variable])
 
-TypedRelationDiagram(port_types::AbstractVector{Symbol}) =
+function UndirectedWiringDiagram(::Type{RelationDiagram}, nports::Int)
+  UndirectedWiringDiagram(UntypedRelationDiagram, nports,
+                          name=Symbol, variable=Symbol)
+end
+function UndirectedWiringDiagram(::Type{RelationDiagram},
+                                 port_types::AbstractVector{Symbol})
   UndirectedWiringDiagram(TypedRelationDiagram, port_types,
                           name=Symbol, variable=Symbol)
+end
 
-# Relational syntax
-###################
+RelationDiagram(ports) = UndirectedWiringDiagram(RelationDiagram, ports)
 
-""" Parse an undirected wiring diagram from a relation.
+# Relations
+###########
+
+""" Construct an undirected wiring diagram using relation notation.
 
 Unlike the [`@program`](@ref) macro for directed wiring diagrams, this macro
 fundamentally alters the usual semantics of the Julia language. Function calls
@@ -82,15 +89,16 @@ function parse_relation_diagram(expr::Expr)
 end
 
 function parse_relation_diagram(head::Expr, body::Expr)
+  body = Base.remove_linenums!(body)
   @match head begin
     Expr(:where, [Expr(:tuple, args), Expr(:tuple, context)]) =>
-      parse_relation_diagram(context, args, body)
+      make_relation_diagram(context, args, body.args)
     _ => error("Invalid syntax in declaration of outer ports and context")
   end
 end
 
-function parse_relation_diagram(context::AbstractVector, args::AbstractVector,
-                                body::Expr)
+function make_relation_diagram(context::AbstractVector, args::AbstractVector,
+                               body::AbstractVector)
   all_vars, all_types = parse_context(context)
   outer_vars = parse_variables(args)
   outer_vars ⊆ all_vars || error("One of variables $outer_vars is not declared")
@@ -101,15 +109,14 @@ function parse_relation_diagram(context::AbstractVector, args::AbstractVector,
     vars -> getindex.(Ref(var_type_map), vars)
   end
 
-  # Create diagram and add outer ports and junctionsm
-  UWD = isnothing(all_types) ? RelationDiagram : TypedRelationDiagram
-  d = UWD(var_types(outer_vars))
+  # Create diagram and add outer ports and junctions.
+  d = RelationDiagram(var_types(outer_vars))
   add_junctions!(d, var_types(all_vars), variable=all_vars)
   set_junction!(d, ports(d, outer=true),
                 incident(d, outer_vars, :variable), outer=true)
 
   # Add boxes to diagram.
-  for expr in Base.remove_linenums!(body).args
+  for expr in body
     name, vars = @match expr begin
       Expr(:call, [name::Symbol, vars...]) => (name, parse_variables(vars))
       _ => error("Invalid syntax in box definition $expr")
@@ -140,5 +147,68 @@ function parse_context(context)
 end
 
 parse_variables(vars) = collect(Symbol, vars)
+
+# Tensor networks
+#################
+
+""" Construct an undirected wiring diagram using tensor notation.
+"""
+macro tensor_network(exprs...)
+  Expr(:call, GlobalRef(RelationalPrograms, :parse_tensor_network),
+       (QuoteNode(expr) for expr in exprs)...)
+end
+
+""" Parse an undirected wiring diagram from a tensor expression.
+
+For more information, see the corresponding macro [`@tensor_diagram`](@ref).
+"""
+function parse_tensor_network(context::Expr, expr::Expr)
+  all_vars = @match context begin
+    Expr(:tuple, args) => parse_variables(args)
+    Expr(:vect, args) => parse_variables(args)
+  end
+  parse_tensor_network(expr, all_vars=all_vars)
+end
+
+function parse_tensor_network(expr::Expr; all_vars=nothing)
+  # Parse tensor expression.
+  (outer_name, outer_vars), body = @match expr begin
+    Expr(:(=), [outer, body]) => (parse_tensor_term(outer), body)
+    Expr(:(:=), [outer, body]) => (parse_tensor_term(outer), body)
+    _ => error("Tensor expression must be an assignment, either = or :=")
+  end
+  names_and_vars = map(parse_tensor_term, @match body begin
+    Expr(:call, [:(*), args...]) => args
+    1 => [] # No terms
+    arg => [arg] # One term
+  end)
+
+  # Check compatibility of used variables with declared variables.
+  used_vars = unique(reduce(vcat, ([[outer_vars]; last.(names_and_vars)])))
+  if isnothing(all_vars)
+    all_vars = used_vars
+  else
+    used_vars ⊆ all_vars || error("One of variables $used_vars is not declared")
+  end
+
+  # Construct the undirected wiring diagram.
+  d = RelationDiagram(length(outer_vars))
+  add_junctions!(d, length(all_vars), variable=all_vars)
+  set_junction!(d, ports(d, outer=true),
+                incident(d, outer_vars, :variable), outer=true)
+  for (name, vars) in names_and_vars
+    box = add_box!(d, length(vars), name=name)
+    set_junction!(d, ports(d, box), incident(d, vars, :variable))
+  end
+  return d
+end
+
+function parse_tensor_term(expr)
+  @match expr begin
+    Expr(:ref, [name::Symbol, args...]) => (name, parse_variables(args))
+    name::Symbol => (name, Symbol[]) # Scalar
+    _ => error("Invalid syntax in term $expr in tensor expression")
+  end
+end
 
 end
