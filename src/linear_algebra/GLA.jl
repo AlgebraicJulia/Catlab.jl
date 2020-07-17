@@ -1,18 +1,14 @@
 module GraphicalLinearAlgebra
-export LinearFunctions, FreeLinearFunctions, LinearRelations,
-  FreeLinearRelations, LinearMapDom, LinearMap, LinearOpDom, LinearOperator,
+export LinearFunctions, FreeLinearFunctions,
+  LinearRelations, FreeLinearRelations,
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, swap,
   dagger, dunit, docunit, mcopy, Δ, delete, ◊, mmerge, ∇, create, □,
   plus, +, zero, coplus, cozero, meet, top, join, bottom,
   scalar, antipode, antipode, adjoint, evaluate
 
+import Base: adjoint
 using AutoHashEquals
-using LinearMaps
-import LinearMaps: adjoint
-const LMs = LinearMaps
-using LinearOperators
-import LinearOperators:
-  adjoint, opEye, opExtension, opRestriction, opZeros
+using Requires
 
 using ...Catlab, ...Theories
 import ...Theories:
@@ -80,108 +76,6 @@ end
 # Evaluation
 ############
 
-# LinearMaps instance
-#--------------------
-
-@auto_hash_equals struct LinearMapDom
-  N::Int
-end
-
-@instance LinearFunctions(LinearMapDom, LinearMap) begin
-  @import adjoint, +
-
-  dom(f::LinearMap) = LinearMapDom(size(f,2))
-  codom(f::LinearMap) = LinearMapDom(size(f,1))
-
-  compose(f::LinearMap, g::LinearMap) = g*f
-  id(V::LinearMapDom) = LMs.UniformScalingMap(1, V.N)
-
-  oplus(V::LinearMapDom, W::LinearMapDom) = LinearMapDom(V.N + W.N)
-  oplus(f::LinearMap, g::LinearMap) = LMs.BlockDiagonalMap(f, g)
-  mzero(::Type{LinearMapDom}) = LinearMapDom(0)
-  swap(V::LinearMapDom, W::LinearMapDom) =
-    LinearMap(swap_lm(V.N), swap_lm(W.N), W.N+V.N, V.N+W.N)
-
-  mcopy(V::LinearMapDom) = LinearMap(mcopy_lm, plus_lm, 2*V.N, V.N)
-  delete(V::LinearMapDom) = LinearMap(delete_lm, zero_lm(V.N), 0, V.N)
-  plus(V::LinearMapDom) = LinearMap(plus_lm, mcopy_lm, V.N, 2*V.N)
-  zero(V::LinearMapDom) = LinearMap(zero_lm(V.N), delete_lm, V.N, 0)
-
-  plus(f::LinearMap, g::LinearMap) = f+g
-  scalar(V::LinearMapDom, c::Number) = LMs.UniformScalingMap(c, V.N)
-  antipode(V::LinearMapDom) = LMs.UniformScalingMap(-1, V.N)
-  
-  pair(f::LinearMap, g::LinearMap) = mcopy(dom(f)) ⋅ (f ⊕ g)
-  copair(f::LinearMap, g::LinearMap) = (f ⊕ g) ⋅ plus(codom(f))
-  proj1(A::LinearMapDom, B::LinearMapDom) = id(A) ⊕ delete(B)
-  proj2(A::LinearMapDom, B::LinearMapDom) = delete(A) ⊕ id(B)
-  coproj1(A::LinearMapDom, B::LinearMapDom) = id(A) ⊕ zero(B)
-  coproj2(A::LinearMapDom, B::LinearMapDom) = zero(A) ⊕ id(B)
-end
-
-swap_lm(n::Int) = x::AbstractVector -> vcat(x[n+1:end], x[1:n])
-mcopy_lm(x::AbstractVector) = vcat(x, x)
-delete_lm(x::AbstractVector) = eltype(x)[]
-plus_lm(x::AbstractVector) = begin
-  n = length(x) ÷ 2
-  x[1:n] + x[n+1:end]
-end
-zero_lm(n::Int) = x::AbstractVector -> zeros(eltype(x), n)
-
-# LinearOps instance
-#-------------------
-
-@auto_hash_equals struct LinearOpDom
-  N::Int
-end
-
-@instance LinearFunctions(LinearOpDom, LinearOperator) begin
-  @import adjoint, +
-
-  dom(f::LinearOperator) = LinearOpDom(size(f,2))
-  codom(f::LinearOperator) = LinearOpDom(size(f,1))
-
-  compose(f::LinearOperator, g::LinearOperator) = g*f
-  id(V::LinearOpDom) = opEye(V.N)
-
-  oplus(V::LinearOpDom, W::LinearOpDom) = LinearOpDom(V.N + W.N)
-  oplus(f::LinearOperator, g::LinearOperator) = begin
-    dom_total   = size(f,2) + size(g,2)
-    codom_total = size(f,1) + size(g,1)
-    dom_f   = 1:size(f,2)
-    codom_f = 1:size(f,1)
-    dom_g   = (size(f,2)+1):dom_total
-    codom_g = (size(f,1)+1):codom_total
-    fOp = opExtension(codom_f, codom_total)*f*opRestriction(dom_f,dom_total)
-    gOp = opExtension(codom_g, codom_total)*g*opRestriction(dom_g,dom_total)
-    fOp + gOp
-  end
-  mzero(::Type{LinearOpDom}) = LinearOpDom(0)
-  swap(V::LinearOpDom, W::LinearOpDom) =
-    opExtension(1:W.N, V.N+W.N) * opRestriction((V.N+1):(V.N+W.N),V.N+W.N) +
-    opExtension((W.N+1):(V.N+W.N), V.N+W.N) * opRestriction(1:V.N,V.N+W.N)
-  mcopy(V::LinearOpDom) =
-    opExtension(1:V.N, 2*V.N)+opExtension((V.N+1):(2*V.N), 2*V.N)
-  delete(V::LinearOpDom) = opZeros(0, V.N)
-  plus(V::LinearOpDom) =
-    opRestriction(1:V.N, 2*V.N)+opRestriction((V.N+1):(2*V.N), 2*V.N)
-  zero(V::LinearOpDom) = opZeros(V.N, 0)
-
-  plus(f::LinearOperator, g::LinearOperator) = f+g
-  scalar(V::LinearOpDom, c::Number) = opEye(typeof(c),V.N)*c
-  antipode(V::LinearOpDom) = scalar(V,-1)
-  
-  pair(f::LinearOperator, g::LinearOperator) = mcopy(dom(f)) ⋅ (f ⊕ g)
-  copair(f::LinearOperator, g::LinearOperator) = (f ⊕ g) ⋅ plus(codom(f))
-  proj1(A::LinearOpDom, B::LinearOpDom) = id(A) ⊕ delete(B)
-  proj2(A::LinearOpDom, B::LinearOpDom) = delete(A) ⊕ id(B)
-  coproj1(A::LinearOpDom, B::LinearOpDom) = id(A) ⊕ zero(B)
-  coproj2(A::LinearOpDom, B::LinearOpDom) = zero(A) ⊕ id(B)
-end
-
-# Catlab evaluate
-#----------------
-
 function evaluate_hom(f::FreeLinearFunctions.Hom{:generator}, xs::Vector;
                       generators::AbstractDict=Dict())
   M = generators[f]
@@ -210,5 +104,17 @@ end
 
 evaluate_hom(f::FreeLinearFunctions.Hom{:scalar}, xs::Vector; kw...) = last(f) .* xs
 evaluate_hom(f::FreeLinearFunctions.Hom{:antipode}, xs::Vector; kw...) = -1 .* xs
+
+# Extras
+########
+
+function __init__()
+  @require LinearMaps="7a12625a-238d-50fd-b39a-03d52299707e" begin
+    include("LinearMapsExternal.jl")
+  end
+  @require LinearOperators="5c8ed15e-5a4c-59e4-a42b-c7e8811fb125" begin
+    include("LinearOperatorsExternal.jl")
+  end
+end
 
 end
