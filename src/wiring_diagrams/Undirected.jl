@@ -52,21 +52,24 @@ const TypedUndirectedWiringDiagram = const TypedUWD =
 # Imperative interface
 ######################
 
-function UndirectedWiringDiagram(nports::Int)
-  d = UntypedUWD()
+function UndirectedWiringDiagram(::Type{UWD},
+    nports::Int; data_types...) where UWD <: AbstractUWD
+  d = UWD(; data_types...)
   add_parts!(d, :OuterPort, nports)
   return d
 end
+UndirectedWiringDiagram(nports::Int; data_types...) =
+  UndirectedWiringDiagram(UntypedUWD, nports; data_types...)
 
-function UndirectedWiringDiagram(
-    ::Type{T}, port_types::AbstractVector{S}) where {T, S<:T}
-  d = TypedUWD(port_type=T, outer_port_type=T, junction_type=T)
+function UndirectedWiringDiagram(::Type{UWD},
+    port_types::AbstractVector{T}; data_types...) where {UWD <: AbstractUWD, T}
+  d = UWD(; port_type=T, outer_port_type=T, junction_type=T, data_types...)
   nports = length(port_types)
   add_parts!(d, :OuterPort, nports, outer_port_type=port_types)
   return d
 end
-UndirectedWiringDiagram(port_types::AbstractVector{T}) where T =
-  UndirectedWiringDiagram(T, port_types)
+UndirectedWiringDiagram(port_types::AbstractVector; data_types...) =
+  UndirectedWiringDiagram(TypedUWD, port_types; data_types...)
 
 outer_box(::AbstractUWD) = 0
 box(d::AbstractUWD, args...) = subpart(d, args..., :box)
@@ -116,13 +119,14 @@ function add_box!(d::AbstractUWD, port_types::AbstractVector; data...)
   box
 end
 
-add_junction!(d::AbstractUWD) = add_part!(d, :Junction)
-add_junction!(d::AbstractUWD, type) =
-  add_part!(d, :Junction, junction_type=type)
-add_junctions!(d::AbstractUWD, njunctions::Int) =
-  add_parts!(d, :Junction, njunctions)
-add_junctions!(d::AbstractUWD, types::AbstractVector) =
-  add_parts!(d, :Junction, length(types), junction_type=types)
+add_junction!(d::AbstractUWD; data...) = add_part!(d, :Junction; data...)
+add_junction!(d::AbstractUWD, type; data...) =
+  add_part!(d, :Junction; junction_type=type, data...)
+
+add_junctions!(d::AbstractUWD, njunctions::Int; data...) =
+  add_parts!(d, :Junction, njunctions; data...)
+add_junctions!(d::AbstractUWD, types::AbstractVector; data...) =
+  add_parts!(d, :Junction, length(types); junction_type=types, data...)
 
 function set_junction!(d::AbstractUWD, port, junction; outer::Bool=false)
   if has_subpart(d, :junction_type)

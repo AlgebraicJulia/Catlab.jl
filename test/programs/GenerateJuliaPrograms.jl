@@ -5,26 +5,24 @@ using Test
 using Catlab, Catlab.Theories
 using Catlab.Programs.GenerateJuliaPrograms
 
+ℝ = Ob(FreeCartesianCategory, :ℝ)
+plus_hom = Hom(:+, ℝ⊗ℝ, ℝ)
+cos_hom, sin_hom = Hom(:cos, ℝ, ℝ), Hom(:sin, ℝ, ℝ)
+
 # Compilation
 #############
 
-# Note: Further tests of compilation are provided by the roundtripping
+# Note: Further testing of compilation  the roundtripping
 # integration tests in `TestParseJuliaPrograms`.
 
-W, X, Y, Z = Ob(FreeCartesianCategory, :W, :X, :Y, :Z)
-f, g, h = Hom(:f, X, Y), Hom(:g, Y, Z), Hom(:h, Z, W)
-
-@test compile(f) isa Function
-@test compile(compose(f,g)) isa Function
-@test compile(otimes(f,h)) isa Function
-@test compile(compose(f, mcopy(Y), otimes(g,g))) isa Function
+x = collect(range(-2,stop=2,length=50))
+@test compile(cos_hom).(x) == cos.(x)
+@test compile(compose(cos_hom, sin_hom)).(x) == @. sin(cos(x))
+@test compile(otimes(cos_hom, sin_hom))(π/2, π/2) == (cos(π/2), sin(π/2))
 
 # Evaluation
 ############
 
-ℝ = Ob(FreeCartesianCategory, :ℝ)
-
-plus, cos_hom, sin_hom = Hom(:+, ℝ⊗ℝ, ℝ), Hom(:cos, ℝ, ℝ), Hom(:sin, ℝ, ℝ)
 generators = Dict{Symbol,Any}(:+ => +, :cos => cos, :sin => sin)
 ev = (args...; kw...) -> evaluate(args...; generators=generators, kw...)
 
@@ -49,7 +47,7 @@ x = collect(range(-2,stop=2,length=50))
 @test ev(delete(ℝ), 1) == nothing
 @test ev(delete(ℝ⊗ℝ), 1, 2) == nothing
 
-f = compose(mcopy(ℝ), otimes(cos_hom, sin_hom), plus)
+f = compose(mcopy(ℝ), otimes(cos_hom, sin_hom), plus_hom)
 @test ev(f, 1) == cos(1) + sin(1)
 @test ev(f, x; broadcast=true) == cos.(x) + sin.(x)
 

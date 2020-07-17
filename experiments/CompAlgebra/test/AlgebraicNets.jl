@@ -18,10 +18,6 @@ f_comp = compile(f)
 @test f_comp(x) == sin.(x)
 f_comp = compile(f,args=[:x])
 @test f_comp(x) == sin.(x)
-f_comp = compile(f,name=:myfun)
-@test f_comp(x) == sin.(x)
-f_comp = compile(f,name=:myfun2,args=[:x])
-@test f_comp(x) == sin.(x)
 @test evaluate(f,x) == sin.(x)
 
 # Composition
@@ -156,7 +152,7 @@ f_comp, f_const = compile(f, return_constants=true, vector=true)
 @test f_comp([x],[2,1]) == @. sin(2x)
 
 f = compose(otimes(id(R),constant(:c,R)), mmerge(R))
-f_comp = compile(f,name=:myfun3)
+f_comp = compile(f)
 @test f_comp(x,c=2) ≈ @. x+2
 
 # Display

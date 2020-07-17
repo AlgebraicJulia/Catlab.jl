@@ -3,8 +3,8 @@
 module ParseJuliaPrograms
 export @program, parse_wiring_diagram
 
-using Base: invokelatest
 using Compat
+using GeneralizedGenerated: mk_function
 using Match
 
 using ...Catlab
@@ -16,9 +16,9 @@ using ..GenerateJuliaPrograms: make_return_value
 
 """ Parse a wiring diagram from a Julia program.
 
-For the most part, this is standard Julia but we take a few liberties with the
-syntax. Products are represented as tuples. So if `x` and `y` are variables of
-type \$X\$ and \$Y\$, then `(x,y)` has type \$X \\otimes Y\$. Also, both `()`
+For the most part, this is standard Julia code but we take a few liberties with
+the syntax. Products are represented as tuples. So if `x` and `y` are variables
+of type \$X\$ and \$Y\$, then `(x,y)` has type \$X \\otimes Y\$. Also, both `()`
 and `nothing` are interpreted as the monoidal unit \$I\$.
 
 Unlike in standard Julia, the call expressions `f(x,y)` and `f((x,y))` are
@@ -31,7 +31,7 @@ g(x,y)
 ```
 
 is equivalent to `g(f(w))`. In standard Julia, at most one of these calls to `g`
-would be valid.
+would be valid, unless `g` had multiple signatures.
 
 The diagonals (copying and deleting) are implicit in the Julia syntax: copying
 is variable reuse and deleting is variable non-use. For the codiagonals (merging
@@ -42,18 +42,14 @@ creation by the empty vector `[]`. For example, `f([x1,x2])` translates to
 
 This macro is a wrapper around [`parse_wiring_diagram`](@ref).
 """
-macro program(pres, expr)
+macro program(pres, exprs...)
   Expr(:call, GlobalRef(ParseJuliaPrograms, :parse_wiring_diagram),
-       esc(pres), esc(Expr(:quote, expr)))
-end
-macro program(pres, call, body)
-  Expr(:call, GlobalRef(ParseJuliaPrograms, :parse_wiring_diagram),
-       esc(pres), esc(Expr(:quote, call)), esc(Expr(:quote, body)))
+       esc(pres), (QuoteNode(expr) for expr in exprs)...)
 end
 
 """ Parse a wiring diagram from a Julia function expression.
 
-The macro version of this function is [`@program`](@ref).
+For more information, see the corresponding macro [`@program`](@ref).
 """
 function parse_wiring_diagram(pres::Presentation, expr::Expr)::WiringDiagram
   @match expr begin
@@ -86,7 +82,7 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
   kwargs = make_lookup_table(pres, syntax_module, unique_symbols(body))
   func_expr = compile_recording_expr(body, args,
     kwargs = sort!(collect(keys(kwargs))))
-  func = parentmodule(syntax_module).eval(func_expr)
+  func = mk_function(parentmodule(syntax_module), func_expr)
 
   # ...and then evaluate function that records the function calls.
   arg_obs = syntax_module.Ob[ last(arg) for arg in parsed_args ]
@@ -97,7 +93,7 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
   arg_ports = [ Tuple(Port(v_in, OutputPort, i) for i in (stop-len+1):stop)
                 for (len, stop) in zip(arg_blocks, cumsum(arg_blocks)) ]
   recorder = f -> (args...) -> record_call!(diagram, f, args...)
-  value = invokelatest(func, recorder, arg_ports...; kwargs...)
+  value = func(recorder, arg_ports...; kwargs...)
 
   # Add outgoing wires for return values.
   out_ports = normalize_arguments((value,))
@@ -132,15 +128,15 @@ end
 """ Evaluate pseudo-Julia type expression, such as `X` or `otimes{X,Y}`.
 """
 function eval_type_expr(pres::Presentation, syntax_module::Module, expr::Expr0)
-  function eval(expr)
+  function _eval_type_expr(expr)
     @match expr begin
       Expr(:curly, [name, args...]) =>
-        invoke_term(syntax_module, name, map(eval, args)...)
+        invoke_term(syntax_module, name, map(_eval_type_expr, args)...)
       name::Symbol => generator(pres, name)
       _ => error("Invalid type expression $expr")
     end
   end
-  eval(expr)
+  _eval_type_expr(expr)
 end
 
 """ Generate a Julia function expression that will record function calls.

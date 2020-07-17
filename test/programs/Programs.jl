@@ -7,3 +7,7 @@ end
 @testset "ParseJuliaPrograms" begin
   include("ParseJuliaPrograms.jl")
 end
+
+@testset "ParseRelations" begin
+  include("ParseRelations.jl")
+end
