@@ -47,6 +47,9 @@ set_junction!(d, [1,2,3], outer=true)
 # Tensor networks
 #################
 
+# Parsing
+#--------
+
 parsed = @tensor_network (i,j,k,ℓ) D[i,j,k] = A[i,ℓ] * B[j,ℓ] * C[k,ℓ]
 d = RelationDiagram(3)
 add_box!(d, 2, name=:A); add_box!(d, 2, name=:B); add_box!(d, 2, name=:C)
@@ -61,7 +64,7 @@ parsed = @tensor_network D[i,j,k] := A[i,ℓ] * B[j,ℓ] * C[k,ℓ]
 @test parsed == d
 
 # Degenerate case: single term.
-parsed = @tensor_network B[i,j,k] := A[i,j,k]
+parsed = @tensor_network B[i,j,k] = A[i,j,k]
 d = singleton_diagram(RelationDiagram, 3, name=:A)
 set_subpart!(d, :variable, [:i,:j,:k])
 @test parsed == d
@@ -72,5 +75,19 @@ d = RelationDiagram(2)
 add_junctions!(d, 2, variable=[:i,:j])
 set_junction!(d, 1:2, outer=true)
 @test parsed == d
+
+# Round trip
+#-----------
+
+# Parse and then compile.
+macro roundtrip_tensor(tensor)
+  quote
+    expr = compile_tensor_expr(@tensor_network($tensor), Symbol("@tensor"),
+                               outer_name=:out)
+    @test last(expr.args) == $(QuoteNode(tensor))
+  end
+end
+
+@roundtrip_tensor out[i,j,k] := A[i,ℓ] * B[j,ℓ] * C[k,ℓ]
 
 end

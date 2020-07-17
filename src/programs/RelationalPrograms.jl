@@ -1,10 +1,11 @@
 """ Parse relation expressions in Julia syntax into undirected wiring diagrams.
 """
 module RelationalPrograms
-export RelationDiagram, @relation, @tensor_network,
-  parse_relation_diagram, parse_tensor_network
+export RelationDiagram, @relation, @tensor_network, parse_relation_diagram,
+  parse_tensor_network, compile_tensor, compile_tensor_expr
 
 using Compat
+using GeneralizedGenerated: mk_function
 using Match
 
 using ...CategoricalAlgebra.CSets, ...Present
@@ -160,7 +161,7 @@ wiring diagram for composite of two matrices (or two binary relations) is
 constructed by
 
 ```julia
-@tensor_network (i,j,k) C[i,k] = A[i,j] * B[j,k]
+@tensor_network (i,j,k) C[i,k] := A[i,j] * B[j,k]
 ```
 
 The leading context, or list of variables, may be omitted, in which case it is
@@ -168,8 +169,10 @@ inferred from the variables used in the tensor expression. So, in this example,
 an equivalent macro call is
 
 ```julia
-@tensor_network C[i,k] = A[i,j] * B[j,k]
+@tensor_network C[i,k] := A[i,j] * B[j,k]
 ```
+
+See also: [`compile_tensor`](@ref), the "inverse" to this macro.
 """
 macro tensor_network(exprs...)
   Expr(:call, GlobalRef(RelationalPrograms, :parse_tensor_network),
@@ -193,7 +196,7 @@ function parse_tensor_network(expr::Expr; all_vars=nothing)
   (outer_name, outer_vars), body = @match expr begin
     Expr(:(=), [outer, body]) => (parse_tensor_term(outer), body)
     Expr(:(:=), [outer, body]) => (parse_tensor_term(outer), body)
-    _ => error("Tensor expression must be an assignment, either = or :=")
+    _ => error("Tensor expression $expr must be an assignment, either = or :=")
   end
   names_and_vars = map(parse_tensor_term, @match body begin
     Expr(:call, [:(*), args...]) => args
@@ -228,5 +231,36 @@ function parse_tensor_term(expr)
     _ => error("Invalid syntax in term $expr in tensor expression")
   end
 end
+
+""" Generate tensor expression from undirected wiring diagram.
+"""
+function compile_tensor(d::RelationDiagram, args...; kw...)
+  expr = Expr(:function, Expr(:tuple, subpart(d, :name)),
+              compile_tensor_expr(d, args...; kw...))
+  mk_function(expr)
+end
+
+function compile_tensor_expr(d::RelationDiagram, tensor_macro;
+    assign_op::Symbol=:(:=), context::Bool=false,
+    outer_name::Union{Symbol,Nothing}=nothing)
+  if isnothing(outer_name)
+    outer_name = gensym("A")
+  end
+  vars = junctions -> subpart(d, junctions, :variable)
+  outer_vars = vars(junction(d, ports(d, outer=true), outer=true))
+  terms = map(boxes(d)) do box
+    Expr(:ref, subpart(d, box, :name), vars(junction(d, ports(d, box)))...)
+  end
+  lhs = Expr(:ref, outer_name, outer_vars...)
+  rhs = if isempty(terms); 1
+    elseif length(terms) == 1; first(terms)
+    else Expr(:call, :(*), terms...) end
+  assign_expr = Expr(assign_op, lhs, rhs)
+  Expr(:macrocall, make_ref(tensor_macro), LineNumberNode(0),
+       (context ? (Expr(:tuple, vars...),) : ())..., assign_expr)
+end
+
+make_ref(m) = GlobalRef(parentmodule(m), nameof(m))
+make_ref(m::Symbol) = m
 
 end
