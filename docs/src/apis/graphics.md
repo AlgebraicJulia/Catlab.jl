@@ -1,4 +1,4 @@
-# Graphics
+# [Graphics](@id graphics)
 
 ```@autodocs
 Modules = [

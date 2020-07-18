@@ -55,7 +55,7 @@ RelationDiagram(ports) = UndirectedWiringDiagram(RelationDiagram, ports)
 
 """ Construct an undirected wiring diagram using relation notation.
 
-Unlike the [`@program`](@ref) macro for directed wiring diagrams, this macro
+Unlike the `@program` macro for directed wiring diagrams, this macro
 fundamentally alters the usual semantics of the Julia language. Function calls
 with n arguments are now interpreted as assertions that an n-ary relation holds
 at a particular point. For example, the operation of composing of binary
@@ -181,7 +181,7 @@ end
 
 """ Parse an undirected wiring diagram from a tensor expression.
 
-For more information, see the corresponding macro [`@tensor_diagram`](@ref).
+For more information, see the corresponding macro [`@tensor_network`](@ref).
 """
 function parse_tensor_network(context::Expr, expr::Expr)
   all_vars = @match context begin
