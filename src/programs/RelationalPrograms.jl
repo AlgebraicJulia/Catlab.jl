@@ -232,17 +232,46 @@ function parse_tensor_term(expr)
   end
 end
 
-""" Generate tensor expression from undirected wiring diagram.
+""" Compile tensor contraction function from undirected wiring diagram.
+
+The arguments are an undirected wiring diagram and a macro compatible with the
+notation for tensor contractions that is de facto standard among the Julia
+tensor packages. For example,
+
+```julia
+f = compile_tensor(diagram, var"@tensor")
+```
+
+defines a contraction function using the `@tensor` macro. The following macros
+should be supported:
+
+- `@tensor` from
+  [TensorOperations.jl](https://github.com/Jutho/TensorOperations.jl).
+- `@tullio` from [Tullio.jl](https://github.com/mcabbott/Tullio.jl)
+- `@einsum` from [Einsum.jl](https://github.com/ahwillia/Einsum.jl)
+- `@ein` from [OMEinsum.jl](https://github.com/under-Peter/OMEinsum.jl)
+
+For now, `@cast` and `@reduce` from
+[TensorCast.jl](https://github.com/mcabbott/TensorCast.jl) are *not* supported
+since they do not use implicit summation.
+
+See also: [`@tensor_network`](@ref), the "inverse" to this function.
 """
 function compile_tensor(d::UndirectedWiringDiagram, tensor_macro;
-                        context::Bool=true, kw...)
+                        context::Bool=false, kw...)
   assign_expr, names, vars = compile_tensor_expr(d; kw...)
   expr = Expr(:function, Expr(:tuple, names...),
     Expr(:macrocall, macro_ref(tensor_macro), LineNumberNode(0),
          (context ? (Expr(:tuple, vars...),) : ())..., assign_expr))
   mk_function(expr)
 end
+macro_ref(m) = GlobalRef(parentmodule(m), nameof(m))
+macro_ref(m::Symbol) = m
 
+""" Generate tensor expression from undirected wiring diagram.
+
+See also: [`compile_tensor`](@ref).
+"""
 function compile_tensor_expr(d::UndirectedWiringDiagram;
     assign_op::Symbol=:(:=), assign_name::Union{Symbol,Nothing}=nothing)
   if isnothing(assign_name)
@@ -266,8 +295,5 @@ end
 function ref_expr(name::Symbol, vars)
   isempty(vars) ? name : Expr(:ref, name, vars...)
 end
-
-macro_ref(m) = GlobalRef(parentmodule(m), nameof(m))
-macro_ref(m::Symbol) = m
 
 end
