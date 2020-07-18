@@ -255,6 +255,41 @@ function add_edges!(g::SymmetricPropertyGraph{T}, srcs::AbstractVector{Int},
              inv=invs, eprops=eprops)
 end
 
+# Constructor from regular graph
+################################
+
+function PropertyGraph{T}(g::Graph,vertex_dec,edge_dec) where {T}
+  pg = PropertyGraph{T}()
+  add_vertices!(pg, nv(g))
+  add_edges!(pg,src(g),tgt(g))
+  for i in 1:nv(g)
+    set_vprops!(pg,i,vertex_dec(i))
+  end
+  for i in 1:ne(g)
+    set_eprops!(pg,i,edge_dec(i))
+  end
+  pg
+end
+
+PropertyGraph{T}(g::Graph) where {T} = PropertyGraph{T}(g,e->Dict(),v->Dict())
+
+function SymmetricPropertyGraph{T}(g::SymmetricGraph,vertex_dec,edge_dec) where {T}
+  pg = SymmetricPropertyGraph{T}()
+  add_vertices!(pg, nv(g))
+  for v in 1:nv(g)
+    set_vprops!(pg,v,vertex_dec(v))
+  end
+  for e in 1:ne(g)
+    if e <= inv(g,e)
+      add_edge!(pg,src(g,e),tgt(g,e))
+      set_eprops!(pg,e,edge_dec(e))
+    end
+  end
+  pg
+end
+
+SymmetricPropertyGraph{T}(g::SymmetricGraph) where {T} = SymmetricPropertyGraph{T}(g,e->Dict(),v->Dict())
+
 # LightGraphs interop
 #####################
 
