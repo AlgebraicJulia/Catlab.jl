@@ -82,12 +82,14 @@ set_junction!(d, 1:2, outer=true)
 # Parse and then compile.
 macro roundtrip_tensor(tensor)
   quote
-    expr = compile_tensor_expr(@tensor_network($tensor), Symbol("@tensor"),
-                               outer_name=:out)
-    @test last(expr.args) == $(QuoteNode(tensor))
+    compiled = compile_tensor_expr(@tensor_network($tensor), assign_op=:(=))
+    @test first(compiled) == $(QuoteNode(tensor))
   end
 end
 
-@roundtrip_tensor out[i,j,k] := A[i,ℓ] * B[j,ℓ] * C[k,ℓ]
+@roundtrip_tensor out[i,k] = A[i,j] * B[j,k]
+@roundtrip_tensor out[i,j,k] = A[i,ℓ] * B[j,ℓ] * C[k,ℓ]
+@roundtrip_tensor out = u[i] * A[i,j] * v[j]
+@roundtrip_tensor out[j] = α * a[i] * B[i,j]
 
 end

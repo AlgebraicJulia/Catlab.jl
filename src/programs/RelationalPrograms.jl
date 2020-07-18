@@ -234,33 +234,40 @@ end
 
 """ Generate tensor expression from undirected wiring diagram.
 """
-function compile_tensor(d::RelationDiagram, args...; kw...)
-  expr = Expr(:function, Expr(:tuple, subpart(d, :name)),
-              compile_tensor_expr(d, args...; kw...))
+function compile_tensor(d::UndirectedWiringDiagram, tensor_macro;
+                        context::Bool=true, kw...)
+  assign_expr, names, vars = compile_tensor_expr(d; kw...)
+  expr = Expr(:function, Expr(:tuple, names...),
+    Expr(:macrocall, macro_ref(tensor_macro), LineNumberNode(0),
+         (context ? (Expr(:tuple, vars...),) : ())..., assign_expr))
   mk_function(expr)
 end
 
-function compile_tensor_expr(d::RelationDiagram, tensor_macro;
-    assign_op::Symbol=:(:=), context::Bool=false,
-    outer_name::Union{Symbol,Nothing}=nothing)
-  if isnothing(outer_name)
-    outer_name = gensym("A")
+function compile_tensor_expr(d::UndirectedWiringDiagram;
+    assign_op::Symbol=:(:=), assign_name::Union{Symbol,Nothing}=nothing)
+  if isnothing(assign_name)
+    assign_name = :out
   end
-  vars = junctions -> subpart(d, junctions, :variable)
-  outer_vars = vars(junction(d, ports(d, outer=true), outer=true))
+  names = has_subpart(d, :name) ? subpart(d, :name) :
+    [ Symbol("A$i") for i in boxes(d) ]
+  vars = has_subpart(d, :variable) ? subpart(d, :variable) :
+    [ Symbol("i$j") for j in junctions(d) ]
+  outer_vars = vars[junction(d, ports(d, outer=true), outer=true)]
   terms = map(boxes(d)) do box
-    Expr(:ref, subpart(d, box, :name), vars(junction(d, ports(d, box)))...)
+    ref_expr(names[box], vars[junction(d, ports(d, box))])
   end
-  lhs = Expr(:ref, outer_name, outer_vars...)
+  lhs = ref_expr(assign_name, outer_vars)
   rhs = if isempty(terms); 1
     elseif length(terms) == 1; first(terms)
     else Expr(:call, :(*), terms...) end
-  assign_expr = Expr(assign_op, lhs, rhs)
-  Expr(:macrocall, make_ref(tensor_macro), LineNumberNode(0),
-       (context ? (Expr(:tuple, vars...),) : ())..., assign_expr)
+  (Expr(assign_op, lhs, rhs), unique(names), vars)
 end
 
-make_ref(m) = GlobalRef(parentmodule(m), nameof(m))
-make_ref(m::Symbol) = m
+function ref_expr(name::Symbol, vars)
+  isempty(vars) ? name : Expr(:ref, name, vars...)
+end
+
+macro_ref(m) = GlobalRef(parentmodule(m), nameof(m))
+macro_ref(m::Symbol) = m
 
 end
