@@ -273,10 +273,7 @@ macro_ref(m::Symbol) = m
 See also: [`compile_tensor`](@ref).
 """
 function compile_tensor_expr(d::UndirectedWiringDiagram;
-    assign_op::Symbol=:(:=), assign_name::Union{Symbol,Nothing}=nothing)
-  if isnothing(assign_name)
-    assign_name = :out
-  end
+    assign_op::Symbol=:(:=), assign_name::Symbol=:out)
   names = has_subpart(d, :name) ? subpart(d, :name) :
     [ Symbol("A$i") for i in boxes(d) ]
   vars = has_subpart(d, :variable) ? subpart(d, :variable) :

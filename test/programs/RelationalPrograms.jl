@@ -82,7 +82,8 @@ set_junction!(d, 1:2, outer=true)
 # Parse and then compile.
 macro roundtrip_tensor(tensor)
   quote
-    compiled = compile_tensor_expr(@tensor_network($tensor), assign_op=:(=))
+    compiled = compile_tensor_expr(@tensor_network($tensor),
+                                   assign_op=:(=), assign_name=:out)
     @test first(compiled) == $(QuoteNode(tensor))
   end
 end
