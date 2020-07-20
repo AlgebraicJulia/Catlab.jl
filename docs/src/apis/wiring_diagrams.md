@@ -3,6 +3,7 @@
 ```@autodocs
 Modules = [
   WiringDiagrams.DirectedWiringDiagrams,
+  WiringDiagrams.UndirectedWiringDiagrams,
   WiringDiagrams.AlgebraicWiringDiagrams,
   WiringDiagrams.WiringDiagramAlgorithms,
   WiringDiagrams.WiringDiagramSerialization,
