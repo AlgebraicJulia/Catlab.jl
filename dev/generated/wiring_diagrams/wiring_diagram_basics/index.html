@@ -13,7 +13,7 @@ show_diagram(d::WiringDiagram) = to_graphviz(d,
   edge_attrs=Graphviz.Attributes(
     :fontname =&gt; &quot;Courier&quot;,
   )
-)</code></pre><pre><code class="language-none">show_diagram (generic function with 1 method)</code></pre><h2 id="Data-structures"><a class="docs-heading-anchor" href="#Data-structures">Data structures</a><a id="Data-structures-1"></a><a class="docs-heading-anchor-permalink" href="#Data-structures" title="Permalink"></a></h2><p>The basic building blocks of a wiring diagram are boxes, ports, and wires. The top-level data structure is <code>WiringDiagram</code>, defined in the module <code>Catlab.WiringDiagrams</code>. A wiring diagram consists of boxes (usually of type <code>Box</code>) connected by wires (of type <code>Wire</code>). Each box has a sequence of input ports and a sequence of output ports, as does the wiring diagram itself. The wires have sources and targets, both of which consist of a box and a port on that box.</p><p>The boxes in a wiring diagram are indexed by integer IDs. Boxes can be retrieved by ID, and wires refer to boxes using their IDs. Two special IDs, obtained by <code>input_id</code> and <code>output_id</code> methods, refer to the inputs and outputs of the diagram itself. In this way, wires can connect the (inner) boxes of a diagram to the diagram&#39;s &quot;outer box&quot;.</p><p>The <code>WiringDiagram</code> data structure is an elaborate wrapper around a directed graph from <a href="https://github.com/JuliaGraphs/LightGraphs.jl">LightGraphs.jl</a>. The underlying <code>DiGraph</code> object can be accessed using the <code>graph</code> method. The vertices of this graph are exactly the box IDs. The graph should never be mutated directly, on pain of creating inconsistent state, but it does allow convenient access to the large array of <a href="https://juliagraphs.github.io/LightGraphs.jl/latest/">graph algorithms</a> supported by LightGraphs.</p><p>All this is somewhat abstract but should become clearer as we see concrete examples.</p><h2 id="Categorical-interface"><a class="docs-heading-anchor" href="#Categorical-interface">Categorical interface</a><a id="Categorical-interface-1"></a><a class="docs-heading-anchor-permalink" href="#Categorical-interface" title="Permalink"></a></h2><p>In this example, the wiring diagrams will carry symbolic expressions (of type <code>Catlab.ObExpr</code> and <code>Catlab.HomExpr</code>).</p><pre><code class="language-julia">using Catlab.Theories
+)</code></pre><pre class="documenter-example-output">show_diagram (generic function with 1 method)</pre><h2 id="Data-structures"><a class="docs-heading-anchor" href="#Data-structures">Data structures</a><a id="Data-structures-1"></a><a class="docs-heading-anchor-permalink" href="#Data-structures" title="Permalink"></a></h2><p>The basic building blocks of a wiring diagram are boxes, ports, and wires. The top-level data structure is <code>WiringDiagram</code>, defined in the module <code>Catlab.WiringDiagrams</code>. A wiring diagram consists of boxes (usually of type <code>Box</code>) connected by wires (of type <code>Wire</code>). Each box has a sequence of input ports and a sequence of output ports, as does the wiring diagram itself. The wires have sources and targets, both of which consist of a box and a port on that box.</p><p>The boxes in a wiring diagram are indexed by integer IDs. Boxes can be retrieved by ID, and wires refer to boxes using their IDs. Two special IDs, obtained by <code>input_id</code> and <code>output_id</code> methods, refer to the inputs and outputs of the diagram itself. In this way, wires can connect the (inner) boxes of a diagram to the diagram&#39;s &quot;outer box&quot;.</p><p>The <code>WiringDiagram</code> data structure is an elaborate wrapper around a directed graph from <a href="https://github.com/JuliaGraphs/LightGraphs.jl">LightGraphs.jl</a>. The underlying <code>DiGraph</code> object can be accessed using the <code>graph</code> method. The vertices of this graph are exactly the box IDs. The graph should never be mutated directly, on pain of creating inconsistent state, but it does allow convenient access to the large array of <a href="https://juliagraphs.github.io/LightGraphs.jl/latest/">graph algorithms</a> supported by LightGraphs.</p><p>All this is somewhat abstract but should become clearer as we see concrete examples.</p><h2 id="Categorical-interface"><a class="docs-heading-anchor" href="#Categorical-interface">Categorical interface</a><a id="Categorical-interface-1"></a><a class="docs-heading-anchor-permalink" href="#Categorical-interface" title="Permalink"></a></h2><p>In this example, the wiring diagrams will carry symbolic expressions (of type <code>Catlab.ObExpr</code> and <code>Catlab.HomExpr</code>).</p><pre><code class="language-julia">using Catlab.Theories
 
 A, B, C, D = Ob(FreeBiproductCategory, :A, :B, :C, :D)
 f = Hom(:f, A, B)
@@ -21,12 +21,12 @@ g = Hom(:g, B, C)
 h = Hom(:h, C, D)
 
 f</code></pre><div>\[f : A \to B\]</div><h3 id="Generators"><a class="docs-heading-anchor" href="#Generators">Generators</a><a id="Generators-1"></a><a class="docs-heading-anchor-permalink" href="#Generators" title="Permalink"></a></h3><p>Convert each of the morphism generators into a diagram with a single box.</p><pre><code class="language-julia">f, g, h = to_wiring_diagram(f), to_wiring_diagram(g), to_wiring_diagram(h)
-f</code></pre><pre><code class="language-none">WiringDiagram{BiproductCategory}([:A], [:B], 
+f</code></pre><pre class="documenter-example-output">WiringDiagram{BiproductCategory}([:A], [:B], 
 [ 1 =&gt; {inputs},
   2 =&gt; {outputs},
   3 =&gt; Box(:f, [:A], [:B]) ],
 [ Wire((1,1) =&gt; (3,1)),
-  Wire((3,1) =&gt; (2,1)) ])</code></pre><pre><code class="language-julia">show_diagram(f)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+  Wire((3,1) =&gt; (2,1)) ])</pre><pre><code class="language-julia">show_diagram(f)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.40.1 (20161225.0304)
@@ -64,14 +64,14 @@ f</code></pre><pre><code class="language-none">WiringDiagram{BiproductCategory}(
 </g>
 </g>
 </svg>
-<h3 id="Composition"><a class="docs-heading-anchor" href="#Composition">Composition</a><a id="Composition-1"></a><a class="docs-heading-anchor-permalink" href="#Composition" title="Permalink"></a></h3><pre><code class="language-julia">compose(f,g)</code></pre><pre><code class="language-none">WiringDiagram{BiproductCategory}([:A], [:C], 
+<h3 id="Composition"><a class="docs-heading-anchor" href="#Composition">Composition</a><a id="Composition-1"></a><a class="docs-heading-anchor-permalink" href="#Composition" title="Permalink"></a></h3><pre><code class="language-julia">compose(f,g)</code></pre><pre class="documenter-example-output">WiringDiagram{BiproductCategory}([:A], [:C], 
 [ 1 =&gt; {inputs},
   2 =&gt; {outputs},
   3 =&gt; Box(:f, [:A], [:B]),
   4 =&gt; Box(:g, [:B], [:C]) ],
 [ Wire((1,1) =&gt; (3,1)),
   Wire((3,1) =&gt; (4,1)),
-  Wire((4,1) =&gt; (2,1)) ])</code></pre><pre><code class="language-julia">show_diagram(compose(f,g))</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+  Wire((4,1) =&gt; (2,1)) ])</pre><pre><code class="language-julia">show_diagram(compose(f,g))</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.40.1 (20161225.0304)
@@ -124,7 +124,7 @@ f</code></pre><pre><code class="language-none">WiringDiagram{BiproductCategory}(
 </g>
 </g>
 </svg>
-<h3 id="Monoidal-products"><a class="docs-heading-anchor" href="#Monoidal-products">Monoidal products</a><a id="Monoidal-products-1"></a><a class="docs-heading-anchor-permalink" href="#Monoidal-products" title="Permalink"></a></h3><pre><code class="language-julia">otimes(f,h)</code></pre><pre><code class="language-none">WiringDiagram{BiproductCategory}([:A,:C], [:B,:D], 
+<h3 id="Monoidal-products"><a class="docs-heading-anchor" href="#Monoidal-products">Monoidal products</a><a id="Monoidal-products-1"></a><a class="docs-heading-anchor-permalink" href="#Monoidal-products" title="Permalink"></a></h3><pre><code class="language-julia">otimes(f,h)</code></pre><pre class="documenter-example-output">WiringDiagram{BiproductCategory}([:A,:C], [:B,:D], 
 [ 1 =&gt; {inputs},
   2 =&gt; {outputs},
   3 =&gt; Box(:f, [:A], [:B]),
@@ -132,7 +132,7 @@ f</code></pre><pre><code class="language-none">WiringDiagram{BiproductCategory}(
 [ Wire((1,1) =&gt; (3,1)),
   Wire((1,2) =&gt; (4,1)),
   Wire((3,1) =&gt; (2,1)),
-  Wire((4,1) =&gt; (2,2)) ])</code></pre><pre><code class="language-julia">show_diagram(otimes(f,h))</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+  Wire((4,1) =&gt; (2,2)) ])</pre><pre><code class="language-julia">show_diagram(otimes(f,h))</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.40.1 (20161225.0304)
@@ -197,12 +197,12 @@ f</code></pre><pre><code class="language-none">WiringDiagram{BiproductCategory}(
 </g>
 </g>
 </svg>
-<h3 id="Copy-and-merge,-delete-and-create"><a class="docs-heading-anchor" href="#Copy-and-merge,-delete-and-create">Copy and merge, delete and create</a><a id="Copy-and-merge,-delete-and-create-1"></a><a class="docs-heading-anchor-permalink" href="#Copy-and-merge,-delete-and-create" title="Permalink"></a></h3><pre><code class="language-julia">mcopy(codom(f),2)</code></pre><pre><code class="language-none">WiringDiagram{BiproductCategory}([:B], [:B,:B], 
+<h3 id="Copy-and-merge,-delete-and-create"><a class="docs-heading-anchor" href="#Copy-and-merge,-delete-and-create">Copy and merge, delete and create</a><a id="Copy-and-merge,-delete-and-create-1"></a><a class="docs-heading-anchor-permalink" href="#Copy-and-merge,-delete-and-create" title="Permalink"></a></h3><pre><code class="language-julia">mcopy(codom(f),2)</code></pre><pre class="documenter-example-output">WiringDiagram{BiproductCategory}([:B], [:B,:B], 
 [ 1 =&gt; {inputs},
   2 =&gt; {outputs},
    ],
 [ Wire((1,1) =&gt; (2,1)),
-  Wire((1,1) =&gt; (2,2)) ])</code></pre><pre><code class="language-julia">show_diagram(mcopy(codom(f),2))</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+  Wire((1,1) =&gt; (2,2)) ])</pre><pre><code class="language-julia">show_diagram(mcopy(codom(f),2))</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.40.1 (20161225.0304)
@@ -350,7 +350,7 @@ f</code></pre><pre><code class="language-none">WiringDiagram{BiproductCategory}(
 g = Box(:g, [:B], [:C])
 h = Box(:h, [:C], [:D])
 
-f</code></pre><pre><code class="language-none">Box(:f, [:A], [:B])</code></pre><h3 id="Composition-2"><a class="docs-heading-anchor" href="#Composition-2">Composition</a><a class="docs-heading-anchor-permalink" href="#Composition-2" title="Permalink"></a></h3><p>For example, here is how to manually construct a composition of two boxes.</p><p>The <code>add_box!</code> method adds a box to a wiring diagrams and returns the ID assigned to the box. How the boxes are indexed is an implementation detail that you should not rely on; use the IDs that the system gives you.</p><pre><code class="language-julia">d = WiringDiagram([:A], [:C])
+f</code></pre><pre class="documenter-example-output">Box(:f, [:A], [:B])</pre><h3 id="Composition-2"><a class="docs-heading-anchor" href="#Composition-2">Composition</a><a class="docs-heading-anchor-permalink" href="#Composition-2" title="Permalink"></a></h3><p>For example, here is how to manually construct a composition of two boxes.</p><p>The <code>add_box!</code> method adds a box to a wiring diagrams and returns the ID assigned to the box. How the boxes are indexed is an implementation detail that you should not rely on; use the IDs that the system gives you.</p><pre><code class="language-julia">d = WiringDiagram([:A], [:C])
 
 fv = add_box!(d, f)
 gv = add_box!(d, g)
@@ -361,14 +361,14 @@ add_wires!(d, [
   (gv,1) =&gt; (output_id(d),1),
 ])
 
-nboxes(d)</code></pre><pre><code class="language-none">2</code></pre><pre><code class="language-julia">nwires(d)</code></pre><pre><code class="language-none">3</code></pre><pre><code class="language-julia">d</code></pre><pre><code class="language-none">WiringDiagram([:A], [:C], 
+nboxes(d)</code></pre><pre class="documenter-example-output">2</pre><pre><code class="language-julia">nwires(d)</code></pre><pre class="documenter-example-output">3</pre><pre><code class="language-julia">d</code></pre><pre class="documenter-example-output">WiringDiagram([:A], [:C], 
 [ 1 =&gt; {inputs},
   2 =&gt; {outputs},
   3 =&gt; Box(:f, [:A], [:B]),
   4 =&gt; Box(:g, [:B], [:C]) ],
 [ Wire((1,1) =&gt; (3,1)),
   Wire((3,1) =&gt; (4,1)),
-  Wire((4,1) =&gt; (2,1)) ])</code></pre><pre><code class="language-julia">show_diagram(d)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+  Wire((4,1) =&gt; (2,1)) ])</pre><pre><code class="language-julia">show_diagram(d)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.40.1 (20161225.0304)
@@ -433,7 +433,7 @@ add_wires!(d, [
   (hv,1) =&gt; (output_id(d),2),
 ])
 
-d</code></pre><pre><code class="language-none">WiringDiagram([:A,:C], [:B,:D], 
+d</code></pre><pre class="documenter-example-output">WiringDiagram([:A,:C], [:B,:D], 
 [ 1 =&gt; {inputs},
   2 =&gt; {outputs},
   3 =&gt; Box(:f, [:A], [:B]),
@@ -441,7 +441,7 @@ d</code></pre><pre><code class="language-none">WiringDiagram([:A,:C], [:B,:D],
 [ Wire((1,1) =&gt; (3,1)),
   Wire((1,2) =&gt; (4,1)),
   Wire((3,1) =&gt; (2,1)),
-  Wire((4,1) =&gt; (2,2)) ])</code></pre><pre><code class="language-julia">show_diagram(d)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+  Wire((4,1) =&gt; (2,2)) ])</pre><pre><code class="language-julia">show_diagram(d)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.40.1 (20161225.0304)
@@ -506,4 +506,4 @@ d</code></pre><pre><code class="language-none">WiringDiagram([:A,:C], [:B,:D],
 </g>
 </g>
 </svg>
-</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../../">« Catlab.jl</a><a class="docs-footer-nextpage" href="../diagrams_and_expressions/">Wiring diagrams and syntactic expressions »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Monday 20 July 2020 18:06">Monday 20 July 2020</span>. Using Julia version 1.4.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../../">« Catlab.jl</a><a class="docs-footer-nextpage" href="../diagrams_and_expressions/">Wiring diagrams and syntactic expressions »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Monday 20 July 2020 23:19">Monday 20 July 2020</span>. Using Julia version 1.4.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

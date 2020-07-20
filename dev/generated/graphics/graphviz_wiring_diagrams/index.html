@@ -1131,7 +1131,7 @@ to_graphviz(compose(f,g),
 <h2 id="Output-formats"><a class="docs-heading-anchor" href="#Output-formats">Output formats</a><a id="Output-formats-1"></a><a class="docs-heading-anchor-permalink" href="#Output-formats" title="Permalink"></a></h2><p>The function <code>to_graphviz</code> returns an object of a type <code>Graphviz.Graph</code>, representing a Graphviz graph as an abstract syntax tree. When displayed interactively, this object is automatically run through Graphviz and rendered as an SVG image. Sometimes it is convenient to perform this process manually, to change the output format or further customize the generated dot file.</p><p>To generate a dot file, use the builtin pretty-printer. This feature does not require Graphviz to be installed.</p><pre><code class="language-julia">using Catlab.Graphics: Graphviz
 
 graph = to_graphviz(compose(f,g))
-Graphviz.pprint(graph)</code></pre><pre><code class="language-none">digraph G {
+Graphviz.pprint(graph)</code></pre><pre class="documenter-example-output">digraph G {
   graph [fontname=&quot;Serif&quot;,rankdir=&quot;TB&quot;];
   node [fontname=&quot;Serif&quot;,shape=&quot;none&quot;,width=&quot;0&quot;,height=&quot;0&quot;,margin=&quot;0&quot;];
   edge [arrowsize=&quot;0.5&quot;,fontname=&quot;Serif&quot;];
@@ -1162,9 +1162,9 @@ Graphviz.pprint(graph)</code></pre><pre><code class="language-none">digraph G {
   n1p1:s -&gt; n3:in1:n [comment=&quot;A&quot;,id=&quot;e1&quot;];
   n3:out1:s -&gt; n4:in1:n [comment=&quot;B&quot;,id=&quot;e2&quot;];
   n4:out1:s -&gt; n2p1:n [comment=&quot;C&quot;,id=&quot;e3&quot;];
-}</code></pre><p>Catlab provides a simple wrapper around the Graphviz command-line programs. For example, here is the JSON output for the graph.</p><pre><code class="language-julia">import JSON
+}</pre><p>Catlab provides a simple wrapper around the Graphviz command-line programs. For example, here is the JSON output for the graph.</p><pre><code class="language-julia">import JSON
 
-JSON.parse(Graphviz.run_graphviz(graph, format=&quot;json0&quot;))</code></pre><pre><code class="language-none">Dict{String,Any} with 9 entries:
+JSON.parse(Graphviz.run_graphviz(graph, format=&quot;json0&quot;))</code></pre><pre class="documenter-example-output">Dict{String,Any} with 9 entries:
   &quot;name&quot;          =&gt; &quot;G&quot;
   &quot;strict&quot;        =&gt; false
   &quot;bb&quot;            =&gt; &quot;0,0,24,160&quot;
@@ -1173,4 +1173,4 @@ JSON.parse(Graphviz.run_graphviz(graph, format=&quot;json0&quot;))</code></pre><
   &quot;rankdir&quot;       =&gt; &quot;TB&quot;
   &quot;directed&quot;      =&gt; true
   &quot;edges&quot;         =&gt; Any[Dict{String,Any}(&quot;headport&quot;=&gt;&quot;in1:n&quot;,&quot;tail&quot;=&gt;2,&quot;head&quot;=…
-  &quot;_subgraph_cnt&quot; =&gt; 2</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../composejl_wiring_diagrams/">« Drawing wiring diagrams in Compose.jl</a><a class="docs-footer-nextpage" href="../tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Monday 20 July 2020 18:06">Monday 20 July 2020</span>. Using Julia version 1.4.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+  &quot;_subgraph_cnt&quot; =&gt; 2</pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../composejl_wiring_diagrams/">« Drawing wiring diagrams in Compose.jl</a><a class="docs-footer-nextpage" href="../tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Monday 20 July 2020 23:19">Monday 20 July 2020</span>. Using Julia version 1.4.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
