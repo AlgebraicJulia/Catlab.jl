@@ -1,11 +1,10 @@
 """ Parse relation expressions in Julia syntax into undirected wiring diagrams.
 """
 module RelationalPrograms
-export RelationDiagram, @relation, @tensor_network, parse_relation_diagram,
-  parse_tensor_network, compile_tensor, compile_tensor_expr
+export RelationDiagram, @relation, @tensor_network, @eval_tensor_network,
+  parse_relation_diagram, parse_tensor_network, compile_tensor_expr
 
 using Compat
-using GeneralizedGenerated: mk_function
 using Match
 
 using ...CategoricalAlgebra.CSets, ...Present
@@ -73,8 +72,7 @@ In general, the context in the `where` clause defines the set of junctions in
 the diagram and variable sharing defines the wiring of ports to junctions.
 """
 macro relation(exprs...)
-  Expr(:call, GlobalRef(RelationalPrograms, :parse_relation_diagram),
-       (QuoteNode(expr) for expr in exprs)...)
+  :(parse_relation_diagram($((QuoteNode(expr) for expr in exprs)...)))
 end
 
 """ Parse an undirected wiring diagram from a relation expression.
@@ -172,11 +170,10 @@ an equivalent macro call is
 @tensor_network C[i,k] := A[i,j] * B[j,k]
 ```
 
-See also: [`compile_tensor`](@ref), the "inverse" to this macro.
+See also: [`@eval_tensor_network`](@ref), the "inverse" to this macro.
 """
 macro tensor_network(exprs...)
-  Expr(:call, GlobalRef(RelationalPrograms, :parse_tensor_network),
-       (QuoteNode(expr) for expr in exprs)...)
+  :(parse_tensor_network($((QuoteNode(expr) for expr in exprs)...)))
 end
 
 """ Parse an undirected wiring diagram from a tensor expression.
@@ -232,18 +229,18 @@ function parse_tensor_term(expr)
   end
 end
 
-""" Compile tensor contraction function from undirected wiring diagram.
+""" Evaluate a tensor network using another macro.
 
-The arguments are an undirected wiring diagram and a macro compatible with the
-notation for tensor contractions that is de facto standard among the Julia
-tensor packages. For example,
+This macro takes two arguments: an undirected wiring diagram and a macro call
+supporting the tensor contraction notation that is de facto standard among Julia
+tensor packages. For example, to evaluate a tensor network using the `@tullio`
+macro, use:
 
 ```julia
-f = compile_tensor(diagram, var"@tensor")
+A = @eval_tensor_network diagram @tullio
 ```
 
-defines a contraction function using the `@tensor` macro. The following macros
-should be supported:
+The following macros should work:
 
 - `@tensor` from
   [TensorOperations.jl](https://github.com/Jutho/TensorOperations.jl).
@@ -251,42 +248,47 @@ should be supported:
 - `@einsum` from [Einsum.jl](https://github.com/ahwillia/Einsum.jl)
 - `@ein` from [OMEinsum.jl](https://github.com/under-Peter/OMEinsum.jl)
 
-For now, `@cast` and `@reduce` from
-[TensorCast.jl](https://github.com/mcabbott/TensorCast.jl) are *not* supported
-since they do not use implicit summation.
+However,, the macros `@cast` and `@reduce` from
+[TensorCast.jl](https://github.com/mcabbott/TensorCast.jl) will *not* work
+because they do not support implicit summation.
 
-See also: [`@tensor_network`](@ref), the "inverse" to this function.
+See also: [`@tensor_network`](@ref), the "inverse" to this macro.
 """
-function compile_tensor(d::UndirectedWiringDiagram, tensor_macro;
-                        context::Bool=false, kw...)
-  assign_expr, names, vars = compile_tensor_expr(d; kw...)
-  expr = Expr(:function, Expr(:tuple, names...),
-    Expr(:macrocall, macro_ref(tensor_macro), LineNumberNode(0),
-         (context ? (Expr(:tuple, vars...),) : ())..., assign_expr))
-  mk_function(expr)
+macro eval_tensor_network(diagram, tensor_macro)
+  # XXX: We cannot use `GeneralizedGenerated.mk_function` here because packages
+  # like Tullio generate code with type parameters, which GG does not allow.
+  # Thus we are stuck with `eval`. Of course, the real solution is for the Julia
+  # tensor packages to expose a tensor contraction interface that is not based
+  # on macros but on an appropriate data structure---such as wiring diagrams!
+  compile_expr = :(compile_tensor_expr($(esc(diagram)),
+    assign_op=:(:=), assign_name=gensym("out")))
+  Expr(:call, esc(:eval),
+       :(_eval_tensor_network($compile_expr, $(QuoteNode(tensor_macro)))))
 end
-macro_ref(m) = GlobalRef(parentmodule(m), nameof(m))
-macro_ref(m::Symbol) = m
+function _eval_tensor_network(tensor_expr, macro_expr)
+  @match macro_expr begin
+    Expr(:macrocall, args) => Expr(:macrocall, args..., tensor_expr)
+    _ => error("Expression $macro_expr is not a macro call")
+  end
+end
 
 """ Generate tensor expression from undirected wiring diagram.
 
-See also: [`compile_tensor`](@ref).
+This function is used to implement [`@eval_tensor_network`](@ref) but may be
+useful in its own right.
 """
 function compile_tensor_expr(d::UndirectedWiringDiagram;
-    assign_op::Symbol=:(:=), assign_name::Symbol=:out)
-  names = has_subpart(d, :name) ? subpart(d, :name) :
-    [ Symbol("A$i") for i in boxes(d) ]
-  vars = has_subpart(d, :variable) ? subpart(d, :variable) :
-    [ Symbol("i$j") for j in junctions(d) ]
-  outer_vars = vars[junction(d, ports(d, outer=true), outer=true)]
+    assign_op::Symbol=:(=), assign_name::Symbol=:out)
+  vars = j -> subpart(d, j, :variable)
+  outer_vars = vars(junction(d, ports(d, outer=true), outer=true))
   terms = map(boxes(d)) do box
-    ref_expr(names[box], vars[junction(d, ports(d, box))])
+    ref_expr(subpart(d, box, :name), vars(junction(d, ports(d, box))))
   end
   lhs = ref_expr(assign_name, outer_vars)
   rhs = if isempty(terms); 1
     elseif length(terms) == 1; first(terms)
     else Expr(:call, :(*), terms...) end
-  (Expr(assign_op, lhs, rhs), unique(names), vars)
+  Expr(assign_op, lhs, rhs)
 end
 
 function ref_expr(name::Symbol, vars)

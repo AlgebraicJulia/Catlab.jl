@@ -84,7 +84,7 @@ macro roundtrip_tensor(tensor)
   quote
     compiled = compile_tensor_expr(@tensor_network($tensor),
                                    assign_op=:(=), assign_name=:out)
-    @test first(compiled) == $(QuoteNode(tensor))
+    @test compiled == $(QuoteNode(tensor))
   end
 end
 
