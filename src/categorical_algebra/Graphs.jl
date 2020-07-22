@@ -258,15 +258,15 @@ end
 # Constructor from regular graph
 ################################
 
-function PropertyGraph{T}(g::Graph,vertex_dec,edge_dec) where {T}
+function PropertyGraph{T}(g::Graph,make_vprops,make_eprops) where {T}
   pg = PropertyGraph{T}()
   add_vertices!(pg, nv(g))
   add_edges!(pg,src(g),tgt(g))
   for i in 1:nv(g)
-    set_vprops!(pg,i,vertex_dec(i))
+    set_vprops!(pg,i,make_vprops(i))
   end
   for i in 1:ne(g)
-    set_eprops!(pg,i,edge_dec(i))
+    set_eprops!(pg,i,make_eprops(i))
   end
   pg
 end

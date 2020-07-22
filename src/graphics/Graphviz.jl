@@ -249,6 +249,14 @@ function to_graphviz(g::AbstractPropertyGraph)::Graph
   )
 end
 
+function to_graphviz(g::AbstractGraph)
+  to_graphviz(PropertyGraph{String}(g))
+end
+
+function to_graphviz(g::AbstractSymmetricGraph)
+  to_graphviz(SymmetricPropertyGraph{String}(g))
+end
+
 # Pretty-print
 ##############
 
