@@ -9,12 +9,9 @@ using Catlab.Theories: Category, FreeCategory, dom, codom, compose
 
 const NamedSVector{Names,T,N} = SLArray{Tuple{N},T,1,N,Names}
 
-# Typed C-sets
+# C-sets
 ##############
 
-
-""" Typed C-sets (TCSets) are CSets with concrete types for their data morphisms
-"""
 abstract type AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom,DataTypes} end
 
 mutable struct CSet{Ob,Hom,Dom,Codom,Data,DataDom,DataTypes,
@@ -67,7 +64,7 @@ function CSetTypeParams(pres::Presentation{Category};
   (Tuple(nameof.(obs)), Tuple(nameof.(homs)),
    Tuple(@. ob_num(dom(homs))), Tuple(@. ob_num(codom(homs))),
    Tuple(nameof.(data_homs)), Tuple(@. ob_num(dom(data_homs))),
-   hom_tuple, data_tuple,
+   Tuple([datatypes[nameof(h)] for h in data_homs]), hom_tuple, data_tuple,
    Tuple(index), Tuple(data_index), Tuple(k ∈ unique_index for k in data_index))
 end
 
@@ -83,6 +80,6 @@ end
   dec::Hom(V,num)
 end
 
-const RDecGraph = CSetType(TheoryDecGraph, data=(:num,), datatypes=Dict(:dec=>Float64))
+# const RDecGraph = CSetType(TheoryDecGraph, data=(:num,), datatypes=Dict(:dec=>Float64))
 
 end
