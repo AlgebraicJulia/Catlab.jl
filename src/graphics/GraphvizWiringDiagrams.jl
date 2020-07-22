@@ -137,7 +137,7 @@ function to_graphviz(f::WiringDiagram;
   end
   
   # Graph.
-  Graphviz.Digraph(graph_name, stmts;
+  Graphviz.Digraph(graph_name, stmts; prog="dot",
     graph_attrs=merge(default_attrs.graph, Graphviz.as_attributes(graph_attrs),
       Graphviz.Attributes(
         :rankdir => rank_dir(orientation)
