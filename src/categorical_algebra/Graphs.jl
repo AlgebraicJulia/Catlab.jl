@@ -140,10 +140,10 @@ struct PropertyGraph{T,G<:_AbstractPropertyGraph} <: AbstractPropertyGraph{T}
   gprops::Dict{Symbol,T}
 end
 
-PropertyGraph{T,G}() where {T,G<:_AbstractPropertyGraph} =
+PropertyGraph{T,G}(; kw...) where {T,G<:_AbstractPropertyGraph} =
   PropertyGraph(G(vprops=Dict{Symbol,T}, eprops=Dict{Symbol,T}),
-                Dict{Symbol,T}())
-PropertyGraph{T}() where T = PropertyGraph{T,_PropertyGraph}()
+                Dict{Symbol,T}(kw...))
+PropertyGraph{T}(; kw...) where T = PropertyGraph{T,_PropertyGraph}(; kw...)
 
 @present TheorySymmetricPropertyGraph <: TheorySymmetricGraph begin
   Props::Ob
@@ -171,26 +171,28 @@ struct SymmetricPropertyGraph{T,G<:_AbstractSymmetricPropertyGraph} <:
   gprops::Dict{Symbol,T}
 end
 
-SymmetricPropertyGraph{T,G}() where {T,G<:_AbstractSymmetricPropertyGraph} =
+SymmetricPropertyGraph{T,G}(; kw...) where {T,G<:_AbstractSymmetricPropertyGraph} =
   SymmetricPropertyGraph(G(vprops=Dict{Symbol,T}, eprops=Dict{Symbol,T}),
-                         Dict{Symbol,T}())
-SymmetricPropertyGraph{T}() where T =
-  SymmetricPropertyGraph{T,_SymmetricPropertyGraph}()
+                         Dict{Symbol,T}(kw...))
+SymmetricPropertyGraph{T}(; kw...) where T =
+  SymmetricPropertyGraph{T,_SymmetricPropertyGraph}(; kw...)
 
 gprops(g::AbstractPropertyGraph) = g.gprops
-vprops(g::AbstractPropertyGraph, v::Int) = subpart(g.graph, v, :vprops)
-eprops(g::AbstractPropertyGraph, e::Int) = subpart(g.graph, e, :eprops)
+vprops(g::AbstractPropertyGraph, v) = subpart(g.graph, v, :vprops)
+eprops(g::AbstractPropertyGraph, e) = subpart(g.graph, e, :eprops)
 
 get_gprop(g::AbstractPropertyGraph, key::Symbol) = gprops(g)[key]
-get_vprop(g::AbstractPropertyGraph, v::Int, key::Symbol) = vprops(g,v)[key]
-get_eprop(g::AbstractPropertyGraph, e::Int, key::Symbol) = eprops(g,e)[key]
+get_vprop(g::AbstractPropertyGraph, v, key::Symbol) =
+  broadcast(v) do v; vprops(g,v)[key] end
+get_eprop(g::AbstractPropertyGraph, e, key::Symbol) =
+  broadcast(e) do e; eprops(g,e)[key] end
 
 set_gprop!(g::AbstractPropertyGraph, key::Symbol, value) =
   (gprops(g)[key] = value)
-set_vprop!(g::AbstractPropertyGraph, v::Int, key::Symbol, value) =
-  (vprops(g,v)[key] = value)
-set_eprop!(g::AbstractPropertyGraph, e::Int, key::Symbol, value) =
-  (eprops(g,e)[key] = value)
+set_vprop!(g::AbstractPropertyGraph, v, key::Symbol, value) =
+  broadcast(v, value) do v, value; vprops(g,v)[key] = value end
+set_eprop!(g::AbstractPropertyGraph, e, key::Symbol, value) =
+  broadcast(e, value) do e, value; eprops(g,e)[key] = value end
 
 set_gprops!(g::AbstractPropertyGraph; kw...) = merge!(gprops(g), kw)
 set_vprops!(g::AbstractPropertyGraph, v::Int; kw...) = merge!(vprops(g,v), kw)

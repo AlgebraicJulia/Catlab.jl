@@ -43,6 +43,7 @@ as_attributes(d::AbstractDict) =
 Base.@kwdef struct Graph <: Expression
   name::String
   directed::Bool
+  prog::String="dot"
   stmts::Vector{Statement}=Statement[]
   graph_attrs::Attributes=Attributes()
   node_attrs::Attributes=Attributes()
@@ -94,7 +95,7 @@ end
 Edge(path::Vector{NodeID}, attrs::AbstractDict) = Edge(path, as_attributes(attrs))
 Edge(path::Vector{NodeID}; attrs...) = Edge(path, attrs)
 Edge(path::Vararg{NodeID}; attrs...) = Edge(collect(path), attrs)
-Edge(path::Vector{String}, attrs) = Edge(map(NodeID, path), attrs)
+Edge(path::Vector{String}, attrs::AbstractDict) = Edge(map(NodeID, path), attrs)
 Edge(path::Vector{String}; attrs...) = Edge(map(NodeID, path), attrs)
 Edge(path::Vararg{String}; attrs...) = Edge(map(NodeID, collect(path)), attrs)
 
@@ -110,7 +111,12 @@ For bindings to the Graphviz C API, see the the package
 [GraphViz.jl](https://github.com/Keno/GraphViz.jl). At the time of this writing,
 GraphViz.jl is unmaintained.
 """
-function run_graphviz(io::IO, graph::Graph; prog::String="dot", format::String="json0")
+function run_graphviz(io::IO, graph::Graph; prog::Union{String,Nothing}=nothing,
+                      format::String="json0")
+  if isnothing(prog)
+    prog = graph.prog
+  end
+  @assert prog in ("dot","neato","fdp","sfdp","twopi","circo")
   open(`$prog -T$format`, io, write=true) do gv
     pprint(gv, graph)
   end
@@ -241,7 +247,8 @@ function to_graphviz(g::AbstractPropertyGraph)::Graph
   attrs = gprops(g)
   Graph(
     name = get(attrs, :name, "G"),
-    directed = !(g isa SymmetricPropertyGraph),
+    directed = is_directed,
+    prog = get(attrs, :prog, is_directed ? "dot" : "neato"),
     stmts = stmts,
     graph_attrs = as_attributes(get(attrs, :graph, Dict())),
     node_attrs = as_attributes(get(attrs, :node, Dict())),
@@ -334,9 +341,9 @@ function pprint_attrs(io::IO, attrs::Attributes, n::Int=0;
       if (i > 1) print(io, ",") end
       print(io, key)
       print(io, "=")
-      print(io, isa(value, Html) ? "<" : "\"")
+      print(io, value isa Html ? "<" : "\"")
       print(io, value)
-      print(io, isa(value, Html) ? ">" : "\"")
+      print(io, value isa Html ? ">" : "\"")
     end
     print(io, "]")
     print(io, post)

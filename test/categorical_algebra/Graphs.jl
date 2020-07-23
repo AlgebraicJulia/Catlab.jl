@@ -76,6 +76,8 @@ set_vprop!(g, 1, :b, "baz")
 add_vertices!(g, 2)
 @test nv(g) == 3
 @test vprops(g, 3) == Dict()
+set_vprop!(g, 1:3, :b, ["bar", "baz", "biz"])
+@test get_vprop(g, 1:3, :b) == ["bar", "baz", "biz"]
 
 add_edge!(g, 1, 2, c="car")
 @test ne(g) == 1
@@ -86,11 +88,10 @@ add_edge!(g, 1, 2, c="car")
 set_eprop!(g, 1, :c, "cat")
 @test get_eprop(g, 1, :c) == "cat"
 add_edges!(g, [2,2], [3,3])
-set_eprop!(g, 2, :d, "dog")
-set_eprop!(g, 3, :d, "dig")
+set_eprop!(g, 2:3, :d, ["dog", "dig"])
 @test src(g, [2,3]) == [2,2]
 @test tgt(g, [2,3]) == [3,3]
-@test (get_eprop(g, 2, :d), get_eprop(g, 3, :d)) == ("dog", "dig")
+@test get_eprop(g, 2:3, :d) == ["dog", "dig"]
 
 # Symmetric property graphs
 ###########################

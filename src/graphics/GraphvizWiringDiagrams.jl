@@ -8,39 +8,40 @@ using LinearAlgebra: normalize
 using StaticArrays
 
 import ...Theories: HomExpr
-using ...CategoricalAlgebra.Graphs
+using ...CategoricalAlgebra.CSets, ...CategoricalAlgebra.Graphs
 using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
 import ..Graphviz
 import ..Graphviz: to_graphviz
-using ..Graphviz: parse_graphviz, run_graphviz
 using ..WiringDiagramLayouts: BoxLayout, PortLayout, WirePoint,
   LayoutOrientation, LeftToRight, RightToLeft, TopToBottom, BottomToTop,
   is_horizontal, is_vertical, box_label, wire_label, port_sign, svector
 
-# Drawing
-#########
-
 # Default Graphviz font. Reference: http://www.graphviz.org/doc/fontfaq.txt
-const default_font = "Serif"
+const default_graphviz_font = "Serif"
 
-# Default graph, node, edge, and cell attributes.
-const default_graph_attrs = Graphviz.Attributes(
-  :fontname => default_font,
-)
-const default_node_attrs = Graphviz.Attributes(
-  :fontname => default_font,
-  :shape => "none",
-  :width => "0",
-  :height => "0",
-  :margin => "0",
-)
-const default_edge_attrs = Graphviz.Attributes(
-  :arrowsize => "0.5",
-  :fontname => default_font,
-)
-const default_cell_attrs = Graphviz.Attributes(
-  :border => "1",
-  :cellpadding => "4",
+# Directed drawing
+##################
+
+# Default graph, node, edge, and cell attributes for directed wiring diagrams.
+const default_directed_graphviz_attrs = (
+  graph = Graphviz.Attributes(
+    :fontname => default_graphviz_font,
+  ),
+  node = Graphviz.Attributes(
+    :fontname => default_graphviz_font,
+    :shape => "none",
+    :width => "0",
+    :height => "0",
+    :margin => "0",
+  ),
+  edge = Graphviz.Attributes(
+    :arrowsize => "0.5",
+    :fontname => default_graphviz_font,
+  ),
+  cell = Graphviz.Attributes(
+    :border => "1",
+    :cellpadding => "4",
+  )
 )
 
 struct GraphvizBox
@@ -68,10 +69,10 @@ wiring diagram.
   If disabled, no incoming or outgoing wires will be shown either!
 - `anchor_outer_ports=true`: whether to enforce ordering of the outer box's
   input and output, i.e., ordering of the incoming and outgoing wires
-- `graph_attrs=default_graph_attrs`: top-level graph attributes
-- `node_attrs=default_node_attrs`: top-level node attributes
-- `edge_attrs=default_edge_attrs`: top-level edge attributes
-- `cell_attrs=default_cell_attrs`: main cell attributes in node HTML-like label
+- `graph_attrs=Dict()`: top-level graph attributes
+- `node_attrs=Dict()`: top-level node attributes
+- `edge_attrs=Dict()`: top-level edge attributes
+- `cell_attrs=Dict()`: main cell attributes in node HTML-like label
 """
 function to_graphviz(f::WiringDiagram;
     graph_name::String="G", orientation::LayoutOrientation=TopToBottom,
@@ -101,7 +102,8 @@ function to_graphviz(f::WiringDiagram;
   end
   
   # Visible nodes for boxes.
-  cell_attrs = merge(default_cell_attrs, Graphviz.as_attributes(cell_attrs))
+  default_attrs = default_directed_graphviz_attrs
+  cell_attrs = merge(default_attrs.cell, Graphviz.as_attributes(cell_attrs))
   for v in box_ids(f)
     gv_box = graphviz_box(box(f,v), box_id([v]),
       orientation=orientation, labels=node_labels, port_size=port_size,
@@ -135,13 +137,13 @@ function to_graphviz(f::WiringDiagram;
   end
   
   # Graph.
-  Graphviz.Digraph(graph_name, stmts;
-    graph_attrs=merge(default_graph_attrs, Graphviz.as_attributes(graph_attrs),
+  Graphviz.Digraph(graph_name, stmts; prog="dot",
+    graph_attrs=merge(default_attrs.graph, Graphviz.as_attributes(graph_attrs),
       Graphviz.Attributes(
         :rankdir => rank_dir(orientation)
       )),
-    node_attrs=merge(default_node_attrs, Graphviz.as_attributes(node_attrs)),
-    edge_attrs=merge(default_edge_attrs, Graphviz.as_attributes(edge_attrs)))
+    node_attrs=merge(default_attrs.node, Graphviz.as_attributes(node_attrs)),
+    edge_attrs=merge(default_attrs.edge, Graphviz.as_attributes(edge_attrs)))
 end
 
 function to_graphviz(f::HomExpr; kw...)::Graphviz.Graph
@@ -157,7 +159,7 @@ function graphviz_box(box::AbstractBox, node_id;
   # Main node.
   nin, nout = length(input_ports(box)), length(output_ports(box))
   text_label = labels ? node_label(box.value) : ""
-  html_label = node_html_label(nin, nout, text_label;
+  html_label = box_html_label(nin, nout, text_label;
     orientation=orientation, port_size=port_size, attrs=cell_attrs)
   # Note: The `id` attribute is included in the Graphviz output but is not used
   # internally by Graphviz. It is for use by downstream applications.
@@ -170,7 +172,8 @@ function graphviz_box(box::AbstractBox, node_id;
   
   # Input and output ports.
   graphviz_port = (kind::PortKind, port::Int) -> begin
-    Graphviz.NodeID(node_id, port_name(kind, port), port_anchor(kind, orientation))
+    Graphviz.NodeID(node_id, port_name(kind, port),
+                    port_anchor(kind, orientation))
   end
   inputs = [ graphviz_port(InputPort, i) for i in 1:nin ]
   outputs = [ graphviz_port(OutputPort, i) for i in 1:nout ]
@@ -203,7 +206,7 @@ end
 
 """ Create "HTML-like" node label for a box.
 """
-function node_html_label(nin::Int, nout::Int, text_label::String;
+function box_html_label(nin::Int, nout::Int, text_label::String;
     orientation::LayoutOrientation=TopToBottom, port_size::String="0",
     attrs::AbstractDict=Dict())::Graphviz.Html
   if is_vertical(orientation)
@@ -322,6 +325,7 @@ port_node_name(v::Int, port::Int) = string(box_id([v]), "p", port)
 Reference: https://www.graphviz.org/doc/info/attrs.html#k:rankdir
 """
 rank_dir(orientation::LayoutOrientation) = rank_dirs[orientation]
+# FIXME: Should use @match but Match.jl doesn't work with enums.
 
 const rank_dirs = Dict{LayoutOrientation,String}(
   TopToBottom => "TB",
@@ -346,6 +350,121 @@ const port_anchors = Dict{Tuple{PortKind,LayoutOrientation},String}(
   (InputPort, RightToLeft) => "e",
   (OutputPort, RightToLeft) => "w",
 )
+
+# Undirected drawing
+####################
+
+const default_undirected_graphviz_attrs = (
+  graph = Graphviz.Attributes(
+    :fontname => default_graphviz_font,
+  ),
+  node = Graphviz.Attributes(
+    :fontname => default_graphviz_font,
+    :shape => "ellipse",
+    :margin => "0.05,0.025",
+    :width => "0.5",
+    :height => "0.5",
+  ),
+  edge = Graphviz.Attributes(
+    :fontname => default_graphviz_font,
+    :len => "0.5",
+  )
+)
+
+""" Draw an undirected wiring diagram using Graphviz.
+
+Creates an undirected, bipartite Graphviz graph, with the boxes and outer ports
+of the diagram becoming nodes of one kind and the junctions of the diagram
+becoming nodes of the second kind.
+
+# Arguments
+- `graph_name="G"`: name of Graphviz graph
+- `prog="neato"`: Graphviz program, usually "neato" or "fdp"
+- `box_labels=nothing`: name of diagram data for box label
+- `port_labels=true`: label ports with their number
+- `junction_labels=nothing`: name of diagram data for junction label
+- `junction_size="0.075"`: size of junction nodes, in inches
+- `implicit_junctions=false`: whether to represent a junction implicity as a
+  wire when it has exactly two incident ports
+- `graph_attrs=Dict()`: top-level graph attributes
+- `node_attrs=Dict()`: top-level node attributes
+- `edge_attrs=Dict()`: top-level edge attributes
+"""
+function to_graphviz(d::UndirectedWiringDiagram; kw...)::Graphviz.Graph
+  to_graphviz(to_graphviz_property_graph(d; kw...))
+end
+
+function to_graphviz_property_graph(d::UndirectedWiringDiagram;
+    graph_name::String="G", prog::String="neato",
+    box_labels::Union{Symbol,Nothing}=nothing, port_labels::Bool=true,
+    junction_labels::Union{Symbol,Nothing}=nothing,
+    junction_size::String="0.075", implicit_junctions::Bool=false,
+    graph_attrs::AbstractDict=Dict(), node_attrs::AbstractDict=Dict(),
+    edge_attrs::AbstractDict=Dict())::SymmetricPropertyGraph
+  default_attrs = default_undirected_graphviz_attrs
+  graph = SymmetricPropertyGraph{Any}(
+    name = graph_name, prog = prog,
+    graph = merge(default_attrs.graph, Graphviz.as_attributes(graph_attrs)),
+    node = merge(default_attrs.node, Graphviz.as_attributes(node_attrs)),
+    edge = merge(default_attrs.edge, Graphviz.as_attributes(edge_attrs)),
+  )
+
+  # Create nodes for boxes.
+  box_vs = add_vertices!(graph, nboxes(d))
+  set_vprop!(graph, box_vs, :id, [ "box$b" for b in boxes(d) ])
+  set_vprop!(graph, box_vs, :label, isnothing(box_labels) ? "" :
+             node_label.(subpart(d, box_vs, box_labels)))
+
+  # Create nodes for outer ports.
+  outer_vs = add_vertices!(graph, length(ports(d, outer=true)))
+  set_vprop!(graph, outer_vs, :id, [ "outer$p" for p in ports(d, outer=true) ])
+  for v in outer_vs
+    set_vprops!(graph, v, style="invis", shape="none", label="",
+                width="0", height="0", margin="0")
+  end
+
+  # Create nodes and edge for junctions.
+  for j in junctions(d)
+    # Get all ports, including outer ports, incident to junction.
+    incident_ports = [ map(ports_with_junction(d, j)) do port
+        b = box(d, port)
+        (b, findfirst(p -> p == port, ports(d, b)))
+      end; map(ports_with_junction(d, j, outer=true)) do port
+        (nboxes(d) + port, port)
+      end ]
+
+    # Case 1: Create edge for junction with exactly two incident ports.
+    if implicit_junctions && length(incident_ports) == 2
+      (src, src_port), (tgt, tgt_port) = incident_ports
+      e, e_inv = add_edge!(graph, src, tgt)
+      if port_labels
+        set_eprops!(graph, e, taillabel=string(src_port),
+                    headlabel=string(tgt_port))
+      end
+    # Case 2: Create junction node and add edge for every incident port.
+    else
+      jv = add_vertex!(graph, id="junction$j", comment="junction",
+                       shape="circle", label="",
+                       style="filled", fillcolor="black",
+                       width=junction_size, height=junction_size)
+      if !isnothing(junction_labels)
+        set_vprop!(graph, jv, :xlabel,
+                   node_label(subpart(d, j, junction_labels)))
+      end
+      for (v, port) in incident_ports
+        e, e_inv = add_edge!(graph, v, jv)
+        if port_labels
+          set_eprop!(graph, e, :taillabel, string(port))
+        end
+      end
+    end
+  end
+  
+  return graph
+end
+
+# Graphviz labels
+#################
 
 """ Create a label for the main content of a box.
 """
@@ -376,10 +495,10 @@ function escape_html(s::AbstractString)
   ], init=s)
 end
 
-# Layout
-########
+# Directed layout
+#################
 
-""" Lay out wiring diagram using Graphviz.
+""" Lay out directed wiring diagram using Graphviz.
 
 Note: At this time, only the positions and sizes of the boxes, and the positions
 of the outer ports, are used. The positions of the box ports and the splines for
@@ -387,8 +506,8 @@ the wires are ignored.
 """
 function graphviz_layout(diagram::WiringDiagram; kw...)
   graph = to_graphviz(diagram; kw...)
-  doc = JSON.parse(run_graphviz(graph, format="json0"))
-  graphviz_layout(diagram, parse_graphviz(doc))
+  doc = JSON.parse(Graphviz.run_graphviz(graph, format="json0"))
+  graphviz_layout(diagram, Graphviz.parse_graphviz(doc))
 end
 
 function graphviz_layout(diagram::WiringDiagram, graph::PropertyGraph)
