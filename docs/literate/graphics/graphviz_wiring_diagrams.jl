@@ -2,13 +2,14 @@
 #
 #md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/graphics/graphviz_wiring_diagrams.ipynb)
 #
-# Catlab can draw wiring diagrams using the `dot` program in
-# [Graphviz](https://www.graphviz.org/). This feature requires that Graphviz be
-# installed, but does not require any additional Julia packages.
+# Catlab can draw wiring diagrams using [Graphviz](https://www.graphviz.org/).
+# Directed wiring diagrams are drawn using the `dot` program and undirected
+# wiring diagrams using `neato` and `fdp`. This feature requires that Graphviz
+# be installed, but does not require any additional Julia packages.
 
 using Catlab.WiringDiagrams, Catlab.Graphics
 
-# ## Examples
+# ## Directed wiring diagrams
 
 # ### Symmetric monoidal category
 
@@ -85,6 +86,43 @@ g, h = Hom(:g, A, A), Hom(:h, B, B)
 
 trace_naturality = trace(X, A, B, compose(otimes(id(X),g), f, otimes(id(X),h)))
 to_graphviz(trace_naturality, orientation=LeftToRight)
+
+# ## Undirected wiring diagrams
+
+# The composite of two binary relations:
+
+using Catlab.Programs: @relation
+
+diagram = @relation (x,z) where (x,y,z) begin
+    R(x,y)
+    S(y,z)
+end
+to_graphviz(diagram, box_labels=:name)
+
+# A "wheel"-shaped composition of relations:
+
+diagram = @relation (x,y,z) where (w,x,y,z) begin
+    R(x,w)
+    S(y,w)
+    T(z,w)
+end
+to_graphviz(diagram, box_labels=:name)
+
+# As these examples show, the `box_labels` keyword argument specifies the data
+# attribute of boxes to use for box labels, if any. The boolean argument
+# `port_labels` controls the labeling of ports by numerical values and the
+# argument `junction_labels` specifies the data attribute of junctions to use
+# for junction labels. Note that the macro `@relation` creates wiring diagrams
+# with `name` attribute for boxes and `variable` attribute for junctions.
+
+to_graphviz(diagram, box_labels=:name,
+            port_labels=false, junction_labels=:variable)
+
+# By default, all junctions are shown. The keyword argument `implicit_junctions`
+# omits any junctions which have exactly two incident ports.
+
+to_graphviz(diagram, box_labels=:name,
+            port_labels=false, implicit_junctions=true)
 
 # ## Custom styles
 

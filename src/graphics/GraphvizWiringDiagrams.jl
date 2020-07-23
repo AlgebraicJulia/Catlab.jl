@@ -361,9 +361,13 @@ const default_undirected_graphviz_attrs = (
   node = Graphviz.Attributes(
     :fontname => default_graphviz_font,
     :shape => "ellipse",
+    :margin => "0.05,0.025",
+    :width => "0.5",
+    :height => "0.5",
   ),
   edge = Graphviz.Attributes(
     :fontname => default_graphviz_font,
+    :len => "0.5",
   )
 )
 
@@ -379,7 +383,7 @@ becoming nodes of the second kind.
 - `box_labels=nothing`: name of diagram data for box label
 - `port_labels=true`: label ports with their number
 - `junction_labels=nothing`: name of diagram data for junction label
-- `junction_size="0.05"`: size of junction nodes, in inches
+- `junction_size="0.075"`: size of junction nodes, in inches
 - `implicit_junctions=false`: whether to represent a junction implicity as a
   wire when it has exactly two incident ports
 - `graph_attrs=Dict()`: top-level graph attributes
@@ -394,7 +398,7 @@ function to_graphviz_property_graph(d::UndirectedWiringDiagram;
     graph_name::String="G", prog::String="neato",
     box_labels::Union{Symbol,Nothing}=nothing, port_labels::Bool=true,
     junction_labels::Union{Symbol,Nothing}=nothing,
-    junction_size::String="0.05", implicit_junctions::Bool=false,
+    junction_size::String="0.075", implicit_junctions::Bool=false,
     graph_attrs::AbstractDict=Dict(), node_attrs::AbstractDict=Dict(),
     edge_attrs::AbstractDict=Dict())::SymmetricPropertyGraph
   default_attrs = default_undirected_graphviz_attrs
@@ -416,7 +420,7 @@ function to_graphviz_property_graph(d::UndirectedWiringDiagram;
   set_vprop!(graph, outer_vs, :id, [ "outer$p" for p in ports(d, outer=true) ])
   for v in outer_vs
     set_vprops!(graph, v, style="invis", shape="none", label="",
-                width="0", height="0")
+                width="0", height="0", margin="0")
   end
 
   # Create nodes and edge for junctions.
