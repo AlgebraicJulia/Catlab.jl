@@ -4,11 +4,9 @@ using Test
 import JSON
 
 using Catlab.Theories, Catlab.WiringDiagrams, Catlab.Graphics
+using Catlab.Programs: @relation
 import Catlab.Graphics: Graphviz
 using Catlab.Graphics.WiringDiagramLayouts: position, normal
-
-# Drawing
-#########
 
 function stmts(graph::Graphviz.Graph, type::Type)
   [ stmt for stmt in graph.stmts if stmt isa type ]
@@ -17,6 +15,9 @@ function stmts(graph::Graphviz.Graph, type::Type, attr::Symbol)
   [ stmt.attrs[attr] for stmt in graph.stmts
     if stmt isa type && haskey(stmt.attrs, attr) ]
 end
+
+# Directed drawing
+##################
 
 f = singleton_diagram(Box(:f, [:A], [:B]))
 g = singleton_diagram(Box(:g, [:B], [:A]))
@@ -66,8 +67,38 @@ graph = to_graphviz(otimes(f,g); anchor_outer_ports=true)
 graph = to_graphviz(otimes(f,g); anchor_outer_ports=false)
 @test stmts(graph, Graphviz.Node, :comment) == ["f","g"]
 
-# Layout
-########
+# Undirected drawing
+####################
+
+d = singleton_diagram(UndirectedWiringDiagram, 2)
+graph = to_graphviz(d)
+@test stmts(graph, Graphviz.Node, :id) ==
+  ["box1", "outer1", "outer2", "junction1", "junction2"]
+@test length(stmts(graph, Graphviz.Edge)) == 4
+
+graph = to_graphviz(d, implicit_junctions=true)
+@test stmts(graph, Graphviz.Node, :id) == ["box1", "outer1", "outer2"]
+@test length(stmts(graph, Graphviz.Edge)) == 2
+
+d = @relation ((x,z) where (x,y,z)) -> (R(x,y); S(y,z))
+graph = to_graphviz(d)
+@test stmts(graph, Graphviz.Node, :id) ==
+  ["box1", "box2", "outer1", "outer2", "junction1", "junction2", "junction3"]
+@test length(stmts(graph, Graphviz.Edge)) == 6
+
+graph = to_graphviz(d, implicit_junctions=true)
+@test stmts(graph, Graphviz.Node, :id) == ["box1", "box2", "outer1", "outer2"]
+@test length(stmts(graph, Graphviz.Edge)) == 3
+
+# Box, port, and junction labels.
+notempty = x -> !isempty(x)
+graph = to_graphviz(d, box_labels=:name, junction_labels=:variable)
+@test filter(notempty, stmts(graph, Graphviz.Node, :label)) == ["R", "S"]
+@test stmts(graph, Graphviz.Node, :xlabel) == ["x", "y", "z"]
+@test stmts(graph, Graphviz.Edge, :taillabel) == ["1","1","2","1","2","2"]
+
+# Directed layout
+#################
 
 diagram = include(joinpath("data", "graphviz_wiring_diagram.jl"))
 doc = open(JSON.parse,
