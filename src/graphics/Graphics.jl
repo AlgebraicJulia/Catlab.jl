@@ -10,14 +10,12 @@ include("ComposeWiringDiagrams.jl")
 include("TikZ.jl")
 include("TikZWiringDiagrams.jl")
 include("YFilesWiringDiagrams.jl")
-include("Display.jl")
 
 @reexport using .WiringDiagramLayouts
 @reexport using .GraphvizWiringDiagrams
 @reexport using .ComposeWiringDiagrams
 @reexport using .TikZWiringDiagrams
 @reexport using .YFilesWiringDiagrams
-@reexport using .Display
 
 function __init__()
   @require Convex="f65535da-76fb-5f13-bab9-19810c17039a" begin

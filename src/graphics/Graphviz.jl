@@ -14,7 +14,8 @@ using DataStructures: OrderedDict
 using StaticArrays: StaticVector, SVector
 
 using ...CategoricalAlgebra.Graphs: AbstractPropertyGraph, PropertyGraph,
-  SymmetricPropertyGraph, src, tgt, inv, vertices, edges,
+  SymmetricPropertyGraph, AbstractGraph, AbstractSymmetricGraph,
+  src, tgt, inv, vertices, edges,
   add_vertex!, add_edge!, vprops, eprops, gprops, set_gprops!
 
 # AST
