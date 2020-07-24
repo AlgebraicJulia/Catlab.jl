@@ -11,7 +11,7 @@ export @syntax, GATExpr, SyntaxDomainError, head, args, first, last,
 import Base: first, last
 import Base.Meta: ParseError, show_sexpr
 using Compat
-using Match
+using MLStyle: @match
 
 using ..GAT: Context, Theory, TypeConstructor, TermConstructor
 import ..GAT
@@ -105,7 +105,7 @@ macro syntax(syntax_head, mod_name, body=nothing)
   if isnothing(body); body = Expr(:block) end
   @assert body.head == :block
   syntax_name, base_types = @match syntax_head begin
-    Expr(:call, [name::Symbol, args...]) => (name, args)
+    Expr(:call, name::Symbol, args...) => (name, args)
     name::Symbol => (name, [])
     _ => throw(ParseError("Ill-formed syntax signature $syntax_head"))
   end
@@ -270,7 +270,7 @@ Besides expanding the implicit variables, we must handle two annoying issues:
 function gen_term_constructor_params(cons, theory, mod)::Vector
   expr = GAT.expand_term_type(cons, theory)
   raw_params = @match expr begin
-    Expr(:call, [name::Symbol, args...]) => args
+    Expr(:call, name::Symbol, args...) => args
     _::Symbol => []
   end
 
@@ -285,12 +285,12 @@ function gen_term_constructor_params(cons, theory, mod)::Vector
 end
 function replace_nullary_constructors(expr, theory)
   @match expr begin
-    Expr(:call, [name::Symbol]) => begin
+    Expr(:call, name::Symbol) => begin
       terms = theory.terms[findall(cons -> cons.name == name, theory.terms)]
       @assert length(terms) == 1
       Expr(:call, name, terms[1].typ)
     end
-    Expr(:call, [name::Symbol, args...]) =>
+    Expr(:call, name::Symbol, args...) =>
       Expr(:call, name, [replace_nullary_constructors(a,theory) for a in args]...)
     _ => expr
   end

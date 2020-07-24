@@ -5,7 +5,7 @@ export to_tikz, layout_to_tikz
 
 using Compat
 using DataStructures: OrderedDict
-using Match
+using MLStyle: @match
 
 using ...Syntax: GATExpr, show_latex
 using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
@@ -317,52 +317,47 @@ function tikz_node_style(opts::TikZOptions, name::String)
     "triangular box" => [
       TikZ.Property("isosceles triangle"),
       TikZ.Property("isosceles triangle stretches"),
-      TikZ.Property("shape border rotate", Dict(
-        # FIXME: Match.jl doesn't work with enums.
-          LeftToRight => "180",
-          RightToLeft => "0",
-          TopToBottom => "90",
-          BottomToTop => "270",
-        )[opts.orientation]
-      ),
+      TikZ.Property("shape border rotate", @match opts.orientation begin
+        &LeftToRight => "180"
+        &RightToLeft => "0"
+        &TopToBottom => "90"
+        &BottomToTop => "270"
+      end),
       TikZ.Property("draw"), TikZ.Property("solid"), rounded,
       TikZ.Property("inner sep", "0"),
     ]
     "inverse triangular box" => [
       TikZ.Property("isosceles triangle"),
       TikZ.Property("isosceles triangle stretches"),
-      TikZ.Property("shape border rotate", Dict(
-          LeftToRight => "0",
-          RightToLeft => "180",
-          TopToBottom => "270",
-          BottomToTop => "90",
-        )[opts.orientation]
-      ),
+      TikZ.Property("shape border rotate", @match opts.orientation begin
+        &LeftToRight => "0"
+        &RightToLeft => "180"
+        &TopToBottom => "270"
+        &BottomToTop => "90"
+      end),
       TikZ.Property("draw"), TikZ.Property("solid"), rounded,
       TikZ.Property("inner sep", "0"),
     ]
     "trapezoidal box" => [
       TikZ.Property("trapezium"), TikZ.Property("trapezium angle", "80"),
       TikZ.Property("trapezium stretches body"),
-      TikZ.Property("shape border rotate", Dict(
-          LeftToRight => "90",
-          RightToLeft => "270",
-          TopToBottom => "0",
-          BottomToTop => "180",
-        )[opts.orientation]
-      ),
+      TikZ.Property("shape border rotate", @match opts.orientation begin
+        &LeftToRight => "90"
+        &RightToLeft => "270"
+        &TopToBottom => "0"
+        &BottomToTop => "180"
+      end),
       TikZ.Property("draw"), TikZ.Property("solid"), rounded,
     ]
     "inverse trapezoidal box" => [
       TikZ.Property("trapezium"), TikZ.Property("trapezium angle", "80"),
       TikZ.Property("trapezium stretches body"),
-      TikZ.Property("shape border rotate", Dict(
-          LeftToRight => "270",
-          RightToLeft => "90",
-          TopToBottom => "180",
-          BottomToTop => "0",
-        )[opts.orientation]
-      ),
+      TikZ.Property("shape border rotate", @match opts.orientation begin
+        &LeftToRight => "270"
+        &RightToLeft => "90"
+        &TopToBottom => "180"
+        &BottomToTop => "0"
+      end),
       TikZ.Property("draw"), TikZ.Property("solid"), rounded,
     ]
     "junction" => [

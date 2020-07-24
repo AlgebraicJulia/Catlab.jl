@@ -5,7 +5,7 @@ export @program, parse_wiring_diagram
 
 using Compat
 using GeneralizedGenerated: mk_function
-using Match
+using MLStyle: @match
 
 using ...Catlab
 import ...Meta: Expr0
@@ -53,8 +53,8 @@ For more information, see the corresponding macro [`@program`](@ref).
 """
 function parse_wiring_diagram(pres::Presentation, expr::Expr)::WiringDiagram
   @match expr begin
-    Expr(:function, [call, body]) => parse_wiring_diagram(pres, call, body)
-    Expr(:->, [call, body]) => parse_wiring_diagram(pres, call, body)
+    Expr(:function, call, body) => parse_wiring_diagram(pres, call, body)
+    Expr(:->, call, body) => parse_wiring_diagram(pres, call, body)
     _ => error("Not a function or lambda expression")
   end
 end
@@ -63,22 +63,22 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
   # Parse argument names and types from call expression.
   syntax_module = pres.syntax
   call_args = @match call begin
-    Expr(:call, [name, args...]) => args
-    Expr(:tuple, args) => args
-    Expr(:(::), _) => [call]
+    Expr(:call, name, args...) => args
+    Expr(:tuple, args...) => args
+    Expr(:(::), _...) => [call]
     _::Symbol => [call]
     _ => error("Invalid function signature: $call")
   end
   parsed_args = map(call_args) do arg
     @match arg begin
-      Expr(:(::), [name::Symbol, type_expr::Expr0]) =>
+      Expr(:(::), name::Symbol, type_expr::Expr0) =>
         (name, eval_type_expr(pres, syntax_module, type_expr))
       _ => error("Argument $arg is missing name or type")
     end
   end
 
   # Compile...
-  args = first.(parsed_args)
+  args = Symbol[ first(arg) for arg in parsed_args ]
   kwargs = make_lookup_table(pres, syntax_module, unique_symbols(body))
   func_expr = compile_recording_expr(body, args,
     kwargs = sort!(collect(keys(kwargs))))
@@ -130,7 +130,7 @@ end
 function eval_type_expr(pres::Presentation, syntax_module::Module, expr::Expr0)
   function _eval_type_expr(expr)
     @match expr begin
-      Expr(:curly, [name, args...]) =>
+      Expr(:curly, name, args...) =>
         invoke_term(syntax_module, name, map(_eval_type_expr, args)...)
       name::Symbol => generator(pres, name)
       _ => error("Invalid type expression $expr")
@@ -153,11 +153,11 @@ function compile_recording_expr(body::Expr, args::Vector{Symbol};
     recorder::Symbol=Symbol("##recorder"))::Expr
   function rewrite(expr)
     @match expr begin
-      Expr(:call, [f, args...]) =>
+      Expr(:call, f, args...) =>
         Expr(:call, Expr(:call, recorder, rewrite(f)), map(rewrite, args)...)
-      Expr(:curly, [f, args...]) =>
+      Expr(:curly, f, args...) =>
         Expr(:call, rewrite(f), map(rewrite, args)...)
-      Expr(head, args) => Expr(head, map(rewrite, args)...)
+      Expr(head, args...) => Expr(head, map(rewrite, args)...)
       _ => expr
     end
   end
