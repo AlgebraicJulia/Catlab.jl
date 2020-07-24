@@ -5,6 +5,7 @@ export to_graphviz, graphviz_layout
 
 import JSON
 using LinearAlgebra: normalize
+using MLStyle: @match
 using StaticArrays
 
 import ...Theories: HomExpr
@@ -324,32 +325,27 @@ port_node_name(v::Int, port::Int) = string(box_id([v]), "p", port)
 
 Reference: https://www.graphviz.org/doc/info/attrs.html#k:rankdir
 """
-rank_dir(orientation::LayoutOrientation) = rank_dirs[orientation]
-# FIXME: Should use @match but Match.jl doesn't work with enums.
-
-const rank_dirs = Dict{LayoutOrientation,String}(
-  TopToBottom => "TB",
-  BottomToTop => "BT",
-  LeftToRight => "LR",
-  RightToLeft => "RL",
-)
+rank_dir(orientation::LayoutOrientation) = @match orientation begin
+  &TopToBottom => "TB"
+  &BottomToTop => "BT"
+  &LeftToRight => "LR"
+  &RightToLeft => "RL"
+end
 
 """ Graphviz anchor for port.
 """
 function port_anchor(kind::PortKind, orientation::LayoutOrientation)
-  port_anchors[(kind, orientation)]
+  @match (kind, orientation) begin
+    (&InputPort, &TopToBottom) => "n"
+    (&OutputPort, &TopToBottom) => "s"
+    (&InputPort, &BottomToTop) => "s"
+    (&OutputPort, &BottomToTop) => "n"
+    (&InputPort, &LeftToRight) => "w"
+    (&OutputPort, &LeftToRight) => "e"
+    (&InputPort, &RightToLeft) => "e"
+    (&OutputPort, &RightToLeft) => "w"
+  end
 end
-
-const port_anchors = Dict{Tuple{PortKind,LayoutOrientation},String}(
-  (InputPort, TopToBottom) => "n",
-  (OutputPort, TopToBottom) => "s",
-  (InputPort, BottomToTop) => "s",
-  (OutputPort, BottomToTop) => "n",
-  (InputPort, LeftToRight) => "w",
-  (OutputPort, LeftToRight) => "e",
-  (InputPort, RightToLeft) => "e",
-  (OutputPort, RightToLeft) => "w",
-)
 
 # Undirected drawing
 ####################
@@ -514,7 +510,7 @@ function graphviz_layout(diagram::WiringDiagram, graph::PropertyGraph)
   # Graphviz uses the standard Cartesian coordinate system (with origin in
   # bottom left corner), while our layout system uses a coordinate system with
   # centered origin and positive y-axis pointing downwards.
-  orientation = inverse_rank_dirs[get_gprop(graph, :rankdir)]
+  orientation = inverse_rank_dir(get_gprop(graph, :rankdir))
   bounds, pad = get_gprop(graph, :bounds), get_gprop(graph, :pad)
   diagram_size = bounds + 2*pad
   transform_point(p) = SVector(1,-1) .* (p - diagram_size/2)
@@ -600,11 +596,15 @@ function layout_linear_ports(port_kind::PortKind, port_values::Vector,
   end
 end
 
-const inverse_rank_dirs = Dict{String,LayoutOrientation}(
-  "TB" => TopToBottom,
-  "BT" => BottomToTop,
-  "LR" => LeftToRight,
-  "RL" => RightToLeft,
-)
+""" Layout orientation for Graphviz rank direction (`rankdir`).
+
+Reference: https://www.graphviz.org/doc/info/attrs.html#k:rankdir
+"""
+inverse_rank_dir(rank_dir::String) = @match rank_dir begin
+  "TB" => TopToBottom
+  "BT" => BottomToTop
+  "LR" => LeftToRight
+  "RL" => RightToLeft
+end
 
 end
