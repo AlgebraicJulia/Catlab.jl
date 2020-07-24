@@ -65,7 +65,7 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
   call_args = @match call begin
     Expr(:call, name, args...) => args
     Expr(:tuple, args...) => args
-    Expr(:(::), _, _) => [call]
+    Expr(:(::), _...) => [call]
     _::Symbol => [call]
     _ => error("Invalid function signature: $call")
   end
@@ -78,7 +78,7 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
   end
 
   # Compile...
-  args = first.(parsed_args)
+  args = Symbol[ first(arg) for arg in parsed_args ]
   kwargs = make_lookup_table(pres, syntax_module, unique_symbols(body))
   func_expr = compile_recording_expr(body, args,
     kwargs = sort!(collect(keys(kwargs))))
