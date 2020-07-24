@@ -8,7 +8,7 @@ export Expr0, JuliaFunction, JuliaFunctionSig, parse_docstring, parse_function,
 using Base.Meta: ParseError
 using Compat
 using AutoHashEquals
-using Match
+using MLStyle: @match
 
 # Data types
 ############
@@ -54,14 +54,14 @@ end
 function parse_function(expr::Expr)::JuliaFunction
   doc, expr = parse_docstring(expr)
   fun_expr, impl = @match expr begin
-    Expr(:(=), args) => args
-    Expr(:function, args) => args
+    Expr(:(=), args...) => args
+    Expr(:function, args...) => args
     _ => throw(ParseError("Ill-formed function definition $expr"))
   end
   @match fun_expr begin
-    (Expr(:(::), [Expr(:call, args), return_type]) => 
+    (Expr(:(::), Expr(:call, args...), return_type) =>
       JuliaFunction(Expr(:call, args...), return_type, impl, doc))
-    (Expr(:call, args) =>
+    (Expr(:call, args...) =>
       JuliaFunction(Expr(:call, args...), nothing, impl, doc))
     _ => throw(ParseError("Ill-formed function header $fun_expr"))
   end
@@ -71,14 +71,14 @@ end
 """
 function parse_function_sig(call_expr::Expr)::JuliaFunctionSig
   name, args = @match call_expr begin
-    Expr(:call, [name::Symbol, Expr(:parameters, kw...), args...]) => (name, args)
-    Expr(:call, [name::Symbol, args...]) => (name, args)
+    Expr(:call, name::Symbol, Expr(:parameters, kw...), args...) => (name, args)
+    Expr(:call, name::Symbol, args...) => (name, args)
     _ => throw(ParseError("Ill-formed function signature $call_expr"))
   end
   types = map(args) do expr
     @match expr begin
-      Expr(:(::), [_, typ]) => typ
-      Expr(:(::), [typ]) => typ
+      Expr(:(::), _, type) => type
+      Expr(:(::), type) => type
       _ => :Any
     end
   end
@@ -124,7 +124,7 @@ end
 function append_expr!(block::Expr, expr)::Expr
   @assert block.head == :block
   @match expr begin
-    Expr(:block, args) => append!(block.args, args)
+    Expr(:block, args...) => append!(block.args, args)
     _ => push!(block.args, expr)
   end
   block
@@ -134,9 +134,9 @@ end
 """
 function concat_expr(expr1::Expr, expr2::Expr)::Expr
   @match (expr1, expr2) begin
-    (Expr(:block, a1), Expr(:block, a2)) => Expr(:block, [a1; a2]...)
-    (Expr(:block, a1), _) => Expr(:block, [a1; expr2]...)
-    (_, Expr(:block, a2)) => Expr(:block, [expr1; a2]...)
+    (Expr(:block, a1...), Expr(:block, a2...)) => Expr(:block, a1..., a2...)
+    (Expr(:block, a1...), _) => Expr(:block, a1..., expr2)
+    (_, Expr(:block, a2...)) => Expr(:block, expr1, a2...)
     _ => Expr(:block, expr1, expr2)
   end
 end
@@ -158,7 +158,7 @@ end
 function replace_symbols(bindings::AbstractDict, expr)
   recurse(expr) = replace_symbols(bindings, expr)
   @match expr begin
-    Expr(head, args) => Expr(head, map(recurse,args)...)
+    Expr(head, args...) => Expr(head, map(recurse,args)...)
     sym::Symbol => get(bindings, sym, sym)
     _ => expr
   end

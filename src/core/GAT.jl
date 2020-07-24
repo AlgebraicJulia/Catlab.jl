@@ -7,7 +7,7 @@ using Base.Meta: ParseError
 using Compat
 using AutoHashEquals
 using DataStructures: OrderedDict
-using Match
+using MLStyle: @match
 
 using ..Meta
 
@@ -189,16 +189,16 @@ end
 function parse_theory_head(expr::Expr)::TheoryHead
   parse = parse_theory_binding
   @match expr begin
-    (Expr(:call, [:(=>), Expr(:tuple, bases), main])
+    (Expr(:call, :(=>), Expr(:tuple, bases), main)
       => TheoryHead(parse(main), map(parse, bases)))
-    Expr(:call, [:(=>), base, main]) => TheoryHead(parse(main), [parse(base)])
+    Expr(:call, :(=>), base, main) => TheoryHead(parse(main), [parse(base)])
     _ => TheoryHead(parse(expr))
   end
 end
 
 function parse_theory_binding(expr::Expr)::TheoryBinding
   @match expr begin
-    Expr(:call, [name::Symbol, params...]) => TheoryBinding(name, params)
+    Expr(:call, name::Symbol, params...) => TheoryBinding(name, params)
     _ => throw(ParseError("Ill-formed theory binding $expr"))
   end
 end
@@ -272,7 +272,7 @@ does not (yet?) support
 """
 function add_type_dispatch(call_expr::Expr, type_expr::Expr0)::Expr
   @match call_expr begin
-    (Expr(:call, [name, args...]) =>
+    (Expr(:call, name, args...) =>
       Expr(:call, name, :(::Type{$type_expr}), args...))
     _ => throw(ParseError("Ill-formed call expression $call_expr"))
   end
@@ -287,7 +287,7 @@ A "raw expression" is a just composition of function and constant symbols.
 """
 function parse_raw_expr(expr)
   @match expr begin
-    Expr(:call, args) => map(parse_raw_expr, args)
+    Expr(:call, args...) => map(parse_raw_expr, args)
     head::Symbol => nothing
     _ => throw(ParseError("Ill-formed raw expression $expr"))
   end
@@ -300,15 +300,15 @@ function parse_context(expr::Expr)::Context
   context = Context()
   args = expr.head == :tuple ? expr.args : [ expr ]
   for arg in args
-    name, typ = @match arg begin
-      Expr(:(::), [name::Symbol, typ]) => (name, parse_raw_expr(typ))
+    name, type = @match arg begin
+      Expr(:(::), name::Symbol, type) => (name, parse_raw_expr(type))
       name::Symbol => (name, :Any)
       _ => throw(ParseError("Ill-formed context expression $expr"))
     end
     if haskey(context, name)
       throw(ParseError("Name $name already defined"))
     end
-    context[name] = typ
+    context[name] = type
   end
   context
 end
@@ -320,37 +320,37 @@ function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor,
   # Context is optional.
   doc, expr = parse_docstring(expr)
   cons_expr, context = @match expr begin
-    Expr(:call, [:<=, inner, context]) => (inner, parse_context(context))
-    Expr(:call, [:⊣, inner, context]) => (inner, parse_context(context))
-    Expr(:comparison, [cons_left, cons_sym, cons_right, :⊣, context]) => (
+    Expr(:call, :<=, inner, context) => (inner, parse_context(context))
+    Expr(:call, :⊣, inner, context) => (inner, parse_context(context))
+    Expr(:comparison, cons_left, cons_sym, cons_right, :⊣, context) => (
       Expr(:call, cons_sym, cons_left, cons_right), parse_context(context))
-    Expr(:where, [inner, context]) => (inner, parse_context(context))
+    Expr(:where, inner, context) => (inner, parse_context(context))
     _ => (expr, Context())
   end
 
   # Allow abbreviated syntax where tail of context is included in parameters.
   function parse_param(param::Expr0)::Symbol
-    name, typ = @match param begin
-      Expr(:(::), [name::Symbol, typ]) => (name, parse_raw_expr(typ))
+    name, type = @match param begin
+      Expr(:(::), name::Symbol, type) => (name, parse_raw_expr(type))
       name::Symbol => (name, :Any)
       _ => throw(ParseError("Ill-formed type/term parameter $param"))
     end
     if !haskey(context, name)
-      context[name] = typ
+      context[name] = type
     end
     name
   end
 
   @match cons_expr begin
-    (Expr(:(::), [name::Symbol, :TYPE])
+    (Expr(:(::), name::Symbol, :TYPE)
       => TypeConstructor(name, [], context, doc))
-    (Expr(:(::), [Expr(:call, [name::Symbol, params...]), :TYPE])
+    (Expr(:(::), Expr(:call, name::Symbol, params...), :TYPE)
       => TypeConstructor(name, map(parse_param, params), context, doc))
-    (Expr(:(::), [Expr(:call, [name::Symbol, params...]), typ])
-      => TermConstructor(name, map(parse_param, params), parse_raw_expr(typ),
+    (Expr(:(::), Expr(:call, name::Symbol, params...), type)
+      => TermConstructor(name, map(parse_param, params), parse_raw_expr(type),
                          context, doc))
-    (Expr(:call, [:(==), left, right]) => AxiomConstructor(:(==), left, right,
-                         context, doc))
+    (Expr(:call, :(==), left, right)
+       => AxiomConstructor(:(==), left, right, context, doc))
     _ => throw(ParseError("Ill-formed type/term constructor $cons_expr"))
   end
 end
@@ -384,7 +384,7 @@ function replace_types(bindings::Dict, aliases::Dict)::Dict
 end
 function replace_types(bindings::Dict, context::Context)::Context
   GAT.Context(((name => @match expr begin
-    (Expr(:call, [sym::Symbol, args...]) =>
+    (Expr(:call, sym::Symbol, args...) =>
       Expr(:call, replace_symbols(bindings, sym), args...))
     sym::Symbol => replace_symbols(bindings, sym)
   end) for (name, expr) in context))
@@ -394,7 +394,7 @@ end
 """
 function strip_type(expr)::Symbol
   @match expr begin
-    Expr(:call, [head::Symbol, args...]) => head
+    Expr(:call, head::Symbol, args...) => head
     sym::Symbol => sym
   end
 end
@@ -409,7 +409,7 @@ Reference: (Cartmell, 1986, Sec 10: 'Informal syntax').
 function expand_in_context(expr, params::Vector{Symbol},
                            context::Context, theory::Theory)
   @match expr begin
-    Expr(:call, [name::Symbol, args...]) => begin
+    Expr(:call, name::Symbol, args...) => begin
       expanded = [expand_in_context(e, params, context, theory) for e in args]
       Expr(:call, name, expanded...)
     end
@@ -561,7 +561,7 @@ function parse_instance_body(expr::Expr)
     if head == :macrocall && elem.args[1] == Symbol("@import")
       ext_funs = @match elem.args[2] begin
         sym::Symbol => [ext_funs; [sym]]
-        Expr(:tuple, arr) => [ext_funs; Symbol[arr...]]
+        Expr(:tuple, args...) => [ext_funs; Symbol[args...]]
       end
     else
       push!(funs, parse_function(elem))
@@ -631,9 +631,9 @@ function alias_functions(theory::Theory)::Vector{JuliaFunction}
       args = map(fun.call_expr.args[2:end]) do arg
         @match arg begin
           # Special case: dispatch on return type.
-          Expr(:(::), [ Expr(:curly, [:Type, type]) ]) => type
+          Expr(:(::), Expr(:curly, :Type, type)) => type
           # Main case: typed parameter.
-          Expr(:(::), [ param, type ]) => param
+          Expr(:(::), param, type) => param
           _ => throw(ParseError("Cannot parse argument $arg for alias $alias"))
         end
       end

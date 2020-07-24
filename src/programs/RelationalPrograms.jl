@@ -5,7 +5,7 @@ export RelationDiagram, @relation, @tensor_network, @eval_tensor_network,
   parse_relation_diagram, parse_tensor_network, compile_tensor_expr
 
 using Compat
-using Match
+using MLStyle: @match
 
 using ...CategoricalAlgebra.CSets, ...Present
 using ...Theories: FreeCategory
@@ -81,8 +81,8 @@ For more information, see the corresponding macro [`@relation`](@ref).
 """
 function parse_relation_diagram(expr::Expr)
   @match expr begin
-    Expr(:function, [head, body]) => parse_relation_diagram(head, body)
-    Expr(:->, [head, body]) => parse_relation_diagram(head, body)
+    Expr(:function, head, body) => parse_relation_diagram(head, body)
+    Expr(:->, head, body) => parse_relation_diagram(head, body)
     _ => error("Not a function or lambda expression")
   end
 end
@@ -90,7 +90,7 @@ end
 function parse_relation_diagram(head::Expr, body::Expr)
   body = Base.remove_linenums!(body)
   @match head begin
-    Expr(:where, [Expr(:tuple, args), Expr(:tuple, context)]) =>
+    Expr(:where, Expr(:tuple, args...), Expr(:tuple, context...)) =>
       make_relation_diagram(context, args, body.args)
     _ => error("Invalid syntax in declaration of outer ports and context")
   end
@@ -117,7 +117,7 @@ function make_relation_diagram(context::AbstractVector, args::AbstractVector,
   # Add boxes to diagram.
   for expr in body
     name, vars = @match expr begin
-      Expr(:call, [name::Symbol, vars...]) => (name, parse_variables(vars))
+      Expr(:call, name::Symbol, vars...) => (name, parse_variables(vars))
       _ => error("Invalid syntax in box definition $expr")
     end
     vars ⊆ all_vars || error("One of variables $vars is not declared")
@@ -131,7 +131,7 @@ end
 function parse_context(context)
   vars = map(context) do term
     @match term begin
-      Expr(:(::), [var::Symbol, type::Symbol]) => (var => type)
+      Expr(:(::), var::Symbol, type::Symbol) => (var => type)
       var::Symbol => var
       _ => error("Invalid syntax in term $expr of context")
     end
@@ -182,8 +182,8 @@ For more information, see the corresponding macro [`@tensor_network`](@ref).
 """
 function parse_tensor_network(context::Expr, expr::Expr)
   all_vars = @match context begin
-    Expr(:tuple, args) => parse_variables(args)
-    Expr(:vect, args) => parse_variables(args)
+    Expr(:tuple, args...) => parse_variables(args)
+    Expr(:vect, args...) => parse_variables(args)
   end
   parse_tensor_network(expr, all_vars=all_vars)
 end
@@ -191,12 +191,12 @@ end
 function parse_tensor_network(expr::Expr; all_vars=nothing)
   # Parse tensor expression.
   (outer_name, outer_vars), body = @match expr begin
-    Expr(:(=), [outer, body]) => (parse_tensor_term(outer), body)
-    Expr(:(:=), [outer, body]) => (parse_tensor_term(outer), body)
+    Expr(:(=), outer, body) => (parse_tensor_term(outer), body)
+    Expr(:(:=), outer, body) => (parse_tensor_term(outer), body)
     _ => error("Tensor expression $expr must be an assignment, either = or :=")
   end
   names_and_vars = map(parse_tensor_term, @match body begin
-    Expr(:call, [:(*), args...]) => args
+    Expr(:call, :(*), args...) => args
     1 => [] # No terms
     arg => [arg] # One term
   end)
@@ -223,7 +223,7 @@ end
 
 function parse_tensor_term(expr)
   @match expr begin
-    Expr(:ref, [name::Symbol, args...]) => (name, parse_variables(args))
+    Expr(:ref, name::Symbol, args...) => (name, parse_variables(args))
     name::Symbol => (name, Symbol[]) # Scalar
     _ => error("Invalid syntax in term $expr in tensor expression")
   end
@@ -267,7 +267,7 @@ macro eval_tensor_network(diagram, tensor_macro)
 end
 function _eval_tensor_network(tensor_expr, macro_expr)
   @match macro_expr begin
-    Expr(:macrocall, args) => Expr(:macrocall, args..., tensor_expr)
+    Expr(:macrocall, args...) => Expr(:macrocall, args..., tensor_expr)
     _ => error("Expression $macro_expr is not a macro call")
   end
 end

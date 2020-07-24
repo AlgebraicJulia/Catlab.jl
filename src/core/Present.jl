@@ -13,7 +13,7 @@ export @present, Presentation, generator, generators, has_generator, equations,
 
 using Base.Meta: ParseError
 using Compat
-using Match
+using MLStyle: @match
 
 using ..Meta, ..Syntax
 import ..GAT
@@ -115,9 +115,9 @@ end
 """
 macro present(head, body)
   name, pres = @match head begin
-    Expr(:call, [name::Symbol, syntax_name::Symbol]) =>
+    Expr(:call, name::Symbol, syntax_name::Symbol) =>
       (name, :($(module_ref(:Presentation))($syntax_name)))
-    Expr(:(<:), [name::Symbol, parent::Symbol]) => (name, :(copy($parent)))
+    Expr(:(<:), name::Symbol, parent::Symbol) => (name, :(copy($parent)))
     _ => throw(ParseError("Ill-formed presentation header $head"))
   end
   let_expr = Expr(:let, Expr(:block), translate_presentation(pres, body))
@@ -141,13 +141,13 @@ end
 """
 function translate_statement(expr::Expr)::Expr
   @match expr begin
-    Expr(:(::), [name::Symbol, type_expr]) =>
+    Expr(:(::), name::Symbol, type_expr) =>
       translate_generator(name, type_expr)
-    Expr(:(::), [type_expr]) =>
+    Expr(:(::), type_expr) =>
       translate_generator(nothing, type_expr)
-    Expr(:(:=), [name::Symbol, def_expr]) =>
+    Expr(:(:=), name::Symbol, def_expr) =>
       translate_definition(name, def_expr)
-    Expr(:call, [:(==), lhs, rhs]) => translate_equation(lhs, rhs)
+    Expr(:call, :(==), lhs, rhs) => translate_equation(lhs, rhs)
     _ => throw(ParseError("Ill-formed presentation statement $expr"))
   end
 end
@@ -157,7 +157,7 @@ end
 function translate_generator(name::Union{Symbol,Nothing}, type_expr)::Expr
   type_name, args = @match type_expr begin
     name::Symbol => (name, [])
-    Expr(:call, [name::Symbol, args...]) => (name, args)
+    Expr(:call, name::Symbol, args...) => (name, args)
     _ => throw(ParseError("Ill-formed type expression $type_expr"))
   end
   gen_expr = Expr(:call, type_name,
@@ -184,7 +184,7 @@ end
 """
 function translate_expr(expr)
   @match expr begin
-    Expr(:call, [name::Symbol, args...]) =>
+    Expr(:call, name::Symbol, args...) =>
       Expr(:call, GlobalRef(Syntax, :invoke_term), :(_presentation.syntax),
            QuoteNode(name), map(translate_expr, args)...)
     name::Symbol =>

@@ -5,7 +5,7 @@ export to_tikz, layout_to_tikz
 
 using Compat
 using DataStructures: OrderedDict
-using Match
+using MLStyle: @match
 
 using ...Syntax: GATExpr, show_latex
 using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
