@@ -1,7 +1,7 @@
 """ Computing in the category of finite sets and functions.
 """
 module FinSets
-export FinSet, FinSetFunction, FinSetFunc, FinSetVector, force,
+export FinSet, FinFunction, FinFunctionCallable, FinFunctionVector, force,
   terminal, product, equalizer, pullback, limit,
   initial, coproduct, coequalizer, pushout, colimit
 
@@ -31,10 +31,10 @@ Base.in(s::AbstractSetOb, elem) = in(s, iterable(s))
 
 """ Finite set.
 
-This generic type encompasses both the category **FinSet** of finite sets and
-functions, through types `FinSet{S} where S <: AbstractSet`, and the skeleton of
-this category, through the type `FinSet{Int}`. In the latter case, the object
-`FinSet(n)` represents the set {1,...,n}.
+This generic type encompasses the category **FinSet** of finite sets and
+functions, through types `FinSet{S} where S <: AbstractSet`, as well as the
+skeleton of this category, through the type `FinSet{Int}`. In the latter case,
+the object `FinSet(n)` represents the set {1,...,n}.
 """
 @auto_hash_equals struct FinSet{S} <: AbstractSetOb{S}
   set::S
@@ -50,73 +50,73 @@ case it is evaluated lazily, or explictly by a vector of integers. In the latter
 case, the function (1↦1, 2↦3, 3↦2, 4↦3), for example, is represented by the
 vector [1,3,2,3].
 """
-abstract type FinSetFunction{S} end
+abstract type FinFunction{S} end
 
-FinSetFunction(f::Function, args...) = FinSetFunc(f, args...)
-FinSetFunction(f::AbstractVector, args...) = FinSetVector(f, args...)
+FinFunction(f::Function, args...) = FinFunctionCallable(f, args...)
+FinFunction(f::AbstractVector, args...) = FinFunctionVector(f, args...)
 
-""" Function in FinSet defined by an arbitrary Julia function.
+""" Function in FinSet defined by a callable Julia object.
 
 To be evaluated lazily unless forced.
 """
-@auto_hash_equals struct FinSetFunc{S} <: FinSetFunction{S}
-  func::Function
+@auto_hash_equals struct FinFunctionCallable{S} <: FinFunction{S}
+  func::Any # Usually `Function` but can be any Julia callable.
   dom::FinSet{S}
   codom::FinSet{S}
 end
-FinSetFunc(f::Function, dom::Int, codom::Int) =
-  FinSetFunc(f, FinSet(dom), FinSet(codom))
+FinFunctionCallable(f::Function, dom::Int, codom::Int) =
+  FinFunctionCallable(f, FinSet(dom), FinSet(codom))
 
-(f::FinSetFunc)(x) = f.func(x)
+(f::FinFunctionCallable)(x) = f.func(x)
 
 """ Function in FinSet represented explicitly by a vector.
 
 The elements of the set are assumed to be {1,...,n}.
 """
-@auto_hash_equals struct FinSetVector{T<:AbstractVector{Int}} <: FinSetFunction{Int}
+@auto_hash_equals struct FinFunctionVector{T<:AbstractVector{Int}} <: FinFunction{Int}
   func::T
   codom::Int
 end
-FinSetVector(f::AbstractVector) = FinSetVector(f, maximum(f))
+FinFunctionVector(f::AbstractVector) = FinFunctionVector(f, maximum(f))
 
-function FinSetVector(f::AbstractVector, dom::Int, codom::Int)
+function FinFunctionVector(f::AbstractVector, dom::Int, codom::Int)
   length(f) == dom || error("Length of vector $f does not match domain $dom")
-  FinSetVector(f, codom)
+  FinFunctionVector(f, codom)
 end
 
-FinSetVector(f::AbstractVector, codom::FinSet{Int}) =
-  FinSetVector(f, length(codom))
-FinSetVector(f::AbstractVector, dom::FinSet{Int}, codom::FinSet{Int}) =
-  FinSetVector(f, length(dom), length(codom))
+FinFunctionVector(f::AbstractVector, codom::FinSet{Int}) =
+  FinFunctionVector(f, length(codom))
+FinFunctionVector(f::AbstractVector, dom::FinSet{Int}, codom::FinSet{Int}) =
+  FinFunctionVector(f, length(dom), length(codom))
 
-dom(f::FinSetVector) = FinSet(length(f.func))
-codom(f::FinSetVector) = FinSet(f.codom)
+dom(f::FinFunctionVector) = FinSet(length(f.func))
+codom(f::FinFunctionVector) = FinSet(f.codom)
 
-(f::FinSetVector)(x) = f.func[x]
+(f::FinFunctionVector)(x) = f.func[x]
 
 """ Force evaluation of lazy function or relation.
 """
-force(f::FinSetFunction{Int}) = FinSetVector(map(f, dom(f)), codom(f))
-force(f::FinSetVector) = f
+force(f::FinFunction{Int}) = FinFunctionVector(map(f, dom(f)), codom(f))
+force(f::FinFunctionVector) = f
 
-Base.collect(f::FinSetFunction) = force(f).func
+Base.collect(f::FinFunction) = force(f).func
 
 """ Category of finite sets and functions.
 """
-@instance Category(FinSet, FinSetFunction) begin
-  dom(f::FinSetFunction) = f.dom
-  codom(f::FinSetFunction) = f.codom
+@instance Category(FinSet, FinFunction) begin
+  dom(f::FinFunction) = f.dom
+  codom(f::FinFunction) = f.codom
   
-  id(A::FinSet) = FinSetFunction(identity, A, A)
+  id(A::FinSet) = FinFunction(identity, A, A)
   
-  function compose(f::FinSetFunction, g::FinSetFunction)
+  function compose(f::FinFunction, g::FinFunction)
     @assert codom(f) == dom(g)
-    FinSetFunction(compose_impl(f,g), dom(f), codom(g))
+    FinFunction(compose_impl(f,g), dom(f), codom(g))
   end
 end
 
-compose_impl(f::FinSetFunction, g::FinSetFunction) = g ∘ f
-compose_impl(f::FinSetVector, g::FinSetVector) = g.func[f.func]
+compose_impl(f::FinFunction, g::FinFunction) = g ∘ f
+compose_impl(f::FinFunctionVector, g::FinFunctionVector) = g.func[f.func]
 
 # Limits
 ########
@@ -126,8 +126,8 @@ terminal(::Type{FinSet{Int}}) = FinSet(1)
 function product(A::FinSet{Int}, B::FinSet{Int})
   m, n = length(A), length(B)
   indices = CartesianIndices((m, n))
-  π1 = FinSetFunction(i -> indices[i][1], m*n, m)
-  π2 = FinSetFunction(i -> indices[i][2], m*n, n)
+  π1 = FinFunction(i -> indices[i][1], m*n, m)
+  π2 = FinFunction(i -> indices[i][2], m*n, n)
   Span(π1, π2)
 end
 
@@ -135,30 +135,30 @@ function product(Xs::AbstractVector{FinSet{Int}})
   ns = length.(Xs)
   indices = CartesianIndices(tuple(ns...))
   apex = prod(ns)
-  πs = [FinSetFunction(i -> indices[i][j],apex,ns[j]) for j in 1:length(ns)]
+  πs = [FinFunction(i -> indices[i][j],apex,ns[j]) for j in 1:length(ns)]
   Cone(FinSet(apex), πs)
 end
 
-function equalizer(f::FinSetFunction{Int}, g::FinSetFunction{Int})
+function equalizer(f::FinFunction{Int}, g::FinFunction{Int})
   @assert dom(f) == dom(g) && codom(f) == codom(g)
   m = length(dom(f))
-  FinSetFunction(filter(i -> f(i) == g(i), 1:m), m)
+  FinFunction(filter(i -> f(i) == g(i), 1:m), m)
 end
 
-function equalizer(fs::AbstractVector{<:FinSetFunction{Int}})
+function equalizer(fs::AbstractVector{<:FinFunction{Int}})
   @assert length(fs) >= 1
   f1 = fs[1]
   frest = fs[2:end]
   @assert all(dom(f) == dom(f1) && codom(f) == codom(f1) for f in frest)
   m = length(dom(f1))
-  FinSetFunction(filter(i -> all(f1(i) == f(i) for f in frest), 1:m),m)
+  FinFunction(filter(i -> all(f1(i) == f(i) for f in frest), 1:m),m)
 end
 
 """ Pullback of cospan of functions between finite sets.
 
 TODO: This logic is completely generic. Make it independent of FinSet.
 """
-function pullback(cospan::Cospan{<:FinSetFunction,<:FinSetFunction})
+function pullback(cospan::Cospan{<:FinFunction,<:FinFunction})
   f, g = left(cospan), right(cospan)
   prod = product(dom(f), dom(g))
   π1, π2 = left(prod), right(prod)
@@ -166,11 +166,11 @@ function pullback(cospan::Cospan{<:FinSetFunction,<:FinSetFunction})
   Span(eq⋅π1, eq⋅π2)
 end
 
-function limit(d::Diagram{FinSet{Int}, <:FinSetFunction{Int}})
+function limit(d::Diagram{FinSet{Int}, <:FinFunction{Int}})
   p = product(d.obs)
   n = length(apex(p))
   satisfy((s,t,g),x) = g(leg(p,s)(x)) == leg(p,t)(x)
-  f = FinSetFunction(filter(i -> all(satisfy(h,i) for h in d.homs), 1:n), n)
+  f = FinFunction(filter(i -> all(satisfy(h,i) for h in d.homs), 1:n), n)
   Cone(dom(f),[compose(f,leg(p,i)) for i in 1:length(d.obs)])
 end
 
@@ -182,8 +182,8 @@ initial(::Type{FinSet{Int}}) = FinSet(0)
 
 function coproduct(A::FinSet{Int}, B::FinSet{Int})
   m, n = length(A), length(B)
-  ι1 = FinSetFunction(1:m, m, m+n)
-  ι2 = FinSetFunction(m+1:m+n, n, m+n)
+  ι1 = FinFunction(1:m, m, m+n)
+  ι2 = FinFunction(m+1:m+n, n, m+n)
   Cospan(ι1, ι2)
 end
 
@@ -191,11 +191,11 @@ function coproduct(Xs::AbstractVector{FinSet{Int}})
   ns = length.(Xs)
   base = sum(ns)
   offsets = [0,cumsum(ns)...]
-  πs = [FinSetFunction((1:ns[j]) .+ offsets[j],ns[j],base) for j in 1:length(ns)]
+  πs = [FinFunction((1:ns[j]) .+ offsets[j],ns[j],base) for j in 1:length(ns)]
   Cocone(FinSet(base), πs)
 end
 
-function coequalizer(f::FinSetFunction{Int}, g::FinSetFunction{Int})
+function coequalizer(f::FinFunction{Int}, g::FinFunction{Int})
   @assert dom(f) == dom(g) && codom(f) == codom(g)
   m, n = length(dom(f)), length(codom(f))
   sets = IntDisjointSets(n)
@@ -204,10 +204,10 @@ function coequalizer(f::FinSetFunction{Int}, g::FinSetFunction{Int})
   end
   h = [ find_root(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
-  FinSetFunction([ searchsortedfirst(roots, r) for r in h], length(roots))
+  FinFunction([ searchsortedfirst(roots, r) for r in h], length(roots))
 end
 
-function coequalizer(fs::AbstractVector{<:FinSetFunction{Int}})
+function coequalizer(fs::AbstractVector{<:FinFunction{Int}})
   @assert length(fs) >= 1
   f1 = fs[1]
   frest = fs[2:end]
@@ -221,14 +221,14 @@ function coequalizer(fs::AbstractVector{<:FinSetFunction{Int}})
   end
   h = [ find_root(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
-  FinSetFunction([searchsortedfirst(roots, r) for r in h], length(roots))
+  FinFunction([searchsortedfirst(roots, r) for r in h], length(roots))
 end
 
 """ Pushout of span of functions between finite sets.
 
 TODO: This logic is completely generic. Make it independent of FinSet.
 """
-function pushout(span::Span{<:FinSetFunction,<:FinSetFunction})
+function pushout(span::Span{<:FinFunction,<:FinFunction})
   f, g = left(span), right(span)
   coprod = coproduct(codom(f), codom(g))
   ι1, ι2 = left(coprod), right(coprod)
@@ -236,7 +236,7 @@ function pushout(span::Span{<:FinSetFunction,<:FinSetFunction})
   Cospan(ι1⋅coeq, ι2⋅coeq)
 end
 
-function colimit(d::Diagram{FinSet{Int}, <:FinSetFunction{Int}})
+function colimit(d::Diagram{FinSet{Int}, <:FinFunction{Int}})
   cp = coproduct(d.obs)
   n = length(base(cp))
   sets = IntDisjointSets(n)
@@ -248,7 +248,7 @@ function colimit(d::Diagram{FinSet{Int}, <:FinSetFunction{Int}})
   h = [ find_root(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   m = length(roots)
-  f = FinSetFunction([searchsortedfirst(roots, r) for r in h], m)
+  f = FinFunction([searchsortedfirst(roots, r) for r in h], m)
   Cocone(FinSet(m),[compose(leg(cp,i),f) for i in 1:length(d.obs)])
 end
 
