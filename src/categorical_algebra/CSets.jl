@@ -424,8 +424,8 @@ end
 # Useful Printing
 #################
 
-function show(io::IO, mime::MIME"text/plain", a::AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom}
-              ) where {Ob,Hom,Dom,Codom,Data,DataDom}
+function show(io::IO, mime::MIME"text/plain", a::AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom}) where
+    {Ob,Hom,Dom,Codom,Data,DataDom}
   println(io, "CSet")
   for ob in Ob
     println(io, "  $(string(ob)) = 1:$(nparts(a,ob))")
