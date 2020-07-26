@@ -16,7 +16,7 @@ abstract type AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom,DataTypes} end
 
 mutable struct CSet{Ob,Hom,Dom,Codom,Data,DataDom,DataTypes,
                     HomTuple,DataTuple,Index,DataIndex,IsUnique} <:
-                      AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom,DataTypes}
+                      AbstractCSet{Ob,Hom,Dom,Codom,Data,DataTypes}
   obs::NamedTuple{Ob,HomTuple}
   indices::NamedSVector{Index,Vector{Vector{Int}}}
   data::NamedTuple{Ob,DataTuple}
@@ -57,14 +57,14 @@ function CSetTypeParams(pres::Presentation{Category};
   hom_svector(homs) = NamedSVector{Tuple(nameof.(homs)),Vector{Int}}
   hom_tuple = NamedTuple{Tuple(nameof.(obs)), Tuple{[hom_svector(homs_by_ob[nameof(ob)]) for ob in obs]...}}
 
-  data_struct_array(homs) = StructArray{Tuple(nameof.(homs)),Tuple{[datatypes[nameof(h)] for h in homs]...}}
+  data_struct_array(homs) = StructArray{Tuple(nameof.(homs)),Tuple{[datatypes[nameof(codom(h))] for h in homs]...}}
   data_tuple = NamedTuple{Tuple(nameof.(obs)), Tuple{[data_struct_array(data_by_ob[nameof(ob)]) for ob in obs]...}}
 
   ob_num = ob -> findfirst(obs .== ob)::Int
   (Tuple(nameof.(obs)), Tuple(nameof.(homs)),
    Tuple(@. ob_num(dom(homs))), Tuple(@. ob_num(codom(homs))),
    Tuple(nameof.(data_homs)), Tuple(@. ob_num(dom(data_homs))),
-   Tuple([datatypes[nameof(h)] for h in data_homs]), hom_tuple, data_tuple,
+   Tuple(datatypes[ob] for ob in data), hom_tuple, data_tuple,
    Tuple(index), Tuple(data_index), Tuple(k ∈ unique_index for k in data_index))
 end
 
