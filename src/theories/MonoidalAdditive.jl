@@ -3,7 +3,8 @@ export MonoidalCategoryAdditive, SymmetricMonoidalCategoryAdditive,
   MonoidalCategoryWithCodiagonals, CocartesianCategory, FreeCocartesianCategory,
   plus, zero, copair, coproj1, coproj2,
   MonoidalCategoryWithBidiagonalsAdditive, SemiadditiveCategory,
-  mcopy, delete, pair, proj1, proj2, Δ, ◊, +
+  mcopy, delete, pair, proj1, proj2, Δ, ◊, +,
+  HypergraphCategoryAdditive
 
 import Base: collect, ndims, +, zero
 
@@ -184,4 +185,30 @@ instead of multiplicatively.
   plus(A)⋅◊(A) == ◊(A) ⊕ ◊(A) ⊣ (A::Ob)
   zero(A)⋅Δ(A) == zero(A) ⊕ zero(A) ⊣ (A::Ob)
   zero(A)⋅◊(A) == id(mzero()) ⊣ (A::Ob)
+end
+
+# Hypergraph category
+#####################
+
+""" Theory of *hypergraph categories*, in additive notation
+
+Mathematically the same as [`HypergraphCategory`](@ref) but with different
+notation.
+"""
+@signature SymmetricMonoidalCategoryAdditive(Ob,Hom) =>
+    HypergraphCategoryAdditive(Ob,Hom) begin
+  # Supply of Frobenius monoids.
+  mcopy(A::Ob)::(A → (A ⊕ A))
+  @op (Δ) := mcopy
+  delete(A::Ob)::(A → mzero())
+  @op (◊) := delete
+  mmerge(A::Ob)::((A ⊕ A) → A)
+  @op (∇) := mmerge
+  create(A::Ob)::(mzero() → A)
+  @op (□) := create
+
+  # Self-dual compact closed category.
+  dunit(A::Ob)::(mzero() → (A ⊕ A))
+  dcounit(A::Ob)::((A ⊕ A) → mzero())
+  dagger(R::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
 end
