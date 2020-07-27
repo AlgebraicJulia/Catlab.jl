@@ -5,7 +5,7 @@ building on the low-level imperative interface and the operadic interface. It
 also defines data types and functions to represent diagonals, codiagonals,
 duals, caps, cups, daggers, and other gadgets in wiring diagrams.
 """
-module AlgebraicWiringDiagrams
+module MonoidalDirectedWiringDiagrams
 export Ports, Junction, PortOp, BoxOp, functor, permute,
   implicit_mcopy, implicit_mmerge, junctioned_mcopy, junctioned_mmerge,
   junction_diagram, add_junctions, add_junctions!, rem_junctions, merge_junctions,

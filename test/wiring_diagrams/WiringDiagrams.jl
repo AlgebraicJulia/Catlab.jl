@@ -5,8 +5,8 @@ using Test
   include("Undirected.jl")
 end
 
-@testset "Algebraic" begin
-  include("Algebraic.jl")
+@testset "Monoidal" begin
+  include("MonoidalDirected.jl")
 end
 
 @testset "Algorithms" begin

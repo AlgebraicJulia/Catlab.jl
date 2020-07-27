@@ -4,7 +4,7 @@
 Modules = [
   WiringDiagrams.DirectedWiringDiagrams,
   WiringDiagrams.UndirectedWiringDiagrams,
-  WiringDiagrams.AlgebraicWiringDiagrams,
+  WiringDiagrams.MonoidalDirectedWiringDiagrams,
   WiringDiagrams.WiringDiagramAlgorithms,
   WiringDiagrams.WiringDiagramSerialization,
   WiringDiagrams.GraphMLWiringDiagrams,
