@@ -8,7 +8,7 @@ export UndirectedWiringDiagram, outer_box, box, junction, nboxes, njunctions,
 
 using ...CategoricalAlgebra.CSets, ...Present
 using ...CategoricalAlgebra.ShapeDiagrams: Span
-using ...CategoricalAlgebra.FinSets: FinOrdFunction, pushout
+using ...CategoricalAlgebra.FinSets: FinFunction, pushout
 using ...Theories: FreeCategory, dom, codom, compose, ⋅, id
 
 import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,
@@ -204,24 +204,24 @@ function ocompose(f::AbstractUWD, gs::AbstractVector{<:AbstractUWD})
     copy_boxes!(h, g, boxes(g))
   end
 
-  f_junction = FinOrdFunction(
+  f_junction = FinFunction(
     flat(junction(f, ports(f, i)) for i in boxes(f)), njunctions(f))
   # FIXME: Should use coproduct as monoidal product.
   gs_offset = [0; cumsum(njunctions.(gs))]
-  gs_outer = FinOrdFunction(
+  gs_outer = FinFunction(
     flat(junction(g, outer=true) .+ n for (g,n) in zip(gs, gs_offset[1:end-1])),
     gs_offset[end])
   cospan = pushout(Span(f_junction, gs_outer))
   f_inc, g_inc = cospan.left, cospan.right
-  junctions = add_junctions!(h, codom(f_inc).n)
+  junctions = add_junctions!(h, length(codom(f_inc)))
   if has_subpart(h, :junction_type)
     set_subpart!(h, [collect(f_inc); collect(g_inc)], :junction_type,
                  [junction_type(f); flat(junction_type(g) for g in gs)])
   end
 
-  f_outer = FinOrdFunction(junction(f, outer=true), njunctions(f))
+  f_outer = FinFunction(junction(f, outer=true), njunctions(f))
   # FIXME: Again, should use coproduct.
-  gs_junction = FinOrdFunction(
+  gs_junction = FinFunction(
     flat(junction(g) .+ n for (g,n) in zip(gs, gs_offset[1:end-1])),
     gs_offset[end])
   set_junction!(h, collect(f_outer ⋅ f_inc), outer=true)
@@ -237,21 +237,21 @@ function ocompose(f::AbstractUWD, i::Int, g::AbstractUWD)
   copy_boxes!(h, g, boxes(g))
   copy_boxes!(h, f, (i+1):nboxes(f))
 
-  f_i = FinOrdFunction(junction(f, ports(f, i)), njunctions(f))
-  g_outer = FinOrdFunction(junction(g, outer=true), njunctions(g))
+  f_i = FinFunction(junction(f, ports(f, i)), njunctions(f))
+  g_outer = FinFunction(junction(g, outer=true), njunctions(g))
   cospan = pushout(Span(f_i, g_outer))
   f_inc, g_inc = cospan.left, cospan.right
-  junctions = add_junctions!(h, codom(f_inc).n)
+  junctions = add_junctions!(h, length(codom(f_inc)))
   if has_subpart(h, :junction_type)
     set_subpart!(h, [collect(f_inc); collect(g_inc)], :junction_type,
                  [junction_type(f); junction_type(g)])
   end
 
-  f_outer = FinOrdFunction(junction(f, outer=true), njunctions(f))
-  f_start = FinOrdFunction(junction(f, flat(ports(f, 1:(i-1)))), njunctions(f))
-  g_junction = FinOrdFunction(junction(g), njunctions(g))
-  f_end = FinOrdFunction(
-    junction(f, flat(ports(f, (i+1):nboxes(f)))), njunctions(f))
+  f_outer = FinFunction(junction(f, outer=true), njunctions(f))
+  f_start = FinFunction(junction(f, flat(ports(f, 1:(i-1)))), njunctions(f))
+  g_junction = FinFunction(junction(g), njunctions(g))
+  f_end = FinFunction(junction(f, flat(ports(f, (i+1):nboxes(f)))),
+                      njunctions(f))
   set_junction!(h, collect(f_outer ⋅ f_inc), outer=true)
   set_junction!(h, [
     collect(f_start ⋅ f_inc);
