@@ -12,8 +12,7 @@ using ...CategoricalAlgebra.FinSets: FinFunction, pushout
 using ...Theories: FreeCategory, dom, codom, compose, ⋅, id
 
 import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,
-  add_wires!, singleton_diagram
-import ..AlgebraicWiringDiagrams: add_junctions!, ocompose
+  add_wires!, singleton_diagram, ocompose
 
 # Data types
 ############

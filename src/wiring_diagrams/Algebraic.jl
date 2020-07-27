@@ -1,12 +1,12 @@
-""" Wiring diagrams as a symmetric monoidal category and as an operad.
+""" Wiring diagrams as a symmetric monoidal category.
 
-This module provides a high-level functional and algebraic interface to wiring
-diagrams, building on the low-level imperative interface. It also defines data
-types and functions to represent diagonals, codiagonals, duals, caps, cups,
-daggers, and other structures in wiring diagrams.
+This module provides a high-level categorical interface to wiring diagrams,
+building on the low-level imperative interface and the operadic interface. It
+also defines data types and functions to represent diagonals, codiagonals,
+duals, caps, cups, daggers, and other gadgets in wiring diagrams.
 """
 module AlgebraicWiringDiagrams
-export Ports, Junction, PortOp, BoxOp, functor, ocompose, permute,
+export Ports, Junction, PortOp, BoxOp, functor, permute,
   implicit_mcopy, implicit_mmerge, junctioned_mcopy, junctioned_mmerge,
   junction_diagram, add_junctions, add_junctions!, rem_junctions, merge_junctions,
   junction_caps, junction_cups, junctioned_dunit, junctioned_dcounit
@@ -22,6 +22,7 @@ import ...Theories: dom, codom, id, compose, ⋅, ∘,
 import ...Syntax: functor, head
 using ..DirectedWiringDiagrams
 import ..DirectedWiringDiagrams: Box, WiringDiagram, input_ports, output_ports
+import ..UndirectedWiringDiagrams: add_junctions!
 
 # Categorical interface
 #######################
@@ -358,26 +359,6 @@ join(f::WiringDiagram{AbBiRel}, g::WiringDiagram{AbBiRel}) =
   compose(coplus(dom(f)), oplus(f,g), plus(codom(f)))
 top(A::Ports{AbBiRel}, B::Ports{AbBiRel}) = compose(delete(A), create(B))
 bottom(A::Ports{AbBiRel}, B::Ports{AbBiRel}) = compose(cozero(A), zero(B))
-
-# Operadic interface
-####################
-
-""" Operadic composition of wiring diagrams.
-
-This generic function has two different signatures, corresponding to the "full"
-and "partial" notions of operadic composition (Yau, 2018, *Operads of Wiring
-Diagrams*, Definitions 2.3 and 2.10).
-
-This operation is a simple wrapper around [`substitute`](@ref).
-"""
-function ocompose(f::WiringDiagram, gs::Vector{<:WiringDiagram})
-  @assert length(gs) == nboxes(f)
-  substitute(f, box_ids(f), gs)
-end
-function ocompose(f::WiringDiagram, i::Int, g::WiringDiagram)
-  @assert 1 <= i <= nboxes(f)
-  substitute(f, box_ids(f)[i], g)
-end
 
 # Junctions
 ###########
