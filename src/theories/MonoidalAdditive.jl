@@ -210,5 +210,5 @@ notation.
   # Self-dual compact closed category.
   dunit(A::Ob)::(mzero() → (A ⊕ A))
   dcounit(A::Ob)::((A ⊕ A) → mzero())
-  dagger(R::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
+  dagger(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
 end

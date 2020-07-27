@@ -447,9 +447,14 @@ categories" and "spidered/dungeon categories", among other things.
 FIXME: Should also inherit `ClosedMonoidalCategory` and `DaggerCategory`, but
 multiple inheritance is not yet supported.
 """
-@signature MonoidalCategoryWithBidiagonals(Ob,Hom) => HypergraphCategory(Ob,Hom) begin
+@theory MonoidalCategoryWithBidiagonals(Ob,Hom) => HypergraphCategory(Ob,Hom) begin
   # Self-dual compact closed category.
   dunit(A::Ob)::(munit() → (A ⊗ A))
   dcounit(A::Ob)::((A ⊗ A) → munit())
-  dagger(R::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
+  dagger(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
+
+  dunit(A) == create(A) ⋅ mcopy(A) ⊣ (A::Ob)
+  dcounit(A) == mmerge(A) ⋅ delete(A) ⊣ (A::Ob)
+  (dagger(f) == (id(Y) ⊗ dunit(X)) ⋅ (id(Y) ⊗ f ⊗ id(X)) ⋅ (dcounit(Y) ⊗ id(X))
+   ⊣ (A::Ob, B::Ob, f::(A → B)))
 end
