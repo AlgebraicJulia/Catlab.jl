@@ -53,6 +53,8 @@ function UndirectedWiringDiagram(::Type{UWD},
   add_parts!(d, :OuterPort, nports)
   return d
 end
+UndirectedWiringDiagram(nports::Int; kw...) =
+  UndirectedWiringDiagram(UntypedUWD, nports; kw...)
 
 function UndirectedWiringDiagram(::Type{UWD},
     port_types::AbstractVector{T}; data_types...) where {UWD <: AbstractUWD, T}
@@ -61,13 +63,8 @@ function UndirectedWiringDiagram(::Type{UWD},
   add_parts!(d, :OuterPort, nports, outer_port_type=port_types)
   return d
 end
-
-function UndirectedWiringDiagram(port_types; data_types...)
-  UWD = UndirectedWiringDiagramType(typeof(port_types))
-  UndirectedWiringDiagram(UWD, port_types; data_types...)
-end
-UndirectedWiringDiagramType(::Type{Int}) = UntypedUWD
-UndirectedWiringDiagramType(::Type{<:AbstractVector}) = TypedUWD
+UndirectedWiringDiagram(port_types::AbstractVector; kw...) =
+  UndirectedWiringDiagram(TypedUWD, port_types; kw...)
 
 # Imperative interface
 ######################
@@ -181,10 +178,12 @@ function add_wires!(d::AbstractUWD, wires)
   end
 end
 
+# Other constructors
+#-------------------
+
 function singleton_diagram(::Type{T}, port_types; data...) where T<:AbstractUWD
-  UWD = T == UndirectedWiringDiagram ?
-    UndirectedWiringDiagramType(typeof(port_types)) : T
-  d = UndirectedWiringDiagram(UWD, port_types)
+  d = UndirectedWiringDiagram(
+    (T == AbstractUWD ? (port_types,) : (T, port_types))...)
   junctions = add_junctions!(d, port_types)
   add_box!(d, port_types; data...)
   set_junction!(d, junctions)

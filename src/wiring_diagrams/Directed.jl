@@ -478,7 +478,8 @@ function out_wires(d::WiringDiagram, v::Int, port::Int)
   out_wires(d, Port(v, OutputPort, port))
 end
 
-# Other constructors.
+# Other constructors
+#-------------------
 
 """ A wiring diagram with a single box connected to its outer ports.
 """
