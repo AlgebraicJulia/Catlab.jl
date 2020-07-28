@@ -3,6 +3,7 @@ module TestTheories
 using Test
 using Catlab.Theories
 using Catlab.Syntax
+using Catlab.Present
 
 sexpr(expr::GATExpr) = sprint(show_sexpr, expr)
 unicode(expr::GATExpr) = sprint(show_unicode, expr)
