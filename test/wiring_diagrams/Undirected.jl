@@ -82,6 +82,12 @@ add_box!(d, 2); add_junctions!(d, 1)
 set_junction!(d, [1,1]); set_junction!(d, 1, outer=true)
 @test cospan_diagram(UWD, FinFunction([1,1]), FinFunction([1])) == d
 
+# Diagrams from functions: junctions only.
+d = UndirectedWiringDiagram(4)
+add_junctions!(d, 3)
+set_junction!(d, [1,2,2,3], outer=true)
+@test junction_diagram(UWD, FinFunction([1,2,2,3])) == d
+
 # Operadic interface
 ####################
 

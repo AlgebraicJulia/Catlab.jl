@@ -22,7 +22,7 @@ import ...Theories: dom, codom, id, compose, ⋅, ∘,
 import ...Syntax: functor, head
 using ..DirectedWiringDiagrams
 import ..DirectedWiringDiagrams: Box, WiringDiagram, input_ports, output_ports
-import ..UndirectedWiringDiagrams: add_junctions!
+import ..UndirectedWiringDiagrams: add_junctions!, junction_diagram
 
 # Categorical interface
 #######################
