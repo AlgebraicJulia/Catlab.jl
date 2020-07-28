@@ -481,7 +481,7 @@ end
 # Other constructors
 #-------------------
 
-""" A wiring diagram with a single box connected to its outer ports.
+""" Create wiring diagram with a single box connected to its outer ports.
 """
 function singleton_diagram(T::Type, box::AbstractBox)
   inputs, outputs = input_ports(box), output_ports(box)

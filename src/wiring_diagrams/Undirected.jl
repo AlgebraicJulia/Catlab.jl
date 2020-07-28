@@ -4,7 +4,7 @@ module UndirectedWiringDiagrams
 export UndirectedWiringDiagram, outer_box, box, junction, nboxes, njunctions,
   boxes, junctions, ports, ports_with_junction, junction_type, port_type,
   add_box!, add_junction!, add_junctions!, set_junction!, add_wire!,
-  add_wires!, singleton_diagram, ocompose
+  add_wires!, singleton_diagram, cospan_diagram, ocompose
 
 using ...CategoricalAlgebra.CSets, ...Present
 using ...CategoricalAlgebra.ShapeDiagrams: Span
@@ -182,12 +182,39 @@ end
 #-------------------
 
 function singleton_diagram(::Type{T}, port_types; data...) where T<:AbstractUWD
-  d = UndirectedWiringDiagram(
-    (T == AbstractUWD ? (port_types,) : (T, port_types))...)
-  junctions = add_junctions!(d, port_types)
+  d = UndirectedWiringDiagram((T == AbstractUWD ? () : (T,))..., port_types)
   add_box!(d, port_types; data...)
-  set_junction!(d, junctions)
-  set_junction!(d, junctions, outer=true)
+  js = add_junctions!(d, port_types)
+  set_junction!(d, js)
+  set_junction!(d, js, outer=true)
+  return d
+end
+
+""" Create undirected wiring diagram from a cospan.
+
+The wiring diagram has a single box. The ports of this box, the outer ports, the
+junctions, and the connections between them are defined by the cospan. Thus,
+this function generalizes [`singleton_diagram`](@ref).
+"""
+function cospan_diagram(::Type{T}, f::FinFunction{Int},
+                        f_outer::FinFunction{Int}, port_types=nothing;
+                        data...) where T<:AbstractUWD
+  @assert codom(f) == codom(f_outer)
+  cospan_diagram(T, collect(f), collect(f_outer),
+                 isnothing(port_types) ? length(codom(f)) : port_types; data...)
+end
+function cospan_diagram(::Type{T}, f::AbstractVector{Int},
+                        f_outer::AbstractVector{Int}, port_types;
+                        data...) where T<:AbstractUWD
+  map_port_types(::Int, g) = length(g)
+  map_port_types(types::AbstractVector, g) = types[g]
+
+  d = UndirectedWiringDiagram((T == AbstractUWD ? () : (T,))...,
+                              map_port_types(port_types, f_outer))
+  add_box!(d, map_port_types(port_types, f); data...)
+  add_junctions!(d, port_types)
+  set_junction!(d, f)
+  set_junction!(d, f_outer, outer=true)
   return d
 end
 
