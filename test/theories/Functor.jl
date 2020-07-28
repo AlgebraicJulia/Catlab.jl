@@ -1,5 +1,6 @@
 using Test
 using Match
+import Catlab.Theories: dom, codom
 
 @present C1(FreeCategory) begin
   A::Ob
@@ -29,6 +30,6 @@ function (F::TypeF1)(morph::HomExpr{:generator})
   end
 end
 
-F = TestF1()
+F = TypeF1()
 
 @test F(compose(g,h)) == compose(f,h)
