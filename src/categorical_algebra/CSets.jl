@@ -5,7 +5,6 @@ export AbstractCSet, AbstractCSetType, CSet, CSetType,
   nparts, has_part, subpart, has_subpart, incident,
   add_part!, add_parts!, copy_parts!, set_subpart!, set_subparts!
 
-import Base: show
 using Compat
 using LabelledArrays, StaticArrays
 
@@ -118,6 +117,23 @@ function Base.copy(cset::T) where T <: CSet
 end
 
 Base.empty(cset::T) where T <: CSet = T(map(eltype, cset.data))
+
+function Base.show(io::IO, mime::MIME"text/plain",
+                   a::AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom}) where
+    {Ob,Hom,Dom,Codom,Data,DataDom}
+  println(io, "CSet")
+  for ob in Ob
+    println(io, "  $ob = 1:$(nparts(a,ob))")
+  end
+  for (i, hom) in enumerate(Hom)
+    println(io, "  $hom : $(Ob[Dom[i]]) → $(Ob[Codom[i]])")
+    println(io, "    $(subpart(a,hom))")
+  end
+  for (i, data) in enumerate(Data)
+    println(io, "  $data : $(Ob[DataDom[i]]) → $(eltype(subpart(a,data)))")
+    println(io, "    $(subpart(a,data))")
+  end
+end
 
 # C-set interface
 #################
@@ -421,22 +437,4 @@ function deletesorted!(a::AbstractVector, x)
   deleteat!(a, i)
 end
 
-# Useful Printing
-#################
-
-function show(io::IO, mime::MIME"text/plain", a::AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom}) where
-    {Ob,Hom,Dom,Codom,Data,DataDom}
-  println(io, "CSet")
-  for ob in Ob
-    println(io, "  $(string(ob)) = 1:$(nparts(a,ob))")
-  end
-  for i in 1:length(Hom)
-    println(io, "  $(string(Hom[i])) : $(string(Ob[Dom[i]])) -> $(string(Ob[Codom[i]]))")
-    println(io, "    $(subpart(a,Hom[i]))")
-  end
-  for i in 1:length(Data)
-    println(io, "  $(string(Data[i])) : $(string(Ob[DataDom[i]])) -> $(eltype(subpart(a,Data[i])))")
-    println(io, "    $(subpart(a,Data[i]))")
-  end
-end
 end
