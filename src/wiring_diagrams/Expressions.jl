@@ -18,7 +18,7 @@ using LightGraphs
 using ...Syntax, ...Theories
 using ...Syntax: syntax_module
 using ...CategoricalAlgebra.Permutations
-using ..DirectedWiringDiagrams, ..AlgebraicWiringDiagrams
+using ..DirectedWiringDiagrams, ..MonoidalDirectedWiringDiagrams
 using ..WiringDiagramAlgorithms: crossing_minimization_by_sort
 
 # Expression -> Diagram

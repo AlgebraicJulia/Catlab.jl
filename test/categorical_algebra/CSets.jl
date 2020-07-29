@@ -94,6 +94,11 @@ copy_parts!(d2, d, :X, [4,5])
 @test subpart(d2, [1,2], :parent) == [2,2]
 @test subpart(d2, [1,2], :height) == [10,20]
 
+du = disjoint_union(d, d2)
+@test nparts(du, :X) == 7
+@test subpart(du, :parent) == [4,4,4,5,5,7,7]
+@test subpart(du, :height) == [0,0,0,10,20,10,20]
+
 # Labeled sets
 ##############
 

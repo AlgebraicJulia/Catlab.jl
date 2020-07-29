@@ -10,7 +10,8 @@ export MonoidalCategory, otimes, munit, ⊗, collect, ndims,
   DaggerCategory, FreeDaggerCategory, dagger,
   DaggerSymmetricMonoidalCategory, FreeDaggerSymmetricMonoidalCategory,
   DaggerCompactCategory, FreeDaggerCompactCategory,
-  TracedMonoidalCategory, FreeTracedMonoidalCategory, trace
+  TracedMonoidalCategory, FreeTracedMonoidalCategory, trace,
+  HypergraphCategory
 
 import Base: collect, ndims
 
@@ -433,4 +434,27 @@ end
 function show_latex(io::IO, expr::HomExpr{:trace}; kw...)
   X, A, B, f = args(expr)
   print(io, "\\operatorname{Tr}_{$A,$B}^{$X} \\left($f\\right)")
+end
+
+# Hypergraph category
+#####################
+
+""" Theory of *hypergraph categories*
+
+Hypergraph categories are also known as "well-supported compact closed
+categories" and "spidered/dungeon categories", among other things.
+
+FIXME: Should also inherit `ClosedMonoidalCategory` and `DaggerCategory`, but
+multiple inheritance is not yet supported.
+"""
+@theory MonoidalCategoryWithBidiagonals(Ob,Hom) => HypergraphCategory(Ob,Hom) begin
+  # Self-dual compact closed category.
+  dunit(A::Ob)::(munit() → (A ⊗ A))
+  dcounit(A::Ob)::((A ⊗ A) → munit())
+  dagger(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
+
+  dunit(A) == create(A) ⋅ mcopy(A) ⊣ (A::Ob)
+  dcounit(A) == mmerge(A) ⋅ delete(A) ⊣ (A::Ob)
+  (dagger(f) == (id(Y) ⊗ dunit(X)) ⋅ (id(Y) ⊗ f ⊗ id(X)) ⋅ (dcounit(Y) ⊗ id(X))
+   ⊣ (A::Ob, B::Ob, f::(A → B)))
 end

@@ -23,7 +23,7 @@ export AbstractBox, Box, WiringDiagram, Wire, Port, PortKind,
   rem_wires!, port_value, validate_ports, is_permuted_equal,
   all_neighbors, neighbors, outneighbors, inneighbors, in_wires, out_wires,
   singleton_diagram, induced_subdiagram, encapsulated_subdiagram,
-  substitute, encapsulate
+  ocompose, substitute, encapsulate
 
 using Compat
 using AutoHashEquals
@@ -478,9 +478,10 @@ function out_wires(d::WiringDiagram, v::Int, port::Int)
   out_wires(d, Port(v, OutputPort, port))
 end
 
-# Other constructors.
+# Other constructors
+#-------------------
 
-""" A wiring diagram with a single box connected to its outer ports.
+""" Wiring diagram with a single box connected to the outer ports.
 """
 function singleton_diagram(T::Type, box::AbstractBox)
   inputs, outputs = input_ports(box), output_ports(box)
@@ -512,6 +513,26 @@ function induced_subdiagram(d::WiringDiagram{T}, vs::Vector{Int}) where T
   return sub
 end
 
+# Operadic interface
+####################
+
+""" Operadic composition of wiring diagrams.
+
+This generic function has two different signatures, corresponding to the "full"
+and "partial" notions of operadic composition (Yau, 2018, *Operads of Wiring
+Diagrams*, Definitions 2.3 and 2.10).
+
+This operation is a simple wrapper around [`substitute`](@ref).
+"""
+function ocompose(f::WiringDiagram, gs::Vector{<:WiringDiagram})
+  @assert length(gs) == nboxes(f)
+  substitute(f, box_ids(f), gs)
+end
+function ocompose(f::WiringDiagram, i::Int, g::WiringDiagram)
+  @assert 1 <= i <= nboxes(f)
+  substitute(f, box_ids(f)[i], g)
+end
+
 # Substitution
 ##############
 
@@ -520,8 +541,8 @@ end
 Performs one or more substitutions. When performing multiple substitutions, the
 substitutions are simultaneous.
 
-This operation implements the operadic composition of wiring diagrams
-(`ocompose`).
+This operation implements the operadic composition of wiring diagrams, see also
+[`ocompose`](@ref).
 """
 function substitute(d::WiringDiagram; kw...)
   substitute(d, filter(v -> box(d,v) isa WiringDiagram, box_ids(d)); kw...)
@@ -637,7 +658,8 @@ default_merge_wire_values(::Any, middle::Any, ::Any) = middle
 
 """ Encapsulate multiple boxes within a single sub-diagram.
 
-This operation is a (one-sided) inverse to subsitution (see `substitute`).
+This operation is a (one-sided) inverse to subsitution, see
+[`substitute`](@ref).
 """
 function encapsulate(d::WiringDiagram, vs::Vector{Int}; value=nothing, kw...)
   encapsulate(d, [vs]; values=[value], kw...)

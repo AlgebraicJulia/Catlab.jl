@@ -18,12 +18,7 @@ References:
 - Walters, 2009, blog post, "Categorical algebras of relations",
   http://rfcwalters.blogspot.com/2009/10/categorical-algebras-of-relations.html
 """
-@signature MonoidalCategoryWithBidiagonals(Ob,Hom) => BicategoryRelations(Ob,Hom) begin
-  # Self-dual dagger compact category.
-  dagger(R::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
-  dunit(A::Ob)::(munit() → (A ⊗ A))
-  dcounit(A::Ob)::((A ⊗ A) → munit())
-
+@signature HypergraphCategory(Ob,Hom) => BicategoryRelations(Ob,Hom) begin
   # Logical operations.
   meet(R::(A → B), S::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
   top(A::Ob, B::Ob)::(A → B)
@@ -48,20 +43,11 @@ References:
 - Carboni & Walters, 1987, "Cartesian bicategories I", Sec. 5
 - Baez & Erbele, 2015, "Categories in control"
 """
-@signature MonoidalCategoryWithBidiagonalsAdditive(Ob,Hom) =>
+@signature HypergraphCategoryAdditive(Ob,Hom) =>
     AbelianBicategoryRelations(Ob,Hom) begin
-  # Self-dual dagger compact category.
-  dagger(R::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
-  dunit(A::Ob)::(mzero() → (A ⊕ A))
-  dcounit(A::Ob)::((A ⊕ A) → mzero())
-
-  # Merging and creating (right adjoints of copying and deleting maps).
-  mmerge(A::Ob)::((A ⊕ A) → A)
-  @op (∇) := mmerge
-  create(A::Ob)::(mzero() → A)
-  @op (□) := create
-
-  # Co-addition and co-zero (right adjoints of addition and zero maps).
+  # Second supply of Frobenius monoids.
+  plus(A::Ob)::((A ⊕ A) → A)
+  zero(A::Ob)::(mzero() → A)
   coplus(A::Ob)::(A → (A ⊕ A))
   cozero(A::Ob)::(A → mzero())
 

@@ -3,6 +3,7 @@ using Test
 
 using Catlab.WiringDiagrams.DirectedWiringDiagrams
 import Catlab.WiringDiagrams.DirectedWiringDiagrams: validate_ports
+using Catlab.WiringDiagrams.MonoidalDirectedWiringDiagrams: compose
 
 # For testing purposes, check equality of port symbols.
 function validate_ports(source_port::Symbol, target_port::Symbol)
@@ -205,5 +206,36 @@ d = encapsulate(d0, [v1,v2])
 @test nwires(d) == 2
 sub = first(boxes(d))
 @test sub == d0
+
+# Operadic interface
+####################
+
+f, g, h = map([:f, :g, :h]) do sym
+  (i::Int) -> singleton_diagram(Box(Symbol("$sym$i"), [:A], [:A]))
+end
+
+# Identity
+d = compose(f(1),f(2))
+@test ocompose(g(1), 1, d) == d
+@test ocompose(g(1), [d]) == d
+@test ocompose(d, [f(1),f(2)]) == d
+@test ocompose(d, 1, f(1)) == d
+@test ocompose(d, 2, f(2)) == d
+
+# Associativity
+@test ocompose(compose(f(1),f(2)), [
+  ocompose(compose(g(1),g(2)), [compose(h(1),h(2)), compose(h(3),h(4))]),
+  ocompose(compose(g(3),g(4)), [compose(h(5),h(6)), compose(h(7),h(8))])
+]) == ocompose(
+  ocompose(compose(f(1),f(2)), [compose(g(1),g(2)), compose(g(3),g(4))]),
+  [compose(h(1),h(2)), compose(h(3),h(4)), compose(h(5),h(6)), compose(h(7),h(8))]
+)
+@test ocompose(
+  ocompose(compose(f(1),f(2)), 1, compose(g(1),g(2))),
+  3, compose(g(3),g(4))
+) == ocompose(
+  ocompose(compose(f(1),f(2)), 2, compose(g(3),g(4))),
+  1, compose(g(1),g(2))
+)
 
 end

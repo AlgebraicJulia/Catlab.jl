@@ -1,7 +1,10 @@
 module TestUndirectedWiringDiagrams
 using Test
 
+using Catlab.CategoricalAlgebra.FinSets: FinFunction
 using Catlab.WiringDiagrams.UndirectedWiringDiagrams
+
+const UWD = UndirectedWiringDiagram
 
 # Imperative interface
 ######################
@@ -58,12 +61,32 @@ add_wire!(d, (1,2) => (2,2))
 add_wire!(d, (2,2) => (3,2))
 @test d == d_previous
 
+# Other constructors
+#-------------------
+
 # Singleton diagrams.
 d = UndirectedWiringDiagram([:X,:Y,:Z])
-add_junctions!(d, [:X,:Y,:Z])
 add_box!(d, [:X,:Y,:Z])
+add_junctions!(d, [:X,:Y,:Z])
 set_junction!(d, 1:3); set_junction!(d, 1:3, outer=true)
-@test singleton_diagram(UndirectedWiringDiagram, [:X,:Y,:Z]) == d
+@test singleton_diagram(UWD, [:X,:Y,:Z]) == d
+
+# Diagrams from cospans.
+@test cospan_diagram(UWD, FinFunction(1:3), FinFunction(1:3), [:X,:Y,:Z]) ==
+  singleton_diagram(UWD, [:X,:Y,:Z])
+@test cospan_diagram(UWD, FinFunction(1:3), FinFunction(1:3)) ==
+  singleton_diagram(UWD, 3)
+
+d = UndirectedWiringDiagram(1)
+add_box!(d, 2); add_junctions!(d, 1)
+set_junction!(d, [1,1]); set_junction!(d, 1, outer=true)
+@test cospan_diagram(UWD, FinFunction([1,1]), FinFunction([1])) == d
+
+# Diagrams from functions: junctions only.
+d = UndirectedWiringDiagram(4)
+add_junctions!(d, 3)
+set_junction!(d, [1,2,2,3], outer=true)
+@test junction_diagram(UWD, FinFunction([1,2,2,3])) == d
 
 # Operadic interface
 ####################

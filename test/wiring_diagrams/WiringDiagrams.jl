@@ -1,15 +1,13 @@
 using Test
 
-@testset "Directed" begin
+@testset "Core" begin
   include("Directed.jl")
-end
-
-@testset "Undirected" begin
   include("Undirected.jl")
 end
 
-@testset "Algebraic" begin
-  include("Algebraic.jl")
+@testset "Monoidal" begin
+  include("MonoidalDirected.jl")
+  include("MonoidalUndirected.jl")
 end
 
 @testset "Algorithms" begin
@@ -20,10 +18,7 @@ end
   include("Expressions.jl")
 end
 
-@testset "GraphML" begin
+@testset "Serialization" begin
   include("GraphML.jl")
-end
-
-@testset "JSON" begin
   include("JSON.jl")
 end

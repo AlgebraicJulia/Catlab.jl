@@ -2,10 +2,9 @@
 """
 module CSets
 export AbstractCSet, AbstractCSetType, CSet, CSetType,
-  nparts, has_part, subpart, has_subpart, incident,
-  add_part!, add_parts!, copy_parts!, set_subpart!, set_subparts!
+  nparts, has_part, subpart, has_subpart, incident, add_part!, add_parts!,
+  copy_parts!, set_subpart!, set_subparts!, disjoint_union
 
-import Base: show
 using Compat
 using LabelledArrays, StaticArrays
 
@@ -118,6 +117,23 @@ function Base.copy(cset::T) where T <: CSet
 end
 
 Base.empty(cset::T) where T <: CSet = T(map(eltype, cset.data))
+
+function Base.show(io::IO, mime::MIME"text/plain",
+                   a::AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom}) where
+    {Ob,Hom,Dom,Codom,Data,DataDom}
+  println(io, "CSet")
+  for ob in Ob
+    println(io, "  $ob = 1:$(nparts(a,ob))")
+  end
+  for (i, hom) in enumerate(Hom)
+    println(io, "  $hom : $(Ob[Dom[i]]) → $(Ob[Codom[i]])")
+    println(io, "    $(subpart(a,hom))")
+  end
+  for (i, data) in enumerate(Data)
+    println(io, "  $data : $(Ob[DataDom[i]]) → $(eltype(subpart(a,data)))")
+    println(io, "    $(subpart(a,data))")
+  end
+end
 
 # C-set interface
 #################
@@ -236,19 +252,30 @@ end
   end
 end
 
-""" Copy parts from one C-set to another.
+""" Copy parts from one C-set into another.
 
-All subparts between the selected parts, including any attached data, are
+All subparts among the selected parts, including any attached data, are
 preserved. Thus, if the selected parts form a sub-C-set, then the whole
 sub-C-set is preserved. On the other hand, if the selected parts do *not* form a
 sub-C-set, then some copied parts will have undefined subparts.
 """
-copy_parts!(cset::CSet, from::CSet; kw...) = copy_parts!(cset, from, (; kw...))
-
+copy_parts!(cset::CSet, from::CSet; kw...) =
+  copy_parts!(cset, from, (; kw...))
+copy_parts!(cset::CSet, from::CSet, type::Symbol) =
+  copy_parts!(cset, from, (; type => :))
 copy_parts!(cset::CSet, from::CSet, type::Symbol, parts) =
   copy_parts!(cset, from, (; type => parts))
+copy_parts!(cset::CSet, from::CSet, types::Tuple) =
+  copy_parts!(cset::CSet, from::CSet, NamedTuple{types}((:) for t in types))
 
-@generated function copy_parts!(cset::T, from::T, parts::NamedTuple{types}) where
+function copy_parts!(cset::CSet, from::CSet, parts::NamedTuple{types}) where types
+  parts = map(types, parts) do type, part
+    part == (:) ? (1:nparts(from, type)) : part
+  end
+  _copy_parts!(cset, from, NamedTuple{types}(parts))
+end
+
+@generated function _copy_parts!(cset::T, from::T, parts::NamedTuple{types}) where
     {types, obs,homs,doms,codoms, T <: CSet{obs,homs,doms,codoms}}
   obnums = [ findfirst(obs .== type)::Int for type in types ]
   in_obs, out_homs = Symbol[], Tuple{Symbol,Symbol,Symbol}[]
@@ -421,22 +448,15 @@ function deletesorted!(a::AbstractVector, x)
   deleteat!(a, i)
 end
 
-# Useful Printing
-#################
+# Limits and colimits
+#####################
 
-function show(io::IO, mime::MIME"text/plain", a::AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom}) where
-    {Ob,Hom,Dom,Codom,Data,DataDom}
-  println(io, "CSet")
-  for ob in Ob
-    println(io, "  $(string(ob)) = 1:$(nparts(a,ob))")
-  end
-  for i in 1:length(Hom)
-    println(io, "  $(string(Hom[i])) : $(string(Ob[Dom[i]])) -> $(string(Ob[Codom[i]]))")
-    println(io, "    $(subpart(a,Hom[i]))")
-  end
-  for i in 1:length(Data)
-    println(io, "  $(string(Data[i])) : $(string(Ob[DataDom[i]])) -> $(eltype(subpart(a,Data[i])))")
-    println(io, "    $(subpart(a,Data[i]))")
-  end
+# TODO: Implement (co)limits of C-sets using generic (co)limits interface.
+
+function disjoint_union(cset1::T, cset2::T) where {obs, T <: CSet{obs}}
+  cset = copy(cset1)
+  copy_parts!(cset, cset2, obs)
+  cset
 end
+
 end

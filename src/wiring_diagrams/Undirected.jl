@@ -4,7 +4,7 @@ module UndirectedWiringDiagrams
 export UndirectedWiringDiagram, outer_box, box, junction, nboxes, njunctions,
   boxes, junctions, ports, ports_with_junction, junction_type, port_type,
   add_box!, add_junction!, add_junctions!, set_junction!, add_wire!,
-  add_wires!, singleton_diagram, ocompose
+  add_wires!, singleton_diagram, cospan_diagram, junction_diagram, ocompose
 
 using ...CategoricalAlgebra.CSets, ...Present
 using ...CategoricalAlgebra.ShapeDiagrams: Span
@@ -12,8 +12,7 @@ using ...CategoricalAlgebra.FinSets: FinFunction, pushout
 using ...Theories: FreeCategory, dom, codom, compose, ⋅, id
 
 import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,
-  add_wires!, singleton_diagram
-import ..AlgebraicWiringDiagrams: add_junctions!, ocompose
+  add_wires!, singleton_diagram, ocompose
 
 # Data types
 ############
@@ -54,6 +53,8 @@ function UndirectedWiringDiagram(::Type{UWD},
   add_parts!(d, :OuterPort, nports)
   return d
 end
+UndirectedWiringDiagram(nports::Int; kw...) =
+  UndirectedWiringDiagram(UntypedUWD, nports; kw...)
 
 function UndirectedWiringDiagram(::Type{UWD},
     port_types::AbstractVector{T}; data_types...) where {UWD <: AbstractUWD, T}
@@ -62,13 +63,8 @@ function UndirectedWiringDiagram(::Type{UWD},
   add_parts!(d, :OuterPort, nports, outer_port_type=port_types)
   return d
 end
-
-function UndirectedWiringDiagram(port_types; data_types...)
-  UWD = UndirectedWiringDiagramType(typeof(port_types))
-  UndirectedWiringDiagram(UWD, port_types; data_types...)
-end
-UndirectedWiringDiagramType(::Type{Int}) = UntypedUWD
-UndirectedWiringDiagramType(::Type{<:AbstractVector}) = TypedUWD
+UndirectedWiringDiagram(port_types::AbstractVector; kw...) =
+  UndirectedWiringDiagram(TypedUWD, port_types; kw...)
 
 # Imperative interface
 ######################
@@ -182,16 +178,67 @@ function add_wires!(d::AbstractUWD, wires)
   end
 end
 
+# Other constructors
+#-------------------
+
+function empty_diagram(::Type{T}, port_types) where T<:AbstractUWD
+  UndirectedWiringDiagram((T == AbstractUWD ? () : (T,))..., port_types)
+end
+
 function singleton_diagram(::Type{T}, port_types; data...) where T<:AbstractUWD
-  UWD = T == UndirectedWiringDiagram ?
-    UndirectedWiringDiagramType(typeof(port_types)) : T
-  d = UndirectedWiringDiagram(UWD, port_types)
-  junctions = add_junctions!(d, port_types)
+  d = empty_diagram(T, port_types)
   add_box!(d, port_types; data...)
-  set_junction!(d, junctions)
-  set_junction!(d, junctions, outer=true)
+  js = add_junctions!(d, port_types)
+  set_junction!(d, js)
+  set_junction!(d, js, outer=true)
   return d
 end
+
+""" Undirected wiring diagram defined by a cospan.
+
+The wiring diagram has a single box. The ports of this box, the outer ports, the
+junctions, and the connections between them are defined by the cospan. Thus,
+this function generalizes [`singleton_diagram`](@ref).
+
+See also: [`junction_diagram`](@ref).
+"""
+function cospan_diagram(::Type{T}, f::FinFunction{Int},
+                        f_outer::FinFunction{Int}, junction_types=nothing;
+                        data...) where T<:AbstractUWD
+  @assert codom(f) == codom(f_outer)
+  if isnothing(junction_types); junction_types = length(codom(f)) end
+  cospan_diagram(T, collect(f), collect(f_outer), junction_types; data...)
+end
+function cospan_diagram(::Type{T}, f::AbstractVector{Int},
+                        f_outer::AbstractVector{Int}, junction_types;
+                        data...) where T<:AbstractUWD
+  d = empty_diagram(T, map_port_types(junction_types, f_outer))
+  add_box!(d, map_port_types(junction_types, f); data...)
+  add_junctions!(d, junction_types)
+  set_junction!(d, f)
+  set_junction!(d, f_outer, outer=true)
+  return d
+end
+
+""" Undirected wiring diagram with no boxes, only junctions.
+
+See also: [`singleton_diagram`](@ref), [`cospan_diagram`](@ref).
+"""
+function junction_diagram(::Type{T}, f::FinFunction{Int},
+                          junction_types=nothing) where T<:AbstractUWD
+  if isnothing(junction_types); junction_types = length(codom(f)) end
+  junction_diagram(T, collect(f), junction_types)
+end
+function junction_diagram(::Type{T}, f::AbstractVector{Int},
+                          junction_types) where T<:AbstractUWD
+  d = empty_diagram(T, map_port_types(junction_types, f))
+  add_junctions!(d, junction_types)
+  set_junction!(d, f, outer=true)
+  return d
+end
+
+map_port_types(::Int, g) = length(g)
+map_port_types(types::AbstractVector, g) = types[g]
 
 # Operadic interface
 ####################
@@ -199,7 +246,7 @@ end
 function ocompose(f::AbstractUWD, gs::AbstractVector{<:AbstractUWD})
   @assert length(gs) == nboxes(f)
   h = empty(f)
-  copy_parts!(h, f, OuterPort=ports(f, outer=true))
+  copy_parts!(h, f, OuterPort=:)
   for g in gs
     copy_boxes!(h, g, boxes(g))
   end
@@ -232,7 +279,7 @@ end
 function ocompose(f::AbstractUWD, i::Int, g::AbstractUWD)
   @assert 1 <= i <= nboxes(f)
   h = empty(f)
-  copy_parts!(h, f, OuterPort=ports(f, outer=true))
+  copy_parts!(h, f, OuterPort=:)
   copy_boxes!(h, f, 1:(i-1))
   copy_boxes!(h, g, boxes(g))
   copy_boxes!(h, f, (i+1):nboxes(f))
