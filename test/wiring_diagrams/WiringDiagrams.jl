@@ -7,6 +7,7 @@ end
 
 @testset "Monoidal" begin
   include("MonoidalDirected.jl")
+  include("MonoidalUndirected.jl")
 end
 
 @testset "Algorithms" begin

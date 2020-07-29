@@ -65,8 +65,8 @@ WiringDiagram(value, inputs::Ports{T}, outputs::Ports{T}) where T =
 WiringDiagram(inputs::Ports{T}, outputs::Ports{T}) where T =
   WiringDiagram{T}(collect(inputs), collect(outputs))
 
-input_ports(::Type{Ports}, d::WiringDiagram{T}) where T = Ports{T}(input_ports(d))
-output_ports(::Type{Ports}, d::WiringDiagram{T}) where T = Ports{T}(output_ports(d))
+dom(d::WiringDiagram{T}) where T = Ports{T}(input_ports(d))
+codom(d::WiringDiagram{T}) where T = Ports{T}(output_ports(d))
 
 # Symmetric monoidal category
 #----------------------------
@@ -78,8 +78,7 @@ different ways, but wiring diagrams always form a symmetric monoidal category in
 the same way.
 """
 @instance SymmetricMonoidalCategory(Ports, WiringDiagram) begin
-  dom(f::WiringDiagram) = input_ports(Ports, f)
-  codom(f::WiringDiagram) = output_ports(Ports, f)
+  @import dom, codom
 
   function id(A::Ports)
     f = WiringDiagram(A, A)

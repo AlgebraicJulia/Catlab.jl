@@ -203,18 +203,18 @@ this function generalizes [`singleton_diagram`](@ref).
 See also: [`junction_diagram`](@ref).
 """
 function cospan_diagram(::Type{T}, f::FinFunction{Int},
-                        f_outer::FinFunction{Int}, port_types=nothing;
+                        f_outer::FinFunction{Int}, junction_types=nothing;
                         data...) where T<:AbstractUWD
   @assert codom(f) == codom(f_outer)
-  if isnothing(port_types); port_types = length(codom(f)) end
-  cospan_diagram(T, collect(f), collect(f_outer), port_types; data...)
+  if isnothing(junction_types); junction_types = length(codom(f)) end
+  cospan_diagram(T, collect(f), collect(f_outer), junction_types; data...)
 end
 function cospan_diagram(::Type{T}, f::AbstractVector{Int},
-                        f_outer::AbstractVector{Int}, port_types;
+                        f_outer::AbstractVector{Int}, junction_types;
                         data...) where T<:AbstractUWD
-  d = empty_diagram(T, map_port_types(port_types, f_outer))
-  add_box!(d, map_port_types(port_types, f); data...)
-  add_junctions!(d, port_types)
+  d = empty_diagram(T, map_port_types(junction_types, f_outer))
+  add_box!(d, map_port_types(junction_types, f); data...)
+  add_junctions!(d, junction_types)
   set_junction!(d, f)
   set_junction!(d, f_outer, outer=true)
   return d
@@ -225,14 +225,14 @@ end
 See also: [`singleton_diagram`](@ref), [`cospan_diagram`](@ref).
 """
 function junction_diagram(::Type{T}, f::FinFunction{Int},
-                          port_types=nothing) where T<:AbstractUWD
-  if isnothing(port_types); port_types = length(codom(f)) end
-  junction_diagram(T, collect(f), port_types)
+                          junction_types=nothing) where T<:AbstractUWD
+  if isnothing(junction_types); junction_types = length(codom(f)) end
+  junction_diagram(T, collect(f), junction_types)
 end
 function junction_diagram(::Type{T}, f::AbstractVector{Int},
-                          port_types) where T<:AbstractUWD
-  d = empty_diagram(T, map_port_types(port_types, f))
-  add_junctions!(d, port_types)
+                          junction_types) where T<:AbstractUWD
+  d = empty_diagram(T, map_port_types(junction_types, f))
+  add_junctions!(d, junction_types)
   set_junction!(d, f, outer=true)
   return d
 end
