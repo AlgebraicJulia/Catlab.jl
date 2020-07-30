@@ -217,21 +217,23 @@ this function generalizes [`singleton_diagram`](@ref).
 
 See also: [`junction_diagram`](@ref).
 """
-function cospan_diagram(::Type{T}, f::FinFunction{Int},
-                        f_outer::FinFunction{Int}, junction_types=nothing;
+function cospan_diagram(::Type{T}, inner::FinFunction{Int},
+                        outer::FinFunction{Int}, junction_types=nothing;
                         data...) where T<:AbstractUWD
-  @assert codom(f) == codom(f_outer)
-  if isnothing(junction_types); junction_types = length(codom(f)) end
-  cospan_diagram(T, collect(f), collect(f_outer), junction_types; data...)
+  @assert codom(inner) == codom(outer)
+  if isnothing(junction_types)
+    junction_types = length(codom(inner))
+  end
+  cospan_diagram(T, collect(inner), collect(outer), junction_types; data...)
 end
-function cospan_diagram(::Type{T}, f::AbstractVector{Int},
-                        f_outer::AbstractVector{Int}, junction_types;
+function cospan_diagram(::Type{T}, inner::AbstractVector{Int},
+                        outer::AbstractVector{Int}, junction_types;
                         data...) where T<:AbstractUWD
-  d = empty_diagram(T, map_port_types(junction_types, f_outer))
-  add_box!(d, map_port_types(junction_types, f); data...)
+  d = empty_diagram(T, map_port_types(junction_types, outer))
+  add_box!(d, map_port_types(junction_types, inner); data...)
   add_junctions!(d, junction_types)
-  set_junction!(d, f)
-  set_junction!(d, f_outer, outer=true)
+  set_junction!(d, inner)
+  set_junction!(d, outer, outer=true)
   return d
 end
 
@@ -239,16 +241,18 @@ end
 
 See also: [`singleton_diagram`](@ref), [`cospan_diagram`](@ref).
 """
-function junction_diagram(::Type{T}, f::FinFunction{Int},
+function junction_diagram(::Type{T}, outer::FinFunction{Int},
                           junction_types=nothing) where T<:AbstractUWD
-  if isnothing(junction_types); junction_types = length(codom(f)) end
-  junction_diagram(T, collect(f), junction_types)
+  if isnothing(junction_types)
+    junction_types = length(codom(outer))
+  end
+  junction_diagram(T, collect(outer), junction_types)
 end
-function junction_diagram(::Type{T}, f::AbstractVector{Int},
+function junction_diagram(::Type{T}, outer::AbstractVector{Int},
                           junction_types) where T<:AbstractUWD
-  d = empty_diagram(T, map_port_types(junction_types, f))
+  d = empty_diagram(T, map_port_types(junction_types, outer))
   add_junctions!(d, junction_types)
-  set_junction!(d, f, outer=true)
+  set_junction!(d, outer, outer=true)
   return d
 end
 
