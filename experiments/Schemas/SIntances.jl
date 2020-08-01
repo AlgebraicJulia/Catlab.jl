@@ -5,6 +5,8 @@ using Match
 @theory Category(Ob,Hom) => Schema(Ob,Hom,Concrete,Attr) begin
   Concrete::TYPE
   Attr(dom::Ob,codom::Concrete)::TYPE
+
+  precompose(f::Hom(A,B), g::Attr(B,X))::Attr(A,X) ⊣ (A::Ob, B::Ob, X::Concrete)
 end
 
 abstract type SchemaExpr{T} <: GATExpr{T} end
@@ -12,6 +14,7 @@ abstract type ConcreteExpr{T} <: SchemaExpr{T} end
 abstract type AttrExpr{T} <: SchemaExpr{T} end
 
 @syntax FreeSchema(ObExpr,HomExpr,ConcreteExpr,AttrExpr) Schema begin
+  # should have a normal representation for precompose of a morphism + a generator attribute
 end
 
 @present TheoryDecGraph(FreeSchema) begin
