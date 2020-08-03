@@ -3,6 +3,7 @@
 module GraphvizWiringDiagrams
 export to_graphviz, graphviz_layout
 
+using Compat: isnothing
 import JSON
 using LinearAlgebra: normalize
 using MLStyle: @match

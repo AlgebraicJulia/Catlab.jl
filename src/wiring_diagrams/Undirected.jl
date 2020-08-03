@@ -6,11 +6,12 @@ export UndirectedWiringDiagram, outer_box, box, junction, nboxes, njunctions,
   add_box!, add_junction!, add_junctions!, set_junction!, add_wire!,
   add_wires!, singleton_diagram, cospan_diagram, junction_diagram, ocompose
 
+using Compat: isnothing
+
 using ...CategoricalAlgebra.CSets, ...Present
 using ...CategoricalAlgebra.ShapeDiagrams: Span
 using ...CategoricalAlgebra.FinSets: FinFunction, pushout
 using ...Theories: FreeCategory, dom, codom, compose, ⋅, id
-
 import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,
   add_wires!, singleton_diagram, ocompose
 
