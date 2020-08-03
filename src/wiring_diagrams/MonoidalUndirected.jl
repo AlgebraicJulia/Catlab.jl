@@ -5,6 +5,7 @@ export UndirectedWiringDiagramOb, UndirectedWiringDiagramHom, ObUWD, HomUWD,
   cospan_action, dom_mask, codom_mask
 
 using AutoHashEquals
+using Compat: isnothing
 
 using ...GAT
 using ...Theories: HypergraphCategory

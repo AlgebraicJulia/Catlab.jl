@@ -11,6 +11,7 @@ export Expression, Statement, Attributes, Graph, Digraph, Subgraph,
 
 using Compat
 using DataStructures: OrderedDict
+using Parameters: @with_kw_noshow
 using StaticArrays: StaticVector, SVector
 
 using ...CategoricalAlgebra.Graphs: AbstractPropertyGraph, PropertyGraph,
@@ -41,7 +42,7 @@ as_attributes(d::OrderedDict) = Attributes(Symbol(k) => d[k] for k in keys(d))
 as_attributes(d::AbstractDict) =
   Attributes(Symbol(k) => d[k] for k in sort!(collect(keys(d))))
 
-Base.@kwdef struct Graph <: Expression
+@with_kw_noshow struct Graph <: Expression
   name::String
   directed::Bool
   prog::String="dot"
@@ -60,7 +61,7 @@ Digraph(name::String, stmts::Vector{Statement}; kw...) =
 Digraph(name::String, stmts::Vararg{Statement}; kw...) =
   Graph(; name=name, directed=true, stmts=collect(stmts), kw...)
 
-Base.@kwdef struct Subgraph <: Statement
+@with_kw_noshow struct Subgraph <: Statement
   name::String="" # Subgraphs can be anonymous
   stmts::Vector{Statement}=Statement[]
   graph_attrs::Attributes=Attributes()

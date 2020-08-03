@@ -6,7 +6,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        julia-version: ['1.3', '1.4']
+        julia_version: ['1.0', '1.3', '1.4']
         os: [ubuntu-latest]
     
     steps:
@@ -14,6 +14,13 @@ jobs:
       - name: "Set up Julia"
         uses: julia-actions/setup-julia@latest
         with:
-          version: ${{ matrix.julia-version }}
+          version: ${{ matrix.julia_version }}
       - name: "Run tests"
         uses: julia-actions/julia-runtest@master
+        if: matrix.julia_version != '1.0'
+      - name: "Run tests"
+        run: |
+          julia -e 'using Pkg; Pkg.activate("test"); Pkg.develop(PackageSpec(path="."))'
+          julia --color=yes --check-bounds=yes --project=test test/runtests.jl
+        # XXX: Julia 1.0 does not use the Project.toml in `tests` directory.
+        if: matrix.julia_version == '1.0'

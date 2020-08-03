@@ -6,6 +6,7 @@ export to_tikz, layout_to_tikz
 using Compat
 using DataStructures: OrderedDict
 using MLStyle: @match
+using Parameters: @with_kw_noshow
 
 using ...Syntax: GATExpr, show_latex
 using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
@@ -20,7 +21,7 @@ import ..TikZ
 
 """ Internal data type for configurable options of Compose.jl wiring diagrams.
 """
-Base.@kwdef struct TikZOptions
+@with_kw_noshow struct TikZOptions
   orientation::LayoutOrientation = LeftToRight
   base_unit::String = "4mm"
   labels::Bool = false
