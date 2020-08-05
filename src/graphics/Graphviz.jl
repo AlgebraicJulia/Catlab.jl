@@ -11,9 +11,12 @@ export Expression, Statement, Attributes, Graph, Digraph, Subgraph,
 
 using Compat
 using DataStructures: OrderedDict
-using Graphviz_jll: Graphviz_jll
 using Parameters: @with_kw_noshow
 using StaticArrays: StaticVector, SVector
+
+if VERSION >= v"1.3"
+  using Graphviz_jll: Graphviz_jll
+end
 
 using ...CategoricalAlgebra.Graphs: AbstractPropertyGraph, PropertyGraph,
   SymmetricPropertyGraph, AbstractGraph, AbstractSymmetricGraph,
@@ -109,6 +112,9 @@ Edge(path::Vararg{String}; attrs...) = Edge(map(NodeID, collect(path)), attrs)
 
 Invokes Graphviz through its command-line interface.
 
+For Julia versions prior to 1.3, it's assumed that Graphviz
+is installed on the local system.
+
 For bindings to the Graphviz C API, see the the package
 [GraphViz.jl](https://github.com/Keno/GraphViz.jl). At the time of this writing,
 GraphViz.jl is unmaintained.
@@ -119,11 +125,12 @@ function run_graphviz(io::IO, graph::Graph; prog::Union{String,Nothing}=nothing,
     prog = graph.prog
   end
   @assert prog in ("dot","neato","fdp","sfdp","twopi","circo")
-  fun = getfield(Graphviz_jll, Symbol(prog))
-  fun() do path
-    open(`$path -T$format`, io, write=true) do gv
-      pprint(gv, graph)
-    end
+  @static if VERSION >= v"1.3"
+    fun = getfield(Graphviz_jll, Symbol(prog))
+    prog = fun(identity)
+  end
+  open(`$prog -T$format`, io, write=true) do gv
+    pprint(gv, graph)
   end
 end
 function run_graphviz(graph::Graph; kw...)
