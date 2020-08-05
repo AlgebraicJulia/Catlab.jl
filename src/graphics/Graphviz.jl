@@ -11,6 +11,7 @@ export Expression, Statement, Attributes, Graph, Digraph, Subgraph,
 
 using Compat
 using DataStructures: OrderedDict
+using Graphviz_jll: Graphviz_jll
 using Parameters: @with_kw_noshow
 using StaticArrays: StaticVector, SVector
 
@@ -106,8 +107,7 @@ Edge(path::Vararg{String}; attrs...) = Edge(map(NodeID, collect(path)), attrs)
 
 """ Run a Graphviz program.
 
-Assumes that Graphviz is installed on the local system and invokes Graphviz
-through its command-line interface.
+Invokes Graphviz through its command-line interface.
 
 For bindings to the Graphviz C API, see the the package
 [GraphViz.jl](https://github.com/Keno/GraphViz.jl). At the time of this writing,
@@ -119,8 +119,11 @@ function run_graphviz(io::IO, graph::Graph; prog::Union{String,Nothing}=nothing,
     prog = graph.prog
   end
   @assert prog in ("dot","neato","fdp","sfdp","twopi","circo")
-  open(`$prog -T$format`, io, write=true) do gv
-    pprint(gv, graph)
+  fun = getfield(Graphviz_jll, Symbol(prog))
+  fun() do path
+    open(`$path -T$format`, io, write=true) do gv
+      pprint(gv, graph)
+    end
   end
 end
 function run_graphviz(graph::Graph; kw...)
