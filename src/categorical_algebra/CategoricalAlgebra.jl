@@ -7,6 +7,6 @@ include("FinRelations.jl")
 include("Permutations.jl")
 include("CSets.jl")
 include("Graphs.jl")
-include("DecidableSets.jl")
+include("PredicatedSets.jl")
 
 end
