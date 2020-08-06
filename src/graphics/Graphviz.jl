@@ -14,14 +14,22 @@ using DataStructures: OrderedDict
 using Parameters: @with_kw_noshow
 using StaticArrays: StaticVector, SVector
 
-if VERSION >= v"1.3"
-  using Graphviz_jll: Graphviz_jll
-end
-
 using ...CategoricalAlgebra.Graphs: AbstractPropertyGraph, PropertyGraph,
   SymmetricPropertyGraph, AbstractGraph, AbstractSymmetricGraph,
   src, tgt, inv, vertices, edges,
   add_vertex!, add_edge!, vprops, eprops, gprops, set_gprops!
+
+const USE_GV_JLL = VERSION >= v"1.3" && !Sys.isfreebsd() && !Sys.iswindows()
+
+if USE_GV_JLL
+  using Graphviz_jll: Graphviz_jll
+end
+
+function __init__()
+  if USE_GV_JLL
+    Graphviz_jll.dot(path -> run(`$path -c`))
+  end
+end
 
 # AST
 #####
@@ -125,7 +133,7 @@ function run_graphviz(io::IO, graph::Graph; prog::Union{String,Nothing}=nothing,
     prog = graph.prog
   end
   @assert prog in ("dot","neato","fdp","sfdp","twopi","circo")
-  @static if VERSION >= v"1.3"
+  @static if USE_GV_JLL
     fun = getfield(Graphviz_jll, Symbol(prog))
     prog = fun(identity)
   end
