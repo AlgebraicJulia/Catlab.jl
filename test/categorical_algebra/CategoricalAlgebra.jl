@@ -27,4 +27,8 @@ end
   include("Graphs.jl")
 end
 
+@testset "PredicatedSets.jl" begin
+  include("PredicatedSets.jl")
+end
+
 end
