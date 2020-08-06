@@ -10,34 +10,33 @@ using MLStyle: @match
 
 using ...CategoricalAlgebra.CSets, ...Present
 using ...WiringDiagrams.UndirectedWiringDiagrams
-using ...WiringDiagrams.UndirectedWiringDiagrams: TheoryUWD, TheoryTypedUWD
+using ...WiringDiagrams.MonoidalUndirectedWiringDiagrams:
+  TheoryUntypedHypergraphDiagram, TheoryHypergraphDiagram
 
 # Data structures
 #################
 
-@present TheoryRelationDiagram <: TheoryUWD begin
-  Name::Data
-  name::Attr(Box,Name)
-  variable::Attr(Junction,Name)
+@present TheoryRelationDiagram <: TheoryUntypedHypergraphDiagram begin
+  Variable::Data
+  variable::Attr(Junction,Variable)
 end
 
 const RelationDiagram = AbstractACSetType(TheoryRelationDiagram)
 const UntypedRelationDiagram = ACSetType(TheoryRelationDiagram,
   index=[:box, :junction, :outer_junction], unique_index=[:variable])
 
-@present TheoryTypedRelationDiagram <: TheoryTypedUWD begin
-  Name::Data
-  name::Attr(Box,Name)
-  variable::Attr(Junction,Name)
+@present TheoryTypedRelationDiagram <: TheoryHypergraphDiagram begin
+  Variable::Data
+  variable::Attr(Junction,Variable)
 end
 
 const TypedRelationDiagram = ACSetType(TheoryTypedRelationDiagram,
   index=[:box, :junction, :outer_junction], unique_index=[:variable])
 
-RelationDiagram{Name}(ports::Int) where Name =
-  UntypedRelationDiagram{Name}(ports)
+RelationDiagram{Name}(ports::Int) where {Name} =
+  UntypedRelationDiagram{Name,Symbol}(ports)
 RelationDiagram{Name}(ports::AbstractVector{T}) where {T,Name} =
-  TypedRelationDiagram{T,Name}(ports)
+  TypedRelationDiagram{T,Name,Symbol}(ports)
 
 # Relations
 ###########

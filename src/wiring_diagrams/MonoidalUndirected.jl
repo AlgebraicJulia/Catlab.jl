@@ -1,21 +1,44 @@
 """ Undirected wiring diagrams as symmetric monoidal categories.
 """
 module MonoidalUndirectedWiringDiagrams
-export UndirectedWiringDiagramOb, UndirectedWiringDiagramHom, ObUWD, HomUWD,
-  cospan_action, dom_mask, codom_mask
+export HypergraphDiagram, UndirectedWiringDiagramOb, UndirectedWiringDiagramHom,
+  ObUWD, HomUWD, cospan_action, dom_mask, codom_mask
 
 using AutoHashEquals
 using Compat: isnothing
 
-using ...GAT
+using ...GAT, ...Present, ...CategoricalAlgebra.CSets
 using ...Theories: HypergraphCategory
 import ...Theories: dom, codom, compose, id, ⋅, ∘, otimes, ⊗, munit, braid, σ,
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dunit, dcounit, dagger
 using ...CategoricalAlgebra.CSets: disjoint_union
 using ..UndirectedWiringDiagrams
+using ..UndirectedWiringDiagrams: AbstractUWD, TheoryUWD, TheoryTypedUWD
 import ..UndirectedWiringDiagrams: singleton_diagram, junction_diagram
 
-const AbstractUWD = UndirectedWiringDiagram
+# Data types
+############
+
+@present TheoryUntypedHypergraphDiagram <: TheoryUWD begin
+  Name::Data
+  name::Attr(Box,Name)
+end
+
+const UntypedHypergraphDiagram = ACSetType(TheoryUntypedHypergraphDiagram,
+  index=[:box, :junction, :outer_junction])
+
+""" Diagram suitable for representing morphisms in hypergraph categories.
+
+An undirected wiring diagram where the ports and junctions are typed and the
+boxes have names identifying the morphisms.
+"""
+@present TheoryHypergraphDiagram <: TheoryTypedUWD begin
+  Name::Data
+  name::Attr(Box,Name)
+end
+
+const HypergraphDiagram = ACSetType(TheoryHypergraphDiagram,
+  index=[:box, :junction, :outer_junction])
 
 # Cospan algebra
 ################
