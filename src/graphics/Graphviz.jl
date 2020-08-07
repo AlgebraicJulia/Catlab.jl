@@ -12,6 +12,7 @@ export Expression, Statement, Attributes, Graph, Digraph, Subgraph,
 using Compat
 using DataStructures: OrderedDict
 using Parameters: @with_kw_noshow
+using Requires: @require
 using StaticArrays: StaticVector, SVector
 
 using ...CategoricalAlgebra.Graphs: AbstractPropertyGraph, PropertyGraph,
@@ -19,13 +20,15 @@ using ...CategoricalAlgebra.Graphs: AbstractPropertyGraph, PropertyGraph,
   src, tgt, inv, vertices, edges,
   add_vertex!, add_edge!, vprops, eprops, gprops, set_gprops!
 
-const USE_GV_JLL = VERSION >= v"1.3" && !Sys.isfreebsd() && !Sys.iswindows()
+const USE_GV_JLL = Ref(false)
 
-if USE_GV_JLL
-  using Graphviz_jll: Graphviz_jll
-  let cfg = joinpath(Graphviz_jll.artifact_dir, "lib", "graphviz", "config6")
-    if !isfile(cfg)
-      Graphviz_jll.dot(path -> run(`$path -c`))
+function __init__()
+  @require Graphviz_jll="3c863552-8265-54e4-a6dc-903eb78fde85" begin
+    USE_GV_JLL[] = true
+    let cfg = joinpath(Graphviz_jll.artifact_dir, "lib", "graphviz", "config6")
+      if !isfile(cfg)
+        Graphviz_jll.dot(path -> run(`$path -c`))
+      end
     end
   end
 end
@@ -132,7 +135,7 @@ function run_graphviz(io::IO, graph::Graph; prog::Union{String,Nothing}=nothing,
     prog = graph.prog
   end
   @assert prog in ("dot","neato","fdp","sfdp","twopi","circo")
-  @static if USE_GV_JLL
+  if USE_GV_JLL[]
     fun = getfield(Graphviz_jll, Symbol(prog))
     prog = fun(identity)
   end
@@ -163,7 +166,7 @@ All units are in points. Note that Graphviz has 72 points per inch.
 function parse_graphviz(doc::AbstractDict)::AbstractPropertyGraph
   graph = doc["directed"] ? PropertyGraph{Any}() : SymmetricPropertyGraph{Any}()
   nsubgraphs = doc["_subgraph_cnt"] # Subgraphs are ignored.
-  
+
   # Graph-level layout: bounds and padding.
   # It seems, but is not documented, that the first two numbers in the Graphviz
   # bounding box are always zero.
@@ -172,7 +175,7 @@ function parse_graphviz(doc::AbstractDict)::AbstractPropertyGraph
     pad = 72*parse_point(get(doc, "pad", "0,0")),
     rankdir = get(doc, "rankdir", "TB"),
   )
-  
+
   # Add vertex for each Graphviz node.
   node_keys = ("id", "name", "comment", "label", "shape", "style")
   for node in doc["objects"][nsubgraphs+1:end]
@@ -185,7 +188,7 @@ function parse_graphviz(doc::AbstractDict)::AbstractPropertyGraph
     )
     add_vertex!(graph, props)
   end
-  
+
   # Add edge for each Graphviz edge.
   edge_keys = ("id", "comment", "label", "xlabel", "headlabel", "taillabel",
                "headport", "tailport")
@@ -201,7 +204,7 @@ function parse_graphviz(doc::AbstractDict)::AbstractPropertyGraph
     tgt = edge["head"] - nsubgraphs + 1
     add_edge!(graph, src, tgt, props)
   end
-  
+
   graph
 end
 
