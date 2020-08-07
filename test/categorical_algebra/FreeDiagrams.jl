@@ -1,7 +1,7 @@
-module TestShapeDiagrams
+module TestFreeDiagrams
 using Test
 
-using Catlab.Theories, Catlab.CategoricalAlgebra.ShapeDiagrams
+using Catlab.Theories, Catlab.CategoricalAlgebra.FreeDiagrams
 
 A, B, C = Ob(FreeCategory, :A, :B, :C)
 

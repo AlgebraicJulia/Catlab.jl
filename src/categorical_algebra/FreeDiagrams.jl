@@ -1,6 +1,11 @@
-""" Diagrams of a given shape.
+""" Free diagrams in a category.
+
+A [free diagram](https://ncatlab.org/nlab/show/free+diagram) is a diagram in a
+category whose shape is a free category. Examples include the empty diagram,
+discrete diagrams, parallel morphisms, spans, and cospans. Limits and colimits
+are most commonly taken over free diagrams.
 """
-module ShapeDiagrams
+module FreeDiagrams
 export Span, Cospan, Diagram, apex, base, left, right,
   DecoratedCospan, AbstractFunctor, AbstractLaxator, LaxMonoidalFunctor,
   decorator, decoration, undecorate
@@ -45,7 +50,7 @@ base(cospan::Cospan) = codom(cospan.left) # == codom(cospan.right)
 left(cospan::Cospan) = cospan.left
 right(cospan::Cospan) = cospan.right
 
-# FIXME: 
+# FIXME: Types and structs for functors do not belong here.
 abstract type AbstractFunctor end
 abstract type AbstractLaxator end
 

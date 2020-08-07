@@ -12,7 +12,7 @@ using ...GAT
 using ...Theories: Category
 import ...Theories: dom, codom, id, compose, ⋅, ∘,
   terminal, product, equalizer, initial, coproduct, coequalizer
-using ..ShapeDiagrams, ..Limits
+using ..FreeDiagrams, ..Limits
 
 # Category of finite sets
 #########################

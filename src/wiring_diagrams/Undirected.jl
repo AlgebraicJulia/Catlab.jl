@@ -9,7 +9,7 @@ export UndirectedWiringDiagram, outer_box, box, junction, nboxes, njunctions,
 using Compat: isnothing
 
 using ...CategoricalAlgebra.CSets, ...Present
-using ...CategoricalAlgebra.ShapeDiagrams: Span
+using ...CategoricalAlgebra.FreeDiagrams: Span
 using ...CategoricalAlgebra.FinSets: FinFunction, pushout
 using ...Theories: FreeCategory, dom, codom, compose, ⋅, id
 import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,

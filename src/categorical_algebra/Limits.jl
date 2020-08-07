@@ -6,8 +6,8 @@ export Cone, Cocone, apex, base, leg, legs, nlegs, pullback, pushout
 using AutoHashEquals
 
 using ...Theories
-using ..ShapeDiagrams
-import ..ShapeDiagrams: apex, base
+using ..FreeDiagrams
+import ..FreeDiagrams: apex, base
 
 # Data types
 ############
