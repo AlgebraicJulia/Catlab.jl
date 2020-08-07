@@ -12,12 +12,26 @@ export Expression, Statement, Attributes, Graph, Digraph, Subgraph,
 using Compat
 using DataStructures: OrderedDict
 using Parameters: @with_kw_noshow
+using Requires: @require
 using StaticArrays: StaticVector, SVector
 
 using ...CategoricalAlgebra.Graphs: AbstractPropertyGraph, PropertyGraph,
   SymmetricPropertyGraph, AbstractGraph, AbstractSymmetricGraph,
   src, tgt, inv, vertices, edges,
   add_vertex!, add_edge!, vprops, eprops, gprops, set_gprops!
+
+const USE_GV_JLL = Ref(false)
+
+function __init__()
+  @require Graphviz_jll="3c863552-8265-54e4-a6dc-903eb78fde85" begin
+    USE_GV_JLL[] = true
+    let cfg = joinpath(Graphviz_jll.artifact_dir, "lib", "graphviz", "config6")
+      if !isfile(cfg)
+        Graphviz_jll.dot(path -> run(`$path -c`))
+      end
+    end
+  end
+end
 
 # AST
 #####
@@ -106,8 +120,10 @@ Edge(path::Vararg{String}; attrs...) = Edge(map(NodeID, collect(path)), attrs)
 
 """ Run a Graphviz program.
 
-Assumes that Graphviz is installed on the local system and invokes Graphviz
-through its command-line interface.
+Invokes Graphviz through its command-line interface.
+
+For Julia versions prior to 1.3, it's assumed that Graphviz
+is installed on the local system.
 
 For bindings to the Graphviz C API, see the the package
 [GraphViz.jl](https://github.com/Keno/GraphViz.jl). At the time of this writing,
@@ -119,6 +135,10 @@ function run_graphviz(io::IO, graph::Graph; prog::Union{String,Nothing}=nothing,
     prog = graph.prog
   end
   @assert prog in ("dot","neato","fdp","sfdp","twopi","circo")
+  if USE_GV_JLL[]
+    fun = getfield(Graphviz_jll, Symbol(prog))
+    prog = fun(identity)
+  end
   open(`$prog -T$format`, io, write=true) do gv
     pprint(gv, graph)
   end
@@ -146,7 +166,7 @@ All units are in points. Note that Graphviz has 72 points per inch.
 function parse_graphviz(doc::AbstractDict)::AbstractPropertyGraph
   graph = doc["directed"] ? PropertyGraph{Any}() : SymmetricPropertyGraph{Any}()
   nsubgraphs = doc["_subgraph_cnt"] # Subgraphs are ignored.
-  
+
   # Graph-level layout: bounds and padding.
   # It seems, but is not documented, that the first two numbers in the Graphviz
   # bounding box are always zero.
@@ -155,7 +175,7 @@ function parse_graphviz(doc::AbstractDict)::AbstractPropertyGraph
     pad = 72*parse_point(get(doc, "pad", "0,0")),
     rankdir = get(doc, "rankdir", "TB"),
   )
-  
+
   # Add vertex for each Graphviz node.
   node_keys = ("id", "name", "comment", "label", "shape", "style")
   for node in doc["objects"][nsubgraphs+1:end]
@@ -168,7 +188,7 @@ function parse_graphviz(doc::AbstractDict)::AbstractPropertyGraph
     )
     add_vertex!(graph, props)
   end
-  
+
   # Add edge for each Graphviz edge.
   edge_keys = ("id", "comment", "label", "xlabel", "headlabel", "taillabel",
                "headport", "tailport")
@@ -184,7 +204,7 @@ function parse_graphviz(doc::AbstractDict)::AbstractPropertyGraph
     tgt = edge["head"] - nsubgraphs + 1
     add_edge!(graph, src, tgt, props)
   end
-  
+
   graph
 end
 
