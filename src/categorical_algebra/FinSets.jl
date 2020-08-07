@@ -12,7 +12,7 @@ using ...GAT
 using ...Theories: Category
 import ...Theories: dom, codom, id, compose, ⋅, ∘,
   terminal, product, equalizer, initial, coproduct, coequalizer
-using ..ShapeDiagrams
+using ..ShapeDiagrams, ..Limits
 
 # Category of finite sets
 #########################
@@ -154,18 +154,6 @@ function equalizer(fs::AbstractVector{<:FinFunction{Int}})
   FinFunction(filter(i -> all(f1(i) == f(i) for f in frest), 1:m),m)
 end
 
-""" Pullback of cospan of functions between finite sets.
-
-TODO: This logic is completely generic. Make it independent of FinSet.
-"""
-function pullback(cospan::Cospan{<:FinFunction,<:FinFunction})
-  f, g = left(cospan), right(cospan)
-  prod = product(dom(f), dom(g))
-  π1, π2 = left(prod), right(prod)
-  eq = equalizer(π1⋅f, π2⋅g)
-  Span(eq⋅π1, eq⋅π2)
-end
-
 function limit(d::Diagram{FinSet{Int}, <:FinFunction{Int}})
   p = product(d.obs)
   n = length(apex(p))
@@ -173,7 +161,6 @@ function limit(d::Diagram{FinSet{Int}, <:FinFunction{Int}})
   f = FinFunction(filter(i -> all(satisfy(h,i) for h in d.homs), 1:n), n)
   Cone(dom(f),[compose(f,leg(p,i)) for i in 1:length(d.obs)])
 end
-
 
 # Colimits
 ##########
@@ -222,18 +209,6 @@ function coequalizer(fs::AbstractVector{<:FinFunction{Int}})
   h = [ find_root(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   FinFunction([searchsortedfirst(roots, r) for r in h], length(roots))
-end
-
-""" Pushout of span of functions between finite sets.
-
-TODO: This logic is completely generic. Make it independent of FinSet.
-"""
-function pushout(span::Span{<:FinFunction,<:FinFunction})
-  f, g = left(span), right(span)
-  coprod = coproduct(codom(f), codom(g))
-  ι1, ι2 = left(coprod), right(coprod)
-  coeq = coequalizer(f⋅ι1, g⋅ι2)
-  Cospan(ι1⋅coeq, ι2⋅coeq)
 end
 
 function colimit(d::Diagram{FinSet{Int}, <:FinFunction{Int}})

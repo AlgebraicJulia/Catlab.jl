@@ -2,7 +2,8 @@ module TestFinSets
 using Test
 
 using Catlab.Theories
-using Catlab.CategoricalAlgebra.ShapeDiagrams, Catlab.CategoricalAlgebra.FinSets
+using Catlab.CategoricalAlgebra.ShapeDiagrams, Catlab.CategoricalAlgebra.Limits
+using Catlab.CategoricalAlgebra.FinSets
 
 # Category of finite ordinals
 #############################

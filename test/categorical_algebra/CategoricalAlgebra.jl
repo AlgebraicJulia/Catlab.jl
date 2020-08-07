@@ -6,6 +6,10 @@ using Test
   include("ShapeDiagrams.jl")
 end
 
+@testset "Limits" begin
+  include("Limits.jl")
+end
+
 @testset "Matrices" begin
   include("Matrices.jl")
 end

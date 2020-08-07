@@ -1,6 +1,7 @@
 module CategoricalAlgebra
 
 include("ShapeDiagrams.jl")
+include("Limits.jl")
 include("Matrices.jl")
 include("FinSets.jl")
 include("FinRelations.jl")
