@@ -23,11 +23,10 @@ const USE_GV_JLL = VERSION >= v"1.3" && !Sys.isfreebsd() && !Sys.iswindows()
 
 if USE_GV_JLL
   using Graphviz_jll: Graphviz_jll
-end
-
-function __init__()
-  if USE_GV_JLL
-    Graphviz_jll.dot(path -> run(`$path -c`))
+  let cfg = joinpath(Graphviz_jll.artifact_dir, "lib", "graphviz", "config6")
+    if !isfile(cfg)
+      Graphviz_jll.dot(path -> run(`$path -c`))
+    end
   end
 end
 
