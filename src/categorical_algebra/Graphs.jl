@@ -12,9 +12,8 @@ export AbstractGraph, Graph, AbstractSymmetricGraph, SymmetricGraph,
   set_gprop!, set_vprop!, set_eprop!, set_gprops!, set_vprops!, set_eprops!
 
 using Compat: isnothing
-import LightGraphs
-import LightGraphs: nv, ne, src, dst, edges, vertices, has_edge, has_vertex,
-  add_edge!, add_vertex!, add_vertices!,
+import LightGraphs: SimpleGraph, SimpleDiGraph, nv, ne, src, dst,
+  edges, vertices, has_edge, has_vertex, add_edge!, add_vertex!, add_vertices!,
   neighbors, inneighbors, outneighbors, all_neighbors
 
 using ...Present
@@ -258,55 +257,59 @@ function add_edges!(g::SymmetricPropertyGraph{T}, srcs::AbstractVector{Int},
              inv=invs, eprops=eprops)
 end
 
-# Constructor from regular graph
-################################
+# Constructors from graphs
+#-------------------------
 
-function PropertyGraph{T}(g::Graph,make_vprops,make_eprops) where {T}
+function PropertyGraph{T}(g::Graph, make_vprops, make_eprops) where T
   pg = PropertyGraph{T}()
   add_vertices!(pg, nv(g))
-  add_edges!(pg,src(g),tgt(g))
-  for i in 1:nv(g)
-    set_vprops!(pg,i,make_vprops(i))
+  add_edges!(pg, src(g), tgt(g))
+  for v in vertices(g)
+    set_vprops!(pg, v, make_vprops(v))
   end
-  for i in 1:ne(g)
-    set_eprops!(pg,i,make_eprops(i))
+  for e in edges(g)
+    set_eprops!(pg, e, make_eprops(e))
   end
   pg
 end
 
-PropertyGraph{T}(g::Graph) where {T} = PropertyGraph{T}(g,e->Dict(),v->Dict())
+PropertyGraph{T}(g::Graph) where T = PropertyGraph{T}(g, e->Dict(), v->Dict())
 
-function SymmetricPropertyGraph{T}(g::SymmetricGraph,vertex_dec,edge_dec) where {T}
+function SymmetricPropertyGraph{T}(g::SymmetricGraph,
+                                   make_vprops, make_eprops) where T
   pg = SymmetricPropertyGraph{T}()
   add_vertices!(pg, nv(g))
-  for v in 1:nv(g)
-    set_vprops!(pg,v,vertex_dec(v))
+  for v in vertices(g)
+    set_vprops!(pg, v, make_vprops(v))
   end
-  for e in 1:ne(g)
+  for e in edges(g)
     if e <= inv(g,e)
-      add_edge!(pg,src(g,e),tgt(g,e))
-      set_eprops!(pg,e,edge_dec(e))
+      add_edge!(pg, src(g,e), tgt(g,e))
+      set_eprops!(pg, e, make_eprops(e))
     end
   end
   pg
 end
 
-SymmetricPropertyGraph{T}(g::SymmetricGraph) where {T} = SymmetricPropertyGraph{T}(g,e->Dict(),v->Dict())
+SymmetricPropertyGraph{T}(g::SymmetricGraph) where T =
+  SymmetricPropertyGraph{T}(g, e->Dict(), v->Dict())
 
 # LightGraphs interop
 #####################
 
-function LightGraphs.SimpleDiGraph(
-    g::Union{AbstractGraph,AbstractSymmetricGraph})
-  lg = LightGraphs.SimpleDiGraph(nv(g))
-  for e in edges(g); add_edge!(lg, src(g,e), tgt(g,e)) end
+function SimpleDiGraph(g::Union{AbstractGraph,AbstractSymmetricGraph})
+  lg = SimpleDiGraph(nv(g))
+  for e in edges(g)
+    add_edge!(lg, src(g,e), tgt(g,e))
+  end
   lg
 end
 
-function LightGraphs.SimpleGraph(
-    g::Union{AbstractGraph,AbstractSymmetricGraph})
-  lg = LightGraphs.SimpleGraph(nv(g))
-  for e in edges(g); add_edge!(lg, src(g,e), tgt(g,e)) end
+function SimpleGraph(g::Union{AbstractGraph,AbstractSymmetricGraph})
+  lg = SimpleGraph(nv(g))
+  for e in edges(g)
+    add_edge!(lg, src(g,e), tgt(g,e))
+  end
   lg
 end
 
