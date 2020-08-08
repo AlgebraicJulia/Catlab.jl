@@ -6,15 +6,16 @@ discrete diagrams, parallel morphisms, spans, and cospans. Limits and colimits
 are most commonly taken over free diagrams.
 """
 module FreeDiagrams
-export FreeDiagram, FixedFreeDiagram, Span, Cospan, ParallelPair,
+export FreeDiagram, FixedFreeDiagram,
+  Span, Cospan, Multispan, Multicospan, ParallelPair, ParallelMorphisms,
   ob, hom, dom, codom, apex, base, legs, nlegs, left, right,
   nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
   add_vertex!, add_vertices!, add_edge!, add_edges!,
   DecoratedCospan, AbstractFunctor, AbstractLaxator, LaxMonoidalFunctor,
   decorator, decoration, undecorate
 
-import Base: first, last
 using AutoHashEquals
+using StaticArrays: StaticVector, SVector
 
 import ...Theories: ob, hom, dom, codom
 using ...Present, ..CSets, ..Graphs
@@ -27,83 +28,115 @@ using ..Graphs: TheoryGraph
 """
 abstract type FixedFreeDiagram{Ob,Hom} end
 
-""" Span of morphisms in a category.
+""" Multispan of morphisms in a category.
 
-A colimit of this shape is a pushout.
+A [multispan](https://ncatlab.org/nlab/show/multispan) is like a [`Span`](@ref)
+except that it may have a number of legs different than two. A colimit of this
+shape is a pushout.
 """
-@auto_hash_equals struct Span{Ob,Hom} <: FixedFreeDiagram{Ob,Hom}
+@auto_hash_equals struct Multispan{Ob,Hom,Legs<:AbstractVector{Hom}} <:
+    FixedFreeDiagram{Ob,Hom}
   apex::Ob
-  left::Hom
-  right::Hom
-
-  Span(apex::Ob, left::Left, right::Right) where {Ob,Left,Right} =
-    new{Ob,typejoin(Left,Right)}(apex, left, right)
+  legs::Legs
 end
+
+function Multispan(legs::AbstractVector)
+  @assert length(unique(dom.(legs))) == 1
+  Multispan(dom(first(legs)), legs)
+end
+
+""" Span of morphims in a category.
+
+A common special case of [`Multispan`](@ref). See also [`Cospan`](@ref).
+"""
+const Span{Ob,Hom} = Multispan{Ob,Hom,<:StaticVector{2,Hom}}
 
 function Span(left, right)
   dom(left) == dom(right) ||
-    error("Domains of legs in span do not match: $left vs $right")
-  Span(dom(left), left, right)
+    error("Domains of legs of span do not match: $left vs $right")
+  Multispan(dom(left), SVector(left, right))
 end
 
-apex(span::Span) = span.apex
-left(span::Span) = span.left
-right(span::Span) = span.right
-legs(span::Span) = (left(span), right(span))
-nlegs(::Span) = 2
+apex(span::Multispan) = span.apex
+legs(span::Multispan) = span.legs
+nlegs(span::Multispan) = length(span.legs)
+left(span::Span) = span.legs[1]
+right(span::Span) = span.legs[2]
+
+""" Multicospan of morphisms in a category.
+
+A multicospan is like a [`Cospan`](@ref) except that it may have a number of
+legs different than two. A limit of this shape is a pullback.
+"""
+@auto_hash_equals struct Multicospan{Ob,Hom,Legs<:AbstractVector{Hom}} <:
+    FixedFreeDiagram{Ob,Hom}
+  base::Ob
+  legs::Legs
+end
+
+function Multicospan(legs::AbstractVector)
+  @assert length(unique(codom.(legs))) == 1
+  Multicospan(codom(first(legs)), legs)
+end
 
 """ Cospan of morphisms in a category.
 
-A limit of this shape is a pullback.
+A common special case of [`Multicospan`](@ref). See also [`Span`](@ref).
 """
-@auto_hash_equals struct Cospan{Ob,Hom} <: FixedFreeDiagram{Ob,Hom}
-  base::Ob
-  left::Hom
-  right::Hom
-
-  Cospan(base::Ob, left::Left, right::Right) where {Ob,Left,Right} =
-    new{Ob,typejoin(Left,Right)}(base, left, right)
-end
+const Cospan{Ob,Hom} = Multicospan{Ob,Hom,<:StaticVector{2,Hom}}
 
 function Cospan(left, right)
   codom(left) == codom(right) ||
-    error("Codomains of legs in cospan do not match: $left vs $right")
-  Cospan(codom(left), left, right)
+    error("Codomains of legs of cospan do not match: $left vs $right")
+  Multicospan(codom(left), SVector(left, right))
 end
 
-base(cospan::Cospan) = cospan.base
-left(cospan::Cospan) = cospan.left
-right(cospan::Cospan) = cospan.right
-legs(cospan::Cospan) = (left(cospan), right(cospan))
-nlegs(::Cospan) = 2
+base(cospan::Multicospan) = cospan.base
+legs(cospan::Multicospan) = cospan.legs
+nlegs(cospan::Multicospan) = length(cospan.legs)
+left(cospan::Cospan) = cospan.legs[1]
+right(cospan::Cospan) = cospan.legs[2]
 
-""" Parallel pair of morphims in a category.
+""" Parallel morphims in a category.
 
-A (co)limit of this shape is a (co)equalizer.
+[Parallel morphisms](https://ncatlab.org/nlab/show/parallel+morphisms) are just
+morphisms with the same domain and codomain. A (co)limit of this shape is a
+(co)equalizer.
+
+For the common special case of two morphisms, see [`ParallelPair`](@ref).
 """
-@auto_hash_equals struct ParallelPair{Ob,Hom} <: FixedFreeDiagram{Ob,Hom}
+@auto_hash_equals struct ParallelMorphisms{Ob,Hom,Homs<:AbstractVector{Hom}} <:
+    FixedFreeDiagram{Ob,Hom}
   dom::Ob
   codom::Ob
-  first::Hom
-  last::Hom
-
-  ParallelPair(dom::Dom, codom::Codom, first::First, last::Last) where
-      {Dom,Codom,First,Last} =
-    new{typejoin(Dom,Codom),typejoin(First,Last)}(dom, codom, first, last)
+  homs::Homs
 end
+
+function ParallelMorphisms(homs::AbstractVector)
+  @assert length(unique(dom.(homs))) == 1
+  @assert length(unique(codom.(homs))) == 1
+  ParallelMorphisms(dom(first(homs)), codom(first(homs)), homs)
+end
+
+""" Pair of parallel morphisms in a category.
+
+A common special case of [`ParallelMorphism`](@ref).
+"""
+const ParallelPair{Ob,Hom} = ParallelMorphisms{Ob,Hom,<:StaticVector{2,Hom}}
 
 function ParallelPair(first, last)
   dom(first) == dom(last) ||
-    error("Domains of parallel morphisms do not match: $first vs $last")
+    error("Domains of parallel pair do not match: $first vs $last")
   codom(first) == codom(last) ||
-    error("Codomains of parallel morphisms do not match: $first vs $last")
-  ParallelPair(dom(first), codom(first), first, last)
+    error("Codomains of parallel pair do not match: $first vs $last")
+  ParallelMorphisms(dom(first), codom(first), SVector(first, last))
 end
 
-dom(pair::ParallelPair) = pair.dom
-codom(pair::ParallelPair) = pair.codom
-first(pair::ParallelPair) = pair.first
-last(pair::ParallelPair) = pair.last
+dom(para::ParallelMorphisms) = para.dom
+codom(para::ParallelMorphisms) = para.codom
+hom(para::ParallelMorphisms) = para.homs
+Base.first(pair::ParallelPair) = pair.homs[1]
+Base.last(pair::ParallelPair) = pair.homs[2]
 
 # Decorated cospans
 #------------------
@@ -160,26 +193,27 @@ end
 # Conversion of fixed shapes
 #---------------------------
 
-function FreeDiagram(span::Span{Ob,Hom}) where {Ob,Hom}
+function FreeDiagram(span::Multispan{Ob,Hom}) where {Ob,Hom}
   d = FreeDiagram(ob=Ob, hom=Hom)
   v0 = add_vertex!(d, ob=apex(span))
   vs = add_vertices!(d, nlegs(span), ob=codom.(legs(span)))
-  add_edges!(d, repeat([v0], nlegs(span)), vs, hom=legs(span))
+  add_edges!(d, fill(v0, nlegs(span)), vs, hom=legs(span))
   return d
 end
 
-function FreeDiagram(cospan::Cospan{Ob,Hom}) where {Ob,Hom}
+function FreeDiagram(cospan::Multicospan{Ob,Hom}) where {Ob,Hom}
   d = FreeDiagram(ob=Ob, hom=Hom)
   vs = add_vertices!(d, nlegs(cospan), ob=dom.(legs(cospan)))
   v0 = add_vertex!(d, ob=base(cospan))
-  add_edges!(d, vs, repeat([v0], nlegs(cospan)), hom=legs(cospan))
+  add_edges!(d, vs, fill(v0, nlegs(cospan)), hom=legs(cospan))
   return d
 end
 
-function FreeDiagram(pair::ParallelPair{Ob,Hom}) where {Ob,Hom}
+function FreeDiagram(para::ParallelMorphisms{Ob,Hom}) where {Ob,Hom}
   d = FreeDiagram(ob=Ob, hom=Hom)
-  add_vertices!(d, 2, ob=[dom(pair), codom(pair)])
-  add_edges!(d, [1,1], [2,2], hom=[first(pair), last(pair)])
+  add_vertices!(d, 2, ob=[dom(para), codom(para)])
+  n = length(hom(para))
+  add_edges!(d, fill(1,n), fill(2,n), hom=hom(para))
   return d
 end
 
