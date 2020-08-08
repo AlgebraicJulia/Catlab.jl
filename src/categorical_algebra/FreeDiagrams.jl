@@ -14,42 +14,48 @@ using AutoHashEquals
 
 using ...Theories: dom, codom
 
+# Free diagrams of specific shape
+#################################
+
 """ Span of morphisms in a category.
 """
-@auto_hash_equals struct Span{Left,Right}
+@auto_hash_equals struct Span{Apex,Left,Right}
+  apex::Apex
   left::Left
   right::Right
-
-  function Span(left::Left, right::Right; strict::Bool=true) where {Left,Right}
-    if strict && dom(left) != dom(right)
-      error("Domains of legs in span do not match: $left vs $right")
-    end
-    new{Left,Right}(left, right)
-  end
 end
 
-apex(span::Span) = dom(span.left) # == dom(span.right)
+function Span(left, right)
+  if dom(left) != dom(right)
+    error("Domains of legs in span do not match: $left != $right")
+  end
+  Span(dom(left), left, right)
+end
+
+apex(span::Span) = span.apex
 left(span::Span) = span.left
 right(span::Span) = span.right
 
 """ Cospan of morphisms in a category.
 """
-@auto_hash_equals struct Cospan{Left,Right}
+@auto_hash_equals struct Cospan{Base,Left,Right}
+  base::Base
   left::Left
   right::Right
-
-  function Cospan(left::Left, right::Right; strict::Bool=true) where {Left,Right}
-    if strict && codom(left) != codom(right)
-      error("Codomains of legs in cospan do not match: $left vs $right")
-    end
-    new{Left,Right}(left, right)
-  end
 end
 
-base(cospan::Cospan) = codom(cospan.left) # == codom(cospan.right)
+function Cospan(left, right)
+  if codom(left) != codom(right)
+    error("Codomains of legs in cospan do not match: $left != $right")
+  end
+  Cospan(codom(left), left, right)
+end
+
+base(cospan::Cospan) = cospan.base
 left(cospan::Cospan) = cospan.left
 right(cospan::Cospan) = cospan.right
 
+# Decorated cospans.
 # FIXME: Types and structs for functors do not belong here.
 abstract type AbstractFunctor end
 abstract type AbstractLaxator end
@@ -73,6 +79,9 @@ undecorate(m::DecoratedCospan) = m.cospan
 base(m::DecoratedCospan) = base(m.cospan)
 left(m::DecoratedCospan) = left(m.cospan)
 right(m::DecoratedCospan) = right(m.cospan)
+
+# General free diagrams
+#######################
 
 struct Diagram{Ob,Hom}
   obs::Vector{Ob}
