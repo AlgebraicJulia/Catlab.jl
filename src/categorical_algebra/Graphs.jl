@@ -51,16 +51,16 @@ has_vertex(g::AbstractCSet, v) = has_part(g, :V, v)
 has_edge(g::AbstractCSet, e) = has_part(g, :E, e)
 has_edge(g::AbstractCSet, src::Int, tgt::Int) = tgt ∈ outneighbors(g, src)
 
-add_vertex!(g::AbstractGraph) = add_part!(g, :V)
-add_vertices!(g::AbstractGraph, n::Int) = add_parts!(g, :V, n)
+add_vertex!(g::AbstractGraph; kw...) = add_part!(g, :V; kw...)
+add_vertices!(g::AbstractGraph, n::Int; kw...) = add_parts!(g, :V, n; kw...)
 
-add_edge!(g::AbstractGraph, src::Int, tgt::Int) =
-  add_part!(g, :E, src=src, tgt=tgt)
+add_edge!(g::AbstractGraph, src::Int, tgt::Int; kw...) =
+  add_part!(g, :E; src=src, tgt=tgt, kw...)
 
 function add_edges!(g::AbstractGraph, srcs::AbstractVector{Int},
-                    tgts::AbstractVector{Int})
+                    tgts::AbstractVector{Int}; kw...)
   @assert length(srcs) == length(tgts)
-  add_parts!(g, :E, length(srcs), src=srcs, tgt=tgts)
+  add_parts!(g, :E, length(srcs); src=srcs, tgt=tgts, kw...)
 end
 
 neighbors(g::AbstractGraph, v::Int) = outneighbors(g, v)
@@ -87,17 +87,20 @@ const SymmetricGraph = CSetType(TheorySymmetricGraph, index=[:src])
 
 inv(g::AbstractCSet, args...) = subpart(g, args..., :inv)
 
-add_vertex!(g::AbstractSymmetricGraph) = add_part!(g, :V)
-add_vertices!(g::AbstractSymmetricGraph, n::Int) = add_parts!(g, :V, n)
+add_vertex!(g::AbstractSymmetricGraph; kw...) = add_part!(g, :V; kw...)
+add_vertices!(g::AbstractSymmetricGraph, n::Int; kw...) =
+  add_parts!(g, :V, n; kw...)
 
-add_edge!(g::AbstractSymmetricGraph, src::Int, tgt::Int) =
-  add_edges!(g, src:src, tgt:tgt)
+add_edge!(g::AbstractSymmetricGraph, src::Int, tgt::Int; kw...) =
+  add_edges!(g, src:src, tgt:tgt; kw...)
 
 function add_edges!(g::AbstractSymmetricGraph, srcs::AbstractVector{Int},
-                    tgts::AbstractVector{Int})
+                    tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
-  invs = nparts(g, :E) .+ [(n+1):2n; 1:n]
-  add_parts!(g, :E, 2n, src=[srcs; tgts], tgt=[tgts; srcs], inv=invs)
+  e = add_parts!(g, :E, 2n)
+  set_subparts!(g, e[1:n]; src=srcs, tgt=tgts, inv=e[(n+1):2n], kw...)
+  set_subparts!(g, e[(n+1):2n]; src=tgts, tgt=srcs, inv=e[1:n], kw...)
+  return e
 end
 
 neighbors(g::AbstractSymmetricGraph, v::Int) =
