@@ -1,13 +1,15 @@
 """ Limits and colimits in a category.
 """
 module Limits
-export Cone, Cocone, apex, base, leg, legs, nlegs, pullback, pushout
+export Cone, Cocone, apex, base, leg, legs, nlegs, pullback, pushout,
+  limit, colimit
 
 using AutoHashEquals
+using Missings: nonmissingtype
 
 using ...Theories
 using ..FreeDiagrams
-import ..FreeDiagrams: apex, base
+import ..FreeDiagrams: apex, base, legs, nlegs
 
 # Data types
 ############
@@ -50,8 +52,8 @@ leg(cocone::Cocone,n) = cocone.legs[n]
 legs(cocone::Cocone) = cocone.legs
 nlegs(cocone::Cocone) = length(cocone.legs)
 
-# Limits
-########
+# Specific (co)limits
+#####################
 
 """ Pullback of a cospan.
 
@@ -65,9 +67,6 @@ function pullback(cospan::Cospan)
   Span(eq⋅π1, eq⋅π2)
 end
 
-# Colimits
-##########
-
 """ Pushout of a span.
 
 The default implementation computes the pushout from coproducts and
@@ -80,5 +79,14 @@ function pushout(span::Span)
   coeq = coequalizer(f⋅ι1, g⋅ι2)
   Cospan(ι1⋅coeq, ι2⋅coeq)
 end
+
+# General (co)limits
+####################
+
+# FIXME: Object type information should be encoded in C-set type.
+limit(diagram::FreeDiagram) =
+  limit(nonmissingtype(eltype(diagram.data.ob)), diagram)
+colimit(diagram::FreeDiagram) =
+  colimit(nonmissingtype(eltype(diagram.data.ob)), diagram)
 
 end

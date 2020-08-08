@@ -74,7 +74,7 @@ span = pullback(Cospan(FinFunction([1,1]), FinFunction([1,1,1])))
 
 # Pullback using generic limit interface
 f,g = FinFunction([1,1,3,2],4), FinFunction([1,1,4,2],4)
-cone = limit(Diagram([FinSet(4),FinSet(4),FinSet(4)], [(1,3,f),(2,3,g)]))
+cone = limit(FreeDiagram([FinSet(4),FinSet(4),FinSet(4)], [(1,3,f),(2,3,g)]))
 @test apex(cone) == FinSet(5)
 @test force(leg(cone,1)) == FinFunction([1,2,1,2,4],4)
 @test force(leg(cone,2)) == FinFunction([1,1,2,2,4],4)
@@ -130,7 +130,7 @@ h, k = left(cospan), right(cospan)
 @test k == FinFunction([3,1,4], 4)
 
 # Same thing with generic colimit interface
-diag = Diagram([FinSet(1),FinSet(2),FinSet(3)],[(1,2,f), (1,3,g)])
+diag = FreeDiagram([FinSet(1),FinSet(2),FinSet(3)],[(1,2,f), (1,3,g)])
 cocone = colimit(diag)
 @test base(cocone) == FinSet(4)
 h, k = leg(cocone,2), leg(cocone,3)
@@ -148,7 +148,7 @@ h, k = left(cospan), right(cospan)
 @test k == FinFunction([1,1], 2)
 
 # Same thing with generic colimit interface
-diag = Diagram([FinSet(2),FinSet(2),FinSet(2)],[(1,2,f),(1,3,g)])
+diag = FreeDiagram([FinSet(2),FinSet(2),FinSet(2)],[(1,2,f),(1,3,g)])
 cocone = colimit(diag)
 @test base(cocone) == FinSet(2)
 h,k = leg(cocone,2), leg(cocone,3)

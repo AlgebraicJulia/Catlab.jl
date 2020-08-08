@@ -6,6 +6,7 @@ export AbstractCSet, AbstractCSetType, CSet, CSetType,
   copy_parts!, set_subpart!, set_subparts!, disjoint_union
 
 using Compat
+using Missings: disallowmissing
 using LabelledArrays, StaticArrays
 
 using ...Present
@@ -157,8 +158,16 @@ has_part(cset::CSet, type::Symbol, part::AbstractVector{Int}) =
 
 Both single and vectorized access are supported.
 """
-subpart(cset::CSet, part, name::Symbol) = subpart(cset, name)[part]
-subpart(cset::CSet, name::Symbol) = _subpart(cset, Val(name))
+function subpart(cset::CSet, part, name::Symbol; allowmissing=true)
+  x = _subpart(cset, Val(name))[part]
+  @assert allowmissing || !ismissing(x)
+  x
+end
+
+function subpart(cset::CSet, name::Symbol; allowmissing=true)
+  x = _subpart(cset, Val(name))
+  allowmissing ? x : disallowmissing(x)
+end
 
 @generated function _subpart(cset::T, ::Val{name}) where
     {name, obs,homs,doms,codoms,data, T <: CSet{obs,homs,doms,codoms,data}}

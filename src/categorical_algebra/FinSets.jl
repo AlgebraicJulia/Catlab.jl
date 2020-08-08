@@ -13,6 +13,7 @@ using ...Theories: Category
 import ...Theories: dom, codom, id, compose, ⋅, ∘,
   terminal, product, equalizer, initial, coproduct, coequalizer
 using ..FreeDiagrams, ..Limits
+import ..Limits: limit, colimit
 
 # Category of finite sets
 #########################
@@ -154,12 +155,12 @@ function equalizer(fs::AbstractVector{<:FinFunction{Int}})
   FinFunction(filter(i -> all(f1(i) == f(i) for f in frest), 1:m),m)
 end
 
-function limit(d::Diagram{FinSet{Int}, <:FinFunction{Int}})
-  p = product(d.obs)
+function limit(::Type{FinSet{Int}}, d::FreeDiagram)
+  p = product(ob(d))
   n = length(apex(p))
-  satisfy((s,t,g),x) = g(leg(p,s)(x)) == leg(p,t)(x)
-  f = FinFunction(filter(i -> all(satisfy(h,i) for h in d.homs), 1:n), n)
-  Cone(dom(f),[compose(f,leg(p,i)) for i in 1:length(d.obs)])
+  satisfy(e,x) = hom(d,e)(leg(p,src(d,e))(x)) == leg(p,tgt(d,e))(x)
+  f = FinFunction(filter(i -> all(satisfy(e,i) for e in edges(d)), 1:n), n)
+  Cone(dom(f), [compose(f,leg(p,i)) for i in vertices(d)])
 end
 
 # Colimits
@@ -211,20 +212,21 @@ function coequalizer(fs::AbstractVector{<:FinFunction{Int}})
   FinFunction([searchsortedfirst(roots, r) for r in h], length(roots))
 end
 
-function colimit(d::Diagram{FinSet{Int}, <:FinFunction{Int}})
-  cp = coproduct(d.obs)
+function colimit(::Type{FinSet{Int}}, d::FreeDiagram)
+  cp = coproduct(ob(d))
   n = length(base(cp))
   sets = IntDisjointSets(n)
-  for (s,t,h) in d.homs
-    for i in d.obs[s]
-      union!(sets,leg(cp,s)(i),leg(cp,t)(h(i)))
+  for e in edges(d)
+    s, t, h = src(d,e), tgt(d,e), hom(d,e)
+    for i in dom(h)
+      union!(sets, leg(cp,s)(i), leg(cp,t)(h(i)))
     end
   end
   h = [ find_root(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   m = length(roots)
   f = FinFunction([searchsortedfirst(roots, r) for r in h], m)
-  Cocone(FinSet(m),[compose(leg(cp,i),f) for i in 1:length(d.obs)])
+  Cocone(FinSet(m), [compose(leg(cp,i),f) for i in vertices(d)])
 end
 
 end
