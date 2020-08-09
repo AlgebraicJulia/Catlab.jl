@@ -28,7 +28,7 @@ import ..FreeDiagrams: apex, base, legs
 The standard concrete subtype is [`Limit`](@ref), although for computational
 reasons certain categories may use different subtypes to include extra data.
 """
-abstract type AbstractLimit{Ob,Hom,Diagram} end
+abstract type AbstractLimit{Ob,Diagram} end
 
 ob(lim::AbstractLimit) = apex(lim)
 cone(lim::AbstractLimit) = lim.cone
@@ -41,18 +41,18 @@ Base.length(lim::AbstractLimit) = length(cone(lim))
 
 """ Limit in a category.
 """
-@auto_hash_equals struct Limit{Ob,Hom,Diagram,Cone<:Multispan{Ob,Hom}} <:
-    AbstractLimit{Ob,Hom,Diagram}
+@auto_hash_equals struct Limit{Ob,Diagram,Cone<:Multispan{Ob}} <:
+    AbstractLimit{Ob,Diagram}
   diagram::Diagram
   cone::Cone
 end
 
-const Terminal{Ob,Hom} = AbstractLimit{Ob,Hom,<:StaticVector{0}}
-const BinaryProduct{Ob,Hom} = AbstractLimit{Ob,Hom,<:StaticVector{2}}
-const Product{Ob,Hom} = AbstractLimit{Ob,Hom,<:AbstractVector}
-const BinaryPullback{Ob,Hom} = AbstractLimit{Ob,Hom,<:Cospan}
-const Pullback{Ob,Hom} = AbstractLimit{Ob,Hom,<:Multicospan}
-const Equalizer{Ob,Hom} = AbstractLimit{Ob,Hom,<:ParallelMorphisms}
+const Terminal{Ob} = AbstractLimit{Ob,<:StaticVector{0}}
+const BinaryProduct{Ob} = AbstractLimit{Ob,<:StaticVector{2}}
+const Product{Ob} = AbstractLimit{Ob,<:AbstractVector}
+const BinaryPullback{Ob} = AbstractLimit{Ob,<:Cospan}
+const Pullback{Ob} = AbstractLimit{Ob,<:Multicospan}
+const Equalizer{Ob} = AbstractLimit{Ob,<:ParallelMorphisms}
 
 proj1(lim::Union{BinaryProduct,BinaryPullback}) = first(legs(lim))
 proj2(lim::Union{BinaryProduct,BinaryPullback}) = last(legs(lim))
@@ -63,7 +63,7 @@ incl(eq::Equalizer) = only(legs(eq))
 The standard concrete subtype is [`Colimit`](@ref), although for computational
 reasons certain categories may use different subtypes to include extra data.
 """
-abstract type AbstractColimit{Ob,Hom,Diagram} end
+abstract type AbstractColimit{Ob,Diagram} end
 
 ob(colim::AbstractColimit) = base(colim)
 cocone(colim::AbstractColimit) = colim.cocone
@@ -76,18 +76,18 @@ Base.length(colim::AbstractColimit) = length(cocone(colim))
 
 """ Colimit in a category.
 """
-@auto_hash_equals struct Colimit{Ob,Hom,Diagram,Cocone<:Multicospan{Ob,Hom}} <:
-    AbstractColimit{Ob,Hom,Diagram}
+@auto_hash_equals struct Colimit{Ob,Diagram,Cocone<:Multicospan{Ob}} <:
+    AbstractColimit{Ob,Diagram}
   diagram::Diagram
   cocone::Cocone
 end
 
-const Initial{Ob,Hom} = AbstractColimit{Ob,Hom,<:StaticVector{0}}
-const BinaryCoproduct{Ob,Hom} = AbstractColimit{Ob,Hom,<:StaticVector{2}}
-const Coproduct{Ob,Hom} = AbstractColimit{Ob,Hom,<:AbstractVector}
-const BinaryPushout{Ob,Hom} = AbstractColimit{Ob,Hom,<:Span}
-const Pushout{Ob,Hom} = AbstractColimit{Ob,Hom,<:Multispan}
-const Coequalizer{Ob,Hom} = AbstractColimit{Ob,Hom,<:ParallelMorphisms}
+const Initial{Ob} = AbstractColimit{Ob,<:StaticVector{0}}
+const BinaryCoproduct{Ob} = AbstractColimit{Ob,<:StaticVector{2}}
+const Coproduct{Ob} = AbstractColimit{Ob,<:AbstractVector}
+const BinaryPushout{Ob} = AbstractColimit{Ob,<:Span}
+const Pushout{Ob} = AbstractColimit{Ob,<:Multispan}
+const Coequalizer{Ob} = AbstractColimit{Ob,<:ParallelMorphisms}
 
 coproj1(colim::Union{BinaryCoproduct,BinaryPushout}) = first(legs(colim))
 coproj2(colim::Union{BinaryCoproduct,BinaryPushout}) = last(legs(colim))

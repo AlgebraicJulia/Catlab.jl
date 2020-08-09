@@ -26,7 +26,7 @@ using ..Graphs: TheoryGraph
 
 """ Abstract type for free diagram of fixed shape.
 """
-abstract type FixedFreeDiagram{Ob,Hom} end
+abstract type FixedFreeDiagram{Ob} end
 
 """ Multispan of morphisms in a category.
 
@@ -34,8 +34,7 @@ A [multispan](https://ncatlab.org/nlab/show/multispan) is like a [`Span`](@ref)
 except that it may have a number of legs different than two. A colimit of this
 shape is a pushout.
 """
-@auto_hash_equals struct Multispan{Ob,Hom,Legs<:AbstractVector{Hom}} <:
-    FixedFreeDiagram{Ob,Hom}
+@auto_hash_equals struct Multispan{Ob,Legs<:AbstractVector} <: FixedFreeDiagram{Ob}
   apex::Ob
   legs::Legs
 end
@@ -49,7 +48,7 @@ end
 
 A common special case of [`Multispan`](@ref). See also [`Cospan`](@ref).
 """
-const Span{Ob,Hom} = Multispan{Ob,Hom,<:StaticVector{2,Hom}}
+const Span{Ob} = Multispan{Ob,<:StaticVector{2}}
 
 function Span(left, right)
   dom(left) == dom(right) ||
@@ -63,7 +62,7 @@ left(span::Span) = span.legs[1]
 right(span::Span) = span.legs[2]
 
 Base.iterate(span::Multispan, args...) = iterate(span.legs, args...)
-Base.eltype(::Multispan{Ob,Hom}) where {Ob,Hom} = Hom
+Base.eltype(span::Multispan) = eltype(span.legs)
 Base.length(span::Multispan) = length(span.legs)
 
 """ Multicospan of morphisms in a category.
@@ -71,8 +70,7 @@ Base.length(span::Multispan) = length(span.legs)
 A multicospan is like a [`Cospan`](@ref) except that it may have a number of
 legs different than two. A limit of this shape is a pullback.
 """
-@auto_hash_equals struct Multicospan{Ob,Hom,Legs<:AbstractVector{Hom}} <:
-    FixedFreeDiagram{Ob,Hom}
+@auto_hash_equals struct Multicospan{Ob,Legs<:AbstractVector} <: FixedFreeDiagram{Ob}
   base::Ob
   legs::Legs
 end
@@ -86,7 +84,7 @@ end
 
 A common special case of [`Multicospan`](@ref). See also [`Span`](@ref).
 """
-const Cospan{Ob,Hom} = Multicospan{Ob,Hom,<:StaticVector{2,Hom}}
+const Cospan{Ob} = Multicospan{Ob,<:StaticVector{2}}
 
 function Cospan(left, right)
   codom(left) == codom(right) ||
@@ -100,7 +98,7 @@ left(cospan::Cospan) = cospan.legs[1]
 right(cospan::Cospan) = cospan.legs[2]
 
 Base.iterate(cospan::Multicospan, args...) = iterate(cospan.legs, args...)
-Base.eltype(::Multicospan{Ob,Hom}) where {Ob,Hom} = Hom
+Base.eltype(cospan::Multicospan) = eltype(cospan.legs)
 Base.length(cospan::Multicospan) = length(cospan.legs)
 
 """ Parallel morphims in a category.
@@ -111,8 +109,7 @@ morphisms with the same domain and codomain. A (co)limit of this shape is a
 
 For the common special case of two morphisms, see [`ParallelPair`](@ref).
 """
-@auto_hash_equals struct ParallelMorphisms{Ob,Hom,Homs<:AbstractVector{Hom}} <:
-    FixedFreeDiagram{Ob,Hom}
+@auto_hash_equals struct ParallelMorphisms{Ob,Homs<:AbstractVector} <: FixedFreeDiagram{Ob}
   dom::Ob
   codom::Ob
   homs::Homs
@@ -127,7 +124,7 @@ end
 
 A common special case of [`ParallelMorphism`](@ref).
 """
-const ParallelPair{Ob,Hom} = ParallelMorphisms{Ob,Hom,<:StaticVector{2,Hom}}
+const ParallelPair{Ob} = ParallelMorphisms{Ob,<:StaticVector{2}}
 
 function ParallelPair(first, last)
   dom(first) == dom(last) ||
@@ -142,7 +139,7 @@ codom(para::ParallelMorphisms) = para.codom
 hom(para::ParallelMorphisms) = para.homs
 
 Base.iterate(para::ParallelMorphisms, args...) = iterate(para.homs, args...)
-Base.eltype(::ParallelMorphisms{Ob,Hom}) where {Ob,Hom} = Hom
+Base.eltype(para::ParallelMorphisms) = eltype(para.homs)
 Base.length(para::ParallelMorphisms) = length(para.homs)
 Base.getindex(para::ParallelMorphisms, i) = para.homs[i]
 Base.firstindex(para::ParallelMorphisms) = firstindex(para.homs)
@@ -205,24 +202,24 @@ end
 # Conversion of fixed shapes
 #---------------------------
 
-function FreeDiagram(span::Multispan{Ob,Hom}) where {Ob,Hom}
-  d = FreeDiagram(ob=Ob, hom=Hom)
+function FreeDiagram(span::Multispan{Ob}) where Ob
+  d = FreeDiagram(ob=Ob, hom=eltype(span))
   v0 = add_vertex!(d, ob=apex(span))
   vs = add_vertices!(d, length(span), ob=codom.(legs(span)))
   add_edges!(d, fill(v0, length(span)), vs, hom=legs(span))
   return d
 end
 
-function FreeDiagram(cospan::Multicospan{Ob,Hom}) where {Ob,Hom}
-  d = FreeDiagram(ob=Ob, hom=Hom)
+function FreeDiagram(cospan::Multicospan{Ob}) where Ob
+  d = FreeDiagram(ob=Ob, hom=eltype(cospan))
   vs = add_vertices!(d, length(cospan), ob=dom.(legs(cospan)))
   v0 = add_vertex!(d, ob=base(cospan))
   add_edges!(d, vs, fill(v0, length(cospan)), hom=legs(cospan))
   return d
 end
 
-function FreeDiagram(para::ParallelMorphisms{Ob,Hom}) where {Ob,Hom}
-  d = FreeDiagram(ob=Ob, hom=Hom)
+function FreeDiagram(para::ParallelMorphisms{Ob}) where Ob
+  d = FreeDiagram(ob=Ob, hom=eltype(para))
   add_vertices!(d, 2, ob=[dom(para), codom(para)])
   add_edges!(d, fill(1,length(para)), fill(2,length(para)), hom=hom(para))
   return d
