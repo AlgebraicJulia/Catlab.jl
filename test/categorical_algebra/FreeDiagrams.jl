@@ -34,7 +34,6 @@ f = Hom(:f, A, B)
 f, g, h = Hom(:f, C, A), Hom(:g, C, B), Hom(:h, C, A)
 span = Multispan([f,g,h])
 @test apex(span) == C
-@test nlegs(span) == 3
 @test legs(span) == [f,g,h]
 
 diagram = FreeDiagram(span)
@@ -55,7 +54,6 @@ cospan = Cospan(f,g)
 f, g, h = Hom(:f, A, C), Hom(:g, B, C), Hom(:h, A, C)
 cospan = Multicospan([f,g,h])
 @test base(cospan) == C
-@test nlegs(cospan) == 3
 @test legs(cospan) == [f,g,h]
 
 diagram = FreeDiagram(cospan)

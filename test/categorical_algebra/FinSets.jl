@@ -30,128 +30,127 @@ h = FinFunction([3,1,2], 3)
 ########
 
 # Terminal object.
-@test terminal(FinSet{Int}) == FinSet(1)
+@test ob(terminal(FinSet{Int})) == FinSet(1)
 
-# Binary Product.
-span = product(FinSet(2), FinSet(3))
-@test apex(span) == FinSet(6)
-@test force(left(span)) == FinFunction([1,2,1,2,1,2])
-@test force(right(span)) == FinFunction([1,1,2,2,3,3])
+# Binary product.
+lim = product(FinSet(2), FinSet(3))
+@test ob(lim) == FinSet(6)
+@test force(proj1(lim)) == FinFunction([1,2,1,2,1,2])
+@test force(proj2(lim)) == FinFunction([1,1,2,2,3,3])
 
-# N-ary Product.
-cone = product([FinSet(2), FinSet(3)])
-@test apex(cone) == FinSet(6)
-@test force(leg(cone,1)) == FinFunction([1,2,1,2,1,2])
-@test force(leg(cone,2)) == FinFunction([1,1,2,2,3,3])
-@test apex(product(FinSet{Int}[])) == FinSet(1)
+# N-ary product.
+lim = product([FinSet(2), FinSet(3)])
+@test ob(lim) == FinSet(6)
+@test force.(legs(lim)) ==
+  [FinFunction([1,2,1,2,1,2]), FinFunction([1,1,2,2,3,3])]
+@test ob(product(FinSet{Int}[])) == FinSet(1)
 
 # Equalizer.
 f, g = FinFunction([1,2,3]), FinFunction([3,2,1])
-@test equalizer(f,g) == FinFunction([2], 3)
-@test equalizer([f,g]) == FinFunction([2], 3)
+@test incl(equalizer(f,g)) == FinFunction([2], 3)
+@test incl(equalizer([f,g])) == FinFunction([2], 3)
 
 # Equalizer in case of identical functions.
 f = FinFunction([4,2,3,1], 5)
-@test equalizer(f,f) == force(id(FinSet(4)))
-@test equalizer([f,f]) == force(id(FinSet(4)))
+@test incl(equalizer(f,f)) == force(id(FinSet(4)))
+@test incl(equalizer([f,f])) == force(id(FinSet(4)))
 
 # Equalizer matching nothing.
 f, g = id(FinSet(5)), FinFunction([2,3,4,5,1], 5)
-@test equalizer(f,g) == FinFunction(Int[], 5)
-@test equalizer([f,g]) == FinFunction(Int[], 5)
+@test incl(equalizer(f,g)) == FinFunction(Int[], 5)
+@test incl(equalizer([f,g])) == FinFunction(Int[], 5)
 
 # Pullback.
-span = pullback(Cospan(FinFunction([1,1,3,2],4), FinFunction([1,1,4,2],4)))
-@test apex(span) == FinSet(5)
-@test force(left(span)) == FinFunction([1,2,1,2,4], 4)
-@test force(right(span)) == FinFunction([1,1,2,2,4], 4)
+lim = pullback(FinFunction([1,1,3,2],4), FinFunction([1,1,4,2],4))
+@test ob(lim) == FinSet(5)
+@test force(proj1(lim)) == FinFunction([1,2,1,2,4], 4)
+@test force(proj2(lim)) == FinFunction([1,1,2,2,4], 4)
 
 # Pullback from a singleton set: the degenerate case of a product.
-span = pullback(Cospan(FinFunction([1,1]), FinFunction([1,1,1])))
-@test apex(span) == FinSet(6)
-@test force(left(span)) == FinFunction([1,2,1,2,1,2])
-@test force(right(span)) == FinFunction([1,1,2,2,3,3])
+lim = pullback(FinFunction([1,1]), FinFunction([1,1,1]))
+@test ob(lim) == FinSet(6)
+@test force(proj1(lim)) == FinFunction([1,2,1,2,1,2])
+@test force(proj2(lim)) == FinFunction([1,1,2,2,3,3])
 
 # Pullback using generic limit interface
-f,g = FinFunction([1,1,3,2],4), FinFunction([1,1,4,2],4)
-cone = limit(FreeDiagram([FinSet(4),FinSet(4),FinSet(4)], [(1,3,f),(2,3,g)]))
-@test apex(cone) == FinSet(5)
-@test force(leg(cone,1)) == FinFunction([1,2,1,2,4],4)
-@test force(leg(cone,2)) == FinFunction([1,1,2,2,4],4)
+f, g = FinFunction([1,1,3,2],4), FinFunction([1,1,4,2],4)
+lim = limit(FreeDiagram([FinSet(4),FinSet(4),FinSet(4)], [(1,3,f),(2,3,g)]))
+@test ob(lim) == FinSet(5)
+@test force.(legs(lim)[1:2]) ==
+  [FinFunction([1,2,1,2,4],4), FinFunction([1,1,2,2,4],4)]
 
 # Colimits
 ##########
 
 # Initial object.
-@test initial(FinSet{Int}) == FinSet(0)
+@test ob(initial(FinSet{Int})) == FinSet(0)
 
-# Binary Coproduct.
-cospan = coproduct(FinSet(2), FinSet(3))
-@test base(cospan) == FinSet(5)
-@test left(cospan) == FinFunction([1,2], 5)
-@test right(cospan) == FinFunction([3,4,5], 5)
+# Binary coproduct.
+colim = coproduct(FinSet(2), FinSet(3))
+@test ob(colim) == FinSet(5)
+@test coproj1(colim) == FinFunction([1,2], 5)
+@test coproj2(colim) == FinFunction([3,4,5], 5)
 
-# N-ary Coproduct.
-cocone = coproduct([FinSet(2), FinSet(3)])
-@test base(cocone) == FinSet(5)
-@test leg(cocone,1) == FinFunction([1,2], 5)
-@test leg(cocone,2) == FinFunction([3,4,5], 5)
-@test base(coproduct(FinSet{Int}[])) == FinSet(0)
+# N-ary coproduct.
+colim = coproduct([FinSet(2), FinSet(3)])
+@test ob(colim) == FinSet(5)
+@test legs(colim) == [FinFunction([1,2], 5), FinFunction([3,4,5], 5)]
+@test ob(coproduct(FinSet{Int}[])) == FinSet(0)
 
 # Coequalizer from a singleton set.
 f, g = FinFunction([1], 3), FinFunction([3], 3)
-@test coequalizer(f,g) == FinFunction([1,2,1], 2)
-@test coequalizer([f,g]) == FinFunction([1,2,1], 2)
+@test proj(coequalizer(f,g)) == FinFunction([1,2,1], 2)
+@test proj(coequalizer([f,g])) == FinFunction([1,2,1], 2)
 
 # Coequalizer in case of identical functions.
 f = FinFunction([4,2,3,1], 5)
-@test coequalizer(f,f) == force(id(FinSet(5)))
-@test coequalizer([f,f]) == force(id(FinSet(5)))
+@test proj(coequalizer(f,f)) == force(id(FinSet(5)))
+@test proj(coequalizer([f,f])) == force(id(FinSet(5)))
 
 # Coequalizer identifying everything.
 f, g = id(FinSet(5)), FinFunction([2,3,4,5,1], 5)
-@test coequalizer(f,g) == FinFunction(repeat([1],5))
-@test coequalizer([f,g]) == FinFunction(repeat([1],5))
+@test proj(coequalizer(f,g)) == FinFunction(repeat([1],5))
+@test proj(coequalizer([f,g])) == FinFunction(repeat([1],5))
 
 # Pushout from the empty set: the degenerate case of the coproduct.
 f, g = FinFunction(Int[], 2), FinFunction(Int[], 3)
-cospan = pushout(Span(f,g))
-@test base(cospan) == FinSet(5)
-@test left(cospan) == FinFunction([1,2], 5)
-@test right(cospan) == FinFunction([3,4,5], 5)
+colim = pushout(f,g)
+@test ob(colim) == FinSet(5)
+@test coproj1(colim) == FinFunction([1,2], 5)
+@test coproj2(colim) == FinFunction([3,4,5], 5)
 
 # Pushout from a singleton set.
 f, g = FinFunction([1], 2), FinFunction([2], 3)
-cospan = pushout(Span(f,g))
-@test base(cospan) == FinSet(4)
-h, k = left(cospan), right(cospan)
+colim = pushout(f,g)
+@test ob(colim) == FinSet(4)
+h, k = colim
 @test compose(f,h) == compose(g,k)
 @test h == FinFunction([1,2], 4)
 @test k == FinFunction([3,1,4], 4)
 
 # Same thing with generic colimit interface
 diag = FreeDiagram([FinSet(1),FinSet(2),FinSet(3)],[(1,2,f), (1,3,g)])
-cocone = colimit(diag)
-@test base(cocone) == FinSet(4)
-h, k = leg(cocone,2), leg(cocone,3)
+colim = colimit(diag)
+@test ob(colim) == FinSet(4)
+_, h, k = colim
 @test compose(f,h) == compose(g,k)
 @test h == FinFunction([1,2], 4)
 @test k == FinFunction([3,1,4], 4)
 
 # Pushout from a two-element set, with non-injective legs.
 f, g = FinFunction([1,1], 2), FinFunction([1,2], 2)
-cospan = pushout(Span(f,g))
-@test base(cospan) == FinSet(2)
-h, k = left(cospan), right(cospan)
+colim = pushout(f,g)
+@test ob(colim) == FinSet(2)
+h, k = colim
 @test compose(f,h) == compose(g,k)
 @test h == FinFunction([1,2], 2)
 @test k == FinFunction([1,1], 2)
 
 # Same thing with generic colimit interface
 diag = FreeDiagram([FinSet(2),FinSet(2),FinSet(2)],[(1,2,f),(1,3,g)])
-cocone = colimit(diag)
-@test base(cocone) == FinSet(2)
-h,k = leg(cocone,2), leg(cocone,3)
+colim = colimit(diag)
+@test ob(colim) == FinSet(2)
+_, h, k = colim
 @test compose(f,h) == compose(g,k)
 @test h == FinFunction([1,2], 2)
 @test k == FinFunction([1,1], 2)

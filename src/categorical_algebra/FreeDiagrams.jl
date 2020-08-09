@@ -8,7 +8,7 @@ are most commonly taken over free diagrams.
 module FreeDiagrams
 export FreeDiagram, FixedFreeDiagram,
   Span, Cospan, Multispan, Multicospan, ParallelPair, ParallelMorphisms,
-  ob, hom, dom, codom, apex, base, legs, nlegs, left, right,
+  ob, hom, dom, codom, apex, base, legs, left, right,
   nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
   add_vertex!, add_vertices!, add_edge!, add_edges!,
   DecoratedCospan, AbstractFunctor, AbstractLaxator, LaxMonoidalFunctor,
@@ -41,7 +41,7 @@ shape is a pushout.
 end
 
 function Multispan(legs::AbstractVector)
-  @assert length(unique(dom.(legs))) == 1
+  @assert !isempty(legs) && allequal(dom.(legs))
   Multispan(dom(first(legs)), legs)
 end
 
@@ -59,9 +59,12 @@ end
 
 apex(span::Multispan) = span.apex
 legs(span::Multispan) = span.legs
-nlegs(span::Multispan) = length(span.legs)
 left(span::Span) = span.legs[1]
 right(span::Span) = span.legs[2]
+
+Base.iterate(span::Multispan, args...) = iterate(span.legs, args...)
+Base.eltype(::Multispan{Ob,Hom}) where {Ob,Hom} = Hom
+Base.length(span::Multispan) = length(span.legs)
 
 """ Multicospan of morphisms in a category.
 
@@ -75,7 +78,7 @@ legs different than two. A limit of this shape is a pullback.
 end
 
 function Multicospan(legs::AbstractVector)
-  @assert length(unique(codom.(legs))) == 1
+  @assert !isempty(legs) && allequal(codom.(legs))
   Multicospan(codom(first(legs)), legs)
 end
 
@@ -93,9 +96,12 @@ end
 
 base(cospan::Multicospan) = cospan.base
 legs(cospan::Multicospan) = cospan.legs
-nlegs(cospan::Multicospan) = length(cospan.legs)
 left(cospan::Cospan) = cospan.legs[1]
 right(cospan::Cospan) = cospan.legs[2]
+
+Base.iterate(cospan::Multicospan, args...) = iterate(cospan.legs, args...)
+Base.eltype(::Multicospan{Ob,Hom}) where {Ob,Hom} = Hom
+Base.length(cospan::Multicospan) = length(cospan.legs)
 
 """ Parallel morphims in a category.
 
@@ -113,8 +119,7 @@ For the common special case of two morphisms, see [`ParallelPair`](@ref).
 end
 
 function ParallelMorphisms(homs::AbstractVector)
-  @assert length(unique(dom.(homs))) == 1
-  @assert length(unique(codom.(homs))) == 1
+  @assert !isempty(homs) && allequal(dom.(homs)) && allequal(codom.(homs))
   ParallelMorphisms(dom(first(homs)), codom(first(homs)), homs)
 end
 
@@ -135,8 +140,15 @@ end
 dom(para::ParallelMorphisms) = para.dom
 codom(para::ParallelMorphisms) = para.codom
 hom(para::ParallelMorphisms) = para.homs
-Base.first(pair::ParallelPair) = pair.homs[1]
-Base.last(pair::ParallelPair) = pair.homs[2]
+
+Base.iterate(para::ParallelMorphisms, args...) = iterate(para.homs, args...)
+Base.eltype(::ParallelMorphisms{Ob,Hom}) where {Ob,Hom} = Hom
+Base.length(para::ParallelMorphisms) = length(para.homs)
+Base.getindex(para::ParallelMorphisms, i) = para.homs[i]
+Base.firstindex(para::ParallelMorphisms) = firstindex(para.homs)
+Base.lastindex(para::ParallelMorphisms) = lastindex(para.homs)
+
+allequal(xs::AbstractVector) = all(isequal(x, xs[1]) for x in xs[2:end])
 
 # Decorated cospans
 #------------------
@@ -196,24 +208,23 @@ end
 function FreeDiagram(span::Multispan{Ob,Hom}) where {Ob,Hom}
   d = FreeDiagram(ob=Ob, hom=Hom)
   v0 = add_vertex!(d, ob=apex(span))
-  vs = add_vertices!(d, nlegs(span), ob=codom.(legs(span)))
-  add_edges!(d, fill(v0, nlegs(span)), vs, hom=legs(span))
+  vs = add_vertices!(d, length(span), ob=codom.(legs(span)))
+  add_edges!(d, fill(v0, length(span)), vs, hom=legs(span))
   return d
 end
 
 function FreeDiagram(cospan::Multicospan{Ob,Hom}) where {Ob,Hom}
   d = FreeDiagram(ob=Ob, hom=Hom)
-  vs = add_vertices!(d, nlegs(cospan), ob=dom.(legs(cospan)))
+  vs = add_vertices!(d, length(cospan), ob=dom.(legs(cospan)))
   v0 = add_vertex!(d, ob=base(cospan))
-  add_edges!(d, vs, fill(v0, nlegs(cospan)), hom=legs(cospan))
+  add_edges!(d, vs, fill(v0, length(cospan)), hom=legs(cospan))
   return d
 end
 
 function FreeDiagram(para::ParallelMorphisms{Ob,Hom}) where {Ob,Hom}
   d = FreeDiagram(ob=Ob, hom=Hom)
   add_vertices!(d, 2, ob=[dom(para), codom(para)])
-  n = length(hom(para))
-  add_edges!(d, fill(1,n), fill(2,n), hom=hom(para))
+  add_edges!(d, fill(1,length(para)), fill(2,length(para)), hom=hom(para))
   return d
 end
 

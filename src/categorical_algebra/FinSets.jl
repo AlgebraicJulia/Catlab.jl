@@ -1,19 +1,18 @@
 """ Computing in the category of finite sets and functions.
 """
 module FinSets
-export FinSet, FinFunction, FinFunctionCallable, FinFunctionVector, force,
-  terminal, product, equalizer, pullback, limit,
-  initial, coproduct, coequalizer, pushout, colimit
+export FinSet, FinFunction, FinFunctionCallable, FinFunctionVector, force
 
 using AutoHashEquals
 using DataStructures: IntDisjointSets, union!, find_root
+using StaticArrays: StaticVector, SVector, @SVector
 
 using ...GAT
 using ...Theories: Category
-import ...Theories: dom, codom, id, compose, ⋅, ∘,
-  terminal, product, equalizer, initial, coproduct, coequalizer
+import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ..FreeDiagrams, ..Limits
-import ..Limits: limit, colimit
+import ..Limits: terminal, product, equalizer, pullback, limit,
+  initial, coproduct, coequalizer, pushout, colimit
 
 # Category of finite sets
 #########################
@@ -122,85 +121,88 @@ compose_impl(f::FinFunctionVector, g::FinFunctionVector) = g.func[f.func]
 # Limits
 ########
 
-terminal(::Type{FinSet{Int}}) = FinSet(1)
+function product(Xs::StaticVector{0,FinSet{Int}})
+  Limit(Xs, Multispan(FinSet(1), @SVector FinFunction{Int}[]))
+end
 
-function product(A::FinSet{Int}, B::FinSet{Int})
-  m, n = length(A), length(B)
+function product(Xs::StaticVector{2,FinSet{Int}})
+  m, n = length.(Xs)
   indices = CartesianIndices((m, n))
   π1 = FinFunction(i -> indices[i][1], m*n, m)
   π2 = FinFunction(i -> indices[i][2], m*n, n)
-  Span(π1, π2)
+  Limit(Xs, Span(π1, π2))
 end
 
 function product(Xs::AbstractVector{FinSet{Int}})
   ns = length.(Xs)
   indices = CartesianIndices(tuple(ns...))
-  apex = prod(ns)
-  πs = [FinFunction(i -> indices[i][j],apex,ns[j]) for j in 1:length(ns)]
-  Cone(FinSet(apex), πs)
+  n = prod(ns)
+  πs = [FinFunction(i -> indices[i][j],n,ns[j]) for j in 1:length(ns)]
+  Limit(Xs, Multispan(FinSet(n), πs))
 end
 
-function equalizer(f::FinFunction{Int}, g::FinFunction{Int})
-  @assert dom(f) == dom(g) && codom(f) == codom(g)
-  m = length(dom(f))
-  FinFunction(filter(i -> f(i) == g(i), 1:m), m)
+function equalizer(pair::ParallelPair{FinSet{Int}})
+  f, g = pair
+  m = length(dom(pair))
+  eq = FinFunction(filter(i -> f(i) == g(i), 1:m), m)
+  Limit(pair, Multispan(SVector(eq)))
 end
 
-function equalizer(fs::AbstractVector{<:FinFunction{Int}})
-  @assert length(fs) >= 1
-  f1 = fs[1]
-  frest = fs[2:end]
-  @assert all(dom(f) == dom(f1) && codom(f) == codom(f1) for f in frest)
-  m = length(dom(f1))
-  FinFunction(filter(i -> all(f1(i) == f(i) for f in frest), 1:m),m)
+function equalizer(para::ParallelMorphisms{FinSet{Int}})
+  @assert length(para) >= 1
+  f1, frest = para[1], para[2:end]
+  m = length(dom(para))
+  eq = FinFunction(filter(i -> all(f1(i) == f(i) for f in frest), 1:m), m)
+  Limit(para, Multispan(SVector(eq)))
 end
 
 function limit(::Type{FinSet{Int}}, d::FreeDiagram)
   p = product(ob(d))
-  n = length(apex(p))
-  satisfy(e,x) = hom(d,e)(leg(p,src(d,e))(x)) == leg(p,tgt(d,e))(x)
+  n, leg = length(ob(p)), legs(p)
+  satisfy(e,x) = hom(d,e)(leg[src(d,e)](x)) == leg[tgt(d,e)](x)
   f = FinFunction(filter(i -> all(satisfy(e,i) for e in edges(d)), 1:n), n)
-  Cone(dom(f), [compose(f,leg(p,i)) for i in vertices(d)])
+  Limit(d, Multispan(dom(f), [compose(f,leg[i]) for i in vertices(d)]))
 end
 
 # Colimits
 ##########
 
-initial(::Type{FinSet{Int}}) = FinSet(0)
+function coproduct(Xs::StaticVector{0,FinSet{Int}})
+  Colimit(Xs, Multicospan(FinSet(0), @SVector FinFunction{Int}[]))
+end
 
-function coproduct(A::FinSet{Int}, B::FinSet{Int})
-  m, n = length(A), length(B)
+function coproduct(Xs::StaticVector{2,FinSet{Int}})
+  m, n = length.(Xs)
   ι1 = FinFunction(1:m, m, m+n)
   ι2 = FinFunction(m+1:m+n, n, m+n)
-  Cospan(ι1, ι2)
+  Colimit(Xs, Cospan(ι1, ι2))
 end
 
 function coproduct(Xs::AbstractVector{FinSet{Int}})
   ns = length.(Xs)
-  base = sum(ns)
+  n = sum(ns)
   offsets = [0,cumsum(ns)...]
-  πs = [FinFunction((1:ns[j]) .+ offsets[j],ns[j],base) for j in 1:length(ns)]
-  Cocone(FinSet(base), πs)
+  ιs = [FinFunction((1:ns[j]) .+ offsets[j],ns[j],n) for j in 1:length(ns)]
+  Colimit(Xs, Multicospan(FinSet(n), ιs))
 end
 
-function coequalizer(f::FinFunction{Int}, g::FinFunction{Int})
-  @assert dom(f) == dom(g) && codom(f) == codom(g)
-  m, n = length(dom(f)), length(codom(f))
+function coequalizer(pair::ParallelPair{FinSet{Int}})
+  f, g = pair
+  m, n = length(dom(pair)), length(codom(pair))
   sets = IntDisjointSets(n)
   for i in 1:m
     union!(sets, f(i), g(i))
   end
   h = [ find_root(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
-  FinFunction([ searchsortedfirst(roots, r) for r in h], length(roots))
+  coeq = FinFunction([ searchsortedfirst(roots, r) for r in h], length(roots))
+  Colimit(pair, Multicospan(SVector(coeq)))
 end
 
-function coequalizer(fs::AbstractVector{<:FinFunction{Int}})
-  @assert length(fs) >= 1
-  f1 = fs[1]
-  frest = fs[2:end]
-  @assert all(dom(f) == dom(f1) && codom(f) == codom(f1) for f in frest)
-  m,n = length(dom(f1)), length(codom(f1))
+function coequalizer(para::ParallelMorphisms{FinSet{Int}})
+  @assert length(para) >= 1
+  f1, frest = para[1], para[2:end]
+  m, n = length(dom(para)), length(codom(para))
   sets = IntDisjointSets(n)
   for i in 1:m
     for f in frest
@@ -209,24 +211,25 @@ function coequalizer(fs::AbstractVector{<:FinFunction{Int}})
   end
   h = [ find_root(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
-  FinFunction([searchsortedfirst(roots, r) for r in h], length(roots))
+  coeq = FinFunction([searchsortedfirst(roots, r) for r in h], length(roots))
+  Colimit(para, Multicospan(SVector(coeq)))
 end
 
 function colimit(::Type{FinSet{Int}}, d::FreeDiagram)
   cp = coproduct(ob(d))
-  n = length(base(cp))
+  n, leg = length(ob(cp)), legs(cp)
   sets = IntDisjointSets(n)
   for e in edges(d)
     s, t, h = src(d,e), tgt(d,e), hom(d,e)
     for i in dom(h)
-      union!(sets, leg(cp,s)(i), leg(cp,t)(h(i)))
+      union!(sets, leg[s](i), leg[t](h(i)))
     end
   end
   h = [ find_root(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   m = length(roots)
   f = FinFunction([searchsortedfirst(roots, r) for r in h], m)
-  Cocone(FinSet(m), [compose(leg(cp,i),f) for i in vertices(d)])
+  Colimit(d, Multicospan(FinSet(m), [compose(leg[i],f) for i in vertices(d)]))
 end
 
 end
