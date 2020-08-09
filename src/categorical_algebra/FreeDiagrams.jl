@@ -122,7 +122,7 @@ end
 
 """ Pair of parallel morphisms in a category.
 
-A common special case of [`ParallelMorphism`](@ref).
+A common special case of [`ParallelMorphisms`](@ref).
 """
 const ParallelPair{Ob} = ParallelMorphisms{Ob,<:StaticVector{2}}
 
