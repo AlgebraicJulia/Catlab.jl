@@ -1,7 +1,7 @@
 module TestFreeDiagrams
 using Test
 
-using Catlab.Theories, Catlab.CategoricalAlgebra.FreeDiagrams
+using Catlab.Theories, Catlab.CategoricalAlgebra
 
 A, B, C = Ob(FreeCategory, :A, :B, :C)
 

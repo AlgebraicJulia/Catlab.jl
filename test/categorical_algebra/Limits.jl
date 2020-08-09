@@ -7,8 +7,7 @@ module TestLimits
 using Test
 
 using StaticArrays
-using Catlab.Theories
-using Catlab.CategoricalAlgebra.FreeDiagrams, Catlab.CategoricalAlgebra.Limits
+using Catlab.Theories, Catlab.CategoricalAlgebra
 
 A, B, C = Ob(FreeCategory, :A, :B, :C)
 
