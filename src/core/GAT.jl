@@ -191,7 +191,10 @@ function parse_theory_head(expr::Expr)::TheoryHead
   @match expr begin
     (Expr(:call, :(=>), Expr(:tuple, bases), main)
       => TheoryHead(parse(main), map(parse, bases)))
+    (Expr(:(<:), main, Expr(:tuple,bases))
+      => TheoryHead(parse(main), map(parse, bases)))
     Expr(:call, :(=>), base, main) => TheoryHead(parse(main), [parse(base)])
+    Expr(:(<:), main, base) => TheoryHead(parse(main), [parse(base)])
     _ => TheoryHead(parse(expr))
   end
 end
@@ -199,6 +202,7 @@ end
 function parse_theory_binding(expr::Expr)::TheoryBinding
   @match expr begin
     Expr(:call, name::Symbol, params...) => TheoryBinding(name, params)
+    Expr(:curly, name::Symbol, params...) => TheoryBinding(name, params)
     _ => throw(ParseError("Ill-formed theory binding $expr"))
   end
 end

@@ -16,7 +16,7 @@ We retain the usual meaning of the symbol ∘ (\\circ), i.e., g∘f = compose(f,
 This usage is too entrenched to overturn, inconvenient though it may be.
 We use symbol ⋅ (\\cdot) for diagrammatic composition: f⋅g = compose(f,g).
 """
-@theory Category(Ob,Hom) begin
+@theory Category{Ob,Hom} begin
   # Unicode aliases.
   @op begin
     (→) := Hom
@@ -79,7 +79,7 @@ end
 
 """ Theory of (strict) *2-categories*
 """
-@signature Category(Ob,Hom) => Category2(Ob,Hom,Hom2) begin
+@signature Category2{Ob,Hom,Hom2} <: Category{Ob,Hom} begin
   """ 2-morphism in a 2-category """
   Hom2(dom::Hom(A,B), codom::Hom(A,B))::TYPE ⊣ (A::Ob, B::Ob)
   @op (⇒) := Hom2

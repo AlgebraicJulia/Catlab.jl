@@ -24,7 +24,7 @@ To avoid associators and unitors, we assume the monoidal category is *strict*.
 By the coherence theorem there is no loss of generality, but we may add a
 theory for weak monoidal categories later.
 """
-@signature Category(Ob,Hom) => MonoidalCategory(Ob,Hom) begin
+@signature MonoidalCategory{Ob,Hom} <: Category{Ob,Hom} begin
   otimes(A::Ob, B::Ob)::Ob
   otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣
     (A::Ob, B::Ob, C::Ob, D::Ob)
