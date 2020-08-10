@@ -1,5 +1,5 @@
 module SInstances
-export Schema, SchemaExpr, ConcreteExpr, AttrExpr, FreeSchema,
+export Schema, SchemaExpr, DataExpr, AttrExpr, FreeSchema,
   SchemaDesc, AbstractSInstance, SInstance,
   nparts, add_part!, add_parts!, _add_parts!, subpart, incident,
   TheoryGraph, AbstractGraph, Graph,
@@ -9,18 +9,21 @@ using Catlab.GAT, Catlab.Syntax, Catlab.Present, Catlab.Theories
 using StructArrays
 using MLStyle
 
-@theory Category(Ob,Hom) => Schema(Ob,Hom,Concrete,Attr) begin
-  Concrete::TYPE
-  Attr(dom::Ob,codom::Concrete)::TYPE
+@theory Category(Ob,Hom) => Schema(Ob,Hom,Data,Attr) begin
+  Data::TYPE
+  Attr(dom::Ob,codom::Data)::TYPE
 
-  precompose(f::Hom(A,B), g::Attr(B,X))::Attr(A,X) ⊣ (A::Ob, B::Ob, X::Concrete)
+  compose(f::Hom(A,B), g::Attr(B,X))::Attr(A,X) ⊣ (A::Ob, B::Ob, X::Data)
+  (compose(f, compose(g, a)) == compose(compose(f, g), a)
+    ⊣ (A::Ob, B::Ob, C::Ob, X::Data, f::Hom(A,B), g::Hom(B,C), a::Attr(C, X)))
+  compose(id(A), a) == a ⊣ (A::Ob, X::Ob, a::Attr(A,X))
 end
 
 abstract type SchemaExpr{T} <: GATExpr{T} end
-abstract type ConcreteExpr{T} <: SchemaExpr{T} end
+abstract type DataExpr{T} <: SchemaExpr{T} end
 abstract type AttrExpr{T} <: SchemaExpr{T} end
 
-@syntax FreeSchema(ObExpr,HomExpr,ConcreteExpr,AttrExpr) Schema begin
+@syntax FreeSchema(ObExpr,HomExpr,DataExpr,AttrExpr) Schema begin
   # should have a normal representation for precompose of a morphism + a generator attribute
 end
 
@@ -51,18 +54,18 @@ function Base.getproperty(S::Type{T},i::Symbol) where
   end
 end
 
-struct AttrDesc{CD,Concrete,Attr,ADom,ACodom}
-  function AttrDesc{CD,Concrete,Attr,ADom,ACodom}() where {CD,Concrete,Attr,ADom,ACodom}
-    new{CD,Concrete,Attr,ADom,ACodom}()
+struct AttrDesc{CD,Data,Attr,ADom,ACodom}
+  function AttrDesc{CD,Data,Attr,ADom,ACodom}() where {CD,Data,Attr,ADom,ACodom}
+    new{CD,Data,Attr,ADom,ACodom}()
   end
   function AttrDesc(pres::Presentation{Schema})
     CD = CatDescType(pres)
-    concretes, attrs = generators(pres, :Concrete), generators(pres,:Attr)
-    concrete_syms, attr_syms = nameof.(concretes), nameof.(attrs)
+    datas, attrs = generators(pres, :Data), generators(pres,:Attr)
+    data_syms, attr_syms = nameof.(datas), nameof.(attrs)
     ob_num = ob -> findfirst(CD.ob .== ob)::Int
-    concrete_num = ob -> findfirst(concrete_syms .== ob)::Int
-    new{CD,Tuple(concrete_syms), Tuple(attr_syms),
-        Tuple(@. ob_num(nameof(dom(attrs)))), Tuple(@. concrete_num(nameof(codom(attrs))))}()
+    data_num = ob -> findfirst(data_syms .== ob)::Int
+    new{CD,Tuple(data_syms), Tuple(attr_syms),
+        Tuple(@. ob_num(nameof(dom(attrs)))), Tuple(@. data_num(nameof(codom(attrs))))}()
   end
   function AttrDesc(::CatDesc{Ob,Hom,Dom,Codom}) where {Ob,Hom,Dom,Codom}
     new{CatDesc{Ob,Hom,Dom,Codom},(),(),(),()}
@@ -72,10 +75,10 @@ end
 AttrDescType(pres::Presentation{Schema}) = typeof(AttrDesc(pres))
 
 function Base.getproperty(S::Type{T}, i::Symbol) where
-  {CD,Concrete,Attr,ADom,ACodom,T <: AttrDesc{CD,Concrete,Attr,ADom,ACodom}}
+  {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
   @match i begin
     :cd => CD
-    :concrete => Concrete
+    :data => Data
     :attr => Attr
     :adom => ADom
     :acodom => ACodom
@@ -98,8 +101,8 @@ function make_index(CD::Type{<:CatDesc},AD::Type{<:AttrDesc},Ts::Type{<:Tuple},I
 end
 
 function table_desc(::Type{CatDesc{Ob,Hom,Dom,Codom}},
-                    ::Type{AttrDesc{CatDesc{Ob,Hom,Dom,Codom},Concrete,Attr,ADom,ACodom}},
-                    ts::Tuple) where {Ob,Hom,Dom,Codom,Concrete,Attr,ADom,ACodom}
+                    ::Type{AttrDesc{CatDesc{Ob,Hom,Dom,Codom},Data,Attr,ADom,ACodom}},
+                    ts::Tuple) where {Ob,Hom,Dom,Codom,Data,Attr,ADom,ACodom}
   cols = [Tuple{Symbol,DataType}[] for ob in Ob]
   for i in 1:length(Hom)
     push!(cols[Dom[i]], (Hom[i],Int))
@@ -186,11 +189,11 @@ function Base.show(io::IO, mime::MIME"text/plain", ins::AbstractSInstance{CD,AD,
     println(io, "  $hom : $(CD.ob[CD.dom[i]]) → $(CD.ob[CD.codom[i]])")
     println(io, "    $(subpart(ins,hom))")
   end
-  for (i,conc) in enumerate(AD.concrete)
+  for (i,conc) in enumerate(AD.data)
     println(io, "  $conc = $(Ts.parameters[i])")
   end
   for (i,attr) in enumerate(AD.attr)
-    println(io, "  $attr : $(CD.ob[AD.adom[i]]) ⇒ $(AD.concrete[AD.acodom[i]])")
+    println(io, "  $attr : $(CD.ob[AD.adom[i]]) ⇒ $(AD.data[AD.acodom[i]])")
     println(io, "    $(subpart(ins,attr))")
   end
 end
@@ -300,7 +303,7 @@ const Graph = SInstance{typeof(CatDesc(TheoryGraph)),
                         typeof(AttrDesc(TheoryGraph)),Tuple{},(:src,:tgt)}
 
 @present TheoryDecGraph <: TheoryGraph begin
-  X::Concrete
+  X::Data
 
   vdec::Attr(V,X)
   edec::Attr(E,X)
