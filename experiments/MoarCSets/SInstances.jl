@@ -1,7 +1,7 @@
 module SInstances
 export Schema, SchemaExpr, DataExpr, AttrExpr, FreeSchema,
-  SchemaDesc, AbstractSInstance, SInstance,
-  nparts, add_part!, add_parts!, _add_parts!, subpart, incident,
+  CatDesc, CatDescType, AttrDesc, AttrDescType, AbstractSInstance, SInstance,
+  nparts, add_part!, add_parts!, _add_parts!, subpart, incident, set_subpart!, set_subparts!,
   TheoryGraph, AbstractGraph, Graph,
   TheoryDecGraph, AbstractDecGraph, DecGraph
 
@@ -43,15 +43,31 @@ end
 
 CatDescType(pres::Presentation{Schema}) = typeof(CatDesc(pres))
 
-function Base.getproperty(S::Type{T},i::Symbol) where
+function Base.getproperty(AD::Type{T},i::Symbol) where
   {Ob,Hom,Dom,Codom,T<:CatDesc{Ob,Hom,Dom,Codom}}
   @match i begin
     :ob => Ob
     :hom => Hom
     :dom => Dom
     :codom => Codom
-    _ => error("unsupported index $i on CatDesc")
+    _ => invoke(Base.getproperty, Tuple{Type,Symbol}, AD, i)
   end
+end
+
+function cd_ob_num(CD::Type{T}, ob::Symbol) where {Ob,Hom,Dom,Codom, T <: CatDesc{Ob,Hom,Dom,Codom}}
+  findfirst(Ob .== ob)::Int
+end
+
+function cd_hom_num(CD::Type{T}, hom::Symbol) where {Ob,Hom,Dom,Codom, T <: CatDesc{Ob,Hom,Dom,Codom}}
+  findfirst(Hom .== hom)::Int
+end
+
+function cd_dom(CD::Type{T}, hom::Symbol) where {Ob,Hom,Dom,Codom, T <: CatDesc{Ob,Hom,Dom,Codom}}
+  Ob[Dom[cd_hom_num(CD,hom)]]
+end
+
+function cd_codom(CD::Type{T}, hom::Symbol) where {Ob,Hom,Dom,Codom, T <: CatDesc{Ob,Hom,Dom,Codom}}
+  Ob[Codom[cd_hom_num(CD,hom)]]
 end
 
 struct AttrDesc{CD,Data,Attr,ADom,ACodom}
@@ -74,7 +90,7 @@ end
 
 AttrDescType(pres::Presentation{Schema}) = typeof(AttrDesc(pres))
 
-function Base.getproperty(S::Type{T}, i::Symbol) where
+function Base.getproperty(AD::Type{T}, i::Symbol) where
   {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
   @match i begin
     :cd => CD
@@ -82,17 +98,36 @@ function Base.getproperty(S::Type{T}, i::Symbol) where
     :attr => Attr
     :adom => ADom
     :acodom => ACodom
-    _ => error("unsupported index $i on AttrDesc")
+    _ => invoke(Base.getproperty, Tuple{Type,Symbol}, AD, i)
   end
 end
 
+function ad_data_num(AD::Type{T}, data::Symbol) where
+  {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
+  findfirst(Data .== data)::Int
+end
+
+function ad_attr_num(AD::Type{T}, attr::Symbol) where
+  {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
+  findfirst(Attr .== attr)::Int
+end
+
+function ad_dom(AD::Type{T}, attr::Symbol) where
+  {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
+  CD.ob[ADom[ad_attr_num(AD,attr)]]
+end
+
+function ad_codom(AD::Type{T}, attr::Symbol) where
+  {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
+  Data[ACodom[ad_attr_num(AD,attr)]]
+end
+
 function make_index(CD::Type{<:CatDesc},AD::Type{<:AttrDesc},Ts::Type{<:Tuple},Idxed::Tuple)
-    attr_num = attr -> findfirst(AD.attr .== attr)::Int
     function make_idx(name)
       if name ∈ CD.hom
         Vector{Vector{Int}}()
       elseif name ∈ AD.attr
-        Dict{Ts.parameters[AD.acodom[attr_num(name)]],Vector{Int}}()
+        Dict{Ts.parameters[ad_codom(AD,name)],Vector{Int}}()
       else
         error("invalid index parameter")
       end
@@ -202,6 +237,20 @@ nparts(ins::SInstance,type::Symbol) = length(ins.tables[type])
 
 haspart(ins::SInstance,type::Symbol,part::Int) = 1 <= part <= nparts(ins,type)
 
+""" Insert into sorted vector, preserving the sorting.
+"""
+function insertsorted!(a::AbstractVector, x)
+  insert!(a, searchsortedfirst(a, x), x)
+end
+
+""" Delete one occurrence of value from sorted vector.
+"""
+function deletesorted!(a::AbstractVector, x)
+  i = searchsortedfirst(a, x)
+  @assert i <= length(a) && a[i] == x "Value $x is not contained in $a"
+  deleteat!(a, i)
+end
+
 add_part!(ins::SInstance,type::Symbol,subparts::NamedTuple) =
   _add_parts!(ins,Val(type),StructArray([subparts]))[1]
 add_parts!(ins::SInstance,type::Symbol,subpartses::StructArray{<:NamedTuple}) =
@@ -220,20 +269,18 @@ add_parts!(ins::SInstance,type::Symbol,subpartses::StructArray{<:NamedTuple}) =
     end
   end
   inner_loop = Expr(:block)
-  for hom in T.parameters[1].parameters[1]
+  for hom in fields(T)
     if hom ∈ Idxed
       if hom ∈ CD.hom
-        hom_num = findfirst(CD.hom .== hom)
         index_code = quote
-          @assert haspart(ins, $(Expr(:quote, CD.ob[CD.codom[hom_num]])), subparts.$hom)
-          push!(ins.index.$(hom)[subparts.$hom],i)
+          @assert haspart(ins, $(Expr(:quote, cd_codom(CD,hom))), subparts.$hom)
+          insertsorted!(ins.index.$(hom)[subparts.$hom],i)
         end
         push!(inner_loop.args, index_code)
       elseif hom ∈ AD.attr
-        attr_num = findfirst(CD.attr .== hom)
         index_code = quote
           if subparts.$hom ∈ keys(ins.index.$hom)
-            push!(ins.index.$(hom)[subparts.$hom],i)
+            insertsorted!(ins.index.$(hom)[subparts.$hom],i)
           else
             ins.index.$(hom)[subparts.$hom] = [i]
           end
@@ -258,12 +305,10 @@ subpart(ins::SInstance, name::Symbol) = _subpart(ins,Val(name))
 
 @generated function _subpart(ins::SInstance{CD,AD,Ts},::Val{name}) where {CD,AD,Ts,name}
   if name ∈ CD.hom
-    i = findfirst(CD.hom .== name)
-    dom = CD.ob[CD.dom[i]]
+    dom = cd_dom(CD,name)
     :(ins.tables.$dom.$name)
   elseif name ∈ AD.attr
-    i = findfirst(AD.attr .== name)
-    dom = CD.ob[AD.adom[i]]
+    dom = ad_dom(AD,name)
     :(ins.tables.$dom.$name)
   else
     throw(KeyError(name))
@@ -286,6 +331,49 @@ get_data_index(d::AbstractDict{K,<:AbstractVector{Int}}, k::K) where K =
     end
   else
     throw(KeyError(name))
+  end
+end
+
+@generated function _set_subpart!(ins::SInstance{CD,AD,Ts,Idxed}, part::Int, ::Val{name}, subpart) where
+  {CD,AD,Ts,Idxed,name}
+  code = Expr(:block)
+  if name ∈ CD.hom
+    push!(code.args, quote
+          old = ins.tables.$(cd_dom(CD,name)).$(name)[part]
+          ins.tables.$(cd_dom(CD,name)).$name[part] = subpart
+          end)
+  elseif name ∈ AD.attr
+    push!(code.args, quote
+          old = ins.tables.$(ad_dom(AD,name)).$(name)[part]
+          ins.tables.$(ad_dom(AD,name)).$name[part] = subpart
+          end)
+  else
+    throw(KeyError(name))
+  end
+  if name ∈ Idxed
+    if name ∈ CD.hom
+      index_code = quote
+        @assert haspart(ins,$(Expr(:quote, cd_codom(CD,name))),subpart)
+        deletesorted!(ins.index.$(name)[old], part)
+        insertsorted!(ins.index.$(name)[subpart], part)
+      end
+      push!(code.args, index_code)
+    elseif name ∈ AD.attr
+      index_code = quote
+        @assert pop!(ins.index.$name, old) == part
+        insertsorted!(get!(ins.index.$name, subpart) do; Int[] end, part)
+      end
+      push!(code.args, index_code)
+    end
+  end
+  code
+end
+
+set_subpart!(ins::SInstance, part, name, subpart) = _set_subpart!(ins, part, Val(name), subpart)
+
+function set_subparts!(ins::SInstance, part, subparts)
+  for (name, subpart) in pairs(subparts)
+    set_subpart!(ins, part, name, subpart)
   end
 end
 
