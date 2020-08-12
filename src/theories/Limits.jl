@@ -11,7 +11,9 @@ export CategoryWithProducts, ob, terminal, delete, product, proj1, proj2, pair,
 Finite products are presented in biased style, via the nullary case (terminal
 objects) and the binary case (binary products). The equational axioms are
 standard, especially in type theory (Lambek & Scott, 1986, Section 0.5 or
-Section I.3).
+Section I.3). Strictly speaking, this theory is not of a "category with finite
+products" (a category in which finite products exist) but of a "category with
+*chosen* finite products".
 
 For a monoidal category axiomatization, see [`CartesianCategory`](@ref).
 """
@@ -48,7 +50,9 @@ end
 
 Finite limits are presented in biased style, via finite products and equalizers.
 The equational axioms for equalizers are obscure, but can found in (Lambek &
-Scott, 1986, Section 0.5), apparently following "Burroni's pioneering ideas".
+Scott, 1986, Section 0.5), which follow "Burroni's pioneering ideas". Strictly
+speaking, this theory is not of a "finitely complete category" (a category in
+which finite limits exist) but of a "category with *chosen* finite limits".
 """
 @theory CategoryWithProducts(Ob,Hom,Terminal,Product) =>
     CompleteCategory(Ob,Hom,Terminal,Product,Equalizer) begin

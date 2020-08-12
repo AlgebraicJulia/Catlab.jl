@@ -2,8 +2,12 @@ module TestCategoricalAlgebra
 
 using Test
 
-@testset "ShapeDiagrams" begin
-  include("ShapeDiagrams.jl")
+@testset "FreeDiagrams" begin
+  include("FreeDiagrams.jl")
+end
+
+@testset "Limits" begin
+  include("Limits.jl")
 end
 
 @testset "Matrices" begin

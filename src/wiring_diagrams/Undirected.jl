@@ -9,8 +9,8 @@ export UndirectedWiringDiagram, outer_box, box, junction, nboxes, njunctions,
 using Compat: isnothing
 
 using ...CategoricalAlgebra.CSets, ...Present
-using ...CategoricalAlgebra.ShapeDiagrams: Span
-using ...CategoricalAlgebra.FinSets: FinFunction, pushout
+using ...CategoricalAlgebra.FinSets: FinFunction
+using ...CategoricalAlgebra.Limits: pushout
 using ...Theories: FreeCategory, dom, codom, compose, ⋅, id
 import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,
   add_wires!, singleton_diagram, ocompose
@@ -259,8 +259,7 @@ function ocompose(f::AbstractUWD, gs::AbstractVector{<:AbstractUWD})
   gs_outer = FinFunction(
     flat(junction(g, outer=true) .+ n for (g,n) in zip(gs, gs_offset[1:end-1])),
     gs_offset[end])
-  cospan = pushout(Span(f_junction, gs_outer))
-  f_inc, g_inc = cospan.left, cospan.right
+  f_inc, g_inc = pushout(f_junction, gs_outer)
   junctions = add_junctions!(h, length(codom(f_inc)))
   if has_subpart(h, :junction_type)
     set_subpart!(h, [collect(f_inc); collect(g_inc)], :junction_type,
@@ -287,8 +286,7 @@ function ocompose(f::AbstractUWD, i::Int, g::AbstractUWD)
 
   f_i = FinFunction(junction(f, ports(f, i)), njunctions(f))
   g_outer = FinFunction(junction(g, outer=true), njunctions(g))
-  cospan = pushout(Span(f_i, g_outer))
-  f_inc, g_inc = cospan.left, cospan.right
+  f_inc, g_inc = pushout(f_i, g_outer)
   junctions = add_junctions!(h, length(codom(f_inc)))
   if has_subpart(h, :junction_type)
     set_subpart!(h, [collect(f_inc); collect(g_inc)], :junction_type,
