@@ -29,7 +29,7 @@ h = FinFunction([3,1,2], 3)
 ########
 
 # Terminal object.
-@test ob(terminal(FinSet{Int})) == FinSet(1)
+@test ob(terminal(FinSet{Int,Int})) == FinSet(1)
 
 # Binary product.
 lim = product(FinSet(2), FinSet(3))
@@ -42,7 +42,7 @@ lim = product([FinSet(2), FinSet(3)])
 @test ob(lim) == FinSet(6)
 @test force.(legs(lim)) ==
   [FinFunction([1,2,1,2,1,2]), FinFunction([1,1,2,2,3,3])]
-@test ob(product(FinSet{Int}[])) == FinSet(1)
+@test ob(product(FinSet{Int,Int}[])) == FinSet(1)
 
 # Equalizer.
 f, g = FinFunction([1,2,3]), FinFunction([3,2,1])
@@ -82,7 +82,7 @@ lim = limit(FreeDiagram([FinSet(4),FinSet(4),FinSet(4)], [(1,3,f),(2,3,g)]))
 ##########
 
 # Initial object.
-@test ob(initial(FinSet{Int})) == FinSet(0)
+@test ob(initial(FinSet{Int,Int})) == FinSet(0)
 
 # Binary coproduct.
 colim = coproduct(FinSet(2), FinSet(3))
@@ -94,7 +94,7 @@ colim = coproduct(FinSet(2), FinSet(3))
 colim = coproduct([FinSet(2), FinSet(3)])
 @test ob(colim) == FinSet(5)
 @test legs(colim) == [FinFunction([1,2], 5), FinFunction([3,4,5], 5)]
-@test ob(coproduct(FinSet{Int}[])) == FinSet(0)
+@test ob(coproduct(FinSet{Int,Int}[])) == FinSet(0)
 
 # Coequalizer from a singleton set.
 f, g = FinFunction([1], 3), FinFunction([3], 3)
