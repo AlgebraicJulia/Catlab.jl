@@ -9,7 +9,7 @@ using .LinearOperators: opEye, opExtension, opRestriction, opZeros
   N::Int
 end
 
-@instance LinearFunctions(LinearOpDom, LinearOperator) begin
+@instance LinearFunctions{LinearOpDom, LinearOperator} begin
   @import adjoint, +
 
   dom(f::LinearOperator) = LinearOpDom(size(f,2))

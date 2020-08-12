@@ -13,12 +13,12 @@ import Catlab.Theories: Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, bra
 
 """ Theory of *Markov categories*
 """
-@signature MonoidalCategoryWithDiagonals(Ob,Hom) => MarkovCategory(Ob,Hom) begin
+@signature MarkovCategory{Ob,Hom} <: MonoidalCategoryWithDiagonals{Ob,Hom} begin
   expectation(M::(A → B))::(A → B) <= (A::Ob, B::Ob)
   @op (𝔼) := expectation
 end
 
-@syntax FreeMarkovCategory(ObExpr,HomExpr) MarkovCategory begin
+@syntax FreeMarkovCategory{ObExpr,HomExpr} MarkovCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))

@@ -103,7 +103,7 @@ Base.collect(f::FinFunction) = force(f).func
 
 """ Category of finite sets and functions.
 """
-@instance Category(FinSet, FinFunction) begin
+@instance Category{FinSet, FinFunction} begin
   dom(f::FinFunction) = f.dom
   codom(f::FinFunction) = f.codom
   

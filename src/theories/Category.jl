@@ -43,7 +43,7 @@ end
 compose(fs::Vector) = foldl(compose, fs)
 compose(f, g, h, fs...) = compose([f, g, h, fs...])
 
-@syntax FreeCategory(ObExpr,HomExpr) Category begin
+@syntax FreeCategory{ObExpr,HomExpr} Category begin
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
 end
 
@@ -102,7 +102,7 @@ compose2(α, β, γ, αs...) = compose2([α, β, γ, αs...])
 
 Checks domains of morphisms but not 2-morphisms.
 """
-@syntax FreeCategory2(ObExpr,HomExpr,Hom2Expr) Category2 begin
+@syntax FreeCategory2{ObExpr,HomExpr,Hom2Expr} Category2 begin
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
   compose(α::Hom2, β::Hom2) = associate(new(α,β))
   compose2(α::Hom2, β::Hom2) = associate(new(α,β))

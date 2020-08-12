@@ -25,7 +25,7 @@ import ...Programs: evaluate_hom
 
 Functional fragment of graphical linear algebra.
 """
-@theory SemiadditiveCategory(Ob,Hom) => LinearFunctions(Ob,Hom) begin
+@theory LinearFunctions{Ob,Hom} <: SemiadditiveCategory{Ob,Hom} begin
   adjoint(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
   
   scalar(A::Ob, c::Number)::(A → A)
@@ -45,7 +45,7 @@ Functional fragment of graphical linear algebra.
   scalar(A, c) ⋅ f == f ⋅ scalar(B, c) ⊣ (A::Ob, B::Ob, c::Number, f::(A → B))
 end
 
-@syntax FreeLinearFunctions(ObExpr,HomExpr) LinearFunctions begin
+@syntax FreeLinearFunctions{ObExpr,HomExpr} LinearFunctions begin
   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
   oplus(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = new(f,g; strict=true) # No normalization!
@@ -55,7 +55,7 @@ end
 
 The full relational language of graphical linear algebra.
 """
-@theory AbelianBicategoryRelations(Ob,Hom) => LinearRelations(Ob,Hom) begin
+@theory LinearRelations{Ob,Hom} <: AbelianBicategoryRelations{Ob,Hom} begin
   adjoint(R::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
 
   scalar(A::Ob, c::Number)::(A → A)
@@ -67,7 +67,7 @@ The full relational language of graphical linear algebra.
   scalar(A, c) ⋅ R == R ⋅ scalar(B, c) ⊣ (A::Ob, B::Ob, c::Number, R::(A → B))
 end
 
-@syntax FreeLinearRelations(ObExpr,HomExpr) LinearRelations begin
+@syntax FreeLinearRelations{ObExpr,HomExpr} LinearRelations begin
   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
   oplus(R::Hom, S::Hom) = associate(new(R,S))
   compose(R::Hom, S::Hom) = new(R,S; strict=true) # No normalization!

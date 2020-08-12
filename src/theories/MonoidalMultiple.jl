@@ -16,7 +16,7 @@ ignore coherence isomorphisms such as associators and unitors.
 FIXME: This theory should also inherit `MonoidalCategory`, but multiple
 inheritance is not supported.
 """
-@signature SymmetricMonoidalCategoryAdditive(Ob,Hom) => RigCategory(Ob,Hom) begin
+@signature RigCategory{Ob,Hom} <: SymmetricMonoidalCategoryAdditive{Ob,Hom} begin
   otimes(A::Ob, B::Ob)::Ob
   otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣
     (A::Ob, B::Ob, C::Ob, D::Ob)
@@ -28,7 +28,7 @@ end
 
 FIXME: Should also inherit `SymmetricMonoidalCategory`.
 """
-@signature RigCategory(Ob,Hom) => SymmetricRigCategory(Ob,Hom) begin
+@signature SymmetricRigCategory{Ob,Hom} <: RigCategory{Ob,Hom} begin
   braid(A::Ob, B::Ob)::((A ⊗ B) → (B ⊗ A))
   @op (σ) := braid
 end
@@ -40,7 +40,7 @@ universal invariants", Section 3.2
 
 FIXME: Should also inherit `CocartesianCategory`.
 """
-@theory SymmetricRigCategory(Ob,Hom) => DistributiveMonoidalCategory(Ob,Hom) begin
+@theory DistributiveMonoidalCategory{Ob,Hom} <: SymmetricRigCategory{Ob,Hom} begin
   plus(A::Ob)::((A ⊕ A) → A)
   zero(A::Ob)::(mzero() → A)
   
@@ -61,8 +61,8 @@ end
 
 FIXME: Should also inherit `MonoidalCategoryWithDiagonals`.
 """
-@theory DistributiveMonoidalCategory(Ob,Hom) =>
-    DistributiveMonoidalCategoryWithDiagonals(Ob,Hom) begin
+@theory DistributiveMonoidalCategoryWithDiagonals{Ob,Hom} <:
+    DistributiveMonoidalCategory{Ob,Hom} begin
   mcopy(A::Ob)::(A → (A ⊗ A))
   @op (Δ) := mcopy
   delete(A::Ob)::(A → munit())
@@ -78,7 +78,7 @@ biproduct.
 
 FIXME: Should also inherit `SemiadditiveCategory`
 """
-@theory DistributiveMonoidalCategory(Ob,Hom) => DistributiveSemiadditiveCategory(Ob,Hom) begin
+@theory DistributiveSemiadditiveCategory{Ob,Hom} <: DistributiveMonoidalCategory{Ob,Hom} begin
   mcopy(A::Ob)::(A → (A ⊕ A))
   @op (Δ) := mcopy
   delete(A::Ob)::(A → mzero())
@@ -100,7 +100,7 @@ is the cartesian product, see [`DistributiveMonoidalCategory`](@ref).
 
 FIXME: Should also inherit `CartesianCategory`.
 """
-@theory DistributiveMonoidalCategoryWithDiagonals(Ob,Hom) => DistributiveCategory(Ob,Hom) begin
+@theory DistributiveCategory{Ob,Hom} <: DistributiveMonoidalCategoryWithDiagonals{Ob,Hom} begin
   pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊗ B) → B)

@@ -11,7 +11,7 @@ const LMs = LinearMaps
   N::Int
 end
 
-@instance LinearFunctions(LinearMapDom, LinearMap) begin
+@instance LinearFunctions{LinearMapDom, LinearMap} begin
   @import adjoint, +
 
   dom(f::LinearMap) = LinearMapDom(size(f,2))

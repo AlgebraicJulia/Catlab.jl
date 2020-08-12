@@ -15,7 +15,7 @@ Section I.3).
 
 For a monoidal category axiomatization, see [`CartesianCategory`](@ref).
 """
-@theory Category(Ob,Hom) => CategoryWithProducts(Ob,Hom,Terminal,Product) begin
+@theory CategoryWithProducts{Ob,Hom,Terminal,Product} <: Category{Ob,Hom} begin
   Terminal()::TYPE
   Product(foot1::Ob, foot2::Ob)::TYPE
   
@@ -50,8 +50,8 @@ Finite limits are presented in biased style, via finite products and equalizers.
 The equational axioms for equalizers are obscure, but can found in (Lambek &
 Scott, 1986, Section 0.5), apparently following "Burroni's pioneering ideas".
 """
-@theory CategoryWithProducts(Ob,Hom,Terminal,Product) =>
-    CompleteCategory(Ob,Hom,Terminal,Product,Equalizer) begin
+@theory CompleteCategory{Ob,Hom,Terminal,Product,Equalizer} <:
+    CategoryWithProducts{Ob,Hom,Terminal,Product} begin
   Equalizer(f::(A → B), g::(A → B))::TYPE ⊣ (A::Ob, B::Ob)
   
   # Equalizers.
@@ -87,7 +87,7 @@ of [`CategoryWithProducts`](@ref).
 
 For a monoidal category axiomatization, see [`CocartesianCategory`](@ref).
 """
-@theory Category(Ob,Hom) => CategoryWithCoproducts(Ob,Hom,Initial,Coproduct) begin
+@theory CategoryWithCoproducts{Ob,Hom,Initial,Coproduct} <: Category{Ob,Hom} begin
   Initial()::TYPE
   Coproduct(foot1::Ob, foot2::Ob)::TYPE
 
@@ -121,8 +121,8 @@ end
 Finite colimits are presented in biased style, via finite coproducts and
 coequalizers. The axioms are dual to those of [`CompleteCategory`](@ref).
 """
-@theory CategoryWithCoproducts(Ob,Hom,Initial,Coproduct) =>
-    CocompleteCategory(Ob,Hom,Initial,Coproduct,Coequalizer) begin
+@theory CocompleteCategory{Ob,Hom,Initial,Coproduct,Coequalizer} <:
+    CategoryWithCoproducts{Ob,Hom,Initial,Coproduct} begin
   Coequalizer(f::(A → B), g::(A → B))::TYPE ⊣ (A::Ob, B::Ob)
   
   # Coequalizers.

@@ -51,7 +51,7 @@ import Catlab.Theories: Ob, Hom, ObExpr, HomExpr, dom, codom, compose, ⋅, id
 ```
 
 ```@example category
-@theory Category(Ob,Hom) begin
+@theory Category{Ob,Hom} begin
   @op begin
     (→) := Hom
     (⋅) := compose
@@ -132,7 +132,7 @@ struct MatrixDomain
   dim::Int
 end
 
-@instance Category(MatrixDomain, Matrix) begin
+@instance Category{MatrixDomain, Matrix} begin
   dom(M::Matrix) = MatrixDomain(eltype(M), size(M,1))
   codom(M::Matrix) = MatrixDomain(eltype(M), size(M,2))
 
@@ -171,7 +171,7 @@ Below, we subtype from Catlab's abstract types `ObExpr` and `HomExpr` to enable
 LaTeX pretty-printing and other convenient features, but this is not required.
 
 ```@example category
-@syntax CategoryExprs(ObExpr, HomExpr) Category begin
+@syntax CategoryExprs{ObExpr, HomExpr} Category begin
 end
 
 A, B, C, D = [ Ob(CategoryExprs.Ob, X) for X in [:A, :B, :C, :D] ]
@@ -198,7 +198,7 @@ $n$. The option `strict=true` tells Catlab to check that the domain and codomain
 objects are strictly equal and throw an error if they are not.
 
 ```@example category
-@syntax SimplifyingCategoryExprs(ObExpr, HomExpr) Category begin
+@syntax SimplifyingCategoryExprs{ObExpr, HomExpr} Category begin
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
 end
 
@@ -238,7 +238,7 @@ import Catlab.Theories: Ob, Hom, ObExpr, HomExpr, SymmetricMonoidalCategory,
 ```
 
 ```@example cartesian-monoidal-category
-@signature SymmetricMonoidalCategory(Ob,Hom) => CartesianCategory(Ob,Hom) begin
+@signature CartesianCategory{Ob,Hom} <: SymmetricMonoidalCategory{Ob,Hom} begin
   mcopy(A::Ob)::(A → (A ⊗ A))
   delete(A::Ob)::(A → munit())
 
@@ -252,7 +252,7 @@ nothing # hide
 We could then define the copying operation in terms of the pairing.
 
 ```@example cartesian-monoidal-category
-@syntax CartesianCategoryExprsV1(ObExpr,HomExpr) CartesianCategory begin
+@syntax CartesianCategoryExprsV1{ObExpr,HomExpr} CartesianCategory begin
   mcopy(A::Ob) = pair(id(A), id(A))
 end
 
@@ -264,7 +264,7 @@ Alternatively, we could define the pairing and projections in terms of the
 copying and deleting operations.
 
 ```@example cartesian-monoidal-category
-@syntax CartesianCategoryExprsV2(ObExpr,HomExpr) CartesianCategory begin
+@syntax CartesianCategoryExprsV2{ObExpr,HomExpr} CartesianCategory begin
   pair(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g))
   proj1(A::Ob, B::Ob) = otimes(id(A), delete(B))
   proj2(A::Ob, B::Ob) = otimes(delete(A), id(B))

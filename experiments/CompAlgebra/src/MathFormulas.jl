@@ -99,7 +99,7 @@ end
 These methods should only be used with `gensym`-ed variables since they assume
 that any two formulas have disjoint variables.
 """
-@instance AlgebraicNetTheory(NFormula, Formulas) begin
+@instance AlgebraicNetTheory{NFormula, Formulas} begin
   dom(f::Formulas) = NFormula(length(f.inputs))
   codom(f::Formulas) = NFormula(length(f.terms))
 

@@ -77,7 +77,7 @@ Extra structure, such as copying or merging, can be added to wiring diagrams in
 different ways, but wiring diagrams always form a symmetric monoidal category in
 the same way.
 """
-@instance SymmetricMonoidalCategory(Ports, WiringDiagram) begin
+@instance SymmetricMonoidalCategory{Ports, WiringDiagram} begin
   @import dom, codom
 
   function id(A::Ports)

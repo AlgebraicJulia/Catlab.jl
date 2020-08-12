@@ -43,9 +43,9 @@ For a similar design (only for sparse matrices) by the Julia core developers,
 see [SemiringAlgebra.jl](https://github.com/JuliaComputing/SemiringAlgebra.jl)
 and [accompanying short paper](https://doi.org/10.1109/HPEC.2013.6670347).
 """
-@instance DistributiveSemiadditiveCategory(MatrixDom, AbstractMatrix) begin
+@instance DistributiveSemiadditiveCategory{MatrixDom, AbstractMatrix} begin
   # FIXME: Cannot define type-parameterized instances.
-  #@instance AdditiveBiproductCategory(MatrixDom{M}, M) where M <: AbstractMatrix begin
+  #@instance AdditiveBiproductCategory{MatrixDom{M}, M} where M <: AbstractMatrix begin
   @import +, dom, codom, id, mzero, munit, braid
   
   compose(A::AbstractMatrix, B::AbstractMatrix) = B*A
