@@ -203,6 +203,8 @@ function parse_theory_head(expr::Expr)::TheoryHead
 end
 
 function parse_theory_binding(expr::Expr)::TheoryBinding
+  @warn "Using Haskell-style theory declaration with parentheses is deprecated," *
+    " use Julia-style with curly braces." _file=missing _line=missing
   @match expr begin
     Expr(:call, name::Symbol, params...) => TheoryBinding(name, params)
     _ => throw(ParseError("Ill-formed theory binding $expr"))

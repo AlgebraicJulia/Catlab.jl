@@ -106,7 +106,8 @@ macro syntax(syntax_head, mod_name, body=nothing)
   @assert body.head == :block
   syntax_name, base_types = @match syntax_head begin
     Expr(:call, name::Symbol, args...) => begin
-      @warn "Haskell-style syntax declaration with parentheses is deprecated; use Julia style with curly braces."
+      @warn "Using Haskell-style theory declaration with parentheses is deprecated," *
+        " use Julia-style with curly braces." _file=missing _line=missing
       (name, args)
     end
     Expr(:curly, name::Symbol, args...) => (name, args)
