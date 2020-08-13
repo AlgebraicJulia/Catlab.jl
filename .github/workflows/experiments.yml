@@ -6,7 +6,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        experiment: [CompAlgebra, Markov]
+        experiment: [CompAlgebra, Markov, ACSets]
     
     steps:
       - uses: actions/checkout@v2
