@@ -50,7 +50,7 @@ function Base.getproperty(AD::Type{T},i::Symbol) where
     :hom => Hom
     :dom => Dom
     :codom => Codom
-    _ => invoke(Base.getproperty, Tuple{Type,Symbol}, AD, i)
+    _ => getfield(AD,i)
   end
 end
 
@@ -98,7 +98,7 @@ function Base.getproperty(AD::Type{T}, i::Symbol) where
     :attr => Attr
     :adom => ADom
     :acodom => ACodom
-    _ => invoke(Base.getproperty, Tuple{Type,Symbol}, AD, i)
+    _ => getfield(AD,i)
   end
 end
 
@@ -123,15 +123,15 @@ function ad_codom(AD::Type{T}, attr::Symbol) where
 end
 
 function make_index(CD::Type{<:CatDesc},AD::Type{<:AttrDesc},Ts::Type{<:Tuple},Idxed::Tuple)
-    function make_idx(name)
-      if name ∈ CD.hom
-        Vector{Vector{Int}}()
-      elseif name ∈ AD.attr
-        Dict{Ts.parameters[ad_codom(AD,name)],Vector{Int}}()
-      else
-        error("invalid index parameter")
-      end
+  function make_idx(name)
+    if name ∈ CD.hom
+      Vector{Vector{Int}}()
+    elseif name ∈ AD.attr
+      Dict{Ts.parameters[ad_codom(AD,name)],Vector{Int}}()
+    else
+      error("invalid index parameter")
     end
+  end
   NamedTuple{Idxed}(Tuple(make_idx(name) for name in Idxed))
 end
 
@@ -176,33 +176,29 @@ struct SInstance{CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed,
 end
 
 
-function fields(::Type{T}) where {T <: NamedTuple}
-  T.parameters[1]
-end
-
 function fieldtype(::Type{T},i::Integer) where {T <: NamedTuple}
   fieldtypes(T)[i]
 end
 
 function fieldtype(::Type{T},s::Symbol) where {T <: NamedTuple}
-  i = findfirst(fields(T) .== s)
+  i = findfirst(fieldnames(T) .== s)
   fieldtype(T,i)
 end
 
-function fields(::Type{T}) where {T <: StructArray{<:NamedTuple}}
-  fields(T.parameters[1])
+function Base.fieldnames(::Type{T}) where {T <: StructArray{<:NamedTuple}}
+  fieldnames(eltype(T))
 end
 
 function Base.fieldtypes(::Type{T}) where {T <: StructArray{<:NamedTuple}}
-  fieldtypes(T.parameters[1])
+  fieldtypes(eltype(T))
 end
 
 function fieldtype(::Type{T},i::Integer) where {T <: StructArray{<:NamedTuple}}
-  fieldtype(T.parameters[1],i)
+  fieldtype(eltype(T),i)
 end
 
 function fieldtype(::Type{T},s::Symbol) where {T <: StructArray{<:NamedTuple}}
-  fieldtype(T.parameters[1],s)
+  fieldtype(eltype(T),s)
 end
 
 function Base.:(==)(x1::T, x2::T) where T <: SInstance
@@ -269,7 +265,7 @@ add_parts!(ins::SInstance,type::Symbol,subpartses::StructArray{<:NamedTuple}) =
     end
   end
   inner_loop = Expr(:block)
-  for hom in fields(T)
+  for hom in fieldnames(T)
     if hom ∈ Idxed
       if hom ∈ CD.hom
         index_code = quote
