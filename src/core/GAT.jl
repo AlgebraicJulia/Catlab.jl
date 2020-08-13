@@ -7,6 +7,7 @@ using Base.Meta: ParseError
 using Compat
 using AutoHashEquals
 using DataStructures: OrderedDict
+using Logging
 using MLStyle: @match
 
 using ..Meta
@@ -188,17 +189,39 @@ end
 
 function parse_theory_head(expr::Expr)::TheoryHead
   parse = parse_theory_binding
+  parse_jl = parse_theory_binding_jlstyle
+  parse_either = parse_theory_binding_either
   @match expr begin
     (Expr(:call, :(=>), Expr(:tuple, bases), main)
       => TheoryHead(parse(main), map(parse, bases)))
+    (Expr(:(<:), main, Expr(:tuple,bases))
+      => TheoryHead(parse_jl(main), map(parse_jl, bases)))
     Expr(:call, :(=>), base, main) => TheoryHead(parse(main), [parse(base)])
-    _ => TheoryHead(parse(expr))
+    Expr(:(<:), main, base) => TheoryHead(parse_jl(main), [parse_jl(base)])
+    _ => TheoryHead(parse_either(expr))
   end
 end
 
 function parse_theory_binding(expr::Expr)::TheoryBinding
+  @warn "Using Haskell-style theory declaration with parentheses is deprecated," *
+    " use Julia-style with curly braces." _file=missing _line=missing
   @match expr begin
     Expr(:call, name::Symbol, params...) => TheoryBinding(name, params)
+    _ => throw(ParseError("Ill-formed theory binding $expr"))
+  end
+end
+
+function parse_theory_binding_jlstyle(expr::Expr)::TheoryBinding
+  @match expr begin
+    Expr(:curly, name::Symbol, params...) => TheoryBinding(name, params)
+    _ => throw(ParseError("Ill-formed theory binding $expr"))
+  end
+end
+
+function parse_theory_binding_either(expr::Expr)::TheoryBinding
+  @match expr begin
+    Expr(:call, name::Symbol, params...) => TheoryBinding(name, params)
+    Expr(:curly, name::Symbol, params...) => TheoryBinding(name, params)
     _ => throw(ParseError("Ill-formed theory binding $expr"))
   end
 end
@@ -515,7 +538,7 @@ end
 """
 macro instance(head, body)
   # Parse the instance definition.
-  head = parse_theory_binding(head)
+  head = parse_theory_binding_either(head)
   functions, ext_functions = parse_instance_body(body)
 
   # We must generate and evaluate the code at *run time* because the theory

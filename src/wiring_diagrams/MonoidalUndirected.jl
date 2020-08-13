@@ -114,7 +114,7 @@ codom(f::HomUWD{UWD}) where UWD = ObUWD{UWD}(codom_port_types(f))
 The objects are lists of port types and morphisms are undirected wiring diagrams
 whose outer ports are partitioned into domain and codomain.
 """
-@instance HypergraphCategory(ObUWD, HomUWD) begin
+@instance HypergraphCategory{ObUWD, HomUWD} begin
   @import dom, codom
 
   function compose(f::HomUWD, g::HomUWD)

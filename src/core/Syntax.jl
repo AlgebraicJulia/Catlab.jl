@@ -105,7 +105,12 @@ macro syntax(syntax_head, mod_name, body=nothing)
   if isnothing(body); body = Expr(:block) end
   @assert body.head == :block
   syntax_name, base_types = @match syntax_head begin
-    Expr(:call, name::Symbol, args...) => (name, args)
+    Expr(:call, name::Symbol, args...) => begin
+      @warn "Using Haskell-style theory declaration with parentheses is deprecated," *
+        " use Julia-style with curly braces." _file=missing _line=missing
+      (name, args)
+    end
+    Expr(:curly, name::Symbol, args...) => (name, args)
     name::Symbol => (name, [])
     _ => throw(ParseError("Ill-formed syntax signature $syntax_head"))
   end

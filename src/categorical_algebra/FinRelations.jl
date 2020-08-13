@@ -113,7 +113,7 @@ FIXME: Many methods only work for `FinRel{Int}`. The default methods should
 assume `FinRel{<:AbstractSet}` and the case `FinRel{Int}` should be handled
 specially.
 """
-@instance DistributiveBicategoryRelations(FinRel, FinRelation) begin
+@instance DistributiveBicategoryRelations{FinRel, FinRelation} begin
   dom(R::FinRelation) = R.dom
   codom(R::FinRelation) = R.codom
 

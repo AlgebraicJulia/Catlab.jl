@@ -22,7 +22,7 @@ import ..GraphicalLinearAlgebra:
 Structured matrices have some properties that allow us to compute with them faster
 than general dense matrices. Morphisms in this category represent structured matrices.
 """
-@theory LinearFunctions(Ob,Hom) => StructuredLinearFunctions(Ob, Hom) begin
+@theory StructuredLinearFunctions{Ob,Hom} <: LinearFunctions{Ob,Hom} begin
   munit()::Ob
   @op (ℝ) := munit
 
@@ -51,7 +51,7 @@ than general dense matrices. Morphisms in this category represent structured mat
   symtridiag(a,b) == tridiagonal(a,b,b) ⊣ (A::Ob, a::(ℝ()→A⊗ℝ()), b::(ℝ()→A))
 end
 
-@syntax FreeStructuredLinearFunctions(ObExpr,HomExpr) StructuredLinearFunctions begin
+@syntax FreeStructuredLinearFunctions{ObExpr,HomExpr} StructuredLinearFunctions begin
   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
   oplus(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = new(f,g; strict=true) # No normalization!

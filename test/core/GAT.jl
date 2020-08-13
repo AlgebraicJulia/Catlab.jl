@@ -98,7 +98,7 @@ target = Dict(:→ => :Mor)
 
 # This try-catch block is a necessary work around because of a current bug
 # where test_throws doesn't catch errors thrown from inside of a macro
-@test_throws ParseError try @eval @signature Category(Ob,Hom) begin
+@test_throws ParseError try @eval @signature Category{Ob,Hom} begin
   Ob::TYPE
   Hom(dom, codom)::TYPE ⊣ (dom::Ob, codom::Ob)
   @op (→) := Hom
@@ -118,7 +118,7 @@ end
 
 """ Theory of categories
 """
-@theory Category(Ob,Hom) begin
+@theory Category{Ob,Hom} begin
   Ob::TYPE
   Hom(dom, codom)::TYPE ⊣ (dom::Ob, codom::Ob)
   @op (→) := Hom
@@ -167,7 +167,7 @@ category_theory = GAT.Theory(types, terms, axioms, aliases)
 
 """ Equivalent shorthand definition of Category theory
 """
-@theory CategoryAbbrev(Ob,Hom) begin
+@theory CategoryAbbrev{Ob,Hom} begin
   @op begin
     (→) := Hom
     (⋅) := compose
@@ -203,12 +203,12 @@ theory = GAT.theory(Category)
 @test GAT.interface(theory) == [accessors; constructors; alias_functions]
 
 # Theory extension
-@signature Semigroup(S) begin
+@signature Semigroup{S} begin
   S::TYPE
   times(x::S,y::S)::S
 end
 
-@signature Semigroup(M) => MonoidExt(M) begin
+@signature MonoidExt{M} <: Semigroup{M} begin
   munit()::M
 end
 
@@ -255,13 +255,13 @@ context = GAT.Context((:X => :Ob, :Y => :Ob, :Z => :Ob,
 
 """ Vectors as an instance of the theory of semigroups
 """
-@instance Semigroup(Vector) begin
+@instance Semigroup{Vector} begin
   times(x::Vector, y::Vector) = [x; y]
 end
 
 @test times([1,2],[3,4]) == [1,2,3,4]
 
-@signature Monoid(M) begin
+@signature Monoid{M} begin
   M::TYPE
   munit()::M
   times(x::M,y::M)::M
@@ -269,12 +269,12 @@ end
 
 # Incomplete instance of Monoid
 # XXX: Cannot use `@test_warn` since generated code won't be at toplevel.
-#@test_warn "not implemented" @instance Monoid(String) begin
+#@test_warn "not implemented" @instance Monoid{String} begin
 #  times(x::AbsStringtractString, y::String) = string(x,y)
 #end
 
 # Complete instance of Monoid
-@instance Monoid(String) begin
+@instance Monoid{String} begin
   munit(::Type{String}) = ""
   times(x::String, y::String) = string(x,y)
 end

@@ -44,7 +44,7 @@ function compose(f::PredicatedHom{T,S},g::PredicatedHom{S,U}) where {T,S,U}
 end
 
 # This is really the category of decidable sets and partial functions...
-@instance Category(PredicatedSet, PredicatedHom) begin
+@instance Category{PredicatedSet, PredicatedHom} begin
   dom(f::PredicatedHom) = f.dom
   codom(f::PredicatedHom) = f.codom
 

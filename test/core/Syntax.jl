@@ -13,7 +13,7 @@ using Catlab
 
 """ Theory of monoids.
 """
-@signature Monoid(Elem) begin
+@signature Monoid{Elem} begin
   Elem::TYPE
   munit()::Elem
   mtimes(x::Elem,y::Elem)::Elem
@@ -67,13 +67,13 @@ e = munit(FreeMonoidAssocUnit.Elem)
 @test mtimes(e,x) == x && mtimes(x,e) == x
 
 abstract type MonoidExpr{T} <: GATExpr{T} end
-@syntax FreeMonoidTyped(MonoidExpr) Monoid
+@syntax FreeMonoidTyped{MonoidExpr} Monoid
 
 x = Elem(FreeMonoidTyped.Elem, :x)
 @test FreeMonoidTyped.Elem <: MonoidExpr
 @test isa(x, FreeMonoidTyped.Elem) && isa(x, MonoidExpr)
 
-@signature Monoid(Elem) => MonoidNumeric(Elem) begin
+@signature MonoidNumeric{Elem} <: Monoid{Elem} begin
   elem_int(x::Int)::Elem
 end
 @syntax FreeMonoidNumeric MonoidNumeric
@@ -84,7 +84,7 @@ x = elem_int(FreeMonoidNumeric.Elem, 1)
 
 """ A monoid with two distinguished elements.
 """
-@signature Monoid(Elem) => MonoidTwo(Elem) begin
+@signature MonoidTwo{Elem} <: Monoid{Elem} begin
   one()::Elem
   two()::Elem
 end
@@ -102,7 +102,7 @@ x, y = one(FreeMonoidTwo.Elem), two(FreeMonoidTwo.Elem)
 # Category
 ##########
 
-@signature Category(Ob,Hom) begin
+@signature Category{Ob,Hom} begin
   Ob::TYPE
   Hom(dom::Ob, codom::Ob)::TYPE
 
@@ -147,7 +147,7 @@ f, g = Hom(:f, X, Y), Hom(:g, Y, X)
 # Functor
 #########
 
-@instance Monoid(String) begin
+@instance Monoid{String} begin
   munit(::Type{String}) = ""
   mtimes(x::String, y::String) = string(x,y)
 end

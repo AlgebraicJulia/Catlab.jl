@@ -18,13 +18,13 @@ References:
 - Walters, 2009, blog post, "Categorical algebras of relations",
   http://rfcwalters.blogspot.com/2009/10/categorical-algebras-of-relations.html
 """
-@signature HypergraphCategory(Ob,Hom) => BicategoryRelations(Ob,Hom) begin
+@signature BicategoryRelations{Ob,Hom} <: HypergraphCategory{Ob,Hom} begin
   # Logical operations.
   meet(R::(A → B), S::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
   top(A::Ob, B::Ob)::(A → B)
 end
 
-@syntax FreeBicategoryRelations(ObExpr,HomExpr) BicategoryRelations begin
+@syntax FreeBicategoryRelations{ObExpr,HomExpr} BicategoryRelations begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(R::Hom, S::Hom) = associate(new(R,S))
   compose(R::Hom, S::Hom) = associate(new(R,S; strict=true))
@@ -43,8 +43,7 @@ References:
 - Carboni & Walters, 1987, "Cartesian bicategories I", Sec. 5
 - Baez & Erbele, 2015, "Categories in control"
 """
-@signature HypergraphCategoryAdditive(Ob,Hom) =>
-    AbelianBicategoryRelations(Ob,Hom) begin
+@signature AbelianBicategoryRelations{Ob,Hom} <: HypergraphCategoryAdditive{Ob,Hom} begin
   # Second supply of Frobenius monoids.
   plus(A::Ob)::((A ⊕ A) → A)
   zero(A::Ob)::(mzero() → A)
@@ -58,7 +57,7 @@ References:
   bottom(A::Ob, B::Ob)::(A → B)
 end
 
-@syntax FreeAbelianBicategoryRelations(ObExpr,HomExpr) AbelianBicategoryRelations begin
+@syntax FreeAbelianBicategoryRelations{ObExpr,HomExpr} AbelianBicategoryRelations begin
   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
   oplus(R::Hom, S::Hom) = associate(new(R,S))
   compose(R::Hom, S::Hom) = associate(new(R,S; strict=true))
@@ -81,8 +80,8 @@ References:
 FIXME: Should also inherit `BicategoryOfRelations`, but multiple inheritance is
 not yet supported.
 """
-@signature DistributiveMonoidalCategoryWithDiagonals(Ob,Hom) =>
-    DistributiveBicategoryRelations(Ob,Hom) begin
+@signature DistributiveBicategoryRelations{Ob,Hom} <:
+    DistributiveMonoidalCategoryWithDiagonals{Ob,Hom} begin
   # Self-dual dagger compact category.
   dagger(R::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
   dunit(A::Ob)::(munit() → (A ⊗ A))

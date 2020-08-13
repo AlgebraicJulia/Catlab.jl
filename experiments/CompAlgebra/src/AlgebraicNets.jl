@@ -33,12 +33,12 @@ import Catlab.Programs.GenerateJuliaPrograms: genvar, genvars, to_function_expr,
 
 TODO: Explain
 """
-@signature MonoidalCategoryWithBidiagonals(Ob,Hom) => AlgebraicNetTheory(Ob,Hom) begin
+@signature AlgebraicNetTheory{Ob,Hom} <: MonoidalCategoryWithBidiagonals{Ob,Hom} begin
   linear(x::Any, A::Ob, B::Ob)::(A → B)
   constant(x::Any, A::Ob)::(munit() → A)
 end
 
-@syntax AlgebraicNet(ObExpr,HomExpr) AlgebraicNetTheory begin
+@syntax AlgebraicNet{ObExpr,HomExpr} AlgebraicNetTheory begin
   # FIXME: `compose` and `otimes` should delegate to wiring layer when possible.
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)

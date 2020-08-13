@@ -16,7 +16,7 @@ We retain the usual meaning of the symbol ∘ (\\circ), i.e., g∘f = compose(f,
 This usage is too entrenched to overturn, inconvenient though it may be.
 We use symbol ⋅ (\\cdot) for diagrammatic composition: f⋅g = compose(f,g).
 """
-@theory Category(Ob,Hom) begin
+@theory Category{Ob,Hom} begin
   # Unicode aliases.
   @op begin
     (→) := Hom
@@ -43,7 +43,7 @@ end
 compose(fs::Vector) = foldl(compose, fs)
 compose(f, g, h, fs...) = compose([f, g, h, fs...])
 
-@syntax FreeCategory(ObExpr,HomExpr) Category begin
+@syntax FreeCategory{ObExpr,HomExpr} Category begin
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
 end
 
@@ -79,7 +79,7 @@ end
 
 """ Theory of (strict) *2-categories*
 """
-@signature Category(Ob,Hom) => Category2(Ob,Hom,Hom2) begin
+@signature Category2{Ob,Hom,Hom2} <: Category{Ob,Hom} begin
   """ 2-morphism in a 2-category """
   Hom2(dom::Hom(A,B), codom::Hom(A,B))::TYPE ⊣ (A::Ob, B::Ob)
   @op (⇒) := Hom2
@@ -102,7 +102,7 @@ compose2(α, β, γ, αs...) = compose2([α, β, γ, αs...])
 
 Checks domains of morphisms but not 2-morphisms.
 """
-@syntax FreeCategory2(ObExpr,HomExpr,Hom2Expr) Category2 begin
+@syntax FreeCategory2{ObExpr,HomExpr,Hom2Expr} Category2 begin
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
   compose(α::Hom2, β::Hom2) = associate(new(α,β))
   compose2(α::Hom2, β::Hom2) = associate(new(α,β))
