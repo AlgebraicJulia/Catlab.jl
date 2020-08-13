@@ -1,6 +1,6 @@
-module SInstances
+module ACSets
 export Schema, SchemaExpr, DataExpr, AttrExpr, FreeSchema,
-  CatDesc, CatDescType, AttrDesc, AttrDescType, AbstractSInstance, SInstance,
+  CatDesc, CatDescType, AttrDesc, AttrDescType, AbstractACSet, ACSet,
   nparts, add_part!, add_parts!, _add_parts!, subpart, incident, set_subpart!, set_subparts!,
   TheoryGraph, AbstractGraph, Graph,
   TheoryDecGraph, AbstractDecGraph, DecGraph
@@ -122,12 +122,18 @@ function ad_codom(AD::Type{T}, attr::Symbol) where
   Data[ACodom[ad_attr_num(AD,attr)]]
 end
 
+function ad_codom_data_type(Ts::Type{T}, AD::Type{S}, attr::Symbol) where
+  {T <: Tuple, CD,Data,Attr,ADom,ACodom,S <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
+  fieldtypes(Ts)[ACodom[ad_attr_num(AD,attr)]]
+end
+
+
 function make_index(CD::Type{<:CatDesc},AD::Type{<:AttrDesc},Ts::Type{<:Tuple},Idxed::Tuple)
   function make_idx(name)
     if name ∈ CD.hom
       Vector{Vector{Int}}()
     elseif name ∈ AD.attr
-      Dict{Ts.parameters[ad_codom(AD,name)],Vector{Int}}()
+      Dict{ad_codom_data_type(Ts,AD,name),Vector{Int}}()
     else
       error("invalid index parameter")
     end
@@ -148,16 +154,18 @@ function table_desc(::Type{CatDesc{Ob,Hom,Dom,Codom}},
   [(col_names = first.(cols[i]), col_types = last.(cols[i])) for i in 1:length(Ob)]
 end
 
-abstract type AbstractSInstance{CD,AD,Ts} end
+abstract type AbstractAttributedCSet{CD,AD,Ts} end
 
-struct SInstance{CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed,
-                 TablesType <: NamedTuple, IndexType <: NamedTuple} <: AbstractSInstance{CD,AD,Ts}
+const AbstractACSet = AbstractAttributedCSet
+
+struct AttributedCSet{CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed,
+             TablesType <: NamedTuple, IndexType <: NamedTuple} <: AbstractACSet{CD,AD,Ts}
   tables::TablesType
   index::IndexType
-  function SInstance{CD}() where {CD <: CatDesc}
-    SInstance{CD,typeof(AttrDesc(CD())),Tuple{}}()
+  function AttributedCSet{CD}() where {CD <: CatDesc}
+    ACSet{CD,typeof(AttrDesc(CD())),Tuple{}}()
   end
-  function SInstance{CD,AD,Ts,Idxed}() where {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed}
+  function AttributedCSet{CD,AD,Ts,Idxed}() where {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed}
     td = table_desc(CD,AD,Tuple(Ts.parameters))
     empty_tables = NamedTuple{CD.ob}(
       [StructArray{NamedTuple{Tuple(td[i].col_names), Tuple{td[i].col_types...}}}(undef,0)
@@ -165,16 +173,17 @@ struct SInstance{CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed,
     index = make_index(CD,AD,Ts,Idxed)
     new{CD,AD,Ts,Idxed,typeof(empty_tables),typeof(index)}(empty_tables,index)
   end
-  function SInstance{CD,AD,Ts,Idxed,TT,IT}() where
+  function AttributedCSet{CD,AD,Ts,Idxed,TT,IT}() where
     {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple,Idxed,TT <: NamedTuple,IT <: NamedTuple}
-    SInstance{CD,AD,Ts,Idxed}()
+    ACSet{CD,AD,Ts,Idxed}()
   end
-  function SInstance{CD,AD,Ts,Idxed,TT,IT}(tables::TT,index::IT) where
+  function AttributedCSet{CD,AD,Ts,Idxed,TT,IT}(tables::TT,index::IT) where
     {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple,Idxed,TT <: NamedTuple,IT <: NamedTuple}
     new{CD,AD,Ts,Idxed,TT,IT}(tables,index)
   end
 end
 
+const ACSet = AttributedCSet
 
 function fieldtype(::Type{T},i::Integer) where {T <: NamedTuple}
   fieldtypes(T)[i]
@@ -201,18 +210,18 @@ function fieldtype(::Type{T},s::Symbol) where {T <: StructArray{<:NamedTuple}}
   fieldtype(eltype(T),s)
 end
 
-function Base.:(==)(x1::T, x2::T) where T <: SInstance
+function Base.:(==)(x1::T, x2::T) where T <: ACSet
   x1.tables == x2.tables
 end
 
-function Base.copy(ins::T) where T <: SInstance
+function Base.copy(ins::T) where T <: ACSet
   T(copy(ins.tables),copy(ins.index))
 end
 
-Base.empty(ins::T) where T <: SInstance = T()
+Base.empty(ins::T) where T <: ACSet = T()
 
-function Base.show(io::IO, mime::MIME"text/plain", ins::AbstractSInstance{CD,AD,Ts}) where {CD,AD,Ts}
-  println(io,"SInstance")
+function Base.show(io::IO, mime::MIME"text/plain", ins::AbstractACSet{CD,AD,Ts}) where {CD,AD,Ts}
+  println(io,"ACSet")
   for ob in CD.ob
     println(io, "  $ob = 1:$(nparts(ins,ob))")
   end
@@ -229,9 +238,9 @@ function Base.show(io::IO, mime::MIME"text/plain", ins::AbstractSInstance{CD,AD,
   end
 end
 
-nparts(ins::SInstance,type::Symbol) = length(ins.tables[type])
+nparts(ins::ACSet,type::Symbol) = length(ins.tables[type])
 
-haspart(ins::SInstance,type::Symbol,part::Int) = 1 <= part <= nparts(ins,type)
+haspart(ins::ACSet,type::Symbol,part::Int) = 1 <= part <= nparts(ins,type)
 
 """ Insert into sorted vector, preserving the sorting.
 """
@@ -247,12 +256,12 @@ function deletesorted!(a::AbstractVector, x)
   deleteat!(a, i)
 end
 
-add_part!(ins::SInstance,type::Symbol,subparts::NamedTuple) =
+add_part!(ins::ACSet,type::Symbol,subparts::NamedTuple) =
   _add_parts!(ins,Val(type),StructArray([subparts]))[1]
-add_parts!(ins::SInstance,type::Symbol,subpartses::StructArray{<:NamedTuple}) =
+add_parts!(ins::ACSet,type::Symbol,subpartses::StructArray{<:NamedTuple}) =
   _add_parts!(ins,Val(type),subpartses)
 
-@generated function _add_parts!(ins::SInstance{CD,AD,Ts,Idxed,TT},::Val{ob},
+@generated function _add_parts!(ins::ACSet{CD,AD,Ts,Idxed,TT},::Val{ob},
                                 subpartses::T) where
   {CD,AD,Ts,Idxed,TT,ob,T<:StructArray{<:NamedTuple}}
   @assert T == fieldtype(TT,ob)
@@ -296,10 +305,10 @@ add_parts!(ins::SInstance,type::Symbol,subpartses::StructArray{<:NamedTuple}) =
   end
 end
 
-subpart(ins::SInstance, part, name::Symbol) = subpart(ins,name)[part]
-subpart(ins::SInstance, name::Symbol) = _subpart(ins,Val(name))
+subpart(ins::ACSet, part, name::Symbol) = subpart(ins,name)[part]
+subpart(ins::ACSet, name::Symbol) = _subpart(ins,Val(name))
 
-@generated function _subpart(ins::SInstance{CD,AD,Ts},::Val{name}) where {CD,AD,Ts,name}
+@generated function _subpart(ins::ACSet{CD,AD,Ts},::Val{name}) where {CD,AD,Ts,name}
   if name ∈ CD.hom
     dom = cd_dom(CD,name)
     :(ins.tables.$dom.$name)
@@ -311,14 +320,14 @@ subpart(ins::SInstance, name::Symbol) = _subpart(ins,Val(name))
   end
 end
 
-incident(ins::SInstance, part, name::Symbol) = _incident(ins, part, Val(name))
+incident(ins::ACSet, part, name::Symbol) = _incident(ins, part, Val(name))
 
 get_data_index(d::AbstractDict{K,Int}, k::K) where K =
   get(d, k, nothing)
 get_data_index(d::AbstractDict{K,<:AbstractVector{Int}}, k::K) where K =
   get(d, k, 1:0)
 
-@generated function _incident(ins::SInstance{CD,AD,Ts,Idxed}, part, ::Val{name}) where {CD,AD,Ts,Idxed,name}
+@generated function _incident(ins::ACSet{CD,AD,Ts,Idxed}, part, ::Val{name}) where {CD,AD,Ts,Idxed,name}
   if name ∈ Idxed
     if name ∈ CD.hom
       :(ins.index.$name[part])
@@ -330,7 +339,7 @@ get_data_index(d::AbstractDict{K,<:AbstractVector{Int}}, k::K) where K =
   end
 end
 
-@generated function _set_subpart!(ins::SInstance{CD,AD,Ts,Idxed}, part::Int, ::Val{name}, subpart) where
+@generated function _set_subpart!(ins::ACSet{CD,AD,Ts,Idxed}, part::Int, ::Val{name}, subpart) where
   {CD,AD,Ts,Idxed,name}
   code = Expr(:block)
   if name ∈ CD.hom
@@ -365,9 +374,9 @@ end
   code
 end
 
-set_subpart!(ins::SInstance, part, name, subpart) = _set_subpart!(ins, part, Val(name), subpart)
+set_subpart!(ins::ACSet, part, name, subpart) = _set_subpart!(ins, part, Val(name), subpart)
 
-function set_subparts!(ins::SInstance, part, subparts)
+function set_subparts!(ins::ACSet, part, subparts)
   for (name, subpart) in pairs(subparts)
     set_subpart!(ins, part, name, subpart)
   end
@@ -381,10 +390,10 @@ end
   tgt::Hom(E,V)
 end
 
-const AbstractGraph = AbstractSInstance{typeof(CatDesc(TheoryGraph))}
+const AbstractGraph = AbstractACSet{typeof(CatDesc(TheoryGraph))}
 
-const Graph = SInstance{typeof(CatDesc(TheoryGraph)),
-                        typeof(AttrDesc(TheoryGraph)),Tuple{},(:src,:tgt)}
+const Graph = ACSet{typeof(CatDesc(TheoryGraph)),
+                    typeof(AttrDesc(TheoryGraph)),Tuple{},(:src,:tgt)}
 
 @present TheoryDecGraph <: TheoryGraph begin
   X::Data
@@ -393,10 +402,10 @@ const Graph = SInstance{typeof(CatDesc(TheoryGraph)),
   edec::Attr(E,X)
 end
 
-const AbstractDecGraph{T} = AbstractSInstance{typeof(CatDesc(TheoryDecGraph)),
-                                              typeof(AttrDesc(TheoryDecGraph)),Tuple{T}}
+const AbstractDecGraph{T} = AbstractACSet{typeof(CatDesc(TheoryDecGraph)),
+                                          typeof(AttrDesc(TheoryDecGraph)),Tuple{T}}
 
-const DecGraph{T} = SInstance{typeof(CatDesc(TheoryDecGraph)),
-                              typeof(AttrDesc(TheoryDecGraph)),Tuple{T},(:src,:tgt)}
+const DecGraph{T} = ACSet{typeof(CatDesc(TheoryDecGraph)),
+                          typeof(AttrDesc(TheoryDecGraph)),Tuple{T},(:src,:tgt,:vdec)}
 
 end

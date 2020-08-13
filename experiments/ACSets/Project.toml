@@ -1,0 +1,10 @@
+name = "ACSets"
+uuid = "77b1bf6b-78e9-409b-9286-44bdb370c07b"
+authors = ["olynch"]
+version = "0.1.0"
+
+[deps]
+Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
+MLStyle = "d8e11817-5142-5d16-987a-aa16d5891078"
+StructArrays = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
