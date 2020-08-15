@@ -28,7 +28,7 @@ sections. From the programming perspective, theories can be thought of as
 classes](https://en.wikipedia.org/wiki/Type_class). Both instances and syntax
 systems then act as *implementations* of the interface.
 
-## Theories
+## [Theories](@id gats)
 
 [Generalized algebraic
 theories](https://ncatlab.org/nlab/show/generalized+algebraic+theory) (GATs) are
@@ -112,7 +112,7 @@ inherit a theory that already has the alias defined.
   categories*
 - Pitts, 1995: Categorical logic, Sec 6: Dependent types
 
-## Instances
+## [Instances](@id instances)
 
 A theory can have one or more *instances*, or instantiations by ordinary
 Julia types and functions. This feature builds on Julia's support for generic
@@ -152,7 +152,7 @@ representing a field $k$ and an integer `dim` representing the dimensionality
 $n$, and so can be interpreted as the $n$-dimensional vector space $k^n$. The
 theory `Hom` is mapped to the standard Julia type `Matrix`.
 
-## Syntax systems
+## [Syntax systems](@id syntax-systems)
 
 Theories can also be instantiated as systems of symbolic expressions, using
 the [`@syntax`](@ref) macro. The symbolic expressions are expression trees, as
