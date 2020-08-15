@@ -2,11 +2,22 @@
 
 Through the module `Catlab.Theories`, Catlab provides a standard library of
 [generalized algebraic theories](@ref gats) for categories, monoidal categories,
-and other algebraic structures. The theories correspond, in most cases, to
+and other categorical structures. The theories correspond, in most cases, to
 standard definitions in category theory and they are used throughout Catlab and
 the AlgebraicJulia ecosystem to structure programs and provide a common
 interface for applied category theory. The module also provides default [syntax
 sysytems](@ref syntax-systems) for many of the theories.
+
+Categorical structures for which theories are provided include:
+
++ categories
++ monoidal and symmetric monoidal categories
++ cartesian and cocartesian categories
++ semiadditive categories/biproduct categories
++ hypergraph categories
++ bicategories of relations
++ categories with two monoidal products, such as distributive monoidal
+  categories
 
 ```@autodocs
 Modules = [ Theories ]
