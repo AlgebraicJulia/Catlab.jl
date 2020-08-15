@@ -1,21 +1,22 @@
-# Symbolic expressions
+# Theories, instances, and expressions
 
-At the core of Catlab is a system for defining and manipulating symbolic
-expressions in typed algebraic structures, including categories and monoidal
-categories. Objects, morphisms, and even higher-order morphisms are represented
-as typed symbolic expressions. The expressions can be manipulated abstractly or
-transformed, usually functorially, into more concrete representations, such as
-[wiring diagrams](@ref wiring_diagrams) or [Julia functions](@ref programs).
+At the core of Catlab is a system for defining generalized algebraic structures,
+such as categories and monoidal categories, and then creating instances of these
+structures in Julia code. The objects, morphisms, and even higher-order
+morphisms can also be represented as typed symbolic expressions, as in a
+computer algebra system. These expressions can be manipulated abstractly or
+transformed into more concrete representations, such as [wiring diagrams](@ref
+wiring_diagrams) or [Julia functions](@ref programs).
 
 The basic elements of this system are:
 
 1. **Generalized algebraic theories** (GATs), defined using the
-   [`@theory`](@ref) macro. Categories and other typed (multisorted)
-   algebraic structures can be defined as GATs. The [`@signature`](@ref) macro
-   can be used in cases where only the signature of the GAT is defined, and not
-   the axioms.
+   [`@theory`](@ref) macro. Categories and other typed (multisorted) algebraic
+   structures can be defined as GATs. Alternatively, the [`@signature`](@ref)
+   macro can be used when only the signature (not the axioms) of the GAT are to
+   be specified.
 
-2. **Instances**, or concrete implementations, of theories, asserted using the
+2. **Instances**, or concrete implementations, of theories, defined using the
    [`@instance`](@ref) macro.
 
 3. **Syntax systems** for theories, defined using the [`@syntax`](@ref) macro.
@@ -25,8 +26,9 @@ The basic elements of this system are:
 We'll explain each of these elements in greater detail in the following
 sections. From the programming perspective, theories can be thought of as
 *interfaces* and bear some resemblance to [type
-classes](https://en.wikipedia.org/wiki/Type_class). Both instances and syntax
-systems then act as *implementations* of the interface.
+classes](https://en.wikipedia.org/wiki/Type_class) in languages like Haskell.
+Both instances and syntax systems can then be thought of as *implementations* of
+the interface.
 
 ## [Theories](@id gats)
 
@@ -274,10 +276,6 @@ A, B, C = [ Ob(CartesianCategoryExprsV2.Ob, X) for X in [:A, :B, :C] ]
 f, g = Hom(:f, A, B), Hom(:g, A, C)
 pair(f, g)
 ```
-
-## Presentations
-
-TODO
 
 ## API
 

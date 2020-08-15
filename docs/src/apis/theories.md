@@ -21,8 +21,8 @@ Categorical structures for which theories are provided include:
 
 The contents of this module can be supplemented by the user, and it is even
 possible to use many parts of Catlab without using this module. The user is free
-to define new syntax systems for the theories here and also to define entirely
-new theories.
+to create new syntax systems for the theories defined here and also to define
+entirely new theories.
 
 ```@autodocs
 Modules = [ Theories ]
