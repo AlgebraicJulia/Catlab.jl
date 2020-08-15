@@ -26,8 +26,8 @@ end
   include("Permutations.jl")
 end
 
-@testset "CSets.jl" begin
-  include("CSets.jl")
+@testset "ACSets.jl" begin
+  include("ACSets.jl")
   include("Graphs.jl")
 end
 
