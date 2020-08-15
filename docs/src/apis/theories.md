@@ -6,7 +6,7 @@ and other categorical structures. The theories correspond, in most cases, to
 standard definitions in category theory and they are used throughout Catlab and
 the AlgebraicJulia ecosystem to structure programs and provide a common
 interface for applied category theory. The module also provides default [syntax
-sysytems](@ref syntax-systems) for many of the theories.
+systems](@ref syntax-systems) for many of the theories.
 
 Categorical structures for which theories are provided include:
 
@@ -18,6 +18,11 @@ Categorical structures for which theories are provided include:
 + bicategories of relations
 + categories with two monoidal products, such as distributive monoidal
   categories
+
+The contents of this module can be supplemented by the user, and it is even
+possible to use many parts of Catlab without using this module. The user is free
+to define new syntax systems for the theories here and also to define entirely
+new theories.
 
 ```@autodocs
 Modules = [ Theories ]
