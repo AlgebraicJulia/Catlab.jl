@@ -39,11 +39,10 @@ the object `FinSet(n)` represents the set {1,...,n}.
 """
 @auto_hash_equals struct FinSet{S,T} <: AbstractSetOb{S,T}
   set::S
-  function FinSet(i::Int)
-    new{Int,Int}(i)
-  end
 end
 
+FinSet(n::Int) = FinSet{Int,Int}(n)
+FinSet(set::S) where {T,S<:AbstractSet{T}} = FinSet{S,T}(set)
 iterable(s::FinSet{Int}) = 1:s.set
 iterable(s::FinSet{<:AbstractSet}) = s.set
 
@@ -127,11 +126,11 @@ compose_impl(f::FinFunctionVector, g::FinFunctionVector) = g.func[f.func]
 # Limits
 ########
 
-function product(Xs::StaticVector{0,FinSet{Int,Int}})
+function product(Xs::StaticVector{0,<:FinSet{Int}})
   Limit(Xs, Multispan(FinSet(1), @SVector FinFunction{Int}[]))
 end
 
-function product(Xs::StaticVector{2,FinSet{Int,Int}})
+function product(Xs::StaticVector{2,<:FinSet{Int}})
   m, n = length.(Xs)
   indices = CartesianIndices((m, n))
   π1 = FinFunction(i -> indices[i][1], m*n, m)
@@ -139,7 +138,7 @@ function product(Xs::StaticVector{2,FinSet{Int,Int}})
   Limit(Xs, Span(π1, π2))
 end
 
-function product(Xs::AbstractVector{FinSet{Int,Int}})
+function product(Xs::AbstractVector{<:FinSet{Int}})
   ns = length.(Xs)
   indices = CartesianIndices(tuple(ns...))
   n = prod(ns)
@@ -147,14 +146,14 @@ function product(Xs::AbstractVector{FinSet{Int,Int}})
   Limit(Xs, Multispan(FinSet(n), πs))
 end
 
-function equalizer(pair::ParallelPair{FinSet{Int,Int}})
+function equalizer(pair::ParallelPair{<:FinSet{Int}})
   f, g = pair
   m = length(dom(pair))
   eq = FinFunction(filter(i -> f(i) == g(i), 1:m), m)
   Limit(pair, Multispan(SVector(eq)))
 end
 
-function equalizer(para::ParallelMorphisms{FinSet{Int,Int}})
+function equalizer(para::ParallelMorphisms{<:FinSet{Int}})
   @assert length(para) >= 1
   f1, frest = para[1], para[2:end]
   m = length(dom(para))
@@ -162,7 +161,7 @@ function equalizer(para::ParallelMorphisms{FinSet{Int,Int}})
   Limit(para, Multispan(SVector(eq)))
 end
 
-function limit(::Type{FinSet{Int,Int}}, d::FreeDiagram)
+function limit(::Type{<:FinSet{Int}}, d::FreeDiagram)
   p = product(ob(d))
   n, leg = length(ob(p)), legs(p)
   satisfy(e,x) = hom(d,e)(leg[src(d,e)](x)) == leg[tgt(d,e)](x)
@@ -173,18 +172,18 @@ end
 # Colimits
 ##########
 
-function coproduct(Xs::StaticVector{0,FinSet{Int,Int}})
+function coproduct(Xs::StaticVector{0,<:FinSet{Int}})
   Colimit(Xs, Multicospan(FinSet(0), @SVector FinFunction{Int}[]))
 end
 
-function coproduct(Xs::StaticVector{2,FinSet{Int,Int}})
+function coproduct(Xs::StaticVector{2,<:FinSet{Int}})
   m, n = length.(Xs)
   ι1 = FinFunction(1:m, m, m+n)
   ι2 = FinFunction(m+1:m+n, n, m+n)
   Colimit(Xs, Cospan(ι1, ι2))
 end
 
-function coproduct(Xs::AbstractVector{FinSet{Int,Int}})
+function coproduct(Xs::AbstractVector{<:FinSet{Int}})
   ns = length.(Xs)
   n = sum(ns)
   offsets = [0,cumsum(ns)...]
@@ -192,7 +191,7 @@ function coproduct(Xs::AbstractVector{FinSet{Int,Int}})
   Colimit(Xs, Multicospan(FinSet(n), ιs))
 end
 
-function coequalizer(pair::ParallelPair{FinSet{Int,Int}})
+function coequalizer(pair::ParallelPair{<:FinSet{Int}})
   f, g = pair
   m, n = length(dom(pair)), length(codom(pair))
   sets = IntDisjointSets(n)
@@ -205,7 +204,7 @@ function coequalizer(pair::ParallelPair{FinSet{Int,Int}})
   Colimit(pair, Multicospan(SVector(coeq)))
 end
 
-function coequalizer(para::ParallelMorphisms{FinSet{Int,Int}})
+function coequalizer(para::ParallelMorphisms{<:FinSet{Int}})
   @assert length(para) >= 1
   f1, frest = para[1], para[2:end]
   m, n = length(dom(para)), length(codom(para))
@@ -221,7 +220,7 @@ function coequalizer(para::ParallelMorphisms{FinSet{Int,Int}})
   Colimit(para, Multicospan(SVector(coeq)))
 end
 
-function colimit(::Type{FinSet{Int,Int}}, d::FreeDiagram)
+function colimit(::Type{<:FinSet{Int}}, d::FreeDiagram)
   cp = coproduct(ob(d))
   n, leg = length(ob(cp)), legs(cp)
   sets = IntDisjointSets(n)

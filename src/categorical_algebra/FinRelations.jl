@@ -47,11 +47,10 @@ See also: `FinSet`.
 """
 @auto_hash_equals struct FinRel{S,T} <: AbstractSetOb{S,T}
   set::S
-  function FinRel(i::Int)
-    new{Int,Int}(i)
-  end
 end
 
+FinRel(i::Int) = new{Int,Int}(i)
+FinRel(set::S) where {T,S<:AbstractSet{T}} = FinRel{S,T}(set)
 iterable(s::FinRel{Int}) = 1:s.set
 iterable(s::FinRel{<:AbstractSet}) = s.set
 
