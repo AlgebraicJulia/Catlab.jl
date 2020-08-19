@@ -63,12 +63,22 @@ function make_tables(::Type{CD}, AD::Type{<:AttrDesc{CD}}, Ts::Type{<:Tuple}) wh
   map(col -> StructArrayWithLength{NamedTuple{Tuple(first.(col)),Tuple{last.(col)...}}}(undef,0), cols)
 end
 
-function Base.fieldnames(::Type{T}) where {T <: StructArrayWithLength{<:NamedTuple}}
-  fieldnames(eltype(T))
+if VERSION < v"1.1"
+  function fieldtypes(::Type{T}) where {T <: NamedTuple}
+    T.parameters[2].parameters
+  end
+
+  function fieldtypes(::Type{T}) where {T <: StructArrayWithLength{<:NamedTuple}}
+    fieldtypes(eltype(T))
+  end
+else
+  function Base.fieldtypes(::Type{T}) where {T <: StructArrayWithLength{<:NamedTuple}}
+    fieldtypes(eltype(T))
+  end
 end
 
-function Base.fieldtypes(::Type{T}) where {T <: StructArrayWithLength{<:NamedTuple}}
-  fieldtypes(eltype(T))
+function Base.fieldnames(::Type{T}) where {T <: StructArrayWithLength{<:NamedTuple}}
+  fieldnames(eltype(T))
 end
 
 function Base.:(==)(x1::T, x2::T) where T <: ACSet
