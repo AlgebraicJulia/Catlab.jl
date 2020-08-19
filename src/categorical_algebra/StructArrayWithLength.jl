@@ -2,28 +2,36 @@ using StructArrays
 
 import Base: length, append!, push!, size
 
-mutable struct StructArrayWithLength{T,N,C,I} <: AbstractArray{T,N}
-  sa::StructArray{T,N,C,I}
+const Tup0 = Union{NamedTuple{(),Tuple{}},Tuple{}}
+
+mutable struct StructArrayWithLength{T,C,I} <: AbstractArray{T,1}
+  sa::StructArray{T,1,C,I}
   n::Int
-  function StructArrayWithLength{T}(::Base.UndefInitializer, sz) where {T}
+  function StructArrayWithLength{T}(::Base.UndefInitializer, sz::Int) where {T}
     sa = StructArray{T}(undef,sz)
-    _,N,C,I = typeof(sa).parameters
-    new{T,N,C,I}(sa,sz)
+    _,_,C,I = typeof(sa).parameters
+    new{T,C,I}(sa,sz)
   end
-  function StructArrayWithLength(sa::StructArray{T,N,C,I}) where {T,N,C,I}
-    new{T,N,C,I}(sa,length(sa))
+  function StructArrayWithLength(sa::StructArray{T,1,C,I}) where {T,N,C,I}
+    new{T,C,I}(sa,length(sa))
+  end
+  function StructArrayWithLength(v::Vector{<:Tup0})
+    @assert length(v) >= 1
+    sa = StructArray{eltype(v)}(undef, 0)
+    T,_,C,I = typeof(sa).parameters
+    new{T,C,I}(sa,length(v))
   end
   function StructArrayWithLength(v::Vector)
     @assert length(v) >= 1
     sa = StructArray(v)
-    T,N,C,I = typeof(sa).parameters
-    new{T,N,C,I}(sa,length(v))
+    T,_,C,I = typeof(sa).parameters
+    new{T,C,I}(sa,length(v))
   end
   function StructArrayWithLength(n::Int;kw...)
     @assert all(length.(last.([kw...])) .== n)
     sa = StructArray(;kw...)
-    T,N,C,I = typeof(sa).parameters
-    new{T,N,C,I}(sa,n)
+    T,_,C,I = typeof(sa).parameters
+    new{T,C,I}(sa,n)
   end
   function StructArrayWithLength(;kw...)
     @assert length([kw...]) != 0
@@ -50,4 +58,7 @@ Base.getproperty(s::StructArrayWithLength, key::Int) = Base.getproperty(getfield
 
 Base.getindex(s::StructArrayWithLength{NamedTuple{(),Tuple{}}}, I::Int) = (;)
 Base.getindex(s::StructArrayWithLength{Tuple}, I::Int) = ()
-Base.@propagate_inbounds Base.getindex(s::StructArrayWithLength, I) = Base.getindex(getfield(s,:sa),I)
+Base.getindex(s::StructArrayWithLength, I) = Base.getindex(getfield(s,:sa),I)
+
+Base.setindex!(s::StructArrayWithLength{<:Tup0}, v, I::Int) = nothing
+Base.setindex!(s::StructArrayWithLength,v,I::Int) = Base.setindex!(getfield(s,:sa),v,I)
