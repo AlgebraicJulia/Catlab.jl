@@ -8,17 +8,18 @@ export UndirectedWiringDiagram, outer_box, box, junction, nboxes, njunctions,
 
 using Compat: isnothing
 
-using ...CategoricalAlgebra.CSets, ...Present
+using ...CategoricalAlgebra.ACSets, ...Present
 using ...CategoricalAlgebra.FinSets: FinFunction
 using ...CategoricalAlgebra.Limits: pushout
-using ...Theories: FreeCategory, dom, codom, compose, ⋅, id
+using ...Theories: FreeSchema, dom, codom, compose, ⋅, id,
+  CatDescType, AttrDescType, SchemaType
 import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,
   add_wires!, singleton_diagram, ocompose
 
 # Data types
 ############
 
-@present TheoryUWD(FreeCategory) begin
+@present TheoryUWD(FreeSchema) begin
   Box::Ob
   Port::Ob
   OuterPort::Ob
@@ -29,43 +30,44 @@ import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,
   outer_junction::Hom(OuterPort,Junction)
 end
 
-const UndirectedWiringDiagram = const AbstractUWD = AbstractCSetType(TheoryUWD)
+const UndirectedWiringDiagram = const AbstractUWD = AbstractACSet{CatDescType(TheoryUWD)}
 const UntypedUndirectedWiringDiagram = const UntypedUWD =
-  CSetType(TheoryUWD, index=[:box, :junction, :outer_junction])
+  CSet{CatDescType(TheoryUWD),(:box, :junction, :outer_junction)}
 
 @present TheoryTypedUWD <: TheoryUWD begin
-  Type::Ob
+  Type::Data
 
-  port_type::Hom(Port,Type)
-  outer_port_type::Hom(OuterPort,Type)
-  junction_type::Hom(Junction,Type)
+  port_type::Attr(Port,Type)
+  outer_port_type::Attr(OuterPort,Type)
+  junction_type::Attr(Junction,Type)
 
   compose(junction, junction_type) == port_type
   compose(outer_junction, junction_type) == outer_port_type
 end
 
-const TypedUndirectedWiringDiagram = const TypedUWD =
-  CSetType(TheoryTypedUWD, data=[:Type],
-           index=[:box, :junction, :outer_junction])
+const AbstractTypedUWD{T} = AbstractACSet{SchemaType(TheoryTypedUWD)..., Tuple{T}}
+const TypedUndirectedWiringDiagram{T} = ACSet{SchemaType(TheoryTypedUWD)..., Tuple{T}, (:box, :junction, :outer_junction)}
+const TypedUWD{T} = TypedUndirectedWiringDiagram{T}
 
-function UndirectedWiringDiagram(::Type{UWD},
-    nports::Int; data_types...) where UWD <: AbstractUWD
-  d = UWD(; data_types...)
-  add_parts!(d, :OuterPort, nports)
+function UndirectedWiringDiagram(::Type{UWD}, nports::Int) where UWD <: AbstractUWD
+  d = UWD()
+  add_parts!(d, :OuterPort, outer_junction=zeros(Int64,nports))
   return d
 end
+
 UndirectedWiringDiagram(nports::Int; kw...) =
   UndirectedWiringDiagram(UntypedUWD, nports; kw...)
 
 function UndirectedWiringDiagram(::Type{UWD},
-    port_types::AbstractVector{T}; data_types...) where {UWD <: AbstractUWD, T}
-  d = UWD(; port_type=T, outer_port_type=T, junction_type=T, data_types...)
+    port_types::AbstractVector{T}; data_types...) where {T, UWD <: AbstractTypedUWD{T}}
+  d = UWD(; data_types...)
   nports = length(port_types)
-  add_parts!(d, :OuterPort, nports, outer_port_type=port_types)
+  add_parts!(d, :OuterPort, nports, outer_junction = zeros(Int64,nports), outer_port_type=port_types)
   return d
 end
-UndirectedWiringDiagram(port_types::AbstractVector; kw...) =
-  UndirectedWiringDiagram(TypedUWD, port_types; kw...)
+
+UndirectedWiringDiagram(port_types::AbstractVector{T}; kw...) where {T} =
+  UndirectedWiringDiagram(TypedUWD{T}, port_types; kw...)
 
 # Imperative interface
 ######################
@@ -107,14 +109,15 @@ add_box!(d::AbstractUWD; data...) = add_part!(d, :Box; data...)
 
 function add_box!(d::AbstractUWD, nports::Int; data...)
   box = add_box!(d; data...)
-  ports = add_parts!(d, :Port, nports, box=box)
+  ports = add_parts!(d, :Port, box=[box for i in 1:nports], junction=zeros(Int64,nports))
   box
 end
 
 function add_box!(d::AbstractUWD, port_types::AbstractVector; data...)
   box = add_box!(d; data...)
   nports = length(port_types)
-  ports = add_parts!(d, :Port, nports, box=box, port_type=port_types)
+  ports = add_parts!(d, :Port, box=[box for i in 1:nports],
+                     junction = zeros(Int64,nports), port_type=port_types)
   box
 end
 

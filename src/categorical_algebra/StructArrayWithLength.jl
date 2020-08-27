@@ -1,6 +1,6 @@
 using StructArrays
 
-import Base: length, append!, push!, size
+import Base: length, append!, push!, size, copy
 
 const Tup0 = Union{NamedTuple{(),Tuple{}},Tuple{}}
 
@@ -12,7 +12,10 @@ mutable struct StructArrayWithLength{T,C,I} <: AbstractArray{T,1}
     _,_,C,I = typeof(sa).parameters
     new{T,C,I}(sa,sz)
   end
-  function StructArrayWithLength(sa::StructArray{T,1,C,I}) where {T,N,C,I}
+  function StructArrayWithLength(sa::StructArray{T,1,C,I},n::Int) where {T,C,I}
+    new{T,C,I}(sa,n)
+  end
+  function StructArrayWithLength(sa::StructArray{T,1,C,I}) where {T,C,I}
     new{T,C,I}(sa,length(sa))
   end
   function StructArrayWithLength(v::Vector{<:Tup0})
@@ -62,3 +65,5 @@ Base.getindex(s::StructArrayWithLength, I) = Base.getindex(getfield(s,:sa),I)
 
 Base.setindex!(s::StructArrayWithLength{<:Tup0}, v, I::Int) = nothing
 Base.setindex!(s::StructArrayWithLength,v,I::Int) = Base.setindex!(getfield(s,:sa),v,I)
+
+Base.copy(s::StructArrayWithLength) = StructArrayWithLength(copy(getfield(s,:sa)),getfield(s,:n))
