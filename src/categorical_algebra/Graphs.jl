@@ -263,8 +263,8 @@ end
 # Constructors from graphs
 #-------------------------
 
-function PropertyGraph{T}(g::Graph, make_vprops, make_eprops) where T
-  pg = PropertyGraph{T}()
+function PropertyGraph{T}(g::Graph, make_vprops, make_eprops; gprops...) where T
+  pg = PropertyGraph{T}(; gprops...)
   add_vertices!(pg, nv(g))
   add_edges!(pg, src(g), tgt(g))
   for v in vertices(g)
@@ -276,11 +276,12 @@ function PropertyGraph{T}(g::Graph, make_vprops, make_eprops) where T
   pg
 end
 
-PropertyGraph{T}(g::Graph) where T = PropertyGraph{T}(g, e->Dict(), v->Dict())
+PropertyGraph{T}(g::Graph; gprops...) where T =
+  PropertyGraph{T}(g, e->Dict(), v->Dict(); gprops...)
 
 function SymmetricPropertyGraph{T}(g::SymmetricGraph,
-                                   make_vprops, make_eprops) where T
-  pg = SymmetricPropertyGraph{T}()
+                                   make_vprops, make_eprops; gprops...) where T
+  pg = SymmetricPropertyGraph{T}(; gprops...)
   add_vertices!(pg, nv(g))
   for v in vertices(g)
     set_vprops!(pg, v, make_vprops(v))
@@ -294,8 +295,8 @@ function SymmetricPropertyGraph{T}(g::SymmetricGraph,
   pg
 end
 
-SymmetricPropertyGraph{T}(g::SymmetricGraph) where T =
-  SymmetricPropertyGraph{T}(g, e->Dict(), v->Dict())
+SymmetricPropertyGraph{T}(g::SymmetricGraph; gprops...) where T =
+  SymmetricPropertyGraph{T}(g, e->Dict(), v->Dict(); gprops...)
 
 # LightGraphs interop
 #####################
