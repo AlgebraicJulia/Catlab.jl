@@ -32,8 +32,7 @@ add_edge!(g, 1, 2)
 @test inneighbors(g, 1) == []
 @test LightGraphs.DiGraph(g) == LightGraphs.path_digraph(3)
 
-g = Graph()
-add_vertices!(g, 4)
+g = Graph(4)
 add_edges!(g, [1,2,3], [2,3,4])
 @test LightGraphs.DiGraph(g) == LightGraphs.path_digraph(4)
 
@@ -56,8 +55,7 @@ add_edge!(g, 2, 3)
 @test neighbors(g, 3) == [2]
 @test LightGraphs.Graph(g) == LightGraphs.path_graph(3)
 
-g = SymmetricGraph()
-add_vertices!(g, 4)
+g = SymmetricGraph(4)
 add_edges!(g, [1,2,3], [2,3,4])
 lg = LightGraphs.DiGraph(4)
 map((src, tgt) -> add_edge!(lg, src, tgt), [1,2,3,2,3,4], [2,3,4,1,2,3])

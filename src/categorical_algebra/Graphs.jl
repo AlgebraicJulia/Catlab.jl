@@ -85,6 +85,13 @@ end
 const AbstractSymmetricGraph = AbstractCSetType(TheorySymmetricGraph)
 const SymmetricGraph = CSetType(TheorySymmetricGraph, index=[:src])
 
+function (::Type{T})(nv::Int) where
+    T <: Union{AbstractGraph,AbstractSymmetricGraph}
+  g = T()
+  add_vertices!(g, nv)
+  g
+end
+
 inv(g::AbstractCSet, args...) = subpart(g, args..., :inv)
 
 add_vertex!(g::AbstractSymmetricGraph; kw...) = add_part!(g, :V; kw...)
