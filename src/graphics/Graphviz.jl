@@ -278,12 +278,19 @@ function to_graphviz(g::AbstractPropertyGraph)::Graph
   )
 end
 
-function to_graphviz(g::AbstractGraph)
-  to_graphviz(PropertyGraph{String}(g))
+function to_graphviz(g::AbstractGraph; prog="dot")
+  to_graphviz(PropertyGraph{Any}(g,
+    prog = prog,
+    node = Dict("shape" => "point"),
+  ))
 end
 
-function to_graphviz(g::AbstractSymmetricGraph)
-  to_graphviz(SymmetricPropertyGraph{String}(g))
+function to_graphviz(g::AbstractSymmetricGraph; prog="neato")
+  to_graphviz(SymmetricPropertyGraph{Any}(g,
+    prog = prog,
+    node = Dict("shape" => "point"),
+    edge = Dict("len" => "0.3"),
+  ))
 end
 
 # Pretty-print
