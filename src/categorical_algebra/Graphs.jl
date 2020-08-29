@@ -308,16 +308,9 @@ SymmetricPropertyGraph{T}(g::SymmetricGraph; gprops...) where T =
 # LightGraphs interop
 #####################
 
-function SimpleDiGraph(g::Union{AbstractGraph,AbstractSymmetricGraph})
-  lg = SimpleDiGraph(nv(g))
-  for e in edges(g)
-    add_edge!(lg, src(g,e), tgt(g,e))
-  end
-  lg
-end
-
-function SimpleGraph(g::Union{AbstractGraph,AbstractSymmetricGraph})
-  lg = SimpleGraph(nv(g))
+function (::Type{LG})(g::Union{AbstractGraph,AbstractSymmetricGraph}) where
+    LG <: Union{SimpleGraph,SimpleDiGraph}
+  lg = LG(nv(g))
   for e in edges(g)
     add_edge!(lg, src(g,e), tgt(g,e))
   end
