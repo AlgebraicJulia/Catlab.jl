@@ -278,18 +278,25 @@ function to_graphviz(g::AbstractPropertyGraph)::Graph
   )
 end
 
-function to_graphviz(g::AbstractGraph; prog="dot")
+function to_graphviz(g::AbstractGraph;
+    prog::String="dot", graph_attrs::AbstractDict=Dict(),
+    node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict())
   to_graphviz(PropertyGraph{Any}(g,
     prog = prog,
-    node = Dict("shape" => "point"),
+    graph = merge(Dict("rankdir" => "LR"), graph_attrs),
+    node = merge(Dict("shape" => "point"), node_attrs),
+    edge = merge(Dict("arrowsize" => "0.5"), edge_attrs),
   ))
 end
 
-function to_graphviz(g::AbstractSymmetricGraph; prog="neato")
+function to_graphviz(g::AbstractSymmetricGraph;
+    prog::String="neato", graph_attrs::AbstractDict=Dict(),
+    node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict())
   to_graphviz(SymmetricPropertyGraph{Any}(g,
     prog = prog,
-    node = Dict("shape" => "point"),
-    edge = Dict("len" => "0.3"),
+    graph = graph_attrs,
+    node = merge(Dict("shape" => "point"), node_attrs),
+    edge = merge(Dict("len" => "0.5"), edge_attrs),
   ))
 end
 
