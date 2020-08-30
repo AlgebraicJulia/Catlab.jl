@@ -12,6 +12,12 @@ using Catlab,
 
 @info "Building Literate.jl docs"
 
+# XXX: Work around old LaTeX distribution in GitHub CI.
+if haskey(ENV, "GITHUB_ACTIONS")
+  import TikzPictures
+  TikzPictures.standaloneWorkaround(true)
+end
+
 # Set Literate.jl config if not being compiled on recognized service.
 config = Dict{String,String}()
 if !(haskey(ENV, "GITHUB_ACTIONS") || haskey(ENV, "GITLAB_CI"))
