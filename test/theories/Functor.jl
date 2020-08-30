@@ -1,6 +1,7 @@
 using Test
 using MLStyle
 import Catlab.Theories: dom, codom
+import Catlab.Syntax: fmap
 
 @present C1(FreeCategory) begin
   A::Ob
@@ -22,7 +23,7 @@ codom(F::TypeF1) = C1
 
 (F::TypeF1)(x::ObExpr) = x
 
-function (F::TypeF1)(morph::HomExpr{:generator})
+function Syntax.fmap(F::TypeF1, morph::HomExpr{:generator})
   @match morph.args[1] begin
     :f => f
     :g => f
@@ -32,7 +33,7 @@ end
 
 F1 = TypeF1()
 
-@test map(F1,compose(g,h)) == compose(f,h)
+@test fmap(F1,compose(g,h)) == compose(f,h)
 
 @present C2(FreeSymmetricMonoidalCategory) begin
   A::Ob
@@ -50,5 +51,5 @@ F2 = DictSymmetricMonoidalFunctor(C2,C2,
                                   Dict(:A => A, :B => B, :C => C),
                                   Dict(:f => f, :g => f, :h => h))
 
-@test map(F2,compose(g,h)) == compose(f,h)
-@test map(F2,otimes(f,g)) == otimes(f,f)
+@test fmap(F2,compose(g,h)) == compose(f,h)
+@test fmap(F2,otimes(f,g)) == otimes(f,f)
