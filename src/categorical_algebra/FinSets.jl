@@ -5,6 +5,7 @@ export FinSet, FinFunction, FinFunctionCallable, FinFunctionVector, force
 
 using AutoHashEquals
 using DataStructures: IntDisjointSets, union!, find_root
+import FunctionWrappers: FunctionWrapper
 using StaticArrays: StaticVector, SVector, @SVector
 
 using ...GAT
@@ -22,7 +23,7 @@ import ..Limits: terminal, product, equalizer, pullback, limit,
 An implementation detail used to control method dispatch. Concrete subtypes
 include `FinSet` and `FinRel`.
 """
-abstract type AbstractSetOb{S} end
+abstract type AbstractSetOb{S,T} end
 
 Base.eltype(::Type{AbstractSetOb{S}}) where S = eltype(S)
 Base.iterate(s::AbstractSetOb, args...) = iterate(iterable(s), args...)
@@ -36,10 +37,12 @@ functions, through types `FinSet{S} where S <: AbstractSet`, as well as the
 skeleton of this category, through the type `FinSet{Int}`. In the latter case,
 the object `FinSet(n)` represents the set {1,...,n}.
 """
-@auto_hash_equals struct FinSet{S} <: AbstractSetOb{S}
+@auto_hash_equals struct FinSet{S,T} <: AbstractSetOb{S,T}
   set::S
 end
 
+FinSet(n::Int) = FinSet{Int,Int}(n)
+FinSet(set::S) where {T,S<:AbstractSet{T}} = FinSet{S,T}(set)
 iterable(s::FinSet{Int}) = 1:s.set
 iterable(s::FinSet{<:AbstractSet}) = s.set
 
@@ -50,7 +53,7 @@ case it is evaluated lazily, or explictly by a vector of integers. In the latter
 case, the function (1↦1, 2↦3, 3↦2, 4↦3), for example, is represented by the
 vector [1,3,2,3].
 """
-abstract type FinFunction{S} end
+abstract type FinFunction{S,T} end
 
 FinFunction(f::Function, args...) = FinFunctionCallable(f, args...)
 FinFunction(f::AbstractVector, args...) = FinFunctionVector(f, args...)
@@ -59,13 +62,15 @@ FinFunction(f::AbstractVector, args...) = FinFunctionVector(f, args...)
 
 To be evaluated lazily unless forced.
 """
-@auto_hash_equals struct FinFunctionCallable{S} <: FinFunction{S}
-  func::Any # Usually `Function` but can be any Julia callable.
-  dom::FinSet{S}
-  codom::FinSet{S}
+@auto_hash_equals struct FinFunctionCallable{S,T} <: FinFunction{S,T}
+  func::FunctionWrapper{T,Tuple{T}} # Usually `Function` but can be any Julia callable.
+  dom::FinSet{S,T}
+  codom::FinSet{S,T}
 end
 FinFunctionCallable(f::Function, dom::Int, codom::Int) =
-  FinFunctionCallable(f, FinSet(dom), FinSet(codom))
+  FinFunctionCallable(FunctionWrapper{Int,Tuple{Int}}(f), FinSet(dom), FinSet(codom))
+FinFunctionCallable(f::Function, dom::FinSet{S,T}, codom::FinSet{S,T}) where {S,T} =
+  FinFunctionCallable(FunctionWrapper{T,Tuple{T}}(f),dom,codom)
 
 (f::FinFunctionCallable)(x) = f.func(x)
 
@@ -73,7 +78,7 @@ FinFunctionCallable(f::Function, dom::Int, codom::Int) =
 
 The elements of the set are assumed to be {1,...,n}.
 """
-@auto_hash_equals struct FinFunctionVector{T<:AbstractVector{Int}} <: FinFunction{Int}
+@auto_hash_equals struct FinFunctionVector{T<:AbstractVector{Int}} <: FinFunction{Int,Int}
   func::T
   codom::Int
 end
@@ -115,17 +120,17 @@ Base.collect(f::FinFunction) = force(f).func
   end
 end
 
-compose_impl(f::FinFunction, g::FinFunction) = g ∘ f
+compose_impl(f::FinFunction{S,T}, g::FinFunction{S,T}) where {S,T} = g ∘ f
 compose_impl(f::FinFunctionVector, g::FinFunctionVector) = g.func[f.func]
 
 # Limits
 ########
 
-function product(Xs::StaticVector{0,FinSet{Int}})
+function product(Xs::StaticVector{0,<:FinSet{Int}})
   Limit(Xs, Multispan(FinSet(1), @SVector FinFunction{Int}[]))
 end
 
-function product(Xs::StaticVector{2,FinSet{Int}})
+function product(Xs::StaticVector{2,<:FinSet{Int}})
   m, n = length.(Xs)
   indices = CartesianIndices((m, n))
   π1 = FinFunction(i -> indices[i][1], m*n, m)
@@ -133,7 +138,7 @@ function product(Xs::StaticVector{2,FinSet{Int}})
   Limit(Xs, Span(π1, π2))
 end
 
-function product(Xs::AbstractVector{FinSet{Int}})
+function product(Xs::AbstractVector{<:FinSet{Int}})
   ns = length.(Xs)
   indices = CartesianIndices(tuple(ns...))
   n = prod(ns)
@@ -141,14 +146,14 @@ function product(Xs::AbstractVector{FinSet{Int}})
   Limit(Xs, Multispan(FinSet(n), πs))
 end
 
-function equalizer(pair::ParallelPair{FinSet{Int}})
+function equalizer(pair::ParallelPair{<:FinSet{Int}})
   f, g = pair
   m = length(dom(pair))
   eq = FinFunction(filter(i -> f(i) == g(i), 1:m), m)
   Limit(pair, Multispan(SVector(eq)))
 end
 
-function equalizer(para::ParallelMorphisms{FinSet{Int}})
+function equalizer(para::ParallelMorphisms{<:FinSet{Int}})
   @assert length(para) >= 1
   f1, frest = para[1], para[2:end]
   m = length(dom(para))
@@ -156,7 +161,7 @@ function equalizer(para::ParallelMorphisms{FinSet{Int}})
   Limit(para, Multispan(SVector(eq)))
 end
 
-function limit(::Type{FinSet{Int}}, d::FreeDiagram)
+function limit(::Type{<:FinSet{Int}}, d::FreeDiagram)
   p = product(ob(d))
   n, leg = length(ob(p)), legs(p)
   satisfy(e,x) = hom(d,e)(leg[src(d,e)](x)) == leg[tgt(d,e)](x)
@@ -167,18 +172,18 @@ end
 # Colimits
 ##########
 
-function coproduct(Xs::StaticVector{0,FinSet{Int}})
+function coproduct(Xs::StaticVector{0,<:FinSet{Int}})
   Colimit(Xs, Multicospan(FinSet(0), @SVector FinFunction{Int}[]))
 end
 
-function coproduct(Xs::StaticVector{2,FinSet{Int}})
+function coproduct(Xs::StaticVector{2,<:FinSet{Int}})
   m, n = length.(Xs)
   ι1 = FinFunction(1:m, m, m+n)
   ι2 = FinFunction(m+1:m+n, n, m+n)
   Colimit(Xs, Cospan(ι1, ι2))
 end
 
-function coproduct(Xs::AbstractVector{FinSet{Int}})
+function coproduct(Xs::AbstractVector{<:FinSet{Int}})
   ns = length.(Xs)
   n = sum(ns)
   offsets = [0,cumsum(ns)...]
@@ -186,7 +191,7 @@ function coproduct(Xs::AbstractVector{FinSet{Int}})
   Colimit(Xs, Multicospan(FinSet(n), ιs))
 end
 
-function coequalizer(pair::ParallelPair{FinSet{Int}})
+function coequalizer(pair::ParallelPair{<:FinSet{Int}})
   f, g = pair
   m, n = length(dom(pair)), length(codom(pair))
   sets = IntDisjointSets(n)
@@ -199,7 +204,7 @@ function coequalizer(pair::ParallelPair{FinSet{Int}})
   Colimit(pair, Multicospan(SVector(coeq)))
 end
 
-function coequalizer(para::ParallelMorphisms{FinSet{Int}})
+function coequalizer(para::ParallelMorphisms{<:FinSet{Int}})
   @assert length(para) >= 1
   f1, frest = para[1], para[2:end]
   m, n = length(dom(para)), length(codom(para))
@@ -215,7 +220,7 @@ function coequalizer(para::ParallelMorphisms{FinSet{Int}})
   Colimit(para, Multicospan(SVector(coeq)))
 end
 
-function colimit(::Type{FinSet{Int}}, d::FreeDiagram)
+function colimit(::Type{<:FinSet{Int}}, d::FreeDiagram)
   cp = coproduct(ob(d))
   n, leg = length(ob(cp)), legs(cp)
   sets = IntDisjointSets(n)

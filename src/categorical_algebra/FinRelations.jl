@@ -6,6 +6,7 @@ export BoolRig, FinRel, FinRelation, FinRelationCallable, FinRelationMatrix,
 
 import Base: +, *
 using AutoHashEquals
+import FunctionWrappers: FunctionWrapper
 
 using ...GAT
 using ...Theories: DistributiveBicategoryRelations
@@ -44,10 +45,12 @@ Base.show(io::IO, x::BoolRig) = print(io, x.value)
 
 See also: `FinSet`.
 """
-@auto_hash_equals struct FinRel{S} <: AbstractSetOb{S}
+@auto_hash_equals struct FinRel{S,T} <: AbstractSetOb{S,T}
   set::S
 end
 
+FinRel(i::Int) = FinRel{Int,Int}(i)
+FinRel(set::S) where {T,S<:AbstractSet{T}} = FinRel{S,T}(set)
 iterable(s::FinRel{Int}) = 1:s.set
 iterable(s::FinRel{<:AbstractSet}) = s.set
 
@@ -58,28 +61,30 @@ represented implicitly by an arbitrary Julia function mapping pairs of elements
 to booleans or explicitly by a matrix (dense or sparse) taking values in the rig
 of booleans ([`BoolRig`](@ref)).
 """
-abstract type FinRelation{S} end
+abstract type FinRelation{S,T} end
 
 FinRelation(R::Function, args...) = FinRelationCallable(R, args...)
 FinRelation(R::AbstractMatrix, args...) = FinRelationMatrix(R, args...)
 
 """ Relation in FinRel defined by a callable Julia object.
 """
-@auto_hash_equals struct FinRelationCallable{S} <: FinRelation{S}
-  rel::Any # Usually `Function` but can be any Julia callable.
-  dom::FinRel{S}
-  codom::FinRel{S}
+@auto_hash_equals struct FinRelationCallable{S,T} <: FinRelation{S,T}
+  rel::FunctionWrapper{Bool,Tuple{T,T}} # Usually `Function` but can be any Julia callable.
+  dom::FinRel{S,T}
+  codom::FinRel{S,T}
+  FinRelationCallable(R::Function, dom::Int, codom::Int) =
+    new{Int,Int}(FunctionWrapper{Int,Tuple{Int,Int}}(R), FinRel(dom), FinRel(codom))
+  FinRelationCallable(R::Function, dom::FinRel{S,T}, codom::FinRel{S,T}) where {S,T} =
+    new{S,T}(FunctionWrapper{T,Tuple{T,T}}(R), dom, codom)
 end
-FinRelationCallable(R::Function, dom::Int, codom::Int) =
-  FinRelationCallable(R, FinRel(dom), FinRel(codom))
 
-(R::FinRelationCallable)(x, y) = R.rel(x, y)
+(R::FinRelationCallable{S,T})(x::T, y::T) where {S,T} = R.rel(x, y)
 
 """ Relation in FinRel represented by a boolean matrix.
 
 Boolean matrices are also known as logical matrices or relation matrices.
 """
-@auto_hash_equals struct FinRelationMatrix{T<:AbstractMatrix{BoolRig}} <: FinRelation{Int}
+@auto_hash_equals struct FinRelationMatrix{T<:AbstractMatrix{BoolRig}} <: FinRelation{Int,Int}
   rel::T
 end
 
