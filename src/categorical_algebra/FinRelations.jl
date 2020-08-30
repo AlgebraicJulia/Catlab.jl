@@ -49,7 +49,7 @@ See also: `FinSet`.
   set::S
 end
 
-FinRel(i::Int) = new{Int,Int}(i)
+FinRel(i::Int) = FinRel{Int,Int}(i)
 FinRel(set::S) where {T,S<:AbstractSet{T}} = FinRel{S,T}(set)
 iterable(s::FinRel{Int}) = 1:s.set
 iterable(s::FinRel{<:AbstractSet}) = s.set
