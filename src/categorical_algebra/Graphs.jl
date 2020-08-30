@@ -284,7 +284,7 @@ function PropertyGraph{T}(g::Graph, make_vprops, make_eprops; gprops...) where T
 end
 
 PropertyGraph{T}(g::Graph; gprops...) where T =
-  PropertyGraph{T}(g, e->Dict(), v->Dict(); gprops...)
+  PropertyGraph{T}(g, v->Dict(), e->Dict(); gprops...)
 
 function SymmetricPropertyGraph{T}(g::SymmetricGraph,
                                    make_vprops, make_eprops; gprops...) where T
@@ -295,15 +295,15 @@ function SymmetricPropertyGraph{T}(g::SymmetricGraph,
   end
   for e in edges(g)
     if e <= inv(g,e)
-      add_edge!(pg, src(g,e), tgt(g,e))
-      set_eprops!(pg, e, make_eprops(e))
+      e1, e2 = add_edge!(pg, src(g,e), tgt(g,e))
+      set_eprops!(pg, e1, make_eprops(e))
     end
   end
   pg
 end
 
 SymmetricPropertyGraph{T}(g::SymmetricGraph; gprops...) where T =
-  SymmetricPropertyGraph{T}(g, e->Dict(), v->Dict(); gprops...)
+  SymmetricPropertyGraph{T}(g, v->Dict(), e->Dict(); gprops...)
 
 # LightGraphs interop
 #####################

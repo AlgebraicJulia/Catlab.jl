@@ -3,8 +3,9 @@ module TestGraphviz
 using Test
 import JSON
 
-using Catlab.CategoricalAlgebra.Graphs: PropertyGraph, SymmetricPropertyGraph,
-  nv, ne, src, tgt, add_vertex!, add_vertices!, add_edge!, get_vprop, get_eprop
+using Catlab.CategoricalAlgebra: Graphs
+using Catlab.CategoricalAlgebra.Graphs: nv, ne, src, tgt,
+  add_vertex!, add_vertices!, add_edge!, add_edges!, get_vprop, get_eprop
 using Catlab.Graphics.Graphviz
 
 # Graphviz to property graph
@@ -15,14 +16,14 @@ data_path(name::String) = joinpath(@__DIR__, "data", name)
 # Undirected simple graph.
 doc = open(JSON.parse, data_path("graphviz_graph.json"), "r")
 parsed = parse_graphviz(doc)
-@test parsed isa SymmetricPropertyGraph
+@test parsed isa Graphs.SymmetricPropertyGraph
 @test nv(parsed) == 10
 @test ne(parsed) ÷ 2 == 13
 
 # Directed simple graph
 doc = open(JSON.parse, data_path("graphviz_digraph.json"), "r")
 parsed = parse_graphviz(doc)
-@test parsed isa PropertyGraph
+@test parsed isa Graphs.PropertyGraph
 @test nv(parsed) == 5
 @test src(parsed) == [1,1,1,2,3,4]
 @test tgt(parsed) == [2,3,4,5,5,5]
@@ -34,41 +35,65 @@ parsed = parse_graphviz(doc)
 # Property graph to Graphviz
 ############################
 
-# Undirected simple graph
-g = SymmetricPropertyGraph{String}()
+# Symmetric property graph.
+g = Graphs.SymmetricPropertyGraph{String}()
 add_vertex!(g, label="v")
 add_vertices!(g, 2)
 add_edge!(g, 1, 2, xlabel="e")
-gv = to_graphviz(g)::Graph
+gv = to_graphviz(g)
 @test !gv.directed
-nodes = filter(s -> isa(s,Node), gv.stmts)
-edges = filter(s -> isa(s,Edge), gv.stmts)
+nodes = filter(s -> s isa Node, gv.stmts)
+edges = filter(s -> s isa Edge, gv.stmts)
 @test length(nodes) == 3
 @test length(edges) == 1
 @test nodes[1].attrs[:label] == "v"
 @test edges[1].attrs[:xlabel] == "e"
 
-# Directed simple graph
-g = PropertyGraph{String}()
+# Property graph.
+g = Graphs.PropertyGraph{String}()
 add_vertices!(g, 3); add_edge!(g, 1, 2); add_edge!(g, 2, 3)
-gv = to_graphviz(g)::Graph
+gv = to_graphviz(g)
 @test gv.directed
-@test length(filter(s -> isa(s,Node), gv.stmts)) == 3
-@test length(filter(s -> isa(s,Edge), gv.stmts)) == 2
+@test length(filter(s -> s isa Node, gv.stmts)) == 3
+@test length(filter(s -> s isa Edge, gv.stmts)) == 2
 
-# Directed multigraph
-g = PropertyGraph{String}()
+# Property graph with multiple edges.
+g = Graphs.PropertyGraph{String}()
 add_vertices!(g, 2)
 add_edge!(g, 1, 2, label="e1")
 add_edge!(g, 1, 2, label="e2")
-gv = to_graphviz(g)::Graph
+gv = to_graphviz(g)
 @test gv.directed
-nodes = filter(s -> isa(s,Node), gv.stmts)
-edges = filter(s -> isa(s,Edge), gv.stmts)
+nodes = filter(s -> s isa Node, gv.stmts)
+edges = filter(s -> s isa Edge, gv.stmts)
 @test length(nodes) == 2
 @test length(edges) == 2
-@test edges[1].attrs[:label] == "e1"
-@test edges[2].attrs[:label] == "e2"
+@test [ edge.attrs[:label] for edge in edges ] == ["e1", "e2"]
+
+# Graph to Graphviz
+###################
+
+# Graph.
+g = Graphs.Graph(3)
+add_edges!(g, [1,2], [2,3])
+gv = to_graphviz(g)
+@test gv.directed
+nodes = filter(s -> s isa Node, gv.stmts)
+@test [ node.attrs[:label] for node in nodes ] == ["", "", ""]
+
+gv = to_graphviz(g, node_labels=true, edge_labels=true)
+nodes = filter(s -> s isa Node, gv.stmts)
+edges = filter(s -> s isa Edge, gv.stmts)
+@test [ node.attrs[:label] for node in nodes ] == ["1", "2", "3"]
+@test [ edge.attrs[:label] for edge in edges ] == ["1", "2"]
+
+# Symmetric graph.
+g = Graphs.SymmetricGraph(3)
+add_edges!(g, [1,2], [2,3])
+gv = to_graphviz(g, edge_labels=true)
+@test !gv.directed
+edges = filter(s -> s isa Edge, gv.stmts)
+@test [ edge.attrs[:label] for edge in edges ] == ["1", "2"]
 
 # Pretty-print
 ##############

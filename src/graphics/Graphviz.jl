@@ -278,26 +278,52 @@ function to_graphviz(g::AbstractPropertyGraph)::Graph
   )
 end
 
+""" Convert a graph to a Graphviz graph.
+
+A simple default style is applied. For more control over the visual appearance,
+first convert the graph to a property graph, define the Graphviz attributes as
+needed, and then convert to a Graphviz graph.
+"""
 function to_graphviz(g::AbstractGraph;
     prog::String="dot", graph_attrs::AbstractDict=Dict(),
-    node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict())
+    node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
+    node_labels::Bool=false, edge_labels::Bool=false)
   to_graphviz(PropertyGraph{Any}(g,
+    node_labeler(node_labels), edge_labeler(edge_labels);
     prog = prog,
-    graph = merge(Dict("rankdir" => "LR"), graph_attrs),
-    node = merge(Dict("shape" => "point"), node_attrs),
-    edge = merge(Dict("arrowsize" => "0.5"), edge_attrs),
+    graph = merge(Dict(:rankdir => "LR"), graph_attrs),
+    node = merge(Dict(
+      :shape => node_labels ? "circle" : "point",
+      :width => "0.05", :height => "0.05", :margin => "0",
+    ), node_attrs),
+    edge = merge(Dict(:arrowsize => "0.5"), edge_attrs),
   ))
 end
 
 function to_graphviz(g::AbstractSymmetricGraph;
     prog::String="neato", graph_attrs::AbstractDict=Dict(),
-    node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict())
+    node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
+    node_labels::Bool=false, edge_labels::Bool=false)
   to_graphviz(SymmetricPropertyGraph{Any}(g,
+    node_labeler(node_labels), edge_labeler(edge_labels);
     prog = prog,
     graph = graph_attrs,
-    node = merge(Dict("shape" => "point"), node_attrs),
-    edge = merge(Dict("len" => "0.5"), edge_attrs),
+    node = merge(Dict(
+      :shape => node_labels ? "circle" : "point",
+      :width => "0.05", :height => "0.05", :margin => "0",
+    ), node_attrs),
+    edge = merge(Dict(:len => "0.5"), edge_attrs),
   ))
+end
+
+function node_labeler(labels::Bool=true)
+  if labels; v -> Dict(:label => string(v))
+  else v -> Dict(:label => "") end
+end
+
+function edge_labeler(labels::Bool=true; label_attr::Symbol=:label)
+  if labels; e -> Dict(label_attr => string(e))
+  else e -> Dict{Symbol,String}() end
 end
 
 # Pretty-print
