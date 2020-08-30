@@ -288,8 +288,13 @@ function to_graphviz(g::AbstractGraph;
     prog::String="dot", graph_attrs::AbstractDict=Dict(),
     node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
     node_labels::Bool=false, edge_labels::Bool=false)
-  to_graphviz(PropertyGraph{Any}(g,
-    node_labeler(node_labels), edge_labeler(edge_labels);
+  node_labeler(v) = Dict(:label => node_labels ? string(v) : "")
+  edge_labeler(e) = if edge_labels
+    Dict(:label => string(e))
+  else
+    Dict{Symbol,String}()
+  end
+  to_graphviz(PropertyGraph{Any}(g, node_labeler, edge_labeler;
     prog = prog,
     graph = merge(Dict(:rankdir => "LR"), graph_attrs),
     node = merge(Dict(
@@ -304,8 +309,14 @@ function to_graphviz(g::AbstractSymmetricGraph;
     prog::String="neato", graph_attrs::AbstractDict=Dict(),
     node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
     node_labels::Bool=false, edge_labels::Bool=false)
-  to_graphviz(SymmetricPropertyGraph{Any}(g,
-    node_labeler(node_labels), edge_labeler(edge_labels);
+  node_labeler(v) = Dict(:label => node_labels ? string(v) : "")
+  edge_labeler(e) = if edge_labels
+    e′ = inv(g,e)
+    Dict(:label => "($(min(e,e′)),$(max(e,e′)))")
+  else
+    Dict{Symbol,String}()
+  end
+  to_graphviz(SymmetricPropertyGraph{Any}(g, node_labeler, edge_labeler;
     prog = prog,
     graph = graph_attrs,
     node = merge(Dict(
@@ -314,16 +325,6 @@ function to_graphviz(g::AbstractSymmetricGraph;
     ), node_attrs),
     edge = merge(Dict(:len => "0.5"), edge_attrs),
   ))
-end
-
-function node_labeler(labels::Bool=true)
-  if labels; v -> Dict(:label => string(v))
-  else v -> Dict(:label => "") end
-end
-
-function edge_labeler(labels::Bool=true; label_attr::Symbol=:label)
-  if labels; e -> Dict(label_attr => string(e))
-  else e -> Dict{Symbol,String}() end
 end
 
 # Pretty-print

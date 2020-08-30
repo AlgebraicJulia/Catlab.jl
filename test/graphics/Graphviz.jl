@@ -93,7 +93,7 @@ add_edges!(g, [1,2], [2,3])
 gv = to_graphviz(g, edge_labels=true)
 @test !gv.directed
 edges = filter(s -> s isa Edge, gv.stmts)
-@test [ edge.attrs[:label] for edge in edges ] == ["1", "2"]
+@test [ edge.attrs[:label] for edge in edges ] == ["(1,3)", "(2,4)"]
 
 # Pretty-print
 ##############
