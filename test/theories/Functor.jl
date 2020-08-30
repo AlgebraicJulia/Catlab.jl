@@ -32,7 +32,7 @@ end
 
 F1 = TypeF1()
 
-@test F1(compose(g,h)) == compose(f,h)
+@test map(F1,compose(g,h)) == compose(f,h)
 
 @present C2(FreeSymmetricMonoidalCategory) begin
   A::Ob
@@ -50,5 +50,5 @@ F2 = DictSymmetricMonoidalFunctor(C2,C2,
                                   Dict(:A => A, :B => B, :C => C),
                                   Dict(:f => f, :g => f, :h => h))
 
-@test F2(compose(g,h)) == compose(f,h)
-@test F2(otimes(f,g)) == otimes(f,f)
+@test map(F2,compose(g,h)) == compose(f,h)
+@test map(F2,otimes(f,g)) == otimes(f,f)

@@ -456,8 +456,8 @@ end
 
 function map_term_constructor(map_name::Symbol, term_constructor::Symbol, term_type::Symbol)
   quote
-    function (F::$map_name)(x::$term_type{$(Expr(:quote, term_constructor))})
-      $term_constructor(map(F, x.args))
+    function Base.map(F::$map_name, x::$term_type{$(Expr(:quote, term_constructor))})
+      $term_constructor(map(y -> map(F,y), x.args))
     end
   end
 end
