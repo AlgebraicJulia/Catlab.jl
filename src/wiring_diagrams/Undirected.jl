@@ -31,6 +31,7 @@ import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,
 end
 
 const UndirectedWiringDiagram = const AbstractUWD = AbstractACSet{CatDescType(TheoryUWD)}
+const AbstractUntypedUWD = AbstractCSet{CatDescType(TheoryUWD)}
 const UntypedUndirectedWiringDiagram = const UntypedUWD =
   CSet{CatDescType(TheoryUWD),(:box, :junction, :outer_junction)}
 
@@ -49,6 +50,8 @@ const AbstractTypedUWD{T} = AbstractACSet{SchemaType(TheoryTypedUWD)..., Tuple{T
 const TypedUndirectedWiringDiagram{T} = ACSet{SchemaType(TheoryTypedUWD)..., Tuple{T}, (:box, :junction, :outer_junction)}
 const TypedUWD{T} = TypedUndirectedWiringDiagram{T}
 
+type_type(::Type{<:TypedUWD{T}}) where {T} = T
+
 function UndirectedWiringDiagram(::Type{UWD}, nports::Int) where UWD <: AbstractUWD
   d = UWD()
   add_parts!(d, :OuterPort, outer_junction=zeros(Int64,nports))
@@ -59,8 +62,8 @@ UndirectedWiringDiagram(nports::Int; kw...) =
   UndirectedWiringDiagram(UntypedUWD, nports; kw...)
 
 function UndirectedWiringDiagram(::Type{UWD},
-    port_types::AbstractVector{T}; data_types...) where {T, UWD <: AbstractTypedUWD{T}}
-  d = UWD(; data_types...)
+    port_types::AbstractVector{T}) where {T, UWD <: AbstractUWD}
+  d = UWD()
   nports = length(port_types)
   add_parts!(d, :OuterPort, nports, outer_junction = zeros(Int64,nports), outer_port_type=port_types)
   return d
@@ -113,7 +116,7 @@ function add_box!(d::AbstractUWD, nports::Int; data...)
   box
 end
 
-function add_box!(d::AbstractUWD, port_types::AbstractVector; data...)
+function add_box!(d::AbstractUWD, port_types::AbstractVector{T}; data...) where {T}
   box = add_box!(d; data...)
   nports = length(port_types)
   ports = add_parts!(d, :Port, box=[box for i in 1:nports],
@@ -122,12 +125,12 @@ function add_box!(d::AbstractUWD, port_types::AbstractVector; data...)
 end
 
 add_junction!(d::AbstractUWD; data...) = add_part!(d, :Junction; data...)
-add_junction!(d::AbstractUWD, type; data...) =
+add_junction!(d::AbstractUWD, type::T; data...) where {T} =
   add_part!(d, :Junction; junction_type=type, data...)
 
 add_junctions!(d::AbstractUWD, njunctions::Int; data...) =
   add_parts!(d, :Junction, njunctions; data...)
-add_junctions!(d::AbstractUWD, types::AbstractVector; data...) =
+add_junctions!(d::AbstractUWD, types::AbstractVector{T}; data...) where {T} =
   add_parts!(d, :Junction, length(types); junction_type=types, data...)
 
 function set_junction!(d::AbstractUWD, port, junction; outer::Bool=false)
@@ -193,6 +196,15 @@ function singleton_diagram(::Type{T}, port_types; data...) where T<:AbstractUWD
   d = empty_diagram(T, port_types)
   add_box!(d, port_types; data...)
   js = add_junctions!(d, port_types)
+  set_junction!(d, js)
+  set_junction!(d, js, outer=true)
+  return d
+end
+
+function singleton_diagram(::Type{T}, port_types, box_data, junction_data) where T<:AbstractUWD
+  d = empty_diagram(T, port_types)
+  add_box!(d, port_types; box_data...)
+  js = add_junctions!(d, port_types; junction_data...)
   set_junction!(d, js)
   set_junction!(d, js, outer=true)
   return d
@@ -290,10 +302,17 @@ function ocompose(f::AbstractUWD, i::Int, g::AbstractUWD)
   f_i = FinFunction(junction(f, ports(f, i)), njunctions(f))
   g_outer = FinFunction(junction(g, outer=true), njunctions(g))
   f_inc, g_inc = pushout(f_i, g_outer)
-  junctions = add_junctions!(h, length(codom(f_inc)))
+
   if has_subpart(h, :junction_type)
-    set_subpart!(h, [collect(f_inc); collect(g_inc)], :junction_type,
-                 [junction_type(f); junction_type(g)])
+    T = type_type(typeof(h))
+    pushout_types = Vector{Union{Missing, T}}(missing, length(codom(f_inc)))
+    coproduct_types = [junction_type(f); junction_type(g)]
+    for (i,idx) in enumerate([collect(f_inc); collect(g_inc)])
+      pushout_types[idx] = coproduct_types[i]
+    end
+    junctions = add_junctions!(h, Vector{T}(pushout_types))
+  else
+    junctions = add_junctions!(h, length(codom(f_inc)))
   end
 
   f_outer = FinFunction(junction(f, outer=true), njunctions(f))

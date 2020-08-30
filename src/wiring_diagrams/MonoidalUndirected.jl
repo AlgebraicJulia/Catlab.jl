@@ -11,7 +11,7 @@ using ...GAT
 using ...Theories: HypergraphCategory
 import ...Theories: dom, codom, compose, id, ⋅, ∘, otimes, ⊗, munit, braid, σ,
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dunit, dcounit, dagger
-using ...CategoricalAlgebra.CSets: disjoint_union
+using ...CategoricalAlgebra.ACSets: disjoint_union
 using ..UndirectedWiringDiagrams
 using ..UndirectedWiringDiagrams: TypedUndirectedWiringDiagram
 import ..UndirectedWiringDiagrams: singleton_diagram, junction_diagram
@@ -66,7 +66,7 @@ otimes(f::UWD, g::UWD) where UWD <: AbstractUWD = disjoint_union(f, g)
 end
 const ObUWD = UndirectedWiringDiagramOb
 
-ObUWD(types::Vector) = ObUWD{TypedUndirectedWiringDiagram}(types)
+ObUWD(types::Vector{T}) where {T} = ObUWD{TypedUndirectedWiringDiagram{T}}(types)
 
 Base.length(A::ObUWD) = length(A.types)
 Base.cat(A::ObUWD{UWD}, B::ObUWD{UWD}) where UWD =

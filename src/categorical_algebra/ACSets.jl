@@ -4,6 +4,7 @@ export AbstractACSet, ACSet, AbstractCSet, CSet,
   copy_parts!, set_subpart!, set_subparts!, disjoint_union
 
 using ...Theories
+import Compat: isnothing
 
 # FIXME: We use a monkey-patched StructArray to get around
 # https://github.com/JuliaArrays/StructArrays.jl/issues/148
@@ -357,6 +358,12 @@ end
     n = length(parts)
     $(Expr(:call, :add_parts!, Expr(:parameters, subparts...), :acs, Expr(:quote, type), :n))
   end
+end
+
+function disjoint_union(acs1::T,acs2::T) where {CD,AD,T<:ACSet{CD,AD}}
+  acs = copy(acs1)
+  copy_parts!(acs,acs2,CD.ob)
+  acs
 end
 
 end
