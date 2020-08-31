@@ -3,20 +3,59 @@ export AbstractACSet, ACSet, AbstractCSet, CSet,
   nparts, has_part, subpart, has_subpart, incident, add_part!, add_parts!,
   copy_parts!, set_subpart!, set_subparts!, disjoint_union
 
-# Compatibility wit hJulia v1.0.
+# Compatibility with Julia v1.0.
 import Base: fieldnames
 if VERSION < v"1.1"
-  function fieldtypes(::Type{T}) where T <: NamedTuple
-    T.parameters[2].parameters
-  end
+  fieldtypes(::Type{T}) where T <: NamedTuple = T.parameters[2].parameters
+  fieldtypes(::Type) = ()
 else
   import Base: fieldtypes
 end
 
-import Compat: isnothing
+using Compat: isnothing
 using StructArrays
 
 using ...Theories
+
+# Struct arrays
+###############
+
+const EmptyTuple = Union{Tuple{},NamedTuple{(),Tuple{}}}
+const StructArray0{T} = Union{StructArray{T},Vector{<:EmptyTuple}}
+
+""" Create StructArray while avoiding inconsistency with zero length arrays.
+
+By default, just constructs a StructArray (a struct of arrays) but when struct
+is empty, returns a ordinary Julia vector (an array of empty structs).
+
+See: https://github.com/JuliaArrays/StructArrays.jl/issues/148
+"""
+make_struct_array(x) = StructArray(x)
+
+function make_struct_array(n::Int, x)
+  sa = StructArray(x)
+  @assert length(sa) == n
+  sa
+end
+
+make_struct_array(::EmptyTuple) = error("Length needed when struct is empty")
+make_struct_array(n::Int, ::T) where T <: EmptyTuple = fill(T(()), n)
+make_struct_array(v::Vector{<:EmptyTuple}) = v
+
+make_struct_array(::Type{SA}, ::UndefInitializer, n::Int) where
+  SA <: StructArray = SA(undef, n)
+make_struct_array(::Type{<:StructArray{T}}, ::UndefInitializer, n::Int) where
+  T <: EmptyTuple = fill(T(()), n)
+
+function fieldtypes(::Type{T}) where {T <: StructArray{<:NamedTuple}}
+  fieldtypes(eltype(T))
+end
+function fieldnames(::Type{T}) where {T <: StructArray{<:NamedTuple}}
+  fieldnames(eltype(T))
+end
+
+# Data types
+############
 
 abstract type AbstractAttributedCSet{CD,AD,Ts} end
 
@@ -76,33 +115,6 @@ function make_tables(::Type{CD}, AD::Type{<:AttrDesc{CD}}, Ts::Type{<:Tuple}) wh
     SA = StructArray{NamedTuple{Tuple(first.(col)),Tuple{last.(col)...}}}
     make_struct_array(SA, undef, 0)
   end
-end
-
-make_struct_array(x) = StructArray(x)
-
-function make_struct_array(n::Int, x)
-  sa = StructArray(x)
-  @assert length(sa) == n
-  sa
-end
-
-const EmptyTuple = Union{Tuple{},NamedTuple{(),Tuple{}}}
-const StructArray0{T} = Union{StructArray{T},Vector{<:EmptyTuple}}
-
-make_struct_array(::EmptyTuple) = error("Length needed when struct is empty")
-make_struct_array(n::Int, ::T) where T <: EmptyTuple = fill(T(()), n)
-make_struct_array(v::Vector{<:EmptyTuple}) = v
-
-make_struct_array(::Type{SA}, ::UndefInitializer, n::Int) where
-  SA <: StructArray = SA(undef, n)
-make_struct_array(::Type{<:StructArray{T}}, ::UndefInitializer, n::Int) where
-  T <: EmptyTuple = fill(T(()), n)
-
-function fieldtypes(::Type{T}) where {T <: StructArray{<:NamedTuple}}
-  fieldtypes(eltype(T))
-end
-function fieldnames(::Type{T}) where {T <: StructArray{<:NamedTuple}}
-  fieldnames(eltype(T))
 end
 
 function Base.:(==)(x1::T, x2::T) where T <: ACSet
