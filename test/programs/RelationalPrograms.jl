@@ -65,8 +65,7 @@ parsed = @tensor_network D[i,j,k] := A[i,ℓ] * B[j,ℓ] * C[k,ℓ]
 
 # Degenerate case: single term.
 parsed = @tensor_network B[i,j,k] = A[i,j,k]
-d = singleton_diagram(RelationDiagram, 3, name=:A)
-set_subpart!(d, :variable, [:i,:j,:k])
+d = singleton_diagram(UntypedRelationDiagram{Symbol}, 3, (name=:A,), (variable=[:i,:j,:k],))
 @test parsed == d
 
 # Degenerate case: no terms.

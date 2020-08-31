@@ -34,5 +34,6 @@ include("MonoidalAdditive.jl")
 include("MonoidalMultiple.jl")
 include("Preorders.jl")
 include("Relations.jl")
+include("Schema.jl")
 
 end

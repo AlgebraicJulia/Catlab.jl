@@ -17,7 +17,7 @@ export FreeDiagram, FixedFreeDiagram,
 using AutoHashEquals
 using StaticArrays: StaticVector, SVector
 
-import ...Theories: ob, hom, dom, codom
+import ...Theories: ob, hom, dom, codom, SchemaType
 using ...Present, ..CSets, ..Graphs
 using ..Graphs: TheoryGraph
 
@@ -178,22 +178,21 @@ right(m::DecoratedCospan) = right(m.cospan)
 ##################
 
 @present TheoryFreeDiagram <: TheoryGraph begin
-  Ob::Ob
-  Hom::Ob
-  ob::Hom(V,Ob)
-  hom::Hom(E,Hom)
+  Ob::Data
+  Hom::Data
+  ob::Attr(V,Ob)
+  hom::Attr(E,Hom)
 end
 
-const FreeDiagram = CSetType(TheoryFreeDiagram, data=[:Ob, :Hom],
-                             index=[:src, :tgt])
+const FreeDiagram{ObT,HomT} = ACSet{SchemaType(TheoryFreeDiagram)...,Tuple{ObT,HomT},(:src,:tgt)}
 
-ob(d::FreeDiagram, args...) = subpart(d, args..., :ob; allowmissing=false)
-hom(d::FreeDiagram, args...) = subpart(d, args..., :hom; allowmissing=false)
+ob(d::FreeDiagram, args...) = subpart(d, args..., :ob)
+hom(d::FreeDiagram, args...) = subpart(d, args..., :hom)
 
 function FreeDiagram(obs::Vector{Ob},
                      homs::Vector{Tuple{Int,Int,Hom}}) where {Ob,Hom}
   @assert all(obs[s] == dom(f) && obs[t] == codom(f) for (s,t,f) in homs)
-  d = FreeDiagram(ob=Ob, hom=Hom)
+  d = FreeDiagram{Ob,Hom}()
   add_vertices!(d, length(obs), ob=obs)
   add_edges!(d, getindex.(homs,1), getindex.(homs,2), hom=last.(homs))
   return d
@@ -203,7 +202,7 @@ end
 #---------------------------
 
 function FreeDiagram(span::Multispan{Ob}) where Ob
-  d = FreeDiagram(ob=Ob, hom=eltype(span))
+  d = FreeDiagram{Ob,eltype(span)}()
   v0 = add_vertex!(d, ob=apex(span))
   vs = add_vertices!(d, length(span), ob=codom.(legs(span)))
   add_edges!(d, fill(v0, length(span)), vs, hom=legs(span))
@@ -211,7 +210,7 @@ function FreeDiagram(span::Multispan{Ob}) where Ob
 end
 
 function FreeDiagram(cospan::Multicospan{Ob}) where Ob
-  d = FreeDiagram(ob=Ob, hom=eltype(cospan))
+  d = FreeDiagram{Ob,eltype(cospan)}()
   vs = add_vertices!(d, length(cospan), ob=dom.(legs(cospan)))
   v0 = add_vertex!(d, ob=base(cospan))
   add_edges!(d, vs, fill(v0, length(cospan)), hom=legs(cospan))
@@ -219,7 +218,7 @@ function FreeDiagram(cospan::Multicospan{Ob}) where Ob
 end
 
 function FreeDiagram(para::ParallelMorphisms{Ob}) where Ob
-  d = FreeDiagram(ob=Ob, hom=eltype(para))
+  d = FreeDiagram{Ob,eltype(para)}()
   add_vertices!(d, 2, ob=[dom(para), codom(para)])
   add_edges!(d, fill(1,length(para)), fill(2,length(para)), hom=hom(para))
   return d

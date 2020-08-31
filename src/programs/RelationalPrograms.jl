@@ -1,14 +1,15 @@
 """ Parse relation expressions in Julia syntax into undirected wiring diagrams.
 """
 module RelationalPrograms
-export RelationDiagram, @relation, @tensor_network, @eval_tensor_network,
+export RelationDiagram, UntypedRelationDiagram, TypedRelationDiagram,
+  @relation, @tensor_network, @eval_tensor_network,
   parse_relation_diagram, parse_tensor_network, compile_tensor_expr
 
 using Compat
 using MLStyle: @match
 
 using ...CategoricalAlgebra.CSets, ...Present
-using ...Theories: FreeCategory
+using ...Theories: FreeCategory, SchemaType
 using ...WiringDiagrams.UndirectedWiringDiagrams
 import ...WiringDiagrams.UndirectedWiringDiagrams: UndirectedWiringDiagram,
   TheoryUWD, TheoryTypedUWD
@@ -17,37 +18,28 @@ import ...WiringDiagrams.UndirectedWiringDiagrams: UndirectedWiringDiagram,
 #################
 
 @present TheoryRelationDiagram <: TheoryUWD begin
-  Name::Ob
-  name::Hom(Box,Name)
-  variable::Hom(Junction,Name)
+  Name::Data
+  name::Attr(Box,Name)
+  variable::Attr(Junction,Name)
 end
 
-const RelationDiagram = AbstractCSetType(TheoryRelationDiagram, data=[:Name])
-const UntypedRelationDiagram = CSetType(
-  TheoryRelationDiagram, data=[:Name],
-  index=[:box, :junction, :outer_junction], unique_index=[:variable])
+const AbstractUntypedRelationDiagram{T} = AbstractACSet{SchemaType(TheoryRelationDiagram)...,Tuple{T}}
+const UntypedRelationDiagram{T} = ACSet{SchemaType(TheoryRelationDiagram)..., Tuple{T},
+  (:box, :junction, :outer_junction, :variable)}
 
 @present TheoryTypedRelationDiagram <: TheoryTypedUWD begin
-  Name::Ob
-  name::Hom(Box,Name)
-  variable::Hom(Junction,Name)
+  Name::Data
+  name::Attr(Box,Name)
+  variable::Attr(Junction,Name)
 end
 
-const TypedRelationDiagram = CSetType(
-  TheoryTypedRelationDiagram, data=[:Name, :Type],
-  index=[:box, :junction, :outer_junction], unique_index=[:variable])
+const AbstractTypedRelationDiagram{Types,Names} = AbstractACSet{SchemaType(TheoryTypedRelationDiagram)...,
+                                                                Tuple{Types,Names}}
+const TypedRelationDiagram{Types,Names} = ACSet{SchemaType(TheoryTypedRelationDiagram)...,
+                                      Tuple{Types,Names}, (:box, :junction, :outer_junction, :variable)}
 
-function UndirectedWiringDiagram(::Type{RelationDiagram}, nports::Int)
-  UndirectedWiringDiagram(UntypedRelationDiagram, nports,
-                          name=Symbol, variable=Symbol)
-end
-function UndirectedWiringDiagram(::Type{RelationDiagram},
-                                 port_types::AbstractVector{Symbol})
-  UndirectedWiringDiagram(TypedRelationDiagram, port_types,
-                          name=Symbol, variable=Symbol)
-end
-
-RelationDiagram(ports) = UndirectedWiringDiagram(RelationDiagram, ports)
+RelationDiagram(ports::Int) = UndirectedWiringDiagram(UntypedRelationDiagram{Symbol}, ports)
+RelationDiagram(ports::Vector{T}) where {T} = UndirectedWiringDiagram(TypedRelationDiagram{T,Symbol}, ports)
 
 # Relations
 ###########
@@ -96,6 +88,12 @@ function parse_relation_diagram(head::Expr, body::Expr)
   end
 end
 
+function assert_unique(xs)
+  @assert length(xs) == 1 "variables must be unique"
+  xs[1]
+end
+
+
 function make_relation_diagram(context::AbstractVector, args::AbstractVector,
                                body::AbstractVector)
   all_vars, all_types = parse_context(context)
@@ -112,7 +110,7 @@ function make_relation_diagram(context::AbstractVector, args::AbstractVector,
   d = RelationDiagram(var_types(outer_vars))
   add_junctions!(d, var_types(all_vars), variable=all_vars)
   set_junction!(d, ports(d, outer=true),
-                incident(d, outer_vars, :variable), outer=true)
+                assert_unique.(incident(d, outer_vars, :variable)), outer=true)
 
   # Add boxes to diagram.
   for expr in body
@@ -122,7 +120,7 @@ function make_relation_diagram(context::AbstractVector, args::AbstractVector,
     end
     vars ⊆ all_vars || error("One of variables $vars is not declared")
     box = add_box!(d, var_types(vars), name=name)
-    set_junction!(d, ports(d, box), incident(d, vars, :variable))
+    set_junction!(d, ports(d, box), assert_unique.(incident(d, vars, :variable)))
   end
 
   return d
@@ -213,10 +211,10 @@ function parse_tensor_network(expr::Expr; all_vars=nothing)
   d = RelationDiagram(length(outer_vars))
   add_junctions!(d, length(all_vars), variable=all_vars)
   set_junction!(d, ports(d, outer=true),
-                incident(d, outer_vars, :variable), outer=true)
+                assert_unique.(incident(d, outer_vars, :variable)), outer=true)
   for (name, vars) in names_and_vars
     box = add_box!(d, length(vars), name=name)
-    set_junction!(d, ports(d, box), incident(d, vars, :variable))
+    set_junction!(d, ports(d, box), assert_unique.(incident(d, vars, :variable)))
   end
   return d
 end

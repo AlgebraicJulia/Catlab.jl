@@ -21,4 +21,8 @@ end
   include("Preorders.jl")
 end
 
+@testset "Schemas" begin
+  include("Schema.jl")
+end
+
 end

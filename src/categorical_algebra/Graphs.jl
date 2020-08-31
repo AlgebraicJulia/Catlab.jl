@@ -17,39 +17,39 @@ import LightGraphs: SimpleGraph, SimpleDiGraph, nv, ne, src, dst,
   neighbors, inneighbors, outneighbors, all_neighbors
 
 using ...Present
-using ...Theories: FreeCategory
+using ...Theories
 using ..CSets
 
 # Graphs
 ########
 
-@present TheoryGraph(FreeCategory) begin
+@present TheoryGraph(FreeSchema) begin
   V::Ob
   E::Ob
   src::Hom(E,V)
   tgt::Hom(E,V)
 end
 
-const AbstractGraph = AbstractCSetType(TheoryGraph)
-const Graph = CSetType(TheoryGraph, index=[:src,:tgt])
+const AbstractGraph = AbstractACSet{CatDescType(TheoryGraph)}
+const Graph = CSet{CatDescType(TheoryGraph), (:src,:tgt)}
 
-nv(g::AbstractCSet) = nparts(g, :V)
-ne(g::AbstractCSet) = nparts(g, :E)
-ne(g::AbstractCSet, src::Int, tgt::Int) =
+nv(g::AbstractACSet) = nparts(g, :V)
+ne(g::AbstractACSet) = nparts(g, :E)
+ne(g::AbstractACSet, src::Int, tgt::Int) =
   count(subpart(g, e, :tgt) == tgt for e in incident(g, src, :src))
 
-src(g::AbstractCSet, args...) = subpart(g, args..., :src)
-tgt(g::AbstractCSet, args...) = subpart(g, args..., :tgt)
-dst(g::AbstractCSet, args...) = tgt(g, args...) # LightGraphs compatibility
+src(g::AbstractACSet, args...) = subpart(g, args..., :src)
+tgt(g::AbstractACSet, args...) = subpart(g, args..., :tgt)
+dst(g::AbstractACSet, args...) = tgt(g, args...) # LightGraphs compatibility
 
-vertices(g::AbstractCSet) = 1:nv(g)
-edges(g::AbstractCSet) = 1:ne(g)
-edges(g::AbstractCSet, src::Int, tgt::Int) =
+vertices(g::AbstractACSet) = 1:nv(g)
+edges(g::AbstractACSet) = 1:ne(g)
+edges(g::AbstractACSet, src::Int, tgt::Int) =
   (e for e in incident(g, src, :src) if subpart(g, e, :tgt) == tgt)
 
-has_vertex(g::AbstractCSet, v) = has_part(g, :V, v)
-has_edge(g::AbstractCSet, e) = has_part(g, :E, e)
-has_edge(g::AbstractCSet, src::Int, tgt::Int) = tgt ∈ outneighbors(g, src)
+has_vertex(g::AbstractACSet, v) = has_part(g, :V, v)
+has_edge(g::AbstractACSet, e) = has_part(g, :E, e)
+has_edge(g::AbstractACSet, src::Int, tgt::Int) = tgt ∈ outneighbors(g, src)
 
 add_vertex!(g::AbstractGraph; kw...) = add_part!(g, :V; kw...)
 add_vertices!(g::AbstractGraph, n::Int; kw...) = add_parts!(g, :V, n; kw...)
@@ -60,7 +60,7 @@ add_edge!(g::AbstractGraph, src::Int, tgt::Int; kw...) =
 function add_edges!(g::AbstractGraph, srcs::AbstractVector{Int},
                     tgts::AbstractVector{Int}; kw...)
   @assert length(srcs) == length(tgts)
-  add_parts!(g, :E, length(srcs); src=srcs, tgt=tgts, kw...)
+  add_parts!(g, :E; src=srcs, tgt=tgts, kw...)
 end
 
 neighbors(g::AbstractGraph, v::Int) = outneighbors(g, v)
@@ -69,8 +69,8 @@ outneighbors(g::AbstractGraph, v::Int) = subpart(g, incident(g, v, :src), :tgt)
 all_neighbors(g::AbstractGraph, v::Int) =
   Iterators.flatten((inneighbors(g, v), outneighbors(g, v)))
 
-# Symmetric graphs
-##################
+# # Symmetric graphs
+# ##################
 
 @present TheorySymmetricGraph <: TheoryGraph begin
   inv::Hom(E,E)
@@ -82,8 +82,8 @@ end
 
 # Don't index `inv` because it is self-inverse and don't index `tgt`
 # because `src` contains the same information due to symmetry of graph.
-const AbstractSymmetricGraph = AbstractCSetType(TheorySymmetricGraph)
-const SymmetricGraph = CSetType(TheorySymmetricGraph, index=[:src])
+const AbstractSymmetricGraph = AbstractCSet{CatDescType(TheorySymmetricGraph)}
+const SymmetricGraph = CSet{CatDescType(TheorySymmetricGraph), (:src,)}
 
 function (::Type{T})(nv::Int) where
     T <: Union{AbstractGraph,AbstractSymmetricGraph}
@@ -92,7 +92,7 @@ function (::Type{T})(nv::Int) where
   g
 end
 
-inv(g::AbstractCSet, args...) = subpart(g, args..., :inv)
+inv(g::AbstractACSet, args...) = subpart(g, args..., :inv)
 
 add_vertex!(g::AbstractSymmetricGraph; kw...) = add_part!(g, :V; kw...)
 add_vertices!(g::AbstractSymmetricGraph, n::Int; kw...) =
@@ -104,10 +104,10 @@ add_edge!(g::AbstractSymmetricGraph, src::Int, tgt::Int; kw...) =
 function add_edges!(g::AbstractSymmetricGraph, srcs::AbstractVector{Int},
                     tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
-  e = add_parts!(g, :E, 2n)
-  set_subparts!(g, e[1:n]; src=srcs, tgt=tgts, inv=e[(n+1):2n], kw...)
-  set_subparts!(g, e[(n+1):2n]; src=tgts, tgt=srcs, inv=e[1:n], kw...)
-  return e
+  k = nparts(g,:E)
+  doubled_kw = map(v -> vcat(v,v),values(kw))
+  add_parts!(g, :E; src=vcat(srcs,tgts), tgt=vcat(tgts,srcs),
+             inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
 end
 
 neighbors(g::AbstractSymmetricGraph, v::Int) =
@@ -126,15 +126,15 @@ Concrete types are [`PropertyGraph`](@ref) and [`SymmetricPropertyGraph`](@ref).
 abstract type AbstractPropertyGraph{T} end
 
 @present TheoryPropertyGraph <: TheoryGraph begin
-  Props::Ob
-  vprops::Hom(V,Props)
-  eprops::Hom(E,Props)
+  Props::Data
+  vprops::Attr(V,Props)
+  eprops::Attr(E,Props)
 end
 
-const _AbstractPropertyGraph =
-  AbstractCSetType(TheoryPropertyGraph, data=[:Props])
-const _PropertyGraph =
-  CSetType(TheoryPropertyGraph, data=[:Props], index=[:src,:tgt])
+const _AbstractPropertyGraph{T} =
+  AbstractACSet{SchemaType(TheoryPropertyGraph)..., Tuple{Dict{Symbol,T}}}
+const _PropertyGraph{T} =
+  ACSet{SchemaType(TheoryPropertyGraph)..., Tuple{Dict{Symbol,T}}, (:src,:tgt)}
 
 """ Graph with properties.
 
@@ -145,28 +145,27 @@ and more efficient to create a specialized C-set type using [`CSetType`](@ref).
 
 See also: [`SymmetricPropertyGraph`](@ref).
 """
-struct PropertyGraph{T,G<:_AbstractPropertyGraph} <: AbstractPropertyGraph{T}
+struct PropertyGraph{T,G<:_AbstractPropertyGraph{T}} <: AbstractPropertyGraph{T}
   graph::G
   gprops::Dict{Symbol,T}
 end
 
-PropertyGraph{T,G}(; kw...) where {T,G<:_AbstractPropertyGraph} =
-  PropertyGraph(G(vprops=Dict{Symbol,T}, eprops=Dict{Symbol,T}),
-                Dict{Symbol,T}(kw...))
-PropertyGraph{T}(; kw...) where T = PropertyGraph{T,_PropertyGraph}(; kw...)
+PropertyGraph{T,G}(; kw...) where {T,G<:_AbstractPropertyGraph{T}} =
+  PropertyGraph(G(), Dict{Symbol,T}(kw...))
+PropertyGraph{T}(; kw...) where T = PropertyGraph{T,_PropertyGraph{T}}(; kw...)
 
 @present TheorySymmetricPropertyGraph <: TheorySymmetricGraph begin
-  Props::Ob
-  vprops::Hom(V,Props)
-  eprops::Hom(E,Props)
+  Props::Data
+  vprops::Attr(V,Props)
+  eprops::Attr(E,Props)
 
   compose(inv,eprops) == eprops # Edge involution preserves edge properties.
 end
 
-const _AbstractSymmetricPropertyGraph =
-  AbstractCSetType(TheorySymmetricPropertyGraph, data=[:Props])
-const _SymmetricPropertyGraph =
-  CSetType(TheorySymmetricPropertyGraph, data=[:Props], index=[:src])
+const _AbstractSymmetricPropertyGraph{T} =
+  AbstractACSet{SchemaType(TheorySymmetricPropertyGraph)..., Tuple{Dict{Symbol,T}}}
+const _SymmetricPropertyGraph{T} =
+  ACSet{SchemaType(TheorySymmetricPropertyGraph)..., Tuple{Dict{Symbol,T}}, (:src,)}
 
 """ Symmetric graphs with properties.
 
@@ -175,17 +174,17 @@ interpreted as "undirected" property (multi)graphs.
 
 See also: [`PropertyGraph`](@ref).
 """
-struct SymmetricPropertyGraph{T,G<:_AbstractSymmetricPropertyGraph} <:
+struct SymmetricPropertyGraph{T,G<:_AbstractSymmetricPropertyGraph{T}} <:
     AbstractPropertyGraph{T}
   graph::G
   gprops::Dict{Symbol,T}
 end
 
-SymmetricPropertyGraph{T,G}(; kw...) where {T,G<:_AbstractSymmetricPropertyGraph} =
-  SymmetricPropertyGraph(G(vprops=Dict{Symbol,T}, eprops=Dict{Symbol,T}),
+SymmetricPropertyGraph{T,G}(; kw...) where {T,G<:_AbstractSymmetricPropertyGraph{T}} =
+  SymmetricPropertyGraph(G(),
                          Dict{Symbol,T}(kw...))
 SymmetricPropertyGraph{T}(; kw...) where T =
-  SymmetricPropertyGraph{T,_SymmetricPropertyGraph}(; kw...)
+  SymmetricPropertyGraph{T,_SymmetricPropertyGraph{T}}(; kw...)
 
 gprops(g::AbstractPropertyGraph) = g.gprops
 vprops(g::AbstractPropertyGraph, v) = subpart(g.graph, v, :vprops)
@@ -230,7 +229,7 @@ add_vertex!(g::AbstractPropertyGraph{T}, d::Dict{Symbol,T}) where T =
   add_part!(g.graph, :V, vprops=d)
 
 add_vertices!(g::AbstractPropertyGraph{T}, n::Int) where T =
-  add_parts!(g.graph, :V, n, vprops=(Dict{Symbol,T}() for i=1:n))
+  add_parts!(g.graph, :V, n, vprops=[Dict{Symbol,T}() for i=1:n])
 
 add_edge!(g::AbstractPropertyGraph{T}, src::Int, tgt::Int; kw...) where T =
   add_edge!(g, src, tgt, Dict{Symbol,T}(kw...))
@@ -244,7 +243,7 @@ function add_edges!(g::PropertyGraph{T}, srcs::AbstractVector{Int},
                     tgts::AbstractVector{Int}, eprops=nothing) where T
   @assert (n = length(srcs)) == length(tgts)
   if isnothing(eprops)
-    eprops = (Dict{Symbol,T}() for i=1:n)
+    eprops = [Dict{Symbol,T}() for i=1:n]
   end
   add_parts!(g.graph, :E, n, src=srcs, tgt=tgts, eprops=eprops)
 end
@@ -268,7 +267,7 @@ function add_edges!(g::SymmetricPropertyGraph{T}, srcs::AbstractVector{Int},
 end
 
 # Constructors from graphs
-#-------------------------
+##########################
 
 function PropertyGraph{T}(g::Graph, make_vprops, make_eprops; gprops...) where T
   pg = PropertyGraph{T}(; gprops...)

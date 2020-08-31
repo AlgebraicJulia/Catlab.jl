@@ -1,445 +1,141 @@
-""" Generic data structures for C-sets (presheaves).
-"""
 module CSets
-export AbstractCSet, AbstractCSetType, CSet, CSetType,
+export AbstractACSet, ACSet, AbstractCSet, CSet,
   nparts, has_part, subpart, has_subpart, incident, add_part!, add_parts!,
   copy_parts!, set_subpart!, set_subparts!, disjoint_union
 
-using Compat
-using Missings: disallowmissing
-using LabelledArrays, StaticArrays
+using ...Theories
+import Compat: isnothing
 
-using ...Present
-using ...Theories: Category, dom, codom
+# FIXME: We use a monkey-patched StructArray to get around
+# https://github.com/JuliaArrays/StructArrays.jl/issues/148
 
-# C-set data types
-##################
+include("StructArrayWithLength.jl")
 
-const NamedSVector{Names,T,N} = SLArray{Tuple{N},T,1,N,Names}
+abstract type AbstractAttributedCSet{CD,AD,Ts} end
 
-""" Abstract type for C-sets (presheaves).
+const AbstractACSet = AbstractAttributedCSet
 
-The type parameters are:
-- `Ob`: tuple of symbols naming objects
-- `Hom`: tuple of symbols naming morphims
-- `Dom`: tuple of integers giving domain of each morphism
-- `Codom`: tuple of integers giving codomain of each morphism
-- `Data`: tuple of symbols naming extra morphisms for data/attributes
-- `DataDom`: tuple of integers giving domain of each data morphism
-
-For example, a graph with one vertex attribute could be represented as
-`AbstractCSet{(:V,:E),(:src,:tgt),(2,2),(1,1),(:vattr,),(1,)}`.
-
-See also: [`CSet`](@ref) and [`CSetType`](@ref).
-"""
-abstract type AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom} end
-
-""" Data type for C-sets (presheaves).
-
-Instead of filling out the type parameters manually, we recommend using the
-function [`CSetType`](@ref) to generate a `CSet` type from a presentation of a
-category. Nevertheless, the first six type parameters are documented at
-[`AbstractCSet`](@ref). The remaining type parameters are an implementation
-detail and should be ignored.
-
-Following LightGraphs.jl, the incidence vectors, stored in the `incidence`
-field, are kept in sorted order. To ensure consistency, no field of the struct
-should ever be mutated directly.
-"""
-mutable struct CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,DataIndex,IsUnique} <:
-       AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom}
-  nparts::NamedSVector{Ob,Int}
-  subparts::NamedSVector{Hom,Vector{Int}}
-  indices::NamedSVector{Index,Vector{Vector{Int}}}
-  data::NamedTuple{Data}
-  data_indices::NamedTuple{DataIndex}
-end
-
-function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,DataIndex,IsUnique}(;
-    kw...) where {Ob,Hom,Dom,Codom,Data,DataDom,Index,DataIndex,IsUnique}
-  CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,DataIndex,IsUnique}((; kw...))
-end
-function CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,DataIndex,IsUnique}(
-    datatypes::NamedTuple{Data}) where
-    {Ob,Hom,Dom,Codom,Data,DataDom,Index,DataIndex,IsUnique}
-  NOb, NHom, NIndex = length(Ob), length(Hom), length(Index)
-  CSet{Ob,Hom,Dom,Codom,Data,DataDom,Index,DataIndex,IsUnique}(
-    NamedSVector{Ob,Int,NOb}(zeros(SVector{NOb,Int})),
-    NamedSVector{Hom,Vector{Int},NHom}(Tuple(Int[] for i in 1:NHom)),
-    NamedSVector{Index,Vector{Vector{Int}},NIndex}(
-      Tuple(Vector{Int}[] for i in 1:NIndex)),
-    NamedTuple{Data}(Union{T,Missing}[] for T in datatypes),
-    NamedTuple{DataIndex}(
-      Dict{datatypes[name], is_unique ? Int : Vector{Int}}()
-      for (name, is_unique) in zip(DataIndex, IsUnique)))
-end
-
-""" Generate an abstract C-set type from a presentation of a category.
-
-See also: [`CSetType`](@ref).
-"""
-function AbstractCSetType(pres::Presentation{Category}; data=())
-  # Only include `Data` and `DataDom` params if there are data morphisms.
-  Ts = CSetTypeParams(pres, data=data)
-  AbstractCSet{(isempty(Ts[5]) ? Ts[1:4] : Ts[1:6])...}
-end
-
-""" Generate a C-set data type from a presentation of a category.
-
-See also: [`AbstractCSetType`](@ref).
-"""
-function CSetType(pres::Presentation{Category}; kw...)
-  CSet{CSetTypeParams(pres; kw...)...}
-end
-
-function CSetTypeParams(pres::Presentation{Category};
-                        data=(), index=(), unique_index=())
-  obs, homs = generators(pres, :Ob), generators(pres, :Hom)
-  data_obs, obs = separate(ob -> nameof(ob) ∈ data, obs)
-  data_homs, homs = separate(hom -> codom(hom) ∈ data_obs, homs)
-  data_index, index = separate(name -> name ∈ nameof.(data_homs),
-                               sort!(index ∪ unique_index))
-  ob_num = ob -> findfirst(obs .== ob)::Int
-  (Tuple(nameof.(obs)), Tuple(nameof.(homs)),
-   Tuple(@. ob_num(dom(homs))), Tuple(@. ob_num(codom(homs))),
-   Tuple(nameof.(data_homs)), Tuple(@. ob_num(dom(data_homs))),
-   Tuple(index), Tuple(data_index), Tuple(k ∈ unique_index for k in data_index))
-end
-separate(f, a::AbstractArray) = (i = f.(a); (a[i], a[.!i]))
-
-function Base.:(==)(x1::T, x2::T) where T <: CSet
-  # The subpart and data indices are redundant, so need not be compared.
-  x1.nparts == x2.nparts && x1.subparts == x2.subparts && x1.data == x2.data
-end
-
-function Base.copy(cset::T) where T <: CSet
-  T(cset.nparts, map(copy, cset.subparts), map(copy, cset.indices),
-    map(copy, cset.data), map(copy, cset.data_indices))
-end
-
-Base.empty(cset::T) where T <: CSet = T(map(eltype, cset.data))
-
-function Base.show(io::IO, mime::MIME"text/plain",
-                   a::AbstractCSet{Ob,Hom,Dom,Codom,Data,DataDom}) where
-    {Ob,Hom,Dom,Codom,Data,DataDom}
-  println(io, "CSet")
-  for ob in Ob
-    println(io, "  $ob = 1:$(nparts(a,ob))")
+struct AttributedCSet{CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed,
+             TablesType <: NamedTuple, IndicesType <: NamedTuple} <: AbstractACSet{CD,AD,Ts}
+  tables::TablesType
+  indices::IndicesType
+  function AttributedCSet{CD,AD,Ts,Idxed}() where {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed}
+    tables = make_tables(CD,AD,Ts)
+    indices = make_indices(CD,AD,Ts,Idxed)
+    new{CD,AD,Ts,Idxed,typeof(tables),typeof(indices)}(tables,indices)
   end
-  for (i, hom) in enumerate(Hom)
-    println(io, "  $hom : $(Ob[Dom[i]]) → $(Ob[Codom[i]])")
-    println(io, "    $(subpart(a,hom))")
+  function AttributedCSet{CD}() where {CD <: CatDesc}
+    AttributedCSet{CD,typeof(AttrDesc(CD())),Tuple{}}()
   end
-  for (i, data) in enumerate(Data)
-    println(io, "  $data : $(Ob[DataDom[i]]) → $(eltype(subpart(a,data)))")
-    println(io, "    $(subpart(a,data))")
+  function AttributedCSet{CD,AD,Ts,Idxed,TT,IT}() where
+    {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple,Idxed,TT <: NamedTuple,IT <: NamedTuple}
+    AttributedCSet{CD,AD,Ts,Idxed}()
+  end
+  function AttributedCSet{CD,AD,Ts,Idxed,TT,IT}(tables::TT,indices::IT) where
+    {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple,Idxed,TT <: NamedTuple,IT <: NamedTuple}
+    new{CD,AD,Ts,Idxed,TT,IT}(tables,indices)
   end
 end
 
-# C-set interface
-#################
+const ACSet = AttributedCSet
 
-""" Number of parts of given type in a C-set.
-"""
-nparts(cset::CSet, type::Symbol) = cset.nparts[type]
+const AbstractCSet{CD} = AbstractACSet{CD,AttrDesc{CD,(),(),(),()},Tuple{}}
+const CSet{CD,Idxed} = ACSet{CD,AttrDesc{CD,(),(),(),()},Tuple{},Idxed}
 
-""" Whether a C-set has a part with the given name.
-"""
-has_part(cset::CSet, type::Symbol) = _has_part(cset, Val(type))
-
-@generated _has_part(cset::CSet{obs}, ::Val{type}) where {obs,type} =
-  type ∈ obs
-
-has_part(cset::CSet, type::Symbol, part::Int) = 1 <= part <= nparts(cset, type)
-has_part(cset::CSet, type::Symbol, part::AbstractVector{Int}) =
-  let n=nparts(cset, type); [ 1 <= x <= n for x in part ] end
-
-""" Get subpart of part in C-set.
-
-Both single and vectorized access are supported.
-"""
-function subpart(cset::CSet, part, name::Symbol; allowmissing=true)
-  x = _subpart(cset, Val(name))[part]
-  @assert allowmissing || !ismissing(x)
-  x
+function make_indices(::Type{CD},AD::Type{<:AttrDesc{CD}},Ts::Type{<:Tuple},Idxed::Tuple) where {CD}
+  ts = Ts.parameters
+  function make_idx(name)
+    if name ∈ CD.hom
+      Vector{Vector{Int}}()
+    elseif name ∈ AD.attr
+      Dict{ts[codom_num(AD,name)],Vector{Int}}()
+    else
+      error("invalid indices parameter")
+    end
+  end
+  NamedTuple{Idxed}(Tuple(make_idx(name) for name in Idxed))
 end
 
-function subpart(cset::CSet, name::Symbol; allowmissing=true)
-  x = _subpart(cset, Val(name))
-  allowmissing ? x : disallowmissing(x)
+function make_tables(::Type{CD}, AD::Type{<:AttrDesc{CD}}, Ts::Type{<:Tuple}) where {CD}
+  ts = Ts.parameters
+  cols = NamedTuple{CD.ob}(Tuple{Symbol,DataType}[] for ob in CD.ob)
+  for hom in CD.hom
+    push!(cols[dom(CD,hom)], (hom,Int))
+  end
+  for attr in AD.attr
+    push!(cols[dom(AD,attr)], (attr,ts[codom_num(AD,attr)]))
+  end
+  map(col -> StructArrayWithLength{NamedTuple{Tuple(first.(col)),Tuple{last.(col)...}}}(undef,0), cols)
 end
 
-@generated function _subpart(cset::T, ::Val{name}) where
-    {name, obs,homs,doms,codoms,data, T <: CSet{obs,homs,doms,codoms,data}}
-  if name ∈ homs
-    :(cset.subparts.$name)
-  elseif name ∈ data
-    :(cset.data.$name)
-  else
-    throw(KeyError(name))
+if VERSION < v"1.1"
+  function fieldtypes(::Type{T}) where {T <: NamedTuple}
+    T.parameters[2].parameters
+  end
+
+  function fieldtypes(::Type{T}) where {T <: StructArrayWithLength{<:NamedTuple}}
+    fieldtypes(eltype(T))
+  end
+else
+  function Base.fieldtypes(::Type{T}) where {T <: StructArrayWithLength{<:NamedTuple}}
+    fieldtypes(eltype(T))
   end
 end
+
+function Base.fieldnames(::Type{T}) where {T <: StructArrayWithLength{<:NamedTuple}}
+  fieldnames(eltype(T))
+end
+
+function Base.:(==)(x1::T, x2::T) where T <: ACSet
+  x1.tables == x2.tables
+end
+
+function Base.copy(acs::T) where T <: ACSet
+  T(map(copy, acs.tables),map(copy, acs.indices))
+end
+
+Base.empty(acs::T) where T <: ACSet = T()
+
+nparts(acs::ACSet,type::Symbol) = length(acs.tables[type])
 
 """ Whether a C-set has a subpart with the given name.
 """
-has_subpart(cset::CSet, name::Symbol) = _has_subpart(cset, Val(name))
+has_subpart(acs::ACSet, name::Symbol) = _has_subpart(acs, Val(name))
 
-@generated function _has_subpart(cset::T, ::Val{name}) where
-    {name, obs,homs,doms,codoms,data, T <: CSet{obs,homs,doms,codoms,data}}
-  name ∈ homs || name ∈ data
+@generated function _has_subpart(::ACSet{CD,AD}, ::Val{name}) where {CD,AD,name}
+  name ∈ CD.hom || name ∈ AD.attr
 end
 
-""" Get superparts incident to part in C-set.
-"""
-incident(cset::CSet, part, name::Symbol) = _incident(cset, part, Val(name))
+has_part(acs::ACSet,type::Symbol,part::Int) = 1 <= part <= nparts(acs,type)
 
-@generated function _incident(cset::T, part, ::Val{name}) where
-    {name, obs,homs,doms,codoms,data,data_doms,indexed,data_indexed,
-     T <: CSet{obs,homs,doms,codoms,data,data_doms,indexed,data_indexed}}
-  if name ∈ indexed
-    :(cset.indices.$name[part])
-  elseif name ∈ data_indexed
-    :(get_data_index.(Ref(cset.data_indices.$name), part))
+subpart(acs::ACSet, part, name::Symbol) = subpart(acs,name)[part]
+subpart(acs::ACSet, name::Symbol) = _subpart(acs,Val(name))
+
+@generated function _subpart(acs::ACSet{CD,AD,Ts},::Val{name}) where {CD,AD,Ts,name}
+  if name ∈ CD.hom
+    :(acs.tables.$(dom(CD,name)).$name)
+  elseif name ∈ AD.attr
+    :(acs.tables.$(dom(AD,name)).$name)
   else
     throw(KeyError(name))
   end
 end
 
-""" Add part of given type to C-set, optionally setting its subparts.
-
-Returns the ID of the added part.
-
-See also: [`add_parts!`](@ref).
-"""
-function add_part!(cset::CSet, type::Symbol, args...; kw...)
-  part = only(_add_parts!(cset, Val(type), 1))
-  set_subparts!(cset, part, args...; kw...)
-  part
-end
-
-""" Add parts of given type to C-set, optionally setting their subparts.
-
-Returns the range of IDs for the added parts.
-
-See also: [`add_part!`](@ref).
-"""
-function add_parts!(cset::CSet, type::Symbol, n::Int, args...; kw...)
-  parts = _add_parts!(cset, Val(type), n)
-  set_subparts!(cset, parts, args...; kw...)
-  parts
-end
-
-@generated function _add_parts!(cset::T, ::Val{type}, n::Int) where
-    {type, obs,homs,doms,codoms,data,data_doms,indexed,
-     T <: CSet{obs,homs,doms,codoms,data,data_doms,indexed}}
-  ob_num = findfirst(obs .== type)::Int
-  in_homs = [ homs[i] for (i, codom) in enumerate(codoms) if codom == ob_num ]
-  out_homs = [ homs[i] for (i, dom) in enumerate(doms) if dom == ob_num ]
-  data_homs = [ data[i] for (i, dom) in enumerate(data_doms) if dom == ob_num ]
-  indexed_homs = filter(hom -> hom ∈ indexed, in_homs)
-  # Question: The three loops could (should?) be unrolled. Or is the Julia
-  # compiler smart enough to do this on its own?
-  quote
-    if n == 0; return 1:0 end
-    nparts = cset.nparts.$type + n
-    cset.nparts = SLVector(cset.nparts; $type=nparts)
-    start = nparts - n + 1
-    for name in $(Tuple(out_homs))
-      resize!(cset.subparts[name], nparts)
-      @inbounds cset.subparts[name][start:nparts] .= 0
-    end
-    for name in $(Tuple(indexed_homs))
-      index = cset.indices[name]
-      resize!(index, nparts)
-      @inbounds for part in start:nparts; index[part] = Int[] end
-    end
-    for name in $(Tuple(data_homs))
-      resize!(cset.data[name], nparts)
-      @inbounds cset.data[name][start:nparts] .= missing
-    end
-    start:nparts
+function Base.show(io::IO, ::MIME"text/plain", acs::AbstractACSet{CD,AD,Ts}) where {CD,AD,Ts}
+  println(io,"ACSet")
+  for ob in CD.ob
+    println(io, "  $ob = 1:$(nparts(acs,ob))")
   end
-end
-
-""" Copy parts from one C-set into another.
-
-All subparts among the selected parts, including any attached data, are
-preserved. Thus, if the selected parts form a sub-C-set, then the whole
-sub-C-set is preserved. On the other hand, if the selected parts do *not* form a
-sub-C-set, then some copied parts will have undefined subparts.
-"""
-copy_parts!(cset::CSet, from::CSet; kw...) =
-  copy_parts!(cset, from, (; kw...))
-copy_parts!(cset::CSet, from::CSet, type::Symbol) =
-  copy_parts!(cset, from, (; type => :))
-copy_parts!(cset::CSet, from::CSet, type::Symbol, parts) =
-  copy_parts!(cset, from, (; type => parts))
-copy_parts!(cset::CSet, from::CSet, types::Tuple) =
-  copy_parts!(cset::CSet, from::CSet, NamedTuple{types}((:) for t in types))
-
-function copy_parts!(cset::CSet, from::CSet, parts::NamedTuple{types}) where types
-  parts = map(types, parts) do type, part
-    part == (:) ? (1:nparts(from, type)) : part
+  for (i,hom) in enumerate(CD.hom)
+    println(io, "  $hom : $(dom(CD,i)) → $(codom(CD,i))")
+    println(io, "    $(subpart(acs,hom))")
   end
-  _copy_parts!(cset, from, NamedTuple{types}(parts))
-end
-
-@generated function _copy_parts!(cset::T, from::T, parts::NamedTuple{types}) where
-    {types, obs,homs,doms,codoms, T <: CSet{obs,homs,doms,codoms}}
-  obnums = [ findfirst(obs .== type)::Int for type in types ]
-  in_obs, out_homs = Symbol[], Tuple{Symbol,Symbol,Symbol}[]
-  for (hom, dom, codom) in zip(homs, doms, codoms)
-    if dom ∈ obnums && codom ∈ obnums
-      push!(in_obs, obs[codom])
-      push!(out_homs, (hom, obs[dom], obs[codom]))
-    end
+  for (i,conc) in enumerate(AD.data)
+    println(io, "  $conc = $(Ts.parameters[i])")
   end
-  in_obs = Tuple(unique!(in_obs))
-  quote
-    newparts = NamedTuple{$types}(tuple($(map(types) do type
-      :(_copy_parts_data!(cset, from, Val($(QuoteNode(type))), parts.$type))
-    end...)))
-    partmaps = NamedTuple{$in_obs}(tuple($(map(in_obs) do type
-      :(Dict{Int,Int}(zip(parts.$type, newparts.$type)))
-    end...)))
-    for (name, dom, codom) in $(Tuple(out_homs))
-      for (p, newp) in zip(parts[dom], newparts[dom])
-        q = subpart(from, p, name)
-        newq = get(partmaps[codom], q, nothing)
-        if !isnothing(newq)
-          set_subpart!(cset, newp, name, newq)
-        end
-      end
-    end
-    newparts
-  end
-end
-
-""" Copy parts of a single type from one C-set to another.
-
-Any data attached to the parts is also copied.
-"""
-@generated function _copy_parts_data!(cset::T, from::T, ::Val{type}, parts) where
-    {type, obs,homs,doms,codoms,data,data_doms,
-     T <: CSet{obs,homs,doms,codoms,data,data_doms}}
-  obnum = findfirst(obs .== type)::Int
-  data_homs = [ data[i] for (i, dom) in enumerate(data_doms) if dom == obnum ]
-  quote
-    newparts = add_parts!(cset, $(QuoteNode(type)), length(parts))
-    for name in $(Tuple(data_homs))
-      set_subpart!(cset, newparts, name, from.data[name][parts])
-    end
-    newparts
-  end
-end
-
-""" Mutate subpart of a part in a C-set.
-
-Both single and vectorized assignment are supported.
-
-See also: [`set_subparts!`](@ref).
-"""
-set_subpart!(cset::CSet, part::Int, name::Symbol, subpart) =
-  _set_subpart!(cset, part, Val(name), subpart)
-
-function set_subpart!(cset::CSet, part::AbstractVector{Int},
-                      name::Symbol, subpart)
-  broadcast(part, subpart) do part, subpart
-    _set_subpart!(cset, part, Val(name), subpart)
-  end
-end
-
-set_subpart!(cset::CSet, ::Colon, name::Symbol, subpart) =
-  set_subpart!(cset, name, subpart)
-set_subpart!(cset::CSet, name::Symbol, new_subpart) =
-  set_subpart!(cset, 1:length(subpart(cset, name)), name, new_subpart)
-
-@generated function _set_subpart!(cset::T, part::Int, ::Val{name}, subpart) where
-    {name, obs,homs,doms,codoms,data,data_doms,indexed,data_indexed,
-     T <: CSet{obs,homs,doms,codoms,data,data_doms,indexed,data_indexed}}
-  if name ∈ homs
-    codom = obs[codoms[findfirst(name .== homs)]]
-  end
-  if name ∈ indexed
-    quote
-      @assert 0 <= subpart <= cset.nparts.$codom
-      old = cset.subparts.$name[part]
-      cset.subparts.$name[part] = subpart
-      if old > 0
-        deletesorted!(cset.indices.$name[old], part)
-      end
-      if subpart > 0
-        insertsorted!(cset.indices.$name[subpart], part)
-      end
-    end
-  elseif name ∈ homs
-    quote
-      @assert 0 <= subpart <= cset.nparts.$codom
-      cset.subparts.$name[part] = subpart
-    end
-  elseif name ∈ data_indexed
-    quote
-      old = cset.data.$name[part]
-      cset.data.$name[part] = subpart
-      if !ismissing(old)
-        unset_data_index!(cset.data_indices.$name, old, part)
-      end
-      if !ismissing(subpart)
-        set_data_index!(cset.data_indices.$name, subpart, part)
-      end
-    end
-  elseif name ∈ data
-    :(cset.data.$name[part] = subpart)
-  else
-    throw(KeyError(name))
-  end
-end
-
-""" Mutate subparts of a part in a C-set.
-
-Both single and vectorized assignment are supported.
-
-See also: [`set_subpart!`](@ref).
-"""
-set_subparts!(cset::CSet, part; kw...) = set_subparts!(cset, part, (; kw...))
-
-function set_subparts!(cset::CSet, part, subparts)
-  for (name, subpart) in pairs(subparts)
-    set_subpart!(cset, part, name, subpart)
-  end
-end
-
-""" Look up key in C-set data index.
-"""
-get_data_index(d::AbstractDict{K,Int}, k::K) where K =
-  get(d, k, nothing)
-get_data_index(d::AbstractDict{K,<:AbstractVector{Int}}, k::K) where K =
-  get(d, k, 1:0)
-
-""" Set key and value for C-set data index.
-"""
-function set_data_index!(d::AbstractDict{K,Int}, k::K, v::Int) where K
-  if haskey(d, k)
-    error("Key $k already defined in unique index")
-  end
-  d[k] = v
-end
-function set_data_index!(d::AbstractDict{K,<:AbstractVector{Int}},
-                         k::K, v::Int) where K
-  insertsorted!(get!(d, k) do; Int[] end, v)
-end
-
-""" Unset key and value from C-set data index.
-"""
-function unset_data_index!(d::AbstractDict{K,Int}, k::K, v::Int) where K
-  @assert pop!(d, k) == v
-end
-function unset_data_index!(d::AbstractDict{K,<:AbstractVector{Int}},
-                           k::K, v::Int) where K
-  vs = d[k]
-  deletesorted!(vs, v)
-  if isempty(vs)
-    delete!(d, k)
+  for (i,attr) in enumerate(AD.attr)
+    println(io, "  $attr : $(dom(AD,i)) ⇒ $(codom(AD,i))")
+    println(io, "    $(subpart(acs,attr))")
   end
 end
 
@@ -457,15 +153,221 @@ function deletesorted!(a::AbstractVector, x)
   deleteat!(a, i)
 end
 
-# Limits and colimits
-#####################
+add_part!(acs::ACSet,type::Symbol,subparts::NamedTuple) =
+  _add_parts!(acs,Val(type),StructArrayWithLength([subparts]))[1]
+add_part!(acs::ACSet,type::Symbol;kwargs...) = add_part!(acs,type,(;kwargs...))
 
-# TODO: Implement (co)limits of C-sets using generic (co)limits interface.
+add_parts!(acs::ACSet,type::Symbol,subpartses::StructArrayWithLength{<:NamedTuple}) =
+  _add_parts!(acs,Val(type),subpartses)
+add_parts!(acs::ACSet,type::Symbol;kwargs...) = add_parts!(acs,type,StructArrayWithLength(;kwargs...))
+add_parts!(acs::ACSet,type::Symbol,n::Int;kwargs...) = add_parts!(acs,type,StructArrayWithLength(n;kwargs...))
 
-function disjoint_union(cset1::T, cset2::T) where {obs, T <: CSet{obs}}
-  cset = copy(cset1)
-  copy_parts!(cset, cset2, obs)
-  cset
+@generated function _add_parts!(acs::ACSet{CD,AD,Ts,Idxed,TT},::Val{ob},
+                                subpartses::T) where
+  {CD,AD,Ts,Idxed,TT,ob,T<:StructArrayWithLength{<:NamedTuple}}
+  @assert fieldnames(T) == fieldnames(fieldtype(TT,ob))
+  @assert fieldtypes(T) == fieldtypes(fieldtype(TT,ob))
+  code = quote
+    append!(acs.tables.$ob,subpartses)
+  end
+  for (i,hom) in enumerate(CD.hom)
+    if hom ∈ Idxed && CD.ob[CD.codom[i]] == ob
+      push!(code.args, :(append!(acs.indices.$(hom), repeat([[]],length(subpartses)))))
+    end
+  end
+  inner_loop = Expr(:block)
+  for hom in fieldnames(T)
+    if hom ∈ Idxed
+      if hom ∈ CD.hom
+        indices_code = quote
+          if has_part(acs, $(Expr(:quote, codom(CD,hom))), subparts.$hom)
+            insertsorted!(acs.indices.$(hom)[subparts.$hom],part_num)
+          elseif subparts.$hom != 0
+            error("No part $(subparts.$hom) exists of type $($(Expr(:quote, codom(CD,hom))))")
+          end
+        end
+        push!(inner_loop.args, indices_code)
+      elseif hom ∈ AD.attr
+        indices_code = quote
+          if subparts.$hom ∈ keys(acs.indices.$hom)
+            insertsorted!(acs.indices.$(hom)[subparts.$hom],part_num)
+          else
+            acs.indices.$(hom)[subparts.$hom] = [part_num]
+          end
+        end
+        push!(inner_loop.args, indices_code)
+      end
+    end
+  end
+  quote
+    k = length(subpartses)
+    n = nparts(acs,ob)
+    $code
+    for (i,subparts) in enumerate(subpartses)
+      part_num = i+n
+      $inner_loop
+    end
+    (n+1):(n+k)
+  end
+end
+
+incident(acs::ACSet, part, name::Symbol) = _incident(acs, part, Val(name))
+
+get_data_index(d::AbstractDict{K,Int}, k::K) where K =
+  get(d, k, nothing)
+get_data_index(d::AbstractDict{K,<:AbstractVector{Int}}, k::K) where K =
+  get(d, k, 1:0)
+
+@generated function _incident(acs::ACSet{CD,AD,Ts,Idxed}, part, ::Val{name}) where {CD,AD,Ts,Idxed,name}
+  if name ∈ Idxed
+    if name ∈ CD.hom
+      :(acs.indices.$name[part])
+    else
+      :(get_data_index.(Ref(acs.indices.$name),part))
+    end
+  else
+    throw(KeyError(name))
+  end
+end
+
+@generated function _set_subpart!(acs::ACSet{CD,AD,Ts,Idxed}, part::Int, ::Val{name}, subpart) where
+  {CD,AD,Ts,Idxed,name}
+  code = Expr(:block)
+  if name ∈ CD.hom
+    push!(code.args, quote
+          old = acs.tables.$(dom(CD,name)).$(name)[part]
+          acs.tables.$(dom(CD,name)).$name[part] = subpart
+          end)
+  elseif name ∈ AD.attr
+    push!(code.args, quote
+          old = acs.tables.$(dom(AD,name)).$(name)[part]
+          acs.tables.$(dom(AD,name)).$name[part] = subpart
+          end)
+  else
+    throw(KeyError(name))
+  end
+  if name ∈ Idxed
+    if name ∈ CD.hom
+      indices_code = quote
+        @assert has_part(acs,$(Expr(:quote, codom(CD,name))),subpart)
+        if old != 0
+          deletesorted!(acs.indices.$(name)[old], part)
+        end
+        insertsorted!(acs.indices.$(name)[subpart], part)
+      end
+      push!(code.args, indices_code)
+    elseif name ∈ AD.attr
+      indices_code = quote
+        @assert pop!(acs.indices.$name, old) == part
+        insertsorted!(get!(acs.indices.$name, subpart) do; Int[] end, part)
+      end
+      push!(code.args, indices_code)
+    end
+  end
+  code
+end
+
+set_subpart!(acs::ACSet, part::Int, name, subpart) = _set_subpart!(acs, part, Val(name), subpart)
+
+function set_subpart!(acs::ACSet, parts::AbstractArray{Int}, name, subparts::AbstractArray)
+  for (part,subpart) in zip(parts,subparts)
+    set_subpart!(acs,part,name,subpart)
+  end
+end
+
+## FIXME: Put a more specific type on this
+function set_subpart!(acs::ACSet, parts::AbstractArray{Int}, name, subpart)
+  for part in parts
+    set_subpart!(acs,part,name,subpart)
+  end
+end
+
+function set_subpart!(acs::ACSet{CD,AD}, parts::Colon, name, subparts) where {CD,AD}
+  part_type = if name ∈ CD.hom
+    dom(CD,name)
+  elseif name ∈ AD.attr
+    dom(AD,name)
+  else
+    error("No such subpart: $name")
+  end
+  set_subpart!(acs,1:nparts(acs,part_type),name,subparts)
+end
+
+function set_subparts!(acs::ACSet, part, subparts)
+  for (name, subpart) in pairs(subparts)
+    set_subpart!(acs, part, name, subpart)
+  end
+end
+
+""" Copy parts from one C-set into another.
+All subparts among the selected parts, including any attached data, are
+preserved. Thus, if the selected parts form a sub-C-set, then the whole
+sub-C-set is preserved. On the other hand, if the selected parts do *not* form a
+sub-C-set, then some copied parts will have undefined subparts.
+"""
+copy_parts!(acs::ACSet, from::ACSet; kw...) =
+  copy_parts!(acs, from, (; kw...))
+copy_parts!(acs::ACSet, from::ACSet, type::Symbol) =
+  copy_parts!(acs, from, (; type => :))
+copy_parts!(acs::ACSet, from::ACSet, type::Symbol, parts) =
+  copy_parts!(acs, from, (; type => parts))
+copy_parts!(acs::ACSet, from::ACSet, types::Tuple) =
+  copy_parts!(acs::ACSet, from::ACSet, NamedTuple{types}((:) for t in types))
+
+function copy_parts!(acs::ACSet, from::ACSet, parts::NamedTuple{types}) where types
+  parts = map(types, parts) do type, part
+    part == (:) ? (1:nparts(from, type)) : part
+  end
+  _copy_parts!(acs, from, NamedTuple{types}(parts))
+end
+
+@generated function _copy_parts!(acs::T, from::T, parts::NamedTuple{types}) where
+    {types,CD,AD,Ts,Idx,T <: ACSet{CD,AD,Ts,Idx}}
+  obnums = ob_num.(CD, types)
+  in_obs, out_homs = Symbol[], Tuple{Symbol,Symbol,Symbol}[]
+  for (hom, dom, codom) in zip(CD.hom, CD.dom, CD.codom)
+    if dom ∈ obnums && codom ∈ obnums
+      push!(in_obs, CD.ob[codom])
+      push!(out_homs, (hom, CD.ob[dom], CD.ob[codom]))
+    end
+  end
+  in_obs = Tuple(unique!(in_obs))
+  quote
+    newparts = NamedTuple{$types}(tuple($(map(types) do type
+      :(_copy_parts_data!(acs, from, Val($(QuoteNode(type))), parts.$type))
+    end...)))
+    partmaps = NamedTuple{$in_obs}(tuple($(map(in_obs) do type
+      :(Dict{Int,Int}(zip(parts.$type, newparts.$type)))
+    end...)))
+    for (name, dom, codom) in $(Tuple(out_homs))
+      for (p, newp) in zip(parts[dom], newparts[dom])
+        q = subpart(from, p, name)
+        newq = get(partmaps[codom], q, nothing)
+        if !isnothing(newq)
+          set_subpart!(acs, newp, name, newq)
+        end
+      end
+    end
+    newparts
+  end
+end
+
+@generated function _copy_parts_data!(acs::T, from::T, ::Val{type}, parts) where
+  {type,CD,AD,T<:ACSet{CD,AD}}
+  homs = collect(filter(hom -> dom(CD,hom) == type, CD.hom))
+  attrs = collect(filter(attr -> dom(AD,attr) == type, AD.attr))
+  subparts = [[Expr(:kw, hom, :(zeros(Int64,n))) for hom in homs];
+              [Expr(:kw, attr, :(subpart(from,parts,$(Expr(:quote, attr))))) for attr in attrs]]
+  quote
+    n = length(parts)
+    $(Expr(:call, :add_parts!, Expr(:parameters, subparts...), :acs, Expr(:quote, type), :n))
+  end
+end
+
+function disjoint_union(acs1::T,acs2::T) where {CD,AD,T<:ACSet{CD,AD}}
+  acs = copy(acs1)
+  copy_parts!(acs,acs2,CD.ob)
+  acs
 end
 
 end

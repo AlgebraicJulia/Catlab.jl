@@ -155,8 +155,8 @@ end
 
 # FIXME: Object type information should be encoded in C-set type.
 limit(diagram::FreeDiagram) =
-  limit(nonmissingtype(eltype(diagram.data.ob)), diagram)
+  limit(nonmissingtype(eltype(diagram.tables.V.ob)), diagram)
 colimit(diagram::FreeDiagram) =
-  colimit(nonmissingtype(eltype(diagram.data.ob)), diagram)
+  colimit(nonmissingtype(eltype(diagram.tables.V.ob)), diagram)
 
 end
