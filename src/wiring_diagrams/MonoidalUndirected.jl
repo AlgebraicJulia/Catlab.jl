@@ -11,7 +11,7 @@ using ...GAT
 using ...Theories: HypergraphCategory
 import ...Theories: dom, codom, compose, id, ⋅, ∘, otimes, ⊗, munit, braid, σ,
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dunit, dcounit, dagger
-using ...CategoricalAlgebra.ACSets: disjoint_union
+using ...CategoricalAlgebra.CSets: disjoint_union
 using ..UndirectedWiringDiagrams
 using ..UndirectedWiringDiagrams: TypedUndirectedWiringDiagram
 import ..UndirectedWiringDiagrams: singleton_diagram, junction_diagram

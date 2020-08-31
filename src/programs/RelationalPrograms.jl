@@ -8,7 +8,7 @@ export RelationDiagram, UntypedRelationDiagram, TypedRelationDiagram,
 using Compat
 using MLStyle: @match
 
-using ...CategoricalAlgebra.ACSets, ...Present
+using ...CategoricalAlgebra.CSets, ...Present
 using ...Theories: FreeCategory, SchemaType
 using ...WiringDiagrams.UndirectedWiringDiagrams
 import ...WiringDiagrams.UndirectedWiringDiagrams: UndirectedWiringDiagram,

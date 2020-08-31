@@ -8,7 +8,7 @@ export UndirectedWiringDiagram, outer_box, box, junction, nboxes, njunctions,
 
 using Compat: isnothing
 
-using ...CategoricalAlgebra.ACSets, ...Present
+using ...CategoricalAlgebra.CSets, ...Present
 using ...CategoricalAlgebra.FinSets: FinFunction
 using ...CategoricalAlgebra.Limits: pushout
 using ...Theories: FreeSchema, dom, codom, compose, ⋅, id,

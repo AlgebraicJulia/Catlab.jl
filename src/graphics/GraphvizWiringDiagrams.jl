@@ -10,7 +10,7 @@ using MLStyle: @match
 using StaticArrays
 
 import ...Theories: HomExpr
-using ...CategoricalAlgebra.ACSets, ...CategoricalAlgebra.Graphs
+using ...CategoricalAlgebra.CSets, ...CategoricalAlgebra.Graphs
 using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
 import ..Graphviz
 import ..Graphviz: to_graphviz

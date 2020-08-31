@@ -1,4 +1,4 @@
-module ACSets
+module CSets
 export AbstractACSet, ACSet, AbstractCSet, CSet,
   nparts, has_part, subpart, has_subpart, incident, add_part!, add_parts!,
   copy_parts!, set_subpart!, set_subparts!, disjoint_union
@@ -11,29 +11,33 @@ import Compat: isnothing
 
 include("StructArrayWithLength.jl")
 
-abstract type AbstractACSet{CD,AD,Ts} end
+abstract type AbstractAttributedCSet{CD,AD,Ts} end
 
-struct ACSet{CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed,
+const AbstractACSet = AbstractAttributedCSet
+
+struct AttributedCSet{CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed,
              TablesType <: NamedTuple, IndicesType <: NamedTuple} <: AbstractACSet{CD,AD,Ts}
   tables::TablesType
   indices::IndicesType
-  function ACSet{CD,AD,Ts,Idxed}() where {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed}
+  function AttributedCSet{CD,AD,Ts,Idxed}() where {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed}
     tables = make_tables(CD,AD,Ts)
     indices = make_indices(CD,AD,Ts,Idxed)
     new{CD,AD,Ts,Idxed,typeof(tables),typeof(indices)}(tables,indices)
   end
-  function ACSet{CD}() where {CD <: CatDesc}
-    ACSet{CD,typeof(AttrDesc(CD())),Tuple{}}()
+  function AttributedCSet{CD}() where {CD <: CatDesc}
+    AttributedCSet{CD,typeof(AttrDesc(CD())),Tuple{}}()
   end
-  function ACSet{CD,AD,Ts,Idxed,TT,IT}() where
+  function AttributedCSet{CD,AD,Ts,Idxed,TT,IT}() where
     {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple,Idxed,TT <: NamedTuple,IT <: NamedTuple}
-    ACSet{CD,AD,Ts,Idxed}()
+    AttributedCSet{CD,AD,Ts,Idxed}()
   end
-  function ACSet{CD,AD,Ts,Idxed,TT,IT}(tables::TT,indices::IT) where
+  function AttributedCSet{CD,AD,Ts,Idxed,TT,IT}(tables::TT,indices::IT) where
     {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple,Idxed,TT <: NamedTuple,IT <: NamedTuple}
     new{CD,AD,Ts,Idxed,TT,IT}(tables,indices)
   end
 end
+
+const ACSet = AttributedCSet
 
 const AbstractCSet{CD} = AbstractACSet{CD,AttrDesc{CD,(),(),(),()},Tuple{}}
 const CSet{CD,Idxed} = ACSet{CD,AttrDesc{CD,(),(),(),()},Tuple{},Idxed}

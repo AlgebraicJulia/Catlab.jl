@@ -16,7 +16,7 @@ export read_yfiles_diagram, parse_yfiles_diagram
 using Compat
 using LightXML
 
-using ...CategoricalAlgebra.ACSets: incident
+using ...CategoricalAlgebra.CSets: incident
 using ...CategoricalAlgebra.Graphs
 using ...WiringDiagrams
 import ...WiringDiagrams.GraphMLWiringDiagrams: parse_graphml_data_value,

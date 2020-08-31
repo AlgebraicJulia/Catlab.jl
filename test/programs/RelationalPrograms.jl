@@ -1,7 +1,7 @@
 module TestRelationalPrograms
 using Test
 
-using Catlab.CategoricalAlgebra.ACSets
+using Catlab.CategoricalAlgebra.CSets
 using Catlab.WiringDiagrams.UndirectedWiringDiagrams
 using Catlab.Programs.RelationalPrograms
 

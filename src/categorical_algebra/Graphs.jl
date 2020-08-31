@@ -18,7 +18,7 @@ import LightGraphs: SimpleGraph, SimpleDiGraph, nv, ne, src, dst,
 
 using ...Present
 using ...Theories
-using ..ACSets
+using ..CSets
 
 # Graphs
 ########

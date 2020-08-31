@@ -18,7 +18,7 @@ using AutoHashEquals
 using StaticArrays: StaticVector, SVector
 
 import ...Theories: ob, hom, dom, codom, SchemaType
-using ...Present, ..ACSets, ..Graphs
+using ...Present, ..CSets, ..Graphs
 using ..Graphs: TheoryGraph
 
 # Diagrams of fixed shape
