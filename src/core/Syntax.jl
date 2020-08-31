@@ -408,7 +408,7 @@ end
 
 abstract type AbstractTheoryMap end
 
-function fmap(T::AbstractTheoryMap, x::Expr) end
+function fmap(T::AbstractTheoryMap, x::GATExpr) end
 
 macro theory_map(head)
   map_name, theory_name, expr_types, dict_impl_name = @match head begin
