@@ -1,7 +1,8 @@
 # ![Catlab.jl](docs/src/assets/logo.png) Catlab.jl
 
 [![Build Status](https://github.com/AlgebraicJulia/Catlab.jl/workflows/Tests/badge.svg)](https://github.com/AlgebraicJulia/Catlab.jl/actions?query=workflow%3ATests)
-[![Latest Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://algebraicjulia.github.io/Catlab.jl/latest)
+[![Stable Docs](https://img.shields.io/badge/docs-stable-blue.svg)](https://algebraicjulia.github.io/Catlab.jl/stable)
+[![Dev Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://algebraicjulia.github.io/Catlab.jl/dev)
 [![Code Coverage](https://codecov.io/gh/AlgebraicJulia/Catlab.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/AlgebraicJulia/Catlab.jl)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.598366.svg)](https://doi.org/10.5281/zenodo.598366)
 
