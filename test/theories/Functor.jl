@@ -1,5 +1,5 @@
 using Test
-using Match
+using MLStyle
 import Catlab.Theories: dom, codom
 
 @present C1(FreeCategory) begin
@@ -30,6 +30,25 @@ function (F::TypeF1)(morph::HomExpr{:generator})
   end
 end
 
-F = TypeF1()
+F1 = TypeF1()
 
-@test F(compose(g,h)) == compose(f,h)
+@test F1(compose(g,h)) == compose(f,h)
+
+@present C2(FreeSymmetricMonoidalCategory) begin
+  A::Ob
+  B::Ob
+  C::Ob
+  f::Hom(A,B)
+  g::Hom(A,B)
+  h::Hom(B,C)
+end
+
+A,B,C = generators(C2,:Ob)
+f,g,h = generators(C2,:Hom)
+
+F2 = DictSymmetricMonoidalFunctor(C2,C2,
+                                  Dict(:A => A, :B => B, :C => C),
+                                  Dict(:f => f, :g => f, :h => h))
+
+@test F2(compose(g,h)) == compose(f,h)
+@test F2(otimes(f,g)) == otimes(f,f)

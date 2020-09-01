@@ -26,4 +26,8 @@ end
   include("Schema.jl")
 end
 
+@testset "Functors" begin
+  include("Functor.jl")
+end
+
 end
