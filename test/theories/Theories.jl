@@ -17,6 +17,10 @@ end
   include("MonoidalAdditive.jl")
 end
 
+@testset "Functors" begin
+  include("Functor.jl")
+end
+
 @testset "Preorders" begin
   include("Preorders.jl")
 end
