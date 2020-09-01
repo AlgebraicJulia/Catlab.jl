@@ -480,7 +480,7 @@ function dict_map_code(map_name::Symbol, theory, theory_name, expr_types, dict_i
                      Expr(:block, struct_members...))
   struct_implementations = map(zip(theory.types, expr_types)) do (ty, expr_ty)
     quote
-      function fmap(F::$dict_impl_name, x::$expr_ty{:generator})
+      function Syntax.fmap(F::$dict_impl_name, x::$expr_ty{:generator})
         F.$(to_struct_attr(ty.name))[x.args[1]]
       end
     end
