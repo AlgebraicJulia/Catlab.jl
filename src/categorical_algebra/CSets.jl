@@ -3,13 +3,59 @@ export AbstractACSet, ACSet, AbstractCSet, CSet,
   nparts, has_part, subpart, has_subpart, incident, add_part!, add_parts!,
   copy_parts!, set_subpart!, set_subparts!, disjoint_union
 
+# Compatibility with Julia v1.0.
+import Base: fieldnames
+if VERSION < v"1.1"
+  fieldtypes(::Type{T}) where T <: NamedTuple = T.parameters[2].parameters
+  fieldtypes(::Type) = ()
+else
+  import Base: fieldtypes
+end
+
+using Compat: isnothing
+using StructArrays
+
 using ...Theories
-import Compat: isnothing
 
-# FIXME: We use a monkey-patched StructArray to get around
-# https://github.com/JuliaArrays/StructArrays.jl/issues/148
+# Struct arrays
+###############
 
-include("StructArrayWithLength.jl")
+const EmptyTuple = Union{Tuple{},NamedTuple{(),Tuple{}}}
+const StructArray0{T} = Union{StructArray{T},Vector{<:EmptyTuple}}
+
+""" Create StructArray while avoiding inconsistency with zero length arrays.
+
+By default, just constructs a StructArray (a struct of arrays) but when struct
+is empty, returns a ordinary Julia vector (an array of empty structs).
+
+See: https://github.com/JuliaArrays/StructArrays.jl/issues/148
+"""
+make_struct_array(x) = StructArray(x)
+
+function make_struct_array(n::Int, x)
+  sa = StructArray(x)
+  @assert length(sa) == n
+  sa
+end
+
+make_struct_array(::EmptyTuple) = error("Length needed when struct is empty")
+make_struct_array(n::Int, ::T) where T <: EmptyTuple = fill(T(()), n)
+make_struct_array(v::Vector{<:EmptyTuple}) = v
+
+make_struct_array(::Type{SA}, ::UndefInitializer, n::Int) where
+  SA <: StructArray = SA(undef, n)
+make_struct_array(::Type{<:StructArray{T}}, ::UndefInitializer, n::Int) where
+  T <: EmptyTuple = fill(T(()), n)
+
+function fieldtypes(::Type{T}) where {T <: StructArray{<:NamedTuple}}
+  fieldtypes(eltype(T))
+end
+function fieldnames(::Type{T}) where {T <: StructArray{<:NamedTuple}}
+  fieldnames(eltype(T))
+end
+
+# Data types
+############
 
 abstract type AbstractAttributedCSet{CD,AD,Ts} end
 
@@ -65,25 +111,10 @@ function make_tables(::Type{CD}, AD::Type{<:AttrDesc{CD}}, Ts::Type{<:Tuple}) wh
   for attr in AD.attr
     push!(cols[dom(AD,attr)], (attr,ts[codom_num(AD,attr)]))
   end
-  map(col -> StructArrayWithLength{NamedTuple{Tuple(first.(col)),Tuple{last.(col)...}}}(undef,0), cols)
-end
-
-if VERSION < v"1.1"
-  function fieldtypes(::Type{T}) where {T <: NamedTuple}
-    T.parameters[2].parameters
+  map(cols) do col
+    SA = StructArray{NamedTuple{Tuple(first.(col)),Tuple{last.(col)...}}}
+    make_struct_array(SA, undef, 0)
   end
-
-  function fieldtypes(::Type{T}) where {T <: StructArrayWithLength{<:NamedTuple}}
-    fieldtypes(eltype(T))
-  end
-else
-  function Base.fieldtypes(::Type{T}) where {T <: StructArrayWithLength{<:NamedTuple}}
-    fieldtypes(eltype(T))
-  end
-end
-
-function Base.fieldnames(::Type{T}) where {T <: StructArrayWithLength{<:NamedTuple}}
-  fieldnames(eltype(T))
 end
 
 function Base.:(==)(x1::T, x2::T) where T <: ACSet
@@ -153,18 +184,20 @@ function deletesorted!(a::AbstractVector, x)
   deleteat!(a, i)
 end
 
-add_part!(acs::ACSet,type::Symbol,subparts::NamedTuple) =
-  _add_parts!(acs,Val(type),StructArrayWithLength([subparts]))[1]
-add_part!(acs::ACSet,type::Symbol;kwargs...) = add_part!(acs,type,(;kwargs...))
+add_part!(acs::ACSet, type::Symbol, subparts::NamedTuple) =
+  _add_parts!(acs, Val(type), make_struct_array([subparts]))[1]
+add_part!(acs::ACSet, type::Symbol; kw...) = add_part!(acs, type, (; kw...))
 
-add_parts!(acs::ACSet,type::Symbol,subpartses::StructArrayWithLength{<:NamedTuple}) =
-  _add_parts!(acs,Val(type),subpartses)
-add_parts!(acs::ACSet,type::Symbol;kwargs...) = add_parts!(acs,type,StructArrayWithLength(;kwargs...))
-add_parts!(acs::ACSet,type::Symbol,n::Int;kwargs...) = add_parts!(acs,type,StructArrayWithLength(n;kwargs...))
+add_parts!(acs::ACSet, type::Symbol, subpartses::StructArray0{<:NamedTuple}) =
+  _add_parts!(acs, Val(type), subpartses)
+add_parts!(acs::ACSet, type::Symbol; kw...) =
+  add_parts!(acs, type, make_struct_array((; kw...)))
+add_parts!(acs::ACSet,type::Symbol, n::Int; kw...) =
+  add_parts!(acs, type, make_struct_array(n, (; kw...)))
 
 @generated function _add_parts!(acs::ACSet{CD,AD,Ts,Idxed,TT},::Val{ob},
                                 subpartses::T) where
-  {CD,AD,Ts,Idxed,TT,ob,T<:StructArrayWithLength{<:NamedTuple}}
+  {CD,AD,Ts,Idxed,TT,ob,T<:StructArray0{<:NamedTuple}}
   @assert fieldnames(T) == fieldnames(fieldtype(TT,ob))
   @assert fieldtypes(T) == fieldtypes(fieldtype(TT,ob))
   code = quote
