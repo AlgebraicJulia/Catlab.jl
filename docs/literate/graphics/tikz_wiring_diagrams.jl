@@ -110,7 +110,7 @@ X = Ob(FreeAbelianBicategoryRelations, :X)
 
 to_tikz(plus(X) ⋅ mcopy(X))
 #-
-to_composejl((mcopy(X)⊕mcopy(X)) ⋅ (id(X)⊕swap(X,X)⊕id(X)) ⋅ (plus(X)⊕plus(X)))
+to_tikz((mcopy(X)⊕mcopy(X)) ⋅ (id(X)⊕swap(X,X)⊕id(X)) ⋅ (plus(X)⊕plus(X)))
 
 # ## Custom styles
 
