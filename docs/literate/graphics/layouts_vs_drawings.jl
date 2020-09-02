@@ -22,7 +22,7 @@ expr = otimes(f, compose(f,g), compose(f,g,h))
 using Catlab.WiringDiagrams, Catlab.Graphics
 
 diagram = to_wiring_diagram(expr)
-graph(diagram)
+WiringDiagrams.graph(diagram)
 
 # ## Graphviz layout
 
