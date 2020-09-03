@@ -377,9 +377,11 @@ becoming nodes of the second kind.
 # Arguments
 - `graph_name="G"`: name of Graphviz graph
 - `prog="neato"`: Graphviz program, usually "neato" or "fdp"
-- `box_labels=nothing`: name of diagram data for box label
-- `port_labels=true`: label ports with their number
-- `junction_labels=nothing`: name of diagram data for junction label
+- `box_labels=false`: if boolean, whether to label boxes with their number;
+   if a symbol, name of data attribute for box label
+- `port_labels=false`: whether to label ports with their number
+- `junction_labels=false`: if boolean, whether to label junctions with their
+  number; if a symbol, name of data attribute for junction label
 - `junction_size="0.075"`: size of junction nodes, in inches
 - `implicit_junctions=false`: whether to represent a junction implicity as a
   wire when it has exactly two incident ports
@@ -393,8 +395,8 @@ end
 
 function to_graphviz_property_graph(d::UndirectedWiringDiagram;
     graph_name::String="G", prog::String="neato",
-    box_labels::Union{Symbol,Nothing}=nothing, port_labels::Bool=true,
-    junction_labels::Union{Symbol,Nothing}=nothing,
+    box_labels::Union{Bool,Symbol}=false, port_labels::Bool=false,
+    junction_labels::Union{Bool,Symbol}=false,
     junction_size::String="0.075", implicit_junctions::Bool=false,
     graph_attrs::AbstractDict=Dict(), node_attrs::AbstractDict=Dict(),
     edge_attrs::AbstractDict=Dict())::SymmetricPropertyGraph
@@ -409,8 +411,12 @@ function to_graphviz_property_graph(d::UndirectedWiringDiagram;
   # Create nodes for boxes.
   box_vs = add_vertices!(graph, nboxes(d))
   set_vprop!(graph, box_vs, :id, [ "box$b" for b in boxes(d) ])
-  set_vprop!(graph, box_vs, :label, isnothing(box_labels) ? "" :
-             node_label.(subpart(d, box_vs, box_labels)))
+  labels = if box_labels isa Symbol
+    node_label.(subpart(d, box_vs, box_labels))
+  else
+    box_labels ? string.(boxes(d)) : ""
+  end
+  set_vprop!(graph, box_vs, :label, labels)
 
   # Create nodes for outer ports.
   outer_vs = add_vertices!(graph, length(ports(d, outer=true)))
@@ -423,12 +429,15 @@ function to_graphviz_property_graph(d::UndirectedWiringDiagram;
   # Create nodes and edge for junctions.
   for j in junctions(d)
     # Get all ports, including outer ports, incident to junction.
-    incident_ports = [ map(ports_with_junction(d, j)) do port
+    incident_ports = [
+      map(ports_with_junction(d, j)) do port
         b = box(d, port)
         (b, findfirst(p -> p == port, ports(d, b)))
-      end; map(ports_with_junction(d, j, outer=true)) do port
+      end;
+      map(ports_with_junction(d, j, outer=true)) do port
         (nboxes(d) + port, port)
-      end ]
+      end
+    ]
 
     # Case 1: Create edge for junction with exactly two incident ports.
     if implicit_junctions && length(incident_ports) == 2
@@ -444,9 +453,11 @@ function to_graphviz_property_graph(d::UndirectedWiringDiagram;
                        shape="circle", label="",
                        style="filled", fillcolor="black",
                        width=junction_size, height=junction_size)
-      if !isnothing(junction_labels)
+      if junction_labels isa Symbol
         set_vprop!(graph, jv, :xlabel,
                    node_label(subpart(d, j, junction_labels)))
+      elseif junction_labels
+        set_vprop!(graph, jv, :xlabel, string(j))
       end
       for (v, port) in incident_ports
         e, e_inv = add_edge!(graph, v, jv)
