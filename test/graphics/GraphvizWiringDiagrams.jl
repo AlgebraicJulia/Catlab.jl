@@ -91,10 +91,15 @@ graph = to_graphviz(d, implicit_junctions=true)
 @test length(stmts(graph, Graphviz.Edge)) == 3
 
 # Box, port, and junction labels.
-notempty = x -> !isempty(x)
-graph = to_graphviz(d, box_labels=:name, junction_labels=:variable)
-@test filter(notempty, stmts(graph, Graphviz.Node, :label)) == ["R", "S"]
+graph = to_graphviz(d, box_labels=:name, junction_labels=:variable,
+                    port_labels=false)
+@test filter(!isempty, stmts(graph, Graphviz.Node, :label)) == ["R", "S"]
 @test stmts(graph, Graphviz.Node, :xlabel) == ["x", "y", "z"]
+@test stmts(graph, Graphviz.Edge, :taillabel) == []
+
+graph = to_graphviz(d, box_labels=true, junction_labels=true, port_labels=true)
+@test filter(!isempty, stmts(graph, Graphviz.Node, :label)) == ["1", "2"]
+@test stmts(graph, Graphviz.Node, :xlabel) == ["1", "2", "3"]
 @test stmts(graph, Graphviz.Edge, :taillabel) == ["1","1","2","1","2","2"]
 
 # Directed layout
