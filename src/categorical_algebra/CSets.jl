@@ -96,7 +96,7 @@ function make_indices(::Type{CD},AD::Type{<:AttrDesc{CD}},Ts::Type{<:Tuple},Idxe
     elseif name ∈ AD.attr
       Dict{ts[codom_num(AD,name)],Vector{Int}}()
     else
-      error("invalid indices parameter")
+      error("Cannot index $name: not a morphism or an attribute")
     end
   end
   NamedTuple{Idxed}(Tuple(make_idx(name) for name in Idxed))
@@ -129,6 +129,16 @@ Base.empty(acs::T) where T <: ACSet = T()
 
 nparts(acs::ACSet,type::Symbol) = length(acs.tables[type])
 
+has_part(acs::ACSet, type::Symbol, part::Int) = 1 <= part <= nparts(acs,type)
+has_part(acs::ACSet, type::Symbol, part::AbstractVector{Int}) =
+  let n=nparts(acs, type); [ 1 <= x <= n for x in part ] end
+
+has_part(acs::ACSet,type::Symbol) = _has_part(acs, Val(type))
+
+@generated function _has_part(::ACSet{CD,AD}, ::Val{type}) where {CD,AD,type}
+  type ∈ CD.ob || type ∈ AD.data
+end
+
 """ Whether a C-set has a subpart with the given name.
 """
 has_subpart(acs::ACSet, name::Symbol) = _has_subpart(acs, Val(name))
@@ -136,8 +146,6 @@ has_subpart(acs::ACSet, name::Symbol) = _has_subpart(acs, Val(name))
 @generated function _has_subpart(::ACSet{CD,AD}, ::Val{name}) where {CD,AD,name}
   name ∈ CD.hom || name ∈ AD.attr
 end
-
-has_part(acs::ACSet,type::Symbol,part::Int) = 1 <= part <= nparts(acs,type)
 
 subpart(acs::ACSet, part, name::Symbol) = subpart(acs,name)[part]
 subpart(acs::ACSet, name::Symbol) = _subpart(acs,Val(name))
