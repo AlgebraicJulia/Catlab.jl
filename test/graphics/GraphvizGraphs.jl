@@ -5,6 +5,14 @@ import JSON
 using Catlab.CategoricalAlgebra.Graphs, Catlab.Graphics.GraphvizGraphs
 import Catlab.Graphics: Graphviz
 
+function stmts(graph::Graphviz.Graph, type::Type)
+  [ stmt for stmt in graph.stmts if stmt isa type ]
+end
+function stmts(graph::Graphviz.Graph, type::Type, attr::Symbol)
+  [ stmt.attrs[attr] for stmt in graph.stmts
+    if stmt isa type && haskey(stmt.attrs, attr) ]
+end
+
 # Property graphs
 #################
 
@@ -32,7 +40,7 @@ parsed = parse_graphviz(doc)
 @test get_vprop(parsed, 1, :size) == [54, 36]
 @test get_eprop(parsed, 1, :spline) isa Vector
 
-# Visualizing
+# Visualizion
 #------------
 
 # Symmetric property graph.
@@ -42,20 +50,18 @@ add_vertices!(g, 2)
 add_edge!(g, 1, 2, xlabel="e")
 gv = to_graphviz(g)
 @test !gv.directed
-nodes = filter(s -> s isa Graphviz.Node, gv.stmts)
-edges = filter(s -> s isa Graphviz.Edge, gv.stmts)
-@test length(nodes) == 3
-@test length(edges) == 1
-@test nodes[1].attrs[:label] == "v"
-@test edges[1].attrs[:xlabel] == "e"
+@test length(stmts(gv, Graphviz.Node)) == 3
+@test length(stmts(gv, Graphviz.Edge)) == 1
+@test stmts(gv, Graphviz.Node, :label) == ["v"]
+@test stmts(gv, Graphviz.Edge, :xlabel) == ["e"]
 
 # Property graph.
 g = PropertyGraph{String}()
 add_vertices!(g, 3); add_edge!(g, 1, 2); add_edge!(g, 2, 3)
 gv = to_graphviz(g)
 @test gv.directed
-@test length(filter(s -> s isa Graphviz.Node, gv.stmts)) == 3
-@test length(filter(s -> s isa Graphviz.Edge, gv.stmts)) == 2
+@test length(stmts(gv, Graphviz.Node)) == 3
+@test length(stmts(gv, Graphviz.Edge)) == 2
 
 # Property graph with multiple edges.
 g = PropertyGraph{String}()
@@ -64,11 +70,9 @@ add_edge!(g, 1, 2, label="e1")
 add_edge!(g, 1, 2, label="e2")
 gv = to_graphviz(g)
 @test gv.directed
-nodes = filter(s -> s isa Graphviz.Node, gv.stmts)
-edges = filter(s -> s isa Graphviz.Edge, gv.stmts)
-@test length(nodes) == 2
-@test length(edges) == 2
-@test [ edge.attrs[:label] for edge in edges ] == ["e1", "e2"]
+@test length(stmts(gv, Graphviz.Node)) == 2
+@test length(stmts(gv, Graphviz.Edge)) == 2
+@test stmts(gv, Graphviz.Edge, :label) == ["e1", "e2"]
 
 # Graphs
 ########
@@ -77,14 +81,11 @@ g = Graph(3)
 add_edges!(g, [1,2], [2,3])
 gv = to_graphviz(g)
 @test gv.directed
-nodes = filter(s -> s isa Graphviz.Node, gv.stmts)
-@test [ node.attrs[:label] for node in nodes ] == ["", "", ""]
+@test stmts(gv, Graphviz.Node, :label) == fill("", 3)
 
 gv = to_graphviz(g, node_labels=true, edge_labels=true)
-nodes = filter(s -> s isa Graphviz.Node, gv.stmts)
-edges = filter(s -> s isa Graphviz.Edge, gv.stmts)
-@test [ node.attrs[:label] for node in nodes ] == ["1", "2", "3"]
-@test [ edge.attrs[:label] for edge in edges ] == ["1", "2"]
+@test stmts(gv, Graphviz.Node, :label) == ["1", "2", "3"]
+@test stmts(gv, Graphviz.Edge, :label) == ["1", "2"]
 
 # Symmetric graphs
 ##################
@@ -93,7 +94,7 @@ g = SymmetricGraph(3)
 add_edges!(g, [1,2], [2,3])
 gv = to_graphviz(g, edge_labels=true)
 @test !gv.directed
-edges = filter(s -> s isa Graphviz.Edge, gv.stmts)
-@test [ edge.attrs[:label] for edge in edges ] == ["(1,3)", "(2,4)"]
+@test stmts(gv, Graphviz.Node, :label) == fill("", 3)
+@test stmts(gv, Graphviz.Edge, :label) == ["(1,3)", "(2,4)"]
 
 end
