@@ -5,7 +5,7 @@ this module to enable the simple but flexible construction of syntax systems.
 """
 module Syntax
 export @syntax, GATExpr, SyntaxDomainError, head, args, first, last,
-  gat_typeof, gat_type_args, invoke_term, functor, @theory_map, AbstractTheoryMap, fmap,
+  gat_typeof, gat_type_args, invoke_term, functor, @theory_map, AbstractTheoryMap, gatmap,
   to_json_sexpr, parse_json_sexpr, show_sexpr, show_unicode, show_latex
 
 import Base: first, last
@@ -408,7 +408,7 @@ end
 
 abstract type AbstractTheoryMap end
 
-function fmap(T::AbstractTheoryMap, x::GATExpr) end
+function gatmap(T::AbstractTheoryMap, x::GATExpr) end
 
 macro theory_map(head)
   map_name, theory_name, expr_types, dict_impl_name = @match head begin
@@ -460,8 +460,8 @@ end
 
 function map_term_constructor(map_name::Symbol, term_constructor::Symbol, term_type::Symbol)
   quote
-    function Syntax.fmap(F::$map_name, x::$term_type{$(Expr(:quote, term_constructor))})
-      $term_constructor(map(y -> fmap(F,y), x.args))
+    function Syntax.gatmap(F::$map_name, x::$term_type{$(Expr(:quote, term_constructor))})
+      $term_constructor(map(y -> gatmap(F,y), x.args))
     end
   end
 end
@@ -480,7 +480,7 @@ function dict_map_code(map_name::Symbol, theory, theory_name, expr_types, dict_i
                      Expr(:block, struct_members...))
   struct_implementations = map(zip(theory.types, expr_types)) do (ty, expr_ty)
     quote
-      function Syntax.fmap(F::$dict_impl_name, x::$expr_ty{:generator})
+      function Syntax.gatmap(F::$dict_impl_name, x::$expr_ty{:generator})
         F.$(to_struct_attr(ty.name))[x.args[1]]
       end
     end
