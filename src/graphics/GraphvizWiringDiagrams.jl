@@ -10,10 +10,10 @@ using MLStyle: @match
 using StaticArrays
 
 import ...Theories: HomExpr
-using ...CategoricalAlgebra.CSets, ...CategoricalAlgebra.Graphs
 using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
+using ...CategoricalAlgebra.CSets, ...CategoricalAlgebra.Graphs, ..GraphvizGraphs
 import ..Graphviz
-import ..Graphviz: to_graphviz
+import ..GraphvizGraphs: to_graphviz
 using ..WiringDiagramLayouts: BoxLayout, PortLayout, WirePoint,
   LayoutOrientation, LeftToRight, RightToLeft, TopToBottom, BottomToTop,
   is_horizontal, is_vertical, box_label, wire_label, port_sign, svector
@@ -515,7 +515,7 @@ the wires are ignored.
 function graphviz_layout(diagram::WiringDiagram; kw...)
   graph = to_graphviz(diagram; kw...)
   doc = JSON.parse(Graphviz.run_graphviz(graph, format="json0"))
-  graphviz_layout(diagram, Graphviz.parse_graphviz(doc))
+  graphviz_layout(diagram, parse_graphviz(doc))
 end
 
 function graphviz_layout(diagram::WiringDiagram, graph::PropertyGraph)

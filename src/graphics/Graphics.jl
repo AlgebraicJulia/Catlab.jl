@@ -5,6 +5,7 @@ using Requires
 
 include("WiringDiagramLayouts.jl")
 include("Graphviz.jl")
+include("GraphvizGraphs.jl")
 include("GraphvizWiringDiagrams.jl")
 include("ComposeWiringDiagrams.jl")
 include("TikZ.jl")
@@ -12,6 +13,7 @@ include("TikZWiringDiagrams.jl")
 include("YFilesWiringDiagrams.jl")
 
 @reexport using .WiringDiagramLayouts
+@reexport using .GraphvizGraphs
 @reexport using .GraphvizWiringDiagrams
 @reexport using .ComposeWiringDiagrams
 @reexport using .TikZWiringDiagrams
