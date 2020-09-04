@@ -30,8 +30,8 @@ using ..CSets
   tgt::Hom(E,V)
 end
 
-const AbstractGraph = AbstractACSet{CatDescType(TheoryGraph)}
-const Graph = CSet{CatDescType(TheoryGraph), (:src,:tgt)}
+const AbstractGraph = AbstractACSetType(TheoryGraph)
+const Graph = CSetType(TheoryGraph, index=[:src,:tgt])
 
 nv(g::AbstractACSet) = nparts(g, :V)
 ne(g::AbstractACSet) = nparts(g, :E)
@@ -82,8 +82,8 @@ end
 
 # Don't index `inv` because it is self-inverse and don't index `tgt`
 # because `src` contains the same information due to symmetry of graph.
-const AbstractSymmetricGraph = AbstractCSet{CatDescType(TheorySymmetricGraph)}
-const SymmetricGraph = CSet{CatDescType(TheorySymmetricGraph), (:src,)}
+const AbstractSymmetricGraph = AbstractACSetType(TheorySymmetricGraph)
+const SymmetricGraph = CSetType(TheorySymmetricGraph, index=[:src])
 
 function (::Type{T})(nv::Int) where
     T <: Union{AbstractGraph,AbstractSymmetricGraph}
@@ -131,6 +131,7 @@ abstract type AbstractPropertyGraph{T} end
   eprops::Attr(E,Props)
 end
 
+# We don't use ACSetType because we are being a bit more flexible here
 const _AbstractPropertyGraph{T} =
   AbstractACSet{SchemaType(TheoryPropertyGraph)..., Tuple{Dict{Symbol,T}}}
 const _PropertyGraph{T} =

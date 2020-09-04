@@ -184,7 +184,7 @@ right(m::DecoratedCospan) = right(m.cospan)
   hom::Attr(E,Hom)
 end
 
-const FreeDiagram{ObT,HomT} = ACSet{SchemaType(TheoryFreeDiagram)...,Tuple{ObT,HomT},(:src,:tgt)}
+const FreeDiagram = ACSetType(TheoryFreeDiagram,index = [:src,:tgt])
 
 ob(d::FreeDiagram, args...) = subpart(d, args..., :ob)
 hom(d::FreeDiagram, args...) = subpart(d, args..., :hom)
