@@ -30,10 +30,10 @@ import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,
   outer_junction::Hom(OuterPort,Junction)
 end
 
-const UndirectedWiringDiagram = const AbstractUWD = AbstractACSet{CatDescType(TheoryUWD)}
-const AbstractUntypedUWD = AbstractCSet{CatDescType(TheoryUWD)}
+const UndirectedWiringDiagram = const AbstractUWD = AbstractACSetType(TheoryUWD)
+const AbstractUntypedUWD = AbstractCSetType(TheoryUWD)
 const UntypedUndirectedWiringDiagram = const UntypedUWD =
-  CSet{CatDescType(TheoryUWD),(:box, :junction, :outer_junction)}
+  CSetType(TheoryUWD, index=[:box, :junction, :outer_junction])
 
 @present TheoryTypedUWD <: TheoryUWD begin
   Type::Data
@@ -46,9 +46,9 @@ const UntypedUndirectedWiringDiagram = const UntypedUWD =
   compose(outer_junction, junction_type) == outer_port_type
 end
 
-const AbstractTypedUWD{T} = AbstractACSet{SchemaType(TheoryTypedUWD)..., Tuple{T}}
-const TypedUndirectedWiringDiagram{T} = ACSet{SchemaType(TheoryTypedUWD)..., Tuple{T}, (:box, :junction, :outer_junction)}
-const TypedUWD{T} = TypedUndirectedWiringDiagram{T}
+const AbstractTypedUWD = AbstractACSetType(TheoryTypedUWD)
+const TypedUndirectedWiringDiagram = ACSetType(TheoryTypedUWD, index=[:box, :junction, :outer_junction])
+const TypedUWD = TypedUndirectedWiringDiagram
 
 type_type(::Type{<:TypedUWD{T}}) where {T} = T
 

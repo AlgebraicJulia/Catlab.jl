@@ -1,5 +1,6 @@
 module CSets
 export AbstractACSet, ACSet, AbstractCSet, CSet,
+  AbstractACSetType, ACSetType, AbstractCSetType, CSetType,
   nparts, has_part, subpart, has_subpart, incident, add_part!, add_parts!,
   copy_parts!, set_subpart!, set_subparts!, disjoint_union
 
@@ -16,6 +17,7 @@ using Compat: isnothing
 using StructArrays
 
 using ...Theories
+using ...Present
 
 # Struct arrays
 ###############
@@ -85,8 +87,26 @@ end
 
 const ACSet = AttributedCSet
 
+function AbstractACSetType(pres::Presentation{Schema})
+  ACSet{CatDescType(pres)}
+end
+
+function ACSetType(pres::Presentation{Schema}; index=[])
+  ty_params = [TypeVar(nameof(data_type)) for data_type in generators(pres,:Data)]
+  foldr((v,T) -> UnionAll(v,T), ty_params,
+        init=ACSet{SchemaType(pres)...,Tuple{ty_params...},Tuple(index)})
+end
+
 const AbstractCSet{CD} = AbstractACSet{CD,AttrDesc{CD,(),(),(),()},Tuple{}}
 const CSet{CD,Idxed} = ACSet{CD,AttrDesc{CD,(),(),(),()},Tuple{},Idxed}
+
+function AbstractCSetType(pres::Presentation{Schema})
+  AbstractCSet{CatDescType(pres)}
+end
+
+function CSetType(pres::Presentation{Schema}; index=[])
+  CSet{CatDescType(pres),Tuple(index)}
+end
 
 function make_indices(::Type{CD},AD::Type{<:AttrDesc{CD}},Ts::Type{<:Tuple},Idxed::Tuple) where {CD}
   ts = Ts.parameters
