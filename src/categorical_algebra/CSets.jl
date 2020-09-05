@@ -227,7 +227,7 @@ add_parts!(acs::ACSet,type::Symbol, n::Int; kw...) =
                                 subpartses::T) where
   {CD,AD,Ts,Idxed,TT,ob,T<:StructArray0{<:NamedTuple}}
   @assert fieldnames(T) == fieldnames(fieldtype(TT,ob))
-  @assert fieldtypes(T) == fieldtypes(fieldtype(TT,ob))
+  @assert all(map(<:, fieldtypes(T), fieldtypes(fieldtype(TT,ob))))
   code = quote
     append!(acs.tables.$ob,subpartses)
   end

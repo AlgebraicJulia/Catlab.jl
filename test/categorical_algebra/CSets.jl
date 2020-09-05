@@ -104,6 +104,11 @@ du = disjoint_union(d, d2)
 @test subpart(du, :parent) == [4,4,4,5,5,7,7]
 @test subpart(du, :height) == [0,0,0,10,20,10,20]
 
+# test type inheritance of adding parts to a CSet
+d = Dendrogram{Number}()
+add_parts!(d, :X, 2, parent=[0,0], height=[10.0, 4])
+@test subpart(d, :height) == [10.0, 4]
+
 # Labeled sets
 ##############
 
