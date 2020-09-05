@@ -7,6 +7,8 @@ export AbstractGraph, Graph, AbstractSymmetricGraph, SymmetricGraph,
   nv, ne, src, tgt, inv, edges, vertices, has_edge, has_vertex,
   add_edge!, add_edges!, add_vertex!, add_vertices!,
   neighbors, inneighbors, outneighbors, all_neighbors,
+  AbstractHalfEdgeGraph, HalfEdgeGraph, vertex, half_edges,
+  add_dangling_edge!, add_dangling_edges!,
   AbstractPropertyGraph, PropertyGraph, SymmetricPropertyGraph,
   gprops, vprops, eprops, get_gprop, get_vprop, get_eprop,
   set_gprop!, set_vprop!, set_eprop!, set_gprops!, set_vprops!, set_eprops!
@@ -52,8 +54,8 @@ has_vertex(g::AbstractACSet, v) = has_part(g, :V, v)
 has_edge(g::AbstractACSet, e) = has_part(g, :E, e)
 has_edge(g::AbstractACSet, src::Int, tgt::Int) = tgt ∈ outneighbors(g, src)
 
-add_vertex!(g::AbstractGraph; kw...) = add_part!(g, :V; kw...)
-add_vertices!(g::AbstractGraph, n::Int; kw...) = add_parts!(g, :V, n; kw...)
+add_vertex!(g::AbstractACSet; kw...) = add_part!(g, :V; kw...)
+add_vertices!(g::AbstractACSet, n::Int; kw...) = add_parts!(g, :V, n; kw...)
 
 add_edge!(g::AbstractGraph, src::Int, tgt::Int; kw...) =
   add_part!(g, :E; src=src, tgt=tgt, kw...)
@@ -95,18 +97,13 @@ end
 
 inv(g::AbstractACSet, args...) = subpart(g, args..., :inv)
 
-add_vertex!(g::AbstractSymmetricGraph; kw...) = add_part!(g, :V; kw...)
-add_vertices!(g::AbstractSymmetricGraph, n::Int; kw...) =
-  add_parts!(g, :V, n; kw...)
-
 add_edge!(g::AbstractSymmetricGraph, src::Int, tgt::Int; kw...) =
   add_edges!(g, src:src, tgt:tgt; kw...)
 
 function add_edges!(g::AbstractSymmetricGraph, srcs::AbstractVector{Int},
                     tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
-  k = nparts(g,:E)
-  doubled_kw = map(v -> vcat(v,v),values(kw))
+  k = nparts(g, :E)
   add_parts!(g, :E; src=vcat(srcs,tgts), tgt=vcat(tgts,srcs),
              inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
 end
@@ -116,6 +113,46 @@ neighbors(g::AbstractSymmetricGraph, v::Int) =
 inneighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
 outneighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
 all_neighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
+
+# Half-edge graphs
+##################
+
+@present TheoryHalfEdgeGraph(FreeSchema) begin
+  V::Ob
+  H::Ob
+  vertex::Hom(H,V)
+  inv::Hom(H,H)
+
+  compose(inv, inv) == id(H)
+end
+
+const AbstractHalfEdgeGraph = AbstractACSetType(TheoryHalfEdgeGraph)
+const HalfEdgeGraph = CSetType(TheoryHalfEdgeGraph, index=[:vertex])
+
+vertex(g::AbstractACSet, args...) = subpart(g, args..., :vertex)
+
+half_edges(g::AbstractACSet) = 1:nparts(g, :H)
+half_edges(g::AbstractACSet, v) = incident(g, v, :vertex)
+
+add_edge!(g::AbstractHalfEdgeGraph, src::Int, tgt::Int; kw...) =
+  add_edges!(g, src:src, tgt:tgt; kw...)
+
+function add_edges!(g::AbstractHalfEdgeGraph, srcs::AbstractVector{Int},
+                    tgts::AbstractVector{Int}; kw...)
+  @assert (n = length(srcs)) == length(tgts)
+  k = nparts(g, :H)
+  add_parts!(g, :H; vertex=vcat(srcs,tgts),
+             inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
+end
+
+add_dangling_edge!(g::AbstractHalfEdgeGraph, v::Int; kw...) =
+  add_part!(g, :H; vertex=v, inv=nparts(g,:H)+1)
+
+function add_dangling_edges!(g::AbstractHalfEdgeGraph,
+                             vs::AbstractVector{Int}; kw...)
+  k = nparts(g, :H)
+  add_parts!(g, :H; vertex=vs, inv=(k+1):(k+length(vs)), kw...)
+end
 
 # Property graphs
 #################

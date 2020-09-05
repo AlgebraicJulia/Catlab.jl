@@ -61,6 +61,30 @@ lg = LightGraphs.DiGraph(4)
 map((src, tgt) -> add_edge!(lg, src, tgt), [1,2,3,2,3,4], [2,3,4,1,2,3])
 @test LightGraphs.DiGraph(g) == lg
 
+# Half-edge graphs
+##################
+
+g = HalfEdgeGraph()
+@test keys(g.indices) == (:vertex,)
+
+add_vertices!(g, 2)
+@test nv(g) == 2
+@test isempty(half_edges(g))
+
+add_edge!(g, 1, 2)
+add_edge!(g, 2, 1)
+@test collect(half_edges(g)) == [1,2,3,4]
+@test vertex(g) == [1,2,2,1]
+@test inv(g) == [2,1,4,3]
+@test half_edges(g, 1) == [1,4]
+@test half_edges(g, 2) == [2,3]
+
+add_dangling_edge!(g, 1)
+add_dangling_edges!(g, [2,2])
+@test length(half_edges(g)) == 7
+@test vertex(g, 5:7) == [1,2,2]
+@test inv(g, 5:7) == [5,6,7]
+
 # Property graphs
 #################
 
