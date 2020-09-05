@@ -97,4 +97,21 @@ gv = to_graphviz(g, edge_labels=true)
 @test stmts(gv, Graphviz.Node, :label) == fill("", 3)
 @test stmts(gv, Graphviz.Edge, :label) == ["(1,3)", "(2,4)"]
 
+# Half-edge graphs
+##################
+
+g = HalfEdgeGraph(3)
+add_edges!(g, [1,2], [2,3])
+gv = to_graphviz(g, edge_labels=true)
+@test !gv.directed
+@test stmts(gv, Graphviz.Node, :label) == fill("", 3)
+@test stmts(gv, Graphviz.Edge, :label) == ["(1,3)", "(2,4)"]
+
+g = HalfEdgeGraph(2)
+add_edge!(g, 1, 2)
+add_dangling_edges!(g, [1,2])
+gv = to_graphviz(g, node_labels=true, edge_labels=true)
+@test stmts(gv, Graphviz.Node, :label) == ["1", "2", "", ""]
+@test stmts(gv, Graphviz.Edge, :label) == ["(1,2)", "3", "4"]
+
 end

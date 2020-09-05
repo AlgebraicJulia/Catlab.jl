@@ -144,7 +144,7 @@ first convert the graph to a property graph, define the Graphviz attributes as
 needed, and then convert to a Graphviz graph.
 """
 function to_graphviz(g::AbstractGraph;
-    prog::String="dot", graph_attrs::AbstractDict=Dict(),
+    prog::AbstractString="dot", graph_attrs::AbstractDict=Dict(),
     node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
     node_labels::Bool=false, edge_labels::Bool=false)
   node_labeler(v) = Dict(:label => node_labels ? string(v) : "")
@@ -168,7 +168,7 @@ end
 ##################
 
 function to_graphviz(g::AbstractSymmetricGraph;
-    prog::String="neato", graph_attrs::AbstractDict=Dict(),
+    prog::AbstractString="neato", graph_attrs::AbstractDict=Dict(),
     node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
     node_labels::Bool=false, edge_labels::Bool=false)
   node_labeler(v) = Dict(:label => node_labels ? string(v) : "")
@@ -187,6 +187,45 @@ function to_graphviz(g::AbstractSymmetricGraph;
     ), node_attrs),
     edge = merge(Dict(:len => "0.5"), edge_attrs),
   ))
+end
+
+# Half-edge graphs
+##################
+
+function to_graphviz(g::AbstractHalfEdgeGraph;
+    prog::AbstractString="neato", graph_attrs::AbstractDict=Dict(),
+    node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
+    node_labels::Bool=false, edge_labels::Bool=false)
+  pg = SymmetricPropertyGraph{Any}(;
+    prog = prog,
+    graph = graph_attrs,
+    node = merge(Dict(
+      :shape => node_labels ? "circle" : "point",
+      :width => "0.05", :height => "0.05", :margin => "0",
+    ), node_attrs),
+    edge = merge(Dict(:len => "0.5"), edge_attrs),
+  )
+  for v in vertices(g)
+    add_vertex!(pg, label=node_labels ? string(v) : "")
+  end
+  for e in half_edges(g)
+    e′ = inv(g,e)
+    if e == e′
+      # Dangling half-edge: add an invisible vertex.
+      v = add_vertex!(pg, style="invis", shape="none", label="")
+      new_edge = add_edge!(pg, vertex(g,e), v)
+      if edge_labels
+        set_eprop!(pg, new_edge, :label, string(e))
+      end
+    elseif e < e′
+      # Pair of distict half-edges: add a standard edge.
+      new_edge = add_edge!(pg, vertex(g,e), vertex(g,e′))
+      if edge_labels
+        set_eprop!(pg, new_edge, :label, "($e,$e′)")
+      end
+    end
+  end
+  to_graphviz(pg)
 end
 
 end
