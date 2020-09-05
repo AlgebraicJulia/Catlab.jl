@@ -85,6 +85,12 @@ add_dangling_edges!(g, [2,2])
 @test vertex(g, 5:7) == [1,2,2]
 @test inv(g, 5:7) == [5,6,7]
 
+g = HalfEdgeGraph(4)
+add_edges!(g, [1,2,3], [2,3,4])
+lg = LightGraphs.Graph(4)
+map((src, tgt) -> add_edge!(lg, src, tgt), [1,2,3], [2,3,4])
+@test LightGraphs.Graph(g) == lg
+
 # Property graphs
 #################
 

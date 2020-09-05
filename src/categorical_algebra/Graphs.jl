@@ -36,6 +36,10 @@ end
 const AbstractGraph = AbstractACSetType(TheoryGraph)
 const Graph = CSetType(TheoryGraph, index=[:src,:tgt])
 
+function (::Type{T})(nv::Int) where T <: AbstractGraph
+  g = T(); add_vertices!(g, nv); g
+end
+
 nv(g::AbstractACSet) = nparts(g, :V)
 ne(g::AbstractACSet) = nparts(g, :E)
 ne(g::AbstractACSet, src::Int, tgt::Int) =
@@ -88,11 +92,8 @@ end
 const AbstractSymmetricGraph = AbstractACSetType(TheorySymmetricGraph)
 const SymmetricGraph = CSetType(TheorySymmetricGraph, index=[:src])
 
-function (::Type{T})(nv::Int) where
-    T <: Union{AbstractGraph,AbstractSymmetricGraph}
-  g = T()
-  add_vertices!(g, nv)
-  g
+function (::Type{T})(nv::Int) where T <: AbstractSymmetricGraph
+  g = T(); add_vertices!(g, nv); g
 end
 
 inv(g::AbstractACSet, args...) = subpart(g, args..., :inv)
@@ -128,6 +129,10 @@ end
 
 const AbstractHalfEdgeGraph = AbstractACSetType(TheoryHalfEdgeGraph)
 const HalfEdgeGraph = CSetType(TheoryHalfEdgeGraph, index=[:vertex])
+
+function (::Type{T})(nv::Int) where T <: AbstractHalfEdgeGraph
+  g = T(); add_vertices!(g, nv); g
+end
 
 vertex(g::AbstractACSet, args...) = subpart(g, args..., :vertex)
 
@@ -306,7 +311,7 @@ function add_edges!(g::SymmetricPropertyGraph{T}, srcs::AbstractVector{Int},
 end
 
 # Constructors from graphs
-##########################
+#-------------------------
 
 function PropertyGraph{T}(g::Graph, make_vprops, make_eprops; gprops...) where T
   pg = PropertyGraph{T}(; gprops...)
@@ -343,14 +348,25 @@ end
 SymmetricPropertyGraph{T}(g::SymmetricGraph; gprops...) where T =
   SymmetricPropertyGraph{T}(g, v->Dict(), e->Dict(); gprops...)
 
-# LightGraphs interop
-#####################
+# LightGraphs constructors
+##########################
 
 function (::Type{LG})(g::Union{AbstractGraph,AbstractSymmetricGraph}) where
     LG <: Union{SimpleGraph,SimpleDiGraph}
   lg = LG(nv(g))
   for e in edges(g)
     add_edge!(lg, src(g,e), tgt(g,e))
+  end
+  lg
+end
+
+function SimpleGraph(g::AbstractHalfEdgeGraph)
+  lg = SimpleGraph(nv(g))
+  for e in half_edges(g)
+    e′ = inv(g,e)
+    if e <= e′
+      add_edge!(lg, vertex(g,e), vertex(g,e′))
+    end
   end
   lg
 end
