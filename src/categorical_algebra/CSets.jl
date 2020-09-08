@@ -227,11 +227,11 @@ end
 
 """ Number of parts of given type in a C-set.
 """
-nparts(acs::ACSet,type::Symbol) = length(acs.tables[type])
+nparts(acs::ACSet, type::Symbol) = length(acs.tables[type])
 
 """ Whether a C-set has a part with the given name.
 """
-has_part(acs::ACSet,type::Symbol) = _has_part(acs, Val(type))
+has_part(acs::ACSet, type::Symbol) = _has_part(acs, Val(type))
 
 @generated function _has_part(::ACSet{CD,AD}, ::Val{type}) where {CD,AD,type}
   type ∈ CD.ob || type ∈ AD.data
@@ -281,13 +281,6 @@ incident(acs::ACSet, part, name::Symbol) = _incident(acs, part, Val(name))
     throw(KeyError(name))
   end
 end
-
-""" Look up key in C-set data index.
-"""
-get_data_index(d::AbstractDict{K,Int}, k::K) where K =
-  get(d, k, nothing)
-get_data_index(d::AbstractDict{K,<:AbstractVector{Int}}, k::K) where K =
-  get(d, k, 1:0)
 
 """ Add part of given type to C-set, optionally setting its subparts.
 
@@ -361,73 +354,64 @@ add_parts!(acs::ACSet,type::Symbol, n::Int; kw...) =
   end
 end
 
-@generated function _set_subpart!(acs::ACSet{CD,AD,Ts,Idxed}, part::Int, ::Val{name}, subpart) where
-  {CD,AD,Ts,Idxed,name}
-  code = Expr(:block)
-  if name ∈ CD.hom
-    push!(code.args, quote
-          old = acs.tables.$(dom(CD,name)).$(name)[part]
-          acs.tables.$(dom(CD,name)).$name[part] = subpart
-          end)
-  elseif name ∈ AD.attr
-    push!(code.args, quote
-          old = acs.tables.$(dom(AD,name)).$(name)[part]
-          acs.tables.$(dom(AD,name)).$name[part] = subpart
-          end)
-  else
-    throw(KeyError(name))
-  end
-  if name ∈ Idxed
-    if name ∈ CD.hom
-      indices_code = quote
-        @assert has_part(acs,$(Expr(:quote, codom(CD,name))),subpart)
-        if old != 0
-          deletesorted!(acs.indices.$(name)[old], part)
-        end
-        insertsorted!(acs.indices.$(name)[subpart], part)
-      end
-      push!(code.args, indices_code)
-    elseif name ∈ AD.attr
-      indices_code = quote
-        @assert pop!(acs.indices.$name, old) == part
-        insertsorted!(get!(acs.indices.$name, subpart) do; Int[] end, part)
-      end
-      push!(code.args, indices_code)
-    end
-  end
-  code
-end
-
 """ Mutate subpart of a part in a C-set.
 
 Both single and vectorized assignment are supported.
 
 See also: [`set_subparts!`](@ref).
 """
-set_subpart!(acs::ACSet, part::Int, name, subpart) = _set_subpart!(acs, part, Val(name), subpart)
+set_subpart!(acs::ACSet, part::Int, name, subpart) =
+  _set_subpart!(acs, part, Val(name), subpart)
 
-function set_subpart!(acs::ACSet, parts::AbstractArray{Int}, name, subparts::AbstractArray)
-  for (part,subpart) in zip(parts,subparts)
-    set_subpart!(acs,part,name,subpart)
+function set_subpart!(acs::ACSet, part::AbstractVector{Int},
+                      name::Symbol, subpart)
+  broadcast(part, subpart) do part, subpart
+    _set_subpart!(acs, part, Val(name), subpart)
   end
 end
 
-## FIXME: Put a more specific type on this
-function set_subpart!(acs::ACSet, parts::AbstractArray{Int}, name, subpart)
-  for part in parts
-    set_subpart!(acs,part,name,subpart)
-  end
-end
+set_subpart!(acs::ACSet, ::Colon, name::Symbol, subpart) =
+  set_subpart!(acs, name, subpart)
+set_subpart!(acs::ACSet, name::Symbol, new_subpart) =
+  set_subpart!(acs, 1:length(subpart(acs, name)), name, new_subpart)
 
-function set_subpart!(acs::ACSet{CD,AD}, parts::Colon, name, subparts) where {CD,AD}
-  part_type = if name ∈ CD.hom
-    dom(CD,name)
+@generated function _set_subpart!(acs::ACSet{CD,AD,Ts,Idxed}, part::Int,
+    ::Val{name}, subpart) where {CD,AD,Ts,Idxed,name}
+  if name ∈ CD.hom
+    ob, codom_ob = dom(CD, name), codom(CD, name)
+    if name ∈ Idxed
+      quote
+        @assert 0 <= subpart <= length(acs.tables.$codom_ob)
+        old = acs.tables.$ob.$name[part]
+        acs.tables.$ob.$name[part] = subpart
+        if old > 0
+          deletesorted!(acs.indices.$name[old], part)
+        end
+        if subpart > 0
+          insertsorted!(acs.indices.$name[subpart], part)
+        end
+      end
+    else
+      quote
+        @assert 0 <= subpart <= length(acs.tables.$codom_ob)
+        acs.tables.$ob.$name[part] = subpart
+      end
+    end
   elseif name ∈ AD.attr
-    dom(AD,name)
+    ob = dom(AD, name)
+    if name ∈ Idxed
+      quote
+        old = acs.tables.$ob.$name[part]
+        acs.tables.$ob.$name[part] = subpart
+        unset_data_index!(acs.indices.$name, old, part)
+        set_data_index!(acs.indices.$name, subpart, part)
+      end
+    else
+      :(acs.tables.$ob.$name[part] = subpart)
+    end
   else
-    error("No such subpart: $name")
+    throw(KeyError(name))
   end
-  set_subpart!(acs,1:nparts(acs,part_type),name,subparts)
 end
 
 """ Mutate subparts of a part in a C-set.
@@ -436,6 +420,8 @@ Both single and vectorized assignment are supported.
 
 See also: [`set_subpart!`](@ref).
 """
+set_subparts!(acs::ACSet, part; kw...) = set_subparts!(acs, part, (; kw...))
+
 function set_subparts!(acs::ACSet, part, subparts)
   for (name, subpart) in pairs(subparts)
     set_subpart!(acs, part, name, subpart)
@@ -512,6 +498,40 @@ function disjoint_union(acs1::T,acs2::T) where {CD,AD,T<:ACSet{CD,AD}}
   acs = copy(acs1)
   copy_parts!(acs,acs2,CD.ob)
   acs
+end
+
+""" Look up key in C-set data index.
+"""
+get_data_index(d::AbstractDict{K,Int}, k::K) where K =
+  get(d, k, nothing)
+get_data_index(d::AbstractDict{K,<:AbstractVector{Int}}, k::K) where K =
+  get(d, k, 1:0)
+
+""" Set key and value for C-set data index.
+"""
+function set_data_index!(d::AbstractDict{K,Int}, k::K, v::Int) where K
+  if haskey(d, k)
+    error("Key $k already defined in unique index")
+  end
+  d[k] = v
+end
+function set_data_index!(d::AbstractDict{K,<:AbstractVector{Int}},
+                         k::K, v::Int) where K
+  insertsorted!(get!(d, k) do; Int[] end, v)
+end
+
+""" Unset key and value from C-set data index.
+"""
+function unset_data_index!(d::AbstractDict{K,Int}, k::K, v::Int) where K
+  @assert pop!(d, k) == v
+end
+function unset_data_index!(d::AbstractDict{K,<:AbstractVector{Int}},
+                           k::K, v::Int) where K
+  vs = d[k]
+  deletesorted!(vs, v)
+  if isempty(vs)
+    delete!(d, k)
+  end
 end
 
 """ Insert into sorted vector, preserving the sorting.

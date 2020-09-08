@@ -139,9 +139,9 @@ add_parts!(lset, :X, 2, label=[:foo, :bar])
 
 add_part!(lset, :X, label=:foo)
 @test incident(lset, :foo, :label) == [1,3]
-#set_subpart!(lset, 1, :label, :baz) # FIXME: @generated error.
-@test_skip subpart(lset, 1, :label) == :baz
-@test_skip incident(lset, [:foo,:baz], :label) == [[3],[1]]
+set_subpart!(lset, 1, :label, :baz)
+@test subpart(lset, 1, :label) == :baz
+@test incident(lset, [:foo,:baz], :label) == [[3],[1]]
 
 # TODO: Unique indexing temporarily not supported.
 # const UniqueIndexedLabeledSet = ...
