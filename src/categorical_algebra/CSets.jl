@@ -225,17 +225,21 @@ end
 # Imperative interface
 ######################
 
+""" Number of parts of given type in a C-set.
+"""
 nparts(acs::ACSet,type::Symbol) = length(acs.tables[type])
 
-has_part(acs::ACSet, type::Symbol, part::Int) = 1 <= part <= nparts(acs,type)
-has_part(acs::ACSet, type::Symbol, part::AbstractVector{Int}) =
-  let n=nparts(acs, type); [ 1 <= x <= n for x in part ] end
-
+""" Whether a C-set has a part with the given name.
+"""
 has_part(acs::ACSet,type::Symbol) = _has_part(acs, Val(type))
 
 @generated function _has_part(::ACSet{CD,AD}, ::Val{type}) where {CD,AD,type}
   type ∈ CD.ob || type ∈ AD.data
 end
+
+has_part(acs::ACSet, type::Symbol, part::Int) = 1 <= part <= nparts(acs, type)
+has_part(acs::ACSet, type::Symbol, part::AbstractVector{Int}) =
+  let n=nparts(acs, type); [ 1 <= x <= n for x in part ] end
 
 """ Whether a C-set has a subpart with the given name.
 """
@@ -245,10 +249,15 @@ has_subpart(acs::ACSet, name::Symbol) = _has_subpart(acs, Val(name))
   name ∈ CD.hom || name ∈ AD.attr
 end
 
+""" Get subpart of part in C-set.
+
+Both single and vectorized access are supported.
+"""
 subpart(acs::ACSet, part, name::Symbol) = subpart(acs,name)[part]
 subpart(acs::ACSet, name::Symbol) = _subpart(acs,Val(name))
 
-@generated function _subpart(acs::ACSet{CD,AD,Ts},::Val{name}) where {CD,AD,Ts,name}
+@generated function _subpart(acs::ACSet{CD,AD,Ts},::Val{name}) where
+    {CD,AD,Ts,name}
   if name ∈ CD.hom
     :(acs.tables.$(dom(CD,name)).$name)
   elseif name ∈ AD.attr
@@ -258,24 +267,44 @@ subpart(acs::ACSet, name::Symbol) = _subpart(acs,Val(name))
   end
 end
 
-""" Insert into sorted vector, preserving the sorting.
+""" Get superparts incident to part in C-set.
 """
-function insertsorted!(a::AbstractVector, x)
-  insert!(a, searchsortedfirst(a, x), x)
+incident(acs::ACSet, part, name::Symbol) = _incident(acs, part, Val(name))
+
+@generated function _incident(acs::ACSet{CD,AD,Ts,Idxed}, part, ::Val{name}) where
+    {CD,AD,Ts,Idxed,name}
+  if name ∈ Idxed && name ∈ CD.hom
+    :(acs.indices.$name[part])
+  elseif name ∈ Idxed && name ∈ AD.attr
+    :(get_data_index.(Ref(acs.indices.$name), part))
+  else
+    throw(KeyError(name))
+  end
 end
 
-""" Delete one occurrence of value from sorted vector.
+""" Look up key in C-set data index.
 """
-function deletesorted!(a::AbstractVector, x)
-  i = searchsortedfirst(a, x)
-  @assert i <= length(a) && a[i] == x "Value $x is not contained in $a"
-  deleteat!(a, i)
-end
+get_data_index(d::AbstractDict{K,Int}, k::K) where K =
+  get(d, k, nothing)
+get_data_index(d::AbstractDict{K,<:AbstractVector{Int}}, k::K) where K =
+  get(d, k, 1:0)
 
+""" Add part of given type to C-set, optionally setting its subparts.
+
+Returns the ID of the added part.
+
+See also: [`add_parts!`](@ref).
+"""
 add_part!(acs::ACSet, type::Symbol, subparts::NamedTuple) =
   _add_parts!(acs, Val(type), make_struct_array([subparts]))[1]
 add_part!(acs::ACSet, type::Symbol; kw...) = add_part!(acs, type, (; kw...))
 
+""" Add parts of given type to C-set, optionally setting their subparts.
+
+Returns the range of IDs for the added parts.
+
+See also: [`add_part!`](@ref).
+"""
 add_parts!(acs::ACSet, type::Symbol, subpartses::StructArray0{<:NamedTuple}) =
   _add_parts!(acs, Val(type), subpartses)
 add_parts!(acs::ACSet, type::Symbol; kw...) =
@@ -332,25 +361,6 @@ add_parts!(acs::ACSet,type::Symbol, n::Int; kw...) =
   end
 end
 
-incident(acs::ACSet, part, name::Symbol) = _incident(acs, part, Val(name))
-
-get_data_index(d::AbstractDict{K,Int}, k::K) where K =
-  get(d, k, nothing)
-get_data_index(d::AbstractDict{K,<:AbstractVector{Int}}, k::K) where K =
-  get(d, k, 1:0)
-
-@generated function _incident(acs::ACSet{CD,AD,Ts,Idxed}, part, ::Val{name}) where {CD,AD,Ts,Idxed,name}
-  if name ∈ Idxed
-    if name ∈ CD.hom
-      :(acs.indices.$name[part])
-    else
-      :(get_data_index.(Ref(acs.indices.$name),part))
-    end
-  else
-    throw(KeyError(name))
-  end
-end
-
 @generated function _set_subpart!(acs::ACSet{CD,AD,Ts,Idxed}, part::Int, ::Val{name}, subpart) where
   {CD,AD,Ts,Idxed,name}
   code = Expr(:block)
@@ -388,6 +398,12 @@ end
   code
 end
 
+""" Mutate subpart of a part in a C-set.
+
+Both single and vectorized assignment are supported.
+
+See also: [`set_subparts!`](@ref).
+"""
 set_subpart!(acs::ACSet, part::Int, name, subpart) = _set_subpart!(acs, part, Val(name), subpart)
 
 function set_subpart!(acs::ACSet, parts::AbstractArray{Int}, name, subparts::AbstractArray)
@@ -414,6 +430,12 @@ function set_subpart!(acs::ACSet{CD,AD}, parts::Colon, name, subparts) where {CD
   set_subpart!(acs,1:nparts(acs,part_type),name,subparts)
 end
 
+""" Mutate subparts of a part in a C-set.
+
+Both single and vectorized assignment are supported.
+
+See also: [`set_subpart!`](@ref).
+"""
 function set_subparts!(acs::ACSet, part, subparts)
   for (name, subpart) in pairs(subparts)
     set_subpart!(acs, part, name, subpart)
@@ -490,6 +512,20 @@ function disjoint_union(acs1::T,acs2::T) where {CD,AD,T<:ACSet{CD,AD}}
   acs = copy(acs1)
   copy_parts!(acs,acs2,CD.ob)
   acs
+end
+
+""" Insert into sorted vector, preserving the sorting.
+"""
+function insertsorted!(a::AbstractVector, x)
+  insert!(a, searchsortedfirst(a, x), x)
+end
+
+""" Delete one occurrence of value from sorted vector.
+"""
+function deletesorted!(a::AbstractVector, x)
+  i = searchsortedfirst(a, x)
+  @assert i <= length(a) && a[i] == x "Value $x is not contained in $a"
+  deleteat!(a, i)
 end
 
 end
