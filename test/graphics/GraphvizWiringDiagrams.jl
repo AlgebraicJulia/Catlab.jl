@@ -108,7 +108,7 @@ graph = to_graphviz(d, box_labels=true, junction_labels=true, port_labels=true)
 diagram = include(joinpath("data", "graphviz_wiring_diagram.jl"))
 doc = open(JSON.parse,
   joinpath(@__DIR__, "data", "graphviz_wiring_diagram.json"), "r")
-graph = Graphviz.parse_graphviz(doc)
+graph = parse_graphviz(doc)
 layout = graphviz_layout(diagram, graph)
 
 # Is original data preserved?

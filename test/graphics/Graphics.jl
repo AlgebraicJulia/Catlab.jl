@@ -6,6 +6,7 @@ end
 
 @testset "Graphviz" begin
   include("Graphviz.jl")
+  include("GraphvizGraphs.jl")
   include("GraphvizWiringDiagrams.jl")
 end
 

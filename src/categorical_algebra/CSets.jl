@@ -180,7 +180,7 @@ subpart(acs::ACSet, name::Symbol) = _subpart(acs,Val(name))
   end
 end
 
-function Base.show(io::IO, ::MIME"text/plain", acs::AbstractACSet{CD,AD,Ts}) where {CD,AD,Ts}
+function Base.show(io::IO, acs::AbstractACSet{CD,AD,Ts}) where {CD,AD,Ts}
   println(io,"ACSet")
   for ob in CD.ob
     println(io, "  $ob = 1:$(nparts(acs,ob))")
