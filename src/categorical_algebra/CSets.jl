@@ -1,3 +1,5 @@
+""" Generate data structure for C-sets (copreshaves) and attributed C-sets.
+"""
 module CSets
 export AbstractACSet, ACSet, AbstractCSet, CSet,
   AbstractACSetType, ACSetType, AbstractCSetType, CSetType,
@@ -59,15 +61,38 @@ end
 # Data types
 ############
 
+""" Abstract type for attributed C-sets, including C-sets as a special case.
+
+The type parameters are:
+
+- `CD`: indexing category C, encoded as a type
+- `AD`: data types and data attributes, encoded as a type
+- `Ts`: Julia types corresponding to data types in schema
+
+Together, the first two type parameters encode a schema, see `Schema`.
+
+See also: [`AttributedCSet`](@ref).
+"""
 abstract type AbstractAttributedCSet{CD,AD,Ts} end
 
+""" Alias for the abstract type `AbstractAttributedCSet`.
+"""
 const AbstractACSet = AbstractAttributedCSet
 
+""" Data type for attributed C-sets, including C-sets as a special case.
+
+Instead of filling out the type parameters manually, we recommend using the
+function [`CSetType`](@ref) or [`ACSetType`](@ref) to generate a data type from
+a schema. Nevertheless, the first three type parameters are documented at
+[`AbstractAttributedCSet`](@ref). The remaining type parameters are
+implementation details and should be ignored.
+"""
 struct AttributedCSet{CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed,
-             TablesType <: NamedTuple, IndicesType <: NamedTuple} <: AbstractACSet{CD,AD,Ts}
-  tables::TablesType
-  indices::IndicesType
-  function AttributedCSet{CD,AD,Ts,Idxed}() where {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed}
+    Tables <: NamedTuple, Indices <: NamedTuple} <: AbstractACSet{CD,AD,Ts}
+  tables::Tables
+  indices::Indices
+  function AttributedCSet{CD,AD,Ts,Idxed}() where
+      {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed}
     tables = make_tables(CD,AD,Ts)
     indices = make_indices(CD,AD,Ts,Idxed)
     new{CD,AD,Ts,Idxed,typeof(tables),typeof(indices)}(tables,indices)
@@ -75,35 +100,71 @@ struct AttributedCSet{CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed,
   function AttributedCSet{CD}() where {CD <: CatDesc}
     AttributedCSet{CD,typeof(AttrDesc(CD())),Tuple{}}()
   end
-  function AttributedCSet{CD,AD,Ts,Idxed,TT,IT}() where
-    {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple,Idxed,TT <: NamedTuple,IT <: NamedTuple}
+  function AttributedCSet{CD,AD,Ts,Idxed,Tables,Indices}() where
+      {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed,
+       Tables <: NamedTuple, Indices <: NamedTuple}
     AttributedCSet{CD,AD,Ts,Idxed}()
   end
-  function AttributedCSet{CD,AD,Ts,Idxed,TT,IT}(tables::TT,indices::IT) where
-    {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple,Idxed,TT <: NamedTuple,IT <: NamedTuple}
-    new{CD,AD,Ts,Idxed,TT,IT}(tables,indices)
+  function AttributedCSet{CD,AD,Ts,Idxed,Tables,Indices}(tables::Tables, indices::Indices) where
+      {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed,
+       Tables <: NamedTuple, Indices <: NamedTuple}
+    new{CD,AD,Ts,Idxed,Tables,Indices}(tables,indices)
   end
 end
 
+""" Alias for the data type `AttributedCSet`.
+"""
 const ACSet = AttributedCSet
 
+""" Generate an abstract type for attributed C-sets from a schema.
+
+To generate a concrete type, use [`ACSetType`](@ref).
+"""
 function AbstractACSetType(pres::Presentation{Schema})
   ACSet{CatDescType(pres)}
 end
 
+""" Generate a data type for attributed C-sets from a schema.
+
+In addition to the schema, you can specify which morphisms and data attributes
+are indexed using the `index` keyword argument. By default, no morphisms or data
+attributes are indexed.
+
+See also: [`AbstractACSetType`](@ref).
+"""
 function ACSetType(pres::Presentation{Schema}; index=[])
   ty_params = [TypeVar(nameof(data_type)) for data_type in generators(pres,:Data)]
   foldr((v,T) -> UnionAll(v,T), ty_params,
         init=ACSet{SchemaType(pres)...,Tuple{ty_params...},Tuple(index)})
 end
 
+""" Abstract type for C-sets.
+
+The special case of `AbstractAttributedCSet` with no data attributes.
+"""
 const AbstractCSet{CD} = AbstractACSet{CD,AttrDesc{CD,(),(),(),()},Tuple{}}
+
+""" Data type for C-sets.
+
+The special case of `AttributedCSet` with no data attributes.
+"""
 const CSet{CD,Idxed} = ACSet{CD,AttrDesc{CD,(),(),(),()},Tuple{},Idxed}
 
+""" Generate an abstract type for C-sets from a presentation of a category C.
+
+To generate a concrete type, use [`CSetType`](@ref).
+"""
 function AbstractCSetType(pres::Presentation{Schema})
   AbstractCSet{CatDescType(pres)}
 end
 
+""" Generate a data type for C-sets from a presentation of a category C.
+
+In addition to the category, you can specify which morphisms are indexed using
+the `index` keyword argument. By default, no morphisms are indexed.
+
+See also: [`AbstractCSetType`](@ref).
+"""
 function CSetType(pres::Presentation{Schema}; index=[])
   CSet{CatDescType(pres),Tuple(index)}
 end
@@ -138,14 +199,31 @@ function make_tables(::Type{CD}, AD::Type{<:AttrDesc{CD}}, Ts::Type{<:Tuple}) wh
 end
 
 function Base.:(==)(x1::T, x2::T) where T <: ACSet
+  # The indices are redundant, so need not be compared.
   x1.tables == x2.tables
 end
 
 function Base.copy(acs::T) where T <: ACSet
-  T(map(copy, acs.tables),map(copy, acs.indices))
+  T(map(copy, acs.tables), map(copy, acs.indices))
 end
 
 Base.empty(acs::T) where T <: ACSet = T()
+
+function Base.show(io::IO, acs::AbstractACSet{CD,AD,Ts}) where {CD,AD,Ts}
+  println(io, "ACSet(")
+  join(io, vcat(
+    [ "  $ob = 1:$(nparts(acs,ob))" for ob in CD.ob ],
+    [ "  $data = $(Ts.parameters[i])" for (i,data) in enumerate(AD.data) ],
+    [ "  $hom : $(dom(CD,i)) → $(codom(CD,i)) = $(subpart(acs,hom))"
+      for (i,hom) in enumerate(CD.hom) ],
+    [ "  $attr : $(dom(AD,i)) → $(codom(AD,i)) = $(subpart(acs,attr))"
+      for (i,attr) in enumerate(AD.attr) ],
+  ), ",\n")
+  print(io, ")")
+end
+
+# Imperative interface
+######################
 
 nparts(acs::ACSet,type::Symbol) = length(acs.tables[type])
 
@@ -178,19 +256,6 @@ subpart(acs::ACSet, name::Symbol) = _subpart(acs,Val(name))
   else
     throw(KeyError(name))
   end
-end
-
-function Base.show(io::IO, acs::AbstractACSet{CD,AD,Ts}) where {CD,AD,Ts}
-  println(io, "ACSet(")
-  join(io, vcat(
-    [ "  $ob = 1:$(nparts(acs,ob))" for ob in CD.ob ],
-    [ "  $data = $(Ts.parameters[i])" for (i,data) in enumerate(AD.data) ],
-    [ "  $hom : $(dom(CD,i)) → $(codom(CD,i)) = $(subpart(acs,hom))"
-      for (i,hom) in enumerate(CD.hom) ],
-    [ "  $attr : $(dom(AD,i)) → $(codom(AD,i)) = $(subpart(acs,attr))"
-      for (i,attr) in enumerate(AD.attr) ],
-  ), ",\n")
-  print(io, ")")
 end
 
 """ Insert into sorted vector, preserving the sorting.
@@ -356,6 +421,7 @@ function set_subparts!(acs::ACSet, part, subparts)
 end
 
 """ Copy parts from one C-set into another.
+
 All subparts among the selected parts, including any attached data, are
 preserved. Thus, if the selected parts form a sub-C-set, then the whole
 sub-C-set is preserved. On the other hand, if the selected parts do *not* form a
