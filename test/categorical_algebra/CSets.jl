@@ -2,7 +2,7 @@ module TestCSets
 using Test
 
 using Catlab: @present
-using Catlab.Theories: FreeSchema, CatDescType, SchemaType
+using Catlab.Theories: FreeSchema
 using Catlab.CategoricalAlgebra.CSets
 
 # Discrete dynamical systems
@@ -13,8 +13,8 @@ using Catlab.CategoricalAlgebra.CSets
   Φ::Hom(X,X)
 end
 
-const AbstractDDS = AbstractCSet{CatDescType(TheoryDDS)}
-const DDS = CSet{CatDescType(TheoryDDS), (:Φ,)}
+const AbstractDDS = AbstractCSetType(TheoryDDS)
+const DDS = CSetType(TheoryDDS, index=[:Φ])
 @test DDS <: AbstractDDS
 @test DDS <: CSet
 
@@ -71,10 +71,8 @@ s = sprint(show, dds)
   height::Attr(X,R)
 end
 
-const AbstractDendrogram{T} =
-  AbstractACSet{SchemaType(TheoryDendrogram)..., Tuple{T}}
-const Dendrogram{T} =
-  ACSet{SchemaType(TheoryDendrogram)..., Tuple{T}, (:parent,)}
+const AbstractDendrogram = AbstractACSetType(TheoryDendrogram)
+const Dendrogram = ACSetType(TheoryDendrogram, index=[:parent])
 
 d = Dendrogram{Int}()
 # add_parts!(d, :X, 3, height=0)
@@ -130,8 +128,7 @@ add_parts!(d, :X, 2, parent=[0,0], height=[10.0, 4])
   label::Attr(X,Label)
 end
 
-const IndexedLabeledSet{T} =
-  ACSet{SchemaType(TheoryLabeledSet)..., Tuple{T}, (:label,)}
+const IndexedLabeledSet = ACSetType(TheoryLabeledSet, index=[:label])
 
 lset = IndexedLabeledSet{Symbol}()
 @test keys(lset.indices) == (:label,)
