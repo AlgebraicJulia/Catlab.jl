@@ -46,6 +46,11 @@ set_subpart!(dds, 1, :Φ, 1)
 @test_throws KeyError subpart(dds, 1, :nonsubpart)
 @test_throws KeyError set_subpart!(dds, 1, :nonsubpart, 1)
 
+# Pretty printing
+s = sprint(show, dds)
+@test occursin("X = 1:3", s)
+@test occursin("Φ : X → X = ", s)
+
 # Error handling
 @test_throws ErrorException add_part!(dds, :X, Φ=5)
 @test_skip subpart(dds, :Φ) == [1,1,1,0]
@@ -104,7 +109,12 @@ du = disjoint_union(d, d2)
 @test subpart(du, :parent) == [4,4,4,5,5,7,7]
 @test subpart(du, :height) == [0,0,0,10,20,10,20]
 
-# test type inheritance of adding parts to a CSet
+# Pretty printing of data attributes.
+s = sprint(show, d)
+@test occursin("R = Int64", s)
+@test occursin("height : X → R = ", s)
+
+# Allow type inheritance for data attributes.
 d = Dendrogram{Number}()
 add_parts!(d, :X, 2, parent=[0,0], height=[10.0, 4])
 @test subpart(d, :height) == [10.0, 4]

@@ -27,10 +27,10 @@ const StructArray0{T} = Union{StructArray{T},Vector{<:EmptyTuple}}
 
 """ Create StructArray while avoiding inconsistency with zero length arrays.
 
-By default, just constructs a StructArray (a struct of arrays) but when struct
-is empty, returns a ordinary Julia vector (an array of empty structs).
+By default, just constructs a StructArray (a struct of arrays) but when the
+struct is empty, returns a ordinary Julia vector (an array of empty structs).
 
-See: https://github.com/JuliaArrays/StructArrays.jl/issues/148
+For context, see: https://github.com/JuliaArrays/StructArrays.jl/issues/148
 """
 make_struct_array(x) = StructArray(x)
 
@@ -181,21 +181,16 @@ subpart(acs::ACSet, name::Symbol) = _subpart(acs,Val(name))
 end
 
 function Base.show(io::IO, acs::AbstractACSet{CD,AD,Ts}) where {CD,AD,Ts}
-  println(io,"ACSet")
-  for ob in CD.ob
-    println(io, "  $ob = 1:$(nparts(acs,ob))")
-  end
-  for (i,hom) in enumerate(CD.hom)
-    println(io, "  $hom : $(dom(CD,i)) → $(codom(CD,i))")
-    println(io, "    $(subpart(acs,hom))")
-  end
-  for (i,conc) in enumerate(AD.data)
-    println(io, "  $conc = $(Ts.parameters[i])")
-  end
-  for (i,attr) in enumerate(AD.attr)
-    println(io, "  $attr : $(dom(AD,i)) ⇒ $(codom(AD,i))")
-    println(io, "    $(subpart(acs,attr))")
-  end
+  println(io, "ACSet(")
+  join(io, vcat(
+    [ "  $ob = 1:$(nparts(acs,ob))" for ob in CD.ob ],
+    [ "  $data = $(Ts.parameters[i])" for (i,data) in enumerate(AD.data) ],
+    [ "  $hom : $(dom(CD,i)) → $(codom(CD,i)) = $(subpart(acs,hom))"
+      for (i,hom) in enumerate(CD.hom) ],
+    [ "  $attr : $(dom(AD,i)) → $(codom(AD,i)) = $(subpart(acs,attr))"
+      for (i,attr) in enumerate(AD.attr) ],
+  ), ",\n")
+  print(io, ")")
 end
 
 """ Insert into sorted vector, preserving the sorting.
