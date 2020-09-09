@@ -2,7 +2,6 @@ module TestCSets
 using Test
 
 using Catlab: @present
-using Catlab.Theories: FreeSchema
 using Catlab.CategoricalAlgebra.CSets
 
 # Discrete dynamical systems

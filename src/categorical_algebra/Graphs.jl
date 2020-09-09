@@ -20,7 +20,6 @@ import LightGraphs: SimpleGraph, SimpleDiGraph, nv, ne, src, dst,
   neighbors, inneighbors, outneighbors, all_neighbors
 
 using ...Present
-using ...Theories
 using ...Theories: SchemaType
 using ..CSets
 

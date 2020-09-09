@@ -11,8 +11,7 @@ using Compat: isnothing
 using ...CategoricalAlgebra.CSets, ...Present
 using ...CategoricalAlgebra.FinSets: FinFunction
 using ...CategoricalAlgebra.Limits: pushout
-using ...Theories: FreeSchema, dom, codom, compose, ⋅, id,
-  CatDescType, AttrDescType, SchemaType
+using ...Theories: dom, codom, compose, ⋅, id
 import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,
   add_wires!, singleton_diagram, ocompose
 
