@@ -21,6 +21,7 @@ import LightGraphs: SimpleGraph, SimpleDiGraph, nv, ne, src, dst,
 
 using ...Present
 using ...Theories
+using ...Theories: SchemaType
 using ..CSets
 
 # Graphs

@@ -18,7 +18,9 @@ end
 using Compat: isnothing, only
 using StructArrays
 
-using ...Theories
+using ...Theories: Schema, FreeSchema, dom, codom,
+  CatDesc, CatDescType, AttrDesc, AttrDescType, SchemaType,
+  ob_num, hom_num, data_num, attr_num, dom_num, codom_num
 using ...Present
 
 # Struct arrays
