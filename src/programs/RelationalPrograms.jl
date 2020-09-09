@@ -9,7 +9,6 @@ using Compat
 using MLStyle: @match
 
 using ...CategoricalAlgebra.CSets, ...Present
-using ...Theories: FreeCategory, SchemaType
 using ...WiringDiagrams.UndirectedWiringDiagrams
 import ...WiringDiagrams.UndirectedWiringDiagrams: UndirectedWiringDiagram,
   TheoryUWD, TheoryTypedUWD
@@ -23,9 +22,9 @@ import ...WiringDiagrams.UndirectedWiringDiagrams: UndirectedWiringDiagram,
   variable::Attr(Junction,Name)
 end
 
-const AbstractUntypedRelationDiagram{T} = AbstractACSet{SchemaType(TheoryRelationDiagram)...,Tuple{T}}
-const UntypedRelationDiagram{T} = ACSet{SchemaType(TheoryRelationDiagram)..., Tuple{T},
-  (:box, :junction, :outer_junction, :variable)}
+const AbstractUntypedRelationDiagram = AbstractACSetType(TheoryRelationDiagram)
+const UntypedRelationDiagram = ACSetType(TheoryRelationDiagram,
+  index=[:box, :junction, :outer_junction], unique_index=[:variable])
 
 @present TheoryTypedRelationDiagram <: TheoryTypedUWD begin
   Name::Data
@@ -33,13 +32,15 @@ const UntypedRelationDiagram{T} = ACSet{SchemaType(TheoryRelationDiagram)..., Tu
   variable::Attr(Junction,Name)
 end
 
-const AbstractTypedRelationDiagram{Types,Names} = AbstractACSet{SchemaType(TheoryTypedRelationDiagram)...,
-                                                                Tuple{Types,Names}}
-const TypedRelationDiagram{Types,Names} = ACSet{SchemaType(TheoryTypedRelationDiagram)...,
-                                      Tuple{Types,Names}, (:box, :junction, :outer_junction, :variable)}
+const AbstractTypedRelationDiagram =
+  AbstractACSetType(TheoryTypedRelationDiagram)
+const TypedRelationDiagram = ACSetType(TheoryTypedRelationDiagram,
+  index=[:box, :junction, :outer_junction], unique_index=[:variable])
 
-RelationDiagram(ports::Int) = UndirectedWiringDiagram(UntypedRelationDiagram{Symbol}, ports)
-RelationDiagram(ports::Vector{T}) where {T} = UndirectedWiringDiagram(TypedRelationDiagram{T,Symbol}, ports)
+RelationDiagram(ports::Int) =
+  UndirectedWiringDiagram(UntypedRelationDiagram{Symbol}, ports)
+RelationDiagram(ports::Vector{T}) where {T} =
+  UndirectedWiringDiagram(TypedRelationDiagram{T,Symbol}, ports)
 
 # Relations
 ###########

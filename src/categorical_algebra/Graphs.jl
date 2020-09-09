@@ -174,11 +174,11 @@ abstract type AbstractPropertyGraph{T} end
   eprops::Attr(E,Props)
 end
 
-# We don't use ACSetType because we are being a bit more flexible here
-const _AbstractPropertyGraph{T} =
-  AbstractACSet{SchemaType(TheoryPropertyGraph)..., Tuple{Dict{Symbol,T}}}
-const _PropertyGraph{T} =
-  ACSet{SchemaType(TheoryPropertyGraph)..., Tuple{Dict{Symbol,T}}, (:src,:tgt)}
+# We don't use `ACSetType` because we are being a bit more flexible here.
+const _AbstractPropertyGraph{T} = AbstractACSet{
+  SchemaType(TheoryPropertyGraph)...,Tuple{Dict{Symbol,T}}}
+const _PropertyGraph{T} = ACSet{
+  SchemaType(TheoryPropertyGraph)...,Tuple{Dict{Symbol,T}},(:src,:tgt),()}
 
 """ Graph with properties.
 
@@ -206,10 +206,10 @@ PropertyGraph{T}(; kw...) where T = PropertyGraph{T,_PropertyGraph{T}}(; kw...)
   compose(inv,eprops) == eprops # Edge involution preserves edge properties.
 end
 
-const _AbstractSymmetricPropertyGraph{T} =
-  AbstractACSet{SchemaType(TheorySymmetricPropertyGraph)..., Tuple{Dict{Symbol,T}}}
-const _SymmetricPropertyGraph{T} =
-  ACSet{SchemaType(TheorySymmetricPropertyGraph)..., Tuple{Dict{Symbol,T}}, (:src,)}
+const _AbstractSymmetricPropertyGraph{T} = AbstractACSet{
+  SchemaType(TheorySymmetricPropertyGraph)...,Tuple{Dict{Symbol,T}}}
+const _SymmetricPropertyGraph{T} = ACSet{
+  SchemaType(TheorySymmetricPropertyGraph)...,Tuple{Dict{Symbol,T}},(:src,),()}
 
 """ Symmetric graphs with properties.
 

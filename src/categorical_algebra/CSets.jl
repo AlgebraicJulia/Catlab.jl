@@ -29,7 +29,8 @@ Together, the first two type parameters encode a schema, see `Schema`.
 
 See also: [`AttributedCSet`](@ref).
 """
-abstract type AbstractAttributedCSet{CD,AD,Ts} end
+abstract type AbstractAttributedCSet{CD <: CatDesc, AD <: AttrDesc{CD},
+                                     Ts <: Tuple} end
 
 """ Alias for the abstract type `AbstractAttributedCSet`.
 """
@@ -43,28 +44,31 @@ a schema. Nevertheless, the first three type parameters are documented at
 [`AbstractAttributedCSet`](@ref). The remaining type parameters are
 implementation details and should be ignored.
 """
-struct AttributedCSet{CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed,
-    Tables <: NamedTuple, Indices <: NamedTuple} <: AbstractACSet{CD,AD,Ts}
+struct AttributedCSet{CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple,
+                      Idxed, UniqueIdxed, Tables <: NamedTuple,
+                      Indices <: NamedTuple} <: AbstractACSet{CD,AD,Ts}
   tables::Tables
   indices::Indices
-  function AttributedCSet{CD,AD,Ts,Idxed}() where
-      {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed}
+  function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}() where
+      {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed, UniqueIdxed}
     tables = make_tables(CD,AD,Ts)
-    indices = make_indices(CD,AD,Ts,Idxed)
-    new{CD,AD,Ts,Idxed,typeof(tables),typeof(indices)}(tables,indices)
+    indices = make_indices(CD,AD,Ts,Idxed,UniqueIdxed)
+    new{CD,AD,Ts,Idxed,UniqueIdxed,typeof(tables),typeof(indices)}(
+      tables, indices)
   end
   function AttributedCSet{CD}() where {CD <: CatDesc}
     AttributedCSet{CD,typeof(AttrDesc(CD())),Tuple{}}()
   end
-  function AttributedCSet{CD,AD,Ts,Idxed,Tables,Indices}() where
-      {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed,
+  function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed,Tables,Indices}() where
+      {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed, UniqueIdxed,
        Tables <: NamedTuple, Indices <: NamedTuple}
-    AttributedCSet{CD,AD,Ts,Idxed}()
+    AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}()
   end
-  function AttributedCSet{CD,AD,Ts,Idxed,Tables,Indices}(tables::Tables, indices::Indices) where
-      {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed,
+  function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed,Tables,Indices}(
+      tables::Tables, indices::Indices) where
+      {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed, UniqueIdxed,
        Tables <: NamedTuple, Indices <: NamedTuple}
-    new{CD,AD,Ts,Idxed,Tables,Indices}(tables,indices)
+    new{CD,AD,Ts,Idxed,UniqueIdxed,Tables,Indices}(tables,indices)
   end
 end
 
@@ -83,15 +87,17 @@ end
 """ Generate a data type for attributed C-sets from a schema.
 
 In addition to the schema, you can specify which morphisms and data attributes
-are indexed using the `index` keyword argument. By default, no morphisms or data
-attributes are indexed.
+are (uniquely) indexed using the keyword argument `index` (or `unique_index`).
+By default, no morphisms or data attributes are indexed.
 
 See also: [`AbstractACSetType`](@ref).
 """
-function ACSetType(pres::Presentation{Schema}; index=[])
-  ty_params = [TypeVar(nameof(data_type)) for data_type in generators(pres,:Data)]
-  foldr((v,T) -> UnionAll(v,T), ty_params,
-        init=ACSet{SchemaType(pres)...,Tuple{ty_params...},Tuple(index)})
+function ACSetType(pres::Presentation{Schema}; index=[], unique_index=[])
+  type_params = [ TypeVar(nameof(data_type))
+                  for data_type in generators(pres, :Data) ]
+  T = ACSet{SchemaType(pres)..., Tuple{type_params...},
+            Tuple(sort!(index ∪ unique_index)), Tuple(sort!(unique_index))}
+  foldr((v,T) -> UnionAll(v,T), type_params, init=T)
 end
 
 """ Abstract type for C-sets.
@@ -104,7 +110,8 @@ const AbstractCSet{CD} = AbstractACSet{CD,AttrDesc{CD,(),(),(),()},Tuple{}}
 
 The special case of `AttributedCSet` with no data attributes.
 """
-const CSet{CD,Idxed} = ACSet{CD,AttrDesc{CD,(),(),(),()},Tuple{},Idxed}
+const CSet{CD,Idxed,UniqueIdxed} =
+  ACSet{CD,AttrDesc{CD,(),(),(),()},Tuple{},Idxed,UniqueIdxed}
 
 """ Generate an abstract type for C-sets from a presentation of a category C.
 
@@ -116,27 +123,29 @@ end
 
 """ Generate a data type for C-sets from a presentation of a category C.
 
-In addition to the category, you can specify which morphisms are indexed using
-the `index` keyword argument. By default, no morphisms are indexed.
+In addition to the category, you can specify which morphisms are (uniquely)
+indexed using the keyword argument `index` (or `unique_index`). By default, no
+morphisms are indexed.
 
 See also: [`AbstractCSetType`](@ref).
 """
-function CSetType(pres::Presentation{Schema}; index=[])
-  CSet{CatDescType(pres),Tuple(index)}
+function CSetType(pres::Presentation{Schema}; index=[], unique_index=[])
+  CSet{CatDescType(pres),
+       Tuple(sort!(index ∪ unique_index)), Tuple(sort!(unique_index))}
 end
 
 function make_indices(::Type{CD}, AD::Type{<:AttrDesc{CD}},
-                      Ts::Type{<:Tuple}, Idxed::Tuple) where {CD}
-  function make_idx(name)
+                      Ts::Type{<:Tuple}, Idxed::Tuple, UniqueIdxed::Tuple) where {CD}
+  NamedTuple{Idxed}(Tuple(map(Idxed) do name
+    IndexType = name ∈ UniqueIdxed ? Int : Vector{Int}
     if name ∈ CD.hom
-      Vector{Vector{Int}}()
+      Vector{IndexType}()
     elseif name ∈ AD.attr
-      Dict{Ts.parameters[codom_num(AD,name)],Vector{Int}}()
+      Dict{Ts.parameters[codom_num(AD,name)],IndexType}()
     else
       error("Cannot index $name: not a morphism or an attribute")
     end
-  end
-  NamedTuple{Idxed}(Tuple(make_idx(name) for name in Idxed))
+  end))
 end
 
 function make_tables(::Type{CD}, AD::Type{<:AttrDesc{CD}},

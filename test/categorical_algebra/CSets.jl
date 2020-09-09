@@ -138,20 +138,22 @@ set_subpart!(lset, 1, :label, :baz)
 set_subpart!(lset, 3, :label, :biz)
 @test incident(lset, :foo, :label) == []
 
-# TODO: Unique indexing temporarily not supported.
-# const UniqueIndexedLabeledSet = ...
+const UniqueIndexedLabeledSet = ACSetType(TheoryLabeledSet,
+                                          unique_index=[:label])
 
-# lset = UniqueIndexedLabeledSet{Symbol}()
-# @test keys(lset.data_indices) == (:label,)
-# add_parts!(lset, :X, 2, label=[:foo, :bar])
-# @test subpart(lset, :, :label) == [:foo, :bar]
-# @test incident(lset, :foo, :label) == 1
-# @test incident(lset, [:foo,:bar], :label) == [1,2]
-# @test incident(lset, :nonkey, :label) == nothing
+lset = UniqueIndexedLabeledSet{Symbol}()
+@test keys(lset.indices) == (:label,)
+add_parts!(lset, :X, 2, label=[:foo, :bar])
+@test subpart(lset, :, :label) == [:foo, :bar]
+@test incident(lset, :foo, :label) == 1
+@test incident(lset, [:foo,:bar], :label) == [1,2]
+@test incident(lset, :nonkey, :label) == nothing
 
-# set_subpart!(lset, 1, :label, :baz)
-# @test subpart(lset, 1, :label) == :baz
-# @test incident(lset, :baz, :label) == 1
-# @test_throws ErrorException set_subpart!(lset, 1, :label, :bar)
+set_subpart!(lset, 1, :label, :baz)
+@test subpart(lset, 1, :label) == :baz
+@test incident(lset, :baz, :label) == 1
+@test incident(lset, :foo, :label) == nothing
+
+@test_throws ErrorException set_subpart!(lset, 1, :label, :bar)
 
 end
