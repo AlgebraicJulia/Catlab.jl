@@ -1,5 +1,7 @@
 using Test
+
 using Catlab.Present
+using Catlab.Theories: CatDescType, AttrDescType
 
 # Schema
 ########

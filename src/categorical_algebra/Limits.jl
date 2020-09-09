@@ -11,7 +11,6 @@ export AbstractLimit, AbstractColimit, Limit, Colimit,
 using Compat: only
 
 using AutoHashEquals
-using Missings: nonmissingtype
 using StaticArrays: StaticVector, SVector, @SVector
 
 using ...Theories
@@ -153,10 +152,12 @@ end
 # General (co)limits
 ####################
 
-# FIXME: Object type information should be encoded in C-set type.
-limit(diagram::FreeDiagram) =
-  limit(nonmissingtype(eltype(diagram.tables.V.ob)), diagram)
-colimit(diagram::FreeDiagram) =
-  colimit(nonmissingtype(eltype(diagram.tables.V.ob)), diagram)
+""" Limit of a diagram.
+"""
+function limit end
+
+""" Colimit of a diagram.
+"""
+function colimit end
 
 end

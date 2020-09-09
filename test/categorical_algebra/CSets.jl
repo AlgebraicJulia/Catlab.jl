@@ -2,7 +2,6 @@ module TestCSets
 using Test
 
 using Catlab: @present
-using Catlab.Theories: FreeSchema, CatDescType, SchemaType
 using Catlab.CategoricalAlgebra.CSets
 
 # Discrete dynamical systems
@@ -13,15 +12,15 @@ using Catlab.CategoricalAlgebra.CSets
   Φ::Hom(X,X)
 end
 
-const AbstractDDS = AbstractCSet{CatDescType(TheoryDDS)}
-const DDS = CSet{CatDescType(TheoryDDS), (:Φ,)}
+const AbstractDDS = AbstractCSetType(TheoryDDS)
+const DDS = CSetType(TheoryDDS, index=[:Φ])
 @test DDS <: AbstractDDS
 @test DDS <: CSet
 
 dds = DDS()
 @test keys(dds.indices) == (:Φ,)
 @test nparts(dds, :X) == 0
-@test add_part!(dds, :X, Φ=0) == 1 # FIXME: Shouldn't need Φ=0
+@test add_part!(dds, :X) == 1
 @test nparts(dds, :X) == 1
 @test incident(dds, 1, :Φ) == []
 
@@ -46,10 +45,19 @@ set_subpart!(dds, 1, :Φ, 1)
 @test_throws KeyError subpart(dds, 1, :nonsubpart)
 @test_throws KeyError set_subpart!(dds, 1, :nonsubpart, 1)
 
-# Error handling
-@test_throws ErrorException add_part!(dds, :X, Φ=5)
-@test_skip subpart(dds, :Φ) == [1,1,1,0]
-@test_skip incident(dds, 4, :Φ) == []
+# Pretty printing.
+s = sprint(show, dds)
+@test occursin("X = 1:3", s)
+@test occursin("Φ : X → X = ", s)
+
+s = sprint(show, MIME"text/plain"(), dds)
+@test occursin("X table with 3 elements", s)
+@test occursin("(Φ = 1,)", s)
+
+# Error handling.
+@test_throws AssertionError add_part!(dds, :X, Φ=5)
+@test subpart(dds, :Φ) == [1,1,1,0]
+@test incident(dds, 4, :Φ) == []
 
 # Dendrograms
 #############
@@ -66,20 +74,12 @@ set_subpart!(dds, 1, :Φ, 1)
   height::Attr(X,R)
 end
 
-const AbstractDendrogram{T} =
-  AbstractACSet{SchemaType(TheoryDendrogram)..., Tuple{T}}
-const Dendrogram{T} =
-  ACSet{SchemaType(TheoryDendrogram)..., Tuple{T}, (:parent,)}
+const AbstractDendrogram = AbstractACSetType(TheoryDendrogram)
+const Dendrogram = ACSetType(TheoryDendrogram, index=[:parent])
 
 d = Dendrogram{Int}()
-# add_parts!(d, :X, 3, height=0)
-# add_parts!(d, :X, 2, height=[10,20])
-# FIXME: Broadcasting style should work.
-# add_parts!(d, :X, 3, height=[0,0,0], parent=[0,0,0])
-# add_parts!(d, :X, 2, height=[10,20], parent=[0,0])
-# FIXME: Order of keyword arguments should not matter.
-add_parts!(d, :X, 3, parent=[0,0,0], height=[0,0,0])
-add_parts!(d, :X, 2, parent=[0,0], height=[10,20])
+add_parts!(d, :X, 3, height=0)
+add_parts!(d, :X, 2, height=[10,20])
 set_subpart!(d, 1:3, :parent, 4)
 set_subpart!(d, [4,5], :parent, 5)
 
@@ -104,7 +104,15 @@ du = disjoint_union(d, d2)
 @test subpart(du, :parent) == [4,4,4,5,5,7,7]
 @test subpart(du, :height) == [0,0,0,10,20,10,20]
 
-# test type inheritance of adding parts to a CSet
+# Pretty printing of data attributes.
+s = sprint(show, d)
+@test occursin("R = Int64", s)
+@test occursin("height : X → R = ", s)
+
+s = sprint(show, MIME"text/plain"(), d)
+@test occursin("(parent = 4, height = 0)", s)
+
+# Allow type inheritance for data attributes.
 d = Dendrogram{Number}()
 add_parts!(d, :X, 2, parent=[0,0], height=[10.0, 4])
 @test subpart(d, :height) == [10.0, 4]
@@ -120,8 +128,7 @@ add_parts!(d, :X, 2, parent=[0,0], height=[10.0, 4])
   label::Attr(X,Label)
 end
 
-const IndexedLabeledSet{T} =
-  ACSet{SchemaType(TheoryLabeledSet)..., Tuple{T}, (:label,)}
+const IndexedLabeledSet = ACSetType(TheoryLabeledSet, index=[:label])
 
 lset = IndexedLabeledSet{Symbol}()
 @test keys(lset.indices) == (:label,)
@@ -132,24 +139,28 @@ add_parts!(lset, :X, 2, label=[:foo, :bar])
 
 add_part!(lset, :X, label=:foo)
 @test incident(lset, :foo, :label) == [1,3]
-#set_subpart!(lset, 1, :label, :baz) # FIXME: @generated error.
-@test_skip subpart(lset, 1, :label) == :baz
-@test_skip incident(lset, [:foo,:baz], :label) == [[3],[1]]
+set_subpart!(lset, 1, :label, :baz)
+@test subpart(lset, 1, :label) == :baz
+@test incident(lset, [:foo,:baz], :label) == [[3],[1]]
+set_subpart!(lset, 3, :label, :biz)
+@test incident(lset, :foo, :label) == []
 
-# TODO: Unique indexing temporarily not supported.
-# const UniqueIndexedLabeledSet = ...
+const UniqueIndexedLabeledSet = ACSetType(TheoryLabeledSet,
+                                          unique_index=[:label])
 
-# lset = UniqueIndexedLabeledSet{Symbol}()
-# @test keys(lset.data_indices) == (:label,)
-# add_parts!(lset, :X, 2, label=[:foo, :bar])
-# @test subpart(lset, :, :label) == [:foo, :bar]
-# @test incident(lset, :foo, :label) == 1
-# @test incident(lset, [:foo,:bar], :label) == [1,2]
-# @test incident(lset, :nonkey, :label) == nothing
+lset = UniqueIndexedLabeledSet{Symbol}()
+@test keys(lset.indices) == (:label,)
+add_parts!(lset, :X, 2, label=[:foo, :bar])
+@test subpart(lset, :, :label) == [:foo, :bar]
+@test incident(lset, :foo, :label) == 1
+@test incident(lset, [:foo,:bar], :label) == [1,2]
+@test incident(lset, :nonkey, :label) == nothing
 
-# set_subpart!(lset, 1, :label, :baz)
-# @test subpart(lset, 1, :label) == :baz
-# @test incident(lset, :baz, :label) == 1
-# @test_throws ErrorException set_subpart!(lset, 1, :label, :bar)
+set_subpart!(lset, 1, :label, :baz)
+@test subpart(lset, 1, :label) == :baz
+@test incident(lset, :baz, :label) == 1
+@test incident(lset, :foo, :label) == nothing
+
+@test_throws ErrorException set_subpart!(lset, 1, :label, :bar)
 
 end

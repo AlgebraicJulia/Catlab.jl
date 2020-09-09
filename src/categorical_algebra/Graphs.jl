@@ -20,7 +20,7 @@ import LightGraphs: SimpleGraph, SimpleDiGraph, nv, ne, src, dst,
   neighbors, inneighbors, outneighbors, all_neighbors
 
 using ...Present
-using ...Theories
+using ...Theories: SchemaType
 using ..CSets
 
 # Graphs
@@ -66,8 +66,8 @@ add_edge!(g::AbstractGraph, src::Int, tgt::Int; kw...) =
 
 function add_edges!(g::AbstractGraph, srcs::AbstractVector{Int},
                     tgts::AbstractVector{Int}; kw...)
-  @assert length(srcs) == length(tgts)
-  add_parts!(g, :E; src=srcs, tgt=tgts, kw...)
+  @assert (n = length(srcs)) == length(tgts)
+  add_parts!(g, :E, n; src=srcs, tgt=tgts, kw...)
 end
 
 neighbors(g::AbstractGraph, v::Int) = outneighbors(g, v)
@@ -105,7 +105,7 @@ function add_edges!(g::AbstractSymmetricGraph, srcs::AbstractVector{Int},
                     tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
   k = nparts(g, :E)
-  add_parts!(g, :E; src=vcat(srcs,tgts), tgt=vcat(tgts,srcs),
+  add_parts!(g, :E, 2n; src=vcat(srcs,tgts), tgt=vcat(tgts,srcs),
              inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
 end
 
@@ -146,7 +146,7 @@ function add_edges!(g::AbstractHalfEdgeGraph, srcs::AbstractVector{Int},
                     tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
   k = nparts(g, :H)
-  add_parts!(g, :H; vertex=vcat(srcs,tgts),
+  add_parts!(g, :H, 2n; vertex=vcat(srcs,tgts),
              inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
 end
 
@@ -155,8 +155,8 @@ add_dangling_edge!(g::AbstractHalfEdgeGraph, v::Int; kw...) =
 
 function add_dangling_edges!(g::AbstractHalfEdgeGraph,
                              vs::AbstractVector{Int}; kw...)
-  k = nparts(g, :H)
-  add_parts!(g, :H; vertex=vs, inv=(k+1):(k+length(vs)), kw...)
+  n, k = length(vs), nparts(g, :H)
+  add_parts!(g, :H, n; vertex=vs, inv=(k+1):(k+n), kw...)
 end
 
 # Property graphs
@@ -174,11 +174,11 @@ abstract type AbstractPropertyGraph{T} end
   eprops::Attr(E,Props)
 end
 
-# We don't use ACSetType because we are being a bit more flexible here
-const _AbstractPropertyGraph{T} =
-  AbstractACSet{SchemaType(TheoryPropertyGraph)..., Tuple{Dict{Symbol,T}}}
-const _PropertyGraph{T} =
-  ACSet{SchemaType(TheoryPropertyGraph)..., Tuple{Dict{Symbol,T}}, (:src,:tgt)}
+# We don't use `ACSetType` because we are being a bit more flexible here.
+const _AbstractPropertyGraph{T} = AbstractACSet{
+  SchemaType(TheoryPropertyGraph)...,Tuple{Dict{Symbol,T}}}
+const _PropertyGraph{T} = ACSet{
+  SchemaType(TheoryPropertyGraph)...,Tuple{Dict{Symbol,T}},(:src,:tgt),()}
 
 """ Graph with properties.
 
@@ -206,10 +206,10 @@ PropertyGraph{T}(; kw...) where T = PropertyGraph{T,_PropertyGraph{T}}(; kw...)
   compose(inv,eprops) == eprops # Edge involution preserves edge properties.
 end
 
-const _AbstractSymmetricPropertyGraph{T} =
-  AbstractACSet{SchemaType(TheorySymmetricPropertyGraph)..., Tuple{Dict{Symbol,T}}}
-const _SymmetricPropertyGraph{T} =
-  ACSet{SchemaType(TheorySymmetricPropertyGraph)..., Tuple{Dict{Symbol,T}}, (:src,)}
+const _AbstractSymmetricPropertyGraph{T} = AbstractACSet{
+  SchemaType(TheorySymmetricPropertyGraph)...,Tuple{Dict{Symbol,T}}}
+const _SymmetricPropertyGraph{T} = ACSet{
+  SchemaType(TheorySymmetricPropertyGraph)...,Tuple{Dict{Symbol,T}},(:src,),()}
 
 """ Symmetric graphs with properties.
 

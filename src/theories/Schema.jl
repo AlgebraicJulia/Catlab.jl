@@ -1,8 +1,6 @@
-export Schema, FreeSchema, Data, Attr, SchemaExpr, DataExpr, AttrExpr,
-  CatDesc, CatDescType, AttrDesc, AttrDescType, SchemaType,
-  ob_num, hom_num, data_num, attr_num, dom_num, codom_num
+export Schema, FreeSchema, Data, Attr, SchemaExpr, DataExpr, AttrExpr
 
-using MLStyle
+using MLStyle: @match
 
 # Schema
 ########
@@ -18,7 +16,8 @@ of the sets given by the profunctor.
   Data::TYPE
   Attr(dom::Ob,codom::Data)::TYPE
 
-  """ Composition is given by the action of C on the profunctor, with corresponding laws """
+  """ Composition is given by the action of the profunctor on C.
+  """
   compose(f::Hom(A,B), g::Attr(B,X))::Attr(A,X) ⊣ (A::Ob, B::Ob, X::Data)
 
   (compose(f, compose(g, a)) == compose(compose(f, g), a)
@@ -40,12 +39,12 @@ end
 """ CatDesc is a type-level description of a category
 
 In order to have Attributed C-sets that are parameterized by schemas, we have to
-use the type of this struct as the type parameter to get around Julia's restrictions
-on what sort of thing can appear as a type parameter.
+use the type of this struct as the type parameter to get around Julia's
+restrictions on what sort of thing can appear as a type parameter.
 
-We split a Schema up into two types: CatDesc (describing the category) and AttrDesc
-(describing the discrete category and the profunctor). This allows us to have
-C-sets as Attributed C-sets with an empty AttrDesc.
+We split a Schema up into two types: CatDesc (describing the category) and
+AttrDesc (describing the discrete category and the profunctor). This allows us
+to have C-sets as Attributed C-sets with an empty AttrDesc.
 """
 struct CatDesc{Ob,Hom,Dom,Codom}
   function CatDesc{Ob,Hom,Dom,Codom}() where
