@@ -21,7 +21,7 @@ const DDS = CSetType(TheoryDDS, index=[:Φ])
 dds = DDS()
 @test keys(dds.indices) == (:Φ,)
 @test nparts(dds, :X) == 0
-@test add_part!(dds, :X, Φ=0) == 1 # FIXME: Shouldn't need Φ=0
+@test add_part!(dds, :X) == 1
 @test nparts(dds, :X) == 1
 @test incident(dds, 1, :Φ) == []
 
@@ -52,9 +52,9 @@ s = sprint(show, dds)
 @test occursin("Φ : X → X = ", s)
 
 # Error handling
-@test_throws ErrorException add_part!(dds, :X, Φ=5)
-@test_skip subpart(dds, :Φ) == [1,1,1,0]
-@test_skip incident(dds, 4, :Φ) == []
+@test_throws AssertionError add_part!(dds, :X, Φ=5)
+@test subpart(dds, :Φ) == [1,1,1,0]
+@test incident(dds, 4, :Φ) == []
 
 # Dendrograms
 #############
@@ -75,14 +75,8 @@ const AbstractDendrogram = AbstractACSetType(TheoryDendrogram)
 const Dendrogram = ACSetType(TheoryDendrogram, index=[:parent])
 
 d = Dendrogram{Int}()
-# add_parts!(d, :X, 3, height=0)
-# add_parts!(d, :X, 2, height=[10,20])
-# FIXME: Broadcasting style should work.
-# add_parts!(d, :X, 3, height=[0,0,0], parent=[0,0,0])
-# add_parts!(d, :X, 2, height=[10,20], parent=[0,0])
-# FIXME: Order of keyword arguments should not matter.
-add_parts!(d, :X, 3, parent=[0,0,0], height=[0,0,0])
-add_parts!(d, :X, 2, parent=[0,0], height=[10,20])
+add_parts!(d, :X, 3, height=0)
+add_parts!(d, :X, 2, height=[10,20])
 set_subpart!(d, 1:3, :parent, 4)
 set_subpart!(d, [4,5], :parent, 5)
 
@@ -142,6 +136,8 @@ add_part!(lset, :X, label=:foo)
 set_subpart!(lset, 1, :label, :baz)
 @test subpart(lset, 1, :label) == :baz
 @test incident(lset, [:foo,:baz], :label) == [[3],[1]]
+set_subpart!(lset, 3, :label, :biz)
+@test incident(lset, :foo, :label) == []
 
 # TODO: Unique indexing temporarily not supported.
 # const UniqueIndexedLabeledSet = ...

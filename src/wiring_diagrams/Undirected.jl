@@ -54,7 +54,7 @@ type_type(::Type{<:TypedUWD{T}}) where {T} = T
 
 function UndirectedWiringDiagram(::Type{UWD}, nports::Int) where UWD <: AbstractUWD
   d = UWD()
-  add_parts!(d, :OuterPort, outer_junction=zeros(Int64,nports))
+  add_parts!(d, :OuterPort, nports)
   return d
 end
 
@@ -65,7 +65,7 @@ function UndirectedWiringDiagram(::Type{UWD},
     port_types::AbstractVector{T}) where {T, UWD <: AbstractUWD}
   d = UWD()
   nports = length(port_types)
-  add_parts!(d, :OuterPort, nports, outer_junction = zeros(Int64,nports), outer_port_type=port_types)
+  add_parts!(d, :OuterPort, nports, outer_port_type=port_types)
   return d
 end
 
@@ -112,15 +112,15 @@ add_box!(d::AbstractUWD; data...) = add_part!(d, :Box; data...)
 
 function add_box!(d::AbstractUWD, nports::Int; data...)
   box = add_box!(d; data...)
-  ports = add_parts!(d, :Port, box=[box for i in 1:nports], junction=zeros(Int64,nports))
+  ports = add_parts!(d, :Port, nports, box=fill(box, nports))
   box
 end
 
 function add_box!(d::AbstractUWD, port_types::AbstractVector{T}; data...) where {T}
   box = add_box!(d; data...)
   nports = length(port_types)
-  ports = add_parts!(d, :Port, box=[box for i in 1:nports],
-                     junction = zeros(Int64,nports), port_type=port_types)
+  ports = add_parts!(d, :Port, nports, box=fill(box, nports),
+                     port_type=port_types)
   box
 end
 

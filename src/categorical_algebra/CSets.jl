@@ -15,7 +15,7 @@ else
   import Base: fieldtypes
 end
 
-using Compat: isnothing
+using Compat: isnothing, only
 using StructArrays
 
 using ...Theories
@@ -25,7 +25,6 @@ using ...Present
 ###############
 
 const EmptyTuple = Union{Tuple{},NamedTuple{(),Tuple{}}}
-const StructArray0{T} = Union{StructArray{T},Vector{<:EmptyTuple}}
 
 """ Create StructArray while avoiding inconsistency with zero length arrays.
 
@@ -34,18 +33,6 @@ struct is empty, returns a ordinary Julia vector (an array of empty structs).
 
 For context, see: https://github.com/JuliaArrays/StructArrays.jl/issues/148
 """
-make_struct_array(x) = StructArray(x)
-
-function make_struct_array(n::Int, x)
-  sa = StructArray(x)
-  @assert length(sa) == n
-  sa
-end
-
-make_struct_array(::EmptyTuple) = error("Length needed when struct is empty")
-make_struct_array(n::Int, ::T) where T <: EmptyTuple = fill(T(()), n)
-make_struct_array(v::Vector{<:EmptyTuple}) = v
-
 make_struct_array(::Type{SA}, ::UndefInitializer, n::Int) where
   SA <: StructArray = SA(undef, n)
 make_struct_array(::Type{<:StructArray{T}}, ::UndefInitializer, n::Int) where
@@ -169,7 +156,8 @@ function CSetType(pres::Presentation{Schema}; index=[])
   CSet{CatDescType(pres),Tuple(index)}
 end
 
-function make_indices(::Type{CD},AD::Type{<:AttrDesc{CD}},Ts::Type{<:Tuple},Idxed::Tuple) where {CD}
+function make_indices(::Type{CD}, AD::Type{<:AttrDesc{CD}},
+                      Ts::Type{<:Tuple}, Idxed::Tuple) where {CD}
   ts = Ts.parameters
   function make_idx(name)
     if name ∈ CD.hom
@@ -183,7 +171,8 @@ function make_indices(::Type{CD},AD::Type{<:AttrDesc{CD}},Ts::Type{<:Tuple},Idxe
   NamedTuple{Idxed}(Tuple(make_idx(name) for name in Idxed))
 end
 
-function make_tables(::Type{CD}, AD::Type{<:AttrDesc{CD}}, Ts::Type{<:Tuple}) where {CD}
+function make_tables(::Type{CD}, AD::Type{<:AttrDesc{CD}},
+                     Ts::Type{<:Tuple}) where {CD}
   ts = Ts.parameters
   cols = NamedTuple{CD.ob}(Tuple{Symbol,DataType}[] for ob in CD.ob)
   for hom in CD.hom
@@ -288,9 +277,11 @@ Returns the ID of the added part.
 
 See also: [`add_parts!`](@ref).
 """
-add_part!(acs::ACSet, type::Symbol, subparts::NamedTuple) =
-  _add_parts!(acs, Val(type), make_struct_array([subparts]))[1]
-add_part!(acs::ACSet, type::Symbol; kw...) = add_part!(acs, type, (; kw...))
+function add_part!(acs::ACSet, type::Symbol, args...; kw...)
+  part = only(_add_parts!(acs, Val(type), 1))
+  set_subparts!(acs, part, args...; kw...)
+  part
+end
 
 """ Add parts of given type to C-set, optionally setting their subparts.
 
@@ -298,59 +289,31 @@ Returns the range of IDs for the added parts.
 
 See also: [`add_part!`](@ref).
 """
-add_parts!(acs::ACSet, type::Symbol, subpartses::StructArray0{<:NamedTuple}) =
-  _add_parts!(acs, Val(type), subpartses)
-add_parts!(acs::ACSet, type::Symbol; kw...) =
-  add_parts!(acs, type, make_struct_array((; kw...)))
-add_parts!(acs::ACSet,type::Symbol, n::Int; kw...) =
-  add_parts!(acs, type, make_struct_array(n, (; kw...)))
+function add_parts!(acs::ACSet, type::Symbol, n::Int, args...; kw...)
+  parts = _add_parts!(acs, Val(type), n)
+  set_subparts!(acs, parts, args...; kw...)
+  parts
+end
 
-@generated function _add_parts!(acs::ACSet{CD,AD,Ts,Idxed,TT},::Val{ob},
-                                subpartses::T) where
-  {CD,AD,Ts,Idxed,TT,ob,T<:StructArray0{<:NamedTuple}}
-  @assert fieldnames(T) == fieldnames(fieldtype(TT,ob))
-  @assert all(map(<:, fieldtypes(T), fieldtypes(fieldtype(TT,ob))))
-  code = quote
-    append!(acs.tables.$ob,subpartses)
-  end
-  for (i,hom) in enumerate(CD.hom)
-    if hom ∈ Idxed && CD.ob[CD.codom[i]] == ob
-      push!(code.args, :(append!(acs.indices.$(hom), repeat([[]],length(subpartses)))))
-    end
-  end
-  inner_loop = Expr(:block)
-  for hom in fieldnames(T)
-    if hom ∈ Idxed
-      if hom ∈ CD.hom
-        indices_code = quote
-          if has_part(acs, $(Expr(:quote, codom(CD,hom))), subparts.$hom)
-            insertsorted!(acs.indices.$(hom)[subparts.$hom],part_num)
-          elseif subparts.$hom != 0
-            error("No part $(subparts.$hom) exists of type $($(Expr(:quote, codom(CD,hom))))")
-          end
-        end
-        push!(inner_loop.args, indices_code)
-      elseif hom ∈ AD.attr
-        indices_code = quote
-          if subparts.$hom ∈ keys(acs.indices.$hom)
-            insertsorted!(acs.indices.$(hom)[subparts.$hom],part_num)
-          else
-            acs.indices.$(hom)[subparts.$hom] = [part_num]
-          end
-        end
-        push!(inner_loop.args, indices_code)
-      end
-    end
-  end
+@generated function _add_parts!(acs::ACSet{CD,AD,Ts,Idxed}, ::Val{ob},
+                                n::Int) where {CD,AD,Ts,Idxed,ob}
+  out_homs = filter(hom -> dom(CD, hom) == ob, CD.hom)
+  indexed_homs = filter(hom -> codom(CD, hom) == ob && hom ∈ Idxed, CD.hom)
   quote
-    k = length(subpartses)
-    n = nparts(acs,ob)
-    $code
-    for (i,subparts) in enumerate(subpartses)
-      part_num = i+n
-      $inner_loop
-    end
-    (n+1):(n+k)
+    if n == 0; return 1:0 end
+    nparts = length(acs.tables.$ob) + n
+    resize!(acs.tables.$ob, nparts)
+    start = nparts - n + 1
+    $(Expr(:block, map(out_homs) do hom
+        :(@inbounds acs.tables.$ob.$hom[start:nparts] .= 0)
+     end...))
+    $(Expr(:block, map(indexed_homs) do hom
+        quote
+          resize!(acs.indices.$hom, nparts)
+          @inbounds for i in start:nparts; acs.indices.$hom[i] = Int[] end
+        end
+      end...))
+    start:nparts
   end
 end
 
@@ -385,7 +348,7 @@ set_subpart!(acs::ACSet, name::Symbol, new_subpart) =
         old = acs.tables.$ob.$name[part]
         acs.tables.$ob.$name[part] = subpart
         if old > 0
-          deletesorted!(acs.indices.$name[old], part)
+          @assert deletesorted!(acs.indices.$name[old], part)
         end
         if subpart > 0
           insertsorted!(acs.indices.$name[subpart], part)
@@ -401,9 +364,11 @@ set_subpart!(acs::ACSet, name::Symbol, new_subpart) =
     ob = dom(AD, name)
     if name ∈ Idxed
       quote
-        old = acs.tables.$ob.$name[part]
+        if isassigned(acs.tables.$ob.$name, part)
+          old = acs.tables.$ob.$name[part]
+          unset_data_index!(acs.indices.$name, old, part)
+        end
         acs.tables.$ob.$name[part] = subpart
-        unset_data_index!(acs.indices.$name, old, part)
         set_data_index!(acs.indices.$name, subpart, part)
       end
     else
@@ -482,15 +447,20 @@ end
   end
 end
 
-@generated function _copy_parts_data!(acs::T, from::T, ::Val{type}, parts) where
-  {type,CD,AD,T<:ACSet{CD,AD}}
-  homs = collect(filter(hom -> dom(CD,hom) == type, CD.hom))
-  attrs = collect(filter(attr -> dom(AD,attr) == type, AD.attr))
-  subparts = [[Expr(:kw, hom, :(zeros(Int64,n))) for hom in homs];
-              [Expr(:kw, attr, :(subpart(from,parts,$(Expr(:quote, attr))))) for attr in attrs]]
+""" Copy parts of a single type from one C-set to another.
+
+Any data attributes attached to the parts are also copied.
+"""
+@generated function _copy_parts_data!(acs::T, from::T, ::Val{ob}, parts) where
+    {CD,AD,T<:ACSet{CD,AD},ob}
+  attrs = collect(filter(attr -> dom(AD, attr) == ob, AD.attr))
   quote
-    n = length(parts)
-    $(Expr(:call, :add_parts!, Expr(:parameters, subparts...), :acs, Expr(:quote, type), :n))
+    newparts = add_parts!(acs, $(QuoteNode(ob)), length(parts))
+    $(Expr(:block, map(attrs) do attr
+       :(set_subpart!(acs, newparts, $(QuoteNode(attr)),
+                      from.tables.$ob.$attr[parts]))
+      end...))
+    newparts
   end
 end
 
@@ -520,17 +490,20 @@ function set_data_index!(d::AbstractDict{K,<:AbstractVector{Int}},
   insertsorted!(get!(d, k) do; Int[] end, v)
 end
 
-""" Unset key and value from C-set data index.
+""" Unset key and value from C-set data index, if it is set.
 """
 function unset_data_index!(d::AbstractDict{K,Int}, k::K, v::Int) where K
-  @assert pop!(d, k) == v
+  if haskey(d, k) && d[k] == v
+    delete!(d, k)
+  end
 end
 function unset_data_index!(d::AbstractDict{K,<:AbstractVector{Int}},
                            k::K, v::Int) where K
-  vs = d[k]
-  deletesorted!(vs, v)
-  if isempty(vs)
-    delete!(d, k)
+  if haskey(d, k)
+    vs = d[k]
+    if deletesorted!(vs, v) && isempty(vs)
+      delete!(d, k)
+    end
   end
 end
 
@@ -540,12 +513,15 @@ function insertsorted!(a::AbstractVector, x)
   insert!(a, searchsortedfirst(a, x), x)
 end
 
-""" Delete one occurrence of value from sorted vector.
+""" Delete one occurrence of value from sorted vector, if present.
+
+Returns whether an occurence was found and deleted.
 """
 function deletesorted!(a::AbstractVector, x)
   i = searchsortedfirst(a, x)
-  @assert i <= length(a) && a[i] == x "Value $x is not contained in $a"
-  deleteat!(a, i)
+  found = i <= length(a) && a[i] == x
+  if found; deleteat!(a, i) end
+  found
 end
 
 end
