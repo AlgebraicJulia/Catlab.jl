@@ -161,7 +161,7 @@ function equalizer(para::ParallelMorphisms{<:FinSet{Int}})
   Limit(para, Multispan(SVector(eq)))
 end
 
-function limit(::Type{<:FinSet{Int}}, d::FreeDiagram)
+function limit(d::FreeDiagram{<:FinSet{Int}})
   p = product(ob(d))
   n, leg = length(ob(p)), legs(p)
   satisfy(e,x) = hom(d,e)(leg[src(d,e)](x)) == leg[tgt(d,e)](x)
@@ -220,7 +220,7 @@ function coequalizer(para::ParallelMorphisms{<:FinSet{Int}})
   Colimit(para, Multicospan(SVector(coeq)))
 end
 
-function colimit(::Type{<:FinSet{Int}}, d::FreeDiagram)
+function colimit(d::FreeDiagram{<:FinSet{Int}})
   cp = coproduct(ob(d))
   n, leg = length(ob(cp)), legs(cp)
   sets = IntDisjointSets(n)
