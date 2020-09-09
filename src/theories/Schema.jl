@@ -113,6 +113,18 @@ function codom(CD::Type{T}, hom::Symbol) where {Ob,Hom,Dom,Codom, T <: CatDesc{O
   Ob[codom_num(CD,hom)]
 end
 
+function Base.show(io::IO, CD::Type{<:CatDesc})
+  n = length(CD.hom)
+  sep = ","
+  ob_descs = map([CD.ob...]) do ob
+    hom_descs = map((1:n)[dom.(CD,1:n) .== ob]) do i
+      "$(CD.hom[i])::$(codom(CD,i))"
+    end
+    "$ob[$(join(hom_descs,sep))]"
+  end
+  print(io,"CatDesc{|$(join(ob_descs,sep))|}")
+end
+
 """ AttrDesc is a type-level representation of attributes added
 to a category to form a schema
 """
@@ -194,6 +206,18 @@ end
 function codom(AD::Type{T}, attr::Symbol) where
   {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
   Data[codom_num(AD,attr)]
+end
+
+function Base.show(io::IO, AD::Type{<:AttrDesc})
+  n = length(AD.attr)
+  sep = ","
+  ob_descs = map([AD.cd.ob...]) do ob
+    attr_descs = map((1:n)[dom.(AD,1:n) .== ob]) do i
+      "$(AD.attr[i])::$(codom(AD,i))"
+    end
+    "$ob[$(join(attr_descs,sep))]"
+  end
+  print(io,"AttrDesc{|$(join(ob_descs,sep))|}")
 end
 
 SchemaType(pres::Presentation{Schema}) = (CatDescType(pres),AttrDescType(pres))
