@@ -45,12 +45,16 @@ set_subpart!(dds, 1, :Φ, 1)
 @test_throws KeyError subpart(dds, 1, :nonsubpart)
 @test_throws KeyError set_subpart!(dds, 1, :nonsubpart, 1)
 
-# Pretty printing
+# Pretty printing.
 s = sprint(show, dds)
 @test occursin("X = 1:3", s)
 @test occursin("Φ : X → X = ", s)
 
-# Error handling
+s = sprint(show, MIME"text/plain"(), dds)
+@test occursin("X table with 3 elements", s)
+@test occursin("(Φ = 1,)", s)
+
+# Error handling.
 @test_throws AssertionError add_part!(dds, :X, Φ=5)
 @test subpart(dds, :Φ) == [1,1,1,0]
 @test incident(dds, 4, :Φ) == []
@@ -104,6 +108,9 @@ du = disjoint_union(d, d2)
 s = sprint(show, d)
 @test occursin("R = Int64", s)
 @test occursin("height : X → R = ", s)
+
+s = sprint(show, MIME"text/plain"(), d)
+@test occursin("(parent = 4, height = 0)", s)
 
 # Allow type inheritance for data attributes.
 d = Dendrogram{Number}()

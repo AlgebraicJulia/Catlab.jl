@@ -163,6 +163,8 @@ function make_tables(::Type{CD}, AD::Type{<:AttrDesc{CD}},
   end
 end
 
+const EmptyTuple = Union{Tuple{},NamedTuple{(),Tuple{}}}
+
 """ Create StructArray while avoiding inconsistency with zero length arrays.
 
 By default, just constructs a StructArray (a struct of arrays) but when the
@@ -173,7 +175,7 @@ For context, see: https://github.com/JuliaArrays/StructArrays.jl/issues/148
 make_struct_array(::Type{SA}, ::UndefInitializer, n::Int) where
   SA <: StructArray = SA(undef, n)
 make_struct_array(::Type{<:StructArray{T}}, ::UndefInitializer, n::Int) where
-  T <: Union{Tuple{},NamedTuple{(),Tuple{}}} = fill(T(()), n)
+  T <: EmptyTuple = fill(T(()), n)
 
 function Base.:(==)(x1::T, x2::T) where T <: ACSet
   # The indices are redundant, so need not be compared.
@@ -197,6 +199,18 @@ function Base.show(io::IO, acs::AbstractACSet{CD,AD,Ts}) where {CD,AD,Ts}
       for (i,attr) in enumerate(AD.attr) ],
   ), ",\n")
   print(io, ")")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", acs::ACSet)
+  println(io, "ACSet:")
+  for (name, table) in pairs(acs.tables)
+    print(io, "  $name table with $(length(table)) elements")
+    if !(eltype(table) <: EmptyTuple)
+      print(io, ":\n    ")
+      join(io, map(string, table), "\n    ")
+    end
+    println(io)
+  end
 end
 
 # Imperative interface
