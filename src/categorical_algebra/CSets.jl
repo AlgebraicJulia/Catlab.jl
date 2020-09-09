@@ -6,15 +6,6 @@ export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
   nparts, has_part, subpart, has_subpart, incident, add_part!, add_parts!,
   copy_parts!, set_subpart!, set_subparts!, disjoint_union
 
-# Compatibility with Julia v1.0.
-import Base: fieldnames
-if VERSION < v"1.1"
-  fieldtypes(::Type{T}) where T <: NamedTuple = T.parameters[2].parameters
-  fieldtypes(::Type) = ()
-else
-  import Base: fieldtypes
-end
-
 using Compat: isnothing, only
 using StructArrays
 
@@ -22,30 +13,6 @@ using ...Theories: Schema, FreeSchema, dom, codom,
   CatDesc, CatDescType, AttrDesc, AttrDescType, SchemaType,
   ob_num, hom_num, data_num, attr_num, dom_num, codom_num
 using ...Present
-
-# Struct arrays
-###############
-
-const EmptyTuple = Union{Tuple{},NamedTuple{(),Tuple{}}}
-
-""" Create StructArray while avoiding inconsistency with zero length arrays.
-
-By default, just constructs a StructArray (a struct of arrays) but when the
-struct is empty, returns a ordinary Julia vector (an array of empty structs).
-
-For context, see: https://github.com/JuliaArrays/StructArrays.jl/issues/148
-"""
-make_struct_array(::Type{SA}, ::UndefInitializer, n::Int) where
-  SA <: StructArray = SA(undef, n)
-make_struct_array(::Type{<:StructArray{T}}, ::UndefInitializer, n::Int) where
-  T <: EmptyTuple = fill(T(()), n)
-
-function fieldtypes(::Type{T}) where {T <: StructArray{<:NamedTuple}}
-  fieldtypes(eltype(T))
-end
-function fieldnames(::Type{T}) where {T <: StructArray{<:NamedTuple}}
-  fieldnames(eltype(T))
-end
 
 # Data types
 ############
@@ -160,12 +127,11 @@ end
 
 function make_indices(::Type{CD}, AD::Type{<:AttrDesc{CD}},
                       Ts::Type{<:Tuple}, Idxed::Tuple) where {CD}
-  ts = Ts.parameters
   function make_idx(name)
     if name ∈ CD.hom
       Vector{Vector{Int}}()
     elseif name ∈ AD.attr
-      Dict{ts[codom_num(AD,name)],Vector{Int}}()
+      Dict{Ts.parameters[codom_num(AD,name)],Vector{Int}}()
     else
       error("Cannot index $name: not a morphism or an attribute")
     end
@@ -175,19 +141,30 @@ end
 
 function make_tables(::Type{CD}, AD::Type{<:AttrDesc{CD}},
                      Ts::Type{<:Tuple}) where {CD}
-  ts = Ts.parameters
   cols = NamedTuple{CD.ob}(Tuple{Symbol,DataType}[] for ob in CD.ob)
   for hom in CD.hom
-    push!(cols[dom(CD,hom)], (hom,Int))
+    push!(cols[dom(CD,hom)], (hom, Int))
   end
   for attr in AD.attr
-    push!(cols[dom(AD,attr)], (attr,ts[codom_num(AD,attr)]))
+    push!(cols[dom(AD,attr)], (attr, Ts.parameters[codom_num(AD,attr)]))
   end
   map(cols) do col
     SA = StructArray{NamedTuple{Tuple(first.(col)),Tuple{last.(col)...}}}
     make_struct_array(SA, undef, 0)
   end
 end
+
+""" Create StructArray while avoiding inconsistency with zero length arrays.
+
+By default, just constructs a StructArray (a struct of arrays) but when the
+struct is empty, returns a ordinary Julia vector (an array of empty structs).
+
+For context, see: https://github.com/JuliaArrays/StructArrays.jl/issues/148
+"""
+make_struct_array(::Type{SA}, ::UndefInitializer, n::Int) where
+  SA <: StructArray = SA(undef, n)
+make_struct_array(::Type{<:StructArray{T}}, ::UndefInitializer, n::Int) where
+  T <: Union{Tuple{},NamedTuple{(),Tuple{}}} = fill(T(()), n)
 
 function Base.:(==)(x1::T, x2::T) where T <: ACSet
   # The indices are redundant, so need not be compared.
