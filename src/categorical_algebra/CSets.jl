@@ -81,7 +81,15 @@ const ACSet = AttributedCSet
 To generate a concrete type, use [`ACSetType`](@ref).
 """
 function AbstractACSetType(pres::Presentation{Schema})
-  ACSet{CatDescType(pres)}
+  type_vars = [ TypeVar(nameof(data)) for data in generators(pres, :Data) ]
+  if isempty(type_vars)
+    # When the schema has no data attributes, allow subtyping from any schema
+    # extending it with attributes.
+    AbstractACSet{CatDescType(pres)}
+  else
+    T = AbstractACSet{SchemaType(pres)..., Tuple{type_vars...}}
+    foldr(UnionAll, type_vars, init=T)
+  end
 end
 
 """ Generate a data type for attributed C-sets from a schema.
@@ -93,11 +101,10 @@ By default, no morphisms or data attributes are indexed.
 See also: [`AbstractACSetType`](@ref).
 """
 function ACSetType(pres::Presentation{Schema}; index=[], unique_index=[])
-  type_params = [ TypeVar(nameof(data_type))
-                  for data_type in generators(pres, :Data) ]
-  T = ACSet{SchemaType(pres)..., Tuple{type_params...},
+  type_vars = [ TypeVar(nameof(data)) for data in generators(pres, :Data) ]
+  T = ACSet{SchemaType(pres)..., Tuple{type_vars...},
             Tuple(sort!(index ∪ unique_index)), Tuple(sort!(unique_index))}
-  foldr((v,T) -> UnionAll(v,T), type_params, init=T)
+  foldr(UnionAll, type_vars, init=T)
 end
 
 """ Abstract type for C-sets.
