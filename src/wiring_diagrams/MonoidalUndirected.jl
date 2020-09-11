@@ -13,7 +13,6 @@ import ...Theories: dom, codom, compose, id, ⋅, ∘, otimes, ⊗, munit, braid
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dunit, dcounit, dagger
 using ...CategoricalAlgebra.CSets: disjoint_union
 using ..UndirectedWiringDiagrams
-using ..UndirectedWiringDiagrams: TypedUndirectedWiringDiagram
 import ..UndirectedWiringDiagrams: singleton_diagram, junction_diagram
 
 const AbstractUWD = UndirectedWiringDiagram
@@ -66,7 +65,7 @@ otimes(f::UWD, g::UWD) where UWD <: AbstractUWD = disjoint_union(f, g)
 end
 const ObUWD = UndirectedWiringDiagramOb
 
-ObUWD(types::Vector{T}) where {T} = ObUWD{TypedUndirectedWiringDiagram{T}}(types)
+ObUWD(types::Vector{T}) where {T} = ObUWD{TypedUWD{T}}(types)
 
 Base.length(A::ObUWD) = length(A.types)
 Base.cat(A::ObUWD{UWD}, B::ObUWD{UWD}) where UWD =
