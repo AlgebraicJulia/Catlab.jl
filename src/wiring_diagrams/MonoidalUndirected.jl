@@ -1,7 +1,7 @@
 """ Undirected wiring diagrams as symmetric monoidal categories.
 """
 module MonoidalUndirectedWiringDiagrams
-export HypergraphDiagram, UndirectedWiringDiagramOb, UndirectedWiringDiagramHom,
+export HypergraphDiagram, HypergraphDiagramOb, HypergraphDiagramHom,
   ObUWD, HomUWD, cospan_action, dom_mask, codom_mask
 
 using AutoHashEquals
@@ -53,8 +53,8 @@ essentially the same way that any hypergraph category is (Fong & Spivak, 2019,
 this action to implement the hypergraph category structure, particularly
 composition, on undirected wiring diagrams.
 """
-function cospan_action(f::AbstractUWD, args...)
-  ocompose(cospan_diagram(typeof(f), args...), 1, f)
+function cospan_action(f::UWD, args...) where UWD <: AbstractUWD
+  ocompose(cospan_diagram(UWD, args...), 1, f)
 end
 
 function compose(f::UWD, g::UWD,
@@ -80,15 +80,10 @@ otimes(f::UWD, g::UWD) where UWD <: AbstractUWD = disjoint_union(f, g)
 
 """ List of port types representing outer boundary of undirected wiring diagram.
 """
-@auto_hash_equals struct UndirectedWiringDiagramOb{UWD<:AbstractUWD,T}
+@auto_hash_equals struct ObUWD{UWD <: AbstractUWD, T}
   types::Vector{T}
-
-  UndirectedWiringDiagramOb{UWD}(types::Vector{T}) where {UWD<:AbstractUWD, T} =
-    new{UWD,T}(types)
 end
-const ObUWD = UndirectedWiringDiagramOb
-
-ObUWD(types::Vector{T}) where {T} = ObUWD{TypedUWD{T}}(types)
+ObUWD{UWD}(types::Vector{T}) where {UWD<:AbstractUWD,T} = ObUWD{UWD,T}(types)
 
 Base.length(A::ObUWD) = length(A.types)
 Base.cat(A::ObUWD{UWD}, B::ObUWD{UWD}) where UWD =
@@ -99,11 +94,11 @@ Base.cat(A::ObUWD{UWD}, B::ObUWD{UWD}) where UWD =
 The outer ports of the undirected wiring diagram are partitioned into domain and
 codomain by masks (bit vectors).
 """
-@auto_hash_equals struct UndirectedWiringDiagramHom{UWD<:AbstractUWD}
+@auto_hash_equals struct HomUWD{UWD <: AbstractUWD}
   diagram::UWD
   dom::BitVector
 
-  function UndirectedWiringDiagramHom(diagram::UWD;
+  function HomUWD{UWD}(diagram::UWD;
       dom::Union{BitVector,Nothing}=nothing,
       codom::Union{BitVector,Nothing}=nothing) where UWD <: AbstractUWD
     if !(isnothing(dom) || isnothing(codom))
@@ -118,10 +113,14 @@ codomain by masks (bit vectors).
     new{UWD}(diagram, dom)
   end
 end
-const HomUWD = UndirectedWiringDiagramHom
+HomUWD(diagram::UWD; kw...) where UWD <: AbstractUWD =
+  HomUWD{UWD}(diagram; kw...)
 
 dom_mask(f::HomUWD) = f.dom
 codom_mask(f::HomUWD) = .!f.dom
+
+const HypergraphDiagramOb{T,Name} = ObUWD{HypergraphDiagram{T,Name},T}
+const HypergraphDiagramHom{T,Name} = HomUWD{HypergraphDiagram{T,Name}}
 
 dom_ports(f::HomUWD) = ports(f.diagram, outer=true)[dom_mask(f)]
 codom_ports(f::HomUWD) = ports(f.diagram, outer=true)[codom_mask(f)]
@@ -183,7 +182,9 @@ end
 munit(::Type{ObUWD{UWD}}) where UWD = ObUWD{UWD}(Symbol[])
 munit(::Type{ObUWD{UWD,T}}) where {UWD,T} = ObUWD{UWD}(T[])
 
-singleton_diagram(A::ObUWD{UWD}) where UWD = singleton_diagram(UWD, A.types)
-junction_diagram(A::ObUWD{UWD}, f) where UWD = junction_diagram(UWD, f, A.types)
+singleton_diagram(A::ObUWD{UWD}; data...) where UWD =
+  singleton_diagram(UWD, A.types; data...)
+junction_diagram(A::ObUWD{UWD}, outer) where UWD =
+  junction_diagram(UWD, outer, A.types)
 
 end

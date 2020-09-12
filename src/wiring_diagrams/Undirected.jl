@@ -109,7 +109,7 @@ function add_box!(d::AbstractUWD, nports::Int; data...)
   box
 end
 
-function add_box!(d::AbstractUWD, port_types::AbstractVector{T}; data...) where {T}
+function add_box!(d::AbstractUWD, port_types::AbstractVector; data...)
   box = add_box!(d; data...)
   nports = length(port_types)
   ports = add_parts!(d, :Port, nports, box=fill(box, nports),
@@ -118,12 +118,12 @@ function add_box!(d::AbstractUWD, port_types::AbstractVector{T}; data...) where 
 end
 
 add_junction!(d::AbstractUWD; data...) = add_part!(d, :Junction; data...)
-add_junction!(d::AbstractUWD, type::T; data...) where {T} =
+add_junction!(d::AbstractUWD, type; data...) =
   add_part!(d, :Junction; junction_type=type, data...)
 
 add_junctions!(d::AbstractUWD, njunctions::Int; data...) =
   add_parts!(d, :Junction, njunctions; data...)
-add_junctions!(d::AbstractUWD, types::AbstractVector{T}; data...) where {T} =
+add_junctions!(d::AbstractUWD, types::AbstractVector; data...) =
   add_parts!(d, :Junction, length(types); junction_type=types, data...)
 
 function set_junction!(d::AbstractUWD, port, junction; outer::Bool=false)
