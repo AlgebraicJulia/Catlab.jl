@@ -82,7 +82,8 @@ The elements of the set are assumed to be {1,...,n}.
   func::T
   codom::Int
 end
-FinFunctionVector(f::AbstractVector) = FinFunctionVector(f, maximum(f))
+FinFunctionVector(f::AbstractVector) =
+  FinFunctionVector(f, isempty(f) ? 0 : maximum(f))
 
 function FinFunctionVector(f::AbstractVector, dom::Int, codom::Int)
   length(f) == dom || error("Length of vector $f does not match domain $dom")
@@ -171,11 +172,16 @@ function equalizer(pair::ParallelPair{<:FinSet{Int}})
 end
 
 function equalizer(para::ParallelMorphisms{<:FinSet{Int}})
-  @assert length(para) >= 1
+  @assert !isempty(para)
   f1, frest = para[1], para[2:end]
   m = length(dom(para))
   eq = FinFunction(filter(i -> all(f1(i) == f(i) for f in frest), 1:m), m)
   Limit(para, Multispan(SVector(eq)))
+end
+
+function factorize(lim::Equalizer{<:FinSet{Int}}, f::FinFunction{Int})
+  ι = collect(incl(lim))
+  FinFunction(Int[searchsortedfirst(ι, j) for j in collect(f)], length(ι))
 end
 
 function limit(d::FreeDiagram{<:FinSet{Int}})

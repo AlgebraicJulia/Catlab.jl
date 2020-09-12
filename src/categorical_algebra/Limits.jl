@@ -2,12 +2,12 @@
 """
 module Limits
 export AbstractLimit, AbstractColimit, Limit, Colimit,
-  Terminal, BinaryProduct, Product, BinaryPullback, Pullback, Equalizer,
-  Initial, BinaryCoproduct, Coproduct, BinaryPushout, Pushout, Coequalizer,
-  ob, cone, cocone, apex, base, legs,
-  limit, terminal, product, proj1, proj2, equalizer, incl, pullback,
-  colimit, initial, coproduct, coproj1, coproj2, coqualizer, proj, pushout,
-  factorize, delete, create, pair, copair
+  ob, cone, cocone, apex, base, legs, limit, colimit, factorize,
+  Terminal, Initial, terminal, initial, delete, create,
+  BinaryProduct, Product, product, proj1, proj2, pair,
+  BinaryPullback, Pullback, BinaryEqualizer, Equalizer, pullback, incl,
+  BinaryCoproduct, Coproduct, coproduct, coproj1, coproj2, copair,
+  BinaryPushout, Pushout, BinaryCoequalizer, Coequalizer, pushout, proj
 
 using Compat: only
 
@@ -54,6 +54,7 @@ const BinaryProduct{Ob} = AbstractLimit{Ob,<:StaticVector{2}}
 const Product{Ob} = AbstractLimit{Ob,<:AbstractVector}
 const BinaryPullback{Ob} = AbstractLimit{Ob,<:Cospan}
 const Pullback{Ob} = AbstractLimit{Ob,<:Multicospan}
+const BinaryEqualizer{Ob} = AbstractLimit{Ob,<:ParallelPair}
 const Equalizer{Ob} = AbstractLimit{Ob,<:ParallelMorphisms}
 
 proj1(lim::Union{BinaryProduct,BinaryPullback}) = first(legs(lim))
@@ -90,6 +91,7 @@ const BinaryCoproduct{Ob} = AbstractColimit{Ob,<:StaticVector{2}}
 const Coproduct{Ob} = AbstractColimit{Ob,<:AbstractVector}
 const BinaryPushout{Ob} = AbstractColimit{Ob,<:Span}
 const Pushout{Ob} = AbstractColimit{Ob,<:Multispan}
+const BinaryCoequalizer{Ob} = AbstractColimit{Ob,<:ParallelPair}
 const Coequalizer{Ob} = AbstractColimit{Ob,<:ParallelMorphisms}
 
 coproj1(colim::Union{BinaryCoproduct,BinaryPushout}) = first(legs(colim))

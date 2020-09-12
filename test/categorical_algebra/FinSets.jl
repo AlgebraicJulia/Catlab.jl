@@ -55,19 +55,25 @@ lim = product([FinSet(4), FinSet(3)])
 @test force(pair(lim,[f,g]) ⋅ last(legs(lim))) == g
 
 # Equalizer.
-f, g = FinFunction([1,2,3]), FinFunction([3,2,1])
-@test incl(equalizer(f,g)) == FinFunction([2], 3)
-@test incl(equalizer([f,g])) == FinFunction([2], 3)
+f, g = FinFunction([1,2,4,3]), FinFunction([3,2,4,1])
+eq = equalizer(f,g)
+@test incl(eq) == FinFunction([2,3], 4)
+@test incl(equalizer([f,g])) == incl(eq)
+@test factorize(eq, FinFunction([2,3,2])) == FinFunction([1,2,1])
 
 # Equalizer in case of identical functions.
 f = FinFunction([4,2,3,1], 5)
-@test incl(equalizer(f,f)) == force(id(FinSet(4)))
-@test incl(equalizer([f,f])) == force(id(FinSet(4)))
+eq = equalizer(f,f)
+@test incl(eq) == force(id(FinSet(4)))
+@test incl(equalizer([f,f])) == incl(eq)
+@test factorize(eq, FinFunction([2,1,3,3])) == FinFunction([2,1,3,3], 4)
 
 # Equalizer matching nothing.
 f, g = id(FinSet(5)), FinFunction([2,3,4,5,1], 5)
-@test incl(equalizer(f,g)) == FinFunction(Int[], 5)
-@test incl(equalizer([f,g])) == FinFunction(Int[], 5)
+eq = equalizer(f,g)
+@test incl(eq) == FinFunction(Int[], 5)
+@test incl(equalizer([f,g])) == incl(eq)
+@test factorize(eq, FinFunction(Int[])) == FinFunction(Int[])
 
 # Pullback.
 lim = pullback(FinFunction([1,1,3,2],4), FinFunction([1,1,4,2],4))
