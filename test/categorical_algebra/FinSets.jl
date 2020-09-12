@@ -99,11 +99,18 @@ colim = coproduct(FinSet(2), FinSet(3))
 @test coproj1(colim) == FinFunction([1,2], 5)
 @test coproj2(colim) == FinFunction([3,4,5], 5)
 
+f, g = FinFunction([3,5], 5), FinFunction([1,2,3], 5)
+@test force(coproj1(colim) ⋅ copair(colim,f,g)) == f
+@test force(coproj2(colim) ⋅ copair(colim,f,g)) == g
+
 # N-ary coproduct.
 colim = coproduct([FinSet(2), FinSet(3)])
 @test ob(colim) == FinSet(5)
 @test legs(colim) == [FinFunction([1,2], 5), FinFunction([3,4,5], 5)]
 @test ob(coproduct(FinSet{Int}[])) == FinSet(0)
+
+@test force(first(legs(colim)) ⋅ copair(colim,[f,g])) == f
+@test force(last(legs(colim)) ⋅ copair(colim,[f,g])) == g
 
 # Coequalizer from a singleton set.
 f, g = FinFunction([1], 3), FinFunction([3], 3)

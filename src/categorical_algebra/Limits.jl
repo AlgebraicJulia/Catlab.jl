@@ -5,9 +5,9 @@ export AbstractLimit, AbstractColimit, Limit, Colimit,
   Terminal, BinaryProduct, Product, BinaryPullback, Pullback, Equalizer,
   Initial, BinaryCoproduct, Coproduct, BinaryPushout, Pushout, Coequalizer,
   ob, cone, cocone, apex, base, legs,
-  limit, terminal, product, proj1, proj2, pair, equalizer, incl,
-  colimit, initial, coproduct, coproj1, coproj2, copair, coqualizer, proj,
-  pullback, pushout, factorize
+  limit, terminal, product, proj1, proj2, equalizer, incl, pullback,
+  colimit, initial, coproduct, coproj1, coproj2, coqualizer, proj, pushout,
+  factorize, delete, create, pair, copair
 
 using Compat: only
 
@@ -15,8 +15,9 @@ using AutoHashEquals
 using StaticArrays: StaticVector, SVector, @SVector
 
 using ...Theories
-import ...Theories: ob, terminal, product, proj1, proj2, pair, equalizer, incl,
-  initial, coproduct, coproj1, coproj2, copair, coequalizer, proj, factorize
+import ...Theories: ob, terminal, product, proj1, proj2, equalizer, incl,
+  initial, coproduct, coproj1, coproj2, coequalizer, proj,
+  factorize, delete, create, pair, copair
 using ..FreeDiagrams
 import ..FreeDiagrams: apex, base, legs
 
@@ -111,6 +112,11 @@ pair(lim::Product, fs::AbstractVector) = pair(lim, Multispan(fs))
 """ Coproduct of a pair of objects.
 """
 coproduct(A, B) = coproduct(SVector(A, B))
+
+""" Copairing of morphisms: universal property of coproducts.
+"""
+copair(colim::BinaryCoproduct, f, g) = copair(colim, Cospan(f, g))
+copair(colim::Coproduct, fs::AbstractVector) = copair(colim, Multicospan(fs))
 
 """ Equalizer of a pair of morphisms with common domain and codomain.
 """

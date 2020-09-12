@@ -196,12 +196,22 @@ function coproduct(Xs::StaticVector{2,<:FinSet{Int}})
   Colimit(Xs, Cospan(ι1, ι2))
 end
 
+function copair(colim::BinaryCoproduct{<:FinSet{Int}}, fs::Cospan{<:FinSet{Int}})
+  f, g = fs
+  FinFunction(vcat(collect(f), collect(g)), ob(colim), base(fs))
+end
+
 function coproduct(Xs::AbstractVector{<:FinSet{Int}})
   ns = length.(Xs)
   n = sum(ns)
   offsets = [0,cumsum(ns)...]
   ιs = [FinFunction((1:ns[j]) .+ offsets[j],ns[j],n) for j in 1:length(ns)]
   Colimit(Xs, Multicospan(FinSet(n), ιs))
+end
+
+function copair(colim::Coproduct{<:FinSet{Int}}, fs::Multicospan{<:FinSet{Int}})
+  FinFunction(reduce(vcat, (collect(f) for f in fs), init=Int[]),
+              ob(colim), base(fs))
 end
 
 function coequalizer(pair::ParallelPair{<:FinSet{Int}})
