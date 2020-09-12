@@ -122,18 +122,25 @@ colim = coproduct([FinSet(2), FinSet(3)])
 
 # Coequalizer from a singleton set.
 f, g = FinFunction([1], 3), FinFunction([3], 3)
-@test proj(coequalizer(f,g)) == FinFunction([1,2,1], 2)
-@test proj(coequalizer([f,g])) == FinFunction([1,2,1], 2)
+coeq = coequalizer(f,g)
+@test proj(coeq) == FinFunction([1,2,1], 2)
+@test proj(coequalizer([f,g])) == proj(coeq)
+@test factorize(coeq, FinFunction([4,1,4])) == FinFunction([4,1])
+@test_throws AssertionError factorize(coeq, FinFunction([3,1,4]))
 
 # Coequalizer in case of identical functions.
 f = FinFunction([4,2,3,1], 5)
-@test proj(coequalizer(f,f)) == force(id(FinSet(5)))
-@test proj(coequalizer([f,f])) == force(id(FinSet(5)))
+coeq = coequalizer(f,f)
+@test proj(coeq) == force(id(FinSet(5)))
+@test proj(coequalizer([f,f])) == proj(coeq)
+@test factorize(coeq, FinFunction([2,1,3,3,4])) == FinFunction([2,1,3,3,4])
 
 # Coequalizer identifying everything.
 f, g = id(FinSet(5)), FinFunction([2,3,4,5,1], 5)
-@test proj(coequalizer(f,g)) == FinFunction(repeat([1],5))
-@test proj(coequalizer([f,g])) == FinFunction(repeat([1],5))
+coeq = coequalizer(f,g)
+@test proj(coeq) == FinFunction(fill(1,5))
+@test proj(coequalizer([f,g])) == proj(coeq)
+@test factorize(coeq, FinFunction(fill(3,5))) == FinFunction([3])
 
 # Pushout from the empty set: the degenerate case of the coproduct.
 f, g = FinFunction(Int[], 2), FinFunction(Int[], 3)

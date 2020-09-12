@@ -179,9 +179,9 @@ function equalizer(para::ParallelMorphisms{<:FinSet{Int}})
   Limit(para, Multispan(SVector(eq)))
 end
 
-function factorize(lim::Equalizer{<:FinSet{Int}}, f::FinFunction{Int})
+function factorize(lim::Equalizer{<:FinSet{Int}}, h::FinFunction{Int})
   ι = collect(incl(lim))
-  FinFunction(Int[searchsortedfirst(ι, j) for j in collect(f)], length(ι))
+  FinFunction(Int[searchsortedfirst(ι, i) for i in collect(h)], length(ι))
 end
 
 function limit(d::FreeDiagram{<:FinSet{Int}})
@@ -244,7 +244,7 @@ function coequalizer(pair::ParallelPair{<:FinSet{Int}})
 end
 
 function coequalizer(para::ParallelMorphisms{<:FinSet{Int}})
-  @assert length(para) >= 1
+  @assert !isempty(para)
   f1, frest = para[1], para[2:end]
   m, n = length(dom(para)), length(codom(para))
   sets = IntDisjointSets(n)
@@ -255,13 +255,27 @@ function coequalizer(para::ParallelMorphisms{<:FinSet{Int}})
   end
   h = [ find_root(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
-  coeq = FinFunction([searchsortedfirst(roots, r) for r in h], length(roots))
+  coeq = FinFunction([ searchsortedfirst(roots, r) for r in h ], length(roots))
   Colimit(para, Multicospan(SVector(coeq)))
 end
 
+function factorize(coeq::Coequalizer{<:FinSet{Int}}, h::FinFunction{Int})
+  q = zeros(Int, length(ob(coeq)))
+  π = proj(coeq)
+  for i in dom(h)
+    j = π(i)
+    if q[j] == 0
+      q[j] = h(i)
+    else
+      @assert q[j] == h(i) "Quotient map out of coequalizer is ill-defined"
+    end
+  end
+  FinFunction(q, codom(h))
+end
+
 function colimit(d::FreeDiagram{<:FinSet{Int}})
-  cp = coproduct(ob(d))
-  n, leg = length(ob(cp)), legs(cp)
+  coprod = coproduct(ob(d))
+  n, leg = length(ob(coprod)), legs(coprod)
   sets = IntDisjointSets(n)
   for e in edges(d)
     s, t, h = src(d,e), tgt(d,e), hom(d,e)
@@ -272,8 +286,8 @@ function colimit(d::FreeDiagram{<:FinSet{Int}})
   h = [ find_root(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   m = length(roots)
-  f = FinFunction([searchsortedfirst(roots, r) for r in h], m)
-  Colimit(d, Multicospan(FinSet(m), [compose(leg[i],f) for i in vertices(d)]))
+  f = FinFunction([ searchsortedfirst(roots, r) for r in h ], m)
+  Colimit(d, Multicospan(FinSet(m), [ compose(leg[i],f) for i in vertices(d) ]))
 end
 
 end
