@@ -164,6 +164,13 @@ copair(colim::Union{Coproduct,Pushout}, fs::AbstractVector) =
 #########################
 
 """ Pullback formed as composite of product and equalizer.
+
+The fields of this struct are an implementation detail; accessing them directly
+violates the abstraction. Everything that you can do with a pushout, including
+invoking its universal property, should be done through the generic interface
+for limits.
+
+See also: [`CompositePushout`](@ref).
 """
 struct CompositePullback{Ob, Diagram<:Multicospan{Ob}, Cone<:Multispan{Ob},
     Prod<:Product{Ob}, Eq<:Equalizer{Ob}} <: AbstractLimit{Ob,Diagram}
@@ -189,6 +196,8 @@ function factorize(lim::CompositePullback, fs::Multispan)
 end
 
 """ Pushout formed as composite of coproduct and equalizer.
+
+See also: [`CompositePullback`](@ref).
 """
 struct CompositePushout{Ob, Diagram<:Multispan{Ob}, Cocone<:Multicospan{Ob},
     Coprod<:Coproduct{Ob}, Coeq<:Coequalizer{Ob}} <: AbstractColimit{Ob,Diagram}
