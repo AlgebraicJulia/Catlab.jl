@@ -11,7 +11,7 @@ export MonoidalCategory, otimes, munit, ⊗, collect, ndims,
   DaggerSymmetricMonoidalCategory, FreeDaggerSymmetricMonoidalCategory,
   DaggerCompactCategory, FreeDaggerCompactCategory,
   TracedMonoidalCategory, FreeTracedMonoidalCategory, trace,
-  HypergraphCategory
+  HypergraphCategory, FreeHypergraphCategory
 
 import Base: collect, ndims
 
@@ -458,4 +458,12 @@ multiple inheritance is not yet supported.
   dcounit(A) == mmerge(A) ⋅ delete(A) ⊣ (A::Ob)
   (dagger(f) == (id(Y) ⊗ dunit(X)) ⋅ (id(Y) ⊗ f ⊗ id(X)) ⋅ (dcounit(Y) ⊗ id(X))
    ⊣ (A::Ob, B::Ob, f::(A → B)))
+end
+
+@syntax FreeHypergraphCategory{ObExpr,HomExpr} HypergraphCategory begin
+  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f,g))
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  dagger(f::Hom) = distribute_unary(distribute_dagger(involute(new(f))),
+                                    dagger, otimes)
 end

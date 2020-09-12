@@ -10,7 +10,7 @@ It is trivial to convert a morphism expression to a wiring diagram, but not to
 go the other way around.
 """
 module WiringDiagramExpressions
-export to_ob_expr, to_hom_expr, to_wiring_diagram
+export to_ob_expr, to_hom_expr, to_wiring_diagram, to_undirected_wiring_diagram
 
 using Compat
 using LightGraphs
@@ -18,7 +18,8 @@ using LightGraphs
 using ...Syntax, ...Theories
 using ...Syntax: syntax_module
 using ...CategoricalAlgebra.Permutations
-using ..DirectedWiringDiagrams, ..MonoidalDirectedWiringDiagrams
+using ..DirectedWiringDiagrams, ..UndirectedWiringDiagrams,
+  ..MonoidalDirectedWiringDiagrams, ..MonoidalUndirectedWiringDiagrams
 using ..WiringDiagramAlgorithms: crossing_minimization_by_sort
 
 # Expression -> Diagram
@@ -34,12 +35,34 @@ function to_wiring_diagram(T::Type, expr::GATExpr)
   to_wiring_diagram(T, expr, first, first)
 end
 function to_wiring_diagram(T::Type, expr::GATExpr, ob_map, hom_map)
+  to_wd = expr -> to_wiring_diagram(T, expr, ob_map, hom_map)
   functor((Ports, WiringDiagram), expr; terms=Dict(
     :Ob => expr -> Ports{T}([ob_map(expr)]),
-    :Hom => expr -> singleton_diagram(T,
-      Box(hom_map(expr),
-          to_wiring_diagram(T, dom(expr), ob_map, hom_map),
-          to_wiring_diagram(T, codom(expr), ob_map, hom_map)))
+    :Hom => expr -> begin
+      A, B = to_wd(dom(expr)), to_wd(codom(expr))
+      singleton_diagram(T, Box(hom_map(expr), A, B))
+    end
+  ))
+end
+
+""" Convert a morphism expression into an undirected wiring diagram.
+
+Returns a `HomUWD`, or a UWD with outer ports partitioned domain and codomain.
+"""
+function to_undirected_wiring_diagram(expr::GATExpr)
+  to_undirected_wiring_diagram(expr, Symbol, Symbol, first, first)
+end
+function to_undirected_wiring_diagram(expr::GATExpr, Ob::Type, Hom::Type,
+                                      ob_map, hom_map)
+  to_uwd = expr -> to_undirected_wiring_diagram(expr, Ob, Hom, ob_map, hom_map)
+  HDOb, HDHom = HypergraphDiagramOb{Ob,Hom}, HypergraphDiagramHom{Ob,Hom}
+  functor((HDOb, HDHom), expr; terms=Dict(
+    :Ob => expr -> HDOb([ob_map(expr)]),
+    :Hom => expr -> begin
+      A, B = to_uwd(dom(expr)), to_uwd(codom(expr))
+      HDHom(singleton_diagram(A⊗B, name=hom_map(expr)),
+            dom=[trues(length(A)); falses(length(B))])
+    end
   ))
 end
 

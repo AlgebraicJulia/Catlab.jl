@@ -2,17 +2,23 @@ module TestMonoidalUndirectedWiringDiagrams
 using Test
 
 using Catlab.Theories, Catlab.WiringDiagrams
+using Catlab.CategoricalAlgebra.CSets: subpart
 
 # Categorical interface
 #######################
+
+const HDOb = HypergraphDiagramOb{Symbol,Symbol}
+const HDHom = HypergraphDiagramHom{Symbol,Symbol}
 
 # Category
 #---------
 
 # Domains and codomains
-A, B = ObUWD([:A]), ObUWD([:B])
-f = HomUWD(singleton_diagram(A⊗B), dom=BitArray([1,0]))
-g = HomUWD(singleton_diagram(B⊗A), codom=BitArray([0,1]))
+A, B = HDOb([:A]), HDOb([:B])
+f = HDHom(singleton_diagram(A⊗B, name=:f), dom=BitArray([1,0]))
+g = HDHom(singleton_diagram(B⊗A, name=:g), codom=BitArray([0,1]))
+@test subpart(f.diagram, :name) == [:f]
+@test subpart(g.diagram, :name) == [:g]
 @test dom(f) == A
 @test codom(f) == B
 @test dom(g) == B
@@ -31,8 +37,8 @@ fg = compose(f,g)
 #----------------------------
 
 # Monoidal products
-X, Y = ObUWD([:A,:B]), ObUWD([:C,:D])
-I = munit(ObUWD)
+X, Y = HDOb([:A,:B]), HDOb([:C,:D])
+I = munit(HDOb)
 @test otimes(A,B) == X
 @test otimes(X,I) == X
 @test otimes(I,X) == X

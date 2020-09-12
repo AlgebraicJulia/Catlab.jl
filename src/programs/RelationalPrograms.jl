@@ -10,37 +10,33 @@ using MLStyle: @match
 
 using ...CategoricalAlgebra.CSets, ...Present
 using ...WiringDiagrams.UndirectedWiringDiagrams
-import ...WiringDiagrams.UndirectedWiringDiagrams: UndirectedWiringDiagram,
-  TheoryUWD, TheoryTypedUWD
+using ...WiringDiagrams.MonoidalUndirectedWiringDiagrams:
+  TheoryUntypedHypergraphDiagram, TheoryHypergraphDiagram
 
 # Data structures
 #################
 
-@present TheoryRelationDiagram <: TheoryUWD begin
-  Name::Data
-  name::Attr(Box,Name)
-  variable::Attr(Junction,Name)
+@present TheoryRelationDiagram <: TheoryUntypedHypergraphDiagram begin
+  Variable::Data
+  variable::Attr(Junction,Variable)
 end
 
-const AbstractUntypedRelationDiagram = AbstractACSetType(TheoryRelationDiagram)
+const RelationDiagram = AbstractACSetType(TheoryRelationDiagram)
 const UntypedRelationDiagram = ACSetType(TheoryRelationDiagram,
   index=[:box, :junction, :outer_junction], unique_index=[:variable])
 
-@present TheoryTypedRelationDiagram <: TheoryTypedUWD begin
-  Name::Data
-  name::Attr(Box,Name)
-  variable::Attr(Junction,Name)
+@present TheoryTypedRelationDiagram <: TheoryHypergraphDiagram begin
+  Variable::Data
+  variable::Attr(Junction,Variable)
 end
 
-const AbstractTypedRelationDiagram =
-  AbstractACSetType(TheoryTypedRelationDiagram)
 const TypedRelationDiagram = ACSetType(TheoryTypedRelationDiagram,
   index=[:box, :junction, :outer_junction], unique_index=[:variable])
 
-RelationDiagram(ports::Int) =
-  UndirectedWiringDiagram(UntypedRelationDiagram{Symbol}, ports)
-RelationDiagram(ports::Vector{T}) where {T} =
-  UndirectedWiringDiagram(TypedRelationDiagram{T,Symbol}, ports)
+RelationDiagram{Name}(ports::Int) where {Name} =
+  UntypedRelationDiagram{Name,Symbol}(ports)
+RelationDiagram{Name}(ports::AbstractVector{T}) where {T,Name} =
+  TypedRelationDiagram{T,Name,Symbol}(ports)
 
 # Relations
 ###########
@@ -89,12 +85,6 @@ function parse_relation_diagram(head::Expr, body::Expr)
   end
 end
 
-function assert_unique(xs)
-  @assert length(xs) == 1 "variables must be unique"
-  xs[1]
-end
-
-
 function make_relation_diagram(context::AbstractVector, args::AbstractVector,
                                body::AbstractVector)
   all_vars, all_types = parse_context(context)
@@ -108,10 +98,10 @@ function make_relation_diagram(context::AbstractVector, args::AbstractVector,
   end
 
   # Create diagram and add outer ports and junctions.
-  d = RelationDiagram(var_types(outer_vars))
+  d = RelationDiagram{Symbol}(var_types(outer_vars))
   add_junctions!(d, var_types(all_vars), variable=all_vars)
   set_junction!(d, ports(d, outer=true),
-                assert_unique.(incident(d, outer_vars, :variable)), outer=true)
+                incident(d, outer_vars, :variable), outer=true)
 
   # Add boxes to diagram.
   for expr in body
@@ -121,7 +111,7 @@ function make_relation_diagram(context::AbstractVector, args::AbstractVector,
     end
     vars ⊆ all_vars || error("One of variables $vars is not declared")
     box = add_box!(d, var_types(vars), name=name)
-    set_junction!(d, ports(d, box), assert_unique.(incident(d, vars, :variable)))
+    set_junction!(d, ports(d, box), incident(d, vars, :variable))
   end
 
   return d
@@ -209,13 +199,13 @@ function parse_tensor_network(expr::Expr; all_vars=nothing)
   end
 
   # Construct the undirected wiring diagram.
-  d = RelationDiagram(length(outer_vars))
+  d = RelationDiagram{Symbol}(length(outer_vars))
   add_junctions!(d, length(all_vars), variable=all_vars)
   set_junction!(d, ports(d, outer=true),
-                assert_unique.(incident(d, outer_vars, :variable)), outer=true)
+                incident(d, outer_vars, :variable), outer=true)
   for (name, vars) in names_and_vars
     box = add_box!(d, length(vars), name=name)
-    set_junction!(d, ports(d, box), assert_unique.(incident(d, vars, :variable)))
+    set_junction!(d, ports(d, box), incident(d, vars, :variable))
   end
   return d
 end
