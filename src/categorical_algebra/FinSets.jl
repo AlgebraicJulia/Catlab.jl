@@ -3,6 +3,8 @@
 module FinSets
 export FinSet, FinFunction, FinFunctionCallable, FinFunctionVector, force
 
+using Compat: only
+
 using AutoHashEquals
 using DataStructures: IntDisjointSets, union!, find_root
 import FunctionWrappers: FunctionWrapper
@@ -181,7 +183,7 @@ end
 
 function factorize(lim::Equalizer{<:FinSet{Int}}, h::FinFunction{Int})
   ι = collect(incl(lim))
-  FinFunction(Int[searchsortedfirst(ι, i) for i in collect(h)], length(ι))
+  FinFunction(Int[only(searchsorted(ι, i)) for i in collect(h)], length(ι))
 end
 
 function limit(d::FreeDiagram{<:FinSet{Int}})

@@ -61,16 +61,6 @@ proj1(lim::Union{BinaryProduct,BinaryPullback}) = first(legs(lim))
 proj2(lim::Union{BinaryProduct,BinaryPullback}) = last(legs(lim))
 incl(eq::Equalizer) = only(legs(eq))
 
-""" Pullback formed as composite of product and equalizer.
-"""
-struct CompositePullback{Ob, Diagram<:Multicospan{Ob}, Cone<:Multispan{Ob},
-    Prod<:Product{Ob}, Eq<:Equalizer{Ob}} <: AbstractLimit{Ob,Diagram}
-  diagram::Diagram
-  cone::Cone
-  prod::Prod
-  eq::Eq
-end
-
 # Data types for colimits
 #########################
 
@@ -111,18 +101,16 @@ coproj1(colim::Union{BinaryCoproduct,BinaryPushout}) = first(legs(colim))
 coproj2(colim::Union{BinaryCoproduct,BinaryPushout}) = last(legs(colim))
 proj(coeq::Coequalizer) = only(legs(coeq))
 
-""" Pushout formed as composite of coproduct and equalizer.
-"""
-struct CompositePushout{Ob, Diagram<:Multispan{Ob}, Cocone<:Multicospan{Ob},
-    Coprod<:Coproduct{Ob}, Coeq<:Coequalizer{Ob}} <: AbstractColimit{Ob,Diagram}
-  diagram::Diagram
-  cocone::Cocone
-  coprod::Coprod
-  coeq::Coeq
-end
-
 # Generic functions
 ###################
+
+""" Limit of a diagram.
+"""
+function limit end
+
+""" Colimit of a diagram.
+"""
+function colimit end
 
 terminal(T::Type) = product(@SVector T[])
 initial(T::Type) = coproduct(@SVector T[])
@@ -134,19 +122,9 @@ create(colim::Initial, A) = factorize(colim, A)
 """
 product(A, B) = product(SVector(A, B))
 
-""" Pairing of morphisms: universal property of products.
-"""
-pair(lim::BinaryProduct, f, g) = factorize(lim, Span(f, g))
-pair(lim::Product, fs::AbstractVector) = factorize(lim, Multispan(fs))
-
 """ Coproduct of a pair of objects.
 """
 coproduct(A, B) = coproduct(SVector(A, B))
-
-""" Copairing of morphisms: universal property of coproducts.
-"""
-copair(colim::BinaryCoproduct, f, g) = factorize(colim, Cospan(f, g))
-copair(colim::Coproduct, fs::AbstractVector) = factorize(colim, Multicospan(fs))
 
 """ Equalizer of a pair of morphisms with common domain and codomain.
 """
@@ -168,6 +146,33 @@ pullback(fs::AbstractVector) = pullback(Multicospan(fs))
 pushout(f, g) = pushout(Span(f, g))
 pushout(fs::AbstractVector) = pushout(Multispan(fs))
 
+""" Pairing of morphisms: universal property of products/pullbacks.
+"""
+pair(lim::Union{BinaryProduct,BinaryPullback}, f, g) =
+  factorize(lim, Span(f, g))
+pair(lim::Union{Product,Pullback}, fs::AbstractVector) =
+  factorize(lim, Multispan(fs))
+
+""" Copairing of morphisms: universal property of coproducts/pushouts.
+"""
+copair(colim::Union{BinaryCoproduct,BinaryPushout}, f, g) =
+  factorize(colim, Cospan(f, g))
+copair(colim::Union{Coproduct,Pushout}, fs::AbstractVector) =
+  factorize(colim, Multicospan(fs))
+
+# Default implementations
+#########################
+
+""" Pullback formed as composite of product and equalizer.
+"""
+struct CompositePullback{Ob, Diagram<:Multicospan{Ob}, Cone<:Multispan{Ob},
+    Prod<:Product{Ob}, Eq<:Equalizer{Ob}} <: AbstractLimit{Ob,Diagram}
+  diagram::Diagram
+  cone::Cone
+  prod::Prod
+  eq::Eq
+end
+
 """ Pullback of a cospan.
 
 The default implementation computes the pullback from products and equalizers.
@@ -177,6 +182,20 @@ function pullback(cospan::Cospan)
   (π1, π2) = prod = product(dom(f), dom(g))
   (ι,) = eq = equalizer(π1⋅f, π2⋅g)
   CompositePullback(cospan, Span(ι⋅π1, ι⋅π2), prod, eq)
+end
+
+function factorize(lim::CompositePullback, fs::Multispan)
+  factorize(lim.eq, factorize(lim.prod, fs))
+end
+
+""" Pushout formed as composite of coproduct and equalizer.
+"""
+struct CompositePushout{Ob, Diagram<:Multispan{Ob}, Cocone<:Multicospan{Ob},
+    Coprod<:Coproduct{Ob}, Coeq<:Coequalizer{Ob}} <: AbstractColimit{Ob,Diagram}
+  diagram::Diagram
+  cocone::Cocone
+  coprod::Coprod
+  coeq::Coeq
 end
 
 """ Pushout of a span.
@@ -191,12 +210,8 @@ function pushout(span::Span)
   CompositePushout(span, Cospan(ι1⋅π, ι2⋅π), coprod, coeq)
 end
 
-""" Limit of a diagram.
-"""
-function limit end
-
-""" Colimit of a diagram.
-"""
-function colimit end
+function factorize(lim::CompositePushout, fs::Multicospan)
+  factorize(lim.coeq, factorize(lim.coprod, fs))
+end
 
 end
