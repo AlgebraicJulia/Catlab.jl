@@ -12,8 +12,8 @@ using ...GAT
 using ...Theories: Category
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ..FreeDiagrams, ..Limits
-import ..Limits: terminal, product, equalizer, pullback, limit,
-  initial, coproduct, coequalizer, pushout, colimit
+import ..Limits: terminal, product, pair, equalizer, pullback, limit,
+  initial, coproduct, copair, coequalizer, pushout, colimit, factorize
 
 # Category of finite sets
 #########################
@@ -138,12 +138,25 @@ function product(Xs::StaticVector{2,<:FinSet{Int}})
   Limit(Xs, Span(π1, π2))
 end
 
+function pair(prod::BinaryProduct{<:FinSet{Int}}, fs::Span{<:FinSet{Int}})
+  f, g = fs
+  m, n = length.(codom.(fs))
+  indices = LinearIndices((m, n))
+  FinFunction(i -> indices[f(i),g(i)], apex(fs), ob(prod))
+end
+
 function product(Xs::AbstractVector{<:FinSet{Int}})
   ns = length.(Xs)
-  indices = CartesianIndices(tuple(ns...))
+  indices = CartesianIndices(Tuple(ns))
   n = prod(ns)
-  πs = [FinFunction(i -> indices[i][j],n,ns[j]) for j in 1:length(ns)]
+  πs = [FinFunction(i -> indices[i][j], n, ns[j]) for j in 1:length(ns)]
   Limit(Xs, Multispan(FinSet(n), πs))
+end
+
+function pair(prod::Product{<:FinSet{Int}}, fs::Multispan{<:FinSet})
+  ns = length.(codom.(fs))
+  indices = LinearIndices(Tuple(ns))
+  FinFunction(i -> indices[(f(i) for f in fs)...], apex(fs), ob(prod))
 end
 
 function equalizer(pair::ParallelPair{<:FinSet{Int}})

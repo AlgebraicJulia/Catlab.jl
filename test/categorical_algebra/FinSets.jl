@@ -37,12 +37,21 @@ lim = product(FinSet(2), FinSet(3))
 @test force(proj1(lim)) == FinFunction([1,2,1,2,1,2])
 @test force(proj2(lim)) == FinFunction([1,1,2,2,3,3])
 
+lim = product(FinSet(4), FinSet(3))
+f, g = FinFunction([2,1,4]), FinFunction([1,3,2])
+@test force(pair(lim,f,g) ⋅ proj1(lim)) == f
+@test force(pair(lim,f,g) ⋅ proj2(lim)) == g
+
 # N-ary product.
 lim = product([FinSet(2), FinSet(3)])
 @test ob(lim) == FinSet(6)
 @test force.(legs(lim)) ==
   [FinFunction([1,2,1,2,1,2]), FinFunction([1,1,2,2,3,3])]
 @test ob(product(FinSet{Int}[])) == FinSet(1)
+
+lim = product([FinSet(4), FinSet(3)])
+@test force(pair(lim,[f,g]) ⋅ first(legs(lim))) == f
+@test force(pair(lim,[f,g]) ⋅ last(legs(lim))) == g
 
 # Equalizer.
 f, g = FinFunction([1,2,3]), FinFunction([3,2,1])
