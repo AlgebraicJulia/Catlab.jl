@@ -21,8 +21,8 @@ import ...Theories: ob, terminal, product, proj1, proj2, equalizer, incl,
 using ..FreeDiagrams
 import ..FreeDiagrams: apex, base, legs
 
-# Data types
-############
+# Data types for limits
+#######################
 
 """ Abstract type for limit in a category.
 
@@ -61,6 +61,19 @@ proj1(lim::Union{BinaryProduct,BinaryPullback}) = first(legs(lim))
 proj2(lim::Union{BinaryProduct,BinaryPullback}) = last(legs(lim))
 incl(eq::Equalizer) = only(legs(eq))
 
+""" Pullback formed as composite of product and equalizer.
+"""
+struct CompositePullback{Ob, Diagram<:Multicospan{Ob}, Cone<:Multispan{Ob},
+    Prod<:Product{Ob}, Eq<:Equalizer{Ob}} <: AbstractLimit{Ob,Diagram}
+  diagram::Diagram
+  cone::Cone
+  prod::Prod
+  eq::Eq
+end
+
+# Data types for colimits
+#########################
+
 """ Abstract type for colimit in a category.
 
 The standard concrete subtype is [`Colimit`](@ref), although for computational
@@ -98,8 +111,18 @@ coproj1(colim::Union{BinaryCoproduct,BinaryPushout}) = first(legs(colim))
 coproj2(colim::Union{BinaryCoproduct,BinaryPushout}) = last(legs(colim))
 proj(coeq::Coequalizer) = only(legs(coeq))
 
-# Specific (co)limits
-#####################
+""" Pushout formed as composite of coproduct and equalizer.
+"""
+struct CompositePushout{Ob, Diagram<:Multispan{Ob}, Cocone<:Multicospan{Ob},
+    Coprod<:Coproduct{Ob}, Coeq<:Coequalizer{Ob}} <: AbstractColimit{Ob,Diagram}
+  diagram::Diagram
+  cocone::Cocone
+  coprod::Coprod
+  coeq::Coeq
+end
+
+# Generic functions
+###################
 
 terminal(T::Type) = product(@SVector T[])
 initial(T::Type) = coproduct(@SVector T[])
@@ -151,9 +174,9 @@ The default implementation computes the pullback from products and equalizers.
 """
 function pullback(cospan::Cospan)
   f, g = cospan
-  π1, π2 = product(dom(f), dom(g))
-  ι = incl(equalizer(π1⋅f, π2⋅g))
-  Limit(cospan, Span(ι⋅π1, ι⋅π2))
+  (π1, π2) = prod = product(dom(f), dom(g))
+  (ι,) = eq = equalizer(π1⋅f, π2⋅g)
+  CompositePullback(cospan, Span(ι⋅π1, ι⋅π2), prod, eq)
 end
 
 """ Pushout of a span.
@@ -163,13 +186,10 @@ coequalizers.
 """
 function pushout(span::Span)
   f, g = span
-  ι1, ι2 = coproduct(codom(f), codom(g))
-  π = proj(coequalizer(f⋅ι1, g⋅ι2))
-  Colimit(span, Cospan(ι1⋅π, ι2⋅π))
+  (ι1, ι2) = coprod = coproduct(codom(f), codom(g))
+  (π,) = coeq = coequalizer(f⋅ι1, g⋅ι2)
+  CompositePushout(span, Cospan(ι1⋅π, ι2⋅π), coprod, coeq)
 end
-
-# General (co)limits
-####################
 
 """ Limit of a diagram.
 """
