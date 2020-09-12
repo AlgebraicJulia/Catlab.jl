@@ -31,6 +31,7 @@ reasons certain categories may use different subtypes to include extra data.
 """
 abstract type AbstractLimit{Ob,Diagram} end
 
+diagram(lim::AbstractLimit) = lim.diagram
 ob(lim::AbstractLimit) = apex(lim)
 cone(lim::AbstractLimit) = lim.cone
 apex(lim::AbstractLimit) = apex(cone(lim))
@@ -66,6 +67,7 @@ reasons certain categories may use different subtypes to include extra data.
 """
 abstract type AbstractColimit{Ob,Diagram} end
 
+diagram(lim::AbstractColimit) = lim.diagram
 ob(colim::AbstractColimit) = base(colim)
 cocone(colim::AbstractColimit) = colim.cocone
 base(colim::AbstractColimit) = base(cocone(colim))
@@ -100,14 +102,17 @@ proj(coeq::Coequalizer) = only(legs(coeq))
 terminal(T::Type) = product(@SVector T[])
 initial(T::Type) = coproduct(@SVector T[])
 
+delete(lim::Terminal, A) = factorize(lim, A)
+create(colim::Initial, A) = factorize(colim, A)
+
 """ Product of a pair of objects.
 """
 product(A, B) = product(SVector(A, B))
 
 """ Pairing of morphisms: universal property of products.
 """
-pair(lim::BinaryProduct, f, g) = pair(lim, Span(f, g))
-pair(lim::Product, fs::AbstractVector) = pair(lim, Multispan(fs))
+pair(lim::BinaryProduct, f, g) = factorize(lim, Span(f, g))
+pair(lim::Product, fs::AbstractVector) = factorize(lim, Multispan(fs))
 
 """ Coproduct of a pair of objects.
 """
@@ -115,8 +120,8 @@ coproduct(A, B) = coproduct(SVector(A, B))
 
 """ Copairing of morphisms: universal property of coproducts.
 """
-copair(colim::BinaryCoproduct, f, g) = copair(colim, Cospan(f, g))
-copair(colim::Coproduct, fs::AbstractVector) = copair(colim, Multicospan(fs))
+copair(colim::BinaryCoproduct, f, g) = factorize(colim, Cospan(f, g))
+copair(colim::Coproduct, fs::AbstractVector) = factorize(colim, Multicospan(fs))
 
 """ Equalizer of a pair of morphisms with common domain and codomain.
 """

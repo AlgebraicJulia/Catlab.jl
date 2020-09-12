@@ -13,8 +13,7 @@ using ...Theories: Category
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ..FreeDiagrams, ..Limits
 import ..Limits: terminal, product, equalizer, pullback, limit,
-  initial, coproduct, coequalizer, pushout, colimit,
-  delete, create, pair, copair, factorize
+  initial, coproduct, coequalizer, pushout, colimit, factorize
 
 # Category of finite sets
 #########################
@@ -131,7 +130,7 @@ function product(Xs::StaticVector{0,<:FinSet{Int}})
   Limit(Xs, Multispan(FinSet(1), @SVector FinFunction{Int}[]))
 end
 
-function delete(lim::Terminal{<:FinSet{Int}}, X::FinSet{Int})
+function factorize(lim::Terminal{<:FinSet{Int}}, X::FinSet{Int})
   FinFunction(ones(Int, length(X)))
 end
 
@@ -143,7 +142,7 @@ function product(Xs::StaticVector{2,<:FinSet{Int}})
   Limit(Xs, Span(π1, π2))
 end
 
-function pair(lim::BinaryProduct{<:FinSet{Int}}, fs::Span{<:FinSet{Int}})
+function factorize(lim::BinaryProduct{<:FinSet{Int}}, fs::Span{<:FinSet{Int}})
   f, g = fs
   m, n = length.(codom.(fs))
   indices = LinearIndices((m, n))
@@ -158,7 +157,7 @@ function product(Xs::AbstractVector{<:FinSet{Int}})
   Limit(Xs, Multispan(FinSet(n), πs))
 end
 
-function pair(lim::Product{<:FinSet{Int}}, fs::Multispan{<:FinSet})
+function factorize(lim::Product{<:FinSet{Int}}, fs::Multispan{<:FinSet})
   ns = length.(codom.(fs))
   indices = LinearIndices(Tuple(ns))
   FinFunction(i -> indices[(f(i) for f in fs)...], apex(fs), ob(lim))
@@ -194,7 +193,7 @@ function coproduct(Xs::StaticVector{0,<:FinSet{Int}})
   Colimit(Xs, Multicospan(FinSet(0), @SVector FinFunction{Int}[]))
 end
 
-function create(colim::Initial{<:FinSet{Int}}, X::FinSet{Int})
+function factorize(colim::Initial{<:FinSet{Int}}, X::FinSet{Int})
   FinFunction(Int[], X)
 end
 
@@ -205,7 +204,8 @@ function coproduct(Xs::StaticVector{2,<:FinSet{Int}})
   Colimit(Xs, Cospan(ι1, ι2))
 end
 
-function copair(colim::BinaryCoproduct{<:FinSet{Int}}, fs::Cospan{<:FinSet{Int}})
+function factorize(colim::BinaryCoproduct{<:FinSet{Int}},
+                   fs::Cospan{<:FinSet{Int}})
   f, g = fs
   FinFunction(vcat(collect(f), collect(g)), ob(colim), base(fs))
 end
@@ -218,7 +218,8 @@ function coproduct(Xs::AbstractVector{<:FinSet{Int}})
   Colimit(Xs, Multicospan(FinSet(n), ιs))
 end
 
-function copair(colim::Coproduct{<:FinSet{Int}}, fs::Multicospan{<:FinSet{Int}})
+function factorize(colim::Coproduct{<:FinSet{Int}},
+                   fs::Multicospan{<:FinSet{Int}})
   FinFunction(reduce(vcat, (collect(f) for f in fs), init=Int[]),
               ob(colim), base(fs))
 end
