@@ -30,6 +30,7 @@ h = FinFunction([3,1,2], 3)
 
 # Terminal object.
 @test ob(terminal(FinSet{Int})) == FinSet(1)
+@test delete(terminal(FinSet{Int}), FinSet(3)) == FinFunction([1,1,1])
 
 # Binary product.
 lim = product(FinSet(2), FinSet(3))
@@ -92,6 +93,7 @@ lim = limit(FreeDiagram([FinSet(4),FinSet(4),FinSet(4)], [(1,3,f),(2,3,g)]))
 
 # Initial object.
 @test ob(initial(FinSet{Int})) == FinSet(0)
+@test create(initial(FinSet{Int}), FinSet(3)) == FinFunction(Int[], 3)
 
 # Binary coproduct.
 colim = coproduct(FinSet(2), FinSet(3))
