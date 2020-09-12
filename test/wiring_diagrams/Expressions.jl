@@ -11,6 +11,9 @@ using Catlab.WiringDiagrams.WiringDiagramExpressions: find_parallel,
 # Expression -> Diagram
 #######################
 
+# Directed wiring diagrams
+#-------------------------
+
 A, B, C = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C)
 I = munit(FreeSymmetricMonoidalCategory.Ob)
 f, g = Hom(:f,A,B), Hom(:g,B,C)
@@ -20,6 +23,28 @@ fd, gd = to_wiring_diagram(f), to_wiring_diagram(g)
 @test to_wiring_diagram(compose(f,g)) == compose(fd,gd)
 @test to_wiring_diagram(otimes(f,g)) == otimes(fd,gd)
 @test to_wiring_diagram(I) == munit(Ports)
+
+# Undirected wiring diagrams
+#---------------------------
+
+const to_uwd = to_undirected_wiring_diagram
+const HDOb = HypergraphDiagramOb{Symbol,Symbol}
+const HDHom = HypergraphDiagramHom{Symbol,Symbol}
+
+A, B, C = Ob(FreeHypergraphCategory, :A, :B, :C)
+I = munit(FreeHypergraphCategory.Ob)
+f, g = Hom(:f,A,B), Hom(:g,B,C)
+
+# Generators.
+@test to_uwd(A) == HDOb([:A])
+@test to_uwd(f) == HDHom(singleton_diagram(HDOb([:A,:B]), name=:f),
+                         dom=BitArray([1,0]))
+
+# Functorality of conversion.
+fd, gd = to_uwd(f), to_uwd(g)
+@test to_uwd(compose(f,g)) == compose(fd,gd)
+@test to_uwd(otimes(f,g)) == otimes(fd,gd)
+@test to_uwd(I) == munit(HypergraphDiagramOb{Symbol,Symbol})
 
 # Diagram -> Expression
 #######################
