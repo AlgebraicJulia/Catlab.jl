@@ -31,7 +31,6 @@ reasons certain categories may use different subtypes to include extra data.
 """
 abstract type AbstractLimit{Ob,Diagram} end
 
-diagram(lim::AbstractLimit) = lim.diagram
 ob(lim::AbstractLimit) = apex(lim)
 cone(lim::AbstractLimit) = lim.cone
 apex(lim::AbstractLimit) = apex(cone(lim))
@@ -71,7 +70,6 @@ reasons certain categories may use different subtypes to include extra data.
 """
 abstract type AbstractColimit{Ob,Diagram} end
 
-diagram(lim::AbstractColimit) = lim.diagram
 ob(colim::AbstractColimit) = base(colim)
 cocone(colim::AbstractColimit) = colim.cocone
 base(colim::AbstractColimit) = base(cocone(colim))
