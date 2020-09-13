@@ -1,7 +1,8 @@
 """ Morphisms of C-sets and attributed C-sets.
 """
 module CSetMorphisms
-export ACSetTransformation, CSetTransformation, components, dom, codom
+export ACSetTransformation, CSetTransformation, components, dom, codom,
+  is_natural
 
 using AutoHashEquals
 
@@ -9,8 +10,8 @@ using ..CSets, ..FinSets
 using ...Theories: CatDesc, AttrDesc
 import ...Theories: dom, codom
 
-# Data types
-############
+# C-set transformations
+#######################
 
 """ Transformation between attributed C-sets.
 
@@ -31,9 +32,9 @@ for data attributes is a commutative triangle, rather than a commutative square.
   function ACSetTransformation{CD,AD}(components::NamedTuple{Ob},
                                       X::Dom, Y::Dom) where
       {Ob, CD <: CatDesc{Ob}, AD <: AttrDesc{CD}, Dom <: AbstractACSet{CD,AD}}
-    components = NamedTuple{Ob}([
+    components = NamedTuple{Ob}(Tuple(
       coerce_component(ob, f, X, Y) for (ob, f) in pairs(components)
-    ])
+    ))
     new{CD,AD,typeof(components),Dom}(components, X, Y)
   end
 end
@@ -71,6 +72,23 @@ components(α::ACSetTransformation) = α.components
 dom(α::ACSetTransformation) = α.dom
 codom(α::ACSetTransformation) = α.codom
 
-Base.getindex(α::ACSetTransformation, ob::Symbol) = α.components[ob]
+Base.getindex(α::ACSetTransformation, ob) = α.components[ob]
+
+""" Is the transformation between C-sets a natural transformation?
+
+TODO: Generating set of morphisms
+"""
+function is_natural(α::ACSetTransformation{CD,AD}) where {CD,AD}
+  X, Y = dom(α), codom(α)
+  for (f, c, d) in zip(CD.hom, CD.dom, CD.codom)
+    Xf, Yf, α_c, α_d = subpart(X,f), subpart(Y,f), α[c], α[d]
+    all(Yf[α_c(i)] == α_d(Xf[i]) for i in eachindex(Xf)) || return false
+  end
+  for (f, c) in zip(AD.attr, AD.adom)
+    Xf, Yf, α_c = subpart(X,f), subpart(Y,f), α[c]
+    all(Yf[α_c(i)] == Xf[i] for i in eachindex(Xf)) || return false
+  end
+  return true
+end
 
 end
