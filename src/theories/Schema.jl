@@ -97,19 +97,13 @@ function codom_num(CD::Type{<:CatDesc}, hom::Symbol)
   codom_num(CD, hom_num(CD,hom))
 end
 
-function dom(CD::Type{T}, hom::Int) where {Ob,Hom,Dom,Codom, T <: CatDesc{Ob,Hom,Dom,Codom}}
+function dom(CD::Type{T}, hom::Union{Int,Symbol}) where
+    {Ob,Hom,Dom,Codom, T <: CatDesc{Ob,Hom,Dom,Codom}}
   Ob[dom_num(CD,hom)]
 end
 
-function dom(CD::Type{T}, hom::Symbol) where {Ob,Hom,Dom,Codom, T <: CatDesc{Ob,Hom,Dom,Codom}}
-  Ob[dom_num(CD,hom)]
-end
-
-function codom(CD::Type{T}, hom::Int) where {Ob,Hom,Dom,Codom, T <: CatDesc{Ob,Hom,Dom,Codom}}
-  Ob[codom_num(CD,hom)]
-end
-
-function codom(CD::Type{T}, hom::Symbol) where {Ob,Hom,Dom,Codom, T <: CatDesc{Ob,Hom,Dom,Codom}}
+function codom(CD::Type{T}, hom::Union{Int,Symbol}) where
+    {Ob,Hom,Dom,Codom, T <: CatDesc{Ob,Hom,Dom,Codom}}
   Ob[codom_num(CD,hom)]
 end
 
@@ -176,23 +170,13 @@ function codom_num(AD::Type{<:AttrDesc}, attr::Symbol)
   codom_num(AD,attr_num(AD,attr))
 end
 
-function dom(AD::Type{T}, attr::Int) where
-  {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
+function dom(AD::Type{T}, attr::Union{Int,Symbol}) where
+    {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
   CD.ob[dom_num(AD,attr)]
 end
 
-function dom(AD::Type{T}, attr::Symbol) where
-  {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
-  CD.ob[dom_num(AD,attr)]
-end
-
-function codom(AD::Type{T}, attr::Int) where
-  {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
-  Data[codom_num(AD,attr)]
-end
-
-function codom(AD::Type{T}, attr::Symbol) where
-  {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
+function codom(AD::Type{T}, attr::Union{Int,Symbol}) where
+    {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
   Data[codom_num(AD,attr)]
 end
 
