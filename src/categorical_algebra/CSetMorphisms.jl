@@ -1,14 +1,14 @@
 """ Morphisms of C-sets and attributed C-sets.
 """
 module CSetMorphisms
-export ACSetTransformation, CSetTransformation, components, dom, codom,
-  is_natural
+export ACSetTransformation, CSetTransformation, components, is_natural
 
 using AutoHashEquals
 
-using ..CSets, ..FinSets
-using ...Theories: CatDesc, AttrDesc
-import ...Theories: dom, codom
+using ...GAT, ..CSets, ..FinSets
+import ..FinSets: force
+using ...Theories: Category, CatDesc, AttrDesc
+import ...Theories: dom, codom, compose, ⋅, id
 
 # C-set transformations
 #######################
@@ -69,14 +69,12 @@ CSetTransformation(X::Dom, Y::Dom; components...) where Dom <: AbstractCSet =
   ACSetTransformation(X, Y; components...)
 
 components(α::ACSetTransformation) = α.components
-dom(α::ACSetTransformation) = α.dom
-codom(α::ACSetTransformation) = α.codom
-
 Base.getindex(α::ACSetTransformation, ob) = α.components[ob]
 
 """ Is the transformation between C-sets a natural transformation?
 
-TODO: Generating set of morphisms
+Uses the fact that to check whether a transformation is natural, it suffices to
+check the naturality equation on a generating set of morphisms.
 """
 function is_natural(α::ACSetTransformation{CD,AD}) where {CD,AD}
   X, Y = dom(α), codom(α)
@@ -89,6 +87,27 @@ function is_natural(α::ACSetTransformation{CD,AD}) where {CD,AD}
     all(Yf[α_c(i)] == Xf[i] for i in eachindex(Xf)) || return false
   end
   return true
+end
+
+force(α::ACSetTransformation) =
+  ACSetTransformation(map(force, components(α)), dom(α), codom(α))
+
+# Category of C-sets
+####################
+
+@instance Category{ACSet, ACSetTransformation} begin
+  dom(α::ACSetTransformation) = α.dom
+  codom(α::ACSetTransformation) = α.codom
+
+  function id(X::ACSet)
+    ACSetTransformation(map(t -> id(FinSet(length(t))), X.tables), X, X)
+  end
+
+  function compose(α::ACSetTransformation, β::ACSetTransformation)
+    # Question: Should we incur cost of checking that codom(β) == dom(α)?
+    ACSetTransformation(map(compose, components(α), components(β)),
+                        dom(α), codom(β))
+  end
 end
 
 end

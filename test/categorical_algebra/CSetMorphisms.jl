@@ -1,17 +1,14 @@
 module TestCSetMorphisms
 using Test
 
-using Catlab, Catlab.CategoricalAlgebra, Catlab.CategoricalAlgebra.FinSets,
-  Catlab.CategoricalAlgebra.Graphs
+using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
+using Catlab.CategoricalAlgebra.FinSets, Catlab.CategoricalAlgebra.Graphs
 using Catlab.CategoricalAlgebra.Graphs: TheoryGraph
 
-# C-set transformations
-#######################
+# C-set morphisms
+#################
 
-# C-sets
-#-------
-
-# Constructors and accessors
+# Constructors and accessors.
 g, h = Graph(4), Graph(2)
 add_edges!(g, [1,2,3], [2,3,4])
 add_edges!(h, [1,2], [2,1])
@@ -20,21 +17,28 @@ add_edges!(h, [1,2], [2,1])
 @test α[:V] isa FinFunction{Int} && α[:E] isa FinFunction{Int}
 @test α[:V](3) == 1
 @test α[:E](2) == 2
-@test dom(α) === g
-@test codom(α) === h
 
 α′ = CSetTransformation(g, h, V=[1,2,1,2], E=[1,2,1])
 @test components(α′) == components(α)
 α′′ = CSetTransformation(g, h, V=FinFunction([1,2,1,2]), E=FinFunction([1,2,1]))
 @test components(α′′) == components(α)
 
-# Naturality
+# Naturality.
 @test is_natural(α)
 β = CSetTransformation((V=[1,2,1,2], E=[1,1,1]), g, h)
 @test !is_natural(β)
+β = CSetTransformation((V=[2,1], E=[2,1]), h, h)
+@test is_natural(β)
 
-# Attributed C-sets
-#------------------
+# Category of C-sets.
+@test dom(α) === g
+@test codom(α) === h
+@test compose(α,β) == CSetTransformation((V=α[:V]⋅β[:V], E=α[:E]⋅β[:E]), g, h)
+@test force(compose(id(g), α)) == α
+@test force(compose(α, id(h))) == α
+
+# Attributed C-set morphisms
+############################
 
 @present TheoryWeightedGraph <: TheoryGraph begin
   Weight::Data
