@@ -12,7 +12,6 @@ export AbstractLimit, AbstractColimit, Limit, Colimit,
 using Compat: only
 
 using AutoHashEquals
-using StaticArrays: StaticVector, SVector, @SVector
 
 using ...Theories
 import ...Theories: ob, terminal, product, proj1, proj2, equalizer, incl,
@@ -48,9 +47,9 @@ Base.length(lim::AbstractLimit) = length(cone(lim))
   cone::Cone
 end
 
-const Terminal{Ob} = AbstractLimit{Ob,<:StaticVector{0}}
-const BinaryProduct{Ob} = AbstractLimit{Ob,<:StaticVector{2}}
-const Product{Ob} = AbstractLimit{Ob,<:AbstractVector}
+const Terminal{Ob} = AbstractLimit{Ob,<:EmptyDiagram}
+const BinaryProduct{Ob} = AbstractLimit{Ob,<:ObjectPair}
+const Product{Ob} = AbstractLimit{Ob,<:DiscreteDiagram}
 const BinaryPullback{Ob} = AbstractLimit{Ob,<:Cospan}
 const Pullback{Ob} = AbstractLimit{Ob,<:Multicospan}
 const BinaryEqualizer{Ob} = AbstractLimit{Ob,<:ParallelPair}
@@ -87,9 +86,9 @@ Base.length(colim::AbstractColimit) = length(cocone(colim))
   cocone::Cocone
 end
 
-const Initial{Ob} = AbstractColimit{Ob,<:StaticVector{0}}
-const BinaryCoproduct{Ob} = AbstractColimit{Ob,<:StaticVector{2}}
-const Coproduct{Ob} = AbstractColimit{Ob,<:AbstractVector}
+const Initial{Ob} = AbstractColimit{Ob,<:EmptyDiagram}
+const BinaryCoproduct{Ob} = AbstractColimit{Ob,<:ObjectPair}
+const Coproduct{Ob} = AbstractColimit{Ob,<:DiscreteDiagram}
 const BinaryPushout{Ob} = AbstractColimit{Ob,<:Span}
 const Pushout{Ob} = AbstractColimit{Ob,<:Multispan}
 const BinaryCoequalizer{Ob} = AbstractColimit{Ob,<:ParallelPair}
@@ -110,19 +109,21 @@ function limit end
 """
 function colimit end
 
-terminal(T::Type) = product(@SVector T[])
-initial(T::Type) = coproduct(@SVector T[])
+terminal(T::Type) = product(EmptyDiagram{T}())
+initial(T::Type) = coproduct(EmptyDiagram{T}())
 
 delete(lim::Terminal, A) = factorize(lim, A)
 create(colim::Initial, A) = factorize(colim, A)
 
 """ Product of a pair of objects.
 """
-product(A, B) = product(SVector(A, B))
+product(A, B) = product(ObjectPair(A, B))
+product(As::AbstractVector) = product(DiscreteDiagram(As))
 
 """ Coproduct of a pair of objects.
 """
-coproduct(A, B) = coproduct(SVector(A, B))
+coproduct(A, B) = coproduct(ObjectPair(A, B))
+coproduct(As::AbstractVector) = coproduct(DiscreteDiagram(As))
 
 """ Equalizer of a pair of morphisms with common domain and codomain.
 """

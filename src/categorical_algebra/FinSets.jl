@@ -8,7 +8,7 @@ using Compat: only
 using AutoHashEquals
 using DataStructures: IntDisjointSets, union!, find_root
 import FunctionWrappers: FunctionWrapper
-using StaticArrays: StaticVector, SVector, @SVector
+using StaticArrays: SVector, @SVector
 
 using ...GAT
 using ...Theories: Category
@@ -129,7 +129,7 @@ compose_impl(f::FinFunctionVector, g::FinFunctionVector) = g.func[f.func]
 # Limits
 ########
 
-function product(Xs::StaticVector{0,<:FinSet{Int}})
+function product(Xs::EmptyDiagram{<:FinSet{Int}})
   Limit(Xs, Multispan(FinSet(1), @SVector FinFunction{Int}[]))
 end
 
@@ -137,7 +137,7 @@ function factorize(lim::Terminal{<:FinSet{Int}}, X::FinSet{Int})
   FinFunction(ones(Int, length(X)))
 end
 
-function product(Xs::StaticVector{2,<:FinSet{Int}})
+function product(Xs::ObjectPair{<:FinSet{Int}})
   m, n = length.(Xs)
   indices = CartesianIndices((m, n))
   π1 = FinFunction(i -> indices[i][1], m*n, m)
@@ -152,7 +152,7 @@ function factorize(lim::BinaryProduct{<:FinSet{Int}}, fs::Span{<:FinSet{Int}})
   FinFunction(i -> indices[f(i),g(i)], apex(fs), ob(lim))
 end
 
-function product(Xs::AbstractVector{<:FinSet{Int}})
+function product(Xs::DiscreteDiagram{<:FinSet{Int}})
   ns = length.(Xs)
   indices = CartesianIndices(Tuple(ns))
   n = prod(ns)
@@ -197,7 +197,7 @@ end
 # Colimits
 ##########
 
-function coproduct(Xs::StaticVector{0,<:FinSet{Int}})
+function coproduct(Xs::EmptyDiagram{<:FinSet{Int}})
   Colimit(Xs, Multicospan(FinSet(0), @SVector FinFunction{Int}[]))
 end
 
@@ -205,7 +205,7 @@ function factorize(colim::Initial{<:FinSet{Int}}, X::FinSet{Int})
   FinFunction(Int[], X)
 end
 
-function coproduct(Xs::StaticVector{2,<:FinSet{Int}})
+function coproduct(Xs::ObjectPair{<:FinSet{Int}})
   m, n = length.(Xs)
   ι1 = FinFunction(1:m, m, m+n)
   ι2 = FinFunction(m+1:m+n, n, m+n)
@@ -218,7 +218,7 @@ function factorize(colim::BinaryCoproduct{<:FinSet{Int}},
   FinFunction(vcat(collect(f), collect(g)), ob(colim), base(fs))
 end
 
-function coproduct(Xs::AbstractVector{<:FinSet{Int}})
+function coproduct(Xs::DiscreteDiagram{<:FinSet{Int}})
   ns = length.(Xs)
   n = sum(ns)
   offsets = [0,cumsum(ns)...]

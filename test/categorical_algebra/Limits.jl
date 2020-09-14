@@ -6,7 +6,6 @@ FinSet.
 module TestLimits
 using Test
 
-using StaticArrays
 using Catlab.Theories, Catlab.CategoricalAlgebra
 
 A, B, C = Ob(FreeCategory, :A, :B, :C)
@@ -16,13 +15,13 @@ A, B, C = Ob(FreeCategory, :A, :B, :C)
 
 # Products.
 f, g = Hom(:f, C, A), Hom(:g, C, B)
-lim = Limit(SVector(A,B), Span(f,g))
+lim = Limit(ObjectPair(A,B), Span(f,g))
 @test lim isa BinaryProduct
 @test ob(lim) == C
 @test apex(lim) == C
 @test legs(lim) == [f,g]
 
-lim = Limit([A,B], Span(f,g))
+lim = Limit(DiscreteDiagram([A,B]), Span(f,g))
 @test lim isa Product
 
 # Colimits
@@ -30,13 +29,13 @@ lim = Limit([A,B], Span(f,g))
 
 # Coproducts.
 f, g = Hom(:f, A, C), Hom(:g, B, C)
-colim = Colimit(SVector(A,B), Cospan(f,g))
+colim = Colimit(ObjectPair(A,B), Cospan(f,g))
 @test colim isa BinaryCoproduct
 @test ob(colim) == C
 @test base(colim) == C
 @test legs(colim) == [f,g]
 
-colim = Colimit([A,B], Cospan(f,g))
+colim = Colimit(DiscreteDiagram([A,B]), Cospan(f,g))
 @test colim isa Coproduct
 
 end
