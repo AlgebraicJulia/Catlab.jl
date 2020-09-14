@@ -19,6 +19,25 @@ diagram = FreeDiagram([A,B,C], [(1,3,f),(2,3,g),(1,2,h)])
 # Diagrams of fixed shape
 #########################
 
+# Empty diagrams.
+@test isempty(EmptyDiagram{FreeCategory.Ob}())
+
+# Object pairs.
+pair = ObjectPair(A,B)
+@test length(pair) == 2
+@test first(pair) == A
+@test last(pair) == B
+
+# Discrete diagrams.
+discrete = DiscreteDiagram([A,B,C])
+@test length(discrete) == 3
+A′, B′, C′ = discrete
+@test [A′,B′,C′] == collect(discrete)
+
+diagram = FreeDiagram(discrete)
+@test ob(diagram) == [A,B,C]
+@test isempty(hom(diagram))
+
 # Spans.
 f, g = Hom(:f, C, A), Hom(:g, C, B)
 span = Span(f,g)

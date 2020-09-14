@@ -2,12 +2,13 @@
 
 A [free diagram](https://ncatlab.org/nlab/show/free+diagram) in a category is a
 diagram whose shape is a free category. Examples include the empty diagram,
-discrete diagrams, parallel morphisms, spans, and cospans. Limits and colimits
-are most commonly taken over free diagrams.
+pairs of objects, discrete diagrams, parallel morphisms, spans, and cospans.
+Limits and colimits are most commonly taken over free diagrams.
 """
 module FreeDiagrams
-export FreeDiagram, FixedFreeDiagram,
-  Span, Cospan, Multispan, Multicospan, ParallelPair, ParallelMorphisms,
+export FreeDiagram, FixedShapeFreeDiagram, DiscreteDiagram, EmptyDiagram,
+  ObjectPair, Span, Cospan, Multispan, Multicospan,
+  ParallelPair, ParallelMorphisms,
   ob, hom, dom, codom, apex, base, legs, left, right,
   nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
   add_vertex!, add_vertices!, add_edge!, add_edges!,
@@ -15,9 +16,9 @@ export FreeDiagram, FixedFreeDiagram,
   decorator, decoration, undecorate
 
 using AutoHashEquals
-using StaticArrays: StaticVector, SVector
+using StaticArrays: StaticVector, SVector, @SVector
 
-import ...Theories: ob, hom, dom, codom, SchemaType
+import ...Theories: ob, hom, dom, codom
 using ...Present, ..CSets, ..Graphs
 using ..Graphs: TheoryGraph
 
@@ -26,7 +27,27 @@ using ..Graphs: TheoryGraph
 
 """ Abstract type for free diagram of fixed shape.
 """
-abstract type FixedFreeDiagram{Ob} end
+abstract type FixedShapeFreeDiagram{Ob} end
+
+""" Discrete diagram: a diagram whose only morphisms are identities.
+"""
+@auto_hash_equals struct DiscreteDiagram{Ob,Objects<:AbstractVector{Ob}} <:
+    FixedShapeFreeDiagram{Ob}
+  objects::Objects
+end
+
+const EmptyDiagram{Ob} = DiscreteDiagram{Ob,<:StaticVector{0}}
+const ObjectPair{Ob} = DiscreteDiagram{Ob,<:StaticVector{2}}
+
+EmptyDiagram{Ob}() where Ob = DiscreteDiagram(@SVector Ob[])
+ObjectPair(first, second) = DiscreteDiagram(SVector(first, second))
+
+Base.iterate(d::DiscreteDiagram, args...) = iterate(d.objects, args...)
+Base.eltype(d::DiscreteDiagram) = eltype(d.objects)
+Base.length(d::DiscreteDiagram) = length(d.objects)
+Base.getindex(d::DiscreteDiagram, i) = d.objects[i]
+Base.firstindex(d::DiscreteDiagram) = firstindex(d.objects)
+Base.lastindex(d::DiscreteDiagram) = lastindex(d.objects)
 
 """ Multispan of morphisms in a category.
 
@@ -34,7 +55,8 @@ A [multispan](https://ncatlab.org/nlab/show/multispan) is like a [`Span`](@ref)
 except that it may have a number of legs different than two. A colimit of this
 shape is a pushout.
 """
-@auto_hash_equals struct Multispan{Ob,Legs<:AbstractVector} <: FixedFreeDiagram{Ob}
+@auto_hash_equals struct Multispan{Ob,Legs<:AbstractVector} <:
+    FixedShapeFreeDiagram{Ob}
   apex::Ob
   legs::Legs
 end
@@ -70,7 +92,8 @@ Base.length(span::Multispan) = length(span.legs)
 A multicospan is like a [`Cospan`](@ref) except that it may have a number of
 legs different than two. A limit of this shape is a pullback.
 """
-@auto_hash_equals struct Multicospan{Ob,Legs<:AbstractVector} <: FixedFreeDiagram{Ob}
+@auto_hash_equals struct Multicospan{Ob,Legs<:AbstractVector} <:
+    FixedShapeFreeDiagram{Ob}
   base::Ob
   legs::Legs
 end
@@ -109,7 +132,8 @@ morphisms with the same domain and codomain. A (co)limit of this shape is a
 
 For the common special case of two morphisms, see [`ParallelPair`](@ref).
 """
-@auto_hash_equals struct ParallelMorphisms{Ob,Homs<:AbstractVector} <: FixedFreeDiagram{Ob}
+@auto_hash_equals struct ParallelMorphisms{Ob,Homs<:AbstractVector} <:
+    FixedShapeFreeDiagram{Ob}
   dom::Ob
   codom::Ob
   homs::Homs
@@ -200,6 +224,12 @@ end
 
 # Conversion of fixed shapes
 #---------------------------
+
+function FreeDiagram(discrete::DiscreteDiagram{Ob}) where Ob
+  d = FreeDiagram{Ob,Nothing}()
+  add_vertices!(d, length(discrete), ob=collect(discrete))
+  return d
+end
 
 function FreeDiagram(span::Multispan{Ob}) where Ob
   d = FreeDiagram{Ob,eltype(span)}()
