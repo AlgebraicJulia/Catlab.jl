@@ -98,52 +98,69 @@ coproj1(colim::Union{BinaryCoproduct,BinaryPushout}) = first(legs(colim))
 coproj2(colim::Union{BinaryCoproduct,BinaryPushout}) = last(legs(colim))
 proj(coeq::Coequalizer) = only(legs(coeq))
 
-# Generic functions
-###################
+# Generic limits and colimits
+#############################
 
 """ Limit of a diagram.
+
+To define limits in a category with objects `Ob`, override the method
+`limit(::FreeDiagram{Ob})` for general limits or `limit(::D)` with suitable type
+`D <: FixedShapeFreeDiagram{Ob}` for limits of specific shape, such as products
+or equalizers.
+
+See also: [`colimit`](@ref)
 """
 function limit end
 
 """ Colimit of a diagram.
+
+To define colimits in a category with objects `Ob`, override the method
+`colimit(::FreeDiagram{Ob})` for general colimits or `colimit(::D)` with
+suitable type `D <: FixedShapeFreeDiagram{Ob}` for colimits of specific shape,
+such as coproducts or coequalizers.
+
+See also: [`limit`](@ref)
 """
 function colimit end
 
-terminal(T::Type) = product(EmptyDiagram{T}())
-initial(T::Type) = coproduct(EmptyDiagram{T}())
+# Specific limits and colimits
+##############################
+
+terminal(T::Type) = limit(EmptyDiagram{T}())
+initial(T::Type) = colimit(EmptyDiagram{T}())
 
 delete(lim::Terminal, A) = factorize(lim, A)
 create(colim::Initial, A) = factorize(colim, A)
 
 """ Product of a pair of objects.
 """
-product(A, B) = product(ObjectPair(A, B))
-product(As::AbstractVector) = product(DiscreteDiagram(As))
+product(A, B) = limit(ObjectPair(A, B))
+product(As::AbstractVector) = limit(DiscreteDiagram(As))
 
 """ Coproduct of a pair of objects.
 """
-coproduct(A, B) = coproduct(ObjectPair(A, B))
-coproduct(As::AbstractVector) = coproduct(DiscreteDiagram(As))
+coproduct(A, B) = colimit(ObjectPair(A, B))
+coproduct(As::AbstractVector) = colimit(DiscreteDiagram(As))
 
 """ Equalizer of a pair of morphisms with common domain and codomain.
 """
-equalizer(f, g) = equalizer(ParallelPair(f, g))
-equalizer(fs::AbstractVector) = equalizer(ParallelMorphisms(fs))
+equalizer(f, g) = limit(ParallelPair(f, g))
+equalizer(fs::AbstractVector) = limit(ParallelMorphisms(fs))
 
 """ Coequalizer of a pair of morphisms with common domain and codomain.
 """
-coequalizer(f, g) = coequalizer(ParallelPair(f, g))
-coequalizer(fs::AbstractVector) = coequalizer(ParallelMorphisms(fs))
+coequalizer(f, g) = colimit(ParallelPair(f, g))
+coequalizer(fs::AbstractVector) = colimit(ParallelMorphisms(fs))
 
 """ Pullback of a pair of morphisms with common codomain.
 """
-pullback(f, g) = pullback(Cospan(f, g))
-pullback(fs::AbstractVector) = pullback(Multicospan(fs))
+pullback(f, g) = limit(Cospan(f, g))
+pullback(fs::AbstractVector) = limit(Multicospan(fs))
 
 """ Pushout of a pair of morphisms with common domain.
 """
-pushout(f, g) = pushout(Span(f, g))
-pushout(fs::AbstractVector) = pushout(Multispan(fs))
+pushout(f, g) = colimit(Span(f, g))
+pushout(fs::AbstractVector) = colimit(Multispan(fs))
 
 """ Pairing of morphisms: universal property of products/pullbacks.
 """
@@ -179,11 +196,11 @@ struct CompositePullback{Ob, Diagram<:Multicospan{Ob}, Cone<:Multispan{Ob},
   eq::Eq
 end
 
-""" Pullback of a cospan.
+""" Default implementation of the pullback of a cospan.
 
-The default implementation computes the pullback from products and equalizers.
+Computes the pullback from products and equalizers.
 """
-function pullback(cospan::Cospan)
+function limit(cospan::Cospan)
   f, g = cospan
   (π1, π2) = prod = product(dom(f), dom(g))
   (ι,) = eq = equalizer(π1⋅f, π2⋅g)
@@ -206,12 +223,11 @@ struct CompositePushout{Ob, Diagram<:Multispan{Ob}, Cocone<:Multicospan{Ob},
   coeq::Coeq
 end
 
-""" Pushout of a span.
+""" Default implementation of the pushout of a span.
 
-The default implementation computes the pushout from coproducts and
-coequalizers.
+Computes the pushout from coproducts and coequalizers.
 """
-function pushout(span::Span)
+function colimit(span::Span)
   f, g = span
   (ι1, ι2) = coprod = coproduct(codom(f), codom(g))
   (π,) = coeq = coequalizer(f⋅ι1, g⋅ι2)

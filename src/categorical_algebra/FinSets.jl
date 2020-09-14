@@ -14,8 +14,7 @@ using ...GAT
 using ...Theories: Category
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ..FreeDiagrams, ..Limits
-import ..Limits: terminal, product, equalizer, pullback, limit,
-  initial, coproduct, coequalizer, pushout, colimit, factorize
+import ..Limits: limit, colimit, factorize
 
 # Category of finite sets
 #########################
@@ -129,7 +128,7 @@ compose_impl(f::FinFunctionVector, g::FinFunctionVector) = g.func[f.func]
 # Limits
 ########
 
-function product(Xs::EmptyDiagram{<:FinSet{Int}})
+function limit(Xs::EmptyDiagram{<:FinSet{Int}})
   Limit(Xs, Multispan(FinSet(1), @SVector FinFunction{Int}[]))
 end
 
@@ -137,7 +136,7 @@ function factorize(lim::Terminal{<:FinSet{Int}}, X::FinSet{Int})
   FinFunction(ones(Int, length(X)))
 end
 
-function product(Xs::ObjectPair{<:FinSet{Int}})
+function limit(Xs::ObjectPair{<:FinSet{Int}})
   m, n = length.(Xs)
   indices = CartesianIndices((m, n))
   π1 = FinFunction(i -> indices[i][1], m*n, m)
@@ -152,7 +151,7 @@ function factorize(lim::BinaryProduct{<:FinSet{Int}}, fs::Span{<:FinSet{Int}})
   FinFunction(i -> indices[f(i),g(i)], apex(fs), ob(lim))
 end
 
-function product(Xs::DiscreteDiagram{<:FinSet{Int}})
+function limit(Xs::DiscreteDiagram{<:FinSet{Int}})
   ns = length.(Xs)
   indices = CartesianIndices(Tuple(ns))
   n = prod(ns)
@@ -166,14 +165,14 @@ function factorize(lim::Product{<:FinSet{Int}}, fs::Multispan{<:FinSet})
   FinFunction(i -> indices[(f(i) for f in fs)...], apex(fs), ob(lim))
 end
 
-function equalizer(pair::ParallelPair{<:FinSet{Int}})
+function limit(pair::ParallelPair{<:FinSet{Int}})
   f, g = pair
   m = length(dom(pair))
   eq = FinFunction(filter(i -> f(i) == g(i), 1:m), m)
   Limit(pair, Multispan(SVector(eq)))
 end
 
-function equalizer(para::ParallelMorphisms{<:FinSet{Int}})
+function limit(para::ParallelMorphisms{<:FinSet{Int}})
   @assert !isempty(para)
   f1, frest = para[1], para[2:end]
   m = length(dom(para))
@@ -197,7 +196,7 @@ end
 # Colimits
 ##########
 
-function coproduct(Xs::EmptyDiagram{<:FinSet{Int}})
+function colimit(Xs::EmptyDiagram{<:FinSet{Int}})
   Colimit(Xs, Multicospan(FinSet(0), @SVector FinFunction{Int}[]))
 end
 
@@ -205,7 +204,7 @@ function factorize(colim::Initial{<:FinSet{Int}}, X::FinSet{Int})
   FinFunction(Int[], X)
 end
 
-function coproduct(Xs::ObjectPair{<:FinSet{Int}})
+function colimit(Xs::ObjectPair{<:FinSet{Int}})
   m, n = length.(Xs)
   ι1 = FinFunction(1:m, m, m+n)
   ι2 = FinFunction(m+1:m+n, n, m+n)
@@ -218,7 +217,7 @@ function factorize(colim::BinaryCoproduct{<:FinSet{Int}},
   FinFunction(vcat(collect(f), collect(g)), ob(colim), base(fs))
 end
 
-function coproduct(Xs::DiscreteDiagram{<:FinSet{Int}})
+function colimit(Xs::DiscreteDiagram{<:FinSet{Int}})
   ns = length.(Xs)
   n = sum(ns)
   offsets = [0,cumsum(ns)...]
@@ -232,7 +231,7 @@ function factorize(colim::Coproduct{<:FinSet{Int}},
               ob(colim), base(fs))
 end
 
-function coequalizer(pair::ParallelPair{<:FinSet{Int}})
+function colimit(pair::ParallelPair{<:FinSet{Int}})
   f, g = pair
   m, n = length(dom(pair)), length(codom(pair))
   sets = IntDisjointSets(n)
@@ -245,7 +244,7 @@ function coequalizer(pair::ParallelPair{<:FinSet{Int}})
   Colimit(pair, Multicospan(SVector(coeq)))
 end
 
-function coequalizer(para::ParallelMorphisms{<:FinSet{Int}})
+function colimit(para::ParallelMorphisms{<:FinSet{Int}})
   @assert !isempty(para)
   f1, frest = para[1], para[2:end]
   m, n = length(dom(para)), length(codom(para))
