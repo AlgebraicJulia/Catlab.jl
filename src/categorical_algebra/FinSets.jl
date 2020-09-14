@@ -3,6 +3,8 @@
 module FinSets
 export FinSet, FinFunction, FinFunctionCallable, FinFunctionVector, force
 
+using Compat: only
+
 using AutoHashEquals
 using DataStructures: IntDisjointSets, union!, find_root
 import FunctionWrappers: FunctionWrapper
@@ -13,7 +15,7 @@ using ...Theories: Category
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ..FreeDiagrams, ..Limits
 import ..Limits: terminal, product, equalizer, pullback, limit,
-  initial, coproduct, coequalizer, pushout, colimit
+  initial, coproduct, coequalizer, pushout, colimit, factorize
 
 # Category of finite sets
 #########################
@@ -82,7 +84,8 @@ The elements of the set are assumed to be {1,...,n}.
   func::T
   codom::Int
 end
-FinFunctionVector(f::AbstractVector) = FinFunctionVector(f, maximum(f))
+FinFunctionVector(f::AbstractVector) =
+  FinFunctionVector(f, isempty(f) ? 0 : maximum(f))
 
 function FinFunctionVector(f::AbstractVector, dom::Int, codom::Int)
   length(f) == dom || error("Length of vector $f does not match domain $dom")
@@ -130,6 +133,10 @@ function product(Xs::StaticVector{0,<:FinSet{Int}})
   Limit(Xs, Multispan(FinSet(1), @SVector FinFunction{Int}[]))
 end
 
+function factorize(lim::Terminal{<:FinSet{Int}}, X::FinSet{Int})
+  FinFunction(ones(Int, length(X)))
+end
+
 function product(Xs::StaticVector{2,<:FinSet{Int}})
   m, n = length.(Xs)
   indices = CartesianIndices((m, n))
@@ -138,12 +145,25 @@ function product(Xs::StaticVector{2,<:FinSet{Int}})
   Limit(Xs, Span(π1, π2))
 end
 
+function factorize(lim::BinaryProduct{<:FinSet{Int}}, fs::Span{<:FinSet{Int}})
+  f, g = fs
+  m, n = length.(codom.(fs))
+  indices = LinearIndices((m, n))
+  FinFunction(i -> indices[f(i),g(i)], apex(fs), ob(lim))
+end
+
 function product(Xs::AbstractVector{<:FinSet{Int}})
   ns = length.(Xs)
-  indices = CartesianIndices(tuple(ns...))
+  indices = CartesianIndices(Tuple(ns))
   n = prod(ns)
-  πs = [FinFunction(i -> indices[i][j],n,ns[j]) for j in 1:length(ns)]
+  πs = [FinFunction(i -> indices[i][j], n, ns[j]) for j in 1:length(ns)]
   Limit(Xs, Multispan(FinSet(n), πs))
+end
+
+function factorize(lim::Product{<:FinSet{Int}}, fs::Multispan{<:FinSet})
+  ns = length.(codom.(fs))
+  indices = LinearIndices(Tuple(ns))
+  FinFunction(i -> indices[(f(i) for f in fs)...], apex(fs), ob(lim))
 end
 
 function equalizer(pair::ParallelPair{<:FinSet{Int}})
@@ -154,11 +174,16 @@ function equalizer(pair::ParallelPair{<:FinSet{Int}})
 end
 
 function equalizer(para::ParallelMorphisms{<:FinSet{Int}})
-  @assert length(para) >= 1
+  @assert !isempty(para)
   f1, frest = para[1], para[2:end]
   m = length(dom(para))
   eq = FinFunction(filter(i -> all(f1(i) == f(i) for f in frest), 1:m), m)
   Limit(para, Multispan(SVector(eq)))
+end
+
+function factorize(lim::Equalizer{<:FinSet{Int}}, h::FinFunction{Int})
+  ι = collect(incl(lim))
+  FinFunction(Int[only(searchsorted(ι, i)) for i in collect(h)], length(ι))
 end
 
 function limit(d::FreeDiagram{<:FinSet{Int}})
@@ -176,11 +201,21 @@ function coproduct(Xs::StaticVector{0,<:FinSet{Int}})
   Colimit(Xs, Multicospan(FinSet(0), @SVector FinFunction{Int}[]))
 end
 
+function factorize(colim::Initial{<:FinSet{Int}}, X::FinSet{Int})
+  FinFunction(Int[], X)
+end
+
 function coproduct(Xs::StaticVector{2,<:FinSet{Int}})
   m, n = length.(Xs)
   ι1 = FinFunction(1:m, m, m+n)
   ι2 = FinFunction(m+1:m+n, n, m+n)
   Colimit(Xs, Cospan(ι1, ι2))
+end
+
+function factorize(colim::BinaryCoproduct{<:FinSet{Int}},
+                   fs::Cospan{<:FinSet{Int}})
+  f, g = fs
+  FinFunction(vcat(collect(f), collect(g)), ob(colim), base(fs))
 end
 
 function coproduct(Xs::AbstractVector{<:FinSet{Int}})
@@ -189,6 +224,12 @@ function coproduct(Xs::AbstractVector{<:FinSet{Int}})
   offsets = [0,cumsum(ns)...]
   ιs = [FinFunction((1:ns[j]) .+ offsets[j],ns[j],n) for j in 1:length(ns)]
   Colimit(Xs, Multicospan(FinSet(n), ιs))
+end
+
+function factorize(colim::Coproduct{<:FinSet{Int}},
+                   fs::Multicospan{<:FinSet{Int}})
+  FinFunction(reduce(vcat, (collect(f) for f in fs), init=Int[]),
+              ob(colim), base(fs))
 end
 
 function coequalizer(pair::ParallelPair{<:FinSet{Int}})
@@ -205,7 +246,7 @@ function coequalizer(pair::ParallelPair{<:FinSet{Int}})
 end
 
 function coequalizer(para::ParallelMorphisms{<:FinSet{Int}})
-  @assert length(para) >= 1
+  @assert !isempty(para)
   f1, frest = para[1], para[2:end]
   m, n = length(dom(para)), length(codom(para))
   sets = IntDisjointSets(n)
@@ -216,13 +257,27 @@ function coequalizer(para::ParallelMorphisms{<:FinSet{Int}})
   end
   h = [ find_root(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
-  coeq = FinFunction([searchsortedfirst(roots, r) for r in h], length(roots))
+  coeq = FinFunction([ searchsortedfirst(roots, r) for r in h ], length(roots))
   Colimit(para, Multicospan(SVector(coeq)))
 end
 
+function factorize(coeq::Coequalizer{<:FinSet{Int}}, h::FinFunction{Int})
+  q = zeros(Int, length(ob(coeq)))
+  π = proj(coeq)
+  for i in dom(h)
+    j = π(i)
+    if q[j] == 0
+      q[j] = h(i)
+    else
+      @assert q[j] == h(i) "Quotient map out of coequalizer is ill-defined"
+    end
+  end
+  FinFunction(q, codom(h))
+end
+
 function colimit(d::FreeDiagram{<:FinSet{Int}})
-  cp = coproduct(ob(d))
-  n, leg = length(ob(cp)), legs(cp)
+  coprod = coproduct(ob(d))
+  n, leg = length(ob(coprod)), legs(coprod)
   sets = IntDisjointSets(n)
   for e in edges(d)
     s, t, h = src(d,e), tgt(d,e), hom(d,e)
@@ -233,8 +288,8 @@ function colimit(d::FreeDiagram{<:FinSet{Int}})
   h = [ find_root(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   m = length(roots)
-  f = FinFunction([searchsortedfirst(roots, r) for r in h], m)
-  Colimit(d, Multicospan(FinSet(m), [compose(leg[i],f) for i in vertices(d)]))
+  f = FinFunction([ searchsortedfirst(roots, r) for r in h ], m)
+  Colimit(d, Multicospan(FinSet(m), [ compose(leg[i],f) for i in vertices(d) ]))
 end
 
 end
