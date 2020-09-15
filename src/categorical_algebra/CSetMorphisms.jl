@@ -101,9 +101,7 @@ force(α::ACSetTransformation) =
   dom(α::ACSetTransformation) = α.dom
   codom(α::ACSetTransformation) = α.codom
 
-  function id(X::ACSet)
-    ACSetTransformation(map(t -> id(FinSet(length(t))), X.tables), X, X)
-  end
+  id(X::ACSet) = ACSetTransformation(map(id, finsets(X)), X, X)
 
   function compose(α::ACSetTransformation, β::ACSetTransformation)
     # Question: Should we incur cost of checking that codom(β) == dom(α)?
@@ -111,6 +109,8 @@ force(α::ACSetTransformation) =
                         dom(α), codom(β))
   end
 end
+
+finsets(X::ACSet) = map(table -> FinSet(length(table)), X.tables)
 
 # Limits and colimits
 #####################
@@ -141,9 +141,9 @@ end
 unpack_diagram(diagram::DiscreteDiagram{<:AbstractCSet}) =
   map(DiscreteDiagram, unpack_finsets(ob(diagram)))
 unpack_diagram(span::Multispan{<:AbstractCSet}) =
-  map(Multispan, unpack_finsets(apex(span)), unpack_components(legs(span)))
+  map(Multispan, finsets(apex(span)), unpack_components(legs(span)))
 unpack_diagram(cospan::Multicospan{<:AbstractCSet}) =
-  map(Multicospan, unpack_finsets(base(cospan)), unpack_components(legs(cospan)))
+  map(Multicospan, finsets(base(cospan)), unpack_components(legs(cospan)))
 unpack_diagram(para::ParallelMorphisms{<:AbstractCSet}) =
   map(ParallelMorphisms, unpack_components(hom(para)))
 
@@ -166,9 +166,13 @@ function pack_components(fs::NamedTuple{Ob}, doms, codoms) where Ob
   map(ACSetTransformation, components, doms, codoms)
 end
 
-# TODO: Document.
+""" Objects in diagram that will have explicit legs in limit cone.
+
+Encodes common conventions such as, when taking a pullback of a cospan, not
+including a leg for the base since it can be computed from the other legs.
+"""
 cone_objects(diagram) = ob(diagram)
-cone_objects(span::Multispan) = map(codom, legs(span))
+cone_objects(cospan::Multicospan) = map(dom, legs(cospan))
 cone_objects(para::ParallelMorphisms) = SVector(dom(para))
 
 end

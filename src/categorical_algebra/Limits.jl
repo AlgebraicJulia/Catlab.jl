@@ -7,7 +7,8 @@ export AbstractLimit, AbstractColimit, Limit, Colimit,
   BinaryProduct, Product, product, proj1, proj2, pair,
   BinaryPullback, Pullback, BinaryEqualizer, Equalizer, pullback, incl,
   BinaryCoproduct, Coproduct, coproduct, coproj1, coproj2, copair,
-  BinaryPushout, Pushout, BinaryCoequalizer, Coequalizer, pushout, proj
+  BinaryPushout, Pushout, BinaryCoequalizer, Coequalizer, pushout, proj,
+  composite_pullback, composite_pushout
 
 using Compat: only
 
@@ -98,8 +99,8 @@ coproj1(colim::Union{BinaryCoproduct,BinaryPushout}) = first(legs(colim))
 coproj2(colim::Union{BinaryCoproduct,BinaryPushout}) = last(legs(colim))
 proj(coeq::Coequalizer) = only(legs(coeq))
 
-# Generic limits and colimits
-#############################
+# Generic (co)limits
+####################
 
 """ Limit of a diagram.
 
@@ -132,8 +133,8 @@ See also: [`limit`](@ref), [`colimit`](@ref).
 """
 function universal end
 
-# Specific limits and colimits
-##############################
+# Specific (co)limits
+#####################
 
 """ Terminal object.
 
@@ -242,8 +243,8 @@ define the method `universal(::Coequalizer{T}, ::SMulticospan{1,T})`.
 factorize(lim::Equalizer, h) = universal(lim, SMultispan(h))
 factorize(colim::Coequalizer, h) = universal(colim, SMulticospan(h))
 
-# Default implementations
-#########################
+# Composite (co)limits
+######################
 
 """ Pullback formed as composite of product and equalizer.
 
@@ -262,16 +263,15 @@ struct CompositePullback{Ob, Diagram<:Multicospan{Ob}, Cone<:Multispan{Ob},
   eq::Eq
 end
 
-""" Default implementation of the pullback of a cospan.
-
-Computes the pullback from products and equalizers.
+""" Compute pullback as composite of product and equalizer.
 """
-function limit(cospan::Cospan)
+function composite_pullback(cospan::Cospan)
   f, g = cospan
   (π1, π2) = prod = product(dom(f), dom(g))
   (ι,) = eq = equalizer(π1⋅f, π2⋅g)
   CompositePullback(cospan, Span(ι⋅π1, ι⋅π2), prod, eq)
 end
+composite_pullback(f, g) = composite_pullback(Cospan(f, g))
 
 function universal(lim::CompositePullback, cone::Multispan)
   factorize(lim.eq, universal(lim.prod, cone))
@@ -289,16 +289,15 @@ struct CompositePushout{Ob, Diagram<:Multispan{Ob}, Cocone<:Multicospan{Ob},
   coeq::Coeq
 end
 
-""" Default implementation of the pushout of a span.
-
-Computes the pushout from coproducts and coequalizers.
+""" Compute pushout as composite of coproduct and coequalizer.
 """
-function colimit(span::Span)
+function composite_pushout(span::Span)
   f, g = span
   (ι1, ι2) = coprod = coproduct(codom(f), codom(g))
   (π,) = coeq = coequalizer(f⋅ι1, g⋅ι2)
   CompositePushout(span, Cospan(ι1⋅π, ι2⋅π), coprod, coeq)
 end
+composite_pushout(f, g) = composite_pushout(Span(f, g))
 
 function universal(lim::CompositePushout, cone::Multicospan)
   factorize(lim.coeq, universal(lim.coprod, cone))

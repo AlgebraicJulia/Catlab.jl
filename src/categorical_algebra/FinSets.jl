@@ -187,6 +187,8 @@ function universal(lim::Equalizer{<:FinSet{Int}},
   FinFunction(Int[only(searchsorted(ι, i)) for i in collect(h)], length(ι))
 end
 
+limit(cospan::Multicospan{<:FinSet{Int}}) = composite_pullback(cospan)
+
 function limit(d::FreeDiagram{<:FinSet{Int}})
   p = product(ob(d))
   n, leg = length(ob(p)), legs(p)
@@ -278,6 +280,8 @@ function universal(coeq::Coequalizer{<:FinSet{Int}},
   end
   FinFunction(q, codom(h))
 end
+
+colimit(span::Multispan{<:FinSet{Int}}) = composite_pushout(span)
 
 function colimit(d::FreeDiagram{<:FinSet{Int}})
   coprod = coproduct(ob(d))
