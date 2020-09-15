@@ -46,7 +46,7 @@ span = Span(f,g)
 @test right(span) == g
 
 f = Hom(:f, A, B)
-@test_throws Exception Span(f,g)
+@test_throws ErrorException Span(f,g)
 
 # Multispans.
 f, g, h = Hom(:f, C, A), Hom(:g, C, B), Hom(:h, C, A)
@@ -67,6 +67,9 @@ cospan = Cospan(f,g)
 @test legs(cospan) == [f,g]
 @test left(cospan) == f
 @test right(cospan) == g
+
+f = Hom(:f, A ,B)
+@test_throws ErrorException Cospan(f,g)
 
 # Multicospans.
 f, g, h = Hom(:f, A, C), Hom(:g, B, C), Hom(:h, A, C)

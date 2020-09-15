@@ -64,26 +64,22 @@ shape is a pushout.
 end
 
 function Multispan(legs::AbstractVector)
-  @assert !isempty(legs) && allequal(dom.(legs))
+  !isempty(legs) || error("Empty list of legs but no base given")
+  allequal(dom.(legs)) || error("Legs $legs do not have common domain")
   Multispan(dom(first(legs)), legs)
 end
 
 const SMultispan{N,Ob} = Multispan{Ob,<:StaticVector{N}}
 
+SMultispan(legs...) = Multispan(SVector(legs...))
+SMultispan{N}(legs::Vararg{T,N}) where {T,N} = Multispan(SVector(legs...))
 SMultispan{0}(apex) = Multispan(apex, SVector{0,Any}())
-SMultispan{1}(leg) = Multispan(dom(leg), SVector(leg))
 
 """ Span of morphims in a category.
 
 A common special case of [`Multispan`](@ref). See also [`Cospan`](@ref).
 """
-const Span{Ob} = Multispan{Ob,<:StaticVector{2}}
-
-function Span(left, right)
-  dom(left) == dom(right) ||
-    error("Domains of legs of span do not match: $left vs $right")
-  Multispan(dom(left), SVector(left, right))
-end
+const Span{Ob} = SMultispan{2,Ob}
 
 apex(span::Multispan) = span.apex
 legs(span::Multispan) = span.legs
@@ -106,26 +102,22 @@ legs different than two. A limit of this shape is a pullback.
 end
 
 function Multicospan(legs::AbstractVector)
-  @assert !isempty(legs) && allequal(codom.(legs))
+  !isempty(legs) || error("Empty list of legs but no base given")
+  allequal(codom.(legs)) || error("Legs $legs do not have common codomain")
   Multicospan(codom(first(legs)), legs)
 end
 
 const SMulticospan{N,Ob} = Multicospan{Ob,<:StaticVector{N}}
 
+SMulticospan(legs...) = Multicospan(SVector(legs...))
+SMulticospan{N}(legs::Vararg{T,N}) where {T,N} = Multicospan(SVector(legs...))
 SMulticospan{0}(base) = Multicospan(base, SVector{0,Any}())
-SMulticospan{1}(leg) = Multicospan(codom(leg), SVector(leg))
 
 """ Cospan of morphisms in a category.
 
 A common special case of [`Multicospan`](@ref). See also [`Span`](@ref).
 """
 const Cospan{Ob} = SMulticospan{2,Ob}
-
-function Cospan(left, right)
-  codom(left) == codom(right) ||
-    error("Codomains of legs of cospan do not match: $left vs $right")
-  Multicospan(codom(left), SVector(left, right))
-end
 
 base(cospan::Multicospan) = cospan.base
 legs(cospan::Multicospan) = cospan.legs
