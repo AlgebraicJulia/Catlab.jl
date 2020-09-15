@@ -2,8 +2,8 @@
 """
 module Limits
 export AbstractLimit, AbstractColimit, Limit, Colimit,
-  ob, cone, cocone, apex, base, legs, limit, colimit, factorize,
-  Terminal, Initial, terminal, initial, delete, create,
+  ob, cone, cocone, apex, base, legs, limit, colimit, universal,
+  Terminal, Initial, terminal, initial, delete, create, factorize,
   BinaryProduct, Product, product, proj1, proj2, pair,
   BinaryPullback, Pullback, BinaryEqualizer, Equalizer, pullback, incl,
   BinaryCoproduct, Coproduct, coproduct, coproj1, coproj2, copair,
@@ -16,7 +16,7 @@ using AutoHashEquals
 using ...Theories
 import ...Theories: ob, terminal, product, proj1, proj2, equalizer, incl,
   initial, coproduct, coproj1, coproj2, coequalizer, proj,
-  factorize, delete, create, pair, copair
+  delete, create, pair, copair, factorize
 using ..FreeDiagrams
 import ..FreeDiagrams: apex, base, legs
 
@@ -123,6 +123,15 @@ See also: [`limit`](@ref)
 """
 function colimit end
 
+""" Universal property of (co)limits.
+
+Compute the morphism whose existence and uniqueness is guaranteed by the
+universal property of (co)limits.
+
+See also: [`limit`](@ref), [`colimit`](@ref).
+"""
+function universal end
+
 # Specific limits and colimits
 ##############################
 
@@ -138,17 +147,19 @@ To implement for a type `T`, define the method `colimit(::EmptyDiagram{T})`.
 """
 initial(T::Type) = colimit(EmptyDiagram{T}())
 
-""" Universal morphism into a terminal object.
+""" Unique morphism into a terminal object.
 
-To implement for a type `T`, define the method `factorize(::Terminal{T}, ::T)`.
+To implement for a type `T`, define the method
+`universal(::Terminal{T}, ::SMultispan{0,T})`.
 """
-delete(lim::Terminal, A) = factorize(lim, A)
+delete(lim::Terminal, A) = universal(lim, SMultispan{0}(A))
 
-""" Universal morphism out of an initial object.
+""" Unique morphism out of an initial object.
 
-To implement for a type `T`, define the method `factorize(::Initial{T}, ::T)`.
+To implement for a type `T`, define the method
+`universal(::Initial{T}, ::SMulticospan{0,T})`.
 """
-create(colim::Initial, A) = factorize(colim, A)
+create(colim::Initial, A) = universal(colim, SMulticospan{0}(A))
 
 """ Product of objects.
 
@@ -203,24 +214,33 @@ pushout(fs::AbstractVector) = colimit(Multispan(fs))
 """ Pairing of morphisms: universal property of products/pullbacks.
 
 To implement for products of type `T`, define the method
-`factorize(::BinaryProduct{T}, ::Span{T})` and/or
-`factorize(::Product{T}, ::Multispan{T})` and similarly for pullbacks.
+`universal(::BinaryProduct{T}, ::Span{T})` and/or
+`universal(::Product{T}, ::Multispan{T})` and similarly for pullbacks.
 """
 pair(lim::Union{BinaryProduct,BinaryPullback}, f, g) =
-  factorize(lim, Span(f, g))
+  universal(lim, Span(f, g))
 pair(lim::Union{Product,Pullback}, fs::AbstractVector) =
-  factorize(lim, Multispan(fs))
+  universal(lim, Multispan(fs))
 
 """ Copairing of morphisms: universal property of coproducts/pushouts.
 
 To implement for coproducts of type `T`, define the method
-`factorize(::BinaryCoproduct{T}, ::Cospan{T})` and/or
-`factorize(::Coproduct{T}, ::Multicospan{T})` and similarly for pushouts.
+`universal(::BinaryCoproduct{T}, ::Cospan{T})` and/or
+`universal(::Coproduct{T}, ::Multicospan{T})` and similarly for pushouts.
 """
 copair(colim::Union{BinaryCoproduct,BinaryPushout}, f, g) =
-  factorize(colim, Cospan(f, g))
+  universal(colim, Cospan(f, g))
 copair(colim::Union{Coproduct,Pushout}, fs::AbstractVector) =
-  factorize(colim, Multicospan(fs))
+  universal(colim, Multicospan(fs))
+
+""" Factor morphism through (co)equalizer, via the universal property.
+
+To implement for equalizers of type `T`, define the method
+`universal(::Equalizer{T}, ::SMultispan{1,T})`. For coequalizers of type `T`,
+define the method `universal(::Coequalizer{T}, ::SMulticospan{1,T})`.
+"""
+factorize(lim::Equalizer, h) = universal(lim, SMultispan(h))
+factorize(colim::Coequalizer, h) = universal(colim, SMulticospan(h))
 
 # Default implementations
 #########################
@@ -253,8 +273,8 @@ function limit(cospan::Cospan)
   CompositePullback(cospan, Span(ι⋅π1, ι⋅π2), prod, eq)
 end
 
-function factorize(lim::CompositePullback, fs::Multispan)
-  factorize(lim.eq, factorize(lim.prod, fs))
+function universal(lim::CompositePullback, cone::Multispan)
+  factorize(lim.eq, universal(lim.prod, cone))
 end
 
 """ Pushout formed as composite of coproduct and equalizer.
@@ -280,8 +300,8 @@ function colimit(span::Span)
   CompositePushout(span, Cospan(ι1⋅π, ι2⋅π), coprod, coeq)
 end
 
-function factorize(lim::CompositePushout, fs::Multicospan)
-  factorize(lim.coeq, factorize(lim.coprod, fs))
+function universal(lim::CompositePushout, cone::Multicospan)
+  factorize(lim.coeq, universal(lim.coprod, cone))
 end
 
 end

@@ -13,7 +13,7 @@ using ...GAT
 using ...Theories: Category
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ..FreeDiagrams, ..Limits
-import ..Limits: limit, colimit, factorize
+import ..Limits: limit, colimit, universal
 
 # Category of finite sets
 #########################
@@ -131,8 +131,9 @@ function limit(Xs::EmptyDiagram{<:FinSet{Int}})
   Limit(Xs, SMultispan{0}(FinSet(1)))
 end
 
-function factorize(lim::Terminal{<:FinSet{Int}}, X::FinSet{Int})
-  FinFunction(ones(Int, length(X)))
+function universal(lim::Terminal{<:FinSet{Int}},
+                   cone::SMultispan{0,<:FinSet{Int}})
+  FinFunction(ones(Int, length(apex(cone))))
 end
 
 function limit(Xs::ObjectPair{<:FinSet{Int}})
@@ -143,11 +144,11 @@ function limit(Xs::ObjectPair{<:FinSet{Int}})
   Limit(Xs, Span(π1, π2))
 end
 
-function factorize(lim::BinaryProduct{<:FinSet{Int}}, fs::Span{<:FinSet{Int}})
-  f, g = fs
-  m, n = length.(codom.(fs))
+function universal(lim::BinaryProduct{<:FinSet{Int}}, cone::Span{<:FinSet{Int}})
+  f, g = cone
+  m, n = length.(codom.(cone))
   indices = LinearIndices((m, n))
-  FinFunction(i -> indices[f(i),g(i)], apex(fs), ob(lim))
+  FinFunction(i -> indices[f(i),g(i)], apex(cone), ob(lim))
 end
 
 function limit(Xs::DiscreteDiagram{<:FinSet{Int}})
@@ -158,10 +159,10 @@ function limit(Xs::DiscreteDiagram{<:FinSet{Int}})
   Limit(Xs, Multispan(FinSet(n), πs))
 end
 
-function factorize(lim::Product{<:FinSet{Int}}, fs::Multispan{<:FinSet})
-  ns = length.(codom.(fs))
+function universal(lim::Product{<:FinSet{Int}}, cone::Multispan{<:FinSet})
+  ns = length.(codom.(cone))
   indices = LinearIndices(Tuple(ns))
-  FinFunction(i -> indices[(f(i) for f in fs)...], apex(fs), ob(lim))
+  FinFunction(i -> indices[(f(i) for f in cone)...], apex(cone), ob(lim))
 end
 
 function limit(pair::ParallelPair{<:FinSet{Int}})
@@ -179,8 +180,10 @@ function limit(para::ParallelMorphisms{<:FinSet{Int}})
   Limit(para, SMultispan(eq))
 end
 
-function factorize(lim::Equalizer{<:FinSet{Int}}, h::FinFunction{Int})
+function universal(lim::Equalizer{<:FinSet{Int}},
+                   cone::SMultispan{1,<:FinSet{Int}})
   ι = collect(incl(lim))
+  h = only(cone)
   FinFunction(Int[only(searchsorted(ι, i)) for i in collect(h)], length(ι))
 end
 
@@ -199,8 +202,9 @@ function colimit(Xs::EmptyDiagram{<:FinSet{Int}})
   Colimit(Xs, SMulticospan{0}(FinSet(0)))
 end
 
-function factorize(colim::Initial{<:FinSet{Int}}, X::FinSet{Int})
-  FinFunction(Int[], X)
+function universal(colim::Initial{<:FinSet{Int}},
+                   cocone::SMulticospan{0,<:FinSet{Int}})
+  FinFunction(Int[], base(cocone))
 end
 
 function colimit(Xs::ObjectPair{<:FinSet{Int}})
@@ -210,10 +214,10 @@ function colimit(Xs::ObjectPair{<:FinSet{Int}})
   Colimit(Xs, Cospan(ι1, ι2))
 end
 
-function factorize(colim::BinaryCoproduct{<:FinSet{Int}},
-                   fs::Cospan{<:FinSet{Int}})
-  f, g = fs
-  FinFunction(vcat(collect(f), collect(g)), ob(colim), base(fs))
+function universal(colim::BinaryCoproduct{<:FinSet{Int}},
+                   cocone::Cospan{<:FinSet{Int}})
+  f, g = cocone
+  FinFunction(vcat(collect(f), collect(g)), ob(colim), base(cocone))
 end
 
 function colimit(Xs::DiscreteDiagram{<:FinSet{Int}})
@@ -224,10 +228,10 @@ function colimit(Xs::DiscreteDiagram{<:FinSet{Int}})
   Colimit(Xs, Multicospan(FinSet(n), ιs))
 end
 
-function factorize(colim::Coproduct{<:FinSet{Int}},
-                   fs::Multicospan{<:FinSet{Int}})
-  FinFunction(reduce(vcat, (collect(f) for f in fs), init=Int[]),
-              ob(colim), base(fs))
+function universal(colim::Coproduct{<:FinSet{Int}},
+                   cocone::Multicospan{<:FinSet{Int}})
+  FinFunction(reduce(vcat, (collect(f) for f in cocone), init=Int[]),
+              ob(colim), base(cocone))
 end
 
 function colimit(pair::ParallelPair{<:FinSet{Int}})
@@ -259,9 +263,11 @@ function colimit(para::ParallelMorphisms{<:FinSet{Int}})
   Colimit(para, SMulticospan(coeq))
 end
 
-function factorize(coeq::Coequalizer{<:FinSet{Int}}, h::FinFunction{Int})
+function universal(coeq::Coequalizer{<:FinSet{Int}},
+                   cocone::SMulticospan{1,<:FinSet{Int}})
   q = zeros(Int, length(ob(coeq)))
   π = proj(coeq)
+  h = only(cocone)
   for i in dom(h)
     j = π(i)
     if q[j] == 0
