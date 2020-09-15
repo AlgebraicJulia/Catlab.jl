@@ -31,8 +31,7 @@ pair = ObjectPair(A,B)
 # Discrete diagrams.
 discrete = DiscreteDiagram([A,B,C])
 @test length(discrete) == 3
-A′, B′, C′ = discrete
-@test [A′,B′,C′] == collect(discrete)
+@test ob(discrete) == [A,B,C]
 
 diagram = FreeDiagram(discrete)
 @test ob(diagram) == [A,B,C]
@@ -94,6 +93,7 @@ f, g, h = Hom(:f, A, B), Hom(:g, A, B), Hom(:h, A, B)
 para = ParallelMorphisms([f,g,h])
 @test dom(para) == A
 @test codom(para) == B
+@test hom(para) == [f,g,h]
 
 diagram = FreeDiagram(para)
 @test ob(diagram) == [A,B]

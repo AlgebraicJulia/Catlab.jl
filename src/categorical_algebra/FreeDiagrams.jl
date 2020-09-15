@@ -6,9 +6,9 @@ pairs of objects, discrete diagrams, parallel morphisms, spans, and cospans.
 Limits and colimits are most commonly taken over free diagrams.
 """
 module FreeDiagrams
-export FreeDiagram, FixedShapeFreeDiagram, DiscreteDiagram, EmptyDiagram,
-  ObjectPair, Span, Cospan, Multispan, Multicospan,
-  ParallelPair, ParallelMorphisms,
+export AbstractFreeDiagram, FreeDiagram, FixedShapeFreeDiagram, DiscreteDiagram,
+  EmptyDiagram, ObjectPair, Span, Cospan, Multispan, Multicospan,
+  SMultispan, SMulticospan, ParallelPair, ParallelMorphisms,
   ob, hom, dom, codom, apex, base, legs, left, right,
   nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
   add_vertex!, add_vertices!, add_edge!, add_edges!,
@@ -42,6 +42,8 @@ const ObjectPair{Ob} = DiscreteDiagram{Ob,<:StaticVector{2}}
 EmptyDiagram{Ob}() where Ob = DiscreteDiagram(@SVector Ob[])
 ObjectPair(first, second) = DiscreteDiagram(SVector(first, second))
 
+ob(d::DiscreteDiagram) = d.objects
+
 Base.iterate(d::DiscreteDiagram, args...) = iterate(d.objects, args...)
 Base.eltype(d::DiscreteDiagram) = eltype(d.objects)
 Base.length(d::DiscreteDiagram) = length(d.objects)
@@ -65,6 +67,11 @@ function Multispan(legs::AbstractVector)
   @assert !isempty(legs) && allequal(dom.(legs))
   Multispan(dom(first(legs)), legs)
 end
+
+const SMultispan{N,Ob} = Multispan{Ob,<:StaticVector{N}}
+
+SMultispan{0}(apex) = Multispan(apex, SVector{0,Any}())
+SMultispan{1}(leg) = Multispan(dom(leg), SVector(leg))
 
 """ Span of morphims in a category.
 
@@ -103,11 +110,16 @@ function Multicospan(legs::AbstractVector)
   Multicospan(codom(first(legs)), legs)
 end
 
+const SMulticospan{N,Ob} = Multicospan{Ob,<:StaticVector{N}}
+
+SMulticospan{0}(base) = Multicospan(base, SVector{0,Any}())
+SMulticospan{1}(leg) = Multicospan(codom(leg), SVector(leg))
+
 """ Cospan of morphisms in a category.
 
 A common special case of [`Multicospan`](@ref). See also [`Span`](@ref).
 """
-const Cospan{Ob} = Multicospan{Ob,<:StaticVector{2}}
+const Cospan{Ob} = SMulticospan{2,Ob}
 
 function Cospan(left, right)
   codom(left) == codom(right) ||
@@ -208,7 +220,12 @@ right(m::DecoratedCospan) = right(m.cospan)
   hom::Attr(E,Hom)
 end
 
-const FreeDiagram = ACSetType(TheoryFreeDiagram,index = [:src,:tgt])
+const FreeDiagram = ACSetType(TheoryFreeDiagram, index=[:src,:tgt])
+
+# XXX: This is needed because we cannot control the supertype of C-set types.
+const _AbstractFreeDiagram = AbstractACSetType(TheoryFreeDiagram)
+const AbstractFreeDiagram{Ob} =
+  Union{_AbstractFreeDiagram{Ob},FixedShapeFreeDiagram{Ob}}
 
 ob(d::FreeDiagram, args...) = subpart(d, args..., :ob)
 hom(d::FreeDiagram, args...) = subpart(d, args..., :hom)

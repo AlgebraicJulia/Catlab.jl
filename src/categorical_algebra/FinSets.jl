@@ -8,7 +8,6 @@ using Compat: only
 using AutoHashEquals
 using DataStructures: IntDisjointSets, union!, find_root
 import FunctionWrappers: FunctionWrapper
-using StaticArrays: SVector, @SVector
 
 using ...GAT
 using ...Theories: Category
@@ -129,7 +128,7 @@ compose_impl(f::FinFunctionVector, g::FinFunctionVector) = g.func[f.func]
 ########
 
 function limit(Xs::EmptyDiagram{<:FinSet{Int}})
-  Limit(Xs, Multispan(FinSet(1), @SVector FinFunction{Int}[]))
+  Limit(Xs, SMultispan{0}(FinSet(1)))
 end
 
 function factorize(lim::Terminal{<:FinSet{Int}}, X::FinSet{Int})
@@ -169,7 +168,7 @@ function limit(pair::ParallelPair{<:FinSet{Int}})
   f, g = pair
   m = length(dom(pair))
   eq = FinFunction(filter(i -> f(i) == g(i), 1:m), m)
-  Limit(pair, Multispan(SVector(eq)))
+  Limit(pair, SMultispan{1}(eq))
 end
 
 function limit(para::ParallelMorphisms{<:FinSet{Int}})
@@ -177,7 +176,7 @@ function limit(para::ParallelMorphisms{<:FinSet{Int}})
   f1, frest = para[1], para[2:end]
   m = length(dom(para))
   eq = FinFunction(filter(i -> all(f1(i) == f(i) for f in frest), 1:m), m)
-  Limit(para, Multispan(SVector(eq)))
+  Limit(para, SMultispan{1}(eq))
 end
 
 function factorize(lim::Equalizer{<:FinSet{Int}}, h::FinFunction{Int})
@@ -197,7 +196,7 @@ end
 ##########
 
 function colimit(Xs::EmptyDiagram{<:FinSet{Int}})
-  Colimit(Xs, Multicospan(FinSet(0), @SVector FinFunction{Int}[]))
+  Colimit(Xs, SMulticospan{0}(FinSet(0)))
 end
 
 function factorize(colim::Initial{<:FinSet{Int}}, X::FinSet{Int})
@@ -241,7 +240,7 @@ function colimit(pair::ParallelPair{<:FinSet{Int}})
   h = [ find_root(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   coeq = FinFunction([ searchsortedfirst(roots, r) for r in h], length(roots))
-  Colimit(pair, Multicospan(SVector(coeq)))
+  Colimit(pair, SMulticospan{1}(coeq))
 end
 
 function colimit(para::ParallelMorphisms{<:FinSet{Int}})
@@ -257,7 +256,7 @@ function colimit(para::ParallelMorphisms{<:FinSet{Int}})
   h = [ find_root(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   coeq = FinFunction([ searchsortedfirst(roots, r) for r in h ], length(roots))
-  Colimit(para, Multicospan(SVector(coeq)))
+  Colimit(para, SMulticospan{1}(coeq))
 end
 
 function factorize(coeq::Coequalizer{<:FinSet{Int}}, h::FinFunction{Int})
