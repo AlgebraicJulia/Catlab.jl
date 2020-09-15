@@ -115,6 +115,9 @@ end
 # Limits and colimits
 #####################
 
+# Compute limits and colimits of C-sets by reducing to those in FinSet using the
+# "pointwise" formula for (co)limits in functor categories.
+
 function limit(diagram::AbstractFreeDiagram{T}) where {CD, T<:AbstractCSet{CD}}
   limits = map(limit, unpack_diagram(diagram))
   Xs = cone_objects(diagram)
@@ -129,9 +132,7 @@ function limit(diagram::AbstractFreeDiagram{T}) where {CD, T<:AbstractCSet{CD}}
     Yf = universal(limits[d], Multispan(ob(limits[c]), Yfs))
     set_subpart!(Y, f, collect(Yf))
   end
-  πs = map(pack_components(map(legs, limits)), Xs) do π, X
-    ACSetTransformation(π, Y, X)
-  end
+  πs = pack_components(map(legs, limits), map(X -> Y, Xs), Xs)
   Limit(diagram, Multispan(Y, πs))
 end
 
@@ -139,29 +140,35 @@ end
 """
 unpack_diagram(diagram::DiscreteDiagram{<:AbstractCSet}) =
   map(DiscreteDiagram, unpack_finsets(ob(diagram)))
+unpack_diagram(span::Multispan{<:AbstractCSet}) =
+  map(Multispan, unpack_finsets(apex(span)), unpack_components(legs(span)))
+unpack_diagram(cospan::Multicospan{<:AbstractCSet}) =
+  map(Multicospan, unpack_finsets(base(cospan)), unpack_components(legs(cospan)))
 unpack_diagram(para::ParallelMorphisms{<:AbstractCSet}) =
-  map(ParallelMorphisms, unpack_components(hom(diagram)))
+  map(ParallelMorphisms, unpack_components(hom(para)))
 
 """ Vector of C-sets → named tuple of vectors of FinSets
 """
 unpack_finsets(Xs::AbstractVector{<:AbstractACSet{CD}}) where
-    {Ob, CD<:CatDesc{Ob}} =
+    {Ob, CD <: CatDesc{Ob}} =
   NamedTuple{Ob}([ map(X -> FinSet{Int,Int}(nparts(X, ob)), Xs) for ob in Ob ])
 
 """ Vector of C-set transformations → named tuple of vectors of FinFunctions
 """
 unpack_components(αs::AbstractVector{<:ACSetTransformation{CD}}) where
-    {Ob, CD<:CatDesc{Ob}} =
+    {Ob, CD <: CatDesc{Ob}} =
   NamedTuple{Ob}([ map(α -> α[ob], αs) for ob in Ob ])
 
-""" Named tuple of vectors of FinFuncs → vector of named tuples of FinFuncs
+""" Named tuple of vectors of FinFunctions → vector of C-set transformations
 """
-pack_components(fs::NamedTuple{Ob}) where Ob =
-  map((x...) -> NamedTuple{Ob}(x), fs...) # XXX: Is there a better way?
+function pack_components(fs::NamedTuple{Ob}, doms, codoms) where Ob
+  components = map((x...) -> NamedTuple{Ob}(x), fs...) # XXX: Is there a better way?
+  map(ACSetTransformation, components, doms, codoms)
+end
 
 # TODO: Document.
 cone_objects(diagram) = ob(diagram)
 cone_objects(span::Multispan) = map(codom, legs(span))
-cone_objects(para::ParallelMorphisms) = SVector(codom(para))
+cone_objects(para::ParallelMorphisms) = SVector(dom(para))
 
 end
