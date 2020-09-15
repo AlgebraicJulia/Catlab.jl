@@ -37,6 +37,43 @@ add_edges!(h, [1,2], [2,1])
 @test force(compose(id(g), α)) == α
 @test force(compose(α, id(h))) == α
 
+# Limits
+#-------
+
+# Terminal object in Graph: the self-loop.
+term = Graph(1)
+add_edge!(term, 1, 1)
+@test ob(terminal(Graph)) == term
+
+# Products in Graph: unitality.
+lim = product(g, term)
+@test ob(lim) == g
+@test force(proj1(lim)) == force(id(g))
+@test force(proj2(lim)) ==
+  CSetTransformation((V=fill(1,4), E=fill(1,3)), g, term)
+
+# Product in Graph: two directed intervals (Reyes et al 2004, p. 48).
+I = Graph(2)
+add_edge!(I, 1, 2)
+prod = ob(product(I, I))
+@test nv(prod) == 4
+@test ne(prod) == 1
+@test src(prod) != tgt(prod)
+
+# Product in Graph: deleting edges by multiplying by an isolated vertex.
+g0 = ob(product(g, Graph(1)))
+@test nv(g0) == nv(g)
+@test ne(g0) == 0
+
+# Product in Graph: copying edges by multiplying by the double self-loop.
+cycle2 = Graph(1)
+add_edges!(cycle2, [1,1], [1,1])
+g2 = ob(product(g, cycle2))
+@test nv(g2) == nv(g)
+@test ne(g2) == 2*ne(g)
+@test src(g2) == repeat(src(g), 2)
+@test tgt(g2) == repeat(tgt(g), 2)
+
 # Attributed C-set morphisms
 ############################
 

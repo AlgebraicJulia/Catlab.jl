@@ -225,7 +225,7 @@ end
 
 """ Number of parts of given type in a C-set.
 """
-nparts(acs::ACSet, type::Symbol) = length(acs.tables[type])
+nparts(acs::ACSet, type) = length(acs.tables[type])
 
 """ Whether a C-set has a part with the given name.
 """
