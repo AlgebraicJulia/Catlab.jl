@@ -120,13 +120,33 @@ colim = coproduct(g, Graph())
 @test force(coproj2(colim)) ==
   CSetTransformation((V=Int[], E=Int[]), Graph(), g)
 
-# Coproducts in Graph.
+# Coproduct in Graph.
 h = Graph(2)
 add_edges!(h, [1,2], [2,1])
 coprod = ob(coproduct(g, h))
 @test nv(coprod) == 6
 @test src(coprod) == [1,2,3,5,6]
 @test tgt(coprod) == [2,3,4,6,5]
+
+# Coequalizer in Graph: collapsing a segment to a loop.
+g = Graph(2)
+add_edge!(g, 1, 2)
+α = CSetTransformation((V=[1], E=Int[]), Graph(1), g)
+β = CSetTransformation((V=[2], E=Int[]), Graph(1), g)
+@test is_natural(α) && is_natural(β)
+coeq = coequalizer(α, β)
+@test ob(coeq) == ob(terminal(Graph))
+@test force(proj(coeq)[:V]) == FinFunction([1,1])
+@test force(proj(coeq)[:E]) == FinFunction([1])
+
+# Pushout in Graph from (Reyes et al 2004, p. 59).
+α = CSetTransformation((V=[2], E=Int[]), Graph(1), g)
+β = CSetTransformation((V=[1], E=Int[]), Graph(1), ob(terminal(Graph)))
+@test is_natural(α) && is_natural(β)
+colim = pushout(α, β)
+@test nv(ob(colim)) == 2
+@test src(ob(colim)) == [1,2]
+@test tgt(ob(colim)) == [2,2]
 
 # Attributed C-set morphisms
 ############################
