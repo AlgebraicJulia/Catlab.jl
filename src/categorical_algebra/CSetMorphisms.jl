@@ -136,6 +136,24 @@ function limit(diagram::AbstractFreeDiagram{T}) where {CD, T<:AbstractCSet{CD}}
   Limit(diagram, Multispan(Y, πs))
 end
 
+function colimit(diagram::AbstractFreeDiagram{T}) where {CD, T<:AbstractCSet{CD}}
+  colimits = map(colimit, unpack_diagram(diagram))
+  Xs = cocone_objects(diagram)
+  Y = T()
+  for (c, colim) in pairs(colimits)
+    add_parts!(Y, c, length(ob(colim)))
+  end
+  for (f, c, d) in zip(CD.hom, CD.dom, CD.codom)
+    Yfs = map(legs(colimits[d]), Xs) do ι, X
+      compose(FinFunction(subpart(X, f), nparts(X, d)), ι)
+    end
+    Yf = universal(colimits[c], Multicospan(ob(colimits[d]), Yfs))
+    set_subpart!(Y, f, collect(Yf))
+  end
+  ιs = pack_components(map(legs, colimits), Xs, map(X -> Y, Xs))
+  Colimit(diagram, Multicospan(Y, ιs))
+end
+
 """ Diagram in C-Set → named tuple of diagrams in FinSet
 """
 unpack_diagram(diagram::DiscreteDiagram{<:AbstractCSet}) =
@@ -174,5 +192,11 @@ including a leg for the base since it can be computed from the other legs.
 cone_objects(diagram) = ob(diagram)
 cone_objects(cospan::Multicospan) = map(dom, legs(cospan))
 cone_objects(para::ParallelMorphisms) = SVector(dom(para))
+
+""" Objects in diagram that will have explicit legs in colimit cocone.
+"""
+cocone_objects(diagram) = ob(diagram)
+cocone_objects(span::Multispan) = map(codom, legs(span))
+cocone_objects(para::ParallelMorphisms) = SVector(codom(para))
 
 end

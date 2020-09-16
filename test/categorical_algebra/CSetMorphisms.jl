@@ -105,6 +105,29 @@ lim = pullback(ϕ, ψ)
 @test is_natural(proj1(lim))
 @test is_natural(proj2(lim))
 
+# Colimits
+#---------
+
+# Initial object in graph: the empty graph.
+@test ob(initial(Graph)) == Graph()
+
+# Coproducts in Graph: unitality.
+g = Graph(4)
+add_edges!(g, [1,2,3], [2,3,4])
+colim = coproduct(g, Graph())
+@test ob(colim) == g
+@test force(coproj1(colim)) == force(id(g))
+@test force(coproj2(colim)) ==
+  CSetTransformation((V=Int[], E=Int[]), Graph(), g)
+
+# Coproducts in Graph.
+h = Graph(2)
+add_edges!(h, [1,2], [2,1])
+coprod = ob(coproduct(g, h))
+@test nv(coprod) == 6
+@test src(coprod) == [1,2,3,5,6]
+@test tgt(coprod) == [2,3,4,6,5]
+
 # Attributed C-set morphisms
 ############################
 
