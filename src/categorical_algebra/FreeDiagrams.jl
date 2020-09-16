@@ -2,12 +2,13 @@
 
 A [free diagram](https://ncatlab.org/nlab/show/free+diagram) in a category is a
 diagram whose shape is a free category. Examples include the empty diagram,
-discrete diagrams, parallel morphisms, spans, and cospans. Limits and colimits
-are most commonly taken over free diagrams.
+pairs of objects, discrete diagrams, parallel morphisms, spans, and cospans.
+Limits and colimits are most commonly taken over free diagrams.
 """
 module FreeDiagrams
-export FreeDiagram, FixedFreeDiagram,
-  Span, Cospan, Multispan, Multicospan, ParallelPair, ParallelMorphisms,
+export AbstractFreeDiagram, FreeDiagram, FixedShapeFreeDiagram, DiscreteDiagram,
+  EmptyDiagram, ObjectPair, Span, Cospan, Multispan, Multicospan,
+  SMultispan, SMulticospan, ParallelPair, ParallelMorphisms,
   ob, hom, dom, codom, apex, base, legs, left, right,
   nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
   add_vertex!, add_vertices!, add_edge!, add_edges!,
@@ -15,9 +16,9 @@ export FreeDiagram, FixedFreeDiagram,
   decorator, decoration, undecorate
 
 using AutoHashEquals
-using StaticArrays: StaticVector, SVector
+using StaticArrays: StaticVector, SVector, @SVector
 
-import ...Theories: ob, hom, dom, codom, SchemaType
+import ...Theories: ob, hom, dom, codom
 using ...Present, ..CSets, ..Graphs
 using ..Graphs: TheoryGraph
 
@@ -26,7 +27,29 @@ using ..Graphs: TheoryGraph
 
 """ Abstract type for free diagram of fixed shape.
 """
-abstract type FixedFreeDiagram{Ob} end
+abstract type FixedShapeFreeDiagram{Ob} end
+
+""" Discrete diagram: a diagram whose only morphisms are identities.
+"""
+@auto_hash_equals struct DiscreteDiagram{Ob,Objects<:AbstractVector{Ob}} <:
+    FixedShapeFreeDiagram{Ob}
+  objects::Objects
+end
+
+const EmptyDiagram{Ob} = DiscreteDiagram{Ob,<:StaticVector{0}}
+const ObjectPair{Ob} = DiscreteDiagram{Ob,<:StaticVector{2}}
+
+EmptyDiagram{Ob}() where Ob = DiscreteDiagram(@SVector Ob[])
+ObjectPair(first, second) = DiscreteDiagram(SVector(first, second))
+
+ob(d::DiscreteDiagram) = d.objects
+
+Base.iterate(d::DiscreteDiagram, args...) = iterate(d.objects, args...)
+Base.eltype(d::DiscreteDiagram) = eltype(d.objects)
+Base.length(d::DiscreteDiagram) = length(d.objects)
+Base.getindex(d::DiscreteDiagram, i) = d.objects[i]
+Base.firstindex(d::DiscreteDiagram) = firstindex(d.objects)
+Base.lastindex(d::DiscreteDiagram) = lastindex(d.objects)
 
 """ Multispan of morphisms in a category.
 
@@ -34,27 +57,29 @@ A [multispan](https://ncatlab.org/nlab/show/multispan) is like a [`Span`](@ref)
 except that it may have a number of legs different than two. A colimit of this
 shape is a pushout.
 """
-@auto_hash_equals struct Multispan{Ob,Legs<:AbstractVector} <: FixedFreeDiagram{Ob}
+@auto_hash_equals struct Multispan{Ob,Legs<:AbstractVector} <:
+    FixedShapeFreeDiagram{Ob}
   apex::Ob
   legs::Legs
 end
 
 function Multispan(legs::AbstractVector)
-  @assert !isempty(legs) && allequal(dom.(legs))
+  !isempty(legs) || error("Empty list of legs but no base given")
+  allequal(dom.(legs)) || error("Legs $legs do not have common domain")
   Multispan(dom(first(legs)), legs)
 end
+
+const SMultispan{N,Ob} = Multispan{Ob,<:StaticVector{N}}
+
+SMultispan(legs...) = Multispan(SVector(legs...))
+SMultispan{N}(legs::Vararg{T,N}) where {T,N} = Multispan(SVector(legs...))
+SMultispan{0}(apex) = Multispan(apex, SVector{0,Any}())
 
 """ Span of morphims in a category.
 
 A common special case of [`Multispan`](@ref). See also [`Cospan`](@ref).
 """
-const Span{Ob} = Multispan{Ob,<:StaticVector{2}}
-
-function Span(left, right)
-  dom(left) == dom(right) ||
-    error("Domains of legs of span do not match: $left vs $right")
-  Multispan(dom(left), SVector(left, right))
-end
+const Span{Ob} = SMultispan{2,Ob}
 
 apex(span::Multispan) = span.apex
 legs(span::Multispan) = span.legs
@@ -70,27 +95,29 @@ Base.length(span::Multispan) = length(span.legs)
 A multicospan is like a [`Cospan`](@ref) except that it may have a number of
 legs different than two. A limit of this shape is a pullback.
 """
-@auto_hash_equals struct Multicospan{Ob,Legs<:AbstractVector} <: FixedFreeDiagram{Ob}
+@auto_hash_equals struct Multicospan{Ob,Legs<:AbstractVector} <:
+    FixedShapeFreeDiagram{Ob}
   base::Ob
   legs::Legs
 end
 
 function Multicospan(legs::AbstractVector)
-  @assert !isempty(legs) && allequal(codom.(legs))
+  !isempty(legs) || error("Empty list of legs but no base given")
+  allequal(codom.(legs)) || error("Legs $legs do not have common codomain")
   Multicospan(codom(first(legs)), legs)
 end
+
+const SMulticospan{N,Ob} = Multicospan{Ob,<:StaticVector{N}}
+
+SMulticospan(legs...) = Multicospan(SVector(legs...))
+SMulticospan{N}(legs::Vararg{T,N}) where {T,N} = Multicospan(SVector(legs...))
+SMulticospan{0}(base) = Multicospan(base, SVector{0,Any}())
 
 """ Cospan of morphisms in a category.
 
 A common special case of [`Multicospan`](@ref). See also [`Span`](@ref).
 """
-const Cospan{Ob} = Multicospan{Ob,<:StaticVector{2}}
-
-function Cospan(left, right)
-  codom(left) == codom(right) ||
-    error("Codomains of legs of cospan do not match: $left vs $right")
-  Multicospan(codom(left), SVector(left, right))
-end
+const Cospan{Ob} = SMulticospan{2,Ob}
 
 base(cospan::Multicospan) = cospan.base
 legs(cospan::Multicospan) = cospan.legs
@@ -109,7 +136,8 @@ morphisms with the same domain and codomain. A (co)limit of this shape is a
 
 For the common special case of two morphisms, see [`ParallelPair`](@ref).
 """
-@auto_hash_equals struct ParallelMorphisms{Ob,Homs<:AbstractVector} <: FixedFreeDiagram{Ob}
+@auto_hash_equals struct ParallelMorphisms{Ob,Homs<:AbstractVector} <:
+    FixedShapeFreeDiagram{Ob}
   dom::Ob
   codom::Ob
   homs::Homs
@@ -184,7 +212,12 @@ right(m::DecoratedCospan) = right(m.cospan)
   hom::Attr(E,Hom)
 end
 
-const FreeDiagram = ACSetType(TheoryFreeDiagram,index = [:src,:tgt])
+const FreeDiagram = ACSetType(TheoryFreeDiagram, index=[:src,:tgt])
+
+# XXX: This is needed because we cannot control the supertype of C-set types.
+const _AbstractFreeDiagram = AbstractACSetType(TheoryFreeDiagram)
+const AbstractFreeDiagram{Ob} =
+  Union{_AbstractFreeDiagram{Ob},FixedShapeFreeDiagram{Ob}}
 
 ob(d::FreeDiagram, args...) = subpart(d, args..., :ob)
 hom(d::FreeDiagram, args...) = subpart(d, args..., :hom)
@@ -200,6 +233,12 @@ end
 
 # Conversion of fixed shapes
 #---------------------------
+
+function FreeDiagram(discrete::DiscreteDiagram{Ob}) where Ob
+  d = FreeDiagram{Ob,Nothing}()
+  add_vertices!(d, length(discrete), ob=collect(discrete))
+  return d
+end
 
 function FreeDiagram(span::Multispan{Ob}) where Ob
   d = FreeDiagram{Ob,eltype(span)}()

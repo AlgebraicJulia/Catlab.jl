@@ -4,8 +4,10 @@ module CSetMorphisms
 export ACSetTransformation, CSetTransformation, components, is_natural
 
 using AutoHashEquals
+using StaticArrays: SVector
 
-using ...GAT, ..CSets, ..FinSets
+using ...GAT, ..CSets, ..FreeDiagrams, ..Limits, ..FinSets
+import ..Limits: limit, colimit
 import ..FinSets: force
 using ...Theories: Category, CatDesc, AttrDesc
 import ...Theories: dom, codom, compose, ⋅, id
@@ -99,9 +101,7 @@ force(α::ACSetTransformation) =
   dom(α::ACSetTransformation) = α.dom
   codom(α::ACSetTransformation) = α.codom
 
-  function id(X::ACSet)
-    ACSetTransformation(map(t -> id(FinSet(length(t))), X.tables), X, X)
-  end
+  id(X::ACSet) = ACSetTransformation(map(id, finsets(X)), X, X)
 
   function compose(α::ACSetTransformation, β::ACSetTransformation)
     # Question: Should we incur cost of checking that codom(β) == dom(α)?
@@ -109,5 +109,70 @@ force(α::ACSetTransformation) =
                         dom(α), codom(β))
   end
 end
+
+finsets(X::ACSet) = map(table -> FinSet(length(table)), X.tables)
+
+# Limits and colimits
+#####################
+
+# Compute limits and colimits of C-sets by reducing to those in FinSet using the
+# "pointwise" formula for (co)limits in functor categories.
+
+function limit(diagram::AbstractFreeDiagram{T}) where {CD, T<:AbstractCSet{CD}}
+  limits = map(limit, unpack_diagram(diagram))
+  Xs = cone_objects(diagram)
+  Y = T()
+  for (c, lim) in pairs(limits)
+    add_parts!(Y, c, length(ob(lim)))
+  end
+  for (f, c, d) in zip(CD.hom, CD.dom, CD.codom)
+    Yfs = map(legs(limits[c]), Xs) do π, X
+      compose(π, FinFunction(subpart(X, f), nparts(X, d)))
+    end
+    Yf = universal(limits[d], Multispan(ob(limits[c]), Yfs))
+    set_subpart!(Y, f, collect(Yf))
+  end
+  πs = pack_components(map(legs, limits), map(X -> Y, Xs), Xs)
+  Limit(diagram, Multispan(Y, πs))
+end
+
+""" Diagram in C-Set → named tuple of diagrams in FinSet
+"""
+unpack_diagram(diagram::DiscreteDiagram{<:AbstractCSet}) =
+  map(DiscreteDiagram, unpack_finsets(ob(diagram)))
+unpack_diagram(span::Multispan{<:AbstractCSet}) =
+  map(Multispan, finsets(apex(span)), unpack_components(legs(span)))
+unpack_diagram(cospan::Multicospan{<:AbstractCSet}) =
+  map(Multicospan, finsets(base(cospan)), unpack_components(legs(cospan)))
+unpack_diagram(para::ParallelMorphisms{<:AbstractCSet}) =
+  map(ParallelMorphisms, unpack_components(hom(para)))
+
+""" Vector of C-sets → named tuple of vectors of FinSets
+"""
+unpack_finsets(Xs::AbstractVector{<:AbstractACSet{CD}}) where
+    {Ob, CD <: CatDesc{Ob}} =
+  NamedTuple{Ob}([ map(X -> FinSet{Int,Int}(nparts(X, ob)), Xs) for ob in Ob ])
+
+""" Vector of C-set transformations → named tuple of vectors of FinFunctions
+"""
+unpack_components(αs::AbstractVector{<:ACSetTransformation{CD}}) where
+    {Ob, CD <: CatDesc{Ob}} =
+  NamedTuple{Ob}([ map(α -> α[ob], αs) for ob in Ob ])
+
+""" Named tuple of vectors of FinFunctions → vector of C-set transformations
+"""
+function pack_components(fs::NamedTuple{Ob}, doms, codoms) where Ob
+  components = map((x...) -> NamedTuple{Ob}(x), fs...) # XXX: Is there a better way?
+  map(ACSetTransformation, components, doms, codoms)
+end
+
+""" Objects in diagram that will have explicit legs in limit cone.
+
+Encodes common conventions such as, when taking a pullback of a cospan, not
+including a leg for the base since it can be computed from the other legs.
+"""
+cone_objects(diagram) = ob(diagram)
+cone_objects(cospan::Multicospan) = map(dom, legs(cospan))
+cone_objects(para::ParallelMorphisms) = SVector(dom(para))
 
 end

@@ -2,22 +2,22 @@
 """
 module Limits
 export AbstractLimit, AbstractColimit, Limit, Colimit,
-  ob, cone, cocone, apex, base, legs, limit, colimit, factorize,
-  Terminal, Initial, terminal, initial, delete, create,
+  ob, cone, cocone, apex, base, legs, limit, colimit, universal,
+  Terminal, Initial, terminal, initial, delete, create, factorize,
   BinaryProduct, Product, product, proj1, proj2, pair,
   BinaryPullback, Pullback, BinaryEqualizer, Equalizer, pullback, incl,
   BinaryCoproduct, Coproduct, coproduct, coproj1, coproj2, copair,
-  BinaryPushout, Pushout, BinaryCoequalizer, Coequalizer, pushout, proj
+  BinaryPushout, Pushout, BinaryCoequalizer, Coequalizer, pushout, proj,
+  composite_pullback, composite_pushout
 
 using Compat: only
 
 using AutoHashEquals
-using StaticArrays: StaticVector, SVector, @SVector
 
 using ...Theories
 import ...Theories: ob, terminal, product, proj1, proj2, equalizer, incl,
   initial, coproduct, coproj1, coproj2, coequalizer, proj,
-  factorize, delete, create, pair, copair
+  delete, create, pair, copair, factorize
 using ..FreeDiagrams
 import ..FreeDiagrams: apex, base, legs
 
@@ -48,9 +48,9 @@ Base.length(lim::AbstractLimit) = length(cone(lim))
   cone::Cone
 end
 
-const Terminal{Ob} = AbstractLimit{Ob,<:StaticVector{0}}
-const BinaryProduct{Ob} = AbstractLimit{Ob,<:StaticVector{2}}
-const Product{Ob} = AbstractLimit{Ob,<:AbstractVector}
+const Terminal{Ob} = AbstractLimit{Ob,<:EmptyDiagram}
+const BinaryProduct{Ob} = AbstractLimit{Ob,<:ObjectPair}
+const Product{Ob} = AbstractLimit{Ob,<:DiscreteDiagram}
 const BinaryPullback{Ob} = AbstractLimit{Ob,<:Cospan}
 const Pullback{Ob} = AbstractLimit{Ob,<:Multicospan}
 const BinaryEqualizer{Ob} = AbstractLimit{Ob,<:ParallelPair}
@@ -87,9 +87,9 @@ Base.length(colim::AbstractColimit) = length(cocone(colim))
   cocone::Cocone
 end
 
-const Initial{Ob} = AbstractColimit{Ob,<:StaticVector{0}}
-const BinaryCoproduct{Ob} = AbstractColimit{Ob,<:StaticVector{2}}
-const Coproduct{Ob} = AbstractColimit{Ob,<:AbstractVector}
+const Initial{Ob} = AbstractColimit{Ob,<:EmptyDiagram}
+const BinaryCoproduct{Ob} = AbstractColimit{Ob,<:ObjectPair}
+const Coproduct{Ob} = AbstractColimit{Ob,<:DiscreteDiagram}
 const BinaryPushout{Ob} = AbstractColimit{Ob,<:Span}
 const Pushout{Ob} = AbstractColimit{Ob,<:Multispan}
 const BinaryCoequalizer{Ob} = AbstractColimit{Ob,<:ParallelPair}
@@ -99,67 +99,152 @@ coproj1(colim::Union{BinaryCoproduct,BinaryPushout}) = first(legs(colim))
 coproj2(colim::Union{BinaryCoproduct,BinaryPushout}) = last(legs(colim))
 proj(coeq::Coequalizer) = only(legs(coeq))
 
-# Generic functions
-###################
+# Generic (co)limits
+####################
 
 """ Limit of a diagram.
+
+To define limits in a category with objects `Ob`, override the method
+`limit(::FreeDiagram{Ob})` for general limits or `limit(::D)` with suitable type
+`D <: FixedShapeFreeDiagram{Ob}` for limits of specific shape, such as products
+or equalizers.
+
+See also: [`colimit`](@ref)
 """
 function limit end
 
 """ Colimit of a diagram.
+
+To define colimits in a category with objects `Ob`, override the method
+`colimit(::FreeDiagram{Ob})` for general colimits or `colimit(::D)` with
+suitable type `D <: FixedShapeFreeDiagram{Ob}` for colimits of specific shape,
+such as coproducts or coequalizers.
+
+See also: [`limit`](@ref)
 """
 function colimit end
 
-terminal(T::Type) = product(@SVector T[])
-initial(T::Type) = coproduct(@SVector T[])
+""" Universal property of (co)limits.
 
-delete(lim::Terminal, A) = factorize(lim, A)
-create(colim::Initial, A) = factorize(colim, A)
+Compute the morphism whose existence and uniqueness is guaranteed by the
+universal property of (co)limits.
 
-""" Product of a pair of objects.
+See also: [`limit`](@ref), [`colimit`](@ref).
 """
-product(A, B) = product(SVector(A, B))
+function universal end
 
-""" Coproduct of a pair of objects.
-"""
-coproduct(A, B) = coproduct(SVector(A, B))
+# Specific (co)limits
+#####################
 
-""" Equalizer of a pair of morphisms with common domain and codomain.
-"""
-equalizer(f, g) = equalizer(ParallelPair(f, g))
-equalizer(fs::AbstractVector) = equalizer(ParallelMorphisms(fs))
+""" Terminal object.
 
-""" Coequalizer of a pair of morphisms with common domain and codomain.
+To implement for a type `T`, define the method `limit(::EmptyDiagram{T})`.
 """
-coequalizer(f, g) = coequalizer(ParallelPair(f, g))
-coequalizer(fs::AbstractVector) = coequalizer(ParallelMorphisms(fs))
+terminal(T::Type) = limit(EmptyDiagram{T}())
+
+""" Initial object.
+
+To implement for a type `T`, define the method `colimit(::EmptyDiagram{T})`.
+"""
+initial(T::Type) = colimit(EmptyDiagram{T}())
+
+""" Unique morphism into a terminal object.
+
+To implement for a type `T`, define the method
+`universal(::Terminal{T}, ::SMultispan{0,T})`.
+"""
+delete(lim::Terminal, A) = universal(lim, SMultispan{0}(A))
+
+""" Unique morphism out of an initial object.
+
+To implement for a type `T`, define the method
+`universal(::Initial{T}, ::SMulticospan{0,T})`.
+"""
+create(colim::Initial, A) = universal(colim, SMulticospan{0}(A))
+
+""" Product of objects.
+
+To implement for a type `T`, define the method `limit(::ObjectPair{T})` and/or
+`limit(::DiscreteDiagram{T})`.
+"""
+product(A, B) = limit(ObjectPair(A, B))
+product(As::AbstractVector) = limit(DiscreteDiagram(As))
+
+""" Coproduct of objects.
+
+To implement for a type `T`, define the method `colimit(::ObjectPair{T})` and/or
+`colimit(::DiscreteDiagram{T})`.
+"""
+coproduct(A, B) = colimit(ObjectPair(A, B))
+coproduct(As::AbstractVector) = colimit(DiscreteDiagram(As))
+
+""" Equalizer of morphisms with common domain and codomain.
+
+To implement for a type `T`, define the method `limit(::ParallelPair{T})` and/or
+`limit(::ParallelMorphisms{T})`.
+"""
+equalizer(f, g) = limit(ParallelPair(f, g))
+equalizer(fs::AbstractVector) = limit(ParallelMorphisms(fs))
+
+""" Coequalizer of morphisms with common domain and codomain.
+
+To implement for a type `T`, define the method `colimit(::ParallelPair{T})` or
+`colimit(::ParallelMorphisms{T})`.
+"""
+coequalizer(f, g) = colimit(ParallelPair(f, g))
+coequalizer(fs::AbstractVector) = colimit(ParallelMorphisms(fs))
 
 """ Pullback of a pair of morphisms with common codomain.
+
+To implement for a type `T`, define the method `limit(::Cospan{T})` and/or
+`limit(::Multicospan{T})` or, if you have already implemented products and
+equalizers, rely on the default implementation.
 """
-pullback(f, g) = pullback(Cospan(f, g))
-pullback(fs::AbstractVector) = pullback(Multicospan(fs))
+pullback(f, g) = limit(Cospan(f, g))
+pullback(fs::AbstractVector) = limit(Multicospan(fs))
 
 """ Pushout of a pair of morphisms with common domain.
+
+To implement for a type `T`, define the method `colimit(::Span{T})` and/or
+`colimit(::Multispan{T})` or, if you have already implemented coproducts and
+coequalizers, rely on the default implementation.
 """
-pushout(f, g) = pushout(Span(f, g))
-pushout(fs::AbstractVector) = pushout(Multispan(fs))
+pushout(f, g) = colimit(Span(f, g))
+pushout(fs::AbstractVector) = colimit(Multispan(fs))
 
 """ Pairing of morphisms: universal property of products/pullbacks.
+
+To implement for products of type `T`, define the method
+`universal(::BinaryProduct{T}, ::Span{T})` and/or
+`universal(::Product{T}, ::Multispan{T})` and similarly for pullbacks.
 """
 pair(lim::Union{BinaryProduct,BinaryPullback}, f, g) =
-  factorize(lim, Span(f, g))
+  universal(lim, Span(f, g))
 pair(lim::Union{Product,Pullback}, fs::AbstractVector) =
-  factorize(lim, Multispan(fs))
+  universal(lim, Multispan(fs))
 
 """ Copairing of morphisms: universal property of coproducts/pushouts.
+
+To implement for coproducts of type `T`, define the method
+`universal(::BinaryCoproduct{T}, ::Cospan{T})` and/or
+`universal(::Coproduct{T}, ::Multicospan{T})` and similarly for pushouts.
 """
 copair(colim::Union{BinaryCoproduct,BinaryPushout}, f, g) =
-  factorize(colim, Cospan(f, g))
+  universal(colim, Cospan(f, g))
 copair(colim::Union{Coproduct,Pushout}, fs::AbstractVector) =
-  factorize(colim, Multicospan(fs))
+  universal(colim, Multicospan(fs))
 
-# Default implementations
-#########################
+""" Factor morphism through (co)equalizer, via the universal property.
+
+To implement for equalizers of type `T`, define the method
+`universal(::Equalizer{T}, ::SMultispan{1,T})`. For coequalizers of type `T`,
+define the method `universal(::Coequalizer{T}, ::SMulticospan{1,T})`.
+"""
+factorize(lim::Equalizer, h) = universal(lim, SMultispan(h))
+factorize(colim::Coequalizer, h) = universal(colim, SMulticospan(h))
+
+# Composite (co)limits
+######################
 
 """ Pullback formed as composite of product and equalizer.
 
@@ -178,19 +263,18 @@ struct CompositePullback{Ob, Diagram<:Multicospan{Ob}, Cone<:Multispan{Ob},
   eq::Eq
 end
 
-""" Pullback of a cospan.
-
-The default implementation computes the pullback from products and equalizers.
+""" Compute pullback as composite of product and equalizer.
 """
-function pullback(cospan::Cospan)
+function composite_pullback(cospan::Cospan)
   f, g = cospan
   (π1, π2) = prod = product(dom(f), dom(g))
   (ι,) = eq = equalizer(π1⋅f, π2⋅g)
   CompositePullback(cospan, Span(ι⋅π1, ι⋅π2), prod, eq)
 end
+composite_pullback(f, g) = composite_pullback(Cospan(f, g))
 
-function factorize(lim::CompositePullback, fs::Multispan)
-  factorize(lim.eq, factorize(lim.prod, fs))
+function universal(lim::CompositePullback, cone::Multispan)
+  factorize(lim.eq, universal(lim.prod, cone))
 end
 
 """ Pushout formed as composite of coproduct and equalizer.
@@ -205,20 +289,18 @@ struct CompositePushout{Ob, Diagram<:Multispan{Ob}, Cocone<:Multicospan{Ob},
   coeq::Coeq
 end
 
-""" Pushout of a span.
-
-The default implementation computes the pushout from coproducts and
-coequalizers.
+""" Compute pushout as composite of coproduct and coequalizer.
 """
-function pushout(span::Span)
+function composite_pushout(span::Span)
   f, g = span
   (ι1, ι2) = coprod = coproduct(codom(f), codom(g))
   (π,) = coeq = coequalizer(f⋅ι1, g⋅ι2)
   CompositePushout(span, Cospan(ι1⋅π, ι2⋅π), coprod, coeq)
 end
+composite_pushout(f, g) = composite_pushout(Span(f, g))
 
-function factorize(lim::CompositePushout, fs::Multicospan)
-  factorize(lim.coeq, factorize(lim.coprod, fs))
+function universal(lim::CompositePushout, cone::Multicospan)
+  factorize(lim.coeq, universal(lim.coprod, cone))
 end
 
 end

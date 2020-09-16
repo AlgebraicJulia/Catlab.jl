@@ -19,6 +19,24 @@ diagram = FreeDiagram([A,B,C], [(1,3,f),(2,3,g),(1,2,h)])
 # Diagrams of fixed shape
 #########################
 
+# Empty diagrams.
+@test isempty(EmptyDiagram{FreeCategory.Ob}())
+
+# Object pairs.
+pair = ObjectPair(A,B)
+@test length(pair) == 2
+@test first(pair) == A
+@test last(pair) == B
+
+# Discrete diagrams.
+discrete = DiscreteDiagram([A,B,C])
+@test length(discrete) == 3
+@test ob(discrete) == [A,B,C]
+
+diagram = FreeDiagram(discrete)
+@test ob(diagram) == [A,B,C]
+@test isempty(hom(diagram))
+
 # Spans.
 f, g = Hom(:f, C, A), Hom(:g, C, B)
 span = Span(f,g)
@@ -28,7 +46,7 @@ span = Span(f,g)
 @test right(span) == g
 
 f = Hom(:f, A, B)
-@test_throws Exception Span(f,g)
+@test_throws ErrorException Span(f,g)
 
 # Multispans.
 f, g, h = Hom(:f, C, A), Hom(:g, C, B), Hom(:h, C, A)
@@ -49,6 +67,9 @@ cospan = Cospan(f,g)
 @test legs(cospan) == [f,g]
 @test left(cospan) == f
 @test right(cospan) == g
+
+f = Hom(:f, A ,B)
+@test_throws ErrorException Cospan(f,g)
 
 # Multicospans.
 f, g, h = Hom(:f, A, C), Hom(:g, B, C), Hom(:h, A, C)
@@ -75,6 +96,7 @@ f, g, h = Hom(:f, A, B), Hom(:g, A, B), Hom(:h, A, B)
 para = ParallelMorphisms([f,g,h])
 @test dom(para) == A
 @test codom(para) == B
+@test hom(para) == [f,g,h]
 
 diagram = FreeDiagram(para)
 @test ob(diagram) == [A,B]

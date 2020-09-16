@@ -8,14 +8,12 @@ using Compat: only
 using AutoHashEquals
 using DataStructures: IntDisjointSets, union!, find_root
 import FunctionWrappers: FunctionWrapper
-using StaticArrays: StaticVector, SVector, @SVector
 
 using ...GAT
 using ...Theories: Category
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ..FreeDiagrams, ..Limits
-import ..Limits: terminal, product, equalizer, pullback, limit,
-  initial, coproduct, coequalizer, pushout, colimit, factorize
+import ..Limits: limit, colimit, universal
 
 # Category of finite sets
 #########################
@@ -129,15 +127,16 @@ compose_impl(f::FinFunctionVector, g::FinFunctionVector) = g.func[f.func]
 # Limits
 ########
 
-function product(Xs::StaticVector{0,<:FinSet{Int}})
-  Limit(Xs, Multispan(FinSet(1), @SVector FinFunction{Int}[]))
+function limit(Xs::EmptyDiagram{<:FinSet{Int}})
+  Limit(Xs, SMultispan{0}(FinSet(1)))
 end
 
-function factorize(lim::Terminal{<:FinSet{Int}}, X::FinSet{Int})
-  FinFunction(ones(Int, length(X)))
+function universal(lim::Terminal{<:FinSet{Int}},
+                   cone::SMultispan{0,<:FinSet{Int}})
+  FinFunction(ones(Int, length(apex(cone))))
 end
 
-function product(Xs::StaticVector{2,<:FinSet{Int}})
+function limit(Xs::ObjectPair{<:FinSet{Int}})
   m, n = length.(Xs)
   indices = CartesianIndices((m, n))
   π1 = FinFunction(i -> indices[i][1], m*n, m)
@@ -145,14 +144,14 @@ function product(Xs::StaticVector{2,<:FinSet{Int}})
   Limit(Xs, Span(π1, π2))
 end
 
-function factorize(lim::BinaryProduct{<:FinSet{Int}}, fs::Span{<:FinSet{Int}})
-  f, g = fs
-  m, n = length.(codom.(fs))
+function universal(lim::BinaryProduct{<:FinSet{Int}}, cone::Span{<:FinSet{Int}})
+  f, g = cone
+  m, n = length.(codom.(cone))
   indices = LinearIndices((m, n))
-  FinFunction(i -> indices[f(i),g(i)], apex(fs), ob(lim))
+  FinFunction(i -> indices[f(i),g(i)], apex(cone), ob(lim))
 end
 
-function product(Xs::AbstractVector{<:FinSet{Int}})
+function limit(Xs::DiscreteDiagram{<:FinSet{Int}})
   ns = length.(Xs)
   indices = CartesianIndices(Tuple(ns))
   n = prod(ns)
@@ -160,31 +159,35 @@ function product(Xs::AbstractVector{<:FinSet{Int}})
   Limit(Xs, Multispan(FinSet(n), πs))
 end
 
-function factorize(lim::Product{<:FinSet{Int}}, fs::Multispan{<:FinSet})
-  ns = length.(codom.(fs))
+function universal(lim::Product{<:FinSet{Int}}, cone::Multispan{<:FinSet})
+  ns = length.(codom.(cone))
   indices = LinearIndices(Tuple(ns))
-  FinFunction(i -> indices[(f(i) for f in fs)...], apex(fs), ob(lim))
+  FinFunction(i -> indices[(f(i) for f in cone)...], apex(cone), ob(lim))
 end
 
-function equalizer(pair::ParallelPair{<:FinSet{Int}})
+function limit(pair::ParallelPair{<:FinSet{Int}})
   f, g = pair
   m = length(dom(pair))
   eq = FinFunction(filter(i -> f(i) == g(i), 1:m), m)
-  Limit(pair, Multispan(SVector(eq)))
+  Limit(pair, SMultispan(eq))
 end
 
-function equalizer(para::ParallelMorphisms{<:FinSet{Int}})
+function limit(para::ParallelMorphisms{<:FinSet{Int}})
   @assert !isempty(para)
   f1, frest = para[1], para[2:end]
   m = length(dom(para))
   eq = FinFunction(filter(i -> all(f1(i) == f(i) for f in frest), 1:m), m)
-  Limit(para, Multispan(SVector(eq)))
+  Limit(para, SMultispan(eq))
 end
 
-function factorize(lim::Equalizer{<:FinSet{Int}}, h::FinFunction{Int})
+function universal(lim::Equalizer{<:FinSet{Int}},
+                   cone::SMultispan{1,<:FinSet{Int}})
   ι = collect(incl(lim))
+  h = only(cone)
   FinFunction(Int[only(searchsorted(ι, i)) for i in collect(h)], length(ι))
 end
+
+limit(cospan::Multicospan{<:FinSet{Int}}) = composite_pullback(cospan)
 
 function limit(d::FreeDiagram{<:FinSet{Int}})
   p = product(ob(d))
@@ -197,28 +200,29 @@ end
 # Colimits
 ##########
 
-function coproduct(Xs::StaticVector{0,<:FinSet{Int}})
-  Colimit(Xs, Multicospan(FinSet(0), @SVector FinFunction{Int}[]))
+function colimit(Xs::EmptyDiagram{<:FinSet{Int}})
+  Colimit(Xs, SMulticospan{0}(FinSet(0)))
 end
 
-function factorize(colim::Initial{<:FinSet{Int}}, X::FinSet{Int})
-  FinFunction(Int[], X)
+function universal(colim::Initial{<:FinSet{Int}},
+                   cocone::SMulticospan{0,<:FinSet{Int}})
+  FinFunction(Int[], base(cocone))
 end
 
-function coproduct(Xs::StaticVector{2,<:FinSet{Int}})
+function colimit(Xs::ObjectPair{<:FinSet{Int}})
   m, n = length.(Xs)
   ι1 = FinFunction(1:m, m, m+n)
   ι2 = FinFunction(m+1:m+n, n, m+n)
   Colimit(Xs, Cospan(ι1, ι2))
 end
 
-function factorize(colim::BinaryCoproduct{<:FinSet{Int}},
-                   fs::Cospan{<:FinSet{Int}})
-  f, g = fs
-  FinFunction(vcat(collect(f), collect(g)), ob(colim), base(fs))
+function universal(colim::BinaryCoproduct{<:FinSet{Int}},
+                   cocone::Cospan{<:FinSet{Int}})
+  f, g = cocone
+  FinFunction(vcat(collect(f), collect(g)), ob(colim), base(cocone))
 end
 
-function coproduct(Xs::AbstractVector{<:FinSet{Int}})
+function colimit(Xs::DiscreteDiagram{<:FinSet{Int}})
   ns = length.(Xs)
   n = sum(ns)
   offsets = [0,cumsum(ns)...]
@@ -226,13 +230,13 @@ function coproduct(Xs::AbstractVector{<:FinSet{Int}})
   Colimit(Xs, Multicospan(FinSet(n), ιs))
 end
 
-function factorize(colim::Coproduct{<:FinSet{Int}},
-                   fs::Multicospan{<:FinSet{Int}})
-  FinFunction(reduce(vcat, (collect(f) for f in fs), init=Int[]),
-              ob(colim), base(fs))
+function universal(colim::Coproduct{<:FinSet{Int}},
+                   cocone::Multicospan{<:FinSet{Int}})
+  FinFunction(reduce(vcat, (collect(f) for f in cocone), init=Int[]),
+              ob(colim), base(cocone))
 end
 
-function coequalizer(pair::ParallelPair{<:FinSet{Int}})
+function colimit(pair::ParallelPair{<:FinSet{Int}})
   f, g = pair
   m, n = length(dom(pair)), length(codom(pair))
   sets = IntDisjointSets(n)
@@ -242,10 +246,10 @@ function coequalizer(pair::ParallelPair{<:FinSet{Int}})
   h = [ find_root(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   coeq = FinFunction([ searchsortedfirst(roots, r) for r in h], length(roots))
-  Colimit(pair, Multicospan(SVector(coeq)))
+  Colimit(pair, SMulticospan(coeq))
 end
 
-function coequalizer(para::ParallelMorphisms{<:FinSet{Int}})
+function colimit(para::ParallelMorphisms{<:FinSet{Int}})
   @assert !isempty(para)
   f1, frest = para[1], para[2:end]
   m, n = length(dom(para)), length(codom(para))
@@ -258,12 +262,14 @@ function coequalizer(para::ParallelMorphisms{<:FinSet{Int}})
   h = [ find_root(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   coeq = FinFunction([ searchsortedfirst(roots, r) for r in h ], length(roots))
-  Colimit(para, Multicospan(SVector(coeq)))
+  Colimit(para, SMulticospan(coeq))
 end
 
-function factorize(coeq::Coequalizer{<:FinSet{Int}}, h::FinFunction{Int})
+function universal(coeq::Coequalizer{<:FinSet{Int}},
+                   cocone::SMulticospan{1,<:FinSet{Int}})
   q = zeros(Int, length(ob(coeq)))
   π = proj(coeq)
+  h = only(cocone)
   for i in dom(h)
     j = π(i)
     if q[j] == 0
@@ -274,6 +280,8 @@ function factorize(coeq::Coequalizer{<:FinSet{Int}}, h::FinFunction{Int})
   end
   FinFunction(q, codom(h))
 end
+
+colimit(span::Multispan{<:FinSet{Int}}) = composite_pushout(span)
 
 function colimit(d::FreeDiagram{<:FinSet{Int}})
   coprod = coproduct(ob(d))
