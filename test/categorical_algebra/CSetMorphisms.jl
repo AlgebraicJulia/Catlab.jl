@@ -102,8 +102,7 @@ lim = pullback(ϕ, ψ)
 @test nv(ob(lim)) == 3
 @test sort!(collect(zip(src(ob(lim)), tgt(ob(lim))))) ==
   [(2,3), (2,3), (3,3), (3,3)]
-@test is_natural(proj1(lim))
-@test is_natural(proj2(lim))
+@test is_natural(proj1(lim)) && is_natural(proj2(lim))
 
 # Colimits
 #---------
@@ -147,6 +146,7 @@ colim = pushout(α, β)
 @test nv(ob(colim)) == 2
 @test src(ob(colim)) == [1,2]
 @test tgt(ob(colim)) == [2,2]
+@test is_natural(coproj1(colim)) && is_natural(coproj2(colim))
 
 # Attributed C-set morphisms
 ############################
@@ -170,5 +170,45 @@ add_edges!(h, [1,2,3], [2,3,4], weight=[1.0,2.0,3.0])
 @test !is_natural(β) # Preserves weight but not graph homomorphism
 β = ACSetTransformation((V=[1,2], E=[1]), g, h)
 @test !is_natural(β) # Graph homomorphism but does not preserve weight
+
+# Colimits
+#---------
+
+@present TheoryLabeledGraph <: TheoryGraph begin
+  Label::Data
+  vlabel::Attr(V,Label)
+  elabel::Attr(E,Label)
+end
+const LabeledGraph = ACSetType(TheoryLabeledGraph, index=[:src,:tgt])
+
+# Initial labeled graph.
+@test ob(initial(LabeledGraph{Symbol})) == LabeledGraph{Symbol}()
+
+# Coproduct of labeled graphs.
+g = LabeledGraph{Symbol}()
+add_vertices!(g, 2, vlabel=[:u,:v])
+add_edge!(g, 1, 2, elabel=:e)
+h = LabeledGraph{Symbol}()
+add_vertex!(h, vlabel=:u)
+add_edge!(h, 1, 1, elabel=:f)
+coprod = ob(coproduct(g, h))
+@test subpart(coprod, :vlabel) == [:u, :v, :u]
+@test subpart(coprod, :elabel) == [:e, :f]
+
+# Pushout of labeled graph.
+g0 = LabeledGraph{Symbol}()
+add_vertex!(g0, vlabel=:u)
+α = ACSetTransformation((V=[1], E=Int[]), g0, g)
+β = ACSetTransformation((V=[1], E=Int[]), g0, h)
+@test is_natural(α) && is_natural(β)
+colim = pushout(α, β)
+@test src(ob(colim)) == [1,1]
+@test tgt(ob(colim)) == [2,1]
+@test subpart(ob(colim), :vlabel) == [:u, :v]
+@test subpart(ob(colim), :elabel) == [:e, :f]
+
+α′ = ACSetTransformation(V=[2], E=Int[], g0, g)
+@test !is_natural(α′) # Vertex labels don't match.
+@test_throws ErrorException pushout(α′, β)
 
 end
