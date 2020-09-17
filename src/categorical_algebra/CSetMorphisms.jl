@@ -3,6 +3,8 @@
 module CSetMorphisms
 export ACSetTransformation, CSetTransformation, components, is_natural
 
+using Compat: isnothing
+
 using AutoHashEquals
 using StaticArrays: SVector
 
@@ -118,10 +120,11 @@ finsets(X::ACSet) = map(table -> FinSet(length(table)), X.tables)
 # Compute limits and colimits of C-sets by reducing to those in FinSet using the
 # "pointwise" formula for (co)limits in functor categories.
 
-function limit(diagram::AbstractFreeDiagram{T}) where {CD, T<:AbstractCSet{CD}}
+function limit(diagram::AbstractFreeDiagram{ACS}) where
+    {CD <: CatDesc, ACS <: AbstractCSet{CD}}
   limits = map(limit, unpack_diagram(diagram))
   Xs = cone_objects(diagram)
-  Y = T()
+  Y = ACS()
   for (c, lim) in pairs(limits)
     add_parts!(Y, c, length(ob(lim)))
   end
@@ -136,10 +139,12 @@ function limit(diagram::AbstractFreeDiagram{T}) where {CD, T<:AbstractCSet{CD}}
   Limit(diagram, Multispan(Y, πs))
 end
 
-function colimit(diagram::AbstractFreeDiagram{T}) where {CD, T<:AbstractCSet{CD}}
+function colimit(diagram::AbstractFreeDiagram{ACS}) where
+    {CD <: CatDesc, AD <: AttrDesc{CD}, Ts, ACS <: AbstractACSet{CD,AD,Ts}}
+  # Colimit of C-set without attributes.
   colimits = map(colimit, unpack_diagram(diagram))
   Xs = cocone_objects(diagram)
-  Y = T()
+  Y = ACS()
   for (c, colim) in pairs(colimits)
     add_parts!(Y, c, length(ob(colim)))
   end
@@ -151,18 +156,38 @@ function colimit(diagram::AbstractFreeDiagram{T}) where {CD, T<:AbstractCSet{CD}
     set_subpart!(Y, f, collect(Yf))
   end
   ιs = pack_components(map(legs, colimits), Xs, map(X -> Y, Xs))
+
+  # Set data attributes by canonical inclusion from attributes in diagram.
+  for (attr, c, d) in zip(AD.attr, AD.adom, AD.acodom)
+    T = Ts.parameters[d]
+    data = Vector{Union{Some{T},Nothing}}(nothing, nparts(Y, c))
+    for (ι, X) in zip(ιs, Xs)
+      for i in 1:nparts(X, c)
+        j = ι[c](i)
+        if isnothing(data[j])
+          data[j] = Some(subpart(X, i, attr))
+        else
+          val1, val2 = subpart(X, i, attr), something(data[j])
+          val1 == val2 || error(
+            "ACSet colimit does not exist: $attr attributes $val1 != $val2")
+        end
+      end
+    end
+    set_subpart!(Y, attr, map(something, data))
+  end
+
   Colimit(diagram, Multicospan(Y, ιs))
 end
 
 """ Diagram in C-Set → named tuple of diagrams in FinSet
 """
-unpack_diagram(diagram::DiscreteDiagram{<:AbstractCSet}) =
+unpack_diagram(diagram::DiscreteDiagram{<:AbstractACSet}) =
   map(DiscreteDiagram, unpack_finsets(ob(diagram)))
-unpack_diagram(span::Multispan{<:AbstractCSet}) =
+unpack_diagram(span::Multispan{<:AbstractACSet}) =
   map(Multispan, finsets(apex(span)), unpack_components(legs(span)))
-unpack_diagram(cospan::Multicospan{<:AbstractCSet}) =
+unpack_diagram(cospan::Multicospan{<:AbstractACSet}) =
   map(Multicospan, finsets(base(cospan)), unpack_components(legs(cospan)))
-unpack_diagram(para::ParallelMorphisms{<:AbstractCSet}) =
+unpack_diagram(para::ParallelMorphisms{<:AbstractACSet}) =
   map(ParallelMorphisms, unpack_components(hom(para)))
 
 """ Vector of C-sets → named tuple of vectors of FinSets

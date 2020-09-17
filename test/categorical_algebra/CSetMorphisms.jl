@@ -171,4 +171,28 @@ add_edges!(h, [1,2,3], [2,3,4], weight=[1.0,2.0,3.0])
 β = ACSetTransformation((V=[1,2], E=[1]), g, h)
 @test !is_natural(β) # Graph homomorphism but does not preserve weight
 
+# Colimits
+#---------
+
+@present TheoryLabeledGraph <: TheoryGraph begin
+  Label::Data
+  vlabel::Attr(V,Label)
+  elabel::Attr(E,Label)
+end
+const LabeledGraph = ACSetType(TheoryLabeledGraph, index=[:src,:tgt])
+
+# Initial labeled graph.
+@test ob(initial(LabeledGraph{Symbol})) == LabeledGraph{Symbol}()
+
+# Coproduct of labeled graphs.
+g = LabeledGraph{Symbol}()
+add_vertices!(g, 2, vlabel=[:v1,:v2])
+add_edge!(g, 1, 2, elabel=:e)
+h = LabeledGraph{Symbol}()
+add_vertex!(h, vlabel=:v1)
+add_edge!(h, 1, 1, elabel=:f)
+coprod = ob(coproduct(g, h))
+@test subpart(coprod, :vlabel) == [:v1, :v2, :v1]
+@test subpart(coprod, :elabel) == [:e, :f]
+
 end
