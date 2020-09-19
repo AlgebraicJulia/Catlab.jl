@@ -146,7 +146,8 @@ end
     (→) := HomH
     (↓) := HomV
     (⇒) := Hom2
-    (⋅) := compose
+    (⋅) := composeH
+    (⋆) := composeV
   end
 
   idH(A::Ob)::(A → A) ⊣ (A::Ob)
@@ -178,15 +179,19 @@ end
 
   # Vertical composition of 2-cells
   composeV(
-    α::Hom(A→B, X→Y, A↓X, B↓Y),
-    β::Hom(X→Y, C→D, X↓C, Y↓D)
-  )::Hom2(A→B, C→D, A↓C, B↓D)  ⊣ (A::Ob, B::Ob, X::Ob, Y::Ob, C::Ob, D::Ob)
+    α::Hom2(t,b,l,r),
+    β::Hom2(t2,b2,l2,r2)
+  )::Hom2(A→B, C→D, A↓C, B↓D)  ⊣ (A::Ob, B::Ob, X::Ob, Y::Ob, C::Ob, D::Ob,
+                                  t::(A→B), b::(X→Y), l::(A↓X), r::(B↓Y),
+                                  t2::(X→Y), b2::(C→D), l2::(X↓C), r2::(Y↓D))
 
   # Horizontal composition of 2-cells
   composeH(
-    α::Hom(A→X, B→Y, A↓B, X↓Y),
-    β::Hom(X→C, Y→D, X↓Y, C↓D)
-  )::Hom2(A→C, B→D, A↓B, C↓D)  ⊣ (A::Ob, B::Ob, X::Ob, Y::Ob, C::Ob, D::Ob)
+    α::Hom2(t,b,l,r),
+    β::Hom2(t2,b2,l2,r2)
+  )::Hom2(A→C, B→D, A↓B, C↓D)  ⊣ (A::Ob, B::Ob, X::Ob, Y::Ob, C::Ob, D::Ob,
+                                  t::(A→X), b::(B→Y), l::(A↓B), r::(X↓Y),
+                                  t2::(X→C), b2::(Y→D), l2::(X↓Y), r2::(C↓D))
 end
 
 # Convenience constructors
@@ -207,16 +212,16 @@ Checks domains of morphisms but not 2-morphisms.
   # composeV(α::Hom2, β::Hom2) = associate(new(α,β))
 end
 
-function show_unicode(io::IO, expr::Hom2Expr{:compose}; kw...)
+function show_unicode(io::IO, expr::Hom2Expr{:composeH}; kw...)
   Syntax.show_unicode_infix(io, expr, "⋅"; kw...)
 end
-function show_unicode(io::IO, expr::Hom2Expr{:compose2}; kw...)
+function show_unicode(io::IO, expr::Hom2Expr{:composeV}; kw...)
   Syntax.show_unicode_infix(io, expr, "*"; kw...)
 end
 
-function show_latex(io::IO, expr::Hom2Expr{:compose}; kw...)
+function show_latex(io::IO, expr::Hom2Expr{:composeH}; kw...)
   Syntax.show_latex_infix(io, expr, "\\cdot"; kw...)
 end
-function show_latex(io::IO, expr::Hom2Expr{:compose2}; kw...)
-  Syntax.show_latex_infix(io, expr, "*"; kw...)
+function show_latex(io::IO, expr::Hom2Expr{:composeV}; kw...)
+  Syntax.show_latex_infix(io, expr, "\\star"; kw...)
 end
