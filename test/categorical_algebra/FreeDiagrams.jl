@@ -135,9 +135,6 @@ function SquareDiagram(left, top, bottom, right)
     return FreeDiagram(V, E)
 end
 
-l, t, b, r = Hom(:lef, A,B), Hom(:top, A, C), Hom(:bot, B, D), Hom(:rht, C,D)
-sq1 = SquareDiagram(l,t,b,r)
-@show sq1
 
 function hcompose(s₁::AbstractFreeDiagram, s₂::AbstractFreeDiagram)
     #   1   -f->   3  -g->   5
@@ -148,19 +145,29 @@ function hcompose(s₁::AbstractFreeDiagram, s₂::AbstractFreeDiagram)
     # 
     @assert ob(s₁)[3] == ob(s₂)[1]
     @assert ob(s₁)[4] == ob(s₂)[2]
-    @show hom(s₁)[4]
-    @show hom(s₂)[1]
     @assert hom(s₁)[4] == hom(s₂)[1]
 
     f = hom(s₁)[2]
     f′= hom(s₁)[3]
     g = hom(s₂)[2]
     g′= hom(s₂)[3]
-    @show f⋅g
-    @show f′⋅g′
-    # return SquareDiagram(hom(s₁)[1]⋅id(ob(s₁)[2]), f⋅g, f′⋅g′, hom(s₂)[end]⋅id(ob(s₂)[4]))
     return SquareDiagram(hom(s₁)[1], f⋅g, f′⋅g′, hom(s₂)[end])
 end
+
+function vcompose(s₁::AbstractFreeDiagram, s₂::AbstractFreeDiagram)
+    @assert ob(s₁)[2] == ob(s₂)[1]
+    @assert ob(s₁)[4] == ob(s₂)[3]
+    @assert hom(s₁)[3] == hom(s₂)[2]
+    f = hom(s₁)[1]
+    f′= hom(s₁)[4]
+    g = hom(s₂)[1]
+    g′= hom(s₂)[4]
+    return SquareDiagram(f⋅g, hom(s₁)[2], hom(s₂)[3], f′⋅g′)
+end
+
+l, t, b, r = Hom(:lef, A,B), Hom(:top, A, C), Hom(:bot, B, D), Hom(:rht, C,D)
+sq1 = SquareDiagram(l,t,b,r)
+@show sq1
 
 @test_throws AssertionError hcompose(sq1, sq1)
 
@@ -172,5 +179,16 @@ sq3 = hcompose(sq2, SquareDiagram(r, t, b, rr))
 @test hom(sq3)[2] == compose(t,t)
 @test hom(sq3)[3] == compose(b,b)
 @test hom(sq3)[4] == rr
+
+
+@test_throws AssertionError vcompose(sq2, sq2)
+
+ll = Hom(:ll, B, A)
+rr = Hom(:rr, B, A)
+sq4 = vcompose(sq2, SquareDiagram(ll, b, t, rr))
+@test hom(sq4)[1] == compose(l, ll)
+@test hom(sq4)[4] == compose(r, rr)
+@test hom(sq4)[2] == t
+@test hom(sq4)[3] == t
 
 end
