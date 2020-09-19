@@ -3,7 +3,7 @@ using Test
 
 using Catlab.Theories, Catlab.CategoricalAlgebra
 
-A, B, C = Ob(FreeCategory, :A, :B, :C)
+A, B, C, D = Ob(FreeCategory, :A, :B, :C, :D)
 
 # General diagrams
 ##################
@@ -113,5 +113,64 @@ diagram = FreeDiagram(para)
 @test hom(diagram) == [f,g,h]
 @test src(diagram) == [1,1,1]
 @test tgt(diagram) == [2,2,2]
+
+@show typeof(diagram)
+
+function SquareDiagram(left, top, bottom, right)
+    # check that the domains and codomains match
+    #   1   -top->   3
+    #   |            |
+    # left         right
+    #   v            v
+    #   2  -bottom-> 4
+    # this is numbered as if it were a pushout square.
+
+    @assert codom(top) == dom(right)
+    @assert dom(top) == dom(left)
+    @assert dom(bottom) == codom(left)
+    @assert codom(bottom) == codom(right)
+
+    V = [dom(left), codom(left), dom(right), codom(right)]
+    E = [(1,2, left), (1,3, top), (2,4, bottom), (3,4, right)] 
+    return FreeDiagram(V, E)
+end
+
+l, t, b, r = Hom(:lef, A,B), Hom(:top, A, C), Hom(:bot, B, D), Hom(:rht, C,D)
+sq1 = SquareDiagram(l,t,b,r)
+@show sq1
+
+function hcompose(s₁::AbstractFreeDiagram, s₂::AbstractFreeDiagram)
+    #   1   -f->   3  -g->   5
+    #   |          |         |
+    #   |          |         |
+    #   v          v         v
+    #   2  -f'->   4  -g'->  6
+    # 
+    @assert ob(s₁)[3] == ob(s₂)[1]
+    @assert ob(s₁)[4] == ob(s₂)[2]
+    @show hom(s₁)[4]
+    @show hom(s₂)[1]
+    @assert hom(s₁)[4] == hom(s₂)[1]
+
+    f = hom(s₁)[2]
+    f′= hom(s₁)[3]
+    g = hom(s₂)[2]
+    g′= hom(s₂)[3]
+    @show f⋅g
+    @show f′⋅g′
+    # return SquareDiagram(hom(s₁)[1]⋅id(ob(s₁)[2]), f⋅g, f′⋅g′, hom(s₂)[end]⋅id(ob(s₂)[4]))
+    return SquareDiagram(hom(s₁)[1], f⋅g, f′⋅g′, hom(s₂)[end])
+end
+
+@test_throws AssertionError hcompose(sq1, sq1)
+
+l, t, b, r = Hom(:lef, A,B), Hom(:top, A, A), Hom(:bot, B, B), Hom(:rht, A,B)
+rr = Hom(:rr, A,B)
+sq2 = SquareDiagram(l,t,b,r)
+sq3 = hcompose(sq2, SquareDiagram(r, t, b, rr))
+@test hom(sq3)[1] == l
+@test hom(sq3)[2] == compose(t,t)
+@test hom(sq3)[3] == compose(b,b)
+@test hom(sq3)[4] == rr
 
 end
