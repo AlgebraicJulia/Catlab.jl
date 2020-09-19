@@ -5,16 +5,16 @@ export UndirectedWiringDiagram, UntypedUWD, TypedUWD,
   outer_box, box, junction, nboxes, njunctions, boxes, junctions,
   ports, ports_with_junction, junction_type, port_type,
   add_box!, add_junction!, add_junctions!, set_junction!, add_wire!,
-  add_wires!, singleton_diagram, cospan_diagram, junction_diagram, ocompose
+  add_wires!, singleton_diagram, cospan_diagram, junction_diagram,
+  ocompose, substitute
 
 using Compat: isnothing
 
-using ...CategoricalAlgebra.CSets, ...Present
-using ...CategoricalAlgebra.FinSets: FinFunction
-using ...CategoricalAlgebra.Limits: pushout
+using ...Present, ...CategoricalAlgebra.CSets, ...CategoricalAlgebra.Limits
+using ...CategoricalAlgebra.FinSets: FinSet, FinFunction
 using ...Theories: dom, codom, compose, ⋅, id
 import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,
-  add_wires!, singleton_diagram, ocompose
+  add_wires!, singleton_diagram, ocompose, substitute
 
 # Data types
 ############
@@ -245,71 +245,65 @@ map_port_types(types::AbstractVector, g) = types[g]
 ####################
 
 function ocompose(f::AbstractUWD, gs::AbstractVector{<:AbstractUWD})
-  @assert length(gs) == nboxes(f)
-  h = empty(f)
-  copy_parts!(h, f, OuterPort=:)
-  for g in gs
-    copy_boxes!(h, g, boxes(g))
-  end
-
-  f_junction = FinFunction(
-    flat(junction(f, ports(f, i)) for i in boxes(f)), njunctions(f))
-  # FIXME: Should use coproduct as monoidal product.
-  gs_offset = [0; cumsum(njunctions.(gs))]
-  gs_outer = FinFunction(
-    flat(junction(g, outer=true) .+ n for (g,n) in zip(gs, gs_offset[1:end-1])),
-    gs_offset[end])
-  f_inc, g_inc = pushout(f_junction, gs_outer)
-  junctions = add_junctions!(h, length(codom(f_inc)))
-  if has_subpart(h, :junction_type)
-    set_subpart!(h, [collect(f_inc); collect(g_inc)], :junction_type,
-                 [junction_type(f); flat(junction_type(g) for g in gs)])
-  end
-
-  f_outer = FinFunction(junction(f, outer=true), njunctions(f))
-  # FIXME: Again, should use coproduct.
-  gs_junction = FinFunction(
-    flat(junction(g) .+ n for (g,n) in zip(gs, gs_offset[1:end-1])),
-    gs_offset[end])
-  set_junction!(h, collect(f_outer ⋅ f_inc), outer=true)
-  set_junction!(h, collect(gs_junction ⋅ g_inc))
-  return h
+  substitute(f, boxes(f), gs)
 end
-
 function ocompose(f::AbstractUWD, i::Int, g::AbstractUWD)
-  @assert 1 <= i <= nboxes(f)
-  h = empty(f)
-  copy_parts!(h, f, OuterPort=:)
-  copy_boxes!(h, f, 1:(i-1))
-  copy_boxes!(h, g, boxes(g))
-  copy_boxes!(h, f, (i+1):nboxes(f))
+  substitute(f, [i], [g])
+end
 
-  f_i = FinFunction(junction(f, ports(f, i)), njunctions(f))
-  g_outer = FinFunction(junction(g, outer=true), njunctions(g))
-  f_inc, g_inc = pushout(f_i, g_outer)
-  junctions = add_junctions!(h, length(codom(f_inc)))
-  if has_subpart(h, :junction_type)
-    set_subpart!(h, [collect(f_inc); collect(g_inc)], :junction_type,
-                 [junction_type(f); junction_type(g)])
+function substitute(f::UWD, indices::AbstractVector{Int},
+                    gs::AbstractVector{UWD}) where {UWD <: AbstractUWD}
+  @assert length(indices) == length(gs)
+  h = UWD()
+  copy_parts!(h, f, OuterPort=:)
+
+  # Copy boxes from original diagram and diagrams to be substituted.
+  gs_index = Vector{Union{Int,Nothing}}(nothing, nboxes(f))
+  gs_index[indices] = 1:length(indices)
+  for (i,j) in enumerate(gs_index)
+    if isnothing(j)
+      copy_parts!(h, f, Box=[i], Port=ports(f, i))
+    else
+      g = gs[j]
+      copy_parts!(h, g, Box=boxes(g), Port=flat(ports(g, boxes(g))))
+    end
   end
 
-  f_outer = FinFunction(junction(f, outer=true), njunctions(f))
-  f_start = FinFunction(junction(f, flat(ports(f, 1:(i-1)))), njunctions(f))
-  g_junction = FinFunction(junction(g), njunctions(g))
-  f_end = FinFunction(junction(f, flat(ports(f, (i+1):nboxes(f)))),
-                      njunctions(f))
-  set_junction!(h, collect(f_outer ⋅ f_inc), outer=true)
-  set_junction!(h, [
-    collect(f_start ⋅ f_inc);
-    collect(g_junction ⋅ g_inc);
-    collect(f_end ⋅ f_inc);
-  ])
+  # Add junctions obtained from pushout of junction sets.
+  f_inner_junction = FinFunction(flat(
+    junction(f, ports(f, i)) for (i,j) in enumerate(gs_index) if !isnothing(j)),
+    njunctions(f))
+  g_outer_junction = oplus([
+    FinFunction(junction(g, outer=true), njunctions(g)) for g in gs ])
+  f_leg, g_leg = colim = pushout(f_inner_junction, g_outer_junction)
+  add_junctions!(h, length(ob(colim)))
+  if has_subpart(h, :junction_type)
+    # XXX: We should be taking the colimits in a slice category over the
+    # junction attributes. That would automate this and also check for errors.
+    set_subpart!(h, collect(f_leg), :junction_type, junction_type(f))
+    set_subpart!(h, collect(g_leg), :junction_type,
+                 flat(junction_type(g) for g in gs))
+  end
+
+  # Assign junctions to all ports.
+  gs_incl = legs(coproduct([ FinSet(njunctions(g)) for g in gs ]))
+  set_junction!(h, map(f_leg, junction(f, outer=true)), outer=true)
+  set_junction!(h, flatmap(enumerate(gs_index)) do (i,j)
+    if isnothing(j)
+      map(f_leg, junction(f, ports(f, i)))
+    else
+      map(gs_incl[j] ⋅ g_leg, junction(gs[j]))
+    end
+  end)
   return h
 end
 
-copy_boxes!(d::AbstractUWD, from::AbstractUWD, boxes) =
-  copy_parts!(d, from, Box=boxes, Port=flat(ports(from, boxes)))
+flat(x) = reduce(vcat, x, init=Int[])
+flatmap(f, xs...) = mapreduce(f, vcat, xs..., init=Int[])
 
-flat(vs) = reduce(vcat, vs, init=Int[])
+# FIXME: Should be defined in FinSets.
+function oplus(fs::AbstractVector{<:FinFunction})
+  copair(coproduct(map(dom, fs)), map(compose, fs, coproduct(map(codom, fs))))
+end
 
 end

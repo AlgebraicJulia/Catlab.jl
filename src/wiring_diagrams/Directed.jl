@@ -550,14 +550,15 @@ end
 function substitute(d::WiringDiagram, v::Int; kw...)
   substitute(d, v, box(d,v)::WiringDiagram; kw...)
 end
-function substitute(d::WiringDiagram, vs::Vector{Int}; kw...)
+function substitute(d::WiringDiagram, vs::AbstractVector{Int}; kw...)
   substitute(d, vs, WiringDiagram[ box(d,v) for v in vs ]; kw...)
 end
 function substitute(d::WiringDiagram, v::Int, sub::WiringDiagram; kw...)
   substitute(d, [v], [sub]; kw...)
 end
 
-function substitute(d::WiringDiagram{T}, vs::Vector{Int}, subs::Vector{<:WiringDiagram};
+function substitute(d::WiringDiagram{T}, vs::AbstractVector{Int},
+                    subs::Vector{<:WiringDiagram};
                     merge_wire_values=default_merge_wire_values) where T
   # In outline, the algorithm is:
   #
