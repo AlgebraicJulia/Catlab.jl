@@ -13,7 +13,11 @@ import ..Syntax: GATExpr, show_unicode, show_latex
 abstract type CategoryExpr{T} <: GATExpr{T} end
 abstract type ObExpr{T} <: CategoryExpr{T} end
 abstract type HomExpr{T} <: CategoryExpr{T} end
+# 2-categories and double categories
 abstract type Hom2Expr{T} <: CategoryExpr{T} end
+# double categories
+abstract type HomVExpr{T} <: CategoryExpr{T} end
+abstract type HomHExpr{T} <: CategoryExpr{T} end
 
 # Convenience methods
 Ob(mod::Module, args...) = Ob(mod.Ob, args...)

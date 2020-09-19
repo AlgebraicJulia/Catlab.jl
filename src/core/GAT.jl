@@ -276,7 +276,7 @@ most one type constructor with a given name.
 """
 function get_type(theory::Theory, name::Symbol)::TypeConstructor
   indices = findall(cons -> cons.name == name, theory.types)
-  @assert length(indices) == 1
+  length(indices) == 1 || error("Malformed GAT definition type constructors cannot be overloaded $name")
   theory.types[indices[1]]
 end
 function has_type(theory::Theory, name::Symbol)::Bool

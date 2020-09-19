@@ -1,5 +1,6 @@
 export Category, FreeCategory, Ob, Hom, dom, codom, id, compose, ⋅,
-  Category2, FreeCategory2, Hom2, compose2
+  Category2, FreeCategory2, Hom2, compose2, 
+  DoubleCategory, HomH, HomV, composeH, composeV
 
 import Base: show
 
@@ -106,6 +107,104 @@ Checks domains of morphisms but not 2-morphisms.
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
   compose(α::Hom2, β::Hom2) = associate(new(α,β))
   compose2(α::Hom2, β::Hom2) = associate(new(α,β))
+end
+
+function show_unicode(io::IO, expr::Hom2Expr{:compose}; kw...)
+  Syntax.show_unicode_infix(io, expr, "⋅"; kw...)
+end
+function show_unicode(io::IO, expr::Hom2Expr{:compose2}; kw...)
+  Syntax.show_unicode_infix(io, expr, "*"; kw...)
+end
+
+function show_latex(io::IO, expr::Hom2Expr{:compose}; kw...)
+  Syntax.show_latex_infix(io, expr, "\\cdot"; kw...)
+end
+function show_latex(io::IO, expr::Hom2Expr{:compose2}; kw...)
+  Syntax.show_latex_infix(io, expr, "*"; kw...)
+end
+
+
+###########
+# Double Category
+###########
+
+""" Theory of (strict) *double categories*
+"""
+@theory DoubleCategory{Ob,HomV,HomH,Hom2} begin
+  # """ Object in a category """
+  Ob::TYPE
+  """ Horizontal Morphism in a double category """
+  HomH(dom::Ob, codom::Ob)::TYPE
+  """ Vertical Morphism in a double category """
+  HomV(dom::Ob, codom::Ob)::TYPE
+  """ 2-cell in a double category """
+  Hom2(top::HomH(A,B),
+       bottom::HomH(C,D),
+       left::HomV(A,C),
+       right::HomV(B,D))::TYPE ⊣ (A::Ob, B::Ob, C::Ob, D::Ob)
+  @op begin
+    (→) := HomH
+    (↓) := HomV
+    (⇒) := Hom2
+    (⋅) := compose
+  end
+
+  idH(A::Ob)::(A → A) ⊣ (A::Ob)
+  idV(A::Ob)::(A ↓ A) ⊣ (A::Ob)
+  composeH(f::(A → B), g::(B → C))::(A → C) ⊣ (A::Ob, B::Ob, C::Ob)
+  composeV(f::(A ↓ B), g::(B ↓ C))::(A ↓ C) ⊣ (A::Ob, B::Ob, C::Ob)
+
+  # Category axioms for Horizontal morphisms
+  ((f ⋅ g) ⋅ h == f ⋅ (g ⋅ h)
+    ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, f::(A → B), g::(B → C), h::(C → D)))
+  f ⋅ idH(B) == f ⊣ (A::Ob, B::Ob, f::(A → B))
+  idH(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
+
+  # Category axioms for Vertical morphisms
+  ((f ⋅ g) ⋅ h == f ⋅ (g ⋅ h)
+    ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, f::(A ↓ B), g::(B ↓ C), h::(C ↓ D)))
+  f ⋅ idV(B) == f ⊣ (A::Ob, B::Ob, f::(A ↓ B))
+  idV(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A ↓ B))
+
+  # identity two cell on 1 object
+  id2(X::Ob)::Hom2(X→X, X→X, X↓X, X↓X)          ⊣ (X::Ob)
+  id2(X) == id2(idH(X), idH(X), idV(X), idV(X)) ⊣ (X::Ob)
+  # identity two cell from a HomH
+  id2(f::(X→Y))::Hom2(X→Y, X→Y, X↓X, Y↓Y) ⊣ (X::Ob, Y::Ob)
+  id2(f) == Hom2(f, f, idV(X), idV(Y))    ⊣ (X::Ob, Y::Ob, f::(X→Y))
+  # identity two cell from a HomV
+  id2(f::(X↓Y))::Hom2(X→X, Y→Y, X↓Y, X↓Y) ⊣ (X::Ob, Y::Ob)
+  id2(f) == Hom2(idH(X), idH(Y), f, f)    ⊣ (X::Ob, Y::Ob, f::(X→Y))
+
+  # Vertical composition of 2-cells
+  composeV(
+    α::Hom(A→B, X→Y, A↓X, B↓Y),
+    β::Hom(X→Y, C→D, X↓C, Y↓D)
+  )::Hom2(A→B, C→D, A↓C, B↓D)  ⊣ (A::Ob, B::Ob, X::Ob, Y::Ob, C::Ob, D::Ob)
+
+  # Horizontal composition of 2-cells
+  composeH(
+    α::Hom(A→X, B→Y, A↓B, X↓Y),
+    β::Hom(X→C, Y→D, X↓Y, C↓D)
+  )::Hom2(A→C, B→D, A↓B, C↓D)  ⊣ (A::Ob, B::Ob, X::Ob, Y::Ob, C::Ob, D::Ob)
+end
+
+# Convenience constructors
+composeH(αs::Vector) = foldl(composeH, αs)
+composeV(αs::Vector) = foldl(composeV, αs)
+composeH(α, β, γ, αs...) = composeH([α, β, γ, αs...])
+composeV(α, β, γ, αs...) = composeV([α, β, γ, αs...])
+
+
+""" Syntax for a double category.
+
+Checks domains of morphisms but not 2-morphisms.
+"""
+@syntax FreeDoubleCategory{ObExpr,HomVExpr, HomHExpr,Hom2Expr} DoubleCategory begin
+  compose(f::HomV, g::HomV) = associate(new(f,g; strict=true))
+  compose(f::HomH, g::HomH) = associate(new(f,g; strict=true))
+  # composeH(α::Hom2, β::Hom2) = associate(new(α,β))
+  # composeV(α::Hom2, β::Hom2) = associate(new(α,β))
 end
 
 function show_unicode(io::IO, expr::Hom2Expr{:compose}; kw...)
