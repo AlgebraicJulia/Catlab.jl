@@ -157,7 +157,7 @@ end
 
 function make_tables(::Type{CD}, AD::Type{<:AttrDesc{CD}},
                      Ts::Type{<:Tuple}) where {CD}
-  cols = NamedTuple{CD.ob}(Tuple{Symbol,DataType}[] for ob in CD.ob)
+  cols = NamedTuple{CD.ob}(Tuple{Symbol,Type}[] for ob in CD.ob)
   for hom in CD.hom
     push!(cols[dom(CD,hom)], (hom, Int))
   end
