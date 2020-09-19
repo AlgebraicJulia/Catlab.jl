@@ -1,6 +1,6 @@
 export Category, FreeCategory, Ob, Hom, dom, codom, id, compose, ⋅,
   Category2, FreeCategory2, Hom2, compose2, 
-  DoubleCategory, HomH, HomV, composeH, composeV
+  DoubleCategory, HomH, HomV, composeH, composeV, FreeDoubleCategory
 
 import Base: show
 
@@ -180,18 +180,18 @@ end
   # Vertical composition of 2-cells
   composeV(
     α::Hom2(t,b,l,r),
-    β::Hom2(t2,b2,l2,r2)
-  )::Hom2(A→B, C→D, A↓C, B↓D)  ⊣ (A::Ob, B::Ob, X::Ob, Y::Ob, C::Ob, D::Ob,
+    β::Hom2(b,b2,l2,r2)
+  )::Hom2(t, b2, l⋅l2, r⋅r2)  ⊣ (A::Ob, B::Ob, X::Ob, Y::Ob, C::Ob, D::Ob,
                                   t::(A→B), b::(X→Y), l::(A↓X), r::(B↓Y),
-                                  t2::(X→Y), b2::(C→D), l2::(X↓C), r2::(Y↓D))
+                                           b2::(C→D), l2::(X↓C), r2::(Y↓D))
 
   # Horizontal composition of 2-cells
   composeH(
     α::Hom2(t,b,l,r),
-    β::Hom2(t2,b2,l2,r2)
-  )::Hom2(A→C, B→D, A↓B, C↓D)  ⊣ (A::Ob, B::Ob, X::Ob, Y::Ob, C::Ob, D::Ob,
+    β::Hom2(t2,b2,r,r2)
+  )::Hom2(t⋅t2, b⋅b2, l, r2)  ⊣ (A::Ob, B::Ob, X::Ob, Y::Ob, C::Ob, D::Ob,
                                   t::(A→X), b::(B→Y), l::(A↓B), r::(X↓Y),
-                                  t2::(X→C), b2::(Y→D), l2::(X↓Y), r2::(C↓D))
+                                  t2::(X→C), b2::(Y→D), r2::(C↓D))
 end
 
 # Convenience constructors
@@ -208,8 +208,8 @@ Checks domains of morphisms but not 2-morphisms.
 @syntax FreeDoubleCategory{ObExpr,HomVExpr, HomHExpr,Hom2Expr} DoubleCategory begin
   compose(f::HomV, g::HomV) = associate(new(f,g; strict=true))
   compose(f::HomH, g::HomH) = associate(new(f,g; strict=true))
-  # composeH(α::Hom2, β::Hom2) = associate(new(α,β))
-  # composeV(α::Hom2, β::Hom2) = associate(new(α,β))
+  composeH(α::Hom2, β::Hom2) = associate(new(α,β))
+  composeV(α::Hom2, β::Hom2) = associate(new(α,β))
 end
 
 function show_unicode(io::IO, expr::Hom2Expr{:composeH}; kw...)

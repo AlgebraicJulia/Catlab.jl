@@ -167,7 +167,6 @@ end
 
 l, t, b, r = Hom(:lef, A,B), Hom(:top, A, C), Hom(:bot, B, D), Hom(:rht, C,D)
 sq1 = SquareDiagram(l,t,b,r)
-@show sq1
 
 @test_throws AssertionError hcompose(sq1, sq1)
 
