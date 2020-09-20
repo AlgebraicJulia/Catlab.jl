@@ -11,10 +11,12 @@ include("Permutations.jl")
 include("PredicatedSets.jl")
 include("CSets.jl")
 include("StructuredCospans.jl")
+include("Squares.jl")
 
 @reexport using .FreeDiagrams
 @reexport using .Limits
 @reexport using .CSets
 @reexport using .StructuredCospans
+@reexport using .Squares
 
 end
