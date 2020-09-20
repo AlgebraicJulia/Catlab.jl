@@ -114,9 +114,7 @@ diagram = FreeDiagram(para)
 @test src(diagram) == [1,1,1]
 @test tgt(diagram) == [2,2,2]
 
-@show typeof(diagram)
-
-function SquareDiagram(left, top, bottom, right)
+function SquareDiagram(top, bottom, left, right)
     # check that the domains and codomains match
     #   1   -top->   3
     #   |            |
@@ -151,7 +149,7 @@ function hcompose(s₁::AbstractFreeDiagram, s₂::AbstractFreeDiagram)
     f′= hom(s₁)[3]
     g = hom(s₂)[2]
     g′= hom(s₂)[3]
-    return SquareDiagram(hom(s₁)[1], f⋅g, f′⋅g′, hom(s₂)[end])
+    return SquareDiagram(f⋅g, f′⋅g′, hom(s₁)[1], hom(s₂)[end])
 end
 
 function vcompose(s₁::AbstractFreeDiagram, s₂::AbstractFreeDiagram)
@@ -162,18 +160,18 @@ function vcompose(s₁::AbstractFreeDiagram, s₂::AbstractFreeDiagram)
     f′= hom(s₁)[4]
     g = hom(s₂)[1]
     g′= hom(s₂)[4]
-    return SquareDiagram(f⋅g, hom(s₁)[2], hom(s₂)[3], f′⋅g′)
+    return SquareDiagram(hom(s₁)[2], hom(s₂)[3], f⋅g, f′⋅g′)
 end
 
 l, t, b, r = Hom(:lef, A,B), Hom(:top, A, C), Hom(:bot, B, D), Hom(:rht, C,D)
-sq1 = SquareDiagram(l,t,b,r)
+sq1 = SquareDiagram(t, b, l, r)
 
 @test_throws AssertionError hcompose(sq1, sq1)
 
 l, t, b, r = Hom(:lef, A,B), Hom(:top, A, A), Hom(:bot, B, B), Hom(:rht, A,B)
 rr = Hom(:rr, A,B)
-sq2 = SquareDiagram(l,t,b,r)
-sq3 = hcompose(sq2, SquareDiagram(r, t, b, rr))
+sq2 = SquareDiagram(t, b, l, r)
+sq3 = hcompose(sq2, SquareDiagram(t, b, r, rr))
 @test hom(sq3)[1] == l
 @test hom(sq3)[2] == compose(t,t)
 @test hom(sq3)[3] == compose(b,b)
@@ -184,7 +182,7 @@ sq3 = hcompose(sq2, SquareDiagram(r, t, b, rr))
 
 ll = Hom(:ll, B, A)
 rr = Hom(:rr, B, A)
-sq4 = vcompose(sq2, SquareDiagram(ll, b, t, rr))
+sq4 = vcompose(sq2, SquareDiagram(b, t, ll, rr))
 @test hom(sq4)[1] == compose(l, ll)
 @test hom(sq4)[4] == compose(r, rr)
 @test hom(sq4)[2] == t
