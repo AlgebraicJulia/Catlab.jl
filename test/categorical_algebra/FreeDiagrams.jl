@@ -114,68 +114,26 @@ diagram = FreeDiagram(para)
 @test src(diagram) == [1,1,1]
 @test tgt(diagram) == [2,2,2]
 
-function SquareDiagram(top, bottom, left, right)
-    # check that the domains and codomains match
-    #   1   -top->   3
-    #   |            |
-    # left         right
-    #   v            v
-    #   2  -bottom-> 4
-    # this is numbered as if it were a pushout square.
 
-    @assert codom(top) == dom(right)
-    @assert dom(top) == dom(left)
-    @assert dom(bottom) == codom(left)
-    @assert codom(bottom) == codom(right)
-
-    V = [dom(left), codom(left), dom(right), codom(right)]
-    E = [(1,2, left), (1,3, top), (2,4, bottom), (3,4, right)] 
-    return FreeDiagram(V, E)
-end
-
-
-function hcompose(s₁::AbstractFreeDiagram, s₂::AbstractFreeDiagram)
-    #   1   -f->   3  -g->   5
-    #   |          |         |
-    #   |          |         |
-    #   v          v         v
-    #   2  -f'->   4  -g'->  6
-    # 
-    @assert ob(s₁)[3] == ob(s₂)[1]
-    @assert ob(s₁)[4] == ob(s₂)[2]
-    @assert hom(s₁)[4] == hom(s₂)[1]
-
-    f = hom(s₁)[2]
-    f′= hom(s₁)[3]
-    g = hom(s₂)[2]
-    g′= hom(s₂)[3]
-    return SquareDiagram(f⋅g, f′⋅g′, hom(s₁)[1], hom(s₂)[end])
-end
-
-function vcompose(s₁::AbstractFreeDiagram, s₂::AbstractFreeDiagram)
-    @assert ob(s₁)[2] == ob(s₂)[1]
-    @assert ob(s₁)[4] == ob(s₂)[3]
-    @assert hom(s₁)[3] == hom(s₂)[2]
-    f = hom(s₁)[1]
-    f′= hom(s₁)[4]
-    g = hom(s₂)[1]
-    g′= hom(s₂)[4]
-    return SquareDiagram(hom(s₁)[2], hom(s₂)[3], f⋅g, f′⋅g′)
-end
+# double category of squares
 
 l, t, b, r = Hom(:lef, A,B), Hom(:top, A, C), Hom(:bot, B, D), Hom(:rht, C,D)
 sq1 = SquareDiagram(t, b, l, r)
 
 @test_throws AssertionError hcompose(sq1, sq1)
+@test hom(FreeDiagram(sq1))[1] == t
+@test hom(FreeDiagram(sq1))[2] == b
+@test hom(FreeDiagram(sq1))[3] == l
+@test hom(FreeDiagram(sq1))[4] == r
 
 l, t, b, r = Hom(:lef, A,B), Hom(:top, A, A), Hom(:bot, B, B), Hom(:rht, A,B)
 rr = Hom(:rr, A,B)
 sq2 = SquareDiagram(t, b, l, r)
 sq3 = hcompose(sq2, SquareDiagram(t, b, r, rr))
-@test hom(sq3)[1] == l
-@test hom(sq3)[2] == compose(t,t)
-@test hom(sq3)[3] == compose(b,b)
-@test hom(sq3)[4] == rr
+@test left(sq3)   == l
+@test top(sq3)    == compose(t,t)
+@test bottom(sq3) == compose(b,b)
+@test right(sq3)  == rr
 
 
 @test_throws AssertionError vcompose(sq2, sq2)
@@ -183,9 +141,9 @@ sq3 = hcompose(sq2, SquareDiagram(t, b, r, rr))
 ll = Hom(:ll, B, A)
 rr = Hom(:rr, B, A)
 sq4 = vcompose(sq2, SquareDiagram(b, t, ll, rr))
-@test hom(sq4)[1] == compose(l, ll)
-@test hom(sq4)[4] == compose(r, rr)
-@test hom(sq4)[2] == t
-@test hom(sq4)[3] == t
+@test left(sq4)    == compose(l, ll)
+@test right(sq4)  == compose(r, rr)
+@test top(sq4)   == t
+@test bottom(sq4) == t
 
 end

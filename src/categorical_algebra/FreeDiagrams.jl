@@ -11,13 +11,14 @@ export AbstractFreeDiagram, FreeDiagram, FixedShapeFreeDiagram, DiscreteDiagram,
   SMultispan, SMulticospan, ParallelPair, ParallelMorphisms,
   ob, hom, dom, codom, apex, legs, feet, left, right,
   nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
-  add_vertex!, add_vertices!, add_edge!, add_edges!
+  add_vertex!, add_vertices!, add_edge!, add_edges!,
+  SquareDiagram, hcompose, vcompose
 
 using AutoHashEquals
 using StaticArrays: StaticVector, SVector, @SVector
 
 using ...Present, ...Theories, ...CSetDataStructures, ...Graphs
-import ...Theories: ob, hom, dom, codom
+import ...Theories: ob, hom, dom, codom, ⋅, top, bottom, left, right
 using ...Graphs.BasicGraphs: TheoryGraph
 
 # Diagrams of fixed shape
@@ -177,6 +178,93 @@ Base.lastindex(para::ParallelMorphisms) = lastindex(para.homs)
 
 allequal(xs::AbstractVector) = all(isequal(x, xs[1]) for x in xs[2:end])
 
+# SquareDiagrams form a Double category
+#######################################
+
+"""    SquareDiagram(top, bottom, left, right)
+
+creates a square diagram in a category, which forms the 2-cells of the double category Sq(C).
+The four 1-cells are given in top, bottom, left, right order, to match the GAT of a double category.
+"""
+@auto_hash_equals struct SquareDiagram{Ob,Homs<:AbstractVector} <:
+    FixedShapeFreeDiagram{Ob}
+  corners::Vector{Ob}
+  sides::Homs
+end
+
+function SquareDiagram(homs::AbstractVector)
+  length(homs) == 4 || error("Square diagrams accept exactly 4 homs, in order top, bottom, left, right")
+  obs = [dom(homs[1]), dom(homs[2]), dom(homs[4]), codom(homs[4])]
+
+  # checking well-formedness
+  # top-left share domains
+  @assert dom(homs[1]) == dom(homs[3])
+  # bottom-right share codomains
+  @assert codom(homs[2]) == codom(homs[4])
+  # left-bottom intersection
+  @assert codom(homs[3]) == dom(homs[2])
+  # top-right intersection
+  @assert codom(homs[1]) == dom(homs[4])
+
+  SquareDiagram(obs, homs)
+end
+
+SquareDiagram(top, bottom, left, right) = SquareDiagram([top, bottom, left, right])
+
+ob(sq::SquareDiagram) = sq.corners
+hom(sq::SquareDiagram) = sq.sides
+
+top(sq::SquareDiagram) = sq.sides[1]
+bottom(sq::SquareDiagram) = sq.sides[2]
+left(sq::SquareDiagram) = sq.sides[3]
+right(sq::SquareDiagram) = sq.sides[4]
+
+
+"""    hcompose(s₁, s₂)
+
+compose two squares horizontally as shown below:
+    1   -f->   3  -g->   5
+    |          |         |
+    |          |         |
+    v          v         v
+    2  -f'->   4  -g'->  6
+"""
+function hcompose(s₁::SquareDiagram, s₂::SquareDiagram)
+    @assert ob(s₁)[3] == ob(s₂)[1]
+    @assert ob(s₁)[4] == ob(s₂)[2]
+    @assert right(s₁) == left(s₂)
+
+    f = top(s₁)
+    f′= bottom(s₁)
+    g = top(s₂)
+    g′= bottom(s₂)
+    return SquareDiagram(f⋅g, f′⋅g′, left(s₁), right(s₂))
+end
+"""    vcompose(s₁, s₂)
+
+compose two squares vertically as shown below:
+    1   -->  3
+    |        |
+    |        |
+    v        v
+    2  -->   4
+    |        |
+    |        |
+    v        v
+    5  -->   6
+"""
+function vcompose(s₁::SquareDiagram, s₂::SquareDiagram)
+    @assert ob(s₁)[2] == ob(s₂)[1]
+    @assert ob(s₁)[4] == ob(s₂)[3]
+    @assert bottom(s₁) == top(s₂)
+
+    f = left(s₁)
+    f′= right(s₁)
+    g = left(s₂)
+    g′= right(s₂)
+    return SquareDiagram(top(s₁), bottom(s₂), f⋅g, f′⋅g′)
+end
+
 # General diagrams
 ##################
 
@@ -238,4 +326,22 @@ function FreeDiagram(para::ParallelMorphisms{Ob}) where Ob
   return d
 end
 
+function FreeDiagram(sq::SquareDiagram{Ob}) where Ob
+    top, bottom, left, right = sq.sides
+    # check that the domains and codomains match
+    #   1   -top->   3
+    #   |            |
+    # left         right
+    #   v            v
+    #   2  -bottom-> 4
+
+    @assert codom(top) == dom(right)
+    @assert dom(top) == dom(left)
+    @assert dom(bottom) == codom(left)
+    @assert codom(bottom) == codom(right)
+
+    V = [dom(left), codom(left), dom(right), codom(right)]
+    E = [(1,3, top), (2,4, bottom), (1,2, left), (3,4, right)] 
+    return FreeDiagram(V, E)
+end
 end
