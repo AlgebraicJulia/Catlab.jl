@@ -9,7 +9,7 @@ module FreeDiagrams
 export AbstractFreeDiagram, FreeDiagram, FixedShapeFreeDiagram, DiscreteDiagram,
   EmptyDiagram, ObjectPair, Span, Cospan, Multispan, Multicospan,
   SMultispan, SMulticospan, ParallelPair, ParallelMorphisms,
-  ob, hom, dom, codom, apex, base, legs, left, right,
+  ob, hom, dom, codom, apex, legs, left, right,
   nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
   add_vertex!, add_vertices!, add_edge!, add_edges!
 
@@ -62,7 +62,7 @@ shape is a pushout.
 end
 
 function Multispan(legs::AbstractVector)
-  !isempty(legs) || error("Empty list of legs but no base given")
+  !isempty(legs) || error("Empty list of legs but no apex given")
   allequal(dom.(legs)) || error("Legs $legs do not have common domain")
   Multispan(dom(first(legs)), legs)
 end
@@ -95,12 +95,12 @@ legs different than two. A limit of this shape is a pullback.
 """
 @auto_hash_equals struct Multicospan{Ob,Legs<:AbstractVector} <:
     FixedShapeFreeDiagram{Ob}
-  base::Ob
+  apex::Ob
   legs::Legs
 end
 
 function Multicospan(legs::AbstractVector)
-  !isempty(legs) || error("Empty list of legs but no base given")
+  !isempty(legs) || error("Empty list of legs but no apex given")
   allequal(codom.(legs)) || error("Legs $legs do not have common codomain")
   Multicospan(codom(first(legs)), legs)
 end
@@ -109,7 +109,7 @@ const SMulticospan{N,Ob} = Multicospan{Ob,<:StaticVector{N}}
 
 SMulticospan(legs...) = Multicospan(SVector(legs...))
 SMulticospan{N}(legs...) where N = Multicospan(SVector{N}(legs...))
-SMulticospan{0}(base) = Multicospan(base, SVector{0,Any}())
+SMulticospan{0}(apex) = Multicospan(apex, SVector{0,Any}())
 
 """ Cospan of morphisms in a category.
 
@@ -117,7 +117,7 @@ A common special case of [`Multicospan`](@ref). See also [`Span`](@ref).
 """
 const Cospan{Ob} = SMulticospan{2,Ob}
 
-base(cospan::Multicospan) = cospan.base
+apex(cospan::Multicospan) = cospan.apex
 legs(cospan::Multicospan) = cospan.legs
 left(cospan::Cospan) = cospan.legs[1]
 right(cospan::Cospan) = cospan.legs[2]
@@ -222,7 +222,7 @@ end
 function FreeDiagram(cospan::Multicospan{Ob}) where Ob
   d = FreeDiagram{Ob,eltype(cospan)}()
   vs = add_vertices!(d, length(cospan), ob=dom.(legs(cospan)))
-  v0 = add_vertex!(d, ob=base(cospan))
+  v0 = add_vertex!(d, ob=apex(cospan))
   add_edges!(d, vs, fill(v0, length(cospan)), hom=legs(cospan))
   return d
 end

@@ -186,7 +186,7 @@ unpack_diagram(diagram::DiscreteDiagram{<:AbstractACSet}) =
 unpack_diagram(span::Multispan{<:AbstractACSet}) =
   map(Multispan, finsets(apex(span)), unpack_components(legs(span)))
 unpack_diagram(cospan::Multicospan{<:AbstractACSet}) =
-  map(Multicospan, finsets(base(cospan)), unpack_components(legs(cospan)))
+  map(Multicospan, finsets(apex(cospan)), unpack_components(legs(cospan)))
 unpack_diagram(para::ParallelMorphisms{<:AbstractACSet}) =
   map(ParallelMorphisms, unpack_components(hom(para)))
 
@@ -212,7 +212,8 @@ end
 """ Objects in diagram that will have explicit legs in limit cone.
 
 Encodes common conventions such as, when taking a pullback of a cospan, not
-including a leg for the base since it can be computed from the other legs.
+including a cone leg for the cospan apex since it can be computed from the other
+legs.
 """
 cone_objects(diagram) = ob(diagram)
 cone_objects(cospan::Multicospan) = map(dom, legs(cospan))

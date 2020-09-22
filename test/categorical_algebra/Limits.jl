@@ -32,7 +32,7 @@ f, g = Hom(:f, A, C), Hom(:g, B, C)
 colim = Colimit(ObjectPair(A,B), Cospan(f,g))
 @test colim isa BinaryCoproduct
 @test ob(colim) == C
-@test base(colim) == C
+@test apex(colim) == C
 @test legs(colim) == [f,g]
 
 colim = Colimit(DiscreteDiagram([A,B]), Cospan(f,g))

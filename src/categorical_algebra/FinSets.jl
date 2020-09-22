@@ -206,7 +206,7 @@ end
 
 function universal(colim::Initial{<:FinSet{Int}},
                    cocone::SMulticospan{0,<:FinSet{Int}})
-  FinFunction(Int[], base(cocone))
+  FinFunction(Int[], apex(cocone))
 end
 
 function colimit(Xs::ObjectPair{<:FinSet{Int}})
@@ -219,7 +219,7 @@ end
 function universal(colim::BinaryCoproduct{<:FinSet{Int}},
                    cocone::Cospan{<:FinSet{Int}})
   f, g = cocone
-  FinFunction(vcat(collect(f), collect(g)), ob(colim), base(cocone))
+  FinFunction(vcat(collect(f), collect(g)), ob(colim), apex(cocone))
 end
 
 function colimit(Xs::DiscreteDiagram{<:FinSet{Int}})
@@ -233,7 +233,7 @@ end
 function universal(colim::Coproduct{<:FinSet{Int}},
                    cocone::Multicospan{<:FinSet{Int}})
   FinFunction(reduce(vcat, (collect(f) for f in cocone), init=Int[]),
-              ob(colim), base(cocone))
+              ob(colim), apex(cocone))
 end
 
 function colimit(pair::ParallelPair{<:FinSet{Int}})

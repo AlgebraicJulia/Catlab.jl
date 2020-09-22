@@ -66,7 +66,7 @@ diagram = FreeDiagram(span)
 # Cospans.
 f, g = Hom(:f, A, C), Hom(:g, B, C)
 cospan = Cospan(f,g)
-@test base(cospan) == C
+@test apex(cospan) == C
 @test legs(cospan) == [f,g]
 @test left(cospan) == f
 @test right(cospan) == g
@@ -80,7 +80,7 @@ f = Hom(:f, A ,B)
 # Multicospans.
 f, g, h = Hom(:f, A, C), Hom(:g, B, C), Hom(:h, A, C)
 cospan = Multicospan([f,g,h])
-@test base(cospan) == C
+@test apex(cospan) == C
 @test legs(cospan) == [f,g,h]
 
 diagram = FreeDiagram(cospan)
