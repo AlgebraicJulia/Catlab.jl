@@ -46,6 +46,8 @@ FinSet(set::S) where {T,S<:AbstractSet{T}} = FinSet{S,T}(set)
 iterable(s::FinSet{Int}) = 1:s.set
 iterable(s::FinSet{<:AbstractSet}) = s.set
 
+Base.show(io::IO, s::FinSet) = print(io, "FinSet($(s.set))")
+
 """ Function between finite sets.
 
 The function can be defined implicitly by an arbitrary Julia function, in which
@@ -73,6 +75,11 @@ FinFunctionCallable(f::Function, dom::Int, codom::Int) =
 FinFunctionCallable(f::Function, dom::FinSet{S,T}, codom::FinSet{S,T}) where {S,T} =
   FinFunctionCallable(FunctionWrapper{T,Tuple{T}}(f), dom, codom)
 
+function Base.show(io::IO, f::FinFunctionCallable)
+  func = f.func.obj[] # Deference FunctionWrapper
+  print(io, "FinFunction($(nameof(func)), $(f.dom), $(f.codom))")
+end
+
 (f::FinFunctionCallable)(x) = f.func(x)
 
 """ Function in FinSet represented explicitly by a vector.
@@ -99,6 +106,9 @@ FinFunctionVector(f::AbstractVector, dom::FinSet{Int}, codom::FinSet{Int}) =
 dom(f::FinFunctionVector) = FinSet(length(f.func))
 codom(f::FinFunctionVector) = FinSet(f.codom)
 
+Base.show(io::IO, f::FinFunctionVector) =
+  print(io, "FinFunction($(f.func), $(length(f.func)), $(f.codom))")
+
 (f::FinFunctionVector)(x) = f.func[x]
 
 """ Force evaluation of lazy function or relation.
@@ -122,6 +132,9 @@ FinFunctionIdentity(n::Int) = FinFunctionIdentity(FinSet(n))
 
 dom(f::FinFunctionIdentity) = f.dom
 codom(f::FinFunctionIdentity) = f.dom
+
+Base.show(io::IO, f::FinFunctionIdentity) =
+  print(io, "FinFunction(identity, $(f.dom))")
 
 (f::FinFunctionIdentity)(x) = x
 
