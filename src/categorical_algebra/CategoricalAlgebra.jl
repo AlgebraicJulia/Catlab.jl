@@ -12,10 +12,12 @@ include("Matrices.jl")
 include("FinRelations.jl")
 include("Permutations.jl")
 include("PredicatedSets.jl")
+include("StructuredCospans.jl")
 
 @reexport using .FreeDiagrams
 @reexport using .Limits
 @reexport using .CSets
 @reexport using .CSetMorphisms
+@reexport using .StructuredCospans
 
 end
