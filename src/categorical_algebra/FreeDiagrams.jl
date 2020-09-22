@@ -9,7 +9,7 @@ module FreeDiagrams
 export AbstractFreeDiagram, FreeDiagram, FixedShapeFreeDiagram, DiscreteDiagram,
   EmptyDiagram, ObjectPair, Span, Cospan, Multispan, Multicospan,
   SMultispan, SMulticospan, ParallelPair, ParallelMorphisms,
-  ob, hom, dom, codom, apex, legs, left, right,
+  ob, hom, dom, codom, apex, legs, feet, left, right,
   nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
   add_vertex!, add_vertices!, add_edge!, add_edges!
 
@@ -81,6 +81,7 @@ const Span{Ob} = SMultispan{2,Ob}
 
 apex(span::Multispan) = span.apex
 legs(span::Multispan) = span.legs
+feet(span::Multispan) = map(codom, span.legs)
 left(span::Span) = span.legs[1]
 right(span::Span) = span.legs[2]
 
@@ -119,6 +120,7 @@ const Cospan{Ob} = SMulticospan{2,Ob}
 
 apex(cospan::Multicospan) = cospan.apex
 legs(cospan::Multicospan) = cospan.legs
+feet(cospan::Multicospan) = map(dom, cospan.legs)
 left(cospan::Cospan) = cospan.legs[1]
 right(cospan::Cospan) = cospan.legs[2]
 
@@ -214,14 +216,14 @@ end
 function FreeDiagram(span::Multispan{Ob}) where Ob
   d = FreeDiagram{Ob,eltype(span)}()
   v0 = add_vertex!(d, ob=apex(span))
-  vs = add_vertices!(d, length(span), ob=codom.(legs(span)))
+  vs = add_vertices!(d, length(span), ob=feet(span))
   add_edges!(d, fill(v0, length(span)), vs, hom=legs(span))
   return d
 end
 
 function FreeDiagram(cospan::Multicospan{Ob}) where Ob
   d = FreeDiagram{Ob,eltype(cospan)}()
-  vs = add_vertices!(d, length(cospan), ob=dom.(legs(cospan)))
+  vs = add_vertices!(d, length(cospan), ob=feet(cospan))
   v0 = add_vertex!(d, ob=apex(cospan))
   add_edges!(d, vs, fill(v0, length(cospan)), hom=legs(cospan))
   return d

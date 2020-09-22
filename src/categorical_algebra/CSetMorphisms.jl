@@ -212,17 +212,17 @@ end
 """ Objects in diagram that will have explicit legs in limit cone.
 
 Encodes common conventions such as, when taking a pullback of a cospan, not
-including a cone leg for the cospan apex since it can be computed from the other
-legs.
+explicitly including a cone leg for the cospan apex since it can be computed
+from the other legs.
 """
 cone_objects(diagram) = ob(diagram)
-cone_objects(cospan::Multicospan) = map(dom, legs(cospan))
+cone_objects(cospan::Multicospan) = feet(cospan)
 cone_objects(para::ParallelMorphisms) = SVector(dom(para))
 
 """ Objects in diagram that will have explicit legs in colimit cocone.
 """
 cocone_objects(diagram) = ob(diagram)
-cocone_objects(span::Multispan) = map(codom, legs(span))
+cocone_objects(span::Multispan) = feet(span)
 cocone_objects(para::ParallelMorphisms) = SVector(codom(para))
 
 end
