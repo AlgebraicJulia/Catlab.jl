@@ -32,8 +32,8 @@ import ..FinSets: compose_impl, FinSet, FinFunction
 
   id2(A::FinSet) = SquareDiagram(idH(A), idH(A), idV(A), idV(A))
   # FIXME: how do you distinguish between vertical and horizontal if they are the same type?
-  id2(f::FinFunction) = SquareDiagram(f, f, idV(A), idV(A))
-  id2(f::FinFunction) = SquareDiagram(idH(A), idH(A), f, f)
+  id2V(f::FinFunction) = SquareDiagram(f, f, idV(A), idV(A))
+  id2H(f::FinFunction) = SquareDiagram(idH(A), idH(A), f, f)
 
   composeH(α::SquareDiagram, β::SquareDiagram) = hcompose(α, β)
   composeV(α::SquareDiagram, β::SquareDiagram) = vcompose(α, β)

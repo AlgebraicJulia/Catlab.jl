@@ -146,4 +146,5 @@ sq4 = vcompose(sq2, SquareDiagram(b, t, ll, rr))
 @test top(sq4)   == t
 @test bottom(sq4) == t
 
+@test hom(sq4) == [top(sq4), bottom(sq4), left(sq4), right(sq4)]
 end

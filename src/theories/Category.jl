@@ -1,6 +1,6 @@
 export Category, FreeCategory, Ob, Hom, dom, codom, id, compose, ⋅,
   Category2, FreeCategory2, Hom2, compose2, 
-  DoubleCategory, HomH, HomV, composeH, composeV, FreeDoubleCategory
+  DoubleCategory, HomH, HomV, idH, idV, composeH, composeV, FreeDoubleCategory
 
 import Base: show
 
@@ -170,12 +170,12 @@ end
   # identity two cell on 1 object
   id2(X::Ob)::Hom2(X→X, X→X, X↓X, X↓X)          ⊣ (X::Ob)
   id2(X) == id2(idH(X), idH(X), idV(X), idV(X)) ⊣ (X::Ob)
-  # identity two cell from a HomH
-  id2(f::(X→Y))::Hom2(X→Y, X→Y, X↓X, Y↓Y) ⊣ (X::Ob, Y::Ob)
-  id2(f) == Hom2(f, f, idV(X), idV(Y))    ⊣ (X::Ob, Y::Ob, f::(X→Y))
-  # identity two cell from a HomV
-  id2(f::(X↓Y))::Hom2(X→X, Y→Y, X↓Y, X↓Y) ⊣ (X::Ob, Y::Ob)
-  id2(f) == Hom2(idH(X), idH(Y), f, f)    ⊣ (X::Ob, Y::Ob, f::(X→Y))
+  # identity two cell for vertical composition
+  id2V(f::(X→Y))::Hom2(X→Y, X→Y, X↓X, Y↓Y) ⊣ (X::Ob, Y::Ob)
+  id2V(f) == Hom2(f, f, idV(X), idV(Y))    ⊣ (X::Ob, Y::Ob, f::(X→Y))
+  # identity two cell for horizontal composition
+  id2H(f::(X↓Y))::Hom2(X→X, Y→Y, X↓Y, X↓Y) ⊣ (X::Ob, Y::Ob)
+  id2H(f) == Hom2(idH(X), idH(Y), f, f)    ⊣ (X::Ob, Y::Ob, f::(X→Y))
 
   # Vertical composition of 2-cells
   composeV(

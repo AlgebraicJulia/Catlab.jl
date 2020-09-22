@@ -46,4 +46,11 @@ r = FinFunction([1,2,2,3,3], 3)
 @test_throws AssertionError composeH(α, β)
 @test collect(left(γ)) == [1,2,2] 
 @test collect(right(γ)) == [1,1,1] 
+
+@test collect(idH(FinSet(3))) == collect(1:3)
+@test collect(idV(FinSet(5))) == collect(1:5)
+@test collect(idH(FinSet(0))) == []
+
+@test collect(composeH(FinFunction([2,1], 3), FinFunction([2, 1, 3]))) == [1,2]
+@test collect(composeV(FinFunction([2,1], 3), FinFunction([2, 1, 3]))) == [1,2]
 end #module
