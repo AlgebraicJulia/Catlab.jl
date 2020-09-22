@@ -11,9 +11,7 @@ export AbstractFreeDiagram, FreeDiagram, FixedShapeFreeDiagram, DiscreteDiagram,
   SMultispan, SMulticospan, ParallelPair, ParallelMorphisms,
   ob, hom, dom, codom, apex, base, legs, left, right,
   nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
-  add_vertex!, add_vertices!, add_edge!, add_edges!,
-  DecoratedCospan, AbstractFunctor, AbstractLaxator, LaxMonoidalFunctor,
-  decorator, decoration, undecorate
+  add_vertex!, add_vertices!, add_edge!, add_edges!
 
 using AutoHashEquals
 using StaticArrays: StaticVector, SVector, @SVector
@@ -174,33 +172,6 @@ Base.firstindex(para::ParallelMorphisms) = firstindex(para.homs)
 Base.lastindex(para::ParallelMorphisms) = lastindex(para.homs)
 
 allequal(xs::AbstractVector) = all(isequal(x, xs[1]) for x in xs[2:end])
-
-# Decorated cospans
-#------------------
-
-# FIXME: Types and structs for functors do not belong here.
-abstract type AbstractFunctor end
-abstract type AbstractLaxator end
-
-struct LaxMonoidalFunctor{Ftr <: AbstractFunctor, Lxr <: AbstractLaxator} <: AbstractFunctor
-  F::Ftr
-  L::Lxr
-end
-
-""" Decorate Cospan of morphisms for representing open networks.
-"""
-struct DecoratedCospan{Decorator <: AbstractFunctor,Decoration}
-  cospan::Cospan
-  decorator::Decorator
-  decoration::Decoration
-end
-
-decorator(m::DecoratedCospan) = m.decorator
-decoration(m::DecoratedCospan) = m.decoration
-undecorate(m::DecoratedCospan) = m.cospan
-base(m::DecoratedCospan) = base(m.cospan)
-left(m::DecoratedCospan) = left(m.cospan)
-right(m::DecoratedCospan) = right(m.cospan)
 
 # General diagrams
 ##################
