@@ -16,14 +16,18 @@ h = FinFunction([3,1,2], 3)
 @test map(id(FinSet(3)), 1:3) == [1,2,3]
 @test map(FinFunction(x -> (x % 3) + 1, 3, 3), 1:3) == [2,3,1]
 
-# Composition and identities.
+# Domains and codomains.
 @test dom(f) == FinSet(3)
 @test codom(f) == FinSet(5)
+@test dom(id(FinSet(3))) == FinSet(3)
+@test codom(id(FinSet(3))) == FinSet(3)
+
+# Composition and identities.
 @test compose(f,g) == FinFunction([1,2,2], 3)
 @test compose(g,h) == FinFunction([3,3,1,1,2], 3)
 @test compose(compose(f,g),h) == compose(f,compose(g,h))
-@test force(compose(id(dom(f)),f)) == f
-@test force(compose(f,id(codom(f)))) == f
+@test compose(id(dom(f)), f) == f
+@test compose(f, id(codom(f))) == f
 
 # Limits
 #-------

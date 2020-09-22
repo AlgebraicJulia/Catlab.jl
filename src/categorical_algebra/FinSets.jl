@@ -15,8 +15,8 @@ import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ..FreeDiagrams, ..Limits
 import ..Limits: limit, colimit, universal
 
-# Category of finite sets
-#########################
+# Data types
+############
 
 """ Abstract type for objects in a category that are sets.
 
@@ -57,6 +57,7 @@ abstract type FinFunction{S,T} end
 
 FinFunction(f::Function, args...) = FinFunctionCallable(f, args...)
 FinFunction(f::AbstractVector, args...) = FinFunctionVector(f, args...)
+FinFunction(::typeof(identity), args...) = FinFunctionIdentity(args...)
 
 """ Function in FinSet defined by a callable Julia object.
 
@@ -70,7 +71,7 @@ end
 FinFunctionCallable(f::Function, dom::Int, codom::Int) =
   FinFunctionCallable(FunctionWrapper{Int,Tuple{Int}}(f), FinSet(dom), FinSet(codom))
 FinFunctionCallable(f::Function, dom::FinSet{S,T}, codom::FinSet{S,T}) where {S,T} =
-  FinFunctionCallable(FunctionWrapper{T,Tuple{T}}(f),dom,codom)
+  FinFunctionCallable(FunctionWrapper{T,Tuple{T}}(f), dom, codom)
 
 (f::FinFunctionCallable)(x) = f.func(x)
 
@@ -107,6 +108,26 @@ force(f::FinFunctionVector) = f
 
 Base.collect(f::FinFunction) = force(f).func
 
+""" Identity function in FinSet.
+"""
+@auto_hash_equals struct FinFunctionIdentity{S,T} <: FinFunction{S,T}
+  dom::FinSet{S,T}
+end
+
+function FinFunctionIdentity(dom, codom)
+  @assert dom == codom
+  FinFunctionIdentity(dom)
+end
+FinFunctionIdentity(n::Int) = FinFunctionIdentity(FinSet(n))
+
+dom(f::FinFunctionIdentity) = f.dom
+codom(f::FinFunctionIdentity) = f.dom
+
+(f::FinFunctionIdentity)(x) = x
+
+# Category of finite sets
+#########################
+
 """ Category of finite sets and functions.
 """
 @instance Category{FinSet, FinFunction} begin
@@ -117,12 +138,18 @@ Base.collect(f::FinFunction) = force(f).func
   
   function compose(f::FinFunction, g::FinFunction)
     @assert codom(f) == dom(g)
-    FinFunction(compose_impl(f,g), dom(f), codom(g))
+    compose_impl(f, g)
   end
 end
 
-compose_impl(f::FinFunction{S,T}, g::FinFunction{S,T}) where {S,T} = g ∘ f
-compose_impl(f::FinFunctionVector, g::FinFunctionVector) = g.func[f.func]
+compose_impl(f::FinFunction{S,T}, g::FinFunction{S,T}) where {S,T} =
+  FinFunction(g ∘ f, dom(f), codom(g))
+compose_impl(f::FinFunctionVector, g::FinFunctionVector) =
+  FinFunctionVector(g.func[f.func], g.codom)
+
+compose_impl(f::FinFunction, ::FinFunctionIdentity) = f
+compose_impl(::FinFunctionIdentity, f::FinFunction) = f
+compose_impl(f::FinFunctionIdentity, ::FinFunctionIdentity) = f
 
 # Limits
 ########
