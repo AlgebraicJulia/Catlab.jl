@@ -72,7 +72,7 @@ end
 const SMultispan{N,Ob} = Multispan{Ob,<:StaticVector{N}}
 
 SMultispan(legs...) = Multispan(SVector(legs...))
-SMultispan{N}(legs::Vararg{T,N}) where {T,N} = Multispan(SVector(legs...))
+SMultispan{N}(legs...) where N = Multispan(SVector{N}(legs...))
 SMultispan{0}(apex) = Multispan(apex, SVector{0,Any}())
 
 """ Span of morphims in a category.
@@ -110,7 +110,7 @@ end
 const SMulticospan{N,Ob} = Multicospan{Ob,<:StaticVector{N}}
 
 SMulticospan(legs...) = Multicospan(SVector(legs...))
-SMulticospan{N}(legs::Vararg{T,N}) where {T,N} = Multicospan(SVector(legs...))
+SMulticospan{N}(legs...) where N = Multicospan(SVector{N}(legs...))
 SMulticospan{0}(base) = Multicospan(base, SVector{0,Any}())
 
 """ Cospan of morphisms in a category.

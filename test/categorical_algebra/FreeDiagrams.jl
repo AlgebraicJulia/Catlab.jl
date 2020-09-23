@@ -45,6 +45,9 @@ span = Span(f,g)
 @test left(span) == f
 @test right(span) == g
 
+f = Hom(:f, A, A)
+@test legs(Span(id(A), f)) == [id(A),f]
+
 f = Hom(:f, A, B)
 @test_throws ErrorException Span(f,g)
 
@@ -67,6 +70,9 @@ cospan = Cospan(f,g)
 @test legs(cospan) == [f,g]
 @test left(cospan) == f
 @test right(cospan) == g
+
+f = Hom(:f, A, A)
+@test legs(Cospan(f, id(A))) == [f,id(A)]
 
 f = Hom(:f, A ,B)
 @test_throws ErrorException Cospan(f,g)
