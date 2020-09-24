@@ -33,13 +33,13 @@ for data attributes is a commutative triangle, rather than a commutative square.
   dom::Dom
   codom::Dom
 
-  function ACSetTransformation{CD,AD}(components::NamedTuple{Ob},
-                                      X::Dom, Y::Dom) where
+  function ACSetTransformation{CD,AD}(components::NamedTuple, X::Dom, Y::Dom) where
       {Ob, CD <: CatDesc{Ob}, AD <: AttrDesc{CD}, Dom <: AbstractACSet{CD,AD}}
-    components = NamedTuple{Ob}(Tuple(
-      coerce_component(ob, f, X, Y) for (ob, f) in pairs(components)
-    ))
-    new{CD,AD,typeof(components),Dom}(components, X, Y)
+    @assert keys(components) ⊆ Ob
+    coerced_components = NamedTuple{Ob}(
+      coerce_component(ob, get(components, ob) do; Int[] end, X, Y)
+      for ob in Ob)
+    new{CD,AD,typeof(coerced_components),Dom}(coerced_components, X, Y)
   end
 end
 
@@ -52,17 +52,12 @@ function coerce_component(ob::Symbol, f, X, Y)::FinFunction{Int}
   FinFunction(f, nparts(X,ob), nparts(Y,ob))
 end
 
-function ACSetTransformation(components::NamedTuple{Ob}, X::Dom, Y::Dom) where
-    {Ob, CD <: CatDesc{Ob}, AD <: AttrDesc{CD}, Dom <: AbstractACSet{CD,AD}}
+ACSetTransformation(components::NamedTuple, X::Dom, Y::Dom) where
+    {CD <: CatDesc, AD <: AttrDesc{CD}, Dom <: AbstractACSet{CD,AD}} =
   ACSetTransformation{CD,AD}(components, X, Y)
-end
-
-function ACSetTransformation(X::Dom, Y::Dom; components...) where
-    {Ob, CD <: CatDesc{Ob}, AD <: AttrDesc{CD}, Dom <: AbstractACSet{CD,AD}}
-  @assert length(components) == length(Ob)
-  components = NamedTuple{Ob}(Tuple(components[ob] for ob in Ob))
-  ACSetTransformation{CD,AD}(components, X, Y)
-end
+ACSetTransformation(X::Dom, Y::Dom; components...) where
+    {CD <: CatDesc, AD <: AttrDesc{CD}, Dom <: AbstractACSet{CD,AD}} =
+  ACSetTransformation{CD,AD}((; components...), X, Y)
 
 const CSetTransformation{CD, Comp, Dom <: AbstractCSet{CD}} =
   ACSetTransformation{CD,AttrDesc{CD,(),(),(),()},Comp,Dom}
