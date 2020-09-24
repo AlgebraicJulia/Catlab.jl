@@ -209,7 +209,7 @@ function limit(pair::ParallelPair{<:FinSet{Int}})
   f, g = pair
   m = length(dom(pair))
   eq = FinFunction(filter(i -> f(i) == g(i), 1:m), m)
-  Limit(pair, SMultispan(eq))
+  Limit(pair, SMultispan{1}(eq))
 end
 
 function limit(para::ParallelMorphisms{<:FinSet{Int}})
@@ -217,7 +217,7 @@ function limit(para::ParallelMorphisms{<:FinSet{Int}})
   f1, frest = para[1], para[2:end]
   m = length(dom(para))
   eq = FinFunction(filter(i -> all(f1(i) == f(i) for f in frest), 1:m), m)
-  Limit(para, SMultispan(eq))
+  Limit(para, SMultispan{1}(eq))
 end
 
 function universal(lim::Equalizer{<:FinSet{Int}},
@@ -286,7 +286,7 @@ function colimit(pair::ParallelPair{<:FinSet{Int}})
   h = [ find_root(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   coeq = FinFunction([ searchsortedfirst(roots, r) for r in h], length(roots))
-  Colimit(pair, SMulticospan(coeq))
+  Colimit(pair, SMulticospan{1}(coeq))
 end
 
 function colimit(para::ParallelMorphisms{<:FinSet{Int}})
@@ -302,7 +302,7 @@ function colimit(para::ParallelMorphisms{<:FinSet{Int}})
   h = [ find_root(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   coeq = FinFunction([ searchsortedfirst(roots, r) for r in h ], length(roots))
-  Colimit(para, SMulticospan(coeq))
+  Colimit(para, SMulticospan{1}(coeq))
 end
 
 function universal(coeq::Coequalizer{<:FinSet{Int}},

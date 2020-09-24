@@ -240,8 +240,8 @@ To implement for equalizers of type `T`, define the method
 `universal(::Equalizer{T}, ::SMultispan{1,T})`. For coequalizers of type `T`,
 define the method `universal(::Coequalizer{T}, ::SMulticospan{1,T})`.
 """
-factorize(lim::Equalizer, h) = universal(lim, SMultispan(h))
-factorize(colim::Coequalizer, h) = universal(colim, SMulticospan(h))
+factorize(lim::Equalizer, h) = universal(lim, SMultispan{1}(h))
+factorize(colim::Coequalizer, h) = universal(colim, SMulticospan{1}(h))
 
 # Composite (co)limits
 ######################
