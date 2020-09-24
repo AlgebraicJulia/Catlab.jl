@@ -12,7 +12,7 @@ using StaticArrays: StaticVector, SVector
 
 using ...GAT, ..FreeDiagrams, ..Limits, ..FinSets, ..CSets, ..CSetMorphisms
 import ..FreeDiagrams: apex, legs, feet, left, right
-using ...Theories: Category
+using ...Theories: Category, CatDesc, AttrDesc
 import ...Theories: dom, codom, compose, ⋅, id
 
 # Generic structured cospans
@@ -30,15 +30,19 @@ See also: [`StructuredCospan`](@ref).
   cospan::Cosp
   feet::Feet
 
+  """ Construct structured multicospan in L-form.
+  """
   StructuredMulticospan{L}(cospan::Cosp, feet::Feet) where
       {L, Cosp <: Multicospan, Feet <: AbstractVector} =
     new{L,Cosp,Feet}(cospan, feet)
 end
 
-function StructuredMulticospan{L}(apex, cospan::Multicospan) where L
-  ϵ = counit(L, apex)
+""" Construct structured multicospan in R-form.
+"""
+function StructuredMulticospan{L}(x, cospan::Multicospan) where L
   StructuredMulticospan{L}(
-    Multicospan(apex, map(leg -> L(leg)⋅ϵ, legs(cospan))), feet(cospan))
+    Multicospan(x, map(leg -> shift_left(L, x, leg), legs(cospan))),
+    feet(cospan))
 end
 
 apex(cospan::StructuredMulticospan) = apex(cospan.cospan)
@@ -64,8 +68,13 @@ See also: [`StructuredMulticospan`](@ref).
 const StructuredCospan{L, Cosp <: Cospan, Feet <: StaticVector{2}} =
   StructuredMulticospan{L,Cosp,Feet}
 
+""" Construct structured cospan in L-form.
+"""
 StructuredCospan{L}(cospan::Cospan, feet::StaticVector{2}) where L =
   StructuredMulticospan{L}(cospan, feet)
+
+""" Construct structured cospan in R-form.
+"""
 StructuredCospan{L}(apex, cospan::Cospan) where L =
   StructuredMulticospan{L}(apex, cospan)
 
@@ -110,34 +119,64 @@ end
 # Structured cospans of C-sets
 ##############################
 
-function OpenACSetTypes(::Type{X}, ob₀::Symbol) where {CD, X <: AbstractACSet{CD}}
-  @assert ob₀ ∈ CD.ob
-  L = DiscreteACSet{ob₀,X}
+struct FinSetDiscreteACSet{ob₀, X <: AbstractACSet} end
+struct DiscreteACSet{A <: AbstractACSet, X <: AbstractACSet} end
+
+function OpenCSetTypes(::Type{X}, ob₀::Symbol) where {X<:AbstractCSet}
+  L = FinSetDiscreteACSet{ob₀, X}
   (StructuredCospanOb{L}, StructuredCospan{L})
 end
-OpenCSetTypes(::Type{X}, ob₀::Symbol) where {X <: AbstractCSet} =
-  OpenACSetTypes(X, ob₀)
 
-struct DiscreteACSet{ob₀, X <: AbstractACSet} end
+function OpenACSetTypes(::Type{X}, ob₀::Symbol) where
+    {CD<:CatDesc, AD<:AttrDesc{CD}, Ts<:Tuple, X<:AbstractACSet{CD,AD,Ts}}
+  @assert ob₀ ∈ CD.ob
+  attrs₀ = [ i for (i,j) in enumerate(CD.adom) if CD.ob[j] == ob₀ ]
+  L = if isempty(attrs₀)
+    FinSetDiscreteACSet{ob₀, X}
+  else
+    CD₀ = CatDesc{(ob₀,),(),(),()}
+    AD₀ = AttrDesc{CD₀,AD.Data,AD.Attr[attrs₀],AD.ADom[attrs₀],AD.ACodom[attrs₀]}
+    DiscreteACSet{ACSet{CD₀,AD₀,Ts,(),()}, X}
+  end
+  (StructuredCospanOb{L}, StructuredCospan{L})
+end
 
-function (::Type{L})(x₀::FinSet{Int}) where {ob₀, X, L<:DiscreteACSet{ob₀,X}}
+function (::Type{L})(a::FinSet{Int}) where
+    {ob₀, X, L <: FinSetDiscreteACSet{ob₀,X}}
   x = X()
-  add_parts!(x, ob₀, length(x₀))
-  x
+  add_parts!(x, ob₀, length(a))
+  return x
 end
-function (::Type{L})(f₀::FinFunction{Int}) where {ob₀, L<:DiscreteACSet{ob₀}}
-  ACSetTransformation((; ob₀ => f₀), L(dom(f₀)), L(codom(f₀)))
+function (::Type{L})(a::AbstractACSet) where
+    {CD₀, AD₀, A <: AbstractACSet{CD₀,AD₀}, X, L <: DiscreteACSet{A,X}}
+  x = X()
+  for ob in CD₀.ob
+    add_parts!(x, ob, nparts(a, ob))
+  end
+  for attr in AD₀.attr
+    set_subpart!(x, attr, subpart(a, attr))
+  end
+  return x
 end
 
-""" Unit a → R(L(a)) of discrete-forgetful adjunction L ⊣ R: FinSet → C-Set.
-"""
-unit(::Type{L}, a) where {L<:DiscreteACSet} = id(a)
+function (::Type{L})(f::FinFunction{Int}) where
+    {ob₀, L <: FinSetDiscreteACSet{ob₀}}
+  ACSetTransformation((; ob₀ => f), L(dom(f)), L(codom(f)))
+end
+function (::Type{L})(ϕ::ACSetTransformation) where {L <: DiscreteACSet}
+  ACSetTransformation(components(ϕ), L(dom(ϕ)), L(codom(ϕ)))
+end
 
-""" Counit L(R(x)) → x of discrete-forgetful adjunction L ⊣ R: FinSet → CSet.
+""" Convert morphism a → R(x) to morphism L(a) → x using discrete-forgetful
+adjunction L ⊣ R.
 """
-function counit(::Type{L}, x) where {ob₀, L<:DiscreteACSet{ob₀}}
-  x₀ = FinSet(nparts(x, ob₀))
-  ACSetTransformation((; ob₀ => id(x₀)), L(x₀), x)
+function shift_left(::Type{L}, x::AbstractACSet, f::FinFunction{Int}) where
+    {ob₀, L <: FinSetDiscreteACSet{ob₀}}
+  ACSetTransformation((; ob₀ => f), L(dom(f)), x)
+end
+function shift_left(::Type{L}, x::AbstractACSet, ϕ::ACSetTransformation) where
+    {L <: DiscreteACSet}
+  ACSetTransformation(components(ϕ), L(dom(ϕ)), x)
 end
 
 end

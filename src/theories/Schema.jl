@@ -47,8 +47,7 @@ AttrDesc (describing the discrete category and the profunctor). This allows us
 to have C-sets as Attributed C-sets with an empty AttrDesc.
 """
 struct CatDesc{Ob,Hom,Dom,Codom}
-  function CatDesc{Ob,Hom,Dom,Codom}() where
-    {Ob,Hom,Dom,Codom}
+  function CatDesc{Ob,Hom,Dom,Codom}() where {Ob,Hom,Dom,Codom}
     new{Ob,Hom,Dom,Codom}()
   end
   function CatDesc(pres::Presentation{Schema})
