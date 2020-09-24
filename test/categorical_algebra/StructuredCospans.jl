@@ -1,8 +1,9 @@
 module TestStructuredCospans
 using Test
 
-using Catlab.Theories, Catlab.CategoricalAlgebra,
+using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra,
   Catlab.CategoricalAlgebra.FinSets, Catlab.CategoricalAlgebra.Graphs
+using Catlab.CategoricalAlgebra.Graphs: TheoryGraph
 
 # Structured cospans of C-sets
 ##############################
@@ -38,5 +39,33 @@ a = OpenGraphOb(FinSet(3))
 @test codom(id(a)) == a
 @test compose(g, id(codom(g))) == g
 @test compose(id(dom(g)), g) == g
+
+# Structured cospan of attributed C-sets
+########################################
+
+# Non-attributed boundary
+#------------------------
+
+@present TheoryWeightedGraph <: TheoryGraph begin
+  Weight::Data
+  weight::Attr(E,Weight)
+end
+
+const WeightedGraph = ACSetType(TheoryWeightedGraph, index=[:src,:tgt])
+const OpenWeightedGraphOb, OpenWeightedGraph = OpenACSetTypes(WeightedGraph, :V)
+
+g0 = WeightedGraph{Float64}(2)
+add_edge!(g0, 1, 2, weight=1.5)
+g = OpenWeightedGraph{Float64}(g0, Cospan(FinFunction([1],2), FinFunction([2],2)))
+@test dom.(legs(g)) == [WeightedGraph{Float64}(1), WeightedGraph{Float64}(1)]
+@test feet(g) == [FinSet(1), FinSet(1)]
+
+h0 = WeightedGraph{Float64}(3)
+add_edges!(h0, [1,1], [2,3], weight=[1.0,2.0])
+h = OpenWeightedGraph{Float64}(h0, Cospan(FinFunction([1],3), FinFunction([2,3],3)))
+k = compose(g, h)
+k0 = apex(k)
+@test (src(k0), tgt(k0)) == ([1,2,2], [2,3,4])
+@test subpart(k0, :weight) == [1.5, 1.0, 2.0]
 
 end

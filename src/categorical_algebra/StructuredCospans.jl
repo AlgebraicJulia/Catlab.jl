@@ -122,23 +122,35 @@ end
 struct FinSetDiscreteACSet{ob₀, X <: AbstractACSet} end
 struct DiscreteACSet{A <: AbstractACSet, X <: AbstractACSet} end
 
+""" Create types for open C-sets from a C-set type.
+
+Returns two types, for objects and morphisms (structured cospans).
+
+See also: [`OpenACSetTypes`](@ref).
+"""
 function OpenCSetTypes(::Type{X}, ob₀::Symbol) where {X<:AbstractCSet}
   L = FinSetDiscreteACSet{ob₀, X}
   (StructuredCospanOb{L}, StructuredCospan{L})
 end
 
+""" Create types for open attributed C-sets from an attributed C-set type.
+
+TODO
+"""
 function OpenACSetTypes(::Type{X}, ob₀::Symbol) where
-    {CD<:CatDesc, AD<:AttrDesc{CD}, Ts<:Tuple, X<:AbstractACSet{CD,AD,Ts}}
+    {CD<:CatDesc, AD<:AttrDesc{CD}, X<:AbstractACSet{CD,AD}}
   @assert ob₀ ∈ CD.ob
-  attrs₀ = [ i for (i,j) in enumerate(CD.adom) if CD.ob[j] == ob₀ ]
+  type_vars = [ TypeVar(data) for data in AD.data ]
+  attrs₀ = [ i for (i,j) in enumerate(AD.adom) if CD.ob[j] == ob₀ ]
   L = if isempty(attrs₀)
-    FinSetDiscreteACSet{ob₀, X}
+    FinSetDiscreteACSet{ob₀, X{type_vars...}}
   else
     CD₀ = CatDesc{(ob₀,),(),(),()}
     AD₀ = AttrDesc{CD₀,AD.Data,AD.Attr[attrs₀],AD.ADom[attrs₀],AD.ACodom[attrs₀]}
-    DiscreteACSet{ACSet{CD₀,AD₀,Ts,(),()}, X}
+    DiscreteACSet{ACSet{CD₀,AD₀,Tuple{type_vars...},(),()}, X{type_vars...}}
   end
-  (StructuredCospanOb{L}, StructuredCospan{L})
+  (foldr(UnionAll, type_vars, init=StructuredCospanOb{L}),
+   foldr(UnionAll, type_vars, init=StructuredCospan{L}))
 end
 
 function (::Type{L})(a::FinSet{Int}) where
