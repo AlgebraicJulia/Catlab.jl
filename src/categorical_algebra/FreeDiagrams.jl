@@ -16,8 +16,8 @@ export AbstractFreeDiagram, FreeDiagram, FixedShapeFreeDiagram, DiscreteDiagram,
 using AutoHashEquals
 using StaticArrays: StaticVector, SVector, @SVector
 
+using ...Present, ...Theories, ..CSets, ..Graphs
 import ...Theories: ob, hom, dom, codom
-using ...Present, ..CSets, ..Graphs
 using ..Graphs: TheoryGraph
 
 # Diagrams of fixed shape
@@ -71,7 +71,7 @@ const SMultispan{N,Ob} = Multispan{Ob,<:StaticVector{N}}
 
 SMultispan{N}(apex, legs::Vararg{Any,N}) where N =
   Multispan(apex, SVector{N}(legs...))
-SMultispan{0}(apex) = Multispan(apex, SVector{0,Any}())
+SMultispan{0}(apex) = Multispan(apex, SVector{0,typeof(id(apex))}())
 SMultispan{N}(legs::Vararg{Any,N}) where N = Multispan(SVector{N}(legs...))
 
 """ Span of morphims in a category.
@@ -111,7 +111,7 @@ const SMulticospan{N,Ob} = Multicospan{Ob,<:StaticVector{N}}
 
 SMulticospan{N}(apex, legs::Vararg{Any,N}) where N =
   Multicospan(apex, SVector{N}(legs...))
-SMulticospan{0}(apex) = Multicospan(apex, SVector{0,Any}())
+SMulticospan{0}(apex) = Multicospan(apex, SVector{0,typeof(id(apex))}())
 SMulticospan{N}(legs::Vararg{Any,N}) where N = Multicospan(SVector{N}(legs...))
 
 """ Cospan of morphisms in a category.

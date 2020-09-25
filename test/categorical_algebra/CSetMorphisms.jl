@@ -43,7 +43,9 @@ add_edges!(h, [1,2], [2,1])
 # Terminal object in Graph: the self-loop.
 term = Graph(1)
 add_edge!(term, 1, 1)
-@test ob(terminal(Graph)) == term
+lim = terminal(Graph)
+@test ob(lim) == term
+@test delete(lim, g) == CSetTransformation((V=fill(1,4), E=fill(1,3)), g, term)
 
 # Products in Graph: unitality.
 lim = product(g, term)
@@ -70,11 +72,17 @@ g0 = ob(product(g, Graph(1)))
 # Product in Graph: copying edges by multiplying by the double self-loop.
 cycle2 = Graph(1)
 add_edges!(cycle2, [1,1], [1,1])
-g2 = ob(product(g, cycle2))
+lim = product(g, cycle2)
+g2 = ob(lim)
 @test nv(g2) == nv(g)
 @test ne(g2) == 2*ne(g)
 @test src(g2) == repeat(src(g), 2)
 @test tgt(g2) == repeat(tgt(g), 2)
+α = CSetTransformation((V=[2,3], E=[2]), I, g)
+β = CSetTransformation((V=[1,1], E=[2]), I, cycle2)
+γ = pair(lim, α, β)
+@test force(γ⋅proj1(lim)) == α
+@test force(γ⋅proj2(lim)) == β
 
 # Equalizer in Graph from (Reyes et al 2004, p. 50).
 g, h = Graph(2), Graph(2)
