@@ -42,6 +42,7 @@ f, g = Hom(:f, C, A), Hom(:g, C, B)
 span = Span(f,g)
 @test apex(span) == C
 @test legs(span) == [f,g]
+@test feet(span) == [A,B]
 @test left(span) == f
 @test right(span) == g
 
@@ -56,6 +57,7 @@ f, g, h = Hom(:f, C, A), Hom(:g, C, B), Hom(:h, C, A)
 span = Multispan([f,g,h])
 @test apex(span) == C
 @test legs(span) == [f,g,h]
+@test feet(span) == [A,B,A]
 
 diagram = FreeDiagram(span)
 @test ob(diagram) == [C,A,B,A]
@@ -66,8 +68,9 @@ diagram = FreeDiagram(span)
 # Cospans.
 f, g = Hom(:f, A, C), Hom(:g, B, C)
 cospan = Cospan(f,g)
-@test base(cospan) == C
+@test apex(cospan) == C
 @test legs(cospan) == [f,g]
+@test feet(cospan) == [A,B]
 @test left(cospan) == f
 @test right(cospan) == g
 
@@ -80,8 +83,9 @@ f = Hom(:f, A ,B)
 # Multicospans.
 f, g, h = Hom(:f, A, C), Hom(:g, B, C), Hom(:h, A, C)
 cospan = Multicospan([f,g,h])
-@test base(cospan) == C
+@test apex(cospan) == C
 @test legs(cospan) == [f,g,h]
+@test feet(cospan) == [A,B,A]
 
 diagram = FreeDiagram(cospan)
 @test ob(diagram) == [A,B,A,C]

@@ -2,7 +2,7 @@
 """
 module Limits
 export AbstractLimit, AbstractColimit, Limit, Colimit,
-  ob, cone, cocone, apex, base, legs, limit, colimit, universal,
+  ob, cone, cocone, apex, legs, limit, colimit, universal,
   Terminal, Initial, terminal, initial, delete, create, factorize,
   BinaryProduct, Product, product, proj1, proj2, pair,
   BinaryPullback, Pullback, BinaryEqualizer, Equalizer, pullback, incl,
@@ -19,7 +19,7 @@ import ...Theories: ob, terminal, product, proj1, proj2, equalizer, incl,
   initial, coproduct, coproj1, coproj2, coequalizer, proj,
   delete, create, pair, copair, factorize
 using ..FreeDiagrams
-import ..FreeDiagrams: apex, base, legs
+import ..FreeDiagrams: apex, legs
 
 # Data types for limits
 #######################
@@ -70,9 +70,9 @@ reasons certain categories may use different subtypes to include extra data.
 """
 abstract type AbstractColimit{Ob,Diagram} end
 
-ob(colim::AbstractColimit) = base(colim)
+ob(colim::AbstractColimit) = apex(colim)
 cocone(colim::AbstractColimit) = colim.cocone
-base(colim::AbstractColimit) = base(cocone(colim))
+apex(colim::AbstractColimit) = apex(cocone(colim))
 legs(colim::AbstractColimit) = legs(cocone(colim))
 
 Base.iterate(colim::AbstractColimit, args...) = iterate(cocone(colim), args...)
@@ -240,8 +240,8 @@ To implement for equalizers of type `T`, define the method
 `universal(::Equalizer{T}, ::SMultispan{1,T})`. For coequalizers of type `T`,
 define the method `universal(::Coequalizer{T}, ::SMulticospan{1,T})`.
 """
-factorize(lim::Equalizer, h) = universal(lim, SMultispan(h))
-factorize(colim::Coequalizer, h) = universal(colim, SMulticospan(h))
+factorize(lim::Equalizer, h) = universal(lim, SMultispan{1}(h))
+factorize(colim::Coequalizer, h) = universal(colim, SMulticospan{1}(h))
 
 # Composite (co)limits
 ######################

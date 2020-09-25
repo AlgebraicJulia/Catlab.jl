@@ -33,13 +33,13 @@ for data attributes is a commutative triangle, rather than a commutative square.
   dom::Dom
   codom::Dom
 
-  function ACSetTransformation{CD,AD}(components::NamedTuple{Ob},
-                                      X::Dom, Y::Dom) where
+  function ACSetTransformation{CD,AD}(components::NamedTuple, X::Dom, Y::Dom) where
       {Ob, CD <: CatDesc{Ob}, AD <: AttrDesc{CD}, Dom <: AbstractACSet{CD,AD}}
-    components = NamedTuple{Ob}(Tuple(
-      coerce_component(ob, f, X, Y) for (ob, f) in pairs(components)
-    ))
-    new{CD,AD,typeof(components),Dom}(components, X, Y)
+    @assert keys(components) ⊆ Ob
+    coerced_components = NamedTuple{Ob}(
+      coerce_component(ob, get(components, ob) do; Int[] end, X, Y)
+      for ob in Ob)
+    new{CD,AD,typeof(coerced_components),Dom}(coerced_components, X, Y)
   end
 end
 
@@ -52,17 +52,12 @@ function coerce_component(ob::Symbol, f, X, Y)::FinFunction{Int}
   FinFunction(f, nparts(X,ob), nparts(Y,ob))
 end
 
-function ACSetTransformation(components::NamedTuple{Ob}, X::Dom, Y::Dom) where
-    {Ob, CD <: CatDesc{Ob}, AD <: AttrDesc{CD}, Dom <: AbstractACSet{CD,AD}}
+ACSetTransformation(components::NamedTuple, X::Dom, Y::Dom) where
+    {CD <: CatDesc, AD <: AttrDesc{CD}, Dom <: AbstractACSet{CD,AD}} =
   ACSetTransformation{CD,AD}(components, X, Y)
-end
-
-function ACSetTransformation(X::Dom, Y::Dom; components...) where
-    {Ob, CD <: CatDesc{Ob}, AD <: AttrDesc{CD}, Dom <: AbstractACSet{CD,AD}}
-  @assert length(components) == length(Ob)
-  components = NamedTuple{Ob}(Tuple(components[ob] for ob in Ob))
-  ACSetTransformation{CD,AD}(components, X, Y)
-end
+ACSetTransformation(X::Dom, Y::Dom; components...) where
+    {CD <: CatDesc, AD <: AttrDesc{CD}, Dom <: AbstractACSet{CD,AD}} =
+  ACSetTransformation{CD,AD}((; components...), X, Y)
 
 const CSetTransformation{CD, Comp, Dom <: AbstractCSet{CD}} =
   ACSetTransformation{CD,AttrDesc{CD,(),(),(),()},Comp,Dom}
@@ -186,7 +181,7 @@ unpack_diagram(diagram::DiscreteDiagram{<:AbstractACSet}) =
 unpack_diagram(span::Multispan{<:AbstractACSet}) =
   map(Multispan, finsets(apex(span)), unpack_components(legs(span)))
 unpack_diagram(cospan::Multicospan{<:AbstractACSet}) =
-  map(Multicospan, finsets(base(cospan)), unpack_components(legs(cospan)))
+  map(Multicospan, finsets(apex(cospan)), unpack_components(legs(cospan)))
 unpack_diagram(para::ParallelMorphisms{<:AbstractACSet}) =
   map(ParallelMorphisms, unpack_components(hom(para)))
 
@@ -212,16 +207,17 @@ end
 """ Objects in diagram that will have explicit legs in limit cone.
 
 Encodes common conventions such as, when taking a pullback of a cospan, not
-including a leg for the base since it can be computed from the other legs.
+explicitly including a cone leg for the cospan apex since it can be computed
+from the other legs.
 """
 cone_objects(diagram) = ob(diagram)
-cone_objects(cospan::Multicospan) = map(dom, legs(cospan))
+cone_objects(cospan::Multicospan) = feet(cospan)
 cone_objects(para::ParallelMorphisms) = SVector(dom(para))
 
 """ Objects in diagram that will have explicit legs in colimit cocone.
 """
 cocone_objects(diagram) = ob(diagram)
-cocone_objects(span::Multispan) = map(codom, legs(span))
+cocone_objects(span::Multispan) = feet(span)
 cocone_objects(para::ParallelMorphisms) = SVector(codom(para))
 
 end

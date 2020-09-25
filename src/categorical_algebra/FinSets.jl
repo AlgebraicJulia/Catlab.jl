@@ -15,8 +15,8 @@ import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ..FreeDiagrams, ..Limits
 import ..Limits: limit, colimit, universal
 
-# Category of finite sets
-#########################
+# Data types
+############
 
 """ Abstract type for objects in a category that are sets.
 
@@ -46,6 +46,8 @@ FinSet(set::S) where {T,S<:AbstractSet{T}} = FinSet{S,T}(set)
 iterable(s::FinSet{Int}) = 1:s.set
 iterable(s::FinSet{<:AbstractSet}) = s.set
 
+Base.show(io::IO, s::FinSet) = print(io, "FinSet($(s.set))")
+
 """ Function between finite sets.
 
 The function can be defined implicitly by an arbitrary Julia function, in which
@@ -57,6 +59,7 @@ abstract type FinFunction{S,T} end
 
 FinFunction(f::Function, args...) = FinFunctionCallable(f, args...)
 FinFunction(f::AbstractVector, args...) = FinFunctionVector(f, args...)
+FinFunction(::typeof(identity), args...) = FinFunctionIdentity(args...)
 
 """ Function in FinSet defined by a callable Julia object.
 
@@ -70,7 +73,12 @@ end
 FinFunctionCallable(f::Function, dom::Int, codom::Int) =
   FinFunctionCallable(FunctionWrapper{Int,Tuple{Int}}(f), FinSet(dom), FinSet(codom))
 FinFunctionCallable(f::Function, dom::FinSet{S,T}, codom::FinSet{S,T}) where {S,T} =
-  FinFunctionCallable(FunctionWrapper{T,Tuple{T}}(f),dom,codom)
+  FinFunctionCallable(FunctionWrapper{T,Tuple{T}}(f), dom, codom)
+
+function Base.show(io::IO, f::FinFunctionCallable)
+  func = f.func.obj[] # Deference FunctionWrapper
+  print(io, "FinFunction($(nameof(func)), $(f.dom), $(f.codom))")
+end
 
 (f::FinFunctionCallable)(x) = f.func(x)
 
@@ -98,6 +106,9 @@ FinFunctionVector(f::AbstractVector, dom::FinSet{Int}, codom::FinSet{Int}) =
 dom(f::FinFunctionVector) = FinSet(length(f.func))
 codom(f::FinFunctionVector) = FinSet(f.codom)
 
+Base.show(io::IO, f::FinFunctionVector) =
+  print(io, "FinFunction($(f.func), $(length(f.func)), $(f.codom))")
+
 (f::FinFunctionVector)(x) = f.func[x]
 
 """ Force evaluation of lazy function or relation.
@@ -106,6 +117,29 @@ force(f::FinFunction{Int}) = FinFunctionVector(map(f, dom(f)), codom(f))
 force(f::FinFunctionVector) = f
 
 Base.collect(f::FinFunction) = force(f).func
+
+""" Identity function in FinSet.
+"""
+@auto_hash_equals struct FinFunctionIdentity{S,T} <: FinFunction{S,T}
+  dom::FinSet{S,T}
+end
+
+function FinFunctionIdentity(dom, codom)
+  @assert dom == codom
+  FinFunctionIdentity(dom)
+end
+FinFunctionIdentity(n::Int) = FinFunctionIdentity(FinSet(n))
+
+dom(f::FinFunctionIdentity) = f.dom
+codom(f::FinFunctionIdentity) = f.dom
+
+Base.show(io::IO, f::FinFunctionIdentity) =
+  print(io, "FinFunction(identity, $(f.dom))")
+
+(f::FinFunctionIdentity)(x) = x
+
+# Category of finite sets
+#########################
 
 """ Category of finite sets and functions.
 """
@@ -117,12 +151,18 @@ Base.collect(f::FinFunction) = force(f).func
   
   function compose(f::FinFunction, g::FinFunction)
     @assert codom(f) == dom(g)
-    FinFunction(compose_impl(f,g), dom(f), codom(g))
+    compose_impl(f, g)
   end
 end
 
-compose_impl(f::FinFunction{S,T}, g::FinFunction{S,T}) where {S,T} = g ∘ f
-compose_impl(f::FinFunctionVector, g::FinFunctionVector) = g.func[f.func]
+compose_impl(f::FinFunction{S,T}, g::FinFunction{S,T}) where {S,T} =
+  FinFunction(g ∘ f, dom(f), codom(g))
+compose_impl(f::FinFunctionVector, g::FinFunctionVector) =
+  FinFunctionVector(g.func[f.func], g.codom)
+
+compose_impl(f::FinFunction, ::FinFunctionIdentity) = f
+compose_impl(::FinFunctionIdentity, f::FinFunction) = f
+compose_impl(f::FinFunctionIdentity, ::FinFunctionIdentity) = f
 
 # Limits
 ########
@@ -169,7 +209,7 @@ function limit(pair::ParallelPair{<:FinSet{Int}})
   f, g = pair
   m = length(dom(pair))
   eq = FinFunction(filter(i -> f(i) == g(i), 1:m), m)
-  Limit(pair, SMultispan(eq))
+  Limit(pair, SMultispan{1}(eq))
 end
 
 function limit(para::ParallelMorphisms{<:FinSet{Int}})
@@ -177,7 +217,7 @@ function limit(para::ParallelMorphisms{<:FinSet{Int}})
   f1, frest = para[1], para[2:end]
   m = length(dom(para))
   eq = FinFunction(filter(i -> all(f1(i) == f(i) for f in frest), 1:m), m)
-  Limit(para, SMultispan(eq))
+  Limit(para, SMultispan{1}(eq))
 end
 
 function universal(lim::Equalizer{<:FinSet{Int}},
@@ -206,7 +246,7 @@ end
 
 function universal(colim::Initial{<:FinSet{Int}},
                    cocone::SMulticospan{0,<:FinSet{Int}})
-  FinFunction(Int[], base(cocone))
+  FinFunction(Int[], apex(cocone))
 end
 
 function colimit(Xs::ObjectPair{<:FinSet{Int}})
@@ -219,7 +259,7 @@ end
 function universal(colim::BinaryCoproduct{<:FinSet{Int}},
                    cocone::Cospan{<:FinSet{Int}})
   f, g = cocone
-  FinFunction(vcat(collect(f), collect(g)), ob(colim), base(cocone))
+  FinFunction(vcat(collect(f), collect(g)), ob(colim), apex(cocone))
 end
 
 function colimit(Xs::DiscreteDiagram{<:FinSet{Int}})
@@ -233,7 +273,7 @@ end
 function universal(colim::Coproduct{<:FinSet{Int}},
                    cocone::Multicospan{<:FinSet{Int}})
   FinFunction(reduce(vcat, (collect(f) for f in cocone), init=Int[]),
-              ob(colim), base(cocone))
+              ob(colim), apex(cocone))
 end
 
 function colimit(pair::ParallelPair{<:FinSet{Int}})
@@ -246,7 +286,7 @@ function colimit(pair::ParallelPair{<:FinSet{Int}})
   h = [ find_root(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   coeq = FinFunction([ searchsortedfirst(roots, r) for r in h], length(roots))
-  Colimit(pair, SMulticospan(coeq))
+  Colimit(pair, SMulticospan{1}(coeq))
 end
 
 function colimit(para::ParallelMorphisms{<:FinSet{Int}})
@@ -262,7 +302,7 @@ function colimit(para::ParallelMorphisms{<:FinSet{Int}})
   h = [ find_root(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   coeq = FinFunction([ searchsortedfirst(roots, r) for r in h ], length(roots))
-  Colimit(para, SMulticospan(coeq))
+  Colimit(para, SMulticospan{1}(coeq))
 end
 
 function universal(coeq::Coequalizer{<:FinSet{Int}},

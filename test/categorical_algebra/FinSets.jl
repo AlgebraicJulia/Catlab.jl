@@ -12,18 +12,30 @@ g = FinFunction([1,1,2,2,3], 3)
 h = FinFunction([3,1,2], 3)
 
 # Evaluation.
+rot3(x) = (x % 3) + 1
 @test map(f, 1:3) == [1,3,4]
+@test map(FinFunction(rot3, 3, 3), 1:3) == [2,3,1]
 @test map(id(FinSet(3)), 1:3) == [1,2,3]
-@test map(FinFunction(x -> (x % 3) + 1, 3, 3), 1:3) == [2,3,1]
 
-# Composition and identities.
+# Pretty-print.
+@test sprint(show, FinSet(3)) == "FinSet(3)"
+@test sprint(show, f) == "FinFunction([1, 3, 4], 3, 5)"
+@test sprint(show, FinFunction(rot3, 3, 3)) ==
+  "FinFunction(rot3, FinSet(3), FinSet(3))"
+@test sprint(show, id(FinSet(3))) == "FinFunction(identity, FinSet(3))"
+
+# Domains and codomains.
 @test dom(f) == FinSet(3)
 @test codom(f) == FinSet(5)
+@test dom(id(FinSet(3))) == FinSet(3)
+@test codom(id(FinSet(3))) == FinSet(3)
+
+# Composition and identities.
 @test compose(f,g) == FinFunction([1,2,2], 3)
 @test compose(g,h) == FinFunction([3,3,1,1,2], 3)
 @test compose(compose(f,g),h) == compose(f,compose(g,h))
-@test force(compose(id(dom(f)),f)) == f
-@test force(compose(f,id(codom(f)))) == f
+@test compose(id(dom(f)), f) == f
+@test compose(f, id(codom(f))) == f
 
 # Limits
 #-------

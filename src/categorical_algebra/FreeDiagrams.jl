@@ -9,11 +9,9 @@ module FreeDiagrams
 export AbstractFreeDiagram, FreeDiagram, FixedShapeFreeDiagram, DiscreteDiagram,
   EmptyDiagram, ObjectPair, Span, Cospan, Multispan, Multicospan,
   SMultispan, SMulticospan, ParallelPair, ParallelMorphisms,
-  ob, hom, dom, codom, apex, base, legs, left, right,
+  ob, hom, dom, codom, apex, legs, feet, left, right,
   nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
-  add_vertex!, add_vertices!, add_edge!, add_edges!,
-  DecoratedCospan, AbstractFunctor, AbstractLaxator, LaxMonoidalFunctor,
-  decorator, decoration, undecorate
+  add_vertex!, add_vertices!, add_edge!, add_edges!
 
 using AutoHashEquals
 using StaticArrays: StaticVector, SVector, @SVector
@@ -64,16 +62,17 @@ shape is a pushout.
 end
 
 function Multispan(legs::AbstractVector)
-  !isempty(legs) || error("Empty list of legs but no base given")
+  !isempty(legs) || error("Empty list of legs but no apex given")
   allequal(dom.(legs)) || error("Legs $legs do not have common domain")
   Multispan(dom(first(legs)), legs)
 end
 
 const SMultispan{N,Ob} = Multispan{Ob,<:StaticVector{N}}
 
-SMultispan(legs...) = Multispan(SVector(legs...))
-SMultispan{N}(legs...) where N = Multispan(SVector{N}(legs...))
+SMultispan{N}(apex, legs::Vararg{Any,N}) where N =
+  Multispan(apex, SVector{N}(legs...))
 SMultispan{0}(apex) = Multispan(apex, SVector{0,Any}())
+SMultispan{N}(legs::Vararg{Any,N}) where N = Multispan(SVector{N}(legs...))
 
 """ Span of morphims in a category.
 
@@ -83,6 +82,7 @@ const Span{Ob} = SMultispan{2,Ob}
 
 apex(span::Multispan) = span.apex
 legs(span::Multispan) = span.legs
+feet(span::Multispan) = map(codom, span.legs)
 left(span::Span) = span.legs[1]
 right(span::Span) = span.legs[2]
 
@@ -97,21 +97,22 @@ legs different than two. A limit of this shape is a pullback.
 """
 @auto_hash_equals struct Multicospan{Ob,Legs<:AbstractVector} <:
     FixedShapeFreeDiagram{Ob}
-  base::Ob
+  apex::Ob
   legs::Legs
 end
 
 function Multicospan(legs::AbstractVector)
-  !isempty(legs) || error("Empty list of legs but no base given")
+  !isempty(legs) || error("Empty list of legs but no apex given")
   allequal(codom.(legs)) || error("Legs $legs do not have common codomain")
   Multicospan(codom(first(legs)), legs)
 end
 
 const SMulticospan{N,Ob} = Multicospan{Ob,<:StaticVector{N}}
 
-SMulticospan(legs...) = Multicospan(SVector(legs...))
-SMulticospan{N}(legs...) where N = Multicospan(SVector{N}(legs...))
-SMulticospan{0}(base) = Multicospan(base, SVector{0,Any}())
+SMulticospan{N}(apex, legs::Vararg{Any,N}) where N =
+  Multicospan(apex, SVector{N}(legs...))
+SMulticospan{0}(apex) = Multicospan(apex, SVector{0,Any}())
+SMulticospan{N}(legs::Vararg{Any,N}) where N = Multicospan(SVector{N}(legs...))
 
 """ Cospan of morphisms in a category.
 
@@ -119,8 +120,9 @@ A common special case of [`Multicospan`](@ref). See also [`Span`](@ref).
 """
 const Cospan{Ob} = SMulticospan{2,Ob}
 
-base(cospan::Multicospan) = cospan.base
+apex(cospan::Multicospan) = cospan.apex
 legs(cospan::Multicospan) = cospan.legs
+feet(cospan::Multicospan) = map(dom, cospan.legs)
 left(cospan::Cospan) = cospan.legs[1]
 right(cospan::Cospan) = cospan.legs[2]
 
@@ -175,33 +177,6 @@ Base.lastindex(para::ParallelMorphisms) = lastindex(para.homs)
 
 allequal(xs::AbstractVector) = all(isequal(x, xs[1]) for x in xs[2:end])
 
-# Decorated cospans
-#------------------
-
-# FIXME: Types and structs for functors do not belong here.
-abstract type AbstractFunctor end
-abstract type AbstractLaxator end
-
-struct LaxMonoidalFunctor{Ftr <: AbstractFunctor, Lxr <: AbstractLaxator} <: AbstractFunctor
-  F::Ftr
-  L::Lxr
-end
-
-""" Decorate Cospan of morphisms for representing open networks.
-"""
-struct DecoratedCospan{Decorator <: AbstractFunctor,Decoration}
-  cospan::Cospan
-  decorator::Decorator
-  decoration::Decoration
-end
-
-decorator(m::DecoratedCospan) = m.decorator
-decoration(m::DecoratedCospan) = m.decoration
-undecorate(m::DecoratedCospan) = m.cospan
-base(m::DecoratedCospan) = base(m.cospan)
-left(m::DecoratedCospan) = left(m.cospan)
-right(m::DecoratedCospan) = right(m.cospan)
-
 # General diagrams
 ##################
 
@@ -243,15 +218,15 @@ end
 function FreeDiagram(span::Multispan{Ob}) where Ob
   d = FreeDiagram{Ob,eltype(span)}()
   v0 = add_vertex!(d, ob=apex(span))
-  vs = add_vertices!(d, length(span), ob=codom.(legs(span)))
+  vs = add_vertices!(d, length(span), ob=feet(span))
   add_edges!(d, fill(v0, length(span)), vs, hom=legs(span))
   return d
 end
 
 function FreeDiagram(cospan::Multicospan{Ob}) where Ob
   d = FreeDiagram{Ob,eltype(cospan)}()
-  vs = add_vertices!(d, length(cospan), ob=dom.(legs(cospan)))
-  v0 = add_vertex!(d, ob=base(cospan))
+  vs = add_vertices!(d, length(cospan), ob=feet(cospan))
+  v0 = add_vertex!(d, ob=apex(cospan))
   add_edges!(d, vs, fill(v0, length(cospan)), hom=legs(cospan))
   return d
 end

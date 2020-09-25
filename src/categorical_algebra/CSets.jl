@@ -193,8 +193,6 @@ function Base.copy(acs::T) where T <: ACSet
   T(map(copy, acs.tables), map(copy, acs.indices))
 end
 
-Base.empty(acs::T) where T <: ACSet = T()
-
 function Base.show(io::IO, acs::AbstractACSet{CD,AD,Ts}) where {CD,AD,Ts}
   println(io, "ACSet(")
   join(io, vcat(

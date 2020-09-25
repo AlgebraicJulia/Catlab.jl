@@ -39,4 +39,8 @@ end
   include("PredicatedSets.jl")
 end
 
+@testset "StructuredCospans" begin
+  include("StructuredCospans.jl")
+end
+
 end
