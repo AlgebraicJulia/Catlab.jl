@@ -150,8 +150,9 @@ function OpenACSetTypes(::Type{X}, ob₀::Symbol) where
   L = if isempty(attrs₀)
     FinSetDiscreteACSet{ob₀, X{type_vars...}}
   else
+    adom = Tuple(ones(Int, length(attrs₀)))
     CD₀ = CatDesc{(ob₀,),(),(),()}
-    AD₀ = AttrDesc{CD₀,AD.data,AD.attr[attrs₀],AD.adom[attrs₀],AD.acodom[attrs₀]}
+    AD₀ = AttrDesc{CD₀,AD.data,AD.attr[attrs₀],adom,AD.acodom[attrs₀]}
     DiscreteACSet{ACSet{CD₀,AD₀,Tuple{type_vars...},(),()}, X{type_vars...}}
   end
   (foldr(UnionAll, type_vars, init=StructuredCospanOb{L}),
