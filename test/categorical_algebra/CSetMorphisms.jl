@@ -116,7 +116,9 @@ lim = pullback(ϕ, ψ)
 #---------
 
 # Initial object in graph: the empty graph.
-@test ob(initial(Graph)) == Graph()
+colim = initial(Graph)
+@test ob(colim) == Graph()
+@test create(colim, g) == CSetTransformation((V=Int[], E=Int[]), Graph(), g)
 
 # Coproducts in Graph: unitality.
 g = Graph(4)
@@ -130,10 +132,16 @@ colim = coproduct(g, Graph())
 # Coproduct in Graph.
 h = Graph(2)
 add_edges!(h, [1,2], [2,1])
-coprod = ob(coproduct(g, h))
+colim = coproduct(g, h)
+coprod = ob(colim)
 @test nv(coprod) == 6
 @test src(coprod) == [1,2,3,5,6]
 @test tgt(coprod) == [2,3,4,6,5]
+α = CSetTransformation((V=[1,2,1,2], E=[1,2,1]), g, h)
+β = id(h)
+γ = copair(colim, α, β)
+@test force(coproj1(colim)⋅γ) == α
+@test force(coproj2(colim)⋅γ) == force(β)
 
 # Coequalizer in Graph: collapsing a segment to a loop.
 g = Graph(2)

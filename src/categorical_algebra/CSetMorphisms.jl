@@ -121,6 +121,15 @@ struct CSetLimit{Ob <: AbstractCSet, Diagram, Cone <: Multispan{Ob},
   limits::Limits
 end
 
+""" Colimit of attributed C-sets that stores the pointwise colimits in FinSet.
+"""
+struct ACSetColimit{Ob <: AbstractACSet, Diagram, Cocone <: Multicospan{Ob},
+                    Colimits <: NamedTuple} <: AbstractColimit{Ob,Diagram}
+  diagram::Diagram
+  cocone::Cocone
+  colimits::Colimits
+end
+
 # Compute limits and colimits of C-sets by reducing to those in FinSet using the
 # "pointwise" formula for (co)limits in functor categories.
 
@@ -185,7 +194,12 @@ function colimit(diagram::AbstractFreeDiagram{ACS}) where
     set_subpart!(Y, attr, map(something, data))
   end
 
-  Colimit(diagram, Multicospan(Y, ιs))
+  ACSetColimit(diagram, Multicospan(Y, ιs), colimits)
+end
+
+function universal(colim::ACSetColimit, cocone::Multicospan)
+  components = map(universal, colim.colimits, unpack_diagram(cocone))
+  ACSetTransformation(components, ob(colim), apex(cocone))
 end
 
 """ Diagram in C-Set → named tuple of diagrams in FinSet
