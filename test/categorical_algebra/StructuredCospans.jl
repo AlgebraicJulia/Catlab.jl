@@ -19,6 +19,8 @@ g = OpenGraph(g0, FinFunction([1],4), FinFunction([3,4],4))
 @test apex(g) == g0
 @test dom.(legs(g)) == [Graph(1), Graph(2)]
 @test feet(g) == [FinSet(1), FinSet(2)]
+@test dom(g) == OpenGraphOb(FinSet(1))
+@test codom(g) == OpenGraphOb(FinSet(2))
 
 # Opposite of previous graph.
 h0 = Graph(4)
@@ -84,12 +86,15 @@ const OpenWeightedGraphOb, OpenWeightedGraph = OpenACSetTypes(WeightedGraph, :V)
 g0 = WeightedGraph{Float64}(2)
 add_edge!(g0, 1, 2, weight=1.5)
 g = OpenWeightedGraph{Float64}(g0, FinFunction([1],2), FinFunction([2],2))
-@test dom.(legs(g)) == [WeightedGraph{Float64}(1), WeightedGraph{Float64}(1)]
-@test feet(g) == [FinSet(1), FinSet(1)]
 
 h0 = WeightedGraph{Float64}(3)
 add_edges!(h0, [1,1], [2,3], weight=[1.0,2.0])
 h = OpenWeightedGraph{Float64}(h0, FinFunction([1],3), FinFunction([2,3],3))
+@test dom.(legs(h)) == [WeightedGraph{Float64}(1), WeightedGraph{Float64}(2)]
+@test feet(h) == [FinSet(1), FinSet(2)]
+@test dom(h) == OpenWeightedGraphOb{Float64}(FinSet(1))
+@test codom(h) == OpenWeightedGraphOb{Float64}(FinSet(2))
+
 k = compose(g, h)
 k0 = apex(k)
 @test src(k0) == [1,2,2]
@@ -118,12 +123,13 @@ add_vertices!(h0, 3, vlabel=[:y,:w,:z])
 add_edges!(h0, [1,1], [2,3], elabel=[:g,:h])
 h = OpenLabeledGraph{Symbol}(h0, FinFunction([1],3), FinFunction([2,3],3))
 lfoot, rfoot = feet(h)
-@test lfoot isa ACSet
-@test keys(lfoot.tables) == (:V,)
-@test nparts(lfoot, :V) == 1
 @test nparts(rfoot, :V) == 2
-@test subpart(lfoot, :vlabel) == [:y]
 @test subpart(rfoot, :vlabel) == [:w,:z]
+@test dom(h) == OpenLabeledGraphOb{Symbol}(FinSet(1), vlabel=:y)
+@test codom(h) == OpenLabeledGraphOb{Symbol}(FinSet(2), vlabel=[:w,:z])
+
+# Category
+#---------
 
 k = compose(g, h)
 k0 = apex(k)
@@ -136,5 +142,18 @@ k0 = apex(k)
 set_subpart!(h0, 1, :vlabel, :y′)
 h = OpenLabeledGraph{Symbol}(h0, FinFunction([1],3), FinFunction([2,3],3))
 @test_throws ErrorException compose(g, h)
+
+# Symmetric monoidal category
+#----------------------------
+
+k = otimes(g, h)
+@test dom(k) == dom(g)⊗dom(h)
+@test codom(k) == codom(g)⊗codom(h)
+@test (nv(apex(k)), ne(apex(k))) == (5, 3)
+
+a = OpenLabeledGraphOb{Symbol}(FinSet(2), vlabel=[:u,:v])
+b = OpenLabeledGraphOb{Symbol}(FinSet(3), vlabel=[:x,:y,:z])
+@test dom(braid(a, b)) == a⊗b
+@test codom(braid(a, b)) == b⊗a
 
 end

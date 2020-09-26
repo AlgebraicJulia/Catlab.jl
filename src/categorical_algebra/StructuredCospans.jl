@@ -133,9 +133,10 @@ begin
     StructuredCospanOb{L}(ob(initial(dom(L))))
 
   function braid(a::StructuredCospanOb{L}, b::StructuredCospanOb{L}) where L
-    ab, ba = coproduct(a.ob, b.ob), coproduct(b.ob, a.ob)
-    cospan = Cospan(id(ob(ab)), copair(ba, coproj2(ab), coproj1(ab)))
-    StructuredCospan{L}(L(ob(ab)), cospan)
+    x, y = L(a.ob), L(b.ob)
+    xy, yx = coproduct(x, y), coproduct(y, x)
+    cospan = Cospan(ob(xy), id(ob(xy)), copair(yx, coproj2(xy), coproj1(xy)))
+    StructuredCospan{L}(cospan, a⊗b, b⊗a)
   end
 
   mcopy(a::StructuredCospanOb{L}) where L = let x = L(a.ob), i = id(x)
@@ -241,14 +242,20 @@ struct DiscreteACSet{A <: AbstractACSet, X} <: AbstractDiscreteACSet{X} end
 
 dom(::Type{<:DiscreteACSet{A}}) where A = A
 
-function StructuredCospan{L}(
-    x::AbstractACSet, cospan::Cospan{<:FinSet{Int}}) where
-    {A, L<:DiscreteACSet{A}}
+function StructuredCospan{L}(x::AbstractACSet, cospan::Cospan{<:FinSet{Int}}) where
+    {A, L <: DiscreteACSet{A}}
   a = A()
   copy_common_parts!(a, x)
   f, g = cospan
   ϕ, ψ = induced_transformation(a, f), induced_transformation(a, g)
   StructuredCospan{L}(x, Cospan(a, ϕ, ψ))
+end
+
+function StructuredCospanOb{L}(set::FinSet{Int}; kw...) where
+    {CD, A <: AbstractACSet{CD}, L <: DiscreteACSet{A}}
+  a = A()
+  add_parts!(a, only(CD.ob), length(set); kw...)
+  StructuredCospanOb{L}(a)
 end
 
 """ C-set transformation b → a induced by function `f` into parts of `a`.
