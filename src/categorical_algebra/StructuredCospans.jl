@@ -14,8 +14,10 @@ using StaticArrays: StaticVector, SVector
 
 using ...GAT, ..FreeDiagrams, ..Limits, ..FinSets, ..CSets, ..CSetMorphisms
 import ..FreeDiagrams: apex, legs, feet, left, right
+import ..CSetMorphisms: force
 using ...Theories: Category, CatDesc, AttrDesc
-import ...Theories: dom, codom, compose, ⋅, id
+import ...Theories: dom, codom, compose, ⋅, id, otimes, ⊗, munit, braid, σ,
+  mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dunit, dcounit, dagger
 
 # Generic structured cospans
 ############################
@@ -83,8 +85,8 @@ StructuredCospan{L}(apex, cospan::Cospan) where L =
 left(cospan::StructuredCospan) = first(legs(cospan))
 right(cospan::StructuredCospan) = last(legs(cospan))
 
-# Category of structured cospans
-################################
+# Hypergraph category of structured cospans
+###########################################
 
 """ Object in the category of L-structured cospans.
 """
@@ -93,30 +95,81 @@ right(cospan::StructuredCospan) = last(legs(cospan))
   StructuredCospanOb{L}(ob::T) where {L,T} = new{L,T}(ob)
 end
 
-function StructuredCospan(cospan::Cospan, lfoot::StructuredCospanOb{L},
-                          rfoot::StructuredCospanOb{L}) where L
+function StructuredCospan{L}(cospan::Cospan, lfoot::StructuredCospanOb{L},
+                             rfoot::StructuredCospanOb{L}) where L
   StructuredCospan{L}(cospan, SVector(lfoot.ob, rfoot.ob))
 end
 
-@instance Category{StructuredCospanOb, StructuredCospan} begin
-  @import dom, codom, id
+# FIXME: Instances don't support type parameters.
+# @instance HypergraphCategory{StructuredCospanOb{L}, StructuredCospan{L}} where L begin
+begin
+  dom(cospan::StructuredCospan{L}) where L =
+    StructuredCospanOb{L}(first(feet(cospan)))
+  codom(cospan::StructuredCospan{L}) where L =
+    StructuredCospanOb{L}(last(feet(cospan)))
 
-  function compose(M::StructuredCospan, N::StructuredCospan)
-    ι1, ι2 = colim = pushout(right(M), left(N))
-    cospan = Cospan(ob(colim), left(M)⋅ι1, right(N)⋅ι2)
-    StructuredCospan(cospan, dom(M), codom(N))
+  id(a::StructuredCospanOb{L}) where L = let x = L(a.ob), i = id(x)
+    StructuredCospan{L}(Cospan(x, i, i), a, a)
   end
+
+  function compose(M::StructuredCospan{L}, N::StructuredCospan{L}) where L
+    ιM, ιN = colim = pushout(right(M), left(N))
+    cospan = Cospan(ob(colim), left(M)⋅ιM, right(N)⋅ιN)
+    StructuredCospan{L}(cospan, dom(M), codom(N))
+  end
+
+  otimes(a::StructuredCospanOb{L}, b::StructuredCospanOb{L}) where L =
+    StructuredCospanOb{L}(ob(coproduct(a.ob, b.ob)))
+
+  function otimes(M::StructuredCospan{L}, N::StructuredCospan{L}) where L
+    ιM, ιN = colim = coproduct(apex(M), apex(N))
+    cospan = Cospan(ob(colim),
+      copair(coproduct(dom(left(M)), dom(left(N))), left(M)⋅ιM, left(N)⋅ιN),
+      copair(coproduct(dom(right(M)), dom(right(N))), right(M)⋅ιM, right(N)⋅ιN))
+    StructuredCospan{L}(cospan, dom(M)⊗dom(N), codom(M)⊗codom(N))
+  end
+
+  munit(::Type{StructuredCospanOb{L}}) where L =
+    StructuredCospanOb{L}(ob(initial(dom(L))))
+
+  function braid(a::StructuredCospanOb{L}, b::StructuredCospanOb{L}) where L
+    x, y = L(a.ob), L(b.ob)
+    xy, yx = coproduct(x, y), coproduct(y, x)
+    cospan = Cospan(ob(xy), id(ob(xy)), copair(yx, coproj2(xy), coproj1(xy)))
+    StructuredCospan{L}(cospan, a⊗b, b⊗a)
+  end
+
+  mcopy(a::StructuredCospanOb{L}) where L = let x = L(a.ob), i = id(x)
+    StructuredCospan{L}(Cospan(x, i, copair(i,i)), a, a⊗a)
+  end
+  mmerge(a::StructuredCospanOb{L}) where L = let x = L(a.ob), i = id(x)
+    StructuredCospan{L}(Cospan(x, copair(i,i), i), a⊗a, a)
+  end
+  delete(a::StructuredCospanOb{L}) where L = let x = L(a.ob), i = id(x)
+    StructuredCospan{L}(Cospan(x, i, create(x)), a, munit_like(a))
+  end
+  create(a::StructuredCospanOb{L}) where L = let x = L(a.ob), i = id(x)
+    StructuredCospan{L}(Cospan(x, create(x), i), munit_like(a), a)
+  end
+
+  dunit(a::StructuredCospanOb{L}) where L = let x = L(a.ob), i = id(x)
+    StructuredCospan{L}(Cospan(x, create(x), copair(i,i)), munit_like(a), a⊗a)
+  end
+  dcounit(a::StructuredCospanOb{L}) where L = let x = L(a.ob), i = id(x)
+    StructuredCospan{L}(Cospan(x, copair(i,i), create(x)), a⊗a, munit_like(a))
+  end
+  
+  dagger(M::StructuredCospan{L}) where L =
+    StructuredCospan{L}(Multicospan(apex(M), reverse(legs(M))),
+                        reverse(feet(M)))
 end
 
-dom(cospan::StructuredCospan{L}) where L =
-  StructuredCospanOb{L}(first(feet(cospan)))
-codom(cospan::StructuredCospan{L}) where L =
-  StructuredCospanOb{L}(last(feet(cospan)))
+munit_like(a::StructuredCospanOb{L}) where L = munit(StructuredCospanOb{L})
 
-function id(a::StructuredCospanOb{L}) where L
-  leg = L(id(a.ob))
-  StructuredCospan(Cospan(leg, leg), a, a)
-end
+# XXX: Needed because we're not using `@instance`.
+⋅(M::StructuredCospan, N::StructuredCospan) = compose(M, N)
+⊗(a::StructuredCospanOb, b::StructuredCospanOb) = otimes(a, b)
+⊗(M::StructuredCospan, N::StructuredCospan) = otimes(M, N)
 
 # Structured cospans of C-sets
 ##############################
@@ -163,7 +216,11 @@ abstract type AbstractDiscreteACSet{X <: AbstractACSet} end
 
 StructuredCospan{L}(x::AbstractACSet, f::FinFunction{Int},
                     g::FinFunction{Int}) where {L<:AbstractDiscreteACSet} =
- StructuredCospan{L}(x, Cospan(f, g))
+  StructuredCospan{L}(x, Cospan(f, g))
+
+force(M::StructuredMulticospan{L}) where {L<:AbstractDiscreteACSet} =
+  StructuredMulticospan{L}(
+    Multicospan(apex(M.cospan), map(force, legs(M.cospan))), M.feet)
 
 """ A functor L: FinSet → C-Set giving the discrete C-set wrt an object in C.
 
@@ -173,6 +230,8 @@ that object. Instead of instantiating this type directly, you should use
 """
 struct FinSetDiscreteACSet{ob₀, X} <: AbstractDiscreteACSet{X} end
 
+dom(::Type{<:FinSetDiscreteACSet}) = FinSet{Int}
+
 """ A functor L: C₀-Set → C-Set giving the discrete C-set for C₀.
 
 Here C₀ is assumed to contain a single object from C and the discreteness is
@@ -181,14 +240,22 @@ forgetting the rest of C. Data attributes of the chosen object are preserved.
 """
 struct DiscreteACSet{A <: AbstractACSet, X} <: AbstractDiscreteACSet{X} end
 
-function StructuredCospan{L}(
-    x::AbstractACSet, cospan::Cospan{<:FinSet{Int}}) where
-    {A, L<:DiscreteACSet{A}}
+dom(::Type{<:DiscreteACSet{A}}) where A = A
+
+function StructuredCospan{L}(x::AbstractACSet, cospan::Cospan{<:FinSet{Int}}) where
+    {A, L <: DiscreteACSet{A}}
   a = A()
   copy_common_parts!(a, x)
   f, g = cospan
   ϕ, ψ = induced_transformation(a, f), induced_transformation(a, g)
   StructuredCospan{L}(x, Cospan(a, ϕ, ψ))
+end
+
+function StructuredCospanOb{L}(set::FinSet{Int}; kw...) where
+    {CD, A <: AbstractACSet{CD}, L <: DiscreteACSet{A}}
+  a = A()
+  add_parts!(a, only(CD.ob), length(set); kw...)
+  StructuredCospanOb{L}(a)
 end
 
 """ C-set transformation b → a induced by function `f` into parts of `a`.

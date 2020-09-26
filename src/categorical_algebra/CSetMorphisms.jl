@@ -1,7 +1,7 @@
 """ Morphisms of C-sets and attributed C-sets.
 """
 module CSetMorphisms
-export ACSetTransformation, CSetTransformation, components, is_natural
+export ACSetTransformation, CSetTransformation, components, force, is_natural
 
 using Compat: isnothing
 
@@ -9,7 +9,7 @@ using AutoHashEquals
 using StaticArrays: SVector
 
 using ...GAT, ..CSets, ..FreeDiagrams, ..Limits, ..FinSets
-import ..Limits: limit, colimit
+import ..Limits: limit, colimit, universal
 import ..FinSets: force
 using ...Theories: Category, CatDesc, AttrDesc
 import ...Theories: dom, codom, compose, ⋅, id
@@ -112,6 +112,24 @@ finsets(X::ACSet) = map(table -> FinSet(length(table)), X.tables)
 # Limits and colimits
 #####################
 
+""" Limit of C-sets that stores the pointwise limits in FinSet.
+"""
+struct CSetLimit{Ob <: AbstractCSet, Diagram, Cone <: Multispan{Ob},
+                 Limits <: NamedTuple} <: AbstractLimit{Ob,Diagram}
+  diagram::Diagram
+  cone::Cone
+  limits::Limits
+end
+
+""" Colimit of attributed C-sets that stores the pointwise colimits in FinSet.
+"""
+struct ACSetColimit{Ob <: AbstractACSet, Diagram, Cocone <: Multicospan{Ob},
+                    Colimits <: NamedTuple} <: AbstractColimit{Ob,Diagram}
+  diagram::Diagram
+  cocone::Cocone
+  colimits::Colimits
+end
+
 # Compute limits and colimits of C-sets by reducing to those in FinSet using the
 # "pointwise" formula for (co)limits in functor categories.
 
@@ -131,7 +149,12 @@ function limit(diagram::AbstractFreeDiagram{ACS}) where
     set_subpart!(Y, f, collect(Yf))
   end
   πs = pack_components(map(legs, limits), map(X -> Y, Xs), Xs)
-  Limit(diagram, Multispan(Y, πs))
+  CSetLimit(diagram, Multispan(Y, πs), limits)
+end
+
+function universal(lim::CSetLimit, cone::Multispan)
+  components = map(universal, lim.limits, unpack_diagram(cone))
+  CSetTransformation(components, apex(cone), ob(lim))
 end
 
 function colimit(diagram::AbstractFreeDiagram{ACS}) where
@@ -171,7 +194,12 @@ function colimit(diagram::AbstractFreeDiagram{ACS}) where
     set_subpart!(Y, attr, map(something, data))
   end
 
-  Colimit(diagram, Multicospan(Y, ιs))
+  ACSetColimit(diagram, Multicospan(Y, ιs), colimits)
+end
+
+function universal(colim::ACSetColimit, cocone::Multicospan)
+  components = map(universal, colim.colimits, unpack_diagram(cocone))
+  ACSetTransformation(components, ob(colim), apex(cocone))
 end
 
 """ Diagram in C-Set → named tuple of diagrams in FinSet
