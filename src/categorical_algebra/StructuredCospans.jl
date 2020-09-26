@@ -16,7 +16,8 @@ using ...GAT, ..FreeDiagrams, ..Limits, ..FinSets, ..CSets, ..CSetMorphisms
 import ..FreeDiagrams: apex, legs, feet, left, right
 import ..CSetMorphisms: force
 using ...Theories: Category, CatDesc, AttrDesc
-import ...Theories: dom, codom, compose, ⋅, id, otimes, ⊗, munit, braid
+import ...Theories: dom, codom, compose, ⋅, id, otimes, ⊗, munit, braid, σ,
+  mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dunit, dcounit, dagger
 
 # Generic structured cospans
 ############################
@@ -84,8 +85,8 @@ StructuredCospan{L}(apex, cospan::Cospan) where L =
 left(cospan::StructuredCospan) = first(legs(cospan))
 right(cospan::StructuredCospan) = last(legs(cospan))
 
-# Category of structured cospans
-################################
+# Hypergraph category of structured cospans
+###########################################
 
 """ Object in the category of L-structured cospans.
 """
@@ -100,16 +101,15 @@ function StructuredCospan{L}(cospan::Cospan, lfoot::StructuredCospanOb{L},
 end
 
 # FIXME: Instances don't support type parameters.
-# @instance SymmetricMonoidalCategory{StructuredCospanOb{L}, StructuredCospan{L}} where L begin
+# @instance HypergraphCategory{StructuredCospanOb{L}, StructuredCospan{L}} where L begin
 begin
   dom(cospan::StructuredCospan{L}) where L =
     StructuredCospanOb{L}(first(feet(cospan)))
   codom(cospan::StructuredCospan{L}) where L =
     StructuredCospanOb{L}(last(feet(cospan)))
 
-  function id(a::StructuredCospanOb{L}) where L
-    leg = L(id(a.ob))
-    StructuredCospan{L}(Cospan(leg, leg), a, a)
+  id(a::StructuredCospanOb{L}) where L = let x = L(a.ob), i = id(x)
+    StructuredCospan{L}(Cospan(x, i, i), a, a)
   end
 
   function compose(M::StructuredCospan{L}, N::StructuredCospan{L}) where L
@@ -126,8 +126,7 @@ begin
     cospan = Cospan(ob(colim),
       copair(coproduct(dom(left(M)), dom(left(N))), left(M)⋅ιM, left(N)⋅ιN),
       copair(coproduct(dom(right(M)), dom(right(N))), right(M)⋅ιM, right(N)⋅ιN))
-    StructuredCospan{L}(cospan, otimes(dom(M),dom(N)),
-                        otimes(codom(M),codom(N)))
+    StructuredCospan{L}(cospan, dom(M)⊗dom(N), codom(M)⊗codom(N))
   end
 
   munit(::Type{StructuredCospanOb{L}}) where L =
@@ -138,7 +137,33 @@ begin
     cospan = Cospan(id(ob(ab)), copair(ba, coproj2(ab), coproj1(ab)))
     StructuredCospan{L}(L(ob(ab)), cospan)
   end
+
+  mcopy(a::StructuredCospanOb{L}) where L = let x = L(a.ob), i = id(x)
+    StructuredCospan{L}(Cospan(x, i, copair(i,i)), a, a⊗a)
+  end
+  mmerge(a::StructuredCospanOb{L}) where L = let x = L(a.ob), i = id(x)
+    StructuredCospan{L}(Cospan(x, copair(i,i), i), a⊗a, a)
+  end
+  delete(a::StructuredCospanOb{L}) where L = let x = L(a.ob), i = id(x)
+    StructuredCospan{L}(Cospan(x, i, create(x)), a, munit_like(a))
+  end
+  create(a::StructuredCospanOb{L}) where L = let x = L(a.ob), i = id(x)
+    StructuredCospan{L}(Cospan(x, create(x), i), munit_like(a), a)
+  end
+
+  dunit(a::StructuredCospanOb{L}) where L = let x = L(a.ob), i = id(x)
+    StructuredCospan{L}(Cospan(x, create(x), copair(i,i)), munit_like(a), a⊗a)
+  end
+  dcounit(a::StructuredCospanOb{L}) where L = let x = L(a.ob), i = id(x)
+    StructuredCospan{L}(Cospan(x, copair(i,i), create(x)), a⊗a, munit_like(a))
+  end
+  
+  dagger(M::StructuredCospan{L}) where L =
+    StructuredCospan{L}(Multicospan(apex(M), reverse(legs(M))),
+                        reverse(feet(M)))
 end
+
+munit_like(a::StructuredCospanOb{L}) where L = munit(StructuredCospanOb{L})
 
 # XXX: Needed because we're not using `@instance`.
 ⋅(M::StructuredCospan, N::StructuredCospan) = compose(M, N)

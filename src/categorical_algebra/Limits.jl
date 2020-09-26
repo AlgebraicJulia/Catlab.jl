@@ -153,6 +153,7 @@ initial(T::Type) = colimit(EmptyDiagram{T}())
 To implement for a type `T`, define the method
 `universal(::Terminal{T}, ::SMultispan{0,T})`.
 """
+delete(A::T) where T = delete(terminal(T), A)
 delete(lim::Terminal, A) = universal(lim, SMultispan{0}(A))
 
 """ Unique morphism out of an initial object.
@@ -160,6 +161,7 @@ delete(lim::Terminal, A) = universal(lim, SMultispan{0}(A))
 To implement for a type `T`, define the method
 `universal(::Initial{T}, ::SMulticospan{0,T})`.
 """
+create(A::T) where T = create(initial(T), A)
 create(colim::Initial, A) = universal(colim, SMulticospan{0}(A))
 
 """ Product of objects.
@@ -218,6 +220,8 @@ To implement for products of type `T`, define the method
 `universal(::BinaryProduct{T}, ::Span{T})` and/or
 `universal(::Product{T}, ::Multispan{T})` and similarly for pullbacks.
 """
+pair(f, g) = pair(product(codom(f), codom(g)), f, g)
+pair(fs::AbstractVector) = pair(product(map(codom, fs)), fs)
 pair(lim::Union{BinaryProduct,BinaryPullback}, f, g) =
   universal(lim, Span(f, g))
 pair(lim::Union{Product,Pullback}, fs::AbstractVector) =
@@ -229,6 +233,8 @@ To implement for coproducts of type `T`, define the method
 `universal(::BinaryCoproduct{T}, ::Cospan{T})` and/or
 `universal(::Coproduct{T}, ::Multicospan{T})` and similarly for pushouts.
 """
+copair(f, g) = copair(coproduct(dom(f), dom(g)), f, g)
+copair(fs::AbstractVector) = copair(coproduct(map(dom, fs)), fs)
 copair(colim::Union{BinaryCoproduct,BinaryPushout}, f, g) =
   universal(colim, Cospan(f, g))
 copair(colim::Union{Coproduct,Pushout}, fs::AbstractVector) =
