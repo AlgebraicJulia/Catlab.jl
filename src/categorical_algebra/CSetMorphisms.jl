@@ -1,7 +1,7 @@
 """ Morphisms of C-sets and attributed C-sets.
 """
 module CSetMorphisms
-export ACSetTransformation, CSetTransformation, components, is_natural
+export ACSetTransformation, CSetTransformation, components, force, is_natural
 
 using Compat: isnothing
 

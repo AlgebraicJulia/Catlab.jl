@@ -14,8 +14,9 @@ using StaticArrays: StaticVector, SVector
 
 using ...GAT, ..FreeDiagrams, ..Limits, ..FinSets, ..CSets, ..CSetMorphisms
 import ..FreeDiagrams: apex, legs, feet, left, right
+import ..CSetMorphisms: force
 using ...Theories: Category, CatDesc, AttrDesc
-import ...Theories: dom, codom, compose, ⋅, id
+import ...Theories: dom, codom, compose, ⋅, id, otimes, ⊗, munit, braid
 
 # Generic structured cospans
 ############################
@@ -93,30 +94,56 @@ right(cospan::StructuredCospan) = last(legs(cospan))
   StructuredCospanOb{L}(ob::T) where {L,T} = new{L,T}(ob)
 end
 
-function StructuredCospan(cospan::Cospan, lfoot::StructuredCospanOb{L},
-                          rfoot::StructuredCospanOb{L}) where L
+function StructuredCospan{L}(cospan::Cospan, lfoot::StructuredCospanOb{L},
+                             rfoot::StructuredCospanOb{L}) where L
   StructuredCospan{L}(cospan, SVector(lfoot.ob, rfoot.ob))
 end
 
-@instance Category{StructuredCospanOb, StructuredCospan} begin
-  @import dom, codom, id
+# FIXME: Instances don't support type parameters.
+# @instance SymmetricMonoidalCategory{StructuredCospanOb{L}, StructuredCospan{L}} where L begin
+begin
+  dom(cospan::StructuredCospan{L}) where L =
+    StructuredCospanOb{L}(first(feet(cospan)))
+  codom(cospan::StructuredCospan{L}) where L =
+    StructuredCospanOb{L}(last(feet(cospan)))
 
-  function compose(M::StructuredCospan, N::StructuredCospan)
-    ι1, ι2 = colim = pushout(right(M), left(N))
-    cospan = Cospan(ob(colim), left(M)⋅ι1, right(N)⋅ι2)
-    StructuredCospan(cospan, dom(M), codom(N))
+  function id(a::StructuredCospanOb{L}) where L
+    leg = L(id(a.ob))
+    StructuredCospan{L}(Cospan(leg, leg), a, a)
+  end
+
+  function compose(M::StructuredCospan{L}, N::StructuredCospan{L}) where L
+    ιM, ιN = colim = pushout(right(M), left(N))
+    cospan = Cospan(ob(colim), left(M)⋅ιM, right(N)⋅ιN)
+    StructuredCospan{L}(cospan, dom(M), codom(N))
+  end
+
+  otimes(a::StructuredCospanOb{L}, b::StructuredCospanOb{L}) where L =
+    StructuredCospanOb{L}(ob(coproduct(a.ob, b.ob)))
+
+  function otimes(M::StructuredCospan{L}, N::StructuredCospan{L}) where L
+    ιM, ιN = colim = coproduct(apex(M), apex(N))
+    cospan = Cospan(ob(colim),
+      copair(coproduct(dom(left(M)), dom(left(N))), left(M)⋅ιM, left(N)⋅ιN),
+      copair(coproduct(dom(right(M)), dom(right(N))), right(M)⋅ιM, right(N)⋅ιN))
+    StructuredCospan{L}(cospan, otimes(dom(M),dom(N)),
+                        otimes(codom(M),codom(N)))
+  end
+
+  munit(::Type{StructuredCospanOb{L}}) where L =
+    StructuredCospanOb{L}(ob(initial(dom(L))))
+
+  function braid(a::StructuredCospanOb{L}, b::StructuredCospanOb{L}) where L
+    ab, ba = coproduct(a.ob, b.ob), coproduct(b.ob, a.ob)
+    cospan = Cospan(id(ob(ab)), copair(ba, coproj2(ab), coproj1(ab)))
+    StructuredCospan{L}(L(ob(ab)), cospan)
   end
 end
 
-dom(cospan::StructuredCospan{L}) where L =
-  StructuredCospanOb{L}(first(feet(cospan)))
-codom(cospan::StructuredCospan{L}) where L =
-  StructuredCospanOb{L}(last(feet(cospan)))
-
-function id(a::StructuredCospanOb{L}) where L
-  leg = L(id(a.ob))
-  StructuredCospan(Cospan(leg, leg), a, a)
-end
+# XXX: Needed because we're not using `@instance`.
+⋅(M::StructuredCospan, N::StructuredCospan) = compose(M, N)
+⊗(a::StructuredCospanOb, b::StructuredCospanOb) = otimes(a, b)
+⊗(M::StructuredCospan, N::StructuredCospan) = otimes(M, N)
 
 # Structured cospans of C-sets
 ##############################
@@ -163,7 +190,11 @@ abstract type AbstractDiscreteACSet{X <: AbstractACSet} end
 
 StructuredCospan{L}(x::AbstractACSet, f::FinFunction{Int},
                     g::FinFunction{Int}) where {L<:AbstractDiscreteACSet} =
- StructuredCospan{L}(x, Cospan(f, g))
+  StructuredCospan{L}(x, Cospan(f, g))
+
+force(M::StructuredMulticospan{L}) where {L<:AbstractDiscreteACSet} =
+  StructuredMulticospan{L}(
+    Multicospan(apex(M.cospan), map(force, legs(M.cospan))), M.feet)
 
 """ A functor L: FinSet → C-Set giving the discrete C-set wrt an object in C.
 
@@ -173,6 +204,8 @@ that object. Instead of instantiating this type directly, you should use
 """
 struct FinSetDiscreteACSet{ob₀, X} <: AbstractDiscreteACSet{X} end
 
+dom(::Type{<:FinSetDiscreteACSet}) = FinSet{Int}
+
 """ A functor L: C₀-Set → C-Set giving the discrete C-set for C₀.
 
 Here C₀ is assumed to contain a single object from C and the discreteness is
@@ -180,6 +213,8 @@ with respect to this object. The functor L has a right adjoint R: C-Set → C₀
 forgetting the rest of C. Data attributes of the chosen object are preserved.
 """
 struct DiscreteACSet{A <: AbstractACSet, X} <: AbstractDiscreteACSet{X} end
+
+dom(::Type{<:DiscreteACSet{A}}) where A = A
 
 function StructuredCospan{L}(
     x::AbstractACSet, cospan::Cospan{<:FinSet{Int}}) where

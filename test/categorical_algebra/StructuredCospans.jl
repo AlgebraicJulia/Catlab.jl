@@ -25,6 +25,9 @@ h0 = Graph(4)
 add_edges!(h0, [1,2,3], [3,3,4])
 h = OpenGraph(h0, FinFunction([1,2],4), FinFunction([4],4))
 
+# Symmetric monoidal category
+#----------------------------
+
 # Composition.
 k = compose(g, h)
 @test dom(k) == dom(g)
@@ -39,6 +42,19 @@ a = OpenGraphOb(FinSet(3))
 @test codom(id(a)) == a
 @test compose(g, id(codom(g))) == g
 @test compose(id(dom(g)), g) == g
+
+# Monoidal products.
+a, b = OpenGraphOb(FinSet(3)), OpenGraphOb(FinSet(2))
+@test otimes(a, b) == OpenGraphOb(FinSet(5))
+@test munit(OpenGraphOb) == OpenGraphOb(FinSet(0))
+@test dom(braid(a, b)) == a⊗b
+@test codom(braid(b, a)) == b⊗a
+@test force(braid(a,b)⋅braid(b,a)) == force(id(a⊗b))
+
+k = otimes(g, h)
+@test dom(k) == dom(g)⊗dom(h)
+@test codom(k) == codom(g)⊗codom(h)
+@test (nv(apex(k)), ne(apex(k))) == (8, 6)
 
 # Structured cospan of attributed C-sets
 ########################################
