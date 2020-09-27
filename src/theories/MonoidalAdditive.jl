@@ -84,10 +84,16 @@ For references, see [`MonoidalCategoryWithDiagonals`](@ref).
   zero(A::Ob)::(mzero() → A)
   
   # Commutative monoid axioms.
-  plus(A) == swap(A,A) ⋅ plus(A) ⊣ (A::Ob)
   (plus(A) ⊕ id(A)) ⋅ plus(A) == (id(A) ⊕ plus(A)) ⋅ plus(A) ⊣ (A::Ob)
   (zero(A) ⊕ id(A)) ⋅ plus(A) == id(A) ⊣ (A::Ob)
   (id(A) ⊕ zero(A)) ⋅ plus(A) == id(A) ⊣ (A::Ob)
+  plus(A) == swap(A,A) ⋅ plus(A) ⊣ (A::Ob)
+
+  # Coherence axioms.
+  plus(A⊕B) == (id(A) ⊕ swap(B,A) ⊕ id(B)) ⋅ (plus(A) ⊕ plus(B)) ⊣ (A::Ob, B::Ob)
+  zero(A⊕B) == zero(A) ⊕ zero(B) ⊣ (A::Ob, B::Ob)
+  plus(mzero()) == id(mzero())
+  zero(mzero()) == id(mzero())
 end
 
 """ Theory of *cocartesian (monoidal) categories*
@@ -99,7 +105,8 @@ For the traditional axiomatization of coproducts, see
   copair(f::(A → C), g::(B → C))::((A ⊕ B) → C) <= (A::Ob, B::Ob, C::Ob)
   coproj1(A::Ob, B::Ob)::(A → (A ⊕ B))
   coproj2(A::Ob, B::Ob)::(B → (A ⊕ B))
-  
+
+  # Definitions of copairing and coprojections.
   copair(f,g) == (f⊕g)⋅plus(C) ⊣ (A::Ob, B::Ob, C::Ob, f::(A → C), g::(B → C))
   coproj1(A,B) == id(A)⊕zero(B) ⊣ (A::Ob, B::Ob)
   coproj2(A,B) == zero(A)⊕id(B) ⊣ (A::Ob, B::Ob)

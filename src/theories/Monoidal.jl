@@ -124,11 +124,23 @@ References:
   Section 6.6: "Cartesian center"
 - Selinger, 1999, "Categorical structure of asynchrony"
 """
-@signature MonoidalCategoryWithDiagonals{Ob,Hom} <: SymmetricMonoidalCategory{Ob,Hom} begin
+@theory MonoidalCategoryWithDiagonals{Ob,Hom} <: SymmetricMonoidalCategory{Ob,Hom} begin
   mcopy(A::Ob)::(A → (A ⊗ A))
   @op (Δ) := mcopy
   delete(A::Ob)::(A → munit())
   @op (◊) := delete
+
+  # Commutative comonoid axioms.
+  Δ(A) ⋅ (Δ(A) ⊗ id(A)) == Δ(A) ⋅ (id(A) ⊗ Δ(A)) ⊣ (A::Ob)
+  Δ(A) ⋅ (◊(A) ⊗ id(A)) == id(A) ⊣ (A::Ob)
+  Δ(A) ⋅ (id(A) ⊗ ◊(A)) == id(A) ⊣ (A::Ob)
+  Δ(A) ⋅ σ(A,A) == Δ(A) ⊣ (A::Ob)
+
+  # Coherence axioms.
+  Δ(A⊗B) == (Δ(A) ⊗ Δ(B)) ⋅ (id(A) ⊗ σ(A,B) ⊗ id(B)) ⊣ (A::Ob, B::Ob)
+  ◊(A⊗B) == ◊(A) ⊗ ◊(B) ⊣ (A::Ob, B::Ob)
+  Δ(munit()) == id(munit())
+  ◊(munit()) == id(munit())
 end
 
 """ Theory of *cartesian (monoidal) categories*
@@ -141,6 +153,7 @@ For the traditional axiomatization of products, see
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
 
+  # Definitions of pairing and projections.
   pair(f,g) == Δ(C)⋅(f⊗g) ⊣ (A::Ob, B::Ob, C::Ob, f::(C → A), g::(C → B))
   proj1(A,B) == id(A)⊗◊(B) ⊣ (A::Ob, B::Ob)
   proj2(A,B) == ◊(A)⊗id(B) ⊣ (A::Ob, B::Ob)
