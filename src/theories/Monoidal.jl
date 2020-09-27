@@ -24,12 +24,25 @@ To avoid associators and unitors, we assume the monoidal category is *strict*.
 By the coherence theorem there is no loss of generality, but we may add a
 theory for weak monoidal categories later.
 """
-@signature MonoidalCategory{Ob,Hom} <: Category{Ob,Hom} begin
+@theory MonoidalCategory{Ob,Hom} <: Category{Ob,Hom} begin
   otimes(A::Ob, B::Ob)::Ob
   otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣
     (A::Ob, B::Ob, C::Ob, D::Ob)
   @op (⊗) := otimes
   munit()::Ob
+
+  # Monoid axioms.
+  (A ⊗ B) ⊗ C == A ⊗ (B ⊗ C) ⊣ (A::Ob, B::Ob, C::Ob)
+  A ⊗ munit() == A ⊣ (A::Ob)
+  munit() ⊗ A == A ⊣ (A::Ob)
+  (f ⊗ g) ⊗ h == f ⊗ (g ⊗ h) ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
+                                f::(A → X), g::(B → Y), h::(C → Z))
+
+  # Functorality axioms.
+  ((f ⊗ g) ⋅ (h ⊗ k) == (f ⋅ h) ⊗ (g ⋅ k)
+    ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
+       f::(A → B), h::(B → C), g::(X → Y), k::(Y → Z)))
+  id(A ⊗ B) == id(A) ⊗ id(B) ⊣ (A::Ob, B::Ob)
 end
 
 # Convenience constructors
@@ -65,13 +78,22 @@ show_latex(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
 # Symmetric monoidal category
 #############################
 
-""" Theory of *symmetric monoidal categories*
-
-The theory (but not the axioms) is the same as a braided monoidal category.
+""" Theory of (strict) *symmetric monoidal categories*
 """
-@signature SymmetricMonoidalCategory{Ob,Hom} <: MonoidalCategory{Ob,Hom} begin
+@theory SymmetricMonoidalCategory{Ob,Hom} <: MonoidalCategory{Ob,Hom} begin
   braid(A::Ob, B::Ob)::((A ⊗ B) → (B ⊗ A))
   @op (σ) := braid
+
+  # Involutivity axiom.
+  σ(A,B) ⋅ σ(B,A) == id(A ⊗ B) ⊣ (A::Ob, B::Ob)
+
+  # Coherence axioms.
+  σ(A,B⊗C) == (σ(A,B) ⊗ id(C)) ⋅ (id(B) ⊗ σ(A,C)) ⊣ (A::Ob, B::Ob, C::Ob)
+  σ(A⊗B,C) == (id(A) ⊗ σ(B,C)) ⋅ (σ(A,C) ⊗ id(B)) ⊣ (A::Ob, B::Ob, C::Ob)
+
+  # Naturality axiom.
+  (f ⊗ g) ⋅ σ(B,D) == σ(A,C) ⋅ (g ⊗ f) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
+                                          f::(A → B), g::(C → D))
 end
 
 @syntax FreeSymmetricMonoidalCategory{ObExpr,HomExpr} SymmetricMonoidalCategory begin
