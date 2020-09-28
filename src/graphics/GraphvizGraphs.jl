@@ -210,9 +210,39 @@ function to_graphviz(g::AbstractReflexiveGraph;
   for e in edges(g)
     is_reflexive = e ∈ reflexive_edges
     if show_reflexive || !is_reflexive
-      new_edge = add_edge!(pg, src(g,e), tgt(g,e))
-      if is_reflexive; set_eprop!(pg, new_edge, :style, "dashed") end
-      if edge_labels; set_eprop!(pg, new_edge, :label, string(e)) end
+      e′ = add_edge!(pg, src(g,e), tgt(g,e))
+      if is_reflexive; set_eprop!(pg, e′, :style, "dashed") end
+      if edge_labels; set_eprop!(pg, e′, :label, string(e)) end
+    end
+  end
+  to_graphviz(pg)
+end
+
+# Symmetric reflexive graphs
+############################
+
+function to_graphviz(g::AbstractSymmetricReflexiveGraph;
+    prog::AbstractString="neato", graph_attrs::AbstractDict=Dict(),
+    node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
+    node_labels::Bool=false, edge_labels::Bool=false,
+    show_reflexive::Bool=false)
+  pg = SymmetricPropertyGraph{Any}(; prog = prog,
+    graph = graph_attrs,
+    node = merge!(default_node_attrs(node_labels), node_attrs),
+    edge = merge!(Dict(:len => "0.5"), edge_attrs),
+  )
+  for v in vertices(g)
+    add_vertex!(pg, label=node_labels ? string(v) : "")
+  end
+  reflexive_edges = Set(refl(g))
+  for e in edges(g)
+    is_reflexive = e ∈ reflexive_edges
+    if is_reflexive && show_reflexive
+      e′ = add_edge!(pg, src(g,e), tgt(g,e), style="dashed")
+      if edge_labels; set_eprop!(pg, e′, :label, string(e)) end
+    elseif !is_reflexive && e <= inv(g,e)
+      e′ = add_edge!(pg, src(g,e), tgt(g,e))
+      if edge_labels; set_eprop!(pg, e′, :label, "($e,$(inv(g,e)))") end
     end
   end
   to_graphviz(pg)
@@ -234,16 +264,15 @@ function to_graphviz(g::AbstractHalfEdgeGraph;
     add_vertex!(pg, label=node_labels ? string(v) : "")
   end
   for e in half_edges(g)
-    e′ = inv(g,e)
-    if e == e′
+    if e == inv(g,e)
       # Dangling half-edge: add an invisible vertex.
       v = add_vertex!(pg, style="invis", shape="none", label="")
-      new_edge = add_edge!(pg, vertex(g,e), v)
-      if edge_labels; set_eprop!(pg, new_edge, :label, string(e)) end
-    elseif e < e′
+      e′ = add_edge!(pg, vertex(g,e), v)
+      if edge_labels; set_eprop!(pg, e′, :label, string(e)) end
+    elseif e < inv(g,e)
       # Pair of distict half-edges: add a standard edge.
-      new_edge = add_edge!(pg, vertex(g,e), vertex(g,e′))
-      if edge_labels; set_eprop!(pg, new_edge, :label, "($e,$e′)") end
+      e′ = add_edge!(pg, vertex(g,e), vertex(g,inv(g,e)))
+      if edge_labels; set_eprop!(pg, e′, :label, "($e,$(inv(g,e)))") end
     end
   end
   to_graphviz(pg)
