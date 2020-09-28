@@ -1,6 +1,6 @@
-""" Generate data structure for C-sets (copreshaves) and attributed C-sets.
+""" Data structure for C-sets (copreshaves) and attributed C-sets.
 """
-module CSets
+module CSetDataStructures
 export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
   AbstractACSetType, ACSetType, AbstractCSetType, CSetType,
   nparts, has_part, subpart, has_subpart, incident, add_part!, add_parts!,

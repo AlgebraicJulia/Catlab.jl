@@ -1,4 +1,4 @@
-module TestCSetMorphisms
+module TestCSets
 using Test
 
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra

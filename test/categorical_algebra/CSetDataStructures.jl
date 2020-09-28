@@ -1,8 +1,8 @@
-module TestCSets
+module TestCSetDataStructures
 using Test
 
 using Catlab: @present
-using Catlab.CategoricalAlgebra.CSets
+using Catlab.CSetDataStructures
 
 # Discrete dynamical systems
 ############################

@@ -1,14 +1,16 @@
-""" Morphisms of C-sets and attributed C-sets.
+""" Categories of C-sets and attributed C-sets.
 """
-module CSetMorphisms
+module CSets
 export ACSetTransformation, CSetTransformation, components, force, is_natural
 
 using Compat: isnothing
 
 using AutoHashEquals
+using Reexport
 using StaticArrays: SVector
 
-using ...GAT, ..CSets, ..FreeDiagrams, ..Limits, ..FinSets
+@reexport using ...CSetDataStructures
+using ...GAT, ..FreeDiagrams, ..Limits, ..FinSets
 import ..Limits: limit, colimit, universal
 import ..FinSets: force
 using ...Theories: Category, CatDesc, AttrDesc
