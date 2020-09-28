@@ -3,10 +3,11 @@
 Support for graphs, symmetric graphs, and half-edge graphs.
 """
 module BasicGraphs
-export AbstractGraph, Graph, AbstractSymmetricGraph, SymmetricGraph,
-  nv, ne, src, tgt, inv, edges, vertices, has_edge, has_vertex,
-  add_edge!, add_edges!, add_vertex!, add_vertices!,
+export AbstractGraph, Graph, nv, ne, src, tgt, edges, vertices,
+  has_edge, has_vertex, add_edge!, add_edges!, add_vertex!, add_vertices!,
   neighbors, inneighbors, outneighbors, all_neighbors,
+  AbstractSymmetricGraph, SymmetricGraph, inv,
+  AbstractReflexiveGraph, ReflexiveGraph, refl,
   AbstractHalfEdgeGraph, HalfEdgeGraph, vertex, half_edges,
   add_dangling_edge!, add_dangling_edges!
 
@@ -108,6 +109,44 @@ neighbors(g::AbstractSymmetricGraph, v::Int) =
 inneighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
 outneighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
 all_neighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
+
+# Reflexive graphs
+##################
+
+@present TheoryReflexiveGraph <: TheoryGraph begin
+  refl::Hom(V,E)
+
+  compose(refl, src) == id(V)
+  compose(refl, tgt) == id(V)
+end
+
+const AbstractReflexiveGraph = AbstractACSetType(TheoryReflexiveGraph)
+const ReflexiveGraph = CSetType(TheoryReflexiveGraph, index=[:src,:tgt])
+
+refl(g::AbstractACSet, args...) = subpart(g, args..., :refl)
+
+function add_vertex!(g::AbstractReflexiveGraph; kw...)
+  v = add_part!(g, :V; kw...)
+  e = add_edge!(g, v, v)
+  set_subpart!(g, v, :refl, e)
+  v
+end
+
+function add_vertices!(g::AbstractReflexiveGraph, n::Int; kw...)
+  vs = add_parts!(g, :V, n; kw...)
+  es = add_edges!(g, vs, vs)
+  set_subpart!(g, vs, :refl, es)
+  vs
+end
+
+add_edge!(g::AbstractReflexiveGraph, src::Int, tgt::Int; kw...) =
+  add_part!(g, :E; src=src, tgt=tgt, kw...)
+
+function add_edges!(g::AbstractReflexiveGraph, srcs::AbstractVector{Int},
+                    tgts::AbstractVector{Int}; kw...)
+  @assert (n = length(srcs)) == length(tgts)
+  add_parts!(g, :E, n; src=srcs, tgt=tgts, kw...)
+end
 
 # Half-edge graphs
 ##################

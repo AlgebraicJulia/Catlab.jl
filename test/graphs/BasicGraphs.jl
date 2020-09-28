@@ -61,6 +61,24 @@ lg = LightGraphs.DiGraph(4)
 map((src, tgt) -> add_edge!(lg, src, tgt), [1,2,3,2,3,4], [2,3,4,1,2,3])
 @test LightGraphs.DiGraph(g) == lg
 
+# Reflexive graphs
+##################
+
+g = ReflexiveGraph()
+add_vertex!(g)
+add_vertices!(g, 2)
+@test nv(g) == 3
+@test ne(g) == 3
+@test refl(g,1) == 1
+@test refl(g) == [1,2,3]
+@test src(g) == [1,2,3]
+@test tgt(g) == [1,2,3]
+
+add_edges!(g, [1,2], [2,3])
+add_edge!(g, 1, 3)
+@test src(g) == [1,2,3,1,2,1]
+@test tgt(g) == [1,2,3,2,3,3]
+
 # Half-edge graphs
 ##################
 
