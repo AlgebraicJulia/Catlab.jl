@@ -2,7 +2,7 @@ module CategoricalAlgebra
 
 using Reexport
 
-include("CSets.jl")
+include("CSetDataStructures.jl")
 include("Graphs.jl")
 include("FreeDiagrams.jl")
 include("Limits.jl")

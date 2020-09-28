@@ -27,7 +27,7 @@ end
 end
 
 @testset "CSets" begin
-  include("CSets.jl")
+  include("CSetDataStructures.jl")
   include("CSetMorphisms.jl")
 end
 
