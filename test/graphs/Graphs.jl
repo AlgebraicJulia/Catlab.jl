@@ -2,7 +2,7 @@ module TestGraphs
 using Test
 
 import LightGraphs
-using Catlab.CategoricalAlgebra.Graphs
+using Catlab.Graphs
 
 # Graphs
 ########

@@ -22,7 +22,7 @@ using DataStructures: OrderedDict
 import JSON
 using LightXML
 
-using ...CategoricalAlgebra.Graphs
+using ...Graphs
 using ..DirectedWiringDiagrams, ..WiringDiagramSerialization
 import ..DirectedWiringDiagrams: PortData
 

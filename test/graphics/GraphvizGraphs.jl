@@ -2,7 +2,7 @@ module TestGraphvizGraphs
 using Test
 import JSON
 
-using Catlab.CategoricalAlgebra.Graphs, Catlab.Graphics.GraphvizGraphs
+using Catlab.Graphs, Catlab.Graphics.GraphvizGraphs
 import Catlab.Graphics: Graphviz
 
 function stmts(graph::Graphviz.Graph, type::Type)

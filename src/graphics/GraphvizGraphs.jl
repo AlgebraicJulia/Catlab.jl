@@ -6,7 +6,7 @@ export parse_graphviz, to_graphviz
 using Compat: isnothing
 using StaticArrays: StaticVector, SVector
 
-using ...CategoricalAlgebra.Graphs
+using ...Graphs
 import ..Graphviz
 
 # Property graphs

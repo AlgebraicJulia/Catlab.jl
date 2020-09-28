@@ -2,7 +2,6 @@ module CategoricalAlgebra
 
 using Reexport
 
-include("Graphs.jl")
 include("FreeDiagrams.jl")
 include("Limits.jl")
 include("FinSets.jl")

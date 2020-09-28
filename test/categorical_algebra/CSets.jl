@@ -1,9 +1,9 @@
 module TestCSets
 using Test
 
-using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
-using Catlab.CategoricalAlgebra.FinSets, Catlab.CategoricalAlgebra.Graphs
-using Catlab.CategoricalAlgebra.Graphs: TheoryGraph
+using Catlab, Catlab.Theories, Catlab.Graphs,
+  Catlab.CategoricalAlgebra, Catlab.CategoricalAlgebra.FinSets
+using Catlab.Graphs: TheoryGraph
 
 # C-set morphisms
 #################
