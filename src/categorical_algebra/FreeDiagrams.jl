@@ -18,7 +18,7 @@ using StaticArrays: StaticVector, SVector, @SVector
 
 using ...Present, ...Theories, ...CSetDataStructures, ...Graphs
 import ...Theories: ob, hom, dom, codom
-using ...Graphs: TheoryGraph
+using ...Graphs.BasicGraphs: TheoryGraph
 
 # Diagrams of fixed shape
 #########################
