@@ -76,8 +76,27 @@ add_vertices!(g, 2)
 
 add_edges!(g, [1,2], [2,3])
 add_edge!(g, 1, 3)
-@test src(g) == [1,2,3,1,2,1]
-@test tgt(g) == [1,2,3,2,3,3]
+@test ne(g) == 6
+@test src(g, 4:6) == [1,2,1]
+@test tgt(g, 4:6) == [2,3,3]
+
+# Symmetric reflexive graphs
+############################
+
+g = SymmetricReflexiveGraph()
+add_vertex!(g)
+add_vertices!(g, 2)
+@test nv(g) == 3
+@test refl(g) == [1,2,3]
+@test inv(g) == [1,2,3]
+@test src(g) == [1,2,3]
+@test tgt(g) == [1,2,3]
+
+add_edge!(g, 1, 3)
+@test ne(g) == 5
+@test src(g, 4:5) == [1,3]
+@test tgt(g, 4:5) == [3,1]
+@test inv(g, 4:5) == [5,4]
 
 # Half-edge graphs
 ##################

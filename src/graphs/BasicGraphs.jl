@@ -1,6 +1,8 @@
 """ Data structures for graphs, based on C-sets.
 
-Support for graphs, symmetric graphs, and half-edge graphs.
+Provides the category theorist's four basic kinds of graphs: (directed) graphs,
+symmetric graphs, reflexive graphs, and symmetric reflexive graphs. Also defines
+half-edge graphs.
 """
 module BasicGraphs
 export AbstractGraph, Graph, nv, ne, src, tgt, edges, vertices,
@@ -8,8 +10,11 @@ export AbstractGraph, Graph, nv, ne, src, tgt, edges, vertices,
   neighbors, inneighbors, outneighbors, all_neighbors,
   AbstractSymmetricGraph, SymmetricGraph, inv,
   AbstractReflexiveGraph, ReflexiveGraph, refl,
+  AbstractSymmetricReflexiveGraph, SymmetricReflexiveGraph,
   AbstractHalfEdgeGraph, HalfEdgeGraph, vertex, half_edges,
   add_dangling_edge!, add_dangling_edges!
+
+using Compat: only
 
 import Base: inv
 import LightGraphs: SimpleGraph, SimpleDiGraph, nv, ne, src, dst,
@@ -125,16 +130,12 @@ const ReflexiveGraph = CSetType(TheoryReflexiveGraph, index=[:src,:tgt])
 
 refl(g::AbstractACSet, args...) = subpart(g, args..., :refl)
 
-function add_vertex!(g::AbstractReflexiveGraph; kw...)
-  v = add_part!(g, :V; kw...)
-  e = add_edge!(g, v, v)
-  set_subpart!(g, v, :refl, e)
-  v
-end
+add_vertex!(g::AbstractReflexiveGraph; kw...) =
+  only(add_vertices!(g, 1; kw...))
 
 function add_vertices!(g::AbstractReflexiveGraph, n::Int; kw...)
   vs = add_parts!(g, :V, n; kw...)
-  es = add_edges!(g, vs, vs)
+  es = add_parts!(g, :E, n, src=vs, tgt=vs)
   set_subpart!(g, vs, :refl, es)
   vs
 end
@@ -146,6 +147,44 @@ function add_edges!(g::AbstractReflexiveGraph, srcs::AbstractVector{Int},
                     tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
   add_parts!(g, :E, n; src=srcs, tgt=tgts, kw...)
+end
+
+# Symmetric reflexive graphs
+############################
+
+@present TheorySymmetricReflexiveGraph <: TheorySymmetricGraph begin
+  refl::Hom(V,E)
+
+  compose(refl, src) == id(V)
+  compose(refl, tgt) == id(V)
+  compose(refl, inv) == refl # Reflexive loop fixed by involution.
+end
+
+const AbstractSymmetricReflexiveGraph =
+  AbstractACSetType(TheorySymmetricReflexiveGraph)
+const SymmetricReflexiveGraph =
+  CSetType(TheorySymmetricReflexiveGraph, index=[:src])
+
+add_vertex!(g::AbstractSymmetricReflexiveGraph; kw...) =
+  only(add_vertices!(g, 1; kw...))
+
+function add_vertices!(g::AbstractSymmetricReflexiveGraph, n::Int; kw...)
+  vs = add_parts!(g, :V, n; kw...)
+  es = add_parts!(g, :E, n, src=vs, tgt=vs)
+  set_subpart!(g, vs, :refl, es)
+  set_subpart!(g, es, :inv, es)
+  vs
+end
+
+add_edge!(g::AbstractSymmetricReflexiveGraph, src::Int, tgt::Int; kw...) =
+  add_edges!(g, src:src, tgt:tgt; kw...)
+
+function add_edges!(g::AbstractSymmetricReflexiveGraph,
+                    srcs::AbstractVector{Int}, tgts::AbstractVector{Int}; kw...)
+  @assert (n = length(srcs)) == length(tgts)
+  k = nparts(g, :E)
+  add_parts!(g, :E, 2n; src=vcat(srcs,tgts), tgt=vcat(tgts,srcs),
+             inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
 end
 
 # Half-edge graphs
