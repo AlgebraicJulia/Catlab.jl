@@ -128,6 +128,10 @@ end
 const AbstractReflexiveGraph = AbstractACSetType(TheoryReflexiveGraph)
 const ReflexiveGraph = CSetType(TheoryReflexiveGraph, index=[:src,:tgt])
 
+function (::Type{T})(nv::Int) where T <: AbstractReflexiveGraph
+  g = T(); add_vertices!(g, nv); g
+end
+
 refl(g::AbstractACSet, args...) = subpart(g, args..., :refl)
 
 add_vertex!(g::AbstractReflexiveGraph; kw...) =
@@ -164,6 +168,10 @@ const AbstractSymmetricReflexiveGraph =
   AbstractACSetType(TheorySymmetricReflexiveGraph)
 const SymmetricReflexiveGraph =
   CSetType(TheorySymmetricReflexiveGraph, index=[:src])
+
+function (::Type{T})(nv::Int) where T <: AbstractSymmetricReflexiveGraph
+  g = T(); add_vertices!(g, nv); g
+end
 
 add_vertex!(g::AbstractSymmetricReflexiveGraph; kw...) =
   only(add_vertices!(g, 1; kw...))

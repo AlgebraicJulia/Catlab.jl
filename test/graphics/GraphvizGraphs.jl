@@ -97,6 +97,20 @@ gv = to_graphviz(g, edge_labels=true)
 @test stmts(gv, Graphviz.Node, :label) == fill("", 3)
 @test stmts(gv, Graphviz.Edge, :label) == ["(1,3)", "(2,4)"]
 
+# Reflexive graphs
+##################
+
+g = ReflexiveGraph(3)
+add_edges!(g, [1,2], [2,3])
+gv = to_graphviz(g, show_reflexive=false)
+@test gv.directed
+@test length(stmts(gv, Graphviz.Node)) == 3
+@test length(stmts(gv, Graphviz.Edge)) == 2
+
+gv = to_graphviz(g, show_reflexive=true)
+@test length(stmts(gv, Graphviz.Edge)) == 5
+@test stmts(gv, Graphviz.Edge, :style) == fill("dashed", 3)
+
 # Half-edge graphs
 ##################
 

@@ -155,14 +155,18 @@ function to_graphviz(g::AbstractGraph;
   end
   to_graphviz(PropertyGraph{Any}(g, node_labeler, edge_labeler;
     prog = prog,
-    graph = merge(Dict(:rankdir => "LR"), graph_attrs),
-    node = merge(Dict(
-      :shape => node_labels ? "circle" : "point",
-      :width => "0.05", :height => "0.05", :margin => "0",
-    ), node_attrs),
-    edge = merge(Dict(:arrowsize => "0.5"), edge_attrs),
+    graph = merge!(Dict(:rankdir => "LR"), graph_attrs),
+    node = merge!(default_node_attrs(node_labels), node_attrs),
+    edge = merge!(Dict(:arrowsize => "0.5"), edge_attrs),
   ))
 end
+
+default_node_attrs(show_labels::Bool) = Dict(
+  :shape => show_labels ? "circle" : "point",
+  :width => "0.05",
+  :height => "0.05",
+  :margin => "0",
+)
 
 # Symmetric graphs
 ##################
@@ -181,12 +185,37 @@ function to_graphviz(g::AbstractSymmetricGraph;
   to_graphviz(SymmetricPropertyGraph{Any}(g, node_labeler, edge_labeler;
     prog = prog,
     graph = graph_attrs,
-    node = merge(Dict(
-      :shape => node_labels ? "circle" : "point",
-      :width => "0.05", :height => "0.05", :margin => "0",
-    ), node_attrs),
-    edge = merge(Dict(:len => "0.5"), edge_attrs),
+    node = merge!(default_node_attrs(node_labels), node_attrs),
+    edge = merge!(Dict(:len => "0.5"), edge_attrs),
   ))
+end
+
+# Reflexive graphs
+##################
+
+function to_graphviz(g::AbstractReflexiveGraph;
+    prog::AbstractString="dot", graph_attrs::AbstractDict=Dict(),
+    node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
+    node_labels::Bool=false, edge_labels::Bool=false,
+    show_reflexive::Bool=false)
+  pg = PropertyGraph{Any}(; prog = prog,
+    graph = graph_attrs,
+    node = merge!(default_node_attrs(node_labels), node_attrs),
+    edge = merge!(Dict(:arrowsize => "0.5"), edge_attrs),
+  )
+  for v in vertices(g)
+    add_vertex!(pg, label=node_labels ? string(v) : "")
+  end
+  reflexive_edges = Set(refl(g))
+  for e in edges(g)
+    is_reflexive = e ∈ reflexive_edges
+    if show_reflexive || !is_reflexive
+      new_edge = add_edge!(pg, src(g,e), tgt(g,e))
+      if is_reflexive; set_eprop!(pg, new_edge, :style, "dashed") end
+      if edge_labels; set_eprop!(pg, new_edge, :label, string(e)) end
+    end
+  end
+  to_graphviz(pg)
 end
 
 # Half-edge graphs
@@ -196,14 +225,10 @@ function to_graphviz(g::AbstractHalfEdgeGraph;
     prog::AbstractString="neato", graph_attrs::AbstractDict=Dict(),
     node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
     node_labels::Bool=false, edge_labels::Bool=false)
-  pg = SymmetricPropertyGraph{Any}(;
-    prog = prog,
+  pg = SymmetricPropertyGraph{Any}(; prog = prog,
     graph = graph_attrs,
-    node = merge(Dict(
-      :shape => node_labels ? "circle" : "point",
-      :width => "0.05", :height => "0.05", :margin => "0",
-    ), node_attrs),
-    edge = merge(Dict(:len => "0.5"), edge_attrs),
+    node = merge!(default_node_attrs(node_labels), node_attrs),
+    edge = merge!(Dict(:len => "0.5"), edge_attrs),
   )
   for v in vertices(g)
     add_vertex!(pg, label=node_labels ? string(v) : "")
@@ -214,15 +239,11 @@ function to_graphviz(g::AbstractHalfEdgeGraph;
       # Dangling half-edge: add an invisible vertex.
       v = add_vertex!(pg, style="invis", shape="none", label="")
       new_edge = add_edge!(pg, vertex(g,e), v)
-      if edge_labels
-        set_eprop!(pg, new_edge, :label, string(e))
-      end
+      if edge_labels; set_eprop!(pg, new_edge, :label, string(e)) end
     elseif e < e′
       # Pair of distict half-edges: add a standard edge.
       new_edge = add_edge!(pg, vertex(g,e), vertex(g,e′))
-      if edge_labels
-        set_eprop!(pg, new_edge, :label, "($e,$e′)")
-      end
+      if edge_labels; set_eprop!(pg, new_edge, :label, "($e,$e′)") end
     end
   end
   to_graphviz(pg)
