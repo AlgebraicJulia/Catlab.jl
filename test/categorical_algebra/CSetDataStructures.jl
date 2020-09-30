@@ -56,6 +56,11 @@ s = sprint(show, MIME"text/plain"(), dds)
 @test startswith(s, "CSet")
 @test occursin("X table with 3 elements", s)
 
+s = sprint(show, MIME"text/html"(), dds)
+@test startswith(s, "<div class=\"c-set\">")
+@test occursin("<table>", s)
+@test endswith(rstrip(s), "</div>")
+
 # Error handling.
 @test_throws AssertionError add_part!(dds, :X, Φ=5)
 @test subpart(dds, :Φ) == [1,1,1,0]
@@ -115,7 +120,6 @@ s = sprint(show, d)
 @test occursin("R = Int64", s)
 @test occursin("height : X → R = ", s)
 
-show(stdout, MIME"text/plain"(), d)
 s = sprint(show, MIME"text/plain"(), d)
 @test startswith(s, "ACSet")
 
