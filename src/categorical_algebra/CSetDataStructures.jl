@@ -8,6 +8,8 @@ export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
   disjoint_union
 
 using Compat: isnothing, only
+
+using PrettyTables: pretty_table
 using StructArrays
 
 using ...Theories: Schema, FreeSchema, dom, codom,
@@ -210,14 +212,16 @@ end
 
 function Base.show(io::IO, ::MIME"text/plain", acs::T) where {T<:AbstractACSet}
   print(io, T <: AbstractCSet ? "CSet" : "ACSet")
-  println(io, ":")
+  print(io, " with types: ")
+  join(io, keys(tables(acs)), ", ")
+  println(io)
   for (name, table) in pairs(tables(acs))
-    print(io, "  $name table with $(length(table)) elements")
+    println(io, "• $name table with $(length(table)) elements")
     if !(eltype(table) <: EmptyTuple)
-      print(io, ":\n    ")
-      join(io, map(string, table), "\n    ")
+      # TODO: Set option `row_number_column_title=name` when next version of
+      # PrettyTables is released.
+      pretty_table(io, table, nosubheader=true, show_row_number=true)
     end
-    println(io)
   end
 end
 

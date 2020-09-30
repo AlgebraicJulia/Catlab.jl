@@ -53,8 +53,8 @@ s = sprint(show, dds)
 @test occursin("Φ : X → X = ", s)
 
 s = sprint(show, MIME"text/plain"(), dds)
+@test startswith(s, "CSet")
 @test occursin("X table with 3 elements", s)
-@test occursin("(Φ = 1,)", s)
 
 # Error handling.
 @test_throws AssertionError add_part!(dds, :X, Φ=5)
@@ -115,8 +115,9 @@ s = sprint(show, d)
 @test occursin("R = Int64", s)
 @test occursin("height : X → R = ", s)
 
+show(stdout, MIME"text/plain"(), d)
 s = sprint(show, MIME"text/plain"(), d)
-@test occursin("(parent = 4, height = 0)", s)
+@test startswith(s, "ACSet")
 
 # Allow type inheritance for data attributes.
 d = Dendrogram{Number}()
