@@ -18,6 +18,7 @@ const DDS = CSetType(TheoryDDS, index=[:Φ])
 @test DDS <: CSet
 
 dds = DDS()
+@test keys(tables(dds)) == (:X,)
 @test keys(dds.indices) == (:Φ,)
 @test nparts(dds, :X) == 0
 @test add_part!(dds, :X) == 1
@@ -47,12 +48,18 @@ set_subpart!(dds, 1, :Φ, 1)
 
 # Pretty printing.
 s = sprint(show, dds)
+@test startswith(s, "CSet")
 @test occursin("X = 1:3", s)
 @test occursin("Φ : X → X = ", s)
 
 s = sprint(show, MIME"text/plain"(), dds)
-@test occursin("X table with 3 elements", s)
-@test occursin("(Φ = 1,)", s)
+@test startswith(s, "CSet")
+@test occursin("X = 1:3", s)
+
+s = sprint(show, MIME"text/html"(), dds)
+@test startswith(s, "<div class=\"c-set\">")
+@test occursin("<table>", s)
+@test endswith(rstrip(s), "</div>")
 
 # Error handling.
 @test_throws AssertionError add_part!(dds, :X, Φ=5)
@@ -109,11 +116,12 @@ du = disjoint_union(d, d2)
 
 # Pretty printing of data attributes.
 s = sprint(show, d)
+@test startswith(s, "ACSet")
 @test occursin("R = Int64", s)
 @test occursin("height : X → R = ", s)
 
 s = sprint(show, MIME"text/plain"(), d)
-@test occursin("(parent = 4, height = 0)", s)
+@test startswith(s, "ACSet")
 
 # Allow type inheritance for data attributes.
 d = Dendrogram{Number}()

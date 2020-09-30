@@ -3,10 +3,13 @@
 module CSetDataStructures
 export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
   AbstractACSetType, ACSetType, AbstractCSetType, CSetType,
-  nparts, has_part, subpart, has_subpart, incident, add_part!, add_parts!,
-  copy_parts!, set_subpart!, set_subparts!, disjoint_union
+  tables, nparts, has_part, subpart, has_subpart, incident,
+  add_part!, add_parts!, copy_parts!, set_subpart!, set_subparts!,
+  disjoint_union
 
 using Compat: isnothing, only
+
+using PrettyTables: pretty_table
 using StructArrays
 
 using ...Theories: Schema, FreeSchema, dom, codom,
@@ -193,8 +196,9 @@ function Base.copy(acs::T) where T <: ACSet
   T(map(copy, acs.tables), map(copy, acs.indices))
 end
 
-function Base.show(io::IO, acs::AbstractACSet{CD,AD,Ts}) where {CD,AD,Ts}
-  println(io, "ACSet(")
+function Base.show(io::IO, acs::T) where {CD,AD,Ts,T<:AbstractACSet{CD,AD,Ts}}
+  print(io, T <: AbstractCSet ? "CSet" : "ACSet")
+  println(io, "(")
   join(io, vcat(
     [ "  $ob = 1:$(nparts(acs,ob))" for ob in CD.ob ],
     [ "  $data = $(Ts.parameters[i])" for (i,data) in enumerate(AD.data) ],
@@ -206,20 +210,47 @@ function Base.show(io::IO, acs::AbstractACSet{CD,AD,Ts}) where {CD,AD,Ts}
   print(io, ")")
 end
 
-function Base.show(io::IO, ::MIME"text/plain", acs::ACSet)
-  println(io, "ACSet:")
-  for (name, table) in pairs(acs.tables)
-    print(io, "  $name table with $(length(table)) elements")
+function Base.show(io::IO, ::MIME"text/plain", acs::T) where {T<:AbstractACSet}
+  print(io, T <: AbstractCSet ? "CSet" : "ACSet")
+  print(io, " with elements ")
+  join(io, ["$ob = 1:$(nparts(acs,ob))" for ob in keys(tables(acs))], ", ")
+  println(io)
+  for (ob, table) in pairs(tables(acs))
     if !(eltype(table) <: EmptyTuple)
-      print(io, ":\n    ")
-      join(io, map(string, table), "\n    ")
+      # TODO: Set option `row_number_column_title=name` when next version of
+      # PrettyTables is released, instead of making new table.
+      table = StructArray((; ob => 1:nparts(acs,ob), fieldarrays(table)...))
+      pretty_table(io, table, nosubheader=true)
     end
-    println(io)
   end
+end
+
+function Base.show(io::IO, ::MIME"text/html", acs::T) where {T<:AbstractACSet}
+  println(io, "<div class=\"c-set\">")
+  print(io, "<span class=\"c-set-summary\">")
+  print(io, T <: AbstractCSet ? "CSet" : "ACSet")
+  print(io, " with elements ")
+  join(io, ["$ob = 1:$(nparts(acs,ob))" for ob in keys(tables(acs))], ", ")
+  println(io, "</span>")
+  for (ob, table) in pairs(tables(acs))
+    if !(eltype(table) <: EmptyTuple)
+      # TODO: Set option `row_number_column_title`. See above.
+      table = StructArray((; ob => 1:nparts(acs,ob), fieldarrays(table)...))
+      pretty_table(io, table, backend=:html, standalone=false, nosubheader=true)
+    end
+  end
+  println(io, "</div>")
 end
 
 # Imperative interface
 ######################
+
+""" Tables defining a C-set.
+
+A named tuple with a table for each part type. To ensure consistency, do not
+directly mutate these tables, especially when indexing is enabled!
+"""
+tables(acs::ACSet) = acs.tables
 
 """ Number of parts of given type in a C-set.
 """

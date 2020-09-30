@@ -109,7 +109,7 @@ force(α::ACSetTransformation) =
   end
 end
 
-finsets(X::ACSet) = map(table -> FinSet(length(table)), X.tables)
+finsets(X::ACSet) = map(table -> FinSet(length(table)), tables(X))
 
 # Limits and colimits
 #####################
