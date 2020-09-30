@@ -48,6 +48,7 @@ set_subpart!(dds, 1, :Φ, 1)
 
 # Pretty printing.
 s = sprint(show, dds)
+@test startswith(s, "CSet")
 @test occursin("X = 1:3", s)
 @test occursin("Φ : X → X = ", s)
 
@@ -110,6 +111,7 @@ du = disjoint_union(d, d2)
 
 # Pretty printing of data attributes.
 s = sprint(show, d)
+@test startswith(s, "ACSet")
 @test occursin("R = Int64", s)
 @test occursin("height : X → R = ", s)
 

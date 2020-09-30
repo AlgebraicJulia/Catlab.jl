@@ -194,8 +194,9 @@ function Base.copy(acs::T) where T <: ACSet
   T(map(copy, acs.tables), map(copy, acs.indices))
 end
 
-function Base.show(io::IO, acs::AbstractACSet{CD,AD,Ts}) where {CD,AD,Ts}
-  println(io, "ACSet(")
+function Base.show(io::IO, acs::T) where {CD,AD,Ts,T<:AbstractACSet{CD,AD,Ts}}
+  print(io, T <: AbstractCSet ? "CSet" : "ACSet")
+  println(io, "(")
   join(io, vcat(
     [ "  $ob = 1:$(nparts(acs,ob))" for ob in CD.ob ],
     [ "  $data = $(Ts.parameters[i])" for (i,data) in enumerate(AD.data) ],
@@ -207,9 +208,10 @@ function Base.show(io::IO, acs::AbstractACSet{CD,AD,Ts}) where {CD,AD,Ts}
   print(io, ")")
 end
 
-function Base.show(io::IO, ::MIME"text/plain", acs::ACSet)
-  println(io, "ACSet:")
-  for (name, table) in pairs(acs.tables)
+function Base.show(io::IO, ::MIME"text/plain", acs::T) where {T<:AbstractACSet}
+  print(io, T <: AbstractCSet ? "CSet" : "ACSet")
+  println(io, ":")
+  for (name, table) in pairs(tables(acs))
     print(io, "  $name table with $(length(table)) elements")
     if !(eltype(table) <: EmptyTuple)
       print(io, ":\n    ")
