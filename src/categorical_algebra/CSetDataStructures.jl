@@ -3,8 +3,9 @@
 module CSetDataStructures
 export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
   AbstractACSetType, ACSetType, AbstractCSetType, CSetType,
-  nparts, has_part, subpart, has_subpart, incident, add_part!, add_parts!,
-  copy_parts!, set_subpart!, set_subparts!, disjoint_union
+  tables, nparts, has_part, subpart, has_subpart, incident,
+  add_part!, add_parts!, copy_parts!, set_subpart!, set_subparts!,
+  disjoint_union
 
 using Compat: isnothing, only
 using StructArrays
@@ -220,6 +221,13 @@ end
 
 # Imperative interface
 ######################
+
+""" Tables defining a C-set.
+
+A named tuple with a table for each part type. To ensure consistency, do not
+directly mutate these tables, especially when indexing is enabled!
+"""
+tables(acs::ACSet) = acs.tables
 
 """ Number of parts of given type in a C-set.
 """

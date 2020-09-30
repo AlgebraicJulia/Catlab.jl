@@ -18,6 +18,7 @@ const DDS = CSetType(TheoryDDS, index=[:Φ])
 @test DDS <: CSet
 
 dds = DDS()
+@test keys(tables(dds)) == (:X,)
 @test keys(dds.indices) == (:Φ,)
 @test nparts(dds, :X) == 0
 @test add_part!(dds, :X) == 1
