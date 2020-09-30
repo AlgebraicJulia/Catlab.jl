@@ -54,7 +54,7 @@ s = sprint(show, dds)
 
 s = sprint(show, MIME"text/plain"(), dds)
 @test startswith(s, "CSet")
-@test occursin("X table with 3 elements", s)
+@test occursin("X = 1:3", s)
 
 s = sprint(show, MIME"text/html"(), dds)
 @test startswith(s, "<div class=\"c-set\">")

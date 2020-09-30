@@ -212,15 +212,15 @@ end
 
 function Base.show(io::IO, ::MIME"text/plain", acs::T) where {T<:AbstractACSet}
   print(io, T <: AbstractCSet ? "CSet" : "ACSet")
-  print(io, " with types: ")
-  join(io, keys(tables(acs)), ", ")
+  print(io, " with elements ")
+  join(io, ["$ob = 1:$(nparts(acs,ob))" for ob in keys(tables(acs))], ", ")
   println(io)
-  for (name, table) in pairs(tables(acs))
-    println(io, "• $name table with $(length(table)) elements")
+  for (ob, table) in pairs(tables(acs))
     if !(eltype(table) <: EmptyTuple)
       # TODO: Set option `row_number_column_title=name` when next version of
-      # PrettyTables is released.
-      pretty_table(io, table, nosubheader=true, show_row_number=true)
+      # PrettyTables is released, instead of making new table.
+      table = StructArray((; ob => 1:nparts(acs,ob), fieldarrays(table)...))
+      pretty_table(io, table, nosubheader=true)
     end
   end
 end
@@ -229,23 +229,16 @@ function Base.show(io::IO, ::MIME"text/html", acs::T) where {T<:AbstractACSet}
   println(io, "<div class=\"c-set\">")
   print(io, "<span class=\"c-set-summary\">")
   print(io, T <: AbstractCSet ? "CSet" : "ACSet")
-  print(io, " with types: ")
-  join(io, keys(tables(acs)), ", ")
+  print(io, " with elements ")
+  join(io, ["$ob = 1:$(nparts(acs,ob))" for ob in keys(tables(acs))], ", ")
   println(io, "</span>")
-  println(io, "<ul>")
-  for (name, table) in pairs(tables(acs))
-    println(io, "<li>")
-    print(io, "<span class=\"c-set-table-summary\">")
-    print(io, "$name table with $(length(table)) elements")
-    println(io, "</span>")
+  for (ob, table) in pairs(tables(acs))
     if !(eltype(table) <: EmptyTuple)
       # TODO: Set option `row_number_column_title`. See above.
-      pretty_table(io, table, backend=:html, standalone=false,
-                   nosubheader=true, show_row_number=true)
+      table = StructArray((; ob => 1:nparts(acs,ob), fieldarrays(table)...))
+      pretty_table(io, table, backend=:html, standalone=false, nosubheader=true)
     end
-    println(io, "</li>")
   end
-  println(io, "</ul>")
   println(io, "</div>")
 end
 
