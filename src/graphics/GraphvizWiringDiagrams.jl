@@ -11,7 +11,7 @@ using StaticArrays
 
 import ...Theories: HomExpr
 using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
-using ...CategoricalAlgebra.CSets, ...CategoricalAlgebra.Graphs, ..GraphvizGraphs
+using ...CategoricalAlgebra.CSets, ...Graphs, ..GraphvizGraphs
 import ..Graphviz
 import ..GraphvizGraphs: to_graphviz
 using ..WiringDiagramLayouts: BoxLayout, PortLayout, WirePoint,

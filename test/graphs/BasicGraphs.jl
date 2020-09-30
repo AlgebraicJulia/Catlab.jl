@@ -1,8 +1,8 @@
-module TestGraphs
+module TestBasicGraphs
 using Test
 
 import LightGraphs
-using Catlab.CategoricalAlgebra.Graphs
+using Catlab.Graphs.BasicGraphs
 
 # Graphs
 ########
@@ -61,6 +61,43 @@ lg = LightGraphs.DiGraph(4)
 map((src, tgt) -> add_edge!(lg, src, tgt), [1,2,3,2,3,4], [2,3,4,1,2,3])
 @test LightGraphs.DiGraph(g) == lg
 
+# Reflexive graphs
+##################
+
+g = ReflexiveGraph()
+add_vertex!(g)
+add_vertices!(g, 2)
+@test nv(g) == 3
+@test ne(g) == 3
+@test refl(g,1) == 1
+@test refl(g) == [1,2,3]
+@test src(g) == [1,2,3]
+@test tgt(g) == [1,2,3]
+
+add_edges!(g, [1,2], [2,3])
+add_edge!(g, 1, 3)
+@test ne(g) == 6
+@test src(g, 4:6) == [1,2,1]
+@test tgt(g, 4:6) == [2,3,3]
+
+# Symmetric reflexive graphs
+############################
+
+g = SymmetricReflexiveGraph()
+add_vertex!(g)
+add_vertices!(g, 2)
+@test nv(g) == 3
+@test refl(g) == [1,2,3]
+@test inv(g) == [1,2,3]
+@test src(g) == [1,2,3]
+@test tgt(g) == [1,2,3]
+
+add_edge!(g, 1, 3)
+@test ne(g) == 5
+@test src(g, 4:5) == [1,3]
+@test tgt(g, 4:5) == [3,1]
+@test inv(g, 4:5) == [5,4]
+
 # Half-edge graphs
 ##################
 
@@ -90,49 +127,5 @@ add_edges!(g, [1,2,3], [2,3,4])
 lg = LightGraphs.Graph(4)
 map((src, tgt) -> add_edge!(lg, src, tgt), [1,2,3], [2,3,4])
 @test LightGraphs.Graph(g) == lg
-
-# Property graphs
-#################
-
-g = PropertyGraph{String}()
-add_vertex!(g, a="foo", b="bar")
-@test nv(g) == 1
-@test vprops(g, 1) == Dict(:a => "foo", :b => "bar")
-@test get_vprop(g, 1, :b) == "bar"
-set_vprop!(g, 1, :b, "baz")
-@test get_vprop(g, 1, :b) == "baz"
-add_vertices!(g, 2)
-@test nv(g) == 3
-@test vprops(g, 3) == Dict()
-set_vprop!(g, 1:3, :b, ["bar", "baz", "biz"])
-@test get_vprop(g, 1:3, :b) == ["bar", "baz", "biz"]
-
-add_edge!(g, 1, 2, c="car")
-@test ne(g) == 1
-@test src(g, 1) == 1
-@test tgt(g, 1) == 2
-@test eprops(g, 1) == Dict(:c => "car")
-@test get_eprop(g, 1, :c) == "car"
-set_eprop!(g, 1, :c, "cat")
-@test get_eprop(g, 1, :c) == "cat"
-add_edges!(g, [2,2], [3,3])
-set_eprop!(g, 2:3, :d, ["dog", "dig"])
-@test src(g, [2,3]) == [2,2]
-@test tgt(g, [2,3]) == [3,3]
-@test get_eprop(g, 2:3, :d) == ["dog", "dig"]
-
-# Symmetric property graphs
-###########################
-
-g = SymmetricPropertyGraph{String}()
-add_vertex!(g, a="aardvark")
-@test vprops(g, 1) == Dict(:a => "aardvark")
-add_vertex!(g)
-@test vprops(g, 2) == Dict()
-
-add_edge!(g, 1, 2, c="car")
-@test ne(g) == 2
-@test eprops(g, 1) == Dict(:c => "car")
-@test eprops(g, 1) === eprops(g, 2)
 
 end

@@ -8,8 +8,6 @@ Modules = [
   CategoricalAlgebra.FinRelations,
   CategoricalAlgebra.Permutations,
   CategoricalAlgebra.CSets,
-  CategoricalAlgebra.Graphs,
 ]
 Private = false
 ```
-

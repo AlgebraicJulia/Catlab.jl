@@ -16,9 +16,9 @@ export AbstractFreeDiagram, FreeDiagram, FixedShapeFreeDiagram, DiscreteDiagram,
 using AutoHashEquals
 using StaticArrays: StaticVector, SVector, @SVector
 
-using ...Present, ...Theories, ..CSets, ..Graphs
+using ...Present, ...Theories, ...CSetDataStructures, ...Graphs
 import ...Theories: ob, hom, dom, codom
-using ..Graphs: TheoryGraph
+using ...Graphs.BasicGraphs: TheoryGraph
 
 # Diagrams of fixed shape
 #########################

@@ -17,8 +17,7 @@ using Compat
 using LightXML
 
 using ...CategoricalAlgebra.CSets: incident
-using ...CategoricalAlgebra.Graphs
-using ...WiringDiagrams
+using ...Graphs, ...WiringDiagrams
 import ...WiringDiagrams.GraphMLWiringDiagrams: parse_graphml_data_value,
   parse_graphml_metagraph
 using ..WiringDiagramLayouts: LayoutOrientation, TopToBottom, is_vertical

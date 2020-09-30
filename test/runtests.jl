@@ -12,6 +12,10 @@ end
   include("categorical_algebra/CategoricalAlgebra.jl")
 end
 
+@testset "Graphs" begin
+  include("graphs/Graphs.jl")
+end
+
 @testset "WiringDiagrams" begin
   include("wiring_diagrams/WiringDiagrams.jl")
 end

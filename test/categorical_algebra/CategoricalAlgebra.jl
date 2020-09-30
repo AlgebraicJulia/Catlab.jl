@@ -26,17 +26,13 @@ end
   include("Permutations.jl")
 end
 
-@testset "CSets" begin
-  include("CSets.jl")
-  include("CSetMorphisms.jl")
-end
-
-@testset "Graphs" begin
-  include("Graphs.jl")
-end
-
 @testset "PredicatedSets" begin
   include("PredicatedSets.jl")
+end
+
+@testset "CSets" begin
+  include("CSetDataStructures.jl")
+  include("CSets.jl")
 end
 
 @testset "StructuredCospans" begin
