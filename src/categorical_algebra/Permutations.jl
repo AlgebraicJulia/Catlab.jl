@@ -4,7 +4,8 @@ module Permutations
 export decompose_permutation_by_bubble_sort!,
   decompose_permutation_by_insertion_sort!, permutation_to_expr
 
-using Compat
+using Compat: isnothing
+
 using ...Syntax
 using ...Theories: dom, codom, compose, id, otimes, munit, braid
 

@@ -15,9 +15,8 @@ export to_ob_expr, to_hom_expr, to_wiring_diagram, to_undirected_wiring_diagram
 using Compat
 using LightGraphs
 
-using ...Syntax, ...Theories
+using ...Syntax, ...Theories, ...Permutations
 using ...Syntax: syntax_module
-using ...CategoricalAlgebra.Permutations
 using ..DirectedWiringDiagrams, ..UndirectedWiringDiagrams,
   ..MonoidalDirectedWiringDiagrams, ..MonoidalUndirectedWiringDiagrams
 using ..WiringDiagramAlgorithms: crossing_minimization_by_sort
