@@ -1,8 +1,8 @@
 """ Computing with permutations: the computer algebra of the symmetric group.
 """
 module Permutations
-export adjacent_transpositions_by_bubble_sort!,
-  adjacent_transpositions_by_insertion_sort!, permutation_to_expr
+export cycles, permutation_to_expr, adjacent_transpositions_by_bubble_sort!,
+  adjacent_transpositions_by_insertion_sort!
 
 using Compat: isnothing
 
@@ -11,6 +11,28 @@ using ...Theories: dom, codom, compose, id, otimes, munit, braid
 
 # Decomposition
 ###############
+
+""" Decompose a permutation into its cycles.
+
+Returns a vector of vectors, the cycles of the permutation.
+"""
+function cycles(σ::AbstractVector{Int})
+  n = length(σ)
+  cycles = Vector{Int}[]
+  used = falses(n)
+  for i in 1:n
+    if used[i]; continue end
+    cycle, j = Int[], i
+    while true
+      push!(cycle, j)
+      used[j] = true
+      j = σ[j]
+      if j == i; break end
+    end
+    push!(cycles, cycle)
+  end
+  cycles
+end
 
 """ Decompose permutation into adjacent transpositions using bubble sort.
 

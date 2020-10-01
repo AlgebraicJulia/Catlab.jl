@@ -10,16 +10,25 @@ const bubble_sort = adjacent_transpositions_by_bubble_sort!
 const insertion_sort = adjacent_transpositions_by_insertion_sort!
 
 # Permutations in Sym(1)
+@test cycles([1]) == [[1]]
 @test bubble_sort([1]) == []
 @test insertion_sort([1]) == []
 
 # Permutations in Sym(2)
+@test cycles([1,2]) == [[1],[2]]
+@test cycles([2,1]) == [[1,2]]
 @test bubble_sort([1,2]) == []
 @test bubble_sort([2,1]) == [1]
 @test insertion_sort([1,2]) == []
 @test insertion_sort([2,1]) == [1]
 
 # Permutations in Sym(3)
+@test cycles([1,2,3]) == [[1],[2],[3]]
+@test cycles([2,1,3]) == [[1,2],[3]]
+@test cycles([1,3,2]) == [[1],[2,3]]
+@test cycles([2,3,1]) == [[1,2,3]]
+@test cycles([3,1,2]) == [[1,3,2]]
+@test cycles([3,2,1]) == [[1,3],[2]]
 @test bubble_sort([1,2,3]) == []
 @test bubble_sort([2,1,3]) == [1]
 @test bubble_sort([1,3,2]) == [2]
