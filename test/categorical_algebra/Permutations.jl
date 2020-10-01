@@ -6,8 +6,8 @@ using Catlab.Theories, Catlab.Permutations
 # Decomposition
 ###############
 
-const bubble_sort = decompose_permutation_by_bubble_sort!
-const insertion_sort = decompose_permutation_by_insertion_sort!
+const bubble_sort = adjacent_transpositions_by_bubble_sort!
+const insertion_sort = adjacent_transpositions_by_insertion_sort!
 
 # Permutations in Sym(1)
 @test bubble_sort([1]) == []
