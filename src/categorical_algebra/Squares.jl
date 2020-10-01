@@ -1,7 +1,7 @@
 """ Arrow Category as a Double Category of Squares
 
-In every category C, you can construct Sq(C) as a 
-[double category](https://ncatlab.org/nlab/show/double+category) 
+In every category C, you can construct Sq(C) as a
+[double category](https://ncatlab.org/nlab/show/double+category)
 of commutative squares. This module uses SquareDiagrams to implement
 this construction.
 """
@@ -11,7 +11,8 @@ using AutoHashEquals
 # using ...Present
 using ...GAT
 using ...Theories: DoubleCategory
-import ...Theories: ob, hom, dom, codom, compose, ⋅, ⋆, HomV, HomH, composeH, composeV, id
+import ...Theories: ob, hom, dom, codom, compose, ⋅, ⋆, HomV, HomH,
+                    composeH, composeV, id, idH, idV, id2, id2H, id2V
 using ..FreeDiagrams
 import ..FinSets: compose_impl, FinSet, FinFunction
 
@@ -37,7 +38,7 @@ import ..FinSets: compose_impl, FinSet, FinFunction
 
   composeH(α::SquareDiagram, β::SquareDiagram) = hcompose(α, β)
   composeV(α::SquareDiagram, β::SquareDiagram) = vcompose(α, β)
-  
+
 end
 
 end
