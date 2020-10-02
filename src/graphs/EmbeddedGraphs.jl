@@ -7,7 +7,7 @@ embedded in an (oriented) surface, up to equivalence under
 """
 module EmbeddedGraphs
 export AbstractRotationGraph, RotationGraph, σ, add_corolla!, pair_half_edges!,
-  trace_faces
+  AbstractRotationSystem, RotationSystem, α, trace_vertices, trace_faces
 
 using ...Present, ...CSetDataStructures, ..BasicGraphs
 using ...Permutations: cycles
@@ -25,31 +25,63 @@ end
 const AbstractRotationGraph = AbstractACSetType(TheoryRotationGraph)
 const RotationGraph = CSetType(TheoryRotationGraph, index=[:vertex])
 
-σ(g::AbstractACSet, args...) = subpart(g, args..., :σ)
+σ(x::AbstractACSet, args...) = subpart(x, args..., :σ)
 
-""" Add corolla to rotation graph.
+""" Add corolla to rotation graph or system.
 
 A *corolla* is a vertex together with its incident half-edges, the number of
 which is its *valence*. The rotation on the half-edges is the consecutive one
 induced by the half-edge part numbers.
 """
 function add_corolla!(g::AbstractRotationGraph, valence::Int; kw...)
-  v = add_vertex!(g)
+  v = add_vertex!(g; kw...)
   n = nparts(g, :H)
   add_parts!(g, :H, valence; vertex=v, σ=circshift((n+1):(n+valence), -1))
-  v
 end
 
 pair_half_edges!(g::AbstractRotationGraph, h::Int, h′::Int) =
   pair_half_edges!(g, h:h, h′:h′)
-
 pair_half_edges!(g::AbstractRotationGraph, h::AbstractVector{Int},
                  h′::AbstractVector{Int}) =
   set_subpart!(g, vcat(h,h′), :inv, vcat(h′,h))
 
-""" Trace faces of rotation graph, returning list of cycles.
-"""
 trace_faces(g::AbstractRotationGraph) =
   cycles(h -> σ(g, inv(g, h)), nparts(g, :H))
+
+# Rotation systems
+##################
+
+@present TheoryRotationSystem(FreeSchema) begin
+  H::Ob
+  σ::Hom(H,H)
+  α::Hom(H,H)
+
+  compose(α, α) == id(H)
+end
+
+const AbstractRotationSystem = AbstractACSetType(TheoryRotationSystem)
+const RotationSystem = CSetType(TheoryRotationSystem)
+
+α(x::AbstractACSet, args...) = subpart(x, args..., :α)
+
+function add_corolla!(sys::AbstractRotationSystem, valence::Int)
+  n = nparts(sys, :H)
+  add_parts!(sys, :H, valence; σ=circshift((n+1):(n+valence), -1))
+end
+
+pair_half_edges!(sys::AbstractRotationSystem, h::Int, h′::Int) =
+  pair_half_edges!(sys, h:h, h′:h′)
+pair_half_edges!(sys::AbstractRotationSystem, h::AbstractVector{Int},
+                 h′::AbstractVector{Int}) =
+  set_subpart!(sys, vcat(h,h′), :α, vcat(h′,h))
+
+""" Trace vertices of rotation system, returning a list of cycles.
+"""
+trace_vertices(sys::AbstractRotationSystem) = cycles(σ(sys))
+
+""" Trace faces of rotation system, returning list of cycles.
+"""
+trace_faces(sys::AbstractRotationSystem) =
+  cycles(h -> σ(sys, α(sys, h)), nparts(sys, :H))
 
 end
