@@ -6,12 +6,44 @@ embedded in an (oriented) surface, up to equivalence under
 (orientation-preserving) homeomorphism.
 """
 module EmbeddedGraphs
-export AbstractRotationGraph, RotationGraph, σ, add_corolla!, pair_half_edges!,
-  AbstractRotationSystem, RotationSystem, α, trace_vertices, trace_faces
+export σ, α, ϕ, trace_vertices, trace_edges, trace_faces,
+  AbstractRotationGraph, RotationGraph, add_corolla!, pair_half_edges!,
+  AbstractRotationSystem, RotationSystem,
+  AbstractCombinatorialMap, CombinatorialMap
 
 using ...Present, ...CSetDataStructures, ..BasicGraphs
 using ...Permutations: cycles
 using ..BasicGraphs: TheoryHalfEdgeGraph
+
+# General properties
+####################
+
+""" Vertex permutation of rotation system or similar structure.
+"""
+σ(x::AbstractACSet, args...) = subpart(x, args..., :σ)
+
+""" Edge permutation of rotation system or similar structure.
+"""
+α(x::AbstractACSet, args...) = subpart(x, args..., :α)
+
+""" Face permutation of rotation system or similar structure.
+"""
+ϕ(x::AbstractACSet, args...) = subpart(x, args..., :ϕ)
+
+""" Trace vertices of rotation system or similar, returning a list of cycles.
+"""
+trace_vertices(x::AbstractACSet) = cycles(σ(x))
+
+""" Trace edges of rotation system or similar, return a listing of cycles.
+
+Usually the cycles will be pairs of half edges but in a hypermap the cycles can
+be arbitrary.
+"""
+trace_edges(x::AbstractACSet) = cycles(α(x))
+
+""" Trace faces of rotation system or similar, returning list of cycles.
+"""
+trace_faces(x::AbstractACSet) = cycles(ϕ(x))
 
 # Rotation graphs
 #################
@@ -25,9 +57,10 @@ end
 const AbstractRotationGraph = AbstractACSetType(TheoryRotationGraph)
 const RotationGraph = CSetType(TheoryRotationGraph, index=[:vertex])
 
-σ(x::AbstractACSet, args...) = subpart(x, args..., :σ)
+α(g::AbstractRotationGraph) = inv(g)
+ϕ(g::AbstractRotationGraph) = sortperm(inv(g)[σ(g)]) # == (σ ⋅ inv)⁻¹
 
-""" Add corolla to rotation graph or system.
+""" Add corolla to rotation graph, rotation system, or similar structure.
 
 A *corolla* is a vertex together with its incident half-edges, the number of
 which is its *valence*. The rotation on the half-edges is the consecutive one
@@ -45,11 +78,6 @@ pair_half_edges!(g::AbstractRotationGraph, h::AbstractVector{Int},
                  h′::AbstractVector{Int}) =
   set_subpart!(g, vcat(h,h′), :inv, vcat(h′,h))
 
-function trace_faces(g::AbstractRotationGraph)
-  ϕ = sortperm(inv(g)[σ(g)]) # == (σ ⋅ inv)⁻¹
-  cycles(ϕ)
-end
-
 # Rotation systems
 ##################
 
@@ -64,7 +92,8 @@ end
 const AbstractRotationSystem = AbstractACSetType(TheoryRotationSystem)
 const RotationSystem = CSetType(TheoryRotationSystem)
 
-α(x::AbstractACSet, args...) = subpart(x, args..., :α)
+# ϕ == (σ⋅α)⁻¹ == α⁻¹ ⋅ σ⁻¹
+ϕ(sys::AbstractRotationSystem) = sortperm(α(sys)[σ(sys)])
 
 function add_corolla!(sys::AbstractRotationSystem, valence::Int)
   n = nparts(sys, :H)
@@ -77,15 +106,23 @@ pair_half_edges!(sys::AbstractRotationSystem, h::AbstractVector{Int},
                  h′::AbstractVector{Int}) =
   set_subpart!(sys, vcat(h,h′), :α, vcat(h′,h))
 
-""" Trace vertices of rotation system, returning a list of cycles.
-"""
-trace_vertices(sys::AbstractRotationSystem) = cycles(σ(sys))
+# Combinatorial maps
+####################
 
-""" Trace faces of rotation system, returning list of cycles.
-"""
-function trace_faces(sys::AbstractRotationSystem)
-  ϕ = sortperm(α(sys)[σ(sys)]) # == (σ⋅α)⁻¹ == α⁻¹ ⋅ σ⁻¹
-  cycles(ϕ)
+@present TheoryHypermap(FreeSchema) begin
+  H::Ob
+  σ::Hom(H,H)
+  α::Hom(H,H)
+  ϕ::Hom(H,H)
+
+  compose(σ, α, ϕ) == id(H)
 end
+
+@present TheoryCombinatorialMap <: TheoryHypermap begin
+  compose(α, α) == id(H)
+end
+
+const AbstractCombinatorialMap = AbstractACSetType(TheoryCombinatorialMap)
+const CombinatorialMap = CSetType(TheoryCombinatorialMap)
 
 end

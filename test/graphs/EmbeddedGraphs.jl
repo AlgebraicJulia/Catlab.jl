@@ -28,6 +28,7 @@ g = embedded_wheel_graph(RotationGraph, 5)
 @test half_edges(g, 5) == [13,14,15,16]
 @test σ(g, [1,2,3]) == [2,3,1]
 @test σ(g, [13,14,15,16]) == [14,15,16,13]
+@test α(g) == inv(g)
 
 faces = trace_faces(g)
 sort!(faces, by=length)
@@ -47,6 +48,11 @@ vertices = trace_vertices(sys)
 @test length(vertices) == 5
 @test [1,2,3] in vertices
 @test [13,14,15,16] in vertices
+
+edges = trace_edges(sys)
+@test length(edges) == 8
+@test [3,4] in edges
+@test [1,12] in edges
 
 @test σ(sys) == σ(g)
 @test α(sys) == inv(g)
