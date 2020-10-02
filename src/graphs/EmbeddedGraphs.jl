@@ -6,9 +6,11 @@ embedded in an (oriented) surface, up to equivalence under
 (orientation-preserving) homeomorphism.
 """
 module EmbeddedGraphs
-export AbstractRotationGraph, RotationGraph, σ, add_corolla!, pair_half_edges!
+export AbstractRotationGraph, RotationGraph, σ, add_corolla!, pair_half_edges!,
+  trace_faces
 
 using ...Present, ...CSetDataStructures, ..BasicGraphs
+using ...Permutations: cycles
 using ..BasicGraphs: TheoryHalfEdgeGraph
 
 # Rotation graphs
@@ -44,5 +46,10 @@ pair_half_edges!(g::AbstractRotationGraph, h::Int, h′::Int) =
 pair_half_edges!(g::AbstractRotationGraph, h::AbstractVector{Int},
                  h′::AbstractVector{Int}) =
   set_subpart!(g, vcat(h,h′), :inv, vcat(h′,h))
+
+""" Trace faces of rotation graph, returning list of cycles.
+"""
+trace_faces(g::AbstractRotationGraph) =
+  cycles(h -> σ(g, inv(g, h)), nparts(g, :H))
 
 end

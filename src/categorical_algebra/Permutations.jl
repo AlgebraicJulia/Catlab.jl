@@ -16,8 +16,9 @@ using ...Theories: dom, codom, compose, id, otimes, munit, braid
 
 Returns a vector of vectors, the cycles of the permutation.
 """
-function cycles(σ::AbstractVector{Int})
-  n = length(σ)
+cycles(σ::AbstractVector{Int}) = cycles(i -> σ[i], length(σ))
+
+function cycles(σ, n::Int)
   cycles = Vector{Int}[]
   used = falses(n)
   for i in 1:n
@@ -26,7 +27,8 @@ function cycles(σ::AbstractVector{Int})
     while true
       push!(cycle, j)
       used[j] = true
-      j = σ[j]
+      j = σ(j)
+      @assert 1 <= j <= n
       if j == i; break end
     end
     push!(cycles, cycle)
