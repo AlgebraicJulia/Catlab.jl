@@ -45,8 +45,10 @@ pair_half_edges!(g::AbstractRotationGraph, h::AbstractVector{Int},
                  h′::AbstractVector{Int}) =
   set_subpart!(g, vcat(h,h′), :inv, vcat(h′,h))
 
-trace_faces(g::AbstractRotationGraph) =
-  cycles(h -> σ(g, inv(g, h)), nparts(g, :H))
+function trace_faces(g::AbstractRotationGraph)
+  ϕ = sortperm(inv(g)[σ(g)]) # == (σ ⋅ inv)⁻¹
+  cycles(ϕ)
+end
 
 # Rotation systems
 ##################
@@ -81,7 +83,9 @@ trace_vertices(sys::AbstractRotationSystem) = cycles(σ(sys))
 
 """ Trace faces of rotation system, returning list of cycles.
 """
-trace_faces(sys::AbstractRotationSystem) =
-  cycles(h -> σ(sys, α(sys, h)), nparts(sys, :H))
+function trace_faces(sys::AbstractRotationSystem)
+  ϕ = sortperm(α(sys)[σ(sys)]) # == (σ⋅α)⁻¹ == α⁻¹ ⋅ σ⁻¹
+  cycles(ϕ)
+end
 
 end
