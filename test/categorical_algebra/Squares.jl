@@ -53,4 +53,5 @@ r = FinFunction([1,2,2,3,3], 3)
 
 @test collect(composeH(FinFunction([2,1], 3), FinFunction([2, 1, 3]))) == [1,2]
 @test collect(composeV(FinFunction([2,1], 3), FinFunction([2, 1, 3]))) == [1,2]
-end #module
+
+end

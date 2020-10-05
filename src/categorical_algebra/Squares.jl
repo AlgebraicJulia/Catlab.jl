@@ -8,28 +8,20 @@ this construction.
 module Squares
 
 using AutoHashEquals
-# using ...Present
+
 using ...GAT
 using ...Theories: DoubleCategory
 import ...Theories: ob, hom, dom, codom, compose, ⋅, ⋆, HomV, HomH,
                     composeH, composeV, id, idH, idV, id2, id2H, id2V
-using ..FreeDiagrams
-import ..FinSets: compose_impl, FinSet, FinFunction
+using ..FreeDiagrams, ..FinSets
 
 @instance DoubleCategory{FinSet, FinFunction, FinFunction, SquareDiagram} begin
   @import dom, codom, top, bottom, left, right, ⋅
   idH(A::FinSet) = FinFunction(identity, A, A)
   idV(A::FinSet) = FinFunction(identity, A, A)
 
-  function composeH(f::FinFunction, g::FinFunction)
-    @assert codom(f) == dom(g)
-    FinFunction(compose_impl(f,g), dom(f), codom(g))
-  end
-
-  function composeV(f::FinFunction, g::FinFunction)
-    @assert codom(f) == dom(g)
-    FinFunction(compose_impl(f,g), dom(f), codom(g))
-  end
+  composeH(f::FinFunction, g::FinFunction) = compose(f,g)
+  composeV(f::FinFunction, g::FinFunction) = compose(f,g)
 
   id2(A::FinSet) = SquareDiagram(idH(A), idH(A), idV(A), idV(A))
   # FIXME: how do you distinguish between vertical and horizontal if they are the same type?
