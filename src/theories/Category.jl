@@ -123,10 +123,8 @@ function show_latex(io::IO, expr::Hom2Expr{:compose2}; kw...)
   Syntax.show_latex_infix(io, expr, "*"; kw...)
 end
 
-
-###########
-# Double Category
-###########
+# Double category
+#################
 
 """ Theory of (strict) *double categories*
 """
@@ -168,30 +166,27 @@ end
   idV(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A ↓ B))
 
   # identity two cell on 1 object
-  id2(X::Ob)::Hom2(X→X, X→X, X↓X, X↓X)          ⊣ (X::Ob)
-  id2(X) == id2(idH(X), idH(X), idV(X), idV(X)) ⊣ (X::Ob)
+  id2(X::Ob)::Hom2(idH(X), idH(X), idV(X), idV(X)) ⊣ (X::Ob)
   # identity two cell for vertical composition
-  id2V(f::(X→Y))::Hom2(X→Y, X→Y, X↓X, Y↓Y) ⊣ (X::Ob, Y::Ob)
-  id2V(f) == Hom2(f, f, idV(X), idV(Y))    ⊣ (X::Ob, Y::Ob, f::(X→Y))
+  id2V(f::(X→Y))::Hom2(f, f, idV(X), idV(Y)) ⊣ (X::Ob, Y::Ob)
   # identity two cell for horizontal composition
-  id2H(f::(X↓Y))::Hom2(X→X, Y→Y, X↓Y, X↓Y) ⊣ (X::Ob, Y::Ob)
-  id2H(f) == Hom2(idH(X), idH(Y), f, f)    ⊣ (X::Ob, Y::Ob, f::(X→Y))
+  id2H(f::(X↓Y))::Hom2(idH(X), idH(Y), f, f) ⊣ (X::Ob, Y::Ob)
 
   # Vertical composition of 2-cells
   composeV(
     α::Hom2(t,b,l,r),
     β::Hom2(b,b2,l2,r2)
   )::Hom2(t, b2, l⋅l2, r⋅r2)  ⊣ (A::Ob, B::Ob, X::Ob, Y::Ob, C::Ob, D::Ob,
-                                  t::(A→B), b::(X→Y), l::(A↓X), r::(B↓Y),
-                                           b2::(C→D), l2::(X↓C), r2::(Y↓D))
+                                 t::(A→B), b::(X→Y), l::(A↓X), r::(B↓Y),
+                                 b2::(C→D), l2::(X↓C), r2::(Y↓D))
 
   # Horizontal composition of 2-cells
   composeH(
     α::Hom2(t,b,l,r),
     β::Hom2(t2,b2,r,r2)
   )::Hom2(t⋅t2, b⋅b2, l, r2)  ⊣ (A::Ob, B::Ob, X::Ob, Y::Ob, C::Ob, D::Ob,
-                                  t::(A→X), b::(B→Y), l::(A↓B), r::(X↓Y),
-                                  t2::(X→C), b2::(Y→D), r2::(C↓D))
+                                 t::(A→X), b::(B→Y), l::(A↓B), r::(X↓Y),
+                                 t2::(X→C), b2::(Y→D), r2::(C↓D))
 end
 
 # Convenience constructors
