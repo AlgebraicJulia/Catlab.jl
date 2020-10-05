@@ -13,7 +13,7 @@ export σ, α, ϕ, trace_vertices, trace_edges, trace_faces,
 
 using ...Present, ...CSetDataStructures, ..BasicGraphs
 using ...Permutations: cycles
-using ..BasicGraphs: TheoryGraph, TheoryHalfEdgeGraph
+using ..BasicGraphs: TheoryHalfEdgeGraph
 
 # General properties
 ####################
@@ -122,47 +122,5 @@ const AbstractCombinatorialMap = AbstractACSetType(TheoryCombinatorialMap)
 const CombinatorialMap = CSetType(TheoryCombinatorialMap)
 
 # TODO: What kind of interface should we have for maps and hypermaps?
-
-# Commutative graphs
-####################
-
-@present TheoryEmbeddedCommutativeGraph(FreeSchema) begin
-  V::Ob # vertices
-  L::Ob # left edges
-  R::Ob # right edges
-  F::Ob # faces
-
-  # Source and target vertices of edges and faces.
-  srcL::Hom(L,V)
-  tgtL::Hom(L,V)
-  srcR::Hom(R,V)
-  tgtR::Hom(R,V)
-  srcF::Hom(F,V)
-  tgtF::Hom(F,V)
-
-  # Left and right directed paths.
-  ϕL::Hom(L,L)
-  ϕR::Hom(R,R)
-  compose(ϕL, srcL) == tgtL
-  compose(ϕR, srcR) == tgtR
-
-  # Start loops for left and right paths.
-  startL::Hom(F,L)
-  startR::Hom(F,R)
-  compose(startL, srcL) == srcF
-  compose(startL, tgtL) == srcF
-  compose(startR, srcR) == srcF
-  compose(startR, tgtR) == srcF
-
-  # Stop loops for left and right paths.
-  stopL::Hom(F,L)
-  stopR::Hom(F,R)
-  compose(stopL, srcL) == tgtF
-  compose(stopL, tgtL) == tgtF
-  compose(stopR, srcR) == tgtF
-  compose(stopR, tgtR) == tgtF
-  compose(stopL, ϕL) == stopL
-  compose(stopR, ϕR) == stopR
-end
 
 end
