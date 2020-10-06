@@ -1,6 +1,6 @@
 export Category, FreeCategory, Ob, Hom, dom, codom, id, compose, ⋅,
   Category2, FreeCategory2, Hom2, compose2, 
-  DoubleCategory, HomH, HomV, idH, idV, composeH, composeV, FreeDoubleCategory
+  DoubleCategory, FreeDoubleCategory, HomH, HomV, idH, idV, composeH, composeV, ⋆
 
 import Base: show
 
@@ -144,8 +144,8 @@ end
     (→) := HomH
     (↓) := HomV
     (⇒) := Hom2
-    (⋅) := composeH
-    (⋆) := composeV
+    (⋆) := composeH
+    (⋅) := composeV
   end
 
   idH(A::Ob)::(A → A) ⊣ (A::Ob)
@@ -154,10 +154,10 @@ end
   composeV(f::(A ↓ B), g::(B ↓ C))::(A ↓ C) ⊣ (A::Ob, B::Ob, C::Ob)
 
   # Category axioms for Horizontal morphisms
-  ((f ⋅ g) ⋅ h == f ⋅ (g ⋅ h)
+  ((f ⋆ g) ⋆ h == f ⋆ (g ⋆ h)
     ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, f::(A → B), g::(B → C), h::(C → D)))
-  f ⋅ idH(B) == f ⊣ (A::Ob, B::Ob, f::(A → B))
-  idH(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
+  f ⋆ idH(B) == f ⊣ (A::Ob, B::Ob, f::(A → B))
+  idH(A) ⋆ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
 
   # Category axioms for Vertical morphisms
   ((f ⋅ g) ⋅ h == f ⋅ (g ⋅ h)
@@ -184,7 +184,7 @@ end
   composeH(
     α::Hom2(t,b,l,r),
     β::Hom2(t2,b2,r,r2)
-  )::Hom2(t⋅t2, b⋅b2, l, r2)  ⊣ (A::Ob, B::Ob, X::Ob, Y::Ob, C::Ob, D::Ob,
+  )::Hom2(t⋆t2, b⋆b2, l, r2)  ⊣ (A::Ob, B::Ob, X::Ob, Y::Ob, C::Ob, D::Ob,
                                  t::(A→X), b::(B→Y), l::(A↓B), r::(X↓Y),
                                  t2::(X→C), b2::(Y→D), r2::(C↓D))
 end
@@ -207,16 +207,16 @@ Checks domains of morphisms but not 2-morphisms.
   composeV(α::Hom2, β::Hom2) = associate(new(α,β))
 end
 
-function show_unicode(io::IO, expr::Hom2Expr{:composeH}; kw...)
+function show_unicode(io::IO, expr::Hom2Expr{:composeV}; kw...)
   Syntax.show_unicode_infix(io, expr, "⋅"; kw...)
 end
-function show_unicode(io::IO, expr::Hom2Expr{:composeV}; kw...)
+function show_unicode(io::IO, expr::Hom2Expr{:composeH}; kw...)
   Syntax.show_unicode_infix(io, expr, "*"; kw...)
 end
 
-function show_latex(io::IO, expr::Hom2Expr{:composeH}; kw...)
+function show_latex(io::IO, expr::Hom2Expr{:composeV}; kw...)
   Syntax.show_latex_infix(io, expr, "\\cdot"; kw...)
 end
-function show_latex(io::IO, expr::Hom2Expr{:composeV}; kw...)
+function show_latex(io::IO, expr::Hom2Expr{:composeH}; kw...)
   Syntax.show_latex_infix(io, expr, "\\star"; kw...)
 end

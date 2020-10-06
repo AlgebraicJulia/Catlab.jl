@@ -96,11 +96,10 @@ g = Hom(:g, Ob(FreeCategory2, :B), Ob(FreeCategory2, :C))
 #################
 
 A, B, C, D, X, Y = [Ob(FreeDoubleCategory, x) for x in [:A, :B, :C, :D, :X, :Y]]
-@show typeof(A), typeof(X)
 f, g, h, k = HomH(:f, A, X), HomH(:g, B, Y), HomH(h, X, C), HomH(:k, Y, D)
 l, r, rr = HomV(:ϕ, A, B), HomV(:r, X, Y), HomV(:rr, C, D)
 α, β = Hom2(:α, f, g, l, r), Hom2(:β, h, k, r, rr)
-@test composeH(α, β) == α⋅β
+@test composeH(α, β) == α⋆β
 αβ = composeH(α, β)
 #@test top(αβ) == composeH(f, h)
 #@test bottom(αβ) == composeH(g, k)
