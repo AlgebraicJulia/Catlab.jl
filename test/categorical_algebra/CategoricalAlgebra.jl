@@ -39,4 +39,8 @@ end
   include("StructuredCospans.jl")
 end
 
+@testset "Squares" begin
+  include("Squares.jl")
+end
+
 end

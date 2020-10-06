@@ -11,13 +11,14 @@ export AbstractFreeDiagram, FreeDiagram, FixedShapeFreeDiagram, DiscreteDiagram,
   SMultispan, SMulticospan, ParallelPair, ParallelMorphisms,
   ob, hom, dom, codom, apex, legs, feet, left, right,
   nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
-  add_vertex!, add_vertices!, add_edge!, add_edges!
+  add_vertex!, add_vertices!, add_edge!, add_edges!,
+  SquareDiagram, top, bottom
 
 using AutoHashEquals
 using StaticArrays: StaticVector, SVector, @SVector
 
 using ...Present, ...Theories, ...CSetDataStructures, ...Graphs
-import ...Theories: ob, hom, dom, codom
+import ...Theories: ob, hom, dom, codom, top, bottom, left, right
 using ...Graphs.BasicGraphs: TheoryGraph
 
 # Diagrams of fixed shape
@@ -177,6 +178,47 @@ Base.lastindex(para::ParallelMorphisms) = lastindex(para.homs)
 
 allequal(xs::AbstractVector) = all(isequal(x, xs[1]) for x in xs[2:end])
 
+# Commutative squares
+#####################
+
+"""    SquareDiagram(top, bottom, left, right)
+
+creates a square diagram in a category, which forms the 2-cells of the double category Sq(C).
+The four 1-cells are given in top, bottom, left, right order, to match the GAT of a double category.
+"""
+@auto_hash_equals struct SquareDiagram{Ob,Homs<:AbstractVector} <:
+    FixedShapeFreeDiagram{Ob}
+  corners::Vector{Ob}
+  sides::Homs
+end
+
+function SquareDiagram(homs::AbstractVector)
+  length(homs) == 4 || error("Square diagrams accept exactly 4 homs, in order top, bottom, left, right")
+  obs = [dom(homs[1]), dom(homs[2]), dom(homs[4]), codom(homs[4])]
+
+  # checking well-formedness
+  # top-left share domains
+  @assert dom(homs[1]) == dom(homs[3])
+  # bottom-right share codomains
+  @assert codom(homs[2]) == codom(homs[4])
+  # left-bottom intersection
+  @assert codom(homs[3]) == dom(homs[2])
+  # top-right intersection
+  @assert codom(homs[1]) == dom(homs[4])
+
+  SquareDiagram(obs, homs)
+end
+
+SquareDiagram(top, bottom, left, right) = SquareDiagram([top, bottom, left, right])
+
+ob(sq::SquareDiagram) = sq.corners
+hom(sq::SquareDiagram) = sq.sides
+
+top(sq::SquareDiagram) = sq.sides[1]
+bottom(sq::SquareDiagram) = sq.sides[2]
+left(sq::SquareDiagram) = sq.sides[3]
+right(sq::SquareDiagram) = sq.sides[4]
+
 # General diagrams
 ##################
 
@@ -238,4 +280,22 @@ function FreeDiagram(para::ParallelMorphisms{Ob}) where Ob
   return d
 end
 
+function FreeDiagram(sq::SquareDiagram{Ob}) where Ob
+    top, bottom, left, right = sq.sides
+    # check that the domains and codomains match
+    #   1   -top->   3
+    #   |            |
+    # left         right
+    #   v            v
+    #   2  -bottom-> 4
+
+    @assert codom(top) == dom(right)
+    @assert dom(top) == dom(left)
+    @assert dom(bottom) == codom(left)
+    @assert codom(bottom) == codom(right)
+
+    V = [dom(left), codom(left), dom(right), codom(right)]
+    E = [(1,3, top), (2,4, bottom), (1,2, left), (3,4, right)] 
+    return FreeDiagram(V, E)
+end
 end

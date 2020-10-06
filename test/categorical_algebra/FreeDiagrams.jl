@@ -3,7 +3,7 @@ using Test
 
 using Catlab.Theories, Catlab.CategoricalAlgebra
 
-A, B, C = Ob(FreeCategory, :A, :B, :C)
+A, B, C, D = Ob(FreeCategory, :A, :B, :C, :D)
 
 # General diagrams
 ##################
@@ -114,4 +114,36 @@ diagram = FreeDiagram(para)
 @test src(diagram) == [1,1,1]
 @test tgt(diagram) == [2,2,2]
 
+# Commutative squares.
+
+l, t, b, r = Hom(:lef, A,B), Hom(:top, A, C), Hom(:bot, B, D), Hom(:rht, C,D)
+sq1 = SquareDiagram(t, b, l, r)
+
+@test_throws AssertionError composeH(sq1, sq1)
+@test hom(FreeDiagram(sq1))[1] == t
+@test hom(FreeDiagram(sq1))[2] == b
+@test hom(FreeDiagram(sq1))[3] == l
+@test hom(FreeDiagram(sq1))[4] == r
+
+l, t, b, r = Hom(:lef, A,B), Hom(:top, A, A), Hom(:bot, B, B), Hom(:rht, A,B)
+rr = Hom(:rr, A,B)
+sq2 = SquareDiagram(t, b, l, r)
+sq3 = composeH(sq2, SquareDiagram(t, b, r, rr))
+@test left(sq3)   == l
+@test top(sq3)    == compose(t,t)
+@test bottom(sq3) == compose(b,b)
+@test right(sq3)  == rr
+
+
+@test_throws AssertionError composeV(sq2, sq2)
+
+ll = Hom(:ll, B, A)
+rr = Hom(:rr, B, A)
+sq4 = composeV(sq2, SquareDiagram(b, t, ll, rr))
+@test left(sq4)    == compose(l, ll)
+@test right(sq4)  == compose(r, rr)
+@test top(sq4)   == t
+@test bottom(sq4) == t
+
+@test hom(sq4) == [top(sq4), bottom(sq4), left(sq4), right(sq4)]
 end
