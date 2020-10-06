@@ -28,9 +28,51 @@ using ..FreeDiagrams, ..FinSets
   id2V(f::FinFunction) = SquareDiagram(f, f, idV(A), idV(A))
   id2H(f::FinFunction) = SquareDiagram(idH(A), idH(A), f, f)
 
-  composeH(α::SquareDiagram, β::SquareDiagram) = hcompose(α, β)
-  composeV(α::SquareDiagram, β::SquareDiagram) = vcompose(α, β)
+  """    composeH(s₁, s₂)
 
+  compose two squares horizontally as shown below:
+      1   -f->   3  -g->   5
+      |          |         |
+      |          |         |
+      v          v         v
+      2  -f'->   4  -g'->  6
+   """
+  function composeH(s₁::SquareDiagram, s₂::SquareDiagram)
+    @assert ob(s₁)[3] == ob(s₂)[1]
+    @assert ob(s₁)[4] == ob(s₂)[2]
+    @assert right(s₁) == left(s₂)
+
+    f = top(s₁)
+    f′= bottom(s₁)
+    g = top(s₂)
+    g′= bottom(s₂)
+    return SquareDiagram(f⋅g, f′⋅g′, left(s₁), right(s₂))
+  end
+
+  """    composeV(s₁, s₂)
+
+  compose two squares vertically as shown below:
+      1   -->  3
+      |        |
+      |        |
+      v        v
+      2  -->   4
+      |        |
+      |        |
+      v        v
+      5  -->   6
+  """
+  function composeV(s₁::SquareDiagram, s₂::SquareDiagram)
+    @assert ob(s₁)[2] == ob(s₂)[1]
+    @assert ob(s₁)[4] == ob(s₂)[3]
+    @assert bottom(s₁) == top(s₂)
+
+    f = left(s₁)
+    f′= right(s₁)
+    g = left(s₂)
+    g′= right(s₂)
+    return SquareDiagram(top(s₁), bottom(s₂), f⋅g, f′⋅g′)
+  end
 end
 
 end

@@ -12,13 +12,13 @@ export AbstractFreeDiagram, FreeDiagram, FixedShapeFreeDiagram, DiscreteDiagram,
   ob, hom, dom, codom, apex, legs, feet, left, right,
   nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
   add_vertex!, add_vertices!, add_edge!, add_edges!,
-  SquareDiagram, hcompose, vcompose
+  SquareDiagram, top, bottom
 
 using AutoHashEquals
 using StaticArrays: StaticVector, SVector, @SVector
 
 using ...Present, ...Theories, ...CSetDataStructures, ...Graphs
-import ...Theories: ob, hom, dom, codom, ⋅, top, bottom, left, right
+import ...Theories: ob, hom, dom, codom, top, bottom, left, right
 using ...Graphs.BasicGraphs: TheoryGraph
 
 # Diagrams of fixed shape
@@ -178,8 +178,8 @@ Base.lastindex(para::ParallelMorphisms) = lastindex(para.homs)
 
 allequal(xs::AbstractVector) = all(isequal(x, xs[1]) for x in xs[2:end])
 
-# SquareDiagrams form a Double category
-#######################################
+# Commutative squares
+#####################
 
 """    SquareDiagram(top, bottom, left, right)
 
@@ -218,52 +218,6 @@ top(sq::SquareDiagram) = sq.sides[1]
 bottom(sq::SquareDiagram) = sq.sides[2]
 left(sq::SquareDiagram) = sq.sides[3]
 right(sq::SquareDiagram) = sq.sides[4]
-
-
-"""    hcompose(s₁, s₂)
-
-compose two squares horizontally as shown below:
-    1   -f->   3  -g->   5
-    |          |         |
-    |          |         |
-    v          v         v
-    2  -f'->   4  -g'->  6
-"""
-function hcompose(s₁::SquareDiagram, s₂::SquareDiagram)
-    @assert ob(s₁)[3] == ob(s₂)[1]
-    @assert ob(s₁)[4] == ob(s₂)[2]
-    @assert right(s₁) == left(s₂)
-
-    f = top(s₁)
-    f′= bottom(s₁)
-    g = top(s₂)
-    g′= bottom(s₂)
-    return SquareDiagram(f⋅g, f′⋅g′, left(s₁), right(s₂))
-end
-"""    vcompose(s₁, s₂)
-
-compose two squares vertically as shown below:
-    1   -->  3
-    |        |
-    |        |
-    v        v
-    2  -->   4
-    |        |
-    |        |
-    v        v
-    5  -->   6
-"""
-function vcompose(s₁::SquareDiagram, s₂::SquareDiagram)
-    @assert ob(s₁)[2] == ob(s₂)[1]
-    @assert ob(s₁)[4] == ob(s₂)[3]
-    @assert bottom(s₁) == top(s₂)
-
-    f = left(s₁)
-    f′= right(s₁)
-    g = left(s₂)
-    g′= right(s₂)
-    return SquareDiagram(top(s₁), bottom(s₂), f⋅g, f′⋅g′)
-end
 
 # General diagrams
 ##################
