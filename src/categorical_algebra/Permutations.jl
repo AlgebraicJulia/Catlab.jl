@@ -1,15 +1,40 @@
 """ Computing with permutations: the computer algebra of the symmetric group.
 """
 module Permutations
-export decompose_permutation_by_bubble_sort!,
-  decompose_permutation_by_insertion_sort!, permutation_to_expr
+export cycles, permutation_to_expr, adjacent_transpositions_by_bubble_sort!,
+  adjacent_transpositions_by_insertion_sort!
 
-using Compat
+using Compat: isnothing
+
 using ...Syntax
 using ...Theories: dom, codom, compose, id, otimes, munit, braid
 
 # Decomposition
 ###############
+
+""" Decompose a permutation into its cycles.
+
+Returns a vector of vectors, the cycles of the permutation.
+"""
+cycles(σ::AbstractVector{Int}) = cycles(i -> σ[i], length(σ))
+
+function cycles(σ, n::Int)
+  cycles = Vector{Int}[]
+  used = falses(n)
+  for i in 1:n
+    if used[i]; continue end
+    cycle, j = Int[], i
+    while true
+      push!(cycle, j)
+      used[j] = true
+      j = σ(j)
+      @assert 1 <= j <= n
+      if j == i; break end
+    end
+    push!(cycles, cycle)
+  end
+  cycles
+end
 
 """ Decompose permutation into adjacent transpositions using bubble sort.
 
@@ -21,20 +46,20 @@ This algorithm appears as Algorithm 2.7 in the PhD thesis of Jonathan Huang,
 decompositions of the symmetric group". As Huang notes, the algorithm is
 very similar to the well-known bubble sort. It has quadratic complexity.
 
-See also: `decompose_permutation_by_insertion_sort!`
+See also: [`adjacent_transpositions_by_insertion_sort!`](@ref).
 """
-function decompose_permutation_by_bubble_sort!(σ::Vector{Int})::Vector{Int}
+function adjacent_transpositions_by_bubble_sort!(σ::AbstractVector{Int})
   n = length(σ)
-  result = Int[]
+  transpositions = Int[]
   for i in 1:n-1
     for j = n-1:-1:i
       if σ[j+1] < σ[j]
         σ[j], σ[j+1] = σ[j+1], σ[j]
-        push!(result, j)
+        push!(transpositions, j)
       end
     end
   end
-  result
+  transpositions
 end
 
 """ Decompose permutation into adjacent transpositions using insertion sort.
@@ -48,20 +73,20 @@ minimal example on which they give different decompositions is the permutation:
 
   [1,2,3] ↦ [3,2,1]
 
-See also: `decompose_permutation_by_bubble_sort!`
+See also: [`adjacent_transpositions_by_bubble_sort!`](@ref).
 """
-function decompose_permutation_by_insertion_sort!(σ::Vector{Int})::Vector{Int}
+function adjacent_transpositions_by_insertion_sort!(σ::AbstractVector{Int})
   n = length(σ)
-  result = Int[]
+  transpositions = Int[]
   for i in 2:n
     for j in i:-1:2
       if σ[j-1] > σ[j]
         σ[j-1], σ[j] = σ[j], σ[j-1]
-        push!(result, j-1)
+        push!(transpositions, j-1)
       end
     end
   end
-  result
+  transpositions
 end
 
 # Conversion to expression
@@ -71,17 +96,19 @@ end
 
 Warning: The morphism expression is not simplified.
 """
-function permutation_to_expr(σ::Vector{Int}, xs::Vector; sort::Symbol=:insertion)
+function permutation_to_expr(σ::AbstractVector{Int}, xs::AbstractVector;
+                             sort::Symbol=:insertion)
   permutation_to_expr!(copy(σ), copy(xs); sort=sort)
 end
-function permutation_to_expr!(σ::Vector{Int}, xs::Vector; sort::Symbol=:insertion)
+function permutation_to_expr!(σ::AbstractVector{Int}, xs::AbstractVector;
+                              sort::Symbol=:insertion)
   n = length(σ)
   @assert length(xs) == n
   
   transpositions = if sort == :bubble
-    decompose_permutation_by_bubble_sort!(σ)
+    adjacent_transpositions_by_bubble_sort!(σ)
   elseif sort == :insertion
-    decompose_permutation_by_insertion_sort!(σ)
+    adjacent_transpositions_by_insertion_sort!(σ)
   else
     error("Sorting algorithm not supported: $sort")
   end

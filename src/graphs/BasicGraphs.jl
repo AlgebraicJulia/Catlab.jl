@@ -219,22 +219,30 @@ vertex(g::AbstractACSet, args...) = subpart(g, args..., :vertex)
 half_edges(g::AbstractACSet) = 1:nparts(g, :H)
 half_edges(g::AbstractACSet, v) = incident(g, v, :vertex)
 
-add_edge!(g::AbstractHalfEdgeGraph, src::Int, tgt::Int; kw...) =
-  add_edges!(g, src:src, tgt:tgt; kw...)
+@inline add_edge!(g::AbstractHalfEdgeGraph, src::Int, tgt::Int; kw...) =
+  add_half_edge_pair!(g, src, tgt; kw...)
 
-function add_edges!(g::AbstractHalfEdgeGraph, srcs::AbstractVector{Int},
-                    tgts::AbstractVector{Int}; kw...)
+@inline add_edges!(g::AbstractHalfEdgeGraph, srcs::AbstractVector{Int},
+                   tgts::AbstractVector{Int}; kw...) =
+  add_half_edge_pairs!(g, srcs, tgts; kw...)
+
+function add_half_edge_pair!(g::AbstractACSet, src::Int, tgt::Int; kw...)
+  k = nparts(g, :H)
+  add_parts!(g, :H, 2; vertex=[src,tgt], inv=[k+2,k+1], kw...)
+end
+
+function add_half_edge_pairs!(g::AbstractACSet, srcs::AbstractVector{Int},
+                              tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
   k = nparts(g, :H)
   add_parts!(g, :H, 2n; vertex=vcat(srcs,tgts),
              inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
 end
 
-add_dangling_edge!(g::AbstractHalfEdgeGraph, v::Int; kw...) =
+add_dangling_edge!(g::AbstractACSet, v::Int; kw...) =
   add_part!(g, :H; vertex=v, inv=nparts(g,:H)+1)
 
-function add_dangling_edges!(g::AbstractHalfEdgeGraph,
-                             vs::AbstractVector{Int}; kw...)
+function add_dangling_edges!(g::AbstractACSet, vs::AbstractVector{Int}; kw...)
   n, k = length(vs), nparts(g, :H)
   add_parts!(g, :H, n; vertex=vs, inv=(k+1):(k+n), kw...)
 end
