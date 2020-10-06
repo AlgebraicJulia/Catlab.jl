@@ -62,8 +62,9 @@ s = sprint(show, MIME"text/html"(), dds)
 @test occursin("<table>", s)
 @test endswith(rstrip(s), "</div>")
 
-# Special cases of pretty printing.
+# Special case of pretty print: empty table.
 empty_dds = DDS()
+@test !isempty(sprint(show, empty_dds))
 @test !isempty(sprint(show, MIME"text/plain"(), empty_dds))
 @test !isempty(sprint(show, MIME"text/html"(), empty_dds))
 
@@ -145,6 +146,9 @@ add_parts!(d, :X, 2, parent=[0,0], height=[10.0, 4])
   label::Attr(X,Label)
 end
 
+# Labeled sets with index
+#------------------------
+
 const IndexedLabeledSet = ACSetType(TheoryLabeledSet, index=[:label])
 
 lset = IndexedLabeledSet{Symbol}()
@@ -161,6 +165,16 @@ set_subpart!(lset, 1, :label, :baz)
 @test incident(lset, [:foo,:baz], :label) == [[3],[1]]
 set_subpart!(lset, 3, :label, :biz)
 @test incident(lset, :foo, :label) == []
+
+# Special case of pretty-print: unitialized data attribute.
+lset = IndexedLabeledSet{Symbol}()
+add_part!(lset, :X)
+@test occursin("#undef", sprint(show, lset))
+@test occursin("#undef", sprint(show, MIME"text/plain"(), lset))
+@test occursin("#undef", sprint(show, MIME"text/html"(), lset))
+
+# Labeled sets with unique index
+#-------------------------------
 
 const UniqueIndexedLabeledSet = ACSetType(TheoryLabeledSet,
                                           unique_index=[:label])

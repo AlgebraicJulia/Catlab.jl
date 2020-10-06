@@ -216,11 +216,12 @@ function Base.show(io::IO, ::MIME"text/plain", acs::T) where {T<:AbstractACSet}
   join(io, ["$ob = 1:$(nparts(acs,ob))" for ob in keys(tables(acs))], ", ")
   println(io)
   for (ob, table) in pairs(tables(acs))
-    # Note: PrettyTables will not print tables with zero rows.
+    # Note: PrettyTables will not print tables with no rows or undefined elems.
     if !(eltype(table) <: EmptyTuple || isempty(table))
       # TODO: Set option `row_number_column_title=name` when next version of
       # PrettyTables is released, instead of making new table.
-      table = StructArray((; ob => 1:nparts(acs,ob), fieldarrays(table)...))
+      cols = map(col -> replace_unassigned(col, "#undef"), fieldarrays(table))
+      table = StructArray((; ob => 1:nparts(acs,ob), cols...))
       pretty_table(io, table, nosubheader=true)
     end
   end
@@ -234,14 +235,23 @@ function Base.show(io::IO, ::MIME"text/html", acs::T) where {T<:AbstractACSet}
   join(io, ["$ob = 1:$(nparts(acs,ob))" for ob in keys(tables(acs))], ", ")
   println(io, "</span>")
   for (ob, table) in pairs(tables(acs))
-    # Note: PrettyTables will not print tables with zero rows.
+    # Note: PrettyTables will not print tables with no rows or undefined elems.
     if !(eltype(table) <: EmptyTuple || isempty(table))
       # TODO: Set option `row_number_column_title`. See above.
-      table = StructArray((; ob => 1:nparts(acs,ob), fieldarrays(table)...))
+      cols = map(col -> replace_unassigned(col, "#undef"), fieldarrays(table))
+      table = StructArray((; ob => 1:nparts(acs,ob), cols...))
       pretty_table(io, table, backend=:html, standalone=false, nosubheader=true)
     end
   end
   println(io, "</div>")
+end
+
+function replace_unassigned(x::Array{T}, value::V=nothing) where {T,V}
+  y = Array{Union{T,V}}(undef, size(x))
+  for i in eachindex(x)
+    y[i] = isassigned(x, i) ? x[i] : value
+  end
+  y
 end
 
 # Imperative interface
