@@ -216,7 +216,8 @@ function Base.show(io::IO, ::MIME"text/plain", acs::T) where {T<:AbstractACSet}
   join(io, ["$ob = 1:$(nparts(acs,ob))" for ob in keys(tables(acs))], ", ")
   println(io)
   for (ob, table) in pairs(tables(acs))
-    if !(eltype(table) <: EmptyTuple)
+    # Note: PrettyTables will not print tables with zero rows.
+    if !(eltype(table) <: EmptyTuple || isempty(table))
       # TODO: Set option `row_number_column_title=name` when next version of
       # PrettyTables is released, instead of making new table.
       table = StructArray((; ob => 1:nparts(acs,ob), fieldarrays(table)...))
@@ -233,7 +234,8 @@ function Base.show(io::IO, ::MIME"text/html", acs::T) where {T<:AbstractACSet}
   join(io, ["$ob = 1:$(nparts(acs,ob))" for ob in keys(tables(acs))], ", ")
   println(io, "</span>")
   for (ob, table) in pairs(tables(acs))
-    if !(eltype(table) <: EmptyTuple)
+    # Note: PrettyTables will not print tables with zero rows.
+    if !(eltype(table) <: EmptyTuple || isempty(table))
       # TODO: Set option `row_number_column_title`. See above.
       table = StructArray((; ob => 1:nparts(acs,ob), fieldarrays(table)...))
       pretty_table(io, table, backend=:html, standalone=false, nosubheader=true)

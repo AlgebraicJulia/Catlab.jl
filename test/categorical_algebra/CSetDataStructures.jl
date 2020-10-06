@@ -55,11 +55,17 @@ s = sprint(show, dds)
 s = sprint(show, MIME"text/plain"(), dds)
 @test startswith(s, "CSet")
 @test occursin("X = 1:3", s)
+@test occursin("│ X │", s)
 
 s = sprint(show, MIME"text/html"(), dds)
 @test startswith(s, "<div class=\"c-set\">")
 @test occursin("<table>", s)
 @test endswith(rstrip(s), "</div>")
+
+# Special cases of pretty printing.
+empty_dds = DDS()
+@test !isempty(sprint(show, MIME"text/plain"(), empty_dds))
+@test !isempty(sprint(show, MIME"text/html"(), empty_dds))
 
 # Error handling.
 @test_throws AssertionError add_part!(dds, :X, Φ=5)
