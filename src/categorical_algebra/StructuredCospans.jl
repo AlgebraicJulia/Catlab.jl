@@ -245,7 +245,7 @@ dom(::Type{<:DiscreteACSet{A}}) where A = A
 function StructuredCospan{L}(x::AbstractACSet, cospan::Cospan{<:FinSet{Int}}) where
     {A, L <: DiscreteACSet{A}}
   a = A()
-  copy_common_parts!(a, x)
+  copy_parts_only!(a, x)
   f, g = cospan
   ϕ, ψ = induced_transformation(a, f), induced_transformation(a, g)
   StructuredCospan{L}(x, Cospan(a, ϕ, ψ))
@@ -285,7 +285,7 @@ end
 """
 function (::Type{L})(a::AbstractACSet) where {A,X,L<:DiscreteACSet{A,X}}
   x = X()
-  copy_common_parts!(x, a)
+  copy_parts_only!(x, a)
   x
 end
 
@@ -312,28 +312,6 @@ end
 function shift_left(::Type{L}, x::AbstractACSet, ϕ::ACSetTransformation) where
     {L <: DiscreteACSet}
   ACSetTransformation(components(ϕ), L(dom(ϕ)), x)
-end
-
-""" Copy parts into a C-set from a C′-set along intersection of C and C′.
-
-TODO: Both more and less general than `copy_parts!` in the `CSets` module: more
-general in allowing C != C′, but less general in not copying subparts, only
-common data attributes. Ideally this functionality would be unified.
-"""
-@generated function copy_common_parts!(to::ACSet{CD,AD}, from::ACSet{CD′,AD′}) where
-    {CD, AD, CD′, AD′}
-  obs = intersect(CD.ob, CD′.ob)
-  attrs = intersect(AD.attr, AD′.attr)
-  @assert all(dom(AD, attr) == dom(AD′, attr) for attr in attrs)
-  Expr(:block,
-    :(newparts = (; $(map(obs) do ob
-        Expr(:kw, ob, :(add_parts!(to, $(QuoteNode(ob)),
-                                   nparts(from, $(QuoteNode(ob))))))
-        end...))),
-    map(attrs) do attr
-      :(set_subpart!(to, newparts.$(dom(AD, attr)), $(QuoteNode(attr)),
-                     subpart(from, $(QuoteNode(attr)))))
-    end...)
 end
 
 end
