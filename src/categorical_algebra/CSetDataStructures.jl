@@ -461,28 +461,27 @@ copy_parts!(acs::ACSet, from::ACSet, types::Tuple) =
 copy_parts!(acs::ACSet, from::ACSet, parts::NamedTuple) =
   _copy_parts!(acs, from, replace_colons(from, parts))
 
-@generated function _copy_parts!(acs::T, from::T, parts::NamedTuple{types}) where
-    {types,CD,AD,Ts,Idx,T <: ACSet{CD,AD,Ts,Idx}}
-  obnums = ob_num.(CD, types)
-  in_obs, out_homs = Symbol[], Tuple{Symbol,Symbol,Symbol}[]
-  for (hom, dom, codom) in zip(CD.hom, CD.dom, CD.codom)
-    if dom ∈ obnums && codom ∈ obnums
-      push!(in_obs, CD.ob[codom])
-      push!(out_homs, (hom, CD.ob[dom], CD.ob[codom]))
-    end
+@generated function _copy_parts!(to::ACSet{CD}, from::ACSet{CD′},
+                                 parts::NamedTuple{obs}) where {CD, CD′, obs}
+  @assert obs ⊆ intersect(CD.ob, CD′.ob)
+  homs = intersect(CD.hom, CD′.hom)
+  homs = filter(homs) do hom
+    c, c′, d, d′ = dom(CD,hom), dom(CD′,hom), codom(CD,hom), codom(CD′,hom)
+    c == c′ && d == d′ && c ∈ obs && d ∈ obs
   end
-  in_obs = Tuple(unique!(in_obs))
+  hom_triples = [ (hom, dom(CD,hom), codom(CD,hom)) for hom in homs ]
+  in_obs = unique!(map(last, hom_triples))
   quote
-    newparts = _copy_parts_only!(acs, from, parts)
-    partmaps = NamedTuple{$in_obs}(tuple($(map(in_obs) do type
+    newparts = _copy_parts_only!(to, from, parts)
+    partmaps = NamedTuple{$(Tuple(in_obs))}(tuple($(map(in_obs) do type
       :(Dict{Int,Int}(zip(parts.$type, newparts.$type)))
     end...)))
-    for (name, dom, codom) in $(Tuple(out_homs))
+    for (name, dom, codom) in $(Tuple(hom_triples))
       for (p, newp) in zip(parts[dom], newparts[dom])
         q = subpart(from, p, name)
         newq = get(partmaps[codom], q, nothing)
         if !isnothing(newq)
-          set_subpart!(acs, newp, name, newq)
+          set_subpart!(to, newp, name, newq)
         end
       end
     end
@@ -506,9 +505,8 @@ copy_parts_only!(to::ACSet, from::ACSet, obs::Tuple) =
 copy_parts_only!(to::ACSet, from::ACSet, parts::NamedTuple) =
   _copy_parts_only!(to, from, replace_colons(from, parts))
 
-@generated function _copy_parts_only!(
-    to::ACSet{CD,AD}, from::ACSet{CD′,AD′}, parts::NamedTuple{obs}) where
-    {CD, AD, CD′, AD′, obs}
+@generated function _copy_parts_only!(to::ACSet{CD,AD}, from::ACSet{CD′,AD′},
+    parts::NamedTuple{obs}) where {CD, AD, CD′, AD′, obs}
   @assert obs ⊆ intersect(CD.ob, CD′.ob)
   attrs = intersect(AD.attr, AD′.attr)
   attrs = filter(attrs) do attr
@@ -524,8 +522,7 @@ copy_parts_only!(to::ACSet, from::ACSet, parts::NamedTuple) =
       :(set_subpart!(to, newparts.$ob, $(QuoteNode(attr)),
                      subpart(from, parts.$ob, $(QuoteNode(attr)))))
     end...,
-    :newparts
-  )
+    :newparts)
 end
 
 function replace_colons(acs::ACSet, parts::NamedTuple{types}) where {types}
