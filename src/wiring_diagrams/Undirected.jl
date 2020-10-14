@@ -269,23 +269,23 @@ function substitute(f::UWD, indices::AbstractVector{Int},
     end
   end
 
-  # Add junctions obtained from pushout of junction sets.
-  f_inner_junction = FinFunction(flat(
-    junction(f, ports(f, i)) for (i,j) in enumerate(gs_index) if !isnothing(j)),
-    njunctions(f))
-  g_outer_junction = oplus([
-    FinFunction(junction(g, outer=true), njunctions(g)) for g in gs ])
-  f_leg, g_leg = colim = pushout(f_inner_junction, g_outer_junction)
-  add_junctions!(h, length(ob(colim)))
-  if has_subpart(h, :junction_type)
-    # XXX: We should be taking the colimits in a slice category over the
-    # junction attributes. That would automate this and also check for errors.
-    set_subpart!(h, collect(f_leg), :junction_type, junction_type(f))
-    set_subpart!(h, collect(g_leg), :junction_type,
-                 flat(junction_type(g) for g in gs))
+  # Add junctions obtained from pushout of attributed junction sets.
+  Junctions = ACSetTableType(UWD, :Junction)
+  f_junctions, g_junctions, apex = Junctions(), Junctions(), Junctions()
+  copy_parts_only!(f_junctions, f)
+  for g in gs
+    copy_parts_only!(g_junctions, g)
+    copy_parts_only!(apex, g, Junction=junction(g, outer=true))
   end
+  f_inner = ACSetTransformation(apex, f_junctions, Junction=flat(
+    junction(f, ports(f, i)) for (i,j) in enumerate(gs_index) if !isnothing(j)))
+  g_outer = ACSetTransformation(apex, g_junctions, Junction=oplus([
+    FinFunction(junction(g, outer=true), njunctions(g)) for g in gs ]))
+  colim = pushout(f_inner, g_outer)
+  copy_parts_only!(h, ob(colim))
 
   # Assign junctions to all ports.
+  f_leg, g_leg = (leg[:Junction] for leg in colim)
   gs_incl = legs(coproduct([ FinSet(njunctions(g)) for g in gs ]))
   set_junction!(h, map(f_leg, junction(f, outer=true)), outer=true)
   set_junction!(h, flatmap(enumerate(gs_index)) do (i,j)
