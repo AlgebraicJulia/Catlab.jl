@@ -1,11 +1,11 @@
-""" Data structure for C-sets (copreshaves) and attributed C-sets.
+""" Data structure for C-sets (copresheaves) and attributed C-sets.
 """
 module CSetDataStructures
 export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
   AbstractACSetType, ACSetType, AbstractCSetType, CSetType,
   tables, nparts, has_part, subpart, has_subpart, incident,
-  add_part!, add_parts!, copy_parts!, set_subpart!, set_subparts!,
-  disjoint_union
+  add_part!, add_parts!, set_subpart!, set_subparts!, copy_parts!,
+  copy_parts_only!, disjoint_union
 
 using Compat: isnothing, only
 
@@ -443,53 +443,47 @@ function set_subparts!(acs::ACSet, part, subparts)
   end
 end
 
-""" Copy parts from one C-set into another.
+""" Copy parts from a C-set to a C′-set.
 
-All subparts among the selected parts, including any attached data, are
-preserved. Thus, if the selected parts form a sub-C-set, then the whole
-sub-C-set is preserved. On the other hand, if the selected parts do *not* form a
-sub-C-set, then some copied parts will have undefined subparts.
+The selected parts must belong to both schemas. All subparts common to the
+selected parts, including data attributes, are preserved. Thus, if the selected
+parts form a sub-C-set, then the whole sub-C-set is preserved. On the other
+hand, if the selected parts do *not* form a sub-C-set, then some copied parts
+will have undefined subparts.
+
 """
-copy_parts!(acs::ACSet, from::ACSet; kw...) =
-  copy_parts!(acs, from, (; kw...))
-copy_parts!(acs::ACSet, from::ACSet, type::Symbol) =
-  copy_parts!(acs, from, (; type => :))
-copy_parts!(acs::ACSet, from::ACSet, type::Symbol, parts) =
-  copy_parts!(acs, from, (; type => parts))
-copy_parts!(acs::ACSet, from::ACSet, types::Tuple) =
-  copy_parts!(acs::ACSet, from::ACSet, NamedTuple{types}((:) for t in types))
-
-function copy_parts!(acs::ACSet, from::ACSet, parts::NamedTuple{types}) where types
-  parts = map(types, parts) do type, part
-    part == (:) ? (1:nparts(from, type)) : part
-  end
-  _copy_parts!(acs, from, NamedTuple{types}(parts))
+@generated function copy_parts!(to::ACSet{CD},
+                                from::ACSet{CD′}; kw...) where {CD, CD′}
+  obs = intersect(CD.ob, CD′.ob)
+  :(copy_parts!(to, from, isempty(kw) ? $(Tuple(obs)) : (; kw...)))
 end
 
-@generated function _copy_parts!(acs::T, from::T, parts::NamedTuple{types}) where
-    {types,CD,AD,Ts,Idx,T <: ACSet{CD,AD,Ts,Idx}}
-  obnums = ob_num.(CD, types)
-  in_obs, out_homs = Symbol[], Tuple{Symbol,Symbol,Symbol}[]
-  for (hom, dom, codom) in zip(CD.hom, CD.dom, CD.codom)
-    if dom ∈ obnums && codom ∈ obnums
-      push!(in_obs, CD.ob[codom])
-      push!(out_homs, (hom, CD.ob[dom], CD.ob[codom]))
-    end
+copy_parts!(to::ACSet, from::ACSet, obs::Tuple) =
+  copy_parts!(to, from, NamedTuple{obs}((:) for ob in obs))
+copy_parts!(to::ACSet, from::ACSet, parts::NamedTuple) =
+  _copy_parts!(to, from, replace_colons(from, parts))
+
+@generated function _copy_parts!(to::ACSet{CD}, from::ACSet{CD′},
+                                 parts::NamedTuple{obs}) where {CD, CD′, obs}
+  @assert obs ⊆ intersect(CD.ob, CD′.ob)
+  homs = intersect(CD.hom, CD′.hom)
+  homs = filter(homs) do hom
+    c, c′, d, d′ = dom(CD,hom), dom(CD′,hom), codom(CD,hom), codom(CD′,hom)
+    c == c′ && d == d′ && c ∈ obs && d ∈ obs
   end
-  in_obs = Tuple(unique!(in_obs))
+  hom_triples = [ (hom, dom(CD,hom), codom(CD,hom)) for hom in homs ]
+  in_obs = unique!(map(last, hom_triples))
   quote
-    newparts = NamedTuple{$types}(tuple($(map(types) do type
-      :(_copy_parts_data!(acs, from, Val($(QuoteNode(type))), parts.$type))
-    end...)))
-    partmaps = NamedTuple{$in_obs}(tuple($(map(in_obs) do type
+    newparts = _copy_parts_only!(to, from, parts)
+    partmaps = NamedTuple{$(Tuple(in_obs))}(tuple($(map(in_obs) do type
       :(Dict{Int,Int}(zip(parts.$type, newparts.$type)))
     end...)))
-    for (name, dom, codom) in $(Tuple(out_homs))
+    for (name, dom, codom) in $(Tuple(hom_triples))
       for (p, newp) in zip(parts[dom], newparts[dom])
         q = subpart(from, p, name)
         newq = get(partmaps[codom], q, nothing)
         if !isnothing(newq)
-          set_subpart!(acs, newp, name, newq)
+          set_subpart!(to, newp, name, newq)
         end
       end
     end
@@ -497,26 +491,53 @@ end
   end
 end
 
-""" Copy parts of a single type from one C-set to another.
+""" Copy parts from a C-set to a C′-set, ignoring all non-data subparts.
 
-Any data attributes attached to the parts are also copied.
+The selected parts must belong to both schemas. Data attributes common to both
+schemas are also copied, but no other subparts are copied.
+
+See also: [`copy_parts!`](@ref).
 """
-@generated function _copy_parts_data!(acs::T, from::T, ::Val{ob}, parts) where
-    {CD,AD,T<:ACSet{CD,AD},ob}
-  attrs = collect(filter(attr -> dom(AD, attr) == ob, AD.attr))
-  quote
-    newparts = add_parts!(acs, $(QuoteNode(ob)), length(parts))
-    $(Expr(:block, map(attrs) do attr
-       :(set_subpart!(acs, newparts, $(QuoteNode(attr)),
-                      from.tables.$ob.$attr[parts]))
-      end...))
-    newparts
-  end
+@generated function copy_parts_only!(to::ACSet{CD},
+                                     from::ACSet{CD′}; kw...) where {CD, CD′}
+  obs = intersect(CD.ob, CD′.ob)
+  :(copy_parts_only!(to, from, isempty(kw) ? $(Tuple(obs)) : (; kw...)))
 end
 
-function disjoint_union(acs1::T,acs2::T) where {CD,AD,T<:ACSet{CD,AD}}
+copy_parts_only!(to::ACSet, from::ACSet, obs::Tuple) =
+  copy_parts_only!(to, from, NamedTuple{obs}((:) for ob in obs))
+copy_parts_only!(to::ACSet, from::ACSet, parts::NamedTuple) =
+  _copy_parts_only!(to, from, replace_colons(from, parts))
+
+@generated function _copy_parts_only!(to::ACSet{CD,AD}, from::ACSet{CD′,AD′},
+    parts::NamedTuple{obs}) where {CD, AD, CD′, AD′, obs}
+  @assert obs ⊆ intersect(CD.ob, CD′.ob)
+  attrs = intersect(AD.attr, AD′.attr)
+  attrs = filter(attrs) do attr
+    ob, ob′ = dom(AD, attr), dom(AD′, attr)
+    ob == ob′ && ob ∈ obs
+  end
+  Expr(:block,
+    :(newparts = (; $(map(obs) do ob
+        Expr(:kw, ob, :(add_parts!(to, $(QuoteNode(ob)), length(parts.$ob))))
+        end...))),
+    map(attrs) do attr
+      ob = dom(AD, attr)
+      :(set_subpart!(to, newparts.$ob, $(QuoteNode(attr)),
+                     subpart(from, parts.$ob, $(QuoteNode(attr)))))
+    end...,
+    :newparts)
+end
+
+function replace_colons(acs::ACSet, parts::NamedTuple{types}) where {types}
+  NamedTuple{types}(map(types, parts) do type, part
+    part == (:) ? (1:nparts(acs, type)) : part
+  end)
+end
+
+function disjoint_union(acs1::T, acs2::T) where {T<:ACSet}
   acs = copy(acs1)
-  copy_parts!(acs,acs2,CD.ob)
+  copy_parts!(acs, acs2)
   acs
 end
 

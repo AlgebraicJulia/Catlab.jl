@@ -78,8 +78,8 @@ empty_dds = DDS()
 
 # Strictly speaking, this data structure is not a single dendrogram but a forest
 # of dendrograms (whose roots are the elements fixed under the `parent` map) and
-# in order to be valid dendrograms, the `height` map must satisfy
-# `compose(parent, height) ≥ height` pointwise.
+# in order to be valid dendrograms, there must be no nontrivial cycles and the
+# `height` map must satisfy `compose(parent, height) ≥ height` pointwise.
 
 @present TheoryDendrogram(FreeSchema) begin
   X::Ob
@@ -111,7 +111,7 @@ set_subpart!(d, [4,5], :parent, 5)
 @test subpart(d, :, :height) == [0,0,0,10,20]
 
 d2 = Dendrogram{Int}()
-copy_parts!(d2, d, :X, [4,5])
+copy_parts!(d2, d, X=[4,5])
 @test nparts(d2, :X) == 2
 @test subpart(d2, [1,2], :parent) == [2,2]
 @test subpart(d2, [1,2], :height) == [10,20]
@@ -131,9 +131,31 @@ s = sprint(show, MIME"text/plain"(), d)
 @test startswith(s, "ACSet")
 
 # Allow type inheritance for data attributes.
-d = Dendrogram{Number}()
-add_parts!(d, :X, 2, parent=[0,0], height=[10.0, 4])
-@test subpart(d, :height) == [10.0, 4]
+d_abs = Dendrogram{Number}()
+add_parts!(d_abs, :X, 2, height=[10.0, 4])
+@test subpart(d_abs, :height) == [10.0, 4]
+
+# Dendrograms with leaves
+#------------------------
+
+@present TheoryLDendrogram <: TheoryDendrogram begin
+  L::Ob
+  leafparent::Hom(L,X)
+end
+
+const LDendrogram = ACSetType(TheoryLDendrogram, index=[:parent, :leafparent])
+
+# Copying between C-sets and C′-sets with C != C′.
+ld = LDendrogram{Int}()
+copy_parts!(ld, d)
+@test nparts(ld, :L) == 0
+@test subpart(ld, :parent) == subpart(d, :parent)
+
+add_parts!(ld, :L, 3, leafparent=[2,3,4])
+@test subpart(ld, :leafparent) == [2,3,4]
+d′ = Dendrogram{Int}()
+copy_parts!(d′, ld)
+@test d′ == d
 
 # Labeled sets
 ##############
