@@ -111,7 +111,7 @@ set_subpart!(d, [4,5], :parent, 5)
 @test subpart(d, :, :height) == [0,0,0,10,20]
 
 d2 = Dendrogram{Int}()
-copy_parts!(d2, d, :X, [4,5])
+copy_parts!(d2, d, X=[4,5])
 @test nparts(d2, :X) == 2
 @test subpart(d2, [1,2], :parent) == [2,2]
 @test subpart(d2, [1,2], :height) == [10,20]

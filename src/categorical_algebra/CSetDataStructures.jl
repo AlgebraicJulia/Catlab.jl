@@ -443,23 +443,25 @@ function set_subparts!(acs::ACSet, part, subparts)
   end
 end
 
-""" Copy parts from one C-set into another.
+""" Copy parts from a C-set to a C′-set.
 
-All subparts among the selected parts, including any attached data, are
-preserved. Thus, if the selected parts form a sub-C-set, then the whole
-sub-C-set is preserved. On the other hand, if the selected parts do *not* form a
-sub-C-set, then some copied parts will have undefined subparts.
+The selected parts must belong to both schemas. All subparts common to the
+selected parts, including data attributes, are preserved. Thus, if the selected
+parts form a sub-C-set, then the whole sub-C-set is preserved. On the other
+hand, if the selected parts do *not* form a sub-C-set, then some copied parts
+will have undefined subparts.
+
 """
-copy_parts!(acs::ACSet, from::ACSet; kw...) =
-  copy_parts!(acs, from, (; kw...))
-copy_parts!(acs::ACSet, from::ACSet, type::Symbol) =
-  copy_parts!(acs, from, (; type => :))
-copy_parts!(acs::ACSet, from::ACSet, type::Symbol, parts) =
-  copy_parts!(acs, from, (; type => parts))
-copy_parts!(acs::ACSet, from::ACSet, types::Tuple) =
-  copy_parts!(acs::ACSet, from::ACSet, NamedTuple{types}((:) for t in types))
-copy_parts!(acs::ACSet, from::ACSet, parts::NamedTuple) =
-  _copy_parts!(acs, from, replace_colons(from, parts))
+@generated function copy_parts!(to::ACSet{CD},
+                                from::ACSet{CD′}; kw...) where {CD, CD′}
+  obs = intersect(CD.ob, CD′.ob)
+  :(copy_parts!(to, from, isempty(kw) ? $(Tuple(obs)) : (; kw...)))
+end
+
+copy_parts!(to::ACSet, from::ACSet, obs::Tuple) =
+  copy_parts!(to, from, NamedTuple{obs}((:) for ob in obs))
+copy_parts!(to::ACSet, from::ACSet, parts::NamedTuple) =
+  _copy_parts!(to, from, replace_colons(from, parts))
 
 @generated function _copy_parts!(to::ACSet{CD}, from::ACSet{CD′},
                                  parts::NamedTuple{obs}) where {CD, CD′, obs}
@@ -489,15 +491,17 @@ copy_parts!(acs::ACSet, from::ACSet, parts::NamedTuple) =
   end
 end
 
-""" Copy parts from a C-set to a C′-set, ignoring non-data subparts.
+""" Copy parts from a C-set to a C′-set, ignoring all non-data subparts.
 
-The parts must belong to both schemas. Data attributes common to both schemas
-are also copied, but no other subparts are copied.
+The selected parts must belong to both schemas. Data attributes common to both
+schemas are also copied, but no other subparts are copied.
+
+See also: [`copy_parts!`](@ref).
 """
-@generated function copy_parts_only!(to::ACSet{CD}, from::ACSet{CD′}) where
-    {CD, CD′}
+@generated function copy_parts_only!(to::ACSet{CD},
+                                     from::ACSet{CD′}; kw...) where {CD, CD′}
   obs = intersect(CD.ob, CD′.ob)
-  :(copy_parts_only!(to, from, $(Tuple(obs))))
+  :(copy_parts_only!(to, from, isempty(kw) ? $(Tuple(obs)) : (; kw...)))
 end
 
 copy_parts_only!(to::ACSet, from::ACSet, obs::Tuple) =
@@ -531,9 +535,9 @@ function replace_colons(acs::ACSet, parts::NamedTuple{types}) where {types}
   end)
 end
 
-function disjoint_union(acs1::T, acs2::T) where {CD,AD,T<:ACSet{CD,AD}}
+function disjoint_union(acs1::T, acs2::T) where {T<:ACSet}
   acs = copy(acs1)
-  copy_parts!(acs, acs2, CD.ob)
+  copy_parts!(acs, acs2)
   acs
 end
 
