@@ -85,7 +85,7 @@ secretary = Hom(:secretary, Department, Employee)
   compose(secretary, works_in) => id(Department),
 ]
 
-# Check generators with compound type arguments.
+# Generators with compound type arguments.
 @present C(FreeSymmetricMonoidalCategory) begin
   A::Ob
   B::Ob
@@ -108,6 +108,19 @@ X = Ob(FreeCategory, :X)
 Φ = Hom(:Φ, X, X)
 @test generators(TheoryDDS, :Ob) == [X]
 @test generators(TheoryDDS, :Hom) == [Φ]
+
+# Abbreviated syntax.
+@present TheoryGraph(FreeCategory) begin
+  V::Ob
+  E::Ob
+  src::Hom(E,V)
+  tgt::Hom(E,V)
+end
+@present TheoryGraph′(FreeCategory) begin
+  (V, E)::Ob
+  (src, tgt)::Hom(E,V)
+end
+@test TheoryGraph == TheoryGraph′
 
 # Serialization
 ###############

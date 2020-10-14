@@ -39,6 +39,11 @@ function Presentation{Name}(syntax::Module) where Name
 end
 Presentation(syntax::Module) = Presentation{Symbol}(syntax)
 
+function Base.:(==)(pres1::Presentation, pres2::Presentation)
+  pres1.syntax == pres2.syntax && pres1.generators == pres2.generators &&
+    pres1.equations == pres2.equations
+end
+
 function Base.copy(pres::Presentation{T,Name}) where {T,Name}
   Presentation{T,Name}(pres.syntax, map(copy, pres.generators),
                        copy(pres.generator_name_index), copy(pres.equations))
@@ -143,6 +148,8 @@ function translate_statement(expr::Expr)::Expr
   @match expr begin
     Expr(:(::), name::Symbol, type_expr) =>
       translate_generator(name, type_expr)
+    Expr(:(::), Expr(:tuple, names...), type_expr) =>
+      Expr(:block, (translate_generator(name, type_expr) for name in names)...)
     Expr(:(::), type_expr) =>
       translate_generator(nothing, type_expr)
     Expr(:(:=), name::Symbol, def_expr) =>
