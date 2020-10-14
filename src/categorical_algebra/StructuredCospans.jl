@@ -14,7 +14,6 @@ using StaticArrays: StaticVector, SVector
 
 using ...GAT, ..FreeDiagrams, ..Limits, ..FinSets, ..CSets
 import ..FreeDiagrams: apex, legs, feet, left, right
-using ...CSetDataStructures: ACSetDataTable
 import ..CSets: force
 using ...Theories: Category, CatDesc, AttrDesc
 import ...Theories: dom, codom, compose, ⋅, id, otimes, ⊗, munit, braid, σ,
@@ -201,7 +200,7 @@ function OpenACSetTypes(::Type{X}, ob₀::Symbol) where
   @assert ob₀ ∈ CD.ob
   type_vars = map(TypeVar, AD.data)
   L = if any(CD.ob[j] == ob₀ for (i,j) in enumerate(AD.adom))
-    A = ACSetDataTable(X, ob₀)
+    A = ACSetTableType(X, ob₀, union_all=true)
     DiscreteACSet{A{type_vars...}, X{type_vars...}}
   else
     FinSetDiscreteACSet{ob₀, X{type_vars...}}
