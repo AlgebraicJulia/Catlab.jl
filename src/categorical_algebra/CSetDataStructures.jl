@@ -110,6 +110,19 @@ function ACSetType(pres::Presentation{Schema}; index=[], unique_index=[])
   foldr(UnionAll, type_vars, init=T)
 end
 
+function ACSetDataTable(::Type{X}, ob₀::Symbol) where
+    {CD<:CatDesc, AD<:AttrDesc{CD}, X<:AbstractACSet{CD,AD}}
+  @assert ob₀ ∈ CD.ob
+  attrs₀ = [ i for (i,j) in enumerate(AD.adom) if CD.ob[j] == ob₀ ]
+  adom = Tuple(ones(Int, length(attrs₀)))
+  CD₀ = CatDesc{(ob₀,),(),(),()}
+  AD₀ = AttrDesc{CD₀,AD.data,AD.attr[attrs₀],adom,AD.acodom[attrs₀]}
+
+  type_vars = map(TypeVar, AD.data)
+  T = ACSet{CD₀,AD₀,Tuple{type_vars...},(),()}
+  foldr(UnionAll, type_vars, init=T)
+end
+
 """ Abstract type for C-sets.
 
 The special case of `AbstractAttributedCSet` with no data attributes.

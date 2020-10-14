@@ -14,6 +14,7 @@ using StaticArrays: StaticVector, SVector
 
 using ...GAT, ..FreeDiagrams, ..Limits, ..FinSets, ..CSets
 import ..FreeDiagrams: apex, legs, feet, left, right
+using ...CSetDataStructures: ACSetDataTable
 import ..CSets: force
 using ...Theories: Category, CatDesc, AttrDesc
 import ...Theories: dom, codom, compose, ⋅, id, otimes, ⊗, munit, braid, σ,
@@ -199,14 +200,11 @@ function OpenACSetTypes(::Type{X}, ob₀::Symbol) where
     {CD<:CatDesc, AD<:AttrDesc{CD}, X<:AbstractACSet{CD,AD}}
   @assert ob₀ ∈ CD.ob
   type_vars = map(TypeVar, AD.data)
-  attrs₀ = [ i for (i,j) in enumerate(AD.adom) if CD.ob[j] == ob₀ ]
-  L = if isempty(attrs₀)
-    FinSetDiscreteACSet{ob₀, X{type_vars...}}
+  L = if any(CD.ob[j] == ob₀ for (i,j) in enumerate(AD.adom))
+    A = ACSetDataTable(X, ob₀)
+    DiscreteACSet{A{type_vars...}, X{type_vars...}}
   else
-    adom = Tuple(ones(Int, length(attrs₀)))
-    CD₀ = CatDesc{(ob₀,),(),(),()}
-    AD₀ = AttrDesc{CD₀,AD.data,AD.attr[attrs₀],adom,AD.acodom[attrs₀]}
-    DiscreteACSet{ACSet{CD₀,AD₀,Tuple{type_vars...},(),()}, X{type_vars...}}
+    FinSetDiscreteACSet{ob₀, X{type_vars...}}
   end
   (foldr(UnionAll, type_vars, init=StructuredCospanOb{L}),
    foldr(UnionAll, type_vars, init=StructuredCospan{L}))
