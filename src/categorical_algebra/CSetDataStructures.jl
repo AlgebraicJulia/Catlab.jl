@@ -326,7 +326,7 @@ Both single and vectorized access are supported.
 subpart(acs::ACSet, part, name::Symbol) = subpart(acs,name)[part]
 subpart(acs::ACSet, name::Symbol) = _subpart(acs,Val(name))
 
-@generated function _subpart(acs::ACSet{CD,AD,Ts},::Val{name}) where
+@generated function _subpart(acs::ACSet{CD,AD,Ts}, ::Val{name}) where
     {CD,AD,Ts,name}
   if name ∈ CD.hom
     :(acs.tables.$(dom(CD,name)).$name)
@@ -343,10 +343,18 @@ incident(acs::ACSet, part, name::Symbol) = _incident(acs, part, Val(name))
 
 @generated function _incident(acs::ACSet{CD,AD,Ts,Idxed}, part, ::Val{name}) where
     {CD,AD,Ts,Idxed,name}
-  if name ∈ Idxed && name ∈ CD.hom
-    :(acs.indices.$name[part])
-  elseif name ∈ Idxed && name ∈ AD.attr
-    :(get_data_index.(Ref(acs.indices.$name), part))
+  if name ∈ CD.hom
+    if name ∈ Idxed
+      :(acs.indices.$name[part])
+    else
+      :(findall(acs.tables.$(dom(CD,name)).$name .== part))
+    end
+  elseif name ∈ AD.attr
+    if name ∈ Idxed
+      :(get_data_index.(Ref(acs.indices.$name), part))
+    else
+      :(findall(acs.tables.$(dom(AD,name)).$name .== part))
+    end
   else
     throw(KeyError(name))
   end

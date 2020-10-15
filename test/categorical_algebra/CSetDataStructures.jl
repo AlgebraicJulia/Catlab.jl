@@ -73,6 +73,14 @@ empty_dds = DDS()
 @test subpart(dds, :Φ) == [1,1,1,0]
 @test incident(dds, 4, :Φ) == []
 
+# Incidence without indexing.
+UnindexedDDS = CSetType(TheoryDDS)
+dds = UnindexedDDS()
+add_parts!(dds, :X, 4, Φ=[3,3,4,4])
+@test isempty(keys(dds.indices))
+@test incident(dds, 3, :Φ) == [1,2]
+@test incident(dds, 4, :Φ) == [3,4]
+
 # Dendrograms
 #############
 
