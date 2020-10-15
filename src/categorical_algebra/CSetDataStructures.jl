@@ -2,7 +2,7 @@
 """
 module CSetDataStructures
 export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
-  AbstractACSetType, ACSetType, AbstractCSetType, CSetType,
+  AbstractACSetType, ACSetType, ACSetTableType, AbstractCSetType, CSetType,
   tables, nparts, has_part, subpart, has_subpart, incident,
   add_part!, add_parts!, set_subpart!, set_subparts!, copy_parts!,
   copy_parts_only!, disjoint_union
@@ -95,7 +95,7 @@ function AbstractACSetType(pres::Presentation{Schema})
   end
 end
 
-""" Generate a data type for attributed C-sets from a schema.
+""" Generate a type for attributed C-sets from a schema.
 
 In addition to the schema, you can specify which morphisms and data attributes
 are (uniquely) indexed using the keyword argument `index` (or `unique_index`).
@@ -108,6 +108,37 @@ function ACSetType(pres::Presentation{Schema}; index=[], unique_index=[])
   T = ACSet{SchemaType(pres)..., Tuple{type_vars...},
             Tuple(sort!(index ∪ unique_index)), Tuple(sort!(unique_index))}
   foldr(UnionAll, type_vars, init=T)
+end
+
+""" Given an attributed C-set type, generate a new type based on one object.
+
+The resulting attributed C-set type can be seen as the type of a data table or
+data frame, hence the name.
+"""
+function ACSetTableType(X::Type, ob₀::Symbol; union_all::Bool=false)
+  (union_all ? ACSetTableUnionAll : ACSetTableDataType)(X, Val(ob₀))
+end
+
+@generated function ACSetTableDataType(::Type{X}, ::Val{ob₀}) where
+    {CD<:CatDesc, AD<:AttrDesc{CD}, Ts, X<:AbstractACSet{CD,AD,Ts}, ob₀}
+  CD₀, AD₀ = ACSetTableDesc(CD, AD, ob₀)
+  :(ACSet{$CD₀,$AD₀,$Ts,(),()})
+end
+
+@generated function ACSetTableUnionAll(::Type{X}, ::Val{ob₀}) where
+    {CD<:CatDesc, AD<:AttrDesc{CD}, X<:AbstractACSet{CD,AD}, ob₀}
+  CD₀, AD₀ = ACSetTableDesc(CD, AD, ob₀)
+  :(ACSet{$CD₀,$AD₀,Tuple{$(AD.data...)},(),()} where {$(AD.data...)})
+end
+
+function ACSetTableDesc(::Type{CD}, ::Type{AD}, ob₀::Symbol) where
+    {CD<:CatDesc, AD<:AttrDesc{CD}}
+  @assert ob₀ ∈ CD.ob
+  attrs₀ = [ i for (i,j) in enumerate(AD.adom) if CD.ob[j] == ob₀ ]
+  adom = Tuple(ones(Int, length(attrs₀)))
+  CD₀ = CatDesc{(ob₀,),(),(),()}
+  AD₀ = AttrDesc{CD₀,AD.data,AD.attr[attrs₀],adom,AD.acodom[attrs₀]}
+  (CD₀, AD₀)
 end
 
 """ Abstract type for C-sets.
@@ -131,7 +162,7 @@ function AbstractCSetType(pres::Presentation{Schema})
   AbstractCSet{CatDescType(pres)}
 end
 
-""" Generate a data type for C-sets from a presentation of a category C.
+""" Generate a type for C-sets from a presentation of a category C.
 
 In addition to the category, you can specify which morphisms are (uniquely)
 indexed using the keyword argument `index` (or `unique_index`). By default, no
