@@ -4,7 +4,7 @@ module CSetDataStructures
 export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
   AbstractACSetType, ACSetType, ACSetTableType, AbstractCSetType, CSetType,
   tables, nparts, has_part, subpart, has_subpart, incident,
-  add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!,
+  add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!,
   copy_parts!, copy_parts_only!, disjoint_union
 
 using Compat: isnothing, only
@@ -494,14 +494,22 @@ The part is removed using the "pop and swap" strategy familiar from
 [LightGraphs.jl](https://github.com/JuliaGraphs/LightGraphs.jl), where the
 "removed" part is actually replaced by the last part, which is then deleted.
 This strategy has important performance benefits since only the last part must
-be assigned a new ID, rather than *every* part following the removed part in the
-integer order.
+be assigned a new ID, as opposed to assigning new IDs to *every* part following
+the removed part.
 
-The deletion is *not* recursive. When a part is deleted, any superparts incident
-to it are preserved, but their subparts become undefined (equal to the integer
-zero). For example, in a graph, if you call `rem_part!` on a vertex, the edges
-incident the `src` and/or `tgt` vertices of the edge become undefined but the
-edge itself is not deleted.
+The removal operation is *not* recursive. When a part is deleted, any superparts
+incident to it are retained, but their subparts become undefined (equal to the
+integer zero). For example, in a graph, if you call `rem_part!` on a vertex, the
+edges incident the `src` and/or `tgt` vertices of the edge become undefined but
+the edge itself is not deleted.
+
+Indexing has both positive and negative impacts on performance. On the one hand,
+indexing reduces the cost of finding affected superparts from linear time to
+constant time. On the other hand, the indices of subparts must be updated when
+the parted is remove. For example, in a graph, indexing `src` and `tgt` makes
+removing vertices faster but removing edges (slightly) slower.
+
+See also: [`rem_parts!`](@ref).
 """
 rem_part!(acs::ACSet, type::Symbol, part::Int) =
   _rem_part!(acs, Val(type), part)
@@ -535,6 +543,19 @@ rem_part!(acs::ACSet, type::Symbol, part::Int) =
     if part < last_part
       set_subparts!(acs, part, last_row)
     end
+  end
+end
+
+""" Remove parts from a C-set.
+
+The parts must be supplied in sorted order, without duplicates.
+
+See also: [`rem_part!`](@ref).
+"""
+function rem_parts!(acs::ACSet, type::Symbol, parts::AbstractVector{Int})
+  issorted(parts) || error("Parts to removed must be in sorted order")
+  for part in Iterators.reverse(parts)
+    rem_part!(acs, type, part)
   end
 end
 

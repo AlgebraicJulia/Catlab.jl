@@ -60,6 +60,14 @@ rem_part!(dds, :X, 2)
 rem_part!(dds, :X, 1)
 @test nparts(dds, :X) == 0
 
+dds = DDS()
+add_parts!(dds, :X, 4, Φ=[2,3,3,4])
+@test_throws ErrorException rem_parts!(dds, :X, [4,1])
+rem_parts!(dds, :X, [1,4])
+@test subpart(dds, :Φ) == [1,1]
+@test incident(dds, 1, :Φ) == [1,2]
+@test incident(dds, 2, :Φ) == []
+
 # Pretty printing.
 dds = DDS()
 add_parts!(dds, :X, 3, Φ=[2,3,3])
