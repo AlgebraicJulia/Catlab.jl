@@ -222,6 +222,13 @@ set_subpart!(lset, 1, :label, :baz)
 set_subpart!(lset, 3, :label, :biz)
 @test incident(lset, :foo, :label) == []
 
+# Deletion with indexed data attribute.
+lset = IndexedLabeledSet{Symbol}()
+add_parts!(lset, :X, 3, label=[:foo, :foo, :bar])
+rem_part!(lset, :X, 1)
+@test subpart(lset, :label) == [:bar, :foo]
+@test incident(lset, [:foo, :bar], :label) == [[2], [1]]
+
 # Special case of pretty-print: unitialized data attribute.
 lset = IndexedLabeledSet{Symbol}()
 add_part!(lset, :X)
