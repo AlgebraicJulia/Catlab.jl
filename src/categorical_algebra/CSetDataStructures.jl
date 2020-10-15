@@ -338,6 +338,9 @@ subpart(acs::ACSet, name::Symbol) = _subpart(acs,Val(name))
 end
 
 """ Get superparts incident to part in C-set.
+
+If the subpart is indexed, this takes constant time; otherwise, it takes linear
+time. Both single and vectorized access are supported.
 """
 incident(acs::ACSet, part, name::Symbol) = _incident(acs, part, Val(name))
 
@@ -347,18 +350,21 @@ incident(acs::ACSet, part, name::Symbol) = _incident(acs, part, Val(name))
     if name ∈ Idxed
       :(acs.indices.$name[part])
     else
-      :(findall(acs.tables.$(dom(CD,name)).$name .== part))
+      :(broadcast_findall(part, acs.tables.$(dom(CD,name)).$name))
     end
   elseif name ∈ AD.attr
     if name ∈ Idxed
       :(get_data_index.(Ref(acs.indices.$name), part))
     else
-      :(findall(acs.tables.$(dom(AD,name)).$name .== part))
+      :(broadcast_findall(part, acs.tables.$(dom(AD,name)).$name))
     end
   else
     throw(KeyError(name))
   end
 end
+
+broadcast_findall(xs, array::AbstractArray) =
+  broadcast(x -> findall(y -> x == y, array), xs)
 
 """ Add part of given type to C-set, optionally setting its subparts.
 
@@ -489,7 +495,6 @@ selected parts, including data attributes, are preserved. Thus, if the selected
 parts form a sub-C-set, then the whole sub-C-set is preserved. On the other
 hand, if the selected parts do *not* form a sub-C-set, then some copied parts
 will have undefined subparts.
-
 """
 @generated function copy_parts!(to::ACSet{CD},
                                 from::ACSet{CD′}; kw...) where {CD, CD′}
