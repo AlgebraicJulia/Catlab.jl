@@ -46,7 +46,23 @@ set_subpart!(dds, 1, :Φ, 1)
 @test_throws KeyError subpart(dds, 1, :nonsubpart)
 @test_throws KeyError set_subpart!(dds, 1, :nonsubpart, 1)
 
+# Deletion.
+dds = DDS()
+add_parts!(dds, :X, 3, Φ=[2,3,3])
+rem_part!(dds, :X, 2)
+@test nparts(dds, :X) == 2
+@test subpart(dds, :Φ) == [0,2]
+@test incident(dds, 1, :Φ) == []
+@test incident(dds, 2, :Φ) == [2]
+rem_part!(dds, :X, 2)
+@test nparts(dds, :X) == 1
+@test subpart(dds, :Φ) == [0]
+rem_part!(dds, :X, 1)
+@test nparts(dds, :X) == 0
+
 # Pretty printing.
+dds = DDS()
+add_parts!(dds, :X, 3, Φ=[2,3,3])
 s = sprint(show, dds)
 @test startswith(s, "CSet")
 @test occursin("X = 1:3", s)
@@ -68,7 +84,9 @@ empty_dds = DDS()
 @test !isempty(sprint(show, MIME"text/plain"(), empty_dds))
 @test !isempty(sprint(show, MIME"text/html"(), empty_dds))
 
-# Error handling.
+# Incidence after error handling.
+dds = DDS()
+add_parts!(dds, :X, 3, Φ=[1,1,1])
 @test_throws AssertionError add_part!(dds, :X, Φ=5)
 @test subpart(dds, :Φ) == [1,1,1,0]
 @test incident(dds, 4, :Φ) == []

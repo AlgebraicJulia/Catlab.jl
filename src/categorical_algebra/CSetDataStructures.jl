@@ -4,8 +4,8 @@ module CSetDataStructures
 export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
   AbstractACSetType, ACSetType, ACSetTableType, AbstractCSetType, CSetType,
   tables, nparts, has_part, subpart, has_subpart, incident,
-  add_part!, add_parts!, set_subpart!, set_subparts!, copy_parts!,
-  copy_parts_only!, disjoint_union
+  add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!,
+  copy_parts!, copy_parts_only!, disjoint_union
 
 using Compat: isnothing, only
 
@@ -393,7 +393,7 @@ end
 @generated function _add_parts!(acs::ACSet{CD,AD,Ts,Idxed}, ::Val{ob},
                                 n::Int) where {CD,AD,Ts,Idxed,ob}
   out_homs = filter(hom -> dom(CD, hom) == ob, CD.hom)
-  indexed_homs = filter(hom -> codom(CD, hom) == ob && hom ∈ Idxed, CD.hom)
+  indexed_in_homs = filter(hom -> codom(CD, hom) == ob && hom ∈ Idxed, CD.hom)
   quote
     if n == 0; return 1:0 end
     nparts = length(acs.tables.$ob) + n
@@ -402,7 +402,7 @@ end
     $(Expr(:block, map(out_homs) do hom
         :(@inbounds acs.tables.$ob.$hom[start:nparts] .= 0)
      end...))
-    $(Expr(:block, map(indexed_homs) do hom
+    $(Expr(:block, map(indexed_in_homs) do hom
         quote
           resize!(acs.indices.$hom, nparts)
           @inbounds for i in start:nparts; acs.indices.$hom[i] = Int[] end
@@ -485,6 +485,56 @@ set_subparts!(acs::ACSet, part; kw...) = set_subparts!(acs, part, (; kw...))
 function set_subparts!(acs::ACSet, part, subparts)
   for (name, subpart) in pairs(subparts)
     set_subpart!(acs, part, name, subpart)
+  end
+end
+
+""" Remove part from a C-set.
+
+The part is removed using the "pop and swap" strategy familiar from
+[LightGraphs.jl](https://github.com/JuliaGraphs/LightGraphs.jl), where the
+"removed" part is actually replaced by the last part, which is then deleted.
+This strategy has important performance benefits since only the last part must
+be assigned a new ID, rather than *every* part following the removed part in the
+integer order.
+
+The deletion is *not* recursive. When a part is deleted, any superparts incident
+to it are preserved, but their subparts become undefined (equal to the integer
+zero). For example, in a graph, if you call `rem_part!` on a vertex, the edges
+incident the `src` and/or `tgt` vertices of the edge become undefined but the
+edge itself is not deleted.
+"""
+rem_part!(acs::ACSet, type::Symbol, part::Int) =
+  _rem_part!(acs, Val(type), part)
+
+@generated function _rem_part!(acs::ACSet{CD,AD,Ts,Idxed}, ::Val{ob},
+                               part::Int) where {CD,AD,Ts,Idxed,ob}
+  in_homs = filter(hom -> codom(CD, hom) == ob, CD.hom)
+  indexed_out_homs = filter(hom -> dom(CD, hom) == ob && hom ∈ Idxed, CD.hom)
+  indexed_attrs = filter(attr -> dom(AD, attr) == ob && attr ∈ Idxed, AD.attr)
+  quote
+    last_part = length(acs.tables.$ob)
+    @assert 1 <= part <= last_part
+    # Unassign superparts of the part to be removed and also reassign superparts
+    # of the last part to this part.
+    for hom in $(Tuple(in_homs))
+      set_subpart!(acs, incident(acs, part, hom), hom, 0)
+      set_subpart!(acs, copy(incident(acs, last_part, hom)), hom, part)
+    end
+    last_row = acs.tables.$ob[last_part]
+
+    # Clear any morphism and data attribute indices for last part.
+    for hom in $(Tuple(indexed_out_homs))
+      set_subpart!(acs, last_part, hom, 0)
+    end
+    for attr in $(Tuple(indexed_attrs))
+      unset_data_index!(acs.indices[attr], last_row[attr], last_part)
+    end
+
+    # Finally, delete the last part and update subparts of the removed part.
+    resize!(acs.tables.$ob, last_part - 1)
+    if part < last_part
+      set_subparts!(acs, part, last_row)
+    end
   end
 end
 
