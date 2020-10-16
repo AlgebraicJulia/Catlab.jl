@@ -94,8 +94,8 @@ outneighbors(g::AbstractGraph, v::Int) = subpart(g, incident(g, v, :src), :tgt)
 all_neighbors(g::AbstractGraph, v::Int) =
   Iterators.flatten((inneighbors(g, v), outneighbors(g, v)))
 
-# # Symmetric graphs
-# ##################
+# Symmetric graphs
+##################
 
 @present TheorySymmetricGraph <: TheoryGraph begin
   inv::Hom(E,E)
@@ -251,6 +251,13 @@ vertex(g::AbstractACSet, args...) = subpart(g, args..., :vertex)
 half_edges(g::AbstractACSet) = 1:nparts(g, :H)
 half_edges(g::AbstractACSet, v) = incident(g, v, :vertex)
 
+function half_edge_pairs(g::AbstractACSet, src::Int, tgt::Int)
+  hs = half_edges(g, src)
+  hs′ = inv(g, hs)
+  has_tgt = vertex(g, hs′) .== tgt
+  (hs[has_tgt], hs′[has_tgt])
+end
+
 @inline add_edge!(g::AbstractHalfEdgeGraph, src::Int, tgt::Int; kw...) =
   add_half_edge_pair!(g, src, tgt; kw...)
 
@@ -278,6 +285,21 @@ function add_dangling_edges!(g::AbstractACSet, vs::AbstractVector{Int}; kw...)
   n, k = length(vs), nparts(g, :H)
   add_parts!(g, :H, n; vertex=vs, inv=(k+1):(k+n), kw...)
 end
+
+function rem_vertices!(g::AbstractHalfEdgeGraph, vs; keep_edges::Bool=false)
+  if !keep_edges
+    hs = reduce(vcat, incident(g, vs, :vertex))
+    rem_parts!(g, :H, unique!(sort!([hs; inv(g, hs)])))
+  end
+  rem_parts!(g, :V, vs)
+end
+
+rem_edge!(g::AbstractHalfEdgeGraph, src::Int, tgt::Int) =
+  rem_parts!(g, :H, sort!(unique(first.(half_edge_pairs(g, src, tgt)))))
+
+rem_edge!(g::AbstractHalfEdgeGraph, h::Int) = rem_edges!(g, h:h)
+rem_edges!(g::AbstractHalfEdgeGraph, hs) =
+  rem_parts!(g, :H, unique!(sort!([hs; inv(g, hs)])))
 
 # LightGraphs constructors
 ##########################

@@ -144,4 +144,13 @@ lg = LightGraphs.Graph(4)
 map((src, tgt) -> add_edge!(lg, src, tgt), [1,2,3], [2,3,4])
 @test LightGraphs.Graph(g) == lg
 
+rem_edge!(g, 3, 4)
+@test Set(zip(vertex(g), vertex(g,inv(g)))) == Set([(1,2),(2,1),(2,3),(3,2)])
+add_edge!(g, 3, 4)
+rem_edge!(g, last(half_edges(g)))
+@test Set(zip(vertex(g), vertex(g,inv(g)))) == Set([(1,2),(2,1),(2,3),(3,2)])
+rem_vertex!(g, 2)
+@test nv(g) == 3
+@test isempty(half_edges(g))
+
 end
