@@ -341,20 +341,32 @@ end
 
 If the subpart is indexed, this takes constant time; otherwise, it takes linear
 time. Both single and vectorized access are supported.
-"""
-incident(acs::ACSet, part, name::Symbol) = _incident(acs, part, Val(name))
 
-@generated function _incident(acs::ACSet{CD,AD,Ts,Idxed}, part, ::Val{name}) where
-    {CD,AD,Ts,Idxed,name}
+Note that when the subpart is indexed, this function returns a view of the
+underlying index, which should not be mutated. To ensure that a fresh copy is
+returned, regardless of whether indexing is enabled, set the keyword argument
+`copy=true`.
+"""
+incident(acs::ACSet, part, name::Symbol; copy::Bool=false) =
+  _incident(acs, part, Val(name); copy=copy)
+
+@generated function _incident(acs::ACSet{CD,AD,Ts,Idxed}, part, ::Val{name};
+                              copy::Bool=false) where {CD,AD,Ts,Idxed,name}
   if name ∈ CD.hom
     if name ∈ Idxed
-      :(acs.indices.$name[part])
+      quote
+        indices = acs.indices.$name[part]
+        copy ? Base.copy.(indices) : indices
+      end
     else
       :(broadcast_findall(part, acs.tables.$(dom(CD,name)).$name))
     end
   elseif name ∈ AD.attr
     if name ∈ Idxed
-      :(get_data_index.(Ref(acs.indices.$name), part))
+      quote
+        indices = get_data_index.(Ref(acs.indices.$name), part)
+        copy ? Base.copy.(indices) : indices
+      end
     else
       :(broadcast_findall(part, acs.tables.$(dom(AD,name)).$name))
     end
@@ -525,8 +537,8 @@ rem_part!(acs::ACSet, type::Symbol, part::Int) =
     # Unassign superparts of the part to be removed and also reassign superparts
     # of the last part to this part.
     for hom in $(Tuple(in_homs))
-      set_subpart!(acs, incident(acs, part, hom), hom, 0)
-      set_subpart!(acs, copy(incident(acs, last_part, hom)), hom, part)
+      set_subpart!(acs, incident(acs, part, hom, copy=true), hom, 0)
+      set_subpart!(acs, incident(acs, last_part, hom, copy=true), hom, part)
     end
     last_row = acs.tables.$ob[last_part]
 
