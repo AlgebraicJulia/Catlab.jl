@@ -248,12 +248,12 @@ add_parts!(lset, :X, 2, label=[:foo, :bar])
 @test subpart(lset, :, :label) == [:foo, :bar]
 @test incident(lset, :foo, :label) == 1
 @test incident(lset, [:foo,:bar], :label) == [1,2]
-@test incident(lset, :nonkey, :label) == nothing
+@test incident(lset, :nonkey, :label) == 0
 
 set_subpart!(lset, 1, :label, :baz)
 @test subpart(lset, 1, :label) == :baz
 @test incident(lset, :baz, :label) == 1
-@test incident(lset, :foo, :label) == nothing
+@test incident(lset, :foo, :label) == 0
 
 @test_throws ErrorException set_subpart!(lset, 1, :label, :bar)
 

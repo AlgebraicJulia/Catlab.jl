@@ -658,8 +658,7 @@ end
 
 """ Look up key in C-set data index.
 """
-get_data_index(d::AbstractDict{K,Int}, k::K) where K =
-  get(d, k, nothing)
+get_data_index(d::AbstractDict{K,Int}, k::K) where K = get(d, k, 0)
 get_data_index(d::AbstractDict{K,<:AbstractVector{Int}}, k::K) where K =
   get(d, k, 1:0)
 
