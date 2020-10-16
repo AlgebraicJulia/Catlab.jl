@@ -7,6 +7,7 @@ half-edge graphs.
 module BasicGraphs
 export AbstractGraph, Graph, nv, ne, src, tgt, edges, vertices,
   has_edge, has_vertex, add_edge!, add_edges!, add_vertex!, add_vertices!,
+  rem_edge!, rem_edges!, rem_vertex!, rem_vertices!,
   neighbors, inneighbors, outneighbors, all_neighbors,
   AbstractSymmetricGraph, SymmetricGraph, inv,
   AbstractReflexiveGraph, ReflexiveGraph, refl,
@@ -17,8 +18,9 @@ export AbstractGraph, Graph, nv, ne, src, tgt, edges, vertices,
 using Compat: only
 
 import Base: inv
-import LightGraphs: SimpleGraph, SimpleDiGraph, nv, ne, src, dst,
-  edges, vertices, has_edge, has_vertex, add_edge!, add_vertex!, add_vertices!,
+import LightGraphs: SimpleGraph, SimpleDiGraph,
+  nv, ne, src, dst, edges, vertices, has_edge, has_vertex,
+  add_edge!, add_vertex!, add_vertices!, rem_edge!, rem_vertex!, rem_vertices!,
   neighbors, inneighbors, outneighbors, all_neighbors
 
 using ...Present, ...CSetDataStructures
@@ -69,6 +71,22 @@ function add_edges!(g::AbstractGraph, srcs::AbstractVector{Int},
   @assert (n = length(srcs)) == length(tgts)
   add_parts!(g, :E, n; src=srcs, tgt=tgts, kw...)
 end
+
+rem_vertex!(g::AbstractGraph, v::Int) = rem_vertices!(g, v:v)
+
+function rem_vertices!(g::AbstractGraph, vs; keep_edges::Bool=false)
+  if !keep_edges
+    es = [incident(g, vs, :src); incident(g, vs, :tgt)]
+    rem_edges!(g, unique!(sort!(reduce(vcat, es, init=Int[]))))
+  end
+  rem_parts!(g, :V, vs)
+end
+
+rem_edge!(g::AbstractGraph, e::Int) = rem_part!(g, :E, e)
+rem_edge!(g::AbstractGraph, src::Int, tgt::Int) =
+  rem_edge!(g, first(edges(g, src, tgt)))
+
+rem_edges!(g::AbstractGraph, es) = rem_parts!(g, :E, es)
 
 neighbors(g::AbstractGraph, v::Int) = outneighbors(g, v)
 inneighbors(g::AbstractGraph, v::Int) = subpart(g, incident(g, v, :tgt), :src)

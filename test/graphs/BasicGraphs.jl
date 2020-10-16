@@ -36,6 +36,14 @@ g = Graph(4)
 add_edges!(g, [1,2,3], [2,3,4])
 @test LightGraphs.DiGraph(g) == LightGraphs.path_digraph(4)
 
+rem_edge!(g, 3)
+@test ne(g) == 2
+@test src(g) == [1,2]
+@test tgt(g) == [2,3]
+rem_vertex!(g, 2)
+@test nv(g) == 3
+@test ne(g) == 0
+
 # Symmetric graphs
 ##################
 
