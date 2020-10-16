@@ -72,18 +72,18 @@ function add_edges!(g::AbstractGraph, srcs::AbstractVector{Int},
   add_parts!(g, :E, n; src=srcs, tgt=tgts, kw...)
 end
 
-rem_vertex!(g::AbstractGraph, v::Int) = rem_vertices!(g, v:v)
+rem_vertex!(g::AbstractACSet, v::Int; kw...) = rem_vertices!(g, v:v; kw...)
 
 function rem_vertices!(g::AbstractGraph, vs; keep_edges::Bool=false)
   if !keep_edges
-    es = [incident(g, vs, :src); incident(g, vs, :tgt)]
-    rem_edges!(g, unique!(sort!(reduce(vcat, es, init=Int[]))))
+    es = reduce(vcat, [incident(g, vs, :src); incident(g, vs, :tgt)])
+    rem_parts!(g, :E, unique!(sort!(es)))
   end
   rem_parts!(g, :V, vs)
 end
 
 rem_edge!(g::AbstractGraph, e::Int) = rem_part!(g, :E, e)
-rem_edge!(g::AbstractGraph, src::Int, tgt::Int) =
+rem_edge!(g::AbstractACSet, src::Int, tgt::Int) =
   rem_edge!(g, first(edges(g, src, tgt)))
 
 rem_edges!(g::AbstractGraph, es) = rem_parts!(g, :E, es)
@@ -126,6 +126,20 @@ function add_edges!(g::AbstractSymmetricGraph, srcs::AbstractVector{Int},
   add_parts!(g, :E, 2n; src=vcat(srcs,tgts), tgt=vcat(tgts,srcs),
              inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
 end
+
+function rem_vertices!(g::AbstractSymmetricGraph, vs; keep_edges::Bool=false)
+  if !keep_edges
+    es = reduce(vcat, incident(g, vs, :src))
+    rem_parts!(g, :E, unique!(sort!([es; inv(g, es)])))
+  end
+  # FIXME: Inefficient when deleting incident edges since `rem_parts!` still
+  # searches for edges with given targets but `tgt` is not indexed.
+  rem_parts!(g, :V, vs)
+end
+
+rem_edge!(g::AbstractSymmetricGraph, e::Int) = rem_edges!(g, e:e)
+rem_edges!(g::AbstractSymmetricGraph, es) =
+  rem_parts!(g, :E, unique!(sort!([es; inv(g, es)])))
 
 neighbors(g::AbstractSymmetricGraph, v::Int) =
   subpart(g, incident(g, v, :src), :tgt)

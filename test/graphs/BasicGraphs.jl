@@ -36,7 +36,7 @@ g = Graph(4)
 add_edges!(g, [1,2,3], [2,3,4])
 @test LightGraphs.DiGraph(g) == LightGraphs.path_digraph(4)
 
-rem_edge!(g, 3)
+rem_edge!(g, 3, 4)
 @test ne(g) == 2
 @test src(g) == [1,2]
 @test tgt(g) == [2,3]
@@ -68,6 +68,14 @@ add_edges!(g, [1,2,3], [2,3,4])
 lg = LightGraphs.DiGraph(4)
 map((src, tgt) -> add_edge!(lg, src, tgt), [1,2,3,2,3,4], [2,3,4,1,2,3])
 @test LightGraphs.DiGraph(g) == lg
+
+rem_edge!(g, 3, 4)
+@test ne(g) == 4
+@test neighbors(g, 3) == [2]
+@test neighbors(g, 4) == []
+rem_vertex!(g, 2)
+@test nv(g) == 3
+@test ne(g) == 0
 
 # Reflexive graphs
 ##################
