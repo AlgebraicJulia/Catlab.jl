@@ -46,7 +46,31 @@ set_subpart!(dds, 1, :Φ, 1)
 @test_throws KeyError subpart(dds, 1, :nonsubpart)
 @test_throws KeyError set_subpart!(dds, 1, :nonsubpart, 1)
 
+# Deletion.
+dds = DDS()
+add_parts!(dds, :X, 3, Φ=[2,3,3])
+rem_part!(dds, :X, 2)
+@test nparts(dds, :X) == 2
+@test subpart(dds, :Φ) == [0,2]
+@test incident(dds, 1, :Φ) == []
+@test incident(dds, 2, :Φ) == [2]
+rem_part!(dds, :X, 2)
+@test nparts(dds, :X) == 1
+@test subpart(dds, :Φ) == [0]
+rem_part!(dds, :X, 1)
+@test nparts(dds, :X) == 0
+
+dds = DDS()
+add_parts!(dds, :X, 4, Φ=[2,3,3,4])
+@test_throws ErrorException rem_parts!(dds, :X, [4,1])
+rem_parts!(dds, :X, [1,4])
+@test subpart(dds, :Φ) == [1,1]
+@test incident(dds, 1, :Φ) == [1,2]
+@test incident(dds, 2, :Φ) == []
+
 # Pretty printing.
+dds = DDS()
+add_parts!(dds, :X, 3, Φ=[2,3,3])
 s = sprint(show, dds)
 @test startswith(s, "CSet")
 @test occursin("X = 1:3", s)
@@ -68,10 +92,20 @@ empty_dds = DDS()
 @test !isempty(sprint(show, MIME"text/plain"(), empty_dds))
 @test !isempty(sprint(show, MIME"text/html"(), empty_dds))
 
-# Error handling.
+# Incidence after error handling.
+dds = DDS()
+add_parts!(dds, :X, 3, Φ=[1,1,1])
 @test_throws AssertionError add_part!(dds, :X, Φ=5)
 @test subpart(dds, :Φ) == [1,1,1,0]
 @test incident(dds, 4, :Φ) == []
+
+# Incidence without indexing.
+UnindexedDDS = CSetType(TheoryDDS)
+dds = UnindexedDDS()
+add_parts!(dds, :X, 4, Φ=[3,3,4,4])
+@test isempty(keys(dds.indices))
+@test incident(dds, 3, :Φ) == [1,2]
+@test incident(dds, 4, :Φ) == [3,4]
 
 # Dendrograms
 #############
@@ -188,6 +222,13 @@ set_subpart!(lset, 1, :label, :baz)
 set_subpart!(lset, 3, :label, :biz)
 @test incident(lset, :foo, :label) == []
 
+# Deletion with indexed data attribute.
+lset = IndexedLabeledSet{Symbol}()
+add_parts!(lset, :X, 3, label=[:foo, :foo, :bar])
+rem_part!(lset, :X, 1)
+@test subpart(lset, :label) == [:bar, :foo]
+@test incident(lset, [:foo, :bar], :label) == [[2], [1]]
+
 # Special case of pretty-print: unitialized data attribute.
 lset = IndexedLabeledSet{Symbol}()
 add_part!(lset, :X)
@@ -207,12 +248,12 @@ add_parts!(lset, :X, 2, label=[:foo, :bar])
 @test subpart(lset, :, :label) == [:foo, :bar]
 @test incident(lset, :foo, :label) == 1
 @test incident(lset, [:foo,:bar], :label) == [1,2]
-@test incident(lset, :nonkey, :label) == nothing
+@test incident(lset, :nonkey, :label) == 0
 
 set_subpart!(lset, 1, :label, :baz)
 @test subpart(lset, 1, :label) == :baz
 @test incident(lset, :baz, :label) == 1
-@test incident(lset, :foo, :label) == nothing
+@test incident(lset, :foo, :label) == 0
 
 @test_throws ErrorException set_subpart!(lset, 1, :label, :bar)
 

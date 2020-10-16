@@ -4,8 +4,8 @@ module CSetDataStructures
 export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
   AbstractACSetType, ACSetType, ACSetTableType, AbstractCSetType, CSetType,
   tables, nparts, has_part, subpart, has_subpart, incident,
-  add_part!, add_parts!, set_subpart!, set_subparts!, copy_parts!,
-  copy_parts_only!, disjoint_union
+  add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!,
+  copy_parts!, copy_parts_only!, disjoint_union
 
 using Compat: isnothing, only
 
@@ -326,7 +326,7 @@ Both single and vectorized access are supported.
 subpart(acs::ACSet, part, name::Symbol) = subpart(acs,name)[part]
 subpart(acs::ACSet, name::Symbol) = _subpart(acs,Val(name))
 
-@generated function _subpart(acs::ACSet{CD,AD,Ts},::Val{name}) where
+@generated function _subpart(acs::ACSet{CD,AD,Ts}, ::Val{name}) where
     {CD,AD,Ts,name}
   if name ∈ CD.hom
     :(acs.tables.$(dom(CD,name)).$name)
@@ -338,19 +338,45 @@ subpart(acs::ACSet, name::Symbol) = _subpart(acs,Val(name))
 end
 
 """ Get superparts incident to part in C-set.
-"""
-incident(acs::ACSet, part, name::Symbol) = _incident(acs, part, Val(name))
 
-@generated function _incident(acs::ACSet{CD,AD,Ts,Idxed}, part, ::Val{name}) where
-    {CD,AD,Ts,Idxed,name}
-  if name ∈ Idxed && name ∈ CD.hom
-    :(acs.indices.$name[part])
-  elseif name ∈ Idxed && name ∈ AD.attr
-    :(get_data_index.(Ref(acs.indices.$name), part))
+If the subpart is indexed, this takes constant time; otherwise, it takes linear
+time. Both single and vectorized access are supported.
+
+Note that when the subpart is indexed, this function returns a view of the
+underlying index, which should not be mutated. To ensure that a fresh copy is
+returned, regardless of whether indexing is enabled, set the keyword argument
+`copy=true`.
+"""
+incident(acs::ACSet, part, name::Symbol; copy::Bool=false) =
+  _incident(acs, part, Val(name); copy=copy)
+
+@generated function _incident(acs::ACSet{CD,AD,Ts,Idxed}, part, ::Val{name};
+                              copy::Bool=false) where {CD,AD,Ts,Idxed,name}
+  if name ∈ CD.hom
+    if name ∈ Idxed
+      quote
+        indices = acs.indices.$name[part]
+        copy ? Base.copy.(indices) : indices
+      end
+    else
+      :(broadcast_findall(part, acs.tables.$(dom(CD,name)).$name))
+    end
+  elseif name ∈ AD.attr
+    if name ∈ Idxed
+      quote
+        indices = get_data_index.(Ref(acs.indices.$name), part)
+        copy ? Base.copy.(indices) : indices
+      end
+    else
+      :(broadcast_findall(part, acs.tables.$(dom(AD,name)).$name))
+    end
   else
     throw(KeyError(name))
   end
 end
+
+broadcast_findall(xs, array::AbstractArray) =
+  broadcast(x -> findall(y -> x == y, array), xs)
 
 """ Add part of given type to C-set, optionally setting its subparts.
 
@@ -379,7 +405,7 @@ end
 @generated function _add_parts!(acs::ACSet{CD,AD,Ts,Idxed}, ::Val{ob},
                                 n::Int) where {CD,AD,Ts,Idxed,ob}
   out_homs = filter(hom -> dom(CD, hom) == ob, CD.hom)
-  indexed_homs = filter(hom -> codom(CD, hom) == ob && hom ∈ Idxed, CD.hom)
+  indexed_in_homs = filter(hom -> codom(CD, hom) == ob && hom ∈ Idxed, CD.hom)
   quote
     if n == 0; return 1:0 end
     nparts = length(acs.tables.$ob) + n
@@ -388,7 +414,7 @@ end
     $(Expr(:block, map(out_homs) do hom
         :(@inbounds acs.tables.$ob.$hom[start:nparts] .= 0)
      end...))
-    $(Expr(:block, map(indexed_homs) do hom
+    $(Expr(:block, map(indexed_in_homs) do hom
         quote
           resize!(acs.indices.$hom, nparts)
           @inbounds for i in start:nparts; acs.indices.$hom[i] = Int[] end
@@ -474,6 +500,77 @@ function set_subparts!(acs::ACSet, part, subparts)
   end
 end
 
+""" Remove part from a C-set.
+
+The part is removed using the "pop and swap" strategy familiar from
+[LightGraphs.jl](https://github.com/JuliaGraphs/LightGraphs.jl), where the
+"removed" part is actually replaced by the last part, which is then deleted.
+This strategy has important performance benefits since only the last part must
+be assigned a new ID, as opposed to assigning new IDs to *every* part following
+the removed part.
+
+The removal operation is *not* recursive. When a part is deleted, any superparts
+incident to it are retained, but their subparts become undefined (equal to the
+integer zero). For example, in a graph, if you call `rem_part!` on a vertex, the
+edges incident the `src` and/or `tgt` vertices of the edge become undefined but
+the edge itself is not deleted.
+
+Indexing has both positive and negative impacts on performance. On the one hand,
+indexing reduces the cost of finding affected superparts from linear time to
+constant time. On the other hand, the indices of subparts must be updated when
+the parted is remove. For example, in a graph, indexing `src` and `tgt` makes
+removing vertices faster but removing edges (slightly) slower.
+
+See also: [`rem_parts!`](@ref).
+"""
+rem_part!(acs::ACSet, type::Symbol, part::Int) =
+  _rem_part!(acs, Val(type), part)
+
+@generated function _rem_part!(acs::ACSet{CD,AD,Ts,Idxed}, ::Val{ob},
+                               part::Int) where {CD,AD,Ts,Idxed,ob}
+  in_homs = filter(hom -> codom(CD, hom) == ob, CD.hom)
+  indexed_out_homs = filter(hom -> dom(CD, hom) == ob && hom ∈ Idxed, CD.hom)
+  indexed_attrs = filter(attr -> dom(AD, attr) == ob && attr ∈ Idxed, AD.attr)
+  quote
+    last_part = length(acs.tables.$ob)
+    @assert 1 <= part <= last_part
+    # Unassign superparts of the part to be removed and also reassign superparts
+    # of the last part to this part.
+    for hom in $(Tuple(in_homs))
+      set_subpart!(acs, incident(acs, part, hom, copy=true), hom, 0)
+      set_subpart!(acs, incident(acs, last_part, hom, copy=true), hom, part)
+    end
+    last_row = acs.tables.$ob[last_part]
+
+    # Clear any morphism and data attribute indices for last part.
+    for hom in $(Tuple(indexed_out_homs))
+      set_subpart!(acs, last_part, hom, 0)
+    end
+    for attr in $(Tuple(indexed_attrs))
+      unset_data_index!(acs.indices[attr], last_row[attr], last_part)
+    end
+
+    # Finally, delete the last part and update subparts of the removed part.
+    resize!(acs.tables.$ob, last_part - 1)
+    if part < last_part
+      set_subparts!(acs, part, last_row)
+    end
+  end
+end
+
+""" Remove parts from a C-set.
+
+The parts must be supplied in sorted order, without duplicates.
+
+See also: [`rem_part!`](@ref).
+"""
+function rem_parts!(acs::ACSet, type::Symbol, parts::AbstractVector{Int})
+  issorted(parts) || error("Parts to removed must be in sorted order")
+  for part in Iterators.reverse(parts)
+    rem_part!(acs, type, part)
+  end
+end
+
 """ Copy parts from a C-set to a C′-set.
 
 The selected parts must belong to both schemas. All subparts common to the
@@ -481,7 +578,6 @@ selected parts, including data attributes, are preserved. Thus, if the selected
 parts form a sub-C-set, then the whole sub-C-set is preserved. On the other
 hand, if the selected parts do *not* form a sub-C-set, then some copied parts
 will have undefined subparts.
-
 """
 @generated function copy_parts!(to::ACSet{CD},
                                 from::ACSet{CD′}; kw...) where {CD, CD′}
@@ -574,8 +670,7 @@ end
 
 """ Look up key in C-set data index.
 """
-get_data_index(d::AbstractDict{K,Int}, k::K) where K =
-  get(d, k, nothing)
+get_data_index(d::AbstractDict{K,Int}, k::K) where K = get(d, k, 0)
 get_data_index(d::AbstractDict{K,<:AbstractVector{Int}}, k::K) where K =
   get(d, k, 1:0)
 
