@@ -127,6 +127,7 @@ const Dendrogram = ACSetType(TheoryDendrogram, index=[:parent])
 @test Dendrogram <: AbstractDendrogram
 @test Dendrogram <: ACSet
 @test Dendrogram{Real} <: AbstractDendrogram{Real}
+@test_throws ErrorException CSetType(TheoryDendrogram)
 
 d = Dendrogram{Int}()
 add_parts!(d, :X, 3, height=0)

@@ -171,6 +171,9 @@ morphisms are indexed.
 See also: [`AbstractCSetType`](@ref).
 """
 function CSetType(pres::Presentation{Schema}; index=[], unique_index=[])
+  if !(isempty(generators(pres, :Data)) && isempty(generators(pres, :Attr)))
+    error("Use `ACSetType` instead of `CSetType` for schemas with data attributes")
+  end
   CSet{CatDescType(pres),
        Tuple(sort!(index ∪ unique_index)), Tuple(sort!(unique_index))}
 end
