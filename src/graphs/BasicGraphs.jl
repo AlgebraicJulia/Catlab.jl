@@ -7,6 +7,7 @@ half-edge graphs.
 module BasicGraphs
 export AbstractGraph, Graph, nv, ne, src, tgt, edges, vertices,
   has_edge, has_vertex, add_edge!, add_edges!, add_vertex!, add_vertices!,
+  rem_edge!, rem_edges!, rem_vertex!, rem_vertices!,
   neighbors, inneighbors, outneighbors, all_neighbors,
   AbstractSymmetricGraph, SymmetricGraph, inv,
   AbstractReflexiveGraph, ReflexiveGraph, refl,
@@ -17,8 +18,9 @@ export AbstractGraph, Graph, nv, ne, src, tgt, edges, vertices,
 using Compat: only
 
 import Base: inv
-import LightGraphs: SimpleGraph, SimpleDiGraph, nv, ne, src, dst,
-  edges, vertices, has_edge, has_vertex, add_edge!, add_vertex!, add_vertices!,
+import LightGraphs: SimpleGraph, SimpleDiGraph,
+  nv, ne, src, dst, edges, vertices, has_edge, has_vertex,
+  add_edge!, add_vertex!, add_vertices!, rem_edge!, rem_vertex!, rem_vertices!,
   neighbors, inneighbors, outneighbors, all_neighbors
 
 using ...Present, ...CSetDataStructures
@@ -70,14 +72,30 @@ function add_edges!(g::AbstractGraph, srcs::AbstractVector{Int},
   add_parts!(g, :E, n; src=srcs, tgt=tgts, kw...)
 end
 
+rem_vertex!(g::AbstractACSet, v::Int; kw...) = rem_vertices!(g, v:v; kw...)
+
+function rem_vertices!(g::AbstractGraph, vs; keep_edges::Bool=false)
+  if !keep_edges
+    es = reduce(vcat, [incident(g, vs, :src); incident(g, vs, :tgt)])
+    rem_parts!(g, :E, unique!(sort!(es)))
+  end
+  rem_parts!(g, :V, vs)
+end
+
+rem_edge!(g::AbstractGraph, e::Int) = rem_part!(g, :E, e)
+rem_edge!(g::AbstractACSet, src::Int, tgt::Int) =
+  rem_edge!(g, first(edges(g, src, tgt)))
+
+rem_edges!(g::AbstractGraph, es) = rem_parts!(g, :E, es)
+
 neighbors(g::AbstractGraph, v::Int) = outneighbors(g, v)
 inneighbors(g::AbstractGraph, v::Int) = subpart(g, incident(g, v, :tgt), :src)
 outneighbors(g::AbstractGraph, v::Int) = subpart(g, incident(g, v, :src), :tgt)
 all_neighbors(g::AbstractGraph, v::Int) =
   Iterators.flatten((inneighbors(g, v), outneighbors(g, v)))
 
-# # Symmetric graphs
-# ##################
+# Symmetric graphs
+##################
 
 @present TheorySymmetricGraph <: TheoryGraph begin
   inv::Hom(E,E)
@@ -108,6 +126,20 @@ function add_edges!(g::AbstractSymmetricGraph, srcs::AbstractVector{Int},
   add_parts!(g, :E, 2n; src=vcat(srcs,tgts), tgt=vcat(tgts,srcs),
              inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
 end
+
+function rem_vertices!(g::AbstractSymmetricGraph, vs; keep_edges::Bool=false)
+  if !keep_edges
+    es = reduce(vcat, incident(g, vs, :src))
+    rem_parts!(g, :E, unique!(sort!([es; inv(g, es)])))
+  end
+  # FIXME: Vertex removal is inefficient because `rem_parts!` still searches for
+  # edges with given targets but `tgt` is not indexed.
+  rem_parts!(g, :V, vs)
+end
+
+rem_edge!(g::AbstractSymmetricGraph, e::Int) = rem_edges!(g, e:e)
+rem_edges!(g::AbstractSymmetricGraph, es) =
+  rem_parts!(g, :E, unique!(sort!([es; inv(g, es)])))
 
 neighbors(g::AbstractSymmetricGraph, v::Int) =
   subpart(g, incident(g, v, :src), :tgt)
@@ -153,6 +185,20 @@ function add_edges!(g::AbstractReflexiveGraph, srcs::AbstractVector{Int},
   add_parts!(g, :E, n; src=srcs, tgt=tgts, kw...)
 end
 
+function rem_vertices!(g::AbstractReflexiveGraph, vs; keep_edges::Bool=false)
+  es = if keep_edges
+    sort(refl(g, vs)) # Always delete reflexive edges.
+  else
+    es = reduce(vcat, [incident(g, vs, :src); incident(g, vs, :tgt)])
+    unique!(sort!(es))
+  end
+  rem_parts!(g, :E, es)
+  rem_parts!(g, :V, vs)
+end
+
+rem_edge!(g::AbstractReflexiveGraph, e::Int) = rem_part!(g, :E, e)
+rem_edges!(g::AbstractReflexiveGraph, es) = rem_parts!(g, :E, es)
+
 # Symmetric reflexive graphs
 ############################
 
@@ -195,6 +241,23 @@ function add_edges!(g::AbstractSymmetricReflexiveGraph,
              inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
 end
 
+function rem_vertices!(g::AbstractSymmetricReflexiveGraph, vs;
+                       keep_edges::Bool=false)
+  es = if keep_edges
+    sort(refl(g, vs)) # Always delete reflexive edges.
+  else
+    es = reduce(vcat, incident(g, vs, :src))
+    unique!(sort!([es; inv(g, es)]))
+  end
+  rem_parts!(g, :E, es)
+  # FIXME: Vertex removal is inefficient for same reason as `SymmetricGraph`.
+  rem_parts!(g, :V, vs)
+end
+
+rem_edge!(g::AbstractSymmetricReflexiveGraph, e::Int) = rem_edges!(g, e:e)
+rem_edges!(g::AbstractSymmetricReflexiveGraph, es) =
+  rem_parts!(g, :E, unique!(sort!([es; inv(g, es)])))
+
 # Half-edge graphs
 ##################
 
@@ -218,6 +281,13 @@ vertex(g::AbstractACSet, args...) = subpart(g, args..., :vertex)
 
 half_edges(g::AbstractACSet) = 1:nparts(g, :H)
 half_edges(g::AbstractACSet, v) = incident(g, v, :vertex)
+
+function half_edge_pairs(g::AbstractACSet, src::Int, tgt::Int)
+  hs = half_edges(g, src)
+  hs′ = inv(g, hs)
+  has_tgt = vertex(g, hs′) .== tgt
+  (hs[has_tgt], hs′[has_tgt])
+end
 
 @inline add_edge!(g::AbstractHalfEdgeGraph, src::Int, tgt::Int; kw...) =
   add_half_edge_pair!(g, src, tgt; kw...)
@@ -246,6 +316,21 @@ function add_dangling_edges!(g::AbstractACSet, vs::AbstractVector{Int}; kw...)
   n, k = length(vs), nparts(g, :H)
   add_parts!(g, :H, n; vertex=vs, inv=(k+1):(k+n), kw...)
 end
+
+function rem_vertices!(g::AbstractHalfEdgeGraph, vs; keep_edges::Bool=false)
+  if !keep_edges
+    hs = reduce(vcat, incident(g, vs, :vertex))
+    rem_parts!(g, :H, unique!(sort!([hs; inv(g, hs)])))
+  end
+  rem_parts!(g, :V, vs)
+end
+
+rem_edge!(g::AbstractHalfEdgeGraph, src::Int, tgt::Int) =
+  rem_parts!(g, :H, sort!(unique(first.(half_edge_pairs(g, src, tgt)))))
+
+rem_edge!(g::AbstractHalfEdgeGraph, h::Int) = rem_edges!(g, h:h)
+rem_edges!(g::AbstractHalfEdgeGraph, hs) =
+  rem_parts!(g, :H, unique!(sort!([hs; inv(g, hs)])))
 
 # LightGraphs constructors
 ##########################
