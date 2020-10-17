@@ -127,6 +127,14 @@ add_edge!(g, 1, 3)
 @test tgt(g, 4:5) == [3,1]
 @test inv(g, 4:5) == [5,4]
 
+g = SymmetricReflexiveGraph(4)
+add_edges!(g, [1,2,3], [2,3,4])
+rem_edge!(g, 3, 4)
+@test ne(g) == 8
+rem_vertex!(g, 2)
+@test nv(g) == 3
+@test ne(g) == 3
+
 # Half-edge graphs
 ##################
 

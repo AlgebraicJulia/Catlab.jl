@@ -132,8 +132,8 @@ function rem_vertices!(g::AbstractSymmetricGraph, vs; keep_edges::Bool=false)
     es = reduce(vcat, incident(g, vs, :src))
     rem_parts!(g, :E, unique!(sort!([es; inv(g, es)])))
   end
-  # FIXME: Inefficient when deleting incident edges since `rem_parts!` still
-  # searches for edges with given targets but `tgt` is not indexed.
+  # FIXME: Vertex removal is inefficient because `rem_parts!` still searches for
+  # edges with given targets but `tgt` is not indexed.
   rem_parts!(g, :V, vs)
 end
 
@@ -187,9 +187,10 @@ end
 
 function rem_vertices!(g::AbstractReflexiveGraph, vs; keep_edges::Bool=false)
   es = if keep_edges
-    sort(refl(g, vs))
+    sort(refl(g, vs)) # Always delete reflexive edges.
   else
-    unique!(sort!(reduce(vcat, [incident(g, vs, :src); incident(g, vs, :tgt)])))
+    es = reduce(vcat, [incident(g, vs, :src); incident(g, vs, :tgt)])
+    unique!(sort!(es))
   end
   rem_parts!(g, :E, es)
   rem_parts!(g, :V, vs)
@@ -239,6 +240,23 @@ function add_edges!(g::AbstractSymmetricReflexiveGraph,
   add_parts!(g, :E, 2n; src=vcat(srcs,tgts), tgt=vcat(tgts,srcs),
              inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
 end
+
+function rem_vertices!(g::AbstractSymmetricReflexiveGraph, vs;
+                       keep_edges::Bool=false)
+  es = if keep_edges
+    sort(refl(g, vs)) # Always delete reflexive edges.
+  else
+    es = reduce(vcat, incident(g, vs, :src))
+    unique!(sort!([es; inv(g, es)]))
+  end
+  rem_parts!(g, :E, es)
+  # FIXME: Vertex removal is inefficient for same reason as `SymmetricGraph`.
+  rem_parts!(g, :V, vs)
+end
+
+rem_edge!(g::AbstractSymmetricReflexiveGraph, e::Int) = rem_edges!(g, e:e)
+rem_edges!(g::AbstractSymmetricReflexiveGraph, es) =
+  rem_parts!(g, :E, unique!(sort!([es; inv(g, es)])))
 
 # Half-edge graphs
 ##################
