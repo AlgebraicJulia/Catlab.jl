@@ -185,6 +185,19 @@ function add_edges!(g::AbstractReflexiveGraph, srcs::AbstractVector{Int},
   add_parts!(g, :E, n; src=srcs, tgt=tgts, kw...)
 end
 
+function rem_vertices!(g::AbstractReflexiveGraph, vs; keep_edges::Bool=false)
+  es = if keep_edges
+    sort(refl(g, vs))
+  else
+    unique!(sort!(reduce(vcat, [incident(g, vs, :src); incident(g, vs, :tgt)])))
+  end
+  rem_parts!(g, :E, es)
+  rem_parts!(g, :V, vs)
+end
+
+rem_edge!(g::AbstractReflexiveGraph, e::Int) = rem_part!(g, :E, e)
+rem_edges!(g::AbstractReflexiveGraph, es) = rem_parts!(g, :E, es)
+
 # Symmetric reflexive graphs
 ############################
 

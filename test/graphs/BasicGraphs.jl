@@ -96,6 +96,19 @@ add_edge!(g, 1, 3)
 @test src(g, 4:6) == [1,2,1]
 @test tgt(g, 4:6) == [2,3,3]
 
+g = ReflexiveGraph(4)
+add_edges!(g, [1,2,3], [2,3,4])
+rem_edge!(g, 3, 4)
+@test ne(g) == 6
+@test src(g, 5:6) == [1,2]
+@test tgt(g, 5:6) == [2,3]
+rem_vertex!(g, 2)
+@test nv(g) == 3
+@test ne(g) == 3
+@test refl(g) == [1,2,3]
+@test src(g) == [1,2,3]
+@test tgt(g) == [1,2,3]
+
 # Symmetric reflexive graphs
 ############################
 
