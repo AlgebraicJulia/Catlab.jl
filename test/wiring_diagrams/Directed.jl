@@ -23,8 +23,8 @@ h = Box(:h, C, D)
 # Operations on boxes
 d = WiringDiagram(A, C)
 @test nboxes(d) == 0
-@test_throws KeyError box(d,input_id(d))
-@test_throws KeyError box(d,output_id(d))
+@test box(d, input_id(d)) == nothing
+@test box(d, output_id(d)) == nothing
 
 fv = add_box!(d, f)
 @test nboxes(d) == 1
@@ -84,8 +84,8 @@ rem_boxes!(d_copy, [fv,gv])
 @test nwires(d) == 3
 
 # Graph properties.
-@test Set(all_neighbors(d, fv)) == Set([input_id(d),gv])
-@test Set(all_neighbors(d, gv)) == Set([fv,output_id(d)])
+@test Set(all_neighbors(d, fv)) == Set([input_id(d), gv])
+@test Set(all_neighbors(d, gv)) == Set([fv, output_id(d)])
 @test neighbors(d, fv) == [gv]
 @test outneighbors(d, fv) == [gv]
 @test inneighbors(d, gv) == [fv]

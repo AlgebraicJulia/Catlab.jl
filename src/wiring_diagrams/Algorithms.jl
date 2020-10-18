@@ -5,7 +5,7 @@ export topological_sort, normalize_cartesian!, normalize_copy!,
   normalize_delete!, crossing_minimization_by_sort
 
 using DataStructures
-import LightGraphs
+using LightGraphs: DiGraph, topological_sort_by_dfs
 using Statistics: mean
 
 using ..DirectedWiringDiagrams
@@ -19,8 +19,8 @@ import ..DirectedWiringDiagrams: set_box
 Returns a list of box IDs, excluding the outer box's input and output IDs.
 """
 function topological_sort(d::WiringDiagram)::Vector{Int}
-  vs = LightGraphs.topological_sort_by_dfs(graph(d))
-  filter(v -> !(v in outer_ids(d)), vs)
+  vs = topological_sort_by_dfs(DiGraph(graph(d)))
+  filter(v -> v ∉ outer_ids(d), vs)
 end
 
 # Normalization
