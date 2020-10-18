@@ -76,7 +76,7 @@ rem_vertex!(g::AbstractACSet, v::Int; kw...) = rem_vertices!(g, v:v; kw...)
 
 function rem_vertices!(g::AbstractGraph, vs; keep_edges::Bool=false)
   if !keep_edges
-    es = reduce(vcat, [incident(g, vs, :src); incident(g, vs, :tgt)])
+    es = reduce(vcat, [incident(g,vs,:src); incident(g,vs,:tgt)], init=Int[])
     rem_parts!(g, :E, unique!(sort!(es)))
   end
   rem_parts!(g, :V, vs)
@@ -129,7 +129,7 @@ end
 
 function rem_vertices!(g::AbstractSymmetricGraph, vs; keep_edges::Bool=false)
   if !keep_edges
-    es = reduce(vcat, incident(g, vs, :src))
+    es = reduce(vcat, incident(g, vs, :src), init=Int[])
     rem_parts!(g, :E, unique!(sort!([es; inv(g, es)])))
   end
   # FIXME: Vertex removal is inefficient because `rem_parts!` still searches for
@@ -189,7 +189,7 @@ function rem_vertices!(g::AbstractReflexiveGraph, vs; keep_edges::Bool=false)
   es = if keep_edges
     sort(refl(g, vs)) # Always delete reflexive edges.
   else
-    es = reduce(vcat, [incident(g, vs, :src); incident(g, vs, :tgt)])
+    es = reduce(vcat, [incident(g,vs,:src); incident(g,vs,:tgt)], init=Int[])
     unique!(sort!(es))
   end
   rem_parts!(g, :E, es)
@@ -246,7 +246,7 @@ function rem_vertices!(g::AbstractSymmetricReflexiveGraph, vs;
   es = if keep_edges
     sort(refl(g, vs)) # Always delete reflexive edges.
   else
-    es = reduce(vcat, incident(g, vs, :src))
+    es = reduce(vcat, incident(g, vs, :src), init=Int[])
     unique!(sort!([es; inv(g, es)]))
   end
   rem_parts!(g, :E, es)
@@ -319,7 +319,7 @@ end
 
 function rem_vertices!(g::AbstractHalfEdgeGraph, vs; keep_edges::Bool=false)
   if !keep_edges
-    hs = reduce(vcat, incident(g, vs, :vertex))
+    hs = reduce(vcat, incident(g, vs, :vertex), init=Int[])
     rem_parts!(g, :H, unique!(sort!([hs; inv(g, hs)])))
   end
   rem_parts!(g, :V, vs)
