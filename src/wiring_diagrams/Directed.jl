@@ -105,8 +105,8 @@ end
   kind::PortKind
   port::Int
 end
-to_port_data(port::Port) = PortData(port.kind, port.port)
-from_port_data(port::PortData, v::Int) = Port(v, port.kind, port.port)
+PortData(port::Port) = PortData(port.kind, port.port)
+Port(port::PortData, v::Int) = Port(v, port.kind, port.port)
 
 """ Internal wiring diagram data corresponding to `Wire`. Do not use directly.
 """
@@ -115,12 +115,11 @@ from_port_data(port::PortData, v::Int) = Port(v, port.kind, port.port)
   source::PortData
   target::PortData
 end
-function to_wire_data(wire::Wire)
-  WireData(wire.value, to_port_data(wire.source), to_port_data(wire.target))
+function WireData(wire::Wire)
+  WireData(wire.value, PortData(wire.source), PortData(wire.target))
 end
-function from_wire_data(wire::WireData, src::Int, tgt::Int)
-  Wire(wire.value, from_port_data(wire.source, src),
-       from_port_data(wire.target, tgt))
+function Wire(wire::WireData, src::Int, tgt::Int)
+  Wire(wire.value, Port(wire.source, src), Port(wire.target, tgt))
 end
 
 """ Base type for any box (node) in a wiring diagram.
@@ -295,13 +294,12 @@ function box_ids(f::WiringDiagram)
 end
 
 function wires(f::WiringDiagram, src::Int, tgt::Int)
-  Wire[ from_wire_data(subpart(f.graph, e, :wire), src, tgt)
-        for e in edges(f.graph, src, tgt) ]
+  [ Wire(subpart(f.graph, e, :wire), src, tgt)
+    for e in edges(f.graph, src, tgt) ]
 end
 function wires(f::WiringDiagram)
   g = f.graph
-  Wire[ from_wire_data(subpart(g, e, :wire), src(g, e), tgt(g, e))
-        for e in edges(g) ]
+  [ Wire(subpart(g, e, :wire), src(g, e), tgt(g, e)) for e in edges(g) ]
 end
 nwires(f::WiringDiagram) = ne(f.graph)
 
@@ -360,8 +358,7 @@ end
 
 function add_wire!(f::WiringDiagram, wire::Wire)
   validate_ports(port_value(f, wire.source), port_value(f, wire.target))
-  add_edge!(f.graph, wire.source.box, wire.target.box,
-            wire=to_wire_data(wire))
+  add_edge!(f.graph, wire.source.box, wire.target.box, wire=WireData(wire))
 end
 add_wire!(f::WiringDiagram, pair::Pair) = add_wire!(f, Wire(pair))
 
@@ -372,7 +369,7 @@ function add_wires!(f::WiringDiagram, wires)
 end
 
 function rem_wire!(f::WiringDiagram, wire::Wire)
-  g, wire_data = f.graph, to_wire_data(wire)
+  g, wire_data = f.graph, WireData(wire)
   for e in edges(g, wire.source.box, wire.target.box)
     subpart(g, e, :wire) == wire_data && return rem_edge!(g, e)
   end
@@ -415,16 +412,15 @@ inneighbors(d::WiringDiagram, v::Int) = inneighbors(graph(d), v)
 """
 function wires(d::WiringDiagram, v::Int)
   g = graph(d)
-  Wire[ from_wire_data(subpart(g, e, :wire), src(g, e), tgt(g, e))
-        for e in unique!(sort!([incident(g, v, :src); incident(g, v, :tgt)])) ]
+  [ Wire(subpart(g, e, :wire), src(g, e), tgt(g, e))
+    for e in unique!(sort!([incident(g, v, :src); incident(g, v, :tgt)])) ]
 end
 
 """ Get all wires coming into the box.
 """
 function in_wires(d::WiringDiagram, v::Int)
   g = graph(d)
-  Wire[ from_wire_data(subpart(g, e, :wire), src(g, e), v)
-        for e in incident(g, v, :tgt) ]
+  [ Wire(subpart(g, e, :wire), src(g, e), v) for e in incident(g, v, :tgt) ]
 end
 
 """ Get all wires coming into the port.
@@ -440,8 +436,7 @@ end
 """
 function out_wires(d::WiringDiagram, v::Int)
   g = graph(d)
-  Wire[ from_wire_data(subpart(g, e, :wire), v, tgt(g, e))
-        for e in incident(g, v, :src) ]
+  [ Wire(subpart(g, e, :wire), v, tgt(g, e)) for e in incident(g, v, :src) ]
 end
 
 """ Get all wires coming out of the port.
@@ -667,8 +662,8 @@ function encapsulate(d::WiringDiagram{T}, vss::Vector{Vector{Int}};
       sub, sub_map = encapsulated_subdiagram(d, vs;
         discard_boxes=discard_boxes, make_box=make_box, value=value)
       subv = add_box!(result, sub)
-      merge!(port_map, Dict(
-        port => from_port_data(data, subv) for (port, data) in sub_map))
+      merge!(port_map, Dict(port => Port(data, subv)
+                            for (port, data) in sub_map))
     elseif v ∉ all_encapsulated
       vmap[v] = add_box!(result, box(d, v))
     end
