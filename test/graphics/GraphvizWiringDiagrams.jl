@@ -113,7 +113,6 @@ layout = graphviz_layout(diagram, graph)
 
 # Is original data preserved?
 values(xs) = map(x -> x.value, xs)
-@test WiringDiagrams.graph(layout) == WiringDiagrams.graph(diagram)
 @test values(input_ports(layout)) == input_ports(diagram)
 @test values(output_ports(layout)) == output_ports(diagram)
 @test values(values(boxes(layout))) == values(boxes(diagram))

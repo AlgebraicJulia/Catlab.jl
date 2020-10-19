@@ -463,23 +463,26 @@ function add_input_junctions!(d::WiringDiagram, v::Int)
     if nwires != 1
       rem_wires!(d, wires)
       jv = add_box!(d, Junction(port_value, nwires, 1))
+      sources = sort!([ wire.source for wire in wires ])
       add_wire!(d, Port(jv, OutputPort, 1) => Port(v, InputPort, port))
-      add_wires!(d, [ wire.source => Port(jv, InputPort, i)
-                      for (i, wire) in enumerate(wires) ])
+      add_wires!(d, [ source => Port(jv, InputPort, i)
+                      for (i, source) in enumerate(sources) ])
     end
   end
 end
 
 function add_output_junctions!(d::WiringDiagram, v::Int)
   for (port, port_value) in enumerate(output_ports(d, v))
+    # TODO: Sort out wires.
     wires = out_wires(d, v, port)
     nwires = length(wires)
     if nwires != 1
       rem_wires!(d, wires)
       jv = add_box!(d, Junction(port_value, 1, nwires))
+      targets = sort!([ wire.target for wire in wires ])
       add_wire!(d, Port(v, OutputPort, port) => Port(jv, InputPort, 1))
-      add_wires!(d, [ Port(jv, OutputPort, i) => wire.target
-                      for (i, wire) in enumerate(wires) ])
+      add_wires!(d, [ Port(jv, OutputPort, i) => target
+                      for (i, target) in enumerate(targets) ])
     end
   end
 end
@@ -506,7 +509,7 @@ end
 """
 function merge_junctions(d::WiringDiagram; op=nothing)
   junction_ids = filter(v -> box(d,v) isa Junction{op}, box_ids(d))
-  junction_graph, vmap = induced_subgraph(graph(d), junction_ids)
+  junction_graph, vmap = induced_subgraph(DiGraph(graph(d)), junction_ids)
   for edge in edges(junction_graph)
     # Only merge junctions with equal values.
     if box(d, vmap[src(edge)]).value != box(d, vmap[dst(edge)]).value

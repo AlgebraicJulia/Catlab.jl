@@ -227,7 +227,7 @@ function Base.:(==)(x1::T, x2::T) where T <: ACSet
 end
 
 function Base.copy(acs::T) where T <: ACSet
-  T(map(copy, acs.tables), map(copy, acs.indices))
+  T(map(copy, acs.tables), deepcopy(acs.indices))
 end
 
 function Base.show(io::IO, acs::T) where {CD,AD,Ts,T<:AbstractACSet{CD,AD,Ts}}

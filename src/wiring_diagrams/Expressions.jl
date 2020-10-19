@@ -135,7 +135,8 @@ end
 """ All possible parallel reductions of a wiring diagram.
 """
 function parallel_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
-  parallel = find_parallel(graph(d), skip=outer_ids(d))
+  g = DiGraph(graph(d))
+  parallel = find_parallel(g, skip=outer_ids(d))
   encapsulate_parallel(Ob, Hom, d, [
     (vs, [src], [tgt]) for ((src, tgt), vs) in parallel
   ])
@@ -147,9 +148,10 @@ Because these reductions are not necessarily unique, only one is performed,
 the first one in topological sort order.
 """
 function input_parallel_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
-  parallel = find_one_sided_parallel(graph(d), input=true, skip=outer_ids(d))
+  g = DiGraph(graph(d))
+  parallel = find_one_sided_parallel(g, input=true, skip=outer_ids(d))
   if isempty(parallel); return d end
-  sub, vmap = induced_subgraph(graph(d), collect(keys(parallel)))
+  sub, vmap = induced_subgraph(g, collect(keys(parallel)))
   src = vmap[first(topological_sort_by_dfs(sub))]
   encapsulate_parallel(Ob, Hom, d, [ (parallel[src], [src], Int[]) ])
 end
@@ -160,9 +162,10 @@ Because these reductions are not necessarily unique, only one is performed,
 the last one in topological sort order.
 """
 function output_parallel_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
-  parallel = find_one_sided_parallel(graph(d), input=false, skip=outer_ids(d))
+  g = DiGraph(graph(d))
+  parallel = find_one_sided_parallel(g, input=false, skip=outer_ids(d))
   if isempty(parallel); return d end
-  sub, vmap = induced_subgraph(graph(d), collect(keys(parallel)))
+  sub, vmap = induced_subgraph(g, collect(keys(parallel)))
   tgt = vmap[last(topological_sort_by_dfs(sub))]
   encapsulate_parallel(Ob, Hom, d, [ (parallel[tgt], Int[], [tgt]) ])
 end
@@ -184,7 +187,8 @@ end
 function series_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
   box_to_expr(v::Int) = to_hom_expr(Ob, Hom, box(d,v))
 
-  series = find_series(graph(d), source=input_id(d), sink=output_id(d))
+  g = DiGraph(graph(d))
+  series = find_series(g, source=input_id(d), sink=output_id(d))
   composites = map(series) do vs
     exprs = Hom[ box_to_expr(vs[1]) ]
     for i in 2:length(vs)
@@ -202,7 +206,8 @@ function transitive_reduction!(Ob::Type, d::WiringDiagram)
   # Compute transitive reduction of underlying graph.
   # First add extra edges for the "invisible wires" corresponding to monoidal
   # units, since transitive reduction can be needed even in this case.
-  reduced = copy(graph(d))
+  g = DiGraph(graph(d))
+  reduced = copy(g)
   for v in box_ids(d)
     if isempty(input_ports(d, v))
       add_edge!(reduced, input_id(d), v)
@@ -214,9 +219,9 @@ function transitive_reduction!(Ob::Type, d::WiringDiagram)
   reduced = transitive_reduction!(reduced)
 
   # Add junction node for each wire removed by transitive reduction.
-  for edge in collect(edges(graph(d)))
+  for edge in collect(edges(g))
     if !has_edge(reduced, edge)
-      for wire in wires(d, edge)
+      for wire in wires(d, src(edge), dst(edge))
         value = port_value(d, wire.source) # =?= port_value(d, wire.target)
         v = add_box!(d, Junction(value, 1, 1))
         add_wire!(d, Wire(wire.source => Port(v,InputPort,1)))

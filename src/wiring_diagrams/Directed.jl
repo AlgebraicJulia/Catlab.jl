@@ -27,8 +27,10 @@ export AbstractBox, Box, WiringDiagram, Wire, Port, PortKind,
 
 using Compat
 using AutoHashEquals
-using LightGraphs, MetaGraphs
-import LightGraphs: all_neighbors, neighbors, outneighbors, inneighbors
+
+using ...Present, ...CSetDataStructures, ...Graphs.BasicGraphs
+using ...Graphs.BasicGraphs: TheoryGraph
+import ...Graphs: all_neighbors, neighbors, outneighbors, inneighbors
 
 # Data types
 ############
@@ -103,8 +105,8 @@ end
   kind::PortKind
   port::Int
 end
-to_port_data(port::Port) = PortData(port.kind, port.port)
-from_port_data(port::PortData, v::Int) = Port(v, port.kind, port.port)
+PortData(port::Port) = PortData(port.kind, port.port)
+Port(port::PortData, v::Int) = Port(v, port.kind, port.port)
 
 """ Internal wiring diagram data corresponding to `Wire`. Do not use directly.
 """
@@ -113,13 +115,11 @@ from_port_data(port::PortData, v::Int) = Port(v, port.kind, port.port)
   source::PortData
   target::PortData
 end
-function to_wire_data(wire::Wire)
-  WireData(wire.value, to_port_data(wire.source), to_port_data(wire.target))
+function WireData(wire::Wire)
+  WireData(wire.value, PortData(wire.source), PortData(wire.target))
 end
-function from_wire_data(wire::WireData, edge::Edge)
-  Wire(wire.value,
-       from_port_data(wire.source, src(edge)),
-       from_port_data(wire.target, dst(edge)))
+function Wire(wire::WireData, src::Int, tgt::Int)
+  Wire(wire.value, Port(wire.source, src), Port(wire.target, tgt))
 end
 
 """ Base type for any box (node) in a wiring diagram.
@@ -156,29 +156,42 @@ function Base.show(io::IO, box::Box)
   print(io, "])")
 end
 
-""" A directed wiring diagram, aka a string diagram.
+@present TheoryWiringDiagramGraph <: TheoryGraph begin
+  Box::Data
+  WireData::Data
 
-The wiring diagram is implemented using the following internal data structures.
-A LightGraphs `DiGraph` stores the "skeleton" of the diagram: a simple directed
-graph with the boxes as vertices and with an edge between two vertices iff there
-is at least one wire between the corresponding boxes. There are two special
-vertices, accessible via `input_id` and `output_id`, representing the input and
-output ports, respectively.
+  box::Attr(V,Box)
+  wire::Attr(E,WireData)
+end
 
-The `DiGraph` is wrapped inside a `MetaDiGraph` to attach properties to the
-vertices and edges. For each edge, an edge property stores the list of wires
-between the source and target boxes.
+const WiringDiagramGraphUnionAll =
+  ACSetType(TheoryWiringDiagramGraph, index=[:src, :tgt])
+
+""" Internal datatype for graph underlying a directed wiring diagram.
+
+Boxes and wires are attached to vertices and edges, respectively.
+"""
+const WiringDiagramGraph = WiringDiagramGraphUnionAll{
+  Union{AbstractBox,Nothing},WireData}
+
+""" A directed wiring diagram, also known as a string diagram.
+
+The wiring diagram is implemented using the following internal data structure.
+The "skeleton" of the diagram is an instance of `Catlab.Graphs.AbstractGraph`: a
+directed multigraph whose vertices correspond to boxes and whose edges
+correspond to wires. There are two special vertices, accessible via `input_id`
+and `output_id`, that represent the input and output ports of the outer box.
 """
 mutable struct WiringDiagram{Theory} <: AbstractBox
-  graph::MetaDiGraph
+  graph::WiringDiagramGraph
   value::Any
   input_ports::Vector
   output_ports::Vector
   
   function WiringDiagram{T}(value, inputs::Vector, outputs::Vector) where T
-    graph = MetaDiGraph()
+    graph = WiringDiagramGraph()
     diagram = new{T}(graph, value, inputs, outputs)
-    add_vertices!(graph, 2)
+    add_vertices!(graph, 2, box=nothing)
     return diagram
   end
   function WiringDiagram(d::WiringDiagram{T}) where T
@@ -198,14 +211,14 @@ outer_ids(::WiringDiagram) = (1,2)
 
 """ Check equality of wiring diagrams.
 
-Warning: This method checks exact equality of the underlying graph
-representation, not mathematical equality which involves graph isomorphism.
+Warning: This method checks equality of the underlying graph representation, not
+mathematical equality which involves graph isomorphism.
 
 See also: `is_permuted_equal`
 """
 function Base.:(==)(d1::WiringDiagram, d2::WiringDiagram)
-  (input_ports(d1) == input_ports(d2) && output_ports(d1) == output_ports(d2) &&
-   d1.value == d2.value && graph(d1) == graph(d2) &&
+  (input_ports(d1) == input_ports(d2) &&
+   output_ports(d1) == output_ports(d2) && d1.value == d2.value &&
    boxes(d1) == boxes(d2) && sort!(wires(d1)) == sort!(wires(d2)))
 end
 
@@ -268,32 +281,32 @@ end
 
 # Basic accessors.
 
-box(f::WiringDiagram, v::Int) = get_prop(f.graph, v, :box)
-boxes(f::WiringDiagram) = AbstractBox[ box(f,v) for v in box_ids(f) ]
-nboxes(f::WiringDiagram) = nv(graph(f)) - 2
+box(f::WiringDiagram, v::Int) = subpart(f.graph, v, :box)
+
+function boxes(f::WiringDiagram)
+  collect(AbstractBox, subpart(f.graph, box_ids(f), :box))
+end
+
+nboxes(f::WiringDiagram) = nv(f.graph) - 2
 
 function box_ids(f::WiringDiagram)
-  Int[ v for v in 1:nv(graph(f)) if !(v in outer_ids(f)) ]
+  Int[ v for v in 1:nv(f.graph) if !(v in outer_ids(f)) ]
 end
 
-function wires(f::WiringDiagram, edge::Edge)
-  if has_edge(f.graph, edge)
-    Wire[ from_wire_data(data, edge) for data in get_prop(f.graph,edge,:wires) ]
-  else
-    Wire[]
-  end
+function wires(f::WiringDiagram, src::Int, tgt::Int)
+  [ Wire(subpart(f.graph, e, :wire), src, tgt)
+    for e in edges(f.graph, src, tgt) ]
 end
-wires(f::WiringDiagram, src::Int, tgt::Int) = wires(f, Edge(src,tgt))
-wires(f::WiringDiagram) = vcat((wires(f,e) for e in edges(graph(f)))...)
-nwires(f::WiringDiagram) =
-  sum(Int[ length(get_prop(f.graph,e,:wires)) for e in edges(graph(f)) ])
+function wires(f::WiringDiagram)
+  g = f.graph
+  [ Wire(subpart(g, e, :wire), src(g, e), tgt(g, e)) for e in edges(g) ]
+end
+nwires(f::WiringDiagram) = ne(f.graph)
 
-function has_wire(f::WiringDiagram, src::Int, tgt::Int)
-  has_edge(graph(f), Edge(src, tgt))
-end
-function has_wire(f::WiringDiagram, wire::Wire)
+has_wire(f::WiringDiagram, src::Int, tgt::Int) =
+  !isempty(edges(f.graph, src, tgt))
+has_wire(f::WiringDiagram, wire::Wire) =
   wire in wires(f, wire.source.box, wire.target.box)
-end
 has_wire(f::WiringDiagram, pair::Pair) = has_wire(f, Wire(pair))
 
 function input_ports(f::WiringDiagram, v::Int)
@@ -324,38 +337,28 @@ end
 # Graph mutation.
 
 function add_box!(f::WiringDiagram, box::AbstractBox)
-  @assert add_vertex!(f.graph, :box, box)
+  add_vertex!(f.graph, box=box)
   return nv(f.graph)
 end
 
 function add_boxes!(f::WiringDiagram, boxes)
-  for box in boxes
-    add_box!(f, box)
-  end
+  boxes = collect(boxes)
+  add_vertices!(f.graph, length(boxes), box=boxes)
 end
 
 function rem_box!(f::WiringDiagram, v::Int)
-  @assert !(v in outer_ids(f))
+  @assert v ∉ outer_ids(f)
   rem_vertex!(f.graph, v)
 end
 
 function rem_boxes!(f::WiringDiagram, vs)
-  # Remove boxes in descending order of vertex ID to maintain ID stability.
-  for v in sort!(collect(vs), rev=true)
-    rem_box!(f, v)
-  end
+  @assert all(v ∉ outer_ids(f) for v in vs)
+  rem_vertices!(f.graph, sort!(collect(vs)))
 end
 
 function add_wire!(f::WiringDiagram, wire::Wire)
-  # Check compatibility of port types.
   validate_ports(port_value(f, wire.source), port_value(f, wire.target))
-  
-  # Add edge and edge properties.
-  edge = Edge(wire.source.box, wire.target.box)
-  if !has_edge(f.graph, edge)
-    add_edge!(f.graph, src(edge), dst(edge), :wires, WireData[])
-  end
-  push!(get_prop(f.graph, edge, :wires), to_wire_data(wire))
+  add_edge!(f.graph, wire.source.box, wire.target.box, wire=WireData(wire))
 end
 add_wire!(f::WiringDiagram, pair::Pair) = add_wire!(f, Wire(pair))
 
@@ -366,13 +369,11 @@ function add_wires!(f::WiringDiagram, wires)
 end
 
 function rem_wire!(f::WiringDiagram, wire::Wire)
-  edge = Edge(wire.source.box, wire.target.box)
-  edge_data = to_wire_data(wire)
-  wires = get_prop(f.graph, edge, :wires)
-  deleteat!(wires, findlast(d -> d == edge_data, wires))
-  if isempty(wires)
-    rem_edge!(f.graph, edge)
+  g, wire_data = f.graph, WireData(wire)
+  for e in edges(g, wire.source.box, wire.target.box)
+    subpart(g, e, :wire) == wire_data && return rem_edge!(g, e)
   end
+  error("Wire $wire does not exist, so cannot be removed")
 end
 rem_wire!(f::WiringDiagram, pair::Pair) = rem_wire!(f, Wire(pair))
 
@@ -383,7 +384,7 @@ function rem_wires!(f::WiringDiagram, wires)
 end
 
 function rem_wires!(f::WiringDiagram, src::Int, tgt::Int)
-  rem_edge!(f.graph, Edge(src, tgt))
+  rem_edges!(f.graph, sort!(collect(edges(f.graph, src, tgt))))
 end
 
 """ Check compatibility of source and target ports.
@@ -394,14 +395,14 @@ function validate_ports(source_port, target_port) end
 
 # Graph properties.
 
-""" Retrieve the underlying LightGraphs graph.
+""" Retrieve the graph underlying the wiring diagram.
 
-Do not mutate it! All mutations should pass through the `WiringDiagram` methods:
-`add_box!`, `rem_box!`, etc.
+The graph is an instance of `Catlab.Graphs.AbstractGraph`. Do not mutate it! All
+mutations should use the wiring diagrams API: `add_box!`, `rem_box!`, and so on.
 """
-graph(diagram::WiringDiagram) = diagram.graph.graph
+graph(diagram::WiringDiagram) = diagram.graph
 
-# Convenience methods delegated to LightGraphs.
+# Convenience methods delegated to underlying graph.
 all_neighbors(d::WiringDiagram, v::Int) = all_neighbors(graph(d), v)
 neighbors(d::WiringDiagram, v::Int) = neighbors(graph(d), v)
 outneighbors(d::WiringDiagram, v::Int) = outneighbors(graph(d), v)
@@ -410,42 +411,22 @@ inneighbors(d::WiringDiagram, v::Int) = inneighbors(graph(d), v)
 """ Get all wires coming into or out of the box.
 """
 function wires(d::WiringDiagram, v::Int)
-  result = wires(d, v, v)
-  for u in inneighbors(d, v)
-    if u != v
-      append!(result, wires(d, u, v))
-    end
-  end
-  for u in outneighbors(d, v)
-    if u != v
-      append!(result, wires(d, v, u))
-    end
-  end
-  result
+  g = graph(d)
+  [ Wire(subpart(g, e, :wire), src(g, e), tgt(g, e))
+    for e in unique!(sort!([incident(g, v, :src); incident(g, v, :tgt)])) ]
 end
 
 """ Get all wires coming into the box.
 """
 function in_wires(d::WiringDiagram, v::Int)
-  result = Wire[]
-  for u in inneighbors(d, v)
-    append!(result, wires(d, u, v))
-  end
-  result
+  g = graph(d)
+  [ Wire(subpart(g, e, :wire), src(g, e), v) for e in incident(g, v, :tgt) ]
 end
 
 """ Get all wires coming into the port.
 """
 function in_wires(d::WiringDiagram, port::Port)
-  result = Wire[]
-  for v in inneighbors(d, port.box)
-    for wire in wires(d, v, port.box)
-      if wire.target == port
-        push!(result, wire)
-      end
-    end
-  end
-  result
+  filter(wire -> wire.target == port, in_wires(d, port.box))
 end
 function in_wires(d::WiringDiagram, v::Int, port::Int)
   in_wires(d, Port(v, InputPort, port))
@@ -454,25 +435,14 @@ end
 """ Get all wires coming out of the box.
 """
 function out_wires(d::WiringDiagram, v::Int)
-  result = Wire[]
-  for u in outneighbors(d, v)
-    append!(result, wires(d, v, u))
-  end
-  result
+  g = graph(d)
+  [ Wire(subpart(g, e, :wire), v, tgt(g, e)) for e in incident(g, v, :src) ]
 end
 
 """ Get all wires coming out of the port.
 """
 function out_wires(d::WiringDiagram, port::Port)
-  result = Wire[]
-  for v in outneighbors(d, port.box)
-    for wire in wires(d, port.box, v)
-      if wire.source == port
-        push!(result, wire)
-      end
-    end
-  end
-  result
+  filter(wire -> wire.source == port, out_wires(d, port.box))
 end
 function out_wires(d::WiringDiagram, v::Int, port::Int)
   out_wires(d, Port(v, OutputPort, port))
@@ -692,8 +662,8 @@ function encapsulate(d::WiringDiagram{T}, vss::Vector{Vector{Int}};
       sub, sub_map = encapsulated_subdiagram(d, vs;
         discard_boxes=discard_boxes, make_box=make_box, value=value)
       subv = add_box!(result, sub)
-      merge!(port_map, Dict(
-        port => from_port_data(data, subv) for (port, data) in sub_map))
+      merge!(port_map, Dict(port => Port(data, subv)
+                            for (port, data) in sub_map))
     elseif v ∉ all_encapsulated
       vmap[v] = add_box!(result, box(d, v))
     end
