@@ -355,7 +355,8 @@ end
 """ Get superparts incident to part in C-set.
 
 If the subpart is indexed, this takes constant time; otherwise, it takes linear
-time. Both single and vectorized access are supported.
+time. As with [`subpart`](@ref), both single and vectorized access, as well as
+chained access, are supported.
 
 Note that when the subpart is indexed, this function returns a view of the
 underlying index, which should not be mutated. To ensure that a fresh copy is
@@ -364,6 +365,14 @@ returned, regardless of whether indexing is enabled, set the keyword argument
 """
 incident(acs::ACSet, part, name::Symbol; copy::Bool=false) =
   _incident(acs, part, Val(name); copy=copy)
+
+function incident(acs::ACSet, part, names::AbstractVector{Symbol};
+                  copy::Bool=false)
+  # Don't need to pass `copy` because copy will be made regardless.
+  foldr(names, init=part) do name, part
+    reduce(vcat, incident(acs, part, name), init=Int[])
+  end
+end
 
 @generated function _incident(acs::ACSet{CD,AD,Ts,Idxed}, part, ::Val{name};
                               copy::Bool=false) where {CD,AD,Ts,Idxed,name}

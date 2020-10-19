@@ -148,6 +148,8 @@ set_subpart!(d, [4,5], :parent, 5)
 # Chained accessors.
 @test subpart(d, 3, [:parent, :parent]) == 5
 @test subpart(d, 3, [:parent, :height]) == 10
+@test incident(d, 5, [:parent, :parent]) == [1,2,3,4,5]
+@test incident(d, 10, [:parent, :height]) == [1,2,3]
 
 # Copying parts.
 d2 = Dendrogram{Int}()
