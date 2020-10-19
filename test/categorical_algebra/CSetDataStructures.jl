@@ -1,7 +1,8 @@
 module TestCSetDataStructures
 using Test
 
-using Catlab: @present
+using Catlab: @present, generator
+using Catlab.Theories: compose, id
 using Catlab.CSetDataStructures
 
 # Discrete dynamical systems
@@ -145,6 +146,19 @@ set_subpart!(d, [4,5], :parent, 5)
 @test subpart(d, 4, :height) == 10
 @test subpart(d, :, :height) == [0,0,0,10,20]
 
+# Chained accessors.
+@test subpart(d, 3, [:parent, :parent]) == 5
+@test subpart(d, 3, [:parent, :height]) == 10
+@test incident(d, 5, [:parent, :parent]) == [1,2,3,4,5]
+@test incident(d, 10, [:parent, :height]) == [1,2,3]
+
+X, parent, height = generator.(Ref(TheoryDendrogram), [:X, :parent, :height])
+@test subpart(d, 3, parent) == 4
+@test subpart(d, 3, compose(parent, height)) == 10
+@test subpart(d, 3, id(X)) == 3
+@test incident(d, 10, compose(parent, height)) == [1,2,3]
+
+# Copying parts.
 d2 = Dendrogram{Int}()
 copy_parts!(d2, d, X=[4,5])
 @test nparts(d2, :X) == 2
