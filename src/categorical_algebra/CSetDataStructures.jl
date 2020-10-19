@@ -362,7 +362,14 @@ end
 
 If the subpart is indexed, this takes constant time; otherwise, it takes linear
 time. As with [`subpart`](@ref), both single and vectorized access, as well as
-chained access, are supported.
+chained access, are supported. Note that sequences of morphisms are supplied in
+the usual left-to-right order, so that
+
+```
+incident(g, x, [:src, :vattr])
+```
+
+returns the list of all edges whose source vertex has vertex attribute `x`.
 
 Note that when the subpart is indexed, this function returns a view of the
 underlying index, which should not be mutated. To ensure that a fresh copy is
