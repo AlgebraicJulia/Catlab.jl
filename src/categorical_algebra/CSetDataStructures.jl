@@ -12,6 +12,7 @@ using Compat: isnothing, only
 using PrettyTables: pretty_table
 using StructArrays
 
+using ...Syntax: GATExpr, args
 using ...Theories: Schema, FreeSchema, dom, codom, codom_num,
   CatDesc, CatDescType, AttrDesc, AttrDescType, SchemaType
 using ...Present
@@ -340,6 +341,11 @@ function subpart(acs::ACSet, part, names::AbstractVector{Symbol})
     subpart(acs, part, name)
   end
 end
+subpart(acs::ACSet, part, expr::GATExpr) = subpart(acs, part, subpart_name(expr))
+
+subpart_name(expr::GATExpr{:generator}) = first(expr)::Symbol
+subpart_name(expr::GATExpr{:id}) = Symbol[]
+subpart_name(expr::GATExpr{:compose}) = mapreduce(subpart_name, vcat, args(expr))
 
 @generated function _subpart(acs::ACSet{CD,AD,Ts}, ::Val{name}) where
     {CD,AD,Ts,name}
@@ -373,6 +379,8 @@ function incident(acs::ACSet, part, names::AbstractVector{Symbol};
     reduce(vcat, incident(acs, part, name), init=Int[])
   end
 end
+incident(acs::ACSet, part, expr::GATExpr; kw...) =
+  incident(acs, part, subpart_name(expr); kw...)
 
 @generated function _incident(acs::ACSet{CD,AD,Ts,Idxed}, part, ::Val{name};
                               copy::Bool=false) where {CD,AD,Ts,Idxed,name}
