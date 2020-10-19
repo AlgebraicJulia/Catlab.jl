@@ -130,8 +130,8 @@ f</code></pre><pre class="documenter-example-output">WiringDiagram{BiproductCate
   3 =&gt; Box(:f, [:A], [:B]),
   4 =&gt; Box(:h, [:C], [:D]) ],
 [ Wire((1,1) =&gt; (3,1)),
-  Wire((1,2) =&gt; (4,1)),
   Wire((3,1) =&gt; (2,1)),
+  Wire((1,2) =&gt; (4,1)),
   Wire((4,1) =&gt; (2,2)) ])</pre><pre><code class="language-julia">show_diagram(otimes(f,h))</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
@@ -170,7 +170,7 @@ f</code></pre><pre class="documenter-example-output">WiringDiagram{BiproductCate
 </g>
 <!-- n1p2&#45;&gt;n4 -->
 <!-- C -->
-<g id="e2" class="edge">
+<g id="e3" class="edge">
 <title>n1p2:e&#45;&gt;n4:w</title>
 <path fill="none" stroke="#000000" d="M1,-15.5051C15.3266,-15.5051 20.1567,-14.7258 32.2575,-14.5431"/>
 <polygon fill="#000000" stroke="#000000" points="32.5128,-16.2914 37.5,-14.5051 32.4874,-12.7915 32.5128,-16.2914"/>
@@ -181,7 +181,7 @@ f</code></pre><pre class="documenter-example-output">WiringDiagram{BiproductCate
 <!-- n2p1&#45;&gt;n2p2 -->
 <!-- n3&#45;&gt;n2p1 -->
 <!-- B -->
-<g id="e3" class="edge">
+<g id="e2" class="edge">
 <title>n3:e&#45;&gt;n2p1:w</title>
 <path fill="none" stroke="#000000" d="M56,-57.5051C70.125,-57.5051 74.8977,-57.5051 86.8308,-57.5051"/>
 <polygon fill="#000000" stroke="#000000" points="87,-59.2552 92,-57.5051 87,-55.7552 87,-59.2552"/>
@@ -256,7 +256,7 @@ f</code></pre><pre class="documenter-example-output">WiringDiagram{BiproductCate
 </g>
 <!-- n1p1&#45;&gt;n3 -->
 <!-- A -->
-<g id="e1" class="edge">
+<g id="e2" class="edge">
 <title>n1p1:e&#45;&gt;n3:w</title>
 <path fill="none" stroke="#000000" d="M1,-33C15.3212,-33 20.1602,-33 32.259,-33"/>
 <polygon fill="#000000" stroke="#000000" points="32.5,-34.7501 37.5,-33 32.5,-31.2501 32.5,-34.7501"/>
@@ -267,7 +267,7 @@ f</code></pre><pre class="documenter-example-output">WiringDiagram{BiproductCate
 <!-- n2p1&#45;&gt;n2p2 -->
 <!-- n3&#45;&gt;n2p1 -->
 <!-- B -->
-<g id="e2" class="edge">
+<g id="e3" class="edge">
 <title>n3:e&#45;&gt;n2p1:w</title>
 <path fill="none" stroke="#000000" d="M56,-33C72.642,-33 73.4875,-49.951 86.9208,-53.3942"/>
 <polygon fill="#000000" stroke="#000000" points="86.8279,-55.1454 92,-54 87.2425,-51.67 86.8279,-55.1454"/>
@@ -275,7 +275,7 @@ f</code></pre><pre class="documenter-example-output">WiringDiagram{BiproductCate
 </g>
 <!-- n3&#45;&gt;n2p2 -->
 <!-- B -->
-<g id="e3" class="edge">
+<g id="e1" class="edge">
 <title>n3:e&#45;&gt;n2p2:w</title>
 <path fill="none" stroke="#000000" d="M56,-33C72.642,-33 73.4875,-16.049 86.9208,-12.6058"/>
 <polygon fill="#000000" stroke="#000000" points="87.2425,-14.33 92,-12 86.8279,-10.8546 87.2425,-14.33"/>
@@ -319,7 +319,7 @@ f</code></pre><pre class="documenter-example-output">WiringDiagram{BiproductCate
 </g>
 <!-- n1p1&#45;&gt;n4 -->
 <!-- A -->
-<g id="e2" class="edge">
+<g id="e4" class="edge">
 <title>n1p1:e&#45;&gt;n4:w</title>
 <path fill="none" stroke="#000000" d="M1,-35.5051C17.8147,-35.5051 18.7709,-18.5541 32.3644,-15.111"/>
 <polygon fill="#000000" stroke="#000000" points="32.7395,-16.8289 37.5,-14.5051 32.3294,-13.353 32.7395,-16.8289"/>
@@ -330,7 +330,7 @@ f</code></pre><pre class="documenter-example-output">WiringDiagram{BiproductCate
 <!-- n2p1&#45;&gt;n2p2 -->
 <!-- n3&#45;&gt;n2p1 -->
 <!-- B -->
-<g id="e3" class="edge">
+<g id="e2" class="edge">
 <title>n3:e&#45;&gt;n2p1:w</title>
 <path fill="none" stroke="#000000" d="M56,-57.5051C70.125,-57.5051 74.8977,-57.5051 86.8308,-57.5051"/>
 <polygon fill="#000000" stroke="#000000" points="87,-59.2552 92,-57.5051 87,-55.7552 87,-59.2552"/>
@@ -338,7 +338,7 @@ f</code></pre><pre class="documenter-example-output">WiringDiagram{BiproductCate
 </g>
 <!-- n4&#45;&gt;n2p2 -->
 <!-- B -->
-<g id="e4" class="edge">
+<g id="e3" class="edge">
 <title>n4:e&#45;&gt;n2p2:w</title>
 <path fill="none" stroke="#000000" d="M56,-14.5051C70.1304,-14.5051 74.8942,-15.2845 86.8293,-15.4671"/>
 <polygon fill="#000000" stroke="#000000" points="86.9872,-17.2183 92,-15.5051 87.013,-13.7184 86.9872,-17.2183"/>
@@ -506,4 +506,4 @@ d</code></pre><pre class="documenter-example-output">WiringDiagram([:A,:C], [:B,
 </g>
 </g>
 </svg>
-</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../../">« Catlab.jl</a><a class="docs-footer-nextpage" href="../diagrams_and_expressions/">Wiring diagrams and syntactic expressions »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Sunday 18 October 2020 21:33">Sunday 18 October 2020</span>. Using Julia version 1.5.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../../">« Catlab.jl</a><a class="docs-footer-nextpage" href="../diagrams_and_expressions/">Wiring diagrams and syntactic expressions »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Monday 19 October 2020 22:21">Monday 19 October 2020</span>. Using Julia version 1.5.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
