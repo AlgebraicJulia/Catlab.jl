@@ -12,9 +12,8 @@ using Compat: isnothing, only
 using PrettyTables: pretty_table
 using StructArrays
 
-using ...Theories: Schema, FreeSchema, dom, codom,
-  CatDesc, CatDescType, AttrDesc, AttrDescType, SchemaType,
-  ob_num, hom_num, data_num, attr_num, dom_num, codom_num
+using ...Theories: Schema, FreeSchema, dom, codom, codom_num,
+  CatDesc, CatDescType, AttrDesc, AttrDescType, SchemaType
 using ...Present
 
 # Data types
@@ -324,10 +323,23 @@ end
 
 """ Get subpart of part in C-set.
 
-Both single and vectorized access are supported.
+Both single and vectorized access are supported. Chaining, or composition, of
+parts is also supported. For example, given a vertex-attributed graph `g`,
+
+```
+subpart(g, e, [:src, :vattr])
+```
+
+returns the vertex attribute of the source vertex of the edge `e`.
 """
 subpart(acs::ACSet, part, name::Symbol) = subpart(acs,name)[part]
 subpart(acs::ACSet, name::Symbol) = _subpart(acs,Val(name))
+
+function subpart(acs::ACSet, part, names::AbstractVector{Symbol})
+  foldl(names, init=part) do part, name
+    subpart(acs, part, name)
+  end
+end
 
 @generated function _subpart(acs::ACSet{CD,AD,Ts}, ::Val{name}) where
     {CD,AD,Ts,name}

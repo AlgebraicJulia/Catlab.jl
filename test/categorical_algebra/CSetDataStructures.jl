@@ -145,6 +145,11 @@ set_subpart!(d, [4,5], :parent, 5)
 @test subpart(d, 4, :height) == 10
 @test subpart(d, :, :height) == [0,0,0,10,20]
 
+# Chained accessors.
+@test subpart(d, 3, [:parent, :parent]) == 5
+@test subpart(d, 3, [:parent, :height]) == 10
+
+# Copying parts.
 d2 = Dendrogram{Int}()
 copy_parts!(d2, d, X=[4,5])
 @test nparts(d2, :X) == 2
