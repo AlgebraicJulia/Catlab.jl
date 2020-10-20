@@ -329,13 +329,24 @@ end
 """ Get subpart of part in C-set.
 
 Both single and vectorized access are supported. Chaining, or composition, of
-parts is also supported. For example, given a vertex-attributed graph `g`,
+subparts is also supported. For example, given a vertex-attributed graph `g`,
 
 ```
 subpart(g, e, [:src, :vattr])
 ```
 
-returns the vertex attribute of the source vertex of the edge `e`.
+returns the vertex attribute of the source vertex of the edge `e`. As a
+shorthand, subparts can also be accessed by indexing:
+
+```
+g[e, :src] == subpart(g, e, :src)
+```
+
+Be warned that indexing with lists of subparts works as above:
+`g[e,[:src,:vattr]]` is equivalent to `subpart(g, e, [:src,:vattr])`. This
+differs from DataFrames but note that the alternative interpretation of
+`[:src,:vattr]` as two independent columns does not even make sense, since they
+have different domains (belong to different tables).
 """
 subpart(acs::ACSet, part, name::Symbol) = subpart(acs,name)[part]
 subpart(acs::ACSet, name::Symbol) = _subpart(acs,Val(name))
@@ -361,6 +372,8 @@ subpart_name(expr::GATExpr{:compose}) = mapreduce(subpart_name, vcat, args(expr)
     throw(ArgumentError("$(repr(name)) not in $(CD.hom) or $(AD.attr)"))
   end
 end
+
+Base.getindex(acs::ACSet, args...) = subpart(acs, args...)
 
 """ Get superparts incident to part in C-set.
 

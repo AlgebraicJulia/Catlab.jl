@@ -159,6 +159,11 @@ X, parent, height = TheoryDendrogram[[:X, :parent, :height]]
 @test subpart(d, 3, id(X)) == 3
 @test incident(d, 10, compose(parent, height)) == [1,2,3]
 
+# Indexing syntax.
+@test d[3, :parent] == 4
+@test d[3, [:parent, :height]] == 10
+@test d[:, :parent] == [4,4,4,5,5]
+
 # Copying parts.
 d2 = Dendrogram{Int}()
 copy_parts!(d2, d, X=[4,5])
