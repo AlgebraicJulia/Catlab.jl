@@ -3,7 +3,7 @@
 module CSetDataStructures
 export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
   AbstractACSetType, ACSetType, ACSetTableType, AbstractCSetType, CSetType,
-  tables, nparts, has_part, subpart, has_subpart, incident,
+  tables, parts, nparts, has_part, subpart, has_subpart, incident,
   add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!,
   copy_parts!, copy_parts_only!, disjoint_union
 
@@ -255,7 +255,7 @@ function Base.show(io::IO, ::MIME"text/plain", acs::T) where {T<:AbstractACSet}
       # TODO: Set option `row_number_column_title=name` when next version of
       # PrettyTables is released, instead of making new table.
       cols = map(col -> replace_unassigned(col, "#undef"), fieldarrays(table))
-      table = StructArray((; ob => 1:nparts(acs,ob), cols...))
+      table = StructArray((; ob => parts(acs, ob), cols...))
       pretty_table(io, table, nosubheader=true)
     end
   end
@@ -273,7 +273,7 @@ function Base.show(io::IO, ::MIME"text/html", acs::T) where {T<:AbstractACSet}
     if !(eltype(table) <: EmptyTuple || isempty(table))
       # TODO: Set option `row_number_column_title`. See above.
       cols = map(col -> replace_unassigned(col, "#undef"), fieldarrays(table))
-      table = StructArray((; ob => 1:nparts(acs,ob), cols...))
+      table = StructArray((; ob => parts(acs, ob), cols...))
       pretty_table(io, table, backend=:html, standalone=false, nosubheader=true)
     end
   end
@@ -297,6 +297,10 @@ A named tuple with a table for each part type. To ensure consistency, do not
 directly mutate these tables, especially when indexing is enabled!
 """
 tables(acs::ACSet) = acs.tables
+
+""" Parts of given type in a C-set.
+"""
+parts(acs::ACSet, type) = 1:nparts(acs, type)
 
 """ Number of parts of given type in a C-set.
 """
