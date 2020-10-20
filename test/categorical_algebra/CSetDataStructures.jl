@@ -44,8 +44,9 @@ set_subpart!(dds, 1, :Φ, 1)
 
 @test has_subpart(dds, :Φ)
 @test !has_subpart(dds, :nonsubpart)
-@test_throws KeyError subpart(dds, 1, :nonsubpart)
-@test_throws KeyError set_subpart!(dds, 1, :nonsubpart, 1)
+@test_throws ArgumentError subpart(dds, 1, :nonsubpart)
+@test_throws ArgumentError incident(dds, 1, :nonsuppart)
+@test_throws ArgumentError set_subpart!(dds, 1, :nonsubpart, 1)
 
 # Deletion.
 dds = DDS()

@@ -354,7 +354,7 @@ subpart_name(expr::GATExpr{:compose}) = mapreduce(subpart_name, vcat, args(expr)
   elseif name ∈ AD.attr
     :(acs.tables.$(dom(AD,name)).$name)
   else
-    throw(KeyError(name))
+    throw(ArgumentError("$(repr(name)) not in $(CD.hom) or $(AD.attr)"))
   end
 end
 
@@ -410,7 +410,7 @@ incident(acs::ACSet, part, expr::GATExpr; kw...) =
       :(broadcast_findall(part, acs.tables.$(dom(AD,name)).$name))
     end
   else
-    throw(KeyError(name))
+    throw(ArgumentError("$(repr(name)) not in $(CD.hom) or $(AD.attr)"))
   end
 end
 
@@ -521,7 +521,7 @@ set_subpart!(acs::ACSet, name::Symbol, new_subpart) =
       :(acs.tables.$ob.$name[part] = subpart)
     end
   else
-    throw(KeyError(name))
+    throw(ArgumentError("$(repr(name)) not in $(CD.hom) or $(AD.attr)"))
   end
 end
 
