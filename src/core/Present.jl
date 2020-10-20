@@ -59,11 +59,15 @@ generators(pres::Presentation, type::Symbol) = pres.generators[type]
 generators(pres::Presentation, type::Type) = generators(pres, nameof(type))
 
 """ Retrieve generators by name.
+
+Generators can also be retrieved using indexing notation, so that
+`generator(pres, name)` and `pres[name]` are equivalent.
 """
 function generator(pres::Presentation, name)
   type, index = pres.generator_name_index[name]
   pres.generators[type][index]
 end
+Base.getindex(pres::Presentation, name) = generator.(Ref(pres), name)
 
 """ Does the presentation contain a generator with the given name?
 """

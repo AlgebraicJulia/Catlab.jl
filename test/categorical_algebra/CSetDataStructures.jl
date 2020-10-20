@@ -152,7 +152,7 @@ set_subpart!(d, [4,5], :parent, 5)
 @test incident(d, 5, [:parent, :parent]) == [1,2,3,4,5]
 @test incident(d, 10, [:parent, :height]) == [1,2,3]
 
-X, parent, height = generator.(Ref(TheoryDendrogram), [:X, :parent, :height])
+X, parent, height = TheoryDendrogram[[:X, :parent, :height]]
 @test subpart(d, 3, parent) == 4
 @test subpart(d, 3, compose(parent, height)) == 10
 @test subpart(d, 3, id(X)) == 3
