@@ -51,8 +51,8 @@ src(g::AbstractACSet, args...) = subpart(g, args..., :src)
 tgt(g::AbstractACSet, args...) = subpart(g, args..., :tgt)
 dst(g::AbstractACSet, args...) = tgt(g, args...) # LightGraphs compatibility
 
-vertices(g::AbstractACSet) = 1:nv(g)
-edges(g::AbstractACSet) = 1:ne(g)
+vertices(g::AbstractACSet) = parts(g, :V)
+edges(g::AbstractACSet) = parts(g, :E)
 edges(g::AbstractACSet, src::Int, tgt::Int) =
   (e for e in incident(g, src, :src) if subpart(g, e, :tgt) == tgt)
 
@@ -279,7 +279,7 @@ end
 
 vertex(g::AbstractACSet, args...) = subpart(g, args..., :vertex)
 
-half_edges(g::AbstractACSet) = 1:nparts(g, :H)
+half_edges(g::AbstractACSet) = parts(g, :H)
 half_edges(g::AbstractACSet, v) = incident(g, v, :vertex)
 
 function half_edge_pairs(g::AbstractACSet, src::Int, tgt::Int)

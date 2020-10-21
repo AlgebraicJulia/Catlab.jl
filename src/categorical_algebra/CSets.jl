@@ -182,7 +182,7 @@ function colimit(diagram::AbstractFreeDiagram{ACS}) where
     T = Ts.parameters[d]
     data = Vector{Union{Some{T},Nothing}}(nothing, nparts(Y, c))
     for (ι, X) in zip(ιs, Xs)
-      for i in 1:nparts(X, c)
+      for i in parts(X, c)
         j = ι[c](i)
         if isnothing(data[j])
           data[j] = Some(subpart(X, i, attr))

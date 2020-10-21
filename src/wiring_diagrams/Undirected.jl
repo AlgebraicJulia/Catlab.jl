@@ -81,13 +81,12 @@ end
 
 nboxes(d::AbstractUWD) = nparts(d, :Box)
 njunctions(d::AbstractUWD) = nparts(d, :Junction)
-boxes(d::AbstractUWD) = 1:nboxes(d)
-junctions(d::AbstractUWD) = 1:njunctions(d)
+boxes(d::AbstractUWD) = parts(d, :Box)
+junctions(d::AbstractUWD) = parts(d, :Junction)
 
-ports(d::AbstractUWD; outer::Bool=false) =
-  1:nparts(d, outer ? :OuterPort : :Port)
+ports(d::AbstractUWD; outer::Bool=false) = parts(d, outer ? :OuterPort : :Port)
 ports(d::AbstractUWD, box) =
-  box == outer_box(d) ? (1:nparts(d, :OuterPort)) : incident(d, box, :box)
+  box == outer_box(d) ? parts(d, :OuterPort) : incident(d, box, :box)
 ports_with_junction(d::AbstractUWD, junction; outer::Bool=false) =
   incident(d, junction, outer ? :outer_junction : :junction)
 

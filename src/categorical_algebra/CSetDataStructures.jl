@@ -3,7 +3,7 @@
 module CSetDataStructures
 export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
   AbstractACSetType, ACSetType, ACSetTableType, AbstractCSetType, CSetType,
-  tables, nparts, has_part, subpart, has_subpart, incident,
+  tables, parts, nparts, has_part, subpart, has_subpart, incident,
   add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!,
   copy_parts!, copy_parts_only!, disjoint_union
 
@@ -255,7 +255,7 @@ function Base.show(io::IO, ::MIME"text/plain", acs::T) where {T<:AbstractACSet}
       # TODO: Set option `row_number_column_title=name` when next version of
       # PrettyTables is released, instead of making new table.
       cols = map(col -> replace_unassigned(col, "#undef"), fieldarrays(table))
-      table = StructArray((; ob => 1:nparts(acs,ob), cols...))
+      table = StructArray((; ob => parts(acs, ob), cols...))
       pretty_table(io, table, nosubheader=true)
     end
   end
@@ -273,7 +273,7 @@ function Base.show(io::IO, ::MIME"text/html", acs::T) where {T<:AbstractACSet}
     if !(eltype(table) <: EmptyTuple || isempty(table))
       # TODO: Set option `row_number_column_title`. See above.
       cols = map(col -> replace_unassigned(col, "#undef"), fieldarrays(table))
-      table = StructArray((; ob => 1:nparts(acs,ob), cols...))
+      table = StructArray((; ob => parts(acs, ob), cols...))
       pretty_table(io, table, backend=:html, standalone=false, nosubheader=true)
     end
   end
@@ -297,6 +297,10 @@ A named tuple with a table for each part type. To ensure consistency, do not
 directly mutate these tables, especially when indexing is enabled!
 """
 tables(acs::ACSet) = acs.tables
+
+""" Parts of given type in a C-set.
+"""
+parts(acs::ACSet, type) = 1:nparts(acs, type)
 
 """ Number of parts of given type in a C-set.
 """
@@ -325,13 +329,24 @@ end
 """ Get subpart of part in C-set.
 
 Both single and vectorized access are supported. Chaining, or composition, of
-parts is also supported. For example, given a vertex-attributed graph `g`,
+subparts is also supported. For example, given a vertex-attributed graph `g`,
 
 ```
 subpart(g, e, [:src, :vattr])
 ```
 
-returns the vertex attribute of the source vertex of the edge `e`.
+returns the vertex attribute of the source vertex of the edge `e`. As a
+shorthand, subparts can also be accessed by indexing:
+
+```
+g[e, :src] == subpart(g, e, :src)
+```
+
+Be warned that indexing with lists of subparts works as above:
+`g[e,[:src,:vattr]]` is equivalent to `subpart(g, e, [:src,:vattr])`. This
+differs from DataFrames but note that the alternative interpretation of
+`[:src,:vattr]` as two independent columns does not even make sense, since they
+have different domains (belong to different tables).
 """
 subpart(acs::ACSet, part, name::Symbol) = subpart(acs,name)[part]
 subpart(acs::ACSet, name::Symbol) = _subpart(acs,Val(name))
@@ -354,9 +369,11 @@ subpart_name(expr::GATExpr{:compose}) = mapreduce(subpart_name, vcat, args(expr)
   elseif name ∈ AD.attr
     :(acs.tables.$(dom(AD,name)).$name)
   else
-    throw(KeyError(name))
+    throw(ArgumentError("$(repr(name)) not in $(CD.hom) or $(AD.attr)"))
   end
 end
+
+Base.getindex(acs::ACSet, args...) = subpart(acs, args...)
 
 """ Get superparts incident to part in C-set.
 
@@ -410,7 +427,7 @@ incident(acs::ACSet, part, expr::GATExpr; kw...) =
       :(broadcast_findall(part, acs.tables.$(dom(AD,name)).$name))
     end
   else
-    throw(KeyError(name))
+    throw(ArgumentError("$(repr(name)) not in $(CD.hom) or $(AD.attr)"))
   end
 end
 
@@ -521,7 +538,7 @@ set_subpart!(acs::ACSet, name::Symbol, new_subpart) =
       :(acs.tables.$ob.$name[part] = subpart)
     end
   else
-    throw(KeyError(name))
+    throw(ArgumentError("$(repr(name)) not in $(CD.hom) or $(AD.attr)"))
   end
 end
 
