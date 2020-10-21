@@ -17,6 +17,10 @@ end
   include("MonoidalAdditive.jl")
 end
 
+@testset "DoubleCategories" begin
+  include("DoubleCategory.jl")
+end
+
 @testset "Preorders" begin
   include("Preorders.jl")
 end
