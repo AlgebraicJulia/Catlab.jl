@@ -102,7 +102,7 @@ end
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
 end
 
-function show_latex(io::IO, expr::Union{HomExpr{:braid}}; kw...)
+function show_latex(io::IO, expr::HomExpr{:braid}; kw...)
   Syntax.show_latex_script(io, expr, "\\sigma")
 end
 
