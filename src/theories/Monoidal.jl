@@ -1,5 +1,7 @@
 export MonoidalCategory, otimes, munit, ⊗, collect, ndims,
   SymmetricMonoidalCategory, FreeSymmetricMonoidalCategory, braid, σ,
+  MonoidalDoubleCategory, SymmetricMonoidalDoubleCategory,
+  FreeSymmetricMonoidalDoubleCategory, braidH, braidV, σH, σV,
   MonoidalCategoryWithDiagonals, CartesianCategory, FreeCartesianCategory,
   mcopy, delete, pair, proj1, proj2, Δ, ◊,
   mmerge, create, copair, coproj1, coproj2, ∇, □,
@@ -65,15 +67,73 @@ ndims(expr::ObExpr) = 1
 ndims(expr::ObExpr{:otimes}) = sum(map(ndims, args(expr)))
 ndims(expr::ObExpr{:munit}) = 0
 
-function show_unicode(io::IO, expr::Union{ObExpr{:otimes},HomExpr{:otimes}}; kw...)
+function show_unicode(io::IO, expr::Union{ObExpr{:otimes},HomExpr{:otimes},HomVExpr{:otimes},HomHExpr{:otimes},Hom2Expr{:otimes}}; kw...)
   Syntax.show_unicode_infix(io, expr, "⊗"; kw...)
 end
 show_unicode(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
 
-function show_latex(io::IO, expr::Union{ObExpr{:otimes},HomExpr{:otimes}}; kw...)
+function show_latex(io::IO, expr::Union{ObExpr{:otimes},HomExpr{:otimes},HomVExpr{:otimes},HomHExpr{:otimes},Hom2Expr{:otimes}}; kw...)
   Syntax.show_latex_infix(io, expr, "\\otimes"; kw...)
 end
 show_latex(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
+
+""" Theory of *monoidal double categories*
+
+To avoid associators and unitors, we assume the monoidal double category is
+*strict*. By the coherence theorem there is no loss of generality, but we may
+add a theory for weak monoidal categories later.
+"""
+@theory MonoidalDoubleCategory{Ob,HomV,HomH,Hom2} <: DoubleCategory{Ob,HomV,HomH,Hom2} begin
+  otimes(A::Ob, B::Ob)::Ob
+  otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣
+    (A::Ob, B::Ob, C::Ob, D::Ob)
+  otimes(f::(A ↓ B), g::(C ↓ D))::((A ⊗ C) ↓ (B ⊗ D)) ⊣
+    (A::Ob, B::Ob, C::Ob, D::Ob)
+  otimes(f::Hom2(t,b,l,r),g::Hom2(t′,b′,l′,r′))::Hom2(t⊗t′,b⊗b′,l⊗l′,r⊗r′) ⊣
+    (A::Ob, B::Ob, C::Ob, D::Ob, E::Ob, F::Ob, G::Ob, H::Ob,
+     t::(A → B), b::(C → D), l::(A ↓ C), r::(B ↓ D),
+     t′::(E → F), b′::(G → H), l′::(E ↓ G), r′::(F ↓ H))
+
+  @op (⊗) := otimes
+  munit()::Ob
+
+  # Monoid axioms.
+  (A ⊗ B) ⊗ C == A ⊗ (B ⊗ C) ⊣ (A::Ob, B::Ob, C::Ob)
+  A ⊗ munit() == A ⊣ (A::Ob)
+  munit() ⊗ A == A ⊣ (A::Ob)
+  (f ⊗ g) ⊗ h == f ⊗ (g ⊗ h) ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
+                                 f::(A → X), g::(B → Y), h::(C → Z))
+  (f ⊗ g) ⊗ h == f ⊗ (g ⊗ h) ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
+                                 f::(A ↓ X), g::(B ↓ Y), h::(C ↓ Z))
+  (f ⊗ g) ⊗ h == f ⊗ (g ⊗ h) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
+                                 E::Ob, F::Ob, G::Ob, H::Ob,
+                                 I::Ob, J::Ob, K::Ob, L::Ob,
+                                 f::Hom2(A → B, C → D, A ↓ C, B ↓ D),
+                                 g::Hom2(E → F, G → H, E ↓ G, F ↓ H),
+                                 h::Hom2(I → J, K → L, I ↓ K, J ↓ L))
+
+  # Functorality axioms.
+  ((f ⊗ g) ⋅ (h ⊗ k) == (f ⋅ h) ⊗ (g ⋅ k)
+    ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
+       f::(A → B), h::(B → C), g::(X → Y), k::(Y → Z)))
+  ((f ⊗ g) ⋅ (h ⊗ k) == (f ⋅ h) ⊗ (g ⋅ k)
+    ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
+       f::(A ↓ B), h::(B ↓ C), g::(X ↓ Y), k::(Y ↓ Z)))
+  ((f ⊗ g) ⋅ (h ⊗ k) == (f ⋅ h) ⊗ (g ⋅ k)
+    ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
+       E::Ob, F::Ob, G::Ob, H::Ob,
+       I::Ob, J::Ob, K::Ob, L::Ob,
+       M::Ob, N::Ob, O::Ob, P::Ob,
+       f::Hom2(A → B, C → D, A ↓ C, B ↓ D),
+       g::Hom2(E → F, G → H, E ↓ G, F ↓ H),
+       h::Hom2(I → J, K → L, I ↓ K, J ↓ L),
+       k::Hom2(M → N, O → P, M ↓ O, N ↓ P)))
+  idH(A ⊗ B) == idH(A) ⊗ idH(B) ⊣ (A::Ob, B::Ob)
+  idV(A ⊗ B) == idV(A) ⊗ idV(B) ⊣ (A::Ob, B::Ob)
+  id2(A ⊗ B) == id2(A) ⊗ id2(B) ⊣ (A::Ob, B::Ob)
+  id2H((A ⊗ B) → (C ⊗ D)) == id2H(A → C) ⊗ id2H(B → D) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob)
+  id2V((A ⊗ B) ↓ (C ⊗ D)) == id2V(A ↓ C) ⊗ id2V(B ↓ D) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob)
+end
 
 # Symmetric monoidal category
 #############################
@@ -102,8 +162,57 @@ end
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
 end
 
-function show_latex(io::IO, expr::HomExpr{:braid}; kw...)
+function show_latex(io::IO, expr::Union{HomExpr{:braid}}; kw...)
   Syntax.show_latex_script(io, expr, "\\sigma")
+end
+
+""" Theory of (strict) *symmetric monoidal double categories*
+"""
+@theory SymmetricMonoidalDoubleCategory{Ob,HomV,HomH,Hom2} <: MonoidalDoubleCategory{Ob,HomV,HomH,Hom2} begin
+  braidH(A::Ob, B::Ob)::((A ⊗ B) → (B ⊗ A))
+  braidV(A::Ob, B::Ob)::((A ⊗ B) ↓ (B ⊗ A))
+  @op (σH) := braidH
+  @op (σV) := braidV
+
+  # Involutivity axiom.
+  σH(A,B) ⋅ σH(B,A) == idH(A ⊗ B) ⊣ (A::Ob, B::Ob)
+  σV(A,B) ⋅ σV(B,A) == idV(A ⊗ B) ⊣ (A::Ob, B::Ob)
+
+  # Coherence axioms.
+  σH(A,B⊗C) == (σH(A,B) ⊗ idH(C)) ⋅ (idH(B) ⊗ σH(A,C)) ⊣ (A::Ob, B::Ob, C::Ob)
+  σV(A⊗B,C) == (idV(A) ⊗ σV(B,C)) ⋅ (σV(A,C) ⊗ idV(B)) ⊣ (A::Ob, B::Ob, C::Ob)
+
+  # Naturality axiom.
+  (f ⊗ g) ⋅ σH(B,D) == σH(A,C) ⋅ (g ⊗ f) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
+                                           f::(A → B), g::(C → D))
+  (f ⊗ g) ⋅ σV(B,D) == σV(A,C) ⋅ (g ⊗ f) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
+                                           f::(A ↓ B), g::(C ↓ D))
+end
+
+@syntax FreeSymmetricMonoidalDoubleCategory{ObExpr,HomVExpr,HomHExpr,Hom2Expr} SymmetricMonoidalDoubleCategory begin
+  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
+  otimes(f::HomV, g::HomV) = associate(new(f,g))
+  otimes(f::HomH, g::HomH) = associate(new(f,g))
+  otimes(f::Hom2, g::Hom2) = associate(new(f,g))
+  compose(f::HomV, g::HomV) = associate(new(f,g; strict=true))
+  compose(f::HomH, g::HomH) = associate(new(f,g; strict=true))
+  composeH(α::Hom2, β::Hom2) = associate(new(α,β))
+  composeV(α::Hom2, β::Hom2) = associate(new(α,β))
+end
+
+function show_unicode(io::IO, expr::HomHExpr{:braidH}; kw...)
+  Syntax.show_unicode_infix(io, expr, "σH"; kw...)
+end
+function show_unicode(io::IO, expr::HomVExpr{:braidV}; kw...)
+  Syntax.show_unicode_infix(io, expr, "σV"; kw...)
+end
+
+function show_latex(io::IO, expr::Union{HomHExpr{:braidH}}; kw...)
+  Syntax.show_latex_script(io, expr, "\\sigmaH")
+end
+
+function show_latex(io::IO, expr::Union{HomVExpr{:braidV}}; kw...)
+  Syntax.show_latex_script(io, expr, "\\sigmaV")
 end
 
 # Cartesian category
