@@ -131,10 +131,10 @@ end
 @theory DoubleCategory{Ob,HomV,HomH,Hom2} begin
   # """ Object in a category """
   Ob::TYPE
-  """ Horizontal Morphism in a double category """
-  HomH(dom::Ob, codom::Ob)::TYPE
   """ Vertical Morphism in a double category """
   HomV(dom::Ob, codom::Ob)::TYPE
+  """ Horizontal Morphism in a double category """
+  HomH(dom::Ob, codom::Ob)::TYPE
   """ 2-cell in a double category """
   Hom2(top::HomH(A,B),
        bottom::HomH(C,D),
