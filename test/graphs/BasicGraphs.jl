@@ -44,6 +44,13 @@ rem_vertex!(g, 2)
 @test nv(g) == 3
 @test ne(g) == 0
 
+# Error handling.
+g = Graph(2)
+add_edge!(g, 1, 2)
+@test_throws Exception add_edge!(g, 2, 3) # nonexistent target vertex
+@test ne(g) == 1
+@test isempty(outneighbors(g, 2))
+
 # Symmetric graphs
 ##################
 
