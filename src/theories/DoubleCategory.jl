@@ -166,9 +166,9 @@ add a theory for weak monoidal categories later.
   idV(A ⊗ B) == idV(A) ⊗ idV(B) ⊣ (A::Ob, B::Ob)
   id2(A ⊗ B) == id2(A) ⊗ id2(B) ⊣ (A::Ob, B::Ob)
   id2H(l) == id2H(r1) ⊗ id2H(r2) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
-                                    l::((A⊗B)→(C⊗D)), r1::(A→C), r2::(B→D))
-  id2V(l) == id2V(r1) ⊗ id2V(r2) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
                                     l::((A⊗B)↓(C⊗D)), r1::(A↓C), r2::(B↓D))
+  id2V(l) == id2V(r1) ⊗ id2V(r2) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
+                                    l::((A⊗B)→(C⊗D)), r1::(A→C), r2::(B→D))
 end
 
 """ Theory of (strict) *symmetric monoidal double categories*
