@@ -94,12 +94,15 @@ empty_dds = DDS()
 @test !isempty(sprint(show, MIME"text/plain"(), empty_dds))
 @test !isempty(sprint(show, MIME"text/html"(), empty_dds))
 
-# Incidence after error handling.
+# Error handling when adding parts.
 dds = DDS()
 add_parts!(dds, :X, 3, Φ=[1,1,1])
 @test_throws AssertionError add_part!(dds, :X, Φ=5)
-@test subpart(dds, :Φ) == [1,1,1,0]
-@test incident(dds, 4, :Φ) == []
+@test nparts(dds, :X) == 3
+@test subpart(dds, :Φ) == [1,1,1]
+@test_throws AssertionError add_parts!(dds, :X, 2, Φ=[3,6])
+@test nparts(dds, :X) == 3
+@test incident(dds, 3, :Φ) == []
 
 # Incidence without indexing.
 UnindexedDDS = CSetType(TheoryDDS)

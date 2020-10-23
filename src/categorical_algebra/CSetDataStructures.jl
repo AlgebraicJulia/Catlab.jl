@@ -442,7 +442,12 @@ See also: [`add_parts!`](@ref).
 """
 function add_part!(acs::ACSet, type::Symbol, args...; kw...)
   part = only(_add_parts!(acs, Val(type), 1))
-  set_subparts!(acs, part, args...; kw...)
+  try
+    set_subparts!(acs, part, args...; kw...)
+  catch e
+    rem_part!(acs, type, part)
+    rethrow(e)
+  end
   part
 end
 
@@ -454,7 +459,12 @@ See also: [`add_part!`](@ref).
 """
 function add_parts!(acs::ACSet, type::Symbol, n::Int, args...; kw...)
   parts = _add_parts!(acs, Val(type), n)
-  set_subparts!(acs, parts, args...; kw...)
+  try
+    set_subparts!(acs, parts, args...; kw...)
+  catch e
+    rem_parts!(acs, type, parts)
+    rethrow(e)
+  end
   parts
 end
 
