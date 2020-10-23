@@ -1,6 +1,7 @@
-export DoubleCategory, FreeDoubleCategory, HomH, HomV, idH, idV, composeH,
-  composeV, ⋆, MonoidalDoubleCategory, SymmetricMonoidalDoubleCategory,
-  FreeSymmetricMonoidalDoubleCategory, braidH, braidV, σH, σV
+export DoubleCategory, FreeDoubleCategory, HomH, HomV, Hom2, idH, idV,
+  id2, id2V, id2H, composeH, composeV, ⋆, MonoidalDoubleCategory,
+  SymmetricMonoidalDoubleCategory, FreeSymmetricMonoidalDoubleCategory,
+  braidH, braidV, σH, σV
 
 # Double category
 #################
