@@ -131,12 +131,15 @@ add a theory for weak monoidal categories later.
                                  f::(A → X), g::(B → Y), h::(C → Z))
   (f ⊗ g) ⊗ h == f ⊗ (g ⊗ h) ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
                                  f::(A ↓ X), g::(B ↓ Y), h::(C ↓ Z))
-  (f ⊗ g) ⊗ h == f ⊗ (g ⊗ h) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
-                                 E::Ob, F::Ob, G::Ob, H::Ob,
-                                 I::Ob, J::Ob, K::Ob, L::Ob,
-                                 f::Hom2(A → B, C → D, A ↓ C, B ↓ D),
-                                 g::Hom2(E → F, G → H, E ↓ G, F ↓ H),
-                                 h::Hom2(I → J, K → L, I ↓ K, J ↓ L))
+  (α ⊗ β) ⊗ γ == α ⊗ (β ⊗ γ) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
+                                E::Ob, F::Ob, G::Ob, H::Ob,
+                                I::Ob, J::Ob, K::Ob, L::Ob,
+                                t1::(A → B), b1::(C → D), l1::(A ↓ C), r1::(B ↓ D),
+                                t2::(E → F), b2::(G → H), l2::(E ↓ G), r2::(F ↓ H),
+                                t3::(I → J), b3::(K → L), l3::(I ↓ K), r3::(J ↓ L),
+                                α::Hom2(t1, b1, l1, r1),
+                                β::Hom2(t2, b2, l2, r2),
+                                γ::Hom2(t3, b3, l3, r3))
 
   # Functorality axioms.
   ((f ⊗ g) ⋅ (h ⊗ k) == (f ⋅ h) ⊗ (g ⋅ k)
@@ -145,15 +148,19 @@ add a theory for weak monoidal categories later.
   ((f ⊗ g) ⋅ (h ⊗ k) == (f ⋅ h) ⊗ (g ⋅ k)
     ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
        f::(A ↓ B), h::(B ↓ C), g::(X ↓ Y), k::(Y ↓ Z)))
-  ((f ⊗ g) ⋅ (h ⊗ k) == (f ⋅ h) ⊗ (g ⋅ k)
+  ((α ⊗ β) ⋅ (γ ⊗ δ) == (α ⋅ γ) ⊗ (β ⋅ δ)
     ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
        E::Ob, F::Ob, G::Ob, H::Ob,
        I::Ob, J::Ob, K::Ob, L::Ob,
        M::Ob, N::Ob, O::Ob, P::Ob,
-       f::Hom2(A → B, C → D, A ↓ C, B ↓ D),
-       g::Hom2(E → F, G → H, E ↓ G, F ↓ H),
-       h::Hom2(I → J, K → L, I ↓ K, J ↓ L),
-       k::Hom2(M → N, O → P, M ↓ O, N ↓ P)))
+       t1::(A → B), b1::(C → D), l1::(A ↓ C), r1::(B ↓ D),
+       t2::(E → F), b2::(G → H), l2::(E ↓ G), r2::(F ↓ H),
+       t3::(I → J), b3::(K → L), l3::(I ↓ K), r3::(J ↓ L),
+       t4::(M → N), b4::(O → P), l4::(M ↓ O), r4::(N ↓ P),
+       α::Hom2(t1, b1, l1, r1),
+       β::Hom2(t2, b2, l2, r2),
+       γ::Hom2(t3, b3, l3, r3),
+       δ::Hom2(t4, b4, l4, r4)))
   idH(A ⊗ B) == idH(A) ⊗ idH(B) ⊣ (A::Ob, B::Ob)
   idV(A ⊗ B) == idV(A) ⊗ idV(B) ⊣ (A::Ob, B::Ob)
   id2(A ⊗ B) == id2(A) ⊗ id2(B) ⊣ (A::Ob, B::Ob)
