@@ -25,9 +25,9 @@ import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,
   OuterPort::Ob
   Junction::Ob
 
-  box::Hom(Port,Box)
-  junction::Hom(Port,Junction)
-  outer_junction::Hom(OuterPort,Junction)
+  box::Hom(Port, Box)
+  junction::Hom(Port, Junction)
+  outer_junction::Hom(OuterPort, Junction)
 end
 
 const UndirectedWiringDiagram = const AbstractUWD = AbstractACSetType(TheoryUWD)
@@ -36,9 +36,9 @@ const UntypedUWD = CSetType(TheoryUWD, index=[:box, :junction, :outer_junction])
 @present TheoryTypedUWD <: TheoryUWD begin
   Type::Data
 
-  port_type::Attr(Port,Type)
-  outer_port_type::Attr(OuterPort,Type)
-  junction_type::Attr(Junction,Type)
+  port_type::Attr(Port, Type)
+  outer_port_type::Attr(OuterPort, Type)
+  junction_type::Attr(Junction, Type)
 
   compose(junction, junction_type) == port_type
   compose(outer_junction, junction_type) == outer_port_type
