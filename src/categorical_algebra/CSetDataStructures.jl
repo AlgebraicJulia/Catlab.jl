@@ -606,14 +606,16 @@ rem_part!(acs::ACSet, type::Symbol, part::Int) =
       set_subpart!(acs, incident(acs, part, hom, copy=true), hom, 0)
       set_subpart!(acs, incident(acs, last_part, hom, copy=true), hom, part)
     end
-    last_row = acs.tables.$ob[last_part]
+    last_row = getassigned(acs.tables.$ob, last_part)
 
     # Clear any morphism and data attribute indices for last part.
     for hom in $(Tuple(indexed_out_homs))
       set_subpart!(acs, last_part, hom, 0)
     end
     for attr in $(Tuple(indexed_attrs))
-      unset_data_index!(acs.indices[attr], last_row[attr], last_part)
+      if haskey(last_row, attr)
+        unset_data_index!(acs.indices[attr], last_row[attr], last_part)
+      end
     end
 
     # Finally, delete the last part and update subparts of the removed part.
@@ -623,6 +625,15 @@ rem_part!(acs::ACSet, type::Symbol, part::Int) =
     end
   end
 end
+
+""" Get assigned fields of table row as a named tuple.
+"""
+function getassigned(x::StructArray{<:NamedTuple{names}}, i) where names
+  arrays = fieldarrays(x)
+  assigned = filter(name -> isassigned(arrays[name], i), names)
+  NamedTuple{assigned}(map(name -> arrays[name][i], assigned))
+end
+getassigned(::Vector{<:EmptyTuple}, i) = NamedTuple()
 
 """ Remove parts from a C-set.
 

@@ -253,7 +253,13 @@ rem_part!(lset, :X, 1)
 @test subpart(lset, :label) == [:bar, :foo]
 @test incident(lset, [:foo, :bar], :label) == [[2], [1]]
 
-# Special case of pretty-print: unitialized data attribute.
+# Deletion with unitialized data attribute.
+lset = IndexedLabeledSet{Symbol}()
+add_part!(lset, :X)
+rem_part!(lset, :X, 1)
+@test nparts(lset, :X) == 0
+
+# Pretty-printing with unitialized data attribute.
 lset = IndexedLabeledSet{Symbol}()
 add_part!(lset, :X)
 @test occursin("#undef", sprint(show, lset))
