@@ -22,7 +22,7 @@ Feel free to ask questions! Besides the GitHub issues, we have a
 [#catlab.jl](https://julialang.zulipchat.com/#narrow/stream/230248-catlab.2Ejl)
 stream on the [Julia Zulip](https://julialang.zulipchat.com/) (preferred) and
 also a [#catlab](https://julialang.slack.com/archives/CQNUDDF5L) channel on the
-[Julia Slack](https://slackinvite.julialang.org/) (less preferred).
+[Julia Slack](https://julialang.org/slack/) (less preferred).
 
 ### Contributing
 
