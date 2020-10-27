@@ -34,6 +34,12 @@ const AbstractUWDSchedule = AbstractACSetType(TheoryUWDSchedule)
 const UWDSchedule = CSetType(TheoryUWDSchedule,
   index=[:box, :junction, :outer_junction, :parent, :box_parent])
 
+composites(x::AbstractACSet) = parts(x, :Composite)
+parent(x::AbstractACSet, args...) = subpart(x, args..., :parent)
+children(x::AbstractACSet, c::Int) =
+  filter(c′ -> c′ != c, incident(x, c, :parent))
+box_parent(x::AbstractACSet, args...) = subpart(x, args..., :box_parent)
+box_children(x::AbstractACSet, args...) = incident(x, args..., :box_parent)
 
 @present TheoryNestedUWD <: TheoryUWDSchedule begin
   CompositePort::Ob
@@ -50,19 +56,10 @@ const NestedUWD = CSetType(TheoryNestedUWD,
   index=[:box, :junction, :outer_junction,
          :composite, :composite_junction, :parent, :box_parent])
 
-const AbstractUWDForest = Union{AbstractUWDSchedule,AbstractNestedUWD}
-
-composites(x::AbstractUWDForest) = parts(x, :Composite)
-parent(x::AbstractUWDForest, args...) = subpart(x, args..., :parent)
-children(x::AbstractUWDForest, args...) = incident(x, args..., :parent)
-box_parent(x::AbstractUWDForest, args...) = subpart(x, args..., :box_parent)
-box_children(x::AbstractUWDForest, args...) = incident(x, args..., :box_parent)
-
-composite_ports(d::AbstractNestedUWD, args...) =
-  incident(d, args..., :composite)
-composite_ports_with_junction(d::AbstractNestedUWD, args...) =
+composite_ports(d::AbstractACSet, args...) = incident(d, args..., :composite)
+composite_ports_with_junction(d::AbstractACSet, args...) =
   incident(d, args..., :composite_junction)
-composite_junction(d::AbstractNestedUWD, args...) =
+composite_junction(d::AbstractACSet, args...) =
   subpart(d, args..., :composite_junction)
 
 # Evaluation
@@ -123,6 +120,10 @@ end
 ############
 
 """ Schedule UWD as a sequential chain of binary composites.
+
+This is the simplest possible scheduling algorithm, the equivalent of `foldl`
+for undirected wiring diagrams. Unless otherwise specified, the box order is
+that of the box IDs in the diagram.
 """
 sequential_schedule(d::AbstractUWD) = sequential_schedule(d, boxes(d))
 
