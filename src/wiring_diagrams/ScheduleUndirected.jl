@@ -8,6 +8,7 @@ export AbstractNestedUWD, AbstractUWDSchedule, NestedUWD, UWDSchedule,
   eval_nested_diagram, to_nested_diagram, sequential_schedule
 
 using Compat: only
+using DataStructures: IntDisjointSets, union!, in_same_set
 
 using ...Present, ...CategoricalAlgebra.CSets, ..UndirectedWiringDiagrams
 using ..UndirectedWiringDiagrams: TheoryUWD, flat
@@ -34,6 +35,7 @@ const AbstractUWDSchedule = AbstractACSetType(TheoryUWDSchedule)
 const UWDSchedule = CSetType(TheoryUWDSchedule,
   index=[:box, :junction, :outer_junction, :parent, :box_parent])
 
+ncomposites(x::AbstractACSet) = nparts(x, :Composite)
 composites(x::AbstractACSet) = parts(x, :Composite)
 parent(x::AbstractACSet, args...) = subpart(x, args..., :parent)
 children(x::AbstractACSet, c::Int) =
@@ -56,11 +58,11 @@ const NestedUWD = CSetType(TheoryNestedUWD,
   index=[:box, :junction, :outer_junction,
          :composite, :composite_junction, :parent, :box_parent])
 
-composite_ports(d::AbstractACSet, args...) = incident(d, args..., :composite)
-composite_ports_with_junction(d::AbstractACSet, args...) =
-  incident(d, args..., :composite_junction)
-composite_junction(d::AbstractACSet, args...) =
-  subpart(d, args..., :composite_junction)
+composite_ports(x::AbstractACSet, args...) = incident(x, args..., :composite)
+composite_junction(x::AbstractACSet, args...) =
+  subpart(x, args..., :composite_junction)
+composite_ports_with_junction(x::AbstractACSet, args...) =
+  incident(x, args..., :composite_junction)
 
 # Evaluation
 ############
@@ -87,21 +89,30 @@ function to_nested_diagram(s::AbstractUWDSchedule)
   d = NestedUWD()
   copy_parts!(d, s)
 
+  n = nboxes(s)
+  sets = IntDisjointSets(n + ncomposites(s))
+
   function add_composite_ports!(c::Int)
     # Recursively add ports to all child composites.
     foreach(add_composite_ports!, children(d, c))
 
     # Get all junctions incident to any child box or child composite.
-    c_box_ports = flat([ports(d, b) for b in box_children(d, c)])
-    c_composite_ports = flat([composite_ports(d, c′) for c′ in children(d, c)])
-    js = unique!([ junction(d, c_box_ports);
-                   composite_junction(d, c_composite_ports) ])
+    js = unique!(flat([
+      [ junction(d, ports(d, b)) for b in box_children(d, c) ];
+      [ composite_junction(d, composite_ports(d, c′)) for c′ in children(d, c) ]
+    ]))
 
     # Filter for "outgoing" junctions, having incident ports outside this node.
-    c_box_ports, c_composite_ports = Set(c_box_ports), Set(c_composite_ports)
+    c_rep = n+c
+    for b in box_children(d, c)
+      union!(sets, c_rep, b)
+    end
+    for c′ in children(d, c)
+      union!(sets, c_rep, n+c′)
+    end
     js = filter!(js) do j
-      !(ports_with_junction(d, j) ⊆ c_box_ports &&
-        composite_ports_with_junction(d, j) ⊆ c_composite_ports &&
+      !(all(in_same_set(sets, c_rep, box(d, port))
+            for port in ports_with_junction(d, j)) &&
         isempty(ports_with_junction(d, j, outer=true)))
     end
 
