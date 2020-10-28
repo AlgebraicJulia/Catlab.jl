@@ -246,9 +246,6 @@ See also: [`@tensor_network`](@ref), the "inverse" to this macro.
 macro eval_tensor_network(diagram, tensor_macro)
   # XXX: We cannot use `GeneralizedGenerated.mk_function` here because packages
   # like Tullio generate code with type parameters, which GG does not allow.
-  # Thus we are stuck with `eval`. Of course, the real solution is for the Julia
-  # tensor packages to expose a tensor contraction interface that is not based
-  # on macros but on an appropriate data structure---such as wiring diagrams!
   compile_expr = :(compile_tensor_expr($(esc(diagram)),
     assign_op=:(:=), assign_name=gensym("out")))
   Expr(:call, esc(:eval),

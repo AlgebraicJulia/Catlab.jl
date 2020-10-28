@@ -17,7 +17,7 @@ composite_junctions(x::AbstractACSet, c) =
 This function includes matrix multiplication, tensor product, and trace as
 special cases.
 """
-function generalized_contract((A, B), (jA, jB), j_out)
+function general_tensor_contract((A, B), (jA, jB), j_out)
   njunc = length(codom(j_out))
   jA, jB, j_out = Tuple(collect(jA)), Tuple(collect(jB)), Tuple(collect(j_out))
   jsizes = fill(-1, njunc)
@@ -36,13 +36,7 @@ end
 # Open linear path
 ##################
 
-d = @relation (v,z) where (v,w,x,y,z) begin
-  A(v,w)
-  B(w,x)
-  C(x,y)
-  D(y,z)
-end
-
+d = @tensor_network out[v,z] = A[v,w] * B[w,x] * C[x,y] * D[y,z]
 s = sequential_schedule(d, reverse(boxes(d)))
 @test length(composites(s)) == 3
 @test parent(s) == [2,3,3]
@@ -54,19 +48,13 @@ nd = to_nested_diagram(s)
 @test composite_junctions(nd, 1:3) == [[3,5], [2,5], [1,5]]
 
 matrices = map(randn, [(3,4), (4,5), (5,6), (6,7)])
-out = eval_schedule(generalized_contract, nd, matrices)
+out = eval_schedule(general_tensor_contract, nd, matrices)
 @test out ≈ foldr(*, matrices)
 
 # Closed cycle
 ##############
 
-d = @relation () where (w,x,y,z) begin
-  A(w,x)
-  B(x,y)
-  C(y,z)
-  D(z,w)
-end
-
+d = @tensor_network out[] = A[w,x] * B[x,y] * C[y,z] * D[z,w]
 s = sequential_schedule(d)
 nd = to_nested_diagram(s)
 @test parent(nd) == [2,3,3]
@@ -75,22 +63,19 @@ nd = to_nested_diagram(s)
 @test composite_junctions(nd, 1:2) == [[1,3], [1,4]]
 
 matrices = map(randn, [(10,5), (5,5), (5,5), (5,10)])
-out = eval_schedule(generalized_contract, nd, matrices)
+out = eval_schedule(general_tensor_contract, nd, matrices)
 @test out[] ≈ tr(foldl(*, matrices))
 
 # Product
 #########
 
-d = @relation (w,x,y,z) where (w,x,y,z) begin
-  A(w,x)
-  B(y,z)
-end
+d = @tensor_network out[w,x,y,z] = A[w,x] * B[y,z]
 s = sequential_schedule(d)
 @test parent(s) == [1]
 @test box_parent(s) == [1,1]
 
 A, B = randn((3,4)), randn((5,6))
-out = eval_schedule(generalized_contract, s, [A, B])
+out = eval_schedule(general_tensor_contract, s, [A, B])
 @test out ≈ (reshape(A, (3,4,1,1)) .* reshape(B, (1,1,5,6)))
 
 end
