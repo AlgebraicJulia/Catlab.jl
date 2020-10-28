@@ -92,7 +92,12 @@ f(values::AbstractVector,
 where `values` is a list of computed values for boxes or composites in the
 diagram; `juncs` is an equal-length list of `FinSet` functions, mapping the
 ports of each value to junctions; and `outer_junc` is a `FinSet` function
-mapping the outer ports to junctions.
+mapping the outer ports to junctions. This interface is similar to the `ncon`
+function in the [NCON package](https://arxiv.org/abs/1402.0939) for MATLAB or
+the `ncon` function in
+[TensorOperations.jl](https://github.com/Jutho/TensorOperations.jl), except that
+the outer junctions are represented explictly by a third argument rather than
+implictly by using negative numbers in the second argument.
 
 The length of lists `values` and `juncs` in each call depends on the schedule.
 Most scheduling algorithms will reduce the original UWD to binary composites, so
