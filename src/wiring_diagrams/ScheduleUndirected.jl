@@ -64,6 +64,9 @@ const AbstractNestedUWD = AbstractACSetType(TheoryNestedUWD)
 A nested UWD is a scheduled UWD whose composite nodes have been given ports,
 making explicit the intermediate boxes in the composition.
 
+Nested UWDs are very similar but not quite identical to Robin Milner's
+[bigraphs](https://doi.org/10.1017/CBO9780511626661).
+
 See also: [`ScheduledUWD`](@ref).
 """
 const NestedUWD = CSetType(TheoryNestedUWD,
