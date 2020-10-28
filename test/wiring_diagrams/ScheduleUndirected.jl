@@ -16,6 +16,8 @@ composite_junctions(x::AbstractACSet, c) =
 
 This function includes matrix multiplication, tensor product, and trace as
 special cases.
+
+FIXME: Put this somewhere else?
 """
 function general_tensor_contract((A, B), (jA, jB), j_out)
   njunc = length(codom(j_out))

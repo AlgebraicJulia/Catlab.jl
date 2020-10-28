@@ -4,7 +4,7 @@ In category-theoretic terms, this module is about evaluating arbitrary
 composites of morphisms in hypergraph categories.
 """
 module ScheduleUndirectedWiringDiagrams
-export AbstractNestedUWD, AbstractUWDSchedule, NestedUWD, UWDSchedule,
+export AbstractNestedUWD, AbstractScheduledUWD, NestedUWD, ScheduledUWD,
   eval_schedule, to_nested_diagram, sequential_schedule
 
 using Compat: only
@@ -19,7 +19,7 @@ const AbstractUWD = UndirectedWiringDiagram
 # Data types
 ############
 
-@present TheoryUWDSchedule <: TheoryUWD begin
+@present TheoryScheduledUWD <: TheoryUWD begin
   Composite::Ob
 
   parent::Hom(Composite, Composite)
@@ -29,14 +29,17 @@ const AbstractUWD = UndirectedWiringDiagram
   # parent <= id(Composite)
 end
 
-const AbstractUWDSchedule = AbstractACSetType(TheoryUWDSchedule)
+const AbstractScheduledUWD = AbstractACSetType(TheoryScheduledUWD)
 
-""" Schedule of an undirected wiring diagram.
+""" Scheduled undirected wiring diagram.
 
-A schedule consists of a UWD together a set of *composites* forming a rooted
-tree, or in general a rooted forest, whose leaves are the diagram's boxes.
+A scheduled UWD consists of a UWD together with a set of *composite* nodes
+forming a rooted tree, or in general a rooted forest, whose leaves are the
+diagram's boxes.
+
+See also: [`NestedUWD`](@ref).
 """
-const UWDSchedule = CSetType(TheoryUWDSchedule,
+const ScheduledUWD = CSetType(TheoryScheduledUWD,
   index=[:box, :junction, :outer_junction, :parent, :box_parent])
 
 ncomposites(x::AbstractACSet) = nparts(x, :Composite)
@@ -47,7 +50,7 @@ children(x::AbstractACSet, c::Int) =
 box_parent(x::AbstractACSet, args...) = subpart(x, args..., :box_parent)
 box_children(x::AbstractACSet, args...) = incident(x, args..., :box_parent)
 
-@present TheoryNestedUWD <: TheoryUWDSchedule begin
+@present TheoryNestedUWD <: TheoryScheduledUWD begin
   CompositePort::Ob
 
   composite::Hom(CompositePort, Composite)
@@ -60,6 +63,8 @@ const AbstractNestedUWD = AbstractACSetType(TheoryNestedUWD)
 
 A nested UWD is a scheduled UWD whose composite nodes have been given ports,
 making explicit the intermediate boxes in the composition.
+
+See also: [`ScheduledUWD`](@ref).
 """
 const NestedUWD = CSetType(TheoryNestedUWD,
   index=[:box, :junction, :outer_junction,
@@ -94,7 +99,7 @@ the schedule will be evaluated multiple times, you should explicitly convert the
 schedule to a nested UWD using [`to_nested_diagram`](@ref) and then call
 `eval_schedule` on the resulting object instead.
 """
-eval_schedule(f, s::AbstractUWDSchedule, generators::AbstractVector) =
+eval_schedule(f, s::AbstractScheduledUWD, generators::AbstractVector) =
   eval_schedule(f, to_nested_diagram(s), generators)
 
 function eval_schedule(f, d::AbstractNestedUWD, generators::AbstractVector)
@@ -136,7 +141,7 @@ end
 
 """ Convert a scheduled UWD to a nested UWD.
 """
-function to_nested_diagram(s::AbstractUWDSchedule)
+function to_nested_diagram(s::AbstractScheduledUWD)
   d = NestedUWD()
   copy_parts!(d, s)
 
@@ -153,8 +158,8 @@ function to_nested_diagram(s::AbstractUWDSchedule)
       [ composite_junction(d, composite_ports(d, c′)) for c′ in children(d, c) ]
     ])))
 
-    # Filter for "outgoing" junctions, namely those incident to an outer port or
-    # to a port of a box that is not a descendant of this composite.
+    # Filter for "outgoing" junctions, namely those incident to any outer port
+    # or to any port of a box that is not a descendant of this composite.
     c_rep = n+c
     for b in box_children(d, c); union!(sets, c_rep, b) end
     for c′ in children(d, c); union!(sets, c_rep, n+c′) end
@@ -171,7 +176,6 @@ function to_nested_diagram(s::AbstractUWDSchedule)
   # Add ports to each composite, starting at roots.
   roots = filter(c -> parent(d, c) == c, composites(d))
   foreach(add_composite_ports!, roots)
-
   return d
 end
 
@@ -182,7 +186,7 @@ end
 
 This is the simplest possible scheduling algorithm, the equivalent of `foldl`
 for undirected wiring diagrams. Unless otherwise specified, the boxes are folded
-in according to the (arbitrary) order of their IDs.
+according to the order of their IDs, which is arbitrary.
 """
 sequential_schedule(d::AbstractUWD) = sequential_schedule(d, boxes(d))
 
@@ -191,7 +195,7 @@ function sequential_schedule(d::AbstractUWD, boxes::AbstractVector{Int})
   @assert length(boxes) == nb
   nc = max(1, nb-1)
 
-  schedule = UWDSchedule()
+  schedule = ScheduledUWD()
   copy_parts!(schedule, d)
   add_parts!(schedule, :Composite, nc, parent=[2:nc; nc])
   set_subpart!(schedule, boxes[1:min(2,nb)], :box_parent, 1)
