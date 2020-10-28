@@ -39,7 +39,7 @@ end
 ##################
 
 d = @tensor_network out[v,z] = A[v,w] * B[w,x] * C[x,y] * D[y,z]
-s = sequential_schedule(d, reverse(boxes(d)))
+s = schedule(d, order=reverse(boxes(d)))
 @test length(composites(s)) == 3
 @test parent(s) == [2,3,3]
 @test box_parent(s) == [3,2,1,1]
@@ -57,7 +57,7 @@ out = eval_schedule(general_tensor_contract, nd, matrices)
 ##############
 
 d = @tensor_network out[] = A[w,x] * B[x,y] * C[y,z] * D[z,w]
-s = sequential_schedule(d)
+s = schedule(d)
 nd = to_nested_diagram(s)
 @test parent(nd) == [2,3,3]
 @test box_parent(nd) == [1,1,2,3]
@@ -72,7 +72,7 @@ out = eval_schedule(general_tensor_contract, nd, matrices)
 #########
 
 d = @tensor_network out[w,x,y,z] = A[w,x] * B[y,z]
-s = sequential_schedule(d)
+s = schedule(d)
 @test parent(s) == [1]
 @test box_parent(s) == [1,1]
 

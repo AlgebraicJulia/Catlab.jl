@@ -5,9 +5,11 @@ composites of morphisms in hypergraph categories.
 """
 module ScheduleUndirectedWiringDiagrams
 export AbstractNestedUWD, AbstractScheduledUWD, NestedUWD, ScheduledUWD,
-  eval_schedule, to_nested_diagram, sequential_schedule
+  SchedulingAlgorithm, SequentialSchedule,
+  eval_schedule, to_nested_diagram, schedule
 
-using Compat: only
+import Base: schedule
+using Compat: isnothing, only
 using DataStructures: IntDisjointSets, union!, in_same_set
 
 using ...Present, ...CategoricalAlgebra.CSets, ...CategoricalAlgebra.FinSets
@@ -202,24 +204,39 @@ end
 # Scheduling
 ############
 
-""" Schedule UWD as a sequential chain of binary composites.
+abstract type SchedulingAlgorithm end
+
+""" Schedule diagram as a sequential chain of binary composites.
 
 This is the simplest possible scheduling algorithm, the equivalent of `foldl`
 for undirected wiring diagrams. Unless otherwise specified, the boxes are folded
 according to the order of their IDs, which is arbitrary.
 """
-sequential_schedule(d::AbstractUWD) = sequential_schedule(d, boxes(d))
+struct SequentialSchedule <: SchedulingAlgorithm end
 
-function sequential_schedule(d::AbstractUWD, boxes::AbstractVector{Int})
+""" Schedule an undirected wiring diagram.
+
+By default, a simple sequential schedule is used.
+"""
+function schedule(d::AbstractUWD;
+                  alg::SchedulingAlgorithm=SequentialSchedule(), kw...)
+  schedule(d, alg; kw...)
+end
+
+function schedule(d::AbstractUWD, ::SequentialSchedule;
+                  order::Union{AbstractVector{Int},Nothing}=nothing)
+  if isnothing(order)
+    order = boxes(d)
+  end
   nb = nboxes(d)
-  @assert length(boxes) == nb
+  @assert length(order) == nb
   nc = max(1, nb-1)
 
   schedule = ScheduledUWD()
   copy_parts!(schedule, d)
   add_parts!(schedule, :Composite, nc, parent=[2:nc; nc])
-  set_subpart!(schedule, boxes[1:min(2,nb)], :box_parent, 1)
-  set_subpart!(schedule, boxes[3:nb], :box_parent, 2:nc)
+  set_subpart!(schedule, order[1:min(2,nb)], :box_parent, 1)
+  set_subpart!(schedule, order[3:nb], :box_parent, 2:nc)
   schedule
 end
 
