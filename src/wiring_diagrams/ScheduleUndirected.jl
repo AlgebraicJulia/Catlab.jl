@@ -31,7 +31,10 @@ end
 
 const AbstractUWDSchedule = AbstractACSetType(TheoryUWDSchedule)
 
-""" TODO
+""" Schedule of an undirected wiring diagram.
+
+A schedule consists of a UWD together a set of *composites* forming a rooted
+tree, or in general a rooted forest, whose leaves are the diagram's boxes.
 """
 const UWDSchedule = CSetType(TheoryUWDSchedule,
   index=[:box, :junction, :outer_junction, :parent, :box_parent])
@@ -53,7 +56,10 @@ end
 
 const AbstractNestedUWD = AbstractACSetType(TheoryNestedUWD)
 
-""" TODO
+""" Nested undirected wiring diagram.
+
+A nested UWD is a scheduled UWD whose composite nodes have been given ports,
+making explicit the intermediate boxes in the composition.
 """
 const NestedUWD = CSetType(TheoryNestedUWD,
   index=[:box, :junction, :outer_junction,
@@ -68,13 +74,31 @@ composite_ports_with_junction(x::AbstractACSet, args...) =
 # Evaluation
 ############
 
-""" TODO
+""" Evaluate a scheduled UWD given a set of generators for the boxes.
+
+The first argument `f` is a function that should support the signature
+
+```
+f(values::AbstractVector,
+  juncs::AbstractVector{<:FinFunction{Int}},
+  outer_junc::FinFunction{Int})
+```
+
+where `values` is a list of generators corresponding to the atomic boxes of the
+diagram; `juncs` is an equal-length list of `FinSet` functions, mapping the
+ports of the generators to junctions; and `outer_junc` is a `FinSet` function
+mapping the outer ports to junctions.
+
+Nested UWDs are used as an intermediate data structure during the evaluation. If
+the schedule will be evaluated multiple times, you should explicitly convert the
+schedule to a nested UWD using [`to_nested_diagram`](@ref) and then call
+`eval_schedule` on the resulting object instead.
 """
 eval_schedule(f, s::AbstractUWDSchedule, generators::AbstractVector) =
   eval_schedule(f, to_nested_diagram(s), generators)
 
 function eval_schedule(f, d::AbstractNestedUWD, generators::AbstractVector)
-  # Evaluate `f` after normalizing junctions.
+  # Evaluate `f` after normalizing junctions to consecutive numbers 1:n.
   # Question: Should this normalization be optional? It's convenient but also
   # has some (small) cost.
   function do_eval(values, juncs, outer_junc)
@@ -110,7 +134,7 @@ function eval_schedule(f, d::AbstractNestedUWD, generators::AbstractVector)
   do_eval(values, juncs, junction(d, outer=true))
 end
 
-""" TODO
+""" Convert a scheduled UWD to a nested UWD.
 """
 function to_nested_diagram(s::AbstractUWDSchedule)
   d = NestedUWD()
@@ -129,14 +153,11 @@ function to_nested_diagram(s::AbstractUWDSchedule)
       [ composite_junction(d, composite_ports(d, c′)) for c′ in children(d, c) ]
     ])))
 
-    # Filter for "outgoing" junctions, having incident ports outside this node.
+    # Filter for "outgoing" junctions, namely those incident to an outer port or
+    # to a port of a box that is not a descendant of this composite.
     c_rep = n+c
-    for b in box_children(d, c)
-      union!(sets, c_rep, b)
-    end
-    for c′ in children(d, c)
-      union!(sets, c_rep, n+c′)
-    end
+    for b in box_children(d, c); union!(sets, c_rep, b) end
+    for c′ in children(d, c); union!(sets, c_rep, n+c′) end
     js = filter!(js) do j
       !(all(in_same_set(sets, c_rep, box(d, port))
             for port in ports_with_junction(d, j)) &&
@@ -160,8 +181,8 @@ end
 """ Schedule UWD as a sequential chain of binary composites.
 
 This is the simplest possible scheduling algorithm, the equivalent of `foldl`
-for undirected wiring diagrams. Unless otherwise specified, the box order is
-that of the box IDs in the diagram.
+for undirected wiring diagrams. Unless otherwise specified, the boxes are folded
+in according to the (arbitrary) order of their IDs.
 """
 sequential_schedule(d::AbstractUWD) = sequential_schedule(d, boxes(d))
 
