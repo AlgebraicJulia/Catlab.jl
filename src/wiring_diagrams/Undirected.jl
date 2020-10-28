@@ -25,9 +25,9 @@ import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,
   OuterPort::Ob
   Junction::Ob
 
-  box::Hom(Port,Box)
-  junction::Hom(Port,Junction)
-  outer_junction::Hom(OuterPort,Junction)
+  box::Hom(Port, Box)
+  junction::Hom(Port, Junction)
+  outer_junction::Hom(OuterPort, Junction)
 end
 
 const UndirectedWiringDiagram = const AbstractUWD = AbstractACSetType(TheoryUWD)
@@ -36,9 +36,9 @@ const UntypedUWD = CSetType(TheoryUWD, index=[:box, :junction, :outer_junction])
 @present TheoryTypedUWD <: TheoryUWD begin
   Type::Data
 
-  port_type::Attr(Port,Type)
-  outer_port_type::Attr(OuterPort,Type)
-  junction_type::Attr(Junction,Type)
+  port_type::Attr(Port, Type)
+  outer_port_type::Attr(OuterPort, Type)
+  junction_type::Attr(Junction, Type)
 
   compose(junction, junction_type) == port_type
   compose(outer_junction, junction_type) == outer_port_type
@@ -68,37 +68,44 @@ UndirectedWiringDiagram(port_types::AbstractVector{T}) where T =
 # Imperative interface
 ######################
 
-outer_box(::AbstractUWD) = 0
-box(d::AbstractUWD, args...) = subpart(d, args..., :box)
-junction(d::AbstractUWD, args...; outer::Bool=false) =
+# Accessors
+#----------
+
+outer_box(::AbstractACSet) = 0
+box(d::AbstractACSet, args...) = subpart(d, args..., :box)
+junction(d::AbstractACSet, args...; outer::Bool=false) =
   subpart(d, args..., outer ? :outer_junction : :junction)
 
-function junction(d::AbstractUWD, port::Tuple{Int,Int})
+function junction(d::AbstractACSet, port::Tuple{Int,Int})
   box, nport = port
   box == outer_box(d) ?
     junction(d, nport, outer=true) : junction(d, ports(d, box)[nport])
 end
 
-nboxes(d::AbstractUWD) = nparts(d, :Box)
-njunctions(d::AbstractUWD) = nparts(d, :Junction)
-boxes(d::AbstractUWD) = parts(d, :Box)
-junctions(d::AbstractUWD) = parts(d, :Junction)
+nboxes(d::AbstractACSet) = nparts(d, :Box)
+njunctions(d::AbstractACSet) = nparts(d, :Junction)
+boxes(d::AbstractACSet) = parts(d, :Box)
+junctions(d::AbstractACSet) = parts(d, :Junction)
 
-ports(d::AbstractUWD; outer::Bool=false) = parts(d, outer ? :OuterPort : :Port)
-ports(d::AbstractUWD, box) =
+ports(d::AbstractACSet; outer::Bool=false) =
+  parts(d, outer ? :OuterPort : :Port)
+ports(d::AbstractACSet, box) =
   box == outer_box(d) ? parts(d, :OuterPort) : incident(d, box, :box)
-ports_with_junction(d::AbstractUWD, junction; outer::Bool=false) =
+ports_with_junction(d::AbstractACSet, junction; outer::Bool=false) =
   incident(d, junction, outer ? :outer_junction : :junction)
 
-junction_type(d::AbstractUWD, args...) = subpart(d, args..., :junction_type)
-port_type(d::AbstractUWD, args...; outer::Bool=false) =
+junction_type(d::AbstractACSet, args...) = subpart(d, args..., :junction_type)
+port_type(d::AbstractACSet, args...; outer::Bool=false) =
   subpart(d, args..., outer ? :outer_port_type : :port_type)
 
-function port_type(d::AbstractUWD, port::Tuple{Int,Int})
+function port_type(d::AbstractACSet, port::Tuple{Int,Int})
   box, nport = port
   box == outer_box(d) ?
     port_type(d, nport, outer=true) : port_type(d, ports(d, box)[nport])
 end
+
+# Mutators
+#---------
 
 add_box!(d::AbstractUWD; data...) = add_part!(d, :Box; data...)
 
