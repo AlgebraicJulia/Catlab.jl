@@ -5,12 +5,13 @@ composites of morphisms in hypergraph categories.
 """
 module ScheduleUndirectedWiringDiagrams
 export AbstractNestedUWD, AbstractUWDSchedule, NestedUWD, UWDSchedule,
-  eval_nested_diagram, to_nested_diagram, sequential_schedule
+  eval_schedule, to_nested_diagram, sequential_schedule
 
 using Compat: only
 using DataStructures: IntDisjointSets, union!, in_same_set
 
-using ...Present, ...CategoricalAlgebra.CSets, ..UndirectedWiringDiagrams
+using ...Present, ...CategoricalAlgebra.CSets, ...CategoricalAlgebra.FinSets
+using ..UndirectedWiringDiagrams
 using ..UndirectedWiringDiagrams: TheoryUWD, flat
 
 const AbstractUWD = UndirectedWiringDiagram
@@ -69,18 +70,44 @@ composite_ports_with_junction(x::AbstractACSet, args...) =
 
 """ TODO
 """
-function eval_nested_diagram(f, d::AbstractNestedUWD, generators::AbstractVector)
-  function eval_composite(c::Int)
-    bs, cs = box_children(d, c), children(d, c)
-    values = [ generators[bs]; map(eval_composite, cs) ]
-    js = [ [junction(d, ports(d, b)) for b in bs];
-           [composite_junction(d, composite_ports(d, c′)) for c′ in cs] ]
-    outgoing_js = composite_junction(d, composite_ports(d, c))
-    f(values, js, outgoing_js)
+eval_schedule(f, s::AbstractUWDSchedule, generators::AbstractVector) =
+  eval_schedule(f, to_nested_diagram(s), generators)
+
+function eval_schedule(f, d::AbstractNestedUWD, generators::AbstractVector)
+  # Evaluate `f` after normalizing junctions.
+  # Question: Should this normalization be optional? It's convenient but also
+  # has some (small) cost.
+  function do_eval(values, juncs, outer_junc)
+    jmap = Dict{Int,Int}()
+    for j in Iterators.flatten((Iterators.flatten(juncs), outer_junc))
+      get!(jmap, j) do; length(jmap) + 1 end
+    end
+    njunc = length(jmap)
+    f(values, map(js -> FinFunction([jmap[j] for j in js], njunc), juncs),
+      FinFunction([jmap[j] for j in outer_junc], njunc))
   end
 
-  roots = filter(c -> parent(d, c) == c, composites(d))
-  eval_composite(only(roots))
+  # Mutually recursively evaluate children of composite `c`.
+  function eval_children(c::Int)
+    bs, cs = box_children(d, c), children(d, c)
+    values = [ generators[bs]; map(eval_composite, cs) ]
+    juncs = [ [junction(d, ports(d, b)) for b in bs];
+              [composite_junction(d, composite_ports(d, c′)) for c′ in cs] ]
+    (values, juncs)
+  end
+
+  # Mutually recursively evaluate composite `c`.
+  function eval_composite(c::Int)
+    values, juncs = eval_children(c)
+    outer_junc = composite_junction(d, composite_ports(d, c))
+    do_eval(values, juncs, outer_junc)
+  end
+
+  # Evaluate diagram starting at the root, assumed to be unique. The root
+  # composite must be handled specially due to outer ports.
+  root = only(filter(c -> parent(d, c) == c, composites(d)))
+  values, juncs = eval_children(root)
+  do_eval(values, juncs, junction(d, outer=true))
 end
 
 """ TODO
@@ -97,10 +124,10 @@ function to_nested_diagram(s::AbstractUWDSchedule)
     foreach(add_composite_ports!, children(d, c))
 
     # Get all junctions incident to any child box or child composite.
-    js = unique!(flat([
+    js = unique!(sort!(flat([
       [ junction(d, ports(d, b)) for b in box_children(d, c) ];
       [ composite_junction(d, composite_ports(d, c′)) for c′ in children(d, c) ]
-    ]))
+    ])))
 
     # Filter for "outgoing" junctions, having incident ports outside this node.
     c_rep = n+c
