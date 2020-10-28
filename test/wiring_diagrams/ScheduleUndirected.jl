@@ -1,7 +1,7 @@
 module TestScheduleUndirectedWiringDiagrams
 using Test
 
-using LinearAlgebra: tr
+using LinearAlgebra: dot, tr
 
 using Catlab.Theories: codom
 using Catlab.CategoricalAlgebra.CSets
@@ -68,8 +68,8 @@ matrices = map(randn, [(10,5), (5,5), (5,5), (5,10)])
 out = eval_schedule(general_tensor_contract, nd, matrices)
 @test out[] ≈ tr(foldl(*, matrices))
 
-# Product
-#########
+# Tensor product
+################
 
 d = @tensor_network out[w,x,y,z] = A[w,x] * B[y,z]
 s = schedule(d)
@@ -79,5 +79,17 @@ s = schedule(d)
 A, B = randn((3,4)), randn((5,6))
 out = eval_schedule(general_tensor_contract, s, [A, B])
 @test out ≈ (reshape(A, (3,4,1,1)) .* reshape(B, (1,1,5,6)))
+
+# Frobenius inner product
+#########################
+
+d = @tensor_network out[] = A[x,y] * B[x,y]
+s = schedule(d)
+@test parent(s) == [1]
+@test box_parent(s) == [1,1]
+
+A, B = randn((5,5)), randn((5,5))
+out = eval_schedule(general_tensor_contract, s, [A, B])
+@test out[] ≈ dot(vec(A), vec(B))
 
 end
