@@ -81,7 +81,7 @@ composite_ports_with_junction(x::AbstractACSet, args...) =
 
 """ Evaluate a scheduled UWD given a set of generators for the boxes.
 
-The first argument `f` is a function that should support the signature
+The first argument `f` should be a callabe supporting the signature
 
 ```
 f(values::AbstractVector,
@@ -89,15 +89,20 @@ f(values::AbstractVector,
   outer_junc::FinFunction{Int})
 ```
 
-where `values` is a list of generators corresponding to the atomic boxes of the
+where `values` is a list of computed values for boxes or composites in the
 diagram; `juncs` is an equal-length list of `FinSet` functions, mapping the
-ports of the generators to junctions; and `outer_junc` is a `FinSet` function
+ports of each value to junctions; and `outer_junc` is a `FinSet` function
 mapping the outer ports to junctions.
 
-Nested UWDs are used as an intermediate data structure during the evaluation. If
-the schedule will be evaluated multiple times, you should explicitly convert the
-schedule to a nested UWD using [`to_nested_diagram`](@ref) and then call
-`eval_schedule` on the resulting object instead.
+The length of lists `values` and `juncs` in each call depends on the schedule.
+Most scheduling algorithms will reduce the original UWD to binary composites, so
+that the length is always 2, apart from possible degenerate cases of nullary or
+unary composites.
+
+Nested UWDs are used as an auxiliary data structure during the evaluation. If
+the schedule will be evaluated multiple times, you should explicitly convert it
+to a nested UWD using [`to_nested_diagram`](@ref) and then call `eval_schedule`
+on the resulting object instead.
 """
 eval_schedule(f, s::AbstractScheduledUWD, generators::AbstractVector) =
   eval_schedule(f, to_nested_diagram(s), generators)
