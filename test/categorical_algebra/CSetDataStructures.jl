@@ -146,6 +146,8 @@ set_subpart!(d, [4,5], :parent, 5)
 @test subpart(d, 4, :parent) == 5
 @test subpart(d, :, :parent) == [4,4,4,5,5]
 @test incident(d, 4, :parent) == [1,2,3]
+@test incident(d, 4:5, :parent) isa SubArray{Vector{Int},1}
+@test incident(d, 4:5, :parent) == [[1,2,3], [4,5]]
 @test has_subpart(d, :height)
 @test subpart(d, [1,2,3], :height) == [0,0,0]
 @test subpart(d, 4, :height) == 10

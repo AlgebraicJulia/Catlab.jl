@@ -349,9 +349,11 @@ convention differs from DataFrames but note that the alternative interpretation
 of `[:src,:vattr]` as two independent columns does not even make sense, since
 they have different domains (belong to different tables).
 """
-subpart(acs::ACSet, part, name::Symbol) = view(subpart(acs, name), part)
-subpart(acs::ACSet, part::Int, name::Symbol) = subpart(acs, name)[part]
+subpart(acs::ACSet, part, name::Symbol) = view_slice(subpart(acs, name), part)
 subpart(acs::ACSet, name::Symbol) = _subpart(acs, Val(name))
+
+view_slice(x::AbstractVector, i) = view(x, i)
+view_slice(x::AbstractVector, i::Int) = x[i]
 
 function subpart(acs::ACSet, part, names::AbstractVector{Symbol})
   foldl(names, init=part) do part, name
@@ -413,7 +415,7 @@ incident(acs::ACSet, part, expr::GATExpr; kw...) =
   if name ∈ CD.hom
     if name ∈ Idxed
       quote
-        indices = acs.indices.$name[part]
+        indices = view_slice(acs.indices.$name, part)
         copy ? Base.copy.(indices) : indices
       end
     else
