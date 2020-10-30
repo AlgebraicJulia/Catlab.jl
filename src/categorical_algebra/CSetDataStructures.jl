@@ -328,8 +328,9 @@ end
 
 """ Get subpart of part in C-set.
 
-Both single and vectorized access are supported. Chaining, or composition, of
-subparts is also supported. For example, given a vertex-attributed graph `g`,
+Both single and vectorized access are supported, with a view of the underlying
+data being returned in the latter case. Chaining, or composition, of subparts is
+also supported. For example, given a vertex-attributed graph `g`,
 
 ```
 subpart(g, e, [:src, :vattr])
@@ -342,14 +343,15 @@ shorthand, subparts can also be accessed by indexing:
 g[e, :src] == subpart(g, e, :src)
 ```
 
-Be warned that indexing with lists of subparts works as above:
+Be warned that indexing with lists of subparts works just like `subpart`:
 `g[e,[:src,:vattr]]` is equivalent to `subpart(g, e, [:src,:vattr])`. This
-differs from DataFrames but note that the alternative interpretation of
-`[:src,:vattr]` as two independent columns does not even make sense, since they
-have different domains (belong to different tables).
+convention differs from DataFrames but note that the alternative interpretation
+of `[:src,:vattr]` as two independent columns does not even make sense, since
+they have different domains (belong to different tables).
 """
-subpart(acs::ACSet, part, name::Symbol) = subpart(acs,name)[part]
-subpart(acs::ACSet, name::Symbol) = _subpart(acs,Val(name))
+subpart(acs::ACSet, part, name::Symbol) = view(subpart(acs, name), part)
+subpart(acs::ACSet, part::Int, name::Symbol) = subpart(acs, name)[part]
+subpart(acs::ACSet, name::Symbol) = _subpart(acs, Val(name))
 
 function subpart(acs::ACSet, part, names::AbstractVector{Symbol})
   foldl(names, init=part) do part, name
