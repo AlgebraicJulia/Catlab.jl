@@ -230,11 +230,17 @@ end
 limit(cospan::Multicospan{<:FinSet{Int}}) = composite_pullback(cospan)
 
 function limit(d::FreeDiagram{<:FinSet{Int}})
-  p = product(ob(d))
-  n, leg = length(ob(p)), legs(p)
-  satisfy(e,x) = hom(d,e)(leg[src(d,e)](x)) == leg[tgt(d,e)](x)
-  f = FinFunction(filter(i -> all(satisfy(e,i) for e in edges(d)), 1:n), n)
-  Limit(d, Multispan(dom(f), [compose(f,leg[i]) for i in vertices(d)]))
+  # Uses the general formula for limits in Set (Leinster, 2014, Basic Category
+  # Theory, Example 5.1.22 / Equation 5.16).
+  prod = product(ob(d))
+  n, πs = length(ob(prod)), legs(prod)
+  f = FinFunction(filter(1:n) do i
+    all(begin
+          s, t, h = src(d,e), tgt(d,e), hom(d,e)
+          h(πs[s](i)) == πs[t](i)
+        end for e in edges(d))
+    end, n)
+  Limit(d, Multispan(dom(f), [compose(f,πs[i]) for i in vertices(d)]))
 end
 
 # Colimits
@@ -324,20 +330,22 @@ end
 colimit(span::Multispan{<:FinSet{Int}}) = composite_pushout(span)
 
 function colimit(d::FreeDiagram{<:FinSet{Int}})
+  # Uses the general formula for colimits in Set (Leinster, 2014, Basic Category
+  # Theory, Example 5.2.16).
   coprod = coproduct(ob(d))
-  n, leg = length(ob(coprod)), legs(coprod)
+  n, ιs = length(ob(coprod)), legs(coprod)
   sets = IntDisjointSets(n)
   for e in edges(d)
     s, t, h = src(d,e), tgt(d,e), hom(d,e)
     for i in dom(h)
-      union!(sets, leg[s](i), leg[t](h(i)))
+      union!(sets, ιs[s](i), ιs[t](h(i)))
     end
   end
   h = [ find_root!(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   m = length(roots)
   f = FinFunction([ searchsortedfirst(roots, r) for r in h ], m)
-  Colimit(d, Multicospan(FinSet(m), [ compose(leg[i],f) for i in vertices(d) ]))
+  Colimit(d, Multicospan(FinSet(m), [ compose(ιs[i],f) for i in vertices(d) ]))
 end
 
 end
