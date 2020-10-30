@@ -349,22 +349,28 @@ convention differs from DataFrames but note that the alternative interpretation
 of `[:src,:vattr]` as two independent columns does not even make sense, since
 they have different domains (belong to different tables).
 """
-subpart(acs::ACSet, part, name::Symbol) = view_slice(subpart(acs, name), part)
-subpart(acs::ACSet, name::Symbol) = _subpart(acs, Val(name))
+subpart(acs::ACSet, part, name) = view_slice(subpart(acs, name), part)
 
-view_slice(x::AbstractVector, i) = view(x, i)
-view_slice(x::AbstractVector, i::Int) = x[i]
+subpart(acs::ACSet, name::Symbol) = _subpart(acs, Val(name))
+subpart(acs::ACSet, expr::GATExpr{:generator}) = subpart(acs, first(expr))
+subpart(acs::ACSet, expr::GATExpr{:id}) = parts(acs, first(dom(expr)))
 
 function subpart(acs::ACSet, part, names::AbstractVector{Symbol})
   foldl(names, init=part) do part, name
     subpart(acs, part, name)
   end
 end
-subpart(acs::ACSet, part, expr::GATExpr) = subpart(acs, part, subpart_name(expr))
+subpart(acs::ACSet, part, expr::GATExpr{:compose}) =
+  subpart(acs, part, subpart_names(expr))
 
-subpart_name(expr::GATExpr{:generator}) = first(expr)::Symbol
-subpart_name(expr::GATExpr{:id}) = Symbol[]
-subpart_name(expr::GATExpr{:compose}) = mapreduce(subpart_name, vcat, args(expr))
+subpart(acs::ACSet, names::AbstractVector{Symbol}) =
+  subpart(acs, subpart(acs, names[1]), names[2:end])
+subpart(acs::ACSet, expr::GATExpr{:compose}) = subpart(acs, subpart_names(expr))
+
+subpart_names(expr::GATExpr{:generator}) = Symbol[first(expr)]
+subpart_names(expr::GATExpr{:id}) = Symbol[]
+subpart_names(expr::GATExpr{:compose}) =
+  mapreduce(subpart_names, vcat, args(expr))
 
 @generated function _subpart(acs::ACSet{CD,AD,Ts}, ::Val{name}) where
     {CD,AD,Ts,name}
@@ -378,6 +384,9 @@ subpart_name(expr::GATExpr{:compose}) = mapreduce(subpart_name, vcat, args(expr)
 end
 
 Base.getindex(acs::ACSet, args...) = subpart(acs, args...)
+
+view_slice(x::AbstractVector, i) = view(x, i)
+view_slice(x::AbstractVector, i::Int) = x[i]
 
 """ Get superparts incident to part in C-set.
 
@@ -408,7 +417,7 @@ function incident(acs::ACSet, part, names::AbstractVector{Symbol};
   end
 end
 incident(acs::ACSet, part, expr::GATExpr; kw...) =
-  incident(acs, part, subpart_name(expr); kw...)
+  incident(acs, part, subpart_names(expr); kw...)
 
 @generated function _incident(acs::ACSet{CD,AD,Ts,Idxed}, part, ::Val{name};
                               copy::Bool=false) where {CD,AD,Ts,Idxed,name}

@@ -164,6 +164,9 @@ X, parent, height = TheoryDendrogram[[:X, :parent, :height]]
 @test subpart(d, 3, compose(parent, height)) == 10
 @test subpart(d, 3, id(X)) == 3
 @test incident(d, 10, compose(parent, height)) == [1,2,3]
+@test subpart(d, parent) == [4,4,4,5,5]
+@test subpart(d, id(X)) == 1:5
+@test subpart(d, compose(parent, height)) == [10,10,10,20,20]
 
 # Indexing syntax.
 @test d[3, :parent] == 4
