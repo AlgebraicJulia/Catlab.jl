@@ -63,7 +63,7 @@ function normalize_copy!(d::WiringDiagram)
   # Keep only the designated representative of each equivalence class.
   extra = Int[]
   for v in box_ids(d)
-    rep = find_root(sets, v)
+    rep = find_root!(sets, v)
     if v != rep
       for wire in out_wires(d, v)
         add_wire!(d, Wire(set_box(wire.source, rep), wire.target))
@@ -93,7 +93,7 @@ function is_congruent(d::WiringDiagram, sets::IntDisjointSets, v1::Int, v2::Int)
     @assert n1 <= 1 && n2 <= 1 # TODO: Handle merges?
     n1 == n2 && all(zip(wires1, wires2)) do pair
       src1, src2 = pair[1].source, pair[2].source
-      rep1, rep2 = find_root(sets, src1.box), find_root(sets, src2.box)
+      rep1, rep2 = find_root!(sets, src1.box), find_root!(sets, src2.box)
       set_box(src1, rep1) == set_box(src2, rep2)
     end
   end

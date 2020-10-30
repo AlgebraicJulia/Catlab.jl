@@ -6,7 +6,7 @@ export FinSet, FinFunction, FinFunctionCallable, FinFunctionVector, force
 using Compat: only
 
 using AutoHashEquals
-using DataStructures: IntDisjointSets, union!, find_root
+using DataStructures: IntDisjointSets, union!, find_root!
 import FunctionWrappers: FunctionWrapper
 
 using ...GAT
@@ -283,7 +283,7 @@ function colimit(pair::ParallelPair{<:FinSet{Int}})
   for i in 1:m
     union!(sets, f(i), g(i))
   end
-  h = [ find_root(sets, i) for i in 1:n ]
+  h = [ find_root!(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   coeq = FinFunction([ searchsortedfirst(roots, r) for r in h], length(roots))
   Colimit(pair, SMulticospan{1}(coeq))
@@ -299,7 +299,7 @@ function colimit(para::ParallelMorphisms{<:FinSet{Int}})
       union!(sets, f1(i), f(i))
     end
   end
-  h = [ find_root(sets, i) for i in 1:n ]
+  h = [ find_root!(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   coeq = FinFunction([ searchsortedfirst(roots, r) for r in h ], length(roots))
   Colimit(para, SMulticospan{1}(coeq))
@@ -333,7 +333,7 @@ function colimit(d::FreeDiagram{<:FinSet{Int}})
       union!(sets, leg[s](i), leg[t](h(i)))
     end
   end
-  h = [ find_root(sets, i) for i in 1:n ]
+  h = [ find_root!(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   m = length(roots)
   f = FinFunction([ searchsortedfirst(roots, r) for r in h ], m)
