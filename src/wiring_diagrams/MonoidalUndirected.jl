@@ -80,10 +80,11 @@ otimes(f::UWD, g::UWD) where UWD <: AbstractUWD = disjoint_union(f, g)
 
 """ List of port types representing outer boundary of undirected wiring diagram.
 """
-@auto_hash_equals struct ObUWD{UWD <: AbstractUWD, T}
-  types::Vector{T}
+@auto_hash_equals struct ObUWD{UWD <: AbstractUWD, Types <: AbstractVector}
+  types::Types
 end
-ObUWD{UWD}(types::Vector{T}) where {UWD<:AbstractUWD,T} = ObUWD{UWD,T}(types)
+ObUWD{UWD}(types::Types) where {UWD<:AbstractUWD, Types<:AbstractVector} =
+  ObUWD{UWD,Types}(types)
 
 Base.length(A::ObUWD) = length(A.types)
 Base.cat(A::ObUWD{UWD}, B::ObUWD{UWD}) where UWD =
@@ -119,7 +120,7 @@ HomUWD(diagram::UWD; kw...) where UWD <: AbstractUWD =
 dom_mask(f::HomUWD) = f.dom
 codom_mask(f::HomUWD) = .!f.dom
 
-const HypergraphDiagramOb{T,Name} = ObUWD{HypergraphDiagram{T,Name},T}
+const HypergraphDiagramOb{T,Name} = ObUWD{HypergraphDiagram{T,Name}}
 const HypergraphDiagramHom{T,Name} = HomUWD{HypergraphDiagram{T,Name}}
 
 dom_ports(f::HomUWD) = ports(f.diagram, outer=true)[dom_mask(f)]
