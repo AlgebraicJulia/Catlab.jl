@@ -215,6 +215,16 @@ unpack_diagram(cospan::Multicospan{<:AbstractACSet}) =
 unpack_diagram(para::ParallelMorphisms{<:AbstractACSet}) =
   map(ParallelMorphisms, unpack_components(hom(para)))
 
+function unpack_diagram(diagram::FreeDiagram{<:AbstractACSet})
+  map(unpack_finsets(ob(diagram)),
+      unpack_components(hom(diagram))) do sets, funcs
+    d = FreeDiagram{FinSet{Int,Int},FinFunction{Int}}()
+    add_vertices!(d, nv(diagram), ob=sets)
+    add_edges!(d, src(diagram), tgt(diagram), hom=funcs)
+    d
+  end
+end
+
 """ Vector of C-sets → named tuple of vectors of FinSets
 """
 unpack_finsets(Xs::AbstractVector{<:AbstractACSet{CD}}) where

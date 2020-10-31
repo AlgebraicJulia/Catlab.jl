@@ -112,6 +112,13 @@ lim = pullback(ϕ, ψ)
   [(2,3), (2,3), (3,3), (3,3)]
 @test is_natural(proj1(lim)) && is_natural(proj2(lim))
 
+# Same pullback using generic limit interface.
+diagram = FreeDiagram([g1, g2, g0], [(ϕ,1,3), (ψ,2,3)])
+π1, π2, _ = lim′ = limit(diagram)
+@test ob(lim′) == ob(lim)
+@test force(π1) == force(proj1(lim))
+@test force(π2) == force(proj2(lim))
+
 # Colimits
 #---------
 
@@ -163,6 +170,15 @@ colim = pushout(α, β)
 @test src(ob(colim)) == [1,2]
 @test tgt(ob(colim)) == [2,2]
 @test is_natural(coproj1(colim)) && is_natural(coproj2(colim))
+
+# Same pushout using generic colimit interface.
+#diagram = FreeDiagram([Graph(1), g, ob(terminal(Graph))], [(α,1,2), (β,1,3)])
+# ^ This diagram gives colimit that is isomorphic but not equal!
+diagram = FreeDiagram([g, ob(terminal(Graph)), Graph(1)], [(α,3,1), (β,3,2)])
+ι1, ι2, _ = colim′ = colimit(diagram)
+@test ob(colim′) == ob(colim)
+@test force(ι1) == force(coproj1(colim))
+@test force(ι2) == force(coproj2(colim))
 
 # Attributed C-set morphisms
 ############################

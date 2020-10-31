@@ -195,8 +195,8 @@ k = FinFunction([1,2,5])
 @test_throws AssertionError copair(colim,h,k)
 
 # Same thing with generic colimit interface
-diag = FreeDiagram([FinSet(1),FinSet(2),FinSet(3)],[(f,1,2), (g,1,3)])
-colim = colimit(diag)
+diagram = FreeDiagram([FinSet(1),FinSet(2),FinSet(3)],[(f,1,2), (g,1,3)])
+colim = colimit(diagram)
 @test ob(colim) == FinSet(4)
 _, ι1, ι2 = colim
 @test compose(f,ι1) == compose(g,ι2)
@@ -218,8 +218,8 @@ colim = pushout(f,g)
 @test ι2 == FinFunction([1,1], 2)
 
 # Same thing with generic colimit interface
-diag = FreeDiagram([FinSet(2),FinSet(2),FinSet(2)],[(f,1,2),(g,1,3)])
-colim = colimit(diag)
+diagram = FreeDiagram([FinSet(2),FinSet(2),FinSet(2)],[(f,1,2),(g,1,3)])
+colim = colimit(diagram)
 @test ob(colim) == FinSet(2)
 _, ι1, ι2 = colim
 @test compose(f,ι1) == compose(g,ι2)
