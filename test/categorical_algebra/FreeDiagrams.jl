@@ -9,12 +9,12 @@ A, B, C, D = Ob(FreeCategory, :A, :B, :C, :D)
 ##################
 
 f, g, h = Hom(:f, A, C), Hom(:g, B, C), Hom(:h, A, B)
-diagram = FreeDiagram([A,B,C], [(1,3,f),(2,3,g),(1,2,h)])
+diagram = FreeDiagram([A,B,C], [(f,1,3),(g,2,3),(h,1,2)])
 @test ob(diagram) == [A,B,C]
 @test hom(diagram) == [f,g,h]
 @test src(diagram) == [1,2,1]
 @test tgt(diagram) == [3,3,2]
-@test_throws Exception FreeDiagram([A,B,C], [(1,2,f),(2,3,g),(1,2,h)])
+@test_throws Exception FreeDiagram([A,B,C], [(f,1,2),(g,2,3),(h,1,2)])
 
 # Diagrams of fixed shape
 #########################

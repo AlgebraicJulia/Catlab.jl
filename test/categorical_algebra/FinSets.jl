@@ -109,7 +109,7 @@ f, g = FinFunction([1,1,2]), FinFunction([3,2,1])
 
 # Pullback using generic limit interface
 f, g = FinFunction([1,1,3,2],4), FinFunction([1,1,4,2],4)
-lim = limit(FreeDiagram([FinSet(4),FinSet(4),FinSet(4)], [(1,3,f),(2,3,g)]))
+lim = limit(FreeDiagram([FinSet(4),FinSet(4),FinSet(4)], [(f,1,3),(g,2,3)]))
 @test ob(lim) == FinSet(5)
 π1, π2 = legs(lim)[1:2]
 @test force(π1) == FinFunction([1,2,1,2,4], 4)
@@ -195,7 +195,7 @@ k = FinFunction([1,2,5])
 @test_throws AssertionError copair(colim,h,k)
 
 # Same thing with generic colimit interface
-diag = FreeDiagram([FinSet(1),FinSet(2),FinSet(3)],[(1,2,f), (1,3,g)])
+diag = FreeDiagram([FinSet(1),FinSet(2),FinSet(3)],[(f,1,2), (g,1,3)])
 colim = colimit(diag)
 @test ob(colim) == FinSet(4)
 _, ι1, ι2 = colim
@@ -218,7 +218,7 @@ colim = pushout(f,g)
 @test ι2 == FinFunction([1,1], 2)
 
 # Same thing with generic colimit interface
-diag = FreeDiagram([FinSet(2),FinSet(2),FinSet(2)],[(1,2,f),(1,3,g)])
+diag = FreeDiagram([FinSet(2),FinSet(2),FinSet(2)],[(f,1,2),(g,1,3)])
 colim = colimit(diag)
 @test ob(colim) == FinSet(2)
 _, ι1, ι2 = colim
