@@ -203,6 +203,11 @@ _, ι1, ι2 = colim
 @test ι1 == FinFunction([1,2], 4)
 @test ι2 == FinFunction([3,1,4], 4)
 
+h, k = FinFunction([3,5]), FinFunction([1,3,5])
+ℓ = universal(colim, Multicospan([f⋅h, h, k])) # f⋅h == g⋅k
+@test force(ι1 ⋅ ℓ) == h
+@test force(ι2 ⋅ ℓ) == k
+
 # Pushout from a two-element set, with non-injective legs.
 f, g = FinFunction([1,1], 2), FinFunction([1,2], 2)
 colim = pushout(f,g)

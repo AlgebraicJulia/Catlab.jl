@@ -334,9 +334,14 @@ end
 
 function universal(coeq::Coequalizer{<:FinSet{Int}},
                    cocone::SMulticospan{1,<:FinSet{Int}})
-  q = zeros(Int, length(ob(coeq)))
-  π = proj(coeq)
-  h = only(cocone)
+  pass_to_quotient(proj(coeq), only(cocone))
+end
+
+""" Given h: X → Y, pass to quotient q: X/~ → Y under projection π: X → X/~.
+"""
+function pass_to_quotient(π::FinFunction{Int}, h::FinFunction{Int})
+  @assert dom(π) == dom(h)
+  q = zeros(Int, length(codom(π)))
   for i in dom(h)
     j = π(i)
     if q[j] == 0
@@ -345,10 +350,24 @@ function universal(coeq::Coequalizer{<:FinSet{Int}},
       @assert q[j] == h(i) "Quotient map out of coequalizer is ill-defined"
     end
   end
+  @assert all(i > 0 for i in q) "Projection map is not surjective"
   FinFunction(q, codom(h))
 end
 
 colimit(span::Multispan{<:FinSet{Int}}) = composite_pushout(span)
+
+""" Colimit of free diagram of FinSets.
+
+See `CompositePushout` for a very similar construction.
+"""
+struct FinSetFreeDiagramColimit{Ob<:FinSet, Diagram<:FreeDiagram{Ob},
+                                Cocone<:Multicospan{Ob}, Coprod<:Coproduct{Ob},
+                                Proj<:FinFunction} <: AbstractColimit{Ob,Diagram}
+  diagram::Diagram
+  cocone::Cocone
+  coprod::Coprod
+  proj::Proj # Projection for the "multi-coequalizer" in general formula.
+end
 
 function colimit(d::FreeDiagram{<:FinSet{Int}})
   # Uses the general formula for colimits in Set (Leinster, 2014, Basic Category
@@ -365,8 +384,15 @@ function colimit(d::FreeDiagram{<:FinSet{Int}})
   h = [ find_root!(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   m = length(roots)
-  f = FinFunction([ searchsortedfirst(roots, r) for r in h ], m)
-  Colimit(d, Multicospan(FinSet(m), [ compose(ιs[i],f) for i in vertices(d) ]))
+  π = FinFunction([ searchsortedfirst(roots, r) for r in h ], m)
+  cocone = Multicospan(FinSet(m), [ compose(ιs[i],π) for i in vertices(d) ])
+  FinSetFreeDiagramColimit(d, cocone, coprod, π)
+end
+
+function universal(colim::FinSetFreeDiagramColimit,
+                   cocone::Multicospan{<:FinSet{Int}})
+  h = universal(colim.coprod, cocone)
+  pass_to_quotient(colim.proj, h)
 end
 
 end
