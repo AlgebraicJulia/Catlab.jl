@@ -224,23 +224,44 @@ function universal(lim::Equalizer{<:FinSet{Int}},
                    cone::SMultispan{1,<:FinSet{Int}})
   ι = collect(incl(lim))
   h = only(cone)
-  FinFunction(Int[only(searchsorted(ι, i)) for i in collect(h)], length(ι))
+  FinFunction(Int[only(searchsorted(ι, h(i))) for i in dom(h)], length(ι))
 end
 
 limit(cospan::Multicospan{<:FinSet{Int}}) = composite_pullback(cospan)
+
+""" Limit of free diagram of FinSets.
+
+See `CompositePullback` for a very similar construction.
+"""
+struct FinSetFreeDiagramLimit{Ob<:FinSet, Diagram<:FreeDiagram{Ob},
+                              Cone<:Multispan{Ob}, Prod<:Product{Ob},
+                              Incl<:FinFunction} <: AbstractLimit{Ob,Diagram}
+  diagram::Diagram
+  cone::Cone
+  prod::Prod
+  incl::Incl # Inclusion for the "multi-equalizer" in general formula.
+end
 
 function limit(d::FreeDiagram{<:FinSet{Int}})
   # Uses the general formula for limits in Set (Leinster, 2014, Basic Category
   # Theory, Example 5.1.22 / Equation 5.16).
   prod = product(ob(d))
   n, πs = length(ob(prod)), legs(prod)
-  f = FinFunction(filter(1:n) do i
+  ι = FinFunction(filter(1:n) do i
     all(begin
           s, t, h = src(d,e), tgt(d,e), hom(d,e)
           h(πs[s](i)) == πs[t](i)
         end for e in edges(d))
     end, n)
-  Limit(d, Multispan(dom(f), [compose(f,πs[i]) for i in vertices(d)]))
+  cone = Multispan(dom(ι), [compose(ι,πs[i]) for i in vertices(d)])
+  FinSetFreeDiagramLimit(d, cone, prod, ι)
+end
+
+function universal(lim::FinSetFreeDiagramLimit, cone::Multispan{<:FinSet{Int}})
+  ι = collect(lim.incl)
+  h = universal(lim.prod, cone)
+  FinFunction(Int[only(searchsorted(ι, h(i))) for i in dom(h)],
+              apex(cone), ob(lim))
 end
 
 # Colimits

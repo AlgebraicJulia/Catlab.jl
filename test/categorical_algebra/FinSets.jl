@@ -111,8 +111,14 @@ f, g = FinFunction([1,1,2]), FinFunction([3,2,1])
 f, g = FinFunction([1,1,3,2],4), FinFunction([1,1,4,2],4)
 lim = limit(FreeDiagram([FinSet(4),FinSet(4),FinSet(4)], [(1,3,f),(2,3,g)]))
 @test ob(lim) == FinSet(5)
-@test force.(legs(lim)[1:2]) ==
-  [FinFunction([1,2,1,2,4],4), FinFunction([1,1,2,2,4],4)]
+π1, π2 = legs(lim)[1:2]
+@test force(π1) == FinFunction([1,2,1,2,4], 4)
+@test force(π2) == FinFunction([1,1,2,2,4], 4)
+
+f′, g′ = FinFunction([1,2,4]), FinFunction([2,1,4])
+h = universal(lim, Multispan([f′, g′, f′⋅f])) # f′⋅f == g′⋅g
+@test force(h ⋅ π1) == f′
+@test force(h ⋅ π2) == g′
 
 # Colimits
 #---------
