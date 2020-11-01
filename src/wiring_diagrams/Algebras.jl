@@ -1,6 +1,7 @@
 """ Algebras of the operads of wiring diagrams.
 """
 module WiringDiagramAlgebras
+export oapply
 
 using ...CategoricalAlgebra
 using ..UndirectedWiringDiagrams
@@ -8,11 +9,13 @@ using ..UndirectedWiringDiagrams
 # UWD algebra of structured multicospans
 ########################################
 
-""" Compose structured multicospans according to undirected wiring diagram.
+""" Compose structured multicospans according to UWD.
 
-In this way, structured multicospans are an algebra of the operad of UWDs.
+This function makes structured multicospans into an algebra of the operad of
+undirected wiring diagrams.
 """
-function (composite::UndirectedWiringDiagram)(cospans::AbstractVector{SCosp}) where
+function oapply(composite::UndirectedWiringDiagram,
+                cospans::AbstractVector{SCosp}) where
     {Ob, Hom, Cosp <: Multicospan{Ob,<:AbstractVector{Hom}},
      L, SCosp <: StructuredMulticospan{L,Cosp}}
   # Create free diagram whose generating graph is a bipartite graph of the UWD's
@@ -35,7 +38,7 @@ function (composite::UndirectedWiringDiagram)(cospans::AbstractVector{SCosp}) wh
   colim = colimit(diagram)
   outer_legs = legs(colim)[jmap[junction(composite, outer=true)]]
   cospan = Multicospan(ob(colim), outer_legs)
-  feet = [ right(L, dom(leg)) for leg in outer_legs ]
+  feet = map(leg -> right(L, dom(leg)), outer_legs)
   StructuredMulticospan{L}(cospan, feet)
 end
 

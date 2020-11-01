@@ -24,7 +24,7 @@ seq = @relation (a,c) where (a,b,c) begin
   g(a,b)
   h(b,c)
 end
-k = seq([g, h])
+k = oapply(seq, [g, h])
 @test length(legs(k)) == 2
 @test feet(k) == [first(feet(g)), last(feet(h))]
 k0 = apex(k)
@@ -40,7 +40,7 @@ para = @relation (a,b,c,d) where (a,b,c,d) begin
   g(a,b)
   h(c,d)
 end
-k = para([g, h])
+k = oapply(para, [g, h])
 @test length(legs(k)) == 4
 @test feet(k) == [feet(g); feet(h)]
 k0 = apex(k)
