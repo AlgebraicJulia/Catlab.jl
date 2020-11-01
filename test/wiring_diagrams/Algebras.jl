@@ -19,7 +19,7 @@ h0 = Graph(4)
 add_edges!(h0, [1,2,3], [3,3,4])
 h = OpenGraph(h0, FinFunction([1,2],4), FinFunction([4],4))
 
-# Composition in sequence.
+# Sequential composition.
 seq = @relation (a,c) where (a,b,c) begin
   g(a,b)
   h(b,c)
@@ -35,7 +35,7 @@ k0 = apex(k)
 # Composite graph is isomorphic to that with standard labeling.
 @test [ collect(leg[:V]) for leg in legs(k) ] == [[3], [6]]
 
-# Composition in parallel.
+# Parallel composition.
 para = @relation (a,b,c,d) where (a,b,c,d) begin
   g(a,b)
   h(c,d)
@@ -45,5 +45,11 @@ k = oapply(para, [g, h])
 @test feet(k) == [feet(g); feet(h)]
 k0 = apex(k)
 @test (nv(k0), ne(k0)) == (8, 6)
+
+# Identity for sequential composition.
+seq_id = @relation (a,a) where (a,) begin end
+k = oapply(seq_id, typeof(g)[], [FinSet(3)])
+@test apex(k) == Graph(3)
+@test feet(k) == [FinSet(3), FinSet(3)]
 
 end
