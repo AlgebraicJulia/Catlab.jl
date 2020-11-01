@@ -292,20 +292,6 @@ function (::Type{L})(a::AbstractACSet) where {A,X,L<:DiscreteACSet{A,X}}
   x
 end
 
-""" Apply right adjoint R: C-Set → FinSet to object.
-"""
-function right(::Type{L}, x::X) where {ob₀,X,L<:FinSetDiscreteACSet{ob₀,X}}
-  FinSet(nparts(x, ob₀))
-end
-
-""" Apply right adjoint R: C-Set → C₀-Set to object.
-"""
-function right(::Type{L}, x::X) where {A,X,L<:DiscreteACSet{A,X}}
-  a = A()
-  copy_parts_only!(a, x)
-  a
-end
-
 """ Apply left adjoint L: FinSet → C-Set to morphism.
 """
 function (::Type{L})(f::FinFunction{Int}) where
