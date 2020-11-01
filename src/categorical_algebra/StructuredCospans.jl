@@ -177,7 +177,7 @@ munit_like(a::StructuredCospanOb{L}) where L = munit(StructuredCospanOb{L})
 """ Create types for open C-sets from a C-set type.
 
 Returns two types, for objects, a subtype of [`StructuredCospanOb`](@ref), and
-for morphisms, a subtype of [`StructuredCospan`](@ref).
+for morphisms, a subtype of [`StructuredMulticospan`](@ref).
 
 See also: [`OpenACSetTypes`](@ref).
 """
@@ -185,7 +185,7 @@ function OpenCSetTypes(::Type{X}, ob₀::Symbol) where
     {CD<:CatDesc, X<:AbstractCSet{CD}}
   @assert ob₀ ∈ CD.ob
   L = FinSetDiscreteACSet{ob₀, X}
-  (StructuredCospanOb{L}, StructuredCospan{L})
+  (StructuredCospanOb{L}, StructuredMulticospan{L})
 end
 
 """ Create types for open attributed C-sets from an attributed C-set type.
@@ -206,14 +206,20 @@ function OpenACSetTypes(::Type{X}, ob₀::Symbol) where
     FinSetDiscreteACSet{ob₀, X{type_vars...}}
   end
   (foldr(UnionAll, type_vars, init=StructuredCospanOb{L}),
-   foldr(UnionAll, type_vars, init=StructuredCospan{L}))
+   foldr(UnionAll, type_vars, init=StructuredMulticospan{L}))
 end
 
+""" Abstract type for functor L: A → X giving a discrete C-set.
+"""
 abstract type AbstractDiscreteACSet{X <: AbstractACSet} end
 
 StructuredCospan{L}(x::AbstractACSet, f::FinFunction{Int},
                     g::FinFunction{Int}) where {L<:AbstractDiscreteACSet} =
   StructuredCospan{L}(x, Cospan(f, g))
+
+StructuredMulticospan{L}(x::AbstractACSet, fs::Vararg{<:FinFunction{Int},N}) where
+    {L<:AbstractDiscreteACSet, N} =
+  StructuredMulticospan{L}(x, SMulticospan{N}(fs...))
 
 force(M::StructuredMulticospan{L}) where {L<:AbstractDiscreteACSet} =
   StructuredMulticospan{L}(
@@ -239,13 +245,13 @@ struct DiscreteACSet{A <: AbstractACSet, X} <: AbstractDiscreteACSet{X} end
 
 dom(::Type{<:DiscreteACSet{A}}) where A = A
 
-function StructuredCospan{L}(x::AbstractACSet, cospan::Cospan{<:FinSet{Int}}) where
+function StructuredMulticospan{L}(x::AbstractACSet,
+                                  cospan::Multicospan{<:FinSet{Int}}) where
     {A, L <: DiscreteACSet{A}}
   a = A()
   copy_parts_only!(a, x)
-  f, g = cospan
-  ϕ, ψ = induced_transformation(a, f), induced_transformation(a, g)
-  StructuredCospan{L}(x, Cospan(a, ϕ, ψ))
+  induced_legs = map(leg -> induced_transformation(a, leg), legs(cospan))
+  StructuredMulticospan{L}(x, Multicospan(a, induced_legs))
 end
 
 function StructuredCospanOb{L}(set::FinSet{Int}; kw...) where
@@ -284,6 +290,20 @@ function (::Type{L})(a::AbstractACSet) where {A,X,L<:DiscreteACSet{A,X}}
   x = X()
   copy_parts_only!(x, a)
   x
+end
+
+""" Apply right adjoint R: C-Set → FinSet to object.
+"""
+function right(::Type{L}, x::X) where {ob₀,X,L<:FinSetDiscreteACSet{ob₀,X}}
+  FinSet(nparts(x, ob₀))
+end
+
+""" Apply right adjoint R: C-Set → C₀-Set to object.
+"""
+function right(::Type{L}, x::X) where {A,X,L<:DiscreteACSet{A,X}}
+  a = A()
+  copy_parts_only!(a, x)
+  a
 end
 
 """ Apply left adjoint L: FinSet → C-Set to morphism.

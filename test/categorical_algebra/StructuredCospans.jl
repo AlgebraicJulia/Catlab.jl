@@ -9,8 +9,6 @@ using Catlab.Graphs.BasicGraphs: TheoryGraph
 ##############################
 
 const OpenGraphOb, OpenGraph = OpenCSetTypes(Graph, :V)
-@test OpenGraphOb <: StructuredCospanOb
-@test OpenGraph <: StructuredCospan
 
 # Directed fork as open graph with one input and two outputs.
 g0 = Graph(4)

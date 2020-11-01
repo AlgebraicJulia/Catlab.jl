@@ -6,6 +6,7 @@ include("Directed.jl")
 include("Undirected.jl")
 include("MonoidalDirected.jl")
 include("MonoidalUndirected.jl")
+include("Algebras.jl")
 include("Algorithms.jl")
 include("Expressions.jl")
 include("ScheduleUndirected.jl")
@@ -14,6 +15,7 @@ include("ScheduleUndirected.jl")
 @reexport using .UndirectedWiringDiagrams
 @reexport using .MonoidalDirectedWiringDiagrams
 @reexport using .MonoidalUndirectedWiringDiagrams
+@reexport using .WiringDiagramAlgebras
 @reexport using .WiringDiagramAlgorithms
 @reexport using .WiringDiagramExpressions
 @reexport using .ScheduleUndirectedWiringDiagrams
