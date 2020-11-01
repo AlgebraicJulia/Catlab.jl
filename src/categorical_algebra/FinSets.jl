@@ -6,7 +6,7 @@ export FinSet, FinFunction, FinFunctionCallable, FinFunctionVector, force
 using Compat: only
 
 using AutoHashEquals
-using DataStructures: IntDisjointSets, union!, find_root
+using DataStructures: IntDisjointSets, union!, find_root!
 import FunctionWrappers: FunctionWrapper
 
 using ...GAT
@@ -224,17 +224,44 @@ function universal(lim::Equalizer{<:FinSet{Int}},
                    cone::SMultispan{1,<:FinSet{Int}})
   ι = collect(incl(lim))
   h = only(cone)
-  FinFunction(Int[only(searchsorted(ι, i)) for i in collect(h)], length(ι))
+  FinFunction(Int[only(searchsorted(ι, h(i))) for i in dom(h)], length(ι))
 end
 
 limit(cospan::Multicospan{<:FinSet{Int}}) = composite_pullback(cospan)
 
+""" Limit of free diagram of FinSets.
+
+See `CompositePullback` for a very similar construction.
+"""
+struct FinSetFreeDiagramLimit{Ob<:FinSet, Diagram<:FreeDiagram{Ob},
+                              Cone<:Multispan{Ob}, Prod<:Product{Ob},
+                              Incl<:FinFunction} <: AbstractLimit{Ob,Diagram}
+  diagram::Diagram
+  cone::Cone
+  prod::Prod
+  incl::Incl # Inclusion for the "multi-equalizer" in general formula.
+end
+
 function limit(d::FreeDiagram{<:FinSet{Int}})
-  p = product(ob(d))
-  n, leg = length(ob(p)), legs(p)
-  satisfy(e,x) = hom(d,e)(leg[src(d,e)](x)) == leg[tgt(d,e)](x)
-  f = FinFunction(filter(i -> all(satisfy(e,i) for e in edges(d)), 1:n), n)
-  Limit(d, Multispan(dom(f), [compose(f,leg[i]) for i in vertices(d)]))
+  # Uses the general formula for limits in Set (Leinster, 2014, Basic Category
+  # Theory, Example 5.1.22 / Equation 5.16).
+  prod = product(ob(d))
+  n, πs = length(ob(prod)), legs(prod)
+  ι = FinFunction(filter(1:n) do i
+    all(begin
+          s, t, h = src(d,e), tgt(d,e), hom(d,e)
+          h(πs[s](i)) == πs[t](i)
+        end for e in edges(d))
+    end, n)
+  cone = Multispan(dom(ι), [compose(ι,πs[i]) for i in vertices(d)])
+  FinSetFreeDiagramLimit(d, cone, prod, ι)
+end
+
+function universal(lim::FinSetFreeDiagramLimit, cone::Multispan{<:FinSet{Int}})
+  ι = collect(lim.incl)
+  h = universal(lim.prod, cone)
+  FinFunction(Int[only(searchsorted(ι, h(i))) for i in dom(h)],
+              apex(cone), ob(lim))
 end
 
 # Colimits
@@ -283,7 +310,7 @@ function colimit(pair::ParallelPair{<:FinSet{Int}})
   for i in 1:m
     union!(sets, f(i), g(i))
   end
-  h = [ find_root(sets, i) for i in 1:n ]
+  h = [ find_root!(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   coeq = FinFunction([ searchsortedfirst(roots, r) for r in h], length(roots))
   Colimit(pair, SMulticospan{1}(coeq))
@@ -299,7 +326,7 @@ function colimit(para::ParallelMorphisms{<:FinSet{Int}})
       union!(sets, f1(i), f(i))
     end
   end
-  h = [ find_root(sets, i) for i in 1:n ]
+  h = [ find_root!(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   coeq = FinFunction([ searchsortedfirst(roots, r) for r in h ], length(roots))
   Colimit(para, SMulticospan{1}(coeq))
@@ -307,9 +334,14 @@ end
 
 function universal(coeq::Coequalizer{<:FinSet{Int}},
                    cocone::SMulticospan{1,<:FinSet{Int}})
-  q = zeros(Int, length(ob(coeq)))
-  π = proj(coeq)
-  h = only(cocone)
+  pass_to_quotient(proj(coeq), only(cocone))
+end
+
+""" Given h: X → Y, pass to quotient q: X/~ → Y under projection π: X → X/~.
+"""
+function pass_to_quotient(π::FinFunction{Int}, h::FinFunction{Int})
+  @assert dom(π) == dom(h)
+  q = zeros(Int, length(codom(π)))
   for i in dom(h)
     j = π(i)
     if q[j] == 0
@@ -318,26 +350,49 @@ function universal(coeq::Coequalizer{<:FinSet{Int}},
       @assert q[j] == h(i) "Quotient map out of coequalizer is ill-defined"
     end
   end
+  @assert all(i > 0 for i in q) "Projection map is not surjective"
   FinFunction(q, codom(h))
 end
 
 colimit(span::Multispan{<:FinSet{Int}}) = composite_pushout(span)
 
+""" Colimit of free diagram of FinSets.
+
+See `CompositePushout` for a very similar construction.
+"""
+struct FinSetFreeDiagramColimit{Ob<:FinSet, Diagram<:FreeDiagram{Ob},
+                                Cocone<:Multicospan{Ob}, Coprod<:Coproduct{Ob},
+                                Proj<:FinFunction} <: AbstractColimit{Ob,Diagram}
+  diagram::Diagram
+  cocone::Cocone
+  coprod::Coprod
+  proj::Proj # Projection for the "multi-coequalizer" in general formula.
+end
+
 function colimit(d::FreeDiagram{<:FinSet{Int}})
+  # Uses the general formula for colimits in Set (Leinster, 2014, Basic Category
+  # Theory, Example 5.2.16).
   coprod = coproduct(ob(d))
-  n, leg = length(ob(coprod)), legs(coprod)
+  n, ιs = length(ob(coprod)), legs(coprod)
   sets = IntDisjointSets(n)
   for e in edges(d)
     s, t, h = src(d,e), tgt(d,e), hom(d,e)
     for i in dom(h)
-      union!(sets, leg[s](i), leg[t](h(i)))
+      union!(sets, ιs[s](i), ιs[t](h(i)))
     end
   end
-  h = [ find_root(sets, i) for i in 1:n ]
+  h = [ find_root!(sets, i) for i in 1:n ]
   roots = unique!(sort(h))
   m = length(roots)
-  f = FinFunction([ searchsortedfirst(roots, r) for r in h ], m)
-  Colimit(d, Multicospan(FinSet(m), [ compose(leg[i],f) for i in vertices(d) ]))
+  π = FinFunction([ searchsortedfirst(roots, r) for r in h ], m)
+  cocone = Multicospan(FinSet(m), [ compose(ιs[i],π) for i in vertices(d) ])
+  FinSetFreeDiagramColimit(d, cocone, coprod, π)
+end
+
+function universal(colim::FinSetFreeDiagramColimit,
+                   cocone::Multicospan{<:FinSet{Int}})
+  h = universal(colim.coprod, cocone)
+  pass_to_quotient(colim.proj, h)
 end
 
 end

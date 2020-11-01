@@ -239,12 +239,12 @@ const AbstractFreeDiagram{Ob} =
 ob(d::FreeDiagram, args...) = subpart(d, args..., :ob)
 hom(d::FreeDiagram, args...) = subpart(d, args..., :hom)
 
-function FreeDiagram(obs::Vector{Ob},
-                     homs::Vector{Tuple{Int,Int,Hom}}) where {Ob,Hom}
-  @assert all(obs[s] == dom(f) && obs[t] == codom(f) for (s,t,f) in homs)
+function FreeDiagram(obs::AbstractVector{Ob},
+                     homs::AbstractVector{Tuple{Hom,Int,Int}}) where {Ob,Hom}
+  @assert all(obs[s] == dom(f) && obs[t] == codom(f) for (f,s,t) in homs)
   d = FreeDiagram{Ob,Hom}()
   add_vertices!(d, length(obs), ob=obs)
-  add_edges!(d, getindex.(homs,1), getindex.(homs,2), hom=last.(homs))
+  add_edges!(d, getindex.(homs,2), getindex.(homs,3), hom=first.(homs))
   return d
 end
 
@@ -295,7 +295,7 @@ function FreeDiagram(sq::SquareDiagram{Ob}) where Ob
     @assert codom(bottom) == codom(right)
 
     V = [dom(left), codom(left), dom(right), codom(right)]
-    E = [(1,3, top), (2,4, bottom), (1,2, left), (3,4, right)] 
+    E = [(top,1,3), (bottom,2,4), (left,1,2), (right,3,4)]
     return FreeDiagram(V, E)
 end
 end

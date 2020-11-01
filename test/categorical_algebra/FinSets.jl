@@ -109,10 +109,16 @@ f, g = FinFunction([1,1,2]), FinFunction([3,2,1])
 
 # Pullback using generic limit interface
 f, g = FinFunction([1,1,3,2],4), FinFunction([1,1,4,2],4)
-lim = limit(FreeDiagram([FinSet(4),FinSet(4),FinSet(4)], [(1,3,f),(2,3,g)]))
+lim = limit(FreeDiagram([FinSet(4),FinSet(4),FinSet(4)], [(f,1,3),(g,2,3)]))
 @test ob(lim) == FinSet(5)
-@test force.(legs(lim)[1:2]) ==
-  [FinFunction([1,2,1,2,4],4), FinFunction([1,1,2,2,4],4)]
+π1, π2 = legs(lim)[1:2]
+@test force(π1) == FinFunction([1,2,1,2,4], 4)
+@test force(π2) == FinFunction([1,1,2,2,4], 4)
+
+f′, g′ = FinFunction([1,2,4]), FinFunction([2,1,4])
+h = universal(lim, Multispan([f′, g′, f′⋅f])) # f′⋅f == g′⋅g
+@test force(h ⋅ π1) == f′
+@test force(h ⋅ π2) == g′
 
 # Colimits
 #---------
@@ -189,13 +195,18 @@ k = FinFunction([1,2,5])
 @test_throws AssertionError copair(colim,h,k)
 
 # Same thing with generic colimit interface
-diag = FreeDiagram([FinSet(1),FinSet(2),FinSet(3)],[(1,2,f), (1,3,g)])
-colim = colimit(diag)
+diagram = FreeDiagram([FinSet(1),FinSet(2),FinSet(3)],[(f,1,2), (g,1,3)])
+colim = colimit(diagram)
 @test ob(colim) == FinSet(4)
 _, ι1, ι2 = colim
 @test compose(f,ι1) == compose(g,ι2)
 @test ι1 == FinFunction([1,2], 4)
 @test ι2 == FinFunction([3,1,4], 4)
+
+h, k = FinFunction([3,5]), FinFunction([1,3,5])
+ℓ = universal(colim, Multicospan([f⋅h, h, k])) # f⋅h == g⋅k
+@test force(ι1 ⋅ ℓ) == h
+@test force(ι2 ⋅ ℓ) == k
 
 # Pushout from a two-element set, with non-injective legs.
 f, g = FinFunction([1,1], 2), FinFunction([1,2], 2)
@@ -207,8 +218,8 @@ colim = pushout(f,g)
 @test ι2 == FinFunction([1,1], 2)
 
 # Same thing with generic colimit interface
-diag = FreeDiagram([FinSet(2),FinSet(2),FinSet(2)],[(1,2,f),(1,3,g)])
-colim = colimit(diag)
+diagram = FreeDiagram([FinSet(2),FinSet(2),FinSet(2)],[(f,1,2),(g,1,3)])
+colim = colimit(diagram)
 @test ob(colim) == FinSet(2)
 _, ι1, ι2 = colim
 @test compose(f,ι1) == compose(g,ι2)
