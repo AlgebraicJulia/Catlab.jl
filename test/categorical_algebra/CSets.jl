@@ -243,4 +243,27 @@ colim = pushout(α, β)
 @test !is_natural(α′) # Vertex labels don't match.
 @test_throws ErrorException pushout(α′, β)
 
+# Functorial Data Migration
+@present TheoryDDS(FreeSchema) begin
+  X::Ob
+  Φ::Hom(X,X)
+end
+
+const AbstractDDS = AbstractCSetType(TheoryDDS)
+const DDS = CSetType(TheoryDDS, index=[:Φ])
+
+h= Graph(3)
+add_parts!(h, :E, 3, src = [1,2,3], tgt = [2,3,1])
+
+@test h == Graph(h, Dict(:V => :V, :E => :E), 
+                       Dict(:src => :src, :tgt => :tgt))
+
+dds = DDS()
+add_parts!(dds, :X, 3, Φ=[2,3,1])
+X = TheoryDDS[:X]
+
+@test h == Graph(dds, Dict(:V => :X, :E => :X),
+                        Dict(:src => id(X), :tgt => :Φ))
+@test dds == DDS(dds, Dict(:X => :X),
+                      Dict(:Φ => [:Φ, :Φ, :Φ, :Φ]))
 end
