@@ -10,6 +10,10 @@ end
   include("MonoidalUndirected.jl")
 end
 
+@testset "Algebras" begin
+  include("Algebras.jl")
+end
+
 @testset "Algorithms" begin
   include("Algorithms.jl")
 end
