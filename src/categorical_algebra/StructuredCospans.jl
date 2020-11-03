@@ -130,7 +130,7 @@ begin
   end
 
   munit(::Type{StructuredCospanOb{L}}) where L =
-    StructuredCospanOb{L}(ob(initial(dom(L))))
+    StructuredCospanOb{L}(ob(initial(first(dom(L)))))
 
   function braid(a::StructuredCospanOb{L}, b::StructuredCospanOb{L}) where L
     x, y = L(a.ob), L(b.ob)
@@ -213,6 +213,9 @@ end
 """
 abstract type AbstractDiscreteACSet{X <: AbstractACSet} end
 
+codom(::Type{<:AbstractDiscreteACSet{X}}) where
+  {CD, AD, X<:AbstractACSet{CD,AD}} = (X, ACSetTransformation{CD,AD})
+
 StructuredCospan{L}(x::AbstractACSet, f::FinFunction{Int},
                     g::FinFunction{Int}) where {L<:AbstractDiscreteACSet} =
   StructuredCospan{L}(x, Cospan(f, g))
@@ -233,7 +236,7 @@ that object. Instead of instantiating this type directly, you should use
 """
 struct FinSetDiscreteACSet{ob₀, X} <: AbstractDiscreteACSet{X} end
 
-dom(::Type{<:FinSetDiscreteACSet}) = FinSet{Int}
+dom(::Type{<:FinSetDiscreteACSet}) = (FinSet{Int}, FinFunction{Int})
 
 """ A functor L: C₀-Set → C-Set giving the discrete C-set for C₀.
 
@@ -243,7 +246,8 @@ forgetting the rest of C. Data attributes of the chosen object are preserved.
 """
 struct DiscreteACSet{A <: AbstractACSet, X} <: AbstractDiscreteACSet{X} end
 
-dom(::Type{<:DiscreteACSet{A}}) where A = A
+dom(::Type{<:DiscreteACSet{A}}) where {CD, AD, A<:AbstractACSet{CD,AD}} =
+  (A, ACSetTransformation{CD,AD})
 
 function StructuredMulticospan{L}(x::AbstractACSet,
                                   cospan::Multicospan{<:FinSet{Int}}) where

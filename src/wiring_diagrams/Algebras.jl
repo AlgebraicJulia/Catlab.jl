@@ -17,13 +17,11 @@ This function makes structured multicospans into an algebra of the operad of
 undirected wiring diagrams.
 """
 function oapply(composite::UndirectedWiringDiagram,
-                cospans::AbstractVector{SCosp},
-                junction_feet::Union{AbstractVector,Nothing}=nothing) where
-    {Ob, Hom, Cosp <: Multicospan{Ob,<:AbstractVector{Hom}},
-     L, SCosp <: StructuredMulticospan{L,Cosp}}
+                cospans::AbstractVector{<:StructuredMulticospan{L}},
+                junction_feet::Union{AbstractVector,Nothing}=nothing) where L
   @assert nboxes(composite) == length(cospans)
   if isnothing(junction_feet)
-    junction_feet = Vector{dom(L)}(undef, njunctions(composite))
+    junction_feet = Vector{first(dom(L))}(undef, njunctions(composite))
   else
     @assert njunctions(composite) == length(junction_feet)
   end
@@ -32,7 +30,7 @@ function oapply(composite::UndirectedWiringDiagram,
   # boxes and junctions. Each directed edge goes from a junction vertex to a box
   # vertex, as defined by the UWD's junction map, and the edge is mapped to the
   # corresponding leg of a multicospan.
-  diagram = FreeDiagram{Ob,Hom}()
+  diagram = FreeDiagram{codom(L)...}()
   add_vertices!(diagram, nboxes(composite), ob=map(apex, cospans))
   jmap = add_vertices!(diagram, njunctions(composite))
   for (b, cospan) in zip(boxes(composite), cospans)

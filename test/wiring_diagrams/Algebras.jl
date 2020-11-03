@@ -48,7 +48,7 @@ k0 = apex(k)
 
 # Identity for sequential composition.
 seq_id = @relation (a,a) where (a,) begin end
-k = oapply(seq_id, typeof(g)[], [FinSet(3)])
+k = oapply(seq_id, OpenGraph[], [FinSet(3)])
 @test apex(k) == Graph(3)
 @test feet(k) == [FinSet(3), FinSet(3)]
 
