@@ -24,7 +24,7 @@ seq = @relation (a,c) where (a,b,c) begin
   g(a,b)
   h(b,c)
 end
-k = oapply(seq, [g, h])
+k = oapply(seq, Dict(:g => g, :h => h))
 @test length(legs(k)) == 2
 @test feet(k) == [first(feet(g)), last(feet(h))]
 k0 = apex(k)
@@ -40,7 +40,7 @@ para = @relation (a,b,c,d) where (a,b,c,d) begin
   g(a,b)
   h(c,d)
 end
-k = oapply(para, [g, h])
+k = oapply(para, Dict(:g => g, :h => h))
 @test length(legs(k)) == 4
 @test feet(k) == [feet(g); feet(h)]
 k0 = apex(k)
@@ -48,7 +48,7 @@ k0 = apex(k)
 
 # Identity for sequential composition.
 seq_id = @relation (a,a) where (a,) begin end
-k = oapply(seq_id, OpenGraph[], [FinSet(3)])
+k = oapply(seq_id, Dict{Symbol,OpenGraph}(), Dict(:a => FinSet(3)))
 @test apex(k) == Graph(3)
 @test feet(k) == [FinSet(3), FinSet(3)]
 

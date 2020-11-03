@@ -8,6 +8,22 @@ using Compat: isnothing
 using ...CategoricalAlgebra
 using ..UndirectedWiringDiagrams
 
+""" Compose morphisms according to UWD.
+
+The morphisms corresponding to the boxes, and optionally also the objects
+corresponding to the junctions, are given by dictionaries indexed by
+box/junction attributes. The default attributes are those compatible with the
+`@relation` macro.
+"""
+function oapply(composite::UndirectedWiringDiagram, hom_map::AbstractDict,
+                ob_map::Union{AbstractDict,Nothing}=nothing;
+                hom_attr::Symbol=:name, ob_attr::Symbol=:variable)
+  homs = [ hom_map[name] for name in subpart(composite, hom_attr) ]
+  obs = isnothing(ob_map) ? nothing :
+    [ ob_map[name] for name in subpart(composite, ob_attr) ]
+  oapply(composite, homs, obs)
+end
+
 # UWD algebra of structured multicospans
 ########################################
 
