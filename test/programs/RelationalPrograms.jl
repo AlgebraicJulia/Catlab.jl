@@ -28,6 +28,10 @@ parsed = @relation ((x,z) where (x,y,z)) -> (R(x,y); S(y,z))
 parsed = @relation function (x,z) where (x,y,z); R(x,y); S(y,z) end
 @test parsed == d
 
+d1 = @relation (x,y,z) -> (R(x,y); S(y,z))
+d2 = @relation ((x,y,z) where (x,y,z)) -> (R(x,y); S(y,z))
+@test d1 == d2
+
 # Typed relations
 
 parsed = @relation (x,y,z) where (x::X, y::Y, z::Z, w::W) begin

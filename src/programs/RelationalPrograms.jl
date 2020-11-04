@@ -81,6 +81,7 @@ function parse_relation_diagram(head::Expr, body::Expr)
   @match head begin
     Expr(:where, Expr(:tuple, args...), Expr(:tuple, context...)) =>
       make_relation_diagram(context, args, body.args)
+    Expr(:tuple, args...) => make_relation_diagram(args, args, body.args)
     _ => error("Invalid syntax in declaration of outer ports and context")
   end
 end
