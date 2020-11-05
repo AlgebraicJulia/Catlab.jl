@@ -250,13 +250,10 @@ function Base.show(io::IO, ::MIME"text/plain", acs::T) where {T<:AbstractACSet}
   join(io, ["$ob = 1:$(nparts(acs,ob))" for ob in keys(tables(acs))], ", ")
   println(io)
   for (ob, table) in pairs(tables(acs))
-    # Note: PrettyTables will not print tables with no rows or undefined elems.
+    # Note: PrettyTables will not print tables with no rows.
     if !(eltype(table) <: EmptyTuple || isempty(table))
-      # TODO: Set option `row_number_column_title=name` when next version of
-      # PrettyTables is released, instead of making new table.
-      cols = map(col -> replace_unassigned(col, "#undef"), fieldarrays(table))
-      table = StructArray((; ob => parts(acs, ob), cols...))
-      pretty_table(io, table, nosubheader=true)
+      pretty_table(io, table, nosubheader=true,
+                   show_row_number=true, row_number_column_title=string(ob))
     end
   end
 end
@@ -269,23 +266,13 @@ function Base.show(io::IO, ::MIME"text/html", acs::T) where {T<:AbstractACSet}
   join(io, ["$ob = 1:$(nparts(acs,ob))" for ob in keys(tables(acs))], ", ")
   println(io, "</span>")
   for (ob, table) in pairs(tables(acs))
-    # Note: PrettyTables will not print tables with no rows or undefined elems.
+    # Note: PrettyTables will not print tables with no rows.
     if !(eltype(table) <: EmptyTuple || isempty(table))
-      # TODO: Set option `row_number_column_title`. See above.
-      cols = map(col -> replace_unassigned(col, "#undef"), fieldarrays(table))
-      table = StructArray((; ob => parts(acs, ob), cols...))
-      pretty_table(io, table, backend=:html, standalone=false, nosubheader=true)
+      pretty_table(io, table, backend=:html, standalone=false, nosubheader=true,
+                   show_row_number=true, row_number_column_title=string(ob))
     end
   end
   println(io, "</div>")
-end
-
-function replace_unassigned(x::Array{T}, value::V=nothing) where {T,V}
-  y = Array{Union{T,V}}(undef, size(x))
-  for i in eachindex(x)
-    y[i] = isassigned(x, i) ? x[i] : value
-  end
-  y
 end
 
 # Imperative interface
