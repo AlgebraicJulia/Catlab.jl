@@ -45,28 +45,24 @@ export DoubleCategory, FreeDoubleCategory, HomH, HomV, Hom2, idH, idV,
   f ⋅ idV(B) == f ⊣ (A::Ob, B::Ob, f::(A ↓ B))
   idV(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A ↓ B))
 
-  # identity two cell on 1 object
+  # Identity 2-cell on object
   id2(X::Ob)::Hom2(idH(X), idH(X), idV(X), idV(X)) ⊣ (X::Ob)
-  # identity two cell for vertical composition
+  # Identity 2-cell for vertical composition
   id2V(f::(X→Y))::Hom2(f, f, idV(X), idV(Y)) ⊣ (X::Ob, Y::Ob)
-  # identity two cell for horizontal composition
+  # Identity 2-cell for horizontal composition
   id2H(f::(X↓Y))::Hom2(idH(X), idH(Y), f, f) ⊣ (X::Ob, Y::Ob)
 
   # Vertical composition of 2-cells
-  composeV(
-    α::Hom2(t,b,l,r),
-    β::Hom2(b,b2,l2,r2)
-  )::Hom2(t, b2, l⋅l2, r⋅r2)  ⊣ (A::Ob, B::Ob, X::Ob, Y::Ob, C::Ob, D::Ob,
-                                 t::(A→B), b::(X→Y), l::(A↓X), r::(B↓Y),
-                                 b2::(C→D), l2::(X↓C), r2::(Y↓D))
+  composeV(α::Hom2(t,b,l,r), β::Hom2(b,b′,l′,r′))::Hom2(t, b′, l⋅l′, r⋅r′) ⊣
+    (A::Ob, B::Ob, X::Ob, Y::Ob, C::Ob, D::Ob,
+     t::(A→B), b::(X→Y), l::(A↓X), r::(B↓Y),
+     b′::(C→D), l′::(X↓C), r′::(Y↓D))
 
   # Horizontal composition of 2-cells
-  composeH(
-    α::Hom2(t,b,l,r),
-    β::Hom2(t2,b2,r,r2)
-  )::Hom2(t⋆t2, b⋆b2, l, r2)  ⊣ (A::Ob, B::Ob, X::Ob, Y::Ob, C::Ob, D::Ob,
-                                 t::(A→X), b::(B→Y), l::(A↓B), r::(X↓Y),
-                                 t2::(X→C), b2::(Y→D), r2::(C↓D))
+  composeH(α::Hom2(t,b,l,r), β::Hom2(t′,b′,r,r′))::Hom2(t⋆t′, b⋆b′, l, r′) ⊣
+    (A::Ob, B::Ob, X::Ob, Y::Ob, C::Ob, D::Ob,
+     t::(A→X), b::(B→Y), l::(A↓B), r::(X↓Y),
+     t′::(X→C), b′::(Y→D), r′::(C↓D))
 end
 
 # Convenience constructors
@@ -107,8 +103,26 @@ end
 """ Theory of *monoidal double categories*
 
 To avoid associators and unitors, we assume the monoidal double category is
-*strict*. By the coherence theorem there is no loss of generality, but we may
-add a theory for weak monoidal categories later.
+*strict* in both the horizontal and vertical directions. Apart from assuming
+strictness, this theory follows the definition of a monoidal double category in
+(Shulman, 2010, Constructing symmetric monoidal bicategories) and other recent
+papers, starting from an internal category (S,T: D₁ ⇉ D₀, U: D₀ → D₁,
+⋆: D₁ ×_{D₀} D₁ → D₁) in Cat where
+
+- the objects of D₀ are objects
+- the morphisms of D₀ are vertical 1-cells
+- the objects of D₁ are horizontal 1-cells
+- the morphisms of D₁ are 2-cells.
+
+The top and bottom of a 2-cell are given by domain and codomain in D₁ and the
+left and right are given by the functors S,T. In a monoidal double category, D₀
+and D₁ are each required to be monoidal categories, subject to further axioms
+such as S and T being strict monoidal functors.
+
+Despite the apparent asymmetry in this setup, the definition of a monoidal
+double category unpacks to be nearly symmetric with respect to horizontal and
+vertical, except that the monoidal unit I of D₀ induces the monoidal unit of D₁
+as U(I), which I think has no analogue in the vertical direction.
 """
 @theory MonoidalDoubleCategory{Ob,HomV,HomH,Hom2} <: DoubleCategory{Ob,HomV,HomH,Hom2} begin
   otimes(A::Ob, B::Ob)::Ob
@@ -124,44 +138,42 @@ add a theory for weak monoidal categories later.
   @op (⊗) := otimes
   munit()::Ob
 
-  # Monoid axioms.
+  # Monoid axioms, vertical.
   (A ⊗ B) ⊗ C == A ⊗ (B ⊗ C) ⊣ (A::Ob, B::Ob, C::Ob)
   A ⊗ munit() == A ⊣ (A::Ob)
   munit() ⊗ A == A ⊣ (A::Ob)
   (f ⊗ g) ⊗ h == f ⊗ (g ⊗ h) ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
-                                 f::(A → X), g::(B → Y), h::(C → Z))
+                                f::(A ↓ X), g::(B ↓ Y), h::(C ↓ Z))
+
+  # Monoid axioms, horizontal.
   (f ⊗ g) ⊗ h == f ⊗ (g ⊗ h) ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
-                                 f::(A ↓ X), g::(B ↓ Y), h::(C ↓ Z))
-  (α ⊗ β) ⊗ γ == α ⊗ (β ⊗ γ) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
-                                E::Ob, F::Ob, G::Ob, H::Ob,
-                                I::Ob, J::Ob, K::Ob, L::Ob,
-                                t1::(A → B), b1::(C → D), l1::(A ↓ C), r1::(B ↓ D),
-                                t2::(E → F), b2::(G → H), l2::(E ↓ G), r2::(F ↓ H),
-                                t3::(I → J), b3::(K → L), l3::(I ↓ K), r3::(J ↓ L),
-                                α::Hom2(t1, b1, l1, r1),
-                                β::Hom2(t2, b2, l2, r2),
-                                γ::Hom2(t3, b3, l3, r3))
+                                f::(A → X), g::(B → Y), h::(C → Z))
+  f ⊗ idH(munit()) == f ⊣ (A::Ob, B::Ob, f::(A → B))
+  idH(munit()) ⊗ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
+  (α ⊗ β) ⊗ γ == α ⊗ (β ⊗ γ) ⊣
+    (A::Ob, B::Ob, C::Ob, D::Ob, E::Ob, F::Ob,
+     G::Ob, H::Ob, I::Ob, J::Ob, K::Ob, L::Ob,
+     t1::(A → B), b1::(C → D), l1::(A ↓ C), r1::(B ↓ D),
+     t2::(E → F), b2::(G → H), l2::(E ↓ G), r2::(F ↓ H),
+     t3::(I → J), b3::(K → L), l3::(I ↓ K), r3::(J ↓ L),
+     α::Hom2(t1, b1, l1, r1), β::Hom2(t2, b2, l2, r2), γ::Hom2(t3, b3, l3, r3))
 
   # Functorality axioms.
-  ((f ⊗ g) ⋅ (h ⊗ k) == (f ⋅ h) ⊗ (g ⋅ k)
+  ((f ⊗ g) ⋆ (h ⊗ k) == (f ⋆ h) ⊗ (g ⋆ k)
     ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
        f::(A → B), h::(B → C), g::(X → Y), k::(Y → Z)))
   ((f ⊗ g) ⋅ (h ⊗ k) == (f ⋅ h) ⊗ (g ⋅ k)
     ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
        f::(A ↓ B), h::(B ↓ C), g::(X ↓ Y), k::(Y ↓ Z)))
   ((α ⊗ β) ⋅ (γ ⊗ δ) == (α ⋅ γ) ⊗ (β ⋅ δ)
-    ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
-       E::Ob, F::Ob, G::Ob, H::Ob,
-       I::Ob, J::Ob, K::Ob, L::Ob,
-       M::Ob, N::Ob, O::Ob, P::Ob,
+    ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, E::Ob, F::Ob, G::Ob, H::Ob,
+       I::Ob, J::Ob, K::Ob, L::Ob, M::Ob, N::Ob, O::Ob, P::Ob,
        t1::(A → B), b1::(C → D), l1::(A ↓ C), r1::(B ↓ D),
        t2::(E → F), b2::(G → H), l2::(E ↓ G), r2::(F ↓ H),
        t3::(I → J), b3::(K → L), l3::(I ↓ K), r3::(J ↓ L),
        t4::(M → N), b4::(O → P), l4::(M ↓ O), r4::(N ↓ P),
-       α::Hom2(t1, b1, l1, r1),
-       β::Hom2(t2, b2, l2, r2),
-       γ::Hom2(t3, b3, l3, r3),
-       δ::Hom2(t4, b4, l4, r4)))
+       α::Hom2(t1, b1, l1, r1), β::Hom2(t2, b2, l2, r2),
+       γ::Hom2(t3, b3, l3, r3), δ::Hom2(t4, b4, l4, r4)))
   idH(A ⊗ B) == idH(A) ⊗ idH(B) ⊣ (A::Ob, B::Ob)
   idV(A ⊗ B) == idV(A) ⊗ idV(B) ⊣ (A::Ob, B::Ob)
   id2(A ⊗ B) == id2(A) ⊗ id2(B) ⊣ (A::Ob, B::Ob)
