@@ -30,12 +30,14 @@ s′ = Hom2(:s′, t′, b′, l′, r′)
 @test top(otimes(s,s′)) == otimes(top(s),top(s′))
 @test bottom(otimes(s,s′)) == otimes(bottom(s),bottom(s′))
 
-@test dom(braidH(A,B)) == otimes(A,B)
-@test codom(braidH(A,B)) == otimes(B,A)
 @test dom(braidV(A,B)) == otimes(A,B)
 @test codom(braidV(A,B)) == otimes(B,A)
-@test σH(A, B) == braidH(A,B)
+@test top(braidH(t,b)) == otimes(t,b)
+@test bottom(braidH(t,b)) == otimes(b,t)
+@test left(braidH(t,b)) == braidV(A,C)
+@test right(braidH(t,b)) == braidV(B,D)
 @test σV(A, B) == braidV(A,B)
+@test σH(t, b) == braidH(t,b)
 
 # Associativity and unit
 I = munit(FreeSymmetricMonoidalDoubleCategory.Ob)

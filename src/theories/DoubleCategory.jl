@@ -1,5 +1,6 @@
-export DoubleCategory, FreeDoubleCategory, HomH, HomV, Hom2, idH, idV,
-  id2, id2V, id2H, composeH, composeV, ⋆, MonoidalDoubleCategory,
+export DoubleCategory, FreeDoubleCategory, HomH, HomV, Hom2,
+  left, right, top, bottom, idH, idV, id2, id2V, id2H, composeH, composeV, ⋆,
+  MonoidalDoubleCategory,
   SymmetricMonoidalDoubleCategory, FreeSymmetricMonoidalDoubleCategory,
   braidH, braidV, σH, σV
 
@@ -184,26 +185,41 @@ as U(I), which I think has no analogue in the vertical direction.
 end
 
 """ Theory of (strict) *symmetric monoidal double categories*
+
+Unlike classical double categories, symmetric monoidal double categories do not
+treat the vertical and horizontal directions on an equal footing, even in the
+strict case. See [`MonoidalDoubleCategory`](@ref) for details and references.
 """
 @theory SymmetricMonoidalDoubleCategory{Ob,HomV,HomH,Hom2} <: MonoidalDoubleCategory{Ob,HomV,HomH,Hom2} begin
-  braidH(A::Ob, B::Ob)::((A ⊗ B) → (B ⊗ A))
   braidV(A::Ob, B::Ob)::((A ⊗ B) ↓ (B ⊗ A))
-  @op (σH) := braidH
+  braidH(f::(A → C), g::(B → D))::Hom2((f ⊗ g), (g ⊗ f), σV(A,B), σV(C,D)) ⊣
+    (A::Ob, B::Ob, C::Ob, D::Ob)
   @op (σV) := braidV
+  @op (σH) := braidH
 
-  # Involutivity axiom.
-  σH(A,B) ⋅ σH(B,A) == idH(A ⊗ B) ⊣ (A::Ob, B::Ob)
+  # Involutivity axioms.
   σV(A,B) ⋅ σV(B,A) == idV(A ⊗ B) ⊣ (A::Ob, B::Ob)
+  σH(f,g) ⋅ σH(g,f) == id2V(f ⊗ g) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
+                                      f::(A → C), g::(B → D))
+
+  # Naturality axioms.
+  (f⊗g) ⋅ σV(C,D) == σV(A,B) ⋅ (g⊗f) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
+                                        f::(A ↓ C), g::(B ↓ D))
+  ((α⊗β) ⋅ σH(h,k) == σH(f,g) ⋅ (β⊗α) ⊣
+    (A::Ob, B::Ob, C::Ob, D::Ob, E::Ob, F::Ob, G::Ob, H::Ob,
+     f::(A → C), g::(B → D), h::(E → G), k::(F → H),
+     ℓ1::(A ↓ E), r1::(C ↓ G), ℓ2::(B ↓ F), r2::(D ↓ H),
+     α::Hom2(f,h,ℓ1,r1), β::Hom2(g,k,ℓ2,r2)))
 
   # Coherence axioms.
-  σH(A,B⊗C) == (σH(A,B) ⊗ idH(C)) ⋅ (idH(B) ⊗ σH(A,C)) ⊣ (A::Ob, B::Ob, C::Ob)
+  σV(A,B⊗C) == (σV(A,B) ⊗ idV(C)) ⋅ (idV(B) ⊗ σV(A,C)) ⊣ (A::Ob, B::Ob, C::Ob)
   σV(A⊗B,C) == (idV(A) ⊗ σV(B,C)) ⋅ (σV(A,C) ⊗ idV(B)) ⊣ (A::Ob, B::Ob, C::Ob)
-
-  # Naturality axiom.
-  (f ⊗ g) ⋅ σH(B,D) == σH(A,C) ⋅ (g ⊗ f) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
-                                           f::(A → B), g::(C → D))
-  (f ⊗ g) ⋅ σV(B,D) == σV(A,C) ⋅ (g ⊗ f) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
-                                           f::(A ↓ B), g::(C ↓ D))
+  (σH(f,g⊗h) == (σH(f,g) ⊗ id2V(h)) ⋅ (id2V(g) ⊗ σH(f,h)) ⊣
+    (A::Ob, B::Ob, C::Ob, D::Ob, E::Ob, F::Ob,
+     f::(A → D), g::(B → E), h::(C → F)))
+  (σH(f⊗g,h) == (id2V(f) ⊗ σH(g,h)) ⋅ (σH(f,h) ⊗ id2V(g)) ⊣
+    (A::Ob, B::Ob, C::Ob, D::Ob, E::Ob, F::Ob,
+     f::(A → D), g::(B → E), h::(C → F)))
 end
 
 @syntax FreeSymmetricMonoidalDoubleCategory{ObExpr,HomVExpr,HomHExpr,Hom2Expr} SymmetricMonoidalDoubleCategory begin
@@ -217,17 +233,16 @@ end
   composeV(α::Hom2, β::Hom2) = associate(new(α,β))
 end
 
-function show_unicode(io::IO, expr::HomHExpr{:braidH}; kw...)
-  Syntax.show_unicode_infix(io, expr, "σH"; kw...)
-end
 function show_unicode(io::IO, expr::HomVExpr{:braidV}; kw...)
   Syntax.show_unicode_infix(io, expr, "σV"; kw...)
 end
-
-function show_latex(io::IO, expr::HomHExpr{:braidH}; kw...)
-  Syntax.show_latex_script(io, expr, "\\sigmaH")
+function show_unicode(io::IO, expr::Hom2Expr{:braidH}; kw...)
+  Syntax.show_unicode_infix(io, expr, "σH"; kw...)
 end
 
 function show_latex(io::IO, expr::HomVExpr{:braidV}; kw...)
   Syntax.show_latex_script(io, expr, "\\sigmaV")
+end
+function show_latex(io::IO, expr::Hom2Expr{:braidH}; kw...)
+  Syntax.show_latex_script(io, expr, "\\sigmaH")
 end
