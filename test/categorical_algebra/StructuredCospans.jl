@@ -25,6 +25,11 @@ h0 = Graph(4)
 add_edges!(h0, [1,2,3], [3,3,4])
 h = OpenGraph(h0, FinFunction([1,2],4), FinFunction([4],4))
 
+# Structured multicospans.
+g′ = OpenGraph(g0, FinFunction([1],4), FinFunction([3],4), FinFunction([4],4))
+@test feet(g′) == fill(FinSet(1), 3)
+@test bundle_legs(g′, [1, (2,3)]) == g
+
 # Category
 #---------
 
