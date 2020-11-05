@@ -5,7 +5,7 @@ implementation for attributed C-sets.
 """
 module StructuredCospans
 export StructuredMulticospan, StructuredCospan, StructuredCospanOb,
-  OpenCSetTypes, OpenACSetTypes, bundle_legs
+  OpenCSetTypes, OpenACSetTypes
 
 using Compat: only
 
@@ -13,7 +13,7 @@ using AutoHashEquals
 using StaticArrays: StaticVector, SVector
 
 using ...GAT, ..FreeDiagrams, ..Limits, ..FinSets, ..CSets
-import ..FreeDiagrams: apex, legs, feet, left, right
+import ..FreeDiagrams: apex, legs, feet, left, right, bundle_legs
 import ..CSets: force
 using ...Theories: Category, CatDesc, AttrDesc
 import ...Theories: dom, codom, compose, ⋅, id, otimes, ⊗, munit, braid, σ,
@@ -85,17 +85,9 @@ StructuredCospan{L}(apex, cospan::Cospan) where L =
 left(cospan::StructuredCospan) = first(legs(cospan))
 right(cospan::StructuredCospan) = last(legs(cospan))
 
-""" Bundle together legs of (structured) multicospan.
-"""
 bundle_legs(cospan::StructuredMulticospan{L}, indices) where L =
   StructuredMulticospan{L}(bundle_legs(cospan.cospan, indices),
                            map(i -> bundle_feet(cospan, i), indices))
-bundle_legs(cospan::Multicospan, indices) =
-  Multicospan(apex(cospan), map(i -> bundle_leg(cospan, i), indices))
-
-bundle_leg(cospan, i::Int) = legs(cospan)[i]
-bundle_leg(cospan, i::Tuple) = bundle_leg(cospan, SVector(i))
-bundle_leg(cospan, i::AbstractVector{Int}) = copair(legs(cospan)[i])
 
 bundle_feet(cospan, i::Int) = feet(cospan)[i]
 bundle_feet(cospan, i::Tuple) = bundle_feet(cospan, SVector(i))

@@ -9,7 +9,7 @@ module FreeDiagrams
 export AbstractFreeDiagram, FreeDiagram, FixedShapeFreeDiagram, DiscreteDiagram,
   EmptyDiagram, ObjectPair, Span, Cospan, Multispan, Multicospan,
   SMultispan, SMulticospan, ParallelPair, ParallelMorphisms,
-  ob, hom, dom, codom, apex, legs, feet, left, right,
+  ob, hom, dom, codom, apex, legs, feet, left, right, bundle_legs,
   nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
   add_vertex!, add_vertices!, add_edge!, add_edges!,
   SquareDiagram, top, bottom
@@ -27,6 +27,9 @@ using ...Graphs.BasicGraphs: TheoryGraph
 """ Abstract type for free diagram of fixed shape.
 """
 abstract type FixedShapeFreeDiagram{Ob} end
+
+# Discrete diagrams
+#------------------
 
 """ Discrete diagram: a diagram whose only morphisms are identities.
 """
@@ -49,6 +52,9 @@ Base.length(d::DiscreteDiagram) = length(d.objects)
 Base.getindex(d::DiscreteDiagram, i) = d.objects[i]
 Base.firstindex(d::DiscreteDiagram) = firstindex(d.objects)
 Base.lastindex(d::DiscreteDiagram) = lastindex(d.objects)
+
+# Spans and cospans
+#------------------
 
 """ Multispan of morphisms in a category.
 
@@ -131,6 +137,24 @@ Base.iterate(cospan::Multicospan, args...) = iterate(cospan.legs, args...)
 Base.eltype(cospan::Multicospan) = eltype(cospan.legs)
 Base.length(cospan::Multicospan) = length(cospan.legs)
 
+""" Bundle together legs of a multi(co)span.
+
+The bundling use the universal property of (co)products, which assumes that
+these (co)limits exist and are implemented.
+"""
+bundle_legs(span::Multispan, indices) =
+  Multispan(apex(span), map(i -> bundle_leg(span, i), indices))
+bundle_legs(cospan::Multicospan, indices) =
+  Multicospan(apex(cospan), map(i -> bundle_leg(cospan, i), indices))
+
+bundle_leg(x::Union{Multispan,Multicospan}, i::Int) = legs(x)[i]
+bundle_leg(x::Union{Multispan,Multicospan}, i::Tuple) = bundle_leg(x, SVector(i))
+bundle_leg(span::Multispan, i::AbstractVector{Int}) = pair(legs(span)[i])
+bundle_leg(cospan::Multicospan, i::AbstractVector{Int}) = copair(legs(cospan)[i])
+
+# Parallel morphisms
+#-------------------
+
 """ Parallel morphims in a category.
 
 [Parallel morphisms](https://ncatlab.org/nlab/show/parallel+morphisms) are just
@@ -179,7 +203,10 @@ Base.lastindex(para::ParallelMorphisms) = lastindex(para.homs)
 allequal(xs::AbstractVector) = all(isequal(x, xs[1]) for x in xs[2:end])
 
 # Commutative squares
-#####################
+#--------------------
+
+# FIXME: Commutative squares are not free diagrams (they commute!) and so do not
+# belong in this module.
 
 """    SquareDiagram(top, bottom, left, right)
 
