@@ -2,6 +2,7 @@ module TestFreeDiagrams
 using Test
 
 using Catlab.Theories, Catlab.CategoricalAlgebra
+using Catlab.CategoricalAlgebra.FinSets: FinSet, FinFunction
 
 A, B, C, D = Ob(FreeCategory, :A, :B, :C, :D)
 
@@ -65,6 +66,11 @@ diagram = FreeDiagram(span)
 @test src(diagram) == [1,1,1]
 @test tgt(diagram) == [2,3,4]
 
+span = Multispan([ id(FinSet(2)) for i in 1:3 ])
+span = bundle_legs(span, [1, (2,3)])
+@test apex(span) == FinSet(2)
+@test codom.(legs(span)) == [FinSet(2), FinSet(4)]
+
 # Cospans.
 f, g = Hom(:f, A, C), Hom(:g, B, C)
 cospan = Cospan(f,g)
@@ -92,6 +98,11 @@ diagram = FreeDiagram(cospan)
 @test hom(diagram) == [f,g,h]
 @test src(diagram) == [1,2,3]
 @test tgt(diagram) == [4,4,4]
+
+cospan = Multicospan([FinFunction([i],3) for i in 1:3])
+cospan = bundle_legs(cospan, [(1,3), 2])
+@test apex(cospan) == FinSet(3)
+@test legs(cospan) == [FinFunction([1,3], 3), FinFunction([2], 3)]
 
 # Parallel pairs.
 f, g = Hom(:f, A, B), Hom(:g, A, B)

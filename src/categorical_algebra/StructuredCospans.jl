@@ -13,7 +13,7 @@ using AutoHashEquals
 using StaticArrays: StaticVector, SVector
 
 using ...GAT, ..FreeDiagrams, ..Limits, ..FinSets, ..CSets
-import ..FreeDiagrams: apex, legs, feet, left, right
+import ..FreeDiagrams: apex, legs, feet, left, right, bundle_legs
 import ..CSets: force
 using ...Theories: Category, CatDesc, AttrDesc
 import ...Theories: dom, codom, compose, ⋅, id, otimes, ⊗, munit, braid, σ,
@@ -84,6 +84,14 @@ StructuredCospan{L}(apex, cospan::Cospan) where L =
 
 left(cospan::StructuredCospan) = first(legs(cospan))
 right(cospan::StructuredCospan) = last(legs(cospan))
+
+bundle_legs(cospan::StructuredMulticospan{L}, indices) where L =
+  StructuredMulticospan{L}(bundle_legs(cospan.cospan, indices),
+                           map(i -> bundle_feet(cospan, i), indices))
+
+bundle_feet(cospan, i::Int) = feet(cospan)[i]
+bundle_feet(cospan, i::Tuple) = bundle_feet(cospan, SVector(i))
+bundle_feet(cospan, i::AbstractVector{Int}) = ob(coproduct(feet(cospan)[i]))
 
 # Hypergraph category of structured cospans
 ###########################################
