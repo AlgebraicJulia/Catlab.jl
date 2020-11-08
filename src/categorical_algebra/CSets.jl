@@ -268,9 +268,10 @@ Migrates an instance of one ACSet
 given dictionaries representing a functor between theories
 """
 
-function migrate!(Y::ACSet{CD}, X::ACSet, FOb::Dict, FHom::Dict) where {CD}
+function migrate!(Y::ACSet{CD, AD}, X::ACSet, FOb::Dict, FHom::Dict) where {CD, AD}
   @assert CD.ob ⊆ keys(FOb)
   @assert CD.hom ⊆ keys(FHom)
+  @assert AD.attr ⊆ keys(FHom)
 
   for (obY, obX) in FOb  
     add_parts!(Y, obY, nparts(X, obX))

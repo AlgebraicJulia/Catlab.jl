@@ -5,7 +5,7 @@ using Catlab, Catlab.Theories, Catlab.Graphs,
   Catlab.CategoricalAlgebra, Catlab.CategoricalAlgebra.FinSets
 using Catlab.Graphs.BasicGraphs: TheoryGraph
 
-# C-set morphisms
+  # C-set morphisms
 #################
 
 # Constructors and accessors.
@@ -266,4 +266,21 @@ X = TheoryDDS[:X]
                         Dict(:src => id(X), :tgt => :Φ))
 @test dds == DDS(dds, Dict(:X => :X),
                       Dict(:Φ => [:Φ, :Φ, :Φ, :Φ]))
+
+@present TheoryLabeledDDS <: TheoryDDS begin
+  Label::Data
+  label::Attr(X, Label)
+end
+const LabeledDDS = ACSetType(TheoryLabeledDDS, index=[:Φ, :label])
+
+ldds = LabeledDDS{Int}()
+add_parts!(ldds, :X, 4, Φ=[2,3,4,1], label=[100, 101, 102, 103])
+
+wg = WeightedGraph{Int}(4)
+add_parts!(wg, :E, 4, src=[1,2,3,4], tgt=[2,3,4,1], weight=[101, 102, 103, 100])
+
+@test wg == WeightedGraph{Int}(ldds,  Dict(:V => :X, :E => :X),
+                                      Dict(:src => id(X), :tgt => :Φ, :weight => [:Φ, :label]))
+  
+
 end
