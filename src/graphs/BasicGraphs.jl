@@ -96,11 +96,11 @@ all_neighbors(g::AbstractGraph, v::Int) =
 
 function induced_subgraph(g::G, vs::AbstractVector{Int}) where G <: AbstractACSet
   vset = Set(vs)
-  es = filter!(reduce(vcat, incident(g, vs, :src), init=Int[])) do e
+  es = Iterators.filter(Iterators.flatten(incident(g, vs, :src))) do e
     tgt(g, e) ∈ vset
   end
   sub = G()
-  copy_parts!(sub, g, V=vs, E=es)
+  copy_parts!(sub, g, V=vs, E=collect(Int, es))
   sub
 end
 
