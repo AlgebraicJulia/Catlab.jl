@@ -51,6 +51,14 @@ add_edge!(g, 1, 2)
 @test ne(g) == 1
 @test isempty(outneighbors(g, 2))
 
+# Induced subgraphs.
+g = Graph(3)
+add_edges!(g, [1,1,2], [3,3,3])
+sub = induced_subgraph(g, [1,3])
+@test nv(sub) == 2
+@test src(sub) == [1,1]
+@test tgt(sub) == [2,2]
+
 # Symmetric graphs
 ##################
 

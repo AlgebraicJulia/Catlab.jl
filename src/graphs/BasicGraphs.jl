@@ -8,7 +8,7 @@ module BasicGraphs
 export AbstractGraph, Graph, nv, ne, src, tgt, edges, vertices,
   has_edge, has_vertex, add_edge!, add_edges!, add_vertex!, add_vertices!,
   rem_edge!, rem_edges!, rem_vertex!, rem_vertices!,
-  neighbors, inneighbors, outneighbors, all_neighbors,
+  neighbors, inneighbors, outneighbors, all_neighbors, induced_subgraph,
   AbstractSymmetricGraph, SymmetricGraph, inv,
   AbstractReflexiveGraph, ReflexiveGraph, refl,
   AbstractSymmetricReflexiveGraph, SymmetricReflexiveGraph,
@@ -21,7 +21,7 @@ import Base: inv
 import LightGraphs: SimpleGraph, SimpleDiGraph,
   nv, ne, src, dst, edges, vertices, has_edge, has_vertex,
   add_edge!, add_vertex!, add_vertices!, rem_edge!, rem_vertex!, rem_vertices!,
-  neighbors, inneighbors, outneighbors, all_neighbors
+  neighbors, inneighbors, outneighbors, all_neighbors, induced_subgraph
 
 using ...Present, ...CSetDataStructures
 
@@ -93,6 +93,16 @@ inneighbors(g::AbstractGraph, v::Int) = subpart(g, incident(g, v, :tgt), :src)
 outneighbors(g::AbstractGraph, v::Int) = subpart(g, incident(g, v, :src), :tgt)
 all_neighbors(g::AbstractGraph, v::Int) =
   Iterators.flatten((inneighbors(g, v), outneighbors(g, v)))
+
+function induced_subgraph(g::G, vs::AbstractVector{Int}) where G <: AbstractACSet
+  vset = Set(vs)
+  es = filter!(reduce(vcat, incident(g, vs, :src), init=Int[])) do e
+    tgt(g, e) ∈ vset
+  end
+  sub = G()
+  copy_parts!(sub, g, V=vs, E=es)
+  sub
+end
 
 # Symmetric graphs
 ##################
