@@ -269,10 +269,10 @@ given dictionaries representing a functor between theories
 """
 
 function migrate!(Y::ACSet{CD, AD}, X::ACSet, FOb::Dict, FHom::Dict) where {CD, AD}
-  @assert CD.ob ⊆ keys(FOb)
-  @assert CD.hom ⊆ keys(FHom)
-  @assert AD.attr ⊆ keys(FHom)
-
+  CD.ob ⊆ keys(FOb)     || error("Every object in $CD must be a key in $FOb")
+  CD.hom ⊆ keys(FHom)   || error("Every hom in $CD must be a key in $FHom")
+  AD.attr ⊆ keys(FHom)  || error("Every attribute in $AD must be a key in $FHom")
+  
   for (obY, obX) in FOb  
     add_parts!(Y, obY, nparts(X, obX))
   end
