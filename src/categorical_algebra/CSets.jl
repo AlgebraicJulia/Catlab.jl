@@ -273,12 +273,12 @@ function migrate!(Y::ACSet{CD, AD}, X::ACSet, FOb::Dict, FHom::Dict) where {CD, 
   CD.hom ⊆ keys(FHom)   || error("Every hom in $CD must be a key in $FHom")
   AD.attr ⊆ keys(FHom)  || error("Every attribute in $AD must be a key in $FHom")
   
-  for (obY, obX) in FOb  
-    add_parts!(Y, obY, nparts(X, obX))
+  for obY in CD.ob
+    add_parts!(Y, obY, nparts(X, FOb[obY]))
   end
 
-  for (homY, homX) in FHom
-    set_subpart!(Y, homY, subpart(X, homX))
+  for homY in CD.hom ∪ AD.attr
+    set_subpart!(Y, homY, subpart(X, FHom[homY]))
   end
   return Y
 end
