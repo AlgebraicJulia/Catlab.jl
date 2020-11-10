@@ -1,13 +1,13 @@
-""" Algorithms operating on wiring diagrams.
+""" Algorithms on wiring diagrams.
 """
 module WiringDiagramAlgorithms
 export topological_sort, normalize_cartesian!, normalize_copy!,
   normalize_delete!, crossing_minimization_by_sort
 
 using DataStructures
-using LightGraphs: DiGraph, topological_sort_by_dfs
 using Statistics: mean
 
+import ...Graphs.GraphAlgorithms: topological_sort
 using ..DirectedWiringDiagrams
 import ..DirectedWiringDiagrams: set_box
 
@@ -18,9 +18,8 @@ import ..DirectedWiringDiagrams: set_box
 
 Returns a list of box IDs, excluding the outer box's input and output IDs.
 """
-function topological_sort(d::WiringDiagram)::Vector{Int}
-  vs = topological_sort_by_dfs(DiGraph(graph(d)))
-  filter(v -> v ∉ outer_ids(d), vs)
+function topological_sort(d::WiringDiagram)::AbstractVector{Int}
+  filter(v -> v ∉ outer_ids(d), topological_sort(graph(d)))
 end
 
 # Normalization
