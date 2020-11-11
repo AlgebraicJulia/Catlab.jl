@@ -132,19 +132,20 @@ end
 """ Draw an atomic box in Compose.jl.
 """
 function render_box(layout::BoxLayout, opts::ComposeOptions)
-  render_box(Val(layout.shape), layout, opts)
+  render_box(Val{layout.shape}, layout, opts)
 end
-function render_box(::Val{:rectangle}, layout::BoxLayout, opts::ComposeOptions)
+function render_box(::Type{Val{:rectangle}}, layout::BoxLayout,
+                    opts::ComposeOptions)
   form = opts.rounded_boxes ? rounded_rectangle() : C.rectangle()
   labeled_box(form, layout, opts)
 end
-render_box(::Val{:circle}, layout::BoxLayout, opts::ComposeOptions) =
+render_box(::Type{Val{:circle}}, layout::BoxLayout, opts::ComposeOptions) =
   labeled_box(C.circle(), layout, opts)
-render_box(::Val{:ellipse}, layout::BoxLayout, opts::ComposeOptions) =
+render_box(::Type{Val{:ellipse}}, layout::BoxLayout, opts::ComposeOptions) =
   labeled_box(C.ellipse(), layout, opts)
-render_box(::Val{:junction}, layout::BoxLayout, opts::ComposeOptions) =
+render_box(::Type{Val{:junction}}, layout::BoxLayout, opts::ComposeOptions) =
   C.compose(C.context(), C.circle(), box_props(layout, opts)...)
-render_box(::Val{:invisible}, ::BoxLayout, ::ComposeOptions) = C.context()
+render_box(::Type{Val{:invisible}}, ::BoxLayout, ::ComposeOptions) = C.context()
 
 function labeled_box(form::C.ComposeNode, layout::BoxLayout, opts::ComposeOptions)
   labeled_form(form, box_label(MIME("text/plain"), layout.value),
