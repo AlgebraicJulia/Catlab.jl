@@ -1,7 +1,8 @@
 """ Algorithms on graphs based on C-sets.
 """
 module GraphAlgorithms
-export connected_components, connected_component_projection, topological_sort
+export connected_components, connected_component_projection, topological_sort,
+  transitive_reduction!
 
 using Compat: isnothing
 using DataStructures: Stack
@@ -25,8 +26,8 @@ end
 # Implemented elsewhere, where coequalizers are available.
 function connected_component_projection end
 
-# Traversal
-###########
+# DAGs
+######
 
 abstract type TopologicalSortAlgorithm end
 struct TopologicalSortByDFS <: TopologicalSortAlgorithm end
@@ -73,5 +74,40 @@ function topological_sort(g::AbstractACSet, ::TopologicalSortByDFS)
 end
 
 @enum TopologicalSortDFSMarking Unmarked=0 TempMarked=1 Marked=2
+
+""" Transitive reduction of a DAG.
+
+The algorithm computes the longest paths in the DAGs and keeps only the edges
+corresponding to longest paths of length 1. Requires a topological sort, which
+is computed if it is not supplied.
+"""
+function transitive_reduction!(g::AbstractACSet; sorted=nothing)
+  lengths = longest_paths(g, sorted=sorted)
+  transitive_edges = filter(edges(g)) do e
+    lengths[tgt(g,e)] - lengths[src(g,e)] != 1
+  end
+  rem_edges!(g, transitive_edges)
+  return g
+end
+
+""" Longest paths in a DAG.
+
+Returns a vector of integers whose i-th element is the length of the longest
+path to vertex i. Requires a topological sort, which is computed if it is not
+supplied.
+"""
+function longest_paths(g::AbstractACSet;
+                       sorted::Union{AbstractVector{Int},Nothing}=nothing)
+  if isnothing(sorted)
+    sorted = topological_sort(g)
+  end
+  lengths = fill(0, nv(g))
+  for v in sorted
+    lengths[v] = mapreduce(max, inneighbors(g, v), init=0) do u
+      lengths[u] + 1
+    end
+  end
+  lengths
+end
 
 end
