@@ -14,4 +14,8 @@ end
   include("PropertyGraphs.jl")
 end
 
+@testset "GraphAlgorithms" begin
+  include("GraphAlgorithms.jl")
+end
+
 end

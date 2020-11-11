@@ -12,7 +12,6 @@ export Ports, Junction, PortOp, BoxOp, functor, permute,
   junction_caps, junction_cups, junctioned_dunit, junctioned_dcounit
 
 using AutoHashEquals
-using LightGraphs
 
 using ...GAT, ...Theories
 import ...Theories: dom, codom, id, compose, ⋅, ∘,
@@ -20,6 +19,7 @@ import ...Theories: dom, codom, id, compose, ⋅, ∘,
   mcopy, delete, Δ, ◊, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
   plus, zero, coplus, cozero, meet, join, top, bottom, trace
 import ...Syntax: functor, head
+using ...CSetDataStructures, ...Graphs
 using ..DirectedWiringDiagrams
 import ..DirectedWiringDiagrams: Box, WiringDiagram, input_ports, output_ports
 import ..UndirectedWiringDiagrams: add_junctions!, junction_diagram
@@ -508,16 +508,16 @@ end
 """ Merge adjacent junction nodes into single junctions.
 """
 function merge_junctions(d::WiringDiagram; op=nothing)
-  junction_ids = filter(v -> box(d,v) isa Junction{op}, box_ids(d))
-  junction_graph, vmap = induced_subgraph(DiGraph(graph(d)), junction_ids)
-  for edge in edges(junction_graph)
-    # Only merge junctions with equal values.
-    if box(d, vmap[src(edge)]).value != box(d, vmap[dst(edge)]).value
-      rem_edge!(junction_graph, edge)
-    end
+  g = graph(d)
+  junction_vs = filter(v -> box(d,v) isa Junction{op}, vertices(g))
+  junction_es = filter(edges(g)) do e
+    s, t = box(d, src(g, e)), box(d, tgt(g, e))
+    s isa Junction{op} && t isa Junction{op} && s.value == t.value
   end
-  components = [ [vmap[v] for v in component]
-    for component in weakly_connected_components(junction_graph)
+  junction_graph = Graph()
+  copy_parts!(junction_graph, g, V=junction_vs, E=junction_es)
+  components = [ [junction_vs[v] for v in component]
+    for component in connected_components(junction_graph)
     if length(component) > 1 ]
   values = [ box(d, first(component)).value for component in components ]
   encapsulate(d, components;

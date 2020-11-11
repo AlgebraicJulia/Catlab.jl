@@ -13,11 +13,10 @@ module WiringDiagramExpressions
 export to_ob_expr, to_hom_expr, to_wiring_diagram, to_undirected_wiring_diagram
 
 using Compat
-using LightGraphs
 
 using ...Syntax, ...Theories, ...Permutations
 using ...Syntax: syntax_module
-using ..DirectedWiringDiagrams, ..UndirectedWiringDiagrams,
+using ...Graphs, ..DirectedWiringDiagrams, ..UndirectedWiringDiagrams,
   ..MonoidalDirectedWiringDiagrams, ..MonoidalUndirectedWiringDiagrams
 using ..WiringDiagramAlgorithms: crossing_minimization_by_sort
 
@@ -135,7 +134,7 @@ end
 """ All possible parallel reductions of a wiring diagram.
 """
 function parallel_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
-  g = DiGraph(graph(d))
+  g = graph(d)
   parallel = find_parallel(g, skip=outer_ids(d))
   encapsulate_parallel(Ob, Hom, d, [
     (vs, [src], [tgt]) for ((src, tgt), vs) in parallel
@@ -148,11 +147,13 @@ Because these reductions are not necessarily unique, only one is performed,
 the first one in topological sort order.
 """
 function input_parallel_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
-  g = DiGraph(graph(d))
+  g = graph(d)
   parallel = find_one_sided_parallel(g, input=true, skip=outer_ids(d))
-  if isempty(parallel); return d end
-  sub, vmap = induced_subgraph(g, collect(keys(parallel)))
-  src = vmap[first(topological_sort_by_dfs(sub))]
+  if isempty(parallel)
+    return d
+  end
+  vs = collect(keys(parallel))
+  src = vs[first(topological_sort(induced_subgraph(g, vs)))]
   encapsulate_parallel(Ob, Hom, d, [ (parallel[src], [src], Int[]) ])
 end
 
@@ -162,11 +163,13 @@ Because these reductions are not necessarily unique, only one is performed,
 the last one in topological sort order.
 """
 function output_parallel_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
-  g = DiGraph(graph(d))
+  g = graph(d)
   parallel = find_one_sided_parallel(g, input=false, skip=outer_ids(d))
-  if isempty(parallel); return d end
-  sub, vmap = induced_subgraph(g, collect(keys(parallel)))
-  tgt = vmap[last(topological_sort_by_dfs(sub))]
+  if isempty(parallel)
+    return d
+  end
+  vs = collect(keys(parallel))
+  tgt = vs[last(topological_sort(induced_subgraph(g, vs)))]
   encapsulate_parallel(Ob, Hom, d, [ (parallel[tgt], Int[], [tgt]) ])
 end
 
@@ -187,7 +190,7 @@ end
 function series_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
   box_to_expr(v::Int) = to_hom_expr(Ob, Hom, box(d,v))
 
-  g = DiGraph(graph(d))
+  g = graph(d)
   series = find_series(g, source=input_id(d), sink=output_id(d))
   composites = map(series) do vs
     exprs = Hom[ box_to_expr(vs[1]) ]
@@ -206,7 +209,7 @@ function transitive_reduction!(Ob::Type, d::WiringDiagram)
   # Compute transitive reduction of underlying graph.
   # First add extra edges for the "invisible wires" corresponding to monoidal
   # units, since transitive reduction can be needed even in this case.
-  g = DiGraph(graph(d))
+  g = graph(d)
   reduced = copy(g)
   for v in box_ids(d)
     if isempty(input_ports(d, v))
@@ -216,12 +219,13 @@ function transitive_reduction!(Ob::Type, d::WiringDiagram)
       add_edge!(reduced, v, output_id(d))
     end
   end
-  reduced = transitive_reduction!(reduced)
+  reduced = Graphs.transitive_reduction!(reduced)
 
   # Add junction node for each wire removed by transitive reduction.
   for edge in collect(edges(g))
-    if !has_edge(reduced, edge)
-      for wire in wires(d, src(edge), dst(edge))
+    s, t = src(g, edge), tgt(g, edge)
+    if !has_edge(reduced, s, t)
+      for wire in wires(d, s, t)
         value = port_value(d, wire.source) # =?= port_value(d, wire.target)
         v = add_box!(d, Junction(value, 1, 1))
         add_wire!(d, Wire(wire.source => Port(v,InputPort,1)))
@@ -307,11 +311,11 @@ end
 This two-sided notion of parallel composition is standard in the literature on
 series-parallel digraphs.
 """
-function find_parallel(g::DiGraph; skip=())
+function find_parallel(g::AbstractGraph; skip=())
   parallel = Dict{Pair{Int,Int},Vector{Int}}()
   for v in 1:nv(g)
     if v in skip; continue end
-    v_in, v_out = inneighbors(g,v), outneighbors(g,v)
+    v_in, v_out = unique(inneighbors(g,v)), unique(outneighbors(g,v))
     if length(v_in) == 1 && length(v_out) == 1
       u, w = first(v_in), first(v_out)
       push!(get!(parallel, u => w, Int[]), v)
@@ -325,11 +329,11 @@ end
 Finds either input-sided or output-sided compositions. This weaker notion of
 parallel composition seems to be nonstandard.
 """
-function find_one_sided_parallel(g::DiGraph; input::Bool=true, skip=())
+function find_one_sided_parallel(g::AbstractGraph; input::Bool=true, skip=())
   parallel = Dict{Int,Vector{Int}}()
   for v in 1:nv(g)
     if v in skip; continue end
-    vs = input ? inneighbors(g,v) : outneighbors(g,v)
+    vs = unique(input ? inneighbors(g,v) : outneighbors(g,v))
     if length(vs) == 1
       push!(get!(parallel, first(vs), Int[]), v)
     end
@@ -339,40 +343,24 @@ end
 
 """ Find series compositions in a directed graph.
 """
-function find_series(g::DiGraph; source=nothing, sink=nothing)::Vector{Vector{Int}}
-  series_graph = DiGraph(nv(g))
+function find_series(g::AbstractGraph; source=nothing, sink=nothing)::Vector{Vector{Int}}
+  series_graph = Graph(nv(g))
   for edge in edges(g)
-    if (length(outneighbors(g,src(edge))) == 1 &&
-        length(inneighbors(g,dst(edge))) == 1 &&
-        src(edge) != source && dst(edge) != sink)
-      add_edge!(series_graph, edge)
+    s, t = src(g, edge), tgt(g, edge)
+    if (length(unique(outneighbors(g,s))) == 1 &&
+        length(unique(inneighbors(g,t))) == 1 &&
+        s != source && t != sink)
+      add_edge!(series_graph, s, t)
     end
   end
   series = Vector{Int}[]
-  for component in weakly_connected_components(series_graph)
+  for component in connected_components(series_graph)
     if length(component) > 1
-      sub, vmap = induced_subgraph(series_graph, component)
-      push!(series, Int[ vmap[v] for v in topological_sort_by_dfs(sub) ])
+      sub = induced_subgraph(series_graph, component)
+      push!(series, Int[ component[v] for v in topological_sort(sub) ])
     end
   end
   series
-end
-
-""" Transitive reduction of a directed acyclic graph.
-
-Algorithm described at CS.SE: https://cs.stackexchange.com/a/29133
-"""
-function transitive_reduction!(g::DiGraph)::DiGraph
-  for u in 1:nv(g)
-    for v in outneighbors(g, u)
-      for w in neighborhood(g, v, nv(g))
-        if w != v
-          rem_edge!(g, u, w)
-        end
-      end
-    end
-  end
-  return g
 end
 
 end

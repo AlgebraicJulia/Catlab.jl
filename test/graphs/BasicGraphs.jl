@@ -4,6 +4,8 @@ using Test
 import LightGraphs
 using Catlab.Graphs.BasicGraphs
 
+const LG = LightGraphs
+
 # Graphs
 ########
 
@@ -30,11 +32,11 @@ add_edge!(g, 1, 2)
 @test collect(edges(g, 1, 2)) == [1,3]
 @test outneighbors(g, 1) == [2,2]
 @test inneighbors(g, 1) == []
-@test LightGraphs.DiGraph(g) == LightGraphs.path_digraph(3)
+@test LG.DiGraph(g) == LG.path_digraph(3)
 
 g = Graph(4)
 add_edges!(g, [1,2,3], [2,3,4])
-@test LightGraphs.DiGraph(g) == LightGraphs.path_digraph(4)
+@test LG.DiGraph(g) == LG.path_digraph(4)
 
 rem_edge!(g, 3, 4)
 @test ne(g) == 2
@@ -50,6 +52,14 @@ add_edge!(g, 1, 2)
 @test_throws Exception add_edge!(g, 2, 3) # nonexistent target vertex
 @test ne(g) == 1
 @test isempty(outneighbors(g, 2))
+
+# Induced subgraphs.
+g = Graph(3)
+add_edges!(g, [1,1,2], [3,3,3])
+sub = induced_subgraph(g, [1,3])
+@test nv(sub) == 2
+@test src(sub) == [1,1]
+@test tgt(sub) == [2,2]
 
 # Symmetric graphs
 ##################
@@ -68,13 +78,12 @@ add_edge!(g, 2, 3)
 @test neighbors(g, 1) == [2]
 @test neighbors(g, 2) == [1,3]
 @test neighbors(g, 3) == [2]
-@test LightGraphs.Graph(g) == LightGraphs.path_graph(3)
+@test LG.Graph(g) == LG.path_graph(3)
 
 g = SymmetricGraph(4)
 add_edges!(g, [1,2,3], [2,3,4])
-lg = LightGraphs.DiGraph(4)
-map((src, tgt) -> add_edge!(lg, src, tgt), [1,2,3,2,3,4], [2,3,4,1,2,3])
-@test LightGraphs.DiGraph(g) == lg
+lg = LG.DiGraph(map(LG.Edge, [1,2,3,2,3,4], [2,3,4,1,2,3]))
+@test LG.DiGraph(g) == lg
 
 rem_edge!(g, 3, 4)
 @test ne(g) == 4
@@ -168,9 +177,8 @@ add_dangling_edges!(g, [2,2])
 
 g = HalfEdgeGraph(4)
 add_edges!(g, [1,2,3], [2,3,4])
-lg = LightGraphs.Graph(4)
-map((src, tgt) -> add_edge!(lg, src, tgt), [1,2,3], [2,3,4])
-@test LightGraphs.Graph(g) == lg
+lg = LG.Graph(map(LG.Edge, [1,2,3], [2,3,4]))
+@test LG.Graph(g) == lg
 
 rem_edge!(g, 3, 4)
 @test Set(zip(vertex(g), vertex(g,inv(g)))) == Set([(1,2),(2,1),(2,3),(3,2)])

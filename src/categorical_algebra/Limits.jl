@@ -5,9 +5,11 @@ export AbstractLimit, AbstractColimit, Limit, Colimit,
   ob, cone, cocone, apex, legs, limit, colimit, universal,
   Terminal, Initial, terminal, initial, delete, create, factorize,
   BinaryProduct, Product, product, proj1, proj2, pair,
-  BinaryPullback, Pullback, BinaryEqualizer, Equalizer, pullback, incl,
+  BinaryPullback, Pullback, pullback,
+  BinaryEqualizer, Equalizer, equalizer, incl,
   BinaryCoproduct, Coproduct, coproduct, coproj1, coproj2, copair,
-  BinaryPushout, Pushout, BinaryCoequalizer, Coequalizer, pushout, proj,
+  BinaryPushout, Pushout, pushout,
+  BinaryCoequalizer, Coequalizer, coequalizer, proj,
   composite_pullback, composite_pushout
 
 using Compat: only

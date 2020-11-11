@@ -9,6 +9,7 @@ include("Matrices.jl")
 include("FinRelations.jl")
 include("PredicatedSets.jl")
 include("CSets.jl")
+include("GraphCategories.jl")
 include("StructuredCospans.jl")
 include("Squares.jl")
 

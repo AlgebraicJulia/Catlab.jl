@@ -1,9 +1,8 @@
 module TestWiringDiagramExpressions
 
 using Test
-using LightGraphs
 
-using Catlab.Theories, Catlab.WiringDiagrams
+using Catlab.Theories, Catlab.Graphs, Catlab.WiringDiagrams
 using Catlab.Syntax: syntax_module
 using Catlab.WiringDiagrams.WiringDiagramExpressions: find_parallel,
   find_series, transitive_reduction!
@@ -210,19 +209,14 @@ f, g = Hom(:f,A,B), Hom(:g,B,C)
 # Graph operations
 ##################
 
-# Parallel compositions in digraph.
-graph = DiGraph([Edge(1,2),Edge(2,3),Edge(3,4),Edge(3,5),Edge(4,6),Edge(5,6)])
+# Parallel compositions in graph.
+graph = Graph(6)
+add_edges!(graph, [1,2,3,3,4,5], [2,3,4,5,6,6])
 @test find_parallel(graph) == Dict((3 => 6) => [4,5])
 
-# Series compositions in digraph.
-graph = union(DiGraph(10), path_digraph(3))
-add_edge!(graph,5,6); add_edge!(graph,8,9); add_edge!(graph,9,10)
-@test Set(find_series(graph)) == Set([[1,2,3],[5,6],[8,9,10]])
-
-# Transitive reduction of DAG.
-graph = DiGraph([ Edge(1,2),Edge(1,3),Edge(1,4),Edge(1,5),
-                  Edge(2,4),Edge(3,4),Edge(3,5),Edge(4,5) ])
-transitive_reduction!(graph)
-@test graph == DiGraph([Edge(1,2),Edge(1,3),Edge(2,4),Edge(3,4),Edge(4,5)])
+# Series compositions in graph.
+graph = Graph(13)
+add_edges!(graph, [5,8,9,11,12], [6,9,10,12,13])
+@test Set(find_series(graph)) == Set([[5,6],[8,9,10],[11,12,13]])
 
 end

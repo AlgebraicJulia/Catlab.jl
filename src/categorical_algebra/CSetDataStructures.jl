@@ -584,7 +584,7 @@ the edge itself is not deleted.
 Indexing has both positive and negative impacts on performance. On the one hand,
 indexing reduces the cost of finding affected superparts from linear time to
 constant time. On the other hand, the indices of subparts must be updated when
-the parted is remove. For example, in a graph, indexing `src` and `tgt` makes
+the part is removed. For example, in a graph, indexing `src` and `tgt` makes
 removing vertices faster but removing edges (slightly) slower.
 
 See also: [`rem_parts!`](@ref).
