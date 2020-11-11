@@ -13,6 +13,10 @@ using ...CSetDataStructures, ..BasicGraphs
 # Connectivity
 ##############
 
+""" (Weakly) connected components of a graph.
+
+Returns a vector of vectors, which are the components of the graph.
+"""
 function connected_components(g::AbstractACSet)::Vector{Vector{Int}}
   π = connected_component_projection(g)
   components = [ Int[] for c in codom(π) ]
@@ -22,8 +26,12 @@ function connected_components(g::AbstractACSet)::Vector{Vector{Int}}
   components
 end
 
-# Implemented elsewhere, where coequalizers are available.
+""" Projection onto (weakly) connected components of a graph.
+
+Returns a function in FinSet{Int} from the vertex set to the set of components.
+"""
 function connected_component_projection end
+# Implemented elsewhere, where coequalizers are available.
 
 # DAGs
 ######
