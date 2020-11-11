@@ -58,7 +58,8 @@ edges(g::AbstractACSet, src::Int, tgt::Int) =
 
 has_vertex(g::AbstractACSet, v) = has_part(g, :V, v)
 has_edge(g::AbstractACSet, e) = has_part(g, :E, e)
-has_edge(g::AbstractACSet, src::Int, tgt::Int) = tgt ∈ outneighbors(g, src)
+has_edge(g::AbstractACSet, src::Int, tgt::Int) =
+  has_vertex(g, src) && tgt ∈ outneighbors(g, src)
 
 add_vertex!(g::AbstractACSet; kw...) = add_part!(g, :V; kw...)
 add_vertices!(g::AbstractACSet, n::Int; kw...) = add_parts!(g, :V, n; kw...)
