@@ -6,7 +6,6 @@ export connected_components, connected_component_projection, topological_sort,
 
 using Compat: isnothing
 using DataStructures: Stack
-import LightGraphs: connected_components
 
 using ...Theories: dom, codom
 using ...CSetDataStructures, ..BasicGraphs

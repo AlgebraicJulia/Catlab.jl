@@ -16,12 +16,8 @@ export AbstractGraph, Graph, nv, ne, src, tgt, edges, vertices,
   add_dangling_edge!, add_dangling_edges!
 
 using Compat: only
-
 import Base: inv
-import LightGraphs: SimpleGraph, SimpleDiGraph,
-  nv, ne, src, dst, edges, vertices, has_edge, has_vertex,
-  add_edge!, add_vertex!, add_vertices!, rem_edge!, rem_vertex!, rem_vertices!,
-  neighbors, inneighbors, outneighbors, all_neighbors, induced_subgraph
+using Requires
 
 using ...Present, ...CSetDataStructures
 
@@ -49,7 +45,6 @@ ne(g::AbstractACSet, src::Int, tgt::Int) =
 
 src(g::AbstractACSet, args...) = subpart(g, args..., :src)
 tgt(g::AbstractACSet, args...) = subpart(g, args..., :tgt)
-dst(g::AbstractACSet, args...) = tgt(g, args...) # LightGraphs compatibility
 
 vertices(g::AbstractACSet) = parts(g, :V)
 edges(g::AbstractACSet) = parts(g, :E)
@@ -346,24 +341,31 @@ rem_edges!(g::AbstractHalfEdgeGraph, hs) =
 # LightGraphs constructors
 ##########################
 
-function (::Type{LG})(g::Union{AbstractGraph,AbstractSymmetricGraph}) where
-    LG <: Union{SimpleGraph,SimpleDiGraph}
-  lg = LG(nv(g))
-  for e in edges(g)
-    add_edge!(lg, src(g,e), tgt(g,e))
-  end
-  lg
-end
+function __init__()
+  @require LightGraphs="093fc24a-ae57-5d10-9952-331d41423f4d" begin
+    import .LightGraphs
+    import .LightGraphs: SimpleGraph, SimpleDiGraph
 
-function SimpleGraph(g::AbstractHalfEdgeGraph)
-  lg = SimpleGraph(nv(g))
-  for e in half_edges(g)
-    e′ = inv(g,e)
-    if e <= e′
-      add_edge!(lg, vertex(g,e), vertex(g,e′))
+    function (::Type{LG})(g::Union{AbstractGraph,AbstractSymmetricGraph}) where
+        LG <: Union{SimpleGraph,SimpleDiGraph}
+      lg = LG(nv(g))
+      for e in edges(g)
+        LightGraphs.add_edge!(lg, src(g,e), tgt(g,e))
+      end
+      lg
+    end
+
+    function SimpleGraph(g::AbstractHalfEdgeGraph)
+      lg = SimpleGraph(nv(g))
+      for e in half_edges(g)
+        e′ = inv(g,e)
+        if e <= e′
+          LightGraphs.add_edge!(lg, vertex(g,e), vertex(g,e′))
+        end
+      end
+      lg
     end
   end
-  lg
 end
 
 end
