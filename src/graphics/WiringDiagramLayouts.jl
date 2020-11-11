@@ -336,10 +336,10 @@ function layout_box(inputs::Vector, outputs::Vector, opts::LayoutOptions;
     isnothing(shape) ? opts.default_box_shape : shape
   end
   style = get(opts.box_styles, value, style)
-  layout_box(Val(shape), inputs, outputs, opts; style=style, value=value, kw...)
+  layout_box(Val{shape}, inputs, outputs, opts; style=style, value=value, kw...)
 end
 
-function layout_box(::Val{:rectangle}, inputs::Vector, outputs::Vector,
+function layout_box(::Type{Val{:rectangle}}, inputs::Vector, outputs::Vector,
                     opts::LayoutOptions; shape::Symbol=:rectangle, kw...)
   size = default_box_size(length(inputs), length(outputs), opts)
   box = Box(BoxLayout(; shape=shape, size=size, kw...),
@@ -348,7 +348,7 @@ function layout_box(::Val{:rectangle}, inputs::Vector, outputs::Vector,
   size_to_fit!(singleton_diagram(box), opts)
 end
 
-function layout_box(::Val{:circle}, inputs::Vector, outputs::Vector,
+function layout_box(::Type{Val{:circle}}, inputs::Vector, outputs::Vector,
                     opts::LayoutOptions; pad::Bool=true, kw...)
   size = default_box_size(1, 1, opts)
   radius = first(size) / 2
@@ -358,7 +358,7 @@ function layout_box(::Val{:circle}, inputs::Vector, outputs::Vector,
   size_to_fit!(singleton_diagram(box), opts)
 end
 
-function layout_box(::Val{:ellipse}, inputs::Vector, outputs::Vector,
+function layout_box(::Type{Val{:ellipse}}, inputs::Vector, outputs::Vector,
                     opts::LayoutOptions; pad::Bool=true, kw...)
   size = default_box_size(length(inputs), length(outputs), opts)
   radii = size / 2
@@ -368,29 +368,29 @@ function layout_box(::Val{:ellipse}, inputs::Vector, outputs::Vector,
   size_to_fit!(singleton_diagram(box), opts)
 end
 
-function layout_box(::Val{:triangle}, inputs::Vector, outputs::Vector,
+function layout_box(::Type{Val{:triangle}}, inputs::Vector, outputs::Vector,
                     opts::LayoutOptions; kw...)
   @assert length(inputs) <= 1 "Cannot use triangle shape with multiple inputs"
-  layout_box(Val(:rectangle), inputs, outputs, opts; shape=:triangle, kw...)
+  layout_box(Val{:rectangle}, inputs, outputs, opts; shape=:triangle, kw...)
 end
-function layout_box(::Val{:invtriangle}, inputs::Vector, outputs::Vector,
+function layout_box(::Type{Val{:invtriangle}}, inputs::Vector, outputs::Vector,
                     opts::LayoutOptions; kw...)
   @assert length(outputs) <= 1 "Cannot use invtriangle shape with multiple outputs"
-  layout_box(Val(:rectangle), inputs, outputs, opts; shape=:invtriangle, kw...)
+  layout_box(Val{:rectangle}, inputs, outputs, opts; shape=:invtriangle, kw...)
 end
 
 # Although `trapezoid` is the standard term in North American English,
 # we use the term `trapezium` because both Graphviz and TikZ do. 
-function layout_box(::Val{:trapezium}, inputs::Vector, outputs::Vector,
+function layout_box(::Type{Val{:trapezium}}, inputs::Vector, outputs::Vector,
                     opts::LayoutOptions; kw...)
-  layout_box(Val(:rectangle), inputs, outputs, opts; shape=:trapezium, kw...)
+  layout_box(Val{:rectangle}, inputs, outputs, opts; shape=:trapezium, kw...)
 end
-function layout_box(::Val{:invtrapezium}, inputs::Vector, outputs::Vector,
+function layout_box(::Type{Val{:invtrapezium}}, inputs::Vector, outputs::Vector,
                     opts::LayoutOptions; kw...)
-  layout_box(Val(:rectangle), inputs, outputs, opts; shape=:invtrapezium, kw...)
+  layout_box(Val{:rectangle}, inputs, outputs, opts; shape=:invtrapezium, kw...)
 end
 
-function layout_box(::Val{:junction}, inputs::Vector, outputs::Vector,
+function layout_box(::Type{Val{:junction}}, inputs::Vector, outputs::Vector,
                     opts::LayoutOptions; visible::Bool=true, pad::Bool=true, kw...)
   nin, nout = length(inputs), length(outputs)
   shape, radius = visible ? (:junction, opts.junction_size) : (:invisible, 0)
@@ -494,17 +494,17 @@ function layout_outer_ports(diagram::WiringDiagram, opts::LayoutOptions;
     end
     method = :fixed
   end
-  layout_outer_ports(diagram, opts, Val(method); kw...)
+  layout_outer_ports(diagram, opts, Val{method}; kw...)
 end
 
 function layout_outer_ports(diagram::WiringDiagram, opts::LayoutOptions,
-                            ::Val{:fixed})
+                            ::Type{Val{:fixed}})
   (layout_linear_ports(InputPort, input_ports(diagram), size(diagram), opts),
    layout_linear_ports(OutputPort, output_ports(diagram), size(diagram), opts))
 end
 
 function layout_outer_ports(diagram::WiringDiagram, opts::LayoutOptions,
-                            ::Val{:isotonic})
+                            ::Type{Val{:isotonic}})
   inputs, outputs = input_ports(diagram), output_ports(diagram)
   diagram_size = diagram.value.size
   port_dir = svector(opts, 0, 1)
@@ -546,9 +546,9 @@ function layout_outer_ports(diagram::WiringDiagram, opts::LayoutOptions,
 end
 solve_isotonic(args...; kw...) = error("Isotonic regression backend not available")
 
-has_port_layout_method(method::Symbol) = has_port_layout_method(Val(method))
-has_port_layout_method(::Val) = false
-has_port_layout_method(::Val{:fixed}) = true
+has_port_layout_method(method::Symbol) = has_port_layout_method(Val{method})
+has_port_layout_method(::Type{<:Val}) = false
+has_port_layout_method(::Type{Val{:fixed}}) = true
 
 layout_port(value; kw...) = PortLayout(; value=value, kw...)
 

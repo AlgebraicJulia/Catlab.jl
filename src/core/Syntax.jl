@@ -439,21 +439,23 @@ function parse_json_sexpr(syntax_module::Module, sexpr;
   theory = GAT.theory(theory_type)
   type_lens = Dict(cons.name => length(cons.params) for cons in theory.types)
 
-  function parse_impl(sexpr::Vector, ::Val{:expr})
+  function parse_impl(sexpr::Vector, ::Type{Val{:expr}})
     name = Symbol(parse_head(symbols ? Symbol(sexpr[1]) : sexpr[1]))
     nargs = length(sexpr) - 1
     args = map(enumerate(sexpr[2:end])) do (i, arg)
       arg_kind = ((i == 1 && get(type_lens, name, nothing) == nargs-1) ||
                   arg isa Union{Bool,Number,Nothing}) ? :value : :expr
-      parse_impl(arg, Val(arg_kind))
+      parse_impl(arg, Val{arg_kind})
     end
     invoke_term(syntax_module, name, args...)
   end
-  parse_impl(x, ::Val{:value}) = parse_value(x)
-  parse_impl(x::String, ::Val{:expr}) = parse_reference(symbols ? Symbol(x) : x)
-  parse_impl(x::String, ::Val{:value}) = parse_value(symbols ? Symbol(x) : x)
+  parse_impl(x, ::Type{Val{:value}}) = parse_value(x)
+  parse_impl(x::String, ::Type{Val{:expr}}) =
+    parse_reference(symbols ? Symbol(x) : x)
+  parse_impl(x::String, ::Type{Val{:value}}) =
+    parse_value(symbols ? Symbol(x) : x)
 
-  parse_impl(sexpr, Val(:expr))
+  parse_impl(sexpr, Val{:expr})
 end
 
 # Pretty-print

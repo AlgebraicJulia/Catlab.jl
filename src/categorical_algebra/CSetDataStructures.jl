@@ -116,16 +116,16 @@ The resulting attributed C-set type can be seen as the type of a data table or
 data frame, hence the name.
 """
 function ACSetTableType(X::Type, ob₀::Symbol; union_all::Bool=false)
-  (union_all ? ACSetTableUnionAll : ACSetTableDataType)(X, Val(ob₀))
+  (union_all ? ACSetTableUnionAll : ACSetTableDataType)(X, Val{ob₀})
 end
 
-@generated function ACSetTableDataType(::Type{X}, ::Val{ob₀}) where
+@generated function ACSetTableDataType(::Type{X}, ::Type{Val{ob₀}}) where
     {CD<:CatDesc, AD<:AttrDesc{CD}, Ts, X<:AbstractACSet{CD,AD,Ts}, ob₀}
   CD₀, AD₀ = ACSetTableDesc(CD, AD, ob₀)
   :(ACSet{$CD₀,$AD₀,$Ts,(),()})
 end
 
-@generated function ACSetTableUnionAll(::Type{X}, ::Val{ob₀}) where
+@generated function ACSetTableUnionAll(::Type{X}, ::Type{Val{ob₀}}) where
     {CD<:CatDesc, AD<:AttrDesc{CD}, X<:AbstractACSet{CD,AD}, ob₀}
   CD₀, AD₀ = ACSetTableDesc(CD, AD, ob₀)
   :(ACSet{$CD₀,$AD₀,Tuple{$(AD.data...)},(),()} where {$(AD.data...)})
@@ -295,9 +295,10 @@ nparts(acs::ACSet, type) = length(acs.tables[type])
 
 """ Whether a C-set has a part with the given name.
 """
-has_part(acs::ACSet, type::Symbol) = _has_part(acs, Val(type))
+has_part(acs::ACSet, type::Symbol) = _has_part(acs, Val{type})
 
-@generated function _has_part(::ACSet{CD,AD}, ::Val{type}) where {CD,AD,type}
+@generated function _has_part(::ACSet{CD,AD}, ::Type{Val{type}}) where
+    {CD,AD,type}
   type ∈ CD.ob || type ∈ AD.data
 end
 
@@ -307,9 +308,10 @@ has_part(acs::ACSet, type::Symbol, part::AbstractVector{Int}) =
 
 """ Whether a C-set has a subpart with the given name.
 """
-has_subpart(acs::ACSet, name::Symbol) = _has_subpart(acs, Val(name))
+has_subpart(acs::ACSet, name::Symbol) = _has_subpart(acs, Val{name})
 
-@generated function _has_subpart(::ACSet{CD,AD}, ::Val{name}) where {CD,AD,name}
+@generated function _has_subpart(::ACSet{CD,AD}, ::Type{Val{name}}) where
+    {CD,AD,name}
   name ∈ CD.hom || name ∈ AD.attr
 end
 
@@ -338,7 +340,7 @@ they have different domains (belong to different tables).
 """
 subpart(acs::ACSet, part, name) = view_slice(subpart(acs, name), part)
 
-subpart(acs::ACSet, name::Symbol) = _subpart(acs, Val(name))
+subpart(acs::ACSet, name::Symbol) = _subpart(acs, Val{name})
 subpart(acs::ACSet, expr::GATExpr{:generator}) = subpart(acs, first(expr))
 subpart(acs::ACSet, expr::GATExpr{:id}) = parts(acs, first(dom(expr)))
 
@@ -359,7 +361,7 @@ subpart_names(expr::GATExpr{:id}) = Symbol[]
 subpart_names(expr::GATExpr{:compose}) =
   mapreduce(subpart_names, vcat, args(expr))
 
-@generated function _subpart(acs::ACSet{CD,AD,Ts}, ::Val{name}) where
+@generated function _subpart(acs::ACSet{CD,AD,Ts}, ::Type{Val{name}}) where
     {CD,AD,Ts,name}
   if name ∈ CD.hom
     :(acs.tables.$(dom(CD,name)).$name)
@@ -372,8 +374,8 @@ end
 
 Base.getindex(acs::ACSet, args...) = subpart(acs, args...)
 
-view_slice(x::AbstractVector, i) = view(x, i)
-view_slice(x::AbstractVector, i::Int) = x[i]
+@inline view_slice(x::AbstractVector, i) = view(x, i)
+@inline view_slice(x::AbstractVector, i::Int) = x[i]
 
 """ Get superparts incident to part in C-set.
 
@@ -394,7 +396,7 @@ returned, regardless of whether indexing is enabled, set the keyword argument
 `copy=true`.
 """
 incident(acs::ACSet, part, name::Symbol; copy::Bool=false) =
-  _incident(acs, part, Val(name); copy=copy)
+  _incident(acs, part, Val{name}; copy=copy)
 
 function incident(acs::ACSet, part, names::AbstractVector{Symbol};
                   copy::Bool=false)
@@ -406,8 +408,8 @@ end
 incident(acs::ACSet, part, expr::GATExpr; kw...) =
   incident(acs, part, subpart_names(expr); kw...)
 
-@generated function _incident(acs::ACSet{CD,AD,Ts,Idxed}, part, ::Val{name};
-                              copy::Bool=false) where {CD,AD,Ts,Idxed,name}
+@generated function _incident(acs::ACSet{CD,AD,Ts,Idxed}, part,
+    ::Type{Val{name}}; copy::Bool=false) where {CD,AD,Ts,Idxed,name}
   if name ∈ CD.hom
     if name ∈ Idxed
       quote
@@ -441,7 +443,7 @@ Returns the ID of the added part.
 See also: [`add_parts!`](@ref).
 """
 function add_part!(acs::ACSet, type::Symbol, args...; kw...)
-  part = only(_add_parts!(acs, Val(type), 1))
+  part = only(_add_parts!(acs, Val{type}, 1))
   try
     set_subparts!(acs, part, args...; kw...)
   catch e
@@ -458,7 +460,7 @@ Returns the range of IDs for the added parts.
 See also: [`add_part!`](@ref).
 """
 function add_parts!(acs::ACSet, type::Symbol, n::Int, args...; kw...)
-  parts = _add_parts!(acs, Val(type), n)
+  parts = _add_parts!(acs, Val{type}, n)
   try
     set_subparts!(acs, parts, args...; kw...)
   catch e
@@ -468,7 +470,7 @@ function add_parts!(acs::ACSet, type::Symbol, n::Int, args...; kw...)
   parts
 end
 
-@generated function _add_parts!(acs::ACSet{CD,AD,Ts,Idxed}, ::Val{ob},
+@generated function _add_parts!(acs::ACSet{CD,AD,Ts,Idxed}, ::Type{Val{ob}},
                                 n::Int) where {CD,AD,Ts,Idxed,ob}
   out_homs = filter(hom -> dom(CD, hom) == ob, CD.hom)
   indexed_in_homs = filter(hom -> codom(CD, hom) == ob && hom ∈ Idxed, CD.hom)
@@ -497,12 +499,12 @@ Both single and vectorized assignment are supported.
 See also: [`set_subparts!`](@ref).
 """
 set_subpart!(acs::ACSet, part::Int, name, subpart) =
-  _set_subpart!(acs, part, Val(name), subpart)
+  _set_subpart!(acs, part, Val{name}, subpart)
 
 function set_subpart!(acs::ACSet, part::AbstractVector{Int},
                       name::Symbol, subpart)
   broadcast(part, subpart) do part, subpart
-    _set_subpart!(acs, part, Val(name), subpart)
+    _set_subpart!(acs, part, Val{name}, subpart)
   end
 end
 
@@ -512,7 +514,7 @@ set_subpart!(acs::ACSet, name::Symbol, new_subpart) =
   set_subpart!(acs, 1:length(subpart(acs, name)), name, new_subpart)
 
 @generated function _set_subpart!(acs::ACSet{CD,AD,Ts,Idxed}, part::Int,
-    ::Val{name}, subpart) where {CD,AD,Ts,Idxed,name}
+    ::Type{Val{name}}, subpart) where {CD,AD,Ts,Idxed,name}
   if name ∈ CD.hom
     ob, codom_ob = dom(CD, name), codom(CD, name)
     if name ∈ Idxed
@@ -590,9 +592,9 @@ removing vertices faster but removing edges (slightly) slower.
 See also: [`rem_parts!`](@ref).
 """
 rem_part!(acs::ACSet, type::Symbol, part::Int) =
-  _rem_part!(acs, Val(type), part)
+  _rem_part!(acs, Val{type}, part)
 
-@generated function _rem_part!(acs::ACSet{CD,AD,Ts,Idxed}, ::Val{ob},
+@generated function _rem_part!(acs::ACSet{CD,AD,Ts,Idxed}, ::Type{Val{ob}},
                                part::Int) where {CD,AD,Ts,Idxed,ob}
   in_homs = filter(hom -> codom(CD, hom) == ob, CD.hom)
   indexed_out_homs = filter(hom -> dom(CD, hom) == ob && hom ∈ Idxed, CD.hom)

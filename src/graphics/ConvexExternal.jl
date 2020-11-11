@@ -3,7 +3,7 @@ using .Convex, .SCS
 
 import .WiringDiagramLayouts: has_port_layout_method, solve_isotonic
 
-has_port_layout_method(::Val{:isotonic}) = true
+has_port_layout_method(::Type{Val{:isotonic}}) = true
 
 function solve_isotonic(y::Vector; solver=()->SCS.Optimizer(verbose=false),
                         loss=sumsquares, lower::Number=-Inf, upper::Number=Inf,
