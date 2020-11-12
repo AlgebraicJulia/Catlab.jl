@@ -33,7 +33,12 @@ using ...Present, ...CSetDataStructures
   tgt::Hom(E,V)
 end
 
+""" Abstract type for graphs, possibly with data attributes.
+"""
 const AbstractGraph = AbstractACSetType(TheoryGraph)
+
+""" A graph, also known as a directed multigraph.
+"""
 const Graph = CSetType(TheoryGraph, index=[:src,:tgt])
 
 function (::Type{T})(nv::Int) where T <: AbstractGraph
@@ -136,12 +141,12 @@ rem_edges!(g::AbstractGraph, es) = rem_parts!(g, :E, es)
 
 """ Neighbors of vertex in a graph.
 
-In a graph, this function is an alias for `outneighbors`; in a symmetric graph,
-a vertex has the same out-neighbors and as in-neighbors, so the distinction is
-moot.
+In a graph, this function is an alias for [`outneighbors`](@ref); in a symmetric
+graph, a vertex has the same out-neighbors and as in-neighbors, so the
+distinction is moot.
 
-In the presence of multiple edges, neighbors are given *with multiplicity*. To
-get the unique neighbors, call `unique(neighbors(g))`.
+In the presence of multiple edges, neighboring vertices are given *with
+multiplicity*. To get the unique neighbors, call `unique(neighbors(g))`.
 """
 neighbors(g::AbstractGraph, v::Int) = outneighbors(g, v)
 
@@ -159,6 +164,9 @@ all_neighbors(g::AbstractGraph, v::Int) =
   Iterators.flatten((inneighbors(g, v), outneighbors(g, v)))
 
 """ Subgraph induced by a set of a vertices.
+
+The [induced subgraph](https://en.wikipedia.org/wiki/Induced_subgraph) consists
+of the given vertices and all edges between vertices in this set.
 """
 function induced_subgraph(g::G, vs::AbstractVector{Int}) where G <: AbstractACSet
   vset = Set(vs)
@@ -182,15 +190,24 @@ end
   compose(inv,tgt) == src
 end
 
+""" Abstract type for symmetric graph, possibly with data attributes.
+"""
+const AbstractSymmetricGraph = AbstractACSetType(TheorySymmetricGraph)
+
+""" A symmetric graph, or graph with an orientation-reversing edge involution.
+
+Symmetric graphs are closely related, but not identical, to undirected graphs.
+"""
+const SymmetricGraph = CSetType(TheorySymmetricGraph, index=[:src])
 # Don't index `inv` because it is self-inverse and don't index `tgt`
 # because `src` contains the same information due to symmetry of graph.
-const AbstractSymmetricGraph = AbstractACSetType(TheorySymmetricGraph)
-const SymmetricGraph = CSetType(TheorySymmetricGraph, index=[:src])
 
 function (::Type{T})(nv::Int) where T <: AbstractSymmetricGraph
   g = T(); add_vertices!(g, nv); g
 end
 
+""" Involution on edge(s) in a symmetric graph.
+"""
 inv(g::AbstractACSet, args...) = subpart(g, args..., :inv)
 
 add_edge!(g::AbstractSymmetricGraph, src::Int, tgt::Int; kw...) =
@@ -234,13 +251,23 @@ all_neighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
   compose(refl, tgt) == id(V)
 end
 
+""" Abstract type for reflexive graphs, possibly with data attributes.
+"""
 const AbstractReflexiveGraph = AbstractACSetType(TheoryReflexiveGraph)
+
+""" A reflexive graph.
+
+[Reflexive graphs](https://ncatlab.org/nlab/show/reflexive+graph) are graphs in
+which every vertex has a distinguished self-loop.
+"""
 const ReflexiveGraph = CSetType(TheoryReflexiveGraph, index=[:src,:tgt])
 
 function (::Type{T})(nv::Int) where T <: AbstractReflexiveGraph
   g = T(); add_vertices!(g, nv); g
 end
 
+""" Reflexive loop(s) of vertex (vertices) in a reflexive graph.
+"""
 refl(g::AbstractACSet, args...) = subpart(g, args..., :refl)
 
 add_vertex!(g::AbstractReflexiveGraph; kw...) =
@@ -287,8 +314,17 @@ rem_edges!(g::AbstractReflexiveGraph, es) = rem_parts!(g, :E, es)
   compose(refl, inv) == refl # Reflexive loop fixed by involution.
 end
 
+""" Abstract type for symmetric reflexive graphs, possibly with data attributes.
+"""
 const AbstractSymmetricReflexiveGraph =
   AbstractACSetType(TheorySymmetricReflexiveGraph)
+
+""" A symmetric reflexive graph.
+
+Symmetric reflexive graphs are both symmetric graphs ([`SymmetricGraph`](@ref))
+and reflexive graphs ([`ReflexiveGraph`](@ref)) such that the reflexive loops
+are fixed by the edge involution.
+"""
 const SymmetricReflexiveGraph =
   CSetType(TheorySymmetricReflexiveGraph, index=[:src])
 
