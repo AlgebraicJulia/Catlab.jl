@@ -383,15 +383,30 @@ rem_edges!(g::AbstractSymmetricReflexiveGraph, es) =
   compose(inv, inv) == id(H)
 end
 
+""" Abstract type for half-edge graphs, possibly with data attributes.
+"""
 const AbstractHalfEdgeGraph = AbstractACSetType(TheoryHalfEdgeGraph)
+
+""" A half-edge graph.
+
+[Half-edge
+graphs](https://www.algebraicjulia.org/blog/post/2020/09/cset-graphs-2/) are a
+variant of undirected graphs whose edges are pairs of "half-edges" or "darts".
+Half-edge graphs are isomorphic to symmetric graphs but have a different data
+model.
+"""
 const HalfEdgeGraph = CSetType(TheoryHalfEdgeGraph, index=[:vertex])
 
 function (::Type{T})(nv::Int) where T <: AbstractHalfEdgeGraph
   g = T(); add_vertices!(g, nv); g
 end
 
+""" Incident vertex (vertices) of half-edge(s) in a half-edge graph.
+"""
 vertex(g::AbstractACSet, args...) = subpart(g, args..., :vertex)
 
+""" Half-edges in a half-edge graph, or incident to a vertex.
+"""
 half_edges(g::AbstractACSet) = parts(g, :H)
 half_edges(g::AbstractACSet, v) = incident(g, v, :vertex)
 
@@ -422,9 +437,17 @@ function add_half_edge_pairs!(g::AbstractACSet, srcs::AbstractVector{Int},
              inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
 end
 
+""" Add a dangling edge to a half-edge graph.
+
+A "dangling edge" is a half-edge that is paired with itself under the half-edge
+involution. They are usually interpreted differently than "self-loops", i.e., a
+pair of distinct half-edges incident to the same vertex.
+"""
 add_dangling_edge!(g::AbstractACSet, v::Int; kw...) =
   add_part!(g, :H; vertex=v, inv=nparts(g,:H)+1)
 
+""" Add multiple dangling edges to a half-edge graph.
+"""
 function add_dangling_edges!(g::AbstractACSet, vs::AbstractVector{Int}; kw...)
   n, k = length(vs), nparts(g, :H)
   add_parts!(g, :H, n; vertex=vs, inv=(k+1):(k+n), kw...)
