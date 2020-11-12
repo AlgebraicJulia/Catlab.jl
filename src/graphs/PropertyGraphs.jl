@@ -84,29 +84,61 @@ SymmetricPropertyGraph{T}(; kw...) where T =
 # Accessors and mutators
 ########################
 
+""" Graph-level properties of a property graph.
+"""
 gprops(g::AbstractPropertyGraph) = g.gprops
+
+""" Properties of vertex in a property graph.
+"""
 vprops(g::AbstractPropertyGraph, v) = subpart(g.graph, v, :vprops)
+
+""" Properties of edge in a property graph.
+"""
 eprops(g::AbstractPropertyGraph, e) = subpart(g.graph, e, :eprops)
 
+""" Get graph-level property of a property graph.
+"""
 get_gprop(g::AbstractPropertyGraph, key::Symbol) = gprops(g)[key]
+
+""" Get property of vertex or vertices in a property graph.
+"""
 get_vprop(g::AbstractPropertyGraph, v, key::Symbol) =
   broadcast(v) do v; vprops(g,v)[key] end
+
+""" Get property of edge or edges in a property graph.
+"""
 get_eprop(g::AbstractPropertyGraph, e, key::Symbol) =
   broadcast(e) do e; eprops(g,e)[key] end
 
+""" Set graph-level property in a property graph.
+"""
 set_gprop!(g::AbstractPropertyGraph, key::Symbol, value) =
   (gprops(g)[key] = value)
+
+""" Set property of vertex or vertices in a property graph.
+"""
 set_vprop!(g::AbstractPropertyGraph, v, key::Symbol, value) =
   broadcast(v, value) do v, value; vprops(g,v)[key] = value end
+
+""" Set property of edge or edges in a property graph.
+"""
 set_eprop!(g::AbstractPropertyGraph, e, key::Symbol, value) =
   broadcast(e, value) do e, value; eprops(g,e)[key] = value end
 
+""" Set multiple graph-level properties in a property graph.
+"""
 set_gprops!(g::AbstractPropertyGraph; kw...) = merge!(gprops(g), kw)
-set_vprops!(g::AbstractPropertyGraph, v::Int; kw...) = merge!(vprops(g,v), kw)
-set_eprops!(g::AbstractPropertyGraph, e::Int; kw...) = merge!(eprops(g,e), kw)
 set_gprops!(g::AbstractPropertyGraph, d::AbstractDict) = merge!(gprops(g), d)
+
+""" Set multiple properties of a vertex in a property graph.
+"""
+set_vprops!(g::AbstractPropertyGraph, v::Int; kw...) = merge!(vprops(g,v), kw)
 set_vprops!(g::AbstractPropertyGraph, v::Int, d::AbstractDict) =
   merge!(vprops(g,v), d)
+
+""" Set multiple properties of an edge in a property graph.
+"""
+set_eprops!(g::AbstractPropertyGraph, e::Int; kw...) = merge!(eprops(g,e), kw)
 set_eprops!(g::AbstractPropertyGraph, e::Int, d::AbstractDict) =
   merge!(eprops(g,e), d)
 
@@ -114,7 +146,6 @@ set_eprops!(g::AbstractPropertyGraph, e::Int, d::AbstractDict) =
 @inline ne(g::AbstractPropertyGraph) = ne(g.graph)
 @inline src(g::AbstractPropertyGraph, args...) = src(g.graph, args...)
 @inline tgt(g::AbstractPropertyGraph, args...) = tgt(g.graph, args...)
-@inline dst(g::AbstractPropertyGraph, args...) = dst(g.graph, args...)
 @inline inv(g::SymmetricPropertyGraph, args...) = inv(g.graph, args...)
 @inline vertices(g::AbstractPropertyGraph) = vertices(g.graph)
 @inline edges(g::AbstractPropertyGraph) = edges(g.graph)
