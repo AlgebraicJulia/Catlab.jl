@@ -1,8 +1,10 @@
 """ Data structures for graphs, based on C-sets.
 
-Provides the category theorist's four basic kinds of graphs: (directed) graphs,
-symmetric graphs, reflexive graphs, and symmetric reflexive graphs. Also defines
-half-edge graphs.
+Provides the category theorist's four basic kinds of graphs: graphs (aka
+directed multigraphs), symmetric graphs, reflexive graphs, and symmetric
+reflexive graphs. Also defines half-edge graphs. The API generally follows that
+of [LightGraphs.jl](https://github.com/JuliaGraphs/LightGraphs.jl), with some
+departures due to differences between the data structures.
 """
 module BasicGraphs
 export AbstractGraph, Graph, nv, ne, src, tgt, edges, vertices,
@@ -31,45 +33,94 @@ using ...Present, ...CSetDataStructures
   tgt::Hom(E,V)
 end
 
+""" Abstract type for graphs, possibly with data attributes.
+"""
 const AbstractGraph = AbstractACSetType(TheoryGraph)
+
+""" A graph, also known as a directed multigraph.
+"""
 const Graph = CSetType(TheoryGraph, index=[:src,:tgt])
 
 function (::Type{T})(nv::Int) where T <: AbstractGraph
   g = T(); add_vertices!(g, nv); g
 end
 
+""" Number of vertices in a graph.
+"""
 nv(g::AbstractACSet) = nparts(g, :V)
+
+""" Number of edges in a graph, or between two vertices in a graph.
+
+In a symmetric graph, this function counts both edges in each edge pair, so that
+the number of edges in a symmetric graph is twice the number of edges in the
+corresponding undirected graph (at least when the edge involution has no fixed
+points).
+"""
 ne(g::AbstractACSet) = nparts(g, :E)
 ne(g::AbstractACSet, src::Int, tgt::Int) =
   count(subpart(g, e, :tgt) == tgt for e in incident(g, src, :src))
 
+""" Source vertex (vertices) of edges(s) in a graph.
+"""
 src(g::AbstractACSet, args...) = subpart(g, args..., :src)
+
+""" Target vertex (vertices) of edges(s) in a graph.
+"""
 tgt(g::AbstractACSet, args...) = subpart(g, args..., :tgt)
 
+""" Vertices in a graph.
+"""
 vertices(g::AbstractACSet) = parts(g, :V)
+
+""" Edges in a graph, or between two vertices in a graph.
+"""
 edges(g::AbstractACSet) = parts(g, :E)
 edges(g::AbstractACSet, src::Int, tgt::Int) =
   (e for e in incident(g, src, :src) if subpart(g, e, :tgt) == tgt)
 
+""" Whether the graph has the given vertex.
+"""
 has_vertex(g::AbstractACSet, v) = has_part(g, :V, v)
+
+""" Whether the graph has the given edge, or an edge between two vertices.
+"""
 has_edge(g::AbstractACSet, e) = has_part(g, :E, e)
 has_edge(g::AbstractACSet, src::Int, tgt::Int) =
   has_vertex(g, src) && tgt ∈ outneighbors(g, src)
 
+""" Add a vertex to a graph.
+"""
 add_vertex!(g::AbstractACSet; kw...) = add_part!(g, :V; kw...)
+
+""" Add multiple vertices to a graph.
+"""
 add_vertices!(g::AbstractACSet, n::Int; kw...) = add_parts!(g, :V, n; kw...)
 
+""" Add an edge to a graph.
+"""
 add_edge!(g::AbstractGraph, src::Int, tgt::Int; kw...) =
   add_part!(g, :E; src=src, tgt=tgt, kw...)
 
+""" Add multiple edges to a graph.
+"""
 function add_edges!(g::AbstractGraph, srcs::AbstractVector{Int},
                     tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
   add_parts!(g, :E, n; src=srcs, tgt=tgts, kw...)
 end
 
+""" Remove a vertex from a graph.
+
+When `keep_edges` is false (the default), all edges incident to the vertex are
+also deleted. When `keep_edges` is true, incident edges are preserved but their
+source/target vertices become undefined.
+"""
 rem_vertex!(g::AbstractACSet, v::Int; kw...) = rem_vertices!(g, v:v; kw...)
 
+""" Remove multiple vertices from a graph.
+
+Edges incident to any of the vertices are treated as in [`rem_vertex!`](@ref).
+"""
 function rem_vertices!(g::AbstractGraph, vs; keep_edges::Bool=false)
   if !keep_edges
     es = reduce(vcat, [incident(g,vs,:src); incident(g,vs,:tgt)], init=Int[])
@@ -78,20 +129,48 @@ function rem_vertices!(g::AbstractGraph, vs; keep_edges::Bool=false)
   rem_parts!(g, :V, vs)
 end
 
+""" Remove an edge from a graph.
+"""
 rem_edge!(g::AbstractGraph, e::Int) = rem_part!(g, :E, e)
 rem_edge!(g::AbstractACSet, src::Int, tgt::Int) =
   rem_edge!(g, first(edges(g, src, tgt)))
 
+""" Remove multiple edges from a graph.
+"""
 rem_edges!(g::AbstractGraph, es) = rem_parts!(g, :E, es)
 
+""" Neighbors of vertex in a graph.
+
+In a graph, this function is an alias for [`outneighbors`](@ref); in a symmetric
+graph, a vertex has the same out-neighbors and as in-neighbors, so the
+distinction is moot.
+
+In the presence of multiple edges, neighboring vertices are given *with
+multiplicity*. To get the unique neighbors, call `unique(neighbors(g))`.
+"""
 neighbors(g::AbstractGraph, v::Int) = outneighbors(g, v)
+
+""" In-neighbors of vertex in a graph.
+"""
 inneighbors(g::AbstractGraph, v::Int) = subpart(g, incident(g, v, :tgt), :src)
+
+""" Out-neighbors of vertex in a graph.
+"""
 outneighbors(g::AbstractGraph, v::Int) = subpart(g, incident(g, v, :src), :tgt)
+
+""" Union of in-neighbors and out-neighbors in a graph.
+"""
 all_neighbors(g::AbstractGraph, v::Int) =
   Iterators.flatten((inneighbors(g, v), outneighbors(g, v)))
 
+""" Subgraph induced by a set of a vertices.
+
+The [induced subgraph](https://en.wikipedia.org/wiki/Induced_subgraph) consists
+of the given vertices and all edges between vertices in this set.
+"""
 function induced_subgraph(g::G, vs::AbstractVector{Int}) where G <: AbstractACSet
   vset = Set(vs)
+  length(vs) == length(vset) || error("Duplicate vertices in: $vs")
   es = Iterators.filter(Iterators.flatten(incident(g, vs, :src))) do e
     tgt(g, e) ∈ vset
   end
@@ -111,15 +190,24 @@ end
   compose(inv,tgt) == src
 end
 
+""" Abstract type for symmetric graph, possibly with data attributes.
+"""
+const AbstractSymmetricGraph = AbstractACSetType(TheorySymmetricGraph)
+
+""" A symmetric graph, or graph with an orientation-reversing edge involution.
+
+Symmetric graphs are closely related, but not identical, to undirected graphs.
+"""
+const SymmetricGraph = CSetType(TheorySymmetricGraph, index=[:src])
 # Don't index `inv` because it is self-inverse and don't index `tgt`
 # because `src` contains the same information due to symmetry of graph.
-const AbstractSymmetricGraph = AbstractACSetType(TheorySymmetricGraph)
-const SymmetricGraph = CSetType(TheorySymmetricGraph, index=[:src])
 
 function (::Type{T})(nv::Int) where T <: AbstractSymmetricGraph
   g = T(); add_vertices!(g, nv); g
 end
 
+""" Involution on edge(s) in a symmetric graph.
+"""
 inv(g::AbstractACSet, args...) = subpart(g, args..., :inv)
 
 add_edge!(g::AbstractSymmetricGraph, src::Int, tgt::Int; kw...) =
@@ -163,13 +251,23 @@ all_neighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
   compose(refl, tgt) == id(V)
 end
 
+""" Abstract type for reflexive graphs, possibly with data attributes.
+"""
 const AbstractReflexiveGraph = AbstractACSetType(TheoryReflexiveGraph)
+
+""" A reflexive graph.
+
+[Reflexive graphs](https://ncatlab.org/nlab/show/reflexive+graph) are graphs in
+which every vertex has a distinguished self-loop.
+"""
 const ReflexiveGraph = CSetType(TheoryReflexiveGraph, index=[:src,:tgt])
 
 function (::Type{T})(nv::Int) where T <: AbstractReflexiveGraph
   g = T(); add_vertices!(g, nv); g
 end
 
+""" Reflexive loop(s) of vertex (vertices) in a reflexive graph.
+"""
 refl(g::AbstractACSet, args...) = subpart(g, args..., :refl)
 
 add_vertex!(g::AbstractReflexiveGraph; kw...) =
@@ -216,8 +314,17 @@ rem_edges!(g::AbstractReflexiveGraph, es) = rem_parts!(g, :E, es)
   compose(refl, inv) == refl # Reflexive loop fixed by involution.
 end
 
+""" Abstract type for symmetric reflexive graphs, possibly with data attributes.
+"""
 const AbstractSymmetricReflexiveGraph =
   AbstractACSetType(TheorySymmetricReflexiveGraph)
+
+""" A symmetric reflexive graph.
+
+Symmetric reflexive graphs are both symmetric graphs ([`SymmetricGraph`](@ref))
+and reflexive graphs ([`ReflexiveGraph`](@ref)) such that the reflexive loops
+are fixed by the edge involution.
+"""
 const SymmetricReflexiveGraph =
   CSetType(TheorySymmetricReflexiveGraph, index=[:src])
 
@@ -276,15 +383,30 @@ rem_edges!(g::AbstractSymmetricReflexiveGraph, es) =
   compose(inv, inv) == id(H)
 end
 
+""" Abstract type for half-edge graphs, possibly with data attributes.
+"""
 const AbstractHalfEdgeGraph = AbstractACSetType(TheoryHalfEdgeGraph)
+
+""" A half-edge graph.
+
+[Half-edge
+graphs](https://www.algebraicjulia.org/blog/post/2020/09/cset-graphs-2/) are a
+variant of undirected graphs whose edges are pairs of "half-edges" or "darts".
+Half-edge graphs are isomorphic to symmetric graphs but have a different data
+model.
+"""
 const HalfEdgeGraph = CSetType(TheoryHalfEdgeGraph, index=[:vertex])
 
 function (::Type{T})(nv::Int) where T <: AbstractHalfEdgeGraph
   g = T(); add_vertices!(g, nv); g
 end
 
+""" Incident vertex (vertices) of half-edge(s) in a half-edge graph.
+"""
 vertex(g::AbstractACSet, args...) = subpart(g, args..., :vertex)
 
+""" Half-edges in a half-edge graph, or incident to a vertex.
+"""
 half_edges(g::AbstractACSet) = parts(g, :H)
 half_edges(g::AbstractACSet, v) = incident(g, v, :vertex)
 
@@ -315,9 +437,17 @@ function add_half_edge_pairs!(g::AbstractACSet, srcs::AbstractVector{Int},
              inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
 end
 
+""" Add a dangling edge to a half-edge graph.
+
+A "dangling edge" is a half-edge that is paired with itself under the half-edge
+involution. They are usually interpreted differently than "self-loops", i.e., a
+pair of distinct half-edges incident to the same vertex.
+"""
 add_dangling_edge!(g::AbstractACSet, v::Int; kw...) =
   add_part!(g, :H; vertex=v, inv=nparts(g,:H)+1)
 
+""" Add multiple dangling edges to a half-edge graph.
+"""
 function add_dangling_edges!(g::AbstractACSet, vs::AbstractVector{Int}; kw...)
   n, k = length(vs), nparts(g, :H)
   add_parts!(g, :H, n; vertex=vs, inv=(k+1):(k+n), kw...)
