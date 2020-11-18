@@ -5,10 +5,12 @@ export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
   AbstractACSetType, ACSetType, ACSetTableType, AbstractCSetType, CSetType,
   tables, parts, nparts, has_part, subpart, has_subpart, incident,
   add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!,
-  copy_parts!, copy_parts_only!, disjoint_union
+  copy_parts!, copy_parts_only!, disjoint_union, @acset, init_acset
 
 using Compat: isnothing, only
 
+using MLStyle: @match
+using ...Meta
 using PrettyTables: pretty_table
 using StructArrays
 
@@ -798,6 +800,37 @@ function deletesorted!(a::AbstractVector, x)
   found = i <= length(a) && a[i] == x
   if found; deleteat!(a, i) end
   found
+end
+
+""" More convenient syntax for declaring an ACSet
+"""
+
+macro acset(head, body)
+  expr = :(init_acset($(esc(head)), $(Expr(:quote, body))))
+  Expr(:call, esc(:eval), expr)
+end
+
+""" TODO: Add well-formedness checks to this
+"""
+function init_acset(T::Type{<:ACSet{CD,AD,Ts}},body) where {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple}
+  body = strip_lines(body)
+  @assert body.head == :block
+  code = quote
+    acs = $(T)()
+  end
+  for elem in body.args
+    @assert elem.head == :(=)
+    @assert length(elem.args) == 2
+    lhs = elem.args[1]
+    rhs = elem.args[2]
+    if lhs in CD.ob
+      push!(code.args, :(add_parts!(acs, $(Expr(:quote, lhs)), $(rhs))))
+    elseif lhs in CD.hom || lhs in AD.attr
+      push!(code.args, :(set_subpart!(acs, :, $(Expr(:quote, lhs)), $(rhs))))
+    end
+  end
+  push!(code.args, :(return acs))
+  code
 end
 
 end
