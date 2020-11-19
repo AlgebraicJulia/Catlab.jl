@@ -1,13 +1,18 @@
+""" Benchmark Catlab.Graphs against LightGraphs and MetaGraphs.
+"""
 module BenchmarkGraphs
 
 using BenchmarkTools
 const SUITE = BenchmarkGroup()
 
 using Random
-import LightGraphs
-const LG = LightGraphs
+import LightGraphs, MetaGraphs
+const LG, MG = LightGraphs, MetaGraphs
 
-using Catlab.Graphs
+using Catlab, Catlab.Graphs
+
+# Helpers
+#########
 
 # `bench_iter_edges` and `bench_has_edge` adapted from LightGraphs:
 # https://github.com/JuliaGraphs/LightGraphs.jl/blob/master/benchmark/core.jl
@@ -111,5 +116,24 @@ bench["has-edge-lightgraphs"] = @benchmarkable bench_has_edge($lg)
 v = n÷2
 bench["neighbors"] = @benchmarkable neighbors($g, $v)
 bench["neighbors-lightgraphs"] = @benchmarkable LG.neighbors($lg, $v)
+
+# Weighted graphs
+#################
+
+bench = SUITE["WeightedGraph"] = BenchmarkGroup()
+
+n = 500
+g = WeightedGraph{Float64}(n)
+add_edges!(g, 1:(n-1), 2:n, weight=range(0, 1, length=n-1))
+mg = MG.MetaDiGraph(g)
+
+bench["sum-weights"] = @benchmarkable sum(weight($g))
+bench["sum-weights-metagraphs"] = @benchmarkable begin
+  total = 0.0
+  for e in MG.edges($mg)
+    total += MG.get_prop($mg, e, :weight)
+  end
+  total
+end
 
 end
