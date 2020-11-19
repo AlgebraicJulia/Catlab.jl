@@ -9,7 +9,7 @@ using Random
 import LightGraphs, MetaGraphs
 const LG, MG = LightGraphs, MetaGraphs
 
-using Catlab, Catlab.Graphs
+using Catlab, Catlab.CategoricalAlgebra, Catlab.Graphs
 
 # Helpers
 #########
@@ -83,6 +83,17 @@ bench["inneighbors"] = @benchmarkable inneighbors($g, $v)
 bench["outneighbors"] = @benchmarkable outneighbors($g, $v)
 bench["inneighbors-lightgraphs"] = @benchmarkable LG.inneighbors($lg, $v)
 bench["outneighbors-lightgraphs"] = @benchmarkable LG.outneighbors($lg, $v)
+
+n₀ = 50
+g₀ = Graph(n₀)
+add_edges!(g₀, 1:(n₀-1), 2:n₀)
+g = ob(coproduct(fill(g, 5)))
+lg = LG.DiGraph(g)
+bench["connected-components"] = @benchmarkable connected_components($g)
+bench["connected-components-proj"] =
+  @benchmarkable connected_component_projection($g)
+bench["connected-components-lightgraphs"] =
+  @benchmarkable LG.weakly_connected_components($lg)
 
 # Symmetric graphs
 ##################
