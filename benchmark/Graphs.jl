@@ -9,11 +9,24 @@ const LG = LightGraphs
 
 using Catlab.Graphs
 
-# Benchmarks adapted from LightGraphs
+# `bench_iter_edges` and `bench_has_edge` adapted from LightGraphs:
 # https://github.com/JuliaGraphs/LightGraphs.jl/blob/master/benchmark/core.jl
 
-@inline Graphs.nv(g::LG.AbstractGraph) = LG.nv(g)
-@inline Graphs.has_edge(g::LG.AbstractGraph, args...) = LG.has_edge(g, args...)
+function bench_iter_edges(g::Union{AbstractGraph,AbstractSymmetricGraph})
+  count = 0
+  for (s,t) in zip(src(g), tgt(g))
+    count += 1
+  end
+  count
+end
+function bench_iter_edges(g::LG.AbstractGraph)
+  count = 0
+  for e in LG.edges(g)
+    s, t = LG.src(e), LG.dst(e)
+    count += 1
+  end
+  count
+end
 
 function bench_has_edge(g)
   Random.seed!(1)
@@ -27,6 +40,9 @@ function bench_has_edge(g)
   end
   count
 end
+
+@inline Graphs.nv(g::LG.AbstractGraph) = LG.nv(g)
+@inline Graphs.has_edge(g::LG.AbstractGraph, args...) = LG.has_edge(g, args...)
 
 # Graphs
 ########
@@ -50,9 +66,11 @@ end
 
 g = Graph(n)
 add_edges!(g, 1:(n-1), 2:n)
-bench["has-edge"] = @benchmarkable bench_has_edge($g)
-
 lg = LG.DiGraph(g)
+
+bench["iter-edges"] = @benchmarkable bench_iter_edges($g)
+bench["iter-edges-lightgraphs"] = @benchmarkable bench_iter_edges($lg)
+bench["has-edge"] = @benchmarkable bench_has_edge($g)
 bench["has-edge-lightgraphs"] = @benchmarkable bench_has_edge($lg)
 
 v = n÷2
@@ -83,9 +101,11 @@ end
 
 g = SymmetricGraph(n)
 add_edges!(g, 1:(n-1), 2:n)
-bench["has-edge"] = @benchmarkable bench_has_edge($g)
-
 lg = LG.Graph(g)
+
+bench["iter-edges"] = @benchmarkable bench_iter_edges($g)
+bench["iter-edges-lightgraphs"] = @benchmarkable bench_iter_edges($lg)
+bench["has-edge"] = @benchmarkable bench_has_edge($g)
 bench["has-edge-lightgraphs"] = @benchmarkable bench_has_edge($lg)
 
 v = n÷2
