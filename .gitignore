@@ -5,6 +5,7 @@
 .ipynb_checkpoints
 
 # Julia
+benchmark/tune.json
 Manifest.toml
 *.jl.cov
 *.jl.*.cov

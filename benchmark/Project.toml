@@ -1,0 +1,8 @@
+[deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
+LightGraphs = "093fc24a-ae57-5d10-9952-331d41423f4d"
+PkgBenchmark = "32113eaa-f34f-5b0d-bd6c-c81e245fc73d"
+
+[compat]
+LightGraphs = "^1"
