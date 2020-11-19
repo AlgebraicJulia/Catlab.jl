@@ -89,10 +89,20 @@ g₀ = Graph(n₀)
 add_edges!(g₀, 1:(n₀-1), 2:n₀)
 g = ob(coproduct(fill(g, 5)))
 lg = LG.DiGraph(g)
-bench["connected-components"] = @benchmarkable connected_components($g)
-bench["connected-components-proj"] =
+bench["path-graph-components"] = @benchmarkable connected_components($g)
+bench["path-graph-components-proj"] =
   @benchmarkable connected_component_projection($g)
-bench["connected-components-lightgraphs"] =
+bench["path-graph-components-lightgraphs"] =
+  @benchmarkable LG.weakly_connected_components($lg)
+
+g₀ = Graph(n₀)
+add_edges!(g₀, fill(1,n₀-1), 2:n₀)
+g = ob(coproduct(fill(g, 5)))
+lg = LG.DiGraph(g)
+bench["star-graph-components"] = @benchmarkable connected_components($g)
+bench["star-graph-components-proj"] =
+  @benchmarkable connected_component_projection($g)
+bench["star-graph-components-lightgraphs"] =
   @benchmarkable LG.weakly_connected_components($lg)
 
 # Symmetric graphs
