@@ -183,12 +183,6 @@ diagram = FreeDiagram([g, ob(terminal(Graph)), Graph(1)], [(α,3,1), (β,3,2)])
 # Attributed C-set morphisms
 ############################
 
-@present TheoryWeightedGraph <: TheoryGraph begin
-  Weight::Data
-  weight::Attr(E,Weight)
-end
-const WeightedGraph = ACSetType(TheoryWeightedGraph, index=[:src,:tgt])
-
 # Constructors and accessors.
 g, h = WeightedGraph{Float64}(2), WeightedGraph{Float64}(4)
 add_edge!(g, 1, 2, weight=2.0)

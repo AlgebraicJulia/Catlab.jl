@@ -15,7 +15,8 @@ export AbstractGraph, Graph, nv, ne, src, tgt, edges, vertices,
   AbstractReflexiveGraph, ReflexiveGraph, refl,
   AbstractSymmetricReflexiveGraph, SymmetricReflexiveGraph,
   AbstractHalfEdgeGraph, HalfEdgeGraph, vertex, half_edges,
-  add_dangling_edge!, add_dangling_edges!
+  add_dangling_edge!, add_dangling_edges!,
+  WeightedGraph, WeightedSymmetricGraph
 
 using Compat: only
 import Base: inv
@@ -467,6 +468,35 @@ rem_edge!(g::AbstractHalfEdgeGraph, src::Int, tgt::Int) =
 rem_edge!(g::AbstractHalfEdgeGraph, h::Int) = rem_edges!(g, h:h)
 rem_edges!(g::AbstractHalfEdgeGraph, hs) =
   rem_parts!(g, :H, unique!(sort!([hs; inv(g, hs)])))
+
+# Weighted graphs
+#################
+
+@present TheoryWeightedGraph <: TheoryGraph begin
+  Weight::Data
+  weight::Attr(E,Weight)
+end
+
+""" A weighted graph.
+
+A graph in which every edge has a numerical weight.
+"""
+const WeightedGraph = ACSetType(TheoryWeightedGraph, index=[:src,:tgt])
+
+@present TheoryWeightedSymmetricGraph <: TheorySymmetricGraph begin
+  Weight::Data
+  weight::Attr(E,Weight)
+
+  compose(inv, weight) == weight
+end
+
+""" A weighted symmetric graph.
+
+A symmetric graph in which every edge has a numerical weight, preserved by the
+edge involution.
+"""
+const WeightedSymmetricGraph = ACSetType(TheoryWeightedSymmetricGraph,
+                                         index=[:src])
 
 # LightGraphs constructors
 ##########################
