@@ -1,12 +1,32 @@
 module BenchmarkGraphs
 
 using BenchmarkTools
-const SUITE = BenchmarkGroup(["c-sets", "graphs"])
+const SUITE = BenchmarkGroup()
+
+using Random
+import LightGraphs
+const LG = LightGraphs
 
 using Catlab.Graphs
 
-import LightGraphs
-const LG = LightGraphs
+# Benchmarks adapted from LightGraphs
+# https://github.com/JuliaGraphs/LightGraphs.jl/blob/master/benchmark/core.jl
+
+@inline Graphs.nv(g::LG.AbstractGraph) = LG.nv(g)
+@inline Graphs.has_edge(g::LG.AbstractGraph, args...) = LG.has_edge(g, args...)
+
+function bench_has_edge(g)
+  Random.seed!(1)
+  n = nv(g)
+  srcs, tgts = rand(1:n, n÷4), rand(1:n, n÷4)
+  count = 0
+  for (s, t) in zip(srcs, tgts)
+    if has_edge(g, s, t)
+      count += 1
+    end
+  end
+  count
+end
 
 # Graphs
 ########
@@ -28,14 +48,18 @@ bench["make-path-lightgraphs"] = @benchmarkable begin
   end
 end
 
-g = Graph(5)
-add_edges!(g, [1,2,3,3], [3,3,4,5])
-bench["inneighbors"] = @benchmarkable inneighbors($g, 3)
-bench["outneighbors"] = @benchmarkable outneighbors($g, 3)
+g = Graph(n)
+add_edges!(g, 1:(n-1), 2:n)
+bench["has-edge"] = @benchmarkable bench_has_edge($g)
 
 lg = LG.DiGraph(g)
-bench["inneighbors-lightgraphs"] = @benchmarkable LG.inneighbors($lg, 3)
-bench["outneighbors-lightgraphs"] = @benchmarkable LG.outneighbors($lg, 3)
+bench["has-edge-lightgraphs"] = @benchmarkable bench_has_edge($lg)
+
+v = n÷2
+bench["inneighbors"] = @benchmarkable inneighbors($g, $v)
+bench["outneighbors"] = @benchmarkable outneighbors($g, $v)
+bench["inneighbors-lightgraphs"] = @benchmarkable LG.inneighbors($lg, $v)
+bench["outneighbors-lightgraphs"] = @benchmarkable LG.outneighbors($lg, $v)
 
 # Symmetric graphs
 ##################
@@ -57,11 +81,15 @@ bench["make-path-lightgraphs"] = @benchmarkable begin
   end
 end
 
-g = SymmetricGraph(5)
-add_edges!(g, [1,2,3,3], [3,3,4,5])
-bench["neighbors"] = @benchmarkable neighbors($g, 3)
+g = SymmetricGraph(n)
+add_edges!(g, 1:(n-1), 2:n)
+bench["has-edge"] = @benchmarkable bench_has_edge($g)
 
 lg = LG.Graph(g)
-bench["neighbors-lightgraphs"] = @benchmarkable LG.neighbors($lg, 3)
+bench["has-edge-lightgraphs"] = @benchmarkable bench_has_edge($lg)
+
+v = n÷2
+bench["neighbors"] = @benchmarkable neighbors($g, $v)
+bench["neighbors-lightgraphs"] = @benchmarkable LG.neighbors($lg, $v)
 
 end
