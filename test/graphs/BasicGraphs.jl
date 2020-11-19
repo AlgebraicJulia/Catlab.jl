@@ -1,10 +1,10 @@
 module TestBasicGraphs
 using Test
 
-import LightGraphs
-using Catlab.Graphs.BasicGraphs
+import LightGraphs, MetaGraphs
+const LG, MG = LightGraphs, MetaGraphs
 
-const LG = LightGraphs
+using Catlab.Graphs.BasicGraphs
 
 # Graphs
 ########
@@ -188,5 +188,19 @@ rem_edge!(g, last(half_edges(g)))
 rem_vertex!(g, 2)
 @test nv(g) == 3
 @test isempty(half_edges(g))
+
+# Weighted graphs
+#################
+
+g = WeightedGraph{Float64}(4)
+add_edges!(g, 1:3, 2:4, weight=[0.25, 0.5, 0.75])
+@test weight(g, 1) == 0.25
+@test weight(g) == [0.25, 0.5, 0.75]
+
+mg = MG.MetaDiGraph{Int,Float64}(4)
+MG.add_edge!(mg, 1, 2, :weight, 0.25)
+MG.add_edge!(mg, 2, 3, :weight, 0.5)
+MG.add_edge!(mg, 3, 4, :weight, 0.75)
+@test MG.MetaDiGraph(g) == mg
 
 end
