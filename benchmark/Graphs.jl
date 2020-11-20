@@ -138,6 +138,11 @@ v = n÷2
 bench["neighbors"] = @benchmarkable neighbors($g, $v)
 bench["neighbors-lightgraphs"] = @benchmarkable LG.neighbors($lg, $v)
 
+function lg_connected_components_projection(g)
+  label = Vector{Int}(undef, LG.nv(g))
+  LG.connected_components!(label, g)
+end
+
 n₀ = 50
 g₀ = SymmetricGraph(n₀)
 add_edges!(g₀, 1:(n₀-1), 2:n₀)
@@ -148,6 +153,8 @@ bench["path-graph-components-proj"] =
   @benchmarkable connected_component_projection($g)
 bench["path-graph-components-lightgraphs"] =
   @benchmarkable LG.connected_components($lg)
+bench["path-graph-components-proj-lightgraphs"] =
+  @benchmarkable lg_connected_components_projection($lg)
 
 g₀ = SymmetricGraph(n₀)
 add_edges!(g₀, fill(1,n₀-1), 2:n₀)
@@ -158,6 +165,8 @@ bench["star-graph-components-proj"] =
   @benchmarkable connected_component_projection($g)
 bench["star-graph-components-lightgraphs"] =
   @benchmarkable LG.connected_components($lg)
+bench["star-graph-components-proj-lightgraphs"] =
+  @benchmarkable lg_connected_components_projection($lg)
 
 # Weighted graphs
 #################
