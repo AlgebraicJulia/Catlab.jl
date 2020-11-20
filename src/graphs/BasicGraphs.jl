@@ -15,7 +15,9 @@ export AbstractGraph, Graph, nv, ne, src, tgt, edges, vertices,
   AbstractReflexiveGraph, ReflexiveGraph, refl,
   AbstractSymmetricReflexiveGraph, SymmetricReflexiveGraph,
   AbstractHalfEdgeGraph, HalfEdgeGraph, vertex, half_edges,
-  add_dangling_edge!, add_dangling_edges!
+  add_dangling_edge!, add_dangling_edges!,
+  AbstractWeightedGraph, WeightedGraph, weight,
+  AbstractSymmetricWeightedGraph, SymmetricWeightedGraph
 
 using Compat: only
 import Base: inv
@@ -468,7 +470,49 @@ rem_edge!(g::AbstractHalfEdgeGraph, h::Int) = rem_edges!(g, h:h)
 rem_edges!(g::AbstractHalfEdgeGraph, hs) =
   rem_parts!(g, :H, unique!(sort!([hs; inv(g, hs)])))
 
-# LightGraphs constructors
+# Weighted graphs
+#################
+
+@present TheoryWeightedGraph <: TheoryGraph begin
+  Weight::Data
+  weight::Attr(E,Weight)
+end
+
+""" Abstract type for weighted graphs.
+"""
+const AbstractWeightedGraph = AbstractACSetType(TheoryWeightedGraph)
+
+""" A weighted graph.
+
+A graph in which every edge has a numerical weight.
+"""
+const WeightedGraph = ACSetType(TheoryWeightedGraph, index=[:src,:tgt])
+
+""" Weight(s) of edge(s) in a weighted graph.
+"""
+weight(g::AbstractACSet, args...) = subpart(g, args..., :weight)
+
+@present TheorySymmetricWeightedGraph <: TheorySymmetricGraph begin
+  Weight::Data
+  weight::Attr(E,Weight)
+
+  compose(inv, weight) == weight
+end
+
+""" Abstract type for symmetric weights graphs.
+"""
+const AbstractSymmetricWeightedGraph =
+  AbstractACSetType(TheorySymmetricWeightedGraph)
+
+""" A symmetric weighted graph.
+
+A symmetric graph in which every edge has a numerical weight, preserved by the
+edge involution.
+"""
+const SymmetricWeightedGraph =
+  ACSetType(TheorySymmetricWeightedGraph, index=[:src])
+
+# JuliaGraphs constructors
 ##########################
 
 function __init__()
@@ -479,8 +523,8 @@ function __init__()
     function (::Type{LG})(g::Union{AbstractGraph,AbstractSymmetricGraph}) where
         LG <: Union{SimpleGraph,SimpleDiGraph}
       lg = LG(nv(g))
-      for e in edges(g)
-        LightGraphs.add_edge!(lg, src(g,e), tgt(g,e))
+      for (s, t) in zip(src(g), tgt(g))
+        LightGraphs.add_edge!(lg, s, t)
       end
       lg
     end
@@ -494,6 +538,24 @@ function __init__()
         end
       end
       lg
+    end
+  end
+
+  @require MetaGraphs="626554b9-1ddb-594c-aa3c-2596fe9399a5" begin
+    import .MetaGraphs
+    import .MetaGraphs: MetaGraph, MetaDiGraph
+
+    MetaDiGraph(g::AbstractWeightedGraph{U}) where U =
+      to_weighted_metagraph(MetaDiGraph{Int,U}, g)
+    MetaGraph(g::AbstractSymmetricWeightedGraph{U}) where U =
+      to_weighted_metagraph(MetaGraph{Int,U}, g)
+
+    function to_weighted_metagraph(MG::Type{<:MetaGraphs.AbstractMetaGraph}, g)
+      mg = MG(nv(g))
+      for (s, t, w) in zip(src(g), tgt(g), weight(g))
+        MetaGraphs.add_edge!(mg, s, t, :weight, w)
+      end
+      mg
     end
   end
 end

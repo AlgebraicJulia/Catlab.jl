@@ -78,12 +78,6 @@ k = otimes(g, h)
 # Non-attributed boundary
 #------------------------
 
-@present TheoryWeightedGraph <: TheoryGraph begin
-  Weight::Data
-  weight::Attr(E,Weight)
-end
-
-const WeightedGraph = ACSetType(TheoryWeightedGraph, index=[:src,:tgt])
 const OpenWeightedGraphOb, OpenWeightedGraph = OpenACSetTypes(WeightedGraph, :V)
 
 g0 = WeightedGraph{Float64}(2)

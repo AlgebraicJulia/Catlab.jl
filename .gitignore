@@ -5,6 +5,8 @@
 .ipynb_checkpoints
 
 # Julia
+.benchmarkci
+benchmark/*.json
 Manifest.toml
 *.jl.cov
 *.jl.*.cov
