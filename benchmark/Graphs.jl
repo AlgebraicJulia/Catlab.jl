@@ -46,15 +46,25 @@ function bench_has_edge(g)
   count
 end
 
+function bench_iter_neighbors(g)
+  count = 0
+  for v in vertices(g)
+    count += length(neighbors(g, v))
+  end
+  count
+end
+
 @inline Graphs.nv(g::LG.AbstractGraph) = LG.nv(g)
+@inline Graphs.vertices(g::LG.AbstractGraph) = LG.vertices(g)
 @inline Graphs.has_edge(g::LG.AbstractGraph, args...) = LG.has_edge(g, args...)
+@inline Graphs.neighbors(g::LG.AbstractGraph, args...) = LG.neighbors(g, args...)
 
 # Graphs
 ########
 
 bench = SUITE["Graph"] = BenchmarkGroup()
 
-n = 500
+n = 10000
 bench["make-path"] = @benchmarkable begin
   g = Graph()
   add_vertices!(g, n)
@@ -77,17 +87,13 @@ bench["iter-edges"] = @benchmarkable bench_iter_edges($g)
 bench["iter-edges-lightgraphs"] = @benchmarkable bench_iter_edges($lg)
 bench["has-edge"] = @benchmarkable bench_has_edge($g)
 bench["has-edge-lightgraphs"] = @benchmarkable bench_has_edge($lg)
+bench["iter-neighbors"] = @benchmarkable bench_iter_neighbors($g)
+bench["iter-neighbors-lightgraphs"] = @benchmarkable bench_iter_neighbors($lg)
 
-v = n÷2
-bench["inneighbors"] = @benchmarkable inneighbors($g, $v)
-bench["outneighbors"] = @benchmarkable outneighbors($g, $v)
-bench["inneighbors-lightgraphs"] = @benchmarkable LG.inneighbors($lg, $v)
-bench["outneighbors-lightgraphs"] = @benchmarkable LG.outneighbors($lg, $v)
-
-n₀ = 50
+n₀ = 2000
 g₀ = Graph(n₀)
 add_edges!(g₀, 1:(n₀-1), 2:n₀)
-g = ob(coproduct(fill(g, 5)))
+g = ob(coproduct(fill(g₀, 5)))
 lg = LG.DiGraph(g)
 bench["path-graph-components"] = @benchmarkable connected_components($g)
 bench["path-graph-components-proj"] =
@@ -97,7 +103,7 @@ bench["path-graph-components-lightgraphs"] =
 
 g₀ = Graph(n₀)
 add_edges!(g₀, fill(1,n₀-1), 2:n₀)
-g = ob(coproduct(fill(g, 5)))
+g = ob(coproduct(fill(g₀, 5)))
 lg = LG.DiGraph(g)
 bench["star-graph-components"] = @benchmarkable connected_components($g)
 bench["star-graph-components-proj"] =
@@ -110,7 +116,7 @@ bench["star-graph-components-lightgraphs"] =
 
 bench = SUITE["SymmetricGraph"] = BenchmarkGroup()
 
-n = 500
+n = 10000
 bench["make-path"] = @benchmarkable begin
   g = SymmetricGraph()
   add_vertices!(g, n)
@@ -133,20 +139,18 @@ bench["iter-edges"] = @benchmarkable bench_iter_edges($g)
 bench["iter-edges-lightgraphs"] = @benchmarkable bench_iter_edges($lg)
 bench["has-edge"] = @benchmarkable bench_has_edge($g)
 bench["has-edge-lightgraphs"] = @benchmarkable bench_has_edge($lg)
-
-v = n÷2
-bench["neighbors"] = @benchmarkable neighbors($g, $v)
-bench["neighbors-lightgraphs"] = @benchmarkable LG.neighbors($lg, $v)
+bench["iter-neighbors"] = @benchmarkable bench_iter_neighbors($g)
+bench["iter-neighbors-lightgraphs"] = @benchmarkable bench_iter_neighbors($lg)
 
 function lg_connected_components_projection(g)
   label = Vector{Int}(undef, LG.nv(g))
   LG.connected_components!(label, g)
 end
 
-n₀ = 50
+n₀ = 2000
 g₀ = SymmetricGraph(n₀)
 add_edges!(g₀, 1:(n₀-1), 2:n₀)
-g = ob(coproduct(fill(g, 5)))
+g = ob(coproduct(fill(g₀, 5)))
 lg = LG.Graph(g)
 bench["path-graph-components"] = @benchmarkable connected_components($g)
 bench["path-graph-components-proj"] =
@@ -158,7 +162,7 @@ bench["path-graph-components-proj-lightgraphs"] =
 
 g₀ = SymmetricGraph(n₀)
 add_edges!(g₀, fill(1,n₀-1), 2:n₀)
-g = ob(coproduct(fill(g, 5)))
+g = ob(coproduct(fill(g₀, 5)))
 lg = LG.Graph(g)
 bench["star-graph-components"] = @benchmarkable connected_components($g)
 bench["star-graph-components-proj"] =
@@ -173,7 +177,7 @@ bench["star-graph-components-proj-lightgraphs"] =
 
 bench = SUITE["WeightedGraph"] = BenchmarkGroup()
 
-n = 500
+n = 10000
 g = WeightedGraph{Float64}(n)
 add_edges!(g, 1:(n-1), 2:n, weight=range(0, 1, length=n-1))
 mg = MG.MetaDiGraph(g)
