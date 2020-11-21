@@ -223,25 +223,33 @@ bench = SUITE["LabeledGraph"] = BenchmarkGroup()
   label::Attr(V,Label)
 end
 const LabeledGraph = ACSetType(TheoryLabeledGraph, index=[:src,:tgt])
+const IndexedLabeledGraph = ACSetType(TheoryLabeledGraph, index=[:src,:tgt],
+                                      unique_index=[:label])
 
-function discrete_labeled_graph(n)
-  g = LabeledGraph{String}()
+function discrete_labeled_graph(n::Int; indexed::Bool=false)
+  g = (indexed ? IndexedLabeledGraph{String} : LabeledGraph{String})()
   add_vertices!(g, n, label=("v$i" for i in 1:n))
   g
 end
 
-function discrete_labeled_metagraph(n)
+function discrete_labeled_metagraph(n::Int; indexed::Bool=false)
   mg = MG.MetaDiGraph()
   for i in 1:n
     MG.add_vertex!(mg, :label, "v$i")
   end
+  if indexed; MG.set_indexing_prop!(mg, :label) end
   mg
 end
 
-n = 10000
+n = 5000
 bench["make-discrete"] = @benchmarkable discrete_labeled_graph($n)
 bench["make-discrete-metagraphs"] = @benchmarkable discrete_labeled_metagraph($n)
+bench["make-discrete-indexed"] =
+  @benchmarkable discrete_labeled_graph($n, indexed=true)
+bench["make-discrete-indexed-metagraphs"] =
+  @benchmarkable discrete_labeled_metagraph($n, indexed=true)
 
+n = 10000
 g = discrete_labeled_graph(n)
 mg = discrete_labeled_metagraph(n)
 bench["iter-labels"] = @benchmarkable begin
@@ -252,6 +260,21 @@ end
 bench["iter-labels-metagraphs"] = @benchmarkable begin
   for v in MG.vertices($mg)
     label = MG.get_prop($mg, v, :label)
+  end
+end
+
+g = discrete_labeled_graph(n, indexed=true)
+mg = discrete_labeled_metagraph(n, indexed=true)
+Random.seed!(1)
+σ = randperm(n)
+bench["indexed-lookup"] = @benchmarkable begin
+  for i in $σ
+    @assert incident($g, "v$i", :label) == i
+  end
+end
+bench["indexed-lookup-metagraphs"] = @benchmarkable begin
+  for i in $σ
+    @assert $mg["v$i", :label] == i
   end
 end
 
