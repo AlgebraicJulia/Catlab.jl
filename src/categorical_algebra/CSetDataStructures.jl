@@ -500,21 +500,23 @@ Both single and vectorized assignment are supported.
 
 See also: [`set_subparts!`](@ref).
 """
-@inline set_subpart!(acs::ACSet, part::Int, name, subpart) =
+@inline set_subpart!(acs::ACSet, part, name::Symbol, subpart) =
   _set_subpart!(acs, part, Val{name}, subpart)
+@inline set_subpart!(acs::ACSet, name::Symbol, subpart) =
+  _set_subpart!(acs, Val{name}, subpart)
 # Inlined for the same reason as `subpart`.
 
-function set_subpart!(acs::ACSet, part::AbstractVector{Int},
-                      name::Symbol, subpart)
+function _set_subpart!(acs::ACSet, part::AbstractVector{Int},
+                       ::Type{Name}, subpart) where Name
   broadcast(part, subpart) do part, subpart
-    _set_subpart!(acs, part, Val{name}, subpart)
+    _set_subpart!(acs, part, Name, subpart)
   end
 end
 
-set_subpart!(acs::ACSet, ::Colon, name::Symbol, subpart) =
-  set_subpart!(acs, name, subpart)
-set_subpart!(acs::ACSet, name::Symbol, new_subpart) =
-  set_subpart!(acs, 1:length(subpart(acs, name)), name, new_subpart)
+_set_subpart!(acs::ACSet, ::Colon, ::Type{Name}, subpart) where Name =
+  _set_subpart!(acs, Name, subpart)
+_set_subpart!(acs::ACSet, ::Type{Name}, subpart) where Name =
+  _set_subpart!(acs, 1:length(_subpart(acs, Name)), Name, subpart)
 
 @generated function _set_subpart!(acs::ACSet{CD,AD,Ts,Idxed}, part::Int,
     ::Type{Val{name}}, subpart) where {CD,AD,Ts,Idxed,name}
