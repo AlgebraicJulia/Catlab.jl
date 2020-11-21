@@ -556,6 +556,9 @@ set_subpart!(acs::ACSet, name::Symbol, new_subpart) =
   end
 end
 
+@inline Base.setindex!(acs::ACSet, value, args...) =
+  set_subpart!(acs, args..., value)
+
 """ Mutate subparts of a part in a C-set.
 
 Both single and vectorized assignment are supported.
