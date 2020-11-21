@@ -500,8 +500,9 @@ Both single and vectorized assignment are supported.
 
 See also: [`set_subparts!`](@ref).
 """
-set_subpart!(acs::ACSet, part::Int, name, subpart) =
+@inline set_subpart!(acs::ACSet, part::Int, name, subpart) =
   _set_subpart!(acs, part, Val{name}, subpart)
+# Inlined for the same reason as `subpart`.
 
 function set_subpart!(acs::ACSet, part::AbstractVector{Int},
                       name::Symbol, subpart)

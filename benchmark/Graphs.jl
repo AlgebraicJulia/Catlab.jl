@@ -10,6 +10,7 @@ import LightGraphs, MetaGraphs
 const LG, MG = LightGraphs, MetaGraphs
 
 using Catlab, Catlab.CategoricalAlgebra, Catlab.Graphs
+using Catlab.Graphs.BasicGraphs: TheoryGraph
 
 # Helpers
 #########
@@ -184,7 +185,6 @@ mg = MG.MetaDiGraph(g)
 
 bench["sum-weights-vectorized"] = @benchmarkable sum(weight($g))
 bench["sum-weights"] = @benchmarkable begin
-  # Slower than above but useful for comparison with MetaGraphs.
   total = 0.0
   for e in edges($g)
     total += weight($g, e)
@@ -197,6 +197,43 @@ bench["sum-weights-metagraphs"] = @benchmarkable begin
     total += MG.get_prop($mg, e, :weight)
   end
   total
+end
+
+bench["increment-weights-vectorized"] = @benchmarkable begin
+  $g[:weight] = $g[:weight] .+ 1.0
+end
+bench["increment-weights"] = @benchmarkable begin
+  for e in edges($g)
+    $g[e,:weight] += 1.0
+  end
+end
+bench["increment-weights-metagraphs"] = @benchmarkable begin
+  for e in MG.edges($mg)
+    MG.set_prop!($mg, e, :weight, MG.get_prop($mg, e, :weight) + 1.0)
+  end
+end
+
+# Labeled graphs
+################
+
+bench = SUITE["LabeledGraph"] = BenchmarkGroup()
+
+@present TheoryLabeledGraph <: TheoryGraph begin
+  Label::Data
+  label::Attr(V,Label)
+end
+const LabeledGraph = ACSetType(TheoryLabeledGraph, index=[:src,:tgt])
+
+n = 10000
+bench["make-labeled-graph"] = @benchmarkable begin
+  g = LabeledGraph{String}()
+  add_vertices!(g, $n, label=("v$i" for i in 1:$n))
+end
+bench["make-labeled-graph-metagraphs"] = @benchmarkable begin
+  mg = MG.MetaDiGraph()
+  for i in 1:$n
+    MG.add_vertex!(mg, :label, "v$i")
+  end
 end
 
 end
