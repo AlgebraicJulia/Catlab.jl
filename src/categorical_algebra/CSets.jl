@@ -260,4 +260,32 @@ cocone_objects(diagram) = ob(diagram)
 cocone_objects(span::Multispan) = feet(span)
 cocone_objects(para::ParallelMorphisms) = SVector(codom(para))
 
+# Functorial Data migration
+###########################
+
+""" 
+Migrates an instance of one ACSet 
+given dictionaries representing a functor between theories
+"""
+
+function migrate!(Y::ACSet{CD, AD}, X::ACSet, FOb::Dict, FHom::Dict) where {CD, AD}
+  CD.ob ⊆ keys(FOb)     || error("Every object in $CD must be a key in $FOb")
+  CD.hom ⊆ keys(FHom)   || error("Every hom in $CD must be a key in $FHom")
+  AD.attr ⊆ keys(FHom)  || error("Every attribute in $AD must be a key in $FHom")
+  
+  for obY in CD.ob
+    add_parts!(Y, obY, nparts(X, FOb[obY]))
+  end
+
+  for homY in CD.hom ∪ AD.attr
+    set_subpart!(Y, homY, subpart(X, FHom[homY]))
+  end
+  return Y
+end
+
+function (::Type{T})(X::ACSet, FOb::Dict, FHom::Dict) where T <: AbstractACSet
+  Y = T(); migrate!(Y, X, FOb, FHom)
+end
+
+
 end
