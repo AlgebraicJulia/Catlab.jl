@@ -10,6 +10,7 @@ import LightGraphs, MetaGraphs
 const LG, MG = LightGraphs, MetaGraphs
 
 using Catlab, Catlab.CategoricalAlgebra, Catlab.Graphs
+using Catlab.Graphs.BasicGraphs: TheoryGraph
 
 # Helpers
 #########
@@ -182,9 +183,8 @@ g = WeightedGraph{Float64}(n)
 add_edges!(g, 1:(n-1), 2:n, weight=range(0, 1, length=n-1))
 mg = MG.MetaDiGraph(g)
 
-bench["sum-weights"] = @benchmarkable sum(weight($g))
-bench["sum-weights-slow"] = @benchmarkable begin
-  # Slower than above but useful for comparison with MetaGraphs.
+bench["sum-weights-vectorized"] = @benchmarkable sum(weight($g))
+bench["sum-weights"] = @benchmarkable begin
   total = 0.0
   for e in edges($g)
     total += weight($g, e)
@@ -197,6 +197,85 @@ bench["sum-weights-metagraphs"] = @benchmarkable begin
     total += MG.get_prop($mg, e, :weight)
   end
   total
+end
+
+bench["increment-weights-vectorized"] = @benchmarkable begin
+  $g[:weight] = $g[:weight] .+ 1.0
+end
+bench["increment-weights"] = @benchmarkable begin
+  for e in edges($g)
+    $g[e,:weight] += 1.0
+  end
+end
+bench["increment-weights-metagraphs"] = @benchmarkable begin
+  for e in MG.edges($mg)
+    MG.set_prop!($mg, e, :weight, MG.get_prop($mg, e, :weight) + 1.0)
+  end
+end
+
+# Labeled graphs
+################
+
+bench = SUITE["LabeledGraph"] = BenchmarkGroup()
+
+@present TheoryLabeledGraph <: TheoryGraph begin
+  Label::Data
+  label::Attr(V,Label)
+end
+const LabeledGraph = ACSetType(TheoryLabeledGraph, index=[:src,:tgt])
+const IndexedLabeledGraph = ACSetType(TheoryLabeledGraph, index=[:src,:tgt],
+                                      unique_index=[:label])
+
+function discrete_labeled_graph(n::Int; indexed::Bool=false)
+  g = (indexed ? IndexedLabeledGraph{String} : LabeledGraph{String})()
+  add_vertices!(g, n, label=("v$i" for i in 1:n))
+  g
+end
+
+function discrete_labeled_metagraph(n::Int; indexed::Bool=false)
+  mg = MG.MetaDiGraph()
+  for i in 1:n
+    MG.add_vertex!(mg, :label, "v$i")
+  end
+  if indexed; MG.set_indexing_prop!(mg, :label) end
+  mg
+end
+
+n = 5000
+bench["make-discrete"] = @benchmarkable discrete_labeled_graph($n)
+bench["make-discrete-metagraphs"] = @benchmarkable discrete_labeled_metagraph($n)
+bench["make-discrete-indexed"] =
+  @benchmarkable discrete_labeled_graph($n, indexed=true)
+bench["make-discrete-indexed-metagraphs"] =
+  @benchmarkable discrete_labeled_metagraph($n, indexed=true)
+
+n = 10000
+g = discrete_labeled_graph(n)
+mg = discrete_labeled_metagraph(n)
+bench["iter-labels"] = @benchmarkable begin
+  for v in vertices($g)
+    label = $g[v,:label]
+  end
+end
+bench["iter-labels-metagraphs"] = @benchmarkable begin
+  for v in MG.vertices($mg)
+    label = MG.get_prop($mg, v, :label)
+  end
+end
+
+g = discrete_labeled_graph(n, indexed=true)
+mg = discrete_labeled_metagraph(n, indexed=true)
+Random.seed!(1)
+σ = randperm(n)
+bench["indexed-lookup"] = @benchmarkable begin
+  for i in $σ
+    @assert incident($g, "v$i", :label) == i
+  end
+end
+bench["indexed-lookup-metagraphs"] = @benchmarkable begin
+  for i in $σ
+    @assert $mg["v$i", :label] == i
+  end
 end
 
 end

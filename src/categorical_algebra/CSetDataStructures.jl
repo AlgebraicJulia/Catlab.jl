@@ -338,9 +338,11 @@ convention differs from DataFrames but note that the alternative interpretation
 of `[:src,:vattr]` as two independent columns does not even make sense, since
 they have different domains (belong to different tables).
 """
-subpart(acs::ACSet, part, name) = view_slice(subpart(acs, name), part)
+@inline subpart(acs::ACSet, part, name) = view_slice(subpart(acs, name), part)
+@inline subpart(acs::ACSet, name::Symbol) = _subpart(acs, Val{name})
+# These accessors must be inlined to ensure that constant names are propagated
+# at compile time, e.g., `subpart(g, :src)` becomes `_subpart(g, Val{:src})`.
 
-subpart(acs::ACSet, name::Symbol) = _subpart(acs, Val{name})
 subpart(acs::ACSet, expr::GATExpr{:generator}) = subpart(acs, first(expr))
 subpart(acs::ACSet, expr::GATExpr{:id}) = parts(acs, first(dom(expr)))
 
@@ -372,7 +374,7 @@ subpart_names(expr::GATExpr{:compose}) =
   end
 end
 
-Base.getindex(acs::ACSet, args...) = subpart(acs, args...)
+@inline Base.getindex(acs::ACSet, args...) = subpart(acs, args...)
 
 @inline view_slice(x::AbstractVector, i) = view(x, i)
 @inline view_slice(x::AbstractVector, i::Int) = x[i]
@@ -395,8 +397,9 @@ underlying index, which should not be mutated. To ensure that a fresh copy is
 returned, regardless of whether indexing is enabled, set the keyword argument
 `copy=true`.
 """
-incident(acs::ACSet, part, name::Symbol; copy::Bool=false) =
+@inline incident(acs::ACSet, part, name::Symbol; copy::Bool=false) =
   _incident(acs, part, Val{name}; copy=copy)
+# Inlined for same reason as `subpart`.
 
 function incident(acs::ACSet, part, names::AbstractVector{Symbol};
                   copy::Bool=false)
@@ -498,20 +501,23 @@ Both single and vectorized assignment are supported.
 
 See also: [`set_subparts!`](@ref).
 """
-set_subpart!(acs::ACSet, part::Int, name, subpart) =
+@inline set_subpart!(acs::ACSet, part, name::Symbol, subpart) =
   _set_subpart!(acs, part, Val{name}, subpart)
+@inline set_subpart!(acs::ACSet, name::Symbol, subpart) =
+  _set_subpart!(acs, Val{name}, subpart)
+# Inlined for the same reason as `subpart`.
 
-function set_subpart!(acs::ACSet, part::AbstractVector{Int},
-                      name::Symbol, subpart)
+function _set_subpart!(acs::ACSet, part::AbstractVector{Int},
+                       ::Type{Name}, subpart) where Name
   broadcast(part, subpart) do part, subpart
-    _set_subpart!(acs, part, Val{name}, subpart)
+    _set_subpart!(acs, part, Name, subpart)
   end
 end
 
-set_subpart!(acs::ACSet, ::Colon, name::Symbol, subpart) =
-  set_subpart!(acs, name, subpart)
-set_subpart!(acs::ACSet, name::Symbol, new_subpart) =
-  set_subpart!(acs, 1:length(subpart(acs, name)), name, new_subpart)
+_set_subpart!(acs::ACSet, ::Colon, ::Type{Name}, subpart) where Name =
+  _set_subpart!(acs, Name, subpart)
+_set_subpart!(acs::ACSet, ::Type{Name}, subpart) where Name =
+  _set_subpart!(acs, 1:length(_subpart(acs, Name)), Name, subpart)
 
 @generated function _set_subpart!(acs::ACSet{CD,AD,Ts,Idxed}, part::Int,
     ::Type{Val{name}}, subpart) where {CD,AD,Ts,Idxed,name}
@@ -554,6 +560,9 @@ set_subpart!(acs::ACSet, name::Symbol, new_subpart) =
   end
 end
 
+@inline Base.setindex!(acs::ACSet, value, args...) =
+  set_subpart!(acs, args..., value)
+
 """ Mutate subparts of a part in a C-set.
 
 Both single and vectorized assignment are supported.
@@ -562,10 +571,13 @@ See also: [`set_subpart!`](@ref).
 """
 set_subparts!(acs::ACSet, part; kw...) = set_subparts!(acs, part, (; kw...))
 
-function set_subparts!(acs::ACSet, part, subparts)
-  for (name, subpart) in pairs(subparts)
-    set_subpart!(acs, part, name, subpart)
-  end
+@generated function set_subparts!(acs::ACSet, part,
+                                  subparts::NamedTuple{names}) where names
+  Expr(:block,
+    map(names) do name
+      :(_set_subpart!(acs, part, Val{$(QuoteNode(name))}, subparts.$name))
+    end...,
+    nothing)
 end
 
 """ Remove part from a C-set.

@@ -173,6 +173,12 @@ X, parent, height = TheoryDendrogram[[:X, :parent, :height]]
 @test d[3, [:parent, :height]] == 10
 @test d[3:5, [:parent, :height]] == [10,20,20]
 @test d[:, :parent] == [4,4,4,5,5]
+d2 = copy(d)
+d2[1, :parent] = 1
+d2[2:3, :parent] = 2:3
+@test d2[1:3, :parent] == 1:3
+d2[1:3, :parent] = 4
+@test d2 == d
 
 # Copying parts.
 d2 = Dendrogram{Int}()
