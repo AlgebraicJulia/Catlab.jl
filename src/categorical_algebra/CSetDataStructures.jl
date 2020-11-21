@@ -570,10 +570,13 @@ See also: [`set_subpart!`](@ref).
 """
 set_subparts!(acs::ACSet, part; kw...) = set_subparts!(acs, part, (; kw...))
 
-function set_subparts!(acs::ACSet, part, subparts)
-  for (name, subpart) in pairs(subparts)
-    set_subpart!(acs, part, name, subpart)
-  end
+@generated function set_subparts!(acs::ACSet, part,
+                                  subparts::NamedTuple{names}) where names
+  Expr(:block,
+    map(names) do name
+      :(_set_subpart!(acs, part, Val{$(QuoteNode(name))}, subparts.$name))
+    end...,
+    nothing)
 end
 
 """ Remove part from a C-set.
