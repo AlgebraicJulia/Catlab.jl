@@ -397,8 +397,9 @@ underlying index, which should not be mutated. To ensure that a fresh copy is
 returned, regardless of whether indexing is enabled, set the keyword argument
 `copy=true`.
 """
-incident(acs::ACSet, part, name::Symbol; copy::Bool=false) =
+@inline incident(acs::ACSet, part, name::Symbol; copy::Bool=false) =
   _incident(acs, part, Val{name}; copy=copy)
+# Inlined for same reason as `subpart`.
 
 function incident(acs::ACSet, part, names::AbstractVector{Symbol};
                   copy::Bool=false)
