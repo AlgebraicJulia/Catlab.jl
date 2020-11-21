@@ -224,15 +224,34 @@ bench = SUITE["LabeledGraph"] = BenchmarkGroup()
 end
 const LabeledGraph = ACSetType(TheoryLabeledGraph, index=[:src,:tgt])
 
-n = 10000
-bench["make-labeled-graph"] = @benchmarkable begin
+function discrete_labeled_graph(n)
   g = LabeledGraph{String}()
-  add_vertices!(g, $n, label=("v$i" for i in 1:$n))
+  add_vertices!(g, n, label=("v$i" for i in 1:n))
+  g
 end
-bench["make-labeled-graph-metagraphs"] = @benchmarkable begin
+
+function discrete_labeled_metagraph(n)
   mg = MG.MetaDiGraph()
-  for i in 1:$n
+  for i in 1:n
     MG.add_vertex!(mg, :label, "v$i")
+  end
+  mg
+end
+
+n = 10000
+bench["make-discrete"] = @benchmarkable discrete_labeled_graph($n)
+bench["make-discrete-metagraphs"] = @benchmarkable discrete_labeled_metagraph($n)
+
+g = discrete_labeled_graph(n)
+mg = discrete_labeled_metagraph(n)
+bench["iter-labels"] = @benchmarkable begin
+  for v in vertices($g)
+    label = $g[v,:label]
+  end
+end
+bench["iter-labels-metagraphs"] = @benchmarkable begin
+  for v in MG.vertices($mg)
+    label = MG.get_prop($mg, v, :label)
   end
 end
 
