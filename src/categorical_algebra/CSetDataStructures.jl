@@ -338,9 +338,11 @@ convention differs from DataFrames but note that the alternative interpretation
 of `[:src,:vattr]` as two independent columns does not even make sense, since
 they have different domains (belong to different tables).
 """
-subpart(acs::ACSet, part, name) = view_slice(subpart(acs, name), part)
+@inline subpart(acs::ACSet, part, name) = view_slice(subpart(acs, name), part)
+@inline subpart(acs::ACSet, name::Symbol) = _subpart(acs, Val{name})
+# These accessors must be inlined to ensure that constant names are propagated
+# at compile time, e.g., `subpart(g, :src)` becomes `_subpart(g, Val{:src})`.
 
-subpart(acs::ACSet, name::Symbol) = _subpart(acs, Val{name})
 subpart(acs::ACSet, expr::GATExpr{:generator}) = subpart(acs, first(expr))
 subpart(acs::ACSet, expr::GATExpr{:id}) = parts(acs, first(dom(expr)))
 
@@ -372,7 +374,7 @@ subpart_names(expr::GATExpr{:compose}) =
   end
 end
 
-Base.getindex(acs::ACSet, args...) = subpart(acs, args...)
+@inline Base.getindex(acs::ACSet, args...) = subpart(acs, args...)
 
 @inline view_slice(x::AbstractVector, i) = view(x, i)
 @inline view_slice(x::AbstractVector, i::Int) = x[i]

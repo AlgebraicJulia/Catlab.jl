@@ -182,8 +182,8 @@ g = WeightedGraph{Float64}(n)
 add_edges!(g, 1:(n-1), 2:n, weight=range(0, 1, length=n-1))
 mg = MG.MetaDiGraph(g)
 
-bench["sum-weights"] = @benchmarkable sum(weight($g))
-bench["sum-weights-slow"] = @benchmarkable begin
+bench["sum-weights-vectorized"] = @benchmarkable sum(weight($g))
+bench["sum-weights"] = @benchmarkable begin
   # Slower than above but useful for comparison with MetaGraphs.
   total = 0.0
   for e in edges($g)
