@@ -8,8 +8,8 @@ using ...Graphs.BasicGraphs
 import ...Graphs.BasicGraphs: TheoryGraph
 import ..DirectedWiringDiagrams: ocompose
 
-export ThCPortGraph, ThOpenCPortGraph, ThSymCPortGraph, ThOpenSymCPortGraph,
-  CPortGraph, OpenCPortGraph, SymCPortGraph, OpenSymCPortGraph
+export ThCPortGraph, ThOpenCPortGraph, ThSymCPortGraph, ThOpenSymCPortGraph, ThBundledCPG,
+  CPortGraph, OpenCPortGraph, SymCPortGraph, OpenSymCPortGraph, BundledCPG
 
 
 @present ThCPortGraph(FreeSchema) begin
@@ -120,7 +120,7 @@ function ocompose(g::OpenCPortGraph, xs::Vector)
         ι_tgtport = legs(u.cocone)[tbox][:P](localport_tgt)
         add_part!(sum, :W; src=ι_srcport, tgt=ι_tgtport) 
     end
-    rem_parts!(sum, :OP, parts(xsum, :OP))
+    rem_parts!(sum, :OP, parts(sum, :OP))
     for op in parts(g, :OP)
         i = g[op, [:con, :box]]
         localport = findfirst(op .== incident(g, i, :box))
@@ -150,7 +150,7 @@ function BundledCPG(g::OpenCPortGraph)
     return bg
 end
 
-function oapply(g::BundledCPG, xs::Vector)
+function ocompose(g::BundledCPG, xs::Vector)
     u = coproduct(xs)
     xsum=apex(u)
     for e in parts(g, :W)

@@ -58,7 +58,8 @@ end
   hex = ocompose(g, [Bar, Bar, Bar])
   @test subpart(hex, :, :src) == [1,3,5,2,4,6]
   @test subpart(hex, :, :tgt) == [2,4,6,3,5,1]
-  @test subpart(hex, :, :con) == 1:6
+  @test subpart(hex, :, :con) == Int[]
+  add_parts!(hex, :OP, 6, con=1:6)
 
   twohex = ocompose(barbell(6), [hex, hex])
   g′ = migrate!(Graph(), migrate!(CPortGraph(), twohex))
@@ -89,20 +90,19 @@ EdgeGraph() = begin
   
   f = OpenCPortGraph(migrate!(CPortGraph(), e₁))
   f = BundledCPG(f)
-  fee = oapply(f, [boe₁, boe₁])
+  fee = ocompose(f, [boe₁, boe₁])
   @test fee[:, :src] == [1,3,1,2]
   @test fee[:, :tgt] == [2,4,3,4]
   
   add_parts!(f, :Bundle, 2)
   add_parts!(f, :OP, 2, con=[1,2], bun=[1,2])
-  fee′ = oapply(f, [boe₁, boe₁])
+  fee′ = ocompose(f, [boe₁, boe₁])
   @test fee′[:, :con] == 1:4
   @test fee′[:, :bun] == [1,1,2,2]
-  h = oapply(f, [fee′, fee′])
+  h = ocompose(f, [fee′, fee′])
   @test nparts(h, :W) == 10
   
   set_subpart!(fee′, :bun, 1)
-  @show fee′
-  h = oapply(f, [fee′, fee′])
+  h = ocompose(f, [fee′, fee′])
   @test nparts(h, :W) == 12
 end
