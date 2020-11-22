@@ -17,7 +17,7 @@ migrate!(pg, g)
 
 @test subpart(pg, :, :box) == 1:4
 @test subpart(pg, :, :src) == 1:4
-@test subpart(pg, :, :src) == [2,3,4,1]
+@test subpart(pg, :, :tgt) == [2,3,4,1]
 
 bar = Graph()
 add_vertices!(bar, 2)
