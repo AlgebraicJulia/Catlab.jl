@@ -329,4 +329,27 @@ end
 @test subpart(g,:,:src) == [1,2,3,4]
 @test incident(g,1,:src) == [1]
 
+# Views on ACSets
+#----------------
+
+@present TheoryCoords(FreeSchema) begin
+  Pos::Ob
+  Num::Data
+  x::Attr(Pos,Num)
+  y::Attr(Pos,Num)
+end
+
+const Coords = ACSetType(TheoryCoords)
+
+cs = @acset Coords{Int} begin
+  Pos=3
+  x=[1,2,3]
+  y=[3,2,1]
+end
+
+cs_view = ACSetView(cs,:Pos,[1,3])
+
+@test cs_view[2] == (x=3,y=1)
+@test (@. cs_view.x ^ 2 + cs_view.y ^ 2) == [10,10]
+
 end

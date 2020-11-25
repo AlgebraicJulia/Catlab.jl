@@ -5,7 +5,8 @@ export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
   AbstractACSetType, ACSetType, ACSetTableType, AbstractCSetType, CSetType,
   tables, parts, nparts, has_part, subpart, has_subpart, incident,
   add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!,
-  copy_parts!, copy_parts_only!, disjoint_union, @acset
+  copy_parts!, copy_parts_only!, disjoint_union,
+  @acset, ACSetView
 
 using Compat: isnothing, only
 
@@ -856,5 +857,38 @@ function init_acset(T::Type{<:ACSet{CD,AD,Ts}},body) where {CD <: CatDesc, AD <:
   push!(code.args, :(return acs))
   code
 end
+
+""" Dataframes backed by ACSets
+
+Useful as a "view" onto an ACSet, and also for computing limits
+"""
+
+""" P is a symbol, the object in the schema that this ASet focuses onto
+"""
+struct ACSetView{A <: ACSet, P, Attrs <: NamedTuple} <: AbstractArray{Attrs,1}
+  backing :: A
+  parts :: Vector{Int}
+  function ACSetView(backing::A, P::Symbol, parts::Vector{Int}) where
+      {CD <: CatDesc,AD <: AttrDesc{CD},Ts <: Tuple, A <: ACSet{CD,AD,Ts}}
+    attr_names = filter(a -> dom(AD,a) == P, AD.attr)
+    attr_types = map(a -> Ts.parameters[codom_num(AD,a)], AD.attr)
+    row_type = NamedTuple{attr_names, Tuple{attr_types...}}
+    new{A,P,NamedTuple{attr_names, Tuple{attr_types...}}}(backing,parts)
+  end
+end
+
+Base.size(av::ACSetView) = size(getfield(av,:parts))
+
+@generated function Base.getindex(av::ACSetView{<:ACSet,P,Attrs}, i::Int) where
+    {P, Attrs <: NamedTuple}
+  tuple_args = map(Attrs.parameters[1]) do attr
+    :($attr = subpart(getfield(av,:backing), getfield(av,:parts)[i], $(Expr(:quote, attr))))
+  end
+  Expr(:tuple,tuple_args...)
+end
+
+Base.getindex(av::ACSetView,i::Int,name::Symbol) = subpart(getfield(av,:backing), getfield(av,:parts)[i], name)
+
+Base.getproperty(av::ACSetView, name::Symbol) = subpart(getfield(av,:backing), getfield(av,:parts), name)
 
 end
