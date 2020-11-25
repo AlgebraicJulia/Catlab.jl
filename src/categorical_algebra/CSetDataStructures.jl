@@ -803,6 +803,14 @@ function deletesorted!(a::AbstractVector, x)
 end
 
 """ More convenient syntax for declaring an ACSet
+
+Example:
+@acset Graph begin
+  V = 2
+  E = 2
+  src = [1,2]
+  tgt = [2,1]
+end
 """
 
 macro acset(head, body)
@@ -810,7 +818,11 @@ macro acset(head, body)
   Expr(:call, esc(:eval), expr)
 end
 
-""" TODO: Add well-formedness checks to this
+"""
+TODO: Well-formedness check
+TODO: Could also rely on a @generated function that took in a "flat" named tuple
+TODO: Alternative syntax for @acset input based on CSV
+TODO: Actual CSV input
 """
 function init_acset(T::Type{<:ACSet{CD,AD,Ts}},body) where {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple}
   body = strip_lines(body)
