@@ -5,7 +5,7 @@ export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
   AbstractACSetType, ACSetType, ACSetTableType, AbstractCSetType, CSetType,
   tables, parts, nparts, has_part, subpart, has_subpart, incident,
   add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!,
-  copy_parts!, copy_parts_only!, disjoint_union, @acset, init_acset
+  copy_parts!, copy_parts_only!, disjoint_union, @acset
 
 using Compat: isnothing, only
 
@@ -831,10 +831,10 @@ function init_acset(T::Type{<:ACSet{CD,AD,Ts}},body) where {CD <: CatDesc, AD <:
     acs = $(T)()
   end
   for elem in body.args
-    @assert elem.head == :(=)
-    @assert length(elem.args) == 2
-    lhs = elem.args[1]
-    rhs = elem.args[2]
+    lhs, rhs = @match elem begin
+      Expr(:(=), lhs, rhs) => (lhs,rhs)
+      _ => error("Every line of `@acset` must be an assignment")
+    end
     if lhs in CD.ob
       push!(code.args, :(add_parts!(acs, $(Expr(:quote, lhs)), $(rhs))))
     elseif lhs in CD.hom || lhs in AD.attr
