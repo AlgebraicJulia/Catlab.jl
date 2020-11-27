@@ -109,21 +109,21 @@ function ocompose(g::OpenCPortGraph, xs::Vector)
     u = coproduct(xs)
     sum = apex(u)
     for e in parts(g, :W)
-        s = subpart(g, e, :src)
-        t = subpart(g, e, :tgt)
-        sbox = subpart(g, s, :box)
-        tbox = subpart(g, t, :box)
-        incident(g, sbox, :box)
+        s = g[e, :src]
+        t = g[e, :tgt]
+        sbox = g[s, :box]
+        tbox = g[t, :box]
         localport_src = findfirst(s .== incident(g, sbox, :box))
         localport_tgt = findfirst(t .== incident(g, tbox, :box))
-        ι_srcport = legs(u.cocone)[sbox][:P](localport_src)
-        ι_tgtport = legs(u.cocone)[tbox][:P](localport_tgt)
+        ι_srcport = legs(u.cocone)[sbox][:P](xs[sbox][localport_src, :con])
+        ι_tgtport = legs(u.cocone)[tbox][:P](xs[tbox][localport_tgt, :con])
         add_part!(sum, :W; src=ι_srcport, tgt=ι_tgtport) 
     end
     rem_parts!(sum, :OP, parts(sum, :OP))
     for op in parts(g, :OP)
         i = g[op, [:con, :box]]
-        localport = findfirst(op .== incident(g, i, :box))
+        j = findfirst(g[op, :con] .== incident(g, i, :box))
+        localport = xs[i][j, :con]
         newop = legs(u.cocone)[i][:P](localport)
         add_parts!(sum, :OP, 1, con=newop)
     end
