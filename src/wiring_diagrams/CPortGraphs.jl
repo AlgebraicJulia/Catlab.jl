@@ -42,7 +42,7 @@ end
 end
 
 const CPortGraph = ACSetType(ThCPortGraph)
-const OpenCPortGraph = ACSetType(ThOpenCPortGraph)
+const OpenCPortGraph = ACSetType(ThOpenCPortGraph, index=[:box, :src, :tgt])
 const SymCPortGraph = ACSetType(ThSymCPortGraph)
 const OpenSymCPortGraph = ACSetType(ThOpenSymCPortGraph)
 const OSCPGraph = OpenSymCPortGraph
