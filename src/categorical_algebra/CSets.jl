@@ -1,7 +1,8 @@
 """ Categories of C-sets and attributed C-sets.
 """
 module CSets
-export ACSetTransformation, CSetTransformation, components, force, is_natural
+export ACSetTransformation, CSetTransformation, components, force, is_natural,
+  migrate!
 
 using Compat: isnothing
 
@@ -260,32 +261,42 @@ cocone_objects(diagram) = ob(diagram)
 cocone_objects(span::Multispan) = feet(span)
 cocone_objects(para::ParallelMorphisms) = SVector(codom(para))
 
-# Functorial Data migration
+# Functorial data migration
 ###########################
 
-""" 
-Migrates an instance of one ACSet 
-given dictionaries representing a functor between theories
-"""
+""" Pullback functorial data migration from one ACSet to another.
 
-function migrate!(Y::ACSet{CD, AD}, X::ACSet, FOb::Dict, FHom::Dict) where {CD, AD}
+Note that this operation is contravariant: the data is transferred from `X` to
+`Y` but the functor, represented by two dictionaries, maps the schema for `Y`
+to the schema for `X`.
+
+When the functor is the identity, this function is equivalent to
+[`copy_parts!`](@ref).
+"""
+function migrate!(Y::ACSet{CD, AD}, X::ACSet,
+                  FOb::AbstractDict, FHom::AbstractDict) where {CD, AD}
   CD.ob ⊆ keys(FOb)     || error("Every object in $CD must be a key in $FOb")
   CD.hom ⊆ keys(FHom)   || error("Every hom in $CD must be a key in $FHom")
   AD.attr ⊆ keys(FHom)  || error("Every attribute in $AD must be a key in $FHom")
   
-  for obY in CD.ob
+  partsY = NamedTuple{CD.ob}(map(CD.ob) do obY
     add_parts!(Y, obY, nparts(X, FOb[obY]))
+  end)
+  for homY in CD.hom
+    domY, codomY = dom(CD, homY), codom(CD, homY)
+    set_subpart!(Y, partsY[domY], homY, partsY[codomY][subpart(X, FHom[homY])])
   end
-
-  for homY in CD.hom ∪ AD.attr
-    set_subpart!(Y, homY, subpart(X, FHom[homY]))
+  for attrY in AD.attr
+    domY = dom(AD, attrY)
+    set_subpart!(Y, partsY[domY], attrY, subpart(X, FHom[attrY]))
   end
   return Y
 end
 
-function (::Type{T})(X::ACSet, FOb::Dict, FHom::Dict) where T <: AbstractACSet
-  Y = T(); migrate!(Y, X, FOb, FHom)
+function (::Type{T})(X::ACSet, FOb::AbstractDict,
+                     FHom::AbstractDict) where T <: AbstractACSet
+  Y = T()
+  migrate!(Y, X, FOb, FHom)
 end
-
 
 end
