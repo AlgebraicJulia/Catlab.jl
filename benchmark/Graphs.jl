@@ -18,17 +18,17 @@ using Catlab.Graphs.BasicGraphs: TheoryGraph
 # `bench_iter_edges` and `bench_has_edge` adapted from LightGraphs:
 # https://github.com/JuliaGraphs/LightGraphs.jl/blob/master/benchmark/core.jl
 
-function bench_iter_edges(g::Union{AbstractGraph,AbstractSymmetricGraph})
+function bench_iter_edges(g)
   count = 0
-  for (s,t) in zip(src(g), tgt(g))
+  for e in edges(g)
+    s, t = src(g,e), tgt(g,e)
     count += 1
   end
   count
 end
-function bench_iter_edges(g::LG.AbstractGraph)
+function bench_iter_edges_vectorized(g)
   count = 0
-  for e in LG.edges(g)
-    s, t = LG.src(e), LG.dst(e)
+  for (s,t) in zip(src(g), tgt(g))
     count += 1
   end
   count
@@ -57,6 +57,9 @@ end
 
 @inline Graphs.nv(g::LG.AbstractGraph) = LG.nv(g)
 @inline Graphs.vertices(g::LG.AbstractGraph) = LG.vertices(g)
+@inline Graphs.edges(g::LG.AbstractGraph) = LG.edges(g)
+@inline Graphs.src(g::LG.AbstractGraph, e::LG.AbstractEdge) = LG.src(e)
+@inline Graphs.tgt(g::LG.AbstractGraph, e::LG.AbstractEdge) = LG.dst(e)
 @inline Graphs.has_edge(g::LG.AbstractGraph, args...) = LG.has_edge(g, args...)
 @inline Graphs.neighbors(g::LG.AbstractGraph, args...) = LG.neighbors(g, args...)
 
@@ -85,6 +88,7 @@ add_edges!(g, 1:(n-1), 2:n)
 lg = LG.DiGraph(g)
 
 bench["iter-edges"] = @benchmarkable bench_iter_edges($g)
+bench["iter-edges-vectorized"] = @benchmarkable bench_iter_edges_vectorized($g)
 bench["iter-edges-lightgraphs"] = @benchmarkable bench_iter_edges($lg)
 bench["has-edge"] = @benchmarkable bench_has_edge($g)
 bench["has-edge-lightgraphs"] = @benchmarkable bench_has_edge($lg)
@@ -137,6 +141,7 @@ add_edges!(g, 1:(n-1), 2:n)
 lg = LG.Graph(g)
 
 bench["iter-edges"] = @benchmarkable bench_iter_edges($g)
+bench["iter-edges-vectorized"] = @benchmarkable bench_iter_edges_vectorized($g)
 bench["iter-edges-lightgraphs"] = @benchmarkable bench_iter_edges($lg)
 bench["has-edge"] = @benchmarkable bench_has_edge($g)
 bench["has-edge-lightgraphs"] = @benchmarkable bench_has_edge($lg)
