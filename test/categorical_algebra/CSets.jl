@@ -5,7 +5,7 @@ using Catlab, Catlab.Theories, Catlab.Graphs,
   Catlab.CategoricalAlgebra, Catlab.CategoricalAlgebra.FinSets
 using Catlab.Graphs.BasicGraphs: TheoryGraph
 
-  # C-set morphisms
+# C-set morphisms
 #################
 
 # Constructors and accessors.
@@ -237,7 +237,9 @@ colim = pushout(α, β)
 @test !is_natural(α′) # Vertex labels don't match.
 @test_throws ErrorException pushout(α′, β)
 
-# Functorial Data Migration
+# Functorial data migration
+###########################
+
 @present TheoryDDS(FreeSchema) begin
   X::Ob
   Φ::Hom(X,X)
@@ -246,18 +248,26 @@ end
 const AbstractDDS = AbstractCSetType(TheoryDDS)
 const DDS = CSetType(TheoryDDS, index=[:Φ])
 
-h= Graph(3)
+h = Graph(3)
 add_parts!(h, :E, 3, src = [1,2,3], tgt = [2,3,1])
 
+# Identity data migration.
 @test h == Graph(h, Dict(:V => :V, :E => :E), 
-                       Dict(:src => :src, :tgt => :tgt))
+                    Dict(:src => :src, :tgt => :tgt))
 
+# Migrate DDS → Graph.
 dds = DDS()
 add_parts!(dds, :X, 3, Φ=[2,3,1])
 X = TheoryDDS[:X]
-
 @test h == Graph(dds, Dict(:V => :X, :E => :X),
-                        Dict(:src => id(X), :tgt => :Φ))
+                 Dict(:src => id(X), :tgt => :Φ))
+
+h2 = copy(h)
+migrate!(h2, dds, Dict(:V => :X, :E => :X),
+                  Dict(:src => id(X), :tgt => :Φ))
+@test h2 == ob(coproduct(h, h))
+
+# Migrate DDS → DDS by advancing four steps.
 @test dds == DDS(dds, Dict(:X => :X),
                       Dict(:Φ => [:Φ, :Φ, :Φ, :Φ]))
 
@@ -273,8 +283,9 @@ add_parts!(ldds, :X, 4, Φ=[2,3,4,1], label=[100, 101, 102, 103])
 wg = WeightedGraph{Int}(4)
 add_parts!(wg, :E, 4, src=[1,2,3,4], tgt=[2,3,4,1], weight=[101, 102, 103, 100])
 
-@test wg == WeightedGraph{Int}(ldds,  Dict(:V => :X, :E => :X),
-                                      Dict(:src => id(X), :tgt => :Φ, :weight => [:Φ, :label]))
+@test wg == WeightedGraph{Int}(ldds,
+  Dict(:V => :X, :E => :X),
+  Dict(:src => id(X), :tgt => :Φ, :weight => [:Φ, :label]))
   
 
 end
