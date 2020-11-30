@@ -300,4 +300,33 @@ set_subpart!(lset, 1, :label, :baz)
 
 @test_throws ErrorException set_subpart!(lset, 1, :label, :bar)
 
+# Test out the @acset macro
+#--------------------------
+
+@present TheoryDecGraph(FreeSchema) begin
+  E::Ob
+  V::Ob
+  src::Hom(E,V)
+  tgt::Hom(E,V)
+
+  X::Data
+  dec::Attr(E,X)
+end
+
+const DecGraph = ACSetType(TheoryDecGraph, index=[:src,:tgt])
+
+g = @acset DecGraph{String} begin
+  V = 4
+  E = 4
+
+  src = [1,2,3,4]
+  tgt = [2,3,4,1]
+
+  dec = ["a","b","c","d"]
+end
+
+@test nparts(g,:V) == 4
+@test subpart(g,:,:src) == [1,2,3,4]
+@test incident(g,1,:src) == [1]
+
 end
