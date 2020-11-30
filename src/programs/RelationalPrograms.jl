@@ -17,38 +17,66 @@ using ...WiringDiagrams.MonoidalUndirectedWiringDiagrams:
 #################
 
 @present TheoryRelationDiagram <: TheoryUntypedHypergraphDiagram begin
-  Variable::Data
-  variable::Attr(Junction,Variable)
+  VarName::Data
+  variable::Attr(Junction, VarName)
+end
+
+@present TheoryTypedRelationDiagram <: TheoryHypergraphDiagram begin
+  VarName::Data
+  variable::Attr(Junction, VarName)
 end
 
 const RelationDiagram = AbstractACSetType(TheoryRelationDiagram)
 const UntypedRelationDiagram = ACSetType(TheoryRelationDiagram,
   index=[:box, :junction, :outer_junction], unique_index=[:variable])
-
-@present TheoryTypedRelationDiagram <: TheoryHypergraphDiagram begin
-  Variable::Data
-  variable::Attr(Junction,Variable)
-end
-
 const TypedRelationDiagram = ACSetType(TheoryTypedRelationDiagram,
   index=[:box, :junction, :outer_junction], unique_index=[:variable])
 
-RelationDiagram{Name}(ports::Int) where {Name} =
-  UntypedRelationDiagram{Name,Symbol}(ports)
-RelationDiagram{Name}(ports::AbstractVector{T}) where {T,Name} =
-  TypedRelationDiagram{T,Name,Symbol}(ports)
+@present TheoryNamedRelationDiagram <: TheoryRelationDiagram begin
+  port_name::Attr(Port, VarName)
+  outer_port_name::Attr(OuterPort, VarName)
+end
+
+@present TheoryTypedNamedRelationDiagram <: TheoryTypedRelationDiagram begin
+  port_name::Attr(Port, VarName)
+  outer_port_name::Attr(OuterPort, VarName)
+end
+
+const UntypedNamedRelationDiagram = ACSetType(TheoryNamedRelationDiagram,
+  index=[:box, :junction, :outer_junction], unique_index=[:variable])
+const TypedNamedRelationDiagram = ACSetType(TheoryTypedNamedRelationDiagram,
+  index=[:box, :junction, :outer_junction], unique_index=[:variable])
+
+function RelationDiagram{Name}(ports::Int; port_names=nothing) where {Name}
+  if isnothing(port_names)
+    return UntypedRelationDiagram{Name,Symbol}(ports)
+  end
+  d = UntypedNamedRelationDiagram{Name,Symbol}(ports)
+  set_subpart!(d, :outer_port_name, port_names)
+  return d
+end
+
+function RelationDiagram{Name}(ports::AbstractVector{T};
+                               port_names=nothing) where {T,Name}
+  if isnothing(port_names)
+    return TypedRelationDiagram{T,Name,Symbol}(ports)
+  end
+  d = TypedNamedRelationDiagram{T,Name,Symbol}(ports)
+  set_subpart!(d, :outer_port_name, port_names)
+  return d
+end
+
 
 # Relations
 ###########
 
 """ Construct an undirected wiring diagram using relation notation.
 
-Unlike the `@program` macro for directed wiring diagrams, this macro
-fundamentally alters the usual semantics of the Julia language. Function calls
-with n arguments are now interpreted as assertions that an n-ary relation holds
-at a particular point. For example, the operation of composing of binary
-relations R ⊆ X × Y and S ⊆ Y × Z can be represented as an undirected wiring
-diagram by the macro call
+Unlike the `@program` macro for directed wiring diagrams, this macro departs
+from the usual semantics of the Julia programming language. Function calls with
+n arguments are now interpreted as assertions that an n-ary relation holds at a
+particular point. For example, the composition of binary relations R ⊆ X × Y and
+S ⊆ Y × Z can be represented as an undirected wiring diagram by the macro call
 
 ```julia
 @relation (x,z) where (x::X, y::Y, z::Z) begin
@@ -59,6 +87,15 @@ end
 
 In general, the context in the `where` clause defines the set of junctions in
 the diagram and variable sharing defines the wiring of ports to junctions.
+
+The ports and junctions of the diagram may be typed or untyped, and the ports
+may be named or unnamed. Thus four possible types of diagrams may be returned,
+with the type determined by the form of relation header:
+
+1. Untyped, unnamed: `@relation (x,z) where (x,y,z) ...`
+2. Typed, unnamed: `@relation (x,z) where (x::X, y::Y, z::Z) ...`
+3. Untyped, named: `@relation (out1=x, out2=z) where (x,y,z) ...`
+4. Typed, named: `@relation (out=1, out2=z) where (x::X, y::Y, z::Z) ...`
 """
 macro relation(exprs...)
   :(parse_relation_diagram($((QuoteNode(expr) for expr in exprs)...)))
@@ -77,20 +114,12 @@ function parse_relation_diagram(expr::Expr)
 end
 
 function parse_relation_diagram(head::Expr, body::Expr)
-  body = Base.remove_linenums!(body)
-  @match head begin
-    Expr(:where, Expr(:tuple, args...), Expr(:tuple, context...)) =>
-      make_relation_diagram(context, args, body.args)
-    Expr(:tuple, args...) => make_relation_diagram(args, args, body.args)
-    _ => error("Invalid syntax in declaration of outer ports and context")
+  # Parse variables and their types from context.
+  context, outer_expr = @match head begin
+    Expr(:where, expr, context) => (context, expr)
+    _ => (head, head)
   end
-end
-
-function make_relation_diagram(context::AbstractVector, args::AbstractVector,
-                               body::AbstractVector)
-  all_vars, all_types = parse_context(context)
-  outer_vars = parse_variables(args)
-  outer_vars ⊆ all_vars || error("One of variables $outer_vars is not declared")
+  all_vars, all_types = parse_relation_context(context)
   var_types = if isnothing(all_types) # Untyped case.
     vars -> length(vars)
   else # Typed case.
@@ -98,28 +127,35 @@ function make_relation_diagram(context::AbstractVector, args::AbstractVector,
     vars -> getindex.(Ref(var_type_map), vars)
   end
 
-  # Create diagram and add outer ports and junctions.
-  d = RelationDiagram{Symbol}(var_types(outer_vars))
+  # Create wiring diagram and add outer ports and junctions.
+  _, outer_port_names, outer_vars = parse_relation_call(outer_expr)
+  outer_vars ⊆ all_vars || error("One of variables $outer_vars is not declared")
+  d = RelationDiagram{Symbol}(var_types(outer_vars),
+                              port_names=outer_port_names)
   add_junctions!(d, var_types(all_vars), variable=all_vars)
   set_junction!(d, ports(d, outer=true),
                 incident(d, outer_vars, :variable), outer=true)
 
-  # Add boxes to diagram.
-  for expr in body
-    name, vars = @match expr begin
-      Expr(:call, name::Symbol, vars...) => (name, parse_variables(vars))
-      _ => error("Invalid syntax in box definition $expr")
-    end
+  # Add box to diagram for each relation call.
+  body = Base.remove_linenums!(body)
+  for expr in body.args
+    name, port_names, vars = parse_relation_call(expr)
     vars ⊆ all_vars || error("One of variables $vars is not declared")
     box = add_box!(d, var_types(vars), name=name)
+    if !isnothing(port_names)
+      set_subpart!(d, ports(d, box), :port_name, port_names)
+    end
     set_junction!(d, ports(d, box), incident(d, vars, :variable))
   end
-
   return d
 end
 
-function parse_context(context)
-  vars = map(context) do term
+function parse_relation_context(context)
+  terms = @match context begin
+    Expr(:tuple, terms...) => terms
+    _ => error("Invalid syntax in relation context $context")
+  end
+  vars = map(terms) do term
     @match term begin
       Expr(:(::), var::Symbol, type::Symbol) => (var => type)
       var::Symbol => var
@@ -131,11 +167,32 @@ function parse_context(context)
   elseif vars isa AbstractVector{Pair{Symbol,Symbol}}
     (first.(vars), last.(vars))
   else
-    error("Context $context mixes typed and untyped terms")
+    error("Context $context mixes typed and untyped variables")
   end
 end
 
-parse_variables(vars) = collect(Symbol, vars)
+function parse_relation_call(call)
+  name, args = @match call begin
+    Expr(:call, name::Symbol, args...) => (name, args)
+    Expr(:tuple, args...) => (nothing, args)
+    _ => error("Invalid syntax in relation call $call")
+  end
+  args = map(args) do arg
+    @match arg begin
+      Expr(:kw, port_name::Symbol, var::Symbol) => (port_name => var)
+      Expr(:(=), port_name::Symbol, var::Symbol) => (port_name => var)
+      var::Symbol => var
+      _ => error("Invalid syntax in relation argument $arg")
+    end
+  end
+  if args isa AbstractVector{Symbol}
+    (name, nothing, args)
+  elseif args isa AbstractVector{Pair{Symbol,Symbol}}
+    (name, first.(args), last.(args))
+  else
+    error("Relation call $call mixes named and unnamed arguments")
+  end
+end
 
 # Tensor networks
 #################
@@ -172,8 +229,8 @@ For more information, see the corresponding macro [`@tensor_network`](@ref).
 """
 function parse_tensor_network(context::Expr, expr::Expr)
   all_vars = @match context begin
-    Expr(:tuple, args...) => parse_variables(args)
-    Expr(:vect, args...) => parse_variables(args)
+    Expr(:tuple, args...) => collect(Symbol, args)
+    Expr(:vect, args...) => collect(Symbol, args)
   end
   parse_tensor_network(expr, all_vars=all_vars)
 end
@@ -213,7 +270,7 @@ end
 
 function parse_tensor_term(expr)
   @match expr begin
-    Expr(:ref, name::Symbol, args...) => (name, parse_variables(args))
+    Expr(:ref, name::Symbol, args...) => (name, collect(Symbol, args))
     name::Symbol => (name, Symbol[]) # Scalar
     _ => error("Invalid syntax in term $expr in tensor expression")
   end
