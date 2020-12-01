@@ -1,8 +1,8 @@
-""" Tensor networks via undirected wiring diagrams and operad algebras.
+""" Tensor networks via the operad of undirected wiring diagrams.
 """
 module TensorNetworks
-export RelationDiagram, @tensor_network, @eval_tensor_network,
-  contract_tensor_network, parse_tensor_network, compile_tensor_expr
+export RelationDiagram, @tensor_network, parse_tensor_network,
+  contract_tensor_network, @contract_tensors_with, gen_tensor_notation
 
 using Compat
 using MLStyle: @match
@@ -39,7 +39,7 @@ of square matrices performs ``k³`` multiplications. A ternary matrix multiply
 performs ``k⁴`` multiplications, whereas a sequence of two binary multiplies
 performs ``2k³``. Thus, when there are more than two junctions, it is usually
 better to schedule a computation using [`schedule`](@ref) or another package,
-possibly via [`@eval_tensor_network`](@ref).
+possibly via [`@contract_tensors_with`](@ref).
 
 In addition to the method taking an undirected wiring diagram, this function has
 methods similar to the `ncon` ("Network CONtractor") function in:
@@ -114,10 +114,11 @@ end
 
 """ Construct an undirected wiring diagram using tensor notation.
 
-The tensor syntax is compatible with that used by packages like
+The syntax is compatible with the Einstein-style tensor notation used by tensor
+algebra packages like
 [TensorOperations.jl](https://github.com/Jutho/TensorOperations.jl) and
 [TensorCast.jl](https://github.com/mcabbott/TensorCast.jl). For example, the
-wiring diagram for composite of two matrices (or two binary relations) is
+wiring diagram for the composite of two matrices (or two binary relations) is
 constructed by
 
 ```julia
@@ -132,7 +133,7 @@ an equivalent macro call is
 @tensor_network C[i,k] := A[i,j] * B[j,k]
 ```
 
-See also: [`@eval_tensor_network`](@ref), the "inverse" to this macro.
+See also: [`gen_tensor_notation`](@ref), the "inverse" to this macro.
 """
 macro tensor_network(exprs...)
   :(parse_tensor_network($((QuoteNode(expr) for expr in exprs)...)))
@@ -191,7 +192,7 @@ function parse_tensor_term(expr)
   end
 end
 
-""" Evaluate a tensor network using another macro.
+""" Contract a tensor network using a macro from another package.
 
 This macro takes two arguments: an undirected wiring diagram and a macro call
 supporting the tensor contraction notation that is de facto standard among Julia
@@ -199,7 +200,7 @@ tensor packages. For example, to evaluate a tensor network using the `@tullio`
 macro, use:
 
 ```julia
-A = @eval_tensor_network diagram @tullio
+A = @contract_tensors_with @tullio diagram
 ```
 
 The following macros should work:
@@ -213,30 +214,30 @@ The following macros should work:
 However, the macros `@cast` and `@reduce` from
 [TensorCast.jl](https://github.com/mcabbott/TensorCast.jl) will *not* work
 because they do not support implicit summation.
-
-See also: [`@tensor_network`](@ref), the "inverse" to this macro.
 """
-macro eval_tensor_network(diagram, tensor_macro)
+macro contract_tensors_with(diagram, macro_expr)
   # XXX: We cannot use `GeneralizedGenerated.mk_function` here because packages
   # like Tullio generate code with type parameters, which GG does not allow.
-  compile_expr = :(compile_tensor_expr($(esc(diagram)),
+  compile_expr = :(gen_tensor_notation($(esc(diagram)),
     assign_op=:(:=), assign_name=gensym("out")))
   Expr(:call, esc(:eval),
-       :(_eval_tensor_network($compile_expr, $(QuoteNode(tensor_macro)))))
+       :(_contract_tensors_with($compile_expr, $(QuoteNode(macro_expr)))))
 end
-function _eval_tensor_network(tensor_expr, macro_expr)
+function _contract_tensors_with(tensor_expr, macro_expr)
   @match macro_expr begin
     Expr(:macrocall, args...) => Expr(:macrocall, args..., tensor_expr)
     _ => error("Expression $macro_expr is not a macro call")
   end
 end
 
-""" Generate tensor expression from undirected wiring diagram.
+""" Generate Julia expression in tensor notation from undirected wiring diagram.
 
-This function is used to implement [`@eval_tensor_network`](@ref) but may be
+This function is used to implement [`@contract_tensors_with`](@ref) but may be
 useful in its own right.
+
+See also [`@tensor_network`](@ref), the "inverse" to this function.
 """
-function compile_tensor_expr(d::UndirectedWiringDiagram;
+function gen_tensor_notation(d::UndirectedWiringDiagram;
     assign_op::Symbol=:(=), assign_name::Symbol=:out)
   vars = j -> subpart(d, j, :variable)
   outer_vars = vars(junction(d, ports(d, outer=true), outer=true))
