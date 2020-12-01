@@ -9,6 +9,7 @@ using Catlab.Programs.RelationalPrograms
 ###########
 
 # Untyped relations
+#------------------
 
 parsed = @relation (x,z) where (x,y,z) begin
   R(x,y)
@@ -28,11 +29,13 @@ parsed = @relation ((x,z) where (x,y,z)) -> (R(x,y); S(y,z))
 parsed = @relation function (x,z) where (x,y,z); R(x,y); S(y,z) end
 @test parsed == d
 
+# Shorthand for when every junction is exposed as an outer port.
 d1 = @relation (x,y,z) -> (R(x,y); S(y,z))
 d2 = @relation ((x,y,z) where (x,y,z)) -> (R(x,y); S(y,z))
 @test d1 == d2
 
 # Typed relations
+#----------------
 
 parsed = @relation (x,y,z) where (x::X, y::Y, z::Z, w::W) begin
   R(x,w)
@@ -46,6 +49,39 @@ add_box!(d, [:Z,:W], name=:T)
 add_junctions!(d, [:X,:Y,:Z,:W], variable=[:x,:y,:z,:w])
 set_junction!(d, [1,4,2,4,3,4])
 set_junction!(d, [1,2,3], outer=true)
+@test parsed == d
+
+# Untyped relations with named ports
+#-----------------------------------
+
+parsed = @relation (start=u, stop=w) where (u, v, w) begin
+  E(src=u, tgt=v)
+  E(src=v, tgt=w)
+end
+d = RelationDiagram{Symbol}(2, port_names=[:start, :stop])
+add_box!(d, 2, name=:E)
+add_box!(d, 2, name=:E)
+add_junctions!(d, 3, variable=[:u,:v,:w])
+set_junction!(d, [1,2,2,3])
+set_junction!(d, [1,3], outer=true)
+set_subpart!(d, :port_name, [:src, :tgt, :src, :tgt])
+@test parsed == d
+
+# Typed relations with named ports
+#---------------------------------
+
+parsed = @relation (e=e, e′=e′) where (e::Employee, e′::Employee,
+                                       d::Department) begin
+  Employee(id=e, department=d)
+  Employee(id=e′, department=d)
+end
+d = RelationDiagram{Symbol}([:Employee, :Employee], port_names=[:e,:e′])
+add_box!(d, [:Employee, :Department], name=:Employee)
+add_box!(d, [:Employee, :Department], name=:Employee)
+add_junctions!(d, [:Employee, :Employee, :Department], variable=[:e,:e′,:d])
+set_junction!(d, [1,3,2,3])
+set_junction!(d, [1,2], outer=true)
+set_subpart!(d, :port_name, [:id, :department, :id, :department])
 @test parsed == d
 
 # Tensor networks
