@@ -5,9 +5,10 @@ using LinearAlgebra: dot, tr
 
 using Catlab.Theories: codom
 using Catlab.CategoricalAlgebra.CSets
-using Catlab.WiringDiagrams, Catlab.Programs.RelationalPrograms
+using Catlab.WiringDiagrams
 using Catlab.WiringDiagrams.ScheduleUndirectedWiringDiagrams:
   composites, composite_junction, composite_ports, parent, box_parent
+using Catlab.LinearAlgebra.TensorNetworks: @tensor_network
 
 composite_junctions(x::AbstractACSet, c) =
   composite_junction.(Ref(x), composite_ports(x, c))

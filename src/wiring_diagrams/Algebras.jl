@@ -24,45 +24,6 @@ function oapply(composite::UndirectedWiringDiagram, hom_map::AbstractDict,
   oapply(composite, homs, obs)
 end
 
-# Tensors
-#########
-
-function oapply(d::UndirectedWiringDiagram,
-                tensors::AbstractVector{<:AbstractArray})
-  @assert nboxes(d) == length(tensors)
-  contract_tensor_network(tensors,
-                          [junction(d, ports(d, b)) for b in boxes(d)],
-                          junction(d, ports(d, outer=true), outer=true))
-end
-
-""" Generalized contraction of two tensors of arbitrary rank.
-
-This function includes matrix multiplication, tensor product, and trace as
-special cases. The interface similar to that of the `ncon` ("Network
-CONtractor") function in:
-
-- the [NCON package](https://arxiv.org/abs/1402.0939) for MATLAB
-- the Julia package [TensorOperations.jl](https://github.com/Jutho/TensorOperations.jl)
-
-except that the outer junctions are represented explictly by a third argument
-rather than implicitly by using negative numbers in the second argument.
-"""
-function contract_tensor_network((A, B), (jA, jB), j_out)
-  njunc = maximum(Iterators.flatten((jA, jB, j_out)))
-  jA, jB, j_out = Tuple(jA), Tuple(jB), Tuple(j_out)
-  jsizes = fill(-1, njunc)
-  for (i,j) in enumerate(jA); jsizes[j] = size(A, i) end
-  for (i,j) in enumerate(jB); jsizes[j] = size(B, i) end
-  jsizes = Tuple(jsizes)
-
-  C = zeros(eltype(A), Tuple(jsizes[j] for j in j_out))
-  for index in CartesianIndices(jsizes)
-    C[(index[j] for j in j_out)...] +=
-      A[(index[j] for j in jA)...] * B[(index[j] for j in jB)...]
-  end
-  return C
-end
-
 # Structured multicospans
 #########################
 
