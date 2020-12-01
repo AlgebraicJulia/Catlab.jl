@@ -1,8 +1,8 @@
-""" Tensor networks from the perspective of undirected wiring diagrams.
+""" Tensor networks via undirected wiring diagrams and operad algebras.
 """
 module TensorNetworks
 export RelationDiagram, @tensor_network, @eval_tensor_network,
-  parse_tensor_network, compile_tensor_expr
+  contract_tensor_network, parse_tensor_network, compile_tensor_expr
 
 using Compat
 using MLStyle: @match
@@ -16,41 +16,97 @@ using ...Programs.RelationalPrograms: RelationDiagram
 ############
 
 """ Contract tensors according to UWD.
+
+This method simply wraps [`contract_tensor_network`](@ref), which also presents
+an interface closer to the standard tensor algebra packages.
 """
-function oapply(d::UndirectedWiringDiagram,
-                tensors::AbstractVector{<:AbstractArray})
-  @assert nboxes(d) == length(tensors)
-  contract_tensor_network(tensors,
-                          [junction(d, ports(d, b)) for b in boxes(d)],
-                          junction(d, ports(d, outer=true), outer=true))
-end
+oapply(d::UndirectedWiringDiagram, tensors::AbstractVector{<:AbstractArray}) =
+  contract_tensor_network(d, tensors)
 
-""" Generalized contraction of two tensors of arbitrary rank.
+""" Contract a tensor network all at once.
 
-This function includes matrix multiplication, tensor product, and trace as
-special cases. The interface similar to that of the `ncon` ("Network
-CONtractor") function in:
+Performs a generalized contraction of a list of tensors of arbitrary rank. In
+the binary case, this function includes matrix multiplication, tensor product,
+and trace as special cases. In general, it implements the "generalized matrix
+multiplication" described in [Spivak et al's "Pixel
+Arrays"](https://arxiv.org/abs/1609.00061).
+
+Be warned that this method is inefficient for contracting networks with more
+than two junctions. Specifically, if the network has ``n`` junctions with
+dimensions ``k₁, …, kₙ``, then this function performs exactly ``k₁ ⋯ kₙ``
+multiplications in the base ring (or rig). For example, a binary matrix multiply
+of square matrices performs ``k³`` multiplications. A ternary matrix multiply
+performs ``k⁴`` multiplications, whereas a sequence of two binary multiplies
+performs ``2k³``. Thus, when there are more than two junctions, it is usually
+better to schedule a computation using [`schedule`](@ref) or another package,
+possibly via [`@eval_tensor_network`](@ref).
+
+In addition to the method taking an undirected wiring diagram, this function has
+methods similar to the `ncon` ("Network CONtractor") function in:
 
 - the [NCON package](https://arxiv.org/abs/1402.0939) for MATLAB
 - the Julia package [TensorOperations.jl](https://github.com/Jutho/TensorOperations.jl)
 
-except that the outer junctions are represented explictly by a third argument
-rather than implicitly by using negative numbers in the second argument.
+except that here the outer junctions are represented explictly by a third
+argument rather than implicitly by using negative numbers in the second
+argument.
 """
-function contract_tensor_network((A, B), (jA, jB), j_out)
-  njunc = maximum(Iterators.flatten((jA, jB, j_out)))
-  jA, jB, j_out = Tuple(jA), Tuple(jB), Tuple(j_out)
-  jsizes = fill(-1, njunc)
-  for (i,j) in enumerate(jA); jsizes[j] = size(A, i) end
-  for (i,j) in enumerate(jB); jsizes[j] = size(B, i) end
-  jsizes = Tuple(jsizes)
+function contract_tensor_network(d::UndirectedWiringDiagram,
+                                 tensors::AbstractVector{<:AbstractArray})
+  @assert nboxes(d) == length(tensors)
+  juncs = [junction(d, ports(d, b)) for b in boxes(d)]
+  j_out = junction(d, ports(d, outer=true), outer=true)
+  contract_tensor_network(tensors, juncs, j_out)
+end
 
-  C = zeros(eltype(A), Tuple(jsizes[j] for j in j_out))
+function contract_tensor_network(tensors::AbstractVector{<:AbstractArray{T}},
+                                 juncs::AbstractVector, j_out) where T
+  # Handle important binary case with specialized code.
+  if length(tensors) == 2 && length(juncs) == 2
+    return contract_tensor_network(Tuple(tensors), Tuple(juncs), j_out)
+  end
+
+  jsizes = Tuple(infer_junction_sizes(tensors, juncs, j_out))
+  juncs, j_out = map(Tuple, juncs), Tuple(j_out)
+  C = zeros(T, Tuple(jsizes[j] for j in j_out))
+  for index in CartesianIndices(jsizes)
+    x = one(T)
+    for (A, junc) in zip(tensors, juncs)
+      x *= A[(index[j] for j in junc)...]
+    end
+    C[(index[j] for j in j_out)...] += x
+  end
+  return C
+end
+
+function contract_tensor_network( # Binary case.
+    (A, B)::Tuple{<:AbstractArray{T},<:AbstractArray{T}},
+    (jA, jB), j_out) where T
+  jsizes = Tuple(infer_junction_sizes((A, B), (jA, jB), j_out))
+  jA, jB, j_out = Tuple(jA), Tuple(jB), Tuple(j_out)
+  C = zeros(T, Tuple(jsizes[j] for j in j_out))
   for index in CartesianIndices(jsizes)
     C[(index[j] for j in j_out)...] +=
       A[(index[j] for j in jA)...] * B[(index[j] for j in jB)...]
   end
   return C
+end
+
+function infer_junction_sizes(tensors, juncs, j_out)
+  @assert length(tensors) == length(juncs)
+  njunc = maximum(Iterators.flatten((Iterators.flatten(juncs), j_out)))
+  jsizes = fill(-1, njunc)
+  for (A, junc) in zip(tensors, juncs)
+    for (i, j) in enumerate(junc)
+      if jsizes[j] == -1
+        jsizes[j] = size(A, i)
+      else
+        @assert jsizes[j] == size(A, i)
+      end
+    end
+  end
+  @assert all(s >= 0 for s in jsizes)
+  jsizes
 end
 
 # Parsing and code generation

@@ -104,7 +104,7 @@ eval_schedule(schedule, generators::AbstractVector) =
 eval_schedule(f, schedule::AbstractScheduledUWD, generators::AbstractVector) =
   eval_schedule(f, to_nested_diagram(schedule), generators)
 
-function eval_schedule(f, d::AbstractNestedUWD, generators::AbstractVector{T}) where T
+function eval_schedule(f, d::AbstractNestedUWD, generators::AbstractVector)
   # Evaluate `f` after constructing UWD for the composite.
   function do_eval(values, juncs, outer_junc)
     # Create diagram, adding boxes and ports.
@@ -129,7 +129,8 @@ function eval_schedule(f, d::AbstractNestedUWD, generators::AbstractVector{T}) w
   # Mutually recursively evaluate children of composite `c`.
   function eval_children(c::Int)
     bs, cs = box_children(d, c), children(d, c)
-    values = T[ generators[bs]; map(eval_composite, cs) ]
+    values = isempty(cs) ? generators[bs] : # XXX: Avoid Any[].
+      [ generators[bs]; map(eval_composite, cs) ]
     juncs = [ [junction(d, ports(d, b)) for b in bs];
               [composite_junction(d, composite_ports(d, c′)) for c′ in cs] ]
     (values, juncs)

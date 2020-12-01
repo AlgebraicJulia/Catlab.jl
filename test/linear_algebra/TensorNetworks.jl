@@ -1,6 +1,8 @@
 module TestTensorNetworks
 using Test
 
+using LinearAlgebra: tr
+
 using Catlab.CategoricalAlgebra.CSets, Catlab.WiringDiagrams
 using Catlab.LinearAlgebra.TensorNetworks
 
@@ -51,5 +53,28 @@ end
 @roundtrip_tensor out[i,j,k] = A[i,ℓ] * B[j,ℓ] * C[k,ℓ]
 @roundtrip_tensor out = u[i] * A[i,j] * v[j]
 @roundtrip_tensor out[j] = α * a[i] * B[i,j]
+
+# Evaluation
+############
+
+# Binary matrix multiply.
+A, B = randn((3,4)), randn((4,5))
+network = @tensor_network C[i,k] = A[i,j] * B[j,k]
+@test oapply(network, [A,B]) ≈ A*B
+
+# Ternary matrix multiply.
+C = randn((5,6))
+network = @tensor_network D[i,ℓ] = A[i,j] * B[j,k] * C[k,ℓ]
+@test oapply(network, [A,B,C]) ≈ A*B*C
+
+# Trace.
+A = randn((5,5))
+network = @tensor_network out[] = A[i,i]
+@test oapply(network, [A])[] ≈ tr(A)
+
+# Tensor product.
+A, B = randn((3,4)), randn((5,6))
+network = @tensor_network C[i,j,k,ℓ] = A[i,j] * B[k,ℓ]
+@test oapply(network, [A,B]) ≈ (reshape(A, (3,4,1,1)) .* reshape(B, (1,1,5,6)))
 
 end
