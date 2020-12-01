@@ -1,12 +1,8 @@
+module TestCPortGraphs
 using Test
-using Catlab
-using Catlab.Graphs
-using Catlab.WiringDiagrams
-using Catlab.WiringDiagrams.CPortGraphs
-using Catlab.CategoricalAlgebra
-using Catlab.CategoricalAlgebra.CSets
-import Catlab.CategoricalAlgebra.CSets: migrate!
 
+using Catlab.Graphs, Catlab.WiringDiagrams, Catlab.CategoricalAlgebra
+import Catlab.CategoricalAlgebra.CSets: migrate!
 
 g = Graph()
 add_vertices!(g, 4)
@@ -70,11 +66,11 @@ end
 
 @testset "Bundling CPGs" begin
   
-EdgeGraph() = begin
-  g = Graph()
-  add_parts!(g, :V, 2)
-  add_parts!(g, :E, 1, src=[1], tgt=[2])
-  return g
+  EdgeGraph() = begin
+    g = Graph()
+    add_parts!(g, :V, 2)
+    add_parts!(g, :E, 1, src=[1], tgt=[2])
+    return g
   end
   
   e₁ = EdgeGraph()
@@ -105,4 +101,6 @@ EdgeGraph() = begin
   set_subpart!(fee′, :bun, 1)
   h = ocompose(f, [fee′, fee′])
   @test nparts(h, :W) == 12
+end
+
 end
