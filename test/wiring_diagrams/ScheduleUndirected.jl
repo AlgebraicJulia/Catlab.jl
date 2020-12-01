@@ -12,29 +12,6 @@ using Catlab.WiringDiagrams.ScheduleUndirectedWiringDiagrams:
 composite_junctions(x::AbstractACSet, c) =
   composite_junction.(Ref(x), composite_ports(x, c))
 
-""" Generalized contraction of two tensors of arbitrary rank.
-
-This function includes matrix multiplication, tensor product, and trace as
-special cases.
-
-FIXME: Put this somewhere else?
-"""
-function general_tensor_contract((A, B), (jA, jB), j_out)
-  njunc = length(codom(j_out))
-  jA, jB, j_out = Tuple(collect(jA)), Tuple(collect(jB)), Tuple(collect(j_out))
-  jsizes = fill(-1, njunc)
-  for (i,j) in enumerate(jA); jsizes[j] = size(A, i) end
-  for (i,j) in enumerate(jB); jsizes[j] = size(B, i) end
-  jsizes = Tuple(jsizes)
-
-  C = zeros(eltype(A), Tuple(jsizes[j] for j in j_out))
-  for index in CartesianIndices(jsizes)
-    C[(index[j] for j in j_out)...] +=
-      A[(index[j] for j in jA)...] * B[(index[j] for j in jB)...]
-  end
-  return C
-end
-
 # Open linear path
 ##################
 
@@ -50,7 +27,7 @@ nd = to_nested_diagram(s)
 @test composite_junctions(nd, 1:3) == [[3,5], [2,5], [1,5]]
 
 matrices = map(randn, [(3,4), (4,5), (5,6), (6,7)])
-out = eval_schedule(general_tensor_contract, nd, matrices)
+out = eval_schedule(nd, matrices)
 @test out ≈ foldr(*, matrices)
 
 # Closed cycle
@@ -65,7 +42,7 @@ nd = to_nested_diagram(s)
 @test composite_junctions(nd, 1:2) == [[1,3], [1,4]]
 
 matrices = map(randn, [(10,5), (5,5), (5,5), (5,10)])
-out = eval_schedule(general_tensor_contract, nd, matrices)
+out = eval_schedule(nd, matrices)
 @test out[] ≈ tr(foldl(*, matrices))
 
 # Tensor product
@@ -77,7 +54,7 @@ s = schedule(d)
 @test box_parent(s) == [1,1]
 
 A, B = randn((3,4)), randn((5,6))
-out = eval_schedule(general_tensor_contract, s, [A, B])
+out = eval_schedule(s, [A, B])
 @test out ≈ (reshape(A, (3,4,1,1)) .* reshape(B, (1,1,5,6)))
 
 # Frobenius inner product
@@ -89,7 +66,7 @@ s = schedule(d)
 @test box_parent(s) == [1,1]
 
 A, B = randn((5,5)), randn((5,5))
-out = eval_schedule(general_tensor_contract, s, [A, B])
+out = eval_schedule(s, [A, B])
 @test out[] ≈ dot(vec(A), vec(B))
 
 end

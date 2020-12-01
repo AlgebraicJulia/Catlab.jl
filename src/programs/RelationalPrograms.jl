@@ -295,7 +295,7 @@ The following macros should work:
 - `@einsum` from [Einsum.jl](https://github.com/ahwillia/Einsum.jl)
 - `@ein` from [OMEinsum.jl](https://github.com/under-Peter/OMEinsum.jl)
 
-However,, the macros `@cast` and `@reduce` from
+However, the macros `@cast` and `@reduce` from
 [TensorCast.jl](https://github.com/mcabbott/TensorCast.jl) will *not* work
 because they do not support implicit summation.
 

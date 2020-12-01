@@ -13,7 +13,7 @@ using Compat: isnothing, only
 using DataStructures: IntDisjointSets, union!, in_same_set
 
 using ...Present, ...CategoricalAlgebra.CSets, ...CategoricalAlgebra.FinSets
-using ..UndirectedWiringDiagrams
+using ..UndirectedWiringDiagrams, ..WiringDiagramAlgebras
 using ..UndirectedWiringDiagrams: TheoryUWD, flat
 
 const AbstractUWD = UndirectedWiringDiagram
@@ -86,62 +86,50 @@ composite_ports_with_junction(x::AbstractACSet, args...) =
 
 """ Evaluate a scheduled UWD given a set of generators for the boxes.
 
-The first argument `f` should be a callable object supporting the signature
+The optional first argument `f` should be a callable with the same signature as
+[`oapply`](@ref) for UWD algebras, which by default is `oapply` itself.
 
+```julia
+f(composite::UndirectedWiringDiagram, values::AbstractVector)
 ```
-f(values::AbstractVector,
-  juncs::AbstractVector{<:FinFunction{Int}},
-  outer_junc::FinFunction{Int})
-```
-
-where `values` is a list of computed values for boxes or composites in the
-diagram; `juncs` is an equal-length list of `FinSet` functions, mapping the
-ports of each value to junctions; and `outer_junc` is a `FinSet` function
-mapping the outer ports to junctions. All these functions share a common
-codomain of form `FinSet{Int}(n)`, where `n` is the number of junctions. In
-other words, the functions form a multicospan with a distinguished leg
-representing the outputs.
-
-The length of `values` and `juncs` in each call depends on the schedule. Most
-scheduling algorithms will reduce the original UWD to binary composites, so that
-the length is always 2, excluding degenerate cases of nullary or unary
-composites.
 
 Nested UWDs are used as an auxiliary data structure during the evaluation. If
 the schedule will be evaluated multiple times, you should explicitly convert it
 to a nested UWD using [`to_nested_diagram`](@ref) and then call `eval_schedule`
 on the resulting object instead.
-
-Users familiar with tensor computing may recognize that the callable `f` has an
-interface similar to the `ncon` function in:
-
-- the [NCON package](https://arxiv.org/abs/1402.0939) for MATLAB
-- the Julia package [TensorOperations.jl](https://github.com/Jutho/TensorOperations.jl)
-
-except that the outer junctions are represented explictly by a third argument
-rather than implicitly by using negative numbers in the second argument.
 """
-eval_schedule(f, s::AbstractScheduledUWD, generators::AbstractVector) =
-  eval_schedule(f, to_nested_diagram(s), generators)
+eval_schedule(schedule, generators::AbstractVector) =
+  eval_schedule(oapply, schedule, generators)
 
-function eval_schedule(f, d::AbstractNestedUWD, generators::AbstractVector)
-  # Evaluate `f` after normalizing junctions to consecutive numbers 1:n.
-  # Question: Should this normalization be optional? It's convenient but also
-  # has some (small) cost.
+eval_schedule(f, schedule::AbstractScheduledUWD, generators::AbstractVector) =
+  eval_schedule(f, to_nested_diagram(schedule), generators)
+
+function eval_schedule(f, d::AbstractNestedUWD, generators::AbstractVector{T}) where T
+  # Evaluate `f` after constructing UWD for the composite.
   function do_eval(values, juncs, outer_junc)
-    jmap = Dict{Int,Int}()
-    for j in Iterators.flatten((Iterators.flatten(juncs), outer_junc))
-      get!(jmap, j) do; length(jmap) + 1 end
+    # Create diagram, adding boxes and ports.
+    composite = UndirectedWiringDiagram(length(outer_junc))
+    for junc in juncs
+      add_box!(composite, length(junc))
     end
-    njunc = length(jmap)
-    f(values, map(js -> FinFunction([jmap[j] for j in js], njunc), juncs),
-      FinFunction([jmap[j] for j in outer_junc], njunc))
+
+    # Set junctions, normalizing junction IDs to consecutive numbers `1:n`.
+    jmap = Dict{Int,Int}()
+    mapj!(j) = get!(jmap, j) do; add_junction!(composite) end
+    for (port, j) in enumerate(Iterators.flatten(juncs))
+      set_subpart!(composite, port, :junction, mapj!(j))
+    end
+    for (port, j) in enumerate(outer_junc)
+      set_subpart!(composite, port, :outer_junction, mapj!(j))
+    end
+
+    f(composite, values)
   end
 
   # Mutually recursively evaluate children of composite `c`.
   function eval_children(c::Int)
     bs, cs = box_children(d, c), children(d, c)
-    values = [ generators[bs]; map(eval_composite, cs) ]
+    values = T[ generators[bs]; map(eval_composite, cs) ]
     juncs = [ [junction(d, ports(d, b)) for b in bs];
               [composite_junction(d, composite_ports(d, c′)) for c′ in cs] ]
     (values, juncs)
