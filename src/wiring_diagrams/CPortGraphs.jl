@@ -59,7 +59,7 @@ function OpenCPortGraph(g::AbstractCPortGraph)
     return x
 end
 
-function migrate!(g::Graph, cpg::AbstractCPortGraph)
+function migrate!(g::AbstractGraph, cpg::AbstractCPortGraph)
     migrate!(g, cpg,
     Dict(:E=>:W, :V=>:B),
     Dict(
@@ -74,7 +74,7 @@ function migrate!(pg::AbstractCPortGraph, opg::AbstractOpenCPortGraph)
     )
 end
 
-function migrate!(pg::AbstractCPortGraph, g::Graph)
+function migrate!(pg::AbstractCPortGraph, g::AbstractGraph)
     migrate!(pg, g,
       Dict(:B=>:V, :P=>:V, :W=>:E),
       Dict(
@@ -95,9 +95,10 @@ function migrate!(og::AbstractOpenCPortGraph, g::AbstractCPortGraph)
             :con=>id(ThCPortGraph[:P])
         ))
 end
-migrate!(og::AbstractOpenCPortGraph, g::Graph) = migrate!(og, migrate!(CPortGraph(),g))
+migrate!(og::AbstractOpenCPortGraph, g::AbstractGraph) =
+  migrate!(og, migrate!(CPortGraph(),g))
 
-function migrate!(pg::AbstractSymCPortGraph, g::SymmetricGraph)
+function migrate!(pg::AbstractSymCPortGraph, g::AbstractSymmetricGraph)
     migrate!(pg, g,
       Dict(:B=>:V, :P=>:V, :W=>:E),
       Dict(
