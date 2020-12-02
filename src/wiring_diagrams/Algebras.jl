@@ -1,4 +1,4 @@
-""" Algebras of the operads of wiring diagrams.
+""" Algebras of operads of wiring diagrams.
 """
 module WiringDiagramAlgebras
 export oapply
@@ -24,8 +24,8 @@ function oapply(composite::UndirectedWiringDiagram, hom_map::AbstractDict,
   oapply(composite, homs, obs)
 end
 
-# UWD algebra of structured multicospans
-########################################
+# Structured multicospans
+#########################
 
 """ Compose structured multicospans according to UWD.
 
