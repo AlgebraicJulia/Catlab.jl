@@ -1,5 +1,3 @@
-export LinearOpDom, LinearOperator
-
 # External packages.
 using .LinearOperators
 using .LinearOperators: opEye, opExtension, opRestriction, opZeros

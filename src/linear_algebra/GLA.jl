@@ -108,6 +108,8 @@ evaluate_hom(f::FreeLinearFunctions.Hom{:antipode}, xs::Vector; kw...) = -1 .* x
 # Extras
 ########
 
+export LinearMapDom, LinearMap, LinearOpDom, LinearOperator
+
 function __init__()
   @require LinearMaps="7a12625a-238d-50fd-b39a-03d52299707e" begin
     include("LinearMapsExternal.jl")

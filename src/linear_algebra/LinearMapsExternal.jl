@@ -1,5 +1,3 @@
-export LinearMapDom, LinearMap
-
 # External packages.
 import .LinearMaps
 using .LinearMaps: LinearMap
