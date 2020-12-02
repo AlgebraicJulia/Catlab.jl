@@ -3,6 +3,7 @@ module WiringDiagrams
 using Reexport
 
 include("Directed.jl")
+include("CPortGraphs.jl")
 include("Undirected.jl")
 include("MonoidalDirected.jl")
 include("MonoidalUndirected.jl")
@@ -12,6 +13,7 @@ include("Expressions.jl")
 include("ScheduleUndirected.jl")
 
 @reexport using .DirectedWiringDiagrams
+@reexport using .CPortGraphs
 @reexport using .UndirectedWiringDiagrams
 @reexport using .MonoidalDirectedWiringDiagrams
 @reexport using .MonoidalUndirectedWiringDiagrams

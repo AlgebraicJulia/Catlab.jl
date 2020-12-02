@@ -2,6 +2,7 @@ using Test
 
 @testset "Core" begin
   include("Directed.jl")
+  include("CPortGraphs.jl")
   include("Undirected.jl")
 end
 
