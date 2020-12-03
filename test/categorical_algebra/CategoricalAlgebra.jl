@@ -27,10 +27,6 @@ end
   include("Permutations.jl")
 end
 
-@testset "PredicatedSets" begin
-  include("PredicatedSets.jl")
-end
-
 @testset "CSets" begin
   include("CSetDataStructures.jl")
   include("CSets.jl")

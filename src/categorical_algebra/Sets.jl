@@ -1,7 +1,7 @@
 """ Categories of sets, including infinite ones, and functions.
 """
 module Sets
-export SetOb, TypeSet, SetFunction, SetFunctionCallable
+export SetOb, TypeSet, PredicatedSet, SetFunction, SetFunctionCallable
 
 using AutoHashEquals
 using FunctionWrappers: FunctionWrapper
@@ -57,7 +57,9 @@ SetFunction(::typeof(identity), args...) = SetFunctionIdentity(args...)
   end
 end
 
-(f::SetFunctionCallable)(x) = f.func(x)
+function (f::SetFunctionCallable{T,T′})(x::T)::T′ where {T,T′}
+  f.func(x)
+end
 
 """ Identity function in **Set**.
 """
@@ -73,6 +75,31 @@ end
 codom(f::SetFunctionIdentity) = f.dom
 
 (f::SetFunctionIdentity)(x) = x
+
+# Predicated sets
+#################
+
+""" Set defined by a predicate (boolean-valued function) on a Julia data type.
+"""
+struct PredicatedSet{T} <: SetOb{T}
+  predicate::FunctionWrapper{Bool,Tuple{T}}
+
+  PredicatedSet{T}(f) where T = new{T}(FunctionWrapper{Bool,Tuple{T}}(f))
+end
+
+function (s::PredicatedSet{T})(x::T)::Bool where {T}
+  s.predicate(x)
+end
+
+const PredicatedFunction{T,T′} =
+  SetFunctionCallable{T,T′,PredicatedSet{T},PredicatedSet{T′}}
+
+function (f::PredicatedFunction{T,T′})(x::T)::T′ where {T,T′}
+  dom(f)(x) || error("Predicate not satisfied on input: $x")
+  y = f.func(x)
+  codom(f)(y) || error("Predicate not satisfied on output: $y")
+  y
+end
 
 # Category of sets
 ##################
