@@ -1,7 +1,7 @@
 """ The category of finite sets and functions, and its skeleton.
 """
 module FinSets
-export FinSet, FinFunction, FinFunctionCallable, FinFunctionVector, force
+export FinSet, FinFunction, FinDomFunction, force
 
 using Compat: only
 
@@ -12,7 +12,7 @@ using FunctionWrappers: FunctionWrapper
 using ...Theories, ..FreeDiagrams, ..Limits, ..Sets
 import ...Theories: dom, codom
 import ..Limits: limit, colimit, universal
-using ..Sets: SetFunctionIdentity
+using ..Sets: SetFunctionCallable, SetFunctionIdentity
 
 # Data types
 ############
@@ -43,80 +43,85 @@ Base.show(io::IO, s::FinSet) = print(io, "FinSet($(s.set))")
 """ Function between finite sets.
 
 The function can be defined implicitly by an arbitrary Julia function, in which
-case it is evaluated lazily, or explictly by a vector of integers. In the latter
-case, the function (1↦1, 2↦3, 3↦2, 4↦3), for example, is represented by the
-vector [1,3,2,3].
+case it is evaluated lazily, or explictly by a vector of integers. In the vector
+representation, the function (1↦1, 2↦3, 3↦2, 4↦3), for example, is represented
+by the vector [1,3,2,3].
+
+A slight generalization is [`FinDomFunction`](@ref).
 """
 const FinFunction{S, S′, Dom <: FinSet{S}, Codom <: FinSet{S′}} =
   SetFunction{Dom,Codom}
 
-FinFunction(f::Function, args...) = FinFunctionCallable(f, args...)
-FinFunction(f::AbstractVector, args...) = FinFunctionVector(f, args...)
-FinFunction(::typeof(identity), args...) = FinFunctionIdentity(args...)
-
-""" Function in **FinSet** defined by a callable Julia object.
-
-Is evaluated lazily unless forced via [`force`](@ref).
-"""
-const FinFunctionCallable{S,S′,T,T′} =
-  SetFunctionCallable{T,T′,FinSet{S,T},FinSet{S′,T′}}
-
-FinFunctionCallable(f, dom, codom) =
+FinFunction(f::Function, dom, codom) =
   SetFunctionCallable(f, FinSet(dom), FinSet(codom))
+FinFunction(f::AbstractVector, args...) =
+  FinDomFunctionVector(f, (FinSet(arg) for arg in args)...)
+FinFunction(::typeof(identity), args...) =
+  SetFunctionIdentity((FinSet(arg) for arg in args)...)
 
-function Base.show(io::IO, f::FinFunctionCallable)
-  func = f.func.obj[] # Deference FunctionWrapper
-  print(io, "FinFunction($(nameof(func)), $(f.dom), $(f.codom))")
-end
+Sets.show_type(io::IO, ::Type{<:FinFunction}) = print(io, "FinFunction")
 
-""" Function in **FinSet** represented explicitly by a vector.
+""" Function out of a finite set.
 
-The elements of the set are assumed to be ``{1,...,n}``.
+This class of functions is convenient because it is exactly the class that can
+be represented explicitly by a vector of values from the codomain.
 """
-@auto_hash_equals struct FinFunctionVector{S′,T′,V<:AbstractVector{T′}} <:
-    SetFunction{FinSet{Int,Int},FinSet{S′,T′}}
+const FinDomFunction{S, Dom<:FinSet{S}, Codom} = SetFunction{Dom,Codom}
+
+FinDomFunction(f::Function, dom, codom) =
+  SetFunctionCallable(f, FinSet(dom), codom)
+FinDomFunction(f::AbstractVector, args...) = FinDomFunctionVector(f, args...)
+FinDomFunction(::typeof(identity), args...) =
+  SetFunctionIdentity((FinSet(arg) for arg in args)...)
+
+Sets.show_type(io::IO, ::Type{<:FinDomFunction}) = print(io, "FinDomFunction")
+
+""" Function in **Set** represented by a vector.
+
+The domain of this function is always of type `FinSet{Int}`, with elements of
+the form ``{1,...,n}``.
+"""
+@auto_hash_equals struct FinDomFunctionVector{T′,V<:AbstractVector{T′},
+    Codom<:SetOb{T′}} <: FinDomFunction{Int,FinSet{Int,Int},Codom}
   func::V
-  codom::FinSet{S′,T′}
+  codom::Codom
 end
 
-FinFunctionVector(f::AbstractVector{Int}) =
-  FinFunctionVector(f, isempty(f) ? 0 : maximum(f))
-FinFunctionVector(f::AbstractVector, codom) = FinFunctionVector(f, FinSet(codom))
-FinFunctionVector(f::AbstractVector, dom::Int, codom) =
-  FinFunctionVector(f, FinSet(dom), FinSet(codom))
+FinDomFunctionVector(f::AbstractVector{Int}) =
+  FinDomFunctionVector(f, FinSet(isempty(f) ? 0 : maximum(f)))
 
-function FinFunctionVector(f::AbstractVector, dom::FinSet{Int}, codom::FinSet)
+function FinDomFunctionVector(f::AbstractVector, dom::FinSet{Int}, codom)
   length(f) == length(dom) ||
     error("Length of vector $f does not match domain $dom")
-  FinFunctionVector(f, codom)
+  FinDomFunctionVector(f, codom)
 end
 
-dom(f::FinFunctionVector) = FinSet(length(f.func))
+dom(f::FinDomFunctionVector) = FinSet(length(f.func))
 
-Sets.compose_impl(f::FinFunctionVector, g::FinFunctionVector) =
-  FinFunctionVector(g.func[f.func], g.codom)
+(f::FinDomFunctionVector)(x) = f.func[x]
 
-Base.show(io::IO, f::FinFunctionVector) =
-  print(io, "FinFunction($(f.func), $(length(f.func)), $(length(f.codom)))")
-
-(f::FinFunctionVector)(x) = f.func[x]
+function Base.show(io::IO, f::FinDomFunctionVector)
+  print(io, "FinDomFunction($(f.func), $(dom(f)), $(codom(f)))")
+end
 
 """ Force evaluation of lazy function or relation.
 """
-force(f::FinFunction{Int}) = FinFunctionVector(map(f, dom(f)), codom(f))
-force(f::FinFunctionVector) = f
+force(f::FinDomFunction{Int}) = FinDomFunctionVector(map(f, dom(f)), codom(f))
+force(f::FinDomFunctionVector) = f
 
-Base.collect(f::FinFunction) = force(f).func
+Base.collect(f::FinDomFunction) = force(f).func
 
-""" Identity function in **Set**.
+""" Function in **FinSet** represented explicitly by a vector.
 """
-const FinFunctionIdentity{S,T} = SetFunctionIdentity{FinSet{S,T}}
+const FinFunctionVector{S′,T′,V<:AbstractVector{T′}} =
+  FinDomFunctionVector{T′,V,FinSet{S′,T′}}
 
-FinFunctionIdentity(dom) = SetFunctionIdentity(FinSet(dom))
-FinFunctionIdentity(dom, codom) = SetFunctionIdentity(FinSet(dom), FinSet(codom))
+function Base.show(io::IO, f::FinFunctionVector)
+  print(io, "FinFunction($(f.func), $(length(dom(f))), $(length(codom(f))))")
+end
 
-Base.show(io::IO, f::FinFunctionIdentity) =
-  print(io, "FinFunction(identity, $(f.dom))")
+Sets.compose_impl(f::FinFunctionVector, g::FinDomFunctionVector) =
+  FinDomFunctionVector(g.func[f.func], codom(g))
 
 # Limits
 ########

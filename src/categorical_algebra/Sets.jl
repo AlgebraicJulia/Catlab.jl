@@ -1,7 +1,7 @@
 """ Categories of sets, including infinite ones, and functions.
 """
 module Sets
-export SetOb, TypeSet, PredicatedSet, SetFunction, SetFunctionCallable
+export SetOb, TypeSet, PredicatedSet, SetFunction
 
 using AutoHashEquals
 using FunctionWrappers: FunctionWrapper
@@ -29,6 +29,8 @@ Base.eltype(::Type{SetOb{T}}) where T = T
 """
 struct TypeSet{T} <: SetOb{T} end
 
+Base.show(io::IO, ::TypeSet{T}) where T = print(io, "TypeSet{$T}()")
+
 """ Abstract type for morphism in the category **Set**.
 
 Every instance of `SetFunction{<:SetOb{T},<:SetOb{T′}}` is callable with
@@ -41,6 +43,8 @@ abstract type SetFunction{Dom <: SetOb, Codom <: SetOb} end
 
 SetFunction(f::Function, args...) = SetFunctionCallable(f, args...)
 SetFunction(::typeof(identity), args...) = SetFunctionIdentity(args...)
+
+show_type(io::IO, ::Type{<:SetFunction}) = print(io, "SetFunction")
 
 """ Function in **Set** defined by a callable Julia object.
 """
@@ -61,6 +65,12 @@ function (f::SetFunctionCallable{T,T′})(x::T)::T′ where {T,T′}
   f.func(x)
 end
 
+function Base.show(io::IO, f::F) where F <: SetFunctionCallable
+  func = f.func.obj[] # Deference FunctionWrapper
+  show_type(io, F)
+  print(io, "($(nameof(func)), $(f.dom), $(f.codom))")
+end
+
 """ Identity function in **Set**.
 """
 @auto_hash_equals struct SetFunctionIdentity{Dom} <: SetFunction{Dom,Dom}
@@ -75,6 +85,11 @@ end
 codom(f::SetFunctionIdentity) = f.dom
 
 (f::SetFunctionIdentity)(x) = x
+
+function Base.show(io::IO, f::F) where F <: SetFunctionIdentity
+  show_type(io, F)
+  print(io, "(identity, $(f.dom))")
+end
 
 # Predicated sets
 #################
