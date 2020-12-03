@@ -18,18 +18,6 @@ import ..Limits: limit, colimit, universal
 # Data types
 ############
 
-""" Abstract type for objects in a category that are sets.
-
-An implementation detail used to control method dispatch. Concrete subtypes
-include `FinSet` and `FinRel`.
-"""
-abstract type AbstractSetOb{S,T} end
-
-Base.eltype(::Type{AbstractSetOb{S}}) where S = eltype(S)
-Base.iterate(s::AbstractSetOb, args...) = iterate(iterable(s), args...)
-Base.length(s::AbstractSetOb) = length(iterable(s))
-Base.in(s::AbstractSetOb, elem) = in(s, iterable(s))
-
 """ Finite set.
 
 This generic type encompasses the category **FinSet** of finite sets and
@@ -40,12 +28,17 @@ this category, through the type `FinSet{Int}`. In the latter case, the object
 In the general type `FinSet{S,T}`, the first type parameter `S` is the set type
 and the second type parameter `T` is the element type of the set.
 """
-@auto_hash_equals struct FinSet{S,T} <: AbstractSetOb{S,T}
+@auto_hash_equals struct FinSet{S,T}
   set::S
 end
 
 FinSet(n::Int) = FinSet{Int,Int}(n)
 FinSet(set::S) where {T,S<:AbstractSet{T}} = FinSet{S,T}(set)
+
+Base.eltype(::Type{FinSet{S,T}}) where {S,T} = T
+Base.iterate(s::FinSet, args...) = iterate(iterable(s), args...)
+Base.length(s::FinSet) = length(iterable(s))
+Base.in(s::FinSet, elem) = in(s, iterable(s))
 iterable(s::FinSet{Int}) = 1:s.set
 iterable(s::FinSet{<:AbstractSet}) = s.set
 

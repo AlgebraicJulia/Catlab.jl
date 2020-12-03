@@ -14,7 +14,7 @@ import ...Theories: dom, codom, id, compose, ⋅, ∘, dagger, dunit, dcounit,
   otimes, ⊗, munit, braid, oplus, ⊕, mzero, swap,
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, plus, zero, coplus, cozero,
   pair, copair, proj1, proj2, coproj1, coproj2, meet, join, top, bottom
-import ..FinSets: AbstractSetOb, iterable, force
+import ..FinSets: force
 using ..Matrices
 using ..Matrices: zero_matrix
 
@@ -45,12 +45,17 @@ Base.show(io::IO, x::BoolRig) = print(io, x.value)
 
 See also: [`FinSet`](@ref).
 """
-@auto_hash_equals struct FinRel{S,T} <: AbstractSetOb{S,T}
+@auto_hash_equals struct FinRel{S,T}
   set::S
 end
 
 FinRel(i::Int) = FinRel{Int,Int}(i)
 FinRel(set::S) where {T,S<:AbstractSet{T}} = FinRel{S,T}(set)
+
+Base.eltype(::Type{FinRel{S,T}}) where {S,T} = T
+Base.iterate(s::FinRel, args...) = iterate(iterable(s), args...)
+Base.length(s::FinRel) = length(iterable(s))
+Base.in(s::FinRel, elem) = in(s, iterable(s))
 iterable(s::FinRel{Int}) = 1:s.set
 iterable(s::FinRel{<:AbstractSet}) = s.set
 
