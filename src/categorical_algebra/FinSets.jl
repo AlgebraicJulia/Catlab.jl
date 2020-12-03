@@ -1,4 +1,4 @@
-""" Computing in the category of finite sets and functions.
+""" The category of finite sets and functions, and its skeleton.
 """
 module FinSets
 export FinSet, FinFunction, FinFunctionCallable, FinFunctionVector, force
@@ -33,9 +33,12 @@ Base.in(s::AbstractSetOb, elem) = in(s, iterable(s))
 """ Finite set.
 
 This generic type encompasses the category **FinSet** of finite sets and
-functions, through types `FinSet{S} where S <: AbstractSet`, as well as the
-skeleton of this category, through the type `FinSet{Int}`. In the latter case,
-the object `FinSet(n)` represents the set {1,...,n}.
+functions, through types `FinSet{S} where S <: AbstractSet`, and the skeleton of
+this category, through the type `FinSet{Int}`. In the latter case, the object
+`FinSet(n)` represents the set ``{1,...,n}``.
+
+In the general type `FinSet{S,T}`, the first type parameter `S` is the set type
+and the second type parameter `T` is the element type of the set.
 """
 @auto_hash_equals struct FinSet{S,T} <: AbstractSetOb{S,T}
   set::S
@@ -55,7 +58,7 @@ case it is evaluated lazily, or explictly by a vector of integers. In the latter
 case, the function (1↦1, 2↦3, 3↦2, 4↦3), for example, is represented by the
 vector [1,3,2,3].
 """
-abstract type FinFunction{S,T} end
+abstract type FinFunction{S,S′,T,T′} end
 
 FinFunction(f::Function, args...) = FinFunctionCallable(f, args...)
 FinFunction(f::AbstractVector, args...) = FinFunctionVector(f, args...)
@@ -65,15 +68,17 @@ FinFunction(::typeof(identity), args...) = FinFunctionIdentity(args...)
 
 To be evaluated lazily unless forced.
 """
-@auto_hash_equals struct FinFunctionCallable{S,T} <: FinFunction{S,T}
-  func::FunctionWrapper{T,Tuple{T}} # Usually `Function` but can be any Julia callable.
+@auto_hash_equals struct FinFunctionCallable{S,S′,T,T′} <: FinFunction{S,S′,T,T′}
+  # Field `func` is usually a `Function` but can be any Julia callable.
+  func::FunctionWrapper{T′,Tuple{T}}
   dom::FinSet{S,T}
-  codom::FinSet{S,T}
+  codom::FinSet{S′,T′}
+
+  FinFunctionCallable(f, dom::FinSet{S,T}, codom::FinSet{S′,T′}) where {S,S′,T,T′} =
+    new{S,S′,T,T′}(FunctionWrapper{T′,Tuple{T}}(f), dom, codom)
 end
-FinFunctionCallable(f::Function, dom::Int, codom::Int) =
-  FinFunctionCallable(FunctionWrapper{Int,Tuple{Int}}(f), FinSet(dom), FinSet(codom))
-FinFunctionCallable(f::Function, dom::FinSet{S,T}, codom::FinSet{S,T}) where {S,T} =
-  FinFunctionCallable(FunctionWrapper{T,Tuple{T}}(f), dom, codom)
+FinFunctionCallable(f, dom, codom) =
+  FinFunctionCallable(f, FinSet(dom), FinSet(codom))
 
 function Base.show(io::IO, f::FinFunctionCallable)
   func = f.func.obj[] # Deference FunctionWrapper
@@ -84,30 +89,29 @@ end
 
 """ Function in FinSet represented explicitly by a vector.
 
-The elements of the set are assumed to be {1,...,n}.
+The elements of the set are assumed to be ``{1,...,n}``.
 """
-@auto_hash_equals struct FinFunctionVector{T<:AbstractVector{Int}} <: FinFunction{Int,Int}
-  func::T
-  codom::Int
+@auto_hash_equals struct FinFunctionVector{S′,T′,V<:AbstractVector{T′}} <: FinFunction{Int,S′,Int,T′}
+  func::V
+  codom::FinSet{S′,T′}
 end
-FinFunctionVector(f::AbstractVector) =
-  FinFunctionVector(f, isempty(f) ? 0 : maximum(f))
 
-function FinFunctionVector(f::AbstractVector, dom::Int, codom::Int)
-  length(f) == dom || error("Length of vector $f does not match domain $dom")
+FinFunctionVector(f::AbstractVector{Int}) =
+  FinFunctionVector(f, isempty(f) ? 0 : maximum(f))
+FinFunctionVector(f::AbstractVector, codom) = FinFunctionVector(f, FinSet(codom))
+FinFunctionVector(f::AbstractVector, dom::Int, codom) =
+  FinFunctionVector(f, FinSet(dom), FinSet(codom))
+
+function FinFunctionVector(f::AbstractVector, dom::FinSet{Int}, codom::FinSet)
+  length(f) == length(dom) ||
+    error("Length of vector $f does not match domain $dom")
   FinFunctionVector(f, codom)
 end
 
-FinFunctionVector(f::AbstractVector, codom::FinSet{Int}) =
-  FinFunctionVector(f, length(codom))
-FinFunctionVector(f::AbstractVector, dom::FinSet{Int}, codom::FinSet{Int}) =
-  FinFunctionVector(f, length(dom), length(codom))
-
 dom(f::FinFunctionVector) = FinSet(length(f.func))
-codom(f::FinFunctionVector) = FinSet(f.codom)
 
 Base.show(io::IO, f::FinFunctionVector) =
-  print(io, "FinFunction($(f.func), $(length(f.func)), $(f.codom))")
+  print(io, "FinFunction($(f.func), $(length(f.func)), $(length(f.codom)))")
 
 (f::FinFunctionVector)(x) = f.func[x]
 
@@ -120,17 +124,18 @@ Base.collect(f::FinFunction) = force(f).func
 
 """ Identity function in FinSet.
 """
-@auto_hash_equals struct FinFunctionIdentity{S,T} <: FinFunction{S,T}
+@auto_hash_equals struct FinFunctionIdentity{S,T} <: FinFunction{S,S,T,T}
   dom::FinSet{S,T}
 end
 
-function FinFunctionIdentity(dom, codom)
+function FinFunctionIdentity(dom::FinSet, codom::FinSet)
   @assert dom == codom
   FinFunctionIdentity(dom)
 end
-FinFunctionIdentity(n::Int) = FinFunctionIdentity(FinSet(n))
 
-dom(f::FinFunctionIdentity) = f.dom
+FinFunctionIdentity(dom) = FinFunctionIdentity(FinSet(dom))
+FinFunctionIdentity(dom, codom) = FinFunctionIdentity(FinSet(dom), FinSet(codom))
+
 codom(f::FinFunctionIdentity) = f.dom
 
 Base.show(io::IO, f::FinFunctionIdentity) =
@@ -155,7 +160,7 @@ Base.show(io::IO, f::FinFunctionIdentity) =
   end
 end
 
-compose_impl(f::FinFunction{S,T}, g::FinFunction{S,T}) where {S,T} =
+compose_impl(f::FinFunction, g::FinFunction) =
   FinFunction(g ∘ f, dom(f), codom(g))
 compose_impl(f::FinFunctionVector, g::FinFunctionVector) =
   FinFunctionVector(g.func[f.func], g.codom)
@@ -339,7 +344,7 @@ end
 
 """ Given h: X → Y, pass to quotient q: X/~ → Y under projection π: X → X/~.
 """
-function pass_to_quotient(π::FinFunction{Int}, h::FinFunction{Int})
+function pass_to_quotient(π::FinFunction{Int,Int}, h::FinFunction{Int,Int})
   @assert dom(π) == dom(h)
   q = zeros(Int, length(codom(π)))
   for i in dom(h)

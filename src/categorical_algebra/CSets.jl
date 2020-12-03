@@ -46,12 +46,12 @@ for data attributes is a commutative triangle, rather than a commutative square.
   end
 end
 
-function coerce_component(ob::Symbol, f::FinFunction{Int}, X, Y)
+function coerce_component(ob::Symbol, f::FinFunction{Int,Int}, X, Y)
   @assert length(dom(f)) == nparts(X,ob) "Domain error in component $ob"
   @assert length(codom(f)) == nparts(Y,ob) "Codomain error in component $ob"
   return f
 end
-function coerce_component(ob::Symbol, f, X, Y)::FinFunction{Int}
+function coerce_component(ob::Symbol, f, X, Y)::FinFunction{Int,Int}
   FinFunction(f, nparts(X,ob), nparts(Y,ob))
 end
 
@@ -219,7 +219,7 @@ unpack_diagram(para::ParallelMorphisms{<:AbstractACSet}) =
 function unpack_diagram(diagram::FreeDiagram{<:AbstractACSet})
   map(unpack_finsets(ob(diagram)),
       unpack_components(hom(diagram))) do sets, funcs
-    d = FreeDiagram{FinSet{Int,Int},FinFunction{Int}}()
+    d = FreeDiagram{FinSet{Int,Int},FinFunction{Int,Int}}()
     add_vertices!(d, nv(diagram), ob=sets)
     add_edges!(d, src(diagram), tgt(diagram), hom=funcs)
     d

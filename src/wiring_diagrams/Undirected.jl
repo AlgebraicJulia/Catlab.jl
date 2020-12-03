@@ -205,8 +205,8 @@ this function generalizes [`singleton_diagram`](@ref).
 
 See also: [`junction_diagram`](@ref).
 """
-function cospan_diagram(::Type{UWD}, inner::FinFunction{Int},
-                        outer::FinFunction{Int}, junction_types=nothing;
+function cospan_diagram(::Type{UWD}, inner::FinFunction{Int,Int},
+                        outer::FinFunction{Int,Int}, junction_types=nothing;
                         data...) where UWD <: AbstractUWD
   @assert codom(inner) == codom(outer)
   if isnothing(junction_types)
@@ -229,7 +229,7 @@ end
 
 See also: [`singleton_diagram`](@ref), [`cospan_diagram`](@ref).
 """
-function junction_diagram(::Type{UWD}, outer::FinFunction{Int},
+function junction_diagram(::Type{UWD}, outer::FinFunction{Int,Int},
                           junction_types=nothing) where UWD <: AbstractUWD
   if isnothing(junction_types)
     junction_types = length(codom(outer))

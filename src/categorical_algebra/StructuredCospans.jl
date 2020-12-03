@@ -224,17 +224,19 @@ abstract type AbstractDiscreteACSet{X <: AbstractACSet} end
 codom(::Type{<:AbstractDiscreteACSet{X}}) where
   {CD, AD, X<:AbstractACSet{CD,AD}} = (X, ACSetTransformation{CD,AD})
 
-StructuredCospan{L}(x::AbstractACSet, f::FinFunction{Int},
-                    g::FinFunction{Int}) where {L<:AbstractDiscreteACSet} =
+StructuredCospan{L}(x::AbstractACSet, f::FinFunction{Int,Int},
+                    g::FinFunction{Int,Int}) where {L<:AbstractDiscreteACSet} =
   StructuredCospan{L}(x, Cospan(f, g))
 
-StructuredMulticospan{L}(x::AbstractACSet, fs::Vararg{<:FinFunction{Int},N}) where
+StructuredMulticospan{L}(x::AbstractACSet,
+                         fs::Vararg{<:FinFunction{Int,Int},N}) where
     {L<:AbstractDiscreteACSet, N} =
   StructuredMulticospan{L}(x, SMulticospan{N}(fs...))
 
-force(M::StructuredMulticospan{L}) where {L<:AbstractDiscreteACSet} =
+function force(M::StructuredMulticospan{L}) where {L<:AbstractDiscreteACSet}
   StructuredMulticospan{L}(
     Multicospan(apex(M.cospan), map(force, legs(M.cospan))), M.feet)
+end
 
 """ A functor L: FinSet → C-Set giving the discrete C-set wrt an object in C.
 
@@ -244,7 +246,7 @@ that object. Instead of instantiating this type directly, you should use
 """
 struct FinSetDiscreteACSet{ob₀, X} <: AbstractDiscreteACSet{X} end
 
-dom(::Type{<:FinSetDiscreteACSet}) = (FinSet{Int}, FinFunction{Int})
+dom(::Type{<:FinSetDiscreteACSet}) = (FinSet{Int}, FinFunction{Int,Int})
 
 """ A functor L: C₀-Set → C-Set giving the discrete C-set for C₀.
 
@@ -275,7 +277,7 @@ end
 
 """ C-set transformation b → a induced by function `f` into parts of `a`.
 """
-function induced_transformation(a::A, f::FinFunction{Int}) where
+function induced_transformation(a::A, f::FinFunction{Int,Int}) where
     {CD, AD, A <: AbstractACSet{CD,AD}}
   ob = only(CD.ob)
   @assert nparts(a, ob) == length(codom(f))
@@ -306,7 +308,7 @@ end
 
 """ Apply left adjoint L: FinSet → C-Set to morphism.
 """
-function (::Type{L})(f::FinFunction{Int}) where
+function (::Type{L})(f::FinFunction{Int,Int}) where
     {ob₀, L <: FinSetDiscreteACSet{ob₀}}
   ACSetTransformation((; ob₀ => f), L(dom(f)), L(codom(f)))
 end
@@ -320,7 +322,7 @@ end
 """ Convert morphism a → R(x) to morphism L(a) → x using discrete-forgetful
 adjunction L ⊣ R: A ↔ X.
 """
-function shift_left(::Type{L}, x::AbstractACSet, f::FinFunction{Int}) where
+function shift_left(::Type{L}, x::AbstractACSet, f::FinFunction{Int,Int}) where
     {ob₀, L <: FinSetDiscreteACSet{ob₀}}
   ACSetTransformation((; ob₀ => f), L(dom(f)), x)
 end
