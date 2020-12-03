@@ -14,11 +14,12 @@ end
   include("Matrices.jl")
 end
 
-@testset "FinSets" begin
+@testset "Sets" begin
+  include("Sets.jl")
   include("FinSets.jl")
 end
 
-@testset "FinRelations" begin
+@testset "Relations" begin
   include("FinRelations.jl")
 end
 

@@ -7,13 +7,12 @@ using Compat: only
 
 using AutoHashEquals
 using DataStructures: IntDisjointSets, union!, find_root!
-import FunctionWrappers: FunctionWrapper
+using FunctionWrappers: FunctionWrapper
 
-using ...GAT
-using ...Theories: Category
-import ...Theories: dom, codom, id, compose, ⋅, ∘
-using ..FreeDiagrams, ..Limits
+using ...Theories, ..FreeDiagrams, ..Limits, ..Sets
+import ...Theories: dom, codom
 import ..Limits: limit, colimit, universal
+using ..Sets: SetFunctionIdentity
 
 # Data types
 ############
@@ -21,21 +20,18 @@ import ..Limits: limit, colimit, universal
 """ Finite set.
 
 This generic type encompasses the category **FinSet** of finite sets and
-functions, through types `FinSet{S} where S <: AbstractSet`, and the skeleton of
-this category, through the type `FinSet{Int}`. In the latter case, the object
-`FinSet(n)` represents the set ``{1,...,n}``.
-
-In the general type `FinSet{S,T}`, the first type parameter `S` is the set type
-and the second type parameter `T` is the element type of the set.
+functions, through types `FinSet{S} where S <: AbstractSet`, as well as the
+skeleton of this category, through the type `FinSet{Int}`. In the latter case,
+the object `FinSet(n)` represents the set ``{1,...,n}``.
 """
-@auto_hash_equals struct FinSet{S,T}
+@auto_hash_equals struct FinSet{S,T} <: SetOb{T}
   set::S
 end
 
 FinSet(n::Int) = FinSet{Int,Int}(n)
 FinSet(set::S) where {T,S<:AbstractSet{T}} = FinSet{S,T}(set)
+FinSet(s::FinSet) = s
 
-Base.eltype(::Type{FinSet{S,T}}) where {S,T} = T
 Base.iterate(s::FinSet, args...) = iterate(iterable(s), args...)
 Base.length(s::FinSet) = length(iterable(s))
 Base.in(s::FinSet, elem) = in(s, iterable(s))
@@ -51,40 +47,34 @@ case it is evaluated lazily, or explictly by a vector of integers. In the latter
 case, the function (1↦1, 2↦3, 3↦2, 4↦3), for example, is represented by the
 vector [1,3,2,3].
 """
-abstract type FinFunction{S,S′,T,T′} end
+const FinFunction{S, S′, Dom <: FinSet{S}, Codom <: FinSet{S′}} =
+  SetFunction{Dom,Codom}
 
 FinFunction(f::Function, args...) = FinFunctionCallable(f, args...)
 FinFunction(f::AbstractVector, args...) = FinFunctionVector(f, args...)
 FinFunction(::typeof(identity), args...) = FinFunctionIdentity(args...)
 
-""" Function in FinSet defined by a callable Julia object.
+""" Function in **FinSet** defined by a callable Julia object.
 
-To be evaluated lazily unless forced.
+Is evaluated lazily unless forced via [`force`](@ref).
 """
-@auto_hash_equals struct FinFunctionCallable{S,S′,T,T′} <: FinFunction{S,S′,T,T′}
-  # Field `func` is usually a `Function` but can be any Julia callable.
-  func::FunctionWrapper{T′,Tuple{T}}
-  dom::FinSet{S,T}
-  codom::FinSet{S′,T′}
+const FinFunctionCallable{S,S′,T,T′} =
+  SetFunctionCallable{T,T′,FinSet{S,T},FinSet{S′,T′}}
 
-  FinFunctionCallable(f, dom::FinSet{S,T}, codom::FinSet{S′,T′}) where {S,S′,T,T′} =
-    new{S,S′,T,T′}(FunctionWrapper{T′,Tuple{T}}(f), dom, codom)
-end
 FinFunctionCallable(f, dom, codom) =
-  FinFunctionCallable(f, FinSet(dom), FinSet(codom))
+  SetFunctionCallable(f, FinSet(dom), FinSet(codom))
 
 function Base.show(io::IO, f::FinFunctionCallable)
   func = f.func.obj[] # Deference FunctionWrapper
   print(io, "FinFunction($(nameof(func)), $(f.dom), $(f.codom))")
 end
 
-(f::FinFunctionCallable)(x) = f.func(x)
-
-""" Function in FinSet represented explicitly by a vector.
+""" Function in **FinSet** represented explicitly by a vector.
 
 The elements of the set are assumed to be ``{1,...,n}``.
 """
-@auto_hash_equals struct FinFunctionVector{S′,T′,V<:AbstractVector{T′}} <: FinFunction{Int,S′,Int,T′}
+@auto_hash_equals struct FinFunctionVector{S′,T′,V<:AbstractVector{T′}} <:
+    SetFunction{FinSet{Int,Int},FinSet{S′,T′}}
   func::V
   codom::FinSet{S′,T′}
 end
@@ -103,6 +93,9 @@ end
 
 dom(f::FinFunctionVector) = FinSet(length(f.func))
 
+Sets.compose_impl(f::FinFunctionVector, g::FinFunctionVector) =
+  FinFunctionVector(g.func[f.func], g.codom)
+
 Base.show(io::IO, f::FinFunctionVector) =
   print(io, "FinFunction($(f.func), $(length(f.func)), $(length(f.codom)))")
 
@@ -115,52 +108,15 @@ force(f::FinFunctionVector) = f
 
 Base.collect(f::FinFunction) = force(f).func
 
-""" Identity function in FinSet.
+""" Identity function in **Set**.
 """
-@auto_hash_equals struct FinFunctionIdentity{S,T} <: FinFunction{S,S,T,T}
-  dom::FinSet{S,T}
-end
+const FinFunctionIdentity{S,T} = SetFunctionIdentity{FinSet{S,T}}
 
-function FinFunctionIdentity(dom::FinSet, codom::FinSet)
-  @assert dom == codom
-  FinFunctionIdentity(dom)
-end
-
-FinFunctionIdentity(dom) = FinFunctionIdentity(FinSet(dom))
-FinFunctionIdentity(dom, codom) = FinFunctionIdentity(FinSet(dom), FinSet(codom))
-
-codom(f::FinFunctionIdentity) = f.dom
+FinFunctionIdentity(dom) = SetFunctionIdentity(FinSet(dom))
+FinFunctionIdentity(dom, codom) = SetFunctionIdentity(FinSet(dom), FinSet(codom))
 
 Base.show(io::IO, f::FinFunctionIdentity) =
   print(io, "FinFunction(identity, $(f.dom))")
-
-(f::FinFunctionIdentity)(x) = x
-
-# Category of finite sets
-#########################
-
-""" Category of finite sets and functions.
-"""
-@instance Category{FinSet, FinFunction} begin
-  dom(f::FinFunction) = f.dom
-  codom(f::FinFunction) = f.codom
-  
-  id(A::FinSet) = FinFunction(identity, A, A)
-  
-  function compose(f::FinFunction, g::FinFunction)
-    @assert codom(f) == dom(g)
-    compose_impl(f, g)
-  end
-end
-
-compose_impl(f::FinFunction, g::FinFunction) =
-  FinFunction(g ∘ f, dom(f), codom(g))
-compose_impl(f::FinFunctionVector, g::FinFunctionVector) =
-  FinFunctionVector(g.func[f.func], g.codom)
-
-compose_impl(f::FinFunction, ::FinFunctionIdentity) = f
-compose_impl(::FinFunctionIdentity, f::FinFunction) = f
-compose_impl(f::FinFunctionIdentity, ::FinFunctionIdentity) = f
 
 # Limits
 ########

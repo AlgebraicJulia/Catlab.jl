@@ -4,6 +4,7 @@ using Reexport
 
 include("FreeDiagrams.jl")
 include("Limits.jl")
+include("Sets.jl")
 include("FinSets.jl")
 include("Matrices.jl")
 include("FinRelations.jl")
