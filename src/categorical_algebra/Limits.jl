@@ -2,6 +2,7 @@
 """
 module Limits
 export AbstractLimit, AbstractColimit, Limit, Colimit,
+  LimitAlgorithm, ColimitAlgorithm,
   ob, cone, cocone, apex, legs, limit, colimit, universal,
   Terminal, Initial, terminal, initial, delete, create, factorize,
   BinaryProduct, Product, product, proj1, proj2, pair,
@@ -10,7 +11,7 @@ export AbstractLimit, AbstractColimit, Limit, Colimit,
   BinaryCoproduct, Coproduct, coproduct, coproj1, coproj2, copair,
   BinaryPushout, Pushout, pushout,
   BinaryCoequalizer, Coequalizer, coequalizer, proj,
-  composite_pullback, composite_pushout
+  ComposeProductEqualizer, ComposeCoproductCoequalizer
 
 using Compat: only
 
@@ -62,6 +63,10 @@ proj1(lim::Union{BinaryProduct,BinaryPullback}) = first(legs(lim))
 proj2(lim::Union{BinaryProduct,BinaryPullback}) = last(legs(lim))
 incl(eq::Equalizer) = only(legs(eq))
 
+""" Algorithm for computing limits.
+"""
+abstract type LimitAlgorithm end
+
 # Data types for colimits
 #########################
 
@@ -100,6 +105,10 @@ const Coequalizer{Ob} = AbstractColimit{Ob,<:ParallelMorphisms}
 coproj1(colim::Union{BinaryCoproduct,BinaryPushout}) = first(legs(colim))
 coproj2(colim::Union{BinaryCoproduct,BinaryPushout}) = last(legs(colim))
 proj(coeq::Coequalizer) = only(legs(coeq))
+
+""" Algorithm for computing colimits.
+"""
+abstract type ColimitAlgorithm end
 
 # Generic (co)limits
 ####################
@@ -254,6 +263,12 @@ factorize(colim::Coequalizer, h) = universal(colim, SMulticospan{1}(h))
 # Composite (co)limits
 ######################
 
+""" Compute pullback by composing a product with an equalizer.
+
+See also: [`ComposeCoproductCoequalizer`](@ref).
+"""
+struct ComposeProductEqualizer <: LimitAlgorithm end
+
 """ Pullback formed as composite of product and equalizer.
 
 The fields of this struct are an implementation detail; accessing them directly
@@ -271,19 +286,22 @@ struct CompositePullback{Ob, Diagram<:Multicospan{Ob}, Cone<:Multispan{Ob},
   eq::Eq
 end
 
-""" Compute pullback as composite of product and equalizer.
-"""
-function composite_pullback(cospan::Multicospan)
+function limit(cospan::Multicospan, ::ComposeProductEqualizer)
   prod = product(feet(cospan))
   (ι,) = eq = equalizer(map(compose, legs(prod), legs(cospan)))
   cone = Multispan(map(π -> ι⋅π, legs(prod)))
   CompositePullback(cospan, cone, prod, eq)
 end
-composite_pullback(f, g) = composite_pullback(Cospan(f, g))
 
 function universal(lim::CompositePullback, cone::Multispan)
   factorize(lim.eq, universal(lim.prod, cone))
 end
+
+""" Compute pushout by composing a coproduct with a coequalizer.
+
+See also: [`ComposeProductEqualizer`](@ref).
+"""
+struct ComposeCoproductCoequalizer <: ColimitAlgorithm end
 
 """ Pushout formed as composite of coproduct and equalizer.
 
@@ -297,15 +315,12 @@ struct CompositePushout{Ob, Diagram<:Multispan{Ob}, Cocone<:Multicospan{Ob},
   coeq::Coeq
 end
 
-""" Compute pushout as composite of coproduct and coequalizer.
-"""
-function composite_pushout(span::Multispan)
+function colimit(span::Multispan, ::ComposeCoproductCoequalizer)
   coprod = coproduct(feet(span))
   (π,) = coeq = coequalizer(map(compose, legs(span), legs(coprod)))
   cocone = Multicospan(map(ι -> ι⋅π, legs(coprod)))
   CompositePushout(span, cocone, coprod, coeq)
 end
-composite_pushout(f, g) = composite_pushout(Span(f, g))
 
 function universal(lim::CompositePushout, cone::Multicospan)
   factorize(lim.coeq, universal(lim.coprod, cone))

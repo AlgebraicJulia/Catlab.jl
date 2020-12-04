@@ -186,7 +186,9 @@ function universal(lim::Equalizer{<:FinSet{Int}},
   FinFunction(Int[only(searchsorted(ι, h(i))) for i in dom(h)], length(ι))
 end
 
-limit(cospan::Multicospan{<:FinSet{Int}}) = composite_pullback(cospan)
+function limit(cospan::Multicospan{<:FinSet{Int}})
+  limit(cospan, ComposeProductEqualizer())
+end
 
 """ Limit of free diagram of FinSets.
 
@@ -313,7 +315,9 @@ function pass_to_quotient(π::FinFunction{Int,Int}, h::FinFunction{Int,Int})
   FinFunction(q, codom(h))
 end
 
-colimit(span::Multispan{<:FinSet{Int}}) = composite_pushout(span)
+function colimit(span::Multispan{<:FinSet{Int}})
+  colimit(span, ComposeCoproductCoequalizer())
+end
 
 """ Colimit of free diagram of FinSets.
 
