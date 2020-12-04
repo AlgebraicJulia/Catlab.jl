@@ -151,13 +151,13 @@ function universal end
 
 To implement for a type `T`, define the method `limit(::EmptyDiagram{T})`.
 """
-terminal(T::Type) = limit(EmptyDiagram{T}())
+terminal(T::Type; kw...) = limit(EmptyDiagram{T}(); kw...)
 
 """ Initial object.
 
 To implement for a type `T`, define the method `colimit(::EmptyDiagram{T})`.
 """
-initial(T::Type) = colimit(EmptyDiagram{T}())
+initial(T::Type; kw...) = colimit(EmptyDiagram{T}(); kw...)
 
 """ Unique morphism into a terminal object.
 
@@ -180,32 +180,32 @@ create(colim::Initial, A) = universal(colim, SMulticospan{0}(A))
 To implement for a type `T`, define the method `limit(::ObjectPair{T})` and/or
 `limit(::DiscreteDiagram{T})`.
 """
-product(A, B) = limit(ObjectPair(A, B))
-product(As::AbstractVector) = limit(DiscreteDiagram(As))
+product(A, B; kw...) = limit(ObjectPair(A, B); kw...)
+product(As::AbstractVector; kw...) = limit(DiscreteDiagram(As); kw...)
 
 """ Coproduct of objects.
 
 To implement for a type `T`, define the method `colimit(::ObjectPair{T})` and/or
 `colimit(::DiscreteDiagram{T})`.
 """
-coproduct(A, B) = colimit(ObjectPair(A, B))
-coproduct(As::AbstractVector) = colimit(DiscreteDiagram(As))
+coproduct(A, B; kw...) = colimit(ObjectPair(A, B); kw...)
+coproduct(As::AbstractVector; kw...) = colimit(DiscreteDiagram(As); kw...)
 
 """ Equalizer of morphisms with common domain and codomain.
 
 To implement for a type `T`, define the method `limit(::ParallelPair{T})` and/or
 `limit(::ParallelMorphisms{T})`.
 """
-equalizer(f, g) = limit(ParallelPair(f, g))
-equalizer(fs::AbstractVector) = limit(ParallelMorphisms(fs))
+equalizer(f, g; kw...) = limit(ParallelPair(f, g); kw...)
+equalizer(fs::AbstractVector; kw...) = limit(ParallelMorphisms(fs); kw...)
 
 """ Coequalizer of morphisms with common domain and codomain.
 
 To implement for a type `T`, define the method `colimit(::ParallelPair{T})` or
 `colimit(::ParallelMorphisms{T})`.
 """
-coequalizer(f, g) = colimit(ParallelPair(f, g))
-coequalizer(fs::AbstractVector) = colimit(ParallelMorphisms(fs))
+coequalizer(f, g; kw...) = colimit(ParallelPair(f, g); kw...)
+coequalizer(fs::AbstractVector; kw...) = colimit(ParallelMorphisms(fs); kw...)
 
 """ Pullback of a pair of morphisms with common codomain.
 
@@ -213,8 +213,8 @@ To implement for a type `T`, define the method `limit(::Cospan{T})` and/or
 `limit(::Multicospan{T})` or, if you have already implemented products and
 equalizers, rely on the default implementation.
 """
-pullback(f, g) = limit(Cospan(f, g))
-pullback(fs::AbstractVector) = limit(Multicospan(fs))
+pullback(f, g; kw...) = limit(Cospan(f, g); kw...)
+pullback(fs::AbstractVector; kw...) = limit(Multicospan(fs); kw...)
 
 """ Pushout of a pair of morphisms with common domain.
 
@@ -222,8 +222,8 @@ To implement for a type `T`, define the method `colimit(::Span{T})` and/or
 `colimit(::Multispan{T})` or, if you have already implemented coproducts and
 coequalizers, rely on the default implementation.
 """
-pushout(f, g) = colimit(Span(f, g))
-pushout(fs::AbstractVector) = colimit(Multispan(fs))
+pushout(f, g; kw...) = colimit(Span(f, g); kw...)
+pushout(fs::AbstractVector; kw...) = colimit(Multispan(fs); kw...)
 
 """ Pairing of morphisms: universal property of products/pullbacks.
 

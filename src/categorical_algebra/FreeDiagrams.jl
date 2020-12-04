@@ -205,7 +205,7 @@ Base.getindex(para::ParallelMorphisms, i) = para.homs[i]
 Base.firstindex(para::ParallelMorphisms) = firstindex(para.homs)
 Base.lastindex(para::ParallelMorphisms) = lastindex(para.homs)
 
-allequal(xs::AbstractVector) = all(isequal(x, xs[1]) for x in xs[2:end])
+allequal(xs::AbstractVector) = isempty(xs) || all(==(xs[1]), xs)
 
 # Commutative squares
 #--------------------

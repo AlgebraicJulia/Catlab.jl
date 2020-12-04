@@ -23,7 +23,7 @@ encompassed by the subtype [`FinSet`](@ref).
 """
 abstract type SetOb{T} end
 
-Base.eltype(::Type{SetOb{T}}) where T = T
+Base.eltype(::Type{<:SetOb{T}}) where T = T
 
 """ A Julia data type regarded as a set.
 """

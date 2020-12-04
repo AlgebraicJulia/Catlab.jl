@@ -51,9 +51,14 @@ f = FinFunction([1,3,4], 5)
 # Limits
 ########
 
-# Terminal object.
+# Terminal object
+#----------------
+
 @test ob(terminal(FinSet{Int})) == FinSet(1)
 @test delete(terminal(FinSet{Int}), FinSet(3)) == FinFunction([1,1,1])
+
+# Products
+#---------
 
 # Binary product.
 lim = product(FinSet(2), FinSet(3))
@@ -77,14 +82,16 @@ lim = product([FinSet(4), FinSet(3)])
 @test force(pair(lim,[f,g]) ⋅ first(legs(lim))) == f
 @test force(pair(lim,[f,g]) ⋅ last(legs(lim))) == g
 
-# Equalizer.
+# Equalizers
+#-----------
+
 f, g = FinFunction([1,2,4,3]), FinFunction([3,2,4,1])
 eq = equalizer(f,g)
 @test incl(eq) == FinFunction([2,3], 4)
 @test incl(equalizer([f,g])) == incl(eq)
 @test factorize(eq, FinFunction([2,3,2])) == FinFunction([1,2,1])
 
-# Equalizer in case of identical functions.
+# Equalizer of identical functions.
 f = FinFunction([4,2,3,1], 5)
 eq = equalizer(f,f)
 @test incl(eq) == force(id(FinSet(4)))
@@ -98,7 +105,9 @@ eq = equalizer(f,g)
 @test incl(equalizer([f,g])) == incl(eq)
 @test factorize(eq, FinFunction(Int[])) == FinFunction(Int[])
 
-# Pullback.
+# Pullbacks
+#----------
+
 lim = pullback(FinFunction([1,1,3,2],4), FinFunction([1,1,4,2],4))
 @test ob(lim) == FinSet(5)
 @test force(proj1(lim)) == FinFunction([1,2,1,2,4], 4)
@@ -118,7 +127,23 @@ f, g = FinFunction([1,1,2]), FinFunction([3,2,1])
 @test force(pair(lim,f,g) ⋅ proj1(lim)) == f
 @test force(pair(lim,f,g) ⋅ proj2(lim)) == g
 
-# Pullback using generic limit interface
+# Pullback using different algorithms.
+tuples(lim::AbstractLimit) =
+  sort!([ Tuple(map(π -> π(i), legs(lim))) for i in ob(lim) ])
+
+f, g = FinFunction([3,1,1,5,2],5), FinFunction([4,1,1,3,2],5)
+lim = pullback(f, g, alg=NestedLoopJoin())
+@test ob(lim) == FinSet(6)
+@test tuples(lim) == [(1,4), (2,2), (2,3), (3,2), (3,3), (5,5)]
+
+lim = pullback(f, g, alg=SortMergeJoin())
+@test ob(lim) == FinSet(6)
+@test tuples(lim) == [(1,4), (2,2), (2,3), (3,2), (3,3), (5,5)]
+
+# General limits
+#---------------
+
+# Pullback as a general limit.
 f, g = FinFunction([1,1,3,2],4), FinFunction([1,1,4,2],4)
 lim = limit(FreeDiagram([FinSet(4),FinSet(4),FinSet(4)], [(f,1,3),(g,2,3)]))
 @test ob(lim) == FinSet(5)
@@ -134,9 +159,14 @@ h = universal(lim, Multispan([f′, g′, f′⋅f])) # f′⋅f == g′⋅g
 # Colimits
 ##########
 
-# Initial object.
+# Initial object
+#---------------
+
 @test ob(initial(FinSet{Int})) == FinSet(0)
 @test create(initial(FinSet{Int}), FinSet(3)) == FinFunction(Int[], 3)
+
+# Coproducts
+#-----------
 
 # Binary coproduct.
 colim = coproduct(FinSet(2), FinSet(3))
@@ -156,6 +186,9 @@ colim = coproduct([FinSet(2), FinSet(3)])
 
 @test force(first(legs(colim)) ⋅ copair(colim,[f,g])) == f
 @test force(last(legs(colim)) ⋅ copair(colim,[f,g])) == g
+
+# Coequalizers
+#-------------
 
 # Coequalizer from a singleton set.
 f, g = FinFunction([1], 3), FinFunction([3], 3)
@@ -178,6 +211,9 @@ coeq = coequalizer(f,g)
 @test proj(coeq) == FinFunction(fill(1,5))
 @test proj(coequalizer([f,g])) == proj(coeq)
 @test factorize(coeq, FinFunction(fill(3,5))) == FinFunction([3])
+
+# Pushouts
+#---------
 
 # Pushout from the empty set: the degenerate case of the coproduct.
 f, g = FinFunction(Int[], 2), FinFunction(Int[], 3)
