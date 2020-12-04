@@ -43,7 +43,7 @@ k = FinDomFunction([:a,:b,:c,:d,:e], SymbolSet)
 @test k(3) == :c
 @test collect(k) == [:a,:b,:c,:d,:e]
 @test sprint(show, k) ==
-  "FinDomFunction($([:a,:b,:c,:d,:e]), FinSet(5), TypeSet{Symbol}())"
+  "FinDomFunction($([:a,:b,:c,:d,:e]), FinSet(5), TypeSet(Symbol))"
 
 f = FinFunction([1,3,4], 5)
 @test compose(f,k) == FinDomFunction([:a,:c,:d], SymbolSet)

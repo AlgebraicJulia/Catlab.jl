@@ -29,7 +29,9 @@ Base.eltype(::Type{SetOb{T}}) where T = T
 """
 struct TypeSet{T} <: SetOb{T} end
 
-Base.show(io::IO, ::TypeSet{T}) where T = print(io, "TypeSet{$T}()")
+TypeSet(T::Type) = TypeSet{T}()
+
+Base.show(io::IO, ::TypeSet{T}) where T = print(io, "TypeSet($T)")
 
 """ Abstract type for morphism in the category **Set**.
 
@@ -102,8 +104,15 @@ struct PredicatedSet{T} <: SetOb{T}
   PredicatedSet{T}(f) where T = new{T}(FunctionWrapper{Bool,Tuple{T}}(f))
 end
 
+PredicatedSet(T::Type, f) = PredicatedSet{T}(f)
+
 function (s::PredicatedSet{T})(x::T)::Bool where {T}
   s.predicate(x)
+end
+
+function Base.show(io::IO, s::PredicatedSet{T}) where T
+  func = s.predicate.obj[] # Deference FunctionWrapper
+  print(io, "PredicatedSet($T, $(nameof(func)))")
 end
 
 const PredicatedFunction{T,T′} =

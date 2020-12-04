@@ -6,19 +6,18 @@ using Catlab.Theories, Catlab.CategoricalAlgebra.Sets
 # Sets from Julia types
 #######################
 
-IntSet = TypeSet{Int}()
-f = SetFunction(x -> 2x, IntSet, IntSet)
-g = SetFunction(x -> 3x, IntSet, IntSet)
-
 # Callables.
-@test dom(f) == IntSet
-@test codom(f) == IntSet
+f = SetFunction(x -> 2x, TypeSet(Int), TypeSet(Int))
+g = SetFunction(x -> 3x, TypeSet(Int), TypeSet(Int))
+@test dom(f) == TypeSet(Int)
+@test codom(f) == TypeSet(Int)
 @test f(1) == 2
 
 # Identities.
-@test dom(id(IntSet)) == IntSet
-@test codom(id(IntSet)) == IntSet
-@test id(IntSet)(1) == 1
+X = TypeSet(Int)
+@test dom(id(X)) == X
+@test codom(id(X)) == X
+@test id(X)(1) == 1
 
 # Composition.
 h = compose(f,g)
@@ -29,8 +28,9 @@ h = compose(f,g)
 # Predicated sets
 #################
 
-odds = PredicatedSet{Int}(x -> x % 2 == 1)
-evens = PredicatedSet{Int}(x -> x % 2 == 0)
+odds = PredicatedSet(Int, isodd)
+evens = PredicatedSet(Int, iseven)
+@test sprint(show, odds) == "PredicatedSet($(Int), isodd)"
 
 plus_one_to_odd = SetFunction(x -> x+1, odds, evens)
 plus_one_to_even = SetFunction(x -> x+1, evens, odds)
