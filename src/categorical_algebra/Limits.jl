@@ -273,11 +273,11 @@ end
 
 """ Compute pullback as composite of product and equalizer.
 """
-function composite_pullback(cospan::Cospan)
-  f, g = cospan
-  (π1, π2) = prod = product(dom(f), dom(g))
-  (ι,) = eq = equalizer(π1⋅f, π2⋅g)
-  CompositePullback(cospan, Span(ι⋅π1, ι⋅π2), prod, eq)
+function composite_pullback(cospan::Multicospan)
+  prod = product(feet(cospan))
+  (ι,) = eq = equalizer(map(compose, legs(prod), legs(cospan)))
+  cone = Multispan(map(π -> ι⋅π, legs(prod)))
+  CompositePullback(cospan, cone, prod, eq)
 end
 composite_pullback(f, g) = composite_pullback(Cospan(f, g))
 
@@ -299,11 +299,11 @@ end
 
 """ Compute pushout as composite of coproduct and coequalizer.
 """
-function composite_pushout(span::Span)
-  f, g = span
-  (ι1, ι2) = coprod = coproduct(codom(f), codom(g))
-  (π,) = coeq = coequalizer(f⋅ι1, g⋅ι2)
-  CompositePushout(span, Cospan(ι1⋅π, ι2⋅π), coprod, coeq)
+function composite_pushout(span::Multispan)
+  coprod = coproduct(feet(span))
+  (π,) = coeq = coequalizer(map(compose, legs(span), legs(coprod)))
+  cocone = Multicospan(map(ι -> ι⋅π, legs(coprod)))
+  CompositePushout(span, cocone, coprod, coeq)
 end
 composite_pushout(f, g) = composite_pushout(Span(f, g))
 
