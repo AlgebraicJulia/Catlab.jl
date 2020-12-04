@@ -1,4 +1,4 @@
-""" Computing in the category of finite sets and relations, and its skeleton.
+""" The category of finite sets and relations, and its skeleton.
 """
 module FinRelations
 export BoolRig, FinRel, FinRelation, FinRelationCallable, FinRelationMatrix,
@@ -14,7 +14,7 @@ import ...Theories: dom, codom, id, compose, ⋅, ∘, dagger, dunit, dcounit,
   otimes, ⊗, munit, braid, oplus, ⊕, mzero, swap,
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, plus, zero, coplus, cozero,
   pair, copair, proj1, proj2, coproj1, coproj2, meet, join, top, bottom
-import ..FinSets: AbstractSetOb, iterable, force
+import ..FinSets: force
 using ..Matrices
 using ..Matrices: zero_matrix
 
@@ -43,14 +43,19 @@ Base.show(io::IO, x::BoolRig) = print(io, x.value)
 
 """ Object in the category of finite sets and relations.
 
-See also: `FinSet`.
+See also: [`FinSet`](@ref).
 """
-@auto_hash_equals struct FinRel{S,T} <: AbstractSetOb{S,T}
+@auto_hash_equals struct FinRel{S,T}
   set::S
 end
 
 FinRel(i::Int) = FinRel{Int,Int}(i)
 FinRel(set::S) where {T,S<:AbstractSet{T}} = FinRel{S,T}(set)
+
+Base.eltype(::Type{FinRel{S,T}}) where {S,T} = T
+Base.iterate(s::FinRel, args...) = iterate(iterable(s), args...)
+Base.length(s::FinRel) = length(iterable(s))
+Base.in(s::FinRel, elem) = in(s, iterable(s))
 iterable(s::FinRel{Int}) = 1:s.set
 iterable(s::FinRel{<:AbstractSet}) = s.set
 
@@ -61,22 +66,25 @@ represented implicitly by an arbitrary Julia function mapping pairs of elements
 to booleans or explicitly by a matrix (dense or sparse) taking values in the rig
 of booleans ([`BoolRig`](@ref)).
 """
-abstract type FinRelation{S,T} end
+abstract type FinRelation{S,S′,T,T′} end
 
 FinRelation(R::Function, args...) = FinRelationCallable(R, args...)
 FinRelation(R::AbstractMatrix, args...) = FinRelationMatrix(R, args...)
 
 """ Relation in FinRel defined by a callable Julia object.
 """
-@auto_hash_equals struct FinRelationCallable{S,T} <: FinRelation{S,T}
-  rel::FunctionWrapper{Bool,Tuple{T,T}} # Usually `Function` but can be any Julia callable.
+@auto_hash_equals struct FinRelationCallable{S,S′,T,T′} <: FinRelation{S,S′,T,T′}
+  # Field `rel` is usually a `Function` but can be any Julia callable.
+  rel::FunctionWrapper{Bool,Tuple{T,T′}}
   dom::FinRel{S,T}
-  codom::FinRel{S,T}
-  FinRelationCallable(R::Function, dom::Int, codom::Int) =
-    new{Int,Int}(FunctionWrapper{Int,Tuple{Int,Int}}(R), FinRel(dom), FinRel(codom))
-  FinRelationCallable(R::Function, dom::FinRel{S,T}, codom::FinRel{S,T}) where {S,T} =
-    new{S,T}(FunctionWrapper{T,Tuple{T,T}}(R), dom, codom)
+  codom::FinRel{S′,T′}
+
+  FinRelationCallable(R, dom::FinRel{S,T}, codom::FinRel{S′,T′}) where {S,S′,T,T′} =
+    new{S,S′,T,T′}(FunctionWrapper{Bool,Tuple{T,T′}}(R), dom, codom)
 end
+
+FinRelationCallable(R, dom::Int, codom::Int) =
+  FinRelationCallable(R, FinRel(dom), FinRel(codom))
 
 (R::FinRelationCallable{S,T})(x::T, y::T) where {S,T} = R.rel(x, y)
 
@@ -84,8 +92,8 @@ end
 
 Boolean matrices are also known as logical matrices or relation matrices.
 """
-@auto_hash_equals struct FinRelationMatrix{T<:AbstractMatrix{BoolRig}} <: FinRelation{Int,Int}
-  rel::T
+@auto_hash_equals struct FinRelationMatrix{M<:AbstractMatrix{BoolRig}} <: FinRelation{Int,Int,Int,Int}
+  rel::M
 end
 
 function FinRelationMatrix(R::AbstractMatrix{BoolRig}, dom::Int, codom::Int)

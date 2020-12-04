@@ -2,14 +2,16 @@ module TestFinSets
 using Test
 
 using Catlab.Theories, Catlab.CategoricalAlgebra
-using Catlab.CategoricalAlgebra.FinSets
+using Catlab.CategoricalAlgebra.Sets, Catlab.CategoricalAlgebra.FinSets
 
-# Category of finite sets: skeleton
-###################################
+# Functions between finite sets
+###############################
 
 f = FinFunction([1,3,4], 5)
 g = FinFunction([1,1,2,2,3], 3)
 h = FinFunction([3,1,2], 3)
+@test dom(f) == FinSet(3)
+@test codom(f) == FinSet(5)
 
 # Evaluation.
 rot3(x) = (x % 3) + 1
@@ -19,26 +21,35 @@ rot3(x) = (x % 3) + 1
 
 # Pretty-print.
 @test sprint(show, FinSet(3)) == "FinSet(3)"
-@test sprint(show, f) == "FinFunction([1, 3, 4], 3, 5)"
+@test sprint(show, f) == "FinFunction($([1,3,4]), 3, 5)"
 @test sprint(show, FinFunction(rot3, 3, 3)) ==
   "FinFunction(rot3, FinSet(3), FinSet(3))"
 @test sprint(show, id(FinSet(3))) == "FinFunction(identity, FinSet(3))"
 
-# Domains and codomains.
-@test dom(f) == FinSet(3)
-@test codom(f) == FinSet(5)
-@test dom(id(FinSet(3))) == FinSet(3)
-@test codom(id(FinSet(3))) == FinSet(3)
-
-# Composition and identities.
+# Composition.
 @test compose(f,g) == FinFunction([1,2,2], 3)
 @test compose(g,h) == FinFunction([3,3,1,1,2], 3)
 @test compose(compose(f,g),h) == compose(f,compose(g,h))
 @test compose(id(dom(f)), f) == f
 @test compose(f, id(codom(f))) == f
 
+# Functions out of finite sets
+##############################
+
+SymbolSet = TypeSet{Symbol}()
+k = FinDomFunction([:a,:b,:c,:d,:e], SymbolSet)
+@test dom(k) == FinSet(5)
+@test codom(k) == SymbolSet
+@test k(3) == :c
+@test collect(k) == [:a,:b,:c,:d,:e]
+@test sprint(show, k) ==
+  "FinDomFunction($([:a,:b,:c,:d,:e]), FinSet(5), TypeSet(Symbol))"
+
+f = FinFunction([1,3,4], 5)
+@test compose(f,k) == FinDomFunction([:a,:c,:d], SymbolSet)
+
 # Limits
-#-------
+########
 
 # Terminal object.
 @test ob(terminal(FinSet{Int})) == FinSet(1)
@@ -121,7 +132,7 @@ h = universal(lim, Multispan([f′, g′, f′⋅f])) # f′⋅f == g′⋅g
 @test force(h ⋅ π2) == g′
 
 # Colimits
-#---------
+##########
 
 # Initial object.
 @test ob(initial(FinSet{Int})) == FinSet(0)
