@@ -62,7 +62,7 @@ A [multispan](https://ncatlab.org/nlab/show/multispan) is like a [`Span`](@ref)
 except that it may have a number of legs different than two. A colimit of this
 shape is a pushout.
 """
-@auto_hash_equals struct Multispan{Ob,Legs<:AbstractVector} <:
+@auto_hash_equals struct Multispan{Ob,Hom,Legs<:AbstractVector{Hom}} <:
     FixedShapeFreeDiagram{Ob}
   apex::Ob
   legs::Legs
@@ -74,7 +74,7 @@ function Multispan(legs::AbstractVector)
   Multispan(dom(first(legs)), legs)
 end
 
-const SMultispan{N,Ob} = Multispan{Ob,<:StaticVector{N}}
+const SMultispan{N,Ob,Hom} = Multispan{Ob,Hom,<:StaticVector{N,Hom}}
 
 SMultispan{N}(apex, legs::Vararg{Any,N}) where N =
   Multispan(apex, SVector{N}(legs...))
@@ -85,7 +85,7 @@ SMultispan{N}(legs::Vararg{Any,N}) where N = Multispan(SVector{N}(legs...))
 
 A common special case of [`Multispan`](@ref). See also [`Cospan`](@ref).
 """
-const Span{Ob} = SMultispan{2,Ob}
+const Span{Ob,Hom} = SMultispan{2,Ob,Hom}
 
 apex(span::Multispan) = span.apex
 legs(span::Multispan) = span.legs
@@ -102,7 +102,7 @@ Base.length(span::Multispan) = length(span.legs)
 A multicospan is like a [`Cospan`](@ref) except that it may have a number of
 legs different than two. A limit of this shape is a pullback.
 """
-@auto_hash_equals struct Multicospan{Ob,Legs<:AbstractVector} <:
+@auto_hash_equals struct Multicospan{Ob,Hom,Legs<:AbstractVector{Hom}} <:
     FixedShapeFreeDiagram{Ob}
   apex::Ob
   legs::Legs
@@ -114,7 +114,7 @@ function Multicospan(legs::AbstractVector)
   Multicospan(codom(first(legs)), legs)
 end
 
-const SMulticospan{N,Ob} = Multicospan{Ob,<:StaticVector{N}}
+const SMulticospan{N,Ob,Hom} = Multicospan{Ob,Hom,<:StaticVector{N,Hom}}
 
 SMulticospan{N}(apex, legs::Vararg{Any,N}) where N =
   Multicospan(apex, SVector{N}(legs...))
@@ -125,7 +125,7 @@ SMulticospan{N}(legs::Vararg{Any,N}) where N = Multicospan(SVector{N}(legs...))
 
 A common special case of [`Multicospan`](@ref). See also [`Span`](@ref).
 """
-const Cospan{Ob} = SMulticospan{2,Ob}
+const Cospan{Ob,Hom} = SMulticospan{2,Ob,Hom}
 
 apex(cospan::Multicospan) = cospan.apex
 legs(cospan::Multicospan) = cospan.legs
@@ -168,7 +168,7 @@ morphisms with the same domain and codomain. A (co)limit of this shape is a
 
 For the common special case of two morphisms, see [`ParallelPair`](@ref).
 """
-@auto_hash_equals struct ParallelMorphisms{Ob,Homs<:AbstractVector} <:
+@auto_hash_equals struct ParallelMorphisms{Ob,Hom,Homs<:AbstractVector{Hom}} <:
     FixedShapeFreeDiagram{Ob}
   dom::Ob
   codom::Ob
@@ -184,7 +184,7 @@ end
 
 A common special case of [`ParallelMorphisms`](@ref).
 """
-const ParallelPair{Ob} = ParallelMorphisms{Ob,<:StaticVector{2}}
+const ParallelPair{Ob,Hom} = ParallelMorphisms{Ob,Hom,<:StaticVector{2,Hom}}
 
 function ParallelPair(first, last)
   dom(first) == dom(last) ||
@@ -218,7 +218,7 @@ allequal(xs::AbstractVector) = isempty(xs) || all(==(xs[1]), xs)
 creates a square diagram in a category, which forms the 2-cells of the double category Sq(C).
 The four 1-cells are given in top, bottom, left, right order, to match the GAT of a double category.
 """
-@auto_hash_equals struct SquareDiagram{Ob,Homs<:AbstractVector} <:
+@auto_hash_equals struct SquareDiagram{Ob,Hom,Homs<:AbstractVector{Hom}} <:
     FixedShapeFreeDiagram{Ob}
   corners::Vector{Ob}
   sides::Homs
@@ -289,30 +289,30 @@ function FreeDiagram(discrete::DiscreteDiagram{Ob}) where Ob
   return d
 end
 
-function FreeDiagram(span::Multispan{Ob}) where Ob
-  d = FreeDiagram{Ob,eltype(span)}()
+function FreeDiagram(span::Multispan{Ob,Hom}) where {Ob,Hom}
+  d = FreeDiagram{Ob,Hom}()
   v0 = add_vertex!(d, ob=apex(span))
   vs = add_vertices!(d, length(span), ob=feet(span))
   add_edges!(d, fill(v0, length(span)), vs, hom=legs(span))
   return d
 end
 
-function FreeDiagram(cospan::Multicospan{Ob}) where Ob
-  d = FreeDiagram{Ob,eltype(cospan)}()
+function FreeDiagram(cospan::Multicospan{Ob,Hom}) where {Ob,Hom}
+  d = FreeDiagram{Ob,Hom}()
   vs = add_vertices!(d, length(cospan), ob=feet(cospan))
   v0 = add_vertex!(d, ob=apex(cospan))
   add_edges!(d, vs, fill(v0, length(cospan)), hom=legs(cospan))
   return d
 end
 
-function FreeDiagram(para::ParallelMorphisms{Ob}) where Ob
-  d = FreeDiagram{Ob,eltype(para)}()
+function FreeDiagram(para::ParallelMorphisms{Ob,Hom}) where {Ob,Hom}
+  d = FreeDiagram{Ob,Hom}()
   add_vertices!(d, 2, ob=[dom(para), codom(para)])
   add_edges!(d, fill(1,length(para)), fill(2,length(para)), hom=hom(para))
   return d
 end
 
-function FreeDiagram(sq::SquareDiagram{Ob}) where Ob
+function FreeDiagram(sq::SquareDiagram)
     top, bottom, left, right = sq.sides
     # check that the domains and codomains match
     #   1   -top->   3
@@ -330,4 +330,5 @@ function FreeDiagram(sq::SquareDiagram{Ob}) where Ob
     E = [(top,1,3), (bottom,2,4), (left,1,2), (right,3,4)]
     return FreeDiagram(V, E)
 end
+
 end
