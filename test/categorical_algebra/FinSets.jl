@@ -105,6 +105,12 @@ eq = equalizer(f,g)
 @test incl(equalizer([f,g])) == incl(eq)
 @test factorize(eq, FinFunction(Int[])) == FinFunction(Int[])
 
+# Equalizer of functions into non-finite set.
+f = FinDomFunction([:a, :b, :d, :c], TypeSet(Symbol))
+g = FinDomFunction([:c, :b, :d, :a], TypeSet(Symbol))
+eq = equalizer(f,g)
+@test incl(eq) == FinFunction([2,3], 4)
+
 # Pullbacks
 #----------
 
@@ -126,6 +132,14 @@ lim = pullback(FinFunction([1,1]), FinFunction([1,1,1]))
 f, g = FinFunction([1,1,2]), FinFunction([3,2,1])
 @test force(pair(lim,f,g) ⋅ proj1(lim)) == f
 @test force(pair(lim,f,g) ⋅ proj2(lim)) == g
+
+# Pullback of a cospan into non-finite set.
+f = FinDomFunction([:a, :a, :c, :b], TypeSet(Symbol))
+g = FinDomFunction([:a, :a, :d, :b], TypeSet(Symbol))
+π1, π2 = lim = pullback(f, g)
+@test ob(lim) == FinSet(5)
+@test force(π1) == FinFunction([1,2,1,2,4], 4)
+@test force(π2) == FinFunction([1,1,2,2,4], 4)
 
 # Pullback using different algorithms.
 tuples(lim::AbstractLimit) =

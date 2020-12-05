@@ -200,12 +200,12 @@ This is the naive algorithm for computing joins.
 """
 struct NestedLoopJoin <: JoinAlgorithm end
 
-function limit(cospan::Multicospan{<:FinSet{Int}};
+function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}};
                alg::LimitAlgorithm=NestedLoopJoin())
   limit(cospan, alg)
 end
 
-function limit(cospan::Multicospan{<:FinSet{Int}}, ::NestedLoopJoin)
+function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}}, ::NestedLoopJoin)
   # A nested-loop join is exactly what you get by composing the above algorithms
   # for products and equalizers, except that we handle the "nested" loops using
   # `CartesianIndices`.
@@ -216,7 +216,7 @@ end
 """
 struct SortMergeJoin <: JoinAlgorithm end
 
-function limit(cospan::Multicospan{<:FinSet{Int}}, ::SortMergeJoin)
+function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}}, ::SortMergeJoin)
   funcs = map(collect, legs(cospan))
   sorts = map(sortperm, funcs)
   values = similar_mutable(funcs, eltype(apex(cospan)))

@@ -168,10 +168,10 @@ morphisms with the same domain and codomain. A (co)limit of this shape is a
 
 For the common special case of two morphisms, see [`ParallelPair`](@ref).
 """
-@auto_hash_equals struct ParallelMorphisms{Ob,Hom,Homs<:AbstractVector{Hom}} <:
-    FixedShapeFreeDiagram{Ob}
-  dom::Ob
-  codom::Ob
+@auto_hash_equals struct ParallelMorphisms{Dom,Codom,Hom,Homs<:AbstractVector{Hom}} <:
+    FixedShapeFreeDiagram{Union{Dom,Codom}}
+  dom::Dom
+  codom::Codom
   homs::Homs
 end
 
@@ -184,7 +184,8 @@ end
 
 A common special case of [`ParallelMorphisms`](@ref).
 """
-const ParallelPair{Ob,Hom} = ParallelMorphisms{Ob,Hom,<:StaticVector{2,Hom}}
+const ParallelPair{Dom,Codom,Hom} =
+  ParallelMorphisms{Dom,Codom,Hom,<:StaticVector{2,Hom}}
 
 function ParallelPair(first, last)
   dom(first) == dom(last) ||
@@ -305,8 +306,8 @@ function FreeDiagram(cospan::Multicospan{Ob,Hom}) where {Ob,Hom}
   return d
 end
 
-function FreeDiagram(para::ParallelMorphisms{Ob,Hom}) where {Ob,Hom}
-  d = FreeDiagram{Ob,Hom}()
+function FreeDiagram(para::ParallelMorphisms{Dom,Codom,Hom}) where {Dom,Codom,Hom}
+  d = FreeDiagram{Union{Dom,Codom},Hom}()
   add_vertices!(d, 2, ob=[dom(para), codom(para)])
   add_edges!(d, fill(1,length(para)), fill(2,length(para)), hom=hom(para))
   return d

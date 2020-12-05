@@ -278,8 +278,8 @@ for limits.
 
 See also: [`CompositePushout`](@ref).
 """
-struct CompositePullback{Ob, Diagram<:Multicospan{Ob}, Cone<:Multispan{Ob},
-    Prod<:Product{Ob}, Eq<:Equalizer{Ob}} <: AbstractLimit{Ob,Diagram}
+struct CompositePullback{Ob, Diagram<:Multicospan, Cone<:Multispan{Ob},
+    Prod<:Product, Eq<:Equalizer} <: AbstractLimit{Ob,Diagram}
   diagram::Diagram
   cone::Cone
   prod::Prod
@@ -307,8 +307,8 @@ struct ComposeCoproductCoequalizer <: ColimitAlgorithm end
 
 See also: [`CompositePullback`](@ref).
 """
-struct CompositePushout{Ob, Diagram<:Multispan{Ob}, Cocone<:Multicospan{Ob},
-    Coprod<:Coproduct{Ob}, Coeq<:Coequalizer{Ob}} <: AbstractColimit{Ob,Diagram}
+struct CompositePushout{Ob, Diagram<:Multispan, Cocone<:Multicospan{Ob},
+    Coprod<:Coproduct, Coeq<:Coequalizer} <: AbstractColimit{Ob,Diagram}
   diagram::Diagram
   cocone::Cocone
   coprod::Coprod
