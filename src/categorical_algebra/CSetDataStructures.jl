@@ -57,7 +57,7 @@ struct AttributedCSet{CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple,
 
   function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}() where
       {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed, UniqueIdxed}
-    tables = make_tables(CD,AD,Ts)
+    tables = make_tables(StructArray,CD,AD,Ts)
     indices = make_indices(CD,AD,Ts,Idxed,UniqueIdxed)
     new{CD,AD,Ts,Idxed,UniqueIdxed,typeof(tables),typeof(indices)}(
       tables, indices)
@@ -180,6 +180,7 @@ end
 
 function make_indices(::Type{CD}, AD::Type{<:AttrDesc{CD}},
                       Ts::Type{<:Tuple}, Idxed::Tuple, UniqueIdxed::Tuple) where {CD}
+  # TODO: Could be `@generated` for faster initialization of C-sets.
   NamedTuple{Idxed}(Tuple(map(Idxed) do name
     IndexType = name ∈ UniqueIdxed ? Int : Vector{Int}
     if name ∈ CD.hom
@@ -192,34 +193,32 @@ function make_indices(::Type{CD}, AD::Type{<:AttrDesc{CD}},
   end))
 end
 
-function make_tables(::Type{CD}, AD::Type{<:AttrDesc{CD}},
+function make_tables(make_table, ::Type{CD}, AD::Type{<:AttrDesc{CD}},
                      Ts::Type{<:Tuple}) where {CD}
-  cols = NamedTuple{CD.ob}(Tuple{Symbol,Type}[] for ob in CD.ob)
+  # TODO: Could be `@generated` for faster initialization of C-sets.
+  cols = NamedTuple{CD.ob}((names=Symbol[], types=Type[]) for ob in CD.ob)
   for hom in CD.hom
-    push!(cols[dom(CD,hom)], (hom, Int))
+    col = cols[dom(CD,hom)]
+    push!(col.names, hom); push!(col.types, Int)
   end
   for attr in AD.attr
-    push!(cols[dom(AD,attr)], (attr, Ts.parameters[codom_num(AD,attr)]))
+    col = cols[dom(AD,attr)]
+    push!(col.names, attr); push!(col.types, Ts.parameters[codom_num(AD,attr)])
   end
   map(cols) do col
-    SA = StructArray{NamedTuple{Tuple(first.(col)),Tuple{last.(col)...}}}
-    make_struct_array(SA, undef, 0)
+    if isempty(col.names)
+      # Tables based on structs of arrays, such as StructArrays and TypedTables,
+      # generally do not support empty structs, so we use an array of empty
+      # structs instead. See also:
+      # https://github.com/JuliaArrays/StructArrays.jl/issues/148
+      Tuple{}[]
+    else
+      make_table(NamedTuple{Tuple(col.names)}((T[] for T in col.types)))
+    end
   end
 end
 
 const EmptyTuple = Union{Tuple{},NamedTuple{(),Tuple{}}}
-
-""" Create StructArray while avoiding inconsistency with zero length arrays.
-
-By default, just constructs a StructArray (a struct of arrays) but when the
-struct is empty, returns a ordinary Julia vector (an array of empty structs).
-
-For context, see: https://github.com/JuliaArrays/StructArrays.jl/issues/148
-"""
-make_struct_array(::Type{SA}, ::UndefInitializer, n::Int) where
-  SA <: StructArray = SA(undef, n)
-make_struct_array(::Type{<:StructArray{T}}, ::UndefInitializer, n::Int) where
-  T <: EmptyTuple = fill(T(()), n)
 
 function Base.:(==)(x1::T, x2::T) where T <: ACSet
   # The indices hold redundant information, so need not be compared.
