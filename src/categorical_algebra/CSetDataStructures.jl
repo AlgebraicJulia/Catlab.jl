@@ -11,8 +11,7 @@ using Compat: isnothing, only
 
 using MLStyle: @match
 using PrettyTables: pretty_table
-import Tables
-using StructArrays: StructArray
+import Tables, TypedTables
 
 using ...Meta, ...Present
 using ...Syntax: GATExpr, args
@@ -63,7 +62,8 @@ function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}(
   AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed,Tables,Indices}(tables, indices)
 end
 
-function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}(; table_type=StructArray) where
+function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}(;
+    table_type = TypedTables.Table) where
     {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed, UniqueIdxed}
   tables = make_tables(table_type,CD,AD,Ts)
   indices = make_indices(CD,AD,Ts,Idxed,UniqueIdxed)
@@ -501,13 +501,8 @@ end
   end
 end
 
-function resize_table!(table, n)
-  if Tables.isrowtable(table)
-    resize!(table, n)
-  else
-    map(col -> resize!(col, n), Tables.columns(table))
-  end
-end
+resize_table!(table, n) = map(col -> resize!(col, n), Tables.columns(table))
+resize_table!(table::Vector, n) = resize!(table, n)
 
 """ Mutate subpart of a part in a C-set.
 
