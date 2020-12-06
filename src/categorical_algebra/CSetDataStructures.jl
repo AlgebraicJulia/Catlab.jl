@@ -46,23 +46,21 @@ const AbstractACSet = AbstractAttributedCSet
 Instead of filling out the type parameters manually, we recommend using the
 function [`CSetType`](@ref) or [`ACSetType`](@ref) to generate a data type from
 a schema. Nevertheless, the first three type parameters are documented at
-[`AbstractAttributedCSet`](@ref). The remaining type parameters are
-implementation details and should be ignored.
+[`AbstractAttributedCSet`](@ref). The remaining type parameters are an
+implementation detail and should be ignored.
 """
 struct AttributedCSet{CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple,
                       Idxed, UniqueIdxed, Tables <: NamedTuple,
                       Indices <: NamedTuple} <: AbstractACSet{CD,AD,Ts}
   tables::Tables
   indices::Indices
+
   function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}() where
       {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed, UniqueIdxed}
     tables = make_tables(CD,AD,Ts)
     indices = make_indices(CD,AD,Ts,Idxed,UniqueIdxed)
     new{CD,AD,Ts,Idxed,UniqueIdxed,typeof(tables),typeof(indices)}(
       tables, indices)
-  end
-  function AttributedCSet{CD}() where {CD <: CatDesc}
-    AttributedCSet{CD,typeof(AttrDesc(CD())),Tuple{}}()
   end
   function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed,Tables,Indices}() where
       {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed, UniqueIdxed,
@@ -73,7 +71,7 @@ struct AttributedCSet{CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple,
       tables::Tables, indices::Indices) where
       {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed, UniqueIdxed,
        Tables <: NamedTuple, Indices <: NamedTuple}
-    new{CD,AD,Ts,Idxed,UniqueIdxed,Tables,Indices}(tables,indices)
+    new{CD,AD,Ts,Idxed,UniqueIdxed,Tables,Indices}(tables, indices)
   end
 end
 
@@ -224,7 +222,7 @@ make_struct_array(::Type{<:StructArray{T}}, ::UndefInitializer, n::Int) where
   T <: EmptyTuple = fill(T(()), n)
 
 function Base.:(==)(x1::T, x2::T) where T <: ACSet
-  # The indices are redundant, so need not be compared.
+  # The indices hold redundant information, so need not be compared.
   x1.tables == x2.tables
 end
 
