@@ -63,20 +63,24 @@ function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}(
 end
 
 function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}(;
-    table_type = TypedTables.Table) where
+    table_type::Type=TypedTables.Table) where
     {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed, UniqueIdxed}
   tables = make_tables(table_type,CD,AD,Ts)
   indices = make_indices(CD,AD,Ts,Idxed,UniqueIdxed)
   AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}(tables, indices)
 end
 
-function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed,Tables,Indices}(; kw...) where
+function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed,Tables,Indices}() where
     {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed, UniqueIdxed,
      Tables <: NamedTuple, Indices <: NamedTuple}
-  # FIXME: This is not really correct because we are ignoring the types already
-  # given as `Tables` and `Indices`. The difficulty is that there seems to be no
-  # generic way to instantiate an empty instance of the `Tables` type.
-  AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}(; kw...)
+  # Find first table type for a table with at least one column.
+  i = findfirst(!=(Vector{NamedTuple{(),Tuple{}}}), Tables.types)
+  if isnothing(i)
+    AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}()
+  else
+    T = Tables.types[i].name.wrapper # `UnionAll` corresponding to type.
+    AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}(table_type=T)
+  end
 end
 
 """ Alias for the data type `AttributedCSet`.
@@ -230,8 +234,11 @@ function Base.:(==)(x1::T, x2::T) where T <: ACSet
 end
 
 function Base.copy(acs::T) where T <: ACSet
-  T(map(copy, acs.tables), deepcopy(acs.indices))
+  T(map(copy_table, acs.tables), deepcopy(acs.indices))
 end
+
+copy_table(table) = copy(table)
+copy_table(table::NamedTuple) = map(copy, table)
 
 function Base.show(io::IO, acs::T) where {CD,AD,Ts,T<:AbstractACSet{CD,AD,Ts}}
   print(io, T <: AbstractCSet ? "CSet" : "ACSet")

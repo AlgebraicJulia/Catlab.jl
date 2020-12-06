@@ -121,6 +121,12 @@ add_parts!(dds, :X, 3, Φ=[1,1,1])
 rem_part!(dds, :X, 2)
 @test nparts(dds, :X) == 2
 
+dds′ = copy(dds)
+@test tables(dds′).X isa NamedTuple{(:Φ,)}
+@test dds′ == dds
+empty_dds = typeof(dds)()
+@test tables(empty_dds).X isa NamedTuple{(:Φ,)}
+
 # Dendrograms
 #############
 
