@@ -10,14 +10,14 @@ export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
 using Compat: isnothing, only
 
 using MLStyle: @match
-using ...Meta
 using PrettyTables: pretty_table
-using StructArrays
+import Tables
+using StructArrays: StructArray
 
+using ...Meta, ...Present
 using ...Syntax: GATExpr, args
 using ...Theories: Schema, FreeSchema, dom, codom, codom_num,
   CatDesc, CatDescType, AttrDesc, AttrDescType, SchemaType
-using ...Present
 
 # Data types
 ############
@@ -54,25 +54,29 @@ struct AttributedCSet{CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple,
                       Indices <: NamedTuple} <: AbstractACSet{CD,AD,Ts}
   tables::Tables
   indices::Indices
+end
 
-  function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}() where
-      {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed, UniqueIdxed}
-    tables = make_tables(StructArray,CD,AD,Ts)
-    indices = make_indices(CD,AD,Ts,Idxed,UniqueIdxed)
-    new{CD,AD,Ts,Idxed,UniqueIdxed,typeof(tables),typeof(indices)}(
-      tables, indices)
-  end
-  function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed,Tables,Indices}() where
-      {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed, UniqueIdxed,
-       Tables <: NamedTuple, Indices <: NamedTuple}
-    AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}()
-  end
-  function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed,Tables,Indices}(
-      tables::Tables, indices::Indices) where
-      {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed, UniqueIdxed,
-       Tables <: NamedTuple, Indices <: NamedTuple}
-    new{CD,AD,Ts,Idxed,UniqueIdxed,Tables,Indices}(tables, indices)
-  end
+function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}(
+    tables::Tables, indices::Indices) where
+    {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed, UniqueIdxed,
+     Tables <: NamedTuple, Indices <: NamedTuple}
+  AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed,Tables,Indices}(tables, indices)
+end
+
+function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}(; table_type=StructArray) where
+    {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed, UniqueIdxed}
+  tables = make_tables(table_type,CD,AD,Ts)
+  indices = make_indices(CD,AD,Ts,Idxed,UniqueIdxed)
+  AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}(tables, indices)
+end
+
+function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed,Tables,Indices}(; kw...) where
+    {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed, UniqueIdxed,
+     Tables <: NamedTuple, Indices <: NamedTuple}
+  # FIXME: This is not really correct because we are ignoring the types already
+  # given as `Tables` and `Indices`. The difficulty is that there seems to be no
+  # generic way to instantiate an empty instance of the `Tables` type.
+  AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}(; kw...)
 end
 
 """ Alias for the data type `AttributedCSet`.
@@ -193,7 +197,7 @@ function make_indices(::Type{CD}, AD::Type{<:AttrDesc{CD}},
   end))
 end
 
-function make_tables(make_table, ::Type{CD}, AD::Type{<:AttrDesc{CD}},
+function make_tables(Table::Type, ::Type{CD}, AD::Type{<:AttrDesc{CD}},
                      Ts::Type{<:Tuple}) where {CD}
   # TODO: Could be `@generated` for faster initialization of C-sets.
   cols = NamedTuple{CD.ob}((names=Symbol[], types=Type[]) for ob in CD.ob)
@@ -211,14 +215,14 @@ function make_tables(make_table, ::Type{CD}, AD::Type{<:AttrDesc{CD}},
       # generally do not support empty structs, so we use an array of empty
       # structs instead. See also:
       # https://github.com/JuliaArrays/StructArrays.jl/issues/148
-      Tuple{}[]
+      NamedTuple{(),Tuple{}}[]
     else
-      make_table(NamedTuple{Tuple(col.names)}((T[] for T in col.types)))
+      make_table(Table, NamedTuple{Tuple(col.names)}((T[] for T in col.types)))
     end
   end
 end
-
-const EmptyTuple = Union{Tuple{},NamedTuple{(),Tuple{}}}
+make_table(::Type{T}, cols) where T = T(cols)
+make_table(::Type{NamedTuple}, cols) = cols # No copy constructor defined.
 
 function Base.:(==)(x1::T, x2::T) where T <: ACSet
   # The indices hold redundant information, so need not be compared.
@@ -250,7 +254,7 @@ function Base.show(io::IO, ::MIME"text/plain", acs::T) where {T<:AbstractACSet}
   println(io)
   for (ob, table) in pairs(tables(acs))
     # Note: PrettyTables will not print tables with no rows.
-    if !(eltype(table) <: EmptyTuple || isempty(table))
+    if !(isempty(Tables.columnnames(table)) || Tables.rowcount(table) == 0)
       pretty_table(io, table, nosubheader=true,
                    show_row_number=true, row_number_column_title=string(ob))
     end
@@ -266,7 +270,7 @@ function Base.show(io::IO, ::MIME"text/html", acs::T) where {T<:AbstractACSet}
   println(io, "</span>")
   for (ob, table) in pairs(tables(acs))
     # Note: PrettyTables will not print tables with no rows.
-    if !(eltype(table) <: EmptyTuple || isempty(table))
+    if !(isempty(Tables.columnnames(table)) || Tables.rowcount(table) == 0)
       pretty_table(io, table, backend=:html, standalone=false, nosubheader=true,
                    show_row_number=true, row_number_column_title=string(ob))
     end
@@ -290,7 +294,10 @@ parts(acs::ACSet, type) = 1:nparts(acs, type)
 
 """ Number of parts of given type in a C-set.
 """
-nparts(acs::ACSet, type) = length(acs.tables[type])
+nparts(acs::ACSet, type) = Tables.rowcount(acs.tables[type])
+
+# XXX: https://github.com/JuliaData/Tables.jl/issues/170
+Tables.rowcount(x::AbstractVector{NamedTuple{(),Tuple{}}}) = length(x)
 
 """ Whether a C-set has a part with the given name.
 """
@@ -478,8 +485,8 @@ end
   indexed_in_homs = filter(hom -> codom(CD, hom) == ob && hom ∈ Idxed, CD.hom)
   quote
     if n == 0; return 1:0 end
-    nparts = length(acs.tables.$ob) + n
-    resize!(acs.tables.$ob, nparts)
+    nparts = Tables.rowcount(acs.tables.$ob) + n
+    resize_table!(acs.tables.$ob, nparts)
     start = nparts - n + 1
     $(Expr(:block, map(out_homs) do hom
         :(@inbounds acs.tables.$ob.$hom[start:nparts] .= 0)
@@ -491,6 +498,14 @@ end
         end
       end...))
     start:nparts
+  end
+end
+
+function resize_table!(table, n)
+  if Tables.isrowtable(table)
+    resize!(table, n)
+  else
+    map(col -> resize!(col, n), Tables.columns(table))
   end
 end
 
@@ -524,7 +539,7 @@ _set_subpart!(acs::ACSet, ::Type{Name}, subpart) where Name =
     ob, codom_ob = dom(CD, name), codom(CD, name)
     if name ∈ Idxed
       quote
-        @assert 0 <= subpart <= length(acs.tables.$codom_ob)
+        @assert 0 <= subpart <= Tables.rowcount(acs.tables.$codom_ob)
         old = acs.tables.$ob.$name[part]
         acs.tables.$ob.$name[part] = subpart
         if old > 0
@@ -536,7 +551,7 @@ _set_subpart!(acs::ACSet, ::Type{Name}, subpart) where Name =
       end
     else
       quote
-        @assert 0 <= subpart <= length(acs.tables.$codom_ob)
+        @assert 0 <= subpart <= Tables.rowcount(acs.tables.$codom_ob)
         acs.tables.$ob.$name[part] = subpart
       end
     end
@@ -611,7 +626,7 @@ rem_part!(acs::ACSet, type::Symbol, part::Int) =
   indexed_out_homs = filter(hom -> dom(CD, hom) == ob && hom ∈ Idxed, CD.hom)
   indexed_attrs = filter(attr -> dom(AD, attr) == ob && attr ∈ Idxed, AD.attr)
   quote
-    last_part = length(acs.tables.$ob)
+    last_part = Tables.rowcount(acs.tables.$ob)
     @assert 1 <= part <= last_part
     # Unassign superparts of the part to be removed and also reassign superparts
     # of the last part to this part.
@@ -632,7 +647,7 @@ rem_part!(acs::ACSet, type::Symbol, part::Int) =
     end
 
     # Finally, delete the last part and update subparts of the removed part.
-    resize!(acs.tables.$ob, last_part - 1)
+    resize_table!(acs.tables.$ob, last_part - 1)
     if part < last_part
       set_subparts!(acs, part, last_row)
     end
@@ -641,12 +656,12 @@ end
 
 """ Get assigned fields of table row as a named tuple.
 """
-function getassigned(x::StructArray{<:NamedTuple{names}}, i) where names
-  arrays = fieldarrays(x)
-  assigned = filter(name -> isassigned(arrays[name], i), names)
-  NamedTuple{assigned}(map(name -> arrays[name][i], assigned))
+function getassigned(table, i)
+  cols, names = Tables.columns(table), Tables.columnnames(table)
+  assigned = filter(name -> isassigned(cols[name], i), names)
+  NamedTuple{assigned}(map(name -> cols[name][i], assigned))
 end
-getassigned(::Vector{<:EmptyTuple}, i) = NamedTuple()
+getassigned(::AbstractVector{NamedTuple{(),Tuple{}}}, i) = NamedTuple()
 
 """ Remove parts from a C-set.
 

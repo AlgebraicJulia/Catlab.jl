@@ -112,6 +112,15 @@ add_parts!(dds, :X, 4, Φ=[3,3,4,4])
 @test incident(dds, 3, :Φ) == [1,2]
 @test incident(dds, 4, :Φ) == [3,4]
 
+# Custom table type supported by Tables.jl, here a named tuple of arrays.
+dds = DDS(table_type=NamedTuple)
+@test tables(dds).X isa NamedTuple{(:Φ,)}
+add_parts!(dds, :X, 3, Φ=[1,1,1])
+@test nparts(dds, :X) == 3
+@test subpart(dds, :Φ) == [1,1,1]
+rem_part!(dds, :X, 2)
+@test nparts(dds, :X) == 2
+
 # Dendrograms
 #############
 
@@ -300,8 +309,8 @@ set_subpart!(lset, 1, :label, :baz)
 
 @test_throws ErrorException set_subpart!(lset, 1, :label, :bar)
 
-# Test out the @acset macro
-#--------------------------
+# @acset macro
+##############
 
 @present TheoryDecGraph(FreeSchema) begin
   E::Ob
@@ -318,10 +327,8 @@ const DecGraph = ACSetType(TheoryDecGraph, index=[:src,:tgt])
 g = @acset DecGraph{String} begin
   V = 4
   E = 4
-
   src = [1,2,3,4]
   tgt = [2,3,4,1]
-
   dec = ["a","b","c","d"]
 end
 
