@@ -1,13 +1,15 @@
 """ The category of finite sets and functions, and its skeleton.
 """
 module FinSets
-export FinSet, FinFunction, FinDomFunction, force
+export FinSet, FinFunction, FinDomFunction, force,
+  JoinAlgorithm, NestedLoopJoin, SortMergeJoin
 
 using Compat: only
 
 using AutoHashEquals
 using DataStructures: IntDisjointSets, union!, find_root!
 using FunctionWrappers: FunctionWrapper
+using StaticArrays
 
 using ...Theories, ..FreeDiagrams, ..Limits, ..Sets
 import ...Theories: dom, codom
@@ -186,7 +188,85 @@ function universal(lim::Equalizer{<:FinSet{Int}},
   FinFunction(Int[only(searchsorted(ι, h(i))) for i in dom(h)], length(ι))
 end
 
-limit(cospan::Multicospan{<:FinSet{Int}}) = composite_pullback(cospan)
+""" Algorithm for limit of spans or multispans out of finite sets.
+
+In the context of relational databases, such limits are joins.
+"""
+abstract type JoinAlgorithm <: LimitAlgorithm end
+
+""" [Nested-loop join](https://en.wikipedia.org/wiki/Nested_loop_join) algorithm.
+
+This is the naive algorithm for computing joins.
+"""
+struct NestedLoopJoin <: JoinAlgorithm end
+
+function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}};
+               alg::LimitAlgorithm=NestedLoopJoin())
+  limit(cospan, alg)
+end
+
+function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}}, ::NestedLoopJoin)
+  # A nested-loop join is exactly what you get by composing the above algorithms
+  # for products and equalizers, except that we handle the "nested" loops using
+  # `CartesianIndices`.
+  limit(cospan, ComposeProductEqualizer())
+end
+
+""" [Sort-merge join](https://en.wikipedia.org/wiki/Sort-merge_join) algorithm.
+"""
+struct SortMergeJoin <: JoinAlgorithm end
+
+function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}}, ::SortMergeJoin)
+  funcs = map(collect, legs(cospan))
+  sorts = map(sortperm, funcs)
+  values = similar_mutable(funcs, eltype(apex(cospan)))
+  ranges = similar_mutable(funcs, UnitRange{Int})
+
+  function next_range!(i::Int)
+    f, sort = funcs[i], sorts[i]
+    n = length(f)
+    start = last(ranges[i]) + 1
+    ranges[i] = if start <= n
+      val = values[i] = f[sort[start]]
+      stop = start + 1
+      while stop <= n && f[sort[stop]] == val; stop += 1 end
+      start:(stop - 1)
+    else
+      start:n
+    end
+  end
+
+  πs = map(_ -> Int[], funcs)
+  for i in eachindex(ranges)
+    ranges[i] = 0:0
+    next_range!(i)
+  end
+  while !any(isempty, ranges)
+    if all(==(values[1]), values)
+      # TODO: Make more efficient by preallocating larger arrays.
+      for index in CartesianIndices(Tuple(ranges))
+        for i in eachindex(πs)
+          push!(πs[i], sorts[i][index[i]])
+        end
+      end
+      for i in eachindex(ranges)
+        next_range!(i)
+      end
+    else
+      next_range!(last(findmin(values)))
+    end
+  end
+  cone = Multispan(map((π,f) -> FinFunction(π, length(f)), πs, funcs))
+  Limit(cospan, cone)
+end
+
+similar_mutable(x::AbstractVector, T::Type) = similar(x, T)
+
+function similar_mutable(x::StaticVector{N}, T::Type) where N
+  # `similar` always returns an `MVector` but `setindex!(::MVector, args...)`
+  # only works when the element type is a bits-type.
+  isbitstype(T) ? similar(x, T) : SizedVector{N}(Vector{T}(undef, N))
+end
 
 """ Limit of free diagram of FinSets.
 
@@ -313,7 +393,9 @@ function pass_to_quotient(π::FinFunction{Int,Int}, h::FinFunction{Int,Int})
   FinFunction(q, codom(h))
 end
 
-colimit(span::Multispan{<:FinSet{Int}}) = composite_pushout(span)
+function colimit(span::Multispan{<:FinSet{Int}})
+  colimit(span, ComposeCoproductCoequalizer())
+end
 
 """ Colimit of free diagram of FinSets.
 

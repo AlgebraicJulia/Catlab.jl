@@ -2,6 +2,7 @@
 """
 module Limits
 export AbstractLimit, AbstractColimit, Limit, Colimit,
+  LimitAlgorithm, ColimitAlgorithm,
   ob, cone, cocone, apex, legs, limit, colimit, universal,
   Terminal, Initial, terminal, initial, delete, create, factorize,
   BinaryProduct, Product, product, proj1, proj2, pair,
@@ -10,7 +11,7 @@ export AbstractLimit, AbstractColimit, Limit, Colimit,
   BinaryCoproduct, Coproduct, coproduct, coproj1, coproj2, copair,
   BinaryPushout, Pushout, pushout,
   BinaryCoequalizer, Coequalizer, coequalizer, proj,
-  composite_pullback, composite_pushout
+  ComposeProductEqualizer, ComposeCoproductCoequalizer
 
 using Compat: only
 
@@ -62,6 +63,10 @@ proj1(lim::Union{BinaryProduct,BinaryPullback}) = first(legs(lim))
 proj2(lim::Union{BinaryProduct,BinaryPullback}) = last(legs(lim))
 incl(eq::Equalizer) = only(legs(eq))
 
+""" Algorithm for computing limits.
+"""
+abstract type LimitAlgorithm end
+
 # Data types for colimits
 #########################
 
@@ -100,6 +105,10 @@ const Coequalizer{Ob} = AbstractColimit{Ob,<:ParallelMorphisms}
 coproj1(colim::Union{BinaryCoproduct,BinaryPushout}) = first(legs(colim))
 coproj2(colim::Union{BinaryCoproduct,BinaryPushout}) = last(legs(colim))
 proj(coeq::Coequalizer) = only(legs(coeq))
+
+""" Algorithm for computing colimits.
+"""
+abstract type ColimitAlgorithm end
 
 # Generic (co)limits
 ####################
@@ -142,13 +151,13 @@ function universal end
 
 To implement for a type `T`, define the method `limit(::EmptyDiagram{T})`.
 """
-terminal(T::Type) = limit(EmptyDiagram{T}())
+terminal(T::Type; kw...) = limit(EmptyDiagram{T}(); kw...)
 
 """ Initial object.
 
 To implement for a type `T`, define the method `colimit(::EmptyDiagram{T})`.
 """
-initial(T::Type) = colimit(EmptyDiagram{T}())
+initial(T::Type; kw...) = colimit(EmptyDiagram{T}(); kw...)
 
 """ Unique morphism into a terminal object.
 
@@ -171,32 +180,32 @@ create(colim::Initial, A) = universal(colim, SMulticospan{0}(A))
 To implement for a type `T`, define the method `limit(::ObjectPair{T})` and/or
 `limit(::DiscreteDiagram{T})`.
 """
-product(A, B) = limit(ObjectPair(A, B))
-product(As::AbstractVector) = limit(DiscreteDiagram(As))
+product(A, B; kw...) = limit(ObjectPair(A, B); kw...)
+product(As::AbstractVector; kw...) = limit(DiscreteDiagram(As); kw...)
 
 """ Coproduct of objects.
 
 To implement for a type `T`, define the method `colimit(::ObjectPair{T})` and/or
 `colimit(::DiscreteDiagram{T})`.
 """
-coproduct(A, B) = colimit(ObjectPair(A, B))
-coproduct(As::AbstractVector) = colimit(DiscreteDiagram(As))
+coproduct(A, B; kw...) = colimit(ObjectPair(A, B); kw...)
+coproduct(As::AbstractVector; kw...) = colimit(DiscreteDiagram(As); kw...)
 
 """ Equalizer of morphisms with common domain and codomain.
 
 To implement for a type `T`, define the method `limit(::ParallelPair{T})` and/or
 `limit(::ParallelMorphisms{T})`.
 """
-equalizer(f, g) = limit(ParallelPair(f, g))
-equalizer(fs::AbstractVector) = limit(ParallelMorphisms(fs))
+equalizer(f, g; kw...) = limit(ParallelPair(f, g); kw...)
+equalizer(fs::AbstractVector; kw...) = limit(ParallelMorphisms(fs); kw...)
 
 """ Coequalizer of morphisms with common domain and codomain.
 
 To implement for a type `T`, define the method `colimit(::ParallelPair{T})` or
 `colimit(::ParallelMorphisms{T})`.
 """
-coequalizer(f, g) = colimit(ParallelPair(f, g))
-coequalizer(fs::AbstractVector) = colimit(ParallelMorphisms(fs))
+coequalizer(f, g; kw...) = colimit(ParallelPair(f, g); kw...)
+coequalizer(fs::AbstractVector; kw...) = colimit(ParallelMorphisms(fs); kw...)
 
 """ Pullback of a pair of morphisms with common codomain.
 
@@ -204,8 +213,8 @@ To implement for a type `T`, define the method `limit(::Cospan{T})` and/or
 `limit(::Multicospan{T})` or, if you have already implemented products and
 equalizers, rely on the default implementation.
 """
-pullback(f, g) = limit(Cospan(f, g))
-pullback(fs::AbstractVector) = limit(Multicospan(fs))
+pullback(f, g; kw...) = limit(Cospan(f, g); kw...)
+pullback(fs::AbstractVector; kw...) = limit(Multicospan(fs); kw...)
 
 """ Pushout of a pair of morphisms with common domain.
 
@@ -213,8 +222,8 @@ To implement for a type `T`, define the method `colimit(::Span{T})` and/or
 `colimit(::Multispan{T})` or, if you have already implemented coproducts and
 coequalizers, rely on the default implementation.
 """
-pushout(f, g) = colimit(Span(f, g))
-pushout(fs::AbstractVector) = colimit(Multispan(fs))
+pushout(f, g; kw...) = colimit(Span(f, g); kw...)
+pushout(fs::AbstractVector; kw...) = colimit(Multispan(fs); kw...)
 
 """ Pairing of morphisms: universal property of products/pullbacks.
 
@@ -254,6 +263,12 @@ factorize(colim::Coequalizer, h) = universal(colim, SMulticospan{1}(h))
 # Composite (co)limits
 ######################
 
+""" Compute pullback by composing a product with an equalizer.
+
+See also: [`ComposeCoproductCoequalizer`](@ref).
+"""
+struct ComposeProductEqualizer <: LimitAlgorithm end
+
 """ Pullback formed as composite of product and equalizer.
 
 The fields of this struct are an implementation detail; accessing them directly
@@ -263,49 +278,49 @@ for limits.
 
 See also: [`CompositePushout`](@ref).
 """
-struct CompositePullback{Ob, Diagram<:Multicospan{Ob}, Cone<:Multispan{Ob},
-    Prod<:Product{Ob}, Eq<:Equalizer{Ob}} <: AbstractLimit{Ob,Diagram}
+struct CompositePullback{Ob, Diagram<:Multicospan, Cone<:Multispan{Ob},
+    Prod<:Product, Eq<:Equalizer} <: AbstractLimit{Ob,Diagram}
   diagram::Diagram
   cone::Cone
   prod::Prod
   eq::Eq
 end
 
-""" Compute pullback as composite of product and equalizer.
-"""
-function composite_pullback(cospan::Cospan)
-  f, g = cospan
-  (π1, π2) = prod = product(dom(f), dom(g))
-  (ι,) = eq = equalizer(π1⋅f, π2⋅g)
-  CompositePullback(cospan, Span(ι⋅π1, ι⋅π2), prod, eq)
+function limit(cospan::Multicospan, ::ComposeProductEqualizer)
+  prod = product(feet(cospan))
+  (ι,) = eq = equalizer(map(compose, legs(prod), legs(cospan)))
+  cone = Multispan(map(π -> ι⋅π, legs(prod)))
+  CompositePullback(cospan, cone, prod, eq)
 end
-composite_pullback(f, g) = composite_pullback(Cospan(f, g))
 
 function universal(lim::CompositePullback, cone::Multispan)
   factorize(lim.eq, universal(lim.prod, cone))
 end
 
+""" Compute pushout by composing a coproduct with a coequalizer.
+
+See also: [`ComposeProductEqualizer`](@ref).
+"""
+struct ComposeCoproductCoequalizer <: ColimitAlgorithm end
+
 """ Pushout formed as composite of coproduct and equalizer.
 
 See also: [`CompositePullback`](@ref).
 """
-struct CompositePushout{Ob, Diagram<:Multispan{Ob}, Cocone<:Multicospan{Ob},
-    Coprod<:Coproduct{Ob}, Coeq<:Coequalizer{Ob}} <: AbstractColimit{Ob,Diagram}
+struct CompositePushout{Ob, Diagram<:Multispan, Cocone<:Multicospan{Ob},
+    Coprod<:Coproduct, Coeq<:Coequalizer} <: AbstractColimit{Ob,Diagram}
   diagram::Diagram
   cocone::Cocone
   coprod::Coprod
   coeq::Coeq
 end
 
-""" Compute pushout as composite of coproduct and coequalizer.
-"""
-function composite_pushout(span::Span)
-  f, g = span
-  (ι1, ι2) = coprod = coproduct(codom(f), codom(g))
-  (π,) = coeq = coequalizer(f⋅ι1, g⋅ι2)
-  CompositePushout(span, Cospan(ι1⋅π, ι2⋅π), coprod, coeq)
+function colimit(span::Multispan, ::ComposeCoproductCoequalizer)
+  coprod = coproduct(feet(span))
+  (π,) = coeq = coequalizer(map(compose, legs(span), legs(coprod)))
+  cocone = Multicospan(map(ι -> ι⋅π, legs(coprod)))
+  CompositePushout(span, cocone, coprod, coeq)
 end
-composite_pushout(f, g) = composite_pushout(Span(f, g))
 
 function universal(lim::CompositePushout, cone::Multicospan)
   factorize(lim.coeq, universal(lim.coprod, cone))
