@@ -334,7 +334,7 @@ end
 
 f(s::String)::Int = Int(s[1])
 
-h = map(String,Int,f,:X,g)
+h = map(Int,f,:X,g)
 
 @test subpart(h,:src) == subpart(g,:src)
 @test typeof(h).parameters[3] == Tuple{Int}

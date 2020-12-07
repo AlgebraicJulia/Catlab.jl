@@ -861,13 +861,12 @@ end
 """ Map over a data type, in the style of Haskell functors
 """
 
-Base.map(A::Type,B::Type,f::Function,D::Symbol,acs::ACSet) = _map(FunctionWrapper{B,Tuple{A}}(f),Val{D},acs)
+Base.map(B::Type, f::Function, D::Symbol, acs::ACSet) = _map(B, f,Val{D},acs)
 
-@generated function _map(f::FunctionWrapper{B,As}, ::Type{Val{D}}, acs::AT) where
-    {B,As,D,AT<:ACSet}
+@generated function _map(::Type{B}, f::Function, ::Type{Val{D}}, acs::AT) where
+    {B,D,AT<:ACSet}
   # Build the new ACSet type
   CD,AD,Ts,Idxed,UniqIdxed = AT.parameters[1:5]
-  A = As.parameters[1]
   k = data_num(AD, D)
   new_Ts = begin
     arr = [Ts.parameters...]
