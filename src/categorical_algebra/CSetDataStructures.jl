@@ -9,13 +9,14 @@ export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
 
 using Compat: isnothing, only
 
+using FunctionWrappers: FunctionWrapper
 using MLStyle: @match
 using ...Meta
 using PrettyTables: pretty_table
 using StructArrays
 
 using ...Syntax: GATExpr, args
-using ...Theories: Schema, FreeSchema, dom, codom, codom_num,
+using ...Theories: Schema, FreeSchema, dom, codom, codom_num, data_num,
   CatDesc, CatDescType, AttrDesc, AttrDescType, SchemaType
 using ...Present
 
@@ -855,6 +856,42 @@ function init_acset(T::Type{<:ACSet{CD,AD,Ts}},body) where {CD <: CatDesc, AD <:
   end
   push!(code.args, :(return acs))
   code
+end
+
+""" Map over a data type, in the style of Haskell functors
+"""
+
+Base.map(A::Type,B::Type,f::Function,D::Symbol,acs::ACSet) = _map(FunctionWrapper{B,Tuple{A}}(f),Val{D},acs)
+
+@generated function _map(f::FunctionWrapper{B,As}, ::Type{Val{D}}, acs::AT) where
+    {B,As,D,AT<:ACSet}
+  # Build the new ACSet type
+  CD,AD,Ts,Idxed,UniqIdxed = AT.parameters[1:5]
+  A = As.parameters[1]
+  k = data_num(AD, D)
+  new_Ts = begin
+    arr = [Ts.parameters...]
+    arr[k] = B
+    Tuple{arr...}
+  end
+  new_acset_type = ACSet{CD,AD,new_Ts,Idxed,UniqIdxed}
+  quote
+    new_acs = $(new_acset_type)()
+    $(Expr(:block, map(CD.ob) do ob
+           :(add_parts!(new_acs,$(Expr(:quote,ob)),nparts(acs,$(Expr(:quote,ob)))))
+      end...))
+    $(Expr(:block, map(CD.hom) do hom
+           :(set_subpart!(new_acs,$(Expr(:quote,hom)),subpart(acs,$(Expr(:quote,hom)))))
+      end...))
+    $(Expr(:block, map(AD.attr) do attr
+        if codom_num(AD,attr) == k
+           :(set_subpart!(new_acs,$(Expr(:quote,attr)),f.(subpart(acs,$(Expr(:quote,attr))))))
+        else
+           :(set_subpart!(new_acs,$(Expr(:quote,attr)),subpart(acs,$(Expr(:quote,attr)))))
+        end
+      end...))
+    return new_acs
+  end
 end
 
 end
