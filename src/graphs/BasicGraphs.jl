@@ -100,12 +100,12 @@ add_vertices!(g::AbstractACSet, n::Int; kw...) = add_parts!(g, :V, n; kw...)
 
 """ Add an edge to a graph.
 """
-add_edge!(g::AbstractGraph, src::Int, tgt::Int; kw...) =
+add_edge!(g::AbstractACSet, src::Int, tgt::Int; kw...) =
   add_part!(g, :E; src=src, tgt=tgt, kw...)
 
 """ Add multiple edges to a graph.
 """
-function add_edges!(g::AbstractGraph, srcs::AbstractVector{Int},
+function add_edges!(g::AbstractACSet, srcs::AbstractVector{Int},
                     tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
   add_parts!(g, :E, n; src=srcs, tgt=tgts, kw...)
@@ -125,21 +125,23 @@ Edges incident to any of the vertices are treated as in [`rem_vertex!`](@ref).
 """
 function rem_vertices!(g::AbstractGraph, vs; keep_edges::Bool=false)
   if !keep_edges
-    es = reduce(vcat, [incident(g,vs,:src); incident(g,vs,:tgt)], init=Int[])
+    es = flatten([incident(g, vs, :src); incident(g, vs, :tgt)])
     rem_parts!(g, :E, unique!(sort!(es)))
   end
   rem_parts!(g, :V, vs)
 end
+flatten(x::AbstractVector{<:AbstractVector{T}}) where T =
+  reduce(vcat, x, init=T[])
 
 """ Remove an edge from a graph.
 """
-rem_edge!(g::AbstractGraph, e::Int) = rem_part!(g, :E, e)
+rem_edge!(g::AbstractACSet, e::Int) = rem_part!(g, :E, e)
 rem_edge!(g::AbstractACSet, src::Int, tgt::Int) =
   rem_edge!(g, first(edges(g, src, tgt)))
 
 """ Remove multiple edges from a graph.
 """
-rem_edges!(g::AbstractGraph, es) = rem_parts!(g, :E, es)
+rem_edges!(g::AbstractACSet, es) = rem_parts!(g, :E, es)
 
 """ Neighbors of vertex in a graph.
 
@@ -225,7 +227,7 @@ end
 
 function rem_vertices!(g::AbstractSymmetricGraph, vs; keep_edges::Bool=false)
   if !keep_edges
-    es = reduce(vcat, incident(g, vs, :src), init=Int[])
+    es = flatten(incident(g, vs, :src))
     rem_parts!(g, :E, unique!(sort!([es; inv(g, es)])))
   end
   # FIXME: Vertex removal is inefficient because `rem_parts!` still searches for
@@ -282,28 +284,15 @@ function add_vertices!(g::AbstractReflexiveGraph, n::Int; kw...)
   vs
 end
 
-add_edge!(g::AbstractReflexiveGraph, src::Int, tgt::Int; kw...) =
-  add_part!(g, :E; src=src, tgt=tgt, kw...)
-
-function add_edges!(g::AbstractReflexiveGraph, srcs::AbstractVector{Int},
-                    tgts::AbstractVector{Int}; kw...)
-  @assert (n = length(srcs)) == length(tgts)
-  add_parts!(g, :E, n; src=srcs, tgt=tgts, kw...)
-end
-
 function rem_vertices!(g::AbstractReflexiveGraph, vs; keep_edges::Bool=false)
   es = if keep_edges
     sort(refl(g, vs)) # Always delete reflexive edges.
   else
-    es = reduce(vcat, [incident(g,vs,:src); incident(g,vs,:tgt)], init=Int[])
-    unique!(sort!(es))
+    unique!(sort!(flatten([incident(g, vs, :src); incident(g, vs, :tgt)])))
   end
   rem_parts!(g, :E, es)
   rem_parts!(g, :V, vs)
 end
-
-rem_edge!(g::AbstractReflexiveGraph, e::Int) = rem_part!(g, :E, e)
-rem_edges!(g::AbstractReflexiveGraph, es) = rem_parts!(g, :E, es)
 
 # Symmetric reflexive graphs
 ############################
@@ -361,7 +350,7 @@ function rem_vertices!(g::AbstractSymmetricReflexiveGraph, vs;
   es = if keep_edges
     sort(refl(g, vs)) # Always delete reflexive edges.
   else
-    es = reduce(vcat, incident(g, vs, :src), init=Int[])
+    es = flatten(incident(g, vs, :src))
     unique!(sort!([es; inv(g, es)]))
   end
   rem_parts!(g, :E, es)
@@ -457,7 +446,7 @@ end
 
 function rem_vertices!(g::AbstractHalfEdgeGraph, vs; keep_edges::Bool=false)
   if !keep_edges
-    hs = reduce(vcat, incident(g, vs, :vertex), init=Int[])
+    hs = flatten(incident(g, vs, :vertex))
     rem_parts!(g, :H, unique!(sort!([hs; inv(g, hs)])))
   end
   rem_parts!(g, :V, vs)
