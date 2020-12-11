@@ -21,7 +21,7 @@ import ...Theories: dom, codom, id, compose, ⋅, ∘,
 import ...Syntax: functor, head
 using ...CSetDataStructures, ...Graphs
 using ..DirectedWiringDiagrams
-import ..DirectedWiringDiagrams: Box, WiringDiagram, input_ports, output_ports
+import ..DirectedWiringDiagrams: Box, WiringDiagram, input_ports, output_ports, value
 import ..UndirectedWiringDiagrams: add_junctions!, junction_diagram
 
 # Categorical interface
@@ -373,11 +373,14 @@ struct Junction{Op,Value} <: AbstractBox
   output_ports::Vector
   Junction{Op}(value::Value, inputs::Vector, outputs::Vector) where {Op,Value} =
     new{Op,Value}(value, inputs, outputs)
+  Junction{Op, Value}(value::Value, inputs::Vector, outputs::Vector) where {Op,Value} =
+    new{Op,Value}(value, inputs, outputs)
 end
 
 Junction(args...) = Junction{nothing}(args...)
-Junction{Op}(value, ninputs::Int, noutputs::Int) where Op =
+Junction{Op}(value, ninputs::Int, noutputs::Int) where Op = 
   Junction{Op}(value, repeat([value], ninputs), repeat([value], noutputs))
+Junction{Op, Value}(box::Box) where {Op,Value}= Junction{Op, Value}(value(box), input_ports(box), output_ports(box))
 
 head(junction::Junction{Op}) where Op = Op
 
@@ -508,18 +511,20 @@ end
 """ Merge adjacent junction nodes into single junctions.
 """
 function merge_junctions(d::WiringDiagram; op=nothing)
-  g = graph(d)
-  junction_vs = filter(v -> box(d,v) isa Junction{op}, vertices(g))
-  junction_es = filter(edges(g)) do e
-    s, t = box(d, src(g, e)), box(d, tgt(g, e))
-    s isa Junction{op} && t isa Junction{op} && s.value == t.value
+  junction_graph = Graph(nparts(d.diagram, :Box))
+  for w in parts(d.diagram, :Wire)
+    src_box = subpart(d.diagram, w, [:src, :out_port_box])
+    tgt_box = subpart(d.diagram, w, [:tgt, :in_port_box])
+    if subpart(d.diagram, src_box, :box_type) <: Junction &&
+      subpart(d.diagram, tgt_box, :box_type) <: Junction &&
+      subpart(d.diagram, src_box, :value) == subpart(d.diagram, tgt_box, :value)
+
+      add_edge!(junction_graph, src_box, tgt_box)
+    end
   end
-  junction_graph = Graph()
-  copy_parts!(junction_graph, g, V=junction_vs, E=junction_es)
-  components = [ [junction_vs[v] for v in component]
-    for component in connected_components(junction_graph)
-    if length(component) > 1 ]
-  values = [ box(d, first(component)).value for component in components ]
+
+  components = filter(c -> length(c) > 1, connected_components(junction_graph))
+  values = [ subpart(d.diagram, first(component), :value) for component in components ]
   encapsulate(d, components;
     discard_boxes=true, values=values, make_box=Junction{op})
 end
@@ -547,10 +552,13 @@ Represents unary operations on boxes in wiring diagrams.
 struct BoxOp{op} <: AbstractBox
   box::AbstractBox
 end
+BoxOp{op}(value::Value, inputs::Vector, outputs::Vector) where {op,Value} =
+BoxOp{op}(Box{Value}(value, outputs, inputs))
 
 head(::BoxOp{Op}) where Op = Op
 input_ports(op::BoxOp) = input_ports(op.box)
 output_ports(op::BoxOp) = output_ports(op.box)
+value(op::BoxOp) = value(op.box)
 
 Base.:(==)(op1::BoxOp, op2::BoxOp) =
   head(op1) == head(op2) && op1.box == op2.box
@@ -570,6 +578,8 @@ dual_ports(ports::Ports{T}) where T = Ports{T}(dual_ports(collect(ports)))
 #---------
 
 const DaggerBox = BoxOp{:dagger}
+DaggerBox(value::Value, inputs::Vector, outputs::Vector) where Value =
+  DaggerBox(Box{Value}(value, outputs, inputs))
 
 input_ports(dagger::DaggerBox) = output_ports(dagger.box)
 output_ports(dagger::DaggerBox) = input_ports(dagger.box)
@@ -580,6 +590,8 @@ dagger(junction::Junction{Op}) where Op = Junction{Op}(
   junction.value, output_ports(junction), input_ports(junction))
 
 const MateBox = BoxOp{:mate}
+MateBox(value::Value, inputs::Vector, outputs::Vector) where Value = 
+  MateBox(Box{Value}(value, dual_ports(outputs), dual_ports(inputs)))
 
 input_ports(mate::MateBox) = dual_ports(output_ports(mate.box))
 output_ports(mate::MateBox) = dual_ports(input_ports(mate.box))

@@ -17,8 +17,10 @@ Graphviz or other declarative diagram languages.
 """
 module DirectedWiringDiagrams
 export AbstractBox, Box, WiringDiagram, Wire, Port, PortKind,
-  InputPort, OutputPort, input_ports, output_ports, input_id, output_id,
-  outer_ids, boxes, box_ids, nboxes, nwires, box, wires, has_wire, graph,
+  InputPort, OutputPort, input_ports, output_ports, set_input_ports!, set_output_ports!,
+  add_input_ports!, add_output_ports!,
+  input_id, output_id, outer_ids, boxes, box_ids, nboxes, nwires, box, wires, has_wire, 
+  graph, internal_graph,
   add_box!, add_boxes!, add_wire!, add_wires!, rem_box!, rem_boxes!, rem_wire!,
   rem_wires!, port_value, validate_ports, is_permuted_equal,
   all_neighbors, neighbors, outneighbors, inneighbors, in_wires, out_wires,
@@ -28,9 +30,11 @@ export AbstractBox, Box, WiringDiagram, Wire, Port, PortKind,
 using Compat
 using AutoHashEquals
 
-using ...Present, ...CSetDataStructures, ...Graphs.BasicGraphs
+using ...Present, ...CSetDataStructures, ...Graphs.BasicGraphs, ...CategoricalAlgebra
 using ...Graphs.BasicGraphs: TheoryGraph
 import ...Graphs: all_neighbors, neighbors, outneighbors, inneighbors
+
+
 
 # Data types
 ############
@@ -47,6 +51,7 @@ import ...Graphs: all_neighbors, neighbors, outneighbors, inneighbors
   port::Int
 end
 set_box(port::Port, box::Int) = Port(box, port.kind, port.port)
+
 
 function Base.isless(p1::Port, p2::Port)::Bool
   # Lexicographic order.
@@ -99,37 +104,11 @@ function Base.isless(w1::Wire, w2::Wire)::Bool
     (w1.source == w2.source && isless(w1.target, w2.target))
 end
 
-""" Internal wiring diagram data corresponding to `Port`. Do not use directly.
-"""
-@auto_hash_equals struct PortData
-  kind::PortKind
-  port::Int
-end
-PortData(port::Port) = PortData(port.kind, port.port)
-Port(port::PortData, v::Int) = Port(v, port.kind, port.port)
-
-""" Internal wiring diagram data corresponding to `Wire`. Do not use directly.
-"""
-@auto_hash_equals struct WireData{Value}
-  value::Value
-  source::PortData
-  target::PortData
-end
-function WireData(wire::Wire)
-  WireData(wire.value, PortData(wire.source), PortData(wire.target))
-end
-function Wire(wire::WireData, src::Int, tgt::Int)
-  Wire(wire.value, Port(wire.source, src), Port(wire.target, tgt))
-end
-
 """ Base type for any box (node) in a wiring diagram.
 
 This type represents an arbitrary black box with inputs and outputs.
 """
 abstract type AbstractBox end
-
-input_ports(box::AbstractBox)::Vector = box.input_ports
-output_ports(box::AbstractBox)::Vector = box.output_ports
 
 """ An atomic box in a wiring diagram.
 
@@ -142,6 +121,9 @@ These boxes have no internal structure.
 end
 
 Box(inputs::Vector, outputs::Vector) = Box(nothing, inputs, outputs)
+
+input_ports(box::AbstractBox) = box.input_ports
+output_ports(box::AbstractBox) = box.output_ports
 
 function Base.show(io::IO, box::Box)
   print(io, "Box(")
@@ -156,6 +138,15 @@ function Base.show(io::IO, box::Box)
   print(io, "])")
 end
 
+""" Check equality of boxes.
+"""
+function Base.:(==)(b1::AbstractBox, b2::AbstractBox)
+  (input_ports(b1) == input_ports(b2) &&
+   output_ports(b1) == output_ports(b2) && value(b1) == value(b2))
+end
+
+value(b::AbstractBox) = b.value
+
 @present TheoryWiringDiagramGraph <: TheoryGraph begin
   Box::Data
   WireData::Data
@@ -164,15 +155,59 @@ end
   wire::Attr(E,WireData)
 end
 
-const WiringDiagramGraphUnionAll =
+const WiringDiagramGraphDataType =
   ACSetType(TheoryWiringDiagramGraph, index=[:src, :tgt])
 
 """ Internal datatype for graph underlying a directed wiring diagram.
 
 Boxes and wires are attached to vertices and edges, respectively.
 """
-const WiringDiagramGraph = WiringDiagramGraphUnionAll{
-  Union{AbstractBox,Nothing},WireData}
+# const WiringDiagramGraph = WiringDiagramGraphDataType{
+#   Union{AbstractBox,Nothing},WireData}
+
+@present TheoryWiringDiagram(FreeSchema) begin
+  Box::Ob
+  (InPort, OutPort, OuterInPort, OuterOutPort)::Ob
+  (Wire, InWire, OutWire, PassWire)::Ob
+  
+  src::Hom(Wire, OutPort)
+  tgt::Hom(Wire, InPort)
+  in_src::Hom(InWire, OuterInPort)
+  in_tgt::Hom(InWire, InPort)
+  out_src::Hom(OutWire, OutPort)
+  out_tgt::Hom(OutWire, OuterOutPort)
+  pass_src::Hom(PassWire, OuterInPort)
+  pass_tgt::Hom(PassWire, OuterOutPort)
+
+  in_port_box::Hom(InPort, Box)
+  out_port_box::Hom(OutPort, Box)
+end
+
+const AbstractWiringDiagramACSet = AbstractACSetType(TheoryWiringDiagram)
+
+@present TheoryTypedWiringDiagram <: TheoryWiringDiagram begin
+  PortValue::Data
+  in_port_type::Attr(InPort, PortValue)
+  out_port_type::Attr(OutPort, PortValue)
+  outer_in_port_type::Attr(OuterInPort, PortValue)
+  outer_out_port_type::Attr(OuterOutPort, PortValue)
+end
+
+@present TheoryAttributedWiringDiagram <: TheoryTypedWiringDiagram begin
+  WireValue::Data
+  BoxValue::Data
+  BoxType::Data
+
+  value::Attr(Box, BoxValue)
+  box_type::Attr(Box, BoxType)
+  wire_value::Attr(Wire, WireValue)
+  in_wire_value::Attr(InWire, WireValue)
+  out_wire_value::Attr(OutWire, WireValue)
+  pass_wire_value::Attr(PassWire, WireValue)
+end
+
+const WiringDiagramACSet = ACSetType(TheoryAttributedWiringDiagram,
+  index=[:src, :tgt, :in_src, :in_tgt, :out_src, :out_tgt, :pass_src, :pass_tgt])
 
 """ A directed wiring diagram, also known as a string diagram.
 
@@ -182,32 +217,47 @@ directed multigraph whose vertices correspond to boxes and whose edges
 correspond to wires. There are two special vertices, accessible via `input_id`
 and `output_id`, that represent the input and output ports of the outer box.
 """
-mutable struct WiringDiagram{Theory} <: AbstractBox
-  graph::WiringDiagramGraph
+
+mutable struct WiringDiagram{Theory, PortValue, WireValue,  BoxValue} <: AbstractBox
+  # mutable struct WiringDiagram{Theory} <: AbstractBox
+  #   graph::WiringDiagramGraph
+  #   value::Any
+  #   input_ports::Vector
+  #   output_ports::Vector
+  diagram::WiringDiagramACSet{PortValue, WireValue, Union{BoxValue, AbstractBox}, DataType}
   value::Any
-  input_ports::Vector
-  output_ports::Vector
   
-  function WiringDiagram{T}(value, inputs::Vector, outputs::Vector) where T
-    graph = WiringDiagramGraph()
-    diagram = new{T}(graph, value, inputs, outputs)
-    add_vertices!(graph, 2, box=nothing)
-    return diagram
+
+  # function WiringDiagram{T}(value, inputs::Vector, outputs::Vector) where T
+  #   graph = WiringDiagramGraph()
+  #   diagram = new{T}(graph, value, inputs, outputs)
+  #   add_vertices!(graph, 2, box=nothing)
+  #   return diagram
+  # end
+  function WiringDiagram{T, PortValue, WireValue, BoxValue}(value, inputs::Vector, outputs::Vector) where {T, PortValue, WireValue, BoxValue}
+    diagram = WiringDiagramACSet{PortValue, WireValue, Union{BoxValue, AbstractBox}, DataType}()
+    f = new{T, PortValue, WireValue, BoxValue}(diagram, value)
+    add_parts!(diagram, :OuterInPort, length(inputs),   outer_in_port_type=inputs)
+    add_parts!(diagram, :OuterOutPort, length(outputs), outer_out_port_type=outputs)
+    return f
   end
-  function WiringDiagram(d::WiringDiagram{T}) where T
-    # Copy constructor for shallow copy.
-    new{T}(copy(d.graph), d.value, d.input_ports, d.output_ports)
+  function WiringDiagram(f::WiringDiagram{T, PortValue, WireValue, BoxValue}) where {T, PortValue, WireValue, BoxValue}
+    # Copy constructor for shallow copy
+    new{T, PortValue, WireValue, BoxValue}(copy(f.diagram), f.value)
   end
 end
 
-function WiringDiagram{T}(inputs::Vector, outputs::Vector) where T
-  WiringDiagram{T}(nothing, inputs, outputs)
-end
-WiringDiagram(args...) = WiringDiagram{Any}(args...)
 
-input_id(::WiringDiagram) = 1
-output_id(::WiringDiagram) = 2
-outer_ids(::WiringDiagram) = (1,2)
+function WiringDiagram{T, PortValue, WireValue, BoxValue}(inputs::Vector, outputs::Vector) where {T, PortValue, WireValue, BoxValue}
+  WiringDiagram{T, PortValue, WireValue, BoxValue}(nothing, inputs, outputs)
+end
+WiringDiagram(args...) = WiringDiagram{Any, Any, Any, Any}(args...)
+WiringDiagram{T}(args...) where T = WiringDiagram{T, Any, Any, Any}(args...)
+
+
+input_id(::WiringDiagram) = -2
+output_id(::WiringDiagram) = -1
+outer_ids(::WiringDiagram) = (-2,-1)
 
 """ Check equality of wiring diagrams.
 
@@ -276,90 +326,290 @@ function Base.show(io::IO, diagram::WiringDiagram{T}) where T
   print(io, ")")
 end
 
+@present TheoryWiringDiagramGraph <: TheoryGraph begin
+  Box::Data
+  WireData::Data
+
+  box::Attr(V,Box)
+  wire::Attr(E,WireData)
+end
+
+const WiringDiagramGraphUnionAll =
+  ACSetType(TheoryWiringDiagramGraph, index=[:src, :tgt])
+
+""" Internal datatype for graph underlying a directed wiring diagram.
+Boxes and wires are attached to vertices and edges, respectively.
+"""
+const WiringDiagramGraph = WiringDiagramGraphUnionAll{
+  Union{AbstractBox,Nothing},Wire}
+
 # Imperative interface
 ######################
 
 # Basic accessors.
 
-box(f::WiringDiagram, v::Int) = subpart(f.graph, v, :box)
-
-function boxes(f::WiringDiagram)
-  collect(AbstractBox, subpart(f.graph, box_ids(f), :box))
-end
-
-nboxes(f::WiringDiagram) = nv(f.graph) - 2
-
-function box_ids(f::WiringDiagram)
-  Int[ v for v in 1:nv(f.graph) if !(v in outer_ids(f)) ]
-end
-
-function wires(f::WiringDiagram, src::Int, tgt::Int)
-  [ Wire(subpart(f.graph, e, :wire), src, tgt)
-    for e in edges(f.graph, src, tgt) ]
-end
-function wires(f::WiringDiagram)
-  g = f.graph
-  [ Wire(subpart(g, e, :wire), src(g, e), tgt(g, e)) for e in edges(g) ]
-end
-nwires(f::WiringDiagram) = ne(f.graph)
-
-has_wire(f::WiringDiagram, src::Int, tgt::Int) =
-  !isempty(edges(f.graph, src, tgt))
-has_wire(f::WiringDiagram, wire::Wire) =
-  wire in wires(f, wire.source.box, wire.target.box)
-has_wire(f::WiringDiagram, pair::Pair) = has_wire(f, Wire(pair))
-
-function input_ports(f::WiringDiagram, v::Int)
-  if v == input_id(f)
-    error("Input vertex does not have input ports within wiring diagram")
-  elseif v == output_id(f)
-    output_ports(f)
-  else
-    input_ports(box(f, v))
+function box(f::WiringDiagram, b::Int)
+  if b == input_id(f)
+    return nothing
+  elseif b == output_id(f)
+    return nothing
+  else 
+    box_value = subpart(f.diagram, b, :value)
+    box_value isa WiringDiagram ? box_value : subpart(f.diagram, b, :box_type)(box_value, 
+                                                      input_ports(f, b), 
+                                                      output_ports(f, b))
   end
 end
 
-function output_ports(f::WiringDiagram, v::Int)
-  if v == input_id(f)
+boxes(f::WiringDiagram) = map(b -> box(f, b), box_ids(f))
+nboxes(f::WiringDiagram) = nparts(f.diagram, :Box)
+box_ids(f::WiringDiagram) = collect(parts(f.diagram, :Box))
+box_id(f::WiringDiagram, b::Int) = b # box_ids(f)[b]
+
+src_box(f::WiringDiagram, w::Int) = subpart(f.diagram, w, [:src, :out_port_box])
+tgt_box(f::WiringDiagram, w::Int) = subpart(f.diagram, w, [:tgt, :in_port_box])
+src_box_id(f::WiringDiagram, w::Int) = src_box(f,w)#box_ids(f)[src_box(f, w)]
+tgt_box_id(f::WiringDiagram, w::Int) = tgt_box(f, w)#box_ids(f)[tgt_box(f, w)]
+
+in_tgt_box(f::WiringDiagram, w::Int) = subpart(f.diagram, w, [:in_tgt, :in_port_box])
+in_tgt_box_id(f::WiringDiagram, w::Int) = in_tgt_box(f,w)#box_ids(f)[in_tgt_box(f,w)]
+
+out_src_box(f::WiringDiagram, w::Int) = subpart(f.diagram, w, [:out_src, :out_port_box])
+out_src_box_id(f::WiringDiagram, w::Int) = out_src_box(f,w)#box_ids(f)[out_src_box(f,w)]
+
+
+local_in_port_id(f::WiringDiagram, b::Int, p::Int) = searchsorted(incident(f.diagram, b, :in_port_box), p)[1]
+local_out_port_id(f::WiringDiagram, b::Int, p::Int) = searchsorted(incident(f.diagram, b, :out_port_box), p)[1]
+
+in_port_id(f::WiringDiagram, b::Int, p::Int) = incident(f.diagram, b, :in_port_box)[p]
+out_port_id(f::WiringDiagram, b::Int, p::Int) = incident(f.diagram, b, :out_port_box)[p]
+in_port_id(f::WiringDiagram, p::Port) = in_port_id(f, p.box, p.port)
+out_port_id(f::WiringDiagram, p::Port) = out_port_id(f, p.box, p.port)
+
+pass_wire(f::WiringDiagram, w::Int) = Wire(subpart(f.diagram, w, :pass_wire_value),
+  (input_id(f), subpart(f.diagram, w, :pass_src)) =>
+  (output_id(f), subpart(f.diagram, w, :pass_tgt)))
+
+in_wire(f::WiringDiagram, w::Int) = Wire(subpart(f.diagram, w, :in_wire_value), 
+  (input_id(f), subpart(f.diagram, w, :in_src)) => 
+  (in_tgt_box_id(f,w), local_in_port_id(f, in_tgt_box(f,w), subpart(f.diagram, w, :in_tgt))))
+
+out_wire(f::WiringDiagram, w::Int) = Wire(subpart(f.diagram, w, :out_wire_value), 
+  (out_src_box_id(f,w), local_out_port_id(f, out_src_box(f,w), subpart(f.diagram, w, :out_src))) =>
+  (output_id(f), subpart(f.diagram, w, :out_tgt)) )
+
+wire(f::WiringDiagram, w::Int) = Wire( subpart(f.diagram, w, :wire_value),
+  (src_box_id(f,w), local_out_port_id(f, src_box(f,w), subpart(f.diagram, w, :src))) =>
+  (tgt_box_id(f,w), local_in_port_id(f, tgt_box(f,w), subpart(f.diagram, w, :tgt))))
+
+
+function wires(f::WiringDiagram, src::Int, tgt::Int)
+  if src == input_id(f) && tgt == output_id(f)
+    [pass_wire(f, w) for w in parts(f.diagram, :PassWire)]
+  elseif src == input_id(f)
+    [in_wire(f, w) for w in parts(f.diagram, :InWire) if in_tgt_box_id(f, w) == tgt]
+  elseif tgt == output_id(f)
+    [out_wire(f, w) for w in parts(f.diagram, :OutWire) if out_src_box_id(f, w) == src]
+  else
+    [wire(f, w) for w in parts(f.diagram, :Wire) if 
+        src_box_id(f,w)==src && tgt_box_id(f,w)==tgt]
+  end
+end
+
+pass_wires(f::WiringDiagram) = [pass_wire(f, w) for w in parts(f.diagram, :PassWire)]
+in_wires(f::WiringDiagram) = [in_wire(f, w) for w in parts(f.diagram, :InWire)]
+out_wires(f::WiringDiagram) = [out_wire(f, w) for w in parts(f.diagram, :OutWire)]
+internal_wires(f::WiringDiagram) = [wire(f, w) for w in parts(f.diagram, :Wire)]
+wires(f::WiringDiagram) = vcat(pass_wires(f), in_wires(f), internal_wires(f), out_wires(f))
+
+
+npass_wires(f::WiringDiagram) = nparts(f.diagram, :PassWire)
+nin_wires(f::WiringDiagram) = nparts(f.diagram, :InWire)
+nout_wires(f::WiringDiagram) = nparts(f.diagram, :OutWire)
+ninternal_wires(f::WiringDiagram) = nparts(f.diagram, :Wire)
+nwires(f::WiringDiagram) = npass_wires(f) + nin_wires(f) + nout_wires(f) + ninternal_wires(f)
+
+
+has_pass_wire(f::WiringDiagram) = !isempty(parts(f.diagram, :PassWire))
+has_in_wire(f::WiringDiagram, tgt::Int) = !isempty(incident(f.diagram, tgt, :in_tgt))
+has_out_wire(f::WiringDiagram, src::Int) = !isempty(incident(f.diagram, src, :out_src))
+has_internal_wire(f::WiringDiagram, src::Int, tgt::Int) = 
+  !isempty(incident(f.diagram, src, :src) ∩ incident(f.diagram, tgt, :tgt))
+
+function has_wire(f::WiringDiagram, src::Int, tgt::Int)
+  if src == input_id(f) && tgt == output_id(f)
+    has_pass_wire(f)
+  elseif src == input_id(f)
+    has_in_wire(f, tgt)
+  elseif tgt == output_id(f)
+    has_out_wire(f, src)
+  else
+    has_internal_wire(f, src, tgt)
+  end
+end
+
+has_wire(f::WiringDiagram, wire::Wire) = has_wire(f, wire.source.box, wire.target.box)
+has_wire(f::WiringDiagram, pair::Pair) = has_wire(f, first(pair)[1], last(pair)[1])
+
+
+input_ports(f::WiringDiagram) = subpart(f.diagram, :outer_in_port_type)
+output_ports(f::WiringDiagram) = subpart(f.diagram, :outer_out_port_type)
+set_input_ports!(f::WiringDiagram, input_ports::Vector) = 
+    set_subpart!(f.diagram, :outer_in_port_type, input_ports)
+set_output_ports!(f::WiringDiagram, output_ports::Vector) = 
+    set_subpart!(f.diagram, :outer_out_port_type, output_ports)
+add_input_ports!(f::WiringDiagram, input_ports::Vector) = 
+    add_parts!(f.diagram, :OuterInPort, length(input_ports), outer_in_port_type = input_ports)
+add_output_ports!(f::WiringDiagram, output_ports::Vector) = 
+    add_parts!(f.diagram, :OuterOutPort, length(output_ports), outer_out_port_type = output_ports)
+
+
+function input_ports(f::WiringDiagram, b::Int)
+  if b == input_id(f)
+    error("Input vertex does not have input ports within wiring diagram")
+  elseif b == output_id(f)
+    output_ports(f)
+  else
+    copy(subpart(f.diagram, incident(f.diagram, b, :in_port_box), :in_port_type)) # copy because to use in Box constructor
+  end
+end
+
+function output_ports(f::WiringDiagram, b::Int)
+  if b == input_id(f)
     input_ports(f)
-  elseif v == output_id(f)
+  elseif b == output_id(f)
     error("Output vertex does not have output ports within wiring diagram")
   else
-    output_ports(box(f, v))
+    copy(subpart(f.diagram, incident(f.diagram, b, :out_port_box), :out_port_type))
   end
 end
 
 function port_value(f::WiringDiagram, port::Port)
-  get_ports = port.kind == InputPort ? input_ports : output_ports
-  get_ports(f, port.box)[port.port]
+  if port.box == input_id(f)
+    subpart(f.diagram, port.port, :outer_in_port_type)
+  elseif port.box == output_id(f)
+    subpart(f.diagram, port.port, :outer_out_port_type)
+  else
+    port_id   = port.kind == InputPort ? in_port_id : out_port_id
+    type_expr = port.kind == InputPort ? :in_port_type : :out_port_type
+    subpart(f.diagram, port_id(f, port), type_expr)
+  end
+  
 end
+
 
 # Graph mutation.
 
 function add_box!(f::WiringDiagram, box::AbstractBox)
-  add_vertex!(f.graph, box=box)
-  return nv(f.graph)
-end
+  b = add_part!(f.diagram, :Box)
+  set_subpart!(f.diagram, b, :box_type, typeof(box))
+  box isa WiringDiagram ? set_subpart!(f.diagram, b, :value, box) : 
+                                 set_subpart!(f.diagram, b, :value, value(box))
+
+  in_ports = add_parts!(f.diagram, :InPort, length(input_ports(box)))
+  set_subpart!(f.diagram, in_ports, :in_port_box, b)
+  set_subpart!(f.diagram, in_ports, :in_port_type, input_ports(box))
+  out_ports = add_parts!(f.diagram, :OutPort, length(output_ports(box)))
+  set_subpart!(f.diagram, out_ports, :out_port_box, b)
+  set_subpart!(f.diagram, out_ports, :out_port_type, output_ports(box))
+  return b
+end 
 
 function add_boxes!(f::WiringDiagram, boxes)
-  boxes = collect(boxes)
-  add_vertices!(f.graph, length(boxes), box=boxes)
+  map(box -> add_box!(f,box), boxes)
 end
 
-function rem_box!(f::WiringDiagram, v::Int)
-  @assert v ∉ outer_ids(f)
-  rem_vertex!(f.graph, v)
+function rem_box!(f::WiringDiagram, b::Int)
+  @assert b ∉ outer_ids(f)
+  rem_parts!(f.diagram, :InWire, 
+    incident(f.diagram, b, [:in_tgt, :in_port_box]))
+  rem_parts!(f.diagram, :OutWire, 
+    incident(f.diagram, b, [:out_src, :out_port_box]))
+  rem_parts!(f.diagram, :Wire,
+    incident(f.diagram, b, [:tgt, :in_port_box]))
+  rem_parts!(f.diagram, :Wire,
+    incident(f.diagram, b, [:src, :out_port_box]))
+
+  rem_part!(f.diagram, :Box, b)
 end
 
-function rem_boxes!(f::WiringDiagram, vs)
-  @assert all(v ∉ outer_ids(f) for v in vs)
-  rem_vertices!(f.graph, sort!(collect(vs)))
+# needed because the output of `incident` could be a vector of vectors or a vector of Ints
+incident_reduce(acs::ACSet, part, expr) = begin
+    xs = incident(acs, part, expr)
+    if typeof(xs) <: Vector{Vector}
+        return sort(reduce(vcat, xs))
+    end
+    return sort(xs)
 end
+
+function rem_boxes!(f::WiringDiagram, bs::Vector)
+  @assert all(b ∉ outer_ids(f) for b in bs)
+
+  # remove associated wires
+  rem_parts!(f.diagram, :InWire, incident_reduce(f.diagram, bs, [:in_tgt, :in_port_box]))
+  rem_parts!(f.diagram, :OutWire, incident_reduce(f.diagram, bs, [:out_src, :out_port_box]))
+  rem_parts!(f.diagram, :Wire, incident_reduce(f.diagram, bs, [:tgt, :in_port_box]))
+  rem_parts!(f.diagram, :Wire, incident_reduce(f.diagram, bs, [:src, :out_port_box]))
+
+  # remove associated ports
+  rem_parts!(f.diagram, :InPort, incident_reduce(f.diagram, bs, [:in_port_box]))
+  rem_parts!(f.diagram, :OutPort, incident_reduce(f.diagram, bs, [:out_port_box]))
+
+  rem_parts!(f.diagram, :Box, bs)
+end
+
+function rem_boxes!(f::WiringDiagram, bs)
+    rem_boxes!(f, [b for b in bs])
+end
+
+
+function add_pass_wire!(f::WiringDiagram, wire::Wire)
+  w = add_part!(f.diagram, :PassWire)
+  set_subpart!(f.diagram, w, :pass_wire_value, wire.value)
+  set_subpart!(f.diagram, w, :pass_src, wire.source.port)
+  set_subpart!(f.diagram, w, :pass_tgt, wire.target.port)
+  return w
+end
+
+function add_in_wire!(f::WiringDiagram, wire::Wire)
+  w = add_part!(f.diagram, :InWire)
+  set_subpart!(f.diagram, w, :in_wire_value, wire.value)
+  set_subpart!(f.diagram, w, :in_src, wire.source.port)
+  set_subpart!(f.diagram, w, :in_tgt, in_port_id(f, wire.target))
+  return w
+end
+
+function add_out_wire!(f::WiringDiagram, wire::Wire)
+  w = add_part!(f.diagram, :OutWire)
+  set_subpart!(f.diagram, w, :out_wire_value, wire.value)
+  set_subpart!(f.diagram, w, :out_src, out_port_id(f, wire.source))
+  set_subpart!(f.diagram, w, :out_tgt, wire.target.port)
+  return w
+end
+
+
+function add_internal_wire!(f::WiringDiagram, wire::Wire)
+  w = add_part!(f.diagram, :Wire)
+  set_subpart!(f.diagram, w, :wire_value, wire.value)
+  set_subpart!(f.diagram, w, :src, out_port_id(f, wire.source))
+  set_subpart!(f.diagram, w, :tgt, in_port_id(f, wire.target))
+  return w
+end
+
 
 function add_wire!(f::WiringDiagram, wire::Wire)
   validate_ports(port_value(f, wire.source), port_value(f, wire.target))
-  add_edge!(f.graph, wire.source.box, wire.target.box, wire=WireData(wire))
+  if wire.source.box == input_id(f) && wire.target.box == output_id(f)
+    add_pass_wire!(f, wire)
+  elseif wire.source.box == input_id(f)
+    add_in_wire!(f,wire)
+  elseif wire.target.box == output_id(f)
+    add_out_wire!(f,wire)
+  else
+    add_internal_wire!(f, wire)
+  end
 end
+
 add_wire!(f::WiringDiagram, pair::Pair) = add_wire!(f, Wire(pair))
 
 function add_wires!(f::WiringDiagram, wires)
@@ -368,12 +618,51 @@ function add_wires!(f::WiringDiagram, wires)
   end
 end
 
-function rem_wire!(f::WiringDiagram, wire::Wire)
-  g, wire_data = f.graph, WireData(wire)
-  for e in edges(g, wire.source.box, wire.target.box)
-    subpart(g, e, :wire) == wire_data && return rem_edge!(g, e)
+function rem_pass_wire!(f::WiringDiagram, wire::Wire)
+  for w in parts(f.diagram, :PassWire)
+    subpart(f.diagram, w, :pass_wire_value) == wire.value && 
+      subpart(f.diagram, w, :pass_src) == wire.source.port &&
+      subpart(f.diagram, w, :pass_tgt) == wire.target.port &&
+      return rem_part!(f.diagram, :PassWire, w)
+  end
+  error("PassWire $wire does not exist, so cannot be removed")
+end
+
+function rem_in_wire!(f::WiringDiagram, wire::Wire)
+  for w in incident(f.diagram, in_port_id(f, wire.target), :in_tgt)
+    subpart(f.diagram, w, :in_wire_value) == wire.value && 
+          return rem_part!(f.diagram, :InWire, w)
+  end
+  error("InWire $wire does not exist, so cannot be removed")
+end
+
+function rem_out_wire!(f::WiringDiagram, wire::Wire)
+  for w in incident(f.diagram, out_port_id(f, wire.source), :out_src)
+    subpart(f.diagram, w, :out_wire_value) == wire.value && 
+          return rem_part!(f.diagram, :OutWire, w)
+  end
+  error("OutWire $wire does not exist, so cannot be removed")
+end
+
+function rem_internal_wire!(f::WiringDiagram, wire::Wire)
+  for w in incident(f.diagram, out_port_id(f, wire.source), :src)
+    subpart(f.diagram, w, :tgt) == in_port_id(f, wire.target) &&
+          subpart(f.diagram, w, :wire_value) == wire.value &&
+          return rem_part!(f.diagram, :Wire, w)
   end
   error("Wire $wire does not exist, so cannot be removed")
+end
+
+function rem_wire!(f::WiringDiagram, wire::Wire)
+  if wire.source.box == input_id(f) && wire.target.box == output_id(f)
+    rem_pass_wire!(f, wire)
+  elseif wire.source.box == input_id(f)
+    rem_in_wire!(f, wire)
+  elseif wire.target.box == output_id(f)
+    rem_out_wire!(f,wire)
+  else
+    rem_internal_wire!(f, wire)
+  end
 end
 rem_wire!(f::WiringDiagram, pair::Pair) = rem_wire!(f, Wire(pair))
 
@@ -384,7 +673,29 @@ function rem_wires!(f::WiringDiagram, wires)
 end
 
 function rem_wires!(f::WiringDiagram, src::Int, tgt::Int)
-  rem_edges!(f.graph, sort!(collect(edges(f.graph, src, tgt))))
+  if src == input_id(f) && tgt == output_id(f)
+    rem_parts!(f.diagram, :PassWire, parts(f.diagram, :PassWire))
+  elseif src == input_id(f) 
+    rem_parts!(f.diagram, :InWire, incident(f.diagram, tgt, [:in_tgt, :in_port_box]))
+  elseif tgt == output_id(f)
+    rem_parts!(f.diagram, :OutWire, incident(f.diagram, src, [:out_src, :out_port_box]))
+  else
+    rem_parts!(f.diagram, :Wire, incident(f.diagram, src, [:src, :out_port_box]) ∩ 
+                                 incident(f.diagram, tgt, [:tgt, :in_port_box]) ) #fast way for sorted intersection?
+  end
+end
+
+
+function add_outer_in_port!(f::WiringDiagram, val)
+  p = add_part!(f.diagram, :OuterInPort)
+  set_subpart!(f.diagram, p, :outer_in_port_type, val)
+  return p
+end
+
+function add_outer_out_port!(f::WiringDiagram, val)
+  p = add_part!(f.diagram, :OuterOutPort)
+  set_subpart!(f.diagram, p, :outer_out_port_type, val)
+  return p
 end
 
 """ Check compatibility of source and target ports.
@@ -394,33 +705,110 @@ The default implementation is a no-op.
 function validate_ports(source_port, target_port) end
 
 # Graph properties.
+function internal_graph(f::WiringDiagram; id_only = false)
+  if id_only
+    g = WiringDiagramGraphUnionAll{Int, Int}()
+    add_parts!(g, :V, nparts(f.diagram, :Box), box = parts(f.diagram, :Box))
+    add_parts!(g, :E, nparts(f.diagram, :Wire), 
+        src = subpart(f.diagram, [:src, :out_port_box]), 
+        tgt = subpart(f.diagram, [:tgt, :in_port_box]), 
+        wire = parts(f.diagram, :Wire))
+  else
+    g = WiringDiagramGraph()
+    add_parts!(g, :V, nparts(f.diagram, :Box), box = [box(f,b) for b in parts(f.diagram, :Box)])
+    add_parts!(g, :E, nparts(f.diagram, :Wire), 
+        src = subpart(f.diagram, [:src, :out_port_box]), 
+        tgt = subpart(f.diagram, [:tgt, :in_port_box]), 
+        wire = [wire(f,w) for w in parts(f.diagram, :Wire)])
+  end
+  return g
+end
 
-""" Retrieve the graph underlying the wiring diagram.
+function graph(f::WiringDiagram; id_only = false)
+  g = internal_graph(f; id_only = id_only)
+  input, output = add_parts!(g, :V, 2)
+  in_wires = add_parts!(g, :E, nparts(f.diagram, :InWire))
+  set_subparts!(g, in_wires, src = input)
+  set_subparts!(g, in_wires, tgt = subpart(f.diagram, [:in_tgt, :in_port_box]))
 
-The graph is an instance of `Catlab.Graphs.AbstractGraph`. Do not mutate it! All
-mutations should use the wiring diagrams API: `add_box!`, `rem_box!`, and so on.
-"""
-graph(diagram::WiringDiagram) = diagram.graph
+  out_wires = add_parts!(g, :E, nparts(f.diagram, :OutWire))
+  set_subparts!(g, out_wires, tgt = output)
+  set_subparts!(g, out_wires, src = subpart(f.diagram, [:out_src, :out_port_box]))
 
-# Convenience methods delegated to underlying graph.
-all_neighbors(d::WiringDiagram, v::Int) = all_neighbors(graph(d), v)
-neighbors(d::WiringDiagram, v::Int) = neighbors(graph(d), v)
-outneighbors(d::WiringDiagram, v::Int) = outneighbors(graph(d), v)
-inneighbors(d::WiringDiagram, v::Int) = inneighbors(graph(d), v)
+  pass_wires = add_parts!(g, :E, nparts(f.diagram, :PassWire), src = input, tgt = output)
 
+  if id_only
+    set_subparts!(g, [input, output], box = [input_id(f), output_id(f)])
+    set_subparts!(g, in_wires, wire = parts(f.diagram, :InWire))
+    set_subparts!(g, out_wires, wire = parts(f.diagram, :OutWire))
+    set_subparts!(g, pass_wires, wire = parts(f.diagram, :PassWire))
+  else
+    set_subparts!(g, [input, output], box = [box(f, b) for b in [input_id(f), output_id(f)]])
+    set_subparts!(g, in_wires, wire = [in_wire(f, w) for w in parts(f.diagram, :InWire)])
+    set_subparts!(g, out_wires, wire = [out_wire(f, w) for w in parts(f.diagram, :OutWire)])
+    set_subparts!(g, pass_wires, wire = [pass_wire(f, w) for w in parts(f.diagram, :PassWire)])
+  end
+  return g
+end
+
+conditional_append(cond::Bool, a::Int, ls::Vector{Int}) = cond ? append!(ls, a) : ls
+
+function outneighbors(f::WiringDiagram, b::Int)
+    if b==input_id(f)
+        conditional_append(!isempty(subpart(f.diagram, :WirePass)), 
+                            output_id(f), 
+                            copy(subpart(f.diagram, [:in_tgt, :in_port_box])))
+    elseif b==output_id(f)
+        return []
+    else
+        conditional_append(!isempty(incident(f.diagram, b, [:out_src, :out_port_box])), 
+                            output_id(f),
+                            copy(subpart(f.diagram, 
+                                    incident(f.diagram, b, [:src, :out_port_box]), 
+                                    [:tgt, :in_port_box])))
+    end
+end
+
+function inneighbors(f::WiringDiagram, b::Int)
+    if b == input_id(f)
+        return []
+    elseif b==output_id(f)
+        conditional_append(!isempty(subpart(f.diagram, :WirePass)), 
+                            input_id(f),
+                            copy(subpart(f.diagram, [:out_src, :out_port_box])))
+    else
+        conditional_append(!isempty(incident(f.diagram, b, [:in_tgt, :in_port_box])), 
+                            input_id(f), 
+                            copy(subpart(f.diagram,
+                                    incident(f.diagram, b, [:tgt, :in_port_box]),
+                                    [:src, :out_port_box])))
+    end
+end
+
+neighbors(f::WiringDiagram, b::Int) = outneighbors(f, b)
+all_neighbors(f::WiringDiagram, b::Int) = 
+    Iterators.flatten((inneighbors(f, b), outneighbors(f, b)))
+
+
+# Get wires
 """ Get all wires coming into or out of the box.
 """
-function wires(d::WiringDiagram, v::Int)
-  g = graph(d)
-  [ Wire(subpart(g, e, :wire), src(g, e), tgt(g, e))
-    for e in unique!(sort!([incident(g, v, :src); incident(g, v, :tgt)])) ]
+function wires(f::WiringDiagram, b::Int)
+  vcat(in_wires(f,b), out_wires(f,b))
 end
 
 """ Get all wires coming into the box.
 """
-function in_wires(d::WiringDiagram, v::Int)
-  g = graph(d)
-  [ Wire(subpart(g, e, :wire), src(g, e), v) for e in incident(g, v, :tgt) ]
+function in_wires(f::WiringDiagram, b::Int)
+  if b == input_id(f)
+    return []
+  elseif b == output_id(f)
+    vcat([pass_wire(f, w) for w in parts(f.diagram, :PassWire)],
+         [out_wire(f, w) for w in parts(f.diagram, :OutWire)])
+  else
+    vcat([wire(f, w) for w in incident(f.diagram, b, [:tgt, :in_port_box])], 
+         [in_wire(f, w) for w in incident(f.diagram, b, [:in_tgt, :in_port_box])])
+  end
 end
 
 """ Get all wires coming into the port.
@@ -434,9 +822,16 @@ end
 
 """ Get all wires coming out of the box.
 """
-function out_wires(d::WiringDiagram, v::Int)
-  g = graph(d)
-  [ Wire(subpart(g, e, :wire), v, tgt(g, e)) for e in incident(g, v, :src) ]
+function out_wires(f::WiringDiagram, b::Int)
+  if b == input_id(f)
+    vcat([pass_wire(f, w) for w in parts(f.diagram, :PassWire)],
+         [in_wire(f, w) for w in parts(f.diagram, :InWire)])
+  elseif b == output_id(f)
+    return []
+  else
+    vcat([wire(f, w) for w in incident(f.diagram, b, [:src, :out_port_box])],
+         [out_wire(f, w) for w in incident(f.diagram, b, [:out_src, :out_port_box])])
+  end
 end
 
 """ Get all wires coming out of the port.
@@ -527,9 +922,9 @@ function substitute(d::WiringDiagram, v::Int, sub::WiringDiagram; kw...)
   substitute(d, [v], [sub]; kw...)
 end
 
-function substitute(d::WiringDiagram{T}, vs::AbstractVector{Int},
+function substitute(d::WiringDiagram{T, PortValue, WireValue, BoxValue}, vs::AbstractVector{Int},
                     subs::Vector{<:WiringDiagram};
-                    merge_wire_values=default_merge_wire_values) where T
+                    merge_wire_values=default_merge_wire_values) where {T, PortValue, WireValue, BoxValue}
   # In outline, the algorithm is:
   #
   # 1. Create an empty wiring diagram.
@@ -543,7 +938,7 @@ function substitute(d::WiringDiagram{T}, vs::AbstractVector{Int},
   # problem of *instantaneous wires*. Some authors ban instantaneous wires, but
   # we need them to represent identities, braidings, etc.
   @assert length(vs) == length(subs)
-  result = WiringDiagram{T}(d.value, input_ports(d), output_ports(d))
+  result = WiringDiagram{T, PortValue, WireValue, BoxValue}(d.value, input_ports(d), output_ports(d))
   
   # Add boxes by interleaving, in the correct order, the non-substituted boxes
   # of the original diagram and the internal boxes of the substituted diagrams.
@@ -636,8 +1031,8 @@ function encapsulate(d::WiringDiagram, vs::Vector{Int}; value=nothing, kw...)
   encapsulate(d, [vs]; values=[value], kw...)
 end
 
-function encapsulate(d::WiringDiagram{T}, vss::Vector{Vector{Int}};
-    discard_boxes::Bool=false, make_box=Box, values=nothing) where T
+function encapsulate(d::WiringDiagram{T, PortValue, WireValue, BoxValue}, vss::Vector{Vector{Int}};
+    discard_boxes::Bool=false, make_box=Box, values=nothing) where {T, PortValue, WireValue, BoxValue}
   if isempty(vss); return d end
   if any(isempty(vs) for vs in vss)
     error("Cannot encapsulate an empty set of boxes")
@@ -648,7 +1043,7 @@ function encapsulate(d::WiringDiagram{T}, vss::Vector{Vector{Int}};
   if isnothing(values)
     values = repeat([nothing], length(vss))
   end
-  result = WiringDiagram{T}(d.value, input_ports(d), output_ports(d))
+  result = WiringDiagram{T, PortValue, WireValue, BoxValue}(d.value, input_ports(d), output_ports(d))
   
   # Add boxes, both encapsulated and non-encapsulated, to new wiring diagram.
   encapsulated_representatives = Dict(
@@ -683,6 +1078,15 @@ function encapsulate(d::WiringDiagram{T}, vss::Vector{Vector{Int}};
   result
 end
 
+""" Internal wiring diagram data corresponding to `Port`. Do not use directly.
+"""
+@auto_hash_equals struct PortData
+  kind::PortKind
+  port::Int
+end
+PortData(port::Port) = PortData(port.kind, port.port)
+Port(port::PortData, v::Int) = Port(v, port.kind, port.port)
+
 """ Create an encapsulating box for a set of boxes in a wiring diagram.
 
 To a first approximation, the union of input ports of the given boxes will
@@ -702,11 +1106,11 @@ simplified into a single port of the encapsulating box.
 
 See also `induced_subdiagram`.
 """
-function encapsulated_subdiagram(d::WiringDiagram{T}, vs::Vector{Int};
-    discard_boxes::Bool=false, make_box=Box, value=nothing) where T
+function encapsulated_subdiagram(d::WiringDiagram{T, PortValue, WireValue, BoxValue}, vs::Vector{Int};
+    discard_boxes::Bool=false, make_box=Box, value=nothing) where {T, PortValue, WireValue, BoxValue}
   # Add encapsulated box to new wiring diagram.
   inputs, outputs = [], []
-  result = discard_boxes ? nothing : WiringDiagram{T}(value, inputs, outputs)
+  result = discard_boxes ? nothing : WiringDiagram{T, PortValue, WireValue, BoxValue}(value, inputs, outputs)
   vmap = if discard_boxes
     Dict(v => nothing for v in vs)
   else
@@ -724,8 +1128,8 @@ function encapsulated_subdiagram(d::WiringDiagram{T}, vs::Vector{Int};
                      if !haskey(vmap, wire.source.box) ])
       if isempty(srcs) continue end
       src = get!(inner_port_map, (srcs, value)) do
-        push!(inputs, value)
-        port_data = port_map[tgt] = PortData(InputPort, length(inputs))
+        p = discard_boxes ? length(push!(inputs, value)) : add_outer_in_port!(result, value)
+        port_data = port_map[tgt] = PortData(InputPort, p)
         port_data.port
       end
       if discard_boxes; continue end
@@ -740,8 +1144,8 @@ function encapsulated_subdiagram(d::WiringDiagram{T}, vs::Vector{Int};
                     if !haskey(vmap, wire.target.box) ])
       if isempty(tgts) continue end
       tgt = get!(inner_port_map, (tgts, value)) do
-        push!(outputs, value)
-        port_data = port_map[src] = PortData(OutputPort, length(outputs))
+        p = discard_boxes ? length(push!(outputs, value)) : add_outer_out_port!(result, value)
+        port_data = port_map[src] = PortData(OutputPort, p)
         port_data.port
       end
       if discard_boxes; continue end
@@ -759,13 +1163,9 @@ function encapsulated_subdiagram(d::WiringDiagram{T}, vs::Vector{Int};
       end
     end
   end
-  
-  # Yield input and output port lists with the tightest possible types.
-  inputs, outputs = [ x for x in inputs ], [ x for x in outputs ]
+
   if discard_boxes
     result = make_box(value, inputs, outputs)
-  else
-    result.input_ports, result.output_ports = inputs, outputs
   end
   (result, port_map)
 end

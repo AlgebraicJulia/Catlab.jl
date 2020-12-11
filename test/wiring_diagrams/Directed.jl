@@ -4,6 +4,7 @@ using Test
 using Catlab.WiringDiagrams.DirectedWiringDiagrams
 import Catlab.WiringDiagrams.DirectedWiringDiagrams: validate_ports
 using Catlab.WiringDiagrams.MonoidalDirectedWiringDiagrams: compose
+using Catlab.Graphs, Catlab.CategoricalAlgebra
 
 # For testing purposes, check equality of port symbols.
 function validate_ports(source_port::Symbol, target_port::Symbol)
@@ -84,6 +85,12 @@ rem_boxes!(d_copy, [fv,gv])
 @test nwires(d) == 3
 
 # Graph properties.
+gr = graph(d)
+@test length(vertices(gr)) == nboxes(d) + 2
+@test length(edges(gr)) == nwires(d)
+@test sort!(subpart(gr, :wire)) == sort!(wires(d))
+@test subpart(gr, :box) == [box(d, b) for b in box_ids(d) ∪ outer_ids(d)]
+
 @test Set(all_neighbors(d, fv)) == Set([input_id(d), gv])
 @test Set(all_neighbors(d, gv)) == Set([fv, output_id(d)])
 @test neighbors(d, fv) == [gv]

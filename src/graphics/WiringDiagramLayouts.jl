@@ -472,10 +472,11 @@ end
 """
 function layout_outer_ports!(diagram::WiringDiagram, opts::LayoutOptions; kw...)
   original_value = x -> x isa PortLayout ? x.value : x # XXX: This is ugly.
-  diagram.input_ports = map(original_value, input_ports(diagram))
-  diagram.output_ports = map(original_value, output_ports(diagram))
-  diagram.input_ports, diagram.output_ports =
-    layout_outer_ports(diagram, opts; kw...)
+  set_input_ports!(diagram, map(original_value, input_ports(diagram)))
+  set_output_ports!(diagram, map(original_value, output_ports(diagram)))
+  in_ports, out_ports = layout_outer_ports(diagram, opts; kw...)
+  set_input_ports!(diagram, in_ports)
+  set_output_ports!(diagram, out_ports)
   diagram
 end
 

@@ -97,10 +97,10 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
 
   # Add outgoing wires for return values.
   out_ports = normalize_arguments((value,))
-  diagram.output_ports = [
+  add_output_ports!(diagram, [
     # XXX: Inferring the output port types is not reliable.
     port_value(diagram, first(ports)) for ports in out_ports
-  ]
+  ])
   add_wires!(diagram, [
     port => Port(v_out, InputPort, i)
     for (i, ports) in enumerate(out_ports) for port in ports
