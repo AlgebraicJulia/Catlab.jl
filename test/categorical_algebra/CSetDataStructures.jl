@@ -315,18 +315,25 @@ end
 
 const DecGraph = ACSetType(TheoryDecGraph, index=[:src,:tgt])
 
-g = @acset DecGraph{String} begin
+g = @acset DecGraph{Symbol} begin
   V = 4
   E = 4
 
   src = [1,2,3,4]
   tgt = [2,3,4,1]
 
-  dec = ["a","b","c","d"]
+  dec = [:a,:b,:c,:d]
 end
 
 @test nparts(g,:V) == 4
 @test subpart(g,:,:src) == [1,2,3,4]
 @test incident(g,1,:src) == [1]
+
+g2 = @present_acset DecGraph{Symbol}, with_names(E,dec) begin
+  (w,x,y,z) :: V
+  (a,b,c,d) :: E(src=[w,x,y,z],tgt=[x,y,z,w])
+end
+
+@test g2 == g
 
 end
