@@ -150,6 +150,7 @@ end
 
 function parse_relation_context(context)
   terms = @match context begin
+    Expr(:tuple) => return (Symbol[], nothing)
     Expr(:tuple, terms...) => terms
     _ => error("Invalid syntax in relation context $context")
   end
@@ -170,25 +171,48 @@ function parse_relation_context(context)
 end
 
 function parse_relation_call(call)
-  name, args = @match call begin
-    Expr(:call, name::Symbol, args...) => (name, args)
-    Expr(:tuple, args...) => (nothing, args)
-    _ => error("Invalid syntax in relation call $call")
+  @match call begin
+    Expr(:call, name::Symbol, Expr(:parameters, args)) =>
+      (name, parse_relation_kw_args(args)...)
+    Expr(:call, name::Symbol) => (name, nothing, Symbol[])
+    Expr(:call, name::Symbol, args...) =>
+      (name, parse_relation_inferred_args(args)...)
+
+    Expr(:tuple, Expr(:parameters, args...)) =>
+      (nothing, parse_relation_kw_args(args)...)
+    Expr(:tuple) => (nothing, nothing, Symbol[])
+    Expr(:tuple, args...) => (nothing, parse_relation_inferred_args(args)...)
+
+    _ => error("Invalid syntax in relation $call")
   end
+end
+
+function parse_relation_kw_args(args)
   args = map(args) do arg
     @match arg begin
-      Expr(:kw, port_name::Symbol, var::Symbol) => (port_name => var)
-      Expr(:(=), port_name::Symbol, var::Symbol) => (port_name => var)
+      Expr(:kw, name::Symbol, var::Symbol) => (name => var)
+      _ => error("Expected name as keyword argument")
+    end
+  end
+  (first.(args), last.(args))
+end
+
+function parse_relation_inferred_args(args)
+  @assert !isempty(args) # Need at least one argument to infer named/unnamed.
+  args = map(args) do arg
+    @match arg begin
+      Expr(:kw, name::Symbol, var::Symbol) => (name => var)
+      Expr(:(=), name::Symbol, var::Symbol) => (name => var)
       var::Symbol => var
-      _ => error("Invalid syntax in relation argument $arg")
+      _ => error("Expected name as positional or keyword argument")
     end
   end
   if args isa AbstractVector{Symbol}
-    (name, nothing, args)
+    (nothing, args)
   elseif args isa AbstractVector{Pair{Symbol,Symbol}}
-    (name, first.(args), last.(args))
+    (first.(args), last.(args))
   else
-    error("Relation call $call mixes named and unnamed arguments")
+    error("Relation mixes named and unnamed arguments $args")
   end
 end
 
