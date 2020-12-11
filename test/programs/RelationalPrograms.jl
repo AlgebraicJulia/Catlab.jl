@@ -79,8 +79,10 @@ set_subpart!(d, :port_name, [:src, :tgt, :src, :tgt])
 @test parsed == d
 
 # Special case: closed diagram.
-parsed = @relation ((;) where (v,)) -> E(src=v, tgt=v)
-@test subpart(parsed, :port_name) == [:src, :tgt]
+if VERSION >= v"1.5"
+  parsed = @relation ((;) where (v,)) -> E(src=v, tgt=v)
+  @test subpart(parsed, :port_name) == [:src, :tgt]
+end
 
 # Typed, named ports
 #-------------------
