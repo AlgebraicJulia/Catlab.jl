@@ -25,7 +25,6 @@ set_junction!(d, [1,3], outer=true)
 
 parsed = @relation ((x,z) where (x,y,z)) -> (R(x,y); S(y,z))
 @test parsed == d
-
 parsed = @relation function (x,z) where (x,y,z); R(x,y); S(y,z) end
 @test parsed == d
 
@@ -33,6 +32,18 @@ parsed = @relation function (x,z) where (x,y,z); R(x,y); S(y,z) end
 d1 = @relation (x,y,z) -> (R(x,y); S(y,z))
 d2 = @relation ((x,y,z) where (x,y,z)) -> (R(x,y); S(y,z))
 @test d1 == d2
+
+# Special case: closed diagram.
+parsed = @relation (() where (a,)) -> R(a,a)
+d = RelationDiagram{Symbol}(0)
+add_box!(d, 2, name=:R)
+add_junction!(d, variable=:a); set_junction!(d, [1,1])
+@test parsed == d
+
+parsed = @relation () -> A()
+d = RelationDiagram{Symbol}(0)
+add_box!(d, 0, name=:A)
+@test parsed == d
 
 # Typed
 #------
@@ -66,6 +77,12 @@ set_junction!(d, [1,2,2,3])
 set_junction!(d, [1,3], outer=true)
 set_subpart!(d, :port_name, [:src, :tgt, :src, :tgt])
 @test parsed == d
+
+# Special case: closed diagram.
+if VERSION >= v"1.5"
+  parsed = @relation ((;) where (v,)) -> E(src=v, tgt=v)
+  @test subpart(parsed, :port_name) == [:src, :tgt]
+end
 
 # Typed, named ports
 #-------------------

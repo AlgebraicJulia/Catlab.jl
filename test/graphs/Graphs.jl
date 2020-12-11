@@ -6,6 +6,10 @@ using Test
   include("BasicGraphs.jl")
 end
 
+@testset "BipartiteGraphs" begin
+  include("BipartiteGraphs.jl")
+end
+
 @testset "EmbeddedGraphs" begin
   include("EmbeddedGraphs.jl")
 end
