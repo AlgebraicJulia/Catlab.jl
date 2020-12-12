@@ -56,7 +56,9 @@ const FinFunction{S, S′, Dom <: FinSet{S}, Codom <: FinSet{S′}} =
 
 FinFunction(f::Function, dom, codom) =
   SetFunctionCallable(f, FinSet(dom), FinSet(codom))
-FinFunction(f::AbstractVector, args...) =
+FinFunction(f::AbstractVector{Int}) =
+  FinDomFunctionVector(f, FinSet(isempty(f) ? 0 : maximum(f)))
+FinFunction(f::AbstractVector{Int}, args...) =
   FinDomFunctionVector(f, (FinSet(arg) for arg in args)...)
 FinFunction(::typeof(identity), args...) =
   SetFunctionIdentity((FinSet(arg) for arg in args)...)
@@ -89,8 +91,8 @@ the form ``{1,...,n}``.
   codom::Codom
 end
 
-FinDomFunctionVector(f::AbstractVector{Int}) =
-  FinDomFunctionVector(f, FinSet(isempty(f) ? 0 : maximum(f)))
+FinDomFunctionVector(f::AbstractVector{T′}) where T′ =
+  FinDomFunctionVector(f, TypeSet{T′}())
 
 function FinDomFunctionVector(f::AbstractVector, dom::FinSet{Int}, codom)
   length(f) == length(dom) ||

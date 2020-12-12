@@ -12,6 +12,7 @@ g = FinFunction([1,1,2,2,3], 3)
 h = FinFunction([3,1,2], 3)
 @test dom(f) == FinSet(3)
 @test codom(f) == FinSet(5)
+@test codom(FinFunction([1,3,4])) == FinSet(4)
 
 # Evaluation.
 rot3(x) = (x % 3) + 1
@@ -36,17 +37,16 @@ rot3(x) = (x % 3) + 1
 # Functions out of finite sets
 ##############################
 
-SymbolSet = TypeSet{Symbol}()
-k = FinDomFunction([:a,:b,:c,:d,:e], SymbolSet)
+k = FinDomFunction([:a,:b,:c,:d,:e])
 @test dom(k) == FinSet(5)
-@test codom(k) == SymbolSet
+@test codom(k) == TypeSet(Symbol)
 @test k(3) == :c
 @test collect(k) == [:a,:b,:c,:d,:e]
 @test sprint(show, k) ==
   "FinDomFunction($([:a,:b,:c,:d,:e]), FinSet(5), TypeSet(Symbol))"
 
 f = FinFunction([1,3,4], 5)
-@test compose(f,k) == FinDomFunction([:a,:c,:d], SymbolSet)
+@test compose(f,k) == FinDomFunction([:a,:c,:d])
 
 # Limits
 ########
@@ -106,8 +106,8 @@ eq = equalizer(f,g)
 @test factorize(eq, FinFunction(Int[])) == FinFunction(Int[])
 
 # Equalizer of functions into non-finite set.
-f = FinDomFunction([:a, :b, :d, :c], TypeSet(Symbol))
-g = FinDomFunction([:c, :b, :d, :a], TypeSet(Symbol))
+f = FinDomFunction([:a, :b, :d, :c])
+g = FinDomFunction([:c, :b, :d, :a])
 eq = equalizer(f,g)
 @test incl(eq) == FinFunction([2,3], 4)
 
@@ -134,8 +134,8 @@ f, g = FinFunction([1,1,2]), FinFunction([3,2,1])
 @test force(pair(lim,f,g) ⋅ proj2(lim)) == g
 
 # Pullback of a cospan into non-finite set.
-f = FinDomFunction([:a, :a, :c, :b], TypeSet(Symbol))
-g = FinDomFunction([:a, :a, :d, :b], TypeSet(Symbol))
+f = FinDomFunction([:a, :a, :c, :b])
+g = FinDomFunction([:a, :a, :d, :b])
 π1, π2 = lim = pullback(f, g)
 @test ob(lim) == FinSet(5)
 @test force(π1) == FinFunction([1,2,1,2,4], 4)
