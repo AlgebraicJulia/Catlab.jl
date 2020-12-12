@@ -48,6 +48,32 @@ k = FinDomFunction([:a,:b,:c,:d,:e])
 f = FinFunction([1,3,4], 5)
 @test compose(f,k) == FinDomFunction([:a,:c,:d])
 
+# Indexed functions
+###################
+
+f = IndexedFinFunction([1,2,1,3], 5)
+@test f isa FinFunction{Int,Int}
+@test force(f) === f
+@test (dom(f), codom(f)) == (FinSet(4), FinSet(5))
+@test f(1) == 1
+@test preimage(f, 1) == [1,3]
+@test preimage(f, 3) == [4]
+@test isempty(preimage(f, 4))
+
+g = FinFunction(5:-1:1)
+@test compose(f,g) == FinFunction([5,4,5,3])
+
+k = IndexedFinDomFunction([:a,:b,:a,:c])
+@test k isa FinDomFunction{Int}
+@test (dom(k), codom(k)) == (FinSet(4), TypeSet(Symbol))
+@test k(1) == :a
+@test preimage(k, :a) == [1,3]
+@test preimage(k, :c) == [4]
+@test isempty(preimage(k, :d))
+
+f = FinFunction([1,3,2], 4)
+@test compose(f,k) == FinDomFunction([:a,:a,:b])
+
 # Limits
 ########
 

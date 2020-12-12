@@ -2,9 +2,10 @@
 """
 module FinSets
 export FinSet, FinFunction, FinDomFunction, force,
+  IndexedFinFunction, IndexedFinDomFunction, preimage,
   JoinAlgorithm, NestedLoopJoin, SortMergeJoin
 
-using Compat: only
+using Compat: isnothing, only
 
 using AutoHashEquals
 using DataStructures: IntDisjointSets, union!, find_root!
@@ -13,11 +14,15 @@ using StaticArrays
 
 using ...Theories, ..FreeDiagrams, ..Limits, ..Sets
 import ...Theories: dom, codom
+using ...CSetDataStructures: insertsorted!, set_data_index!
 import ..Limits: limit, colimit, universal
 using ..Sets: SetFunctionCallable, SetFunctionIdentity
 
 # Data types
 ############
+
+# Finite sets
+#------------
 
 """ Finite set.
 
@@ -42,6 +47,9 @@ iterable(s::FinSet{<:AbstractSet}) = s.set
 
 Base.show(io::IO, s::FinSet) = print(io, "FinSet($(s.set))")
 
+# Finite functions
+#-----------------
+
 """ Function between finite sets.
 
 The function can be defined implicitly by an arbitrary Julia function, in which
@@ -49,7 +57,7 @@ case it is evaluated lazily, or explictly by a vector of integers. In the vector
 representation, the function (1↦1, 2↦3, 3↦2, 4↦3), for example, is represented
 by the vector [1,3,2,3].
 
-A slight generalization is [`FinDomFunction`](@ref).
+This type is mildly generalized by [`FinDomFunction`](@ref).
 """
 const FinFunction{S, S′, Dom <: FinSet{S}, Codom <: FinSet{S′}} =
   SetFunction{Dom,Codom}
@@ -85,14 +93,14 @@ Sets.show_type(io::IO, ::Type{<:FinDomFunction}) = print(io, "FinDomFunction")
 The domain of this function is always of type `FinSet{Int}`, with elements of
 the form ``{1,...,n}``.
 """
-@auto_hash_equals struct FinDomFunctionVector{T′,V<:AbstractVector{T′},
-    Codom<:SetOb{T′}} <: FinDomFunction{Int,FinSet{Int,Int},Codom}
+@auto_hash_equals struct FinDomFunctionVector{T,V<:AbstractVector{T},
+    Codom<:SetOb{T}} <: FinDomFunction{Int,FinSet{Int,Int},Codom}
   func::V
   codom::Codom
 end
 
-FinDomFunctionVector(f::AbstractVector{T′}) where T′ =
-  FinDomFunctionVector(f, TypeSet{T′}())
+FinDomFunctionVector(f::AbstractVector{T}) where T =
+  FinDomFunctionVector(f, TypeSet{T}())
 
 function FinDomFunctionVector(f::AbstractVector, dom::FinSet{Int}, codom)
   length(f) == length(dom) ||
@@ -113,18 +121,99 @@ end
 force(f::FinDomFunction{Int}) = FinDomFunctionVector(map(f, dom(f)), codom(f))
 force(f::FinDomFunctionVector) = f
 
-Base.collect(f::FinDomFunction) = force(f).func
+Base.collect(f::SetFunction) = force(f).func
 
 """ Function in **FinSet** represented explicitly by a vector.
 """
-const FinFunctionVector{S′,T′,V<:AbstractVector{T′}} =
-  FinDomFunctionVector{T′,V,FinSet{S′,T′}}
+const FinFunctionVector{S,T,V<:AbstractVector{T}} =
+  FinDomFunctionVector{T,V,FinSet{S,T}}
 
 function Base.show(io::IO, f::FinFunctionVector)
   print(io, "FinFunction($(f.func), $(length(dom(f))), $(length(codom(f))))")
 end
 
 Sets.compose_impl(f::FinFunctionVector, g::FinDomFunctionVector) =
+  FinDomFunctionVector(g.func[f.func], codom(g))
+
+# Indexed functions
+#------------------
+
+""" Indexed function out of a finite set of type `FinSet{Int}`.
+
+Works in the same way as the special case of [`IndexedFinFunction`](@ref),
+except that the index is typically a dictionary, not a vector.
+"""
+struct IndexedFinDomFunction{T,V<:AbstractVector{T},Index,Codom<:SetOb{T}} <:
+    SetFunction{FinSet{Int,Int},Codom}
+  func::V
+  index::Index
+  codom::Codom
+end
+
+IndexedFinDomFunction(f::AbstractVector{T}; kw...) where T =
+  IndexedFinDomFunction(f, TypeSet{T}(); kw...)
+
+function IndexedFinDomFunction(f::AbstractVector{T}, codom::SetOb{T};
+                               index=nothing) where T
+  if isnothing(index)
+    index = Dict{T,Vector{Int}}()
+    for (i, x) in enumerate(f)
+      set_data_index!(index, x, i)
+    end
+  end
+  IndexedFinDomFunction(f, index, codom)
+end
+
+dom(f::IndexedFinDomFunction) = FinSet(length(f.func))
+force(f::IndexedFinDomFunction) = f
+
+(f::IndexedFinDomFunction)(x) = f.func[x]
+
+""" The preimage (inverse image) of the value y in the codomain.
+"""
+preimage(f::IndexedFinDomFunction, y) = get_preimage_index(f.index, y)
+
+@inline get_preimage_index(index::AbstractDict, y) = get(index, y, 1:0)
+@inline get_preimage_index(index::AbstractVector, y) = index[y]
+
+""" Indexed function between finite sets of type `FinSet{Int}`.
+
+Indexed functions store both the forward map ``f: X → Y``, as a vector of
+integers, and the backward map ``f: Y → X⁻¹``, as a vector of sorted vectors of
+integers, accessible through the [`preimage`](@ref) function. The backward map
+is called the *index*. If it is not supplied through the keyword argument
+`index`, it is computed when the object is constructed.
+
+This type is mildly generalized by [`IndexedFinDomFunction`](@ref).
+"""
+const IndexedFinFunction{V,Index} =
+  IndexedFinDomFunction{Int,V,Index,FinSet{Int,Int}}
+
+IndexedFinFunction(f::AbstractVector{Int}, codom; kw...) =
+  IndexedFinFunction(f; codom=codom, kw...)
+
+function IndexedFinFunction(f::AbstractVector{Int}; codom=nothing, index=nothing)
+  if isnothing(codom) && isnothing(index)
+    codom = isempty(f) ? 0 : maximum(f)
+  elseif isnothing(codom)
+    codom = length(index)
+  end
+  codom = FinSet(codom)
+  if isnothing(index)
+    index = [ Int[] for j in codom ]
+    for (i, j) in enumerate(f)
+      insertsorted!(index[j], i)
+    end
+  else
+    length(index) == length(codom) ||
+      error("Index length $(length(index)) does not match codomain $codom")
+  end
+  IndexedFinDomFunction(f, index, codom)
+end
+
+# For now, we do not preserve or compose indices, only the function vectors.
+Sets.compose_impl(f::Union{FinFunctionVector,IndexedFinFunction},
+                  g::Union{FinDomFunctionVector,IndexedFinDomFunction}) =
   FinDomFunctionVector(g.func[f.func], codom(g))
 
 # Limits
