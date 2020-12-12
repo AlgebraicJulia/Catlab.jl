@@ -51,8 +51,12 @@ f = FinFunction([1,3,4], 5)
 # Indexed functions
 ###################
 
+@test !is_indexed(FinFunction([1,3,2]))
+@test !is_indexed(FinDomFunction([:a,:c,:b]))
+
+# Indexed functions between finite sets.
 f = IndexedFinFunction([1,2,1,3], 5)
-@test f isa FinFunction{Int,Int}
+@test is_indexed(f)
 @test force(f) === f
 @test (dom(f), codom(f)) == (FinSet(4), FinSet(5))
 @test f(1) == 1
@@ -63,8 +67,12 @@ f = IndexedFinFunction([1,2,1,3], 5)
 g = FinFunction(5:-1:1)
 @test compose(f,g) == FinFunction([5,4,5,3])
 
+@test is_indexed(id(FinSet(3)))
+@test preimage(id(FinSet(3)), 2) == [2]
+
+# Indexed functions out of finite sets.
 k = IndexedFinDomFunction([:a,:b,:a,:c])
-@test k isa FinDomFunction{Int}
+@test is_indexed(k)
 @test (dom(k), codom(k)) == (FinSet(4), TypeSet(Symbol))
 @test k(1) == :a
 @test preimage(k, :a) == [1,3]

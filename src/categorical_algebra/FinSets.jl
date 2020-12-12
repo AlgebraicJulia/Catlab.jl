@@ -2,7 +2,7 @@
 """
 module FinSets
 export FinSet, FinFunction, FinDomFunction, force,
-  IndexedFinFunction, IndexedFinDomFunction, preimage,
+  IndexedFinFunction, IndexedFinDomFunction, is_indexed, preimage,
   JoinAlgorithm, NestedLoopJoin, SortMergeJoin
 
 using Compat: isnothing, only
@@ -169,9 +169,16 @@ force(f::IndexedFinDomFunction) = f
 
 (f::IndexedFinDomFunction)(x) = f.func[x]
 
+""" Whether the given function is indexed, i.e., supports preimages.
+"""
+is_indexed(f::IndexedFinDomFunction) = true
+is_indexed(f::SetFunction) = false
+is_indexed(f::SetFunctionIdentity) = true
+
 """ The preimage (inverse image) of the value y in the codomain.
 """
 preimage(f::IndexedFinDomFunction, y) = get_preimage_index(f.index, y)
+preimage(f::SetFunctionIdentity, y) = SVector(y)
 
 @inline get_preimage_index(index::AbstractDict, y) = get(index, y, 1:0)
 @inline get_preimage_index(index::AbstractVector, y) = index[y]
