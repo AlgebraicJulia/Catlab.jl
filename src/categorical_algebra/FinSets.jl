@@ -1,8 +1,7 @@
 """ The category of finite sets and functions, and its skeleton.
 """
 module FinSets
-export FinSet, FinFunction, FinDomFunction, force,
-  IndexedFinFunction, IndexedFinDomFunction, is_indexed, preimage,
+export FinSet, FinFunction, FinDomFunction, force, is_indexed, preimage,
   JoinAlgorithm, NestedLoopJoin, SortMergeJoin
 
 using Compat: isnothing, only
@@ -64,12 +63,18 @@ const FinFunction{S, S′, Dom <: FinSet{S}, Codom <: FinSet{S′}} =
 
 FinFunction(f::Function, dom, codom) =
   SetFunctionCallable(f, FinSet(dom), FinSet(codom))
-FinFunction(f::AbstractVector{Int}) =
-  FinDomFunctionVector(f, FinSet(isempty(f) ? 0 : maximum(f)))
-FinFunction(f::AbstractVector{Int}, args...) =
-  FinDomFunctionVector(f, (FinSet(arg) for arg in args)...)
 FinFunction(::typeof(identity), args...) =
   SetFunctionIdentity((FinSet(arg) for arg in args)...)
+FinFunction(f::AbstractVector{Int}; kw...) =
+  FinDomFunctionVector(f, FinSet(isempty(f) ? 0 : maximum(f)); kw...)
+
+function FinFunction(f::AbstractVector{Int}, args...; index=false)
+  if index == false
+    FinDomFunctionVector(f, (FinSet(arg) for arg in args)...)
+  else
+    IndexedFinFunction(f, args...; index=(index == true ? nothing : index))
+  end
+end
 
 Sets.show_type(io::IO, ::Type{<:FinFunction}) = print(io, "FinFunction")
 
@@ -82,9 +87,16 @@ const FinDomFunction{S, Dom<:FinSet{S}, Codom} = SetFunction{Dom,Codom}
 
 FinDomFunction(f::Function, dom, codom) =
   SetFunctionCallable(f, FinSet(dom), codom)
-FinDomFunction(f::AbstractVector, args...) = FinDomFunctionVector(f, args...)
 FinDomFunction(::typeof(identity), args...) =
   SetFunctionIdentity((FinSet(arg) for arg in args)...)
+
+function FinDomFunction(f::AbstractVector, args...; index=false)
+  if index == false
+    FinDomFunctionVector(f, args...)
+  else
+    IndexedFinDomFunction(f, args..., index=(index == true ? nothing : index))
+  end
+end
 
 Sets.show_type(io::IO, ::Type{<:FinDomFunction}) = print(io, "FinDomFunction")
 
@@ -112,9 +124,8 @@ dom(f::FinDomFunctionVector) = FinSet(length(f.func))
 
 (f::FinDomFunctionVector)(x) = f.func[x]
 
-function Base.show(io::IO, f::FinDomFunctionVector)
+Base.show(io::IO, f::FinDomFunctionVector) =
   print(io, "FinDomFunction($(f.func), $(dom(f)), $(codom(f)))")
-end
 
 """ Force evaluation of lazy function or relation.
 """
@@ -128,9 +139,8 @@ Base.collect(f::SetFunction) = force(f).func
 const FinFunctionVector{S,T,V<:AbstractVector{T}} =
   FinDomFunctionVector{T,V,FinSet{S,T}}
 
-function Base.show(io::IO, f::FinFunctionVector)
+Base.show(io::IO, f::FinFunctionVector) =
   print(io, "FinFunction($(f.func), $(length(dom(f))), $(length(codom(f))))")
-end
 
 Sets.compose_impl(f::FinFunctionVector, g::FinDomFunctionVector) =
   FinDomFunctionVector(g.func[f.func], codom(g))
@@ -164,6 +174,9 @@ function IndexedFinDomFunction(f::AbstractVector{T}, codom::SetOb{T};
   IndexedFinDomFunction(f, index, codom)
 end
 
+Base.show(io::IO, f::IndexedFinDomFunction) =
+  print(io, "FinDomFunction($(f.func), $(dom(f)), $(codom(f)), index=true)")
+
 dom(f::IndexedFinDomFunction) = FinSet(length(f.func))
 force(f::IndexedFinDomFunction) = f
 
@@ -196,27 +209,26 @@ This type is mildly generalized by [`IndexedFinDomFunction`](@ref).
 const IndexedFinFunction{V,Index} =
   IndexedFinDomFunction{Int,V,Index,FinSet{Int,Int}}
 
-IndexedFinFunction(f::AbstractVector{Int}, codom; kw...) =
-  IndexedFinFunction(f; codom=codom, kw...)
+function IndexedFinFunction(f::AbstractVector{Int}; index=nothing)
+  codom = isnothing(index) ? (isempty(f) ? 0 : maximum(f)) : length(index)
+  IndexedFinFunction(f, codom; index=index)
+end
 
-function IndexedFinFunction(f::AbstractVector{Int}; codom=nothing, index=nothing)
-  if isnothing(codom) && isnothing(index)
-    codom = isempty(f) ? 0 : maximum(f)
-  elseif isnothing(codom)
-    codom = length(index)
-  end
+function IndexedFinFunction(f::AbstractVector{Int}, codom; index=nothing)
   codom = FinSet(codom)
   if isnothing(index)
     index = [ Int[] for j in codom ]
     for (i, j) in enumerate(f)
       insertsorted!(index[j], i)
     end
-  else
-    length(index) == length(codom) ||
-      error("Index length $(length(index)) does not match codomain $codom")
+  elseif length(index) != length(codom)
+    error("Index length $(length(index)) does not match codomain $codom")
   end
   IndexedFinDomFunction(f, index, codom)
 end
+
+Base.show(io::IO, f::IndexedFinFunction) =
+  print(io, "FinFunction($(f.func), $(length(dom(f))), $(length(codom(f))), index=true)")
 
 # For now, we do not preserve or compose indices, only the function vectors.
 Sets.compose_impl(f::Union{FinFunctionVector,IndexedFinFunction},

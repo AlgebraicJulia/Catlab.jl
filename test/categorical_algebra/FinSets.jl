@@ -10,8 +10,8 @@ using Catlab.CategoricalAlgebra.Sets, Catlab.CategoricalAlgebra.FinSets
 f = FinFunction([1,3,4], 5)
 g = FinFunction([1,1,2,2,3], 3)
 h = FinFunction([3,1,2], 3)
-@test dom(f) == FinSet(3)
-@test codom(f) == FinSet(5)
+@test (dom(f), codom(f)) == (FinSet(3), FinSet(5))
+@test force(f) === f
 @test codom(FinFunction([1,3,4])) == FinSet(4)
 
 # Evaluation.
@@ -20,13 +20,6 @@ rot3(x) = (x % 3) + 1
 @test map(FinFunction(rot3, 3, 3), 1:3) == [2,3,1]
 @test map(id(FinSet(3)), 1:3) == [1,2,3]
 
-# Pretty-print.
-@test sprint(show, FinSet(3)) == "FinSet(3)"
-@test sprint(show, f) == "FinFunction($([1,3,4]), 3, 5)"
-@test sprint(show, FinFunction(rot3, 3, 3)) ==
-  "FinFunction(rot3, FinSet(3), FinSet(3))"
-@test sprint(show, id(FinSet(3))) == "FinFunction(identity, FinSet(3))"
-
 # Composition.
 @test compose(f,g) == FinFunction([1,2,2], 3)
 @test compose(g,h) == FinFunction([3,3,1,1,2], 3)
@@ -34,28 +27,12 @@ rot3(x) = (x % 3) + 1
 @test compose(id(dom(f)), f) == f
 @test compose(f, id(codom(f))) == f
 
-# Functions out of finite sets
-##############################
+# Indexing.
+@test !is_indexed(f)
+@test is_indexed(id(FinSet(3)))
+@test preimage(id(FinSet(3)), 2) == [2]
 
-k = FinDomFunction([:a,:b,:c,:d,:e])
-@test dom(k) == FinSet(5)
-@test codom(k) == TypeSet(Symbol)
-@test k(3) == :c
-@test collect(k) == [:a,:b,:c,:d,:e]
-@test sprint(show, k) ==
-  "FinDomFunction($([:a,:b,:c,:d,:e]), FinSet(5), TypeSet(Symbol))"
-
-f = FinFunction([1,3,4], 5)
-@test compose(f,k) == FinDomFunction([:a,:c,:d])
-
-# Indexed functions
-###################
-
-@test !is_indexed(FinFunction([1,3,2]))
-@test !is_indexed(FinDomFunction([:a,:c,:b]))
-
-# Indexed functions between finite sets.
-f = IndexedFinFunction([1,2,1,3], 5)
+f = FinFunction([1,2,1,3], 5, index=true)
 @test is_indexed(f)
 @test force(f) === f
 @test (dom(f), codom(f)) == (FinSet(4), FinSet(5))
@@ -67,17 +44,40 @@ f = IndexedFinFunction([1,2,1,3], 5)
 g = FinFunction(5:-1:1)
 @test compose(f,g) == FinFunction([5,4,5,3])
 
-@test is_indexed(id(FinSet(3)))
-@test preimage(id(FinSet(3)), 2) == [2]
+# Pretty-print.
+sshow(args...) = sprint(show, args...)
+@test sshow(FinSet(3)) == "FinSet(3)"
+@test sshow(FinFunction(rot3, 3, 3)) ==
+  "FinFunction(rot3, FinSet(3), FinSet(3))"
+@test sshow(id(FinSet(3))) == "FinFunction(identity, FinSet(3))"
+@test sshow(FinFunction([1,3,4], 5)) == "FinFunction($([1,3,4]), 3, 5)"
+@test sshow(FinFunction([1,3,4], 5, index=true)) ==
+  "FinFunction($([1,3,4]), 3, 5, index=true)"
 
-# Indexed functions out of finite sets.
-k = IndexedFinDomFunction([:a,:b,:a,:c])
+# Functions out of finite sets
+##############################
+
+k = FinDomFunction([:a,:b,:c,:d,:e])
+@test (dom(k), codom(k)) == (FinSet(5), TypeSet(Symbol))
+@test k(3) == :c
+@test collect(k) == [:a,:b,:c,:d,:e]
+@test sshow(k) ==
+  "FinDomFunction($([:a,:b,:c,:d,:e]), FinSet(5), TypeSet(Symbol))"
+
+f = FinFunction([1,3,4], 5)
+@test compose(f,k) == FinDomFunction([:a,:c,:d])
+
+# Indexing.
+@test !is_indexed(k)
+k = FinDomFunction([:a,:b,:a,:c], index=true)
 @test is_indexed(k)
 @test (dom(k), codom(k)) == (FinSet(4), TypeSet(Symbol))
 @test k(1) == :a
 @test preimage(k, :a) == [1,3]
 @test preimage(k, :c) == [4]
 @test isempty(preimage(k, :d))
+@test sshow(k) ==
+  "FinDomFunction($([:a,:b,:a,:c]), FinSet(4), TypeSet(Symbol), index=true)"
 
 f = FinFunction([1,3,2], 4)
 @test compose(f,k) == FinDomFunction([:a,:a,:b])
