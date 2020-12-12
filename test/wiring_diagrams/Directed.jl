@@ -83,27 +83,27 @@ rem_boxes!(d_copy, [fv,gv])
 @test nboxes(d) == 2
 @test nwires(d) == 3
 
-# # Graph properties.
-# @test Set(all_neighbors(d, fv)) == Set([input_id(d), gv])
-# @test Set(all_neighbors(d, gv)) == Set([fv, output_id(d)])
-# @test neighbors(d, fv) == [gv]
-# @test outneighbors(d, fv) == [gv]
-# @test inneighbors(d, gv) == [fv]
-# @test wires(d, input_id(d)) == [ Wire((input_id(d),1) => (fv,1)) ]
-# @test wires(d, fv) == map(Wire, [
-#   ((input_id(d),1) => (fv,1)),
-#   ((fv,1) => (gv,1))
-# ])
-# @test out_wires(d, fv) == [ Wire((fv,1) => (gv,1)) ]
-# @test out_wires(d, Port(fv,OutputPort,1)) == [ Wire((fv,1) => (gv,1)) ]
-# @test in_wires(d, gv) == [ Wire((fv,1) => (gv,1)) ]
-# @test in_wires(d, Port(gv,InputPort,1)) == [ Wire((fv,1) => (gv,1)) ]
+# Graph properties.
+@test Set(all_neighbors(d, fv)) == Set([input_id(d), gv])
+@test Set(all_neighbors(d, gv)) == Set([fv, output_id(d)])
+@test neighbors(d, fv) == [gv]
+@test outneighbors(d, fv) == [gv]
+@test inneighbors(d, gv) == [fv]
+@test wires(d, input_id(d)) == [ Wire((input_id(d),1) => (fv,1)) ]
+@test wires(d, fv) == map(Wire, [
+  ((input_id(d),1) => (fv,1)),
+  ((fv,1) => (gv,1))
+])
+@test out_wires(d, fv) == [ Wire((fv,1) => (gv,1)) ]
+@test out_wires(d, Port(fv,OutputPort,1)) == [ Wire((fv,1) => (gv,1)) ]
+@test in_wires(d, gv) == [ Wire((fv,1) => (gv,1)) ]
+@test in_wires(d, Port(gv,InputPort,1)) == [ Wire((fv,1) => (gv,1)) ]
 
-# rem_wires!(d, fv, gv)
-# @test nwires(d) == 2
-# @test !has_wire(d, fv, gv)
-# rem_wire!(d, (input_id(d),1) => (fv,1))
-# @test wires(d) == [ Wire((gv,1) => (output_id(d),1)) ]
+rem_wires!(d, fv, gv)
+@test nwires(d) == 2
+@test !has_wire(d, fv, gv)
+rem_wire!(d, (input_id(d),1) => (fv,1))
+@test wires(d) == [ Wire((gv,1) => (output_id(d),1)) ]
 
 # # Induced subgraph.
 # d = WiringDiagram(A,D)

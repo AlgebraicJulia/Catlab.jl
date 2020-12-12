@@ -32,6 +32,7 @@ using ...Present, ...CSetDataStructures, ...Graphs.BasicGraphs
 using ...Graphs.BasicGraphs: TheoryGraph
 import ...Graphs: all_neighbors, neighbors, outneighbors, inneighbors
 
+
 # Data types
 ############
 
@@ -537,6 +538,7 @@ function rem_pass_wire!(f::WiringDiagram, wire::Wire)
     subpart(f.diagram, w, :pass_wire_value) == wire.value && 
           return rem_part!(f.diagram, :PassWire, w)
   end
+  error("PassWire $wire does not exist, so cannot be removed")
 end
 
 function rem_in_wire!(f::WiringDiagram, wire::Wire)
@@ -544,6 +546,7 @@ function rem_in_wire!(f::WiringDiagram, wire::Wire)
     subpart(f.diagram, w, :in_wire_value) == wire.value && 
           return rem_part!(f.diagram, :InWire, w)
   end
+  error("InWire $wire does not exist, so cannot be removed")
 end
 
 function rem_out_wire!(f::WiringDiagram, wire::Wire)
@@ -551,6 +554,7 @@ function rem_out_wire!(f::WiringDiagram, wire::Wire)
     subpart(f.diagram, w, :out_wire_value) == wire.value && 
           return rem_part!(f.diagram, :OutWire, w)
   end
+  error("OutWire $wire does not exist, so cannot be removed")
 end
 
 function rem_internal_wire!(f::WiringDiagram, wire::Wire)
@@ -559,19 +563,19 @@ function rem_internal_wire!(f::WiringDiagram, wire::Wire)
           subpart(f.diagram, w, :wire_value) == wire.value &&
           return rem_part!(f.diagram, :Wire, w)
   end
+  error("Wire $wire does not exist, so cannot be removed")
 end
 
 function rem_wire!(f::WiringDiagram, wire::Wire)
   if wire.source.box == input_id(f) && wire.target.box == output_id(f)
     rem_pass_wire!(f, wire)
   elseif wire.source.box == input_id(f)
-    rem_in_wire!(f,wire)
+    rem_in_wire!(f, wire)
   elseif wire.target.box == output_id(f)
     rem_out_wire!(f,wire)
   else
     rem_internal_wire!(f, wire)
   end
-  error("Wire $wire does not exist, so cannot be removed")
 end
 rem_wire!(f::WiringDiagram, pair::Pair) = rem_wire!(f, Wire(pair))
 
@@ -585,12 +589,12 @@ function rem_wires!(f::WiringDiagram, src::Int, tgt::Int)
   if src == input_id(f) && tgt == output_id(f)
     rem_parts!(f.diagram, :PassWire, parts(f.diagram, :PassWire))
   elseif src == input_id(f) 
-    rem_parts!(f.diagram, :InWire, incident(f.diagram, tgt, :in_port_box∘:in_tgt))
+    rem_parts!(f.diagram, :InWire, incident(f.diagram, tgt, [:in_tgt, :in_port_box]))
   elseif tgt == output_id(f)
-    rem_parts!(f.diagram, :OutWire, incident(f.diagram, src, :out_port_box∘:out_src))
+    rem_parts!(f.diagram, :OutWire, incident(f.diagram, src, [:out_src, :out_port_box]))
   else
-    rem_parts!(f.diagram, :Wire, incident(f.diagram, src, :out_port_box∘:src) ∩ 
-                                 incident(f.diagram, tgt, :in_port_box∘:tgt) ) #fast way for sorted intersection?
+    rem_parts!(f.diagram, :Wire, incident(f.diagram, src, [:src, :out_port_box]) ∩ 
+                                 incident(f.diagram, tgt, [:tgt, :in_port_box]) ) #fast way for sorted intersection?
   end
 end
 
@@ -601,33 +605,64 @@ The default implementation is a no-op.
 function validate_ports(source_port, target_port) end
 
 # Graph properties.
+conditional_append(cond::Bool, a::Int, ls::Vector{Int}) = cond ? append!(ls, a) : ls
 
-""" Retrieve the graph underlying the wiring diagram.
+function outneighbors(f::WiringDiagram, b::Int)
+    if b==input_id(f)
+        conditional_append(!isempty(subpart(f.diagram, :WirePass)), 
+                            output_id(f), 
+                            copy(subpart(f.diagram, [:in_tgt, :in_port_box])))
+    elseif b==output_id(f)
+        return []
+    else
+        conditional_append(!isempty(incident(f.diagram, b, [:out_src, :out_port_box])), 
+                            output_id(f),
+                            copy(subpart(f.diagram, 
+                                    incident(f.diagram, b, [:src, :out_port_box]), 
+                                    [:tgt, :in_port_box])))
+    end
+end
 
-The graph is an instance of `Catlab.Graphs.AbstractGraph`. Do not mutate it! All
-mutations should use the wiring diagrams API: `add_box!`, `rem_box!`, and so on.
-"""
-graph(diagram::WiringDiagram) = diagram.graph
+function inneighbors(f::WiringDiagram, b::Int)
+    if b == input_id(f)
+        return []
+    elseif b==output_id(f)
+        conditional_append(!isempty(subpart(f.diagram, :WirePass)), 
+                            input_id(f),
+                            copy(subpart(f.diagram, [:out_src, :out_port_box])))
+    else
+        conditional_append(!isempty(incident(f.diagram, b, [:in_tgt, :in_port_box])), 
+                            input_id(f), 
+                            copy(subpart(f.diagram,
+                                    incident(f.diagram, b, [:tgt, :in_port_box]),
+                                    [:src, :out_port_box])))
+    end
+end
 
-# Convenience methods delegated to underlying graph.
-all_neighbors(d::WiringDiagram, v::Int) = all_neighbors(graph(d), v)
-neighbors(d::WiringDiagram, v::Int) = neighbors(graph(d), v)
-outneighbors(d::WiringDiagram, v::Int) = outneighbors(graph(d), v)
-inneighbors(d::WiringDiagram, v::Int) = inneighbors(graph(d), v)
+neighbors(f::WiringDiagram, b::Int) = outneighbors(f, b)
+all_neighbors(f::WiringDiagram, b::Int) = 
+    Iterators.flatten((inneighbors(f, b), outneighbors(f, b)))
 
+
+# Get wires
 """ Get all wires coming into or out of the box.
 """
-function wires(d::WiringDiagram, v::Int)
-  g = graph(d)
-  [ Wire(subpart(g, e, :wire), src(g, e), tgt(g, e))
-    for e in unique!(sort!([incident(g, v, :src); incident(g, v, :tgt)])) ]
+function wires(f::WiringDiagram, b::Int)
+  vcat(in_wires(f,b), out_wires(f,b))
 end
 
 """ Get all wires coming into the box.
 """
-function in_wires(d::WiringDiagram, v::Int)
-  g = graph(d)
-  [ Wire(subpart(g, e, :wire), src(g, e), v) for e in incident(g, v, :tgt) ]
+function in_wires(f::WiringDiagram, b::Int)
+  if b == input_id(f)
+    return []
+  elseif b == output_id(f)
+    vcat([pass_wire(f, w) for w in parts(f.diagram, :PassWire)],
+         [out_wire(f, w) for w in parts(f.diagram, :OutWire)])
+  else
+    vcat([wire(f, w) for w in incident(f.diagram, b, [:tgt, :in_port_box])], 
+         [in_wire(f, w) for w in incident(f.diagram, b, [:in_tgt, :in_port_box])])
+  end
 end
 
 """ Get all wires coming into the port.
@@ -641,9 +676,16 @@ end
 
 """ Get all wires coming out of the box.
 """
-function out_wires(d::WiringDiagram, v::Int)
-  g = graph(d)
-  [ Wire(subpart(g, e, :wire), v, tgt(g, e)) for e in incident(g, v, :src) ]
+function out_wires(f::WiringDiagram, b::Int)
+  if b == input_id(f)
+    vcat([pass_wire(f, w) for w in parts(f.diagram, :PassWire)],
+         [in_wire(f, w) for w in parts(f.diagram, :InWire)])
+  elseif b == output_id(f)
+    return []
+  else
+    vcat([wire(f, w) for w in incident(f.diagram, b, [:src, :out_port_box])],
+         [out_wire(f, w) for w in incident(f.diagram, b, [:out_src, :out_port_box])])
+  end
 end
 
 """ Get all wires coming out of the port.
