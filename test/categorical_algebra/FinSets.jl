@@ -180,13 +180,11 @@ tuples(lim::AbstractLimit) =
   sort!([ Tuple(map(π -> π(i), legs(lim))) for i in ob(lim) ])
 
 f, g = FinFunction([3,1,1,5,2],5), FinFunction([4,1,1,3,2],5)
-lim = pullback(f, g, alg=NestedLoopJoin())
-@test ob(lim) == FinSet(6)
-@test tuples(lim) == [(1,4), (2,2), (2,3), (3,2), (3,3), (5,5)]
-
-lim = pullback(f, g, alg=SortMergeJoin())
-@test ob(lim) == FinSet(6)
-@test tuples(lim) == [(1,4), (2,2), (2,3), (3,2), (3,3), (5,5)]
+for Alg in (NestedLoopJoin, SortMergeJoin, HashJoin)
+  lim = pullback(f, g, alg=Alg())
+  @test ob(lim) == FinSet(6)
+  @test tuples(lim) == [(1,4), (2,2), (2,3), (3,2), (3,3), (5,5)]
+end
 
 # General limits
 #---------------

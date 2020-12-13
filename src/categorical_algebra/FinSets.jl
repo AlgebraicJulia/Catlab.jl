@@ -2,14 +2,15 @@
 """
 module FinSets
 export FinSet, FinFunction, FinDomFunction, force, is_indexed, preimage,
-  JoinAlgorithm, NestedLoopJoin, SortMergeJoin
+  JoinAlgorithm, NestedLoopJoin, SortMergeJoin, HashJoin
 
 using Compat: isnothing, only
 
 using AutoHashEquals
 using DataStructures: IntDisjointSets, union!, find_root!
 using FunctionWrappers: FunctionWrapper
-using StaticArrays
+import StaticArrays
+using StaticArrays: StaticVector, SVector, SizedVector
 
 using ...Theories, ..FreeDiagrams, ..Limits, ..Sets
 import ...Theories: dom, codom
@@ -315,10 +316,11 @@ function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}};
   limit(cospan, alg)
 end
 
-function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}}, ::NestedLoopJoin)
+function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}},
+               ::NestedLoopJoin)
   # A nested-loop join is exactly what you get by composing the above algorithms
-  # for products and equalizers, except that we handle the "nested" loops using
-  # `CartesianIndices`.
+  # for products and equalizers, except that we transform the nested loops into
+  # a single loop using `CartesianIndices`.
   limit(cospan, ComposeProductEqualizer())
 end
 
@@ -326,7 +328,8 @@ end
 """
 struct SortMergeJoin <: JoinAlgorithm end
 
-function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}}, ::SortMergeJoin)
+function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}},
+               ::SortMergeJoin)
   funcs = map(collect, legs(cospan))
   sorts = map(sortperm, funcs)
   values = similar_mutable(funcs, eltype(apex(cospan)))
@@ -366,8 +369,7 @@ function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}}, ::SortMergeJo
       next_range!(last(findmin(values)))
     end
   end
-  cone = Multispan(map((π,f) -> FinFunction(π, length(f)), πs, funcs))
-  Limit(cospan, cone)
+  Limit(cospan, Multispan(map((π,f) -> FinFunction(π, length(f)), πs, funcs)))
 end
 
 similar_mutable(x::AbstractVector, T::Type) = similar(x, T)
@@ -377,6 +379,58 @@ function similar_mutable(x::StaticVector{N}, T::Type) where N
   # only works when the element type is a bits-type.
   isbitstype(T) ? similar(x, T) : SizedVector{N}(Vector{T}(undef, N))
 end
+
+""" [Hash join](https://en.wikipedia.org/wiki/Hash_join) algorithm.
+"""
+struct HashJoin <: JoinAlgorithm end
+
+function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}}, ::HashJoin)
+  # We follow the standard terminology for hash joins: in a multiway hash join,
+  # one function, called the *probe*, will be iterated over and need not be
+  # indexed, whereas the other functions, call *build* inputs, must be indexed.
+  #
+  # We choose as probe the unindexed function with largest domain. If all
+  # functions are already indexed, we arbitrarily choose the first one.
+  i = last(findmax(map(legs(cospan)) do f
+    is_indexed(f) ? -1 : length(dom(f))
+  end))
+  probe = legs(cospan)[i]
+  builds = map(ensure_indexed, deleteat(legs(cospan), i))
+  πs_build, π_probe = hash_join(builds, probe)
+  Limit(cospan, Multispan(insert(πs_build, i, π_probe)))
+end
+
+function hash_join(builds::StaticVector{1,<:FinDomFunction{Int}},
+                   probe::FinDomFunction{Int})
+  πb, πp = hash_join(builds[1], probe)
+  (SVector((πb,)), πp)
+end
+function hash_join(build::FinDomFunction{Int}, probe::FinDomFunction{Int})
+  πb, πp = Int[], Int[]
+  for k in dom(probe)
+    js = preimage(build, probe(k))
+    if !isempty(js)
+      nb, np, nj = length(πb), length(πp), length(js)
+      resize!(πb, nb + nj)
+      resize!(πp, np + nj)
+      for (i, j) in enumerate(js)
+        πb[nb + i] = j
+        πp[np + i] = k
+      end
+    end
+  end
+  (FinFunction(πb, dom(build)), FinFunction(πp, dom(probe)))
+end
+
+ensure_indexed(f::FinFunction{Int,Int}) = is_indexed(f) ? f :
+  FinFunction(collect(f), codom(f), index=true)
+ensure_indexed(f::FinDomFunction{Int}) = is_indexed(f) ? f :
+  FinDomFunction(collect(f), index=true)
+
+insert(x::AbstractVector, args...) = insert!(copy(x), args...)
+insert(x::StaticVector, args...) = StaticArrays.insert(x, args...)
+deleteat(x::AbstractVector, i) = deleteat!(copy(x), i)
+deleteat(x::StaticVector, i) = StaticArrays.deleteat(x, i)
 
 """ Limit of free diagram of FinSets.
 
