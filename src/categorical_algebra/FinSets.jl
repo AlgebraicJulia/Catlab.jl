@@ -312,16 +312,26 @@ This is the naive algorithm for computing joins.
 struct NestedLoopJoin <: JoinAlgorithm end
 
 function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}};
-               alg::LimitAlgorithm=NestedLoopJoin())
+               alg::LimitAlgorithm=ComposeProductEqualizer())
   limit(cospan, alg)
 end
 
 function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}},
                ::NestedLoopJoin)
-  # A nested-loop join is exactly what you get by composing the above algorithms
-  # for products and equalizers, except that we transform the nested loops into
-  # a single loop using `CartesianIndices`.
-  limit(cospan, ComposeProductEqualizer())
+  # A nested-loop join is algorithmically the same as `ComposeProductEqualizer`,
+  # but for completeness and performance we give a direct implementation here.
+  funcs = legs(cospan)
+  ns = map(length, feet(cospan))
+  πs = map(_ -> Int[], funcs)
+  for index in CartesianIndices(Tuple(ns))
+    values = map((f, i) -> f(index[i]), funcs, eachindex(funcs))
+    if all(==(values[1]), values)
+      for i in eachindex(πs)
+        push!(πs[i], index[i])
+      end
+    end
+  end
+  Limit(cospan, Multispan(map((π,f) -> FinFunction(π, dom(f)), πs, funcs)))
 end
 
 """ [Sort-merge join](https://en.wikipedia.org/wiki/Sort-merge_join) algorithm.
