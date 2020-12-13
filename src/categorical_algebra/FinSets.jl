@@ -14,7 +14,6 @@ using StaticArrays: StaticVector, SVector, SizedVector
 
 using ...Theories, ..FreeDiagrams, ..Limits, ..Sets
 import ...Theories: dom, codom
-using ...CSetDataStructures: insertsorted!, set_data_index!
 import ..Limits: limit, colimit, universal
 using ..Sets: SetFunctionCallable, SetFunctionIdentity
 
@@ -169,7 +168,7 @@ function IndexedFinDomFunction(f::AbstractVector{T}, codom::SetOb{T};
   if isnothing(index)
     index = Dict{T,Vector{Int}}()
     for (i, x) in enumerate(f)
-      set_data_index!(index, x, i)
+      push!(get!(index, x) do; Int[] end, i)
     end
   end
   IndexedFinDomFunction(f, index, codom)
@@ -200,7 +199,7 @@ preimage(f::SetFunctionIdentity, y) = SVector(y)
 """ Indexed function between finite sets of type `FinSet{Int}`.
 
 Indexed functions store both the forward map ``f: X → Y``, as a vector of
-integers, and the backward map ``f: Y → X⁻¹``, as a vector of sorted vectors of
+integers, and the backward map ``f: Y → X⁻¹``, as a vector of vectors of
 integers, accessible through the [`preimage`](@ref) function. The backward map
 is called the *index*. If it is not supplied through the keyword argument
 `index`, it is computed when the object is constructed.
@@ -220,7 +219,7 @@ function IndexedFinFunction(f::AbstractVector{Int}, codom; index=nothing)
   if isnothing(index)
     index = [ Int[] for j in codom ]
     for (i, j) in enumerate(f)
-      insertsorted!(index[j], i)
+      push!(index[j], i)
     end
   elseif length(index) != length(codom)
     error("Index length $(length(index)) does not match codomain $codom")
