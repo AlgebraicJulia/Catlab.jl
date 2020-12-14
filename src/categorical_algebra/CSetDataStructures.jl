@@ -5,7 +5,7 @@ export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
   AbstractACSetType, ACSetType, ACSetTableType, AbstractCSetType, CSetType,
   tables, parts, nparts, has_part, subpart, has_subpart, incident,
   add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!,
-  copy_parts!, copy_parts_only!, disjoint_union, @acset
+  copy_parts!, copy_parts_only!, disjoint_union, @acset, wrangle_attributes
 
 using Compat: isnothing, only
 
@@ -16,7 +16,7 @@ using PrettyTables: pretty_table
 using StructArrays
 
 using ...Syntax: GATExpr, args
-using ...Theories: Schema, FreeSchema, dom, codom, codom_num, data_num,
+using ...Theories: Schema, FreeSchema, dom, codom, codom_num, data_num, attrs_by_codom,
   CatDesc, CatDescType, AttrDesc, AttrDescType, SchemaType
 using ...Present
 
@@ -861,21 +861,56 @@ end
 """ Map over a data type, in the style of Haskell functors
 """
 
-Base.map(B::Type, f::Function, D::Symbol, acs::ACSet) = _map(B, f,Val{D},acs)
+function Base.map(acs::ACSet; kwargs...)
+  fns = (;kwargs...)
+  _map(acs, fns)
+end
 
-@generated function _map(::Type{B}, f::Function, ::Type{Val{D}}, acs::AT) where
-    {B,D,AT<:ACSet}
-  # Build the new ACSet type
+function sortunique!(x)
+  sort!(x)
+  unique!(x)
+  x
+end
+
+@generated function _map(acs::AT, fns::NamedTuple{map_over}) where
+    {map_over,AT<:ACSet}
   CD,AD,Ts,Idxed,UniqIdxed = AT.parameters[1:5]
-  k = data_num(AD, D)
-  new_Ts = begin
-    arr = [Ts.parameters...]
-    arr[k] = B
-    Tuple{arr...}
+  map_over = [map_over...]
+  attrs = filter(x -> x ∈ AD.attr, map_over)
+  data = filter(x -> x ∈ AD.data, map_over)
+  abc = attrs_by_codom(AD)
+  data_attrs = vcat(map(d -> abc[d], data)...)
+  all_attrs = sortunique!(Symbol[attrs; data_attrs])
+  affected_data = sortunique!(map(a -> codom(AD,a), all_attrs))
+  needed_attrs = sortunique!(vcat(map(d -> abc[d], affected_data)...))
+  all_attrs == needed_attrs || error("not enough functions provided to fully transform ACSet")
+
+  fn_applications = map(all_attrs) do a
+    qa = Expr(:quote,a)
+    if a ∈ attrs
+      :($a = (fns[$qa]).(subpart(acs, $qa)))
+    else
+      d = codom(AD,a)
+      :($a = (fns[$(Expr(:quote,d))]).(subpart(acs, $qa)))
+    end
   end
-  new_acset_type = ACSet{CD,AD,new_Ts,Idxed,UniqIdxed}
+  data_types = map(enumerate(AD.data)) do (i,d)
+    if d ∈ affected_data
+      quote
+        T = eltype(fn_vals[$(Expr(:quote, abc[d][1]))])
+        $(Expr(:block, (map(abc[d][2:end]) do a
+               :(@assert T == eltype(fn_vals[$(Expr(:quote,a))]))
+               end)...))
+        T
+      end
+    else
+      :($(Ts[i]))
+    end
+  end
   quote
-    new_acs = $(new_acset_type)()
+    fn_vals = $(Expr(:tuple, fn_applications...))
+    new_Ts = Tuple{$(data_types...)}
+    new_acs = ACSet{$CD,$AD,new_Ts,$Idxed,$UniqIdxed}()
     $(Expr(:block, map(CD.ob) do ob
            :(add_parts!(new_acs,$(Expr(:quote,ob)),nparts(acs,$(Expr(:quote,ob)))))
       end...))
@@ -883,10 +918,11 @@ Base.map(B::Type, f::Function, D::Symbol, acs::ACSet) = _map(B, f,Val{D},acs)
            :(set_subpart!(new_acs,$(Expr(:quote,hom)),subpart(acs,$(Expr(:quote,hom)))))
       end...))
     $(Expr(:block, map(AD.attr) do attr
-        if codom_num(AD,attr) == k
-           :(set_subpart!(new_acs,$(Expr(:quote,attr)),f.(subpart(acs,$(Expr(:quote,attr))))))
+        qa = Expr(:quote, attr)
+        if attr ∈ all_attrs
+           :(set_subpart!(new_acs,$qa,fn_vals[$qa]))
         else
-           :(set_subpart!(new_acs,$(Expr(:quote,attr)),subpart(acs,$(Expr(:quote,attr)))))
+           :(set_subpart!(new_acs,$qa,subpart(acs,$qa)))
         end
       end...))
     return new_acs

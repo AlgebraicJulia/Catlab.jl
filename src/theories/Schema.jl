@@ -1,4 +1,4 @@
-export Schema, FreeSchema, Data, Attr, SchemaExpr, DataExpr, AttrExpr
+export Schema, FreeSchema, Data, Attr, SchemaExpr, DataExpr, AttrExpr, attrs_by_codom
 
 using MLStyle: @match
 
@@ -177,6 +177,21 @@ end
 function codom(AD::Type{T}, attr::Union{Int,Symbol}) where
     {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
   Data[codom_num(AD,attr)]
+end
+
+function attrs_by_codom(AD::Type{T}) where
+    {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
+  abc = Dict{Symbol,Array{Symbol}}()
+  for i in eachindex(Attr)
+    a = Attr[i]
+    d = Data[ACodom[i]]
+    if d ∈ keys(abc)
+      push!(abc[d],a)
+    else
+      abc[d] = [a]
+    end
+  end
+  abc
 end
 
 SchemaType(pres::Presentation{Schema}) = (CatDescType(pres),AttrDescType(pres))
