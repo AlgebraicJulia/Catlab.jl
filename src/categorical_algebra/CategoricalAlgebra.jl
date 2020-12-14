@@ -11,12 +11,12 @@ include("FinRelations.jl")
 include("CSets.jl")
 include("GraphCategories.jl")
 include("StructuredCospans.jl")
-include("Squares.jl")
+include("CommutativeDiagrams.jl")
 
 @reexport using .FreeDiagrams
+@reexport using .CommutativeDiagrams
 @reexport using .Limits
 @reexport using .CSets
 @reexport using .StructuredCospans
-@reexport using .Squares
 
 end

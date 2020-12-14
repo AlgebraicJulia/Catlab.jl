@@ -6,6 +6,10 @@ using Test
   include("FreeDiagrams.jl")
 end
 
+@testset "CommutativeDiagrams" begin
+  include("CommutativeDiagrams.jl")
+end
+
 @testset "Limits" begin
   include("Limits.jl")
 end
@@ -34,10 +38,6 @@ end
 
 @testset "StructuredCospans" begin
   include("StructuredCospans.jl")
-end
-
-@testset "Squares" begin
-  include("Squares.jl")
 end
 
 end
