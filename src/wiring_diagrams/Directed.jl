@@ -136,6 +136,15 @@ function Base.show(io::IO, box::Box)
   print(io, "])")
 end
 
+""" Check equality of boxes.
+"""
+function Base.:(==)(b1::AbstractBox, b2::AbstractBox)
+  (input_ports(b1) == input_ports(b2) &&
+   output_ports(b1) == output_ports(b2) && value(b1) == value(b2))
+end
+
+value(b::AbstractBox) = b.value
+
 @present TheoryWiringDiagramGraph <: TheoryGraph begin
   Box::Data
   WireData::Data
@@ -144,14 +153,14 @@ end
   wire::Attr(E,WireData)
 end
 
-const WiringDiagramGraphUnionAll =
+const WiringDiagramGraphDataType =
   ACSetType(TheoryWiringDiagramGraph, index=[:src, :tgt])
 
 """ Internal datatype for graph underlying a directed wiring diagram.
 
 Boxes and wires are attached to vertices and edges, respectively.
 """
-# const WiringDiagramGraph = WiringDiagramGraphUnionAll{
+# const WiringDiagramGraph = WiringDiagramGraphDataType{
 #   Union{AbstractBox,Nothing},WireData}
 
 @present TheoryWiringDiagram(FreeSchema) begin
@@ -175,18 +184,20 @@ end
 const AbstractWiringDiagramACSet = AbstractACSetType(TheoryWiringDiagram)
 
 @present TheoryTypedWiringDiagram <: TheoryWiringDiagram begin
-  PortType::Data
-  in_port_type::Attr(InPort, PortType)
-  out_port_type::Attr(OutPort, PortType)
-  outer_in_port_type::Attr(OuterInPort, PortType)
-  outer_out_port_type::Attr(OuterOutPort, PortType)
+  PortValue::Data
+  in_port_type::Attr(InPort, PortValue)
+  out_port_type::Attr(OutPort, PortValue)
+  outer_in_port_type::Attr(OuterInPort, PortValue)
+  outer_out_port_type::Attr(OuterOutPort, PortValue)
 end
 
 @present TheoryAttributedWiringDiagram <: TheoryTypedWiringDiagram begin
-  BoxValue::Data
   WireValue::Data
+  BoxValue::Data
+  BoxType::Data
 
   value::Attr(Box, BoxValue)
+  box_type::Attr(Box, BoxType)
   wire_value::Attr(Wire, WireValue)
   in_wire_value::Attr(InWire, WireValue)
   out_wire_value::Attr(OutWire, WireValue)
@@ -205,13 +216,13 @@ correspond to wires. There are two special vertices, accessible via `input_id`
 and `output_id`, that represent the input and output ports of the outer box.
 """
 
-mutable struct WiringDiagram{Theory, BoxValue, PortType, WireValue} <: AbstractBox
+mutable struct WiringDiagram{Theory, PortValue, WireValue,  BoxValue} <: AbstractBox
   # mutable struct WiringDiagram{Theory} <: AbstractBox
   #   graph::WiringDiagramGraph
   #   value::Any
   #   input_ports::Vector
   #   output_ports::Vector
-  diagram::WiringDiagramACSet{PortType,Union{BoxValue, AbstractBox},WireValue}
+  diagram::WiringDiagramACSet{PortValue, WireValue, Union{BoxValue, AbstractBox}, DataType}
   value::Any
   
 
@@ -221,22 +232,22 @@ mutable struct WiringDiagram{Theory, BoxValue, PortType, WireValue} <: AbstractB
   #   add_vertices!(graph, 2, box=nothing)
   #   return diagram
   # end
-  function WiringDiagram{T, BoxValue, PortType, WireValue}(value, inputs::Vector, outputs::Vector) where {T, BoxValue, PortType, WireValue}
-    diagram = WiringDiagramACSet{PortType, Union{BoxValue, AbstractBox}, WireValue}()
-    f = new{T, BoxValue, PortType, WireValue}(diagram, value)
+  function WiringDiagram{T, PortValue, WireValue, BoxValue}(value, inputs::Vector, outputs::Vector) where {T, PortValue, WireValue, BoxValue}
+    diagram = WiringDiagramACSet{PortValue, WireValue, Union{BoxValue, AbstractBox}, DataType}()
+    f = new{T, PortValue, WireValue, BoxValue}(diagram, value)
     add_parts!(diagram, :OuterInPort, length(inputs),   outer_in_port_type=inputs)
     add_parts!(diagram, :OuterOutPort, length(outputs), outer_out_port_type=outputs)
     return f
   end
-  function WiringDiagram(f::WiringDiagram{T, BoxValue, PortType, WireValue}) where {T, BoxValue, PortType, WireValue}
+  function WiringDiagram(f::WiringDiagram{T, PortValue, WireValue, BoxValue}) where {T, PortValue, WireValue, BoxValue}
     # Copy constructor for shallow copy
-    new{T, BoxValue, PortType, WireValue}(copy(f.diagram), f.value)
+    new{T, PortValue, WireValue, BoxValue}(copy(f.diagram), f.value)
   end
 end
 
 
-function WiringDiagram{T, BoxValue, PortType, WireValue}(inputs::Vector, outputs::Vector) where {T, BoxValue, PortType, WireValue}
-  WiringDiagram{T, BoxValue, PortType, WireValue}(nothing, inputs, outputs)
+function WiringDiagram{T, PortValue, WireValue, BoxValue}(inputs::Vector, outputs::Vector) where {T, PortValue, WireValue, BoxValue}
+  WiringDiagram{T, PortValue, WireValue, BoxValue}(nothing, inputs, outputs)
 end
 WiringDiagram(args...) = WiringDiagram{Any, Any, Any, Any}(args...)
 WiringDiagram{T}(args...) where T = WiringDiagram{T, Any, Any, Any}(args...)
@@ -326,7 +337,9 @@ function box(f::WiringDiagram, b::Int)
   else 
     box_value = subpart(f.diagram, b, :value)
     typeof(box_value) <: WiringDiagram ? 
-        box_value : Box(box_value, input_ports(f, b), output_ports(f, b))
+        box_value : subpart(f.diagram, b, :box_type)(box_value, 
+                                                      input_ports(f, b), 
+                                                      output_ports(f, b))
   end
 end
 
@@ -421,9 +434,6 @@ has_wire(f::WiringDiagram, wire::Wire) = has_wire(f, wire.source.box, wire.targe
 has_wire(f::WiringDiagram, pair::Pair) = has_wire(f, first(pair)[1], last(pair)[1])
 
 
-
-
-
 input_ports(f::WiringDiagram) = subpart(f.diagram, :outer_in_port_type)
 output_ports(f::WiringDiagram) = subpart(f.diagram, :outer_out_port_type)
 
@@ -464,17 +474,18 @@ end
 # Graph mutation.
 
 function add_box!(f::WiringDiagram, box::AbstractBox)
-
   b = add_part!(f.diagram, :Box)
+  set_subpart!(f.diagram, b, :box_type, typeof(box))
+  box isa WiringDiagram ? set_subpart!(f.diagram, b, :value, box) : 
+                                 set_subpart!(f.diagram, b, :value, value(box))
+
+
   in_ports = add_parts!(f.diagram, :InPort, length(input_ports(box)))
   set_subpart!(f.diagram, in_ports, :in_port_box, b)
   set_subpart!(f.diagram, in_ports, :in_port_type, input_ports(box))
   out_ports = add_parts!(f.diagram, :OutPort, length(output_ports(box)))
   set_subpart!(f.diagram, out_ports, :out_port_box, b)
   set_subpart!(f.diagram, out_ports, :out_port_type, output_ports(box))
-
-  typeof(box) <: WiringDiagram ? set_subpart!(f.diagram, b, :value, box) : 
-                                 set_subpart!(f.diagram, b, :value, box.value)
   return b
 end 
 
@@ -837,9 +848,9 @@ function substitute(d::WiringDiagram, v::Int, sub::WiringDiagram; kw...)
   substitute(d, [v], [sub]; kw...)
 end
 
-function substitute(d::WiringDiagram{T, BoxValue, PortType, WireValue}, vs::AbstractVector{Int},
+function substitute(d::WiringDiagram{T, PortValue, WireValue, BoxValue}, vs::AbstractVector{Int},
                     subs::Vector{<:WiringDiagram};
-                    merge_wire_values=default_merge_wire_values) where {T, BoxValue, PortType, WireValue}
+                    merge_wire_values=default_merge_wire_values) where {T, PortValue, WireValue, BoxValue}
   # In outline, the algorithm is:
   #
   # 1. Create an empty wiring diagram.
@@ -853,7 +864,7 @@ function substitute(d::WiringDiagram{T, BoxValue, PortType, WireValue}, vs::Abst
   # problem of *instantaneous wires*. Some authors ban instantaneous wires, but
   # we need them to represent identities, braidings, etc.
   @assert length(vs) == length(subs)
-  result = WiringDiagram{T, BoxValue, PortType, WireValue}(d.value, input_ports(d), output_ports(d))
+  result = WiringDiagram{T, PortValue, WireValue, BoxValue}(d.value, input_ports(d), output_ports(d))
   
   # Add boxes by interleaving, in the correct order, the non-substituted boxes
   # of the original diagram and the internal boxes of the substituted diagrams.
@@ -946,8 +957,8 @@ function encapsulate(d::WiringDiagram, vs::Vector{Int}; value=nothing, kw...)
   encapsulate(d, [vs]; values=[value], kw...)
 end
 
-function encapsulate(d::WiringDiagram{T, BoxValue, PortType, WireValue}, vss::Vector{Vector{Int}};
-    discard_boxes::Bool=false, make_box=Box, values=nothing) where {T, BoxValue, PortType, WireValue}
+function encapsulate(d::WiringDiagram{T, PortValue, WireValue, BoxValue}, vss::Vector{Vector{Int}};
+    discard_boxes::Bool=false, make_box=Box, values=nothing) where {T, PortValue, WireValue, BoxValue}
   if isempty(vss); return d end
   if any(isempty(vs) for vs in vss)
     error("Cannot encapsulate an empty set of boxes")
@@ -958,7 +969,7 @@ function encapsulate(d::WiringDiagram{T, BoxValue, PortType, WireValue}, vss::Ve
   if isnothing(values)
     values = repeat([nothing], length(vss))
   end
-  result = WiringDiagram{T, BoxValue, PortType, WireValue}(d.value, input_ports(d), output_ports(d))
+  result = WiringDiagram{T, PortValue, WireValue, BoxValue}(d.value, input_ports(d), output_ports(d))
   
   # Add boxes, both encapsulated and non-encapsulated, to new wiring diagram.
   encapsulated_representatives = Dict(
@@ -1021,11 +1032,11 @@ simplified into a single port of the encapsulating box.
 
 See also `induced_subdiagram`.
 """
-function encapsulated_subdiagram(d::WiringDiagram{T, BoxValue, PortType, WireValue}, vs::Vector{Int};
-    discard_boxes::Bool=false, make_box=Box, value=nothing) where {T, BoxValue, PortType, WireValue}
+function encapsulated_subdiagram(d::WiringDiagram{T, PortValue, WireValue, BoxValue}, vs::Vector{Int};
+    discard_boxes::Bool=false, make_box=Box, value=nothing) where {T, PortValue, WireValue, BoxValue}
   # Add encapsulated box to new wiring diagram.
   inputs, outputs = [], []
-  result = discard_boxes ? nothing : WiringDiagram{T, BoxValue, PortType, WireValue}(value, inputs, outputs)
+  result = discard_boxes ? nothing : WiringDiagram{T, PortValue, WireValue, BoxValue}(value, inputs, outputs)
   vmap = if discard_boxes
     Dict(v => nothing for v in vs)
   else
