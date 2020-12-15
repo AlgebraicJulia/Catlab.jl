@@ -1,7 +1,4 @@
-""" Benchmark Catlab.Graphs against LightGraphs and MetaGraphs.
-"""
-module BenchmarkGraphs
-
+# Benchmark Catlab.Graphs against LightGraphs and MetaGraphs.
 using BenchmarkTools
 const SUITE = BenchmarkGroup()
 
@@ -281,6 +278,4 @@ bench["indexed-lookup-metagraphs"] = @benchmarkable begin
   for i in $σ
     @assert $mg["v$i", :label] == i
   end
-end
-
 end

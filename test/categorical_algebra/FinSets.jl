@@ -10,21 +10,15 @@ using Catlab.CategoricalAlgebra.Sets, Catlab.CategoricalAlgebra.FinSets
 f = FinFunction([1,3,4], 5)
 g = FinFunction([1,1,2,2,3], 3)
 h = FinFunction([3,1,2], 3)
-@test dom(f) == FinSet(3)
-@test codom(f) == FinSet(5)
+@test (dom(f), codom(f)) == (FinSet(3), FinSet(5))
+@test force(f) === f
+@test codom(FinFunction([1,3,4])) == FinSet(4)
 
 # Evaluation.
 rot3(x) = (x % 3) + 1
 @test map(f, 1:3) == [1,3,4]
 @test map(FinFunction(rot3, 3, 3), 1:3) == [2,3,1]
 @test map(id(FinSet(3)), 1:3) == [1,2,3]
-
-# Pretty-print.
-@test sprint(show, FinSet(3)) == "FinSet(3)"
-@test sprint(show, f) == "FinFunction($([1,3,4]), 3, 5)"
-@test sprint(show, FinFunction(rot3, 3, 3)) ==
-  "FinFunction(rot3, FinSet(3), FinSet(3))"
-@test sprint(show, id(FinSet(3))) == "FinFunction(identity, FinSet(3))"
 
 # Composition.
 @test compose(f,g) == FinFunction([1,2,2], 3)
@@ -33,20 +27,60 @@ rot3(x) = (x % 3) + 1
 @test compose(id(dom(f)), f) == f
 @test compose(f, id(codom(f))) == f
 
+# Indexing.
+@test !is_indexed(f)
+@test is_indexed(id(FinSet(3)))
+@test preimage(id(FinSet(3)), 2) == [2]
+
+f = FinFunction([1,2,1,3], 5, index=true)
+@test is_indexed(f)
+@test force(f) === f
+@test (dom(f), codom(f)) == (FinSet(4), FinSet(5))
+@test f(1) == 1
+@test preimage(f, 1) == [1,3]
+@test preimage(f, 3) == [4]
+@test isempty(preimage(f, 4))
+
+g = FinFunction(5:-1:1)
+@test compose(f,g) == FinFunction([5,4,5,3])
+
+# Pretty-print.
+sshow(args...) = sprint(show, args...)
+@test sshow(FinSet(3)) == "FinSet(3)"
+@test sshow(FinFunction(rot3, 3, 3)) ==
+  "FinFunction(rot3, FinSet(3), FinSet(3))"
+@test sshow(id(FinSet(3))) == "FinFunction(identity, FinSet(3))"
+@test sshow(FinFunction([1,3,4], 5)) == "FinFunction($([1,3,4]), 3, 5)"
+@test sshow(FinFunction([1,3,4], 5, index=true)) ==
+  "FinFunction($([1,3,4]), 3, 5, index=true)"
+
 # Functions out of finite sets
 ##############################
 
-SymbolSet = TypeSet{Symbol}()
-k = FinDomFunction([:a,:b,:c,:d,:e], SymbolSet)
-@test dom(k) == FinSet(5)
-@test codom(k) == SymbolSet
+k = FinDomFunction([:a,:b,:c,:d,:e])
+@test (dom(k), codom(k)) == (FinSet(5), TypeSet(Symbol))
 @test k(3) == :c
 @test collect(k) == [:a,:b,:c,:d,:e]
-@test sprint(show, k) ==
+@test sshow(k) ==
   "FinDomFunction($([:a,:b,:c,:d,:e]), FinSet(5), TypeSet(Symbol))"
 
 f = FinFunction([1,3,4], 5)
-@test compose(f,k) == FinDomFunction([:a,:c,:d], SymbolSet)
+@test compose(f,k) == FinDomFunction([:a,:c,:d])
+
+# Indexing.
+@test !is_indexed(k)
+k = FinDomFunction([:a,:b,:a,:c], index=true)
+@test is_indexed(k)
+@test (dom(k), codom(k)) == (FinSet(4), TypeSet(Symbol))
+@test k(1) == :a
+@test preimage(k, :a) == [1,3]
+@test preimage(k, :c) == [4]
+@test isempty(preimage(k, :d))
+@test sshow(k) ==
+  "FinDomFunction($([:a,:b,:a,:c]), FinSet(4), TypeSet(Symbol), index=true)"
+
+f = FinFunction([1,3,2], 4)
+@test compose(f,k) == FinDomFunction([:a,:a,:b])
 
 # Limits
 ########
@@ -106,8 +140,8 @@ eq = equalizer(f,g)
 @test factorize(eq, FinFunction(Int[])) == FinFunction(Int[])
 
 # Equalizer of functions into non-finite set.
-f = FinDomFunction([:a, :b, :d, :c], TypeSet(Symbol))
-g = FinDomFunction([:c, :b, :d, :a], TypeSet(Symbol))
+f = FinDomFunction([:a, :b, :d, :c])
+g = FinDomFunction([:c, :b, :d, :a])
 eq = equalizer(f,g)
 @test incl(eq) == FinFunction([2,3], 4)
 
@@ -134,8 +168,8 @@ f, g = FinFunction([1,1,2]), FinFunction([3,2,1])
 @test force(pair(lim,f,g) ⋅ proj2(lim)) == g
 
 # Pullback of a cospan into non-finite set.
-f = FinDomFunction([:a, :a, :c, :b], TypeSet(Symbol))
-g = FinDomFunction([:a, :a, :d, :b], TypeSet(Symbol))
+f = FinDomFunction([:a, :a, :c, :b])
+g = FinDomFunction([:a, :a, :d, :b])
 π1, π2 = lim = pullback(f, g)
 @test ob(lim) == FinSet(5)
 @test force(π1) == FinFunction([1,2,1,2,4], 4)
@@ -146,13 +180,11 @@ tuples(lim::AbstractLimit) =
   sort!([ Tuple(map(π -> π(i), legs(lim))) for i in ob(lim) ])
 
 f, g = FinFunction([3,1,1,5,2],5), FinFunction([4,1,1,3,2],5)
-lim = pullback(f, g, alg=NestedLoopJoin())
-@test ob(lim) == FinSet(6)
-@test tuples(lim) == [(1,4), (2,2), (2,3), (3,2), (3,3), (5,5)]
-
-lim = pullback(f, g, alg=SortMergeJoin())
-@test ob(lim) == FinSet(6)
-@test tuples(lim) == [(1,4), (2,2), (2,3), (3,2), (3,3), (5,5)]
+for Alg in (NestedLoopJoin, SortMergeJoin, HashJoin)
+  lim = pullback(f, g, alg=Alg())
+  @test ob(lim) == FinSet(6)
+  @test tuples(lim) == [(1,4), (2,2), (2,3), (3,2), (3,3), (5,5)]
+end
 
 # General limits
 #---------------
