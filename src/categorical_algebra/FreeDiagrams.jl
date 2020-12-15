@@ -6,10 +6,11 @@ pairs of objects, discrete diagrams, parallel morphisms, spans, and cospans.
 Limits and colimits are most commonly taken over free diagrams.
 """
 module FreeDiagrams
-export AbstractFreeDiagram, FreeDiagram, FixedShapeFreeDiagram, DiscreteDiagram,
-  EmptyDiagram, ObjectPair, Span, Cospan, Multispan, Multicospan,
-  SMultispan, SMulticospan, ParallelPair, ParallelMorphisms,
-  ob, hom, dom, codom, apex, legs, feet, left, right, bundle_legs,
+export AbstractFreeDiagram, FreeDiagram, BipartiteFreeDiagram,
+  FixedShapeFreeDiagram, DiscreteDiagram, EmptyDiagram, ObjectPair,
+  Span, Cospan, Multispan, Multicospan, SMultispan, SMulticospan,
+  ParallelPair, ParallelMorphisms,
+  ob, ob₁, ob₂, hom, dom, codom, apex, legs, feet, left, right, bundle_legs,
   nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
   add_vertex!, add_vertices!, add_edge!, add_edges!
 
@@ -19,6 +20,7 @@ using StaticArrays: StaticVector, SVector, @SVector
 using ...Present, ...Theories, ...CSetDataStructures, ...Graphs
 import ...Theories: ob, hom, dom, codom, left, right
 using ...Graphs.BasicGraphs: TheoryGraph
+using ...Graphs.BipartiteGraphs: TheoryUndirectedBipartiteGraph
 
 # Diagrams of fixed shape
 #########################
@@ -207,16 +209,75 @@ Base.lastindex(para::ParallelMorphisms) = lastindex(para.homs)
 
 allequal(xs::AbstractVector) = isempty(xs) || all(==(xs[1]), xs)
 
-# Commutative squares
-#--------------------
+# Diagrams of flexible shape
+############################
 
-# FIXME: Commutative squares are not free diagrams (they commute!) and so do not
-# belong in this module.
+# Bipartite free diagrams
+#------------------------
 
+@present TheoryBipartiteFreeDiagram <: TheoryUndirectedBipartiteGraph begin
+  Ob::Data
+  Hom::Data
+  ob₁::Attr(V₁,Ob)
+  ob₂::Attr(V₂,Ob)
+  hom::Attr(E,Hom)
+end
 
+const AbstractBipartiteFreeDiagram =
+  AbstractACSetType(TheoryBipartiteFreeDiagram)
 
-# General diagrams
-##################
+""" A free diagram that is bipartite.
+
+Such diagrams include most of the fixed shapes, such as spans, cospans, and
+parallel morphisms. They are the generic shape of diagrams for limits and
+colimits arising from undirected wiring diagrams. For limits, the boxes
+correspond to vertices in ``V₁`` and the junctions to vertics in ``V₂``.
+Colimits are dual.
+"""
+const BipartiteFreeDiagram = ACSetType(TheoryBipartiteFreeDiagram,
+                                       index=[:src, :tgt])
+
+ob₁(d::BipartiteFreeDiagram, args...) = subpart(d, args..., :ob₁)
+ob₂(d::BipartiteFreeDiagram, args...) = subpart(d, args..., :ob₂)
+hom(d::BipartiteFreeDiagram, args...) = subpart(d, args..., :hom)
+
+function BipartiteFreeDiagram(
+    obs₁::AbstractVector{Ob₁}, obs₂::AbstractVector{Ob₂},
+    homs::AbstractVector{Tuple{Hom,Int,Int}}) where {Ob₁,Ob₂,Hom}
+  @assert all(obs₁[s] == dom(f) && obs₂[t] == codom(f) for (f,s,t) in homs)
+  d = BipartiteFreeDiagram{Union{Ob₁,Ob₂},Hom}()
+  add_vertices₁!(d, length(obs₁), ob₁=obs₁)
+  add_vertices₂!(d, length(obs₂), ob₂=obs₂)
+  add_edges!(d, getindex.(homs,2), getindex.(homs,3), hom=first.(homs))
+  return d
+end
+
+function BipartiteFreeDiagram(span::Multispan{Ob,Hom}) where {Ob,Hom}
+  d = BipartiteFreeDiagram{Ob,Hom}()
+  v₀ = add_vertex₁!(d, ob₁=apex(span))
+  vs = add_vertices₂!(d, length(span), ob₂=feet(span))
+  add_edges!(d, fill(v₀, length(span)), vs, hom=legs(span))
+  return d
+end
+
+function BipartiteFreeDiagram(cospan::Multicospan{Ob,Hom}) where {Ob,Hom}
+  d = BipartiteFreeDiagram{Ob,Hom}()
+  v₀ = add_vertex₂!(d, ob₂=apex(cospan))
+  vs = add_vertices₁!(d, length(cospan), ob₁=feet(cospan))
+  add_edges!(d, vs, fill(v₀, length(cospan)), hom=legs(cospan))
+  return d
+end
+
+function BipartiteFreeDiagram(para::ParallelMorphisms{Dom,Codom,Hom}) where {Dom,Codom,Hom}
+  d = BipartiteFreeDiagram{Union{Dom,Codom},Hom}()
+  v₁ = add_vertex₁!(d, ob₁=dom(para))
+  v₂ = add_vertex₂!(d, ob₂=codom(para))
+  add_edges!(d, fill(v₁,length(para)), fill(v₂,length(para)), hom=hom(para))
+  return d
+end
+
+# General free diagrams
+#----------------------
 
 @present TheoryFreeDiagram <: TheoryGraph begin
   Ob::Data
@@ -229,8 +290,8 @@ const FreeDiagram = ACSetType(TheoryFreeDiagram, index=[:src,:tgt])
 
 # XXX: This is needed because we cannot control the supertype of C-set types.
 const _AbstractFreeDiagram = AbstractACSetType(TheoryFreeDiagram)
-const AbstractFreeDiagram{Ob} =
-  Union{_AbstractFreeDiagram{Ob},FixedShapeFreeDiagram{Ob}}
+const AbstractFreeDiagram{Ob} = Union{FixedShapeFreeDiagram{Ob},
+  AbstractBipartiteFreeDiagram{Ob}, _AbstractFreeDiagram{Ob}}
 
 ob(d::FreeDiagram, args...) = subpart(d, args..., :ob)
 hom(d::FreeDiagram, args...) = subpart(d, args..., :hom)
@@ -244,9 +305,6 @@ function FreeDiagram(obs::AbstractVector{Ob},
   return d
 end
 
-# Conversion of fixed shapes
-#---------------------------
-
 function FreeDiagram(discrete::DiscreteDiagram{Ob}) where Ob
   d = FreeDiagram{Ob,Nothing}()
   add_vertices!(d, length(discrete), ob=collect(discrete))
@@ -255,17 +313,17 @@ end
 
 function FreeDiagram(span::Multispan{Ob,Hom}) where {Ob,Hom}
   d = FreeDiagram{Ob,Hom}()
-  v0 = add_vertex!(d, ob=apex(span))
+  v₀ = add_vertex!(d, ob=apex(span))
   vs = add_vertices!(d, length(span), ob=feet(span))
-  add_edges!(d, fill(v0, length(span)), vs, hom=legs(span))
+  add_edges!(d, fill(v₀, length(span)), vs, hom=legs(span))
   return d
 end
 
 function FreeDiagram(cospan::Multicospan{Ob,Hom}) where {Ob,Hom}
   d = FreeDiagram{Ob,Hom}()
   vs = add_vertices!(d, length(cospan), ob=feet(cospan))
-  v0 = add_vertex!(d, ob=apex(cospan))
-  add_edges!(d, vs, fill(v0, length(cospan)), hom=legs(cospan))
+  v₀ = add_vertex!(d, ob=apex(cospan))
+  add_edges!(d, vs, fill(v₀, length(cospan)), hom=legs(cospan))
   return d
 end
 
@@ -273,6 +331,15 @@ function FreeDiagram(para::ParallelMorphisms{Dom,Codom,Hom}) where {Dom,Codom,Ho
   d = FreeDiagram{Union{Dom,Codom},Hom}()
   add_vertices!(d, 2, ob=[dom(para), codom(para)])
   add_edges!(d, fill(1,length(para)), fill(2,length(para)), hom=hom(para))
+  return d
+end
+
+function FreeDiagram(diagram::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
+  # Should be a pushforward data migration but that is not yet implemented.
+  d = FreeDiagram{Ob,Hom}()
+  vs₁ = add_vertices!(d, nv₁(diagram), ob=ob₁(diagram))
+  vs₂ = add_vertices!(d, nv₂(diagram), ob=ob₂(diagram))
+  add_edges!(d, vs₁[src(diagram)], vs₂[tgt(diagram)], hom=hom(diagram))
   return d
 end
 
