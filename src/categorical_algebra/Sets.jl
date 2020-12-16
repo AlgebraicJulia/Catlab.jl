@@ -6,9 +6,10 @@ export SetOb, TypeSet, PredicatedSet, SetFunction
 using AutoHashEquals
 using FunctionWrappers: FunctionWrapper
 
-using ...GAT
+using ...GAT, ..FreeDiagrams, ..Limits
 using ...Theories: Category
 import ...Theories: dom, codom, id, compose, ⋅, ∘
+import ..Limits: limit, universal
 
 # Data types
 ############
@@ -148,5 +149,38 @@ compose_impl(f::SetFunction, g::SetFunction) =
 compose_impl(f::SetFunction, ::SetFunctionIdentity) = f
 compose_impl(::SetFunctionIdentity, f::SetFunction) = f
 compose_impl(f::SetFunctionIdentity, ::SetFunctionIdentity) = f
+
+# Limits
+########
+
+limit(Xs::EmptyDiagram{<:TypeSet}) =
+  Limit(Xs, SMultispan{0}(TypeSet(Nothing)))
+
+universal(lim::Terminal{TypeSet{Nothing}}, span::SMultispan{0,<:SetOb}) =
+  SetFunction(x -> nothing, apex(span), ob(lim))
+
+function limit(Xs::ObjectPair{<:TypeSet})
+  X1, X2 = Xs
+  X = TypeSet(Tuple{eltype(X1),eltype(X2)})
+  π1, π2 = SetFunction(first, X, X1), SetFunction(last, X, X2)
+  Limit(Xs, Span(π1, π2))
+end
+
+function universal(lim::BinaryProduct{<:TypeSet}, span::Span{<:SetOb})
+  f, g = span
+  SetFunction(x -> (f(x),g(x)), apex(span), ob(lim))
+end
+
+function limit(Xs::DiscreteDiagram{<:TypeSet})
+  X = TypeSet(Tuple{map(eltype, Xs)...})
+  πs = [ SetFunction(x -> getindex(x, i), X, Xi) for (i, Xi) in enumerate(Xs) ]
+  Limit(Xs, Multispan(X, πs))
+end
+
+function universal(lim::Product{<:TypeSet}, span::Multispan{<:SetOb})
+  @assert length(cone(lim)) == length(span)
+  fs = Tuple(legs(span))
+  SetFunction(x -> map(f -> f(x), fs), apex(span), ob(lim))
+end
 
 end

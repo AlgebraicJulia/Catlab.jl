@@ -85,14 +85,12 @@ f = FinFunction([1,3,2], 4)
 # Limits
 ########
 
-# Terminal object
-#----------------
-
-@test ob(terminal(FinSet{Int})) == FinSet(1)
-@test delete(terminal(FinSet{Int}), FinSet(3)) == FinFunction([1,1,1])
-
 # Products
 #---------
+
+# Terminal object.
+@test ob(terminal(FinSet{Int})) == FinSet(1)
+@test delete(terminal(FinSet{Int}), FinSet(3)) == FinFunction([1,1,1])
 
 # Binary product.
 lim = product(FinSet(2), FinSet(3))
@@ -218,14 +216,12 @@ h = universal(lim, Multispan([f′, g′, f′⋅f])) # f′⋅f == g′⋅g
 # Colimits
 ##########
 
-# Initial object
-#---------------
-
-@test ob(initial(FinSet{Int})) == FinSet(0)
-@test create(initial(FinSet{Int}), FinSet(3)) == FinFunction(Int[], 3)
-
 # Coproducts
 #-----------
+
+# Initial object.
+@test ob(initial(FinSet{Int})) == FinSet(0)
+@test create(initial(FinSet{Int}), FinSet(3)) == FinFunction(Int[], 3)
 
 # Binary coproduct.
 colim = coproduct(FinSet(2), FinSet(3))
