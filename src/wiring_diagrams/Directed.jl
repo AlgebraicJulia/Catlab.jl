@@ -336,8 +336,7 @@ function box(f::WiringDiagram, b::Int)
     return nothing
   else 
     box_value = subpart(f.diagram, b, :value)
-    typeof(box_value) <: WiringDiagram ? 
-        box_value : subpart(f.diagram, b, :box_type)(box_value, 
+    box_value isa WiringDiagram ? box_value : subpart(f.diagram, b, :box_type)(box_value, 
                                                       input_ports(f, b), 
                                                       output_ports(f, b))
   end
@@ -402,7 +401,7 @@ pass_wires(f::WiringDiagram) = [pass_wire(f, w) for w in parts(f.diagram, :PassW
 in_wires(f::WiringDiagram) = [in_wire(f, w) for w in parts(f.diagram, :InWire)]
 out_wires(f::WiringDiagram) = [out_wire(f, w) for w in parts(f.diagram, :OutWire)]
 internal_wires(f::WiringDiagram) = [wire(f, w) for w in parts(f.diagram, :Wire)]
-wires(f::WiringDiagram) = pass_wires(f) ∪ in_wires(f) ∪ out_wires(f) ∪ internal_wires(f)
+wires(f::WiringDiagram) = vcat(pass_wires(f), in_wires(f), out_wires(f), internal_wires(f))
 
 
 npass_wires(f::WiringDiagram) = nparts(f.diagram, :PassWire)
