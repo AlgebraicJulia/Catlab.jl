@@ -10,9 +10,10 @@ export AbstractFreeDiagram, FreeDiagram, BipartiteFreeDiagram,
   FixedShapeFreeDiagram, DiscreteDiagram, EmptyDiagram, ObjectPair,
   Span, Cospan, Multispan, Multicospan, SMultispan, SMulticospan,
   ParallelPair, ParallelMorphisms,
-  ob, ob₁, ob₂, hom, dom, codom, apex, legs, feet, left, right, bundle_legs,
-  nv, ne, src, tgt, vertices, vertices₁, vertices₂, edges, has_vertex, has_edge,
-  add_vertex!, add_vertices!,  add_edge!, add_edges!,
+  ob, hom, dom, codom, apex, legs, feet, left, right, bundle_legs,
+  nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
+  add_vertex!, add_vertices!, add_edge!, add_edges!,
+  ob₁, ob₂, nv₁, nv₂, vertices₁, vertices₂,
   add_vertex₁!, add_vertex₂!, add_vertices₁!, add_vertices₂!
 
 using AutoHashEquals

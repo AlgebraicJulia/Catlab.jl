@@ -5,7 +5,7 @@ export oapply
 
 using Compat: isnothing
 
-using ...CategoricalAlgebra
+using ...Theories, ...CategoricalAlgebra
 using ..UndirectedWiringDiagrams
 
 """ Compose morphisms according to UWD.
@@ -42,17 +42,16 @@ function oapply(composite::UndirectedWiringDiagram,
     @assert njunctions(composite) == length(junction_feet)
   end
 
-  # Create free diagram whose generating graph is a bipartite graph of the UWD's
-  # boxes and junctions. Each directed edge goes from a junction vertex to a box
-  # vertex, as defined by the UWD's junction map, and the edge is mapped to the
-  # corresponding leg of a multicospan.
-  diagram = FreeDiagram{codom(L)...}()
-  add_vertices!(diagram, nboxes(composite), ob=map(apex, cospans))
-  jmap = add_vertices!(diagram, njunctions(composite))
+  # Create bipartite free diagram whose vertices of types 1 and 2 are the UWD's
+  # junctions and boxes, respectively, and whose edges are define by the UWD's
+  # junction map.
+  diagram = BipartiteFreeDiagram{codom(L)...}()
+  add_vertices₁!(diagram, njunctions(composite))
+  add_vertices₂!(diagram, nboxes(composite), ob₂=map(apex, cospans))
   for (b, cospan) in zip(boxes(composite), cospans)
     for (p, leg, foot) in zip(ports(composite, b), legs(cospan), feet(cospan))
       j = junction(composite, p)
-      add_edge!(diagram, jmap[j], b, hom=leg)
+      add_edge!(diagram, j, b, hom=leg)
       if isassigned(junction_feet, j)
         foot′ = junction_feet[j]
         foot == foot′ || error(
@@ -62,12 +61,29 @@ function oapply(composite::UndirectedWiringDiagram,
       end
     end
   end
-  set_subparts!(diagram, jmap, ob=map(L, junction_feet))
+  diagram[:ob₁] = map(L, junction_feet)
+
+  # Find, or if necessary create, an outgoing edge for each junction. The
+  # existence of such edges is an assumption for colimits of bipartite diagrams.
+  # The edges are also needed to construct inclusions for the outer junctions.
+  junction_edges = map(junctions(composite)) do j
+    out_edges = incident(diagram, j, :src)
+    if isempty(out_edges)
+      x = ob₁(diagram, j)
+      v = add_vertex₂!(diagram, ob₂=x)
+      add_edge!(diagram, j, v, hom=id(x))
+    else
+      first(out_edges)
+    end
+  end
 
   # The composite multicospan is given by the colimit of this diagram.
   colim = colimit(diagram)
   outer_js = junction(composite, outer=true)
-  outer_legs, outer_feet = legs(colim)[jmap[outer_js]], junction_feet[outer_js]
+  outer_legs = map(junction_edges[outer_js]) do e
+    hom(diagram, e) ⋅ legs(colim)[tgt(diagram, e)]
+  end
+  outer_feet = junction_feet[outer_js]
   StructuredMulticospan{L}(Multicospan(ob(colim), outer_legs), outer_feet)
 end
 

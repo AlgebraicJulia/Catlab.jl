@@ -216,6 +216,17 @@ unpack_diagram(cospan::Multicospan{<:AbstractACSet}) =
 unpack_diagram(para::ParallelMorphisms{<:AbstractACSet}) =
   map(ParallelMorphisms, unpack_components(hom(para)))
 
+function unpack_diagram(diagram::BipartiteFreeDiagram{<:AbstractACSet})
+  map(unpack_finsets(ob₁(diagram)), unpack_finsets(ob₂(diagram)),
+      unpack_components(hom(diagram))) do sets₁, sets₂, funcs
+    d = BipartiteFreeDiagram{FinSet{Int,Int},FinFunction{Int,Int}}()
+    add_vertices₁!(d, nv₁(diagram), ob₁=sets₁)
+    add_vertices₂!(d, nv₂(diagram), ob₂=sets₂)
+    add_edges!(d, src(diagram), tgt(diagram), hom=funcs)
+    d
+  end
+end
+
 function unpack_diagram(diagram::FreeDiagram{<:AbstractACSet})
   map(unpack_finsets(ob(diagram)),
       unpack_components(hom(diagram))) do sets, funcs
@@ -250,14 +261,18 @@ end
 Encodes common conventions such as, when taking a pullback of a cospan, not
 explicitly including a cone leg for the cospan apex since it can be computed
 from the other legs.
+
+FIXME: Should this function be part of the official limits interface?
 """
 cone_objects(diagram) = ob(diagram)
+cone_objects(diagram::BipartiteFreeDiagram) = ob₁(diagram)
 cone_objects(cospan::Multicospan) = feet(cospan)
 cone_objects(para::ParallelMorphisms) = SVector(dom(para))
 
 """ Objects in diagram that will have explicit legs in colimit cocone.
 """
 cocone_objects(diagram) = ob(diagram)
+cocone_objects(diagram::BipartiteFreeDiagram) = ob₂(diagram)
 cocone_objects(span::Multispan) = feet(span)
 cocone_objects(para::ParallelMorphisms) = SVector(codom(para))
 

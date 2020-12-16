@@ -29,22 +29,23 @@ k = oapply(seq, Dict(:g => g, :h => h))
 @test feet(k) == [first(feet(g)), last(feet(h))]
 k0 = apex(k)
 @test (nv(k0), ne(k0)) == (6, 6)
-@test sort!(collect(zip(src(k0), tgt(k0)))) == sort!(
-  [(3,1), (1,4), (1,5), (4,2), (5,2), (2,6)])
-# [(1,2), (2,3), (2,4), (3,5), (4,5), (5,6)]
-# Composite graph is isomorphic to that with standard labeling.
-@test [ collect(leg[:V]) for leg in legs(k) ] == [[3], [6]]
+@test sort!(collect(zip(src(k0), tgt(k0)))) ==
+  sort!([(1,2), (2,3), (2,4), (3,5), (4,5), (5,6)])
+@test [ collect(leg[:V]) for leg in legs(k) ] == [[1], [6]]
 
 # Parallel composition.
-para = @relation (a,b,c,d) where (a,b,c,d) begin
+para = @relation (a,c,b,d) where (a,b,c,d) begin
   g(a,b)
   h(c,d)
 end
 k = oapply(para, Dict(:g => g, :h => h))
 @test length(legs(k)) == 4
-@test feet(k) == [feet(g); feet(h)]
+@test feet(k) == [first(feet(g)), first(feet(h)), last(feet(g)), last(feet(h))]
 k0 = apex(k)
 @test (nv(k0), ne(k0)) == (8, 6)
+@test sort!(collect(zip(src(k0), tgt(k0)))) ==
+  sort!([(1,2), (2,3), (2,4), (5,7), (6,7), (7,8)])
+@test [ collect(leg[:V]) for leg in legs(k) ] == [[1], [5,6], [3,4], [8]]
 
 # Identity for sequential composition.
 seq_id = @relation (a,a) where (a,) begin end
