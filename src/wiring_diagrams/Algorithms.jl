@@ -49,7 +49,7 @@ The main difference is the possibility of zero or many function outputs.
 """
 function normalize_copy!(d::WiringDiagram)
   # Compute equivalence classes of boxes (without modifying the diagram).
-  sets = IntDisjointSets(nboxes(d)+2)
+  sets = DisjointSets{Int}(vcat([input_id(d),output_id(d)], box_ids(d)))
   initial = filter(box_ids(d)) do v
     all(u == input_id(d) for u in inneighbors(d,v))
   end
@@ -74,7 +74,7 @@ function normalize_copy!(d::WiringDiagram)
   d
 end
 
-function merge_if_congruent!(d::WiringDiagram, sets::IntDisjointSets, v1::Int, v2::Int)
+function merge_if_congruent!(d::WiringDiagram, sets::DisjointSets{Int}, v1::Int, v2::Int)
   if v1 == v2 || (!in_same_set(sets, v1, v2) && is_congruent(d, sets, v1, v2))
     union!(sets, v1, v2)
     for out1 in filter(v -> v != output_id(d), outneighbors(d, v1))
@@ -85,7 +85,7 @@ function merge_if_congruent!(d::WiringDiagram, sets::IntDisjointSets, v1::Int, v
   end
 end
 
-function is_congruent(d::WiringDiagram, sets::IntDisjointSets, v1::Int, v2::Int)::Bool
+function is_congruent(d::WiringDiagram, sets::DisjointSets{Int}, v1::Int, v2::Int)::Bool
   box(d, v1) == box(d, v2) && all(eachindex(input_ports(box(d,v1)))) do port
     wires1, wires2 = in_wires(d,v1,port), in_wires(d,v2,port)
     n1, n2 = length(wires1), length(wires2)
