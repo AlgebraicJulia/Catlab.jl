@@ -14,6 +14,7 @@ using StaticArrays: StaticVector, SVector, SizedVector
 
 using ...Theories, ..FreeDiagrams, ..Limits, ..Sets
 import ...Theories: dom, codom
+using ...CSetDataStructures: incident
 import ..Limits: limit, colimit, universal
 using ..Sets: SetFunctionCallable, SetFunctionIdentity
 
@@ -534,10 +535,7 @@ function colimit(pair::ParallelPair{<:FinSet{Int}})
   for i in 1:m
     union!(sets, f(i), g(i))
   end
-  h = [ find_root!(sets, i) for i in 1:n ]
-  roots = unique!(sort(h))
-  coeq = FinFunction([ searchsortedfirst(roots, r) for r in h], length(roots))
-  Colimit(pair, SMulticospan{1}(coeq))
+  Colimit(pair, SMulticospan{1}(quotient_projection(sets)))
 end
 
 function colimit(para::ParallelMorphisms{<:FinSet{Int}})
@@ -550,15 +548,20 @@ function colimit(para::ParallelMorphisms{<:FinSet{Int}})
       union!(sets, f1(i), f(i))
     end
   end
-  h = [ find_root!(sets, i) for i in 1:n ]
-  roots = unique!(sort(h))
-  coeq = FinFunction([ searchsortedfirst(roots, r) for r in h ], length(roots))
-  Colimit(para, SMulticospan{1}(coeq))
+  Colimit(para, SMulticospan{1}(quotient_projection(sets)))
 end
 
 function universal(coeq::Coequalizer{<:FinSet{Int}},
                    cocone::SMulticospan{1,<:FinSet{Int}})
   pass_to_quotient(proj(coeq), only(cocone))
+end
+
+""" Create projection map π: X → X/∼ from partition of X.
+"""
+function quotient_projection(sets::IntDisjointSets)
+  h = [ find_root!(sets, i) for i in 1:length(sets) ]
+  roots = unique!(sort(h))
+  FinFunction([ searchsortedfirst(roots, r) for r in h ], length(roots))
 end
 
 """ Given h: X → Y, pass to quotient q: X/~ → Y under projection π: X → X/~.
@@ -586,13 +589,35 @@ end
 
 See `CompositePushout` for a very similar construction.
 """
-struct FinSetFreeDiagramColimit{Ob<:FinSet, Diagram<:FreeDiagram{Ob},
+struct FinSetFreeDiagramColimit{Ob<:FinSet, Diagram<:AbstractFreeDiagram{Ob},
                                 Cocone<:Multicospan{Ob}, Coprod<:Coproduct{Ob},
                                 Proj<:FinFunction} <: AbstractColimit{Ob,Diagram}
   diagram::Diagram
   cocone::Cocone
   coprod::Coprod
   proj::Proj # Projection for the "multi-coequalizer" in general formula.
+end
+
+function colimit(d::BipartiteFreeDiagram{<:FinSet{Int}})
+  # As in a pushout, assumes that all objects in a layer 1 have outgoing
+  # morphisms so that they can be excluded from the coproduct.
+  @assert !any(isempty(incident(d, u, :src)) for u in vertices₁(d))
+  coprod = coproduct(ob₂(d))
+  n, ιs = length(ob(coprod)), legs(coprod)
+  sets = IntDisjointSets(n)
+  for u in vertices₁(d)
+    out_edges = incident(d, u, :src)
+    for (e1, e2) in zip(out_edges[1:end-1], out_edges[2:end])
+      h1, h2 = hom(d, e1), hom(d, e2)
+      ι1, ι2 = ιs[tgt(d, e1)], ιs[tgt(d, e2)]
+      for i in ob₁(d, u)
+        union!(sets, ι1(h1(i)), ι2(h2(i)))
+      end
+    end
+  end
+  π = quotient_projection(sets)
+  cocone = Multicospan(codom(π), [ ιs[i]⋅π for i in vertices₂(d) ])
+  FinSetFreeDiagramColimit(d, cocone, coprod, π)
 end
 
 function colimit(d::FreeDiagram{<:FinSet{Int}})
@@ -607,11 +632,8 @@ function colimit(d::FreeDiagram{<:FinSet{Int}})
       union!(sets, ιs[s](i), ιs[t](h(i)))
     end
   end
-  h = [ find_root!(sets, i) for i in 1:n ]
-  roots = unique!(sort(h))
-  m = length(roots)
-  π = FinFunction([ searchsortedfirst(roots, r) for r in h ], m)
-  cocone = Multicospan(FinSet(m), [ compose(ιs[i],π) for i in vertices(d) ])
+  π = quotient_projection(sets)
+  cocone = Multicospan(codom(π), [ ιs[i]⋅π for i in vertices(d) ])
   FinSetFreeDiagramColimit(d, cocone, coprod, π)
 end
 

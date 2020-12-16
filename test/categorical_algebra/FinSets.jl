@@ -300,7 +300,7 @@ h, k = FinFunction([3,5]), FinFunction([1,3,5])
 k = FinFunction([1,2,5])
 @test_throws AssertionError copair(colim,h,k)
 
-# Same thing with generic colimit interface
+# Same thing as a colimit of a general free diagram.
 diagram = FreeDiagram([FinSet(1),FinSet(2),FinSet(3)],[(f,1,2), (g,1,3)])
 colim = colimit(diagram)
 @test ob(colim) == FinSet(4)
@@ -315,21 +315,29 @@ h, k = FinFunction([3,5]), FinFunction([1,3,5])
 @test force(ι2 ⋅ ℓ) == k
 
 # Pushout from a two-element set, with non-injective legs.
-f, g = FinFunction([1,1], 2), FinFunction([1,2], 2)
+f, g = FinFunction([1,1], 2), FinFunction([1,2], 3)
 colim = pushout(f,g)
-@test ob(colim) == FinSet(2)
+@test ob(colim) == FinSet(3)
 ι1, ι2 = colim
 @test compose(f,ι1) == compose(g,ι2)
-@test ι1 == FinFunction([1,2], 2)
-@test ι2 == FinFunction([1,1], 2)
+@test ι1 == FinFunction([1,2], 3)
+@test ι2 == FinFunction([1,1,3], 3)
 
-# Same thing with generic colimit interface
-diagram = FreeDiagram([FinSet(2),FinSet(2),FinSet(2)],[(f,1,2),(g,1,3)])
+# Same thing as a colimit of a general free diagram.
+diagram = FreeDiagram([FinSet(2),FinSet(2),FinSet(3)],[(f,1,2),(g,1,3)])
 colim = colimit(diagram)
-@test ob(colim) == FinSet(2)
+@test ob(colim) == FinSet(3)
 _, ι1, ι2 = colim
-@test compose(f,ι1) == compose(g,ι2)
-@test ι1 == FinFunction([1,2], 2)
-@test ι2 == FinFunction([1,1], 2)
+@test ι1 == FinFunction([1,2], 3)
+@test ι2 == FinFunction([1,1,3], 3)
+
+# Same thing as a colimit of a bipartite free diagram.
+diagram = BipartiteFreeDiagram([FinSet(2)], [FinSet(2),FinSet(3)],
+                               [(f,1,1),(g,1,2)])
+colim = colimit(diagram)
+@test ob(colim) == FinSet(3)
+ι1, ι2 = colim
+@test ι1 == FinFunction([1,2], 3)
+@test ι2 == FinFunction([1,1,3], 3)
 
 end
