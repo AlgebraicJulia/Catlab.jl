@@ -1,6 +1,8 @@
 module TestWiringDiagramAlgebras
 using Test
 
+using Tables, TypedTables
+
 using Catlab.CategoricalAlgebra, Catlab.CategoricalAlgebra.FinSets
 using Catlab.Graphs, Catlab.WiringDiagrams, Catlab.Programs.RelationalPrograms
 
@@ -52,5 +54,27 @@ seq_id = @relation (a,a) where (a,) begin end
 k = oapply(seq_id, Dict{Symbol,OpenGraph}(), Dict(:a => FinSet(3)))
 @test apex(k) == Graph(3)
 @test feet(k) == [FinSet(3), FinSet(3)]
+
+# Queries of ACSets
+###################
+
+paths2 = @relation (start=u, stop=w) where (u,v,w) begin
+  E(src=u, tgt=v)
+  E(src=v, tgt=w)
+end
+
+# Graph underlying a commutative squares.
+square = Graph(4)
+add_edges!(square, [1,1,2,3], [2,3,4,4])
+result = query(square, paths2)
+@test result == Table((start=[1,1], stop=[4,4]))
+
+# Graph underlying a pasting of two commutative squares.
+squares2 = copy(square)
+add_vertices!(squares2, 2)
+add_edges!(squares2, [2,4,5], [5,6,6])
+result = query(squares2, paths2)
+@test sort!(collect(zip(columns(result)...))) ==
+  [(1,4), (1,4), (1,5), (2,6), (2,6), (3,6)]
 
 end

@@ -1,11 +1,13 @@
 """ Algebras of operads of wiring diagrams.
 """
 module WiringDiagramAlgebras
-export oapply
+export oapply, query
 
 using Compat: isnothing
+import TypedTables
 
-using ...Theories, ...CategoricalAlgebra
+using ...Theories, ...CategoricalAlgebra, ...CategoricalAlgebra.FinSets
+using ...CSetDataStructures: make_table
 using ..UndirectedWiringDiagrams
 
 """ Compose morphisms according to UWD.
@@ -24,14 +26,48 @@ function oapply(composite::UndirectedWiringDiagram, hom_map::AbstractDict,
   oapply(composite, homs, obs)
 end
 
-# Structured multicospans
-#########################
+# UWD algebras of multi(co)spans
+################################
 
-""" Compose structured multicospans according to UWD.
+function oapply(composite::UndirectedWiringDiagram,
+                spans::AbstractVector{<:Multispan})
+  @assert nboxes(composite) == length(spans)
+  apexes = map(apex, spans)
+  Ob = typejoin(eltype(apexes), mapreduce(eltype∘feet, typejoin, spans))
+  Hom = mapreduce(eltype∘legs, typejoin, spans)
+  junction_feet = Vector{Ob}(undef, njunctions(composite))
 
-This function makes structured multicospans into an algebra of the operad of
-undirected wiring diagrams.
-"""
+  # Create bipartite free diagram whose vertices of types 1 and 2 are the UWD's
+  # boxes and junctions, respectively.
+  diagram = BipartiteFreeDiagram{Ob,Hom}()
+  add_vertices₁!(diagram, nboxes(composite), ob₁=apexes)
+  add_vertices₂!(diagram, njunctions(composite))
+  for (b, span) in zip(boxes(composite), spans)
+    for (p, leg) in zip(ports(composite, b), legs(span))
+      j = junction(composite, p)
+      add_edge!(diagram, b, j, hom=leg)
+      foot = codom(leg)
+      if isassigned(junction_feet, j)
+        foot′ = junction_feet[j]
+        foot == foot′ || error("Feet of spans are not equal: $foot != $foot′")
+      else
+        junction_feet[j] = foot
+      end
+    end
+  end
+  all(isassigned(junction_feet, j) for j in junctions(composite)) ||
+    error("Limits with isolated junctions are not supported")
+  diagram[:ob₂] = junction_feet
+
+  # The composite multispan is given by the limit of this diagram.
+  lim = limit(diagram)
+  outer_legs = map(junction(composite, outer=true)) do j
+    e = first(incident(diagram, j, :tgt))
+    legs(lim)[src(diagram, e)] ⋅ hom(diagram, e)
+  end
+  Multispan(ob(lim), outer_legs)
+end
+
 function oapply(composite::UndirectedWiringDiagram,
                 cospans::AbstractVector{<:StructuredMulticospan{L}},
                 junction_feet::Union{AbstractVector,Nothing}=nothing) where L
@@ -43,8 +79,7 @@ function oapply(composite::UndirectedWiringDiagram,
   end
 
   # Create bipartite free diagram whose vertices of types 1 and 2 are the UWD's
-  # junctions and boxes, respectively, and whose edges are define by the UWD's
-  # junction map.
+  # junctions and boxes, respectively.
   diagram = BipartiteFreeDiagram{codom(L)...}()
   add_vertices₁!(diagram, njunctions(composite))
   add_vertices₂!(diagram, nboxes(composite), ob₂=map(apex, cospans))
@@ -54,8 +89,7 @@ function oapply(composite::UndirectedWiringDiagram,
       add_edge!(diagram, j, b, hom=leg)
       if isassigned(junction_feet, j)
         foot′ = junction_feet[j]
-        foot == foot′ || error(
-          "Domains of structured cospans are not equal: $foot != $foot′")
+        foot == foot′ || error("Feet of cospans are not equal: $foot != $foot′")
       else
         junction_feet[j] = foot
       end
@@ -85,6 +119,33 @@ function oapply(composite::UndirectedWiringDiagram,
   end
   outer_feet = junction_feet[outer_js]
   StructuredMulticospan{L}(Multicospan(ob(colim), outer_legs), outer_feet)
+end
+
+# Queries via UWD algebras
+##########################
+
+""" Evaluate a conjunctive query on an attributed C-set.
+
+The query is a undirected wiring diagram whose boxes and ports are assumed to be
+named through attributes `:name` and `:port_name`/`:outer_port_name`. To define
+such a diagram, use the named form of the [`@relation`](@ref) macro.
+
+This function is a thin wrapper around the [`oapply`](@ref) method for
+multispans, which implements the UWD algebra of multispans.
+"""
+function query(X::AbstractACSet, diagram::UndirectedWiringDiagram;
+               table_type::Type=TypedTables.Table)
+  spans = map(boxes(diagram), subpart(diagram, :name)) do b, name
+    apex = FinSet(nparts(X, name))
+    legs = map(subpart(diagram, ports(diagram, b), :port_name)) do port_name
+      FinDomFunction(X, port_name == :_id ? name : port_name)
+    end
+    Multispan(apex, collect(FinDomFunction{Int}, legs))
+  end
+  outer_names = subpart(diagram, :outer_port_name)
+  outer_span = oapply(diagram, spans)
+  table = NamedTuple{Tuple(outer_names)}(Tuple(map(collect, outer_span)))
+  make_table(table_type, table)
 end
 
 end

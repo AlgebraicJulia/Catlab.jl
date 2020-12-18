@@ -481,13 +481,11 @@ function limit(d::BipartiteFreeDiagram{Ob,Hom}) where
 
   # It is generally optimal to compute all equalizers (self joins) first, so as
   # to reduce the sizes of later pullbacks (joins) and products (cross joins).
-  #
-  # Note: We could also call `pair_all` *before* this, which is not necessarily
-  # redundant with the call below, but I don't know whether that would
-  # meaningfully affect the performance.
   d, ιs = equalize_all(d)
+  rem_vertices₂!(d, [v for v in vertices₂(d) if
+                     length(incident(d, v, :tgt)) == 1])
 
-  # Perform all pairings before computing any joins
+  # Perform all pairings before computing any joins.
   d = pair_all(d)
 
   # Having done this preprocessing, if there are any nontrivial joins, perform
