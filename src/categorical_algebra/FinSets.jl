@@ -598,7 +598,7 @@ function pair_all(d::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
       add_edges!(d_paired, srcs, fill(v, length(srcs)),
                  hom=hom(d, only(in_edges)))
     else
-      prod = product(ob₂(d, tgts))
+      prod = product(SVector(ob₂(d, tgts)...))
       v = add_vertex₂!(d_paired, ob₂=ob(prod))
       for (i,u) in enumerate(srcs)
         f = pair(prod, hom(d, getindex.(in_edges, i)))

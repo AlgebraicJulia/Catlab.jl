@@ -6,7 +6,8 @@ export oapply, query
 using Compat: isnothing
 import TypedTables
 
-using ...Theories, ...CategoricalAlgebra, ...CategoricalAlgebra.FinSets
+using ...Theories, ...CategoricalAlgebra,
+  ...CategoricalAlgebra.Sets, ...CategoricalAlgebra.FinSets
 using ...CSetDataStructures: make_table
 using ..UndirectedWiringDiagrams
 
@@ -30,17 +31,19 @@ end
 ################################
 
 function oapply(composite::UndirectedWiringDiagram,
-                spans::AbstractVector{<:Multispan})
+                spans::AbstractVector{<:Multispan}; Ob=nothing, Hom=nothing)
   @assert nboxes(composite) == length(spans)
-  apexes = map(apex, spans)
-  Ob = typejoin(eltype(apexes), mapreduce(eltype∘feet, typejoin, spans))
-  Hom = mapreduce(eltype∘legs, typejoin, spans)
+  # FIXME: This manual type inference is hacky and bad. The right solution is to
+  # extend `Multi(co)span` with type parameters that allow abstract types.
+  if isnothing(Ob); Ob = typejoin(mapreduce(typeof∘apex, typejoin, spans),
+                                  mapreduce(eltype∘feet, typejoin, spans)) end
+  if isnothing(Hom); Hom = mapreduce(eltype∘legs, typejoin, spans) end
   junction_feet = Vector{Ob}(undef, njunctions(composite))
 
   # Create bipartite free diagram whose vertices of types 1 and 2 are the UWD's
   # boxes and junctions, respectively.
   diagram = BipartiteFreeDiagram{Ob,Hom}()
-  add_vertices₁!(diagram, nboxes(composite), ob₁=apexes)
+  add_vertices₁!(diagram, nboxes(composite), ob₁=map(apex, spans))
   add_vertices₂!(diagram, njunctions(composite))
   for (b, span) in zip(boxes(composite), spans)
     for (p, leg) in zip(ports(composite, b), legs(span))
@@ -140,10 +143,10 @@ function query(X::AbstractACSet, diagram::UndirectedWiringDiagram;
     legs = map(subpart(diagram, ports(diagram, b), :port_name)) do port_name
       FinDomFunction(X, port_name == :_id ? name : port_name)
     end
-    Multispan(apex, collect(FinDomFunction{Int}, legs))
+    Multispan(apex, legs)
   end
   outer_names = subpart(diagram, :outer_port_name)
-  outer_span = oapply(diagram, spans)
+  outer_span = oapply(diagram, spans, Ob=SetOb, Hom=FinDomFunction{Int})
   table = NamedTuple{Tuple(outer_names)}(Tuple(map(collect, outer_span)))
   make_table(table_type, table)
 end

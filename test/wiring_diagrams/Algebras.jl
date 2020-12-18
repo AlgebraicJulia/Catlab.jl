@@ -6,6 +6,8 @@ using Tables, TypedTables
 using Catlab.CategoricalAlgebra, Catlab.CategoricalAlgebra.FinSets
 using Catlab.Graphs, Catlab.WiringDiagrams, Catlab.Programs.RelationalPrograms
 
+tuples(args...) = sort!(collect(zip(args...)))
+
 # UWD algebra of structured multicospans
 ########################################
 
@@ -31,8 +33,7 @@ k = oapply(seq, Dict(:g => g, :h => h))
 @test feet(k) == [first(feet(g)), last(feet(h))]
 k0 = apex(k)
 @test (nv(k0), ne(k0)) == (6, 6)
-@test sort!(collect(zip(src(k0), tgt(k0)))) ==
-  sort!([(1,2), (2,3), (2,4), (3,5), (4,5), (5,6)])
+@test tuples(src(k0), tgt(k0)) == [(1,2), (2,3), (2,4), (3,5), (4,5), (5,6)]
 @test [ collect(leg[:V]) for leg in legs(k) ] == [[1], [6]]
 
 # Parallel composition.
@@ -45,8 +46,7 @@ k = oapply(para, Dict(:g => g, :h => h))
 @test feet(k) == [first(feet(g)), first(feet(h)), last(feet(g)), last(feet(h))]
 k0 = apex(k)
 @test (nv(k0), ne(k0)) == (8, 6)
-@test sort!(collect(zip(src(k0), tgt(k0)))) ==
-  sort!([(1,2), (2,3), (2,4), (5,7), (6,7), (7,8)])
+@test tuples(src(k0), tgt(k0)) == [(1,2), (2,3), (2,4), (5,7), (6,7), (7,8)]
 @test [ collect(leg[:V]) for leg in legs(k) ] == [[1], [5,6], [3,4], [8]]
 
 # Identity for sequential composition.
@@ -74,7 +74,23 @@ squares2 = copy(square)
 add_vertices!(squares2, 2)
 add_edges!(squares2, [2,4,5], [5,6,6])
 result = query(squares2, paths2)
-@test sort!(collect(zip(columns(result)...))) ==
-  [(1,4), (1,4), (1,5), (2,6), (2,6), (3,6)]
+@test tuples(columns(result)...) == [(1,4), (1,4), (1,5), (2,6), (2,6), (3,6)]
+
+cycles3 = @relation (edge1=e, edge2=f, edge3=g) where (e,f,g,u,v,w) begin
+  E(_id=e, src=u, tgt=v)
+  E(_id=f, src=v, tgt=w)
+  E(_id=g, src=w, tgt=u)
+end
+
+function ncycle(n::Int)
+  g = Graph(n)
+  add_edges!(g, 1:n, circshift(1:n, -1))
+  return g
+end
+result = query(ncycle(3), cycles3)
+@test tuples(columns(result)...) == [(1,2,3), (2,3,1), (3,1,2)]
+
+result = query(ncycle(4), cycles3)
+@test isempty(result)
 
 end

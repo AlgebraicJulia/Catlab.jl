@@ -15,7 +15,7 @@ using ...GAT, ..FreeDiagrams, ..Limits, ..Sets, ..FinSets
 import ..Limits: limit, colimit, universal
 import ..FinSets: FinFunction, FinDomFunction, force
 using ...Theories: Category, CatDesc, AttrDesc
-import ...Theories: dom, codom, compose, ⋅, id, codom_num
+import ...Theories: dom, codom, compose, ⋅, id
 
 # FinSets interop
 #################
@@ -57,15 +57,9 @@ FinDomFunction(X::ACSet, name::Symbol) = fin_dom_function(X, Val{name})
       n = nparts(X, $(QuoteNode(name)))
       FinDomFunction(1:n, FinSet(n), TypeSet{Int}())
     end
-  elseif name ∈ CD.hom
+  elseif name ∈ CD.hom || name ∈ AD.attr
     quote
-      FinDomFunction(subpart(X, $(QuoteNode(name))), TypeSet{Int}(),
-                     index=$(name ∈ Idxed ? :(X.indices.$name) : false))
-    end
-  elseif name ∈ AD.attr
-    T = Ts.parameters[codom_num(AD, name)]
-    quote
-      FinDomFunction(subpart(X, $(QuoteNode(name))), TypeSet{$T}(),
+      FinDomFunction(subpart(X, $(QuoteNode(name))),
                      index=$(name ∈ Idxed ? :(X.indices.$name) : false))
     end
   else

@@ -70,7 +70,7 @@ f = FinFunction([1,3,4], 5)
 # Indexing.
 @test !is_indexed(k)
 
-k = FinDomFunction(5:10, TypeSet(Int))
+k = FinDomFunction(5:10)
 @test is_indexed(k)
 @test preimage(k, 6) == [2]
 @test isempty(preimage(k, 4))
@@ -230,6 +230,16 @@ lim = limit(BipartiteFreeDiagram(Cospan(f, g)))
 f, g = [FinDomFunction(x -> x % i, FinSet(100), TypeSet(Int)) for i in 2:3]
 lim = (ι,) = limit(BipartiteFreeDiagram(ParallelPair(f, g)))
 @test ι == incl(equalizer(f, g))
+
+# Two pullbacks, which should be reduced to a single pullback by pairing.
+f1, g1 = FinDomFunction([1,1,2,2,3,3]), FinDomFunction([:a,:a,:a,:b,:b,:b])
+f2, g2 = FinDomFunction([1,2,3]), FinDomFunction([:a,:b,:c])
+d = BipartiteFreeDiagram{SetOb,FinDomFunction{Int}}(2, 2)
+d[:ob₁], d[:ob₂] = [FinSet(6), FinSet(3)], [TypeSet(Int), TypeSet(Symbol)]
+add_edges!(d, [1,1,2,2], [1,2,1,2], hom=[f1,g1,f2,g2])
+lim = π1, π2 = limit(d)
+@test π1 == FinFunction([1,2,4], 6)
+@test π2 == FinFunction([1,1,2], 3)
 
 # Colimits
 ##########
