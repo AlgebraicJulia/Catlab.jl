@@ -69,6 +69,12 @@ f = FinFunction([1,3,4], 5)
 
 # Indexing.
 @test !is_indexed(k)
+
+k = FinDomFunction(5:10, TypeSet(Int))
+@test is_indexed(k)
+@test preimage(k, 6) == [2]
+@test isempty(preimage(k, 4))
+
 k = FinDomFunction([:a,:b,:a,:c], index=true)
 @test is_indexed(k)
 @test (dom(k), codom(k)) == (FinSet(4), TypeSet(Symbol))

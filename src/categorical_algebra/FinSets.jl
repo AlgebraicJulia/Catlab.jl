@@ -185,17 +185,22 @@ force(f::IndexedFinDomFunction) = f
 
 """ Whether the given function is indexed, i.e., supports preimages.
 """
-is_indexed(f::IndexedFinDomFunction) = true
 is_indexed(f::SetFunction) = false
 is_indexed(f::SetFunctionIdentity) = true
+is_indexed(f::IndexedFinDomFunction) = true
+is_indexed(f::FinDomFunctionVector{T,<:AbstractRange{T}}) where T = true
 
 """ The preimage (inverse image) of the value y in the codomain.
 """
-preimage(f::IndexedFinDomFunction, y) = get_preimage_index(f.index, y)
 preimage(f::SetFunctionIdentity, y) = SVector(y)
+preimage(f::IndexedFinDomFunction, y) = get_preimage_index(f.index, y)
 
 @inline get_preimage_index(index::AbstractDict, y) = get(index, y, 1:0)
 @inline get_preimage_index(index::AbstractVector, y) = index[y]
+
+preimage(f::FinDomFunctionVector{T,<:AbstractRange{T}}, y::T) where T =
+  # Both `in` and `searchsortedfirst` are specialized for AbstractRange.
+  y ∈ f.func ? SVector(searchsortedfirst(f.func, y)) : SVector{0,Int}()
 
 """ Indexed function between finite sets of type `FinSet{Int}`.
 
