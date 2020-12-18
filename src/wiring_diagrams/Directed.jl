@@ -18,7 +18,7 @@ Graphviz or other declarative diagram languages.
 module DirectedWiringDiagrams
 export AbstractBox, Box, WiringDiagram, Wire, Port, PortKind,
   InputPort, OutputPort, input_ports, output_ports, input_id, output_id,
-  outer_ids, boxes, box_ids, nboxes, nwires, box, wires, has_wire, graph,
+  outer_ids, boxes, box_ids, nboxes, nwires, box, wires, has_wire, graph, internal_graph,
   add_box!, add_boxes!, add_wire!, add_wires!, rem_box!, rem_boxes!, rem_wire!,
   rem_wires!, port_value, validate_ports, is_permuted_equal,
   all_neighbors, neighbors, outneighbors, inneighbors, in_wires, out_wires,
@@ -28,7 +28,7 @@ export AbstractBox, Box, WiringDiagram, Wire, Port, PortKind,
 using Compat
 using AutoHashEquals
 
-using ...Present, ...CSetDataStructures, ...Graphs.BasicGraphs
+using ...Present, ...CSetDataStructures, ...Graphs.BasicGraphs, ...CategoricalAlgebra
 using ...Graphs.BasicGraphs: TheoryGraph
 import ...Graphs: all_neighbors, neighbors, outneighbors, inneighbors
 
@@ -323,6 +323,23 @@ function Base.show(io::IO, diagram::WiringDiagram{T}) where T
   end
   print(io, ")")
 end
+
+@present TheoryWiringDiagramGraph <: TheoryGraph begin
+  Box::Data
+  WireData::Data
+
+  box::Attr(V,Box)
+  wire::Attr(E,WireData)
+end
+
+const WiringDiagramGraphUnionAll =
+  ACSetType(TheoryWiringDiagramGraph, index=[:src, :tgt])
+
+""" Internal datatype for graph underlying a directed wiring diagram.
+Boxes and wires are attached to vertices and edges, respectively.
+"""
+const WiringDiagramGraph = WiringDiagramGraphUnionAll{
+  Union{AbstractBox,Nothing},Wire}
 
 # Imperative interface
 ######################
@@ -676,6 +693,52 @@ The default implementation is a no-op.
 function validate_ports(source_port, target_port) end
 
 # Graph properties.
+function internal_graph(f::WiringDiagram; id_only = false)
+  if id_only
+    g = WiringDiagramGraphUnionAll{Int, Int}()
+    add_parts!(g, :V, nparts(f.diagram, :Box), box = parts(f.diagram, :Box))
+    add_parts!(g, :E, nparts(f.diagram, :Wire), 
+        src = subpart(f.diagram, [:src, :out_port_box]), 
+        tgt = subpart(f.diagram, [:tgt, :in_port_box]), 
+        wire = parts(f.diagram, :Wire))
+  else
+    g = WiringDiagramGraph()
+    add_parts!(g, :V, nparts(f.diagram, :Box), box = [box(f,b) for b in parts(f.diagram, :Box)])
+    add_parts!(g, :E, nparts(f.diagram, :Wire), 
+        src = subpart(f.diagram, [:src, :out_port_box]), 
+        tgt = subpart(f.diagram, [:tgt, :in_port_box]), 
+        wire = [wire(f,w) for w in parts(f.diagram, :Wire)])
+  end
+  return g
+end
+
+function graph(f::WiringDiagram; id_only = false)
+  g = internal_graph(f; id_only = id_only)
+  input, output = add_parts!(g, :V, 2)
+  in_wires = add_parts!(g, :E, nparts(f.diagram, :InWire))
+  set_subparts!(g, in_wires, src = input)
+  set_subparts!(g, in_wires, tgt = subpart(f.diagram, :in_tgt))
+
+  out_wires = add_parts!(g, :E, nparts(f.diagram, :OutWire))
+  set_subparts!(g, out_wires, tgt = output)
+  set_subparts!(g, out_wires, src = subpart(f.diagram, :out_src))
+
+  pass_wires = add_parts!(g, :E, nparts(f.diagram, :PassWire), src = input, tgt = output)
+
+  if id_only
+    set_subparts!(g, [input, output], box = [input_id(f), output_id(f)])
+    set_subparts!(g, in_wires, wire = parts(f.diagram, :InWire))
+    set_subparts!(g, out_wires, wire = parts(f.diagram, :OutWire))
+    set_subparts!(g, pass_wires, wire = parts(f.diagram, :PassWire))
+  else
+    set_subparts!(g, [input, output], box = [box(f, b) for b in [input_id(f), output_id(f)]])
+    set_subparts!(g, in_wires, wire = [in_wire(f, w) for w in parts(f.diagram, :InWire)])
+    set_subparts!(g, out_wires, wire = [out_wire(f, w) for w in parts(f.diagram, :OutWire)])
+    set_subparts!(g, pass_wires, wire = [pass_wire(f, w) for w in parts(f.diagram, :PassWire)])
+  end
+  return g
+end
+
 conditional_append(cond::Bool, a::Int, ls::Vector{Int}) = cond ? append!(ls, a) : ls
 
 function outneighbors(f::WiringDiagram, b::Int)
