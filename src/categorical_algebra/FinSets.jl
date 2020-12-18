@@ -7,14 +7,14 @@ export FinSet, FinFunction, FinDomFunction, force, is_indexed, preimage,
 using Compat: isnothing, only
 
 using AutoHashEquals
-using DataStructures: IntDisjointSets, union!, find_root!
+using DataStructures: OrderedDict, IntDisjointSets, union!, find_root!
 using FunctionWrappers: FunctionWrapper
 import StaticArrays
 using StaticArrays: StaticVector, SVector, SizedVector
 
-using ...Theories, ..FreeDiagrams, ..Limits, ..Sets
+using ...Theories, ...CSetDataStructures, ...Graphs, ..FreeDiagrams,
+  ..Limits, ..Sets
 import ...Theories: dom, codom
-using ...CSetDataStructures: incident
 import ..Limits: limit, colimit, universal
 using ..Sets: SetFunctionCallable, SetFunctionIdentity
 
@@ -458,7 +458,7 @@ deleteat(x::StaticVector, i) = StaticArrays.deleteat(x, i)
 
 See `CompositePullback` for a very similar construction.
 """
-struct FinSetFreeDiagramLimit{Ob<:FinSet, Diagram<:FreeDiagram{Ob},
+struct FinSetFreeDiagramLimit{Ob<:FinSet, Diagram<:AbstractFreeDiagram{Ob},
                               Cone<:Multispan{Ob}, Prod<:Product{Ob},
                               Incl<:FinFunction} <: AbstractLimit{Ob,Diagram}
   diagram::Diagram
@@ -467,9 +467,149 @@ struct FinSetFreeDiagramLimit{Ob<:FinSet, Diagram<:FreeDiagram{Ob},
   incl::Incl # Inclusion for the "multi-equalizer" in general formula.
 end
 
+function limit(d::BipartiteFreeDiagram{Ob,Hom}) where
+    {Ob<:SetOb, Hom<:FinDomFunction{Int}}
+  # As in a pullback, this method assumes that all objects in layer 2 have
+  # incoming morphisms.
+  @assert !any(isempty(incident(d, v, :tgt)) for v in vertices₂(d))
+  d_original = d
+
+  # It is generally optimal to compute all equalizers (self joins) first, so as
+  # to reduce the sizes of later pullbacks (joins) and products (cross joins).
+  #
+  # Note: We could also call `pair_all` *before* this, which is not necessarily
+  # redundant with the call below, but I don't know whether that would
+  # meaningfully affect the performance.
+  d, ιs = equalize_all(d)
+
+  # Perform all pairings before computing any joins
+  d = pair_all(d)
+
+  # Having done this preprocessing, if there are any nontrivial joins, perform
+  # the first one with maximal arity and the recurse; otherwise, we have at most
+  # a product to compute and then we are finished.
+  #
+  # In the binary case (`nv₁(d) == 2`), the preprocessing guarantees that there
+  # is at most one nontrivial join, so there are no choices to make. When there
+  # are more than two relations, we have effectively a simple planning algorithm
+  # that prefers high-arity joins (e.g., three-way joins to standard two-way
+  # joins). For more control over the order of the joins, create a UWD schedule.
+  n, v = nv₂(d) == 0 ? (0, 0) :
+    findmax([ length(incident(d, v, :tgt)) for v in vertices₂(d) ])
+  if n <= 1
+    if nv₁(d) == 1
+      Limit(d_original, SMultispan{1}(ιs[1]))
+    else
+      prod = product(SVector(ob₁(d)...))
+      Limit(d_original, map(compose, legs(prod), ιs))
+    end
+  else
+    # Compute the pullback (inner join).
+    join_edges = incident(d, v, :tgt)
+    to_join = src(d, join_edges)
+    to_keep = setdiff(vertices₁(d), to_join)
+    pb = pullback(SVector(hom(d, join_edges)...), alg=HashJoin())
+
+    # Create a new bipartite diagram with joined vertices.
+    d_joined = BipartiteFreeDiagram{Ob,Hom}()
+    copy_parts!(d_joined, d, V₁=to_keep, V₂=setdiff(vertices₂(d),v), E=edges(d))
+    joined = add_vertex₁!(d_joined, ob₁=apex(pb))
+    for (u, π) in zip(to_join, legs(pb))
+      for e in setdiff(incident(d, u, :src), join_edges)
+        set_subparts!(d_joined, e, src=joined, hom=π⋅hom(d,e))
+      end
+    end
+    rem_edges!(d_joined, join_edges)
+
+    # Recursively compute the limit of the new diagram.
+    lim = limit(d_joined)
+
+    # Assemble limit cone from cones for pullback and reduced limit.
+    πs = Vector{Hom}(undef, nv₁(d))
+    for (i, u) in enumerate(to_join)
+      πs[u] = compose(last(legs(lim)), legs(pb)[i], ιs[u])
+    end
+    for (i, u) in enumerate(to_keep)
+      πs[u] = compose(legs(lim)[i], ιs[u])
+    end
+    Limit(d_original, Multispan(πs))
+  end
+end
+
+""" Compute all possible equalizers in a bipartite free diagram.
+
+The result is a new bipartite free diagram that has the same vertices but is
+*simple*, i.e., has no multiple edges. The list of inclusion morphisms into
+layer 1 of the original diagram is also returned.
+"""
+function equalize_all(d::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
+  d_simple = BipartiteFreeDiagram{Ob,Hom}()
+  copy_parts!(d_simple, d, V₂=vertices₂(d))
+  ιs = map(vertices₁(d)) do u
+    # Collect outgoing edges of u, key-ed by target vertex.
+    out_edges = OrderedDict{Int,Vector{Int}}()
+    for e in incident(d, u, :src)
+      push!(get!(out_edges, tgt(d,e)) do; Int[] end, e)
+    end
+
+    # Equalize all sets of parallel edges out of u.
+    ι = id(ob₁(d, u))
+    for es in values(out_edges)
+      if length(es) > 1
+        fs = SVector((ι⋅f for f in hom(d, es))...)
+        ι = incl(equalizer(fs)) ⋅ ι
+      end
+    end
+
+    add_vertex₁!(d_simple, ob₁=dom(ι)) # == u
+    for (v, es) in pairs(out_edges)
+      add_edge!(d_simple, u, v, hom=ι⋅hom(d, first(es)))
+    end
+    ι
+  end
+  (d_simple, ιs)
+end
+
+""" Perform all possible pairings in a bipartite free diagram.
+
+The resulting diagram has the same ``V₁`` set but a possibly reduced ``V₂``.
+Layer 2 vertices are merged when they have exactly the same multiset of adjacent
+vertices.
+"""
+function pair_all(d::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
+  d_paired = BipartiteFreeDiagram{Ob,Hom}()
+  copy_parts!(d_paired, d, V₁=vertices₁(d))
+
+  # Construct mapping to V₂ vertices from multisets of adjacent V₁ vertices.
+  outmap = OrderedDict{Vector{Int},Vector{Int}}()
+  for v in vertices₂(d)
+    push!(get!(outmap, sort(inneighbors(d, v))) do; Int[] end, v)
+  end
+
+  for (srcs, tgts) in pairs(outmap)
+    in_edges = map(tgts) do v
+      sort(incident(d, v, :tgt), by=e->src(d,e))
+    end
+    if length(tgts) == 1
+      v = add_vertex₂!(d_paired, ob₂=ob₂(d, only(tgts)))
+      add_edges!(d_paired, srcs, fill(v, length(srcs)),
+                 hom=hom(d, only(in_edges)))
+    else
+      prod = product(ob₂(d, tgts))
+      v = add_vertex₂!(d_paired, ob₂=ob(prod))
+      for (i,u) in enumerate(srcs)
+        f = pair(prod, hom(d, getindex.(in_edges, i)))
+        add_edge!(d_paired, u, v, hom=f)
+      end
+    end
+  end
+  d_paired
+end
+
 function limit(d::FreeDiagram{<:FinSet{Int}})
   # Uses the general formula for limits in Set (Leinster, 2014, Basic Category
-  # Theory, Example 5.1.22 / Equation 5.16).
+  # Theory, Example 5.1.22 / Equation 5.16). This method is simple and direct,
+  # but extremely inefficient!
   prod = product(ob(d))
   n, πs = length(ob(prod)), legs(prod)
   ι = FinFunction(filter(1:n) do i
@@ -478,7 +618,7 @@ function limit(d::FreeDiagram{<:FinSet{Int}})
           h(πs[s](i)) == πs[t](i)
         end for e in edges(d))
     end, n)
-  cone = Multispan(dom(ι), [compose(ι,πs[i]) for i in vertices(d)])
+  cone = Multispan(dom(ι), [ι⋅πs[i] for i in vertices(d)])
   FinSetFreeDiagramLimit(d, cone, prod, ι)
 end
 
@@ -599,8 +739,8 @@ struct FinSetFreeDiagramColimit{Ob<:FinSet, Diagram<:AbstractFreeDiagram{Ob},
 end
 
 function colimit(d::BipartiteFreeDiagram{<:FinSet{Int}})
-  # As in a pushout, assumes that all objects in a layer 1 have outgoing
-  # morphisms so that they can be excluded from the coproduct.
+  # As in a pushout, this method assume that all objects in layer 1 have
+  # outgoing morphisms so that they can be excluded from the coproduct.
   @assert !any(isempty(incident(d, u, :src)) for u in vertices₁(d))
   coprod = coproduct(ob₂(d))
   n, ιs = length(ob(coprod)), legs(coprod)

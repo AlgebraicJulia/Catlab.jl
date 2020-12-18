@@ -41,8 +41,8 @@ abstract type FixedShapeFreeDiagram{Ob} end
   objects::Objects
 end
 
-const EmptyDiagram{Ob} = DiscreteDiagram{Ob,<:StaticVector{0}}
-const ObjectPair{Ob} = DiscreteDiagram{Ob,<:StaticVector{2}}
+const EmptyDiagram{Ob} = DiscreteDiagram{Ob,<:StaticVector{0,Ob}}
+const ObjectPair{Ob} = DiscreteDiagram{Ob,<:StaticVector{2,Ob}}
 
 EmptyDiagram{Ob}() where Ob = DiscreteDiagram(@SVector Ob[])
 ObjectPair(first, second) = DiscreteDiagram(SVector(first, second))

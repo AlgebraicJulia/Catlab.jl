@@ -17,7 +17,7 @@ export AbstractUndirectedBipartiteGraph, UndirectedBipartiteGraph,
 
 using ...Present, ...CSetDataStructures
 using ..BasicGraphs: flatten
-import ..BasicGraphs: nv, ne, vertices, edges
+import ..BasicGraphs: nv, ne, vertices, edges, inneighbors, outneighbors
 
 # Undirected bipartite graphs
 #############################
@@ -102,6 +102,11 @@ function rem_vertices₂!(g::AbstractUndirectedBipartiteGraph, vs;
   end
   rem_parts!(g, :V₂, vs)
 end
+
+inneighbors(g::AbstractUndirectedBipartiteGraph, v::Int) =
+  subpart(g, incident(g, v, :tgt), :src)
+outneighbors(g::AbstractUndirectedBipartiteGraph, v::Int) =
+  subpart(g, incident(g, v, :src), :tgt)
 
 # Bipartite graphs
 ##################

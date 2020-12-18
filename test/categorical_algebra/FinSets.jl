@@ -200,9 +200,9 @@ end
 # General limits
 #---------------
 
-# Pullback as a general limit.
+# Pullback as limit of free diagram.
 f, g = FinFunction([1,1,3,2],4), FinFunction([1,1,4,2],4)
-lim = limit(FreeDiagram([FinSet(4),FinSet(4),FinSet(4)], [(f,1,3),(g,2,3)]))
+lim = limit(FreeDiagram(Cospan(f, g)))
 @test ob(lim) == FinSet(5)
 π1, π2 = legs(lim)[1:2]
 @test force(π1) == FinFunction([1,2,1,2,4], 4)
@@ -212,6 +212,18 @@ f′, g′ = FinFunction([1,2,4]), FinFunction([2,1,4])
 h = universal(lim, Multispan([f′, g′, f′⋅f])) # f′⋅f == g′⋅g
 @test force(h ⋅ π1) == f′
 @test force(h ⋅ π2) == g′
+
+# Pullback as limit of bipartite free diagram.
+lim = limit(BipartiteFreeDiagram(Cospan(f, g)))
+π1, π2 = legs(lim)
+@test π1 == FinFunction([1,1,2,2,4], 4)
+@test π2 == FinFunction([1,2,1,2,4], 4)
+@test π1 ⋅ f == π2 ⋅ g
+
+# Equalizer as limit of bipartite free diagram.
+f, g = [FinDomFunction(x -> x % i, FinSet(100), TypeSet(Int)) for i in 2:3]
+lim = (ι,) = limit(BipartiteFreeDiagram(ParallelPair(f, g)))
+@test ι == incl(equalizer(f, g))
 
 # Colimits
 ##########

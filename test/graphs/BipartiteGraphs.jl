@@ -20,6 +20,8 @@ add_edges!(g, [2,2], [2,3])
 @test ne(g) == 3
 @test edges(g) == 1:3
 @test (src(g), tgt(g)) == ([1,2,2], [1,2,3])
+@test inneighbors(g, 1) == [1]
+@test outneighbors(g, 2) == [2,3]
 
 rem_edge!(g, 1, 1)
 @test ne(g) == 2
