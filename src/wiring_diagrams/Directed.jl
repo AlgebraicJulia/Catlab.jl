@@ -361,7 +361,7 @@ end
 
 boxes(f::WiringDiagram) = map(b -> box(f, b), box_ids(f))
 nboxes(f::WiringDiagram) = nparts(f.diagram, :Box)
-box_ids(f::WiringDiagram) = parts(f.diagram, :Box)
+box_ids(f::WiringDiagram) = collect(parts(f.diagram, :Box))
 box_id(f::WiringDiagram, b::Int) = b # box_ids(f)[b]
 
 src_box(f::WiringDiagram, w::Int) = subpart(f.diagram, w, [:src, :out_port_box])
@@ -494,7 +494,6 @@ function add_box!(f::WiringDiagram, box::AbstractBox)
   set_subpart!(f.diagram, b, :box_type, typeof(box))
   box isa WiringDiagram ? set_subpart!(f.diagram, b, :value, box) : 
                                  set_subpart!(f.diagram, b, :value, value(box))
-
 
   in_ports = add_parts!(f.diagram, :InPort, length(input_ports(box)))
   set_subpart!(f.diagram, in_ports, :in_port_box, b)

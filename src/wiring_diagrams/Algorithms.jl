@@ -19,7 +19,7 @@ import ..DirectedWiringDiagrams: set_box
 Returns a list of box IDs, excluding the outer box's input and output IDs.
 """
 function topological_sort(d::WiringDiagram)::AbstractVector{Int}
-  filter(v -> v ∉ outer_ids(d), topological_sort(graph(d)))
+  filter(v -> v ∉ outer_ids(d), topological_sort(internal_graph(d; id_only = true)))
 end
 
 # Normalization
@@ -110,7 +110,7 @@ function normalize_delete!(d::WiringDiagram)
       push!(unused, v)
     end
   end
-  rem_boxes!(d, unused)
+  rem_boxes!(d, sort(collect(unused)))
   d
 end
 
