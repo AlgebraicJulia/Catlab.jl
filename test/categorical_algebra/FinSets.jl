@@ -186,6 +186,19 @@ for Alg in (NestedLoopJoin, SortMergeJoin, HashJoin)
   @test tuples(lim) == [(1,4), (2,2), (2,3), (3,2), (3,3), (5,5)]
 end
 
+# Ternary pullback using different algorithms.
+f, g = FinDomFunction([:a,:b,:c]), FinDomFunction([:c,:b,:a])
+h = FinDomFunction([:a,:a,:b,:b,:c,:c])
+lim = limit(SMulticospan{3}(f, g, h), alg=ComposeProductEqualizer())
+@test ob(lim) == FinSet(6)
+reference_tuples = tuples(lim)
+
+for Alg in (NestedLoopJoin, SortMergeJoin, HashJoin)
+  lim = limit(SMulticospan{3}(f, g, h), alg=Alg())
+  @test ob(lim) == FinSet(6)
+  @test tuples(lim) == reference_tuples
+end
+
 # General limits
 #---------------
 
