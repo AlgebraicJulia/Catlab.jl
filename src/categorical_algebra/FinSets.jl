@@ -365,13 +365,9 @@ function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}},
   end
   while !any(isempty, ranges)
     if all(==(values[1]), values)
-      # TODO: Make more efficient by preallocating larger arrays.
-      for I in CartesianIndices(Tuple(ranges))
-        for i in eachindex(πs)
-          push!(πs[i], sorts[i][I[i]])
-        end
-      end
-      for i in eachindex(ranges)
+      indices = CartesianIndices(Tuple(ranges))
+      for i in eachindex(πs)
+        append!(πs[i], (sorts[i][I[i]] for I in indices))
         next_range!(i)
       end
     else
@@ -418,9 +414,10 @@ function hash_join(builds::AbstractVector{<:FinDomFunction{Int}},
     n_preimages = Tuple(map(length, preimages))
     n = prod(n_preimages)
     if n > 0
+      indices = CartesianIndices(n_preimages)
       for j in eachindex(π_builds)
         πb, xs = π_builds[j], preimages[j]
-        append!(πb, (xs[I[j]] for I in CartesianIndices(n_preimages)))
+        append!(πb, (xs[I[j]] for I in indices))
       end
       append!(πp, (y for i in 1:n))
     end
