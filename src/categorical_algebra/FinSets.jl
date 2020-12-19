@@ -322,11 +322,11 @@ function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}},
   funcs = legs(cospan)
   ns = map(length, feet(cospan))
   πs = map(_ -> Int[], funcs)
-  for index in CartesianIndices(Tuple(ns))
-    values = map((f, i) -> f(index[i]), funcs, eachindex(funcs))
+  for I in CartesianIndices(Tuple(ns))
+    values = map((f, i) -> f(I[i]), funcs, eachindex(funcs))
     if all(==(values[1]), values)
       for i in eachindex(πs)
-        push!(πs[i], index[i])
+        push!(πs[i], I[i])
       end
     end
   end
@@ -366,9 +366,9 @@ function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}},
   while !any(isempty, ranges)
     if all(==(values[1]), values)
       # TODO: Make more efficient by preallocating larger arrays.
-      for index in CartesianIndices(Tuple(ranges))
+      for I in CartesianIndices(Tuple(ranges))
         for i in eachindex(πs)
-          push!(πs[i], sorts[i][index[i]])
+          push!(πs[i], sorts[i][I[i]])
         end
       end
       for i in eachindex(ranges)
@@ -409,6 +409,25 @@ function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}}, ::HashJoin)
   Limit(cospan, Multispan(insert(πs_build, i, π_probe)))
 end
 
+function hash_join(builds::AbstractVector{<:FinDomFunction{Int}},
+                   probe::FinDomFunction{Int})
+  π_builds, πp = map(_ -> Int[], builds), Int[]
+  for y in dom(probe)
+    val = probe(y)
+    preimages = map(build -> preimage(build, val), builds)
+    n_preimages = Tuple(map(length, preimages))
+    n = prod(n_preimages)
+    if n > 0
+      for j in eachindex(π_builds)
+        πb, xs = π_builds[j], preimages[j]
+        append!(πb, (xs[I[j]] for I in CartesianIndices(n_preimages)))
+      end
+      append!(πp, (y for i in 1:n))
+    end
+  end
+  (map(FinFunction, π_builds, map(dom, builds)), FinFunction(πp, dom(probe)))
+end
+
 function hash_join(builds::StaticVector{1,<:FinDomFunction{Int}},
                    probe::FinDomFunction{Int})
   πb, πp = hash_join(builds[1], probe)
@@ -416,16 +435,12 @@ function hash_join(builds::StaticVector{1,<:FinDomFunction{Int}},
 end
 function hash_join(build::FinDomFunction{Int}, probe::FinDomFunction{Int})
   πb, πp = Int[], Int[]
-  for k in dom(probe)
-    js = preimage(build, probe(k))
-    if !isempty(js)
-      nb, np, nj = length(πb), length(πp), length(js)
-      resize!(πb, nb + nj)
-      resize!(πp, np + nj)
-      for (i, j) in enumerate(js)
-        πb[nb + i] = j
-        πp[np + i] = k
-      end
+  for y in dom(probe)
+    xs = preimage(build, probe(y))
+    n = length(xs)
+    if n > 0
+      append!(πb, xs)
+      append!(πp, (y for i in 1:n))
     end
   end
   (FinFunction(πb, dom(build)), FinFunction(πp, dom(probe)))
