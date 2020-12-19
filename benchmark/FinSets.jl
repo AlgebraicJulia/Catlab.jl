@@ -13,8 +13,8 @@ function benchmark_pullback(suite::BenchmarkGroup, name, cospan)
   end
 end
 
-m, n = 100, 150
-f, g = FinFunction(ones(Int, m), 1), FinFunction(ones(Int, n), 1)
+sizes = (100, 150)
+f, g = (FinFunction(ones(Int, size), 1) for size in sizes)
 benchmark_pullback(bench, "pullback_terminal", Cospan(f, g))
 
 f = FinFunction(identity, FinSet(10000))
@@ -26,7 +26,14 @@ f, g = FinFunction(randperm(n), n), FinFunction(randperm(n), n)
 benchmark_pullback(bench, "pullback_randperm", Cospan(f, g))
 
 k = 1000
-m, n = 9000, 11000
+sizes = (9000, 11000)
 Random.seed!(1)
-f, g = FinFunction(rand(1:k, m), k), FinFunction(rand(1:k, n), k)
+f, g = (FinFunction(rand(1:k, size), k) for size in sizes)
 benchmark_pullback(bench, "pullback_randsparse", Cospan(f, g))
+
+k = 50
+sizes = (400, 500, 600)
+Random.seed!(1)
+f, g, h = (FinFunction(rand(1:k, size), k) for size in sizes)
+benchmark_pullback(bench, "ternary_pullback_randsparse",
+                   SMulticospan{3}(f, g, h))
