@@ -718,11 +718,11 @@ function graph(f::WiringDiagram; id_only = false)
   input, output = add_parts!(g, :V, 2)
   in_wires = add_parts!(g, :E, nparts(f.diagram, :InWire))
   set_subparts!(g, in_wires, src = input)
-  set_subparts!(g, in_wires, tgt = subpart(f.diagram, :in_tgt))
+  set_subparts!(g, in_wires, tgt = subpart(f.diagram, [:in_tgt, :in_port_box]))
 
   out_wires = add_parts!(g, :E, nparts(f.diagram, :OutWire))
   set_subparts!(g, out_wires, tgt = output)
-  set_subparts!(g, out_wires, src = subpart(f.diagram, :out_src))
+  set_subparts!(g, out_wires, src = subpart(f.diagram, [:out_src, :out_port_box]))
 
   pass_wires = add_parts!(g, :E, nparts(f.diagram, :PassWire), src = input, tgt = output)
 
