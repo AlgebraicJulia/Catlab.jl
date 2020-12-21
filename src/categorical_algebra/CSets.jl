@@ -13,12 +13,16 @@ using StaticArrays: SVector
 @reexport using ...CSetDataStructures
 using ...GAT, ..FreeDiagrams, ..Limits, ..Sets, ..FinSets
 import ..Limits: limit, colimit, universal
-import ..FinSets: FinFunction, FinDomFunction, force
+import ..FinSets: FinSet, FinFunction, FinDomFunction, force
 using ...Theories: Category, CatDesc, AttrDesc
 import ...Theories: dom, codom, compose, ⋅, id
 
 # FinSets interop
 #################
+
+""" Create `FinSet` for part of attributed C-set.
+"""
+FinSet(X::ACSet, type::Symbol) = FinSet{Int,Int}(nparts(X, type))
 
 """ Create `FinFunction` for part or subpart of attributed C-set.
 
@@ -30,12 +34,12 @@ FinFunction(X::ACSet, name::Symbol) = fin_function(X, Val{name})
     ::Type{Val{name}}) where {CD,AD,Ts,Idxed,name}
   if name ∈ CD.ob
     quote
-      FinFunction(identity, FinSet(nparts(X, $(QuoteNode(name)))))
+      FinFunction(identity, FinSet(X, $(QuoteNode(name))))
     end
   elseif name ∈ CD.hom
     quote
       FinFunction(subpart(X, $(QuoteNode(name))),
-                  FinSet(nparts(X, $(QuoteNode(codom(CD, name))))),
+                  FinSet(X, $(QuoteNode(codom(CD, name)))),
                   index=$(name ∈ Idxed ? :(X.indices.$name) : false))
     end
   else
@@ -257,8 +261,8 @@ end
 
 """ Diagram in C-Set → named tuple of diagrams in FinSet
 """
-unpack_diagram(diagram::DiscreteDiagram{<:AbstractACSet}) =
-  map(DiscreteDiagram, unpack_sets(ob(diagram)))
+unpack_diagram(discrete::DiscreteDiagram{<:AbstractACSet}) =
+  map(DiscreteDiagram, unpack_sets(ob(discrete)))
 unpack_diagram(span::Multispan{<:AbstractACSet}) =
   map(Multispan, fin_sets(apex(span)), unpack_components(legs(span)))
 unpack_diagram(cospan::Multicospan{<:AbstractACSet}) =
@@ -266,32 +270,16 @@ unpack_diagram(cospan::Multicospan{<:AbstractACSet}) =
 unpack_diagram(para::ParallelMorphisms{<:AbstractACSet}) =
   map(ParallelMorphisms, unpack_components(hom(para)))
 
-function unpack_diagram(diagram::BipartiteFreeDiagram{<:AbstractACSet})
-  map(unpack_sets(ob₁(diagram)), unpack_sets(ob₂(diagram)),
-      unpack_components(hom(diagram))) do sets₁, sets₂, funcs
-    d = BipartiteFreeDiagram{FinSet{Int,Int},FinFunction{Int,Int}}()
-    add_vertices₁!(d, nv₁(diagram), ob₁=sets₁)
-    add_vertices₂!(d, nv₂(diagram), ob₂=sets₂)
-    add_edges!(d, src(diagram), tgt(diagram), hom=funcs)
-    d
-  end
-end
-
-function unpack_diagram(diagram::FreeDiagram{<:AbstractACSet})
-  map(unpack_sets(ob(diagram)),
-      unpack_components(hom(diagram))) do sets, funcs
-    d = FreeDiagram{FinSet{Int,Int},FinFunction{Int,Int}}()
-    add_vertices!(d, nv(diagram), ob=sets)
-    add_edges!(d, src(diagram), tgt(diagram), hom=funcs)
-    d
-  end
+function unpack_diagram(d::Union{FreeDiagram{ACS},BipartiteFreeDiagram{ACS}}) where
+    {Ob, CD <: CatDesc{Ob}, ACS <: AbstractACSet{CD}}
+  NamedTuple{Ob}([ map(d, Ob=X -> FinSet(X, ob), Hom=α -> α[ob]) for ob in Ob ])
 end
 
 """ Vector of C-sets → named tuple of vectors of FinSets
 """
 unpack_sets(Xs::AbstractVector{<:AbstractACSet{CD}}) where
     {Ob, CD <: CatDesc{Ob}} =
-  NamedTuple{Ob}([ map(X -> FinSet{Int,Int}(nparts(X, ob)), Xs) for ob in Ob ])
+  NamedTuple{Ob}([ map(X -> FinSet(X, ob), Xs) for ob in Ob ])
 
 """ Vector of C-set transformations → named tuple of vectors of FinFunctions
 """
