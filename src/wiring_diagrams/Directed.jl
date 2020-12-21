@@ -526,7 +526,7 @@ end
 incident_reduce(acs::ACSet, part, expr) = begin
     xs = incident(acs, part, expr)
     if typeof(xs) <: Vector{Vector}
-        return sort(foldl(vcat, xs))
+        return sort(reduce(vcat, xs))
     end
     return sort(xs)
 end
@@ -610,7 +610,9 @@ end
 function rem_pass_wire!(f::WiringDiagram, wire::Wire)
   for w in parts(f.diagram, :PassWire)
     subpart(f.diagram, w, :pass_wire_value) == wire.value && 
-          return rem_part!(f.diagram, :PassWire, w)
+      subpart(f.diagram, w, :pass_src) == wire.source.port &&
+      subpart(f.diagram, w, :pass_tgt) == wire.target.port &&
+      return rem_part!(f.diagram, :PassWire, w)
   end
   error("PassWire $wire does not exist, so cannot be removed")
 end
