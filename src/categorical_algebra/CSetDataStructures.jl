@@ -5,7 +5,7 @@ export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
   AbstractACSetType, ACSetType, ACSetTableType, AbstractCSetType, CSetType,
   tables, parts, nparts, has_part, subpart, has_subpart, incident,
   add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!,
-  copy_parts!, copy_parts_only!, disjoint_union, @acset
+  copy_parts!, copy_parts_only!, disjoint_union, @acset, @present_acset
 
 using Compat: isnothing, only
 
@@ -827,6 +827,9 @@ function deletesorted!(a::AbstractVector, x)
   if found; deleteat!(a, i) end
   found
 end
+ 
+# ACSet Creation Macros
+#######################
 
 """ More convenient syntax for declaring an ACSet
 
@@ -869,6 +872,64 @@ function init_acset(T::Type{<:ACSet{CD,AD,Ts}},body) where {CD <: CatDesc, AD <:
   end
   push!(code.args, :(return acs))
   code
+end
+
+""" Alternative ACSet creation macro
+
+Example usage:
+```julia
+@present_acset Graph begin
+   a::V
+   b::V
+   x::E(src=a,tgt=b)
+end
+```
+"""
+
+macro present_acset(head,body)
+  acset_type, name_attrs = @match head begin
+    Expr(:tuple, acset_type, names...) => (acset_type, names)
+    _ => (head,[])
+  end
+  name_attrs = map(name_attrs) do syntax
+    @match syntax begin
+      Expr(:call, :with_names, ob, attr) => (ob => attr)
+      _ => error("unsupported argument in @present_acset head")
+    end
+  end |> Dict
+  lines = @match strip_lines(body) begin
+    Expr(:block, lines...) => lines
+    _ => error("Must pass in a block to @present_acset body")
+  end
+  quote
+    acs = $(esc(acset_type))()
+    $(Expr(:block, map(line -> convert_line(line, name_attrs), lines)...))
+    acs
+  end
+end
+
+function convert_line(line,name_attrs)
+  @match line begin
+    Expr(:(::), var, expr) => begin
+      ob, args = @match expr begin
+        Expr(:call, ob, args...) => (ob,Array(args))
+        ob::Symbol => (ob,[])
+        _ => error("invalid right hand side in @present_acset body")
+      end
+      vars = @match var begin
+        Expr(:tuple, vars...) => vars
+        _::Symbol => [var]
+        _ => error("invalid left hand side in @present_acset body")
+      end
+      if ob ∈ keys(name_attrs)
+        push!(args,Expr(:kw, name_attrs[ob], Expr(:vect, map(v -> Expr(:quote,v),vars)...)))
+      end
+      quote
+        $(Expr(:tuple, vars...)) = add_parts!(acs, $(Expr(:quote, ob)), $(length(vars)), $(args...))
+      end
+    end
+    _ => error("invalid line type in @present_acset body: must be a :: declaration")
+  end
 end
 
 end
