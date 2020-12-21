@@ -5,11 +5,10 @@ export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
   AbstractACSetType, ACSetType, ACSetTableType, AbstractCSetType, CSetType,
   tables, parts, nparts, has_part, subpart, has_subpart, incident,
   add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!,
-  copy_parts!, copy_parts_only!, disjoint_union, @acset, wrangle_attributes
+  copy_parts!, copy_parts_only!, disjoint_union, @acset
 
 using Compat: isnothing, only
 
-using FunctionWrappers: FunctionWrapper
 using MLStyle: @match
 using ...Meta
 using PrettyTables: pretty_table

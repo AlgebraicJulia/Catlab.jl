@@ -1,4 +1,4 @@
-export Schema, FreeSchema, Data, Attr, SchemaExpr, DataExpr, AttrExpr, attrs_by_codom
+export Schema, FreeSchema, Data, Attr, SchemaExpr, DataExpr, AttrExpr
 
 using MLStyle: @match
 
