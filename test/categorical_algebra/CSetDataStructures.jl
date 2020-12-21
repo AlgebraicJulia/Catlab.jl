@@ -342,4 +342,44 @@ end
 @test subpart(g,:,:src) == [1,2,3,4]
 @test incident(g,1,:src) == [1]
 
+# Test mapping
+#-------------
+
+f(s::String) = Int(s[1])
+
+h1 = map(g, dec = f)
+h2 = map(g, X = f)
+
+@test h1 == h1
+
+@test subpart(h1,:src) == subpart(g,:src)
+@test typeof(h1).parameters[3] == Tuple{Int}
+@test subpart(h1,:dec) == f.(["a","b","c","d"])
+
+@present TheoryLabelledDecGraph <: TheoryDecGraph begin
+  label::Attr(V,X)
+end
+
+const LabelledDecGraph = ACSetType(TheoryLabelledDecGraph, index=[:src,:tgt])
+
+g = @acset LabelledDecGraph{String} begin
+  V = 4
+  E = 4
+
+  src = [1,2,3,4]
+  tgt = [2,3,4,1]
+
+  dec = ["a","b","c","d"]
+  label = ["w", "x", "y", "z"]
+end
+
+h1 = map(g, X = f)
+@test subpart(h1,:label) == f.(["w","x","y","z"])
+
+h2 = map(g, dec = f, label = i -> 3)
+@test subpart(h2,:dec) == f.(["a","b","c","d"])
+@test subpart(h2,:label) == [3,3,3,3]
+
+@test_throws Any map(g, dec = f)
+
 end
