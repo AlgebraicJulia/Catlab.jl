@@ -113,11 +113,10 @@ end
 
 function parse_relation_diagram(head::Expr, body::Expr)
   # Parse variables and their types from context.
-  context, outer_expr = @match head begin
-    Expr(:where, expr, context) => (context, expr)
-    _ => (head, head)
+  outer_expr, all_vars, all_types = @match head begin
+    Expr(:where, expr, context) => (expr, parse_relation_context(context)...)
+    _ => (head, nothing, nothing)
   end
-  all_vars, all_types = parse_relation_context(context)
   var_types = if isnothing(all_types) # Untyped case.
     vars -> length(vars)
   else # Typed case.
@@ -127,10 +126,16 @@ function parse_relation_diagram(head::Expr, body::Expr)
 
   # Create wiring diagram and add outer ports and junctions.
   _, outer_port_names, outer_vars = parse_relation_call(outer_expr)
-  outer_vars ⊆ all_vars || error("One of variables $outer_vars is not declared")
+  isnothing(all_vars) || outer_vars ⊆ all_vars ||
+    error("One of variables $outer_vars is not declared in context $all_vars")
   d = RelationDiagram{Symbol}(var_types(outer_vars),
                               port_names=outer_port_names)
-  add_junctions!(d, var_types(all_vars), variable=all_vars)
+  if isnothing(all_vars)
+    new_vars = unique(outer_vars)
+    add_junctions!(d, var_types(new_vars), variable=new_vars)
+  else
+    add_junctions!(d, var_types(all_vars), variable=all_vars)
+  end
   set_junction!(d, ports(d, outer=true),
                 incident(d, outer_vars, :variable), outer=true)
 
@@ -138,10 +143,15 @@ function parse_relation_diagram(head::Expr, body::Expr)
   body = Base.remove_linenums!(body)
   for expr in body.args
     name, port_names, vars = parse_relation_call(expr)
-    vars ⊆ all_vars || error("One of variables $vars is not declared")
+    isnothing(all_vars) || vars ⊆ all_vars ||
+      error("One of variables $vars is not declared in context $all_vars")
     box = add_box!(d, var_types(vars), name=name)
     if !isnothing(port_names)
       set_subpart!(d, ports(d, box), :port_name, port_names)
+    end
+    if isnothing(all_vars)
+      new_vars = setdiff(unique(vars), d[:variable])
+      add_junctions!(d, var_types(new_vars), variable=new_vars)
     end
     set_junction!(d, ports(d, box), incident(d, vars, :variable))
   end

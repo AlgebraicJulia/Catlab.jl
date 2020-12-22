@@ -28,9 +28,13 @@ parsed = @relation ((x,z) where (x,y,z)) -> (R(x,y); S(y,z))
 parsed = @relation function (x,z) where (x,y,z); R(x,y); S(y,z) end
 @test parsed == d
 
-# Shorthand for when every junction is exposed as an outer port.
+# Abbreviated syntax where context is inferred.
 d1 = @relation (x,y,z) -> (R(x,y); S(y,z))
 d2 = @relation ((x,y,z) where (x,y,z)) -> (R(x,y); S(y,z))
+@test d1 == d2
+
+d1 = @relation (x,z) -> (R(x,y); S(y,z))
+d2 = @relation ((x,z) where (x,z,y)) -> (R(x,y); S(y,z))
 @test d1 == d2
 
 # Special case: closed diagram.
@@ -78,10 +82,24 @@ set_junction!(d, [1,3], outer=true)
 set_subpart!(d, :port_name, [:src, :tgt, :src, :tgt])
 @test parsed == d
 
+# Abbreviated syntax where context is inferred.
+d1 = @relation (start=u, mid=v, stop=w) -> (E(src=u, tgt=v); E(src=v, tgt=w))
+d2 = @relation ((start=u, mid=v, stop=w) where (u,v,w)) ->
+  (E(src=u, tgt=v); E(src=v, tgt=w))
+@test d1 == d2
+
+d1 = @relation (start=u, stop=w) -> (E(src=u, tgt=v); E(src=v, tgt=w))
+d2 = @relation ((start=u, stop=w) where (u,w,v)) ->
+  (E(src=u, tgt=v); E(src=v, tgt=w))
+@test d1 == d2
+
 # Special case: closed diagram.
 if VERSION >= v"1.5"
-  parsed = @relation ((;) where (v,)) -> E(src=v, tgt=v)
-  @test subpart(parsed, :port_name) == [:src, :tgt]
+  d1 = @relation ((;) where (v,)) -> E(src=v, tgt=v)
+  @test subpart(d1, :port_name) == [:src, :tgt]
+
+  d2 = @relation (;) -> E(src=v, tgt=v)
+  @test d1 == d2
 end
 
 # Typed, named ports
