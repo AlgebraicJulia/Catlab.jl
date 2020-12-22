@@ -1,9 +1,36 @@
 module TestCSets
 using Test
 
-using Catlab, Catlab.Theories, Catlab.Graphs,
-  Catlab.CategoricalAlgebra, Catlab.CategoricalAlgebra.FinSets
+using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra,
+  Catlab.CategoricalAlgebra.Sets, Catlab.CategoricalAlgebra.FinSets
 using Catlab.Graphs.BasicGraphs: TheoryGraph
+
+# FinSets interop
+#################
+
+g = Graph(6)
+add_edges!(g, 2:4, 3:5)
+f = FinFunction(g, :V)
+@test collect(f) == 1:6
+@test is_indexed(f)
+f = FinFunction(g, :src)
+@test codom(f) == FinSet(6)
+@test collect(f) == 2:4
+@test is_indexed(f)
+
+f = FinDomFunction(g, :E)
+@test collect(f) == 1:3
+@test is_indexed(f)
+f = FinDomFunction(g, :tgt)
+@test codom(f) == TypeSet(Int)
+@test collect(f) == 3:5
+@test is_indexed(f)
+
+g = WeightedGraph{Float64}(3)
+add_edges!(g, 1:2, 2:3, weight=[0.5, 1.5])
+f = FinDomFunction(g, :weight)
+@test codom(f) == TypeSet(Float64)
+@test collect(f) == [0.5, 1.5]
 
 # C-set morphisms
 #################

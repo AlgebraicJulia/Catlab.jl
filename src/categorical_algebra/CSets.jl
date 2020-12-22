@@ -11,11 +11,65 @@ using Reexport
 using StaticArrays: SVector
 
 @reexport using ...CSetDataStructures
-using ...GAT, ..FreeDiagrams, ..Limits, ..FinSets
+using ...GAT, ..FreeDiagrams, ..Limits, ..Sets, ..FinSets
 import ..Limits: limit, colimit, universal
-import ..FinSets: force
+import ..FinSets: FinSet, FinFunction, FinDomFunction, force
 using ...Theories: Category, CatDesc, AttrDesc
 import ...Theories: dom, codom, compose, ⋅, id
+
+# FinSets interop
+#################
+
+""" Create `FinSet` for part of attributed C-set.
+"""
+FinSet(X::ACSet, type::Symbol) = FinSet{Int,Int}(nparts(X, type))
+
+""" Create `FinFunction` for part or subpart of attributed C-set.
+
+The subpart must be of kind `Ob`. For indexed subparts, the index is included.
+"""
+FinFunction(X::ACSet, name::Symbol) = fin_function(X, Val{name})
+
+@generated function fin_function(X::ACSet{CD,AD,Ts,Idxed},
+    ::Type{Val{name}}) where {CD,AD,Ts,Idxed,name}
+  if name ∈ CD.ob
+    quote
+      FinFunction(identity, FinSet(X, $(QuoteNode(name))))
+    end
+  elseif name ∈ CD.hom
+    quote
+      FinFunction(subpart(X, $(QuoteNode(name))),
+                  FinSet(X, $(QuoteNode(codom(CD, name)))),
+                  index=$(name ∈ Idxed ? :(X.indices.$name) : false))
+    end
+  else
+    throw(ArgumentError("$(repr(name)) not in $(CD.ob) or $(CD.hom)"))
+  end
+end
+
+""" Create `FinDomFunction` for part or subpart of attributed C-set.
+
+The codomain is always of type `TypeSet`, regardless of whether the subpart is
+of kind `Ob` or `Data`. For indexed subparts, the index is included.
+"""
+FinDomFunction(X::ACSet, name::Symbol) = fin_dom_function(X, Val{name})
+
+@generated function fin_dom_function(X::ACSet{CD,AD,Ts,Idxed},
+    ::Type{Val{name}}) where {CD,AD,Ts,Idxed,name}
+  if name ∈ CD.ob
+    quote
+      n = nparts(X, $(QuoteNode(name)))
+      FinDomFunction(1:n, FinSet(n), TypeSet{Int}())
+    end
+  elseif name ∈ CD.hom || name ∈ AD.attr
+    quote
+      FinDomFunction(subpart(X, $(QuoteNode(name))),
+                     index=$(name ∈ Idxed ? :(X.indices.$name) : false))
+    end
+  else
+    throw(ArgumentError("$(repr(name)) not in $(CD.ob), $(CD.hom), or $(AD.attr)"))
+  end
+end
 
 # C-set transformations
 #######################
@@ -101,7 +155,7 @@ force(α::ACSetTransformation) =
   dom(α::ACSetTransformation) = α.dom
   codom(α::ACSetTransformation) = α.codom
 
-  id(X::ACSet) = ACSetTransformation(map(id, finsets(X)), X, X)
+  id(X::ACSet) = ACSetTransformation(map(id, fin_sets(X)), X, X)
 
   function compose(α::ACSetTransformation, β::ACSetTransformation)
     # Question: Should we incur cost of checking that codom(β) == dom(α)?
@@ -110,7 +164,7 @@ force(α::ACSetTransformation) =
   end
 end
 
-finsets(X::ACSet) = map(table -> FinSet(length(table)), tables(X))
+fin_sets(X::ACSet) = map(table -> FinSet(length(table)), tables(X))
 
 # Limits and colimits
 #####################
@@ -207,30 +261,25 @@ end
 
 """ Diagram in C-Set → named tuple of diagrams in FinSet
 """
-unpack_diagram(diagram::DiscreteDiagram{<:AbstractACSet}) =
-  map(DiscreteDiagram, unpack_finsets(ob(diagram)))
+unpack_diagram(discrete::DiscreteDiagram{<:AbstractACSet}) =
+  map(DiscreteDiagram, unpack_sets(ob(discrete)))
 unpack_diagram(span::Multispan{<:AbstractACSet}) =
-  map(Multispan, finsets(apex(span)), unpack_components(legs(span)))
+  map(Multispan, fin_sets(apex(span)), unpack_components(legs(span)))
 unpack_diagram(cospan::Multicospan{<:AbstractACSet}) =
-  map(Multicospan, finsets(apex(cospan)), unpack_components(legs(cospan)))
+  map(Multicospan, fin_sets(apex(cospan)), unpack_components(legs(cospan)))
 unpack_diagram(para::ParallelMorphisms{<:AbstractACSet}) =
   map(ParallelMorphisms, unpack_components(hom(para)))
 
-function unpack_diagram(diagram::FreeDiagram{<:AbstractACSet})
-  map(unpack_finsets(ob(diagram)),
-      unpack_components(hom(diagram))) do sets, funcs
-    d = FreeDiagram{FinSet{Int,Int},FinFunction{Int,Int}}()
-    add_vertices!(d, nv(diagram), ob=sets)
-    add_edges!(d, src(diagram), tgt(diagram), hom=funcs)
-    d
-  end
+function unpack_diagram(d::Union{FreeDiagram{ACS},BipartiteFreeDiagram{ACS}}) where
+    {Ob, CD <: CatDesc{Ob}, ACS <: AbstractACSet{CD}}
+  NamedTuple{Ob}([ map(d, Ob=X -> FinSet(X, ob), Hom=α -> α[ob]) for ob in Ob ])
 end
 
 """ Vector of C-sets → named tuple of vectors of FinSets
 """
-unpack_finsets(Xs::AbstractVector{<:AbstractACSet{CD}}) where
+unpack_sets(Xs::AbstractVector{<:AbstractACSet{CD}}) where
     {Ob, CD <: CatDesc{Ob}} =
-  NamedTuple{Ob}([ map(X -> FinSet{Int,Int}(nparts(X, ob)), Xs) for ob in Ob ])
+  NamedTuple{Ob}([ map(X -> FinSet(X, ob), Xs) for ob in Ob ])
 
 """ Vector of C-set transformations → named tuple of vectors of FinFunctions
 """
@@ -250,14 +299,18 @@ end
 Encodes common conventions such as, when taking a pullback of a cospan, not
 explicitly including a cone leg for the cospan apex since it can be computed
 from the other legs.
+
+FIXME: Should this function be part of the official limits interface?
 """
 cone_objects(diagram) = ob(diagram)
+cone_objects(diagram::BipartiteFreeDiagram) = ob₁(diagram)
 cone_objects(cospan::Multicospan) = feet(cospan)
 cone_objects(para::ParallelMorphisms) = SVector(dom(para))
 
 """ Objects in diagram that will have explicit legs in colimit cocone.
 """
 cocone_objects(diagram) = ob(diagram)
+cocone_objects(diagram::BipartiteFreeDiagram) = ob₂(diagram)
 cocone_objects(span::Multispan) = feet(span)
 cocone_objects(para::ParallelMorphisms) = SVector(codom(para))
 

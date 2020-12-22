@@ -7,12 +7,13 @@ export FinSet, FinFunction, FinDomFunction, force, is_indexed, preimage,
 using Compat: isnothing, only
 
 using AutoHashEquals
-using DataStructures: IntDisjointSets, union!, find_root!
+using DataStructures: OrderedDict, IntDisjointSets, union!, find_root!
 using FunctionWrappers: FunctionWrapper
 import StaticArrays
 using StaticArrays: StaticVector, SVector, SizedVector
 
-using ...Theories, ..FreeDiagrams, ..Limits, ..Sets
+using ...Theories, ...CSetDataStructures, ...Graphs, ..FreeDiagrams,
+  ..Limits, ..Sets
 import ...Theories: dom, codom
 import ..Limits: limit, colimit, universal
 using ..Sets: SetFunctionCallable, SetFunctionIdentity
@@ -184,17 +185,22 @@ force(f::IndexedFinDomFunction) = f
 
 """ Whether the given function is indexed, i.e., supports preimages.
 """
-is_indexed(f::IndexedFinDomFunction) = true
 is_indexed(f::SetFunction) = false
 is_indexed(f::SetFunctionIdentity) = true
+is_indexed(f::IndexedFinDomFunction) = true
+is_indexed(f::FinDomFunctionVector{T,<:AbstractRange{T}}) where T = true
 
 """ The preimage (inverse image) of the value y in the codomain.
 """
-preimage(f::IndexedFinDomFunction, y) = get_preimage_index(f.index, y)
 preimage(f::SetFunctionIdentity, y) = SVector(y)
+preimage(f::IndexedFinDomFunction, y) = get_preimage_index(f.index, y)
 
 @inline get_preimage_index(index::AbstractDict, y) = get(index, y, 1:0)
 @inline get_preimage_index(index::AbstractVector, y) = index[y]
+
+preimage(f::FinDomFunctionVector{T,<:AbstractRange{T}}, y::T) where T =
+  # Both `in` and `searchsortedfirst` are specialized for AbstractRange.
+  y ∈ f.func ? SVector(searchsortedfirst(f.func, y)) : SVector{0,Int}()
 
 """ Indexed function between finite sets of type `FinSet{Int}`.
 
@@ -371,7 +377,7 @@ function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}},
         next_range!(i)
       end
     else
-      next_range!(last(findmin(values)))
+      next_range!(argmin(values))
     end
   end
   Limit(cospan, Multispan(map((π,f) -> FinFunction(π, length(f)), πs, funcs)))
@@ -396,9 +402,9 @@ function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}}, ::HashJoin)
   #
   # We choose as probe the unindexed function with largest domain. If all
   # functions are already indexed, we arbitrarily choose the first one.
-  i = last(findmax(map(legs(cospan)) do f
+  i = argmax(map(legs(cospan)) do f
     is_indexed(f) ? -1 : length(dom(f))
-  end))
+  end)
   probe = legs(cospan)[i]
   builds = map(ensure_indexed, deleteat(legs(cospan), i))
   πs_build, π_probe = hash_join(builds, probe)
@@ -457,7 +463,7 @@ deleteat(x::StaticVector, i) = StaticArrays.deleteat(x, i)
 
 See `CompositePullback` for a very similar construction.
 """
-struct FinSetFreeDiagramLimit{Ob<:FinSet, Diagram<:FreeDiagram{Ob},
+struct FinSetFreeDiagramLimit{Ob<:FinSet, Diagram<:AbstractFreeDiagram{Ob},
                               Cone<:Multispan{Ob}, Prod<:Product{Ob},
                               Incl<:FinFunction} <: AbstractLimit{Ob,Diagram}
   diagram::Diagram
@@ -466,9 +472,151 @@ struct FinSetFreeDiagramLimit{Ob<:FinSet, Diagram<:FreeDiagram{Ob},
   incl::Incl # Inclusion for the "multi-equalizer" in general formula.
 end
 
+function limit(d::BipartiteFreeDiagram{Ob,Hom}) where
+    {Ob<:SetOb, Hom<:FinDomFunction{Int}}
+  # As in a pullback, this method assumes that all objects in layer 2 have
+  # incoming morphisms.
+  @assert !any(isempty(incident(d, v, :tgt)) for v in vertices₂(d))
+  d_original = d
+
+  # It is generally optimal to compute all equalizers (self joins) first, so as
+  # to reduce the sizes of later pullbacks (joins) and products (cross joins).
+  d, ιs = equalize_all(d)
+  rem_vertices₂!(d, [v for v in vertices₂(d) if
+                     length(incident(d, v, :tgt)) == 1])
+
+  # Perform all pairings before computing any joins.
+  d = pair_all(d)
+
+  # Having done this preprocessing, if there are any nontrivial joins, perform
+  # one of them and recurse; otherwise, we have at most a product to compute.
+  #
+  # In the binary case (`nv₁(d) == 2`), the preprocessing guarantees that there
+  # is at most one nontrivial join, so there are no choices to make. When there
+  # are multiple possible joins, do the one with smallest base cardinality
+  # (product of sizes of relations to join). This is a simple greedy heuristic.
+  # For more control over the order of the joins, create a UWD schedule.
+  if nv₂(d) == 0
+    if nv₁(d) == 1
+      Limit(d_original, SMultispan{1}(ιs[1]))
+    else
+      πs = legs(product(SVector(ob₁(d)...)))
+      Limit(d_original, map(compose, πs, ιs))
+    end
+  else
+    # Select the join to perform.
+    v = argmin(map(vertices₂(d)) do v
+      edges = incident(d, v, :tgt)
+      @assert length(edges) >= 2
+      prod(e -> length(dom(hom(d, e))), edges)
+    end)
+
+    # Compute the pullback (inner join).
+    join_edges = incident(d, v, :tgt)
+    to_join = src(d, join_edges)
+    to_keep = setdiff(vertices₁(d), to_join)
+    pb = pullback(SVector(hom(d, join_edges)...), alg=HashJoin())
+
+    # Create a new bipartite diagram with joined vertices.
+    d_joined = BipartiteFreeDiagram{Ob,Hom}()
+    copy_parts!(d_joined, d, V₁=to_keep, V₂=setdiff(vertices₂(d),v), E=edges(d))
+    joined = add_vertex₁!(d_joined, ob₁=apex(pb))
+    for (u, π) in zip(to_join, legs(pb))
+      for e in setdiff(incident(d, u, :src), join_edges)
+        set_subparts!(d_joined, e, src=joined, hom=π⋅hom(d,e))
+      end
+    end
+    rem_edges!(d_joined, join_edges)
+
+    # Recursively compute the limit of the new diagram.
+    lim = limit(d_joined)
+
+    # Assemble limit cone from cones for pullback and reduced limit.
+    πs = Vector{Hom}(undef, nv₁(d))
+    for (i, u) in enumerate(to_join)
+      πs[u] = compose(last(legs(lim)), legs(pb)[i], ιs[u])
+    end
+    for (i, u) in enumerate(to_keep)
+      πs[u] = compose(legs(lim)[i], ιs[u])
+    end
+    Limit(d_original, Multispan(πs))
+  end
+end
+
+""" Compute all possible equalizers in a bipartite free diagram.
+
+The result is a new bipartite free diagram that has the same vertices but is
+*simple*, i.e., has no multiple edges. The list of inclusion morphisms into
+layer 1 of the original diagram is also returned.
+"""
+function equalize_all(d::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
+  d_simple = BipartiteFreeDiagram{Ob,Hom}()
+  copy_parts!(d_simple, d, V₂=vertices₂(d))
+  ιs = map(vertices₁(d)) do u
+    # Collect outgoing edges of u, key-ed by target vertex.
+    out_edges = OrderedDict{Int,Vector{Int}}()
+    for e in incident(d, u, :src)
+      push!(get!(out_edges, tgt(d,e)) do; Int[] end, e)
+    end
+
+    # Equalize all sets of parallel edges out of u.
+    ι = id(ob₁(d, u))
+    for es in values(out_edges)
+      if length(es) > 1
+        fs = SVector((ι⋅f for f in hom(d, es))...)
+        ι = incl(equalizer(fs)) ⋅ ι
+      end
+    end
+
+    add_vertex₁!(d_simple, ob₁=dom(ι)) # == u
+    for (v, es) in pairs(out_edges)
+      add_edge!(d_simple, u, v, hom=ι⋅hom(d, first(es)))
+    end
+    ι
+  end
+  (d_simple, ιs)
+end
+
+""" Perform all possible pairings in a bipartite free diagram.
+
+The resulting diagram has the same ``V₁`` set but a possibly reduced ``V₂``.
+Layer 2 vertices are merged when they have exactly the same multiset of adjacent
+vertices.
+"""
+function pair_all(d::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
+  d_paired = BipartiteFreeDiagram{Ob,Hom}()
+  copy_parts!(d_paired, d, V₁=vertices₁(d))
+
+  # Construct mapping to V₂ vertices from multisets of adjacent V₁ vertices.
+  outmap = OrderedDict{Vector{Int},Vector{Int}}()
+  for v in vertices₂(d)
+    push!(get!(outmap, sort(inneighbors(d, v))) do; Int[] end, v)
+  end
+
+  for (srcs, tgts) in pairs(outmap)
+    in_edges = map(tgts) do v
+      sort(incident(d, v, :tgt), by=e->src(d,e))
+    end
+    if length(tgts) == 1
+      v = add_vertex₂!(d_paired, ob₂=ob₂(d, only(tgts)))
+      add_edges!(d_paired, srcs, fill(v, length(srcs)),
+                 hom=hom(d, only(in_edges)))
+    else
+      prod = product(SVector(ob₂(d, tgts)...))
+      v = add_vertex₂!(d_paired, ob₂=ob(prod))
+      for (i,u) in enumerate(srcs)
+        f = pair(prod, hom(d, getindex.(in_edges, i)))
+        add_edge!(d_paired, u, v, hom=f)
+      end
+    end
+  end
+  d_paired
+end
+
 function limit(d::FreeDiagram{<:FinSet{Int}})
   # Uses the general formula for limits in Set (Leinster, 2014, Basic Category
-  # Theory, Example 5.1.22 / Equation 5.16).
+  # Theory, Example 5.1.22 / Equation 5.16). This method is simple and direct,
+  # but extremely inefficient!
   prod = product(ob(d))
   n, πs = length(ob(prod)), legs(prod)
   ι = FinFunction(filter(1:n) do i
@@ -477,7 +625,7 @@ function limit(d::FreeDiagram{<:FinSet{Int}})
           h(πs[s](i)) == πs[t](i)
         end for e in edges(d))
     end, n)
-  cone = Multispan(dom(ι), [compose(ι,πs[i]) for i in vertices(d)])
+  cone = Multispan(dom(ι), [ι⋅πs[i] for i in vertices(d)])
   FinSetFreeDiagramLimit(d, cone, prod, ι)
 end
 
@@ -534,10 +682,7 @@ function colimit(pair::ParallelPair{<:FinSet{Int}})
   for i in 1:m
     union!(sets, f(i), g(i))
   end
-  h = [ find_root!(sets, i) for i in 1:n ]
-  roots = unique!(sort(h))
-  coeq = FinFunction([ searchsortedfirst(roots, r) for r in h], length(roots))
-  Colimit(pair, SMulticospan{1}(coeq))
+  Colimit(pair, SMulticospan{1}(quotient_projection(sets)))
 end
 
 function colimit(para::ParallelMorphisms{<:FinSet{Int}})
@@ -550,15 +695,20 @@ function colimit(para::ParallelMorphisms{<:FinSet{Int}})
       union!(sets, f1(i), f(i))
     end
   end
-  h = [ find_root!(sets, i) for i in 1:n ]
-  roots = unique!(sort(h))
-  coeq = FinFunction([ searchsortedfirst(roots, r) for r in h ], length(roots))
-  Colimit(para, SMulticospan{1}(coeq))
+  Colimit(para, SMulticospan{1}(quotient_projection(sets)))
 end
 
 function universal(coeq::Coequalizer{<:FinSet{Int}},
                    cocone::SMulticospan{1,<:FinSet{Int}})
   pass_to_quotient(proj(coeq), only(cocone))
+end
+
+""" Create projection map π: X → X/∼ from partition of X.
+"""
+function quotient_projection(sets::IntDisjointSets)
+  h = [ find_root!(sets, i) for i in 1:length(sets) ]
+  roots = unique!(sort(h))
+  FinFunction([ searchsortedfirst(roots, r) for r in h ], length(roots))
 end
 
 """ Given h: X → Y, pass to quotient q: X/~ → Y under projection π: X → X/~.
@@ -586,13 +736,35 @@ end
 
 See `CompositePushout` for a very similar construction.
 """
-struct FinSetFreeDiagramColimit{Ob<:FinSet, Diagram<:FreeDiagram{Ob},
+struct FinSetFreeDiagramColimit{Ob<:FinSet, Diagram<:AbstractFreeDiagram{Ob},
                                 Cocone<:Multicospan{Ob}, Coprod<:Coproduct{Ob},
                                 Proj<:FinFunction} <: AbstractColimit{Ob,Diagram}
   diagram::Diagram
   cocone::Cocone
   coprod::Coprod
   proj::Proj # Projection for the "multi-coequalizer" in general formula.
+end
+
+function colimit(d::BipartiteFreeDiagram{<:FinSet{Int}})
+  # As in a pushout, this method assume that all objects in layer 1 have
+  # outgoing morphisms so that they can be excluded from the coproduct.
+  @assert !any(isempty(incident(d, u, :src)) for u in vertices₁(d))
+  coprod = coproduct(ob₂(d))
+  n, ιs = length(ob(coprod)), legs(coprod)
+  sets = IntDisjointSets(n)
+  for u in vertices₁(d)
+    out_edges = incident(d, u, :src)
+    for (e1, e2) in zip(out_edges[1:end-1], out_edges[2:end])
+      h1, h2 = hom(d, e1), hom(d, e2)
+      ι1, ι2 = ιs[tgt(d, e1)], ιs[tgt(d, e2)]
+      for i in ob₁(d, u)
+        union!(sets, ι1(h1(i)), ι2(h2(i)))
+      end
+    end
+  end
+  π = quotient_projection(sets)
+  cocone = Multicospan(codom(π), [ ιs[i]⋅π for i in vertices₂(d) ])
+  FinSetFreeDiagramColimit(d, cocone, coprod, π)
 end
 
 function colimit(d::FreeDiagram{<:FinSet{Int}})
@@ -607,11 +779,8 @@ function colimit(d::FreeDiagram{<:FinSet{Int}})
       union!(sets, ιs[s](i), ιs[t](h(i)))
     end
   end
-  h = [ find_root!(sets, i) for i in 1:n ]
-  roots = unique!(sort(h))
-  m = length(roots)
-  π = FinFunction([ searchsortedfirst(roots, r) for r in h ], m)
-  cocone = Multicospan(FinSet(m), [ compose(ιs[i],π) for i in vertices(d) ])
+  π = quotient_projection(sets)
+  cocone = Multicospan(codom(π), [ ιs[i]⋅π for i in vertices(d) ])
   FinSetFreeDiagramColimit(d, cocone, coprod, π)
 end
 

@@ -69,6 +69,12 @@ f = FinFunction([1,3,4], 5)
 
 # Indexing.
 @test !is_indexed(k)
+
+k = FinDomFunction(5:10)
+@test is_indexed(k)
+@test preimage(k, 6) == [2]
+@test isempty(preimage(k, 4))
+
 k = FinDomFunction([:a,:b,:a,:c], index=true)
 @test is_indexed(k)
 @test (dom(k), codom(k)) == (FinSet(4), TypeSet(Symbol))
@@ -85,14 +91,12 @@ f = FinFunction([1,3,2], 4)
 # Limits
 ########
 
-# Terminal object
-#----------------
-
-@test ob(terminal(FinSet{Int})) == FinSet(1)
-@test delete(terminal(FinSet{Int}), FinSet(3)) == FinFunction([1,1,1])
-
 # Products
 #---------
+
+# Terminal object.
+@test ob(terminal(FinSet{Int})) == FinSet(1)
+@test delete(terminal(FinSet{Int}), FinSet(3)) == FinFunction([1,1,1])
 
 # Binary product.
 lim = product(FinSet(2), FinSet(3))
@@ -202,9 +206,9 @@ end
 # General limits
 #---------------
 
-# Pullback as a general limit.
+# Pullback as limit of free diagram.
 f, g = FinFunction([1,1,3,2],4), FinFunction([1,1,4,2],4)
-lim = limit(FreeDiagram([FinSet(4),FinSet(4),FinSet(4)], [(f,1,3),(g,2,3)]))
+lim = limit(FreeDiagram(Cospan(f, g)))
 @test ob(lim) == FinSet(5)
 π1, π2 = legs(lim)[1:2]
 @test force(π1) == FinFunction([1,2,1,2,4], 4)
@@ -215,17 +219,37 @@ h = universal(lim, Multispan([f′, g′, f′⋅f])) # f′⋅f == g′⋅g
 @test force(h ⋅ π1) == f′
 @test force(h ⋅ π2) == g′
 
+# Pullback as limit of bipartite free diagram.
+lim = limit(BipartiteFreeDiagram(Cospan(f, g)))
+π1, π2 = legs(lim)
+@test π1 == FinFunction([1,1,2,2,4], 4)
+@test π2 == FinFunction([1,2,1,2,4], 4)
+@test π1 ⋅ f == π2 ⋅ g
+
+# Equalizer as limit of bipartite free diagram.
+f, g = [FinDomFunction(x -> x % i, FinSet(100), TypeSet(Int)) for i in 2:3]
+lim = (ι,) = limit(BipartiteFreeDiagram(ParallelPair(f, g)))
+@test ι == incl(equalizer(f, g))
+
+# Two pullbacks, which should be reduced to a single pullback by pairing.
+f1, g1 = FinDomFunction([1,1,2,2,3,3]), FinDomFunction([:a,:a,:a,:b,:b,:b])
+f2, g2 = FinDomFunction([1,2,3]), FinDomFunction([:a,:b,:c])
+d = BipartiteFreeDiagram{SetOb,FinDomFunction{Int}}(2, 2)
+d[:ob₁], d[:ob₂] = [FinSet(6), FinSet(3)], [TypeSet(Int), TypeSet(Symbol)]
+add_edges!(d, [1,1,2,2], [1,2,1,2], hom=[f1,g1,f2,g2])
+lim = π1, π2 = limit(d)
+@test π1 == FinFunction([1,2,4], 6)
+@test π2 == FinFunction([1,1,2], 3)
+
 # Colimits
 ##########
 
-# Initial object
-#---------------
-
-@test ob(initial(FinSet{Int})) == FinSet(0)
-@test create(initial(FinSet{Int}), FinSet(3)) == FinFunction(Int[], 3)
-
 # Coproducts
 #-----------
+
+# Initial object.
+@test ob(initial(FinSet{Int})) == FinSet(0)
+@test create(initial(FinSet{Int}), FinSet(3)) == FinFunction(Int[], 3)
 
 # Binary coproduct.
 colim = coproduct(FinSet(2), FinSet(3))
@@ -300,7 +324,7 @@ h, k = FinFunction([3,5]), FinFunction([1,3,5])
 k = FinFunction([1,2,5])
 @test_throws AssertionError copair(colim,h,k)
 
-# Same thing with generic colimit interface
+# Same thing as a colimit of a general free diagram.
 diagram = FreeDiagram([FinSet(1),FinSet(2),FinSet(3)],[(f,1,2), (g,1,3)])
 colim = colimit(diagram)
 @test ob(colim) == FinSet(4)
@@ -315,21 +339,29 @@ h, k = FinFunction([3,5]), FinFunction([1,3,5])
 @test force(ι2 ⋅ ℓ) == k
 
 # Pushout from a two-element set, with non-injective legs.
-f, g = FinFunction([1,1], 2), FinFunction([1,2], 2)
+f, g = FinFunction([1,1], 2), FinFunction([1,2], 3)
 colim = pushout(f,g)
-@test ob(colim) == FinSet(2)
+@test ob(colim) == FinSet(3)
 ι1, ι2 = colim
 @test compose(f,ι1) == compose(g,ι2)
-@test ι1 == FinFunction([1,2], 2)
-@test ι2 == FinFunction([1,1], 2)
+@test ι1 == FinFunction([1,2], 3)
+@test ι2 == FinFunction([1,1,3], 3)
 
-# Same thing with generic colimit interface
-diagram = FreeDiagram([FinSet(2),FinSet(2),FinSet(2)],[(f,1,2),(g,1,3)])
+# Same thing as a colimit of a general free diagram.
+diagram = FreeDiagram([FinSet(2),FinSet(2),FinSet(3)],[(f,1,2),(g,1,3)])
 colim = colimit(diagram)
-@test ob(colim) == FinSet(2)
+@test ob(colim) == FinSet(3)
 _, ι1, ι2 = colim
-@test compose(f,ι1) == compose(g,ι2)
-@test ι1 == FinFunction([1,2], 2)
-@test ι2 == FinFunction([1,1], 2)
+@test ι1 == FinFunction([1,2], 3)
+@test ι2 == FinFunction([1,1,3], 3)
+
+# Same thing as a colimit of a bipartite free diagram.
+diagram = BipartiteFreeDiagram([FinSet(2)], [FinSet(2),FinSet(3)],
+                               [(f,1,1),(g,1,2)])
+colim = colimit(diagram)
+@test ob(colim) == FinSet(3)
+ι1, ι2 = colim
+@test ι1 == FinFunction([1,2], 3)
+@test ι2 == FinFunction([1,1,3], 3)
 
 end

@@ -1,8 +1,12 @@
 module TestWiringDiagramAlgebras
 using Test
 
+using Tables, TypedTables
+
 using Catlab.CategoricalAlgebra, Catlab.CategoricalAlgebra.FinSets
 using Catlab.Graphs, Catlab.WiringDiagrams, Catlab.Programs.RelationalPrograms
+
+tuples(args...) = sort!(collect(zip(args...)))
 
 # UWD algebra of structured multicospans
 ########################################
@@ -29,27 +33,64 @@ k = oapply(seq, Dict(:g => g, :h => h))
 @test feet(k) == [first(feet(g)), last(feet(h))]
 k0 = apex(k)
 @test (nv(k0), ne(k0)) == (6, 6)
-@test sort!(collect(zip(src(k0), tgt(k0)))) == sort!(
-  [(3,1), (1,4), (1,5), (4,2), (5,2), (2,6)])
-# [(1,2), (2,3), (2,4), (3,5), (4,5), (5,6)]
-# Composite graph is isomorphic to that with standard labeling.
-@test [ collect(leg[:V]) for leg in legs(k) ] == [[3], [6]]
+@test tuples(src(k0), tgt(k0)) == [(1,2), (2,3), (2,4), (3,5), (4,5), (5,6)]
+@test [ collect(leg[:V]) for leg in legs(k) ] == [[1], [6]]
 
 # Parallel composition.
-para = @relation (a,b,c,d) where (a,b,c,d) begin
+para = @relation (a,c,b,d) where (a,b,c,d) begin
   g(a,b)
   h(c,d)
 end
 k = oapply(para, Dict(:g => g, :h => h))
 @test length(legs(k)) == 4
-@test feet(k) == [feet(g); feet(h)]
+@test feet(k) == [first(feet(g)), first(feet(h)), last(feet(g)), last(feet(h))]
 k0 = apex(k)
 @test (nv(k0), ne(k0)) == (8, 6)
+@test tuples(src(k0), tgt(k0)) == [(1,2), (2,3), (2,4), (5,7), (6,7), (7,8)]
+@test [ collect(leg[:V]) for leg in legs(k) ] == [[1], [5,6], [3,4], [8]]
 
 # Identity for sequential composition.
 seq_id = @relation (a,a) where (a,) begin end
 k = oapply(seq_id, Dict{Symbol,OpenGraph}(), Dict(:a => FinSet(3)))
 @test apex(k) == Graph(3)
 @test feet(k) == [FinSet(3), FinSet(3)]
+
+# Queries of ACSets
+###################
+
+paths2 = @relation (start=u, stop=w) where (u,v,w) begin
+  E(src=u, tgt=v)
+  E(src=v, tgt=w)
+end
+
+# Graph underlying a commutative squares.
+square = Graph(4)
+add_edges!(square, [1,1,2,3], [2,3,4,4])
+result = query(square, paths2)
+@test result == Table((start=[1,1], stop=[4,4]))
+
+# Graph underlying a pasting of two commutative squares.
+squares2 = copy(square)
+add_vertices!(squares2, 2)
+add_edges!(squares2, [2,4,5], [5,6,6])
+result = query(squares2, paths2)
+@test tuples(columns(result)...) == [(1,4), (1,4), (1,5), (2,6), (2,6), (3,6)]
+
+cycles3 = @relation (edge1=e, edge2=f, edge3=g) where (e,f,g,u,v,w) begin
+  E(_id=e, src=u, tgt=v)
+  E(_id=f, src=v, tgt=w)
+  E(_id=g, src=w, tgt=u)
+end
+
+function ncycle(n::Int)
+  g = Graph(n)
+  add_edges!(g, 1:n, circshift(1:n, -1))
+  return g
+end
+result = query(ncycle(3), cycles3)
+@test tuples(columns(result)...) == [(1,2,3), (2,3,1), (3,1,2)]
+
+result = query(ncycle(4), cycles3)
+@test isempty(result)
 
 end
