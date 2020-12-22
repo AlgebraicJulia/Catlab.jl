@@ -17,8 +17,9 @@ Graphviz or other declarative diagram languages.
 """
 module DirectedWiringDiagrams
 export AbstractBox, Box, WiringDiagram, Wire, Port, PortKind,
-  InputPort, OutputPort, input_ports, output_ports, input_id, output_id,
-  outer_ids, boxes, box_ids, nboxes, nwires, box, wires, has_wire, graph, internal_graph,
+  InputPort, OutputPort, input_ports, output_ports, set_input_ports!, set_output_ports!,
+  input_id, output_id, outer_ids, boxes, box_ids, nboxes, nwires, box, wires, has_wire, 
+  graph, internal_graph,
   add_box!, add_boxes!, add_wire!, add_wires!, rem_box!, rem_boxes!, rem_wire!,
   rem_wires!, port_value, validate_ports, is_permuted_equal,
   all_neighbors, neighbors, outneighbors, inneighbors, in_wires, out_wires,
@@ -452,6 +453,11 @@ has_wire(f::WiringDiagram, pair::Pair) = has_wire(f, first(pair)[1], last(pair)[
 
 input_ports(f::WiringDiagram) = subpart(f.diagram, :outer_in_port_type)
 output_ports(f::WiringDiagram) = subpart(f.diagram, :outer_out_port_type)
+set_input_ports!(f::WiringDiagram, input_ports::Vector) = 
+    set_subpart!(f.diagram, :outer_in_port_type, input_ports)
+set_output_ports!(f::WiringDiagram, output_ports::Vector) = 
+    set_subpart!(f.diagram, :outer_out_port_type, output_ports)
+
 
 function input_ports(f::WiringDiagram, b::Int)
   if b == input_id(f)

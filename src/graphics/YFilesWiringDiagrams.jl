@@ -99,12 +99,12 @@ function parse_yfiles_diagram(BoxValue::Type, WireValue::Type, xdoc::XMLDocument
     box_layout = if pop!(vprops(graph, v), :input, false)
       # Special case: diagram inputs.
       ports, coord_map = infer_output_ports(graph, v)
-      diagram.input_ports = ports
+      set_input_ports!(diagram, ports)
       BoxLayout(input_id(diagram), Dict(), coord_map)
     elseif pop!(vprops(graph, v), :output, false)
       # Special case: diagram outputs.
       ports, coord_map = infer_input_ports(graph, v)
-      diagram.output_ports = ports
+      set_output_ports!(diagram, ports)
       BoxLayout(output_id(diagram), coord_map, Dict())
     else
       # Generic case: a box.
