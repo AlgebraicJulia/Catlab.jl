@@ -377,7 +377,7 @@ function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}},
         next_range!(i)
       end
     else
-      next_range!(last(findmin(values)))
+      next_range!(argmin(values))
     end
   end
   Limit(cospan, Multispan(map((π,f) -> FinFunction(π, length(f)), πs, funcs)))
@@ -402,9 +402,9 @@ function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}}, ::HashJoin)
   #
   # We choose as probe the unindexed function with largest domain. If all
   # functions are already indexed, we arbitrarily choose the first one.
-  i = last(findmax(map(legs(cospan)) do f
+  i = argmax(map(legs(cospan)) do f
     is_indexed(f) ? -1 : length(dom(f))
-  end))
+  end)
   probe = legs(cospan)[i]
   builds = map(ensure_indexed, deleteat(legs(cospan), i))
   πs_build, π_probe = hash_join(builds, probe)
@@ -489,24 +489,28 @@ function limit(d::BipartiteFreeDiagram{Ob,Hom}) where
   d = pair_all(d)
 
   # Having done this preprocessing, if there are any nontrivial joins, perform
-  # the first one with maximal arity and the recurse; otherwise, we have at most
-  # a product to compute and then we are finished.
+  # one of them and recurse; otherwise, we have at most a product to compute.
   #
   # In the binary case (`nv₁(d) == 2`), the preprocessing guarantees that there
   # is at most one nontrivial join, so there are no choices to make. When there
-  # are more than two relations, we have effectively a simple planning algorithm
-  # that prefers high-arity joins (e.g., three-way joins to standard two-way
-  # joins). For more control over the order of the joins, create a UWD schedule.
-  n, v = nv₂(d) == 0 ? (0, 0) :
-    findmax([ length(incident(d, v, :tgt)) for v in vertices₂(d) ])
-  if n <= 1
+  # are multiple possible joins, do the one with smallest base cardinality
+  # (product of sizes of relations to join). This is a simple greedy heuristic.
+  # For more control over the order of the joins, create a UWD schedule.
+  if nv₂(d) == 0
     if nv₁(d) == 1
       Limit(d_original, SMultispan{1}(ιs[1]))
     else
-      prod = product(SVector(ob₁(d)...))
-      Limit(d_original, map(compose, legs(prod), ιs))
+      πs = legs(product(SVector(ob₁(d)...)))
+      Limit(d_original, map(compose, πs, ιs))
     end
   else
+    # Select the join to perform.
+    v = argmin(map(vertices₂(d)) do v
+      edges = incident(d, v, :tgt)
+      @assert length(edges) >= 2
+      prod(e -> length(dom(hom(d, e))), edges)
+    end)
+
     # Compute the pullback (inner join).
     join_edges = incident(d, v, :tgt)
     to_join = src(d, join_edges)
