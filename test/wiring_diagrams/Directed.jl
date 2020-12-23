@@ -74,8 +74,8 @@ add_wire!(d, (gv,1) => (output_id(d),1))
 @test_throws ErrorException add_wire!(d, (gv,1) => (fv,1))
 @test wires(d) == map(Wire, [
   (input_id(d),1) => (fv,1),
-  (gv,1) => (output_id(d),1),
   (fv,1) => (gv,1),
+  (gv,1) => (output_id(d),1),
 ])
 
 # Shallow copies.
