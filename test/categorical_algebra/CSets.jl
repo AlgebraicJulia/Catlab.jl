@@ -2,7 +2,7 @@ module TestCSets
 using Test
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra,
-  Catlab.CategoricalAlgebra.Sets, Catlab.CategoricalAlgebra.FinSets
+  Catlab.CategoricalAlgebra.FinSets
 using Catlab.Graphs.BasicGraphs: TheoryGraph
 
 # FinSets interop

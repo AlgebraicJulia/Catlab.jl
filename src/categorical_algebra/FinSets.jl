@@ -5,6 +5,7 @@ export FinSet, FinFunction, FinDomFunction, force, is_indexed, preimage,
   JoinAlgorithm, NestedLoopJoin, SortMergeJoin, HashJoin
 
 using Compat: isnothing, only
+using Reexport
 
 using AutoHashEquals
 using DataStructures: OrderedDict, IntDisjointSets, union!, find_root!
@@ -12,8 +13,8 @@ using FunctionWrappers: FunctionWrapper
 import StaticArrays
 using StaticArrays: StaticVector, SVector, SizedVector
 
-using ...Theories, ...CSetDataStructures, ...Graphs, ..FreeDiagrams,
-  ..Limits, ..Sets
+@reexport using ..Sets
+using ...Theories, ...CSetDataStructures, ...Graphs, ..FreeDiagrams, ..Limits
 import ...Theories: dom, codom
 import ..Limits: limit, colimit, universal
 using ..Sets: SetFunctionCallable, SetFunctionIdentity

@@ -6,8 +6,7 @@ export oapply, query
 using Compat: isnothing
 import TypedTables
 
-using ...Theories, ...CategoricalAlgebra,
-  ...CategoricalAlgebra.Sets, ...CategoricalAlgebra.FinSets
+using ...Theories, ...CategoricalAlgebra, ...CategoricalAlgebra.FinSets
 using ...CSetDataStructures: make_table
 using ..UndirectedWiringDiagrams
 
