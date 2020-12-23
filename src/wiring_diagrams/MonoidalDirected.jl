@@ -552,6 +552,8 @@ Represents unary operations on boxes in wiring diagrams.
 struct BoxOp{op} <: AbstractBox
   box::AbstractBox
 end
+BoxOp{op}(value::Value, inputs::Vector, outputs::Vector) where {op,Value} =
+BoxOp{op}(Box{Value}(value, outputs, inputs))
 
 head(::BoxOp{Op}) where Op = Op
 input_ports(op::BoxOp) = input_ports(op.box)
