@@ -5,12 +5,10 @@ export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
   AbstractACSetType, ACSetType, ACSetTableType, AbstractCSetType, CSetType,
   tables, parts, nparts, has_part, subpart, has_subpart, incident,
   add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!,
-  copy_parts!, copy_parts_only!, disjoint_union,
-  @acset
+  copy_parts!, copy_parts_only!, disjoint_union, pretty_tables, @acset
 
 using Compat: isnothing, only
 
-using FunctionWrappers: FunctionWrapper
 using MLStyle: @match
 using PrettyTables: pretty_table
 import Tables, TypedTables
@@ -261,13 +259,7 @@ function Base.show(io::IO, ::MIME"text/plain", acs::T) where {T<:AbstractACSet}
   print(io, " with elements ")
   join(io, ["$ob = 1:$(nparts(acs,ob))" for ob in keys(tables(acs))], ", ")
   println(io)
-  for (ob, table) in pairs(tables(acs))
-    # Note: PrettyTables will not print tables with no rows.
-    if !(isempty(Tables.columnnames(table)) || Tables.rowcount(table) == 0)
-      pretty_table(io, table, nosubheader=true,
-                   show_row_number=true, row_number_column_title=string(ob))
-    end
-  end
+  pretty_tables(io, acs)
 end
 
 function Base.show(io::IO, ::MIME"text/html", acs::T) where {T<:AbstractACSet}
@@ -277,15 +269,24 @@ function Base.show(io::IO, ::MIME"text/html", acs::T) where {T<:AbstractACSet}
   print(io, " with elements ")
   join(io, ["$ob = 1:$(nparts(acs,ob))" for ob in keys(tables(acs))], ", ")
   println(io, "</span>")
-  for (ob, table) in pairs(tables(acs))
-    # Note: PrettyTables will not print tables with no rows.
-    if !(isempty(Tables.columnnames(table)) || Tables.rowcount(table) == 0)
-      pretty_table(io, table, backend=:html, standalone=false, nosubheader=true,
-                   show_row_number=true, row_number_column_title=string(ob))
-    end
-  end
+  pretty_tables(io, acs, backend=:html, standalone=false)
   println(io, "</div>")
 end
+
+""" Show all tables in a C-set using PrettyTables.jl.
+
+Any keyword arguments are passed to `pretty_table`.
+"""
+function pretty_tables(io::IO, acs::AbstractACSet; kw...)
+  options = merge((nosubheader=true, show_row_number=true), (; kw...))
+  for (ob, table) in pairs(tables(acs))
+    # Note: PrettyTables will not print tables with zero rows.
+    if !(isempty(Tables.columnnames(table)) || Tables.rowcount(table) == 0)
+      pretty_table(io, table, row_number_column_title=string(ob); options...)
+    end
+  end
+end
+pretty_tables(acs::AbstractACSet; kw...) = pretty_tables(stdout, acs; kw...)
 
 # Imperative interface
 ######################
@@ -833,14 +834,16 @@ end
 """ More convenient syntax for declaring an ACSet
 
 Example:
+
+```
 @acset Graph begin
   V = 2
   E = 2
   src = [1,2]
   tgt = [2,1]
 end
+```
 """
-
 macro acset(head, body)
   expr = :(init_acset($(esc(head)), $(Expr(:quote, body))))
   Expr(:call, esc(:eval), expr)
