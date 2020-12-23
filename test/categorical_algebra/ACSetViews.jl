@@ -1,4 +1,4 @@
-module TestCSetDataStructures
+module TestACSetViews
 using Test
 
 using Catlab: @present, generator
