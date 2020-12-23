@@ -18,6 +18,7 @@ Graphviz or other declarative diagram languages.
 module DirectedWiringDiagrams
 export AbstractBox, Box, WiringDiagram, Wire, Port, PortKind,
   InputPort, OutputPort, input_ports, output_ports, set_input_ports!, set_output_ports!,
+  add_input_ports!, add_output_ports!,
   input_id, output_id, outer_ids, boxes, box_ids, nboxes, nwires, box, wires, has_wire, 
   graph, internal_graph,
   add_box!, add_boxes!, add_wire!, add_wires!, rem_box!, rem_boxes!, rem_wire!,
@@ -457,6 +458,10 @@ set_input_ports!(f::WiringDiagram, input_ports::Vector) =
     set_subpart!(f.diagram, :outer_in_port_type, input_ports)
 set_output_ports!(f::WiringDiagram, output_ports::Vector) = 
     set_subpart!(f.diagram, :outer_out_port_type, output_ports)
+add_input_ports!(f::WiringDiagram, input_ports::Vector) = 
+    add_parts!(f.diagram, :OuterInPort, length(input_ports), outer_in_port_type = input_ports)
+add_output_ports!(f::WiringDiagram, output_ports::Vector) = 
+    add_parts!(f.diagram, :OuterOutPort, length(output_ports), outer_out_port_type = output_ports)
 
 
 function input_ports(f::WiringDiagram, b::Int)
