@@ -251,7 +251,7 @@ end
 
 function universal(lim::Terminal{<:FinSet{Int}},
                    cone::SMultispan{0,<:FinSet{Int}})
-  FinFunction(ones(Int, length(apex(cone))))
+  ConstantFunction(1, apex(cone), FinSet(1))
 end
 
 function limit(Xs::ObjectPair{<:FinSet{Int}})

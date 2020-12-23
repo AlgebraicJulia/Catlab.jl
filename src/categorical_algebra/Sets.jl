@@ -1,7 +1,7 @@
-""" Categories of sets, including infinite ones, and functions.
+""" Categories of (possibly infinite) sets and functions.
 """
 module Sets
-export SetOb, TypeSet, PredicatedSet, SetFunction
+export SetOb, TypeSet, PredicatedSet, SetFunction, ConstantFunction
 
 using AutoHashEquals
 using FunctionWrappers: FunctionWrapper
@@ -94,6 +94,20 @@ function Base.show(io::IO, f::F) where F <: SetFunctionIdentity
   print(io, "(identity, $(f.dom))")
 end
 
+""" Function in **Set** taking a constant value.
+"""
+@auto_hash_equals struct ConstantFunction{T,Value<:T,Dom,Codom<:SetOb{T}} <:
+    SetFunction{Dom,Codom}
+  value::Value
+  dom::Dom
+  codom::Codom
+end
+
+ConstantFunction(value::T, dom::SetOb) where T =
+  ConstantFunction(value, dom, TypeSet{T}())
+
+(f::ConstantFunction)(x) = f.value
+
 # Predicated sets
 #################
 
@@ -140,15 +154,24 @@ end
   function compose(f::SetFunction, g::SetFunction)
     codom(f) == dom(g) ||
       error("Domain mismatch in composition: $(codom(f)) != $(dom(g))")
-    compose_impl(f, g)
+    compose_maybe_id(f, g)
   end
 end
 
+@inline compose_maybe_id(f::SetFunction, g::SetFunction) = compose_impl(f, g)
+@inline compose_maybe_id(f::SetFunction, ::SetFunctionIdentity) = f
+@inline compose_maybe_id(::SetFunctionIdentity, f::SetFunction) = f
+@inline compose_maybe_id(f::SetFunctionIdentity, ::SetFunctionIdentity) = f
+
 compose_impl(f::SetFunction, g::SetFunction) =
   SetFunction(g ∘ f, dom(f), codom(g))
-compose_impl(f::SetFunction, ::SetFunctionIdentity) = f
-compose_impl(::SetFunctionIdentity, f::SetFunction) = f
-compose_impl(f::SetFunctionIdentity, ::SetFunctionIdentity) = f
+
+compose_impl(f::SetFunction, c::ConstantFunction) =
+  ConstantFunction(c.value, dom(f), codom(c))
+compose_impl(c::ConstantFunction, f::SetFunction) =
+  ConstantFunction(f(c.value), dom(c), codom(f))
+compose_impl(c::ConstantFunction, d::ConstantFunction) =
+  ConstantFunction(d.value, dom(c), codom(d))
 
 # Limits
 ########

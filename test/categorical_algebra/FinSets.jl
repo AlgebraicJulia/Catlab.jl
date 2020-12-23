@@ -95,8 +95,9 @@ f = FinFunction([1,3,2], 4)
 #---------
 
 # Terminal object.
-@test ob(terminal(FinSet{Int})) == FinSet(1)
-@test delete(terminal(FinSet{Int}), FinSet(3)) == FinFunction([1,1,1])
+I = terminal(FinSet{Int})
+@test ob(I) == FinSet(1)
+@test force(delete(I, FinSet(3))) == FinFunction([1,1,1])
 
 # Binary product.
 lim = product(FinSet(2), FinSet(3))

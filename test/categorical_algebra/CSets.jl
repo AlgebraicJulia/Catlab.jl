@@ -72,7 +72,8 @@ term = Graph(1)
 add_edge!(term, 1, 1)
 lim = terminal(Graph)
 @test ob(lim) == term
-@test delete(lim, g) == CSetTransformation((V=fill(1,4), E=fill(1,3)), g, term)
+@test force(delete(lim, g)) ==
+  CSetTransformation((V=fill(1,4), E=fill(1,3)), g, term)
 
 # Products in Graph: unitality.
 lim = product(g, term)

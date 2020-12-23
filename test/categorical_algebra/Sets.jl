@@ -13,6 +13,12 @@ g = SetFunction(x -> 3x, TypeSet(Int), TypeSet(Int))
 @test codom(f) == TypeSet(Int)
 @test f(1) == 2
 
+# Constants.
+c = ConstantFunction("foo", TypeSet(Int))
+@test dom(c) == TypeSet(Int)
+@test codom(c) == TypeSet(String)
+@test c(1) == "foo"
+
 # Identities.
 X = TypeSet(Int)
 @test dom(id(X)) == X
@@ -24,6 +30,11 @@ h = compose(f,g)
 @test h(1) == 6
 @test compose(id(dom(f)), f) == f
 @test compose(f, id(codom(f))) == f
+
+c = ConstantFunction(5, TypeSet(Int))
+@test compose(c, f) == ConstantFunction(f(5), TypeSet(Int))
+@test compose(f, c) == c
+@test compose(c, c) == c
 
 # Predicated sets
 #################
