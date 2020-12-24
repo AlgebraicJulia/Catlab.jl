@@ -180,7 +180,7 @@ limit(Xs::EmptyDiagram{<:TypeSet}) =
   Limit(Xs, SMultispan{0}(TypeSet(Nothing)))
 
 universal(lim::Terminal{TypeSet{Nothing}}, span::SMultispan{0,<:SetOb}) =
-  SetFunction(x -> nothing, apex(span), ob(lim))
+  ConstantFunction(nothing, apex(span), ob(lim))
 
 function limit(Xs::ObjectPair{<:TypeSet})
   X1, X2 = Xs

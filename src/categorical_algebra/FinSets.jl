@@ -2,7 +2,7 @@
 """
 module FinSets
 export FinSet, FinFunction, FinDomFunction, force, is_indexed, preimage,
-  JoinAlgorithm, NestedLoopJoin, SortMergeJoin, HashJoin
+  JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin
 
 using Compat: isnothing, only
 using Reexport
@@ -11,7 +11,7 @@ using AutoHashEquals
 using DataStructures: OrderedDict, IntDisjointSets, union!, find_root!
 using FunctionWrappers: FunctionWrapper
 import StaticArrays
-using StaticArrays: StaticVector, SVector, SizedVector
+using StaticArrays: StaticVector, SVector, SizedVector, similar_type
 
 @reexport using ..Sets
 using ...Theories, ...CSetDataStructures, ...Graphs, ..FreeDiagrams, ..Limits
@@ -184,7 +184,7 @@ force(f::IndexedFinDomFunction) = f
 
 (f::IndexedFinDomFunction)(x) = f.func[x]
 
-""" Whether the given function is indexed, i.e., supports preimages.
+""" Whether the given function is indexed, i.e., supports efficient preimages.
 """
 is_indexed(f::SetFunction) = false
 is_indexed(f::SetFunctionIdentity) = true
@@ -194,6 +194,7 @@ is_indexed(f::FinDomFunctionVector{T,<:AbstractRange{T}}) where T = true
 """ The preimage (inverse image) of the value y in the codomain.
 """
 preimage(f::SetFunctionIdentity, y) = SVector(y)
+preimage(f::FinDomFunction, y) = [ x for x in dom(f) if f(x) == y ]
 preimage(f::IndexedFinDomFunction, y) = get_preimage_index(f.index, y)
 
 @inline get_preimage_index(index::AbstractDict, y) = get(index, y, 1:0)
@@ -311,16 +312,54 @@ In the context of relational databases, such limits are joins.
 """
 abstract type JoinAlgorithm <: LimitAlgorithm end
 
-""" [Nested-loop join](https://en.wikipedia.org/wiki/Nested_loop_join) algorithm.
-
-This is the naive algorithm for computing joins.
+""" Meta-algorithm for joins that attempts to pick an appropriate algorithm.
 """
-struct NestedLoopJoin <: JoinAlgorithm end
+struct SmartJoin <: JoinAlgorithm end
 
 function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}};
                alg::LimitAlgorithm=ComposeProductEqualizer())
   limit(cospan, alg)
 end
+
+function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}}, ::SmartJoin)
+  # Handle the important special case where one of the legs is a constant
+  # (function out of a singleton set). In this case, we just need to take a
+  # product of preimages of the constant value.
+  funcs = legs(cospan)
+  i = findfirst(f -> length(dom(f)) == 1, funcs)
+  if !isnothing(i)
+    c = funcs[i](1)
+    ιs = map(deleteat(funcs, i)) do f
+      FinFunction(preimage(f, c), dom(f))
+    end
+    x, πs = if length(ιs) == 1
+      dom(only(ιs)), ιs
+    else
+      prod = product(map(dom, ιs))
+      ob(prod), map(compose, legs(prod), ιs)
+    end
+    πs = insert(πs, i, ConstantFunction(1, x, FinSet(1)))
+    return Limit(cospan, Multispan(πs))
+  end
+
+  # In the general case, for now we always just do a hash join, although
+  # sort-merge joins can sometimes be faster.
+  limit(cospan, HashJoin())
+end
+
+deleteat(vec::StaticVector, i) = StaticArrays.deleteat(vec, i)
+deleteat(vec::Vector, i) = deleteat!(copy(vec), i)
+
+insert(vec::StaticVector{N,T}, i, x::S) where {N,T,S} =
+  StaticArrays.insert(similar_type(vec, typejoin(T,S))(vec), i, x)
+insert(vec::Vector{T}, i, x::S) where {T,S} =
+  insert!(collect(typejoin(T,S), vec), i, x)
+
+""" [Nested-loop join](https://en.wikipedia.org/wiki/Nested_loop_join) algorithm.
+
+This is the naive algorithm for computing joins.
+"""
+struct NestedLoopJoin <: JoinAlgorithm end
 
 function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}},
                ::NestedLoopJoin)
@@ -455,11 +494,6 @@ ensure_indexed(f::FinFunction{Int,Int}) = is_indexed(f) ? f :
 ensure_indexed(f::FinDomFunction{Int}) = is_indexed(f) ? f :
   FinDomFunction(collect(f), index=true)
 
-insert(x::AbstractVector, args...) = insert!(copy(x), args...)
-insert(x::StaticVector, args...) = StaticArrays.insert(x, args...)
-deleteat(x::AbstractVector, i) = deleteat!(copy(x), i)
-deleteat(x::StaticVector, i) = StaticArrays.deleteat(x, i)
-
 """ Limit of free diagram of FinSets.
 
 See `CompositePullback` for a very similar construction.
@@ -516,7 +550,7 @@ function limit(d::BipartiteFreeDiagram{Ob,Hom}) where
     join_edges = incident(d, v, :tgt)
     to_join = src(d, join_edges)
     to_keep = setdiff(vertices₁(d), to_join)
-    pb = pullback(SVector(hom(d, join_edges)...), alg=HashJoin())
+    pb = pullback(SVector(hom(d, join_edges)...), alg=SmartJoin())
 
     # Create a new bipartite diagram with joined vertices.
     d_joined = BipartiteFreeDiagram{Ob,Hom}()

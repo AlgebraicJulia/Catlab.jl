@@ -69,6 +69,7 @@ f = FinFunction([1,3,4], 5)
 
 # Indexing.
 @test !is_indexed(k)
+@test preimage(k, :c) == [3]
 
 k = FinDomFunction(5:10)
 @test is_indexed(k)
@@ -203,6 +204,12 @@ for Alg in (NestedLoopJoin, SortMergeJoin, HashJoin)
   @test ob(lim) == FinSet(6)
   @test tuples(lim) == reference_tuples
 end
+
+# Pullback involving a constant, which should be handled specially.
+lim = pullback(FinFunction([3], 4), FinFunction([1,3,4,2,3,3]), alg=SmartJoin())
+@test ob(lim)== FinSet(3)
+@test proj1(lim) == ConstantFunction(1, FinSet(3), FinSet(1))
+@test proj2(lim) == FinFunction([2,5,6], 6)
 
 # General limits
 #---------------
