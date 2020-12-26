@@ -93,6 +93,10 @@ d2 = @relation ((start=u, stop=w) where (u,w,v)) ->
   (E(src=u, tgt=v); E(src=v, tgt=w))
 @test d1 == d2
 
+# Special case: unary named tuple syntax.
+parsed = @relation ((src=v) where (v, w)) -> E(src=v, tgt=w)
+@test parsed[:outer_port_name] == [:src]
+
 # Special case: closed diagram.
 if VERSION >= v"1.5"
   d1 = @relation ((;) where (v,)) -> E(src=v, tgt=v)

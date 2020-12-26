@@ -192,6 +192,7 @@ function parse_relation_call(call)
       (nothing, parse_relation_kw_args(args)...)
     Expr(:tuple) => (nothing, nothing, Symbol[])
     Expr(:tuple, args...) => (nothing, parse_relation_inferred_args(args)...)
+    Expr(:(=), args...) => (nothing, parse_relation_inferred_args([call])...)
 
     _ => error("Invalid syntax in relation $call")
   end
