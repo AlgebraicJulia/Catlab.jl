@@ -6,8 +6,7 @@ export oapply, query
 using Compat: isnothing
 import TypedTables
 
-using ...Theories, ...CategoricalAlgebra,
-  ...CategoricalAlgebra.Sets, ...CategoricalAlgebra.FinSets
+using ...Theories, ...CategoricalAlgebra, ...CategoricalAlgebra.FinSets
 using ...CSetDataStructures: make_table
 using ..UndirectedWiringDiagrams
 
@@ -133,11 +132,12 @@ The query is a undirected wiring diagram whose boxes and ports are assumed to be
 named through attributes `:name` and `:port_name`/`:outer_port_name`. To define
 such a diagram, use the named form of the [`@relation`](@ref) macro.
 
-This function is a thin wrapper around the [`oapply`](@ref) method for
+This function straightforwardly wraps the [`oapply`](@ref) method for
 multispans, which implements the UWD algebra of multispans.
 """
-function query(X::AbstractACSet, diagram::UndirectedWiringDiagram;
-               table_type::Type=TypedTables.Table)
+function query(X::AbstractACSet, diagram::UndirectedWiringDiagram,
+               params=NamedTuple(); table_type::Type=TypedTables.Table)
+  # For each box in the diagram, extract span from ACSet.
   spans = map(boxes(diagram), subpart(diagram, :name)) do b, name
     apex = FinSet(nparts(X, name))
     legs = map(subpart(diagram, ports(diagram, b), :port_name)) do port_name
@@ -145,6 +145,19 @@ function query(X::AbstractACSet, diagram::UndirectedWiringDiagram;
     end
     Multispan(apex, legs)
   end
+
+  # Add an extra box and corresponding span for each parameter.
+  if !isempty(params)
+    diagram = copy(diagram)
+    spans = vcat(spans, map(collect(pairs(params))) do (var, value)
+      box = add_part!(diagram, :Box, name=:_const)
+      add_part!(diagram, :Port, port_name=:_value,
+                box=box, junction=incident(diagram, var, :variable))
+      SMultispan{1}(ConstantFunction(value, FinSet(1)))
+    end)
+  end
+
+  # Call `oapply` and make a table out of the resulting span.
   outer_names = subpart(diagram, :outer_port_name)
   outer_span = oapply(diagram, spans, Ob=SetOb, Hom=FinDomFunction{Int})
   table = NamedTuple{Tuple(outer_names)}(Tuple(map(collect, outer_span)))
