@@ -89,7 +89,7 @@ A = ( F(M₄)'*F(M₄) ) + UniformScaling(n)
 b = A*x
 x̂ᴰ = Matrix(A)\b
 
-x̂, h = gmres(A, b; tol=1e-12, maxiter=160, log=true, verbose=false)
+x̂, h = gmres(A, b; reltol=1e-12, maxiter=160, log=true, verbose=false)
 
 b̂ = A*x̂
 @test norm(b̂-b) < 1e-8
