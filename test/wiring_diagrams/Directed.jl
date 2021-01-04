@@ -88,8 +88,7 @@ rem_boxes!(d_copy, [fv,gv])
 gr = graph(d)
 @test length(vertices(gr)) == nboxes(d) + 2
 @test length(edges(gr)) == nwires(d)
-@test sort!(subpart(gr, :wire)) == sort!(wires(d))
-@test subpart(gr, :box) == [box(d, b) for b in box_ids(d) ∪ outer_ids(d)]
+@test subpart(gr, :box) == box_ids(d) ∪ outer_ids(d)
 
 @test Set(all_neighbors(d, fv)) == Set([input_id(d), gv])
 @test Set(all_neighbors(d, gv)) == Set([fv, output_id(d)])

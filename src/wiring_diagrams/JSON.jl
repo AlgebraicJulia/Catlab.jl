@@ -22,9 +22,9 @@ using DataStructures: OrderedDict
 import JSON
 
 using ..DirectedWiringDiagrams, ..WiringDiagramSerialization
-import ..DirectedWiringDiagrams: PortData
 
 const JSONObject = OrderedDict{String,Any}
+const PortData = NamedTuple{(:kind,:port),Tuple{PortKind,Int}}
 
 # Serialization
 ###############
@@ -176,10 +176,10 @@ function parse_json_ports(PortValue::Type, node::AbstractDict)
     value = parse_json_graph_data(PortValue, port)
     if port_kind == "input"
       push!(input_ports, value)
-      ports[(node_id, port_id)] = PortData(InputPort, length(input_ports))
+      ports[(node_id, port_id)] = (kind=InputPort, port=length(input_ports))
     elseif port_kind == "output"
       push!(output_ports, value)
-      ports[(node_id, port_id)] = PortData(OutputPort, length(output_ports))
+      ports[(node_id, port_id)] = (kind=OutputPort, port=length(output_ports))
     else
       error("Invalid port kind: $portkind")
     end
