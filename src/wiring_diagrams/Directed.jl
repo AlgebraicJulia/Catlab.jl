@@ -30,11 +30,9 @@ export AbstractBox, Box, WiringDiagram, Wire, Port, PortKind,
 using Compat
 using AutoHashEquals
 
-using ...Present, ...CSetDataStructures, ...Graphs.BasicGraphs, ...CategoricalAlgebra
+using ...Present, ...Graphs.BasicGraphs, ...CategoricalAlgebra.CSets
 using ...Graphs.BasicGraphs: TheoryGraph
 import ...Graphs: all_neighbors, neighbors, outneighbors, inneighbors
-
-
 
 # Data types
 ############
@@ -51,7 +49,6 @@ import ...Graphs: all_neighbors, neighbors, outneighbors, inneighbors
   port::Int
 end
 set_box(port::Port, box::Int) = Port(box, port.kind, port.port)
-
 
 function Base.isless(p1::Port, p2::Port)::Bool
   # Lexicographic order.
@@ -110,6 +107,10 @@ This type represents an arbitrary black box with inputs and outputs.
 """
 abstract type AbstractBox end
 
+input_ports(box::AbstractBox) = box.input_ports
+output_ports(box::AbstractBox) = box.output_ports
+value(b::AbstractBox) = b.value
+
 """ An atomic box in a wiring diagram.
 
 These boxes have no internal structure.
@@ -121,9 +122,6 @@ These boxes have no internal structure.
 end
 
 Box(inputs::Vector, outputs::Vector) = Box(nothing, inputs, outputs)
-
-input_ports(box::AbstractBox) = box.input_ports
-output_ports(box::AbstractBox) = box.output_ports
 
 function Base.show(io::IO, box::Box)
   print(io, "Box(")
@@ -137,33 +135,6 @@ function Base.show(io::IO, box::Box)
   join(io, [sprint(show, port) for port in box.output_ports], ",")
   print(io, "])")
 end
-
-""" Check equality of boxes.
-"""
-function Base.:(==)(b1::AbstractBox, b2::AbstractBox)
-  (input_ports(b1) == input_ports(b2) &&
-   output_ports(b1) == output_ports(b2) && value(b1) == value(b2))
-end
-
-value(b::AbstractBox) = b.value
-
-@present TheoryWiringDiagramGraph <: TheoryGraph begin
-  Box::Data
-  WireData::Data
-
-  box::Attr(V,Box)
-  wire::Attr(E,WireData)
-end
-
-const WiringDiagramGraphDataType =
-  ACSetType(TheoryWiringDiagramGraph, index=[:src, :tgt])
-
-""" Internal datatype for graph underlying a directed wiring diagram.
-
-Boxes and wires are attached to vertices and edges, respectively.
-"""
-# const WiringDiagramGraph = WiringDiagramGraphDataType{
-#   Union{AbstractBox,Nothing},WireData}
 
 @present TheoryWiringDiagram(FreeSchema) begin
   Box::Ob
@@ -219,21 +190,9 @@ and `output_id`, that represent the input and output ports of the outer box.
 """
 
 mutable struct WiringDiagram{Theory, PortValue, WireValue,  BoxValue} <: AbstractBox
-  # mutable struct WiringDiagram{Theory} <: AbstractBox
-  #   graph::WiringDiagramGraph
-  #   value::Any
-  #   input_ports::Vector
-  #   output_ports::Vector
   diagram::WiringDiagramACSet{PortValue, WireValue, Union{BoxValue, AbstractBox}, DataType}
   value::Any
-  
 
-  # function WiringDiagram{T}(value, inputs::Vector, outputs::Vector) where T
-  #   graph = WiringDiagramGraph()
-  #   diagram = new{T}(graph, value, inputs, outputs)
-  #   add_vertices!(graph, 2, box=nothing)
-  #   return diagram
-  # end
   function WiringDiagram{T, PortValue, WireValue, BoxValue}(value, inputs::Vector, outputs::Vector) where {T, PortValue, WireValue, BoxValue}
     diagram = WiringDiagramACSet{PortValue, WireValue, Union{BoxValue, AbstractBox}, DataType}()
     f = new{T, PortValue, WireValue, BoxValue}(diagram, value)
@@ -247,13 +206,11 @@ mutable struct WiringDiagram{Theory, PortValue, WireValue,  BoxValue} <: Abstrac
   end
 end
 
-
 function WiringDiagram{T, PortValue, WireValue, BoxValue}(inputs::Vector, outputs::Vector) where {T, PortValue, WireValue, BoxValue}
   WiringDiagram{T, PortValue, WireValue, BoxValue}(nothing, inputs, outputs)
 end
 WiringDiagram(args...) = WiringDiagram{Any, Any, Any, Any}(args...)
 WiringDiagram{T}(args...) where T = WiringDiagram{T, Any, Any, Any}(args...)
-
 
 input_id(::WiringDiagram) = -2
 output_id(::WiringDiagram) = -1
@@ -327,21 +284,15 @@ function Base.show(io::IO, diagram::WiringDiagram{T}) where T
 end
 
 @present TheoryWiringDiagramGraph <: TheoryGraph begin
-  Box::Data
-  WireData::Data
-
-  box::Attr(V,Box)
-  wire::Attr(E,WireData)
+  ID::Data
+  box::Attr(V,ID)
+  wire::Attr(E,ID)
 end
 
-const WiringDiagramGraphUnionAll =
-  ACSetType(TheoryWiringDiagramGraph, index=[:src, :tgt])
-
-""" Internal datatype for graph underlying a directed wiring diagram.
-Boxes and wires are attached to vertices and edges, respectively.
+""" Graph underlying a directed wiring diagram.
 """
-const WiringDiagramGraph = WiringDiagramGraphUnionAll{
-  Union{AbstractBox,Nothing},Wire}
+const WiringDiagramGraph =
+  ACSetType(TheoryWiringDiagramGraph, index=[:src, :tgt]){Int}
 
 # Imperative interface
 ######################
@@ -705,49 +656,38 @@ The default implementation is a no-op.
 function validate_ports(source_port, target_port) end
 
 # Graph properties.
-function internal_graph(f::WiringDiagram; id_only = false)
-  if id_only
-    g = WiringDiagramGraphUnionAll{Int, Int}()
-    add_parts!(g, :V, nparts(f.diagram, :Box), box = parts(f.diagram, :Box))
-    add_parts!(g, :E, nparts(f.diagram, :Wire), 
-        src = subpart(f.diagram, [:src, :out_port_box]), 
-        tgt = subpart(f.diagram, [:tgt, :in_port_box]), 
-        wire = parts(f.diagram, :Wire))
-  else
-    g = WiringDiagramGraph()
-    add_parts!(g, :V, nparts(f.diagram, :Box), box = [box(f,b) for b in parts(f.diagram, :Box)])
-    add_parts!(g, :E, nparts(f.diagram, :Wire), 
-        src = subpart(f.diagram, [:src, :out_port_box]), 
-        tgt = subpart(f.diagram, [:tgt, :in_port_box]), 
-        wire = [wire(f,w) for w in parts(f.diagram, :Wire)])
-  end
+
+""" Graph underlying wiring diagram, with edges for internal wires only.
+"""
+function internal_graph(f::WiringDiagram)
+  g = WiringDiagramGraph()
+  add_parts!(g, :V, nparts(f.diagram, :Box), box = parts(f.diagram, :Box))
+  add_parts!(g, :E, nparts(f.diagram, :Wire),
+             src = subpart(f.diagram, [:src, :out_port_box]),
+             tgt = subpart(f.diagram, [:tgt, :in_port_box]),
+             wire = parts(f.diagram, :Wire))
   return g
 end
 
-function graph(f::WiringDiagram; id_only = false)
-  g = internal_graph(f; id_only = id_only)
-  input, output = add_parts!(g, :V, 2)
-  in_wires = add_parts!(g, :E, nparts(f.diagram, :InWire))
-  set_subparts!(g, in_wires, src = input)
-  set_subparts!(g, in_wires, tgt = subpart(f.diagram, [:in_tgt, :in_port_box]))
+""" Grapn underlying wiring diagram, including parts for noin-internal wires.
 
-  out_wires = add_parts!(g, :E, nparts(f.diagram, :OutWire))
-  set_subparts!(g, out_wires, tgt = output)
-  set_subparts!(g, out_wires, src = subpart(f.diagram, [:out_src, :out_port_box]))
-
-  pass_wires = add_parts!(g, :E, nparts(f.diagram, :PassWire), src = input, tgt = output)
-
-  if id_only
-    set_subparts!(g, [input, output], box = [input_id(f), output_id(f)])
-    set_subparts!(g, in_wires, wire = parts(f.diagram, :InWire))
-    set_subparts!(g, out_wires, wire = parts(f.diagram, :OutWire))
-    set_subparts!(g, pass_wires, wire = parts(f.diagram, :PassWire))
-  else
-    set_subparts!(g, [input, output], box = [box(f, b) for b in [input_id(f), output_id(f)]])
-    set_subparts!(g, in_wires, wire = [in_wire(f, w) for w in parts(f.diagram, :InWire)])
-    set_subparts!(g, out_wires, wire = [out_wire(f, w) for w in parts(f.diagram, :OutWire)])
-    set_subparts!(g, pass_wires, wire = [pass_wire(f, w) for w in parts(f.diagram, :PassWire)])
-  end
+The graph has two special vertices representing the input and output boundaries
+of the outer box.
+"""
+function graph(f::WiringDiagram)
+  g = internal_graph(f)
+  input, output = add_parts!(g, :V, 2, box = [input_id(f), output_id(f)])
+  add_parts!(g, :E, nparts(f.diagram, :InWire),
+             src = input,
+             tgt = subpart(f.diagram, [:in_tgt, :in_port_box]),
+             wire = parts(f.diagram, :InWire))
+  add_parts!(g, :E, nparts(f.diagram, :OutWire),
+             src = subpart(f.diagram, [:out_src, :out_port_box]),
+             tgt = output,
+             wire = parts(f.diagram, :OutWire))
+  add_parts!(g, :E, nparts(f.diagram, :PassWire),
+             src = input, tgt = output,
+             wire = parts(f.diagram, :PassWire))
   return g
 end
 

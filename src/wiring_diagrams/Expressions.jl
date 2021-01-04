@@ -19,16 +19,15 @@ using ...Syntax: syntax_module
 using ...Graphs, ..DirectedWiringDiagrams, ..UndirectedWiringDiagrams,
   ..MonoidalDirectedWiringDiagrams, ..MonoidalUndirectedWiringDiagrams
 using ..WiringDiagramAlgorithms: crossing_minimization_by_sort
-using ..DirectedWiringDiagrams: WiringDiagramGraphUnionAll
+using ..DirectedWiringDiagrams: WiringDiagramGraph
 
 
 function graph_with_outer_ids(d::WiringDiagram)
-  g = graph(d; id_only = true)
+  g = graph(d)
   return g, incident(g, input_id(d), :box)[1], incident(g, output_id(d), :box)[1]
 end
 
-box_id(g::WiringDiagramGraphUnionAll{Int,Int}, v::Int) = subpart(g, v, :box)
-box_id(g::WiringDiagramGraphUnionAll{Int, Int}, vs::Array{Int}) = copy(subpart(g, vs, :box))
+box_id(g::WiringDiagramGraph, v) = subpart(g, v, :box)
 
 # Expression -> Diagram
 #######################
