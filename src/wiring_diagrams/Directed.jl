@@ -300,70 +300,75 @@ const WiringDiagramGraph =
 # Basic accessors.
 
 function box(f::WiringDiagram, b::Int)
-  if b == input_id(f)
-    return nothing
-  elseif b == output_id(f)
-    return nothing
-  else 
-    box_value = subpart(f.diagram, b, :value)
-    box_value isa WiringDiagram ? box_value : subpart(f.diagram, b, :box_type)(box_value, 
-                                                      input_ports(f, b), 
-                                                      output_ports(f, b))
+  b ∉ outer_ids(f) || return nothing
+  value = subpart(f.diagram, b, :value)
+  if value isa AbstractBox
+    value
+  else
+    BoxType = subpart(f.diagram, b, :box_type)
+    BoxType(value, input_ports(f, b), output_ports(f, b))
   end
 end
 
 boxes(f::WiringDiagram) = map(b -> box(f, b), box_ids(f))
 nboxes(f::WiringDiagram) = nparts(f.diagram, :Box)
 box_ids(f::WiringDiagram) = collect(parts(f.diagram, :Box))
-box_id(f::WiringDiagram, b::Int) = b # box_ids(f)[b]
 
 src_box(f::WiringDiagram, w::Int) = subpart(f.diagram, w, [:src, :out_port_box])
 tgt_box(f::WiringDiagram, w::Int) = subpart(f.diagram, w, [:tgt, :in_port_box])
-src_box_id(f::WiringDiagram, w::Int) = src_box(f,w)#box_ids(f)[src_box(f, w)]
-tgt_box_id(f::WiringDiagram, w::Int) = tgt_box(f, w)#box_ids(f)[tgt_box(f, w)]
-
 in_tgt_box(f::WiringDiagram, w::Int) = subpart(f.diagram, w, [:in_tgt, :in_port_box])
-in_tgt_box_id(f::WiringDiagram, w::Int) = in_tgt_box(f,w)#box_ids(f)[in_tgt_box(f,w)]
-
 out_src_box(f::WiringDiagram, w::Int) = subpart(f.diagram, w, [:out_src, :out_port_box])
-out_src_box_id(f::WiringDiagram, w::Int) = out_src_box(f,w)#box_ids(f)[out_src_box(f,w)]
 
-
-local_in_port_id(f::WiringDiagram, b::Int, p::Int) = searchsorted(incident(f.diagram, b, :in_port_box), p)[1]
-local_out_port_id(f::WiringDiagram, b::Int, p::Int) = searchsorted(incident(f.diagram, b, :out_port_box), p)[1]
+local_in_port_id(f::WiringDiagram, b::Int, p::Int) =
+  searchsortedfirst(incident(f.diagram, b, :in_port_box), p)
+local_out_port_id(f::WiringDiagram, b::Int, p::Int) =
+  searchsortedfirst(incident(f.diagram, b, :out_port_box), p)
 
 in_port_id(f::WiringDiagram, b::Int, p::Int) = incident(f.diagram, b, :in_port_box)[p]
 out_port_id(f::WiringDiagram, b::Int, p::Int) = incident(f.diagram, b, :out_port_box)[p]
 in_port_id(f::WiringDiagram, p::Port) = in_port_id(f, p.box, p.port)
 out_port_id(f::WiringDiagram, p::Port) = out_port_id(f, p.box, p.port)
 
-pass_wire(f::WiringDiagram, w::Int) = Wire(subpart(f.diagram, w, :pass_wire_value),
-  (input_id(f), subpart(f.diagram, w, :pass_src)) =>
-  (output_id(f), subpart(f.diagram, w, :pass_tgt)))
+function pass_wire(f::WiringDiagram, w::Int)
+  Wire(subpart(f.diagram, w, :pass_wire_value),
+       (input_id(f), subpart(f.diagram, w, :pass_src)) =>
+       (output_id(f), subpart(f.diagram, w, :pass_tgt)))
+end
 
-in_wire(f::WiringDiagram, w::Int) = Wire(subpart(f.diagram, w, :in_wire_value), 
-  (input_id(f), subpart(f.diagram, w, :in_src)) => 
-  (in_tgt_box_id(f,w), local_in_port_id(f, in_tgt_box(f,w), subpart(f.diagram, w, :in_tgt))))
+function in_wire(f::WiringDiagram, w::Int)
+  Wire(subpart(f.diagram, w, :in_wire_value),
+       (input_id(f),
+        subpart(f.diagram, w, :in_src)) => 
+       (in_tgt_box(f,w),
+        local_in_port_id(f, in_tgt_box(f,w), subpart(f.diagram, w, :in_tgt))))
+end
 
-out_wire(f::WiringDiagram, w::Int) = Wire(subpart(f.diagram, w, :out_wire_value), 
-  (out_src_box_id(f,w), local_out_port_id(f, out_src_box(f,w), subpart(f.diagram, w, :out_src))) =>
-  (output_id(f), subpart(f.diagram, w, :out_tgt)) )
+function out_wire(f::WiringDiagram, w::Int)
+  Wire(subpart(f.diagram, w, :out_wire_value),
+       (out_src_box(f,w),
+        local_out_port_id(f, out_src_box(f,w), subpart(f.diagram, w, :out_src))) =>
+       (output_id(f),
+        subpart(f.diagram, w, :out_tgt)))
+end
 
-wire(f::WiringDiagram, w::Int) = Wire( subpart(f.diagram, w, :wire_value),
-  (src_box_id(f,w), local_out_port_id(f, src_box(f,w), subpart(f.diagram, w, :src))) =>
-  (tgt_box_id(f,w), local_in_port_id(f, tgt_box(f,w), subpart(f.diagram, w, :tgt))))
-
+function wire(f::WiringDiagram, w::Int)
+  Wire(subpart(f.diagram, w, :wire_value),
+       (src_box(f,w),
+        local_out_port_id(f, src_box(f,w), subpart(f.diagram, w, :src))) =>
+       (tgt_box(f,w),
+        local_in_port_id(f, tgt_box(f,w), subpart(f.diagram, w, :tgt))))
+end
 
 function wires(f::WiringDiagram, src::Int, tgt::Int)
   if src == input_id(f) && tgt == output_id(f)
     [pass_wire(f, w) for w in parts(f.diagram, :PassWire)]
   elseif src == input_id(f)
-    [in_wire(f, w) for w in parts(f.diagram, :InWire) if in_tgt_box_id(f, w) == tgt]
+    [in_wire(f, w) for w in parts(f.diagram, :InWire) if in_tgt_box(f, w) == tgt]
   elseif tgt == output_id(f)
-    [out_wire(f, w) for w in parts(f.diagram, :OutWire) if out_src_box_id(f, w) == src]
+    [out_wire(f, w) for w in parts(f.diagram, :OutWire) if out_src_box(f, w) == src]
   else
     [wire(f, w) for w in parts(f.diagram, :Wire) if 
-        src_box_id(f,w)==src && tgt_box_id(f,w)==tgt]
+        src_box(f,w)==src && tgt_box(f,w)==tgt]
   end
 end
 
@@ -445,9 +450,7 @@ function port_value(f::WiringDiagram, port::Port)
     type_expr = port.kind == InputPort ? :in_port_type : :out_port_type
     subpart(f.diagram, port_id(f, port), type_expr)
   end
-  
 end
-
 
 # Graph mutation.
 
