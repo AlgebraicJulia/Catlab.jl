@@ -2,6 +2,7 @@ module CategoricalAlgebra
 
 using Reexport
 
+include("KeyedTables.jl")
 include("FreeDiagrams.jl")
 include("Limits.jl")
 include("Sets.jl")
