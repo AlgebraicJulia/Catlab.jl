@@ -41,7 +41,7 @@ _table(kt::KeyedTable) = getfield(kt,:table)
 _keys(kt::KeyedTable) = getfield(kt,:keys)
 _index(kt::KeyedTable) = getfield(kt,:index)
 
-getproperty(kt::KeyedTable,prop::Symbol) = getproperty(_table(kt),prop)
+Base.getproperty(kt::KeyedTable,prop::Symbol) = getproperty(_table(kt),prop)
 
 Tables.istable(kt::KeyedTable) = Tables.rowaccess(_table(kt))
 
