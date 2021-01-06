@@ -135,9 +135,9 @@ wires. Typical choices are:
 In both cases, this algorithm has the property that if there is a permutation
 with no crossings, it will find it.
 """
-function crossing_minimization_by_sort(d::WiringDiagram, vs::Vector{Int};
-    sources::Vector{Int}=Int[], targets::Vector{Int}=Int[],
-    statistic::Function=mean)::Vector{Int}
+function crossing_minimization_by_sort(d::WiringDiagram, vs::AbstractVector{Int};
+    sources::AbstractVector{Int}=Int[], targets::AbstractVector{Int}=Int[],
+    statistic::Function=mean)::AbstractVector{Int}
   @assert allunique(vs) && allunique(sources) && allunique(targets)
   if isempty(sources) && isempty(targets)
     # Degenerate case: nothing to sort, so preserve original order.
@@ -160,7 +160,7 @@ end
 
 """ Make function mapping ports to logical coordinates.
 """
-function port_coords(d::WiringDiagram, vs::Vector{Int}, kind::PortKind)
+function port_coords(d::WiringDiagram, vs::AbstractVector{Int}, kind::PortKind)
   get_ports = kind == InputPort ? input_ports : output_ports
   index = Dict(vs[i] => i for i in eachindex(vs))
   sizes = [ length(get_ports(d,v)) for v in vs ]
