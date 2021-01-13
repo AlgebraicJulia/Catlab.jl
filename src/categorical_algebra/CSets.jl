@@ -2,11 +2,12 @@
 """
 module CSets
 export ACSetTransformation, CSetTransformation, components, force, is_natural,
-  migrate!
+  migrate!, serialize, deserialize
 
 using Compat: isnothing
 
 using AutoHashEquals
+using JSON
 using Reexport
 using StaticArrays: SVector
 
@@ -16,6 +17,9 @@ import ..Limits: limit, colimit, universal
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force
 using ...Theories: Category, CatDesc, AttrDesc
 import ...Theories: dom, codom, compose, ⋅, id
+
+import Base.convert
+Base.convert(::Type{Symbol}, str::String) = Symbol(str)
 
 # FinSets interop
 #################
@@ -331,7 +335,7 @@ function migrate!(Y::ACSet{CD, AD}, X::ACSet,
   CD.ob ⊆ keys(FOb)     || error("Every object in $CD must be a key in $FOb")
   CD.hom ⊆ keys(FHom)   || error("Every hom in $CD must be a key in $FHom")
   AD.attr ⊆ keys(FHom)  || error("Every attribute in $AD must be a key in $FHom")
-  
+
   partsY = NamedTuple{CD.ob}(map(CD.ob) do obY
     add_parts!(Y, obY, nparts(X, FOb[obY]))
   end)
@@ -351,5 +355,30 @@ function (::Type{T})(X::ACSet, FOb::AbstractDict,
   Y = T()
   migrate!(Y, X, FOb, FHom)
 end
+
+""" Serialize an ACSet object to a JSON string
+"""
+serialize(x::ACSet) = JSON.json(x.tables)
+
+""" Deserialize a dictionary from a parsed JSON string to an object of the given ACSet type
+"""
+function deserialize(input::Dict, type)
+    out = type()
+    for (k,v) ∈ input
+        add_parts!(out, Symbol(k), length(v))
+    end
+    for l ∈ values(input)
+        for (i, j) ∈ enumerate(l)
+            for (k,v) ∈ j
+                set_subpart!(out, i, Symbol(k), v)
+            end
+        end
+    end
+    out
+end
+
+""" Deserialize a JSON string to an object of the given ACSet type
+"""
+deserialize(input::String, type) = deserialize(JSON.parse(input), type)
 
 end

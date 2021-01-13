@@ -18,6 +18,8 @@ f = FinFunction(g, :src)
 @test collect(f) == 2:4
 @test is_indexed(f)
 
+@test g == deserialize(serialize(g), Graph)
+
 f = FinDomFunction(g, :E)
 @test collect(f) == 1:3
 @test is_indexed(f)
@@ -31,6 +33,8 @@ add_edges!(g, 1:2, 2:3, weight=[0.5, 1.5])
 f = FinDomFunction(g, :weight)
 @test codom(f) == TypeSet(Float64)
 @test collect(f) == [0.5, 1.5]
+
+@test g == deserialize(serialize(g), WeightedGraph{Float64})
 
 # C-set morphisms
 #################
@@ -249,6 +253,8 @@ coprod = ob(coproduct(g, h))
 @test subpart(coprod, :vlabel) == [:u, :v, :u]
 @test subpart(coprod, :elabel) == [:e, :f]
 
+@test g == deserialize(serialize(g), LabeledGraph{Symbol})
+
 # Pushout of labeled graph.
 g0 = LabeledGraph{Symbol}()
 add_vertex!(g0, vlabel=:u)
@@ -280,7 +286,7 @@ h = Graph(3)
 add_parts!(h, :E, 3, src = [1,2,3], tgt = [2,3,1])
 
 # Identity data migration.
-@test h == Graph(h, Dict(:V => :V, :E => :E), 
+@test h == Graph(h, Dict(:V => :V, :E => :E),
                     Dict(:src => :src, :tgt => :tgt))
 
 # Migrate DDS → Graph.
@@ -314,6 +320,8 @@ add_parts!(wg, :E, 4, src=[1,2,3,4], tgt=[2,3,4,1], weight=[101, 102, 103, 100])
 @test wg == WeightedGraph{Int}(ldds,
   Dict(:V => :X, :E => :X),
   Dict(:src => id(X), :tgt => :Φ, :weight => [:Φ, :label]))
-  
+
+@test ldds == deserialize(serialize(ldds), LabeledDDS{Int})
+
 
 end
