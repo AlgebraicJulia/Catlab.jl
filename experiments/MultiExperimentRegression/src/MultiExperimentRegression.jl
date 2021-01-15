@@ -21,7 +21,7 @@ const MEData = Vector{Tuple{Array{Float64,2},Vector{Float64}}}
     f = legs(spec)[i]
     (X,y) = data[i]
     for j in 1:length(y)
-      y[j] ~ Normal(sum(β[f(k)] * x[j,k] for k in dom(f)),σ)
+      y[j] ~ Normal(sum(β[f(k)] * X[j,k] for k in dom(f)),σ)
     end
   end
 end
