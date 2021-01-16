@@ -7,7 +7,7 @@ export connected_components, connected_component_projection, topological_sort,
 using DataStructures: Stack
 
 using ...Theories: dom, codom
-using ...CSetDataStructures, ..BasicGraphs
+using ...CSetDataStructures, ...Acsets, ..BasicGraphs
 
 # Connectivity
 ##############
@@ -16,7 +16,7 @@ using ...CSetDataStructures, ..BasicGraphs
 
 Returns a vector of vectors, which are the components of the graph.
 """
-function connected_components(g::AbstractACSet)::Vector{Vector{Int}}
+function connected_components(g::Acset)::Vector{Vector{Int}}
   π = connected_component_projection(g)
   components = [ Int[] for c in codom(π) ]
   for v in dom(π)
@@ -45,12 +45,12 @@ algorithm is adapted from the function
 [`topological_sort_by_dfs`](https://github.com/JuliaGraphs/LightGraphs.jl/blob/1c6cf65cc0981250e430bbef39055da23bd25bd0/src/traversals/dfs.jl#L44)
 in LightGraphs.jl.
 """
-function topological_sort(g::AbstractACSet;
+function topological_sort(g::Acset;
                           alg::TopologicalSortAlgorithm=TopologicalSortByDFS())
   topological_sort(g, alg)
 end
 
-function topological_sort(g::AbstractACSet, ::TopologicalSortByDFS)
+function topological_sort(g::Acset, ::TopologicalSortByDFS)
   vs = Int[]
   marking = fill(Unmarked, nv(g))
   for v in reverse(vertices(g))
@@ -87,7 +87,7 @@ The algorithm computes the longest paths in the DAGs and keeps only the edges
 corresponding to longest paths of length 1. Requires a topological sort, which
 is computed if it is not supplied.
 """
-function transitive_reduction!(g::AbstractACSet; sorted=nothing)
+function transitive_reduction!(g::Acset; sorted=nothing)
   lengths = longest_paths(g, sorted=sorted)
   transitive_edges = filter(edges(g)) do e
     lengths[tgt(g,e)] - lengths[src(g,e)] != 1
@@ -102,7 +102,7 @@ Returns a vector of integers whose i-th element is the length of the longest
 path to vertex i. Requires a topological sort, which is computed if it is not
 supplied.
 """
-function longest_paths(g::AbstractACSet;
+function longest_paths(g::Acset;
                        sorted::Union{AbstractVector{Int},Nothing}=nothing)
   if isnothing(sorted)
     sorted = topological_sort(g)

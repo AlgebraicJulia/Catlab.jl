@@ -2,11 +2,11 @@
 """
 module GraphCategories
 
-using ..FinSets, ..CSets, ..Limits
+using ..FinSets, ...Acsets, ..Limits
 using ...Graphs.BasicGraphs
 import ...Graphs.GraphAlgorithms: connected_component_projection
 
-function connected_component_projection(g::AbstractACSet)::FinFunction
+function connected_component_projection(g::Acset)::FinFunction
   proj(coequalizer(FinFunction(src(g), nv(g)),
                    FinFunction(tgt(g), nv(g))))
 end

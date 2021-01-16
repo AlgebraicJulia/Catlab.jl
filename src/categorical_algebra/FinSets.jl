@@ -13,8 +13,7 @@ import StaticArrays
 using StaticArrays: StaticVector, SVector, SizedVector, similar_type
 
 @reexport using ..Sets
-using ...GAT, ...Theories
-using ...CSetDataStructures, ...Graphs, ..FreeDiagrams, ..Limits
+using ...Theories, ...Acsets, ...Graphs, ..FreeDiagrams, ..Limits
 import ...Theories: dom, codom
 import ..Limits: limit, colimit, universal
 using ..Sets: SetFunctionCallable, SetFunctionIdentity
