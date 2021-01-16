@@ -4,5 +4,6 @@ authors = ["Unknown "]
 version = "0.1.0"
 
 [deps]
+AlgebraicPetri = "4f99eebe-17bf-4e98-b6a1-2c4f205a959b"
 Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
 Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
