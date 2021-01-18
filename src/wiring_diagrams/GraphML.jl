@@ -24,7 +24,6 @@ using LightXML
 
 using ...Graphs
 using ..DirectedWiringDiagrams, ..WiringDiagramSerialization
-import ..DirectedWiringDiagrams: PortData
 
 # Data types
 ############
@@ -50,6 +49,8 @@ struct ReadState
   PortValue::Type
   WireValue::Type
 end
+
+const PortData = NamedTuple{(:kind,:port),Tuple{PortKind,Int}}
 
 # Serialization
 ###############
@@ -293,10 +294,10 @@ function parse_graphml_ports(state::ReadState, xnode::XMLElement)
     value = convert_from_graphml_data(state.PortValue, data)
     if port_kind == "input"
       push!(input_ports, value)
-      ports[(xnode_id, xport_name)] = PortData(InputPort, length(input_ports))
+      ports[(xnode_id, xport_name)] = (kind=InputPort, port=length(input_ports))
     elseif port_kind == "output"
       push!(output_ports, value)
-      ports[(xnode_id, xport_name)] = PortData(OutputPort, length(output_ports))
+      ports[(xnode_id, xport_name)] = (kind=OutputPort, port=length(output_ports))
     else
       error("Invalid port kind: $portkind")
     end

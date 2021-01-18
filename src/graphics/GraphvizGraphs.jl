@@ -38,10 +38,8 @@ function parse_graphviz(doc::AbstractDict)::AbstractPropertyGraph
     props = Dict{Symbol,Any}(
       Symbol(k) => node[k] for k in node_keys if haskey(node, k))
     props[:position] = parse_point(node["pos"])
-    props[:size] = 72*SVector(
-      parse(Float64, node["width"]),
-      parse(Float64, node["height"])
-    )
+    props[:size] = 72*SVector(parse(Float64, node["width"]),
+                              parse(Float64, node["height"]))
     add_vertex!(graph, props)
   end
 

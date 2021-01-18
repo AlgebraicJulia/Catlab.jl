@@ -270,36 +270,38 @@ function graphviz_outer_box(f::WiringDiagram;
   stmts = Graphviz.Statement[]
   ninputs, noutputs = length(input_ports(f)), length(output_ports(f))
   if ninputs > 0
-    push!(stmts, graphviz_outer_ports(input_id(f), InputPort, ninputs;
+    push!(stmts, graphviz_outer_ports(InputPort, ninputs;
       anchor=anchor, orientation=orientation))
   end
   if noutputs > 0
-    push!(stmts, graphviz_outer_ports(output_id(f), OutputPort, noutputs;
+    push!(stmts, graphviz_outer_ports(OutputPort, noutputs;
       anchor=anchor, orientation=orientation))
   end
   
   # Input and output ports.
-  graphviz_port = (port::Port) -> Graphviz.NodeID(
-    port_node_name(port.box, port.port),
-    port_anchor(port.kind, orientation)
-  )
-  inputs = [ graphviz_port(Port(input_id(f), OutputPort, i)) for i in 1:ninputs ]
-  outputs = [ graphviz_port(Port(output_id(f), InputPort, i)) for i in 1:noutputs ]
+  inputs = map(1:ninputs) do i
+    Graphviz.NodeID(port_node_name(InputPort, i),
+                    port_anchor(OutputPort, orientation))
+  end
+  outputs = map(1:noutputs) do i
+    Graphviz.NodeID(port_node_name(OutputPort, i),
+                    port_anchor(InputPort, orientation))
+  end
   
   GraphvizBox(stmts, inputs, outputs)
 end
 
 """ Create invisible nodes for the input or output ports of an outer box.
 """
-function graphviz_outer_ports(v::Int, kind::PortKind, nports::Int;
+function graphviz_outer_ports(kind::PortKind, nports::Int;
     anchor::Bool=true, orientation::LayoutOrientation=TopToBottom)::Graphviz.Subgraph
   @assert nports > 0
   port_width = "$(round(24/72,digits=3))" # port width in inches
-  nodes = [ port_node_name(v, i) for i in 1:nports ]
+  nodes = [ port_node_name(kind, i) for i in 1:nports ]
   stmts = Graphviz.Statement[
     Graphviz.Node(nodes[i], id=port_name(kind, i)) for i in 1:nports
   ]
-  if anchor
+  if anchor && length(nodes) >= 2
     push!(stmts, Graphviz.Edge(nodes))
   end
   Graphviz.Subgraph(
@@ -320,7 +322,8 @@ function graphviz_outer_ports(v::Int, kind::PortKind, nports::Int;
     ),
   )
 end
-port_node_name(v::Int, port::Int) = string(box_id([v]), "p", port)
+port_node_name(kind::PortKind, port::Int) =
+  string(kind == InputPort ? "n0in" : "n0out", port)
 
 """ Graphviz rank direction (`rankdir`) for layout orientation.
 

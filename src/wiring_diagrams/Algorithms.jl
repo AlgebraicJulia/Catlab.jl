@@ -19,7 +19,7 @@ import ..DirectedWiringDiagrams: set_box
 Returns a list of box IDs, excluding the outer box's input and output IDs.
 """
 function topological_sort(d::WiringDiagram)::AbstractVector{Int}
-  filter(v -> v ∉ outer_ids(d), topological_sort(graph(d)))
+  topological_sort(internal_graph(d))
 end
 
 # Normalization
@@ -49,7 +49,7 @@ The main difference is the possibility of zero or many function outputs.
 """
 function normalize_copy!(d::WiringDiagram)
   # Compute equivalence classes of boxes (without modifying the diagram).
-  sets = IntDisjointSets(nboxes(d)+2)
+  sets = DisjointSets{Int}(vcat([input_id(d),output_id(d)], box_ids(d)))
   initial = filter(box_ids(d)) do v
     all(u == input_id(d) for u in inneighbors(d,v))
   end
@@ -74,7 +74,7 @@ function normalize_copy!(d::WiringDiagram)
   d
 end
 
-function merge_if_congruent!(d::WiringDiagram, sets::IntDisjointSets, v1::Int, v2::Int)
+function merge_if_congruent!(d::WiringDiagram, sets::DisjointSets{Int}, v1::Int, v2::Int)
   if v1 == v2 || (!in_same_set(sets, v1, v2) && is_congruent(d, sets, v1, v2))
     union!(sets, v1, v2)
     for out1 in filter(v -> v != output_id(d), outneighbors(d, v1))
@@ -85,7 +85,7 @@ function merge_if_congruent!(d::WiringDiagram, sets::IntDisjointSets, v1::Int, v
   end
 end
 
-function is_congruent(d::WiringDiagram, sets::IntDisjointSets, v1::Int, v2::Int)::Bool
+function is_congruent(d::WiringDiagram, sets::DisjointSets{Int}, v1::Int, v2::Int)::Bool
   box(d, v1) == box(d, v2) && all(eachindex(input_ports(box(d,v1)))) do port
     wires1, wires2 = in_wires(d,v1,port), in_wires(d,v2,port)
     n1, n2 = length(wires1), length(wires2)
@@ -110,7 +110,7 @@ function normalize_delete!(d::WiringDiagram)
       push!(unused, v)
     end
   end
-  rem_boxes!(d, unused)
+  rem_boxes!(d, sort(collect(unused)))
   d
 end
 
@@ -135,9 +135,9 @@ wires. Typical choices are:
 In both cases, this algorithm has the property that if there is a permutation
 with no crossings, it will find it.
 """
-function crossing_minimization_by_sort(d::WiringDiagram, vs::Vector{Int};
-    sources::Vector{Int}=Int[], targets::Vector{Int}=Int[],
-    statistic::Function=mean)::Vector{Int}
+function crossing_minimization_by_sort(d::WiringDiagram, vs::AbstractVector{Int};
+    sources::AbstractVector{Int}=Int[], targets::AbstractVector{Int}=Int[],
+    statistic::Function=mean)::AbstractVector{Int}
   @assert allunique(vs) && allunique(sources) && allunique(targets)
   if isempty(sources) && isempty(targets)
     # Degenerate case: nothing to sort, so preserve original order.
@@ -160,7 +160,7 @@ end
 
 """ Make function mapping ports to logical coordinates.
 """
-function port_coords(d::WiringDiagram, vs::Vector{Int}, kind::PortKind)
+function port_coords(d::WiringDiagram, vs::AbstractVector{Int}, kind::PortKind)
   get_ports = kind == InputPort ? input_ports : output_ports
   index = Dict(vs[i] => i for i in eachindex(vs))
   sizes = [ length(get_ports(d,v)) for v in vs ]
