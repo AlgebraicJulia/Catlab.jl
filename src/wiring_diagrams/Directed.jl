@@ -293,8 +293,8 @@ end
 
 """ Graph underlying a directed wiring diagram.
 """
-const WiringDiagramGraph =
-  ACSetType(TheoryWiringDiagramGraph, index=[:src, :tgt]){Int}
+const WiringDiagramGraph = ACSetType(TheoryWiringDiagramGraph,
+  index=[:src, :tgt], unique_index=[:box]){Int}
 
 # Imperative interface
 ######################
@@ -367,14 +367,14 @@ function wires(f::WiringDiagram, src::Int, tgt::Int)
   if src == input_id(f) && tgt == output_id(f)
     [Wire(f, :PassWire, w) for w in parts(f.diagram, :PassWire)]
   elseif src == input_id(f)
-    [Wire(f, :InWire, w) for w in parts(f.diagram, :InWire)
-     if in_tgt_box(f, w) == tgt]
+    [Wire(f, :InWire, w)
+     for w in incident(f.diagram, tgt, [:in_tgt, :in_port_box])]
   elseif tgt == output_id(f)
-    [Wire(f, :OutWire, w) for w in parts(f.diagram, :OutWire)
-     if out_src_box(f, w) == src]
+    [Wire(f, :OutWire, w)
+     for w in incident(f.diagram, src, [:out_src, :out_port_box])]
   else
-    [Wire(f, :Wire, w) for w in parts(f.diagram, :Wire)
-     if src_box(f,w) == src && tgt_box(f,w) == tgt]
+    [Wire(f, :Wire, w) for w in incident(f.diagram, src, [:src, :out_port_box])
+     if tgt_box(f,w) == tgt]
   end
 end
 
@@ -383,25 +383,27 @@ wires(f::WiringDiagram, type::Symbol) =
 wires(f::WiringDiagram) = vcat(wires(f, :PassWire), wires(f, :InWire),
                                wires(f, :Wire), wires(f, :OutWire))
 
+function nwires(f::WiringDiagram, src::Int, tgt::Int)
+  if src == input_id(f) && tgt == output_id(f)
+    nparts(f.diagram, :PassWire)
+  elseif src == input_id(f)
+    length(incident(f.diagram, tgt, [:in_tgt, :in_port_box]))
+  elseif tgt == output_id(f)
+    length(incident(f.diagram, src, [:out_src, :out_port_box]))
+  else
+    count(w -> tgt_box(f,w) == tgt,
+          incident(f.diagram, src, [:src, :out_port_box]))
+  end
+end
+
 nwires(f::WiringDiagram, type::Symbol) = nparts(f.diagram, type)
 nwires(f::WiringDiagram) = (nwires(f, :PassWire) + nwires(f, :InWire) +
                             nwires(f, :Wire) + nwires(f, :OutWire))
 
-function has_wire(f::WiringDiagram, src::Int, tgt::Int)
-  if src == input_id(f) && tgt == output_id(f)
-    nparts(f.diagram, :PassWire) > 0
-  elseif src == input_id(f)
-    !isempty(incident(f.diagram, tgt, [:in_tgt, :in_port_box]))
-  elseif tgt == output_id(f)
-    !isempty(incident(f.diagram, src, [:out_src, :out_port_box]))
-  else
-    any(tgt_box(f,w) == tgt
-        for w in incident(f.diagram, src, [:src, :out_port_box]))
-  end
-end
-
-has_wire(f::WiringDiagram, wire::Wire) = has_wire(f, wire.source.box, wire.target.box)
-has_wire(f::WiringDiagram, pair::Pair) = has_wire(f, first(pair)[1], last(pair)[1])
+has_wire(f::WiringDiagram, src::Int, tgt::Int) = nwires(f, src, tgt) > 0
+has_wire(f::WiringDiagram, wire::Wire) =
+  wire in wires(f, wire.source.box, wire.target.box)
+has_wire(f::WiringDiagram, pair::Pair) = has_wire(f, Wire(pair))
 
 input_ports(f::WiringDiagram) = subpart(f.diagram, :outer_in_port_type)
 output_ports(f::WiringDiagram) = subpart(f.diagram, :outer_out_port_type)

@@ -21,14 +21,6 @@ using ...Graphs, ..DirectedWiringDiagrams, ..UndirectedWiringDiagrams,
 using ..WiringDiagramAlgorithms: crossing_minimization_by_sort
 using ..DirectedWiringDiagrams: WiringDiagramGraph
 
-
-function graph_with_outer_ids(d::WiringDiagram)
-  g = graph(d)
-  return g, incident(g, input_id(d), :box)[1], incident(g, output_id(d), :box)[1]
-end
-
-box_id(g::WiringDiagramGraph, v) = subpart(g, v, :box)
-
 # Expression -> Diagram
 #######################
 
@@ -144,8 +136,8 @@ end
 """ All possible parallel reductions of a wiring diagram.
 """
 function parallel_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
-  g, input_v, output_v = graph_with_outer_ids(d)
-  parallel = find_parallel(g, skip=[input_v, output_v])
+  g, outer_vs = graph_with_outer_ids(d)
+  parallel = find_parallel(g, skip=outer_vs)
   parallel = Dict([((box_id(g, src), box_id(g, tgt)), box_id(g,vs)) for ((src, tgt), vs) in parallel])
   encapsulate_parallel(Ob, Hom, d, [
     (vs, [src], [tgt]) for ((src, tgt), vs) in parallel
@@ -158,8 +150,8 @@ Because these reductions are not necessarily unique, only one is performed,
 the first one in topological sort order.
 """
 function input_parallel_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
-  g, input_v, output_v = graph_with_outer_ids(d)
-  parallel = find_one_sided_parallel(g, input=true, skip=[input_v, output_v])
+  g, outer_vs = graph_with_outer_ids(d)
+  parallel = find_one_sided_parallel(g, input=true, skip=outer_vs)
   if isempty(parallel)
     return d
   end
@@ -174,8 +166,8 @@ Because these reductions are not necessarily unique, only one is performed,
 the last one in topological sort order.
 """
 function output_parallel_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
-  g, input_v, output_v = graph_with_outer_ids(d)
-  parallel = find_one_sided_parallel(g, input=false, skip=[input_v, output_v])
+  g, outer_vs = graph_with_outer_ids(d)
+  parallel = find_one_sided_parallel(g, input=false, skip=outer_vs)
   if isempty(parallel)
     return d
   end
@@ -201,8 +193,7 @@ end
 function series_reduction(Ob::Type, Hom::Type, d::WiringDiagram)
   box_to_expr(v::Int) = to_hom_expr(Ob, Hom, box(d,v))
 
-  g, input_v, output_v = graph_with_outer_ids(d)
-
+  g, (input_v, output_v) = graph_with_outer_ids(d)
   series = find_series(g, source=input_v, sink=output_v)
   composites = map(series) do vs
     exprs = Hom[ box_to_expr(vs[1]) ]
@@ -221,8 +212,7 @@ function transitive_reduction!(Ob::Type, d::WiringDiagram)
   # Compute transitive reduction of underlying graph.
   # First add extra edges for the "invisible wires" corresponding to monoidal
   # units, since transitive reduction can be needed even in this case.
-  g, input_v, output_v = graph_with_outer_ids(d)
-
+  g, (input_v, output_v) = graph_with_outer_ids(d)
   reduced = copy(g)
   for v in box_ids(d)
     if isempty(input_ports(d, v))
@@ -315,6 +305,14 @@ function mmerge_foldl(A, n::Int)
   elseif (n == 1) id(A)
   else create(A) end
 end
+
+function graph_with_outer_ids(d::WiringDiagram)
+  g = graph(d)
+  outer = (incident(g, input_id(d), :box), incident(g, output_id(d), :box))
+  (g, outer)
+end
+
+box_id(g::WiringDiagramGraph, v) = subpart(g, v, :box)
 
 # Graph operations
 ##################
