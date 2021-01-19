@@ -3,7 +3,6 @@
 ```@autodocs
 Modules = [
   Graphs.BasicGraphs,
-  Graphs.EmbeddedGraphs,
   Graphs.PropertyGraphs,
   Graphs.GraphAlgorithms,
 ]
