@@ -11,6 +11,7 @@ using Compat: isnothing, only
 
 using MLStyle: @match
 using PrettyTables: pretty_table
+using StaticArrays: StaticArray
 import Tables, TypedTables
 
 using ...Meta, ...Present
@@ -354,7 +355,7 @@ convention differs from DataFrames but note that the alternative interpretation
 of `[:src,:vattr]` as two independent columns does not even make sense, since
 they have different domains (belong to different tables).
 """
-@inline subpart(acs::ACSet, part, name) = view_slice(subpart(acs, name), part)
+@inline subpart(acs::ACSet, part, name) = view_or_slice(subpart(acs, name), part)
 @inline subpart(acs::ACSet, name::Symbol) = _subpart(acs, Val{name})
 # These accessors must be inlined to ensure that constant names are propagated
 # at compile time, e.g., `subpart(g, :src)` becomes `_subpart(g, Val{:src})`.
@@ -392,8 +393,8 @@ end
 
 @inline Base.getindex(acs::ACSet, args...) = subpart(acs, args...)
 
-@inline view_slice(x::AbstractVector, i) = view(x, i)
-@inline view_slice(x::AbstractVector, i::Int) = x[i]
+@inline view_or_slice(x::AbstractVector, i) = view(x, i)
+@inline view_or_slice(x::AbstractVector, i::Union{Integer,StaticArray}) = x[i]
 
 """ Get superparts incident to part in C-set.
 
@@ -432,7 +433,7 @@ incident(acs::ACSet, part, expr::GATExpr; kw...) =
   if name ∈ CD.hom
     if name ∈ Idxed
       quote
-        indices = view_slice(acs.indices.$name, part)
+        indices = view_or_slice(acs.indices.$name, part)
         copy ? Base.copy.(indices) : indices
       end
     else
