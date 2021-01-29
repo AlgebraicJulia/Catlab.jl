@@ -6,6 +6,7 @@ using Requires
 include("WiringDiagramLayouts.jl")
 include("Graphviz.jl")
 include("GraphvizGraphs.jl")
+include("GraphvizSchemas.jl")
 include("GraphvizWiringDiagrams.jl")
 include("ComposeWiringDiagrams.jl")
 include("TikZ.jl")

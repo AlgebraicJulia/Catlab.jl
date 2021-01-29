@@ -7,7 +7,6 @@ include("BipartiteGraphs.jl")
 include("EmbeddedGraphs.jl")
 include("PropertyGraphs.jl")
 include("GraphAlgorithms.jl")
-include("Presentations.jl")
 
 @reexport using .BasicGraphs
 @reexport using .BipartiteGraphs
