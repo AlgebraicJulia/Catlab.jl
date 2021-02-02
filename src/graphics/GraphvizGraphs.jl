@@ -307,6 +307,7 @@ function to_graphviz_graph(pres::Presentation{Schema})
              index_of.(Ref(pres), nameof.(codom.(homs))))
   for (i,hom) in enumerate(homs)
     set_eprop!(g,i,:label,string(nameof(hom)))
+    set_eprop!(g,i,:len,"2")
   end
   
   add_edges!(g,
@@ -314,9 +315,11 @@ function to_graphviz_graph(pres::Presentation{Schema})
              length(obs) .+ index_of.(Ref(pres), nameof.(codom.(attrs))))
   for (i,attr) in enumerate(attrs)
     set_eprop!(g,i+length(homs),:label,string(nameof(attr)))
+    set_eprop!(g,i+length(homs),:len,"2")
   end
 
   set_gprop!(g,:graph,Dict(:rankdir => "LR"))
+  set_gprop!(g,:prog,"neato")
 
   g
 end
