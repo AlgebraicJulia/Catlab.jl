@@ -303,16 +303,16 @@ function to_graphviz_graph(pres::Presentation{Schema})
   end
 
   add_edges!(g,
-             index_of.(Ref(pres), nameof.(dom.(homs))),
-             index_of.(Ref(pres), nameof.(codom.(homs))))
+             generator_index.(Ref(pres), nameof.(dom.(homs))),
+             generator_index.(Ref(pres), nameof.(codom.(homs))))
   for (i,hom) in enumerate(homs)
     set_eprop!(g,i,:label,string(nameof(hom)))
     set_eprop!(g,i,:len,"2")
   end
   
   add_edges!(g,
-             index_of.(Ref(pres), nameof.(dom.(attrs))),
-             length(obs) .+ index_of.(Ref(pres), nameof.(codom.(attrs))))
+             generator_index.(Ref(pres), nameof.(dom.(attrs))),
+             length(obs) .+ generator_index.(Ref(pres), nameof.(codom.(attrs))))
   for (i,attr) in enumerate(attrs)
     set_eprop!(g,i+length(homs),:label,string(nameof(attr)))
     set_eprop!(g,i+length(homs),:len,"2")

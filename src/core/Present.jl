@@ -9,7 +9,7 @@ in applications like knowledge representation.
 """
 module Present
 export @present, Presentation, generator, generators, has_generator, equations,
-  add_generator!, add_generators!, add_definition!, add_equation!, index_of
+  add_generator!, add_generators!, add_definition!, add_equation!, generator_index
 
 using Base.Meta: ParseError
 using Compat
@@ -119,7 +119,7 @@ end
 
 """ Get the index of a generator
 """
-index_of(pres::Presentation, x::Symbol) = pres.generator_name_index[x].second
+generator_index(pres::Presentation, x::Symbol) = pres.generator_name_index[x].second
 
 # Presentation macro
 ####################
