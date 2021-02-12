@@ -7,7 +7,7 @@ export ACSetView, backing, @compute_prop, @select_where,
 using ...CSetDataStructures
 using ..CSets
 using ..FinSets
-using ...Theories: CatDesc, AttrDesc, dom, codom_num
+using ...Theories: CatDesc, AttrDesc, dom, codom_num, attr
 
 using MLStyle: @match
 using PrettyTables: pretty_table
@@ -28,7 +28,7 @@ struct ACSetView{A <: ACSet, P, Attrs <: NamedTuple} <: AbstractArray{Attrs,1}
   parts :: AbstractVector{Int}
   function ACSetView(backing::A, P::Symbol, parts::AbstractVector{Int}) where
       {CD <: CatDesc,AD <: AttrDesc{CD},Ts <: Tuple, A <: ACSet{CD,AD,Ts}}
-    attr_names = filter(a -> dom(AD,a) == P, AD.attr)
+    attr_names = filter(a -> dom(AD,a) == P, attr(AD))
     attr_types = map(a -> Ts.parameters[codom_num(AD,a)], attr_names)
     row_type = NamedTuple{attr_names, Tuple{attr_types...}}
     new{A,P,row_type}(backing,parts)

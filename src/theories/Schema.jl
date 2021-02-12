@@ -61,16 +61,10 @@ end
 
 CatDescType(pres::Presentation{Schema}) = typeof(CatDesc(pres))
 
-function Base.getproperty(AD::Type{T},i::Symbol) where
-  {Ob,Hom,Dom,Codom,T<:CatDesc{Ob,Hom,Dom,Codom}}
-  @match i begin
-    :ob => Ob
-    :hom => Hom
-    :dom => Dom
-    :codom => Codom
-    _ => getfield(AD,i)
-  end
-end
+ob(::Type{T}) where {Ob,T <: CatDesc{Ob}} = Ob
+hom(::Type{T}) where {Ob,Hom, T <: CatDesc{Ob,Hom}} = Hom
+dom(::Type{T}) where {Ob,Hom,Dom, T <: CatDesc{Ob,Hom,Dom}} = Dom
+codom(::Type{T}) where {Ob,Hom,Dom,Codom, T <: CatDesc{Ob,Hom,Dom,Codom}} = Codom
 
 function ob_num(CD::Type{T}, ob::Symbol) where {Ob,Hom,Dom,Codom, T <: CatDesc{Ob,Hom,Dom,Codom}}
   findfirst(Ob .== ob)::Int
@@ -117,7 +111,7 @@ struct AttrDesc{CD,Data,Attr,ADom,ACodom}
     CD = CatDescType(pres)
     datas, attrs = generators(pres, :Data), generators(pres,:Attr)
     data_syms, attr_syms = nameof.(datas), nameof.(attrs)
-    ob_num = ob -> findfirst(CD.ob .== ob)::Int
+    ob_num = ob -> findfirst(Theories.ob(CD) .== ob)::Int
     data_num = ob -> findfirst(data_syms .== ob)::Int
     new{CD,Tuple(data_syms), Tuple(attr_syms),
         Tuple(@. ob_num(nameof(dom(attrs)))), Tuple(@. data_num(nameof(codom(attrs))))}()
@@ -129,17 +123,12 @@ end
 
 AttrDescType(pres::Presentation{Schema}) = typeof(AttrDesc(pres))
 
-function Base.getproperty(AD::Type{T}, i::Symbol) where
-  {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
-  @match i begin
-    :cd => CD
-    :data => Data
-    :attr => Attr
-    :adom => ADom
-    :acodom => ACodom
-    _ => getfield(AD,i)
-  end
-end
+data(::Type{T}) where {CD,Data, T <: AttrDesc{CD,Data}} = Data
+attr(::Type{T}) where {CD,Data,Attr, T <: AttrDesc{CD,Data,Attr}} = Attr
+adom(::Type{T}) where {CD,Data,Attr,ADom,
+                       T <: AttrDesc{CD,Data,Attr,ADom}} = ADom
+acodom(::Type{T}) where {CD,Data,Attr,ADom,ACodom,
+                         T <: AttrDesc{CD,Data,Attr,ADom,ACodom}} = ACodom
 
 function data_num(AD::Type{T}, data::Symbol) where
   {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
@@ -171,7 +160,7 @@ end
 
 function dom(AD::Type{T}, attr::Union{Int,Symbol}) where
     {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
-  CD.ob[dom_num(AD,attr)]
+  ob(CD)[dom_num(AD,attr)]
 end
 
 function codom(AD::Type{T}, attr::Union{Int,Symbol}) where
