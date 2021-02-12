@@ -15,7 +15,7 @@ using StaticArrays: StaticVector, SVector
 using ...GAT, ..FreeDiagrams, ..Limits, ..FinSets, ..CSets
 import ..FreeDiagrams: apex, legs, feet, left, right, bundle_legs
 import ..CSets: force
-using ...Theories: Category, CatDesc, AttrDesc
+using ...Theories: Category, CatDesc, AttrDesc, data, attr, adom, acodom
 import ...Theories: dom, codom, compose, ⋅, id, otimes, ⊗, munit, braid, σ,
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dunit, dcounit, dagger
 
@@ -191,7 +191,7 @@ See also: [`OpenACSetTypes`](@ref).
 """
 function OpenCSetTypes(::Type{X}, ob₀::Symbol) where
     {CD<:CatDesc, X<:AbstractCSet{CD}}
-  @assert ob₀ ∈ CD.ob
+  @assert ob₀ ∈ ob(CD)
   L = FinSetDiscreteACSet{ob₀, X}
   (StructuredCospanOb{L}, StructuredMulticospan{L})
 end
@@ -205,9 +205,9 @@ See also: [`OpenCSetTypes`](@ref).
 """
 function OpenACSetTypes(::Type{X}, ob₀::Symbol) where
     {CD<:CatDesc, AD<:AttrDesc{CD}, X<:AbstractACSet{CD,AD}}
-  @assert ob₀ ∈ CD.ob
-  type_vars = map(TypeVar, AD.data)
-  L = if any(CD.ob[j] == ob₀ for (i,j) in enumerate(AD.adom))
+  @assert ob₀ ∈ ob(CD)
+  type_vars = map(TypeVar, data(AD))
+  L = if any(ob(CD)[j] == ob₀ for (i,j) in enumerate(adom(AD)))
     A = ACSetTableType(X, ob₀, union_all=true)
     DiscreteACSet{A{type_vars...}, X{type_vars...}}
   else
@@ -271,7 +271,7 @@ end
 function StructuredCospanOb{L}(set::FinSet{Int}; kw...) where
     {CD, A <: AbstractACSet{CD}, L <: DiscreteACSet{A}}
   a = A()
-  add_parts!(a, only(CD.ob), length(set); kw...)
+  add_parts!(a, only(ob(CD)), length(set); kw...)
   StructuredCospanOb{L}(a)
 end
 
@@ -279,15 +279,15 @@ end
 """
 function induced_transformation(a::A, f::FinFunction{Int,Int}) where
     {CD, AD, A <: AbstractACSet{CD,AD}}
-  ob = only(CD.ob)
-  @assert nparts(a, ob) == length(codom(f))
+  ob₀ = only(ob(CD))
+  @assert nparts(a, ob₀) == length(codom(f))
   b = A()
-  add_parts!(b, ob, length(dom(f)))
+  add_parts!(b, ob₀, length(dom(f)))
   f_vec = collect(f)
-  for attr in AD.attr
+  for attr in attr(AD)
     set_subpart!(b, attr, subpart(a, f_vec, attr))
   end
-  ACSetTransformation((; ob => f), b, a)
+  ACSetTransformation((; ob₀ => f), b, a)
 end
 
 """ Apply left adjoint L: FinSet → C-Set to object.

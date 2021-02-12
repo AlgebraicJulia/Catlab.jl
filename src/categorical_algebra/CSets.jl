@@ -14,7 +14,7 @@ using StaticArrays: SVector
 using ...GAT, ..FreeDiagrams, ..Limits, ..Sets, ..FinSets
 import ..Limits: limit, colimit, universal
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force
-using ...Theories: Category, CatDesc, AttrDesc
+using ...Theories: Category, CatDesc, AttrDesc, ob, hom, attr, adom, acodom
 import ...Theories: dom, codom, compose, ⋅, id
 
 # FinSets interop
@@ -32,18 +32,18 @@ FinFunction(X::ACSet, name::Symbol) = fin_function(X, Val{name})
 
 @generated function fin_function(X::ACSet{CD,AD,Ts,Idxed},
     ::Type{Val{name}}) where {CD,AD,Ts,Idxed,name}
-  if name ∈ CD.ob
+  if name ∈ ob(CD)
     quote
       FinFunction(identity, FinSet(X, $(QuoteNode(name))))
     end
-  elseif name ∈ CD.hom
+  elseif name ∈ hom(CD)
     quote
       FinFunction(subpart(X, $(QuoteNode(name))),
                   FinSet(X, $(QuoteNode(codom(CD, name)))),
                   index=$(name ∈ Idxed ? :(X.indices.$name) : false))
     end
   else
-    throw(ArgumentError("$(repr(name)) not in $(CD.ob) or $(CD.hom)"))
+    throw(ArgumentError("$(repr(name)) not in $(ob(CD)) or $(hom(CD))"))
   end
 end
 
@@ -56,18 +56,19 @@ FinDomFunction(X::ACSet, name::Symbol) = fin_dom_function(X, Val{name})
 
 @generated function fin_dom_function(X::ACSet{CD,AD,Ts,Idxed},
     ::Type{Val{name}}) where {CD,AD,Ts,Idxed,name}
-  if name ∈ CD.ob
+  if name ∈ ob(CD)
     quote
       n = nparts(X, $(QuoteNode(name)))
       FinDomFunction(1:n, FinSet(n), TypeSet{Int}())
     end
-  elseif name ∈ CD.hom || name ∈ AD.attr
+  elseif name ∈ hom(CD) || name ∈ attr(AD)
     quote
       FinDomFunction(subpart(X, $(QuoteNode(name))),
                      index=$(name ∈ Idxed ? :(X.indices.$name) : false))
     end
   else
-    throw(ArgumentError("$(repr(name)) not in $(CD.ob), $(CD.hom), or $(AD.attr)"))
+    throw(ArgumentError(
+      "$(repr(name)) not in $(ob(CD)), $(hom(CD)), or $(attr(AD))"))
   end
 end
 
@@ -134,11 +135,11 @@ check the naturality equation on a generating set of morphisms.
 """
 function is_natural(α::ACSetTransformation{CD,AD}) where {CD,AD}
   X, Y = dom(α), codom(α)
-  for (f, c, d) in zip(CD.hom, CD.dom, CD.codom)
+  for (f, c, d) in zip(hom(CD), dom(CD), codom(CD))
     Xf, Yf, α_c, α_d = subpart(X,f), subpart(Y,f), α[c], α[d]
     all(Yf[α_c(i)] == α_d(Xf[i]) for i in eachindex(Xf)) || return false
   end
-  for (f, c) in zip(AD.attr, AD.adom)
+  for (f, c) in zip(attr(AD), adom(AD))
     Xf, Yf, α_c = subpart(X,f), subpart(Y,f), α[c]
     all(Yf[α_c(i)] == Xf[i] for i in eachindex(Xf)) || return false
   end
@@ -198,7 +199,7 @@ function limit(diagram::AbstractFreeDiagram{ACS}) where
   for (c, lim) in pairs(limits)
     add_parts!(Y, c, length(ob(lim)))
   end
-  for (f, c, d) in zip(CD.hom, CD.dom, CD.codom)
+  for (f, c, d) in zip(hom(CD), dom(CD), codom(CD))
     Yfs = map(legs(limits[c]), Xs) do π, X
       compose(π, FinFunction(subpart(X, f), nparts(X, d)))
     end
@@ -223,7 +224,7 @@ function colimit(diagram::AbstractFreeDiagram{ACS}) where
   for (c, colim) in pairs(colimits)
     add_parts!(Y, c, length(ob(colim)))
   end
-  for (f, c, d) in zip(CD.hom, CD.dom, CD.codom)
+  for (f, c, d) in zip(hom(CD), dom(CD), codom(CD))
     Yfs = map(legs(colimits[d]), Xs) do ι, X
       compose(FinFunction(subpart(X, f), nparts(X, d)), ι)
     end
@@ -233,7 +234,7 @@ function colimit(diagram::AbstractFreeDiagram{ACS}) where
   ιs = pack_components(map(legs, colimits), Xs, map(X -> Y, Xs))
 
   # Set data attributes by canonical inclusion from attributes in diagram.
-  for (attr, c, d) in zip(AD.attr, AD.adom, AD.acodom)
+  for (attr, c, d) in zip(attr(AD), adom(AD), acodom(AD))
     T = Ts.parameters[d]
     data = Vector{Union{Some{T},Nothing}}(nothing, nparts(Y, c))
     for (ι, X) in zip(ιs, Xs)
@@ -328,18 +329,18 @@ When the functor is the identity, this function is equivalent to
 """
 function migrate!(Y::ACSet{CD, AD}, X::ACSet,
                   FOb::AbstractDict, FHom::AbstractDict) where {CD, AD}
-  CD.ob ⊆ keys(FOb)     || error("Every object in $CD must be a key in $FOb")
-  CD.hom ⊆ keys(FHom)   || error("Every hom in $CD must be a key in $FHom")
-  AD.attr ⊆ keys(FHom)  || error("Every attribute in $AD must be a key in $FHom")
+  ob(CD) ⊆ keys(FOb)     || error("Every object in $CD must be a key in $FOb")
+  hom(CD) ⊆ keys(FHom)   || error("Every morphism in $CD must be a key in $FHom")
+  attr(AD) ⊆ keys(FHom)  || error("Every attribute in $AD must be a key in $FHom")
   
-  partsY = NamedTuple{CD.ob}(map(CD.ob) do obY
+  partsY = NamedTuple{ob(CD)}(map(ob(CD)) do obY
     add_parts!(Y, obY, nparts(X, FOb[obY]))
   end)
-  for homY in CD.hom
+  for homY in hom(CD)
     domY, codomY = dom(CD, homY), codom(CD, homY)
     set_subpart!(Y, partsY[domY], homY, partsY[codomY][subpart(X, FHom[homY])])
   end
-  for attrY in AD.attr
+  for attrY in attr(AD)
     domY = dom(AD, attrY)
     set_subpart!(Y, partsY[domY], attrY, subpart(X, FHom[attrY]))
   end
