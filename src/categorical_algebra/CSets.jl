@@ -369,7 +369,7 @@ function parse_json_acset(type::Type{T}, input::Dict) where T <: AbstractACSet
   for l ∈ values(input)
     for (i, j) ∈ enumerate(l)
       for (k,v) ∈ j
-        vtype = valtype(out[Symbol(k)])
+        vtype = eltype(out[Symbol(k)])
         if !(typeof(v) <: vtype)
           v = vtype(v)
         end
