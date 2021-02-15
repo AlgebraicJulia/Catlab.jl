@@ -18,7 +18,9 @@ f = FinFunction(g, :src)
 @test collect(f) == 2:4
 @test is_indexed(f)
 
-@test g == deserialize(serialize(g), Graph)
+write_json_acset(g, "graph.json")
+@test g == read_json_acset(Graph, "graph.json")
+rm("graph.json")
 
 f = FinDomFunction(g, :E)
 @test collect(f) == 1:3
@@ -34,7 +36,9 @@ f = FinDomFunction(g, :weight)
 @test codom(f) == TypeSet(Float64)
 @test collect(f) == [0.5, 1.5]
 
-@test g == deserialize(serialize(g), WeightedGraph{Float64})
+write_json_acset(g, "graph.json")
+@test g == read_json_acset(WeightedGraph{Float64}, "graph.json")
+rm("graph.json")
 
 # C-set morphisms
 #################
@@ -253,7 +257,9 @@ coprod = ob(coproduct(g, h))
 @test subpart(coprod, :vlabel) == [:u, :v, :u]
 @test subpart(coprod, :elabel) == [:e, :f]
 
-@test g == deserialize(serialize(g), LabeledGraph{Symbol})
+write_json_acset(g, "graph.json")
+@test g == read_json_acset(LabeledGraph{Symbol}, "graph.json")
+rm("graph.json")
 
 # Pushout of labeled graph.
 g0 = LabeledGraph{Symbol}()
@@ -321,7 +327,9 @@ add_parts!(wg, :E, 4, src=[1,2,3,4], tgt=[2,3,4,1], weight=[101, 102, 103, 100])
   Dict(:V => :X, :E => :X),
   Dict(:src => id(X), :tgt => :Φ, :weight => [:Φ, :label]))
 
-@test ldds == deserialize(serialize(ldds), LabeledDDS{Int})
+write_json_acset(ldds, "graph.json")
+@test ldds == read_json_acset(LabeledDDS{Int}, "graph.json")
+rm("graph.json")
 
 
 end

@@ -2,7 +2,7 @@
 """
 module CSets
 export ACSetTransformation, CSetTransformation, components, force, is_natural,
-  migrate!, serialize, deserialize
+  migrate!, generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
 
 using Compat: isnothing
 
@@ -17,9 +17,6 @@ import ..Limits: limit, colimit, universal
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force
 using ...Theories: Category, CatDesc, AttrDesc
 import ...Theories: dom, codom, compose, ⋅, id
-
-import Base.convert
-Base.convert(::Type{Symbol}, str::String) = Symbol(str)
 
 # FinSets interop
 #################
@@ -358,27 +355,49 @@ end
 
 """ Serialize an ACSet object to a JSON string
 """
-serialize(x::ACSet) = JSON.json(x.tables)
+function generate_json_acset(x::T) where T <: AbstractACSet
+  JSON.json(x.tables)
+end
 
 """ Deserialize a dictionary from a parsed JSON string to an object of the given ACSet type
 """
-function deserialize(input::Dict, type)
-    out = type()
-    for (k,v) ∈ input
-        add_parts!(out, Symbol(k), length(v))
-    end
-    for l ∈ values(input)
-        for (i, j) ∈ enumerate(l)
-            for (k,v) ∈ j
-                set_subpart!(out, i, Symbol(k), v)
-            end
+function parse_json_acset(type::Type{T}, input::Dict) where T <: AbstractACSet
+  out = type()
+  for (k,v) ∈ input
+    add_parts!(out, Symbol(k), length(v))
+  end
+  for l ∈ values(input)
+    for (i, j) ∈ enumerate(l)
+      for (k,v) ∈ j
+        vtype = valtype(out[Symbol(k)])
+        if !(typeof(v) <: vtype)
+          v = vtype(v)
         end
+        set_subpart!(out, i, Symbol(k), v)
+      end
     end
-    out
+  end
+  out
 end
 
 """ Deserialize a JSON string to an object of the given ACSet type
 """
-deserialize(input::String, type) = deserialize(JSON.parse(input), type)
+function parse_json_acset(type::Type{T}, input::String) where T <: AbstractACSet
+  parse_json_acset(type, JSON.parse(input))
+end
+
+""" Read a JSON file to an object of the given ACSet type
+"""
+function read_json_acset(type::Type{T}, input::String) where T <: AbstractACSet
+  parse_json_acset(type, open(f->read(f, String), input))
+end
+
+""" Serialize an ACSet object to a JSON file
+"""
+function write_json_acset(x::T, fname::AbstractString) where T <: AbstractACSet
+  open(string(fname), "w") do f
+    write(f, generate_json_acset(x))
+  end
+end
 
 end
