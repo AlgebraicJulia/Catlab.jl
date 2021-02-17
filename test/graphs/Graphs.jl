@@ -10,10 +10,6 @@ end
   include("BipartiteGraphs.jl")
 end
 
-@testset "EmbeddedGraphs" begin
-  include("EmbeddedGraphs.jl")
-end
-
 @testset "PropertyGraphs" begin
   include("PropertyGraphs.jl")
 end

@@ -4,6 +4,7 @@ using Test
 using Catlab.WiringDiagrams.DirectedWiringDiagrams
 import Catlab.WiringDiagrams.DirectedWiringDiagrams: validate_ports
 using Catlab.WiringDiagrams.MonoidalDirectedWiringDiagrams: compose
+using Catlab.Graphs, Catlab.CategoricalAlgebra.CSets
 
 # For testing purposes, check equality of port symbols.
 function validate_ports(source_port::Symbol, target_port::Symbol)
@@ -70,12 +71,39 @@ add_wire!(d, (gv,1) => (output_id(d),1))
 @test nwires(d) == 3
 @test has_wire(d, fv, gv)
 @test has_wire(d, (fv,1) => (gv,1))
+@test has_wire(d, input_id(d), fv) && !has_wire(d, input_id(d), gv)
+@test has_wire(d, gv, output_id(d)) && !has_wire(d, fv, output_id(d))
+@test !has_wire(d, input_id(d), output_id(d))
 @test_throws ErrorException add_wire!(d, (gv,1) => (fv,1))
 @test wires(d) == map(Wire, [
   (input_id(d),1) => (fv,1),
   (fv,1) => (gv,1),
   (gv,1) => (output_id(d),1),
 ])
+
+d_orig = copy(d)
+add_wires!(d, [fill((input_id(d),1) => (fv,1), 2);
+               fill((fv,1) => (gv,1), 2);
+               fill((gv,1) => (output_id(d),1), 2)])
+rem_wire!(d, (fv,1) => (gv,1))
+@test nwires(d, fv, gv) == 2
+rem_wires!(d, fv, gv)
+@test nwires(d, fv, gv) == 0
+rem_wire!(d, (input_id(d),1) => (fv,1))
+@test nwires(d, input_id(d), fv) == 2
+rem_wires!(d, input_id(d), fv)
+@test nwires(d, input_id(d), fv) == 0
+rem_wire!(d, (gv,1) => (output_id(d),1))
+@test nwires(d, gv, output_id(d)) == 2
+rem_wires!(d, gv, output_id(d))
+@test nwires(d, gv, output_id(d)) == 0
+d = WiringDiagram(A, A)
+add_wires!(d, fill((input_id(d),1) => (output_id(d),1), 3))
+rem_wire!(d, (input_id(d),1) => (output_id(d),1))
+@test nwires(d, input_id(d), output_id(d)) == 2
+rem_wires!(d, input_id(d), output_id(d))
+@test nwires(d, input_id(d), output_id(d)) == 0
+d = d_orig
 
 # Shallow copies.
 d_copy = copy(d)
@@ -84,11 +112,20 @@ rem_boxes!(d_copy, [fv,gv])
 @test nwires(d) == 3
 
 # Graph properties.
+d_graph = graph(d)
+@test length(vertices(d_graph)) == nboxes(d) + 2
+@test length(edges(d_graph)) == nwires(d)
+@test subpart(d_graph, :box) == box_ids(d) ∪ outer_ids(d)
+
 @test Set(all_neighbors(d, fv)) == Set([input_id(d), gv])
 @test Set(all_neighbors(d, gv)) == Set([fv, output_id(d)])
 @test neighbors(d, fv) == [gv]
 @test outneighbors(d, fv) == [gv]
+@test outneighbors(d, input_id(d)) == [fv]
+@test isempty(outneighbors(d, output_id(d)))
 @test inneighbors(d, gv) == [fv]
+@test inneighbors(d, output_id(d)) == [gv]
+@test isempty(inneighbors(d, input_id(d)))
 @test wires(d, input_id(d)) == [ Wire((input_id(d),1) => (fv,1)) ]
 @test wires(d, fv) == map(Wire, [
   ((input_id(d),1) => (fv,1)),
@@ -98,12 +135,6 @@ rem_boxes!(d_copy, [fv,gv])
 @test out_wires(d, Port(fv,OutputPort,1)) == [ Wire((fv,1) => (gv,1)) ]
 @test in_wires(d, gv) == [ Wire((fv,1) => (gv,1)) ]
 @test in_wires(d, Port(gv,InputPort,1)) == [ Wire((fv,1) => (gv,1)) ]
-
-rem_wires!(d, fv, gv)
-@test nwires(d) == 2
-@test !has_wire(d, fv, gv)
-rem_wire!(d, (input_id(d),1) => (fv,1))
-@test wires(d) == [ Wire((gv,1) => (output_id(d),1)) ]
 
 # Induced subgraph.
 d = WiringDiagram(A,D)

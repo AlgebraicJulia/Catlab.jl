@@ -11,12 +11,15 @@ using Compat: isnothing, only
 
 using MLStyle: @match
 using PrettyTables: pretty_table
+using StaticArrays: StaticArray
 import Tables, TypedTables
 
 using ...Meta, ...Present
 using ...Syntax: GATExpr, args
-using ...Theories: Schema, FreeSchema, dom, codom, codom_num, data_num, attrs_by_codom,
-  CatDesc, CatDescType, AttrDesc, AttrDescType, SchemaType
+using ...Theories: Schema, FreeSchema, SchemaType,
+  CatDesc, CatDescType, ob, hom, dom, codom, codom_num,
+  AttrDesc, AttrDescType, data, attr, adom, acodom, data_num, attrs_by_codom
+
 
 # Data types
 ############
@@ -136,16 +139,16 @@ end
 @generated function ACSetTableUnionAll(::Type{X}, ::Type{Val{ob₀}}) where
     {CD<:CatDesc, AD<:AttrDesc{CD}, X<:AbstractACSet{CD,AD}, ob₀}
   CD₀, AD₀ = ACSetTableDesc(CD, AD, ob₀)
-  :(ACSet{$CD₀,$AD₀,Tuple{$(AD.data...)},(),()} where {$(AD.data...)})
+  :(ACSet{$CD₀,$AD₀,Tuple{$(data(AD)...)},(),()} where {$(data(AD)...)})
 end
 
 function ACSetTableDesc(::Type{CD}, ::Type{AD}, ob₀::Symbol) where
     {CD<:CatDesc, AD<:AttrDesc{CD}}
-  @assert ob₀ ∈ CD.ob
-  attrs₀ = [ i for (i,j) in enumerate(AD.adom) if CD.ob[j] == ob₀ ]
-  adom = Tuple(ones(Int, length(attrs₀)))
+  @assert ob₀ ∈ ob(CD)
+  attrs₀ = [ i for (i,j) in enumerate(adom(AD)) if ob(CD)[j] == ob₀ ]
+  adom₀ = Tuple(ones(Int, length(attrs₀)))
   CD₀ = CatDesc{(ob₀,),(),(),()}
-  AD₀ = AttrDesc{CD₀,AD.data,AD.attr[attrs₀],adom,AD.acodom[attrs₀]}
+  AD₀ = AttrDesc{CD₀,data(AD),attr(AD)[attrs₀],adom₀,acodom(AD)[attrs₀]}
   (CD₀, AD₀)
 end
 
@@ -191,9 +194,9 @@ function make_indices(::Type{CD}, AD::Type{<:AttrDesc{CD}},
   # TODO: Could be `@generated` for faster initialization of C-sets.
   NamedTuple{Idxed}(Tuple(map(Idxed) do name
     IndexType = name ∈ UniqueIdxed ? Int : Vector{Int}
-    if name ∈ CD.hom
+    if name ∈ hom(CD)
       Vector{IndexType}()
-    elseif name ∈ AD.attr
+    elseif name ∈ attr(AD)
       Dict{Ts.parameters[codom_num(AD,name)],IndexType}()
     else
       error("Cannot index $name: not a morphism or an attribute")
@@ -204,12 +207,12 @@ end
 function make_tables(Table::Type, ::Type{CD}, AD::Type{<:AttrDesc{CD}},
                      Ts::Type{<:Tuple}) where {CD}
   # TODO: Could be `@generated` for faster initialization of C-sets.
-  cols = NamedTuple{CD.ob}((names=Symbol[], types=Type[]) for ob in CD.ob)
-  for hom in CD.hom
+  cols = NamedTuple{ob(CD)}((names=Symbol[], types=Type[]) for _ in ob(CD))
+  for hom in hom(CD)
     col = cols[dom(CD,hom)]
     push!(col.names, hom); push!(col.types, Int)
   end
-  for attr in AD.attr
+  for attr in attr(AD)
     col = cols[dom(AD,attr)]
     push!(col.names, attr); push!(col.types, Ts.parameters[codom_num(AD,attr)])
   end
@@ -244,12 +247,12 @@ function Base.show(io::IO, acs::T) where {CD,AD,Ts,T<:AbstractACSet{CD,AD,Ts}}
   print(io, T <: AbstractCSet ? "CSet" : "ACSet")
   println(io, "(")
   join(io, vcat(
-    [ "  $ob = 1:$(nparts(acs,ob))" for ob in CD.ob ],
-    [ "  $data = $(Ts.parameters[i])" for (i,data) in enumerate(AD.data) ],
+    [ "  $ob = 1:$(nparts(acs,ob))" for ob in ob(CD) ],
+    [ "  $data = $(Ts.parameters[i])" for (i, data) in enumerate(data(AD)) ],
     [ "  $hom : $(dom(CD,i)) → $(codom(CD,i)) = $(subpart(acs,hom))"
-      for (i,hom) in enumerate(CD.hom) ],
+      for (i, hom) in enumerate(hom(CD)) ],
     [ "  $attr : $(dom(AD,i)) → $(codom(AD,i)) = $(subpart(acs,attr))"
-      for (i,attr) in enumerate(AD.attr) ],
+      for (i, attr) in enumerate(attr(AD)) ],
   ), ",\n")
   print(io, ")")
 end
@@ -315,7 +318,7 @@ has_part(acs::ACSet, type::Symbol) = _has_part(acs, Val{type})
 
 @generated function _has_part(::ACSet{CD,AD}, ::Type{Val{type}}) where
     {CD,AD,type}
-  type ∈ CD.ob || type ∈ AD.data
+  type ∈ ob(CD) || type ∈ data(AD)
 end
 
 has_part(acs::ACSet, type::Symbol, part::Int) = 1 <= part <= nparts(acs, type)
@@ -328,7 +331,7 @@ has_subpart(acs::ACSet, name::Symbol) = _has_subpart(acs, Val{name})
 
 @generated function _has_subpart(::ACSet{CD,AD}, ::Type{Val{name}}) where
     {CD,AD,name}
-  name ∈ CD.hom || name ∈ AD.attr
+  name ∈ hom(CD) || name ∈ attr(AD)
 end
 
 """ Get subpart of part in C-set.
@@ -354,7 +357,7 @@ convention differs from DataFrames but note that the alternative interpretation
 of `[:src,:vattr]` as two independent columns does not even make sense, since
 they have different domains (belong to different tables).
 """
-@inline subpart(acs::ACSet, part, name) = view_slice(subpart(acs, name), part)
+@inline subpart(acs::ACSet, part, name) = view_or_slice(subpart(acs, name), part)
 @inline subpart(acs::ACSet, name::Symbol) = _subpart(acs, Val{name})
 # These accessors must be inlined to ensure that constant names are propagated
 # at compile time, e.g., `subpart(g, :src)` becomes `_subpart(g, Val{:src})`.
@@ -381,19 +384,19 @@ subpart_names(expr::GATExpr{:compose}) =
 
 @generated function _subpart(acs::ACSet{CD,AD,Ts}, ::Type{Val{name}}) where
     {CD,AD,Ts,name}
-  if name ∈ CD.hom
+  if name ∈ hom(CD)
     :(acs.tables.$(dom(CD,name)).$name)
-  elseif name ∈ AD.attr
+  elseif name ∈ attr(AD)
     :(acs.tables.$(dom(AD,name)).$name)
   else
-    throw(ArgumentError("$(repr(name)) not in $(CD.hom) or $(AD.attr)"))
+    throw(ArgumentError("$(repr(name)) not in $(hom(CD)) or $(attr(AD))"))
   end
 end
 
 @inline Base.getindex(acs::ACSet, args...) = subpart(acs, args...)
 
-@inline view_slice(x::AbstractVector, i) = view(x, i)
-@inline view_slice(x::AbstractVector, i::Int) = x[i]
+@inline view_or_slice(x::AbstractVector, i) = view(x, i)
+@inline view_or_slice(x::AbstractVector, i::Union{Integer,StaticArray}) = x[i]
 
 """ Get superparts incident to part in C-set.
 
@@ -429,16 +432,16 @@ incident(acs::ACSet, part, expr::GATExpr; kw...) =
 
 @generated function _incident(acs::ACSet{CD,AD,Ts,Idxed}, part,
     ::Type{Val{name}}; copy::Bool=false) where {CD,AD,Ts,Idxed,name}
-  if name ∈ CD.hom
+  if name ∈ hom(CD)
     if name ∈ Idxed
       quote
-        indices = view_slice(acs.indices.$name, part)
+        indices = view_or_slice(acs.indices.$name, part)
         copy ? Base.copy.(indices) : indices
       end
     else
       :(broadcast_findall(part, acs.tables.$(dom(CD,name)).$name))
     end
-  elseif name ∈ AD.attr
+  elseif name ∈ attr(AD)
     if name ∈ Idxed
       quote
         indices = get_data_index.(Ref(acs.indices.$name), part)
@@ -448,7 +451,7 @@ incident(acs::ACSet, part, expr::GATExpr; kw...) =
       :(broadcast_findall(part, acs.tables.$(dom(AD,name)).$name))
     end
   else
-    throw(ArgumentError("$(repr(name)) not in $(CD.hom) or $(AD.attr)"))
+    throw(ArgumentError("$(repr(name)) not in $(hom(CD)) or $(attr(AD))"))
   end
 end
 
@@ -491,8 +494,8 @@ end
 
 @generated function _add_parts!(acs::ACSet{CD,AD,Ts,Idxed}, ::Type{Val{ob}},
                                 n::Int) where {CD,AD,Ts,Idxed,ob}
-  out_homs = filter(hom -> dom(CD, hom) == ob, CD.hom)
-  indexed_in_homs = filter(hom -> codom(CD, hom) == ob && hom ∈ Idxed, CD.hom)
+  out_homs = filter(hom -> dom(CD, hom) == ob, hom(CD))
+  indexed_in_homs = filter(hom -> codom(CD, hom) == ob && hom ∈ Idxed, hom(CD))
   quote
     if n == 0; return 1:0 end
     nparts = Tables.rowcount(acs.tables.$ob) + n
@@ -540,7 +543,7 @@ _set_subpart!(acs::ACSet, ::Type{Name}, subpart) where Name =
 
 @generated function _set_subpart!(acs::ACSet{CD,AD,Ts,Idxed}, part::Int,
     ::Type{Val{name}}, subpart) where {CD,AD,Ts,Idxed,name}
-  if name ∈ CD.hom
+  if name ∈ hom(CD)
     ob, codom_ob = dom(CD, name), codom(CD, name)
     if name ∈ Idxed
       quote
@@ -560,7 +563,7 @@ _set_subpart!(acs::ACSet, ::Type{Name}, subpart) where Name =
         acs.tables.$ob.$name[part] = subpart
       end
     end
-  elseif name ∈ AD.attr
+  elseif name ∈ attr(AD)
     ob = dom(AD, name)
     if name ∈ Idxed
       quote
@@ -575,7 +578,7 @@ _set_subpart!(acs::ACSet, ::Type{Name}, subpart) where Name =
       :(acs.tables.$ob.$name[part] = subpart)
     end
   else
-    throw(ArgumentError("$(repr(name)) not in $(CD.hom) or $(AD.attr)"))
+    throw(ArgumentError("$(repr(name)) not in $(hom(CD)) or $(attr(AD))"))
   end
 end
 
@@ -627,9 +630,9 @@ rem_part!(acs::ACSet, type::Symbol, part::Int) =
 
 @generated function _rem_part!(acs::ACSet{CD,AD,Ts,Idxed}, ::Type{Val{ob}},
                                part::Int) where {CD,AD,Ts,Idxed,ob}
-  in_homs = filter(hom -> codom(CD, hom) == ob, CD.hom)
-  indexed_out_homs = filter(hom -> dom(CD, hom) == ob && hom ∈ Idxed, CD.hom)
-  indexed_attrs = filter(attr -> dom(AD, attr) == ob && attr ∈ Idxed, AD.attr)
+  in_homs = filter(hom -> codom(CD, hom) == ob, hom(CD))
+  indexed_out_homs = filter(hom -> dom(CD, hom) == ob && hom ∈ Idxed, hom(CD))
+  indexed_attrs = filter(attr -> dom(AD, attr) == ob && attr ∈ Idxed, attr(AD))
   quote
     last_part = Tables.rowcount(acs.tables.$ob)
     @assert 1 <= part <= last_part
@@ -691,7 +694,7 @@ will have undefined subparts.
 """
 @generated function copy_parts!(to::ACSet{CD},
                                 from::ACSet{CD′}; kw...) where {CD, CD′}
-  obs = intersect(CD.ob, CD′.ob)
+  obs = intersect(ob(CD), ob(CD′))
   :(copy_parts!(to, from, isempty(kw) ? $(Tuple(obs)) : (; kw...)))
 end
 
@@ -702,8 +705,8 @@ copy_parts!(to::ACSet, from::ACSet, parts::NamedTuple) =
 
 @generated function _copy_parts!(to::ACSet{CD}, from::ACSet{CD′},
                                  parts::NamedTuple{obs}) where {CD, CD′, obs}
-  @assert obs ⊆ intersect(CD.ob, CD′.ob)
-  homs = intersect(CD.hom, CD′.hom)
+  @assert obs ⊆ intersect(ob(CD), ob(CD′))
+  homs = intersect(hom(CD), hom(CD′))
   homs = filter(homs) do hom
     c, c′, d, d′ = dom(CD,hom), dom(CD′,hom), codom(CD,hom), codom(CD′,hom)
     c == c′ && d == d′ && c ∈ obs && d ∈ obs
@@ -737,7 +740,7 @@ See also: [`copy_parts!`](@ref).
 """
 @generated function copy_parts_only!(to::ACSet{CD},
                                      from::ACSet{CD′}; kw...) where {CD, CD′}
-  obs = intersect(CD.ob, CD′.ob)
+  obs = intersect(ob(CD), ob(CD′))
   :(copy_parts_only!(to, from, isempty(kw) ? $(Tuple(obs)) : (; kw...)))
 end
 
@@ -748,8 +751,8 @@ copy_parts_only!(to::ACSet, from::ACSet, parts::NamedTuple) =
 
 @generated function _copy_parts_only!(to::ACSet{CD,AD}, from::ACSet{CD′,AD′},
     parts::NamedTuple{obs}) where {CD, AD, CD′, AD′, obs}
-  @assert obs ⊆ intersect(CD.ob, CD′.ob)
-  attrs = intersect(AD.attr, AD′.attr)
+  @assert obs ⊆ intersect(ob(CD), ob(CD′))
+  attrs = intersect(attr(AD), attr(AD′))
   attrs = filter(attrs) do attr
     ob, ob′ = dom(AD, attr), dom(AD′, attr)
     ob == ob′ && ob ∈ obs
@@ -866,9 +869,9 @@ function init_acset(T::Type{<:ACSet{CD,AD,Ts}},body) where {CD <: CatDesc, AD <:
       Expr(:(=), lhs, rhs) => (lhs,rhs)
       _ => error("Every line of `@acset` must be an assignment")
     end
-    if lhs in CD.ob
+    if lhs in ob(CD)
       push!(code.args, :(add_parts!(acs, $(Expr(:quote, lhs)), $(rhs))))
-    elseif lhs in CD.hom || lhs in AD.attr
+    elseif lhs in hom(CD) || lhs in attr(AD)
       push!(code.args, :(set_subpart!(acs, :, $(Expr(:quote, lhs)), $(rhs))))
     end
   end
@@ -891,13 +894,12 @@ function sortunique!(x)
 end
 
 @generated function _map(acs::AT, fns::NamedTuple{map_over}) where
-    {map_over,AT<:ACSet}
-  CD,AD,Ts,Idxed,UniqIdxed = AT.parameters[1:5]
+    {map_over, CD,AD,Ts,Idxed,UniqIdxed, AT<:ACSet{CD,AD,Ts,Idxed,UniqIdxed}}
   map_over = [map_over...]
-  attrs = filter(x -> x ∈ AD.attr, map_over)
-  data = filter(x -> x ∈ AD.data, map_over)
+  attrs = filter(x -> x ∈ attr(AD), map_over)
+  data_names = filter(x -> x ∈ data(AD), map_over)
   abc = attrs_by_codom(AD)
-  data_attrs = vcat(map(d -> abc[d], data)...)
+  data_attrs = vcat(map(d -> abc[d], data_names)...)
   all_attrs = sortunique!(Symbol[attrs; data_attrs])
   affected_data = sortunique!(map(a -> codom(AD,a), all_attrs))
   needed_attrs = sortunique!(vcat(map(d -> abc[d], affected_data)...))
@@ -912,7 +914,7 @@ end
       :($a = (fns[$(Expr(:quote,d))]).(subpart(acs, $qa)))
     end
   end
-  data_types = map(enumerate(AD.data)) do (i,d)
+  data_types = map(enumerate(data(AD))) do (i,d)
     if d ∈ affected_data
       quote
         T = eltype(fn_vals[$(Expr(:quote, abc[d][1]))])
@@ -929,13 +931,13 @@ end
     fn_vals = $(Expr(:tuple, fn_applications...))
     new_Ts = Tuple{$(data_types...)}
     new_acs = ACSet{$CD,$AD,new_Ts,$Idxed,$UniqIdxed}()
-    $(Expr(:block, map(CD.ob) do ob
+    $(Expr(:block, map(ob(CD)) do ob
            :(add_parts!(new_acs,$(Expr(:quote,ob)),nparts(acs,$(Expr(:quote,ob)))))
       end...))
-    $(Expr(:block, map(CD.hom) do hom
+    $(Expr(:block, map(hom(CD)) do hom
            :(set_subpart!(new_acs,$(Expr(:quote,hom)),subpart(acs,$(Expr(:quote,hom)))))
       end...))
-    $(Expr(:block, map(AD.attr) do attr
+    $(Expr(:block, map(attr(AD)) do attr
         qa = Expr(:quote, attr)
         if attr ∈ all_attrs
            :(set_subpart!(new_acs,$qa,fn_vals[$qa]))

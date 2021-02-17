@@ -7,6 +7,8 @@ using Compat: isnothing
 using StaticArrays: StaticVector, SVector
 
 using ...Graphs
+using ...Present
+using ...Theories
 import ..Graphviz
 
 # Property graphs
@@ -38,10 +40,8 @@ function parse_graphviz(doc::AbstractDict)::AbstractPropertyGraph
     props = Dict{Symbol,Any}(
       Symbol(k) => node[k] for k in node_keys if haskey(node, k))
     props[:position] = parse_point(node["pos"])
-    props[:size] = 72*SVector(
-      parse(Float64, node["width"]),
-      parse(Float64, node["height"])
-    )
+    props[:size] = 72*SVector(parse(Float64, node["width"]),
+                              parse(Float64, node["height"]))
     add_vertex!(graph, props)
   end
 
@@ -277,5 +277,51 @@ function to_graphviz(g::AbstractHalfEdgeGraph;
   end
   to_graphviz(pg)
 end
+
+# Schemas
+#########
+
+
+""" Construct a graph representing the schema
+"""
+function to_graphviz_graph(pres::Presentation{Schema})
+  obs,homs,datas,attrs = generators.(Ref(pres), [:Ob,:Hom,:Data,:Attr])
+  g = PropertyGraph{Any}()
+
+  add_vertices!(g,length(obs))
+  for (i,ob) in enumerate(obs)
+    set_vprop!(g,i,:label,string(nameof(ob)))
+    set_vprop!(g,i,:shape,"plain")
+    set_vprop!(g,i,:margin,"2")
+  end
+
+  add_vertices!(g,length(datas))
+  for (i,data) in enumerate(datas)
+    set_vprop!(g,i+length(obs),:label,string(nameof(data)))
+  end
+
+  add_edges!(g,
+             generator_index.(Ref(pres), nameof.(dom.(homs))),
+             generator_index.(Ref(pres), nameof.(codom.(homs))))
+  for (i,hom) in enumerate(homs)
+    set_eprop!(g,i,:label,string(nameof(hom)))
+    set_eprop!(g,i,:len,"2")
+  end
+  
+  add_edges!(g,
+             generator_index.(Ref(pres), nameof.(dom.(attrs))),
+             length(obs) .+ generator_index.(Ref(pres), nameof.(codom.(attrs))))
+  for (i,attr) in enumerate(attrs)
+    set_eprop!(g,i+length(homs),:label,string(nameof(attr)))
+    set_eprop!(g,i+length(homs),:len,"2")
+  end
+
+  set_gprop!(g,:graph,Dict(:rankdir => "LR"))
+  set_gprop!(g,:prog,"neato")
+
+  g
+end
+
+to_graphviz(pres::Presentation{Schema}) = to_graphviz(to_graphviz_graph(pres))
 
 end

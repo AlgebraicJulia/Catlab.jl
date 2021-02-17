@@ -4,7 +4,6 @@ using Reexport
 
 include("BasicGraphs.jl")
 include("BipartiteGraphs.jl")
-include("EmbeddedGraphs.jl")
 include("PropertyGraphs.jl")
 include("GraphAlgorithms.jl")
 
