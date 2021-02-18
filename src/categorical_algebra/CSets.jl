@@ -2,11 +2,12 @@
 """
 module CSets
 export ACSetTransformation, CSetTransformation, components, force, is_natural,
-  migrate!
+  migrate!, generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
 
 using Compat: isnothing
 
 using AutoHashEquals
+using JSON
 using Reexport
 using StaticArrays: SVector
 
@@ -351,6 +352,53 @@ function (::Type{T})(X::ACSet, FOb::AbstractDict,
                      FHom::AbstractDict) where T <: AbstractACSet
   Y = T()
   migrate!(Y, X, FOb, FHom)
+end
+
+""" Serialize an ACSet object to a JSON string
+"""
+function generate_json_acset(x::T) where T <: AbstractACSet
+  JSON.json(x.tables)
+end
+
+""" Deserialize a dictionary from a parsed JSON string to an object of the given ACSet type
+"""
+function parse_json_acset(type::Type{T}, input::Dict) where T <: AbstractACSet
+  out = type()
+  for (k,v) ∈ input
+    add_parts!(out, Symbol(k), length(v))
+  end
+  for l ∈ values(input)
+    for (i, j) ∈ enumerate(l)
+      for (k,v) ∈ j
+        vtype = eltype(out[Symbol(k)])
+        if !(typeof(v) <: vtype)
+          v = vtype(v)
+        end
+        set_subpart!(out, i, Symbol(k), v)
+      end
+    end
+  end
+  out
+end
+
+""" Deserialize a JSON string to an object of the given ACSet type
+"""
+function parse_json_acset(type::Type{T}, input::String) where T <: AbstractACSet
+  parse_json_acset(type, JSON.parse(input))
+end
+
+""" Read a JSON file to an object of the given ACSet type
+"""
+function read_json_acset(type::Type{T}, input::String) where T <: AbstractACSet
+  parse_json_acset(type, open(f->read(f, String), input))
+end
+
+""" Serialize an ACSet object to a JSON file
+"""
+function write_json_acset(x::T, fname::AbstractString) where T <: AbstractACSet
+  open(string(fname), "w") do f
+    write(f, generate_json_acset(x))
+  end
 end
 
 end

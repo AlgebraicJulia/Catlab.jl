@@ -5,6 +5,14 @@ using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra,
   Catlab.CategoricalAlgebra.FinSets
 using Catlab.Graphs.BasicGraphs: TheoryGraph
 
+function roundtrip_json_acset(x::T) where T <: AbstractACSet
+  mktempdir() do dir
+    path = joinpath(dir, "acset.json")
+    write_json_acset(x, path)
+    read_json_acset(T, path)
+  end
+end
+
 # FinSets interop
 #################
 
@@ -17,6 +25,7 @@ f = FinFunction(g, :src)
 @test codom(f) == FinSet(6)
 @test collect(f) == 2:4
 @test is_indexed(f)
+@test roundtrip_json_acset(g) == g
 
 f = FinDomFunction(g, :E)
 @test collect(f) == 1:3
@@ -31,6 +40,7 @@ add_edges!(g, 1:2, 2:3, weight=[0.5, 1.5])
 f = FinDomFunction(g, :weight)
 @test codom(f) == TypeSet(Float64)
 @test collect(f) == [0.5, 1.5]
+@test roundtrip_json_acset(g) == g
 
 # C-set morphisms
 #################
@@ -248,6 +258,7 @@ add_edge!(h, 1, 1, elabel=:f)
 coprod = ob(coproduct(g, h))
 @test subpart(coprod, :vlabel) == [:u, :v, :u]
 @test subpart(coprod, :elabel) == [:e, :f]
+@test roundtrip_json_acset(g) == g
 
 # Pushout of labeled graph.
 g0 = LabeledGraph{Symbol}()
@@ -280,7 +291,7 @@ h = Graph(3)
 add_parts!(h, :E, 3, src = [1,2,3], tgt = [2,3,1])
 
 # Identity data migration.
-@test h == Graph(h, Dict(:V => :V, :E => :E), 
+@test h == Graph(h, Dict(:V => :V, :E => :E),
                     Dict(:src => :src, :tgt => :tgt))
 
 # Migrate DDS → Graph.
@@ -314,6 +325,6 @@ add_parts!(wg, :E, 4, src=[1,2,3,4], tgt=[2,3,4,1], weight=[101, 102, 103, 100])
 @test wg == WeightedGraph{Int}(ldds,
   Dict(:V => :X, :E => :X),
   Dict(:src => id(X), :tgt => :Φ, :weight => [:Φ, :label]))
-  
+@test roundtrip_json_acset(ldds) == ldds
 
 end
