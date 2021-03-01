@@ -1,4 +1,6 @@
 """ Lay out and draw wiring diagrams using Graphviz.
+
+This module requires Graphviz v2.42 or higher.
 """
 module GraphvizWiringDiagrams
 export to_graphviz, graphviz_layout
@@ -54,8 +56,8 @@ end
 
 """ Draw a wiring diagram using Graphviz.
 
-The input `f` can also be a morphism expression, which is converted into a
-wiring diagram.
+The input can also be a morphism expression, in which case it is first converted
+into a wiring diagram. This function requires Graphviz v2.42 or higher.
 
 # Arguments
 - `graph_name="G"`: name of Graphviz digraph
