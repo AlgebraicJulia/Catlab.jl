@@ -32,11 +32,16 @@ theory for weak monoidal categories later.
   munit()::Ob
 
   # Monoid axioms.
+  #
+  # The last two axioms are the naturality equations associated with the left
+  # and right unitors, in the strict case where they are identities.
   (A ⊗ B) ⊗ C == A ⊗ (B ⊗ C) ⊣ (A::Ob, B::Ob, C::Ob)
-  A ⊗ munit() == A ⊣ (A::Ob)
   munit() ⊗ A == A ⊣ (A::Ob)
+  A ⊗ munit() == A ⊣ (A::Ob)
   (f ⊗ g) ⊗ h == f ⊗ (g ⊗ h) ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
                                 f::(A → X), g::(B → Y), h::(C → Z))
+  id(munit()) ⊗ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
+  f ⊗ id(munit()) == f ⊣ (A::Ob, B::Ob, f::(A → B))
 
   # Functorality axioms.
   ((f ⊗ g) ⋅ (h ⊗ k) == (f ⋅ h) ⊗ (g ⋅ k)
