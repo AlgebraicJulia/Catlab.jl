@@ -22,7 +22,7 @@ of the sets given by the profunctor.
 
   (compose(f, compose(g, a)) == compose(compose(f, g), a)
     ⊣ (A::Ob, B::Ob, C::Ob, X::Data, f::Hom(A,B), g::Hom(B,C), a::Attr(C, X)))
-  compose(id(A), a) == a ⊣ (A::Ob, X::Ob, a::Attr(A,X))
+  compose(id(A), a) == a ⊣ (A::Ob, X::Data, a::Attr(A,X))
 end
 
 abstract type SchemaExpr{T} <: GATExpr{T} end
