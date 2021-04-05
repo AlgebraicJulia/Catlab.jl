@@ -68,6 +68,21 @@ The first of these was Freyd’s essentially algebraic theories. In an essential
 
 Later, Cartmell proposed generalized algebraic theories, which solves the same problem but in a different way. Rather than having partial operations, you have total operations but on dependent types (types that are parameterized by values). So now the composition operation has signature `compose(f::Hom(A,B), g::Hom(B,C))::Hom(A,C) where (A::Ob, B::Ob, C::Ob)`  exactly as appears in Catlab. This is closer to the way that mathematicians actually think and write about categories. For example, if you look at the definitions of category, functor, and natural transformation in [Emily Riehl’s textbook](http://www.math.jhu.edu/~eriehl/context/), you will see that they are already essentially in the form of a GAT, whereas they require translation into an essentially algebraic theory. Nevertheless, GATs and essentially algebraic theories have the same expressive power, at least in their standard set-based semantics. GATs provide a version of the computer scientist's type theory that plays well with the mathematician's algebra, thus, providing a perfect opportunity for computer algebra systems.
 
+## Overview of Key Components
+
+There are several core parts to the Catlab design, we start with a brief overview of each one
+
+1. [Catlab.GAT](@ref gats) provides `@theory` - defines a new Generalized Algebraic Theory these are algebraic versions of what a logician would call a logical theory. They support equational reasoning and a limited version of dependent types. Namely the dependent types must also form an algebraic theory and you are only allowed to have equations between terms of the same type. Catlab ships with many predefined theories for important concepts like Categories and "doctrines" of categories like Symmetric Monoidal Categories. These predefined theories are defined in Catlab.Theories, but you can make your own with the `@theory` macro.
+
+2. [Catlab.Syntax](@ref syntax-systems) provides initial algebras for a GAT, which are declared with `@syntax`. These are represented as a typed version of Expr that allows you to customize the normalization procedure for example in a FreeCategory, the composition operation which is a unital and associative binary operation is normalized into lists. This allows you to write algorithms on Syntax trees that use differnt styles of simplification. The only styles available now are support for normalizing unital and associate operations like comoposition and a monoidal product.
+
+3. [`@instance`](@ref) associates Julia data structures as semantics for a GAT. This is known as functorial semantics, where you associate every type in the GAT with a type in Julia and every term constructor in the GAT to a julia function (possibly a struct constructor). These functions and types must satisfy the axioms that are encoded in the GAT. 
+
+4. [`@present`](@ref) enumerates a finite set of generators for a model of the GAT just like you would write out a group (model of the theory of groups) as list of generators and relations, the presentation lets you enumerate the objects and morphisms that generate a category.
+
+
+
+
 ## Table of Contents
 
 ```@contents
