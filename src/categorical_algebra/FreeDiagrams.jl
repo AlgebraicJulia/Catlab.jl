@@ -90,8 +90,22 @@ A common special case of [`Multispan`](@ref). See also [`Cospan`](@ref).
 """
 const Span{Ob,Hom} = SMultispan{2,Ob,Hom}
 
+"""    apex(span::Multispan)
+
+returns the object at the top of the multispan, which is the domain of all the legs.
+"""
 apex(span::Multispan) = span.apex
+
+"""    legs(span::Multispan)
+
+returns the collection of legs in the multspan, which are the morphisms sharing a common domain.
+"""
 legs(span::Multispan) = span.legs
+
+"""    feet(span::Multispan)
+
+returns the collection of feet in the multspan, which are the codomains of the legs.
+"""
 feet(span::Multispan) = map(codom, span.legs)
 left(span::Span) = span.legs[1]
 right(span::Span) = span.legs[2]
