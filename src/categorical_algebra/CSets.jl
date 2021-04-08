@@ -87,18 +87,19 @@ attributes, the data types are assumed to be fixed. Thus, the naturality axiom
 for data attributes is a commutative triangle, rather than a commutative square.
 """
 @auto_hash_equals struct ACSetTransformation{CD <: CatDesc, AD <: AttrDesc{CD},
-    Comp <: NamedTuple, Dom <: AbstractACSet{CD,AD}}
+    Comp <: NamedTuple, Dom <: AbstractACSet{CD,AD}, Codom <: AbstractACSet{CD,AD}}
   components::Comp
   dom::Dom
-  codom::Dom
+  codom::Codom
 
-  function ACSetTransformation{CD,AD}(components::NamedTuple, X::Dom, Y::Dom) where
-      {Ob, CD <: CatDesc{Ob}, AD <: AttrDesc{CD}, Dom <: AbstractACSet{CD,AD}}
+  function ACSetTransformation{CD,AD}(components::NamedTuple, X::Dom, Y::Codom) where
+      {Ob, CD <: CatDesc{Ob}, AD <: AttrDesc{CD},
+       Dom <: AbstractACSet{CD,AD}, Codom <: AbstractACSet{CD,AD}}
     @assert keys(components) ⊆ Ob
     coerced_components = NamedTuple{Ob}(
       coerce_component(ob, get(components, ob) do; Int[] end, X, Y)
       for ob in Ob)
-    new{CD,AD,typeof(coerced_components),Dom}(coerced_components, X, Y)
+    new{CD,AD,typeof(coerced_components),Dom,Codom}(coerced_components, X, Y)
   end
 end
 
@@ -111,19 +112,20 @@ function coerce_component(ob::Symbol, f, X, Y)::FinFunction{Int,Int}
   FinFunction(f, nparts(X,ob), nparts(Y,ob))
 end
 
-ACSetTransformation(components::NamedTuple, X::Dom, Y::Dom) where
-    {CD <: CatDesc, AD <: AttrDesc{CD}, Dom <: AbstractACSet{CD,AD}} =
+ACSetTransformation(components, X::Dom, Y::Codom) where
+    {CD, AD, Dom <: AbstractACSet{CD,AD}, Codom <: AbstractACSet{CD,AD}} =
   ACSetTransformation{CD,AD}(components, X, Y)
-ACSetTransformation(X::Dom, Y::Dom; components...) where
-    {CD <: CatDesc, AD <: AttrDesc{CD}, Dom <: AbstractACSet{CD,AD}} =
+ACSetTransformation(X::Dom, Y::Codom; components...) where
+    {CD, AD, Dom <: AbstractACSet{CD,AD}, Codom <: AbstractACSet{CD,AD}} =
   ACSetTransformation{CD,AD}((; components...), X, Y)
 
-const CSetTransformation{CD, Comp, Dom <: AbstractCSet{CD}} =
-  ACSetTransformation{CD,AttrDesc{CD,(),(),(),()},Comp,Dom}
+const CSetTransformation{CD, Comp,
+                         Dom <: AbstractCSet{CD}, Codom <: AbstractCSet{CD}} =
+  ACSetTransformation{CD,AttrDesc{CD,(),(),(),()},Comp,Dom,Codom}
 
-CSetTransformation(components, X::Dom, Y::Dom) where Dom <: AbstractCSet =
+CSetTransformation(components, X::AbstractCSet, Y::AbstractCSet) =
   ACSetTransformation(components, X, Y)
-CSetTransformation(X::Dom, Y::Dom; components...) where Dom <: AbstractCSet =
+CSetTransformation(X::AbstractCSet, Y::AbstractCSet; components...) =
   ACSetTransformation(X, Y; components...)
 
 components(α::ACSetTransformation) = α.components
