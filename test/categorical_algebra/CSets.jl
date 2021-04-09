@@ -238,21 +238,21 @@ add_edges!(h, [1,2,3], [2,3,4], weight=[1.0,2.0,3.0])
 # Colimits
 #---------
 
-@present TheoryLabeledGraph <: TheoryGraph begin
+@present TheoryVELabeledGraph <: TheoryGraph begin
   Label::Data
   vlabel::Attr(V,Label)
   elabel::Attr(E,Label)
 end
-const LabeledGraph = ACSetType(TheoryLabeledGraph, index=[:src,:tgt])
+const VELabeledGraph = ACSetType(TheoryVELabeledGraph, index=[:src,:tgt])
 
 # Initial labeled graph.
-@test ob(initial(LabeledGraph{Symbol})) == LabeledGraph{Symbol}()
+@test ob(initial(VELabeledGraph{Symbol})) == VELabeledGraph{Symbol}()
 
 # Coproduct of labeled graphs.
-g = LabeledGraph{Symbol}()
+g = VELabeledGraph{Symbol}()
 add_vertices!(g, 2, vlabel=[:u,:v])
 add_edge!(g, 1, 2, elabel=:e)
-h = LabeledGraph{Symbol}()
+h = VELabeledGraph{Symbol}()
 add_vertex!(h, vlabel=:u)
 add_edge!(h, 1, 1, elabel=:f)
 coprod = ob(coproduct(g, h))
@@ -261,7 +261,7 @@ coprod = ob(coproduct(g, h))
 @test roundtrip_json_acset(g) == g
 
 # Pushout of labeled graph.
-g0 = LabeledGraph{Symbol}()
+g0 = VELabeledGraph{Symbol}()
 add_vertex!(g0, vlabel=:u)
 α = ACSetTransformation((V=[1], E=Int[]), g0, g)
 β = ACSetTransformation((V=[1], E=Int[]), g0, h)
@@ -275,6 +275,72 @@ colim = pushout(α, β)
 α′ = ACSetTransformation(V=[2], E=Int[], g0, g)
 @test !is_natural(α′) # Vertex labels don't match.
 @test_throws ErrorException pushout(α′, β)
+
+# Finding C-set morphisms
+#########################
+
+# Graphs
+#-------
+g, h = Graph(3), Graph(4)
+add_edges!(g, 1:2, 2:3)
+add_edges!(h, 1:3, 2:4)
+@test homomorphisms(g, h) == [CSetTransformation((V=[1,2,3], E=[1,2]), g, h),
+                              CSetTransformation((V=[2,3,4], E=[2,3]), g, h)]
+I = ob(terminal(Graph))
+@test homomorphism(g, I) == CSetTransformation((V=[1,1,1], E=[1,1]), g, I)
+@test isnothing(homomorphism(I, h))
+
+# Symmetic graphs
+#-----------------
+
+g, h = SymmetricGraph(4), SymmetricGraph(4)
+add_edges!(g, 1:3, 2:4)
+add_edges!(h, 2:4, 1:3)
+αs = homomorphisms(g, h)
+@test all(is_natural(α) for α in αs)
+@test length(αs) == 16
+@test count(allunique(collect(α[:V])) for α in αs) == 2
+
+# Graph colorability via symmetric graph homomorphism.
+
+K₂, K₃ = SymmetricGraph(2), SymmetricGraph(3)
+add_edge!(K₂, 1, 2)
+add_edges!(K₃, [1,2,3], [2,3,1])
+
+function cycle_graph(n::Int)
+  cycle = SymmetricGraph(n)
+  add_edges!(cycle, 1:n, circshift(1:n, -1))
+  cycle
+end
+
+# The 5-cycle has chromatic number 3 but the 6-cycle has chromatic number 2.
+C₅, C₆ = cycle_graph(5), cycle_graph(6)
+@test isnothing(homomorphism(C₅, K₂))
+α = homomorphism(C₅, K₃)
+@test !isnothing(α) && is_natural(α)
+α = homomorphism(C₆, K₂)
+@test !isnothing(α) && is_natural(α)
+
+# Labeled graphs
+#---------------
+
+@present TheoryLabeledGraph <: TheoryGraph begin
+  Label::Data
+  label::Attr(V,Label)
+end
+const LabeledGraph = ACSetType(TheoryLabeledGraph, index=[:src,:tgt])
+
+function labeled_cycle(labels::AbstractVector{T}) where T
+  g, n = LabeledGraph{T}(), length(labels)
+  add_vertices!(g, n, label=labels)
+  add_edges!(g, 1:n, circshift(1:n, -1))
+  g
+end
+
+g, h = labeled_cycle([:a,:b,:c,:d]), labeled_cycle([:c,:d,:a,:b])
+@test homomorphism(g, h) == ACSetTransformation((V=[3,4,1,2], E=[3,4,1,2]), g, h)
+h = labeled_cycle([:a,:b,:d,:c])
+@test isnothing(homomorphism(g, h))
 
 # Functorial data migration
 ###########################

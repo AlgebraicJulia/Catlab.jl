@@ -1,8 +1,9 @@
 """ Categories of C-sets and attributed C-sets.
 """
 module CSets
-export ACSetTransformation, CSetTransformation, components, force, is_natural,
-  migrate!, generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
+export ACSetTransformation, CSetTransformation,
+  components, force, is_natural, homomorphism, homomorphisms, migrate!,
+  generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
 
 using Compat: isnothing
 
@@ -78,11 +79,12 @@ end
 
 """ Transformation between attributed C-sets.
 
-A morphism of C-sets is a natural transformation: a transformation between
-functors C -> Set satisfying the naturality axiom for all morphisms in C. This
-struct records the data of a transformation; it does not enforce naturality.
+A homomorphism of C-sets is a natural transformation: a transformation between
+functors C → Set satisfying the naturality axiom for all morphisms in C. This
+struct records the data of a transformation; it does not enforce naturality, but
+see [`is_natural`](@ref).
 
-The transformation has a component for every object in C. When C-sets have
+A C-set transformation has a component for every object in C. When C-sets have
 attributes, the data types are assumed to be fixed. Thus, the naturality axiom
 for data attributes is a commutative triangle, rather than a commutative square.
 """
@@ -151,6 +153,178 @@ end
 
 force(α::ACSetTransformation) =
   ACSetTransformation(map(force, components(α)), dom(α), codom(α))
+
+# Finding C-set transformations
+###############################
+
+""" Find a homomorphism between two attributed ``C``-sets.
+
+Returns `nothing` if no homomorphism exists. For many categories ``C``, the
+``C``-set homomorphism problem is NP-complete and thus this procedure generally
+runs in exponential time. It works best when the domain object is small.
+
+This procedure uses the classic backtracking search algorithm for a
+combinatorial constraint satisfaction problem (CSP). As is well known, the
+homomorphism problem for relational databases is equivalent to CSP. Since the
+C-set homomorphism problem is "the same" as the database homomorphism problem
+(insofar as attributed C-sets are "the same" as relational databases), it is
+also equivalent to CSP. Backtracking search for CSP is described in many
+computer science textbooks, such as (Russell & Norvig 2010, *Artificial
+Intelligence*, Third Ed., Chapter 6: Constraint satisfaction problems, esp.
+Algorithm 6.5). In our implementation, the search tree is ordered using the
+popular heuristic of "minimum remaining values" (MRV), also known as "most
+constrained variable."
+
+See also: [`homomorphisms`](@ref).
+"""
+function homomorphism(X::AbstractACSet, Y::AbstractACSet)
+  result = backtracking_search(X, Y, findall=false)
+  isnothing(result) ? nothing : ACSetTransformation(result, X, Y)
+end
+
+""" Find all homomorphisms between two attributed ``C``-sets.
+
+This function is at least as expensive as [`homomorphism`](@ref) and when no
+homomorphisms exist, it is exactly as expensive. See that function for more
+information about the algorithms involved.
+"""
+function homomorphisms(X::AbstractACSet, Y::AbstractACSet)
+  results = backtracking_search(X, Y, findall=true)
+  map(components -> ACSetTransformation(components, X, Y), results)
+end
+
+""" Internal state for backtracking search for ACSet homomorphisms.
+"""
+struct BacktrackingState{CD <: CatDesc, AD <: AttrDesc{CD},
+    Comp <: NamedTuple, Dom <: AbstractACSet{CD,AD}, Codom <: AbstractACSet{CD,AD}}
+  """ The current assignment, a partially-defined homomorphism of ACSets. """
+  assignment::Comp
+  """ Depth in search tree at which assignments were made. """
+  assignment_depth::Comp
+  """ Domain ACSet: the "variables" in the CSP. """
+  dom::Dom
+  """ Codomain ACSet: the "values" in the CSP. """
+  codom::Codom
+  """ Results: always `nothing` if finding one homomorphism,
+      a list of completed assignments if finding all homomorphisms.
+  """
+  results::Union{Nothing,Vector{Comp}}
+end
+
+function backtracking_search(X::AbstractACSet{CD}, Y::AbstractACSet{CD};
+                             findall::Bool=false) where {Ob, CD<:CatDesc{Ob}}
+  assignment = NamedTuple{Ob}(zeros(Int, nparts(X, ob)) for ob in Ob)
+  assignment_depth = map(copy, assignment)
+  results = findall ? typeof(assignment)[] : nothing
+  state = BacktrackingState(assignment, assignment_depth, X, Y, results)
+  backtracking_search(state, 0)
+end
+
+function backtracking_search(state::BacktrackingState, depth::Int)
+  # Choose the next unassigned element.
+  mrv, mrv_elem = find_mrv_elem(state, depth)
+  if isnothing(mrv_elem)
+    # No unassigned elements remain, so we have a complete assignment.
+    return isnothing(state.results) ? state.assignment :
+      push!(state.results, map(copy, state.assignment))
+  elseif mrv == 0
+    # An element has no allowable assignment, so we must backtrack.
+    return state.results
+  end
+  c, x = mrv_elem
+
+  # Attempt all assignments of the chosen element.
+  Y = state.codom
+  for y in parts(Y, c)
+    if assign_elem!(state, depth, c, x, y)
+      result = backtracking_search(state, depth + 1)
+      if isnothing(state.results) && !isnothing(result)
+        return result
+      end
+    end
+    unassign_elem!(state, depth, c, x)
+  end
+  state.results
+end
+
+""" Find an unassigned element having the minimum remaining values (MRV).
+"""
+function find_mrv_elem(state::BacktrackingState{CD}, depth) where CD
+  mrv, mrv_elem = Inf, nothing
+  Y = state.codom
+  for c in ob(CD), (x, y) in enumerate(state.assignment[c])
+    y == 0 || continue
+    n = count(can_assign_elem(state, depth, c, x, y) for y in parts(Y, c))
+    if n < mrv
+      mrv, mrv_elem = n, (c, x)
+    end
+  end
+  (mrv, mrv_elem)
+end
+
+""" Check whether element (c,x) can be assigned to (c,y) in current assignment.
+"""
+function can_assign_elem(state::BacktrackingState, depth, c, x, y)
+  # Although this method is nonmutating overall, we must temporarily mutate the
+  # backtracking state, for several reasons. First, an assignment can be a
+  # consistent at each individual subpart but not consistent for all subparts
+  # simultaneously (consider trying to assign a self-loop to an edge with
+  # distinct vertices). Moreover, in schemas with non-trivial endomorphisms, we
+  # must keep track of which elements we have visited to avoid looping forever.
+  ok = assign_elem!(state, depth, c, x, y)
+  unassign_elem!(state, depth, c, x)
+  return ok
+end
+
+""" Attempt to assign element (c,x) to (c,y) in the current assignment.
+
+Returns whether the assignment succeeded. Note that the backtracking state can
+be mutated even when the assignment fails.
+"""
+function assign_elem!(state::BacktrackingState{CD,AD}, depth, c, x, y) where {CD, AD}
+  y′ = state.assignment[c][x]
+  y′ == y && return true  # If x is already assigned to y, return immediately.
+  y′ == 0 || return false # Otherwise, x must be unassigned.
+
+  # Check attributes first to fail as quickly as possible.
+  X, Y = state.dom, state.codom
+  for f in out_attr(AD, Val{c})
+    subpart(X,x,f) == subpart(Y,y,f) || return false
+  end
+
+  # Make the assignment and recursively assign subparts.
+  state.assignment[c][x] = y
+  state.assignment_depth[c][x] = depth
+  for (f, d) in out_hom(CD, Val{c})
+    assign_elem!(state, depth, d,
+                 subpart(X,x,f), subpart(Y,y,f)) || return false
+  end
+  return true
+end
+
+""" Unassign the element (c,x) in the current assignment.
+"""
+function unassign_elem!(state::BacktrackingState{CD}, depth, c, x) where CD
+  state.assignment[c][x] == 0 && return
+  x_depth = state.assignment_depth[c][x]
+  @assert x_depth <= depth
+  if x_depth == depth
+    X = state.dom
+    state.assignment[c][x] = 0
+    state.assignment_depth[c][x] = 0
+    for (f, d) in out_hom(CD, Val{c})
+      unassign_elem!(state, depth, d, subpart(X,x,f))
+    end
+  end
+end
+
+@generated function out_hom(::Type{CD}, ::Type{Val{c}}) where {CD<:CatDesc, c}
+  Expr(:tuple, (:($(QuoteNode(f)) => $(QuoteNode(codom(CD, f))))
+                for f in hom(CD) if dom(CD, f) == c)...)
+end
+@generated function out_attr(::Type{AD}, ::Type{Val{c}}) where {AD<:AttrDesc, c}
+  Expr(:tuple, (QuoteNode(f) for f in attr(AD) if dom(AD, f) == c)...)
+end
 
 # Category of C-sets
 ####################
