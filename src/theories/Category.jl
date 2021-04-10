@@ -63,9 +63,10 @@ end
   actl(f::Hom(A,B), x::Psh(B))::Psh(A) ⊣ (A::Ob, B::Ob)
 
   # action equations
-  actl(f , actr(g , x)) == actl((f ⋅ g) , x)  ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::Psh(C))
+  actl(f , actl(g , x)) == actl((f ⋅ g) , x)  ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::Psh(C))
   actl(id(A) , x) == x  ⊣ (A::Ob, x::Psh(A))
 end
+
 
 # Convenience constructors
 compose(fs::Vector) = foldl(compose, fs)
