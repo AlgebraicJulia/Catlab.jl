@@ -175,10 +175,13 @@ Algorithm 6.5). In our implementation, the search tree is ordered using the
 popular heuristic of "minimum remaining values" (MRV), also known as "most
 constrained variable."
 
+Set the keyword argument `monic=true` to restrict to monomorphisms:
+homomorphisms whose components are all injective functions.
+
 See also: [`homomorphisms`](@ref).
 """
-function homomorphism(X::AbstractACSet, Y::AbstractACSet)
-  result = backtracking_search(X, Y, findall=false)
+function homomorphism(X::AbstractACSet, Y::AbstractACSet; monic::Bool=false)
+  result = backtracking_search(X, Y, findall=false, monic=monic)
   isnothing(result) ? nothing : ACSetTransformation(result, X, Y)
 end
 
@@ -188,35 +191,46 @@ This function is at least as expensive as [`homomorphism`](@ref) and when no
 homomorphisms exist, it is exactly as expensive. See that function for more
 information about the algorithms involved.
 """
-function homomorphisms(X::AbstractACSet, Y::AbstractACSet)
-  results = backtracking_search(X, Y, findall=true)
+function homomorphisms(X::AbstractACSet, Y::AbstractACSet; monic::Bool=false)
+  results = backtracking_search(X, Y, findall=true, monic=monic)
   map(components -> ACSetTransformation(components, X, Y), results)
 end
 
 """ Internal state for backtracking search for ACSet homomorphisms.
 """
 struct BacktrackingState{CD <: CatDesc, AD <: AttrDesc{CD},
-    Comp <: NamedTuple, Dom <: AbstractACSet{CD,AD}, Codom <: AbstractACSet{CD,AD}}
+    Assign <: NamedTuple, Dom <: AbstractACSet{CD,AD}, Codom <: AbstractACSet{CD,AD}}
   """ The current assignment, a partially-defined homomorphism of ACSets. """
-  assignment::Comp
+  assignment::Assign
   """ Depth in search tree at which assignments were made. """
-  assignment_depth::Comp
+  assignment_depth::Assign
+  """ Inverse assignment if finding a monomorphism, otherwise `nothing`. """
+  inv_assignment::Union{Nothing,Assign}
   """ Domain ACSet: the "variables" in the CSP. """
   dom::Dom
   """ Codomain ACSet: the "values" in the CSP. """
   codom::Codom
-  """ Results: always `nothing` if finding one homomorphism,
-      a list of completed assignments if finding all homomorphisms.
+  """ List of completed assignments if finding all homomorphisms;
+  always `nothing` if finding one homomorphism.
   """
-  results::Union{Nothing,Vector{Comp}}
+  results::Union{Nothing,Vector{Assign}}
 end
 
 function backtracking_search(X::AbstractACSet{CD}, Y::AbstractACSet{CD};
-                             findall::Bool=false) where {Ob, CD<:CatDesc{Ob}}
-  assignment = NamedTuple{Ob}(zeros(Int, nparts(X, ob)) for ob in Ob)
+    findall::Bool=false, monic::Bool=false) where {Ob, CD<:CatDesc{Ob}}
+  # Fail early if no monic homomorphism exists on cardinality grounds.
+  Assign = NamedTuple{Ob,Tuple{(Vector{Int} for c in Ob)...}}
+  results = findall ? Assign[] : nothing
+  if monic && !all(nparts(X,c) <= nparts(Y,c) for c in Ob)
+    return results
+  end
+
+  assignment = NamedTuple{Ob}(zeros(Int, nparts(X, c)) for c in Ob)
   assignment_depth = map(copy, assignment)
-  results = findall ? typeof(assignment)[] : nothing
-  state = BacktrackingState(assignment, assignment_depth, X, Y, results)
+  inv_assignment = monic ?
+    NamedTuple{Ob}(zeros(Int, nparts(Y, c)) for c in Ob) : nothing
+  state = BacktrackingState(assignment, assignment_depth, inv_assignment,
+                            X, Y, results)
   backtracking_search(state, 0)
 end
 
@@ -285,6 +299,10 @@ function assign_elem!(state::BacktrackingState{CD,AD}, depth, c, x, y) where {CD
   y′ = state.assignment[c][x]
   y′ == y && return true  # If x is already assigned to y, return immediately.
   y′ == 0 || return false # Otherwise, x must be unassigned.
+  if !isnothing(state.inv_assignment) && state.inv_assignment[c][y] != 0
+    # Also, y must unassigned in the inverse assignment.
+    return false
+  end
 
   # Check attributes first to fail as quickly as possible.
   X, Y = state.dom, state.codom
@@ -295,6 +313,9 @@ function assign_elem!(state::BacktrackingState{CD,AD}, depth, c, x, y) where {CD
   # Make the assignment and recursively assign subparts.
   state.assignment[c][x] = y
   state.assignment_depth[c][x] = depth
+  if !isnothing(state.inv_assignment)
+    state.inv_assignment[c][y] = x
+  end
   for (f, d) in out_hom(CD, Val{c})
     assign_elem!(state, depth, d,
                  subpart(X,x,f), subpart(Y,y,f)) || return false
@@ -306,10 +327,14 @@ end
 """
 function unassign_elem!(state::BacktrackingState{CD}, depth, c, x) where CD
   state.assignment[c][x] == 0 && return
-  x_depth = state.assignment_depth[c][x]
-  @assert x_depth <= depth
-  if x_depth == depth
+  assign_depth = state.assignment_depth[c][x]
+  @assert assign_depth <= depth
+  if assign_depth == depth
     X = state.dom
+    if !isnothing(state.inv_assignment)
+      y = state.assignment[c][x]
+      state.inv_assignment[c][y] = 0
+    end
     state.assignment[c][x] = 0
     state.assignment_depth[c][x] = 0
     for (f, d) in out_hom(CD, Val{c})
