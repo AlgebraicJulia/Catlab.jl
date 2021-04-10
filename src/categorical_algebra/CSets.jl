@@ -1,8 +1,8 @@
 """ Categories of C-sets and attributed C-sets.
 """
 module CSets
-export ACSetTransformation, CSetTransformation,
-  components, force, is_natural, homomorphism, homomorphisms, migrate!,
+export ACSetTransformation, CSetTransformation, components, force, is_natural,
+  homomorphism, homomorphisms, isomorphism, isomorphisms, migrate!,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
 
 using Compat: isnothing
@@ -178,7 +178,7 @@ constrained variable."
 Set the keyword argument `monic=true` to restrict to monomorphisms:
 homomorphisms whose components are all injective functions.
 
-See also: [`homomorphisms`](@ref).
+See also: [`homomorphisms`](@ref), [`isomorphism`](@ref).
 """
 function homomorphism(X::AbstractACSet, Y::AbstractACSet; monic::Bool=false)
   result = backtracking_search(X, Y, findall=false, monic=monic)
@@ -188,11 +188,29 @@ end
 """ Find all homomorphisms between two attributed ``C``-sets.
 
 This function is at least as expensive as [`homomorphism`](@ref) and when no
-homomorphisms exist, it is exactly as expensive. See that function for more
-information about the algorithms involved.
+homomorphisms exist, it is exactly as expensive.
 """
 function homomorphisms(X::AbstractACSet, Y::AbstractACSet; monic::Bool=false)
   results = backtracking_search(X, Y, findall=true, monic=monic)
+  map(components -> ACSetTransformation(components, X, Y), results)
+end
+
+""" Find an isomorphism between two attributed ``C``-sets, if one exists.
+
+See [`homomorphism`](@ref) for more information about the algorithms involved.
+"""
+function isomorphism(X::AbstractACSet, Y::AbstractACSet)
+  result = backtracking_search(X, Y, findall=false, iso=true)
+  isnothing(result) ? nothing : ACSetTransformation(result, X, Y)
+end
+
+""" Find all isomorphisms between two attributed ``C``-sets.
+
+This function is at least as expensive as [`isomorphism`](@ref) and when no
+homomorphisms exist, it is exactly as expensive.
+"""
+function isomorphisms(X::AbstractACSet, Y::AbstractACSet)
+  results = backtracking_search(X, Y, findall=true, iso=true)
   map(components -> ACSetTransformation(components, X, Y), results)
 end
 
@@ -217,12 +235,17 @@ struct BacktrackingState{CD <: CatDesc, AD <: AttrDesc{CD},
 end
 
 function backtracking_search(X::AbstractACSet{CD}, Y::AbstractACSet{CD};
-    findall::Bool=false, monic::Bool=false) where {Ob, CD<:CatDesc{Ob}}
-  # Fail early if no monic homomorphism exists on cardinality grounds.
+                             monic::Bool=false, iso::Bool=false,
+                             findall::Bool=false) where {Ob, CD<:CatDesc{Ob}}
+  # Fail early if no monic/iso exists on cardinality grounds.
   Assign = NamedTuple{Ob,Tuple{(Vector{Int} for c in Ob)...}}
   results = findall ? Assign[] : nothing
-  if monic && !all(nparts(X,c) <= nparts(Y,c) for c in Ob)
-    return results
+  if iso
+    all(nparts(X,c) == nparts(Y,c) for c in Ob) || return results
+    # Injections between finite sets are bijections, so reduce to that case.
+    monic = true
+  elseif monic
+    all(nparts(X,c) <= nparts(Y,c) for c in Ob) || return results
   end
 
   assignment = NamedTuple{Ob}(zeros(Int, nparts(X, c)) for c in Ob)

@@ -286,6 +286,8 @@ add_edges!(g, 1:2, 2:3)
 add_edges!(h, 1:3, 2:4)
 @test homomorphisms(g, h) == [CSetTransformation((V=[1,2,3], E=[1,2]), g, h),
                               CSetTransformation((V=[2,3,4], E=[2,3]), g, h)]
+@test isnothing(isomorphism(g, h))
+
 I = ob(terminal(Graph))
 @test homomorphism(g, I) == CSetTransformation((V=[1,1,1], E=[1,1]), g, I)
 @test isnothing(homomorphism(g, I, monic=true))
@@ -300,9 +302,12 @@ add_edges!(h, 2:4, 1:3)
 αs = homomorphisms(g, h)
 @test all(is_natural(α) for α in αs)
 @test length(αs) == 16
-αs = homomorphisms(g, h, monic=true)
+αs = isomorphisms(g, h)
 @test length(αs) == 2
 @test map(α -> collect(α[:V]), αs) == [[1,2,3,4], [4,3,2,1]]
+g = SymmetricGraph(3)
+add_edges!(g, 1:2, 2:3)
+@test length(homomorphisms(g, h, monic=true)) == 4
 
 # Graph colorability via symmetric graph homomorphism.
 
