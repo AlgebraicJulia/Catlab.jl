@@ -46,11 +46,11 @@ end
   Psh(dom::Ob)::TYPE
 
   # functoriality = covariant action
-  actr(x::Psh(A), f::Hom(A,B))::Psh(B) ⊣ (A::Ob, B::Ob)
+  act(x::Psh(A), f::Hom(A,B))::Psh(B) ⊣ (A::Ob, B::Ob)
 
   # action equations
-  actr(actr(x , f) , g) == actr(x , (f ⋅ g))  ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::Psh(A))
-  actr(x , id(A)) == x  ⊣ (A::Ob, x::Psh(A))
+  act(act(x , f) , g) == act(x , (f ⋅ g))  ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::Psh(A))
+  act(x , id(A)) == x  ⊣ (A::Ob, x::Psh(A))
 end
 
 @theory Presheaf{Ob,Hom,Psh} <: Category{Ob,Hom} begin
@@ -60,13 +60,12 @@ end
   Psh(codom::Ob)::TYPE
 
   # functoriality = contravariant action
-  actl(f::Hom(A,B), x::Psh(B))::Psh(A) ⊣ (A::Ob, B::Ob)
+  coact(f::Hom(A,B), x::Psh(B))::Psh(A) ⊣ (A::Ob, B::Ob)
 
   # action equations
-  actl(f , actl(g , x)) == actl((f ⋅ g) , x)  ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::Psh(C))
-  actl(id(A) , x) == x  ⊣ (A::Ob, x::Psh(A))
+  coact(f , coact(g , x)) == coact((f ⋅ g) , x)  ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::Psh(C))
+  coact(id(A) , x) == x  ⊣ (A::Ob, x::Psh(A))
 end
-
 
 # Convenience constructors
 compose(fs::Vector) = foldl(compose, fs)
