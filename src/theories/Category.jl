@@ -39,18 +39,18 @@ We use symbol ⋅ (\\cdot) for diagrammatic composition: f⋅g = compose(f,g).
   id(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 
-@theory coPresheaf{Ob,Hom,Psh} <: Category{Ob,Hom} begin
+@theory Copresheaf{Ob,Hom,Psh} <: Category{Ob,Hom} begin
   # unicode - *decide later*
 
   # presheaf = object-indexed family
   Psh(dom::Ob)::TYPE
 
   # functoriality = covariant action
-  actl(x::Psh(A), f::Hom(A,B))::Psh(B) ⊣ (A::Ob, B::Ob)
+  actr(x::Psh(A), f::Hom(A,B))::Psh(B) ⊣ (A::Ob, B::Ob)
 
   # action equations
-  actl(actl(x , f) , g) == actl(x , (f ⋅ g))  ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::Psh(A))
-  actl(x , id(A)) == x  ⊣ (A::Ob, x::Psh(A))
+  actr(actr(x , f) , g) == actr(x , (f ⋅ g))  ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::Psh(A))
+  actr(x , id(A)) == x  ⊣ (A::Ob, x::Psh(A))
 end
 
 @theory Presheaf{Ob,Hom,Psh} <: Category{Ob,Hom} begin
@@ -60,11 +60,11 @@ end
   Psh(codom::Ob)::TYPE
 
   # functoriality = contravariant action
-  actr(x::Psh(B), f::Hom(A,B))::Psh(A) ⊣ (A::Ob, B::Ob)
+  actl(f::Hom(A,B), x::Psh(B))::Psh(A) ⊣ (A::Ob, B::Ob)
 
   # action equations
-  actr(actr(x , f) , g) == actr(x , (f ⋅ g))  ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::Psh(C))
-  actr(x , id(A)) == x  ⊣ (A::Ob, x::Psh(A))
+  actl(f , actr(g , x)) == actl((f ⋅ g) , x)  ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::Psh(C))
+  actl(id(A) , x) == x  ⊣ (A::Ob, x::Psh(A))
 end
 
 # Convenience constructors
