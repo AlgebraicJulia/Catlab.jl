@@ -298,12 +298,8 @@ g = path_graph(SymmetricGraph, 3)
 @test length(homomorphisms(g, h, monic=true)) == 4
 
 # Graph colorability via symmetric graph homomorphism.
-
-K₂, K₃ = SymmetricGraph(2), SymmetricGraph(3)
-add_edge!(K₂, 1, 2)
-add_edges!(K₃, [1,2,3], [2,3,1])
-
 # The 5-cycle has chromatic number 3 but the 6-cycle has chromatic number 2.
+K₂, K₃ = complete_graph(SymmetricGraph, 2), complete_graph(SymmetricGraph, 3)
 C₅, C₆ = cycle_graph(SymmetricGraph, 5), cycle_graph(SymmetricGraph, 6)
 @test isnothing(homomorphism(C₅, K₂))
 α = homomorphism(C₅, K₃)
