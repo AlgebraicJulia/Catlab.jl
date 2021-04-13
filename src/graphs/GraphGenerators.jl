@@ -1,5 +1,5 @@
 module GraphGenerators
-export path_graph, cycle_graph, complete_graph
+export path_graph, cycle_graph, complete_graph, star_graph
 
 using ...CSetDataStructures, ..BasicGraphs
 using ...CSetDataStructures: hom
@@ -34,6 +34,15 @@ function complete_graph(::Type{T}, n::Int; V=(;)) where T <: AbstractACSet
       add_edge!(g, i, j)
     end
   end
+  g
+end
+
+""" Star graph on ``n`` vertices.
+"""
+function star_graph(::Type{T}, n::Int) where T <: AbstractACSet
+  g = T()
+  add_vertices!(g, n)
+  add_edges!(g, fill(n,n-1), 1:(n-1))
   g
 end
 

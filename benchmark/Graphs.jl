@@ -95,8 +95,7 @@ bench["path-graph-components-proj"] =
 bench["path-graph-components-lightgraphs"] =
   @benchmarkable LG.weakly_connected_components($lg)
 
-g₀ = Graph(n₀)
-add_edges!(g₀, fill(1,n₀-1), 2:n₀)
+g₀ = star_graph(Graph, n₀)
 g = ob(coproduct(fill(g₀, 5)))
 lg = LG.DiGraph(g)
 bench["star-graph-components"] = @benchmarkable connected_components($g)
@@ -147,8 +146,7 @@ bench["path-graph-components-lightgraphs"] =
 bench["path-graph-components-proj-lightgraphs"] =
   @benchmarkable lg_connected_components_projection($lg)
 
-g₀ = SymmetricGraph(n₀)
-add_edges!(g₀, fill(1,n₀-1), 2:n₀)
+g₀ = star_graph(SymmetricGraph, n₀)
 g = ob(coproduct(fill(g₀, 5)))
 lg = LG.Graph(g)
 bench["star-graph-components"] = @benchmarkable connected_components($g)

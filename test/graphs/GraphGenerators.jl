@@ -32,4 +32,13 @@ for T in (ReflexiveGraph, SymmetricReflexiveGraph)
   @test (nv(g), ne(g)) == (n, n*n)
 end
 
+# Star graphs
+#------------
+
+g = star_graph(Graph, n)
+@test (nv(g), ne(g)) == (n, n-1)
+@test length(unique(src(g,e) for e in edges(g))) == 1
+g = star_graph(SymmetricGraph, n)
+@test (nv(g), ne(g)) == (n, 2(n-1))
+
 end
