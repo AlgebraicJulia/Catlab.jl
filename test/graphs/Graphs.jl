@@ -18,4 +18,8 @@ end
   include("GraphAlgorithms.jl")
 end
 
+@testset "GraphGenerators" begin
+  include("GraphGenerators.jl")
+end
+
 end

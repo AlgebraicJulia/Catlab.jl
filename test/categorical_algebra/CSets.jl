@@ -35,8 +35,7 @@ f = FinDomFunction(g, :tgt)
 @test collect(f) == 3:5
 @test is_indexed(f)
 
-g = WeightedGraph{Float64}(3)
-add_edges!(g, 1:2, 2:3, weight=[0.5, 1.5])
+g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5, 1.5],))
 f = FinDomFunction(g, :weight)
 @test codom(f) == TypeSet(Float64)
 @test collect(f) == [0.5, 1.5]
@@ -46,9 +45,7 @@ f = FinDomFunction(g, :weight)
 #################
 
 # Constructors and accessors.
-g, h = Graph(4), Graph(2)
-add_edges!(g, [1,2,3], [2,3,4])
-add_edges!(h, [1,2], [2,1])
+g, h = path_graph(Graph, 4), cycle_graph(Graph, 2)
 α = CSetTransformation((V=[1,2,1,2], E=[1,2,1]), g, h)
 @test components(α) == (V=α[:V], E=α[:E])
 @test α[:V] isa FinFunction{Int} && α[:E] isa FinFunction{Int}
@@ -101,30 +98,28 @@ prod = ob(product(I, I))
 @test src(prod) != tgt(prod)
 
 # Product in Graph: deleting edges by multiplying by an isolated vertex.
-g = Graph(4)
-add_edges!(g, [1,2,3], [2,3,4])
+g = path_graph(Graph, 4)
 g0 = ob(product(g, Graph(1)))
 @test nv(g0) == nv(g)
 @test ne(g0) == 0
 
 # Product in Graph: copying edges by multiplying by the double self-loop.
-cycle2 = Graph(1)
-add_edges!(cycle2, [1,1], [1,1])
-lim = product(g, cycle2)
+loop2 = Graph(1)
+add_edges!(loop2, [1,1], [1,1])
+lim = product(g, loop2)
 g2 = ob(lim)
 @test nv(g2) == nv(g)
 @test ne(g2) == 2*ne(g)
 @test src(g2) == repeat(src(g), 2)
 @test tgt(g2) == repeat(tgt(g), 2)
 α = CSetTransformation((V=[2,3], E=[2]), I, g)
-β = CSetTransformation((V=[1,1], E=[2]), I, cycle2)
+β = CSetTransformation((V=[1,1], E=[2]), I, loop2)
 γ = pair(lim, α, β)
 @test force(γ⋅proj1(lim)) == α
 @test force(γ⋅proj2(lim)) == β
 
 # Equalizer in Graph from (Reyes et al 2004, p. 50).
-g, h = Graph(2), Graph(2)
-add_edges!(g, [1,2], [2,1])
+g, h = cycle_graph(Graph, 2), Graph(2)
 add_edges!(h, [1,2,2], [2,1,1])
 ϕ = CSetTransformation((V=[1,2], E=[1,2]), g, h)
 ψ = CSetTransformation((V=[1,2], E=[1,3]), g, h)
@@ -166,8 +161,7 @@ colim = initial(Graph)
 @test create(colim, g) == CSetTransformation((V=Int[], E=Int[]), Graph(), g)
 
 # Coproducts in Graph: unitality.
-g = Graph(4)
-add_edges!(g, [1,2,3], [2,3,4])
+g = path_graph(Graph, 4)
 colim = coproduct(g, Graph())
 @test ob(colim) == g
 @test force(coproj1(colim)) == force(id(g))
@@ -175,8 +169,7 @@ colim = coproduct(g, Graph())
   CSetTransformation((V=Int[], E=Int[]), Graph(), g)
 
 # Coproduct in Graph.
-h = Graph(2)
-add_edges!(h, [1,2], [2,1])
+h = cycle_graph(Graph, 2)
 colim = coproduct(g, h)
 coprod = ob(colim)
 @test nv(coprod) == 6
@@ -222,9 +215,8 @@ diagram = FreeDiagram([g, ob(terminal(Graph)), Graph(1)], [(α,3,1), (β,3,2)])
 ############################
 
 # Constructors and accessors.
-g, h = WeightedGraph{Float64}(2), WeightedGraph{Float64}(4)
-add_edge!(g, 1, 2, weight=2.0)
-add_edges!(h, [1,2,3], [2,3,4], weight=[1.0,2.0,3.0])
+g = path_graph(WeightedGraph{Float64}, 2, E=(weight=2.0,))
+h = path_graph(WeightedGraph{Float64}, 4, E=(weight=[1.,2.,3.],))
 α = ACSetTransformation((V=[2,3], E=[2]), g, h)
 @test length(components(α)) == 2
 
@@ -281,9 +273,8 @@ colim = pushout(α, β)
 
 # Graphs
 #-------
-g, h = Graph(3), Graph(4)
-add_edges!(g, 1:2, 2:3)
-add_edges!(h, 1:3, 2:4)
+
+g, h = path_graph(Graph, 3), path_graph(Graph, 4)
 @test homomorphisms(g, h) == [CSetTransformation((V=[1,2,3], E=[1,2]), g, h),
                               CSetTransformation((V=[2,3,4], E=[2,3]), g, h)]
 @test isnothing(isomorphism(g, h))
@@ -296,17 +287,14 @@ I = ob(terminal(Graph))
 # Symmetic graphs
 #-----------------
 
-g, h = SymmetricGraph(4), SymmetricGraph(4)
-add_edges!(g, 1:3, 2:4)
-add_edges!(h, 2:4, 1:3)
+g, h = path_graph(SymmetricGraph, 4), path_graph(SymmetricGraph, 4)
 αs = homomorphisms(g, h)
 @test all(is_natural(α) for α in αs)
 @test length(αs) == 16
 αs = isomorphisms(g, h)
 @test length(αs) == 2
 @test map(α -> collect(α[:V]), αs) == [[1,2,3,4], [4,3,2,1]]
-g = SymmetricGraph(3)
-add_edges!(g, 1:2, 2:3)
+g = path_graph(SymmetricGraph, 3)
 @test length(homomorphisms(g, h, monic=true)) == 4
 
 # Graph colorability via symmetric graph homomorphism.
@@ -315,14 +303,8 @@ K₂, K₃ = SymmetricGraph(2), SymmetricGraph(3)
 add_edge!(K₂, 1, 2)
 add_edges!(K₃, [1,2,3], [2,3,1])
 
-function cycle_graph(n::Int)
-  cycle = SymmetricGraph(n)
-  add_edges!(cycle, 1:n, circshift(1:n, -1))
-  cycle
-end
-
 # The 5-cycle has chromatic number 3 but the 6-cycle has chromatic number 2.
-C₅, C₆ = cycle_graph(5), cycle_graph(6)
+C₅, C₆ = cycle_graph(SymmetricGraph, 5), cycle_graph(SymmetricGraph, 6)
 @test isnothing(homomorphism(C₅, K₂))
 α = homomorphism(C₅, K₃)
 @test !isnothing(α) && is_natural(α)
@@ -338,16 +320,10 @@ C₅, C₆ = cycle_graph(5), cycle_graph(6)
 end
 const LabeledGraph = ACSetType(TheoryLabeledGraph, index=[:src,:tgt])
 
-function labeled_cycle(labels::AbstractVector{T}) where T
-  g, n = LabeledGraph{T}(), length(labels)
-  add_vertices!(g, n, label=labels)
-  add_edges!(g, 1:n, circshift(1:n, -1))
-  g
-end
-
-g, h = labeled_cycle([:a,:b,:c,:d]), labeled_cycle([:c,:d,:a,:b])
+g = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:c,:d],))
+h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:c,:d,:a,:b],))
 @test homomorphism(g, h) == ACSetTransformation((V=[3,4,1,2], E=[3,4,1,2]), g, h)
-h = labeled_cycle([:a,:b,:d,:c])
+h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:d,:c],))
 @test isnothing(homomorphism(g, h))
 
 # Functorial data migration
