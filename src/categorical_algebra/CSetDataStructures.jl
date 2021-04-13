@@ -20,7 +20,6 @@ using ...Theories: Schema, FreeSchema, SchemaType,
   CatDesc, CatDescType, ob, hom, dom, codom, codom_num,
   AttrDesc, AttrDescType, data, attr, adom, acodom, data_num, attrs_by_codom
 
-
 # Data types
 ############
 
@@ -272,7 +271,7 @@ function Base.show(io::IO, ::MIME"text/html", acs::T) where {T<:AbstractACSet}
   print(io, " with elements ")
   join(io, ["$ob = 1:$(nparts(acs,ob))" for ob in keys(tables(acs))], ", ")
   println(io, "</span>")
-  pretty_tables(io, acs, backend=:html, standalone=false)
+  pretty_tables(io, acs, backend=Val(:html), standalone=false)
   println(io, "</div>")
 end
 
