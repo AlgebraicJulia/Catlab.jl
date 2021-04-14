@@ -12,8 +12,6 @@ go the other way around.
 module WiringDiagramExpressions
 export to_ob_expr, to_hom_expr, to_wiring_diagram, to_undirected_wiring_diagram
 
-using Compat
-
 using ...Syntax, ...Theories, ...Permutations, ...CategoricalAlgebra
 using ...Syntax: syntax_module
 using ...Graphs, ..DirectedWiringDiagrams, ..UndirectedWiringDiagrams,

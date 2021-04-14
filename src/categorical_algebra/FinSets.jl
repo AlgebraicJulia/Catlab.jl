@@ -4,7 +4,6 @@ module FinSets
 export FinSet, FinFunction, FinDomFunction, force, is_indexed, preimage,
   JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin
 
-using Compat: isnothing, only
 using Reexport
 
 using AutoHashEquals

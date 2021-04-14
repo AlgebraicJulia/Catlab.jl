@@ -7,8 +7,6 @@ export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
   add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!,
   copy_parts!, copy_parts_only!, disjoint_union, pretty_tables, @acset
 
-using Compat: isnothing, only
-
 using MLStyle: @match
 using PrettyTables: pretty_table
 using StaticArrays: StaticArray

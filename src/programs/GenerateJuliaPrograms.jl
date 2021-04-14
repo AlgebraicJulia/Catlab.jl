@@ -4,7 +4,6 @@ module GenerateJuliaPrograms
 export Block, CompileState, compile, compile_expr, compile_block,
   evaluate, evaluate_hom
 
-using Compat
 using GeneralizedGenerated: mk_function
 
 using ...Catlab

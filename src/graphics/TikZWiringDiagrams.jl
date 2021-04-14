@@ -3,7 +3,6 @@
 module TikZWiringDiagrams
 export to_tikz, layout_to_tikz
 
-using Compat
 using DataStructures: OrderedDict
 using MLStyle: @match
 using Parameters: @with_kw_noshow

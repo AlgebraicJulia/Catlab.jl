@@ -13,8 +13,6 @@ export AbstractLimit, AbstractColimit, Limit, Colimit,
   BinaryCoequalizer, Coequalizer, coequalizer, proj,
   ComposeProductEqualizer, ComposeCoproductCoequalizer
 
-using Compat: only
-
 using AutoHashEquals
 
 using ...Theories

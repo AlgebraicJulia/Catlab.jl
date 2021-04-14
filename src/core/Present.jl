@@ -12,7 +12,6 @@ export @present, Presentation, generator, generators, has_generator, equations,
   add_generator!, add_generators!, add_definition!, add_equation!, generator_index
 
 using Base.Meta: ParseError
-using Compat
 using MLStyle: @match
 
 using ..Meta, ..Syntax

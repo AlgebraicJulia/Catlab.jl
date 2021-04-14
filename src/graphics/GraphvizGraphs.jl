@@ -3,12 +3,10 @@
 module GraphvizGraphs
 export parse_graphviz, to_graphviz
 
-using Compat: isnothing
 using StaticArrays: StaticVector, SVector
 
+using ...Present, ...Theories
 using ...Graphs
-using ...Present
-using ...Theories
 import ..Graphviz
 
 # Property graphs

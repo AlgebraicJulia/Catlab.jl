@@ -3,7 +3,6 @@
 module ParseJuliaPrograms
 export @program, parse_wiring_diagram
 
-using Compat
 using GeneralizedGenerated: mk_function
 using MLStyle: @match
 

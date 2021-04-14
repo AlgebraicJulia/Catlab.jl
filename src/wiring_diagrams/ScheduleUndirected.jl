@@ -9,7 +9,6 @@ export AbstractNestedUWD, AbstractScheduledUWD, NestedUWD, ScheduledUWD,
   eval_schedule, to_nested_diagram, schedule
 
 import Base: schedule
-using Compat: isnothing, only
 using DataStructures: IntDisjointSets, union!, in_same_set
 
 using ...Present, ...CategoricalAlgebra.CSets, ...CategoricalAlgebra.FinSets

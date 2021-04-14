@@ -4,7 +4,6 @@ module RelationalPrograms
 export RelationDiagram, UntypedRelationDiagram, TypedRelationDiagram,
   @relation, parse_relation_diagram
 
-using Compat
 using MLStyle: @match
 
 using ...CategoricalAlgebra.CSets, ...Present

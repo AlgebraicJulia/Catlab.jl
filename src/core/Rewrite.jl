@@ -6,7 +6,6 @@ a generic term rewriting system.
 module Rewrite
 export associate, associate_unit, distribute_unary, involute
 
-using Compat
 using ..Syntax
 
 """ Simplify associative binary operation.

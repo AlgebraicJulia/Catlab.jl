@@ -9,7 +9,6 @@ module Graphviz
 export Expression, Statement, Attributes, Graph, Digraph, Subgraph,
   Node, NodeID, Edge, pprint, run_graphviz
 
-using Compat
 using DataStructures: OrderedDict
 using Parameters: @with_kw_noshow
 using Requires: @require

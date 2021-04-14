@@ -1,8 +1,7 @@
 module TestMeta
+using Test
 
 using Base.Meta: ParseError
-using Compat
-using Test
 
 using Catlab.Meta
 

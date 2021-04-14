@@ -4,7 +4,6 @@ module GAT
 export @theory, @signature, @instance, theory, invoke_term
 
 using Base.Meta: ParseError
-using Compat
 using AutoHashEquals
 using DataStructures: OrderedDict
 using Logging

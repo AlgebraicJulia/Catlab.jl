@@ -1,6 +1,4 @@
 module TestTikZWiringDiagrams
-
-using Compat
 using Test
 
 using Catlab.Theories, Catlab.WiringDiagrams

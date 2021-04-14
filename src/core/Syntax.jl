@@ -10,7 +10,6 @@ export @syntax, GATExpr, SyntaxDomainError, head, args, first, last,
 
 import Base: first, last
 import Base.Meta: ParseError, show_sexpr
-using Compat
 using MLStyle: @match
 
 using ..GAT: Context, Theory, TypeConstructor, TermConstructor

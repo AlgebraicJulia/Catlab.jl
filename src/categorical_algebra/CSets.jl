@@ -5,8 +5,6 @@ export ACSetTransformation, CSetTransformation, components, force, is_natural,
   homomorphism, homomorphisms, isomorphism, isomorphisms, migrate!,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
 
-using Compat: isnothing
-
 using AutoHashEquals
 using JSON
 using Reexport

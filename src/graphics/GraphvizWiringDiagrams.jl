@@ -5,7 +5,6 @@ This module requires Graphviz v2.42 or higher.
 module GraphvizWiringDiagrams
 export to_graphviz, graphviz_layout
 
-using Compat: isnothing
 import JSON
 using LinearAlgebra: normalize
 using MLStyle: @match

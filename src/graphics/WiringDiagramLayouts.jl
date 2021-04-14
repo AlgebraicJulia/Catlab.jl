@@ -10,7 +10,6 @@ module WiringDiagramLayouts
 export LayoutOrientation, LeftToRight, RightToLeft, TopToBottom, BottomToTop,
   layout_diagram, layout_box
 
-using Compat
 import Base: sign
 using LinearAlgebra: dot, normalize
 using Logging

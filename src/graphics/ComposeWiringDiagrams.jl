@@ -3,7 +3,6 @@
 module ComposeWiringDiagrams
 export ComposePicture, to_composejl, layout_to_composejl
 
-using Compat
 using LinearAlgebra: dot
 using Parameters: @with_kw_noshow
 import Compose

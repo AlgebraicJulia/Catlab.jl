@@ -8,8 +8,6 @@ export UndirectedWiringDiagram, UntypedUWD, TypedUWD,
   add_wires!, singleton_diagram, cospan_diagram, junction_diagram,
   ocompose, substitute
 
-using Compat: isnothing
-
 using ...Present, ...CategoricalAlgebra.CSets, ...CategoricalAlgebra.Limits
 using ...CategoricalAlgebra.FinSets: FinSet, FinFunction
 using ...Theories: dom, codom, compose, ⋅, id

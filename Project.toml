@@ -6,7 +6,6 @@ version = "0.11.2"
 
 [deps]
 AutoHashEquals = "15f4f7f2-30c1-5605-9d31-71845cf9641f"
-Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
 Compose = "a81c6b42-2e10-5240-aca2-a61377ecd94b"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 FunctionWrappers = "069b7b12-0de2-55c6-9aab-29f3d0a68a2e"
@@ -30,7 +29,6 @@ TypedTables = "9d95f2ec-7b3d-5a63-8d20-e2491e220bb9"
 
 [compat]
 AutoHashEquals = "0.2"
-Compat = "^1, ^2, ^3"
 Compose = "0.7, 0.8, 0.9"
 DataStructures = "0.17, 0.18"
 FunctionWrappers = "1.1.2"

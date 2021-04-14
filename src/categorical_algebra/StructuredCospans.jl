@@ -7,8 +7,6 @@ module StructuredCospans
 export StructuredMulticospan, StructuredCospan, StructuredCospanOb,
   OpenCSetTypes, OpenACSetTypes
 
-using Compat: only
-
 using AutoHashEquals
 using StaticArrays: StaticVector, SVector
 
