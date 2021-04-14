@@ -87,18 +87,12 @@ cycles3 = @relation (edge1=e, edge2=f, edge3=g) where (e,f,g,u,v,w) begin
   E(_id=g, src=w, tgt=u)
 end
 
-function ncycle(n::Int)
-  g = Graph(n)
-  add_edges!(g, 1:n, circshift(1:n, -1))
-  return g
-end
-
-g = ncycle(3)
+g = cycle_graph(Graph, 3)
 result = query(g, cycles3)
 @test tuples(columns(result)...) == [(1,2,3), (2,3,1), (3,1,2)]
 result = query(g, cycles3, (v=1,))
 @test result == Table((edge1=[3], edge2=[1], edge3=[2]))
 
-@test isempty(query(ncycle(4), cycles3))
+@test isempty(query(cycle_graph(Graph, 4), cycles3))
 
 end

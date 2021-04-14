@@ -77,8 +77,7 @@ gv = to_graphviz(g)
 # Graphs
 ########
 
-g = Graph(3)
-add_edges!(g, [1,2], [2,3])
+g = path_graph(Graph, 3)
 gv = to_graphviz(g)
 @test gv.directed
 @test stmts(gv, Graphviz.Node, :label) == fill("", 3)
@@ -90,8 +89,7 @@ gv = to_graphviz(g, node_labels=true, edge_labels=true)
 # Symmetric graphs
 ##################
 
-g = SymmetricGraph(3)
-add_edges!(g, [1,2], [2,3])
+g = path_graph(SymmetricGraph, 3)
 gv = to_graphviz(g, edge_labels=true)
 @test !gv.directed
 @test stmts(gv, Graphviz.Node, :label) == fill("", 3)
@@ -100,8 +98,7 @@ gv = to_graphviz(g, edge_labels=true)
 # Reflexive graphs
 ##################
 
-g = ReflexiveGraph(3)
-add_edges!(g, [1,2], [2,3])
+g = path_graph(ReflexiveGraph, 3)
 gv = to_graphviz(g, show_reflexive=false)
 @test gv.directed
 @test length(stmts(gv, Graphviz.Node)) == 3
@@ -115,8 +112,7 @@ gv = to_graphviz(g, edge_labels=true, show_reflexive=true)
 # Symmetric reflexive graphs
 ############################
 
-g = SymmetricReflexiveGraph(3)
-add_edges!(g, [1,2], [2,3])
+g = path_graph(SymmetricReflexiveGraph, 3)
 gv = to_graphviz(g, show_reflexive=false)
 @test !gv.directed
 @test length(stmts(gv, Graphviz.Node)) == 3
@@ -130,8 +126,7 @@ gv = to_graphviz(g, edge_labels=true, show_reflexive=true)
 # Half-edge graphs
 ##################
 
-g = HalfEdgeGraph(3)
-add_edges!(g, [1,2], [2,3])
+g = path_graph(HalfEdgeGraph, 3)
 gv = to_graphviz(g, edge_labels=true)
 @test !gv.directed
 @test stmts(gv, Graphviz.Node, :label) == fill("", 3)

@@ -5,7 +5,6 @@ using Catlab: @present, generator
 using Catlab.Theories: compose, id
 using Catlab.Graphs
 using Catlab.Graphs.BasicGraphs: TheoryGraph
-using Catlab.CSetDataStructures
 using Catlab.CategoricalAlgebra.ACSetViews
 using Catlab.CategoricalAlgebra.CSets
 
@@ -58,9 +57,8 @@ vertices = ACSetView(g,:V)
 # Morphisms
 ###########
 
-g, h = WeightedGraph{Float64}(2), WeightedGraph{Float64}(4)
-add_edge!(g, 1, 2, weight=2.0)
-add_edges!(h, [1,2,3], [2,3,4], weight=[1.0,2.0,3.0])
+g = path_graph(WeightedGraph{Float64}, 2, E=(weight=2.0,))
+h = path_graph(WeightedGraph{Float64}, 4, E=(weight=[1.,2.,3.],))
 α = ACSetTransformation((V=[2,3], E=[2]), g, h)
 αE = ACSetViewMorphism(α, :E)
 

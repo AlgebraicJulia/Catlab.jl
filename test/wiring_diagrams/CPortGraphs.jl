@@ -4,10 +4,7 @@ using Test
 using Catlab.Graphs, Catlab.WiringDiagrams, Catlab.CategoricalAlgebra
 import Catlab.CategoricalAlgebra.CSets: migrate!
 
-g = Graph()
-add_vertices!(g, 4)
-add_edges!(g, [1,2,3,4], [2,3,4,1])
-
+g = cycle_graph(Graph, 4)
 pg = CPortGraph()
 migrate!(pg, g)
 

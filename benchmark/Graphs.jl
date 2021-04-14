@@ -66,12 +66,7 @@ end
 bench = SUITE["Graph"] = BenchmarkGroup()
 
 n = 10000
-bench["make-path"] = @benchmarkable begin
-  g = Graph()
-  add_vertices!(g, n)
-  add_edges!(g, 1:(n-1), 2:n)
-end
-
+bench["make-path"] = @benchmarkable path_graph(Graph, n)
 bench["make-path-lightgraphs"] = @benchmarkable begin
   g = LG.DiGraph()
   LG.add_vertices!(g, n)
@@ -80,10 +75,8 @@ bench["make-path-lightgraphs"] = @benchmarkable begin
   end
 end
 
-g = Graph(n)
-add_edges!(g, 1:(n-1), 2:n)
+g = path_graph(Graph, n)
 lg = LG.DiGraph(g)
-
 bench["iter-edges"] = @benchmarkable bench_iter_edges($g)
 bench["iter-edges-vectorized"] = @benchmarkable bench_iter_edges_vectorized($g)
 bench["iter-edges-lightgraphs"] = @benchmarkable bench_iter_edges($lg)
@@ -93,8 +86,7 @@ bench["iter-neighbors"] = @benchmarkable bench_iter_neighbors($g)
 bench["iter-neighbors-lightgraphs"] = @benchmarkable bench_iter_neighbors($lg)
 
 n₀ = 2000
-g₀ = Graph(n₀)
-add_edges!(g₀, 1:(n₀-1), 2:n₀)
+g₀ = path_graph(Graph, n₀)
 g = ob(coproduct(fill(g₀, 5)))
 lg = LG.DiGraph(g)
 bench["path-graph-components"] = @benchmarkable connected_components($g)
@@ -103,8 +95,7 @@ bench["path-graph-components-proj"] =
 bench["path-graph-components-lightgraphs"] =
   @benchmarkable LG.weakly_connected_components($lg)
 
-g₀ = Graph(n₀)
-add_edges!(g₀, fill(1,n₀-1), 2:n₀)
+g₀ = star_graph(Graph, n₀)
 g = ob(coproduct(fill(g₀, 5)))
 lg = LG.DiGraph(g)
 bench["star-graph-components"] = @benchmarkable connected_components($g)
@@ -119,12 +110,7 @@ bench["star-graph-components-lightgraphs"] =
 bench = SUITE["SymmetricGraph"] = BenchmarkGroup()
 
 n = 10000
-bench["make-path"] = @benchmarkable begin
-  g = SymmetricGraph()
-  add_vertices!(g, n)
-  add_edges!(g, 1:(n-1), 2:n)
-end
-
+bench["make-path"] = @benchmarkable path_graph(SymmetricGraph, n)
 bench["make-path-lightgraphs"] = @benchmarkable begin
   g = LG.Graph()
   LG.add_vertices!(g, n)
@@ -133,10 +119,8 @@ bench["make-path-lightgraphs"] = @benchmarkable begin
   end
 end
 
-g = SymmetricGraph(n)
-add_edges!(g, 1:(n-1), 2:n)
+g = path_graph(SymmetricGraph, n)
 lg = LG.Graph(g)
-
 bench["iter-edges"] = @benchmarkable bench_iter_edges($g)
 bench["iter-edges-vectorized"] = @benchmarkable bench_iter_edges_vectorized($g)
 bench["iter-edges-lightgraphs"] = @benchmarkable bench_iter_edges($lg)
@@ -151,8 +135,7 @@ function lg_connected_components_projection(g)
 end
 
 n₀ = 2000
-g₀ = SymmetricGraph(n₀)
-add_edges!(g₀, 1:(n₀-1), 2:n₀)
+g₀ = path_graph(SymmetricGraph, n₀)
 g = ob(coproduct(fill(g₀, 5)))
 lg = LG.Graph(g)
 bench["path-graph-components"] = @benchmarkable connected_components($g)
@@ -163,8 +146,7 @@ bench["path-graph-components-lightgraphs"] =
 bench["path-graph-components-proj-lightgraphs"] =
   @benchmarkable lg_connected_components_projection($lg)
 
-g₀ = SymmetricGraph(n₀)
-add_edges!(g₀, fill(1,n₀-1), 2:n₀)
+g₀ = star_graph(SymmetricGraph, n₀)
 g = ob(coproduct(fill(g₀, 5)))
 lg = LG.Graph(g)
 bench["star-graph-components"] = @benchmarkable connected_components($g)
@@ -181,8 +163,7 @@ bench["star-graph-components-proj-lightgraphs"] =
 bench = SUITE["WeightedGraph"] = BenchmarkGroup()
 
 n = 10000
-g = WeightedGraph{Float64}(n)
-add_edges!(g, 1:(n-1), 2:n, weight=range(0, 1, length=n-1))
+g = path_graph(WeightedGraph{Float64}, n; E=(weight=range(0,1,length=n-1),))
 mg = MG.MetaDiGraph(g)
 
 bench["sum-weights-vectorized"] = @benchmarkable sum(weight($g))
