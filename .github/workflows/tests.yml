@@ -8,12 +8,13 @@ jobs:
       matrix:
         julia_version: ['1.6']
         os: [ubuntu-latest]
-    
     steps:
       - uses: actions/checkout@v2
       - name: "Set up Julia"
         uses: julia-actions/setup-julia@latest
         with:
           version: ${{ matrix.julia_version }}
+      - name: "Build package"
+        uses: julia-actions/julia-buildpkg@v1
       - name: "Run tests"
-        uses: julia-actions/julia-runtest@master
+        uses: julia-actions/julia-runtest@v1
