@@ -27,7 +27,6 @@ export AbstractBox, Box, WiringDiagram, Wire, Port, PortKind,
   singleton_diagram, induced_subdiagram, encapsulated_subdiagram,
   ocompose, substitute, encapsulate
 
-using Compat
 using AutoHashEquals
 
 using ...Present, ...Graphs.BasicGraphs, ...CategoricalAlgebra.CSets

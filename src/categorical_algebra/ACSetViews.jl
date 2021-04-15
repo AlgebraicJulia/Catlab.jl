@@ -1,17 +1,14 @@
 """ Data structure for views of attributed C-sets
 """
 module ACSetViews
-export ACSetView, backing, @compute_prop, @select_where,
-  ACSetViewMorphism
-
-using ...CSetDataStructures
-using ..CSets
-using ..FinSets
-using ...Theories: CatDesc, AttrDesc, dom, codom_num, attr
+export ACSetView, ACSetViewMorphism, backing, @compute_prop, @select_where
 
 using MLStyle: @match
 using PrettyTables: pretty_table
 using Tables
+
+using ..CSets, ..FinSets
+using ...Theories: CatDesc, AttrDesc, dom, codom_num, attr
 
 # Data types
 ############

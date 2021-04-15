@@ -12,8 +12,6 @@ go the other way around.
 module WiringDiagramExpressions
 export to_ob_expr, to_hom_expr, to_wiring_diagram, to_undirected_wiring_diagram
 
-using Compat
-
 using ...Syntax, ...Theories, ...Permutations, ...CategoricalAlgebra
 using ...Syntax: syntax_module
 using ...Graphs, ..DirectedWiringDiagrams, ..UndirectedWiringDiagrams,
@@ -75,8 +73,7 @@ function to_hom_expr(Ob::Type, Hom::Type, d::WiringDiagram)
 
   # Initial reduction: Add junction nodes to ensure any wiring layer between two
   # boxes is a permutation.
-  #d = add_junctions(d) XXX: This core dumps on Julia 1.0?!
-  d = add_junctions!(copy(d))
+  d = add_junctions(d)
 
   # Dispatch special case: no boxes.
   if nboxes(d) == 0

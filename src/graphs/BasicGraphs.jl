@@ -19,7 +19,6 @@ export AbstractGraph, Graph, nv, ne, src, tgt, edges, vertices,
   AbstractWeightedGraph, WeightedGraph, weight,
   AbstractSymmetricWeightedGraph, SymmetricWeightedGraph
 
-using Compat: only
 import Base: inv
 using Requires
 

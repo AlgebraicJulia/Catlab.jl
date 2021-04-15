@@ -10,11 +10,9 @@ module WiringDiagramLayouts
 export LayoutOrientation, LeftToRight, RightToLeft, TopToBottom, BottomToTop,
   layout_diagram, layout_box
 
-using Compat
 import Base: sign
 using LinearAlgebra: dot, normalize
 using Logging
-using Parameters: @with_kw_noshow
 using StaticArrays: StaticVector, SVector
 using Statistics: mean
 
@@ -48,7 +46,7 @@ svector(orient::LayoutOrientation, first, second) =
 
 """ Internal data type for configurable options of wiring diagram layout.
 """
-@with_kw_noshow struct LayoutOptions
+Base.@kwdef struct LayoutOptions
   orientation::LayoutOrientation = LeftToRight
   default_box_shape::Symbol = :rectangle
   box_shapes::AbstractDict = Dict()
@@ -74,7 +72,7 @@ Specific features of the shape are determined by the graphics backend. For
 example, a rectangle could be rendered with or without rounded corners or even
 as another, similar shape, such as a parallelogram.
 """
-@with_kw_noshow mutable struct BoxLayout
+Base.@kwdef mutable struct BoxLayout
   value::Any = nothing
   shape::Symbol = :rectangle
   position::Vector2D = zeros(Vector2D)
@@ -99,7 +97,7 @@ contents_upper_corner(diagram::WiringDiagram) =
 
 """ Layout for port in a wiring diagram.
 """
-@with_kw_noshow struct PortLayout
+Base.@kwdef struct PortLayout
   value::Any = nothing
   position::Vector2D = zeros(Vector2D) # Position relative to box center.
   normal::Vector2D = zeros(Vector2D)   # Outward unit normal vector.

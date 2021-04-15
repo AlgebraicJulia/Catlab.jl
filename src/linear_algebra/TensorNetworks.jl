@@ -4,7 +4,6 @@ module TensorNetworks
 export RelationDiagram, @tensor_network, parse_tensor_network,
   contract_tensor_network, @contract_tensors_with, gen_tensor_notation
 
-using Compat
 using MLStyle: @match
 
 using ...CategoricalAlgebra.CSets

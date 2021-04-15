@@ -10,7 +10,6 @@ export @syntax, GATExpr, SyntaxDomainError, head, args, first, last,
 
 import Base: first, last
 import Base.Meta: ParseError, show_sexpr
-using Compat
 using MLStyle: @match
 
 using ..GAT: Context, Theory, TypeConstructor, TermConstructor
@@ -66,12 +65,7 @@ function Base.show(io::IO, expr::GATExpr)
   print(io, ")")
 end
 function Base.show(io::IO, expr::GATExpr{:generator})
-  value = first(expr)
-  if isnothing(value)
-    show(io, value) # Value `nothing` cannot be printed
-  else
-    print(io, value)
-  end
+  print(io, first(expr))
 end
 
 struct SyntaxDomainError <: Exception

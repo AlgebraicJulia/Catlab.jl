@@ -3,7 +3,6 @@
 module WiringDiagramAlgebras
 export oapply, query
 
-using Compat: isnothing
 import TypedTables
 
 using ...Theories, ...CategoricalAlgebra, ...CategoricalAlgebra.FinSets

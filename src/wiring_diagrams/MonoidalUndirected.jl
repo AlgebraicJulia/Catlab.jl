@@ -5,7 +5,6 @@ export HypergraphDiagram, HypergraphDiagramOb, HypergraphDiagramHom,
   ObUWD, HomUWD, cospan_action, dom_mask, codom_mask
 
 using AutoHashEquals
-using Compat: isnothing
 
 using ...GAT, ...Present, ...CategoricalAlgebra.CSets
 using ...Theories: HypergraphCategory

@@ -6,7 +6,6 @@ export Expr0, JuliaFunction, JuliaFunctionSig, parse_docstring, parse_function,
   append_expr!, concat_expr, replace_symbols, strip_lines
 
 using Base.Meta: ParseError
-using Compat
 using AutoHashEquals
 using MLStyle: @match
 

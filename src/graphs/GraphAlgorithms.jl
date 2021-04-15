@@ -4,7 +4,6 @@ module GraphAlgorithms
 export connected_components, connected_component_projection, topological_sort,
   transitive_reduction!
 
-using Compat: isnothing
 using DataStructures: Stack
 
 using ...Theories: dom, codom
