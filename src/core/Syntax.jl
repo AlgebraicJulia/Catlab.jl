@@ -65,12 +65,7 @@ function Base.show(io::IO, expr::GATExpr)
   print(io, ")")
 end
 function Base.show(io::IO, expr::GATExpr{:generator})
-  value = first(expr)
-  if isnothing(value)
-    show(io, value) # Value `nothing` cannot be printed
-  else
-    print(io, value)
-  end
+  print(io, first(expr))
 end
 
 struct SyntaxDomainError <: Exception
