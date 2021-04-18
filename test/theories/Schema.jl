@@ -45,3 +45,5 @@ AD = AttrDescType(TheoryDecGraph)
 
 @test dom(AD,:vdec) == :V
 @test codom(AD,:edec) == :X
+
+@test TheoryDecGraph == Presentation(CD, AD)

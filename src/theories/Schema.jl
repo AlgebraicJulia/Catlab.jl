@@ -1,6 +1,9 @@
 export Schema, FreeSchema, Data, Attr, SchemaExpr, DataExpr, AttrExpr
 
 using MLStyle: @match
+using ...Present
+
+import ...Present: Presentation
 
 # Schema
 ########
@@ -186,3 +189,18 @@ function attrs_by_codom(AD::Type{T}) where
 end
 
 SchemaType(pres::Presentation{Schema}) = (CatDescType(pres),AttrDescType(pres))
+
+"""
+Inverse of SchemaType. Converts a CatDesc and AttrDesc into a Presentation. 
+"""
+function Presentation(CD::Type{T}, AD::Type{S}) where {T <: CatDesc, S <: AttrDesc}
+  pres = Presentation(FreeSchema)
+
+  obs = map(x -> Ob(FreeSchema, x), collect(ob(CD)))
+  homs = map(Hom, collect(hom(CD)), obs[collect(dom(CD))], obs[collect(codom(CD))])
+  datas = map(x -> Data(FreeSchema.Data, x), collect(data(AD)))
+  attrs = map(FreeSchema.Attr, collect(attr(AD)), obs[collect(adom(AD))], datas[collect(acodom(AD))])
+
+  map(gens -> add_generators!(pres, gens), [obs, homs, datas, attrs])
+  return pres
+end
