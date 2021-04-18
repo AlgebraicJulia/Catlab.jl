@@ -39,32 +39,32 @@ We use symbol ⋅ (\\cdot) for diagrammatic composition: f⋅g = compose(f,g).
   id(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 
-@theory Copresheaf{Ob,Hom,Psh} <: Category{Ob,Hom} begin
+@theory Copresheaf{Ob,Hom,El} <: Category{Ob,Hom} begin
   # unicode - *decide later*
 
   # presheaf = object-indexed family
-  Psh(dom::Ob)::TYPE
+  El(dom::Ob)::TYPE
 
   # functoriality = covariant action
-  act(x::Psh(A), f::Hom(A,B))::Psh(B) ⊣ (A::Ob, B::Ob)
+  act(x::El(A), f::Hom(A,B))::El(B) ⊣ (A::Ob, B::Ob)
 
   # action equations
-  act(act(x , f) , g) == act(x , (f ⋅ g))  ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::Psh(A))
-  act(x , id(A)) == x  ⊣ (A::Ob, x::Psh(A))
+  act(act(x , f) , g) == act(x , (f ⋅ g))  ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::El(A))
+  act(x , id(A)) == x  ⊣ (A::Ob, x::El(A))
 end
 
-@theory Presheaf{Ob,Hom,Psh} <: Category{Ob,Hom} begin
+@theory Presheaf{Ob,Hom,El} <: Category{Ob,Hom} begin
   # unicode - *decide later*
 
   # presheaf = object-indexed family
-  Psh(codom::Ob)::TYPE
+  El(codom::Ob)::TYPE
 
   # functoriality = contravariant action
-  coact(f::Hom(A,B), x::Psh(B))::Psh(A) ⊣ (A::Ob, B::Ob)
+  coact(f::Hom(A,B), x::El(B))::El(A) ⊣ (A::Ob, B::Ob)
 
   # action equations
-  coact(f , coact(g , x)) == coact((f ⋅ g) , x)  ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::Psh(C))
-  coact(id(A) , x) == x  ⊣ (A::Ob, x::Psh(A))
+  coact(f , coact(g , x)) == coact((f ⋅ g) , x)  ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::El(C))
+  coact(id(A) , x) == x  ⊣ (A::Ob, x::El(A))
 end
 
 # Convenience constructors
