@@ -4,6 +4,7 @@ using Test
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra,
   Catlab.CategoricalAlgebra.FinSets
 using Catlab.Graphs.BasicGraphs: TheoryGraph
+using Catlab.Present
 
 function roundtrip_json_acset(x::T) where T <: AbstractACSet
   mktempdir() do dir
@@ -373,4 +374,6 @@ add_parts!(wg, :E, 4, src=[1,2,3,4], tgt=[2,3,4,1], weight=[101, 102, 103, 100])
   Dict(:src => id(X), :tgt => :Φ, :weight => [:Φ, :label]))
 @test roundtrip_json_acset(ldds) == ldds
 
+@test Presentation(Graph(1)) == TheoryGraph
+@test Presentation(ldds) == TheoryLabeledDDS
 end

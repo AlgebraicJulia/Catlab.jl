@@ -18,6 +18,8 @@ import ..Limits: limit, colimit, universal
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force
 using ...Theories: Category, CatDesc, AttrDesc, ob, hom, attr, adom, acodom
 import ...Theories: dom, codom, compose, ⋅, id
+using ...Present
+import ...Present: Presentation
 
 # FinSets interop
 #################
@@ -601,6 +603,12 @@ function (::Type{T})(X::ACSet, FOb::AbstractDict,
                      FHom::AbstractDict) where T <: AbstractACSet
   Y = T()
   migrate!(Y, X, FOb, FHom)
+end
+
+"""Get the Schema from an ACSet
+"""
+function Presentation(::ACSet{CD, AD}) where {CD, AD}
+  return Presentation(CD, AD)
 end
 
 """ Serialize an ACSet object to a JSON string
