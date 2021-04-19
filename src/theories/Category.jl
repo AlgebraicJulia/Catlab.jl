@@ -1,4 +1,5 @@
 export Category, FreeCategory, Ob, Hom, dom, codom, id, compose, ⋅,
+  Copresheaf, Presheaf, El, act, coact,
   Category2, FreeCategory2, Hom2, compose2
 
 import Base: show
@@ -72,6 +73,43 @@ function show(io::IO, ::MIME"text/latex", expr::HomExpr)
   print(io, " \\to ")
   show_latex(io, codom(expr))
   print(io, "\$")
+end
+
+# (Co)presheaf
+##############
+
+""" Theory of *copresheaves*.
+
+Axiomatized as a covariant category action.
+"""
+@theory Copresheaf{Ob,Hom,El} <: Category{Ob,Hom} begin
+  # copresheaf = object-indexed family
+  El(ob::Ob)::TYPE
+
+  # functoriality = covariant action
+  act(x::El(A), f::Hom(A,B))::El(B) ⊣ (A::Ob, B::Ob)
+
+  # action equations
+  act(act(x, f), g) == act(x, (f ⋅ g)) ⊣
+    (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::El(A))
+  act(x, id(A)) == x ⊣ (A::Ob, x::El(A))
+end
+
+""" Theory of *presheaves*.
+
+Axiomatized as a contravariant category action.
+"""
+@theory Presheaf{Ob,Hom,El} <: Category{Ob,Hom} begin
+  # presheaf = object-indexed family
+  El(ob::Ob)::TYPE
+
+  # functoriality = contravariant action
+  coact(f::Hom(A,B), x::El(B))::El(A) ⊣ (A::Ob, B::Ob)
+
+  # action equations
+  coact(f, coact(g, x)) == coact((f ⋅ g), x) ⊣
+    (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::El(C))
+  coact(id(A), x) == x ⊣ (A::Ob, x::El(A))
 end
 
 # 2-category
