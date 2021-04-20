@@ -23,7 +23,7 @@ j = Hom(:j, y⊗z, zz)
 # Preorder
 ##########
 
-x,y,z = (Elt(FreePreorder.Elt, sym) for sym in (:x, :y, :z))
+x,y,z = (El(FreePreorder.El, sym) for sym in (:x, :y, :z))
 f, g = Leq(:f, x, y), Leq(:g, y, z)
 @test lhs(reflexive(x)) == x
 @test rhs(reflexive(x)) == x

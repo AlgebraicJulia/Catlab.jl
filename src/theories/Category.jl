@@ -1,6 +1,5 @@
 export Category, FreeCategory, Ob, Hom, dom, codom, id, compose, ⋅,
-  Copresheaf, Presheaf, El, act, coact,
-  Category2, FreeCategory2, Hom2, compose2
+  Copresheaf, Presheaf, El, ob, act, coact
 
 import Base: show
 
@@ -110,52 +109,4 @@ Axiomatized as a contravariant category action.
   coact(f, coact(g, x)) == coact((f ⋅ g), x) ⊣
     (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::El(C))
   coact(id(A), x) == x ⊣ (A::Ob, x::El(A))
-end
-
-# 2-category
-############
-
-""" Theory of (strict) *2-categories*
-"""
-@signature Category2{Ob,Hom,Hom2} <: Category{Ob,Hom} begin
-  """ 2-morphism in a 2-category """
-  Hom2(dom::Hom(A,B), codom::Hom(A,B))::TYPE ⊣ (A::Ob, B::Ob)
-  @op (⇒) := Hom2
-
-  # Hom categories: Vertical composition
-  id(f)::(f ⇒ f) ⊣ (A::Ob, B::Ob, f::(A ⇒ B))
-  compose(α::(f ⇒ g), β::(g ⇒ h))::(f ⇒ h) ⊣
-    (A::Ob, B::Ob, f::(A → B), g::(A → B), h::(A → B))
-
-  # Horizontal compostion
-  compose2(α::(f ⇒ g), β::(h ⇒ k))::((f ⋅ h) ⇒ (g ⋅ k)) ⊣
-    (A::Ob, B::Ob, C::Ob, f::(A → B), g::(A → B), h::(B → C), k::(B → C))
-end
-
-# Convenience constructors
-compose2(αs::Vector) = foldl(compose2, αs)
-compose2(α, β, γ, αs...) = compose2([α, β, γ, αs...])
-
-""" Syntax for a 2-category.
-
-Checks domains of morphisms but not 2-morphisms.
-"""
-@syntax FreeCategory2{ObExpr,HomExpr,Hom2Expr} Category2 begin
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
-  compose(α::Hom2, β::Hom2) = associate(new(α,β))
-  compose2(α::Hom2, β::Hom2) = associate(new(α,β))
-end
-
-function show_unicode(io::IO, expr::Hom2Expr{:compose}; kw...)
-  Syntax.show_unicode_infix(io, expr, "⋅"; kw...)
-end
-function show_unicode(io::IO, expr::Hom2Expr{:compose2}; kw...)
-  Syntax.show_unicode_infix(io, expr, "*"; kw...)
-end
-
-function show_latex(io::IO, expr::Hom2Expr{:compose}; kw...)
-  Syntax.show_latex_infix(io, expr, "\\cdot"; kw...)
-end
-function show_latex(io::IO, expr::Hom2Expr{:compose2}; kw...)
-  Syntax.show_latex_infix(io, expr, "*"; kw...)
 end

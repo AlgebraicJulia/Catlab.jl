@@ -1,6 +1,6 @@
 export ThinCategory, FreeThinCategory,
   ThinSymmetricMonoidalCategory, FreeThinSymmetricMonoidalCategory,
-  Preorder, FreePreorder, Elt, Leq, ≤, lhs, rhs, reflexive, transitive
+  Preorder, FreePreorder, El, Leq, ≤, lhs, rhs, reflexive, transitive
 
 # Thin category
 ###############
@@ -34,17 +34,17 @@ end
 
 Preorders encode the axioms of reflexivity and transitivity as term constructors.
 """
-@theory Preorder{Elt,Leq} begin
-  Elt::TYPE
-  Leq(lhs::Elt, rhs::Elt)::TYPE
+@theory Preorder{El,Leq} begin
+  El::TYPE
+  Leq(lhs::El, rhs::El)::TYPE
   @op (≤) := Leq
 
   # Preorder axioms are lifted to term constructors in the GAT.
-  reflexive(A::Elt)::(A≤A) # ∀ A there is a term reflexive(A) which implies A≤A
-  transitive(f::(A≤B), g::(B≤C))::(A≤C) ⊣ (A::Elt, B::Elt, C::Elt)
+  reflexive(A::El)::(A≤A) # ∀ A there is a term reflexive(A) which implies A≤A
+  transitive(f::(A≤B), g::(B≤C))::(A≤C) ⊣ (A::El, B::El, C::El)
 
   # Axioms of the GAT are equivalences on terms or simplification rules in the logic
-  f == g ⊣ (A::Elt, B::Elt, f::(A≤B), g::(A≤B))
+  f == g ⊣ (A::El, B::El, f::(A≤B), g::(A≤B))
   # Read as (f⟹ A≤B ∧ g⟹ A≤B) ⟹ f ≡ g
 end
 
@@ -56,8 +56,8 @@ end
 # this is a morphism is *GAT* the category whose objects are GATs
 # and whose morphisms are algebraic structure preserving maps
 
-# @functor F(Preorder(Elt, Leq))::ThinCategory(Ob, Hom) begin
-#   Elt ↦ Ob
+# @functor F(Preorder(El, Leq))::ThinCategory(Ob, Hom) begin
+#   El ↦ Ob
 #   Leq ↦ Hom
 #   reflexive ↦ id
 #   transitive ↦ compose
