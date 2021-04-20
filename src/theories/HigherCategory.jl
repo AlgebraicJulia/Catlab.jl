@@ -1,8 +1,59 @@
-export DoubleCategory, FreeDoubleCategory, HomH, HomV, Hom2,
-  left, right, top, bottom, idH, idV, id2, id2V, id2H, composeH, composeV, ⋆,
-  MonoidalDoubleCategory,
-  SymmetricMonoidalDoubleCategory, FreeSymmetricMonoidalDoubleCategory,
-  braidH, braidV, σH, σV
+export Category2, FreeCategory2, Hom2, composeV, composeH, ⋆,
+  DoubleCategory, FreeDoubleCategory, HomH, HomV, Hom2,
+  left, right, top, bottom, idH, idV, id2, id2V, id2H,
+  MonoidalDoubleCategory, SymmetricMonoidalDoubleCategory,
+  FreeSymmetricMonoidalDoubleCategory, braidH, braidV, σH, σV
+
+# 2-category
+############
+
+""" Theory of (strict) *2-categories*
+"""
+@signature Category2{Ob,Hom,Hom2} <: Category{Ob,Hom} begin
+  """ 2-morphism in a 2-category """
+  Hom2(dom::Hom(A,B), codom::Hom(A,B))::TYPE ⊣ (A::Ob, B::Ob)
+  @op begin
+    (⇒) := Hom2
+    (⋆) := composeH
+  end
+
+  # Hom categories: vertical composition
+  id(f)::(f ⇒ f) ⊣ (A::Ob, B::Ob, f::(A ⇒ B))
+  compose(α::(f ⇒ g), β::(g ⇒ h))::(f ⇒ h) ⊣
+    (A::Ob, B::Ob, f::(A → B), g::(A → B), h::(A → B))
+
+  # Horizontal compostion
+  composeH(α::(f ⇒ g), β::(h ⇒ k))::((f ⋅ h) ⇒ (g ⋅ k)) ⊣
+    (A::Ob, B::Ob, C::Ob, f::(A → B), g::(A → B), h::(B → C), k::(B → C))
+end
+
+# Convenience constructors
+composeH(αs::Vector) = foldl(composeH, αs)
+composeH(α, β, γ, αs...) = composeH([α, β, γ, αs...])
+
+""" Syntax for a 2-category.
+
+Checks domains of morphisms but not 2-morphisms.
+"""
+@syntax FreeCategory2{ObExpr,HomExpr,Hom2Expr} Category2 begin
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  compose(α::Hom2, β::Hom2) = associate(new(α,β))
+  composeH(α::Hom2, β::Hom2) = associate(new(α,β))
+end
+
+function show_unicode(io::IO, expr::Hom2Expr{:compose}; kw...)
+  Syntax.show_unicode_infix(io, expr, "⋅"; kw...)
+end
+function show_unicode(io::IO, expr::Hom2Expr{:composeH}; kw...)
+  Syntax.show_unicode_infix(io, expr, "*"; kw...)
+end
+
+function show_latex(io::IO, expr::Hom2Expr{:compose}; kw...)
+  Syntax.show_latex_infix(io, expr, "\\cdot"; kw...)
+end
+function show_latex(io::IO, expr::Hom2Expr{:composeH}; kw...)
+  Syntax.show_latex_infix(io, expr, "*"; kw...)
+end
 
 # Double category
 #################
@@ -10,17 +61,14 @@ export DoubleCategory, FreeDoubleCategory, HomH, HomV, Hom2,
 """ Theory of (strict) *double categories*
 """
 @theory DoubleCategory{Ob,HomV,HomH,Hom2} begin
-  # """ Object in a category """
   Ob::TYPE
-  """ Vertical Morphism in a double category """
+  """ Vertical morphism in a double category """
   HomV(dom::Ob, codom::Ob)::TYPE
-  """ Horizontal Morphism in a double category """
+  """ Horizontal morphism in a double category """
   HomH(dom::Ob, codom::Ob)::TYPE
   """ 2-cell in a double category """
-  Hom2(top::HomH(A,B),
-       bottom::HomH(C,D),
-       left::HomV(A,C),
-       right::HomV(B,D))::TYPE ⊣ (A::Ob, B::Ob, C::Ob, D::Ob)
+  Hom2(top::HomH(A,B), bottom::HomH(C,D),
+       left::HomV(A,C), right::HomV(B,D))::TYPE ⊣ (A::Ob, B::Ob, C::Ob, D::Ob)
   @op begin
     (→) := HomH
     (↓) := HomV
@@ -34,13 +82,13 @@ export DoubleCategory, FreeDoubleCategory, HomH, HomV, Hom2,
   composeH(f::(A → B), g::(B → C))::(A → C) ⊣ (A::Ob, B::Ob, C::Ob)
   composeV(f::(A ↓ B), g::(B ↓ C))::(A ↓ C) ⊣ (A::Ob, B::Ob, C::Ob)
 
-  # Category axioms for Horizontal morphisms
+  # Category axioms for horizontal morphisms
   ((f ⋆ g) ⋆ h == f ⋆ (g ⋆ h)
     ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, f::(A → B), g::(B → C), h::(C → D)))
   f ⋆ idH(B) == f ⊣ (A::Ob, B::Ob, f::(A → B))
   idH(A) ⋆ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
 
-  # Category axioms for Vertical morphisms
+  # Category axioms for vertical morphisms
   ((f ⋅ g) ⋅ h == f ⋅ (g ⋅ h)
     ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, f::(A ↓ B), g::(B ↓ C), h::(C ↓ D)))
   f ⋅ idV(B) == f ⊣ (A::Ob, B::Ob, f::(A ↓ B))
@@ -67,11 +115,8 @@ export DoubleCategory, FreeDoubleCategory, HomH, HomV, Hom2,
 end
 
 # Convenience constructors
-composeH(αs::Vector) = foldl(composeH, αs)
 composeV(αs::Vector) = foldl(composeV, αs)
-composeH(α, β, γ, αs...) = composeH([α, β, γ, αs...])
 composeV(α, β, γ, αs...) = composeV([α, β, γ, αs...])
-
 
 """ Syntax for a double category.
 
@@ -87,19 +132,13 @@ end
 function show_unicode(io::IO, expr::Hom2Expr{:composeV}; kw...)
   Syntax.show_unicode_infix(io, expr, "⋅"; kw...)
 end
-function show_unicode(io::IO, expr::Hom2Expr{:composeH}; kw...)
-  Syntax.show_unicode_infix(io, expr, "*"; kw...)
-end
 
 function show_latex(io::IO, expr::Hom2Expr{:composeV}; kw...)
   Syntax.show_latex_infix(io, expr, "\\cdot"; kw...)
 end
-function show_latex(io::IO, expr::Hom2Expr{:composeH}; kw...)
-  Syntax.show_latex_infix(io, expr, "\\star"; kw...)
-end
 
-# Monoidal category
-###################
+# Monoidal double category
+##########################
 
 """ Theory of *monoidal double categories*
 

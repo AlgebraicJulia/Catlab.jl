@@ -1,6 +1,35 @@
 using Test
 
-# Double Category
+# 2-category
+############
+
+A, B, C, D = Ob(FreeCategory2, :A, :B, :C, :D)
+f, g, F, G = [ Hom(sym, A, B) for sym in [:f,:g,:F,:G] ]
+h, k, H, K = [ Hom(sym, B, C) for sym in [:h,:k,:H,:K] ]
+
+# Domains and codomains
+α, β = Hom2(:α, f, g), Hom2(:β, g, h)
+@test dom(α) == f
+@test codom(α) == g
+@test dom(dom(α)) == A
+@test codom(dom(α)) == B
+@test dom(compose(α,β)) == f
+@test codom(compose(α,β)) == h
+@test_throws SyntaxDomainError composeH(α,β)
+
+α, β = Hom2(:α, f, g), Hom2(:β, h, k)
+@test dom(composeH(α,β)) == compose(f,h)
+@test codom(composeH(α,β)) == compose(g,k)
+
+# Infix notation (Unicode)
+α, β = Hom2(:α, f, g), Hom2(:β, g, h)
+@test unicode(compose(f,h)) == "f⋅h"
+@test unicode(compose(α,β)) == "α⋅β"
+
+α, β = Hom2(:α, f, g), Hom2(:β, h, k)
+@test unicode(composeH(α,β)) == "α*β"
+
+# Double category
 #################
 
 A, B, C, D, X, Y = Ob(FreeDoubleCategory, :A, :B, :C, :D, :X, :Y)
@@ -12,8 +41,8 @@ l, r, rr = HomV(:ϕ, A, B), HomV(:r, X, Y), HomV(:rr, C, D)
 @test top(αβ) == composeH(f, h)
 @test bottom(αβ) == composeH(g, k)
 
-# Symmetric monoidal double category
-#############################
+# Mmonoidal double category
+###########################
 
 A, B, C, D = Ob(FreeSymmetricMonoidalDoubleCategory, :A, :B, :C, :D)
 E, F, G, H = Ob(FreeSymmetricMonoidalDoubleCategory, :E, :F, :G, :H)

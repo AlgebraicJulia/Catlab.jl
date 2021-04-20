@@ -55,38 +55,3 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 @test latex(Ob(FreeCategory, "x")) == "x"
 @test latex(Ob(FreeCategory, "sin")) == "\\mathrm{sin}"
 @test latex(Ob(FreeCategory, "\\alpha")) == "\\alpha"
-
-# 2-category
-############
-
-A, B, C, D = Ob(FreeCategory2, :A, :B, :C, :D)
-f, g, F, G = [ Hom(sym, A, B) for sym in [:f,:g,:F,:G] ]
-h, k, H, K = [ Hom(sym, B, C) for sym in [:h,:k,:H,:K] ]
-
-# Domains and codomains
-α, β = Hom2(:α, f, g), Hom2(:β, g, h)
-@test dom(α) == f
-@test codom(α) == g
-@test dom(dom(α)) == A
-@test codom(dom(α)) == B
-@test dom(compose(α,β)) == f
-@test codom(compose(α,β)) == h
-@test_throws SyntaxDomainError compose2(α,β)
-
-α, β = Hom2(:α, f, g), Hom2(:β, h, k)
-@test dom(compose2(α,β)) == compose(f,h)
-@test codom(compose2(α,β)) == compose(g,k)
-
-# Infix notation (Unicode)
-α, β = Hom2(:α, f, g), Hom2(:β, g, h)
-@test unicode(compose(f,h)) == "f⋅h"
-@test unicode(compose(α,β)) == "α⋅β"
-
-α, β = Hom2(:α, f, g), Hom2(:β, h, k)
-@test unicode(compose2(α,β)) == "α*β"
-
-# Incompatible theories
-@test_throws MethodError Hom(:f, Ob(FreeCategory, :A), Ob(FreeCategory2, :B))
-f = Hom(:f, Ob(FreeCategory, :A), Ob(FreeCategory, :B))
-g = Hom(:g, Ob(FreeCategory2, :B), Ob(FreeCategory2, :C))
-@test_throws MethodError compose(f,g)
