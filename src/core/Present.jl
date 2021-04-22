@@ -175,7 +175,7 @@ function translate_generator(name::Union{Symbol,Nothing}, type_expr)::Expr
     _ => throw(ParseError("Ill-formed type expression $type_expr"))
   end
   gen_expr = Expr(:call, type_name,
-                  isnothing(name) ? :nothing : QuoteNode(name), args...)
+                  isnothing(name) ? nothing : QuoteNode(name), args...)
   Expr(:call, module_ref(:add_generator!), :_presentation,
        translate_expr(gen_expr))
 end
