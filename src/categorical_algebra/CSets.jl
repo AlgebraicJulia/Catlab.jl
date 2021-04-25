@@ -2,7 +2,8 @@
 """
 module CSets
 export ACSetTransformation, CSetTransformation, components, force, is_natural,
-  homomorphism, homomorphisms, isomorphism, isomorphisms, migrate!,
+  homomorphism, homomorphisms, is_homomorphic,
+  isomorphism, isomorphisms, is_isomorphic, migrate!,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
 
 using AutoHashEquals
@@ -193,6 +194,14 @@ function homomorphisms(X::AbstractACSet, Y::AbstractACSet; monic::Bool=false)
   map(components -> ACSetTransformation(components, X, Y), results)
 end
 
+""" Is the first attributed ``C``-set homomorphic to the second?
+
+A convenience function based on [`homomorphism`](@ref).
+"""
+function is_homomorphic(X::AbstractACSet, Y::AbstractACSet; kw...)
+  !isnothing(homomorphism(X, Y; kw...))
+end
+
 """ Find an isomorphism between two attributed ``C``-sets, if one exists.
 
 See [`homomorphism`](@ref) for more information about the algorithms involved.
@@ -210,6 +219,14 @@ homomorphisms exist, it is exactly as expensive.
 function isomorphisms(X::AbstractACSet, Y::AbstractACSet)
   results = backtracking_search(X, Y, findall=true, iso=true)
   map(components -> ACSetTransformation(components, X, Y), results)
+end
+
+""" Are the two attributed ``C``-sets isomorphic?
+
+A convenience function based on [`isomorphism`](@ref).
+"""
+function is_isomorphic(X::AbstractACSet, Y::AbstractACSet; kw...)
+  !isnothing(isomorphism(X, Y; kw...))
 end
 
 """ Internal state for backtracking search for ACSet homomorphisms.
