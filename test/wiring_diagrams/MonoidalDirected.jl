@@ -156,7 +156,7 @@ g = singleton_diagram(DaggerSymmetricMonoidalCategory, Box(:g,[:B],[:A]))
 @test codom(dagger(f)) == dom(f)
 
 # Functoriality
-@test is_permuted_equal(dagger(compose(f,g)), compose(dagger(g),dagger(f)), [2,1])
+@test is_isomorphic(dagger(compose(f,g)), compose(dagger(g),dagger(f)))
 @test dagger(otimes(f,g)) == otimes(dagger(f),dagger(g))
 
 # Involutivity
@@ -182,10 +182,10 @@ I = munit(typeof(A))
 @test codom(dcounit(A)) == I
 
 # Coherence relations
-@test is_permuted_equal(dunit(otimes(A,B)),
-  compose(dunit(B), otimes(id(dual(B)), dunit(A), id(B))), [2,1])
-@test is_permuted_equal(dcounit(otimes(A,B)),
-  compose(otimes(id(A), dcounit(B), id(dual(A))), dcounit(A)), [2,1])
+@test is_isomorphic(dunit(otimes(A,B)),
+                    compose(dunit(B), otimes(id(dual(B)), dunit(A), id(B))))
+@test is_isomorphic(dcounit(otimes(A,B)),
+                    compose(otimes(id(A), dcounit(B), id(dual(A))), dcounit(A)))
 
 ### Adjoint mates
 
@@ -199,8 +199,8 @@ g = singleton_diagram(CompactClosedCategory, Box(:g,[:B],[:A]))
 @test codom(mate(f)) == dual(dom(f))
 
 # Functoriality
-@test is_permuted_equal(mate(compose(f,g)), compose(mate(g),mate(f)), [2,1])
-@test is_permuted_equal(mate(otimes(f,g)), otimes(mate(g),mate(f)), [2,1])
+@test is_isomorphic(mate(compose(f,g)), compose(mate(g),mate(f)))
+@test is_isomorphic(mate(otimes(f,g)), otimes(mate(g),mate(f)))
 
 # Involutivity
 @test mate(mate(f)) == f
@@ -301,13 +301,13 @@ junctioned = compose(f, junction_diagram(B,1,2))
 
 d = compose(mcopy(A), otimes(f,f))
 junctioned = compose(junction_diagram(A,1,2), otimes(f,f))
-@test is_permuted_equal(add_junctions(d), junctioned, [3,1,2])
+@test is_isomorphic(add_junctions(d), junctioned)
 @test rem_junctions(junctioned) == d
 
 # Merges.
 d = compose(mmerge(A), f)
 junctioned = compose(junction_diagram(A,2,1), f)
-@test is_permuted_equal(add_junctions(d), junctioned, [2,1])
+@test is_isomorphic(add_junctions(d), junctioned)
 @test rem_junctions(junctioned) == d
 
 d = compose(otimes(f,f), mmerge(B))
@@ -324,7 +324,7 @@ junctioned = compose(f, junction_diagram(B,1,0))
 # Creations.
 d = compose(create(A), f)
 junctioned = compose(junction_diagram(A,0,1), f)
-@test is_permuted_equal(add_junctions(d), junctioned, [2,1])
+@test is_isomorphic(add_junctions(d), junctioned)
 @test rem_junctions(junctioned) == d
 
 # Copies, merges, deletions, and creations, all at once.
@@ -332,9 +332,7 @@ d = compose(create(A), f, mcopy(B), mmerge(B), g, delete(C))
 junctioned = compose(junction_diagram(A,0,1), f, junction_diagram(B,1,2),
                      junction_diagram(B,2,1), g, junction_diagram(C,1,0))
 actual = add_junctions(d)
-# XXX: An isomorphism test would be more convenient.
-perm = [ findfirst([b] .== boxes(actual)) for b in boxes(junctioned) ]
-@test is_permuted_equal(actual, junctioned, perm)
+@test is_isomorphic(actual, junctioned)
 @test rem_junctions(junctioned) == d
 
 # Simplify junctions

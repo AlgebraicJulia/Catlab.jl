@@ -23,12 +23,10 @@ add_wires!(d, [
 
 d_vertical = read_yfiles("yed_vertical.graphml", orientation=TopToBottom)
 @test nboxes(d_vertical) == nboxes(d)
-perm = sortperm(boxes(d_vertical); by=box->box.value)
-@test is_permuted_equal(d_vertical, d, perm)
+@test is_isomorphic(d_vertical, d)
 
 d_horizontal = read_yfiles("yed_horizontal.graphml", orientation=LeftToRight)
 @test nboxes(d_horizontal) == nboxes(d)
-perm = sortperm(boxes(d_horizontal); by=box->box.value)
-@test is_permuted_equal(d_horizontal, d, perm)
+@test is_isomorphic(d_horizontal, d)
 
 end
