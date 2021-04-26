@@ -1,8 +1,11 @@
 export Category, FreeCategory, Ob, Hom, dom, codom, id, compose, ⋅,
-  Copresheaf, Presheaf, El, ob, act, coact,
+  Copresheaf, FreeCopresheaf, El, ElExpr, ob, act,
+  Presheaf, FreePresheaf, coact,
   DisplayedCategory, Act, hom
 
 import Base: show
+
+abstract type ElExpr{T} <: GATExpr{T} end
 
 # Category
 ##########
@@ -89,11 +92,16 @@ Axiomatized as a covariant category action.
 
   # functoriality = covariant action
   act(x::El(A), f::Hom(A,B))::El(B) ⊣ (A::Ob, B::Ob)
+  @op (⋅) := act
 
   # action equations
   act(act(x, f), g) == act(x, (f ⋅ g)) ⊣
     (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::El(A))
   act(x, id(A)) == x ⊣ (A::Ob, x::El(A))
+end
+
+@syntax FreeCopresheaf{ObExpr,HomExpr,ElExpr} Copresheaf begin
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
 end
 
 """ Theory of *presheaves*.
@@ -106,11 +114,37 @@ Axiomatized as a contravariant category action.
 
   # functoriality = contravariant action
   coact(f::Hom(A,B), x::El(B))::El(A) ⊣ (A::Ob, B::Ob)
+  @op (⋅) := coact
 
   # action equations
   coact(f, coact(g, x)) == coact((f ⋅ g), x) ⊣
     (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::El(C))
   coact(id(A), x) == x ⊣ (A::Ob, x::El(A))
+end
+
+@syntax FreePresheaf{ObExpr,HomExpr,ElExpr} Presheaf begin
+  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+end
+
+function show(io::IO, ::MIME"text/plain", expr::ElExpr)
+  show_unicode(io, expr)
+  print(io, ": ")
+  show_unicode(io, ob(expr))
+end
+function show(io::IO, ::MIME"text/latex", expr::ElExpr)
+  print(io, "\$")
+  show_latex(io, expr)
+  print(io, " : ")
+  show_latex(io, ob(expr))
+  print(io, "\$")
+end
+
+function show_unicode(io::IO, expr::Union{ElExpr{:act},ElExpr{:coact}}; kw...)
+  Syntax.show_unicode_infix(io, expr, "⋅"; kw...)
+end
+function show_latex(io::IO, expr::Union{ElExpr{:act},ElExpr{:coact}};
+                    paren::Bool=false, kw...)
+  Syntax.show_latex_infix(io, expr, "\\cdot"; paren=paren)
 end
 
 # Displayed category
