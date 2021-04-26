@@ -59,12 +59,13 @@ function show_latex(io::IO, expr::HomExpr{:compose}; paren::Bool=false, kw...)
   Syntax.show_latex_infix(io, expr, "\\cdot"; paren=paren)
 end
 
-function show(io::IO, ::MIME"text/latex", expr::GATExpr)
-  print(io, "\$")
-  show_latex(io, expr)
-  print(io, "\$")
+function show(io::IO, ::MIME"text/plain", expr::HomExpr)
+  show_unicode(io, expr)
+  print(io, ": ")
+  show_unicode(io, dom(expr))
+  print(io, " → ")
+  show_unicode(io, codom(expr))
 end
-
 function show(io::IO, ::MIME"text/latex", expr::HomExpr)
   print(io, "\$")
   show_latex(io, expr)

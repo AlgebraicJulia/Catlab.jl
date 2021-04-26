@@ -35,7 +35,7 @@ I = munit(FreeSymmetricMonoidalCategory.Ob)
 @test collect(A) == [A]
 @test collect(otimes(A,B)) == [A,B]
 @test collect(I) == []
-@test typeof(collect(I)) == Vector{FreeSymmetricMonoidalCategory.Ob}
+@test collect(I) isa Vector{FreeSymmetricMonoidalCategory.Ob}
 @test ndims(A) == 1
 @test ndims(otimes(A,B)) == 2
 @test ndims(I) == 0

@@ -8,7 +8,6 @@ export @syntax, GATExpr, SyntaxDomainError, head, args, first, last,
   gat_typeof, gat_type_args, invoke_term, functor,
   to_json_sexpr, parse_json_sexpr, show_sexpr, show_unicode, show_latex
 
-import Base: first, last
 import Base.Meta: ParseError, show_sexpr
 using MLStyle: @match
 
@@ -37,8 +36,8 @@ abstract type GATExpr{T} end
 
 head(::GATExpr{T}) where T = T
 args(expr::GATExpr) = expr.args
-first(expr::GATExpr) = first(args(expr))
-last(expr::GATExpr) = last(args(expr))
+Base.first(expr::GATExpr) = first(args(expr))
+Base.last(expr::GATExpr) = last(args(expr))
 gat_typeof(expr::GATExpr) = nameof(typeof(expr))
 gat_type_args(expr::GATExpr) = expr.type_args
 
@@ -66,6 +65,15 @@ function Base.show(io::IO, expr::GATExpr)
 end
 function Base.show(io::IO, expr::GATExpr{:generator})
   print(io, first(expr))
+end
+
+function Base.show(io::IO, ::MIME"text/plain", expr::GATExpr)
+  show_unicode(io, expr)
+end
+function Base.show(io::IO, ::MIME"text/latex", expr::GATExpr)
+  print(io, "\$")
+  show_latex(io, expr)
+  print(io, "\$")
 end
 
 struct SyntaxDomainError <: Exception
