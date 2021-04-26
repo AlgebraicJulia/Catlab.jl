@@ -17,12 +17,12 @@ Graphviz or other declarative diagram languages.
 """
 module DirectedWiringDiagrams
 export AbstractBox, Box, WiringDiagram, Wire, Port, PortKind,
-  InputPort, OutputPort, input_ports, output_ports, set_input_ports!, set_output_ports!,
-  add_input_ports!, add_output_ports!,
-  input_id, output_id, outer_ids, boxes, box_ids, nboxes, nwires, box, wires, has_wire, 
-  graph, internal_graph,
+  InputPort, OutputPort, input_ports, output_ports,
+  set_input_ports!, set_output_ports!, add_input_ports!, add_output_ports!,
+  input_id, output_id, outer_ids, boxes, box_ids, nboxes, nwires, box, wires,
+  has_wire, graph, internal_graph,
   add_box!, add_boxes!, add_wire!, add_wires!, rem_box!, rem_boxes!, rem_wire!,
-  rem_wires!, port_value, validate_ports, is_permuted_equal,
+  rem_wires!, port_value, validate_ports, is_isomorphic,
   all_neighbors, neighbors, outneighbors, inneighbors, in_wires, out_wires,
   singleton_diagram, induced_subdiagram, encapsulated_subdiagram,
   ocompose, substitute, encapsulate
@@ -30,6 +30,7 @@ export AbstractBox, Box, WiringDiagram, Wire, Port, PortKind,
 using AutoHashEquals
 
 using ...Present, ...Graphs.BasicGraphs, ...CategoricalAlgebra.CSets
+import ...CategoricalAlgebra.CSets: is_isomorphic
 using ...Graphs.BasicGraphs: TheoryGraph
 import ...Graphs: all_neighbors, neighbors, outneighbors, inneighbors
 
@@ -188,7 +189,7 @@ correspond to wires. There are two special vertices, accessible via `input_id`
 and `output_id`, that represent the input and output ports of the outer box.
 """
 
-mutable struct WiringDiagram{Theory, PortValue, WireValue,  BoxValue} <: AbstractBox
+mutable struct WiringDiagram{Theory, PortValue, WireValue, BoxValue} <: AbstractBox
   diagram::WiringDiagramACSet{PortValue, WireValue, Union{BoxValue, AbstractBox}, DataType}
   value::Any
 
@@ -215,12 +216,10 @@ input_id(::WiringDiagram) = -2
 output_id(::WiringDiagram) = -1
 outer_ids(::WiringDiagram) = (-2,-1)
 
-""" Check equality of wiring diagrams.
+""" Are the two wiring diagrams equal?
 
-Warning: This method checks equality of the underlying graph representation, not
-mathematical equality which involves graph isomorphism.
-
-See also: `is_permuted_equal`
+**Warning**: This method checks equality of the underlying C-set representation.
+Use [`is_isomorphic`](@ref) to check isomorphism of wiring diagrams.
 """
 function Base.:(==)(d1::WiringDiagram, d2::WiringDiagram)
   (input_ports(d1) == input_ports(d2) &&
@@ -228,28 +227,8 @@ function Base.:(==)(d1::WiringDiagram, d2::WiringDiagram)
    boxes(d1) == boxes(d2) && sort!(wires(d1)) == sort!(wires(d2)))
 end
 
-""" Check equality of wiring diagram under permutation of boxes.
-
-When the boxes in the first diagram `d1` are permuted according to `σ`,
-does it become identical to the second diagram `d2`?
-"""
-function is_permuted_equal(d1::WiringDiagram, d2::WiringDiagram,
-                           σ::AbstractVector{Int})
-  @assert nboxes(d1) == length(σ) && nboxes(d2) == length(σ)
-  d1_ids, d2_ids = box_ids(d1), box_ids(d2)
-  box_map = Dict{Int,Int}(d1_ids[σ[i]] => d2_ids[i] for i in eachindex(σ))
-  is_induced_equal(d1, d2, box_map)
-end
-function is_induced_equal(d1::WiringDiagram, d2::WiringDiagram,
-                          box_map::Dict{Int,Int})
-  box_map[input_id(d1)] = input_id(d2)
-  box_map[output_id(d1)] = output_id(d2)
-  map_wire = wire::Wire -> Wire(wire.value,
-    set_box(wire.source, box_map[wire.source.box]),
-    set_box(wire.target, box_map[wire.target.box]))
-  (input_ports(d1) == input_ports(d2) && output_ports(d1) == output_ports(d2) &&
-   all(box(d1,v) == box(d2,box_map[v]) for v in box_ids(d1)) &&
-   sort!(map(map_wire, wires(d1))) == sort!(wires(d2)))
+function is_isomorphic(d1::WiringDiagram, d2::WiringDiagram)
+  d1.value == d2.value && is_isomorphic(d1.diagram, d2.diagram)
 end
 
 Base.copy(diagram::WiringDiagram) = WiringDiagram(diagram)

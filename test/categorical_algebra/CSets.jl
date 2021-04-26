@@ -277,12 +277,12 @@ colim = pushout(α, β)
 g, h = path_graph(Graph, 3), path_graph(Graph, 4)
 @test homomorphisms(g, h) == [CSetTransformation((V=[1,2,3], E=[1,2]), g, h),
                               CSetTransformation((V=[2,3,4], E=[2,3]), g, h)]
-@test isnothing(isomorphism(g, h))
+@test !is_isomorphic(g, h)
 
 I = ob(terminal(Graph))
 @test homomorphism(g, I) == CSetTransformation((V=[1,1,1], E=[1,1]), g, I)
-@test isnothing(homomorphism(g, I, monic=true))
-@test isnothing(homomorphism(I, h))
+@test !is_homomorphic(g, I, monic=true)
+@test !is_homomorphic(I, h)
 
 # Symmetic graphs
 #-----------------
@@ -301,11 +301,11 @@ g = path_graph(SymmetricGraph, 3)
 # The 5-cycle has chromatic number 3 but the 6-cycle has chromatic number 2.
 K₂, K₃ = complete_graph(SymmetricGraph, 2), complete_graph(SymmetricGraph, 3)
 C₅, C₆ = cycle_graph(SymmetricGraph, 5), cycle_graph(SymmetricGraph, 6)
-@test isnothing(homomorphism(C₅, K₂))
-α = homomorphism(C₅, K₃)
-@test !isnothing(α) && is_natural(α)
-α = homomorphism(C₆, K₂)
-@test !isnothing(α) && is_natural(α)
+@test !is_homomorphic(C₅, K₂)
+@test is_homomorphic(C₅, K₃)
+@test is_natural(homomorphism(C₅, K₃))
+@test is_homomorphic(C₆, K₂)
+@test is_natural(homomorphism(C₆, K₂))
 
 # Labeled graphs
 #---------------
@@ -320,7 +320,7 @@ g = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:c,:d],))
 h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:c,:d,:a,:b],))
 @test homomorphism(g, h) == ACSetTransformation((V=[3,4,1,2], E=[3,4,1,2]), g, h)
 h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:d,:c],))
-@test isnothing(homomorphism(g, h))
+@test !is_homomorphic(g, h)
 
 # Functorial data migration
 ###########################

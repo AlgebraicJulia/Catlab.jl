@@ -20,13 +20,11 @@ normalized = compose(f, mcopy(B))
 d = compose(f, mcopy(B), otimes(g,g))
 normalize_copy!(d)
 normalized = compose(f, g, mcopy(C))
-perm = sortperm(boxes(d); by=box->box.value)
-@test is_permuted_equal(d, normalized, perm)
+@test is_isomorphic(d, normalized)
 
 d = compose(mcopy(A), otimes(f,f), otimes(g,g))
 normalize_copy!(d)
-perm = sortperm(boxes(d); by=box->box.value)
-@test is_permuted_equal(d, normalized, perm)
+@test is_isomorphic(d, normalized)
 
 # Normalize deletions.
 @test normalize_delete!(copy(f)) == f
