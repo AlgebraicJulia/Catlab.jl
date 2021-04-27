@@ -1,8 +1,12 @@
-export Category2, FreeCategory2, Hom2, composeV, composeH, ⋆,
-  DoubleCategory, FreeDoubleCategory, HomH, HomV, Hom2,
+export Category2, FreeCategory2, Hom2, Hom2Expr, composeV, composeH, ⋆,
+  DoubleCategory, FreeDoubleCategory, HomH, HomV, HomHExpr, HomVExpr,
   left, right, top, bottom, idH, idV, id2, id2V, id2H,
   MonoidalDoubleCategory, SymmetricMonoidalDoubleCategory,
   FreeSymmetricMonoidalDoubleCategory, braidH, braidV, σH, σV
+
+abstract type Hom2Expr{T} <: CategoryExpr{T} end
+abstract type HomVExpr{T} <: CategoryExpr{T} end
+abstract type HomHExpr{T} <: CategoryExpr{T} end
 
 # 2-category
 ############
@@ -122,7 +126,7 @@ composeV(α, β, γ, αs...) = composeV([α, β, γ, αs...])
 
 Checks domains of morphisms but not 2-morphisms.
 """
-@syntax FreeDoubleCategory{ObExpr,HomVExpr, HomHExpr,Hom2Expr} DoubleCategory begin
+@syntax FreeDoubleCategory{ObExpr,HomVExpr,HomHExpr,Hom2Expr} DoubleCategory begin
   compose(f::HomV, g::HomV) = associate(new(f,g; strict=true))
   compose(f::HomH, g::HomH) = associate(new(f,g; strict=true))
   composeH(α::Hom2, β::Hom2) = associate(new(α,β))

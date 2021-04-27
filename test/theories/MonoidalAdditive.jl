@@ -34,20 +34,10 @@ O = mzero(FreeSymmetricMonoidalCategoryAdditive.Ob)
 @test collect(A) == [A]
 @test collect(oplus(A,B)) == [A,B]
 @test collect(O) == []
-@test typeof(collect(O)) == Vector{FreeSymmetricMonoidalCategoryAdditive.Ob}
+@test collect(O) isa Vector{FreeSymmetricMonoidalCategoryAdditive.Ob}
 @test ndims(A) == 1
 @test ndims(oplus(A,B)) == 2
 @test ndims(O) == 0
-
-# String format
-@test string(oplus(f,g)) == "oplus(f,g)"
-@test string(compose(oplus(f,f),oplus(g,g))) == "compose(oplus(f,f),oplus(g,g))"
-
-# S-expressions
-@test sexpr(O) == "(mzero)"
-@test sexpr(oplus(A,B)) == "(oplus :A :B)"
-@test sexpr(oplus(f,g)) == "(oplus :f :g)"
-@test sexpr(compose(oplus(f,f),oplus(g,g))) == "(compose (oplus :f :f) (oplus :g :g))"
 
 # Infix notation (Unicode)
 @test unicode(O) == "O"
