@@ -4,7 +4,7 @@ export LinearFunctions, FreeLinearFunctions,
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, swap,
   dagger, dunit, docunit, mcopy, Δ, delete, ◊, mmerge, ∇, create, □,
   plus, +, zero, coplus, cozero, meet, top, join, bottom,
-  scalar, antipode, antipode, adjoint, evaluate
+  scalar, antipode, adjoint, evaluate
 
 import Base: adjoint
 using AutoHashEquals
@@ -14,7 +14,7 @@ using ...Catlab, ...Theories
 import ...Theories:
   Ob, Hom, dom, codom, compose, ⋅, ∘, id, oplus, ⊕, mzero, swap,
   dagger, dunit, dcounit, mcopy, Δ, delete, ◊, mmerge, ∇, create, □,
-  plus, +, zero, coplus, cozero, meet, top, join, bottom
+  plus, +, zero, coplus, cozero, antipode, meet, top, join, bottom
 using ...Programs
 import ...Programs: evaluate_hom
 
@@ -25,13 +25,11 @@ import ...Programs: evaluate_hom
 
 Functional fragment of graphical linear algebra.
 """
-@theory LinearFunctions{Ob,Hom} <: SemiadditiveCategory{Ob,Hom} begin
+@theory LinearFunctions{Ob,Hom} <: AdditiveCategory{Ob,Hom} begin
   adjoint(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
-  
   scalar(A::Ob, c::Number)::(A → A)
-  antipode(A::Ob)::(A → A)
 
-  # Scalar and antipode axioms.
+  # Scalar axioms.
   scalar(A, a) ⋅ scalar(A, b) == scalar(A, a*b) ⊣ (A::Ob, a::Number, b::Number)
   scalar(A, 1) == id(A) ⊣ (A::Ob)
   scalar(A, a) ⋅ Δ(A) == Δ(A) ⋅ (scalar(A, a) ⊕ scalar(A, a)) ⊣ (A::Ob, a::Number)
@@ -41,7 +39,7 @@ Functional fragment of graphical linear algebra.
   zero(A) ⋅ scalar(A, a) == zero(A) ⊣ (A::Ob, a::Number)
   antipode(A) == scalar(A, -1) ⊣ (A::Ob)
 
-  # Homogeneity axiom. Additivity is inherited from `SemiadditiveCategory`.
+  # Homogeneity axiom. Additivity is inherited from `AdditiveCategory`.
   scalar(A, c) ⋅ f == f ⋅ scalar(B, c) ⊣ (A::Ob, B::Ob, c::Number, f::(A → B))
 end
 

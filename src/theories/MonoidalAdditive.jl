@@ -2,8 +2,8 @@ export MonoidalCategoryAdditive, SymmetricMonoidalCategoryAdditive,
   FreeSymmetricMonoidalCategoryAdditive, oplus, ⊕, mzero, swap,
   MonoidalCategoryWithCodiagonals, CocartesianCategory, FreeCocartesianCategory,
   plus, zero, copair, coproj1, coproj2,
-  MonoidalCategoryWithBidiagonalsAdditive, SemiadditiveCategory,
-  mcopy, delete, pair, proj1, proj2, Δ, ◊, +,
+  MonoidalCategoryWithBidiagonalsAdditive, SemiadditiveCategory, AdditiveCategory,
+  mcopy, delete, pair, proj1, proj2, Δ, ◊, +, antipode,
   HypergraphCategoryAdditive
 
 import Base: collect, ndims, +, zero
@@ -144,8 +144,8 @@ function show_latex(io::IO, expr::HomExpr{:zero}; kw...)
   Syntax.show_latex_script(io, expr, "0")
 end
 
-# Biproduct category
-####################
+# Additive category
+###################
 
 """ Theory of *monoidal categories with bidiagonals*, in additive notation
 
@@ -194,6 +194,20 @@ instead of multiplicatively.
   plus(A)⋅◊(A) == ◊(A) ⊕ ◊(A) ⊣ (A::Ob)
   zero(A)⋅Δ(A) == zero(A) ⊕ zero(A) ⊣ (A::Ob)
   zero(A)⋅◊(A) == id(mzero()) ⊣ (A::Ob)
+end
+
+""" Theory of *additive categories*
+
+An additive category is a biproduct category enriched in abelian groups. Thus,
+it is a semiadditive category where the hom-monoids have negatives.
+"""
+@theory AdditiveCategory{Ob,Hom} <: SemiadditiveCategory{Ob,Hom} begin
+  antipode(A::Ob)::(A → A)
+
+  # Antipode axioms.
+  antipode(A) ⋅ f == f ⋅ antipode(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  Δ(A)⋅(id(A)⊕antipode(A))⋅plus(A) == ◊(A)⋅zero(A) ⊣ (A::Ob)
+  Δ(A)⋅(antipode(A)⊕id(A))⋅plus(A) == ◊(A)⋅zero(A) ⊣ (A::Ob)
 end
 
 # Hypergraph category
