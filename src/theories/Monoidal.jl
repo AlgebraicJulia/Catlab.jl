@@ -99,6 +99,11 @@ show_latex(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
   # Naturality axiom.
   (f ⊗ g) ⋅ σ(B,D) == σ(A,C) ⋅ (g ⊗ f) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
                                           f::(A → B), g::(C → D))
+
+  # Monoidal unit axioms
+  σ(A, munit()) == id(A) ⊣ (A::Ob)
+  σ(munit(), A) == id(A) ⊣ (A::Ob)
+  σ(munit(), munit()) == id(munit() ⊗ munit())
 end
 
 @syntax FreeSymmetricMonoidalCategory{ObExpr,HomExpr} SymmetricMonoidalCategory begin
