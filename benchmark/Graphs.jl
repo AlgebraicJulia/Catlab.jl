@@ -9,8 +9,12 @@ const LG, MG = LightGraphs, MetaGraphs
 using Catlab, Catlab.CategoricalAlgebra, Catlab.Graphs
 using Catlab.Graphs.BasicGraphs: TheoryGraph
 
+testdatadir = joinpath(dirname(@__FILE__), "..", "test", "testdata")
+
+
 # Helpers
-#########
+#
+########
 
 # `bench_iter_edges` and `bench_has_edge` adapted from LightGraphs:
 # https://github.com/JuliaGraphs/LightGraphs.jl/blob/master/benchmark/core.jl
@@ -60,14 +64,24 @@ end
 @inline Graphs.has_edge(g::LG.AbstractGraph, args...) = LG.has_edge(g, args...)
 @inline Graphs.neighbors(g::LG.AbstractGraph, args...) = LG.neighbors(g, args...)
 
+function lg_connected_components_projection(g)
+  label = Vector{Int}(undef, LG.nv(g))
+  LG.connected_components!(label, g)
+end
+
 # Graphs
 ########
 
 bench = SUITE["Graph"] = BenchmarkGroup()
+clbench = bench["Catlab"] = BenchmarkGroup()
+clvecbench = bench["Catlab-vectorized"] = BenchmarkGroup()
+clprojbench = bench["Catlab-proj"] = BenchmarkGroup()
+lgbench = bench["LightGraphs"] = BenchmarkGroup()
 
 n = 10000
-bench["make-path"] = @benchmarkable path_graph(Graph, n)
-bench["make-path-lightgraphs"] = @benchmarkable begin
+clbench["make-path"] = @benchmarkable path_graph(Graph,n)
+
+lgbench["make-path"] = @benchmarkable begin
   g = LG.DiGraph()
   LG.add_vertices!(g, n)
   for v in 1:(n-1)
@@ -77,41 +91,50 @@ end
 
 g = path_graph(Graph, n)
 lg = LG.DiGraph(g)
-bench["iter-edges"] = @benchmarkable bench_iter_edges($g)
-bench["iter-edges-vectorized"] = @benchmarkable bench_iter_edges_vectorized($g)
-bench["iter-edges-lightgraphs"] = @benchmarkable bench_iter_edges($lg)
-bench["has-edge"] = @benchmarkable bench_has_edge($g)
-bench["has-edge-lightgraphs"] = @benchmarkable bench_has_edge($lg)
-bench["iter-neighbors"] = @benchmarkable bench_iter_neighbors($g)
-bench["iter-neighbors-lightgraphs"] = @benchmarkable bench_iter_neighbors($lg)
+
+clbench["iter-edges"] = @benchmarkable bench_iter_edges($g)
+clvecbench["iter-edges"] = @benchmarkable bench_iter_edges_vectorized($g)
+lgbench["iter-edges"] = @benchmarkable bench_iter_edges($lg)
+clbench["has-edge"] = @benchmarkable bench_has_edge($g)
+lgbench["has-edge"] = @benchmarkable bench_has_edge($lg)
+clbench["iter-neighbors"] = @benchmarkable bench_iter_neighbors($g)
+lgbench["iter-neighbors"] = @benchmarkable bench_iter_neighbors($lg)
 
 n₀ = 2000
 g₀ = path_graph(Graph, n₀)
 g = ob(coproduct(fill(g₀, 5)))
 lg = LG.DiGraph(g)
-bench["path-graph-components"] = @benchmarkable connected_components($g)
-bench["path-graph-components-proj"] =
+clbench["path-graph-components"] = @benchmarkable connected_components($g)
+clprojbench["path-graph-components"] =
   @benchmarkable connected_component_projection($g)
-bench["path-graph-components-lightgraphs"] =
+lgbench["path-graph-components"] =
   @benchmarkable LG.weakly_connected_components($lg)
 
 g₀ = star_graph(Graph, n₀)
 g = ob(coproduct(fill(g₀, 5)))
 lg = LG.DiGraph(g)
-bench["star-graph-components"] = @benchmarkable connected_components($g)
-bench["star-graph-components-proj"] =
+clbench["star-graph-components"] = @benchmarkable connected_components($g)
+clprojbench["star-graph-components"] =
   @benchmarkable connected_component_projection($g)
-bench["star-graph-components-lightgraphs"] =
+lgbench["star-graph-components"] =
   @benchmarkable LG.weakly_connected_components($lg)
+
+bench = SUITE["GraphConnComponents"] = BenchmarkGroup()
+clbench = bench["Catlab"] = BenchmarkGroup()
+lgbench = bench["LightGraphs"] = BenchmarkGroup()
 
 # Symmetric graphs
 ##################
 
 bench = SUITE["SymmetricGraph"] = BenchmarkGroup()
+clbench = bench["Catlab"] = BenchmarkGroup()
+clvecbench = bench["Catlab-vectorized"] = BenchmarkGroup()
+lgbench = bench["LightGraphs"] = BenchmarkGroup()
 
 n = 10000
-bench["make-path"] = @benchmarkable path_graph(SymmetricGraph, n)
-bench["make-path-lightgraphs"] = @benchmarkable begin
+clbench["make-path"] = @benchmarkable path_graph(SymmetricGraph, n)
+
+lgbench["make-path"] = @benchmarkable begin
   g = LG.Graph()
   LG.add_vertices!(g, n)
   for v in 1:(n-1)
@@ -121,60 +144,40 @@ end
 
 g = path_graph(SymmetricGraph, n)
 lg = LG.Graph(g)
-bench["iter-edges"] = @benchmarkable bench_iter_edges($g)
-bench["iter-edges-vectorized"] = @benchmarkable bench_iter_edges_vectorized($g)
-bench["iter-edges-lightgraphs"] = @benchmarkable bench_iter_edges($lg)
-bench["has-edge"] = @benchmarkable bench_has_edge($g)
-bench["has-edge-lightgraphs"] = @benchmarkable bench_has_edge($lg)
-bench["iter-neighbors"] = @benchmarkable bench_iter_neighbors($g)
-bench["iter-neighbors-lightgraphs"] = @benchmarkable bench_iter_neighbors($lg)
 
-function lg_connected_components_projection(g)
-  label = Vector{Int}(undef, LG.nv(g))
-  LG.connected_components!(label, g)
-end
+clbench["iter-edges"] = @benchmarkable bench_iter_edges($g)
+clvecbench["iter-edges"] = @benchmarkable bench_iter_edges_vectorized($g)
+lgbench["iter-edges"] = @benchmarkable bench_iter_edges($lg)
+clbench["has-edge"] = @benchmarkable bench_has_edge($g)
+lgbench["has-edge"] = @benchmarkable bench_has_edge($lg)
+clbench["iter-neighbors"] = @benchmarkable bench_iter_neighbors($g)
+lgbench["iter-neighbors"] = @benchmarkable bench_iter_neighbors($lg)
 
-n₀ = 2000
-g₀ = path_graph(SymmetricGraph, n₀)
-g = ob(coproduct(fill(g₀, 5)))
-lg = LG.Graph(g)
-bench["path-graph-components"] = @benchmarkable connected_components($g)
-bench["path-graph-components-proj"] =
-  @benchmarkable connected_component_projection($g)
-bench["path-graph-components-lightgraphs"] =
-  @benchmarkable LG.connected_components($lg)
-bench["path-graph-components-proj-lightgraphs"] =
-  @benchmarkable lg_connected_components_projection($lg)
-
-g₀ = star_graph(SymmetricGraph, n₀)
-g = ob(coproduct(fill(g₀, 5)))
-lg = LG.Graph(g)
-bench["star-graph-components"] = @benchmarkable connected_components($g)
-bench["star-graph-components-proj"] =
-  @benchmarkable connected_component_projection($g)
-bench["star-graph-components-lightgraphs"] =
-  @benchmarkable LG.connected_components($lg)
-bench["star-graph-components-proj-lightgraphs"] =
-  @benchmarkable lg_connected_components_projection($lg)
+bench = SUITE["SymmetricGraphConnComponent"] = BenchmarkGroup()
+clbench = bench["Catlab"] = BenchmarkGroup()
+lgbench = bench["LightGraphs"] = BenchmarkGroup()
 
 # Weighted graphs
 #################
 
 bench = SUITE["WeightedGraph"] = BenchmarkGroup()
+clbench = bench["Catlab"] = BenchmarkGroup()
+clvecbench = bench["Catlab-vectorized"] = BenchmarkGroup()
+lgbench = bench["LightGraphs"] = BenchmarkGroup()
 
 n = 10000
 g = path_graph(WeightedGraph{Float64}, n; E=(weight=range(0,1,length=n-1),))
 mg = MG.MetaDiGraph(g)
 
-bench["sum-weights-vectorized"] = @benchmarkable sum(weight($g))
-bench["sum-weights"] = @benchmarkable begin
+clvecbench["sum-weights"] = @benchmarkable sum(weight($g))
+clbench["sum-weights"] = @benchmarkable begin
   total = 0.0
   for e in edges($g)
     total += weight($g, e)
   end
   total
 end
-bench["sum-weights-metagraphs"] = @benchmarkable begin
+lgbench["sum-weights"] = @benchmarkable begin
   total = 0.0
   for e in MG.edges($mg)
     total += MG.get_prop($mg, e, :weight)
@@ -182,15 +185,15 @@ bench["sum-weights-metagraphs"] = @benchmarkable begin
   total
 end
 
-bench["increment-weights-vectorized"] = @benchmarkable begin
+clvecbench["increment-weights"] = @benchmarkable begin
   $g[:weight] = $g[:weight] .+ 1.0
 end
-bench["increment-weights"] = @benchmarkable begin
+clbench["increment-weights"] = @benchmarkable begin
   for e in edges($g)
     $g[e,:weight] += 1.0
   end
 end
-bench["increment-weights-metagraphs"] = @benchmarkable begin
+lgbench["increment-weights"] = @benchmarkable begin
   for e in MG.edges($mg)
     MG.set_prop!($mg, e, :weight, MG.get_prop($mg, e, :weight) + 1.0)
   end
@@ -200,6 +203,8 @@ end
 ################
 
 bench = SUITE["LabeledGraph"] = BenchmarkGroup()
+clbench = bench["Catlab"] = BenchmarkGroup()
+lgbench = bench["LightGraphs"] = BenchmarkGroup()
 
 @present TheoryLabeledGraph <: TheoryGraph begin
   Label::Data
@@ -225,22 +230,22 @@ function discrete_labeled_metagraph(n::Int; indexed::Bool=false)
 end
 
 n = 5000
-bench["make-discrete"] = @benchmarkable discrete_labeled_graph($n)
-bench["make-discrete-metagraphs"] = @benchmarkable discrete_labeled_metagraph($n)
-bench["make-discrete-indexed"] =
+clbench["make-discrete"] = @benchmarkable discrete_labeled_graph($n)
+lgbench["make-discrete"] = @benchmarkable discrete_labeled_metagraph($n)
+clbench["make-discrete-indexed"] =
   @benchmarkable discrete_labeled_graph($n, indexed=true)
-bench["make-discrete-indexed-metagraphs"] =
+lgbench["make-discrete-indexed"] =
   @benchmarkable discrete_labeled_metagraph($n, indexed=true)
 
 n = 10000
 g = discrete_labeled_graph(n)
 mg = discrete_labeled_metagraph(n)
-bench["iter-labels"] = @benchmarkable begin
+clbench["iter-labels"] = @benchmarkable begin
   for v in vertices($g)
     label = $g[v,:label]
   end
 end
-bench["iter-labels-metagraphs"] = @benchmarkable begin
+lgbench["iter-labels"] = @benchmarkable begin
   for v in MG.vertices($mg)
     label = MG.get_prop($mg, v, :label)
   end
@@ -250,12 +255,12 @@ g = discrete_labeled_graph(n, indexed=true)
 mg = discrete_labeled_metagraph(n, indexed=true)
 Random.seed!(1)
 σ = randperm(n)
-bench["indexed-lookup"] = @benchmarkable begin
+clbench["indexed-lookup"] = @benchmarkable begin
   for i in $σ
     @assert incident($g, "v$i", :label) == i
   end
 end
-bench["indexed-lookup-metagraphs"] = @benchmarkable begin
+lgbench["indexed-lookup"] = @benchmarkable begin
   for i in $σ
     @assert $mg["v$i", :label] == i
   end
