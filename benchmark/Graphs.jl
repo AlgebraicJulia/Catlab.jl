@@ -9,12 +9,8 @@ const LG, MG = LightGraphs, MetaGraphs
 using Catlab, Catlab.CategoricalAlgebra, Catlab.Graphs
 using Catlab.Graphs.BasicGraphs: TheoryGraph
 
-testdatadir = joinpath(dirname(@__FILE__), "..", "test", "testdata")
-
-
 # Helpers
-#
-########
+#########
 
 # `bench_iter_edges` and `bench_has_edge` adapted from LightGraphs:
 # https://github.com/JuliaGraphs/LightGraphs.jl/blob/master/benchmark/core.jl
@@ -119,16 +115,13 @@ clprojbench["star-graph-components"] =
 lgbench["star-graph-components"] =
   @benchmarkable LG.weakly_connected_components($lg)
 
-bench = SUITE["GraphConnComponents"] = BenchmarkGroup()
-clbench = bench["Catlab"] = BenchmarkGroup()
-lgbench = bench["LightGraphs"] = BenchmarkGroup()
-
 # Symmetric graphs
 ##################
 
 bench = SUITE["SymmetricGraph"] = BenchmarkGroup()
 clbench = bench["Catlab"] = BenchmarkGroup()
 clvecbench = bench["Catlab-vectorized"] = BenchmarkGroup()
+clprojbench = bench["Catlab-proj"] = BenchmarkGroup()
 lgbench = bench["LightGraphs"] = BenchmarkGroup()
 
 n = 10000
@@ -153,9 +146,22 @@ lgbench["has-edge"] = @benchmarkable bench_has_edge($lg)
 clbench["iter-neighbors"] = @benchmarkable bench_iter_neighbors($g)
 lgbench["iter-neighbors"] = @benchmarkable bench_iter_neighbors($lg)
 
-bench = SUITE["SymmetricGraphConnComponent"] = BenchmarkGroup()
-clbench = bench["Catlab"] = BenchmarkGroup()
-lgbench = bench["LightGraphs"] = BenchmarkGroup()
+n₀ = 2000
+g₀ = path_graph(SymmetricGraph, n₀)
+g = ob(coproduct(fill(g₀, 5)))
+lg = LG.Graph(g)
+clbench["path-graph-components"] = @benchmarkable connected_components($g)
+clprojbench["path-graph-components"] =
+  @benchmarkable connected_component_projection($g)
+lgbench["path-graph-components"] = @benchmarkable LG.connected_components($lg)
+
+g₀ = star_graph(SymmetricGraph, n₀)
+g = ob(coproduct(fill(g₀, 5)))
+lg = LG.Graph(g)
+clbench["star-graph-components"] = @benchmarkable connected_components($g)
+clprojbench["star-graph-components"] =
+  @benchmarkable connected_component_projection($g)
+lgbench["star-graph-components"] = @benchmarkable LG.connected_components($lg)
 
 # Weighted graphs
 #################
