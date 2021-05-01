@@ -71,7 +71,6 @@ end
 bench = SUITE["Graph"] = BenchmarkGroup()
 clbench = bench["Catlab"] = BenchmarkGroup()
 clvecbench = bench["Catlab-vectorized"] = BenchmarkGroup()
-clprojbench = bench["Catlab-proj"] = BenchmarkGroup()
 lgbench = bench["LightGraphs"] = BenchmarkGroup()
 
 n = 10000
@@ -100,20 +99,18 @@ n₀ = 2000
 g₀ = path_graph(Graph, n₀)
 g = ob(coproduct(fill(g₀, 5)))
 lg = LG.DiGraph(g)
-clbench["path-graph-components"] = @benchmarkable connected_components($g)
-clprojbench["path-graph-components"] =
+clbench["path-graph-components"] =
   @benchmarkable connected_component_projection($g)
 lgbench["path-graph-components"] =
-  @benchmarkable LG.weakly_connected_components($lg)
+  @benchmarkable lg_connected_components_projection($lg)
 
 g₀ = star_graph(Graph, n₀)
 g = ob(coproduct(fill(g₀, 5)))
 lg = LG.DiGraph(g)
-clbench["star-graph-components"] = @benchmarkable connected_components($g)
-clprojbench["star-graph-components"] =
+clbench["star-graph-components"] =
   @benchmarkable connected_component_projection($g)
 lgbench["star-graph-components"] =
-  @benchmarkable LG.weakly_connected_components($lg)
+  @benchmarkable lg_connected_components_projection($lg)
 
 # Symmetric graphs
 ##################
@@ -121,7 +118,6 @@ lgbench["star-graph-components"] =
 bench = SUITE["SymmetricGraph"] = BenchmarkGroup()
 clbench = bench["Catlab"] = BenchmarkGroup()
 clvecbench = bench["Catlab-vectorized"] = BenchmarkGroup()
-clprojbench = bench["Catlab-proj"] = BenchmarkGroup()
 lgbench = bench["LightGraphs"] = BenchmarkGroup()
 
 n = 10000
@@ -150,18 +146,18 @@ n₀ = 2000
 g₀ = path_graph(SymmetricGraph, n₀)
 g = ob(coproduct(fill(g₀, 5)))
 lg = LG.Graph(g)
-clbench["path-graph-components"] = @benchmarkable connected_components($g)
-clprojbench["path-graph-components"] =
+clbench["path-graph-components"] =
   @benchmarkable connected_component_projection($g)
-lgbench["path-graph-components"] = @benchmarkable LG.connected_components($lg)
+lgbench["path-graph-components"] =
+  @benchmarkable lg_connected_components_projection($lg)
 
 g₀ = star_graph(SymmetricGraph, n₀)
 g = ob(coproduct(fill(g₀, 5)))
 lg = LG.Graph(g)
-clbench["star-graph-components"] = @benchmarkable connected_components($g)
-clprojbench["star-graph-components"] =
+clbench["star-graph-components"] =
   @benchmarkable connected_component_projection($g)
-lgbench["star-graph-components"] = @benchmarkable LG.connected_components($lg)
+lgbench["star-graph-components"] =
+  @benchmarkable lg_connected_components_projection($lg)
 
 # Weighted graphs
 #################
