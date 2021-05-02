@@ -1,5 +1,5 @@
 module GraphGenerators
-export path_graph, cycle_graph, complete_graph, star_graph
+export path_graph, cycle_graph, complete_graph, star_graph, wheel_graph
 
 using ...CSetDataStructures, ..BasicGraphs
 using ...CSetDataStructures: hom
@@ -38,10 +38,23 @@ function complete_graph(::Type{T}, n::Int; V=(;)) where T <: AbstractACSet
 end
 
 """ Star graph on ``n`` vertices.
+
+In the directed case, the edges point outward.
 """
 function star_graph(::Type{T}, n::Int) where T <: AbstractACSet
   g = T()
   add_vertices!(g, n)
+  add_edges!(g, fill(n,n-1), 1:(n-1))
+  g
+end
+
+""" Wheel graph on ``n`` vertices.
+
+In the directed case, the outer cycle is directed and the spokes point outward.
+"""
+function wheel_graph(::Type{T}, n::Int) where T <: AbstractACSet
+  g = cycle_graph(T, n-1)
+  add_vertex!(g)
   add_edges!(g, fill(n,n-1), 1:(n-1))
   g
 end
