@@ -496,7 +496,7 @@ multiple inheritance is not yet supported.
 
   dunit(A) == create(A) ⋅ mcopy(A) ⊣ (A::Ob)
   dcounit(A) == mmerge(A) ⋅ delete(A) ⊣ (A::Ob)
-  (dagger(f) == (id(Y) ⊗ dunit(X)) ⋅ (id(Y) ⊗ f ⊗ id(X)) ⋅ (dcounit(Y) ⊗ id(X))
+  (dagger(f) == (id(B) ⊗ dunit(A)) ⋅ (id(B) ⊗ f ⊗ id(A)) ⋅ (dcounit(B) ⊗ id(A))
    ⊣ (A::Ob, B::Ob, f::(A → B)))
 end
 
