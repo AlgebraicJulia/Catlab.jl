@@ -60,6 +60,18 @@ end
 @inline Graphs.has_edge(g::LG.AbstractGraph, args...) = LG.has_edge(g, args...)
 @inline Graphs.neighbors(g::LG.AbstractGraph, args...) = LG.neighbors(g, args...)
 
+""" Number of triangles in a graph.
+"""
+function ntriangles(g::T) where T
+  triangle = T(3)
+  add_edges!(triangle, [1,2,1], [2,3,3])
+  count = 0
+  homomorphisms(triangle, g) do α;
+    count += 1; return false
+  end
+  count
+end
+
 function lg_connected_components_projection(g)
   label = Vector{Int}(undef, LG.nv(g))
   LG.connected_components!(label, g)
@@ -112,6 +124,11 @@ clbench["star-graph-components"] =
 lgbench["star-graph-components"] =
   @benchmarkable lg_connected_components_projection($lg)
 
+n = 100
+g = wheel_graph(Graph, n)
+lg = LG.DiGraph(g)
+clbench["wheel-graph-triangles"] = @benchmarkable ntriangles($g)
+
 # Symmetric graphs
 ##################
 
@@ -158,6 +175,12 @@ clbench["star-graph-components"] =
   @benchmarkable connected_component_projection($g)
 lgbench["star-graph-components"] =
   @benchmarkable lg_connected_components_projection($lg)
+
+n = 100
+g = wheel_graph(SymmetricGraph, n)
+lg = LG.Graph(g)
+clbench["wheel-graph-triangles"] = @benchmarkable ntriangles($g)
+lgbench["wheel-graph-triangles"] = @benchmarkable sum(LG.triangles($lg))
 
 # Weighted graphs
 #################
