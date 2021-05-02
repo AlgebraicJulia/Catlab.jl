@@ -6,6 +6,7 @@ export ACSetTransformation, CSetTransformation, components, force, is_natural,
   isomorphism, isomorphisms, is_isomorphic, migrate!,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
 
+using Base.Meta: quot
 using AutoHashEquals
 using JSON
 using Reexport
@@ -297,10 +298,10 @@ function backtracking_search(f, state::BacktrackingState, depth::Int)
   # Attempt all assignments of the chosen element.
   Y = state.codom
   for y in parts(Y, c)
-    assign_elem!(state, depth, c, x, y) &&
+    assign_elem!(state, depth, Val{c}, x, y) &&
       backtracking_search(f, state, depth + 1) &&
       return true
-    unassign_elem!(state, depth, c, x)
+    unassign_elem!(state, depth, Val{c}, x)
   end
   return false
 end
@@ -312,7 +313,7 @@ function find_mrv_elem(state::BacktrackingState{CD}, depth) where CD
   Y = state.codom
   for c in ob(CD), (x, y) in enumerate(state.assignment[c])
     y == 0 || continue
-    n = count(can_assign_elem(state, depth, c, x, y) for y in parts(Y, c))
+    n = count(can_assign_elem(state, depth, Val{c}, x, y) for y in parts(Y, c))
     if n < mrv
       mrv, mrv_elem = n, (c, x)
     end
@@ -322,15 +323,16 @@ end
 
 """ Check whether element (c,x) can be assigned to (c,y) in current assignment.
 """
-function can_assign_elem(state::BacktrackingState, depth, c, x, y)
+function can_assign_elem(state::BacktrackingState, depth,
+                         ::Type{Val{c}}, x, y) where c
   # Although this method is nonmutating overall, we must temporarily mutate the
   # backtracking state, for several reasons. First, an assignment can be a
   # consistent at each individual subpart but not consistent for all subparts
   # simultaneously (consider trying to assign a self-loop to an edge with
   # distinct vertices). Moreover, in schemas with non-trivial endomorphisms, we
   # must keep track of which elements we have visited to avoid looping forever.
-  ok = assign_elem!(state, depth, c, x, y)
-  unassign_elem!(state, depth, c, x)
+  ok = assign_elem!(state, depth, Val{c}, x, y)
+  unassign_elem!(state, depth, Val{c}, x)
   return ok
 end
 
@@ -339,60 +341,62 @@ end
 Returns whether the assignment succeeded. Note that the backtracking state can
 be mutated even when the assignment fails.
 """
-function assign_elem!(state::BacktrackingState{CD,AD}, depth, c, x, y) where {CD, AD}
-  y′ = state.assignment[c][x]
-  y′ == y && return true  # If x is already assigned to y, return immediately.
-  y′ == 0 || return false # Otherwise, x must be unassigned.
-  if !isnothing(state.inv_assignment) && state.inv_assignment[c][y] != 0
-    # Also, y must unassigned in the inverse assignment.
-    return false
-  end
+@generated function assign_elem!(state::BacktrackingState{CD,AD}, depth,
+                                 ::Type{Val{c}}, x, y) where {CD, AD, c}
+  out_hom = [ f => codom(CD, f) for f in hom(CD) if dom(CD, f) == c ]
+  out_attr = [ f for f in attr(AD) if dom(AD, f) == c ]
+  quote
+    y′ = state.assignment.$c[x]
+    y′ == y && return true  # If x is already assigned to y, return immediately.
+    y′ == 0 || return false # Otherwise, x must be unassigned.
+    if !isnothing(state.inv_assignment) && state.inv_assignment.$c[y] != 0
+      # Also, y must unassigned in the inverse assignment.
+      return false
+    end
 
-  # Check attributes first to fail as quickly as possible.
-  X, Y = state.dom, state.codom
-  for f in out_attr(AD, Val{c})
-    subpart(X,x,f) == subpart(Y,y,f) || return false
-  end
+    # Check attributes first to fail as quickly as possible.
+    X, Y = state.dom, state.codom
+    $(map(out_attr) do f
+        :(subpart(X,x,$(quot(f))) == subpart(Y,y,$(quot(f))) || return false)
+      end...)
 
-  # Make the assignment and recursively assign subparts.
-  state.assignment[c][x] = y
-  state.assignment_depth[c][x] = depth
-  if !isnothing(state.inv_assignment)
-    state.inv_assignment[c][y] = x
+    # Make the assignment and recursively assign subparts.
+    state.assignment.$c[x] = y
+    state.assignment_depth.$c[x] = depth
+    if !isnothing(state.inv_assignment)
+      state.inv_assignment.$c[y] = x
+    end
+    $(map(out_hom) do (f, d)
+        :(assign_elem!(state, depth, Val{$(quot(d))}, subpart(X,x,$(quot(f))),
+                       subpart(Y,y,$(quot(f)))) || return false)
+      end...)
+    return true
   end
-  for (f, d) in out_hom(CD, Val{c})
-    assign_elem!(state, depth, d,
-                 subpart(X,x,f), subpart(Y,y,f)) || return false
-  end
-  return true
 end
 
 """ Unassign the element (c,x) in the current assignment.
 """
-function unassign_elem!(state::BacktrackingState{CD}, depth, c, x) where CD
-  state.assignment[c][x] == 0 && return
-  assign_depth = state.assignment_depth[c][x]
-  @assert assign_depth <= depth
-  if assign_depth == depth
-    X = state.dom
-    if !isnothing(state.inv_assignment)
-      y = state.assignment[c][x]
-      state.inv_assignment[c][y] = 0
-    end
-    state.assignment[c][x] = 0
-    state.assignment_depth[c][x] = 0
-    for (f, d) in out_hom(CD, Val{c})
-      unassign_elem!(state, depth, d, subpart(X,x,f))
+@generated function unassign_elem!(state::BacktrackingState{CD}, depth,
+                                   ::Type{Val{c}}, x) where {CD, c}
+  out_hom = [ f => codom(CD, f) for f in hom(CD) if dom(CD, f) == c ]
+  quote
+    state.assignment.$c[x] == 0 && return
+    assign_depth = state.assignment_depth.$c[x]
+    @assert assign_depth <= depth
+    if assign_depth == depth
+      X = state.dom
+      if !isnothing(state.inv_assignment)
+        y = state.assignment.$c[x]
+        state.inv_assignment.$c[y] = 0
+      end
+      state.assignment.$c[x] = 0
+      state.assignment_depth.$c[x] = 0
+      $(map(out_hom) do (f, d)
+          :(unassign_elem!(state, depth, Val{$(quot(d))},
+                           subpart(X,x,$(quot(f)))))
+        end...)
     end
   end
-end
-
-@generated function out_hom(::Type{CD}, ::Type{Val{c}}) where {CD<:CatDesc, c}
-  Expr(:tuple, (:($(QuoteNode(f)) => $(QuoteNode(codom(CD, f))))
-                for f in hom(CD) if dom(CD, f) == c)...)
-end
-@generated function out_attr(::Type{AD}, ::Type{Val{c}}) where {AD<:AttrDesc, c}
-  Expr(:tuple, (QuoteNode(f) for f in attr(AD) if dom(AD, f) == c)...)
 end
 
 # Category of C-sets
