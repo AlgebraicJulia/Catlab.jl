@@ -8,6 +8,8 @@ const LG, MG = LightGraphs, MetaGraphs
 
 using Catlab, Catlab.CategoricalAlgebra, Catlab.Graphs
 using Catlab.Graphs.BasicGraphs: TheoryGraph
+using Catlab.WiringDiagrams: query
+using Catlab.Programs: @relation
 
 # Helpers
 #########
@@ -60,9 +62,18 @@ end
 @inline Graphs.has_edge(g::LG.AbstractGraph, args...) = LG.has_edge(g, args...)
 @inline Graphs.neighbors(g::LG.AbstractGraph, args...) = LG.neighbors(g, args...)
 
+function Graphs.connected_component_projection(g::LG.AbstractGraph)
+  label = Vector{Int}(undef, LG.nv(g))
+  LG.connected_components!(label, g)
+end
+
+abstract type FindTrianglesAlgorithm end
+struct TriangleHomomorphism <: FindTrianglesAlgorithm end
+struct TriangleQuery <: FindTrianglesAlgorithm end
+
 """ Number of triangles in a graph.
 """
-function ntriangles(g::T) where T
+function ntriangles(g::T, ::TriangleHomomorphism) where T
   triangle = T(3)
   add_edges!(triangle, [1,2,1], [2,3,3])
   count = 0
@@ -71,10 +82,13 @@ function ntriangles(g::T) where T
   end
   count
 end
-
-function lg_connected_components_projection(g)
-  label = Vector{Int}(undef, LG.nv(g))
-  LG.connected_components!(label, g)
+function ntriangles(g, ::TriangleQuery)
+  length(query(g, triangle_query))
+end
+const triangle_query = @relation (v1=v1, v2=v2, v3=v3) begin
+  E(src=v1, tgt=v2)
+  E(src=v2, tgt=v3)
+  E(src=v1, tgt=v3)
 end
 
 # Graphs
@@ -87,7 +101,6 @@ lgbench = bench["LightGraphs"] = BenchmarkGroup()
 
 n = 10000
 clbench["make-path"] = @benchmarkable path_graph(Graph,n)
-
 lgbench["make-path"] = @benchmarkable begin
   g = LG.DiGraph()
   LG.add_vertices!(g, n)
@@ -114,7 +127,7 @@ lg = LG.DiGraph(g)
 clbench["path-graph-components"] =
   @benchmarkable connected_component_projection($g)
 lgbench["path-graph-components"] =
-  @benchmarkable lg_connected_components_projection($lg)
+  @benchmarkable connected_component_projection($lg)
 
 g₀ = star_graph(Graph, n₀)
 g = ob(coproduct(fill(g₀, 5)))
@@ -122,12 +135,15 @@ lg = LG.DiGraph(g)
 clbench["star-graph-components"] =
   @benchmarkable connected_component_projection($g)
 lgbench["star-graph-components"] =
-  @benchmarkable lg_connected_components_projection($lg)
+  @benchmarkable connected_component_projection($lg)
 
 n = 100
 g = wheel_graph(Graph, n)
 lg = LG.DiGraph(g)
-clbench["wheel-graph-triangles"] = @benchmarkable ntriangles($g)
+clbench["wheel-graph-triangles-hom"] =
+  @benchmarkable ntriangles($g, TriangleHomomorphism())
+clbench["wheel-graph-triangles-query"] =
+  @benchmarkable ntriangles($g, TriangleQuery())
 
 # Symmetric graphs
 ##################
@@ -139,7 +155,6 @@ lgbench = bench["LightGraphs"] = BenchmarkGroup()
 
 n = 10000
 clbench["make-path"] = @benchmarkable path_graph(SymmetricGraph, n)
-
 lgbench["make-path"] = @benchmarkable begin
   g = LG.Graph()
   LG.add_vertices!(g, n)
@@ -166,7 +181,7 @@ lg = LG.Graph(g)
 clbench["path-graph-components"] =
   @benchmarkable connected_component_projection($g)
 lgbench["path-graph-components"] =
-  @benchmarkable lg_connected_components_projection($lg)
+  @benchmarkable connected_component_projection($lg)
 
 g₀ = star_graph(SymmetricGraph, n₀)
 g = ob(coproduct(fill(g₀, 5)))
@@ -174,12 +189,15 @@ lg = LG.Graph(g)
 clbench["star-graph-components"] =
   @benchmarkable connected_component_projection($g)
 lgbench["star-graph-components"] =
-  @benchmarkable lg_connected_components_projection($lg)
+  @benchmarkable connected_component_projection($lg)
 
 n = 100
 g = wheel_graph(SymmetricGraph, n)
 lg = LG.Graph(g)
-clbench["wheel-graph-triangles"] = @benchmarkable ntriangles($g)
+clbench["wheel-graph-triangles-hom"] =
+  @benchmarkable ntriangles($g, TriangleHomomorphism())
+clbench["wheel-graph-triangles-query"] =
+  @benchmarkable ntriangles($g, TriangleQuery())
 lgbench["wheel-graph-triangles"] = @benchmarkable sum(LG.triangles($lg))
 
 # Weighted graphs
