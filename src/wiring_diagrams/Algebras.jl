@@ -127,15 +127,19 @@ end
 
 """ Evaluate a conjunctive query on an attributed C-set.
 
-The query is a undirected wiring diagram whose boxes and ports are assumed to be
-named through attributes `:name` and `:port_name`/`:outer_port_name`. To define
-such a diagram, use the named form of the [`@relation`](@ref) macro.
+The query is a undirected wiring diagram (UWD) whose boxes and ports are assumed
+to be named through attributes `:name` and `:port_name`/`:outer_port_name`. To
+define such a diagram, use the named form of the [`@relation`](@ref) macro.
 
-This function straightforwardly wraps the [`oapply`](@ref) method for
-multispans, which implements the UWD algebra of multispans.
+The result is a table, by default a `TypedTable`, whose columns correspond to
+the outer ports of the UWD. If the UWD has no outer ports, the query is a
+counting query and the result is a vector whose length is the number of results.
+
+For its implementation, this function wraps the [`oapply`](@ref) method for
+multispans, which defines the UWD algebra of multispans.
 """
 function query(X::AbstractACSet, diagram::UndirectedWiringDiagram,
-               params=NamedTuple(); table_type::Type=TypedTables.Table)
+               params=(;); table_type::Type=TypedTables.Table)
   # For each box in the diagram, extract span from ACSet.
   spans = map(boxes(diagram), subpart(diagram, :name)) do b, name
     apex = FinSet(nparts(X, name))
@@ -159,8 +163,12 @@ function query(X::AbstractACSet, diagram::UndirectedWiringDiagram,
   # Call `oapply` and make a table out of the resulting span.
   outer_names = subpart(diagram, :outer_port_name)
   outer_span = oapply(diagram, spans, Ob=SetOb, Hom=FinDomFunction{Int})
-  table = NamedTuple{Tuple(outer_names)}(Tuple(map(collect, outer_span)))
-  make_table(table_type, table)
+  if isempty(outer_names)
+    fill((;), length(apex(outer_span)))
+  else
+    table = NamedTuple{Tuple(outer_names)}(Tuple(map(collect, outer_span)))
+    make_table(table_type, table)
+  end
 end
 
 end

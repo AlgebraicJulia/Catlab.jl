@@ -62,6 +62,10 @@ paths2 = @relation (start=start, stop=stop) begin
   E(src=start, tgt=mid)
   E(src=mid, tgt=stop)
 end
+count_paths2 = @relation (;) begin
+  E(src=start, tgt=mid)
+  E(src=mid, tgt=stop)
+end
 
 # Graph underlying a commutative squares.
 square = Graph(4)
@@ -75,11 +79,13 @@ add_vertices!(squares2, 2)
 add_edges!(squares2, [2,4,5], [5,6,6])
 result = query(squares2, paths2)
 @test tuples(columns(result)...) == [(1,4), (1,4), (1,5), (2,6), (2,6), (3,6)]
+@test length(query(squares2, count_paths2)) == 6
 
 result = query(squares2, paths2, (start=1,))
 @test tuples(columns(result)...) == [(1,4), (1,4), (1,5)]
 result = query(squares2, paths2, (start=1, stop=4))
 @test result == Table((start=[1,1], stop=[4,4]))
+@test length(query(squares2, count_paths2, (start=1, stop=4))) == 2
 
 cycles3 = @relation (edge1=e, edge2=f, edge3=g) where (e,f,g,u,v,w) begin
   E(_id=e, src=u, tgt=v)

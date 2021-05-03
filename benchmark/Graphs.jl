@@ -83,9 +83,9 @@ function ntriangles(g::T, ::TriangleHomomorphism) where T
   count
 end
 function ntriangles(g, ::TriangleQuery)
-  length(query(g, triangle_query))
+  length(query(g, ntriangles_query))
 end
-const triangle_query = @relation (v1=v1, v2=v2, v3=v3) begin
+const ntriangles_query = @relation (;) begin
   E(src=v1, tgt=v2)
   E(src=v2, tgt=v3)
   E(src=v1, tgt=v3)
