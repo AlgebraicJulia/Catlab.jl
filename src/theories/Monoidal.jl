@@ -94,8 +94,14 @@ show_latex(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
   σ(A,B) ⋅ σ(B,A) == id(A ⊗ B) ⊣ (A::Ob, B::Ob)
 
   # Coherence axioms.
+  #
+  # Note: The last two axioms are deducible from the first two axioms together
+  # with the naturality equations for the left/right unitors. We record them for
+  # the sake of clarity and uniformity.
   σ(A,B⊗C) == (σ(A,B) ⊗ id(C)) ⋅ (id(B) ⊗ σ(A,C)) ⊣ (A::Ob, B::Ob, C::Ob)
   σ(A⊗B,C) == (id(A) ⊗ σ(B,C)) ⋅ (σ(A,C) ⊗ id(B)) ⊣ (A::Ob, B::Ob, C::Ob)
+  σ(A,munit()) == id(A) ⊣ (A::Ob)
+  σ(munit(),A) == id(A) ⊣ (A::Ob)
 
   # Naturality axiom.
   (f ⊗ g) ⋅ σ(B,D) == σ(A,C) ⋅ (g ⊗ f) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
