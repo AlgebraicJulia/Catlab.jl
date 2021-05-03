@@ -1,5 +1,6 @@
 export MonoidalCategory, otimes, munit, ⊗, collect, ndims,
   SymmetricMonoidalCategory, FreeSymmetricMonoidalCategory, braid, σ,
+  SymmetricMonoidalCopresheaf, elunit,
   MonoidalCategoryWithDiagonals, CartesianCategory, FreeCartesianCategory,
   mcopy, delete, pair, proj1, proj2, Δ, ◊,
   mmerge, create, copair, coproj1, coproj2, ∇, □,
@@ -109,6 +110,46 @@ end
 
 function show_latex(io::IO, expr::HomExpr{:braid}; kw...)
   Syntax.show_latex_script(io, expr, "\\sigma")
+end
+
+""" Theory of a *symmetric monoidal copresheaf*
+
+The name is not standard but refers to a lax symmetric monoidal functor into
+**Set**. This can be interpreted as an action of a symmetric monoidal category,
+just as a copresheaf (set-valued functor) is an action of a category. The theory
+is simpler than that of a general lax monoidal functor because (1) the domain is
+a strict monoidal category and (2) the codomain is fixed to the cartesian
+monoidal category **Set**.
+
+FIXME: This theory should also extend `Copresheaf` but multiple inheritance is
+not yet supported.
+"""
+@theory SymmetricMonoidalCopresheaf{Ob,Hom,El} <: SymmetricMonoidalCategory{Ob,Hom} begin
+  El(ob::Ob)::TYPE
+
+  # Functor.
+  act(x::El(A), f::Hom(A,B))::El(B) ⊣ (A::Ob, B::Ob)
+  @op (⋅) := act
+
+  # Laxator.
+  otimes(x::El(A), y::El(B))::El(otimes(A,B)) ⊣ (A::Ob, B::Ob)
+  elunit()::El(munit())
+
+  # Functorality axioms.
+  (x ⋅ f) ⋅ g == x ⋅ (f ⋅ g) ⊣
+    (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::El(A))
+  x ⋅ id(A) == x ⊣ (A::Ob, x::El(A))
+
+  # Naturality of laxator.
+  (x ⊗ y) ⋅ (f ⊗ g) == (x ⋅ f) ⊗ (y ⋅ g) ⊣
+    (A::Ob, B::Ob, C::Ob, D::Ob, x::El(A), y::El(B), f::(A → C), g::(B → D))
+
+  # Commutative monoid axioms for laxator.
+  (x ⊗ y) ⊗ z == x ⊗ (y ⊗ z) ⊣
+    (A::Ob, B::Ob, C::Ob, x::El(A), y::El(B), z::El(C))
+  x ⊗ elunit() == x ⊣ (A::Ob, x::El(A))
+  elunit() ⊗ x == x ⊣ (A::Ob, x::El(A))
+  (x ⊗ y) ⋅ σ(A,B) == y ⊗ x ⊣ (A::Ob, B::Ob, x::El(A), y::El(B))
 end
 
 # Cartesian category
