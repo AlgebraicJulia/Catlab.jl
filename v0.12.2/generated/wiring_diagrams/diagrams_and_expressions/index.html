@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Wiring diagrams and syntactic expressions · Catlab.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit">Catlab.jl</span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox" checked/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Wiring diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../wiring_diagram_basics/">Basics of wiring diagrams</a></li><li class="is-active"><a class="tocitem" href>Wiring diagrams and syntactic expressions</a><ul class="internal"><li><a class="tocitem" href="#Expressions-to-diagrams"><span>Expressions to diagrams</span></a></li><li><a class="tocitem" href="#Diagrams-to-expressions"><span>Diagrams to expressions</span></a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphics/composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../../graphics/graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../../graphics/tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../../graphics/layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li><li><a class="tocitem" href="../../graphics/graphviz_schema_visualization/">Visualizing Acset Schemas with Graphviz</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/core/">Theories, instances, and expressions</a></li><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Wiring diagrams</a></li><li class="is-active"><a href>Wiring diagrams and syntactic expressions</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Wiring diagrams and syntactic expressions</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/master/docs/literate/wiring_diagrams/diagrams_and_expressions.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Wiring-diagrams-and-syntactic-expressions"><a class="docs-heading-anchor" href="#Wiring-diagrams-and-syntactic-expressions">Wiring diagrams and syntactic expressions</a><a id="Wiring-diagrams-and-syntactic-expressions-1"></a><a class="docs-heading-anchor-permalink" href="#Wiring-diagrams-and-syntactic-expressions" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/AlgebraicJulia/Catlab.jl/blob/gh-pages/v0.12.2/generated/wiring_diagrams/diagrams_and_expressions.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><p>Morphisms in a monoidal category can be represented as syntactic expressions, such as <span>$f \cdot g$</span> and <span>$f \otimes g$</span>, and also as <a href="../wiring_diagram_basics/#wiring_diagram_basics">wiring diagrams</a>, aka <em>string diagrams</em>. Catlab provides facilities for transforming between these two representations.</p><pre><code class="language-julia">using Catlab.Theories, Catlab.WiringDiagrams
+using Catlab.Graphics
+
+function show_diagram(d::WiringDiagram)
+  to_graphviz(d, orientation=LeftToRight, labels=false)
+end</code></pre><pre class="documenter-example-output">show_diagram (generic function with 1 method)</pre><h2 id="Expressions-to-diagrams"><a class="docs-heading-anchor" href="#Expressions-to-diagrams">Expressions to diagrams</a><a id="Expressions-to-diagrams-1"></a><a class="docs-heading-anchor-permalink" href="#Expressions-to-diagrams" title="Permalink"></a></h2><p>Converting a morphism expression to a wiring diagram is conceptually and algorithmically simple, because every expression determines a unique diagram.</p><p>As a simple example, here is the monoidal product of two generators, <span>$f$</span> and <span>$g$</span>, first as an expression (displayed using LaTeX) and then as a wiring diagram (displayed using Graphviz).</p><pre><code class="language-julia">A, B, C, D, E = Ob(FreeCartesianCategory, :A, :B, :C, :D, :E)
+f = Hom(:f, A, B)
+g = Hom(:g, B, C)
+
+expr = f ⊗ g</code></pre><p class="math-container">\[f \otimes g : A \otimes B \to B \otimes C\]</p><pre><code class="language-julia">show_diagram(to_wiring_diagram(expr))</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="102pt" height="76pt"
+ viewBox="0.00 0.00 102.00 76.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 72)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-72 98,-72 98,4 -4,4"/>
+<!-- n0in1 -->
+<!-- n0in2 -->
+<!-- n0in1&#45;&gt;n0in2 -->
+<!-- n1 -->
+<!-- f -->
+<g id="n1" class="node">
+<title>n1</title>
+<polygon fill="none" stroke="black" points="39,-42.5 39,-67.5 55,-67.5 55,-42.5 39,-42.5"/>
+<text text-anchor="start" x="44" y="-51.3" font-family="Serif" font-size="14.00">f</text>
+</g>
+<!-- n0in1&#45;&gt;n1 -->
+<!-- A -->
+<g id="e1" class="edge">
+<title>n0in1:e&#45;&gt;n1:w</title>
+<path fill="none" stroke="black" d="M1,-54.5C15.52,-54.5 20.42,-54.5 32.69,-54.5"/>
+<polygon fill="black" stroke="black" points="33,-56.25 38,-54.5 33,-52.75 33,-56.25"/>
+</g>
+<!-- n2 -->
+<!-- g -->
+<g id="n2" class="node">
+<title>n2</title>
+<polygon fill="none" stroke="black" points="37,0.5 37,-24.5 57,-24.5 57,0.5 37,0.5"/>
+<text text-anchor="start" x="42" y="-8.3" font-family="Serif" font-size="14.00">g</text>
+</g>
+<!-- n0in2&#45;&gt;n2 -->
+<!-- B -->
+<g id="e2" class="edge">
+<title>n0in2:e&#45;&gt;n2:w</title>
+<path fill="none" stroke="black" d="M1,-12.5C15.13,-12.5 19.89,-11.72 31.83,-11.54"/>
+<polygon fill="black" stroke="black" points="32.01,-13.29 37,-11.5 31.99,-9.79 32.01,-13.29"/>
+</g>
+<!-- n0out1 -->
+<!-- n0out2 -->
+<!-- n0out1&#45;&gt;n0out2 -->
+<!-- n1&#45;&gt;n0out1 -->
+<!-- B -->
+<g id="e3" class="edge">
+<title>n1:e&#45;&gt;n0out1:w</title>
+<path fill="none" stroke="black" d="M56,-54.5C70.52,-54.5 75.42,-54.5 87.69,-54.5"/>
+<polygon fill="black" stroke="black" points="88,-56.25 93,-54.5 88,-52.75 88,-56.25"/>
+</g>
+<!-- n2&#45;&gt;n0out2 -->
+<!-- C -->
+<g id="e4" class="edge">
+<title>n2:e&#45;&gt;n0out2:w</title>
+<path fill="none" stroke="black" d="M57,-11.5C71.13,-11.5 75.89,-12.28 87.83,-12.46"/>
+<polygon fill="black" stroke="black" points="87.99,-14.21 93,-12.5 88.01,-10.71 87.99,-14.21"/>
+</g>
+</g>
+</svg>
+<p>Here is a monoidal product of compositions:</p><pre><code class="language-julia">h = Hom(:h, C, D)
+k = Hom(:k, D, E)
+
+expr = (f ⋅ g) ⊗ (h ⋅ k)</code></pre><p class="math-container">\[\left(f \cdot g\right) \otimes \left(h \cdot k\right) : A \otimes C \to C \otimes E\]</p><pre><code class="language-julia">show_diagram(to_wiring_diagram(expr))</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="158pt" height="76pt"
+ viewBox="0.00 0.00 158.00 76.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 72)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-72 154,-72 154,4 -4,4"/>
+<!-- n0in1 -->
+<!-- n0in2 -->
+<!-- n0in1&#45;&gt;n0in2 -->
+<!-- n1 -->
+<!-- f -->
+<g id="n1" class="node">
+<title>n1</title>
+<polygon fill="none" stroke="black" points="39,-42.5 39,-67.5 55,-67.5 55,-42.5 39,-42.5"/>
+<text text-anchor="start" x="44" y="-51.3" font-family="Serif" font-size="14.00">f</text>
+</g>
+<!-- n0in1&#45;&gt;n1 -->
+<!-- A -->
+<g id="e1" class="edge">
+<title>n0in1:e&#45;&gt;n1:w</title>
+<path fill="none" stroke="black" d="M1,-54.5C15.52,-54.5 20.42,-54.5 32.69,-54.5"/>
+<polygon fill="black" stroke="black" points="33,-56.25 38,-54.5 33,-52.75 33,-56.25"/>
+</g>
+<!-- n3 -->
+<!-- h -->
+<g id="n3" class="node">
+<title>n3</title>
+<polygon fill="none" stroke="black" points="37,0.5 37,-24.5 57,-24.5 57,0.5 37,0.5"/>
+<text text-anchor="start" x="42" y="-8.3" font-family="Serif" font-size="14.00">h</text>
+</g>
+<!-- n0in2&#45;&gt;n3 -->
+<!-- C -->
+<g id="e2" class="edge">
+<title>n0in2:e&#45;&gt;n3:w</title>
+<path fill="none" stroke="black" d="M1,-12.5C15.13,-12.5 19.89,-11.72 31.83,-11.54"/>
+<polygon fill="black" stroke="black" points="32.01,-13.29 37,-11.5 31.99,-9.79 32.01,-13.29"/>
+</g>
+<!-- n0out1 -->
+<!-- n0out2 -->
+<!-- n0out1&#45;&gt;n0out2 -->
+<!-- n2 -->
+<!-- g -->
+<g id="n2" class="node">
+<title>n2</title>
+<polygon fill="none" stroke="black" points="93,-42.5 93,-67.5 113,-67.5 113,-42.5 93,-42.5"/>
+<text text-anchor="start" x="98" y="-51.3" font-family="Serif" font-size="14.00">g</text>
+</g>
+<!-- n1&#45;&gt;n2 -->
+<!-- B -->
+<g id="e3" class="edge">
+<title>n1:e&#45;&gt;n2:w</title>
+<path fill="none" stroke="black" d="M56,-54.5C70.52,-54.5 75.42,-54.5 87.69,-54.5"/>
+<polygon fill="black" stroke="black" points="88,-56.25 93,-54.5 88,-52.75 88,-56.25"/>
+</g>
+<!-- n2&#45;&gt;n0out1 -->
+<!-- C -->
+<g id="e5" class="edge">
+<title>n2:e&#45;&gt;n0out1:w</title>
+<path fill="none" stroke="black" d="M113,-54.5C127.12,-54.5 131.9,-54.5 143.83,-54.5"/>
+<polygon fill="black" stroke="black" points="144,-56.25 149,-54.5 144,-52.75 144,-56.25"/>
+</g>
+<!-- n4 -->
+<!-- k -->
+<g id="n4" class="node">
+<title>n4</title>
+<polygon fill="none" stroke="black" points="94,0.5 94,-24.5 113,-24.5 113,0.5 94,0.5"/>
+<text text-anchor="start" x="99" y="-8.3" font-family="Serif" font-size="14.00">k</text>
+</g>
+<!-- n3&#45;&gt;n4 -->
+<!-- D -->
+<g id="e4" class="edge">
+<title>n3:e&#45;&gt;n4:w</title>
+<path fill="none" stroke="black" d="M57,-11.5C71.12,-11.5 75.9,-11.5 87.83,-11.5"/>
+<polygon fill="black" stroke="black" points="88,-13.25 93,-11.5 88,-9.75 88,-13.25"/>
+</g>
+<!-- n4&#45;&gt;n0out2 -->
+<!-- E -->
+<g id="e6" class="edge">
+<title>n4:e&#45;&gt;n0out2:w</title>
+<path fill="none" stroke="black" d="M113,-11.5C127.13,-11.5 131.89,-12.28 143.83,-12.46"/>
+<polygon fill="black" stroke="black" points="143.99,-14.21 149,-12.5 144.01,-10.71 143.99,-14.21"/>
+</g>
+</g>
+</svg>
+<h2 id="Diagrams-to-expressions"><a class="docs-heading-anchor" href="#Diagrams-to-expressions">Diagrams to expressions</a><a id="Diagrams-to-expressions-1"></a><a class="docs-heading-anchor-permalink" href="#Diagrams-to-expressions" title="Permalink"></a></h2><p>Converting a wiring diagram to a syntactic expression is algorithmically more challenging, due to the fact that a single wiring diagram generally admits many different representations as an expression. Thus, a particular expression must be singled out.</p><p>To bring this out, we define a function that round-trips a morphism expression to a wiring diagram and then back to an expression.</p><pre><code class="language-julia">function roundtrip_expr(expr::FreeCartesianCategory.Hom)
+  d = to_wiring_diagram(expr)
+  to_hom_expr(FreeCartesianCategory, d)
+end</code></pre><pre class="documenter-example-output">roundtrip_expr (generic function with 1 method)</pre><p>We can recover the expression just considered above:</p><pre><code class="language-julia">roundtrip_expr((f ⋅ g) ⊗ (h ⋅ k))</code></pre><p class="math-container">\[\left(f \cdot g\right) \otimes \left(h \cdot k\right) : A \otimes C \to C \otimes E\]</p><p>But here is a different expression that round-trips to the same thing:</p><pre><code class="language-julia">roundtrip_expr((f ⊗ h) ⋅ (g ⊗ k))</code></pre><p class="math-container">\[\left(f \cdot g\right) \otimes \left(h \cdot k\right) : A \otimes C \to C \otimes E\]</p><p>The equality of these two expressions,</p><p class="math-container">\[(f \cdot g) \otimes (h \cdot k) = (f \otimes h) \cdot (g \otimes k),\]</p><p>is the <em>interchange law</em> in a monoidal category. It says that composition and monoidal products can be interchanged. As this example shows, the conversion algorithm in Catlab favors products over composition, placing products towards the root of the expression tree wherever possible. Other laws can be discovered by this procedure. Since we are working in a <a href="https://ncatlab.org/nlab/show/cartesian+monoidal+category">cartesian monoidal category</a>, operations of copying, <span>$\Delta_A: A \to A \otimes A$</span>, and deleting, <span>$\lozenge_A: A \to I$</span>, are available.</p><p>Consider the operation of copying the product <span>$A \otimes B$</span>.</p><pre><code class="language-julia">expr = mcopy(A ⊗ B)</code></pre><p class="math-container">\[\Delta_{A \otimes B} : A \otimes B \to A \otimes B \otimes A \otimes B\]</p><pre><code class="language-julia">show_diagram(add_junctions!(to_wiring_diagram(expr)))</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="86pt" height="158pt"
+ viewBox="0.00 0.00 86.00 158.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 154)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-154 82,-154 82,4 -4,4"/>
+<!-- n0in1 -->
+<!-- n0in2 -->
+<!-- n0in1&#45;&gt;n0in2 -->
+<!-- n1 -->
+<!-- junction -->
+<g id="n1" class="node">
+<title>n1</title>
+<ellipse fill="black" stroke="black" cx="39" cy="-96" rx="2" ry="2"/>
+</g>
+<!-- n0in1&#45;&gt;n1 -->
+<!-- A -->
+<g id="e1" class="edge">
+<title>n0in1:e&#45;&gt;n1</title>
+<path fill="none" stroke="black" d="M1,-96C11.82,-96 24.42,-96 31.77,-96"/>
+<polygon fill="black" stroke="black" points="31.85,-97.75 36.85,-96 31.85,-94.25 31.85,-97.75"/>
+</g>
+<!-- n2 -->
+<!-- junction -->
+<g id="n2" class="node">
+<title>n2</title>
+<ellipse fill="black" stroke="black" cx="39" cy="-54" rx="2" ry="2"/>
+</g>
+<!-- n0in2&#45;&gt;n2 -->
+<!-- B -->
+<g id="e2" class="edge">
+<title>n0in2:e&#45;&gt;n2</title>
+<path fill="none" stroke="black" d="M1,-54C11.82,-54 24.42,-54 31.77,-54"/>
+<polygon fill="black" stroke="black" points="31.85,-55.75 36.85,-54 31.85,-52.25 31.85,-55.75"/>
+</g>
+<!-- n0out1 -->
+<!-- n0out2 -->
+<!-- n0out1&#45;&gt;n0out2 -->
+<!-- n0out3 -->
+<!-- n0out2&#45;&gt;n0out3 -->
+<!-- n0out4 -->
+<!-- n0out3&#45;&gt;n0out4 -->
+<!-- n1&#45;&gt;n0out1 -->
+<!-- A -->
+<g id="e3" class="edge">
+<title>n1&#45;&gt;n0out1:w</title>
+<path fill="none" stroke="black" d="M40.44,-97.4C42.62,-104.12 53.02,-132.95 71.99,-137.42"/>
+<polygon fill="black" stroke="black" points="71.83,-139.16 77,-138 72.24,-135.68 71.83,-139.16"/>
+</g>
+<!-- n1&#45;&gt;n0out3 -->
+<!-- A -->
+<g id="e4" class="edge">
+<title>n1&#45;&gt;n0out3:w</title>
+<path fill="none" stroke="black" d="M40.44,-94.6C42.62,-87.88 53.02,-59.05 71.99,-54.58"/>
+<polygon fill="black" stroke="black" points="72.24,-56.32 77,-54 71.83,-52.84 72.24,-56.32"/>
+</g>
+<!-- n2&#45;&gt;n0out2 -->
+<!-- B -->
+<g id="e5" class="edge">
+<title>n2&#45;&gt;n0out2:w</title>
+<path fill="none" stroke="black" d="M40.44,-55.4C42.62,-62.12 53.02,-90.95 71.99,-95.42"/>
+<polygon fill="black" stroke="black" points="71.83,-97.16 77,-96 72.24,-93.68 71.83,-97.16"/>
+</g>
+<!-- n2&#45;&gt;n0out4 -->
+<!-- B -->
+<g id="e6" class="edge">
+<title>n2&#45;&gt;n0out4:w</title>
+<path fill="none" stroke="black" d="M40.44,-52.6C42.62,-45.88 53.02,-17.05 71.99,-12.58"/>
+<polygon fill="black" stroke="black" points="72.24,-14.32 77,-12 71.83,-10.84 72.24,-14.32"/>
+</g>
+</g>
+</svg>
+<pre><code class="language-julia">roundtrip_expr(expr)</code></pre><p class="math-container">\[\left(\Delta_{A} \otimes \Delta_{B}\right) \cdot \left(\mathrm{id}_{A} \otimes \sigma_{A,B} \otimes \mathrm{id}_{B}\right) : A \otimes B \to A \otimes B \otimes A \otimes B\]</p><p>The equation just witnessed,</p><p class="math-container">\[\Delta_{A \otimes B} = (\Delta_A \otimes \Delta_B) \cdot (1_A \otimes \sigma_{A,B} \otimes 1_B),\]</p><p>is one of the <em>coherence laws</em> for cartesian products (<a href="https://arxiv.org/abs/0908.3347">arXiv:0908.3347</a>, Table 7). Another coherence law for products is</p><p class="math-container">\[\lozenge_{A \otimes B} = \lozenge_A \otimes \lozenge_B.\]</p><pre><code class="language-julia">expr = delete(A ⊗ B)</code></pre><p class="math-container">\[\lozenge_{A \otimes B} : A \otimes B \to I\]</p><pre><code class="language-julia">roundtrip_expr(expr)</code></pre><p class="math-container">\[\lozenge_{A} \otimes \lozenge_{B} : A \otimes B \to I\]</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../wiring_diagram_basics/">« Basics of wiring diagrams</a><a class="docs-footer-nextpage" href="../../graphics/composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Tuesday 4 May 2021 05:10">Tuesday 4 May 2021</span>. Using Julia version 1.6.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
