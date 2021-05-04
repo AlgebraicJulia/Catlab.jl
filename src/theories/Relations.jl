@@ -27,7 +27,7 @@ end
 @syntax FreeBicategoryRelations{ObExpr,HomExpr} BicategoryRelations begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(R::Hom, S::Hom) = associate(new(R,S))
-  compose(R::Hom, S::Hom) = associate(new(R,S; strict=true))
+  compose(R::Hom, S::Hom) = associate_unit(new(R,S; strict=true), id)
   dagger(R::Hom) = distribute_unary(distribute_dagger(involute(new(R))),
                                     dagger, otimes)
   meet(R::Hom, S::Hom) = compose(mcopy(dom(R)), otimes(R,S), mmerge(codom(R)))
@@ -60,7 +60,7 @@ end
 @syntax FreeAbelianBicategoryRelations{ObExpr,HomExpr} AbelianBicategoryRelations begin
   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
   oplus(R::Hom, S::Hom) = associate(new(R,S))
-  compose(R::Hom, S::Hom) = associate(new(R,S; strict=true))
+  compose(R::Hom, S::Hom) = associate_unit(new(R,S; strict=true), id)
   dagger(R::Hom) = distribute_unary(distribute_dagger(involute(new(R))),
                                     dagger, oplus)
   meet(R::Hom, S::Hom) = compose(mcopy(dom(R)), oplus(R,S), mmerge(codom(R)))

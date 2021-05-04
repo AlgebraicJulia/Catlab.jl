@@ -60,7 +60,7 @@ end
 @syntax FreeSymmetricMonoidalCategoryAdditive{ObExpr,HomExpr} SymmetricMonoidalCategoryAdditive begin
   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
   oplus(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 end
 
 function show_latex(io::IO, expr::HomExpr{:swap}; kw...)
@@ -125,7 +125,7 @@ could be dropped or reversed.
 @syntax FreeCocartesianCategory{ObExpr,HomExpr} CocartesianCategory begin
   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
   oplus(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 
   copair(f::Hom, g::Hom) = compose(oplus(f,g), plus(codom(f)))
   coproj1(A::Ob, B::Ob) = oplus(id(A), zero(B))

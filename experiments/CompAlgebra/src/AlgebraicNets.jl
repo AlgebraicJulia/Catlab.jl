@@ -40,7 +40,7 @@ end
 
 @syntax AlgebraicNet{ObExpr,HomExpr} AlgebraicNetTheory begin
   # FIXME: `compose` and `otimes` should delegate to wiring layer when possible.
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
 

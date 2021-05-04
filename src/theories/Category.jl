@@ -48,7 +48,7 @@ compose(fs::Vector) = foldl(compose, fs)
 compose(f, g, h, fs...) = compose([f, g, h, fs...])
 
 @syntax FreeCategory{ObExpr,HomExpr} Category begin
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 end
 
 function show_unicode(io::IO, expr::HomExpr{:compose}; kw...)
@@ -101,7 +101,7 @@ Axiomatized as a covariant category action.
 end
 
 @syntax FreeCopresheaf{ObExpr,HomExpr,ElExpr} Copresheaf begin
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 end
 
 """ Theory of *presheaves*.
@@ -123,7 +123,7 @@ Axiomatized as a contravariant category action.
 end
 
 @syntax FreePresheaf{ObExpr,HomExpr,ElExpr} Presheaf begin
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 end
 
 function show(io::IO, ::MIME"text/plain", expr::ElExpr)
