@@ -14,7 +14,7 @@ Thin categories have at most one morphism between any two objects.
 end
 
 @syntax FreeThinCategory{ObExpr,HomExpr} ThinCategory begin
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 end
 
 @theory ThinSymmetricMonoidalCategory{Ob,Hom} <: SymmetricMonoidalCategory{Ob,Hom} begin
@@ -22,7 +22,7 @@ end
 end
 
 @syntax FreeThinSymmetricMonoidalCategory{ObExpr,HomExpr} ThinSymmetricMonoidalCategory begin
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
 end

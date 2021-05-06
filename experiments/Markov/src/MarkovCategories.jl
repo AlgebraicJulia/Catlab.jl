@@ -21,7 +21,7 @@ end
 @syntax FreeMarkovCategory{ObExpr,HomExpr} MarkovCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 end
 
 function show_latex(io::IO, expr::HomExpr{:expectation}; kw...)

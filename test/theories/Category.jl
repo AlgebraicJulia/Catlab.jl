@@ -18,8 +18,10 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 @test codom(compose(f,g)) == A
 @test_throws SyntaxDomainError compose(f,f)
 
-# Associativity
+# Associativity and unitality
 @test compose(compose(f,g),f) == compose(f,compose(g,f))
+@test compose(id(A), f) == f
+@test compose(f, id(B)) == f
 
 # Extra syntax
 @test compose(f,g,f) == compose(compose(f,g),f)

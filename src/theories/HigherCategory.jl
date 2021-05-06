@@ -40,8 +40,8 @@ composeH(α, β, γ, αs...) = composeH([α, β, γ, αs...])
 Checks domains of morphisms but not 2-morphisms.
 """
 @syntax FreeCategory2{ObExpr,HomExpr,Hom2Expr} Category2 begin
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
-  compose(α::Hom2, β::Hom2) = associate(new(α,β))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
+  compose(α::Hom2, β::Hom2) = associate_unit(new(α,β), id)
   composeH(α::Hom2, β::Hom2) = associate(new(α,β))
 end
 
@@ -127,10 +127,10 @@ composeV(α, β, γ, αs...) = composeV([α, β, γ, αs...])
 Checks domains of morphisms but not 2-morphisms.
 """
 @syntax FreeDoubleCategory{ObExpr,HomVExpr,HomHExpr,Hom2Expr} DoubleCategory begin
-  compose(f::HomV, g::HomV) = associate(new(f,g; strict=true))
-  compose(f::HomH, g::HomH) = associate(new(f,g; strict=true))
-  composeH(α::Hom2, β::Hom2) = associate(new(α,β))
-  composeV(α::Hom2, β::Hom2) = associate(new(α,β))
+  composeV(f::HomV, g::HomV) = associate_unit(new(f,g; strict=true), idV)
+  composeH(f::HomH, g::HomH) = associate_unit(new(f,g; strict=true), idH)
+  composeV(α::Hom2, β::Hom2) = associate_unit(new(α,β), id2V)
+  composeH(α::Hom2, β::Hom2) = associate_unit(new(α,β), id2H)
 end
 
 function show_unicode(io::IO, expr::Hom2Expr{:composeV}; kw...)
@@ -270,10 +270,10 @@ end
   otimes(f::HomV, g::HomV) = associate(new(f,g))
   otimes(f::HomH, g::HomH) = associate(new(f,g))
   otimes(f::Hom2, g::Hom2) = associate(new(f,g))
-  compose(f::HomV, g::HomV) = associate(new(f,g; strict=true))
-  compose(f::HomH, g::HomH) = associate(new(f,g; strict=true))
-  composeH(α::Hom2, β::Hom2) = associate(new(α,β))
-  composeV(α::Hom2, β::Hom2) = associate(new(α,β))
+  composeV(f::HomV, g::HomV) = associate_unit(new(f,g; strict=true), idV)
+  composeH(f::HomH, g::HomH) = associate_unit(new(f,g; strict=true), idH)
+  composeV(α::Hom2, β::Hom2) = associate_unit(new(α,β), id2V)
+  composeH(α::Hom2, β::Hom2) = associate_unit(new(α,β), id2H)
 end
 
 function show_unicode(io::IO, expr::HomVExpr{:braidV}; kw...)

@@ -111,7 +111,7 @@ end
 @syntax FreeSymmetricMonoidalCategory{ObExpr,HomExpr} SymmetricMonoidalCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 end
 
 function show_latex(io::IO, expr::HomExpr{:braid}; kw...)
@@ -224,7 +224,7 @@ This convention could be dropped or reversed.
 @syntax FreeCartesianCategory{ObExpr,HomExpr} CartesianCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 
   pair(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g))
   proj1(A::Ob, B::Ob) = otimes(id(A), delete(B))
@@ -284,7 +284,7 @@ end
 @syntax FreeBiproductCategory{ObExpr,HomExpr} BiproductCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 
   pair(f::Hom, g::Hom) = Δ(dom(f)) ⋅ (f ⊗ g)
   copair(f::Hom, g::Hom) = (f ⊗ g) ⋅ ∇(codom(f))
@@ -322,7 +322,7 @@ end
 @syntax FreeClosedMonoidalCategory{ObExpr,HomExpr} ClosedMonoidalCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 end
 
 function show_latex(io::IO, expr::ObExpr{:hom}; kw...)
@@ -363,7 +363,7 @@ See also `FreeCartesianCategory`.
 @syntax FreeCartesianClosedCategory{ObExpr,HomExpr} CartesianClosedCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 
   pair(f::Hom, g::Hom) = Δ(dom(f)) ⋅ (f ⊗ g)
   proj1(A::Ob, B::Ob) = id(A) ⊗ ◊(B)
@@ -400,7 +400,7 @@ end
                                  unit=munit, contravariant=true)
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
   mate(f::Hom) = distribute_mate(involute(new(f)))
   hom(A::Ob, B::Ob) = B ⊗ dual(A)
   ev(A::Ob, B::Ob) = id(B) ⊗ (σ(dual(A), A) ⋅ dcounit(A))
@@ -439,7 +439,7 @@ end
 end
 
 @syntax FreeDaggerCategory{ObExpr,HomExpr} DaggerCategory begin
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
   dagger(f::Hom) = distribute_dagger(involute(new(f)))
 end
 
@@ -464,7 +464,7 @@ end
 @syntax FreeDaggerSymmetricMonoidalCategory{ObExpr,HomExpr} DaggerSymmetricMonoidalCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
   dagger(f::Hom) = distribute_unary(distribute_dagger(involute(new(f))),
                                     dagger, otimes)
 end
@@ -492,7 +492,7 @@ end
                                  unit=munit, contravariant=true)
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
   dagger(f::Hom) = distribute_unary(distribute_dagger(involute(new(f))),
                                     dagger, otimes)
   mate(f::Hom) = distribute_mate(involute(new(f)))
@@ -514,7 +514,7 @@ end
 @syntax FreeTracedMonoidalCategory{ObExpr,HomExpr} TracedMonoidalCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
   # FIXME: `GAT.equations` fails to identify the implicit equation.
   #trace(X::Ob, A::Ob, B::Ob, f::Hom) = new(X,A,B,f; strict=true)
 end
@@ -550,7 +550,7 @@ end
 @syntax FreeHypergraphCategory{ObExpr,HomExpr} HypergraphCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
   dagger(f::Hom) = distribute_unary(distribute_dagger(involute(new(f))),
                                     dagger, otimes)
 end
