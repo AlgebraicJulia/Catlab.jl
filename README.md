@@ -1,4 +1,7 @@
 # ![Catlab.jl](docs/src/assets/logo.png) Catlab.jl
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 [![Build Status](https://github.com/AlgebraicJulia/Catlab.jl/workflows/Tests/badge.svg)](https://github.com/AlgebraicJulia/Catlab.jl/actions?query=workflow%3ATests)
 [![Stable Docs](https://img.shields.io/badge/docs-stable-blue.svg)](https://algebraicjulia.github.io/Catlab.jl/stable)
@@ -82,3 +85,23 @@ of the project.
 or other graphical user interface. It is primarily a programming library, not a
 user-facing application. However, it could be used as the backend for such an
 application.
+
+## Contributors ✨
+
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tr>
+    <td align="center"><a href="https://www.epatters.org"><img src="https://avatars.githubusercontent.com/u/316610?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Evan Patterson</b></sub></a><br /><a href="https://github.com/AlgebraicJulia/Catlab.jl/issues?q=author%3Aepatters" title="Bug reports">🐛</a> <a href="#maintenance-epatters" title="Maintenance">🚧</a> <a href="https://github.com/AlgebraicJulia/Catlab.jl/commits?author=epatters" title="Code">💻</a> <a href="#ideas-epatters" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/AlgebraicJulia/Catlab.jl/commits?author=epatters" title="Tests">⚠️</a></td>
+  </tr>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
