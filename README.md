@@ -1,13 +1,14 @@
 # ![Catlab.jl](docs/src/assets/logo.png) Catlab.jl
-<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
-<!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 [![Build Status](https://github.com/AlgebraicJulia/Catlab.jl/workflows/Tests/badge.svg)](https://github.com/AlgebraicJulia/Catlab.jl/actions?query=workflow%3ATests)
 [![Stable Docs](https://img.shields.io/badge/docs-stable-blue.svg)](https://algebraicjulia.github.io/Catlab.jl/stable)
 [![Dev Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://algebraicjulia.github.io/Catlab.jl/dev)
 [![Code Coverage](https://codecov.io/gh/AlgebraicJulia/Catlab.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/AlgebraicJulia/Catlab.jl)
 [![DOI](https://img.shields.io/badge/DOI-10.17605%2FOSF.IO%2FHMNFE-blue)](https://doi.org/10.17605/OSF.IO/HMNFE)
+
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 Catlab.jl is a framework for applied and computational category theory, written
 in the [Julia](https://julialang.org) language. Catlab provides a programming
