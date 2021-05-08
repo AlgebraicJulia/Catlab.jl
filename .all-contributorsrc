@@ -1,0 +1,28 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "contributors": [
+    {
+      "login": "epatters",
+      "name": "Evan Patterson",
+      "avatar_url": "https://avatars.githubusercontent.com/u/316610?v=4",
+      "profile": "https://www.epatters.org",
+      "contributions": [
+        "bug",
+        "maintenance",
+        "code",
+        "ideas",
+        "test"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "projectName": "Catlab.jl",
+  "projectOwner": "AlgebraicJulia",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "skipCi": true
+}
