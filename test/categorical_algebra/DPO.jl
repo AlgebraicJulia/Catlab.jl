@@ -503,6 +503,8 @@ end
 """
 For each Ob in the cset, copy its table into res (only if the corresponding table in res is empty)
 Optionally use a dict to map names from the first schema to the second
+
+Helper function to construct MetaACSetTransformations
 """
 function inject_cset(cset::ACSet, res::ACSet, mapping::Dict{Symbol, Symbol}=Dict{Symbol,Symbol}())::ACSet
   for (k, v) in zip(keys(cset.tables), cset.tables)
@@ -577,6 +579,8 @@ end
 
 """
 Create a ACSet to describe the data of a ACSetTransformation
+
+Helper function to construct HΣrewrite
 """
 function to_cset(m::ACSetTransformation)::Tuple{ACSet, Dict{Pair{Symbol, Int}, Int}, Dict{Pair{Symbol, Int}, Int}}
   tparams = typeof(m.dom).parameters;
@@ -608,8 +612,11 @@ function to_cset(m::ACSetTransformation)::Tuple{ACSet, Dict{Pair{Symbol, Int}, I
 end
 
 
+"""
+Given morphisms C1->C3<-C2, induce a morphism between the morphisms via a morphism C1 -> C2
 
-"""given morphisms C1->C3<-C2, define a homomorphism between the homomorphisms using a morphism C1 -> C2"""
+Helper function to construct HΣrewrite
+"""
 function transformation_of_transformations(m1::ACSetTransformation, m2::ACSetTransformation, msrc::ACSetTransformation)::ACSetTransformation
   (m1_, src1, tgt1), (m2_, src2, tgt2) = to_cset(m1), to_cset(m2)
   comps = Dict{Symbol, Vector{Int}}([comp => collect(1:length(m1_.tables[comp]))
@@ -619,7 +626,8 @@ function transformation_of_transformations(m1::ACSetTransformation, m2::ACSetTra
   for (k, vs) in zip(keys(msrc.components), msrc.components)
     for (i, v) in enumerate(vs.func)
         r1[src1[k => i]] = src2[k => v]
-        # this fill fail if msrc.domain has any FKs / attributes
+        # this will fail if msrc.domain has any FKs / attributes
+        # for our example below, this is ok
     end
   end
   for (k, v) in zip([r1, fk1, d1, r2, fk2, d2], [:Row1, :FK1, :Datum1, :Row2, :FK2, :Datum2])
@@ -709,7 +717,7 @@ Hrewrite = rewrite_match(L,R,m); # WORKS
 (R_,HRdict, HRΣdict) = to_cset(ϕR);
 l_ = transformation_of_transformations(ϕK, ϕL, L);
 r_ = transformation_of_transformations(ϕK, ϕR, R);
-m_ = homomorphism(L_, ϕ_); # only 1
+m_ = homomorphism(L_, ϕ_); # there is only 1
 HΣrewrite = rewrite_match(l_,r_,m_);
 
 @test is_isomorphic(ϕHrewrite_, HΣrewrite)
