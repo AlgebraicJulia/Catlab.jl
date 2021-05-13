@@ -601,7 +601,7 @@ function to_cset(m::ACSetTransformation)::Tuple{ACSet, Dict{Pair{Symbol, Int}, I
   res = inject_cset(tgt, res, d2)
 
   # add components
-  comps = repeat([0], length(res.tables[:Row1]))
+  comps = repeat([0], nparts(res,:Row1))
   for (k, v) in zip(keys(m.components), m.components)
     for (i, val) in enumerate(v.func)
       comps[srcdict[k=>i]] = tgtdict[k => val]
@@ -619,10 +619,10 @@ Helper function to construct HΣrewrite
 """
 function transformation_of_transformations(m1::ACSetTransformation, m2::ACSetTransformation, msrc::ACSetTransformation)::ACSetTransformation
   (m1_, src1, tgt1), (m2_, src2, tgt2) = to_cset(m1), to_cset(m2)
-  comps = Dict{Symbol, Vector{Int}}([comp => collect(1:length(m1_.tables[comp]))
+  comps = Dict{Symbol, Vector{Int}}([comp => collect(1:nparts(m1_,comp))
                 for comp in [:HomOb,:ObOb,:AttrOb, :DataOb, :AIndex, :HIndex]])
-  r1, fk1, d1 = [repeat([0], length(m1_.tables[x])) for x in [:Row1, :FK1, :Datum1]]
-  r2, fk2, d2 = [collect(1:length(m2_.tables[x])) for x in [:Row2, :FK2, :Datum2]]
+  r1, fk1, d1 = [repeat([0], nparts(m1_,x)) for x in [:Row1, :FK1, :Datum1]]
+  r2, fk2, d2 = [collect(1:nparts(m2_,x)) for x in [:Row2, :FK2, :Datum2]]
   for (k, vs) in zip(keys(msrc.components), msrc.components)
     for (i, v) in enumerate(vs.func)
         r1[src1[k => i]] = src2[k => v]
