@@ -180,16 +180,16 @@ macro gatmatch(val::Expr0, tbl::Expr)
   return esc(block)
 end
 
-macro gatmatch_pure(val::Expr0, tbl::Expr)
+macro gatmatch_pure(val::Expr0, syntax, tbl::Expr)
     cases = match_cases(tbl)
 
     # Function that will be generated on the fly by substituting val and tbl
     quot = quote
-
+      syntax = $(syntax).syntax
       # Alternative: just pass in theory as argument
-      theory_names = split(string(typeof($val).name), ".")
-      theory_name = theory_names[length(theory_names)-1]
-      syntax = getfield(@__MODULE__, Symbol(theory_name))
+      #   theory_names = split(string(typeof($val).name), ".")
+      #   theory_name = theory_names[length(theory_names)-1]
+      #   syntax = getfield(@__MODULE__, Symbol(theory_name))
 
       for (patarg, patctx, res) in $cases
         # "otherwise" case
