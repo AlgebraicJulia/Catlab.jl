@@ -7,29 +7,20 @@ using ...Theories
 using ..Limits
 
 """
-   l
-L <-- I
-|     |
-|m    |k
-v     v
-G <-- K
-   g
+    l
+  L ← I
+m ↓   ↓k
+  G ← K
+    g
 
-Given I (interface of patterns), L, G (target CSet to rewrite), m (match), l
-Find K (interface of CSets), k, and g such that:
-  (L -m-> G <-g- D) is the pushout of (L <-l- I -k-> K)
+Compute a pushout complement, componentwise in Set. On a formal level:
+For each component, define K = G / m(L/l(I)). There is a natural injection g: K↪G
+For each component, define k as equal to the map l;m (every element in the image in G is also in K).
 
-"Orphans" in L are elements not in the image of l. If the square is to be a pushout, then
-K -g-> G must not map to anything that m maps an orphan to.
+Returns ACSetTransformations k and g such that (m, g) is the pushout of (l, k)
 
-We initialize --k-->K with the composite l;m (so K is initialized as G). The image of the
-orphans is deleted from K. Elements of I mapping into K will map to their original location
-that m sent them to, and any extra elements in K (not in image of k) will go to the elements
-of G that were not in the image of m at all.
-
-These respectively satisfy the equality and inequality requirements of the pushout condition.
-As we delete things from G to turn it into K, the map m;l needs to adjust the indices of things
-it maps to in order to account for this. When we delete element x, then all y>x get renamed to y-1.
+Implementation-wise, elements of K are ordered in the same order as they appear in G.
+Construct an offset mapping to keep track of the location of elements of G within K.
 """
 function pushout_complement(l::ACSetTransformation,m::ACSetTransformation)::Pair{ACSetTransformation,ACSetTransformation}
 
@@ -53,16 +44,16 @@ function pushout_complement(l::ACSetTransformation,m::ACSetTransformation)::Pair
                       1:nparts(L,comp))))
     orph_set = Set(orphans)  # for membership test
 
-    # Tells us how to map from K into G
-    g_components[comp] = filter(x->!(x in orph_set), 1:n_comp)
-
-    # Start initializing the rows of tables in K
-    add_parts!(K, comp, length(g_components[comp]))
-
-    # re-adjust, find offsets (relies on orphans being sorted)
+    # Compute map from G to K (undefined for orphans)
     offsets[comp] = reindex(n_comp, orphans)
 
-    # Define k's action on component in relation to Lm's action
+    # Natural injection of subset of G into G
+    g_components[comp] = filter(x->!(x in orph_set), 1:n_comp)
+
+    # Initialize component in K
+    add_parts!(K, comp, length(g_components[comp]))
+
+    # Adjust lg function from I→G to refer to K using the offset
     newFunc = [x - offsets[comp][x] for x in lm.components[comp].func]
     k_components[comp] = FinFunction(newFunc, n_comp - length(orphans))
   end
