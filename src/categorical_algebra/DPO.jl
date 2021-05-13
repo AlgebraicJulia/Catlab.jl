@@ -2,7 +2,7 @@ module DPO
 export rewrite, rewrite_match, valid_dpo, dangling_condition, id_condition, pushout_complement, extend_cset,subcset
 
 using ..FinSets
-import ..CSets: AbstractACSet, ACSet, ACSetTransformation, components, homomorphism, homomorphisms, unpack_components, pack_components, add_parts!, set_subpart!, is_natural
+import ..CSets: AbstractACSet, ACSet, ACSetTransformation, components, homomorphism, homomorphisms, unpack_components, pack_components, add_parts!, nparts, set_subpart!, is_natural
 using ...Theories
 using ..Limits
 
@@ -14,93 +14,102 @@ L <-- I
 v     v
 G <-- K
    g
+
 Given I (interface of patterns), L, G (target CSet to rewrite), m (match), l
 Find K (interface of CSets), k, and g such that:
   (L -m-> G <-g- D) is the pushout of (L <-l- I -k-> K)
+
 "Orphans" in L are elements not in the image of l. If the square is to be a pushout, then
 K -g-> G must not map to anything that m maps an orphan to.
-We initialize --k-->K with the composite l.m (so K is initialized as G). The image of the
+
+We initialize --k-->K with the composite l;m (so K is initialized as G). The image of the
 orphans is deleted from K. Elements of I mapping into K will map to their original location
 that m sent them to, and any extra elements in K (not in image of k) will go to the elements
 of G that were not in the image of m at all.
+
 These respectively satisfy the equality and inequality requirements of the pushout condition.
-As we delete things from G to turn it into K, the map m.l needs to adjust the indices of things
+As we delete things from G to turn it into K, the map m;l needs to adjust the indices of things
 it maps to in order to account for this. When we delete element x, then all y>x get renamed to y-1.
 """
-function pushout_complement(L::ACSetTransformation,m::ACSetTransformation)::Pair{ACSetTransformation,ACSetTransformation}
+function pushout_complement(l::ACSetTransformation,m::ACSetTransformation)::Pair{ACSetTransformation,ACSetTransformation}
 
-  Lm = compose(L, m)
-  new_comps, non_orphans  = Dict{Symbol, FinFunction}(), Dict{Symbol,Vector{Int}}()
+  I, L, G = l.dom, l.codom, m.codom
+  lm = compose(l, m)
+
+  k_components = Dict{Symbol, FinFunction}()
+  g_components = Dict{Symbol,Vector{Int}}()
+  K = ACSet{typeof(G).parameters...}()
   offsets = Dict{Symbol,Vector{Int}}()
-  K = ACSet{typeof(m.codom).parameters...}()
 
-  for comp in keys(L.components)
 
-    L_image = Set(L.components[comp].func)
-    # image of (complement of image of I into L) into G
+  for comp in keys(l.components)
+
+    n_comp = nparts(G, comp)  # total # of elements in G
+    l_image = Set(l.components[comp].func)
+
+    # m(L/l(G)): image of (complement of image of l) into G
     orphans = sort(map(x->m[comp](x),
-                  filter(x->!(x in L_image),
-                      1:length(L.codom.tables[comp]))))
-    orph_set = Set(orphans)
+                  filter(x->!(x in l_image),
+                      1:nparts(L,comp))))
+    orph_set = Set(orphans)  # for membership test
 
     # Tells us how to map from K into G
-    non_orphans[comp] = filter(x->!(x in orph_set), 1:length(m.codom.tables[comp]))
+    g_components[comp] = filter(x->!(x in orph_set), 1:n_comp)
 
     # Start initializing the rows of tables in K
-    add_parts!(K, comp, length(non_orphans[comp]))
-
-
-    # Modify mapping component
-    oldfun = Lm.components[comp]
-
-    newFunc, offset, off_counter, o_index = Int[], Int[], 0, 1
+    add_parts!(K, comp, length(g_components[comp]))
 
     # re-adjust, find offsets (relies on orphans being sorted)
-    for i in 1:oldfun.codom.set
-      while o_index <= length(orphans) && orphans[o_index] < i
-        if orphans[o_index] < i
-          off_counter +=1
-        end
-        o_index += 1
-      end
-      push!(offset, off_counter)
-    end
-    @assert length(oldfun.codom) == length(offset)
+    offsets[comp] = reindex(n_comp, orphans)
 
-    for (i, x) in enumerate(oldfun.func)
-        if x in orph_set
-          throw(ErrorException("Interface $comp #$i maps to $x which was flagged as an orphan"))
-        else
-          push!(newFunc, x - offset[x])
-        end
-    end
-    offsets[comp] = offset
-    new_comps[comp] = FinFunction(newFunc, oldfun.codom.set - length(orphans))
+    # Define k's action on component in relation to Lm's action
+    newFunc = [x - offsets[comp][x] for x in lm.components[comp].func]
+    k_components[comp] = FinFunction(newFunc, n_comp - length(orphans))
   end
 
-  # Populate data and attributes for K
-  comps, arrows, src, tgt = typeof(m.codom).parameters[1].parameters
-  attrs, srcs = typeof(m.codom).parameters[2].parameters[3:4]
+  # Populate attributes for K (unchanged from G)
+  comps, arrows, src, tgt = typeof(G).parameters[1].parameters
+  attrs, srcs = typeof(G).parameters[2].parameters[3:4]
   for (i, attr) in enumerate(attrs)
-    new=[m.codom[attr][j] for j in non_orphans[comps[srcs[i]]]]
+    new=[G[attr][j] for j in g_components[comps[srcs[i]]]]
     set_subpart!(K, attr, new)
   end
 
+  # Populate relations for K (same as G, with offset applied)
   for (i, col) in enumerate(arrows)
     src_, tgt_ = comps[src[i]], comps[tgt[i]]
-    new=[val - offsets[tgt_][val] for val in m.codom[col][non_orphans[src_]]]
+    new=[val - offsets[tgt_][val] for val in G[col][g_components[src_]]]
     set_subpart!(K, col, new)
   end
 
   # Put together all information into new morphisms
-  k = ACSetTransformation(L.dom, K; new_comps...)
+  k = ACSetTransformation(I, K; k_components...)
   @assert is_natural(k)
-  g = ACSetTransformation(K, m.codom; non_orphans...)
+  g = ACSetTransformation(K, G; g_components...)
   @assert is_natural(g)
 
   return k => g
 end
 
+"""
+Compute offsets induced by removing particular elements from
+the list 1:n. E.g. if we remove elements 2 and 4 from 1:5,
+our offset is [0,_,1,_,2]
+(the offset at the removed element index is not meaningful)
+"""
+function reindex(n::Int, removed::Vector{Int})::Vector{Int}
+  offset, off_counter, o_index = [],0,1
+  for i in 1:n
+    while o_index <= length(removed) && removed[o_index] < i
+      if removed[o_index] < i
+        off_counter +=1
+      end
+      o_index += 1
+    end
+    push!(offset, off_counter)
+  end
+  return offset
+end
 
 """
 Rewrite with explicit match
@@ -150,7 +159,7 @@ function id_condition(L::ACSetTransformation, m::ACSetTransformation, verbose::B
   for comp in keys(L.components)
     image = Set(L.components[comp].func)
     image_complement = filter(x->!(x in image),
-                              1:length(L.codom.tables[comp]))
+                              1:nparts(L.codom,comp))
     orphan_vals = map(x->m[comp](x), image_complement)
     orphan_set = Set(orphan_vals)
     if length(orphan_set)!=length(orphan_vals)
@@ -191,7 +200,7 @@ function dangling_condition(L::ACSetTransformation, m::ACSetTransformation, verb
       orphans[comp] = Set(
         map(x->m[comp](x),
           filter(x->!(x in image),
-            1:length(L.codom.tables[comp]))))
+            1:nparts(L.codom,comp))))
   end
   # check that for all morphisms in C, we do not map to an orphan
   catdesc = typeof(L.dom).parameters[1]
@@ -199,7 +208,7 @@ function dangling_condition(L::ACSetTransformation, m::ACSetTransformation, verb
   for (morph, src_ind, tgt_ind) in zip(catdesc.parameters[2], catdesc.parameters[3], catdesc.parameters[4])
     src_obj = comps[src_ind] # e.g. :E, given morph=:src in graphs
     tgt_obj = comps[tgt_ind] # e.g. :V, given morph=:src in graphs
-    for non_orph_src_val in setdiff(1:length(m.codom.tables[src_obj]), m[src_obj].func) # non_orphans in G
+    for non_orph_src_val in setdiff(1:nparts(m.codom,src_obj), m[src_obj].func) # g_components in G
       orphan_tgt_val = m.codom[morph][non_orph_src_val]
       if m.codom[morph][non_orph_src_val] in orphans[tgt_obj]
         if verbose
