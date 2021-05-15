@@ -535,7 +535,7 @@ function limit(d::BipartiteFreeDiagram{Ob,Hom}) where
       Limit(d_original, SMultispan{1}(ιs[1]))
     else
       πs = legs(product(SVector(ob₁(d)...)))
-      Limit(d_original, map(compose, πs, ιs))
+      Limit(d_original, Multispan(map(compose, πs, ιs)))
     end
   else
     # Select the join to perform.
