@@ -4,6 +4,9 @@ using Catlab.Graphs
 using Catlab.Theories
 using Catlab.CSetDataStructures
 using Combinatorics  # NON CATLAB DEPENDENCY
+using Catlab.WiringDiagrams
+using Catlab.Programs
+import Random: shuffle
 
 """
 Reference: CT for computing science: https://www.math.mcgill.ca/triples/Barr-Wells-ctcs.pdf
@@ -13,8 +16,12 @@ Here are also interesting examples + explanation of connection to Essentially Al
 Section 7.7 describes how this is essentially the same as the
 syntactic version. Maybe useful to help convert between.
 
-FD theories add cocones and model sum types. This goes beyond what we want to model with a GAT, though may be interesting to consider for the model enumeration project, which has some initial code at the bottom.
+FD theories add cocones and model sum types. This goes beyond what we want to model with a GAT, though may be interesting to consider for the model enumeration project, which has some code at the bottom.
 
+Also check Fiore: categorical semantics of dependent type theory
+"""
+
+"""
 Section 7.3+10.1.3 Shorthand Caveats:
 2. nodes a×b×c IMPLICITLY have a cone with projection legs.
 3. likewise nodes labeled 1 are implicitly terminal (empty base limit)
@@ -44,10 +51,11 @@ f₁×f₂×...↓          ↓ fᵢ
     ↙   ↓s  ↘
    a ⟶ b ⟵ a
      s     s
+"""
 
+"""
 Section 7.4: Arrows between FP sketches
 Homomorphisms of a S sketch in category C are natural transformations btw their models (i.e. a C-Set homomorphism if C=Set)
-
 """
 
 
@@ -104,9 +112,12 @@ Tradeoffs vs a julia data structure? (acsets presumed to be graphs)
 struct FLSketch
   G::ACSet  # a Graph, arrows are "operations"
   D::Set{T} # diagrams i.e. morphisms to G
-  C::Set{T} # cones i.e. morphisms to G (assume apex is V1?)
+  C::Set{Tuple{T,Int,Vector{Int}}} # apex + edges in G from apex
 end;
-
+# not all legs from apex need to be defined. Because a valid cone has
+# only ONE arrow to each object in the diagram, it's redundant to
+# specify an arrow from A to C if the diagram already has B->C.
+# For these nodes, an edge value of 0 can be used as a null value.
 #------------------------------------------------
 
 # Example common diagrams
@@ -145,12 +156,11 @@ add_edges!(InwardTri, [1,1,1,3,4], [2,3,4,2,2])
 
 
 """
-   c
-4 <--1\\
-|f  a| \\ b
-v    v   v
-5 <--2-->3
-   e   d
+     c
+  4<--1
+f ↓  a↓ ↘ b
+  5<--2-->3
+    e   d
 """
 SquareTriangle = Graph(5)
 add_edges!(SquareTriangle,[1,1,1,2,2,4],[2,3,4,3,5,5])
@@ -161,25 +171,16 @@ add_edges!(Square,[1,1,2,3],[2,3,4,4])
 
 #------------------------------------------------
 
-# Example common cones
-TerminalObjCone = Graph(1)
-
-ProductCone = Graph(3)
-add_edges!(ProductCone,[1,1], [2,3]);
-
-Product3Cone = Graph(4)
-add_edges!(Product3Cone,[1,1,1],[2,3,4])
+# Example cones
 
 """
+   * ⟶ 2
+   ↓ ↘  ↓ b
+   1 ⟶ 3
      a
-   1 -> 2
- b |\\c | d
-   v \\ v
-   3 -> 4
-     e
 """
-PullBackCone = Graph(4)
-add_edges!(PullBackCone, [1,1,1,2,3],[2,3,4,4,4]);
+Cospan = Graph(3) # cospan
+add_edges!(Cospan, [1,2],[3,3]);
 
 #(START OF EXAMPLES)
 #------------------------------------------------
@@ -219,7 +220,8 @@ ReflSketch = FLSketch(ReflG, Set([
 NatNumGrph =  Graph(2) #"1", "n"
 add_edges!(NatNumGrph,[1,2], [2,2])
 
-NatNumSketch = FLSketch(NatNumGrph, Set(), Set([T(TerminalObjCone, NatNumGrph, V=[1])]));
+NatNumSketch = FLSketch(NatNumGrph, Set(), Set([
+    (T(Graph(0), NatNumGrph), 1, [])]));
 
 #------------------------------------------------
 
@@ -228,8 +230,8 @@ NatNumSketch = FLSketch(NatNumGrph, Set(), Set([T(TerminalObjCone, NatNumGrph, V
 InfListG = Graph(3) # 1, d, l
 add_edges!(InfListG,[1,1,3,3],[2,2,2,3])  # a, b, head, tail
 InfListSketch=FLSketch(InfListG, Set(), Set([
-    T(TerminalObjCone, InfListG, V=[1]),
-    T(ProductCone,InfListG;V=[3,2,3],E=[3,4])]))
+    (T(Graph(0), InfListG), 1,[]),
+    (T(Graph(2),InfListG;V=[2,3]), 3, [3,4])]))
 
 # We CANNOT make a finite model out of this
 
@@ -251,10 +253,12 @@ SemiGrpDd = T(SquareTriangle,SemiGrpG;V=[s³,s²,s,s²,s],E=[idk, Π₁,π₂π�
 # E: associativity constraint
 SemiGrpDe = T(Square,SemiGrpG;V=[s³,s²,s²,s],E=[idk,kid,k,k])
 
-SemiGrpP2 = T(ProductCone, SemiGrpG;V=[s²,s,s],  E=[π₁, π₂])
-SemiGrpP3 = T(Product3Cone,SemiGrpG;V=[s³,s,s,s],E=[Π₁,Π₂,Π₃])
+SemiGrpP2 = (T(Graph(2), SemiGrpG;V=[s,s]), s²,[π₁, π₂])
+SemiGrpP3 = (T(Graph(3),SemiGrpG;V=[s,s,s]),s³,[Π₁,Π₂,Π₃])
 
-SemiGrp = FLSketch(SemiGrpG, Set([SemiGrpDa, SemiGrpDb, SemiGrpDc, SemiGrpDd, SemiGrpDe]), Set([SemiGrpP2, SemiGrpP3]))
+SemiGrp = FLSketch(SemiGrpG, Set([
+    SemiGrpDa, SemiGrpDb, SemiGrpDc, SemiGrpDd, SemiGrpDe]),
+    Set([SemiGrpP2, SemiGrpP3]))
 
 
 #------------------------------------------------
@@ -285,6 +289,15 @@ add_edges!(GroupG, [3,2,1,3,3,4,4,4,2,2,2,2,2,4,4,4,4],
 # TODO diagrams/limits
 
 #------------------------------------------------
+# 10.4.3: Monomorphisms
+MonoG = Graph(2)
+add_edges!(MonoG, [1,1], [1,2])
+
+MonoCone = T(Cospan, MonoG,V=[1,1,2],E=[2,2])
+MonoSketch=FLSketch(MonoG,
+    Set([T(Loop,MonoG,V=[1], E=[1])]), # force ID arrow
+    Set([(MonoCone,1,[1,1])]))
+#------------------------------------------------
 
 GraphG = Graph(2) # V, E
 add_edges!(GraphG, [1,1], [2,2]) # src, tgt
@@ -298,10 +311,16 @@ add_edges!(SimpleGraphG, [2, 2, 3, 3, 2, 2],
                          [1, 1, 1, 1, 3, 2])
                        #src,tgt,p₁,p₂,u,id
 
-SGid = T(Loop, SimpleGraphG, V=[2], E=[6])
-SGD = T(OutwardTri, SimpleGraphG, V=[2,3,1,1], E=[5,1,2,3,4])
-SGcone = T(InwardTri, SimpleGraphG, V=[2,3,2,2],E=[5,6,6,5,5])
-SimpleGraphSketch = FLSketch(GraphG, Set([SGid, SGD]), Set([SGcone]))
+SGid = T(Loop, SimpleGraphG, V=[2], E=[6]);
+src_tgt_equal = T(OutwardTri, SimpleGraphG, V=[2,3,1,1], E=[5,1,2,3,4]);
+
+nn_prod = (T(Graph(2), SimpleGraphG, V=[1,1]), 3, [3,4]);
+
+
+u_monic = (T(Cospan, SimpleGraphG, V=[2,2,3],E=[5,5]), 2, [6,6,5]);
+SimpleGraphSketch = FLSketch(SimpleGraphG,
+    Set([SGid, src_tgt_equal]),
+    Set([nn_prod, u_monic]));
 
 
 #------------------------------------------------
@@ -313,8 +332,8 @@ o,a,a²,a³ = 1:4 # shorthand
 add_edges!(CatG, [o,a,a,a²,a²,a²,a³,a³,a³,a³, a³, a³, a³, a,    a,   a],
                  [a,o,o,a, a, a, a, a, a, a², a², a², a², a²,   a²,  a])
                 # u s t π₁ π₂ c  p₁ p₂ p₃ p₁₂ p₂₃ p₁c cp₃ utid idus, ida
-u,s,t,π₁,π₂,c,p₁,p₂,p₃,p₁₂,p₂₃,p₁c,cp₃,utid,idus,ida = 1:16
-# There is a clear typo in the second diagram in CTCS
+u,s,t,π₁,π₂,c,p₁,p₂,p₃,p₁₂,p₂₃,p₁c,cp₃,utid,idus,ida,v = 1:17
+# There's a clear typo in the second diagram in CTCS
 CD = Set([
     T(OutwardTri,     CatG; V=[a³,a²,a,a],    E=[p₁₂,p₁,p₂,π₁,π₂]),
     T(OutwardTri,     CatG; V=[a³,a²,a,a],    E=[p₂₃,p₂,p₃,π₁,π₂]),
@@ -326,21 +345,21 @@ CD = Set([
     T(Square,         CatG; V=[a³,a²,a²,a],   E=[p₁c,cp₃,c,c]) # associativity
 ])
 
-CLim1 = T(Square, CatG; V=[a²,a,a,o], E=[π₁,π₂,s,t]) # is it really a "cone"?
-CLim2G = Graph(6)
-add_edges!(CLim2G, [1,1,1,2,3,3,4],[2,3,4,5,5,6,6])
-CLim2 = T(CLim2G, CatG; V=[a³,a,a,a,o,o], E=[p₁,p₂,p₃,s,t,s,t])
+CLim1 = (T(Cospan, CatG; V=[a,a,o], E=[s,t]), a², [π₁,π₂,0])
+CLim2G = Graph(5)
+add_edges!(CLim2G, [1,2,2,3],[4,4,5,5])
+CLim2 = (T(CLim2G, CatG; V=[a,a,a,o,o], E=[s,t,s,t]), a³, [p₁,p₂,p₃,0,0])
 
 CatSketch= FLSketch(CatG, CD, Set([CLim1, CLim2]))
+
 
 #------------------------------------------------
 # ENUMERATING ALL MODELS PROJECT
 #------------------------------------------------
 
 # Goals:
-# [ ] Find out how to compute the canonical labeling of a CSet (nauty can't do multi digraphs)
-# [ ] Add impact of cones to model finding
-# [ ] Debug initial term model finding algorithm
+# [x] Find out how to compute the canonical labeling of a CSet (nauty can't do multi digraphs)
+# [x] Add impact of cones to model finding
 # [ ] Need a data structure for sketches *defined* as colimits
 # [ ] Figure out theoretically how the models are related
 # [ ] Work out a database representation of all models found
@@ -349,6 +368,7 @@ CatSketch= FLSketch(CatG, CD, Set([CLim1, CLim2]))
 #   - can then solve general problem in 2 steps
 #   - 1: compute required models for sub-theories
 #   - 2: combine and add stuff as necessary
+# [ ] Less important: debug initial term model finding algorithm
 
 
 """
@@ -356,6 +376,7 @@ Given all the diagrams, which paths (given by pairs of edge sequences) must comm
 """
 function comm_paths(fls::FLSketch)::Set{Pair{Vector{Int}}}
     """Find all paths in a particular diagram"""
+
     function cp(m::ACSetTransformation)::Set{Pair{Vector{Int}}}
         d = m.dom
         M = m.components[:E]
@@ -403,7 +424,7 @@ function comm_paths(fls::FLSketch)::Set{Pair{Vector{Int}}}
         pairs = []
         for (ij, pths) in collect(paths)
             pths = collect(pths)  # Set -> Vector
-            if ij[0] == ij[1]
+            if ij[1] == ij[2]
                 for (f,_) in pths
                     push!(pairs, f=>Int[])  # loops equal to empty path
                 end
@@ -456,6 +477,415 @@ function enum(fls::FLSketch, n::Int)::Dict{Tuple,Vector{CSet}}
 
 end
 
+
+"""
+Brute force try all assignments to see if diagrams are satisfied
+with the number of elements in each set fixed by consts
+
+Algorithm:
+- Start of with CSet initialized to have elements for each const
+  plus one extra value meant to represent unknown (call it u).
+- All values of FKs are initialized to u.
+- For each u we find, branch out a possibility where it takes any possible value.
+
+- For each possibility, check all diagrams
+  - positive info: fill out things we can derive if one leg is known and other unknown
+  - negative info: find a contradiction, short circuit
+- For each cone, check its base diagram and for each matching set of elements
+  - positive info: TBD, I think there is a lot we can infer, however
+  - negative info: if nothing could be an apex or two different things are an apex, fail
+
+- Repeat this until the entire CSet is defined, then trim off the 'unknown' values.
+
+Current problem: evaluating a query on a discrete cone fails for catlab reasons
+"""
+function term_models(fls, consts::Tuple)::Vector{CSet}
+
+    # Initialize model
+    G = fls.G
+    modl = graph_to_cset(G)()
+    xs = [Symbol("x$i") for i in 1:nv(G)]
+    es = [Symbol("e$i") for i in 1:ne(G)]
+
+    # Initialize constants + EXTRA SENTINAL VALUE = "UNKNOWN"
+    for (i, c) in enumerate(consts)
+        add_parts!(modl, xs[i], c+1;)
+    end
+    # initialize foreign keys to unknown value
+    for e in 1:ne(G)
+        n_in, n_out = [nparts(modl, G[x][e]) for x in [:src, :tgt]]
+        set_subparts!(modl, 1:n_in; Dict([es[e]=>n_out])...)
+    end
+
+    # Initialize commutative diagram data
+    c_paths = comm_paths(fls)
+    comm_qs = [paths_to_query(G, p1, p2) for (p1, p2) in c_paths]
+    comm_q_tabs = [xs[lasttabs(G, p1, p2)] for (p1, p2) in c_paths]
+
+    # Initialize cone data
+    cone_ds = [diagram_to_query(cone[1]) for cone in fls.C]
+    cone_tabs = [xs[cone[1].components[:V].func] for cone in fls.C]
+
+    function rec!(cset::CSet, res::Vector{CSet},seen::Set{UInt64})
+        # Fill out any info we can from diagrams, detect contradiction
+        for (comm_q, cqtab, (pth1, pth2)) in zip(comm_qs, comm_q_tabs, c_paths)
+            for qres in query(cset, comm_q)
+                penult1, penult2, last1, last2 = qres
+                nullp1, nullp2, null1, null2 = map(
+                    tabval -> tabval[2] == nparts(cset, tabval[1]), zip(cqtab, qres))
+                if null1 && !null2 && !nullp1 # can propagate info
+                    set_subpart!(cset, penult1, es[pth1[end]], last2)
+                elseif !null1 && null2 && !nullp2 # can propagate info
+                    set_subpart!(cset, penult2, es[pth2[end]], last1)
+                elseif !(null1||null2)  # can check for contradiction
+                    if last1 != last2
+                        return
+                    end
+                end
+            end
+        end
+
+        for (dia, c_tabs, (_, apex, legs)) in zip(cone_ds, cone_tabs, fls.C)
+            npart = nparts(cset, apex)
+            for matches in query(cset, dia)
+                if all(i->matches[i] < nparts(cset,c_tabs[i]), 1:length(c_tabs)) # ignore matches with unknowns
+                    poss_apexes = Set(1:npart)
+                    for (legval,leg) in zip(matches,legs)
+                        if leg != 0
+                            leg_edge = es[leg]
+                            intersect!(poss_apexes, cset.indices[leg_edge][legval])
+                        end
+                    end
+                    has_null, n_apex = npart in poss_apexes, length(poss_apexes)
+                    if  !(n_apex in (has_null ? [1,2] : [1]))
+                        return
+                    end
+                end
+            end
+        end
+
+        # split cases on an arbitrary choice for the first zero we find
+        for (i, e) in shuffle(collect(enumerate(es)))
+            tgt_table = xs[G[:tgt][i]]
+            for (j, val) in shuffle(collect(enumerate(cset[e][1:end-1])))
+                if val == nparts(cset, tgt_table)  #SPLIT
+                    for k in 1:(val-1)
+                        cset2 = deepcopy(cset)
+                        set_subpart!(cset2, j, e, k)
+                        hsh = canonical_hash(cset2)
+                        if !(hsh in seen)
+                            push!(seen,hsh)
+                            rec!(cset2, res, seen)
+                        end
+                    end
+                    return res
+                end
+            end
+        end
+        # No unknown values! Delete the last value from every table
+        for t in keys(cset.tables)
+            rem_part!(cset, t, nparts(cset, t))
+        end
+        hsh = canonical_hash(cset)
+        if hsh in seen
+            return
+        else
+            push!(seen, hsh)
+            push!(res, cset)
+        end
+    end
+    res, seen = CSet[], Set{UInt64}()
+    rec!(modl, res, seen)
+    return res
+end
+
+"""
+Create a CSet type specified by a graph
+Vertices are x₁,x₂,..., edges are e₁, e₂,...
+"""
+function graph_to_cset(grph::CSet)::Type
+    pres = Presentation(FreeSchema)
+    xs = [Ob(FreeSchema,Symbol("x$i")) for i in 1:nv(grph)]
+    es = [Symbol("e$i") for i in 1:ne(grph)]
+    for x in xs
+        add_generator!(pres, x)
+    end
+    for (i,(src, tgt)) in enumerate(zip(grph[:src], grph[:tgt]))
+        add_generator!(pres, Hom(es[i], xs[src], xs[tgt]))
+    end
+    return CSetType(pres, index=es)
+end
+
+"""
+Take in a Graph CSet, return wiring diagram Cset that
+queries a CSet with the schema generated by `graph_to_cset` above
+
+Actually use morphism which renames objects and edges, in case
+d is a pattern to be interpreted in the context of another graph
+"""
+function diagram_to_query(m::ACSetTransformation)
+    d  = m.dom
+    xs = [Symbol("x$(m.components[:V](i))") for i in 1:nv(d)]
+    xnames = [Symbol("$(x)_$i") for (i, x) in enumerate(xs)]
+    es = [Symbol("e$(m.components[:E](i))") for i in 1:ne(d)]
+    rel = RelationDiagram{Symbol}(nv(d),port_names=xnames) # port_names=xs
+    add_junctions!(rel, nv(d),variable=xnames)
+    set_subpart!(rel, 1:nv(d), :outer_junction, 1:nv(d))
+    for v in 1:nv(d)
+        outarrows = d.indices[:src][v]
+        b = add_box!(rel, 1+length(outarrows), name=xs[v])
+        ps = ports(rel, b)
+        set_subpart!(rel, ps, :port_name, vcat([:_id],es[outarrows]))
+        set_junction!(rel, ps, vcat([v],d[:tgt][outarrows]))
+    end
+    return rel
+end
+
+"""
+Given two paths, [a₁,a₂,...] and [b₁, b₂,...] we want a query that
+returns the penultimate and final nodes values along both paths
+for each element in the source table, src(a₁)=src(b₁).
+"""
+function paths_to_query(d::ACSet, p1::Vector{Int}, p2::Vector{Int})
+    n1, n2 = map(length, [p1, p2])
+    xs = [Symbol("x$i") for i in 1:nv(d)]
+    es = [Symbol("e$i") for i in 1:ne(d)]
+    res = [Symbol("$s$i") for s in ["pen", "last"] for i in 1:2]
+    rel = RelationDiagram{Symbol}(4,port_names=res)
+    root = add_box!(rel, n2 > 0 ? 3 : 2, name=xs[d[:src][p1[1]]])
+    ps = ports(rel, root)
+    add_junctions!(rel, 1, variable=[:init])
+    set_junction!(rel, [ps[1]], [1])
+    set_subpart!(rel, ps[1], :port_name, :_id)
+
+    for (p_index,path) in [1=>p1, 2=>p2]
+        if isempty(path)
+
+        else
+            outport = ps[p_index+1]
+            lastj, = add_junctions!(rel, 1, variable=[Symbol("p_$(p_index)_1")])
+            set_junction!(rel, [outport], [lastj])
+            for (i, arr) in enumerate(path)
+                set_subpart!(rel, outport, :port_name, es[arr])
+                if i < length(path)
+                    j, = add_junctions!(rel, 1, variable=[Symbol("p_$(p_index)_$(i+1)")])
+                    b = add_box!(rel, 2, name=xs[d[:tgt][arr]])
+                    pid, pout = ports(rel, b)
+                    set_subpart!(rel, pid, :port_name, :_id)
+                    set_junction!(rel, [pid,pout], [lastj, j])
+                    outport = pout
+                    lastj = j
+                end
+            end
+        end
+    end
+    set_subpart!(rel, 1:4, :outer_junction, [
+        n1, n2 < 2 ? 1 : n1+n2, n1+1, n2 == 0 ? 1 : n1+n2+1])
+    return rel
+end
+
+"""
+Helper function to get the penultimate and
+last tables of a pair of commutative paths
+(note we only allow p2 to be empty)
+"""
+function lasttabs(d::ACSet, p1::Vector{Int}, p2::Vector{Int})::Vector{Int}
+    root =d[:src][p1[1]]
+    penult_1, last_1 = [d[x][p1[end]] for x in [:src, :tgt]]
+    penult_2 = isempty(p2) ? root : d[:src][p2[end]]
+    last_2 = isempty(p2) ? root : d[:tgt][p2[end]]
+    return [penult_1, penult_2, last_1, last_2]
+end
+
+#------------------------------------------------
+# automorphisms
+#------------------------------------------------
+
+CDict = Dict{Symbol, Vector{Int}}
+
+"""Compute all automorphisms of a CSet"""
+function autos(g::CSet) :: Set{CDict}
+    res = Set{CDict}()
+    seen = Set{CDict}()
+    comps = keys(g.tables)
+    cs = Dict([comp=>ones(Int, length(t)) for (comp, t)
+                in zip(comps, g.tables)])
+    for comp in comps
+        for i in 1:length(cs[comp])
+            new_cs = deepcopy(cs)
+            new_cs[comp][i] = 2
+            branch!(g, new_cs, res, seen)
+        end
+    end
+    return res
+end
+
+"""Take a random color with multiple nodes and split"""
+function branch!(g::CSet, cs::CDict, res::Set{CDict}, seen::Set{CDict})
+    comps = collect(keys(g.tables))
+
+    for comp in shuffle(comps)
+        if length(cs[comp]) != length(Set(cs[comp]))
+            seen_colors = Set()
+            for (i, c) in enumerate(cs[comp])
+                if c in seen_colors
+                    updated_cs = update_colors(g, deepcopy(cs), comp, i)
+                    if !(updated_cs in seen)
+                        push!(seen, updated_cs)
+                        branch!(g, updated_cs, res, seen)
+                    end
+                else
+                    push!(seen_colors, c)
+                end
+            end
+
+            return
+        end
+    end
+    push!(res, cs)
+end
+"""Differentiate elements by how many nodes of each color they touch"""
+function update_colors(g::CSet, cs::CDict, tbl::Symbol, val::Int)::CDict
+    comps, arr, src, tgt = typeof(g).parameters[1].parameters
+
+    incident = Dict([comp=>([(a,comps[s]) for (a,s,t) in zip(arr,src,tgt)
+                     if t == i]) for (i, comp) in enumerate(comps)])
+
+    new_color = maximum(cs[tbl]) + 1
+    cs[tbl][val] = new_color
+
+    # propagate info for everything incident to tbl
+    for (arrow, srctab) in incident[tbl]
+        # partition source table by # of each color that is touched through arrow
+        counts = [zeros(Int, new_color) for _ in  1:length(g.tables[srctab])]
+        for (color, preimage) in zip(cs[tbl], g.indices[arrow])
+            for elem in preimage
+                counts[elem][color] += 1
+            end
+        end
+        hshs = map(hash, counts)
+        parts = Dict([h=>[] for h in hshs])
+        for (i,h) in enumerate(hshs)
+            push!(parts[h],i)
+        end
+        old_max = maximum(cs[srctab])
+        orig_parts = [[i for (i,col) in enumerate(cs[srctab])
+                      if col==c] for c in 1:old_max]
+        # change colors if needed
+        for part in filter(x->length(x)>1, orig_parts)
+            parthsh = [hshs[i] for i in part]
+            hshdict = Dict([h=>[] for h in collect(Set(parthsh))])
+            for (h, i) in zip(parthsh, part)
+                push!(hshdict[h],i)
+            end
+            for (offset, is) in enumerate(collect(values(hshdict))[2:end]) # first partition keeps label
+                cs[srctab][is] .= old_max + offset
+            end
+        end
+    end
+    return cs
+end
+"""Apply a coloring to a Cset to get an isomorphic cset"""
+function apply_automorphism(c::CSet,d::CDict)::CSet
+    new = deepcopy(c)
+    tabs, arrs, _, tgts = (typeof(c).parameters[1]).parameters
+    for (arr, tgti) in zip(arrs,tgts)
+        tgt = tabs[tgti]
+        set_subpart!(new, arr, d[tgt][c[arr]])
+    end
+    return new
+end
+function canonical_iso(g::CSet)::CSet
+    isos = sort([apply_automorphism(g, Dict(a)) for a in autos(g)], by=string)
+    return isos[1]
+end
+function canonical_hash(g::CSet)::UInt64
+    return hash(string(canonical_iso(g)))
+end
+#------------------------------------------------
+# Tests
+#------------------------------------------------
+q1 = diagram_to_query(nn_prod[1])
+q2 = diagram_to_query(u_monic[1])
+xg = graph_to_cset(SimpleGraphG)()
+for i in 1:3 add_parts!(xg, Symbol("x$i"), 3) end
+for i in 1:6 set_subpart!(xg, Symbol("e$i"), [3,3,3]) end
+q3 = @relation (x1=x1_1) begin
+    x1(_id=x1_1)
+end
+
+# indexing schema: e1::x2 → x1
+q32 = @relation (x1=x1_1,x2=x2_1) begin
+x1(_id=x1_1)
+x2(_id=x2_1,e1=x1_1) # need e1 or it fails
+end
+
+sg_res = term_models(SimpleGraphSketch, (2,2,2))# n, a, n×n
+
+if 1+1==0 # don't run these automatically
+
+bool_perms = term_models(SetPermSketch,(2,)) # finds id and swap
+mono_res = term_models(MonoSketch, (2,2)) # finds the two isomorphic swap functions
+
+
+# TEST DIAGRAM TO QUERY
+
+rg = @relation (V1=v1,V2=v2) begin
+ E(src=v1, tgt=v2)
+ V(_id=v1)
+end
+
+r = diagram_to_query(id(Triangle))
+
+rel = @relation (x1=x1,x2=x2,x3=x3) begin
+ x1(_id=x1, e1=x2, e2=x3)
+ x2(_id=x2,e3=x3)
+ x3(_id=x3)
+end
+
+@assert is_isomorphic(r, rel)
+
+tri = graph_to_cset(Triangle)()
+for i in 1:3 add_parts!(tri, Symbol("x$i"), 2) end
+for i in 1:3 set_subpart!(tri, Symbol("e$i"), [1,2]) end
+res = query(tri, rel)
+for i in 1:2
+    @assert res[i] == (x1=i,x2=i,x3=i)
+end
+
+# TEST PATHS TO QUERY
+xgraph = Graph(4) # two paths that meet up but intersect along the way
+add_edges!(xgraph, [1,2,1,2,4],[2,3,2,4,3])
+xg = graph_to_cset(xgraph)()
+for i in 1:4 add_parts!(xg, Symbol("x$i"), 2) end
+for (i, p) in enumerate([[1,2],[2,1],[2,1],[2,1],[2,2]])
+    set_subpart!(xg, Symbol("e$i"),p)
+end
+
+p1 = [1,2]  # (12)→(12)→(21)  # pen1 = 1;2, last1 = 2;1
+p2 = [3,4,5] # (12)→(21)→(12)→(22) # pen2 = 1;2, last2=2;2
+q = paths_to_query(xgraph, p1, p2)
+rel = @relation (pen1=p_1_1,pen2=p_2_2,last1=p_1_2,last2=p_2_3) begin
+ x1(_id=init, e1=p_1_1, e3=p_2_1)
+ x2(_id=p_1_1, e2=p_1_2)
+ x2(_id=p_2_1, e4=p_2_2)
+ x4(_id=p_2_2, e5=p_2_3)
+end
+
+# Empty path test
+xg = graph_to_cset(Loop)()
+add_parts!(xg, Symbol("x1"), 3)
+set_subpart!(xg, Symbol("e1"), [2,1,3])
+q = paths_to_query(Loop, [1],Int[])
+rel = @relation (pen1=init,pen2=init,last1=p_1_1,last2=init) begin
+ x1(_id=init, e1=p_1_1)
+end
+end # end of tests
+
+#------------------------------------------------
+# Back burner
+#------------------------------------------------
+
 """
 Algorithm from Section 4.7.11 (Linear Models, pg 136) and extended by 7.6 (for FP models, pg 242).
 
@@ -497,25 +927,22 @@ function init_term_model(fls, consts::Tuple)::CSet
                 if val == 0 # && !change
                     newval = add_part!(modl, xs[G[:tgt][i]])
                     set_subpart!(modl, j, e, newval)
-                    # println("x$(G[:src][i]) $j (e$i) triggered x$(G[:tgt][i]) $newval")
                     change = true
                 end
             end
         end
         # loop over commuting paths
-        for (p1, p2) in c_paths
-            # println("checking paths $p1 $p2")
-            src, tgt = G[:src][p1[1]], G[:tgt][p1[end]]
+        for (pth1, pth2) in c_paths
+            src, tgt = G[:src][pth1[1]], G[:tgt][pth1[end]]
             for startval in 1:length(modl.tables[xs[src]])
                 v1, v2 = startval, startval
-                for e in p1
+                for e in pth1
                     v1 = modl[es[e]][v1]
                 end
-                for e in p2
+                for e in pth2
                     v2 = modl[es[e]][v2]
                 end
                 if v1 != v2
-                    # println("merging table $tgt: $v1 $v2")
                     # Merge v1 and v2 together - 1st replace references to v2
                     for e in es[G.indices[:tgt][tgt]]
                         set_subpart!(modl, e, replace(modl[e],v2=>v1))
@@ -530,143 +957,3 @@ function init_term_model(fls, consts::Tuple)::CSet
     end
     return modl
 end
-
-"""
-Brute force try all assignments to see if diagrams are satisfied
-with the number of elements in each set fixed by consts
-
-Algorithm:
-Start of with CSet initialized to have elements for each const
-(all values of FKs are "0").
-
-For each "0" we find, branch out a possibility where it takes any possible value.
-For each possibility, we first check all diagrams and fill out things we can derive
-or stop if we find a contradiction. Then we again branch on the first "0" we find.
-Do this until the entire CSet is defined.
-
-To do: implement the effects of the cones
-"""
-function term_models(fls, consts::Tuple)::Vector{CSet}
-   # Initialize model
-   G = fls.G
-   targets = Set(fls.G[:tgt])
-
-   if any(x->consts[x]==0, targets)
-    return [] # impossible
-   end
-   c_paths = comm_paths(fls)
-
-   modl = graph_to_cset(G)()
-   xs = [Symbol("x$i") for i in 1:nv(G)]
-   es = [Symbol("e$i") for i in 1:ne(G)]
-   # Initialize constants
-   for (i, c) in enumerate(consts)
-       add_parts!(modl, xs[i], c)
-   end
-
-    # For all limits:
-    for cone in fls.C
-
-    end
-    # Create new limit objects from all combinations of children [FP-3]
-    # (maybe do this at the start when initialize the terms)
-    # Also set the projections to be correct ([FP-5])
-
-    # NOTE: Wait until I understand finite limit diagrams before
-    # implementing anything limit related -- don't want to have
-    # to re-do everything from scratch
-
-   function rec(cset::CSet)::Tuple{Vector{CSet},Set{UInt64}}
-    res, seen = CSet[], Set{UInt64}([hash(cset)])
-
-    # Fill out any info we can from diagrams, detect contradiction
-    for (p1, p2) in c_paths
-        # println("checking paths $p1 $p2")
-        src, tgt = G[:src][p1[1]], G[:tgt][p1[end]]
-        for startval in 1:length(cset.tables[xs[src]])
-            v1, v2 = startval, startval
-            for e in p1[1:end-1]
-                if v1 != 0
-                    v1 = cset[es[e]][v1]
-                end
-            end
-            for e in p2[1:end-1]
-                if v2 != 0
-                    v2 = cset[es[e]][v2]
-                end
-            end
-            nextp1 = es[p1[end]]
-            if isempty(p2)
-                if v1 != 0
-                    next1 = cset[nextp1][v1]
-                    if next1 == 0
-                        set_subpart!(cset, v1, nextp1, v2)
-                    elseif  next1 != v2
-                        return CSet[], seen
-                    end
-                end
-            elseif v1 != 0 || v2 != 0
-                nextp1 = es[p1[end]]
-                nextp2 = es[p2[end]]
-                next1 = v1 == 0 ? 0 : cset[nextp1][v1]
-                next2 = v2 == 0 ? 0 : cset[nextp2][v2]
-                if next1 == 0 && next2 != 0
-                    println("inferred that $v1 -- $nextp1 --> $next2")
-                    set_subpart!(cset, v1, nextp1, next2)
-                elseif v2!=0 && next2 == 0 && next1 != 0
-                    println("inferred that $v2 -- $nextp2 --> $next1")
-                    set_subpart!(cset, v2, nextp2, next1)
-                elseif next1 != 0 && next2 != 0 && next1 != next2
-                    return CSet[], seen  # violation!
-                end
-            end
-        end
-    end
-
-    # For all limits:
-    # When setting two limit objects equal, need to equate their children
-
-    # split cases on an arbitrary choice for the first zero we find
-    for (i, e) in enumerate(es)
-        tgt_table = xs[G[:tgt][i]]
-        for (j, val) in enumerate(cset[e])
-            if val == 0  #SPLIT
-                for k in 1:length(cset.tables[tgt_table])
-                    cset2 = deepcopy(cset)
-                    set_subpart!(cset2, j, e, k)
-                    if !(hash(cset2) in seen)
-                        newres, newseen = rec(cset2)
-                        append!(res, newres)
-                        union!(seen, newseen)
-                    end
-                end
-                return res, seen
-            end
-        end
-    end
-    return [cset], seen
-   end
-
-   return rec(modl)[1]
-end
-
-"""
-Create a CSet type specified by a graph
-Vertices are x₁,x₂,..., edges are e₁, e₂,...
-"""
-function graph_to_cset(grph::CSet)::Type
-    pres = Presentation(FreeSchema)
-    xs = [Ob(FreeSchema,Symbol("x$i")) for i in 1:nv(grph)]
-    for x in xs
-        add_generator!(pres, x)
-    end
-    for (i,(src, tgt)) in enumerate(zip(grph[:src], grph[:tgt]))
-        add_generator!(pres, Hom(Symbol("e$i"), xs[src], xs[tgt]))
-    end
-    return CSetType(pres)
-end
-
-#------------------------------------------------
-# Tests
-#------------------------------------------------
-bool_perms = term_models(SetPermSketch,(2,)) # id and swap
