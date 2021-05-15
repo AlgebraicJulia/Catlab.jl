@@ -58,6 +58,7 @@ k = oapply(seq_id, Dict{Symbol,OpenGraph}(), Dict(:a => FinSet(3)))
 # Queries of ACSets
 ###################
 
+# Query: directed paths of length 2.
 paths2 = @relation (start=start, stop=stop) begin
   E(src=start, tgt=mid)
   E(src=mid, tgt=stop)
@@ -87,18 +88,26 @@ result = query(squares2, paths2, (start=1, stop=4))
 @test result == Table((start=[1,1], stop=[4,4]))
 @test length(query(squares2, count_paths2, (start=1, stop=4))) == 2
 
+# Query: pairs of vertices.
+vertices2 = @relation (v1=v1, v2=v2) begin
+  V(_id=v1)
+  V(_id=v2)
+end
+@test length(query(squares2, vertices2)) == nv(squares2)^2
+
+# Query: directed cycles of length 3.
 cycles3 = @relation (edge1=e, edge2=f, edge3=g) where (e,f,g,u,v,w) begin
   E(_id=e, src=u, tgt=v)
   E(_id=f, src=v, tgt=w)
   E(_id=g, src=w, tgt=u)
 end
 
+# Cycle graph.
 g = cycle_graph(Graph, 3)
 result = query(g, cycles3)
 @test tuples(columns(result)...) == [(1,2,3), (2,3,1), (3,1,2)]
 result = query(g, cycles3, (v=1,))
 @test result == Table((edge1=[3], edge2=[1], edge3=[2]))
-
 @test isempty(query(cycle_graph(Graph, 4), cycles3))
 
 end
