@@ -1,21 +1,11 @@
-module DPOTest
+module TestDPO
 using Test
-using Catlab.CategoricalAlgebra.DPO
-using Catlab.Graphs.BasicGraphs
-using Catlab.Graphs.BipartiteGraphs
-using Catlab.CategoricalAlgebra.CSets
-using Catlab.CategoricalAlgebra.Limits
-using Catlab.Theories
+using Catlab.Graphs
 using Catlab.Present
-using Catlab.CategoricalAlgebra.CSetDataStructures
-using Catlab.CategoricalAlgebra.StructuredCospans
 using Catlab.WiringDiagrams
 using Catlab.CategoricalAlgebra.FinSets
-import Catlab.Theories: AttrDesc
-
-"""
-TODO: check performance in benchmarks
-"""
+using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
+using Catlab.Theories: AttrDesc
 
 ######################################################################################
 ######################################################################################
@@ -244,8 +234,7 @@ L = ACSetTransformation(aI2, aarr, V=[1,2]);
 R = ACSetTransformation(aI2, abiarr, V=[1,2]);
 m = ACSetTransformation(aarr, aspan, V=[2,1], E=[1]);  # sends 'a'->'b' and 'b'->'a'
 
-# Without naturality checking the error is more helpful: "ACSet colimit does not exist: label attributes a != b"
-@test_throws AssertionError("is_natural(k)") rewrite_match(L,R,m)
+@test_throws ErrorException("ACSet colimit does not exist: label attributes a != b") rewrite_match(L,R,m)
 
 m = ACSetTransformation(aarr, aspan, V=[1,2], E=[1]);
 
@@ -352,7 +341,7 @@ m = CSetTransformation(tri, squarediag, V=[2,4,3], E=[3,5,4]);
 k, g = pushout_complement(L, m); # get PO complement to do further tests
 
 # the graph interface is equal to the final graph b/c we only delete things
-@test is_isomorphic(span_triangle, k.codom)
+@test is_isomorphic(span_triangle, codom(k))
 
 # Check pushout properties 1: apex is the original graph
 @test is_isomorphic(squarediag, pushout(L, k).cocone.apex) # recover original graph
@@ -578,12 +567,12 @@ function to_cset(cset::ACSet)::Pair{ACSet, Dict{Pair{Symbol, Int}, Int}}
 end
 
 """
-Create a ACSet to describe the data of a ACSetTransformation
+Create an ACSet to describe the data of a ACSetTransformation
 
 Helper function to construct HΣrewrite
 """
 function to_cset(m::ACSetTransformation)::Tuple{ACSet, Dict{Pair{Symbol, Int}, Int}, Dict{Pair{Symbol, Int}, Int}}
-  tparams = typeof(m.dom).parameters;
+  tparams = typeof(dom(m)).parameters;
   catdesc = to_cset(tparams[2](),
                     collect(tparams[3].parameters),
                     Vector{Symbol}(collect(tparams[4])));
@@ -591,9 +580,8 @@ function to_cset(m::ACSetTransformation)::Tuple{ACSet, Dict{Pair{Symbol, Int}, I
   # Copy over info from the catdesc
   res = inject_cset(catdesc, ACSetType(TheoryACSetTrans){Symbol, DataType, Any}())
 
-  src, srcdict = to_cset(m.dom);
-  tgt, tgtdict = to_cset(m.codom);
-  p = typeof(src).parameters;
+  src, srcdict = to_cset(dom(m));
+  tgt, tgtdict = to_cset(codom(m));
 
   allnames = ["Row", "FK", "Datum", "rowob", "fksrc", "fktgt", "fkhom", "drow", "dattr", "dval"]
   d1, d2 = [Dict([Symbol(x)=> Symbol(string(x)*i) for x in allnames]) for i in ["1", "2"]]
