@@ -289,9 +289,8 @@ m = CSetTransformation(arr, span, V=[2,1], E=[1])
 
 # Remove apex of a subspan (top left corner of squarediag, leaves the triangle behind)
 L = CSetTransformation(I2, span, V=[1,3])
-R = id(I2) # CSetTransformation(I2, I2, V=[1,2])  # identity
 m = CSetTransformation(span, squarediag, V=[2,1,4], E=[1,2])
-@test is_isomorphic(tri, rewrite_match(L,R,m))
+@test is_isomorphic(tri, rewrite_match(L,id(I2),m))
 
 # Remove self-edge using a *non-monic* match morphism
 two_loops = Graph(2)
@@ -300,9 +299,8 @@ one_loop = Graph(2)
 add_edges!(one_loop,[2],[2]) # 1   2↺
 
 L = CSetTransformation(I2, arr, V=[1,2])
-R = CSetTransformation(I2, I2, V=[1,2])
 m = CSetTransformation(arr, two_loops, V=[1, 1], E=[1])
-@test is_isomorphic(one_loop, rewrite_match(L,R,m))
+@test is_isomorphic(one_loop, rewrite_match(L,id(I2),m))
 
 # Simplest non-trivial, non-monic exmaple
 @present TheoryFinSet(FreeSchema) begin
@@ -343,16 +341,27 @@ m = CSetTransformation(arr, arr_loop, V=[2,2], E=[2]) # NOT MONIC
 
 # two possible morphisms L -> squarediag, but both violate dangling condition
 L = CSetTransformation(arr, span, V=[1,2], E=[1]);
-R = CSetTransformation(arr, arr, V=[1,2], E=[1]);
 m = CSetTransformation(span, squarediag, V=[2,1,4], E=[1,2]);
-@test rewrite(L, R, squarediag) === nothing
+
+@test_throws(AssertionError("Dangling condition violation: E#5 --src--> V#4"),
+             dangling_condition(L,m, fail=true))
+
+# violate id condition because two orphans map to same point
+L = CSetTransformation(I2, biarr, V=[1,2]); # delete both arrows
+m = CSetTransformation(biarr, arr_loop, V=[2,2], E=[2,2]);
+@test_throws(AssertionError("E #1+2 both orphaned and sent to 2"),
+             id_condition(L,m, fail=true))
+L = CSetTransformation(arr, biarr, V=[1,2],E=[1]); # delete one arrow
+@test_throws(AssertionError("Nondeleted E #1 in L mapped to deleted val 2 in G"),
+             id_condition(L,m, fail=true))
+
 
 span_triangle = Graph(3); # 2 <- 1 -> 3 (with edge 2->3)
 add_edges!(span_triangle,[1,1,2],[2,3,3]);
 
 L = CSetTransformation(arr, tri, V=[1,2], E=[1]);
 m = CSetTransformation(tri, squarediag, V=[2,4,3], E=[3,5,4]);
-@test is_isomorphic(span_triangle, rewrite_match(L,R,m))
+@test is_isomorphic(span_triangle, rewrite_match(L,id(arr),m))
 
 k, g = pushout_complement(L, m); # get PO complement to do further tests
 
