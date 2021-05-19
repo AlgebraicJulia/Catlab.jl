@@ -151,63 +151,144 @@ function canonical_hash(g::CSet)::UInt64
     return hash(string(canonical_iso(g)))
 end
 
-function direct_canon(g::CSet)::CSet
-    tabs, arrs, srcs, tgts = (typeof(g).parameters[1]).parameters
-    # prefer arrows that point to a table that's the source for many arrows
-    order = sort(1:length(arrs), by=x->count(y->y==tgts[x], srcs))
-    srcarrs = [[e for (e,s) in enumerate(srcs) if s==i] for i in order]
-    arr_order = sort(eachindex(arrs), by=a->count(x->x==a,srcs), rev=true)
-
+function direct_canon(g::CSet{CD})::CSet where {CD}
+    tabs, arrs, srcs, tgts = ob(CD), hom(CD), dom(CD), codom(CD)
+    src_arrs = [[a_ind for (a_ind, src_tab) in enumerate(srcs) if src_tab==tab] for tab in eachindex(tabs)]
     # the state is the automorphism from the minimal (lexigraphic) automorph
     # to the particular g that is used
     # the first term is the data for the FKs which gets ordered.
-    state = ([zeros(nparts(g,src)) for src in srcs],
-             [Set{Int}(1:nparts(g,t)) for t in 1:length(tabs)])
+    state = ([zeros(Int, nparts(g,src)) for src in srcs],
+             [let n=nparts(g,t); [Set{Int}(1:n) for _ in 1:n] end for t in 1:length(tabs)])
 
-    preimg = [g.indices[a] for a in arrs]
+    n_preimg = [map(length,g.indices[a]) for a in arrs]
 
     function branch(state)
         arr_asgn, tab_asgn = state
-        for arr_ind in arr_order
-            arr = arrs[arr_ind]
-            src,tgt = srcs[arr],tgts[arr]
-            asgn = Set(arr_asgn[arr])
-            for i in 1:nparts(g,src)
-                if asgn[i] == 0
-                    for next_ind in sort(collect(setdiff(1:nparts(g,tgt), asgn)))
-                        new_asgn = deepcopy(asgn)
-                        new_asgn[tab][i]=next_ind
-                        res = propagate!((new_asgn, tab_asgn), arr, i)
-                        if !(res===nothing)
-                            return branch(res)
+        println("BRANCHING WITH STATE $arr_asgn\n\t$(join(map(collect,tab_asgn),"\n\t")))")
+        @assert arr_asgn[2][4] == 0 || (arr_asgn[1][3], arr_asgn[2][3]) != (2,1)
+        for (tab_ind, _) in enumerate(tabs)
+            for (ith_arr, arr) in enumerate(src_arrs[tab_ind])
+                src,tgt = srcs[arr],tgts[arr]
+                for i in 1:nparts(g,src)
+                    if arr_asgn[arr][i] == 0
+                        for next_ind in 1:nparts(g,tgt)
+                            new_asgn = deepcopy(arr_asgn)
+                            new_asgn[arr][i]=next_ind
+                            res = propagate_fk!((new_asgn, deepcopy(tab_asgn)), ith_arr, arr, i)
+                            if !(res===nothing)
+                                return branch(res)
+                            end
                         end
+                        @assert false
                     end
-                    @assert false
                 end
             end
         end
         return state
     end
+    function propagate_pk!(state, tab, tab_i)
+        arr_asgn, tab_asgn = state
+        noncanonical_index, = tab_asgn[tab][tab_i]
+        println("ENTERING PROPAGATE PK (just discovered $(tabs[tab])#$tab_i ↦ $noncanonical_index) \n\twith tab_asgn\n\t\t$(join(map(collect,tab_asgn),"\n\t\t"))")
+        for (tab_ind, tab_poss) in enumerate(tab_asgn[tab])
+            if tab_ind!=tab_i
+                deleted = noncanonical_index in tab_poss
+                if deleted
+                    println("\tb/c $(tabs[tab])#($tab_i) is fixed in the canonical graph to be value $noncanonical_index, $tab#$tab_ind in the canonical graph cannot be $noncanonical_index")
+                    delete!(tab_poss, noncanonical_index)
+                    n = length(tab_poss)
+                    if n == 0
+                        println("UNSAT")
+                        return nothing
+                    elseif n == 1
+                        res = propagate_pk!((arr_asgn, tab_asgn), tab, tab_ind)
+                        if res === nothing
+                            return nothing
+                        else
+                            arr_asgn, tab_asgn = res
+                        end
+                    end
+                end
+            end
+        end
+        return arr_asgn, tab_asgn
+    end
     # Given that tab[arr][i] has just been set, what have we learned?
-    function propagate!(state, arr, i)
+    function propagate_fk!(state, ith_arr, arr, src_i)
+
         # apply heuristics to rule out possibilities from state
         arr_asgn, tab_asgn = state
+        fk_val = arr_asgn[arr][src_i]
+        println("PROPAGATING arr $(arrs[arr]) #$src_i↦$(fk_val) WITH STATE $arr_asgn\n\t$(join(map(collect,tab_asgn),"\n\t")))")
+
+        # IF WE'VE ASSIGNED OTHER THINGS FOR THIS SRC_I
+        # WE HAVE TO CONFIRM THAT THERE EXISTS A COMPATIBLE
+        # SRC elem in noncanonical G!!!
 
         src, tgt = srcs[arr], tgts[arr]
-        total_arrows_to_i = [src_ind for (src_ind, val) in enumerate(arr_asgn[arr]) if val == i]
+        total_arrows_to_i = [src_ind for (src_ind, val) in enumerate(arr_asgn[arr])
+                             if val == fk_val]
+        # println("TOTAL ARROWS TO i's value $(total_arrows_to_i)")
+        # Does adding a new FK to i push us over the limit for possible targets?
 
-        impossible_targets = [ind for (ind, pre) in enumerate(preimg[arr])
-                              if length(pre) <= length(total_arrows_to_i)]
-        state[tgt][i] = setdiff(state[tgt][i], impossible_targets)
-        if isempty(state[tgt][i])
-            return nothing
-        else
-            return arr_asgn, tab_asgn
+        # these are indices in the original (noncanonical) graph G
+        impossible_targets = [ind for (ind, n_pre) in enumerate(n_preimg[arr])
+                              if n_pre < length(total_arrows_to_i)]
+
+        for imp in impossible_targets
+            deleted = imp in tab_asgn[tgt][fk_val]
+            if deleted
+                println("\tb/c $(arrs[arr]) sends $(tabs[src])#$src_i↦$(tabs[tgt])#($fk_val), $fk_val in canonical $(tabs[tgt]) cannot refer to $(tabs[tgt])#$imp (from original G)")
+                delete!(tab_asgn[tgt][fk_val], imp)
+                n = length(tab_asgn[tgt][fk_val])
+                if n == 0
+                    println("UNSAT")
+                    return nothing  # unsatisfiable
+                elseif n == 1
+                    res = propagate_pk!((arr_asgn, tab_asgn), tgt, fk_val)
+                    if res === nothing
+                        return nothing
+                    else
+                        arr_asgn, tab_asgn = res
+                    end
+                end
+            end
         end
+        poss_preim = union([g.indices[arr][poss_tgt] for poss_tgt in tab_asgn[tgt][fk_val]]...)
+        for src_to_i in total_arrows_to_i # includes src_i, and maybe others
+            for src_ind in 1:nparts(g, src)
+            # possible preimage values
+                if !(src_ind in poss_preim)
+                    deleted = src_ind in tab_asgn[src][src_to_i]
+                    if deleted
+                        println("\tB/c canon. $(tabs[src])#$src_to_i ↦ $tgt#$(tab_asgn[tgt][fk_val]) via $(arrs[arr]), noncanonical preimage of $(poss_preim) means $(tabs[src])#$src_to_i does not correspond to $src_ind")
+                        delete!(tab_asgn[src][src_to_i], src_ind)
+                        n =length(tab_asgn[src][src_to_i])
+                        if n==0
+                            println("UNSAT")
+                            return nothing
+                        elseif n==1
+                            res = propagate_pk!((arr_asgn, tab_asgn), src, src_to_i)
+                            if res === nothing
+                                return nothing
+                            else
+                                arr_asgn, tab_asgn = res
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        return arr_asgn, tab_asgn
     end
-    return branch(state)
-end
+    arr_asgn, _ = branch(state)
+    new = deepcopy(g)
+    for (arr, asgn) in zip(arrs, arr_asgn)
+        set_subpart!(new, arr, asgn)
+    end
+    return new
 
+end
 function brute(g::CSet)::Set{CDict}
     tabs, arrs, srcs, tgts = (typeof(g).parameters[1]).parameters
     ntab = length(tabs)

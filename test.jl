@@ -1,7 +1,11 @@
 include("automorphisms.jl")
+
+G = Graph(4)
+add_edges!(G,[1,2,4,4,3],[2,4,3,3,2])
+direct_canon(G)
+
 include("sketchgat.jl")
 include("findmodel.jl")
-
 
 #------------------------------------------------
 # Tests
