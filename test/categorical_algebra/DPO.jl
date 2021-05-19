@@ -304,8 +304,24 @@ R = CSetTransformation(I2, I2, V=[1,2])
 m = CSetTransformation(arr, two_loops, V=[1, 1], E=[1])
 @test is_isomorphic(one_loop, rewrite_match(L,R,m))
 
-
-
+# Simplest non-trivial, non-monic exmaple
+@present TheoryFinSet(FreeSchema) begin
+  X :: Ob
+end
+const FinSetType = ACSetType(TheoryFinSet)
+I, L, G = [FinSetType() for _ in 1:3]
+add_parts!(I,:X,2)
+add_parts!(L,:X,1)
+add_parts!(G,:X,1)
+l = CSetTransformation(I,L,X=[1,1])
+m = CSetTransformation(L,G,X=[1])
+@test dangling_condition(l,m)
+@test id_condition(l,m)
+ik, kg = pushout_complement(l,m)
+# There are 3 functions `ik` that make this a valid P.C.
+# codom=1 with [1,1], codom=2 with [1,2] or [2,1]
+K = ik.codom
+@test nparts(K, :X) == 1 # algorithm currently picks the first option
 
 # Non-discrete interface graph. Non-monic matching
 arr_loop= Graph(2)
