@@ -136,131 +136,7 @@ function es(xx::AbstractVector{Int})::Vector{Symbol}
 end
 
 
-"""
-Brute force try all assignments to see if diagrams are satisfied
-with the number of elements in each set fixed by consts
 
-Algorithm:
-
-Algorithm:
-- Start of with CSet initialized to have elements for each const
-  that is known to not be a limit cone,
-  plus one extra value meant to represent unknown (value=1).
-- All values of FKs are initialized to 1.
-- For each 1 we find, branch out a possibility where it takes any possible value.
-
-- For each possibility, check all diagrams
-  - positive info: fill out things we can derive if one leg is known and other unknown
-  - negative info: find a contradiction, short circuit
-- For each cone, check its base diagram and for each matching set of elements
-  - positive info: if no apex found, create an element in the apex and add it
-                   as a possibility to everything that points to that table
-  - negative info: if two different things are an apex, fail (can this happen?)
-
-- Repeat this until the entire CSet is defined, then trim off the 'unknown' values.
-"""
-# function term_models(fls, consts::Tuple)::Vector{CSet}
-
-#     # Initialize model
-#     G = fls.G
-#     modl = graph_to_cset(G)()
-
-#     # Initialize constants + EXTRA SENTINAL VALUE = "UNKNOWN"
-#     for (i, c) in enumerate(consts)
-#         add_parts!(modl, xs(i), c+1;)
-#     end
-#     # initialize foreign keys to unknown value
-#     for e in 1:ne(G)
-#         n_in, n_out = [nparts(modl, G[x][e]) for x in [:src, :tgt]]
-#         set_subparts!(modl, 1:n_in; Dict([es(e)=>n_out])...)
-#     end
-
-#     # Initialize commutative diagram data
-#     c_paths = comm_paths(fls)
-#     comm_qs = [paths_to_query(G, p1, p2) for (p1, p2) in c_paths]
-#     comm_q_tabs = [xs(lasttabs(G, p1, p2)) for (p1, p2) in c_paths]
-
-#     # Initialize cone data
-#     cone_ds = [diagram_to_query(cone[1]) for cone in fls.C]
-#     cone_tabs = [xs(cone[1].components[:V].func) for cone in fls.C]
-
-#     function rec!(cset::CSet, res::Vector{CSet},seen::Set{UInt64})
-#         # Fill out any info we can from diagrams, detect contradiction
-#         for (comm_q, cqtab, (pth1, pth2)) in zip(comm_qs, comm_q_tabs, c_paths)
-#             for qres in query(cset, comm_q)
-#                 penult1, penult2, last1, last2 = qres
-#                 nullp1, nullp2, null1, null2 = map(
-#                     tabval -> tabval[2] == nparts(cset, tabval[1]), zip(cqtab, qres))
-#                 if null1 && !null2 && !nullp1 # can propagate info
-#                     set_subpart!(cset, penult1, es(pth1[end]), last2)
-#                 elseif !null1 && null2 && !nullp2 # can propagate info
-#                     set_subpart!(cset, penult2, es(pth2[end]), last1)
-#                 elseif !(null1||null2)  # can check for contradiction
-#                     if last1 != last2
-#                         return
-#                     end
-#                 end
-#             end
-#         end
-
-#         for (dia, c_tabs, (_, apex, legs)) in zip(cone_ds, cone_tabs, fls.C)
-#             println("DIAGRAM $apex $legs - ctabs = $c_tabs")
-#             npart = nparts(cset, apex)
-#             for matches in query(cset, dia)
-#                 println("\tmatch $matches")
-#                 if all(i->matches[i] < nparts(cset,c_tabs[i]), 1:length(c_tabs)) # ignore matches with unknowns
-#                     poss_apexes = Set(1:npart)
-#                     for (legval,leg) in zip(matches,legs)
-#                         if leg != 0
-#                             leg_edge = es(leg)
-#                             println("legval $legval with edge_in $leg_edge has preimage $(cset.indices[leg_edge][legval])")
-#                             intersect!(poss_apexes, cset.indices[leg_edge][legval])
-#                         end
-#                     end
-#                     has_null, n_apex = npart in poss_apexes, length(poss_apexes)
-#                     if  !(n_apex in (has_null ? [1,2] : [1]))
-#                         println("\tREJECTING $poss_apexes")
-#                         return
-#                     end
-#                 end
-#             end
-#         end
-
-#         # split cases on an arbitrary choice for the first zero we find
-#         for i in shuffle(1:ne(schema))
-#             e = es(i)
-#             tgt_table = xs(G[:tgt][i])
-#             for (j, val) in shuffle(collect(enumerate(cset[e][1:end-1])))
-#                 if val == nparts(cset, tgt_table)  #SPLIT
-#                     for k in 1:(val-1)
-#                         cset2 = deepcopy(cset)
-#                         set_subpart!(cset2, j, e, k)
-#                         hsh = canonical_hash(cset2)
-#                         if !(hsh in seen)
-#                             push!(seen,hsh)
-#                             rec!(cset2, res, seen)
-#                         end
-#                     end
-#                     return res
-#                 end
-#             end
-#         end
-#         # No unknown values! Delete the last value from every table
-#         for t in keys(cset.tables)
-#             rem_part!(cset, t, nparts(cset, t))
-#         end
-#         hsh = canonical_hash(cset)
-#         if hsh in seen
-#             return
-#         else
-#             push!(seen, hsh)
-#             push!(res, cset)
-#         end
-#     end
-#     res, seen = CSet[], Set{UInt64}()
-#     rec!(modl, res, seen)
-#     return res
-# end
 
 """
 Create a CSet type specified by a graph
@@ -387,10 +263,14 @@ end
   che::Hom(Considered, HomElem)
   cpk::Hom(Considered, PK)
 end
+
 const CombModel = ACSetType(TheoryModel, index=[:eo,:po,:pe,:src,:tgt,:hefk,:hesrc,:hetgt,:che,:cpk]);
+
 function Base.length(m::Model)::Int
     return length(m.tables)
 end
+
+"""Encode Model as a CSet"""
 function to_combinatorial(mod::Model)::CSet
     res = CombModel()
     add_parts!(res,:Obj, length(mod))
@@ -399,7 +279,7 @@ function to_combinatorial(mod::Model)::CSet
     set_subpart!(res, :tgt, mod.tgt)
     srcarrs = [[e for (e, src) in enumerate(mod.src) if src==i]
                for i in 1:length(mod)]
-    pkdata = []
+    pkdata = Dict{Int,Tuple{Int,Int,Int,Dict{Int,Int}}}[]
     for tab in 1:length(mod)
         pk_unique = Dict()
         for (i, pk) in enumerate(mod.pks[tab])
@@ -429,8 +309,10 @@ function to_combinatorial(mod::Model)::CSet
                 homelem = fks[arr]
                 raw_fk = mod.fks[tgt][orig_index]
                 tgt_class = mod.tables[tgt].parents[raw_fk]
-                if haskey(pkdatas[tgt],tgt_class)
-                    tgt_elem_id = pkdatas[tgt][tgt_class][3]
+                if haskey(pkdata[tgt],tgt_class)
+                    println("tgt $tgt pkdata $tgt_class ", pkdata[tgt])
+                    println(pkdata[tgt][tgt_class])
+                    tgt_elem_id = pkdata[tgt][tgt_class][3]
                 else
                     tgt_elem_id = add_part!(res, :Elem)
                     set_subpart!(res, tgt_elem_id, :eo, tgt)
@@ -458,6 +340,41 @@ function to_combinatorial(mod::Model)::CSet
         end
     end
     return res
+end
+
+"""
+Parse a CSet. This is not a strict inverse to to_combinatorial
+but the pair forms an involution. `from` will discard elements
+in the union-find that are not referred to by any PK or FK,
+thereby collapsing things known to be equal.
+"""
+function from_combinatorial(mod::CSet)::Model
+    src, tgt = mod[:src], mod[:tgt]
+    elem_offset, tables, pks, fks, cons = [0], [], [], [], []
+    for x in mod.indices[:eo]
+        push!(tables, IntDisjointSets(length(x)))
+        push!(elem_offset, elem_offset[end]+length(x))
+    end
+    for tab in length(tables)
+        push!(pks, [pk-elem_offset[tab] for pk in mod.indices[:po][tab]])
+    end
+    for (fk_id, (srctab, tgttab)) in enumerate(zip(src, tgt))
+        homelems = Set(mod.indices[:hefk][fk_id])
+        fk_vect, con_vect = [], []
+
+        for pk in pks[srctab]
+            hes = filter(x->x in homelems, mod.indices[:hesrc][pk])
+            @assert length(hes) == 1
+            he = hes[1]
+            push!(fk_vect, mod[:hetgt][he]+elem_offset[tgttab])
+            consids = mod[:cpk][mod.indices[:che][he]]
+            push!(con_vect, Set([c + elem_offset[tgttab] for c in consids]))
+        end
+        push!(fks, fk_vect)
+        push!(cons, con_vect)
+    end
+
+    return Model(src, tgt, tables, fks, pks, cons)
 end
 
 function Base.show(io::IO, ::MIME"text/plain",mod::Model)
@@ -502,9 +419,10 @@ function to_graph(m::Model)::CSet
     add_edges!(schema, m.src, m.tgt)
     return schema
 end
+
 """
 loses the "considered" information, but organizes the
-data in a way amenable to conjunctive queries
+data in a way amenable to conjunctive queries / visualization
 
 If sat, then we assume all FKs are matched, so we do
 not need to create an extra "unknown" value per table
@@ -568,7 +486,7 @@ function Base.push!(modl::Model, tab::Int)::Int
     return newval
 end
 
-MAXSIZE=3
+MAXSIZE=2
 
 """
 Union two elements of table `tab`
@@ -591,12 +509,14 @@ function size(mod::Model)::Int
 end
 
 function Base.hash(mod::Model)::UInt64
-    return hash((mod.src, mod.tgt, mod.tables, mod.fks, mod.pks, mod.considered))
-    # m = to_cset(mod)
-    # return canonical_hash(m)
+    # return hash((mod.src, mod.tgt, mod.tables, mod.fks, mod.pks, mod.considered))
+    m = to_cset(mod)
+    return canonical_hash(m)
 end
 
-"""Fill out any info we can from diagramis, detect contradiction"""
+"""
+Fill out any info we can from diagrams, detect contradiction
+"""
 function check_diagrams!(mod::Model, comm_data)::Pair{Bool,Bool}
     cset = to_cset(mod)
     change = false
@@ -665,28 +585,17 @@ function find_models(fls::FLSketch, consts::Vector{Int})#::Vector{Model}
     comm_qs = [paths_to_query(schema, p1, p2) for (p1, p2) in c_paths]
 
     # Initialize cone data
-    cone_ds = [diagram_to_query(cone[1]) for cone in fls.C]
+    cone_ds = [diagram_to_query(conedia) for (apex, conedia) in fls.C]
     cone_tabs = [xs(cone[1].components[:V].func) for cone in fls.C]
 
     function find_models_rec!(mod::Model)
         hsh = hash(mod)
-        #println("finding models for $(to_cset(mod))\n\t$(str(mod)) (seen = $(hsh in seen))")
+        m = to_cset(mod)
+        println("finding models for $(m[:e1]), $(m[:e2])\n\t$(str(mod)) (seen = $(hsh in seen))")
         if !(hsh in seen)
             push!(seen, hsh)
-            success, change = check_diagrams!(mod, zip(comm_qs, c_paths))
-            # if change
-            #     hsh = hash(mod)
-            #     success = !(hsh in seen)
-            #     push!(seen, hsh)
-            # end
+            success, _ = check_diagrams!(mod, zip(comm_qs, c_paths))
             if success
-                # println("after diagrams (change=$(hsh in seen), sat=$(is_sat(mod))): $(to_cset(mod))\n\t$(str(mod))\n\t\t$(mod.tables[1])")
-                # if !(hsh in seen)
-                #     push!(seen, hsh)
-                #     println("CHECKING LIMITS")
-                #     if check_limits!(mod, zip(cone_ds, cone_tabs, fls.C))
-                #         hsh = hash(mod)
-                #         println("after limits (change=$(hsh in seen), sat=$(is_sat(mod))): $(to_cset(mod))\n\t$(str(mod))\n\t\t$(mod.tables[1])")
                 if is_sat(mod)
                     canon_hsh = canonical_hash(to_cset(mod, true))
                     if !(canon_hsh in seen)
@@ -724,7 +633,8 @@ function find_models(fls::FLSketch, consts::Vector{Int})#::Vector{Model}
                     end
                 end
 
-                if size(mod) <= MAXSIZE
+                # THINGS GO HAYWIRE
+                if 1+1==1 # size(mod) < MAXSIZE
                     new_mod = deepcopy(mod)
                     new_id = push!(new_mod, tgt)
                     # println("ADDED $new_id to table $tgt of $new_mod")
@@ -732,12 +642,137 @@ function find_models(fls::FLSketch, consts::Vector{Int})#::Vector{Model}
                     new_mod.considered[e][src_index] = union(Set(tgt_pks), Set([new_id]))
                     new_mod.fks[e][src_index] = new_id
                     find_models_rec!(new_mod)
-                else
-                    # println("MODEL TOO BIG $(str(mod))")
                 end
             end
         end
     end
+
     find_models_rec!(modl)
     return res
 end
+
+# """
+# Brute force try all assignments to see if diagrams are satisfied
+# with the number of elements in each set fixed by consts
+
+# Algorithm:
+
+# Algorithm:
+# - Start of with CSet initialized to have elements for each const
+#   that is known to not be a limit cone,
+#   plus one extra value meant to represent unknown (value=1).
+# - All values of FKs are initialized to 1.
+# - For each 1 we find, branch out a possibility where it takes any possible value.
+
+# - For each possibility, check all diagrams
+#   - positive info: fill out things we can derive if one leg is known and other unknown
+#   - negative info: find a contradiction, short circuit
+# - For each cone, check its base diagram and for each matching set of elements
+#   - positive info: if no apex found, create an element in the apex and add it
+#                    as a possibility to everything that points to that table
+#   - negative info: if two different things are an apex, fail (can this happen?)
+
+# - Repeat this until the entire CSet is defined, then trim off the 'unknown' values.
+# """
+# function term_models(fls, consts::Tuple)::Vector{CSet}
+
+#     # Initialize model
+#     G = fls.G
+#     modl = graph_to_cset(G)()
+
+#     # Initialize constants + EXTRA SENTINAL VALUE = "UNKNOWN"
+#     for (i, c) in enumerate(consts)
+#         add_parts!(modl, xs(i), c+1;)
+#     end
+#     # initialize foreign keys to unknown value
+#     for e in 1:ne(G)
+#         n_in, n_out = [nparts(modl, G[x][e]) for x in [:src, :tgt]]
+#         set_subparts!(modl, 1:n_in; Dict([es(e)=>n_out])...)
+#     end
+
+#     # Initialize commutative diagram data
+#     c_paths = comm_paths(fls)
+#     comm_qs = [paths_to_query(G, p1, p2) for (p1, p2) in c_paths]
+#     comm_q_tabs = [xs(lasttabs(G, p1, p2)) for (p1, p2) in c_paths]
+
+#     # Initialize cone data
+#     cone_ds = [diagram_to_query(cone[1]) for cone in fls.C]
+#     cone_tabs = [xs(cone[1].components[:V].func) for cone in fls.C]
+
+#     function rec!(cset::CSet, res::Vector{CSet},seen::Set{UInt64})
+#         # Fill out any info we can from diagrams, detect contradiction
+#         for (comm_q, cqtab, (pth1, pth2)) in zip(comm_qs, comm_q_tabs, c_paths)
+#             for qres in query(cset, comm_q)
+#                 penult1, penult2, last1, last2 = qres
+#                 nullp1, nullp2, null1, null2 = map(
+#                     tabval -> tabval[2] == nparts(cset, tabval[1]), zip(cqtab, qres))
+#                 if null1 && !null2 && !nullp1 # can propagate info
+#                     set_subpart!(cset, penult1, es(pth1[end]), last2)
+#                 elseif !null1 && null2 && !nullp2 # can propagate info
+#                     set_subpart!(cset, penult2, es(pth2[end]), last1)
+#                 elseif !(null1||null2)  # can check for contradiction
+#                     if last1 != last2
+#                         return
+#                     end
+#                 end
+#             end
+#         end
+
+#         for (dia, c_tabs, (_, apex, legs)) in zip(cone_ds, cone_tabs, fls.C)
+#             println("DIAGRAM $apex $legs - ctabs = $c_tabs")
+#             npart = nparts(cset, apex)
+#             for matches in query(cset, dia)
+#                 println("\tmatch $matches")
+#                 if all(i->matches[i] < nparts(cset,c_tabs[i]), 1:length(c_tabs)) # ignore matches with unknowns
+#                     poss_apexes = Set(1:npart)
+#                     for (legval,leg) in zip(matches,legs)
+#                         if leg != 0
+#                             leg_edge = es(leg)
+#                             println("legval $legval with edge_in $leg_edge has preimage $(cset.indices[leg_edge][legval])")
+#                             intersect!(poss_apexes, cset.indices[leg_edge][legval])
+#                         end
+#                     end
+#                     has_null, n_apex = npart in poss_apexes, length(poss_apexes)
+#                     if  !(n_apex in (has_null ? [1,2] : [1]))
+#                         println("\tREJECTING $poss_apexes")
+#                         return
+#                     end
+#                 end
+#             end
+#         end
+
+#         # split cases on an arbitrary choice for the first zero we find
+#         for i in shuffle(1:ne(schema))
+#             e = es(i)
+#             tgt_table = xs(G[:tgt][i])
+#             for (j, val) in shuffle(collect(enumerate(cset[e][1:end-1])))
+#                 if val == nparts(cset, tgt_table)  #SPLIT
+#                     for k in 1:(val-1)
+#                         cset2 = deepcopy(cset)
+#                         set_subpart!(cset2, j, e, k)
+#                         hsh = canonical_hash(cset2)
+#                         if !(hsh in seen)
+#                             push!(seen,hsh)
+#                             rec!(cset2, res, seen)
+#                         end
+#                     end
+#                     return res
+#                 end
+#             end
+#         end
+#         # No unknown values! Delete the last value from every table
+#         for t in keys(cset.tables)
+#             rem_part!(cset, t, nparts(cset, t))
+#         end
+#         hsh = canonical_hash(cset)
+#         if hsh in seen
+#             return
+#         else
+#             push!(seen, hsh)
+#             push!(res, cset)
+#         end
+#     end
+#     res, seen = CSet[], Set{UInt64}()
+#     rec!(modl, res, seen)
+#     return res
+# end

@@ -1,20 +1,65 @@
-include("automorphisms.jl")
-
-G = Graph(4)
-add_edges!(G,[1,2,4,4,3],[2,4,3,3,2])
-direct_canon(G)
-
-include("sketchgat.jl")
-include("findmodel.jl")
+include("automorphisms.jl");
+include("sketchgat.jl");
+include("findmodel.jl");
+using Test
+using Catlab.Graphs
 
 #------------------------------------------------
 # Tests
 #------------------------------------------------
 
+if 1+1==2 # don't run these automatically
 
-#sg_res = term_models(SimpleGraphSketch, (2,2,2))# n, a, n×n
+    G,H = Graph(4), Graph(4)
+    add_edges!(G,[1,2,4,4,3],[2,4,3,3,2])
+    add_edges!(H,[2,3,1,4,4],[1,1,4,3,3])
+    """Create n copies of a CSet based on a graph schema"""
+    function init_graphs(schema::CSet, consts::Vector{Int}, n::Int=2)::Vector{CSet}
+        cset = graph_to_cset(schema)()
+        for (i, con) in enumerate(consts)
+            add_parts!(cset, Symbol("x$i"), con)
+        end
+        return [deepcopy(cset) for _ in 1:n]
+    end
+    """Confirm canonical hash tracks with whether two CSets are iso"""
+    function test_iso(a::CSet,b::CSet, eq::Bool=true)::Test.Pass
+        tst = a -> eq ? a : !a
+        @test tst(is_isomorphic(a,b))
+        @test a != b
+        @test tst(canonical_hash(a) == canonical_hash(b))
+    end
 
-if 1+1==1 # don't run these automatically
+    G,H = init_graphs(Triangle,[2,2,2])
+    for i in 1:3 set_subpart!(G, Symbol("e$i"), [1,1]) end
+    for i in 1:3 set_subpart!(H, Symbol("e$i"), [2,2]) end
+    test_iso(G,H)
+
+    G,H = init_graphs(Loop, [3])
+    set_subpart!(G, Symbol("e1"), [3,2,1])
+    set_subpart!(H, Symbol("e1"), [1,3,2])
+    test_iso(G,H)
+
+    cyclel, cycler = Graph(3), Graph(3)
+    add_edges!(cyclel,[1,2,3],[2,3,1])
+    add_edges!(cycler,[3,2,1],[2,1,3])
+    test_iso(cyclel, cycler)
+
+    # Example from Hartke and Radcliffe exposition of Nauty
+    G,H = Graph(9), Graph(9)
+    add_edges!(G,[1,1,2,2,3,3,4,4,5,6,7,8],
+                 [7,8,5,6,6,8,5,7,9,9,9,9])
+    add_edges!(H,[1,1,3,3,7,7,9,9,2,4,6,8],
+                 [2,4,8,6,6,2,4,8,5,5,5,5])
+    test_iso(G,H)
+
+    # Same thing as generic CSet
+    G,H = init_graphs(GraphG, [12,9])
+    set_subpart!(G, Symbol("e1"), [1,1,2,2,3,3,4,4,5,6,7,8]) # srcG
+    set_subpart!(G, Symbol("e2"), [7,8,5,6,6,8,5,7,9,9,9,9]) # tgtG
+    set_subpart!(H, Symbol("e1"), [1,1,3,3,7,7,9,9,2,4,6,8]) # srcH
+    set_subpart!(H, Symbol("e2"), [2,4,8,6,6,2,4,8,5,5,5,5]) # tgtH
+    test_iso(G,H)
+
     q1 = diagram_to_query(nn_prod[1])
     q2 = diagram_to_query(u_monic[1])
     xg = graph_to_cset(SimpleGraphG)()
@@ -24,34 +69,10 @@ if 1+1==1 # don't run these automatically
         x1(_id=x1_1)
         x1(_id=x1_2)
     end
-
-    # indexing schema: e1::x2 → x1
-    q32 = @relation (x1=x1_1,x2=x2_1) begin
-    x1(_id=x1_1)
-    x2(_id=x2_1) # need e1 or it fails
-    end
-
-G1, G2= graph_to_cset(Loop)(), graph_to_cset(Loop)()
-add_parts!(G1,:x1,3)
-add_parts!(G2,:x1,3)
-set_subpart!(G1,:e1,[1,3,2])
-set_subpart!(G2,:e1,[3,2,1])
-
-cyclel, cycler = Graph(3), Graph(3)
-add_edges!(cyclel,[1,2,3],[2,3,1])
-add_edges!(cycler,[3,2,1],[2,1,3])
-#cycs = autos(cyclel)
-#bool_perms = term_models(SetPermSketch,(2,)) # finds id and swap
-# mono_res = term_models(MonoSketch, (2,2)) # finds the two isomorphic swap functions
+    @test length(query(xg,q3))==9
 
 
 # TEST DIAGRAM TO QUERY
-
-rg = @relation (V1=v1,V2=v2) begin
- E(src=v1, tgt=v2)
- V(_id=v1)
-end
-
 r = diagram_to_query(id(Triangle))
 
 rel = @relation (x1_1=x1_1,x2_2=x2_2,x3_3=x3_3) begin
@@ -59,15 +80,14 @@ rel = @relation (x1_1=x1_1,x2_2=x2_2,x3_3=x3_3) begin
  x2(_id=x2_2, e3=x3_3)
  x3(_id=x3_3)
 end
-
-@assert is_isomorphic(r, rel)
+@test is_isomorphic(r, rel)
 
 tri = graph_to_cset(Triangle)()
 for i in 1:3 add_parts!(tri, Symbol("x$i"), 2) end
 for i in 1:3 set_subpart!(tri, Symbol("e$i"), [1,2]) end
 res = query(tri, rel)
 for i in 1:2
-    @assert res[i] == (x1_1=i,x2_2=i,x3_3=i)
+    @test res[i] == (x1_1=i,x2_2=i,x3_3=i)
 end
 
 # TEST PATHS TO QUERY
@@ -88,7 +108,7 @@ rel = @relation (pen1=p_1_1,pen2=p_2_2,last1=p_1_2,last2=p_2_3) begin
  x2(_id=p_2_1, e4=p_2_2)
  x4(_id=p_2_2, e5=p_2_3)
 end
-@assert is_isomorphic(q, rel)
+@test is_isomorphic(q, rel)
 
 # Empty path test
 xg = graph_to_cset(Loop)()
@@ -97,20 +117,26 @@ set_subpart!(xg, Symbol("e1"), [2,1,3])
 q = paths_to_query(Loop, [1],Int[])
 rel = @relation (pen1=init,pen2=init,last1=p_1_1,last2=init) begin
  x1(_id=init, e1=p_1_1)
+end
+@test is_isomorphic(q, rel)
 
-
-
-
-#ms = find_models(SetPermSketch, [1]);
-#mod = Model(SetPermSketch.G, [2])
-
-CS = graph_to_cset(SetPermSketch.G)()
-add_parts!(CS, :x1, 4)
-set_subpart!(CS, :e1, [3,4,1,2])
-set_subpart!(CS, :e2, [3,4,1,2])
-canonical_iso(CS)
+G = to_combinatorial(Model(SetPermSketch.G, [2]))
+@test crefine_iter(G)[:Elem] == [2,2,1,1,1,1]
 
 end
 
+G,H = init_graphs(SetPermSketch.G, [2])
+set_subpart!(G, :e1, [2,1])
+set_subpart!(G, :e2, [2,1])
+set_subpart!(H, :e1, [1,1])
+set_subpart!(H, :e2, [2,2])
+test_iso(G,H,false)
 
-end # end of tests
+n_perm = [1,2,3,5] # (1) / (21) / (123) / (123)(45)+(1234)(5)
+for (n, n_p) in enumerate(n_perm)
+ @test length(find_models(SetPermSketch, [n])) == n_p;
+end
+
+# mono_res = term_models(MonoSketch, (2,2)) # finds the two isomorphic swap functions
+
+end
