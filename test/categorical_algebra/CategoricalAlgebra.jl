@@ -41,4 +41,8 @@ end
   include("StructuredCospans.jl")
 end
 
+@testset "Automorphisms" begin
+  include("Automorphisms.jl")
+end
+
 end
