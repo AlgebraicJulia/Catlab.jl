@@ -31,6 +31,8 @@ abstract type AttrExpr{T} <: SchemaExpr{T} end
 
 @syntax FreeSchema{ObExpr,HomExpr,DataExpr,AttrExpr} Schema begin
   # should have a normal representation for precompose of a morphism + a generator attribute
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
+  compose(f::Hom, x::Attr) = associate_unit(new(f,x; strict=true), id)
 end
 
 # Type-level representation of Schema
