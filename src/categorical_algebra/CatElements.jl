@@ -26,6 +26,13 @@ end
 const AbstractElements = AbstractACSetType(ThElements)
 const Elements = ACSetType(ThElements, index=[:src, :tgt, :πₑ, :πₐ])
 
+"""    elements(X::AbstractACSet)
+
+construct the category of elements from an ACSet. This only correctly handles the CSet part.
+This transformation converts an instance of C into a Graph homomorphism. The codomain of the
+homomorphism is a graph shaped like the schema. This is one half of the isomorphism between
+databases and knowledge graphs.
+"""
 function elements(X::ACS) where
     {CD <: CatDesc, AD <: AttrDesc{CD}, Ts, ACS <: AbstractACSet{CD,AD,Ts}}
     Y = Elements{Symbol}()
