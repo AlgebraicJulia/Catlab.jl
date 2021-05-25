@@ -39,7 +39,7 @@ function pushout_complement(l::ACSetTransformation{CD,AD},m::ACSetTransformation
   for comp in keys(l.components)
 
     n_comp = nparts(G, comp)  # total # of elements in G
-    l_image = Set(l.components[comp].func)
+    l_image = Set(collect(l.components[comp]))
 
     # m(L/l(G)): image of (complement of image of l) into G
     orphans = sort(map(x->m[comp](x),
@@ -57,7 +57,7 @@ function pushout_complement(l::ACSetTransformation{CD,AD},m::ACSetTransformation
     add_parts!(K, comp, length(g_components[comp]))
 
     # Adjust lg function from I→G to refer to K using the offset
-    newFunc = [x - offsets[comp][x] for x in lm.components[comp].func]
+    newFunc = [x - offsets[comp][x] for x in collect(lm.components[comp])]
     k_components[comp] = FinFunction(newFunc, n_comp - length(orphans))
   end
 
@@ -111,10 +111,10 @@ function rewrite_match(L::ACSetTransformation{CD, AD},
                        m::ACSetTransformation{CD, AD}
                       )::AbstractACSet{CD, AD} where {CD, AD}
     @assert dom(L) == dom(R)
-    @assert L.codom == dom(m)
+    @assert codom(L) == dom(m)
     (k, _) = pushout_complement(L, m)
     l1, _ = pushout(R, k)
-    return l1.codom
+    return codom(l1)
 end
 
 """
@@ -129,7 +129,7 @@ function rewrite(L::ACSetTransformation{CD, AD},
                  monic::Bool=false,
                  m_index::Int=1
                 )::Union{Nothing, AbstractACSet} where {CD, AD}
-  ms = filter(m->valid_dpo(L, m), homomorphisms(L.codom, G, monic=monic))
+  ms = filter(m->valid_dpo(L, m), homomorphisms(codom(L), G, monic=monic))
   if 0 < m_index <= length(ms)
     return rewrite_match(L, R, ms[m_index])
   else
@@ -155,8 +155,8 @@ function id_condition(L::ACSetTransformation{CD, AD},
                      )::Bool where {CD, AD}
   for comp in keys(L.components)
     m_comp = x->m[comp](x)
-    image = Set(L.components[comp].func)
-    image_complement = filter(x->!(x in image), 1:nparts(L.codom,comp))
+    image = Set(collect(L.components[comp]))
+    image_complement = filter(x->!(x in image), 1:nparts(codom(L),comp))
     image_vals = map(m_comp, collect(image))
     orphan_vals = map(m_comp, image_complement)
     orphan_set = Set(orphan_vals)
@@ -200,7 +200,7 @@ function dangling_condition(L::ACSetTransformation{CD, AD},
                            )::Bool where {CD, AD}
   orphans = Dict()
   for comp in keys(L.components)
-    image = Set(L.components[comp].func)
+    image = Set(collect(L.components[comp]))
     orphans[comp] = Set(
       map(x->m[comp](x),
         filter(x->!(x in image),
@@ -211,11 +211,11 @@ function dangling_condition(L::ACSetTransformation{CD, AD},
     src_obj = ob(CD)[src_ind] # e.g. :E, given morph=:src in graphs
     tgt_obj = ob(CD)[tgt_ind] # e.g. :V, given morph=:src in graphs
     n_src = 1:nparts(codom(m),src_obj)
-    unmatched_vals = setdiff(n_src, m[src_obj].func)
+    unmatched_vals = setdiff(n_src, collect(m[src_obj]))
     unmatched_tgt = map(x -> m.codom[morph][x], collect(unmatched_vals))
     if !isempty(intersect(unmatched_tgt, orphans[tgt_obj]))
       if fail
-        for unmatched_val in setdiff(n_src, m[src_obj].func)  # G/m(L) src
+        for unmatched_val in setdiff(n_src, collect(m[src_obj]))  # G/m(L) src
           unmatched_tgt = m.codom[morph][unmatched_val]
           if codom(m)[morph][unmatched_val] in orphans[tgt_obj]
               @assert false ("Dangling condition violation: $src_obj#$unmatched_val --$morph--> $tgt_obj#$unmatched_tgt")
