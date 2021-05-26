@@ -1,0 +1,10 @@
+# documentation of options: https://github.com/marketplace/actions/auto-request-review
+
+reviewers:
+  defaults:
+    - repository-owners
+
+options:
+  ignore_draft: true
+  ignored_keywords:
+    - DO NOT REVIEW
