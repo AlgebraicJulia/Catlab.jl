@@ -18,7 +18,7 @@ jobs:
         uses: bubkoo/auto-comment@v1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          pullRequestOpened: |-
+          pullRequestReviewRequestedComment: |-
             ### Review Checklist
 
             **Style**
