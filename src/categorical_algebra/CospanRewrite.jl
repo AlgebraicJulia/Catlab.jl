@@ -1,5 +1,8 @@
 module CospanRewrite
-export OpenRule, open_pushout_complement, apply_open_rewrite
+export OpenRule, open_pushout_complement, apply_open_rewrite, force
+
+using AutoHashEquals
+
 using ..StructuredCospans
 using ..DPO
 using ..Limits
@@ -9,7 +12,7 @@ using ...Graphs
 using ...Theories
 using ...GAT
 import ...Theories: id, compose, composeH, composeV, id2, idH, idV, id2H, id2V
-
+import ..CSets: force
 const OpenGraphOb, OpenGraph = OpenCSetTypes(Graph, :V);
 
 """
@@ -17,7 +20,7 @@ Rewrite rule for structured cospans
 
 Left and right are intended to be discrete isomorphisms
 """
-struct OpenRule
+@auto_hash_equals struct OpenRule
     top::OpenGraph
     middle::OpenGraph
     bottom::OpenGraph
@@ -27,10 +30,10 @@ struct OpenRule
 
     # Validate
     function OpenRule(top::OpenGraph,
-                      middle::OpenGraph,
-                      bottom::OpenGraph,
+                      mid::OpenGraph,
+                      bot::OpenGraph,
                       lft::Span,
-                      center::Span,
+                      cent::Span,
                       rght::Span)
 
         is_discrete = leg -> (nparts(dom(leg),:E)
@@ -46,15 +49,26 @@ struct OpenRule
         @assert is_discrete_isospan(lft)
         @assert is_discrete_isospan(rght)
 
+        #check commutivity
         for (quad, a,b,c,d) in [
-            ("upper left", left(lft),   left(top),     left(middle),  left(center)),
-            ("lower left", right(lft),  left(bottom),  left(middle),  right(center)),
-            ("upper right", left(rght),  right(top),    right(middle), left(center)),
-            ("lower right", right(rght), right(bottom), right(middle), right(center))]
-            @assert collect((a ⋅ b)[:V]) == collect((c ⋅ d)[:V]) "$quad $((a ⋅ b)[:V])!=$((c ⋅ d)[:V])"
+            ("↑ ←", left(lft),   left(top),  left(mid),  left(cent)),
+            ("↓ ←", right(lft),  left(bot),  left(mid),  right(cent)),
+            ("↑ →", left(rght),  right(top), right(mid), left(cent)),
+            ("↓ →", right(rght), right(bot), right(mid), right(cent))]
+            err = "$quad $((a ⋅ b)[:V])!=$((c ⋅ d)[:V])"
+            @assert collect((a ⋅ b)[:V]) == collect((c ⋅ d)[:V]) err
         end
-        return new(top, middle, bottom, lft, center, rght)
+        return new(top, mid, bot, lft, cent, rght)
     end
+end
+
+function force(s::Span)::Span
+  return Span(map(force, s)...)
+end
+
+function force(r::OpenRule)::OpenRule
+  return OpenRule(force(r.top), force(r.middle), force(r.bottom),
+                  force(r.left), force(r.center), force(r.right))
 end
 
 """
@@ -63,7 +77,8 @@ replace primes with 0, 1, 2 (1 for center / no prime, 0 for
 top / prime, 2 for bottom / double prime)
 Underscores indicate morphisms
 
-Each OpenRule has 12 morphisms. The target starts out with only 2.
+Each OpenRule has 12 morphisms.
+We need 9 pushouts and 3 pushout complements
 """
 function open_pushout_complement(
     rule::OpenRule,
@@ -74,39 +89,32 @@ function open_pushout_complement(
     )::OpenRule
 
     # unpack input data
-    c0_y0, d0_y0 = left(target), right(target);
-    a0_x0, b0_x0 = left(rule.top), right(rule.top);
+    c0_y0, d0_y0 = left(target),      right(target);
+    a0_x0, b0_x0 = left(rule.top),    right(rule.top);
     a1_x1, b1_x1 = left(rule.middle), right(rule.middle);
     a2_x2, b2_x2 = left(rule.bottom), right(rule.bottom);
-    a1_a0, a1_a2 = left(rule.left), right(rule.left);
-    b1_b0, b1_b2 = left(rule.right), right(rule.right);
+    a1_a0, a1_a2 = left(rule.left),   right(rule.left);
+    b1_b0, b1_b2 = left(rule.right),  right(rule.right);
     x1_x0, x1_x2 = left(rule.center), right(rule.center);
 
     # compute results w/ DPO
     @assert valid_dpo(b1_b0, b0_d0)
-    @assert valid_dpo(x1_x0, x0_y0)
-    @assert valid_dpo(a1_a0, a0_c0)
     b1_d1, d1_d0 = pushout_complement(b1_b0, b0_d0);
-    x1_y1, y1_y0 = pushout_complement(x1_x0, x0_y0);
-    a1_c1, c1_c0 = pushout_complement(a1_a0, a0_c0);
     d1_d2, b2_d2 = pushout(b1_d1, b1_b2);
-    y1_y2, x2_y2 = pushout(x1_y1, x1_x2);
+    _,     d2_y2 = pushout(b2_x2, b2_d2);
+    _,     d0_y0 = pushout(b0_x0, b0_d0);
+    _,     d1_y1 = pushout(b1_x1, b1_d1);
+
+    @assert valid_dpo(x1_x0, x0_y0)
+    x1_y1, y1_y0 = pushout_complement(x1_x0, x0_y0);
+    y1_y2, _ = pushout(x1_y1, x1_x2);
+
+    @assert valid_dpo(a1_a0, a0_c0)
+    a1_c1, c1_c0 = pushout_complement(a1_a0, a0_c0);
     c1_c2, a2_c2 = pushout(a1_c1, a1_a2);
-
-    x0_y0_, d0_y0 = pushout(b0_x0, b0_d0);
-    @assert force(x0_y0) == x0_y0_
-    x0_y0__, c0_y0 = pushout(a0_x0, a0_c0);
-    @assert force(x0_y0) == x0_y0__
-
-    x1_y1_, d1_y1 = pushout(b1_x1, b1_d1);
-    @assert force(x1_y1) == x1_y1_
-    x1_y1__, c1_y1 = pushout(a1_x1, a1_c1);
-    @assert force(x1_y1) == x1_y1__
-
-    x2_y2_,  c2_y2 = pushout(a2_x2, a2_c2);
-    @assert force(x2_y2) == x2_y2_
-    x2_y2__, d2_y2 = pushout(b2_x2, b2_d2);
-    @assert force(x2_y2) == x2_y2__
+    _,     c2_y2 = pushout(a2_x2, a2_c2);
+    _,     c0_y0 = pushout(a0_x0, a0_c0);
+    _,     c1_y1 = pushout(a1_x1, a1_c1);
 
     # package up result
     top    = OpenGraph(apex(target), c0_y0[:V], d0_y0[:V]);
@@ -122,9 +130,9 @@ end
 function apply_open_rewrite(
   rule::OpenRule,
   target::OpenGraph,
-  x0_y0::CSetTransformation,# match
-  a0_c0::CSetTransformation,       # match
-  b0_d0::CSetTransformation        # match
+  x0_y0::CSetTransformation, # match
+  a0_c0::CSetTransformation, # match
+  b0_d0::CSetTransformation  # match
   )::OpenGraph
   res_rule = open_pushout_complement(rule,target,x0_y0,a0_c0,b0_d0)
   return res_rule.bottom
@@ -144,7 +152,7 @@ between open systems)
 """
 @instance DoubleCategory{Graph, Span, OpenGraph, OpenRule} begin
   @import dom, codom, top, bottom, left, right, ⋅
-  idH(A::Graph) = OpenGraph(A, id(A), id(A))
+  idH(A::Graph) = let x=id(A)[:V]; OpenGraph(A, x, x) end
   idV(A::Graph) = Span(id(A), id(A))
 
   """Cospan composition given by pushout"""
@@ -153,12 +161,7 @@ between open systems)
   """Span composition given by pullback"""
   composeV(f::Span, g::Span) = composeSpan(f, g)
 
-  function id2(A::Graph)::OpenRule
-    h=idH(A)
-    v=idV(A)
-    m=id(Graph(A.set))
-    return OpenRule(h,h,h,v,Span(m,m),v)
-  end
+  id2(A::Graph)::OpenRule = let h=idH(A), v=idV(A); OpenRule(h,h,h,v,v,v) end
 
   function id2H(f::Span)::OpenRule
     l, r   = f
@@ -167,17 +170,17 @@ between open systems)
     top    = idH(codom(l))
     middle = idH(G)
     bottom = idH(codom(r))
-    up     = CSetTransformation(G, G, V=collect(l))
-    down   = CSetTransformation(G, G, V=collect(r))
+    up     = CSetTransformation(G, G, V=collect(l[:V]))
+    down   = CSetTransformation(G, G, V=collect(r[:V]))
     return OpenRule(top, middle, bottom, f, Span(up, down), f)
   end
 
   function id2V(f::OpenGraph)::OpenRule
-    nl, nr = [nparts(dom(x), :V) for x in [left(f), right(f)]]
-    lft    = let x=id(FinSet(nl)); Span(x,x) end
-    center = let x=id(apex(f));    Span(x,x) end
-    rght   = let x=id(FinSet(nr)); Span(x,x) end
-    return OpenRule(f, f, f, lft, center, rght)
+    l,c,r = dom(left(f)), apex(f), dom(right(f))
+    lft   = let x=id(l); Span(x,x) end
+    centr = let x=id(c); Span(x,x) end
+    rght  = let x=id(r); Span(x,x) end
+    return OpenRule(f, f, f, lft, centr, rght)
   end
 
   """    composeH(r₁, r₂)
