@@ -1,14 +1,13 @@
-include("automorphisms.jl");
 include("sketchgat.jl");
 include("findmodel.jl");
 using Test
 using Catlab.Graphs
-
+using Catlab.CategoricalAlgebra
 #------------------------------------------------
 # Tests
 #------------------------------------------------
 
-if 1+1==2 # don't run these automatically
+if 1+1==1 # don't run these automatically
 
     G,H = Graph(4), Graph(4)
     add_edges!(G,[1,2,4,4,3],[2,4,3,3,2])
@@ -121,9 +120,8 @@ end
 @test is_isomorphic(q, rel)
 
 G = to_combinatorial(Model(SetPermSketch.G, [2]))
-@test crefine_iter(G)[:Elem] == [2,2,1,1,1,1]
+@test color_refine(G)[:Elem] == [2,2,1,1,1,1]
 
-end
 
 G,H = init_graphs(SetPermSketch.G, [2])
 set_subpart!(G, :e1, [2,1])
@@ -137,6 +135,21 @@ for (n, n_p) in enumerate(n_perm)
  @test length(find_models(SetPermSketch, [n])) == n_p;
 end
 
-# mono_res = term_models(MonoSketch, (2,2)) # finds the two isomorphic swap functions
+# Check to/from combinatorial yields isomorphic results
+m = Model([1, 1], [1, 2], IntDisjointSets[
+    IntDisjointSets{Int64}([3, 4, 3, 4], [0, 0, 1, 1], 2),
+    IntDisjointSets{Int64}([1, 2, 3, 4], [0, 0, 0, 0], 4)],
+    [[1, 4], [3, 1]], [[1, 2], [1, 2]], Vector{Set{Int64}}[
+        [Set([2, 1]), Set()], [Set(), Set([2, 1])]]);
+c = to_combinatorial(m);
+mc = from_combinatorial(c);
+cmc = to_combinatorial(mc);
+@test is_isomorphic(c,cmc)
 
 end
+
+#mono_res = find_models(MonoSketch, Dict([2=>2])) # ID and swap, not tt or ff
+include("findmodel.jl");
+
+Model(MonoSketch,Dict([2=>3]))
+get_nums(CatSketch, Dict([1=>2,2=>3]))

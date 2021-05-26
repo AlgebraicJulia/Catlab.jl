@@ -1,3 +1,6 @@
+include("sketchgat.jl");
+using Catlab.CategoricalAlgebra
+using Base.Iterators: product as prod
 
 #------------------------------------------------
 # ENUMERATING ALL MODELS PROJECT
@@ -254,7 +257,6 @@ end
 @present TheoryModel(FreeSchema) begin
   (Elem, Obj, PK, FK, HomElem, Considered)::Ob
   eo::Hom(Elem, Obj)
-  po::Hom(PK, Obj)
   pe::Hom(PK, Elem)
   (src, tgt)::Hom(FK, Obj)
   hefk::Hom(HomElem, FK)
@@ -264,7 +266,7 @@ end
   cpk::Hom(Considered, PK)
 end
 
-const CombModel = ACSetType(TheoryModel, index=[:eo,:po,:pe,:src,:tgt,:hefk,:hesrc,:hetgt,:che,:cpk]);
+const CombModel = ACSetType(TheoryModel, index=[:eo,:pe,:src,:tgt,:hefk,:hesrc,:hetgt,:che,:cpk]);
 
 function Base.length(m::Model)::Int
     return length(m.tables)
@@ -287,7 +289,7 @@ function to_combinatorial(mod::Model)::CSet
             if !haskey(pk_unique, pk_id)
                 cset_pk_id = add_part!(res, :PK)
                 cset_pk_elem_id = add_part!(res, :Elem)
-                set_subpart!(res, cset_pk_id, :po, tab)
+                # set_subpart!(res, cset_pk_id, :po, tab)
                 set_subpart!(res, cset_pk_elem_id, :eo, tab)
                 set_subpart!(res, cset_pk_id, :pe, cset_pk_elem_id)
 
@@ -310,8 +312,8 @@ function to_combinatorial(mod::Model)::CSet
                 raw_fk = mod.fks[tgt][orig_index]
                 tgt_class = mod.tables[tgt].parents[raw_fk]
                 if haskey(pkdata[tgt],tgt_class)
-                    println("tgt $tgt pkdata $tgt_class ", pkdata[tgt])
-                    println(pkdata[tgt][tgt_class])
+                    #println("tgt $tgt pkdata $tgt_class ", pkdata[tgt])
+                    #println(pkdata[tgt][tgt_class])
                     tgt_elem_id = pkdata[tgt][tgt_class][3]
                 else
                     tgt_elem_id = add_part!(res, :Elem)
@@ -326,6 +328,7 @@ function to_combinatorial(mod::Model)::CSet
     for (fk, considereds) in enumerate(mod.considered)
         source, target = mod.src[fk], mod.tgt[fk]
         for (pk_index, considered) in enumerate(considereds)
+            pk_index = mod.tables[source].parents[pk_index]
             if haskey(pkdata[source], pk_index)
                 hom_elem_id = pkdata[source][pk_index][4][fk]
                 for cons in considered
@@ -350,13 +353,17 @@ thereby collapsing things known to be equal.
 """
 function from_combinatorial(mod::CSet)::Model
     src, tgt = mod[:src], mod[:tgt]
+    # Elem offset allows us to number the elements in Elem
+    # table. We partition it into contiguous regions so that
+    # 1-n, n+1-m, etc. correspond to different tables
     elem_offset, tables, pks, fks, cons = [0], [], [], [], []
     for x in mod.indices[:eo]
         push!(tables, IntDisjointSets(length(x)))
         push!(elem_offset, elem_offset[end]+length(x))
     end
-    for tab in length(tables)
-        push!(pks, [pk-elem_offset[tab] for pk in mod.indices[:po][tab]])
+    for tab in 1:length(tables)
+        pkelems = [i for i in mod.indices[:eo][tab] if !isempty(mod.indices[:pe][i])]
+        push!(pks, [pk-elem_offset[tab] for pk in pkelems]) #mod.indices[:po][tab]])
     end
     for (fk_id, (srctab, tgttab)) in enumerate(zip(src, tgt))
         homelems = Set(mod.indices[:hefk][fk_id])
@@ -366,9 +373,9 @@ function from_combinatorial(mod::CSet)::Model
             hes = filter(x->x in homelems, mod.indices[:hesrc][pk])
             @assert length(hes) == 1
             he = hes[1]
-            push!(fk_vect, mod[:hetgt][he]+elem_offset[tgttab])
+            push!(fk_vect, mod[:hetgt][he]-elem_offset[tgttab])
             consids = mod[:cpk][mod.indices[:che][he]]
-            push!(con_vect, Set([c + elem_offset[tgttab] for c in consids]))
+            push!(con_vect, Set([c - elem_offset[tgttab] for c in consids]))
         end
         push!(fks, fk_vect)
         push!(cons, con_vect)
@@ -391,26 +398,101 @@ function str(m::Model)::String
     return  String(take!(io));
 end
 
-function Model(schema::CSet, consts::Vector{Int})::Model
-    return Model(schema[:src], schema[:tgt], consts)
+"""Assume we are given a cardinality for each (and only)
+non limit object. What is the maximum cardinality of each
+object?
+
+Returns:
+ - the cardinality of each table
+ - the values of each cone arrow
+"""
+function get_nums(f::FLSketch, consts::Dict{Int,Int})::Tuple{Vector{Int}, Dict{Int, Vector{Int}}}
+    # Limit objects can depend on each other (acyclicly)
+    # Create a DAG of tables
+    n = nparts(f.G, :V)
+    dag = Graph(n)
+    edict = Dict{Int,Int}()
+    for (apex, conediagram) in f.C
+        apextab = conediagram[:V](apex)
+        for e in dom(conediagram).indices[:src][apex]
+            original_e = conediagram[:E](e)
+            tgt = f.G[:tgt][original_e]
+            if tgt != apextab
+                e = add_edge!(dag, apextab,tgt)
+                edict[e] = original_e
+            end
+        end
+    end
+    ord = reverse(topological_sort(dag))
+    res = repeat([0], n)
+    for tab in ord
+        if haskey(consts, tab)
+            res[tab] = consts[tab]
+        else
+            legs = dag.indices[:src][tab]
+            tgts = dag[:tgt][legs]
+            res[tab] = 1
+            for t in tgts
+                res[tab] *= res[t]
+            end
+        end
+    end
+
+    println("DAG = $dag\n\tres $res \n\tedict $edict")
+    eres = Dict{Int, Vector{Int}}()
+    for arrs in filter(!isempty, dag.indices[:src])
+        combos = reduce(vcat,collect(prod([1:res[dag[:tgt][e]] for e in arrs]...)))
+        for (i, arr) in enumerate(arrs)
+            eres[edict[arr]] = [tup[i] for tup in combos]
+        end
+        println("PROCESSING arrs $([es(edict[x]) for x in arrs])\n$combos")
+    end
+
+    return res, eres
 end
 
-function Model(src::Vector{Int}, tgt::Vector{Int}, consts::Vector{Int})::Model
-    pks = [collect(1:i) for i in consts]
+
+"""
+Initialize model from FLS data.
+
+# of constants is specified for each NON CONE table
+cone tables are initialized to an apex for each possibility.
+
+"""
+function Model(fls::FLSketch, consts::Dict{Int,Int})::Model
+    src = fls.G[:src]
+    tgt = fls.G[:tgt]
+
+    tabdata, edgedata = get_nums(fls, consts)
+
+    pks = [collect(1:i) for i in tabdata]
     fks = [Vector{Int}() for _ in 1:length(src)]
-    considered = [[Set{Int}() for _ in 1:consts[s]] for s in src]
+
     tabls = []
-    for tab in 1:length(consts)
-        counter = consts[tab]
-        tgt_edges = [i for i in 1:length(src) if tgt[i]==tab]
-        for e in tgt_edges
-            for _ in 1:consts[src[e]]
+    for tab in 1:length(pks)
+        counter = length(pks[tab])
+        incident_edges = fls.G.indices[:tgt][tab]
+        for e in incident_edges
+            for _ in 1:length(pks[src[e]])
                 counter+=1
                 push!(fks[e], counter)
             end
         end
         push!(tabls, IntDisjointSets(counter))
     end
+
+    considered = [[Set{Int}() for _ in 1:length(fks[s])] for s in src]
+
+    # We know things about cone edges
+    for (e, evals) in collect(edgedata)
+        tgttab = tgt[e]
+        for (src_ind, val) in enumerate(evals)
+            pkval = pks[tgttab][val]
+            union!(tabls[tgttab], fks[e][src_ind], pkval)
+            considered[e][src_ind] = setdiff(Set(pks[tgttab]), [pkval])
+        end
+    end
+
     return Model(src,tgt,tabls, fks, pks, considered)
 end
 
@@ -436,10 +518,7 @@ function to_cset(m::Model, sat::Bool=false)::CSet
     for (arr, fks) in enumerate(m.fks)
         tgt_tab = m.tgt[arr]
         vals = [get_pk(m, tgt_tab, fkval) - (sat ? 1 : 0) for fkval in fks]
-        # for arr in src_edges
-        #     vals = [get_pk(m, arr, pk) - (sat ? 1 : 0) for pk in pks]
         set_subpart!(res, es(arr), vcat(sat ? Int[] : [1], vals))
-        #end
     end
     return res
 end
@@ -493,7 +572,7 @@ Union two elements of table `tab`
 
 """
 function union_fk!(mod::Model, tab::Int, fk1::Int, val1::Int, fk2::Int, val2::Int)::Nothing
-    # println("mod $mod\ntab $tab\n1: fk$fk1 v$val1\n2: fk$fk2 $val2")
+    println("Forcing mod $mod\ntgt x$tab: e$fk1 #$val1 = e$fk2 $val2")
     v1 = mod.fks[fk1][val1]
     if fk2 == 0
         v2 = mod.pks[tab][val2]
@@ -510,7 +589,7 @@ end
 
 function Base.hash(mod::Model)::UInt64
     # return hash((mod.src, mod.tgt, mod.tables, mod.fks, mod.pks, mod.considered))
-    m = to_cset(mod)
+    m = to_combinatorial(mod)
     return canonical_hash(m)
 end
 
@@ -522,7 +601,7 @@ function check_diagrams!(mod::Model, comm_data)::Pair{Bool,Bool}
     change = false
     for (comm_q, (pth1, pth2)) in comm_data
         end_table = mod.tgt[pth1[end]]
-        # println("query result $(query(cset, comm_q))")
+        println("query result $(query(cset, comm_q))")
         for qres in query(cset, comm_q)
             penult1, penult2, last1, last2 = qres
             nullp1, nullp2, null1, null2 = [qv == 1 for qv in qres]
@@ -535,7 +614,7 @@ function check_diagrams!(mod::Model, comm_data)::Pair{Bool,Bool}
                 change = true
             elseif !(null1||null2)  # can check for contradiction
                 if last1 != last2
-                    # println("query result $qres is contradiction")
+                    println("query result is contradiction")
                     return false => change
                 end
             end
@@ -548,9 +627,8 @@ end
 
 function check_limits!(mod::Model, c_data)::Bool
     cset = to_cset(mod)
-    for (dia, c_tabs, (_, apex, legs)) in c_data
-        println("DIAGRAM $apex $legs - ctabs = $c_tabs")
-        npart = nparts(cset, apex)
+    for (dia, c_tabs) in c_data
+        println("DIAGRAM $dia")
         for matches in query(cset, dia)
             println("\tmatch $matches")
             if all(i->matches[i] < nparts(cset,c_tabs[i]), 1:length(c_tabs)) # ignore matches with unknowns
@@ -573,30 +651,31 @@ function check_limits!(mod::Model, c_data)::Bool
     return true
 end
 
-function find_models(fls::FLSketch, consts::Vector{Int})#::Vector{Model}
+function find_models(fls::FLSketch, consts::Dict{Int,Int})#::Vector{Model}
     # INITIALIZE
     schema = fls.G
     res=[]
     seen=Set{UInt64}()
-    modl = Model(schema, consts)
+    modl = Model(fls, consts)
 
     # Initialize commutative diagram data
     c_paths = comm_paths(fls)
     comm_qs = [paths_to_query(schema, p1, p2) for (p1, p2) in c_paths]
 
     # Initialize cone data
-    cone_ds = [diagram_to_query(conedia) for (apex, conedia) in fls.C]
-    cone_tabs = [xs(cone[1].components[:V].func) for cone in fls.C]
+    cone_ds = [diagram_to_query(conedia) for (_, conedia) in fls.C]
+    cone_tabs = [xs(cone[2].components[:V].func) for cone in fls.C]
 
     function find_models_rec!(mod::Model)
         hsh = hash(mod)
-        m = to_cset(mod)
-        println("finding models for $(m[:e1]), $(m[:e2])\n\t$(str(mod)) (seen = $(hsh in seen))")
+        # m = to_cset(mod)
+        println("\nfinding models for $(str(mod))\n\t$(mod.considered)\n\t$(mod)\n\t(hsh=$hsh seen = $(hsh in seen))")
         if !(hsh in seen)
             push!(seen, hsh)
             success, _ = check_diagrams!(mod, zip(comm_qs, c_paths))
             if success
-                if is_sat(mod)
+                active = check_limits(mod)
+                if is_sat(mod, active)
                     canon_hsh = canonical_hash(to_cset(mod, true))
                     if !(canon_hsh in seen)
                         push!(res, canon_hsh => deepcopy(mod))
@@ -633,16 +712,16 @@ function find_models(fls::FLSketch, consts::Vector{Int})#::Vector{Model}
                     end
                 end
 
-                # THINGS GO HAYWIRE
-                if 1+1==1 # size(mod) < MAXSIZE
-                    new_mod = deepcopy(mod)
-                    new_id = push!(new_mod, tgt)
-                    # println("ADDED $new_id to table $tgt of $new_mod")
-                    # println(to_cset(new_mod))
-                    new_mod.considered[e][src_index] = union(Set(tgt_pks), Set([new_id]))
-                    new_mod.fks[e][src_index] = new_id
-                    find_models_rec!(new_mod)
-                end
+                # THINGS GO HAYWIRE if we change model size during search
+                # if 1+1==1 # size(mod) < MAXSIZE
+                #     new_mod = deepcopy(mod)
+                #     new_id = push!(new_mod, tgt)
+                #     # println("ADDED $new_id to table $tgt of $new_mod")
+                #     # println(to_cset(new_mod))
+                #     new_mod.considered[e][src_index] = union(Set(tgt_pks), Set([new_id]))
+                #     new_mod.fks[e][src_index] = new_id
+                #     find_models_rec!(new_mod)
+                # end
             end
         end
     end

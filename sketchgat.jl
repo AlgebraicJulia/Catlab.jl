@@ -114,8 +114,17 @@ Tradeoffs vs a julia data structure? (acsets presumed to be graphs)
 struct FLSketch
   G::ACSet  # a Graph, arrows are "operations"
   D::Set{T} # diagrams i.e. morphisms to G
-  C::Dict{Int,Tuple{T,Vector{Int}}} # apex + edges in G from apex
+  C::Set{Pair{Int,T}} # apex + edges in G from apex
 end;
+function FLSketch(G::ACSet)
+  return FLSketch(G,Set{T}(), Set{Pair{Int,T}}())
+end
+function FLSketch(G::ACSet, D::Set{T})
+  return FLSketch(G,D, Set{Pair{Int,T}}())
+end
+function FLSketch(G::ACSet, C::Set{Pair{Int,T}})
+  return FLSketch(G, Set{T}(), C)
+end
 
 # not all legs from apex need to be defined. Because a valid cone has
 # only ONE arrow to each object in the diagram, it's redundant to
@@ -184,6 +193,10 @@ add_edges!(Square,[1,1,2,3],[2,3,4,4])
 """
 Cospan = Graph(3) # cospan
 add_edges!(Cospan, [1,2],[3,3]);
+Span = Graph(3) # span
+add_edges!(Span, [1,1],[2,3]);
+Span3 = Graph(4) # span
+add_edges!(Span3, [1,1,1],[2,3,4]);
 
 #(START OF EXAMPLES)
 #------------------------------------------------
@@ -198,7 +211,7 @@ add_edges!(SetPermDiagram, [1,2],[2,1]);
 SPD = T(SetPermDiagram, SetPermGrph, V=[1,1],E=[1,2]); # f;g = g;f = id
 
 # Model in Set must have one set and two functions to itself. Diagram forces these functions to be inverses
-SetPermSketch = FLSketch(SetPermGrph, Set([SPD]), Dict());
+SetPermSketch = FLSketch(SetPermGrph, Set{T}([SPD]));
 
 # the INITIAL term model of this is infinite when starting with a constant
 # we have words like ffgggffg and can cancel out any adjacent f's and g's via the diagram
@@ -211,11 +224,10 @@ SetPermSketch = FLSketch(SetPermGrph, Set([SPD]), Dict());
 ReflG = Graph(2)
 add_edges!(ReflG,[2,2,1,1], [1,1,1,2]) # src, tgt, id, refl
 
-ReflSketch = FLSketch(ReflG, Set([
+ReflSketch = FLSketch(ReflG, Set{T}([
     T(Loop,     ReflG; V=[1],    E=[3]),
     T(Triangle, ReflG; V=[1,2,1],E=[4,3,1]),
-    T(Triangle, ReflG; V=[1,2,1],E=[4,3,2])
-    ]),Dict())
+    T(Triangle, ReflG; V=[1,2,1],E=[4,3,2])]))
 
 #------------------------------------------------
 
@@ -223,8 +235,8 @@ ReflSketch = FLSketch(ReflG, Set([
 NatNumGrph =  Graph(2) #"1", "n"
 add_edges!(NatNumGrph,[1,2], [2,2])
 
-NatNumSketch = FLSketch(NatNumGrph, Set(), Dict([
-    1=>(T(Graph(0), NatNumGrph), [])]));
+NatNumSketch = FLSketch(NatNumGrph, Set{Pair{Int,T}}([
+  1=>T(Graph(1), NatNumGrph, V=[1])]));
 
 #------------------------------------------------
 
@@ -232,9 +244,9 @@ NatNumSketch = FLSketch(NatNumGrph, Set(), Dict([
 
 InfListG = Graph(3) # 1, d, l
 add_edges!(InfListG,[1,1,3,3],[2,2,2,3])  # a, b, head, tail
-InfListSketch=FLSketch(InfListG, Set(), Dict([
-    1=>(T(Graph(0), InfListG),[]),
-    3=>(T(Graph(2),InfListG;V=[2,3]), [3,4])]))
+InfListSketch=FLSketch(InfListG, Set{Pair{Int,T}}([
+  1=>T(Graph(1), InfListG, V=[1]),
+  1=>T(Span,InfListG;V=[3,2,3],E=[3,4])]))
 
 # We CANNOT make a finite model out of this
 
@@ -256,12 +268,12 @@ SemiGrpDd = T(SquareTriangle,SemiGrpG;V=[s³,s²,s,s²,s],E=[idk, Π₁,π₂π�
 # E: associativity constraint
 SemiGrpDe = T(Square,SemiGrpG;V=[s³,s²,s²,s],E=[idk,kid,k,k])
 
-SemiGrpP2 = (T(Graph(2), SemiGrpG;V=[s,s]), [π₁, π₂])
-SemiGrpP3 = (T(Graph(3),SemiGrpG;V=[s,s,s]),[Π₁,Π₂,Π₃])
+SemiGrpP2 = T(Span, SemiGrpG;V=[s²,s,s],  E=[π₁, π₂])
+SemiGrpP3 = T(Span3,SemiGrpG;V=[s³,s,s,s],E=[Π₁,Π₂,Π₃])
 
 SemiGrp = FLSketch(SemiGrpG, Set([
     SemiGrpDa, SemiGrpDb, SemiGrpDc, SemiGrpDd, SemiGrpDe]),
-    Dict([s²=>SemiGrpP2, s³ => SemiGrpP3]))
+    Set([1=>SemiGrpP2, 1 => SemiGrpP3]))
 
 
 #------------------------------------------------
@@ -296,16 +308,16 @@ add_edges!(GroupG, [3,2,1,3,3,4,4,4,2,2,2,2,2,4,4,4,4],
 MonoG = Graph(2)
 add_edges!(MonoG, [1,1], [1,2])
 
-MonoCone = T(Cospan, MonoG,V=[1,1,2],E=[2,2])
+MonoCone = T(InwardTri, MonoG,V=[1,1,1,2],E=[2,1,1,2,2])
 MonoSketch=FLSketch(MonoG,
     Set([T(Loop,MonoG,V=[1], E=[1])]), # force ID arrow
-    Dict([1=>(MonoCone,[1,1])]))
+    Set([1=>MonoCone]))
 #------------------------------------------------
 
 GraphG = Graph(2) # V, E
 add_edges!(GraphG, [1,1], [2,2]) # src, tgt
 
-DirMultiGraphSketch = FLSketch(GraphG, Set(), Dict()); # directed multigraphs
+DirMultiGraphSketch = FLSketch(GraphG); # directed multigraphs
 #------------------------------------------------
 # Example 10.1.4: SIMPLE GRAPHS
 
@@ -317,13 +329,13 @@ add_edges!(SimpleGraphG, [2, 2, 3, 3, 2, 2],
 SGid = T(Loop, SimpleGraphG, V=[2], E=[6]);
 src_tgt_equal = T(OutwardTri, SimpleGraphG, V=[2,3,1,1], E=[5,1,2,3,4]);
 
-nn_prod = (T(Graph(2), SimpleGraphG, V=[1,1]), [3,4]);
+SGcone = T(InwardTri, SimpleGraphG, V=[2,3,2,2],E=[5,6,6,5,5])
 
 
-u_monic = (T(Cospan, SimpleGraphG, V=[2,2,3],E=[5,5]), [6,6,5]);
+u_monic = T(InwardTri, SimpleGraphG, V=[2,2,2,3],E=[6,5,6,6,5]);
 SimpleGraphSketch = FLSketch(SimpleGraphG,
     Set([SGid, src_tgt_equal]),
-    Dict([3=>nn_prod, 2=>u_monic]));
+    Set([1=>SGcone, 1=>u_monic]));
 
 
 #------------------------------------------------
@@ -348,12 +360,13 @@ CD = Set([
     T(Square,         CatG; V=[a³,a²,a²,a],   E=[p₁c,cp₃,c,c]) # associativity
 ])
 
-CLim1 = (T(Cospan, CatG; V=[a,a,o], E=[s,t]), [π₁,π₂,0])
-CLim2G = Graph(5)
-add_edges!(CLim2G, [1,2,2,3],[4,4,5,5])
-CLim2 = (T(CLim2G, CatG; V=[a,a,a,o,o], E=[s,t,s,t]), [p₁,p₂,p₃,0,0])
+CLim1 = T(Square, CatG; V=[a²,a,a,o], E=[π₁,π₂,s,t]) # is it really a "cone"?
+CLim2G = Graph(6)
+add_edges!(CLim2G, [1,1,1,2,3,3,4],[2,3,4,5,5,6,6])
+CLim2 = T(CLim2G, CatG; V=[a³,a,a,a,o,o], E=[p₁,p₂,p₃,s,t,s,t])
 
-CatSketch= FLSketch(CatG, CD, Dict([ a² => CLim1, a³ => CLim2]))
+CatSketch= FLSketch(CatG, CD, Set([ 1 => CLim1, 1 => CLim2]))
+
 
 
 
