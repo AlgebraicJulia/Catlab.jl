@@ -1,24 +1,20 @@
-name: Auto Review Process
+name: Review Checklist
 
 on:
-  pull_request:
-    types: [opened, ready_for_review, reopened]
+  pull_request_target:
+    types: [review_requested]
 
 jobs:
-  review-process:
-    name: Review Process
+  review-checklist:
+    name: Review Checklist
     runs-on: ubuntu-latest
     steps:
-      - name: Request review based on files changes and/or groups the author belongs to
-        uses: necojackarc/auto-request-review@v0.7.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          config: .github/reviewers.yml
-      - name: Comment review checklist
-        uses: bubkoo/auto-comment@v1
-        with:
+      - uses: unsplash/comment-on-pr@master
+        env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          pullRequestReviewRequestedComment: |-
+        with:
+          check_for_duplicate_msg: true
+          msg: |-
             ### Review Checklist
 
             **Style**
