@@ -1,8 +1,15 @@
 # documentation of options: https://github.com/marketplace/actions/auto-request-review
 
+# eventually move this to using GitHub Teams (we have a developers team)
+# requires the use of a personal access token with access to teams
+# for now, leaving it as an explicit list
 reviewers:
   defaults:
-    - repository-owners
+    - epatters
+    - mehalter
+    - jpfairbanks
+    - bosonbaas
+    - olynch
 
 options:
   ignore_draft: true
