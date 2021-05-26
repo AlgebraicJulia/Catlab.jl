@@ -14,6 +14,7 @@ include("GraphCategories.jl")
 include("StructuredCospans.jl")
 include("CommutativeDiagrams.jl")
 include("DPO.jl")
+include("CospanRewrite.jl")
 
 @reexport using .FreeDiagrams
 @reexport using .CommutativeDiagrams
@@ -22,5 +23,6 @@ include("DPO.jl")
 @reexport using .ACSetViews
 @reexport using .StructuredCospans
 @reexport using .DPO
+@reexport using .CospanRewrite
 
 end

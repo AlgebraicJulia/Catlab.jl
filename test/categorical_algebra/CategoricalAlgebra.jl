@@ -45,4 +45,8 @@ end
   include("DPO.jl")
 end
 
+@testset "CospanRewrite" begin
+  include("CospanRewrite.jl")
+end
+
 end
