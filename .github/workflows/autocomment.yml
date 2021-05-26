@@ -8,7 +8,7 @@ jobs:
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           pullRequestOpenedReactions: 'hooray'
-          pullRequestOpenedComment: >
+          pullRequestReviewRequestedComment: >
             ### Review Checklist
 
             *Style*
