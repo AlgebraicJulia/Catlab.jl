@@ -1,5 +1,5 @@
 name: Auto Comment
-on: [issues, pull_request]
+on: [pull_request]
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -7,18 +7,17 @@ jobs:
       - uses: bubkoo/auto-comment@v1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          pullRequestOpenedReactions: 'hooray'
-          pullRequestReviewRequestedComment: >
+          pullRequestReviewRequested: |-
             ### Review Checklist
 
-            *Style*
+            **Style**
 
             - [ ] Indent width is 2 spaces
             - [ ] Avoid lines longer than 80 characters
             - [ ] No functions (&gt;= 3) contain overlapping arguments that are common aspects of a shared concept
             - [ ] Code is properly split into modules that maximizes isolation of features
 
-            *Tests*
+            **Tests**
 
             - [ ] New features have accompanying unit tests
             - [ ] Bug fixes have unit tests exposing the bug
@@ -26,7 +25,7 @@ jobs:
             - [ ] New modules have tests and are ultimately called by the test runner (`test/runtests.jl`)
             - [ ] Code coverage &gt;= 90%, test coverage reduction must be documented in pull request
 
-            *Documentation*
+            **Documentation**
 
             - [ ] All exported functions, types, and constants have docstrings
             - [ ] Docstrings are written in complete sentences with appropriate capitalization and punctuation
