@@ -1,13 +1,24 @@
-name: Auto Comment
-on: [pull_request]
+name: Auto Review Process
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened]
+
 jobs:
-  run:
+  review-process:
+    name: Review Process
     runs-on: ubuntu-latest
     steps:
-      - uses: bubkoo/auto-comment@v1
+      - name: Request review based on files changes and/or groups the author belongs to
+        uses: necojackarc/auto-request-review@v0.7.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config: .github/reviewers.yml
+      - name: Comment review checklist
+        uses: bubkoo/auto-comment@v1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          pullRequestReviewRequested: |-
+          pullRequestOpened: |-
             ### Review Checklist
 
             **Style**
