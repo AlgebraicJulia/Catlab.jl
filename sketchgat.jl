@@ -13,6 +13,8 @@ import Base: size, hash
 """
 Reference: CT for computing science: https://www.math.mcgill.ca/triples/Barr-Wells-ctcs.pdf
 
+We are concerned with "Regular" sketches, where no node is the vertex of more than one cone.
+
 Here are also interesting examples + explanation of connection to Essentially Algebraic Theories: https://www.math.mcgill.ca/barr/papers/sketch.pdf
 
 Section 7.7 describes how this is essentially the same as the
@@ -330,8 +332,6 @@ SGid = T(Loop, SimpleGraphG, V=[2], E=[6]);
 src_tgt_equal = T(OutwardTri, SimpleGraphG, V=[2,3,1,1], E=[5,1,2,3,4]);
 
 SGcone = T(InwardTri, SimpleGraphG, V=[2,3,2,2],E=[5,6,6,5,5])
-
-
 u_monic = T(InwardTri, SimpleGraphG, V=[2,2,2,3],E=[6,5,6,6,5]);
 SimpleGraphSketch = FLSketch(SimpleGraphG,
     Set([SGid, src_tgt_equal]),
