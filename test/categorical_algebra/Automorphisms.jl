@@ -45,8 +45,8 @@ function init_graphs(schema::CSet, consts::Vector{Int}, n::Int=2)::Vector{CSet}
     return [deepcopy(cset) for _ in 1:n]
 end
 
-"""Confirm canonical hash tracks with whether two CSets are iso"""
-function test_iso(a::CSet,b::CSet, eq::Bool=true)::Test.Pass
+"""Confirm canonical hash tracks with whether two ACSets are iso"""
+function test_iso(a::ACSet,b::ACSet, eq::Bool=true)::Test.Pass
     tst = a -> eq ? a : !a
     @test tst(is_isomorphic(a,b))
     @test a != b  # confirm they're not literally equal
@@ -96,5 +96,85 @@ set_subpart!(G, :e2, [2,1])
 set_subpart!(H, :e1, [1,1])
 set_subpart!(H, :e2, [2,2])
 test_iso(G, H, false)
+
+# ACSet tests
+@present TheoryDecGraph(FreeSchema) begin
+  E::Ob
+  V::Ob
+  src::Hom(E,V)
+  tgt::Hom(E,V)
+
+  X::Data
+  dec::Attr(E,X)
+end
+
+const Labeled = ACSetType(TheoryDecGraph)
+
+G = @acset Labeled{String} begin
+  V = 4
+  E = 4
+  src = [1,2,3,4]
+  tgt = [2,3,4,1]
+  dec = ["a","b","c","d"]
+end;
+
+
+H = @acset Labeled{String} begin
+  V = 4
+  E = 4
+  src = [1,3,2,4]
+  tgt = [3,2,4,1]
+  dec = ["a","b","c","d"]
+end;
+
+test_iso(G,H) # vertices permuted
+
+I = @acset Labeled{String} begin
+V = 4
+E = 4
+src = [1,2,3,4]
+tgt = [2,3,4,1]
+dec = ["b","c","d","a"]
+end;
+
+test_iso(G,I) # labels permuted
+
+N = @acset Labeled{String} begin
+  V = 4
+  E = 4
+  src = [1,2,3,4]
+  tgt = [2,3,4,1]
+  dec = ["a","a","b","c"]
+end;
+
+test_iso(G,N, false) # label mismatch
+
+K = @acset Labeled{String} begin
+  V = 4
+  E = 4
+  src = [1,3,2,4]
+  tgt = [2,3,4,1]
+  dec = ["a","d","b","c"]
+end;
+
+test_iso(G,K,false) # vertex mismatch
+
+G1 = @acset Labeled{String} begin
+  V = 1
+  E = 1
+  src = [1]
+  tgt = [1]
+  dec = ["a"]
+end;
+
+H1 = @acset Labeled{String} begin
+  V = 1
+  E = 1
+  src = [1]
+  tgt = [1]
+  dec = ["b"]
+end;
+
+test_iso(G1, H1, false) # label values different
 
 end

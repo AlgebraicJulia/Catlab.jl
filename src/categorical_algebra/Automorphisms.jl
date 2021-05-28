@@ -1,10 +1,59 @@
 module Automorphisms
-export canonical_hash, autos, apply_automorphism, color_refine
+export canonical_hash, canonical_iso, autos, apply_automorphism, color_refine, pseudo_cset, pseudo_cset_inv
 using ..CSets
 using ...Theories
+using ...Theories: adom, attr, data, attr, adom, acodom, AttrDesc
+using Catlab.Present
 
 # Color assigned to each elem of each compoennt
 CDict = Dict{Symbol, Vector{Int}}
+
+"""
+To compute automorphisms of Attributed CSets, we create a pseudo CSet which has
+components for each data type.
+"""
+function pseudo_cset(g::ACSet{CD,AD})::Tuple{CSet, Vector{Vector{Any}}} where {CD, AD}
+    tabs, arrs, src, tgt = collect(ob(CD)), collect(hom(CD)), dom(CD), codom(CD)
+    dtabs, darrs, dsrc, dtgt = collect(data(AD)), collect(attr(AD)), adom(AD), acodom(AD)
+    pres = Presentation(FreeSchema)
+    xobs = [Ob(FreeSchema,t) for t in vcat(tabs,dtabs)]
+    n = length(tabs)
+    for x in xobs add_generator!(pres, x) end
+    for (arr, s, t) in zip(map(collect, [arrs, src, tgt])...)
+        add_generator!(pres, Hom(arr, xobs[s], xobs[t]))
+    end
+    attrvals = [Set() for _ in 1:length(dtabs)]
+    for (arr, s, t) in zip(darrs, dsrc, dtgt)
+        add_generator!(pres, Hom(arr, xobs[s], xobs[t+n]))
+        union!(attrvals[s], Set(g[arr]))
+    end
+    attrvals = Vector{Any}[sort(collect(x)) for x in attrvals]
+    ctype =  ACSetType(pres, index=vcat(arrs,darrs))
+    res = ctype()
+    println("attrvals $attrvals")
+    for t in tabs add_parts!(res, t, nparts(g,t)) end
+    for (i,t) in enumerate(dtabs) add_parts!(res, t, length(attrvals[i])) end
+    for a in arrs set_subpart!(res, a, g[a]) end
+    for (a,t) in zip(darrs, dtgt)
+        fks = [findfirst(==(v), attrvals[t]) for v in g[a]]
+        set_subpart!(res, a, fks)
+    end
+    return res, attrvals
+end
+
+"""Inverse of pseudo_cset"""
+function pseudo_cset_inv(g::CSet, orig::ACSet{CD,AD}, attrvals::Vector{Vector{Any}})::ACSet{CD,AD} where {CD,AD}
+    orig = deepcopy(orig)
+    arrs = hom(CD)
+    darrs, dtgt = attr(AD), acodom(AD)
+    for arr in arrs
+        set_subpart!(orig, arr, g[arr])
+    end
+    for (darr,tgt) in zip(darrs, dtgt)
+        set_subpart!(orig, darr, attrvals[tgt][g[darr]])
+    end
+    return orig
+end
 
 # The maximum color of an empty color list is 0
 function max0(x::Vector{Int})::Int
@@ -35,13 +84,24 @@ function canonical_iso(g::CSet)::CSet
     return isempty(isos) ? g : isos[1]
 end
 
-function canonical_hash(g::CSet)::UInt64
+"""
+Compute automorphisms for the pseudo-cset, but then substitute in
+the actual attribute values before evaluating the lexicographic order
+"""
+function canonical_iso(g::ACSet)::ACSet
+    p, avals = pseudo_cset(g)
+    isos = sort([pseudo_cset_inv(apply_automorphism(p, Dict(a)), g, avals)
+                 for a in autos(p)], by=string)
+    return isempty(isos) ? g : isos[1]
+end
+
+function canonical_hash(g::ACSet)::UInt64
     return hash(string(canonical_iso(g)))
 end
 
-# Store how many of each color (for each in arrow) has a
-# particular point as its target, as well as what color
-# (for each out arrow) the data point is the src of.
+# Store 1.) how many of each color (for each in arrow) has
+# a particular point as its target, 2.) what color (for
+# each out arrow) the data point is the src of
 CDataPoint = Tuple{Vector{Vector{Int}}, Vector{Int}}
 # Data req' to color a CSet (each element of each component)
 CData = Dict{Symbol, Vector{CDataPoint}}
@@ -52,6 +112,12 @@ properties in the output. Right now, we just compute the
 following pair for each element of each component:
 - number of incident edges from each arrow (from each color)
 - the color pointed to by each outgoing edge
+
+This does not generalize to ACSets. We cannot naively
+throw the attributes as raw data into the color data.
+It will make indistinguishable elements (e.g. two
+elements that map to different data but otherwise can
+be permuted) as distinguishable.
 """
 function compute_color_data(g::CSet{CD}, color::CDict)::CData where {CD}
     tabs, arrs, srcs, tgts = ob(CD), hom(CD), dom(CD), codom(CD)
@@ -109,13 +175,13 @@ function compose_perms(x::CDict, y::CDict)::CDict
     return Dict([k=>compose_comp(v1,y[k]) for (k, v1) in collect(x)])
 end
 
-"""Apply permutation to color dictionary"""
-function permute_color(σ::CDict, x::CDict)::CDict
-    function permute_comp(perm::Vector{Int}, xs::Vector{Int})::Vector{Int}
-        return [xs[perm[i]] for i in eachindex(xs)]
-    end
-    return Dict([k=>permute_comp(σ[k],v) for (k,v) in collect(x)])
-end
+# """Apply permutation to color dictionary"""
+# function permute_color(σ::CDict, x::CDict)::CDict
+#     function permute_comp(perm::Vector{Int}, xs::Vector{Int})::Vector{Int}
+#         return [xs[perm[i]] for i in eachindex(xs)]
+#     end
+#     return Dict([k=>permute_comp(σ[k],v) for (k,v) in collect(x)])
+# end
 
 """
 Iterative color refinement based on the number (and identity) of
@@ -193,18 +259,18 @@ function search_tree(g::CSet{CD},
     if isempty(colors_by_size) # We found a leaf!
         # Construct automorphisms between leaves
         # to possibly prune the search tree
+        # See figure 4
         tau_inv = invert_perm(coloring)
         for p in perms
             pii = tree[p]
             auto = compose_perms(pii,tau_inv)
-            # want to find a,b,c in Fig 4
             i = common(p, split_seq)
             a = tree[p[1:i]]
-            if permute_color(auto, a) == a
+            if compose_perms(auto, a) == a
                 b = tree[p[1:i+1]]
                 c_location = split_seq[1:i+1]
                 c = tree[c_location]
-                if permute_color(auto, b) == c
+                if compose_perms(auto, b) == c
                     push!(skip, c_location)
                 end
             end
