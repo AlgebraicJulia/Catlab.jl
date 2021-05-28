@@ -1,5 +1,5 @@
 module CospanRewrite
-export OpenRule, open_pushout_complement, apply_open_rewrite, force
+export OpenRule, open_pushout_complement, apply_open_rewrite, force, SCRule, composeH_, composeV_, id2_, idH_, idV_, id2H_, id2V_
 
 using AutoHashEquals
 
@@ -13,6 +13,7 @@ using ...Theories
 using ...GAT
 import ...Theories: id, compose, composeH, composeV, id2, idH, idV, id2H, id2V
 import ..CSets: force
+using ..FinSets: FinSet
 const OpenGraphOb, OpenGraph = OpenCSetTypes(Graph, :V);
 
 """
@@ -165,7 +166,7 @@ between open systems)
 
   function id2H(f::Span)::OpenRule
     l, r   = f
-    nd     = codom(l[:V]).set
+    nd     = codom(l[:V]).set # Could also be dom b/c l is iso
     G      = Graph(nd)
     top    = idH(codom(l))
     middle = idH(G)
@@ -241,4 +242,145 @@ between open systems)
     return OpenRule(r₁.top, middle, r₂.bottom, lft, center, rght)
   end
 end
+
+
+# General Double Category.
+@auto_hash_equals struct SCRule{L}
+  top::StructuredCospan{L}
+  middle::StructuredCospan{L}
+  bottom::StructuredCospan{L}
+  left::Span
+  center::Span # of Graph Transformations
+  right::Span
+
+  # Validate
+function SCRule(top::StructuredCospan{L},
+                  mid::StructuredCospan{L},
+                  bot::StructuredCospan{L},
+                  lft::Span,
+                  cent::Span,
+                  rght::Span) where {L}
+    V = L.parameters[1]
+    #check commutivity
+    for (quad, a,b,c,d) in [
+        ("↑ ←", left(lft),   left(top),  left(mid),  left(cent)),
+        ("↓ ←", right(lft),  left(bot),  left(mid),  right(cent)),
+        ("↑ →", left(rght),  right(top), right(mid), left(cent)),
+        ("↓ →", right(rght), right(bot), right(mid), right(cent))]
+        err = "$quad $((a ⋅ b)[V])!=$((c ⋅ d)[V])"
+        @assert collect((a ⋅ b)[V]) == collect((c ⋅ d)[V]) err
+    end
+    return new{L}(top, mid, bot, lft, cent, rght)
+end
+end
+
+
+function idH_(a::StructuredCospanOb{L}) where {L}
+  x = L(FinSet(a.ob))
+  i = id(x)
+  return StructuredCospan{L}(Cospan(x, i, i), a, a)
+end
+
+function idV_(a::StructuredCospanOb{L}) where {L}
+  x = L(FinSet(a.ob))
+  i = id(x)
+  return Span(i, i)
+end
+
+"""Cospan composition given by pushout"""
+function composeH_(f::StructuredCospan{L}, g::StructuredCospan{L})::StructuredCospan{L} where {L}
+  return compose(f,g)
+end
+
+"""Span composition given by pullback"""
+function composeV_(f::Span, g::Span)::Span where {T}
+  pbf, pbg = pullback(right(f), left(g))
+  return Span(compose(pbf, left(f)), compose(pbg,right(g)))
+end
+
+function id2_(A::StructuredCospanOb{L})::SCRule{L} where {L}
+  h=idH_(A)
+  v=idV_(A)
+  return SCRule(h,h,h,v,v,v)
+end
+
+"""Pass dummy value in because Span does not retain L type"""
+function id2H_(f::Span,_::StructuredCospanOb{L})::SCRule{L} where {L}
+  l, r   = f
+  V      = L.parameters[1]
+  G      = dom(l)
+  x      = StructuredCospanOb{L}(nparts(G, V))
+  h      = idH_(x)
+  up     = CSetTransformation(G, G; Dict([V=>collect(l[V])])...)
+  down   = CSetTransformation(G, G; Dict([V=>collect(r[V])])...)
+  return SCRule(h,h,h, f, Span(up, down), f)
+end
+
+function id2V_(f::StructuredCospan{L})::SCRule{L} where {L}
+  l,c,r = dom(left(f)), apex(f), dom(right(f))
+  lft   = let x=id(l); Span(x,x) end
+  centr = let x=id(c); Span(x,x) end
+  rght  = let x=id(r); Span(x,x) end
+  return SCRule(f, f, f, lft, centr, rght)
+end
+
+"""    composeH(r₁, r₂)
+
+compose two rewrite rules horizontally as shown below:
+    La → v ← Lα      Lα → p ← Lx     La→ v +(Lα) p ←Lx
+    ↑    ↑    ↑      ↑    ↑    ↑     ↑     ↑         ↑
+    Lb → w ← Lβ  ∘h  Lβ → q ← Ly  =  Lb→ w +(Lβ) q ←Lx
+    ↓    ↓    ↓      ↓    ↓    ↓     ↓     ↓         ↓
+    Lc → t ← Lγ      Lγ → r ← Lz     Lc→ t +(Lγ) r ←Lx
+ """
+function composeH_(r₁::SCRule{L}, r₂::SCRule{L})::SCRule{L} where {L}
+  @assert r₁.right == r₂.left
+  top = compose(r₁.top, r₂.top)
+  middle = compose(r₁.middle, r₂.middle)
+  bottom = compose(r₁.bottom, r₂.bottom)
+  iD, iF = pushout(right(r₁.top), left(r₂.top)); # upper composite
+  iD_, iF_ = pushout(right(r₁.bottom), left(r₂.bottom)); # lower composite
+  colim  = pushout(right(r₁.middle), left(r₂.middle)); # middle composite
+  ad, bf = left(r₁.center), left(r₂.center); # center 'upward' arrows in the square
+  ad_, bf_ = right(r₁.center), right(r₂.center); # center 'upward' arrows in the square
+  upspan = Multicospan([compose(ad,iD), compose(bf,iF)]);
+  downspan = Multicospan([compose(ad_,iD_), compose(bf_,iF_)]);
+  up, down = [universal(colim, sp) for sp in [upspan, downspan]]
+  return SCRule(top, middle, bottom, r₁.left, Span(up, down), r₂.right)
+end
+
+"""    composeV(r₁, r₂)
+
+compose two rewrite rules vertically as shown below:
+    La → v ← Lα      Lc → x ← Lγ
+    ↑    ↑    ↑      ↑    ↑    ↑
+    Lb → w ← Lβ  ∘v  Ld → y ← Lψ
+    ↓    ↓    ↓      ↓    ↓    ↓
+    Lc → x ← Lγ      Le → z ← Lϕ
+
+       La    →    v   ←    Lα
+       ↑          ↑         ↑
+=  L(b ×c d) → w ×x y ← L(β ×γ ψ)
+       ↓          ↓         ↓
+       Le    →    z   ←    Lϕ
+"""
+function composeV_(r₁::SCRule{L}, r₂::SCRule{L})::SCRule{L} where {L}
+  V = L.parameters[1]
+  @assert r₁.bottom == r₂.top
+  lft = composeV(r₁.left, r₂.left);
+  rght = composeV(r₁.right, r₂.right);
+  center = composeV(r₁.center, r₂.center);
+  lim = pullback(right(r₁.center), left(r₂.center));
+  iB,iD = pullback(right(r₁.left), left(r₂.left));
+  iβ,iψ = pullback(right(r₁.right), left(r₂.right));
+  leftspan = Multispan([compose(iB, left(r₁.middle),),
+                        compose(iD, left(r₂.middle))]);
+  rightspan = Multispan([compose(iβ, right(r₁.middle)),
+                         compose(iψ, right(r₂.middle),)]);
+  middleleft = universal(lim, leftspan);
+  middleright = universal(lim, rightspan);
+  middle = StructuredCospan{L}(apex(center), middleleft[V], middleright[V]);
+  return SCRule(r₁.top, middle, r₂.bottom, lft, center, rght)
+end
+
 end

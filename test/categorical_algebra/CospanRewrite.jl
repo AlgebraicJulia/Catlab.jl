@@ -4,6 +4,142 @@ using Catlab.Graphs
 using Catlab.Theories
 using Catlab.CategoricalAlgebra
 using Catlab.CategoricalAlgebra.FinSets: FinFunction
+using Catlab.Present
+
+
+###################
+# Open Petri Nets #
+###################
+
+@present TheoryPetriNet(FreeSchema) begin
+  (T,S,I,O)::Ob
+  it::Hom(I,T)
+  is::Hom(I,S)
+  ot::Hom(O,T)
+  os::Hom(O,S)
+end
+
+const AbstractPetriNet = AbstractACSetType(TheoryPetriNet);
+ns(p::AbstractPetriNet) = nparts(p,:S)
+
+const PetriNet = CSetType(TheoryPetriNet,index=[:it,:is,:ot,:os]);
+const OpenPetriNetOb, OpenPetriNet = OpenCSetTypes(PetriNet,:S);
+
+Open(p::AbstractPetriNet) = OpenPetriNet(p, map(x->FinFunction([x], ns(p)), 1:ns(p))...);
+Open(p::AbstractPetriNet, legs...) = OpenPetriNet(p, map(l->FinFunction(l, ns(p)), legs)...);
+Open(n, p::AbstractPetriNet, m) = Open(p, n, m);
+o1, o2 = OpenPetriNetOb(1), OpenPetriNetOb(2);
+v1, v2 = idV_(o1), idV_(o2);
+
+idH_(o1);
+idV_(o1);
+isquare = id2_(o1);
+composeV_(isquare, isquare)
+
+iv2 = id2H_(v2, o1);
+
+SIR = @acset PetriNet begin # S ->[si]⇉← I → R
+    S = 3 # S I R
+    T = 2 # si ir
+    I = 3
+    O = 3
+    it = [1,1,2]
+    ot = [1,1,2]
+    is = [1,2,2]
+    os = [2,2,3]
+end;
+oSIR = Open([1], SIR, [2,3]);
+ioSIR = id2V_(oSIR);
+
+SEIR = @acset PetriNet begin # S ->[si]⇉← I → R
+    S = 4 # S I R E
+    T = 3 # si ir ei
+    I = 4
+    O = 4
+    it = [1,1,2,3]
+    ot = [1,1,2,3]
+    is = [1,2,2,4]
+    os = [2,4,3,2]
+end;
+oSEIR = Open([1], SEIR, [2,3]);
+# SIR minus one of the infection arrows to I
+# which will instead be going to E
+sirOverlap = @acset PetriNet begin
+    S = 3 # S I R
+    T = 2 # si ir
+    I = 3
+    O = 2
+    it = [1,1,2]
+    ot = [1,2]
+    is = [1,2,2]
+    os = [2,3]
+end;
+osirOverlap = Open([1], sirOverlap, [2,3]);
+sirUp = ACSetTransformation(sirOverlap, SIR,
+    S=[1,2,3],T=[1,2],I=[1,2,3],O=[1,3]);
+sirDown = ACSetTransformation(sirOverlap, SEIR,
+    S=[1,2,3],T=[1,2],I=[1,2,3],O=[1,2]);
+
+expose = SCRule(oSIR, osirOverlap, oSEIR,
+    v1, Span(sirUp, sirDown), v2);
+
+ll1 = left(v1);
+ll2 = left(oSIR);
+lm1 = left(osirOverlap);
+lm2 = left(Span(sirUp, sirDown));
+
+
+IQR = @acset PetriNet begin # I -> Q -> R
+    S = 3 # I Q R
+    T = 2 # iq qr
+    I = 2
+    O = 2
+    it = [1, 2]
+    ot = [1, 2]
+    is = [1, 2]
+    os = [2, 3]
+end;
+oIQR = Open([1,3],IQR, [2]);
+
+IQRescape = @acset PetriNet begin # I ↔ Q -> R
+    S = 3 # I Q R
+    T = 3 # iq qr qi
+    I = 3
+    O = 3
+    it = [1, 2, 3]
+    ot = [1, 2, 3]
+    is = [1, 2, 2]
+    os = [2, 3, 1]
+end;
+oIQRescape = Open([1,3],IQRescape, [2]);
+
+IQRinj = ACSetTransformation(IQR, IQRescape,
+    S=[1,2,3], T=[1,2], I=[1,2], O=[1,2]);
+
+
+escape = SCRule(oIQR, oIQR, oIQRescape,
+    v2, Span(id(IQR), IQRinj), v1);
+
+# WRITE REWRITE RULES FOR THESE TWO COMPONENTS INDIVIDUALLY
+# CAN COMBINE INTO A LARGER REWRITE RULE
+expose_escape = composeH_(expose, escape); # exposes S and Q
+bottom = apex(expose_escape.bottom);
+expected_bottom = @acset PetriNet begin
+    S = 5 # S I R E Q
+    T = 6
+    O = 7
+    I = 7
+         # si ir ei iq qr qi
+    it = [1,1,2, 3, 4, 5, 6]
+    ot = [1,1,2, 3, 4, 5, 6]
+    is = [1,2,2, 4, 2, 5, 5]
+    os = [2,4,3, 2, 5, 3, 2]
+end
+@test is_isomorphic(bottom, expected_bottom)
+
+##########
+# GRAPHS #
+##########
 
 const OpenGraphOb, OpenGraph = OpenCSetTypes(Graph, :V);
 
