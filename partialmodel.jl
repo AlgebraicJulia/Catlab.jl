@@ -258,11 +258,9 @@ function to_combinatorial(mod::Model, fls::FLSketch)::ACSet
             for arr in srcarrs[tab]
                 tgt = G[:tgt][arr]
                 homelem = fks[arr]
-                raw_fk = mod.fks[tgt][orig_index]
+                raw_fk = mod.fks[arr][orig_index]
                 tgt_class = mod.tables[tgt].parents[raw_fk]
                 if haskey(pkdata[tgt],tgt_class)
-                    #println("tgt $tgt pkdata $tgt_class ", pkdata[tgt])
-                    #println(pkdata[tgt][tgt_class])
                     tgt_elem_id = pkdata[tgt][tgt_class][3]
                 else
                     tgt_elem_id = add_part!(res, :Elem)

@@ -5,10 +5,24 @@ using Test
 using Catlab.Graphs
 using Catlab.CategoricalAlgebra
 
-if 1+1==1
-G,H = Graph(4), Graph(4);
-add_edges!(G,[1,2,4,4,3],[2,4,3,3,2]);
-add_edges!(H,[2,3,1,4,4],[1,1,4,3,3]);
+find_models(MonoSketch, [1,2]) # works
+# m = find_models(ReflSketch, [2,3]); # works, but takes a VERY long time
+# find_models(NatNumSketch, [1,1]) # works
+find_models(ReflSketch, [2,3])
+"""
+Look for all instances of BASE first
+
+Then look for possible apexes
+"""
+# put apex first
+# only apex+immediate legs are connected to outerports
+# create boxes for each node
+rel = @relation (v2=v2,v3=v3,v4=v4) begin
+    x1(_id=v2, e2=v4)
+    x1(_id=v3, e2=v4)
+    x2(_id=v4)
+end;
+
 """Create n copies of a CSet based on a graph schema"""
 function init_graphs(schema::CSet, consts::Vector{Int}, n::Int=2)::Vector{CSet}
     cset = graph_to_cset(schema)()
@@ -25,10 +39,11 @@ function test_iso(a::CSet,b::CSet, eq::Bool=true)::Test.Pass
     @test tst(canonical_hash(a) == canonical_hash(b))
 end
 
+
+if 1+1==1
 G,H = init_graphs(Triangle,[2,2,2]);
 for i in 1:3 set_subpart!(G, Symbol("e$i"), [1,1]) end
 for i in 1:3 set_subpart!(H, Symbol("e$i"), [2,2]) end
-test_iso(G,H)
 
 modtrip = to_cset(from_cset(G, true),Triangle, true)
 @test is_isomorphic(modtrip, G)
@@ -140,11 +155,8 @@ modtrip = to_cset(from_cset(G, true),SetPermSketch.G, true)
 end
 
 # START
-m = Model(SetPermSketch, [1]);
-c = to_combinatorial(m, SetPermSketch);
-p = pseudo_cset(c)
-println(c)
-h = canonical_hash(c)
+m = find_models(MonoSketch, [1,1]);
+
 find_models(SetPermSketch, [1])
 
 n_perm = [1,2,3,5] # (1) / (21) / (123) / (123)(45)+(1234)(5)

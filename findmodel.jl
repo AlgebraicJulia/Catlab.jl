@@ -108,12 +108,13 @@ end
 """
 Fill out any info we can from diagrams, detect contradiction
 """
-function check_diagrams!(mod::Model, comm_data::Set{Pair{Vector{Int}, Vector{Int}}})::Pair{Bool,Bool}
+function check_diagrams!(mod::Model, fls::FLSketch, comm_data::Set{Pair{Vector{Int}, Vector{Int}}})::Pair{Bool,Bool}
+    G = fls.G
     change = false
     for (pth1, pth2) in comm_data
-        cset = to_cset(mod) # update in between paths
-        comm_q = paths_to_query(to_graph(mod), pth1, pth2)
-        end_table = mod.tgt[pth1[end]]
+        cset = to_cset(mod, G) # update in between paths
+        comm_q = paths_to_query(G, pth1, pth2)
+        end_table = G[:tgt][pth1[end]]
         for qres in query(cset, comm_q)
             _,p1,p2,l1,l2=qres
             sat, changed = process_query_result!(
@@ -137,21 +138,40 @@ Returns
 function check_limits(mod::Model,
                        fls::FLSketch
                       )::Bool
-    for (_, cone_dia, cone_map) in cone_data(fls)
-        cset = to_cset(mod, fls)
-        cone_q = diagram_to_query(cone_dia)
-        seen = Set()
-        for res in query(cset, cone_q)
-            apexes = process_cone_match!(mod, res, cone_map)
-            if length(apexes) > 1
+    for (apex_tab, legs, cone_q) in cone_data(fls)
+        cset = to_cset(mod, fls.G)
+        apexes_seen = Set()
+        n_apex = nparts(cset, apex_tab)
+        n = nparts(cset, apex_tab)
+        unmatched = false
+        if isempty(legs) # edge case for terminal object: query gen doesn't work
+            if n != 1+1
                 return false
-            elseif length(apexes)==1
-                if res in seen
+            else
+                continue
+            end
+        end
+        for base_inst in query(cset, cone_q)
+            if !(1 in collect(base_inst))
+                apexes = Set(1:n_apex)
+                @assert length(legs) == length(base_inst)
+                for (leg, baseval) in zip(legs, base_inst)
+                    if leg > 0
+                        intersect!(apexes, cset.indices[leg][baseval])
+                    end
+                end
+                la = length(apexes)
+                if la == 0
+                    unmatched = true
+                elseif la > 1
                     return false
                 else
-                    push!(res, seen)
+                    push!(apexes_seen, pop!(apexes))
                 end
             end
+        end
+        if unmatched && length(apexes_seen)== n -1
+            return false
         end
     end
     return true
@@ -167,15 +187,15 @@ function find_models(fls::FLSketch, consts::Vector{Int})#::Vector{Model}
     # precompute cone data here???
 
     function find_models_rec!(mod::Model)
-        println("Mod $mod")
+        if (length(seen) % 100)==0 println(length(seen)) end
         hsh = hash(mod, fls)
         if !(hsh in seen)
             push!(seen, hsh)
-            success, _ = check_diagrams!(mod, comm_qs)
+            success, _ = check_diagrams!(mod, fls, comm_qs)
             if success && check_limits(mod, fls)
                 if is_sat(mod, fls)
-                    println("CANON HASH OF $mod")
-                    canon_hsh = canonical_hash(to_cset(mod, true))
+                    # println("CANON HASH OF $mod")
+                    canon_hsh = canonical_hash(to_cset(mod, fls.G, true))
                     if !(canon_hsh in seen)
                         push!(res, deepcopy(mod))
                         # println("pushed $(length(res))'th model w/ hash $canon_hsh")
@@ -196,7 +216,7 @@ function find_models(fls::FLSketch, consts::Vector{Int})#::Vector{Model}
     PK and map to it.
     """
     function choose!(mod::Model)
-        for (e, tgt) in enumerate(mod.tgt)
+        for (e, tgt) in enumerate(fls.G[:tgt])
             tgt_pks = mod.pks[tgt]
             for (src_index, considered) in enumerate(mod.considered[e])
                 unconsidered = setdiff(tgt_pks, considered)

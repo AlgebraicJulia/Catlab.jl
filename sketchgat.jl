@@ -66,7 +66,7 @@ Homomorphisms of a S sketch in category C are natural transformations btw their 
 #------------------------------------------------
 
 
-T = ACSetTransformation  # for brevity
+T = CSetTransformation  # for brevity
 
 #------------------------------------------------
 
@@ -114,17 +114,27 @@ end;
 Tradeoffs vs a julia data structure? (acsets presumed to be graphs)
 """
 struct FLSketch
-  G::ACSet  # a Graph, arrows are "operations"
+  G::CSet  # a Graph, arrows are "operations"
   D::Vector{T} # diagrams i.e. morphisms to G
   C::Vector{Pair{Int,T}} # apex + edges in G from apex
-end;
-function FLSketch(G::ACSet)
+  function FLSketch(G::CSet,D::Vector{T},C::Vector{Pair{Int,T}})
+    for t in D
+      @assert is_natural(t)
+    end
+    for (_, t) in C
+      @assert is_natural(t)
+    end
+    return new(G,D,C)
+  end
+end
+
+function FLSketch(G::CSet)
   return FLSketch(G,Vector{T}(), Vector{Pair{Int,T}}())
 end
-function FLSketch(G::ACSet, D::Vector{T})
+function FLSketch(G::CSet, D::Vector{T})
   return FLSketch(G,D, Vector{Pair{Int,T}}())
 end
-function FLSketch(G::ACSet, C::Vector{Pair{Int,T}})
+function FLSketch(G::CSet, C::Vector{Pair{Int,T}})
   return FLSketch(G, Vector{T}(), C)
 end
 
@@ -135,7 +145,7 @@ with the cone and its legs removed
 function remove_cone(dia::CSet, apex::Int)::CSet
   res = Graph(nv(dia)-1)
   offset = [i>apex ? i-1 : i for i in 1:nv(dia)]
-  for (src, tgt) in zip(d[:src], d[:tgt])
+  for (src, tgt) in zip(dia[:src], dia[:tgt])
     @assert tgt != apex
     if src != apex
       add_edge!(res, offset[src], offset[tgt])
@@ -149,18 +159,16 @@ Given a cone diagram, what do vertices in the base
 correspond to tables in G? What do edges from the
 apex correspond to (if any)?
 """
-function cone_dia_map(m::T,apex::Int)::Vector{Pair{Int,Int}}
+function cone_dia_map(m::T,apex::Int)::Tuple{Vector{Int},Vector{Int}, Vector{Int}}
   G = dom(m)
   tgttab = [m[:V](i) for i in 1:nv(G) if i!=apex]
-  out = Dict([G[:tgt][e]=>m[:E](e) for e in G.indices[:src][apex]])
+  out = Dict([G[:tgt][leg]=>m[:E](leg)
+              for leg in G.indices[:src][apex]])
   legs = [get(out,i,0) for i in 1:nv(G) if i!=apex]
-  return collect(zip(tgttab, legs))
+  dia_emap = [m[:E](e)  for e in 1:ne(G) if G[:src][e]!=apex]
+  return tgttab, dia_emap, legs
 end
 
-function cone_data(fls::FLSketch)::Vector{Tuple{Int, CSet, Vector{Pair{Int,Int}}}}
-  return [(m[:V](apex), remove_cone(dom(m),apex), cone_data(m, apex))
-          for (apex, m) in fls.C]
-end
 # not all legs from apex need to be defined. Because a valid cone has
 # only ONE arrow to each object in the diagram, it's redundant to
 # specify an arrow from A to C if the diagram already has B->C.
@@ -306,9 +314,10 @@ SemiGrpDe = T(Square,SemiGrpG;V=[s³,s²,s²,s],E=[idk,kid,k,k])
 SemiGrpP2 = T(Span, SemiGrpG;V=[s²,s,s],  E=[π₁, π₂])
 SemiGrpP3 = T(Span3,SemiGrpG;V=[s³,s,s,s],E=[Π₁,Π₂,Π₃])
 
-SemiGrp = FLSketch(SemiGrpG, [
-    SemiGrpDa, SemiGrpDb, SemiGrpDc, SemiGrpDd, SemiGrpDe],
-    [1=>SemiGrpP2, 1 => SemiGrpP3])
+# IS NATURAL VIOLATION
+# SemiGrp = FLSketch(SemiGrpG, T[
+#     SemiGrpDa, SemiGrpDb, SemiGrpDc, SemiGrpDd, SemiGrpDe],
+#     Pair{Int,T}[1=>SemiGrpP2, 1 => SemiGrpP3])
 
 
 #------------------------------------------------
@@ -340,13 +349,15 @@ add_edges!(GroupG, [3,2,1,3,3,4,4,4,2,2,2,2,2,4,4,4,4],
 
 #------------------------------------------------
 # 10.4.3: Monomorphisms
-MonoG = Graph(2)
-add_edges!(MonoG, [1,1], [1,2])
+MonoG = Graph(2) # a b
+add_edges!(MonoG, [1,1], [1,2]) # id, f
 
-MonoCone = T(InwardTri, MonoG,V=[1,1,1,2],E=[2,1,1,2,2])
+MonoCone = T(InwardTri, MonoG,V=[1,2,1,1],E=[2,1,1,2,2])
 MonoSketch=FLSketch(MonoG,
-    [T(Loop,MonoG,V=[1], E=[1])], # force ID arrow
-    [1=>MonoCone])
+    T[T(Loop,MonoG,V=[1], E=[1])], # force ID arrow
+    Pair{Int,T}[1=>MonoCone])
+#------------------------------------------------
+ProdSketch= FLSketch(Span, Pair{Int,T}[1=> id(Span)])
 #------------------------------------------------
 
 GraphG = Graph(2) # V, E
@@ -366,9 +377,10 @@ src_tgt_equal = T(OutwardTri, SimpleGraphG, V=[2,3,1,1], E=[5,1,2,3,4]);
 
 SGcone = T(InwardTri, SimpleGraphG, V=[2,3,2,2],E=[5,6,6,5,5])
 u_monic = T(InwardTri, SimpleGraphG, V=[2,2,2,3],E=[6,5,6,6,5]);
-SimpleGraphSketch = FLSketch(SimpleGraphG,
-    [SGid, src_tgt_equal],
-    [1=>SGcone, 1=>u_monic]);
+# NATURAL FAIL
+# SimpleGraphSketch = FLSketch(SimpleGraphG,
+#     T[SGid, src_tgt_equal],
+#     Pair{Int,T}[1=>SGcone, 1=>u_monic]);
 
 
 #------------------------------------------------
@@ -382,7 +394,7 @@ add_edges!(CatG, [o,a,a,a²,a²,a²,a³,a³,a³,a³, a³, a³, a³, a,    a,   a
                 # u s t π₁ π₂ c  p₁ p₂ p₃ p₁₂ p₂₃ p₁c cp₃ utid idus, ida
 u,s,t,π₁,π₂,c,p₁,p₂,p₃,p₁₂,p₂₃,p₁c,cp₃,utid,idus,ida,v = 1:17
 # There's a clear typo in the second diagram in CTCS
-CD = [
+CD = T[
     T(OutwardTri,     CatG; V=[a³,a²,a,a],    E=[p₁₂,p₁,p₂,π₁,π₂]),
     T(OutwardTri,     CatG; V=[a³,a²,a,a],    E=[p₂₃,p₂,p₃,π₁,π₂]),
     T(SquareTriangle, CatG; V=[a³,a²,a,a²,a], E=[cp₃,p₃,p₁₂,π₂,π₁,c]),
@@ -398,7 +410,7 @@ CLim2G = Graph(6)
 add_edges!(CLim2G, [1,1,1,2,3,3,4],[2,3,4,5,5,6,6])
 CLim2 = T(CLim2G, CatG; V=[a³,a,a,a,o,o], E=[p₁,p₂,p₃,s,t,s,t])
 
-CatSketch= FLSketch(CatG, CD, [1 => CLim1, 1 => CLim2])
+CatSketch= FLSketch(CatG, CD, Pair{Int,T}[1 => CLim1, 1 => CLim2])
 
 
 
