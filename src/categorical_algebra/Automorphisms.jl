@@ -25,12 +25,11 @@ function pseudo_cset(g::ACSet{CD,AD})::Tuple{CSet, Vector{Vector{Any}}} where {C
     attrvals = [Set() for _ in 1:length(dtabs)]
     for (arr, s, t) in zip(darrs, dsrc, dtgt)
         add_generator!(pres, Hom(arr, xobs[s], xobs[t+n]))
-        union!(attrvals[s], Set(g[arr]))
+        union!(attrvals[t], Set(g[arr]))
     end
     attrvals = Vector{Any}[sort(collect(x)) for x in attrvals]
     ctype =  ACSetType(pres, index=vcat(arrs,darrs))
     res = ctype()
-    println("attrvals $attrvals")
     for t in tabs add_parts!(res, t, nparts(g,t)) end
     for (i,t) in enumerate(dtabs) add_parts!(res, t, length(attrvals[i])) end
     for a in arrs set_subpart!(res, a, g[a]) end
