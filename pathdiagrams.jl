@@ -100,7 +100,7 @@ Create a CSet type specified by a graph
 Vertices are x₁,x₂,..., edges are e₁, e₂,...
 all edges are indexed
 """
-function graph_to_cset(grph::CSet)::Type
+function graph_to_cset(grph::Graph)::Type
     pres = Presentation(FreeSchema)
     xobs = [Ob(FreeSchema,xs(i)) for i in 1:nv(grph)]
     for x in xobs

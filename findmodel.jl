@@ -88,15 +88,18 @@ function process_query_result!(mod::Model,
     pth2_end = isempty(pth2) ? 0 : pth2[end]
     null_pen, null_end = nullp2 || nullp1, null1 || null2
     # println("nullp1 $nullp1, nullp2 $nullp2, null1 $null1, null2 $null2")
-    if !null_pen && (null1 ⊻ null2)  # can propagate info
+    if !null_pen # we can only do stuff if everything is known up to penultimate
+        if null_end  # can propagate info or union two unknowns
         union_fk!(mod, end_table,
                   pth1[end],   # the last edge in path 1
                   penult1-1,   # Factor in the NULL dummy val
                   pth2_end,    # last edge in path 2, if any
                   penult2-1)
-        change, sat = true, 1
-    elseif !null_end  # can check for contradiction
-        sat = last1 == last2 ? 1 : -1
+        change = true
+        sat = null1 && null2 ? 0 : 1
+        else  # both known, can check for contradiction
+            sat = last1 == last2 ? 1 : -1
+        end
     else
         sat = 0
     end
@@ -112,7 +115,7 @@ function check_diagrams!(mod::Model, comm_data::Set{Pair{Vector{Int}, Vector{Int
         comm_q = paths_to_query(to_graph(mod), pth1, pth2)
         end_table = mod.tgt[pth1[end]]
         for qres in query(cset, comm_q)
-            _,p1,p2,l1,l2=qres 
+            _,p1,p2,l1,l2=qres
             sat, changed = process_query_result!(
                 mod, end_table, pth1, pth2, [p1,p2,l1,l2])
             if sat==-1 return false => false end # FAIL
@@ -124,85 +127,37 @@ end
 
 
 """
-Look at each limit cone and check if its diagram is satisfied.
-It can either be known satisfied, known unsat, or unknown.
+Look at each limit cone, call process_cone_match!
+on each matching instance in the model.
 
-If any element points to a known unsat, then the model is unsat.
-
-Return dictionary for each limit object and a set of indices
-for PKs whose diagrams are known sat.
+Returns
+- whether the model has *all* cones satisfied
+- whether the model is unsat
 """
-function check_limits!(mod::Model,
-                       c_data::Vector{Pair{Int, ACSetTransformation}}
-                      )::Tuple{Bool, Dict{Int,Vector{Int}}}
-    res = Dict{Int,Vector{Int}}()
-    change = false
-    for (cone_ind, cone_map) in c_data
-        cset = to_cset(mod)
-        cone_tab = cone_map[:V](cone_ind)
-        # initially assume all cones are known sat
-        res[cone_tab] = ones(Int, nparts(cset, cone_tab)-1)
-        for (p1, p2) in comm_paths_m(cone_map, start=cone_ind)
-            pq = paths_to_query(schema, p1,p2)
-            end_table = mod.tgt[p1[end]]
-            for qres in map(collect,query(cset, pq))
-                if qres[1] > 1
-                    sat, changed = process_query_result!(
-                        mod, end_table, p1, p2, qres[2:end])
-                    change = change || changed
-                    i = qres[1] - 1
-                    res[cone_tab][i] = min(sat, res[cone_tab][i])
+function check_limits(mod::Model,
+                       fls::FLSketch
+                      )::Bool
+    for (_, cone_dia, cone_map) in cone_data(fls)
+        cset = to_cset(mod, fls)
+        cone_q = diagram_to_query(cone_dia)
+        seen = Set()
+        for res in query(cset, cone_q)
+            apexes = process_cone_match!(mod, res, cone_map)
+            if length(apexes) > 1
+                return false
+            elseif length(apexes)==1
+                if res in seen
+                    return false
+                else
+                    push!(res, seen)
                 end
             end
         end
     end
-    # repackage results as indices that are equal to 1
-    r = Dict([k => findall(==(1), v) for (k, v) in collect(res)])
-
-    return change, r
+    return true
 end
 
-"""
-Given a model and data from checking limit diagrams, we can tell
-whether each apex has its diagram satisfied, unsatisfied, or unknown.
-
-We want to check whether any FKs anywhere point to an apex that is
-known to not be satisfied (this means the model is overall unsat).
-
-However, if the violating FK is coming itself from a bad apex, then
-it doesn't matter. So we have to process the limits in topological
-order.
-
-Return simplified limit where instead of -1, 0, 1 for each index
-we just have a list of indices that are -1. These are apexes that
-we should definitively pretend as if they don't exist.
-"""
-function limit_unsat(fls::FLSketch, mod::Model, limdata::Dict{Int,Vector{Int}})::Pair{Bool, Dict{Int,Set{Int}}}
-    res = true 
-    cset = to_cset(mod)
-    bad = Dict{Int,Set{Int}}()
-    _, order, _ = limit_order(fls)
-    for tab in order
-        if haskey(limdata, tab)
-            bad[tab] = Set(findall(==(-1), limdata[tab]))
-            for bad_ind in bad[tab]
-                for incident_edge in fls.G.indices[:tgt][tab]
-                    srctab = fls.G[:src][incident_edge]
-                    preimg = mod.indices[incident_edge][bad]
-                    # everything that
-                    for preim in preimg
-                        if !(preim in get(baddata, srctab, []))
-                            return false => bad
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return true => bad
-end 
-
-function find_models(fls::FLSketch, consts::Dict{Int,Int})#::Vector{Model}
+function find_models(fls::FLSketch, consts::Vector{Int})#::Vector{Model}
     # INITIALIZE
     res, seen = Model[], Set{UInt64}()
     modl = Model(fls, consts)
@@ -212,14 +167,13 @@ function find_models(fls::FLSketch, consts::Dict{Int,Int})#::Vector{Model}
     # precompute cone data here???
 
     function find_models_rec!(mod::Model)
-        hsh = hash(mod)
+        println("Mod $mod")
+        hsh = hash(mod, fls)
         if !(hsh in seen)
             push!(seen, hsh)
             success, _ = check_diagrams!(mod, comm_qs)
-            if success
-                changed, limdata = check_limits!(mod, collect(fls.C))
-                sat, limdata = limit_unsat(fls, mod, limdata)
-                if is_sat(mod, limdata)
+            if success && check_limits(mod, fls)
+                if is_sat(mod, fls)
                     println("CANON HASH OF $mod")
                     canon_hsh = canonical_hash(to_cset(mod, true))
                     if !(canon_hsh in seen)
