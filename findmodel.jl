@@ -1,7 +1,7 @@
 include("pathdiagrams.jl");
 include("partialmodel.jl");
 using Catlab.CategoricalAlgebra
-using Base.Iterators: product as prod
+#using Base.Iterators: product as prod
 
 #------------------------------------------------
 # ENUMERATING ALL MODELS PROJECT

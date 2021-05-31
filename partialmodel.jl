@@ -95,20 +95,12 @@ end
 @present TheoryModel(FreeSchema) begin
   (Elem, PK,  HomElem, Considered)::Ob
   Ind::Data
-  obj::Attr(Elem, Ind)    # formerly :eo
-  hom::Attr(HomElem, Ind) # formerly :hefk
-    #   cone::Attr(Cone, Ind)
-    #   leg::Attr(Leg, Ind)
-
-    #   apex::Hom(Cone, Elem)
-    #   legelem::Hom(Leg,HomElem)
-    #   legcone::Hom(Leg,Cone)
+  obj::Attr(Elem, Ind)
+  hom::Attr(HomElem, Ind)
 
   pe::Hom(PK, Elem)
-
   hesrc::Hom(HomElem, PK)
   hetgt::Hom(HomElem, Elem)
-
   che::Hom(Considered, HomElem)
   cpk::Hom(Considered, PK)
 end
