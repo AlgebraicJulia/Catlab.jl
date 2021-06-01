@@ -17,23 +17,21 @@ jobs:
           msg: |-
             ### Review Checklist
 
-            **Style**
-
-            - [ ] Indent width is 2 spaces
-            - [ ] Avoid lines longer than 80 characters
-            - [ ] No functions (&gt;= 3) contain overlapping arguments that are common aspects of a shared concept
-            - [ ] Code is properly split into modules that maximizes isolation of features
+            Does this PR follow the [development guidelines](https://github.com/AlgebraicJulia/Catlab.jl/wiki/Guidelines-for-PR-writers-and-reviewers)? Following is a *partial* checklist:
 
             **Tests**
 
-            - [ ] New features have accompanying unit tests
-            - [ ] Bug fixes have unit tests exposing the bug
-            - [ ] No deletion of unit tests unless explicitly documented in pull request
-            - [ ] New modules have tests and are ultimately called by the test runner (`test/runtests.jl`)
-            - [ ] Code coverage &gt;= 90%, test coverage reduction must be documented in pull request
+            - [ ] New features and bug fixes have unit tests
+            - [ ] New modules have tests that are ultimately called by the test runner (`test/runtests.jl`)
+            - [ ] Existing tests have not been deleted
+            - [ ] Code coverage &gt;= 90% or reduction justified in PR
 
             **Documentation**
 
-            - [ ] All exported functions, types, and constants have docstrings
-            - [ ] Docstrings are written in complete sentences with appropriate capitalization and punctuation
-            - [ ] Citations are provided for constructions and algorithms implemented/inspired from external sources
+            - [ ] All exported functions, types, and constants have docstrings, written in complete sentences
+            - [ ] Citations are given for any constructions, algorithms, or code drawn from external sources
+
+            **Other**
+
+            - [ ] Style guidelines are followed, including indent width 2
+            - [ ] Changes breaking backwards compatibility have been approved
