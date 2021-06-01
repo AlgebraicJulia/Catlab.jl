@@ -26,15 +26,13 @@ also a [#catlab](https://julialang.slack.com/archives/CQNUDDF5L) channel on the
 
 ### Contributing
 
-Catlab is experimental software and is missing many features, big and small.
-Moreover, the computational aspects of category theory are generally
-underdeveloped, both theoretically and practically. On the flip side, this means
-that there are lots of opportunities to do new and interesting things! Applied
-category theory is a young field and is likely to grow significantly.
+Applied category theory is a young and growing field, and Catlab is too the
+subject of ongoing research and development. This means that there are lots of
+opportunities to do new and interesting things!
 
-We welcome contributions and are committed to supporting prospective
-contributors, regardless of experience level with category theory. If you are
-interested in contributing, please let us know.
+We welcome contributions to Catlab, regardless of your experience level with
+category theory or the Julia language. For more information, see the
+[CONTRIBUTING](CONTRIBUTING.md) file.
 
 ## What is Catlab?
 
