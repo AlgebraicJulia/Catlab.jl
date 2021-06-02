@@ -3,50 +3,86 @@ using Catlab.Present
 using Catlab.Theories
 using Base.Iterators: product as cartprod
 using Catlab.CategoricalAlgebra.FinSets: preimage
-include("sketchgat.jl");
+
+T = CSetTransformation  # for brevity
 
 """
 Assume one diagram per vertex in G (first index is the start of paths)
 Assume at most one cone per vertex in G (last index is the apex)
 """
-struct FLS{CD}
-    G::CSet{CD}  # a Graph, arrows are "operations"
+struct FLS
+    G::CSet      # a Graph, arrows are "operations"
     D::Vector{T} # diagrams i.e. morphisms to G.
     C::Vector{T} # apex + edges in G from apex
-    function FLS(G::CSet{CD},D::Vector{T},C::Vector{T}) where {CD}
-      for (i, tt) in enumerate(D)
+    function FLS(G::CSet,D::Vector{T},C::Vector{T})
+      seen = Set()
+      for tt in D
+        start = tt[:V](1)
+        @assert !(start in seen)
+        push!(seen,start)
         @assert codom(tt) == G
         @assert is_natural(tt)
-        @assert nv(dom(tt))==0 || tt[:V](1) == i
       end
+      seen = Set()
+
       for tt in C
+        cone = tt[:V](nv(dom(tt)))
+        @assert !(cone in seen)
+        push!(seen, cone)
         @assert codom(tt) == G
         @assert topological_sort(dom(tt))[1] == nv(dom(tt)) # apex is last
         @assert is_natural(tt)
       end
-      return new{CD}(G,D,C)
+      return new(G,D,C)
     end
   end
 
 function xpk(x::Int)::Symbol
     return Symbol("pk$x")
 end
+
+"""Go from pk edge to the table #"""
 function unpk(x::Symbol)::Int
     s = string(x)
-    @assert s[:2] == "pk"
+    @assert s[1:2] == "pk" s
     return parse(Int, s[3:end])
 end
+"""Go from table # to table name (or name of pk table)"""
 function xs(x::Int, pk::Bool=false)::Symbol
     return Symbol("x$x"*(pk ? "pk" : ""))
 end
+"""Take table name and get table #"""
+function unx(x::Symbol)::Int
+    s = string(x)
+    @assert s[1] == 'x' s
+    return parse(Int, s[2:end])
+end
+"""Take table name and get pk edge"""
+function pkedge(x::Symbol)::Symbol
+    i = unx(x)
+    return Symbol("pk$i")
+end
+function pktab(x::Symbol)::Symbol
+    unx(x)
+    return Symbol(string(x)*"pk")
+end
+
 function xs(xx::AbstractVector{Int},pk::Bool=false)::Vector{Symbol}
-    return [Symbol("x$x",pk) for x in xx]
+    return [xs(x,pk) for x in xx]
 end
 function es(x::Int)::Symbol
     return Symbol("e$x")
 end
 function es(xx::AbstractVector{Int})::Vector{Symbol}
     [Symbol("e$x") for x in xx]
+end
+
+function ntabs(_::CSet{CD})::Int where {CD}
+    return count(x->occursin("pk", string(x)), ob(CD))
+end
+
+function narrs(_::CSet{CD})::Int where {CD}
+    return count(x->!occursin("pk", string(x)), hom(CD))
 end
 
 function grph_to_cset(grph::CSet)::CSet
@@ -56,12 +92,12 @@ function grph_to_cset(grph::CSet)::CSet
     for i in 1:nv(grph)
         add_generator!(pres, xobs[i])
     end
+    for (i,(src, tgt)) in enumerate(zip(grph[:src], grph[:tgt]))
+        add_generator!(pres, Hom(es(i), xobs[src], xpks[tgt]))
+    end
     for i in 1:nv(grph)
         add_generator!(pres, xpks[i])
         add_generator!(pres, Hom(xpk(i), xobs[i], xpks[i]))
-    end
-    for (i,(src, tgt)) in enumerate(zip(grph[:src], grph[:tgt]))
-        add_generator!(pres, Hom(es(i), xobs[src], xpks[tgt]))
     end
     alledge = vcat(map(xpk, 1:nv(grph)), es(1:ne(grph)))
     return CSetType(pres, index=alledge)()
@@ -103,28 +139,37 @@ function clean(cset::CSet{CD},
                oname=nothing,
                aname=nothing
               )::CSet where{ CD}
+
     tabs, arrs, src, tgt = ob(CD), hom(CD), dom(CD), codom(CD)
+    println("CLEANING WITH TABS $tabs\nAND ARRS $arrs")
+    n_tab, n_arr = ntabs(cset), narrs(cset)
+    n_map = [findfirst(==(xs(i)), tabs) for i in 1:n_tab]
+    e_map = [findfirst(==(es(i)), arrs) for i in 1:n_arr]
+    # n_map_rev = Dict([s=>(s[(end-1):end] == "pk" ? parse(Int,s[2:end-2]) : parse(Int,s[2:end]))
+    #                   for s in map(string,tabs)])
     pres = Presentation(FreeSchema)
-    n = findfirst(x->occursin("pk", string(x)), collect(tabs)) - 1
-    newarrs = collect(arrs)[n+1:end]
-    xobs = [Ob(FreeSchema,xs(i)) for i in 1:n]
+    newarrs = es(1:n_arr)
+    xobs = [Ob(FreeSchema,xs(i)) for i in 1:n_tab]
     for x in xobs
         add_generator!(pres, x)
     end
-    for (a, ss, tt) in collect(zip(arrs,src,tgt))[n+1:end]
-        add_generator!(pres, Hom(a, xobs[ss], xobs[tt-n]))
+    for i in 1:n_arr
+        ss, tt = src[i],tgt[i]
+        targ = tt - n_tab
+        add_generator!(pres, Hom(es(i), xobs[ss], xobs[targ]))
     end
 
     res = CSetType(pres, index=newarrs)()
     order = Vector{Int}[]
     # Copy the data
-    for (tabind, tt) in enumerate(tabs[1:n])
-        ncomp = nparts(cset, tt)
-        add_parts!(res, tt, ncomp)
+    for tabind in 1:n_tab
+        ncomp = nparts(cset, xs(tabind))
+        add_parts!(res, xs(tabind), ncomp)
         push!(order, [findfirst(==(i), cset[xpk(tabind)]) for i in 1:ncomp])
     end
-    for (ss, a) in collect(zip(src,arrs))[n+1:end]
-        set_subpart!(res, a, cset[a][order[ss]])
+    for arr_ind in 1:n_arr
+        ss = src[arr_ind]
+        set_subpart!(res, es(arr_ind), cset[es(arr_ind)][order[ss]])
     end
 
     return rename(res, oname, aname)
@@ -137,7 +182,8 @@ function diagram_to_cset!(trans::CSetTransformation, res::CSet
     for (src_ind, tgt_ind) in enumerate(collect(trans[:V]))
         # there is no need to create anything more than a PK reference
         # for something that is merely a target
-        x = src_ind in G[:src] ? add_part!(res, xs(tgt_ind)) : 0
+        #x = src_ind in G[:src] ? add_part!(res, xs(tgt_ind)) : 0
+        x = add_part!(res, xs(tgt_ind))
         px = add_part!(res, xs(tgt_ind,true))
         push!(sref, x)
         push!(tref, px)
@@ -154,20 +200,17 @@ end
 Asssume FLS has one diagram per component (if any) with the root
 being index 1.
 
-Returns a diagram
+Returns a diagram AND information about which nodes correspond
+to the starting point.
 """
-function diagram_data(fls::FLS)::Tuple{CSet,Vector{Int}}
+function diagram_data(fls::FLS;free::Bool=true)::Tuple{CSet,Dict{Symbol, Int}}
     res = grph_to_cset(fls.G)
-    start = Int[]
-    for (_, trans) in enumerate(collect(fls.D))
-        if nv(dom(trans)) == 0
-            push!(start, 0)
-        else
-            sref, _ = diagram_to_cset!(trans, res)
-            push!(start, sref[1])
-        end
+    start = Dict{Symbol, Int}()
+    for trans in fls.D
+        sref, _ = diagram_to_cset!(trans, res)
+        start[xs(trans.components[:V](1))] = sref[1]
     end
-    freecomplete!(fls.G, res)
+    if free freecomplete!(fls.G, res) end
     return res, start
 end
 
@@ -192,10 +235,10 @@ Therefore, given a `res` from querying the base diagram, the apex must
   be the unique inhabitant of the intersection of the preimages for
   each edge e (for element `res[i]``)
 """
-function cone_data(fls::FLS)::Tuple{Vector{Int}, Vector{CSet}, Vector{Vector{Tuple{Int,Int,Int}}}}
-    if isempty(fls.C) return Int[], CSet[], Vector{Tuple{Int,Int,Int}}[] end
-    function cone_datum(dia::T)::Tuple{Int, CSet, Vector{Tuple{Int,Int,Int}}}
-        apextab = dia[:V](nv(dom(dia)))
+function cone_data(fls::FLS)::Tuple{Vector{Symbol}, Vector{CSet}, Vector{Vector{Tuple{Symbol,Symbol,Int}}}}
+    if isempty(fls.C) return Int[], CSet[], Vector{Tuple{Symbol,Symbol,Int}}[] end
+    function cone_datum(dia::T)::Tuple{Symbol, CSet, Vector{Tuple{Symbol,Symbol,Int}}}
+        apextab = xs(dia[:V](nv(dom(dia))))
         newdom = deepcopy(dom(dia))
         cone_edges = collect(newdom.indices[:src][nv(newdom)])
         cone_tgts = [newdom[:tgt][e] for e in cone_edges]
@@ -208,7 +251,7 @@ function cone_data(fls::FLS)::Tuple{Vector{Int}, Vector{CSet}, Vector{Vector{Tup
                           img = CSetTransformation(newdom, codom(dia); new_comps...)
         base = grph_to_cset(fls.G)
         vind, _ = diagram_to_cset!(img, base)
-        legdata = [(dia[:V](tt), dia[:E](e), vind[tt])
+        legdata = [(xs(dia[:V](tt)), es(dia[:E](e)), vind[tt])
                    for (e, tt) in zip(cone_edges, cone_tgts)]
         freecomplete!(codom(dia), base)
 
@@ -243,20 +286,26 @@ function init_grph(grph::CSet, init::Vector{Int})::CSet
     return res
 end
 
-
 """
 Given a morphism from the cone diagram to the model, find what are the
 possible apexes
 """
 function get_apexes(G::CSet,
-                    h::Vector{Vector{Int}},
-                    apextab::Int,
-                    legdata::Vector{Tuple{Int,Int,Int}}
+                    h::Dict{Symbol,Vector{Int}},
+                    apextab::Symbol,
+                    legdata::Vector{Tuple{Symbol,Symbol,Int}}
                    )::Vector{Int}
     res = Set(1:nparts(G,apextab)) # anything is possible
+    #println("G $G")
     for (ctab, cleg, cind) in collect(legdata)
-        cval = h[ctab][cind]
-        intersect!(res, G.indices[cleg][G[xpk(ctab)][cval]])
+        cpk_edge = pkedge(ctab)
+        if cind > 0
+            cval = h[ctab][cind]
+            #println("ctab $ctab cleg $cleg cind $cind cval $cval ")
+            cpk = G[cpk_edge][cval]
+            #println("G[xpk(ctab)][cval] $(G[xpk(ctab)][cval]) \n\tcpk $cpk \n\tG.indices[cleg] $(G.indices[cleg])")
+            intersect!(res, G.indices[cleg][cpk])
+        end
     end
     return collect(res)
 end
@@ -274,62 +323,107 @@ instantly (no further decisions will undo that).
 
 """
 function limitcheck(cset::CSet{CD},
-                    apextabs::Vector{Int},
+                    apextabs::Vector{Symbol},
                     bases::Vector{CSet},
-                    legdatas::Vector{Vector{Tuple{Int,Int,Int}}}
+                    legdatas::Vector{Vector{Tuple{Symbol,Symbol,Int}}}
                    )::Tuple{CSet, Bool} where {CD}
-    ntab = length(ob(CD))
+    verbose = false
+
     cset = deepcopy(cset)
+    to_delete = Dict{Symbol, Set{Int}}()
     for (apextab, conebase, legdata) in zip(apextabs,bases, legdatas)
         napex = nparts(cset, apextab)
-        apexpk = xpk(apextab)
+        apex_pk, apex_pk_edge = pktab(apextab), pkedge(apextab)
         baseres = map(getcomps, homomorphisms(conebase, cset))
-        if isempty(baseres) && napex != 0 # edge case
-            return cset, true
+        @assert length(baseres) == length(Set(baseres))
+        if isempty(baseres)  # edge case
+            if napex != 0
+                return cset, true
+            else
+                continue
+            end
         else
             apexes  = [get_apexes(cset, br, apextab, legdata) for br in baseres]
-            dup_apexes, seen_bases = Set{Int}(), Set()
+            dup_apexes, seen_bases,  = Set{Int}(), Set()
+            apex_pks, all_apex = Set(), Set()
+
+            # Look for duplicate apexes
+            # If two apex PKs are completely determined, then they should only
+            # appear once when iterating through base results (note this assumes
+            # base_res has unique values). When we see multiple, we flag all but
+            # the first for deletion.
             for (ap, br) in zip(apexes, baseres)
                 for a in ap
                     if br in seen_bases
                         push!(dup_apexes, a)
                     end
-                    if length(cset.indices[apexpk][cset[apexpk][a]]) == 1
+                    pkval = cset[apex_pk_edge][a]
+                    push!(apex_pks, pkval)
+                    push!(all_apex, a)
+                    if length(cset.indices[apex_pk_edge][pkval]) == 1
                         push!(seen_bases, br)
                     end
                 end
             end
 
-            # fail if there's any element in apextab that can't be an apex for anything
-            all_apex = isempty(apexes) ? Set{Int}() : union(apexes...)
             useless_apex = setdiff(Set(1:napex), all_apex)
-            apex_pks = Set([cset[apexpk][a] for a in all_apex])
-            cset = rem(cset, apextab, useless_apex ∪ dup_apexes)
+            delapex = useless_apex ∪ dup_apexes
 
-            dangling_apex = length(apex_pks) < nparts(cset, xs(apextab, true))
-
-            if dangling_apex
-                return cset, true
-            elseif any(isempty, apexes) # WE HAVE DANGLING BASE!
-                allknown = true
-                for base in baseres
-                    for (ctab, _, cind) in legdata
-                        pkfk = xpk(ctab)
-                        val = base[ctab][cind]
-                        key = cset.indices[pkfk][cset[pkfk][val]]
-                        if length(key) > 1
-                            allknown = false
+            # we've flagged rows of the apex table (say, C) to delete
+            # but if one of the cone legs is to C itself, then looking
+            # up the apex may hit a deleted index.
+            self_legs = [leg for (ctab, leg, _) in legdata if ctab == apextab]
+            # Iteratively add to delapex until convergence.
+            # Delete an apex row if its parent cone has been deleted
+            n_delapex = -1
+            while n_delapex != length(delapex)
+                n_delapex = length(delapex)
+                for non_del_apex in setdiff(1:napex, delapex)
+                    non_del_pk = cset[apex_pk_edge][non_del_apex]
+                    for self_leg in self_legs
+                        parents = cset.indices[self_leg][non_del_pk]
+                        if all(p->p ∈ delapex, parents)
+                            push!(delapex,non_del_apex)
                         end
                     end
                 end
-                if allknown
-                    # println("dangling base")
-                    return cset, true
+            end
+
+            # new_cone_inds = reindex(napex, sort(collect(delapex)))
+            to_delete[apextab] = delapex
+            dangling_apex = length(apex_pks) < nparts(cset, apex_pk)
+            if dangling_apex
+                if verbose println("DANGLING APEX") end
+                return cset, true
+            else
+                if any(isempty, apexes) # WE HAVE DANGLING BASE!
+                    allknown = true
+                    for base in baseres
+                        for (ctab, _, cind) in legdata
+                            pkfk = pkedge(ctab)
+                            val = base[ctab][cind]
+                            key = cset.indices[pkfk][cset[pkfk][val]]
+                            if length(key) > 1
+                                allknown = false
+                            end
+                        end
+                    end
+                    if allknown
+                        if verbose println("dangling base") end
+                        return cset, true
+                    end
                 end
             end
         end
     end
-    return cset, false
+
+    return rem(cset, to_delete), false
+end
+
+function pklengths(cset::CSet)::Vector{Vector{Int}}
+    n = ntabs(cset)
+    pks = [cset.indices[xpk(i)] for i in 1:n]
+    return [map(length,x) for x in pks]
 end
 
 """
@@ -343,7 +437,8 @@ function search(fls::FLS,
                 guess::Union{Nothing,CSet}=nothing;
                 verbose=false
                )::Vector{CSet}
-
+    @assert all(x->x>=0, consts)
+    @assert length(consts) == nv(fls.G)
     seen, res = Set(), Set()
     init = guess===nothing ? init_grph(fls.G, consts) : guess
     diagram_cset, start = diagram_data(fls)
@@ -354,6 +449,7 @@ function search(fls::FLS,
     if 1 path is completely known, infer the other."""
     function search_rec(cset::CSet, depth::Int)::Nothing
         if length(res) == n return nothing end
+        # LOOK AT COMMUTATIVE DIAGRAMS
         hres = map(getcomps, homomorphisms(diagram_cset, cset));
         dstr = repeat("\t", depth)
         todelete = elim(cset, start, hres)
@@ -382,11 +478,11 @@ function search(fls::FLS,
             return nothing
         end
 
-        pks = [ncset.indices[xpk(i)] for i in 1:nv(fls.G)]
-        lens = [map(length,x) for x in pks]
+
+        lens = pklengths(ncset)
         ((nmax, pkmax), tabmax) = findmax(map(x->isempty(x) ? (1,1) : findmax(x), lens))
         if minimum(map(x->isempty(x) ? 1 : minimum(x), lens)) < 1
-            if verbose println(dstr*"unsat") end
+            if verbose println(dstr*"unsat $lens") end
             return nothing
         elseif nmax == 1
             push!(res, ncset)
@@ -406,12 +502,21 @@ function search(fls::FLS,
     return collect(res)
 end
 
+function search(fls::FLS, consts::Vector{Int},onames::Vector{Symbol}, anames::Vector{Symbol})
+    res = search(fls, consts)
+    return [clean(r, onames, anames) for r in res]
+end
+
 """Determine which elements to eliminate based on diagram homomorphism result data"""
-function elim(cset::CSet, start::Vector{Int}, results::Vector{Vector{Vector{Int64}}})::Vector{Set{Int}}
-    res = Dict{Symbol, Vector{Int}}()
-    keep = [i == 0 ? Set(1:nparts(cset, tab)) : Set([res[tab][i] for res in results])
-            for (tab, i) in enumerate(start)]
-    return [setdiff(Set(1:nparts(cset, tab)), k) for (tab,k) in enumerate(keep)]
+function elim(cset::CSet, start::Dict{Symbol, Int}, results::Vector{Dict{Symbol,Vector{Int}}})::Dict{Symbol, Set{Int}}
+    n_tab = ntabs(cset)
+    if length(results) == 0
+        return Dict([tab=>Set(1:nparts(cset, tab)) for tab in xs(1:n_tab)])
+    end
+    ks, n = keys(start), ntabs(cset)
+    keep = [i=>i ∈ ks ? Set([res[i][start[i]] for res in results]) : 1:nparts(cset, i)
+            for i in xs(1:n)]
+    return Dict([tab=>setdiff(Set(1:nparts(cset, tab)), k) for (tab,k) in collect(keep)])
 end
 
 """
@@ -419,18 +524,17 @@ Remove elements from tables - does not change any fk indices
 so is only valid for tables which have no arrows to them
 OR removing the LAST indices of a table
 """
-function rem(orig::CSet, rem::Vector{Set{Int}})::CSet
+function rem(orig::CSet, rem::Dict{Symbol, Set{Int}})::CSet
     res = deepcopy(orig)
-    for (comp, reminds) in enumerate(rem)
-        # println("remove comp$comp reminds $reminds")
-        rem_parts!(res, xs(comp), sort(collect(reminds)))
+    for (comp, reminds) in collect(rem)
+        rem_parts!(res, comp, sort(collect(reminds)))
     end
     return res
 end
 """Single table version of `rem`"""
-function rem(orig::CSet, tab::Int, rem::Set{Int})::CSet
+function rem(orig::CSet, tab::Symbol, rem::Set{Int})::CSet
     res = deepcopy(orig)
-    rem_parts!(res, xs(tab), sort(collect(rem)))
+    rem_parts!(res, tab, sort(collect(rem)))
     return res
 end
 
@@ -442,13 +546,32 @@ function choose(orig::CSet{CD}, tab::Int, pk::Int, choice::Int)::Tuple{CSet{CD},
     chosen = orig.tables[tab][pks[choice]]
     @assert 0 < choice <= length(pks)
     delinds = Set([p for (i, p) in enumerate(pks) if i!= choice])
-    return rem(orig, tab, delinds), chosen
+    return rem(orig, xs(tab), delinds), chosen
 end
 
 """Extract the mapping data of a CSet CSetTransformation"""
-function getcomps(x::CSetTransformation)::Vector{Vector{Int}}
-    return [collect(v.func) for v in x.components]
+function getcomps(x::CSetTransformation)::Dict{Symbol,Vector{Int}}
+    cs = keys(x.components)
+    return Dict([c=>collect(v.func) for (c, v) in zip(cs, x.components)])
 end
+
+
+
+function reindex(n::Int, removed::Vector{Int})::Vector{Int}
+    offset, off_counter, o_index = [],0,1
+    for i in 1:n
+        while o_index <= length(removed) && removed[o_index] < i
+            if removed[o_index] < i
+            off_counter +=1
+            end
+            o_index += 1
+        end
+    push!(offset, off_counter)
+    end
+    return offset
+end
+
+# These functions below are no longer needed but may be useful
 
 """The image of a CSetTransformation, as a CSet"""
 function image(m::CSetTransformation{CD})::CSet{CD} where {CD}
@@ -476,5 +599,27 @@ function image(m::CSetTransformation{CD})::CSet{CD} where {CD}
     return new
 end
 
+
+"""Remove cleanly - not needed for the FK values b/c nothing points to them"""
+function remove(orig::CSet{CD},rem::Dict{Symbol, Set{Int}})::CSet where {CD}
+    tabs, arrs, src, tgt = ob(CD), hom(CD), dom(CD), codom(CD)
+    res = deepcopy(orig)
+    offsets = Dict{Symbol, Vector{Int}}()
+    saved = Dict{Symbol, Vector{Int}}()
+    for (tab, reminds) in collect(rem)
+        n = nparts(orig, tab)
+        rem_parts!(res, tab, 1:n)
+        add_parts!(res, tab, n - length(reminds))
+        offsets[tab] = reindex(n, sort(collect(reminds)))
+        saved[tab] = [i for i in 1:n if !(i in reminds)]
+    end
+    for (a, s, t) in zip(arrs, src, tgt)
+        srcinds = get(saved, tabs[s], 1:nparts(orig,s))
+        offs = get(offsets, tabs[t], zeros(Int,nparts(orig, t)))
+        new=[val - offs[val] for val in orig[a][srcinds]]
+        set_subpart!(res, a, new)
+    end
+    return res
+end
 
 
