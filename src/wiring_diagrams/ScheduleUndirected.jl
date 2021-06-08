@@ -4,9 +4,15 @@ In category-theoretic terms, this module is about evaluating arbitrary
 composites of morphisms in hypergraph categories.
 """
 module ScheduleUndirectedWiringDiagrams
-export AbstractNestedUWD, AbstractScheduledUWD, NestedUWD, ScheduledUWD,
-  SchedulingAlgorithm, SequentialSchedule,
-  eval_schedule, to_nested_diagram, schedule
+export AbstractNestedUWD,
+  AbstractScheduledUWD,
+  NestedUWD,
+  ScheduledUWD,
+  SchedulingAlgorithm,
+  SequentialSchedule,
+  eval_schedule,
+  to_nested_diagram,
+  schedule
 
 import Base: schedule
 using DataStructures: IntDisjointSets, union!, in_same_set
@@ -40,8 +46,10 @@ diagram's boxes.
 
 See also: [`NestedUWD`](@ref).
 """
-const ScheduledUWD = CSetType(TheoryScheduledUWD,
-  index=[:box, :junction, :outer_junction, :parent, :box_parent])
+const ScheduledUWD = CSetType(
+  TheoryScheduledUWD,
+  index=[:box, :junction, :outer_junction, :parent, :box_parent],
+)
 
 ncomposites(x::AbstractACSet) = nparts(x, :Composite)
 composites(x::AbstractACSet) = parts(x, :Composite)
@@ -70,9 +78,18 @@ Nested UWDs are very similar but not quite identical to Robin Milner's
 
 See also: [`ScheduledUWD`](@ref).
 """
-const NestedUWD = CSetType(TheoryNestedUWD,
-  index=[:box, :junction, :outer_junction,
-         :composite, :composite_junction, :parent, :box_parent])
+const NestedUWD = CSetType(
+  TheoryNestedUWD,
+  index=[
+    :box,
+    :junction,
+    :outer_junction,
+    :composite,
+    :composite_junction,
+    :parent,
+    :box_parent,
+  ],
+)
 
 composite_ports(x::AbstractACSet, args...) = incident(x, args..., :composite)
 composite_junction(x::AbstractACSet, args...) =
@@ -114,7 +131,10 @@ function eval_schedule(f, d::AbstractNestedUWD, generators::AbstractVector)
 
     # Set junctions, normalizing junction IDs to consecutive numbers `1:n`.
     jmap = Dict{Int,Int}()
-    mapj!(j) = get!(jmap, j) do; add_junction!(composite) end
+    mapj!(j) =
+      get!(jmap, j) do
+        add_junction!(composite)
+      end
     for (port, j) in enumerate(Iterators.flatten(juncs))
       set_subpart!(composite, port, :junction, mapj!(j))
     end
@@ -128,10 +148,13 @@ function eval_schedule(f, d::AbstractNestedUWD, generators::AbstractVector)
   # Mutually recursively evaluate children of composite `c`.
   function eval_children(c::Int)
     bs, cs = box_children(d, c), children(d, c)
-    values = isempty(cs) ? generators[bs] : # XXX: Avoid Any[].
-      [ generators[bs]; map(eval_composite, cs) ]
-    juncs = [ [junction(d, ports(d, b)) for b in bs];
-              [composite_junction(d, composite_ports(d, c′)) for c′ in cs] ]
+    values =
+      isempty(cs) ? generators[bs] : # XXX: Avoid Any[].
+      [generators[bs]; map(eval_composite, cs)]
+    juncs = [
+      [junction(d, ports(d, b)) for b in bs]
+      [composite_junction(d, composite_ports(d, c′)) for c′ in cs]
+    ]
     (values, juncs)
   end
 
@@ -163,24 +186,46 @@ function to_nested_diagram(s::AbstractScheduledUWD)
     foreach(add_composite_ports!, children(d, c))
 
     # Get all junctions incident to any child box or child composite.
-    js = unique!(sort!(flat([
-      [ junction(d, ports(d, b)) for b in box_children(d, c) ];
-      [ composite_junction(d, composite_ports(d, c′)) for c′ in children(d, c) ]
-    ])))
+    js = unique!(
+      sort!(
+        flat(
+          [
+            [junction(d, ports(d, b)) for b in box_children(d, c)]
+            [
+              composite_junction(d, composite_ports(d, c′)) for
+              c′ in children(d, c)
+            ]
+          ],
+        ),
+      ),
+    )
 
     # Filter for "outgoing" junctions, namely those incident to any outer port
     # or to any port of a box that is not a descendant of this composite.
-    c_rep = n+c
-    for b in box_children(d, c); union!(sets, c_rep, b) end
-    for c′ in children(d, c); union!(sets, c_rep, n+c′) end
+    c_rep = n + c
+    for b in box_children(d, c)
+      union!(sets, c_rep, b)
+    end
+    for c′ in children(d, c)
+      union!(sets, c_rep, n + c′)
+    end
     js = filter!(js) do j
-      !(all(in_same_set(sets, c_rep, box(d, port))
-            for port in ports_with_junction(d, j)) &&
-        isempty(ports_with_junction(d, j, outer=true)))
+      !(
+        all(
+          in_same_set(sets, c_rep, box(d, port)) for
+          port in ports_with_junction(d, j)
+        ) && isempty(ports_with_junction(d, j, outer=true))
+      )
     end
 
     # Add port for each outgoing junction.
-    add_parts!(d, :CompositePort, length(js), composite=c, composite_junction=js)
+    add_parts!(
+      d,
+      :CompositePort,
+      length(js),
+      composite=c,
+      composite_junction=js,
+    )
   end
 
   # Add ports to each composite, starting at roots.
@@ -206,24 +251,30 @@ struct SequentialSchedule <: SchedulingAlgorithm end
 
 By default, a simple sequential schedule is used.
 """
-function schedule(d::AbstractUWD;
-                  alg::SchedulingAlgorithm=SequentialSchedule(), kw...)
+function schedule(
+  d::AbstractUWD;
+  alg::SchedulingAlgorithm=SequentialSchedule(),
+  kw...,
+)
   schedule(d, alg; kw...)
 end
 
-function schedule(d::AbstractUWD, ::SequentialSchedule;
-                  order::Union{AbstractVector{Int},Nothing}=nothing)
+function schedule(
+  d::AbstractUWD,
+  ::SequentialSchedule;
+  order::Union{AbstractVector{Int},Nothing}=nothing,
+)
   if isnothing(order)
     order = boxes(d)
   end
   nb = nboxes(d)
   @assert length(order) == nb
-  nc = max(1, nb-1)
+  nc = max(1, nb - 1)
 
   schedule = ScheduledUWD()
   copy_parts!(schedule, d)
   add_parts!(schedule, :Composite, nc, parent=[2:nc; nc])
-  set_subpart!(schedule, order[1:min(2,nb)], :box_parent, 1)
+  set_subpart!(schedule, order[1:min(2, nb)], :box_parent, 1)
   set_subpart!(schedule, order[3:nb], :box_parent, 2:nc)
   schedule
 end

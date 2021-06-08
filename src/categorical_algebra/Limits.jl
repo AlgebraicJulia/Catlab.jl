@@ -1,24 +1,78 @@
 """ Limits and colimits in a category.
 """
 module Limits
-export AbstractLimit, AbstractColimit, Limit, Colimit,
-  LimitAlgorithm, ColimitAlgorithm,
-  ob, cone, cocone, apex, legs, limit, colimit, universal,
-  Terminal, Initial, terminal, initial, delete, create, factorize,
-  BinaryProduct, Product, product, proj1, proj2, pair,
-  BinaryPullback, Pullback, pullback,
-  BinaryEqualizer, Equalizer, equalizer, incl,
-  BinaryCoproduct, Coproduct, coproduct, coproj1, coproj2, copair,
-  BinaryPushout, Pushout, pushout,
-  BinaryCoequalizer, Coequalizer, coequalizer, proj,
-  ComposeProductEqualizer, ComposeCoproductCoequalizer
+export AbstractLimit,
+  AbstractColimit,
+  Limit,
+  Colimit,
+  LimitAlgorithm,
+  ColimitAlgorithm,
+  ob,
+  cone,
+  cocone,
+  apex,
+  legs,
+  limit,
+  colimit,
+  universal,
+  Terminal,
+  Initial,
+  terminal,
+  initial,
+  delete,
+  create,
+  factorize,
+  BinaryProduct,
+  Product,
+  product,
+  proj1,
+  proj2,
+  pair,
+  BinaryPullback,
+  Pullback,
+  pullback,
+  BinaryEqualizer,
+  Equalizer,
+  equalizer,
+  incl,
+  BinaryCoproduct,
+  Coproduct,
+  coproduct,
+  coproj1,
+  coproj2,
+  copair,
+  BinaryPushout,
+  Pushout,
+  pushout,
+  BinaryCoequalizer,
+  Coequalizer,
+  coequalizer,
+  proj,
+  ComposeProductEqualizer,
+  ComposeCoproductCoequalizer
 
 using AutoHashEquals
 
 using ...Theories
-import ...Theories: ob, terminal, product, proj1, proj2, equalizer, incl,
-  initial, coproduct, coproj1, coproj2, coequalizer, proj,
-  delete, create, pair, copair, factorize
+import ...Theories:
+  ob,
+  terminal,
+  product,
+  proj1,
+  proj2,
+  equalizer,
+  incl,
+  initial,
+  coproduct,
+  coproj1,
+  coproj2,
+  coequalizer,
+  proj,
+  delete,
+  create,
+  pair,
+  copair,
+  factorize
 using ..FreeDiagrams
 import ..FreeDiagrams: apex, legs
 
@@ -44,7 +98,7 @@ Base.length(lim::AbstractLimit) = length(cone(lim))
 """ Limit in a category.
 """
 @auto_hash_equals struct Limit{Ob,Diagram,Cone<:Multispan{Ob}} <:
-    AbstractLimit{Ob,Diagram}
+                         AbstractLimit{Ob,Diagram}
   diagram::Diagram
   cone::Cone
 end
@@ -87,7 +141,7 @@ Base.length(colim::AbstractColimit) = length(cocone(colim))
 """ Colimit in a category.
 """
 @auto_hash_equals struct Colimit{Ob,Diagram,Cocone<:Multicospan{Ob}} <:
-    AbstractColimit{Ob,Diagram}
+                         AbstractColimit{Ob,Diagram}
   diagram::Diagram
   cocone::Cocone
 end
@@ -162,7 +216,7 @@ initial(T::Type; kw...) = colimit(EmptyDiagram{T}(); kw...)
 To implement for a type `T`, define the method
 `universal(::Terminal{T}, ::SMultispan{0,T})`.
 """
-delete(A::T) where T = delete(terminal(T), A)
+delete(A::T) where {T} = delete(terminal(T), A)
 delete(lim::Terminal, A) = universal(lim, SMultispan{0}(A))
 
 """ Unique morphism out of an initial object.
@@ -170,7 +224,7 @@ delete(lim::Terminal, A) = universal(lim, SMultispan{0}(A))
 To implement for a type `T`, define the method
 `universal(::Initial{T}, ::SMulticospan{0,T})`.
 """
-create(A::T) where T = create(initial(T), A)
+create(A::T) where {T} = create(initial(T), A)
 create(colim::Initial, A) = universal(colim, SMulticospan{0}(A))
 
 """ Product of objects.
@@ -276,8 +330,13 @@ for limits.
 
 See also: [`CompositePushout`](@ref).
 """
-struct CompositePullback{Ob, Diagram<:Multicospan, Cone<:Multispan{Ob},
-    Prod<:Product, Eq<:Equalizer} <: AbstractLimit{Ob,Diagram}
+struct CompositePullback{
+  Ob,
+  Diagram<:Multicospan,
+  Cone<:Multispan{Ob},
+  Prod<:Product,
+  Eq<:Equalizer,
+} <: AbstractLimit{Ob,Diagram}
   diagram::Diagram
   cone::Cone
   prod::Prod
@@ -287,7 +346,7 @@ end
 function limit(cospan::Multicospan, ::ComposeProductEqualizer)
   prod = product(feet(cospan))
   (ι,) = eq = equalizer(map(compose, legs(prod), legs(cospan)))
-  cone = Multispan(map(π -> ι⋅π, legs(prod)))
+  cone = Multispan(map(π -> ι ⋅ π, legs(prod)))
   CompositePullback(cospan, cone, prod, eq)
 end
 
@@ -305,8 +364,13 @@ struct ComposeCoproductCoequalizer <: ColimitAlgorithm end
 
 See also: [`CompositePullback`](@ref).
 """
-struct CompositePushout{Ob, Diagram<:Multispan, Cocone<:Multicospan{Ob},
-    Coprod<:Coproduct, Coeq<:Coequalizer} <: AbstractColimit{Ob,Diagram}
+struct CompositePushout{
+  Ob,
+  Diagram<:Multispan,
+  Cocone<:Multicospan{Ob},
+  Coprod<:Coproduct,
+  Coeq<:Coequalizer,
+} <: AbstractColimit{Ob,Diagram}
   diagram::Diagram
   cocone::Cocone
   coprod::Coprod
@@ -316,7 +380,7 @@ end
 function colimit(span::Multispan, ::ComposeCoproductCoequalizer)
   coprod = coproduct(feet(span))
   (π,) = coeq = coequalizer(map(compose, legs(span), legs(coprod)))
-  cocone = Multicospan(map(ι -> ι⋅π, legs(coprod)))
+  cocone = Multicospan(map(ι -> ι ⋅ π, legs(coprod)))
   CompositePushout(span, cocone, coprod, coeq)
 end
 

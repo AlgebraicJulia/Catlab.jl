@@ -6,10 +6,10 @@ using ...CSetDataStructures: hom
 
 """ Path graph on ``n`` vertices.
 """
-function path_graph(::Type{T}, n::Int; V=(;), E=(;)) where T <: AbstractACSet
+function path_graph(::Type{T}, n::Int; V=(;), E=(;)) where {T<:AbstractACSet}
   g = T()
   add_vertices!(g, n; V...)
-  add_edges!(g, 1:(n-1), 2:n; E...)
+  add_edges!(g, 1:(n - 1), 2:n; E...)
   g
 end
 
@@ -17,7 +17,7 @@ end
 
 When ``n = 1``, this is a loop graph.
 """
-function cycle_graph(::Type{T}, n::Int; V=(;), E=(;)) where T <: AbstractACSet
+function cycle_graph(::Type{T}, n::Int; V=(;), E=(;)) where {T<:AbstractACSet}
   g = T()
   add_vertices!(g, n; V...)
   add_edges!(g, 1:n, circshift(1:n, -1); E...)
@@ -26,7 +26,7 @@ end
 
 """ Complete graph on ``n`` vertices.
 """
-function complete_graph(::Type{T}, n::Int; V=(;)) where T <: AbstractACSet
+function complete_graph(::Type{T}, n::Int; V=(;)) where {T<:AbstractACSet}
   g = T()
   add_vertices!(g, n; V...)
   for i in vertices(g), j in vertices(g)
@@ -41,10 +41,10 @@ end
 
 In the directed case, the edges point outward.
 """
-function star_graph(::Type{T}, n::Int) where T <: AbstractACSet
+function star_graph(::Type{T}, n::Int) where {T<:AbstractACSet}
   g = T()
   add_vertices!(g, n)
-  add_edges!(g, fill(n,n-1), 1:(n-1))
+  add_edges!(g, fill(n, n - 1), 1:(n - 1))
   g
 end
 
@@ -52,15 +52,15 @@ end
 
 In the directed case, the outer cycle is directed and the spokes point outward.
 """
-function wheel_graph(::Type{T}, n::Int) where T <: AbstractACSet
-  g = cycle_graph(T, n-1)
+function wheel_graph(::Type{T}, n::Int) where {T<:AbstractACSet}
+  g = cycle_graph(T, n - 1)
   add_vertex!(g)
-  add_edges!(g, fill(n,n-1), 1:(n-1))
+  add_edges!(g, fill(n, n - 1), 1:(n - 1))
   g
 end
 
 # Should this be exported from `BasicGraphs`?
-@generated is_directed(::Type{T}) where {CD, T<:AbstractACSet{CD}} =
+@generated is_directed(::Type{T}) where {CD,T<:AbstractACSet{CD}} =
   !(:inv in hom(CD))
 
 end

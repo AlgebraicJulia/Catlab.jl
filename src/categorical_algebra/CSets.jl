@@ -1,10 +1,22 @@
 """ Categories of C-sets and attributed C-sets.
 """
 module CSets
-export ACSetTransformation, CSetTransformation, components, force, is_natural,
-  homomorphism, homomorphisms, is_homomorphic,
-  isomorphism, isomorphisms, is_isomorphic, migrate!,
-  generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
+export ACSetTransformation,
+  CSetTransformation,
+  components,
+  force,
+  is_natural,
+  homomorphism,
+  homomorphisms,
+  is_homomorphic,
+  isomorphism,
+  isomorphisms,
+  is_isomorphic,
+  migrate!,
+  generate_json_acset,
+  parse_json_acset,
+  read_json_acset,
+  write_json_acset
 
 using Base.Meta: quot
 using AutoHashEquals
@@ -32,17 +44,21 @@ The subpart must be of kind `Ob`. For indexed subparts, the index is included.
 """
 FinFunction(X::ACSet, name::Symbol) = fin_function(X, Val{name})
 
-@generated function fin_function(X::ACSet{CD,AD,Ts,Idxed},
-    ::Type{Val{name}}) where {CD,AD,Ts,Idxed,name}
+@generated function fin_function(
+  X::ACSet{CD,AD,Ts,Idxed},
+  ::Type{Val{name}},
+) where {CD,AD,Ts,Idxed,name}
   if name ∈ ob(CD)
     quote
       FinFunction(identity, FinSet(X, $(QuoteNode(name))))
     end
   elseif name ∈ hom(CD)
     quote
-      FinFunction(subpart(X, $(QuoteNode(name))),
-                  FinSet(X, $(QuoteNode(codom(CD, name)))),
-                  index=$(name ∈ Idxed ? :(X.indices.$name) : false))
+      FinFunction(
+        subpart(X, $(QuoteNode(name))),
+        FinSet(X, $(QuoteNode(codom(CD, name)))),
+        index=$(name ∈ Idxed ? :(X.indices.$name) : false),
+      )
     end
   else
     throw(ArgumentError("$(repr(name)) not in $(ob(CD)) or $(hom(CD))"))
@@ -56,8 +72,10 @@ of kind `Ob` or `Data`. For indexed subparts, the index is included.
 """
 FinDomFunction(X::ACSet, name::Symbol) = fin_dom_function(X, Val{name})
 
-@generated function fin_dom_function(X::ACSet{CD,AD,Ts,Idxed},
-    ::Type{Val{name}}) where {CD,AD,Ts,Idxed,name}
+@generated function fin_dom_function(
+  X::ACSet{CD,AD,Ts,Idxed},
+  ::Type{Val{name}},
+) where {CD,AD,Ts,Idxed,name}
   if name ∈ ob(CD)
     quote
       n = nparts(X, $(QuoteNode(name)))
@@ -65,12 +83,17 @@ FinDomFunction(X::ACSet, name::Symbol) = fin_dom_function(X, Val{name})
     end
   elseif name ∈ hom(CD) || name ∈ attr(AD)
     quote
-      FinDomFunction(subpart(X, $(QuoteNode(name))),
-                     index=$(name ∈ Idxed ? :(X.indices.$name) : false))
+      FinDomFunction(
+        subpart(X, $(QuoteNode(name))),
+        index=$(name ∈ Idxed ? :(X.indices.$name) : false),
+      )
     end
   else
-    throw(ArgumentError(
-      "$(repr(name)) not in $(ob(CD)), $(hom(CD)), or $(attr(AD))"))
+    throw(
+      ArgumentError(
+        "$(repr(name)) not in $(ob(CD)), $(hom(CD)), or $(attr(AD))",
+      ),
+    )
   end
 end
 
@@ -88,42 +111,66 @@ A C-set transformation has a component for every object in C. When C-sets have
 attributes, the data types are assumed to be fixed. Thus, the naturality axiom
 for data attributes is a commutative triangle, rather than a commutative square.
 """
-@auto_hash_equals struct ACSetTransformation{CD <: CatDesc, AD <: AttrDesc{CD},
-    Comp <: NamedTuple, Dom <: AbstractACSet{CD,AD}, Codom <: AbstractACSet{CD,AD}}
+@auto_hash_equals struct ACSetTransformation{
+  CD<:CatDesc,
+  AD<:AttrDesc{CD},
+  Comp<:NamedTuple,
+  Dom<:AbstractACSet{CD,AD},
+  Codom<:AbstractACSet{CD,AD},
+}
   components::Comp
   dom::Dom
   codom::Codom
 
-  function ACSetTransformation{CD,AD}(components::NamedTuple, X::Dom, Y::Codom) where
-      {Ob, CD <: CatDesc{Ob}, AD <: AttrDesc{CD},
-       Dom <: AbstractACSet{CD,AD}, Codom <: AbstractACSet{CD,AD}}
+  function ACSetTransformation{CD,AD}(
+    components::NamedTuple,
+    X::Dom,
+    Y::Codom,
+  ) where {
+    Ob,
+    CD<:CatDesc{Ob},
+    AD<:AttrDesc{CD},
+    Dom<:AbstractACSet{CD,AD},
+    Codom<:AbstractACSet{CD,AD},
+  }
     @assert keys(components) ⊆ Ob
     coerced_components = NamedTuple{Ob}(
-      coerce_component(ob, get(components, ob) do; Int[] end, X, Y)
-      for ob in Ob)
+      coerce_component(ob, get(components, ob) do
+        Int[]
+      end, X, Y) for ob in Ob
+    )
     new{CD,AD,typeof(coerced_components),Dom,Codom}(coerced_components, X, Y)
   end
 end
 
 function coerce_component(ob::Symbol, f::FinFunction{Int,Int}, X, Y)
-  @assert length(dom(f)) == nparts(X,ob) "Domain error in component $ob"
-  @assert length(codom(f)) == nparts(Y,ob) "Codomain error in component $ob"
+  @assert length(dom(f)) == nparts(X, ob) "Domain error in component $ob"
+  @assert length(codom(f)) == nparts(Y, ob) "Codomain error in component $ob"
   return f
 end
 function coerce_component(ob::Symbol, f, X, Y)::FinFunction{Int,Int}
-  FinFunction(f, nparts(X,ob), nparts(Y,ob))
+  FinFunction(f, nparts(X, ob), nparts(Y, ob))
 end
 
-ACSetTransformation(components, X::Dom, Y::Codom) where
-    {CD, AD, Dom <: AbstractACSet{CD,AD}, Codom <: AbstractACSet{CD,AD}} =
+ACSetTransformation(
+  components,
+  X::Dom,
+  Y::Codom,
+) where {CD,AD,Dom<:AbstractACSet{CD,AD},Codom<:AbstractACSet{CD,AD}} =
   ACSetTransformation{CD,AD}(components, X, Y)
-ACSetTransformation(X::Dom, Y::Codom; components...) where
-    {CD, AD, Dom <: AbstractACSet{CD,AD}, Codom <: AbstractACSet{CD,AD}} =
+ACSetTransformation(
+  X::Dom,
+  Y::Codom;
+  components...,
+) where {CD,AD,Dom<:AbstractACSet{CD,AD},Codom<:AbstractACSet{CD,AD}} =
   ACSetTransformation{CD,AD}((; components...), X, Y)
 
-const CSetTransformation{CD, Comp,
-                         Dom <: AbstractCSet{CD}, Codom <: AbstractCSet{CD}} =
-  ACSetTransformation{CD,AttrDesc{CD,(),(),(),()},Comp,Dom,Codom}
+const CSetTransformation{
+  CD,
+  Comp,
+  Dom<:AbstractCSet{CD},
+  Codom<:AbstractCSet{CD},
+} = ACSetTransformation{CD,AttrDesc{CD,(),(),(),()},Comp,Dom,Codom}
 
 CSetTransformation(components, X::AbstractCSet, Y::AbstractCSet) =
   ACSetTransformation(components, X, Y)
@@ -141,11 +188,11 @@ check the naturality equation on a generating set of morphisms.
 function is_natural(α::ACSetTransformation{CD,AD}) where {CD,AD}
   X, Y = dom(α), codom(α)
   for (f, c, d) in zip(hom(CD), dom(CD), codom(CD))
-    Xf, Yf, α_c, α_d = subpart(X,f), subpart(Y,f), α[c], α[d]
+    Xf, Yf, α_c, α_d = subpart(X, f), subpart(Y, f), α[c], α[d]
     all(Yf[α_c(i)] == α_d(Xf[i]) for i in eachindex(Xf)) || return false
   end
   for (f, c) in zip(attr(AD), adom(AD))
-    Xf, Yf, α_c = subpart(X,f), subpart(Y,f), α[c]
+    Xf, Yf, α_c = subpart(X, f), subpart(Y, f), α[c]
     all(Yf[α_c(i)] == Xf[i] for i in eachindex(Xf)) || return false
   end
   return true
@@ -184,7 +231,8 @@ See also: [`homomorphisms`](@ref), [`isomorphism`](@ref).
 function homomorphism(X::AbstractACSet, Y::AbstractACSet; kw...)
   result = nothing
   homomorphisms(X, Y; kw...) do α
-    result = α; return true
+    result = α
+    return true
   end
   result
 end
@@ -194,11 +242,15 @@ end
 This function is at least as expensive as [`homomorphism`](@ref) and when no
 homomorphisms exist, it is exactly as expensive.
 """
-function homomorphisms(X::AbstractACSet{CD,AD}, Y::AbstractACSet{CD,AD};
-                       kw...) where {CD,AD}
+function homomorphisms(
+  X::AbstractACSet{CD,AD},
+  Y::AbstractACSet{CD,AD};
+  kw...,
+) where {CD,AD}
   results = ACSetTransformation{CD,AD}[]
   homomorphisms(X, Y; kw...) do α
-    push!(results, map_components(deepcopy, α)); return false
+    push!(results, map_components(deepcopy, α))
+    return false
   end
   results
 end
@@ -220,7 +272,8 @@ See [`homomorphism`](@ref) for more information about the algorithms involved.
 function isomorphism(X::AbstractACSet, Y::AbstractACSet)
   result = nothing
   isomorphisms(X, Y) do α
-    result = α; return true
+    result = α
+    return true
   end
   result
 end
@@ -230,10 +283,14 @@ end
 This function is at least as expensive as [`isomorphism`](@ref) and when no
 homomorphisms exist, it is exactly as expensive.
 """
-function isomorphisms(X::AbstractACSet{CD,AD}, Y::AbstractACSet{CD,AD}) where {CD,AD}
+function isomorphisms(
+  X::AbstractACSet{CD,AD},
+  Y::AbstractACSet{CD,AD},
+) where {CD,AD}
   results = ACSetTransformation{CD,AD}[]
   isomorphisms(X, Y) do α
-    push!(results, map_components(deepcopy, α)); return false
+    push!(results, map_components(deepcopy, α))
+    return false
   end
   results
 end
@@ -250,8 +307,13 @@ end
 
 """ Internal state for backtracking search for ACSet homomorphisms.
 """
-struct BacktrackingState{CD <: CatDesc, AD <: AttrDesc{CD},
-    Assign <: NamedTuple, Dom <: AbstractACSet{CD,AD}, Codom <: AbstractACSet{CD,AD}}
+struct BacktrackingState{
+  CD<:CatDesc,
+  AD<:AttrDesc{CD},
+  Assign<:NamedTuple,
+  Dom<:AbstractACSet{CD,AD},
+  Codom<:AbstractACSet{CD,AD},
+}
   """ The current assignment, a partially-defined homomorphism of ACSets. """
   assignment::Assign
   """ Depth in search tree at which assignments were made. """
@@ -264,21 +326,26 @@ struct BacktrackingState{CD <: CatDesc, AD <: AttrDesc{CD},
   codom::Codom
 end
 
-function backtracking_search(f, X::AbstractACSet{CD}, Y::AbstractACSet{CD};
-                             monic::Bool=false, iso::Bool=false) where {Ob, CD<:CatDesc{Ob}}
+function backtracking_search(
+  f,
+  X::AbstractACSet{CD},
+  Y::AbstractACSet{CD};
+  monic::Bool=false,
+  iso::Bool=false,
+) where {Ob,CD<:CatDesc{Ob}}
   # Fail early if no monic/iso exists on cardinality grounds.
   if iso
-    all(nparts(X,c) == nparts(Y,c) for c in Ob) || return false
+    all(nparts(X, c) == nparts(Y, c) for c in Ob) || return false
     # Injections between finite sets are bijections, so reduce to that case.
     monic = true
   elseif monic
-    all(nparts(X,c) <= nparts(Y,c) for c in Ob) || return false
+    all(nparts(X, c) <= nparts(Y, c) for c in Ob) || return false
   end
 
   assignment = NamedTuple{Ob}(zeros(Int, nparts(X, c)) for c in Ob)
   assignment_depth = map(copy, assignment)
-  inv_assignment = monic ?
-    NamedTuple{Ob}(zeros(Int, nparts(Y, c)) for c in Ob) : nothing
+  inv_assignment =
+    monic ? NamedTuple{Ob}(zeros(Int, nparts(Y, c)) for c in Ob) : nothing
   state = BacktrackingState(assignment, assignment_depth, inv_assignment, X, Y)
   backtracking_search(f, state, 0)
 end
@@ -308,7 +375,7 @@ end
 
 """ Find an unassigned element having the minimum remaining values (MRV).
 """
-function find_mrv_elem(state::BacktrackingState{CD}, depth) where CD
+function find_mrv_elem(state::BacktrackingState{CD}, depth) where {CD}
   mrv, mrv_elem = Inf, nothing
   Y = state.codom
   for c in ob(CD), (x, y) in enumerate(state.assignment[c])
@@ -323,8 +390,13 @@ end
 
 """ Check whether element (c,x) can be assigned to (c,y) in current assignment.
 """
-function can_assign_elem(state::BacktrackingState, depth,
-                         ::Type{Val{c}}, x, y) where c
+function can_assign_elem(
+  state::BacktrackingState,
+  depth,
+  ::Type{Val{c}},
+  x,
+  y,
+) where {c}
   # Although this method is nonmutating overall, we must temporarily mutate the
   # backtracking state, for several reasons. First, an assignment can be a
   # consistent at each individual subpart but not consistent for all subparts
@@ -341,10 +413,15 @@ end
 Returns whether the assignment succeeded. Note that the backtracking state can
 be mutated even when the assignment fails.
 """
-@generated function assign_elem!(state::BacktrackingState{CD,AD}, depth,
-                                 ::Type{Val{c}}, x, y) where {CD, AD, c}
-  out_hom = [ f => codom(CD, f) for f in hom(CD) if dom(CD, f) == c ]
-  out_attr = [ f for f in attr(AD) if dom(AD, f) == c ]
+@generated function assign_elem!(
+  state::BacktrackingState{CD,AD},
+  depth,
+  ::Type{Val{c}},
+  x,
+  y,
+) where {CD,AD,c}
+  out_hom = [f => codom(CD, f) for f in hom(CD) if dom(CD, f) == c]
+  out_attr = [f for f in attr(AD) if dom(AD, f) == c]
   quote
     y′ = state.assignment.$c[x]
     y′ == y && return true  # If x is already assigned to y, return immediately.
@@ -356,9 +433,14 @@ be mutated even when the assignment fails.
 
     # Check attributes first to fail as quickly as possible.
     X, Y = state.dom, state.codom
-    $(map(out_attr) do f
-        :(subpart(X,x,$(quot(f))) == subpart(Y,y,$(quot(f))) || return false)
-      end...)
+    $(
+      map(out_attr) do f
+        :(
+          subpart(X, x, $(quot(f))) == subpart(Y, y, $(quot(f))) ||
+          return false
+        )
+      end...
+    )
 
     # Make the assignment and recursively assign subparts.
     state.assignment.$c[x] = y
@@ -366,19 +448,32 @@ be mutated even when the assignment fails.
     if !isnothing(state.inv_assignment)
       state.inv_assignment.$c[y] = x
     end
-    $(map(out_hom) do (f, d)
-        :(assign_elem!(state, depth, Val{$(quot(d))}, subpart(X,x,$(quot(f))),
-                       subpart(Y,y,$(quot(f)))) || return false)
-      end...)
+    $(
+      map(out_hom) do (f, d)
+        :(
+          assign_elem!(
+            state,
+            depth,
+            Val{$(quot(d))},
+            subpart(X, x, $(quot(f))),
+            subpart(Y, y, $(quot(f))),
+          ) || return false
+        )
+      end...
+    )
     return true
   end
 end
 
 """ Unassign the element (c,x) in the current assignment.
 """
-@generated function unassign_elem!(state::BacktrackingState{CD}, depth,
-                                   ::Type{Val{c}}, x) where {CD, c}
-  out_hom = [ f => codom(CD, f) for f in hom(CD) if dom(CD, f) == c ]
+@generated function unassign_elem!(
+  state::BacktrackingState{CD},
+  depth,
+  ::Type{Val{c}},
+  x,
+) where {CD,c}
+  out_hom = [f => codom(CD, f) for f in hom(CD) if dom(CD, f) == c]
   quote
     state.assignment.$c[x] == 0 && return
     assign_depth = state.assignment_depth.$c[x]
@@ -391,10 +486,16 @@ end
       end
       state.assignment.$c[x] = 0
       state.assignment_depth.$c[x] = 0
-      $(map(out_hom) do (f, d)
-          :(unassign_elem!(state, depth, Val{$(quot(d))},
-                           subpart(X,x,$(quot(f)))))
-        end...)
+      $(
+        map(out_hom) do (f, d)
+          :(unassign_elem!(
+            state,
+            depth,
+            Val{$(quot(d))},
+            subpart(X, x, $(quot(f))),
+          ))
+        end...
+      )
     end
   end
 end
@@ -402,7 +503,7 @@ end
 # Category of C-sets
 ####################
 
-@instance Category{ACSet, ACSetTransformation} begin
+@instance Category{ACSet,ACSetTransformation} begin
   dom(α::ACSetTransformation) = α.dom
   codom(α::ACSetTransformation) = α.codom
 
@@ -410,8 +511,11 @@ end
 
   function compose(α::ACSetTransformation, β::ACSetTransformation)
     # Question: Should we incur cost of checking that codom(β) == dom(α)?
-    ACSetTransformation(map(compose, components(α), components(β)),
-                        dom(α), codom(β))
+    ACSetTransformation(
+      map(compose, components(α), components(β)),
+      dom(α),
+      codom(β),
+    )
   end
 end
 
@@ -422,8 +526,12 @@ fin_sets(X::ACSet) = map(table -> FinSet(length(table)), tables(X))
 
 """ Limit of C-sets that stores the pointwise limits in FinSet.
 """
-struct CSetLimit{Ob <: AbstractCSet, Diagram, Cone <: Multispan{Ob},
-                 Limits <: NamedTuple} <: AbstractLimit{Ob,Diagram}
+struct CSetLimit{
+  Ob<:AbstractCSet,
+  Diagram,
+  Cone<:Multispan{Ob},
+  Limits<:NamedTuple,
+} <: AbstractLimit{Ob,Diagram}
   diagram::Diagram
   cone::Cone
   limits::Limits
@@ -431,8 +539,12 @@ end
 
 """ Colimit of attributed C-sets that stores the pointwise colimits in FinSet.
 """
-struct ACSetColimit{Ob <: AbstractACSet, Diagram, Cocone <: Multicospan{Ob},
-                    Colimits <: NamedTuple} <: AbstractColimit{Ob,Diagram}
+struct ACSetColimit{
+  Ob<:AbstractACSet,
+  Diagram,
+  Cocone<:Multicospan{Ob},
+  Colimits<:NamedTuple,
+} <: AbstractColimit{Ob,Diagram}
   diagram::Diagram
   cocone::Cocone
   colimits::Colimits
@@ -441,8 +553,9 @@ end
 # Compute limits and colimits of C-sets by reducing to those in FinSet using the
 # "pointwise" formula for (co)limits in functor categories.
 
-function limit(diagram::AbstractFreeDiagram{ACS}) where
-    {CD <: CatDesc, ACS <: AbstractCSet{CD}}
+function limit(
+  diagram::AbstractFreeDiagram{ACS},
+) where {CD<:CatDesc,ACS<:AbstractCSet{CD}}
   limits = map(limit, unpack_diagram(diagram))
   Xs = cone_objects(diagram)
   Y = ACS()
@@ -465,8 +578,9 @@ function universal(lim::CSetLimit, cone::Multispan)
   CSetTransformation(components, apex(cone), ob(lim))
 end
 
-function colimit(diagram::AbstractFreeDiagram{ACS}) where
-    {CD <: CatDesc, AD <: AttrDesc{CD}, Ts, ACS <: AbstractACSet{CD,AD,Ts}}
+function colimit(
+  diagram::AbstractFreeDiagram{ACS},
+) where {CD<:CatDesc,AD<:AttrDesc{CD},Ts,ACS<:AbstractACSet{CD,AD,Ts}}
   # Colimit of C-set without attributes.
   colimits = map(colimit, unpack_diagram(diagram))
   Xs = cocone_objects(diagram)
@@ -495,7 +609,8 @@ function colimit(diagram::AbstractFreeDiagram{ACS}) where
         else
           val1, val2 = subpart(X, i, attr), something(data[j])
           val1 == val2 || error(
-            "ACSet colimit does not exist: $attr attributes $val1 != $val2")
+            "ACSet colimit does not exist: $attr attributes $val1 != $val2",
+          )
         end
       end
     end
@@ -521,26 +636,29 @@ unpack_diagram(cospan::Multicospan{<:AbstractACSet}) =
 unpack_diagram(para::ParallelMorphisms{<:AbstractACSet}) =
   map(ParallelMorphisms, unpack_components(hom(para)))
 
-function unpack_diagram(d::Union{FreeDiagram{ACS},BipartiteFreeDiagram{ACS}}) where
-    {Ob, CD <: CatDesc{Ob}, ACS <: AbstractACSet{CD}}
-  NamedTuple{Ob}([ map(d, Ob=X -> FinSet(X, ob), Hom=α -> α[ob]) for ob in Ob ])
+function unpack_diagram(
+  d::Union{FreeDiagram{ACS},BipartiteFreeDiagram{ACS}},
+) where {Ob,CD<:CatDesc{Ob},ACS<:AbstractACSet{CD}}
+  NamedTuple{Ob}([map(d, Ob=X -> FinSet(X, ob), Hom=α -> α[ob]) for ob in Ob])
 end
 
 """ Vector of C-sets → named tuple of vectors of FinSets
 """
-unpack_sets(Xs::AbstractVector{<:AbstractACSet{CD}}) where
-    {Ob, CD <: CatDesc{Ob}} =
-  NamedTuple{Ob}([ map(X -> FinSet(X, ob), Xs) for ob in Ob ])
+unpack_sets(
+  Xs::AbstractVector{<:AbstractACSet{CD}},
+) where {Ob,CD<:CatDesc{Ob}} =
+  NamedTuple{Ob}([map(X -> FinSet(X, ob), Xs) for ob in Ob])
 
 """ Vector of C-set transformations → named tuple of vectors of FinFunctions
 """
-unpack_components(αs::AbstractVector{<:ACSetTransformation{CD}}) where
-    {Ob, CD <: CatDesc{Ob}} =
-  NamedTuple{Ob}([ map(α -> α[ob], αs) for ob in Ob ])
+unpack_components(
+  αs::AbstractVector{<:ACSetTransformation{CD}},
+) where {Ob,CD<:CatDesc{Ob}} =
+  NamedTuple{Ob}([map(α -> α[ob], αs) for ob in Ob])
 
 """ Named tuple of vectors of FinFunctions → vector of C-set transformations
 """
-function pack_components(fs::NamedTuple{Ob}, doms, codoms) where Ob
+function pack_components(fs::NamedTuple{Ob}, doms, codoms) where {Ob}
   components = map((x...) -> NamedTuple{Ob}(x), fs...) # XXX: Is there a better way?
   map(ACSetTransformation, components, doms, codoms)
 end
@@ -577,12 +695,17 @@ to the schema for `X`.
 When the functor is the identity, this function is equivalent to
 [`copy_parts!`](@ref).
 """
-function migrate!(Y::ACSet{CD, AD}, X::ACSet,
-                  FOb::AbstractDict, FHom::AbstractDict) where {CD, AD}
-  ob(CD) ⊆ keys(FOb)     || error("Every object in $CD must be a key in $FOb")
-  hom(CD) ⊆ keys(FHom)   || error("Every morphism in $CD must be a key in $FHom")
-  attr(AD) ⊆ keys(FHom)  || error("Every attribute in $AD must be a key in $FHom")
-  
+function migrate!(
+  Y::ACSet{CD,AD},
+  X::ACSet,
+  FOb::AbstractDict,
+  FHom::AbstractDict,
+) where {CD,AD}
+  ob(CD) ⊆ keys(FOb) || error("Every object in $CD must be a key in $FOb")
+  hom(CD) ⊆ keys(FHom) || error("Every morphism in $CD must be a key in $FHom")
+  attr(AD) ⊆ keys(FHom) ||
+    error("Every attribute in $AD must be a key in $FHom")
+
   partsY = NamedTuple{ob(CD)}(map(ob(CD)) do obY
     add_parts!(Y, obY, nparts(X, FOb[obY]))
   end)
@@ -597,28 +720,31 @@ function migrate!(Y::ACSet{CD, AD}, X::ACSet,
   return Y
 end
 
-function (::Type{T})(X::ACSet, FOb::AbstractDict,
-                     FHom::AbstractDict) where T <: AbstractACSet
+function (::Type{T})(
+  X::ACSet,
+  FOb::AbstractDict,
+  FHom::AbstractDict,
+) where {T<:AbstractACSet}
   Y = T()
   migrate!(Y, X, FOb, FHom)
 end
 
 """ Serialize an ACSet object to a JSON string
 """
-function generate_json_acset(x::T) where T <: AbstractACSet
+function generate_json_acset(x::T) where {T<:AbstractACSet}
   JSON.json(x.tables)
 end
 
 """ Deserialize a dictionary from a parsed JSON string to an object of the given ACSet type
 """
-function parse_json_acset(type::Type{T}, input::Dict) where T <: AbstractACSet
+function parse_json_acset(type::Type{T}, input::Dict) where {T<:AbstractACSet}
   out = type()
-  for (k,v) ∈ input
+  for (k, v) in input
     add_parts!(out, Symbol(k), length(v))
   end
-  for l ∈ values(input)
-    for (i, j) ∈ enumerate(l)
-      for (k,v) ∈ j
+  for l in values(input)
+    for (i, j) in enumerate(l)
+      for (k, v) in j
         vtype = eltype(out[Symbol(k)])
         if !(typeof(v) <: vtype)
           v = vtype(v)
@@ -632,19 +758,19 @@ end
 
 """ Deserialize a JSON string to an object of the given ACSet type
 """
-function parse_json_acset(type::Type{T}, input::String) where T <: AbstractACSet
+function parse_json_acset(type::Type{T}, input::String) where {T<:AbstractACSet}
   parse_json_acset(type, JSON.parse(input))
 end
 
 """ Read a JSON file to an object of the given ACSet type
 """
-function read_json_acset(type::Type{T}, input::String) where T <: AbstractACSet
-  parse_json_acset(type, open(f->read(f, String), input))
+function read_json_acset(type::Type{T}, input::String) where {T<:AbstractACSet}
+  parse_json_acset(type, open(f -> read(f, String), input))
 end
 
 """ Serialize an ACSet object to a JSON file
 """
-function write_json_acset(x::T, fname::AbstractString) where T <: AbstractACSet
+function write_json_acset(x::T, fname::AbstractString) where {T<:AbstractACSet}
   open(string(fname), "w") do f
     write(f, generate_json_acset(x))
   end

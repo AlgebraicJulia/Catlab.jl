@@ -1,8 +1,17 @@
 """ The category of finite sets and functions, and its skeleton.
 """
 module FinSets
-export FinSet, FinFunction, FinDomFunction, force, is_indexed, preimage,
-  JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin
+export FinSet,
+  FinFunction,
+  FinDomFunction,
+  force,
+  is_indexed,
+  preimage,
+  JoinAlgorithm,
+  SmartJoin,
+  NestedLoopJoin,
+  SortMergeJoin,
+  HashJoin
 
 using Reexport
 
@@ -42,7 +51,7 @@ FinSet(s::FinSet) = s
 Base.iterate(s::FinSet, args...) = iterate(iterable(s), args...)
 Base.length(s::FinSet) = length(iterable(s))
 Base.in(s::FinSet, elem) = in(s, iterable(s))
-iterable(s::FinSet{Int}) = 1:s.set
+iterable(s::FinSet{Int}) = 1:(s.set)
 iterable(s::FinSet{<:AbstractSet}) = s.set
 
 Base.show(io::IO, s::FinSet) = print(io, "FinSet($(s.set))")
@@ -59,7 +68,7 @@ by the vector [1,3,2,3].
 
 This type is mildly generalized by [`FinDomFunction`](@ref).
 """
-const FinFunction{S, S′, Dom <: FinSet{S}, Codom <: FinSet{S′}} =
+const FinFunction{S,S′,Dom<:FinSet{S},Codom<:FinSet{S′}} =
   SetFunction{Dom,Codom}
 
 FinFunction(f::Function, dom, codom) =
@@ -84,7 +93,7 @@ Sets.show_type(io::IO, ::Type{<:FinFunction}) = print(io, "FinFunction")
 This class of functions is convenient because it is exactly the class that can
 be represented explicitly by a vector of values from the codomain.
 """
-const FinDomFunction{S, Dom<:FinSet{S}, Codom} = SetFunction{Dom,Codom}
+const FinDomFunction{S,Dom<:FinSet{S},Codom} = SetFunction{Dom,Codom}
 
 FinDomFunction(f::Function, dom, codom) =
   SetFunctionCallable(f, FinSet(dom), codom)
@@ -106,13 +115,16 @@ Sets.show_type(io::IO, ::Type{<:FinDomFunction}) = print(io, "FinDomFunction")
 The domain of this function is always of type `FinSet{Int}`, with elements of
 the form ``{1,...,n}``.
 """
-@auto_hash_equals struct FinDomFunctionVector{T,V<:AbstractVector{T},
-    Codom<:SetOb{T}} <: FinDomFunction{Int,FinSet{Int,Int},Codom}
+@auto_hash_equals struct FinDomFunctionVector{
+  T,
+  V<:AbstractVector{T},
+  Codom<:SetOb{T},
+} <: FinDomFunction{Int,FinSet{Int,Int},Codom}
   func::V
   codom::Codom
 end
 
-FinDomFunctionVector(f::AbstractVector{T}) where T =
+FinDomFunctionVector(f::AbstractVector{T}) where {T} =
   FinDomFunctionVector(f, TypeSet{T}())
 
 function FinDomFunctionVector(f::AbstractVector, dom::FinSet{Int}, codom)
@@ -155,21 +167,26 @@ Works in the same way as the special case of [`IndexedFinFunction`](@ref),
 except that the index is typically a dictionary, not a vector.
 """
 struct IndexedFinDomFunction{T,V<:AbstractVector{T},Index,Codom<:SetOb{T}} <:
-    SetFunction{FinSet{Int,Int},Codom}
+       SetFunction{FinSet{Int,Int},Codom}
   func::V
   index::Index
   codom::Codom
 end
 
-IndexedFinDomFunction(f::AbstractVector{T}; kw...) where T =
+IndexedFinDomFunction(f::AbstractVector{T}; kw...) where {T} =
   IndexedFinDomFunction(f, TypeSet{T}(); kw...)
 
-function IndexedFinDomFunction(f::AbstractVector{T}, codom::SetOb{T};
-                               index=nothing) where T
+function IndexedFinDomFunction(
+  f::AbstractVector{T},
+  codom::SetOb{T};
+  index=nothing,
+) where {T}
   if isnothing(index)
     index = Dict{T,Vector{Int}}()
     for (i, x) in enumerate(f)
-      push!(get!(index, x) do; Int[] end, i)
+      push!(get!(index, x) do
+        Int[]
+      end, i)
     end
   end
   IndexedFinDomFunction(f, index, codom)
@@ -188,19 +205,19 @@ force(f::IndexedFinDomFunction) = f
 is_indexed(f::SetFunction) = false
 is_indexed(f::SetFunctionIdentity) = true
 is_indexed(f::IndexedFinDomFunction) = true
-is_indexed(f::FinDomFunctionVector{T,<:AbstractRange{T}}) where T = true
+is_indexed(f::FinDomFunctionVector{T,<:AbstractRange{T}}) where {T} = true
 
 """ The preimage (inverse image) of the value y in the codomain.
 """
 preimage(f::SetFunctionIdentity, y) = SVector(y)
-preimage(f::FinDomFunction, y) = [ x for x in dom(f) if f(x) == y ]
+preimage(f::FinDomFunction, y) = [x for x in dom(f) if f(x) == y]
 preimage(f::IndexedFinDomFunction, y) = get_preimage_index(f.index, y)
 
 @inline get_preimage_index(index::AbstractDict, y) = get(index, y, 1:0)
 @inline get_preimage_index(index::AbstractVector, y) = index[y]
 
-preimage(f::FinDomFunctionVector{T,<:AbstractRange{T}}, y::T) where T =
-  # Both `in` and `searchsortedfirst` are specialized for AbstractRange.
+preimage(f::FinDomFunctionVector{T,<:AbstractRange{T}}, y::T) where {T} =
+# Both `in` and `searchsortedfirst` are specialized for AbstractRange.
   y ∈ f.func ? SVector(searchsortedfirst(f.func, y)) : SVector{0,Int}()
 
 """ Indexed function between finite sets of type `FinSet{Int}`.
@@ -224,7 +241,7 @@ end
 function IndexedFinFunction(f::AbstractVector{Int}, codom; index=nothing)
   codom = FinSet(codom)
   if isnothing(index)
-    index = [ Int[] for j in codom ]
+    index = [Int[] for j in codom]
     for (i, j) in enumerate(f)
       push!(index[j], i)
     end
@@ -234,13 +251,16 @@ function IndexedFinFunction(f::AbstractVector{Int}, codom; index=nothing)
   IndexedFinDomFunction(f, index, codom)
 end
 
-Base.show(io::IO, f::IndexedFinFunction) =
-  print(io, "FinFunction($(f.func), $(length(dom(f))), $(length(codom(f))), index=true)")
+Base.show(io::IO, f::IndexedFinFunction) = print(
+  io,
+  "FinFunction($(f.func), $(length(dom(f))), $(length(codom(f))), index=true)",
+)
 
 # For now, we do not preserve or compose indices, only the function vectors.
-Sets.compose_impl(f::Union{FinFunctionVector,IndexedFinFunction},
-                  g::Union{FinDomFunctionVector,IndexedFinDomFunction}) =
-  FinDomFunctionVector(g.func[f.func], codom(g))
+Sets.compose_impl(
+  f::Union{FinFunctionVector,IndexedFinFunction},
+  g::Union{FinDomFunctionVector,IndexedFinDomFunction},
+) = FinDomFunctionVector(g.func[f.func], codom(g))
 
 # Limits
 ########
@@ -249,16 +269,18 @@ function limit(Xs::EmptyDiagram{<:FinSet{Int}})
   Limit(Xs, SMultispan{0}(FinSet(1)))
 end
 
-function universal(lim::Terminal{<:FinSet{Int}},
-                   cone::SMultispan{0,<:FinSet{Int}})
+function universal(
+  lim::Terminal{<:FinSet{Int}},
+  cone::SMultispan{0,<:FinSet{Int}},
+)
   ConstantFunction(1, apex(cone), FinSet(1))
 end
 
 function limit(Xs::ObjectPair{<:FinSet{Int}})
   m, n = length.(Xs)
   indices = CartesianIndices((m, n))
-  π1 = FinFunction(i -> indices[i][1], m*n, m)
-  π2 = FinFunction(i -> indices[i][2], m*n, n)
+  π1 = FinFunction(i -> indices[i][1], m * n, m)
+  π2 = FinFunction(i -> indices[i][2], m * n, n)
   Limit(Xs, Span(π1, π2))
 end
 
@@ -266,7 +288,7 @@ function universal(lim::BinaryProduct{<:FinSet{Int}}, cone::Span{<:FinSet{Int}})
   f, g = cone
   m, n = length.(codom.(cone))
   indices = LinearIndices((m, n))
-  FinFunction(i -> indices[f(i),g(i)], apex(cone), ob(lim))
+  FinFunction(i -> indices[f(i), g(i)], apex(cone), ob(lim))
 end
 
 function limit(Xs::DiscreteDiagram{<:FinSet{Int}})
@@ -298,8 +320,10 @@ function limit(para::ParallelMorphisms{<:FinSet{Int}})
   Limit(para, SMultispan{1}(eq))
 end
 
-function universal(lim::Equalizer{<:FinSet{Int}},
-                   cone::SMultispan{1,<:FinSet{Int}})
+function universal(
+  lim::Equalizer{<:FinSet{Int}},
+  cone::SMultispan{1,<:FinSet{Int}},
+)
   ι = collect(incl(lim))
   h = only(cone)
   FinFunction(Int[only(searchsorted(ι, h(i))) for i in dom(h)], length(ι))
@@ -315,8 +339,10 @@ abstract type JoinAlgorithm <: LimitAlgorithm end
 """
 struct SmartJoin <: JoinAlgorithm end
 
-function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}};
-               alg::LimitAlgorithm=ComposeProductEqualizer())
+function limit(
+  cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}};
+  alg::LimitAlgorithm=ComposeProductEqualizer(),
+)
   limit(cospan, alg)
 end
 
@@ -350,9 +376,9 @@ deleteat(vec::StaticVector, i) = StaticArrays.deleteat(vec, i)
 deleteat(vec::Vector, i) = deleteat!(copy(vec), i)
 
 insert(vec::StaticVector{N,T}, i, x::S) where {N,T,S} =
-  StaticArrays.insert(similar_type(vec, typejoin(T,S))(vec), i, x)
+  StaticArrays.insert(similar_type(vec, typejoin(T, S))(vec), i, x)
 insert(vec::Vector{T}, i, x::S) where {T,S} =
-  insert!(collect(typejoin(T,S), vec), i, x)
+  insert!(collect(typejoin(T, S), vec), i, x)
 
 """ [Nested-loop join](https://en.wikipedia.org/wiki/Nested_loop_join) algorithm.
 
@@ -360,8 +386,10 @@ This is the naive algorithm for computing joins.
 """
 struct NestedLoopJoin <: JoinAlgorithm end
 
-function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}},
-               ::NestedLoopJoin)
+function limit(
+  cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}},
+  ::NestedLoopJoin,
+)
   # A nested-loop join is algorithmically the same as `ComposeProductEqualizer`,
   # but for completeness and performance we give a direct implementation here.
   funcs = legs(cospan)
@@ -375,15 +403,17 @@ function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}},
       end
     end
   end
-  Limit(cospan, Multispan(map((π,f) -> FinFunction(π, dom(f)), πs, funcs)))
+  Limit(cospan, Multispan(map((π, f) -> FinFunction(π, dom(f)), πs, funcs)))
 end
 
 """ [Sort-merge join](https://en.wikipedia.org/wiki/Sort-merge_join) algorithm.
 """
 struct SortMergeJoin <: JoinAlgorithm end
 
-function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}},
-               ::SortMergeJoin)
+function limit(
+  cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}},
+  ::SortMergeJoin,
+)
   funcs = map(collect, legs(cospan))
   sorts = map(sortperm, funcs)
   values = similar_mutable(funcs, eltype(apex(cospan)))
@@ -396,7 +426,9 @@ function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}},
     ranges[i] = if start <= n
       val = values[i] = f[sort[start]]
       stop = start + 1
-      while stop <= n && f[sort[stop]] == val; stop += 1 end
+      while stop <= n && f[sort[stop]] == val
+        stop += 1
+      end
       start:(stop - 1)
     else
       start:n
@@ -419,12 +451,12 @@ function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}},
       next_range!(argmin(values))
     end
   end
-  Limit(cospan, Multispan(map((π,f) -> FinFunction(π, length(f)), πs, funcs)))
+  Limit(cospan, Multispan(map((π, f) -> FinFunction(π, length(f)), πs, funcs)))
 end
 
 similar_mutable(x::AbstractVector, T::Type) = similar(x, T)
 
-function similar_mutable(x::StaticVector{N}, T::Type) where N
+function similar_mutable(x::StaticVector{N}, T::Type) where {N}
   # `similar` always returns an `MVector` but `setindex!(::MVector, args...)`
   # only works when the element type is a bits-type.
   isbitstype(T) ? similar(x, T) : SizedVector{N}(Vector{T}(undef, N))
@@ -450,8 +482,10 @@ function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}}, ::HashJoin)
   Limit(cospan, Multispan(insert(πs_build, i, π_probe)))
 end
 
-function hash_join(builds::AbstractVector{<:FinDomFunction{Int}},
-                   probe::FinDomFunction{Int})
+function hash_join(
+  builds::AbstractVector{<:FinDomFunction{Int}},
+  probe::FinDomFunction{Int},
+)
   π_builds, πp = map(_ -> Int[], builds), Int[]
   for y in dom(probe)
     val = probe(y)
@@ -470,8 +504,10 @@ function hash_join(builds::AbstractVector{<:FinDomFunction{Int}},
   (map(FinFunction, π_builds, map(dom, builds)), FinFunction(πp, dom(probe)))
 end
 
-function hash_join(builds::StaticVector{1,<:FinDomFunction{Int}},
-                   probe::FinDomFunction{Int})
+function hash_join(
+  builds::StaticVector{1,<:FinDomFunction{Int}},
+  probe::FinDomFunction{Int},
+)
   πb, πp = hash_join(builds[1], probe)
   (SVector((πb,)), πp)
 end
@@ -488,26 +524,31 @@ function hash_join(build::FinDomFunction{Int}, probe::FinDomFunction{Int})
   (FinFunction(πb, dom(build)), FinFunction(πp, dom(probe)))
 end
 
-ensure_indexed(f::FinFunction{Int,Int}) = is_indexed(f) ? f :
-  FinFunction(collect(f), codom(f), index=true)
-ensure_indexed(f::FinDomFunction{Int}) = is_indexed(f) ? f :
-  FinDomFunction(collect(f), index=true)
+ensure_indexed(f::FinFunction{Int,Int}) =
+  is_indexed(f) ? f : FinFunction(collect(f), codom(f), index=true)
+ensure_indexed(f::FinDomFunction{Int}) =
+  is_indexed(f) ? f : FinDomFunction(collect(f), index=true)
 
 """ Limit of free diagram of FinSets.
 
 See `CompositePullback` for a very similar construction.
 """
-struct FinSetFreeDiagramLimit{Ob<:FinSet, Diagram<:AbstractFreeDiagram{Ob},
-                              Cone<:Multispan{Ob}, Prod<:Product{Ob},
-                              Incl<:FinFunction} <: AbstractLimit{Ob,Diagram}
+struct FinSetFreeDiagramLimit{
+  Ob<:FinSet,
+  Diagram<:AbstractFreeDiagram{Ob},
+  Cone<:Multispan{Ob},
+  Prod<:Product{Ob},
+  Incl<:FinFunction,
+} <: AbstractLimit{Ob,Diagram}
   diagram::Diagram
   cone::Cone
   prod::Prod
   incl::Incl # Inclusion for the "multi-equalizer" in general formula.
 end
 
-function limit(d::BipartiteFreeDiagram{Ob,Hom}) where
-    {Ob<:SetOb, Hom<:FinDomFunction{Int}}
+function limit(
+  d::BipartiteFreeDiagram{Ob,Hom},
+) where {Ob<:SetOb,Hom<:FinDomFunction{Int}}
   # As in a pullback, this method assumes that all objects in layer 2 have
   # incoming morphisms.
   @assert !any(isempty(incident(d, v, :tgt)) for v in vertices₂(d))
@@ -516,8 +557,10 @@ function limit(d::BipartiteFreeDiagram{Ob,Hom}) where
   # It is generally optimal to compute all equalizers (self joins) first, so as
   # to reduce the sizes of later pullbacks (joins) and products (cross joins).
   d, ιs = equalize_all(d)
-  rem_vertices₂!(d, [v for v in vertices₂(d) if
-                     length(incident(d, v, :tgt)) == 1])
+  rem_vertices₂!(
+    d,
+    [v for v in vertices₂(d) if length(incident(d, v, :tgt)) == 1],
+  )
 
   # Perform all pairings before computing any joins.
   d = pair_all(d)
@@ -553,11 +596,17 @@ function limit(d::BipartiteFreeDiagram{Ob,Hom}) where
 
     # Create a new bipartite diagram with joined vertices.
     d_joined = BipartiteFreeDiagram{Ob,Hom}()
-    copy_parts!(d_joined, d, V₁=to_keep, V₂=setdiff(vertices₂(d),v), E=edges(d))
+    copy_parts!(
+      d_joined,
+      d,
+      V₁=to_keep,
+      V₂=setdiff(vertices₂(d), v),
+      E=edges(d),
+    )
     joined = add_vertex₁!(d_joined, ob₁=apex(pb))
     for (u, π) in zip(to_join, legs(pb))
       for e in setdiff(incident(d, u, :src), join_edges)
-        set_subparts!(d_joined, e, src=joined, hom=π⋅hom(d,e))
+        set_subparts!(d_joined, e, src=joined, hom=π ⋅ hom(d, e))
       end
     end
     rem_edges!(d_joined, join_edges)
@@ -590,21 +639,23 @@ function equalize_all(d::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
     # Collect outgoing edges of u, key-ed by target vertex.
     out_edges = OrderedDict{Int,Vector{Int}}()
     for e in incident(d, u, :src)
-      push!(get!(out_edges, tgt(d,e)) do; Int[] end, e)
+      push!(get!(out_edges, tgt(d, e)) do
+        Int[]
+      end, e)
     end
 
     # Equalize all sets of parallel edges out of u.
     ι = id(ob₁(d, u))
     for es in values(out_edges)
       if length(es) > 1
-        fs = SVector((ι⋅f for f in hom(d, es))...)
+        fs = SVector((ι ⋅ f for f in hom(d, es))...)
         ι = incl(equalizer(fs)) ⋅ ι
       end
     end
 
     add_vertex₁!(d_simple, ob₁=dom(ι)) # == u
     for (v, es) in pairs(out_edges)
-      add_edge!(d_simple, u, v, hom=ι⋅hom(d, first(es)))
+      add_edge!(d_simple, u, v, hom=ι ⋅ hom(d, first(es)))
     end
     ι
   end
@@ -624,21 +675,27 @@ function pair_all(d::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
   # Construct mapping to V₂ vertices from multisets of adjacent V₁ vertices.
   outmap = OrderedDict{Vector{Int},Vector{Int}}()
   for v in vertices₂(d)
-    push!(get!(outmap, sort(inneighbors(d, v))) do; Int[] end, v)
+    push!(get!(outmap, sort(inneighbors(d, v))) do
+      Int[]
+    end, v)
   end
 
   for (srcs, tgts) in pairs(outmap)
     in_edges = map(tgts) do v
-      sort(incident(d, v, :tgt), by=e->src(d,e))
+      sort(incident(d, v, :tgt), by=e -> src(d, e))
     end
     if length(tgts) == 1
       v = add_vertex₂!(d_paired, ob₂=ob₂(d, only(tgts)))
-      add_edges!(d_paired, srcs, fill(v, length(srcs)),
-                 hom=hom(d, only(in_edges)))
+      add_edges!(
+        d_paired,
+        srcs,
+        fill(v, length(srcs)),
+        hom=hom(d, only(in_edges)),
+      )
     else
       prod = product(SVector(ob₂(d, tgts)...))
       v = add_vertex₂!(d_paired, ob₂=ob(prod))
-      for (i,u) in enumerate(srcs)
+      for (i, u) in enumerate(srcs)
         f = pair(prod, hom(d, getindex.(in_edges, i)))
         add_edge!(d_paired, u, v, hom=f)
       end
@@ -653,21 +710,27 @@ function limit(d::FreeDiagram{<:FinSet{Int}})
   # but extremely inefficient!
   prod = product(ob(d))
   n, πs = length(ob(prod)), legs(prod)
-  ι = FinFunction(filter(1:n) do i
-    all(begin
-          s, t, h = src(d,e), tgt(d,e), hom(d,e)
-          h(πs[s](i)) == πs[t](i)
-        end for e in edges(d))
-    end, n)
-  cone = Multispan(dom(ι), [ι⋅πs[i] for i in vertices(d)])
+  ι = FinFunction(
+    filter(1:n) do i
+      all(begin
+        s, t, h = src(d, e), tgt(d, e), hom(d, e)
+        h(πs[s](i)) == πs[t](i)
+      end for e in edges(d))
+    end,
+    n,
+  )
+  cone = Multispan(dom(ι), [ι ⋅ πs[i] for i in vertices(d)])
   FinSetFreeDiagramLimit(d, cone, prod, ι)
 end
 
 function universal(lim::FinSetFreeDiagramLimit, cone::Multispan{<:FinSet{Int}})
   ι = collect(lim.incl)
   h = universal(lim.prod, cone)
-  FinFunction(Int[only(searchsorted(ι, h(i))) for i in dom(h)],
-              apex(cone), ob(lim))
+  FinFunction(
+    Int[only(searchsorted(ι, h(i))) for i in dom(h)],
+    apex(cone),
+    ob(lim),
+  )
 end
 
 # Colimits
@@ -677,20 +740,24 @@ function colimit(Xs::EmptyDiagram{<:FinSet{Int}})
   Colimit(Xs, SMulticospan{0}(FinSet(0)))
 end
 
-function universal(colim::Initial{<:FinSet{Int}},
-                   cocone::SMulticospan{0,<:FinSet{Int}})
+function universal(
+  colim::Initial{<:FinSet{Int}},
+  cocone::SMulticospan{0,<:FinSet{Int}},
+)
   FinFunction(Int[], apex(cocone))
 end
 
 function colimit(Xs::ObjectPair{<:FinSet{Int}})
   m, n = length.(Xs)
-  ι1 = FinFunction(1:m, m, m+n)
-  ι2 = FinFunction(m+1:m+n, n, m+n)
+  ι1 = FinFunction(1:m, m, m + n)
+  ι2 = FinFunction((m + 1):(m + n), n, m + n)
   Colimit(Xs, Cospan(ι1, ι2))
 end
 
-function universal(colim::BinaryCoproduct{<:FinSet{Int}},
-                   cocone::Cospan{<:FinSet{Int}})
+function universal(
+  colim::BinaryCoproduct{<:FinSet{Int}},
+  cocone::Cospan{<:FinSet{Int}},
+)
   f, g = cocone
   FinFunction(vcat(collect(f), collect(g)), ob(colim), apex(cocone))
 end
@@ -698,15 +765,20 @@ end
 function colimit(Xs::DiscreteDiagram{<:FinSet{Int}})
   ns = length.(Xs)
   n = sum(ns)
-  offsets = [0,cumsum(ns)...]
-  ιs = [FinFunction((1:ns[j]) .+ offsets[j],ns[j],n) for j in 1:length(ns)]
+  offsets = [0, cumsum(ns)...]
+  ιs = [FinFunction((1:ns[j]) .+ offsets[j], ns[j], n) for j in 1:length(ns)]
   Colimit(Xs, Multicospan(FinSet(n), ιs))
 end
 
-function universal(colim::Coproduct{<:FinSet{Int}},
-                   cocone::Multicospan{<:FinSet{Int}})
-  FinFunction(reduce(vcat, (collect(f) for f in cocone), init=Int[]),
-              ob(colim), apex(cocone))
+function universal(
+  colim::Coproduct{<:FinSet{Int}},
+  cocone::Multicospan{<:FinSet{Int}},
+)
+  FinFunction(
+    reduce(vcat, (collect(f) for f in cocone), init=Int[]),
+    ob(colim),
+    apex(cocone),
+  )
 end
 
 function colimit(pair::ParallelPair{<:FinSet{Int}})
@@ -732,17 +804,19 @@ function colimit(para::ParallelMorphisms{<:FinSet{Int}})
   Colimit(para, SMulticospan{1}(quotient_projection(sets)))
 end
 
-function universal(coeq::Coequalizer{<:FinSet{Int}},
-                   cocone::SMulticospan{1,<:FinSet{Int}})
+function universal(
+  coeq::Coequalizer{<:FinSet{Int}},
+  cocone::SMulticospan{1,<:FinSet{Int}},
+)
   pass_to_quotient(proj(coeq), only(cocone))
 end
 
 """ Create projection map π: X → X/∼ from partition of X.
 """
 function quotient_projection(sets::IntDisjointSets)
-  h = [ find_root!(sets, i) for i in 1:length(sets) ]
+  h = [find_root!(sets, i) for i in 1:length(sets)]
   roots = unique!(sort(h))
-  FinFunction([ searchsortedfirst(roots, r) for r in h ], length(roots))
+  FinFunction([searchsortedfirst(roots, r) for r in h], length(roots))
 end
 
 """ Given h: X → Y, pass to quotient q: X/~ → Y under projection π: X → X/~.
@@ -770,9 +844,13 @@ end
 
 See `CompositePushout` for a very similar construction.
 """
-struct FinSetFreeDiagramColimit{Ob<:FinSet, Diagram<:AbstractFreeDiagram{Ob},
-                                Cocone<:Multicospan{Ob}, Coprod<:Coproduct{Ob},
-                                Proj<:FinFunction} <: AbstractColimit{Ob,Diagram}
+struct FinSetFreeDiagramColimit{
+  Ob<:FinSet,
+  Diagram<:AbstractFreeDiagram{Ob},
+  Cocone<:Multicospan{Ob},
+  Coprod<:Coproduct{Ob},
+  Proj<:FinFunction,
+} <: AbstractColimit{Ob,Diagram}
   diagram::Diagram
   cocone::Cocone
   coprod::Coprod
@@ -788,7 +866,7 @@ function colimit(d::BipartiteFreeDiagram{<:FinSet{Int}})
   sets = IntDisjointSets(n)
   for u in vertices₁(d)
     out_edges = incident(d, u, :src)
-    for (e1, e2) in zip(out_edges[1:end-1], out_edges[2:end])
+    for (e1, e2) in zip(out_edges[1:(end - 1)], out_edges[2:end])
       h1, h2 = hom(d, e1), hom(d, e2)
       ι1, ι2 = ιs[tgt(d, e1)], ιs[tgt(d, e2)]
       for i in ob₁(d, u)
@@ -797,7 +875,7 @@ function colimit(d::BipartiteFreeDiagram{<:FinSet{Int}})
     end
   end
   π = quotient_projection(sets)
-  cocone = Multicospan(codom(π), [ ιs[i]⋅π for i in vertices₂(d) ])
+  cocone = Multicospan(codom(π), [ιs[i] ⋅ π for i in vertices₂(d)])
   FinSetFreeDiagramColimit(d, cocone, coprod, π)
 end
 
@@ -808,18 +886,20 @@ function colimit(d::FreeDiagram{<:FinSet{Int}})
   n, ιs = length(ob(coprod)), legs(coprod)
   sets = IntDisjointSets(n)
   for e in edges(d)
-    s, t, h = src(d,e), tgt(d,e), hom(d,e)
+    s, t, h = src(d, e), tgt(d, e), hom(d, e)
     for i in dom(h)
       union!(sets, ιs[s](i), ιs[t](h(i)))
     end
   end
   π = quotient_projection(sets)
-  cocone = Multicospan(codom(π), [ ιs[i]⋅π for i in vertices(d) ])
+  cocone = Multicospan(codom(π), [ιs[i] ⋅ π for i in vertices(d)])
   FinSetFreeDiagramColimit(d, cocone, coprod, π)
 end
 
-function universal(colim::FinSetFreeDiagramColimit,
-                   cocone::Multicospan{<:FinSet{Int}})
+function universal(
+  colim::FinSetFreeDiagramColimit,
+  cocone::Multicospan{<:FinSet{Int}},
+)
   h = universal(colim.coprod, cocone)
   pass_to_quotient(colim.proj, h)
 end

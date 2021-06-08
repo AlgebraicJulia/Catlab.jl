@@ -7,8 +7,7 @@ using ...Graphs.BasicGraphs
 import ...Graphs.GraphAlgorithms: connected_component_projection
 
 function connected_component_projection(g::AbstractACSet)::FinFunction
-  proj(coequalizer(FinFunction(src(g), nv(g)),
-                   FinFunction(tgt(g), nv(g))))
+  proj(coequalizer(FinFunction(src(g), nv(g)), FinFunction(tgt(g), nv(g))))
 end
 
 end

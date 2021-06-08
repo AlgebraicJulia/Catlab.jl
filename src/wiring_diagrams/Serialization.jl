@@ -5,8 +5,8 @@ serializing wiring diagrams, as well as conventions for serializing box, port,
 and wire attributes.
 """
 module WiringDiagramSerialization
-export box_id, wire_id, port_name,
-  convert_from_graph_data, convert_to_graph_data
+export box_id,
+  wire_id, port_name, convert_from_graph_data, convert_to_graph_data
 
 using ..DirectedWiringDiagrams
 
@@ -23,7 +23,7 @@ end
 function box_id(diagram::WiringDiagram, path::Vector{Int})
   v = last(path)
   if v == input_id(diagram) || v == output_id(diagram)
-    box_id(path[1:end-1])
+    box_id(path[1:(end - 1)])
   else
     box_id(path)
   end
@@ -55,7 +55,7 @@ end
 ############
 
 convert_from_graph_data(::Type{Nothing}, data::AbstractDict) = nothing
-convert_from_graph_data(::Type{T}, data::AbstractDict) where T <: AbstractDict =
+convert_from_graph_data(::Type{T}, data::AbstractDict) where {T<:AbstractDict} =
   convert(T, data)
 
 function convert_from_graph_data(Value::Type, data::AbstractDict)

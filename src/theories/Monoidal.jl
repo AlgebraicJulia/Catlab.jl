@@ -1,18 +1,60 @@
-export MonoidalCategory, otimes, munit, ⊗, collect, ndims,
-  SymmetricMonoidalCategory, FreeSymmetricMonoidalCategory, braid, σ,
-  SymmetricMonoidalCopresheaf, elunit,
-  MonoidalCategoryWithDiagonals, CartesianCategory, FreeCartesianCategory,
-  mcopy, delete, pair, proj1, proj2, Δ, ◊,
-  mmerge, create, copair, coproj1, coproj2, ∇, □,
-  MonoidalCategoryWithBidiagonals, BiproductCategory, FreeBiproductCategory,
-  ClosedMonoidalCategory, FreeClosedMonoidalCategory, hom, ev, curry,
-  CartesianClosedCategory, FreeCartesianClosedCategory,
-  CompactClosedCategory, FreeCompactClosedCategory, dual, dunit, dcounit, mate,
-  DaggerCategory, FreeDaggerCategory, dagger,
-  DaggerSymmetricMonoidalCategory, FreeDaggerSymmetricMonoidalCategory,
-  DaggerCompactCategory, FreeDaggerCompactCategory,
-  TracedMonoidalCategory, FreeTracedMonoidalCategory, trace,
-  HypergraphCategory, FreeHypergraphCategory
+export MonoidalCategory,
+  otimes,
+  munit,
+  ⊗,
+  collect,
+  ndims,
+  SymmetricMonoidalCategory,
+  FreeSymmetricMonoidalCategory,
+  braid,
+  σ,
+  SymmetricMonoidalCopresheaf,
+  elunit,
+  MonoidalCategoryWithDiagonals,
+  CartesianCategory,
+  FreeCartesianCategory,
+  mcopy,
+  delete,
+  pair,
+  proj1,
+  proj2,
+  Δ,
+  ◊,
+  mmerge,
+  create,
+  copair,
+  coproj1,
+  coproj2,
+  ∇,
+  □,
+  MonoidalCategoryWithBidiagonals,
+  BiproductCategory,
+  FreeBiproductCategory,
+  ClosedMonoidalCategory,
+  FreeClosedMonoidalCategory,
+  hom,
+  ev,
+  curry,
+  CartesianClosedCategory,
+  FreeCartesianClosedCategory,
+  CompactClosedCategory,
+  FreeCompactClosedCategory,
+  dual,
+  dunit,
+  dcounit,
+  mate,
+  DaggerCategory,
+  FreeDaggerCategory,
+  dagger,
+  DaggerSymmetricMonoidalCategory,
+  FreeDaggerSymmetricMonoidalCategory,
+  DaggerCompactCategory,
+  FreeDaggerCompactCategory,
+  TracedMonoidalCategory,
+  FreeTracedMonoidalCategory,
+  trace,
+  HypergraphCategory,
+  FreeHypergraphCategory
 
 import Base: collect, ndims
 
@@ -28,7 +70,7 @@ theory for weak monoidal categories later.
 @theory MonoidalCategory{Ob,Hom} <: Category{Ob,Hom} begin
   otimes(A::Ob, B::Ob)::Ob
   otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣
-    (A::Ob, B::Ob, C::Ob, D::Ob)
+  (A::Ob, B::Ob, C::Ob, D::Ob)
   @op (⊗) := otimes
   munit()::Ob
 
@@ -39,25 +81,49 @@ theory for weak monoidal categories later.
   (A ⊗ B) ⊗ C == A ⊗ (B ⊗ C) ⊣ (A::Ob, B::Ob, C::Ob)
   munit() ⊗ A == A ⊣ (A::Ob)
   A ⊗ munit() == A ⊣ (A::Ob)
-  (f ⊗ g) ⊗ h == f ⊗ (g ⊗ h) ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
-                                f::(A → X), g::(B → Y), h::(C → Z))
+  (f ⊗ g) ⊗ h ==
+  f ⊗ (g ⊗ h) ⊣
+  (
+    A::Ob,
+    B::Ob,
+    C::Ob,
+    X::Ob,
+    Y::Ob,
+    Z::Ob,
+    f::(A → X),
+    g::(B → Y),
+    h::(C → Z),
+  )
   id(munit()) ⊗ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
   f ⊗ id(munit()) == f ⊣ (A::Ob, B::Ob, f::(A → B))
 
   # Functorality axioms.
-  ((f ⊗ g) ⋅ (h ⊗ k) == (f ⋅ h) ⊗ (g ⋅ k)
-    ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
-       f::(A → B), h::(B → C), g::(X → Y), k::(Y → Z)))
+  (
+    (f ⊗ g) ⋅ (h ⊗ k) ==
+    (f ⋅ h) ⊗ (g ⋅ k) ⊣
+    (
+      A::Ob,
+      B::Ob,
+      C::Ob,
+      X::Ob,
+      Y::Ob,
+      Z::Ob,
+      f::(A → B),
+      h::(B → C),
+      g::(X → Y),
+      k::(Y → Z),
+    )
+  )
   id(A ⊗ B) == id(A) ⊗ id(B) ⊣ (A::Ob, B::Ob)
 end
 
 # Convenience constructors
-otimes(xs::Vector{T}) where T = isempty(xs) ? munit(T) : foldl(otimes, xs)
+otimes(xs::Vector{T}) where {T} = isempty(xs) ? munit(T) : foldl(otimes, xs)
 otimes(x, y, z, xs...) = otimes([x, y, z, xs...])
 
 """ Collect generators of object in monoidal category as a vector.
 """
-collect(expr::ObExpr) = [ expr ]
+collect(expr::ObExpr) = [expr]
 collect(expr::ObExpr{:otimes}) = vcat(map(collect, args(expr))...)
 collect(expr::ObExpr{:munit}) = roottypeof(expr)[]
 
@@ -91,27 +157,28 @@ show_latex(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
   @op (σ) := braid
 
   # Involutivity axiom.
-  σ(A,B) ⋅ σ(B,A) == id(A ⊗ B) ⊣ (A::Ob, B::Ob)
+  σ(A, B) ⋅ σ(B, A) == id(A ⊗ B) ⊣ (A::Ob, B::Ob)
 
   # Coherence axioms.
   #
   # Note: The last two axioms are deducible from the first two axioms together
   # with the naturality equations for the left/right unitors. We record them for
   # the sake of clarity and uniformity.
-  σ(A,B⊗C) == (σ(A,B) ⊗ id(C)) ⋅ (id(B) ⊗ σ(A,C)) ⊣ (A::Ob, B::Ob, C::Ob)
-  σ(A⊗B,C) == (id(A) ⊗ σ(B,C)) ⋅ (σ(A,C) ⊗ id(B)) ⊣ (A::Ob, B::Ob, C::Ob)
-  σ(A,munit()) == id(A) ⊣ (A::Ob)
-  σ(munit(),A) == id(A) ⊣ (A::Ob)
+  σ(A, B ⊗ C) == (σ(A, B) ⊗ id(C)) ⋅ (id(B) ⊗ σ(A, C)) ⊣ (A::Ob, B::Ob, C::Ob)
+  σ(A ⊗ B, C) == (id(A) ⊗ σ(B, C)) ⋅ (σ(A, C) ⊗ id(B)) ⊣ (A::Ob, B::Ob, C::Ob)
+  σ(A, munit()) == id(A) ⊣ (A::Ob)
+  σ(munit(), A) == id(A) ⊣ (A::Ob)
 
   # Naturality axiom.
-  (f ⊗ g) ⋅ σ(B,D) == σ(A,C) ⋅ (g ⊗ f) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
-                                          f::(A → B), g::(C → D))
+  (f ⊗ g) ⋅ σ(B, D) ==
+  σ(A, C) ⋅ (g ⊗ f) ⊣
+  (A::Ob, B::Ob, C::Ob, D::Ob, f::(A → B), g::(C → D))
 end
 
 @syntax FreeSymmetricMonoidalCategory{ObExpr,HomExpr} SymmetricMonoidalCategory begin
-  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
+  otimes(A::Ob, B::Ob) = associate_unit(new(A, B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f, g))
+  compose(f::Hom, g::Hom) = associate_unit(new(f, g; strict=true), id)
 end
 
 function show_latex(io::IO, expr::HomExpr{:braid}; kw...)
@@ -130,32 +197,36 @@ monoidal category **Set**.
 FIXME: This theory should also extend `Copresheaf` but multiple inheritance is
 not yet supported.
 """
-@theory SymmetricMonoidalCopresheaf{Ob,Hom,El} <: SymmetricMonoidalCategory{Ob,Hom} begin
+@theory SymmetricMonoidalCopresheaf{Ob,Hom,El} <:
+        SymmetricMonoidalCategory{Ob,Hom} begin
   El(ob::Ob)::TYPE
 
   # Functor.
-  act(x::El(A), f::Hom(A,B))::El(B) ⊣ (A::Ob, B::Ob)
+  act(x::El(A), f::Hom(A, B))::El(B) ⊣ (A::Ob, B::Ob)
   @op (⋅) := act
 
   # Laxator.
-  otimes(x::El(A), y::El(B))::El(otimes(A,B)) ⊣ (A::Ob, B::Ob)
+  otimes(x::El(A), y::El(B))::El(otimes(A, B)) ⊣ (A::Ob, B::Ob)
   elunit()::El(munit())
 
   # Functorality axioms.
-  (x ⋅ f) ⋅ g == x ⋅ (f ⋅ g) ⊣
-    (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::El(A))
+  (x ⋅ f) ⋅ g ==
+  x ⋅ (f ⋅ g) ⊣
+  (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::El(A))
   x ⋅ id(A) == x ⊣ (A::Ob, x::El(A))
 
   # Naturality of laxator.
-  (x ⊗ y) ⋅ (f ⊗ g) == (x ⋅ f) ⊗ (y ⋅ g) ⊣
-    (A::Ob, B::Ob, C::Ob, D::Ob, x::El(A), y::El(B), f::(A → C), g::(B → D))
+  (x ⊗ y) ⋅ (f ⊗ g) ==
+  (x ⋅ f) ⊗ (y ⋅ g) ⊣
+  (A::Ob, B::Ob, C::Ob, D::Ob, x::El(A), y::El(B), f::(A → C), g::(B → D))
 
   # Commutative monoid axioms for laxator.
-  (x ⊗ y) ⊗ z == x ⊗ (y ⊗ z) ⊣
-    (A::Ob, B::Ob, C::Ob, x::El(A), y::El(B), z::El(C))
+  (x ⊗ y) ⊗ z ==
+  x ⊗ (y ⊗ z) ⊣
+  (A::Ob, B::Ob, C::Ob, x::El(A), y::El(B), z::El(C))
   x ⊗ elunit() == x ⊣ (A::Ob, x::El(A))
   elunit() ⊗ x == x ⊣ (A::Ob, x::El(A))
-  (x ⊗ y) ⋅ σ(A,B) == y ⊗ x ⊣ (A::Ob, B::Ob, x::El(A), y::El(B))
+  (x ⊗ y) ⋅ σ(A, B) == y ⊗ x ⊣ (A::Ob, B::Ob, x::El(A), y::El(B))
 end
 
 # Cartesian category
@@ -176,7 +247,8 @@ References:
   Section 6.6: "Cartesian center"
 - Selinger, 1999, "Categorical structure of asynchrony"
 """
-@theory MonoidalCategoryWithDiagonals{Ob,Hom} <: SymmetricMonoidalCategory{Ob,Hom} begin
+@theory MonoidalCategoryWithDiagonals{Ob,Hom} <:
+        SymmetricMonoidalCategory{Ob,Hom} begin
   mcopy(A::Ob)::(A → (A ⊗ A))
   @op (Δ) := mcopy
   delete(A::Ob)::(A → munit())
@@ -186,11 +258,11 @@ References:
   Δ(A) ⋅ (Δ(A) ⊗ id(A)) == Δ(A) ⋅ (id(A) ⊗ Δ(A)) ⊣ (A::Ob)
   Δ(A) ⋅ (◊(A) ⊗ id(A)) == id(A) ⊣ (A::Ob)
   Δ(A) ⋅ (id(A) ⊗ ◊(A)) == id(A) ⊣ (A::Ob)
-  Δ(A) ⋅ σ(A,A) == Δ(A) ⊣ (A::Ob)
+  Δ(A) ⋅ σ(A, A) == Δ(A) ⊣ (A::Ob)
 
   # Coherence axioms.
-  Δ(A⊗B) == (Δ(A) ⊗ Δ(B)) ⋅ (id(A) ⊗ σ(A,B) ⊗ id(B)) ⊣ (A::Ob, B::Ob)
-  ◊(A⊗B) == ◊(A) ⊗ ◊(B) ⊣ (A::Ob, B::Ob)
+  Δ(A ⊗ B) == (Δ(A) ⊗ Δ(B)) ⋅ (id(A) ⊗ σ(A, B) ⊗ id(B)) ⊣ (A::Ob, B::Ob)
+  ◊(A ⊗ B) == ◊(A) ⊗ ◊(B) ⊣ (A::Ob, B::Ob)
   Δ(munit()) == id(munit())
   ◊(munit()) == id(munit())
 end
@@ -206,13 +278,13 @@ For the traditional axiomatization of products, see
   proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
 
   # Definitions of pairing and projections.
-  pair(f,g) == Δ(C)⋅(f⊗g) ⊣ (A::Ob, B::Ob, C::Ob, f::(C → A), g::(C → B))
-  proj1(A,B) == id(A)⊗◊(B) ⊣ (A::Ob, B::Ob)
-  proj2(A,B) == ◊(A)⊗id(B) ⊣ (A::Ob, B::Ob)
-  
+  pair(f, g) == Δ(C) ⋅ (f ⊗ g) ⊣ (A::Ob, B::Ob, C::Ob, f::(C → A), g::(C → B))
+  proj1(A, B) == id(A) ⊗ ◊(B) ⊣ (A::Ob, B::Ob)
+  proj2(A, B) == ◊(A) ⊗ id(B) ⊣ (A::Ob, B::Ob)
+
   # Naturality axioms.
-  f⋅Δ(B) == Δ(A)⋅(f⊗f) ⊣ (A::Ob, B::Ob, f::(A → B))
-  f⋅◊(B) == ◊(A) ⊣ (A::Ob, B::Ob, f::(A → B))
+  f ⋅ Δ(B) == Δ(A) ⋅ (f ⊗ f) ⊣ (A::Ob, B::Ob, f::(A → B))
+  f ⋅ ◊(B) == ◊(A) ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 
 """ Syntax for a free cartesian category.
@@ -222,11 +294,11 @@ duplication and deletion, and do not have their own syntactic elements.
 This convention could be dropped or reversed.
 """
 @syntax FreeCartesianCategory{ObExpr,HomExpr} CartesianCategory begin
-  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
+  otimes(A::Ob, B::Ob) = associate_unit(new(A, B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f, g))
+  compose(f::Hom, g::Hom) = associate_unit(new(f, g; strict=true), id)
 
-  pair(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g))
+  pair(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f, g))
   proj1(A::Ob, B::Ob) = otimes(id(A), delete(B))
   proj2(A::Ob, B::Ob) = otimes(delete(A), id(B))
 end
@@ -248,7 +320,7 @@ supposed to mean a monoidal category with coherent diagonals and codiagonals.
 Unlike in a biproduct category, the naturality axioms need not be satisfied.
 """
 @signature MonoidalCategoryWithBidiagonals{Ob,Hom} <:
-    MonoidalCategoryWithDiagonals{Ob,Hom} begin
+           MonoidalCategoryWithDiagonals{Ob,Hom} begin
   mmerge(A::Ob)::((A ⊗ A) → A)
   @op (∇) := mmerge
   create(A::Ob)::(munit() → A)
@@ -267,24 +339,26 @@ multiplicatively, instead of additively.
   proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
   coproj1(A::Ob, B::Ob)::(A → (A ⊗ B))
   coproj2(A::Ob, B::Ob)::(B → (A ⊗ B))
-  
+
   # Naturality axioms.
-  f⋅Δ(B) == Δ(A)⋅(f⊗f) ⊣ (A::Ob, B::Ob, f::(A → B))
-  f⋅◊(B) == ◊(A) ⊣ (A::Ob, B::Ob, f::(A → B))
-  ∇(A)⋅f == (f⊗f)⋅∇(B) ⊣ (A::Ob, B::Ob, f::(A → B))
-  □(A)⋅f == □(B) ⊣ (A::Ob, B::Ob, f::(A → B))
-  
+  f ⋅ Δ(B) == Δ(A) ⋅ (f ⊗ f) ⊣ (A::Ob, B::Ob, f::(A → B))
+  f ⋅ ◊(B) == ◊(A) ⊣ (A::Ob, B::Ob, f::(A → B))
+  ∇(A) ⋅ f == (f ⊗ f) ⋅ ∇(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  □(A) ⋅ f == □(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+
   # Bimonoid axioms. (These follow from naturality + coherence axioms.)
-  ∇(A)⋅Δ(A) == (Δ(A)⊗Δ(A)) ⋅ (id(A)⊗σ(A,A)⊗id(A)) ⋅ (∇(A)⊗∇(A)) ⊣ (A::Ob)
-  ∇(A)⋅◊(A) == ◊(A) ⊗ ◊(A) ⊣ (A::Ob)
-  □(A)⋅Δ(A) == □(A) ⊗ □(A) ⊣ (A::Ob)
-  □(A)⋅◊(A) == id(munit()) ⊣ (A::Ob)
+  ∇(A) ⋅ Δ(A) ==
+  (Δ(A) ⊗ Δ(A)) ⋅ (id(A) ⊗ σ(A, A) ⊗ id(A)) ⋅ (∇(A) ⊗ ∇(A)) ⊣
+  (A::Ob)
+  ∇(A) ⋅ ◊(A) == ◊(A) ⊗ ◊(A) ⊣ (A::Ob)
+  □(A) ⋅ Δ(A) == □(A) ⊗ □(A) ⊣ (A::Ob)
+  □(A) ⋅ ◊(A) == id(munit()) ⊣ (A::Ob)
 end
 
 @syntax FreeBiproductCategory{ObExpr,HomExpr} BiproductCategory begin
-  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
+  otimes(A::Ob, B::Ob) = associate_unit(new(A, B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f, g))
+  compose(f::Hom, g::Hom) = associate_unit(new(f, g; strict=true), id)
 
   pair(f::Hom, g::Hom) = Δ(dom(f)) ⋅ (f ⊗ g)
   copair(f::Hom, g::Hom) = (f ⊗ g) ⋅ ∇(codom(f))
@@ -311,18 +385,18 @@ end
   hom(A::Ob, B::Ob)::Ob
 
   # Evaluation map
-  ev(A::Ob, B::Ob)::((hom(A,B) ⊗ A) → B)
+  ev(A::Ob, B::Ob)::((hom(A, B) ⊗ A) → B)
 
   # Currying (aka, lambda abstraction)
-  curry(A::Ob, B::Ob, f::((A ⊗ B) → C))::(A → hom(B,C)) ⊣ (C::Ob)
+  curry(A::Ob, B::Ob, f::((A ⊗ B) → C))::(A → hom(B, C)) ⊣ (C::Ob)
 end
 
 """ Syntax for a free closed monoidal category.
 """
 @syntax FreeClosedMonoidalCategory{ObExpr,HomExpr} ClosedMonoidalCategory begin
-  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
+  otimes(A::Ob, B::Ob) = associate_unit(new(A, B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f, g))
+  compose(f::Hom, g::Hom) = associate_unit(new(f, g; strict=true), id)
 end
 
 function show_latex(io::IO, expr::ObExpr{:hom}; kw...)
@@ -352,8 +426,8 @@ inheritance is not yet supported.
 """
 @signature CartesianClosedCategory{Ob,Hom} <: CartesianCategory{Ob,Hom} begin
   hom(A::Ob, B::Ob)::Ob
-  ev(A::Ob, B::Ob)::((hom(A,B) ⊗ A) → B)
-  curry(A::Ob, B::Ob, f::((A ⊗ B) → C))::(A → hom(B,C)) ⊣ (C::Ob)
+  ev(A::Ob, B::Ob)::((hom(A, B) ⊗ A) → B)
+  curry(A::Ob, B::Ob, f::((A ⊗ B) → C))::(A → hom(B, C)) ⊣ (C::Ob)
 end
 
 """ Syntax for a free cartesian closed category.
@@ -361,9 +435,9 @@ end
 See also `FreeCartesianCategory`.
 """
 @syntax FreeCartesianClosedCategory{ObExpr,HomExpr} CartesianClosedCategory begin
-  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
+  otimes(A::Ob, B::Ob) = associate_unit(new(A, B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f, g))
+  compose(f::Hom, g::Hom) = associate_unit(new(f, g; strict=true), id)
 
   pair(f::Hom, g::Hom) = Δ(dom(f)) ⋅ (f ⊗ g)
   proj1(A::Ob, B::Ob) = id(A) ⊗ ◊(B)
@@ -387,20 +461,28 @@ end
 
   # Adjoint mate of morphism f.
   mate(f::(A → B))::(dual(B) → dual(A)) ⊣ (A::Ob, B::Ob)
-  
+
   # Axioms for closed monoidal structure.
   hom(A, B) == B ⊗ dual(A) ⊣ (A::Ob, B::Ob)
   ev(A, B) == id(B) ⊗ (σ(dual(A), A) ⋅ dcounit(A)) ⊣ (A::Ob, B::Ob)
-  (curry(A, B, f) == (id(A) ⊗ (dunit(B) ⋅ σ(dual(B), B))) ⋅ (f ⊗ id(dual(B)))
-   ⊣ (A::Ob, B::Ob, C::Ob, f::((A ⊗ B) → C)))
+  (
+    curry(A, B, f) ==
+    (id(A) ⊗ (dunit(B) ⋅ σ(dual(B), B))) ⋅ (f ⊗ id(dual(B))) ⊣
+    (A::Ob, B::Ob, C::Ob, f::((A ⊗ B) → C))
+  )
 end
 
 @syntax FreeCompactClosedCategory{ObExpr,HomExpr} CompactClosedCategory begin
-  dual(A::Ob) = distribute_unary(involute(new(A)), dual, otimes,
-                                 unit=munit, contravariant=true)
-  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
+  dual(A::Ob) = distribute_unary(
+    involute(new(A)),
+    dual,
+    otimes,
+    unit=munit,
+    contravariant=true,
+  )
+  otimes(A::Ob, B::Ob) = associate_unit(new(A, B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f, g))
+  compose(f::Hom, g::Hom) = associate_unit(new(f, g; strict=true), id)
   mate(f::Hom) = distribute_mate(involute(new(f)))
   hom(A::Ob, B::Ob) = B ⊗ dual(A)
   ev(A::Ob, B::Ob) = id(B) ⊗ (σ(dual(A), A) ⋅ dcounit(A))
@@ -413,7 +495,10 @@ end
 function distribute_mate(f::HomExpr)
   distribute_unary(
     distribute_unary(f, mate, compose, contravariant=true),
-    mate, otimes, contravariant=true)
+    mate,
+    otimes,
+    contravariant=true,
+  )
 end
 
 function show_latex(io::IO, expr::ObExpr{:dual}; kw...)
@@ -439,7 +524,7 @@ end
 end
 
 @syntax FreeDaggerCategory{ObExpr,HomExpr} DaggerCategory begin
-  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
+  compose(f::Hom, g::Hom) = associate_unit(new(f, g; strict=true), id)
   dagger(f::Hom) = distribute_dagger(involute(new(f)))
 end
 
@@ -457,16 +542,17 @@ category](https://ncatlab.org/nlab/show/symmetric+monoidal+dagger-category).
 FIXME: This theory should also extend `DaggerCategory`, but multiple inheritance
 is not yet supported.
 """
-@signature DaggerSymmetricMonoidalCategory{Ob,Hom} <: SymmetricMonoidalCategory{Ob,Hom} begin
+@signature DaggerSymmetricMonoidalCategory{Ob,Hom} <:
+           SymmetricMonoidalCategory{Ob,Hom} begin
   dagger(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
 end
 
 @syntax FreeDaggerSymmetricMonoidalCategory{ObExpr,HomExpr} DaggerSymmetricMonoidalCategory begin
-  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
-  dagger(f::Hom) = distribute_unary(distribute_dagger(involute(new(f))),
-                                    dagger, otimes)
+  otimes(A::Ob, B::Ob) = associate_unit(new(A, B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f, g))
+  compose(f::Hom, g::Hom) = associate_unit(new(f, g; strict=true), id)
+  dagger(f::Hom) =
+    distribute_unary(distribute_dagger(involute(new(f))), dagger, otimes)
 end
 
 """ Theory of *dagger compact categories*
@@ -488,13 +574,18 @@ is not yet supported.
 end
 
 @syntax FreeDaggerCompactCategory{ObExpr,HomExpr} DaggerCompactCategory begin
-  dual(A::Ob) = distribute_unary(involute(new(A)), dual, otimes,
-                                 unit=munit, contravariant=true)
-  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
-  dagger(f::Hom) = distribute_unary(distribute_dagger(involute(new(f))),
-                                    dagger, otimes)
+  dual(A::Ob) = distribute_unary(
+    involute(new(A)),
+    dual,
+    otimes,
+    unit=munit,
+    contravariant=true,
+  )
+  otimes(A::Ob, B::Ob) = associate_unit(new(A, B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f, g))
+  compose(f::Hom, g::Hom) = associate_unit(new(f, g; strict=true), id)
+  dagger(f::Hom) =
+    distribute_unary(distribute_dagger(involute(new(f))), dagger, otimes)
   mate(f::Hom) = distribute_mate(involute(new(f)))
 end
 
@@ -512,9 +603,9 @@ end
 end
 
 @syntax FreeTracedMonoidalCategory{ObExpr,HomExpr} TracedMonoidalCategory begin
-  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
+  otimes(A::Ob, B::Ob) = associate_unit(new(A, B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f, g))
+  compose(f::Hom, g::Hom) = associate_unit(new(f, g; strict=true), id)
   # FIXME: `GAT.equations` fails to identify the implicit equation.
   #trace(X::Ob, A::Ob, B::Ob, f::Hom) = new(X,A,B,f; strict=true)
 end
@@ -543,14 +634,17 @@ multiple inheritance is not yet supported.
 
   dunit(A) == create(A) ⋅ mcopy(A) ⊣ (A::Ob)
   dcounit(A) == mmerge(A) ⋅ delete(A) ⊣ (A::Ob)
-  (dagger(f) == (id(B) ⊗ dunit(A)) ⋅ (id(B) ⊗ f ⊗ id(A)) ⋅ (dcounit(B) ⊗ id(A))
-   ⊣ (A::Ob, B::Ob, f::(A → B)))
+  (
+    dagger(f) ==
+    (id(B) ⊗ dunit(A)) ⋅ (id(B) ⊗ f ⊗ id(A)) ⋅ (dcounit(B) ⊗ id(A)) ⊣
+    (A::Ob, B::Ob, f::(A → B))
+  )
 end
 
 @syntax FreeHypergraphCategory{ObExpr,HomExpr} HypergraphCategory begin
-  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(new(f,g))
-  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
-  dagger(f::Hom) = distribute_unary(distribute_dagger(involute(new(f))),
-                                    dagger, otimes)
+  otimes(A::Ob, B::Ob) = associate_unit(new(A, B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f, g))
+  compose(f::Hom, g::Hom) = associate_unit(new(f, g; strict=true), id)
+  dagger(f::Hom) =
+    distribute_unary(distribute_dagger(involute(new(f))), dagger, otimes)
 end

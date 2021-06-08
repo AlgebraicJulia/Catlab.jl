@@ -1,9 +1,18 @@
 """ General-purpose tools for metaprogramming in Julia.
 """
 module Meta
-export Expr0, JuliaFunction, JuliaFunctionSig, parse_docstring, parse_function,
-  parse_function_sig, generate_docstring, generate_function,
-  append_expr!, concat_expr, replace_symbols, strip_lines
+export Expr0,
+  JuliaFunction,
+  JuliaFunctionSig,
+  parse_docstring,
+  parse_function,
+  parse_function_sig,
+  generate_docstring,
+  generate_function,
+  append_expr!,
+  concat_expr,
+  replace_symbols,
+  strip_lines
 
 using Base.Meta: ParseError
 using AutoHashEquals
@@ -19,9 +28,13 @@ const Expr0 = Union{Symbol,Expr}
   return_type::Union{Expr0,Nothing}
   impl::Union{Expr,Nothing}
   doc::Union{String,Nothing}
-  
-  function JuliaFunction(call_expr::Expr, return_type=nothing,
-                         impl=nothing, doc=nothing)
+
+  function JuliaFunction(
+    call_expr::Expr,
+    return_type=nothing,
+    impl=nothing,
+    doc=nothing,
+  )
     new(call_expr, return_type, impl, doc)
   end
 end
@@ -39,9 +52,10 @@ end
 function parse_docstring(expr::Expr)::Tuple{Union{String,Nothing},Expr}
   expr = strip_lines(expr)
   if expr.head == :macrocall && (
-      # XXX: It seems that the @doc macro can show up in two forms.
-      expr.args[1] == GlobalRef(Core, Symbol("@doc")) ||
-      expr.args[1] == Expr(:core, Symbol("@doc")))
+    # XXX: It seems that the @doc macro can show up in two forms.
+    expr.args[1] == GlobalRef(Core, Symbol("@doc")) ||
+    expr.args[1] == Expr(:core, Symbol("@doc"))
+  )
     (expr.args[2], expr.args[3])
   else
     (nothing, expr)
@@ -58,10 +72,14 @@ function parse_function(expr::Expr)::JuliaFunction
     _ => throw(ParseError("Ill-formed function definition $expr"))
   end
   @match fun_expr begin
-    (Expr(:(::), Expr(:call, args...), return_type) =>
-      JuliaFunction(Expr(:call, args...), return_type, impl, doc))
-    (Expr(:call, args...) =>
-      JuliaFunction(Expr(:call, args...), nothing, impl, doc))
+    (
+      Expr(:(::), Expr(:call, args...), return_type) =>
+        JuliaFunction(Expr(:call, args...), return_type, impl, doc)
+    )
+    (
+      Expr(:call, args...) =>
+        JuliaFunction(Expr(:call, args...), nothing, impl, doc)
+    )
     _ => throw(ParseError("Ill-formed function header $fun_expr"))
   end
 end
@@ -91,8 +109,13 @@ function generate_docstring(expr::Expr, doc::Union{String,Nothing})::Expr
   if isnothing(doc)
     expr
   else
-    Expr(:macrocall, GlobalRef(Core, Symbol("@doc")),
-         LineNumberNode(0), doc, expr)
+    Expr(
+      :macrocall,
+      GlobalRef(Core, Symbol("@doc")),
+      LineNumberNode(0),
+      doc,
+      expr,
+    )
   end
 end
 
@@ -101,7 +124,7 @@ end
 function generate_function(fun::JuliaFunction)::Expr
   head = if isnothing(fun.return_type)
     fun.call_expr
-  else 
+  else
     Expr(:(::), fun.call_expr, fun.return_type)
   end
   body = if isnothing(fun.impl)
@@ -142,13 +165,20 @@ end
 
 """ Replace symbols occurring anywhere in a Julia function (except the name).
 """
-function replace_symbols(bindings::AbstractDict, f::JuliaFunction)::JuliaFunction
+function replace_symbols(
+  bindings::AbstractDict,
+  f::JuliaFunction,
+)::JuliaFunction
   JuliaFunction(
-    Expr(f.call_expr.head, f.call_expr.args[1],
-         (replace_symbols(bindings, a) for a in f.call_expr.args[2:end])...),
-    isnothing(f.return_type) ? nothing : replace_symbols(bindings, f.return_type),
+    Expr(
+      f.call_expr.head,
+      f.call_expr.args[1],
+      (replace_symbols(bindings, a) for a in f.call_expr.args[2:end])...,
+    ),
+    isnothing(f.return_type) ? nothing :
+    replace_symbols(bindings, f.return_type),
     isnothing(f.impl) ? nothing : replace_symbols(bindings, f.impl),
-    f.doc
+    f.doc,
   )
 end
 
@@ -157,7 +187,7 @@ end
 function replace_symbols(bindings::AbstractDict, expr)
   recurse(expr) = replace_symbols(bindings, expr)
   @match expr begin
-    Expr(head, args...) => Expr(head, map(recurse,args)...)
+    Expr(head, args...) => Expr(head, map(recurse, args)...)
     sym::Symbol => get(bindings, sym, sym)
     _ => expr
   end
@@ -166,9 +196,9 @@ end
 """ Remove all LineNumberNodes from a Julia expression.
 """
 function strip_lines(expr::Expr; recurse::Bool=false)::Expr
-  args = [ x for x in expr.args if !isa(x, LineNumberNode) ]
+  args = [x for x in expr.args if !isa(x, LineNumberNode)]
   if recurse
-    args = [ isa(x, Expr) ? strip_lines(x; recurse=true) : x for x in args ]
+    args = [isa(x, Expr) ? strip_lines(x; recurse=true) : x for x in args]
   end
   Expr(expr.head, args...)
 end

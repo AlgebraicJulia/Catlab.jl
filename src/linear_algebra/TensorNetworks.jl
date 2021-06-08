@@ -1,8 +1,12 @@
 """ Tensor networks via the operad of undirected wiring diagrams.
 """
 module TensorNetworks
-export RelationDiagram, @tensor_network, parse_tensor_network,
-  contract_tensor_network, @contract_tensors_with, gen_tensor_notation
+export RelationDiagram,
+  @tensor_network,
+  parse_tensor_network,
+  contract_tensor_network,
+  @contract_tensors_with,
+  gen_tensor_notation
 
 using MLStyle: @match
 
@@ -50,16 +54,21 @@ except that here the outer junctions are represented explictly by a third
 argument rather than implicitly by using negative numbers in the second
 argument.
 """
-function contract_tensor_network(d::UndirectedWiringDiagram,
-                                 tensors::AbstractVector{<:AbstractArray})
+function contract_tensor_network(
+  d::UndirectedWiringDiagram,
+  tensors::AbstractVector{<:AbstractArray},
+)
   @assert nboxes(d) == length(tensors)
   juncs = [junction(d, ports(d, b)) for b in boxes(d)]
   j_out = junction(d, ports(d, outer=true), outer=true)
   contract_tensor_network(tensors, juncs, j_out)
 end
 
-function contract_tensor_network(tensors::AbstractVector{<:AbstractArray{T}},
-                                 juncs::AbstractVector, j_out) where T
+function contract_tensor_network(
+  tensors::AbstractVector{<:AbstractArray{T}},
+  juncs::AbstractVector,
+  j_out,
+) where {T}
   # Handle important binary case with specialized code.
   if length(tensors) == 2 && length(juncs) == 2
     return contract_tensor_network(Tuple(tensors), Tuple(juncs), j_out)
@@ -79,8 +88,10 @@ function contract_tensor_network(tensors::AbstractVector{<:AbstractArray{T}},
 end
 
 function contract_tensor_network( # Binary case.
-    (A, B)::Tuple{<:AbstractArray{T},<:AbstractArray{T}},
-    (jA, jB), j_out) where T
+  (A, B)::Tuple{<:AbstractArray{T},<:AbstractArray{T}},
+  (jA, jB),
+  j_out,
+) where {T}
   jsizes = Tuple(infer_junction_sizes((A, B), (jA, jB), j_out))
   jA, jB, j_out = Tuple(jA), Tuple(jB), Tuple(j_out)
   C = zeros(T, Tuple(jsizes[j] for j in j_out))
@@ -155,7 +166,8 @@ function parse_tensor_network(expr::Expr; all_vars=nothing)
   (outer_name, outer_vars), body = @match expr begin
     Expr(:(=), outer, body) => (parse_tensor_term(outer), body)
     Expr(:(:=), outer, body) => (parse_tensor_term(outer), body)
-    _ => error("Tensor expression $expr must be an assignment, either = or :=")
+    _ =>
+      error("Tensor expression $expr must be an assignment, either = or :=")
   end
   names_and_vars = map(parse_tensor_term, @match body begin
     Expr(:call, :(*), args...) => args
@@ -174,8 +186,12 @@ function parse_tensor_network(expr::Expr; all_vars=nothing)
   # Construct the undirected wiring diagram.
   d = RelationDiagram{Symbol}(length(outer_vars))
   add_junctions!(d, length(all_vars), variable=all_vars)
-  set_junction!(d, ports(d, outer=true),
-                incident(d, outer_vars, :variable), outer=true)
+  set_junction!(
+    d,
+    ports(d, outer=true),
+    incident(d, outer_vars, :variable),
+    outer=true,
+  )
   for (name, vars) in names_and_vars
     box = add_box!(d, length(vars), name=name)
     set_junction!(d, ports(d, box), incident(d, vars, :variable))
@@ -217,10 +233,16 @@ because they do not support implicit summation.
 macro contract_tensors_with(diagram, macro_expr)
   # XXX: We cannot use `GeneralizedGenerated.mk_function` here because packages
   # like Tullio generate code with type parameters, which GG does not allow.
-  compile_expr = :(gen_tensor_notation($(esc(diagram)),
-    assign_op=:(:=), assign_name=gensym("out")))
-  Expr(:call, esc(:eval),
-       :(_contract_tensors_with($compile_expr, $(QuoteNode(macro_expr)))))
+  compile_expr = :(gen_tensor_notation(
+    $(esc(diagram)),
+    assign_op=:(:=),
+    assign_name=gensym("out"),
+  ))
+  Expr(
+    :call,
+    esc(:eval),
+    :(_contract_tensors_with($compile_expr, $(QuoteNode(macro_expr)))),
+  )
 end
 function _contract_tensors_with(tensor_expr, macro_expr)
   @match macro_expr begin
@@ -236,17 +258,24 @@ useful in its own right.
 
 See also [`@tensor_network`](@ref), the "inverse" to this function.
 """
-function gen_tensor_notation(d::UndirectedWiringDiagram;
-    assign_op::Symbol=:(=), assign_name::Symbol=:out)
+function gen_tensor_notation(
+  d::UndirectedWiringDiagram;
+  assign_op::Symbol=:(=),
+  assign_name::Symbol=:out,
+)
   vars = j -> subpart(d, j, :variable)
   outer_vars = vars(junction(d, ports(d, outer=true), outer=true))
   terms = map(boxes(d)) do box
     ref_expr(subpart(d, box, :name), vars(junction(d, ports(d, box))))
   end
   lhs = ref_expr(assign_name, outer_vars)
-  rhs = if isempty(terms); 1
-    elseif length(terms) == 1; first(terms)
-    else Expr(:call, :(*), terms...) end
+  rhs = if isempty(terms)
+    1
+  elseif length(terms) == 1
+    first(terms)
+  else
+    Expr(:call, :(*), terms...)
+  end
   Expr(assign_op, lhs, rhs)
 end
 

@@ -20,68 +20,97 @@ They are also useful for computing limits
 
 P is a symbol, the object in the schema that the view focuses onto
 """
-struct ACSetView{A <: ACSet, P, Attrs <: NamedTuple} <: AbstractArray{Attrs,1}
-  backing :: A
-  parts :: AbstractVector{Int}
-  function ACSetView(backing::A, P::Symbol, parts::AbstractVector{Int}) where
-      {CD <: CatDesc,AD <: AttrDesc{CD},Ts <: Tuple, A <: ACSet{CD,AD,Ts}}
-    attr_names = filter(a -> dom(AD,a) == P, attr(AD))
-    attr_types = map(a -> Ts.parameters[codom_num(AD,a)], attr_names)
-    row_type = NamedTuple{attr_names, Tuple{attr_types...}}
-    new{A,P,row_type}(backing,parts)
+struct ACSetView{A<:ACSet,P,Attrs<:NamedTuple} <: AbstractArray{Attrs,1}
+  backing::A
+  parts::AbstractVector{Int}
+  function ACSetView(
+    backing::A,
+    P::Symbol,
+    parts::AbstractVector{Int},
+  ) where {CD<:CatDesc,AD<:AttrDesc{CD},Ts<:Tuple,A<:ACSet{CD,AD,Ts}}
+    attr_names = filter(a -> dom(AD, a) == P, attr(AD))
+    attr_types = map(a -> Ts.parameters[codom_num(AD, a)], attr_names)
+    row_type = NamedTuple{attr_names,Tuple{attr_types...}}
+    new{A,P,row_type}(backing, parts)
   end
-  function ACSetView(backing::A, P::Symbol) where
-      {CD <: CatDesc,AD <: AttrDesc{CD},Ts <: Tuple, A <: ACSet{CD,AD,Ts}}
-    ACSetView(backing,P,1:nparts(backing,P))
+  function ACSetView(
+    backing::A,
+    P::Symbol,
+  ) where {CD<:CatDesc,AD<:AttrDesc{CD},Ts<:Tuple,A<:ACSet{CD,AD,Ts}}
+    ACSetView(backing, P, 1:nparts(backing, P))
   end
 end
 
 # We're going to overload getproperty, so we use these instead
 
-backing(av::ACSetView) = getfield(av,:backing)
+backing(av::ACSetView) = getfield(av, :backing)
 
-CSetDataStructures.parts(av::ACSetView) = getfield(av,:parts)
-
+CSetDataStructures.parts(av::ACSetView) = getfield(av, :parts)
 
 # Overloaded accessors
 ######################
 
 Base.size(av::ACSetView) = size(parts(av))
 
-@generated function Base.getindex(av::ACSetView{<:ACSet,P,Attrs}, i::Int) where
-    {P, Attrs <: NamedTuple}
+@generated function Base.getindex(
+  av::ACSetView{<:ACSet,P,Attrs},
+  i::Int,
+) where {P,Attrs<:NamedTuple}
   tuple_args = map(Attrs.parameters[1]) do attr
-    :($attr = av[i,$(Expr(:quote, attr))])
+    :($attr = av[i, $(Expr(:quote, attr))])
   end
-  Expr(:tuple,tuple_args...)
+  Expr(:tuple, tuple_args...)
 end
 
-function Base.getindex(av::ACSetView{<:ACSet,P,<:NamedTuple},i::Int,name::Union{Symbol,Vector{Symbol}}) where {P}
+function Base.getindex(
+  av::ACSetView{<:ACSet,P,<:NamedTuple},
+  i::Int,
+  name::Union{Symbol,Vector{Symbol}},
+) where {P}
   subpart(backing(av), parts(av)[i], name)
 end
 
-function Base.getindex(av::ACSetView{<:ACSet,P,<:NamedTuple},i,name::Union{Symbol,Vector{Symbol}}) where {P}
-  subpart(backing(av), view(parts(av),i), name)
+function Base.getindex(
+  av::ACSetView{<:ACSet,P,<:NamedTuple},
+  i,
+  name::Union{Symbol,Vector{Symbol}},
+) where {P}
+  subpart(backing(av), view(parts(av), i), name)
 end
 
-function Base.getindex(av::ACSetView{<:ACSet,P,<:NamedTuple},name::Union{Symbol,Vector{Symbol}}) where {P}
+function Base.getindex(
+  av::ACSetView{<:ACSet,P,<:NamedTuple},
+  name::Union{Symbol,Vector{Symbol}},
+) where {P}
   subpart(backing(av), parts(av), name)
 end
 
-function Base.getindex(av::ACSetView{<:ACSet,P,<:NamedTuple},indicator::BitArray{1}) where {P}
-  ACSetView(backing(av),P,parts(av)[indicator])
+function Base.getindex(
+  av::ACSetView{<:ACSet,P,<:NamedTuple},
+  indicator::BitArray{1},
+) where {P}
+  ACSetView(backing(av), P, parts(av)[indicator])
 end
 
 Base.getproperty(av::ACSetView, name::Symbol) =
   subpart(backing(av), parts(av), name)
 
-function Base.show(io::IO, ::MIME"text/plain", av::T) where {ACS <: AbstractACSet, P, T<:ACSetView{ACS,P}}
+function Base.show(
+  io::IO,
+  ::MIME"text/plain",
+  av::T,
+) where {ACS<:AbstractACSet,P,T<:ACSetView{ACS,P}}
   print(io, "ACSetView of object $P")
   println(io)
   table = tables(backing(av))[P][parts(av)]
   if !(eltype(table) <: NamedTuple{(),Tuple{}} || isempty(table))
-    pretty_table(io, table, nosubheader=true,
-                 show_row_number=true, row_number_column_title=string(P))
+    pretty_table(
+      io,
+      table,
+      nosubheader=true,
+      show_row_number=true,
+      row_number_column_title=string(P),
+    )
   end
 end
 
@@ -93,15 +122,19 @@ Tables.istable(av::ACSetView) = true
 Tables.columnaccess(av::ACSetView) = true
 Tables.columns(av::ACSetView) = av
 
-function Tables.getcolumn(av::ACSetView{<:ACSet,P,Attrs}, i::Int) where {P, Attrs <: NamedTuple}
-  av[:,Attrs.parameters[1][i]]
+function Tables.getcolumn(
+  av::ACSetView{<:ACSet,P,Attrs},
+  i::Int,
+) where {P,Attrs<:NamedTuple}
+  av[:, Attrs.parameters[1][i]]
 end
 
-Tables.getcolumn(av::ACSetView, nm::Symbol) = av[:,nm]
+Tables.getcolumn(av::ACSetView, nm::Symbol) = av[:, nm]
 
-Tables.getcolumn(av::ACSetView, i::Int, nm::Symbol) = av[i,nm]
+Tables.getcolumn(av::ACSetView, i::Int, nm::Symbol) = av[i, nm]
 
-Tables.columnnames(av::ACSetView{<:ACSet,P,Attrs}) where {P,Attrs<:NamedTuple} = Attrs.parameters[1]
+Tables.columnnames(av::ACSetView{<:ACSet,P,Attrs}) where {P,Attrs<:NamedTuple} =
+  Attrs.parameters[1]
 
 # Macros for Querying/filtering
 ###############################
@@ -126,7 +159,8 @@ replace_symbols(av, ex::Symbol) = :($av[$(Expr(:quote, ex))])
 
 function replace_symbols(av, ex::Expr)
   @match ex begin
-    Expr(:call, f, args...) => Expr(:call, esc(f), map(arg -> replace_symbols(av,arg), args)...)
+    Expr(:call, f, args...) =>
+      Expr(:call, esc(f), map(arg -> replace_symbols(av, arg), args)...)
     Expr(:$, arg) => esc(arg)
     Expr(:., args...) => :($av[$(flatten_dot_expr(ex))])
     _ => error("unsupported syntax in @query")
@@ -160,20 +194,24 @@ end
 # Morphisms
 ###########
 
-struct ACSetViewMorphism{AV <: ACSetView}
+struct ACSetViewMorphism{AV<:ACSetView}
   f::FinFunction{Int,Int}
   dom::AV
   codom::AV
-  function ACSetViewMorphism{AV}(f::FinFunction, dom::AV, codom::AV) where {AV <: ACSetView}
+  function ACSetViewMorphism{AV}(
+    f::FinFunction,
+    dom::AV,
+    codom::AV,
+  ) where {AV<:ACSetView}
     @assert length(dom(f)) == size(dom)
     @assert length(codom(f)) == size(codom)
-    new{AV}(f,dom,codom)
+    new{AV}(f, dom, codom)
   end
-  function ACSetViewMorphism(α::ACSetTransformation,P::Symbol)
-    dom = ACSetView(α.dom,P)
-    codom = ACSetView(α.codom,P)
+  function ACSetViewMorphism(α::ACSetTransformation, P::Symbol)
+    dom = ACSetView(α.dom, P)
+    codom = ACSetView(α.codom, P)
     f = α.components[P]
-    new{typeof(dom)}(f,dom,codom)
+    new{typeof(dom)}(f, dom, codom)
   end
 end
 

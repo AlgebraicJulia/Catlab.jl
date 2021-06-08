@@ -12,6 +12,6 @@ include("GraphGenerators.jl")
 @reexport using .BipartiteGraphs
 @reexport using .PropertyGraphs
 @reexport using .GraphAlgorithms
-@reexport using. GraphGenerators
+@reexport using .GraphGenerators
 
 end

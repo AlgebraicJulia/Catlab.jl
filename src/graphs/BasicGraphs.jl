@@ -7,17 +7,48 @@ of [LightGraphs.jl](https://github.com/JuliaGraphs/LightGraphs.jl), with some
 departures due to differences between the data structures.
 """
 module BasicGraphs
-export AbstractGraph, Graph, nv, ne, src, tgt, edges, vertices,
-  has_edge, has_vertex, add_edge!, add_edges!, add_vertex!, add_vertices!,
-  rem_edge!, rem_edges!, rem_vertex!, rem_vertices!,
-  neighbors, inneighbors, outneighbors, all_neighbors, induced_subgraph,
-  AbstractSymmetricGraph, SymmetricGraph, inv,
-  AbstractReflexiveGraph, ReflexiveGraph, refl,
-  AbstractSymmetricReflexiveGraph, SymmetricReflexiveGraph,
-  AbstractHalfEdgeGraph, HalfEdgeGraph, vertex, half_edges,
-  add_dangling_edge!, add_dangling_edges!,
-  AbstractWeightedGraph, WeightedGraph, weight,
-  AbstractSymmetricWeightedGraph, SymmetricWeightedGraph
+export AbstractGraph,
+  Graph,
+  nv,
+  ne,
+  src,
+  tgt,
+  edges,
+  vertices,
+  has_edge,
+  has_vertex,
+  add_edge!,
+  add_edges!,
+  add_vertex!,
+  add_vertices!,
+  rem_edge!,
+  rem_edges!,
+  rem_vertex!,
+  rem_vertices!,
+  neighbors,
+  inneighbors,
+  outneighbors,
+  all_neighbors,
+  induced_subgraph,
+  AbstractSymmetricGraph,
+  SymmetricGraph,
+  inv,
+  AbstractReflexiveGraph,
+  ReflexiveGraph,
+  refl,
+  AbstractSymmetricReflexiveGraph,
+  SymmetricReflexiveGraph,
+  AbstractHalfEdgeGraph,
+  HalfEdgeGraph,
+  vertex,
+  half_edges,
+  add_dangling_edge!,
+  add_dangling_edges!,
+  AbstractWeightedGraph,
+  WeightedGraph,
+  weight,
+  AbstractSymmetricWeightedGraph,
+  SymmetricWeightedGraph
 
 import Base: inv
 using Requires
@@ -30,8 +61,8 @@ using ...Present, ...CSetDataStructures
 @present TheoryGraph(FreeSchema) begin
   V::Ob
   E::Ob
-  src::Hom(E,V)
-  tgt::Hom(E,V)
+  src::Hom(E, V)
+  tgt::Hom(E, V)
 end
 
 """ Abstract type for graphs, possibly with data attributes.
@@ -40,10 +71,12 @@ const AbstractGraph = AbstractACSetType(TheoryGraph)
 
 """ A graph, also known as a directed multigraph.
 """
-const Graph = CSetType(TheoryGraph, index=[:src,:tgt])
+const Graph = CSetType(TheoryGraph, index=[:src, :tgt])
 
-function (::Type{T})(nv::Int) where T <: AbstractGraph
-  g = T(); add_vertices!(g, nv); g
+function (::Type{T})(nv::Int) where {T<:AbstractGraph}
+  g = T()
+  add_vertices!(g, nv)
+  g
 end
 
 """ Number of vertices in a graph.
@@ -104,8 +137,12 @@ add_edge!(g::AbstractACSet, src::Int, tgt::Int; kw...) =
 
 """ Add multiple edges to a graph.
 """
-function add_edges!(g::AbstractACSet, srcs::AbstractVector{Int},
-                    tgts::AbstractVector{Int}; kw...)
+function add_edges!(
+  g::AbstractACSet,
+  srcs::AbstractVector{Int},
+  tgts::AbstractVector{Int};
+  kw...,
+)
   @assert (n = length(srcs)) == length(tgts)
   add_parts!(g, :E, n; src=srcs, tgt=tgts, kw...)
 end
@@ -129,7 +166,7 @@ function rem_vertices!(g::AbstractGraph, vs; keep_edges::Bool=false)
   end
   rem_parts!(g, :V, vs)
 end
-flatten(x::AbstractVector{<:AbstractVector{T}}) where T =
+flatten(x::AbstractVector{<:AbstractVector{T}}) where {T} =
   reduce(vcat, x, init=T[])
 
 """ Remove an edge from a graph.
@@ -171,7 +208,10 @@ all_neighbors(g::AbstractGraph, v::Int) =
 The [induced subgraph](https://en.wikipedia.org/wiki/Induced_subgraph) consists
 of the given vertices and all edges between vertices in this set.
 """
-function induced_subgraph(g::G, vs::AbstractVector{Int}) where G <: AbstractACSet
+function induced_subgraph(
+  g::G,
+  vs::AbstractVector{Int},
+) where {G<:AbstractACSet}
   vset = Set(vs)
   length(vs) == length(vset) || error("Duplicate vertices in: $vs")
   es = Iterators.filter(Iterators.flatten(incident(g, vs, :src))) do e
@@ -186,11 +226,11 @@ end
 ##################
 
 @present TheorySymmetricGraph <: TheoryGraph begin
-  inv::Hom(E,E)
+  inv::Hom(E, E)
 
-  compose(inv,inv) == id(E)
-  compose(inv,src) == tgt
-  compose(inv,tgt) == src
+  compose(inv, inv) == id(E)
+  compose(inv, src) == tgt
+  compose(inv, tgt) == src
 end
 
 """ Abstract type for symmetric graph, possibly with data attributes.
@@ -205,8 +245,10 @@ const SymmetricGraph = CSetType(TheorySymmetricGraph, index=[:src])
 # Don't index `inv` because it is self-inverse and don't index `tgt`
 # because `src` contains the same information due to symmetry of graph.
 
-function (::Type{T})(nv::Int) where T <: AbstractSymmetricGraph
-  g = T(); add_vertices!(g, nv); g
+function (::Type{T})(nv::Int) where {T<:AbstractSymmetricGraph}
+  g = T()
+  add_vertices!(g, nv)
+  g
 end
 
 """ Involution on edge(s) in a symmetric graph.
@@ -216,12 +258,23 @@ inv(g::AbstractACSet, args...) = subpart(g, args..., :inv)
 add_edge!(g::AbstractSymmetricGraph, src::Int, tgt::Int; kw...) =
   add_edges!(g, src:src, tgt:tgt; kw...)
 
-function add_edges!(g::AbstractSymmetricGraph, srcs::AbstractVector{Int},
-                    tgts::AbstractVector{Int}; kw...)
+function add_edges!(
+  g::AbstractSymmetricGraph,
+  srcs::AbstractVector{Int},
+  tgts::AbstractVector{Int};
+  kw...,
+)
   @assert (n = length(srcs)) == length(tgts)
   k = nparts(g, :E)
-  add_parts!(g, :E, 2n; src=vcat(srcs,tgts), tgt=vcat(tgts,srcs),
-             inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
+  add_parts!(
+    g,
+    :E,
+    2n;
+    src=vcat(srcs, tgts),
+    tgt=vcat(tgts, srcs),
+    inv=vcat((k + n + 1):(k + 2n), (k + 1):(k + n)),
+    kw...,
+  )
 end
 
 function rem_vertices!(g::AbstractSymmetricGraph, vs; keep_edges::Bool=false)
@@ -248,7 +301,7 @@ all_neighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
 ##################
 
 @present TheoryReflexiveGraph <: TheoryGraph begin
-  refl::Hom(V,E)
+  refl::Hom(V, E)
 
   compose(refl, src) == id(V)
   compose(refl, tgt) == id(V)
@@ -263,18 +316,19 @@ const AbstractReflexiveGraph = AbstractACSetType(TheoryReflexiveGraph)
 [Reflexive graphs](https://ncatlab.org/nlab/show/reflexive+graph) are graphs in
 which every vertex has a distinguished self-loop.
 """
-const ReflexiveGraph = CSetType(TheoryReflexiveGraph, index=[:src,:tgt])
+const ReflexiveGraph = CSetType(TheoryReflexiveGraph, index=[:src, :tgt])
 
-function (::Type{T})(nv::Int) where T <: AbstractReflexiveGraph
-  g = T(); add_vertices!(g, nv); g
+function (::Type{T})(nv::Int) where {T<:AbstractReflexiveGraph}
+  g = T()
+  add_vertices!(g, nv)
+  g
 end
 
 """ Reflexive loop(s) of vertex (vertices) in a reflexive graph.
 """
 refl(g::AbstractACSet, args...) = subpart(g, args..., :refl)
 
-add_vertex!(g::AbstractReflexiveGraph; kw...) =
-  only(add_vertices!(g, 1; kw...))
+add_vertex!(g::AbstractReflexiveGraph; kw...) = only(add_vertices!(g, 1; kw...))
 
 function add_vertices!(g::AbstractReflexiveGraph, n::Int; kw...)
   vs = add_parts!(g, :V, n; kw...)
@@ -297,7 +351,7 @@ end
 ############################
 
 @present TheorySymmetricReflexiveGraph <: TheorySymmetricGraph begin
-  refl::Hom(V,E)
+  refl::Hom(V, E)
 
   compose(refl, src) == id(V)
   compose(refl, tgt) == id(V)
@@ -318,8 +372,10 @@ are fixed by the edge involution.
 const SymmetricReflexiveGraph =
   CSetType(TheorySymmetricReflexiveGraph, index=[:src])
 
-function (::Type{T})(nv::Int) where T <: AbstractSymmetricReflexiveGraph
-  g = T(); add_vertices!(g, nv); g
+function (::Type{T})(nv::Int) where {T<:AbstractSymmetricReflexiveGraph}
+  g = T()
+  add_vertices!(g, nv)
+  g
 end
 
 add_vertex!(g::AbstractSymmetricReflexiveGraph; kw...) =
@@ -336,16 +392,30 @@ end
 add_edge!(g::AbstractSymmetricReflexiveGraph, src::Int, tgt::Int; kw...) =
   add_edges!(g, src:src, tgt:tgt; kw...)
 
-function add_edges!(g::AbstractSymmetricReflexiveGraph,
-                    srcs::AbstractVector{Int}, tgts::AbstractVector{Int}; kw...)
+function add_edges!(
+  g::AbstractSymmetricReflexiveGraph,
+  srcs::AbstractVector{Int},
+  tgts::AbstractVector{Int};
+  kw...,
+)
   @assert (n = length(srcs)) == length(tgts)
   k = nparts(g, :E)
-  add_parts!(g, :E, 2n; src=vcat(srcs,tgts), tgt=vcat(tgts,srcs),
-             inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
+  add_parts!(
+    g,
+    :E,
+    2n;
+    src=vcat(srcs, tgts),
+    tgt=vcat(tgts, srcs),
+    inv=vcat((k + n + 1):(k + 2n), (k + 1):(k + n)),
+    kw...,
+  )
 end
 
-function rem_vertices!(g::AbstractSymmetricReflexiveGraph, vs;
-                       keep_edges::Bool=false)
+function rem_vertices!(
+  g::AbstractSymmetricReflexiveGraph,
+  vs;
+  keep_edges::Bool=false,
+)
   es = if keep_edges
     sort(refl(g, vs)) # Always delete reflexive edges.
   else
@@ -367,8 +437,8 @@ rem_edges!(g::AbstractSymmetricReflexiveGraph, es) =
 @present TheoryHalfEdgeGraph(FreeSchema) begin
   V::Ob
   H::Ob
-  vertex::Hom(H,V)
-  inv::Hom(H,H)
+  vertex::Hom(H, V)
+  inv::Hom(H, H)
 
   compose(inv, inv) == id(H)
 end
@@ -387,8 +457,10 @@ model.
 """
 const HalfEdgeGraph = CSetType(TheoryHalfEdgeGraph, index=[:vertex])
 
-function (::Type{T})(nv::Int) where T <: AbstractHalfEdgeGraph
-  g = T(); add_vertices!(g, nv); g
+function (::Type{T})(nv::Int) where {T<:AbstractHalfEdgeGraph}
+  g = T()
+  add_vertices!(g, nv)
+  g
 end
 
 """ Incident vertex (vertices) of half-edge(s) in a half-edge graph.
@@ -410,21 +482,34 @@ end
 @inline add_edge!(g::AbstractHalfEdgeGraph, src::Int, tgt::Int; kw...) =
   add_half_edge_pair!(g, src, tgt; kw...)
 
-@inline add_edges!(g::AbstractHalfEdgeGraph, srcs::AbstractVector{Int},
-                   tgts::AbstractVector{Int}; kw...) =
-  add_half_edge_pairs!(g, srcs, tgts; kw...)
+@inline add_edges!(
+  g::AbstractHalfEdgeGraph,
+  srcs::AbstractVector{Int},
+  tgts::AbstractVector{Int};
+  kw...,
+) = add_half_edge_pairs!(g, srcs, tgts; kw...)
 
 function add_half_edge_pair!(g::AbstractACSet, src::Int, tgt::Int; kw...)
   k = nparts(g, :H)
-  add_parts!(g, :H, 2; vertex=[src,tgt], inv=[k+2,k+1], kw...)
+  add_parts!(g, :H, 2; vertex=[src, tgt], inv=[k + 2, k + 1], kw...)
 end
 
-function add_half_edge_pairs!(g::AbstractACSet, srcs::AbstractVector{Int},
-                              tgts::AbstractVector{Int}; kw...)
+function add_half_edge_pairs!(
+  g::AbstractACSet,
+  srcs::AbstractVector{Int},
+  tgts::AbstractVector{Int};
+  kw...,
+)
   @assert (n = length(srcs)) == length(tgts)
   k = nparts(g, :H)
-  add_parts!(g, :H, 2n; vertex=vcat(srcs,tgts),
-             inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
+  add_parts!(
+    g,
+    :H,
+    2n;
+    vertex=vcat(srcs, tgts),
+    inv=vcat((k + n + 1):(k + 2n), (k + 1):(k + n)),
+    kw...,
+  )
 end
 
 """ Add a dangling edge to a half-edge graph.
@@ -434,13 +519,13 @@ involution. They are usually interpreted differently than "self-loops", i.e., a
 pair of distinct half-edges incident to the same vertex.
 """
 add_dangling_edge!(g::AbstractACSet, v::Int; kw...) =
-  add_part!(g, :H; vertex=v, inv=nparts(g,:H)+1)
+  add_part!(g, :H; vertex=v, inv=nparts(g, :H) + 1)
 
 """ Add multiple dangling edges to a half-edge graph.
 """
 function add_dangling_edges!(g::AbstractACSet, vs::AbstractVector{Int}; kw...)
   n, k = length(vs), nparts(g, :H)
-  add_parts!(g, :H, n; vertex=vs, inv=(k+1):(k+n), kw...)
+  add_parts!(g, :H, n; vertex=vs, inv=(k + 1):(k + n), kw...)
 end
 
 function rem_vertices!(g::AbstractHalfEdgeGraph, vs; keep_edges::Bool=false)
@@ -463,7 +548,7 @@ rem_edges!(g::AbstractHalfEdgeGraph, hs) =
 
 @present TheoryWeightedGraph <: TheoryGraph begin
   Weight::Data
-  weight::Attr(E,Weight)
+  weight::Attr(E, Weight)
 end
 
 """ Abstract type for weighted graphs.
@@ -474,7 +559,7 @@ const AbstractWeightedGraph = AbstractACSetType(TheoryWeightedGraph)
 
 A graph in which every edge has a numerical weight.
 """
-const WeightedGraph = ACSetType(TheoryWeightedGraph, index=[:src,:tgt])
+const WeightedGraph = ACSetType(TheoryWeightedGraph, index=[:src, :tgt])
 
 """ Weight(s) of edge(s) in a weighted graph.
 """
@@ -482,7 +567,7 @@ weight(g::AbstractACSet, args...) = subpart(g, args..., :weight)
 
 @present TheorySymmetricWeightedGraph <: TheorySymmetricGraph begin
   Weight::Data
-  weight::Attr(E,Weight)
+  weight::Attr(E, Weight)
 
   compose(inv, weight) == weight
 end
@@ -504,12 +589,13 @@ const SymmetricWeightedGraph =
 ##########################
 
 function __init__()
-  @require LightGraphs="093fc24a-ae57-5d10-9952-331d41423f4d" begin
+  @require LightGraphs = "093fc24a-ae57-5d10-9952-331d41423f4d" begin
     import .LightGraphs
     import .LightGraphs: SimpleGraph, SimpleDiGraph
 
-    function (::Type{LG})(g::Union{AbstractGraph,AbstractSymmetricGraph}) where
-        LG <: Union{SimpleGraph,SimpleDiGraph}
+    function (::Type{LG})(
+      g::Union{AbstractGraph,AbstractSymmetricGraph},
+    ) where {LG<:Union{SimpleGraph,SimpleDiGraph}}
       lg = LG(nv(g))
       for (s, t) in zip(src(g), tgt(g))
         LightGraphs.add_edge!(lg, s, t)
@@ -520,22 +606,22 @@ function __init__()
     function SimpleGraph(g::AbstractHalfEdgeGraph)
       lg = SimpleGraph(nv(g))
       for e in half_edges(g)
-        e′ = inv(g,e)
+        e′ = inv(g, e)
         if e <= e′
-          LightGraphs.add_edge!(lg, vertex(g,e), vertex(g,e′))
+          LightGraphs.add_edge!(lg, vertex(g, e), vertex(g, e′))
         end
       end
       lg
     end
   end
 
-  @require MetaGraphs="626554b9-1ddb-594c-aa3c-2596fe9399a5" begin
+  @require MetaGraphs = "626554b9-1ddb-594c-aa3c-2596fe9399a5" begin
     import .MetaGraphs
     import .MetaGraphs: MetaGraph, MetaDiGraph
 
-    MetaDiGraph(g::AbstractWeightedGraph{U}) where U =
+    MetaDiGraph(g::AbstractWeightedGraph{U}) where {U} =
       to_weighted_metagraph(MetaDiGraph{Int,U}, g)
-    MetaGraph(g::AbstractSymmetricWeightedGraph{U}) where U =
+    MetaGraph(g::AbstractSymmetricWeightedGraph{U}) where {U} =
       to_weighted_metagraph(MetaGraph{Int,U}, g)
 
     function to_weighted_metagraph(MG::Type{<:MetaGraphs.AbstractMetaGraph}, g)

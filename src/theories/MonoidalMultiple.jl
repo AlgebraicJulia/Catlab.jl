@@ -1,5 +1,8 @@
-export RigCategory, SymmetricRigCategory, DistributiveMonoidalCategory,
-  DistributiveSemiadditiveCategory, DistributiveCategory
+export RigCategory,
+  SymmetricRigCategory,
+  DistributiveMonoidalCategory,
+  DistributiveSemiadditiveCategory,
+  DistributiveCategory
 
 # Distributive categories
 #########################
@@ -19,7 +22,7 @@ inheritance is not supported.
 @signature RigCategory{Ob,Hom} <: SymmetricMonoidalCategoryAdditive{Ob,Hom} begin
   otimes(A::Ob, B::Ob)::Ob
   otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣
-    (A::Ob, B::Ob, C::Ob, D::Ob)
+  (A::Ob, B::Ob, C::Ob, D::Ob)
   @op (⊗) := otimes
   munit()::Ob
 end
@@ -43,18 +46,20 @@ FIXME: Should also inherit `CocartesianCategory`.
 @theory DistributiveMonoidalCategory{Ob,Hom} <: SymmetricRigCategory{Ob,Hom} begin
   plus(A::Ob)::((A ⊕ A) → A)
   zero(A::Ob)::(mzero() → A)
-  
+
   copair(f::(A → C), g::(B → C))::((A ⊕ B) → C) <= (A::Ob, B::Ob, C::Ob)
   coproj1(A::Ob, B::Ob)::(A → (A ⊕ B))
   coproj2(A::Ob, B::Ob)::(B → (A ⊕ B))
-  
-  copair(f,g) == (f⊕g)⋅plus(C) ⊣ (A::Ob, B::Ob, C::Ob, f::(A → C), g::(B → C))
-  coproj1(A,B) == id(A)⊕zero(B) ⊣ (A::Ob, B::Ob)
-  coproj2(A,B) == zero(A)⊕id(B) ⊣ (A::Ob, B::Ob)
-  
+
+  copair(f, g) ==
+  (f ⊕ g) ⋅ plus(C) ⊣
+  (A::Ob, B::Ob, C::Ob, f::(A → C), g::(B → C))
+  coproj1(A, B) == id(A) ⊕ zero(B) ⊣ (A::Ob, B::Ob)
+  coproj2(A, B) == zero(A) ⊕ id(B) ⊣ (A::Ob, B::Ob)
+
   # Naturality axioms.
-  plus(A)⋅f == (f⊕f)⋅plus(B) ⊣ (A::Ob, B::Ob, f::(A → B))
-  zero(A)⋅f == zero(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  plus(A) ⋅ f == (f ⊕ f) ⋅ plus(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  zero(A) ⋅ f == zero(B) ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 
 """ Theory of a *distributive monoidal category with diagonals*
@@ -62,7 +67,7 @@ end
 FIXME: Should also inherit `MonoidalCategoryWithDiagonals`.
 """
 @theory DistributiveMonoidalCategoryWithDiagonals{Ob,Hom} <:
-    DistributiveMonoidalCategory{Ob,Hom} begin
+        DistributiveMonoidalCategory{Ob,Hom} begin
   mcopy(A::Ob)::(A → (A ⊗ A))
   @op (Δ) := mcopy
   delete(A::Ob)::(A → munit())
@@ -78,7 +83,8 @@ biproduct.
 
 FIXME: Should also inherit `SemiadditiveCategory`
 """
-@theory DistributiveSemiadditiveCategory{Ob,Hom} <: DistributiveMonoidalCategory{Ob,Hom} begin
+@theory DistributiveSemiadditiveCategory{Ob,Hom} <:
+        DistributiveMonoidalCategory{Ob,Hom} begin
   mcopy(A::Ob)::(A → (A ⊕ A))
   @op (Δ) := mcopy
   delete(A::Ob)::(A → mzero())
@@ -87,10 +93,10 @@ FIXME: Should also inherit `SemiadditiveCategory`
   pair(f::(A → B), g::(A → C))::(A → (B ⊕ C)) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊕ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊕ B) → B)
-  
+
   # Naturality axioms.
-  f⋅Δ(B) == Δ(A)⋅(f⊕f) ⊣ (A::Ob, B::Ob, f::(A → B))
-  f⋅◊(B) == ◊(A) ⊣ (A::Ob, B::Ob, f::(A → B))
+  f ⋅ Δ(B) == Δ(A) ⋅ (f ⊕ f) ⊣ (A::Ob, B::Ob, f::(A → B))
+  f ⋅ ◊(B) == ◊(A) ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 
 """ Theory of a *distributive category*
@@ -100,16 +106,17 @@ is the cartesian product, see [`DistributiveMonoidalCategory`](@ref).
 
 FIXME: Should also inherit `CartesianCategory`.
 """
-@theory DistributiveCategory{Ob,Hom} <: DistributiveMonoidalCategoryWithDiagonals{Ob,Hom} begin
+@theory DistributiveCategory{Ob,Hom} <:
+        DistributiveMonoidalCategoryWithDiagonals{Ob,Hom} begin
   pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
 
-  pair(f,g) == Δ(C)⋅(f⊗g) ⊣ (A::Ob, B::Ob, C::Ob, f::(C → A), g::(C → B))
-  proj1(A,B) == id(A)⊗◊(B) ⊣ (A::Ob, B::Ob)
-  proj2(A,B) == ◊(A)⊗id(B) ⊣ (A::Ob, B::Ob)
-  
+  pair(f, g) == Δ(C) ⋅ (f ⊗ g) ⊣ (A::Ob, B::Ob, C::Ob, f::(C → A), g::(C → B))
+  proj1(A, B) == id(A) ⊗ ◊(B) ⊣ (A::Ob, B::Ob)
+  proj2(A, B) == ◊(A) ⊗ id(B) ⊣ (A::Ob, B::Ob)
+
   # Naturality axioms.
-  f⋅Δ(B) == Δ(A)⋅(f⊗f) ⊣ (A::Ob, B::Ob, f::(A → B))
-  f⋅◊(B) == ◊(A) ⊣ (A::Ob, B::Ob, f::(A → B))
+  f ⋅ Δ(B) == Δ(A) ⋅ (f ⊗ f) ⊣ (A::Ob, B::Ob, f::(A → B))
+  f ⋅ ◊(B) == ◊(A) ⊣ (A::Ob, B::Ob, f::(A → B))
 end

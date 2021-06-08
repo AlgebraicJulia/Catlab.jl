@@ -16,26 +16,41 @@ corresponding to the junctions, are given by dictionaries indexed by
 box/junction attributes. The default attributes are those compatible with the
 `@relation` macro.
 """
-function oapply(composite::UndirectedWiringDiagram, hom_map::AbstractDict,
-                ob_map::Union{AbstractDict,Nothing}=nothing;
-                hom_attr::Symbol=:name, ob_attr::Symbol=:variable)
-  homs = [ hom_map[name] for name in subpart(composite, hom_attr) ]
-  obs = isnothing(ob_map) ? nothing :
-    [ ob_map[name] for name in subpart(composite, ob_attr) ]
+function oapply(
+  composite::UndirectedWiringDiagram,
+  hom_map::AbstractDict,
+  ob_map::Union{AbstractDict,Nothing}=nothing;
+  hom_attr::Symbol=:name,
+  ob_attr::Symbol=:variable,
+)
+  homs = [hom_map[name] for name in subpart(composite, hom_attr)]
+  obs =
+    isnothing(ob_map) ? nothing :
+    [ob_map[name] for name in subpart(composite, ob_attr)]
   oapply(composite, homs, obs)
 end
 
 # UWD algebras of multi(co)spans
 ################################
 
-function oapply(composite::UndirectedWiringDiagram,
-                spans::AbstractVector{<:Multispan}; Ob=nothing, Hom=nothing)
+function oapply(
+  composite::UndirectedWiringDiagram,
+  spans::AbstractVector{<:Multispan};
+  Ob=nothing,
+  Hom=nothing,
+)
   @assert nboxes(composite) == length(spans)
   # FIXME: This manual type inference is hacky and bad. The right solution is to
   # extend `Multi(co)span` with type parameters that allow abstract types.
-  if isnothing(Ob); Ob = typejoin(mapreduce(typeof∘apex, typejoin, spans),
-                                  mapreduce(eltype∘feet, typejoin, spans)) end
-  if isnothing(Hom); Hom = mapreduce(eltype∘legs, typejoin, spans) end
+  if isnothing(Ob)
+    Ob = typejoin(
+      mapreduce(typeof ∘ apex, typejoin, spans),
+      mapreduce(eltype ∘ feet, typejoin, spans),
+    )
+  end
+  if isnothing(Hom)
+    Hom = mapreduce(eltype ∘ legs, typejoin, spans)
+  end
   junction_feet = Vector{Ob}(undef, njunctions(composite))
 
   # Create bipartite free diagram whose vertices of types 1 and 2 are the UWD's
@@ -69,9 +84,11 @@ function oapply(composite::UndirectedWiringDiagram,
   Multispan(ob(lim), outer_legs)
 end
 
-function oapply(composite::UndirectedWiringDiagram,
-                cospans::AbstractVector{<:StructuredMulticospan{L}},
-                junction_feet::Union{AbstractVector,Nothing}=nothing) where L
+function oapply(
+  composite::UndirectedWiringDiagram,
+  cospans::AbstractVector{<:StructuredMulticospan{L}},
+  junction_feet::Union{AbstractVector,Nothing}=nothing,
+) where {L}
   @assert nboxes(composite) == length(cospans)
   if isnothing(junction_feet)
     junction_feet = Vector{first(dom(L))}(undef, njunctions(composite))
@@ -138,8 +155,12 @@ counting query and the result is a vector whose length is the number of results.
 For its implementation, this function wraps the [`oapply`](@ref) method for
 multispans, which defines the UWD algebra of multispans.
 """
-function query(X::AbstractACSet, diagram::UndirectedWiringDiagram,
-               params=(;); table_type::Type=TypedTables.Table)
+function query(
+  X::AbstractACSet,
+  diagram::UndirectedWiringDiagram,
+  params=(;);
+  table_type::Type=TypedTables.Table,
+)
   # For each box in the diagram, extract span from ACSet.
   spans = map(boxes(diagram), subpart(diagram, :name)) do b, name
     apex = FinSet(nparts(X, name))
@@ -152,12 +173,20 @@ function query(X::AbstractACSet, diagram::UndirectedWiringDiagram,
   # Add an extra box and corresponding span for each parameter.
   if !isempty(params)
     diagram = copy(diagram)
-    spans = vcat(spans, map(collect(pairs(params))) do (var, value)
-      box = add_part!(diagram, :Box, name=:_const)
-      add_part!(diagram, :Port, port_name=:_value,
-                box=box, junction=incident(diagram, var, :variable))
-      SMultispan{1}(ConstantFunction(value, FinSet(1)))
-    end)
+    spans = vcat(
+      spans,
+      map(collect(pairs(params))) do (var, value)
+        box = add_part!(diagram, :Box, name=:_const)
+        add_part!(
+          diagram,
+          :Port,
+          port_name=:_value,
+          box=box,
+          junction=incident(diagram, var, :variable),
+        )
+        SMultispan{1}(ConstantFunction(value, FinSet(1)))
+      end,
+    )
   end
 
   # Call `oapply` and make a table out of the resulting span.

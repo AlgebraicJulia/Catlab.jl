@@ -17,8 +17,8 @@ using LightXML
 
 using ...CategoricalAlgebra.CSets: incident
 using ...Graphs, ...WiringDiagrams
-import ...WiringDiagrams.GraphMLWiringDiagrams: parse_graphml_data_value,
-  parse_graphml_metagraph
+import ...WiringDiagrams.GraphMLWiringDiagrams:
+  parse_graphml_data_value, parse_graphml_metagraph
 using ..WiringDiagramLayouts: LayoutOrientation, TopToBottom, is_vertical
 
 # Data types
@@ -35,17 +35,37 @@ end
 
 """ Read a wiring diagram from a GraphML file created by yEd and yFiles.
 """
-function read_yfiles_diagram(BoxValue::Type, WireValue::Type, filename::String; kw...)
-  parse_yfiles_diagram(BoxValue, WireValue, LightXML.parse_file(filename); kw...)
+function read_yfiles_diagram(
+  BoxValue::Type,
+  WireValue::Type,
+  filename::String;
+  kw...,
+)
+  parse_yfiles_diagram(
+    BoxValue,
+    WireValue,
+    LightXML.parse_file(filename);
+    kw...,
+  )
 end
 
 """ Parse a wiring diagram from a GraphML string or XML doc created by yFiles.
 """
-function parse_yfiles_diagram(BoxValue::Type, WireValue::Type, s::AbstractString; kw...)
+function parse_yfiles_diagram(
+  BoxValue::Type,
+  WireValue::Type,
+  s::AbstractString;
+  kw...,
+)
   parse_yfiles_diagram(BoxValue, WireValue, LightXML.parse_string(s); kw...)
 end
-function parse_yfiles_diagram(BoxValue::Type, WireValue::Type, xdoc::XMLDocument;
-    orientation::LayoutOrientation=TopToBottom, keep_labels::Bool=true)::WiringDiagram  
+function parse_yfiles_diagram(
+  BoxValue::Type,
+  WireValue::Type,
+  xdoc::XMLDocument;
+  orientation::LayoutOrientation=TopToBottom,
+  keep_labels::Bool=true,
+)::WiringDiagram
   # Clean up GraphML keys before reading.
   xroot = root(xdoc)
   for xkey in xroot["key"]
@@ -59,10 +79,10 @@ function parse_yfiles_diagram(BoxValue::Type, WireValue::Type, xdoc::XMLDocument
       end
     end
   end
-  
+
   # Read the diagram's underlying graph as an attributed graph.
   graph = parse_graphml_metagraph(xdoc, directed=true)
-  
+
   # Extract needed information from yFiles' "nodegraphics" and "edgegraphics"
   # and discard the rest. Keep custom data properties, except the blank
   # "description" property inserted by yEd.
@@ -82,15 +102,19 @@ function parse_yfiles_diagram(BoxValue::Type, WireValue::Type, xdoc::XMLDocument
       delete!(wire_data, :description)
     end
     edge_graphics = pop!(wire_data, :edgegraphics)
-    wire_data[:source_coord] = round(Int,
-      edge_graphics[is_vertical(orientation) ? :source_x : :source_y])
-    wire_data[:target_coord] = round(Int,
-      edge_graphics[is_vertical(orientation) ? :target_x : :target_y])
+    wire_data[:source_coord] = round(
+      Int,
+      edge_graphics[is_vertical(orientation) ? :source_x : :source_y],
+    )
+    wire_data[:target_coord] = round(
+      Int,
+      edge_graphics[is_vertical(orientation) ? :target_x : :target_y],
+    )
     if keep_labels & haskey(edge_graphics, :label)
       wire_data[:label] = edge_graphics[:label]
     end
   end
-  
+
   # Add boxes and their ports to diagram, including the outer box.
   diagram = WiringDiagram([], [])
   boxes = BoxLayout[]
@@ -123,32 +147,37 @@ function parse_yfiles_diagram(BoxValue::Type, WireValue::Type, xdoc::XMLDocument
     source_port = source.output_coord_map[pop!(wire_data, :source_coord)]
     target_port = target.input_coord_map[pop!(wire_data, :target_coord)]
     value = convert_from_graphml_data(WireValue, wire_data)
-    add_wire!(diagram, Wire(value,
-      (source.box, source_port) => (target.box, target_port)))
+    add_wire!(
+      diagram,
+      Wire(value, (source.box, source_port) => (target.box, target_port)),
+    )
   end
-  
+
   diagram
 end
 
 function infer_input_ports(graph::PropertyGraph, v::Int)
   in_edges = incident(graph.graph, v, :tgt)
-  in_coords = [ get_eprop(graph, edge, :target_coord) for edge in in_edges ]
+  in_coords = [get_eprop(graph, edge, :target_coord) for edge in in_edges]
   infer_ports_from_coordinates(in_coords)
 end
 function infer_output_ports(graph::PropertyGraph, v::Int)
   out_edges = incident(graph.graph, v, :src)
-  out_coords = [ get_eprop(graph, edge, :source_coord) for edge in out_edges ]
+  out_coords = [get_eprop(graph, edge, :source_coord) for edge in out_edges]
   infer_ports_from_coordinates(out_coords)
 end
 
-function infer_ports_from_coordinates(coords::Vector{T}) where T
+function infer_ports_from_coordinates(coords::Vector{T}) where {T}
   unique_coords = sort(unique(coords))
   ports = repeat([nothing], length(unique_coords))
   coord_map = Dict{T,Int}(x => i for (i, x) in enumerate(unique_coords))
   (ports, coord_map)
 end
 
-function parse_graphml_data_value(::Type{Val{:yfiles_nodegraphics}}, xdata::XMLElement)
+function parse_graphml_data_value(
+  ::Type{Val{:yfiles_nodegraphics}},
+  xdata::XMLElement,
+)
   ynode = first(child_elements(xdata)) # e.g., ShapeNode
   ygeom = find_element(ynode, "Geometry")
   data = Dict{Symbol,Any}(
@@ -164,7 +193,10 @@ function parse_graphml_data_value(::Type{Val{:yfiles_nodegraphics}}, xdata::XMLE
   data
 end
 
-function parse_graphml_data_value(::Type{Val{:yfiles_edgegraphics}}, xdata::XMLElement)
+function parse_graphml_data_value(
+  ::Type{Val{:yfiles_edgegraphics}},
+  xdata::XMLElement,
+)
   yedge = first(child_elements(xdata)) # e.g., PolyLineEdge
   ypath = find_element(yedge, "Path")
   data = Dict{Symbol,Any}(

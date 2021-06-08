@@ -1,9 +1,16 @@
 module CPortGraphs
-export ThCPortGraph, ThOpenCPortGraph, ThSymCPortGraph, ThOpenSymCPortGraph,
-  CPortGraph, OpenCPortGraph, SymCPortGraph, OpenSymCPortGraph,
-  ThBundledCPG, BundledCPG
+export ThCPortGraph,
+  ThOpenCPortGraph,
+  ThSymCPortGraph,
+  ThOpenSymCPortGraph,
+  CPortGraph,
+  OpenCPortGraph,
+  SymCPortGraph,
+  OpenSymCPortGraph,
+  ThBundledCPG,
+  BundledCPG
 
-using ...Theories, ...Present,  ...CategoricalAlgebra
+using ...Theories, ...Present, ...CategoricalAlgebra
 import ...CategoricalAlgebra.CSets: migrate!
 using ...Graphs
 import ...Graphs.BasicGraphs: TheoryGraph
@@ -27,9 +34,9 @@ end
 @present ThSymCPortGraph <: ThCPortGraph begin
   inv::Hom(Wire, Wire)
 
-  compose(inv,inv) == id(Wire)
-  compose(inv,src) == tgt
-  compose(inv,tgt) == src
+  compose(inv, inv) == id(Wire)
+  compose(inv, src) == tgt
+  compose(inv, tgt) == src
 end
 
 @present ThOpenSymCPortGraph <: ThSymCPortGraph begin
@@ -75,52 +82,66 @@ function OpenCPortGraph(g::AbstractCPortGraph)
 end
 
 function migrate!(g::AbstractGraph, cpg::AbstractCPortGraph)
-  migrate!(g, cpg,
-    Dict(:E=>:Wire, :V=>:Box),
-    Dict(:src=>compose(ThCPortGraph[:src], ThCPortGraph[:box]),
-         :tgt=>compose(ThCPortGraph[:tgt], ThCPortGraph[:box])))
+  migrate!(
+    g,
+    cpg,
+    Dict(:E => :Wire, :V => :Box),
+    Dict(
+      :src => compose(ThCPortGraph[:src], ThCPortGraph[:box]),
+      :tgt => compose(ThCPortGraph[:tgt], ThCPortGraph[:box]),
+    ),
+  )
 end
 
 function migrate!(pg::AbstractCPortGraph, opg::AbstractOpenCPortGraph)
-  migrate!(pg, opg,
-    Dict(:Box=>:Box, :Port=>:Port, :Wire=>:Wire),
-    Dict(:src=>:src, :tgt=>:tgt, :box=>:box))
+  migrate!(
+    pg,
+    opg,
+    Dict(:Box => :Box, :Port => :Port, :Wire => :Wire),
+    Dict(:src => :src, :tgt => :tgt, :box => :box),
+  )
 end
 
 function migrate!(pg::AbstractCPortGraph, g::AbstractGraph)
-  migrate!(pg, g,
-    Dict(:Box=>:V, :Port=>:V, :Wire=>:E),
+  migrate!(
+    pg,
+    g,
+    Dict(:Box => :V, :Port => :V, :Wire => :E),
     Dict(
-      :box=>id(TheoryGraph[:V]),
-      :src=>TheoryGraph[:src],
-      :tgt=>TheoryGraph[:tgt],
-    )
+      :box => id(TheoryGraph[:V]),
+      :src => TheoryGraph[:src],
+      :tgt => TheoryGraph[:tgt],
+    ),
   )
 end
 
 function migrate!(og::AbstractOpenCPortGraph, g::AbstractCPortGraph)
-  migrate!(og, g,
-    Dict(:Box=>:Box, :Port=>:Port, :Wire=>:Wire, :OuterPort=>:Port),
+  migrate!(
+    og,
+    g,
+    Dict(:Box => :Box, :Port => :Port, :Wire => :Wire, :OuterPort => :Port),
     Dict(
-      :src=>:src,
-      :tgt=>:tgt,
-      :box=>:box,
-      :con=>id(ThCPortGraph[:Port]),
-    )
+      :src => :src,
+      :tgt => :tgt,
+      :box => :box,
+      :con => id(ThCPortGraph[:Port]),
+    ),
   )
 end
 migrate!(og::AbstractOpenCPortGraph, g::AbstractGraph) =
-  migrate!(og, migrate!(CPortGraph(),g))
+  migrate!(og, migrate!(CPortGraph(), g))
 
 function migrate!(pg::AbstractSymCPortGraph, g::AbstractSymmetricGraph)
-  migrate!(pg, g,
-    Dict(:Box=>:V, :Port=>:V, :Wire=>:E),
+  migrate!(
+    pg,
+    g,
+    Dict(:Box => :V, :Port => :V, :Wire => :E),
     Dict(
-      :box=>id(TheorySymmetricGraph[:V]),
-      :src=>id(TheorySymmetricGraph[:src]),
-      :tgt=>id(TheorySymmetricGraph[:tgt]),
-      :inv=>TheorySymmetricGraph[:inv],
-    )
+      :box => id(TheorySymmetricGraph[:V]),
+      :src => id(TheorySymmetricGraph[:src]),
+      :tgt => id(TheorySymmetricGraph[:tgt]),
+      :inv => TheorySymmetricGraph[:inv],
+    ),
   )
 end
 
@@ -156,11 +177,24 @@ const AbstractBundledCPG = AbstractACSetType(ThBundledCPG)
 const BundledCPG = ACSetType(ThBundledCPG, index=[:box, :src, :tgt, :bun])
 
 function migrate!(b::AbstractBundledCPG, g::AbstractOpenCPortGraph)
-  migrate!(b,g,
-    Dict(:Box=>:Box, :Port=>:Port, :Wire=>:Wire, :OuterPort=>:OuterPort,
-         :Bundle=>:OuterPort),
-    Dict(:src=>:src, :tgt=>:tgt, :box=>:box,
-         :con=>:con, :bun=>id(ThOpenCPortGraph[:OuterPort])))
+  migrate!(
+    b,
+    g,
+    Dict(
+      :Box => :Box,
+      :Port => :Port,
+      :Wire => :Wire,
+      :OuterPort => :OuterPort,
+      :Bundle => :OuterPort,
+    ),
+    Dict(
+      :src => :src,
+      :tgt => :tgt,
+      :box => :box,
+      :con => :con,
+      :bun => id(ThOpenCPortGraph[:OuterPort]),
+    ),
+  )
 end
 
 function BundledCPG(g::AbstractOpenCPortGraph)
@@ -171,9 +205,9 @@ end
 
 function ocompose(g::AbstractBundledCPG, xs::Vector)
   u = coproduct(xs)
-  xsum=apex(u)
+  xsum = apex(u)
   for e in parts(g, :Wire)
-    s, t = g[e,:src], g[e,:tgt]
+    s, t = g[e, :src], g[e, :tgt]
     sbox, tbox = g[s, :box], g[t, :box]
     localport_src = findfirst(s .== incident(g, sbox, :box))
     localport_tgt = findfirst(t .== incident(g, tbox, :box))

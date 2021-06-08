@@ -1,6 +1,16 @@
-export ThinCategory, FreeThinCategory,
-  ThinSymmetricMonoidalCategory, FreeThinSymmetricMonoidalCategory,
-  Preorder, FreePreorder, El, Leq, ≤, lhs, rhs, reflexive, transitive
+export ThinCategory,
+  FreeThinCategory,
+  ThinSymmetricMonoidalCategory,
+  FreeThinSymmetricMonoidalCategory,
+  Preorder,
+  FreePreorder,
+  El,
+  Leq,
+  ≤,
+  lhs,
+  rhs,
+  reflexive,
+  transitive
 
 # Thin category
 ###############
@@ -10,21 +20,22 @@ export ThinCategory, FreeThinCategory,
 Thin categories have at most one morphism between any two objects.
 """
 @theory ThinCategory{Ob,Hom} <: Category{Ob,Hom} begin
-  f == g ⊣ (A::Ob, B::Ob, f::Hom(A,B), g::Hom(A,B))
+  f == g ⊣ (A::Ob, B::Ob, f::Hom(A, B), g::Hom(A, B))
 end
 
 @syntax FreeThinCategory{ObExpr,HomExpr} ThinCategory begin
-  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
+  compose(f::Hom, g::Hom) = associate_unit(new(f, g; strict=true), id)
 end
 
-@theory ThinSymmetricMonoidalCategory{Ob,Hom} <: SymmetricMonoidalCategory{Ob,Hom} begin
-  f == g ⊣ (A::Ob, B::Ob, f::Hom(A,B), g::Hom(A,B))
+@theory ThinSymmetricMonoidalCategory{Ob,Hom} <:
+        SymmetricMonoidalCategory{Ob,Hom} begin
+  f == g ⊣ (A::Ob, B::Ob, f::Hom(A, B), g::Hom(A, B))
 end
 
 @syntax FreeThinSymmetricMonoidalCategory{ObExpr,HomExpr} ThinSymmetricMonoidalCategory begin
-  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
-  otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
-  otimes(f::Hom, g::Hom) = associate(new(f,g))
+  compose(f::Hom, g::Hom) = associate_unit(new(f, g; strict=true), id)
+  otimes(A::Ob, B::Ob) = associate_unit(new(A, B), munit)
+  otimes(f::Hom, g::Hom) = associate(new(f, g))
 end
 
 # Preorder
@@ -40,16 +51,16 @@ Preorders encode the axioms of reflexivity and transitivity as term constructors
   @op (≤) := Leq
 
   # Preorder axioms are lifted to term constructors in the GAT.
-  reflexive(A::El)::(A≤A) # ∀ A there is a term reflexive(A) which implies A≤A
-  transitive(f::(A≤B), g::(B≤C))::(A≤C) ⊣ (A::El, B::El, C::El)
+  reflexive(A::El)::(A ≤ A) # ∀ A there is a term reflexive(A) which implies A≤A
+  transitive(f::(A ≤ B), g::(B ≤ C))::(A ≤ C) ⊣ (A::El, B::El, C::El)
 
   # Axioms of the GAT are equivalences on terms or simplification rules in the logic
-  f == g ⊣ (A::El, B::El, f::(A≤B), g::(A≤B))
+  f == g ⊣ (A::El, B::El, f::(A ≤ B), g::(A ≤ B))
   # Read as (f⟹ A≤B ∧ g⟹ A≤B) ⟹ f ≡ g
 end
 
 @syntax FreePreorder{ObExpr,HomExpr} Preorder begin
-  transitive(f::Leq, g::Leq) = associate(new(f,g; strict=true))
+  transitive(f::Leq, g::Leq) = associate(new(f, g; strict=true))
 end
 
 # TODO: a GAT-homomorphism between the Preorder GAT and the ThinCategory GAT

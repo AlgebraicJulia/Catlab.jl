@@ -1,7 +1,9 @@
 """ Computing with permutations: the computer algebra of the symmetric group.
 """
 module Permutations
-export cycles, permutation_to_expr, adjacent_transpositions_by_bubble_sort!,
+export cycles,
+  permutation_to_expr,
+  adjacent_transpositions_by_bubble_sort!,
   adjacent_transpositions_by_insertion_sort!
 
 using ...Syntax
@@ -20,14 +22,18 @@ function cycles(σ, n::Int)
   cycles = Vector{Int}[]
   used = falses(n)
   for i in 1:n
-    if used[i]; continue end
+    if used[i]
+      continue
+    end
     cycle, j = Int[], i
     while true
       push!(cycle, j)
       used[j] = true
       j = σ(j)
       @assert 1 <= j <= n
-      if j == i; break end
+      if j == i
+        break
+      end
     end
     push!(cycles, cycle)
   end
@@ -49,10 +55,10 @@ See also: [`adjacent_transpositions_by_insertion_sort!`](@ref).
 function adjacent_transpositions_by_bubble_sort!(σ::AbstractVector{Int})
   n = length(σ)
   transpositions = Int[]
-  for i in 1:n-1
-    for j = n-1:-1:i
-      if σ[j+1] < σ[j]
-        σ[j], σ[j+1] = σ[j+1], σ[j]
+  for i in 1:(n - 1)
+    for j in (n - 1):-1:i
+      if σ[j + 1] < σ[j]
+        σ[j], σ[j + 1] = σ[j + 1], σ[j]
         push!(transpositions, j)
       end
     end
@@ -78,9 +84,9 @@ function adjacent_transpositions_by_insertion_sort!(σ::AbstractVector{Int})
   transpositions = Int[]
   for i in 2:n
     for j in i:-1:2
-      if σ[j-1] > σ[j]
-        σ[j-1], σ[j] = σ[j], σ[j-1]
-        push!(transpositions, j-1)
+      if σ[j - 1] > σ[j]
+        σ[j - 1], σ[j] = σ[j], σ[j - 1]
+        push!(transpositions, j - 1)
       end
     end
   end
@@ -94,15 +100,21 @@ end
 
 Warning: The morphism expression is not simplified.
 """
-function permutation_to_expr(σ::AbstractVector{Int}, xs::AbstractVector;
-                             sort::Symbol=:insertion)
+function permutation_to_expr(
+  σ::AbstractVector{Int},
+  xs::AbstractVector;
+  sort::Symbol=:insertion,
+)
   permutation_to_expr!(copy(σ), copy(xs); sort=sort)
 end
-function permutation_to_expr!(σ::AbstractVector{Int}, xs::AbstractVector;
-                              sort::Symbol=:insertion)
+function permutation_to_expr!(
+  σ::AbstractVector{Int},
+  xs::AbstractVector;
+  sort::Symbol=:insertion,
+)
   n = length(σ)
   @assert length(xs) == n
-  
+
   transpositions = if sort == :bubble
     adjacent_transpositions_by_bubble_sort!(σ)
   elseif sort == :insertion
@@ -113,14 +125,14 @@ function permutation_to_expr!(σ::AbstractVector{Int}, xs::AbstractVector;
   if isempty(transpositions)
     return id(otimes(xs))
   end
-  
+
   layers = map(transpositions) do τ
     layer = [
-      τ > 1 ? id(otimes(xs[1:τ-1])) : nothing,
-      braid(xs[τ], xs[τ+1]),
-      τ+1 < n ? id(otimes(xs[τ+2:n])) : nothing,
+      τ > 1 ? id(otimes(xs[1:(τ - 1)])) : nothing,
+      braid(xs[τ], xs[τ + 1]),
+      τ + 1 < n ? id(otimes(xs[(τ + 2):n])) : nothing,
     ]
-    xs[τ], xs[τ+1] = xs[τ+1], xs[τ]
+    xs[τ], xs[τ + 1] = xs[τ + 1], xs[τ]
     foldl(otimes, filter(!isnothing, layer))
   end
   foldl(compose, layers)

@@ -13,7 +13,7 @@ using ..Syntax
 Maintains the normal form `op(e1,e2,...)` where `e1`,`e2`,... are expressions
 that are *not* applications of `op()`
 """
-function associate(expr::E)::E where E <: GATExpr
+function associate(expr::E)::E where {E<:GATExpr}
   op, e1, e2 = head(expr), first(expr), last(expr)
   args1 = head(e1) == op ? args(e1) : [e1]
   args2 = head(e2) == op ? args(e2) : [e2]
@@ -26,17 +26,27 @@ Reduces a freely generated (typed) monoid to normal form.
 """
 function associate_unit(expr::GATExpr, unit::Function)::GATExpr
   e1, e2 = first(expr), last(expr)
-  if (head(e1) == nameof(unit)) e2
-  elseif (head(e2) == nameof(unit)) e1
-  else associate(expr) end
+  if (head(e1) == nameof(unit))
+    e2
+  elseif (head(e2) == nameof(unit))
+    e1
+  else
+    associate(expr)
+  end
 end
 
 """ Distribute unary operation over binary operation.
 """
-function distribute_unary(expr::GATExpr, unary::Function, binary::Function;
-                          unit::Union{Function,Nothing}=nothing,
-                          contravariant::Bool=false)::GATExpr
-  if (head(expr) != nameof(unary)) return expr end
+function distribute_unary(
+  expr::GATExpr,
+  unary::Function,
+  binary::Function;
+  unit::Union{Function,Nothing}=nothing,
+  contravariant::Bool=false,
+)::GATExpr
+  if (head(expr) != nameof(unary))
+    return expr
+  end
   @assert length(args(expr)) == 1
   arg = first(expr)
   if head(arg) == nameof(binary)

@@ -6,15 +6,53 @@ pairs of objects, discrete diagrams, parallel morphisms, spans, and cospans.
 Limits and colimits are most commonly taken over free diagrams.
 """
 module FreeDiagrams
-export AbstractFreeDiagram, FreeDiagram, BipartiteFreeDiagram,
-  FixedShapeFreeDiagram, DiscreteDiagram, EmptyDiagram, ObjectPair,
-  Span, Cospan, Multispan, Multicospan, SMultispan, SMulticospan,
-  ParallelPair, ParallelMorphisms,
-  ob, hom, dom, codom, apex, legs, feet, left, right, bundle_legs,
-  nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
-  add_vertex!, add_vertices!, add_edge!, add_edges!,
-  ob₁, ob₂, nv₁, nv₂, vertices₁, vertices₂,
-  add_vertex₁!, add_vertex₂!, add_vertices₁!, add_vertices₂!
+export AbstractFreeDiagram,
+  FreeDiagram,
+  BipartiteFreeDiagram,
+  FixedShapeFreeDiagram,
+  DiscreteDiagram,
+  EmptyDiagram,
+  ObjectPair,
+  Span,
+  Cospan,
+  Multispan,
+  Multicospan,
+  SMultispan,
+  SMulticospan,
+  ParallelPair,
+  ParallelMorphisms,
+  ob,
+  hom,
+  dom,
+  codom,
+  apex,
+  legs,
+  feet,
+  left,
+  right,
+  bundle_legs,
+  nv,
+  ne,
+  src,
+  tgt,
+  vertices,
+  edges,
+  has_vertex,
+  has_edge,
+  add_vertex!,
+  add_vertices!,
+  add_edge!,
+  add_edges!,
+  ob₁,
+  ob₂,
+  nv₁,
+  nv₂,
+  vertices₁,
+  vertices₂,
+  add_vertex₁!,
+  add_vertex₂!,
+  add_vertices₁!,
+  add_vertices₂!
 
 using AutoHashEquals
 using StaticArrays: StaticVector, SVector, @SVector
@@ -37,14 +75,14 @@ abstract type FixedShapeFreeDiagram{Ob} end
 """ Discrete diagram: a diagram whose only morphisms are identities.
 """
 @auto_hash_equals struct DiscreteDiagram{Ob,Objects<:AbstractVector{Ob}} <:
-    FixedShapeFreeDiagram{Ob}
+                         FixedShapeFreeDiagram{Ob}
   objects::Objects
 end
 
 const EmptyDiagram{Ob} = DiscreteDiagram{Ob,<:StaticVector{0,Ob}}
 const ObjectPair{Ob} = DiscreteDiagram{Ob,<:StaticVector{2,Ob}}
 
-EmptyDiagram{Ob}() where Ob = DiscreteDiagram(@SVector Ob[])
+EmptyDiagram{Ob}() where {Ob} = DiscreteDiagram(@SVector Ob[])
 ObjectPair(first, second) = DiscreteDiagram(SVector(first, second))
 
 ob(d::DiscreteDiagram) = d.objects
@@ -66,7 +104,7 @@ except that it may have a number of legs different than two. A colimit of this
 shape is a pushout.
 """
 @auto_hash_equals struct Multispan{Ob,Hom,Legs<:AbstractVector{Hom}} <:
-    FixedShapeFreeDiagram{Ob}
+                         FixedShapeFreeDiagram{Ob}
   apex::Ob
   legs::Legs
 end
@@ -79,10 +117,10 @@ end
 
 const SMultispan{N,Ob,Hom} = Multispan{Ob,Hom,<:StaticVector{N,Hom}}
 
-SMultispan{N}(apex, legs::Vararg{Any,N}) where N =
+SMultispan{N}(apex, legs::Vararg{Any,N}) where {N} =
   Multispan(apex, SVector{N}(legs...))
 SMultispan{0}(apex) = Multispan(apex, SVector{0,typeof(id(apex))}())
-SMultispan{N}(legs::Vararg{Any,N}) where N = Multispan(SVector{N}(legs...))
+SMultispan{N}(legs::Vararg{Any,N}) where {N} = Multispan(SVector{N}(legs...))
 
 """ Span of morphims in a category.
 
@@ -120,7 +158,7 @@ A multicospan is like a [`Cospan`](@ref) except that it may have a number of
 legs different than two. A limit of this shape is a pullback.
 """
 @auto_hash_equals struct Multicospan{Ob,Hom,Legs<:AbstractVector{Hom}} <:
-    FixedShapeFreeDiagram{Ob}
+                         FixedShapeFreeDiagram{Ob}
   apex::Ob
   legs::Legs
 end
@@ -133,10 +171,11 @@ end
 
 const SMulticospan{N,Ob,Hom} = Multicospan{Ob,Hom,<:StaticVector{N,Hom}}
 
-SMulticospan{N}(apex, legs::Vararg{Any,N}) where N =
+SMulticospan{N}(apex, legs::Vararg{Any,N}) where {N} =
   Multicospan(apex, SVector{N}(legs...))
 SMulticospan{0}(apex) = Multicospan(apex, SVector{0,typeof(id(apex))}())
-SMulticospan{N}(legs::Vararg{Any,N}) where N = Multicospan(SVector{N}(legs...))
+SMulticospan{N}(legs::Vararg{Any,N}) where {N} =
+  Multicospan(SVector{N}(legs...))
 
 """ Cospan of morphisms in a category.
 
@@ -170,9 +209,11 @@ bundle_legs(cospan::Multicospan, indices) =
   Multicospan(apex(cospan), map(i -> bundle_leg(cospan, i), indices))
 
 bundle_leg(x::Union{Multispan,Multicospan}, i::Int) = legs(x)[i]
-bundle_leg(x::Union{Multispan,Multicospan}, i::Tuple) = bundle_leg(x, SVector(i))
+bundle_leg(x::Union{Multispan,Multicospan}, i::Tuple) =
+  bundle_leg(x, SVector(i))
 bundle_leg(span::Multispan, i::AbstractVector{Int}) = pair(legs(span)[i])
-bundle_leg(cospan::Multicospan, i::AbstractVector{Int}) = copair(legs(cospan)[i])
+bundle_leg(cospan::Multicospan, i::AbstractVector{Int}) =
+  copair(legs(cospan)[i])
 
 # Parallel morphisms
 #-------------------
@@ -185,8 +226,12 @@ morphisms with the same domain and codomain. A (co)limit of this shape is a
 
 For the common special case of two morphisms, see [`ParallelPair`](@ref).
 """
-@auto_hash_equals struct ParallelMorphisms{Dom,Codom,Hom,Homs<:AbstractVector{Hom}} <:
-    FixedShapeFreeDiagram{Union{Dom,Codom}}
+@auto_hash_equals struct ParallelMorphisms{
+  Dom,
+  Codom,
+  Hom,
+  Homs<:AbstractVector{Hom},
+} <: FixedShapeFreeDiagram{Union{Dom,Codom}}
   dom::Dom
   codom::Codom
   homs::Homs
@@ -234,9 +279,9 @@ allequal(xs::AbstractVector) = isempty(xs) || all(==(xs[1]), xs)
 @present TheoryBipartiteFreeDiagram <: TheoryUndirectedBipartiteGraph begin
   Ob::Data
   Hom::Data
-  ob₁::Attr(V₁,Ob)
-  ob₂::Attr(V₂,Ob)
-  hom::Attr(E,Hom)
+  ob₁::Attr(V₁, Ob)
+  ob₂::Attr(V₂, Ob)
+  hom::Attr(E, Hom)
 end
 
 const AbstractBipartiteFreeDiagram =
@@ -250,21 +295,23 @@ colimits arising from undirected wiring diagrams. For limits, the boxes
 correspond to vertices in ``V₁`` and the junctions to vertics in ``V₂``.
 Colimits are dual.
 """
-const BipartiteFreeDiagram = ACSetType(TheoryBipartiteFreeDiagram,
-                                       index=[:src, :tgt])
+const BipartiteFreeDiagram =
+  ACSetType(TheoryBipartiteFreeDiagram, index=[:src, :tgt])
 
 ob₁(d::BipartiteFreeDiagram, args...) = subpart(d, args..., :ob₁)
 ob₂(d::BipartiteFreeDiagram, args...) = subpart(d, args..., :ob₂)
 hom(d::BipartiteFreeDiagram, args...) = subpart(d, args..., :hom)
 
 function BipartiteFreeDiagram(
-    obs₁::AbstractVector{Ob₁}, obs₂::AbstractVector{Ob₂},
-    homs::AbstractVector{Tuple{Hom,Int,Int}}) where {Ob₁,Ob₂,Hom}
-  @assert all(obs₁[s] == dom(f) && obs₂[t] == codom(f) for (f,s,t) in homs)
+  obs₁::AbstractVector{Ob₁},
+  obs₂::AbstractVector{Ob₂},
+  homs::AbstractVector{Tuple{Hom,Int,Int}},
+) where {Ob₁,Ob₂,Hom}
+  @assert all(obs₁[s] == dom(f) && obs₂[t] == codom(f) for (f, s, t) in homs)
   d = BipartiteFreeDiagram{Union{Ob₁,Ob₂},Hom}()
   add_vertices₁!(d, length(obs₁), ob₁=obs₁)
   add_vertices₂!(d, length(obs₂), ob₂=obs₂)
-  add_edges!(d, getindex.(homs,2), getindex.(homs,3), hom=first.(homs))
+  add_edges!(d, getindex.(homs, 2), getindex.(homs, 3), hom=first.(homs))
   return d
 end
 
@@ -284,11 +331,13 @@ function BipartiteFreeDiagram(cospan::Multicospan{Ob,Hom}) where {Ob,Hom}
   return d
 end
 
-function BipartiteFreeDiagram(para::ParallelMorphisms{Dom,Codom,Hom}) where {Dom,Codom,Hom}
+function BipartiteFreeDiagram(
+  para::ParallelMorphisms{Dom,Codom,Hom},
+) where {Dom,Codom,Hom}
   d = BipartiteFreeDiagram{Union{Dom,Codom},Hom}()
   v₁ = add_vertex₁!(d, ob₁=dom(para))
   v₂ = add_vertex₂!(d, ob₂=codom(para))
-  add_edges!(d, fill(v₁,length(para)), fill(v₂,length(para)), hom=hom(para))
+  add_edges!(d, fill(v₁, length(para)), fill(v₂, length(para)), hom=hom(para))
   return d
 end
 
@@ -298,30 +347,35 @@ end
 @present TheoryFreeDiagram <: TheoryGraph begin
   Ob::Data
   Hom::Data
-  ob::Attr(V,Ob)
-  hom::Attr(E,Hom)
+  ob::Attr(V, Ob)
+  hom::Attr(E, Hom)
 end
 
-const FreeDiagram = ACSetType(TheoryFreeDiagram, index=[:src,:tgt])
+const FreeDiagram = ACSetType(TheoryFreeDiagram, index=[:src, :tgt])
 
 # XXX: This is needed because we cannot control the supertype of C-set types.
 const _AbstractFreeDiagram = AbstractACSetType(TheoryFreeDiagram)
-const AbstractFreeDiagram{Ob} = Union{FixedShapeFreeDiagram{Ob},
-  AbstractBipartiteFreeDiagram{Ob}, _AbstractFreeDiagram{Ob}}
+const AbstractFreeDiagram{Ob} = Union{
+  FixedShapeFreeDiagram{Ob},
+  AbstractBipartiteFreeDiagram{Ob},
+  _AbstractFreeDiagram{Ob},
+}
 
 ob(d::FreeDiagram, args...) = subpart(d, args..., :ob)
 hom(d::FreeDiagram, args...) = subpart(d, args..., :hom)
 
-function FreeDiagram(obs::AbstractVector{Ob},
-                     homs::AbstractVector{Tuple{Hom,Int,Int}}) where {Ob,Hom}
-  @assert all(obs[s] == dom(f) && obs[t] == codom(f) for (f,s,t) in homs)
+function FreeDiagram(
+  obs::AbstractVector{Ob},
+  homs::AbstractVector{Tuple{Hom,Int,Int}},
+) where {Ob,Hom}
+  @assert all(obs[s] == dom(f) && obs[t] == codom(f) for (f, s, t) in homs)
   d = FreeDiagram{Ob,Hom}()
   add_vertices!(d, length(obs), ob=obs)
-  add_edges!(d, getindex.(homs,2), getindex.(homs,3), hom=first.(homs))
+  add_edges!(d, getindex.(homs, 2), getindex.(homs, 3), hom=first.(homs))
   return d
 end
 
-function FreeDiagram(discrete::DiscreteDiagram{Ob}) where Ob
+function FreeDiagram(discrete::DiscreteDiagram{Ob}) where {Ob}
   d = FreeDiagram{Ob,Nothing}()
   add_vertices!(d, length(discrete), ob=collect(discrete))
   return d
@@ -343,10 +397,12 @@ function FreeDiagram(cospan::Multicospan{Ob,Hom}) where {Ob,Hom}
   return d
 end
 
-function FreeDiagram(para::ParallelMorphisms{Dom,Codom,Hom}) where {Dom,Codom,Hom}
+function FreeDiagram(
+  para::ParallelMorphisms{Dom,Codom,Hom},
+) where {Dom,Codom,Hom}
   d = FreeDiagram{Union{Dom,Codom},Hom}()
   add_vertices!(d, 2, ob=[dom(para), codom(para)])
-  add_edges!(d, fill(1,length(para)), fill(2,length(para)), hom=hom(para))
+  add_edges!(d, fill(1, length(para)), fill(2, length(para)), hom=hom(para))
   return d
 end
 

@@ -24,8 +24,12 @@ const Context = OrderedDict{Symbol,Expr0}
   context::Context
   doc::Union{String,Nothing}
 
-  function TypeConstructor(name::Symbol, params::Vector,
-                           context::Context, doc=nothing)
+  function TypeConstructor(
+    name::Symbol,
+    params::Vector,
+    context::Context,
+    doc=nothing,
+  )
     new(name, params, context, doc)
   end
 end
@@ -39,8 +43,13 @@ end
   context::Context
   doc::Union{String,Nothing}
 
-  function TermConstructor(name::Symbol, params::Vector, typ::Expr0,
-                           context::Context, doc=nothing)
+  function TermConstructor(
+    name::Symbol,
+    params::Vector,
+    typ::Expr0,
+    context::Context,
+    doc=nothing,
+  )
     new(name, params, typ, context, doc)
   end
 end
@@ -54,8 +63,13 @@ end
   context::Context
   doc::Union{String,Nothing}
 
-  function AxiomConstructor(name::Symbol, left::Expr0, right::Expr0,
-                            context::Context, doc=nothing)
+  function AxiomConstructor(
+    name::Symbol,
+    left::Expr0,
+    right::Expr0,
+    context::Context,
+    doc=nothing,
+  )
     new(name, left, right, context, doc)
   end
 end
@@ -133,8 +147,9 @@ function theory end
 function theory_builder(head, body; signature=false)
   # Parse theory header.
   head = parse_theory_head(head)
-  @assert all(param in head.main.params
-              for base in head.base for param in base.params)
+  @assert all(
+    param in head.main.params for base in head.base for param in base.params
+  )
   @assert length(head.base) <= 1 "Multiple theory extension not supported"
   base_name = isempty(head.base) ? nothing : only(head.base).name
 
@@ -148,40 +163,52 @@ function theory_builder(head, body; signature=false)
   # We must generate and evaluate the code at *run time* because the base
   # theory, if specified, is not available at *parse time*.
   expr = :(theory_code($head, $theory, $(esc(base_name))))
-  Expr(:block,
+  Expr(
+    :block,
     Expr(:call, esc(:eval), expr),
-    :(Core.@__doc__ $(esc(head.main.name))))
+    :(Core.@__doc__ $(esc(head.main.name))),
+  )
 end
 
 function theory_code(head, theory, base_type)
   # Add types/terms/aliases from base theory, if provided.
   if !isnothing(base_type)
     base_theory = GAT.theory(base_type)
-    base_params = [ type.name for type in base_theory.types ]
+    base_params = [type.name for type in base_theory.types]
     bindings = Dict(zip(base_params, only(head.base).params))
     base_theory = replace_types(bindings, base_theory)
-    theory = Theory([base_theory.types; theory.types],
-                    [base_theory.terms; theory.terms],
-                    [base_theory.axioms; theory.axioms],
-                    merge(base_theory.aliases, theory.aliases))
+    theory = Theory(
+      [base_theory.types; theory.types],
+      [base_theory.terms; theory.terms],
+      [base_theory.axioms; theory.axioms],
+      merge(base_theory.aliases, theory.aliases),
+    )
   end
   theory = replace_types(theory.aliases, theory)
 
   # Names of generic functions in interface defined by theory.
-  names = unique!(vcat(
-    [ param for type in theory.types for param in type.params ], # Accessors.
-    [ term.name for term in theory.terms ], # Term constructors.
-    collect(keys(theory.aliases)) # Unicode aliases.
-  ))  
-  
+  names = unique!(
+    vcat(
+      [param for type in theory.types for param in type.params], # Accessors.
+      [term.name for term in theory.terms], # Term constructors.
+      collect(keys(theory.aliases)), # Unicode aliases.
+    ),
+  )
+
   # Generate block with abstract type definition, registration of theory,
   # and stubs for generic functions.
-  Expr(:block,
+  Expr(
+    :block,
     Expr(:abstract, head.main.name),
-    Expr(:(=),
-      Expr(:call, GlobalRef(GAT, :theory),
-        Expr(:(::), Expr(:curly, :Type, head.main.name))),
-      theory),
+    Expr(
+      :(=),
+      Expr(
+        :call,
+        GlobalRef(GAT, :theory),
+        Expr(:(::), Expr(:curly, :Type, head.main.name)),
+      ),
+      theory,
+    ),
     (Expr(:function, name) for name in names)...,
   )
 end
@@ -191,10 +218,14 @@ function parse_theory_head(expr::Expr)::TheoryHead
   parse_jl = parse_theory_binding_jlstyle
   parse_either = parse_theory_binding_either
   @match expr begin
-    (Expr(:call, :(=>), Expr(:tuple, bases), main)
-      => TheoryHead(parse(main), map(parse, bases)))
-    (Expr(:(<:), main, Expr(:tuple,bases))
-      => TheoryHead(parse_jl(main), map(parse_jl, bases)))
+    (
+      Expr(:call, :(=>), Expr(:tuple, bases), main) =>
+        TheoryHead(parse(main), map(parse, bases))
+    )
+    (
+      Expr(:(<:), main, Expr(:tuple, bases)) =>
+        TheoryHead(parse_jl(main), map(parse_jl, bases))
+    )
     Expr(:call, :(=>), base, main) => TheoryHead(parse(main), [parse(base)])
     Expr(:(<:), main, base) => TheoryHead(parse_jl(main), [parse_jl(base)])
     _ => TheoryHead(parse_either(expr))
@@ -203,7 +234,7 @@ end
 
 function parse_theory_binding(expr::Expr)::TheoryBinding
   @warn "Using Haskell-style theory declaration with parentheses is deprecated," *
-    " use Julia-style with curly braces."
+        " use Julia-style with curly braces."
   @match expr begin
     Expr(:call, name::Symbol, params...) => TheoryBinding(name, params)
     _ => throw(ParseError("Ill-formed theory binding $expr"))
@@ -229,7 +260,7 @@ end
 """
 function parse_theory_body(expr::Expr)
   @assert expr.head == :block
-  aliases = Dict{Symbol, Symbol}()
+  aliases = Dict{Symbol,Symbol}()
   types = OrderedDict{Symbol,TypeConstructor}()
   terms = TermConstructor[]
   axioms = AxiomConstructor[]
@@ -253,11 +284,19 @@ function parse_theory_body(expr::Expr)
       if elem.args[2].head == :(:=)
         aliases[elem.args[2].args[1]] = elem.args[2].args[2]
       elseif elem.args[2].head == :block
-        merge!(aliases, Dict(map(x -> if x.head == :(:=)
-                                        x.args[1] => x.args[2]
-                                      else
-                                        throw(ParseError("Ill-formed alias $x"))
-                                      end, strip_lines(elem.args[2]).args)))
+        merge!(
+          aliases,
+          Dict(
+            map(
+              x -> if x.head == :(:=)
+                x.args[1] => x.args[2]
+              else
+                throw(ParseError("Ill-formed alias $x"))
+              end,
+              strip_lines(elem.args[2]).args,
+            ),
+          ),
+        )
       else
         throw(ParseError("Ill-formed alias $elem"))
       end
@@ -275,8 +314,11 @@ most one type constructor with a given name.
 """
 function get_type(theory::Theory, name::Symbol)::TypeConstructor
   indices = findall(cons -> cons.name == name, theory.types)
-  length(indices) < 1 && error("Malformed GAT definition type constructor for $name is missing")
-  length(indices) > 1 && error("Malformed GAT definition type constructor for $name cannot be overloaded")
+  length(indices) < 1 &&
+    error("Malformed GAT definition type constructor for $name is missing")
+  length(indices) > 1 && error(
+    "Malformed GAT definition type constructor for $name cannot be overloaded",
+  )
   theory.types[indices[1]]
 end
 function has_type(theory::Theory, name::Symbol)::Bool
@@ -295,8 +337,10 @@ does not (yet?) support
 """
 function add_type_dispatch(call_expr::Expr, type_expr::Expr0)::Expr
   @match call_expr begin
-    (Expr(:call, name, args...) =>
-      Expr(:call, name, :(::Type{$type_expr}), args...))
+    (
+      Expr(:call, name, args...) =>
+        Expr(:call, name, :(::Type{$type_expr}), args...)
+    )
     _ => throw(ParseError("Ill-formed call expression $call_expr"))
   end
 end
@@ -321,7 +365,7 @@ end
 """
 function parse_context(expr::Expr)::Context
   context = Context()
-  args = expr.head == :tuple ? expr.args : [ expr ]
+  args = expr.head == :tuple ? expr.args : [expr]
   for arg in args
     name, type = @match arg begin
       Expr(:(::), name::Symbol, type) => (name, parse_raw_expr(type))
@@ -338,15 +382,16 @@ end
 
 """ Parse type or term constructor in a GAT.
 """
-function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor,
-                                              AxiomConstructor}
+function parse_constructor(
+  expr::Expr,
+)::Union{TypeConstructor,TermConstructor,AxiomConstructor}
   # Context is optional.
   doc, expr = parse_docstring(expr)
   cons_expr, context = @match expr begin
     Expr(:call, :<=, inner, context) => (inner, parse_context(context))
     Expr(:call, :⊣, inner, context) => (inner, parse_context(context))
-    Expr(:comparison, cons_left, cons_sym, cons_right, :⊣, context) => (
-      Expr(:call, cons_sym, cons_left, cons_right), parse_context(context))
+    Expr(:comparison, cons_left, cons_sym, cons_right, :⊣, context) =>
+      (Expr(:call, cons_sym, cons_left, cons_right), parse_context(context))
     Expr(:where, inner, context) => (inner, parse_context(context))
     _ => (expr, Context())
   end
@@ -365,15 +410,28 @@ function parse_constructor(expr::Expr)::Union{TypeConstructor,TermConstructor,
   end
 
   @match cons_expr begin
-    (Expr(:(::), name::Symbol, :TYPE)
-      => TypeConstructor(name, [], context, doc))
-    (Expr(:(::), Expr(:call, name::Symbol, params...), :TYPE)
-      => TypeConstructor(name, map(parse_param, params), context, doc))
-    (Expr(:(::), Expr(:call, name::Symbol, params...), type)
-      => TermConstructor(name, map(parse_param, params), parse_raw_expr(type),
-                         context, doc))
-    (Expr(:call, :(==), left, right)
-       => AxiomConstructor(:(==), left, right, context, doc))
+    (
+      Expr(:(::), name::Symbol, :TYPE) =>
+        TypeConstructor(name, [], context, doc)
+    )
+    (
+      Expr(:(::), Expr(:call, name::Symbol, params...), :TYPE) =>
+        TypeConstructor(name, map(parse_param, params), context, doc)
+    )
+    (
+      Expr(:(::), Expr(:call, name::Symbol, params...), type) =>
+        TermConstructor(
+          name,
+          map(parse_param, params),
+          parse_raw_expr(type),
+          context,
+          doc,
+        )
+    )
+    (
+      Expr(:call, :(==), left, right) =>
+        AxiomConstructor(:(==), left, right, context, doc)
+    )
     _ => throw(ParseError("Ill-formed type/term constructor $cons_expr"))
   end
 end
@@ -381,36 +439,54 @@ end
 """ Replace names of type constructors in a GAT.
 """
 function replace_types(bindings::Dict, theory::Theory)::Theory
-  Theory([ replace_types(bindings, t) for t in theory.types ],
-         [ replace_types(bindings, t) for t in theory.terms ],
-         [ replace_types(bindings, t) for t in theory.axioms ],
-         replace_types(bindings, theory.aliases))
+  Theory(
+    [replace_types(bindings, t) for t in theory.types],
+    [replace_types(bindings, t) for t in theory.terms],
+    [replace_types(bindings, t) for t in theory.axioms],
+    replace_types(bindings, theory.aliases),
+  )
 end
 function replace_types(bindings::Dict, cons::TypeConstructor)::TypeConstructor
-  TypeConstructor(replace_symbols(bindings, cons.name), cons.params,
-                  replace_types(bindings, cons.context), cons.doc)
+  TypeConstructor(
+    replace_symbols(bindings, cons.name),
+    cons.params,
+    replace_types(bindings, cons.context),
+    cons.doc,
+  )
 end
 function replace_types(bindings::Dict, cons::TermConstructor)::TermConstructor
-  TermConstructor(cons.name, cons.params,
-                  replace_symbols(bindings, cons.typ),
-                  replace_types(bindings, cons.context), cons.doc)
+  TermConstructor(
+    cons.name,
+    cons.params,
+    replace_symbols(bindings, cons.typ),
+    replace_types(bindings, cons.context),
+    cons.doc,
+  )
 end
 function replace_types(bindings::Dict, cons::AxiomConstructor)::AxiomConstructor
-  AxiomConstructor(cons.name,
-                   replace_symbols(bindings, cons.left),
-                   replace_symbols(bindings, cons.right),
-                   replace_types(bindings, cons.context), cons.doc)
+  AxiomConstructor(
+    cons.name,
+    replace_symbols(bindings, cons.left),
+    replace_symbols(bindings, cons.right),
+    replace_types(bindings, cons.context),
+    cons.doc,
+  )
 end
 function replace_types(bindings::Dict, aliases::Dict)::Dict
-  Dict(a => replace_symbols(bindings, aliases[a])
-       for a in keys(aliases))
+  Dict(a => replace_symbols(bindings, aliases[a]) for a in keys(aliases))
 end
 function replace_types(bindings::Dict, context::Context)::Context
-  GAT.Context(((name => @match expr begin
-    (Expr(:call, sym::Symbol, args...) =>
-      Expr(:call, replace_symbols(bindings, sym), args...))
-    sym::Symbol => replace_symbols(bindings, sym)
-  end) for (name, expr) in context))
+  GAT.Context((
+    (
+      name => @match expr begin
+        (
+          Expr(:call, sym::Symbol, args...) =>
+            Expr(:call, replace_symbols(bindings, sym), args...)
+        )
+        sym::Symbol => replace_symbols(bindings, sym)
+      end
+    ) for (name, expr) in context
+  ))
 end
 
 """ Remove type parameters from dependent type.
@@ -429,8 +505,12 @@ end
 
 Reference: (Cartmell, 1986, Sec 10: 'Informal syntax').
 """
-function expand_in_context(expr, params::Vector{Symbol},
-                           context::Context, theory::Theory)
+function expand_in_context(
+  expr,
+  params::Vector{Symbol},
+  context::Context,
+  theory::Theory,
+)
   @match expr begin
     Expr(:call, name::Symbol, args...) => begin
       expanded = [expand_in_context(e, params, context, theory) for e in args]
@@ -448,8 +528,12 @@ function expand_in_context(expr, params::Vector{Symbol},
     _ => throw(ParseError("Ill-formed raw expression $expr"))
   end
 end
-function expand_symbol_in_context(sym::Symbol, params::Vector{Symbol},
-                                  context::Context, theory::Theory)
+function expand_symbol_in_context(
+  sym::Symbol,
+  params::Vector{Symbol},
+  context::Context,
+  theory::Theory,
+)
   # This code expands symbols that occur as direct arguments to type
   # constructors. If there are term constructors in between, it does not work:
   # indeed, it cannot work in general because the term constructors are not
@@ -459,7 +543,7 @@ function expand_symbol_in_context(sym::Symbol, params::Vector{Symbol},
   #   (:X => :Ob, :Y => :Ob, :f => :(Hom(otimes(X,Y))))
   names = collect(keys(context))
   start = findfirst(names .== sym)
-  for name in names[start+1:end]
+  for name in names[(start + 1):end]
     expr = context[name]
     if isa(expr, Expr) && expr.head == :call && sym in expr.args[2:end]
       cons = get_type(theory, expr.args[1])
@@ -476,7 +560,7 @@ of a term constructor.
 """
 function expand_term_type(cons::TermConstructor, theory::Theory)
   isa(cons.typ, Symbol) ? cons.typ :
-    expand_in_context(cons.typ, cons.params, cons.context, theory)
+  expand_in_context(cons.typ, cons.params, cons.context, theory)
 end
 
 """ Implicit equations defined by a context.
@@ -495,7 +579,7 @@ function equations(context::Context, theory::Theory)::Vector{Pair}
   eqs = Pair[]
   names = collect(keys(context))
   for (start, var) in enumerate(names)
-    for name in names[start+1:end]
+    for name in names[(start + 1):end]
       expr = context[name]
       if isa(expr, Symbol) && !has_type(theory, expr)
         # If the constructor is a symbol and there isn't a matching type in
@@ -514,11 +598,17 @@ end
 
 """ Implicit equations defined by context, allowing for implicit variables.
 """
-function equations(params::Vector{Symbol}, context::Context,
-                   theory::Theory)::Vector{Pair}
-  eqs = [ (expand_in_context(lhs, params, context, theory) =>
-           expand_in_context(rhs, params, context, theory))
-          for (lhs, rhs) in equations(context, theory) ]
+function equations(
+  params::Vector{Symbol},
+  context::Context,
+  theory::Theory,
+)::Vector{Pair}
+  eqs = [
+    (
+      expand_in_context(lhs, params, context, theory) =>
+        expand_in_context(rhs, params, context, theory)
+    ) for (lhs, rhs) in equations(context, theory)
+  ]
   # Remove tautologies (expr == expr) resulting from expansions.
   # FIXME: Should we worry about redundancies from the symmetry of equality,
   # i.e., (expr1 == expr2) && (expr2 == expr1)?
@@ -545,16 +635,23 @@ macro instance(head, body)
   # type is not defined at *parse time*.
   # Also, we "throw away" any docstring.
   # FIXME: Is there a better place to put the docstring?
-  expr = :(instance_code($(esc(head.name)), $(esc(head.params)), $functions, $ext_functions))
-  Expr(:block,
+  expr = :(instance_code(
+    $(esc(head.name)),
+    $(esc(head.params)),
+    $functions,
+    $ext_functions,
+  ))
+  Expr(
+    :block,
     Expr(:call, esc(:eval), expr),
-    :(Core.@__doc__ abstract type $(esc(gensym(:instance_doc))) end)) # /dev/null
+    :(Core.@__doc__ abstract type $(esc(gensym(:instance_doc))) end),
+  ) # /dev/null
 end
 function instance_code(theory_type, instance_types, instance_fns, external_fns)
   code = Expr(:block)
   theory = GAT.theory(theory_type)
   bindings = Dict(zip([type.name for type in theory.types], instance_types))
-  bound_fns = [ replace_symbols(bindings, f) for f in interface(theory) ]
+  bound_fns = [replace_symbols(bindings, f) for f in interface(theory)]
   bound_fns = OrderedDict(parse_function_sig(f) => f for f in bound_fns)
   instance_fns = Dict(parse_function_sig(f) => f for f in instance_fns)
   for (sig, f) in bound_fns
@@ -596,9 +693,11 @@ end
 """ Complete set of Julia functions for a theory.
 """
 function interface(theory::Theory)::Vector{JuliaFunction}
-  [ accessors(theory);
-    constructors(theory);
-    alias_functions(theory) ]
+  [
+    accessors(theory)
+    constructors(theory)
+    alias_functions(theory)
+  ]
 end
 
 """ Julia functions for type parameter accessors.
@@ -607,21 +706,26 @@ function accessors(theory::Theory)::Vector{JuliaFunction}
   vcat(map(accessors, theory.types)...)
 end
 function accessors(cons::TypeConstructor)::Vector{JuliaFunction}
-  [ JuliaFunction(Expr(:call, param, Expr(:(::), cons.name)),
-                  strip_type(cons.context[param]))
-    for param in cons.params ]
+  [
+    JuliaFunction(
+      Expr(:call, param, Expr(:(::), cons.name)),
+      strip_type(cons.context[param]),
+    ) for param in cons.params
+  ]
 end
 
 """ Julia functions for term constructors of GAT.
 """
 function constructors(theory::Theory)::Vector{JuliaFunction}
-  [ constructor(cons, theory) for cons in theory.terms ]
+  [constructor(cons, theory) for cons in theory.terms]
 end
-function constructor(cons::Union{TypeConstructor,TermConstructor},
-                     theory::Theory)::JuliaFunction
+function constructor(
+  cons::Union{TypeConstructor,TermConstructor},
+  theory::Theory,
+)::JuliaFunction
   arg_names = cons.params
-  arg_types = [ strip_type(cons.context[name]) for name in arg_names ]
-  args = [ Expr(:(::), name, typ) for (name,typ) in zip(arg_names, arg_types) ]
+  arg_types = [strip_type(cons.context[name]) for name in arg_names]
+  args = [Expr(:(::), name, typ) for (name, typ) in zip(arg_names, arg_types)]
   return_type = cons isa TermConstructor ? strip_type(cons.typ) : cons.name
 
   call_expr = Expr(:call, cons.name, args...)
@@ -637,33 +741,39 @@ function alias_functions(theory::Theory)::Vector{JuliaFunction}
   # collect all of the types and terms from the theory
   terms_types = [theory.types; theory.terms]
   # iterate over the specified aliases
-  collect(Iterators.flatten(map(collect(theory.aliases)) do alias
-    # collect all of the destination function definitions to alias
-    # allows an alias to overite all the type definitions of a function
-    dests = filter(i -> i.name == last(alias), map(x -> x, terms_types))
-    # If there are no matching functions, throw a parse error
-    if isempty(dests)
-      throw(ParseError("Cannot alias undefined type or term $alias"))
-    end
-    # For each destination, create a Julia function
-    map(dests) do dest
-      fun = constructor(dest, theory)
-      fun.call_expr.args[1] = first(alias)
-      # Extract arguments from function header, handling special case of
-      # created by `add_type_dispatch`.
-      args = map(fun.call_expr.args[2:end]) do arg
-        @match arg begin
-          # Special case: dispatch on return type.
-          Expr(:(::), Expr(:curly, :Type, type)) => type
-          # Main case: typed parameter.
-          Expr(:(::), param, type) => param
-          _ => throw(ParseError("Cannot parse argument $arg for alias $alias"))
+  collect(
+    Iterators.flatten(
+      map(collect(theory.aliases)) do alias
+        # collect all of the destination function definitions to alias
+        # allows an alias to overite all the type definitions of a function
+        dests = filter(i -> i.name == last(alias), map(x -> x, terms_types))
+        # If there are no matching functions, throw a parse error
+        if isempty(dests)
+          throw(ParseError("Cannot alias undefined type or term $alias"))
         end
-      end
-      body = Expr(:call, dest.name, args...)
-      JuliaFunction(fun.call_expr, fun.return_type, body)
-    end
-  end))
+        # For each destination, create a Julia function
+        map(dests) do dest
+          fun = constructor(dest, theory)
+          fun.call_expr.args[1] = first(alias)
+          # Extract arguments from function header, handling special case of
+          # created by `add_type_dispatch`.
+          args = map(fun.call_expr.args[2:end]) do arg
+            @match arg begin
+              # Special case: dispatch on return type.
+              Expr(:(::), Expr(:curly, :Type, type)) => type
+              # Main case: typed parameter.
+              Expr(:(::), param, type) => param
+              _ => throw(
+                ParseError("Cannot parse argument $arg for alias $alias"),
+              )
+            end
+          end
+          body = Expr(:call, dest.name, args...)
+          JuliaFunction(fun.call_expr, fun.return_type, body)
+        end
+      end,
+    ),
+  )
 end
 
 """ Invoke a term constructor by name on an instance.
@@ -673,8 +783,12 @@ method for the constructor should be called directly, not through this function.
 
 Cf. Julia's builtin `invoke()` function.
 """
-function invoke_term(theory_type::Type, instance_types::Tuple,
-                     constructor_name::Symbol, args...)
+function invoke_term(
+  theory_type::Type,
+  instance_types::Tuple,
+  constructor_name::Symbol,
+  args...,
+)
   # Get the corresponding Julia method from the parent module.
   method = getfield(parentmodule(theory_type), constructor_name)
   args = collect(Any, args)
@@ -690,8 +804,10 @@ function invoke_term(theory_type::Type, instance_types::Tuple,
       # FIXME: Terms constructors can be overloaded, so there may be multiple
       # term constructors with the same name. Distinguishing them requires type
       # inference. I am punting on that right now.
-      constructor = theory.terms[
-        findfirst(cons -> cons.name == constructor_name, theory.terms)]
+      constructor = theory.terms[findfirst(
+        cons -> cons.name == constructor_name,
+        theory.terms,
+      )]
       return_name = strip_type(constructor.typ)
       index = findfirst(cons -> cons.name == return_name, theory.types)
     end

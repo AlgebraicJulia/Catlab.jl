@@ -8,8 +8,17 @@ Presentations define small categories by generators and relations and are useful
 in applications like knowledge representation.
 """
 module Present
-export @present, Presentation, generator, generators, has_generator, equations,
-  add_generator!, add_generators!, add_definition!, add_equation!, generator_index
+export @present,
+  Presentation,
+  generator,
+  generators,
+  has_generator,
+  equations,
+  add_generator!,
+  add_generators!,
+  add_definition!,
+  add_equation!,
+  generator_index
 
 using Base.Meta: ParseError
 using MLStyle: @match
@@ -28,24 +37,33 @@ struct Presentation{Theory,Name}
   equations::Vector{Pair}
 end
 
-function Presentation{Name}(syntax::Module) where Name
+function Presentation{Name}(syntax::Module) where {Name}
   Theory = syntax.theory()
   theory = GAT.theory(Theory)
   names = Tuple(type.name for type in theory.types)
   vectors = ((getfield(syntax, name){:generator})[] for name in names)
-  Presentation{Theory,Name}(syntax, NamedTuple{names}(vectors),
-                            Dict{Name,Pair{Symbol,Int}}(), Pair[])
+  Presentation{Theory,Name}(
+    syntax,
+    NamedTuple{names}(vectors),
+    Dict{Name,Pair{Symbol,Int}}(),
+    Pair[],
+  )
 end
 Presentation(syntax::Module) = Presentation{Symbol}(syntax)
 
 function Base.:(==)(pres1::Presentation, pres2::Presentation)
-  pres1.syntax == pres2.syntax && pres1.generators == pres2.generators &&
+  pres1.syntax == pres2.syntax &&
+    pres1.generators == pres2.generators &&
     pres1.equations == pres2.equations
 end
 
 function Base.copy(pres::Presentation{T,Name}) where {T,Name}
-  Presentation{T,Name}(pres.syntax, map(copy, pres.generators),
-                       copy(pres.generator_name_index), copy(pres.equations))
+  Presentation{T,Name}(
+    pres.syntax,
+    map(copy, pres.generators),
+    copy(pres.generator_name_index),
+    copy(pres.equations),
+  )
 end
 
 # Presentation
@@ -83,7 +101,7 @@ function add_generator!(pres::Presentation, expr)
     if haskey(pres.generator_name_index, name)
       error("Name $name already defined in presentation")
     end
-    pres.generator_name_index[name] = type => length(generators)+1
+    pres.generator_name_index[name] = type => length(generators) + 1
   end
   push!(generators, expr)
   expr
@@ -118,7 +136,8 @@ end
 
 """ Get the index of a generator
 """
-generator_index(pres::Presentation, x::Symbol) = pres.generator_name_index[x].second
+generator_index(pres::Presentation, x::Symbol) =
+  pres.generator_name_index[x].second
 
 # Presentation macro
 ####################
@@ -153,14 +172,11 @@ end
 """
 function translate_statement(expr::Expr)::Expr
   @match expr begin
-    Expr(:(::), name::Symbol, type_expr) =>
-      translate_generator(name, type_expr)
+    Expr(:(::), name::Symbol, type_expr) => translate_generator(name, type_expr)
     Expr(:(::), Expr(:tuple, names...), type_expr) =>
       Expr(:block, (translate_generator(name, type_expr) for name in names)...)
-    Expr(:(::), type_expr) =>
-      translate_generator(nothing, type_expr)
-    Expr(:(:=), name::Symbol, def_expr) =>
-      translate_definition(name, def_expr)
+    Expr(:(::), type_expr) => translate_generator(nothing, type_expr)
+    Expr(:(:=), name::Symbol, def_expr) => translate_definition(name, def_expr)
     Expr(:call, :(==), lhs, rhs) => translate_equation(lhs, rhs)
     _ => throw(ParseError("Ill-formed presentation statement $expr"))
   end
@@ -174,33 +190,51 @@ function translate_generator(name::Union{Symbol,Nothing}, type_expr)::Expr
     Expr(:call, name::Symbol, args...) => (name, args)
     _ => throw(ParseError("Ill-formed type expression $type_expr"))
   end
-  gen_expr = Expr(:call, type_name,
-                  isnothing(name) ? nothing : QuoteNode(name), args...)
-  Expr(:call, module_ref(:add_generator!), :_presentation,
-       translate_expr(gen_expr))
+  gen_expr =
+    Expr(:call, type_name, isnothing(name) ? nothing : QuoteNode(name), args...)
+  Expr(
+    :call,
+    module_ref(:add_generator!),
+    :_presentation,
+    translate_expr(gen_expr),
+  )
 end
 
 """ Translate definition of generator in terms of other generators.
 """
 function translate_definition(name::Symbol, def_expr)::Expr
-  Expr(:call, module_ref(:add_definition!), :_presentation,
-       QuoteNode(name), translate_expr(def_expr))
+  Expr(
+    :call,
+    module_ref(:add_definition!),
+    :_presentation,
+    QuoteNode(name),
+    translate_expr(def_expr),
+  )
 end
 
 """ Translate declaration of equality between terms.
 """
 function translate_equation(lhs, rhs)::Expr
-  Expr(:call, module_ref(:add_equation!), :_presentation,
-       translate_expr(lhs), translate_expr(rhs))
+  Expr(
+    :call,
+    module_ref(:add_equation!),
+    :_presentation,
+    translate_expr(lhs),
+    translate_expr(rhs),
+  )
 end
 
 """ Translate GAT expression appearing in presentation.
 """
 function translate_expr(expr)
   @match expr begin
-    Expr(:call, name::Symbol, args...) =>
-      Expr(:call, GlobalRef(Syntax, :invoke_term), :(_presentation.syntax),
-           QuoteNode(name), map(translate_expr, args)...)
+    Expr(:call, name::Symbol, args...) => Expr(
+      :call,
+      GlobalRef(Syntax, :invoke_term),
+      :(_presentation.syntax),
+      QuoteNode(name),
+      map(translate_expr, args)...,
+    )
     name::Symbol =>
       Expr(:call, module_ref(:generator), :_presentation, QuoteNode(name))
     _ => expr
@@ -213,15 +247,20 @@ module_ref(sym::Symbol) = GlobalRef(Present, sym)
 ###############
 
 function to_json_sexpr(pres::Presentation, expr::GATExpr)
-  to_json_sexpr(expr;
-    by_reference = name -> has_generator(pres, name))
+  to_json_sexpr(expr; by_reference=name -> has_generator(pres, name))
 end
 
-function parse_json_sexpr(pres::Presentation{Theory,Name},
-                          syntax::Module, sexpr) where {Theory,Name}
-  parse_json_sexpr(syntax, sexpr;
-    symbols = Name == Symbol,
-    parse_reference = name -> generator(pres, name))
+function parse_json_sexpr(
+  pres::Presentation{Theory,Name},
+  syntax::Module,
+  sexpr,
+) where {Theory,Name}
+  parse_json_sexpr(
+    syntax,
+    sexpr;
+    symbols=Name == Symbol,
+    parse_reference=name -> generator(pres, name),
+  )
 end
 
 end

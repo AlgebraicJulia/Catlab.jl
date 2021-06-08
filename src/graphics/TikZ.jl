@@ -15,9 +15,26 @@ The AST is adapted from the (also incomplete) BNF grammar for TikZ in
 [TikZit](http://tikzit.sourceforge.net/manual.html).
 """
 module TikZ
-export Expression, PathExpression, Statement, GraphStatement, Property,
-  Document, Picture, Scope, Coordinate, Node, NodeCoordinate, Edge, EdgeNode,
-  PathOperation, Graph, GraphScope, GraphNode, GraphEdge, MatrixNode, pprint
+export Expression,
+  PathExpression,
+  Statement,
+  GraphStatement,
+  Property,
+  Document,
+  Picture,
+  Scope,
+  Coordinate,
+  Node,
+  NodeCoordinate,
+  Edge,
+  EdgeNode,
+  PathOperation,
+  Graph,
+  GraphScope,
+  GraphNode,
+  GraphEdge,
+  MatrixNode,
+  pprint
 
 using AutoHashEquals
 
@@ -32,22 +49,24 @@ abstract type GraphStatement <: Expression end
 @auto_hash_equals struct Property <: Expression
   key::String
   value::Union{String,Vector{Property},Nothing}
-  
+
   Property(key::String, value=nothing) = new(key, value)
 end
 
 as_property(prop::Property) = prop
 as_property(pair::Pair) = as_property(first(pair), last(pair))
-as_property(key::String, value::Union{String,Nothing}=nothing) = Property(key, value)
-as_property(key::String, values::AbstractVector) = Property(key, as_properties(values))
+as_property(key::String, value::Union{String,Nothing}=nothing) =
+  Property(key, value)
+as_property(key::String, values::AbstractVector) =
+  Property(key, as_properties(values))
 
 as_properties(props::Vector{Property}) = props
-as_properties(props) = Property[ as_property(prop) for prop in props ]
+as_properties(props) = Property[as_property(prop) for prop in props]
 
 @auto_hash_equals struct Picture <: Expression
   stmts::Vector{Statement}
   props::Vector{Property}
-  
+
   Picture(stmts::Vararg{Statement}; props=Property[]) = new([stmts...], props)
 end
 
@@ -55,7 +74,7 @@ end
   picture::Picture
   libraries::Vector{String}
   packages::Vector{String}
-  
+
   Document(picture::Picture; libraries=String[], packages=String[]) =
     new(picture, libraries, packages)
 end
@@ -63,14 +82,14 @@ end
 @auto_hash_equals struct Scope <: Statement
   stmts::Vector{Statement}
   props::Vector{Property}
-  
+
   Scope(stmts::Vararg{Statement}; props=Property[]) = new([stmts...], props)
 end
 
 @auto_hash_equals struct Coordinate <: PathExpression
   x::String
   y::String
-  
+
   Coordinate(x::String, y::String) = new(x, y)
   Coordinate(x::Number, y::Number) = new(string(x), string(y))
 end
@@ -80,7 +99,7 @@ end
   props::Vector{Property}
   coord::Union{Coordinate,Nothing}
   content::String
-  
+
   Node(; name=nothing, props=Property[], coord=nothing, content="") =
     new(name, props, coord, content)
 end
@@ -93,14 +112,14 @@ end
 @auto_hash_equals struct EdgeNode <: PathExpression
   props::Vector{Property}
   content::Union{String,Nothing}
-  
+
   EdgeNode(; props=Property[], content=nothing) = new(props, content)
 end
 
 @auto_hash_equals struct Edge <: Statement
   exprs::Vector{PathExpression}
   props::Vector{Property}
-  
+
   Edge(args...; props=Property[]) =
     new([arg isa String ? NodeCoordinate(arg) : arg for arg in args], props)
 end
@@ -108,14 +127,14 @@ end
 @auto_hash_equals struct PathOperation <: PathExpression
   op::String
   props::Vector{Property}
-  
+
   PathOperation(op::String; props=Property[]) = new(op, props)
 end
 
 @auto_hash_equals struct Graph <: Statement
   stmts::Vector{GraphStatement}
   props::Vector{Property}
-  
+
   Graph(stmts::Vararg{GraphStatement}; props=Property[]) =
     new([stmts...], props)
 end
@@ -123,7 +142,7 @@ end
 @auto_hash_equals struct GraphScope <: GraphStatement
   stmts::Vector{GraphStatement}
   props::Vector{Property}
-  
+
   GraphScope(stmts::Vararg{GraphStatement}; props=Property[]) =
     new([stmts...], props)
 end
@@ -132,7 +151,7 @@ end
   name::String
   props::Vector{Property}
   content::Union{String,Nothing}
-  
+
   GraphNode(name::String; props=Property[], content=nothing) =
     new(name, props, content)
 end
@@ -141,15 +160,14 @@ end
   src::String
   tgt::String
   props::Vector{Property}
-  
-  GraphEdge(src::String, tgt::String; props=Property[]) =
-    new(src, tgt, props)
+
+  GraphEdge(src::String, tgt::String; props=Property[]) = new(src, tgt, props)
 end
 
 @auto_hash_equals struct MatrixNode <: Statement
   stmts::Matrix{Vector{Statement}}
   props::Vector{Property}
-  
+
   MatrixNode(stmts::Matrix; props=Property[]) = new(stmts, props)
 end
 
@@ -179,7 +197,7 @@ function pprint(io::IO, pic::Picture, n::Int)
   pprint(io, pic.props)
   println(io)
   for stmt in pic.stmts
-    pprint(io, stmt, n+2)
+    pprint(io, stmt, n + 2)
     println(io)
   end
   indent(io, n)
@@ -192,7 +210,7 @@ function pprint(io::IO, scope::Scope, n::Int)
   pprint(io, scope.props)
   println(io)
   for stmt in scope.stmts
-    pprint(io, stmt, n+2)
+    pprint(io, stmt, n + 2)
     println(io)
   end
   indent(io, n)
@@ -238,7 +256,7 @@ function pprint(io::IO, graph::Graph, n::Int)
   pprint(io, graph.props)
   println(io, "{")
   for stmt in graph.stmts
-    pprint(io, stmt, n+2)
+    pprint(io, stmt, n + 2)
     println(io)
   end
   indent(io, n)
@@ -251,7 +269,7 @@ function pprint(io::IO, scope::GraphScope, n::Int)
   pprint(io, scope.props)
   println(io)
   for stmt in scope.stmts
-    pprint(io, stmt, n+2)
+    pprint(io, stmt, n + 2)
     println(io)
   end
   indent(io, n)
@@ -272,7 +290,7 @@ function pprint(io::IO, node::GraphNode, n::Int)
 end
 
 function pprint(io::IO, node::GraphEdge, n::Int)
-  indent(io ,n)
+  indent(io, n)
   print(io, "$(node.src) ->")
   pprint(io, node.props)
   print(io, " $(node.tgt);")
@@ -283,15 +301,19 @@ function pprint(io::IO, matrix::MatrixNode, ind::Int)
   print(io, "\\matrix")
   pprint(io, matrix.props)
   println(io, "{")
-  m,n = size(matrix.stmts)
-  for i = 1:m
-    for j = 1:n
-      p = length(matrix.stmts[i,j])
-      for k = 1:p
-        pprint(io, matrix.stmts[i,j][k], ind+2)
-        if (k < p) println(io) end
+  m, n = size(matrix.stmts)
+  for i in 1:m
+    for j in 1:n
+      p = length(matrix.stmts[i, j])
+      for k in 1:p
+        pprint(io, matrix.stmts[i, j][k], ind + 2)
+        if (k < p)
+          println(io)
+        end
       end
-      if (j < n) println(io, " &") end
+      if (j < n)
+        println(io, " &")
+      end
     end
     println(io, " \\\\")
   end
@@ -329,7 +351,9 @@ function pprint(io::IO, props::Vector{Property}, n::Int=0; nested::Bool=false)
     print(io, nested ? "{" : "[")
     for (i, prop) in enumerate(props)
       pprint(io, prop)
-      if (i < length(props)) print(io, ",") end
+      if (i < length(props))
+        print(io, ",")
+      end
     end
     print(io, nested ? "}" : "]")
   end

@@ -12,7 +12,6 @@ using ...Theories: ObExpr, HomExpr, otimes, munit
 using ...WiringDiagrams
 using ..GenerateJuliaPrograms: make_return_value
 
-
 """ Parse a wiring diagram from a Julia program.
 
 For the most part, this is standard Julia code but we take a few liberties with
@@ -42,8 +41,12 @@ creation by the empty vector `[]`. For example, `f([x1,x2])` translates to
 This macro is a wrapper around [`parse_wiring_diagram`](@ref).
 """
 macro program(pres, exprs...)
-  Expr(:call, GlobalRef(ParseJuliaPrograms, :parse_wiring_diagram),
-       esc(pres), (QuoteNode(expr) for expr in exprs)...)
+  Expr(
+    :call,
+    GlobalRef(ParseJuliaPrograms, :parse_wiring_diagram),
+    esc(pres),
+    (QuoteNode(expr) for expr in exprs)...,
+  )
 end
 
 """ Parse a wiring diagram from a Julia function expression.
@@ -58,7 +61,11 @@ function parse_wiring_diagram(pres::Presentation, expr::Expr)::WiringDiagram
   end
 end
 
-function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::WiringDiagram
+function parse_wiring_diagram(
+  pres::Presentation,
+  call::Expr0,
+  body::Expr,
+)::WiringDiagram
   # Parse argument names and types from call expression.
   syntax_module = pres.syntax
   call_args = @match call begin
@@ -77,33 +84,41 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
   end
 
   # Compile...
-  args = Symbol[ first(arg) for arg in parsed_args ]
+  args = Symbol[first(arg) for arg in parsed_args]
   kwargs = make_lookup_table(pres, syntax_module, unique_symbols(body))
-  func_expr = compile_recording_expr(body, args,
-    kwargs = sort!(collect(keys(kwargs))))
+  func_expr =
+    compile_recording_expr(body, args, kwargs=sort!(collect(keys(kwargs))))
   func = mk_function(parentmodule(syntax_module), func_expr)
 
   # ...and then evaluate function that records the function calls.
-  arg_obs = syntax_module.Ob[ last(arg) for arg in parsed_args ]
-  arg_blocks = Int[ length(to_wiring_diagram(ob)) for ob in arg_obs ]
+  arg_obs = syntax_module.Ob[last(arg) for arg in parsed_args]
+  arg_blocks = Int[length(to_wiring_diagram(ob)) for ob in arg_obs]
   inputs = to_wiring_diagram(otimes(arg_obs))
   diagram = WiringDiagram(inputs, munit(typeof(inputs)))
   v_in, v_out = input_id(diagram), output_id(diagram)
-  arg_ports = [ Tuple(Port(v_in, OutputPort, i) for i in (stop-len+1):stop)
-                for (len, stop) in zip(arg_blocks, cumsum(arg_blocks)) ]
+  arg_ports = [
+    Tuple(Port(v_in, OutputPort, i) for i in (stop - len + 1):stop) for
+    (len, stop) in zip(arg_blocks, cumsum(arg_blocks))
+  ]
   recorder = f -> (args...) -> record_call!(diagram, f, args...)
   value = func(recorder, arg_ports...; kwargs...)
 
   # Add outgoing wires for return values.
   out_ports = normalize_arguments((value,))
-  add_output_ports!(diagram, [
-    # XXX: Inferring the output port types is not reliable.
-    port_value(diagram, first(ports)) for ports in out_ports
-  ])
-  add_wires!(diagram, [
-    port => Port(v_out, InputPort, i)
-    for (i, ports) in enumerate(out_ports) for port in ports
-  ])
+  add_output_ports!(
+    diagram,
+    [
+      # XXX: Inferring the output port types is not reliable.
+      port_value(diagram, first(ports)) for ports in out_ports
+    ],
+  )
+  add_wires!(
+    diagram,
+    [
+      port => Port(v_out, InputPort, i) for (i, ports) in enumerate(out_ports)
+      for port in ports
+    ],
+  )
   substitute(diagram)
 end
 
@@ -111,7 +126,7 @@ end
 """
 function make_lookup_table(pres::Presentation, syntax_module::Module, names)
   theory = GAT.theory(syntax_module.theory())
-  terms = Set([ term.name for term in theory.terms ])
+  terms = Set([term.name for term in theory.terms])
 
   table = Dict{Symbol,Any}()
   for name in names
@@ -147,24 +162,31 @@ Rewrites the function body so that:
   2. "Curly" function calls are mapped to ordinary function calls, e.g.,
      `f{X,Y}` becomes `f(X,Y)`
 """
-function compile_recording_expr(body::Expr, args::Vector{Symbol};
-    kwargs::Vector{Symbol}=Symbol[],
-    recorder::Symbol=Symbol("##recorder"))::Expr
+function compile_recording_expr(
+  body::Expr,
+  args::Vector{Symbol};
+  kwargs::Vector{Symbol}=Symbol[],
+  recorder::Symbol=Symbol("##recorder"),
+)::Expr
   function rewrite(expr)
     @match expr begin
       Expr(:call, f, args...) =>
         Expr(:call, Expr(:call, recorder, rewrite(f)), map(rewrite, args)...)
-      Expr(:curly, f, args...) =>
-        Expr(:call, rewrite(f), map(rewrite, args)...)
+      Expr(:curly, f, args...) => Expr(:call, rewrite(f), map(rewrite, args)...)
       Expr(head, args...) => Expr(head, map(rewrite, args)...)
       _ => expr
     end
   end
-  Expr(:function,
-    Expr(:tuple,
+  Expr(
+    :function,
+    Expr(
+      :tuple,
       Expr(:parameters, (Expr(:kw, kw, nothing) for kw in kwargs)...),
-      recorder, args...),
-    rewrite(body))
+      recorder,
+      args...,
+    ),
+    rewrite(body),
+  )
 end
 
 """ Record a Julia function call as a box in a wiring diagram.
@@ -178,21 +200,25 @@ function record_call!(diagram::WiringDiagram, f::HomExpr, args...)
   inputs = input_ports(subdiagram)
   arg_ports = normalize_arguments(Tuple(args))
   @assert length(arg_ports) == length(inputs)
-  add_wires!(diagram, [
-    Wire(port => Port(v, InputPort, i))
-    for (i, ports) in enumerate(arg_ports) for port in ports
-  ])
+  add_wires!(
+    diagram,
+    [
+      Wire(port => Port(v, InputPort, i)) for (i, ports) in
+                                              enumerate(arg_ports) for
+      port in ports
+    ],
+  )
 
   # Return output ports.
   outputs = output_ports(subdiagram)
-  return_ports = [ Port(v, OutputPort, i) for i in eachindex(outputs) ]
+  return_ports = [Port(v, OutputPort, i) for i in eachindex(outputs)]
   make_return_value(return_ports)
 end
 
 """ Normalize arguments given as (possibly nested) tuples or vectors of values.
 """
 function normalize_arguments(xs::Tuple)
-  mapreduce(normalize_arguments, (xs,ys) -> (xs..., ys...), xs; init=())
+  mapreduce(normalize_arguments, (xs, ys) -> (xs..., ys...), xs; init=())
 end
 function normalize_arguments(xs::Vector)
   xss = map(normalize_arguments, flatten_vec(xs)) # Vector of lists of vectors

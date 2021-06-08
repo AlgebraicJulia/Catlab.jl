@@ -24,7 +24,7 @@ encompassed by the subtype [`FinSet`](@ref).
 """
 abstract type SetOb{T} end
 
-Base.eltype(::Type{<:SetOb{T}}) where T = T
+Base.eltype(::Type{<:SetOb{T}}) where {T} = T
 
 """ A Julia data type regarded as a set.
 """
@@ -32,7 +32,7 @@ struct TypeSet{T} <: SetOb{T} end
 
 TypeSet(T::Type) = TypeSet{T}()
 
-Base.show(io::IO, ::TypeSet{T}) where T = print(io, "TypeSet($T)")
+Base.show(io::IO, ::TypeSet{T}) where {T} = print(io, "TypeSet($T)")
 
 """ Abstract type for morphism in the category **Set**.
 
@@ -42,7 +42,7 @@ elements of type `T`, returning an element of type `T′`.
 Note: This type would be better called simply `Function` but that name is
 already taken by the base Julia type.
 """
-abstract type SetFunction{Dom <: SetOb, Codom <: SetOb} end
+abstract type SetFunction{Dom<:SetOb,Codom<:SetOb} end
 
 SetFunction(f::Function, args...) = SetFunctionCallable(f, args...)
 SetFunction(::typeof(identity), args...) = SetFunctionIdentity(args...)
@@ -52,14 +52,21 @@ show_type(io::IO, ::Type{<:SetFunction}) = print(io, "SetFunction")
 """ Function in **Set** defined by a callable Julia object.
 """
 @auto_hash_equals struct SetFunctionCallable{
-    T,T′,Dom<:SetOb{T},Codom<:SetOb{T′}} <: SetFunction{Dom,Codom}
+  T,
+  T′,
+  Dom<:SetOb{T},
+  Codom<:SetOb{T′},
+} <: SetFunction{Dom,Codom}
   # Field `func` is usually a `Function` but can be any Julia callable.
   func::FunctionWrapper{T′,Tuple{T}}
   dom::Dom
   codom::Codom
 
-  function SetFunctionCallable(f, dom::Dom, codom::Codom) where
-      {T,T′,Dom<:SetOb{T},Codom<:SetOb{T′}}
+  function SetFunctionCallable(
+    f,
+    dom::Dom,
+    codom::Codom,
+  ) where {T,T′,Dom<:SetOb{T},Codom<:SetOb{T′}}
     new{T,T′,Dom,Codom}(FunctionWrapper{T′,Tuple{T}}(f), dom, codom)
   end
 end
@@ -68,7 +75,7 @@ function (f::SetFunctionCallable{T,T′})(x::T)::T′ where {T,T′}
   f.func(x)
 end
 
-function Base.show(io::IO, f::F) where F <: SetFunctionCallable
+function Base.show(io::IO, f::F) where {F<:SetFunctionCallable}
   func = f.func.obj[] # Deference FunctionWrapper
   show_type(io, F)
   print(io, "($(nameof(func)), $(f.dom), $(f.codom))")
@@ -89,7 +96,7 @@ codom(f::SetFunctionIdentity) = f.dom
 
 (f::SetFunctionIdentity)(x) = x
 
-function Base.show(io::IO, f::F) where F <: SetFunctionIdentity
+function Base.show(io::IO, f::F) where {F<:SetFunctionIdentity}
   show_type(io, F)
   print(io, "(identity, $(f.dom))")
 end
@@ -97,13 +104,13 @@ end
 """ Function in **Set** taking a constant value.
 """
 @auto_hash_equals struct ConstantFunction{T,Value<:T,Dom,Codom<:SetOb{T}} <:
-    SetFunction{Dom,Codom}
+                         SetFunction{Dom,Codom}
   value::Value
   dom::Dom
   codom::Codom
 end
 
-ConstantFunction(value::T, dom::SetOb) where T =
+ConstantFunction(value::T, dom::SetOb) where {T} =
   ConstantFunction(value, dom, TypeSet{T}())
 
 (f::ConstantFunction)(x) = f.value
@@ -116,7 +123,7 @@ ConstantFunction(value::T, dom::SetOb) where T =
 struct PredicatedSet{T} <: SetOb{T}
   predicate::FunctionWrapper{Bool,Tuple{T}}
 
-  PredicatedSet{T}(f) where T = new{T}(FunctionWrapper{Bool,Tuple{T}}(f))
+  PredicatedSet{T}(f) where {T} = new{T}(FunctionWrapper{Bool,Tuple{T}}(f))
 end
 
 PredicatedSet(T::Type, f) = PredicatedSet{T}(f)
@@ -125,7 +132,7 @@ function (s::PredicatedSet{T})(x::T)::Bool where {T}
   s.predicate(x)
 end
 
-function Base.show(io::IO, s::PredicatedSet{T}) where T
+function Base.show(io::IO, s::PredicatedSet{T}) where {T}
   func = s.predicate.obj[] # Deference FunctionWrapper
   print(io, "PredicatedSet($T, $(nameof(func)))")
 end
@@ -145,7 +152,7 @@ end
 
 """ Category of sets and functions.
 """
-@instance Category{SetOb, SetFunction} begin
+@instance Category{SetOb,SetFunction} begin
   dom(f::SetFunction) = f.dom
   codom(f::SetFunction) = f.codom
 
@@ -176,8 +183,7 @@ compose_impl(c::ConstantFunction, d::ConstantFunction) =
 # Limits
 ########
 
-limit(Xs::EmptyDiagram{<:TypeSet}) =
-  Limit(Xs, SMultispan{0}(TypeSet(Nothing)))
+limit(Xs::EmptyDiagram{<:TypeSet}) = Limit(Xs, SMultispan{0}(TypeSet(Nothing)))
 
 universal(lim::Terminal{TypeSet{Nothing}}, span::SMultispan{0,<:SetOb}) =
   ConstantFunction(nothing, apex(span), ob(lim))
@@ -191,12 +197,12 @@ end
 
 function universal(lim::BinaryProduct{<:TypeSet}, span::Span{<:SetOb})
   f, g = span
-  SetFunction(x -> (f(x),g(x)), apex(span), ob(lim))
+  SetFunction(x -> (f(x), g(x)), apex(span), ob(lim))
 end
 
 function limit(Xs::DiscreteDiagram{<:TypeSet})
   X = TypeSet(Tuple{map(eltype, Xs)...})
-  πs = [ SetFunction(x -> getindex(x, i), X, Xi) for (i, Xi) in enumerate(Xs) ]
+  πs = [SetFunction(x -> getindex(x, i), X, Xi) for (i, Xi) in enumerate(Xs)]
   Limit(Xs, Multispan(X, πs))
 end
 

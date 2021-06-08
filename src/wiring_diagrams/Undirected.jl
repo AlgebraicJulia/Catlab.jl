@@ -1,18 +1,45 @@
 """ Data structure for undirected wiring diagrams.
 """
 module UndirectedWiringDiagrams
-export UndirectedWiringDiagram, UntypedUWD, TypedUWD,
-  outer_box, box, junction, nboxes, njunctions, boxes, junctions,
-  ports, ports_with_junction, junction_type, port_type,
-  add_box!, add_junction!, add_junctions!, set_junction!, add_wire!,
-  add_wires!, singleton_diagram, cospan_diagram, junction_diagram,
-  ocompose, substitute
+export UndirectedWiringDiagram,
+  UntypedUWD,
+  TypedUWD,
+  outer_box,
+  box,
+  junction,
+  nboxes,
+  njunctions,
+  boxes,
+  junctions,
+  ports,
+  ports_with_junction,
+  junction_type,
+  port_type,
+  add_box!,
+  add_junction!,
+  add_junctions!,
+  set_junction!,
+  add_wire!,
+  add_wires!,
+  singleton_diagram,
+  cospan_diagram,
+  junction_diagram,
+  ocompose,
+  substitute
 
 using ...Present, ...CategoricalAlgebra.CSets, ...CategoricalAlgebra.Limits
 using ...CategoricalAlgebra.FinSets: FinSet, FinFunction
 using ...Theories: dom, codom, compose, ⋅, id
-import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,
-  add_wires!, singleton_diagram, ocompose, substitute
+import ..DirectedWiringDiagrams:
+  box,
+  boxes,
+  nboxes,
+  add_box!,
+  add_wire!,
+  add_wires!,
+  singleton_diagram,
+  ocompose,
+  substitute
 
 # Data types
 ############
@@ -43,16 +70,16 @@ const UntypedUWD = CSetType(TheoryUWD, index=[:box, :junction, :outer_junction])
 end
 
 const AbstractTypedUWD = AbstractACSetType(TheoryTypedUWD)
-const TypedUWD = ACSetType(TheoryTypedUWD,
-                           index=[:box, :junction, :outer_junction])
+const TypedUWD =
+  ACSetType(TheoryTypedUWD, index=[:box, :junction, :outer_junction])
 
-function (::Type{UWD})(nports::Int) where UWD <: AbstractUWD
+function (::Type{UWD})(nports::Int) where {UWD<:AbstractUWD}
   d = UWD()
   add_parts!(d, :OuterPort, nports)
   return d
 end
 
-function (::Type{UWD})(port_types::AbstractVector) where UWD <: AbstractUWD
+function (::Type{UWD})(port_types::AbstractVector) where {UWD<:AbstractUWD}
   d = UWD()
   nports = length(port_types)
   add_parts!(d, :OuterPort, nports, outer_port_type=port_types)
@@ -60,7 +87,7 @@ function (::Type{UWD})(port_types::AbstractVector) where UWD <: AbstractUWD
 end
 
 UndirectedWiringDiagram(nports::Int) = UntypedUWD(nports)
-UndirectedWiringDiagram(port_types::AbstractVector{T}) where T =
+UndirectedWiringDiagram(port_types::AbstractVector{T}) where {T} =
   TypedUWD{T}(port_types)
 
 # Imperative interface
@@ -76,8 +103,8 @@ junction(d::AbstractACSet, args...; outer::Bool=false) =
 
 function junction(d::AbstractACSet, port::Tuple{Int,Int})
   box, nport = port
-  box == outer_box(d) ?
-    junction(d, nport, outer=true) : junction(d, ports(d, box)[nport])
+  box == outer_box(d) ? junction(d, nport, outer=true) :
+  junction(d, ports(d, box)[nport])
 end
 
 nboxes(d::AbstractACSet) = nparts(d, :Box)
@@ -98,8 +125,8 @@ port_type(d::AbstractACSet, args...; outer::Bool=false) =
 
 function port_type(d::AbstractACSet, port::Tuple{Int,Int})
   box, nport = port
-  box == outer_box(d) ?
-    port_type(d, nport, outer=true) : port_type(d, ports(d, box)[nport])
+  box == outer_box(d) ? port_type(d, nport, outer=true) :
+  port_type(d, ports(d, box)[nport])
 end
 
 # Mutators
@@ -116,8 +143,8 @@ end
 function add_box!(d::AbstractUWD, port_types::AbstractVector; data...)
   box = add_box!(d; data...)
   nports = length(port_types)
-  ports = add_parts!(d, :Port, nports, box=fill(box, nports),
-                     port_type=port_types)
+  ports =
+    add_parts!(d, :Port, nports, box=fill(box, nports), port_type=port_types)
   box
 end
 
@@ -134,7 +161,8 @@ function set_junction!(d::AbstractUWD, port, junction; outer::Bool=false)
   if has_subpart(d, :junction_type)
     ptype, jtype = port_type(d, port, outer=outer), junction_type(d, junction)
     all(ptype .== jtype) || error(
-      "Domain error: port type $ptype and junction type $jtype do not match")
+      "Domain error: port type $ptype and junction type $jtype do not match",
+    )
   end
   set_subpart!(d, port, outer ? :outer_junction : :junction, junction)
 end
@@ -168,8 +196,9 @@ function add_wire!(d::AbstractUWD, port1::Tuple{Int,Int}, port2::Tuple{Int,Int})
   elseif j2 > 0
     set_junction!(d, port1, j2)
   else
-    j = has_subpart(d, :junction_type) ?
-      add_junction!(d, port_type(d, port1)) : add_junction!(d)
+    j =
+      has_subpart(d, :junction_type) ? add_junction!(d, port_type(d, port1)) :
+      add_junction!(d)
     set_junction!(d, port1, j)
     set_junction!(d, port2, j)
   end
@@ -185,8 +214,11 @@ end
 # Other constructors
 #-------------------
 
-function singleton_diagram(::Type{UWD}, port_types;
-                           data...) where UWD <: AbstractUWD
+function singleton_diagram(
+  ::Type{UWD},
+  port_types;
+  data...,
+) where {UWD<:AbstractUWD}
   d = UWD(port_types)
   add_box!(d, port_types; data...)
   js = add_junctions!(d, port_types)
@@ -203,18 +235,26 @@ this function generalizes [`singleton_diagram`](@ref).
 
 See also: [`junction_diagram`](@ref).
 """
-function cospan_diagram(::Type{UWD}, inner::FinFunction{Int,Int},
-                        outer::FinFunction{Int,Int}, junction_types=nothing;
-                        data...) where UWD <: AbstractUWD
+function cospan_diagram(
+  ::Type{UWD},
+  inner::FinFunction{Int,Int},
+  outer::FinFunction{Int,Int},
+  junction_types=nothing;
+  data...,
+) where {UWD<:AbstractUWD}
   @assert codom(inner) == codom(outer)
   if isnothing(junction_types)
     junction_types = length(codom(inner))
   end
   cospan_diagram(UWD, collect(inner), collect(outer), junction_types; data...)
 end
-function cospan_diagram(::Type{UWD}, inner::AbstractVector{Int},
-                        outer::AbstractVector{Int}, junction_types;
-                        data...) where UWD <: AbstractUWD
+function cospan_diagram(
+  ::Type{UWD},
+  inner::AbstractVector{Int},
+  outer::AbstractVector{Int},
+  junction_types;
+  data...,
+) where {UWD<:AbstractUWD}
   d = UWD(map_port_types(junction_types, outer))
   add_box!(d, map_port_types(junction_types, inner); data...)
   add_junctions!(d, junction_types)
@@ -227,15 +267,21 @@ end
 
 See also: [`singleton_diagram`](@ref), [`cospan_diagram`](@ref).
 """
-function junction_diagram(::Type{UWD}, outer::FinFunction{Int,Int},
-                          junction_types=nothing) where UWD <: AbstractUWD
+function junction_diagram(
+  ::Type{UWD},
+  outer::FinFunction{Int,Int},
+  junction_types=nothing,
+) where {UWD<:AbstractUWD}
   if isnothing(junction_types)
     junction_types = length(codom(outer))
   end
   junction_diagram(UWD, collect(outer), junction_types)
 end
-function junction_diagram(::Type{UWD}, outer::AbstractVector{Int},
-                          junction_types) where UWD <: AbstractUWD
+function junction_diagram(
+  ::Type{UWD},
+  outer::AbstractVector{Int},
+  junction_types,
+) where {UWD<:AbstractUWD}
   d = UWD(map_port_types(junction_types, outer))
   add_junctions!(d, junction_types)
   set_junction!(d, outer, outer=true)
@@ -255,8 +301,11 @@ function ocompose(f::AbstractUWD, i::Int, g::AbstractUWD)
   substitute(f, [i], [g])
 end
 
-function substitute(f::UWD, indices::AbstractVector{Int},
-                    gs::AbstractVector{UWD}) where {UWD <: AbstractUWD}
+function substitute(
+  f::UWD,
+  indices::AbstractVector{Int},
+  gs::AbstractVector{UWD},
+) where {UWD<:AbstractUWD}
   @assert length(indices) == length(gs)
   h = UWD()
   copy_parts!(h, f, OuterPort=:)
@@ -264,7 +313,7 @@ function substitute(f::UWD, indices::AbstractVector{Int},
   # Copy boxes from original diagram and diagrams to be substituted.
   gs_index = Vector{Union{Int,Nothing}}(nothing, nboxes(f))
   gs_index[indices] = 1:length(indices)
-  for (i,j) in enumerate(gs_index)
+  for (i, j) in enumerate(gs_index)
     if isnothing(j)
       copy_parts!(h, f, Box=[i], Port=ports(f, i))
     else
@@ -281,18 +330,29 @@ function substitute(f::UWD, indices::AbstractVector{Int},
     copy_parts_only!(g_junctions, g)
     copy_parts_only!(apex, g, Junction=junction(g, outer=true))
   end
-  f_inner = ACSetTransformation(apex, f_junctions, Junction=flat(
-    junction(f, ports(f, i)) for (i,j) in enumerate(gs_index) if !isnothing(j)))
-  g_outer = ACSetTransformation(apex, g_junctions, Junction=oplus([
-    FinFunction(junction(g, outer=true), njunctions(g)) for g in gs ]))
+  f_inner = ACSetTransformation(
+    apex,
+    f_junctions,
+    Junction=flat(
+      junction(f, ports(f, i)) for
+      (i, j) in enumerate(gs_index) if !isnothing(j)
+    ),
+  )
+  g_outer = ACSetTransformation(
+    apex,
+    g_junctions,
+    Junction=oplus([
+      FinFunction(junction(g, outer=true), njunctions(g)) for g in gs
+    ]),
+  )
   colim = pushout(f_inner, g_outer)
   copy_parts_only!(h, ob(colim))
 
   # Assign junctions to all ports.
   f_leg, g_leg = (leg[:Junction] for leg in colim)
-  gs_incl = legs(coproduct([ FinSet(njunctions(g)) for g in gs ]))
+  gs_incl = legs(coproduct([FinSet(njunctions(g)) for g in gs]))
   set_junction!(h, map(f_leg, junction(f, outer=true)), outer=true)
-  set_junction!(h, flatmap(enumerate(gs_index)) do (i,j)
+  set_junction!(h, flatmap(enumerate(gs_index)) do (i, j)
     if isnothing(j)
       map(f_leg, junction(f, ports(f, i)))
     else

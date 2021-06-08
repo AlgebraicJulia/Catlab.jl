@@ -1,8 +1,11 @@
 """ Parse relation expressions in Julia syntax into undirected wiring diagrams.
 """
 module RelationalPrograms
-export RelationDiagram, UntypedRelationDiagram, TypedRelationDiagram,
-  @relation, parse_relation_diagram
+export RelationDiagram,
+  UntypedRelationDiagram,
+  TypedRelationDiagram,
+  @relation,
+  parse_relation_diagram
 
 using MLStyle: @match
 
@@ -25,10 +28,16 @@ end
 end
 
 const RelationDiagram = AbstractACSetType(TheoryRelationDiagram)
-const UntypedRelationDiagram = ACSetType(TheoryRelationDiagram,
-  index=[:box, :junction, :outer_junction], unique_index=[:variable])
-const TypedRelationDiagram = ACSetType(TheoryTypedRelationDiagram,
-  index=[:box, :junction, :outer_junction], unique_index=[:variable])
+const UntypedRelationDiagram = ACSetType(
+  TheoryRelationDiagram,
+  index=[:box, :junction, :outer_junction],
+  unique_index=[:variable],
+)
+const TypedRelationDiagram = ACSetType(
+  TheoryTypedRelationDiagram,
+  index=[:box, :junction, :outer_junction],
+  unique_index=[:variable],
+)
 
 @present TheoryNamedRelationDiagram <: TheoryRelationDiagram begin
   port_name::Attr(Port, VarName)
@@ -40,10 +49,16 @@ end
   outer_port_name::Attr(OuterPort, VarName)
 end
 
-const UntypedNamedRelationDiagram = ACSetType(TheoryNamedRelationDiagram,
-  index=[:box, :junction, :outer_junction], unique_index=[:variable])
-const TypedNamedRelationDiagram = ACSetType(TheoryTypedNamedRelationDiagram,
-  index=[:box, :junction, :outer_junction], unique_index=[:variable])
+const UntypedNamedRelationDiagram = ACSetType(
+  TheoryNamedRelationDiagram,
+  index=[:box, :junction, :outer_junction],
+  unique_index=[:variable],
+)
+const TypedNamedRelationDiagram = ACSetType(
+  TheoryTypedNamedRelationDiagram,
+  index=[:box, :junction, :outer_junction],
+  unique_index=[:variable],
+)
 
 function RelationDiagram{Name}(ports::Int; port_names=nothing) where {Name}
   if isnothing(port_names)
@@ -54,8 +69,10 @@ function RelationDiagram{Name}(ports::Int; port_names=nothing) where {Name}
   return d
 end
 
-function RelationDiagram{Name}(ports::AbstractVector{T};
-                               port_names=nothing) where {T,Name}
+function RelationDiagram{Name}(
+  ports::AbstractVector{T};
+  port_names=nothing,
+) where {T,Name}
   if isnothing(port_names)
     return TypedRelationDiagram{T,Name,Symbol}(ports)
   end
@@ -125,24 +142,30 @@ function parse_relation_diagram(head::Expr, body::Expr)
 
   # Create wiring diagram and add outer ports and junctions.
   _, outer_port_names, outer_vars = parse_relation_call(outer_expr)
-  isnothing(all_vars) || outer_vars ⊆ all_vars ||
+  isnothing(all_vars) ||
+    outer_vars ⊆ all_vars ||
     error("One of variables $outer_vars is not declared in context $all_vars")
-  d = RelationDiagram{Symbol}(var_types(outer_vars),
-                              port_names=outer_port_names)
+  d =
+    RelationDiagram{Symbol}(var_types(outer_vars), port_names=outer_port_names)
   if isnothing(all_vars)
     new_vars = unique(outer_vars)
     add_junctions!(d, var_types(new_vars), variable=new_vars)
   else
     add_junctions!(d, var_types(all_vars), variable=all_vars)
   end
-  set_junction!(d, ports(d, outer=true),
-                incident(d, outer_vars, :variable), outer=true)
+  set_junction!(
+    d,
+    ports(d, outer=true),
+    incident(d, outer_vars, :variable),
+    outer=true,
+  )
 
   # Add box to diagram for each relation call.
   body = Base.remove_linenums!(body)
   for expr in body.args
     name, port_names, vars = parse_relation_call(expr)
-    isnothing(all_vars) || vars ⊆ all_vars ||
+    isnothing(all_vars) ||
+      vars ⊆ all_vars ||
       error("One of variables $vars is not declared in context $all_vars")
     box = add_box!(d, var_types(vars), name=name)
     if !isnothing(port_names)

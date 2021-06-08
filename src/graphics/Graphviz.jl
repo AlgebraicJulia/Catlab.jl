@@ -6,8 +6,17 @@ References:
 - DOT language guide: http://www.graphviz.org/pdf/dotguide.pdf
 """
 module Graphviz
-export Expression, Statement, Attributes, Graph, Digraph, Subgraph,
-  Node, NodeID, Edge, pprint, run_graphviz
+export Expression,
+  Statement,
+  Attributes,
+  Graph,
+  Digraph,
+  Subgraph,
+  Node,
+  NodeID,
+  Edge,
+  pprint,
+  run_graphviz
 
 using DataStructures: OrderedDict
 using Requires: @require
@@ -15,7 +24,7 @@ using Requires: @require
 const USE_GV_JLL = Ref(false)
 
 function __init__()
-  @require Graphviz_jll="3c863552-8265-54e4-a6dc-903eb78fde85" begin
+  @require Graphviz_jll = "3c863552-8265-54e4-a6dc-903eb78fde85" begin
     USE_GV_JLL[] = true
     let cfg = joinpath(Graphviz_jll.artifact_dir, "lib", "graphviz", "config6")
       if !isfile(cfg)
@@ -51,11 +60,11 @@ as_attributes(d::AbstractDict) =
 Base.@kwdef struct Graph <: Expression
   name::String
   directed::Bool
-  prog::String="dot"
-  stmts::Vector{Statement}=Statement[]
-  graph_attrs::Attributes=Attributes()
-  node_attrs::Attributes=Attributes()
-  edge_attrs::Attributes=Attributes()
+  prog::String = "dot"
+  stmts::Vector{Statement} = Statement[]
+  graph_attrs::Attributes = Attributes()
+  node_attrs::Attributes = Attributes()
+  edge_attrs::Attributes = Attributes()
 end
 
 Graph(name::String, stmts::Vector{Statement}; kw...) =
@@ -68,15 +77,16 @@ Digraph(name::String, stmts::Vararg{Statement}; kw...) =
   Graph(; name=name, directed=true, stmts=collect(stmts), kw...)
 
 Base.@kwdef struct Subgraph <: Statement
-  name::String="" # Subgraphs can be anonymous
-  stmts::Vector{Statement}=Statement[]
-  graph_attrs::Attributes=Attributes()
-  node_attrs::Attributes=Attributes()
-  edge_attrs::Attributes=Attributes()
+  name::String = "" # Subgraphs can be anonymous
+  stmts::Vector{Statement} = Statement[]
+  graph_attrs::Attributes = Attributes()
+  node_attrs::Attributes = Attributes()
+  edge_attrs::Attributes = Attributes()
 end
 
 Subgraph(stmts::Vector{Statement}; kw...) = Subgraph(; stmts=stmts, kw...)
-Subgraph(stmts::Vararg{Statement}; kw...) = Subgraph(; stmts=collect(stmts), kw...)
+Subgraph(stmts::Vararg{Statement}; kw...) =
+  Subgraph(; stmts=collect(stmts), kw...)
 Subgraph(name::String, stmts::Vector{Statement}; kw...) =
   Subgraph(; name=name, stmts=stmts, kw...)
 Subgraph(name::String, stmts::Vararg{Statement}; kw...) =
@@ -93,14 +103,16 @@ struct NodeID <: Expression
   name::String
   port::String
   anchor::String
-  NodeID(name::String, port::String="", anchor::String="") = new(name, port, anchor)
+  NodeID(name::String, port::String="", anchor::String="") =
+    new(name, port, anchor)
 end
 
 struct Edge <: Statement
   path::Vector{NodeID}
   attrs::Attributes
 end
-Edge(path::Vector{NodeID}, attrs::AbstractDict) = Edge(path, as_attributes(attrs))
+Edge(path::Vector{NodeID}, attrs::AbstractDict) =
+  Edge(path, as_attributes(attrs))
 Edge(path::Vector{NodeID}; attrs...) = Edge(path, attrs)
 Edge(path::Vararg{NodeID}; attrs...) = Edge(collect(path), attrs)
 Edge(path::Vector{String}, attrs::AbstractDict) = Edge(map(NodeID, path), attrs)
@@ -120,12 +132,16 @@ For bindings to the Graphviz C API, see the the package
 [GraphViz.jl](https://github.com/Keno/GraphViz.jl). At the time of this writing,
 GraphViz.jl is unmaintained.
 """
-function run_graphviz(io::IO, graph::Graph; prog::Union{String,Nothing}=nothing,
-                      format::String="json0")
+function run_graphviz(
+  io::IO,
+  graph::Graph;
+  prog::Union{String,Nothing}=nothing,
+  format::String="json0",
+)
   if isnothing(prog)
     prog = graph.prog
   end
-  @assert prog in ("dot","neato","fdp","sfdp","twopi","circo")
+  @assert prog in ("dot", "neato", "fdp", "sfdp", "twopi", "circo")
   if USE_GV_JLL[]
     fun = getfield(Graphviz_jll, Symbol(prog))
     prog = fun(identity)
@@ -157,11 +173,11 @@ function pprint(io::IO, graph::Graph, n::Int)
   print(io, graph.directed ? "digraph " : "graph ")
   print(io, graph.name)
   println(io, " {")
-  pprint_attrs(io, graph.graph_attrs, n+2; pre="graph", post=";\n")
-  pprint_attrs(io, graph.node_attrs, n+2; pre="node", post=";\n")
-  pprint_attrs(io, graph.edge_attrs, n+2; pre="edge", post=";\n")
+  pprint_attrs(io, graph.graph_attrs, n + 2; pre="graph", post=";\n")
+  pprint_attrs(io, graph.node_attrs, n + 2; pre="node", post=";\n")
+  pprint_attrs(io, graph.edge_attrs, n + 2; pre="edge", post=";\n")
   for stmt in graph.stmts
-    pprint(io, stmt, n+2, directed=graph.directed)
+    pprint(io, stmt, n + 2, directed=graph.directed)
     println(io)
   end
   indent(io, n)
@@ -177,11 +193,11 @@ function pprint(io::IO, subgraph::Subgraph, n::Int; directed::Bool=false)
     print(io, subgraph.name)
     println(io, " {")
   end
-  pprint_attrs(io, subgraph.graph_attrs, n+2; pre="graph", post=";\n")
-  pprint_attrs(io, subgraph.node_attrs, n+2; pre="node", post=";\n")
-  pprint_attrs(io, subgraph.edge_attrs, n+2; pre="edge", post=";\n")
+  pprint_attrs(io, subgraph.graph_attrs, n + 2; pre="graph", post=";\n")
+  pprint_attrs(io, subgraph.node_attrs, n + 2; pre="node", post=";\n")
+  pprint_attrs(io, subgraph.edge_attrs, n + 2; pre="edge", post=";\n")
   for stmt in subgraph.stmts
-    pprint(io, stmt, n+2, directed=directed)
+    pprint(io, stmt, n + 2, directed=directed)
     println(io)
   end
   indent(io, n)
@@ -219,14 +235,21 @@ function pprint(io::IO, edge::Edge, n::Int; directed::Bool=false)
   print(io, ";")
 end
 
-function pprint_attrs(io::IO, attrs::Attributes, n::Int=0;
-                      pre::String="", post::String="")
+function pprint_attrs(
+  io::IO,
+  attrs::Attributes,
+  n::Int=0;
+  pre::String="",
+  post::String="",
+)
   if !isempty(attrs)
     indent(io, n)
     print(io, pre)
     print(io, " [")
     for (i, (key, value)) in enumerate(attrs)
-      if (i > 1) print(io, ",") end
+      if (i > 1)
+        print(io, ",")
+      end
       print(io, key)
       print(io, "=")
       print(io, value isa Html ? "<" : "\"")

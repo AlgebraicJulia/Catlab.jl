@@ -7,13 +7,38 @@ natural from the structuralist perspective, but the latter terminology, which is
 shorter and more familiar.
 """
 module BipartiteGraphs
-export AbstractUndirectedBipartiteGraph, UndirectedBipartiteGraph,
-  AbstractBipartiteGraph, BipartiteGraph, nv₁, nv₂, vertices₁, vertices₂,
-  ne₁₂, ne₂₁, edges₁₂, edges₂₁, src₁, src₂, tgt₁, tgt₂,
-  add_vertex₁!, add_vertex₂!, add_vertices₁!, add_vertices₂!,
-  rem_vertex₁!, rem_vertex₂!, rem_vertices₁!, rem_vertices₂!,
-  add_edge₁₂!, add_edge₂₁!, add_edges₁₂!, add_edges₂₁!,
-  rem_edge₁₂!, rem_edge₂₁!, rem_edges₁₂!, rem_edges₂₁!
+export AbstractUndirectedBipartiteGraph,
+  UndirectedBipartiteGraph,
+  AbstractBipartiteGraph,
+  BipartiteGraph,
+  nv₁,
+  nv₂,
+  vertices₁,
+  vertices₂,
+  ne₁₂,
+  ne₂₁,
+  edges₁₂,
+  edges₂₁,
+  src₁,
+  src₂,
+  tgt₁,
+  tgt₂,
+  add_vertex₁!,
+  add_vertex₂!,
+  add_vertices₁!,
+  add_vertices₂!,
+  rem_vertex₁!,
+  rem_vertex₂!,
+  rem_vertices₁!,
+  rem_vertices₂!,
+  add_edge₁₂!,
+  add_edge₂₁!,
+  add_edges₁₂!,
+  add_edges₂₁!,
+  rem_edge₁₂!,
+  rem_edge₂₁!,
+  rem_edges₁₂!,
+  rem_edges₂₁!
 
 using ...Present, ...CSetDataStructures
 using ..BasicGraphs: flatten
@@ -85,8 +110,11 @@ rem_vertex₂!(g::AbstractACSet, v::Int; kw...) = rem_vertices₂!(g, v:v; kw...
 
 """ Remove vertices of type 1 from a bipartite graph.
 """
-function rem_vertices₁!(g::AbstractUndirectedBipartiteGraph, vs;
-                        keep_edges::Bool=false)
+function rem_vertices₁!(
+  g::AbstractUndirectedBipartiteGraph,
+  vs;
+  keep_edges::Bool=false,
+)
   if !keep_edges
     rem_parts!(g, :E, unique!(sort!(flatten(incident(g, vs, :src)))))
   end
@@ -95,8 +123,11 @@ end
 
 """ Remove vertices of type 2 from a bipartite graph.
 """
-function rem_vertices₂!(g::AbstractUndirectedBipartiteGraph, vs;
-                        keep_edges::Bool=false)
+function rem_vertices₂!(
+  g::AbstractUndirectedBipartiteGraph,
+  vs;
+  keep_edges::Bool=false,
+)
   if !keep_edges
     rem_parts!(g, :E, unique!(sort!(flatten(incident(g, vs, :tgt)))))
   end
@@ -129,13 +160,13 @@ multigraph](https://cs.stackexchange.com/a/91521).
 
 Such graphs are isomorphic to port hypergraphs.
 """
-const BipartiteGraph = CSetType(TheoryBipartiteGraph,
-                                index=[:src₁, :src₂, :tgt₁, :tgt₂])
+const BipartiteGraph =
+  CSetType(TheoryBipartiteGraph, index=[:src₁, :src₂, :tgt₁, :tgt₂])
 
 const AnyBipartiteGraph =
   Union{AbstractBipartiteGraph,AbstractUndirectedBipartiteGraph}
 
-function (::Type{T})(nv₁::Int, nv₂::Int) where T <: AnyBipartiteGraph
+function (::Type{T})(nv₁::Int, nv₂::Int) where {T<:AnyBipartiteGraph}
   g = T()
   add_parts!(g, :V₁, nv₁)
   add_parts!(g, :V₂, nv₂)
@@ -200,16 +231,24 @@ add_edge₂₁!(g::AbstractACSet, src::Int, tgt::Int; kw...) =
 
 """ Add edges from V₁ to V₂ in a bipartite graph.
 """
-function add_edges₁₂!(g::AbstractACSet, srcs::AbstractVector{Int},
-                      tgts::AbstractVector{Int}; kw...)
+function add_edges₁₂!(
+  g::AbstractACSet,
+  srcs::AbstractVector{Int},
+  tgts::AbstractVector{Int};
+  kw...,
+)
   @assert (n = length(srcs)) == length(tgts)
   add_parts!(g, :E₁₂, n; src₁=srcs, tgt₂=tgts, kw...)
 end
 
 """ Add edges from V₂ to V₁ in a bipartite graph.
 """
-function add_edges₂₁!(g::AbstractACSet, srcs::AbstractVector{Int},
-                      tgts::AbstractVector{Int}; kw...)
+function add_edges₂₁!(
+  g::AbstractACSet,
+  srcs::AbstractVector{Int},
+  tgts::AbstractVector{Int};
+  kw...,
+)
   @assert (n = length(srcs)) == length(tgts)
   add_parts!(g, :E₂₁, n; src₂=srcs, tgt₁=tgts, kw...)
 end

@@ -10,8 +10,28 @@ using AutoHashEquals
 
 using ...GAT
 using ...Theories: DoubleCategory
-import ...Theories: ob, hom, dom, codom, compose, ⋅, ⋆, HomV, HomH,
-  composeH, composeV, id, idH, idV, id2, id2H, id2V, left, right, top, bottom
+import ...Theories:
+  ob,
+  hom,
+  dom,
+  codom,
+  compose,
+  ⋅,
+  ⋆,
+  HomV,
+  HomH,
+  composeH,
+  composeV,
+  id,
+  idH,
+  idV,
+  id2,
+  id2H,
+  id2V,
+  left,
+  right,
+  top,
+  bottom
 using ..FinSets
 
 # Commutative squares
@@ -29,8 +49,9 @@ match the GAT of a double category.
 end
 
 function SquareDiagram(homs::AbstractVector)
-  length(homs) == 4 ||
-    error("Square diagrams accept exactly 4 homs, in order top, bottom, left, right")
+  length(homs) == 4 || error(
+    "Square diagrams accept exactly 4 homs, in order top, bottom, left, right",
+  )
   obs = [dom(homs[1]), dom(homs[2]), dom(homs[4]), codom(homs[4])]
 
   # checking well-formedness
@@ -66,13 +87,13 @@ of commutative squares.
 TODO: This construction has nothing specifically to do with finite sets and
 functions and should be generalized to any category C.
 """
-@instance DoubleCategory{FinSet, FinFunction, FinFunction, SquareDiagram} begin
+@instance DoubleCategory{FinSet,FinFunction,FinFunction,SquareDiagram} begin
   @import dom, codom, top, bottom, left, right, ⋅
   idH(A::FinSet) = FinFunction(identity, A, A)
   idV(A::FinSet) = FinFunction(identity, A, A)
 
-  composeH(f::FinFunction, g::FinFunction) = compose(f,g)
-  composeV(f::FinFunction, g::FinFunction) = compose(f,g)
+  composeH(f::FinFunction, g::FinFunction) = compose(f, g)
+  composeV(f::FinFunction, g::FinFunction) = compose(f, g)
 
   id2(A::FinSet) = SquareDiagram(idH(A), idH(A), idV(A), idV(A))
   # FIXME: how do you distinguish between vertical and horizontal if they are the same type?
@@ -94,10 +115,10 @@ functions and should be generalized to any category C.
     @assert right(s₁) == left(s₂)
 
     f = top(s₁)
-    f′= bottom(s₁)
+    f′ = bottom(s₁)
     g = top(s₂)
-    g′= bottom(s₂)
-    return SquareDiagram(f⋅g, f′⋅g′, left(s₁), right(s₂))
+    g′ = bottom(s₂)
+    return SquareDiagram(f ⋅ g, f′ ⋅ g′, left(s₁), right(s₂))
   end
 
   """    composeV(s₁, s₂)
@@ -119,10 +140,10 @@ functions and should be generalized to any category C.
     @assert bottom(s₁) == top(s₂)
 
     f = left(s₁)
-    f′= right(s₁)
+    f′ = right(s₁)
     g = left(s₂)
-    g′= right(s₂)
-    return SquareDiagram(top(s₁), bottom(s₂), f⋅g, f′⋅g′)
+    g′ = right(s₂)
+    return SquareDiagram(top(s₁), bottom(s₂), f ⋅ g, f′ ⋅ g′)
   end
 end
 
