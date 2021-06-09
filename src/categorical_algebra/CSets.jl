@@ -3,7 +3,7 @@
 module CSets
 export ACSetTransformation, CSetTransformation, components, force, is_natural,
   homomorphism, homomorphisms, is_homomorphic,
-  isomorphism, isomorphisms, is_isomorphic, migrate!,
+  isomorphism, isomorphisms, is_isomorphic, 
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
 
 using Base.Meta: quot
@@ -19,7 +19,6 @@ import ..FinSets: FinSet, FinFunction, FinDomFunction, force
 using ...Theories: Category, CatDesc, AttrDesc, ob, hom, attr, adom, acodom
 import ...Theories: dom, codom, compose, ⋅, id
 using ...Present
-import ...Present: Presentation
 
 # FinSets interop
 #################
@@ -567,50 +566,8 @@ cocone_objects(diagram::BipartiteFreeDiagram) = ob₂(diagram)
 cocone_objects(span::Multispan) = feet(span)
 cocone_objects(para::ParallelMorphisms) = SVector(codom(para))
 
-# Functorial data migration
-###########################
-
-""" Pullback functorial data migration from one ACSet to another.
-
-Note that this operation is contravariant: the data is transferred from `X` to
-`Y` but the functor, represented by two dictionaries, maps the schema for `Y`
-to the schema for `X`.
-
-When the functor is the identity, this function is equivalent to
-[`copy_parts!`](@ref).
-"""
-function migrate!(Y::ACSet{CD, AD}, X::ACSet,
-                  FOb::AbstractDict, FHom::AbstractDict) where {CD, AD}
-  ob(CD) ⊆ keys(FOb)     || error("Every object in $CD must be a key in $FOb")
-  hom(CD) ⊆ keys(FHom)   || error("Every morphism in $CD must be a key in $FHom")
-  attr(AD) ⊆ keys(FHom)  || error("Every attribute in $AD must be a key in $FHom")
-  
-  partsY = NamedTuple{ob(CD)}(map(ob(CD)) do obY
-    add_parts!(Y, obY, nparts(X, FOb[obY]))
-  end)
-  for homY in hom(CD)
-    domY, codomY = dom(CD, homY), codom(CD, homY)
-    set_subpart!(Y, partsY[domY], homY, partsY[codomY][subpart(X, FHom[homY])])
-  end
-  for attrY in attr(AD)
-    domY = dom(AD, attrY)
-    set_subpart!(Y, partsY[domY], attrY, subpart(X, FHom[attrY]))
-  end
-  return Y
-end
-
-function (::Type{T})(X::ACSet, FOb::AbstractDict,
-                     FHom::AbstractDict) where T <: AbstractACSet
-  Y = T()
-  migrate!(Y, X, FOb, FHom)
-end
-
-"""Get the Schema from an ACSet
-"""
-function Presentation(::ACSet{CD, AD}) where {CD, AD}
-  return Presentation(CD, AD)
-end
-
+# Serialization and Deserialization of ACSets
+#############################################
 """ Serialize an ACSet object to a JSON string
 """
 function generate_json_acset(x::T) where T <: AbstractACSet

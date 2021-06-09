@@ -323,39 +323,13 @@ h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:c,:d,:a,:b],))
 h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:d,:c],))
 @test !is_homomorphic(g, h)
 
-# Functorial data migration
-###########################
+# Serialization and Deserialization of ACSets
+#############################################
 
 @present TheoryDDS(FreeSchema) begin
   X::Ob
   Φ::Hom(X,X)
 end
-
-const AbstractDDS = AbstractCSetType(TheoryDDS)
-const DDS = CSetType(TheoryDDS, index=[:Φ])
-
-h = Graph(3)
-add_parts!(h, :E, 3, src = [1,2,3], tgt = [2,3,1])
-
-# Identity data migration.
-@test h == Graph(h, Dict(:V => :V, :E => :E),
-                    Dict(:src => :src, :tgt => :tgt))
-
-# Migrate DDS → Graph.
-dds = DDS()
-add_parts!(dds, :X, 3, Φ=[2,3,1])
-X = TheoryDDS[:X]
-@test h == Graph(dds, Dict(:V => :X, :E => :X),
-                 Dict(:src => id(X), :tgt => :Φ))
-
-h2 = copy(h)
-migrate!(h2, dds, Dict(:V => :X, :E => :X),
-                  Dict(:src => id(X), :tgt => :Φ))
-@test h2 == ob(coproduct(h, h))
-
-# Migrate DDS → DDS by advancing four steps.
-@test dds == DDS(dds, Dict(:X => :X),
-                      Dict(:Φ => [:Φ, :Φ, :Φ, :Φ]))
 
 @present TheoryLabeledDDS <: TheoryDDS begin
   Label::Data
@@ -365,15 +339,6 @@ const LabeledDDS = ACSetType(TheoryLabeledDDS, index=[:Φ, :label])
 
 ldds = LabeledDDS{Int}()
 add_parts!(ldds, :X, 4, Φ=[2,3,4,1], label=[100, 101, 102, 103])
-
-wg = WeightedGraph{Int}(4)
-add_parts!(wg, :E, 4, src=[1,2,3,4], tgt=[2,3,4,1], weight=[101, 102, 103, 100])
-
-@test wg == WeightedGraph{Int}(ldds,
-  Dict(:V => :X, :E => :X),
-  Dict(:src => id(X), :tgt => :Φ, :weight => [:Φ, :label]))
 @test roundtrip_json_acset(ldds) == ldds
 
-@test Presentation(Graph(1)) == TheoryGraph
-@test Presentation(ldds) == TheoryLabeledDDS
 end
