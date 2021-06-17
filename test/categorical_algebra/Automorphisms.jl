@@ -7,16 +7,16 @@ using Catlab.Theories
 
 # Helper functions for writing tests
 function xs(x::Int)::Symbol
-    return Symbol("x$x")
+  return Symbol("x$x")
 end
 function xs(xx::AbstractVector{Int})::Vector{Symbol}
-    return [Symbol("x$x") for x in xx]
+  return [Symbol("x$x") for x in xx]
 end
 function es(x::Int)::Symbol
-    return Symbol("e$x")
+  return Symbol("e$x")
 end
 function es(xx::AbstractVector{Int})::Vector{Symbol}
-    [Symbol("e$x") for x in xx]
+  [Symbol("e$x") for x in xx]
 end
 
 """
@@ -25,32 +25,32 @@ Vertices are x₁,x₂,..., edges are e₁, e₂,...
 all edges are indexed
 """
 function graph_to_cset(grph::CSet)::Type
-    pres = Presentation(FreeSchema)
-    xobs = [Ob(FreeSchema,xs(i)) for i in 1:nv(grph)]
-    for x in xobs
-        add_generator!(pres, x)
-    end
-    for (i,(src, tgt)) in enumerate(zip(grph[:src], grph[:tgt]))
-        add_generator!(pres, Hom(es(i), xobs[src], xobs[tgt]))
-    end
-    return CSetType(pres, index=es(1:ne(grph)))
+  pres = Presentation(FreeSchema)
+  xobs = [Ob(FreeSchema,xs(i)) for i in 1:nv(grph)]
+  for x in xobs
+    add_generator!(pres, x)
+  end
+  for (i,(src, tgt)) in enumerate(zip(grph[:src], grph[:tgt]))
+    add_generator!(pres, Hom(es(i), xobs[src], xobs[tgt]))
+  end
+  return CSetType(pres, index=es(1:ne(grph)))
 end
 
 """Create n copies of a CSet based on a graph schema"""
 function init_graphs(schema::CSet, consts::Vector{Int}, n::Int=2)::Vector{CSet}
-    cset = graph_to_cset(schema)()
-    for (i, con) in enumerate(consts)
-        add_parts!(cset, Symbol("x$i"), con)
-    end
-    return [deepcopy(cset) for _ in 1:n]
+  cset = graph_to_cset(schema)()
+  for (i, con) in enumerate(consts)
+    add_parts!(cset, Symbol("x$i"), con)
+  end
+  return [deepcopy(cset) for _ in 1:n]
 end
 
 """Confirm canonical hash tracks with whether two ACSets are iso"""
 function test_iso(a::ACSet,b::ACSet, eq::Bool=true)::Test.Pass
-    tst = a -> eq ? a : !a
-    @test tst(is_isomorphic(a,b))
-    @test a != b  # confirm they're not literally equal
-    @test tst(canonical_hash(a) == canonical_hash(b))
+  tst = a -> eq ? a : !a
+  @test tst(is_isomorphic(a,b))
+  @test a != b  # confirm they're not literally equal
+  @test tst(canonical_hash(a) == canonical_hash(b))
 end
 
 G,H = Graph(4), Graph(4)
