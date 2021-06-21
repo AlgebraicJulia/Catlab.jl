@@ -167,18 +167,20 @@ runs in exponential time. It works best when the domain object is small.
 
 This procedure uses the classic backtracking search algorithm for a
 combinatorial constraint satisfaction problem (CSP). As is well known, the
-homomorphism problem for relational databases is equivalent to CSP. Since the
+homomorphism problem for relational databases is reducible to CSP. Since the
 C-set homomorphism problem is "the same" as the database homomorphism problem
 (insofar as attributed C-sets are "the same" as relational databases), it is
-also equivalent to CSP. Backtracking search for CSP is described in many
-computer science textbooks, such as (Russell & Norvig 2010, *Artificial
-Intelligence*, Third Ed., Chapter 6: Constraint satisfaction problems, esp.
-Algorithm 6.5). In our implementation, the search tree is ordered using the
-popular heuristic of "minimum remaining values" (MRV), also known as "most
-constrained variable."
+also reducible to CSP. Backtracking search for CSP is described in many computer
+science textbooks, such as (Russell & Norvig 2010, *Artificial Intelligence*,
+Third Ed., Chapter 6: Constraint satisfaction problems, esp. Algorithm 6.5). In
+our implementation, the search tree is ordered using the popular heuristic of
+"minimum remaining values" (MRV), also known as "most constrained variable."
 
-Set the keyword argument `monic=true` to restrict to monomorphisms:
-homomorphisms whose components are all injective functions.
+To restrict to *monomorphisms*, or homomorphisms whose components are all
+injective functions, set the keyword argument `monic=true`. To restrict the
+homomorphism to a given partial assignment, set the keyword argument `initial`.
+For example, to fix the first source vertex to the third target vertex in a
+graph homomorphism, set `initial=(V=Dict(1 => 3),)`.
 
 See also: [`homomorphisms`](@ref), [`isomorphism`](@ref).
 """
@@ -203,8 +205,9 @@ function homomorphisms(X::AbstractACSet{CD,AD}, Y::AbstractACSet{CD,AD};
   end
   results
 end
-homomorphisms(f, X::AbstractACSet, Y::AbstractACSet; monic::Bool=false) =
-  backtracking_search(f, X, Y, monic=monic)
+homomorphisms(f, X::AbstractACSet, Y::AbstractACSet;
+              monic::Bool=false, initial=(;)) =
+  backtracking_search(f, X, Y, monic=monic, initial=initial)
 
 """ Is the first attributed ``C``-set homomorphic to the second?
 
@@ -238,8 +241,8 @@ function isomorphisms(X::AbstractACSet{CD,AD}, Y::AbstractACSet{CD,AD}) where {C
   end
   results
 end
-isomorphisms(f, X::AbstractACSet, Y::AbstractACSet) =
-  backtracking_search(f, X, Y, iso=true)
+isomorphisms(f, X::AbstractACSet, Y::AbstractACSet; initial=(;)) =
+  backtracking_search(f, X, Y, iso=true, initial=initial)
 
 """ Are the two attributed ``C``-sets isomorphic?
 
@@ -266,7 +269,8 @@ struct BacktrackingState{CD <: CatDesc, AD <: AttrDesc{CD},
 end
 
 function backtracking_search(f, X::AbstractACSet{CD}, Y::AbstractACSet{CD};
-                             monic::Bool=false, iso::Bool=false) where {Ob, CD<:CatDesc{Ob}}
+                             monic::Bool=false, iso::Bool=false,
+                             initial=(;)) where {Ob, CD<:CatDesc{Ob}}
   # Fail early if no monic/iso exists on cardinality grounds.
   if iso
     all(nparts(X,c) == nparts(Y,c) for c in Ob) || return false
@@ -276,12 +280,22 @@ function backtracking_search(f, X::AbstractACSet{CD}, Y::AbstractACSet{CD};
     all(nparts(X,c) <= nparts(Y,c) for c in Ob) || return false
   end
 
+  # Initialize state variables for search.
   assignment = NamedTuple{Ob}(zeros(Int, nparts(X, c)) for c in Ob)
   assignment_depth = map(copy, assignment)
   inv_assignment = monic ?
     NamedTuple{Ob}(zeros(Int, nparts(Y, c)) for c in Ob) : nothing
   state = BacktrackingState(assignment, assignment_depth, inv_assignment, X, Y)
-  backtracking_search(f, state, 0)
+
+  # Make any initial assignments, failing immediately if inconsistent.
+  for (c, c_assignments) in pairs(initial)
+    for (x, y) in partial_assignments(c_assignments)
+      assign_elem!(state, 0, Val{c}, x, y) || return false
+    end
+  end
+
+  # Start the main recursion for backtracking search.
+  backtracking_search(f, state, 1)
 end
 
 function backtracking_search(f, state::BacktrackingState, depth::Int)
@@ -399,6 +413,12 @@ end
     end
   end
 end
+
+""" Get assignment pairs from partially specified component of C-set morphism.
+"""
+partial_assignments(x::AbstractDict) = pairs(x)
+partial_assignments(x::AbstractVector) =
+  ((i,y) for (i,y) in enumerate(x) if !isnothing(y) && y > 0)
 
 # Category of C-sets
 ####################

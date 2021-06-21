@@ -285,6 +285,16 @@ I = ob(terminal(Graph))
 @test !is_homomorphic(g, I, monic=true)
 @test !is_homomorphic(I, h)
 
+# Graph homomorphism starting from partial assignment, e.g. vertex assignment.
+α = CSetTransformation((V=[2,3,4], E=[2,3]), g, h)
+@test homomorphisms(g, h, initial=(V=[2,3,4],)) == [α]
+@test homomorphisms(g, h, initial=(V=Dict(1 => 2, 3 => 4),)) == [α]
+@test homomorphisms(g, h, initial=(E=Dict(1 => 2),)) == [α]
+# Inconsistent initial assignment.
+@test !is_homomorphic(g, h, initial=(V=Dict(1 => 1), E=Dict(1 => 3)))
+# Consistent initial assignment but no extension to complete assignment.
+@test !is_homomorphic(g, h, initial=(V=Dict(1 => 2, 3 => 3),))
+
 # Symmetic graphs
 #-----------------
 
