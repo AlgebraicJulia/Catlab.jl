@@ -41,4 +41,8 @@ end
   include("StructuredCospans.jl")
 end
 
+@testset "DataMigration" begin
+  include("DataMigration.jl")
+end
+
 end
