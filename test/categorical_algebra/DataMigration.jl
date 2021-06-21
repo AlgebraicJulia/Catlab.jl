@@ -4,6 +4,7 @@ using Test
 using Catlab.CategoricalAlgebra
 using Catlab.Graphs
 using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryWeightedGraph
+using Catlab.Graphs.BipartiteGraphs: TheoryUndirectedBipartiteGraph
 using Catlab.Theories: id, compose
 using Catlab.Present
 
@@ -70,23 +71,20 @@ F = Functor(
   TheoryWeightedGraph, TheoryLabeledDDS
 )
 
+ΔF = Delta(F)
+@test dom(ΔF) == ACSetType(TheoryLabeledDDS)
+@test codom(ΔF) == ACSetType(TheoryWeightedGraph)
+
 @test wg == WeightedGraph{Int}(ldds, F) 
 
 
 # Left Pushforward data migration
-
 #################################
 
 Σ = Sigma
 
-@present ThBipartite(FreeSchema) begin
-  (V1, V2, E)::Ob
-  src::Hom(E, V1)
-  tgt::Hom(E, V2)
-end
-
-V1B, V2B, EB = generators(ThBipartite, :Ob)
-srcB, tgtB = generators(ThBipartite, :Hom)
+V1B, V2B, EB = generators(TheoryUndirectedBipartiteGraph, :Ob)
+srcB, tgtB = generators(TheoryUndirectedBipartiteGraph, :Hom)
 
 VG, EG = generators(TheoryGraph, :Ob)
 srcG, tgtG = generators(TheoryGraph, :Hom)
@@ -94,7 +92,7 @@ srcG, tgtG = generators(TheoryGraph, :Hom)
 F = Functor(
     Dict(V1B => VG, V2B => VG, EB => EG), 
     Dict(srcB => srcG, tgtB => tgtG),
-    ThBipartite, TheoryGraph
+    TheoryUndirectedBipartiteGraph, TheoryGraph
 )
 
 idF = Functor(
@@ -104,15 +102,18 @@ idF = Functor(
 )
 
 ΣF =  Σ(F)
-X = ACSetType(ThBipartite, index=[:src, :tgt])()
+@test dom(ΣF) == ACSetType(TheoryUndirectedBipartiteGraph)
+@test codom(ΣF) == ACSetType(TheoryGraph)
+
+X = ACSetType(TheoryUndirectedBipartiteGraph, index=[:src, :tgt])()
 Y = ΣF(X)
 
 @test nparts(Y, :V) == 0
 @test nparts(Y, :E) == 0
 
-X =  @acset ACSetType(ThBipartite, index=[:src, :tgt]) begin
-  V1 = 4
-  V2 = 3
+X = @acset UndirectedBipartiteGraph begin
+  V₁ = 4
+  V₂ = 3
   E = 4
   src = [1,2,2,3]
   tgt = [1,1,2,3]
@@ -130,8 +131,9 @@ Y = ΣF(X)
   l1::Hom(A, L1)
   l2::Hom(A, L2)
 end
+const Span = ACSetType(ThSpan, index=[:l1, :l2])
 
-X = @acset ACSetType(ThSpan, index=[:l1, :l2]) begin
+X = @acset Span begin
   L1 = 3
   L2 = 4
   A = 3

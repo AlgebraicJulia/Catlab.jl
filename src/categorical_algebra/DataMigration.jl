@@ -20,7 +20,7 @@ import ...Theories: dom, codom, Ob, Hom
 """
 abstract type AbstractFunctor end
 
-""" Functor
+"""   Functor
 
 A functor ``F: \\mathcal{C} \\to \\mathcal{D}`` consists of a map of objects and a 
 map of homomorphisms from a domain category ``\\mathcal{C}``  to a codomain
@@ -43,14 +43,10 @@ Hom(F::Functor) = F.FHom
 # the domain and codomain presentations. Turn them into a dictionaries 
 # whose keys and values are homs.
 function Functor(FOb::Dict{Symbol, Symbol}, FHom::Dict{Symbol, H}, 
-                  dom::Presentation, codom::Presentation) where H
+                 dom::Presentation, codom::Presentation) where H
   Functor(
-    Dict(map(collect(FOb)) do (c_name, Fc_name)
-      dom[c_name] => codom[Fc_name]
-    end),
-    Dict(map(collect(FHom)) do (f_name, Ff_name)
-      dom[f_name] => get_hom(codom, Ff_name)
-    end), 
+    Dict(dom[c_name] => codom[Fc_name] for (c_name, Fc_name) in FOb),
+    Dict(dom[f_name] => get_hom(codom, Ff_name) for (f_name, Ff_name) in FHom),
     dom, codom
   )
 end
@@ -87,7 +83,7 @@ end
 dom(ΔF::DeltaMigration) = ACSetType(codom(ΔF.F))
 codom(ΔF::DeltaMigration) = ACSetType(dom(ΔF.F))
 
-""" Delta(F::Functor)
+"""   Delta(F::Functor)
 
 Given a functor ``F: \\mathcal{C} \\to \\mathcal{D}`` produces a `MigrationFunctor`
 which maps a ``\\mathcal{D}``-set ``X`` to the ``\\mathcal{C}``-set 
@@ -115,14 +111,13 @@ function (ΔF::DeltaMigration)(X::ACSet, Y::ACSet)
 end
 
 
-""" migrate!(X::ACSet, Y::ACSet, FOb, FHom)
+"""   migrate!(X::ACSet, Y::ACSet, FOb, FHom)
 
 Migrates the data from `Y` to `X` via the pullback 
 data migration induced by the functor defined on objects by `FOb` and 
 on morphisms by `FHom`.
 """
-migrate!(X::ACSet, Y::ACSet, F::Functor) = 
-  Delta(F)(X,Y)
+migrate!(X::ACSet, Y::ACSet, F::Functor) = Delta(F)(X,Y)
 
 migrate!(X::ACSet, Y::ACSet, FOb, FHom) = 
   migrate!(X,Y, Functor(FOb, FHom, Presentation(X), Presentation(Y)))
@@ -140,7 +135,7 @@ end
 
 ### SigmaMigration
 ###################
-""" Leftpushforward functorial data migration from one ACSet to another.
+""" Left pushforward functorial data migration from one ACSet to another.
 """
 struct SigmaMigration{CC} <: MigrationFunctor
   F::Functor # on the schemas
@@ -155,7 +150,7 @@ end
 dom(ΔF::SigmaMigration) = ACSetType(dom(ΔF.F))
 codom(ΔF::SigmaMigration) = ACSetType(codom(ΔF.F))
 
-""" Sigma(F::Functor)
+"""   Sigma(F::Functor)
 
 Given a functor ``F: \\mathcal{C} \\to \\mathcal{D}`` produces a `MigrationFunctor`
 which maps a ``\\mathcal{C}``-set ``X`` to the ``\\mathcal{D}``-set ``\\Sigma_F(X)``.
@@ -204,7 +199,7 @@ function (ΣF::SigmaMigration)(Y::ACSet, X::ACSet)
 end
 
 
-""" inv(D::AbstractDict)
+"""   inv(D::AbstractDict)
 
 Given a dictionary `D` returns a function that maps a proposed value 
 `y` to the array of all keys with value `y`.
@@ -222,7 +217,7 @@ function add_hom!(d::FreeDiagram, src_ob, tgt_ob, hom)
   return add_edge!(d, src_idx, tgt_idx, hom = hom)
 end
 
-""" comma_cats(diagramD::FreeDiagram{FreeSchema.Ob, FreeSchema.Hom}, FOb, FHom)
+"""   comma_cats(diagramD::FreeDiagram{FreeSchema.Ob, FreeSchema.Hom}, FOb, FHom)
 
 Given a free category ``\\mathcal{D}`` with no cycles and 
 a functor represented by the pair `(FOb, FHom)`, returns a diagram 
@@ -296,7 +291,7 @@ function Presentation(::ACSet{CD, AD}) where {CD, AD}
   return Presentation(CD, AD)
 end
 
-""" FreeDiagram(pres::Presentation{FreeSchema, Symbol})
+"""   FreeDiagram(pres::Presentation{FreeSchema, Symbol})
 
 Returns a `FreeDiagram` whose objects are the generating objects of `pres` and 
 whose homs are the generating homs of `pres`.
