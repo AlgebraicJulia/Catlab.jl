@@ -1,3 +1,5 @@
+# DO NOT MERGE
+
 # ![Catlab.jl](docs/src/assets/logo.png) Catlab.jl
 
 [![Build Status](https://github.com/AlgebraicJulia/Catlab.jl/workflows/Tests/badge.svg)](https://github.com/AlgebraicJulia/Catlab.jl/actions?query=workflow%3ATests)
