@@ -9,28 +9,31 @@ jobs:
     name: Review Checklist
     runs-on: ubuntu-latest
     steps:
-      - uses: unsplash/comment-on-pr@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/github-script@v4
         with:
-          check_for_duplicate_msg: true
-          msg: "### Review Checklist\n
-            \n
-            Does this PR follow the [development guidelines](https://github.com/AlgebraicJulia/Catlab.jl/wiki/Guidelines-for-PR-writers-and-reviewers)? Following is a *partial* checklist:\n
-            \n
-            **Tests**\n
-            \n
-            - [ ] New features and bug fixes have unit tests\n
-            - [ ] New modules have tests that are ultimately called by the test runner (`test/runtests.jl`)\n
-            - [ ] Existing tests have not been deleted\n
-            - [ ] Code coverage &gt;= 90% or reduction justified in PR\n
-            \n
-            **Documentation**\n
-            \n
-            - [ ] All exported functions, types, and constants have docstrings, written in complete sentences\n
-            - [ ] Citations are given for any constructions, algorithms, or code drawn from external sources\n
-            \n
-            **Other**\n
-            \n
-            - [ ] Style guidelines are followed, including indent width 2\n
-            - [ ] Changes breaking backwards compatibility have been approved"
+          script: |
+            github.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `### Review Checklist
+
+            Does this PR follow the [development guidelines](https://github.com/AlgebraicJulia/Catlab.jl/wiki/Guidelines-for-PR-writers-and-reviewers)? Following is a *partial* checklist:
+
+            **Tests**
+
+            - [ ] New features and bug fixes have unit tests
+            - [ ] New modules have tests that are ultimately called by the test runner (\`test/runtests.jl\`)
+            - [ ] Existing tests have not been deleted
+            - [ ] Code coverage &gt;= 90% or reduction justified in PR
+
+            **Documentation**
+
+            - [ ] All exported functions, types, and constants have docstrings, written in complete sentences
+            - [ ] Citations are given for any constructions, algorithms, or code drawn from external sources
+
+            **Other**
+
+            - [ ] Style guidelines are followed, including indent width 2
+            - [ ] Changes breaking backwards compatibility have been approved`,
+            })
