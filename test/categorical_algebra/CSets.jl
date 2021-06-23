@@ -302,7 +302,7 @@ add_edge!(g2, 1, 2)  # double arrow
 @test length(homomorphisms(g2,g1)) == 8 # each vertex + 1->2, and four for 2->3
 @test length(homomorphisms(g2,g1, monics=[:V])) == 5 # remove vertex solutions
 @test length(homomorphisms(g2,g1, monics=[:E])) == 2 # two for 2->3
-@test length(homomorphisms(g2,g1, isos=[:E])) == 0 # two for 2->3
+@test length(homomorphisms(g2,g1, isos=[:E])) == 0
 
 # Symmetic graphs
 #-----------------
