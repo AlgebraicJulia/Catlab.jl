@@ -3,7 +3,7 @@
 module CSets
 export ACSetTransformation, CSetTransformation, components, force, is_natural,
   homomorphism, homomorphisms, is_homomorphic,
-  isomorphism, isomorphisms, is_isomorphic, 
+  isomorphism, isomorphisms, is_isomorphic,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
 
 using Base.Meta: quot
@@ -206,8 +206,10 @@ function homomorphisms(X::AbstractACSet{CD,AD}, Y::AbstractACSet{CD,AD};
   results
 end
 homomorphisms(f, X::AbstractACSet, Y::AbstractACSet;
-              monic::Bool=false, initial=(;)) =
-  backtracking_search(f, X, Y, monic=monic, initial=initial)
+              monic::Bool=false, monics::Vector{Symbol}=Symbol[],
+              isos::Vector{Symbol}=Symbol[],initial=(;)) =
+  backtracking_search(f, X, Y, monic=monic, monics=monics, isos=isos,
+                      initial=initial)
 
 """ Is the first attributed ``C``-set homomorphic to the second?
 
@@ -255,13 +257,14 @@ end
 """ Internal state for backtracking search for ACSet homomorphisms.
 """
 struct BacktrackingState{CD <: CatDesc, AD <: AttrDesc{CD},
-    Assign <: NamedTuple, Dom <: AbstractACSet{CD,AD}, Codom <: AbstractACSet{CD,AD}}
+    Assign <: NamedTuple, PartialAssign <: NamedTuple,
+    Dom <: AbstractACSet{CD,AD}, Codom <: AbstractACSet{CD,AD}}
   """ The current assignment, a partially-defined homomorphism of ACSets. """
   assignment::Assign
   """ Depth in search tree at which assignments were made. """
   assignment_depth::Assign
-  """ Inverse assignment if finding a monomorphism, otherwise `nothing`. """
-  inv_assignment::Union{Nothing,Assign}
+  """ Inverse assignment for monic components or if finding a monomorphism. """
+  inv_assignment::PartialAssign
   """ Domain ACSet: the "variables" in the CSP. """
   dom::Dom
   """ Codomain ACSet: the "values" in the CSP. """
@@ -270,21 +273,29 @@ end
 
 function backtracking_search(f, X::AbstractACSet{CD}, Y::AbstractACSet{CD};
                              monic::Bool=false, iso::Bool=false,
+                             monics::Vector{Symbol}=Symbol[],
+                             isos::Vector{Symbol}=Symbol[],
                              initial=(;)) where {Ob, CD<:CatDesc{Ob}}
-  # Fail early if no monic/iso exists on cardinality grounds.
   if iso
-    all(nparts(X,c) == nparts(Y,c) for c in Ob) || return false
-    # Injections between finite sets are bijections, so reduce to that case.
-    monic = true
+    isos = collect(Ob)
   elseif monic
-    all(nparts(X,c) <= nparts(Y,c) for c in Ob) || return false
+    monics = collect(Ob)
+  end
+  # Fail early if no monic/iso exists on cardinality grounds.
+  for iso_comp in isos
+    nparts(X,iso_comp) == nparts(Y,iso_comp)  || return false
+    # Injections between finite sets are bijections, so reduce to that case.
+  end
+  monic_comps = [isos...,monics...]
+  for monic_comp in monic_comps
+    nparts(X,monic_comp) <= nparts(Y,monic_comp) || return false
   end
 
   # Initialize state variables for search.
   assignment = NamedTuple{Ob}(zeros(Int, nparts(X, c)) for c in Ob)
   assignment_depth = map(copy, assignment)
-  inv_assignment = monic ?
-    NamedTuple{Ob}(zeros(Int, nparts(Y, c)) for c in Ob) : nothing
+  inv_assignment = NamedTuple{Ob}(
+    (c in monic_comps ? zeros(Int, nparts(Y, c)) : nothing) for c in Ob)
   state = BacktrackingState(assignment, assignment_depth, inv_assignment, X, Y)
 
   # Make any initial assignments, failing immediately if inconsistent.
@@ -364,7 +375,7 @@ be mutated even when the assignment fails.
     y′ = state.assignment.$c[x]
     y′ == y && return true  # If x is already assigned to y, return immediately.
     y′ == 0 || return false # Otherwise, x must be unassigned.
-    if !isnothing(state.inv_assignment) && state.inv_assignment.$c[y] != 0
+    if !isnothing(state.inv_assignment.$c) && state.inv_assignment.$c[y] != 0
       # Also, y must unassigned in the inverse assignment.
       return false
     end
@@ -378,7 +389,7 @@ be mutated even when the assignment fails.
     # Make the assignment and recursively assign subparts.
     state.assignment.$c[x] = y
     state.assignment_depth.$c[x] = depth
-    if !isnothing(state.inv_assignment)
+    if !isnothing(state.inv_assignment.$c)
       state.inv_assignment.$c[y] = x
     end
     $(map(out_hom) do (f, d)
@@ -400,7 +411,7 @@ end
     @assert assign_depth <= depth
     if assign_depth == depth
       X = state.dom
-      if !isnothing(state.inv_assignment)
+      if !isnothing(state.inv_assignment.$c)
         y = state.assignment.$c[x]
         state.inv_assignment.$c[y] = 0
       end

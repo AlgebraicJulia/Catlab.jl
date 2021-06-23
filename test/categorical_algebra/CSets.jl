@@ -295,6 +295,15 @@ I = ob(terminal(Graph))
 # Consistent initial assignment but no extension to complete assignment.
 @test !is_homomorphic(g, h, initial=(V=Dict(1 => 2, 3 => 3),))
 
+g1, g2 = path_graph(Graph, 3), path_graph(Graph, 2)
+add_edges!(g1, [1,2,3,2], [1,2,3,3])  # loops on each node and one double arrow
+add_edge!(g2, 1, 2)  # double arrow
+
+@test length(homomorphisms(g2,g1)) == 8 # each vertex + 1->2, and four for 2->3
+@test length(homomorphisms(g2,g1, monics=[:V])) == 5 # remove vertex solutions
+@test length(homomorphisms(g2,g1, monics=[:E])) == 2 # two for 2->3
+@test length(homomorphisms(g2,g1, isos=[:E])) == 0 # two for 2->3
+
 # Symmetic graphs
 #-----------------
 
