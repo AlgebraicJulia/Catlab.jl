@@ -1,0 +1,39 @@
+name: Review Checklist
+
+on:
+  pull_request_target:
+    types: [review_requested]
+
+jobs:
+  review-checklist:
+    name: Review Checklist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v4
+        with:
+          script: |
+            github.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `### Review Checklist
+
+            Does this PR follow the [development guidelines](https://github.com/AlgebraicJulia/Catlab.jl/wiki/Guidelines-for-PR-writers-and-reviewers)? Following is a *partial* checklist:
+
+            **Tests**
+
+            - [ ] New features and bug fixes have unit tests
+            - [ ] New modules have tests that are ultimately called by the test runner (\`test/runtests.jl\`)
+            - [ ] Existing tests have not been deleted
+            - [ ] Code coverage &gt;= 90% or reduction justified in PR
+
+            **Documentation**
+
+            - [ ] All exported functions, types, and constants have docstrings, written in complete sentences
+            - [ ] Citations are given for any constructions, algorithms, or code drawn from external sources
+
+            **Other**
+
+            - [ ] Style guidelines are followed, including indent width 2
+            - [ ] Changes breaking backwards compatibility have been approved`,
+            })

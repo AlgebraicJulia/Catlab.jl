@@ -44,5 +44,7 @@ end
 @testset "Automorphisms" begin
   include("Automorphisms.jl")
 end
-
+ 
+@testset "DataMigration" begin
+  include("DataMigration.jl")
 end

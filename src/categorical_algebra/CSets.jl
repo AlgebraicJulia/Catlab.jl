@@ -3,7 +3,7 @@
 module CSets
 export ACSetTransformation, CSetTransformation, components, force, is_natural,
   homomorphism, homomorphisms, is_homomorphic,
-  isomorphism, isomorphisms, is_isomorphic, migrate!,
+  isomorphism, isomorphisms, is_isomorphic, 
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
 
 using Base.Meta: quot
@@ -18,6 +18,7 @@ import ..Limits: limit, colimit, universal
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force
 using ...Theories: Category, CatDesc, AttrDesc, ob, hom, attr, adom, acodom
 import ...Theories: dom, codom, compose, ⋅, id
+using ...Present
 
 # FinSets interop
 #################
@@ -166,18 +167,20 @@ runs in exponential time. It works best when the domain object is small.
 
 This procedure uses the classic backtracking search algorithm for a
 combinatorial constraint satisfaction problem (CSP). As is well known, the
-homomorphism problem for relational databases is equivalent to CSP. Since the
+homomorphism problem for relational databases is reducible to CSP. Since the
 C-set homomorphism problem is "the same" as the database homomorphism problem
 (insofar as attributed C-sets are "the same" as relational databases), it is
-also equivalent to CSP. Backtracking search for CSP is described in many
-computer science textbooks, such as (Russell & Norvig 2010, *Artificial
-Intelligence*, Third Ed., Chapter 6: Constraint satisfaction problems, esp.
-Algorithm 6.5). In our implementation, the search tree is ordered using the
-popular heuristic of "minimum remaining values" (MRV), also known as "most
-constrained variable."
+also reducible to CSP. Backtracking search for CSP is described in many computer
+science textbooks, such as (Russell & Norvig 2010, *Artificial Intelligence*,
+Third Ed., Chapter 6: Constraint satisfaction problems, esp. Algorithm 6.5). In
+our implementation, the search tree is ordered using the popular heuristic of
+"minimum remaining values" (MRV), also known as "most constrained variable."
 
-Set the keyword argument `monic=true` to restrict to monomorphisms:
-homomorphisms whose components are all injective functions.
+To restrict to *monomorphisms*, or homomorphisms whose components are all
+injective functions, set the keyword argument `monic=true`. To restrict the
+homomorphism to a given partial assignment, set the keyword argument `initial`.
+For example, to fix the first source vertex to the third target vertex in a
+graph homomorphism, set `initial=(V=Dict(1 => 3),)`.
 
 See also: [`homomorphisms`](@ref), [`isomorphism`](@ref).
 """
@@ -202,8 +205,9 @@ function homomorphisms(X::AbstractACSet{CD,AD}, Y::AbstractACSet{CD,AD};
   end
   results
 end
-homomorphisms(f, X::AbstractACSet, Y::AbstractACSet; monic::Bool=false) =
-  backtracking_search(f, X, Y, monic=monic)
+homomorphisms(f, X::AbstractACSet, Y::AbstractACSet;
+              monic::Bool=false, initial=(;)) =
+  backtracking_search(f, X, Y, monic=monic, initial=initial)
 
 """ Is the first attributed ``C``-set homomorphic to the second?
 
@@ -237,8 +241,8 @@ function isomorphisms(X::AbstractACSet{CD,AD}, Y::AbstractACSet{CD,AD}) where {C
   end
   results
 end
-isomorphisms(f, X::AbstractACSet, Y::AbstractACSet) =
-  backtracking_search(f, X, Y, iso=true)
+isomorphisms(f, X::AbstractACSet, Y::AbstractACSet; initial=(;)) =
+  backtracking_search(f, X, Y, iso=true, initial=initial)
 
 """ Are the two attributed ``C``-sets isomorphic?
 
@@ -265,7 +269,8 @@ struct BacktrackingState{CD <: CatDesc, AD <: AttrDesc{CD},
 end
 
 function backtracking_search(f, X::AbstractACSet{CD}, Y::AbstractACSet{CD};
-                             monic::Bool=false, iso::Bool=false) where {Ob, CD<:CatDesc{Ob}}
+                             monic::Bool=false, iso::Bool=false,
+                             initial=(;)) where {Ob, CD<:CatDesc{Ob}}
   # Fail early if no monic/iso exists on cardinality grounds.
   if iso
     all(nparts(X,c) == nparts(Y,c) for c in Ob) || return false
@@ -275,12 +280,22 @@ function backtracking_search(f, X::AbstractACSet{CD}, Y::AbstractACSet{CD};
     all(nparts(X,c) <= nparts(Y,c) for c in Ob) || return false
   end
 
+  # Initialize state variables for search.
   assignment = NamedTuple{Ob}(zeros(Int, nparts(X, c)) for c in Ob)
   assignment_depth = map(copy, assignment)
   inv_assignment = monic ?
     NamedTuple{Ob}(zeros(Int, nparts(Y, c)) for c in Ob) : nothing
   state = BacktrackingState(assignment, assignment_depth, inv_assignment, X, Y)
-  backtracking_search(f, state, 0)
+
+  # Make any initial assignments, failing immediately if inconsistent.
+  for (c, c_assignments) in pairs(initial)
+    for (x, y) in partial_assignments(c_assignments)
+      assign_elem!(state, 0, Val{c}, x, y) || return false
+    end
+  end
+
+  # Start the main recursion for backtracking search.
+  backtracking_search(f, state, 1)
 end
 
 function backtracking_search(f, state::BacktrackingState, depth::Int)
@@ -398,6 +413,12 @@ end
     end
   end
 end
+
+""" Get assignment pairs from partially specified component of C-set morphism.
+"""
+partial_assignments(x::AbstractDict) = pairs(x)
+partial_assignments(x::AbstractVector) =
+  ((i,y) for (i,y) in enumerate(x) if !isnothing(y) && y > 0)
 
 # Category of C-sets
 ####################
@@ -565,44 +586,8 @@ cocone_objects(diagram::BipartiteFreeDiagram) = ob₂(diagram)
 cocone_objects(span::Multispan) = feet(span)
 cocone_objects(para::ParallelMorphisms) = SVector(codom(para))
 
-# Functorial data migration
-###########################
-
-""" Pullback functorial data migration from one ACSet to another.
-
-Note that this operation is contravariant: the data is transferred from `X` to
-`Y` but the functor, represented by two dictionaries, maps the schema for `Y`
-to the schema for `X`.
-
-When the functor is the identity, this function is equivalent to
-[`copy_parts!`](@ref).
-"""
-function migrate!(Y::ACSet{CD, AD}, X::ACSet,
-                  FOb::AbstractDict, FHom::AbstractDict) where {CD, AD}
-  ob(CD) ⊆ keys(FOb)     || error("Every object in $CD must be a key in $FOb")
-  hom(CD) ⊆ keys(FHom)   || error("Every morphism in $CD must be a key in $FHom")
-  attr(AD) ⊆ keys(FHom)  || error("Every attribute in $AD must be a key in $FHom")
-  
-  partsY = NamedTuple{ob(CD)}(map(ob(CD)) do obY
-    add_parts!(Y, obY, nparts(X, FOb[obY]))
-  end)
-  for homY in hom(CD)
-    domY, codomY = dom(CD, homY), codom(CD, homY)
-    set_subpart!(Y, partsY[domY], homY, partsY[codomY][subpart(X, FHom[homY])])
-  end
-  for attrY in attr(AD)
-    domY = dom(AD, attrY)
-    set_subpart!(Y, partsY[domY], attrY, subpart(X, FHom[attrY]))
-  end
-  return Y
-end
-
-function (::Type{T})(X::ACSet, FOb::AbstractDict,
-                     FHom::AbstractDict) where T <: AbstractACSet
-  Y = T()
-  migrate!(Y, X, FOb, FHom)
-end
-
+# Serialization and Deserialization of ACSets
+#############################################
 """ Serialize an ACSet object to a JSON string
 """
 function generate_json_acset(x::T) where T <: AbstractACSet

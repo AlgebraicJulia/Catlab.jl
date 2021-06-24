@@ -14,6 +14,7 @@ include("GraphCategories.jl")
 include("StructuredCospans.jl")
 include("CommutativeDiagrams.jl")
 include("Automorphisms.jl")
+include("DataMigration.jl")
 
 @reexport using .FreeDiagrams
 @reexport using .CommutativeDiagrams
@@ -22,5 +23,6 @@ include("Automorphisms.jl")
 @reexport using .ACSetViews
 @reexport using .StructuredCospans
 @reexport using .Automorphisms
+@reexport using .DataMigration
 
 end
