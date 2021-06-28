@@ -3,7 +3,7 @@
 module CSets
 export ACSetTransformation, CSetTransformation, components, force, is_natural,
   homomorphism, homomorphisms, is_homomorphic,
-  isomorphism, isomorphisms, is_isomorphic, 
+  isomorphism, isomorphisms, is_isomorphic,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
 
 using Base.Meta: quot
@@ -177,10 +177,14 @@ our implementation, the search tree is ordered using the popular heuristic of
 "minimum remaining values" (MRV), also known as "most constrained variable."
 
 To restrict to *monomorphisms*, or homomorphisms whose components are all
-injective functions, set the keyword argument `monic=true`. To restrict the
-homomorphism to a given partial assignment, set the keyword argument `initial`.
-For example, to fix the first source vertex to the third target vertex in a
-graph homomorphism, set `initial=(V=Dict(1 => 3),)`.
+injective functions, set the keyword argument `monic=true`. To restrict only
+certain components to be injective or bijective, use `monic=[...]` or
+`iso=[...]`. For example, setting `monic=[:V]` for a graph homomorphism ensures
+that the vertex map is injective but imposes no constraints on the edge map.
+
+To restrict the homomorphism to a given partial assignment, set the keyword
+argument `initial`. For example, to fix the first source vertex to the third
+target vertex in a graph homomorphism, set `initial=(V=Dict(1 => 3),)`.
 
 See also: [`homomorphisms`](@ref), [`isomorphism`](@ref).
 """
@@ -206,62 +210,51 @@ function homomorphisms(X::AbstractACSet{CD,AD}, Y::AbstractACSet{CD,AD};
   results
 end
 homomorphisms(f, X::AbstractACSet, Y::AbstractACSet;
-              monic::Bool=false, initial=(;)) =
-  backtracking_search(f, X, Y, monic=monic, initial=initial)
+              monic=false, iso=false, initial=(;)) =
+  backtracking_search(f, X, Y, monic=monic, iso=iso, initial=initial)
 
 """ Is the first attributed ``C``-set homomorphic to the second?
 
 A convenience function based on [`homomorphism`](@ref).
 """
-function is_homomorphic(X::AbstractACSet, Y::AbstractACSet; kw...)
+is_homomorphic(X::AbstractACSet, Y::AbstractACSet; kw...) =
   !isnothing(homomorphism(X, Y; kw...))
-end
 
 """ Find an isomorphism between two attributed ``C``-sets, if one exists.
 
 See [`homomorphism`](@ref) for more information about the algorithms involved.
 """
-function isomorphism(X::AbstractACSet, Y::AbstractACSet)
-  result = nothing
-  isomorphisms(X, Y) do α
-    result = α; return true
-  end
-  result
-end
+isomorphism(X::AbstractACSet, Y::AbstractACSet; initial=(;)) =
+  homomorphism(X, Y, iso=true, initial=initial)
 
 """ Find all isomorphisms between two attributed ``C``-sets.
 
 This function is at least as expensive as [`isomorphism`](@ref) and when no
 homomorphisms exist, it is exactly as expensive.
 """
-function isomorphisms(X::AbstractACSet{CD,AD}, Y::AbstractACSet{CD,AD}) where {CD,AD}
-  results = ACSetTransformation{CD,AD}[]
-  isomorphisms(X, Y) do α
-    push!(results, map_components(deepcopy, α)); return false
-  end
-  results
-end
+isomorphisms(X::AbstractACSet, Y::AbstractACSet; initial=(;)) =
+  homomorphisms(X, Y, iso=true, initial=initial)
 isomorphisms(f, X::AbstractACSet, Y::AbstractACSet; initial=(;)) =
-  backtracking_search(f, X, Y, iso=true, initial=initial)
+  homomorphisms(f, X, Y, iso=true, initial=initial)
 
 """ Are the two attributed ``C``-sets isomorphic?
 
 A convenience function based on [`isomorphism`](@ref).
 """
-function is_isomorphic(X::AbstractACSet, Y::AbstractACSet; kw...)
+is_isomorphic(X::AbstractACSet, Y::AbstractACSet; kw...) =
   !isnothing(isomorphism(X, Y; kw...))
-end
 
 """ Internal state for backtracking search for ACSet homomorphisms.
 """
 struct BacktrackingState{CD <: CatDesc, AD <: AttrDesc{CD},
-    Assign <: NamedTuple, Dom <: AbstractACSet{CD,AD}, Codom <: AbstractACSet{CD,AD}}
+    Assign <: NamedTuple, PartialAssign <: NamedTuple,
+    Dom <: AbstractACSet{CD,AD}, Codom <: AbstractACSet{CD,AD}}
   """ The current assignment, a partially-defined homomorphism of ACSets. """
   assignment::Assign
   """ Depth in search tree at which assignments were made. """
   assignment_depth::Assign
-  """ Inverse assignment if finding a monomorphism, otherwise `nothing`. """
-  inv_assignment::Union{Nothing,Assign}
+  """ Inverse assignment for monic components or if finding a monomorphism. """
+  inv_assignment::PartialAssign
   """ Domain ACSet: the "variables" in the CSP. """
   dom::Dom
   """ Codomain ACSet: the "values" in the CSP. """
@@ -269,22 +262,28 @@ struct BacktrackingState{CD <: CatDesc, AD <: AttrDesc{CD},
 end
 
 function backtracking_search(f, X::AbstractACSet{CD}, Y::AbstractACSet{CD};
-                             monic::Bool=false, iso::Bool=false,
-                             initial=(;)) where {Ob, CD<:CatDesc{Ob}}
-  # Fail early if no monic/iso exists on cardinality grounds.
-  if iso
-    all(nparts(X,c) == nparts(Y,c) for c in Ob) || return false
-    # Injections between finite sets are bijections, so reduce to that case.
-    monic = true
-  elseif monic
-    all(nparts(X,c) <= nparts(Y,c) for c in Ob) || return false
+                             monic=false, iso=false, initial=(;)) where {Ob, CD<:CatDesc{Ob}}
+  # Fail early if no monic/isos exist on cardinality grounds.
+  if iso isa Bool
+    iso = iso ? Ob : ()
+  end
+  for c in iso
+    nparts(X,c) == nparts(Y,c) || return false
+  end
+  if monic isa Bool
+    monic = monic ? Ob : ()
+  end
+  # Injections between finite sets are bijections, so reduce to that case.
+  monic = unique([iso..., monic...])
+  for c in monic
+    nparts(X,c) <= nparts(Y,c) || return false
   end
 
   # Initialize state variables for search.
   assignment = NamedTuple{Ob}(zeros(Int, nparts(X, c)) for c in Ob)
   assignment_depth = map(copy, assignment)
-  inv_assignment = monic ?
-    NamedTuple{Ob}(zeros(Int, nparts(Y, c)) for c in Ob) : nothing
+  inv_assignment = NamedTuple{Ob}(
+    (c in monic ? zeros(Int, nparts(Y, c)) : nothing) for c in Ob)
   state = BacktrackingState(assignment, assignment_depth, inv_assignment, X, Y)
 
   # Make any initial assignments, failing immediately if inconsistent.
@@ -364,7 +363,7 @@ be mutated even when the assignment fails.
     y′ = state.assignment.$c[x]
     y′ == y && return true  # If x is already assigned to y, return immediately.
     y′ == 0 || return false # Otherwise, x must be unassigned.
-    if !isnothing(state.inv_assignment) && state.inv_assignment.$c[y] != 0
+    if !isnothing(state.inv_assignment.$c) && state.inv_assignment.$c[y] != 0
       # Also, y must unassigned in the inverse assignment.
       return false
     end
@@ -378,7 +377,7 @@ be mutated even when the assignment fails.
     # Make the assignment and recursively assign subparts.
     state.assignment.$c[x] = y
     state.assignment_depth.$c[x] = depth
-    if !isnothing(state.inv_assignment)
+    if !isnothing(state.inv_assignment.$c)
       state.inv_assignment.$c[y] = x
     end
     $(map(out_hom) do (f, d)
@@ -400,7 +399,7 @@ end
     @assert assign_depth <= depth
     if assign_depth == depth
       X = state.dom
-      if !isnothing(state.inv_assignment)
+      if !isnothing(state.inv_assignment.$c)
         y = state.assignment.$c[x]
         state.inv_assignment.$c[y] = 0
       end
