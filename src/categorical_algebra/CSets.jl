@@ -177,10 +177,14 @@ our implementation, the search tree is ordered using the popular heuristic of
 "minimum remaining values" (MRV), also known as "most constrained variable."
 
 To restrict to *monomorphisms*, or homomorphisms whose components are all
-injective functions, set the keyword argument `monic=true`. To restrict the
-homomorphism to a given partial assignment, set the keyword argument `initial`.
-For example, to fix the first source vertex to the third target vertex in a
-graph homomorphism, set `initial=(V=Dict(1 => 3),)`.
+injective functions, set the keyword argument `monic=true`. To restrict only
+certain components to be injective or bijective, use `monic=[...]` or
+`iso=[...]`. For example, setting `monic=[:V]` for a graph homomorphism ensures
+that the vertex map is injective but imposes no constraints on the edge map.
+
+To restrict the homomorphism to a given partial assignment, set the keyword
+argument `initial`. For example, to fix the first source vertex to the third
+target vertex in a graph homomorphism, set `initial=(V=Dict(1 => 3),)`.
 
 See also: [`homomorphisms`](@ref), [`isomorphism`](@ref).
 """
@@ -206,53 +210,39 @@ function homomorphisms(X::AbstractACSet{CD,AD}, Y::AbstractACSet{CD,AD};
   results
 end
 homomorphisms(f, X::AbstractACSet, Y::AbstractACSet;
-              monic::Bool=false, monics::Vector{Symbol}=Symbol[],
-              isos::Vector{Symbol}=Symbol[],initial=(;)) =
-  backtracking_search(f, X, Y, monic=monic, monics=monics, isos=isos,
-                      initial=initial)
+              monic=false, iso=false, initial=(;)) =
+  backtracking_search(f, X, Y, monic=monic, iso=iso, initial=initial)
 
 """ Is the first attributed ``C``-set homomorphic to the second?
 
 A convenience function based on [`homomorphism`](@ref).
 """
-function is_homomorphic(X::AbstractACSet, Y::AbstractACSet; kw...)
+is_homomorphic(X::AbstractACSet, Y::AbstractACSet; kw...) =
   !isnothing(homomorphism(X, Y; kw...))
-end
 
 """ Find an isomorphism between two attributed ``C``-sets, if one exists.
 
 See [`homomorphism`](@ref) for more information about the algorithms involved.
 """
-function isomorphism(X::AbstractACSet, Y::AbstractACSet)
-  result = nothing
-  isomorphisms(X, Y) do α
-    result = α; return true
-  end
-  result
-end
+isomorphism(X::AbstractACSet, Y::AbstractACSet; initial=(;)) =
+  homomorphism(X, Y, iso=true, initial=initial)
 
 """ Find all isomorphisms between two attributed ``C``-sets.
 
 This function is at least as expensive as [`isomorphism`](@ref) and when no
 homomorphisms exist, it is exactly as expensive.
 """
-function isomorphisms(X::AbstractACSet{CD,AD}, Y::AbstractACSet{CD,AD}) where {CD,AD}
-  results = ACSetTransformation{CD,AD}[]
-  isomorphisms(X, Y) do α
-    push!(results, map_components(deepcopy, α)); return false
-  end
-  results
-end
+isomorphisms(X::AbstractACSet, Y::AbstractACSet; initial=(;)) =
+  homomorphisms(X, Y, iso=true, initial=initial)
 isomorphisms(f, X::AbstractACSet, Y::AbstractACSet; initial=(;)) =
-  backtracking_search(f, X, Y, iso=true, initial=initial)
+  homomorphisms(f, X, Y, iso=true, initial=initial)
 
 """ Are the two attributed ``C``-sets isomorphic?
 
 A convenience function based on [`isomorphism`](@ref).
 """
-function is_isomorphic(X::AbstractACSet, Y::AbstractACSet; kw...)
+is_isomorphic(X::AbstractACSet, Y::AbstractACSet; kw...) =
   !isnothing(isomorphism(X, Y; kw...))
-end
 
 """ Internal state for backtracking search for ACSet homomorphisms.
 """
@@ -272,30 +262,28 @@ struct BacktrackingState{CD <: CatDesc, AD <: AttrDesc{CD},
 end
 
 function backtracking_search(f, X::AbstractACSet{CD}, Y::AbstractACSet{CD};
-                             monic::Bool=false, iso::Bool=false,
-                             monics::Vector{Symbol}=Symbol[],
-                             isos::Vector{Symbol}=Symbol[],
-                             initial=(;)) where {Ob, CD<:CatDesc{Ob}}
-  if iso
-    isos = collect(Ob)
-  elseif monic
-    monics = collect(Ob)
+                             monic=false, iso=false, initial=(;)) where {Ob, CD<:CatDesc{Ob}}
+  # Fail early if no monic/isos exist on cardinality grounds.
+  if iso isa Bool
+    iso = iso ? Ob : ()
   end
-  # Fail early if no monic/iso exists on cardinality grounds.
-  for iso_comp in isos
-    nparts(X,iso_comp) == nparts(Y,iso_comp)  || return false
-    # Injections between finite sets are bijections, so reduce to that case.
+  for c in iso
+    nparts(X,c) == nparts(Y,c) || return false
   end
-  monic_comps = [isos...,monics...]
-  for monic_comp in monic_comps
-    nparts(X,monic_comp) <= nparts(Y,monic_comp) || return false
+  if monic isa Bool
+    monic = monic ? Ob : ()
+  end
+  # Injections between finite sets are bijections, so reduce to that case.
+  monic = unique([iso..., monic...])
+  for c in monic
+    nparts(X,c) <= nparts(Y,c) || return false
   end
 
   # Initialize state variables for search.
   assignment = NamedTuple{Ob}(zeros(Int, nparts(X, c)) for c in Ob)
   assignment_depth = map(copy, assignment)
   inv_assignment = NamedTuple{Ob}(
-    (c in monic_comps ? zeros(Int, nparts(Y, c)) : nothing) for c in Ob)
+    (c in monic ? zeros(Int, nparts(Y, c)) : nothing) for c in Ob)
   state = BacktrackingState(assignment, assignment_depth, inv_assignment, X, Y)
 
   # Make any initial assignments, failing immediately if inconsistent.
