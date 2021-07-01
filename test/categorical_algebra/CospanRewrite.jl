@@ -7,9 +7,8 @@ using Catlab.CategoricalAlgebra.FinSets: FinFunction
 using Catlab.Present
 
 
-###################
-# Open Petri Nets #
-###################
+# Open Petri Nets
+#################
 
 @present TheoryPetriNet(FreeSchema) begin
   (T,S,I,O)::Ob
@@ -137,15 +136,13 @@ expected_bottom = @acset PetriNet begin
 end
 @test is_isomorphic(bottom, expected_bottom)
 
-##########
-# GRAPHS #
-##########
+# GRAPHS
+########
 
 const OpenGraphOb, OpenGraph = OpenCSetTypes(Graph, :V);
 
-##################
-# EXAMPLE GRAPHS #
-##################
+# EXAMPLE GRAPHS
+#---------------
 G1 = Graph(1);
 G2 = Graph(2);
 G3 = Graph(3);
@@ -176,9 +173,9 @@ add_edges!(CSpan, [1,3],[2,2]);
 Cycle = Graph(2);
 add_edges!(Cycle, [1,2],[2,1]);
 
-#################
-# Example Spans #
-#################
+# Example Spans
+#--------------
+
 id_1 = id(Graph(1));
 id_2 = id(Graph(2));
 flip = CSetTransformation(G2, G2, V=[2,1]);
@@ -189,9 +186,8 @@ sp1 = Span(id_1, id_1);
 sp2 = Span(id_2, id_2);
 flipflip = Span(flip, flip);
 
-###############
-# Open Graphs #
-###############
+# Open Graphs
+#------------
 o1 = OpenGraph(G1, id_1[:V], id_1[:V]);
 o2 = OpenGraph(G2, f12[:V], f22[:V]);
 openloop = OpenGraph(Loop, id_1[:V], id_1[:V]);
@@ -212,9 +208,8 @@ opencspan = OpenGraph(CSpan,
                         FinFunction([2], 3));
 opencycle = OpenGraph(Cycle,  flip[:V], f22[:V]);
 
-#########################
-# Graph Transformations #
-#########################
+# Graph Transformations
+#----------------------
 gm1 = ACSetTransformation(G1, Loop, V=[1]);
 up_ = ACSetTransformation(G2, Arrow, V=[1,2]);
 down_ = ACSetTransformation(G2, G1, V=[1,1]);
@@ -222,9 +217,9 @@ tosquare = ACSetTransformation(Three, Square, V=[1,2,4],E=[1,3]);
 totrap = ACSetTransformation(Three, Trap, V=[1,2,5], E=[1,2]);
 tocspan = ACSetTransformation(Arrow, CSpan, V=[1,2], E=[1]);
 tocycle = ACSetTransformation(Arrow, Cycle, V=[1,2], E=[1]);
-#########
-# Rules #
-#########
+
+# Rules
+#------
 
 """Removes a loop
 1 → Loop ← 1
