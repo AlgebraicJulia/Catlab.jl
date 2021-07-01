@@ -4,7 +4,7 @@ export ThCPortGraph, ThOpenCPortGraph, ThSymCPortGraph, ThOpenSymCPortGraph,
   ThBundledCPG, BundledCPG
 
 using ...Theories, ...Present,  ...CategoricalAlgebra
-import ...CategoricalAlgebra.CSets: migrate!
+import ...CategoricalAlgebra: migrate!
 using ...Graphs
 import ...Graphs.BasicGraphs: TheoryGraph
 import ..DirectedWiringDiagrams: ocompose
