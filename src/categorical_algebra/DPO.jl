@@ -16,17 +16,20 @@ m ↓   ↓k
     g
 
 Compute a pushout complement, componentwise in Set. On a formal level:
-For each component, define K = G / m(L/l(I)). There is a natural injection g: K↪G
-For each component, define k as equal to the map l;m (every element in the image in G is also in K).
+For each component, define K = G / m(L/l(I)).
+  There is a natural injection g: K↪G
+For each component, define k as equal to the map l;m
+  (every element in the image in G is also in K).
 
 Returns ACSetTransformations k and g such that (m, g) is the pushout of (l, k)
 
-Implementation-wise, elements of K are ordered in the same order as they appear in G.
+Implementation-wise, elements of K are ordered in the same order as they appear
+in G.
 """
 function pushout_complement(
     l::ACSetTransformation{CD,AD}, m::ACSetTransformation{CD,AD}
   )::Pair{ACSetTransformation{CD,AD},ACSetTransformation{CD,AD}} where {CD,AD}
-  @assert valid_dpo(l, m; fail=true)
+  valid_dpo(l, m) || error("morphisms L and m do not satisfy gluing conditions")
   I, L, G = dom(l), codom(l), codom(m)
 
   # Construct subobject g: K ↪ G.
@@ -59,8 +62,8 @@ function rewrite_match(L::ACSetTransformation{CD, AD},
                        R::ACSetTransformation{CD, AD},
                        m::ACSetTransformation{CD, AD}
                       )::AbstractACSet{CD, AD} where {CD, AD}
-    @assert dom(L) == dom(R)
-    @assert codom(L) == dom(m)
+    dom(L) == dom(R) || error("Rewriting where L, R do not share domain")
+    codom(L) == dom(m) || error("Rewriting where L does not compose with m")
     (k, _) = pushout_complement(L, m)
     l1, _ = pushout(R, k)
     return codom(l1)
@@ -89,89 +92,87 @@ end
 """
 Condition for existence of a pushout complement
 """
-function valid_dpo(L::ACSetTransformation, m::ACSetTransformation; fail::Bool=false)::Bool
-  return id_condition(L, m;fail=fail) && dangling_condition(L, m;fail=fail)
+function valid_dpo(L::ACSetTransformation, m::ACSetTransformation)::Bool
+  return all(isempty, [collect(id_condition(L, m))...,
+                       dangling_condition(L, m)])
 end
 
 """
-Does not map both a deleted item and a preserved item in L to the same item in G, or two distinct deleted items to the same.
-(Trivially satisfied if match is mono)
+Does not map both a deleted item and a preserved item in L to the same item in
+G, or two distinct deleted items to the same. (Trivially satisfied if mono)
+
+Returns a pair of lists of violations
+  1.) For a given component, a pair of IDs in L that are deleted yet mapped to
+      the same index (the last integer of the tuple) in G
+  2.) For a given component, a nondeleted index that maps to a deleted index
+      in G
 """
 function id_condition(L::ACSetTransformation{CD, AD},
                       m::ACSetTransformation{CD, AD};
-                      fail::Bool=false)::Bool where {CD, AD}
-  for comp in keys(L.components)
+                      )::Pair{Vector{Tuple{Symbol, Int, Int, Int}},
+                              Vector{Tuple{Symbol, Int, Int}}} where {CD, AD}
+  res1, res2 = Tuple{Symbol, Int, Int, Int}[], Tuple{Symbol, Int, Int}[]
+  for comp in keys(components(L))
     m_comp = x->m[comp](x)
-    image = Set(collect(L.components[comp]))
-    image_complement = filter(x->!(x in image), 1:nparts(codom(L),comp))
+    image = Set(collect(L[comp]))
+    image_complement = filter(x->!(x in image), parts(codom(L),comp))
     image_vals = map(m_comp, collect(image))
     orphan_vals = map(m_comp, image_complement)
     orphan_set = Set(orphan_vals)
-    if length(orphan_set)!=length(orphan_vals)
-      if fail
-        for (i, iv) in enumerate(image_complement)
-          for j in i+1:length(image_complement)
-            if m_comp(iv) == m_comp(image_complement[j])
-              @assert false ("$comp #$i+$j both orphaned and sent to $(m_comp(i))")
-            end
-          end
+
+    for (i, iv) in enumerate(image_complement)
+      for j in i+1:length(image_complement)
+        if m_comp(iv) == m_comp(image_complement[j])
+          push!(res1, (comp, i, j, m_comp(i)))
         end
       end
-      return false
     end
-    if !isempty(intersect(image_vals, orphan_set))
-      if fail
-        for i in image
-          if m_comp(i) in orphan_set
-            @assert false ("Nondeleted $comp #$i in L mapped to deleted val $(m_comp(i)) in G")
-          end
-        end
+    for i in image
+      if m_comp(i) in orphan_set
+        push!(res2, (comp, i, m_comp(i)))
       end
-      return false
     end
   end
 
-  return true
+  return res1 => res2
 end
 
 """
 Dangling condition:
-m doesn't map a deleted element d to a element m(d) ∈ G if m(d) is connected to something outside the image of m.
+m doesn't map a deleted element d to a element m(d) ∈ G if m(d) is connected to
+something outside the image of m.
+
 For example, in the CSet of graphs:
   e1
-1 --> 2   --- if e1 is not matched but either 1 and 2 are deleted, then e1 is dangling
+1 --> 2
+
+if e1 is not matched but either 1 and 2 are deleted, then e1 is dangling
 """
 function dangling_condition(L::ACSetTransformation{CD, AD},
                             m::ACSetTransformation{CD, AD};
-                            fail::Bool=false)::Bool where {CD, AD}
-  orphans = Dict()
-  for comp in keys(L.components)
-    image = Set(collect(L.components[comp]))
+                            )::Vector{Tuple{Symbol, Int, Int}} where {CD, AD}
+  orphans, res = Dict(), []
+  for comp in keys(components(L))
+    image = Set(collect(L[comp]))
     orphans[comp] = Set(
       map(x->m[comp](x),
         filter(x->!(x in image),
-          1:nparts(codom(L),comp))))
+          parts(codom(L), comp))))
   end
   # check that for all morphisms in C, we do not map to an orphan
   for (morph, src_ind, tgt_ind) in zip(hom(CD), dom(CD), codom(CD))
     src_obj = ob(CD)[src_ind] # e.g. :E, given morph=:src in graphs
     tgt_obj = ob(CD)[tgt_ind] # e.g. :V, given morph=:src in graphs
-    n_src = 1:nparts(codom(m),src_obj)
+    n_src = parts(codom(m), src_obj)
     unmatched_vals = setdiff(n_src, collect(m[src_obj]))
     unmatched_tgt = map(x -> m.codom[morph][x], collect(unmatched_vals))
-    if !isempty(intersect(unmatched_tgt, orphans[tgt_obj]))
-      if fail
-        for unmatched_val in setdiff(n_src, collect(m[src_obj]))  # G/m(L) src
-          unmatched_tgt = m.codom[morph][unmatched_val]
-          if codom(m)[morph][unmatched_val] in orphans[tgt_obj]
-              @assert false ("Dangling condition violation: $src_obj#$unmatched_val --$morph--> $tgt_obj#$unmatched_tgt")
-          end
-        end
+    for unmatched_val in setdiff(n_src, collect(m[src_obj]))  # G/m(L) src
+      unmatched_tgt = m.codom[morph][unmatched_val]
+      if unmatched_tgt in orphans[tgt_obj]
+          push!(res, (morph, unmatched_val, unmatched_tgt))
       end
-      return false
     end
   end
-  return true
+  return res
 end
-
 end
