@@ -45,4 +45,8 @@ end
   include("DataMigration.jl")
 end
 
+@testset "DPO" begin
+  include("DPO.jl")
+end
+
 end
