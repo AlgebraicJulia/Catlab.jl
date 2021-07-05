@@ -9,6 +9,7 @@ using Catlab.Theories: AttrDesc
 
 # Wiring diagrams
 #################
+
 A, B, C, D = [:A], [:B], [:C], [:D];
 f,g,h,i = Box(:f, A, B), Box(:g, B, C),Box(:h, C, D), Box(:i, [:D,:B], [:D,:B]);
 
@@ -54,9 +55,9 @@ R=ACSetTransformation(IWD.diagram, RWD.diagram, Box=[1,3]);
 m=ACSetTransformation(LWD.diagram, GWD.diagram, Box=[1,2],InPort=[2],OutPort=[1],Wire=[1]);
 @test is_isomorphic(XWD.diagram, rewrite_match(L,R,m))
 
-
 # Graphs with attributes
 ########################
+
 @present TheoryDecGraph(FreeSchema) begin
   E::Ob
   V::Ob
@@ -74,49 +75,45 @@ end
 const LabelledDecGraph = ACSetType(TheoryLabelledDecGraph, index=[:src,:tgt])
 
 aI2 = @acset LabelledDecGraph{String} begin
-    V = 2
-    E = 0
-    label = ["a","b"]
+  V = 2
+  E = 0
+  label = ["a","b"]
 end
 
 aarr = @acset LabelledDecGraph{String} begin
-    V = 2
-    E = 1
-
-    src = [1]
-    tgt = [2]
-
-    dec = ["e1"]
-    label = ["a","b"]
+  V = 2
+  E = 1
+  src = [1]
+  tgt = [2]
+  dec = ["e1"]
+  label = ["a","b"]
 end
 
 abiarr = @acset LabelledDecGraph{String} begin
-     V = 2
-     E = 2
-
-     src = [1,2]
-     tgt = [2,1]
-
-     dec = ["e1","rev_e1"]
-     label = ["a","b"]
+  V = 2
+  E = 2
+  src = [1,2]
+  tgt = [2,1]
+  dec = ["e1","rev_e1"]
+  label = ["a","b"]
 end
 
 aspan = @acset LabelledDecGraph{String} begin
-    V = 3
-    E = 2
-    src = [1,1]
-    tgt = [2,3]
-    dec = ["e1","e2"]
-    label = ["a","b","c"]
+  V = 3
+  E = 2
+  src = [1,1]
+  tgt = [2,3]
+  dec = ["e1","e2"]
+  label = ["a","b","c"]
 end
 
 expected = @acset LabelledDecGraph{String} begin
-    V = 3
-    E = 3
-    src = [1,1,2]
-    tgt = [2,3,1]
-    dec = ["e1","e2","rev_e1"]
-    label = ["a","b","c"]
+  V = 3
+  E = 3
+  src = [1,1,2]
+  tgt = [2,3,1]
+  dec = ["e1","e2","rev_e1"]
+  label = ["a","b","c"]
 end
 
 
@@ -130,14 +127,10 @@ m = ACSetTransformation(aarr, aspan, V=[1,2], E=[1]);
 
 @test is_isomorphic(expected, rewrite_match(L, R, m))
 
-
-
-
 # Graphs
 ########
 
 # Example graphs
-#---------------
 I2 = Graph(2)
 I3 = Graph(3)
 #   e1   e2
@@ -145,14 +138,12 @@ I3 = Graph(3)
 span = Graph(3)
 add_edges!(span, [2,2],[1,3])
 # 1 -> 2
-arr = Graph(2)
-add_edges!(arr, [1],[2])
+arr = path_graph(Graph, 2)
 # 1 <-> 2
 biarr = Graph(2)
 add_edges!(biarr, [1,2],[2,1])
 # 1 -> 2 -> 3 -> 1
-tri = Graph(3)
-add_edges!(tri,[1,2,3],[2,3,1])
+tri = cycle_graph(Graph, 3)
 # 4 <- 1 -> 2 and 2 <- 3 -> 4
 dispan = Graph(4)
 add_edges!(dispan, [1,1,3,3],[2,4,2,4])
@@ -192,9 +183,10 @@ m = CSetTransformation(arr, two_loops, V=[1, 1], E=[1])
 
 # Simplest non-trivial, non-monic exmaple
 @present TheoryFinSet(FreeSchema) begin
-  X :: Ob
+  X::Ob
 end
 const FinSetType = ACSetType(TheoryFinSet)
+
 I, L, G = [FinSetType() for _ in 1:3]
 add_parts!(I,:X,2)
 add_parts!(L,:X,1)
@@ -260,17 +252,17 @@ k, g = pushout_complement(L, m); # get PO complement to do further tests
 Lm = compose(L,m);
 kg = compose(k,g);
 for I_node in 1:2
-    @test Lm[:V](I_node) == kg[:V](I_node)
+  @test Lm[:V](I_node) == kg[:V](I_node)
 end
 @test Lm[:E](1) == kg[:E](1)
 
 # Check pushout properties 3: for every pair of unmatched things between K and L, they are NOT equal
 for K_node in 1:3
-    @test m[:V](3) != g[:V](K_node)
+  @test m[:V](3) != g[:V](K_node)
 end
 
 for K_edge in 2:3
-    @test m[:E](3) != g[:E](K_edge)
+  @test m[:E](3) != g[:E](K_edge)
 end
 
 # Undirected bipartite graphs
@@ -279,7 +271,6 @@ end
 # 1 --- 1
 #    /
 # 2 --- 2
-
 
 z_ = UndirectedBipartiteGraph()
 add_vertices₁!(z_, 2)
@@ -301,12 +292,10 @@ add_vertices₁!(merge, 2)
 add_vertices₂!(merge, 2)
 add_edges!(merge, [1,2], [1,1])
 
-
 Lspan = UndirectedBipartiteGraph()
 add_vertices₁!(Lspan, 1)
 add_vertices₂!(Lspan, 2)
 add_edges!(Lspan, [1,1],[1,2])
-
 
 I = UndirectedBipartiteGraph()
 add_vertices₁!(I, 1)
@@ -529,9 +518,9 @@ function transformation_of_transformations(m1::ACSetTransformation, m2::ACSetTra
   r2, fk2, d2 = [collect(1:nparts(m2_,x)) for x in [:Row2, :FK2, :Datum2]]
   for (k, vs) in zip(keys(components(msrc)), components(msrc))
     for (i, v) in enumerate(vs.func)
-        r1[src1[k => i]] = src2[k => v]
-        # this will fail if msrc.domain has any FKs / attributes
-        # for our example below, this is ok
+      r1[src1[k => i]] = src2[k => v]
+      # this will fail if msrc.domain has any FKs / attributes
+      # for our example below, this is ok
     end
   end
   for (k, v) in zip([r1, fk1, d1, r2, fk2, d2],
@@ -582,25 +571,25 @@ end
 (m1_,Hdict, HΣdict) = to_cset(ϕ);
 
 HL = @acset HypergraphP{Symbol} begin
-V = 5
-E₂₁ = 2
-s₁ = [1,3]
-s₂ = [2,4]
-t₁ = [3,5]
-Label₂ = [:plus,:plus]
+  V = 5
+  E₂₁ = 2
+  s₁ = [1,3]
+  s₂ = [2,4]
+  t₁ = [3,5]
+  Label₂ = [:plus,:plus]
 end
 
 HK = @acset HypergraphP{Symbol} begin
-V = 3
+  V = 3
 end
 
 HR = @acset HypergraphP{Symbol} begin
-V = 5
-E₂₁ = 2
-s₁ = [2,1]
-s₂ = [3,4]
-t₁ = [4,5]
-Label₂ = [:plus,:plus]
+  V = 5
+  E₂₁ = 2
+  s₁ = [2,1]
+  s₂ = [3,4]
+  t₁ = [4,5]
+  Label₂ = [:plus,:plus]
 end
 
 L = ACSetTransformation(HK, HL, V=[1,2,4])

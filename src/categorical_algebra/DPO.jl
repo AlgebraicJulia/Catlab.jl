@@ -1,9 +1,8 @@
 module DPO
-export rewrite, rewrite_match, valid_dpo, dangling_condition, id_condition, pushout_complement
+export rewrite, rewrite_match, valid_dpo, dangling_condition, id_condition,
+  pushout_complement
 
-using ..FinSets
-using ..CSets
-using ..Limits
+using ..FinSets, ..CSets, ..Limits
 using ...Theories
 using ...Theories: attr
 
@@ -15,16 +14,13 @@ m ↓   ↓k
   G ← K
     g
 
-Compute a pushout complement, componentwise in Set. On a formal level:
-For each component, define K = G / m(L/l(I)).
-  There is a natural injection g: K↪G
-For each component, define k as equal to the map l;m
-  (every element in the image in G is also in K).
+Compute a pushout complement, componentwise in Set. Formally, for each
+component, define K = G / m(L/l(I)). There is a natural injection g: K↪G. For
+each component, define k as equal to the map l;m (every element in the image in
+G is also in K).
 
-Returns ACSetTransformations k and g such that (m, g) is the pushout of (l, k)
-
-Implementation-wise, elements of K are ordered in the same order as they appear
-in G.
+Returns ACSetTransformations k and g such that (m, g) is the pushout of (l, k).
+Elements of K are ordered in the same order as they appear in G.
 """
 function pushout_complement(
     l::ACSetTransformation{CD,AD}, m::ACSetTransformation{CD,AD}
@@ -98,19 +94,18 @@ function valid_dpo(L::ACSetTransformation, m::ACSetTransformation)::Bool
 end
 
 """
-Does not map both a deleted item and a preserved item in L to the same item in
-G, or two distinct deleted items to the same. (Trivially satisfied if mono)
+Check the identification condition: Does not map both a deleted item and a
+preserved item in L to the same item in G, or two distinct deleted items to the
+same. (Trivially satisfied if mono)
 
-Returns a pair of lists of violations
+Returns a tuple of lists of violations
   1.) For a given component, a pair of IDs in L that are deleted yet mapped to
       the same index (the last integer of the tuple) in G
   2.) For a given component, a nondeleted index that maps to a deleted index
       in G
 """
 function id_condition(L::ACSetTransformation{CD, AD},
-                      m::ACSetTransformation{CD, AD};
-                      )::Pair{Vector{Tuple{Symbol, Int, Int, Int}},
-                              Vector{Tuple{Symbol, Int, Int}}} where {CD, AD}
+                      m::ACSetTransformation{CD, AD}) where {CD, AD}
   res1, res2 = Tuple{Symbol, Int, Int, Int}[], Tuple{Symbol, Int, Int}[]
   for comp in keys(components(L))
     m_comp = x->m[comp](x)
@@ -134,13 +129,12 @@ function id_condition(L::ACSetTransformation{CD, AD},
     end
   end
 
-  return res1 => res2
+  return (res1, res2)
 end
 
 """
-Dangling condition:
-m doesn't map a deleted element d to a element m(d) ∈ G if m(d) is connected to
-something outside the image of m.
+Check the dangling condition: m doesn't map a deleted element d to a element
+m(d) ∈ G if m(d) is connected to something outside the image of m.
 
 For example, in the CSet of graphs:
   e1
@@ -149,8 +143,7 @@ For example, in the CSet of graphs:
 if e1 is not matched but either 1 and 2 are deleted, then e1 is dangling
 """
 function dangling_condition(L::ACSetTransformation{CD, AD},
-                            m::ACSetTransformation{CD, AD};
-                            )::Vector{Tuple{Symbol, Int, Int}} where {CD, AD}
+                            m::ACSetTransformation{CD, AD}) where {CD, AD}
   orphans, res = Dict(), []
   for comp in keys(components(L))
     image = Set(collect(L[comp]))
@@ -169,10 +162,11 @@ function dangling_condition(L::ACSetTransformation{CD, AD},
     for unmatched_val in setdiff(n_src, collect(m[src_obj]))  # G/m(L) src
       unmatched_tgt = m.codom[morph][unmatched_val]
       if unmatched_tgt in orphans[tgt_obj]
-          push!(res, (morph, unmatched_val, unmatched_tgt))
+        push!(res, (morph, unmatched_val, unmatched_tgt))
       end
     end
   end
   return res
 end
+
 end
