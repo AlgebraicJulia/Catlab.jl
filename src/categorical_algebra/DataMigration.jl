@@ -1,15 +1,11 @@
 """ Data Migration functors
 """
 module DataMigration
+export Functor, Delta, Sigma, migrate!
 
-export Functor, Delta, migrate!, Sigma
-
-using ...Theories
+using ...Present, ...Theories
 using ...Theories: CatDesc, AttrDesc, ob, hom, dom, codom, attr
-using ...CSetDataStructures
-using ..FinSets, ..CSets, ..Limits, ..FreeDiagrams
-using ...Graphs
-using ...Present
+using ..FinSets, ..CSets, ..Limits, ...Graphs, ..FreeDiagrams
 
 import ...CategoricalAlgebra.FreeDiagrams: FreeDiagram
 import ...Present: Presentation
@@ -122,7 +118,7 @@ migrate!(X::ACSet, Y::ACSet, F::Functor) = Delta(F)(X,Y)
 migrate!(X::ACSet, Y::ACSet, FOb, FHom) = 
   migrate!(X,Y, Functor(FOb, FHom, Presentation(X), Presentation(Y)))
 
-function (::Type{T})(Y::ACSet, FOb, FHom) where T <: AbstractACSet
+function (::Type{T})(Y::ACSet, FOb::AbstractDict, FHom::AbstractDict) where T <: AbstractACSet
   X = T()
   migrate!(X, Y, FOb, FHom)
 end
