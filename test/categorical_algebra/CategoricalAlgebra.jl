@@ -41,8 +41,16 @@ end
   include("StructuredCospans.jl")
 end
 
+@testset "DataMigration" begin
+  include("DataMigration.jl")
+end
+
 @testset "Automorphisms" begin
   include("Automorphisms.jl")
+end
+
+@testset "DPO" begin
+  include("DPO.jl")
 end
 
 end

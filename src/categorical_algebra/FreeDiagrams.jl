@@ -317,7 +317,7 @@ function FreeDiagram(obs::AbstractVector{Ob},
   @assert all(obs[s] == dom(f) && obs[t] == codom(f) for (f,s,t) in homs)
   d = FreeDiagram{Ob,Hom}()
   add_vertices!(d, length(obs), ob=obs)
-  add_edges!(d, getindex.(homs,2), getindex.(homs,3), hom=first.(homs))
+  length(homs) > 0 && add_edges!(d, getindex.(homs,2), getindex.(homs,3), hom=first.(homs))
   return d
 end
 

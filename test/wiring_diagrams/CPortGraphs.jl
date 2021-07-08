@@ -2,7 +2,7 @@ module TestCPortGraphs
 using Test
 
 using Catlab.Graphs, Catlab.WiringDiagrams, Catlab.CategoricalAlgebra
-import Catlab.CategoricalAlgebra.CSets: migrate!
+import Catlab.CategoricalAlgebra: migrate!
 
 g = cycle_graph(Graph, 4)
 pg = CPortGraph()
