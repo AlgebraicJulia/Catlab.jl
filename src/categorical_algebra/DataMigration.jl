@@ -89,14 +89,15 @@ See (Spivak, 2014, *Category Theory for the Sciences*) for details.
 """
 Delta(F::Functor) = DeltaMigration(F)
 
-function (ΔF::DeltaMigration)(X::ACSet, Y::ACSet)
+function (ΔF::DeltaMigration)(X::ACSet{CD, AD}, Y::ACSet) where {CD, AD}
   FOb = Ob(ΔF.F)
   FHom = Hom(ΔF.F)
-
-  partsX = Dict(map(collect(FOb)) do (c, Fc)
-     c => add_parts!(X, nameof(c), nparts(Y, nameof(Fc)))
+  
+  partsX = Dict(map(ob(CD)) do c_name 
+    c = dom(ΔF.F)[c_name]
+    c => add_parts!(X, c_name, nparts(Y, nameof(FOb[c])))
   end)
-
+  
   for (f, Ff) in collect(FHom)
     doms = partsX[dom(f)]
     subpt = f isa FreeSchema.Hom ? partsX[codom(f)][subpart(Y, Ff)] : subpart(Y, Ff)
