@@ -77,6 +77,13 @@ F = Functor(
 
 @test wg == WeightedGraph{Int}(ldds, F) 
 
+idF = Functor(
+  Dict(X => X, Label => Label), 
+  Dict(ϕ => ϕ, label => label), 
+  TheoryLabeledDDS, TheoryLabeledDDS
+)
+
+@test ldds == LabeledDDS{Int}(ldds, idF)
 
 # Left Pushforward data migration
 #################################
