@@ -25,7 +25,7 @@ notation.
 end
 
 # Convenience constructors
-oplus(xs::Vector{T}) where T = isempty(xs) ? mzero(T) : foldl(oplus, xs)
+oplus(xs::AbstractVector{T}) where T = isempty(xs) ? mzero(T) : foldl(oplus, xs)
 oplus(x, y, z, xs...) = oplus([x, y, z, xs...])
 
 # Overload `collect` and `ndims` as for multiplicative monoidal categories.

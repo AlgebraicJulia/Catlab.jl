@@ -44,7 +44,7 @@ We use symbol ⋅ (\\cdot) for diagrammatic composition: f⋅g = compose(f,g).
 end
 
 # Convenience constructors
-compose(fs::Vector) = foldl(compose, fs)
+compose(fs::AbstractVector) = foldl(compose, fs)
 compose(f, g, h, fs...) = compose([f, g, h, fs...])
 
 @syntax FreeCategory{ObExpr,HomExpr} Category begin
