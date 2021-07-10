@@ -258,16 +258,20 @@ lim = π1, π2 = limit(d)
 # Initial object.
 @test ob(initial(FinSet{Int})) == FinSet(0)
 @test create(initial(FinSet{Int}), FinSet(3)) == FinFunction(Int[], 3)
+@test mzero(FinSet{Int}) == FinSet(0)
 
 # Binary coproduct.
 colim = coproduct(FinSet(2), FinSet(3))
 @test ob(colim) == FinSet(5)
 @test coproj1(colim) == FinFunction([1,2], 5)
 @test coproj2(colim) == FinFunction([3,4,5], 5)
+@test FinSet(2)⊕FinSet(3) == FinSet(5)
 
 f, g = FinFunction([3,5], 5), FinFunction([1,2,3], 5)
 @test force(coproj1(colim) ⋅ copair(colim,f,g)) == f
 @test force(coproj2(colim) ⋅ copair(colim,f,g)) == g
+@test f⊕g == FinFunction([3,5,6,7,8], 10)
+@test swap(FinSet(2), FinSet(3)) == FinFunction([4,5,1,2,3])
 
 # N-ary coproduct.
 colim = coproduct([FinSet(2), FinSet(3)])

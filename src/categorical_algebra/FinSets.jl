@@ -13,7 +13,8 @@ import StaticArrays
 using StaticArrays: StaticVector, SVector, SizedVector, similar_type
 
 @reexport using ..Sets
-using ...Theories, ...CSetDataStructures, ...Graphs, ..FreeDiagrams, ..Limits
+using ...GAT, ...Theories
+using ...CSetDataStructures, ...Graphs, ..FreeDiagrams, ..Limits
 import ...Theories: dom, codom
 import ..Limits: limit, colimit, universal
 using ..Sets: SetFunctionCallable, SetFunctionIdentity
@@ -145,6 +146,10 @@ Base.show(io::IO, f::FinFunctionVector) =
 
 Sets.compose_impl(f::FinFunctionVector, g::FinDomFunctionVector) =
   FinDomFunctionVector(g.func[f.func], codom(g))
+
+# Note: Cartesian monoidal structure is implemented generically for Set but
+# cocartesian only for FinSet.
+@cocartesian_monoidal_instance FinSet FinFunction
 
 # Indexed functions
 #------------------

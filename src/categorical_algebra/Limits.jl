@@ -11,7 +11,7 @@ export AbstractLimit, AbstractColimit, Limit, Colimit,
   BinaryCoproduct, Coproduct, coproduct, coproj1, coproj2, copair,
   BinaryPushout, Pushout, pushout,
   BinaryCoequalizer, Coequalizer, coequalizer, proj,
-  @cartesian_monoidal_from_limits,
+  @cartesian_monoidal_instance, @cocartesian_monoidal_instance,
   ComposeProductEqualizer, ComposeCoproductCoequalizer
 
 using AutoHashEquals
@@ -267,7 +267,7 @@ factorize(colim::Coequalizer, h) = universal(colim, SMulticospan{1}(h))
 Implements an instance of [`CartesianCategory`](@ref) assuming that finite
 products have been implemented following the limits interface.
 """
-macro cartesian_monoidal_from_limits(Ob, Hom)
+macro cartesian_monoidal_instance(Ob, Hom)
   esc(quote
     import Catlab.Theories: CartesianCategory, otimes, ⊗, munit, braid, σ,
       mcopy, delete, pair, proj1, proj2, Δ, ◊
@@ -288,8 +288,8 @@ macro cartesian_monoidal_from_limits(Ob, Hom)
       end
 
       mcopy(A::$Ob) = pair(id(A),id(A))
-      proj1(A::SetOb, B::SetOb) = proj1(product(A, B))
-      proj2(A::SetOb, B::SetOb) = proj2(product(A, B))
+      proj1(A::$Ob, B::$Ob) = proj1(product(A, B))
+      proj2(A::$Ob, B::$Ob) = proj2(product(A, B))
     end
 
     otimes(As::AbstractVector{<:$Ob}) = ob(product(As))
@@ -300,6 +300,48 @@ macro cartesian_monoidal_from_limits(Ob, Hom)
     end
 
     munit(::Type{T}) where T <: $Ob = ob(terminal(T))
+  end)
+end
+
+""" Define cocartesian monoidal structure using colimits.
+
+Implements an instance of [`CocartesianCategory`](@ref) assuming that finite
+coproducts have been implemented following the colimits interface.
+"""
+macro cocartesian_monoidal_instance(Ob, Hom)
+  esc(quote
+    import Catlab.Theories: CocartesianCategory, oplus, ⊕, mzero, swap,
+      plus, zero, copair, coproj1, coproj2
+
+    @instance CocartesianCategory{$Ob, $Hom} begin
+      @import dom, codom, compose, ⋅, id, mzero, copair
+
+      oplus(A::$Ob, B::$Ob) = ob(coproduct(A, B))
+
+      function oplus(f::$Hom, g::$Hom)
+        ι1, ι2 = coproduct(codom(f), codom(g))
+        copair(coproduct(dom(f), dom(g)), f⋅ι1, g⋅ι2)
+      end
+
+      function swap(A::$Ob, B::$Ob)
+        AB, BA = coproduct(A, B), coproduct(B, A)
+        copair(AB, coproj2(BA), coproj1(BA))
+      end
+
+      plus(A::$Ob) = copair(id(A),id(A))
+      zero(A::$Ob) = create(A)
+      coproj1(A::$Ob, B::$Ob) = coproj1(coproduct(A, B))
+      coproj2(A::$Ob, B::$Ob) = coproj2(coproduct(A, B))
+    end
+
+    oplus(As::AbstractVector{<:$Ob}) = ob(coproduct(As))
+
+    function oplus(fs::AbstractVector{<:$Hom})
+      ⊔, ⊔′ = coproduct(map(dom, fs)), coproduct(map(codom, fs))
+      copair(⊔, map(compose, fs, legs(⊔′)))
+    end
+
+    mzero(::Type{T}) where T <: $Ob = ob(initial(T))
   end)
 end
 

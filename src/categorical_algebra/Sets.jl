@@ -173,7 +173,7 @@ compose_impl(c::ConstantFunction, f::SetFunction) =
 compose_impl(c::ConstantFunction, d::ConstantFunction) =
   ConstantFunction(d.value, dom(c), codom(d))
 
-@cartesian_monoidal_from_limits SetOb SetFunction
+@cartesian_monoidal_instance SetOb SetFunction
 
 # Limits
 ########
