@@ -5,12 +5,10 @@ export SetOb, TypeSet, PredicatedSet, SetFunction, ConstantFunction
 
 using AutoHashEquals
 using FunctionWrappers: FunctionWrapper
-using StaticArrays: SVector
 
 using ...GAT, ..FreeDiagrams, ..Limits
-using ...Theories: CartesianCategory
-import ...Theories: dom, codom, id, compose, ⋅, ∘, otimes, ⊗, munit, braid, σ,
-  mcopy, delete, pair, proj1, proj2, Δ, ◊
+using ...Theories: Category
+import ...Theories: dom, codom, id, compose, ⋅, ∘
 import ..Limits: limit, universal
 
 # Data types
@@ -142,14 +140,12 @@ function (f::PredicatedFunction{T,T′})(x::T)::T′ where {T,T′}
   y
 end
 
-# Cartesian category of sets
-############################
+# Category of sets
+##################
 
 """ Category of sets and functions.
 """
-@instance CartesianCategory{SetOb, SetFunction} begin
-  @import munit, delete, pair
-
+@instance Category{SetOb, SetFunction} begin
   dom(f::SetFunction) = f.dom
   codom(f::SetFunction) = f.codom
 
@@ -160,18 +156,6 @@ end
       error("Domain mismatch in composition: $(codom(f)) != $(dom(g))")
     compose_maybe_id(f, g)
   end
-
-  otimes(A::SetOb, B::SetOb) = otimes(SVector(A, B))
-  otimes(f::SetFunction, g::SetFunction) = otimes(SVector(f, g))
-
-  function braid(A::SetOb, B::SetOb)
-    AB, BA = product(A, B), product(B, A)
-    pair(BA, proj2(AB), proj1(AB))
-  end
-
-  mcopy(A::SetOb) = pair(id(A),id(A))
-  proj1(A::SetOb, B::SetOb) = proj1(product(A, B))
-  proj2(A::SetOb, B::SetOb) = proj2(product(A, B))
 end
 
 @inline compose_maybe_id(f::SetFunction, g::SetFunction) = compose_impl(f, g)
@@ -189,14 +173,7 @@ compose_impl(c::ConstantFunction, f::SetFunction) =
 compose_impl(c::ConstantFunction, d::ConstantFunction) =
   ConstantFunction(d.value, dom(c), codom(d))
 
-otimes(As::AbstractVector{<:SetOb}) = ob(product(As))
-
-function otimes(fs::AbstractVector{<:SetFunction})
-  Π, Π′ = product(map(dom, fs)), product(map(codom, fs))
-  pair(Π′, map(compose, legs(Π), fs))
-end
-
-munit(::Type{S}) where S <: SetOb = ob(terminal(S))
+@cartesian_monoidal_from_limits SetOb SetFunction
 
 # Limits
 ########

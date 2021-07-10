@@ -86,8 +86,10 @@ lim = product(fill(TypeSet(Int), 3))
 @test ob(lim) == TypeSet(Tuple{Int,Int,Int})
 π1, π2, π3 = lim
 @test (π1((1,2,3)), π2((1,2,3)), π3((1,2,3))) == (1,2,3)
+@test otimes(fill(TypeSet(Int), 3)) == TypeSet(Tuple{Int,Int,Int})
 
 fs = [ SetFunction(x -> x+i, TypeSet(Int), TypeSet(Int)) for i in 1:3 ]
 @test pair(lim, fs)(3) == (4,5,6)
+@test otimes(fs)((1,5,10)) == (2,7,13)
 
 end
