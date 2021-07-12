@@ -2,7 +2,7 @@
 """
 module CSets
 export ACSetTransformation, CSetTransformation, components, force, is_natural,
-  homomorphism, homomorphisms, is_homomorphic,
+  subobject, homomorphism, homomorphisms, is_homomorphic,
   isomorphism, isomorphisms, is_isomorphic,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
 
@@ -155,6 +155,19 @@ end
 map_components(f, α::ACSetTransformation) =
   ACSetTransformation(map(f, components(α)), dom(α), codom(α))
 force(α::ACSetTransformation) = map_components(force, α)
+
+""" Construct subobject of C-set from components of inclusion map.
+
+Recall that a *subobject* of a C-set ``X`` is a monomorphism ``α: U → X``. This
+function constructs a subobject from the components of the monomorphism, given
+as a named tuple or as keyword arguments.
+"""
+function subobject(X::T, components) where T <: AbstractACSet
+  U = T()
+  copy_parts!(U, X, components)
+  ACSetTransformation(components, U, X)
+end
+subobject(X::AbstractACSet; components...) = subobject(X, (; components...))
 
 # Finding C-set transformations
 ###############################
