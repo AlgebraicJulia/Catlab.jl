@@ -342,6 +342,23 @@ end
 @test subpart(g,:,:src) == [1,2,3,4]
 @test incident(g,1,:src) == [1]
 
+function path_graph(n::Int)
+  @acset DecGraph{Float64} begin
+    V = n
+    E = (n-1)
+    src = (1:n-1)
+    tgt = (2:n)
+    dec = zeros(n-1)
+  end
+end
+
+pg = path_graph(30)
+
+@test nparts(pg, :V) == 30
+@test nparts(pg, :E) == 29
+@test incident(pg, 1, :src) == [1]
+    
+
 # Test mapping
 #-------------
 
