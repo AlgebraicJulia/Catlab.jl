@@ -2,10 +2,10 @@ module DPO
 export rewrite, rewrite_match, valid_dpo, dangling_condition, id_condition,
   pushout_complement
 
-using ..FinSets, ..CSets, ..Limits, ..Subobjects
+using ..FinSets, ..CSets, ..FreeDiagrams, ..Limits, ..Subobjects
 using ...Theories
 using ...Theories: attr
-
+import ..Limits: pushout_complement
 
 """
     l
@@ -19,12 +19,13 @@ component, define K = G / m(L/l(I)). There is a natural injection g: K↪G. For
 each component, define k as equal to the map l;m (every element in the image in
 G is also in K).
 
-Returns ACSetTransformations k and g such that (m, g) is the pushout of (l, k).
-Elements of K are ordered in the same order as they appear in G.
+Returns a composable pair of ACSet transformations k and g such that (m, g) is
+the pushout of (l, k). Elements of K are ordered in the same order as they
+appear in G.
 """
-function pushout_complement(
-    l::ACSetTransformation{S}, m::ACSetTransformation{S}
-  )::Pair{ACSetTransformation{S},ACSetTransformation{S}} where {S}
+function pushout_complement(pair::ComposablePair{ACS}) where
+    {S, ACS <: StructACSet{S}}
+  l, m = pair
   valid_dpo(l, m) || error("morphisms L and m do not satisfy gluing conditions")
   I, L, G = dom(l), codom(l), codom(m)
 
@@ -45,7 +46,7 @@ function pushout_complement(
   end)
   k = ACSetTransformation(k_components, I, K)
 
-  return k => g
+  return ComposablePair(k, g)
 end
 
 """
