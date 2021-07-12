@@ -34,8 +34,8 @@ function pushout_complement(
     orphans = Set([ m[c](x) for x in parts(L,c) if x ∉ l_image ])
     filter(x -> x ∉ orphans, parts(G,c))
   end)
-  K = typeof(G)()
-  copy_parts!(K, G, g_components)
+  g = subobject(G, g_components)
+  K = dom(g)
 
   # Construct morphism k: I → K using partial inverse of g.
   lm = compose(l, m)
@@ -43,9 +43,8 @@ function pushout_complement(
     g_inv = Dict{Int,Int}(zip(g_components[c], parts(K,c)))
     [ g_inv[lm[c](x)] for x in parts(I,c) ]
   end)
-
   k = ACSetTransformation(k_components, I, K)
-  g = ACSetTransformation(g_components, K, G)
+
   return k => g
 end
 
