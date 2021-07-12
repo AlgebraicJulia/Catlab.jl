@@ -342,8 +342,8 @@ h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:c,:d,:a,:b],))
 h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:d,:c],))
 @test !is_homomorphic(g, h)
 
-# Serialization and Deserialization of ACSets
-#############################################
+# Serialization
+###############
 
 @present TheoryDDS(FreeSchema) begin
   X::Ob

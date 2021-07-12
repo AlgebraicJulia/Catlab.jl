@@ -437,6 +437,9 @@ end
 
 fin_sets(X::ACSet) = map(table -> FinSet(length(table)), tables(X))
 
+@cartesian_monoidal_instance CSet CSetTransformation
+@cocartesian_monoidal_instance ACSet ACSetTransformation
+
 # Limits and colimits
 #####################
 
@@ -585,8 +588,9 @@ cocone_objects(diagram::BipartiteFreeDiagram) = ob₂(diagram)
 cocone_objects(span::Multispan) = feet(span)
 cocone_objects(para::ParallelMorphisms) = SVector(codom(para))
 
-# Serialization and Deserialization of ACSets
-#############################################
+# Serialization
+###############
+
 """ Serialize an ACSet object to a JSON string
 """
 function generate_json_acset(x::T) where T <: AbstractACSet
