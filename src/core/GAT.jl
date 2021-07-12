@@ -634,15 +634,12 @@ end
 """ Julia functions for term and type aliases of GAT.
 """
 function alias_functions(theory::Theory)::Vector{JuliaFunction}
-  # collect all of the types and terms from the theory
-  terms_types = [theory.types; theory.terms]
-  # iterate over the specified aliases
   collect(Iterators.flatten(map(collect(theory.aliases)) do alias
     # collect all of the destination function definitions to alias
     # allows an alias to overite all the type definitions of a function
-    dests = filter(i -> i.name == last(alias), map(x -> x, terms_types))
+    dests = filter(term -> term.name == last(alias), theory.terms)
     # If there are no matching functions, throw a parse error
-    if isempty(dests)
+    if isempty(dests) && !any(type.name == last(alias) for type in theory.types)
       throw(ParseError("Cannot alias undefined type or term $alias"))
     end
     # For each destination, create a Julia function

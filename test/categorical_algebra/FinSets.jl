@@ -278,6 +278,16 @@ colim = coproduct([FinSet(2), FinSet(3)])
 @test force(first(legs(colim)) ⋅ copair(colim,[f,g])) == f
 @test force(last(legs(colim)) ⋅ copair(colim,[f,g])) == g
 
+# Cocartesian monoidal structure.
+@test FinSet(2)⊕FinSet(3) == FinSet(5)
+@test oplus([FinSet(2), FinSet(3), FinSet(4)]) == FinSet(9)
+@test f⊕g == FinFunction([3,5,6,7,8], 10)
+@test mzero(FinSet{Int}) == FinSet(0)
+@test swap(FinSet(2), FinSet(3)) == FinFunction([4,5,1,2,3])
+ι1, ι2 = coproj1(FinSet(2),FinSet(3)), coproj2(FinSet(2),FinSet(3))
+@test ι1 == FinFunction([1,2], 5)
+@test ι2 == FinFunction([3,4,5], 5)
+
 # Coequalizers
 #-------------
 
