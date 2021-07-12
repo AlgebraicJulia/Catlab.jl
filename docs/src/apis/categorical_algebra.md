@@ -23,7 +23,61 @@ Modules = [
 Private = false
 ```
 
-# Key components of the CSet and ACSet machinery
+# Acsets
+
+## Overview and Theory
+
+For an in depth look into the theory behind acsets, we refer the reader to [our paper](https://arxiv.org/abs/2106.04703) on the subject, which also gives some sense as to how the implementation works. Here, we give a brief tutorial before the the API documentation.
+
+The most essential part of the acset machinery is the schema. The schema *parameterizes* the acset: each schema corresponds to a different type of acset. Schemas consist of four parts.
+
+- Objects $$X,Y$$ (`(X,Y,Z)::Ob`)
+- Homomorphisms $$f \colon X \to Y$$ (`f :: Hom(X,Y)`), which go from objects to objects
+- Data types $$\mathtt{T}$$ (`T :: Data`)
+- Attributes $$a \colon X \to \mathtt{T}$$ (`a :: Attr(X,T)`), which go from objects to data types
+
+For those with a categorical background, a schema is a presentation of a category $$|S|$$ along with a functor $$S$$ from $$|S|$$ to the arrow category $$0 \to 1$$, such that $$S^{-1}(1)$$ is discrete.
+
+An acset $$F$$ on a schema consists of...
+
+- a set $$F(X)$$ of "primary keys" for each object
+- a function $$F(f) \colon F(X) \to F(Y)$$ for each morphism
+- a Julia data type $$F(\mathtt{T})$$ for each data type $$\mathtt{T}$$
+- a function $$F(a) \colon F(X) \to F(\mathtt{T})$$ for each attribute $$a$$.
+
+For those with a categorical background, an acset on a schema $$S$$ consists of a functor from $$S$$ to $$\mathsf{Set}$$, such that objects in $$S^{-1}(0)$$ map to finite sets, and objects in $$S^{-1}(1)$$ map to sets that represent types. For any particular functor $$K \colon S^{-1}(1) \to \mathsf{Set}$$, we can also take the category of acsets that restrict to this map on $$S^{-1}$$.
+
+We can also add relations to this presentation, but we currently do nothing with those relations in the implementation; they mostly serve as documentation.
+
+We will now give an example of how this all works in practice.
+
+```julia
+# Write down the schema for a weighted graph
+@present TheoryWeightedGraph(FreeSchema) begin
+  (E,V)::Ob
+  (src,tgt)::Hom(E,V)
+  T::Data
+  weight::Attr(E,T)
+end
+
+# Construct the type used to store acsets on the previous schema
+# We *index* src and tgt, which means that we store not only
+# the forwards map, but also the backwards map.
+const WeightedGraph = ACSetType(TheoryWeightedGraph, index=[:src,:tgt])
+
+# Construct a weighted graph, with floats as edge weights
+g = @acset WeightedGraph{Float64} begin
+  V = 4
+  E = 5
+  src = [1,1,1,2,3]
+  tgt = [2,3,4,4,4]
+  weight = [7.2, 9.3, 9.4, 0.1, 42.0]
+end
+```
+
+## API
+
+We first give an overview of the data types used in the acset machinery.
 
 `FreeSchema` A finite presentation of a category that will be used as the schema of a database in the *algebraic databases* conception of categorical database theory. Functors out of a schema into FinSet are combinatorial structures over the schema. Attributes in a schema allow you to encode numerical (any julia type) into the database. You can find several examples of schemas in `Catlab.Graphs` where they define categorical versions of graph theory.
 
