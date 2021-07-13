@@ -274,6 +274,11 @@ set_subpart!(lset, 1, :label, :baz)
 set_subpart!(lset, 3, :label, :biz)
 @test incident(lset, :foo, :label) == []
 
+# Labeled set with compound label (tuple).
+lset = IndexedLabeledSet{Tuple{Int,Int}}()
+add_parts!(lset, :X, 2, label=[(1,1), (1,2)])
+@test incident(lset, (1,2), :label) == [2]
+
 # Deletion with indexed data attribute.
 lset = IndexedLabeledSet{Symbol}()
 add_parts!(lset, :X, 3, label=[:foo, :foo, :bar])

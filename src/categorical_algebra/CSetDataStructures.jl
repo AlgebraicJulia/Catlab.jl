@@ -436,23 +436,28 @@ incident(acs::ACSet, part, expr::GATExpr; kw...) =
         copy ? Base.copy.(indices) : indices
       end
     else
-      :(broadcast_findall(part, acs.tables.$(dom(CD,name)).$name))
+      :(vectorized_findall(part, acs.tables.$(dom(CD,name)).$name))
     end
   elseif name ∈ attr(AD)
     if name ∈ Idxed
       quote
-        indices = get_data_index.(Ref(acs.indices.$name), part)
+        indices = vectorized_data_index(acs.indices.$name, part)
         copy ? Base.copy.(indices) : indices
       end
     else
-      :(broadcast_findall(part, acs.tables.$(dom(AD,name)).$name))
+      :(vectorized_findall(part, acs.tables.$(dom(AD,name)).$name))
     end
   else
     throw(ArgumentError("$(repr(name)) not in $(hom(CD)) or $(attr(AD))"))
   end
 end
 
-broadcast_findall(xs, array::AbstractArray) =
+# FIXME: This is not a reliable way to decide whether to vectorize. What if the
+# attribute type is itself an array?
+vectorized_data_index(d, x) = get_data_index(d, x)
+vectorized_data_index(d, xs::AbstractArray) = get_data_index.(Ref(d), xs)
+vectorized_findall(x, array::AbstractArray) = findall(y -> x == y, array)
+vectorized_findall(xs::AbstractArray, array::AbstractArray) =
   broadcast(x -> findall(y -> x == y, array), xs)
 
 """ Add part of given type to C-set, optionally setting its subparts.
