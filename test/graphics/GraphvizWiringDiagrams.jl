@@ -3,7 +3,8 @@ module TestGraphvizWiringDiagrams
 using Test
 import JSON
 
-using Catlab.Theories, Catlab.WiringDiagrams, Catlab.Graphics
+using Catlab.Theories, Catlab.WiringDiagrams, Catlab.Graphics,
+      Catlab.CategoricalAlgebra
 using Catlab.Programs: @relation
 import Catlab.Graphics: Graphviz
 using Catlab.Graphics.WiringDiagramLayouts: position, normal
@@ -121,5 +122,50 @@ values(xs) = map(x -> x.value, xs)
 positions = map(position, boxes(layout))
 @test positions[1][1] < positions[2][1]
 @test positions[1][2] < positions[3][2]
+
+# CPG drawing
+#############
+
+# Cycle CPG
+d = @acset CPortGraph begin
+  Box = 4
+  Port = 4
+  Wire = 4
+  box = [1,2,3,4]
+  src = [1,2,3,4]
+  tgt = [2,3,4,1]
+end
+
+# Star CPG
+d2 = @acset CPortGraph begin
+  Box = 4
+  Port = 6
+  Wire = 3
+  box = [1,1,1,2,3,4]
+  src = [1,2,3]
+  tgt = [4,5,6]
+end
+
+graph = to_graphviz(d)
+@test stmts(graph, Graphviz.Node, :id) ==
+  ["box1", "box2", "box3", "box4"]
+@test length(stmts(graph, Graphviz.Edge)) == 4
+
+graph = to_graphviz(d2)
+@test stmts(graph, Graphviz.Node, :id) ==
+  ["box1", "box2", "box3", "box4"]
+@test length(stmts(graph, Graphviz.Edge)) == 3
+
+# Box and port labels
+#--------------------
+graph = to_graphviz(d, port_labels=true, box_labels=true)
+@test stmts(graph, Graphviz.Edge, :taillabel) == fill("1", 4)
+@test stmts(graph, Graphviz.Edge, :headlabel) == fill("1", 4)
+@test stmts(graph, Graphviz.Node, :label) == ["1", "2", "3" ,"4"]
+
+graph = to_graphviz(d2, port_labels=true, box_labels=true)
+@test stmts(graph, Graphviz.Edge, :taillabel) == ["1", "2", "3"]
+@test stmts(graph, Graphviz.Edge, :headlabel) == ["1", "1", "1"]
+@test stmts(graph, Graphviz.Node, :label) == ["1", "2", "3" ,"4"]
 
 end
