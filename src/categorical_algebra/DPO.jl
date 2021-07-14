@@ -5,28 +5,6 @@ export rewrite, rewrite_match, valid_dpo, dangling_condition, id_condition,
 using ..FinSets, ..CSets, ..FreeDiagrams, ..Limits, ..Subobjects
 using ...Theories
 using ...Theories: attr
-import ..Limits: pushout_complement
-using ..CSets: unpack_diagram
-
-""" Compute pushout complement of attributed C-sets, if possible.
-
-The pushout complement is constructed pointwise from pushout complements of
-finite sets. It will fail if any of the pointwise identification conditions or
-the dangling condition do not hold.
-"""
-function pushout_complement(pair::ComposablePair{<:ACSet})
-  l, m = pair
-  I, G = dom(l), codom(m)
-  valid_dpo(l, m) || error("Morphisms l and m do not satisfy gluing conditions")
-
-  # Compute pushout complements pointwise in FinSet.
-  components = map(pushout_complement, unpack_diagram(pair))
-  k_components, g_components = map(first, components), map(last, components)
-
-  g = hom(Subobject(G, g_components))
-  k = ACSetTransformation(k_components, I, dom(g))
-  return ComposablePair(k, g)
-end
 
 """
 Apply a rewrite rule (given as a span, L<-I->R) to a ACSet
@@ -87,7 +65,7 @@ function id_condition(L::ACSetTransformation{S},
                       m::ACSetTransformation{S}) where {S}
   res1, res2 = Tuple{Symbol, Int, Int, Int}[], Tuple{Symbol, Int, Int}[]
   for comp in keys(components(L))
-    m_comp = x->m[comp](x)
+    m_comp = m[comp]
     image = Set(collect(L[comp]))
     image_complement = filter(x->!(x in image), parts(codom(L),comp))
     image_vals = map(m_comp, collect(image))

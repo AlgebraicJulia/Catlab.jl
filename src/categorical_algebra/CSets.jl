@@ -14,9 +14,8 @@ using StaticArrays: SVector
 using Tables
 
 @reexport using ...CSetDataStructures
-
 using ...GAT, ..FreeDiagrams, ..Limits, ..Subobjects, ..Sets, ..FinSets
-import ..Limits: limit, colimit, universal
+import ..Limits: limit, colimit, universal, pushout_complement
 import ..Subobjects: Subobject, SubobjectBiHeytingAlgebra,
   implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, as_predicate
@@ -599,6 +598,25 @@ cocone_objects(diagram) = ob(diagram)
 cocone_objects(diagram::BipartiteFreeDiagram) = ob₂(diagram)
 cocone_objects(span::Multispan) = feet(span)
 cocone_objects(para::ParallelMorphisms) = SVector(codom(para))
+
+""" Compute pushout complement of attributed C-sets, if possible.
+
+The pushout complement is constructed pointwise from pushout complements of
+finite sets. If any of the pointwise identification conditions fail in FinSet),
+this method will raise an error. If the dangling condition fails, the resulting
+C-set will be only partially defined. To check these conditions in advance, use
+the function [`valid_dpo`](@ref).
+"""
+function pushout_complement(pair::ComposablePair{<:ACSet})
+  # Compute pushout complements pointwise in FinSet.
+  components = map(pushout_complement, unpack_diagram(pair))
+  k_components, g_components = map(first, components), map(last, components)
+
+  # Reassemble components into natural transformations.
+  g = hom(Subobject(codom(pair), g_components))
+  k = ACSetTransformation(k_components, dom(pair), dom(g))
+  return ComposablePair(k, g)
+end
 
 # Sub-C-sets
 ############
