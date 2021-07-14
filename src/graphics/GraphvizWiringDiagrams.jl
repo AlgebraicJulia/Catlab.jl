@@ -624,10 +624,6 @@ inverse_rank_dir(rank_dir::String) = @match rank_dir begin
   "RL" => RightToLeft
 end
 
-function to_graphviz(cp::CPortGraph; kw...)::Graphviz.Graph
-  to_graphviz(property_graph(cp; kw...))
-end
-
 """ Draw a circular port graph using Graphviz.
 
 Creates a Graphviz graph. Ports are currently not respected in the image, but
@@ -646,8 +642,11 @@ the port index for each box can be displayed to provide clarification.
 The lack of ports might be able to be resolved by introducing an extra node per
 port which is connected to its box with an edge of length 0.
 """
+function to_graphviz(cp::CPortGraph; kw...)::Graphviz.Graph
+  to_graphviz(to_graphviz_property_graph(cp; kw...))
+end
 
-function property_graph(cp::CPortGraph;
+function to_graphviz_property_graph(cp::CPortGraph;
     graph_name::String="G", prog::String="neato",
     box_labels::Bool=false, port_labels::Bool=false,
     graph_attrs::AbstractDict=Dict(), node_attrs::AbstractDict=Dict(),
@@ -662,8 +661,9 @@ function property_graph(cp::CPortGraph;
 
   g′ = Graphs.Graph()
 
-  add_parts!(g′, :V, nparts(cp, :Box))
-  add_parts!(g′, :E, nparts(cp, :Wire), src=cp[cp[:src], :box], tgt=cp[cp[:tgt], :box])
+  migrate!(g′, cp, Dict(:V=>:Box, :E=>:Wire),
+                   Dict(:src => [:src, :box],
+                        :tgt => [:tgt, :box]))
 
   node_labeler(v) = box_labels ? Dict(:id => "box$v", :label => string(v)) :
                                  Dict(:id => "box$v")
