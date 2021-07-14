@@ -15,10 +15,10 @@ using StaticArrays: StaticVector, SVector, SizedVector, similar_type
 
 @reexport using ..Sets
 using ...GAT, ...Theories
-
 using ...CSetDataStructures, ...Graphs, ..FreeDiagrams, ..Limits, ..Subobjects
 import ...Theories: dom, codom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
-import ..Limits: limit, colimit, universal, pushout_complement
+import ..Limits: limit, colimit, universal, pushout_complement,
+  can_pushout_complement
 import ..Subobjects: Subobject, SubobjectLattice
 using ..Sets: SetFunctionCallable, SetFunctionIdentity
 
@@ -842,12 +842,13 @@ m ↓   ↓k
   G ← K
     g
 
-constructs ``K := G / m(L / l(I))``, so that ``g: K ↪ G`` is an inclusion. Then
-the function ``k: I → K`` is determined by ``l⋅m`` from the requirement that the
-square commutes.
+define the set ``K := G / m(L / l(I))`` and take ``g: K ↪ G`` to be the
+inclusion. Then the map ``k: I → K`` is determined by the map ``l⋅m: I → G``
+from the requirement that the square commutes.
 
 Pushout complements exist only if the identification condition is satisfied. An
-error will be raised if the pushout complement cannot be constructed.
+error will be raised if the pushout complement cannot be constructed. To check
+this in advance, use [`can_pushout_complement`](@ref).
 """
 function pushout_complement(pair::ComposablePair{<:FinSet{Int}})
   l, m = pair
@@ -867,6 +868,34 @@ function pushout_complement(pair::ComposablePair{<:FinSet{Int}})
   end, I, K)
 
   return ComposablePair(k, g)
+end
+
+can_pushout_complement(pair::ComposablePair{<:FinSet{Int}}) =
+  all(isempty, id_condition(pair))
+
+""" Check identification condition for pushout complement of finite sets.
+
+The identification condition says that the functions do not map (1) both a
+deleted item and a preserved item in L to the same item in G or (2) two distinct
+deleted items to the same item. It is trivially satisfied for injective functions.
+
+Returns pair of iterators of
+
+  (1) a nondeleted item that maps to a deleted item in G
+  (2) a pair of distinct items in L that are deleted yet mapped to the same
+      item in G.
+"""
+function id_condition(pair::ComposablePair{<:FinSet{Int}})
+  l, m = pair
+  l_image = Set(collect(l))
+  l_imageᶜ = [ x for x in codom(l) if x ∉ l_image ]
+  m_image = Set(map(m, l_imageᶜ))
+  return (
+    (i for i in l_image if m(i) ∈ m_image),
+    ((i, j) for i in eachindex(l_imageᶜ)
+            for j in i+1:length(l_imageᶜ)
+            if m(l_imageᶜ[i]) == m(l_imageᶜ[j]))
+  )
 end
 
 # Subsets
