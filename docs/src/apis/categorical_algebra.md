@@ -51,11 +51,15 @@ We can also add relations to this presentation, but we currently do nothing with
 
 We will now give an example of how this all works in practice.
 
-```julia
+```@example
+using Catlab, Catlab.CSetDataStructures, Catlab.Present
+
 # Write down the schema for a weighted graph
 @present TheoryWeightedGraph(FreeSchema) begin
-  (E,V)::Ob
-  (src,tgt)::Hom(E,V)
+  V::Ob
+  E::Ob
+  src::Hom(E,V)
+  tgt::Hom(E,V)
   T::Data
   weight::Attr(E,T)
 end
