@@ -15,9 +15,10 @@ using StaticArrays: StaticVector, SVector, SizedVector, similar_type
 
 @reexport using ..Sets
 using ...GAT, ...Theories
+
 using ...CSetDataStructures, ...Graphs, ..FreeDiagrams, ..Limits, ..Subobjects
 import ...Theories: dom, codom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
-import ..Limits: limit, colimit, universal
+import ..Limits: limit, colimit, universal, pushout_complement
 import ..Subobjects: Subobject, SubobjectLattice
 using ..Sets: SetFunctionCallable, SetFunctionIdentity
 
@@ -829,6 +830,43 @@ function universal(colim::FinSetFreeDiagramColimit,
                    cocone::Multicospan{<:FinSet{Int}})
   h = universal(colim.coprod, cocone)
   pass_to_quotient(colim.proj, h)
+end
+
+""" Compute a pushout complement of finite sets, if possible.
+
+Given functions ``l: I → L`` and ``m: L → G`` to form a pushout square
+
+    l
+  L ← I
+m ↓   ↓k
+  G ← K
+    g
+
+constructs ``K := G / m(L / l(I))``, so that ``g: K ↪ G`` is an inclusion. Then
+the function ``k: I → K`` is determined by ``l⋅m`` from the requirement that the
+square commutes.
+
+Pushout complements exist only if the identification condition is satisfied. An
+error will be raised if the pushout complement cannot be constructed.
+"""
+function pushout_complement(pair::ComposablePair{<:FinSet{Int}})
+  l, m = pair
+  I, L, G = dom(l), codom(l), codom(m)
+
+  # Construct inclusion g: K ↪ G.
+  l_image = Set(collect(l))
+  m_image = Set([ m(x) for x in L if x ∉ l_image ])
+  g = FinFunction([x for x in G if x ∉ m_image], G)
+  K = dom(g)
+
+  # Construct morphism k: I → K using partial inverse of g.
+  g_inv = Dict{Int,Int}(zip(collect(g), K))
+  k = FinFunction(map(I) do x
+    y = m(l(x))
+    get(g_inv, y) do; error("Identification failed for domain element $x") end
+  end, I, K)
+
+  return ComposablePair(k, g)
 end
 
 # Subsets

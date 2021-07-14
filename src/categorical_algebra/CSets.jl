@@ -545,14 +545,16 @@ end
 
 """ Diagram in C-Set → named tuple of diagrams in FinSet
 """
-unpack_diagram(discrete::DiscreteDiagram{<:StructACSet}) =
+unpack_diagram(discrete::DiscreteDiagram{<:ACSet}) =
   map(DiscreteDiagram, unpack_sets(ob(discrete)))
-unpack_diagram(span::Multispan{<:StructACSet}) =
+unpack_diagram(span::Multispan{<:ACSet}) =
   map(Multispan, fin_sets(apex(span)), unpack_components(legs(span)))
-unpack_diagram(cospan::Multicospan{<:StructACSet}) =
+unpack_diagram(cospan::Multicospan{<:ACSet}) =
   map(Multicospan, fin_sets(apex(cospan)), unpack_components(legs(cospan)))
-unpack_diagram(para::ParallelMorphisms{<:StructACSet}) =
+unpack_diagram(para::ParallelMorphisms{<:ACSet}) =
   map(ParallelMorphisms, unpack_components(hom(para)))
+unpack_diagram(comp::ComposableMorphisms{<:ACSet}) =
+  map(ComposableMorphisms, unpack_components(hom(comp)))
 
 function unpack_diagram(d::Union{FreeDiagram{ACS},BipartiteFreeDiagram{ACS}}) where
     {Ob, S <: SchemaDescType{Ob}, ACS <: StructACSet{S}}
