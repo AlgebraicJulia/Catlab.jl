@@ -52,7 +52,7 @@ We can also add relations to this presentation, but we currently do nothing with
 We will now give an example of how this all works in practice.
 
 ```@example
-using Catlab, Catlab.CSetDataStructures, Catlab.Present
+using Catlab, Catlab.CategoricalAlgebra
 
 # Write down the schema for a weighted graph
 @present TheoryWeightedGraph(FreeSchema) begin
