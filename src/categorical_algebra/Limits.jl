@@ -21,6 +21,7 @@ import ...Theories: ob, terminal, product, proj1, proj2, equalizer, incl,
   initial, coproduct, coproj1, coproj2, coequalizer, proj,
   delete, create, pair, copair, factorize
 using ..FreeDiagrams
+using ...GAT
 import ..FreeDiagrams: apex, legs
 
 # Data types for limits

@@ -3,7 +3,6 @@ export Acset, acset_schema, nparts, parts, has_part, has_subpart, subpart, incid
   add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!,
   copy_parts!, copy_parts_only!, disjoint_union
 
-using Compat: only
 using StaticArrays: StaticArray
 
 using ..Syntax: GATExpr, args

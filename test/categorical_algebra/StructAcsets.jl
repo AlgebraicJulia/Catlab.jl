@@ -2,8 +2,8 @@ module TestStructAcsets
 
 using Test
 
-using Catlab.Acset
-using Catlab.StructAcsets
+using Catlab.Acsets
+using Catlab.CSetDataStructures
 using Catlab.Theories
 using Catlab.Present
 

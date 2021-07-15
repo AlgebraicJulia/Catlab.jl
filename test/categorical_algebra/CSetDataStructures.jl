@@ -142,8 +142,9 @@ empty_dds = typeof(dds)()
   height::Attr(X,R)
 end
 
-const AbstractDendrogram = AbstractACSetType(TheoryDendrogram)
-const Dendrogram = ACSetType(TheoryDendrogram, index=[:parent])
+@abstract_acset_type AbstractDendrogram
+
+@acset_type Dendogram(TheoryDendrogram, index=[:parent])
 @test Dendrogram <: AbstractDendrogram
 @test Dendrogram <: ACSet
 @test Dendrogram{Real} <: AbstractDendrogram{Real}

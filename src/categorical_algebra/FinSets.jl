@@ -17,6 +17,7 @@ using ...Theories, ...Acsets, ...Graphs, ..FreeDiagrams, ..Limits
 import ...Theories: dom, codom
 import ..Limits: limit, colimit, universal
 using ..Sets: SetFunctionCallable, SetFunctionIdentity
+using ...GAT
 
 # Data types
 ############
