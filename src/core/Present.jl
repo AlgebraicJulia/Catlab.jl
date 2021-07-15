@@ -12,7 +12,6 @@ export @present, Presentation, generator, generators, generator_index,
   has_generator, equations, add_generator!, add_generators!, add_definition!, add_equation!
 
 using Base.Meta: ParseError
-using Compat
 using MLStyle: @match
 
 using ..Meta, ..Syntax
@@ -205,7 +204,7 @@ end
 macro present(head, body)
   name, pres = @match head begin
     Expr(:call, name::Symbol, syntax_name::Symbol) =>
-      (name, :($(esc(:Presentation))($(esc(syntax_name)))))
+      (name, :($(GlobalRef(Present, :Presentation))($(esc(syntax_name)))))
     Expr(:(<:), name::Symbol, parent::Symbol) => (name,:(copy($(esc(parent)))))
     _ => throw(ParseError("Ill-formed presentation header $head"))
   end
