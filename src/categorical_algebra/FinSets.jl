@@ -19,6 +19,7 @@ import ...Theories: dom, codom
 import ..Limits: limit, colimit, universal
 import ..Subobjects: Subobject, SubobjectLattice
 using ..Sets: SetFunctionCallable, SetFunctionIdentity
+using ...GAT
 
 # Data types
 ############

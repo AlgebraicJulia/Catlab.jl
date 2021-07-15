@@ -1,5 +1,5 @@
 module CSetDataStructures
-export @acset_type, @abstract_acset_type, @declare_schema, AbstractACSet
+export @acset_type, @abstract_acset_type, @declare_schema, StructAcset
 
 using MLStyle
 using StaticArrays: StaticArray

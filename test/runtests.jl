@@ -8,14 +8,9 @@ end
   include("theories/Theories.jl")
 end
 
-@testset "StructAcsets" begin
-  include("categorical_algebra/StructAcsets.jl")
+@testset "CategoricalAlgebra" begin
+  include("categorical_algebra/CategoricalAlgebra.jl")
 end
-
-
-# @testset "CategoricalAlgebra" begin
-#   include("categorical_algebra/CategoricalAlgebra.jl")
-# end
 
 # @testset "Graphs" begin
 #   include("graphs/Graphs.jl")
