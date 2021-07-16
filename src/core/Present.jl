@@ -122,14 +122,14 @@ generator_index(pres::Presentation, x::Symbol) = pres.generator_name_index[x].se
 
 """ Shorthand for contructing a term in the presentation
 """
-function (pres::Presentation)(e::Symbol)
+function make_term(pres::Presentation, e::Symbol)
   pres[e]
 end
 
-function (pres::Presentation)(e::Expr)
+function make_term(pres::Presentation, e::Expr)
   @match e begin
     Expr(:call, term_constructor, args...) =>
-      invoke_term(pres.syntax, term_constructor, map(e -> pres(e), args)...)
+      invoke_term(pres.syntax, term_constructor, map(e -> make_term(pres, e), args)...)
   end
 end
 
@@ -137,14 +137,14 @@ end
 """ Create a new generator in a presentation of a given type
 """
 function make_generator(pres::Presentation, name::Symbol,
-              type::Symbol, type_args::Vector)
-  invoke_term(pres.syntax, type, name, map(e -> pres(e), type_args)...)
+                        type::Symbol, type_args::Vector)
+  invoke_term(pres.syntax, type, name, map(e -> make_term(pres, e), type_args)...)
 end
 
 """ Create and add a new generator
 """
-function add_generator!(pres::Presentation, name::Symbol,
-                   type::Symbol, type_args::Vector=[]; idem=true)
+function construct_generator!(pres::Presentation, name::Symbol,
+                              type::Symbol, type_args::Vector=[]; idem=true)
   if !(name ∈ keys(pres.generator_name_index)) || !idem
     add_generator!(pres, make_generator(pres,name,type,type_args))
   end
@@ -152,10 +152,10 @@ end
 
 """ Create and add multiple generators
 """
-function add_generators!(pres::Presentation, names::Vector,
-                    type::Symbol, type_args::Vector=[]; idem=true)
+function construct_generators!(pres::Presentation, names::Vector,
+                               type::Symbol, type_args::Vector=[]; idem=true)
   for name in names
-    add_generator!(pres, name, type, type_args, idem=idem)
+    construct_generator!(pres, name, type, type_args, idem=idem)
   end
 end
 
@@ -163,6 +163,7 @@ end
 #########################
 
 function add_to_presentation(pres, block)
+  pres = copy(pres)
   @match strip_lines(block) begin
     Expr(:block, lines...) =>
       for line in lines
@@ -184,15 +185,15 @@ end
 function eval_stmt!(pres::Presentation, stmt::Expr)
   @match stmt begin
     Expr(:(::), name::Symbol, type_expr) =>
-      add_generator!(pres, name, parse_type_expr(type_expr)...)
+      construct_generator!(pres, name, parse_type_expr(type_expr)...)
     Expr(:(::), Expr(:tuple, names...), type_expr) =>
-      add_generators!(pres, [names...], parse_type_expr(type_expr)...)
+      construct_generators!(pres, [names...], parse_type_expr(type_expr)...)
     Expr(:(::), type_expr) =>
-      add_generator!(pres, nothing, parse_type_expr(type_expr)...)
+      construct_generator!(pres, nothing, parse_type_expr(type_expr)...)
     Expr(:(:=), name::Symbol, def_expr) =>
-      add_definition!(pres, name, pres(def_expr))
+      add_definition!(pres, name, make_term(pres, def_expr))
     Expr(:call, :(==), lhs, rhs) =>
-      add_equation!(pres, pres(lhs), pres(rhs))
+      add_equation!(pres, make_term(pres, lhs), make_term(pres, rhs))
   end
 end
 
