@@ -11,6 +11,7 @@ include("FinRelations.jl")
 include("CSets.jl")
 include("ACSetViews.jl")
 include("GraphCategories.jl")
+include("Subobjects.jl")
 include("StructuredCospans.jl")
 include("CommutativeDiagrams.jl")
 include("DataMigration.jl")
@@ -21,6 +22,7 @@ include("DPO.jl")
 @reexport using .Limits
 @reexport using .CSets
 @reexport using .ACSetViews
+@reexport using .Subobjects
 @reexport using .StructuredCospans
 @reexport using .DataMigration
 @reexport using .DPO

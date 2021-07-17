@@ -72,12 +72,6 @@ g, h = path_graph(Graph, 4), cycle_graph(Graph, 2)
 @test force(compose(id(g), α)) == α
 @test force(compose(α, id(h))) == α
 
-# Subobjects.
-α = subobject(g, V=[2,3,4], E=[2,3])
-@test is_natural(α)
-@test dom(α) == path_graph(Graph, 3)
-@test codom(α) == g
-
 # Limits
 #-------
 

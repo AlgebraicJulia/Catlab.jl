@@ -3,6 +3,7 @@ export rewrite, rewrite_match, valid_dpo, dangling_condition, id_condition,
   pushout_complement
 
 using ..FinSets, ..CSets, ..Limits
+using ..Subobjects: subobject
 using ...Theories
 using ...Theories: attr
 
