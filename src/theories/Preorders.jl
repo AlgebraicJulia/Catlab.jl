@@ -1,7 +1,9 @@
 export ThinCategory, FreeThinCategory,
   ThinSymmetricMonoidalCategory, FreeThinSymmetricMonoidalCategory,
-  Preorder, FreePreorder, El, Leq, ≤, lhs, rhs, reflexive, transitive,
-  Poset, Lattice, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
+  Preorder, Poset, FreePreorder, El, Leq, ≤, lhs, rhs, reflexive, transitive,
+  Lattice, AlgebraicLattice, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
+
+import Base: join
 
 # Thin category
 ###############
@@ -76,11 +78,15 @@ end
 # Lattice
 #########
 
-""" Theory of (bounded) *lattices*
+""" Theory of *lattices* as posets
 
-A lattice is a poset with all finite meets and joins. Viewed as thin category,
-this means that the category has all finite products and coproducts, hence the
-names for the inequality constructors in the theory.
+A (bounded) lattice is a poset with all finite meets and joins. Viewed as a thin
+category, this means that the category has all finite products and coproducts,
+hence the names for the inequality constructors in the theory. Compare with
+[`CartesianCategory`](@ref) and [`CocartesianCategory`](@ref).
+
+This is one of two standard axiomatizations of a lattice, the other being
+[`AlgebraicLattice`](@ref).
 """
 @theory Lattice{El,Leq} <: Poset{El,Leq} begin
   @op begin
@@ -109,4 +115,48 @@ names for the inequality constructors in the theory.
   # Bottom = minimum.
   bottom()::El
   create(A::El)::(⊥() ≤ A)
+end
+
+""" Theory of *lattices* as algebraic structures
+
+This is one of two standard axiomatizations of a lattice, the other being
+[`Lattice`](@ref). Because the partial order is not present, this theory is
+merely an algebraic theory (no dependent types).
+
+The partial order is recovered as ``A ≤ B`` iff ``A ∧ B = A`` iff ``A ∨ B = B``.
+This definition could be reintroduced into a generalized algebraic theory using
+an equality type `Eq(lhs::El, rhs::El)::TYPE` combined with term constructors
+``meet_leq(eq::Eq(A∧B, A))::(A ≤ B)` and `join_leq(eq::Eq(A∨B, B))::(A ≤ B)`. We
+do not employ that trick here because at that point it is more convenient to
+just start with the poset structure, as in [`Lattice`](@ref).
+"""
+@theory AlgebraicLattice{El} begin
+  @op begin
+    (∧) := meet
+    (⊤) := top
+    (∨) := join
+    (⊥) := bottom
+  end
+
+  # Meet/top as idempotent, commutative, associative, unital operation.
+  meet(A::El, B::El)::El
+  top()::El
+  (A ∧ B) ∧ C == A ∧ (B ∧ C) ⊣ (A::El, B::El, C::El)
+  A ∧ ⊤() == A ⊣ (A::El)
+  ⊤() ∧ A == A ⊣ (A::El)
+  A ∧ B == B ∧ A ⊣ (A::El, B::El)
+  A ∧ A == A ⊣ (A::El)
+
+  # Join/bottom as idempotent, commutative, associative, unital operation.
+  join(A::El, B::El)::El
+  bottom()::El
+  (A ∨ B) ∨ C == A ∨ (B ∨ C) ⊣ (A::El, B::El, C::El)
+  A ∨ ⊥() == A ⊣ (A::El)
+  ⊥() ∨ A == A ⊣ (A::El)
+  A ∨ B == B ∨ A ⊣ (A::El, B::El)
+  A ∨ A == A ⊣ (A::El)
+
+  # Absorption laws.
+  A ∨ (A ∧ B) == A ⊣ (A::El, B::El)
+  A ∧ (A ∨ B) == A ⊣ (A::El, B::El)
 end
