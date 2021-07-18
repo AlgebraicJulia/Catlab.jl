@@ -342,6 +342,27 @@ h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:c,:d,:a,:b],))
 h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:d,:c],))
 @test !is_homomorphic(g, h)
 
+# Sub-C-sets
+############
+
+# Construct sub-C-sets.
+X = path_graph(Graph, 4)
+A = Subobject(X, V=[2,3,4], E=[2,3])
+@test Subobject(X, V=[false,true,true,true], E=[false,true,true]) == A
+α = hom(A)
+@test is_natural(α)
+@test dom(α) == path_graph(Graph, 3)
+@test codom(α) == X
+
+# Lattice operations.
+X = Graph(6)
+add_edges!(X, [1,2,3,4,4], [3,3,4,5,6])
+A, B = Subobject(X, V=1:4, E=1:3), Subobject(X, V=3:6, E=3:5)
+@test A ∧ B == Subobject(X, V=3:4, E=3:3)
+@test A ∨ B == Subobject(X, V=1:6, E=1:5)
+@test ⊤(X) |> force == Subobject(X, V=1:6, E=1:5)
+@test ⊥(X) |> force == Subobject(X, V=1:0, E=1:0)
+
 # Serialization
 ###############
 

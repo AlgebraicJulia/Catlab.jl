@@ -1,8 +1,8 @@
 """ Categories of C-sets and attributed C-sets.
 """
 module CSets
-export ACSetTransformation, CSetTransformation, components, force, is_natural,
-  homomorphism, homomorphisms, is_homomorphic,
+export ACSetTransformation, CSetTransformation, SubACSet, SubCSet,
+  components, force, is_natural, homomorphism, homomorphisms, is_homomorphic,
   isomorphism, isomorphisms, is_isomorphic,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
 
@@ -13,12 +13,13 @@ using Reexport
 using StaticArrays: SVector
 
 @reexport using ...CSetDataStructures
-using ...GAT, ..FreeDiagrams, ..Limits, ..Sets, ..FinSets
+using ...GAT, ..FreeDiagrams, ..Limits, ..Subobjects, ..Sets, ..FinSets
 import ..Limits: limit, colimit, universal
+import ..Subobjects: Subobject, SubobjectLattice
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force
 using ...Theories: Category, CatDesc, AttrDesc, ob, hom, attr, adom, acodom
-import ...Theories: dom, codom, compose, ⋅, id
-using ...Present
+import ...Theories: dom, codom, compose, ⋅, id,
+  meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 
 # FinSets interop
 #################
@@ -107,8 +108,8 @@ for data attributes is a commutative triangle, rather than a commutative square.
 end
 
 function coerce_component(ob::Symbol, f::FinFunction{Int,Int}, X, Y)
-  @assert length(dom(f)) == nparts(X,ob) "Domain error in component $ob"
-  @assert length(codom(f)) == nparts(Y,ob) "Codomain error in component $ob"
+  length(dom(f)) == nparts(X,ob) || error("Domain error in component $ob")
+  length(codom(f)) == nparts(Y,ob) || error("Codomain error in component $ob")
   return f
 end
 function coerce_component(ob::Symbol, f, X, Y)::FinFunction{Int,Int}
@@ -587,6 +588,62 @@ cocone_objects(diagram) = ob(diagram)
 cocone_objects(diagram::BipartiteFreeDiagram) = ob₂(diagram)
 cocone_objects(span::Multispan) = feet(span)
 cocone_objects(para::ParallelMorphisms) = SVector(codom(para))
+
+# Sub-C-sets
+############
+
+const SubCSet = Subobject{<:CSetTransformation}
+const SubACSet = Subobject{<:ACSetTransformation}
+
+components(A::SubACSet) = map(Subobject, components(hom(A)))
+force(A::SubACSet) = Subobject(force(hom(A)))
+
+""" Construct subobject of C-set from components of inclusion or predicate.
+
+This function constructs a subobject from the components of the inclusion
+morphism, given as a named tuple or as keyword arguments. The components can
+also be specified as predicates (boolean vectors).
+"""
+function Subobject(X::T, components) where T <: AbstractACSet
+  U = T()
+  components = map(coerce_subob_component, components)
+  copy_parts!(U, X, components)
+  Subobject(ACSetTransformation(components, U, X))
+end
+Subobject(X::AbstractACSet; components...) = Subobject(X, (; components...))
+
+coerce_subob_component(f::FinFunction{Int}) = collect(f)
+coerce_subob_component(A::SubFinSet{Int}) = collect(hom(A))
+coerce_subob_component(f::AbstractVector{Int}) = f
+coerce_subob_component(pred::Union{AbstractVector{Bool},BitVector}) =
+  findall(pred)
+
+@instance SubobjectLattice{AbstractACSet,SubACSet} begin
+  @import ob
+  meet(A::SubACSet, B::SubACSet) = meet(A, B, SubOpBoolean())
+  join(A::SubACSet, B::SubACSet) = join(A, B, SubOpBoolean())
+  top(X::AbstractACSet) = top(X, SubOpWithLimits())
+  bottom(X::AbstractACSet) = bottom(X, SubOpWithLimits())
+end
+
+function meet(A::SubACSet, B::SubACSet, ::SubOpBoolean)
+  (X = ob(A)) == ob(B) || error("Mismatched subobjects: $(ob(A)) != $(ob(B))")
+  Subobject(X, map(components(A), components(B)) do A₀, B₀
+    meet(A₀, B₀, SubOpBoolean())
+  end)
+end
+
+function join(A::SubACSet, B::SubACSet, ::SubOpBoolean)
+  (X = ob(A)) == ob(B) || error("Mismatched subobjects: $(ob(A)) != $(ob(B))")
+  Subobject(X, map(components(A), components(B)) do A₀, B₀
+    join(A₀, B₀, SubOpBoolean())
+  end)
+end
+
+top(X::AbstractACSet, ::SubOpBoolean) =
+  Subobject(X, map(X₀ -> top(X₀, SubOpBoolean()), fin_sets(X)))
+bottom(X::AbstractACSet, ::SubOpBoolean) =
+  Subobject(X, map(X₀ -> bottom(X₀, SubOpBoolean()), fin_sets(X)))
 
 # Serialization
 ###############

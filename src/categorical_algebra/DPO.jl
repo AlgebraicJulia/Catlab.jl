@@ -2,8 +2,7 @@ module DPO
 export rewrite, rewrite_match, valid_dpo, dangling_condition, id_condition,
   pushout_complement
 
-using ..FinSets, ..CSets, ..Limits
-using ..Subobjects: subobject
+using ..FinSets, ..CSets, ..Limits, ..Subobjects
 using ...Theories
 using ...Theories: attr
 
@@ -35,7 +34,7 @@ function pushout_complement(
     orphans = Set([ m[c](x) for x in parts(L,c) if x ∉ l_image ])
     filter(x -> x ∉ orphans, parts(G,c))
   end)
-  g = subobject(G, g_components)
+  g = hom(Subobject(G, g_components))
   K = dom(g)
 
   # Construct morphism k: I → K using partial inverse of g.
