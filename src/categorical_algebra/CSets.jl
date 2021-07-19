@@ -15,8 +15,9 @@ using StaticArrays: SVector
 @reexport using ...CSetDataStructures
 using ...GAT, ..FreeDiagrams, ..Limits, ..Subobjects, ..Sets, ..FinSets
 import ..Limits: limit, colimit, universal
-import ..Subobjects: Subobject, SubobjectLattice
-import ..FinSets: FinSet, FinFunction, FinDomFunction, force
+import ..Subobjects: Subobject, SubobjectHeytingAlgebra,
+  implies, ⟹, subtract, \, negate, ¬, non, ~
+import ..FinSets: FinSet, FinFunction, FinDomFunction, force, as_predicate
 using ...Theories: Category, CatDesc, AttrDesc, ob, hom, attr, adom, acodom
 import ...Theories: dom, codom, compose, ⋅, id,
   meet, ∧, join, ∨, top, ⊤, bottom, ⊥
@@ -358,8 +359,6 @@ be mutated even when the assignment fails.
 """
 @generated function assign_elem!(state::BacktrackingState{CD,AD}, depth,
                                  ::Type{Val{c}}, x, y) where {CD, AD, c}
-  out_hom = [ f => codom(CD, f) for f in hom(CD) if dom(CD, f) == c ]
-  out_attr = [ f for f in attr(AD) if dom(AD, f) == c ]
   quote
     y′ = state.assignment.$c[x]
     y′ == y && return true  # If x is already assigned to y, return immediately.
@@ -371,7 +370,7 @@ be mutated even when the assignment fails.
 
     # Check attributes first to fail as quickly as possible.
     X, Y = state.dom, state.codom
-    $(map(out_attr) do f
+    $(map(out_attr(AD, c)) do f
         :(subpart(X,x,$(quot(f))) == subpart(Y,y,$(quot(f))) || return false)
       end...)
 
@@ -381,7 +380,7 @@ be mutated even when the assignment fails.
     if !isnothing(state.inv_assignment.$c)
       state.inv_assignment.$c[y] = x
     end
-    $(map(out_hom) do (f, d)
+    $(map(out_hom(CD, c)) do (f, d)
         :(assign_elem!(state, depth, Val{$(quot(d))}, subpart(X,x,$(quot(f))),
                        subpart(Y,y,$(quot(f)))) || return false)
       end...)
@@ -393,7 +392,6 @@ end
 """
 @generated function unassign_elem!(state::BacktrackingState{CD}, depth,
                                    ::Type{Val{c}}, x) where {CD, c}
-  out_hom = [ f => codom(CD, f) for f in hom(CD) if dom(CD, f) == c ]
   quote
     state.assignment.$c[x] == 0 && return
     assign_depth = state.assignment_depth.$c[x]
@@ -406,7 +404,7 @@ end
       end
       state.assignment.$c[x] = 0
       state.assignment_depth.$c[x] = 0
-      $(map(out_hom) do (f, d)
+      $(map(out_hom(CD, c)) do (f, d)
           :(unassign_elem!(state, depth, Val{$(quot(d))},
                            subpart(X,x,$(quot(f)))))
         end...)
@@ -419,6 +417,11 @@ end
 partial_assignments(x::AbstractDict) = pairs(x)
 partial_assignments(x::AbstractVector) =
   ((i,y) for (i,y) in enumerate(x) if !isnothing(y) && y > 0)
+
+# FIXME: Should these accessors go elsewhere?
+in_hom(CD, c) = [dom(CD,f) => f for f in hom(CD) if codom(CD,f) == c]
+out_hom(CD, c) = [f => codom(CD,f) for f in hom(CD) if dom(CD,f) == c]
+out_attr(AD, c) = [f for f in attr(AD) if dom(AD, f) == c]
 
 # Category of C-sets
 ####################
@@ -592,8 +595,8 @@ cocone_objects(para::ParallelMorphisms) = SVector(codom(para))
 # Sub-C-sets
 ############
 
-const SubCSet = Subobject{<:CSetTransformation}
-const SubACSet = Subobject{<:ACSetTransformation}
+const SubCSet{CD} = Subobject{<:CSetTransformation{CD}}
+const SubACSet{CD,AD} = Subobject{<:ACSetTransformation{CD,AD}}
 
 components(A::SubACSet) = map(Subobject, components(hom(A)))
 force(A::SubACSet) = Subobject(force(hom(A)))
@@ -618,32 +621,60 @@ coerce_subob_component(f::AbstractVector{Int}) = f
 coerce_subob_component(pred::Union{AbstractVector{Bool},BitVector}) =
   findall(pred)
 
-@instance SubobjectLattice{AbstractACSet,SubACSet} begin
+@instance SubobjectHeytingAlgebra{AbstractACSet,SubACSet} begin
   @import ob
   meet(A::SubACSet, B::SubACSet) = meet(A, B, SubOpBoolean())
   join(A::SubACSet, B::SubACSet) = join(A, B, SubOpBoolean())
   top(X::AbstractACSet) = top(X, SubOpWithLimits())
   bottom(X::AbstractACSet) = bottom(X, SubOpWithLimits())
+
+  implies(A::SubACSet, B::SubACSet) = implies(A, B, SubOpBoolean())
+  negate(A::SubACSet) = implies(A, bottom(ob(A)), SubOpBoolean())
 end
 
 function meet(A::SubACSet, B::SubACSet, ::SubOpBoolean)
-  (X = ob(A)) == ob(B) || error("Mismatched subobjects: $(ob(A)) != $(ob(B))")
-  Subobject(X, map(components(A), components(B)) do A₀, B₀
+  Subobject(common_ob(A, B), map(components(A), components(B)) do A₀, B₀
     meet(A₀, B₀, SubOpBoolean())
   end)
 end
-
 function join(A::SubACSet, B::SubACSet, ::SubOpBoolean)
-  (X = ob(A)) == ob(B) || error("Mismatched subobjects: $(ob(A)) != $(ob(B))")
-  Subobject(X, map(components(A), components(B)) do A₀, B₀
+  Subobject(common_ob(A, B), map(components(A), components(B)) do A₀, B₀
     join(A₀, B₀, SubOpBoolean())
   end)
 end
-
 top(X::AbstractACSet, ::SubOpBoolean) =
   Subobject(X, map(X₀ -> top(X₀, SubOpBoolean()), fin_sets(X)))
 bottom(X::AbstractACSet, ::SubOpBoolean) =
   Subobject(X, map(X₀ -> bottom(X₀, SubOpBoolean()), fin_sets(X)))
+
+function implies(A::SubACSet{CD}, B::SubACSet{CD}, ::SubOpBoolean) where CD
+  X = common_ob(A, B)
+  A, B = map(as_predicate, components(A)), map(as_predicate, components(B))
+  D = map(X₀ -> trues(length(X₀)), fin_sets(X))
+
+  function unset!(c, x)
+    D[c][x] = false
+    for (c′,f) in in_hom(CD,c)
+      for x′ in incident(X,x,f)
+        if D[c′][x′]; unset(c′,x′) end
+      end
+    end
+  end
+
+  for c in ob(CD)
+    A₀, B₀, D₀ = A[c], B[c], D[c]
+    for x in parts(X,c)
+      if D₀[x] && A₀[x] && !B₀[x]; unset!(c,x) end
+    end
+  end
+  Subobject(X, D)
+end
+
+function common_ob(A::Subobject, B::Subobject)
+  (X = ob(A)) == ob(B) ||
+    error("Subobjects have different base objects: $(ob(A)) != $(ob(B))")
+  return X
+end
 
 # Serialization
 ###############

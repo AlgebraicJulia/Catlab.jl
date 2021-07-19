@@ -1,4 +1,4 @@
-""" The algebra of subobjects in a topos.
+""" Algebra of subobjects in a category.
 
 This module defines the interface for subobjects as well as some generic
 algorithm for computing subobjects using limits and colimits. Concrete instances
@@ -6,9 +6,11 @@ such as subsets (subobjects in Set or FinSet) and sub-C-sets (subobjects in
 C-Set) are defined elsewhere.
 """
 module Subobjects
-export Subobject, ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥,
-  SubOpAlgorithm, SubOpWithLimits
+export Subobject, ob, hom, SubOpAlgorithm, SubOpWithLimits,
+  meet, ∧, join, ∨, top, ⊤, bottom, ⊥,
+  implies, ⟹, subtract, \, negate, ¬, non, ~
 
+import Base: \, ~
 using AutoHashEquals
 using StaticArrays: SVector
 
@@ -18,11 +20,13 @@ import ...Theories: ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 # Theories
 ##########
 
-""" Theory of lattice of subobjects in a topos.
+""" Theory of lattice of subobjects in a coherent category, such as a pretopos.
 
 The axioms are omitted since this theory is the same as the theory
 [`Catlab.Theories.AlgebraicLattice`](@ref) except that the lattice elements are
-dependent on another type.
+dependent on another type. TODO: It should be possible to define a projection
+morphism of GATs from `SubobjectLattice` to `AlgebraicLattice` that sends `Ob`
+to the unit type.
 """
 @signature SubobjectLattice{Ob,Sub} begin
   Ob::TYPE
@@ -41,10 +45,36 @@ dependent on another type.
   bottom(X::Ob)::Sub(X)
 end
 
+""" Theory of Heyting algebra of subobjects in a Heyting category, such as a
+topos.
+"""
+@signature SubobjectHeytingAlgebra{Ob,Sub} <: SubobjectLattice{Ob,Sub} begin
+  @op begin
+    (⟹) := implies
+    (¬) := negate
+  end
+
+  implies(A::Sub(X), B::Sub(X))::Sub(X) ⊣ (X::Ob)
+  negate(A::Sub(X))::Sub(X) ⊣ (X::Ob)
+end
+
+""" Theory of bi-Heyting algebra of subobjects in a bi-Heyting topos, such as a
+presheaf topos.
+"""
+@signature SubobjectBiHeytingAlgebra{Ob,Sub} <: SubobjectHeytingAlgebra{Ob,Sub} begin
+  @op begin
+    (\) := subtract
+    (~) := non
+  end
+
+  subtract(A::Sub(X), B::Sub(X))::Sub(X) ⊣ (X::Ob)
+  non(A::Sub(X))::Sub(X) ⊣ (X::Ob)
+end
+
 # Data types
 ############
 
-""" Subobject in a topos.
+""" Subobject in a category.
 
 A subobject of an object ``X`` is a monomorphism into ``X``.
 """

@@ -354,7 +354,7 @@ A = Subobject(X, V=[2,3,4], E=[2,3])
 @test dom(α) == path_graph(Graph, 3)
 @test codom(α) == X
 
-# Lattice operations.
+# Lattice of sub-C-sets.
 X = Graph(6)
 add_edges!(X, [1,2,3,4,4], [3,3,4,5,6])
 A, B = Subobject(X, V=1:4, E=1:3), Subobject(X, V=3:6, E=3:5)
@@ -362,6 +362,30 @@ A, B = Subobject(X, V=1:4, E=1:3), Subobject(X, V=3:6, E=3:5)
 @test A ∨ B == Subobject(X, V=1:6, E=1:5)
 @test ⊤(X) |> force == Subobject(X, V=1:6, E=1:5)
 @test ⊥(X) |> force == Subobject(X, V=1:0, E=1:0)
+
+# Heyting algebra of sub-C-sets.
+#
+# Implication: (Reyes et al, Sec 9.1, p. 139).
+I = Graph(1)
+Y = path_graph(Graph, 3) ⊕ path_graph(Graph, 2) ⊕ path_graph(Graph, 2)
+add_vertex!(Y)
+add_edge!(Y, 2, 8)
+Z = cycle_graph(Graph, 1) ⊕ cycle_graph(Graph, 1)
+ιY, ιZ = colim = pushout(CSetTransformation(I, Y, V=[3]),
+                         CSetTransformation(I, Z, V=[1]))
+B_implies_C, B = Subobject(ιY), Subobject(ιZ)
+C = Subobject(ob(colim), V=2:5, E=2:3)
+@test (B ⟹ C) == B_implies_C
+
+# Negation: (Reyes et al, Sec 9.1, p. 139-140)
+X = cycle_graph(Graph, 1) ⊕ path_graph(Graph, 2) ⊕ cycle_graph(Graph, 4)
+add_vertex!(X)
+add_edge!(X, 4, 8)
+A = Subobject(X, V=[2,3,4,5,8], E=[3,7])
+neg_A = Subobject(X, V=[1,6,7], E=[1,5])
+@test is_natural(hom(A)) && is_natural(hom(neg_A))
+@test ¬A == neg_A
+@test ¬neg_A == Subobject(X, V=[2,3,4,5,8], E=[2,3,7])
 
 # Serialization
 ###############
