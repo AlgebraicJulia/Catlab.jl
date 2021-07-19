@@ -365,7 +365,7 @@ A, B = Subobject(X, V=1:4, E=1:3), Subobject(X, V=3:6, E=3:5)
 
 # Bi-Heyting algebra of sub-C-sets.
 #
-# Implication: (Reyes et al, Sec 9.1, p. 139).
+# Implication: (Reyes et al 2004, Sec 9.1, p. 139).
 I = Graph(1)
 Y = path_graph(Graph, 3) ⊕ path_graph(Graph, 2) ⊕ path_graph(Graph, 2)
 add_vertex!(Y)
@@ -377,12 +377,12 @@ B_implies_C, B = Subobject(ιY), Subobject(ιZ)
 C = Subobject(ob(colim), V=2:5, E=2:3)
 @test (B ⟹ C) == B_implies_C
 
-# Subtraction: (Reyes et al, Sec 9.1, p. 144)
+# Subtraction: (Reyes et al 2004, Sec 9.1, p. 144)
 X = ob(colim)
 C = Subobject(X, V=2:5, E=[2,3,ne(X)-1])
 @test (B \ C) == Subobject(X, V=[nv(X)], E=[ne(X)])
 
-# Negation: (Reyes et al, Sec 9.1, p. 139-140)
+# Negation: (Reyes et al 2004, Sec 9.1, p. 139-140)
 X = cycle_graph(Graph, 1) ⊕ path_graph(Graph, 2) ⊕ cycle_graph(Graph, 4)
 add_vertex!(X)
 add_edge!(X, 4, 8)
@@ -392,7 +392,7 @@ neg_A = Subobject(X, V=[1,6,7], E=[1,5])
 @test ¬A == neg_A
 @test ¬neg_A == Subobject(X, V=[2,3,4,5,8], E=[2,3,7])
 
-# Non: (Reyes et al, Sec 9.1, p. 144)
+# Non: (Reyes et al 2004, Sec 9.1, p. 144)
 X = path_graph(Graph, 5) ⊕ path_graph(Graph, 2) ⊕ cycle_graph(Graph, 1)
 A = Subobject(X, V=[1,4,5], E=[4])
 non_A = Subobject(X, V=setdiff(vertices(X), 5), E=setdiff(edges(X), 4))

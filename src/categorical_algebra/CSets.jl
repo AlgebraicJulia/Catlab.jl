@@ -649,6 +649,21 @@ top(X::AbstractACSet, ::SubOpBoolean) =
 bottom(X::AbstractACSet, ::SubOpBoolean) =
   Subobject(X, map(X₀ -> bottom(X₀, SubOpBoolean()), fin_sets(X)))
 
+""" Implication of sub-C-sets.
+
+By (Reyes et al 2004, Proposition 9.1.5), the implication ``A ⟹ B`` for two
+sub-``C``-sets ``A,B ↪ X`` is given by
+
+``x ∈ (A ⟹ B)(c) iff ∀f: c → c′, x⋅f ∈ A(c′) ⟹ x⋅f ∈ B(c′)``
+
+for all ``c ∈ C`` and ``x ∈ X(c)``. By the definition of implication and De
+Morgan's law in classical logic, this is equivalent to
+
+``x ∉ (A ⟹ B)(c) iff ∃f: c → c′, x⋅f ∈ A(c′) ∧ x⋅f ∉ B(c′)``.
+
+In this form, we can clearly see the duality to formula and algorithm for
+subtraction of sub-C-sets ([`subtract`](@ref)).
+"""
 function implies(A::SubACSet{CD}, B::SubACSet{CD}, ::SubOpBoolean) where CD
   X = common_ob(A, B)
   A, B = map(as_predicate, components(A)), map(as_predicate, components(B))
@@ -656,7 +671,7 @@ function implies(A::SubACSet{CD}, B::SubACSet{CD}, ::SubOpBoolean) where CD
 
   function unset!(c, x)
     D[c][x] = false
-    for (c′,f) in in_hom(CD,c), x′ in incident(X,x,f)
+    for (c′,x′) in all_incident(X, Val{c}, x)
       if D[c′][x′]; unset!(c′,x′) end
     end
   end
@@ -667,6 +682,15 @@ function implies(A::SubACSet{CD}, B::SubACSet{CD}, ::SubOpBoolean) where CD
   Subobject(X, D)
 end
 
+""" Subtraction of sub-C-sets.
+
+By (Reyes et al 2004, Sec 9.1, pp. 144), the subtraction ``A ∖ B`` for two
+sub-``C``-sets ``A,B ↪ X`` is given by
+
+``x ∈ (A ∖ B)(c) iff ∃f: c′ → c, ∃x′ ∈ f⁻¹⋅x, x′ ∈ A(c′) ∧ x′ ∉ B(c′)``
+
+for all ``c ∈ C`` and ``x ∈ X(c)``. Compare with [`implies`](@ref).
+"""
 function subtract(A::SubACSet{CD}, B::SubACSet{CD}, ::SubOpBoolean) where CD
   X = common_ob(A, B)
   A, B = map(as_predicate, components(A)), map(as_predicate, components(B))
@@ -674,8 +698,7 @@ function subtract(A::SubACSet{CD}, B::SubACSet{CD}, ::SubOpBoolean) where CD
 
   function set!(c, x)
     D[c][x] = true
-    for (f,c′) in out_hom(CD,c)
-      x′ = subpart(X,x,f)
+    for (c′,x′) in all_subparts(X, Val{c}, x)
       if !D[c′][x′]; set!(c′,x′) end
     end
   end
@@ -690,6 +713,23 @@ function common_ob(A::Subobject, B::Subobject)
   (X = ob(A)) == ob(B) ||
     error("Subobjects have different base objects: $(ob(A)) != $(ob(B))")
   return X
+end
+
+# FIXME: Should these two accessors go elsewhere?
+
+@generated function all_subparts(X::AbstractACSet{CD},
+                                 ::Type{Val{c}}, x::Int) where {CD,c}
+  Expr(:tuple, map(out_hom(CD, c)) do (f,c′)
+    :($(quot(c′)), subpart(X,x,$(quot(f))))
+  end...)
+end
+
+@generated function all_incident(X::AbstractACSet{CD},
+                                 ::Type{Val{c}}, x::Int) where {CD,c}
+  Expr(:call, GlobalRef(Iterators, :flatten),
+    Expr(:tuple, map(in_hom(CD, c)) do (c′,f)
+      :(Tuple{Symbol,Int}[ ($(quot(c′)),x′) for x′ in incident(X,x,$(quot(f))) ])
+    end...))
 end
 
 # Serialization
