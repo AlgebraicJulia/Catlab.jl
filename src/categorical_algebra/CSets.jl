@@ -15,7 +15,7 @@ using StaticArrays: SVector
 @reexport using ...CSetDataStructures
 using ...GAT, ..FreeDiagrams, ..Limits, ..Subobjects, ..Sets, ..FinSets
 import ..Limits: limit, colimit, universal
-import ..Subobjects: Subobject, SubobjectHeytingAlgebra,
+import ..Subobjects: Subobject, SubobjectBiHeytingAlgebra,
   implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, as_predicate
 using ...Theories: Category, CatDesc, AttrDesc, ob, hom, attr, adom, acodom
@@ -621,7 +621,7 @@ coerce_subob_component(f::AbstractVector{Int}) = f
 coerce_subob_component(pred::Union{AbstractVector{Bool},BitVector}) =
   findall(pred)
 
-@instance SubobjectHeytingAlgebra{AbstractACSet,SubACSet} begin
+@instance SubobjectBiHeytingAlgebra{AbstractACSet,SubACSet} begin
   @import ob
   meet(A::SubACSet, B::SubACSet) = meet(A, B, SubOpBoolean())
   join(A::SubACSet, B::SubACSet) = join(A, B, SubOpBoolean())
@@ -629,7 +629,9 @@ coerce_subob_component(pred::Union{AbstractVector{Bool},BitVector}) =
   bottom(X::AbstractACSet) = bottom(X, SubOpWithLimits())
 
   implies(A::SubACSet, B::SubACSet) = implies(A, B, SubOpBoolean())
+  subtract(A::SubACSet, B::SubACSet) = subtract(A, B, SubOpBoolean())
   negate(A::SubACSet) = implies(A, bottom(ob(A)), SubOpBoolean())
+  non(A::SubACSet) = subtract(top(ob(A)), A, SubOpBoolean())
 end
 
 function meet(A::SubACSet, B::SubACSet, ::SubOpBoolean)
@@ -654,18 +656,32 @@ function implies(A::SubACSet{CD}, B::SubACSet{CD}, ::SubOpBoolean) where CD
 
   function unset!(c, x)
     D[c][x] = false
-    for (c′,f) in in_hom(CD,c)
-      for x′ in incident(X,x,f)
-        if D[c′][x′]; unset(c′,x′) end
-      end
+    for (c′,f) in in_hom(CD,c), x′ in incident(X,x,f)
+      if D[c′][x′]; unset!(c′,x′) end
     end
   end
 
-  for c in ob(CD)
-    A₀, B₀, D₀ = A[c], B[c], D[c]
-    for x in parts(X,c)
-      if D₀[x] && A₀[x] && !B₀[x]; unset!(c,x) end
+  for c in ob(CD), x in parts(X,c)
+    if D[c][x] && A[c][x] && !B[c][x]; unset!(c,x) end
+  end
+  Subobject(X, D)
+end
+
+function subtract(A::SubACSet{CD}, B::SubACSet{CD}, ::SubOpBoolean) where CD
+  X = common_ob(A, B)
+  A, B = map(as_predicate, components(A)), map(as_predicate, components(B))
+  D = map(X₀ -> falses(length(X₀)), fin_sets(X))
+
+  function set!(c, x)
+    D[c][x] = true
+    for (f,c′) in out_hom(CD,c)
+      x′ = subpart(X,x,f)
+      if !D[c′][x′]; set!(c′,x′) end
     end
+  end
+
+  for c in ob(CD), x in parts(X,c)
+    if !D[c][x] && A[c][x] && !B[c][x]; set!(c,x) end
   end
   Subobject(X, D)
 end

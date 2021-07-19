@@ -363,7 +363,7 @@ A, B = Subobject(X, V=1:4, E=1:3), Subobject(X, V=3:6, E=3:5)
 @test ⊤(X) |> force == Subobject(X, V=1:6, E=1:5)
 @test ⊥(X) |> force == Subobject(X, V=1:0, E=1:0)
 
-# Heyting algebra of sub-C-sets.
+# Bi-Heyting algebra of sub-C-sets.
 #
 # Implication: (Reyes et al, Sec 9.1, p. 139).
 I = Graph(1)
@@ -377,6 +377,11 @@ B_implies_C, B = Subobject(ιY), Subobject(ιZ)
 C = Subobject(ob(colim), V=2:5, E=2:3)
 @test (B ⟹ C) == B_implies_C
 
+# Subtraction: (Reyes et al, Sec 9.1, p. 144)
+X = ob(colim)
+C = Subobject(X, V=2:5, E=[2,3,ne(X)-1])
+@test (B \ C) == Subobject(X, V=[nv(X)], E=[ne(X)])
+
 # Negation: (Reyes et al, Sec 9.1, p. 139-140)
 X = cycle_graph(Graph, 1) ⊕ path_graph(Graph, 2) ⊕ cycle_graph(Graph, 4)
 add_vertex!(X)
@@ -386,6 +391,13 @@ neg_A = Subobject(X, V=[1,6,7], E=[1,5])
 @test is_natural(hom(A)) && is_natural(hom(neg_A))
 @test ¬A == neg_A
 @test ¬neg_A == Subobject(X, V=[2,3,4,5,8], E=[2,3,7])
+
+# Non: (Reyes et al, Sec 9.1, p. 144)
+X = path_graph(Graph, 5) ⊕ path_graph(Graph, 2) ⊕ cycle_graph(Graph, 1)
+A = Subobject(X, V=[1,4,5], E=[4])
+non_A = Subobject(X, V=setdiff(vertices(X), 5), E=setdiff(edges(X), 4))
+@test ~A == non_A
+@test ~non_A == Subobject(X, V=[4,5], E=[4])
 
 # Serialization
 ###############
