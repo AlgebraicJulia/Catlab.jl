@@ -78,8 +78,9 @@ end
 
 A subobject of an object ``X`` is a monomorphism into ``X``.
 """
-@auto_hash_equals struct Subobject{Hom}
+@auto_hash_equals struct Subobject{Ob,Hom}
   hom::Hom
+  Subobject(hom::Hom) where Hom = new{typeof(codom(hom)),Hom}(hom)
 end
 
 hom(sub::Subobject) = sub.hom

@@ -595,8 +595,8 @@ cocone_objects(para::ParallelMorphisms) = SVector(codom(para))
 # Sub-C-sets
 ############
 
-const SubCSet{CD} = Subobject{<:CSetTransformation{CD}}
-const SubACSet{CD,AD} = Subobject{<:ACSetTransformation{CD,AD}}
+const SubCSet{CD} = Subobject{<:AbstractCSet{CD}}
+const SubACSet{CD,AD} = Subobject{<:AbstractACSet{CD,AD}}
 
 components(A::SubACSet) = map(Subobject, components(hom(A)))
 force(A::SubACSet) = Subobject(force(hom(A)))

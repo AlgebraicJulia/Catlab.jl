@@ -836,7 +836,7 @@ end
 
 """ Subset of a finite set represented as an inclusion map.
 """
-const SubFinSet{S} = Subobject{<:FinFunction{S,S}}
+const SubFinSet{S,T} = Subobject{<:FinSet{S,T}}
 
 Subobject(X::FinSet, f) = Subobject(FinFunction(f, X))
 SubFinSet(X, f) = Subobject(FinFunction(f, X))

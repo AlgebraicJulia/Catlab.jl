@@ -6,7 +6,7 @@ export parse_graphviz, to_graphviz
 using StaticArrays: StaticVector, SVector
 
 using ...Present, ...Theories
-using ...Graphs
+using ...Graphs, ...CategoricalAlgebra.Subobjects
 import ..Graphviz
 
 # Property graphs
@@ -283,6 +283,27 @@ function to_graphviz_property_graph(g::AbstractHalfEdgeGraph;
       e′ = add_edge!(pg, vertex(g,e), vertex(g,inv(g,e)))
       if edge_labels; set_eprop!(pg, e′, :label, "($e,$(inv(g,e)))") end
     end
+  end
+  pg
+end
+
+# Subgraphs
+###########
+
+to_graphviz(subgraph::Subobject{<:IsGraph}; kw...) =
+  to_graphviz(to_graphviz_property_graph(subgraph; kw...))
+
+function to_graphviz_property_graph(
+    subgraph::Subobject{<:Union{AbstractGraph,AbstractSymmetricGraph}};
+    subgraph_node_attrs::AbstractDict=Dict(:color => "cornflowerblue"),
+    subgraph_edge_attrs::AbstractDict=Dict(:color => "cornflowerblue"), kw...)
+  pg = to_graphviz_property_graph(ob(subgraph); kw...)
+  f = hom(subgraph)
+  for v in vertices(dom(f))
+    set_vprops!(pg, f[:V](v), subgraph_node_attrs)
+  end
+  for e in edges(dom(f))
+    set_eprops!(pg, f[:E](e), subgraph_edge_attrs)
   end
   pg
 end
