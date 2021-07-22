@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Algebra of subgraphs · Catlab.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit">Catlab.jl</span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox" checked/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li class="is-active"><a class="tocitem" href>Algebra of subgraphs</a><ul class="internal"><li><a class="tocitem" href="#Meet-and-join"><span>Meet and join</span></a></li><li><a class="tocitem" href="#Implication-and-negation"><span>Implication and negation</span></a></li><li><a class="tocitem" href="#Subtraction-and-non"><span>Subtraction and non</span></a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Wiring diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox"/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphics/composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../../graphics/graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../../graphics/tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../../graphics/layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li><li><a class="tocitem" href="../../graphics/graphviz_schema_visualization/">Visualizing Acset Schemas with Graphviz</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/core/">Theories, instances, and expressions</a></li><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Graphs</a></li><li class="is-active"><a href>Algebra of subgraphs</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Algebra of subgraphs</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/master/docs/literate/graphs/subgraphs.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Algebra-of-subgraphs"><a class="docs-heading-anchor" href="#Algebra-of-subgraphs">Algebra of subgraphs</a><a id="Algebra-of-subgraphs-1"></a><a class="docs-heading-anchor-permalink" href="#Algebra-of-subgraphs" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/AlgebraicJulia/Catlab.jl/blob/gh-pages/dev/generated/graphs/subgraphs.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><pre><code class="language-julia">using Catlab.Graphs, Catlab.Graphics
+using Catlab.Theories, Catlab.CategoricalAlgebra</code></pre><p>A <em>subgraph</em> of a graph <span>$G$</span> is a monomorphism <span>$A \rightarrowtail G$</span>. Because the category of graphs is a presheaf topos, its subobjects have a rich algebraic structure, which we will explore in this vignette.</p><p>Consider this graph:</p><pre><code class="language-julia">G = cycle_graph(Graph, 4) ⊕ path_graph(Graph, 2) ⊕ cycle_graph(Graph, 1)
+add_edge!(G, 3, add_vertex!(G))
+
+to_graphviz(G, node_labels=true, edge_labels=true)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="231pt" height="163pt"
+ viewBox="0.00 0.00 230.85 163.21" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 159.21)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-159.21 226.85,-159.21 226.85,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="10.61" cy="-12.61" rx="10.71" ry="10.71"/>
+<text text-anchor="middle" x="10.61" y="-8.91" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="77.82" cy="-33.61" rx="10.71" ry="10.71"/>
+<text text-anchor="middle" x="77.82" y="-29.91" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+<!-- n1&#45;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&#45;&gt;n2</title>
+<path fill="none" stroke="black" d="M20.95,-15.62C31.8,-19.11 49.81,-24.91 62.45,-28.98"/>
+<polygon fill="black" stroke="black" points="62.2,-30.74 67.49,-30.6 63.27,-27.4 62.2,-30.74"/>
+<text text-anchor="middle" x="44.21" y="-28.41" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="145.03" cy="-33.61" rx="10.71" ry="10.71"/>
+<text text-anchor="middle" x="145.03" y="-29.91" font-family="Times,serif" font-size="14.00">3</text>
+</g>
+<!-- n2&#45;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&#45;&gt;n3</title>
+<path fill="none" stroke="black" d="M88.44,-33.61C99.23,-33.61 116.85,-33.61 129.36,-33.61"/>
+<polygon fill="black" stroke="black" points="129.37,-35.36 134.37,-33.61 129.37,-31.86 129.37,-35.36"/>
+<text text-anchor="middle" x="111.43" y="-37.41" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="212.25" cy="-10.61" rx="10.71" ry="10.71"/>
+<text text-anchor="middle" x="212.25" y="-6.91" font-family="Times,serif" font-size="14.00">4</text>
+</g>
+<!-- n3&#45;&gt;n4 -->
+<g id="edge3" class="edge">
+<title>n3&#45;&gt;n4</title>
+<path fill="none" stroke="black" d="M155.38,-30.31C166.22,-26.49 184.24,-20.13 196.87,-15.68"/>
+<polygon fill="black" stroke="black" points="197.79,-17.21 201.92,-13.9 196.62,-13.91 197.79,-17.21"/>
+<text text-anchor="middle" x="178.64" y="-27.41" font-family="Times,serif" font-size="14.00">3</text>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+<ellipse fill="none" stroke="black" cx="212.25" cy="-65.61" rx="10.71" ry="10.71"/>
+<text text-anchor="middle" x="212.25" y="-61.91" font-family="Times,serif" font-size="14.00">8</text>
+</g>
+<!-- n3&#45;&gt;n8 -->
+<g id="edge7" class="edge">
+<title>n3&#45;&gt;n8</title>
+<path fill="none" stroke="black" d="M154.83,-37.92C165.75,-43.28 184.52,-52.49 197.39,-58.81"/>
+<polygon fill="black" stroke="black" points="196.91,-60.52 202.17,-61.15 198.45,-57.38 196.91,-60.52"/>
+<text text-anchor="middle" x="178.64" y="-54.41" font-family="Times,serif" font-size="14.00">7</text>
+</g>
+<!-- n4&#45;&gt;n1 -->
+<g id="edge4" class="edge">
+<title>n4&#45;&gt;n1</title>
+<path fill="none" stroke="black" d="M201.24,-10.71C168.63,-11.03 65.23,-12.07 26.47,-12.46"/>
+<polygon fill="black" stroke="black" points="26.22,-10.71 21.24,-12.51 26.25,-14.21 26.22,-10.71"/>
+<text text-anchor="middle" x="111.43" y="-16.41" font-family="Times,serif" font-size="14.00">4</text>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="none" stroke="black" cx="10.61" cy="-72.61" rx="10.71" ry="10.71"/>
+<text text-anchor="middle" x="10.61" y="-68.91" font-family="Times,serif" font-size="14.00">5</text>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="none" stroke="black" cx="77.82" cy="-72.61" rx="10.71" ry="10.71"/>
+<text text-anchor="middle" x="77.82" y="-68.91" font-family="Times,serif" font-size="14.00">6</text>
+</g>
+<!-- n5&#45;&gt;n6 -->
+<g id="edge5" class="edge">
+<title>n5&#45;&gt;n6</title>
+<path fill="none" stroke="black" d="M21.23,-72.61C32.02,-72.61 49.64,-72.61 62.14,-72.61"/>
+<polygon fill="black" stroke="black" points="62.16,-74.36 67.16,-72.61 62.16,-70.86 62.16,-74.36"/>
+<text text-anchor="middle" x="44.21" y="-76.41" font-family="Times,serif" font-size="14.00">5</text>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="none" stroke="black" cx="10.61" cy="-111.61" rx="10.71" ry="10.71"/>
+<text text-anchor="middle" x="10.61" y="-107.91" font-family="Times,serif" font-size="14.00">7</text>
+</g>
+<!-- n7&#45;&gt;n7 -->
+<g id="edge6" class="edge">
+<title>n7&#45;&gt;n7</title>
+<path fill="none" stroke="black" d="M5.76,-121.28C3.24,-130.36 4.86,-140.21 10.61,-140.21 15.28,-140.21 17.22,-133.71 16.44,-126.4"/>
+<polygon fill="black" stroke="black" points="18.12,-125.86 15.46,-121.28 14.68,-126.52 18.12,-125.86"/>
+<text text-anchor="middle" x="10.61" y="-144.01" font-family="Times,serif" font-size="14.00">6</text>
+</g>
+</g>
+</svg>
+<h2 id="Meet-and-join"><a class="docs-heading-anchor" href="#Meet-and-join">Meet and join</a><a id="Meet-and-join-1"></a><a class="docs-heading-anchor-permalink" href="#Meet-and-join" title="Permalink"></a></h2><p>The basic operations of <a href="https://ncatlab.org/nlab/show/meet">meet</a> or intersection (<span>$\wedge$</span>), <a href="https://ncatlab.org/nlab/show/join">join</a> or union (<span>$\vee$</span>), <a href="https://ncatlab.org/nlab/show/top">top</a> or maximum (<span>$\top$</span>), <a href="https://ncatlab.org/nlab/show/bottom">bottom</a> or minimum (<span>$\bot$</span>) are all computed pointwise: separately on vertices and edges.</p><pre><code class="language-julia">(A = Subobject(G, V=1:4, E=[1,2,4])) |&gt; to_graphviz</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="136pt" height="100pt"
+ viewBox="0.00 0.00 135.84 99.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 95.6)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-95.6 131.84,-95.6 131.84,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="7.24" cy="-12.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="46.84" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n1&#45;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&#45;&gt;n2</title>
+<path fill="none" stroke="cornflowerblue" d="M9.17,-13.17C13.32,-14.83 30.4,-21.64 39.72,-25.36"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="39.21,-27.04 44.5,-27.27 40.5,-23.79 39.21,-27.04"/>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="86.44" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2&#45;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&#45;&gt;n3</title>
+<path fill="none" stroke="cornflowerblue" d="M48.77,-27.8C52.88,-27.8 69.68,-27.8 79.05,-27.8"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="79.1,-29.55 84.1,-27.8 79.1,-26.05 79.1,-29.55"/>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="126.04" cy="-1.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n4 -->
+<g id="edge3" class="edge">
+<title>n3&#45;&gt;n4</title>
+<path fill="none" stroke="black" d="M88.37,-27.16C92.71,-24.15 111.19,-11.38 120.14,-5.19"/>
+<polygon fill="black" stroke="black" points="121.15,-6.61 124.27,-2.33 119.16,-3.74 121.15,-6.61"/>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+<ellipse fill="black" stroke="black" cx="126.04" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n8 -->
+<g id="edge7" class="edge">
+<title>n3&#45;&gt;n8</title>
+<path fill="none" stroke="black" d="M88.37,-27.8C92.48,-27.8 109.28,-27.8 118.65,-27.8"/>
+<polygon fill="black" stroke="black" points="118.7,-29.55 123.7,-27.8 118.7,-26.05 118.7,-29.55"/>
+</g>
+<!-- n4&#45;&gt;n1 -->
+<g id="edge4" class="edge">
+<title>n4&#45;&gt;n1</title>
+<path fill="none" stroke="cornflowerblue" d="M123.88,-1.91C113.57,-2.88 37.28,-10.06 14.59,-12.2"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="14.36,-10.47 9.55,-12.68 14.69,-13.95 14.36,-10.47"/>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="black" stroke="black" cx="46.84" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n5&#45;&gt;n6 -->
+<g id="edge5" class="edge">
+<title>n5&#45;&gt;n6</title>
+<path fill="none" stroke="black" d="M9.17,-49.8C13.28,-49.8 30.08,-49.8 39.45,-49.8"/>
+<polygon fill="black" stroke="black" points="39.5,-51.55 44.5,-49.8 39.5,-48.05 39.5,-51.55"/>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-71.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n7&#45;&gt;n7 -->
+<g id="edge6" class="edge">
+<title>n7&#45;&gt;n7</title>
+<path fill="none" stroke="black" d="M5.57,-73.11C-2.23,-80 -1.67,-91.6 7.24,-91.6 14.61,-91.6 16.26,-83.64 12.18,-77"/>
+<polygon fill="black" stroke="black" points="13.47,-75.8 8.91,-73.11 10.79,-78.06 13.47,-75.8"/>
+</g>
+</g>
+</svg>
+<pre><code class="language-julia">(B = Subobject(G, V=[2,3,4,7,8], E=[2,3,6,7])) |&gt; to_graphviz</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="136pt" height="100pt"
+ viewBox="0.00 0.00 135.84 99.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 95.6)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-95.6 131.84,-95.6 131.84,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-12.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="46.84" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n1&#45;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&#45;&gt;n2</title>
+<path fill="none" stroke="black" d="M9.17,-13.17C13.32,-14.83 30.4,-21.64 39.72,-25.36"/>
+<polygon fill="black" stroke="black" points="39.21,-27.04 44.5,-27.27 40.5,-23.79 39.21,-27.04"/>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="86.44" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2&#45;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&#45;&gt;n3</title>
+<path fill="none" stroke="cornflowerblue" d="M48.77,-27.8C52.88,-27.8 69.68,-27.8 79.05,-27.8"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="79.1,-29.55 84.1,-27.8 79.1,-26.05 79.1,-29.55"/>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="126.04" cy="-1.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n4 -->
+<g id="edge3" class="edge">
+<title>n3&#45;&gt;n4</title>
+<path fill="none" stroke="cornflowerblue" d="M88.37,-27.16C92.71,-24.15 111.19,-11.38 120.14,-5.19"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="121.15,-6.61 124.27,-2.33 119.16,-3.74 121.15,-6.61"/>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="126.04" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n8 -->
+<g id="edge7" class="edge">
+<title>n3&#45;&gt;n8</title>
+<path fill="none" stroke="cornflowerblue" d="M88.37,-27.8C92.48,-27.8 109.28,-27.8 118.65,-27.8"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="118.7,-29.55 123.7,-27.8 118.7,-26.05 118.7,-29.55"/>
+</g>
+<!-- n4&#45;&gt;n1 -->
+<g id="edge4" class="edge">
+<title>n4&#45;&gt;n1</title>
+<path fill="none" stroke="black" d="M123.88,-1.91C113.57,-2.88 37.28,-10.06 14.59,-12.2"/>
+<polygon fill="black" stroke="black" points="14.36,-10.47 9.55,-12.68 14.69,-13.95 14.36,-10.47"/>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="black" stroke="black" cx="46.84" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n5&#45;&gt;n6 -->
+<g id="edge5" class="edge">
+<title>n5&#45;&gt;n6</title>
+<path fill="none" stroke="black" d="M9.17,-49.8C13.28,-49.8 30.08,-49.8 39.45,-49.8"/>
+<polygon fill="black" stroke="black" points="39.5,-51.55 44.5,-49.8 39.5,-48.05 39.5,-51.55"/>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="7.24" cy="-71.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n7&#45;&gt;n7 -->
+<g id="edge6" class="edge">
+<title>n7&#45;&gt;n7</title>
+<path fill="none" stroke="cornflowerblue" d="M5.57,-73.11C-2.23,-80 -1.67,-91.6 7.24,-91.6 14.61,-91.6 16.26,-83.64 12.18,-77"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="13.47,-75.8 8.91,-73.11 10.79,-78.06 13.47,-75.8"/>
+</g>
+</g>
+</svg>
+<pre><code class="language-julia">A ∧ B |&gt; to_graphviz</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="136pt" height="100pt"
+ viewBox="0.00 0.00 135.84 99.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 95.6)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-95.6 131.84,-95.6 131.84,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-12.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="46.84" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n1&#45;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&#45;&gt;n2</title>
+<path fill="none" stroke="black" d="M9.17,-13.17C13.32,-14.83 30.4,-21.64 39.72,-25.36"/>
+<polygon fill="black" stroke="black" points="39.21,-27.04 44.5,-27.27 40.5,-23.79 39.21,-27.04"/>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="86.44" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2&#45;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&#45;&gt;n3</title>
+<path fill="none" stroke="cornflowerblue" d="M48.77,-27.8C52.88,-27.8 69.68,-27.8 79.05,-27.8"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="79.1,-29.55 84.1,-27.8 79.1,-26.05 79.1,-29.55"/>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="126.04" cy="-1.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n4 -->
+<g id="edge3" class="edge">
+<title>n3&#45;&gt;n4</title>
+<path fill="none" stroke="black" d="M88.37,-27.16C92.71,-24.15 111.19,-11.38 120.14,-5.19"/>
+<polygon fill="black" stroke="black" points="121.15,-6.61 124.27,-2.33 119.16,-3.74 121.15,-6.61"/>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+<ellipse fill="black" stroke="black" cx="126.04" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n8 -->
+<g id="edge7" class="edge">
+<title>n3&#45;&gt;n8</title>
+<path fill="none" stroke="black" d="M88.37,-27.8C92.48,-27.8 109.28,-27.8 118.65,-27.8"/>
+<polygon fill="black" stroke="black" points="118.7,-29.55 123.7,-27.8 118.7,-26.05 118.7,-29.55"/>
+</g>
+<!-- n4&#45;&gt;n1 -->
+<g id="edge4" class="edge">
+<title>n4&#45;&gt;n1</title>
+<path fill="none" stroke="black" d="M123.88,-1.91C113.57,-2.88 37.28,-10.06 14.59,-12.2"/>
+<polygon fill="black" stroke="black" points="14.36,-10.47 9.55,-12.68 14.69,-13.95 14.36,-10.47"/>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="black" stroke="black" cx="46.84" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n5&#45;&gt;n6 -->
+<g id="edge5" class="edge">
+<title>n5&#45;&gt;n6</title>
+<path fill="none" stroke="black" d="M9.17,-49.8C13.28,-49.8 30.08,-49.8 39.45,-49.8"/>
+<polygon fill="black" stroke="black" points="39.5,-51.55 44.5,-49.8 39.5,-48.05 39.5,-51.55"/>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-71.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n7&#45;&gt;n7 -->
+<g id="edge6" class="edge">
+<title>n7&#45;&gt;n7</title>
+<path fill="none" stroke="black" d="M5.57,-73.11C-2.23,-80 -1.67,-91.6 7.24,-91.6 14.61,-91.6 16.26,-83.64 12.18,-77"/>
+<polygon fill="black" stroke="black" points="13.47,-75.8 8.91,-73.11 10.79,-78.06 13.47,-75.8"/>
+</g>
+</g>
+</svg>
+<pre><code class="language-julia">A ∨ B |&gt; to_graphviz</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="136pt" height="100pt"
+ viewBox="0.00 0.00 135.84 99.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 95.6)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-95.6 131.84,-95.6 131.84,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="7.24" cy="-12.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="46.84" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n1&#45;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&#45;&gt;n2</title>
+<path fill="none" stroke="cornflowerblue" d="M9.17,-13.17C13.32,-14.83 30.4,-21.64 39.72,-25.36"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="39.21,-27.04 44.5,-27.27 40.5,-23.79 39.21,-27.04"/>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="86.44" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2&#45;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&#45;&gt;n3</title>
+<path fill="none" stroke="cornflowerblue" d="M48.77,-27.8C52.88,-27.8 69.68,-27.8 79.05,-27.8"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="79.1,-29.55 84.1,-27.8 79.1,-26.05 79.1,-29.55"/>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="126.04" cy="-1.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n4 -->
+<g id="edge3" class="edge">
+<title>n3&#45;&gt;n4</title>
+<path fill="none" stroke="cornflowerblue" d="M88.37,-27.16C92.71,-24.15 111.19,-11.38 120.14,-5.19"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="121.15,-6.61 124.27,-2.33 119.16,-3.74 121.15,-6.61"/>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="126.04" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n8 -->
+<g id="edge7" class="edge">
+<title>n3&#45;&gt;n8</title>
+<path fill="none" stroke="cornflowerblue" d="M88.37,-27.8C92.48,-27.8 109.28,-27.8 118.65,-27.8"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="118.7,-29.55 123.7,-27.8 118.7,-26.05 118.7,-29.55"/>
+</g>
+<!-- n4&#45;&gt;n1 -->
+<g id="edge4" class="edge">
+<title>n4&#45;&gt;n1</title>
+<path fill="none" stroke="cornflowerblue" d="M123.88,-1.91C113.57,-2.88 37.28,-10.06 14.59,-12.2"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="14.36,-10.47 9.55,-12.68 14.69,-13.95 14.36,-10.47"/>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="black" stroke="black" cx="46.84" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n5&#45;&gt;n6 -->
+<g id="edge5" class="edge">
+<title>n5&#45;&gt;n6</title>
+<path fill="none" stroke="black" d="M9.17,-49.8C13.28,-49.8 30.08,-49.8 39.45,-49.8"/>
+<polygon fill="black" stroke="black" points="39.5,-51.55 44.5,-49.8 39.5,-48.05 39.5,-51.55"/>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="7.24" cy="-71.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n7&#45;&gt;n7 -->
+<g id="edge6" class="edge">
+<title>n7&#45;&gt;n7</title>
+<path fill="none" stroke="cornflowerblue" d="M5.57,-73.11C-2.23,-80 -1.67,-91.6 7.24,-91.6 14.61,-91.6 16.26,-83.64 12.18,-77"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="13.47,-75.8 8.91,-73.11 10.79,-78.06 13.47,-75.8"/>
+</g>
+</g>
+</svg>
+<h2 id="Implication-and-negation"><a class="docs-heading-anchor" href="#Implication-and-negation">Implication and negation</a><a id="Implication-and-negation-1"></a><a class="docs-heading-anchor-permalink" href="#Implication-and-negation" title="Permalink"></a></h2><p>The other operations, beginning with implication (<span>$\Rightarrow$</span>) and negation (<span>$\neg$</span>) are more interesting because they do not have pointwise formulas.</p><p><em>Implication</em> is defined as the right adjoint to the meet:</p><p class="math-container">\[C \wedge A \leq B \qquad\text{iff}\qquad C \leq A \Rightarrow B.\]</p><pre><code class="language-julia">(A ⟹ B) |&gt; to_graphviz</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="136pt" height="100pt"
+ viewBox="0.00 0.00 135.84 99.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 95.6)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-95.6 131.84,-95.6 131.84,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-12.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="46.84" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n1&#45;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&#45;&gt;n2</title>
+<path fill="none" stroke="black" d="M9.17,-13.17C13.32,-14.83 30.4,-21.64 39.72,-25.36"/>
+<polygon fill="black" stroke="black" points="39.21,-27.04 44.5,-27.27 40.5,-23.79 39.21,-27.04"/>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="86.44" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2&#45;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&#45;&gt;n3</title>
+<path fill="none" stroke="cornflowerblue" d="M48.77,-27.8C52.88,-27.8 69.68,-27.8 79.05,-27.8"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="79.1,-29.55 84.1,-27.8 79.1,-26.05 79.1,-29.55"/>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="126.04" cy="-1.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n4 -->
+<g id="edge3" class="edge">
+<title>n3&#45;&gt;n4</title>
+<path fill="none" stroke="cornflowerblue" d="M88.37,-27.16C92.71,-24.15 111.19,-11.38 120.14,-5.19"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="121.15,-6.61 124.27,-2.33 119.16,-3.74 121.15,-6.61"/>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="126.04" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n8 -->
+<g id="edge7" class="edge">
+<title>n3&#45;&gt;n8</title>
+<path fill="none" stroke="cornflowerblue" d="M88.37,-27.8C92.48,-27.8 109.28,-27.8 118.65,-27.8"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="118.7,-29.55 123.7,-27.8 118.7,-26.05 118.7,-29.55"/>
+</g>
+<!-- n4&#45;&gt;n1 -->
+<g id="edge4" class="edge">
+<title>n4&#45;&gt;n1</title>
+<path fill="none" stroke="black" d="M123.88,-1.91C113.57,-2.88 37.28,-10.06 14.59,-12.2"/>
+<polygon fill="black" stroke="black" points="14.36,-10.47 9.55,-12.68 14.69,-13.95 14.36,-10.47"/>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="7.24" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="46.84" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n5&#45;&gt;n6 -->
+<g id="edge5" class="edge">
+<title>n5&#45;&gt;n6</title>
+<path fill="none" stroke="cornflowerblue" d="M9.17,-49.8C13.28,-49.8 30.08,-49.8 39.45,-49.8"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="39.5,-51.55 44.5,-49.8 39.5,-48.05 39.5,-51.55"/>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="7.24" cy="-71.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n7&#45;&gt;n7 -->
+<g id="edge6" class="edge">
+<title>n7&#45;&gt;n7</title>
+<path fill="none" stroke="cornflowerblue" d="M5.57,-73.11C-2.23,-80 -1.67,-91.6 7.24,-91.6 14.61,-91.6 16.26,-83.64 12.18,-77"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="13.47,-75.8 8.91,-73.11 10.79,-78.06 13.47,-75.8"/>
+</g>
+</g>
+</svg>
+<p><em>Negation</em> is defined by setting <span>$B = \bot$</span> in the above formula:</p><p class="math-container">\[C \wedge A = \bot \qquad\text{iff}\qquad C \leq \neg A.\]</p><pre><code class="language-julia">¬A |&gt; to_graphviz</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="136pt" height="100pt"
+ viewBox="0.00 0.00 135.84 99.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 95.6)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-95.6 131.84,-95.6 131.84,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-12.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="black" stroke="black" cx="46.84" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n1&#45;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&#45;&gt;n2</title>
+<path fill="none" stroke="black" d="M9.17,-13.17C13.32,-14.83 30.4,-21.64 39.72,-25.36"/>
+<polygon fill="black" stroke="black" points="39.21,-27.04 44.5,-27.27 40.5,-23.79 39.21,-27.04"/>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="black" stroke="black" cx="86.44" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2&#45;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&#45;&gt;n3</title>
+<path fill="none" stroke="black" d="M48.77,-27.8C52.88,-27.8 69.68,-27.8 79.05,-27.8"/>
+<polygon fill="black" stroke="black" points="79.1,-29.55 84.1,-27.8 79.1,-26.05 79.1,-29.55"/>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="black" stroke="black" cx="126.04" cy="-1.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n4 -->
+<g id="edge3" class="edge">
+<title>n3&#45;&gt;n4</title>
+<path fill="none" stroke="black" d="M88.37,-27.16C92.71,-24.15 111.19,-11.38 120.14,-5.19"/>
+<polygon fill="black" stroke="black" points="121.15,-6.61 124.27,-2.33 119.16,-3.74 121.15,-6.61"/>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="126.04" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n8 -->
+<g id="edge7" class="edge">
+<title>n3&#45;&gt;n8</title>
+<path fill="none" stroke="black" d="M88.37,-27.8C92.48,-27.8 109.28,-27.8 118.65,-27.8"/>
+<polygon fill="black" stroke="black" points="118.7,-29.55 123.7,-27.8 118.7,-26.05 118.7,-29.55"/>
+</g>
+<!-- n4&#45;&gt;n1 -->
+<g id="edge4" class="edge">
+<title>n4&#45;&gt;n1</title>
+<path fill="none" stroke="black" d="M123.88,-1.91C113.57,-2.88 37.28,-10.06 14.59,-12.2"/>
+<polygon fill="black" stroke="black" points="14.36,-10.47 9.55,-12.68 14.69,-13.95 14.36,-10.47"/>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="7.24" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="46.84" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n5&#45;&gt;n6 -->
+<g id="edge5" class="edge">
+<title>n5&#45;&gt;n6</title>
+<path fill="none" stroke="cornflowerblue" d="M9.17,-49.8C13.28,-49.8 30.08,-49.8 39.45,-49.8"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="39.5,-51.55 44.5,-49.8 39.5,-48.05 39.5,-51.55"/>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="7.24" cy="-71.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n7&#45;&gt;n7 -->
+<g id="edge6" class="edge">
+<title>n7&#45;&gt;n7</title>
+<path fill="none" stroke="cornflowerblue" d="M5.57,-73.11C-2.23,-80 -1.67,-91.6 7.24,-91.6 14.61,-91.6 16.26,-83.64 12.18,-77"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="13.47,-75.8 8.91,-73.11 10.79,-78.06 13.47,-75.8"/>
+</g>
+</g>
+</svg>
+<h3 id="Induced-subgraph-as-a-double-negation"><a class="docs-heading-anchor" href="#Induced-subgraph-as-a-double-negation">Induced subgraph as a double negation</a><a id="Induced-subgraph-as-a-double-negation-1"></a><a class="docs-heading-anchor-permalink" href="#Induced-subgraph-as-a-double-negation" title="Permalink"></a></h3><p>The logic of subgraphs, and of subobjects in presheaf toposes generally, is not classical. Subobjects form a <a href="https://ncatlab.org/nlab/show/Heyting+algebra">Heyting algebra</a> but not a <a href="https://ncatlab.org/nlab/show/Boolean+algebra">Boolean algebra</a>. This means that the law of excluded middle does not hold: in general, <span>$\neg \neg A \neq A$</span>.</p><p>In fact, applying the double negation to a discrete subgraph gives the subgraph induced by those vertices.</p><pre><code class="language-julia">(C = Subobject(G, V=1:4)) |&gt; to_graphviz</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="136pt" height="100pt"
+ viewBox="0.00 0.00 135.84 99.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 95.6)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-95.6 131.84,-95.6 131.84,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="7.24" cy="-12.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="46.84" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n1&#45;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&#45;&gt;n2</title>
+<path fill="none" stroke="black" d="M9.17,-13.17C13.32,-14.83 30.4,-21.64 39.72,-25.36"/>
+<polygon fill="black" stroke="black" points="39.21,-27.04 44.5,-27.27 40.5,-23.79 39.21,-27.04"/>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="86.44" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2&#45;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&#45;&gt;n3</title>
+<path fill="none" stroke="black" d="M48.77,-27.8C52.88,-27.8 69.68,-27.8 79.05,-27.8"/>
+<polygon fill="black" stroke="black" points="79.1,-29.55 84.1,-27.8 79.1,-26.05 79.1,-29.55"/>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="126.04" cy="-1.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n4 -->
+<g id="edge3" class="edge">
+<title>n3&#45;&gt;n4</title>
+<path fill="none" stroke="black" d="M88.37,-27.16C92.71,-24.15 111.19,-11.38 120.14,-5.19"/>
+<polygon fill="black" stroke="black" points="121.15,-6.61 124.27,-2.33 119.16,-3.74 121.15,-6.61"/>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+<ellipse fill="black" stroke="black" cx="126.04" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n8 -->
+<g id="edge7" class="edge">
+<title>n3&#45;&gt;n8</title>
+<path fill="none" stroke="black" d="M88.37,-27.8C92.48,-27.8 109.28,-27.8 118.65,-27.8"/>
+<polygon fill="black" stroke="black" points="118.7,-29.55 123.7,-27.8 118.7,-26.05 118.7,-29.55"/>
+</g>
+<!-- n4&#45;&gt;n1 -->
+<g id="edge4" class="edge">
+<title>n4&#45;&gt;n1</title>
+<path fill="none" stroke="black" d="M123.88,-1.91C113.57,-2.88 37.28,-10.06 14.59,-12.2"/>
+<polygon fill="black" stroke="black" points="14.36,-10.47 9.55,-12.68 14.69,-13.95 14.36,-10.47"/>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="black" stroke="black" cx="46.84" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n5&#45;&gt;n6 -->
+<g id="edge5" class="edge">
+<title>n5&#45;&gt;n6</title>
+<path fill="none" stroke="black" d="M9.17,-49.8C13.28,-49.8 30.08,-49.8 39.45,-49.8"/>
+<polygon fill="black" stroke="black" points="39.5,-51.55 44.5,-49.8 39.5,-48.05 39.5,-51.55"/>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-71.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n7&#45;&gt;n7 -->
+<g id="edge6" class="edge">
+<title>n7&#45;&gt;n7</title>
+<path fill="none" stroke="black" d="M5.57,-73.11C-2.23,-80 -1.67,-91.6 7.24,-91.6 14.61,-91.6 16.26,-83.64 12.18,-77"/>
+<polygon fill="black" stroke="black" points="13.47,-75.8 8.91,-73.11 10.79,-78.06 13.47,-75.8"/>
+</g>
+</g>
+</svg>
+<pre><code class="language-julia">¬(¬C) |&gt; to_graphviz</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="136pt" height="100pt"
+ viewBox="0.00 0.00 135.84 99.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 95.6)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-95.6 131.84,-95.6 131.84,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="7.24" cy="-12.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="46.84" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n1&#45;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&#45;&gt;n2</title>
+<path fill="none" stroke="cornflowerblue" d="M9.17,-13.17C13.32,-14.83 30.4,-21.64 39.72,-25.36"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="39.21,-27.04 44.5,-27.27 40.5,-23.79 39.21,-27.04"/>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="86.44" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2&#45;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&#45;&gt;n3</title>
+<path fill="none" stroke="cornflowerblue" d="M48.77,-27.8C52.88,-27.8 69.68,-27.8 79.05,-27.8"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="79.1,-29.55 84.1,-27.8 79.1,-26.05 79.1,-29.55"/>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="126.04" cy="-1.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n4 -->
+<g id="edge3" class="edge">
+<title>n3&#45;&gt;n4</title>
+<path fill="none" stroke="cornflowerblue" d="M88.37,-27.16C92.71,-24.15 111.19,-11.38 120.14,-5.19"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="121.15,-6.61 124.27,-2.33 119.16,-3.74 121.15,-6.61"/>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+<ellipse fill="black" stroke="black" cx="126.04" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n8 -->
+<g id="edge7" class="edge">
+<title>n3&#45;&gt;n8</title>
+<path fill="none" stroke="black" d="M88.37,-27.8C92.48,-27.8 109.28,-27.8 118.65,-27.8"/>
+<polygon fill="black" stroke="black" points="118.7,-29.55 123.7,-27.8 118.7,-26.05 118.7,-29.55"/>
+</g>
+<!-- n4&#45;&gt;n1 -->
+<g id="edge4" class="edge">
+<title>n4&#45;&gt;n1</title>
+<path fill="none" stroke="cornflowerblue" d="M123.88,-1.91C113.57,-2.88 37.28,-10.06 14.59,-12.2"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="14.36,-10.47 9.55,-12.68 14.69,-13.95 14.36,-10.47"/>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="black" stroke="black" cx="46.84" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n5&#45;&gt;n6 -->
+<g id="edge5" class="edge">
+<title>n5&#45;&gt;n6</title>
+<path fill="none" stroke="black" d="M9.17,-49.8C13.28,-49.8 30.08,-49.8 39.45,-49.8"/>
+<polygon fill="black" stroke="black" points="39.5,-51.55 44.5,-49.8 39.5,-48.05 39.5,-51.55"/>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-71.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n7&#45;&gt;n7 -->
+<g id="edge6" class="edge">
+<title>n7&#45;&gt;n7</title>
+<path fill="none" stroke="black" d="M5.57,-73.11C-2.23,-80 -1.67,-91.6 7.24,-91.6 14.61,-91.6 16.26,-83.64 12.18,-77"/>
+<polygon fill="black" stroke="black" points="13.47,-75.8 8.91,-73.11 10.79,-78.06 13.47,-75.8"/>
+</g>
+</g>
+</svg>
+<h2 id="Subtraction-and-non"><a class="docs-heading-anchor" href="#Subtraction-and-non">Subtraction and non</a><a id="Subtraction-and-non-1"></a><a class="docs-heading-anchor-permalink" href="#Subtraction-and-non" title="Permalink"></a></h2><p>The subojects also form <a href="https://ncatlab.org/nlab/show/co-Heyting+algebra">co-Heyting algebra</a> and hence a bi-Heyting algebra.</p><p><em>Subtraction</em> is defined dually to implication as the left adjoint to the *join:</p><p class="math-container">\[A \leq B \vee C \qquad\text{iff}\qquad A \setminus B \leq C.\]</p><pre><code class="language-julia">(A \ B) |&gt; to_graphviz</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="136pt" height="100pt"
+ viewBox="0.00 0.00 135.84 99.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 95.6)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-95.6 131.84,-95.6 131.84,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="7.24" cy="-12.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="46.84" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n1&#45;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&#45;&gt;n2</title>
+<path fill="none" stroke="cornflowerblue" d="M9.17,-13.17C13.32,-14.83 30.4,-21.64 39.72,-25.36"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="39.21,-27.04 44.5,-27.27 40.5,-23.79 39.21,-27.04"/>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="black" stroke="black" cx="86.44" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2&#45;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&#45;&gt;n3</title>
+<path fill="none" stroke="black" d="M48.77,-27.8C52.88,-27.8 69.68,-27.8 79.05,-27.8"/>
+<polygon fill="black" stroke="black" points="79.1,-29.55 84.1,-27.8 79.1,-26.05 79.1,-29.55"/>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="126.04" cy="-1.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n4 -->
+<g id="edge3" class="edge">
+<title>n3&#45;&gt;n4</title>
+<path fill="none" stroke="black" d="M88.37,-27.16C92.71,-24.15 111.19,-11.38 120.14,-5.19"/>
+<polygon fill="black" stroke="black" points="121.15,-6.61 124.27,-2.33 119.16,-3.74 121.15,-6.61"/>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+<ellipse fill="black" stroke="black" cx="126.04" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n8 -->
+<g id="edge7" class="edge">
+<title>n3&#45;&gt;n8</title>
+<path fill="none" stroke="black" d="M88.37,-27.8C92.48,-27.8 109.28,-27.8 118.65,-27.8"/>
+<polygon fill="black" stroke="black" points="118.7,-29.55 123.7,-27.8 118.7,-26.05 118.7,-29.55"/>
+</g>
+<!-- n4&#45;&gt;n1 -->
+<g id="edge4" class="edge">
+<title>n4&#45;&gt;n1</title>
+<path fill="none" stroke="cornflowerblue" d="M123.88,-1.91C113.57,-2.88 37.28,-10.06 14.59,-12.2"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="14.36,-10.47 9.55,-12.68 14.69,-13.95 14.36,-10.47"/>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="black" stroke="black" cx="46.84" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n5&#45;&gt;n6 -->
+<g id="edge5" class="edge">
+<title>n5&#45;&gt;n6</title>
+<path fill="none" stroke="black" d="M9.17,-49.8C13.28,-49.8 30.08,-49.8 39.45,-49.8"/>
+<polygon fill="black" stroke="black" points="39.5,-51.55 44.5,-49.8 39.5,-48.05 39.5,-51.55"/>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-71.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n7&#45;&gt;n7 -->
+<g id="edge6" class="edge">
+<title>n7&#45;&gt;n7</title>
+<path fill="none" stroke="black" d="M5.57,-73.11C-2.23,-80 -1.67,-91.6 7.24,-91.6 14.61,-91.6 16.26,-83.64 12.18,-77"/>
+<polygon fill="black" stroke="black" points="13.47,-75.8 8.91,-73.11 10.79,-78.06 13.47,-75.8"/>
+</g>
+</g>
+</svg>
+<p><em>Non</em> is defined by setting <span>$A = \top$</span> in the above formula:</p><p class="math-container">\[\top = B \vee C \qquad\text{iff}\qquad {\sim} B \leq C.\]</p><pre><code class="language-julia">~A |&gt; to_graphviz</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="136pt" height="100pt"
+ viewBox="0.00 0.00 135.84 99.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 95.6)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-95.6 131.84,-95.6 131.84,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-12.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="black" stroke="black" cx="46.84" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n1&#45;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&#45;&gt;n2</title>
+<path fill="none" stroke="black" d="M9.17,-13.17C13.32,-14.83 30.4,-21.64 39.72,-25.36"/>
+<polygon fill="black" stroke="black" points="39.21,-27.04 44.5,-27.27 40.5,-23.79 39.21,-27.04"/>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="86.44" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2&#45;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&#45;&gt;n3</title>
+<path fill="none" stroke="black" d="M48.77,-27.8C52.88,-27.8 69.68,-27.8 79.05,-27.8"/>
+<polygon fill="black" stroke="black" points="79.1,-29.55 84.1,-27.8 79.1,-26.05 79.1,-29.55"/>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="126.04" cy="-1.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n4 -->
+<g id="edge3" class="edge">
+<title>n3&#45;&gt;n4</title>
+<path fill="none" stroke="cornflowerblue" d="M88.37,-27.16C92.71,-24.15 111.19,-11.38 120.14,-5.19"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="121.15,-6.61 124.27,-2.33 119.16,-3.74 121.15,-6.61"/>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="126.04" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n8 -->
+<g id="edge7" class="edge">
+<title>n3&#45;&gt;n8</title>
+<path fill="none" stroke="cornflowerblue" d="M88.37,-27.8C92.48,-27.8 109.28,-27.8 118.65,-27.8"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="118.7,-29.55 123.7,-27.8 118.7,-26.05 118.7,-29.55"/>
+</g>
+<!-- n4&#45;&gt;n1 -->
+<g id="edge4" class="edge">
+<title>n4&#45;&gt;n1</title>
+<path fill="none" stroke="black" d="M123.88,-1.91C113.57,-2.88 37.28,-10.06 14.59,-12.2"/>
+<polygon fill="black" stroke="black" points="14.36,-10.47 9.55,-12.68 14.69,-13.95 14.36,-10.47"/>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="7.24" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="46.84" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n5&#45;&gt;n6 -->
+<g id="edge5" class="edge">
+<title>n5&#45;&gt;n6</title>
+<path fill="none" stroke="cornflowerblue" d="M9.17,-49.8C13.28,-49.8 30.08,-49.8 39.45,-49.8"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="39.5,-51.55 44.5,-49.8 39.5,-48.05 39.5,-51.55"/>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="7.24" cy="-71.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n7&#45;&gt;n7 -->
+<g id="edge6" class="edge">
+<title>n7&#45;&gt;n7</title>
+<path fill="none" stroke="cornflowerblue" d="M5.57,-73.11C-2.23,-80 -1.67,-91.6 7.24,-91.6 14.61,-91.6 16.26,-83.64 12.18,-77"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="13.47,-75.8 8.91,-73.11 10.79,-78.06 13.47,-75.8"/>
+</g>
+</g>
+</svg>
+<h3 id="Boundary-via-non"><a class="docs-heading-anchor" href="#Boundary-via-non">Boundary via non</a><a id="Boundary-via-non-1"></a><a class="docs-heading-anchor-permalink" href="#Boundary-via-non" title="Permalink"></a></h3><p>A <a href="https://ncatlab.org/nlab/show/co-Heyting+boundary"><em>boundary</em></a> operator can be defined using the non operator:</p><p class="math-container">\[\partial A := A \wedge {\sim} A.\]</p><pre><code class="language-julia">(A ∧ ~A) |&gt; to_graphviz</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="136pt" height="100pt"
+ viewBox="0.00 0.00 135.84 99.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 95.6)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-95.6 131.84,-95.6 131.84,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-12.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="black" stroke="black" cx="46.84" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n1&#45;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&#45;&gt;n2</title>
+<path fill="none" stroke="black" d="M9.17,-13.17C13.32,-14.83 30.4,-21.64 39.72,-25.36"/>
+<polygon fill="black" stroke="black" points="39.21,-27.04 44.5,-27.27 40.5,-23.79 39.21,-27.04"/>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="86.44" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2&#45;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&#45;&gt;n3</title>
+<path fill="none" stroke="black" d="M48.77,-27.8C52.88,-27.8 69.68,-27.8 79.05,-27.8"/>
+<polygon fill="black" stroke="black" points="79.1,-29.55 84.1,-27.8 79.1,-26.05 79.1,-29.55"/>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="126.04" cy="-1.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n4 -->
+<g id="edge3" class="edge">
+<title>n3&#45;&gt;n4</title>
+<path fill="none" stroke="black" d="M88.37,-27.16C92.71,-24.15 111.19,-11.38 120.14,-5.19"/>
+<polygon fill="black" stroke="black" points="121.15,-6.61 124.27,-2.33 119.16,-3.74 121.15,-6.61"/>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+<ellipse fill="black" stroke="black" cx="126.04" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n8 -->
+<g id="edge7" class="edge">
+<title>n3&#45;&gt;n8</title>
+<path fill="none" stroke="black" d="M88.37,-27.8C92.48,-27.8 109.28,-27.8 118.65,-27.8"/>
+<polygon fill="black" stroke="black" points="118.7,-29.55 123.7,-27.8 118.7,-26.05 118.7,-29.55"/>
+</g>
+<!-- n4&#45;&gt;n1 -->
+<g id="edge4" class="edge">
+<title>n4&#45;&gt;n1</title>
+<path fill="none" stroke="black" d="M123.88,-1.91C113.57,-2.88 37.28,-10.06 14.59,-12.2"/>
+<polygon fill="black" stroke="black" points="14.36,-10.47 9.55,-12.68 14.69,-13.95 14.36,-10.47"/>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="black" stroke="black" cx="46.84" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n5&#45;&gt;n6 -->
+<g id="edge5" class="edge">
+<title>n5&#45;&gt;n6</title>
+<path fill="none" stroke="black" d="M9.17,-49.8C13.28,-49.8 30.08,-49.8 39.45,-49.8"/>
+<polygon fill="black" stroke="black" points="39.5,-51.55 44.5,-49.8 39.5,-48.05 39.5,-51.55"/>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-71.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n7&#45;&gt;n7 -->
+<g id="edge6" class="edge">
+<title>n7&#45;&gt;n7</title>
+<path fill="none" stroke="black" d="M5.57,-73.11C-2.23,-80 -1.67,-91.6 7.24,-91.6 14.61,-91.6 16.26,-83.64 12.18,-77"/>
+<polygon fill="black" stroke="black" points="13.47,-75.8 8.91,-73.11 10.79,-78.06 13.47,-75.8"/>
+</g>
+</g>
+</svg>
+</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../../">« Catlab.jl</a><a class="docs-footer-nextpage" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Thursday 22 July 2021 18:46">Thursday 22 July 2021</span>. Using Julia version 1.6.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

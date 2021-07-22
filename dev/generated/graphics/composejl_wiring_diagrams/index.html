@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Drawing wiring diagrams in Compose.jl · Catlab.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit">Catlab.jl</span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox"/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Wiring diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox" checked/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li class="is-active"><a class="tocitem" href>Drawing wiring diagrams in Compose.jl</a><ul class="internal"><li><a class="tocitem" href="#Examples"><span>Examples</span></a></li><li><a class="tocitem" href="#Custom-styles"><span>Custom styles</span></a></li><li><a class="tocitem" href="#Output-formats"><span>Output formats</span></a></li></ul></li><li><a class="tocitem" href="../graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li><li><a class="tocitem" href="../graphviz_schema_visualization/">Visualizing Acset Schemas with Graphviz</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/core/">Theories, instances, and expressions</a></li><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Graphics</a></li><li class="is-active"><a href>Drawing wiring diagrams in Compose.jl</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Drawing wiring diagrams in Compose.jl</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/master/docs/literate/graphics/composejl_wiring_diagrams.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Drawing-wiring-diagrams-in-Compose.jl"><a class="docs-heading-anchor" href="#Drawing-wiring-diagrams-in-Compose.jl">Drawing wiring diagrams in Compose.jl</a><a id="Drawing-wiring-diagrams-in-Compose.jl-1"></a><a class="docs-heading-anchor-permalink" href="#Drawing-wiring-diagrams-in-Compose.jl" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/AlgebraicJulia/Catlab.jl/blob/gh-pages/dev/generated/graphics/composejl_wiring_diagrams.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><p>Catlab can draw wiring diagrams using the Julia package <a href="https://github.com/GiovineItalia/Compose.jl">Compose.jl</a>.</p><p>For best results, it is recommended to load the packages <a href="https://github.com/JuliaOpt/Convex.jl">Convex.j</a> and <a href="https://github.com/JuliaOpt/SCS.jl">SCS.jl</a>. When available they are used to optimize the layout of the outer ports.</p><pre><code class="language-julia">using Catlab.WiringDiagrams, Catlab.Graphics
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Drawing wiring diagrams in Compose.jl · Catlab.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit">Catlab.jl</span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox"/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Wiring diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox" checked/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li class="is-active"><a class="tocitem" href>Drawing wiring diagrams in Compose.jl</a><ul class="internal"><li><a class="tocitem" href="#Examples"><span>Examples</span></a></li><li><a class="tocitem" href="#Custom-styles"><span>Custom styles</span></a></li><li><a class="tocitem" href="#Output-formats"><span>Output formats</span></a></li></ul></li><li><a class="tocitem" href="../graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li><li><a class="tocitem" href="../graphviz_schema_visualization/">Visualizing Acset Schemas with Graphviz</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/core/">Theories, instances, and expressions</a></li><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Graphics</a></li><li class="is-active"><a href>Drawing wiring diagrams in Compose.jl</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Drawing wiring diagrams in Compose.jl</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/master/docs/literate/graphics/composejl_wiring_diagrams.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Drawing-wiring-diagrams-in-Compose.jl"><a class="docs-heading-anchor" href="#Drawing-wiring-diagrams-in-Compose.jl">Drawing wiring diagrams in Compose.jl</a><a id="Drawing-wiring-diagrams-in-Compose.jl-1"></a><a class="docs-heading-anchor-permalink" href="#Drawing-wiring-diagrams-in-Compose.jl" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/AlgebraicJulia/Catlab.jl/blob/gh-pages/dev/generated/graphics/composejl_wiring_diagrams.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><p>Catlab can draw wiring diagrams using the Julia package <a href="https://github.com/GiovineItalia/Compose.jl">Compose.jl</a>.</p><p>For best results, it is recommended to load the packages <a href="https://github.com/JuliaOpt/Convex.jl">Convex.j</a> and <a href="https://github.com/JuliaOpt/SCS.jl">SCS.jl</a>. When available they are used to optimize the layout of the outer ports.</p><pre><code class="language-julia">using Catlab.WiringDiagrams, Catlab.Graphics
 
 import Convex, SCS</code></pre><h2 id="Examples"><a class="docs-heading-anchor" href="#Examples">Examples</a><a id="Examples-1"></a><a class="docs-heading-anchor-permalink" href="#Examples" title="Permalink"></a></h2><h3 id="Symmetric-monoidal-category"><a class="docs-heading-anchor" href="#Symmetric-monoidal-category">Symmetric monoidal category</a><a id="Symmetric-monoidal-category-1"></a><a class="docs-heading-anchor-permalink" href="#Symmetric-monoidal-category" title="Permalink"></a></h3><pre><code class="language-julia">using Catlab.Theories
 
@@ -14,24 +14,24 @@ f, g = Hom(:f, A, B), Hom(:g, B, A);</code></pre><p>To start, here are a few ver
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-f8d99d77">
+     id="img-41c2b2b3">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-f8d99d77-1">
+<g stroke="#000000" id="img-41c2b2b3-1">
   <g transform="translate(20,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-f8d99d77-2">
+<g stroke="#000000" id="img-41c2b2b3-2">
   <g transform="translate(4,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-f8d99d77-3">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-f8d99d77-4">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-41c2b2b3-3">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-41c2b2b3-4">
     <g transform="translate(15,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -76,7 +76,7 @@ f, g = Hom(:f, A, B), Hom(:g, B, A);</code></pre><p>To start, here are a few ver
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-f8d99d77-5">
+<g fill="#000000" id="img-41c2b2b3-5">
   <g transform="translate(12,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
@@ -240,29 +240,29 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-fcf18413">
+     id="img-9cafa619">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-fcf18413-1">
+<g stroke="#000000" id="img-9cafa619-1">
   <g transform="translate(36,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-fcf18413-2">
+<g stroke="#000000" id="img-9cafa619-2">
   <g transform="translate(20,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-fcf18413-3">
+<g stroke="#000000" id="img-9cafa619-3">
   <g transform="translate(4,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-fcf18413-4">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-fcf18413-5">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-9cafa619-4">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-9cafa619-5">
     <g transform="translate(31,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -307,15 +307,15 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-fcf18413-6">
+<g fill="#000000" id="img-9cafa619-6">
   <g transform="translate(28,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">g</text>
     </g>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-fcf18413-7">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-fcf18413-8">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-9cafa619-7">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-9cafa619-8">
     <g transform="translate(15,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -360,7 +360,7 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-fcf18413-9">
+<g fill="#000000" id="img-9cafa619-9">
   <g transform="translate(12,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
@@ -524,34 +524,34 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-db34e776">
+     id="img-cdc30e26">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-db34e776-1">
+<g stroke="#000000" id="img-cdc30e26-1">
   <g transform="translate(20,20)">
     <path fill="none" d="M-4,-0 C0,-0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-db34e776-2">
+<g stroke="#000000" id="img-cdc30e26-2">
   <g transform="translate(20,8)">
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-db34e776-3">
+<g stroke="#000000" id="img-cdc30e26-3">
   <g transform="translate(4,20)">
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-db34e776-4">
+<g stroke="#000000" id="img-cdc30e26-4">
   <g transform="translate(4,8)">
     <path fill="none" d="M-4,-0 C0,-0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-db34e776-5">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-db34e776-6">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-cdc30e26-5">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-cdc30e26-6">
     <g transform="translate(15,23)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -596,15 +596,15 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-db34e776-7">
+<g fill="#000000" id="img-cdc30e26-7">
   <g transform="translate(12,20)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">g</text>
     </g>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-db34e776-8">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-db34e776-9">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-cdc30e26-8">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-cdc30e26-9">
     <g transform="translate(15,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -649,7 +649,7 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-db34e776-10">
+<g fill="#000000" id="img-cdc30e26-10">
   <g transform="translate(12,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
@@ -817,134 +817,134 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-cfc2ad71">
+     id="img-0cefcecc">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-cfc2ad71-1">
+<g stroke="#000000" id="img-0cefcecc-1">
   <g transform="translate(84,44)">
     <path fill="none" d="M-4,-0 C0,-0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-2">
+<g stroke="#000000" id="img-0cefcecc-2">
   <g transform="translate(84,32)">
     <path fill="none" d="M-4,-0 C0,-0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-3">
+<g stroke="#000000" id="img-0cefcecc-3">
   <g transform="translate(84,20)">
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-4">
+<g stroke="#000000" id="img-0cefcecc-4">
   <g transform="translate(84,8)">
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-5">
+<g stroke="#000000" id="img-0cefcecc-5">
   <g transform="translate(20,20)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-6">
+<g stroke="#000000" id="img-0cefcecc-6">
   <g transform="translate(20,32)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-7">
+<g stroke="#000000" id="img-0cefcecc-7">
   <g transform="translate(20,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-8">
+<g stroke="#000000" id="img-0cefcecc-8">
   <g transform="translate(20,44)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-9">
+<g stroke="#000000" id="img-0cefcecc-9">
   <g transform="translate(36,20)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-10">
+<g stroke="#000000" id="img-0cefcecc-10">
   <g transform="translate(36,32)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-11">
+<g stroke="#000000" id="img-0cefcecc-11">
   <g transform="translate(36,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-12">
+<g stroke="#000000" id="img-0cefcecc-12">
   <g transform="translate(36,44)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-13">
+<g stroke="#000000" id="img-0cefcecc-13">
   <g transform="translate(52,20)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-14">
+<g stroke="#000000" id="img-0cefcecc-14">
   <g transform="translate(52,32)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-15">
+<g stroke="#000000" id="img-0cefcecc-15">
   <g transform="translate(52,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-16">
+<g stroke="#000000" id="img-0cefcecc-16">
   <g transform="translate(52,44)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-17">
+<g stroke="#000000" id="img-0cefcecc-17">
   <g transform="translate(68,20)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-18">
+<g stroke="#000000" id="img-0cefcecc-18">
   <g transform="translate(68,32)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-19">
+<g stroke="#000000" id="img-0cefcecc-19">
   <g transform="translate(68,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-20">
+<g stroke="#000000" id="img-0cefcecc-20">
   <g transform="translate(68,44)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-21">
+<g stroke="#000000" id="img-0cefcecc-21">
   <g transform="translate(4,44)">
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-22">
+<g stroke="#000000" id="img-0cefcecc-22">
   <g transform="translate(4,32)">
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-23">
+<g stroke="#000000" id="img-0cefcecc-23">
   <g transform="translate(4,20)">
     <path fill="none" d="M-4,-0 C0,-0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cfc2ad71-24">
+<g stroke="#000000" id="img-0cefcecc-24">
   <g transform="translate(4,8)">
     <path fill="none" d="M-4,-0 C0,-0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-cfc2ad71-25">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-cfc2ad71-26">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-0cefcecc-25">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-0cefcecc-26">
     <g transform="translate(79,47)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -989,15 +989,15 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-cfc2ad71-27">
+<g fill="#000000" id="img-0cefcecc-27">
   <g transform="translate(76,44)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">g</text>
     </g>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-cfc2ad71-28">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-cfc2ad71-29">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-0cefcecc-28">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-0cefcecc-29">
     <g transform="translate(79,35)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -1042,15 +1042,15 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-cfc2ad71-30">
+<g fill="#000000" id="img-0cefcecc-30">
   <g transform="translate(76,32)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
     </g>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-cfc2ad71-31">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-cfc2ad71-32">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-0cefcecc-31">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-0cefcecc-32">
     <g transform="translate(79,23)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -1095,15 +1095,15 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-cfc2ad71-33">
+<g fill="#000000" id="img-0cefcecc-33">
   <g transform="translate(76,20)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">k</text>
     </g>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-cfc2ad71-34">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-cfc2ad71-35">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-0cefcecc-34">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-0cefcecc-35">
     <g transform="translate(79,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -1148,15 +1148,15 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-cfc2ad71-36">
+<g fill="#000000" id="img-0cefcecc-36">
   <g transform="translate(76,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">h</text>
     </g>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-cfc2ad71-37">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-cfc2ad71-38">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-0cefcecc-37">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-0cefcecc-38">
     <g transform="translate(63,47)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -1201,15 +1201,15 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path fill="none" d="M0,-9 L0,9 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-cfc2ad71-39">
+<g fill="#000000" id="img-0cefcecc-39">
   <g transform="translate(60,38)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">m</text>
     </g>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-cfc2ad71-40">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-cfc2ad71-41">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-0cefcecc-40">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-0cefcecc-41">
     <g transform="translate(63,23)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -1254,15 +1254,15 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path fill="none" d="M0,-9 L0,9 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-cfc2ad71-42">
+<g fill="#000000" id="img-0cefcecc-42">
   <g transform="translate(60,14)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">n</text>
     </g>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-cfc2ad71-43">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-cfc2ad71-44">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-0cefcecc-43">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-0cefcecc-44">
     <g transform="translate(47,47)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -1307,15 +1307,15 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path fill="none" d="M0,-21 L0,21 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-cfc2ad71-45">
+<g fill="#000000" id="img-0cefcecc-45">
   <g transform="translate(44,26)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">l</text>
     </g>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-cfc2ad71-46">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-cfc2ad71-47">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-0cefcecc-46">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-0cefcecc-47">
     <g transform="translate(31,47)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -1360,15 +1360,15 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path fill="none" d="M0,-9 L0,9 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-cfc2ad71-48">
+<g fill="#000000" id="img-0cefcecc-48">
   <g transform="translate(28,38)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">n</text>
     </g>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-cfc2ad71-49">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-cfc2ad71-50">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-0cefcecc-49">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-0cefcecc-50">
     <g transform="translate(31,23)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -1413,15 +1413,15 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path fill="none" d="M0,-9 L0,9 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-cfc2ad71-51">
+<g fill="#000000" id="img-0cefcecc-51">
   <g transform="translate(28,14)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">m</text>
     </g>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-cfc2ad71-52">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-cfc2ad71-53">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-0cefcecc-52">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-0cefcecc-53">
     <g transform="translate(15,47)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -1466,15 +1466,15 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-cfc2ad71-54">
+<g fill="#000000" id="img-0cefcecc-54">
   <g transform="translate(12,44)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">k</text>
     </g>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-cfc2ad71-55">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-cfc2ad71-56">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-0cefcecc-55">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-0cefcecc-56">
     <g transform="translate(15,35)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -1519,15 +1519,15 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-cfc2ad71-57">
+<g fill="#000000" id="img-0cefcecc-57">
   <g transform="translate(12,32)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">h</text>
     </g>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-cfc2ad71-58">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-cfc2ad71-59">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-0cefcecc-58">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-0cefcecc-59">
     <g transform="translate(15,23)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -1572,15 +1572,15 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-cfc2ad71-60">
+<g fill="#000000" id="img-0cefcecc-60">
   <g transform="translate(12,20)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">g</text>
     </g>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-cfc2ad71-61">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-cfc2ad71-62">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-0cefcecc-61">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-0cefcecc-62">
     <g transform="translate(15,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -1625,7 +1625,7 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-cfc2ad71-63">
+<g fill="#000000" id="img-0cefcecc-63">
   <g transform="translate(12,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
@@ -1789,13 +1789,13 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-5f4fd420">
+     id="img-1351069f">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-5f4fd420-1">
+<g stroke="#000000" id="img-1351069f-1">
   <g transform="translate(12,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
@@ -1960,13 +1960,13 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-a4cdab0d">
+     id="img-cd7c0393">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-a4cdab0d-1">
+<g stroke="#000000" id="img-cd7c0393-1">
   <g transform="translate(11.87,10.13)">
     <path fill="none" d="M-3.87,3.87 C-0.38,0.37 0.13,-2.12 4.13,-2.12" class="primitive"/>
   </g>
@@ -1974,7 +1974,7 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
     <path fill="none" d="M-4.13,2.12 C-0.13,2.12 0.38,-0.37 3.87,-3.87" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-a4cdab0d-2">
+<g stroke="#000000" id="img-cd7c0393-2">
   <g transform="translate(11.87,17.87)">
     <path fill="none" d="M-3.87,-3.87 C-0.38,-0.37 0.13,2.12 4.13,2.12" class="primitive"/>
   </g>
@@ -2139,13 +2139,13 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-ab1bd0d2">
+     id="img-a5f522ba">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-ab1bd0d2-1">
+<g stroke="#000000" id="img-a5f522ba-1">
   <g transform="translate(35.87,17.87)">
     <path fill="none" d="M-3.87,-3.87 C-0.38,-0.37 0.13,2.12 4.13,2.12" class="primitive"/>
   </g>
@@ -2153,7 +2153,7 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
     <path fill="none" d="M-4.12,-2.12 C-0.12,-2.12 0.38,0.38 3.88,3.88" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-ab1bd0d2-2">
+<g stroke="#000000" id="img-a5f522ba-2">
   <g transform="translate(35.87,10.13)">
     <path fill="none" d="M-3.87,3.87 C-0.38,0.37 0.13,-2.12 4.13,-2.12" class="primitive"/>
   </g>
@@ -2161,7 +2161,7 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
     <path fill="none" d="M-4.12,2.12 C-0.12,2.12 0.38,-0.38 3.88,-3.88" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-ab1bd0d2-3">
+<g stroke="#000000" id="img-a5f522ba-3">
   <g transform="translate(11.88,17.88)">
     <path fill="none" d="M-3.88,-3.88 C-0.38,-0.38 0.12,2.12 4.12,2.12" class="primitive"/>
   </g>
@@ -2169,7 +2169,7 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
     <path fill="none" d="M-4.13,-2.12 C-0.13,-2.12 0.38,0.37 3.87,3.87" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-ab1bd0d2-4">
+<g stroke="#000000" id="img-a5f522ba-4">
   <g transform="translate(11.88,10.12)">
     <path fill="none" d="M-3.88,3.88 C-0.38,0.38 0.12,-2.12 4.12,-2.12" class="primitive"/>
   </g>
@@ -2177,8 +2177,8 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
     <path fill="none" d="M-4.13,2.12 C-0.13,2.12 0.38,-0.37 3.87,-3.87" class="primitive"/>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-ab1bd0d2-5">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-ab1bd0d2-6">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-a5f522ba-5">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-a5f522ba-6">
     <g transform="translate(23,23)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -2223,15 +2223,15 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-ab1bd0d2-7">
+<g fill="#000000" id="img-a5f522ba-7">
   <g transform="translate(20,20)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
     </g>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-ab1bd0d2-8">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-ab1bd0d2-9">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-a5f522ba-8">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-a5f522ba-9">
     <g transform="translate(23,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -2276,7 +2276,7 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-ab1bd0d2-10">
+<g fill="#000000" id="img-a5f522ba-10">
   <g transform="translate(20,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">g</text>
@@ -2442,13 +2442,13 @@ to_composejl(σ)</code></pre><?xml version="1.0" encoding="UTF-8"?>
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-ed7d0120">
+     id="img-6b8c50a1">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-ed7d0120-1">
+<g stroke="#000000" id="img-6b8c50a1-1">
   <g transform="translate(28,32)">
     <path fill="none" d="M-4,-0 C0,-0 0,0 4,0" class="primitive"/>
   </g>
@@ -2462,7 +2462,7 @@ to_composejl(σ)</code></pre><?xml version="1.0" encoding="UTF-8"?>
     <path fill="none" d="M-4.12,-2.13 C-0.12,-2.13 0.37,0.38 3.88,3.88" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-ed7d0120-2">
+<g stroke="#000000" id="img-6b8c50a1-2">
   <g transform="translate(27.88,10.12)">
     <path fill="none" d="M-3.88,3.88 C-0.37,0.38 0.12,-2.13 4.12,-2.13" class="primitive"/>
   </g>
@@ -2476,7 +2476,7 @@ to_composejl(σ)</code></pre><?xml version="1.0" encoding="UTF-8"?>
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-ed7d0120-3">
+<g stroke="#000000" id="img-6b8c50a1-3">
   <g transform="translate(27.87,17.87)">
     <path fill="none" d="M-3.87,-3.87 C-0.38,-0.37 0.13,2.12 4.13,2.12" class="primitive"/>
   </g>
@@ -2647,23 +2647,23 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-2f255964">
+     id="img-62d40fdf">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-2f255964-1">
+<g stroke="#000000" id="img-62d40fdf-1">
   <g transform="translate(16,20)">
     <path fill="none" d="M-16,-12 C0,-12 0,12 16,12" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-2f255964-2">
+<g stroke="#000000" id="img-62d40fdf-2">
   <g transform="translate(16,20)">
     <path fill="none" d="M-16,12 C0,12 0,-12 16,-12" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-2f255964-3">
+<g stroke="#000000" id="img-62d40fdf-3">
   <g transform="translate(16,20)">
     <path fill="none" d="M-16,0 C0,0 0,0 16,0" class="primitive"/>
   </g>
@@ -2828,28 +2828,28 @@ to_composejl(mcopy(A))</code></pre><?xml version="1.0" encoding="UTF-8"?>
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-e620b0fd">
+     id="img-0c033eeb">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-e620b0fd-1">
+<g stroke="#000000" id="img-0c033eeb-1">
   <g transform="translate(13.98,17.86)">
     <path fill="none" d="M-4.11,-3.36 C0.13,-0.91 -0.04,2.14 4.02,2.14" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-e620b0fd-2">
+<g stroke="#000000" id="img-0c033eeb-2">
   <g transform="translate(13.98,10.14)">
     <path fill="none" d="M-4.11,3.36 C0.13,0.91 -0.04,-2.14 4.02,-2.14" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-e620b0fd-3">
+<g stroke="#000000" id="img-0c033eeb-3">
   <g transform="translate(4,14)">
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-e620b0fd-4">
+<g stroke="#000000" id="img-0c033eeb-4">
   <g transform="translate(9,14)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
@@ -3011,18 +3011,18 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-34f3aed1">
+     id="img-2fdefdc8">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-34f3aed1-1">
+<g stroke="#000000" id="img-2fdefdc8-1">
   <g transform="translate(4,8)">
     <path fill="none" d="M-4,-0 C0,-0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-34f3aed1-2">
+<g stroke="#000000" id="img-2fdefdc8-2">
   <g transform="translate(9,8)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
@@ -3184,49 +3184,49 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-d16a99a9">
+     id="img-960a27ce">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-d16a99a9-1">
+<g stroke="#000000" id="img-960a27ce-1">
   <g transform="translate(40,14)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-d16a99a9-2">
+<g stroke="#000000" id="img-960a27ce-2">
   <g transform="translate(13.98,10.14)">
     <path fill="none" d="M-4.11,3.36 C0.13,0.91 -0.04,-2.14 4.02,-2.14" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-d16a99a9-3">
+<g stroke="#000000" id="img-960a27ce-3">
   <g transform="translate(13.98,17.86)">
     <path fill="none" d="M-4.11,-3.36 C0.13,-0.91 -0.04,2.14 4.02,2.14" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-d16a99a9-4">
+<g stroke="#000000" id="img-960a27ce-4">
   <g transform="translate(30.02,10.14)">
     <path fill="none" d="M-4.02,-2.14 C0.04,-2.14 -0.13,0.91 4.11,3.36" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-d16a99a9-5">
+<g stroke="#000000" id="img-960a27ce-5">
   <g transform="translate(30.02,17.86)">
     <path fill="none" d="M-4.02,2.14 C0.04,2.14 -0.13,-0.91 4.11,-3.36" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-d16a99a9-6">
+<g stroke="#000000" id="img-960a27ce-6">
   <g transform="translate(4,14)">
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-d16a99a9-7">
+<g stroke="#000000" id="img-960a27ce-7">
   <g transform="translate(35,14)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-d16a99a9-8">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-d16a99a9-9">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-960a27ce-8">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-960a27ce-9">
     <g transform="translate(25,23)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -3271,15 +3271,15 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-d16a99a9-10">
+<g fill="#000000" id="img-960a27ce-10">
   <g transform="translate(22,20)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
     </g>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-d16a99a9-11">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-d16a99a9-12">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-960a27ce-11">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-960a27ce-12">
     <g transform="translate(25,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -3324,14 +3324,14 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-d16a99a9-13">
+<g fill="#000000" id="img-960a27ce-13">
   <g transform="translate(22,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
     </g>
   </g>
 </g>
-<g stroke="#000000" id="img-d16a99a9-14">
+<g stroke="#000000" id="img-960a27ce-14">
   <g transform="translate(9,14)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
@@ -3493,48 +3493,48 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-c6f9e5bb">
+     id="img-114a44e3">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-c6f9e5bb-1">
+<g stroke="#000000" id="img-114a44e3-1">
   <g transform="translate(24.67,18.38)">
     <path fill="none" d="M-10.17,-8.51 C-4.49,1.33 7.33,-0.44 7.33,7.62" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-c6f9e5bb-2">
+<g stroke="#000000" id="img-114a44e3-2">
   <g transform="translate(27.33,18.38)">
     <path fill="none" d="M10.17,-8.51 C4.49,1.33 -7.33,-0.44 -7.33,7.62" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-c6f9e5bb-3">
+<g stroke="#000000" id="img-114a44e3-3">
   <g transform="translate(9.7,17.73)">
     <path fill="none" d="M3.8,-7.86 C-0.39,-0.62 -1.7,0.21 -1.7,8.27" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-c6f9e5bb-4">
+<g stroke="#000000" id="img-114a44e3-4">
   <g transform="translate(42.3,17.73)">
     <path fill="none" d="M-3.8,-7.86 C0.39,-0.62 1.7,0.21 1.7,8.27" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-c6f9e5bb-5">
+<g stroke="#000000" id="img-114a44e3-5">
   <g transform="translate(38,4)">
     <path fill="none" d="M-0,-4 C-0,0 0,0 0,4" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-c6f9e5bb-6">
+<g stroke="#000000" id="img-114a44e3-6">
   <g transform="translate(14,4)">
     <path fill="none" d="M0,-4 C0,0 -0,0 -0,4" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-c6f9e5bb-7">
+<g stroke="#000000" id="img-114a44e3-7">
   <g transform="translate(38,9)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-c6f9e5bb-8">
+<g stroke="#000000" id="img-114a44e3-8">
   <g transform="translate(14,9)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
@@ -3696,68 +3696,68 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-5bc89a95">
+     id="img-798041ab">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-5bc89a95-1">
+<g stroke="#000000" id="img-798041ab-1">
   <g transform="translate(27.33,18.38)">
     <path fill="none" d="M10.17,-8.51 C4.49,1.33 -7.33,-0.44 -7.33,7.62" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-5bc89a95-2">
+<g stroke="#000000" id="img-798041ab-2">
   <g transform="translate(66.3,17.73)">
     <path fill="none" d="M-3.8,-7.86 C0.39,-0.62 1.7,0.21 1.7,8.27" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-5bc89a95-3">
+<g stroke="#000000" id="img-798041ab-3">
   <g transform="translate(31.05,19.03)">
     <path fill="none" d="M-16.55,-9.16 C-9.36,3.28 12.95,-1.09 12.95,6.97" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-5bc89a95-4">
+<g stroke="#000000" id="img-798041ab-4">
   <g transform="translate(48.67,18.38)">
     <path fill="none" d="M-10.17,-8.51 C-4.49,1.33 7.33,-0.44 7.33,7.62" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-5bc89a95-5">
+<g stroke="#000000" id="img-798041ab-5">
   <g transform="translate(9.7,17.73)">
     <path fill="none" d="M3.8,-7.86 C-0.39,-0.62 -1.7,0.21 -1.7,8.27" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-5bc89a95-6">
+<g stroke="#000000" id="img-798041ab-6">
   <g transform="translate(44.95,19.03)">
     <path fill="none" d="M16.55,-9.16 C9.36,3.28 -12.95,-1.09 -12.95,6.97" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-5bc89a95-7">
+<g stroke="#000000" id="img-798041ab-7">
   <g transform="translate(62,4)">
     <path fill="none" d="M-0,-4 C-0,0 0,0 0,4" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-5bc89a95-8">
+<g stroke="#000000" id="img-798041ab-8">
   <g transform="translate(38,4)">
-    <path fill="none" d="M0,-4 C0,0 -0,0 -0,4" class="primitive"/>
+    <path fill="none" d="M0,-4 C0,0 0,0 0,4" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-5bc89a95-9">
+<g stroke="#000000" id="img-798041ab-9">
   <g transform="translate(14,4)">
     <path fill="none" d="M0,-4 C0,0 -0,0 -0,4" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-5bc89a95-10">
+<g stroke="#000000" id="img-798041ab-10">
   <g transform="translate(62,9)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-5bc89a95-11">
+<g stroke="#000000" id="img-798041ab-11">
   <g transform="translate(38,9)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-5bc89a95-12">
+<g stroke="#000000" id="img-798041ab-12">
   <g transform="translate(14,9)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
@@ -3921,18 +3921,18 @@ to_composejl(dunit(A))</code></pre><?xml version="1.0" encoding="UTF-8"?>
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-6470635c">
+     id="img-c1eab7d3">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-6470635c-1">
+<g stroke="#000000" id="img-c1eab7d3-1">
   <g transform="translate(11,17.75)">
     <path fill="none" d="M-3,-3.75 C-3,-0.75 1,2.25 5,2.25" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-6470635c-2">
+<g stroke="#000000" id="img-c1eab7d3-2">
   <g transform="translate(11,10.25)">
     <path fill="none" d="M-3,3.75 C-3,0.75 1,-2.25 5,-2.25" class="primitive"/>
   </g>
@@ -4094,18 +4094,18 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-64f62a9d">
+     id="img-6cf778c0">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-64f62a9d-1">
+<g stroke="#000000" id="img-6cf778c0-1">
   <g transform="translate(5,17.75)">
     <path fill="none" d="M-5,2.25 C-1,2.25 3,-0.75 3,-3.75" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-64f62a9d-2">
+<g stroke="#000000" id="img-6cf778c0-2">
   <g transform="translate(5,10.25)">
     <path fill="none" d="M-5,-2.25 C-1,-2.25 3,0.75 3,3.75" class="primitive"/>
   </g>
@@ -4270,13 +4270,13 @@ to_composejl((dunit(A) ⊗ id(B)) ⋅ (id(A) ⊗ f ⊗ id(B)) ⋅ (id(A) ⊗ dco
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-6ec3e387">
+     id="img-bd06241f">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-6ec3e387-1">
+<g stroke="#000000" id="img-bd06241f-1">
   <g transform="translate(36,8)">
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
@@ -4287,17 +4287,17 @@ to_composejl((dunit(A) ⊗ id(B)) ⋅ (id(A) ⊗ f ⊗ id(B)) ⋅ (id(A) ⊗ dco
     <path fill="none" d="M-4.5,3.75 C-4.5,0.75 1.5,-2.25 7.5,-2.25" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-6ec3e387-2">
+<g stroke="#000000" id="img-bd06241f-2">
   <g transform="translate(29,22.25)">
     <path fill="none" d="M-5,-2.25 C-1,-2.25 3,0.75 3,3.75" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-6ec3e387-3">
+<g stroke="#000000" id="img-bd06241f-3">
   <g transform="translate(11,17.75)">
     <path fill="none" d="M-3,-3.75 C-3,-0.75 1,2.25 5,2.25" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-6ec3e387-4">
+<g stroke="#000000" id="img-bd06241f-4">
   <g transform="translate(27.5,29.75)">
     <path fill="none" d="M-7.5,2.25 C-1.5,2.25 4.5,-0.75 4.5,-3.75" class="primitive"/>
   </g>
@@ -4308,8 +4308,8 @@ to_composejl((dunit(A) ⊗ id(B)) ⋅ (id(A) ⊗ f ⊗ id(B)) ⋅ (id(A) ⊗ dco
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-6ec3e387-5">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-6ec3e387-6">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-bd06241f-5">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-bd06241f-6">
     <g transform="translate(23,23)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -4354,7 +4354,7 @@ to_composejl((dunit(A) ⊗ id(B)) ⋅ (id(A) ⊗ f ⊗ id(B)) ⋅ (id(A) ⊗ dco
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-6ec3e387-7">
+<g fill="#000000" id="img-bd06241f-7">
   <g transform="translate(20,20)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
@@ -4520,43 +4520,43 @@ to_composejl(plus(X) ⋅ mcopy(X))</code></pre><?xml version="1.0" encoding="UTF
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-4512c91f">
+     id="img-fe8cab6b">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-4512c91f-1">
+<g stroke="#000000" id="img-fe8cab6b-1">
   <g transform="translate(23.98,17.86)">
     <path fill="none" d="M-4.11,-3.36 C0.13,-0.91 -0.04,2.14 4.02,2.14" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-4512c91f-2">
+<g stroke="#000000" id="img-fe8cab6b-2">
   <g transform="translate(23.98,10.14)">
     <path fill="none" d="M-4.11,3.36 C0.13,0.91 -0.04,-2.14 4.02,-2.14" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-4512c91f-3">
+<g stroke="#000000" id="img-fe8cab6b-3">
   <g transform="translate(14,14)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-4512c91f-4">
+<g stroke="#000000" id="img-fe8cab6b-4">
   <g transform="translate(4.02,17.86)">
     <path fill="none" d="M-4.02,2.14 C0.04,2.14 -0.13,-0.91 4.11,-3.36" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-4512c91f-5">
+<g stroke="#000000" id="img-fe8cab6b-5">
   <g transform="translate(4.02,10.14)">
     <path fill="none" d="M-4.02,-2.14 C0.04,-2.14 -0.13,0.91 4.11,3.36" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-4512c91f-6">
+<g stroke="#000000" id="img-fe8cab6b-6">
   <g transform="translate(19,14)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-4512c91f-7">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-fe8cab6b-7">
   <g transform="translate(9,14)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
@@ -4718,33 +4718,33 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-96c2628f">
+     id="img-585319e3">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-96c2628f-1">
+<g stroke="#000000" id="img-585319e3-1">
   <g transform="translate(32,38)">
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-96c2628f-2">
+<g stroke="#000000" id="img-585319e3-2">
   <g transform="translate(32,14)">
     <path fill="none" d="M-4,-0 C0,-0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-96c2628f-3">
+<g stroke="#000000" id="img-585319e3-3">
   <g transform="translate(18,26)">
     <path fill="none" d="M-8.13,11.5 C2.95,5.1 -2.95,-5.1 8.13,-11.5" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-96c2628f-4">
+<g stroke="#000000" id="img-585319e3-4">
   <g transform="translate(18,26)">
     <path fill="none" d="M-8.13,-11.5 C2.95,-5.1 -2.95,5.1 8.13,11.5" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-96c2628f-5">
+<g stroke="#000000" id="img-585319e3-5">
   <g transform="translate(22.02,10.14)">
     <path fill="none" d="M-4.02,-2.14 C0.04,-2.14 -0.13,0.91 4.11,3.36" class="primitive"/>
   </g>
@@ -4752,7 +4752,7 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
     <path fill="none" d="M-4.11,3.36 C0.13,0.91 -0.04,-2.14 4.02,-2.14" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-96c2628f-6">
+<g stroke="#000000" id="img-585319e3-6">
   <g transform="translate(22.02,41.86)">
     <path fill="none" d="M-4.02,2.14 C0.04,2.14 -0.13,-0.91 4.11,-3.36" class="primitive"/>
   </g>
@@ -4760,32 +4760,32 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
     <path fill="none" d="M-4.11,-3.36 C0.13,-0.91 -0.04,2.14 4.02,2.14" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-96c2628f-7">
+<g stroke="#000000" id="img-585319e3-7">
   <g transform="translate(4,38)">
     <path fill="none" d="M-4,-0 C0,-0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-96c2628f-8">
+<g stroke="#000000" id="img-585319e3-8">
   <g transform="translate(4,14)">
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-96c2628f-9">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-585319e3-9">
   <g transform="translate(27,38)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-96c2628f-10">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-585319e3-10">
   <g transform="translate(27,14)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-96c2628f-11">
+<g stroke="#000000" id="img-585319e3-11">
   <g transform="translate(9,38)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-96c2628f-12">
+<g stroke="#000000" id="img-585319e3-12">
   <g transform="translate(9,14)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
@@ -4954,29 +4954,29 @@ to_composejl(f⋅g, props=Dict(
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-f34b80b6">
+     id="img-cb065068">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-f34b80b6-1">
+<g stroke="#000000" id="img-cb065068-1">
   <g transform="translate(36,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-f34b80b6-2">
+<g stroke="#000000" id="img-cb065068-2">
   <g transform="translate(20,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-f34b80b6-3">
+<g stroke="#000000" id="img-cb065068-3">
   <g transform="translate(4,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" fill="#E6E6FA" id="img-f34b80b6-4">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-f34b80b6-5">
+<g stroke="#000000" fill="#E6E6FA" id="img-cb065068-4">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-cb065068-5">
     <g transform="translate(31,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -5021,15 +5021,15 @@ to_composejl(f⋅g, props=Dict(
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-f34b80b6-6">
+<g fill="#000000" id="img-cb065068-6">
   <g transform="translate(28,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">g</text>
     </g>
   </g>
 </g>
-<g stroke="#000000" fill="#E6E6FA" id="img-f34b80b6-7">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-f34b80b6-8">
+<g stroke="#000000" fill="#E6E6FA" id="img-cb065068-7">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-cb065068-8">
     <g transform="translate(15,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -5074,7 +5074,7 @@ to_composejl(f⋅g, props=Dict(
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-f34b80b6-9">
+<g fill="#000000" id="img-cb065068-9">
   <g transform="translate(12,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
@@ -5243,43 +5243,43 @@ to_composejl(plus(X) ⋅ mcopy(X), props=Dict(
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-cf24cb06">
+     id="img-f66b21c9">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-cf24cb06-1">
+<g stroke="#000000" id="img-f66b21c9-1">
   <g transform="translate(23.98,17.86)">
     <path fill="none" d="M-4.11,-3.36 C0.13,-0.91 -0.04,2.14 4.02,2.14" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cf24cb06-2">
+<g stroke="#000000" id="img-f66b21c9-2">
   <g transform="translate(23.98,10.14)">
     <path fill="none" d="M-4.11,3.36 C0.13,0.91 -0.04,-2.14 4.02,-2.14" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cf24cb06-3">
+<g stroke="#000000" id="img-f66b21c9-3">
   <g transform="translate(14,14)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cf24cb06-4">
+<g stroke="#000000" id="img-f66b21c9-4">
   <g transform="translate(4.02,17.86)">
     <path fill="none" d="M-4.02,2.14 C0.04,2.14 -0.13,-0.91 4.11,-3.36" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-cf24cb06-5">
+<g stroke="#000000" id="img-f66b21c9-5">
   <g transform="translate(4.02,10.14)">
     <path fill="none" d="M-4.02,-2.14 C0.04,-2.14 -0.13,0.91 4.11,3.36" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" fill="#FF0000" id="img-cf24cb06-6">
+<g stroke="#000000" fill="#FF0000" id="img-f66b21c9-6">
   <g transform="translate(19,14)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" fill="#0000FF" id="img-cf24cb06-7">
+<g stroke="#000000" fill="#0000FF" id="img-f66b21c9-7">
   <g transform="translate(9,14)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
@@ -5443,34 +5443,34 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-fdf949f8">
+     id="img-e5be9790">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g fill="#D3D3D3" id="img-fdf949f8-1">
+<g fill="#D3D3D3" id="img-e5be9790-1">
   <g transform="translate(20,8)">
     <path d="M-20,-8 L20,-8 20,8 -20,8  z" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-fdf949f8-2">
+<g stroke="#000000" id="img-e5be9790-2">
   <g transform="translate(36,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-fdf949f8-3">
+<g stroke="#000000" id="img-e5be9790-3">
   <g transform="translate(20,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-fdf949f8-4">
+<g stroke="#000000" id="img-e5be9790-4">
   <g transform="translate(4,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" fill="#FFFFFF" id="img-fdf949f8-5">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-fdf949f8-6">
+<g stroke="#000000" fill="#FFFFFF" id="img-e5be9790-5">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-e5be9790-6">
     <g transform="translate(31,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -5515,15 +5515,15 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-fdf949f8-7">
+<g fill="#000000" id="img-e5be9790-7">
   <g transform="translate(28,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">g</text>
     </g>
   </g>
 </g>
-<g stroke="#000000" fill="#FFFFFF" id="img-fdf949f8-8">
-  <g stroke="#000000" stroke-opacity="0.000" id="img-fdf949f8-9">
+<g stroke="#000000" fill="#FFFFFF" id="img-e5be9790-8">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-e5be9790-9">
     <g transform="translate(15,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -5568,7 +5568,7 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-fdf949f8-10">
+<g fill="#000000" id="img-e5be9790-10">
   <g transform="translate(12,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
@@ -5732,45 +5732,45 @@ amount2:1-d})};a.filter.invert.toString=function(){return this()};a.filter.brigh
      stroke-width="0.3"
      font-size="3.88"
 
-     id="img-eebbfec9">
+     id="img-a9a5c83d">
 <defs>
   <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="#000000" id="img-eebbfec9-1">
+<g stroke="#000000" id="img-a9a5c83d-1">
   <g transform="translate(36,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-eebbfec9-2">
+<g stroke="#000000" id="img-a9a5c83d-2">
   <g transform="translate(20,8)">
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g stroke="#000000" id="img-eebbfec9-3">
+<g stroke="#000000" id="img-a9a5c83d-3">
   <g transform="translate(4,8)">
-    <path fill="none" d="M-4,-0 C0,-0 0,0 4,0" class="primitive"/>
+    <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-eebbfec9-4">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-a9a5c83d-4">
   <g transform="translate(28,8)">
     <circle cx="0" cy="0" r="4" class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-eebbfec9-5">
+<g fill="#000000" id="img-a9a5c83d-5">
   <g transform="translate(28,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">g</text>
     </g>
   </g>
 </g>
-<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-eebbfec9-6">
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-a9a5c83d-6">
   <g transform="translate(12,8)">
     <circle cx="0" cy="0" r="4" class="primitive"/>
   </g>
 </g>
-<g fill="#000000" id="img-eebbfec9-7">
+<g fill="#000000" id="img-a9a5c83d-7">
   <g transform="translate(12,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
@@ -5957,4 +5957,4 @@ println(pgf)</code></pre><pre class="documenter-example-output">\begin{tikzpictu
 \begin{scope}
 \draw (12,8) node [text=mycolor000000,rotate around={-0: (0,0)},inner sep=0.0]{\fontsize{12mm}{14.4mm}\selectfont $\text{f}$};
 \end{scope}
-\end{tikzpicture}</pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../wiring_diagrams/diagrams_and_expressions/">« Wiring diagrams and syntactic expressions</a><a class="docs-footer-nextpage" href="../graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Wednesday 14 July 2021 20:17">Wednesday 14 July 2021</span>. Using Julia version 1.6.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+\end{tikzpicture}</pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../wiring_diagrams/diagrams_and_expressions/">« Wiring diagrams and syntactic expressions</a><a class="docs-footer-nextpage" href="../graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Thursday 22 July 2021 18:46">Thursday 22 July 2021</span>. Using Julia version 1.6.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
