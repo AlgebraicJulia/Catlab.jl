@@ -11,6 +11,7 @@ include("Matrices.jl")
 include("FinRelations.jl")
 include("CSets.jl")
 include("ACSetViews.jl")
+include("SketchedCSets.jl")
 include("GraphCategories.jl")
 include("StructuredCospans.jl")
 include("CommutativeDiagrams.jl")
@@ -23,6 +24,7 @@ include("DPO.jl")
 @reexport using .Subobjects
 @reexport using .CSets
 @reexport using .ACSetViews
+@reexport using .SketchedCSets
 @reexport using .StructuredCospans
 @reexport using .DataMigration
 @reexport using .DPO

@@ -2,11 +2,8 @@ module TestCategoricalAlgebra
 
 using Test
 
-@testset "FreeDiagrams" begin
+@testset "Diagrams" begin
   include("FreeDiagrams.jl")
-end
-
-@testset "CommutativeDiagrams" begin
   include("CommutativeDiagrams.jl")
 end
 
@@ -35,6 +32,10 @@ end
   include("CSetDataStructures.jl")
   include("CSets.jl")
   include("ACSetViews.jl")
+end
+
+@testset "Sketches" begin
+  include("SketchedCSets.jl")
 end
 
 @testset "StructuredCospans" begin
