@@ -32,10 +32,7 @@ end
   include("CSetDataStructures.jl")
   include("CSets.jl")
   include("ACSetViews.jl")
-end
-
-@testset "Sketches" begin
-  include("SketchedCSets.jl")
+  include("SketchedACSets.jl")
 end
 
 @testset "StructuredCospans" begin
