@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Algebra of subgraphs · Catlab.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit">Catlab.jl</span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox" checked/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li class="is-active"><a class="tocitem" href>Algebra of subgraphs</a><ul class="internal"><li><a class="tocitem" href="#Meet-and-join"><span>Meet and join</span></a></li><li><a class="tocitem" href="#Implication-and-negation"><span>Implication and negation</span></a></li><li><a class="tocitem" href="#Subtraction-and-non"><span>Subtraction and non</span></a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Wiring diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox"/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphics/composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../../graphics/graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../../graphics/tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../../graphics/layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li><li><a class="tocitem" href="../../graphics/graphviz_schema_visualization/">Visualizing Acset Schemas with Graphviz</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/core/">Theories, instances, and expressions</a></li><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Graphs</a></li><li class="is-active"><a href>Algebra of subgraphs</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Algebra of subgraphs</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/master/docs/literate/graphs/subgraphs.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Algebra-of-subgraphs"><a class="docs-heading-anchor" href="#Algebra-of-subgraphs">Algebra of subgraphs</a><a id="Algebra-of-subgraphs-1"></a><a class="docs-heading-anchor-permalink" href="#Algebra-of-subgraphs" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/AlgebraicJulia/Catlab.jl/blob/gh-pages/dev/generated/graphs/subgraphs.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><pre><code class="language-julia">using Catlab.Graphs, Catlab.Graphics
-using Catlab.Theories, Catlab.CategoricalAlgebra</code></pre><p>A <em>subgraph</em> of a graph <span>$G$</span> is a monomorphism <span>$A \rightarrowtail G$</span>. Because the category of graphs is a presheaf topos, its subobjects have a rich algebraic structure, which we will explore in this vignette.</p><p>Consider this graph:</p><pre><code class="language-julia">G = cycle_graph(Graph, 4) ⊕ path_graph(Graph, 2) ⊕ cycle_graph(Graph, 1)
+using Catlab.Theories, Catlab.CategoricalAlgebra</code></pre><p>A <em>subgraph</em> of a graph <span>$G$</span> is a monomorphism <span>$A \rightarrowtail G$</span>. Because the category of graphs is a presheaf topos, its subobjects have a rich algebraic structure, which we will explore in this vignette.</p><p>Throughout the vignette, we will work with subgraphs of the following graph.</p><pre><code class="language-julia">G = cycle_graph(Graph, 4) ⊕ path_graph(Graph, 2) ⊕ cycle_graph(Graph, 1)
 add_edge!(G, 3, add_vertex!(G))
 
 to_graphviz(G, node_labels=true, edge_labels=true)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
@@ -113,7 +113,7 @@ to_graphviz(G, node_labels=true, edge_labels=true)</code></pre><?xml version="1.
 </g>
 </g>
 </svg>
-<h2 id="Meet-and-join"><a class="docs-heading-anchor" href="#Meet-and-join">Meet and join</a><a id="Meet-and-join-1"></a><a class="docs-heading-anchor-permalink" href="#Meet-and-join" title="Permalink"></a></h2><p>The basic operations of <a href="https://ncatlab.org/nlab/show/meet">meet</a> or intersection (<span>$\wedge$</span>), <a href="https://ncatlab.org/nlab/show/join">join</a> or union (<span>$\vee$</span>), <a href="https://ncatlab.org/nlab/show/top">top</a> or maximum (<span>$\top$</span>), <a href="https://ncatlab.org/nlab/show/bottom">bottom</a> or minimum (<span>$\bot$</span>) are all computed pointwise: separately on vertices and edges.</p><pre><code class="language-julia">(A = Subobject(G, V=1:4, E=[1,2,4])) |&gt; to_graphviz</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<h2 id="Meet-and-join"><a class="docs-heading-anchor" href="#Meet-and-join">Meet and join</a><a id="Meet-and-join-1"></a><a class="docs-heading-anchor-permalink" href="#Meet-and-join" title="Permalink"></a></h2><p>The basic operations of <a href="https://ncatlab.org/nlab/show/meet">meet</a> or intersection (<span>$\wedge$</span>), <a href="https://ncatlab.org/nlab/show/join">join</a> or union (<span>$\vee$</span>), <a href="https://ncatlab.org/nlab/show/top">top</a> or maximum (<span>$\top$</span>), <a href="https://ncatlab.org/nlab/show/bottom">bottom</a> or minimum (<span>$\bot$</span>) are all computed pointwise: separately on vertices and edges.</p><p>Consider the following two subgraphs.</p><pre><code class="language-julia">(A = Subobject(G, V=1:4, E=[1,2,4])) |&gt; to_graphviz</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.43.0 (0)
@@ -303,102 +303,7 @@ to_graphviz(G, node_labels=true, edge_labels=true)</code></pre><?xml version="1.
 </g>
 </g>
 </svg>
-<pre><code class="language-julia">A ∧ B |&gt; to_graphviz</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
- "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
- -->
-<!-- Title: G Pages: 1 -->
-<svg width="136pt" height="100pt"
- viewBox="0.00 0.00 135.84 99.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 95.6)">
-<title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-95.6 131.84,-95.6 131.84,4 -4,4"/>
-<!-- n1 -->
-<g id="node1" class="node">
-<title>n1</title>
-<ellipse fill="black" stroke="black" cx="7.24" cy="-12.8" rx="1.8" ry="1.8"/>
-</g>
-<!-- n2 -->
-<g id="node2" class="node">
-<title>n2</title>
-<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="46.84" cy="-27.8" rx="1.8" ry="1.8"/>
-</g>
-<!-- n1&#45;&gt;n2 -->
-<g id="edge1" class="edge">
-<title>n1&#45;&gt;n2</title>
-<path fill="none" stroke="black" d="M9.17,-13.17C13.32,-14.83 30.4,-21.64 39.72,-25.36"/>
-<polygon fill="black" stroke="black" points="39.21,-27.04 44.5,-27.27 40.5,-23.79 39.21,-27.04"/>
-</g>
-<!-- n3 -->
-<g id="node3" class="node">
-<title>n3</title>
-<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="86.44" cy="-27.8" rx="1.8" ry="1.8"/>
-</g>
-<!-- n2&#45;&gt;n3 -->
-<g id="edge2" class="edge">
-<title>n2&#45;&gt;n3</title>
-<path fill="none" stroke="cornflowerblue" d="M48.77,-27.8C52.88,-27.8 69.68,-27.8 79.05,-27.8"/>
-<polygon fill="cornflowerblue" stroke="cornflowerblue" points="79.1,-29.55 84.1,-27.8 79.1,-26.05 79.1,-29.55"/>
-</g>
-<!-- n4 -->
-<g id="node4" class="node">
-<title>n4</title>
-<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="126.04" cy="-1.8" rx="1.8" ry="1.8"/>
-</g>
-<!-- n3&#45;&gt;n4 -->
-<g id="edge3" class="edge">
-<title>n3&#45;&gt;n4</title>
-<path fill="none" stroke="black" d="M88.37,-27.16C92.71,-24.15 111.19,-11.38 120.14,-5.19"/>
-<polygon fill="black" stroke="black" points="121.15,-6.61 124.27,-2.33 119.16,-3.74 121.15,-6.61"/>
-</g>
-<!-- n8 -->
-<g id="node8" class="node">
-<title>n8</title>
-<ellipse fill="black" stroke="black" cx="126.04" cy="-27.8" rx="1.8" ry="1.8"/>
-</g>
-<!-- n3&#45;&gt;n8 -->
-<g id="edge7" class="edge">
-<title>n3&#45;&gt;n8</title>
-<path fill="none" stroke="black" d="M88.37,-27.8C92.48,-27.8 109.28,-27.8 118.65,-27.8"/>
-<polygon fill="black" stroke="black" points="118.7,-29.55 123.7,-27.8 118.7,-26.05 118.7,-29.55"/>
-</g>
-<!-- n4&#45;&gt;n1 -->
-<g id="edge4" class="edge">
-<title>n4&#45;&gt;n1</title>
-<path fill="none" stroke="black" d="M123.88,-1.91C113.57,-2.88 37.28,-10.06 14.59,-12.2"/>
-<polygon fill="black" stroke="black" points="14.36,-10.47 9.55,-12.68 14.69,-13.95 14.36,-10.47"/>
-</g>
-<!-- n5 -->
-<g id="node5" class="node">
-<title>n5</title>
-<ellipse fill="black" stroke="black" cx="7.24" cy="-49.8" rx="1.8" ry="1.8"/>
-</g>
-<!-- n6 -->
-<g id="node6" class="node">
-<title>n6</title>
-<ellipse fill="black" stroke="black" cx="46.84" cy="-49.8" rx="1.8" ry="1.8"/>
-</g>
-<!-- n5&#45;&gt;n6 -->
-<g id="edge5" class="edge">
-<title>n5&#45;&gt;n6</title>
-<path fill="none" stroke="black" d="M9.17,-49.8C13.28,-49.8 30.08,-49.8 39.45,-49.8"/>
-<polygon fill="black" stroke="black" points="39.5,-51.55 44.5,-49.8 39.5,-48.05 39.5,-51.55"/>
-</g>
-<!-- n7 -->
-<g id="node7" class="node">
-<title>n7</title>
-<ellipse fill="black" stroke="black" cx="7.24" cy="-71.8" rx="1.8" ry="1.8"/>
-</g>
-<!-- n7&#45;&gt;n7 -->
-<g id="edge6" class="edge">
-<title>n7&#45;&gt;n7</title>
-<path fill="none" stroke="black" d="M5.57,-73.11C-2.23,-80 -1.67,-91.6 7.24,-91.6 14.61,-91.6 16.26,-83.64 12.18,-77"/>
-<polygon fill="black" stroke="black" points="13.47,-75.8 8.91,-73.11 10.79,-78.06 13.47,-75.8"/>
-</g>
-</g>
-</svg>
-<pre><code class="language-julia">A ∨ B |&gt; to_graphviz</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<p>The <em>join</em> is defined as left adjoint to the diagonal, making it the <em>least upper bound</em>:</p><p class="math-container">\[A \vee B \leq C \qquad\text{iff}\qquad A \leq C \text{ and } B \leq C.\]</p><pre><code class="language-julia">A ∨ B |&gt; to_graphviz</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.43.0 (0)
@@ -490,6 +395,101 @@ to_graphviz(G, node_labels=true, edge_labels=true)</code></pre><?xml version="1.
 <title>n7&#45;&gt;n7</title>
 <path fill="none" stroke="cornflowerblue" d="M5.57,-73.11C-2.23,-80 -1.67,-91.6 7.24,-91.6 14.61,-91.6 16.26,-83.64 12.18,-77"/>
 <polygon fill="cornflowerblue" stroke="cornflowerblue" points="13.47,-75.8 8.91,-73.11 10.79,-78.06 13.47,-75.8"/>
+</g>
+</g>
+</svg>
+<p>Dually, the <em>meet</em> is defined as right adjoint to the diagonal, making it the <em>greatest lower bound</em>:</p><p class="math-container">\[C \leq A \text{ and } C \leq B \qquad\text{iff}\qquad C \leq A \wedge B.\]</p><pre><code class="language-julia">A ∧ B |&gt; to_graphviz</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="136pt" height="100pt"
+ viewBox="0.00 0.00 135.84 99.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 95.6)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-95.6 131.84,-95.6 131.84,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-12.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="46.84" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n1&#45;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&#45;&gt;n2</title>
+<path fill="none" stroke="black" d="M9.17,-13.17C13.32,-14.83 30.4,-21.64 39.72,-25.36"/>
+<polygon fill="black" stroke="black" points="39.21,-27.04 44.5,-27.27 40.5,-23.79 39.21,-27.04"/>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="86.44" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2&#45;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&#45;&gt;n3</title>
+<path fill="none" stroke="cornflowerblue" d="M48.77,-27.8C52.88,-27.8 69.68,-27.8 79.05,-27.8"/>
+<polygon fill="cornflowerblue" stroke="cornflowerblue" points="79.1,-29.55 84.1,-27.8 79.1,-26.05 79.1,-29.55"/>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="126.04" cy="-1.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n4 -->
+<g id="edge3" class="edge">
+<title>n3&#45;&gt;n4</title>
+<path fill="none" stroke="black" d="M88.37,-27.16C92.71,-24.15 111.19,-11.38 120.14,-5.19"/>
+<polygon fill="black" stroke="black" points="121.15,-6.61 124.27,-2.33 119.16,-3.74 121.15,-6.61"/>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+<ellipse fill="black" stroke="black" cx="126.04" cy="-27.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n3&#45;&gt;n8 -->
+<g id="edge7" class="edge">
+<title>n3&#45;&gt;n8</title>
+<path fill="none" stroke="black" d="M88.37,-27.8C92.48,-27.8 109.28,-27.8 118.65,-27.8"/>
+<polygon fill="black" stroke="black" points="118.7,-29.55 123.7,-27.8 118.7,-26.05 118.7,-29.55"/>
+</g>
+<!-- n4&#45;&gt;n1 -->
+<g id="edge4" class="edge">
+<title>n4&#45;&gt;n1</title>
+<path fill="none" stroke="black" d="M123.88,-1.91C113.57,-2.88 37.28,-10.06 14.59,-12.2"/>
+<polygon fill="black" stroke="black" points="14.36,-10.47 9.55,-12.68 14.69,-13.95 14.36,-10.47"/>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="black" stroke="black" cx="46.84" cy="-49.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n5&#45;&gt;n6 -->
+<g id="edge5" class="edge">
+<title>n5&#45;&gt;n6</title>
+<path fill="none" stroke="black" d="M9.17,-49.8C13.28,-49.8 30.08,-49.8 39.45,-49.8"/>
+<polygon fill="black" stroke="black" points="39.5,-51.55 44.5,-49.8 39.5,-48.05 39.5,-51.55"/>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="black" stroke="black" cx="7.24" cy="-71.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n7&#45;&gt;n7 -->
+<g id="edge6" class="edge">
+<title>n7&#45;&gt;n7</title>
+<path fill="none" stroke="black" d="M5.57,-73.11C-2.23,-80 -1.67,-91.6 7.24,-91.6 14.61,-91.6 16.26,-83.64 12.18,-77"/>
+<polygon fill="black" stroke="black" points="13.47,-75.8 8.91,-73.11 10.79,-78.06 13.47,-75.8"/>
 </g>
 </g>
 </svg>
@@ -683,7 +683,7 @@ to_graphviz(G, node_labels=true, edge_labels=true)</code></pre><?xml version="1.
 </g>
 </g>
 </svg>
-<h3 id="Induced-subgraph-as-a-double-negation"><a class="docs-heading-anchor" href="#Induced-subgraph-as-a-double-negation">Induced subgraph as a double negation</a><a id="Induced-subgraph-as-a-double-negation-1"></a><a class="docs-heading-anchor-permalink" href="#Induced-subgraph-as-a-double-negation" title="Permalink"></a></h3><p>The logic of subgraphs, and of subobjects in presheaf toposes generally, is not classical. Subobjects form a <a href="https://ncatlab.org/nlab/show/Heyting+algebra">Heyting algebra</a> but not a <a href="https://ncatlab.org/nlab/show/Boolean+algebra">Boolean algebra</a>. This means that the law of excluded middle does not hold: in general, <span>$\neg \neg A \neq A$</span>.</p><p>In fact, applying the double negation to a discrete subgraph gives the subgraph induced by those vertices.</p><pre><code class="language-julia">(C = Subobject(G, V=1:4)) |&gt; to_graphviz</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<h3 id="Induced-subgraph-as-a-double-negation"><a class="docs-heading-anchor" href="#Induced-subgraph-as-a-double-negation">Induced subgraph as a double negation</a><a id="Induced-subgraph-as-a-double-negation-1"></a><a class="docs-heading-anchor-permalink" href="#Induced-subgraph-as-a-double-negation" title="Permalink"></a></h3><p>The logic of subgraphs, and of subobjects in presheaf toposes generally, is not classical. Specifically, subobjects form a <a href="https://ncatlab.org/nlab/show/Heyting+algebra">Heyting algebra</a> but not a <a href="https://ncatlab.org/nlab/show/Boolean+algebra">Boolean algebra</a>. This means that the law of excluded middle does not hold: in general, <span>$\neg \neg A \neq A$</span>.</p><p>Applying the double negation to a discrete subgraph gives the subgraph induced by those vertices.</p><pre><code class="language-julia">(C = Subobject(G, V=1:4)) |&gt; to_graphviz</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.43.0 (0)
@@ -873,7 +873,7 @@ to_graphviz(G, node_labels=true, edge_labels=true)</code></pre><?xml version="1.
 </g>
 </g>
 </svg>
-<h2 id="Subtraction-and-non"><a class="docs-heading-anchor" href="#Subtraction-and-non">Subtraction and non</a><a id="Subtraction-and-non-1"></a><a class="docs-heading-anchor-permalink" href="#Subtraction-and-non" title="Permalink"></a></h2><p>The subojects also form <a href="https://ncatlab.org/nlab/show/co-Heyting+algebra">co-Heyting algebra</a> and hence a bi-Heyting algebra.</p><p><em>Subtraction</em> is defined dually to implication as the left adjoint to the *join:</p><p class="math-container">\[A \leq B \vee C \qquad\text{iff}\qquad A \setminus B \leq C.\]</p><pre><code class="language-julia">(A \ B) |&gt; to_graphviz</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<h2 id="Subtraction-and-non"><a class="docs-heading-anchor" href="#Subtraction-and-non">Subtraction and non</a><a id="Subtraction-and-non-1"></a><a class="docs-heading-anchor-permalink" href="#Subtraction-and-non" title="Permalink"></a></h2><p>The subojects also form <a href="https://ncatlab.org/nlab/show/co-Heyting+algebra">co-Heyting algebra</a> and hence a bi-Heyting algebra.</p><p><em>Subtraction</em> is defined dually to implication as the left adjoint to the join:</p><p class="math-container">\[A \leq B \vee C \qquad\text{iff}\qquad A \setminus B \leq C.\]</p><pre><code class="language-julia">(A \ B) |&gt; to_graphviz</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.43.0 (0)
@@ -1158,4 +1158,4 @@ to_graphviz(G, node_labels=true, edge_labels=true)</code></pre><?xml version="1.
 </g>
 </g>
 </svg>
-</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../../">« Catlab.jl</a><a class="docs-footer-nextpage" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Thursday 22 July 2021 20:40">Thursday 22 July 2021</span>. Using Julia version 1.6.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../../">« Catlab.jl</a><a class="docs-footer-nextpage" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Monday 26 July 2021 05:44">Monday 26 July 2021</span>. Using Julia version 1.6.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
