@@ -116,7 +116,7 @@ struct CatDesc{Ob,Hom,Dom,Codom}
   function CatDesc{Ob,Hom,Dom,Codom}() where {Ob,Hom,Dom,Codom}
     new{Ob,Hom,Dom,Codom}()
   end
-  function CatDesc(pres::Presentation{Schema})
+  function CatDesc(pres::Presentation)
     obs, homs = generators(pres, :Ob), generators(pres,:Hom)
     ob_syms, hom_syms = nameof.(obs), nameof.(homs)
     ob_num = ob -> findfirst(ob_syms .== ob)::Int
@@ -125,7 +125,7 @@ struct CatDesc{Ob,Hom,Dom,Codom}
   end
 end
 
-CatDescType(pres::Presentation{Schema}) = typeof(CatDesc(pres))
+CatDescType(pres::Presentation) = typeof(CatDesc(pres))
 
 ob(::Type{T}) where {Ob,T <: CatDesc{Ob}} = Ob
 hom(::Type{T}) where {Ob,Hom, T <: CatDesc{Ob,Hom}} = Hom
@@ -173,7 +173,7 @@ struct AttrDesc{CD,Data,Attr,ADom,ACodom}
   function AttrDesc{CD,Data,Attr,ADom,ACodom}() where {CD,Data,Attr,ADom,ACodom}
     new{CD,Data,Attr,ADom,ACodom}()
   end
-  function AttrDesc(pres::Presentation{Schema})
+  function AttrDesc(pres::Presentation)
     CD = CatDescType(pres)
     datas, attrs = generators(pres, :Data), generators(pres,:Attr)
     data_syms, attr_syms = nameof.(datas), nameof.(attrs)
@@ -187,7 +187,7 @@ struct AttrDesc{CD,Data,Attr,ADom,ACodom}
   end
 end
 
-AttrDescType(pres::Presentation{Schema}) = typeof(AttrDesc(pres))
+AttrDescType(pres::Presentation) = typeof(AttrDesc(pres))
 
 data(::Type{T}) where {CD,Data, T <: AttrDesc{CD,Data}} = Data
 attr(::Type{T}) where {CD,Data,Attr, T <: AttrDesc{CD,Data,Attr}} = Attr
@@ -249,7 +249,7 @@ function attrs_by_codom(AD::Type{T}) where
   abc
 end
 
-SchemaType(pres::Presentation{Schema}) = (CatDescType(pres),AttrDescType(pres))
+SchemaType(pres::Presentation) = (CatDescType(pres),AttrDescType(pres))
 
 """
 Inverse of SchemaType. Converts a CatDesc and AttrDesc into a Presentation. 

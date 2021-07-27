@@ -91,7 +91,7 @@ const ACSet = AttributedCSet
 
 To generate a concrete type, use [`ACSetType`](@ref).
 """
-function AbstractACSetType(pres::Presentation{Schema})
+function AbstractACSetType(pres::Presentation)
   type_vars = [ TypeVar(nameof(data)) for data in generators(pres, :Data) ]
   if isempty(type_vars)
     # When the schema has no data attributes, allow subtyping from any schema
@@ -111,7 +111,7 @@ By default, no morphisms or data attributes are indexed.
 
 See also: [`AbstractACSetType`](@ref).
 """
-function ACSetType(pres::Presentation{Schema}; index=[], unique_index=[])
+function ACSetType(pres::Presentation; index=[], unique_index=[])
   type_vars = [ TypeVar(nameof(data)) for data in generators(pres, :Data) ]
   T = ACSet{SchemaType(pres)..., Tuple{type_vars...},
             Tuple(sort!(index ∪ unique_index)), Tuple(sort!(unique_index))}
@@ -166,7 +166,7 @@ const CSet{CD,Idxed,UniqueIdxed} =
 
 To generate a concrete type, use [`CSetType`](@ref).
 """
-function AbstractCSetType(pres::Presentation{Schema})
+function AbstractCSetType(pres::Presentation)
   AbstractCSet{CatDescType(pres)}
 end
 
@@ -178,7 +178,7 @@ morphisms are indexed.
 
 See also: [`AbstractCSetType`](@ref).
 """
-function CSetType(pres::Presentation{Schema}; index=[], unique_index=[])
+function CSetType(pres::Presentation; index=[], unique_index=[])
   if !(isempty(generators(pres, :Data)) && isempty(generators(pres, :Attr)))
     error("Use `ACSetType` instead of `CSetType` for schemas with data attributes")
   end

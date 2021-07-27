@@ -25,22 +25,22 @@ import ...Theories: dom, codom, compose, ⋅, id,
 # FinSets interop
 #################
 
-""" Create `FinSet` for part of attributed C-set.
+""" Create `FinSet` for object of attributed C-set.
 """
 FinSet(X::ACSet, type::Symbol) = FinSet{Int,Int}(nparts(X, type))
 
-""" Create `FinFunction` for part or subpart of attributed C-set.
+""" Create `FinFunction` for object or morphism of attributed C-set.
 
-The subpart must be of kind `Ob`. For indexed subparts, the index is included.
+Indices are included when possible. For efficiency, a view of the underlying
+data is returned, which is sensitive to mutations of the C-set.
 """
-FinFunction(X::ACSet, name::Symbol) = fin_function(X, Val{name})
+@inline FinFunction(X::ACSet, name::Symbol, args...) =
+  fin_function(X, Val{name}, args...)
 
 @generated function fin_function(X::ACSet{CD,AD,Ts,Idxed},
-    ::Type{Val{name}}) where {CD,AD,Ts,Idxed,name}
+                                 ::Type{Val{name}}) where {CD,AD,Ts,Idxed,name}
   if name ∈ ob(CD)
-    quote
-      FinFunction(identity, FinSet(X, $(QuoteNode(name))))
-    end
+    :(FinFunction(identity, FinSet(X, $(QuoteNode(name)))))
   elseif name ∈ hom(CD)
     quote
       FinFunction(subpart(X, $(QuoteNode(name))),
@@ -52,15 +52,32 @@ FinFunction(X::ACSet, name::Symbol) = fin_function(X, Val{name})
   end
 end
 
-""" Create `FinDomFunction` for part or subpart of attributed C-set.
+@generated function fin_function(X::ACSet{CD}, ::Type{Val{name}},
+                                 parts::AbstractVector{Int}) where {CD,name}
+  if name ∈ ob(CD)
+    :(FinFunction(parts, FinSet(X, $(QuoteNode(name)))))
+  elseif name ∈ hom(CD)
+    # Any index is invalidated by taking subset of parts.
+    quote
+      FinFunction(subpart(X, parts, $(QuoteNode(name))),
+                  FinSet(X, $(QuoteNode(codom(CD, name)))))
+    end
+  else
+    throw(ArgumentError("$(repr(name)) not in $(ob(CD)) or $(hom(CD))"))
+  end
+end
 
-The codomain is always of type `TypeSet`, regardless of whether the subpart is
-of kind `Ob` or `Data`. For indexed subparts, the index is included.
+""" Create `FinDomFunction` for object, morphism, or attribute of `ACSet`.
+
+The codomain is always of type `TypeSet`. Indices are included when possible.
+For efficiency, a view of the underlying data is returned, which is sensitive to
+mutations of the C-set.
 """
-FinDomFunction(X::ACSet, name::Symbol) = fin_dom_function(X, Val{name})
+@inline FinDomFunction(X::ACSet, name::Symbol, args...) =
+  fin_dom_function(X, Val{name}, args...)
 
 @generated function fin_dom_function(X::ACSet{CD,AD,Ts,Idxed},
-    ::Type{Val{name}}) where {CD,AD,Ts,Idxed,name}
+                                     ::Type{Val{name}}) where {CD,AD,Ts,Idxed,name}
   if name ∈ ob(CD)
     quote
       n = nparts(X, $(QuoteNode(name)))
