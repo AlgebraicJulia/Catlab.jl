@@ -121,6 +121,13 @@ function Base.:(==)(x1::T, x2::T) where T <: StructACSet
   unref.(values(x1.obs)) == unref.(values(x2.obs)) && x1.homs == x2.homs && x1.attrs == x2.attrs
 end
 
+ACSetInterface.acset_schema(::StructACSet{S}) where {S} = SchemaDesc(S)
+
+function ACSetInterface.attr_type_instantiation(::StructACSet{S,Ts}, attr::Symbol) where {S,Ts}
+  s = SchemaDesc(S)
+  Ts.parameters[findfirst(at -> s.codoms[attr] == at, s.attrtypes)]
+end
+
 ACSetInterface.nparts(acs::StructACSet, ob::Symbol) = acs.obs[ob][]
 ACSetInterface.has_part(acs::StructACSet, ob::Symbol) = _has_part(acs, Val{ob})
 
@@ -534,5 +541,94 @@ Tables.getcolumn(row::StructACSetRow, nm::Symbol) = Base.getproperty(row, nm)
 Base.propertynames(row::StructACSetRow{T,ob}) where {T,ob} = outgoing(parent(row), ob)
 
 Tables.columnnames(row::StructACSetRow) = Base.propertynames(row)
+
+# Mapping
+
+function Base.map(acs::ACSet; kwargs...)
+  _map(acs, (;kwargs...))
+end
+
+function sortunique!(x)
+  sort!(x)
+  unique!(x)
+  x
+end
+
+function groupby(f::Function, xs)
+  d = Dict{typeof(f(xs[1])),Vector{eltype(xs)}}()
+  for x in xs
+    k = f(x)
+    if k in keys(d)
+      push!(d[k],x)
+    else
+      d[k] = [x]
+    end
+  end
+  d
+end
+
+@generated function _map(acs::AT, fns::NamedTuple{map_over}) where
+  {S, Ts, AT<:StructACSet{S,Ts}, map_over}
+  s = SchemaDesc(S)
+  map_over = Symbol[map_over...]
+
+  mapped_attrs = intersect(s.attrs, map_over)
+  mapped_attrtypes = intersect(s.attrtypes, map_over)
+  mapped_attrs_from_attrtypes = filter(a -> s.codoms[a] ∈ mapped_attrtypes, s.attrs)
+  attrs_accounted_for = sortunique!(Symbol[mapped_attrs; mapped_attrs_from_attrtypes])
+
+  affected_attrtypes = sortunique!(map(a -> s.codoms[a], attrs_accounted_for))
+  needed_attrs = sort!(filter(a -> s.codoms[a] ∈ affected_attrtypes, s.attrs))
+
+  unnaccounted_for_attrs = filter(a -> a ∉ attrs_accounted_for, needed_attrs)
+  unnaccounted_for_attrs == [] ||
+    error("not enough functions provided to fully transform ACSet, need functions for: $(unnaccounted_for_attrs)")
+
+  fn_applications = map(attrs_accounted_for) do a
+    qa = q(a)
+    if a ∈ mapped_attrs
+      :($a = (fns[$qa]).(subpart(acs, $qa)))
+    else
+      d = s.codoms[a]
+      :($a = (fns[$(q(d))]).(subpart(acs, $qa)))
+    end
+  end
+
+  abc = groupby(a -> s.codoms[a], s.attrs)
+
+  attrtype_instantiations = map(enumerate(s.attrtypes)) do (i,d)
+    if d ∈ affected_attrtypes
+      quote
+        T = eltype(fn_vals[$(q(abc[d][1]))])
+        $(Expr(:block, (map(abc[d][2:end]) do a
+                          :(@assert T == eltype(fn_vals[$(q(a))]))
+                        end)...))
+        T
+      end
+    else
+      :($(Ts[i]))
+    end
+  end
+
+  quote
+    fn_vals = $(Expr(:tuple, fn_applications...))
+    new_acs = $(AT.name.wrapper){$(attrtype_instantiations...)}()
+    $(Expr(:block, map(s.obs) do ob
+           :(add_parts!(new_acs,$(q(ob)),nparts(acs,$(q(ob)))))
+      end...))
+    $(Expr(:block, map(s.homs) do hom
+           :(set_subpart!(new_acs,$(q(hom)),subpart(acs,$(q(hom)))))
+      end...))
+    $(Expr(:block, map(s.attrs) do attr
+        qa = Expr(:quote, attr)
+        if attr ∈ attrs_accounted_for
+           :(set_subpart!(new_acs,$qa,fn_vals[$qa]))
+        else
+           :(set_subpart!(new_acs,$qa,subpart(acs,$qa)))
+        end
+      end...))
+    return new_acs
+  end
+end
 
 end

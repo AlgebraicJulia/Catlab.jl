@@ -1,13 +1,14 @@
 module ACSetInterface
-export ACSet, acset_schema, nparts, parts, has_part, has_subpart, subpart, incident,
+export ACSet, acset_schema, attr_type_instantiation,
+  nparts, parts, has_part, has_subpart, subpart, incident,
   add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!,
-  copy_parts!, copy_parts_only!, disjoint_union, tables, pretty_tables
+  copy_parts!, copy_parts_only!, disjoint_union, tables, pretty_tables, @acset
 
 using StaticArrays: StaticArray
 
 using ..Syntax: GATExpr, args
-
 using ..Theories: dom, codom
+using ...Meta: strip_lines
 
 using PrettyTables: pretty_table
 using Tables
@@ -18,6 +19,11 @@ abstract type ACSet end
 Get the schema of an acset at runtime.
 """
 function acset_schema end
+
+"""
+Get the instantiation of an attr_type at runtime
+"""
+function attr_type_instantiation end
 
 """ Number of parts of given type in an acset.
 """
@@ -164,16 +170,16 @@ Both single and vectorized assignment are supported.
 See also: [`set_subparts!`](@ref).
 """
 function set_subpart! end
-@inline set_subpart!(acs, name, subpart) = set_subpart!(acs, :, name, subpart)
+@inline set_subpart!(acs, name, vals) = set_subpart!(acs, :, name, vals)
 
-@inline set_subpart!(acs, ::Colon, name, subpart) =
-  set_subpart!(acs, 1:length(subpart(acs,name)), name, subpart)
+@inline set_subpart!(acs, ::Colon, name, vals) =
+  set_subpart!(acs, 1:length(subpart(acs,name)), name, vals)
 
 # Inlined for the same reason as `subpart`.
 
-function set_subpart!(acs, part::AbstractVector{Int}, name, subpart)
-  broadcast(part, subpart) do part, subpart
-    set_subpart!(acs, part, name, subpart)
+function set_subpart!(acs, part::AbstractVector{Int}, name, vals)
+  broadcast(part, vals) do part, vals
+    set_subpart!(acs, part, name, vals)
   end
 end
 
@@ -302,6 +308,34 @@ function Base.show(io::IO, ::MIME"text/html", acs::ACSet)
   println(io, "</span>")
   pretty_tables(io, acs, backend=:html, standalone=false)
   println(io, "</div>")
+end
+
+macro acset(head, body)
+  @assert body.head == :block
+  vals = Expr(:call, :(Dict{Symbol,Any}))
+  for l in strip_lines(body).args
+    @assert l.head == :(=)
+    push!(vals.args, :($(Expr(:quote, l.args[1])) => $(l.args[2])))
+  end
+  :(init_acset($(esc(head)), $(esc(vals))))
+end
+
+function init_acset(T::Type{<:ACSet}, initvals::Dict{Symbol,Any})
+  acs = T()
+  s = acset_schema(acs)
+  ob_specs = filter((kv) -> kv[1] ∈ s.obs, pairs(initvals))
+  hom_specs = filter((kv) -> kv[1] ∈ s.homs, pairs(initvals))
+  attr_specs = filter((kv) -> kv[1] ∈ s.attrs, pairs(initvals))
+  for (k,v) in ob_specs
+      add_parts!(acs, k, Int(v))
+  end
+  for (k,v) in hom_specs
+      set_subpart!(acs, :, k, Vector{Int}(v))
+  end
+  for (k,v) in attr_specs
+    set_subpart!(acs, :, k, Vector{attr_type_instantiation(acs, k)}(v))
+  end
+  acs
 end
 
 end

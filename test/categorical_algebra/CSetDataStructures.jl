@@ -326,93 +326,93 @@ add_part!(lset, :X)
 # @test_throws ErrorException set_subpart!(lset, 1, :label, :bar)
 
 # @acset macro
-##############
+#-------------
 
-# @present TheoryDecGraph(FreeSchema) begin
-#   E::Ob
-#   V::Ob
-#   src::Hom(E,V)
-#   tgt::Hom(E,V)
+@present TheoryDecGraph(FreeSchema) begin
+  E::Ob
+  V::Ob
+  src::Hom(E,V)
+  tgt::Hom(E,V)
 
-#   X::Data
-#   dec::Attr(E,X)
-# end
+  X::AttrType
+  dec::Attr(E,X)
+end
 
-# const DecGraph = ACSetType(TheoryDecGraph, index=[:src,:tgt])
+@acset_type DecGraph(TheoryDecGraph, index=[:src,:tgt])
 
-# g = @acset DecGraph{String} begin
-#   V = 4
-#   E = 4
-#   src = [1,2,3,4]
-#   tgt = [2,3,4,1]
-#   dec = ["a","b","c","d"]
-# end
-# @test nparts(g, :V) == 4
-# @test subpart(g, :, :src) == [1,2,3,4]
-# @test incident(g, 1, :src) == [1]
+g = @acset DecGraph{String} begin
+  V = 4
+  E = 4
+  src = [1,2,3,4]
+  tgt = [2,3,4,1]
+  dec = ["a","b","c","d"]
+end
+@test nparts(g, :V) == 4
+@test subpart(g, :, :src) == [1,2,3,4]
+@test incident(g, 1, :src) == [1]
 
-# function path_graph(n::Int)
-#   @acset DecGraph{Float64} begin
-#     V = n
-#     E = n-1
-#     src = 1:n-1
-#     tgt = 2:n
-#     dec = zeros(n-1)
-#   end
-# end
+function path_graph(n::Int)
+  @acset DecGraph{Float64} begin
+    V = n
+    E = n-1
+    src = 1:n-1
+    tgt = 2:n
+    dec = zeros(n-1)
+  end
+end
 
-# pg = path_graph(30)
-# @test (nparts(pg, :V), nparts(pg, :E)) == (30, 29)
-# @test incident(pg, 1, :src) == [1]
+pg = path_graph(30)
+@test (nparts(pg, :V), nparts(pg, :E)) == (30, 29)
+@test incident(pg, 1, :src) == [1]
 
-# n = 4
-# pg = @acset DecGraph{Tuple{Int,Int}} begin
-#   V = n
-#   E = n-1
-#   src = 1:n-1
-#   tgt = 2:n
-#   dec = zip(1:n-1, 2:n)
-# end
-# @test pg[:dec] == [(1,2), (2,3), (3,4)]
+n = 4
+pg = @acset DecGraph{Tuple{Int,Int}} begin
+  V = n
+  E = n-1
+  src = 1:n-1
+  tgt = 2:n
+  dec = zip(1:n-1, 2:n)
+end
+@test pg[:dec] == [(1,2), (2,3), (3,4)]
 
-# # Test mapping
-# #-------------
+# Test mapping
+#-------------
 
-# f(s::String) = Int(s[1])
+f(s::String) = Int(s[1])
 
-# h1 = map(g, dec = f)
-# h2 = map(g, X = f)
+h1 = map(g, dec = f)
+h2 = map(g, X = f)
 
-# @test h1 == h1
+@test h1 == h2
 
-# @test subpart(h1,:src) == subpart(g,:src)
-# @test typeof(h1).parameters[3] == Tuple{Int}
-# @test subpart(h1,:dec) == f.(["a","b","c","d"])
+@test subpart(h1,:src) == subpart(g,:src)
+@test typeof(h1).super.parameters[2] == Tuple{Int}
+@test subpart(h1,:dec) == f.(["a","b","c","d"])
 
-# @present TheoryLabelledDecGraph <: TheoryDecGraph begin
-#   label::Attr(V,X)
-# end
+@present TheoryLabelledDecGraph <: TheoryDecGraph begin
+  label::Attr(V,X)
+end
 
-# const LabelledDecGraph = ACSetType(TheoryLabelledDecGraph, index=[:src,:tgt])
+@acset_type LabelledDecGraph(TheoryLabelledDecGraph, index=[:src,:tgt])
 
-# g = @acset LabelledDecGraph{String} begin
-#   V = 4
-#   E = 4
+g = @acset LabelledDecGraph{String} begin
+  V = 4
+  E = 4
 
-#   src = [1,2,3,4]
-#   tgt = [2,3,4,1]
+  src = [1,2,3,4]
+  tgt = [2,3,4,1]
 
-#   dec = ["a","b","c","d"]
-#   label = ["w", "x", "y", "z"]
-# end
+  dec = ["a","b","c","d"]
+  label = ["w", "x", "y", "z"]
+end
 
-# h1 = map(g, X = f)
-# @test subpart(h1,:label) == f.(["w","x","y","z"])
+h1 = map(g, X = f)
+@test subpart(h1,:label) == f.(["w","x","y","z"])
 
-# h2 = map(g, dec = f, label = i -> 3)
-# @test subpart(h2,:dec) == f.(["a","b","c","d"])
-# @test subpart(h2,:label) == [3,3,3,3]
+h2 = map(g, dec = f, label = i -> 3)
+@test subpart(h2,:dec) == f.(["a","b","c","d"])
+@test subpart(h2,:label) == [3,3,3,3]
 
-# @test_throws Any map(g, dec = f)
+@test_throws Any map(g, dec = f)
 
 end
