@@ -19,7 +19,7 @@ export AbstractFreeDiagram, FreeDiagram, BipartiteFreeDiagram,
 using AutoHashEquals
 using StaticArrays: StaticVector, SVector, @SVector
 
-using ...Present, ...Theories, ...CSetDataStructures, ...Acsets, ...Graphs
+using ...Present, ...Theories, ...CSetDataStructures, ...Graphs
 import ...Theories: ob, hom, dom, codom, left, right
 using ...Graphs.BasicGraphs: TheoryGraph
 using ...Graphs.BipartiteGraphs: TheoryUndirectedBipartiteGraph

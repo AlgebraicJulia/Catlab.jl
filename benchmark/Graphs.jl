@@ -8,8 +8,8 @@ const LG, MG = LightGraphs, MetaGraphs
 
 using Catlab, Catlab.CategoricalAlgebra, Catlab.Graphs
 using Catlab.Graphs.BasicGraphs: TheoryGraph
-using Catlab.WiringDiagrams: query
-using Catlab.Programs: @relation
+# using Catlab.WiringDiagrams: query
+# using Catlab.Programs: @relation
 
 # Helpers
 #########
@@ -67,29 +67,29 @@ function Graphs.connected_component_projection(g::LG.AbstractGraph)
   LG.connected_components!(label, g)
 end
 
-abstract type FindTrianglesAlgorithm end
-struct TriangleHomomorphism <: FindTrianglesAlgorithm end
-struct TriangleQuery <: FindTrianglesAlgorithm end
+# abstract type FindTrianglesAlgorithm end
+# struct TriangleHomomorphism <: FindTrianglesAlgorithm end
+# struct TriangleQuery <: FindTrianglesAlgorithm end
 
-""" Number of triangles in a graph.
-"""
-function ntriangles(g::T, ::TriangleHomomorphism) where T
-  triangle = T(3)
-  add_edges!(triangle, [1,2,1], [2,3,3])
-  count = 0
-  homomorphisms(triangle, g) do α;
-    count += 1; return false
-  end
-  count
-end
-function ntriangles(g, ::TriangleQuery)
-  length(query(g, ntriangles_query))
-end
-const ntriangles_query = @relation (;) begin
-  E(src=v1, tgt=v2)
-  E(src=v2, tgt=v3)
-  E(src=v1, tgt=v3)
-end
+# """ Number of triangles in a graph.
+# """
+# function ntriangles(g::T, ::TriangleHomomorphism) where T
+#   triangle = T(3)
+#   add_edges!(triangle, [1,2,1], [2,3,3])
+#   count = 0
+#   homomorphisms(triangle, g) do α;
+#     count += 1; return false
+#   end
+#   count
+# end
+# function ntriangles(g, ::TriangleQuery)
+#   length(query(g, ntriangles_query))
+# end
+# const ntriangles_query = @relation (;) begin
+#   E(src=v1, tgt=v2)
+#   E(src=v2, tgt=v3)
+#   E(src=v1, tgt=v3)
+# end
 
 # Graphs
 ########
@@ -137,13 +137,13 @@ clbench["star-graph-components"] =
 lgbench["star-graph-components"] =
   @benchmarkable connected_component_projection($lg)
 
-n = 100
-g = wheel_graph(Graph, n)
-lg = LG.DiGraph(g)
-clbench["wheel-graph-triangles-hom"] =
-  @benchmarkable ntriangles($g, TriangleHomomorphism())
-clbench["wheel-graph-triangles-query"] =
-  @benchmarkable ntriangles($g, TriangleQuery())
+# n = 100
+# g = wheel_graph(Graph, n)
+# lg = LG.DiGraph(g)
+# clbench["wheel-graph-triangles-hom"] =
+#   @benchmarkable ntriangles($g, TriangleHomomorphism())
+# clbench["wheel-graph-triangles-query"] =
+#   @benchmarkable ntriangles($g, TriangleQuery())
 
 # Symmetric graphs
 ##################
@@ -191,14 +191,14 @@ clbench["star-graph-components"] =
 lgbench["star-graph-components"] =
   @benchmarkable connected_component_projection($lg)
 
-n = 100
-g = wheel_graph(SymmetricGraph, n)
-lg = LG.Graph(g)
-clbench["wheel-graph-triangles-hom"] =
-  @benchmarkable ntriangles($g, TriangleHomomorphism())
-clbench["wheel-graph-triangles-query"] =
-  @benchmarkable ntriangles($g, TriangleQuery())
-lgbench["wheel-graph-triangles"] = @benchmarkable sum(LG.triangles($lg))
+# n = 100
+# g = wheel_graph(SymmetricGraph, n)
+# lg = LG.Graph(g)
+# clbench["wheel-graph-triangles-hom"] =
+#   @benchmarkable ntriangles($g, TriangleHomomorphism())
+# clbench["wheel-graph-triangles-query"] =
+#   @benchmarkable ntriangles($g, TriangleQuery())
+# lgbench["wheel-graph-triangles"] = @benchmarkable sum(LG.triangles($lg))
 
 # Weighted graphs
 #################
