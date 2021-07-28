@@ -1,7 +1,7 @@
-module Acsets
-export Acset, acset_schema, nparts, parts, has_part, has_subpart, subpart, incident,
+module ACSetInterface
+export ACSet, acset_schema, nparts, parts, has_part, has_subpart, subpart, incident,
   add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!,
-  copy_parts!, copy_parts_only!, disjoint_union
+  copy_parts!, copy_parts_only!, disjoint_union, tables, pretty_tables
 
 using StaticArrays: StaticArray
 
@@ -9,7 +9,10 @@ using ..Syntax: GATExpr, args
 
 using ..Theories: dom, codom
 
-abstract type Acset end
+using PrettyTables: pretty_table
+using Tables
+
+abstract type ACSet end
 
 """
 Get the schema of an acset at runtime.
@@ -61,7 +64,10 @@ function  subpart end
 @inline subpart(acs, part, name) = view_or_slice(subpart(acs, name), part)
 
 function view_or_slice end
-@inline view_or_slice(x::AbstractVector, i::Union{Integer,StaticArray,AbstractVector}) = x[i]
+@inline view_or_slice(x::AbstractVector, i::Integer) = x[i]
+@inline view_or_slice(x::AbstractVector, i::Union{StaticArray, UnitRange}) = @view x[i]
+@inline view_or_slice(x::AbstractVector, ::Colon) = x
+@inline view_or_slice(x::AbstractVector, i::AbstractVector) = x[i]
 
 subpart(acs, expr::GATExpr{:generator}) = subpart(acs, first(expr))
 subpart(acs, expr::GATExpr{:id}) = parts(acs, first(dom(expr)))
@@ -253,6 +259,49 @@ function disjoint_union(acs1, acs2)
   acs = copy(acs1)
   copy_parts!(acs, acs2)
   acs
+end
+
+"""
+Get a named tuple of Tables.jl-compatible tables from an acset
+"""
+function tables end
+
+""" Display an ACSet prettily
+
+This works for any acset that implements tables
+"""
+
+# Fancy Displaying
+
+function pretty_tables(io::IO, acs::ACSet; kw...)
+  options = merge((nosubheader=true, show_row_number=true), (; kw...))
+  for (ob, table) in pairs(tables(acs))
+    # Note: PrettyTables will not print tables with zero rows.
+    if !(isempty(Tables.columnnames(table)) || Tables.rowcount(table) == 0)
+      pretty_table(io, table, row_number_column_title=string(ob); options...)
+    end
+  end
+end
+
+pretty_tables(acs::ACSet; kw...) = pretty_tables(stdout, acs; kw...)
+
+function Base.show(io::IO, ::MIME"text/plain", acs::ACSet)
+  print(io, "ACSet")
+  print(io, " with elements ")
+  join(io, ["$ob = 1:$(nparts(acs,ob))" for ob in keys(tables(acs))], ", ")
+  println(io)
+  pretty_tables(io, acs)
+end
+
+function Base.show(io::IO, ::MIME"text/html", acs::ACSet)
+  println(io, "<div class=\"c-set\">")
+  print(io, "<span class=\"c-set-summary\">")
+  print(io, "ACSet")
+  print(io, " with elements ")
+  join(io, ["$ob = 1:$(nparts(acs,ob))" for ob in keys(tables(acs))], ", ")
+  println(io, "</span>")
+  pretty_tables(io, acs, backend=:html, standalone=false)
+  println(io, "</div>")
 end
 
 end

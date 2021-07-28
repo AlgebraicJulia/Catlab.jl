@@ -3,7 +3,7 @@ export AbstractPropertyGraph, PropertyGraph, SymmetricPropertyGraph,
   gprops, vprops, eprops, get_gprop, get_vprop, get_eprop,
   set_gprop!, set_vprop!, set_eprop!, set_gprops!, set_vprops!, set_eprops!
 
-using ...Present, ...CSetDataStructures, ..BasicGraphs, ...Acsets
+using ...Present, ...CSetDataStructures, ..BasicGraphs
 using ...Theories: SchemaType
 using ..BasicGraphs: TheoryGraph, TheorySymmetricGraph
 import ..BasicGraphs: nv, ne, src, tgt, inv, edges, vertices,

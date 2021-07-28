@@ -27,25 +27,26 @@ import ...Theories: dom, codom, compose, ⋅, id,
 
 """ Create `FinSet` for part of attributed C-set.
 """
-FinSet(X::ACSet, type::Symbol) = FinSet{Int,Int}(nparts(X, type))
+FinSet(X::Acset, type::Symbol) = FinSet{Int,Int}(nparts(X, type))
 
 """ Create `FinFunction` for part or subpart of attributed C-set.
 
 The subpart must be of kind `Ob`. For indexed subparts, the index is included.
 """
-FinFunction(X::ACSet, name::Symbol) = fin_function(X, Val{name})
+FinFunction(X::StructAcset, name::Symbol) = fin_function(X, Val{name})
 
-@generated function fin_function(X::ACSet{CD,AD,Ts,Idxed},
-    ::Type{Val{name}}) where {CD,AD,Ts,Idxed,name}
-  if name ∈ ob(CD)
+@generated function fin_function(X::StructACSet{Ts,S,Idxed},
+    ::Type{Val{name}}) where {Ts,S,Idxed,name}
+  s = SchemaDesc(Schema)
+  if name ∈ s.obs
     quote
       FinFunction(identity, FinSet(X, $(QuoteNode(name))))
     end
-  elseif name ∈ hom(CD)
+  elseif name ∈ s.homs
     quote
       FinFunction(subpart(X, $(QuoteNode(name))),
-                  FinSet(X, $(QuoteNode(codom(CD, name)))),
-                  index=$(name ∈ Idxed ? :(X.indices.$name) : false))
+                  FinSet(X, $(QuoteNode(s.codoms[name]))),
+                  index=$(name ∈ Idxed ? :(X.hom_indices.$name) : false))
     end
   else
     throw(ArgumentError("$(repr(name)) not in $(ob(CD)) or $(hom(CD))"))
@@ -57,19 +58,21 @@ end
 The codomain is always of type `TypeSet`, regardless of whether the subpart is
 of kind `Ob` or `Data`. For indexed subparts, the index is included.
 """
-FinDomFunction(X::ACSet, name::Symbol) = fin_dom_function(X, Val{name})
+FinDomFunction(X::StructAcset, name::Symbol) = fin_dom_function(X, Val{name})
 
-@generated function fin_dom_function(X::ACSet{CD,AD,Ts,Idxed},
-    ::Type{Val{name}}) where {CD,AD,Ts,Idxed,name}
-  if name ∈ ob(CD)
+@generated function fin_dom_function(X::StructAcset{Ts,Schema,Idxed},
+    ::Type{Val{name}}) where {Ts,Schema,Idxed,name}
+  s = SchemaDesc(Schema)
+  if name ∈ s.obs
     quote
       n = nparts(X, $(QuoteNode(name)))
       FinDomFunction(1:n, FinSet(n), TypeSet{Int}())
     end
-  elseif name ∈ hom(CD) || name ∈ attr(AD)
+  elseif name ∈ s.homs || name s.attrs
+    index_name = name ∈ s.homs ? :hom_indices : :attr_indices
     quote
       FinDomFunction(subpart(X, $(QuoteNode(name))),
-                     index=$(name ∈ Idxed ? :(X.indices.$name) : false))
+                     index=$(name ∈ Idxed ? :(X.$(index_name).$name) : false))
     end
   else
     throw(ArgumentError(

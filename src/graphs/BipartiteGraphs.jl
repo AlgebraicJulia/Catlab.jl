@@ -15,7 +15,7 @@ export AbstractUndirectedBipartiteGraph, UndirectedBipartiteGraph,
   add_edge₁₂!, add_edge₂₁!, add_edges₁₂!, add_edges₂₁!,
   rem_edge₁₂!, rem_edge₂₁!, rem_edges₁₂!, rem_edges₂₁!
 
-using ...Present, ...CSetDataStructures, ...Acsets
+using ...Present, ...CSetDataStructures
 using ..BasicGraphs: flatten
 using ...Theories
 import ..BasicGraphs: nv, ne, vertices, edges, inneighbors, outneighbors
@@ -45,43 +45,43 @@ that all edges go from vertices of type 1 to vertices of type 2.
 
 """ Number of vertices of type 1 in a bipartite graph.
 """
-nv₁(g::Acset) = nparts(g, :V₁)
+nv₁(g::ACSet) = nparts(g, :V₁)
 
 """ Number of vertices of type 2 in a bipartite graph.
 """
-nv₂(g::Acset) = nparts(g, :V₂)
+nv₂(g::ACSet) = nparts(g, :V₂)
 
 """ Vertices of type 1 in a bipartite graph.
 """
-vertices₁(g::Acset) = parts(g, :V₁)
+vertices₁(g::ACSet) = parts(g, :V₁)
 
 """ Vertices of type 2 in a bipartite graph.
 """
-vertices₂(g::Acset) = parts(g, :V₂)
+vertices₂(g::ACSet) = parts(g, :V₂)
 
 """ Add a vertex of type 1 to a bipartite graph.
 """
-add_vertex₁!(g::Acset; kw...) = add_part!(g, :V₁; kw...)
+add_vertex₁!(g::ACSet; kw...) = add_part!(g, :V₁; kw...)
 
 """ Add a vertex of type 2 to a bipartite graph.
 """
-add_vertex₂!(g::Acset; kw...) = add_part!(g, :V₂; kw...)
+add_vertex₂!(g::ACSet; kw...) = add_part!(g, :V₂; kw...)
 
 """ Add vertices of type 1 to a bipartite graph.
 """
-add_vertices₁!(g::Acset, n::Int; kw...) = add_parts!(g, :V₁, n; kw...)
+add_vertices₁!(g::ACSet, n::Int; kw...) = add_parts!(g, :V₁, n; kw...)
 
 """ Add vertices of type 2 to a bipartite graph.
 """
-add_vertices₂!(g::Acset, n::Int; kw...) = add_parts!(g, :V₂, n; kw...)
+add_vertices₂!(g::ACSet, n::Int; kw...) = add_parts!(g, :V₂, n; kw...)
 
 """ Remove vertex of type 1 from a bipartite graph.
 """
-rem_vertex₁!(g::Acset, v::Int; kw...) = rem_vertices₁!(g, v:v; kw...)
+rem_vertex₁!(g::ACSet, v::Int; kw...) = rem_vertices₁!(g, v:v; kw...)
 
 """ Remove vertex of type 2 from a bipartite graph.
 """
-rem_vertex₂!(g::Acset, v::Int; kw...) = rem_vertices₂!(g, v:v; kw...)
+rem_vertex₂!(g::ACSet, v::Int; kw...) = rem_vertices₂!(g, v:v; kw...)
 
 """ Remove vertices of type 1 from a bipartite graph.
 """
@@ -150,57 +150,57 @@ edges(g::AbstractBipartiteGraph) = (edges₁₂(g), edges₂₁(g))
 
 """ Number of edges from V₁ to V₂ in a bipartite graph.
 """
-ne₁₂(g::Acset) = nparts(g, :E₁₂)
-ne₁₂(g::Acset, src::Int, tgt::Int) =
+ne₁₂(g::ACSet) = nparts(g, :E₁₂)
+ne₁₂(g::ACSet, src::Int, tgt::Int) =
   count(subpart(g, e, :tgt₂) == tgt for e in incident(g, src, :src₁))
 
 """ Number of edges from V₂ to V₁ in a bipartite graph.
 """
-ne₂₁(g::Acset) = nparts(g, :E₂₁)
-ne₂₁(g::Acset, src::Int, tgt::Int) =
+ne₂₁(g::ACSet) = nparts(g, :E₂₁)
+ne₂₁(g::ACSet, src::Int, tgt::Int) =
   count(subpart(g, e, :tgt₁) == tgt for e in incident(g, src, :src₂))
 
 """ Edges from V₁ to V₂ in a bipartite graph.
 """
-edges₁₂(g::Acset) = parts(g, :E₁₂)
-edges₁₂(g::Acset, src::Int, tgt::Int) =
+edges₁₂(g::ACSet) = parts(g, :E₁₂)
+edges₁₂(g::ACSet, src::Int, tgt::Int) =
   (e for e in incident(g, src, :src₁) if subpart(g, e, :tgt₂) == tgt)
 
 """ Edges from V₂ to V₁ in a bipartite graph.
 """
-edges₂₁(g::Acset) = parts(g, :E₂₁)
-edges₂₁(g::Acset, src::Int, tgt::Int) =
+edges₂₁(g::ACSet) = parts(g, :E₂₁)
+edges₂₁(g::ACSet, src::Int, tgt::Int) =
   (e for e in incident(g, src, :src₂) if subpart(g, e, :tgt₁) == tgt)
 
 """ Source vertex of edge from V₁ to V₂ in a bipartite graph.
 """
-src₁(g::Acset, args...) = subpart(g, args..., :src₁)
+src₁(g::ACSet, args...) = subpart(g, args..., :src₁)
 
 """ Target vertex of edge from V₁ to V₂ in a bipartite graph.
 """
-tgt₂(g::Acset, args...) = subpart(g, args..., :tgt₂)
+tgt₂(g::ACSet, args...) = subpart(g, args..., :tgt₂)
 
 """ Source vertex of edge from V₂ to V₁ in a bipartite graph.
 """
-src₂(g::Acset, args...) = subpart(g, args..., :src₂)
+src₂(g::ACSet, args...) = subpart(g, args..., :src₂)
 
 """ Target vertex of edge from V₂ to V₁ in a bipartite graph.
 """
-tgt₁(g::Acset, args...) = subpart(g, args..., :tgt₁)
+tgt₁(g::ACSet, args...) = subpart(g, args..., :tgt₁)
 
 """ Add edge from V₁ to V₂ in a bipartite graph.
 """
-add_edge₁₂!(g::Acset, src::Int, tgt::Int; kw...) =
+add_edge₁₂!(g::ACSet, src::Int, tgt::Int; kw...) =
   add_part!(g, :E₁₂; src₁=src, tgt₂=tgt, kw...)
 
 """ Add edge from V₂ to V₁ in a bipartite graph.
 """
-add_edge₂₁!(g::Acset, src::Int, tgt::Int; kw...) =
+add_edge₂₁!(g::ACSet, src::Int, tgt::Int; kw...) =
   add_part!(g, :E₂₁; src₂=src, tgt₁=tgt, kw...)
 
 """ Add edges from V₁ to V₂ in a bipartite graph.
 """
-function add_edges₁₂!(g::Acset, srcs::AbstractVector{Int},
+function add_edges₁₂!(g::ACSet, srcs::AbstractVector{Int},
                       tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
   add_parts!(g, :E₁₂, n; src₁=srcs, tgt₂=tgts, kw...)
@@ -208,7 +208,7 @@ end
 
 """ Add edges from V₂ to V₁ in a bipartite graph.
 """
-function add_edges₂₁!(g::Acset, srcs::AbstractVector{Int},
+function add_edges₂₁!(g::ACSet, srcs::AbstractVector{Int},
                       tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
   add_parts!(g, :E₂₁, n; src₂=srcs, tgt₁=tgts, kw...)
