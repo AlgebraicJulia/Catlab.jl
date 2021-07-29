@@ -27,6 +27,16 @@ elarr = elements(arr)
   @test elarr[:, :cod]   == [1, 1]
 end
 
+b = @acset Graph begin
+  V = 2
+  E = 1
+  src = [1]
+  tgt = [2]
+end
+
+ThBPG, obmap, hommap = CatElements.presentation(elements(b))
+@test Symbol.(generators(ThBPG)) == [:E_1, :V_1, :V_2, :tgt_E_1, :src_E_1]
+
 
 p₀ = @acset Graph begin
   V = 2

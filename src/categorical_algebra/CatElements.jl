@@ -3,7 +3,6 @@ using Catlab
 using ..CSets
 using ..FinSets
 using ...Present, ...Theories
-# using ..CSetDataStructures
 using ...Theories: Category, CatDesc, AttrDesc, ob, hom, attr, adom, acodom
 import Catlab.Present: Presentation
 
@@ -21,6 +20,9 @@ export ThElements, AbstractElements, Elements, elements
   πₐ::Hom(Arr, Hom)
   nameo::Attr(Ob, Name)
   nameh::Attr(Hom, Name)
+
+  src⋅πₑ == πₐ⋅dom
+  tgt⋅πₑ == πₐ⋅cod
 end
 
 const AbstractElements = AbstractACSetType(ThElements)
@@ -34,7 +36,7 @@ homomorphism is a graph shaped like the schema. This is one half of the isomorph
 databases and knowledge graphs.
 """
 function elements(X::ACS) where
-  {CD <: CatDesc, AD <: AttrDesc{CD}, Ts, ACS <: AbstractACSet{CD,AD,Ts}}
+  {CD <: CatDesc, ACS <: AbstractCSet{CD}}
   Y = Elements{Symbol}()
 
   add_parts!(Y, :Ob, length(ob(CD)), nameo=ob(CD))
@@ -53,7 +55,14 @@ function elements(X::ACS) where
   return Y
 end
 
+"""    presentation(X::AbstractElements)
 
+convert a category of elements into a new schema. This is useful for generating large schemas
+that are defined as the category of elements of a specified C-Set. For example, the schema for
+Bipartite Graphs is the category of elements of the graph with 2 vertices and 1 edge. The 2 vertices
+will get mapped to elements `V_1, V_2` and the one edge will be `E_1` and the source and target maps
+will be mapped to `src_E_1, tgt_E_1`.
+"""
 function presentation(X::AbstractElements)
   P = Presentation(FreeSchema)
   obs = Dict{Tuple{Symbol, Int}, Any}()
