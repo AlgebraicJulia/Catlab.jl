@@ -1,4 +1,4 @@
-odule TestCatElements
+module TestCatElements
 using Test
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra,
   Catlab.CategoricalAlgebra.FinSets, Catlab.CategoricalAlgebra.CatElements
