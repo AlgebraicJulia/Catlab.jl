@@ -16,7 +16,7 @@ using ...Meta, ...Present
 using ...Syntax: GATExpr, args
 using ...Theories: Schema, FreeSchema, SchemaType,
   CatDesc, CatDescType, ob, hom, dom, codom, codom_num,
-  AttrDesc, AttrDescType, data, attr, adom, acodom, data_num, attrs_by_codom
+  AttrDesc, AttrDescType, data, attr, attr_num, adom, acodom, data_num, attrs_by_codom
 
 # Data types
 ############
@@ -436,23 +436,28 @@ incident(acs::ACSet, part, expr::GATExpr; kw...) =
         copy ? Base.copy.(indices) : indices
       end
     else
-      :(broadcast_findall(part, acs.tables.$(dom(CD,name)).$name))
+      :(vectorized_findall(part, acs.tables.$(dom(CD,name)).$name))
     end
   elseif name ∈ attr(AD)
     if name ∈ Idxed
       quote
-        indices = get_data_index.(Ref(acs.indices.$name), part)
+        indices = vectorized_data_index(acs.indices.$name, part)
         copy ? Base.copy.(indices) : indices
       end
     else
-      :(broadcast_findall(part, acs.tables.$(dom(AD,name)).$name))
+      :(vectorized_findall(part, acs.tables.$(dom(AD,name)).$name))
     end
   else
     throw(ArgumentError("$(repr(name)) not in $(hom(CD)) or $(attr(AD))"))
   end
 end
 
-broadcast_findall(xs, array::AbstractArray) =
+# FIXME: This is not a reliable way to decide whether to vectorize. What if the
+# attribute type is itself an array?
+vectorized_data_index(d, x) = get_data_index(d, x)
+vectorized_data_index(d, xs::AbstractArray) = get_data_index.(Ref(d), xs)
+vectorized_findall(x, array::AbstractArray) = findall(y -> x == y, array)
+vectorized_findall(xs::AbstractArray, array::AbstractArray) =
   broadcast(x -> findall(y -> x == y, array), xs)
 
 """ Add part of given type to C-set, optionally setting its subparts.
@@ -845,8 +850,13 @@ end
 ```
 """
 macro acset(head, body)
-  expr = :(init_acset($(esc(head)), $(Expr(:quote, body))))
-  Expr(:call, esc(:eval), expr)
+  @assert body.head == :block
+  vals = Expr(:call, :(Dict{Symbol,Any}))
+  for l in strip_lines(body).args
+    @assert l.head == :(=)
+    push!(vals.args, :($(Expr(:quote, l.args[1])) => $(l.args[2])))
+  end
+  :(init_acset($(esc(head)), $(esc(vals))))
 end
 
 """
@@ -855,25 +865,22 @@ TODO: Could also rely on a @generated function that took in a "flat" named tuple
 TODO: Alternative syntax for @acset input based on CSV
 TODO: Actual CSV input
 """
-function init_acset(T::Type{<:ACSet{CD,AD,Ts}},body) where {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple}
-  body = strip_lines(body)
-  @assert body.head == :block
-  code = quote
-    acs = $(T)()
+function init_acset(T::Type{<:ACSet{CD,AD,Ts}}, initvals::Dict{Symbol,Any}) where
+    {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple}
+  acs = T()
+  ob_specs = filter((kv) -> kv[1] ∈ ob(CD), pairs(initvals))
+  hom_specs = filter((kv) -> kv[1] ∈ hom(CD), pairs(initvals))
+  attr_specs = filter((kv) -> kv[1] ∈ attr(AD), pairs(initvals))
+  for (k,v) in ob_specs
+      add_parts!(acs, k, Int(v))
   end
-  for elem in body.args
-    lhs, rhs = @match elem begin
-      Expr(:(=), lhs, rhs) => (lhs,rhs)
-      _ => error("Every line of `@acset` must be an assignment")
-    end
-    if lhs in ob(CD)
-      push!(code.args, :(add_parts!(acs, $(Expr(:quote, lhs)), $(rhs))))
-    elseif lhs in hom(CD) || lhs in attr(AD)
-      push!(code.args, :(set_subpart!(acs, :, $(Expr(:quote, lhs)), $(rhs))))
-    end
+  for (k,v) in hom_specs
+      set_subpart!(acs, :, k, Vector{Int}(v))
   end
-  push!(code.args, :(return acs))
-  code
+  for (k,v) in attr_specs
+    set_subpart!(acs, :, k, Vector{Ts.parameters[data_num(AD,codom(AD,k))]}(v))
+  end
+  acs
 end
 
 """ Map over a data type, in the style of Haskell functors

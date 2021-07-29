@@ -4,14 +4,13 @@ using Test
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra,
   Catlab.CategoricalAlgebra.FinSets
 using Catlab.Graphs.BasicGraphs: TheoryGraph
+using Catlab.Present
 
-function roundtrip_json_acset(x::T) where T <: AbstractACSet
-  mktempdir() do dir
-    path = joinpath(dir, "acset.json")
-    write_json_acset(x, path)
-    read_json_acset(T, path)
-  end
+@present TheoryDDS(FreeSchema) begin
+  X::Ob
+  Φ::Hom(X,X)
 end
+const DDS = CSetType(TheoryDDS, index=[:Φ])
 
 # FinSets interop
 #################
@@ -25,7 +24,6 @@ f = FinFunction(g, :src)
 @test codom(f) == FinSet(6)
 @test collect(f) == 2:4
 @test is_indexed(f)
-@test roundtrip_json_acset(g) == g
 
 f = FinDomFunction(g, :E)
 @test collect(f) == 1:3
@@ -39,7 +37,6 @@ g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5, 1.5],))
 f = FinDomFunction(g, :weight)
 @test codom(f) == TypeSet(Float64)
 @test collect(f) == [0.5, 1.5]
-@test roundtrip_json_acset(g) == g
 
 # C-set morphisms
 #################
@@ -250,7 +247,6 @@ add_edge!(h, 1, 1, elabel=:f)
 coprod = ob(coproduct(g, h))
 @test subpart(coprod, :vlabel) == [:u, :v, :u]
 @test subpart(coprod, :elabel) == [:e, :f]
-@test roundtrip_json_acset(g) == g
 
 # Pushout of labeled graph.
 g0 = VELabeledGraph{Symbol}()
@@ -283,6 +279,25 @@ I = ob(terminal(Graph))
 @test homomorphism(g, I) == CSetTransformation((V=[1,1,1], E=[1,1]), g, I)
 @test !is_homomorphic(g, I, monic=true)
 @test !is_homomorphic(I, h)
+
+# Graph homomorphism starting from partial assignment, e.g. vertex assignment.
+α = CSetTransformation((V=[2,3,4], E=[2,3]), g, h)
+@test homomorphisms(g, h, initial=(V=[2,3,4],)) == [α]
+@test homomorphisms(g, h, initial=(V=Dict(1 => 2, 3 => 4),)) == [α]
+@test homomorphisms(g, h, initial=(E=Dict(1 => 2),)) == [α]
+# Inconsistent initial assignment.
+@test !is_homomorphic(g, h, initial=(V=Dict(1 => 1), E=Dict(1 => 3)))
+# Consistent initial assignment but no extension to complete assignment.
+@test !is_homomorphic(g, h, initial=(V=Dict(1 => 2, 3 => 3),))
+
+# Monic and iso on a componentwise basis.
+g1, g2 = path_graph(Graph, 3), path_graph(Graph, 2)
+add_edges!(g1, [1,2,3,2], [1,2,3,3])  # loops on each node and one double arrow
+add_edge!(g2, 1, 2)  # double arrow
+@test length(homomorphisms(g2, g1)) == 8 # each vertex + 1->2, and four for 2->3
+@test length(homomorphisms(g2, g1, monic=[:V])) == 5 # remove vertex solutions
+@test length(homomorphisms(g2, g1, monic=[:E])) == 2 # two for 2->3
+@test length(homomorphisms(g2, g1, iso=[:E])) == 0
 
 # Symmetic graphs
 #-----------------
@@ -322,39 +337,94 @@ h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:c,:d,:a,:b],))
 h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:d,:c],))
 @test !is_homomorphic(g, h)
 
-# Functorial data migration
-###########################
+# Sub-C-sets
+############
 
-@present TheoryDDS(FreeSchema) begin
-  X::Ob
-  Φ::Hom(X,X)
+# Construct sub-C-sets.
+X = path_graph(Graph, 4)
+A = Subobject(X, V=[2,3,4], E=[2,3])
+@test Subobject(X, V=[false,true,true,true], E=[false,true,true]) == A
+α = hom(A)
+@test is_natural(α)
+@test dom(α) == path_graph(Graph, 3)
+@test codom(α) == X
+
+# Lattice of sub-C-sets.
+X = Graph(6)
+add_edges!(X, [1,2,3,4,4], [3,3,4,5,6])
+A, B = Subobject(X, V=1:4, E=1:3), Subobject(X, V=3:6, E=3:5)
+@test A ∧ B == Subobject(X, V=3:4, E=3:3)
+@test A ∨ B == Subobject(X, V=1:6, E=1:5)
+@test ⊤(X) |> force == Subobject(X, V=1:6, E=1:5)
+@test ⊥(X) |> force == Subobject(X, V=1:0, E=1:0)
+
+# Bi-Heyting algebra of sub-C-sets.
+#
+# Implication in Graph (Reyes et al 2004, Sec 9.1, p. 139).
+I = Graph(1)
+Y = path_graph(Graph, 3) ⊕ path_graph(Graph, 2) ⊕ path_graph(Graph, 2)
+add_vertex!(Y)
+add_edge!(Y, 2, 8)
+Z = cycle_graph(Graph, 1) ⊕ cycle_graph(Graph, 1)
+ιY, ιZ = colim = pushout(CSetTransformation(I, Y, V=[3]),
+                         CSetTransformation(I, Z, V=[1]))
+B_implies_C, B = Subobject(ιY), Subobject(ιZ)
+C = Subobject(ob(colim), V=2:5, E=2:3)
+@test (B ⟹ C) == B_implies_C
+
+# Subtraction in Graph (Reyes et al 2004, Sec 9.1, p. 144).
+X = ob(colim)
+C = Subobject(X, V=2:5, E=[2,3,ne(X)-1])
+@test (B \ C) == Subobject(X, V=[nv(X)], E=[ne(X)])
+
+# Negation in Graph (Reyes et al 2004, Sec 9.1, p. 139-140).
+X = cycle_graph(Graph, 1) ⊕ path_graph(Graph, 2) ⊕ cycle_graph(Graph, 4)
+add_vertex!(X)
+add_edge!(X, 4, 8)
+A = Subobject(X, V=[2,3,4,5,8], E=[3,7])
+neg_A = Subobject(X, V=[1,6,7], E=[1,5])
+@test is_natural(hom(A)) && is_natural(hom(neg_A))
+@test ¬A == neg_A
+@test ¬neg_A == Subobject(X, V=[2,3,4,5,8], E=[2,3,7])
+
+# Non in Graph (Reyes et al 2004, Sec 9.1, p. 144).
+X = path_graph(Graph, 5) ⊕ path_graph(Graph, 2) ⊕ cycle_graph(Graph, 1)
+A = Subobject(X, V=[1,4,5], E=[4])
+non_A = Subobject(X, V=setdiff(vertices(X), 5), E=setdiff(edges(X), 4))
+@test ~A == non_A
+@test ~non_A == Subobject(X, V=[4,5], E=[4])
+
+# Negation and non in DDS.
+S₁ = DDS(); add_parts!(S₁, :X, 5, Φ=[3,3,4,5,5])
+S₂ = DDS(); add_parts!(S₂, :X, 3, Φ=[2,3,3])
+ι₁, ι₂ = colim = coproduct(S₁, S₂)
+S = ob(colim)
+A = Subobject(S, X=[3,4,5])
+@test ¬A == Subobject(ι₂)
+@test ¬Subobject(ι₂) == Subobject(ι₁)
+@test ~A == ⊤(S) |> force
+
+# Serialization
+###############
+
+function roundtrip_json_acset(x::T) where T <: AbstractACSet
+  mktempdir() do dir
+    path = joinpath(dir, "acset.json")
+    write_json_acset(x, path)
+    read_json_acset(T, path)
+  end
 end
 
-const AbstractDDS = AbstractCSetType(TheoryDDS)
-const DDS = CSetType(TheoryDDS, index=[:Φ])
+g = star_graph(Graph, 5)
+@test roundtrip_json_acset(g) == g
 
-h = Graph(3)
-add_parts!(h, :E, 3, src = [1,2,3], tgt = [2,3,1])
+g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5, 1.5],))
+@test roundtrip_json_acset(g) == g
 
-# Identity data migration.
-@test h == Graph(h, Dict(:V => :V, :E => :E),
-                    Dict(:src => :src, :tgt => :tgt))
-
-# Migrate DDS → Graph.
-dds = DDS()
-add_parts!(dds, :X, 3, Φ=[2,3,1])
-X = TheoryDDS[:X]
-@test h == Graph(dds, Dict(:V => :X, :E => :X),
-                 Dict(:src => id(X), :tgt => :Φ))
-
-h2 = copy(h)
-migrate!(h2, dds, Dict(:V => :X, :E => :X),
-                  Dict(:src => id(X), :tgt => :Φ))
-@test h2 == ob(coproduct(h, h))
-
-# Migrate DDS → DDS by advancing four steps.
-@test dds == DDS(dds, Dict(:X => :X),
-                      Dict(:Φ => [:Φ, :Φ, :Φ, :Φ]))
+g = VELabeledGraph{Symbol}()
+add_vertices!(g, 2, vlabel=[:u,:v])
+add_edge!(g, 1, 2, elabel=:e)
+@test roundtrip_json_acset(g) == g
 
 @present TheoryLabeledDDS <: TheoryDDS begin
   Label::Data
@@ -364,13 +434,6 @@ const LabeledDDS = ACSetType(TheoryLabeledDDS, index=[:Φ, :label])
 
 ldds = LabeledDDS{Int}()
 add_parts!(ldds, :X, 4, Φ=[2,3,4,1], label=[100, 101, 102, 103])
-
-wg = WeightedGraph{Int}(4)
-add_parts!(wg, :E, 4, src=[1,2,3,4], tgt=[2,3,4,1], weight=[101, 102, 103, 100])
-
-@test wg == WeightedGraph{Int}(ldds,
-  Dict(:V => :X, :E => :X),
-  Dict(:src => id(X), :tgt => :Φ, :weight => [:Φ, :label]))
 @test roundtrip_json_acset(ldds) == ldds
 
 end

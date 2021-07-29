@@ -32,7 +32,7 @@ abstract type HomHExpr{T} <: CategoryExpr{T} end
 end
 
 # Convenience constructors
-composeH(αs::Vector) = foldl(composeH, αs)
+composeH(αs::AbstractVector) = foldl(composeH, αs)
 composeH(α, β, γ, αs...) = composeH([α, β, γ, αs...])
 
 """ Syntax for a 2-category.
@@ -119,7 +119,7 @@ end
 end
 
 # Convenience constructors
-composeV(αs::Vector) = foldl(composeV, αs)
+composeV(αs::AbstractVector) = foldl(composeV, αs)
 composeV(α, β, γ, αs...) = composeV([α, β, γ, αs...])
 
 """ Syntax for a double category.

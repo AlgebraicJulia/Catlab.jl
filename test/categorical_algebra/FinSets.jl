@@ -278,6 +278,16 @@ colim = coproduct([FinSet(2), FinSet(3)])
 @test force(first(legs(colim)) ⋅ copair(colim,[f,g])) == f
 @test force(last(legs(colim)) ⋅ copair(colim,[f,g])) == g
 
+# Cocartesian monoidal structure.
+@test FinSet(2)⊕FinSet(3) == FinSet(5)
+@test oplus([FinSet(2), FinSet(3), FinSet(4)]) == FinSet(9)
+@test f⊕g == FinFunction([3,5,6,7,8], 10)
+@test mzero(FinSet{Int}) == FinSet(0)
+@test swap(FinSet(2), FinSet(3)) == FinFunction([4,5,1,2,3])
+ι1, ι2 = coproj1(FinSet(2),FinSet(3)), coproj2(FinSet(2),FinSet(3))
+@test ι1 == FinFunction([1,2], 5)
+@test ι2 == FinFunction([3,4,5], 5)
+
 # Coequalizers
 #-------------
 
@@ -371,5 +381,25 @@ colim = colimit(diagram)
 ι1, ι2 = colim
 @test ι1 == FinFunction([1,2], 3)
 @test ι2 == FinFunction([1,1,3], 3)
+
+# Subsets
+#########
+
+X = FinSet(10)
+A, B = SubFinSet(X, [1,2,5,6,8,9]), SubFinSet(X, [2,3,5,7,8])
+@test ob(A) == X
+
+# Lattice of subsets.
+@test A ∧ B == SubFinSet(X, [2,5,8])
+@test A ∨ B == SubFinSet(X, [1,2,3,5,6,7,8,9])
+@test ⊤(X) |> force == SubFinSet(X, 1:10)
+@test ⊥(X) |> force == SubFinSet(X, 1:0)
+
+for alg in (SubOpBoolean(), SubOpWithLimits())
+  @test meet(A, B, alg) |> sort == SubFinSet(X, [2,5,8])
+  @test join(A, B, alg) |> sort == SubFinSet(X, [1,2,3,5,6,7,8,9])
+  @test top(X, alg) |> force == SubFinSet(X, 1:10)
+  @test bottom(X, alg) |> force == SubFinSet(X, 1:0)
+end
 
 end

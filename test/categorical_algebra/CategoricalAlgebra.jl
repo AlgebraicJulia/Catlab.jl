@@ -43,6 +43,13 @@ end
 
 @testset "CatElements" begin
   include("CatElements.jl")
+  
+@testset "DataMigration" begin
+  include("DataMigration.jl")
+end
+
+@testset "DPO" begin
+  include("DPO.jl")
 end
 
 end

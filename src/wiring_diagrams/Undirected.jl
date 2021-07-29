@@ -10,7 +10,7 @@ export UndirectedWiringDiagram, UntypedUWD, TypedUWD,
 
 using ...Present, ...CategoricalAlgebra.CSets, ...CategoricalAlgebra.Limits
 using ...CategoricalAlgebra.FinSets: FinSet, FinFunction
-using ...Theories: dom, codom, compose, ⋅, id
+using ...Theories: dom, codom, compose, ⋅, id, oplus
 import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,
   add_wires!, singleton_diagram, ocompose, substitute
 
@@ -304,10 +304,5 @@ end
 
 flat(x) = reduce(vcat, x, init=Int[])
 flatmap(f, xs...) = mapreduce(f, vcat, xs..., init=Int[])
-
-# FIXME: Should be defined in FinSets.
-function oplus(fs::AbstractVector{<:FinFunction})
-  copair(coproduct(map(dom, fs)), map(compose, fs, coproduct(map(codom, fs))))
-end
 
 end

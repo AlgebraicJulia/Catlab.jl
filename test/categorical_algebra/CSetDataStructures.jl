@@ -274,6 +274,11 @@ set_subpart!(lset, 1, :label, :baz)
 set_subpart!(lset, 3, :label, :biz)
 @test incident(lset, :foo, :label) == []
 
+# Labeled set with compound label (tuple).
+lset = IndexedLabeledSet{Tuple{Int,Int}}()
+add_parts!(lset, :X, 2, label=[(1,1), (1,2)])
+@test incident(lset, (1,2), :label) == [2]
+
 # Deletion with indexed data attribute.
 lset = IndexedLabeledSet{Symbol}()
 add_parts!(lset, :X, 3, label=[:foo, :foo, :bar])
@@ -341,6 +346,23 @@ end
 @test nparts(g,:V) == 4
 @test subpart(g,:,:src) == [1,2,3,4]
 @test incident(g,1,:src) == [1]
+
+function path_graph(n::Int)
+  @acset DecGraph{Float64} begin
+    V = n
+    E = (n-1)
+    src = (1:n-1)
+    tgt = (2:n)
+    dec = zeros(n-1)
+  end
+end
+
+pg = path_graph(30)
+
+@test nparts(pg, :V) == 30
+@test nparts(pg, :E) == 29
+@test incident(pg, 1, :src) == [1]
+    
 
 # Test mapping
 #-------------

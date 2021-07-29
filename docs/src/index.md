@@ -51,8 +51,10 @@ of the project.
 
 **Graphical user interface**: Catlab does not provide a wiring diagram editor
 or other graphical user interface. It is primarily a programming library, not a
-user-facing application. However, it could be used as the backend for such an
-application.
+user-facing application. However, there is another project in the AlgebraicJulia
+ecosystem, [Semagrams.jl](https://github.com/AlgebraicJulia/Semagrams.jl)
+which does provide graphical user interfaces for interacting with wiring
+diagrams, Petri nets, and the like.
 
 ### What is a GAT?
 
