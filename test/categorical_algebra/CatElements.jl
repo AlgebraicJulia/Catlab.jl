@@ -1,4 +1,4 @@
-# module TestCatElements
+module TestCatElements
 using Test
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra,
   Catlab.CategoricalAlgebra.FinSets, Catlab.CategoricalAlgebra.CatElements
@@ -8,10 +8,9 @@ using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra,
 arr = @acset Graph begin
     V = 2
     E = 1
-    src=1
-    tgt=2
+    src=[1]
+    tgt=[2]
 end
-
 elarr = elements(arr)
 @testset "Arrow Elements" begin
     @test nparts(elarr, :El)  == 3
@@ -36,7 +35,9 @@ p₀ = @acset Graph begin
     tgt=[2,1]
 end
 
-ThPetri, obmap, hommap = Presentation(elements(p₀))
+ThPetri, obmap, hommap = CatElements.presentation(elements(p₀))
+@test Symbol.(generators(ThPetri)) == [:E_1, :E_2, :V_1, :V_2, :src_E_2, :tgt_E_1, :tgt_E_2, :src_E_1]
+
 Petri = ACSetType(ThPetri)
 
 sir_eltsch = @acset Petri begin
@@ -59,5 +60,6 @@ end
     @test nparts(sir_eltsch, :E_1) == 3
     @test nparts(sir_eltsch, :E_2) == 3
     @test sir_eltsch[:, :src_E_2] == [1,1,2]
+end
 end
 end

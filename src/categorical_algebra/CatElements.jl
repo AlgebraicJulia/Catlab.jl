@@ -54,7 +54,7 @@ function elements(X::ACS) where
 end
 
 
-function Presentation(X::AbstractElements)
+function presentation(X::AbstractElements)
     P = Presentation(FreeSchema)
     obs = Dict{Tuple{Symbol, Int}, Any}()
     for a in 1:nparts(X, :Ob)
