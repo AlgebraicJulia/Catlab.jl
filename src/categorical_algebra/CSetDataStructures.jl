@@ -17,7 +17,7 @@ import Tables
 # StructACSet Struct Generation
 ###############################
 
-abstract type StructACSet{S<:SchemaDescType,Ts<:Tuple,Idxed} <: ACSet end
+abstract type StructACSet{S<:SchemaDescType,Ts<:Tuple,Idxed,UniqueIdxed} <: ACSet end
 
 q(s::Symbol) = Expr(:quote,s)
 q(s::GATExpr) = q(nameof(s))
@@ -40,35 +40,42 @@ end
 
 """ Create the struct declaration for a `StructACSet` from a Presentation
 """
-function struct_acset(name::Symbol, parent, p::Presentation{Schema}, idxed=[])
+function struct_acset(name::Symbol, parent, p::Presentation{Schema}; index=[], unique_index=[])
   obs = p.generators[:Ob]
   homs = p.generators[:Hom]
   attr_types = p.generators[:AttrType]
   Ts = nameof.(attr_types)
   attrs = p.generators[:Attr]
-  idxed = (;[x => x ∈ idxed for x in [nameof.(homs);nameof.(attrs)]]...)
+  idxed = (;[x => x ∈ index for x in [nameof.(homs);nameof.(attrs)]]...)
+  unique_idxed = (;[x => x ∈ unique_index for x in [nameof.(homs);nameof.(attrs)]]...)
   indexed_homs = filter(f -> idxed[nameof(f)], homs)
+  unique_indexed_homs = filter(f -> unique_idxed[nameof(f)], homs)
   indexed_attrs = filter(a -> idxed[nameof(a)], attrs)
-  param_type, new_call = if length(attr_types) > 0
+  unique_indexed_attrs = filter(a -> unique_idxed[nameof(a)], attrs)
+  parameterized_type, new_call = if length(attr_types) > 0
     (:($name{$(nameof.(attr_types)...)}), :(new{$(nameof.(attr_types)...)}))
   else
     name, :new
   end
   schema_type = SchemaDescTypeType(p)
   quote
-    struct $param_type <: $parent{$schema_type, Tuple{$(Ts...)}, $idxed}
+    struct $parameterized_type <: $parent{$schema_type, Tuple{$(Ts...)}, $idxed, $unique_idxed}
       obs::$(pi_type(obs, _ -> :(Ref{Int})))
       homs::$(pi_type(homs, _ -> :(Vector{Int})))
       attrs::$(pi_type(attrs, a -> :(Vector{$(nameof(codom(a)))})))
       hom_indices::$(pi_type(indexed_homs, _ -> :(Vector{Vector{Int}})))
+      hom_unique_indices::$(pi_type(unique_indexed_homs, _ -> :(Vector{Int})))
       attr_indices::$(pi_type(indexed_attrs, a -> :(Dict{$(nameof(codom(a))),Vector{Int}})))
-      function $param_type() where {$(nameof.(attr_types)...)}
+      attr_unique_indices::$(pi_type(unique_indexed_attrs, a -> :(Dict{$(nameof(codom(a))), Int})))
+      function $parameterized_type() where {$(nameof.(attr_types)...)}
         $new_call(
           $(pi_type_elt(obs, _ -> :(Ref(0)))),
           $(pi_type_elt(homs, _ -> :(Int[]))),
           $(pi_type_elt(attrs, a -> :($(nameof(codom(a)))[]))),
           $(pi_type_elt(indexed_homs, _ -> :(Vector{Int}[]))),
-          $(pi_type_elt(indexed_attrs, a -> :(Dict{$(nameof(codom(a))),Vector{Int}}())))
+          $(pi_type_elt(unique_indexed_homs, _ -> Int[])),
+          $(pi_type_elt(indexed_attrs, a -> :(Dict{$(nameof(codom(a))),Vector{Int}}()))),
+          $(pi_type_elt(unique_indexed_attrs, a -> :(Dict{$(nameof(codom(a))),Int}())))
         )
       end
     end
@@ -82,15 +89,17 @@ macro acset_type(head)
     Expr(:(<:), h, p) => (h,p)
     _ => (head, GlobalRef(CSetDataStructures, :StructACSet))
   end
-  name, schema, idxed = @match head begin
-    Expr(:call, name, schema, Expr(:kw,:index,idxed)) => (name, schema, unquote.(idxed.args))
-    Expr(:call, name, schema) => (name, schema, Symbol[])
+  name, schema, idx_args = @match head begin
+    Expr(:call, name, schema, idx_args...) => (name, schema, idx_args)
     _ => error("Unsupported head for @acset_type")
   end
   abstract_name = Symbol("Abstract" * string(name))
+  # We assign this to an anonymous variable so that there is something
+  # to attach documentation to.
+  # TODO: this is a hack and there should be a better way
   quote
     const tmp = $(esc(:eval))($(GlobalRef(CSetDataStructures, :struct_acset))(
-      $(Expr(:quote, name)), $(Expr(:quote, parent)), $(esc(schema)), $idxed))
+      $(Expr(:quote, name)), $(Expr(:quote, parent)), $(esc(schema)), $(idx_args...)))
   end
 end
 
@@ -100,7 +109,7 @@ macro abstract_acset_type(head)
     _ => (head, GlobalRef(CSetDataStructures, :StructACSet))
   end
   esc(quote
-    abstract type $type{S,Ts,idxed} <: $parent{S,Ts,idxed} end
+    abstract type $type{S,Ts,Idxed,UniqueIdxed} <: $parent{S,Ts,Idxed,UniqueIdxed} end
   end)
 end
 
@@ -187,12 +196,18 @@ end
 We keep the main body of the code generating out of the @generated function
 so that the code-generating function only needs to be compiled once.
 """
-function incident_body(s::SchemaDesc, idxed::Dict{Symbol,Bool}, f::Symbol)
+function incident_body(s::SchemaDesc,
+                       idxed::Dict{Symbol,Bool}, unique_idxed::Dict{Symbol,Bool},
+                       f::Symbol)
   if f ∈ s.homs
     if idxed[f]
       quote
         indices = $(GlobalRef(ACSetInterface,:view_or_slice))(acs.hom_indices.$f, part)
         copy ? Base.copy.(indices) : indices
+      end
+    elseif unique_idxed[f]
+      quote
+        get.(Ref(acs.hom_unique_indices.$f), part, Ref(0))
       end
     else
       :(broadcast_findall(part, acs.homs.$f))
@@ -203,6 +218,10 @@ function incident_body(s::SchemaDesc, idxed::Dict{Symbol,Bool}, f::Symbol)
         indices = get_attr_index(acs.attr_indices.$f, part)
         copy ? Base.copy.(indices) : indices
       end
+    elseif unique_idxed[f]
+      quote
+        get.(Ref(acs.attr_unique_indices.$f), part, Ref(0))
+      end
     else
       :(broadcast_findall(part, acs.attrs.$f))
     end
@@ -211,9 +230,10 @@ function incident_body(s::SchemaDesc, idxed::Dict{Symbol,Bool}, f::Symbol)
   end
 end
     
-@generated function _incident(acs::StructACSet{S,Ts,idxed},
-                              part, ::Type{Val{f}}; copy::Bool=false) where {S,Ts,idxed,f}
-  incident_body(SchemaDesc(S),Dict(idxed),f)
+@generated function _incident(acs::StructACSet{S,Ts,Idxed,UniqueIdxed},
+                              part, ::Type{Val{f}}; copy::Bool=false) where
+  {S,Ts,Idxed,UniqueIdxed,f}
+  incident_body(SchemaDesc(S),Dict(Idxed),Dict(UniqueIdxed),f)
 end
 
 # Mutators
@@ -221,7 +241,9 @@ end
 
 ACSetInterface.add_parts!(acs::StructACSet, ob::Symbol, n::Int) = _add_parts!(acs, Val{ob}, n)
 
-function add_parts_body(s::SchemaDesc,idxed::Dict{Symbol,Bool},ob::Symbol)
+function add_parts_body(s::SchemaDesc,
+                        idxed::Dict{Symbol,Bool}, unique_idxed::Dict{Symbol,Bool},
+                        ob::Symbol)
   code = quote
     m = acs.obs.$ob[]
     nparts = m + n
@@ -242,6 +264,13 @@ function add_parts_body(s::SchemaDesc,idxed::Dict{Symbol,Bool},ob::Symbol)
               acs.hom_indices.$f[i] = Int[]
             end
             end)
+    elseif s.codoms[f] == ob && unique_idxed[f]
+      push!(code.args, quote
+            resize!(acs.hom_unique_indices.$f, nparts)
+            for i in newparts
+              acs.hom_unique_indices.$f[i] = 0
+            end
+            end)
     end
     code
   end
@@ -256,16 +285,19 @@ end
 
 """ This generates the _add_parts! methods for a specific object of a `StructACSet`.
 """
-@generated function _add_parts!(acs::StructACSet{S,Ts,idxed},
-                                ::Type{Val{ob}}, n::Int) where {S, Ts, ob, idxed}
-  add_parts_body(SchemaDesc(S),Dict(idxed),ob)
+@generated function _add_parts!(acs::StructACSet{S,Ts,Idxed,UniqueIdxed},
+                                ::Type{Val{ob}}, n::Int) where
+  {S, Ts, Idxed, UniqueIdxed, ob}
+  add_parts_body(SchemaDesc(S),Dict(Idxed),Dict(UniqueIdxed),ob)
 end
 
 ACSetInterface.set_subpart!(acs::StructACSet, part::Int, f::Symbol, subpart) =
   _set_subpart!(acs, part, Val{f}, subpart)
 
 
-function set_subpart_body(s::SchemaDesc, idxed::Dict{Symbol,Bool}, f::Symbol)
+function set_subpart_body(s::SchemaDesc,
+                          idxed::Dict{Symbol,Bool}, unique_idxed::Dict{Symbol,Bool},
+                          f::Symbol)
   if f ∈ s.homs
     if idxed[f]
       quote
@@ -278,6 +310,17 @@ function set_subpart_body(s::SchemaDesc, idxed::Dict{Symbol,Bool}, f::Symbol)
         if subpart > 0
           insertsorted!(acs.hom_indices.$f[subpart], part)
         end
+      end
+    elseif unique_idxed[f]
+      quote
+        @assert 0 <= subpart <= acs.obs.$(s.codoms[f])[]
+        @assert acs.hom_unique_indices.$f[subpart] == 0
+        old = acs.homs.$f[part]
+        if old > 0
+          acs.hom_unique_indices.$f[old] = 0
+        end
+        acs.homs.$f[part] = subpart
+        acs.hom_unique_indices.$f[subpart] = part
       end
     else
       quote
@@ -295,6 +338,16 @@ function set_subpart_body(s::SchemaDesc, idxed::Dict{Symbol,Bool}, f::Symbol)
         acs.attrs.$f[part] = subpart
         set_attr_index!(acs.attr_indices.$f, subpart, part)
       end
+    elseif unique_idxed[f]
+      quote
+        @assert subpart ∉ keys(acs.attr_unique_indices.$f) "subpart not unique"
+        if isassigned(acs.attrs.$f, part)
+          old = acs.attrs.$f[part]
+          delete!(acs.attr_unique_indices.$f, old)
+        end
+        acs.attrs.$f[part] = subpart
+        acs.attr_unique_indices.$f[subpart] = part
+      end
     else
       :(acs.attrs.$f[part] = subpart)
     end
@@ -305,9 +358,9 @@ end
 
 """ This generates the `_set_subparts!` method for a specific arrow (hom/attr) of a StructACSet
 """
-@generated function _set_subpart!(acs::StructACSet{S,Ts,idxed},
-                                  part, ::Type{Val{f}}, subpart) where {S,Ts,idxed,f}
-  set_subpart_body(SchemaDesc(S),Dict(idxed),f)
+@generated function _set_subpart!(acs::StructACSet{S,Ts,Idxed,UniqueIdxed},
+                                  part, ::Type{Val{f}}, subpart) where {S,Ts,Idxed,UniqueIdxed,f}
+  set_subpart_body(SchemaDesc(S),Dict(Idxed),Dict(UniqueIdxed),f)
 end
 
 Base.setindex!(acs::StructACSet, val, part, name) = set_subpart!(acs, part, name, val)
