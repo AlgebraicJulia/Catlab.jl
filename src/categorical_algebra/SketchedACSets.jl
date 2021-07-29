@@ -1,3 +1,30 @@
+""" Sketched C-sets are a data structure for models of sketches.
+
+A *sketch* is a presentation of a category ``C`` together with a set of cones
+and a set of cocones. A *model* of a sketch is a ``C``-set such that all the
+cones are limit cones and all the cocones are limit cocones. This module
+provides a data structure for models of finite limit sketches. Colimits are not
+yet supported.
+
+A *sketched C-set* consists of an underlying C-set, provided by the module
+[`Catlab.CSets`](@ref), and a finite limit sketch. The sketched C-set data
+structure is responsible for ensuring that at all times the specified cones are
+in fact limit cones. The user may set any parts and subparts that do not belong
+to a cone using the usual interface for C-sets. The cones are automatically and
+incrementally updated in response to these changes. Directly modifying parts or
+subparts belonging to cones is not permitted.
+
+Sketches are a well-established concept in category theory, described at length
+in the books by Barr and Wells (*Category Theory for Computing Science* and
+*Toposes, Triples, and Theories*). However, our philosophy departs slightly from
+the usual one. One would usually include whichever cones are needed to specify
+both the operations and the axioms of the theory. In practice, computing limits
+needed only for axioms is wasteful and so we would not specify such cones. For
+example, the theory of categories, a classic example of a finite limit sketch,
+has a binary pullback for the composition operation and a ternary limit for the
+associativity axiom. In a sketched C-set for finite categories, we would include
+only the pullback.
+"""
 module SketchedACSets
 export SketchedACSet
 
@@ -31,6 +58,16 @@ end
   out_edge::Hom(Out,E)
 end
 
+""" A combinatorial data structure for a sketch.
+
+The generating objects and morphisms form a reflexive graph. The dependencies
+between morphisms are encoded by a directed hypergraph whose vertices are the
+graph edges and whose hyperedges are called "operations." Because the graph is
+reflexive, the inputs and outputs of the operations can be objects or morphisms.
+For now, all the operations are limits, with the outputs of each operation
+comprising a cone. However, little about this data structure is specific to
+limits or colimits and in the future we may consider other kinds of operations.
+"""
 const Sketch = ACSetType(TheorySketch,
   # FIXME: `out_vertex` and `out_edge` should be uniquely indexed.
   index=[:src, :tgt, :refl, :out_vertex, :op_in, :op_out, :in_edge, :out_edge],
@@ -123,6 +160,13 @@ end
 # Sketched C-sets
 #################
 
+""" A sketched, attributed C-set.
+
+This data structure is an attributed C-set that is also a model of a sketch. It
+supports the usual imperative interface for acsets except that destructive
+mutations are currently not supported: parts cannot be removed and subparts that
+have been assigned (are nonnull) cannot be unassigned or reassigned.
+"""
 struct SketchedACSet{ACS<:AbstractACSet}
   sketch::Sketch
   acset::ACS
