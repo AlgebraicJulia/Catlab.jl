@@ -1,4 +1,6 @@
-export Schema, FreeSchema, Data, Attr, SchemaExpr, DataExpr, AttrExpr
+export Schema, FreeSchema, Data, Attr, SchemaExpr, DataExpr, AttrExpr,
+  FinProductSchema, FreeFinProductSchema, ob, proj1, proj2,
+  FinLimitSchema, FreeFinLimitSchema, incl, left, right
 
 using MLStyle: @match
 using ...Present
@@ -8,7 +10,7 @@ import ...Present: Presentation
 # Schema
 ########
 
-""" The GAT that parameterizes Attributed C-sets
+""" Theory of a *schema* for attributed C-sets.
 
 A schema is comprised of a category C, a discrete category D, and a profunctor
 Attr : C^op x D → Set. In GAT form, this is given by extending the theory of
@@ -33,7 +35,66 @@ abstract type DataExpr{T} <: SchemaExpr{T} end
 abstract type AttrExpr{T} <: SchemaExpr{T} end
 
 @syntax FreeSchema{ObExpr,HomExpr,DataExpr,AttrExpr} Schema begin
-  # should have a normal representation for precompose of a morphism + a generator attribute
+  # TODO: We should have a normal form for the composition of a morphism with a
+  # data attribute.
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
+  compose(f::Hom, x::Attr) = associate_unit(new(f,x; strict=true), id)
+end
+
+""" Theory of a *schema with finite products*
+
+Recall that a *finite product sketch* is a (directed) graph equipped with a set
+of equations and a set of cones over finite, discrete diagrams. The sketch
+presents an algebraic structure whose operations may involve finite products.
+
+A *finite product schema*, as defined here, is the same as a finite product
+sketch, except that data attributes are allowed. Limit cones are specified in a
+biased style via terminal objects and binary products. Products of attribute
+types are not supported because, by the universal property of the product, an
+attribute into a product type can always be replaced by several attributes into
+the basic types.
+
+We use sketches as a minimalistic syntax for specifying limits in C-sets. Note
+that the models of this GAT are *not* models of sketches. For GATs whose models
+are actually categories with finite products, see [`CartesianCategory`](@ref)
+and [`CategoryWithProducts`](@ref).
+"""
+@theory FinProductSchema{Ob,Hom,Data,Attr,Terminal,Product} <:
+    Schema{Ob,Hom,Data,Attr} begin
+  Terminal(ob::Ob)::TYPE
+  Product(ob::Ob, proj1::Hom(ob,A), proj2::Hom(ob,B))::TYPE ⊣ (A::Ob, B::Ob)
+end
+
+@syntax FreeFinProductSchema{ObExpr,HomExpr,DataExpr,AttrExpr,
+                             GATExpr,GATExpr} FinProductSchema begin
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
+  compose(f::Hom, x::Attr) = associate_unit(new(f,x; strict=true), id)
+end
+
+""" Theory of a *schema with finite limits*
+
+Recall that a *finite limit sketch* is a (directed) graph equipped with a set of
+equations and a set of cones over finite diagrams. The sketch presents an
+algebraic structure whose operations may involve finite limits.
+
+A *finite limit schema* is the same as a finite limit sketch except that data
+attributes are allowed. Limit cones are specified in a biased style via terminal
+objects and binary products, equalizers, and pullbacks.
+"""
+@theory FinLimitSchema{Ob,Hom,Data,Attr,Terminal,Product,Equalizer,Pullback} <:
+    FinProductSchema{Ob,Hom,Data,Attr,Terminal,Product} begin
+  Equalizer(ob::Ob, incl::Hom(ob,A),
+            left::Hom(A,B), right::Hom(A,B))::TYPE ⊣ (A::Ob, B::Ob)
+  Pullback(ob::Ob, proj1::Hom(ob,A), proj2::Hom(ob,B),
+           left::Hom(A,C), right::Hom(B,C))::TYPE ⊣ (A::Ob, B::Ob, C::Ob)
+  # FIXME: If overloadingg type constructors were allowed, we could just use
+  # `Pullback` again instead of `PullbackAttr`.
+  #PullbackAttr(ob::Ob, proj1::Hom(ob,A), proj2::Hom(ob,B),
+  #             left::Attr(A,X), right::Attr(B,X))::TYPE ⊣ (A::Ob, B::Ob, X::Data)
+end
+
+@syntax FreeFinLimitSchema{ObExpr,HomExpr,DataExpr,AttrExpr,
+                           GATExpr,GATExpr,GATExpr,GATExpr} FinLimitSchema begin
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
   compose(f::Hom, x::Attr) = associate_unit(new(f,x; strict=true), id)
 end
@@ -55,7 +116,7 @@ struct CatDesc{Ob,Hom,Dom,Codom}
   function CatDesc{Ob,Hom,Dom,Codom}() where {Ob,Hom,Dom,Codom}
     new{Ob,Hom,Dom,Codom}()
   end
-  function CatDesc(pres::Presentation{Schema})
+  function CatDesc(pres::Presentation)
     obs, homs = generators(pres, :Ob), generators(pres,:Hom)
     ob_syms, hom_syms = nameof.(obs), nameof.(homs)
     ob_num = ob -> findfirst(ob_syms .== ob)::Int
@@ -64,7 +125,7 @@ struct CatDesc{Ob,Hom,Dom,Codom}
   end
 end
 
-CatDescType(pres::Presentation{Schema}) = typeof(CatDesc(pres))
+CatDescType(pres::Presentation) = typeof(CatDesc(pres))
 
 ob(::Type{T}) where {Ob,T <: CatDesc{Ob}} = Ob
 hom(::Type{T}) where {Ob,Hom, T <: CatDesc{Ob,Hom}} = Hom
@@ -112,7 +173,7 @@ struct AttrDesc{CD,Data,Attr,ADom,ACodom}
   function AttrDesc{CD,Data,Attr,ADom,ACodom}() where {CD,Data,Attr,ADom,ACodom}
     new{CD,Data,Attr,ADom,ACodom}()
   end
-  function AttrDesc(pres::Presentation{Schema})
+  function AttrDesc(pres::Presentation)
     CD = CatDescType(pres)
     datas, attrs = generators(pres, :Data), generators(pres,:Attr)
     data_syms, attr_syms = nameof.(datas), nameof.(attrs)
@@ -126,7 +187,7 @@ struct AttrDesc{CD,Data,Attr,ADom,ACodom}
   end
 end
 
-AttrDescType(pres::Presentation{Schema}) = typeof(AttrDesc(pres))
+AttrDescType(pres::Presentation) = typeof(AttrDesc(pres))
 
 data(::Type{T}) where {CD,Data, T <: AttrDesc{CD,Data}} = Data
 attr(::Type{T}) where {CD,Data,Attr, T <: AttrDesc{CD,Data,Attr}} = Attr
@@ -188,7 +249,7 @@ function attrs_by_codom(AD::Type{T}) where
   abc
 end
 
-SchemaType(pres::Presentation{Schema}) = (CatDescType(pres),AttrDescType(pres))
+SchemaType(pres::Presentation) = (CatDescType(pres),AttrDescType(pres))
 
 """
 Inverse of SchemaType. Converts a CatDesc and AttrDesc into a Presentation. 

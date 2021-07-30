@@ -9,13 +9,15 @@ export CategoryWithProducts, ob, terminal, delete, product, proj1, proj2, pair,
 """ Theory of a *category with (finite) products*
 
 Finite products are presented in biased style, via the nullary case (terminal
-objects) and the binary case (binary products). The equational axioms are
-standard, especially in type theory (Lambek & Scott, 1986, Section 0.5 or
-Section I.3). Strictly speaking, this theory is not of a "category with finite
-products" (a category in which finite products exist) but of a "category with
-*chosen* finite products".
+objects) and the binary case (binary products). The equational axioms for
+products are standard, especially in type theory (Lambek & Scott, 1986, Section
+0.5 or Section I.3). Strictly speaking, this theory is not of a "category with
+finite products" (a category in which finite products exist) but of a "category
+with *chosen* finite products".
 
-For a monoidal category axiomatization, see [`CartesianCategory`](@ref).
+This axiomatization matches the API for finite products in
+[`Catlab.CategoricalAlgebra.Limits`](@ref). For an axiomatization in terms of
+monoidal categories, see [`CartesianCategory`](@ref).
 """
 @theory CategoryWithProducts{Ob,Hom,Terminal,Product} <: Category{Ob,Hom} begin
   Terminal()::TYPE
@@ -50,9 +52,10 @@ end
 
 Finite limits are presented in biased style, via finite products and equalizers.
 The equational axioms for equalizers are obscure, but can found in (Lambek &
-Scott, 1986, Section 0.5), which follow "Burroni's pioneering ideas". Strictly
-speaking, this theory is not of a "finitely complete category" (a category in
-which finite limits exist) but of a "category with *chosen* finite limits".
+Scott, 1986, Section 0.5), which in turn follows "Burroni's pioneering ideas."
+Strictly speaking, this theory is not of a "finitely complete category" (a
+category in which finite limits exist) but of a "category with *chosen* finite
+limits".
 """
 @theory CompleteCategory{Ob,Hom,Terminal,Product,Equalizer} <:
     CategoryWithProducts{Ob,Hom,Terminal,Product} begin
@@ -89,7 +92,9 @@ Finite coproducts are presented in biased style, via the nullary case (initial
 objects) and the binary case (binary coproducts). The axioms are dual to those
 of [`CategoryWithProducts`](@ref).
 
-For a monoidal category axiomatization, see [`CocartesianCategory`](@ref).
+This axiomatization matches the API for finite coproducts in
+[`Catlab.CategoricalAlgebra.Limits`](@ref). For an axiomatization in terms of
+monoidal categories, see [`CocartesianCategory`](@ref).
 """
 @theory CategoryWithCoproducts{Ob,Hom,Initial,Coproduct} <: Category{Ob,Hom} begin
   Initial()::TYPE

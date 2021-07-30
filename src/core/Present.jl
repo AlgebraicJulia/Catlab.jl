@@ -133,17 +133,16 @@ function make_term(pres::Presentation, e::Expr)
   end
 end
 
-
 """ Create a new generator in a presentation of a given type
 """
-function make_generator(pres::Presentation, name::Symbol,
+function make_generator(pres::Presentation, name::Union{Symbol,Nothing},
                         type::Symbol, type_args::Vector)
   invoke_term(pres.syntax, type, name, map(e -> make_term(pres, e), type_args)...)
 end
 
 """ Create and add a new generator
 """
-function construct_generator!(pres::Presentation, name::Symbol,
+function construct_generator!(pres::Presentation, name::Union{Symbol,Nothing},
                               type::Symbol, type_args::Vector=[]; idem=true)
   if !(name ∈ keys(pres.generator_name_index)) || !idem
     add_generator!(pres, make_generator(pres,name,type,type_args))
