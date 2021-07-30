@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Visualizing Acset Schemas with Graphviz · Catlab.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit">Catlab.jl</span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox"/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Wiring diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox" checked/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li><li class="is-active"><a class="tocitem" href>Visualizing Acset Schemas with Graphviz</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/core/">Theories, instances, and expressions</a></li><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Graphics</a></li><li class="is-active"><a href>Visualizing Acset Schemas with Graphviz</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Visualizing Acset Schemas with Graphviz</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/master/docs/literate/graphics/graphviz_schema_visualization.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Visualizing-Acset-Schemas-with-Graphviz"><a class="docs-heading-anchor" href="#Visualizing-Acset-Schemas-with-Graphviz">Visualizing Acset Schemas with Graphviz</a><a id="Visualizing-Acset-Schemas-with-Graphviz-1"></a><a class="docs-heading-anchor-permalink" href="#Visualizing-Acset-Schemas-with-Graphviz" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/AlgebraicJulia/Catlab.jl/blob/gh-pages/v0.12.7/generated/graphics/graphviz_wiring_diagrams.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><p>It is convenient to visualize schemas in a non-textual way; often schemas can have many objects, homs and attributes, and it is hard to keep these all in your head.</p><p>For this reason, we provide a function which takes a schema and produces a visual representation of it, using the Catlab Graphviz interface.</p><p>This is as simple as the following code. These figures are by no means publication-quality, but they can be useful for interactive development.</p><pre><code class="language-julia">using Catlab.Present, Catlab.Graphics, Catlab.Graphs
+
+to_graphviz(Graphs.BasicGraphs.TheoryWeightedGraph)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="192pt" height="283pt"
+ viewBox="0.00 0.00 191.56 283.31" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 279.31)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-279.31 187.56,-279.31 187.56,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<text text-anchor="middle" x="5" y="-264.11" font-family="Times,serif" font-size="14.00">V</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<text text-anchor="middle" x="97.93" y="-152.98" font-family="Times,serif" font-size="14.00">E</text>
+</g>
+<!-- n2&#45;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n2&#45;&gt;n1</title>
+<path fill="none" stroke="black" d="M92.26,-159.11C75.92,-171.49 31.05,-224.23 12.65,-251.52"/>
+<polygon fill="black" stroke="black" points="9.5,-249.97 7.18,-260.31 15.44,-253.67 9.5,-249.97"/>
+<text text-anchor="middle" x="41.46" y="-209.12" font-family="Times,serif" font-size="14.00">src</text>
+</g>
+<!-- n2&#45;&gt;n1 -->
+<g id="edge2" class="edge">
+<title>n2&#45;&gt;n1</title>
+<path fill="none" stroke="black" d="M95.64,-164.39C84.36,-184.68 39.98,-238.31 17.62,-259.37"/>
+<polygon fill="black" stroke="black" points="15.33,-256.72 10.01,-265.88 19.88,-262.04 15.33,-256.72"/>
+<text text-anchor="middle" x="67.63" y="-215.68" font-family="Times,serif" font-size="14.00">tgt</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="140.02" cy="-18" rx="43.59" ry="18"/>
+<text text-anchor="middle" x="140.02" y="-14.3" font-family="Times,serif" font-size="14.00">Weight</text>
+</g>
+<!-- n2&#45;&gt;n3 -->
+<g id="edge3" class="edge">
+<title>n2&#45;&gt;n3</title>
+<path fill="none" stroke="black" d="M100.32,-148.83C106.22,-129.39 121.73,-78.26 131.53,-45.98"/>
+<polygon fill="black" stroke="black" points="134.93,-46.81 134.49,-36.23 128.23,-44.78 134.93,-46.81"/>
+<text text-anchor="middle" x="91.42" y="-101.21" font-family="Times,serif" font-size="14.00">weight</text>
+</g>
+</g>
+</svg>
+</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../layouts_vs_drawings/">« Layouts versus drawings of wiring diagrams</a><a class="docs-footer-nextpage" href="../../../apis/core/">Theories, instances, and expressions »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Friday 30 July 2021 21:21">Friday 30 July 2021</span>. Using Julia version 1.6.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
