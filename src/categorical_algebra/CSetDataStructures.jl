@@ -872,16 +872,15 @@ function init_acset(T::Type{<:ACSet{CD,AD,Ts}}, initvals::Dict{Symbol,Any}) wher
   hom_specs = filter((kv) -> kv[1] ∈ hom(CD), pairs(initvals))
   attr_specs = filter((kv) -> kv[1] ∈ attr(AD), pairs(initvals))
   for (k,v) in ob_specs
-      add_parts!(acs, k, Int(v))
+    add_parts!(acs, k, Int(v))
   end
-  for (k,v) in hom_specs
-      set_subpart!(acs, :, k, Vector{Int}(v))
-  end
-  for (k,v) in attr_specs
-    set_subpart!(acs, :, k, Vector{Ts.parameters[data_num(AD,codom(AD,k))]}(v))
+  for (k,v) in Iterators.flatten((hom_specs, attr_specs))
+    set_subpart!(acs, :, k, collect_nonvector(v))
   end
   acs
 end
+collect_nonvector(v::AbstractVector) = v
+collect_nonvector(v) = collect(v)
 
 """ Map over a data type, in the style of Haskell functors
 """

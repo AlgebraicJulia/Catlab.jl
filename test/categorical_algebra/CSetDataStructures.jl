@@ -342,27 +342,33 @@ g = @acset DecGraph{String} begin
   tgt = [2,3,4,1]
   dec = ["a","b","c","d"]
 end
-
-@test nparts(g,:V) == 4
-@test subpart(g,:,:src) == [1,2,3,4]
-@test incident(g,1,:src) == [1]
+@test nparts(g, :V) == 4
+@test subpart(g, :, :src) == [1,2,3,4]
+@test incident(g, 1, :src) == [1]
 
 function path_graph(n::Int)
   @acset DecGraph{Float64} begin
     V = n
-    E = (n-1)
-    src = (1:n-1)
-    tgt = (2:n)
+    E = n-1
+    src = 1:n-1
+    tgt = 2:n
     dec = zeros(n-1)
   end
 end
 
 pg = path_graph(30)
-
-@test nparts(pg, :V) == 30
-@test nparts(pg, :E) == 29
+@test (nparts(pg, :V), nparts(pg, :E)) == (30, 29)
 @test incident(pg, 1, :src) == [1]
-    
+
+n = 4
+pg = @acset DecGraph{Tuple{Int,Int}} begin
+  V = n
+  E = n-1
+  src = 1:n-1
+  tgt = 2:n
+  dec = zip(1:n-1, 2:n)
+end
+@test pg[:dec] == [(1,2), (2,3), (3,4)]
 
 # Test mapping
 #-------------
