@@ -307,7 +307,8 @@ end
 
 # XXX: This is needed because we cannot control the supertype of C-set types.
 const AbstractFreeDiagram{Ob} = Union{FixedShapeFreeDiagram{Ob},
-  AbstractBipartiteFreeDiagram{Ob}, _AbstractFreeDiagram{Tuple{Ob}}}
+  (AbstractBipartiteFreeDiagram{S, Tuple{Ob,Hom}} where {S,Hom}),
+  (_AbstractFreeDiagram{S, Tuple{Ob,Hom}} where {S,Hom})}
 
 ob(d::FreeDiagram, args...) = subpart(d, args..., :ob)
 hom(d::FreeDiagram, args...) = subpart(d, args..., :hom)

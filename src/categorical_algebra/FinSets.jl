@@ -14,7 +14,7 @@ import StaticArrays
 using StaticArrays: StaticVector, SVector, SizedVector, similar_type
 
 @reexport using ..Sets
-using ...Theories, ...Graphs, ..FreeDiagrams, ..Limits
+using ...Theories, ...Graphs, ..FreeDiagrams, ..Limits, ..Subobjects
 import ...Theories: dom, codom
 import ..Limits: limit, colimit, universal
 import ..Subobjects: Subobject, SubobjectLattice

@@ -3,8 +3,10 @@ using Test
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra,
   Catlab.CategoricalAlgebra.FinSets
+using Catlab.CategoricalAlgebra.CSets, Catlab.CSetDataStructures
 using Catlab.Graphs.BasicGraphs: TheoryGraph
 using Catlab.Present
+
 
 @present TheoryDDS(FreeSchema) begin
   X::Ob
@@ -228,11 +230,12 @@ h = path_graph(WeightedGraph{Float64}, 4, E=(weight=[1.,2.,3.],))
 #---------
 
 @present TheoryVELabeledGraph <: TheoryGraph begin
-  Label::Data
+  Label::AttrType
   vlabel::Attr(V,Label)
   elabel::Attr(E,Label)
 end
-const VELabeledGraph = ACSetType(TheoryVELabeledGraph, index=[:src,:tgt])
+
+@acset_type VELabeledGraph(TheoryVELabeledGraph, index=[:src,:tgt])
 
 # Initial labeled graph.
 @test ob(initial(VELabeledGraph{Symbol})) == VELabeledGraph{Symbol}()
@@ -326,10 +329,10 @@ C₅, C₆ = cycle_graph(SymmetricGraph, 5), cycle_graph(SymmetricGraph, 6)
 #---------------
 
 @present TheoryLabeledGraph <: TheoryGraph begin
-  Label::Data
+  Label::AttrType
   label::Attr(V,Label)
 end
-const LabeledGraph = ACSetType(TheoryLabeledGraph, index=[:src,:tgt])
+@acset_type LabeledGraph(TheoryLabeledGraph, index=[:src,:tgt])
 
 g = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:c,:d],))
 h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:c,:d,:a,:b],))
@@ -427,10 +430,10 @@ add_edge!(g, 1, 2, elabel=:e)
 @test roundtrip_json_acset(g) == g
 
 @present TheoryLabeledDDS <: TheoryDDS begin
-  Label::Data
+  Label::AttrType
   label::Attr(X, Label)
 end
-const LabeledDDS = ACSetType(TheoryLabeledDDS, index=[:Φ, :label])
+@acset_type LabeledDDS(TheoryLabeledDDS, index=[:Φ, :label])
 
 ldds = LabeledDDS{Int}()
 add_parts!(ldds, :X, 4, Φ=[2,3,4,1], label=[100, 101, 102, 103])

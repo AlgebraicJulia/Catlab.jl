@@ -1,5 +1,5 @@
 module CSetDataStructures
-export @acset_type, @abstract_acset_type, @declare_schema, StructACSet
+export @acset_type, @abstract_acset_type, @declare_schema, StructACSet, StructCSet
 
 using MLStyle
 using StaticArrays: StaticArray
@@ -8,7 +8,7 @@ using Reexport
 @reexport using ..ACSetInterface
 using ..IndexUtils
 using ...Theories, ...Present, ...Syntax
-using ...Theories: SchemaDesc, SchemaDescType, SchemaDescTypeType
+using ...Theories: SchemaDesc, SchemaDescType, CSetSchemaDescType, SchemaDescTypeType
 @reexport using ...Theories: FreeSchema
 using ...Meta: strip_lines
 import Tables
@@ -18,6 +18,9 @@ import Tables
 ###############################
 
 abstract type StructACSet{S<:SchemaDescType,Ts<:Tuple,Idxed,UniqueIdxed} <: ACSet end
+
+const StructCSet = StructACSet{S,Tuple{},Idxed,UniqueIdxed} where
+  {S<:CSetSchemaDescType,Idxed,UniqueIdxed}
 
 q(s::Symbol) = Expr(:quote,s)
 q(s::GATExpr) = q(nameof(s))

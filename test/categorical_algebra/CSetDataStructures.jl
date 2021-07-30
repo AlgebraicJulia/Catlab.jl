@@ -18,6 +18,7 @@ end
 @acset_type DDS(TheoryDDS, index=[:Φ]) <: AbstractDDS
 @test DDS <: AbstractDDS
 @test DDS <: StructACSet
+@test DDS <: StructCSet
 @test DDS <: ACSet
 
 dds = DDS()
