@@ -8,7 +8,8 @@ using Reexport
 @reexport using ..ACSetInterface
 using ..IndexUtils
 using ...Theories, ...Present, ...Syntax
-using ...Theories: SchemaDesc, SchemaDescType, CSetSchemaDescType, SchemaDescTypeType
+using ...Theories: SchemaDesc, SchemaDescType, CSetSchemaDescType, SchemaDescTypeType,
+  codom_num, attr
 @reexport using ...Theories: FreeSchema
 using ...Meta: strip_lines
 import Tables
@@ -116,6 +117,53 @@ macro abstract_acset_type(head)
   end)
 end
 
+# StructACSet DataFrames
+########################
+
+struct StructACSetFrame{Ob, S, Ts, Idxed, UniqueIdxed, Attrs} <:
+    StructACSet{S, Ts, Idxed, UniqueIdxed}
+  obs::NamedTuple{Ob, Tuple{Ref{Int}}}
+  homs::NamedTuple{(),Tuple{}}
+  attrs::Attrs
+  hom_indices::NamedTuple{(),Tuple{}}
+  hom_unique_indices::NamedTuple{(),Tuple{}}
+  attr_indices::NamedTuple{(),Tuple{}}
+  attr_unique_indices::NamedTuple{(),Tuple{}}
+  function StructACSetFrame{Ob, S, Ts, Idxed, UniqueIdxed, Attrs}() where
+      {Ob,S,Ts,Idxed,UniqueIdxed,Attrs}
+    new{Ob, S,Ts,Idxed,UniqueIdxed,Attrs}(
+      NamedTuple{Ob}((Ref(0),)),
+      (;),
+      Attrs([[] for a in attr(S)]),
+      (;),
+      (;),
+      (;),
+      (;)
+    )
+  end
+end
+
+function StructACSetFrameType(::Type{<:StructACSet{S,Ts}}, ob::Symbol) where {S,Ts}
+  s = SchemaDesc(S)
+  attrs = filter(s.attrs) do attr
+    s.doms[attr] == ob
+  end
+  doms = filter(s.doms) do (f,i)
+    f ∈ attrs
+  end
+  codoms = filter(s.codoms) do (f,i)
+    f ∈ attrs
+  end
+  s′ = SchemaDesc([ob],Symbol[],s.attrtypes, attrs, doms, codoms)
+  rowtype = NamedTuple{
+    Tuple(attrs),
+    Tuple{[Vector{Ts.parameters[codom_num(S,attr)]} for attr in attrs]...}}
+  StructACSetFrame{(ob,), SchemaDescTypeType(s′), Ts,
+                       NamedTuple(attr => false for attr in attrs),
+                       NamedTuple(attr => false for attr in attrs),
+                       rowtype}
+end
+                       
 
 # StructACSet Operations
 ########################
