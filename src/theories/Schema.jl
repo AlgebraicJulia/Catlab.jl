@@ -124,6 +124,15 @@ struct SchemaDesc
   attrs::Vector{Symbol}
   doms::Dict{Symbol,Symbol}
   codoms::Dict{Symbol,Symbol}
+  function SchemaDesc(obs::Vector{Symbol},
+                      homs::Vector{Symbol},
+                      attrtypes::Vector{Symbol},
+                      attrs::Vector{Symbol},
+                      doms::Dict{Symbol,Symbol},
+                      codoms::Dict{Symbol,Symbol})
+    new(obs, homs, attrtypes, attrs, doms, codoms)
+  end
+  
   function SchemaDesc(::Type{SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}}) where
       {obs,homs,attrtypes,attrs,doms,codoms}
     homdoms = [f => obs[doms[f]] for f in homs]
@@ -139,4 +148,23 @@ struct SchemaDesc
       Dict{Symbol,Symbol}(homcodoms...,attrcodoms...)
     )
   end
+end
+
+function SchemaDescTypeType(s::SchemaDesc)
+  SchemaDescType{
+    Tuple(s.obs),
+    Tuple(s.homs),
+    Tuple(s.attrtypes),
+    Tuple(s.attrs),
+    NamedTuple(map([s.doms...]) do (f,d)
+                 (f,intify(s.obs, d))
+               end),
+    NamedTuple(map([s.codoms...]) do (f,cd)
+                 if f ∈ s.homs
+                   (f,intify(s.obs, cd))
+                 else
+                   (f,intify(s.attrtypes,cd))
+                 end
+               end)
+  }
 end
