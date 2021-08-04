@@ -168,3 +168,15 @@ function SchemaDescTypeType(s::SchemaDesc)
                end)
   }
 end
+
+function Presentation(S::Type{T}) where T <: SchemaDescType
+  pres = Presentation(FreeSchema)
+
+  obs = map(x -> Ob(FreeSchema, x), collect(ob(S)))
+  homs = map(Hom, collect(hom(S)), obs[collect(dom_nums(S))], obs[collect(codom_nums(S))])
+  datas = map(x -> AttrType(FreeSchema.AttrType, x), collect(attrtype(S)))
+  attrs = map(FreeSchema.Attr, collect(attr(S)), obs[collect(adom_nums(S))], datas[collect(acodom_nums(S))])
+
+  map(gens -> add_generators!(pres, gens), [obs, homs, datas, attrs])
+  return pres
+end
