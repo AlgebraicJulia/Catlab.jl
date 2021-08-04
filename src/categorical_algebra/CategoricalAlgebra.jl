@@ -10,6 +10,7 @@ include("FinSets.jl")
 include("Matrices.jl")
 include("FinRelations.jl")
 include("CSets.jl")
+include("DataMigration.jl")
 # include("ACSetViews.jl")
 include("GraphCategories.jl")
 # include("StructuredCospans.jl")
@@ -19,6 +20,7 @@ include("GraphCategories.jl")
 # @reexport using .CommutativeDiagrams
 @reexport using .Limits
 # @reexport using .CSets
+@reexport using .DataMigration
 # @reexport using .ACSetViews
 # @reexport using .StructuredCospans
 
