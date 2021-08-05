@@ -301,7 +301,7 @@ end
   hom::Attr(E,Hom)
 end
 
-@abstract_acset_type _AbstractFreeDiagram
+@abstract_acset_type _AbstractFreeDiagram <: AbstractGraph
 
 @acset_type FreeDiagram(TheoryFreeDiagram, index=[:src,:tgt]) <: _AbstractFreeDiagram
 

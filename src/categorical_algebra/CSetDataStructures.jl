@@ -293,7 +293,7 @@ end
 ACSetInterface.add_parts!(acs::StructACSet, ob::Symbol, n::Int) = _add_parts!(acs, Val{ob}, n)
 
 function add_parts_body(s::SchemaDesc,
-                        idxed::Dict{Symbol,Bool}, unique_idxed::Dict{Symbol,Bool},
+                        idxed::Dict, unique_idxed::Dict,
                         ob::Symbol)
   code = quote
     m = acs.obs.$ob[]
