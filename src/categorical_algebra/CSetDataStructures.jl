@@ -1,5 +1,6 @@
 module CSetDataStructures
-export @acset_type, @abstract_acset_type, @declare_schema, StructACSet, StructCSet
+export @acset_type, @abstract_acset_type, @declare_schema, StructACSet, StructCSet,
+  ACSetTableType
 
 using MLStyle
 using StaticArrays: StaticArray
@@ -9,7 +10,7 @@ using Reexport
 using ..IndexUtils
 using ...Theories, ...Present, ...Syntax
 using ...Theories: SchemaDesc, SchemaDescType, CSetSchemaDescType, SchemaDescTypeType,
-  codom_num, attr
+  codom_num, attr, attrtype
 @reexport using ...Theories: FreeSchema
 using ...Meta: strip_lines
 import Tables
@@ -131,7 +132,7 @@ struct StructACSetFrame{Ob, S, Ts, Idxed, UniqueIdxed, Attrs} <:
   attr_unique_indices::NamedTuple{(),Tuple{}}
   function StructACSetFrame{Ob, S, Ts, Idxed, UniqueIdxed, Attrs}() where
       {Ob,S,Ts,Idxed,UniqueIdxed,Attrs}
-    new{Ob, S,Ts,Idxed,UniqueIdxed,Attrs}(
+    new{Ob,S,Ts,Idxed,UniqueIdxed,Attrs}(
       NamedTuple{Ob}((Ref(0),)),
       (;),
       Attrs([[] for a in attr(S)]),
@@ -143,7 +144,7 @@ struct StructACSetFrame{Ob, S, Ts, Idxed, UniqueIdxed, Attrs} <:
   end
 end
 
-function StructACSetFrameType(::Type{<:StructACSet{S,Ts}}, ob::Symbol) where {S,Ts}
+function ACSetTableDesc(::Type{S}, ob::Symbol) where {S}
   s = SchemaDesc(S)
   attrs = filter(s.attrs) do attr
     s.doms[attr] == ob
@@ -154,16 +155,39 @@ function StructACSetFrameType(::Type{<:StructACSet{S,Ts}}, ob::Symbol) where {S,
   codoms = filter(s.codoms) do (f,i)
     f ∈ attrs
   end
-  s′ = SchemaDesc([ob],Symbol[],s.attrtypes, attrs, doms, codoms)
-  rowtype = NamedTuple{
-    Tuple(attrs),
-    Tuple{[Vector{Ts.parameters[codom_num(S,attr)]} for attr in attrs]...}}
-  StructACSetFrame{(ob,), SchemaDescTypeType(s′), Ts,
-                       NamedTuple(attr => false for attr in attrs),
-                       NamedTuple(attr => false for attr in attrs),
-                       rowtype}
+  s′ = SchemaDesc([ob], Symbol[], s.attrtypes, attrs, doms, codoms)
+  SchemaDescTypeType(s′)
 end
-                       
+
+function ACSetTableDataType(::Type{<:StructACSet{S,Ts}}, ob::Symbol) where {S,Ts}
+  S′ = ACSetTableDesc(S,ob)
+  rowtype = NamedTuple{
+    attr(S′),
+    Tuple{[Vector{Ts.parameters[codom_num(S′,a)]} for a in attr(S′)]...}
+  }
+  StructACSetFrame{(ob,), S′, Ts,
+                   NamedTuple(a => false for a in attr(S′)),
+                   NamedTuple(a => false for a in attr(S′)),
+                   rowtype}
+end
+
+function ACSetTableUnionAll(::Type{<:StructACSet{S}}, ob::Symbol) where {S}
+  S′ = ACSetTableDesc(S,ob)
+  type_vars = [ TypeVar(at) for at in attrtype(S′) ]
+  rowtype = NamedTuple{
+    attr(S′),
+    Tuple{[Vector{type_vars[codom_num(S′,a)]} for a in attr(S′)]...}
+  }
+  T = StructACSetFrame{(ob,), S′, Tuple{type_vars...},
+                       NamedTuple(a => false for a in attr(S′)),
+                       NamedTuple(a => false for a in attr(S′)),
+                       rowtype}
+  foldr(UnionAll, type_vars, init=T)
+end
+
+function ACSetTableType(X::Type, ob::Symbol; union_all::Bool=false)
+  (union_all ? ACSetTableUnionAll : ACSetTableDataType)(X, ob)
+end
 
 # StructACSet Operations
 ########################
