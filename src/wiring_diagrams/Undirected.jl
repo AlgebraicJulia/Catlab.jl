@@ -28,11 +28,14 @@ import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,
   outer_junction::Hom(OuterPort, Junction)
 end
 
-const UndirectedWiringDiagram = const AbstractUWD = AbstractACSetType(TheoryUWD)
-const UntypedUWD = CSetType(TheoryUWD, index=[:box, :junction, :outer_junction])
+@abstract_acset_type AbstractUWD
+const UndirectedWiringDiagram = AbstractUWD 
+
+@acset_type UntypedUWD(TheoryUWD, 
+  index=[:box, :junction, :outer_junction]) <: AbstractUWD
 
 @present TheoryTypedUWD <: TheoryUWD begin
-  Type::Data
+  Type::AttrType
 
   port_type::Attr(Port, Type)
   outer_port_type::Attr(OuterPort, Type)
@@ -42,9 +45,9 @@ const UntypedUWD = CSetType(TheoryUWD, index=[:box, :junction, :outer_junction])
   compose(outer_junction, junction_type) == outer_port_type
 end
 
-const AbstractTypedUWD = AbstractACSetType(TheoryTypedUWD)
-const TypedUWD = ACSetType(TheoryTypedUWD,
-                           index=[:box, :junction, :outer_junction])
+@abstract_acset_type AbstractTypedUWD <: AbstractUWD
+@acset_type TypedUWD(TheoryTypedUWD, 
+  index=[:box, :junction, :outer_junction]) <: AbstractTypedUWD
 
 function (::Type{UWD})(nports::Int) where UWD <: AbstractUWD
   d = UWD()
@@ -69,34 +72,34 @@ UndirectedWiringDiagram(port_types::AbstractVector{T}) where T =
 # Accessors
 #----------
 
-outer_box(::AbstractACSet) = 0
-box(d::AbstractACSet, args...) = subpart(d, args..., :box)
-junction(d::AbstractACSet, args...; outer::Bool=false) =
+outer_box(::ACSet) = 0
+box(d::ACSet, args...) = subpart(d, args..., :box)
+junction(d::ACSet, args...; outer::Bool=false) =
   subpart(d, args..., outer ? :outer_junction : :junction)
 
-function junction(d::AbstractACSet, port::Tuple{Int,Int})
+function junction(d::ACSet, port::Tuple{Int,Int})
   box, nport = port
   box == outer_box(d) ?
     junction(d, nport, outer=true) : junction(d, ports(d, box)[nport])
 end
 
-nboxes(d::AbstractACSet) = nparts(d, :Box)
-njunctions(d::AbstractACSet) = nparts(d, :Junction)
-boxes(d::AbstractACSet) = parts(d, :Box)
-junctions(d::AbstractACSet) = parts(d, :Junction)
+nboxes(d::ACSet) = nparts(d, :Box)
+njunctions(d::ACSet) = nparts(d, :Junction)
+boxes(d::ACSet) = parts(d, :Box)
+junctions(d::ACSet) = parts(d, :Junction)
 
-ports(d::AbstractACSet; outer::Bool=false) =
+ports(d::ACSet; outer::Bool=false) =
   parts(d, outer ? :OuterPort : :Port)
-ports(d::AbstractACSet, box) =
+ports(d::ACSet, box) =
   box == outer_box(d) ? parts(d, :OuterPort) : incident(d, box, :box)
-ports_with_junction(d::AbstractACSet, junction; outer::Bool=false) =
+ports_with_junction(d::ACSet, junction; outer::Bool=false) =
   incident(d, junction, outer ? :outer_junction : :junction)
 
-junction_type(d::AbstractACSet, args...) = subpart(d, args..., :junction_type)
-port_type(d::AbstractACSet, args...; outer::Bool=false) =
+junction_type(d::ACSet, args...) = subpart(d, args..., :junction_type)
+port_type(d::ACSet, args...; outer::Bool=false) =
   subpart(d, args..., outer ? :outer_port_type : :port_type)
 
-function port_type(d::AbstractACSet, port::Tuple{Int,Int})
+function port_type(d::ACSet, port::Tuple{Int,Int})
   box, nport = port
   box == outer_box(d) ?
     port_type(d, nport, outer=true) : port_type(d, ports(d, box)[nport])
@@ -274,7 +277,7 @@ function substitute(f::UWD, indices::AbstractVector{Int},
   end
 
   # Add junctions obtained from pushout of attributed junction sets.
-  Junctions = ACSetTableType(UWD, :Junction)
+  Junctions = StructACSetFrameType(UWD, :Junction)
   f_junctions, g_junctions, apex = Junctions(), Junctions(), Junctions()
   copy_parts_only!(f_junctions, f)
   for g in gs
