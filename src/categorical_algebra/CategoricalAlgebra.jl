@@ -12,7 +12,7 @@ include("CSets.jl")
 include("DataMigration.jl")
 # include("ACSetViews.jl")
 include("GraphCategories.jl")
-include("StructuredCospans.jl")
+# include("StructuredCospans.jl")
 # include("CommutativeDiagrams.jl")
 
 @reexport using .FreeDiagrams
@@ -21,6 +21,6 @@ include("StructuredCospans.jl")
 @reexport using .DataMigration
 @reexport using .CSets
 # @reexport using .ACSetViews
-@reexport using .StructuredCospans
+# @reexport using .StructuredCospans
 
 end

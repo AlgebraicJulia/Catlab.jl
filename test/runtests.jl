@@ -16,9 +16,9 @@ end
 #   include("graphs/Graphs.jl")
 # end
 
-# @testset "WiringDiagrams" begin
-#   include("wiring_diagrams/WiringDiagrams.jl")
-# end
+@testset "WiringDiagrams" begin
+  include("wiring_diagrams/WiringDiagrams.jl")
+end
 
 # @testset "Graphics" begin
 #   include("graphics/Graphics.jl")
