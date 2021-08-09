@@ -182,7 +182,7 @@ end
 
 """ A directed wiring diagram, also known as a string diagram.
 
-The wiring diagram is implemented using the following internal AttrType structure.
+The wiring diagram is implemented using the following internal data structure.
 The "skeleton" of the diagram is an instance of `Catlab.Graphs.AbstractGraph`: a
 directed multigraph whose vertices correspond to boxes and whose edges
 correspond to wires. There are two special vertices, accessible via `input_id`
@@ -898,8 +898,8 @@ function encapsulate(d::WD, vss::Vector{Vector{Int}}; discard_boxes::Bool=false,
       sub, sub_map = encapsulated_subdiagram(d, vs;
         discard_boxes=discard_boxes, make_box=make_box, value=value)
       subv = add_box!(result, sub)
-      merge!(port_map, Dict(port => Port(subv, AttrType...)
-                            for (port, AttrType) in sub_map))
+      merge!(port_map, Dict(port => Port(subv, at...)
+                            for (port, at) in sub_map))
     elseif v ∉ all_encapsulated
       vmap[v] = add_box!(result, box(d, v))
     end
