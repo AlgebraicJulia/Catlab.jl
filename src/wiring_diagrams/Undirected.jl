@@ -277,7 +277,7 @@ function substitute(f::UWD, indices::AbstractVector{Int},
   end
 
   # Add junctions obtained from pushout of attributed junction sets.
-  Junctions = StructACSetFrameType(UWD, :Junction)
+  Junctions = ACSetTableType(UWD, :Junction)
   f_junctions, g_junctions, apex = Junctions(), Junctions(), Junctions()
   copy_parts_only!(f_junctions, f)
   for g in gs
