@@ -154,10 +154,10 @@ end
   out_port_box::Hom(OutPort, Box)
 end
 
-const AbstractWiringDiagramACSet = AbstractACSetType(TheoryWiringDiagram)
+@abstract_acset_type AbstractWiringDiagram <: AbstractGraph
 
 @present TheoryTypedWiringDiagram <: TheoryWiringDiagram begin
-  PortValue::Data
+  PortValue::AttrType
   in_port_type::Attr(InPort, PortValue)
   out_port_type::Attr(OutPort, PortValue)
   outer_in_port_type::Attr(OuterInPort, PortValue)
@@ -165,9 +165,9 @@ const AbstractWiringDiagramACSet = AbstractACSetType(TheoryWiringDiagram)
 end
 
 @present TheoryAttributedWiringDiagram <: TheoryTypedWiringDiagram begin
-  WireValue::Data
-  BoxValue::Data
-  BoxType::Data
+  WireValue::AttrType
+  BoxValue::AttrType
+  BoxType::AttrType
 
   value::Attr(Box, BoxValue)
   box_type::Attr(Box, BoxType)
@@ -177,8 +177,8 @@ end
   pass_wire_value::Attr(PassWire, WireValue)
 end
 
-const WiringDiagramACSet = ACSetType(TheoryAttributedWiringDiagram,
-  index=[:src, :tgt, :in_src, :in_tgt, :out_src, :out_tgt, :pass_src, :pass_tgt])
+@acset_type WiringDiagramACSet(TheoryAttributedWiringDiagram,
+  index=[:src, :tgt, :in_src, :in_tgt, :out_src, :out_tgt, :pass_src, :pass_tgt]) <: AbstractWiringDiagram
 
 """ A directed wiring diagram, also known as a string diagram.
 
@@ -264,15 +264,16 @@ function Base.show(io::IO, diagram::WiringDiagram{T}) where T
 end
 
 @present TheoryWiringDiagramGraph <: TheoryGraph begin
-  ID::Data
+  ID::AttrType
   box::Attr(V,ID)
   wire::Attr(E,ID)
 end
 
 """ Graph underlying a directed wiring diagram.
 """
-const WiringDiagramGraph = ACSetType(TheoryWiringDiagramGraph,
-  index=[:src, :tgt], unique_index=[:box]){Int}
+@acset_type WiringDiagramGraphACSet(TheoryWiringDiagramGraph,
+  index=[:src, :tgt], unique_index=[:box]) <: AbstractWiringDiagram
+const WiringDiagramGraph = WiringDiagramGraphACSet{Int}
 
 # Imperative interface
 ######################
@@ -897,8 +898,8 @@ function encapsulate(d::WD, vss::Vector{Vector{Int}}; discard_boxes::Bool=false,
       sub, sub_map = encapsulated_subdiagram(d, vs;
         discard_boxes=discard_boxes, make_box=make_box, value=value)
       subv = add_box!(result, sub)
-      merge!(port_map, Dict(port => Port(subv, data...)
-                            for (port, data) in sub_map))
+      merge!(port_map, Dict(port => Port(subv, at...)
+                            for (port, at) in sub_map))
     elseif v ∉ all_encapsulated
       vmap[v] = add_box!(result, box(d, v))
     end

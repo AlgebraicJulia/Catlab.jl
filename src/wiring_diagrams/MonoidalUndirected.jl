@@ -12,19 +12,20 @@ import ...Theories: dom, codom, compose, id, ⋅, ∘, otimes, ⊗, munit, braid
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dunit, dcounit, dagger
 using ...CategoricalAlgebra.CSets: disjoint_union
 using ..UndirectedWiringDiagrams
-using ..UndirectedWiringDiagrams: AbstractUWD, TheoryUWD, TheoryTypedUWD
+using ..UndirectedWiringDiagrams: AbstractUWD, AbstractTypedUWD, TheoryUWD, TheoryTypedUWD
 import ..UndirectedWiringDiagrams: singleton_diagram, junction_diagram
 
 # Data types
 ############
 
 @present TheoryUntypedHypergraphDiagram <: TheoryUWD begin
-  Name::Data
+  Name::AttrType
   name::Attr(Box,Name)
 end
 
-const UntypedHypergraphDiagram = ACSetType(TheoryUntypedHypergraphDiagram,
-  index=[:box, :junction, :outer_junction])
+@abstract_acset_type AbstractUntypedHypergraphDiagram <: AbstractUWD
+@acset_type UntypedHypergraphDiagram(TheoryUntypedHypergraphDiagram, 
+  index=[:box, :junction, :outer_junction]) <: AbstractUntypedHypergraphDiagram
 
 """ Diagram suitable for representing morphisms in hypergraph categories.
 
@@ -32,12 +33,13 @@ An undirected wiring diagram where the ports and junctions are typed and the
 boxes have names identifying the morphisms.
 """
 @present TheoryHypergraphDiagram <: TheoryTypedUWD begin
-  Name::Data
+  Name::AttrType
   name::Attr(Box,Name)
 end
 
-const HypergraphDiagram = ACSetType(TheoryHypergraphDiagram,
-  index=[:box, :junction, :outer_junction])
+@abstract_acset_type AbstractHypergraphDiagram <: AbstractTypedUWD
+@acset_type HypergraphDiagram(TheoryHypergraphDiagram,
+  index=[:box, :junction, :outer_junction]) <: AbstractHypergraphDiagram
 
 # Cospan algebra
 ################
