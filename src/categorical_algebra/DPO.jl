@@ -152,9 +152,7 @@ function dangling_condition(L::ACSetTransformation{S},
           parts(codom(L), comp))))
   end
   # check that for all morphisms in C, we do not map to an orphan
-  for (morph, src_ind, tgt_ind) in zip(hom(S), dom(S), codom(S))
-    src_obj = ob(S)[src_ind] # e.g. :E, given morph=:src in graphs
-    tgt_obj = ob(S)[tgt_ind] # e.g. :V, given morph=:src in graphs
+  for (morph, src_obj, tgt_obj) in zip(hom(S), dom(S), codom(S))
     n_src = parts(codom(m), src_obj)
     unmatched_vals = setdiff(n_src, collect(m[src_obj]))
     unmatched_tgt = map(x -> m.codom[morph][x], collect(unmatched_vals))
