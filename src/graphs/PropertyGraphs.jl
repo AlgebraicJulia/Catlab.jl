@@ -25,7 +25,7 @@ end
 
 @abstract_acset_type __AbstractPropertyGraph
 
-const _AbstractPropertyGraph{T} = __AbstractPropertyGraph{Tuple{Dict{Symbol,T}}}
+const _AbstractPropertyGraph{T} = __AbstractPropertyGraph{S, Tuple{Dict{Symbol,T}}} where {S}
 
 @acset_type __PropertyGraph(TheoryPropertyGraph, index=[:src,:tgt]) <: __AbstractPropertyGraph
 
@@ -59,7 +59,7 @@ end
 
 @abstract_acset_type __AbstractSymmetricPropertyGraph
 
-const _AbstractSymmetricPropertyGraph{T} = __AbstractSymmetricPropertyGraph{Tuple{Dict{Symbol,T}}}
+const _AbstractSymmetricPropertyGraph{T} = __AbstractSymmetricPropertyGraph{S, Tuple{Dict{Symbol,T}}} where {S}
 
 @acset_type __SymmetricPropertyGraph(TheorySymmetricPropertyGraph, index=[:src,:tgt]) <:
   __AbstractSymmetricPropertyGraph
