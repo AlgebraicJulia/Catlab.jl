@@ -5,7 +5,6 @@ using Catlab.Present
 using Catlab.WiringDiagrams
 using Catlab.CategoricalAlgebra.FinSets
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
-using Catlab.Theories: AttrDesc
 
 # Wiring diagrams
 #################
@@ -64,7 +63,7 @@ m=ACSetTransformation(LWD.diagram, GWD.diagram, Box=[1,2],InPort=[2],OutPort=[1]
   src::Hom(E,V)
   tgt::Hom(E,V)
 
-  X::Data
+  X::AttrType
   dec::Attr(E,X)
 end
 
@@ -377,7 +376,7 @@ const MetaACSetTransformation = ACSetType(
   TheoryACSetTrans){Symbol, DataType, Any}
 
 """Convert an Acset description into its Acset representation"""
-function to_cset(ad::AttrDesc, datatypes::Vector{Any}, inds::Vector{Symbol})::ACSet
+function to_cset(S::SchemaDescType, datatypes::Vector{Any}, inds::Vector{Symbol})::ACSet
   res = MetaCatDesc()
   catdesc, dtypes, anames, asrc, atgt = typeof(ad).parameters
   obj, homs, src, tgt = catdesc.parameters
