@@ -189,6 +189,9 @@ function ACSetTableType(X::Type, ob::Symbol; union_all::Bool=false)
   (union_all ? ACSetTableUnionAll : ACSetTableDataType)(X, ob)
 end
 
+make_table(::Type{T}, cols) where T = T(cols)
+make_table(::Type{NamedTuple}, cols) = cols # No copy constructor defined.
+       
 # StructACSet Operations
 ########################
 
@@ -438,7 +441,7 @@ end
   set_subpart_body(SchemaDesc(S),Dict(Idxed),Dict(UniqueIdxed),f)
 end
 
-Base.setindex!(acs::StructACSet, val, part, name) = set_subpart!(acs, part, name, val)
+Base.setindex!(acs::StructACSet, val, args...) = set_subpart!(acs, args..., val)
 
 ACSetInterface.rem_part!(acs::StructACSet, type::Symbol, part::Int) =
   _rem_part!(acs, Val{type}, part)

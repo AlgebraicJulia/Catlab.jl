@@ -239,7 +239,7 @@ allequal(xs::AbstractVector) = isempty(xs) || all(==(xs[1]), xs)
   hom::Attr(E,Hom)
 end
 
-@abstract_acset_type AbstractBipartiteFreeDiagram
+@abstract_acset_type AbstractBipartiteFreeDiagram <: AbstractUndirectedBipartiteGraph
 
 """ A free diagram that is bipartite.
 

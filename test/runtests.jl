@@ -24,9 +24,9 @@ end
 #   include("graphics/Graphics.jl")
 # end
 
-# @testset "Programs" begin
-#   include("programs/Programs.jl")
-# end
+@testset "Programs" begin
+  include("programs/Programs.jl")
+end
 
 # @testset "LinearAlgebra" begin
 #   include("linear_algebra/LinearAlgebra.jl")
