@@ -9,26 +9,31 @@ using MLStyle: @match
 using ...CategoricalAlgebra.CSets, ...Present
 using ...WiringDiagrams.UndirectedWiringDiagrams
 using ...WiringDiagrams.MonoidalUndirectedWiringDiagrams:
-  TheoryUntypedHypergraphDiagram, TheoryHypergraphDiagram
+  TheoryUntypedHypergraphDiagram, TheoryHypergraphDiagram, 
+  AbstractUntypedHypergraphDiagram, AbstractHypergraphDiagram
 
 # Data structures
 #################
 
 @present TheoryRelationDiagram <: TheoryUntypedHypergraphDiagram begin
-  VarName::Data
+  VarName::AttrType
   variable::Attr(Junction, VarName)
 end
 
 @present TheoryTypedRelationDiagram <: TheoryHypergraphDiagram begin
-  VarName::Data
+  VarName::AttrType
   variable::Attr(Junction, VarName)
 end
 
-const RelationDiagram = AbstractACSetType(TheoryRelationDiagram)
-const UntypedRelationDiagram = ACSetType(TheoryRelationDiagram,
-  index=[:box, :junction, :outer_junction], unique_index=[:variable])
-const TypedRelationDiagram = ACSetType(TheoryTypedRelationDiagram,
-  index=[:box, :junction, :outer_junction], unique_index=[:variable])
+@abstract_acset_type _RelationDiagram <: AbstractUntypedHypergraphDiagram
+const RelationDiagram{Name} = _RelationDiagram{S, Tuple{Name}} where {S}
+
+@abstract_acset_type AbstractTypedRelationDiagram <: AbstractHypergraphDiagram
+
+@acset_type UntypedRelationDiagram(TheoryRelationDiagram,
+  index=[:box, :junction, :outer_junction], unique_index=[:variable]) <: _RelationDiagram
+@acset_type TypedRelationDiagram(TheoryTypedRelationDiagram,
+  index=[:box, :junction, :outer_junction], unique_index=[:variable]) <: AbstractTypedRelationDiagram
 
 @present TheoryNamedRelationDiagram <: TheoryRelationDiagram begin
   port_name::Attr(Port, VarName)
@@ -40,10 +45,13 @@ end
   outer_port_name::Attr(OuterPort, VarName)
 end
 
-const UntypedNamedRelationDiagram = ACSetType(TheoryNamedRelationDiagram,
-  index=[:box, :junction, :outer_junction], unique_index=[:variable])
-const TypedNamedRelationDiagram = ACSetType(TheoryTypedNamedRelationDiagram,
-  index=[:box, :junction, :outer_junction], unique_index=[:variable])
+@abstract_acset_type AbstractNamedRelationDiagram <: _RelationDiagram
+@abstract_acset_type AbstractTypedNamedRelationDiagram <: AbstractTypedRelationDiagram
+
+@acset_type UntypedNamedRelationDiagram(TheoryNamedRelationDiagram,
+  index=[:box, :junction, :outer_junction], unique_index=[:variable]) <: AbstractNamedRelationDiagram
+@acset_type TypedNamedRelationDiagram(TheoryTypedNamedRelationDiagram,
+  index=[:box, :junction, :outer_junction], unique_index=[:variable]) <: AbstractTypedNamedRelationDiagram
 
 function RelationDiagram{Name}(ports::Int; port_names=nothing) where {Name}
   if isnothing(port_names)
