@@ -210,11 +210,6 @@ end
 
 ACSetInterface.acset_schema(::StructACSet{S}) where {S} = SchemaDesc(S)
 
-function ACSetInterface.attr_type_instantiation(::StructACSet{S,Ts}, attr::Symbol) where {S,Ts}
-  s = SchemaDesc(S)
-  Ts.parameters[findfirst(at -> s.codoms[attr] == at, s.attrtypes)]
-end
-
 ACSetInterface.nparts(acs::StructACSet, ob::Symbol) = acs.obs[ob][]
 ACSetInterface.has_part(acs::StructACSet, ob::Symbol) = _has_part(acs, Val{ob})
 

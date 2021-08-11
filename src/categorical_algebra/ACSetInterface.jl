@@ -1,5 +1,5 @@
 module ACSetInterface
-export ACSet, acset_schema, attr_type_instantiation,
+export ACSet, acset_schema,
   nparts, parts, has_part, has_subpart, subpart, incident,
   add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!,
   copy_parts!, copy_parts_only!, disjoint_union, tables, pretty_tables, @acset
@@ -19,11 +19,6 @@ abstract type ACSet end
 Get the schema of an acset at runtime.
 """
 function acset_schema end
-
-"""
-Get the instantiation of an attr_type at runtime
-"""
-function attr_type_instantiation end
 
 """ Number of parts of given type in an acset.
 """
@@ -327,15 +322,14 @@ function init_acset(T::Type{<:ACSet}, initvals::Dict{Symbol,Any})
   hom_specs = filter((kv) -> kv[1] ∈ s.homs, pairs(initvals))
   attr_specs = filter((kv) -> kv[1] ∈ s.attrs, pairs(initvals))
   for (k,v) in ob_specs
-      add_parts!(acs, k, Int(v))
+    add_parts!(acs, k, Int(v))
   end
-  for (k,v) in hom_specs
-      set_subpart!(acs, :, k, Vector{Int}(v))
-  end
-  for (k,v) in attr_specs
-    set_subpart!(acs, :, k, Vector{attr_type_instantiation(acs, k)}(v))
+  for (k,v) in Iterators.flatten((hom_specs, attr_specs))
+    set_subpart!(acs, :, k, collect_nonvector(v))
   end
   acs
 end
+collect_nonvector(v::AbstractVector) = v
+collect_nonvector(v) = collect(v)
 
 end
