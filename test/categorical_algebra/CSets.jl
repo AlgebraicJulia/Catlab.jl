@@ -5,14 +5,12 @@ using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra,
   Catlab.CategoricalAlgebra.FinSets
 using Catlab.CategoricalAlgebra.CSets, Catlab.CSetDataStructures
 using Catlab.Graphs.BasicGraphs: TheoryGraph
-using Catlab.Present
-
 
 @present TheoryDDS(FreeSchema) begin
   X::Ob
   Φ::Hom(X,X)
 end
-const DDS = CSetType(TheoryDDS, index=[:Φ])
+@acset_type DDS(TheoryDDS, index=[:Φ])
 
 # FinSets interop
 #################
@@ -410,7 +408,7 @@ A = Subobject(S, X=[3,4,5])
 # Serialization
 ###############
 
-function roundtrip_json_acset(x::T) where T <: AbstractACSet
+function roundtrip_json_acset(x::T) where T <: ACSet
   mktempdir() do dir
     path = joinpath(dir, "acset.json")
     write_json_acset(x, path)

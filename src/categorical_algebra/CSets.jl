@@ -447,8 +447,8 @@ end
 
 fin_sets(X::StructACSet{S}) where {S} = NamedTuple(A => FinSet(nparts(X,A)) for A in ob(S))
 
-# @cartesian_monoidal_instance CSet CSetTransformation
-# @cocartesian_monoidal_instance ACSet ACSetTransformation
+@cartesian_monoidal_instance ACSet ACSetTransformation
+@cocartesian_monoidal_instance ACSet ACSetTransformation
 
 # Limits and colimits
 #####################
@@ -601,8 +601,8 @@ cocone_objects(para::ParallelMorphisms) = SVector(codom(para))
 # Sub-C-sets
 ############
 
-const SubCSet{CD} = Subobject{<:AbstractCSet{CD}}
-const SubACSet{CD,AD} = Subobject{<:AbstractACSet{CD,AD}}
+const SubCSet{S} = Subobject{<:StructCSet{S}}
+const SubACSet{S} = Subobject{<:StructACSet{S}}
 
 components(A::SubACSet) = map(Subobject, components(hom(A)))
 force(A::SubACSet) = Subobject(force(hom(A)))
@@ -613,13 +613,13 @@ This function constructs a subobject from the components of the inclusion
 morphism, given as a named tuple or as keyword arguments. The components can
 also be specified as predicates (boolean vectors).
 """
-function Subobject(X::T, components) where T <: AbstractACSet
+function Subobject(X::T, components) where T <: ACSet
   U = T()
   components = map(coerce_subob_component, components)
   copy_parts!(U, X, components)
   Subobject(ACSetTransformation(components, U, X))
 end
-Subobject(X::AbstractACSet; components...) = Subobject(X, (; components...))
+Subobject(X::ACSet; components...) = Subobject(X, (; components...))
 
 coerce_subob_component(f::FinFunction{Int}) = collect(f)
 coerce_subob_component(A::SubFinSet{Int}) = collect(hom(A))
@@ -627,12 +627,12 @@ coerce_subob_component(f::AbstractVector{Int}) = f
 coerce_subob_component(pred::Union{AbstractVector{Bool},BitVector}) =
   findall(pred)
 
-@instance SubobjectBiHeytingAlgebra{AbstractACSet,SubACSet} begin
+@instance SubobjectBiHeytingAlgebra{ACSet,SubACSet} begin
   @import ob
   meet(A::SubACSet, B::SubACSet) = meet(A, B, SubOpBoolean())
   join(A::SubACSet, B::SubACSet) = join(A, B, SubOpBoolean())
-  top(X::AbstractACSet) = top(X, SubOpWithLimits())
-  bottom(X::AbstractACSet) = bottom(X, SubOpWithLimits())
+  top(X::ACSet) = top(X, SubOpWithLimits())
+  bottom(X::ACSet) = bottom(X, SubOpWithLimits())
 
   implies(A::SubACSet, B::SubACSet) = implies(A, B, SubOpBoolean())
   subtract(A::SubACSet, B::SubACSet) = subtract(A, B, SubOpBoolean())
@@ -650,9 +650,9 @@ function join(A::SubACSet, B::SubACSet, ::SubOpBoolean)
     join(A₀, B₀, SubOpBoolean())
   end)
 end
-top(X::AbstractACSet, ::SubOpBoolean) =
+top(X::ACSet, ::SubOpBoolean) =
   Subobject(X, map(X₀ -> top(X₀, SubOpBoolean()), fin_sets(X)))
-bottom(X::AbstractACSet, ::SubOpBoolean) =
+bottom(X::ACSet, ::SubOpBoolean) =
   Subobject(X, map(X₀ -> bottom(X₀, SubOpBoolean()), fin_sets(X)))
 
 """ Implication of sub-C-sets.
@@ -670,7 +670,7 @@ Morgan's law in classical logic, this is equivalent to
 In this form, we can clearly see the duality to formula and algorithm for
 subtraction of sub-C-sets ([`subtract`](@ref)).
 """
-function implies(A::SubACSet{CD}, B::SubACSet{CD}, ::SubOpBoolean) where CD
+function implies(A::SubACSet{S}, B::SubACSet{S}, ::SubOpBoolean) where S
   X = common_ob(A, B)
   A, B = map(as_predicate, components(A)), map(as_predicate, components(B))
   D = map(X₀ -> trues(length(X₀)), fin_sets(X))
@@ -682,7 +682,7 @@ function implies(A::SubACSet{CD}, B::SubACSet{CD}, ::SubOpBoolean) where CD
     end
   end
 
-  for c in ob(CD), x in parts(X,c)
+  for c in ob(S), x in parts(X,c)
     if D[c][x] && A[c][x] && !B[c][x]; unset!(c,x) end
   end
   Subobject(X, D)
@@ -697,7 +697,7 @@ sub-``C``-sets ``A,B ↪ X`` is given by
 
 for all ``c ∈ C`` and ``x ∈ X(c)``. Compare with [`implies`](@ref).
 """
-function subtract(A::SubACSet{CD}, B::SubACSet{CD}, ::SubOpBoolean) where CD
+function subtract(A::SubACSet{S}, B::SubACSet{S}, ::SubOpBoolean) where S
   X = common_ob(A, B)
   A, B = map(as_predicate, components(A)), map(as_predicate, components(B))
   D = map(X₀ -> falses(length(X₀)), fin_sets(X))
@@ -709,7 +709,7 @@ function subtract(A::SubACSet{CD}, B::SubACSet{CD}, ::SubOpBoolean) where CD
     end
   end
 
-  for c in ob(CD), x in parts(X,c)
+  for c in ob(S), x in parts(X,c)
     if !D[c][x] && A[c][x] && !B[c][x]; set!(c,x) end
   end
   Subobject(X, D)
@@ -723,17 +723,17 @@ end
 
 # FIXME: Should these two accessors go elsewhere?
 
-@generated function all_subparts(X::AbstractACSet{CD},
-                                 ::Type{Val{c}}, x::Int) where {CD,c}
-  Expr(:tuple, map(out_hom(CD, c)) do (f,c′)
+@generated function all_subparts(X::StructACSet{S},
+                                 ::Type{Val{c}}, x::Int) where {S,c}
+  Expr(:tuple, map(out_hom(S, c)) do (f,c′)
     :($(quot(c′)), subpart(X,x,$(quot(f))))
   end...)
 end
 
-@generated function all_incident(X::AbstractACSet{CD},
-                                 ::Type{Val{c}}, x::Int) where {CD,c}
+@generated function all_incident(X::StructACSet{S},
+                                 ::Type{Val{c}}, x::Int) where {S,c}
   Expr(:call, GlobalRef(Iterators, :flatten),
-    Expr(:tuple, map(in_hom(CD, c)) do (c′,f)
+    Expr(:tuple, map(in_hom(S, c)) do (c′,f)
       :(Tuple{Symbol,Int}[ ($(quot(c′)),x′) for x′ in incident(X,x,$(quot(f))) ])
     end...))
 end

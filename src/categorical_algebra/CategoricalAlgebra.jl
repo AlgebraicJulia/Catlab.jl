@@ -4,7 +4,7 @@ using Reexport
 
 include("FreeDiagrams.jl")
 include("Limits.jl")
-#include("Subobjects.jl")
+include("Subobjects.jl")
 include("Sets.jl")
 include("FinSets.jl")
 include("Matrices.jl")
@@ -20,7 +20,7 @@ include("DPO.jl")
 @reexport using .FreeDiagrams
 # @reexport using .CommutativeDiagrams
 @reexport using .Limits
-# @reexport using .Subobjects
+@reexport using .Subobjects
 @reexport using .CSets
 # @reexport using .ACSetViews
 @reexport using .StructuredCospans
