@@ -6,9 +6,9 @@ using Test
   include("FreeDiagrams.jl")
 end
 
-# @testset "CommutativeDiagrams" begin
-#   include("CommutativeDiagrams.jl")
-# end
+@testset "CommutativeDiagrams" begin
+  include("CommutativeDiagrams.jl")
+end
 
 @testset "Limits" begin
   include("Limits.jl")
@@ -34,7 +34,6 @@ end
 @testset "CSets" begin
   include("CSetDataStructures.jl")
   include("CSets.jl")
-  # include("ACSetViews.jl")
 end
 
 @testset "StructuredCospans" begin
@@ -45,8 +44,8 @@ end
   include("DataMigration.jl")
 end
 
-# @testset "DPO" begin
-#   include("DPO.jl")
-# end
+@testset "DPO" begin
+  include("DPO.jl")
+end
 
 end
