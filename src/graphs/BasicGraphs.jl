@@ -531,9 +531,9 @@ function __init__()
     import .MetaGraphs
     import .MetaGraphs: MetaGraph, MetaDiGraph
 
-    MetaDiGraph(g::AbstractWeightedGraph{Tuple{U}}) where U =
+    MetaDiGraph(g::AbstractWeightedGraph{S, Tuple{U}}) where {S,U} =
       to_weighted_metagraph(MetaDiGraph{Int,U}, g)
-    MetaGraph(g::AbstractSymmetricWeightedGraph{Tuple{U}}) where U =
+    MetaGraph(g::AbstractSymmetricWeightedGraph{S, Tuple{U}}) where {S,U} =
       to_weighted_metagraph(MetaGraph{Int,U}, g)
 
     function to_weighted_metagraph(MG::Type{<:MetaGraphs.AbstractMetaGraph}, g)
