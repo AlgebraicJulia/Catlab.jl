@@ -225,14 +225,14 @@ end
   ob ∈ obs
 end
 
-ACSetInterface.has_subpart(acs::StructACSet, f::Symbol) = _has_subpart(acs, Val{f})
+@inline ACSetInterface.has_subpart(acs::StructACSet, f::Symbol) = _has_subpart(acs, Val{f})
 
 @generated function _has_subpart(acs::StructACSet{S}, ::Type{Val{f}}) where
   {f, obs, homs, attrtypes, attrs, S <: SchemaDescType{obs,homs,attrtypes,attrs}}
   f ∈ homs || f ∈ attrs
 end
 
-ACSetInterface.subpart(acs::StructACSet, f::Symbol) = _subpart(acs,Val{f})
+@inline ACSetInterface.subpart(acs::StructACSet, f::Symbol) = _subpart(acs,Val{f})
 
 @generated function _subpart(acs::StructACSet{S}, ::Type{Val{f}}) where {S,f}
   s = SchemaDesc(S)
@@ -245,7 +245,7 @@ ACSetInterface.subpart(acs::StructACSet, f::Symbol) = _subpart(acs,Val{f})
   end
 end
 
-Base.getindex(acs::StructACSet, args...) = ACSetInterface.subpart(acs, args...)
+@inline Base.getindex(acs::StructACSet, args...) = ACSetInterface.subpart(acs, args...)
 
 @inline ACSetInterface.incident(acs::StructACSet, part, f::Symbol; copy::Bool=false) =
   _incident(acs, part, Val{f}; copy=copy)
@@ -312,7 +312,7 @@ end
 # Mutators
 ##########
 
-ACSetInterface.add_parts!(acs::StructACSet, ob::Symbol, n::Int) = _add_parts!(acs, Val{ob}, n)
+@inline ACSetInterface.add_parts!(acs::StructACSet, ob::Symbol, n::Int) = _add_parts!(acs, Val{ob}, n)
 
 function add_parts_body(s::SchemaDesc,
                         idxed::Dict, unique_idxed::Dict,
@@ -364,7 +364,7 @@ end
   add_parts_body(SchemaDesc(S),Dict(Idxed),Dict(UniqueIdxed),ob)
 end
 
-ACSetInterface.set_subpart!(acs::StructACSet, part::Int, f::Symbol, subpart) =
+@inline ACSetInterface.set_subpart!(acs::StructACSet, part::Int, f::Symbol, subpart) =
   _set_subpart!(acs, part, Val{f}, subpart)
 
 
@@ -438,7 +438,7 @@ end
 
 Base.setindex!(acs::StructACSet, val, args...) = set_subpart!(acs, args..., val)
 
-ACSetInterface.rem_part!(acs::StructACSet, type::Symbol, part::Int) =
+@inline ACSetInterface.rem_part!(acs::StructACSet, type::Symbol, part::Int) =
   _rem_part!(acs, Val{type}, part)
 
 function getassigned(acs::StructACSet, arrows, i)
