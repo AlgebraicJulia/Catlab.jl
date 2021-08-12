@@ -124,7 +124,7 @@ end
 
 struct StructACSetFrame{Ob, S, Ts, Idxed, UniqueIdxed, Attrs} <:
     StructACSet{S, Ts, Idxed, UniqueIdxed}
-  obs::NamedTuple{Ob, Tuple{Ref{Int}}}
+  obs::MVector{1,Int}
   homs::NamedTuple{(),Tuple{}}
   attrs::Attrs
   hom_indices::NamedTuple{(),Tuple{}}
@@ -134,7 +134,7 @@ struct StructACSetFrame{Ob, S, Ts, Idxed, UniqueIdxed, Attrs} <:
   function StructACSetFrame{Ob, S, Ts, Idxed, UniqueIdxed, Attrs}() where
       {Ob,S,Ts,Idxed,UniqueIdxed,Attrs}
     new{Ob,S,Ts,Idxed,UniqueIdxed,Attrs}(
-      NamedTuple{Ob}((Ref(0),)),
+      MVector(0),
       (;),
       Attrs([[] for a in attr(S)]),
       (;),
