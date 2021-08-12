@@ -72,6 +72,8 @@ function SchemaDescTypeType(p::Presentation)
 end
 
 ob(::Type{<:SchemaDescType{obs}}) where {obs} = obs
+ob_num(::Type{<:SchemaDescType{obs}}, x::Symbol) where {obs} = findfirst(obs .== x)
+
 hom(::Type{<:SchemaDescType{obs,homs}}) where {obs,homs} = homs
 
 function dom_nums(::Type{<:SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}}) where
@@ -149,6 +151,8 @@ struct SchemaDesc
     )
   end
 end
+
+ob_num(S::SchemaDesc, x::Symbol) where {obs} = findfirst(S.obs .== x)
 
 function SchemaDescTypeType(s::SchemaDesc)
   SchemaDescType{

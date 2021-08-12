@@ -26,14 +26,14 @@ function nparts end
 
 """ Parts of given type in an acset.
 """
-parts(acs, type) = 1:nparts(acs, type)
+@inline parts(acs, type) = 1:nparts(acs, type)
 
 """ Whether an acset has a part with the given name.
 """
 function has_part end
 
-has_part(acs, type::Symbol, part::Int) = 1 <= part <= nparts(acs, type)
-has_part(acs, type::Symbol, part::AbstractVector{Int}) =
+@inline has_part(acs, type::Symbol, part::Int) = 1 <= part <= nparts(acs, type)
+@inline has_part(acs, type::Symbol, part::AbstractVector{Int}) =
   let n=nparts(acs, type); [ 1 <= x <= n for x in part ] end
 
 function has_subpart end
@@ -70,8 +70,8 @@ function view_or_slice end
 @inline view_or_slice(x::AbstractVector, ::Colon) = x
 @inline view_or_slice(x::AbstractVector, i::AbstractVector) = x[i]
 
-subpart(acs, expr::GATExpr{:generator}) = subpart(acs, first(expr))
-subpart(acs, expr::GATExpr{:id}) = parts(acs, first(dom(expr)))
+@inline subpart(acs, expr::GATExpr{:generator}) = subpart(acs, first(expr))
+@inline subpart(acs, expr::GATExpr{:id}) = parts(acs, first(dom(expr)))
 
 function subpart(acs, part, names::AbstractVector{Symbol})
   foldl(names, init=part) do part, name
@@ -127,7 +127,7 @@ Returns the ID of the added part.
 
 See also: [`add_parts!`](@ref).
 """
-function add_part!(acs, type::Symbol, args...; kw...)
+@inline function add_part!(acs, type::Symbol, args...; kw...)
   part = only(add_parts!(acs,type,1))
   try
     set_subparts!(acs, part, args...; kw...)
@@ -146,7 +146,7 @@ See also: [`add_part!`](@ref).
 """
 function add_parts! end
 
-function add_parts!(acs, type::Symbol, n::Int, args...; kw...)
+@inline function add_parts!(acs, type::Symbol, n::Int, args...; kw...)
   parts = add_parts!(acs, type, n)
   try
     set_subparts!(acs, parts, args...; kw...)
@@ -172,7 +172,7 @@ function set_subpart! end
 
 # Inlined for the same reason as `subpart`.
 
-function set_subpart!(acs, part::AbstractVector{Int}, name, vals)
+@inline function set_subpart!(acs, part::AbstractVector{Int}, name, vals)
   broadcast(part, vals) do part, vals
     set_subpart!(acs, part, name, vals)
   end
@@ -184,13 +184,13 @@ Both single and vectorized assignment are supported.
 
 See also: [`set_subpart!`](@ref).
 """
-function set_subparts!(acs, part, kw::NamedTuple)
+@inline function set_subparts!(acs, part, kw::NamedTuple)
   for name in keys(kw)
     set_subpart!(acs, part, name, kw[name])
   end
 end
 
-set_subparts!(acs, part; kw...) = set_subparts!(acs, part, (;kw...))
+@inline set_subparts!(acs, part; kw...) = set_subparts!(acs, part, (;kw...))
 
 """ Remove part from a C-set.
 
@@ -223,7 +223,7 @@ The parts must be supplied in sorted order, without duplicates.
 
 See also: [`rem_part!`](@ref).
 """
-function rem_parts!(acs, type, parts)
+@inline function rem_parts!(acs, type, parts)
   issorted(parts) || error("Parts to be removed must be in sorted order")
   for part in Iterators.reverse(parts)
     rem_part!(acs, type, part)

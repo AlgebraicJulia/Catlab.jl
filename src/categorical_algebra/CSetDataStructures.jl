@@ -3,14 +3,14 @@ export @acset_type, @abstract_acset_type, @declare_schema, StructACSet, StructCS
   ACSetTableType
 
 using MLStyle
-using StaticArrays: StaticArray
+using StaticArrays
 using Reexport
 
 @reexport using ..ACSetInterface
 using ..IndexUtils
 using ...Theories, ...Present, ...Syntax
 using ...Theories: SchemaDesc, SchemaDescType, CSetSchemaDescType, SchemaDescTypeType,
-  codom_num, attr, attrtype
+  ob_num, codom_num, attr, attrtype
 @reexport using ...Theories: FreeSchema
 using ...Meta: strip_lines
 import Tables
@@ -63,9 +63,10 @@ function struct_acset(name::Symbol, parent, p::Presentation{Schema}; index=[], u
     name, :new
   end
   schema_type = SchemaDescTypeType(p)
+  obs_t = :($(GlobalRef(StaticArrays, :MVector)){$(length(obs)), Int})
   quote
     struct $parameterized_type <: $parent{$schema_type, Tuple{$(Ts...)}, $idxed, $unique_idxed}
-      obs::$(pi_type(obs, _ -> :(Ref{Int})))
+      obs::$obs_t
       homs::$(pi_type(homs, _ -> :(Vector{Int})))
       attrs::$(pi_type(attrs, a -> :(Vector{$(nameof(codom(a)))})))
       hom_indices::$(pi_type(indexed_homs, _ -> :(Vector{Vector{Int}})))
@@ -74,7 +75,7 @@ function struct_acset(name::Symbol, parent, p::Presentation{Schema}; index=[], u
       attr_unique_indices::$(pi_type(unique_indexed_attrs, a -> :(Dict{$(nameof(codom(a))), Int})))
       function $parameterized_type() where {$(nameof.(attr_types)...)}
         $new_call(
-          $(pi_type_elt(obs, _ -> :(Ref(0)))),
+          $obs_t(zeros(Int, $(length(obs)))),
           $(pi_type_elt(homs, _ -> :(Int[]))),
           $(pi_type_elt(attrs, a -> :($(nameof(codom(a)))[]))),
           $(pi_type_elt(indexed_homs, _ -> :(Vector{Int}[]))),
@@ -210,8 +211,13 @@ end
 
 ACSetInterface.acset_schema(::StructACSet{S}) where {S} = SchemaDesc(S)
 
-ACSetInterface.nparts(acs::StructACSet, ob::Symbol) = acs.obs[ob][]
-ACSetInterface.has_part(acs::StructACSet, ob::Symbol) = _has_part(acs, Val{ob})
+@inline ACSetInterface.nparts(acs::StructACSet, ob::Symbol) = _nparts(acs, Val{ob})
+
+@generated function _nparts(acs::StructACSet{S}, ::Type{Val{ob}}) where {S,ob}
+  :(acs.obs[$(ob_num(S,ob))])
+end
+
+@inline ACSetInterface.has_part(acs::StructACSet, ob::Symbol) = _has_part(acs, Val{ob})
 
 outgoing(acs::StructACSet, ob::Symbol) = _outgoing(acs, Val{ob})
 
@@ -318,10 +324,10 @@ function add_parts_body(s::SchemaDesc,
                         idxed::Dict, unique_idxed::Dict,
                         ob::Symbol)
   code = quote
-    m = acs.obs.$ob[]
+    m = acs.obs[$(ob_num(s, ob))]
     nparts = m + n
     newparts = (m+1):m+n
-    acs.obs.$ob[] = nparts
+    acs.obs[$(ob_num(s, ob))] = nparts
   end
   for f in s.homs
     if s.doms[f] == ob
@@ -374,7 +380,7 @@ function set_subpart_body(s::SchemaDesc,
   if f ∈ s.homs
     if idxed[f]
       quote
-        @assert 0 <= subpart <= acs.obs.$(s.codoms[f])[]
+        @assert 0 <= subpart <= acs.obs[$(ob_num(s, s.codoms[f]))]
         old = acs.homs.$f[part]
         acs.homs.$f[part] = subpart
         if old > 0
@@ -386,7 +392,7 @@ function set_subpart_body(s::SchemaDesc,
       end
     elseif unique_idxed[f]
       quote
-        @assert 0 <= subpart <= acs.obs.$(s.codoms[f])[]
+        @assert 0 <= subpart <= acs.obs[$(ob_num(s, s.codoms[f]))]
         @assert acs.hom_unique_indices.$f[subpart] == 0
         old = acs.homs.$f[part]
         if old > 0
@@ -397,7 +403,7 @@ function set_subpart_body(s::SchemaDesc,
       end
     else
       quote
-        @assert 0 <= subpart <= acs.obs.$(s.codoms[f])[]
+        @assert 0 <= subpart <= acs.obs[$(ob_num(s, s.codoms[f]))]
         acs.homs.$f[part] = subpart
       end
     end
@@ -453,7 +459,7 @@ function rem_part_body(s::SchemaDesc, idxed::Dict{Symbol,Bool}, ob::Symbol)
   indexed_out_homs = filter(hom -> s.doms[hom] == ob && idxed[hom], s.homs)
   indexed_attrs = filter(attr -> s.doms[attr] == ob && idxed[attr], s.attrs)
   quote
-    last_part = acs.obs.$ob[]
+    last_part = acs.obs[$(ob_num(s, ob))]
     @assert 1 <= part <= last_part
     # Unassign superparts of the part to be removed and also reassign superparts
     # of the last part to this part.
@@ -480,7 +486,7 @@ function rem_part_body(s::SchemaDesc, idxed::Dict{Symbol,Bool}, ob::Symbol)
     for a in $(Tuple(out_attrs))
       resize!(acs.attrs[a], last_part - 1)
     end
-    acs.obs.$ob[] -= 1
+    acs.obs[$(ob_num(s, ob))] -= 1
     if part < last_part
       set_subparts!(acs, part, (;last_row...))
     end
