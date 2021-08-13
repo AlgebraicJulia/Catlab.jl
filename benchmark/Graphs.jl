@@ -229,8 +229,9 @@ lgbench["sum-weights"] = @benchmarkable begin
 end
 
 clvecbench["increment-weights"] = @benchmarkable begin
-  $g[:weight] = $g[:weight] .+ 1.0
+  $g[:weight] .= $g[:weight] .+ 1.0
 end
+
 clbench["increment-weights"] = @benchmarkable begin
   for e in edges($g)
     $g[e,:weight] += 1.0
