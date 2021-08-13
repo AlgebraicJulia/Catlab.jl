@@ -442,7 +442,9 @@ end
   set_subpart_body(SchemaDesc(S),Dict(Idxed),Dict(UniqueIdxed),f)
 end
 
-Base.setindex!(acs::StructACSet, val, args...) = set_subpart!(acs, args..., val)
+@inline Base.setindex!(acs::StructACSet, val, ob, part) = set_subpart!(acs, ob, part, val)
+
+@inline Base.setindex!(acs::StructACSet, val, ob) = set_subpart!(acs, ob, val)
 
 @inline ACSetInterface.rem_part!(acs::StructACSet, type::Symbol, part::Int) =
   _rem_part!(acs, Val{type}, part)
