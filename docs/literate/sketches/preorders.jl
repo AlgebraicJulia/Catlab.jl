@@ -20,6 +20,8 @@ using Catlab.CategoricalAlgebra
 using Catlab.CategoricalAlgebra.DataMigration
 using Test
 
+import Catlab.Theories: compose
+
 #=
 # Definition of a Preorder formalized as a GAT
 ```julia
@@ -109,12 +111,12 @@ end
 # # Composition is transitivity
 # expressions in the presentation are paths in the Hasse Diagram
 
-function composite(P::Presentation, vs::Vector{Symbol})
+function compose(P::Presentation, vs::Vector{Symbol})
     compose(collect(generator(P, v) for v in vs))
 end
 
 # expressions are represented at expression trees
-ex = composite(P, [:f, :g])
+ex = compose(P, [:f, :g])
 # the head of an expression is the root of the expression tree
 head(ex)
 # the julia type of the expression
@@ -131,7 +133,7 @@ function thinequal(ex₁::FreeThinCategory.Hom, ex₂::FreeThinCategory.Hom)
     dom(ex₁) == dom(ex₂) && codom(ex₁) == codom(ex₂)
 end
 
-@test thinequal(ex, composite(P, [:f,:g])⋅id(generator(P,:Z)))
+@test thinequal(ex, compose(P, [:f,:g])⋅id(generator(P,:Z)))
 
 # Thinking in terms of preorders, the composite f⋅g::Hom(X,Z) is a proof that X ≤ Z
 # in logical notation you would say f::Hom(X,Y) and g::Hom(Y,Z) ⊢ f⋅g::Hom(X,Z)
@@ -149,7 +151,7 @@ end
     h::Hom(X,Z)
 end
 
-ex = composite(P₂, [:f, :g])
+ex = compose(P₂, [:f, :g])
 
 # Now that we have a name for h, we can see that thinequal knows that f⋅g == h because
 # according to the definition of a thin category, any two morphisms with the same
