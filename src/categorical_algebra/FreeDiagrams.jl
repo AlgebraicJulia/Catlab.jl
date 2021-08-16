@@ -232,15 +232,14 @@ allequal(xs::AbstractVector) = isempty(xs) || all(==(xs[1]), xs)
 #------------------------
 
 @present TheoryBipartiteFreeDiagram <: TheoryUndirectedBipartiteGraph begin
-  Ob::Data
-  Hom::Data
+  Ob::AttrType
+  Hom::AttrType
   ob₁::Attr(V₁,Ob)
   ob₂::Attr(V₂,Ob)
   hom::Attr(E,Hom)
 end
 
-const AbstractBipartiteFreeDiagram =
-  AbstractACSetType(TheoryBipartiteFreeDiagram)
+@abstract_acset_type AbstractBipartiteFreeDiagram <: AbstractUndirectedBipartiteGraph
 
 """ A free diagram that is bipartite.
 
@@ -250,8 +249,8 @@ colimits arising from undirected wiring diagrams. For limits, the boxes
 correspond to vertices in ``V₁`` and the junctions to vertics in ``V₂``.
 Colimits are dual.
 """
-const BipartiteFreeDiagram = ACSetType(TheoryBipartiteFreeDiagram,
-                                       index=[:src, :tgt])
+@acset_type BipartiteFreeDiagram(TheoryBipartiteFreeDiagram, index=[:src, :tgt]) <:
+  AbstractBipartiteFreeDiagram
 
 ob₁(d::BipartiteFreeDiagram, args...) = subpart(d, args..., :ob₁)
 ob₂(d::BipartiteFreeDiagram, args...) = subpart(d, args..., :ob₂)
@@ -296,18 +295,20 @@ end
 #----------------------
 
 @present TheoryFreeDiagram <: TheoryGraph begin
-  Ob::Data
-  Hom::Data
+  Ob::AttrType
+  Hom::AttrType
   ob::Attr(V,Ob)
   hom::Attr(E,Hom)
 end
 
-const FreeDiagram = ACSetType(TheoryFreeDiagram, index=[:src,:tgt])
+@abstract_acset_type _AbstractFreeDiagram <: AbstractGraph
+
+@acset_type FreeDiagram(TheoryFreeDiagram, index=[:src,:tgt]) <: _AbstractFreeDiagram
 
 # XXX: This is needed because we cannot control the supertype of C-set types.
-const _AbstractFreeDiagram = AbstractACSetType(TheoryFreeDiagram)
 const AbstractFreeDiagram{Ob} = Union{FixedShapeFreeDiagram{Ob},
-  AbstractBipartiteFreeDiagram{Ob}, _AbstractFreeDiagram{Ob}}
+  (AbstractBipartiteFreeDiagram{S, Tuple{Ob,Hom}} where {S,Hom}),
+  (_AbstractFreeDiagram{S, Tuple{Ob,Hom}} where {S,Hom})}
 
 ob(d::FreeDiagram, args...) = subpart(d, args..., :ob)
 hom(d::FreeDiagram, args...) = subpart(d, args..., :hom)

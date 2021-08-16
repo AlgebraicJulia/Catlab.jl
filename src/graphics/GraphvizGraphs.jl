@@ -315,40 +315,39 @@ to_graphviz(pres::Presentation{Schema}) =
   to_graphviz(to_graphviz_property_graph(pres))
 
 function to_graphviz_property_graph(pres::Presentation{Schema})
-  obs,homs,datas,attrs = generators.(Ref(pres), [:Ob,:Hom,:Data,:Attr])
+  obs,homs,attr_types,attrs = generators.(Ref(pres), [:Ob,:Hom,:AttrType,:Attr])
   g = PropertyGraph{Any}()
 
-  add_vertices!(g,length(obs))
-  for (i,ob) in enumerate(obs)
-    set_vprop!(g,i,:label,string(nameof(ob)))
-    set_vprop!(g,i,:shape,"plain")
-    set_vprop!(g,i,:margin,"2")
+  ob_vertices = add_vertices!(g,length(obs))
+  for (v, ob) in zip(ob_vertices, obs)
+    set_vprop!(g,v,:label,string(nameof(ob)))
+    set_vprop!(g,v,:shape,"plain")
+    set_vprop!(g,v,:margin,"2")
   end
 
-  add_vertices!(g,length(datas))
-  for (i,data) in enumerate(datas)
-    set_vprop!(g,i+length(obs),:label,string(nameof(data)))
+  attr_vertices = add_vertices!(g,length(attr_types))
+  for (v, attr_type) in zip(attr_vertices, attr_types)
+    set_vprop!(g,v,:label,string(nameof(attr_type)))
   end
 
-  add_edges!(g,
-             generator_index.(Ref(pres), nameof.(dom.(homs))),
-             generator_index.(Ref(pres), nameof.(codom.(homs))))
-  for (i,hom) in enumerate(homs)
-    set_eprop!(g,i,:label,string(nameof(hom)))
-    set_eprop!(g,i,:len,"2")
+  hom_edges = add_edges!(g,
+    ob_vertices[generator_index.(Ref(pres), nameof.(dom.(homs)))],
+    ob_vertices[generator_index.(Ref(pres), nameof.(codom.(homs)))])
+  for (e, hom) in zip(hom_edges, homs)
+    set_eprop!(g,e,:label,string(nameof(hom)))
+    set_eprop!(g,e,:len,"2")
   end
   
-  add_edges!(g,
-             generator_index.(Ref(pres), nameof.(dom.(attrs))),
-             length(obs) .+ generator_index.(Ref(pres), nameof.(codom.(attrs))))
-  for (i,attr) in enumerate(attrs)
-    set_eprop!(g,i+length(homs),:label,string(nameof(attr)))
-    set_eprop!(g,i+length(homs),:len,"2")
+  attr_edges = add_edges!(g,
+    ob_vertices[generator_index.(Ref(pres), nameof.(dom.(attrs)))],
+    attr_vertices[generator_index.(Ref(pres), nameof.(codom.(attrs)))])
+  for (e, attr) in zip(attr_edges, attrs)
+    set_eprop!(g,e,:label,string(nameof(attr)))
+    set_eprop!(g,e,:len,"2")
   end
 
   set_gprop!(g,:graph,Dict(:rankdir => "LR"))
   set_gprop!(g,:prog,"neato")
-
   g
 end
 

@@ -102,12 +102,12 @@ k0 = apex(k)
 #--------------------
 
 @present TheoryLabeledGraph <: TheoryGraph begin
-  Label::Data
+  Label::AttrType
   vlabel::Attr(V,Label)
   elabel::Attr(E,Label)
 end
 
-const LabeledGraph = ACSetType(TheoryLabeledGraph, index=[:src,:tgt])
+@acset_type LabeledGraph(TheoryLabeledGraph, index=[:src,:tgt])
 const OpenLabeledGraphOb, OpenLabeledGraph = OpenACSetTypes(LabeledGraph, :V)
 
 g0 = LabeledGraph{Symbol}()

@@ -30,7 +30,7 @@ const AbstractUWD = UndirectedWiringDiagram
   # parent <= id(Composite)
 end
 
-const AbstractScheduledUWD = AbstractACSetType(TheoryScheduledUWD)
+@abstract_acset_type AbstractScheduledUWD <: AbstractUWD
 
 """ Scheduled undirected wiring diagram.
 
@@ -40,16 +40,16 @@ diagram's boxes.
 
 See also: [`NestedUWD`](@ref).
 """
-const ScheduledUWD = CSetType(TheoryScheduledUWD,
-  index=[:box, :junction, :outer_junction, :parent, :box_parent])
+@acset_type ScheduledUWD(TheoryScheduledUWD,
+  index=[:box, :junction, :outer_junction, :parent, :box_parent]) <: AbstractScheduledUWD
 
-ncomposites(x::AbstractACSet) = nparts(x, :Composite)
-composites(x::AbstractACSet) = parts(x, :Composite)
-parent(x::AbstractACSet, args...) = subpart(x, args..., :parent)
-children(x::AbstractACSet, c::Int) =
+ncomposites(x::ACSet) = nparts(x, :Composite)
+composites(x::ACSet) = parts(x, :Composite)
+parent(x::ACSet, args...) = subpart(x, args..., :parent)
+children(x::ACSet, c::Int) =
   filter(c′ -> c′ != c, incident(x, c, :parent))
-box_parent(x::AbstractACSet, args...) = subpart(x, args..., :box_parent)
-box_children(x::AbstractACSet, args...) = incident(x, args..., :box_parent)
+box_parent(x::ACSet, args...) = subpart(x, args..., :box_parent)
+box_children(x::ACSet, args...) = incident(x, args..., :box_parent)
 
 @present TheoryNestedUWD <: TheoryScheduledUWD begin
   CompositePort::Ob
@@ -58,7 +58,7 @@ box_children(x::AbstractACSet, args...) = incident(x, args..., :box_parent)
   composite_junction::Hom(CompositePort, Junction)
 end
 
-const AbstractNestedUWD = AbstractACSetType(TheoryNestedUWD)
+@abstract_acset_type AbstractNestedUWD <: AbstractScheduledUWD
 
 """ Nested undirected wiring diagram.
 
@@ -70,14 +70,14 @@ Nested UWDs are very similar but not quite identical to Robin Milner's
 
 See also: [`ScheduledUWD`](@ref).
 """
-const NestedUWD = CSetType(TheoryNestedUWD,
+@acset_type NestedUWD(TheoryNestedUWD,
   index=[:box, :junction, :outer_junction,
-         :composite, :composite_junction, :parent, :box_parent])
+         :composite, :composite_junction, :parent, :box_parent]) <: AbstractNestedUWD
 
-composite_ports(x::AbstractACSet, args...) = incident(x, args..., :composite)
-composite_junction(x::AbstractACSet, args...) =
+composite_ports(x::ACSet, args...) = incident(x, args..., :composite)
+composite_junction(x::ACSet, args...) =
   subpart(x, args..., :composite_junction)
-composite_ports_with_junction(x::AbstractACSet, args...) =
+composite_ports_with_junction(x::ACSet, args...) =
   incident(x, args..., :composite_junction)
 
 # Evaluation

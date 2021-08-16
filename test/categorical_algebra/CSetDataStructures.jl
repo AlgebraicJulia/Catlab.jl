@@ -4,6 +4,7 @@ using Test
 using Catlab: @present, generator
 using Catlab.Theories: compose, id
 using Catlab.CSetDataStructures
+using Tables
 
 # Discrete dynamical systems
 ############################
@@ -13,14 +14,16 @@ using Catlab.CSetDataStructures
   Φ::Hom(X,X)
 end
 
-const AbstractDDS = AbstractCSetType(TheoryDDS)
-const DDS = CSetType(TheoryDDS, index=[:Φ])
+@abstract_acset_type AbstractDDS
+@acset_type DDS(TheoryDDS, index=[:Φ]) <: AbstractDDS
 @test DDS <: AbstractDDS
-@test DDS <: CSet
+@test DDS <: StructACSet
+@test DDS <: StructCSet
+@test DDS <: ACSet
 
 dds = DDS()
+@test typeof(dds) <: StructACSet
 @test keys(tables(dds)) == (:X,)
-@test keys(dds.indices) == (:Φ,)
 @test nparts(dds, :X) == 0
 @test add_part!(dds, :X) == 1
 @test nparts(dds, :X) == 1
@@ -70,16 +73,17 @@ rem_parts!(dds, :X, [1,4])
 @test incident(dds, 1, :Φ) == [1,2]
 @test incident(dds, 2, :Φ) == []
 
-# Pretty printing.
+## Pretty printing.
+
 dds = DDS()
 add_parts!(dds, :X, 3, Φ=[2,3,3])
 s = sprint(show, dds)
-@test startswith(s, "CSet")
+@test startswith(s, "ACSet")
 @test occursin("X = 1:3", s)
 @test occursin("Φ : X → X = ", s)
 
 s = sprint(show, MIME"text/plain"(), dds)
-@test startswith(s, "CSet")
+@test startswith(s, "ACSet")
 @test occursin("X = 1:3", s)
 @test occursin("│ X │", s)
 
@@ -105,27 +109,12 @@ add_parts!(dds, :X, 3, Φ=[1,1,1])
 @test incident(dds, 3, :Φ) == []
 
 # Incidence without indexing.
-UnindexedDDS = CSetType(TheoryDDS)
+@acset_type UnindexedDDS(TheoryDDS)
 dds = UnindexedDDS()
 add_parts!(dds, :X, 4, Φ=[3,3,4,4])
-@test isempty(keys(dds.indices))
+# @test isempty(keys(dds.indices))
 @test incident(dds, 3, :Φ) == [1,2]
 @test incident(dds, 4, :Φ) == [3,4]
-
-# Custom table type supported by Tables.jl, here a named tuple of arrays.
-dds = DDS(table_type=NamedTuple)
-@test tables(dds).X isa NamedTuple{(:Φ,)}
-add_parts!(dds, :X, 3, Φ=[1,1,1])
-@test nparts(dds, :X) == 3
-@test subpart(dds, :Φ) == [1,1,1]
-rem_part!(dds, :X, 2)
-@test nparts(dds, :X) == 2
-
-dds′ = copy(dds)
-@test tables(dds′).X isa NamedTuple{(:Φ,)}
-@test dds′ == dds
-empty_dds = typeof(dds)()
-@test tables(empty_dds).X isa NamedTuple{(:Φ,)}
 
 # Dendrograms
 #############
@@ -137,17 +126,19 @@ empty_dds = typeof(dds)()
 
 @present TheoryDendrogram(FreeSchema) begin
   X::Ob
-  R::Data
+  R::AttrType
   parent::Hom(X,X)
   height::Attr(X,R)
 end
 
-const AbstractDendrogram = AbstractACSetType(TheoryDendrogram)
-const Dendrogram = ACSetType(TheoryDendrogram, index=[:parent])
+@abstract_acset_type AbstractDendrogram
+
+@acset_type Dendrogram(TheoryDendrogram, index=[:parent]) <: AbstractDendrogram
+
 @test Dendrogram <: AbstractDendrogram
 @test Dendrogram <: ACSet
-@test Dendrogram{Real} <: AbstractDendrogram{Real}
-@test_throws ErrorException CSetType(TheoryDendrogram)
+@test Dendrogram{Real} <: AbstractDendrogram{S,Tuple{Real}} where {S}
+# @test_throws ErrorException CSetType(TheoryDendrogram)
 
 d = Dendrogram{Int}()
 add_parts!(d, :X, 3, height=0)
@@ -221,6 +212,21 @@ d_abs = Dendrogram{Number}()
 add_parts!(d_abs, :X, 2, height=[10.0, 4])
 @test subpart(d_abs, :height) == [10.0, 4]
 
+# Tables interface
+td = tables(d)
+@test keys(td) == (:X,)
+@test Tables.istable(td.X) == true
+cols = Tables.columns(td.X)
+@test Tables.columnnames(cols) == (:parent, :height)
+@test Tables.getcolumn(cols, :parent) == [4,4,4,5,5]
+@test Tables.getcolumn(cols, 1) == [4,4,4,5,5]
+rows = [Tables.rows(td.X)...]
+@test length(rows) == 5
+@test Tables.columnnames(rows[1]) == (:parent, :height)
+@test Tables.getcolumn(rows[1], :parent) == 4
+@test Tables.getcolumn(rows[1], :height) == 0
+@test Tables.getcolumn(rows[1], 1) == 4
+
 # Dendrograms with leaves
 #------------------------
 
@@ -229,7 +235,7 @@ add_parts!(d_abs, :X, 2, height=[10.0, 4])
   leafparent::Hom(L,X)
 end
 
-const LDendrogram = ACSetType(TheoryLDendrogram, index=[:parent, :leafparent])
+@acset_type LDendrogram(TheoryLDendrogram, index=[:parent, :leafparent]) <: AbstractDendrogram
 
 # Copying between C-sets and C′-sets with C != C′.
 ld = LDendrogram{Int}()
@@ -250,17 +256,17 @@ copy_parts!(d′, ld)
 
 @present TheoryLabeledSet(FreeSchema) begin
   X::Ob
-  Label::Data
+  Label::AttrType
   label::Attr(X,Label)
 end
 
 # Labeled sets with index
 #------------------------
 
-const IndexedLabeledSet = ACSetType(TheoryLabeledSet, index=[:label])
+@acset_type IndexedLabeledSet(TheoryLabeledSet, index=[:label])
 
 lset = IndexedLabeledSet{Symbol}()
-@test keys(lset.indices) == (:label,)
+# @test keys(lset.indices) == (:label,)
 add_parts!(lset, :X, 2, label=[:foo, :bar])
 @test subpart(lset, :, :label) == [:foo, :bar]
 @test incident(lset, :foo, :label) == [1]
@@ -302,11 +308,9 @@ add_part!(lset, :X)
 # Labeled sets with unique index
 #-------------------------------
 
-const UniqueIndexedLabeledSet = ACSetType(TheoryLabeledSet,
-                                          unique_index=[:label])
+@acset_type UniqueIndexedLabeledSet(TheoryLabeledSet, unique_index=[:label])
 
 lset = UniqueIndexedLabeledSet{Symbol}()
-@test keys(lset.indices) == (:label,)
 add_parts!(lset, :X, 2, label=[:foo, :bar])
 @test subpart(lset, :, :label) == [:foo, :bar]
 @test incident(lset, :foo, :label) == 1
@@ -318,10 +322,10 @@ set_subpart!(lset, 1, :label, :baz)
 @test incident(lset, :baz, :label) == 1
 @test incident(lset, :foo, :label) == 0
 
-@test_throws ErrorException set_subpart!(lset, 1, :label, :bar)
+@test_throws Any set_subpart!(lset, 1, :label, :bar)
 
 # @acset macro
-##############
+#-------------
 
 @present TheoryDecGraph(FreeSchema) begin
   E::Ob
@@ -329,11 +333,11 @@ set_subpart!(lset, 1, :label, :baz)
   src::Hom(E,V)
   tgt::Hom(E,V)
 
-  X::Data
+  X::AttrType
   dec::Attr(E,X)
 end
 
-const DecGraph = ACSetType(TheoryDecGraph, index=[:src,:tgt])
+@acset_type DecGraph(TheoryDecGraph, index=[:src,:tgt])
 
 g = @acset DecGraph{String} begin
   V = 4
@@ -378,17 +382,17 @@ f(s::String) = Int(s[1])
 h1 = map(g, dec = f)
 h2 = map(g, X = f)
 
-@test h1 == h1
+@test h1 == h2
 
 @test subpart(h1,:src) == subpart(g,:src)
-@test typeof(h1).parameters[3] == Tuple{Int}
+@test typeof(h1).super.parameters[2] == Tuple{Int}
 @test subpart(h1,:dec) == f.(["a","b","c","d"])
 
 @present TheoryLabelledDecGraph <: TheoryDecGraph begin
   label::Attr(V,X)
 end
 
-const LabelledDecGraph = ACSetType(TheoryLabelledDecGraph, index=[:src,:tgt])
+@acset_type LabelledDecGraph(TheoryLabelledDecGraph, index=[:src,:tgt])
 
 g = @acset LabelledDecGraph{String} begin
   V = 4

@@ -39,7 +39,7 @@ end
 
 """ Abstract type for circular port graphs.
 """
-const AbstractCPortGraph = AbstractACSetType(ThCPortGraph)
+@abstract_acset_type AbstractCPortGraph
 
 """ A circular port graph.
 
@@ -47,11 +47,11 @@ Circular port graphs consist of boxes with ports connected by directed wires.
 The ports are not seperated into inputs and outputs, so the "boxes" are actually
 circular, hence the name.
 """
-const CPortGraph = ACSetType(ThCPortGraph, index=[:box, :src, :tgt])
+@acset_type CPortGraph(ThCPortGraph, index=[:box, :src, :tgt]) <: AbstractCPortGraph
 
 """ Abstract type for open circular port graphs.
 """
-const AbstractOpenCPortGraph = AbstractACSetType(ThOpenCPortGraph)
+@abstract_acset_type AbstractOpenCPortGraph <: AbstractCPortGraph
 
 """ An open circular port graph.
 
@@ -59,13 +59,13 @@ Open circular port graphs are circular port graphs with a distinguished set of
 outer ports. They have a natural operad structure and can be seen as a
 specialization of directed wiring diagrams.
 """
-const OpenCPortGraph = ACSetType(ThOpenCPortGraph, index=[:box, :src, :tgt])
+@acset_type OpenCPortGraph(ThOpenCPortGraph, index=[:box, :src, :tgt]) <: AbstractOpenCPortGraph
 
-const AbstractSymCPortGraph = AbstractACSetType(ThSymCPortGraph)
-const SymCPortGraph = ACSetType(ThSymCPortGraph, index=[:box, :src])
+@abstract_acset_type AbstractSymCPortGraph <: AbstractCPortGraph
+@acset_type SymCPortGraph(ThSymCPortGraph, index=[:box, :src]) <: AbstractSymCPortGraph
 
-const AbstractOpenSymCPortGraph = AbstractACSetType(ThOpenSymCPortGraph)
-const OpenSymCPortGraph = ACSetType(ThOpenSymCPortGraph, index=[:box, :src])
+@abstract_acset_type AbstractOpenSymCPortGraph <: AbstractSymCPortGraph
+@acset_type OpenSymCPortGraph(ThOpenSymCPortGraph, index=[:box, :src]) <: AbstractOpenSymCPortGraph
 const OSCPGraph = OpenSymCPortGraph
 
 function OpenCPortGraph(g::AbstractCPortGraph)
@@ -152,8 +152,8 @@ end
   bun::Hom(OuterPort, Bundle)
 end
 
-const AbstractBundledCPG = AbstractACSetType(ThBundledCPG)
-const BundledCPG = ACSetType(ThBundledCPG, index=[:box, :src, :tgt, :bun])
+@abstract_acset_type AbstractBundledCPG <: AbstractOpenCPortGraph
+@acset_type BundledCPG(ThBundledCPG, index=[:box, :src, :tgt, :bun]) <: AbstractBundledCPG
 
 function migrate!(b::AbstractBundledCPG, g::AbstractOpenCPortGraph)
   migrate!(b,g,

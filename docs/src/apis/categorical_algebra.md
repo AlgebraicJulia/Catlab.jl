@@ -60,14 +60,14 @@ using Catlab, Catlab.CategoricalAlgebra
   E::Ob
   src::Hom(E,V)
   tgt::Hom(E,V)
-  T::Data
+  T::AttrType
   weight::Attr(E,T)
 end
 
 # Construct the type used to store acsets on the previous schema
 # We *index* src and tgt, which means that we store not only
 # the forwards map, but also the backwards map.
-const WeightedGraph = ACSetType(TheoryWeightedGraph, index=[:src,:tgt])
+@acset_type WeightedGraph(TheoryWeightedGraph, index=[:src,:tgt])
 
 # Construct a weighted graph, with floats as edge weights
 g = @acset WeightedGraph{Float64} begin
