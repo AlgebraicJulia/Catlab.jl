@@ -34,7 +34,6 @@ end
 @testset "CSets" begin
   include("CSetDataStructures.jl")
   include("CSets.jl")
-  include("ACSetViews.jl")
 end
 
 @testset "StructuredCospans" begin

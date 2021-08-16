@@ -229,8 +229,9 @@ lgbench["sum-weights"] = @benchmarkable begin
 end
 
 clvecbench["increment-weights"] = @benchmarkable begin
-  $g[:weight] = $g[:weight] .+ 1.0
+  $g[:weight] .= $g[:weight] .+ 1.0
 end
+
 clbench["increment-weights"] = @benchmarkable begin
   for e in edges($g)
     $g[e,:weight] += 1.0
@@ -250,12 +251,11 @@ clbench = bench["Catlab"] = BenchmarkGroup()
 lgbench = bench["LightGraphs"] = BenchmarkGroup()
 
 @present TheoryLabeledGraph <: TheoryGraph begin
-  Label::Data
+  Label::AttrType
   label::Attr(V,Label)
 end
-const LabeledGraph = ACSetType(TheoryLabeledGraph, index=[:src,:tgt])
-const IndexedLabeledGraph = ACSetType(TheoryLabeledGraph, index=[:src,:tgt],
-                                      unique_index=[:label])
+@acset_type LabeledGraph(TheoryLabeledGraph, index=[:src,:tgt])
+@acset_type IndexedLabeledGraph(TheoryLabeledGraph, index=[:src,:tgt], unique_index=[:label])
 
 function discrete_labeled_graph(n::Int; indexed::Bool=false)
   g = (indexed ? IndexedLabeledGraph{String} : LabeledGraph{String})()

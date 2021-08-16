@@ -4,7 +4,6 @@ export AbstractPropertyGraph, PropertyGraph, SymmetricPropertyGraph,
   set_gprop!, set_vprop!, set_eprop!, set_gprops!, set_vprops!, set_eprops!
 
 using ...Present, ...CSetDataStructures, ..BasicGraphs
-using ...Theories: SchemaType
 using ..BasicGraphs: TheoryGraph, TheorySymmetricGraph
 import ..BasicGraphs: nv, ne, src, tgt, inv, edges, vertices,
   has_edge, has_vertex, add_edge!, add_edges!, add_vertex!, add_vertices!
@@ -19,16 +18,18 @@ Concrete types are [`PropertyGraph`](@ref) and [`SymmetricPropertyGraph`](@ref).
 abstract type AbstractPropertyGraph{T} end
 
 @present TheoryPropertyGraph <: TheoryGraph begin
-  Props::Data
+  Props::AttrType
   vprops::Attr(V,Props)
   eprops::Attr(E,Props)
 end
 
-# We don't use `ACSetType` because we are being a bit more flexible here.
-const _AbstractPropertyGraph{T} = AbstractACSet{
-  SchemaType(TheoryPropertyGraph)...,Tuple{Dict{Symbol,T}}}
-const _PropertyGraph{T} = ACSet{
-  SchemaType(TheoryPropertyGraph)...,Tuple{Dict{Symbol,T}},(:src,:tgt),()}
+@abstract_acset_type __AbstractPropertyGraph
+
+const _AbstractPropertyGraph{T} = __AbstractPropertyGraph{S, Tuple{Dict{Symbol,T}}} where {S}
+
+@acset_type __PropertyGraph(TheoryPropertyGraph, index=[:src,:tgt]) <: __AbstractPropertyGraph
+
+const _PropertyGraph{T} = __PropertyGraph{Dict{Symbol,T}}
 
 """ Graph with properties.
 
@@ -49,17 +50,21 @@ PropertyGraph{T,G}(; kw...) where {T,G<:_AbstractPropertyGraph{T}} =
 PropertyGraph{T}(; kw...) where T = PropertyGraph{T,_PropertyGraph{T}}(; kw...)
 
 @present TheorySymmetricPropertyGraph <: TheorySymmetricGraph begin
-  Props::Data
+  Props::AttrType
   vprops::Attr(V,Props)
   eprops::Attr(E,Props)
 
   compose(inv,eprops) == eprops # Edge involution preserves edge properties.
 end
 
-const _AbstractSymmetricPropertyGraph{T} = AbstractACSet{
-  SchemaType(TheorySymmetricPropertyGraph)...,Tuple{Dict{Symbol,T}}}
-const _SymmetricPropertyGraph{T} = ACSet{
-  SchemaType(TheorySymmetricPropertyGraph)...,Tuple{Dict{Symbol,T}},(:src,),()}
+@abstract_acset_type __AbstractSymmetricPropertyGraph
+
+const _AbstractSymmetricPropertyGraph{T} = __AbstractSymmetricPropertyGraph{S, Tuple{Dict{Symbol,T}}} where {S}
+
+@acset_type __SymmetricPropertyGraph(TheorySymmetricPropertyGraph, index=[:src,:tgt]) <:
+  __AbstractSymmetricPropertyGraph
+
+const _SymmetricPropertyGraph{T} = __SymmetricPropertyGraph{Dict{Symbol,T}}
 
 """ Symmetric graphs with properties.
 

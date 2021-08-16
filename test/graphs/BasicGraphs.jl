@@ -10,7 +10,6 @@ using Catlab.Graphs.BasicGraphs
 ########
 
 g = Graph()
-@test keys(g.indices) == (:src,:tgt)
 add_vertex!(g)
 add_vertices!(g, 2)
 @test nv(g) == 3
@@ -65,7 +64,6 @@ sub = induced_subgraph(g, [1,3])
 ##################
 
 g = SymmetricGraph()
-@test keys(g.indices) == (:src,)
 
 add_vertices!(g, 3)
 @test nv(g) == 3
@@ -155,7 +153,6 @@ rem_vertex!(g, 2)
 ##################
 
 g = HalfEdgeGraph()
-@test keys(g.indices) == (:vertex,)
 
 add_vertices!(g, 2)
 @test nv(g) == 2

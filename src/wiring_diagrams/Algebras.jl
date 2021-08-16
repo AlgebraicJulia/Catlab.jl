@@ -138,7 +138,7 @@ counting query and the result is a vector whose length is the number of results.
 For its implementation, this function wraps the [`oapply`](@ref) method for
 multispans, which defines the UWD algebra of multispans.
 """
-function query(X::AbstractACSet, diagram::UndirectedWiringDiagram,
+function query(X::ACSet, diagram::UndirectedWiringDiagram,
                params=(;); table_type::Type=TypedTables.Table)
   # For each box in the diagram, extract span from ACSet.
   spans = map(boxes(diagram), subpart(diagram, :name)) do b, name
