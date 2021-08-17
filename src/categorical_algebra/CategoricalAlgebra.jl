@@ -15,6 +15,7 @@ include("StructuredCospans.jl")
 include("CommutativeDiagrams.jl")
 include("DataMigration.jl")
 include("DPO.jl")
+include("PACSets.jl")
 
 @reexport using .FreeDiagrams
 @reexport using .CommutativeDiagrams
