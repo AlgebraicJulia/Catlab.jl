@@ -254,8 +254,9 @@ lgbench = bench["LightGraphs"] = BenchmarkGroup()
   Label::AttrType
   label::Attr(V,Label)
 end
-@acset_type LabeledGraph(TheoryLabeledGraph, index=[:src,:tgt])
-@acset_type IndexedLabeledGraph(TheoryLabeledGraph, index=[:src,:tgt], unique_index=[:label])
+@acset_type LabeledGraph(TheoryLabeledGraph, index=[:src,:tgt]) <: AbstractGraph
+@acset_type IndexedLabeledGraph(TheoryLabeledGraph, index=[:src,:tgt],
+                                unique_index=[:label]) <: AbstractGraph
 
 function discrete_labeled_graph(n::Int; indexed::Bool=false)
   g = (indexed ? IndexedLabeledGraph{String} : LabeledGraph{String})()

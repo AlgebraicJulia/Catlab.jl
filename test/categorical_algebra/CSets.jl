@@ -4,7 +4,7 @@ using Test
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra,
   Catlab.CategoricalAlgebra.FinSets
 using Catlab.CategoricalAlgebra.CSets, Catlab.CSetDataStructures
-using Catlab.Graphs.BasicGraphs: TheoryGraph
+using Catlab.Graphs.BasicGraphs: AbstractGraph, TheoryGraph
 
 @present TheoryDDS(FreeSchema) begin
   X::Ob
@@ -233,7 +233,7 @@ h = path_graph(WeightedGraph{Float64}, 4, E=(weight=[1.,2.,3.],))
   elabel::Attr(E,Label)
 end
 
-@acset_type VELabeledGraph(TheoryVELabeledGraph, index=[:src,:tgt])
+@acset_type VELabeledGraph(TheoryVELabeledGraph, index=[:src,:tgt]) <: AbstractGraph
 
 # Initial labeled graph.
 @test ob(initial(VELabeledGraph{Symbol})) == VELabeledGraph{Symbol}()
@@ -330,7 +330,7 @@ C₅, C₆ = cycle_graph(SymmetricGraph, 5), cycle_graph(SymmetricGraph, 6)
   Label::AttrType
   label::Attr(V,Label)
 end
-@acset_type LabeledGraph(TheoryLabeledGraph, index=[:src,:tgt])
+@acset_type LabeledGraph(TheoryLabeledGraph, index=[:src,:tgt]) <: AbstractGraph
 
 g = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:c,:d],))
 h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:c,:d,:a,:b],))

@@ -3,7 +3,7 @@ using Test
 
 using Catlab, Catlab.Theories, Catlab.Graphs,
   Catlab.CategoricalAlgebra, Catlab.CategoricalAlgebra.FinSets
-using Catlab.Graphs.BasicGraphs: TheoryGraph
+using Catlab.Graphs.BasicGraphs: AbstractGraph, TheoryGraph
 
 # Structured cospans of C-sets
 ##############################
@@ -107,7 +107,7 @@ k0 = apex(k)
   elabel::Attr(E,Label)
 end
 
-@acset_type LabeledGraph(TheoryLabeledGraph, index=[:src,:tgt])
+@acset_type LabeledGraph(TheoryLabeledGraph, index=[:src,:tgt]) <: AbstractGraph
 const OpenLabeledGraphOb, OpenLabeledGraph = OpenACSetTypes(LabeledGraph, :V)
 
 g0 = LabeledGraph{Symbol}()
