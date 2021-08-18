@@ -59,8 +59,8 @@ of course this definition extends the GAT of categories
 @theory Category{Ob,Hom} begin
   # Unicode aliases.
   @op begin
-    (→) := Hom
-    (⋅) := compose
+  (→) := Hom
+  (⋅) := compose
   end
 
   """ Object in a category """
@@ -74,7 +74,7 @@ of course this definition extends the GAT of categories
 
   # Category axioms.
   ((f ⋅ g) ⋅ h == f ⋅ (g ⋅ h)
-    ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, f::(A → B), g::(B → C), h::(C → D)))
+  ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, f::(A → B), g::(B → C), h::(C → D)))
   f ⋅ id(B) == f ⊣ (A::Ob, B::Ob, f::(A → B))
   id(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
 end
@@ -90,20 +90,20 @@ the theory of preorders. Show that they have the same models.
 # those expressions to create a specific example of the theory. We define `P` to be a preorder
 # with 3 elements and 2 ≤ relationships.
 @present P(FreeThinCategory) begin
-    (X,Y,Z)::Ob
-    f::Hom(X,Y)
-    g::Hom(Y,Z)
+  (X,Y,Z)::Ob
+  f::Hom(X,Y)
+  g::Hom(Y,Z)
 end
 
 # another example
 
 @present Q(FreeThinCategory) begin
-    (X,Y,Z)::Ob
-    f::Hom(X,Y)
-    g::Hom(Y,Z)
-    Y′::Ob
-    f′::Hom(X,Y′)
-    g′::Hom(Y′,Z)
+  (X,Y,Z)::Ob
+  f::Hom(X,Y)
+  g::Hom(Y,Z)
+  Y′::Ob
+  f′::Hom(X,Y′)
+  g′::Hom(Y′,Z)
 end
 
 # Exercise: draw the Hasse diagrams for these preorders by hand.
@@ -112,7 +112,7 @@ end
 # expressions in the presentation are paths in the Hasse Diagram
 
 function compose(P::Presentation, vs::Vector{Symbol})
-    compose(collect(generator(P, v) for v in vs))
+  compose(collect(generator(P, v) for v in vs))
 end
 
 # expressions are represented at expression trees
@@ -130,7 +130,7 @@ gat_type_args(ex)
 # In symbols: ex₁::Hom(X,Y) ∧ ex₂::Hom(X,Y) ⟹ ex₁ == ex₂
 
 function thinequal(ex₁::FreeThinCategory.Hom, ex₂::FreeThinCategory.Hom)
-    dom(ex₁) == dom(ex₂) && codom(ex₁) == codom(ex₂)
+  dom(ex₁) == dom(ex₂) && codom(ex₁) == codom(ex₂)
 end
 
 @test thinequal(ex, compose(P, [:f,:g])⋅id(generator(P,:Z)))
@@ -145,10 +145,10 @@ end
 # While computers can access things by offset or addresses, programmers want to use names
 # so when we prove in P that X≤Z, we name that proof by adding it as a generator
 @present P₂(FreeThinCategory) begin
-    (X,Y,Z)::Ob
-    f::Hom(X,Y)
-    g::Hom(Y,Z)
-    h::Hom(X,Z)
+  (X,Y,Z)::Ob
+  f::Hom(X,Y)
+  g::Hom(Y,Z)
+  h::Hom(X,Z)
 end
 
 ex = compose(P₂, [:f, :g])
@@ -168,18 +168,18 @@ generators(P₂′)
 # however, then when you tried to write down a morphism, you wouldn't be able to refer
 # to a specific one by name, because they are all named ≤.
 @present R(FreeThinCategory) begin
-    (x,y,z)::Ob
-    (≤)::Hom(x,y)
+  (x,y,z)::Ob
+  (≤)::Hom(x,y)
 end
 generators(R)
 
 # Catlab won't let you make a presentation where the homs have the same exact name
 #= this will error
 @present Q(FreeThinCategory) begin
-    (x,y,z)::Ob
-    (≤)::Hom(x,y)
-    (≤)::Hom(y,z)
-    (≤)::Hom(x,z)
+  (x,y,z)::Ob
+  (≤)::Hom(x,y)
+  (≤)::Hom(y,z)
+  (≤)::Hom(x,z)
 end
 =#
 
@@ -201,12 +201,12 @@ end
 
 # we can access the objects of a presentation by filtering on the gat_typeof
 objects(P::Presentation) = filter(generators(P)) do x
-    gat_typeof(x) == :Ob
+  gat_typeof(x) == :Ob
 end
 
 # we can access the homs of a presentation by filtering on the gat_typeof
 homs(P::Presentation) = filter(generators(P)) do x
-    gat_typeof(x) == :Hom
+  gat_typeof(x) == :Hom
 end
 
 # a generator is in the set of homs if it is in the list of generators
@@ -221,28 +221,28 @@ in_homs(f::FreeThinCategory.Hom{:compose}, P::Presentation) = all(map(fᵢ->in_h
 # 2. make sure all the homs are sent to homs in the codomain
 # 3. check that the domains and codomainss of the homs match
 function is_functorial(F::Functor)
-    pₒ = map(objects(dom(F))) do X
-        Ob(F)[X] in generators(codom(F))
-    end |> all
+  pₒ = map(objects(dom(F))) do X
+    Ob(F)[X] in generators(codom(F))
+  end |> all
 
-    pₕ = map(homs(dom(F))) do f
-        in_homs(Hom(F)[f], codom(F))
-    end |> all
+  pₕ = map(homs(dom(F))) do f
+    in_homs(Hom(F)[f], codom(F))
+  end |> all
 
-    pᵩ = map(homs(dom(F))) do f
-        FX = Ob(F)[dom(f)]
-        Ff = Hom(F)[f]
-        FY = Ob(F)[codom(f)]
-        dom(Ff) == FX && codom(Ff) == FY
-    end |> all
-    return pₒ && pₕ && pᵩ
+  pᵩ = map(homs(dom(F))) do f
+    FX = Ob(F)[dom(f)]
+    Ff = Hom(F)[f]
+    FY = Ob(F)[codom(f)]
+    dom(Ff) == FX && codom(Ff) == FY
+  end |> all
+  return pₒ && pₕ && pᵩ
 end
 
 @present Q(FreeThinCategory) begin
-    (a,b,c,d)::Ob
-    ab::Hom(a,b)
-    bc::Hom(b,c)
-    cd::Hom(c,d)
+  (a,b,c,d)::Ob
+  ab::Hom(a,b)
+  bc::Hom(b,c)
+  cd::Hom(c,d)
 end
 generators(Q)
 
