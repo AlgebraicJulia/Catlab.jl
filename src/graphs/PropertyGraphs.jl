@@ -23,7 +23,7 @@ abstract type AbstractPropertyGraph{T} end
   eprops::Attr(E,Props)
 end
 
-@abstract_acset_type __AbstractPropertyGraph
+@abstract_acset_type __AbstractPropertyGraph <: HasGraph
 
 const _AbstractPropertyGraph{T} = __AbstractPropertyGraph{S, Tuple{Dict{Symbol,T}}} where {S}
 
@@ -57,7 +57,7 @@ PropertyGraph{T}(; kw...) where T = PropertyGraph{T,_PropertyGraph{T}}(; kw...)
   compose(inv,eprops) == eprops # Edge involution preserves edge properties.
 end
 
-@abstract_acset_type __AbstractSymmetricPropertyGraph
+@abstract_acset_type __AbstractSymmetricPropertyGraph <: HasGraph
 
 const _AbstractSymmetricPropertyGraph{T} = __AbstractSymmetricPropertyGraph{S, Tuple{Dict{Symbol,T}}} where {S}
 
