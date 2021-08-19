@@ -176,8 +176,8 @@ generators(P₂′)
 end
 generators(R)
 
-# Catlab won't let you make a presentation where the homs have the same exact name
-#= this will error
+# Catlab won't let you make a presentation where the homs have the same exact name.
+#= So, this will error:
 @present Q(FreeThinCategory) begin
   (x,y,z)::Ob
   (≤)::Hom(x,y)
@@ -185,7 +185,17 @@ generators(R)
   (≤)::Hom(x,z)
 end
 =#
-
+# However, you can omit the names for homs with the following syntax, which is useful for thin categories.
+  
+```julia
+  @present Q(FreeThinCategory) begin
+     (x,y,z)::Ob
+     ::Hom(x,y)
+     ::Hom(y,z)
+     ::Hom(x,z)
+   end
+```
+ 
 
 # In a thin category, all the homs with the same domain and codomain are the same,
 # so why don't we name them by their the domain and codomain and then use the property
