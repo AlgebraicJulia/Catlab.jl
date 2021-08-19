@@ -24,6 +24,9 @@ import Catlab.Theories: compose
 
 #=
 # Definition of a Preorder formalized as a GAT
+
+The following definitions can be found in the `Catlab.Theories` module. 
+
 ```julia
 """ Theory of *preorders*
 
