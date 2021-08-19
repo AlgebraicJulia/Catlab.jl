@@ -184,8 +184,8 @@ generators(R)
   (≤)::Hom(y,z)
   (≤)::Hom(x,z)
 end
-=#
-# However, you can omit the names for homs with the following syntax, which is useful for thin categories.
+
+However, you can omit the names for homs with the following syntax, which is useful for thin categories.
   
 ```julia
   @present Q(FreeThinCategory) begin
@@ -195,7 +195,7 @@ end
      ::Hom(x,z)
    end
 ```
- 
+=#
 
 # In a thin category, all the homs with the same domain and codomain are the same,
 # so why don't we name them by their the domain and codomain and then use the property
