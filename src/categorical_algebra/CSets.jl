@@ -686,10 +686,14 @@ Subobject(X::ACSet, components::NamedTuple) =
   SubACSetComponentwise(X, components)
 Subobject(X::ACSet; components...) = Subobject(X, (; components...))
 
-coerce_subob_component(X::FinSet, subset::SubFinSet) =
-  X == ob(subset) ? subset : error("Domain mismatch: $X != $(ob(subset))")
-coerce_subob_component(X::FinSet, f::FinFunction) =
-  X == codom(f) ? Subobject(f) : error("Domain mismatch: $X != $(codom(f))")
+function coerce_subob_component(X::FinSet, subset::SubFinSet)
+  X == ob(subset) ? subset :
+    error("Set $X in C-set does not match set of subset $subset")
+end
+function coerce_subob_component(X::FinSet, f::FinFunction)
+  X == codom(f) ? Subobject(f) :
+    error("Set $X in C-set does not match codomain of inclusion $f")
+end
 coerce_subob_component(X::FinSet, f) = Subobject(X, f)
 
 ob(A::SubACSetComponentwise) = A.ob
