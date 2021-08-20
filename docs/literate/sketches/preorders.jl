@@ -1,7 +1,8 @@
 # # Preorders
 #
 #md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/sketches/Preorders.ipynb)
-# Many of the ideas in Category Theory can be viewed as generalizations of 
+#
+# Many of the ideas in category theory can be viewed as generalizations of
 # preorders or monoids. This sketch shows some features of Catlab through the 
 # lens of preorders.
 # You will see examples of defining GATs, Presentations, Syntax, and Functors.
@@ -9,17 +10,9 @@
 # simple cases of categories. 
 
 using Core: GeneratedFunctionStub
-using Catlab
-using Catlab.Theories
-using Catlab.Programs
-using Catlab.WiringDiagrams
-using Catlab.Graphics
-using Catlab.Graphics.Graphviz
-using Catlab.Graphs
-using Catlab.CategoricalAlgebra
-using Catlab.CategoricalAlgebra.DataMigration
 using Test
 
+using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
 import Catlab.Theories: compose
 
 #=
@@ -176,24 +169,28 @@ generators(P₂′)
 end
 generators(R)
 
-# Catlab won't let you make a presentation where the homs have the same exact name.
-#= So, this will error:
+#=
+Catlab won't let you make a presentation where the homs have the same exact name.
+So, this will error:
+
+```julia
 @present Q(FreeThinCategory) begin
   (x,y,z)::Ob
   (≤)::Hom(x,y)
   (≤)::Hom(y,z)
   (≤)::Hom(x,z)
 end
+```
 
 However, you can omit the names for homs with the following syntax, which is useful for thin categories.
   
 ```julia
-  @present Q(FreeThinCategory) begin
-     (x,y,z)::Ob
-     ::Hom(x,y)
-     ::Hom(y,z)
-     ::Hom(x,z)
-   end
+@present Q(FreeThinCategory) begin
+  (x,y,z)::Ob
+  ::Hom(x,y)
+  ::Hom(y,z)
+  ::Hom(x,z)
+end
 ```
 =#
 
@@ -223,10 +220,12 @@ homs(P::Presentation) = filter(generators(P)) do x
 end
 
 # a generator is in the set of homs if it is in the list of generators
-in_homs(f::FreeThinCategory.Hom{:generator}, P::Presentation) = f in generators(P)
+in_homs(f::FreeThinCategory.Hom{:generator}, P::Presentation) =
+  f in generators(P)
 
 # a composite hom is in the list set of homs if all of its components are.
-in_homs(f::FreeThinCategory.Hom{:compose}, P::Presentation) = all(map(fᵢ->in_homs(fᵢ, P), args(f)))
+in_homs(f::FreeThinCategory.Hom{:compose}, P::Presentation) =
+  all(map(fᵢ->in_homs(fᵢ, P), args(f)))
 
 
 # we can check if a map is functorial, which is called monotone for preorders.
