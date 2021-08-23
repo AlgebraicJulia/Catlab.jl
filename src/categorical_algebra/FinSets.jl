@@ -16,7 +16,7 @@ using StaticArrays: StaticVector, SVector, SizedVector, similar_type
 @reexport using ..Sets
 using ...GAT, ...Theories
 using ...CSetDataStructures, ...Graphs, ..FreeDiagrams, ..Limits, ..Subobjects
-import ...Theories: dom, codom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
+import ...Theories: dom, codom, ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 import ..Limits: limit, colimit, universal, pushout_complement,
   can_pushout_complement
 import ..Subobjects: Subobject, SubobjectLattice
@@ -901,7 +901,7 @@ end
 # Subsets
 #########
 
-""" Subset of a finite set represented as an inclusion map.
+""" Subset of a finite set.
 """
 const SubFinSet{S,T} = Subobject{<:FinSet{S,T}}
 
@@ -914,13 +914,36 @@ Base.sort(A::SubFinSet) = SubFinSet(ob(A), sort(collect(A)))
 
 const AbstractBoolVector = Union{AbstractVector{Bool},BitVector}
 
-function Subobject(X::FinSet, pred::AbstractBoolVector)
-  length(pred) == length(X) ||
-    error("Size of predicate $pred does not equal size of object $X")
-  Subobject(X, findall(pred))
+""" Subset of a finite set represented as a boolean vector.
+
+This is the subobject classifier representation since `Bool` is the subobject
+classifier for `Set`.
+"""
+@auto_hash_equals struct SubFinSetVector <: Subobject{FinSet{Int,Int}}
+  set::FinSet{Int,Int}
+  predicate::AbstractBoolVector
+
+  function SubFinSetVector(X::FinSet{Int}, pred::AbstractBoolVector)
+    length(pred) == length(X) ||
+      error("Size of predicate $pred does not equal size of object $X")
+    new(X, pred)
+  end
 end
-function SubFinSet(pred::AbstractBoolVector)
-  Subobject(FinSet(length(pred)), findall(pred))
+
+Subobject(X::FinSet, pred::AbstractBoolVector) = SubFinSetVector(X, pred)
+SubFinSet(pred::AbstractBoolVector) = Subobject(FinSet(length(pred)), pred)
+
+ob(A::SubFinSetVector) = A.set
+hom(A::SubFinSetVector) = FinFunction(findall(A.predicate), A.set)
+predicate(A::SubFinSetVector) = A.predicate
+
+function predicate(A::SubFinSet)
+  f = hom(A)
+  pred = falses(length(codom(f)))
+  for x in dom(f)
+    pred[f(x)] = true
+  end
+  pred
 end
 
 @instance SubobjectLattice{FinSet,SubFinSet} begin
@@ -936,19 +959,10 @@ end
 struct SubOpBoolean <: SubOpAlgorithm end
 
 meet(A::SubFinSet{Int}, B::SubFinSet{Int}, ::SubOpBoolean) =
-  SubFinSet(as_predicate(A) .& as_predicate(B))
+  SubFinSet(predicate(A) .& predicate(B))
 join(A::SubFinSet{Int}, B::SubFinSet{Int}, ::SubOpBoolean) =
-  SubFinSet(as_predicate(A) .| as_predicate(B))
+  SubFinSet(predicate(A) .| predicate(B))
 top(X::FinSet{Int}, ::SubOpBoolean) = SubFinSet(trues(length(X)))
 bottom(X::FinSet{Int}, ::SubOpBoolean) = SubFinSet(falses(length(X)))
-
-function as_predicate(A::SubFinSet)
-  f = hom(A)
-  pred = falses(length(codom(f)))
-  for x in dom(f)
-    pred[f(x)] = true
-  end
-  pred
-end
 
 end

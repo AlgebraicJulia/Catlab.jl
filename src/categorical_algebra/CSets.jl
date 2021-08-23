@@ -19,11 +19,11 @@ import ..Limits: limit, colimit, universal, pushout_complement,
   can_pushout_complement
 import ..Subobjects: Subobject, SubobjectBiHeytingAlgebra,
   implies, ⟹, subtract, \, negate, ¬, non, ~
-import ..FinSets: FinSet, FinFunction, FinDomFunction, force, as_predicate
-using ...Theories: SchemaDesc, SchemaDescType, CSetSchemaDescType,
-  Category, ob, hom, attr, adom, acodom, acodom_nums
+import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate
+using ...Theories: SchemaDescType, CSetSchemaDescType, Category,
+  attr, adom, acodom, acodom_nums
 import ...Theories: dom, codom, compose, ⋅, id,
-  meet, ∧, join, ∨, top, ⊤, bottom, ⊥
+  ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 
 # FinSets interop
 #################
@@ -40,15 +40,14 @@ FinFunction(X::StructACSet, name::Symbol) = fin_function(X, Val{name})
 
 @generated function fin_function(X::StructACSet{S,Ts,Idxed},
     ::Type{Val{name}}) where {Ts,S,Idxed,name}
-  s = SchemaDesc(S)
-  if name ∈ s.obs
+  if name ∈ ob(S)
     quote
       FinFunction(identity, FinSet(X, $(QuoteNode(name))))
     end
-  elseif name ∈ s.homs
+  elseif name ∈ hom(S)
     quote
       FinFunction(subpart(X, $(QuoteNode(name))),
-                  FinSet(X, $(QuoteNode(s.codoms[name]))),
+                  FinSet(X, $(QuoteNode(codom(S, name)))),
                   index=$(Idxed[name] ? :(X.hom_indices.$name) : false))
     end
   else
@@ -65,21 +64,20 @@ FinDomFunction(X::StructACSet, name::Symbol) = fin_dom_function(X, Val{name})
 
 @generated function fin_dom_function(X::StructACSet{S,Ts,Idxed},
     ::Type{Val{name}}) where {S,Ts,Idxed,name}
-  s = SchemaDesc(S)
-  if name ∈ s.obs
+  if name ∈ ob(S)
     quote
       n = nparts(X, $(QuoteNode(name)))
       FinDomFunction(1:n, FinSet(n), TypeSet{Int}())
     end
-  elseif name ∈ s.homs || name ∈ s.attrs
-    index_name = name ∈ s.homs ? :hom_indices : :attr_indices
+  elseif name ∈ hom(S) || name ∈ attr(S)
+    index_name = name ∈ hom(S) ? :hom_indices : :attr_indices
     quote
       FinDomFunction(subpart(X, $(QuoteNode(name))),
-                     index=$(Idxed[name] ? :(X.$(index_name).$name) : false))
+                     index=$(Idxed[name] ? :(X.$index_name.$name) : false))
     end
   else
     throw(ArgumentError(
-      "$(repr(name)) not in $(s.obs), $(s.homs), or $(s.attrs)"))
+      "$(repr(name)) not in $(ob(S)), $(hom(S)), or $(attr(S))"))
   end
 end
 
@@ -104,11 +102,10 @@ for data attributes is a commutative triangle, rather than a commutative square.
   codom::Codom
   function ACSetTransformation{S}(components::NamedTuple, X::Dom, Y::Codom) where
       {S, Dom <: StructACSet{S}, Codom <: StructACSet{S}}
-    s = SchemaDesc(S)
-    @assert keys(components) ⊆ s.obs
-    coerced_components = NamedTuple{Tuple(s.obs)}(
-      coerce_component(ob, get(components, ob) do; Int[] end, X, Y)
-      for ob in s.obs)
+    @assert keys(components) ⊆ ob(S)
+    coerced_components = NamedTuple{Tuple(ob(S))}(
+      coerce_component(ob, get(components, ob) do; 1:0 end, X, Y)
+      for ob in ob(S))
     new{S,typeof(coerced_components),Dom,Codom}(coerced_components, X, Y)
   end
 end
@@ -148,13 +145,12 @@ check the naturality equation on a generating set of morphisms.
 """
 function is_natural(α::ACSetTransformation{S}) where {S}
   X, Y = dom(α), codom(α)
-  s = SchemaDesc(S)
-  for f in s.homs
-    Xf, Yf, α_c, α_d = subpart(X,f), subpart(Y,f), α[s.doms[f]], α[s.codoms[f]]
+  for (f, c, d) in zip(hom(S), dom(S), codom(S))
+    Xf, Yf, α_c, α_d = subpart(X,f), subpart(Y,f), α[c], α[d]
     all(Yf[α_c(i)] == α_d(Xf[i]) for i in eachindex(Xf)) || return false
   end
-  for f in s.attrs
-    Xf, Yf, α_c = subpart(X,f), subpart(Y,f), α[s.doms[f]]
+  for (f, c) in zip(attr(S), adom(S))
+    Xf, Yf, α_c = subpart(X,f), subpart(Y,f), α[c]
     all(Yf[α_c(i)] == Xf[i] for i in eachindex(Xf)) || return false
   end
   return true
@@ -661,31 +657,54 @@ end
 # Sub-C-sets
 ############
 
+""" Sub-C-set of a C-set.
+"""
 const SubCSet{S} = Subobject{<:StructCSet{S}}
 const SubACSet{S} = Subobject{<:StructACSet{S}}
 
 components(A::SubACSet) = map(Subobject, components(hom(A)))
 force(A::SubACSet) = Subobject(force(hom(A)))
 
-""" Construct subobject of C-set from components of inclusion or predicate.
-
-This function constructs a subobject from the components of the inclusion
-morphism, given as a named tuple or as keyword arguments. The components can
-also be specified as predicates (boolean vectors).
+""" Sub-C-set represented componentwise as a collection of subsets.
 """
-function Subobject(X::T, components) where T <: ACSet
-  U = T()
-  components = map(coerce_subob_component, components)
-  copy_parts!(U, X, components)
-  Subobject(ACSetTransformation(components, U, X))
+@auto_hash_equals struct SubACSetComponentwise{
+    Ob<:ACSet, Comp<:NamedTuple} <: Subobject{Ob}
+  ob::Ob
+  components::Comp
+
+  function SubACSetComponentwise(X::Ob, components::NamedTuple) where Ob<:ACSet
+    sets = fin_sets(X)
+    @assert keys(components) ⊆ keys(sets)
+    coerced_components = NamedTuple{keys(sets)}(
+      coerce_subob_component(set, get(components, ob) do; 1:0 end)
+      for (ob, set) in pairs(sets))
+    new{Ob,typeof(coerced_components)}(X, coerced_components)
+  end
 end
+
+Subobject(X::ACSet, components::NamedTuple) =
+  SubACSetComponentwise(X, components)
 Subobject(X::ACSet; components...) = Subobject(X, (; components...))
 
-coerce_subob_component(f::FinFunction{Int}) = collect(f)
-coerce_subob_component(A::SubFinSet{Int}) = collect(hom(A))
-coerce_subob_component(f::AbstractVector{Int}) = f
-coerce_subob_component(pred::Union{AbstractVector{Bool},BitVector}) =
-  findall(pred)
+function coerce_subob_component(X::FinSet, subset::SubFinSet)
+  X == ob(subset) ? subset :
+    error("Set $X in C-set does not match set of subset $subset")
+end
+function coerce_subob_component(X::FinSet, f::FinFunction)
+  X == codom(f) ? Subobject(f) :
+    error("Set $X in C-set does not match codomain of inclusion $f")
+end
+coerce_subob_component(X::FinSet, f) = Subobject(X, f)
+
+ob(A::SubACSetComponentwise) = A.ob
+components(A::SubACSetComponentwise) = A.components
+
+function hom(A::SubACSetComponentwise{T}) where T <: ACSet
+  U, X = T(), ob(A)
+  hom_components = map(collect∘hom, components(A))
+  copy_parts!(U, X, hom_components)
+  ACSetTransformation(hom_components, U, X)
+end
 
 @instance SubobjectBiHeytingAlgebra{ACSet,SubACSet} begin
   @import ob
@@ -732,7 +751,7 @@ subtraction of sub-C-sets ([`subtract`](@ref)).
 """
 function implies(A::SubACSet{S}, B::SubACSet{S}, ::SubOpBoolean) where S
   X = common_ob(A, B)
-  A, B = map(as_predicate, components(A)), map(as_predicate, components(B))
+  A, B = map(predicate, components(A)), map(predicate, components(B))
   D = map(X₀ -> trues(length(X₀)), fin_sets(X))
 
   function unset!(c, x)
@@ -759,7 +778,7 @@ for all ``c ∈ C`` and ``x ∈ X(c)``. Compare with [`implies`](@ref).
 """
 function subtract(A::SubACSet{S}, B::SubACSet{S}, ::SubOpBoolean) where S
   X = common_ob(A, B)
-  A, B = map(as_predicate, components(A)), map(as_predicate, components(B))
+  A, B = map(predicate, components(A)), map(predicate, components(B))
   D = map(X₀ -> falses(length(X₀)), fin_sets(X))
 
   function set!(c, x)

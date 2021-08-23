@@ -242,7 +242,7 @@ k, g = pushout_complement(L, m); # get PO complement to do further tests
 @test is_isomorphic(span_triangle, codom(k))
 
 # Check pushout properties 1: apex is the original graph
-@test is_isomorphic(squarediag, pushout(L, k).cocone.apex) # recover original graph
+@test is_isomorphic(squarediag, ob(pushout(L, k))) # recover original graph
 
 # Check pushout properties 2: the diagram commutes
 Lm = compose(L,m);

@@ -76,15 +76,24 @@ end
 
 """ Subobject in a category.
 
-A subobject of an object ``X`` is a monomorphism into ``X``.
+By definition, a subobject of an object ``X`` in a category is a monomorphism
+into ``X``. This is the default representation of a subobject. Certain
+categories may support additional representations. For example, if the category
+has a subobject classifier ``Ω``, then subobjects of ``X`` are also morphisms
+``X → Ω``.
 """
-@auto_hash_equals struct Subobject{Ob,Hom}
+abstract type Subobject{Ob} end
+
+# Default constructor for subobjects assumes a morphism representation.
+Subobject(hom) = SubobjectHom(hom)
+
+@auto_hash_equals struct SubobjectHom{Ob,Hom} <: Subobject{Ob}
   hom::Hom
-  Subobject(hom::Hom) where Hom = new{typeof(codom(hom)),Hom}(hom)
+  SubobjectHom(hom::Hom) where Hom = new{typeof(codom(hom)),Hom}(hom)
 end
 
-hom(sub::Subobject) = sub.hom
-ob(sub::Subobject) = codom(hom(sub))
+hom(sub::SubobjectHom) = sub.hom
+ob(sub::SubobjectHom) = codom(hom(sub))
 
 # Algorithms
 ############
