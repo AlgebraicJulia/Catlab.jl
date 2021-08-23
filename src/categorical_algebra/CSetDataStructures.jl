@@ -454,7 +454,7 @@ function getassigned(acs::StructACSet, arrows, i)
   Dict(f => subpart(acs,i,f) for f in assigned_subparts)
 end
 
-function rem_part_body(s::SchemaDesc, idxed::Dict{Symbol,Bool}, ob::Symbol)
+function rem_part_body(s::SchemaDesc, idxed, ob::Symbol)
   in_homs = filter(hom -> s.codoms[hom] == ob, s.homs)
   out_homs = filter(f -> s.doms[f] == ob, s.homs)
   out_attrs = filter(f -> s.doms[f] == ob, s.attrs)
@@ -497,7 +497,7 @@ end
 
 @generated function _rem_part!(acs::StructACSet{S,Ts,idxed}, ::Type{Val{ob}},
                                part::Int) where {S,Ts,ob,idxed}
-  rem_part_body(SchemaDesc(S),Dict{Symbol, Bool}(idxed),ob)
+  rem_part_body(SchemaDesc(S),Dict(idxed),ob)
 end
 
 function Base.copy(acs::StructACSet)
