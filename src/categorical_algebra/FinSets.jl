@@ -2,7 +2,8 @@
 """
 module FinSets
 export FinSet, FinFunction, FinDomFunction, force, is_indexed, preimage,
-  JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin
+  JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin,
+  SubFinSet, SubOpBoolean
 
 using Reexport
 
@@ -13,9 +14,12 @@ import StaticArrays
 using StaticArrays: StaticVector, SVector, SizedVector, similar_type
 
 @reexport using ..Sets
-using ...Theories, ...CSetDataStructures, ...Graphs, ..FreeDiagrams, ..Limits
-import ...Theories: dom, codom
-import ..Limits: limit, colimit, universal
+using ...GAT, ...Theories
+using ...CSetDataStructures, ...Graphs, ..FreeDiagrams, ..Limits, ..Subobjects
+import ...Theories: dom, codom, ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
+import ..Limits: limit, colimit, universal, pushout_complement,
+  can_pushout_complement
+import ..Subobjects: Subobject, SubobjectLattice
 using ..Sets: SetFunctionCallable, SetFunctionIdentity
 
 # Data types
@@ -145,6 +149,10 @@ Base.show(io::IO, f::FinFunctionVector) =
 
 Sets.compose_impl(f::FinFunctionVector, g::FinDomFunctionVector) =
   FinDomFunctionVector(g.func[f.func], codom(g))
+
+# Note: Cartesian monoidal structure is implemented generically for Set but
+# cocartesian only for FinSet.
+@cocartesian_monoidal_instance FinSet FinFunction
 
 # Indexed functions
 #------------------
@@ -823,5 +831,138 @@ function universal(colim::FinSetFreeDiagramColimit,
   h = universal(colim.coprod, cocone)
   pass_to_quotient(colim.proj, h)
 end
+
+""" Compute a pushout complement of finite sets, if possible.
+
+Given functions ``l: I → L`` and ``m: L → G`` to form a pushout square
+
+    l
+  L ← I
+m ↓   ↓k
+  G ← K
+    g
+
+define the set ``K := G / m(L / l(I))`` and take ``g: K ↪ G`` to be the
+inclusion. Then the map ``k: I → K`` is determined by the map ``l⋅m: I → G``
+from the requirement that the square commutes.
+
+Pushout complements exist only if the identification condition is satisfied. An
+error will be raised if the pushout complement cannot be constructed. To check
+this in advance, use [`can_pushout_complement`](@ref).
+"""
+function pushout_complement(pair::ComposablePair{<:FinSet{Int}})
+  l, m = pair
+  I, L, G = dom(l), codom(l), codom(m)
+
+  # Construct inclusion g: K ↪ G.
+  l_image = Set(collect(l))
+  m_image = Set([ m(x) for x in L if x ∉ l_image ])
+  g = FinFunction([x for x in G if x ∉ m_image], G)
+  K = dom(g)
+
+  # Construct morphism k: I → K using partial inverse of g.
+  g_inv = Dict{Int,Int}(zip(collect(g), K))
+  k = FinFunction(map(I) do x
+    y = m(l(x))
+    get(g_inv, y) do; error("Identification failed for domain element $x") end
+  end, I, K)
+
+  return ComposablePair(k, g)
+end
+
+can_pushout_complement(pair::ComposablePair{<:FinSet{Int}}) =
+  all(isempty, id_condition(pair))
+
+""" Check identification condition for pushout complement of finite sets.
+
+The identification condition says that the functions do not map (1) both a
+deleted item and a preserved item in L to the same item in G or (2) two distinct
+deleted items to the same item. It is trivially satisfied for injective functions.
+
+Returns pair of iterators of
+
+  (1) a nondeleted item that maps to a deleted item in G
+  (2) a pair of distinct items in L that are deleted yet mapped to the same
+      item in G.
+"""
+function id_condition(pair::ComposablePair{<:FinSet{Int}})
+  l, m = pair
+  l_image = Set(collect(l))
+  l_imageᶜ = [ x for x in codom(l) if x ∉ l_image ]
+  m_image = Set(map(m, l_imageᶜ))
+  return (
+    (i for i in l_image if m(i) ∈ m_image),
+    ((i, j) for i in eachindex(l_imageᶜ)
+            for j in i+1:length(l_imageᶜ)
+            if m(l_imageᶜ[i]) == m(l_imageᶜ[j]))
+  )
+end
+
+# Subsets
+#########
+
+""" Subset of a finite set.
+"""
+const SubFinSet{S,T} = Subobject{<:FinSet{S,T}}
+
+Subobject(X::FinSet, f) = Subobject(FinFunction(f, X))
+SubFinSet(X, f) = Subobject(FinFunction(f, X))
+
+force(A::SubFinSet{Int}) = Subobject(force(hom(A)))
+Base.collect(A::SubFinSet) = collect(hom(A))
+Base.sort(A::SubFinSet) = SubFinSet(ob(A), sort(collect(A)))
+
+const AbstractBoolVector = Union{AbstractVector{Bool},BitVector}
+
+""" Subset of a finite set represented as a boolean vector.
+
+This is the subobject classifier representation since `Bool` is the subobject
+classifier for `Set`.
+"""
+@auto_hash_equals struct SubFinSetVector <: Subobject{FinSet{Int,Int}}
+  set::FinSet{Int,Int}
+  predicate::AbstractBoolVector
+
+  function SubFinSetVector(X::FinSet{Int}, pred::AbstractBoolVector)
+    length(pred) == length(X) ||
+      error("Size of predicate $pred does not equal size of object $X")
+    new(X, pred)
+  end
+end
+
+Subobject(X::FinSet, pred::AbstractBoolVector) = SubFinSetVector(X, pred)
+SubFinSet(pred::AbstractBoolVector) = Subobject(FinSet(length(pred)), pred)
+
+ob(A::SubFinSetVector) = A.set
+hom(A::SubFinSetVector) = FinFunction(findall(A.predicate), A.set)
+predicate(A::SubFinSetVector) = A.predicate
+
+function predicate(A::SubFinSet)
+  f = hom(A)
+  pred = falses(length(codom(f)))
+  for x in dom(f)
+    pred[f(x)] = true
+  end
+  pred
+end
+
+@instance SubobjectLattice{FinSet,SubFinSet} begin
+  @import ob
+  meet(A::SubFinSet, B::SubFinSet) = meet(A, B, SubOpBoolean())
+  join(A::SubFinSet, B::SubFinSet) = join(A, B, SubOpBoolean())
+  top(X::FinSet) = top(X, SubOpWithLimits())
+  bottom(X::FinSet) = bottom(X, SubOpWithLimits())
+end
+
+""" Algorithm to compute subobject operations using elementwise boolean logic.
+"""
+struct SubOpBoolean <: SubOpAlgorithm end
+
+meet(A::SubFinSet{Int}, B::SubFinSet{Int}, ::SubOpBoolean) =
+  SubFinSet(predicate(A) .& predicate(B))
+join(A::SubFinSet{Int}, B::SubFinSet{Int}, ::SubOpBoolean) =
+  SubFinSet(predicate(A) .| predicate(B))
+top(X::FinSet{Int}, ::SubOpBoolean) = SubFinSet(trues(length(X)))
+bottom(X::FinSet{Int}, ::SubOpBoolean) = SubFinSet(falses(length(X)))
 
 end

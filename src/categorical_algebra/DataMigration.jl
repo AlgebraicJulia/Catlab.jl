@@ -1,15 +1,11 @@
 """ Data Migration functors
 """
 module DataMigration
+export Functor, Delta, Sigma, migrate!
 
-export Functor, Delta, migrate!, Sigma
-
-using ...Theories
-using ...Theories: CatDesc, AttrDesc, ob, hom, dom, codom, attr
-using ...CSetDataStructures
-using ..FinSets, ..CSets, ..Limits, ..FreeDiagrams
-using ...Graphs
-using ...Present
+using ...Present, ...Theories
+using ...Theories: SchemaDesc, ob, hom, dom, codom, attr
+using ..FinSets, ..CSets, ..Limits, ...Graphs, ..FreeDiagrams
 
 import ...CategoricalAlgebra.FreeDiagrams: FreeDiagram
 import ...Present: Presentation
@@ -63,6 +59,8 @@ abstract type MigrationFunctor <: AbstractFunctor end
 
 (F::MigrationFunctor)(X::ACSet) = F(codom(F)(),X)
 
+dom(MF::MigrationFunctor) = MF.dom
+codom(MF::MigrationFunctor) = MF.codom
 
 #### Delta Migration
 ###################
@@ -76,12 +74,12 @@ to the schema for `Y`.
 When the functor is the identity, this function is equivalent to
 [`copy_parts!`](@ref).
 """
-struct DeltaMigration <: MigrationFunctor
+struct DeltaMigration{D,C} <: MigrationFunctor
   F::Functor # on the schemas
+  dom::D
+  codom::C
 end
 
-dom(ΔF::DeltaMigration) = ACSetType(codom(ΔF.F))
-codom(ΔF::DeltaMigration) = ACSetType(dom(ΔF.F))
 
 """   Delta(F::Functor)
 
@@ -91,14 +89,15 @@ which maps a ``\\mathcal{D}``-set ``X`` to the ``\\mathcal{C}``-set
 
 See (Spivak, 2014, *Category Theory for the Sciences*) for details.
 """
-Delta(F::Functor) = DeltaMigration(F)
+Delta(F::Functor, dom, codom) = DeltaMigration(F, dom, codom)
 
-function (ΔF::DeltaMigration)(X::ACSet, Y::ACSet)
+function (ΔF::DeltaMigration)(X::StructACSet{S}, Y::ACSet) where {S}
   FOb = Ob(ΔF.F)
   FHom = Hom(ΔF.F)
 
-  partsX = Dict(map(collect(FOb)) do (c, Fc)
-     c => add_parts!(X, nameof(c), nparts(Y, nameof(Fc)))
+  partsX = Dict(map(ob(S)) do c_name 
+    c = dom(ΔF.F)[c_name]
+    c => add_parts!(X, c_name, nparts(Y, nameof(FOb[c]))) 
   end)
 
   for (f, Ff) in collect(FHom)
@@ -117,17 +116,17 @@ Migrates the data from `Y` to `X` via the pullback
 data migration induced by the functor defined on objects by `FOb` and 
 on morphisms by `FHom`.
 """
-migrate!(X::ACSet, Y::ACSet, F::Functor) = Delta(F)(X,Y)
+migrate!(X::ACSet, Y::ACSet, F::Functor) = Delta(F, typeof(Y), typeof(X))(X,Y)
 
 migrate!(X::ACSet, Y::ACSet, FOb, FHom) = 
   migrate!(X,Y, Functor(FOb, FHom, Presentation(X), Presentation(Y)))
 
-function (::Type{T})(Y::ACSet, FOb, FHom) where T <: AbstractACSet
+function (::Type{T})(Y::ACSet, FOb::AbstractDict, FHom::AbstractDict) where T <: ACSet
   X = T()
   migrate!(X, Y, FOb, FHom)
 end
 
-function (::Type{T})(Y::ACSet, F::Functor) where T <: AbstractACSet
+function (::Type{T})(Y::ACSet, F::Functor) where T <: ACSet
   X = T()
   migrate!(X, Y, F)
 end
@@ -137,18 +136,17 @@ end
 ###################
 """ Left pushforward functorial data migration from one ACSet to another.
 """
-struct SigmaMigration{CC} <: MigrationFunctor
+struct SigmaMigration{D, C, CC} <: MigrationFunctor
   F::Functor # on the schemas
+  dom::D
+  codom::C
   comma_cats::CC
 
-  function SigmaMigration(F::Functor)
+  function SigmaMigration(F::Functor, dom::D, codom::C) where {D, C}
     cc = get_comma_cats(F)
-    new{typeof(cc)}(F, cc)
+    new{D, C, typeof(cc)}(F, dom, codom, cc)
   end
 end
-
-dom(ΔF::SigmaMigration) = ACSetType(dom(ΔF.F))
-codom(ΔF::SigmaMigration) = ACSetType(codom(ΔF.F))
 
 """   Sigma(F::Functor)
 
@@ -162,7 +160,7 @@ For ``d \\in \\mathsf{ob}\\mathcal{D}``,
 
 See (Spivak, 2014, *Category Theory for the Sciences*) for details.
 """
-Sigma(F::Functor) = SigmaMigration(F)
+Sigma(F::Functor, dom, codom) = SigmaMigration(F, dom, codom)
 
 function (ΣF::SigmaMigration)(Y::ACSet, X::ACSet)
   comma_cats = ΣF.comma_cats
@@ -172,7 +170,7 @@ function (ΣF::SigmaMigration)(Y::ACSet, X::ACSet)
   colimX = map(parts(diagramD, :V)) do i
     F∇d = ob(comma_cats, i)
     Xobs = map(ob(F∇d)) do (c,_)
-      FinSet(nparts(X, nameof(c)))
+      FinSet{Int, Int}(nparts(X, nameof(c)))
     end
     Xhoms = map(parts(F∇d, :E)) do g
       FinFunction(X[nameof(hom(F∇d, g))], Xobs[src(F∇d, g)], Xobs[tgt(F∇d, g)])
@@ -287,8 +285,8 @@ end
 ###############################################################
 """Get the Schema from an ACSet
 """
-function Presentation(::ACSet{CD, AD}) where {CD, AD}
-  return Presentation(CD, AD)
+function Presentation(::StructACSet{S}) where S
+  return Presentation(S)
 end
 
 """   FreeDiagram(pres::Presentation{FreeSchema, Symbol})

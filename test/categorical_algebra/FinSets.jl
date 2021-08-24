@@ -278,6 +278,16 @@ colim = coproduct([FinSet(2), FinSet(3)])
 @test force(first(legs(colim)) ⋅ copair(colim,[f,g])) == f
 @test force(last(legs(colim)) ⋅ copair(colim,[f,g])) == g
 
+# Cocartesian monoidal structure.
+@test FinSet(2)⊕FinSet(3) == FinSet(5)
+@test oplus([FinSet(2), FinSet(3), FinSet(4)]) == FinSet(9)
+@test f⊕g == FinFunction([3,5,6,7,8], 10)
+@test mzero(FinSet{Int}) == FinSet(0)
+@test swap(FinSet(2), FinSet(3)) == FinFunction([4,5,1,2,3])
+ι1, ι2 = coproj1(FinSet(2),FinSet(3)), coproj2(FinSet(2),FinSet(3))
+@test ι1 == FinFunction([1,2], 5)
+@test ι2 == FinFunction([3,4,5], 5)
+
 # Coequalizers
 #-------------
 
@@ -371,5 +381,46 @@ colim = colimit(diagram)
 ι1, ι2 = colim
 @test ι1 == FinFunction([1,2], 3)
 @test ι2 == FinFunction([1,1,3], 3)
+
+# Pushout complements
+#--------------------
+
+f = FinFunction([1,3], 4)
+g = FinFunction([1,2,5,6], 6)
+@test can_pushout_complement(f, g)
+h, k = pushout_complement(f, g)
+@test f⋅g == h⋅k
+colim = pushout(f,h)
+@test ob(colim) == FinSet(6)
+@test allunique(collect(copair(colim, g, k)))
+
+# Identification condition failure.
+f = FinFunction([1,3], 4)
+g = FinFunction([1,2,2,3], 3)
+@test !can_pushout_complement(f, g)
+@test_throws ErrorException pushout_complement(f, g)
+
+# Subsets
+#########
+
+X = FinSet(10)
+A, B = SubFinSet(X, [1,2,5,6,8,9]), SubFinSet(X, [2,3,5,7,8])
+@test ob(A) == X
+A_pred = SubFinSet(Bool[1,1,0,0,1,1,0,1,1,0])
+@test hom(A) == hom(A_pred)
+@test FinSets.predicate(A) == FinSets.predicate(A_pred)
+
+# Lattice of subsets.
+@test A ∧ B |> force == SubFinSet(X, [2,5,8])
+@test A ∨ B |> force == SubFinSet(X, [1,2,3,5,6,7,8,9])
+@test ⊤(X) |> force == SubFinSet(X, 1:10)
+@test ⊥(X) |> force == SubFinSet(X, 1:0)
+
+for alg in (SubOpBoolean(), SubOpWithLimits())
+  @test meet(A, B, alg) |> sort == SubFinSet(X, [2,5,8])
+  @test join(A, B, alg) |> sort == SubFinSet(X, [1,2,3,5,6,7,8,9])
+  @test top(X, alg) |> force == SubFinSet(X, 1:10)
+  @test bottom(X, alg) |> force == SubFinSet(X, 1:0)
+end
 
 end

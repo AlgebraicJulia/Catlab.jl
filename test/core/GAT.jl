@@ -192,10 +192,7 @@ accessors = [ GAT.JuliaFunction(:(dom(::Hom)), :Ob),
               GAT.JuliaFunction(:(codom(::Hom)), :Ob) ]
 constructors = [ GAT.JuliaFunction(:(id(X::Ob)), :Hom),
                  GAT.JuliaFunction(:(compose(f::Hom, g::Hom)), :Hom) ]
-alias_functions = [
-  GAT.JuliaFunction(:(⋅(f::Hom, g::Hom)), :Hom, :(compose(f, g))),
-  GAT.JuliaFunction(:(→(dom::Ob, codom::Ob)), :Hom, :(Hom(dom, codom))),
-]
+alias_functions = [ GAT.JuliaFunction(:(⋅(f::Hom, g::Hom)), :Hom, :(compose(f, g))) ]
 theory = GAT.theory(Category)
 @test GAT.accessors(theory) == accessors
 @test GAT.constructors(theory) == constructors

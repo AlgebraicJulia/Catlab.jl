@@ -1,10 +1,11 @@
 module TestDataMigration
 using Test
-
+using Catlab.CSetDataStructures
 using Catlab.CategoricalAlgebra
 using Catlab.Graphs
 using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryWeightedGraph
 using Catlab.Graphs.BipartiteGraphs: TheoryUndirectedBipartiteGraph
+using Catlab.Theories
 using Catlab.Theories: id, compose
 using Catlab.Present
 
@@ -16,8 +17,8 @@ using Catlab.Present
   Φ::Hom(X,X)
 end
 
-const AbstractDDS = AbstractCSetType(TheoryDDS)
-const DDS = CSetType(TheoryDDS, index=[:Φ])
+@abstract_acset_type AbstractDDS
+@acset_type DDS(TheoryDDS, index=[:Φ]) <: AbstractDDS
 
 h = Graph(3)
 add_parts!(h, :E, 3, src = [1,2,3], tgt = [2,3,1])
@@ -43,10 +44,10 @@ migrate!(h2, dds, Dict(:V => :X, :E => :X),
                       Dict(:Φ => [:Φ, :Φ, :Φ, :Φ]))
 
 @present TheoryLabeledDDS <: TheoryDDS begin
-  Label::Data
+  Label::AttrType
   label::Attr(X, Label)
 end
-const LabeledDDS = ACSetType(TheoryLabeledDDS, index=[:Φ, :label])
+@acset_type LabeledDDS(TheoryLabeledDDS, index=[:Φ, :label])
 
 S, ϕ, Label, label = generators(TheoryLabeledDDS)
 V, E, s, t, Weight, weight = generators(TheoryWeightedGraph)
@@ -71,12 +72,19 @@ F = Functor(
   TheoryWeightedGraph, TheoryLabeledDDS
 )
 
-ΔF = Delta(F)
-@test dom(ΔF) == ACSetType(TheoryLabeledDDS)
-@test codom(ΔF) == ACSetType(TheoryWeightedGraph)
+ΔF = Delta(F, LabeledDDS, WeightedGraph)
+@test dom(ΔF) == LabeledDDS
+@test codom(ΔF) == WeightedGraph
 
 @test wg == WeightedGraph{Int}(ldds, F) 
 
+idF = Functor(
+  Dict(X => X, Label => Label), 
+  Dict(ϕ => ϕ, label => label), 
+  TheoryLabeledDDS, TheoryLabeledDDS
+)
+
+@test ldds == LabeledDDS{Int}(ldds, idF)
 
 # Left Pushforward data migration
 #################################
@@ -101,11 +109,11 @@ idF = Functor(
   TheoryGraph, TheoryGraph
 )
 
-ΣF =  Σ(F)
-@test dom(ΣF) == ACSetType(TheoryUndirectedBipartiteGraph)
-@test codom(ΣF) == ACSetType(TheoryGraph)
+ΣF =  Σ(F, UndirectedBipartiteGraph, Graph)
+@test dom(ΣF) == UndirectedBipartiteGraph
+@test codom(ΣF) == Graph
 
-X = ACSetType(TheoryUndirectedBipartiteGraph, index=[:src, :tgt])()
+X = UndirectedBipartiteGraph()
 Y = ΣF(X)
 
 @test nparts(Y, :V) == 0
@@ -124,14 +132,14 @@ Y = ΣF(X)
 @test nparts(Y, :E) == 4
 @test length(Y[:src] ∩ Y[:tgt]) == 0
 
-@test Σ(idF)(Y) == Y
+@test Σ(idF, Graph, Graph)(Y) == Y
 
 @present ThSpan(FreeSchema) begin 
   (L1, L2, A)::Ob
   l1::Hom(A, L1)
   l2::Hom(A, L2)
 end
-const Span = ACSetType(ThSpan, index=[:l1, :l2])
+@acset_type Span(ThSpan, index=[:l1, :l2])
 
 X = @acset Span begin
   L1 = 3
@@ -144,6 +152,7 @@ end
 @present ThInitial(FreeSchema) begin
   I::Ob
 end
+@acset_type Initial(ThInitial)
 
 L1, L2, A = generators(ThSpan, :Ob)
 l1, l2 = generators(ThSpan, :Hom)
@@ -155,7 +164,8 @@ bang = Functor(
   ThSpan, ThInitial
 )
 
-Y = Σ(bang)(X)
+Σbang = Σ(bang, Span, Initial)
+Y = Σbang(X)
 
 @test nparts(Y, :I) == 4
 
@@ -170,11 +180,11 @@ edge = Functor(
   ThInitial, TheoryGraph
 )
 
-Z = Σ(vertex)(Y)
+Z = Σ(vertex, Initial, Graph)(Y)
 @test nparts(Z, :V) == 4
 @test nparts(Z, :E) == 0
 
-Z = Σ(edge)(Y)
+Z = Σ(edge, Initial, Graph)(Y)
 @test nparts(Z, :V) == 8
 @test nparts(Z, :E) == 4
 @test Z[:src] ∪ Z[:tgt] == 1:8

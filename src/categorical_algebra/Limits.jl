@@ -9,8 +9,9 @@ export AbstractLimit, AbstractColimit, Limit, Colimit,
   BinaryPullback, Pullback, pullback,
   BinaryEqualizer, Equalizer, equalizer, incl,
   BinaryCoproduct, Coproduct, coproduct, coproj1, coproj2, copair,
-  BinaryPushout, Pushout, pushout,
+  BinaryPushout, Pushout, pushout, pushout_complement, can_pushout_complement,
   BinaryCoequalizer, Coequalizer, coequalizer, proj,
+  @cartesian_monoidal_instance, @cocartesian_monoidal_instance,
   ComposeProductEqualizer, ComposeCoproductCoequalizer
 
 using AutoHashEquals
@@ -20,6 +21,7 @@ import ...Theories: ob, terminal, product, proj1, proj2, equalizer, incl,
   initial, coproduct, coproj1, coproj2, coequalizer, proj,
   delete, create, pair, copair, factorize
 using ..FreeDiagrams
+using ...GAT
 import ..FreeDiagrams: apex, legs
 
 # Data types for limits
@@ -257,6 +259,105 @@ define the method `universal(::Coequalizer{T}, ::SMulticospan{1,T})`.
 """
 factorize(lim::Equalizer, h) = universal(lim, SMultispan{1}(h))
 factorize(colim::Coequalizer, h) = universal(colim, SMulticospan{1}(h))
+
+""" Pushout complement: extend composable pair to a pushout square.
+
+[Pushout complements](https://ncatlab.org/nlab/show/pushout+complement) are the
+essential ingredient for double pushout (DPO) rewriting.
+"""
+pushout_complement(f, g) = pushout_complement(ComposablePair(f, g))
+
+""" Can a pushout complement be constructed for a composable pair?
+
+Even in nice categories, this is not generally possible.
+"""
+can_pushout_complement(f, g) = can_pushout_complement(ComposablePair(f, g))
+
+# (Co)cartesian monoidal categories
+###################################
+
+""" Define cartesian monoidal structure using limits.
+
+Implements an instance of [`CartesianCategory`](@ref) assuming that finite
+products have been implemented following the limits interface.
+"""
+macro cartesian_monoidal_instance(Ob, Hom)
+  esc(quote
+    import Catlab.Theories: CartesianCategory, otimes, ⊗, munit, braid, σ,
+      mcopy, delete, pair, proj1, proj2, Δ, ◊
+
+    @instance CartesianCategory{$Ob, $Hom} begin
+      @import dom, codom, compose, ⋅, id, munit, delete, pair
+
+      otimes(A::$Ob, B::$Ob) = ob(product(A, B))
+
+      function otimes(f::$Hom, g::$Hom)
+        π1, π2 = product(dom(f), dom(g))
+        pair(product(codom(f), codom(g)), π1⋅f, π2⋅g)
+      end
+
+      function braid(A::$Ob, B::$Ob)
+        AB, BA = product(A, B), product(B, A)
+        pair(BA, proj2(AB), proj1(AB))
+      end
+
+      mcopy(A::$Ob) = pair(id(A),id(A))
+      proj1(A::$Ob, B::$Ob) = proj1(product(A, B))
+      proj2(A::$Ob, B::$Ob) = proj2(product(A, B))
+    end
+
+    otimes(As::AbstractVector{<:$Ob}) = ob(product(As))
+
+    function otimes(fs::AbstractVector{<:$Hom})
+      Π, Π′ = product(map(dom, fs)), product(map(codom, fs))
+      pair(Π′, map(compose, legs(Π), fs))
+    end
+
+    munit(::Type{T}) where T <: $Ob = ob(terminal(T))
+  end)
+end
+
+""" Define cocartesian monoidal structure using colimits.
+
+Implements an instance of [`CocartesianCategory`](@ref) assuming that finite
+coproducts have been implemented following the colimits interface.
+"""
+macro cocartesian_monoidal_instance(Ob, Hom)
+  esc(quote
+    import Catlab.Theories: CocartesianCategory, oplus, ⊕, mzero, swap,
+      plus, zero, copair, coproj1, coproj2
+
+    @instance CocartesianCategory{$Ob, $Hom} begin
+      @import dom, codom, compose, ⋅, id, mzero, copair
+
+      oplus(A::$Ob, B::$Ob) = ob(coproduct(A, B))
+
+      function oplus(f::$Hom, g::$Hom)
+        ι1, ι2 = coproduct(codom(f), codom(g))
+        copair(coproduct(dom(f), dom(g)), f⋅ι1, g⋅ι2)
+      end
+
+      function swap(A::$Ob, B::$Ob)
+        AB, BA = coproduct(A, B), coproduct(B, A)
+        copair(AB, coproj2(BA), coproj1(BA))
+      end
+
+      plus(A::$Ob) = copair(id(A),id(A))
+      zero(A::$Ob) = create(A)
+      coproj1(A::$Ob, B::$Ob) = coproj1(coproduct(A, B))
+      coproj2(A::$Ob, B::$Ob) = coproj2(coproduct(A, B))
+    end
+
+    oplus(As::AbstractVector{<:$Ob}) = ob(coproduct(As))
+
+    function oplus(fs::AbstractVector{<:$Hom})
+      ⊔, ⊔′ = coproduct(map(dom, fs)), coproduct(map(codom, fs))
+      copair(⊔, map(compose, fs, legs(⊔′)))
+    end
+
+    mzero(::Type{T}) where T <: $Ob = ob(initial(T))
+  end)
+end
 
 # Composite (co)limits
 ######################

@@ -13,7 +13,8 @@ using StaticArrays: StaticVector, SVector
 using ...GAT, ..FreeDiagrams, ..Limits, ..FinSets, ..CSets
 import ..FreeDiagrams: apex, legs, feet, left, right, bundle_legs
 import ..CSets: force
-using ...Theories: Category, CatDesc, AttrDesc, data, attr, adom, acodom
+using ...Theories: Category, SchemaDesc, SchemaDescType, CSetSchemaDescType, SchemaDescTypeType,
+  attrtype, attr, adom, adom_nums, acodom
 import ...Theories: dom, codom, compose, ⋅, id, otimes, ⊗, munit, braid, σ,
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dunit, dcounit, dagger
 
@@ -188,13 +189,15 @@ for morphisms, a subtype of [`StructuredMulticospan`](@ref).
 See also: [`OpenACSetTypes`](@ref).
 """
 function OpenCSetTypes(::Type{X}, ob₀::Symbol) where
-    {CD<:CatDesc, X<:AbstractCSet{CD}}
-  @assert ob₀ ∈ ob(CD)
+    {S<:CSetSchemaDescType, X<:StructCSet{S}}
+  @assert ob₀ ∈ ob(S)
   L = FinSetDiscreteACSet{ob₀, X}
   (StructuredCospanOb{L}, StructuredMulticospan{L})
 end
 
 """ Create types for open attributed C-sets from an attributed C-set type.
+
+Note: the type passed in should *not* be instantiated with concrete attribute types.
 
 The resulting types, for objects and morphisms, each have the same type
 parameters for data types as the original type.
@@ -202,10 +205,10 @@ parameters for data types as the original type.
 See also: [`OpenCSetTypes`](@ref).
 """
 function OpenACSetTypes(::Type{X}, ob₀::Symbol) where
-    {CD<:CatDesc, AD<:AttrDesc{CD}, X<:AbstractACSet{CD,AD}}
-  @assert ob₀ ∈ ob(CD)
-  type_vars = map(TypeVar, data(AD))
-  L = if any(ob(CD)[j] == ob₀ for (i,j) in enumerate(adom(AD)))
+    {S<:SchemaDescType, X<:StructACSet{S}}
+  @assert ob₀ ∈ ob(S)
+  type_vars = map(TypeVar, attrtype(S))
+  L = if any(ob(S)[j] == ob₀ for (i,j) in enumerate(adom_nums(S)))
     A = ACSetTableType(X, ob₀, union_all=true)
     DiscreteACSet{A{type_vars...}, X{type_vars...}}
   else
@@ -217,16 +220,16 @@ end
 
 """ Abstract type for functor L: A → X giving a discrete C-set.
 """
-abstract type AbstractDiscreteACSet{X <: AbstractACSet} end
+abstract type AbstractDiscreteACSet{X <: StructACSet} end
 
 codom(::Type{<:AbstractDiscreteACSet{X}}) where
-  {CD, AD, X<:AbstractACSet{CD,AD}} = (X, ACSetTransformation{CD,AD})
+  {S, X<:StructACSet{S}} = (X, ACSetTransformation{S})
 
-StructuredCospan{L}(x::AbstractACSet, f::FinFunction{Int,Int},
+StructuredCospan{L}(x::StructACSet, f::FinFunction{Int,Int},
                     g::FinFunction{Int,Int}) where {L<:AbstractDiscreteACSet} =
   StructuredCospan{L}(x, Cospan(f, g))
 
-StructuredMulticospan{L}(x::AbstractACSet,
+StructuredMulticospan{L}(x::StructACSet,
                          fs::Vararg{<:FinFunction{Int,Int},N}) where
     {L<:AbstractDiscreteACSet, N} =
   StructuredMulticospan{L}(x, SMulticospan{N}(fs...))
@@ -252,12 +255,12 @@ Here C₀ is assumed to contain a single object from C and the discreteness is
 with respect to this object. The functor L has a right adjoint R: C-Set → C₀-Set
 forgetting the rest of C. Data attributes of the chosen object are preserved.
 """
-struct DiscreteACSet{A <: AbstractACSet, X} <: AbstractDiscreteACSet{X} end
+struct DiscreteACSet{A <: StructACSet, X} <: AbstractDiscreteACSet{X} end
 
-dom(::Type{<:DiscreteACSet{A}}) where {CD, AD, A<:AbstractACSet{CD,AD}} =
-  (A, ACSetTransformation{CD,AD})
+dom(::Type{<:DiscreteACSet{A}}) where {S, A<:StructACSet{S}} =
+  (A, ACSetTransformation{S})
 
-function StructuredMulticospan{L}(x::AbstractACSet,
+function StructuredMulticospan{L}(x::StructACSet,
                                   cospan::Multicospan{<:FinSet{Int}}) where
     {A, L <: DiscreteACSet{A}}
   a = A()
@@ -267,22 +270,22 @@ function StructuredMulticospan{L}(x::AbstractACSet,
 end
 
 function StructuredCospanOb{L}(set::FinSet{Int}; kw...) where
-    {CD, A <: AbstractACSet{CD}, L <: DiscreteACSet{A}}
+    {S, A <: StructACSet{S}, L <: DiscreteACSet{A}}
   a = A()
-  add_parts!(a, only(ob(CD)), length(set); kw...)
+  add_parts!(a, only(ob(S)), length(set); kw...)
   StructuredCospanOb{L}(a)
 end
 
 """ C-set transformation b → a induced by function `f` into parts of `a`.
 """
 function induced_transformation(a::A, f::FinFunction{Int,Int}) where
-    {CD, AD, A <: AbstractACSet{CD,AD}}
-  ob₀ = only(ob(CD))
+    {S, A <: StructACSet{S}}
+  ob₀ = only(ob(S))
   @assert nparts(a, ob₀) == length(codom(f))
   b = A()
   add_parts!(b, ob₀, length(dom(f)))
   f_vec = collect(f)
-  for attr in attr(AD)
+  for attr in attr(S)
     set_subpart!(b, attr, subpart(a, f_vec, attr))
   end
   ACSetTransformation((; ob₀ => f), b, a)
@@ -298,7 +301,7 @@ end
 
 """ Apply left adjoint L: C₀-Set → C-Set to object.
 """
-function (::Type{L})(a::AbstractACSet) where {A,X,L<:DiscreteACSet{A,X}}
+function (::Type{L})(a::StructACSet) where {A,X,L<:DiscreteACSet{A,X}}
   x = X()
   copy_parts_only!(x, a)
   x
@@ -320,11 +323,11 @@ end
 """ Convert morphism a → R(x) to morphism L(a) → x using discrete-forgetful
 adjunction L ⊣ R: A ↔ X.
 """
-function shift_left(::Type{L}, x::AbstractACSet, f::FinFunction{Int,Int}) where
+function shift_left(::Type{L}, x::StructACSet, f::FinFunction{Int,Int}) where
     {ob₀, L <: FinSetDiscreteACSet{ob₀}}
   ACSetTransformation((; ob₀ => f), L(dom(f)), x)
 end
-function shift_left(::Type{L}, x::AbstractACSet, ϕ::ACSetTransformation) where
+function shift_left(::Type{L}, x::StructACSet, ϕ::ACSetTransformation) where
     {L <: DiscreteACSet}
   ACSetTransformation(components(ϕ), L(dom(ϕ)), x)
 end

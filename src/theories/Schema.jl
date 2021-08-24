@@ -1,38 +1,36 @@
-export Schema, FreeSchema, Data, Attr, SchemaExpr, DataExpr, AttrExpr
+export Schema, FreeSchema, AttrType, Attr,
+  SchemaExpr, AttrTypeExpr, AttrExpr, parse_schema
 
 using MLStyle: @match
-using ...Present
-
-import ...Present: Presentation
+using ...Meta: strip_lines
 
 # Schema
 ########
 
 """ The GAT that parameterizes Attributed C-sets
-
 A schema is comprised of a category C, a discrete category D, and a profunctor
 Attr : C^op x D → Set. In GAT form, this is given by extending the theory of
-categories with two extra types, Data for objects of D, and Attr, for elements
+categories with two extra types, AttrType for objects of D, and Attr, for elements
 of the sets given by the profunctor.
 """
-@theory Schema{Ob,Hom,Data,Attr} <: Category{Ob,Hom} begin
-  Data::TYPE
-  Attr(dom::Ob,codom::Data)::TYPE
+@theory Schema{Ob,Hom,AttrType,Attr} <: Category{Ob,Hom} begin
+  AttrType::TYPE
+  Attr(dom::Ob,codom::AttrType)::TYPE
 
   """ Composition is given by the action of the profunctor on C.
   """
-  compose(f::Hom(A,B), g::Attr(B,X))::Attr(A,X) ⊣ (A::Ob, B::Ob, X::Data)
+  compose(f::Hom(A,B), g::Attr(B,X))::Attr(A,X) ⊣ (A::Ob, B::Ob, X::AttrType)
 
   (compose(f, compose(g, a)) == compose(compose(f, g), a)
-    ⊣ (A::Ob, B::Ob, C::Ob, X::Data, f::Hom(A,B), g::Hom(B,C), a::Attr(C, X)))
-  compose(id(A), a) == a ⊣ (A::Ob, X::Data, a::Attr(A,X))
+    ⊣ (A::Ob, B::Ob, C::Ob, X::AttrType, f::Hom(A,B), g::Hom(B,C), a::Attr(C, X)))
+  compose(id(A), a) == a ⊣ (A::Ob, X::AttrType, a::Attr(A,X))
 end
 
 abstract type SchemaExpr{T} <: GATExpr{T} end
-abstract type DataExpr{T} <: SchemaExpr{T} end
+abstract type AttrTypeExpr{T} <: SchemaExpr{T} end
 abstract type AttrExpr{T} <: SchemaExpr{T} end
 
-@syntax FreeSchema{ObExpr,HomExpr,DataExpr,AttrExpr} Schema begin
+@syntax FreeSchema{ObExpr,HomExpr,AttrTypeExpr,AttrExpr} Schema begin
   # should have a normal representation for precompose of a morphism + a generator attribute
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
   compose(f::Hom, x::Attr) = associate_unit(new(f,x; strict=true), id)
@@ -41,165 +39,147 @@ end
 # Type-level representation of Schema
 #####################################
 
-""" CatDesc is a type-level description of a category
+function intify(tuple,s)
+  findfirst(tuple .== s)
+end
 
-In order to have Attributed C-sets that are parameterized by schemas, we have to
-use the type of this struct as the type parameter to get around Julia's
-restrictions on what sort of thing can appear as a type parameter.
+function tuplize(xs,f)
+  (;[nameof(x) => nameof(f(x)) for x in xs]...)
+end
 
-We split a Schema up into two types: CatDesc (describing the category) and
-AttrDesc (describing the discrete category and the profunctor). This allows us
-to have C-sets as Attributed C-sets with an empty AttrDesc.
-"""
-struct CatDesc{Ob,Hom,Dom,Codom}
-  function CatDesc{Ob,Hom,Dom,Codom}() where {Ob,Hom,Dom,Codom}
-    new{Ob,Hom,Dom,Codom}()
+struct SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}
+end
+
+const ACSetSchemaDescType = SchemaDescType
+const CSetSchemaDescType{obs,homs,doms,codoms} = SchemaDescType{obs,homs,(),(),doms,codoms}
+
+function SchemaDescTypeType(p::Presentation)
+  obs,homs,attrtypes,attrs = map(t -> p.generators[t],[:Ob,:Hom,:AttrType,:Attr])
+  ob_syms,hom_syms,attrtype_syms,attr_syms = map(xs -> Tuple(nameof.(xs)),
+                                                 [obs,homs,attrtypes,attrs])
+  homdoms = map(t -> intify(ob_syms,t),tuplize(homs,dom))
+  homcodoms = map(t -> intify(ob_syms,t),tuplize(homs,codom))
+  attrdoms = map(t -> intify(ob_syms,t),tuplize(attrs,dom))
+  attrcodoms = map(t -> intify(attrtype_syms,t),tuplize(attrs,codom))
+  SchemaDescType{
+    ob_syms,
+    hom_syms,
+    attrtype_syms,
+    attr_syms,
+    (;homdoms...,attrdoms...),
+    (;homcodoms...,attrcodoms...)
+  }
+end
+
+ob(::Type{<:SchemaDescType{obs}}) where {obs} = obs
+ob_num(::Type{<:SchemaDescType{obs}}, x::Symbol) where {obs} = findfirst(obs .== x)
+
+hom(::Type{<:SchemaDescType{obs,homs}}) where {obs,homs} = homs
+
+function dom_nums(::Type{<:SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}}) where
+  {obs,homs,attrtypes,attrs,doms,codoms}
+  Tuple(map(last, filter(((f,_),) -> f ∈ homs, collect(pairs(doms)))))
+end
+
+dom(T::Type{<:SchemaDescType}) = map(i -> ob(T)[i], dom_nums(T))
+function dom_num(::Type{<:SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}},f::Symbol) where
+  {obs,homs,attrtypes,attrs,doms,codoms}
+  doms[f]
+end
+dom(T::Type{<:SchemaDescType},f::Symbol) = ob(T)[dom_num(T,f)]
+
+function codom_nums(::Type{<:SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}}) where
+  {obs,homs,attrtypes,attrs,doms,codoms}
+  Tuple(map(last, filter(((f,_),) -> f ∈ homs, collect(pairs(codoms)))))
+end
+
+codom(T::Type{<:SchemaDescType}) = map(i -> ob(T)[i], codom_nums(T))
+function codom_num(::Type{<:SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}},f::Symbol) where
+  {obs,homs,attrtypes,attrs,doms,codoms}
+  codoms[f]
+end
+codom(T::Type{<:SchemaDescType},f::Symbol) = ob(T)[codom_num(T,f)]
+
+attr(::Type{<:SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}}) where
+  {obs,homs,attrtypes,attrs,doms,codoms} = attrs
+attrtype(::Type{<:SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}}) where
+  {obs,homs,attrtypes,attrs,doms,codoms} = attrtypes
+
+function adom_nums(::Type{<:SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}}) where
+  {obs,homs,attrtypes,attrs,doms,codoms}
+  Tuple(map(last, filter(((f,_),) -> f ∈ attrs, collect(pairs(doms)))))
+end
+
+adom(T::Type{<:SchemaDescType}) = map(i -> ob(T)[i], adom_nums(T))
+
+function acodom_nums(::Type{<:SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}}) where
+  {obs,homs,attrtypes,attrs,doms,codoms}
+  Tuple(map(last, filter(((f,_),) -> f ∈ attrs, collect(pairs(codoms)))))
+end
+
+acodom(T::Type{<:SchemaDescType}) = map(i -> attrtype(T)[i], acodom_nums(T))
+
+struct SchemaDesc
+  obs::Vector{Symbol}
+  homs::Vector{Symbol}
+  attrtypes::Vector{Symbol}
+  attrs::Vector{Symbol}
+  doms::Dict{Symbol,Symbol}
+  codoms::Dict{Symbol,Symbol}
+  function SchemaDesc(obs::Vector{Symbol},
+                      homs::Vector{Symbol},
+                      attrtypes::Vector{Symbol},
+                      attrs::Vector{Symbol},
+                      doms::Dict{Symbol,Symbol},
+                      codoms::Dict{Symbol,Symbol})
+    new(obs, homs, attrtypes, attrs, doms, codoms)
   end
-  function CatDesc(pres::Presentation{Schema})
-    obs, homs = generators(pres, :Ob), generators(pres,:Hom)
-    ob_syms, hom_syms = nameof.(obs), nameof.(homs)
-    ob_num = ob -> findfirst(ob_syms .== ob)::Int
-    new{Tuple(ob_syms), Tuple(hom_syms),
-        Tuple(@. ob_num(nameof(dom(homs)))), Tuple(@. ob_num(nameof(codom(homs))))}()
+  
+  function SchemaDesc(::Type{SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}}) where
+      {obs,homs,attrtypes,attrs,doms,codoms}
+    homdoms = [f => obs[doms[f]] for f in homs]
+    homcodoms = [f => obs[codoms[f]] for f in homs]
+    attrdoms = [a => obs[doms[a]] for a in attrs]
+    attrcodoms = [a => attrtypes[codoms[a]] for a in attrs]
+    new(
+      Symbol[obs...],
+      Symbol[homs...],
+      Symbol[attrtypes...],
+      Symbol[attrs...],
+      Dict{Symbol,Symbol}(homdoms...,attrdoms...),
+      Dict{Symbol,Symbol}(homcodoms...,attrcodoms...)
+    )
   end
 end
 
-CatDescType(pres::Presentation{Schema}) = typeof(CatDesc(pres))
+ob_num(S::SchemaDesc, x::Symbol) where {obs} = findfirst(S.obs .== x)
 
-ob(::Type{T}) where {Ob,T <: CatDesc{Ob}} = Ob
-hom(::Type{T}) where {Ob,Hom, T <: CatDesc{Ob,Hom}} = Hom
-dom(::Type{T}) where {Ob,Hom,Dom, T <: CatDesc{Ob,Hom,Dom}} = Dom
-codom(::Type{T}) where {Ob,Hom,Dom,Codom, T <: CatDesc{Ob,Hom,Dom,Codom}} = Codom
-
-function ob_num(CD::Type{T}, ob::Symbol) where {Ob,Hom,Dom,Codom, T <: CatDesc{Ob,Hom,Dom,Codom}}
-  findfirst(Ob .== ob)::Int
+function SchemaDescTypeType(s::SchemaDesc)
+  SchemaDescType{
+    Tuple(s.obs),
+    Tuple(s.homs),
+    Tuple(s.attrtypes),
+    Tuple(s.attrs),
+    NamedTuple(map([s.doms...]) do (f,d)
+                 (f,intify(s.obs, d))
+               end),
+    NamedTuple(map([s.codoms...]) do (f,cd)
+                 if f ∈ s.homs
+                   (f,intify(s.obs, cd))
+                 else
+                   (f,intify(s.attrtypes,cd))
+                 end
+               end)
+  }
 end
 
-function hom_num(CD::Type{T}, hom::Symbol) where {Ob,Hom,Dom,Codom, T <: CatDesc{Ob,Hom,Dom,Codom}}
-  findfirst(Hom .== hom)::Int
-end
-
-function dom_num(CD::Type{T}, hom::Int) where {Ob,Hom,Dom,Codom, T <: CatDesc{Ob,Hom,Dom,Codom}}
-  Dom[hom]
-end
-
-function dom_num(CD::Type{<:CatDesc}, hom::Symbol)
-  dom_num(CD, hom_num(CD,hom))
-end
-
-function codom_num(CD::Type{T}, hom::Int) where {Ob,Hom,Dom,Codom, T <: CatDesc{Ob,Hom,Dom,Codom}}
-  Codom[hom]
-end
-
-function codom_num(CD::Type{<:CatDesc}, hom::Symbol)
-  codom_num(CD, hom_num(CD,hom))
-end
-
-function dom(CD::Type{T}, hom::Union{Int,Symbol}) where
-    {Ob,Hom,Dom,Codom, T <: CatDesc{Ob,Hom,Dom,Codom}}
-  Ob[dom_num(CD,hom)]
-end
-
-function codom(CD::Type{T}, hom::Union{Int,Symbol}) where
-    {Ob,Hom,Dom,Codom, T <: CatDesc{Ob,Hom,Dom,Codom}}
-  Ob[codom_num(CD,hom)]
-end
-
-""" AttrDesc is a type-level representation of attributes added
-to a category to form a schema
-"""
-struct AttrDesc{CD,Data,Attr,ADom,ACodom}
-  function AttrDesc{CD,Data,Attr,ADom,ACodom}() where {CD,Data,Attr,ADom,ACodom}
-    new{CD,Data,Attr,ADom,ACodom}()
-  end
-  function AttrDesc(pres::Presentation{Schema})
-    CD = CatDescType(pres)
-    datas, attrs = generators(pres, :Data), generators(pres,:Attr)
-    data_syms, attr_syms = nameof.(datas), nameof.(attrs)
-    ob_num = ob -> findfirst(Theories.ob(CD) .== ob)::Int
-    data_num = ob -> findfirst(data_syms .== ob)::Int
-    new{CD,Tuple(data_syms), Tuple(attr_syms),
-        Tuple(@. ob_num(nameof(dom(attrs)))), Tuple(@. data_num(nameof(codom(attrs))))}()
-  end
-  function AttrDesc(::CatDesc{Ob,Hom,Dom,Codom}) where {Ob,Hom,Dom,Codom}
-    new{CatDesc{Ob,Hom,Dom,Codom},(),(),(),()}
-  end
-end
-
-AttrDescType(pres::Presentation{Schema}) = typeof(AttrDesc(pres))
-
-data(::Type{T}) where {CD,Data, T <: AttrDesc{CD,Data}} = Data
-attr(::Type{T}) where {CD,Data,Attr, T <: AttrDesc{CD,Data,Attr}} = Attr
-adom(::Type{T}) where {CD,Data,Attr,ADom,
-                       T <: AttrDesc{CD,Data,Attr,ADom}} = ADom
-acodom(::Type{T}) where {CD,Data,Attr,ADom,ACodom,
-                         T <: AttrDesc{CD,Data,Attr,ADom,ACodom}} = ACodom
-
-function data_num(AD::Type{T}, data::Symbol) where
-  {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
-  findfirst(Data .== data)::Int
-end
-
-function attr_num(AD::Type{T}, attr::Symbol) where
-  {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
-  findfirst(Attr .== attr)::Int
-end
-
-function dom_num(AD::Type{T}, attr::Int) where
-  {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
-  ADom[attr]
-end
-
-function dom_num(AD::Type{<:AttrDesc}, attr::Symbol)
-  dom_num(AD,attr_num(AD,attr))
-end
-
-function codom_num(AD::Type{T}, attr::Int) where
-  {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
-  ACodom[attr]
-end
-
-function codom_num(AD::Type{<:AttrDesc}, attr::Symbol)
-  codom_num(AD,attr_num(AD,attr))
-end
-
-function dom(AD::Type{T}, attr::Union{Int,Symbol}) where
-    {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
-  ob(CD)[dom_num(AD,attr)]
-end
-
-function codom(AD::Type{T}, attr::Union{Int,Symbol}) where
-    {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
-  Data[codom_num(AD,attr)]
-end
-
-function attrs_by_codom(AD::Type{T}) where
-    {CD,Data,Attr,ADom,ACodom,T <: AttrDesc{CD,Data,Attr,ADom,ACodom}}
-  abc = Dict{Symbol,Array{Symbol}}()
-  for i in eachindex(Attr)
-    a = Attr[i]
-    d = Data[ACodom[i]]
-    if d ∈ keys(abc)
-      push!(abc[d],a)
-    else
-      abc[d] = [a]
-    end
-  end
-  abc
-end
-
-SchemaType(pres::Presentation{Schema}) = (CatDescType(pres),AttrDescType(pres))
-
-"""
-Inverse of SchemaType. Converts a CatDesc and AttrDesc into a Presentation. 
-"""
-function Presentation(CD::Type{T}, AD::Type{S}) where {T <: CatDesc, S <: AttrDesc}
+function Presentation(S::Type{T}) where T <: SchemaDescType
   pres = Presentation(FreeSchema)
 
-  obs = map(x -> Ob(FreeSchema, x), collect(ob(CD)))
-  homs = map(Hom, collect(hom(CD)), obs[collect(dom(CD))], obs[collect(codom(CD))])
-  datas = map(x -> Data(FreeSchema.Data, x), collect(data(AD)))
-  attrs = map(FreeSchema.Attr, collect(attr(AD)), obs[collect(adom(AD))], datas[collect(acodom(AD))])
+  obs = map(x -> Ob(FreeSchema, x), collect(ob(S)))
+  homs = map(Hom, collect(hom(S)), obs[collect(dom_nums(S))], obs[collect(codom_nums(S))])
+  datas = map(x -> AttrType(FreeSchema.AttrType, x), collect(attrtype(S)))
+  attrs = map(FreeSchema.Attr, collect(attr(S)), obs[collect(adom_nums(S))], datas[collect(acodom_nums(S))])
 
   map(gens -> add_generators!(pres, gens), [obs, homs, datas, attrs])
   return pres

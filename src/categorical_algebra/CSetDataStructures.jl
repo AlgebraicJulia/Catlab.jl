@@ -1,637 +1,467 @@
-""" Data structure for C-sets (copresheaves) and attributed C-sets.
-"""
 module CSetDataStructures
-export AbstractACSet, ACSet, AbstractCSet, CSet, Schema, FreeSchema,
-  AbstractACSetType, ACSetType, ACSetTableType, AbstractCSetType, CSetType,
-  tables, parts, nparts, has_part, subpart, has_subpart, incident,
-  add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!,
-  copy_parts!, copy_parts_only!, disjoint_union, pretty_tables, @acset
+export @acset_type, @abstract_acset_type, @declare_schema, StructACSet, StructCSet,
+  ACSetTableType
 
-using MLStyle: @match
-using PrettyTables: pretty_table
-using StaticArrays: StaticArray
-import Tables, TypedTables
+using MLStyle
+using StaticArrays
+using Reexport
 
-using ...Meta, ...Present
-using ...Syntax: GATExpr, args
-using ...Theories: Schema, FreeSchema, SchemaType,
-  CatDesc, CatDescType, ob, hom, dom, codom, codom_num,
-  AttrDesc, AttrDescType, data, attr, adom, acodom, data_num, attrs_by_codom
+@reexport using ..ACSetInterface
+using ..IndexUtils
+using ...Theories, ...Present, ...Syntax
+using ...Theories: SchemaDesc, SchemaDescType, CSetSchemaDescType, SchemaDescTypeType,
+  ob_num, codom_num, attr, attrtype
+@reexport using ...Theories: FreeSchema
+using ...Meta: strip_lines
+import Tables
 
-# Data types
-############
 
-""" Abstract type for attributed C-sets, including C-sets as a special case.
+# StructACSet Struct Generation
+###############################
 
-The type parameters are:
+abstract type StructACSet{S<:SchemaDescType,Ts<:Tuple,Idxed,UniqueIdxed} <: ACSet end
 
-- `CD`: indexing category C, encoded as a type
-- `AD`: data types and data attributes, encoded as a type
-- `Ts`: Julia types corresponding to data types in schema
+const StructCSet = StructACSet{S,Tuple{},Idxed,UniqueIdxed} where
+  {S<:CSetSchemaDescType,Idxed,UniqueIdxed}
 
-Together, the first two type parameters encode a schema, see `Schema`.
+q(s::Symbol) = Expr(:quote,s)
+q(s::GATExpr) = q(nameof(s))
 
-See also: [`AttributedCSet`](@ref).
+""" Creates a quoted named tuple used for `StructACSet`s
 """
-abstract type AbstractAttributedCSet{CD <: CatDesc, AD <: AttrDesc{CD},
-                                     Ts <: Tuple} end
-
-""" Alias for the abstract type `AbstractAttributedCSet`.
-"""
-const AbstractACSet = AbstractAttributedCSet
-
-""" Data type for attributed C-sets, including C-sets as a special case.
-
-Instead of filling out the type parameters manually, we recommend using the
-function [`CSetType`](@ref) or [`ACSetType`](@ref) to generate a data type from
-a schema. Nevertheless, the first three type parameters are documented at
-[`AbstractAttributedCSet`](@ref). The remaining type parameters are an
-implementation detail and should be ignored.
-"""
-struct AttributedCSet{CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple,
-                      Idxed, UniqueIdxed, Tables <: NamedTuple,
-                      Indices <: NamedTuple} <: AbstractACSet{CD,AD,Ts}
-  tables::Tables
-  indices::Indices
+function pi_type(dom::Vector, F::Function)
+  :(NamedTuple{($(q.(dom)...),),Tuple{$(F.(dom)...)}})
 end
 
-function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}(
-    tables::Tables, indices::Indices) where
-    {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed, UniqueIdxed,
-     Tables <: NamedTuple, Indices <: NamedTuple}
-  AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed,Tables,Indices}(tables, indices)
-end
-
-function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}(;
-    table_type::Type=TypedTables.Table) where
-    {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed, UniqueIdxed}
-  tables = make_tables(table_type,CD,AD,Ts)
-  indices = make_indices(CD,AD,Ts,Idxed,UniqueIdxed)
-  AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}(tables, indices)
-end
-
-function AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed,Tables,Indices}() where
-    {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple, Idxed, UniqueIdxed,
-     Tables <: NamedTuple, Indices <: NamedTuple}
-  # Find first table type for a table with at least one column.
-  i = findfirst(!=(Vector{NamedTuple{(),Tuple{}}}), Tables.types)
-  if isnothing(i)
-    AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}()
-  else
-    T = Tables.types[i].name.wrapper # `UnionAll` corresponding to type.
-    AttributedCSet{CD,AD,Ts,Idxed,UniqueIdxed}(table_type=T)
+""" Creates a quoted element of a named tuple used for `StructACSet`s
+"""
+function pi_type_elt(dom::Vector, f::Function)
+  if length(dom) > 0
+    Expr(:tuple, Expr(:parameters, [Expr(:kw, nameof(d), f(d)) for d in dom]...))
+  else # workaround for Julia 1.0
+    :(NamedTuple())
   end
 end
 
-""" Alias for the data type `AttributedCSet`.
+""" Create the struct declaration for a `StructACSet` from a Presentation
 """
-const ACSet = AttributedCSet
-
-""" Generate an abstract type for attributed C-sets from a schema.
-
-To generate a concrete type, use [`ACSetType`](@ref).
-"""
-function AbstractACSetType(pres::Presentation{Schema})
-  type_vars = [ TypeVar(nameof(data)) for data in generators(pres, :Data) ]
-  if isempty(type_vars)
-    # When the schema has no data attributes, allow subtyping from any schema
-    # extending it with attributes.
-    AbstractACSet{CatDescType(pres)}
+function struct_acset(name::Symbol, parent, p::Presentation{Schema}; index=[], unique_index=[])
+  obs = p.generators[:Ob]
+  homs = p.generators[:Hom]
+  attr_types = p.generators[:AttrType]
+  Ts = nameof.(attr_types)
+  attrs = p.generators[:Attr]
+  idxed = (;[x => x ∈ index for x in [nameof.(homs);nameof.(attrs)]]...)
+  unique_idxed = (;[x => x ∈ unique_index for x in [nameof.(homs);nameof.(attrs)]]...)
+  indexed_homs = filter(f -> idxed[nameof(f)], homs)
+  unique_indexed_homs = filter(f -> unique_idxed[nameof(f)], homs)
+  indexed_attrs = filter(a -> idxed[nameof(a)], attrs)
+  unique_indexed_attrs = filter(a -> unique_idxed[nameof(a)], attrs)
+  parameterized_type, new_call = if length(attr_types) > 0
+    (:($name{$(nameof.(attr_types)...)}), :(new{$(nameof.(attr_types)...)}))
   else
-    T = AbstractACSet{SchemaType(pres)..., Tuple{type_vars...}}
-    foldr(UnionAll, type_vars, init=T)
+    name, :new
+  end
+  schema_type = SchemaDescTypeType(p)
+  obs_t = :($(GlobalRef(StaticArrays, :MVector)){$(length(obs)), Int})
+  quote
+    struct $parameterized_type <: $parent{$schema_type, Tuple{$(Ts...)}, $idxed, $unique_idxed}
+      obs::$obs_t
+      homs::$(pi_type(homs, _ -> :(Vector{Int})))
+      attrs::$(pi_type(attrs, a -> :(Vector{$(nameof(codom(a)))})))
+      hom_indices::$(pi_type(indexed_homs, _ -> :(Vector{Vector{Int}})))
+      hom_unique_indices::$(pi_type(unique_indexed_homs, _ -> :(Vector{Int})))
+      attr_indices::$(pi_type(indexed_attrs, a -> :(Dict{$(nameof(codom(a))),Vector{Int}})))
+      attr_unique_indices::$(pi_type(unique_indexed_attrs, a -> :(Dict{$(nameof(codom(a))), Int})))
+      function $parameterized_type() where {$(nameof.(attr_types)...)}
+        $new_call(
+          $obs_t(zeros(Int, $(length(obs)))),
+          $(pi_type_elt(homs, _ -> :(Int[]))),
+          $(pi_type_elt(attrs, a -> :($(nameof(codom(a)))[]))),
+          $(pi_type_elt(indexed_homs, _ -> :(Vector{Int}[]))),
+          $(pi_type_elt(unique_indexed_homs, _ -> Int[])),
+          $(pi_type_elt(indexed_attrs, a -> :(Dict{$(nameof(codom(a))),Vector{Int}}()))),
+          $(pi_type_elt(unique_indexed_attrs, a -> :(Dict{$(nameof(codom(a))),Int}())))
+        )
+      end
+    end
   end
 end
 
-""" Generate a type for attributed C-sets from a schema.
+unquote(x::QuoteNode) = x.value
 
-In addition to the schema, you can specify which morphisms and data attributes
-are (uniquely) indexed using the keyword argument `index` (or `unique_index`).
-By default, no morphisms or data attributes are indexed.
+macro acset_type(head)
+  head, parent = @match head begin
+    Expr(:(<:), h, p) => (h,p)
+    _ => (head, GlobalRef(CSetDataStructures, :StructACSet))
+  end
+  name, schema, idx_args = @match head begin
+    Expr(:call, name, schema, idx_args...) => (name, schema, idx_args)
+    _ => error("Unsupported head for @acset_type")
+  end
+  abstract_name = Symbol("Abstract" * string(name))
+  # We assign this to an anonymous variable so that there is something
+  # to attach documentation to.
+  # TODO: this is a hack and there should be a better way
+  quote
+    const tmp = $(esc(:eval))($(GlobalRef(CSetDataStructures, :struct_acset))(
+      $(Expr(:quote, name)), $(Expr(:quote, parent)), $(esc(schema)), $(idx_args...)))
+  end
+end
 
-See also: [`AbstractACSetType`](@ref).
-"""
-function ACSetType(pres::Presentation{Schema}; index=[], unique_index=[])
-  type_vars = [ TypeVar(nameof(data)) for data in generators(pres, :Data) ]
-  T = ACSet{SchemaType(pres)..., Tuple{type_vars...},
-            Tuple(sort!(index ∪ unique_index)), Tuple(sort!(unique_index))}
+macro abstract_acset_type(head)
+  type, parent = @match head begin
+    Expr(:(<:), h, p) => (h,p)
+    _ => (head, GlobalRef(CSetDataStructures, :StructACSet))
+  end
+  esc(quote
+    abstract type $type{S,Ts,Idxed,UniqueIdxed} <: $parent{S,Ts,Idxed,UniqueIdxed} end
+  end)
+end
+
+# StructACSet DataFrames
+########################
+
+struct StructACSetFrame{Ob, S, Ts, Idxed, UniqueIdxed, Attrs} <:
+    StructACSet{S, Ts, Idxed, UniqueIdxed}
+  obs::MVector{1,Int}
+  homs::NamedTuple{(),Tuple{}}
+  attrs::Attrs
+  hom_indices::NamedTuple{(),Tuple{}}
+  hom_unique_indices::NamedTuple{(),Tuple{}}
+  attr_indices::NamedTuple{(),Tuple{}}
+  attr_unique_indices::NamedTuple{(),Tuple{}}
+  function StructACSetFrame{Ob, S, Ts, Idxed, UniqueIdxed, Attrs}() where
+      {Ob,S,Ts,Idxed,UniqueIdxed,Attrs}
+    new{Ob,S,Ts,Idxed,UniqueIdxed,Attrs}(
+      MVector(0),
+      (;),
+      Attrs([[] for a in attr(S)]),
+      (;),
+      (;),
+      (;),
+      (;)
+    )
+  end
+end
+
+function ACSetTableDesc(::Type{S}, ob::Symbol) where {S}
+  s = SchemaDesc(S)
+  attrs = filter(s.attrs) do attr
+    s.doms[attr] == ob
+  end
+  doms = filter(s.doms) do (f,i)
+    f ∈ attrs
+  end
+  codoms = filter(s.codoms) do (f,i)
+    f ∈ attrs
+  end
+  s′ = SchemaDesc([ob], Symbol[], s.attrtypes, attrs, doms, codoms)
+  SchemaDescTypeType(s′)
+end
+
+function ACSetTableDataType(::Type{<:StructACSet{S,Ts}}, ob::Symbol) where {S,Ts}
+  S′ = ACSetTableDesc(S,ob)
+  rowtype = NamedTuple{
+    attr(S′),
+    Tuple{[Vector{Ts.parameters[codom_num(S′,a)]} for a in attr(S′)]...}
+  }
+  StructACSetFrame{(ob,), S′, Ts,
+                   NamedTuple(a => false for a in attr(S′)),
+                   NamedTuple(a => false for a in attr(S′)),
+                   rowtype}
+end
+
+function ACSetTableUnionAll(::Type{<:StructACSet{S}}, ob::Symbol) where {S}
+  S′ = ACSetTableDesc(S,ob)
+  type_vars = [ TypeVar(at) for at in attrtype(S′) ]
+  rowtype = NamedTuple{
+    attr(S′),
+    Tuple{[Vector{type_vars[codom_num(S′,a)]} for a in attr(S′)]...}
+  }
+  T = StructACSetFrame{(ob,), S′, Tuple{type_vars...},
+                       NamedTuple(a => false for a in attr(S′)),
+                       NamedTuple(a => false for a in attr(S′)),
+                       rowtype}
   foldr(UnionAll, type_vars, init=T)
 end
 
-""" Given an attributed C-set type, generate a new type based on one object.
-
-The resulting attributed C-set type can be seen as the type of a data table or
-data frame, hence the name.
-"""
-function ACSetTableType(X::Type, ob₀::Symbol; union_all::Bool=false)
-  (union_all ? ACSetTableUnionAll : ACSetTableDataType)(X, Val{ob₀})
+function ACSetTableType(X::Type, ob::Symbol; union_all::Bool=false)
+  (union_all ? ACSetTableUnionAll : ACSetTableDataType)(X, ob)
 end
 
-@generated function ACSetTableDataType(::Type{X}, ::Type{Val{ob₀}}) where
-    {CD<:CatDesc, AD<:AttrDesc{CD}, Ts, X<:AbstractACSet{CD,AD,Ts}, ob₀}
-  CD₀, AD₀ = ACSetTableDesc(CD, AD, ob₀)
-  :(ACSet{$CD₀,$AD₀,$Ts,(),()})
-end
-
-@generated function ACSetTableUnionAll(::Type{X}, ::Type{Val{ob₀}}) where
-    {CD<:CatDesc, AD<:AttrDesc{CD}, X<:AbstractACSet{CD,AD}, ob₀}
-  CD₀, AD₀ = ACSetTableDesc(CD, AD, ob₀)
-  :(ACSet{$CD₀,$AD₀,Tuple{$(data(AD)...)},(),()} where {$(data(AD)...)})
-end
-
-function ACSetTableDesc(::Type{CD}, ::Type{AD}, ob₀::Symbol) where
-    {CD<:CatDesc, AD<:AttrDesc{CD}}
-  @assert ob₀ ∈ ob(CD)
-  attrs₀ = [ i for (i,j) in enumerate(adom(AD)) if ob(CD)[j] == ob₀ ]
-  adom₀ = Tuple(ones(Int, length(attrs₀)))
-  CD₀ = CatDesc{(ob₀,),(),(),()}
-  AD₀ = AttrDesc{CD₀,data(AD),attr(AD)[attrs₀],adom₀,acodom(AD)[attrs₀]}
-  (CD₀, AD₀)
-end
-
-""" Abstract type for C-sets.
-
-The special case of `AbstractAttributedCSet` with no data attributes.
-"""
-const AbstractCSet{CD} = AbstractACSet{CD,AttrDesc{CD,(),(),(),()},Tuple{}}
-
-""" Data type for C-sets.
-
-The special case of `AttributedCSet` with no data attributes.
-"""
-const CSet{CD,Idxed,UniqueIdxed} =
-  ACSet{CD,AttrDesc{CD,(),(),(),()},Tuple{},Idxed,UniqueIdxed}
-
-""" Generate an abstract type for C-sets from a presentation of a category C.
-
-To generate a concrete type, use [`CSetType`](@ref).
-"""
-function AbstractCSetType(pres::Presentation{Schema})
-  AbstractCSet{CatDescType(pres)}
-end
-
-""" Generate a type for C-sets from a presentation of a category C.
-
-In addition to the category, you can specify which morphisms are (uniquely)
-indexed using the keyword argument `index` (or `unique_index`). By default, no
-morphisms are indexed.
-
-See also: [`AbstractCSetType`](@ref).
-"""
-function CSetType(pres::Presentation{Schema}; index=[], unique_index=[])
-  if !(isempty(generators(pres, :Data)) && isempty(generators(pres, :Attr)))
-    error("Use `ACSetType` instead of `CSetType` for schemas with data attributes")
-  end
-  CSet{CatDescType(pres),
-       Tuple(sort!(index ∪ unique_index)), Tuple(sort!(unique_index))}
-end
-
-function make_indices(::Type{CD}, AD::Type{<:AttrDesc{CD}},
-                      Ts::Type{<:Tuple}, Idxed::Tuple, UniqueIdxed::Tuple) where {CD}
-  # TODO: Could be `@generated` for faster initialization of C-sets.
-  NamedTuple{Idxed}(Tuple(map(Idxed) do name
-    IndexType = name ∈ UniqueIdxed ? Int : Vector{Int}
-    if name ∈ hom(CD)
-      Vector{IndexType}()
-    elseif name ∈ attr(AD)
-      Dict{Ts.parameters[codom_num(AD,name)],IndexType}()
-    else
-      error("Cannot index $name: not a morphism or an attribute")
-    end
-  end))
-end
-
-function make_tables(Table::Type, ::Type{CD}, AD::Type{<:AttrDesc{CD}},
-                     Ts::Type{<:Tuple}) where {CD}
-  # TODO: Could be `@generated` for faster initialization of C-sets.
-  cols = NamedTuple{ob(CD)}((names=Symbol[], types=Type[]) for _ in ob(CD))
-  for hom in hom(CD)
-    col = cols[dom(CD,hom)]
-    push!(col.names, hom); push!(col.types, Int)
-  end
-  for attr in attr(AD)
-    col = cols[dom(AD,attr)]
-    push!(col.names, attr); push!(col.types, Ts.parameters[codom_num(AD,attr)])
-  end
-  map(cols) do col
-    if isempty(col.names)
-      # Tables based on structs of arrays, such as StructArrays and TypedTables,
-      # generally do not support empty structs, so we use an array of empty
-      # structs instead. See also:
-      # https://github.com/JuliaArrays/StructArrays.jl/issues/148
-      NamedTuple{(),Tuple{}}[]
-    else
-      make_table(Table, NamedTuple{Tuple(col.names)}((T[] for T in col.types)))
-    end
-  end
-end
 make_table(::Type{T}, cols) where T = T(cols)
 make_table(::Type{NamedTuple}, cols) = cols # No copy constructor defined.
+       
+# StructACSet Operations
+########################
 
-function Base.:(==)(x1::T, x2::T) where T <: ACSet
+""" This should really be in base, or at least somewhere other than this module...
+"""
+Base.Dict(nt::NamedTuple) = Dict(k => nt[k] for k in keys(nt))
+
+# Accessors
+###########
+
+function Base.:(==)(x1::T, x2::T) where T <: StructACSet
   # The indices hold redundant information, so need not be compared.
-  x1.tables == x2.tables
+  unref(x) = x[]
+  unref.(values(x1.obs)) == unref.(values(x2.obs)) && x1.homs == x2.homs && x1.attrs == x2.attrs
 end
 
-function Base.copy(acs::T) where T <: ACSet
-  T(map(copy_table, acs.tables), deepcopy(acs.indices))
+ACSetInterface.acset_schema(::StructACSet{S}) where {S} = SchemaDesc(S)
+
+@inline ACSetInterface.nparts(acs::StructACSet, ob::Symbol) = _nparts(acs, Val{ob})
+
+@generated function _nparts(acs::StructACSet{S}, ::Type{Val{ob}}) where {S,ob}
+  :(acs.obs[$(ob_num(S,ob))])
 end
 
-copy_table(table) = copy(table)
-copy_table(table::NamedTuple) = map(copy, table)
+@inline ACSetInterface.has_part(acs::StructACSet, ob::Symbol) = _has_part(acs, Val{ob})
 
-function Base.show(io::IO, acs::T) where {CD,AD,Ts,T<:AbstractACSet{CD,AD,Ts}}
-  print(io, T <: AbstractCSet ? "CSet" : "ACSet")
-  println(io, "(")
-  join(io, vcat(
-    [ "  $ob = 1:$(nparts(acs,ob))" for ob in ob(CD) ],
-    [ "  $data = $(Ts.parameters[i])" for (i, data) in enumerate(data(AD)) ],
-    [ "  $hom : $(dom(CD,i)) → $(codom(CD,i)) = $(subpart(acs,hom))"
-      for (i, hom) in enumerate(hom(CD)) ],
-    [ "  $attr : $(dom(AD,i)) → $(codom(AD,i)) = $(subpart(acs,attr))"
-      for (i, attr) in enumerate(attr(AD)) ],
-  ), ",\n")
-  print(io, ")")
+outgoing(acs::StructACSet, ob::Symbol) = _outgoing(acs, Val{ob})
+
+@generated function _outgoing(::StructACSet{S}, ::Type{Val{ob}}) where {S,ob}
+  s = SchemaDesc(S)
+  Tuple(filter(f -> s.doms[f] == ob, vcat(s.homs,s.attrs)))
 end
 
-function Base.show(io::IO, ::MIME"text/plain", acs::T) where {T<:AbstractACSet}
-  print(io, T <: AbstractCSet ? "CSet" : "ACSet")
-  print(io, " with elements ")
-  join(io, ["$ob = 1:$(nparts(acs,ob))" for ob in keys(tables(acs))], ", ")
-  println(io)
-  pretty_tables(io, acs)
+@generated function _has_part(acs::StructACSet{S}, ::Type{Val{ob}}) where
+  {obs, S <: SchemaDescType{obs}, ob}
+  ob ∈ obs
 end
 
-function Base.show(io::IO, ::MIME"text/html", acs::T) where {T<:AbstractACSet}
-  println(io, "<div class=\"c-set\">")
-  print(io, "<span class=\"c-set-summary\">")
-  print(io, T <: AbstractCSet ? "CSet" : "ACSet")
-  print(io, " with elements ")
-  join(io, ["$ob = 1:$(nparts(acs,ob))" for ob in keys(tables(acs))], ", ")
-  println(io, "</span>")
-  pretty_tables(io, acs, backend=Val(:html), standalone=false)
-  println(io, "</div>")
+@inline ACSetInterface.has_subpart(acs::StructACSet, f::Symbol) = _has_subpart(acs, Val{f})
+
+@generated function _has_subpart(acs::StructACSet{S}, ::Type{Val{f}}) where
+  {f, obs, homs, attrtypes, attrs, S <: SchemaDescType{obs,homs,attrtypes,attrs}}
+  f ∈ homs || f ∈ attrs
 end
 
-""" Show all tables in a C-set using PrettyTables.jl.
+@inline ACSetInterface.subpart(acs::StructACSet, f::Symbol) = _subpart(acs,Val{f})
 
-Any keyword arguments are passed to `pretty_table`.
-"""
-function pretty_tables(io::IO, acs::AbstractACSet; kw...)
-  options = merge((nosubheader=true, show_row_number=true), (; kw...))
-  for (ob, table) in pairs(tables(acs))
-    # Note: PrettyTables will not print tables with zero rows.
-    if !(isempty(Tables.columnnames(table)) || Tables.rowcount(table) == 0)
-      pretty_table(io, table, row_number_column_title=string(ob); options...)
-    end
-  end
-end
-pretty_tables(acs::AbstractACSet; kw...) = pretty_tables(stdout, acs; kw...)
-
-# Imperative interface
-######################
-
-""" Tables defining a C-set.
-
-A named tuple with a table for each part type. To ensure consistency, do not
-directly mutate these tables, especially when indexing is enabled!
-"""
-tables(acs::ACSet) = acs.tables
-
-""" Parts of given type in a C-set.
-"""
-parts(acs::ACSet, type) = 1:nparts(acs, type)
-
-""" Number of parts of given type in a C-set.
-"""
-nparts(acs::ACSet, type) = Tables.rowcount(acs.tables[type])
-
-# XXX: https://github.com/JuliaData/Tables.jl/issues/170
-Tables.rowcount(x::AbstractVector{NamedTuple{(),Tuple{}}}) = length(x)
-
-""" Whether a C-set has a part with the given name.
-"""
-has_part(acs::ACSet, type::Symbol) = _has_part(acs, Val{type})
-
-@generated function _has_part(::ACSet{CD,AD}, ::Type{Val{type}}) where
-    {CD,AD,type}
-  type ∈ ob(CD) || type ∈ data(AD)
-end
-
-has_part(acs::ACSet, type::Symbol, part::Int) = 1 <= part <= nparts(acs, type)
-has_part(acs::ACSet, type::Symbol, part::AbstractVector{Int}) =
-  let n=nparts(acs, type); [ 1 <= x <= n for x in part ] end
-
-""" Whether a C-set has a subpart with the given name.
-"""
-has_subpart(acs::ACSet, name::Symbol) = _has_subpart(acs, Val{name})
-
-@generated function _has_subpart(::ACSet{CD,AD}, ::Type{Val{name}}) where
-    {CD,AD,name}
-  name ∈ hom(CD) || name ∈ attr(AD)
-end
-
-""" Get subpart of part in C-set.
-
-Both single and vectorized access are supported, with a view of the underlying
-data being returned in the latter case. Chaining, or composition, of subparts is
-also supported. For example, given a vertex-attributed graph `g`,
-
-```
-subpart(g, e, [:src, :vattr])
-```
-
-returns the vertex attribute of the source vertex of the edge `e`. As a
-shorthand, subparts can also be accessed by indexing:
-
-```
-g[e, :src] == subpart(g, e, :src)
-```
-
-Be warned that indexing with lists of subparts works just like `subpart`:
-`g[e,[:src,:vattr]]` is equivalent to `subpart(g, e, [:src,:vattr])`. This
-convention differs from DataFrames but note that the alternative interpretation
-of `[:src,:vattr]` as two independent columns does not even make sense, since
-they have different domains (belong to different tables).
-"""
-@inline subpart(acs::ACSet, part, name) = view_or_slice(subpart(acs, name), part)
-@inline subpart(acs::ACSet, name::Symbol) = _subpart(acs, Val{name})
-# These accessors must be inlined to ensure that constant names are propagated
-# at compile time, e.g., `subpart(g, :src)` becomes `_subpart(g, Val{:src})`.
-
-subpart(acs::ACSet, expr::GATExpr{:generator}) = subpart(acs, first(expr))
-subpart(acs::ACSet, expr::GATExpr{:id}) = parts(acs, first(dom(expr)))
-
-function subpart(acs::ACSet, part, names::AbstractVector{Symbol})
-  foldl(names, init=part) do part, name
-    subpart(acs, part, name)
-  end
-end
-subpart(acs::ACSet, part, expr::GATExpr{:compose}) =
-  subpart(acs, part, subpart_names(expr))
-
-subpart(acs::ACSet, names::AbstractVector{Symbol}) =
-  subpart(acs, subpart(acs, names[1]), names[2:end])
-subpart(acs::ACSet, expr::GATExpr{:compose}) = subpart(acs, subpart_names(expr))
-
-subpart_names(expr::GATExpr{:generator}) = Symbol[first(expr)]
-subpart_names(expr::GATExpr{:id}) = Symbol[]
-subpart_names(expr::GATExpr{:compose}) =
-  mapreduce(subpart_names, vcat, args(expr))
-
-@generated function _subpart(acs::ACSet{CD,AD,Ts}, ::Type{Val{name}}) where
-    {CD,AD,Ts,name}
-  if name ∈ hom(CD)
-    :(acs.tables.$(dom(CD,name)).$name)
-  elseif name ∈ attr(AD)
-    :(acs.tables.$(dom(AD,name)).$name)
+@generated function _subpart(acs::StructACSet{S}, ::Type{Val{f}}) where {S,f}
+  s = SchemaDesc(S)
+  if f ∈ s.homs
+    :(acs.homs.$f)
+  elseif f ∈ s.attrs
+    :(acs.attrs.$f)
   else
-    throw(ArgumentError("$(repr(name)) not in $(hom(CD)) or $(attr(AD))"))
+    throw(ArgumentError("$(repr(f)) not in $(s.homs) or $(s.attrs)"))
   end
 end
 
-@inline Base.getindex(acs::ACSet, args...) = subpart(acs, args...)
+@inline Base.getindex(acs::StructACSet, args...) = ACSetInterface.subpart(acs, args...)
 
-@inline view_or_slice(x::AbstractVector, i) = view(x, i)
-@inline view_or_slice(x::AbstractVector, i::Union{Integer,StaticArray}) = x[i]
-
-""" Get superparts incident to part in C-set.
-
-If the subpart is indexed, this takes constant time; otherwise, it takes linear
-time. As with [`subpart`](@ref), both single and vectorized access, as well as
-chained access, are supported. Note that sequences of morphisms are supplied in
-the usual left-to-right order, so that
-
-```
-incident(g, x, [:src, :vattr])
-```
-
-returns the list of all edges whose source vertex has vertex attribute `x`.
-
-Note that when the subpart is indexed, this function returns a view of the
-underlying index, which should not be mutated. To ensure that a fresh copy is
-returned, regardless of whether indexing is enabled, set the keyword argument
-`copy=true`.
-"""
-@inline incident(acs::ACSet, part, name::Symbol; copy::Bool=false) =
-  _incident(acs, part, Val{name}; copy=copy)
-# Inlined for same reason as `subpart`.
-
-function incident(acs::ACSet, part, names::AbstractVector{Symbol};
-                  copy::Bool=false)
-  # Don't need to pass `copy` because copy will be made regardless.
-  foldr(names, init=part) do name, part
-    reduce(vcat, incident(acs, part, name), init=Int[])
-  end
-end
-incident(acs::ACSet, part, expr::GATExpr; kw...) =
-  incident(acs, part, subpart_names(expr); kw...)
-
-@generated function _incident(acs::ACSet{CD,AD,Ts,Idxed}, part,
-    ::Type{Val{name}}; copy::Bool=false) where {CD,AD,Ts,Idxed,name}
-  if name ∈ hom(CD)
-    if name ∈ Idxed
-      quote
-        indices = view_or_slice(acs.indices.$name, part)
-        copy ? Base.copy.(indices) : indices
-      end
-    else
-      :(broadcast_findall(part, acs.tables.$(dom(CD,name)).$name))
-    end
-  elseif name ∈ attr(AD)
-    if name ∈ Idxed
-      quote
-        indices = get_data_index.(Ref(acs.indices.$name), part)
-        copy ? Base.copy.(indices) : indices
-      end
-    else
-      :(broadcast_findall(part, acs.tables.$(dom(AD,name)).$name))
-    end
-  else
-    throw(ArgumentError("$(repr(name)) not in $(hom(CD)) or $(attr(AD))"))
-  end
-end
+@inline ACSetInterface.incident(acs::StructACSet, part, f::Symbol; copy::Bool=false) =
+  _incident(acs, part, Val{f}; copy=copy)
 
 broadcast_findall(xs, array::AbstractArray) =
   broadcast(x -> findall(y -> x == y, array), xs)
 
-""" Add part of given type to C-set, optionally setting its subparts.
+function get_attr_index(idx::Dict, k)
+  if k ∈ keys(idx)
+    idx[k]
+  else
+    []
+  end
+end
 
-Returns the ID of the added part.
+function get_attr_index(idx::Dict, k::AbstractArray)
+  get_attr_index.(Ref(idx),k)
+end
 
-See also: [`add_parts!`](@ref).
 """
-function add_part!(acs::ACSet, type::Symbol, args...; kw...)
-  part = only(_add_parts!(acs, Val{type}, 1))
-  try
-    set_subparts!(acs, part, args...; kw...)
-  catch e
-    rem_part!(acs, type, part)
-    rethrow(e)
-  end
-  part
-end
-
-""" Add parts of given type to C-set, optionally setting their subparts.
-
-Returns the range of IDs for the added parts.
-
-See also: [`add_part!`](@ref).
+We keep the main body of the code generating out of the @generated function
+so that the code-generating function only needs to be compiled once.
 """
-function add_parts!(acs::ACSet, type::Symbol, n::Int, args...; kw...)
-  parts = _add_parts!(acs, Val{type}, n)
-  try
-    set_subparts!(acs, parts, args...; kw...)
-  catch e
-    rem_parts!(acs, type, parts)
-    rethrow(e)
-  end
-  parts
-end
-
-@generated function _add_parts!(acs::ACSet{CD,AD,Ts,Idxed}, ::Type{Val{ob}},
-                                n::Int) where {CD,AD,Ts,Idxed,ob}
-  out_homs = filter(hom -> dom(CD, hom) == ob, hom(CD))
-  indexed_in_homs = filter(hom -> codom(CD, hom) == ob && hom ∈ Idxed, hom(CD))
-  quote
-    if n == 0; return 1:0 end
-    nparts = Tables.rowcount(acs.tables.$ob) + n
-    resize_table!(acs.tables.$ob, nparts)
-    start = nparts - n + 1
-    $(Expr(:block, map(out_homs) do hom
-        :(@inbounds acs.tables.$ob.$hom[start:nparts] .= 0)
-     end...))
-    $(Expr(:block, map(indexed_in_homs) do hom
-        quote
-          resize!(acs.indices.$hom, nparts)
-          @inbounds for i in start:nparts; acs.indices.$hom[i] = Int[] end
-        end
-      end...))
-    start:nparts
-  end
-end
-
-resize_table!(table, n) = map(col -> resize!(col, n), Tables.columns(table))
-resize_table!(table::Vector, n) = resize!(table, n)
-
-""" Mutate subpart of a part in a C-set.
-
-Both single and vectorized assignment are supported.
-
-See also: [`set_subparts!`](@ref).
-"""
-@inline set_subpart!(acs::ACSet, part, name::Symbol, subpart) =
-  _set_subpart!(acs, part, Val{name}, subpart)
-@inline set_subpart!(acs::ACSet, name::Symbol, subpart) =
-  _set_subpart!(acs, Val{name}, subpart)
-# Inlined for the same reason as `subpart`.
-
-function _set_subpart!(acs::ACSet, part::AbstractVector{Int},
-                       ::Type{Name}, subpart) where Name
-  broadcast(part, subpart) do part, subpart
-    _set_subpart!(acs, part, Name, subpart)
-  end
-end
-
-_set_subpart!(acs::ACSet, ::Colon, ::Type{Name}, subpart) where Name =
-  _set_subpart!(acs, Name, subpart)
-_set_subpart!(acs::ACSet, ::Type{Name}, subpart) where Name =
-  _set_subpart!(acs, 1:length(_subpart(acs, Name)), Name, subpart)
-
-@generated function _set_subpart!(acs::ACSet{CD,AD,Ts,Idxed}, part::Int,
-    ::Type{Val{name}}, subpart) where {CD,AD,Ts,Idxed,name}
-  if name ∈ hom(CD)
-    ob, codom_ob = dom(CD, name), codom(CD, name)
-    if name ∈ Idxed
+function incident_body(s::SchemaDesc,
+                       idxed::Dict{Symbol,Bool}, unique_idxed::Dict{Symbol,Bool},
+                       f::Symbol)
+  if f ∈ s.homs
+    if idxed[f]
       quote
-        @assert 0 <= subpart <= Tables.rowcount(acs.tables.$codom_ob)
-        old = acs.tables.$ob.$name[part]
-        acs.tables.$ob.$name[part] = subpart
-        if old > 0
-          @assert deletesorted!(acs.indices.$name[old], part)
-        end
-        if subpart > 0
-          insertsorted!(acs.indices.$name[subpart], part)
-        end
+        indices = $(GlobalRef(ACSetInterface,:view_or_slice))(acs.hom_indices.$f, part)
+        copy ? Base.copy.(indices) : indices
+      end
+    elseif unique_idxed[f]
+      quote
+        get.(Ref(acs.hom_unique_indices.$f), part, Ref(0))
       end
     else
-      quote
-        @assert 0 <= subpart <= Tables.rowcount(acs.tables.$codom_ob)
-        acs.tables.$ob.$name[part] = subpart
-      end
+      :(broadcast_findall(part, acs.homs.$f))
     end
-  elseif name ∈ attr(AD)
-    ob = dom(AD, name)
-    if name ∈ Idxed
+  elseif f ∈ s.attrs
+    if idxed[f]
       quote
-        if isassigned(acs.tables.$ob.$name, part)
-          old = acs.tables.$ob.$name[part]
-          unset_data_index!(acs.indices.$name, old, part)
-        end
-        acs.tables.$ob.$name[part] = subpart
-        set_data_index!(acs.indices.$name, subpart, part)
+        indices = get_attr_index(acs.attr_indices.$f, part)
+        copy ? Base.copy.(indices) : indices
+      end
+    elseif unique_idxed[f]
+      quote
+        get.(Ref(acs.attr_unique_indices.$f), part, Ref(0))
       end
     else
-      :(acs.tables.$ob.$name[part] = subpart)
+      :(broadcast_findall(part, acs.attrs.$f))
     end
   else
-    throw(ArgumentError("$(repr(name)) not in $(hom(CD)) or $(attr(AD))"))
+    throw(ArgumentError("$(repr(f)) not in $(s.homs)"))
+  end
+end
+    
+@generated function _incident(acs::StructACSet{S,Ts,Idxed,UniqueIdxed},
+                              part, ::Type{Val{f}}; copy::Bool=false) where
+  {S,Ts,Idxed,UniqueIdxed,f}
+  incident_body(SchemaDesc(S),Dict(Idxed),Dict(UniqueIdxed),f)
+end
+
+# Mutators
+##########
+
+@inline ACSetInterface.add_parts!(acs::StructACSet, ob::Symbol, n::Int) = _add_parts!(acs, Val{ob}, n)
+
+function add_parts_body(s::SchemaDesc,
+                        idxed::Dict, unique_idxed::Dict,
+                        ob::Symbol)
+  code = quote
+    m = acs.obs[$(ob_num(s, ob))]
+    nparts = m + n
+    newparts = (m+1):m+n
+    acs.obs[$(ob_num(s, ob))] = nparts
+  end
+  for f in s.homs
+    if s.doms[f] == ob
+      push!(code.args, quote
+              resize!(acs.homs.$f, nparts)
+              acs.homs.$f[newparts] .= 0
+            end)
+    end
+    if s.codoms[f] == ob && idxed[f]
+      push!(code.args, quote
+            resize!(acs.hom_indices.$f, nparts)
+            for i in newparts
+              acs.hom_indices.$f[i] = Int[]
+            end
+            end)
+    elseif s.codoms[f] == ob && unique_idxed[f]
+      push!(code.args, quote
+            resize!(acs.hom_unique_indices.$f, nparts)
+            for i in newparts
+              acs.hom_unique_indices.$f[i] = 0
+            end
+            end)
+    end
+    code
+  end
+  for a in s.attrs
+    if s.doms[a] == ob
+      push!(code.args,:(resize!(acs.attrs.$a, nparts)))
+    end
+  end
+  push!(code.args, :(newparts))
+  code
+end
+
+""" This generates the _add_parts! methods for a specific object of a `StructACSet`.
+"""
+@generated function _add_parts!(acs::StructACSet{S,Ts,Idxed,UniqueIdxed},
+                                ::Type{Val{ob}}, n::Int) where
+  {S, Ts, Idxed, UniqueIdxed, ob}
+  add_parts_body(SchemaDesc(S),Dict(Idxed),Dict(UniqueIdxed),ob)
+end
+
+@inline ACSetInterface.set_subpart!(acs::StructACSet, part::Int, f::Symbol, subpart) =
+  _set_subpart!(acs, part, Val{f}, subpart)
+
+
+function set_subpart_body(s::SchemaDesc,
+                          idxed::Dict{Symbol,Bool}, unique_idxed::Dict{Symbol,Bool},
+                          f::Symbol)
+  if f ∈ s.homs
+    if idxed[f]
+      quote
+        @assert 0 <= subpart <= acs.obs[$(ob_num(s, s.codoms[f]))]
+        old = acs.homs.$f[part]
+        acs.homs.$f[part] = subpart
+        if old > 0
+          @assert deletesorted!(acs.hom_indices.$f[old], part)
+        end
+        if subpart > 0
+          insertsorted!(acs.hom_indices.$f[subpart], part)
+        end
+      end
+    elseif unique_idxed[f]
+      quote
+        @assert 0 <= subpart <= acs.obs[$(ob_num(s, s.codoms[f]))]
+        @assert acs.hom_unique_indices.$f[subpart] == 0
+        old = acs.homs.$f[part]
+        if old > 0
+          acs.hom_unique_indices.$f[old] = 0
+        end
+        acs.homs.$f[part] = subpart
+        acs.hom_unique_indices.$f[subpart] = part
+      end
+    else
+      quote
+        @assert 0 <= subpart <= acs.obs[$(ob_num(s, s.codoms[f]))]
+        acs.homs.$f[part] = subpart
+      end
+    end
+  elseif f ∈ s.attrs
+    if idxed[f]
+      quote
+        if isassigned(acs.attrs.$f, part)
+          old = acs.attrs.$f[part]
+          unset_attr_index!(acs.attr_indices.$f, old, part)
+        end
+        acs.attrs.$f[part] = subpart
+        set_attr_index!(acs.attr_indices.$f, subpart, part)
+      end
+    elseif unique_idxed[f]
+      quote
+        @assert subpart ∉ keys(acs.attr_unique_indices.$f) "subpart not unique"
+        if isassigned(acs.attrs.$f, part)
+          old = acs.attrs.$f[part]
+          delete!(acs.attr_unique_indices.$f, old)
+        end
+        acs.attrs.$f[part] = subpart
+        acs.attr_unique_indices.$f[subpart] = part
+      end
+    else
+      :(acs.attrs.$f[part] = subpart)
+    end
+  else
+    throw(ArgumentError("$(f) not in $(s.homs) or $(s.attrs)"))
   end
 end
 
-@inline Base.setindex!(acs::ACSet, value, args...) =
-  set_subpart!(acs, args..., value)
-
-""" Mutate subparts of a part in a C-set.
-
-Both single and vectorized assignment are supported.
-
-See also: [`set_subpart!`](@ref).
+""" This generates the `_set_subparts!` method for a specific arrow (hom/attr) of a StructACSet
 """
-set_subparts!(acs::ACSet, part; kw...) = set_subparts!(acs, part, (; kw...))
-
-@generated function set_subparts!(acs::ACSet, part,
-                                  subparts::NamedTuple{names}) where names
-  Expr(:block,
-    map(names) do name
-      :(_set_subpart!(acs, part, Val{$(QuoteNode(name))}, subparts.$name))
-    end...,
-    nothing)
+@generated function _set_subpart!(acs::StructACSet{S,Ts,Idxed,UniqueIdxed},
+                                  part, ::Type{Val{f}}, subpart) where {S,Ts,Idxed,UniqueIdxed,f}
+  set_subpart_body(SchemaDesc(S),Dict(Idxed),Dict(UniqueIdxed),f)
 end
 
-""" Remove part from a C-set.
+@inline Base.setindex!(acs::StructACSet, val, ob, part) = set_subpart!(acs, ob, part, val)
 
-The part is removed using the "pop and swap" strategy familiar from
-[LightGraphs.jl](https://github.com/JuliaGraphs/LightGraphs.jl), where the
-"removed" part is actually replaced by the last part, which is then deleted.
-This strategy has important performance benefits since only the last part must
-be assigned a new ID, as opposed to assigning new IDs to *every* part following
-the removed part.
+@inline Base.setindex!(acs::StructACSet, val, ob) = set_subpart!(acs, ob, val)
 
-The removal operation is *not* recursive. When a part is deleted, any superparts
-incident to it are retained, but their subparts become undefined (equal to the
-integer zero). For example, in a graph, if you call `rem_part!` on a vertex, the
-edges incident the `src` and/or `tgt` vertices of the edge become undefined but
-the edge itself is not deleted.
-
-Indexing has both positive and negative impacts on performance. On the one hand,
-indexing reduces the cost of finding affected superparts from linear time to
-constant time. On the other hand, the indices of subparts must be updated when
-the part is removed. For example, in a graph, indexing `src` and `tgt` makes
-removing vertices faster but removing edges (slightly) slower.
-
-See also: [`rem_parts!`](@ref).
-"""
-rem_part!(acs::ACSet, type::Symbol, part::Int) =
+@inline ACSetInterface.rem_part!(acs::StructACSet, type::Symbol, part::Int) =
   _rem_part!(acs, Val{type}, part)
 
-@generated function _rem_part!(acs::ACSet{CD,AD,Ts,Idxed}, ::Type{Val{ob}},
-                               part::Int) where {CD,AD,Ts,Idxed,ob}
-  in_homs = filter(hom -> codom(CD, hom) == ob, hom(CD))
-  indexed_out_homs = filter(hom -> dom(CD, hom) == ob && hom ∈ Idxed, hom(CD))
-  indexed_attrs = filter(attr -> dom(AD, attr) == ob && attr ∈ Idxed, attr(AD))
+function getassigned(acs::StructACSet, arrows, i)
+  assigned_subparts = filter(f -> isassigned(subpart(acs,f),i), arrows)
+  Dict(f => subpart(acs,i,f) for f in assigned_subparts)
+end
+
+function rem_part_body(s::SchemaDesc, idxed::Dict{Symbol,Bool}, ob::Symbol)
+  in_homs = filter(hom -> s.codoms[hom] == ob, s.homs)
+  out_homs = filter(f -> s.doms[f] == ob, s.homs)
+  out_attrs = filter(f -> s.doms[f] == ob, s.attrs)
+  indexed_out_homs = filter(hom -> s.doms[hom] == ob && idxed[hom], s.homs)
+  indexed_attrs = filter(attr -> s.doms[attr] == ob && idxed[attr], s.attrs)
   quote
-    last_part = Tables.rowcount(acs.tables.$ob)
+    last_part = acs.obs[$(ob_num(s, ob))]
     @assert 1 <= part <= last_part
     # Unassign superparts of the part to be removed and also reassign superparts
     # of the last part to this part.
@@ -639,7 +469,7 @@ rem_part!(acs::ACSet, type::Symbol, part::Int) =
       set_subpart!(acs, incident(acs, part, hom, copy=true), hom, 0)
       set_subpart!(acs, incident(acs, last_part, hom, copy=true), hom, part)
     end
-    last_row = getassigned(acs.tables.$ob, last_part)
+    last_row = getassigned(acs, $([out_homs;out_attrs]), last_part)
 
     # Clear any morphism and data attribute indices for last part.
     for hom in $(Tuple(indexed_out_homs))
@@ -647,38 +477,33 @@ rem_part!(acs::ACSet, type::Symbol, part::Int) =
     end
     for attr in $(Tuple(indexed_attrs))
       if haskey(last_row, attr)
-        unset_data_index!(acs.indices[attr], last_row[attr], last_part)
+        unset_attr_index!(acs.attr_indices[attr], last_row[attr], last_part)
       end
     end
 
     # Finally, delete the last part and update subparts of the removed part.
-    resize_table!(acs.tables.$ob, last_part - 1)
+    for f in $(Tuple(out_homs))
+      resize!(acs.homs[f], last_part - 1)
+    end
+    for a in $(Tuple(out_attrs))
+      resize!(acs.attrs[a], last_part - 1)
+    end
+    acs.obs[$(ob_num(s, ob))] -= 1
     if part < last_part
-      set_subparts!(acs, part, last_row)
+      set_subparts!(acs, part, (;last_row...))
     end
   end
 end
 
-""" Get assigned fields of table row as a named tuple.
-"""
-function getassigned(table, i)
-  cols, names = Tables.columns(table), Tables.columnnames(table)
-  assigned = filter(name -> isassigned(cols[name], i), names)
-  NamedTuple{assigned}(map(name -> cols[name][i], assigned))
+@generated function _rem_part!(acs::StructACSet{S,Ts,idxed}, ::Type{Val{ob}},
+                               part::Int) where {S,Ts,ob,idxed}
+  rem_part_body(SchemaDesc(S),Dict(idxed),ob)
 end
-getassigned(::AbstractVector{NamedTuple{(),Tuple{}}}, i) = NamedTuple()
 
-""" Remove parts from a C-set.
-
-The parts must be supplied in sorted order, without duplicates.
-
-See also: [`rem_part!`](@ref).
-"""
-function rem_parts!(acs::ACSet, type::Symbol, parts::AbstractVector{Int})
-  issorted(parts) || error("Parts to removed must be in sorted order")
-  for part in Iterators.reverse(parts)
-    rem_part!(acs, type, part)
-  end
+function Base.copy(acs::StructACSet)
+  new_acs = typeof(acs)()
+  ACSetInterface.copy_parts!(new_acs, acs)
+  new_acs
 end
 
 """ Copy parts from a C-set to a C′-set.
@@ -689,26 +514,28 @@ parts form a sub-C-set, then the whole sub-C-set is preserved. On the other
 hand, if the selected parts do *not* form a sub-C-set, then some copied parts
 will have undefined subparts.
 """
-@generated function copy_parts!(to::ACSet{CD},
-                                from::ACSet{CD′}; kw...) where {CD, CD′}
-  obs = intersect(ob(CD), ob(CD′))
+@generated function ACSetInterface.copy_parts!(to::StructACSet{S},
+                                from::StructACSet{S′}; kw...) where {S, S′}
+  s, s′ = SchemaDesc(S), SchemaDesc(S′)
+  obs = intersect(s.obs, s′.obs)
   :(copy_parts!(to, from, isempty(kw) ? $(Tuple(obs)) : (; kw...)))
 end
 
-copy_parts!(to::ACSet, from::ACSet, obs::Tuple) =
+ACSetInterface.copy_parts!(to::StructACSet, from::StructACSet, obs::Tuple) =
   copy_parts!(to, from, NamedTuple{obs}((:) for ob in obs))
-copy_parts!(to::ACSet, from::ACSet, parts::NamedTuple) =
+ACSetInterface.copy_parts!(to::StructACSet, from::StructACSet, parts::NamedTuple) =
   _copy_parts!(to, from, replace_colons(from, parts))
 
-@generated function _copy_parts!(to::ACSet{CD}, from::ACSet{CD′},
-                                 parts::NamedTuple{obs}) where {CD, CD′, obs}
-  @assert obs ⊆ intersect(ob(CD), ob(CD′))
-  homs = intersect(hom(CD), hom(CD′))
+@generated function _copy_parts!(to::StructACSet{S}, from::StructACSet{S′},
+                                 parts::NamedTuple{obs}) where {S, S′, obs}
+  s, s′ = SchemaDesc(S), SchemaDesc(S′)
+  @assert obs ⊆ intersect(s.obs, s′.obs)
+  homs = intersect(s.homs, s′.homs)
   homs = filter(homs) do hom
-    c, c′, d, d′ = dom(CD,hom), dom(CD′,hom), codom(CD,hom), codom(CD′,hom)
+    c, c′, d, d′ = s.doms[hom], s′.doms[hom], s.codoms[hom], s′.codoms[hom]
     c == c′ && d == d′ && c ∈ obs && d ∈ obs
   end
-  hom_triples = [ (hom, dom(CD,hom), codom(CD,hom)) for hom in homs ]
+  hom_triples = [ (hom, s.doms[hom], s.codoms[hom]) for hom in homs ]
   in_obs = unique!(map(last, hom_triples))
   quote
     newparts = _copy_parts_only!(to, from, parts)
@@ -730,28 +557,30 @@ end
 
 """ Copy parts from a C-set to a C′-set, ignoring all non-data subparts.
 
-The selected parts must belong to both schemas. Data attributes common to both
+The selected parts must belong to both schemas. Attributes common to both
 schemas are also copied, but no other subparts are copied.
 
 See also: [`copy_parts!`](@ref).
 """
-@generated function copy_parts_only!(to::ACSet{CD},
-                                     from::ACSet{CD′}; kw...) where {CD, CD′}
-  obs = intersect(ob(CD), ob(CD′))
+@generated function copy_parts_only!(to::StructACSet{S}, from::StructACSet{S′}; kw...) where
+  {S,S′}
+  s, s′ = SchemaDesc(S), SchemaDesc(S′)
+  obs = intersect(s.obs, s′.obs)
   :(copy_parts_only!(to, from, isempty(kw) ? $(Tuple(obs)) : (; kw...)))
 end
 
-copy_parts_only!(to::ACSet, from::ACSet, obs::Tuple) =
+copy_parts_only!(to::StructACSet, from::StructACSet, obs::Tuple) =
   copy_parts_only!(to, from, NamedTuple{obs}((:) for ob in obs))
-copy_parts_only!(to::ACSet, from::ACSet, parts::NamedTuple) =
+copy_parts_only!(to::StructACSet, from::StructACSet, parts::NamedTuple) =
   _copy_parts_only!(to, from, replace_colons(from, parts))
 
-@generated function _copy_parts_only!(to::ACSet{CD,AD}, from::ACSet{CD′,AD′},
-    parts::NamedTuple{obs}) where {CD, AD, CD′, AD′, obs}
-  @assert obs ⊆ intersect(ob(CD), ob(CD′))
-  attrs = intersect(attr(AD), attr(AD′))
+@generated function _copy_parts_only!(to::StructACSet{S}, from::StructACSet{S′},
+    parts::NamedTuple{obs}) where {S, S′, obs}
+  s, s′ = SchemaDesc(S), SchemaDesc(S′)
+  @assert obs ⊆ intersect(s.obs, s′.obs)
+  attrs = intersect(s.attrs, s′.attrs)
   attrs = filter(attrs) do attr
-    ob, ob′ = dom(AD, attr), dom(AD′, attr)
+    ob, ob′ = s.doms[attr], s′.doms[attr]
     ob == ob′ && ob ∈ obs
   end
   Expr(:block,
@@ -759,129 +588,98 @@ copy_parts_only!(to::ACSet, from::ACSet, parts::NamedTuple) =
         Expr(:kw, ob, :(add_parts!(to, $(QuoteNode(ob)), length(parts.$ob))))
         end...))),
     map(attrs) do attr
-      ob = dom(AD, attr)
+      ob = s.doms[attr]
       :(set_subpart!(to, newparts.$ob, $(QuoteNode(attr)),
                      subpart(from, parts.$ob, $(QuoteNode(attr)))))
     end...,
     :newparts)
 end
 
-function replace_colons(acs::ACSet, parts::NamedTuple{types}) where {types}
+function replace_colons(acs::StructACSet, parts::NamedTuple{types}) where {types}
   NamedTuple{types}(map(types, parts) do type, part
     part == (:) ? (1:nparts(acs, type)) : part
   end)
 end
 
-function disjoint_union(acs1::T, acs2::T) where {T<:ACSet}
-  acs = copy(acs1)
-  copy_parts!(acs, acs2)
-  acs
+# Printing
+##########
+
+function Base.show(io::IO, acs::StructACSet{S,Ts,idxed}) where {S,Ts,idxed}
+  s = SchemaDesc(S)
+  print(io, "ACSet")
+  println(io, "(")
+  join(io, vcat(
+    [ "  $ob = 1:$(nparts(acs,ob))" for ob in s.obs ],
+    [ "  $attr_type = $(Ts.parameters[i])" for (i, attr_type) in enumerate(s.attrtypes) ],
+    [ "  $f : $(s.doms[f]) → $(s.codoms[f]) = $(subpart(acs,f))"
+      for f in s.homs ],
+    [ "  $a : $(s.doms[a]) → $(s.codoms[a]) = $(subpart(acs,a))"
+      for a in s.attrs ],
+  ), ",\n")
+  print(io, ")")
 end
 
-""" Look up key in C-set data index.
-"""
-get_data_index(d::AbstractDict{K,Int}, k::K) where K = get(d, k, 0)
-get_data_index(d::AbstractDict{K,<:AbstractVector{Int}}, k::K) where K =
-  get(d, k, 1:0)
+# TODO: implement Tables interface
+# Steps:
+# - Wrapper data structure
 
-""" Set key and value for C-set data index.
-"""
-function set_data_index!(d::AbstractDict{K,Int}, k::K, v::Int) where K
-  if haskey(d, k)
-    error("Key $k already defined in unique index")
-  end
-  d[k] = v
-end
-function set_data_index!(d::AbstractDict{K,<:AbstractVector{Int}},
-                         k::K, v::Int) where K
-  insertsorted!(get!(d, k) do; Int[] end, v)
+struct StructACSetTable{T<:StructACSet, ob} <: Tables.AbstractColumns
+  parent::T
 end
 
-""" Unset key and value from C-set data index, if it is set.
-"""
-function unset_data_index!(d::AbstractDict{K,Int}, k::K, v::Int) where K
-  if haskey(d, k) && d[k] == v
-    delete!(d, k)
-  end
-end
-function unset_data_index!(d::AbstractDict{K,<:AbstractVector{Int}},
-                           k::K, v::Int) where K
-  if haskey(d, k)
-    vs = d[k]
-    if deletesorted!(vs, v) && isempty(vs)
-      delete!(d, k)
-    end
-  end
+StructACSetTable(acs::StructACSet, ob::Symbol) = StructACSetTable{typeof(acs), ob}(acs)
+
+ACSetInterface.tables(acs::StructACSet{<:SchemaDescType{obs}}) where {obs} =
+  NamedTuple([ob => StructACSetTable(acs, ob) for ob in obs])
+
+parent(sat::StructACSetTable) = getfield(sat, :parent)
+
+struct StructACSetRow{T<:StructACSet, ob} <: Tables.AbstractRow
+  parent::T
+  idx::Int
 end
 
-""" Insert into sorted vector, preserving the sorting.
-"""
-function insertsorted!(a::AbstractVector, x)
-  insert!(a, searchsortedfirst(a, x), x)
-end
+parent(row::StructACSetRow) = getfield(row, :parent)
+idx(row::StructACSetRow) = getfield(row, :idx)
 
-""" Delete one occurrence of value from sorted vector, if present.
+# - Tables.jl interface
 
-Returns whether an occurence was found and deleted.
-"""
-function deletesorted!(a::AbstractVector, x)
-  i = searchsortedfirst(a, x)
-  found = i <= length(a) && a[i] == x
-  if found; deleteat!(a, i) end
-  found
-end
+Tables.istable(sat::StructACSetTable) = true
 
-""" More convenient syntax for declaring an ACSet
+Tables.columnaccess(sat::StructACSetTable) = true
+Tables.columns(sat::StructACSetTable) = sat
 
-Example:
+Tables.getcolumn(sat::StructACSetTable{T,ob}, i::Int) where {T,ob} =
+  Base.getproperty(sat, outgoing(parent(sat), ob)[i])
 
-```
-@acset Graph begin
-  V = 2
-  E = 2
-  src = [1,2]
-  tgt = [2,1]
-end
-```
-"""
-macro acset(head, body)
-  expr = :(init_acset($(esc(head)), $(Expr(:quote, body))))
-  Expr(:call, esc(:eval), expr)
-end
+Base.getproperty(sat::StructACSetTable, nm::Symbol) = subpart(parent(sat), :, nm)
 
-"""
-TODO: Well-formedness check
-TODO: Could also rely on a @generated function that took in a "flat" named tuple
-TODO: Alternative syntax for @acset input based on CSV
-TODO: Actual CSV input
-"""
-function init_acset(T::Type{<:ACSet{CD,AD,Ts}},body) where {CD <: CatDesc, AD <: AttrDesc{CD}, Ts <: Tuple}
-  body = strip_lines(body)
-  @assert body.head == :block
-  code = quote
-    acs = $(T)()
-  end
-  for elem in body.args
-    lhs, rhs = @match elem begin
-      Expr(:(=), lhs, rhs) => (lhs,rhs)
-      _ => error("Every line of `@acset` must be an assignment")
-    end
-    if lhs in ob(CD)
-      push!(code.args, :(add_parts!(acs, $(Expr(:quote, lhs)), $(rhs))))
-    elseif lhs in hom(CD) || lhs in attr(AD)
-      push!(code.args, :(set_subpart!(acs, :, $(Expr(:quote, lhs)), $(rhs))))
-    end
-  end
-  push!(code.args, :(return acs))
-  code
-end
+Tables.getcolumn(sat::StructACSetTable, nm::Symbol) = Base.getproperty(sat, nm)
 
-""" Map over a data type, in the style of Haskell functors
-"""
+Base.propertynames(sat::StructACSetTable{T,ob}) where {T,ob} = outgoing(parent(sat), ob)
+
+Tables.columnnames(sat::StructACSetTable) = Base.propertynames(sat)
+
+Tables.rowaccess(sat::StructACSetTable) = true
+Tables.rows(sat::StructACSetTable{T,ob}) where {T,ob} =
+  StructACSetRow{T,ob}.(Ref(parent(sat)), parts(parent(sat), ob))
+
+
+Tables.getcolumn(row::StructACSetRow{T,ob}, i::Int) where {T,ob} =
+  Base.getproperty(row, outgoing(parent(row), ob)[i])
+
+Base.getproperty(row::StructACSetRow, nm::Symbol) = subpart(parent(row), idx(row), nm)
+
+Tables.getcolumn(row::StructACSetRow, nm::Symbol) = Base.getproperty(row, nm)
+
+Base.propertynames(row::StructACSetRow{T,ob}) where {T,ob} = outgoing(parent(row), ob)
+
+Tables.columnnames(row::StructACSetRow) = Base.propertynames(row)
+
+# Mapping
 
 function Base.map(acs::ACSet; kwargs...)
-  fns = (;kwargs...)
-  _map(acs, fns)
+  _map(acs, (;kwargs...))
 end
 
 function sortunique!(x)
@@ -890,53 +688,74 @@ function sortunique!(x)
   x
 end
 
-@generated function _map(acs::AT, fns::NamedTuple{map_over}) where
-    {map_over, CD,AD,Ts,Idxed,UniqIdxed, AT<:ACSet{CD,AD,Ts,Idxed,UniqIdxed}}
-  map_over = [map_over...]
-  attrs = filter(x -> x ∈ attr(AD), map_over)
-  data_names = filter(x -> x ∈ data(AD), map_over)
-  abc = attrs_by_codom(AD)
-  data_attrs = vcat(map(d -> abc[d], data_names)...)
-  all_attrs = sortunique!(Symbol[attrs; data_attrs])
-  affected_data = sortunique!(map(a -> codom(AD,a), all_attrs))
-  needed_attrs = sortunique!(vcat(map(d -> abc[d], affected_data)...))
-  all_attrs == needed_attrs || error("not enough functions provided to fully transform ACSet")
-
-  fn_applications = map(all_attrs) do a
-    qa = Expr(:quote,a)
-    if a ∈ attrs
-      :($a = (fns[$qa]).(subpart(acs, $qa)))
+function groupby(f::Function, xs)
+  d = Dict{typeof(f(xs[1])),Vector{eltype(xs)}}()
+  for x in xs
+    k = f(x)
+    if k in keys(d)
+      push!(d[k],x)
     else
-      d = codom(AD,a)
-      :($a = (fns[$(Expr(:quote,d))]).(subpart(acs, $qa)))
+      d[k] = [x]
     end
   end
-  data_types = map(enumerate(data(AD))) do (i,d)
-    if d ∈ affected_data
+  d
+end
+
+@generated function _map(acs::AT, fns::NamedTuple{map_over}) where
+  {S, Ts, AT<:StructACSet{S,Ts}, map_over}
+  s = SchemaDesc(S)
+  map_over = Symbol[map_over...]
+
+  mapped_attrs = intersect(s.attrs, map_over)
+  mapped_attrtypes = intersect(s.attrtypes, map_over)
+  mapped_attrs_from_attrtypes = filter(a -> s.codoms[a] ∈ mapped_attrtypes, s.attrs)
+  attrs_accounted_for = sortunique!(Symbol[mapped_attrs; mapped_attrs_from_attrtypes])
+
+  affected_attrtypes = sortunique!(map(a -> s.codoms[a], attrs_accounted_for))
+  needed_attrs = sort!(filter(a -> s.codoms[a] ∈ affected_attrtypes, s.attrs))
+
+  unnaccounted_for_attrs = filter(a -> a ∉ attrs_accounted_for, needed_attrs)
+  unnaccounted_for_attrs == [] ||
+    error("not enough functions provided to fully transform ACSet, need functions for: $(unnaccounted_for_attrs)")
+
+  fn_applications = map(attrs_accounted_for) do a
+    qa = q(a)
+    if a ∈ mapped_attrs
+      :($a = (fns[$qa]).(subpart(acs, $qa)))
+    else
+      d = s.codoms[a]
+      :($a = (fns[$(q(d))]).(subpart(acs, $qa)))
+    end
+  end
+
+  abc = groupby(a -> s.codoms[a], s.attrs)
+
+  attrtype_instantiations = map(enumerate(s.attrtypes)) do (i,d)
+    if d ∈ affected_attrtypes
       quote
-        T = eltype(fn_vals[$(Expr(:quote, abc[d][1]))])
+        T = eltype(fn_vals[$(q(abc[d][1]))])
         $(Expr(:block, (map(abc[d][2:end]) do a
-               :(@assert T == eltype(fn_vals[$(Expr(:quote,a))]))
-               end)...))
+                          :(@assert T == eltype(fn_vals[$(q(a))]))
+                        end)...))
         T
       end
     else
       :($(Ts[i]))
     end
   end
+
   quote
     fn_vals = $(Expr(:tuple, fn_applications...))
-    new_Ts = Tuple{$(data_types...)}
-    new_acs = ACSet{$CD,$AD,new_Ts,$Idxed,$UniqIdxed}()
-    $(Expr(:block, map(ob(CD)) do ob
-           :(add_parts!(new_acs,$(Expr(:quote,ob)),nparts(acs,$(Expr(:quote,ob)))))
+    new_acs = $(AT.name.wrapper){$(attrtype_instantiations...)}()
+    $(Expr(:block, map(s.obs) do ob
+           :(add_parts!(new_acs,$(q(ob)),nparts(acs,$(q(ob)))))
       end...))
-    $(Expr(:block, map(hom(CD)) do hom
-           :(set_subpart!(new_acs,$(Expr(:quote,hom)),subpart(acs,$(Expr(:quote,hom)))))
+    $(Expr(:block, map(s.homs) do hom
+           :(set_subpart!(new_acs,$(q(hom)),subpart(acs,$(q(hom)))))
       end...))
-    $(Expr(:block, map(attr(AD)) do attr
+    $(Expr(:block, map(s.attrs) do attr
         qa = Expr(:quote, attr)
-        if attr ∈ all_attrs
+        if attr ∈ attrs_accounted_for
            :(set_subpart!(new_acs,$qa,fn_vals[$qa]))
         else
            :(set_subpart!(new_acs,$qa,subpart(acs,$qa)))
