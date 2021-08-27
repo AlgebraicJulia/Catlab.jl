@@ -192,7 +192,7 @@ end
 
 make_table(::Type{T}, cols) where T = T(cols)
 make_table(::Type{NamedTuple}, cols) = cols # No copy constructor defined.
-       
+
 # StructACSet Operations
 ########################
 
@@ -308,7 +308,7 @@ function incident_body(s::SchemaDesc,
     throw(ArgumentError("$(repr(f)) not in $(s.homs)"))
   end
 end
-    
+
 @generated function _incident(acs::StructACSet{S,Ts,Idxed,UniqueIdxed},
                               part, ::Type{Val{f}}; copy::Bool=false) where
   {S,Ts,Idxed,UniqueIdxed,f}
@@ -454,7 +454,7 @@ function getassigned(acs::StructACSet, arrows, i)
   Dict(f => subpart(acs,i,f) for f in assigned_subparts)
 end
 
-function rem_part_body(s::SchemaDesc, idxed::Dict{Symbol,Bool}, ob::Symbol)
+function rem_part_body(s::SchemaDesc, idxed, ob::Symbol)
   in_homs = filter(hom -> s.codoms[hom] == ob, s.homs)
   out_homs = filter(f -> s.doms[f] == ob, s.homs)
   out_attrs = filter(f -> s.doms[f] == ob, s.attrs)
