@@ -15,6 +15,35 @@ import Catlab.Theories: compose
 using DataStructures
 using PrettyTables
 PrettyTables.pretty_table(f::FinFunction, name::Symbol=:f) = pretty_table(OrderedDict(:x=>1:dom(f).set, Symbol("$(name)(x)")=>collect(f)))
+using LaTeXStrings
+
+Quiversty = L"""
+% contents of quiver.sty
+% `tikz-cd` is necessary to draw commutative diagrams.
+\RequirePackage{tikz-cd}
+% `amssymb` is necessary for `\lrcorner` and `\ulcorner`.
+\RequirePackage{amssymb}
+% `calc` is necessary to draw curved arrows.
+\usetikzlibrary{calc}
+% `pathmorphing` is necessary to draw squiggly arrows.
+\usetikzlibrary{decorations.pathmorphing}
+
+% A TikZ style for curved arrows of a fixed height, due to AndréC.
+\tikzset{curve/.style={settings={#1},to path={(\tikztostart)
+    .. controls ($(\tikztostart)!\pv{pos}!(\tikztotarget)!\pv{height}!270:(\tikztotarget)$)
+    and ($(\tikztostart)!1-\pv{pos}!(\tikztotarget)!\pv{height}!270:(\tikztotarget)$)
+    .. (\tikztotarget)\tikztonodes}},
+    settings/.code={\tikzset{quiver/.cd,#1}
+        \def\pv##1{\pgfkeysvalueof{/tikz/quiver/##1}}},
+    quiver/.cd,pos/.initial=0.35,height/.initial=0}
+
+% TikZ arrowhead/tail styles.
+\tikzset{tail reversed/.code={\pgfsetarrowsstart{tikzcd to}}}
+\tikzset{2tail/.code={\pgfsetarrowsstart{Implies[reversed]}}}
+\tikzset{2tail reversed/.code={\pgfsetarrowsstart{Implies}}}
+% TikZ arrow styles.
+\tikzset{no body/.style={/tikz/dash pattern=on 0 off 1mm}}
+""";
 
 # ## FinSet: the category of Finite Sets
 # In FinSet the objects are sets n = {1...n} and the morphisms are functions between finite sets.
@@ -59,8 +88,22 @@ is_surjective(g)
 # are obvious. The composition of surjective maps is surjective, so we can define
 # the refinement order in terms of a diagram in Set.
 #
-# <!-- https://q.uiver.app/?q=WzAsMyxbMCwwLCJBIl0sWzMsMCwiUSJdLFszLDIsIlAiXSxbMSwyLCJoIl0sWzAsMSwiZiJdLFswLDIsImciLDJdXQ== -->
-# <iframe class="quiver-embed" src="https://q.uiver.app/?q=WzAsMyxbMCwwLCJBIl0sWzMsMCwiUSJdLFszLDIsIlAiXSxbMSwyLCJoIl0sWzAsMSwiZiJdLFswLDIsImciLDJdXQ==&embed" width="560" height="432" style="border-radius: 8px; border: none;"></iframe>
+# You can see a graphical definition in [quiver](https://q.uiver.app/?q=WzAsMyxbMCwwLCJBIl0sWzMsMCwiUSJdLFszLDIsIlAiXSxbMSwyLCJoIiwwLHsic3R5bGUiOnsiaGVhZCI6eyJuYW1lIjoiZXBpIn19fV0sWzAsMSwiZiIsMCx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dLFswLDIsImciLDIseyJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJlcGkifX19XV0=)
+
+using TikzCDs
+
+triangle = L"""
+A &&& Q \\
+\\
+&&& P
+\arrow["h", two heads, from=1-4, to=3-4]
+\arrow["f", two heads, from=1-1, to=1-4]
+\arrow["g"', two heads, from=1-1, to=3-4]
+""";
+
+TikzCD(triangle, preamble=Quiversty)
+
+# Let's take a look at an example:
 
 A = FinSet(4)
 Q = FinSet(3)
@@ -70,15 +113,13 @@ f = FinFunction([1,2,3,3], A, Q)
 g = FinFunction([1,1,2,2], A, P)
 h = FinFunction([1,1,2], Q, P)
 
-@test_throws ErrorException compose(g,h) 
+@test_throws ErrorException compose(g,h) #Catlab checks the domains match
 
 pretty_table(compose(f,h), Symbol("(f⋅h)"))
 
 compose(f,h) == g
 
-# so f is a refinement of g.
-# which means that g is coarser than f.
-
+# This triangle commutes, so f is a refinement of g equivalently g is coarser than f.
 
 h′ = FinFunction([1,1], P, FinSet(1))
 
@@ -91,5 +132,18 @@ pretty_table(f⋅h⋅h′, Symbol("f⋅h⋅h′"))
 # 2. Transitive: If f ≤ g ≤ h as partitions, then f ≤ h
 # You can read these directly off the definition of refinements as a commutative
 # triangle in the category of (Set, Surjections).
-# <!-- https://q.uiver.app/?q=WzAsNCxbMCwwLCJBIl0sWzMsMCwiUSJdLFszLDIsIlAiXSxbMyw0LCJRXlxccHJpbWUiXSxbMSwyLCJoIl0sWzAsMSwiZiJdLFswLDIsImciLDJdLFsyLDMsImheXFxwcmltZSJdLFswLDMsImZcXGNkb3QgaFxcY2RvdCBoXlxccHJpbWUgPSBnXFxjZG90IGheXFxwcmltZSIsMl1d --> 
-# <iframe class="quiver-embed" src="https://q.uiver.app/?q=WzAsNCxbMCwwLCJBIl0sWzMsMCwiUSJdLFszLDIsIlAiXSxbMyw0LCJRXlxccHJpbWUiXSxbMSwyLCJoIl0sWzAsMSwiZiJdLFswLDIsImciLDJdLFsyLDMsImheXFxwcmltZSJdLFswLDMsImZcXGNkb3QgaFxcY2RvdCBoXlxccHJpbWUgPSBnXFxjZG90IGheXFxwcmltZSIsMl1d&embed" width="560" height="688" style="border-radius: 8px; border: none;"></iframe>
+# You can edit this diagram in [quiver](https://q.uiver.app/?q=WzAsNCxbMCwwLCJBIl0sWzMsMCwiUSJdLFszLDIsIlAiXSxbMyw0LCJRXlxccHJpbWUiXSxbMSwyLCJoIl0sWzAsMSwiZiIsMCx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dLFswLDIsImciLDIseyJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJlcGkifX19XSxbMiwzLCJoXlxccHJpbWUiXSxbMCwzLCJmXFxjZG90IGhcXGNkb3QgaF5cXHByaW1lID0gZ1xcY2RvdCBoXlxccHJpbWUiLDIseyJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJlcGkifX19XV0=)
+refinement = L"""
+A &&& Q \\
+\\
+&&& P \\
+\\
+&&& {Q^\prime}
+\arrow["h", from=1-4, to=3-4]
+\arrow["f", two heads, from=1-1, to=1-4]
+\arrow["g"', two heads, from=1-1, to=3-4]
+\arrow["{h^\prime}", from=3-4, to=5-4]
+\arrow["{f\cdot h\cdot h^\prime = g\cdot h^\prime}"', two heads, from=1-1, to=5-4]
+""";
+
+TikzCD(refinement, preamble=Quiversty)
