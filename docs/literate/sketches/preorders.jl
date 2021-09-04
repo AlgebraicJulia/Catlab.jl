@@ -114,7 +114,7 @@ end
 # expressions are represented at expression trees
 ex = compose(P, [:f, :g])
 # the head of an expression is the root of the expression tree
-head(ex)
+Catlab.head(ex)
 # the julia type of the expression
 typeof(ex)
 # the GAT type of the expression

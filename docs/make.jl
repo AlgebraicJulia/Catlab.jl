@@ -53,8 +53,10 @@ makedocs(
     "Catlab.jl" => "index.md",
     "Vignettes" => no_literate ? [] : Any[
       "Sketches" => Any[
+        "generated/sketches/partitions.md",
+        "generated/sketches/meets.md",
         "generated/sketches/preorders.md"
-      ],
+        ],
       "Graphs" => Any[
         "generated/graphs/subgraphs.md",
       ],
