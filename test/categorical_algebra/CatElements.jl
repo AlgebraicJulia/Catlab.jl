@@ -48,7 +48,7 @@ end
 ThPetri, obmap, hommap = CatElements.presentation(elements(p₀))
 @test Symbol.(generators(ThPetri)) == [:E_1, :E_2, :V_1, :V_2, :src_E_2, :tgt_E_1, :tgt_E_2, :src_E_1]
 
-Petri = ACSetType(ThPetri)
+@acset_type Petri(ThPetri)
 
 sir_eltsch = @acset Petri begin
   V_1 = 3
@@ -72,4 +72,5 @@ end
   @test sir_eltsch[:, :src_E_2] == [1,1,2]
 end
 end
+
 end
