@@ -1,17 +1,13 @@
 module CatElements
-using Catlab
-using ..CSets
-using ..FinSets
-using ...Present, ...Theories
-using ...Theories: Category, CatDesc, AttrDesc, ob, hom, attr, adom, acodom
-import Catlab.Present: Presentation
-
 export ThElements, AbstractElements, Elements, elements
 
+using ..CSets, ..FinSets
+using ...Present, ...Theories
+using ...Theories: Category, ob, hom, dom_nums, codom_nums
 
 @present ThElements(FreeSchema) begin
   (El, Arr, Ob, Hom)::Ob
-  Name::Data
+  Name::AttrType
   src::Hom(Arr, El)
   tgt::Hom(Arr, El)
   dom::Hom(Hom, Ob)
@@ -25,8 +21,8 @@ export ThElements, AbstractElements, Elements, elements
   tgt⋅πₑ == πₐ⋅cod
 end
 
-const AbstractElements = AbstractACSetType(ThElements)
-const Elements = ACSetType(ThElements, index=[:src, :tgt, :πₑ, :πₐ])
+@abstract_acset_type AbstractElements
+@acset_type Elements(ThElements, index=[:src, :tgt, :πₑ, :πₐ]) <: AbstractElements
 
 """    elements(X::AbstractACSet)
 
@@ -35,22 +31,20 @@ This transformation converts an instance of C into a Graph homomorphism. The cod
 homomorphism is a graph shaped like the schema. This is one half of the isomorphism between
 databases and knowledge graphs.
 """
-function elements(X::ACS) where
-  {CD <: CatDesc, ACS <: AbstractCSet{CD}}
+function elements(X::StructACSet{S}) where S
   Y = Elements{Symbol}()
 
-  add_parts!(Y, :Ob, length(ob(CD)), nameo=ob(CD))
-  els = map(enumerate(ob(CD))) do (i,c)
+  obs = ob(S)
+  add_parts!(Y, :Ob, length(obs), nameo=obs)
+  els = map(enumerate(obs)) do (i,c)
     add_parts!(Y, :El, nparts(X, c), πₑ = i)
   end
 
-  add_parts!(Y, :Hom, length(hom(CD)), dom=dom(CD), cod=codom(CD), nameh=hom(CD))
-  map(enumerate(zip(hom(CD), dom(CD), codom(CD)))) do (i, trip)
-    f, ci, di = trip
-    c = ob(CD)[ci]
-    d = ob(CD)[di]
+  add_parts!(Y, :Hom, length(hom(S)), dom=dom_nums(S), cod=codom_nums(S), nameh=hom(S))
+  map(enumerate(zip(hom(S), dom_nums(S), codom_nums(S)))) do (i, (f, ci, di))
+    c, d = obs[ci], obs[di]
     nc = nparts(X, c)
-    add_parts!(Y, :Arr, nparts(X, c), src = els[ci], tgt = view(els[di], X[f]), πₐ = i)
+    add_parts!(Y, :Arr, nparts(X, c), src=els[ci], tgt=view(els[di], X[f]), πₐ=i)
   end
   return Y
 end

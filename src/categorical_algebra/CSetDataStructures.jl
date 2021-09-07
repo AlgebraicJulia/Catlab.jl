@@ -104,7 +104,7 @@ macro acset_type(head)
   # to attach documentation to.
   # TODO: this is a hack and there should be a better way
   quote
-    const tmp = $(esc(:eval))($(GlobalRef(CSetDataStructures, :struct_acset))(
+    tmp = $(esc(:eval))($(GlobalRef(CSetDataStructures, :struct_acset))(
       $(Expr(:quote, name)), $(Expr(:quote, parent)), $(esc(schema)), $(idx_args...)))
   end
 end
