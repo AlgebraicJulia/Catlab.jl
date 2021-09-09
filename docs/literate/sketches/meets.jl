@@ -1,8 +1,8 @@
-# # Meets
+# # meets
 #
 #md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/sketches/Partitions.ipynb)
 #
-# Our first example of a concept defined by a universal mapping property is a meet respectively join.
+# Our first example of a concept defined by a universal mapping property is a meet respectively meet.
 # 
 
 # The first step is our Catlab imports
@@ -20,11 +20,11 @@ using DataStructures
 # # Defining some basic preorders
 
 @present P(FreeSchema) begin
-  (A,B,C,D)::Ob
-  f::Hom(A, B)
-  g::Hom(A, C)
-  h::Hom(B, D)
-  k::Hom(C, D)
+  (a₁,a₂,a₃,a₄)::Ob
+  f::Hom(a₁, a₂)
+  g::Hom(a₁, a₃)
+  h::Hom(a₂, a₄)
+  k::Hom(a₃, a₄)
 end
 
 # We can draw a picture of our preorder as a Hasse Diagram.
@@ -44,7 +44,7 @@ g = FreeDiagram(P)
 parents(g, y::Int) = subpart(g, incident(g, y, :tgt), :src)
 children(g, x::Int) = subpart(g, incident(g, x, :src), :tgt)
 
-# We can compute upsets with breadth first search.
+# We can compute upsets/downsets with breadth first search.
 
 function bfs(g, x::Int, f=children)
   explored = falses(nparts(g, :V))
@@ -91,38 +91,38 @@ end
 # the meet of two elements is the smallest element in the intersection of their upsets
 
 function meet(g::FreeDiagram, x::Int, y::Int)
-  U = upset(g, x) ∩ upset(g,y)
-  minima(g, U)
-  return minimum(g, U)
+  U = downset(g, x) ∩ downset(g,y)
+  maxima(g, U)
+  return maximum(g, U)
 end
 
-function meet(g::FreeDiagram, x::Symbol, y::Symbol)
-  meet(g, incident(g, x, :ob), incident(g, y, :ob))
+function meet(g::FreeDiagram, x, y)
+  meet(g, incident(g, x, :ob)[1], incident(g, y, :ob)[1])
 end
 
-# assuming that U is an upset, the minima are those elements whose parents are disjoint from the upset.
+# assuming that D is a downset, the maxima are those elements whose children are disjoint from D.
 
-function minima(g::FreeDiagram, U::Vector{Int})
-  X = Set(U)
-  minima = filter(U) do x
-    Pₓ = parents(g, x) ∩ X
+function maxima(g::FreeDiagram, D::Vector{Int})
+  X = Set(D)
+  M = filter(D) do x
+    Pₓ = children(g, x) ∩ X
     length(Pₓ) == 0
   end
-  return minima
+  return M
 end
 
-function hasbottom(g::FreeDiagram, xs::Vector{Int})
-  length(minima(g, xs)) == 1
+function hastop(g::FreeDiagram, xs::Vector{Int})
+  length(maxima(g, xs)) == 1
 end
 
-function minimum(g::FreeDiagram, xs::Vector{Int})
-  m = minima(g, xs::Vector{Int})
+function maximum(g::FreeDiagram, xs::Vector{Int})
+  m = maxima(g, xs::Vector{Int})
   if length(m) == 1
     return m[1]
   end
   if length(m) > 1
     all_iso = all(m) do a
-      Uₐ = upset(g, a) 
+      Uₐ = downset(g, a) 
       a_le_allb = all(m) do b
         b in Uₐ
       end
@@ -169,10 +169,10 @@ end
 end
 
 @testset "Meets" begin
-  @test meet(g, 2,3) == 4
-  @test meet(g, 1,2) == 2
-  @test meet(g, 3,4) == 4
-  @test meet(g, 1, 4) == 4
+  @test meet(g, 2,3) == 1
+  @test meet(g, 1,2) == 1
+  @test meet(g, 3,4) == 3
+  @test meet(g, 1, 4) == 1
   @test meet(g, 1, 1) == 1
   @test meet(g, 2, 2) == 2
 end
@@ -180,12 +180,12 @@ end
 # ## Another Example:
 
 @present P(FreeSchema) begin
-  (A,B,C,D, E)::Ob
-  f::Hom(A, B)
-  g::Hom(A, C)
-  h::Hom(B, D)
-  k::Hom(C, D)
-  l::Hom(B, E)
+  (a₁,a₂,a₃,a₄, a₅)::Ob
+  f::Hom(a₁, a₂)
+  g::Hom(a₁, a₃)
+  h::Hom(a₂, a₄)
+  k::Hom(a₃, a₄)
+  l::Hom(a₅, a₂)
 end
 
 # Which can be viewed as a picture:
@@ -198,11 +198,11 @@ g = FreeDiagram(P)
 
 # ### Test suite
 
-@testset "Meets2" begin
-  @test meet(g, 2,3) == 4
-  @test meet(g, 1,2) == 2
-  @test meet(g, 3,4) == 4
-  @test meet(g, 1, 4) == 4
+@testset "meets2" begin
+  @test meet(g, 2,3) == 1
+  @test meet(g, 1,2) == 1
+  @test meet(g, 3,4) == 3
+  @test meet(g, 1, 4) == 1
   @test meet(g, 1, 1) == 1
   @test meet(g, 2, 2) == 2
   @test meet(g, 3, 5) == nothing
