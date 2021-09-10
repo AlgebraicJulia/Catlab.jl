@@ -88,7 +88,7 @@ function leq(g::FreeDiagram, x::Symbol, y::Symbol)
 end
 
 
-# the meet of two elements is the smallest element in the intersection of their upsets
+# the meet of two elements is the largest element in the intersection of their downsets.
 
 function meet(g::FreeDiagram, x::Int, y::Int)
   U = downset(g, x) ∩ downset(g,y)
