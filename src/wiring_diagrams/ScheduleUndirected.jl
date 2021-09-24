@@ -15,10 +15,14 @@ using ...Present, ...CategoricalAlgebra.CSets, ...CategoricalAlgebra.FinSets
 using ..UndirectedWiringDiagrams, ..WiringDiagramAlgebras
 using ..UndirectedWiringDiagrams: TheoryUWD, flat
 
-const AbstractUWD = UndirectedWiringDiagram
-
 # Data types
 ############
+
+""" Abstract type for C-sets that contain a scheduled UWDS.
+
+This type includes [`ScheduledUWD`](@ref) and [`NestedUWD`](@ref).
+"""
+@abstract_acset_type HasScheduledUWD <: HasUWD
 
 @present TheoryScheduledUWD <: TheoryUWD begin
   Composite::Ob
@@ -30,7 +34,7 @@ const AbstractUWD = UndirectedWiringDiagram
   # parent <= id(Composite)
 end
 
-@abstract_acset_type AbstractScheduledUWD <: AbstractUWD
+@abstract_acset_type AbstractScheduledUWD <: HasScheduledUWD
 
 """ Scheduled undirected wiring diagram.
 
@@ -43,13 +47,17 @@ See also: [`NestedUWD`](@ref).
 @acset_type ScheduledUWD(TheoryScheduledUWD,
   index=[:box, :junction, :outer_junction, :parent, :box_parent]) <: AbstractScheduledUWD
 
-ncomposites(x::ACSet) = nparts(x, :Composite)
-composites(x::ACSet) = parts(x, :Composite)
-parent(x::ACSet, args...) = subpart(x, args..., :parent)
-children(x::ACSet, c::Int) =
+ncomposites(x::HasScheduledUWD) = nparts(x, :Composite)
+composites(x::HasScheduledUWD) = parts(x, :Composite)
+parent(x::HasScheduledUWD, args...) = subpart(x, args..., :parent)
+children(x::HasScheduledUWD, c::Int) =
   filter(c′ -> c′ != c, incident(x, c, :parent))
-box_parent(x::ACSet, args...) = subpart(x, args..., :box_parent)
-box_children(x::ACSet, args...) = incident(x, args..., :box_parent)
+box_parent(x::HasScheduledUWD, args...) = subpart(x, args..., :box_parent)
+box_children(x::HasScheduledUWD, args...) = incident(x, args..., :box_parent)
+
+""" Abstract type for C-sets that contained a nested UWD.
+"""
+@abstract_acset_type HasNestedUWD <: HasScheduledUWD
 
 @present TheoryNestedUWD <: TheoryScheduledUWD begin
   CompositePort::Ob
@@ -58,7 +66,7 @@ box_children(x::ACSet, args...) = incident(x, args..., :box_parent)
   composite_junction::Hom(CompositePort, Junction)
 end
 
-@abstract_acset_type AbstractNestedUWD <: AbstractScheduledUWD
+@abstract_acset_type AbstractNestedUWD <: HasNestedUWD
 
 """ Nested undirected wiring diagram.
 
@@ -74,10 +82,10 @@ See also: [`ScheduledUWD`](@ref).
   index=[:box, :junction, :outer_junction,
          :composite, :composite_junction, :parent, :box_parent]) <: AbstractNestedUWD
 
-composite_ports(x::ACSet, args...) = incident(x, args..., :composite)
-composite_junction(x::ACSet, args...) =
+composite_ports(x::HasNestedUWD, args...) = incident(x, args..., :composite)
+composite_junction(x::HasNestedUWD, args...) =
   subpart(x, args..., :composite_junction)
-composite_ports_with_junction(x::ACSet, args...) =
+composite_ports_with_junction(x::HasNestedUWD, args...) =
   incident(x, args..., :composite_junction)
 
 # Evaluation
