@@ -8,69 +8,83 @@ using MLStyle: @match
 
 using ...CategoricalAlgebra.CSets, ...Present
 using ...WiringDiagrams.UndirectedWiringDiagrams
-using ...WiringDiagrams.MonoidalUndirectedWiringDiagrams:
-  TheoryUntypedHypergraphDiagram, TheoryHypergraphDiagram, 
-  AbstractUntypedHypergraphDiagram, AbstractHypergraphDiagram
+using ...WiringDiagrams.UndirectedWiringDiagrams: TheoryUWD, TheoryTypedUWD
 
-# Data structures
-#################
+# Data types
+############
 
-@present TheoryRelationDiagram <: TheoryUntypedHypergraphDiagram begin
-  VarName::AttrType
+""" Abstract type for UWDs created by [`@relation`](@ref) macro.
+"""
+@abstract_acset_type RelationDiagram <: AbstractUWD
+@abstract_acset_type _UntypedRelationDiagram <: RelationDiagram
+@abstract_acset_type _TypedRelationDiagram <: RelationDiagram
+
+""" Untyped UWD created by [`@relation`](@ref) macro.
+"""
+const UntypedRelationDiagram{Name,VarName} =
+  _UntypedRelationDiagram{S, Tuple{Name,VarName}} where S
+
+""" Typed UWD created by [`@relation`](@ref) macro.
+"""
+const TypedRelationDiagram{T,Name,VarName} =
+  _TypedRelationDiagram{S, Tuple{T,Name,VarName}} where S
+
+@present TheoryRelationDiagram <: TheoryUWD begin
+  (Name, VarName)::AttrType
+  name::Attr(Box, Name)
   variable::Attr(Junction, VarName)
 end
 
-@present TheoryTypedRelationDiagram <: TheoryHypergraphDiagram begin
-  VarName::AttrType
+@present TheoryTypedRelationDiagram <: TheoryTypedUWD begin
+  (Name, VarName)::AttrType
+  name::Attr(Box, Name)
   variable::Attr(Junction, VarName)
 end
 
-@abstract_acset_type _RelationDiagram <: AbstractUntypedHypergraphDiagram
-const RelationDiagram{Name} = _RelationDiagram{S, Tuple{Name}} where {S}
-
-@abstract_acset_type AbstractTypedRelationDiagram <: AbstractHypergraphDiagram
-
-@acset_type UntypedRelationDiagram(TheoryRelationDiagram,
-  index=[:box, :junction, :outer_junction], unique_index=[:variable]) <: _RelationDiagram
-@acset_type TypedRelationDiagram(TheoryTypedRelationDiagram,
-  index=[:box, :junction, :outer_junction], unique_index=[:variable]) <: AbstractTypedRelationDiagram
+@acset_type UntypedUnnamedRelationDiagram(TheoryRelationDiagram,
+  index=[:box, :junction, :outer_junction], unique_index=[:variable]) <: _UntypedRelationDiagram
+@acset_type TypedUnnamedRelationDiagram(TheoryTypedRelationDiagram,
+  index=[:box, :junction, :outer_junction], unique_index=[:variable]) <: _TypedRelationDiagram
 
 @present TheoryNamedRelationDiagram <: TheoryRelationDiagram begin
-  port_name::Attr(Port, VarName)
-  outer_port_name::Attr(OuterPort, VarName)
+  port_name::Attr(Port, Name)
+  outer_port_name::Attr(OuterPort, Name)
 end
 
 @present TheoryTypedNamedRelationDiagram <: TheoryTypedRelationDiagram begin
-  port_name::Attr(Port, VarName)
-  outer_port_name::Attr(OuterPort, VarName)
+  port_name::Attr(Port, Name)
+  outer_port_name::Attr(OuterPort, Name)
 end
-
-@abstract_acset_type AbstractNamedRelationDiagram <: _RelationDiagram
-@abstract_acset_type AbstractTypedNamedRelationDiagram <: AbstractTypedRelationDiagram
 
 @acset_type UntypedNamedRelationDiagram(TheoryNamedRelationDiagram,
-  index=[:box, :junction, :outer_junction], unique_index=[:variable]) <: AbstractNamedRelationDiagram
+  index=[:box, :junction, :outer_junction], unique_index=[:variable]) <: _UntypedRelationDiagram
 @acset_type TypedNamedRelationDiagram(TheoryTypedNamedRelationDiagram,
-  index=[:box, :junction, :outer_junction], unique_index=[:variable]) <: AbstractTypedNamedRelationDiagram
+  index=[:box, :junction, :outer_junction], unique_index=[:variable]) <: _TypedRelationDiagram
 
-function RelationDiagram{Name}(ports::Int; port_names=nothing) where {Name}
+function UntypedRelationDiagram{Name,VarName}(
+    nports::Int; port_names=nothing) where {Name,VarName}
   if isnothing(port_names)
-    return UntypedRelationDiagram{Name,Symbol}(ports)
+    return UntypedUnnamedRelationDiagram{Name,VarName}(nports)
   end
-  d = UntypedNamedRelationDiagram{Name,Symbol}(ports)
+  d = UntypedNamedRelationDiagram{Name,VarName}(nports)
   set_subpart!(d, :outer_port_name, port_names)
   return d
 end
 
-function RelationDiagram{Name}(ports::AbstractVector{T};
-                               port_names=nothing) where {T,Name}
+function TypedRelationDiagram{T,Name,VarName}(
+    ports::AbstractVector; port_names=nothing) where {T,Name,VarName}
   if isnothing(port_names)
-    return TypedRelationDiagram{T,Name,Symbol}(ports)
+    return TypedUnnamedRelationDiagram{T,Name,VarName}(ports)
   end
-  d = TypedNamedRelationDiagram{T,Name,Symbol}(ports)
+  d = TypedNamedRelationDiagram{T,Name,VarName}(ports)
   set_subpart!(d, :outer_port_name, port_names)
   return d
 end
+
+RelationDiagram(nports::Int; kw...) =
+  UntypedRelationDiagram{Symbol,Symbol}(nports; kw...)
+RelationDiagram(ports::AbstractVector{T}; kw...) where T =
+  TypedRelationDiagram{T,Symbol,Symbol}(ports; kw...)
 
 # Relation macro
 ################
@@ -135,8 +149,7 @@ function parse_relation_diagram(head::Expr, body::Expr)
   _, outer_port_names, outer_vars = parse_relation_call(outer_expr)
   isnothing(all_vars) || outer_vars ⊆ all_vars ||
     error("One of variables $outer_vars is not declared in context $all_vars")
-  d = RelationDiagram{Symbol}(var_types(outer_vars),
-                              port_names=outer_port_names)
+  d = RelationDiagram(var_types(outer_vars), port_names=outer_port_names)
   if isnothing(all_vars)
     new_vars = unique(outer_vars)
     add_junctions!(d, var_types(new_vars), variable=new_vars)
