@@ -300,7 +300,7 @@ add_edge!(g2, 1, 2)  # double arrow
 @test length(homomorphisms(g2, g1, monic=[:E])) == 2 # two for 2->3
 @test length(homomorphisms(g2, g1, iso=[:E])) == 0
 
-# Symmetic graphs
+# Symmetric graphs
 #-----------------
 
 g, h = path_graph(SymmetricGraph, 4), path_graph(SymmetricGraph, 4)
