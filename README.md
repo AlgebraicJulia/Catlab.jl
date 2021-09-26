@@ -59,7 +59,7 @@ implement core algorithms for solving word problems and reducing expressions to
 normal form with respect to several important doctrines, such as those of
 categories and of symmetric monoidal categories. For the computer algebra of
 classical abstract algebra, see
-[AbstractAlgebra.j](https://github.com/wbhart/AbstractAlgebra.jl) and
+[AbstractAlgebra.jl](https://github.com/wbhart/AbstractAlgebra.jl) and
 [Nemo.jl](https://github.com/wbhart/Nemo.jl).
 
 ### What is Catlab not?
