@@ -6,10 +6,11 @@ pairs of objects, discrete diagrams, parallel pairs, composable pairs, and spans
 and cospans. Limits and colimits are most commonly taken over free diagrams.
 """
 module FreeDiagrams
-export AbstractFreeDiagram, FreeDiagram, BipartiteFreeDiagram,
-  FixedShapeFreeDiagram, DiscreteDiagram, EmptyDiagram, ObjectPair,
+export FreeDiagram, BipartiteFreeDiagram, FixedShapeFreeDiagram,
+  DiscreteDiagram, EmptyDiagram, ObjectPair,
   Span, Cospan, Multispan, Multicospan, SMultispan, SMulticospan,
   ParallelPair, ParallelMorphisms, ComposablePair, ComposableMorphisms,
+  ob_type, cone_objects, cocone_objects,
   ob, hom, dom, codom, apex, legs, feet, left, right, bundle_legs,
   nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
   add_vertex!, add_vertices!, add_edge!, add_edges!,
@@ -24,12 +25,40 @@ import ...Theories: ob, hom, dom, codom, left, right
 using ...Graphs.BasicGraphs: TheoryGraph
 using ...Graphs.BipartiteGraphs: TheoryUndirectedBipartiteGraph
 
+# Diagram interface
+###################
+
+""" Given a diagram in a category ``C``, return Julia type of objects in ``C``.
+"""
+function ob_type end
+
+""" Objects in diagram that will have explicit legs in limit cone.
+
+In category theory, it is common practice to elide legs of limit cones that can
+be computed from other legs, especially for diagrams of certain fixed shapes.
+For example, when it taking a pullback (the limit of a cospan), the limit object
+is often treated as having two projections, rather than three. This function
+encodes such conventions by listing the objects in the diagram that will have
+corresponding legs in the limit object created by Catlab.
+
+See also: [`cocone_objects`](@ref).
+"""
+cone_objects(diagram) = ob(diagram)
+
+""" Objects in diagram that will have explicit legs in colimit cocone.
+
+See also: [`cone_objects`](@ref).
+"""
+cocone_objects(diagram) = ob(diagram)
+
 # Diagrams of fixed shape
 #########################
 
 """ Abstract type for free diagram of fixed shape.
 """
 abstract type FixedShapeFreeDiagram{Ob} end
+
+ob_type(::FixedShapeFreeDiagram{Ob}) where Ob = Ob
 
 # Discrete diagrams
 #------------------
@@ -90,25 +119,34 @@ A common special case of [`Multispan`](@ref). See also [`Cospan`](@ref).
 """
 const Span{Ob,Hom} = SMultispan{2,Ob,Hom}
 
-"""    apex(span::Multispan)
+""" Apex of multispan or multicospan.
 
-returns the object at the top of the multispan, which is the domain of all the legs.
+The apex of a multi(co)span is the object that is the (co)domain of all the
+[`legs`](@ref).
 """
 apex(span::Multispan) = span.apex
 
-"""    legs(span::Multispan)
+""" Legs of multispan or multicospan.
 
-returns the collection of legs in the multspan, which are the morphisms sharing a common domain.
+The legs are the morphisms comprising the multi(co)span.
 """
 legs(span::Multispan) = span.legs
 
-"""    feet(span::Multispan)
+""" Feet of multispan or multicospan.
 
-returns the collection of feet in the multspan, which are the codomains of the legs.
+The feet of a multispan are the codomains of the [`legs`](@ref).
 """
 feet(span::Multispan) = map(codom, span.legs)
+
+""" Left leg of span or cospan.
+"""
 left(span::Span) = span.legs[1]
+
+""" Right leg of span or cospan.
+"""
 right(span::Span) = span.legs[2]
+
+cocone_objects(span::Multispan) = feet(span)
 
 Base.iterate(span::Multispan, args...) = iterate(span.legs, args...)
 Base.eltype(span::Multispan) = eltype(span.legs)
@@ -149,6 +187,8 @@ legs(cospan::Multicospan) = cospan.legs
 feet(cospan::Multicospan) = map(dom, cospan.legs)
 left(cospan::Cospan) = cospan.legs[1]
 right(cospan::Cospan) = cospan.legs[2]
+
+cone_objects(cospan::Multicospan) = feet(cospan)
 
 Base.iterate(cospan::Multicospan, args...) = iterate(cospan.legs, args...)
 Base.eltype(cospan::Multicospan) = eltype(cospan.legs)
@@ -215,6 +255,9 @@ end
 dom(para::ParallelMorphisms) = para.dom
 codom(para::ParallelMorphisms) = para.codom
 hom(para::ParallelMorphisms) = para.homs
+
+cone_objects(para::ParallelMorphisms) = SVector(dom(para))
+cocone_objects(para::ParallelMorphisms) = SVector(codom(para))
 
 Base.iterate(para::ParallelMorphisms, args...) = iterate(para.homs, args...)
 Base.eltype(para::ParallelMorphisms) = eltype(para.homs)
@@ -286,17 +329,21 @@ end
 """ A free diagram that is bipartite.
 
 Such diagrams include most of the fixed shapes, such as spans, cospans, and
-parallel morphisms. They are the generic shape of diagrams for limits and
+parallel morphisms. They are also the generic shape of diagrams for limits and
 colimits arising from undirected wiring diagrams. For limits, the boxes
-correspond to vertices in ``V₁`` and the junctions to vertics in ``V₂``.
+correspond to vertices in ``V₁`` and the junctions to vertices in ``V₂``.
 Colimits are dual.
 """
 @acset_type BipartiteFreeDiagram(TheoryBipartiteFreeDiagram, index=[:src, :tgt]) <:
   AbstractBipartiteFreeDiagram
 
-ob₁(d::BipartiteFreeDiagram, args...) = subpart(d, args..., :ob₁)
-ob₂(d::BipartiteFreeDiagram, args...) = subpart(d, args..., :ob₂)
-hom(d::BipartiteFreeDiagram, args...) = subpart(d, args..., :hom)
+ob_type(d::AbstractBipartiteFreeDiagram{S,Tuple{Ob,Hom}}) where {S,Ob,Hom} = Ob
+ob₁(d::AbstractBipartiteFreeDiagram, args...) = subpart(d, args..., :ob₁)
+ob₂(d::AbstractBipartiteFreeDiagram, args...) = subpart(d, args..., :ob₂)
+hom(d::AbstractBipartiteFreeDiagram, args...) = subpart(d, args..., :hom)
+
+cone_objects(diagram::AbstractBipartiteFreeDiagram) = ob₁(diagram)
+cocone_objects(diagram::AbstractBipartiteFreeDiagram) = ob₂(diagram)
 
 function BipartiteFreeDiagram(
     obs₁::AbstractVector{Ob₁}, obs₂::AbstractVector{Ob₂},
@@ -343,17 +390,14 @@ end
   hom::Attr(E,Hom)
 end
 
-@abstract_acset_type _AbstractFreeDiagram <: AbstractGraph
+@abstract_acset_type AbstractFreeDiagram <: AbstractGraph
 
-@acset_type FreeDiagram(TheoryFreeDiagram, index=[:src,:tgt]) <: _AbstractFreeDiagram
+@acset_type FreeDiagram(TheoryFreeDiagram, index=[:src,:tgt]) <:
+  AbstractFreeDiagram
 
-# XXX: This is needed because we cannot control the supertype of C-set types.
-const AbstractFreeDiagram{Ob} = Union{FixedShapeFreeDiagram{Ob},
-  (AbstractBipartiteFreeDiagram{S, Tuple{Ob,Hom}} where {S,Hom}),
-  (_AbstractFreeDiagram{S, Tuple{Ob,Hom}} where {S,Hom})}
-
-ob(d::FreeDiagram, args...) = subpart(d, args..., :ob)
-hom(d::FreeDiagram, args...) = subpart(d, args..., :hom)
+ob_type(d::AbstractFreeDiagram{S,Tuple{Ob,Hom}}) where {S,Ob,Hom} = Ob
+ob(d::AbstractFreeDiagram, args...) = subpart(d, args..., :ob)
+hom(d::AbstractFreeDiagram, args...) = subpart(d, args..., :hom)
 
 function FreeDiagram(obs::AbstractVector{Ob},
                      homs::AbstractVector{Tuple{Hom,Int,Int}}) where {Ob,Hom}
