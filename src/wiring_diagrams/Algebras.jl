@@ -3,10 +3,9 @@
 module WiringDiagramAlgebras
 export oapply, query
 
-import TypedTables
+using Requires
 
 using ...Theories, ...CategoricalAlgebra, ...CategoricalAlgebra.FinSets
-using ...CSetDataStructures: make_table
 using ..UndirectedWiringDiagrams
 
 """ Compose morphisms according to UWD.
@@ -125,21 +124,31 @@ end
 # Queries via UWD algebras
 ##########################
 
+abstract type DataFrameFallback end
+abstract type MaybeDataFrame <: DataFrameFallback end
+
 """ Evaluate a conjunctive query on an attributed C-set.
 
-The query is a undirected wiring diagram (UWD) whose boxes and ports are assumed
-to be named through attributes `:name` and `:port_name`/`:outer_port_name`. To
-define such a diagram, use the named form of the [`@relation`](@ref) macro.
+The conjunctive query is represented as an undirected wiring diagram (UWD) whose
+boxes and ports are named via the attributes `:name`, `:port_name`, and
+`:outer_port_name`. To define such a diagram, use the [`@relation`](@ref) macro
+with its named syntax. Parameters to the query may be passed as a named tuple
+using the optional third argument.
 
-The result is a table, by default a `TypedTable`, whose columns correspond to
-the outer ports of the UWD. If the UWD has no outer ports, the query is a
-counting query and the result is a vector whose length is the number of results.
+The result is data table whose columns correspond to the outer ports of the UWD.
+By default, a data frame is returned if the package
+[`DataFrames.jl`](https://github.com/JuliaData/DataFrames.jl) is loaded;
+otherwise, a named tuple is returned. To change this behavior, set the keyword
+argument `table_type` to a type or function taking two arguments, a vector of
+columns and a vector of column names. There is one exceptional case: if the UWD
+has no outer ports, the query is a counting query and the result is a vector
+whose length is the number of results.
 
 For its implementation, this function wraps the [`oapply`](@ref) method for
 multispans, which defines the UWD algebra of multispans.
 """
 function query(X::ACSet, diagram::UndirectedWiringDiagram,
-               params=(;); table_type::Type=TypedTables.Table)
+               params=(;); table_type=MaybeDataFrame)
   # For each box in the diagram, extract span from ACSet.
   spans = map(boxes(diagram), subpart(diagram, :name)) do b, name
     apex = FinSet(nparts(X, name))
@@ -161,13 +170,28 @@ function query(X::ACSet, diagram::UndirectedWiringDiagram,
   end
 
   # Call `oapply` and make a table out of the resulting span.
-  outer_names = subpart(diagram, :outer_port_name)
   outer_span = oapply(diagram, spans, Ob=SetOb, Hom=FinDomFunction{Int})
-  if isempty(outer_names)
+  if nparts(diagram, :OuterPort) == 0
     fill((;), length(apex(outer_span)))
   else
-    table = NamedTuple{Tuple(outer_names)}(Tuple(map(collect, outer_span)))
-    make_table(table_type, table)
+    columns = map(collect, outer_span)
+    names = subpart(diagram, :outer_port_name)
+    make_table(table_type, columns, names)
+  end
+end
+
+make_table(f, columns, names) = f(columns, names)
+make_table(::Type{NamedTuple}, columns, names) =
+  NamedTuple{Tuple(names)}(Tuple(columns))
+
+make_table(::Type{<:DataFrameFallback}, columns, names) =
+  make_table(NamedTuple, columns, names)
+
+function __init__()
+  @require DataFrames="a93c6f00-e57d-5684-b7b6-d8193f3e46c0" begin
+    using .DataFrames: DataFrame
+    make_table(::Type{MaybeDataFrame}, columns, names) =
+      make_table(DataFrame, columns, names)
   end
 end
 

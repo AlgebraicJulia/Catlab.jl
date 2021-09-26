@@ -190,9 +190,6 @@ function ACSetTableType(X::Type, ob::Symbol; union_all::Bool=false)
   (union_all ? ACSetTableUnionAll : ACSetTableDataType)(X, ob)
 end
 
-make_table(::Type{T}, cols) where T = T(cols)
-make_table(::Type{NamedTuple}, cols) = cols # No copy constructor defined.
-
 # StructACSet Operations
 ########################
 

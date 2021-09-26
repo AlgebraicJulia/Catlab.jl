@@ -24,7 +24,6 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Tables = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
-TypedTables = "9d95f2ec-7b3d-5a63-8d20-e2491e220bb9"
 
 [compat]
 AutoHashEquals = "0.2"
@@ -40,11 +39,11 @@ Reexport = "^1"
 Requires = "^1"
 StaticArrays = "0.12, 1.0"
 Tables = "^1"
-TypedTables = "^1"
 julia = "1.6"
 
 [extras]
 Convex = "f65535da-76fb-5f13-bab9-19810c17039a"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Graphviz_jll = "3c863552-8265-54e4-a6dc-903eb78fde85"
 LightGraphs = "093fc24a-ae57-5d10-9952-331d41423f4d"
 LinearMaps = "7a12625a-238d-50fd-b39a-03d52299707e"
