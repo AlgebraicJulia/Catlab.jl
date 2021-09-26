@@ -1,4 +1,4 @@
-module TestStructuredCospans
+#module TestStructuredCospans
 using Test
 
 using Catlab, Catlab.Theories, Catlab.Graphs,
@@ -153,4 +153,128 @@ b = OpenLabeledGraphOb{Symbol}(FinSet(3), vlabel=[:x,:y,:z])
 @test dom(braid(a, b)) == a⊗b
 @test codom(braid(a, b)) == b⊗a
 
+#end
+
+
+
+const OpenGraphOb, OpenGraph = OpenCSetTypes(Graph, :V);
+
+# EXAMPLE GRAPHS
+#---------------
+G1 = Graph(1);
+G2 = Graph(2);
+G3 = Graph(3);
+
+Loop = Graph(1);
+add_edge!(Loop, 1, 1);
+
+Arrow = Graph(2);
+add_edge!(Arrow, 1, 2);
+
+Three = Graph(3);
+add_edges!(Three, [1,2], [2,3]);
+
+Square = Graph(4)
+add_edges!(Square,[1,1,2,3],[2,3,4,4]);
+
+Tri = Graph(3)
+add_edges!(Tri,[1,1,2],[2,3,3]);
+
+"""
+  3→4
+ ╱  ↓
+1→2→5
+"""
+Trap = Graph(5);
+add_edges!(Trap,[1,2,1,3,4],[2,5,3,4,5]);
+
+CSpan = Graph(3);
+add_edges!(CSpan, [1,3],[2,2]);
+
+Cycle = Graph(2);
+add_edges!(Cycle, [1,2],[2,1]);
+
+# Example Spans
+#--------------
+
+id_1 = id(Graph(1));
+id_2 = id(Graph(2));
+flip = CSetTransformation(G2, G2, V=[2,1]);
+f12 = CSetTransformation(G1, G2, V=[1]);
+f22 = CSetTransformation(G1, G2, V=[2]);
+
+sp1 = Span(id_1, id_1);
+sp2 = Span(id_2, id_2);
+flipflip = Span(flip, flip);
+
+# Open Graphs
+#------------
+o1 = OpenGraph(G1, id_1[:V], id_1[:V]);
+o2 = OpenGraph(G2, f12[:V], f22[:V]);
+openloop = OpenGraph(Loop, id_1[:V], id_1[:V]);
+
+openarr = OpenGraph(Arrow, f12[:V], f22[:V]);
+openarr21 = OpenGraph(Arrow, id_2[:V], f22[:V]);
+open3 = OpenGraph(Three,
+                  FinFunction([2,1], 3),
+                  FinFunction([3,2], 3));
+opensquare = OpenGraph(Square,
+                       FinFunction([1], 4),
+                       FinFunction([2], 4));
+opentrap = OpenGraph(Trap,
+                     FinFunction([1,2], 5),
+                     FinFunction([2,5], 5));
+opencspan = OpenGraph(CSpan,
+                        FinFunction([2,1], 3),
+                        FinFunction([2], 3));
+opencycle = OpenGraph(Cycle,  flip[:V], f22[:V]);
+
+# Graph Transformations
+#----------------------
+gm1 = ACSetTransformation(G1, Loop, V=[1]);
+up_ = ACSetTransformation(G2, Arrow, V=[1,2]);
+down_ = ACSetTransformation(G2, G1, V=[1,1]);
+tosquare = ACSetTransformation(Three, Square, V=[1,2,4],E=[1,3]);
+totrap = ACSetTransformation(Three, Trap, V=[1,2,5], E=[1,2]);
+tocspan = ACSetTransformation(Arrow, CSpan, V=[1,2], E=[1]);
+tocycle = ACSetTransformation(Arrow, Cycle, V=[1,2], E=[1]);
+
+rem_loop_l = StructuredMultiCospanHom(o1,
+  openloop, ACSetTransformation[gm1, id_1, id_1])
+triv = StructuredMultiCospanHom(o1, o1,
+  ACSetTransformation[id_1, id_1, id_1])
+squash_l = StructuredMultiCospanHom(o2, openarr,
+  ACSetTransformation[up_, id_1, id_1])
+squash_r = StructuredMultiCospanHom(o2, o1,
+  ACSetTransformation[down_, id_1, id_1])
+rem_loop = openrule(Span(rem_loop_l, triv))
+add_loop = openrule(Span(triv, rem_loop_l))
+squash = openrule(Span(squash_l, squash_r))
+square_m = StructuredMultiCospanHom(openarr, opensquare,
+  ACSetTransformation[ACSetTransformation(Arrow, Square, V=[1,2], E=[1]), id_1, id_1])
+
+res = open_rewrite(squash, opensquare, square_m)
+@test is_isomorphic(apex(res), Tri)
+
+
+function composeSpan(f::Span, g::Span)::Span
+  pbf, pbg = pullback(right(f), left(g))
+  return Span(compose(pbf, left(f)), compose(pbg,right(g)))
 end
+
+"""Span composition given by pullback"""
+composeV(f::openrule, g::openrule) = composeSpan(f.data, g.data)
+
+function composeH(f::openrule, g::openrule)
+  fL, fR = f.data
+  gL, gR = g.data
+  I = compose(dom(fL), dom(gL))
+  L = compose(codom(fL), codom(gL))
+  R = compose(codom(fR), codom(gR))
+  IL = StructuredMultiCospanHom(I, L, vcat(fL.maps[1:end-1], gL.maps[2:end]))
+  IR = StructuredMultiCospanHom(I, R, vcat(fR.maps[1:end-1], gR.maps[2:end]))
+  openrule(Span(IL, IR))
+end
+
+
+cv = composeV(squash, add_loop); # what is ComposeProductEqualizer

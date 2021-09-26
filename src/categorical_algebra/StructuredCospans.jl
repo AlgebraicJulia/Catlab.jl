@@ -5,7 +5,7 @@ implementation for attributed C-sets.
 """
 module StructuredCospans
 export StructuredMulticospan, StructuredCospan, StructuredCospanOb,
-  OpenCSetTypes, OpenACSetTypes
+  OpenCSetTypes, OpenACSetTypes, StructuredMultiCospanHom, openrule
 
 using AutoHashEquals
 using StaticArrays: StaticVector, SVector
@@ -14,7 +14,7 @@ using ...GAT, ..FreeDiagrams, ..Limits, ..FinSets, ..CSets
 import ..FreeDiagrams: apex, legs, feet, left, right, bundle_legs
 import ..CSets: force
 using ...Theories: Category, SchemaDesc, SchemaDescType, CSetSchemaDescType, SchemaDescTypeType,
-  attrtype, attr, adom, adom_nums, acodom
+  attrtype, attr, adom, adom_nums, acodom, dom, codom
 import ...Theories: dom, codom, compose, ⋅, id, otimes, ⊗, munit, braid, σ,
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dunit, dcounit, dagger
 
@@ -165,7 +165,7 @@ begin
   dcounit(a::StructuredCospanOb{L}) where L = let x = L(a.ob), i = id(x)
     StructuredCospan{L}(Cospan(x, copair(i,i), create(x)), a⊗a, munit_like(a))
   end
-  
+
   dagger(M::StructuredCospan{L}) where L =
     StructuredCospan{L}(Multicospan(apex(M), reverse(legs(M))),
                         reverse(feet(M)))
@@ -330,6 +330,32 @@ end
 function shift_left(::Type{L}, x::StructACSet, ϕ::ACSetTransformation) where
     {L <: DiscreteACSet}
   ACSetTransformation(components(ϕ), L(dom(ϕ)), x)
+end
+
+
+struct StructuredMultiCospanHom{L}
+  src::StructuredMulticospan{L}
+  tgt::StructuredMulticospan{L}
+  maps::Vector{<:ACSetTransformation} # one for each leg, plus apex
+  function StructuredMultiCospanHom(s::StructuredMulticospan{L},
+    t::StructuredMulticospan{L},m::Vector{<:ACSetTransformation}) where {L}
+    for (i,(s_leg, t_leg, st_map)) in enumerate(zip(legs(s), legs(t), m[2:end]))
+      force(s_leg ⋅ m[1]) == force(st_map ⋅ t_leg) || error("diagram $i does not commute")
+      force(st_map) ∈ isomorphisms(dom(st_map), codom(st_map)) || error("leg map $i is not iso: $st_map")
+      is_natural(s_leg) || error("src leg $i not natural")
+      is_natural(t_leg) || error("tgt leg $i not natural")
+      is_natural(st_map) || error("st_map $i not natural")
+    end
+    return new{L}(s,t,m)
+  end
+end
+
+dom(x::StructuredMultiCospanHom) = x.src
+codom(x::StructuredMultiCospanHom) = x.tgt
+
+# Intended to be span of StructuredMulticospans
+struct openrule
+  data::Span
 end
 
 end
