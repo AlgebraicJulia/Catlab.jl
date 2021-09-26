@@ -272,14 +272,19 @@ colim = pushout(α, β)
 #-------
 
 g, h = path_graph(Graph, 3), path_graph(Graph, 4)
-@test homomorphisms(g, h) == [CSetTransformation((V=[1,2,3], E=[1,2]), g, h),
-                              CSetTransformation((V=[2,3,4], E=[2,3]), g, h)]
+homs = [CSetTransformation((V=[1,2,3], E=[1,2]), g, h),
+        CSetTransformation((V=[2,3,4], E=[2,3]), g, h)]
+@test homomorphisms(g, h) == homs
+@test homomorphisms(g, h, alg=HomomorphismQuery()) == homs
 @test !is_isomorphic(g, h)
 
 I = ob(terminal(Graph))
-@test homomorphism(g, I) == CSetTransformation((V=[1,1,1], E=[1,1]), g, I)
+deleted = CSetTransformation((V=[1,1,1], E=[1,1]), g, I)
+@test homomorphism(g, I) == deleted
+@test homomorphism(g, I, alg=HomomorphismQuery()) == deleted
 @test !is_homomorphic(g, I, monic=true)
 @test !is_homomorphic(I, h)
+@test !is_homomorphic(I, h, alg=HomomorphismQuery())
 
 # Graph homomorphism starting from partial assignment, e.g. vertex assignment.
 α = CSetTransformation((V=[2,3,4], E=[2,3]), g, h)

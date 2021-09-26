@@ -2,7 +2,7 @@
 """
 module CSets
 export ACSetTransformation, CSetTransformation, SubACSet, SubCSet,
-  ACSetHomomorphismAlgorithm, BacktrackingSearch,
+  ACSetHomomorphismAlgorithm, BacktrackingSearch, HomomorphismQuery,
   components, force, is_natural, homomorphism, homomorphisms, is_homomorphic,
   isomorphism, isomorphisms, is_isomorphic,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
@@ -182,6 +182,16 @@ our implementation, the search tree is ordered using the popular heuristic of
 "minimum remaining values" (MRV), also known as "most constrained variable.
 """
 struct BacktrackingSearch <: ACSetHomomorphismAlgorithm end
+
+""" Find attributed ``C``-set homomorphisms using a conjunctive query.
+
+This algorithm evaluates a conjunctive query (limit in `FinSet`) to find all
+homomorphisms between two ``C``-sets. In fact, conjunctive queries are exactly
+the *representable* functors from ``C``-sets to sets, so every conjunctive query
+arises in this way, with the caveat that conjunctive queries may correspond to
+to infinite ``C``-sets when ``C`` is infinite (but possibly finitely presented).
+"""
+struct HomomorphismQuery <: ACSetHomomorphismAlgorithm end
 
 """ Find a homomorphism between two attributed ``C``-sets.
 

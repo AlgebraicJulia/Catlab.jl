@@ -5,8 +5,12 @@ export oapply, query
 
 using Requires
 
-using ...Theories, ...CategoricalAlgebra, ...CategoricalAlgebra.FinSets
+using ...Present, ...Theories
+using ...Theories: dom_nums, codom_nums
+using ...CategoricalAlgebra, ...CategoricalAlgebra.FinSets
+import ...CategoricalAlgebra.CSets: homomorphisms, homomorphism, is_homomorphic
 using ..UndirectedWiringDiagrams
+using ..UndirectedWiringDiagrams: TheoryUWD
 
 """ Compose morphisms according to UWD.
 
@@ -175,17 +179,74 @@ function query(X::ACSet, diagram::UndirectedWiringDiagram,
     fill((;), length(apex(outer_span)))
   else
     columns = map(collect, outer_span)
-    names = subpart(diagram, :outer_port_name)
+    names = has_subpart(diagram, :outer_port_name) ?
+      subpart(diagram, :outer_port_name) : fill(nothing, length(columns))
     make_table(table_type, columns, names)
   end
 end
 
 make_table(f, columns, names) = f(columns, names)
+make_table(::Type{AbstractVector}, columns, names) = columns
 make_table(::Type{NamedTuple}, columns, names) =
   NamedTuple{Tuple(names)}(Tuple(columns))
-
 make_table(::Type{<:DataFrameFallback}, columns, names) =
   make_table(NamedTuple, columns, names)
+
+""" Create conjunctive query (a UWD) for finding homomorphisms out of a C-set.
+
+Homomorphisms from `X` to `Y` are given by `query(Y, homomorphism_query(X))`.
+Attributes are not yet supported.
+"""
+function homomorphism_query(X::StructACSet{S}; count::Bool=false) where S
+  offsets = cumsum([0; [nparts(X,c) for c in ob(S)]])
+  nelems = offsets[end]
+
+  diagram = HomomorphismQueryDiagram{Symbol}()
+  add_parts!(diagram, :Junction, nelems)
+  if !count
+    add_parts!(diagram, :OuterPort, nelems, outer_junction=1:nelems)
+  end
+  for (i, c) in enumerate(ob(S))
+    n = nparts(X,c)
+    boxes = add_parts!(diagram, :Box, n, name=c)
+    add_parts!(diagram, :Port, n, box=boxes, port_name=:_id,
+               junction=(1:n) .+ offsets[i])
+  end
+  for (f, c, i, j) in zip(hom(S), dom(S), dom_nums(S), codom_nums(S))
+    n = nparts(X,c)
+    add_parts!(diagram, :Port, n, box=(1:n) .+ offsets[i], port_name=f,
+               junction=X[:,f] .+ offsets[j])
+  end
+  diagram
+end
+
+@present TheoryHomomorphismQueryDiagram <: TheoryUWD begin
+  Name::AttrType
+  name::Attr(Box, Name)
+  port_name::Attr(Port, Name)
+end
+@acset_type HomomorphismQueryDiagram(TheoryHomomorphismQueryDiagram,
+  index=[:box, :junction, :outer_junction]) <: UndirectedWiringDiagram
+
+function homomorphisms(X::ACSet, Y::ACSet, ::HomomorphismQuery)
+  columns = query(Y, homomorphism_query(X); table_type=AbstractVector)
+  map(row -> make_homomorphism(row, X, Y), eachrow(reduce(hcat, columns)))
+end
+function homomorphism(X::ACSet, Y::ACSet, ::HomomorphismQuery)
+  columns = query(Y, homomorphism_query(X); table_type=AbstractVector)
+  isempty(first(columns)) ? nothing :
+    make_homomorphism(map(first, columns), X, Y)
+end
+function is_homomorphic(X::ACSet, Y::ACSet, ::HomomorphismQuery)
+  length(query(Y, homomorphism_query(X, count=true))) > 0
+end
+
+function make_homomorphism(row, X::StructACSet{S}, Y::StructACSet{S}) where S
+  components = let i = 0
+    NamedTuple{ob(S)}([row[i+=1] for _ in parts(X,c)] for c in ob(S))
+  end
+  ACSetTransformation(components, X, Y)
+end
 
 function __init__()
   @require DataFrames="a93c6f00-e57d-5684-b7b6-d8193f3e46c0" begin
