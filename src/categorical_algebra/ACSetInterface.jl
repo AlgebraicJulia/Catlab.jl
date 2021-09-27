@@ -301,7 +301,7 @@ function Base.show(io::IO, ::MIME"text/html", acs::ACSet)
   print(io, " with elements ")
   join(io, ["$ob = 1:$(nparts(acs,ob))" for ob in keys(tables(acs))], ", ")
   println(io, "</span>")
-  pretty_tables(io, acs, backend=:html, standalone=false)
+  pretty_tables(io, acs, backend=Val(:html), standalone=false)
   println(io, "</div>")
 end
 
