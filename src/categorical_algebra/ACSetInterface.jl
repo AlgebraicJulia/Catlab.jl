@@ -65,10 +65,9 @@ function  subpart end
 @inline subpart(acs, part, name) = view_or_slice(subpart(acs, name), part)
 
 function view_or_slice end
-@inline view_or_slice(x::AbstractVector, i::Integer) = x[i]
-@inline view_or_slice(x::AbstractVector, i::Union{StaticArray, UnitRange}) = @view x[i]
+@inline view_or_slice(x::AbstractVector, i::Union{Integer,StaticArray}) = x[i]
 @inline view_or_slice(x::AbstractVector, ::Colon) = x
-@inline view_or_slice(x::AbstractVector, i::AbstractVector) = @view x[i]
+@inline view_or_slice(x::AbstractVector, i) = @view x[i]
 
 @inline subpart(acs, expr::GATExpr{:generator}) = subpart(acs, first(expr))
 @inline subpart(acs, expr::GATExpr{:id}) = parts(acs, first(dom(expr)))
