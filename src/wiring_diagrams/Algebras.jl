@@ -6,7 +6,7 @@ export oapply, query
 using Requires
 
 using ...Present, ...Theories
-using ...Theories: dom_nums, codom_nums
+using ...Theories: dom_nums, codom_nums, attr, adom, adom_nums
 using ...CategoricalAlgebra, ...CategoricalAlgebra.FinSets
 import ...CategoricalAlgebra.CSets: homomorphisms, homomorphism, is_homomorphic
 using ..UndirectedWiringDiagrams
@@ -136,8 +136,8 @@ abstract type MaybeDataFrame <: DataFrameFallback end
 The conjunctive query is represented as an undirected wiring diagram (UWD) whose
 boxes and ports are named via the attributes `:name`, `:port_name`, and
 `:outer_port_name`. To define such a diagram, use the [`@relation`](@ref) macro
-with its named syntax. Parameters to the query may be passed as a named tuple
-using the optional third argument.
+with its named syntax. Parameters to the query may be passed as a collection of
+pairs using the optional third argument.
 
 The result is data table whose columns correspond to the outer ports of the UWD.
 By default, a data frame is returned if the package
@@ -165,10 +165,11 @@ function query(X::ACSet, diagram::UndirectedWiringDiagram,
   # Add an extra box and corresponding span for each parameter.
   if !isempty(params)
     diagram = copy(diagram)
-    spans = vcat(spans, map(collect(pairs(params))) do (var, value)
+    spans = vcat(spans, map_pairs(params) do (key, value)
       box = add_part!(diagram, :Box, name=:_const)
+      junction = key isa Integer ? key : incident(diagram, key, :variable)
       add_part!(diagram, :Port, port_name=:_value,
-                box=box, junction=incident(diagram, var, :variable))
+                box=box, junction=junction)
       SMultispan{1}(ConstantFunction(value, FinSet(1)))
     end)
   end
@@ -185,23 +186,24 @@ function query(X::ACSet, diagram::UndirectedWiringDiagram,
   end
 end
 
-make_table(f, columns, names) = f(columns, names)
-make_table(::Type{AbstractVector}, columns, names) = columns
-make_table(::Type{NamedTuple}, columns, names) =
-  NamedTuple{Tuple(names)}(Tuple(columns))
-make_table(::Type{<:DataFrameFallback}, columns, names) =
-  make_table(NamedTuple, columns, names)
+map_pairs(f, collection) = map(f, collect(pairs(collection)))
+map_pairs(f, vec::AbstractVector{<:Pair}) = map(f, vec)
 
 """ Create conjunctive query (a UWD) for finding homomorphisms out of a C-set.
 
-Homomorphisms from `X` to `Y` are given by `query(Y, homomorphism_query(X))`.
-Attributes are not yet supported.
+Returns the query together with query parameters for the attributes.
+Homomorphisms from `X` to `Y` can be computed by:
+
+```julia
+query(Y, homomorphism_query(X)...)
+```
 """
 function homomorphism_query(X::StructACSet{S}; count::Bool=false) where S
   offsets = cumsum([0; [nparts(X,c) for c in ob(S)]])
   nelems = offsets[end]
 
   diagram = HomomorphismQueryDiagram{Symbol}()
+  params = Pair[]
   add_parts!(diagram, :Junction, nelems)
   if !count
     add_parts!(diagram, :OuterPort, nelems, outer_junction=1:nelems)
@@ -217,7 +219,14 @@ function homomorphism_query(X::StructACSet{S}; count::Bool=false) where S
     add_parts!(diagram, :Port, n, box=(1:n) .+ offsets[i], port_name=f,
                junction=X[:,f] .+ offsets[j])
   end
-  diagram
+  for (f, c, i) in zip(attr(S), adom(S), adom_nums(S))
+    n = nparts(X,c)
+    junctions = add_parts!(diagram, :Junction, n)
+    add_parts!(diagram, :Port, n, box=(1:n) .+ offsets[i], port_name=f,
+               junction=junctions)
+    append!(params, Iterators.map(Pair, junctions, X[:,f]))
+  end
+  (diagram, params)
 end
 
 @present TheoryHomomorphismQueryDiagram <: TheoryUWD begin
@@ -229,16 +238,16 @@ end
   index=[:box, :junction, :outer_junction]) <: UndirectedWiringDiagram
 
 function homomorphisms(X::ACSet, Y::ACSet, ::HomomorphismQuery)
-  columns = query(Y, homomorphism_query(X); table_type=AbstractVector)
+  columns = query(Y, homomorphism_query(X)...; table_type=AbstractVector)
   map(row -> make_homomorphism(row, X, Y), eachrow(reduce(hcat, columns)))
 end
 function homomorphism(X::ACSet, Y::ACSet, ::HomomorphismQuery)
-  columns = query(Y, homomorphism_query(X); table_type=AbstractVector)
+  columns = query(Y, homomorphism_query(X)...; table_type=AbstractVector)
   isempty(first(columns)) ? nothing :
     make_homomorphism(map(first, columns), X, Y)
 end
 function is_homomorphic(X::ACSet, Y::ACSet, ::HomomorphismQuery)
-  length(query(Y, homomorphism_query(X, count=true))) > 0
+  length(query(Y, homomorphism_query(X, count=true)...)) > 0
 end
 
 function make_homomorphism(row, X::StructACSet{S}, Y::StructACSet{S}) where S
@@ -247,6 +256,13 @@ function make_homomorphism(row, X::StructACSet{S}, Y::StructACSet{S}) where S
   end
   ACSetTransformation(components, X, Y)
 end
+
+make_table(f, columns, names) = f(columns, names)
+make_table(::Type{AbstractVector}, columns, names) = columns
+make_table(::Type{NamedTuple}, columns, names) =
+  NamedTuple{Tuple(names)}(Tuple(columns))
+make_table(::Type{<:DataFrameFallback}, columns, names) =
+  make_table(NamedTuple, columns, names)
 
 function __init__()
   @require DataFrames="a93c6f00-e57d-5684-b7b6-d8193f3e46c0" begin

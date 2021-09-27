@@ -279,9 +279,9 @@ homs = [CSetTransformation((V=[1,2,3], E=[1,2]), g, h),
 @test !is_isomorphic(g, h)
 
 I = ob(terminal(Graph))
-deleted = CSetTransformation((V=[1,1,1], E=[1,1]), g, I)
-@test homomorphism(g, I) == deleted
-@test homomorphism(g, I, alg=HomomorphismQuery()) == deleted
+α = CSetTransformation((V=[1,1,1], E=[1,1]), g, I)
+@test homomorphism(g, I) == α
+@test homomorphism(g, I, alg=HomomorphismQuery()) == α
 @test !is_homomorphic(g, I, monic=true)
 @test !is_homomorphic(I, h)
 @test !is_homomorphic(I, h, alg=HomomorphismQuery())
@@ -339,9 +339,12 @@ end
 
 g = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:c,:d],))
 h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:c,:d,:a,:b],))
-@test homomorphism(g, h) == ACSetTransformation((V=[3,4,1,2], E=[3,4,1,2]), g, h)
+α = ACSetTransformation((V=[3,4,1,2], E=[3,4,1,2]), g, h)
+@test homomorphism(g, h) == α
+@test homomorphism(g, h, alg=HomomorphismQuery()) == α
 h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:d,:c],))
 @test !is_homomorphic(g, h)
+@test !is_homomorphic(g, h, alg=HomomorphismQuery())
 
 # Sub-C-sets
 ############
