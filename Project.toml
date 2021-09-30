@@ -2,7 +2,7 @@ name = "Catlab"
 uuid = "134e5e36-593f-5add-ad60-77f754baafbe"
 license = "MIT"
 authors = ["Evan Patterson <evan@epatters.org>"]
-version = "0.13.0"
+version = "0.13.1"
 
 [deps]
 AutoHashEquals = "15f4f7f2-30c1-5605-9d31-71845cf9641f"
@@ -36,7 +36,7 @@ JSON = "0.20, 0.21"
 LightXML = "0.8, 0.9"
 MLStyle = "0.4"
 PrettyTables = "0.12, 1.0"
-Reexport = "0.2, 1.0"
+Reexport = "^1"
 Requires = "^1"
 StaticArrays = "0.12, 1.0"
 Tables = "^1"
