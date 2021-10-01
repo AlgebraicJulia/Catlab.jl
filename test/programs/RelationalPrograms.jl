@@ -16,7 +16,7 @@ parsed = @relation (x,z) where (x,y,z) begin
   S(y,z)
 end
 
-d = RelationDiagram{Symbol}(2)
+d = RelationDiagram(2)
 add_box!(d, 2, name=:R); add_box!(d, 2, name=:S)
 add_junctions!(d, 3, variable=[:x,:y,:z])
 set_junction!(d, [1,2,2,3])
@@ -39,13 +39,13 @@ d2 = @relation ((x,z) where (x,z,y)) -> (R(x,y); S(y,z))
 
 # Special case: closed diagram.
 parsed = @relation (() where (a,)) -> R(a,a)
-d = RelationDiagram{Symbol}(0)
+d = RelationDiagram(0)
 add_box!(d, 2, name=:R)
 add_junction!(d, variable=:a); set_junction!(d, [1,1])
 @test parsed == d
 
 parsed = @relation () -> A()
-d = RelationDiagram{Symbol}(0)
+d = RelationDiagram(0)
 add_box!(d, 0, name=:A)
 @test parsed == d
 
@@ -57,7 +57,7 @@ parsed = @relation (x,y,z) where (x::X, y::Y, z::Z, w::W) begin
   S(y,w)
   T(z,w)
 end
-d = RelationDiagram{Symbol}([:X,:Y,:Z])
+d = RelationDiagram([:X,:Y,:Z])
 add_box!(d, [:X,:W], name=:R)
 add_box!(d, [:Y,:W], name=:S)
 add_box!(d, [:Z,:W], name=:T)
@@ -73,7 +73,7 @@ parsed = @relation (start=u, stop=w) where (u, v, w) begin
   E(src=u, tgt=v)
   E(src=v, tgt=w)
 end
-d = RelationDiagram{Symbol}(2, port_names=[:start, :stop])
+d = RelationDiagram(2, port_names=[:start, :stop])
 add_box!(d, 2, name=:E)
 add_box!(d, 2, name=:E)
 add_junctions!(d, 3, variable=[:u,:v,:w])
@@ -114,7 +114,7 @@ parsed = @relation (e=e, e′=e′) where (e::Employee, e′::Employee,
   Employee(id=e, department=d)
   Employee(id=e′, department=d)
 end
-d = RelationDiagram{Symbol}([:Employee, :Employee], port_names=[:e,:e′])
+d = RelationDiagram([:Employee, :Employee], port_names=[:e,:e′])
 add_box!(d, [:Employee, :Department], name=:Employee)
 add_box!(d, [:Employee, :Department], name=:Employee)
 add_junctions!(d, [:Employee, :Employee, :Department], variable=[:e,:e′,:d])

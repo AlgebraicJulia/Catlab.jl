@@ -9,7 +9,7 @@ using MLStyle: @match
 using ...CategoricalAlgebra.CSets
 using ...WiringDiagrams.UndirectedWiringDiagrams
 import ...WiringDiagrams: oapply
-using ...Programs.RelationalPrograms: RelationDiagram
+using ...Programs.RelationalPrograms: RelationDiagram, UntypedRelationDiagram
 
 # Evaluation
 ############
@@ -172,7 +172,7 @@ function parse_tensor_network(expr::Expr; all_vars=nothing)
   end
 
   # Construct the undirected wiring diagram.
-  d = RelationDiagram{Symbol}(length(outer_vars))
+  d = UntypedRelationDiagram{Symbol,Symbol}(length(outer_vars))
   add_junctions!(d, length(all_vars), variable=all_vars)
   set_junction!(d, ports(d, outer=true),
                 incident(d, outer_vars, :variable), outer=true)
