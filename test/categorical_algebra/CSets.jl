@@ -272,14 +272,19 @@ colim = pushout(α, β)
 #-------
 
 g, h = path_graph(Graph, 3), path_graph(Graph, 4)
-@test homomorphisms(g, h) == [CSetTransformation((V=[1,2,3], E=[1,2]), g, h),
-                              CSetTransformation((V=[2,3,4], E=[2,3]), g, h)]
+homs = [CSetTransformation((V=[1,2,3], E=[1,2]), g, h),
+        CSetTransformation((V=[2,3,4], E=[2,3]), g, h)]
+@test homomorphisms(g, h) == homs
+@test homomorphisms(g, h, alg=HomomorphismQuery()) == homs
 @test !is_isomorphic(g, h)
 
 I = ob(terminal(Graph))
-@test homomorphism(g, I) == CSetTransformation((V=[1,1,1], E=[1,1]), g, I)
+α = CSetTransformation((V=[1,1,1], E=[1,1]), g, I)
+@test homomorphism(g, I) == α
+@test homomorphism(g, I, alg=HomomorphismQuery()) == α
 @test !is_homomorphic(g, I, monic=true)
 @test !is_homomorphic(I, h)
+@test !is_homomorphic(I, h, alg=HomomorphismQuery())
 
 # Graph homomorphism starting from partial assignment, e.g. vertex assignment.
 α = CSetTransformation((V=[2,3,4], E=[2,3]), g, h)
@@ -300,7 +305,7 @@ add_edge!(g2, 1, 2)  # double arrow
 @test length(homomorphisms(g2, g1, monic=[:E])) == 2 # two for 2->3
 @test length(homomorphisms(g2, g1, iso=[:E])) == 0
 
-# Symmetic graphs
+# Symmetric graphs
 #-----------------
 
 g, h = path_graph(SymmetricGraph, 4), path_graph(SymmetricGraph, 4)
@@ -334,9 +339,12 @@ end
 
 g = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:c,:d],))
 h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:c,:d,:a,:b],))
-@test homomorphism(g, h) == ACSetTransformation((V=[3,4,1,2], E=[3,4,1,2]), g, h)
+α = ACSetTransformation((V=[3,4,1,2], E=[3,4,1,2]), g, h)
+@test homomorphism(g, h) == α
+@test homomorphism(g, h, alg=HomomorphismQuery()) == α
 h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:d,:c],))
 @test !is_homomorphic(g, h)
+@test !is_homomorphic(g, h, alg=HomomorphismQuery())
 
 # Sub-C-sets
 ############

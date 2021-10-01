@@ -1,7 +1,8 @@
 module TestWiringDiagramAlgebras
 using Test
 
-using Tables, TypedTables
+using Tables: columns
+using DataFrames
 
 using Catlab.CategoricalAlgebra, Catlab.CategoricalAlgebra.FinSets
 using Catlab.Graphs, Catlab.WiringDiagrams, Catlab.Programs.RelationalPrograms
@@ -71,8 +72,8 @@ end
 # Graph underlying a commutative squares.
 square = Graph(4)
 add_edges!(square, [1,1,2,3], [2,3,4,4])
-result = query(square, paths2)
-@test result == Table((start=[1,1], stop=[4,4]))
+@test query(square, paths2) == DataFrame(start=[1,1], stop=[4,4])
+@test query(square, paths2, table_type=NamedTuple) == (start=[1,1], stop=[4,4])
 
 # Graph underlying a pasting of two commutative squares.
 squares2 = copy(square)
@@ -85,7 +86,7 @@ result = query(squares2, paths2)
 result = query(squares2, paths2, (start=1,))
 @test tuples(columns(result)...) == [(1,4), (1,4), (1,5)]
 result = query(squares2, paths2, (start=1, stop=4))
-@test result == Table((start=[1,1], stop=[4,4]))
+@test result == DataFrame(start=[1,1], stop=[4,4])
 @test length(query(squares2, count_paths2, (start=1, stop=4))) == 2
 
 # Query: pairs of vertices.
@@ -93,7 +94,7 @@ vertices2 = @relation (v1=v1, v2=v2) begin
   V(_id=v1)
   V(_id=v2)
 end
-@test length(query(squares2, vertices2)) == nv(squares2)^2
+@test nrow(query(squares2, vertices2)) == nv(squares2)^2
 
 # Query: directed cycles of length 3.
 cycles3 = @relation (edge1=e, edge2=f, edge3=g) where (e,f,g,u,v,w) begin
@@ -107,7 +108,7 @@ g = cycle_graph(Graph, 3)
 result = query(g, cycles3)
 @test tuples(columns(result)...) == [(1,2,3), (2,3,1), (3,1,2)]
 result = query(g, cycles3, (v=1,))
-@test result == Table((edge1=[3], edge2=[1], edge3=[2]))
+@test result == DataFrame(edge1=[3], edge2=[1], edge3=[2])
 @test isempty(query(cycle_graph(Graph, 4), cycles3))
 
 end

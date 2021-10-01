@@ -2,6 +2,7 @@
 """
 module CSets
 export ACSetTransformation, CSetTransformation, SubACSet, SubCSet,
+  ACSetHomomorphismAlgorithm, BacktrackingSearch, HomomorphismQuery,
   components, force, is_natural, homomorphism, homomorphisms, is_homomorphic,
   isomorphism, isomorphisms, is_isomorphic,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
@@ -162,11 +163,11 @@ force(α::ACSetTransformation) = map_components(force, α)
 # Finding C-set transformations
 ###############################
 
-""" Find a homomorphism between two attributed ``C``-sets.
+""" Algorithm for finding homomorphisms between attributed ``C``-sets.
+"""
+abstract type ACSetHomomorphismAlgorithm end
 
-Returns `nothing` if no homomorphism exists. For many categories ``C``, the
-``C``-set homomorphism problem is NP-complete and thus this procedure generally
-runs in exponential time. It works best when the domain object is small.
+""" Find attributed ``C``-set homomorphisms using backtracking search.
 
 This procedure uses the classic backtracking search algorithm for a
 combinatorial constraint satisfaction problem (CSP). As is well known, the
@@ -177,7 +178,25 @@ also reducible to CSP. Backtracking search for CSP is described in many computer
 science textbooks, such as (Russell & Norvig 2010, *Artificial Intelligence*,
 Third Ed., Chapter 6: Constraint satisfaction problems, esp. Algorithm 6.5). In
 our implementation, the search tree is ordered using the popular heuristic of
-"minimum remaining values" (MRV), also known as "most constrained variable."
+"minimum remaining values" (MRV), also known as "most constrained variable.
+"""
+struct BacktrackingSearch <: ACSetHomomorphismAlgorithm end
+
+""" Find attributed ``C``-set homomorphisms using a conjunctive query.
+
+This algorithm evaluates a conjunctive query (limit in `FinSet`) to find all
+homomorphisms between two ``C``-sets. In fact, conjunctive queries are exactly
+the *representable* functors from ``C``-sets to sets, so every conjunctive query
+arises in this way, with the caveat that conjunctive queries may correspond to
+to infinite ``C``-sets when ``C`` is infinite (but possibly finitely presented).
+"""
+struct HomomorphismQuery <: ACSetHomomorphismAlgorithm end
+
+""" Find a homomorphism between two attributed ``C``-sets.
+
+Returns `nothing` if no homomorphism exists. For many categories ``C``, the
+``C``-set homomorphism problem is NP-complete and thus this procedure generally
+runs in exponential time. It works best when the domain object is small.
 
 To restrict to *monomorphisms*, or homomorphisms whose components are all
 injective functions, set the keyword argument `monic=true`. To restrict only
@@ -189,11 +208,17 @@ To restrict the homomorphism to a given partial assignment, set the keyword
 argument `initial`. For example, to fix the first source vertex to the third
 target vertex in a graph homomorphism, set `initial=(V=Dict(1 => 3),)`.
 
+Use the keyword argument `alg` to set the homomorphism-finding algorithm. By
+default, a backtracking search algorithm is used ([`BacktrackingSearch`](@ref)).
+
 See also: [`homomorphisms`](@ref), [`isomorphism`](@ref).
 """
-function homomorphism(X::StructACSet, Y::StructACSet; kw...)
+homomorphism(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
+  homomorphism(X, Y, alg; kw...)
+
+function homomorphism(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...)
   result = nothing
-  homomorphisms(X, Y; kw...) do α
+  backtracking_search(X, Y; kw...) do α
     result = α; return true
   end
   result
@@ -204,48 +229,63 @@ end
 This function is at least as expensive as [`homomorphism`](@ref) and when no
 homomorphisms exist, it is exactly as expensive.
 """
-function homomorphisms(X::StructACSet{S}, Y::StructACSet{S};
-                       kw...) where {S}
+homomorphisms(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
+  homomorphisms(X, Y, alg; kw...)
+
+function homomorphisms(X::StructACSet{S}, Y::StructACSet{S},
+                       alg::BacktrackingSearch; kw...) where {S}
   results = ACSetTransformation{S}[]
-  homomorphisms(X, Y; kw...) do α
+  backtracking_search(X, Y; kw...) do α
     push!(results, map_components(deepcopy, α)); return false
   end
   results
 end
-homomorphisms(f, X::StructACSet, Y::StructACSet;
-              monic=false, iso=false, initial=(;)) =
-  backtracking_search(f, X, Y, monic=monic, iso=iso, initial=initial)
 
 """ Is the first attributed ``C``-set homomorphic to the second?
 
-A convenience function based on [`homomorphism`](@ref).
+This function generally reduces to [`homomorphism`](@ref) but certain algorithms
+may have minor optimizations.
 """
-is_homomorphic(X::StructACSet, Y::StructACSet; kw...) =
-  !isnothing(homomorphism(X, Y; kw...))
+is_homomorphic(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
+  is_homomorphic(X, Y, alg; kw...)
+
+is_homomorphic(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...) =
+  !isnothing(homomorphism(X, Y, alg; kw...))
 
 """ Find an isomorphism between two attributed ``C``-sets, if one exists.
 
 See [`homomorphism`](@ref) for more information about the algorithms involved.
 """
-isomorphism(X::StructACSet, Y::StructACSet; initial=(;)) =
-  homomorphism(X, Y, iso=true, initial=initial)
+isomorphism(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
+  isomorphism(X, Y, alg; kw...)
+
+isomorphism(X::ACSet, Y::ACSet, alg::BacktrackingSearch; initial=(;)) =
+  homomorphism(X, Y, alg; iso=true, initial=initial)
 
 """ Find all isomorphisms between two attributed ``C``-sets.
 
 This function is at least as expensive as [`isomorphism`](@ref) and when no
 homomorphisms exist, it is exactly as expensive.
 """
-isomorphisms(X::StructACSet, Y::StructACSet; initial=(;)) =
-  homomorphisms(X, Y, iso=true, initial=initial)
-isomorphisms(f, X::StructACSet, Y::StructACSet; initial=(;)) =
-  homomorphisms(f, X, Y, iso=true, initial=initial)
+isomorphisms(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
+  isomorphisms(X, Y, alg; kw...)
+
+isomorphisms(X::ACSet, Y::ACSet, alg::BacktrackingSearch; initial=(;)) =
+  homomorphisms(X, Y, alg; iso=true, initial=initial)
 
 """ Are the two attributed ``C``-sets isomorphic?
 
-A convenience function based on [`isomorphism`](@ref).
+This function generally reduces to [`isomorphism`](@ref) but certain algorithms
+may have minor optimizations.
 """
-is_isomorphic(X::StructACSet, Y::StructACSet; kw...) =
-  !isnothing(isomorphism(X, Y; kw...))
+is_isomorphic(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
+  is_isomorphic(X, Y, alg; kw...)
+
+is_isomorphic(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...) =
+  !isnothing(isomorphism(X, Y, alg; kw...))
+
+# Backtracking search
+#--------------------
 
 """ Internal state for backtracking search for ACSet homomorphisms.
 """
