@@ -10,7 +10,6 @@ using Base.Meta: quot
 using AutoHashEquals
 using JSON
 using Reexport
-using StaticArrays: SVector
 using Tables
 
 @reexport using ...CSetDataStructures
@@ -470,7 +469,7 @@ end
 # Compute limits and colimits of C-sets by reducing to those in FinSet using the
 # "pointwise" formula for (co)limits in functor categories.
 
-function limit(diagram::AbstractFreeDiagram{ACS}) where
+function limit(::Type{ACS}, diagram) where
     {S <: CSetSchemaDescType, ACS <: StructCSet{S}}
   limits = map(limit, unpack_diagram(diagram))
   Xs = cone_objects(diagram)
@@ -494,8 +493,7 @@ function universal(lim::CSetLimit, cone::Multispan)
   CSetTransformation(components, apex(cone), ob(lim))
 end
 
-function colimit(diagram::AbstractFreeDiagram{ACS}) where
-    {S, Ts, ACS <: StructACSet{S,Ts}}
+function colimit(::Type{ACS}, diagram) where {S, Ts, ACS <: StructACSet{S,Ts}}
   # Colimit of C-set without attributes.
   colimits = map(colimit, unpack_diagram(diagram))
   Xs = cocone_objects(diagram)
@@ -575,26 +573,6 @@ function pack_components(fs::NamedTuple{Ob}, doms, codoms) where Ob
   components = map((x...) -> NamedTuple{Ob}(x), fs...) # XXX: Is there a better way?
   map(ACSetTransformation, components, doms, codoms)
 end
-
-""" Objects in diagram that will have explicit legs in limit cone.
-
-Encodes common conventions such as, when taking a pullback of a cospan, not
-explicitly including a cone leg for the cospan apex since it can be computed
-from the other legs.
-
-FIXME: Should this function be part of the official limits interface?
-"""
-cone_objects(diagram) = ob(diagram)
-cone_objects(diagram::BipartiteFreeDiagram) = ob₁(diagram)
-cone_objects(cospan::Multicospan) = feet(cospan)
-cone_objects(para::ParallelMorphisms) = SVector(dom(para))
-
-""" Objects in diagram that will have explicit legs in colimit cocone.
-"""
-cocone_objects(diagram) = ob(diagram)
-cocone_objects(diagram::BipartiteFreeDiagram) = ob₂(diagram)
-cocone_objects(span::Multispan) = feet(span)
-cocone_objects(para::ParallelMorphisms) = SVector(codom(para))
 
 """ Compute pushout complement of attributed C-sets, if possible.
 

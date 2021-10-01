@@ -505,7 +505,7 @@ ensure_indexed(f::FinDomFunction{Int}) = is_indexed(f) ? f :
 
 See `CompositePullback` for a very similar construction.
 """
-struct FinSetFreeDiagramLimit{Ob<:FinSet, Diagram<:AbstractFreeDiagram{Ob},
+struct FinSetFreeDiagramLimit{Ob<:FinSet, Diagram,
                               Cone<:Multispan{Ob}, Prod<:Product{Ob},
                               Incl<:FinFunction} <: AbstractLimit{Ob,Diagram}
   diagram::Diagram
@@ -778,7 +778,7 @@ end
 
 See `CompositePushout` for a very similar construction.
 """
-struct FinSetFreeDiagramColimit{Ob<:FinSet, Diagram<:AbstractFreeDiagram{Ob},
+struct FinSetFreeDiagramColimit{Ob<:FinSet, Diagram,
                                 Cocone<:Multicospan{Ob}, Coprod<:Coproduct{Ob},
                                 Proj<:FinFunction} <: AbstractColimit{Ob,Diagram}
   diagram::Diagram
