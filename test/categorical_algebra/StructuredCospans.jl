@@ -1,4 +1,4 @@
-#module TestStructuredCospans
+module TestStructuredCospans
 using Test
 
 using Catlab, Catlab.Theories, Catlab.Graphs,
@@ -153,11 +153,6 @@ b = OpenLabeledGraphOb{Symbol}(FinSet(3), vlabel=[:x,:y,:z])
 @test dom(braid(a, b)) == a⊗b
 @test codom(braid(a, b)) == b⊗a
 
-#end
-
-
-
-const OpenGraphOb, OpenGraph = OpenCSetTypes(Graph, :V);
 
 # EXAMPLE GRAPHS
 #---------------
@@ -171,6 +166,9 @@ add_edge!(Loop, 1, 1);
 Arrow = Graph(2);
 add_edge!(Arrow, 1, 2);
 
+BiArrow = Graph(2)
+add_edges!(BiArrow, [1,2],[2,1])
+
 Three = Graph(3);
 add_edges!(Three, [1,2], [2,3]);
 
@@ -179,6 +177,9 @@ add_edges!(Square,[1,1,2,3],[2,3,4,4]);
 
 Tri = Graph(3)
 add_edges!(Tri,[1,1,2],[2,3,3]);
+
+LoopTri = Graph(3)
+add_edges!(LoopTri,[1,1,1,2],[1,2,3,3]);
 
 """
   3→4
@@ -212,6 +213,8 @@ flipflip = Span(flip, flip);
 o1 = OpenGraph(G1, id_1[:V], id_1[:V]);
 o2 = OpenGraph(G2, f12[:V], f22[:V]);
 openloop = OpenGraph(Loop, id_1[:V], id_1[:V]);
+openp2 = OpenGraph(path_graph(Graph, 3),
+                   FinFunction([1], 3), FinFunction([3], 3))
 
 openarr = OpenGraph(Arrow, f12[:V], f22[:V]);
 openarr21 = OpenGraph(Arrow, id_2[:V], f22[:V]);
@@ -221,6 +224,9 @@ open3 = OpenGraph(Three,
 opensquare = OpenGraph(Square,
                        FinFunction([1], 4),
                        FinFunction([2], 4));
+opensquare2 = OpenGraph(Square,
+                        FinFunction([1], 4),
+                        FinFunction([4], 4));
 opentrap = OpenGraph(Trap,
                      FinFunction([1,2], 5),
                      FinFunction([2,5], 5));
@@ -253,28 +259,18 @@ squash = openrule(Span(squash_l, squash_r))
 square_m = StructuredMultiCospanHom(openarr, opensquare,
   ACSetTransformation[ACSetTransformation(Arrow, Square, V=[1,2], E=[1]), id_1, id_1])
 
-res = open_rewrite(squash, opensquare, square_m)
+res = open_rewrite_match(squash, square_m)
 @test is_isomorphic(apex(res), Tri)
 
+res = open_rewrite_match(composeV_(squash, add_loop), square_m)
+@test is_isomorphic(apex(res), LoopTri)
 
-function composeSpan(f::Span, g::Span)::Span
-  pbf, pbg = pullback(right(f), left(g))
-  return Span(compose(pbf, left(f)), compose(pbg,right(g)))
-end
+sqsq = composeH_(squash, squash); # squashes a path of length 2 into a point
+sqsq_m = StructuredMultiCospanHom(openp2, opensquare2,
+  ACSetTransformation[ACSetTransformation(
+    path_graph(Graph, 3), Square, V=[1,2,4], E=[1,3]), id_1, id_1])
+res = open_rewrite_match(sqsq, sqsq_m)
+# squash one path of a commutative square and obtain •⇆•
+@test is_isomorphic(apex(res), BiArrow)
 
-"""Span composition given by pullback"""
-composeV(f::openrule, g::openrule) = composeSpan(f.data, g.data)
-
-function composeH(f::openrule, g::openrule)
-  fL, fR = f.data
-  gL, gR = g.data
-  I = compose(dom(fL), dom(gL))
-  L = compose(codom(fL), codom(gL))
-  R = compose(codom(fR), codom(gR))
-  IL = StructuredMultiCospanHom(I, L, vcat(fL.maps[1:end-1], gL.maps[2:end]))
-  IR = StructuredMultiCospanHom(I, R, vcat(fR.maps[1:end-1], gR.maps[2:end]))
-  openrule(Span(IL, IR))
-end
-
-
-cv = composeV(squash, add_loop); # what is ComposeProductEqualizer
+end #module
