@@ -68,19 +68,15 @@ function Graphs.connected_component_projection(g::LG.AbstractGraph)
 end
 
 abstract type FindTrianglesAlgorithm end
-struct TriangleHomomorphism <: FindTrianglesAlgorithm end
+struct TriangleBacktrackingSearch <: FindTrianglesAlgorithm end
 struct TriangleQuery <: FindTrianglesAlgorithm end
 
 """ Number of triangles in a graph.
 """
-function ntriangles(g::T, ::TriangleHomomorphism) where T
+function ntriangles(g::T, ::TriangleBacktrackingSearch) where T
   triangle = T(3)
   add_edges!(triangle, [1,2,1], [2,3,3])
-  count = 0
-  homomorphisms(triangle, g) do α;
-    count += 1; return false
-  end
-  count
+  length(homomorphisms(triangle, g, alg=BacktrackingSearch()))
 end
 function ntriangles(g, ::TriangleQuery)
   length(query(g, ntriangles_query))
@@ -141,7 +137,7 @@ n = 100
 g = wheel_graph(Graph, n)
 lg = LG.DiGraph(g)
 clbench["wheel-graph-triangles-hom"] =
-  @benchmarkable ntriangles($g, TriangleHomomorphism())
+  @benchmarkable ntriangles($g, TriangleBacktrackingSearch())
 clbench["wheel-graph-triangles-query"] =
   @benchmarkable ntriangles($g, TriangleQuery())
 
@@ -195,7 +191,7 @@ n = 100
 g = wheel_graph(SymmetricGraph, n)
 lg = LG.Graph(g)
 clbench["wheel-graph-triangles-hom"] =
-  @benchmarkable ntriangles($g, TriangleHomomorphism())
+  @benchmarkable ntriangles($g, TriangleBacktrackingSearch())
 clbench["wheel-graph-triangles-query"] =
   @benchmarkable ntriangles($g, TriangleQuery())
 lgbench["wheel-graph-triangles"] = @benchmarkable sum(LG.triangles($lg))

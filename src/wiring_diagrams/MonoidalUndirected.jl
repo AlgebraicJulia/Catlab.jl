@@ -1,4 +1,4 @@
-""" Undirected wiring diagrams as symmetric monoidal categories.
+""" Undirected wiring diagrams as SMCs and hypergraph categories.
 """
 module MonoidalUndirectedWiringDiagrams
 export HypergraphDiagram, HypergraphDiagramOb, HypergraphDiagramHom,
@@ -12,7 +12,7 @@ import ...Theories: dom, codom, compose, id, ⋅, ∘, otimes, ⊗, munit, braid
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dunit, dcounit, dagger
 using ...CategoricalAlgebra.CSets: disjoint_union
 using ..UndirectedWiringDiagrams
-using ..UndirectedWiringDiagrams: AbstractUWD, AbstractTypedUWD, TheoryUWD, TheoryTypedUWD
+using ..UndirectedWiringDiagrams: AbstractUWD, TheoryUWD, TheoryTypedUWD
 import ..UndirectedWiringDiagrams: singleton_diagram, junction_diagram
 
 # Data types
@@ -20,26 +20,29 @@ import ..UndirectedWiringDiagrams: singleton_diagram, junction_diagram
 
 @present TheoryUntypedHypergraphDiagram <: TheoryUWD begin
   Name::AttrType
-  name::Attr(Box,Name)
+  name::Attr(Box, Name)
 end
 
-@abstract_acset_type AbstractUntypedHypergraphDiagram <: AbstractUWD
-@acset_type UntypedHypergraphDiagram(TheoryUntypedHypergraphDiagram, 
-  index=[:box, :junction, :outer_junction]) <: AbstractUntypedHypergraphDiagram
+""" Diagram to represent morphisms in single-sorted hypergraph categories.
 
-""" Diagram suitable for representing morphisms in hypergraph categories.
+By "single-sorted", we mean that the monoid of objects is free on one generator.
+See [`HypergraphDiagram`](@ref) for the more standard case.
+"""
+@acset_type UntypedHypergraphDiagram(TheoryUntypedHypergraphDiagram, 
+  index=[:box, :junction, :outer_junction]) <: AbstractUWD
+
+@present TheoryHypergraphDiagram <: TheoryTypedUWD begin
+  Name::AttrType
+  name::Attr(Box, Name)
+end
+
+""" Diagram to represent morphisms in hypergraph categories.
 
 An undirected wiring diagram where the ports and junctions are typed and the
 boxes have names identifying the morphisms.
 """
-@present TheoryHypergraphDiagram <: TheoryTypedUWD begin
-  Name::AttrType
-  name::Attr(Box,Name)
-end
-
-@abstract_acset_type AbstractHypergraphDiagram <: AbstractTypedUWD
 @acset_type HypergraphDiagram(TheoryHypergraphDiagram,
-  index=[:box, :junction, :outer_junction]) <: AbstractHypergraphDiagram
+  index=[:box, :junction, :outer_junction]) <: AbstractUWD
 
 # Cospan algebra
 ################

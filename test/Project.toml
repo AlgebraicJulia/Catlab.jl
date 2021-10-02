@@ -1,6 +1,7 @@
 [deps]
 Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
 Compose = "a81c6b42-2e10-5240-aca2-a61377ecd94b"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 IterativeSolvers = "42fd0dbc-a981-5370-80f2-aaf504508153"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
@@ -15,7 +16,6 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Tables = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-TypedTables = "9d95f2ec-7b3d-5a63-8d20-e2491e220bb9"
 
 [compat]
 LinearOperators = "1"
