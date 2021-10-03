@@ -36,12 +36,13 @@ end
   include("CSets.jl")
 end
 
-@testset "StructuredCospans" begin
-  include("StructuredCospans.jl")
+@testset "Categories" begin
+  include("FinCats.jl")
+  include("CatElements.jl")
 end
 
-@testset "CatElements" begin
-  include("CatElements.jl")
+@testset "StructuredCospans" begin
+  include("StructuredCospans.jl")
 end
 
 @testset "DataMigration" begin

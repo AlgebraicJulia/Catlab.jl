@@ -60,8 +60,6 @@ function wheel_graph(::Type{T}, n::Int) where T <: ACSet
 end
 
 # Should this be exported from `BasicGraphs`?
-@generated function is_directed(::Type{T}) where {S, Ts, T<:StructACSet{S,Ts}}
-  !(:inv ∈ hom(S))
-end
+@generated is_directed(::Type{T}) where {S, T<:StructACSet{S}} = :inv ∉ hom(S)
 
 end
