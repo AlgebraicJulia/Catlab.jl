@@ -1,10 +1,7 @@
 module TestCatElements
 using Test
-using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra,
-  Catlab.CategoricalAlgebra.FinSets, Catlab.CategoricalAlgebra.CatElements
+using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 
-
-@testset "Elements" begin
 arr = @acset Graph begin
   V = 2
   E = 1
@@ -70,7 +67,6 @@ end
   @test nparts(sir_eltsch, :E_1) == 3
   @test nparts(sir_eltsch, :E_2) == 3
   @test sir_eltsch[:, :src_E_2] == [1,1,2]
-end
 end
 
 end

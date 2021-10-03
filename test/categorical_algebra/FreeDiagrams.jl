@@ -2,7 +2,6 @@ module TestFreeDiagrams
 using Test
 
 using Catlab.Theories, Catlab.CategoricalAlgebra
-using Catlab.CategoricalAlgebra.FinSets: FinSet, FinFunction
 
 A, B, C, D = Ob(FreeCategory, :A, :B, :C, :D)
 

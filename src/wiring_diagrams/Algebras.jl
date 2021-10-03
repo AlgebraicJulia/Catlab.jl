@@ -7,7 +7,7 @@ using Requires
 
 using ...Present, ...Theories
 using ...Theories: dom_nums, codom_nums, attr, adom, adom_nums
-using ...CategoricalAlgebra, ...CategoricalAlgebra.FinSets
+using ...CategoricalAlgebra
 import ...CategoricalAlgebra.CSets: homomorphisms, homomorphism, is_homomorphic
 using ..UndirectedWiringDiagrams
 using ..UndirectedWiringDiagrams: TheoryUWD
