@@ -5,7 +5,8 @@ the category **Set**: a finitary, combinatorial setting where explicit
 computations can be carried out.
 """
 module FinCats
-export FinCat, FinFunctor, Ob, is_functorial, ob_map, hom_map,
+export FinCat, FinFunctor, FinDomFunctor, Ob, nobjects, nhom_generators,
+  is_functorial, ob_map, hom_map,
   Vertex, Edge, Path, graph, edges, src, tgt
 
 using AutoHashEquals
@@ -21,9 +22,19 @@ using ..FinSets, ..Categories
 # Base types
 ############
 
-""" Abstract base type for finitely presented category.
+""" Abstract type for finitely presented category.
 """
 abstract type FinCat{Ob,Hom} <: Cat{Ob,Hom} end
+
+""" Number of objects in finitely presented category.
+"""
+function nobjects end
+
+""" Number of generating morphisms in finitely presented category.
+"""
+function nhom_generators end
+
+Ob(C::FinCat{Int}) = FinSet(nobjects(C))
 
 """ Abstract type for category with finite generating graph.
 """
@@ -33,12 +44,23 @@ abstract type FinCatGraph{Ob,Hom} <: FinCat{Ob,Hom} end
 """
 graph(C::FinCatGraph) = C.graph
 
-""" Abstract base type for functor between finitely presented categories.
-"""
-abstract type FinFunctor{Dom<:FinCat,Codom<:FinCat} end
+nobjects(C::FinCatGraph) = nv(graph(C))
+nhom_generators(C::FinCatGraph) = ne(graph(C))
 
-dom(F::FinFunctor) = F.dom
-codom(F::FinFunctor) = F.codom
+""" Abstract type for functor out of a finitely presented category.
+"""
+abstract type FinDomFunctor{Dom<:FinCat,Codom<:Cat} end
+
+""" Abstract type for functor between finitely presented categories.
+"""
+const FinFunctor{Dom,Codom<:FinCat} = FinDomFunctor{Dom,Codom}
+
+FinFunctor(maps, dom::FinCat, codom::FinCat) = FinDomFunctor(maps, dom, codom)
+FinFunctor(ob_map, hom_map, dom::FinCat, codom::FinCat) =
+  FinDomFunctor(ob_map, hom_map, dom, codom)
+
+dom(F::FinDomFunctor) = F.dom
+codom(F::FinDomFunctor) = F.codom
 
 # Free categories
 #################
@@ -118,8 +140,6 @@ end
 
 FinCat(g::HasGraph) = FreeFinCatGraph(g)
 
-Ob(C::FinCatGraph) = FinSet(nv(graph(C)))
-
 function is_functorial(F::FinFunctor{<:FinCatGraph})
   g = graph(dom(F))
   all(edges(g)) do e
@@ -128,46 +148,53 @@ function is_functorial(F::FinFunctor{<:FinCatGraph})
   end
 end
 
-""" Functor between finitely presented categories.
+""" Vector-based functor out of a finitely presented category.
 """
-@auto_hash_equals struct FinFunctorVector{
-    VMap<:AbstractVector{Int}, EMap<:AbstractVector{<:Path{Int}},
-    Dom<:FinCat{Int}, Codom<:FinCat{Int}} <: FinFunctor{Dom,Codom}
+@auto_hash_equals struct FinDomFunctorVector{
+    VMap <: AbstractVector, EMap <: AbstractVector,
+    Dom <: FinCat{Int}, Codom} <: FinDomFunctor{Dom,Codom}
   vmap::VMap
   emap::EMap
   dom::Dom
   codom::Codom
 
-  function FinFunctorVector(vmap::AbstractVector, emap::AbstractVector,
-                            dom::Dom, codom::Codom) where {Dom,Codom}
+  function FinDomFunctorVector(vmap::AbstractVector, emap::AbstractVector,
+                               dom::Dom, codom::Codom) where {Dom,Codom}
+    length(vmap) == nobjects(dom) ||
+      error("Length of object map $vmap does not match domain $dom")
+    length(emap) == nhom_generators(dom) ||
+      error("Length of morphism map $emap does not match domain $dom")
     vmap = map(x -> coerce_ob(codom, x), vmap)
     emap = map(f -> coerce_hom(codom, f), emap)
     new{typeof(vmap),typeof(emap),Dom,Codom}(vmap, emap, dom, codom)
   end
 end
 
-coerce_ob(C::FinCatGraph, v) = v
+coerce_ob(C::Cat, x) = x
 coerce_ob(C::FinCatGraph, v::Vertex) = v[]
+coerce_hom(C::Cat, f) = f
 coerce_hom(C::FinCatGraph, path::Path) = path
-coerce_hom(C::FinCatGraph, x) = Path(graph(C), x)
+coerce_hom(C::FinCatGraph, f) = Path(graph(C), f)
 
-FinFunctor(maps::NamedTuple{(:V,:E)}, args...) =
-  FinFunctor(maps.V, maps.E, args...)
-FinFunctor(vmap::AbstractVector, emap::AbstractVector, dom, codom) =
-  FinFunctorVector(vmap, emap, dom, codom)
+FinDomFunctor(maps::NamedTuple{(:V,:E)}, args...) =
+  FinDomFunctor(maps.V, maps.E, args...)
+FinDomFunctor(vmap::AbstractVector, emap::AbstractVector, dom, codom) =
+  FinDomFunctorVector(vmap, emap, dom, codom)
+FinDomFunctor(vmap::AbstractVector{Ob}, emap::AbstractVector{Hom}, dom) where
+  {Ob,Hom} = FinDomFunctorVector(vmap, emap, dom, TypeCat{Ob,Hom}())
 
-ob_map(F::FinFunctorVector, v) = F.vmap[v]
-ob_map(F::FinFunctorVector, v::Vertex) = Vertex(F.vmap[v[]])
+ob_map(F::FinDomFunctorVector, v) = F.vmap[v]
+ob_map(F::FinDomFunctorVector, v::Vertex) = Vertex(F.vmap[v[]])
 
-hom_map(F::FinFunctorVector, e) = F.emap[e]
-hom_map(F::FinFunctorVector, e::Edge) = F.emap[e[]]
-hom_map(F::FinFunctorVector, path::Path) =
-  mapreduce(e -> hom_map(F, e), vcat, edges(path),
-            init=empty(Path, ob_map(F, src(path))))
+hom_map(F::FinDomFunctorVector, e) = F.emap[e]
+hom_map(F::FinDomFunctorVector, e::Edge) = F.emap[e[]]
+hom_map(F::FinDomFunctorVector, path::Path) =
+  mapreduce(e -> hom_map(F, e), compose, edges(path),
+            init=id(ob_map(F, dom(path))))
 
-(F::FinFunctorVector)(x::Vertex) = ob_map(F, x)
-(F::FinFunctorVector)(f::Union{Edge,Path}) = hom_map(F, f)
+(F::FinDomFunctorVector)(x::Vertex) = ob_map(F, x)
+(F::FinDomFunctorVector)(f::Union{Edge,Path}) = hom_map(F, f)
 
-Ob(F::FinFunctorVector) = FinFunction(F.vmap, Ob(codom(F)))
+Ob(F::FinDomFunctorVector) = FinDomFunction(F.vmap, Ob(codom(F)))
 
 end
