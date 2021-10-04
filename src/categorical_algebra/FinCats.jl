@@ -6,18 +6,20 @@ computations can be carried out.
 """
 module FinCats
 export FinCat, FinFunctor, FinDomFunctor, Ob, nobjects, nhom_generators,
-  is_functorial, ob_map, hom_map,
+  is_functorial, ob_map, hom_map, collect_ob, collect_hom,
   Vertex, Edge, Path, graph, edges, src, tgt
 
 using AutoHashEquals
 using StaticArrays: SVector
 
 using ...GAT
-using ...Theories: Category
-import ...Theories: Ob, dom, codom, id, compose, ⋅, ∘
+import ...Theories: Category, Ob, dom, codom, id, compose, ⋅, ∘
 using ...Graphs
 import ...Graphs: edges, src, tgt
-using ..FinSets, ..Categories
+using ..FreeDiagrams, ..FinSets, ..CSets, ..Categories
+import ..FreeDiagrams: FreeDiagram, diagram_ob_type,
+  cone_objects, cocone_objects
+import ..Limits: limit, colimit
 
 # Base types
 ############
@@ -51,6 +53,13 @@ nhom_generators(C::FinCatGraph) = ne(graph(C))
 """
 abstract type FinDomFunctor{Dom<:FinCat,Codom<:Cat} end
 
+dom(F::FinDomFunctor) = F.dom
+codom(F::FinDomFunctor) = F.codom
+
+diagram_ob_type(F::FinDomFunctor{Dom,Codom}) where {Ob,Dom,Codom<:Cat{Ob}} = Ob
+cone_objects(F::FinDomFunctor) = collect_ob(F)
+cocone_objects(F::FinDomFunctor) = collect_ob(F)
+
 """ Abstract type for functor between finitely presented categories.
 """
 const FinFunctor{Dom,Codom<:FinCat} = FinDomFunctor{Dom,Codom}
@@ -58,9 +67,6 @@ const FinFunctor{Dom,Codom<:FinCat} = FinDomFunctor{Dom,Codom}
 FinFunctor(maps, dom::FinCat, codom::FinCat) = FinDomFunctor(maps, dom, codom)
 FinFunctor(ob_map, hom_map, dom::FinCat, codom::FinCat) =
   FinDomFunctor(ob_map, hom_map, dom, codom)
-
-dom(F::FinDomFunctor) = F.dom
-codom(F::FinDomFunctor) = F.codom
 
 # Free categories
 #################
@@ -72,19 +78,21 @@ codom(F::FinDomFunctor) = F.codom
 
 Like [`Edge`](@ref), this wrapper type is used mainly to control dispatch.
 """
-@auto_hash_equals struct Vertex{T} <: AbstractArray{0,T}
+@auto_hash_equals struct Vertex{T}
   vertex::T
 end
 Base.getindex(v::Vertex) = v.vertex
+Base.size(::Vertex) = ()
 
 """ Edge in a graph.
 
 Like [`Vertex`](@ref), this wrapper type is used mainly to control dispatch.
 """
-@auto_hash_equals struct Edge{T} <: AbstractArray{0,T}
+@auto_hash_equals struct Edge{T}
   edge::T
 end
 Base.getindex(e::Edge) = e.edge
+Base.size(::Edge) = ()
 
 """ Path in a graph.
 
@@ -134,25 +142,25 @@ end
 The objects of the free category are vertices in the graph and the morphisms are
 (possibly empty) paths.
 """
-struct FreeFinCatGraph{G<:HasGraph} <: FinCatGraph{Int,Path{Int}}
+@auto_hash_equals struct FreeFinCatGraph{G<:HasGraph} <: FinCatGraph{Int,Path{Int}}
   graph::G
 end
 
 FinCat(g::HasGraph) = FreeFinCatGraph(g)
 
-function is_functorial(F::FinFunctor{<:FinCatGraph})
+function is_functorial(F::FinDomFunctor{<:FinCatGraph})
   g = graph(dom(F))
   all(edges(g)) do e
-    f = hom_map(F, e)
-    src(f) == ob_map(F, src(g,e)) && tgt(f) == ob_map(F, tgt(g,e))
+    f = F(Edge(e))
+    dom(f) == F(Vertex(src(g,e))) && codom(f) == F(Vertex(tgt(g,e)))
   end
 end
 
-""" Vector-based functor out of a finitely presented category.
+""" Vector-based data structure for functor out of finitely presented category.
 """
 @auto_hash_equals struct FinDomFunctorVector{
-    VMap <: AbstractVector, EMap <: AbstractVector,
-    Dom <: FinCat{Int}, Codom} <: FinDomFunctor{Dom,Codom}
+    VMap<:AbstractVector, EMap<:AbstractVector, Dom<:FinCat{Int}, Codom} <:
+    FinDomFunctor{Dom,Codom}
   vmap::VMap
   emap::EMap
   dom::Dom
@@ -169,12 +177,17 @@ end
     new{typeof(vmap),typeof(emap),Dom,Codom}(vmap, emap, dom, codom)
   end
 end
-
 coerce_ob(C::Cat, x) = x
 coerce_ob(C::FinCatGraph, v::Vertex) = v[]
 coerce_hom(C::Cat, f) = f
 coerce_hom(C::FinCatGraph, path::Path) = path
 coerce_hom(C::FinCatGraph, f) = Path(graph(C), f)
+
+""" Vector-based data structure for functor b/w finitely presented categories.
+"""
+const FinFunctorVector{VMap<:AbstractVector,EMap<:AbstractVector,
+                       Dom<:FinCat{Int},Codom<:FinCat} =
+  FinDomFunctorVector{VMap,EMap,Dom,Codom}
 
 FinDomFunctor(maps::NamedTuple{(:V,:E)}, args...) =
   FinDomFunctor(maps.V, maps.E, args...)
@@ -184,7 +197,8 @@ FinDomFunctor(vmap::AbstractVector{Ob}, emap::AbstractVector{Hom}, dom) where
   {Ob,Hom} = FinDomFunctorVector(vmap, emap, dom, TypeCat{Ob,Hom}())
 
 ob_map(F::FinDomFunctorVector, v) = F.vmap[v]
-ob_map(F::FinDomFunctorVector, v::Vertex) = Vertex(F.vmap[v[]])
+ob_map(F::FinDomFunctorVector, v::Vertex) = F.vmap[v[]]
+ob_map(F::FinFunctorVector, v::Vertex) = Vertex(F.vmap[v[]])
 
 hom_map(F::FinDomFunctorVector, e) = F.emap[e]
 hom_map(F::FinDomFunctorVector, e::Edge) = F.emap[e[]]
@@ -192,9 +206,32 @@ hom_map(F::FinDomFunctorVector, path::Path) =
   mapreduce(e -> hom_map(F, e), compose, edges(path),
             init=id(ob_map(F, dom(path))))
 
+collect_ob(F::FinDomFunctorVector) = F.vmap
+collect_hom(F::FinDomFunctorVector) = F.emap
+
 (F::FinDomFunctorVector)(x::Vertex) = ob_map(F, x)
 (F::FinDomFunctorVector)(f::Union{Edge,Path}) = hom_map(F, f)
 
 Ob(F::FinDomFunctorVector) = FinDomFunction(F.vmap, Ob(codom(F)))
+
+# `FreeDiagrams` interop
+#-----------------------
+
+function FreeDiagram(F::FinDomFunctor{<:FinCatGraph,<:TypeCat{Ob,Hom}}) where {Ob,Hom}
+  diagram = FreeDiagram{Ob,Hom}()
+  copy_parts!(diagram, graph(dom(F)))
+  diagram[:ob] = collect_ob(F)
+  diagram[:hom] = collect_hom(F)
+  diagram
+end
+
+function FinDomFunctor(diagram::FreeDiagram)
+  g = Graph()
+  copy_parts!(g, diagram)
+  FinDomFunctor(ob(diagram), hom(diagram), FinCat(g))
+end
+
+limit(F::FinDomFunctor) = limit(FreeDiagram(F))
+colimit(F::FinDomFunctor) = colimit(FreeDiagram(F))
 
 end
