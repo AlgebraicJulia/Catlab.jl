@@ -3,13 +3,17 @@ using Test
 
 using Catlab.CategoricalAlgebra, Catlab.Graphs
 
+# Categories on graphs
+######################
+
 # Free categories
-#################
+#----------------
 
 g = parallel_arrows(Graph, 2)
 C = FinCat(g)
 @test graph(C) == g
 @test Ob(C) == FinSet(2)
+@test is_free(C)
 
 h = Graph(4)
 add_edges!(h, [1,1,2,3], [2,3,4,4])
@@ -34,7 +38,7 @@ F = FinFunctor([1,3,5], [[1,2],[3,4]], C, D)
 @test F(Path(g, [1,2])) == Path(h, [1,2,3,4])
 
 # Free diagrams
-###############
+#--------------
 
 C = FinCat(parallel_arrows(Graph, 2))
 f, g = FinFunction([1,3], 3), FinFunction([2,3], 3)
@@ -56,5 +60,17 @@ diagram = FreeDiagram(ParallelPair(f, g))
 @test cocone_objects(F) == [FinSet(2), FinSet(3)]
 @test ob(limit(F)) == FinSet(1)
 @test ob(colimit(F)) == FinSet(2)
+
+# Path equations
+#---------------
+
+# Simplex category truncated to one dimension.
+Δ¹_graph = Graph(2)
+add_edges!(Δ¹_graph, [2,1,1], [1,2,2])
+Δ¹ = FinCat(Δ¹_graph, [ [2,1] => empty(Path, 1),
+                        [3,1] => empty(Path, 1) ])
+@test graph(Δ¹) == Δ¹_graph
+@test length(equations(Δ¹)) == 2
+@test !is_free(Δ¹)
 
 end

@@ -15,8 +15,8 @@ presented categories are provided by another module, [`FinCats`](@ref).
 module Categories
 export Cat, TypeCat
 
-# Base types
-############
+# Generic interface
+###################
 
 """ Abstract base type for a category.
 
