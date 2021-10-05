@@ -13,7 +13,9 @@ instances are supported through the wrapper type [`TypeCat`](@ref). Finitely
 presented categories are provided by another module, [`FinCats`](@ref).
 """
 module Categories
-export Cat, TypeCat
+export Cat, Functor, dom, codom, TypeCat
+
+import ...Theories: dom, codom
 
 # Generic interface
 ###################
@@ -29,6 +31,13 @@ where the objects and morphisms are numerical identifiers for vertices and edges
 in the graph.
 """
 abstract type Cat{Ob,Hom} end
+
+""" Abstract base type for a functor between categories.
+"""
+abstract type Functor{Dom<:Cat,Codom<:Cat} end
+
+dom(F::Functor) = F.dom
+codom(F::Functor) = F.codom
 
 # Instances
 ###########

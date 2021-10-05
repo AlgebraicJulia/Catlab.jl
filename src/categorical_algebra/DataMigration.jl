@@ -1,69 +1,27 @@
-""" Data Migration functors
+""" Functorial data migration for C-sets.
 """
 module DataMigration
-export Functor, Delta, Sigma, migrate!
+export Delta, Sigma, migrate!
 
 using ...Present, ...Theories
-using ...Theories: SchemaDesc, ob, hom, dom, codom, attr
+using ...Theories: SchemaDesc, ob, hom, dom, codom, attr, adom
 using ..FinSets, ..CSets, ..Limits, ...Graphs, ..FreeDiagrams
-
-import ...CategoricalAlgebra.FreeDiagrams: FreeDiagram
+using ..Categories, ..FinCats
 import ...Present: Presentation
-import ...Theories: dom, codom, Ob, Hom
+import ...CategoricalAlgebra.FreeDiagrams: FreeDiagram
 
+const ACSetCat = TypeCat{ACSet,ACSetTransformation}
 
-""" Abstract type for a functor.
+""" Abstract type for functor that migrates data from one ACSet to another.
 """
-abstract type AbstractFunctor end
+abstract type MigrationFunctor <: Functor{ACSetCat,ACSetCat} end
 
-"""   Functor
+codom_type(F::MigrationFunctor) = F.codom_type
 
-A functor ``F: \\mathcal{C} \\to \\mathcal{D}`` consists of a map of objects and a 
-map of homomorphisms from a domain category ``\\mathcal{C}``  to a codomain
-category ``\\mathcal{D}``.
-"""
-struct Functor{O,H,C,D} <: AbstractFunctor
-  FOb::O
-  FHom::H
-  dom::C
-  codom::D
-end
+(F::MigrationFunctor)(X::ACSet) = F(codom_type(F)(), X)
 
-# interface for abstract functor
-dom(F::Functor) = F.dom
-codom(F::Functor) = F.codom
-Ob(F::Functor) = F.FOb
-Hom(F::Functor) = F.FHom
-
-# To construct a functor where FOb and FHom are keyed by the symbols of 
-# the domain and codomain presentations. Turn them into a dictionaries 
-# whose keys and values are homs.
-function Functor(FOb::Dict{Symbol, Symbol}, FHom::Dict{Symbol, H}, 
-                 dom::Presentation, codom::Presentation) where H
-  Functor(
-    Dict(dom[c_name] => codom[Fc_name] for (c_name, Fc_name) in FOb),
-    Dict(dom[f_name] => get_hom(codom, Ff_name) for (f_name, Ff_name) in FHom),
-    dom, codom
-  )
-end
-
-get_hom(presY::Presentation, Ff::FreeSchema.Hom) = Ff
-get_hom(presY::Presentation, Ff::Symbol) = presY[Ff]
-get_hom(presY::Presentation, Ff::Array) = 
-  reduce(compose, map(h -> get_hom(presY, h), Ff))
-
-
-""" Abstract type for migration functor which migrates data from one ACSet to another
-"""
-abstract type MigrationFunctor <: AbstractFunctor end
-
-(F::MigrationFunctor)(X::ACSet) = F(codom(F)(),X)
-
-dom(MF::MigrationFunctor) = MF.dom
-codom(MF::MigrationFunctor) = MF.codom
-
-#### Delta Migration
-###################
+# Delta migration
+#################
 
 """ Pullback functorial data migration from one ACSet to another.
 
@@ -71,17 +29,15 @@ Note that this operation is contravariant: the data is transferred from `Y` to
 `X` but the functor, represented by two dictionaries, maps the schema for `X`
 to the schema for `Y`.
 
-When the functor is the identity, this function is equivalent to
+When the functor is the identity, this operation is equivalent to
 [`copy_parts!`](@ref).
 """
-struct DeltaMigration{D,C} <: MigrationFunctor
-  F::Functor # on the schemas
-  dom::D
-  codom::C
+struct DeltaMigration <: MigrationFunctor
+  F::FinFunctor # on the schemas
+  codom_type::Type
 end
 
-
-"""   Delta(F::Functor)
+"""   Delta(F::FinFunctor)
 
 Given a functor ``F: \\mathcal{C} \\to \\mathcal{D}`` produces a `MigrationFunctor`
 which maps a ``\\mathcal{D}``-set ``X`` to the ``\\mathcal{C}``-set 
@@ -89,66 +45,62 @@ which maps a ``\\mathcal{D}``-set ``X`` to the ``\\mathcal{C}``-set
 
 See (Spivak, 2014, *Category Theory for the Sciences*) for details.
 """
-Delta(F::Functor, dom, codom) = DeltaMigration(F, dom, codom)
+Delta(F::FinFunctor, codom) = DeltaMigration(F, codom)
+Delta(F::FinFunctor, dom, codom) = DeltaMigration(F, codom)
 
-function (ΔF::DeltaMigration)(X::StructACSet{S}, Y::ACSet) where {S}
-  FOb = Ob(ΔF.F)
-  FHom = Hom(ΔF.F)
+(ΔF::DeltaMigration)(X::ACSet, Y::ACSet) = migrate!(X, Y, ΔF.F)
 
-  partsX = Dict(map(ob(S)) do c_name 
-    c = dom(ΔF.F)[c_name]
-    c => add_parts!(X, c_name, nparts(Y, nameof(FOb[c]))) 
-  end)
+"""   migrate!(X::ACSet, Y::ACSet, FOb, FHom)
 
-  for (f, Ff) in collect(FHom)
-    doms = partsX[dom(f)]
-    subpt = f isa FreeSchema.Hom ? partsX[codom(f)][subpart(Y, Ff)] : subpart(Y, Ff)
-    set_subpart!(X, doms, nameof(f), subpt)
+Migrates the data from `Y` to `X` via the pullback data migration induced by the
+functor defined on objects by `FOb` and on morphisms by `FHom`.
+"""
+function migrate!(X::StructACSet{S}, Y::ACSet, F::FinFunctor) where S
+  partsX = Dict(c => add_parts!(X, c, nparts(Y, nameof(ob_map(F,c))))
+                for c in ob(S))
+
+  for (f,c,d) in zip(hom(S), dom(S), codom(S))
+    set_subpart!(X, partsX[c], f, partsX[d][subpart(Y, hom_map(F,f))])
+  end
+  for (f,c) in zip(attr(S), adom(S))
+    set_subpart!(X, partsX[c], f, subpart(Y, hom_map(F,f)))
   end
 
   return X
 end
 
-
-"""   migrate!(X::ACSet, Y::ACSet, FOb, FHom)
-
-Migrates the data from `Y` to `X` via the pullback 
-data migration induced by the functor defined on objects by `FOb` and 
-on morphisms by `FHom`.
-"""
-migrate!(X::ACSet, Y::ACSet, F::Functor) = Delta(F, typeof(Y), typeof(X))(X,Y)
-
-migrate!(X::ACSet, Y::ACSet, FOb, FHom) = 
-  migrate!(X,Y, Functor(FOb, FHom, Presentation(X), Presentation(Y)))
+function migrate!(X::ACSet, Y::ACSet, FOb, FHom)
+  F = FinFunctor(FOb, FHom, FinCat(Presentation(X)), FinCat(Presentation(Y)))
+  migrate!(X, Y, F)
+end
 
 function (::Type{T})(Y::ACSet, FOb::AbstractDict, FHom::AbstractDict) where T <: ACSet
   X = T()
   migrate!(X, Y, FOb, FHom)
 end
 
-function (::Type{T})(Y::ACSet, F::Functor) where T <: ACSet
+function (::Type{T})(Y::ACSet, F::FinFunctor) where T <: ACSet
   X = T()
   migrate!(X, Y, F)
 end
 
+# Sigma migration
+#################
 
-### SigmaMigration
-###################
 """ Left pushforward functorial data migration from one ACSet to another.
 """
-struct SigmaMigration{D, C, CC} <: MigrationFunctor
-  F::Functor # on the schemas
-  dom::D
-  codom::C
+struct SigmaMigration{CC} <: MigrationFunctor
+  F::FinFunctor # on the schemas
+  codom_type::Type
   comma_cats::CC
 
-  function SigmaMigration(F::Functor, dom::D, codom::C) where {D, C}
+  function SigmaMigration(F::FinFunctor, codom_type)
     cc = get_comma_cats(F)
-    new{D, C, typeof(cc)}(F, dom, codom, cc)
+    new{typeof(cc)}(F, codom_type, cc)
   end
 end
 
-"""   Sigma(F::Functor)
+"""   Sigma(F::FinFunctor)
 
 Given a functor ``F: \\mathcal{C} \\to \\mathcal{D}`` produces a `MigrationFunctor`
 which maps a ``\\mathcal{C}``-set ``X`` to the ``\\mathcal{D}``-set ``\\Sigma_F(X)``.
@@ -160,17 +112,18 @@ For ``d \\in \\mathsf{ob}\\mathcal{D}``,
 
 See (Spivak, 2014, *Category Theory for the Sciences*) for details.
 """
-Sigma(F::Functor, dom, codom) = SigmaMigration(F, dom, codom)
+Sigma(F::FinFunctor, codom) = SigmaMigration(F, codom)
+Sigma(F::FinFunctor, dom, codom) = SigmaMigration(F, codom)
 
 function (ΣF::SigmaMigration)(Y::ACSet, X::ACSet)
   comma_cats = ΣF.comma_cats
-  diagramD = FreeDiagram(codom(ΣF.F))
+  diagramD = FreeDiagram(presentation(codom(ΣF.F)))
 
   # define Y on objects by taking colimits
   colimX = map(parts(diagramD, :V)) do i
     F∇d = ob(comma_cats, i)
     Xobs = map(ob(F∇d)) do (c,_)
-      FinSet{Int, Int}(nparts(X, nameof(c)))
+      FinSet{Int,Int}(nparts(X, nameof(c)))
     end
     Xhoms = map(parts(F∇d, :E)) do g
       FinFunction(X[nameof(hom(F∇d, g))], Xobs[src(F∇d, g)], Xobs[tgt(F∇d, g)])
@@ -188,21 +141,12 @@ function (ΣF::SigmaMigration)(Y::ACSet, X::ACSet)
       continue
     end
     set_subpart!(Y, nameof(hom(diagramD, g)),
-      universal(colimX[src(diagramD, g)], 
-        Multicospan(legs(colimX[tgt(diagramD, g)])[hom(comma_cats, g)[:V].func])
-      ).func
-    )
+      collect(universal(colimX[src(diagramD, g)],
+        Multicospan(legs(colimX[tgt(diagramD, g)])[collect(hom(comma_cats, g)[:V])])
+      )))
   end
   return Y
 end
-
-
-"""   inv(D::AbstractDict)
-
-Given a dictionary `D` returns a function that maps a proposed value 
-`y` to the array of all keys with value `y`.
-"""
-inv(D::AbstractDict) = y -> [k for (k,v) in D if v == y]
 
 
 """ add_hom!(d::FreeDiagram{Ob, Hom}, src_ob::Ob, tgt_ob::Ob, hom::Hom)
@@ -222,9 +166,10 @@ a functor represented by the pair `(FOb, FHom)`, returns a diagram
 ``\\mathcal{D} \\to \\mathsf{Cat}`` which on objects takes ``d \\in \\mathcal{D}`` to the 
 comma category ``F \\downarrow d``.
 """
-function get_comma_cats(F::Functor)
-  diagramD = FreeDiagram(codom(F))
-  FObInv = inv(Ob(F)); FHomInv = inv(Hom(F))
+function get_comma_cats(F::FinFunctor)
+  diagramD = FreeDiagram(presentation(codom(F)))
+  FObInv = y -> filter(x -> ob_map(F,x) == y, ob_generators(dom(F)))
+  FHomInv = g -> filter(f -> hom_map(F,f) == g, hom_generators(dom(F)))
   comma_cats = FreeDiagram{FreeDiagram, ACSetTransformation}()
   add_vertices!(comma_cats,
     nparts(diagramD, :V), 
@@ -266,7 +211,6 @@ function comma_cat_hom!(F∇d, F∇d′, id_d, g, FHomInv)
 
   # for h: (c, f) -> (c', f') in diagram_d', add hom h to F∇d    
   es = add_edges!(F∇d, vs[src(F∇d′)], vs[tgt(F∇d′)], hom = hom(F∇d′))
-  
 
   # for every (c,f) in the recently added objects. If FHom[h] == f, then add the hom 
   #       h: (c,f) -> (codom(h), idv)
@@ -282,8 +226,11 @@ function comma_cat_hom!(F∇d, F∇d′, id_d, g, FHomInv)
 end
 
 ### Translate between ACSets, Presentations, and FreeDiagrams
-###############################################################
-"""Get the Schema from an ACSet
+#############################################################
+
+# FIXME: These functions do not belong here.
+
+""" Get the Schema from an ACSet
 """
 function Presentation(::StructACSet{S}) where S
   return Presentation(S)
@@ -302,4 +249,4 @@ function FreeDiagram(pres::Presentation{Schema, Symbol}) where Schema
   return FreeDiagram(obs, collect(zip(homs, doms, codoms)))
 end
 
-end #module
+end

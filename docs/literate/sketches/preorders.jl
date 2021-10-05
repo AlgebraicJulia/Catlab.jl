@@ -208,43 +208,32 @@ end
 
 # # Monotone Maps
 
-
-# we can access the objects of a presentation by filtering on the gat_typeof
-objects(P::Presentation) = filter(generators(P)) do x
-  gat_typeof(x) == :Ob
-end
-
-# we can access the homs of a presentation by filtering on the gat_typeof
-homs(P::Presentation) = filter(generators(P)) do x
-  gat_typeof(x) == :Hom
-end
-
 # a generator is in the set of homs if it is in the list of generators
-in_homs(f::FreeThinCategory.Hom{:generator}, P::Presentation) =
-  f in generators(P)
+in_homs(f::FreeThinCategory.Hom{:generator}, C::FinCat) =
+  f in hom_generators(C)
 
 # a composite hom is in the list set of homs if all of its components are.
-in_homs(f::FreeThinCategory.Hom{:compose}, P::Presentation) =
-  all(map(fᵢ->in_homs(fᵢ, P), args(f)))
+in_homs(f::FreeThinCategory.Hom{:compose}, C::FinCat) =
+  all(fᵢ->in_homs(fᵢ, C), args(f))
 
 
 # we can check if a map is functorial, which is called monotone for preorders.
 # 1. make sure all the objects in the domain are sent to objects in the codomain
 # 2. make sure all the homs are sent to homs in the codomain
 # 3. check that the domains and codomainss of the homs match
-function is_functorial(F::Functor)
-  pₒ = map(objects(dom(F))) do X
-    Ob(F)[X] in generators(codom(F))
+function is_functorial(F::FinFunctor)
+  pₒ = map(ob_generators(dom(F))) do X
+    F(X) in ob_generators(codom(F))
   end |> all
 
-  pₕ = map(homs(dom(F))) do f
-    in_homs(Hom(F)[f], codom(F))
+  pₕ = map(hom_generators(dom(F))) do f
+    in_homs(F(f), codom(F))
   end |> all
 
-  pᵩ = map(homs(dom(F))) do f
-    FX = Ob(F)[dom(f)]
-    Ff = Hom(F)[f]
-    FY = Ob(F)[codom(f)]
+  pᵩ = map(hom_generators(dom(F))) do f
+    FX = F(dom(f))
+    FY = F(codom(f))
+    Ff = F(f)
     dom(Ff) == FX && codom(Ff) == FY
   end |> all
   return pₒ && pₕ && pᵩ
@@ -260,18 +249,18 @@ generators(Q)
 
 Fₒ = Dict(:X=>:a, :Y=>:b, :Z=>:c)
 Fₕ = Dict(:f=>:ab, :g=>:bc)
-F = Functor(Fₒ, Fₕ, P, Q)
+F = FinFunctor(Fₒ, Fₕ, P, Q)
 @test is_functorial(F)
 
 Fₒ = Dict(:X=>:a, :Y=>:b, :Z=>:d)
 Fₕ = Dict(:f=>:ab, :g=>[:bc, :cd])
-F = Functor(Fₒ, Fₕ, P, Q)
+F = FinFunctor(Fₒ, Fₕ, P, Q)
 @test is_functorial(F)
 
 
 Fₒ = Dict(:X=>:a, :Y=>:b, :Z=>:c)
 Fₕ = Dict(:f=>:ab, :g=>[:bc, :cd])
-F = Functor(Fₒ, Fₕ, P, Q)
+F = FinFunctor(Fₒ, Fₕ, P, Q)
 @test !is_functorial(F)
 
 #=

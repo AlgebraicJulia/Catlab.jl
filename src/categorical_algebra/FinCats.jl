@@ -5,7 +5,8 @@ the category **Set**: a finitary, combinatorial setting where explicit
 calculations are possible.
 """
 module FinCats
-export FinCat, Ob, is_free, ob_generators, hom_generators, equations,
+export FinCat, FinCatGraph, Ob, is_free, ob_generators, hom_generators,
+  equations, presentation,
   FinFunctor, FinDomFunctor, is_functorial, ob_map, hom_map,
   collect_ob, collect_hom,
   Vertex, Edge, Path, graph, edges, src, tgt
@@ -201,7 +202,7 @@ equations(C::FinCatPresentation) = equations(presentation(C))
 
 """ Abstract type for functor out of a finitely presented category.
 """
-abstract type FinDomFunctor{Dom<:FinCat,Codom<:Cat} end
+abstract type FinDomFunctor{Dom<:FinCat,Codom<:Cat} <: Functor{Dom,Codom} end
 
 FinDomFunctor(ob_map::Union{AbstractVector,AbstractDict},
               hom_map::Union{AbstractVector,AbstractDict}, dom, codom) =
@@ -213,12 +214,23 @@ FinDomFunctor(ob_map::Union{AbstractVector{Ob},AbstractDict{<:Any,Ob}},
 FinDomFunctor(maps::NamedTuple{(:V,:E)}, dom::FinCatGraph, codom::Cat) =
   FinDomFunctor(maps.V, maps.E, dom, codom)
 
-dom(F::FinDomFunctor) = F.dom
-codom(F::FinDomFunctor) = F.codom
-
 diagram_ob_type(F::FinDomFunctor{Dom,Codom}) where {Ob,Dom,Codom<:Cat{Ob}} = Ob
 cone_objects(F::FinDomFunctor) = collect_ob(F)
 cocone_objects(F::FinDomFunctor) = collect_ob(F)
+
+ob_map(F::FinDomFunctor{<:FinCatGraph}, v::Vertex) = ob_map(F, v[])
+ob_map(F::FinDomFunctor{<:FinCatGraph,<:FinCatGraph}, v::Vertex) =
+  Vertex(ob_map(F, v[]))
+hom_map(F::FinDomFunctor{<:FinCatGraph}, e::Edge) = hom_map(F, e[])
+hom_map(F::FinDomFunctor{<:FinCatGraph}, path::Path) =
+  mapreduce(e -> hom_map(F, e), compose, edges(path),
+            init=id(ob_map(F, dom(path))))
+
+ob_map(F::FinDomFunctor, x::GATExpr{:generator}) = ob_map(F, first(x))
+hom_map(F::FinDomFunctor, f::GATExpr{:generator}) = hom_map(F, first(f))
+hom_map(F::FinDomFunctor, f::GATExpr{:id}) = ob_map(F, dom(f))
+hom_map(F::FinDomFunctor, f::GATExpr{:compose}) =
+  mapreduce(f -> hom_map(F, f), compose, args(f))
 
 (F::FinDomFunctor)(x::Vertex) = ob_map(F, x)
 (F::FinDomFunctor)(f::Union{Edge,Path}) = hom_map(F, f)
@@ -240,11 +252,15 @@ const FinFunctor{Dom<:FinCat,Codom<:FinCat} = FinDomFunctor{Dom,Codom}
 FinFunctor(maps, dom::FinCat, codom::FinCat) = FinDomFunctor(maps, dom, codom)
 FinFunctor(ob_map, hom_map, dom::FinCat, codom::FinCat) =
   FinDomFunctor(ob_map, hom_map, dom, codom)
+FinFunctor(ob_map, hom_map, dom::Presentation, codom::Presentation) =
+  FinDomFunctor(ob_map, hom_map, FinCat(dom), FinCat(codom))
 
 # Mapping-based functor
 #######################
 
-""" Functor out of finitely presented category defined by an explicit mapping.
+""" Functor out of finitely presented category defined by explicit mapping.
+
+The object and morphism mappings can be vectors or dictionaries.
 """
 @auto_hash_equals struct FinDomFunctorMap{Dom<:FinCat,Codom<:Cat,ObMap,HomMap} <: FinDomFunctor{Dom,Codom}
   ob_map::ObMap
@@ -252,64 +268,73 @@ FinFunctor(ob_map, hom_map, dom::FinCat, codom::FinCat) =
   dom::Dom
   codom::Codom
 
-  function FinDomFunctorMap(ob_map, hom_map, dom::Dom, codom::Codom) where {Dom,Codom}
+  function FinDomFunctorMap(ob_map::AbstractVector, hom_map::AbstractVector,
+                            dom::Dom, codom::Codom) where {Dom,Codom}
     length(ob_map) == length(ob_generators(dom)) ||
       error("Length of object map $ob_map does not match domain $dom")
     length(hom_map) == length(hom_generators(dom)) ||
       error("Length of morphism map $hom_map does not match domain $dom")
-    ob_map = map_container(x -> normalize_functor_key(dom, x),
-                           x -> normalize_ob_value(codom, x), ob_map)
-    hom_map = map_container(f -> normalize_functor_key(dom, f),
-                            f -> normalize_hom_value(codom, f), hom_map)
+    ob_map = map(x -> normalize_ob_value(codom, x), ob_map)
+    hom_map = map(f -> normalize_hom_value(codom, f), hom_map)
+    new{Dom,Codom,typeof(ob_map),typeof(hom_map)}(ob_map, hom_map, dom, codom)
+  end
+
+  function FinDomFunctorMap(ob_map::ObD, hom_map::HomD, dom::Dom, codom::Codom) where
+      {ObD<:AbstractDict, HomD<:AbstractDict, Dom, Codom}
+    ob_map = (ObD.name.wrapper)(
+      normalize_functor_key(dom, k) => normalize_ob_value(codom, v)
+      for (k, v) in ob_map)
+    hom_map = (HomD.name.wrapper)(
+      normalize_functor_key(dom, k) => normalize_hom_value(codom, v)
+      for (k, v) in hom_map)
     new{Dom,Codom,typeof(ob_map),typeof(hom_map)}(ob_map, hom_map, dom, codom)
   end
 end
 
-""" Functor b/w finitely presented categories defined by an explicit mapping.
+""" Functor b/w finitely presented categories defined by explicit mapping.
 """
 const FinFunctorMap{Dom<:FinCat,Codom<:FinCat,ObMap,HomMap} =
   FinDomFunctorMap{Dom,Codom,ObMap,HomMap}
 
-map_container(f_key, f_value, v::AbstractVector) = map(f_value, v)
-map_container(f_key, f_value, d::D) where D <: AbstractDict =
-  (D.name.wrapper)(f_key(k) => f_value(v) for (k,v) in d)
-
-normalize_functor_key(C::Cat, x) = x
-normalize_functor_key(C::Cat, expr::GATExpr) = head(expr) == :generator ?
-  first(expr) : error("Functor must be defined on generators")
-
+normalize_functor_key(C::FinCat, x) = x
 normalize_ob_value(C::Cat, x) = x
-normalize_ob_value(C::FinCatGraph, v::Vertex) = v[]
 normalize_hom_value(C::Cat, f) = f
+
+normalize_ob_value(C::FinCatGraph, v::Vertex) = v[]
 normalize_hom_value(C::FinCatGraph, f) = Path(graph(C), f)
 normalize_hom_value(C::FinCatGraph, path::Path) = path
 
-ob_map(F::FinDomFunctorMap, x) = F.ob_map[x]
-hom_map(F::FinDomFunctorMap, f) = F.hom_map[f]
-
-ob_map(F::FinDomFunctorMap{<:FinCatGraph}, v::Vertex) = F.ob_map[v[]]
-ob_map(F::FinDomFunctorMap{<:FinCatGraph,<:FinCatGraph}, v::Vertex) =
-  Vertex(F.ob_map[v[]])
-hom_map(F::FinDomFunctorMap{<:FinCatGraph}, e::Edge) = F.hom_map[e[]]
-hom_map(F::FinDomFunctorMap{<:FinCatGraph}, path::Path) =
-  mapreduce(e -> hom_map(F, e), compose, edges(path),
-            init=id(ob_map(F, dom(path))))
-
-ob_map(F::FinDomFunctorMap, x::GATExpr{:generator}) = F.ob_map[first(x)]
-hom_map(F::FinDomFunctorMap, f::GATExpr{:generator}) = F.hom_map[first(f)]
-hom_map(F::FinDomFunctorMap, f::GATExpr{:id}) = ob_map(F, dom(f))
-hom_map(F::FinDomFunctorMap, f::GATExpr{:compose}) =
-  mapreduce(f -> hom_map(F, f), compose, args(f))
+normalize_functor_key(C::FinCat, expr::GATExpr) = head(expr) == :generator ?
+  first(expr) : error("Functor must be defined on generators")
+normalize_ob_value(C::FinCatPresentation, x::Union{AbstractString,Symbol}) =
+  presentation(C)[x]
+normalize_hom_value(C::FinCatPresentation, f::Union{AbstractString,Symbol}) =
+  presentation(C)[f]
+normalize_hom_value(C::FinCatPresentation, fs::AbstractVector) =
+  mapreduce(f -> normalize_hom_value(C, f), compose, fs)
 
 """ Vector-based functor out of finitely presented category.
 """
-const FinDomFunctorVector{Dom<:FinCat{Int},Codom<:Cat,ObMap<:AbstractVector,HomMap<:AbstractVector} =
+const FinDomFunctorVector{Dom<:FinCat{Int},Codom<:Cat,
+                          ObMap<:AbstractVector,HomMap<:AbstractVector} =
   FinDomFunctorMap{Dom,Codom,ObMap,HomMap}
+
+ob_map(F::FinDomFunctorVector, x::Integer) = F.ob_map[x]
+hom_map(F::FinDomFunctorVector, f::Integer) = F.hom_map[f]
 
 collect_ob(F::FinDomFunctorVector) = F.ob_map
 collect_hom(F::FinDomFunctorVector) = F.hom_map
 
 Ob(F::FinDomFunctorVector) = FinDomFunction(F.ob_map, Ob(codom(F)))
+
+""" Dictionary-based functor out of finitely presented category.
+"""
+const FinDomFunctorDict{ObKey,HomKey,Dom<:FinCat,Codom<:Cat,
+                        ObMap<:AbstractDict{ObKey},HomMap<:AbstractDict{HomKey}} =
+  FinDomFunctorMap{Dom,Codom,ObMap,HomMap}
+
+ob_map(F::FinDomFunctorDict{ObK,HomK}, x::ObK) where {ObK,HomK} = F.ob_map[x]
+hom_map(F::FinDomFunctorDict{ObK,HomK}, f::HomK) where {ObK,HomK} = F.hom_map[f]
 
 # C-set interop
 #--------------
