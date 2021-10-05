@@ -1,6 +1,7 @@
 # [Categorical algebra](@id categorical_algebra)
 
 ## FinSet and FinRel
+
 The following APIs implement FinSet, the category of Finite Sets (actually the skeleton of FinSet). The objects of this category are natural numbers where `n` represents a set with `n` elements. The morphisms are functions between such sets. We use the skeleton of FinSet in order to ensure that all sets are finite and morphisms can be stored using lists of integers. Finite relations are built out of FinSet and can be used to do some relational algebra.
 
 ```@autodocs

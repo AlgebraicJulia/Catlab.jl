@@ -21,7 +21,11 @@ include("DPO.jl")
 @reexport using .CommutativeDiagrams
 @reexport using .Limits
 @reexport using .Subobjects
+
+@reexport using .Sets
+@reexport using .FinSets
 @reexport using .CSets
+
 @reexport using .StructuredCospans
 @reexport using .CatElements
 @reexport using .DataMigration

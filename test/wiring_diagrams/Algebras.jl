@@ -4,7 +4,7 @@ using Test
 using Tables: columns
 using DataFrames
 
-using Catlab.CategoricalAlgebra, Catlab.CategoricalAlgebra.FinSets
+using Catlab.CategoricalAlgebra
 using Catlab.Graphs, Catlab.WiringDiagrams, Catlab.Programs.RelationalPrograms
 
 tuples(args...) = sort!(collect(zip(args...)))

@@ -1,10 +1,8 @@
 module TestDPO
 using Test
-using Catlab.Graphs
-using Catlab.Present
-using Catlab.WiringDiagrams
-using Catlab.CategoricalAlgebra.FinSets
+
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
+using Catlab.Graphs, Catlab.WiringDiagrams
 
 # Wiring diagrams
 #################

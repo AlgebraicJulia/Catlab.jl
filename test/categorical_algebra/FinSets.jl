@@ -2,7 +2,6 @@ module TestFinSets
 using Test
 
 using Catlab.Theories, Catlab.CategoricalAlgebra
-using Catlab.CategoricalAlgebra.FinSets
 
 # Functions between finite sets
 ###############################

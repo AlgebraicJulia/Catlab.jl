@@ -10,7 +10,7 @@
 using Core: GeneratedFunctionStub
 using Test
 
-using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.CategoricalAlgebra.FinSets
+using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
 import Catlab.Theories: compose
 using DataStructures
 using PrettyTables

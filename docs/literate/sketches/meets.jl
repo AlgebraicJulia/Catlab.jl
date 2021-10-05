@@ -9,10 +9,8 @@
 using Core: GeneratedFunctionStub
 using Test
 
-using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.CategoricalAlgebra.FinSets
-using Catlab.Present
-using Catlab.Graphics
-using Catlab.Graphics.Graphviz
+using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
+using Catlab.Graphics, Catlab.Graphics.Graphviz
 
 import Catlab.Theories: compose
 using DataStructures

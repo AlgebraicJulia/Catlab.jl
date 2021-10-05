@@ -1,8 +1,7 @@
 module TestStructuredCospans
 using Test
 
-using Catlab, Catlab.Theories, Catlab.Graphs,
-  Catlab.CategoricalAlgebra, Catlab.CategoricalAlgebra.FinSets
+using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 using Catlab.Graphs.BasicGraphs: AbstractGraph, TheoryGraph
 
 # Structured cospans of C-sets

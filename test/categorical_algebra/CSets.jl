@@ -1,10 +1,8 @@
 module TestCSets
 using Test
 
-using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra,
-  Catlab.CategoricalAlgebra.FinSets
-using Catlab.CategoricalAlgebra.CSets, Catlab.CSetDataStructures
-using Catlab.Graphs.BasicGraphs: AbstractGraph, TheoryGraph
+using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
+using Catlab.Graphs.BasicGraphs: TheoryGraph
 
 @present TheoryDDS(FreeSchema) begin
   X::Ob
