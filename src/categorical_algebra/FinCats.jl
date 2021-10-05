@@ -2,7 +2,7 @@
 
 This module is to the 2-category **Cat** what the module [`FinSets](@ref) is to
 the category **Set**: a finitary, combinatorial setting where explicit
-computations can be carried out.
+calculations are possible.
 """
 module FinCats
 export FinCat, Ob, is_free, ob_generators, hom_generators, equations,
@@ -13,28 +13,28 @@ export FinCat, Ob, is_free, ob_generators, hom_generators, equations,
 using AutoHashEquals
 using StaticArrays: SVector
 
-using ...GAT
+using ...GAT, ...Present, ...Syntax
 import ...Present: equations
-import ...Theories: Category, Ob, dom, codom, id, compose, ⋅, ∘
-using ...Graphs
+using ...Theories: Category, ObExpr, HomExpr
+import ...Theories: Ob, dom, codom, id, compose, ⋅, ∘
+using ...Graphs, ..FreeDiagrams, ..FinSets, ..CSets, ..Categories
 import ...Graphs: edges, src, tgt
-using ..FreeDiagrams, ..FinSets, ..CSets, ..Categories
-import ..FreeDiagrams: FreeDiagram, diagram_ob_type,
-  cone_objects, cocone_objects
+import ..FreeDiagrams: FreeDiagram, diagram_ob_type, cone_objects, cocone_objects
 import ..Limits: limit, colimit
 
-# Generic interface
-###################
+# Categories
+############
 
 """ Abstract type for finitely presented category.
 """
 abstract type FinCat{Ob,Hom} <: Cat{Ob,Hom} end
 
 FinCat(g::HasGraph, args...; kw...) = FinCatGraph(g, args...; kw...)
+FinCat(pres::Presentation, args...; kw...) = FinCatSymbolic(pres, args...; kw...)
 
 """ Is the category freely generated?
 """
-function is_free end
+is_free(C::FinCat) = isempty(equations(C))
 
 """ Object generators of finitely presented category.
 
@@ -50,29 +50,10 @@ function hom_generators end
 
 Ob(C::FinCat{Int}) = FinSet(length(ob_generators(C)))
 
-""" Abstract type for functor out of a finitely presented category.
-"""
-abstract type FinDomFunctor{Dom<:FinCat,Codom<:Cat} end
-
-dom(F::FinDomFunctor) = F.dom
-codom(F::FinDomFunctor) = F.codom
-
-diagram_ob_type(F::FinDomFunctor{Dom,Codom}) where {Ob,Dom,Codom<:Cat{Ob}} = Ob
-cone_objects(F::FinDomFunctor) = collect_ob(F)
-cocone_objects(F::FinDomFunctor) = collect_ob(F)
-
-""" Abstract type for functor between finitely presented categories.
-"""
-const FinFunctor{Dom,Codom<:FinCat} = FinDomFunctor{Dom,Codom}
-
-FinFunctor(maps, dom::FinCat, codom::FinCat) = FinDomFunctor(maps, dom, codom)
-FinFunctor(ob_map, hom_map, dom::FinCat, codom::FinCat) =
-  FinDomFunctor(ob_map, hom_map, dom, codom)
-
 # Categories on graphs
 ######################
 
-""" Abstract type for category with finite generating graph.
+""" Abstract type for category backed by finite generating graph.
 """
 abstract type FinCatGraph{Ob,Hom} <: FinCat{Ob,Hom} end
 
@@ -162,14 +143,6 @@ FinCatGraph(g::HasGraph) = FreeCatGraph(g)
 
 is_free(::FreeCatGraph) = true
 
-function is_functorial(F::FinDomFunctor{<:FreeCatGraph})
-  g = graph(dom(F))
-  all(edges(g)) do e
-    f = F(Edge(e))
-    dom(f) == F(Vertex(src(g,e))) && codom(f) == F(Vertex(tgt(g,e)))
-  end
-end
-
 # Category on graph with equations
 #---------------------------------
 
@@ -185,85 +158,170 @@ See (Spivak, 2014, *Category theory for the sciences*, §4.5).
   equations::Eqs
 end
 
+equations(C::FinCatGraphEq) = C.equations
+
 function FinCatGraph(g::HasGraph, eqs::AbstractVector)
   eqs = map(eqs) do eq
-    lhs, rhs = coerce_path(g, first(eq)), coerce_path(g, last(eq))
+    lhs, rhs = as_path(g, first(eq)), as_path(g, last(eq))
     (src(lhs) == src(rhs) && tgt(lhs) == tgt(rhs)) ||
       error("Paths $lhs and $rhs in equation do not have equal (co)domains")
     lhs => rhs
   end
   FinCatGraphEq(g, eqs)
 end
-coerce_path(g::HasGraph, path::Path) = path
-coerce_path(g::HasGraph, x) = Path(g, x)
+as_path(g::HasGraph, path::Path) = path
+as_path(g::HasGraph, x) = Path(g, x)
 
-is_free(C::FinCatGraphEq) = isempty(equations(C))
-equations(C::FinCatGraphEq) = C.equations
+# Symbolic categories
+#####################
+
+""" Abstract type for categories presented symbolically.
+"""
+abstract type FinCatSymbolic{Ob,Hom} <: FinCat{Ob,Hom} end
+
+FinCatSymbolic(pres::Presentation) = FinCatPresentation(pres)
+
+""" Category defined by a `Presentation` object.
+"""
+struct FinCatPresentation{Ob,Hom} <: FinCatSymbolic{Ob,Hom}
+  presentation::Presentation
+
+  function FinCatPresentation(pres::Presentation)
+    new{pres.syntax.Ob,pres.syntax.Hom}(pres)
+  end
+end
+
+presentation(C::FinCatPresentation) = C.presentation
+ob_generators(C::FinCatPresentation) = generators(presentation(C), :Ob)
+hom_generators(C::FinCatPresentation) = generators(presentation(C), :Hom)
+equations(C::FinCatPresentation) = equations(presentation(C))
 
 # Functors
 ##########
 
-""" Vector-based data structure for functor out of finitely presented category.
+""" Abstract type for functor out of a finitely presented category.
 """
-@auto_hash_equals struct FinDomFunctorVector{
-    ObMap<:AbstractVector, HomMap<:AbstractVector, Dom<:FinCat{Int}, Codom} <:
-    FinDomFunctor{Dom,Codom}
+abstract type FinDomFunctor{Dom<:FinCat,Codom<:Cat} end
+
+FinDomFunctor(ob_map::Union{AbstractVector,AbstractDict},
+              hom_map::Union{AbstractVector,AbstractDict}, dom, codom) =
+  FinDomFunctorMap(ob_map, hom_map, dom, codom)
+FinDomFunctor(ob_map::Union{AbstractVector{Ob},AbstractDict{<:Any,Ob}},
+              hom_map::Union{AbstractVector{Hom},AbstractDict{<:Any,Hom}},
+              dom) where {Ob,Hom} =
+  FinDomFunctorMap(ob_map, hom_map, dom, TypeCat{Ob,Hom}())
+FinDomFunctor(maps::NamedTuple{(:V,:E)}, dom::FinCatGraph, codom::Cat) =
+  FinDomFunctor(maps.V, maps.E, dom, codom)
+
+dom(F::FinDomFunctor) = F.dom
+codom(F::FinDomFunctor) = F.codom
+
+diagram_ob_type(F::FinDomFunctor{Dom,Codom}) where {Ob,Dom,Codom<:Cat{Ob}} = Ob
+cone_objects(F::FinDomFunctor) = collect_ob(F)
+cocone_objects(F::FinDomFunctor) = collect_ob(F)
+
+(F::FinDomFunctor)(x::Vertex) = ob_map(F, x)
+(F::FinDomFunctor)(f::Union{Edge,Path}) = hom_map(F, f)
+(F::FinDomFunctor)(expr::ObExpr) = ob_map(F, expr)
+(F::FinDomFunctor)(expr::HomExpr) = hom_map(F, expr)
+
+function is_functorial(F::FinDomFunctor{<:FreeCatGraph})
+  g = graph(dom(F))
+  all(edges(g)) do e
+    f = F(Edge(e))
+    dom(f) == F(Vertex(src(g,e))) && codom(f) == F(Vertex(tgt(g,e)))
+  end
+end
+
+""" Abstract type for functor between finitely presented categories.
+"""
+const FinFunctor{Dom<:FinCat,Codom<:FinCat} = FinDomFunctor{Dom,Codom}
+
+FinFunctor(maps, dom::FinCat, codom::FinCat) = FinDomFunctor(maps, dom, codom)
+FinFunctor(ob_map, hom_map, dom::FinCat, codom::FinCat) =
+  FinDomFunctor(ob_map, hom_map, dom, codom)
+
+# Mapping-based functor
+#######################
+
+""" Functor out of finitely presented category defined by an explicit mapping.
+"""
+@auto_hash_equals struct FinDomFunctorMap{Dom<:FinCat,Codom<:Cat,ObMap,HomMap} <: FinDomFunctor{Dom,Codom}
   ob_map::ObMap
   hom_map::HomMap
   dom::Dom
   codom::Codom
 
-  function FinDomFunctorVector(ob_map::AbstractVector, hom_map::AbstractVector,
-                               dom::Dom, codom::Codom) where {Dom,Codom}
+  function FinDomFunctorMap(ob_map, hom_map, dom::Dom, codom::Codom) where {Dom,Codom}
     length(ob_map) == length(ob_generators(dom)) ||
       error("Length of object map $ob_map does not match domain $dom")
     length(hom_map) == length(hom_generators(dom)) ||
       error("Length of morphism map $hom_map does not match domain $dom")
-    ob_map = map(x -> coerce_ob(codom, x), ob_map)
-    hom_map = map(f -> coerce_hom(codom, f), hom_map)
-    new{typeof(ob_map),typeof(hom_map),Dom,Codom}(ob_map, hom_map, dom, codom)
+    ob_map = map_container(x -> normalize_functor_key(dom, x),
+                           x -> normalize_ob_value(codom, x), ob_map)
+    hom_map = map_container(f -> normalize_functor_key(dom, f),
+                            f -> normalize_hom_value(codom, f), hom_map)
+    new{Dom,Codom,typeof(ob_map),typeof(hom_map)}(ob_map, hom_map, dom, codom)
   end
 end
-coerce_ob(C::Cat, x) = x
-coerce_ob(C::FinCatGraph, v::Vertex) = v[]
-coerce_hom(C::Cat, f) = f
-coerce_hom(C::FinCatGraph, path::Path) = path
-coerce_hom(C::FinCatGraph, f) = Path(graph(C), f)
 
-""" Vector-based data structure for functor b/w finitely presented categories.
+""" Functor b/w finitely presented categories defined by an explicit mapping.
 """
-const FinFunctorVector{ObMap<:AbstractVector,HomMap<:AbstractVector,
-                       Dom<:FinCat{Int},Codom<:FinCat} =
-  FinDomFunctorVector{ObMap,HomMap,Dom,Codom}
+const FinFunctorMap{Dom<:FinCat,Codom<:FinCat,ObMap,HomMap} =
+  FinDomFunctorMap{Dom,Codom,ObMap,HomMap}
 
-FinDomFunctor(maps::NamedTuple{(:V,:E)}, args...) =
-  FinDomFunctor(maps.V, maps.E, args...)
-FinDomFunctor(ob_map::AbstractVector, hom_map::AbstractVector, dom, codom) =
-  FinDomFunctorVector(ob_map, hom_map, dom, codom)
-FinDomFunctor(ob_map::AbstractVector{Ob},
-              hom_map::AbstractVector{Hom}, dom) where {Ob,Hom} =
-  FinDomFunctorVector(ob_map, hom_map, dom, TypeCat{Ob,Hom}())
+map_container(f_key, f_value, v::AbstractVector) = map(f_value, v)
+map_container(f_key, f_value, d::D) where D <: AbstractDict =
+  (D.name.wrapper)(f_key(k) => f_value(v) for (k,v) in d)
 
-ob_map(F::FinDomFunctorVector, v) = F.ob_map[v]
-ob_map(F::FinDomFunctorVector, v::Vertex) = F.ob_map[v[]]
-ob_map(F::FinFunctorVector, v::Vertex) = Vertex(F.ob_map[v[]])
+normalize_functor_key(C::Cat, x) = x
+normalize_functor_key(C::Cat, expr::GATExpr) = head(expr) == :generator ?
+  first(expr) : error("Functor must be defined on generators")
 
-hom_map(F::FinDomFunctorVector, e) = F.hom_map[e]
-hom_map(F::FinDomFunctorVector, e::Edge) = F.hom_map[e[]]
-hom_map(F::FinDomFunctorVector, path::Path) =
+normalize_ob_value(C::Cat, x) = x
+normalize_ob_value(C::FinCatGraph, v::Vertex) = v[]
+normalize_hom_value(C::Cat, f) = f
+normalize_hom_value(C::FinCatGraph, f) = Path(graph(C), f)
+normalize_hom_value(C::FinCatGraph, path::Path) = path
+
+ob_map(F::FinDomFunctorMap, x) = F.ob_map[x]
+hom_map(F::FinDomFunctorMap, f) = F.hom_map[f]
+
+ob_map(F::FinDomFunctorMap{<:FinCatGraph}, v::Vertex) = F.ob_map[v[]]
+ob_map(F::FinDomFunctorMap{<:FinCatGraph,<:FinCatGraph}, v::Vertex) =
+  Vertex(F.ob_map[v[]])
+hom_map(F::FinDomFunctorMap{<:FinCatGraph}, e::Edge) = F.hom_map[e[]]
+hom_map(F::FinDomFunctorMap{<:FinCatGraph}, path::Path) =
   mapreduce(e -> hom_map(F, e), compose, edges(path),
             init=id(ob_map(F, dom(path))))
+
+ob_map(F::FinDomFunctorMap, x::GATExpr{:generator}) = F.ob_map[first(x)]
+hom_map(F::FinDomFunctorMap, f::GATExpr{:generator}) = F.hom_map[first(f)]
+hom_map(F::FinDomFunctorMap, f::GATExpr{:id}) = ob_map(F, dom(f))
+hom_map(F::FinDomFunctorMap, f::GATExpr{:compose}) =
+  mapreduce(f -> hom_map(F, f), compose, args(f))
+
+""" Vector-based functor out of finitely presented category.
+"""
+const FinDomFunctorVector{Dom<:FinCat{Int},Codom<:Cat,ObMap<:AbstractVector,HomMap<:AbstractVector} =
+  FinDomFunctorMap{Dom,Codom,ObMap,HomMap}
 
 collect_ob(F::FinDomFunctorVector) = F.ob_map
 collect_hom(F::FinDomFunctorVector) = F.hom_map
 
-(F::FinDomFunctorVector)(x::Vertex) = ob_map(F, x)
-(F::FinDomFunctorVector)(f::Union{Edge,Path}) = hom_map(F, f)
-
 Ob(F::FinDomFunctorVector) = FinDomFunction(F.ob_map, Ob(codom(F)))
 
-# `FreeDiagrams` interop
-#-----------------------
+# C-set interop
+#--------------
+
+function FinDomFunctor(pres::Presentation, X::ACSet)
+  ob_map = Dict(c => FinSet(X, nameof(c)) for c in generators(pres, :Ob))
+  hom_map = Dict(f => FinFunction(X, nameof(f)) for f in generators(pres, :Hom))
+  FinDomFunctor(ob_map, hom_map, FinCat(pres))
+end
+
+# Free diagram interop
+#---------------------
 
 function FreeDiagram(F::FinDomFunctor{<:FreeCatGraph,<:TypeCat{Ob,Hom}}) where {Ob,Hom}
   diagram = FreeDiagram{Ob,Hom}()

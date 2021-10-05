@@ -1,7 +1,9 @@
 module TestFinCats
 using Test
 
-using Catlab.CategoricalAlgebra, Catlab.Graphs
+using Catlab, Catlab.CategoricalAlgebra, Catlab.Graphs
+using Catlab.Theories: FreeCategory
+using Catlab.Graphs.BasicGraphs: TheoryGraph
 
 # Categories on graphs
 ######################
@@ -65,12 +67,38 @@ diagram = FreeDiagram(ParallelPair(f, g))
 #---------------
 
 # Simplex category truncated to one dimension.
-Δ¹_graph = Graph(2)
-add_edges!(Δ¹_graph, [2,1,1], [1,2,2])
-Δ¹ = FinCat(Δ¹_graph, [ [2,1] => empty(Path, 1),
-                        [3,1] => empty(Path, 1) ])
-@test graph(Δ¹) == Δ¹_graph
+Δ¹_generators = Graph(2)
+add_edges!(Δ¹_generators, [1,1,2], [2,2,1])
+Δ¹ = FinCat(Δ¹_generators, [ [1,3] => empty(Path, 1),
+                             [2,3] => empty(Path, 1) ])
+@test graph(Δ¹) == Δ¹_generators
 @test length(equations(Δ¹)) == 2
 @test !is_free(Δ¹)
+
+# Symbolic categories
+#####################
+
+@present Simplex1D(FreeCategory) begin
+  (V, E)::Ob
+  (δ₀, δ₁)::Hom(V, E)
+  σ₀::Hom(E, V)
+
+  δ₀ ⋅ σ₀ == id(V)
+  δ₁ ⋅ σ₀ == id(V)
+end
+
+Δ¹ = FinCat(Simplex1D)
+@test Δ¹ isa FinCat{FreeCategory.Ob,FreeCategory.Hom}
+@test first.(ob_generators(Δ¹)) == [:V, :E]
+@test first.(hom_generators(Δ¹)) == [:δ₀, :δ₁, :σ₀]
+@test length(equations(Δ¹)) == 2
+@test !is_free(Δ¹)
+
+g = path_graph(Graph, 3)
+F = FinDomFunctor(TheoryGraph, g)
+@test ob_map(F, :V) == FinSet(3)
+@test hom_map(F, :src) == FinFunction([1,2], 3)
+@test F(generator(TheoryGraph, :E)) == FinSet(2)
+@test F(generator(TheoryGraph, :tgt)) == FinFunction([2,3], 3)
 
 end
