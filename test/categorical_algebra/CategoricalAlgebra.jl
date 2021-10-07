@@ -37,6 +37,7 @@ end
 end
 
 @testset "Categories" begin
+  include("Categories.jl")
   include("FinCats.jl")
   include("CatElements.jl")
 end

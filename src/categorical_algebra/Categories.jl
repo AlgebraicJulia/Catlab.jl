@@ -13,9 +13,10 @@ instances are supported through the wrapper type [`TypeCat`](@ref). Finitely
 presented categories are provided by another module, [`FinCats`](@ref).
 """
 module Categories
-export Cat, Functor, dom, codom, TypeCat
+export Cat, TypeCat, Ob, Functor, dom, codom, ob_map, hom_map
 
-import ...Theories: dom, codom
+using ..Sets
+import ...Theories: Ob, dom, codom
 
 # Generic interface
 ###################
@@ -33,11 +34,32 @@ in the graph.
 abstract type Cat{Ob,Hom} end
 
 """ Abstract base type for a functor between categories.
+
+A functor has a domain and a codomain ([`dom`](@ref) and [`codom`](@ref)), which
+are categories, and object and morphism maps, which can be evaluated using
+[`ob_map`](@ref) and [`hom_map`](@ref). The functor object can also be called
+directly when the objects and morphisms have distinct Julia types. This is often
+but not always the case (see [`Cat`](@ref)), so when writing generic code one
+should prefer the `ob_map` and `hom_map` functions.
 """
 abstract type Functor{Dom<:Cat,Codom<:Cat} end
 
 dom(F::Functor) = F.dom
 codom(F::Functor) = F.codom
+
+""" Evaluate functor on object.
+"""
+function ob_map end
+
+""" Evaluate functor on morphism.
+"""
+function hom_map end
+
+""" Forgetful functor Ob: Cat → Set.
+
+Sends a category to its set of objects and a functor to its object map.
+"""
+function Ob end
 
 # Instances
 ###########
@@ -48,5 +70,7 @@ The Julia types should form an `@instance` of the theory of categories
 ([`Catlab.Theories.Category`](@ref)).
 """
 struct TypeCat{Ob,Hom} <: Cat{Ob,Hom} end
+
+Ob(::TypeCat{T}) where T = TypeSet{T}()
 
 end

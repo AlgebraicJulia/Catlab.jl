@@ -5,23 +5,25 @@ the category **Set**: a finitary, combinatorial setting where explicit
 calculations are possible.
 """
 module FinCats
-export FinCat, FinCatGraph, Ob, is_free, ob_generators, hom_generators,
+export FinCat, FinCatGraph, is_free, ob_generators, hom_generators,
   equations, presentation,
-  FinFunctor, FinDomFunctor, is_functorial, ob_map, hom_map,
-  collect_ob, collect_hom,
+  FinFunctor, FinDomFunctor, is_functorial, collect_ob, collect_hom,
   Vertex, Edge, Path, graph, edges, src, tgt
 
 using AutoHashEquals
+using Reexport
 using StaticArrays: SVector
 
+@reexport using ..Categories
 using ...GAT, ...Present, ...Syntax
 import ...Present: equations
 using ...Theories: Category, ObExpr, HomExpr
-import ...Theories: Ob, dom, codom, id, compose, ⋅, ∘
-using ...Graphs, ..FreeDiagrams, ..FinSets, ..CSets, ..Categories
+import ...Theories: dom, codom, id, compose, ⋅, ∘
+using ...Graphs, ..FreeDiagrams, ..FinSets, ..CSets
 import ...Graphs: edges, src, tgt
 import ..FreeDiagrams: FreeDiagram, diagram_ob_type, cone_objects, cocone_objects
 import ..Limits: limit, colimit
+import ..Categories: Ob, ob_map, hom_map
 
 # Categories
 ############
