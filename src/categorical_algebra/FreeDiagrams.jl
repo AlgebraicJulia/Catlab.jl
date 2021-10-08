@@ -64,7 +64,7 @@ diagram_type(::FixedShapeFreeDiagram{Ob,Hom}) where {Ob,Hom} = Tuple{Ob,Hom}
 # Discrete diagrams
 #------------------
 
-""" Discrete diagram: a diagram whose only morphisms are identities.
+""" Discrete diagram: a diagram with no non-identity morphisms.
 """
 @auto_hash_equals struct DiscreteDiagram{Ob,Objects<:AbstractVector{Ob}} <:
     FixedShapeFreeDiagram{Ob,Any}

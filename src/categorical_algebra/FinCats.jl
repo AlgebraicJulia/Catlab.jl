@@ -22,7 +22,7 @@ using StaticArrays: SVector
 @reexport using ..Categories
 using ...GAT, ...Present, ...Syntax
 import ...Present: equations
-using ...Theories: Category, ObExpr, HomExpr
+using ...Theories: Category, ObExpr, HomExpr, roottype
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ...Graphs, ..FreeDiagrams, ..FinSets, ..CSets
 import ...Graphs: edges, src, tgt
@@ -300,10 +300,10 @@ The object and morphism mappings can be vectors or dictionaries.
 
   function FinDomFunctorMap(ob_map::ObD, hom_map::HomD, dom::Dom, codom::Codom) where
       {ObD<:AbstractDict, HomD<:AbstractDict, Dom, Codom}
-    ob_map = (ObD.name.wrapper)(functor_key(dom, k) => ob(codom, v)
-                                for (k, v) in ob_map)
-    hom_map = (HomD.name.wrapper)(functor_key(dom, k) => hom(codom, v)
-                                  for (k, v) in hom_map)
+    ob_map = (roottype(ObD))(functor_key(dom, k) => ob(codom, v)
+                             for (k, v) in ob_map)
+    hom_map = (roottype(HomD))(functor_key(dom, k) => hom(codom, v)
+                               for (k, v) in hom_map)
     new{Dom,Codom,typeof(ob_map),typeof(hom_map)}(ob_map, hom_map, dom, codom)
   end
 end
