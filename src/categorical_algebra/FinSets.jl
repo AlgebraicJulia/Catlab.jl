@@ -110,8 +110,8 @@ Sets.show_type(io::IO, ::Type{<:FinDomFunction}) = print(io, "FinDomFunction")
 The domain of this function is always of type `FinSet{Int}`, with elements of
 the form ``{1,...,n}``.
 """
-@auto_hash_equals struct FinDomFunctionVector{T,V<:AbstractVector{T},
-    Codom<:SetOb{T}} <: FinDomFunction{Int,FinSet{Int,Int},Codom}
+struct FinDomFunctionVector{T,V<:AbstractVector{T}, Codom<:SetOb{T}} <:
+    FinDomFunction{Int,FinSet{Int,Int},Codom}
   func::V
   codom::Codom
 end
@@ -182,6 +182,11 @@ function IndexedFinDomFunction(f::AbstractVector{T}, codom::SetOb{T};
   end
   IndexedFinDomFunction(f, index, codom)
 end
+
+Base.:(==)(f::Union{FinDomFunctionVector,IndexedFinDomFunction},
+           g::Union{FinDomFunctionVector,IndexedFinDomFunction}) =
+  # Ignore index when comparing for equality.
+  f.func == g.func && codom(f) == codom(g)
 
 Base.show(io::IO, f::IndexedFinDomFunction) =
   print(io, "FinDomFunction($(f.func), $(dom(f)), $(codom(f)), index=true)")

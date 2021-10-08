@@ -191,7 +191,7 @@ all_neighbors(g::AbstractGraph, v::Int) =
 The [induced subgraph](https://en.wikipedia.org/wiki/Induced_subgraph) consists
 of the given vertices and all edges between vertices in this set.
 """
-function induced_subgraph(g::G, vs::AbstractVector{Int}) where G <: ACSet
+function induced_subgraph(g::G, vs::AbstractVector{Int}) where G <: HasGraph
   vset = Set(vs)
   length(vs) == length(vset) || error("Duplicate vertices in: $vs")
   es = Iterators.filter(Iterators.flatten(incident(g, vs, :src))) do e

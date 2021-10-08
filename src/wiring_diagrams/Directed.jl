@@ -31,6 +31,7 @@ using AutoHashEquals
 
 using ...Present, ...Graphs.BasicGraphs, ...CategoricalAlgebra.CSets
 import ...CategoricalAlgebra.CSets: is_isomorphic
+import ...CategoricalAlgebra.FinCats: graph
 using ...Graphs.BasicGraphs: TheoryGraph
 import ...Graphs: all_neighbors, neighbors, outneighbors, inneighbors
 

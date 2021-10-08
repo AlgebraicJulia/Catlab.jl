@@ -22,7 +22,7 @@ abstract type HomHExpr{T} <: CategoryExpr{T} end
   end
 
   # Hom categories: vertical composition
-  id(f)::(f ⇒ f) ⊣ (A::Ob, B::Ob, f::(A ⇒ B))
+  id(f)::(f ⇒ f) ⊣ (A::Ob, B::Ob, f::(A → B))
   compose(α::(f ⇒ g), β::(g ⇒ h))::(f ⇒ h) ⊣
     (A::Ob, B::Ob, f::(A → B), g::(A → B), h::(A → B))
 

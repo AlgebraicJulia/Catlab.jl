@@ -1,16 +1,12 @@
 module TestDataMigration
 using Test
-using Catlab.CSetDataStructures
-using Catlab.CategoricalAlgebra
-using Catlab.Graphs
+
+using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryWeightedGraph
 using Catlab.Graphs.BipartiteGraphs: TheoryUndirectedBipartiteGraph
-using Catlab.Theories
-using Catlab.Theories: id, compose
-using Catlab.Present
 
 # Pullback data migration
-###########################
+#########################
 
 @present TheoryDDS(FreeSchema) begin
   X::Ob
@@ -65,28 +61,22 @@ add_parts!(wg, :E, 4, src=[1,2,3,4], tgt=[2,3,4,1], weight=[101, 102, 103, 100])
 @test Presentation(Graph(1)) == TheoryGraph
 @test Presentation(ldds) == TheoryLabeledDDS
 
-
-F = Functor(
+F = FinFunctor(
   Dict(V => S, E => S), 
   Dict(s => id(S), t => ϕ, weight => compose(ϕ, label)),
   TheoryWeightedGraph, TheoryLabeledDDS
 )
+ΔF = Delta(F, LabeledDDS{Int}, WeightedGraph{Int})
+@test wg == ΔF(ldds)
 
-ΔF = Delta(F, LabeledDDS, WeightedGraph)
-@test dom(ΔF) == LabeledDDS
-@test codom(ΔF) == WeightedGraph
-
-@test wg == WeightedGraph{Int}(ldds, F) 
-
-idF = Functor(
+idF = FinFunctor(
   Dict(X => X, Label => Label), 
   Dict(ϕ => ϕ, label => label), 
   TheoryLabeledDDS, TheoryLabeledDDS
 )
-
 @test ldds == LabeledDDS{Int}(ldds, idF)
 
-# Left Pushforward data migration
+# Left pushforward data migration
 #################################
 
 Σ = Sigma
@@ -97,25 +87,22 @@ srcB, tgtB = generators(TheoryUndirectedBipartiteGraph, :Hom)
 VG, EG = generators(TheoryGraph, :Ob)
 srcG, tgtG = generators(TheoryGraph, :Hom)
 
-F = Functor(
-    Dict(V1B => VG, V2B => VG, EB => EG), 
-    Dict(srcB => srcG, tgtB => tgtG),
-    TheoryUndirectedBipartiteGraph, TheoryGraph
+F = FinFunctor(
+  Dict(V1B => VG, V2B => VG, EB => EG),
+  Dict(srcB => srcG, tgtB => tgtG),
+  TheoryUndirectedBipartiteGraph, TheoryGraph
 )
 
-idF = Functor(
+idF = FinFunctor(
   Dict(VG => VG, EG => EG),
   Dict(srcG => srcG, tgtG => tgtG),
   TheoryGraph, TheoryGraph
 )
 
-ΣF =  Σ(F, UndirectedBipartiteGraph, Graph)
-@test dom(ΣF) == UndirectedBipartiteGraph
-@test codom(ΣF) == Graph
-
+ΣF = Σ(F, UndirectedBipartiteGraph, Graph)
 X = UndirectedBipartiteGraph()
-Y = ΣF(X)
 
+Y = ΣF(X)
 @test nparts(Y, :V) == 0
 @test nparts(Y, :E) == 0
 
@@ -134,7 +121,7 @@ Y = ΣF(X)
 
 @test Σ(idF, Graph, Graph)(Y) == Y
 
-@present ThSpan(FreeSchema) begin 
+@present ThSpan(FreeSchema) begin
   (L1, L2, A)::Ob
   l1::Hom(A, L1)
   l2::Hom(A, L2)
@@ -158,9 +145,9 @@ L1, L2, A = generators(ThSpan, :Ob)
 l1, l2 = generators(ThSpan, :Hom)
 I = generators(ThInitial)[1]
 
-bang = Functor(
-  Dict{FreeSchema.Ob, FreeSchema.Ob}(L1 => I, L2 => I, A => I),
-  Dict{FreeSchema.Hom, FreeSchema.Hom}(l1 => id(I), l2 => id(I)),
+bang = FinFunctor(
+  Dict(L1 => I, L2 => I, A => I),
+  Dict(l1 => id(I), l2 => id(I)),
   ThSpan, ThInitial
 )
 
@@ -169,16 +156,8 @@ Y = Σbang(X)
 
 @test nparts(Y, :I) == 4
 
-vertex = Functor(
-  Dict{FreeSchema.Ob, FreeSchema.Ob}(I => VG),
-  Dict{FreeSchema.Hom, FreeSchema.Hom}(),
-  ThInitial, TheoryGraph
-)
-edge = Functor(
-  Dict{FreeSchema.Ob, FreeSchema.Ob}(I => EG), 
-  Dict{FreeSchema.Hom, FreeSchema.Hom}(),
-  ThInitial, TheoryGraph
-)
+vertex = FinFunctor(Dict(I => VG), Dict(), ThInitial, TheoryGraph)
+edge = FinFunctor(Dict(I => EG), Dict(), ThInitial, TheoryGraph)
 
 Z = Σ(vertex, Initial, Graph)(Y)
 @test nparts(Z, :V) == 4
@@ -189,4 +168,4 @@ Z = Σ(edge, Initial, Graph)(Y)
 @test nparts(Z, :E) == 4
 @test Z[:src] ∪ Z[:tgt] == 1:8
 
-end #module
+end

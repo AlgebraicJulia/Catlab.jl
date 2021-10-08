@@ -1,5 +1,6 @@
 module GraphGenerators
-export path_graph, cycle_graph, complete_graph, star_graph, wheel_graph
+export path_graph, cycle_graph, complete_graph, star_graph, wheel_graph,
+  parallel_arrows
 
 using ...CSetDataStructures, ..BasicGraphs
 using ...CSetDataStructures: hom
@@ -59,9 +60,16 @@ function wheel_graph(::Type{T}, n::Int) where T <: ACSet
   g
 end
 
-# Should this be exported from `BasicGraphs`?
-@generated function is_directed(::Type{T}) where {S, Ts, T<:StructACSet{S,Ts}}
-  !(:inv ∈ hom(S))
+""" Graph with two vertices and ``n`` parallel edges.
+"""
+function parallel_arrows(::Type{T}, n::Int; V=(;), E=(;)) where T <: ACSet
+  g = T()
+  add_vertices!(g, 2; V...)
+  add_edges!(g, fill(1,n), fill(2,n); E...)
+  g
 end
+
+# Should this be exported from `BasicGraphs`?
+@generated is_directed(::Type{T}) where {S, T<:StructACSet{S}} = :inv ∉ hom(S)
 
 end

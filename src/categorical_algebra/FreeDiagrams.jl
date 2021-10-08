@@ -10,7 +10,7 @@ export FreeDiagram, BipartiteFreeDiagram, FixedShapeFreeDiagram,
   DiscreteDiagram, EmptyDiagram, ObjectPair,
   Span, Cospan, Multispan, Multicospan, SMultispan, SMulticospan,
   ParallelPair, ParallelMorphisms, ComposablePair, ComposableMorphisms,
-  ob_type, cone_objects, cocone_objects,
+  diagram_ob_type, cone_objects, cocone_objects,
   ob, hom, dom, codom, apex, legs, feet, left, right, bundle_legs,
   nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
   add_vertex!, add_vertices!, add_edge!, add_edges!,
@@ -30,7 +30,7 @@ using ...Graphs.BipartiteGraphs: TheoryUndirectedBipartiteGraph
 
 """ Given a diagram in a category ``C``, return Julia type of objects in ``C``.
 """
-function ob_type end
+function diagram_ob_type end
 
 """ Objects in diagram that will have explicit legs in limit cone.
 
@@ -58,7 +58,7 @@ cocone_objects(diagram) = ob(diagram)
 """
 abstract type FixedShapeFreeDiagram{Ob} end
 
-ob_type(::FixedShapeFreeDiagram{Ob}) where Ob = Ob
+diagram_ob_type(::FixedShapeFreeDiagram{Ob}) where Ob = Ob
 
 # Discrete diagrams
 #------------------
@@ -337,11 +337,11 @@ Colimits are dual.
 @acset_type BipartiteFreeDiagram(TheoryBipartiteFreeDiagram, index=[:src, :tgt]) <:
   AbstractBipartiteFreeDiagram
 
-ob_type(d::AbstractBipartiteFreeDiagram{S,Tuple{Ob,Hom}}) where {S,Ob,Hom} = Ob
 ob₁(d::AbstractBipartiteFreeDiagram, args...) = subpart(d, args..., :ob₁)
 ob₂(d::AbstractBipartiteFreeDiagram, args...) = subpart(d, args..., :ob₂)
 hom(d::AbstractBipartiteFreeDiagram, args...) = subpart(d, args..., :hom)
 
+diagram_ob_type(d::AbstractBipartiteFreeDiagram{S,Tuple{Ob,Hom}}) where {S,Ob,Hom} = Ob
 cone_objects(diagram::AbstractBipartiteFreeDiagram) = ob₁(diagram)
 cocone_objects(diagram::AbstractBipartiteFreeDiagram) = ob₂(diagram)
 
@@ -395,9 +395,10 @@ end
 @acset_type FreeDiagram(TheoryFreeDiagram, index=[:src,:tgt]) <:
   AbstractFreeDiagram
 
-ob_type(d::AbstractFreeDiagram{S,Tuple{Ob,Hom}}) where {S,Ob,Hom} = Ob
 ob(d::AbstractFreeDiagram, args...) = subpart(d, args..., :ob)
 hom(d::AbstractFreeDiagram, args...) = subpart(d, args..., :hom)
+
+diagram_ob_type(d::AbstractFreeDiagram{S,Tuple{Ob,Hom}}) where {S,Ob,Hom} = Ob
 
 function FreeDiagram(obs::AbstractVector{Ob},
                      homs::AbstractVector{Tuple{Hom,Int,Int}}) where {Ob,Hom}

@@ -56,4 +56,12 @@ g = wheel_graph(SymmetricGraph, n)
 triangle = cycle_graph(SymmetricGraph, 3)
 @test length(homomorphisms(triangle, g)) == 6(n-1) # == 3! * (n-1)
 
+# Parallel arrows
+#----------------
+
+g = parallel_arrows(Graph, n)
+@test (nv(g), ne(g)) == (2, n)
+@test all(==(1), src(g))
+@test all(==(2), tgt(g))
+
 end
