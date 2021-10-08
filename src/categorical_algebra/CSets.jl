@@ -619,7 +619,7 @@ end
 # Compute limits and colimits of C-sets by reducing to those in FinSet using the
 # "pointwise" formula for (co)limits in functor categories.
 
-function limit(::Type{ACS}, diagram) where
+function limit(::Type{<:Tuple{ACS,Any}}, diagram) where
     {S <: CSetSchemaDescType, ACS <: StructCSet{S}}
   limits = map(limit, unpack_diagram(diagram))
   Xs = cone_objects(diagram)
@@ -643,7 +643,8 @@ function universal(lim::CSetLimit, cone::Multispan)
   CSetTransformation(components, apex(cone), ob(lim))
 end
 
-function colimit(::Type{ACS}, diagram) where {S, Ts, ACS <: StructACSet{S,Ts}}
+function colimit(::Type{<:Tuple{ACS,Any}}, diagram) where
+    {S, Ts, ACS <: StructACSet{S,Ts}}
   # Colimit of C-set without attributes.
   colimits = map(colimit, unpack_diagram(diagram))
   Xs = cocone_objects(diagram)
