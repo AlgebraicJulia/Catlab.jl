@@ -102,8 +102,11 @@ codom(T::Type{<:SchemaDescType},f::Symbol) = ob(T)[codom_num(T,f)]
 
 attr(::Type{<:SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}}) where
   {obs,homs,attrtypes,attrs,doms,codoms} = attrs
+
 attrtype(::Type{<:SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}}) where
   {obs,homs,attrtypes,attrs,doms,codoms} = attrtypes
+attrtype_num(::Type{<:SchemaDescType{obs,homs,attrtypes}}, x::Symbol) where
+  {obs,homs,attrtypes} = findfirst(attrtypes .== x)
 
 function adom_nums(::Type{<:SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}}) where
   {obs,homs,attrtypes,attrs,doms,codoms}

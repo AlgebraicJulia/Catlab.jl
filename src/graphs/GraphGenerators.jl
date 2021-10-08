@@ -42,10 +42,10 @@ end
 
 In the directed case, the edges point outward.
 """
-function star_graph(::Type{T}, n::Int) where T <: ACSet
+function star_graph(::Type{T}, n::Int; E=(;)) where T <: ACSet
   g = T()
   add_vertices!(g, n)
-  add_edges!(g, fill(n,n-1), 1:(n-1))
+  add_edges!(g, fill(n,n-1), 1:(n-1); E...)
   g
 end
 

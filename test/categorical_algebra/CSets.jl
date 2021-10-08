@@ -62,7 +62,10 @@ g, h = path_graph(Graph, 4), cycle_graph(Graph, 2)
 # Category of C-sets.
 @test dom(α) === g
 @test codom(α) === h
-@test compose(α,β) == CSetTransformation((V=α[:V]⋅β[:V], E=α[:E]⋅β[:E]), g, h)
+γ = compose(α,β)
+@test γ isa TightACSetTransformation
+@test γ == CSetTransformation((V=α[:V]⋅β[:V], E=α[:E]⋅β[:E]), g, h)
+@test id(g) isa TightACSetTransformation
 @test force(compose(id(g), α)) == α
 @test force(compose(α, id(h))) == α
 
@@ -221,6 +224,20 @@ h = path_graph(WeightedGraph{Float64}, 4, E=(weight=[1.,2.,3.],))
 @test !is_natural(β) # Preserves weight but not graph homomorphism
 β = ACSetTransformation((V=[1,2], E=[1]), g, h)
 @test !is_natural(β) # Graph homomorphism but does not preserve weight
+
+# Loose morphisms.
+α = ACSetTransformation(g, h, V=[1,2], E=[1], Weight=x->x/2)
+@test α isa LooseACSetTransformation
+@test α[:Weight](10.0) == 5.0
+@test is_natural(α)
+
+g = star_graph(WeightedGraph{Bool}, 3, E=(weight=[true,false],))
+α = ACSetTransformation((V=[2,1,3], E=[2,1], Weight=~), g, g)
+@test is_natural(α)
+α² = compose(α, α)
+@test α² isa LooseACSetTransformation
+@test α²[:V] == force(id(FinSet(3)))
+@test α²[:Weight](true) == true
 
 # Colimits
 #---------
