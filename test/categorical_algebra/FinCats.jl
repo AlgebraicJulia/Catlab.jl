@@ -65,7 +65,7 @@ diagram = FreeDiagram(ParallelPair(f, g))
 @test FinDomFunctor(diagram) == F
 
 # Diagram interface.
-@test diagram_ob_type(F) <: FinSet{Int}
+@test diagram_type(F) <: Tuple{FinSet{Int},FinFunction{Int}}
 @test cone_objects(F) == [FinSet(2), FinSet(3)]
 @test cocone_objects(F) == [FinSet(2), FinSet(3)]
 @test ob(limit(F)) == FinSet(1)
