@@ -40,6 +40,8 @@ pair = ObjectPair(A,B)
 @test diagram_type(pair) <: Tuple{FreeCategory.Ob,Any}
 @test length(pair) == 2
 @test (first(pair), last(pair)) == (A, B)
+pair = ObjectPair(A, B, FreeCategory.Hom)
+@test diagram_type(pair) <: Tuple{FreeCategory.Ob,FreeCategory.Hom}
 
 # Discrete diagrams.
 discrete = DiscreteDiagram([A,B,C])

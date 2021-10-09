@@ -8,7 +8,7 @@ export ACSetTransformation, CSetTransformation,
   isomorphism, isomorphisms, is_isomorphic,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
 
-using Base.Iterators: flatten, repeated
+using Base.Iterators: flatten
 using Base.Meta: quot
 using AutoHashEquals
 using JSON
@@ -619,23 +619,58 @@ struct ACSetColimit{Ob <: StructACSet, Diagram, Cocone <: Multicospan{Ob},
   colimits::Colimits
 end
 
+# By default, products of acsets are taken w.r.t. loose acset morphisms, whereas
+# coproducts of acsets are taken w.r.t. tight acset morphisms. We do not need to
+# provide defaults for limits and colimits of non-discrete diagrams, because the
+# type of the diagram's morphisms disambiguates the situation.
+
+Limits.terminal(::Type{T}; kw...) where T <: ACSet =
+  limit(EmptyDiagram{T}(LooseACSetTransformation); kw...)
+Limits.product(X::ACSet, Y::ACSet; kw...) =
+  limit(ObjectPair(X, Y, LooseACSetTransformation); kw...)
+Limits.product(Xs::AbstractVector{<:ACSet}; kw...) =
+  limit(DiscreteDiagram(Xs, LooseACSetTransformation); kw...)
+
+Limits.initial(::Type{T}; kw...) where T <: ACSet =
+  colimit(EmptyDiagram{T}(TightACSetTransformation); kw...)
+Limits.coproduct(X::ACSet, Y::ACSet; kw...) =
+  colimit(ObjectPair(X, Y, TightACSetTransformation); kw...)
+Limits.coproduct(Xs::AbstractVector{<:ACSet}; kw...) =
+  colimit(DiscreteDiagram(Xs, TightACSetTransformation); kw...)
+
 # Compute limits and colimits in C-Set by reducing to those in Set using the
 # "pointwise" formula for (co)limits in functor categories.
 
 function limit(::Type{Tuple{ACS,Hom}}, diagram) where
-    {S, ACS <: StructACSet{S}, Hom}
+    {S, ACS <: StructCSet{S}, Hom <: TightACSetTransformation}
+  limits = map(limit, unpack_diagram(diagram))
+  Xs = cone_objects(diagram)
+  Y = ACS()
+  limit!(Y, diagram, Xs, limits)
+end
+
+function limit(::Type{Tuple{ACS,Hom}}, diagram) where
+    {S, ACS <: StructACSet{S}, Hom <: LooseACSetTransformation}
   limits = map(limit, unpack_diagram(diagram, all=true))
   Xs = cone_objects(diagram)
-  Y = isempty(attr(S)) ? ACS() :
+  Y = isempty(attrtype(S)) ? ACS() :
     roottype(ACS){(eltype(ob(limits[d])) for d in attrtype(S))...}()
+
+  result = limit!(Y, diagram, Xs, limits)
+  for (f, c, d) in zip(attr(S), adom(S), acodom(S))
+    Yfs = map((π, X) -> π ⋅ FinDomFunction(X, f), legs(limits[c]), Xs)
+    Yf = universal(limits[d], Multispan(ob(limits[c]), Yfs))
+    set_subpart!(Y, f, collect(Yf))
+  end
+  result
+end
+
+function limit!(Y::StructACSet{S}, diagram, Xs, limits) where S
   for c in ob(S)
     add_parts!(Y, c, length(ob(limits[c])))
   end
-  for (f,c,d,finite) in flatten((zip(hom(S),dom(S),codom(S),repeated(true)),
-                                 zip(attr(S),adom(S),acodom(S),repeated(false))))
-    Yfs = map(legs(limits[c]), Xs) do π, X
-      compose(π, (finite ? FinFunction : FinDomFunction)(X, f))
-    end
+  for (f, c, d) in zip(hom(S), dom(S), codom(S))
+    Yfs = map((π, X) -> π ⋅ FinFunction(X, f), legs(limits[c]), Xs)
     Yf = universal(limits[d], Multispan(ob(limits[c]), Yfs))
     set_subpart!(Y, f, collect(Yf))
   end
@@ -649,7 +684,7 @@ function universal(lim::ACSetLimit, cone::Multispan)
 end
 
 function colimit(::Type{Tuple{ACS,Hom}}, diagram) where
-    {S, Ts, ACS <: StructACSet{S,Ts}, Hom}
+    {S, Ts, ACS <: StructACSet{S,Ts}, Hom <: TightACSetTransformation}
   # Colimit of C-set without attributes.
   colimits = map(colimit, unpack_diagram(diagram))
   Xs = cocone_objects(diagram)
@@ -658,9 +693,7 @@ function colimit(::Type{Tuple{ACS,Hom}}, diagram) where
     add_parts!(Y, c, length(ob(colim)))
   end
   for (f, c, d) in zip(hom(S), dom(S), codom(S))
-    Yfs = map(legs(colimits[d]), Xs) do ι, X
-      compose(FinFunction(X, f), ι)
-    end
+    Yfs = map((ι, X) -> FinFunction(X, f) ⋅ ι, legs(colimits[d]), Xs)
     Yf = universal(colimits[c], Multicospan(ob(colimits[d]), Yfs))
     set_subpart!(Y, f, collect(Yf))
   end
