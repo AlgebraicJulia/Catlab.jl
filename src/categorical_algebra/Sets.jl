@@ -213,4 +213,9 @@ function universal(lim::Product{<:TypeSet}, span::Multispan{<:SetOb})
   SetFunction(x -> map(f -> f(x), fs), apex(span), ob(lim))
 end
 
+function limit(cospan::Multicospan{<:TypeSet})
+  eltype(apex(cospan)) == Nothing ? product(feet(cospan)) :
+    error("Pullbacks of TypeSets that are not products are not supported")
+end
+
 end

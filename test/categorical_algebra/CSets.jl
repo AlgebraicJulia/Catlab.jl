@@ -260,6 +260,17 @@ prod = ob(lim)
 @test prod[src(prod,1), :vlabel] == (:a, "x")
 @test prod[tgt(prod,1), :vlabel] == (:b, "y")
 
+# Pullback of weighted graphs.
+g0 = WeightedGraph{Nothing}(2)
+add_edges!(g0, 1:2, 1:2)
+g = WeightedGraph{Int}(4)
+add_edges!(g, [1,3], [2,4], weight=[+1, -1])
+ϕ = ACSetTransformation(g, g0, V=[1,1,2,2], E=[1,2], Weight=nothing)
+ψ = ACSetTransformation(g, g0, V=[2,2,1,1], E=[2,1], Weight=nothing)
+pb = ob(pullback(ϕ, ψ))
+@test (nv(pb), ne(pb)) == (8, 2)
+@test Set(pb[:weight]) == Set([(+1, -1), (-1, +1)])
+
 # Colimits
 #---------
 
