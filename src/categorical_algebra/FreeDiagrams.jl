@@ -18,7 +18,7 @@ export FreeDiagram, BipartiteFreeDiagram, FixedShapeFreeDiagram,
   add_vertex₁!, add_vertex₂!, add_vertices₁!, add_vertices₂!
 
 using AutoHashEquals
-using StaticArrays: StaticVector, SVector, @SVector
+using StaticArrays: StaticVector, SVector
 
 using ...Present, ...Theories, ...CSetDataStructures, ...Graphs
 import ...Theories: ob, hom, dom, codom, left, right
@@ -66,16 +66,20 @@ diagram_type(::FixedShapeFreeDiagram{Ob,Hom}) where {Ob,Hom} = Tuple{Ob,Hom}
 
 """ Discrete diagram: a diagram with no non-identity morphisms.
 """
-@auto_hash_equals struct DiscreteDiagram{Ob,Objects<:AbstractVector{Ob}} <:
-    FixedShapeFreeDiagram{Ob,Any}
-  objects::Objects
+@auto_hash_equals struct DiscreteDiagram{Ob,Hom,Obs<:AbstractVector{Ob}} <:
+    FixedShapeFreeDiagram{Ob,Hom}
+  objects::Obs
 end
 
-const EmptyDiagram{Ob} = DiscreteDiagram{Ob,<:StaticVector{0,Ob}}
-const ObjectPair{Ob} = DiscreteDiagram{Ob,<:StaticVector{2,Ob}}
+DiscreteDiagram(objects::Obs, Hom::Type=Any) where {Ob,Obs<:AbstractVector{Ob}} =
+  DiscreteDiagram{Ob,Hom,Obs}(objects)
 
-EmptyDiagram{Ob}() where Ob = DiscreteDiagram(@SVector Ob[])
-ObjectPair(first, second) = DiscreteDiagram(SVector(first, second))
+const EmptyDiagram{Ob,Hom} = DiscreteDiagram{Ob,Hom,<:StaticVector{0,Ob}}
+const ObjectPair{Ob,Hom} = DiscreteDiagram{Ob,Hom,<:StaticVector{2,Ob}}
+
+EmptyDiagram{Ob}(Hom::Type=Any) where Ob = DiscreteDiagram(SVector{0,Ob}(), Hom)
+ObjectPair(first, second, Hom::Type=Any) =
+  DiscreteDiagram(SVector(first, second), Hom)
 
 ob(d::DiscreteDiagram) = d.objects
 

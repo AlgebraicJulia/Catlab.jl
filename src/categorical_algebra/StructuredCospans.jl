@@ -223,7 +223,7 @@ end
 abstract type AbstractDiscreteACSet{X <: StructACSet} end
 
 codom(::Type{<:AbstractDiscreteACSet{X}}) where
-  {S, X<:StructACSet{S}} = (X, ACSetTransformation{S})
+  {S, X<:StructACSet{S}} = (X, TightACSetTransformation{S})
 
 StructuredCospan{L}(x::StructACSet, f::FinFunction{Int,Int},
                     g::FinFunction{Int,Int}) where {L<:AbstractDiscreteACSet} =
@@ -258,7 +258,7 @@ forgetting the rest of C. Data attributes of the chosen object are preserved.
 struct DiscreteACSet{A <: StructACSet, X} <: AbstractDiscreteACSet{X} end
 
 dom(::Type{<:DiscreteACSet{A}}) where {S, A<:StructACSet{S}} =
-  (A, ACSetTransformation{S})
+  (A, TightACSetTransformation{S})
 
 function StructuredMulticospan{L}(x::StructACSet,
                                   cospan::Multicospan{<:FinSet{Int}}) where
