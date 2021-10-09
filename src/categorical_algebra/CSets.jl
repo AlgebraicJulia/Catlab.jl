@@ -239,6 +239,11 @@ function coerce_type_component(type::Symbol, f::SetFunction,
   eltype(codom(f)) <: codom_type || error("Codomain error in component $type")
   return f
 end
+function coerce_type_component(type::Symbol, ::Nothing,
+                               dom_type::Type, codom_type::Type)
+  codom_type == Nothing || error("Codomain error in component $type")
+  ConstantFunction(nothing, TypeSet(dom_type))
+end
 coerce_type_component(type::Symbol, f, dom_type::Type, codom_type::Type) =
   SetFunction(f, TypeSet(dom_type), TypeSet(codom_type))
 
