@@ -1,4 +1,4 @@
-""" Generate and parse computer programs representing morphisms.
+""" Generate and parse Julia programs representing diagrams.
 """
 module Programs
 
