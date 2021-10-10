@@ -138,7 +138,6 @@ end
 @test Dendrogram <: AbstractDendrogram
 @test Dendrogram <: ACSet
 @test Dendrogram{Real} <: AbstractDendrogram{S,Tuple{Real}} where {S}
-# @test_throws ErrorException CSetType(TheoryDendrogram)
 
 d = Dendrogram{Int}()
 add_parts!(d, :X, 3, height=0)
