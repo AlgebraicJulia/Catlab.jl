@@ -107,14 +107,14 @@ attrtype(::Type{<:SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}}) where
 
 function adom_nums(::Type{<:SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}}) where
   {obs,homs,attrtypes,attrs,doms,codoms}
-  Tuple(map(last, filter(((f,_),) -> f ∈ attrs, collect(pairs(doms)))))
+  Tuple(map(a -> doms[a], attrs))
 end
 
 adom(T::Type{<:SchemaDescType}) = map(i -> ob(T)[i], adom_nums(T))
 
 function acodom_nums(::Type{<:SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}}) where
   {obs,homs,attrtypes,attrs,doms,codoms}
-  Tuple(map(last, filter(((f,_),) -> f ∈ attrs, collect(pairs(codoms)))))
+  Tuple(map(a -> codoms[a], attrs))
 end
 
 acodom(T::Type{<:SchemaDescType}) = map(i -> attrtype(T)[i], acodom_nums(T))
