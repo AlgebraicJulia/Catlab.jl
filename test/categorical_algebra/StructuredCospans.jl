@@ -152,4 +152,38 @@ b = OpenLabeledGraphOb{Symbol}(FinSet(3), vlabel=[:x,:y,:z])
 @test dom(braid(a, b)) == a⊗b
 @test codom(braid(a, b)) == b⊗a
 
+# Structured cospan of multiply attributed C-sets
+#################################################
+
+# Attributed boundary
+#--------------------
+
+@present TheoryMultiplyAttributedGraph <: TheoryGraph begin
+  Length::AttrType
+  Size::AttrType
+  Label::AttrType
+  vlabel::Attr(V,Label)
+  elabel::Attr(E,Label)
+  vsize::Attr(V, Size)
+  elength::Attr(E, Length)
+end
+
+@acset_type MAGraph(TheoryMultiplyAttributedGraph, index=[:src,:tgt]) <: AbstractGraph
+const OpenMAGraphOb, OpenMAGraph = OpenACSetTypes(MAGraph, :V)
+
+g0 = @acset MAGraph{Int, Float64, Symbol} begin
+  V = 5
+  E = 3
+  vlabel = [:a, :b, :c, :d, :e]
+  elabel = [:a, :b, :c]
+  vsize = [0.0, 1.0, 3.0, 3.0, 4.0]
+  elength = [1,2,3]
+  src = [1, 2, 3]
+  tgt = [3, 4, 5]
+end
+g = OpenMAGraph{Int, Float64, Symbol}(g0, FinFunction([1],5), FinFunction([3,4],5))
+
+g′ = OpenMAGraph{Int, Float64, Symbol}(g0, FinFunction([1],5), FinFunction([3],5), FinFunction([4],5))
+@test bundle_legs(g′, [1, (2,3)]) == g
+
 end
