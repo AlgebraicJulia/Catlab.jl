@@ -28,6 +28,12 @@ spprint(expr::Expression) = sprint(pprint, expr)
 @test spprint(Edge(NodeID("n1"), NodeID("n2"), NodeID("n3"))) ==
   "n1 -- n2 -- n3;"
 
+# NodeID/Edge equality
+@test Edge("n1","n2") == Edge("n1","n2")
+@test Edge(NodeID("n1","p1"), NodeID("n2","p2")) ==
+  Edge(NodeID("n1","p1"), NodeID("n2","p2"))
+@test NodeID("n1", "p1") == NodeID("n1", "p1")
+
 # Graph statement
 graph = Graph("G",
   Node("n1"),

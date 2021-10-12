@@ -10,6 +10,7 @@ export Expression, Statement, Attributes, Graph, Digraph, Subgraph,
   Node, NodeID, Edge, pprint, run_graphviz
 
 using DataStructures: OrderedDict
+using AutoHashEquals
 using Requires: @require
 
 const USE_GV_JLL = Ref(false)
@@ -89,14 +90,14 @@ end
 Node(name::String, attrs::AbstractDict) = Node(name, as_attributes(attrs))
 Node(name::String; attrs...) = Node(name, attrs)
 
-struct NodeID <: Expression
+@auto_hash_equals struct NodeID <: Expression
   name::String
   port::String
   anchor::String
   NodeID(name::String, port::String="", anchor::String="") = new(name, port, anchor)
 end
 
-struct Edge <: Statement
+@auto_hash_equals struct Edge <: Statement
   path::Vector{NodeID}
   attrs::Attributes
 end
