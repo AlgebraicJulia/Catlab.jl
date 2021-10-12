@@ -11,15 +11,24 @@ using Catlab.Graphs.BasicGraphs: TheoryGraph
 # Free categories
 #----------------
 
-g = parallel_arrows(Graph, 2)
+g = parallel_arrows(Graph, 3)
 C = FinCat(g)
 @test graph(C) == g
 @test Ob(C) == FinSet(2)
 @test is_free(C)
+@test ob_generators(C) == 1:2
+@test hom_generators(C) == 1:3
 
 h = Graph(4)
 add_edges!(h, [1,1,2,3], [2,3,4,4])
 D = FinCat(h)
+f = id(D, 2)
+@test (src(f), tgt(f)) == (2, 2)
+@test isempty(edges(f))
+f = compose(D, 1, 3)
+@test edges(f) == [1,3]
+
+C = FinCat(parallel_arrows(Graph, 2))
 F = FinFunctor((V=[1,4], E=[[1,3], [2,4]]), C, D)
 @test dom(F) == C
 @test codom(F) == D
@@ -28,8 +37,6 @@ F = FinFunctor((V=[1,4], E=[[1,3], [2,4]]), C, D)
 
 @test ob_map(F, 2) == 4
 @test hom_map(F, 1) == Path(h, [1,3])
-@test F(Vertex(2)) == Vertex(4)
-@test F(Edge(1)) == Path(h, [1,3])
 @test collect_ob(F) == [1,4]
 @test collect_hom(F) == [Path(h, [1,3]), Path(h, [2,4])]
 
@@ -37,7 +44,7 @@ g, h = path_graph(Graph, 3), path_graph(Graph, 5)
 C, D = FinCat(g), FinCat(h)
 F = FinFunctor([1,3,5], [[1,2],[3,4]], C, D)
 @test is_functorial(F)
-@test F(Path(g, [1,2])) == Path(h, [1,2,3,4])
+@test hom_map(F, Path(g, [1,2])) == Path(h, [1,2,3,4])
 
 # Free diagrams
 #--------------
@@ -67,11 +74,11 @@ diagram = FreeDiagram(ParallelPair(f, g))
 #---------------
 
 # Simplex category truncated to one dimension.
-Δ¹_generators = Graph(2)
-add_edges!(Δ¹_generators, [1,1,2], [2,2,1])
-Δ¹ = FinCat(Δ¹_generators, [ [1,3] => empty(Path, 1),
-                             [2,3] => empty(Path, 1) ])
-@test graph(Δ¹) == Δ¹_generators
+Δ¹_graph = Graph(2)
+add_edges!(Δ¹_graph, [1,1,2], [2,2,1])
+Δ¹ = FinCat(Δ¹_graph, [ [1,3] => empty(Path, Δ¹_graph, 1),
+                        [2,3] => empty(Path, Δ¹_graph, 1) ])
+@test graph(Δ¹) == Δ¹_graph
 @test length(equations(Δ¹)) == 2
 @test !is_free(Δ¹)
 
@@ -96,6 +103,7 @@ end
 
 g = path_graph(Graph, 3)
 F = FinDomFunctor(TheoryGraph, g)
+@test is_functorial(F)
 @test ob_map(F, :V) == FinSet(3)
 @test hom_map(F, :src) == FinFunction([1,2], 3)
 @test F(generator(TheoryGraph, :E)) == FinSet(2)
