@@ -3,6 +3,7 @@ using Test
 
 using Catlab.CategoricalAlgebra, Catlab.Programs.DiagrammaticPrograms
 using Catlab.Programs.DiagrammaticPrograms: NamedGraph, MaybeNamedGraph
+using Catlab.Graphs.BasicGraphs: TheoryGraph
 
 # Graphs
 ########
@@ -75,5 +76,35 @@ end
 Δ¹ = FinCat(Δ¹_graph, [ [1,3] => empty(Path, Δ¹_graph, 1),
                         [2,3] => empty(Path, Δ¹_graph, 1) ])
 @test Δ¹_parsed == Δ¹
+
+# Diagrams
+##########
+
+C = FinCat(TheoryGraph)
+F_parsed = @diagram C begin
+  v::V
+  (e1, e2)::E
+  t::tgt : e1 → v
+  s::src : e2 → v
+end
+J = FinCat(@acset NamedGraph{Symbol} begin
+  V = 3
+  E = 2
+  src = [2,3]
+  tgt = [1,1]
+  vname = [:v, :e1, :e2]
+  ename = [:t, :s]
+end)
+@test dom(F_parsed) == J
+F = FinFunctor([:V,:E,:E], [:tgt, :src], J, C)
+@test F_parsed == F
+
+F_parsed = @diagram C begin
+  v => V
+  (e1, e2) => E
+  t: e1 → v => tgt
+  s: e2 → v => src
+end
+@test F_parsed == F
 
 end

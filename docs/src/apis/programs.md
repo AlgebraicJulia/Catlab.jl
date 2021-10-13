@@ -14,8 +14,9 @@ There are two major macros for constructing wiring diagrams:
 In addition, there is a family of macros for constructing category-theoretic
 [diagrams](https://ncatlab.org/nlab/show/diagram):
 
-- [`@graph`](@ref), for constructing graphs
+- [`@graph`](@ref), for defining a graph
 - [`@category`](@ref), for presenting a category as a graph plus path equations
+- [`@diagram`](@ref), for defining a diagram in a given category
 
 ## API
 
