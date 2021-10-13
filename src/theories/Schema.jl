@@ -78,7 +78,7 @@ hom(::Type{<:SchemaDescType{obs,homs}}) where {obs,homs} = homs
 
 function dom_nums(::Type{<:SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}}) where
   {obs,homs,attrtypes,attrs,doms,codoms}
-  Tuple(map(last, filter(((f,_),) -> f ∈ homs, collect(pairs(doms)))))
+  Tuple(map(h -> doms[h], homs))
 end
 
 dom(T::Type{<:SchemaDescType}) = map(i -> ob(T)[i], dom_nums(T))
@@ -90,7 +90,7 @@ dom(T::Type{<:SchemaDescType},f::Symbol) = ob(T)[dom_num(T,f)]
 
 function codom_nums(::Type{<:SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}}) where
   {obs,homs,attrtypes,attrs,doms,codoms}
-  Tuple(map(last, filter(((f,_),) -> f ∈ homs, collect(pairs(codoms)))))
+  Tuple(map(h -> codoms[h], homs))
 end
 
 codom(T::Type{<:SchemaDescType}) = map(i -> ob(T)[i], codom_nums(T))
@@ -107,14 +107,14 @@ attrtype(::Type{<:SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}}) where
 
 function adom_nums(::Type{<:SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}}) where
   {obs,homs,attrtypes,attrs,doms,codoms}
-  Tuple(map(last, filter(((f,_),) -> f ∈ attrs, collect(pairs(doms)))))
+  Tuple(map(a -> doms[a], attrs))
 end
 
 adom(T::Type{<:SchemaDescType}) = map(i -> ob(T)[i], adom_nums(T))
 
 function acodom_nums(::Type{<:SchemaDescType{obs,homs,attrtypes,attrs,doms,codoms}}) where
   {obs,homs,attrtypes,attrs,doms,codoms}
-  Tuple(map(last, filter(((f,_),) -> f ∈ attrs, collect(pairs(codoms)))))
+  Tuple(map(a -> codoms[a], attrs))
 end
 
 acodom(T::Type{<:SchemaDescType}) = map(i -> attrtype(T)[i], acodom_nums(T))
