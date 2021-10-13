@@ -4,8 +4,9 @@ Here "diagram" means diagram in the ordinary sense of category theory, not
 wiring diagram.
 """
 module DiagrammaticPrograms
-export @graph, @category
+export @graph, @category, @diagram
 
+using Base.Iterators: repeated
 using MLStyle: @match
 
 using ...Present, ...Graphs, ...CategoricalAlgebra
@@ -104,10 +105,11 @@ function parse_edge!(g, s::Symbol, t::Symbol;
 end
 
 function reparse_arrow(expr)
+  # `f : x → y` is parsed by Julia as `(f : x) → y`, not `f : (x → y)`.
   @match expr begin
-    # `f : x → y` is parsed by Julia as `(f : x) → y`, not `f : (x → y)`.
     Expr(:call, :(→), Expr(:call, :(:), f, x), y) =>
       Expr(:call, :(:), f, Expr(:call, :(→), x, y))
+    Expr(head, args...) => Expr(head, (reparse_arrow(arg) for arg in args)...)
     _ => expr
   end
 end
@@ -179,6 +181,72 @@ function parse_hom(g, expr)
     end
   end
   parse(expr)
+end
+
+# Diagrams
+##########
+
+""" Present a diagram in a given category.
+
+Recall that a *diagram* in a category ``C`` is a functor ``F: J → C`` from a
+small category ``J`` into ``C``. Given the category ``C``, this macro presents a
+diagram in ``C``, i.e., constructs a finitely presented indexing category ``J``
+together with a functor ``F: J → C``. This method of simultaneous definition is
+often more convenient than defining ``J`` and ``F`` separately.
+
+For example, the following diagram specifies the paths of length two in a graph:
+
+```julia
+@diagram FinCat(TheoryGraph) begin
+  v::V
+  (e1, e2)::E
+  t::tgt : e1 → v
+  s::src : e2 → v
+end
+```
+"""
+macro diagram(category, body)
+  :(parse_diagram_dsl($(esc(category)), $(Meta.quot(body))))
+end
+
+function parse_diagram_dsl(C::Cat, body::Expr)
+  g, eqs = NamedGraph{Symbol}(), Pair[]
+  F_ob, F_hom = [], []
+  body = Base.remove_linenums!(body)
+  for expr in body.args
+    @match reparse_arrow(expr) begin
+      # x => X
+      Expr(:call, :(=>), x::Symbol, X::Symbol) ||
+      # x::X
+      Expr(:(::), x::Symbol, X::Symbol) => begin
+        add_vertex!(g, vname=x)
+        push!(F_ob, X)
+      end
+      # (x, y, ...) => X
+      Expr(:call, :(=>), Expr(:tuple, xs...), X::Symbol) ||
+      # (x, y, ...)::X
+      Expr(:(::), Expr(:tuple, xs...), X::Symbol) => begin
+        add_vertices!(g, length(xs), vname=xs)
+        append!(F_ob, repeated(X, length(xs)))
+      end
+      # (e: x → y) => f
+      Expr(:call, :(=>), Expr(:call, :(:), e::Symbol,
+                              Expr(:call, :(→), x::Symbol, y::Symbol)), f::Symbol) ||
+      # e::f : x → y
+      Expr(:call, :(:), Expr(:(::), e::Symbol, f::Symbol),
+           Expr(:call, :(→), x::Symbol, y::Symbol)) => begin
+        parse_edge!(g, x, y, ename=e)
+        push!(F_hom, f)
+      end
+      # f == g
+      Expr(:call, :(==), lhs, rhs) => push!(eqs, parse_equation(g, lhs, rhs))
+      _ => error("@diagram macro cannot parse line: $expr")
+    end
+  end
+  J = isempty(eqs) ? FinCat(g) : FinCat(g, eqs)
+  F = FinDomFunctor(F_ob, F_hom, J, C)
+  is_functorial(F) || error("Constructed @diagram is not functorial: $F")
+  return F
 end
 
 end
