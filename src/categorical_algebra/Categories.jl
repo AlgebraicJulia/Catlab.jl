@@ -16,7 +16,7 @@ module Categories
 export Cat, TypeCat, Ob, Functor, dom, codom, compose, id, ob_map, hom_map
 
 using ..Sets
-import ...Theories: Ob, dom, codom, compose, id
+import ...Theories: Ob, ob, hom, dom, codom, compose, id
 
 # Generic interface
 ###################
@@ -35,6 +35,22 @@ The basic operations available in any category are: [`dom`](@ref),
 [`codom`](@ref), [`id`](@ref), [`compose`](@ref).
 """
 abstract type Cat{Ob,Hom} end
+
+""" Coerce or look up object in category.
+
+```julia
+ob(C::Cat{Ob,Hom}, x)::Ob where {Ob,Hom}
+```
+"""
+function ob end
+
+""" Coerce or look up morphism in category.
+
+```julia
+hom(C::Cat{Ob,Hom}, f)::Hom where {Ob,Hom}
+```
+"""
+function hom end
 
 """ Domain of morphism in category.
 """
@@ -91,5 +107,8 @@ The Julia types should form an `@instance` of the theory of categories
 struct TypeCat{Ob,Hom} <: Cat{Ob,Hom} end
 
 Ob(::TypeCat{T}) where T = TypeSet{T}()
+
+ob(::TypeCat{Ob,Hom}, x) where {Ob,Hom} = convert(Ob, x)
+hom(::TypeCat{Ob,Hom}, f) where {Ob,Hom} = convert(Hom, f)
 
 end

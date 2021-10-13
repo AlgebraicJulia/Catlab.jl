@@ -23,12 +23,12 @@ using StaticArrays: SVector
 using ...GAT, ...Present, ...Syntax
 import ...Present: equations
 using ...Theories: Category, ObExpr, HomExpr
-import ...Theories: ob, hom, dom, codom, id, compose, ⋅, ∘
+import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ...Graphs, ..FreeDiagrams, ..FinSets, ..CSets
 import ...Graphs: edges, src, tgt
 import ..FreeDiagrams: FreeDiagram, diagram_ob_type, cone_objects, cocone_objects
 import ..Limits: limit, colimit
-import ..Categories: Ob, ob_map, hom_map
+import ..Categories: Ob, ob, hom, ob_map, hom_map
 
 # Categories
 ############
@@ -40,22 +40,6 @@ abstract type FinCat{Ob,Hom} <: Cat{Ob,Hom} end
 FinCat(g::HasGraph, args...; kw...) = FinCatGraph(g, args...; kw...)
 FinCat(pres::Presentation, args...; kw...) =
   FinCatPresentation(pres, args...; kw...)
-
-""" Look up object in finitely presented category.
-
-```julia
-ob(C::FinCat{Ob,Hom}, x)::Ob where {Ob,Hom}
-```
-"""
-function ob end
-
-""" Look up morphism in finitely presented category.
-
-```julia
-hom(C::FinCat{Ob,Hom}, f)::Hom where {Ob,Hom}
-```
-"""
-function hom end
 
 """ Object generators of finitely presented category.
 
@@ -308,17 +292,17 @@ The object and morphism mappings can be vectors or dictionaries.
       error("Length of object map $ob_map does not match domain $dom")
     length(hom_map) == length(hom_generators(dom)) ||
       error("Length of morphism map $hom_map does not match domain $dom")
-    ob_map = map(x -> functor_ob_value(codom, x), ob_map)
-    hom_map = map(f -> functor_hom_value(codom, f), hom_map)
+    ob_map = map(x -> ob(codom, x), ob_map)
+    hom_map = map(f -> hom(codom, f), hom_map)
     new{Dom,Codom,typeof(ob_map),typeof(hom_map)}(ob_map, hom_map, dom, codom)
   end
 
   function FinDomFunctorMap(ob_map::ObD, hom_map::HomD, dom::Dom, codom::Codom) where
       {ObD<:AbstractDict, HomD<:AbstractDict, Dom, Codom}
-    ob_map = (ObD.name.wrapper)(
-      functor_key(dom, k) => functor_ob_value(codom, v) for (k, v) in ob_map)
-    hom_map = (HomD.name.wrapper)(
-      functor_key(dom, k) => functor_hom_value(codom, v) for (k, v) in hom_map)
+    ob_map = (ObD.name.wrapper)(functor_key(dom, k) => ob(codom, v)
+                                for (k, v) in ob_map)
+    hom_map = (HomD.name.wrapper)(functor_key(dom, k) => hom(codom, v)
+                                  for (k, v) in hom_map)
     new{Dom,Codom,typeof(ob_map),typeof(hom_map)}(ob_map, hom_map, dom, codom)
   end
 end
@@ -331,10 +315,6 @@ const FinFunctorMap{Dom<:FinCat,Codom<:FinCat,ObMap,HomMap} =
 functor_key(C::FinCat, x) = x
 functor_key(C::FinCat, expr::GATExpr) = head(expr) == :generator ?
   first(expr) : error("Functor must be defined on generators")
-functor_ob_value(C::Cat, x) = x
-functor_ob_value(C::FinCat, x) = ob(C, x)
-functor_hom_value(C::Cat, f) = f
-functor_hom_value(C::FinCat, f) = hom(C, f)
 
 """ Vector-based functor out of finitely presented category.
 """
