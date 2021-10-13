@@ -13,34 +13,69 @@ instances are supported through the wrapper type [`TypeCat`](@ref). Finitely
 presented categories are provided by another module, [`FinCats`](@ref).
 """
 module Categories
-export Cat, TypeCat, Ob, Functor, dom, codom, ob_map, hom_map
+export Cat, TypeCat, Ob, Functor, dom, codom, compose, id, ob_map, hom_map
 
 using ..Sets
-import ...Theories: Ob, dom, codom
+import ...Theories: Ob, ob, hom, dom, codom, compose, id
 
 # Generic interface
 ###################
 
 """ Abstract base type for a category.
 
-The objects and morphisms in the category have types `Ob` and `Hom`,
+The objects and morphisms in the category have Julia types `Ob` and `Hom`,
 respectively. Note that these types do *not* necessarily form an `@instance` of
 the theory of categories, as they may not meaningfully form a category outside
-the context of this object. For example, a finite category represented as a
+the context of this object. For example, a finite category regarded as a
 reflexive graph with a composition operation might have type `Cat{Int,Int}`,
 where the objects and morphisms are numerical identifiers for vertices and edges
 in the graph.
+
+The basic operations available in any category are: [`dom`](@ref),
+[`codom`](@ref), [`id`](@ref), [`compose`](@ref).
 """
 abstract type Cat{Ob,Hom} end
+
+""" Coerce or look up object in category.
+
+```julia
+ob(C::Cat{Ob,Hom}, x)::Ob where {Ob,Hom}
+```
+"""
+function ob end
+
+""" Coerce or look up morphism in category.
+
+```julia
+hom(C::Cat{Ob,Hom}, f)::Hom where {Ob,Hom}
+```
+"""
+function hom end
+
+""" Domain of morphism in category.
+"""
+dom(C::Cat, f) = dom(f)
+
+""" Codomain of morphism in category.
+"""
+codom(C::Cat, f) = codom(f)
+
+""" Identity morphism on object in category.
+"""
+id(C::Cat, x) = id(x)
+
+""" Compose morphisms in a category.
+"""
+compose(C::Cat, fs...) = compose(fs...)
 
 """ Abstract base type for a functor between categories.
 
 A functor has a domain and a codomain ([`dom`](@ref) and [`codom`](@ref)), which
 are categories, and object and morphism maps, which can be evaluated using
 [`ob_map`](@ref) and [`hom_map`](@ref). The functor object can also be called
-directly when the objects and morphisms have distinct Julia types. This is often
-but not always the case (see [`Cat`](@ref)), so when writing generic code one
-should prefer the `ob_map` and `hom_map` functions.
+directly when the objects and morphisms have distinct Julia types. This is
+sometimes but not always the case (see [`Cat`](@ref)), so when writing generic
+code one should prefer the `ob_map` and `hom_map` functions.
 """
 abstract type Functor{Dom<:Cat,Codom<:Cat} end
 
@@ -72,5 +107,8 @@ The Julia types should form an `@instance` of the theory of categories
 struct TypeCat{Ob,Hom} <: Cat{Ob,Hom} end
 
 Ob(::TypeCat{T}) where T = TypeSet{T}()
+
+ob(::TypeCat{Ob,Hom}, x) where {Ob,Hom} = convert(Ob, x)
+hom(::TypeCat{Ob,Hom}, f) where {Ob,Hom} = convert(Hom, f)
 
 end

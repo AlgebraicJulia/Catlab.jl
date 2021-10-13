@@ -1,14 +1,19 @@
 """ 2-category of finitely presented categories.
 
-This module is to the 2-category **Cat** what the module [`FinSets](@ref) is to
-the category **Set**: a finitary, combinatorial setting where explicit
-calculations are possible.
+This module is for the 2-category **Cat** what the module [`FinSets](@ref) is
+for the category **Set**: a finitary, combinatorial setting where explicit
+calculations can be carried out. We emphasize that the prefix `Fin` means
+"finitely presented," not "finite," as finite categories are too restrictive a
+notion for many purposes. For example, the free category on a graph is finite if
+and only if the graph is DAG, which is a fairly special condition. This usage of
+`Fin` is also consistent with `FinSet` because for sets, being finite and being
+finitely presented are equivalent.
 """
 module FinCats
-export FinCat, FinCatGraph, is_free, ob_generators, hom_generators,
-  equations, presentation,
+export FinCat, Path, ob, hom, ob_generators, hom_generators, equations,
+  is_free, graph, edges, src, tgt, presentation,
   FinFunctor, FinDomFunctor, is_functorial, collect_ob, collect_hom,
-  Vertex, Edge, Path, graph, edges, src, tgt
+  Path, graph, edges, src, tgt
 
 using AutoHashEquals
 using Reexport
@@ -23,7 +28,7 @@ using ...Graphs, ..FreeDiagrams, ..FinSets, ..CSets
 import ...Graphs: edges, src, tgt
 import ..FreeDiagrams: FreeDiagram, diagram_ob_type, cone_objects, cocone_objects
 import ..Limits: limit, colimit
-import ..Categories: Ob, ob_map, hom_map
+import ..Categories: Ob, ob, hom, ob_map, hom_map
 
 # Categories
 ############
@@ -33,23 +38,24 @@ import ..Categories: Ob, ob_map, hom_map
 abstract type FinCat{Ob,Hom} <: Cat{Ob,Hom} end
 
 FinCat(g::HasGraph, args...; kw...) = FinCatGraph(g, args...; kw...)
-FinCat(pres::Presentation, args...; kw...) = FinCatSymbolic(pres, args...; kw...)
-
-""" Is the category freely generated?
-"""
-is_free(C::FinCat) = isempty(equations(C))
+FinCat(pres::Presentation, args...; kw...) =
+  FinCatPresentation(pres, args...; kw...)
 
 """ Object generators of finitely presented category.
 
-Usually the object generators are the same as the objects, although in principle
-it is possible to have equations between objects, so that there are fewer
-objects than object generators.
+The object generators are almost always the same as the objects. In principle,
+however, it is possible to have equations between objects, so that there are
+fewer objects than object generators.
 """
 function ob_generators end
 
 """ Morphism generators of finitely presented category.
 """
 function hom_generators end
+
+""" Is the category freely generated?
+"""
+is_free(C::FinCat) = isempty(equations(C))
 
 Ob(C::FinCat{Int}) = FinSet(length(ob_generators(C)))
 
@@ -70,37 +76,15 @@ hom_generators(C::FinCatGraph) = edges(graph(C))
 # Paths in graphs
 #----------------
 
-""" Vertex in a graph.
-
-Like [`Edge`](@ref), this wrapper type is used mainly to control dispatch.
-"""
-@auto_hash_equals struct Vertex{T}
-  vertex::T
-end
-Base.getindex(v::Vertex) = v.vertex
-Base.size(::Vertex) = ()
-
-""" Edge in a graph.
-
-Like [`Vertex`](@ref), this wrapper type is used mainly to control dispatch.
-"""
-@auto_hash_equals struct Edge{T}
-  edge::T
-end
-Base.getindex(e::Edge) = e.edge
-Base.size(::Edge) = ()
-
 """ Path in a graph.
 
-The path may be empty but always has definite start and end points (source and
-target vertices).
-
-See also: [`Vertex`](@ref), [`Edge`](@ref).
+The path is allowed to be empty but always has definite start and end points
+(source and target vertices).
 """
-@auto_hash_equals struct Path{T,Edges<:AbstractVector{T}}
+@auto_hash_equals struct Path{V,E,Edges<:AbstractVector{E}}
   edges::Edges
-  src::T
-  tgt::T
+  src::V
+  tgt::V
 end
 edges(path::Path) = path.edges
 src(path::Path) = path.src
@@ -108,14 +92,19 @@ tgt(path::Path) = path.tgt
 
 function Path(g::HasGraph, es::AbstractVector)
   !isempty(es) || error("Nonempty edge list needed for nontrivial path")
+  all(e -> has_edge(g, e), es) || error("Path has edges not contained in graph")
   Path(es, src(g, first(es)), tgt(g, last(es)))
 end
 
-Path(g::HasGraph, e) = Path(SVector(e), src(g,e), tgt(g,e))
-Path(g::HasGraph, e::Edge) = Path(g, e[])
+function Path(g::HasGraph, e)
+  has_edge(g, e) || error("Edge $e not contained in graph $g")
+  Path(SVector(e), src(g,e), tgt(g,e))
+end
 
-Base.empty(::Type{Path}, v::T) where T = Path(SVector{0,T}(), v, v)
-Path(v::Vertex) = empty(Path, v[])
+function Base.empty(::Type{Path}, g::HasGraph, v::T) where T
+  has_vertex(g, v) || error("Vertex $v not contained in graph $g")
+  Path(SVector{0,T}(), v, v)
+end
 
 function Base.vcat(p1::Path, p2::Path)
   tgt(p1) == src(p2) ||
@@ -123,12 +112,27 @@ function Base.vcat(p1::Path, p2::Path)
   Path(vcat(edges(p1), edges(p2)), src(p1), tgt(p2))
 end
 
-@instance Category{Vertex,Path} begin
-  dom(path::Path) = Vertex(src(path))
-  codom(path::Path) = Vertex(tgt(path))
-  id(v::Vertex) = Path(v)
-  compose(p1::Path, p2::Path) = vcat(p1, p2)
-end
+""" Abstract type for category whose morphisms are paths in a graph.
+
+(Or equivalence classes of paths in a graph, but we compute with
+"""
+const FinCatPathGraph{V,E} = FinCatGraph{V,Path{V,E}}
+
+dom(C::FinCatPathGraph, e) = src(graph(C), e)
+dom(C::FinCatPathGraph, path::Path) = src(path)
+codom(C::FinCatPathGraph, e) = tgt(graph(C), e)
+codom(C::FinCatPathGraph, path::Path) = tgt(path)
+
+id(C::FinCatPathGraph, x) = empty(Path, graph(C), x)
+compose(C::FinCatPathGraph, fs...) =
+  reduce(vcat, coerce_path(graph(C), f) for f in fs)
+
+ob(C::FinCatPathGraph, x) = has_vertex(graph(C), x) ? x :
+  error("Vertex $x not contained in graph $(graph(C))")
+hom(C::FinCatPathGraph, f) = coerce_path(graph(C), f)
+
+coerce_path(g::HasGraph, path::Path) = path
+coerce_path(g::HasGraph, x) = Path(g, x)
 
 # Free category on graph
 #-----------------------
@@ -138,7 +142,7 @@ end
 The objects of the free category are vertices in the graph and the morphisms are
 (possibly empty) paths.
 """
-@auto_hash_equals struct FreeCatGraph{G<:HasGraph} <: FinCatGraph{Int,Path{Int}}
+@auto_hash_equals struct FreeCatGraph{G<:HasGraph} <: FinCatPathGraph{Int,Int}
   graph::G
 end
 
@@ -156,7 +160,7 @@ paths, quotiented by the congruence relation generated by the path equations.
 See (Spivak, 2014, *Category theory for the sciences*, §4.5).
 """
 @auto_hash_equals struct FinCatGraphEq{G<:HasGraph,Eqs<:AbstractVector{<:Pair}} <:
-    FinCatGraph{Int,Path{Int}}
+    FinCatPathGraph{Int,Int}
   graph::G
   equations::Eqs
 end
@@ -165,28 +169,20 @@ equations(C::FinCatGraphEq) = C.equations
 
 function FinCatGraph(g::HasGraph, eqs::AbstractVector)
   eqs = map(eqs) do eq
-    lhs, rhs = as_path(g, first(eq)), as_path(g, last(eq))
+    lhs, rhs = coerce_path(g, first(eq)), coerce_path(g, last(eq))
     (src(lhs) == src(rhs) && tgt(lhs) == tgt(rhs)) ||
       error("Paths $lhs and $rhs in equation do not have equal (co)domains")
     lhs => rhs
   end
   FinCatGraphEq(g, eqs)
 end
-as_path(g::HasGraph, path::Path) = path
-as_path(g::HasGraph, x) = Path(g, x)
 
 # Symbolic categories
 #####################
 
-""" Abstract type for categories presented symbolically.
-"""
-abstract type FinCatSymbolic{Ob,Hom} <: FinCat{Ob,Hom} end
-
-FinCatSymbolic(pres::Presentation) = FinCatPresentation(pres)
-
 """ Category defined by a `Presentation` object.
 """
-struct FinCatPresentation{Ob,Hom} <: FinCatSymbolic{Ob,Hom}
+struct FinCatPresentation{Ob,Hom} <: FinCat{Ob,Hom}
   presentation::Presentation
 
   function FinCatPresentation(pres::Presentation)
@@ -198,6 +194,18 @@ presentation(C::FinCatPresentation) = C.presentation
 ob_generators(C::FinCatPresentation) = generators(presentation(C), :Ob)
 hom_generators(C::FinCatPresentation) = generators(presentation(C), :Hom)
 equations(C::FinCatPresentation) = equations(presentation(C))
+
+ob(C::FinCatPresentation, x) = ob(C, presentation(C)[x])
+ob(C::FinCatPresentation, x::GATExpr) = x
+  # FIXME: Commented for now because `DataMigration` uses for attr types.
+  # gat_typeof(x) == :Ob ? x : error("Expression $x is not an object")
+
+hom(C::FinCatPresentation, f) = hom(C, presentation(C)[f])
+hom(C::FinCatPresentation, f::GATExpr) = f
+  # FIXME: Commented for now because `DataMigration` uses for attributes.
+  # gat_typeof(f) == :Hom ? f : error("Expression $f is not a morphism")
+hom(C::FinCatPresentation, fs::AbstractVector) =
+  mapreduce(f -> hom(C, f), compose, fs)
 
 # Functors
 ##########
@@ -216,34 +224,42 @@ FinDomFunctor(ob_map::Union{AbstractVector{Ob},AbstractDict{<:Any,Ob}},
 FinDomFunctor(maps::NamedTuple{(:V,:E)}, dom::FinCatGraph, codom::Cat) =
   FinDomFunctor(maps.V, maps.E, dom, codom)
 
+# Diagram interface. See `FreeDiagrams` module.
 diagram_ob_type(F::FinDomFunctor{Dom,Codom}) where {Ob,Dom,Codom<:Cat{Ob}} = Ob
 cone_objects(F::FinDomFunctor) = collect_ob(F)
 cocone_objects(F::FinDomFunctor) = collect_ob(F)
 
-ob_map(F::FinDomFunctor{<:FinCatGraph}, v::Vertex) = ob_map(F, v[])
-ob_map(F::FinDomFunctor{<:FinCatGraph,<:FinCatGraph}, v::Vertex) =
-  Vertex(ob_map(F, v[]))
-hom_map(F::FinDomFunctor{<:FinCatGraph}, e::Edge) = hom_map(F, e[])
-hom_map(F::FinDomFunctor{<:FinCatGraph}, path::Path) =
-  mapreduce(e -> hom_map(F, e), compose, edges(path),
-            init=id(ob_map(F, dom(path))))
+function hom_map(F::FinDomFunctor{<:FinCatPathGraph}, path::Path)
+  D = codom(F)
+  mapreduce(e -> hom_map(F, e), (gs...) -> compose(D, gs...),
+            edges(path), init=id(D, ob_map(F, src(path))))
+end
 
 ob_map(F::FinDomFunctor, x::GATExpr{:generator}) = ob_map(F, first(x))
 hom_map(F::FinDomFunctor, f::GATExpr{:generator}) = hom_map(F, first(f))
-hom_map(F::FinDomFunctor, f::GATExpr{:id}) = ob_map(F, dom(f))
-hom_map(F::FinDomFunctor, f::GATExpr{:compose}) =
-  mapreduce(f -> hom_map(F, f), compose, args(f))
+hom_map(F::FinDomFunctor, f::GATExpr{:id}) = id(codom(F), ob_map(F, dom(f)))
 
-(F::FinDomFunctor)(x::Vertex) = ob_map(F, x)
-(F::FinDomFunctor)(f::Union{Edge,Path}) = hom_map(F, f)
+function hom_map(F::FinDomFunctor, f::GATExpr{:compose})
+  D = codom(F)
+  mapreduce(f -> hom_map(F, f), (gs...) -> compose(D, gs...), args(f))
+end
+
 (F::FinDomFunctor)(expr::ObExpr) = ob_map(F, expr)
 (F::FinDomFunctor)(expr::HomExpr) = hom_map(F, expr)
 
-function is_functorial(F::FinDomFunctor{<:FreeCatGraph})
-  g = graph(dom(F))
-  all(edges(g)) do e
-    f = F(Edge(e))
-    dom(f) == F(Vertex(src(g,e))) && codom(f) == F(Vertex(tgt(g,e)))
+""" Is the purported functor on a presented category functorial?
+
+Because the functor is defined only on the *generating* objects and morphisms of
+a finitely presented category, it is enough to check that object and morphism
+maps preserve domains and codomains. On the other hand, this function does *not*
+check that the functor is well-defined in the sense of respecting all equations
+in the domain category.
+"""
+function is_functorial(F::FinDomFunctor)
+  C, D = dom(F), codom(F)
+  all(hom_generators(C)) do f
+    g = hom_map(F, f)
+    dom(D,g) == ob_map(F, dom(C,f)) && codom(D,g) == ob_map(F, codom(C,f))
   end
 end
 
@@ -276,19 +292,17 @@ The object and morphism mappings can be vectors or dictionaries.
       error("Length of object map $ob_map does not match domain $dom")
     length(hom_map) == length(hom_generators(dom)) ||
       error("Length of morphism map $hom_map does not match domain $dom")
-    ob_map = map(x -> normalize_ob_value(codom, x), ob_map)
-    hom_map = map(f -> normalize_hom_value(codom, f), hom_map)
+    ob_map = map(x -> ob(codom, x), ob_map)
+    hom_map = map(f -> hom(codom, f), hom_map)
     new{Dom,Codom,typeof(ob_map),typeof(hom_map)}(ob_map, hom_map, dom, codom)
   end
 
   function FinDomFunctorMap(ob_map::ObD, hom_map::HomD, dom::Dom, codom::Codom) where
       {ObD<:AbstractDict, HomD<:AbstractDict, Dom, Codom}
-    ob_map = (ObD.name.wrapper)(
-      normalize_functor_key(dom, k) => normalize_ob_value(codom, v)
-      for (k, v) in ob_map)
-    hom_map = (HomD.name.wrapper)(
-      normalize_functor_key(dom, k) => normalize_hom_value(codom, v)
-      for (k, v) in hom_map)
+    ob_map = (ObD.name.wrapper)(functor_key(dom, k) => ob(codom, v)
+                                for (k, v) in ob_map)
+    hom_map = (HomD.name.wrapper)(functor_key(dom, k) => hom(codom, v)
+                                  for (k, v) in hom_map)
     new{Dom,Codom,typeof(ob_map),typeof(hom_map)}(ob_map, hom_map, dom, codom)
   end
 end
@@ -298,22 +312,9 @@ end
 const FinFunctorMap{Dom<:FinCat,Codom<:FinCat,ObMap,HomMap} =
   FinDomFunctorMap{Dom,Codom,ObMap,HomMap}
 
-normalize_functor_key(C::FinCat, x) = x
-normalize_ob_value(C::Cat, x) = x
-normalize_hom_value(C::Cat, f) = f
-
-normalize_ob_value(C::FinCatGraph, v::Vertex) = v[]
-normalize_hom_value(C::FinCatGraph, f) = Path(graph(C), f)
-normalize_hom_value(C::FinCatGraph, path::Path) = path
-
-normalize_functor_key(C::FinCat, expr::GATExpr) = head(expr) == :generator ?
+functor_key(C::FinCat, x) = x
+functor_key(C::FinCat, expr::GATExpr) = head(expr) == :generator ?
   first(expr) : error("Functor must be defined on generators")
-normalize_ob_value(C::FinCatPresentation, x::Union{AbstractString,Symbol}) =
-  presentation(C)[x]
-normalize_hom_value(C::FinCatPresentation, f::Union{AbstractString,Symbol}) =
-  presentation(C)[f]
-normalize_hom_value(C::FinCatPresentation, fs::AbstractVector) =
-  mapreduce(f -> normalize_hom_value(C, f), compose, fs)
 
 """ Vector-based functor out of finitely presented category.
 """
