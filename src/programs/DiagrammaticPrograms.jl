@@ -4,7 +4,7 @@ Here "diagram" means diagram in the ordinary sense of category theory, not
 wiring diagram.
 """
 module DiagrammaticPrograms
-export @graph
+export @graph, @category
 
 using MLStyle: @match
 
@@ -20,6 +20,8 @@ using ...Graphs.BasicGraphs: TheoryGraph
   ename::Attr(E, Name)
 end
 
+""" Default graph type for [`@category`](@ref) macro and related macros.
+"""
 @acset_type NamedGraph(TheoryNamedGraph, index=[:src,:tgt],
                        unique_index=[:vname,:ename]) <: AbstractGraph
 
@@ -38,6 +40,9 @@ end
 Vertex names are uniquely indexed and edge names are optional and unindexed.
 """
 const MaybeNamedGraph{Name} = _MaybeNamedGraph{Name,Union{Nothing,Name}}
+
+vertex_named(g, name) = incident(g, name, :vname)
+edge_named(g, name)= incident(g, name, :ename)
 
 # Graphs
 ########
@@ -70,19 +75,19 @@ function parse_graph_dsl(G::Type, body::Expr)
   g = G()
   body = Base.remove_linenums!(body)
   for expr in body.args
-    @match expr begin
+    @match reparse_arrow(expr) begin
       # v
-      vname::Symbol => add_vertex!(g, vname=vname)
+      v::Symbol => add_vertex!(g, vname=v)
       # u, v, ...
-      Expr(:tuple, vnames...) => add_vertices!(g, length(vnames), vname=vnames)
+      Expr(:tuple, vs...) => add_vertices!(g, length(vs), vname=vs)
       # u → v
       Expr(:call, :(→), u::Symbol, v::Symbol) => parse_edge!(g, u, v)
-      # e : u → v # parsed by Julia as (e : u) → v
-      Expr(:call, :(→), Expr(:call, :(:), e::Symbol, u::Symbol), v::Symbol) =>
+      # e : u → v
+      Expr(:call, :(:), e::Symbol, Expr(:call, :(→), u::Symbol, v::Symbol)) =>
         parse_edge!(g, u, v, ename=e)
-      # e : (u → v)
-      Expr(:call, :(:), e::Symbol, Expr(:(→), u::Symbol, v::Symbol)) =>
-        parse_edge!(g, u, v, ename=e)
+      # (e, f, ...) : u → v
+      Expr(:call, (:), Expr(:tuple, es...), Expr(:call, :(→), u::Symbol, v::Symbol)) =>
+        for e in es; parse_edge!(g, u, v, ename=e) end
       _ => error("@graph macro cannot parse line: $expr")
     end
   end
@@ -91,11 +96,89 @@ end
 
 function parse_edge!(g, s::Symbol, t::Symbol;
                      ename::Union{Symbol,Nothing}=nothing)
-  e = add_edge!(g, incident(g, s, :vname), incident(g, t, :vname))
+  e = add_edge!(g, vertex_named(g, s), vertex_named(g, t))
   if has_subpart(g, :ename)
     g[e,:ename] = ename
   end
   return e
+end
+
+function reparse_arrow(expr)
+  @match expr begin
+    # `f : x → y` is parsed by Julia as `(f : x) → y`, not `f : (x → y)`.
+    Expr(:call, :(→), Expr(:call, :(:), f, x), y) =>
+      Expr(:call, :(:), f, Expr(:call, :(→), x, y))
+    _ => expr
+  end
+end
+
+# Categories
+############
+
+""" Present a category by generators and relations.
+
+The result is a finitely presented category (`FinCat`) represented by a graph,
+possibly with path equations. For example, the simplex category truncated to one
+dimension is:
+
+```julia
+@category begin
+  V, E
+  (δ₀, δ₁): V → E
+  σ₀: E → V
+
+  σ₀ ∘ δ₀ == id(V)
+  σ₀ ∘ δ₁ == id(V)
+end
+```
+
+The objects and morphisms must be uniquely named.
+"""
+macro category(body)
+  parse_category_dsl(NamedGraph{Symbol}, body)
+end
+
+function parse_category_dsl(G::Type, body::Expr)
+  g, eqs = G(), Pair[]
+  body = Base.remove_linenums!(body)
+  for expr in body.args
+    @match reparse_arrow(expr) begin
+      # v
+      v::Symbol => add_vertex!(g, vname=v)
+      # u, v, ...
+      Expr(:tuple, vs...) => add_vertices!(g, length(vs), vname=vs)
+      # e : u → v
+      Expr(:call, :(:), e::Symbol, Expr(:call, :(→), u::Symbol, v::Symbol)) =>
+        parse_edge!(g, u, v, ename=e)
+      # (e, f, ...) : u → v
+      Expr(:call, (:), Expr(:tuple, es...), Expr(:call, :(→), u::Symbol, v::Symbol)) =>
+        for e in es; parse_edge!(g, u, v, ename=e) end
+      # f == g
+      Expr(:call, :(==), lhs, rhs) => push!(eqs, parse_equation(g, lhs, rhs))
+      _ => error("@category macro cannot parse line: $expr")
+    end
+  end
+  isempty(eqs) ? FinCat(g) : FinCat(g, eqs)
+end
+
+""" Given generating graph, parse equation between morphisms.
+"""
+parse_equation(g, lhs, rhs) = parse_hom(g, lhs) => parse_hom(g, rhs)
+
+""" Given generating graph, parse morphism expression.
+"""
+function parse_hom(g, expr)
+  function parse(expr)
+    @match expr begin
+      Expr(:call, :compose, args...) => mapreduce(parse, vcat, args)
+      Expr(:call, :(⋅), f, g) => vcat(parse(f), parse(g))
+      Expr(:call, :(∘), f, g) => vcat(parse(g), parse(f))
+      Expr(:call, :id, x) => empty(Path, g, vertex_named(g, x))
+      f::Symbol => Path(g, edge_named(g, f))
+      _ => error("Invalid morphism expression $expr")
+    end
+  end
+  parse(expr)
 end
 
 end
