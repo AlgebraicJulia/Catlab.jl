@@ -13,7 +13,7 @@ A, B, C, D = Ob(FreeCategory, :A, :B, :C, :D)
 
 f, g, h = Hom(:f, A, C), Hom(:g, B, C), Hom(:h, A, B)
 diagram = FreeDiagram([A,B,C], [(f,1,3),(g,2,3),(h,1,2)])
-@test diagram_ob_type(diagram) == typeof(A)
+@test diagram_type(diagram) <: Tuple{FreeCategory.Ob,FreeCategory.Hom}
 @test ob(diagram) == [A,B,C]
 @test hom(diagram) == [f,g,h]
 @test (src(diagram), tgt(diagram)) == ([1,2,1], [3,3,2])
@@ -23,7 +23,7 @@ diagram = FreeDiagram([A,B,C], [(f,1,3),(g,2,3),(h,1,2)])
 #------------------------
 
 bd = BipartiteFreeDiagram([A,B], [C], [(f,1,1),(g,2,1)])
-@test diagram_ob_type(bd) == typeof(A)
+@test diagram_type(diagram) <: Tuple{FreeCategory.Ob,FreeCategory.Hom}
 @test (ob₁(bd), ob₂(bd)) == ([A,B], [C])
 @test hom(bd) == [f,g]
 @test (src(bd), tgt(bd)) == ([1,2], [1,1])
@@ -37,9 +37,11 @@ bd = BipartiteFreeDiagram([A,B], [C], [(f,1,1),(g,2,1)])
 
 # Object pairs.
 pair = ObjectPair(A,B)
-@test diagram_ob_type(pair) == typeof(A)
+@test diagram_type(pair) <: Tuple{FreeCategory.Ob,Any}
 @test length(pair) == 2
 @test (first(pair), last(pair)) == (A, B)
+pair = ObjectPair(A, B, FreeCategory.Hom)
+@test diagram_type(pair) <: Tuple{FreeCategory.Ob,FreeCategory.Hom}
 
 # Discrete diagrams.
 discrete = DiscreteDiagram([A,B,C])

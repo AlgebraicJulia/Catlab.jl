@@ -122,7 +122,7 @@ or equalizers.
 
 See also: [`colimit`](@ref)
 """
-limit(diagram) = limit(diagram_ob_type(diagram), diagram)
+limit(diagram) = limit(diagram_type(diagram), diagram)
 
 """ Colimit of a diagram.
 
@@ -133,7 +133,7 @@ such as coproducts or coequalizers.
 
 See also: [`limit`](@ref)
 """
-colimit(diagram) = colimit(diagram_ob_type(diagram), diagram)
+colimit(diagram) = colimit(diagram_type(diagram), diagram)
 
 """ Universal property of (co)limits.
 

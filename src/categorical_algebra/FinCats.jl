@@ -22,11 +22,11 @@ using StaticArrays: SVector
 @reexport using ..Categories
 using ...GAT, ...Present, ...Syntax
 import ...Present: equations
-using ...Theories: Category, ObExpr, HomExpr
+using ...Theories: Category, ObExpr, HomExpr, roottype
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ...Graphs, ..FreeDiagrams, ..FinSets, ..CSets
 import ...Graphs: edges, src, tgt
-import ..FreeDiagrams: FreeDiagram, diagram_ob_type, cone_objects, cocone_objects
+import ..FreeDiagrams: FreeDiagram, diagram_type, cone_objects, cocone_objects
 import ..Limits: limit, colimit
 import ..Categories: Ob, ob, hom, ob_map, hom_map
 
@@ -225,7 +225,8 @@ FinDomFunctor(maps::NamedTuple{(:V,:E)}, dom::FinCatGraph, codom::Cat) =
   FinDomFunctor(maps.V, maps.E, dom, codom)
 
 # Diagram interface. See `FreeDiagrams` module.
-diagram_ob_type(F::FinDomFunctor{Dom,Codom}) where {Ob,Dom,Codom<:Cat{Ob}} = Ob
+diagram_type(F::FinDomFunctor{Dom,Codom}) where {Ob,Hom,Dom,Codom<:Cat{Ob,Hom}} =
+  Tuple{Ob,Hom}
 cone_objects(F::FinDomFunctor) = collect_ob(F)
 cocone_objects(F::FinDomFunctor) = collect_ob(F)
 
@@ -299,10 +300,10 @@ The object and morphism mappings can be vectors or dictionaries.
 
   function FinDomFunctorMap(ob_map::ObD, hom_map::HomD, dom::Dom, codom::Codom) where
       {ObD<:AbstractDict, HomD<:AbstractDict, Dom, Codom}
-    ob_map = (ObD.name.wrapper)(functor_key(dom, k) => ob(codom, v)
-                                for (k, v) in ob_map)
-    hom_map = (HomD.name.wrapper)(functor_key(dom, k) => hom(codom, v)
-                                  for (k, v) in hom_map)
+    ob_map = (roottype(ObD))(functor_key(dom, k) => ob(codom, v)
+                             for (k, v) in ob_map)
+    hom_map = (roottype(HomD))(functor_key(dom, k) => hom(codom, v)
+                               for (k, v) in hom_map)
     new{Dom,Codom,typeof(ob_map),typeof(hom_map)}(ob_map, hom_map, dom, codom)
   end
 end

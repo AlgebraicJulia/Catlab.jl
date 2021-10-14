@@ -62,7 +62,10 @@ g, h = path_graph(Graph, 4), cycle_graph(Graph, 2)
 # Category of C-sets.
 @test dom(α) === g
 @test codom(α) === h
-@test compose(α,β) == CSetTransformation((V=α[:V]⋅β[:V], E=α[:E]⋅β[:E]), g, h)
+γ = compose(α,β)
+@test γ isa TightACSetTransformation
+@test γ == CSetTransformation((V=α[:V]⋅β[:V], E=α[:E]⋅β[:E]), g, h)
+@test id(g) isa TightACSetTransformation
 @test force(compose(id(g), α)) == α
 @test force(compose(α, id(h))) == α
 
@@ -70,8 +73,7 @@ g, h = path_graph(Graph, 4), cycle_graph(Graph, 2)
 #-------
 
 # Terminal object in Graph: the self-loop.
-term = Graph(1)
-add_edge!(term, 1, 1)
+term = cycle_graph(Graph, 1)
 lim = terminal(Graph)
 @test ob(lim) == term
 @test force(delete(lim, g)) ==
@@ -85,28 +87,23 @@ lim = product(g, term)
   CSetTransformation((V=fill(1,4), E=fill(1,3)), g, term)
 
 # Product in Graph: two directed intervals (Reyes et al 2004, p. 48).
-I = Graph(2)
-add_edge!(I, 1, 2)
+I = path_graph(Graph, 2)
 prod = ob(product(I, I))
-@test nv(prod) == 4
-@test ne(prod) == 1
+@test (nv(prod), ne(prod)) == (4, 1)
 @test src(prod) != tgt(prod)
 
 # Product in Graph: deleting edges by multiplying by an isolated vertex.
 g = path_graph(Graph, 4)
 g0 = ob(product(g, Graph(1)))
-@test nv(g0) == nv(g)
-@test ne(g0) == 0
+@test (nv(g0), ne(g0)) == (nv(g), 0)
 
 # Product in Graph: copying edges by multiplying by the double self-loop.
 loop2 = Graph(1)
 add_edges!(loop2, [1,1], [1,1])
 lim = product(g, loop2)
 g2 = ob(lim)
-@test nv(g2) == nv(g)
-@test ne(g2) == 2*ne(g)
-@test src(g2) == repeat(src(g), 2)
-@test tgt(g2) == repeat(tgt(g), 2)
+@test (nv(g2), ne(g2)) == (nv(g), 2*ne(g))
+@test (src(g2), tgt(g2)) == (repeat(src(g), 2), repeat(tgt(g), 2))
 α = CSetTransformation((V=[2,3], E=[2]), I, g)
 β = CSetTransformation((V=[1,1], E=[2]), I, loop2)
 γ = pair(lim, α, β)
@@ -222,8 +219,22 @@ h = path_graph(WeightedGraph{Float64}, 4, E=(weight=[1.,2.,3.],))
 β = ACSetTransformation((V=[1,2], E=[1]), g, h)
 @test !is_natural(β) # Graph homomorphism but does not preserve weight
 
-# Colimits
-#---------
+# Loose morphisms.
+α = ACSetTransformation(g, h, V=[1,2], E=[1], Weight=x->x/2)
+@test α isa LooseACSetTransformation
+@test α[:Weight](10.0) == 5.0
+@test is_natural(α)
+
+g = star_graph(WeightedGraph{Bool}, 3, E=(weight=[true,false],))
+α = ACSetTransformation((V=[2,1,3], E=[2,1], Weight=~), g, g)
+@test is_natural(α)
+α² = compose(α, α)
+@test α² isa LooseACSetTransformation
+@test α²[:V] == force(id(FinSet(3)))
+@test α²[:Weight](true) == true
+
+# Limits
+#-------
 
 @present TheoryVELabeledGraph <: TheoryGraph begin
   Label::AttrType
@@ -231,18 +242,44 @@ h = path_graph(WeightedGraph{Float64}, 4, E=(weight=[1.,2.,3.],))
   elabel::Attr(E,Label)
 end
 
-@acset_type VELabeledGraph(TheoryVELabeledGraph, index=[:src,:tgt]) <: AbstractGraph
+@acset_type VELabeledGraph(TheoryVELabeledGraph,
+                           index=[:src,:tgt]) <: AbstractGraph
+
+# Terminal labeled graph.
+@test ob(terminal(VELabeledGraph)) == cycle_graph(VELabeledGraph{Nothing}, 1)
+
+# Product of labeled graphs.
+g = path_graph(VELabeledGraph{Symbol}, 2, V=(vlabel=[:a,:b],), E=(elabel=:f,))
+h = path_graph(VELabeledGraph{String}, 2, V=(vlabel=["x","y"],), E=(elabel="f",))
+lim = product(g, h)
+@test is_natural(proj1(lim)) && is_natural(proj2(lim))
+prod = ob(lim)
+@test prod isa VELabeledGraph{Tuple{Symbol,String}}
+@test Set(prod[:vlabel]) == Set([(:a, "x"), (:a, "y"), (:b, "x"), (:b, "y")])
+@test only(prod[:elabel]) == (:f, "f")
+@test prod[src(prod,1), :vlabel] == (:a, "x")
+@test prod[tgt(prod,1), :vlabel] == (:b, "y")
+
+# Pullback of weighted graphs.
+g0 = WeightedGraph{Nothing}(2)
+add_edges!(g0, 1:2, 1:2)
+g = WeightedGraph{Int}(4)
+add_edges!(g, [1,3], [2,4], weight=[+1, -1])
+ϕ = ACSetTransformation(g, g0, V=[1,1,2,2], E=[1,2], Weight=nothing)
+ψ = ACSetTransformation(g, g0, V=[2,2,1,1], E=[2,1], Weight=nothing)
+pb = ob(pullback(ϕ, ψ))
+@test (nv(pb), ne(pb)) == (8, 2)
+@test Set(pb[:weight]) == Set([(+1, -1), (-1, +1)])
+
+# Colimits
+#---------
 
 # Initial labeled graph.
 @test ob(initial(VELabeledGraph{Symbol})) == VELabeledGraph{Symbol}()
 
 # Coproduct of labeled graphs.
-g = VELabeledGraph{Symbol}()
-add_vertices!(g, 2, vlabel=[:u,:v])
-add_edge!(g, 1, 2, elabel=:e)
-h = VELabeledGraph{Symbol}()
-add_vertex!(h, vlabel=:u)
-add_edge!(h, 1, 1, elabel=:f)
+g = path_graph(VELabeledGraph{Symbol}, 2, V=(vlabel=[:u,:v],), E=(elabel=:e,))
+h = cycle_graph(VELabeledGraph{Symbol}, 1, V=(vlabel=:u,), E=(elabel=:f,))
 coprod = ob(coproduct(g, h))
 @test subpart(coprod, :vlabel) == [:u, :v, :u]
 @test subpart(coprod, :elabel) == [:e, :f]

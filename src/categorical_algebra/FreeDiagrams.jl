@@ -10,7 +10,7 @@ export FreeDiagram, BipartiteFreeDiagram, FixedShapeFreeDiagram,
   DiscreteDiagram, EmptyDiagram, ObjectPair,
   Span, Cospan, Multispan, Multicospan, SMultispan, SMulticospan,
   ParallelPair, ParallelMorphisms, ComposablePair, ComposableMorphisms,
-  diagram_ob_type, cone_objects, cocone_objects,
+  diagram_type, cone_objects, cocone_objects,
   ob, hom, dom, codom, apex, legs, feet, left, right, bundle_legs,
   nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
   add_vertex!, add_vertices!, add_edge!, add_edges!,
@@ -18,7 +18,7 @@ export FreeDiagram, BipartiteFreeDiagram, FixedShapeFreeDiagram,
   add_vertex₁!, add_vertex₂!, add_vertices₁!, add_vertices₂!
 
 using AutoHashEquals
-using StaticArrays: StaticVector, SVector, @SVector
+using StaticArrays: StaticVector, SVector
 
 using ...Present, ...Theories, ...CSetDataStructures, ...Graphs
 import ...Theories: ob, hom, dom, codom, left, right
@@ -28,9 +28,10 @@ using ...Graphs.BipartiteGraphs: TheoryUndirectedBipartiteGraph
 # Diagram interface
 ###################
 
-""" Given a diagram in a category ``C``, return Julia type of objects in ``C``.
+""" Given a diagram in a category ``C``, return Julia type of objects and
+morphisms in ``C`` as a tuple type of form ``Tuple{Ob,Hom}``.
 """
-function diagram_ob_type end
+function diagram_type end
 
 """ Objects in diagram that will have explicit legs in limit cone.
 
@@ -56,25 +57,29 @@ cocone_objects(diagram) = ob(diagram)
 
 """ Abstract type for free diagram of fixed shape.
 """
-abstract type FixedShapeFreeDiagram{Ob} end
+abstract type FixedShapeFreeDiagram{Ob,Hom} end
 
-diagram_ob_type(::FixedShapeFreeDiagram{Ob}) where Ob = Ob
+diagram_type(::FixedShapeFreeDiagram{Ob,Hom}) where {Ob,Hom} = Tuple{Ob,Hom}
 
 # Discrete diagrams
 #------------------
 
-""" Discrete diagram: a diagram whose only morphisms are identities.
+""" Discrete diagram: a diagram with no non-identity morphisms.
 """
-@auto_hash_equals struct DiscreteDiagram{Ob,Objects<:AbstractVector{Ob}} <:
-    FixedShapeFreeDiagram{Ob}
-  objects::Objects
+@auto_hash_equals struct DiscreteDiagram{Ob,Hom,Obs<:AbstractVector{Ob}} <:
+    FixedShapeFreeDiagram{Ob,Hom}
+  objects::Obs
 end
 
-const EmptyDiagram{Ob} = DiscreteDiagram{Ob,<:StaticVector{0,Ob}}
-const ObjectPair{Ob} = DiscreteDiagram{Ob,<:StaticVector{2,Ob}}
+DiscreteDiagram(objects::Obs, Hom::Type=Any) where {Ob,Obs<:AbstractVector{Ob}} =
+  DiscreteDiagram{Ob,Hom,Obs}(objects)
 
-EmptyDiagram{Ob}() where Ob = DiscreteDiagram(@SVector Ob[])
-ObjectPair(first, second) = DiscreteDiagram(SVector(first, second))
+const EmptyDiagram{Ob,Hom} = DiscreteDiagram{Ob,Hom,<:StaticVector{0,Ob}}
+const ObjectPair{Ob,Hom} = DiscreteDiagram{Ob,Hom,<:StaticVector{2,Ob}}
+
+EmptyDiagram{Ob}(Hom::Type=Any) where Ob = DiscreteDiagram(SVector{0,Ob}(), Hom)
+ObjectPair(first, second, Hom::Type=Any) =
+  DiscreteDiagram(SVector(first, second), Hom)
 
 ob(d::DiscreteDiagram) = d.objects
 
@@ -95,7 +100,7 @@ except that it may have a number of legs different than two. A colimit of this
 shape is a pushout.
 """
 @auto_hash_equals struct Multispan{Ob,Hom,Legs<:AbstractVector{Hom}} <:
-    FixedShapeFreeDiagram{Ob}
+    FixedShapeFreeDiagram{Ob,Hom}
   apex::Ob
   legs::Legs
 end
@@ -158,7 +163,7 @@ A multicospan is like a [`Cospan`](@ref) except that it may have a number of
 legs different than two. A limit of this shape is a pullback.
 """
 @auto_hash_equals struct Multicospan{Ob,Hom,Legs<:AbstractVector{Hom}} <:
-    FixedShapeFreeDiagram{Ob}
+    FixedShapeFreeDiagram{Ob,Hom}
   apex::Ob
   legs::Legs
 end
@@ -226,7 +231,7 @@ morphisms with the same domain and codomain. A (co)limit of this shape is a
 For the common special case of two morphisms, see [`ParallelPair`](@ref).
 """
 @auto_hash_equals struct ParallelMorphisms{Dom,Codom,Hom,Homs<:AbstractVector{Hom}} <:
-    FixedShapeFreeDiagram{Union{Dom,Codom}}
+    FixedShapeFreeDiagram{Union{Dom,Codom},Hom}
   dom::Dom
   codom::Codom
   homs::Homs
@@ -279,7 +284,7 @@ in the underlying graph of the category.
 For the common special case of two morphisms, see [`ComposablePair`](@ref).
 """
 @auto_hash_equals struct ComposableMorphisms{Ob,Hom,Homs<:AbstractVector{Hom}} <:
-    FixedShapeFreeDiagram{Ob}
+    FixedShapeFreeDiagram{Ob,Hom}
   homs::Homs
 end
 
@@ -341,7 +346,7 @@ ob₁(d::AbstractBipartiteFreeDiagram, args...) = subpart(d, args..., :ob₁)
 ob₂(d::AbstractBipartiteFreeDiagram, args...) = subpart(d, args..., :ob₂)
 hom(d::AbstractBipartiteFreeDiagram, args...) = subpart(d, args..., :hom)
 
-diagram_ob_type(d::AbstractBipartiteFreeDiagram{S,Tuple{Ob,Hom}}) where {S,Ob,Hom} = Ob
+diagram_type(d::AbstractBipartiteFreeDiagram{S,T}) where {S,T<:Tuple} = T
 cone_objects(diagram::AbstractBipartiteFreeDiagram) = ob₁(diagram)
 cocone_objects(diagram::AbstractBipartiteFreeDiagram) = ob₂(diagram)
 
@@ -398,7 +403,7 @@ end
 ob(d::AbstractFreeDiagram, args...) = subpart(d, args..., :ob)
 hom(d::AbstractFreeDiagram, args...) = subpart(d, args..., :hom)
 
-diagram_ob_type(d::AbstractFreeDiagram{S,Tuple{Ob,Hom}}) where {S,Ob,Hom} = Ob
+diagram_type(d::AbstractFreeDiagram{S,T}) where {S,T<:Tuple} = T
 
 function FreeDiagram(obs::AbstractVector{Ob},
                      homs::AbstractVector{Tuple{Hom,Int,Int}}) where {Ob,Hom}

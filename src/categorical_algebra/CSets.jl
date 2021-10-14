@@ -1,12 +1,14 @@
 """ Categories of C-sets and attributed C-sets.
 """
 module CSets
-export ACSetTransformation, CSetTransformation, SubACSet, SubCSet,
+export ACSetTransformation, CSetTransformation,
+  TightACSetTransformation, LooseACSetTransformation, SubACSet, SubCSet,
   ACSetHomomorphismAlgorithm, BacktrackingSearch, HomomorphismQuery,
   components, force, is_natural, homomorphism, homomorphisms, is_homomorphic,
   isomorphism, isomorphisms, is_isomorphic,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
 
+using Base.Iterators: flatten
 using Base.Meta: quot
 using AutoHashEquals
 using JSON
@@ -19,14 +21,15 @@ import ..Limits: limit, colimit, universal, pushout_complement,
   can_pushout_complement
 import ..Subobjects: Subobject, SubobjectBiHeytingAlgebra,
   implies, ⟹, subtract, \, negate, ¬, non, ~
+import ..Sets: TypeSet
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate
-using ...Theories: SchemaDescType, CSetSchemaDescType, Category,
-  attr, adom, acodom, acodom_nums
+using ...Theories: Category, SchemaDescType, CSetSchemaDescType,
+  attrtype, attrtype_num, attr, adom, acodom, acodom_nums, roottype
 import ...Theories: dom, codom, compose, ⋅, id,
   ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 
-# FinSets interop
-#################
+# Sets interop
+##############
 
 """ Create `FinSet` for part of attributed C-set.
 """
@@ -58,7 +61,7 @@ end
 """ Create `FinDomFunction` for part or subpart of attributed C-set.
 
 The codomain is always of type `TypeSet`, regardless of whether the subpart is
-of kind `Ob` or `Data`. For indexed subparts, the index is included.
+of kind `Ob` or `AttrType`. For indexed subparts, the index is included.
 """
 FinDomFunction(X::StructACSet, name::Symbol) = fin_dom_function(X, Val{name})
 
@@ -81,84 +84,220 @@ FinDomFunction(X::StructACSet, name::Symbol) = fin_dom_function(X, Val{name})
   end
 end
 
+""" Create `TypeSet` for attribute type of attributed C-set.
+"""
+function TypeSet(X::ACS, type::Symbol) where {S, ACS <: StructACSet{S}}
+  i = attrtype_num(S, type)
+  TypeSet(ACS.parameters[i])
+end
+
 # C-set transformations
 #######################
 
 """ Transformation between attributed C-sets.
 
-A homomorphism of C-sets is a natural transformation: a transformation between
-functors C → Set satisfying the naturality axiom for all morphisms in C. This
-struct records the data of a transformation; it does not enforce naturality, but
-see [`is_natural`](@ref).
+Homomorphisms of attributed C-sets generalize homomorphisms of C-sets
+([`CSetTransformation`](@ref)), which the user should understand before reading
+further.
 
-A C-set transformation has a component for every object in C. When C-sets have
-attributes, the data types are assumed to be fixed. Thus, the naturality axiom
-for data attributes is a commutative triangle, rather than a commutative square.
+A homomorphism of attributed C-sets with schema S: C ↛ A (a profunctor) is a
+natural transformation between the corresponding functors col(S) → Set, where
+col(S) is the collage of S. When the components on attribute types, indexed by
+objects of A, are all identity functions, the morphism is called *tight*; in
+general, it is called *loose*. The terms "tight" and "loose" come from what the
+nLab calls an ["M-category"](https://ncatlab.org/nlab/show/M-category). The
+category of acsets on a fixed schema S is an M-category. Calling
+`ACSetTransformation` will construct a tight or loose morphism as appropriate,
+depending on which components are specified.
+
+Since every tight morphism can be considered a loose one, the distinction
+between tight and loose may seem an unimportant technicality, but it can have
+important consequences because choosing one or the other greatly affects limits
+and colimits of acsets. In practice, the tight morphisms suffice for most
+purposes, including computing colimits. However, when computing limits of
+acsets, the loose morphism are usually preferable.
 """
-@auto_hash_equals struct ACSetTransformation{S, Comp <: NamedTuple,
-                                             Dom <: StructACSet{S}, Codom <: StructACSet{S}}
+abstract type ACSetTransformation{S<:SchemaDescType} end
+
+ACSetTransformation(components, X::StructACSet{S}, Y::StructACSet{S}) where S =
+  ACSetTransformation{S}(components, X, Y)
+ACSetTransformation(X::StructACSet{S}, Y::StructACSet{S}; components...) where S =
+  ACSetTransformation{S}((; components...), X, Y)
+
+function ACSetTransformation{S}(components, X::StructACSet{S}, Y::StructACSet{S}) where S
+  ob_components = filter(∈(ob(S))∘first, pairs(components))
+  type_components = filter(∈(attrtype(S))∘first, pairs(components))
+  length(ob_components) + length(type_components) == length(components) ||
+    error("Not all names in $(keys(components)) are objects or attribute types")
+  if isempty(type_components)
+    TightACSetTransformation{S}(ob_components, X, Y)
+  else
+    LooseACSetTransformation{S}(ob_components, type_components, X, Y)
+  end
+end
+
+components(α::ACSetTransformation) = α.components
+force(α::ACSetTransformation) = map_components(force, α)
+
+""" Transformation between C-sets.
+
+Recall that a C-set homomorphism is a natural transformation: a transformation
+between functors C → Set satisfying the naturality axiom for every (generating)
+morphism in C.
+
+This data type records the data of a C-set transformation. Naturality is not
+strictly enforced but is expected to be satisfied. It can be checked using the
+function [`is_natural`](@ref).
+"""
+const CSetTransformation{S<:CSetSchemaDescType} = ACSetTransformation{S}
+
+CSetTransformation(components, X::StructCSet, Y::StructCSet) =
+  TightACSetTransformation(components, X, Y)
+CSetTransformation(X::StructCSet, Y::StructCSet; components...) =
+  TightACSetTransformation((; components...), X, Y)
+
+""" Tight transformation between attributed C-sets.
+
+See [`ACSetTranformation`](@ref) for the distinction between tight and loose.
+"""
+@auto_hash_equals struct TightACSetTransformation{
+    S <: SchemaDescType, Dom <: StructACSet{S}, Codom <: StructACSet{S},
+    Comp <: NamedTuple} <: ACSetTransformation{S}
   components::Comp
   dom::Dom
   codom::Codom
-  function ACSetTransformation{S}(components::NamedTuple, X::Dom, Y::Codom) where
+
+  function TightACSetTransformation{S}(components, X::Dom, Y::Codom) where
       {S, Dom <: StructACSet{S}, Codom <: StructACSet{S}}
     @assert keys(components) ⊆ ob(S)
-    coerced_components = NamedTuple{Tuple(ob(S))}(
-      coerce_component(ob, get(components, ob) do; 1:0 end, X, Y)
-      for ob in ob(S))
-    new{S,typeof(coerced_components),Dom,Codom}(coerced_components, X, Y)
+    components = NamedTuple(
+      c => coerce_component(c, get(components,c,1:0), nparts(X,c), nparts(Y,c))
+      for c in ob(S))
+    new{S,Dom,Codom,typeof(components)}(components, X, Y)
+  end
+end
+TightACSetTransformation(components, X::StructACSet{S}, Y::StructACSet{S}) where S =
+  TightACSetTransformation{S}(components, X, Y)
+
+function coerce_component(ob::Symbol, f::FinFunction{Int,Int},
+                          dom_size::Int, codom_size::Int)
+  length(dom(f)) == dom_size || error("Domain error in component $ob")
+  length(codom(f)) == codom_size || error("Codomain error in component $ob")
+  return f
+end
+coerce_component(ob::Symbol, f, dom_size::Int, codom_size::Int) =
+  FinFunction(f, dom_size, codom_size)
+
+function Base.getindex(α::TightACSetTransformation{S}, c) where S
+  get(α.components, c) do
+    c ∈ attrtype(S) || error("No object or attribute type with name $c")
+    SetFunction(identity, TypeSet(dom(α),c), TypeSet(codom(α),c))
   end
 end
 
-function coerce_component(ob::Symbol, f::FinFunction{Int,Int}, X, Y)
-  length(dom(f)) == nparts(X,ob) || error("Domain error in component $ob")
-  length(codom(f)) == nparts(Y,ob) || error("Codomain error in component $ob")
+type_components(α::TightACSetTransformation{S}) where S =
+  NamedTuple(c => SetFunction(identity, TypeSet(dom(α),c), TypeSet(codom(α),c))
+             for (i, c) in enumerate(attrtype(S)))
+
+map_components(f, α::TightACSetTransformation) =
+  TightACSetTransformation(map(f, components(α)), dom(α), codom(α))
+
+""" Loose transformation between attributed C-sets.
+
+See [`ACSetTranformation`](@ref) for the distinction between tight and loose.
+"""
+@auto_hash_equals struct LooseACSetTransformation{
+    S <: SchemaDescType, Dom <: StructACSet{S}, Codom <: StructACSet{S},
+    Comp <: NamedTuple, TypeComp <: NamedTuple} <: ACSetTransformation{S}
+  components::Comp
+  type_components::TypeComp
+  dom::Dom
+  codom::Codom
+
+  function LooseACSetTransformation{S}(components, type_components,
+                                       X::Dom, Y::Codom) where
+      {S, Dom <: StructACSet{S}, Codom <: StructACSet{S}}
+    @assert keys(components) ⊆ ob(S) && keys(type_components) ⊆ attrtype(S)
+    components = NamedTuple(
+      c => coerce_component(c, get(components,c,1:0), nparts(X,c), nparts(Y,c))
+      for c in ob(S))
+    type_components = NamedTuple(
+      type => coerce_type_component(type, get(type_components, type, identity),
+                                    Dom.parameters[i], Codom.parameters[i])
+      for (type, i) in zip(attrtype(S), acodom_nums(S)))
+    new{S,Dom,Codom,typeof(components),typeof(type_components)}(
+      components, type_components, X, Y)
+  end
+end
+LooseACSetTransformation(components, type_components,
+                         X::StructACSet{S}, Y::StructACSet{S}) where S =
+  LooseACSetTransformation{S}(components, type_components, X, Y)
+
+function coerce_type_component(type::Symbol, f::SetFunction,
+                               dom_type::Type, codom_type::Type)
+  dom_type <: eltype(dom(f)) || error("Domain error in component $type")
+  eltype(codom(f)) <: codom_type || error("Codomain error in component $type")
   return f
 end
-function coerce_component(ob::Symbol, f, X, Y)::FinFunction{Int,Int}
-  FinFunction(f, nparts(X,ob), nparts(Y,ob))
+function coerce_type_component(type::Symbol, ::Nothing,
+                               dom_type::Type, codom_type::Type)
+  codom_type == Nothing || error("Codomain error in component $type")
+  ConstantFunction(nothing, TypeSet(dom_type))
+end
+coerce_type_component(type::Symbol, f, dom_type::Type, codom_type::Type) =
+  SetFunction(f, TypeSet(dom_type), TypeSet(codom_type))
+
+type_components(α::LooseACSetTransformation) = α.type_components
+
+function Base.getindex(α::LooseACSetTransformation, c::Symbol)
+  get(α.components, c) do
+    get(α.type_components, c) do
+      error("No object or attribute type with name $c")
+    end
+  end
 end
 
-ACSetTransformation(components, X::Dom, Y::Codom) where
-    {S, Dom <: StructACSet{S}, Codom <: StructACSet{S}} =
-  ACSetTransformation{S}(components, X, Y)
-ACSetTransformation(X::Dom, Y::Codom; components...) where
-    {S, Dom <: StructACSet{S}, Codom <: StructACSet{S}} =
-  ACSetTransformation{S}((; components...), X, Y)
+""" Is the transformation between attributed C-sets a natural transformation?
 
-const CSetTransformation{S<:CSetSchemaDescType, Comp,
-                         Dom <: StructCSet{S}, Codom <: StructCSet{S}} =
-  ACSetTransformation{S,Comp,Dom,Codom}
-
-CSetTransformation(components, X::StructCSet, Y::StructCSet) =
-  ACSetTransformation(components, X, Y)
-CSetTransformation(X::StructCSet, Y::StructCSet; components...) =
-  ACSetTransformation(X, Y; components...)
-
-components(α::ACSetTransformation) = α.components
-Base.getindex(α::ACSetTransformation, ob) = α.components[ob]
-
-""" Is the transformation between C-sets a natural transformation?
-
-Uses the fact that to check whether a transformation is natural, it suffices to
-check the naturality equation on a generating set of morphisms.
+This function uses the fact that to check whether a transformation is natural,
+it suffices to check the naturality equation on a generating set of morphisms of
+the category C.
 """
 function is_natural(α::ACSetTransformation{S}) where {S}
   X, Y = dom(α), codom(α)
-  for (f, c, d) in zip(hom(S), dom(S), codom(S))
+  for (f, c, d) in flatten((zip(hom(S), dom(S), codom(S)),
+                            zip(attr(S), adom(S), acodom(S))))
     Xf, Yf, α_c, α_d = subpart(X,f), subpart(Y,f), α[c], α[d]
-    all(Yf[α_c(i)] == α_d(Xf[i]) for i in eachindex(Xf)) || return false
-  end
-  for (f, c) in zip(attr(S), adom(S))
-    Xf, Yf, α_c = subpart(X,f), subpart(Y,f), α[c]
-    all(Yf[α_c(i)] == Xf[i] for i in eachindex(Xf)) || return false
+    all(i -> Yf[α_c(i)] == α_d(Xf[i]), eachindex(Xf)) || return false
   end
   return true
 end
 
-map_components(f, α::ACSetTransformation) =
-  ACSetTransformation(map(f, components(α)), dom(α), codom(α))
-force(α::ACSetTransformation) = map_components(force, α)
+# Category of C-sets
+####################
+
+@instance Category{StructACSet, ACSetTransformation} begin
+  dom(α::ACSetTransformation) = α.dom
+  codom(α::ACSetTransformation) = α.codom
+
+  id(X::StructACSet) = TightACSetTransformation(map(id, sets(X)), X, X)
+
+  function compose(α::ACSetTransformation, β::ACSetTransformation)
+    # Question: Should we incur cost of checking that codom(β) == dom(α)?
+    LooseACSetTransformation(
+      map(compose, components(α), components(β)),
+      map(compose, type_components(α), type_components(β)),
+      dom(α), codom(β))
+  end
+end
+
+function compose(α::TightACSetTransformation, β::TightACSetTransformation)
+  TightACSetTransformation(map(compose, components(α), components(β)),
+                           dom(α), codom(β))
+end
+
+@cartesian_monoidal_instance ACSet ACSetTransformation
+@cocartesian_monoidal_instance ACSet ACSetTransformation
 
 # Finding C-set transformations
 ###############################
@@ -464,40 +603,19 @@ in_hom(S, c) = [dom(S,f) => f for f in hom(S) if codom(S,f) == c]
 out_hom(S, c) = [f => codom(S,f) for f in hom(S) if dom(S,f) == c]
 out_attr(S, c) = [f for f in attr(S) if dom(S, f) == c]
 
-# Category of C-sets
-####################
-
-@instance Category{StructACSet, ACSetTransformation} begin
-  dom(α::ACSetTransformation) = α.dom
-  codom(α::ACSetTransformation) = α.codom
-
-  id(X::StructACSet) = ACSetTransformation(map(id, fin_sets(X)), X, X)
-
-  function compose(α::ACSetTransformation, β::ACSetTransformation)
-    # Question: Should we incur cost of checking that codom(β) == dom(α)?
-    ACSetTransformation(map(compose, components(α), components(β)),
-                        dom(α), codom(β))
-  end
-end
-
-fin_sets(X::StructACSet{S}) where {S} = NamedTuple(A => FinSet(nparts(X,A)) for A in ob(S))
-
-@cartesian_monoidal_instance ACSet ACSetTransformation
-@cocartesian_monoidal_instance ACSet ACSetTransformation
-
 # Limits and colimits
 #####################
 
-""" Limit of C-sets that stores the pointwise limits in FinSet.
+""" Limit of attributed C-sets that stores the pointwise limits in Set.
 """
-struct CSetLimit{Ob <: StructCSet, Diagram, Cone <: Multispan{Ob},
+struct ACSetLimit{Ob <: StructACSet, Diagram, Cone <: Multispan{Ob},
                  Limits <: NamedTuple} <: AbstractLimit{Ob,Diagram}
   diagram::Diagram
   cone::Cone
   limits::Limits
 end
 
-""" Colimit of attributed C-sets that stores the pointwise colimits in FinSet.
+""" Colimit of attributed C-sets that stores the pointwise colimits in Set.
 """
 struct ACSetColimit{Ob <: StructACSet, Diagram, Cocone <: Multicospan{Ob},
                     Colimits <: NamedTuple} <: AbstractColimit{Ob,Diagram}
@@ -506,34 +624,72 @@ struct ACSetColimit{Ob <: StructACSet, Diagram, Cocone <: Multicospan{Ob},
   colimits::Colimits
 end
 
-# Compute limits and colimits of C-sets by reducing to those in FinSet using the
+# By default, products of acsets are taken w.r.t. loose acset morphisms, whereas
+# coproducts of acsets are taken w.r.t. tight acset morphisms. We do not need to
+# provide defaults for limits and colimits of non-discrete diagrams, because the
+# type of the diagram's morphisms disambiguates the situation.
+
+Limits.terminal(::Type{T}; kw...) where T <: ACSet =
+  limit(EmptyDiagram{T}(LooseACSetTransformation); kw...)
+Limits.product(X::ACSet, Y::ACSet; kw...) =
+  limit(ObjectPair(X, Y, LooseACSetTransformation); kw...)
+Limits.product(Xs::AbstractVector{<:ACSet}; kw...) =
+  limit(DiscreteDiagram(Xs, LooseACSetTransformation); kw...)
+
+Limits.initial(::Type{T}; kw...) where T <: ACSet =
+  colimit(EmptyDiagram{T}(TightACSetTransformation); kw...)
+Limits.coproduct(X::ACSet, Y::ACSet; kw...) =
+  colimit(ObjectPair(X, Y, TightACSetTransformation); kw...)
+Limits.coproduct(Xs::AbstractVector{<:ACSet}; kw...) =
+  colimit(DiscreteDiagram(Xs, TightACSetTransformation); kw...)
+
+# Compute limits and colimits in C-Set by reducing to those in Set using the
 # "pointwise" formula for (co)limits in functor categories.
 
-function limit(::Type{ACS}, diagram) where
-    {S <: CSetSchemaDescType, ACS <: StructCSet{S}}
+function limit(::Type{Tuple{ACS,Hom}}, diagram) where
+    {S, ACS <: StructCSet{S}, Hom <: TightACSetTransformation}
   limits = map(limit, unpack_diagram(diagram))
   Xs = cone_objects(diagram)
   Y = ACS()
-  for (c, lim) in pairs(limits)
-    add_parts!(Y, c, length(ob(lim)))
+  limit!(Y, diagram, Xs, limits)
+end
+
+function limit(::Type{Tuple{ACS,Hom}}, diagram) where
+    {S, ACS <: StructACSet{S}, Hom <: LooseACSetTransformation}
+  limits = map(limit, unpack_diagram(diagram, all=true))
+  Xs = cone_objects(diagram)
+  Y = isempty(attrtype(S)) ? ACS() :
+    roottype(ACS){(eltype(ob(limits[d])) for d in attrtype(S))...}()
+
+  result = limit!(Y, diagram, Xs, limits)
+  for (f, c, d) in zip(attr(S), adom(S), acodom(S))
+    Yfs = map((π, X) -> π ⋅ FinDomFunction(X, f), legs(limits[c]), Xs)
+    Yf = universal(limits[d], Multispan(ob(limits[c]), Yfs))
+    set_subpart!(Y, f, collect(Yf))
+  end
+  result
+end
+
+function limit!(Y::StructACSet{S}, diagram, Xs, limits) where S
+  for c in ob(S)
+    add_parts!(Y, c, length(ob(limits[c])))
   end
   for (f, c, d) in zip(hom(S), dom(S), codom(S))
-    Yfs = map(legs(limits[c]), Xs) do π, X
-      compose(π, FinFunction(subpart(X, f), nparts(X, d)))
-    end
+    Yfs = map((π, X) -> π ⋅ FinFunction(X, f), legs(limits[c]), Xs)
     Yf = universal(limits[d], Multispan(ob(limits[c]), Yfs))
     set_subpart!(Y, f, collect(Yf))
   end
   πs = pack_components(map(legs, limits), map(X -> Y, Xs), Xs)
-  CSetLimit(diagram, Multispan(Y, πs), limits)
+  ACSetLimit(diagram, Multispan(Y, πs), limits)
 end
 
-function universal(lim::CSetLimit, cone::Multispan)
+function universal(lim::ACSetLimit, cone::Multispan)
   components = map(universal, lim.limits, unpack_diagram(cone))
   CSetTransformation(components, apex(cone), ob(lim))
 end
 
-function colimit(::Type{ACS}, diagram) where {S, Ts, ACS <: StructACSet{S,Ts}}
+function colimit(::Type{Tuple{ACS,Hom}}, diagram) where
+    {S, Ts, ACS <: StructACSet{S,Ts}, Hom <: TightACSetTransformation}
   # Colimit of C-set without attributes.
   colimits = map(colimit, unpack_diagram(diagram))
   Xs = cocone_objects(diagram)
@@ -542,9 +698,7 @@ function colimit(::Type{ACS}, diagram) where {S, Ts, ACS <: StructACSet{S,Ts}}
     add_parts!(Y, c, length(ob(colim)))
   end
   for (f, c, d) in zip(hom(S), dom(S), codom(S))
-    Yfs = map(legs(colimits[d]), Xs) do ι, X
-      compose(FinFunction(subpart(X, f), nparts(X, d)), ι)
-    end
+    Yfs = map((ι, X) -> FinFunction(X, f) ⋅ ι, legs(colimits[d]), Xs)
     Yf = universal(colimits[c], Multicospan(ob(colimits[d]), Yfs))
     set_subpart!(Y, f, collect(Yf))
   end
@@ -577,41 +731,66 @@ function universal(colim::ACSetColimit, cocone::Multicospan)
   ACSetTransformation(components, ob(colim), apex(cocone))
 end
 
-""" Diagram in C-Set → named tuple of diagrams in FinSet
+""" Diagram in C-Set → named tuple of diagrams in Set.
 """
-unpack_diagram(discrete::DiscreteDiagram{<:ACSet}) =
-  map(DiscreteDiagram, unpack_sets(ob(discrete)))
-unpack_diagram(span::Multispan{<:ACSet}) =
-  map(Multispan, fin_sets(apex(span)), unpack_components(legs(span)))
-unpack_diagram(cospan::Multicospan{<:ACSet}) =
-  map(Multicospan, fin_sets(apex(cospan)), unpack_components(legs(cospan)))
-unpack_diagram(para::ParallelMorphisms{<:ACSet}) =
-  map(ParallelMorphisms, unpack_components(hom(para)))
-unpack_diagram(comp::ComposableMorphisms{<:ACSet}) =
-  map(ComposableMorphisms, unpack_components(hom(comp)))
+unpack_diagram(discrete::DiscreteDiagram{<:ACSet}; kw...) =
+  map(DiscreteDiagram, unpack_sets(ob(discrete); kw...))
+unpack_diagram(span::Multispan{<:ACSet}; kw...) =
+  map(Multispan, sets(apex(span); kw...),
+      unpack_components(legs(span); kw...))
+unpack_diagram(cospan::Multicospan{<:ACSet}; kw...) =
+  map(Multicospan, sets(apex(cospan); kw...),
+      unpack_components(legs(cospan); kw...))
+unpack_diagram(para::ParallelMorphisms{<:ACSet}; kw...) =
+  map(ParallelMorphisms, unpack_components(hom(para); kw...))
+unpack_diagram(comp::ComposableMorphisms{<:ACSet}; kw...) =
+  map(ComposableMorphisms, unpack_components(hom(comp); kw...))
 
-function unpack_diagram(d::Union{FreeDiagram{ACS},BipartiteFreeDiagram{ACS}}) where
-    {Ob, S <: SchemaDescType{Ob}, ACS <: StructACSet{S}}
-  NamedTuple{Ob}([ map(d, Ob=X -> FinSet(X, ob), Hom=α -> α[ob]) for ob in Ob ])
+function unpack_diagram(diag::Union{FreeDiagram{ACS},BipartiteFreeDiagram{ACS}};
+                        all::Bool=false) where {S, ACS <: StructACSet{S}}
+  fin_diagrams = (c => map(diag, Ob=X->FinSet(X,c), Hom=α->α[c])
+                  for c in ob(S))
+  NamedTuple(all ?
+    flatten((fin_diagrams, (d => map(diag, Ob=X->TypeSet(X,d), Hom=α->α[d])
+                            for d in attrtype(S)))) :
+    fin_diagrams)
 end
 
-""" Vector of C-sets → named tuple of vectors of FinSets
+""" Vector of C-sets → named tuple of vectors of sets.
 """
-unpack_sets(Xs::AbstractVector{<:StructACSet{S}}) where
-    {Ob, S <: SchemaDescType{Ob}} =
-  NamedTuple{Ob}([ map(X -> FinSet(X, ob), Xs) for ob in Ob ])
+function unpack_sets(Xs::AbstractVector{<:StructACSet{S}};
+                     all::Bool=false) where S
+  fin_sets = (c => map(X->FinSet(X,c), Xs) for c in ob(S))
+  NamedTuple(all ?
+    flatten((fin_sets, (d => map(X->TypeSet(X,d), Xs) for d in attrtype(S)))) :
+    fin_sets)
+end
 
-""" Vector of C-set transformations → named tuple of vectors of FinFunctions
+""" Vector of C-set transformations → named tuple of vectors of functions.
 """
-unpack_components(αs::AbstractVector{<:ACSetTransformation{S}}) where
-    {Ob, S <: SchemaDescType{Ob}} =
-  NamedTuple{Ob}([ map(α -> α[ob], αs) for ob in Ob ])
+function unpack_components(αs::AbstractVector{<:ACSetTransformation{S}};
+                           all::Bool=false) where S
+  fin_components = (c => map(α -> α[c], αs) for c in ob(S))
+  NamedTuple(all ?
+    flatten((fin_components, (d => map(α -> α[d], αs) for d in attrtype(S)))) :
+    fin_components)
+end
 
-""" Named tuple of vectors of FinFunctions → vector of C-set transformations
+""" Named tuple of vectors of FinFunctions → vector of C-set transformations.
 """
-function pack_components(fs::NamedTuple{Ob}, doms, codoms) where Ob
-  components = map((x...) -> NamedTuple{Ob}(x), fs...) # XXX: Is there a better way?
+function pack_components(fs::NamedTuple{names}, doms, codoms) where names
+  # XXX: Is there a better way?
+  components = map((x...) -> NamedTuple{names}(x), fs...)
   map(ACSetTransformation, components, doms, codoms)
+end
+
+""" C-set → named tuple of sets.
+"""
+function sets(X::StructACSet{S}; all::Bool=false) where S
+  fin_sets = (c => FinSet(X,c) for c in ob(S))
+  NamedTuple(all ?
+    flatten((fin_sets, (d => TypeSet(X,d) for d in attrtype(S)))) :
+    fin_sets)
 end
 
 """ Compute pushout complement of attributed C-sets, if possible.
@@ -691,11 +870,11 @@ force(A::SubACSet) = Subobject(force(hom(A)))
   components::Comp
 
   function SubACSetComponentwise(X::Ob, components::NamedTuple) where Ob<:ACSet
-    sets = fin_sets(X)
-    @assert keys(components) ⊆ keys(sets)
-    coerced_components = NamedTuple{keys(sets)}(
-      coerce_subob_component(set, get(components, ob) do; 1:0 end)
-      for (ob, set) in pairs(sets))
+    X_sets = sets(X)
+    @assert keys(components) ⊆ keys(X_sets)
+    coerced_components = NamedTuple{keys(X_sets)}(
+      coerce_subob_component(set, get(components, ob, 1:0))
+      for (ob, set) in pairs(X_sets))
     new{Ob,typeof(coerced_components)}(X, coerced_components)
   end
 end
@@ -748,9 +927,9 @@ function join(A::SubACSet, B::SubACSet, ::SubOpBoolean)
   end)
 end
 top(X::ACSet, ::SubOpBoolean) =
-  Subobject(X, map(X₀ -> top(X₀, SubOpBoolean()), fin_sets(X)))
+  Subobject(X, map(X₀ -> top(X₀, SubOpBoolean()), sets(X)))
 bottom(X::ACSet, ::SubOpBoolean) =
-  Subobject(X, map(X₀ -> bottom(X₀, SubOpBoolean()), fin_sets(X)))
+  Subobject(X, map(X₀ -> bottom(X₀, SubOpBoolean()), sets(X)))
 
 """ Implication of sub-C-sets.
 
@@ -770,7 +949,7 @@ subtraction of sub-C-sets ([`subtract`](@ref)).
 function implies(A::SubACSet{S}, B::SubACSet{S}, ::SubOpBoolean) where S
   X = common_ob(A, B)
   A, B = map(predicate, components(A)), map(predicate, components(B))
-  D = map(X₀ -> trues(length(X₀)), fin_sets(X))
+  D = map(X₀ -> trues(length(X₀)), sets(X))
 
   function unset!(c, x)
     D[c][x] = false
@@ -797,7 +976,7 @@ for all ``c ∈ C`` and ``x ∈ X(c)``. Compare with [`implies`](@ref).
 function subtract(A::SubACSet{S}, B::SubACSet{S}, ::SubOpBoolean) where S
   X = common_ob(A, B)
   A, B = map(predicate, components(A)), map(predicate, components(B))
-  D = map(X₀ -> falses(length(X₀)), fin_sets(X))
+  D = map(X₀ -> falses(length(X₀)), sets(X))
 
   function set!(c, x)
     D[c][x] = true
