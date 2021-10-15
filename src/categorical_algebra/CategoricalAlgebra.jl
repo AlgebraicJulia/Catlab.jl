@@ -9,9 +9,9 @@ include("Sets.jl")
 include("FinSets.jl")
 include("Matrices.jl")
 include("FinRelations.jl")
-include("CSets.jl")
 include("Categories.jl")
 include("FinCats.jl")
+include("CSets.jl")
 include("GraphCategories.jl")
 include("StructuredCospans.jl")
 include("CommutativeDiagrams.jl")
@@ -26,9 +26,9 @@ include("DPO.jl")
 
 @reexport using .Sets
 @reexport using .FinSets
-@reexport using .CSets
 @reexport using .Categories
 @reexport using .FinCats
+@reexport using .CSets
 
 @reexport using .StructuredCospans
 @reexport using .CatElements

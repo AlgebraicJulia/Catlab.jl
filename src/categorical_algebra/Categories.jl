@@ -13,7 +13,8 @@ instances are supported through the wrapper type [`TypeCat`](@ref). Finitely
 presented categories are provided by another module, [`FinCats`](@ref).
 """
 module Categories
-export Cat, TypeCat, Ob, Functor, dom, codom, compose, id, ob_map, hom_map
+export Cat, TypeCat, Ob, Functor, NatTransformation,
+  dom, codom, compose, id, ob, hom, ob_map, hom_map, dom_ob, codom_ob, component
 
 using ..Sets
 import ...Theories: Ob, ob, hom, dom, codom, compose, id
@@ -96,6 +97,37 @@ Sends a category to its set of objects and a functor to its object map.
 """
 function Ob end
 
+""" Abstract base type for a natural transformation between functors.
+
+A natural transformation ``α: F ⇒ G`` has a domain ``F`` and codomain ``G``
+([`dom`](@ref) and [`codom`](@ref)), which are functors ``F,G: C → D`` having
+the same domain ``C`` and codomain ``D``. The transformation consists of a
+component ``αₓ: Fx → Gx`` in ``D`` for each object ``x ∈ C``, accessible using
+[`component`](@ref) or indexing notation (`Base.getindex`).
+"""
+abstract type NatTransformation{C<:Cat,D<:Cat,Dom<:Functor{C,D},Codom<:Functor{C,D}} end
+
+dom(α::NatTransformation) = α.dom
+codom(α::NatTransformation) = α.codom
+
+""" Component of natural transformation.
+"""
+function component end
+
+@inline Base.getindex(α::NatTransformation, c) = component(α, c)
+
+""" Domain object of natural transformation.
+
+Given ``α: F ⇒ G: C → D``, this function returns ``C``.
+"""
+dom_ob(α::NatTransformation) = dom(dom(α)) # == dom(codom(α))
+
+""" Codomain object of natural transformation.
+
+Given ``α: F ⇒ G: C → D``, this function returns ``D``.
+"""
+codom_ob(α::NatTransformation) = codom(dom(α)) # == codom(codom(α))
+
 # Instances
 ###########
 
@@ -105,6 +137,8 @@ The Julia types should form an `@instance` of the theory of categories
 (`Theories.Category`).
 """
 struct TypeCat{Ob,Hom} <: Cat{Ob,Hom} end
+
+TypeCat(Ob::Type, Hom::Type) = TypeCat{Ob,Hom}()
 
 Ob(::TypeCat{T}) where T = TypeSet{T}()
 

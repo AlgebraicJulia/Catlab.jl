@@ -23,6 +23,7 @@ import ..Subobjects: Subobject, SubobjectBiHeytingAlgebra,
   implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..Sets: TypeSet
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate
+import ..FinCats: components, is_natural
 using ...Theories: Category, SchemaDescType, CSetSchemaDescType,
   attrtype, attrtype_num, attr, adom, acodom, acodom_nums, roottype
 import ...Theories: dom, codom, compose, ⋅, id,
@@ -261,12 +262,6 @@ function Base.getindex(α::LooseACSetTransformation, c::Symbol)
   end
 end
 
-""" Is the transformation between attributed C-sets a natural transformation?
-
-This function uses the fact that to check whether a transformation is natural,
-it suffices to check the naturality equation on a generating set of morphisms of
-the category C.
-"""
 function is_natural(α::ACSetTransformation{S}) where {S}
   X, Y = dom(α), codom(α)
   for (f, c, d) in flatten((zip(hom(S), dom(S), codom(S)),
