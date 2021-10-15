@@ -4,8 +4,8 @@ using Test
 ############
 
 A, B, C, D = Ob(FreeCategory2, :A, :B, :C, :D)
-f, g, F, G = [ Hom(sym, A, B) for sym in [:f,:g,:F,:G] ]
-h, k, H, K = [ Hom(sym, B, C) for sym in [:h,:k,:H,:K] ]
+f, g = [Hom(sym, A, B) for sym in [:f,:g]]
+h, k = [Hom(sym, B, C) for sym in [:h,:k]]
 
 # Domains and codomains
 α, β = Hom2(:α, f, g), Hom2(:β, g, h)
@@ -28,6 +28,11 @@ h, k, H, K = [ Hom(sym, B, C) for sym in [:h,:k,:H,:K] ]
 
 α, β = Hom2(:α, f, g), Hom2(:β, h, k)
 @test unicode(composeH(α,β)) == "α*β"
+
+# Whiskering
+α, β = Hom2(:α, f, g), Hom2(:β, h, k)
+@test α*h == α*id(h)
+@test f*β == id(f)*β
 
 # Double category
 #################
