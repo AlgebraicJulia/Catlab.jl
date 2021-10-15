@@ -47,6 +47,15 @@ F = FinFunctor([1,3,5], [[1,2],[3,4]], C, D)
 @test is_functorial(F)
 @test hom_map(F, Path(g, [1,2])) == Path(h, [1,2,3,4])
 
+# Commutative square as natural transformation.
+C = FinCat(path_graph(Graph, 2))
+F = FinDomFunctor([FinSet(4), FinSet(2)], [FinFunction([1,1,2,2])], C)
+α₀, α₁ = FinFunction([3,4,1,2]), FinFunction([2,1])
+α = FinNatTransformation([α₀, α₁], F, F)
+@test is_natural(α)
+@test (α[1], α[2]) == (α₀, α₁)
+@test components(α) == [α₀, α₁]
+
 # Free diagrams
 #--------------
 
@@ -104,6 +113,7 @@ end
 @test length(equations(Δ¹)) == 2
 @test !is_free(Δ¹)
 
+# Graph as set-valued functor on the theory of graphs.
 g = path_graph(Graph, 3)
 F = FinDomFunctor(TheoryGraph, g)
 C = dom(F)
@@ -113,5 +123,15 @@ C = dom(F)
 @test F(ob(C, :E)) == FinSet(2)
 @test F(hom(C, :tgt)) == FinFunction([2,3], 3)
 @test F(id(ob(C, :E))) == id(FinSet(2))
+
+# Graph homomorphism as natural transformation.
+h = path_graph(Graph, 2)
+add_edge!(h, 2, 2)
+G = FinDomFunctor(TheoryGraph, h)
+α = FinNatTransformation(F, G, V=FinFunction([1,2,2]), E=FinFunction([1,2]))
+@test dom_ob(α) == C
+@test codom_ob(α) isa TypeCat{<:FinSet{Int},<:FinFunction{Int}}
+@test is_natural(α)
+@test α[:V](3) == 2
 
 end
