@@ -10,7 +10,7 @@ using AutoHashEquals
 
 using ...GAT
 using ...Theories: DoubleCategory
-import ...Theories: ob, hom, dom, codom, compose, ⋅, ⋆, HomV, HomH,
+import ...Theories: ob, hom, dom, codom, compose, ⋅, *, HomV, HomH,
   composeH, composeV, id, idH, idV, id2, id2H, id2V, left, right, top, bottom
 using ..FinSets
 
