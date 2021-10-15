@@ -28,9 +28,13 @@ abstract type HomHExpr{T} <: CategoryExpr{T} end
   compose(α::(f ⇒ g), β::(g ⇒ h))::(f ⇒ h) ⊣
     (A::Ob, B::Ob, f::(A → B), g::(A → B), h::(A → B))
 
-  # Horizontal compostion
+  # Horizontal composition, including whiskering
   composeH(α::(f ⇒ g), β::(h ⇒ k))::((f ⋅ h) ⇒ (g ⋅ k)) ⊣
     (A::Ob, B::Ob, C::Ob, f::(A → B), g::(A → B), h::(B → C), k::(B → C))
+  composeH(α::(f ⇒ g), h::(B → C))::((f ⋅ h) ⇒ (g ⋅ h)) ⊣
+    (A::Ob, B::Ob, C::Ob, f::(A → B), g::(A → B))
+  composeH(f::(A → B), β::(g ⇒ h))::((f ⋅ g) ⇒ (f ⋅ h)) ⊣
+    (A::Ob, B::Ob, C::Ob, g::(B → C), h::(B → C))
 end
 
 # Convenience constructors
@@ -39,12 +43,14 @@ composeH(α, β, γ, αs...) = composeH([α, β, γ, αs...])
 
 """ Syntax for a 2-category.
 
-Checks domains of morphisms but not 2-morphisms.
+This syntax checks domains of morphisms but not 2-morphisms.
 """
 @syntax FreeCategory2{ObExpr,HomExpr,Hom2Expr} Category2 begin
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
   compose(α::Hom2, β::Hom2) = associate_unit(new(α,β), id)
   composeH(α::Hom2, β::Hom2) = associate(new(α,β))
+  composeH(α::Hom2, h::Hom) = composeH(α, id(h))
+  composeH(f::Hom, β::Hom2) = composeH(id(f), β)
 end
 
 function show_unicode(io::IO, expr::Hom2Expr{:compose}; kw...)
