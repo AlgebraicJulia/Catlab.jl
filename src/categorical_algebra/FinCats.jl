@@ -214,13 +214,10 @@ hom(C::FinCatPresentation, fs::AbstractVector) =
 """
 abstract type FinDomFunctor{Dom<:FinCat,Codom<:Cat} <: Functor{Dom,Codom} end
 
-FinDomFunctor(ob_map::Union{AbstractVector,AbstractDict},
-              hom_map::Union{AbstractVector,AbstractDict}, dom, codom) =
-  FinDomFunctorMap(ob_map, hom_map, dom, codom)
 FinDomFunctor(ob_map::Union{AbstractVector{Ob},AbstractDict{<:Any,Ob}},
               hom_map::Union{AbstractVector{Hom},AbstractDict{<:Any,Hom}},
               dom) where {Ob,Hom} =
-  FinDomFunctorMap(ob_map, hom_map, dom, TypeCat{Ob,Hom}())
+  FinDomFunctor(ob_map, hom_map, dom, TypeCat{Ob,Hom}())
 FinDomFunctor(maps::NamedTuple{(:V,:E)}, dom::FinCatGraph, codom::Cat) =
   FinDomFunctor(maps.V, maps.E, dom, codom)
 
@@ -274,54 +271,29 @@ FinFunctor(ob_map, hom_map, dom::FinCat, codom::FinCat) =
 FinFunctor(ob_map, hom_map, dom::Presentation, codom::Presentation) =
   FinDomFunctor(ob_map, hom_map, FinCat(dom), FinCat(codom))
 
-# Mapping-based functor
-#######################
+# Vector-based functors
+#----------------------
 
-""" Functor out of finitely presented category defined by explicit mapping.
-
-The object and morphism mappings can be vectors or dictionaries.
+""" Functor out of presented category defined explictly using vectors.
 """
-@auto_hash_equals struct FinDomFunctorMap{Dom<:FinCat,Codom<:Cat,ObMap,HomMap} <: FinDomFunctor{Dom,Codom}
+@auto_hash_equals struct FinDomFunctorVector{Dom<:FinCat, Codom<:Cat,
+    ObMap<:AbstractVector, HomMap<:AbstractVector} <: FinDomFunctor{Dom,Codom}
   ob_map::ObMap
   hom_map::HomMap
   dom::Dom
   codom::Codom
-
-  function FinDomFunctorMap(ob_map::AbstractVector, hom_map::AbstractVector,
-                            dom::Dom, codom::Codom) where {Dom,Codom}
-    length(ob_map) == length(ob_generators(dom)) ||
-      error("Length of object map $ob_map does not match domain $dom")
-    length(hom_map) == length(hom_generators(dom)) ||
-      error("Length of morphism map $hom_map does not match domain $dom")
-    ob_map = map(x -> ob(codom, x), ob_map)
-    hom_map = map(f -> hom(codom, f), hom_map)
-    new{Dom,Codom,typeof(ob_map),typeof(hom_map)}(ob_map, hom_map, dom, codom)
-  end
-
-  function FinDomFunctorMap(ob_map::ObD, hom_map::HomD, dom::Dom, codom::Codom) where
-      {ObD<:AbstractDict, HomD<:AbstractDict, Dom, Codom}
-    ob_map = (roottype(ObD))(functor_key(dom, k) => ob(codom, v)
-                             for (k, v) in ob_map)
-    hom_map = (roottype(HomD))(functor_key(dom, k) => hom(codom, v)
-                               for (k, v) in hom_map)
-    new{Dom,Codom,typeof(ob_map),typeof(hom_map)}(ob_map, hom_map, dom, codom)
-  end
 end
 
-""" Functor b/w finitely presented categories defined by explicit mapping.
-"""
-const FinFunctorMap{Dom<:FinCat,Codom<:FinCat,ObMap,HomMap} =
-  FinDomFunctorMap{Dom,Codom,ObMap,HomMap}
-
-functor_key(C::FinCat, x) = x
-functor_key(C::FinCat, expr::GATExpr) = head(expr) == :generator ?
-  first(expr) : error("Functor must be defined on generators")
-
-""" Vector-based functor out of finitely presented category.
-"""
-const FinDomFunctorVector{Dom<:FinCat{Int},Codom<:Cat,
-                          ObMap<:AbstractVector,HomMap<:AbstractVector} =
-  FinDomFunctorMap{Dom,Codom,ObMap,HomMap}
+function FinDomFunctor(ob_map::AbstractVector, hom_map::AbstractVector,
+                       dom::FinCat, codom::Cat)
+  length(ob_map) == length(ob_generators(dom)) ||
+    error("Length of object map $ob_map does not match domain $dom")
+  length(hom_map) == length(hom_generators(dom)) ||
+    error("Length of morphism map $hom_map does not match domain $dom")
+  ob_map = map(x -> ob(codom, x), ob_map)
+  hom_map = map(f -> hom(codom, f), hom_map)
+  FinDomFunctorVector(ob_map, hom_map, dom, codom)
+end
 
 ob_map(F::FinDomFunctorVector, x::Integer) = F.ob_map[x]
 hom_map(F::FinDomFunctorVector, f::Integer) = F.hom_map[f]
@@ -331,14 +303,36 @@ collect_hom(F::FinDomFunctorVector) = F.hom_map
 
 Ob(F::FinDomFunctorVector) = FinDomFunction(F.ob_map, Ob(codom(F)))
 
-""" Dictionary-based functor out of finitely presented category.
-"""
-const FinDomFunctorDict{ObKey,HomKey,Dom<:FinCat,Codom<:Cat,
-                        ObMap<:AbstractDict{ObKey},HomMap<:AbstractDict{HomKey}} =
-  FinDomFunctorMap{Dom,Codom,ObMap,HomMap}
+# Dict-based functors
+#--------------------
 
-ob_map(F::FinDomFunctorDict{ObK,HomK}, x::ObK) where {ObK,HomK} = F.ob_map[x]
-hom_map(F::FinDomFunctorDict{ObK,HomK}, f::HomK) where {ObK,HomK} = F.hom_map[f]
+""" Functor out of presented category defined explicitly using dictionaries.
+"""
+@auto_hash_equals struct FinDomFunctorDict{Dom<:FinCat, Codom<:Cat,
+    ObMap<:AbstractDict, HomMap<:AbstractDict} <: FinDomFunctor{Dom,Codom}
+  ob_map::ObMap
+  hom_map::HomMap
+  dom::Dom
+  codom::Codom
+end
+
+function FinDomFunctor(ob_map::ObD, hom_map::HomD, dom::FinCat,
+                       codom::Cat) where {ObD<:AbstractDict, HomD<:AbstractDict}
+  ob_map = (roottype(ObD))(functor_key(dom, k) => ob(codom, v)
+                           for (k, v) in ob_map)
+  hom_map = (roottype(HomD))(functor_key(dom, k) => hom(codom, v)
+                             for (k, v) in hom_map)
+  FinDomFunctorDict(ob_map, hom_map, dom, codom)
+end
+
+functor_key(C::FinCat, x) = x
+functor_key(C::FinCat, expr::GATExpr) = head(expr) == :generator ?
+  first(expr) : error("Functor must be defined on generators")
+
+ob_map(F::FinDomFunctorDict{Dom,Codom,ObMap}, x::Key) where
+  {Key, Dom, Codom, ObMap<:AbstractDict{Key}} = F.ob_map[x]
+hom_map(F::FinDomFunctorDict{Dom,Codom,ObMap,HomMap}, f::Key) where
+  {Key, Dom, Codom, ObMap, HomMap<:AbstractDict{Key}} = F.hom_map[f]
 
 # C-set interop
 #--------------
