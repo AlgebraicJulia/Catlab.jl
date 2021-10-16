@@ -1,8 +1,7 @@
 module TestFinCats
 using Test
 
-using Catlab, Catlab.CategoricalAlgebra, Catlab.Graphs
-using Catlab.Theories: FreeCategory
+using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
 using Catlab.Graphs.BasicGraphs: TheoryGraph
 
 # Categories on graphs
@@ -29,6 +28,7 @@ f = id(D, 2)
 f = compose(D, 1, 3)
 @test edges(f) == [1,3]
 
+# Functors between free categories.
 C = FinCat(parallel_arrows(Graph, 2))
 F = FinFunctor((V=[1,4], E=[[1,3], [2,4]]), C, D)
 @test dom(F) == C
@@ -41,20 +41,16 @@ F = FinFunctor((V=[1,4], E=[[1,3], [2,4]]), C, D)
 @test collect_ob(F) == [1,4]
 @test collect_hom(F) == [Path(h, [1,3]), Path(h, [2,4])]
 
-g, h = path_graph(Graph, 3), path_graph(Graph, 5)
-C, D = FinCat(g), FinCat(h)
-F = FinFunctor([1,3,5], [[1,2],[3,4]], C, D)
-@test is_functorial(F)
-@test hom_map(F, Path(g, [1,2])) == Path(h, [1,2,3,4])
-
-# Commutative square as natural transformation.
-C = FinCat(path_graph(Graph, 2))
-F = FinDomFunctor([FinSet(4), FinSet(2)], [FinFunction([1,1,2,2])], C)
-α₀, α₁ = FinFunction([3,4,1,2]), FinFunction([2,1])
-α = FinNatTransformation([α₀, α₁], F, F)
-@test is_natural(α)
-@test (α[1], α[2]) == (α₀, α₁)
-@test components(α) == [α₀, α₁]
+# Composition of functors.
+g, h, k = path_graph(Graph, 2), path_graph(Graph, 3), path_graph(Graph, 5)
+C, D, E = FinCat(g), FinCat(h), FinCat(k)
+F = FinFunctor([1,3], [[1,2]], C, D)
+G = FinFunctor([1,3,5], [[1,2],[3,4]], D, E)
+@test is_functorial(G)
+@test hom_map(G, Path(h, [1,2])) == Path(k, [1,2,3,4])
+@test F⋅G == FinFunctor([1,5], [[1,2,3,4]], C, E)
+@test id(C)⋅F == F
+@test F⋅id(D) == F
 
 # Free diagrams
 #--------------
@@ -79,6 +75,16 @@ diagram = FreeDiagram(ParallelPair(f, g))
 @test cocone_objects(F) == [FinSet(2), FinSet(3)]
 @test ob(limit(F)) == FinSet(1)
 @test ob(colimit(F)) == FinSet(2)
+
+# Commutative square as natural transformation.
+C = FinCat(path_graph(Graph, 2))
+F = FinDomFunctor([FinSet(4), FinSet(2)], [FinFunction([1,1,2,2])], C)
+α₀, α₁ = FinFunction([3,4,1,2]), FinFunction([2,1])
+α = FinTransformation([α₀, α₁], F, F)
+@test is_natural(α)
+@test (α[1], α[2]) == (α₀, α₁)
+@test components(α) == [α₀, α₁]
+@test α⋅α == FinTransformation([FinFunction(1:4), FinFunction(1:2)], F, F)
 
 # Path equations
 #---------------
@@ -114,8 +120,7 @@ end
 @test !is_free(Δ¹)
 
 # Graph as set-valued functor on the theory of graphs.
-g = path_graph(Graph, 3)
-F = FinDomFunctor(TheoryGraph, g)
+F = FinDomFunctor(TheoryGraph, path_graph(Graph, 3))
 C = dom(F)
 @test is_functorial(F)
 @test ob_map(F, :V) == FinSet(3)
@@ -124,14 +129,32 @@ C = dom(F)
 @test F(hom(C, :tgt)) == FinFunction([2,3], 3)
 @test F(id(ob(C, :E))) == id(FinSet(2))
 
-# Graph homomorphism as natural transformation.
-h = path_graph(Graph, 2)
-add_edge!(h, 2, 2)
-G = FinDomFunctor(TheoryGraph, h)
-α = FinNatTransformation(F, G, V=FinFunction([1,2,2]), E=FinFunction([1,2]))
+# Graph homomorphisms as natural transformations.
+g = parallel_arrows(Graph, 2)
+add_edges!(g, [2,2], [2,2])
+G = FinDomFunctor(TheoryGraph, g)
+α = FinTransformation(F, G, V=FinFunction([1,2,2]), E=FinFunction([1,3],4))
 @test dom_ob(α) == C
 @test codom_ob(α) isa TypeCat{<:FinSet{Int},<:FinFunction{Int}}
 @test is_natural(α)
 @test α[:V](3) == 2
+σ = FinTransformation(G, G, V=id(FinSet(2)), E=FinFunction([2,1,4,3]))
+@test σ⋅σ == FinTransformation(G, G, V=id(FinSet(2)), E=FinFunction(1:4))
+@test α⋅σ == FinTransformation(F, G, V=FinFunction([1,2,2]), E=FinFunction([2,4]))
+
+# Pullback data migration by pre-whiskering.
+ιV = FinFunctor([:V], [], FinCat(Graph(1)), FinCat(TheoryGraph))
+αV = ιV * α
+@test ob_map(dom(αV), 1) == ob_map(F, :V)
+@test ob_map(codom(αV), 1) == ob_map(G, :V)
+@test component(αV, 1) == component(α, :V)
+
+# Post-whiskering and horizontal composition.
+ιE = FinFunctor([:E], [], FinCat(Graph(1)), FinCat(TheoryGraph))
+ϕ = FinTransformation([:src], ιE, ιV)
+@test is_natural(ϕ)
+@test component(ϕ*F, 1) == hom_map(F, :src)
+@test component(ϕ*α, 1) == hom_map(F, :src) ⋅ α[:V]
+
 
 end

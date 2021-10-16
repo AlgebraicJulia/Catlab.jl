@@ -13,7 +13,7 @@ module FinCats
 export FinCat, Path, ob_generators, hom_generators, equations, is_free,
   graph, edges, src, tgt, presentation,
   FinFunctor, FinDomFunctor, is_functorial, collect_ob, collect_hom,
-  FinNatTransformation, components, is_natural
+  FinTransformation, components, is_natural
 
 using AutoHashEquals
 using Reexport
@@ -271,13 +271,17 @@ FinFunctor(ob_map, hom_map, dom::FinCat, codom::FinCat) =
 FinFunctor(ob_map, hom_map, dom::Presentation, codom::Presentation) =
   FinDomFunctor(ob_map, hom_map, FinCat(dom), FinCat(codom))
 
+""" Functor out of a finitely presented category given by explicit mappings.
+"""
+abstract type FinDomFunctorMap{Dom<:FinCat,Codom<:Cat} <: FinDomFunctor{Dom,Codom} end
+
 # Vector-based functors
 #----------------------
 
-""" Functor out of presented category defined explictly using vectors.
+""" Functor object and morphism maps given as vectors.
 """
 @auto_hash_equals struct FinDomFunctorVector{Dom<:FinCat, Codom<:Cat,
-    ObMap<:AbstractVector, HomMap<:AbstractVector} <: FinDomFunctor{Dom,Codom}
+    ObMap<:AbstractVector, HomMap<:AbstractVector} <: FinDomFunctorMap{Dom,Codom}
   ob_map::ObMap
   hom_map::HomMap
   dom::Dom
@@ -303,31 +307,30 @@ collect_hom(F::FinDomFunctorVector) = F.hom_map
 
 Ob(F::FinDomFunctorVector) = FinDomFunction(F.ob_map, Ob(codom(F)))
 
+function Categories.do_compose(F::FinDomFunctorVector, G::FinDomFunctorMap)
+  FinDomFunctorVector(map(x -> ob_map(G, x), F.ob_map),
+                      map(f -> hom_map(G, f), F.hom_map), dom(F), codom(G))
+end
+
 # Dict-based functors
 #--------------------
 
-""" Functor out of presented category defined explicitly using dictionaries.
+""" Functor with object and morphism maps given as dictionaries.
 """
 @auto_hash_equals struct FinDomFunctorDict{Dom<:FinCat, Codom<:Cat,
-    ObMap<:AbstractDict, HomMap<:AbstractDict} <: FinDomFunctor{Dom,Codom}
+    ObMap<:AbstractDict, HomMap<:AbstractDict} <: FinDomFunctorMap{Dom,Codom}
   ob_map::ObMap
   hom_map::HomMap
   dom::Dom
   codom::Codom
 end
 
-function FinDomFunctor(ob_map::ObD, hom_map::HomD, dom::FinCat,
-                       codom::Cat) where {ObD<:AbstractDict, HomD<:AbstractDict}
-  ob_map = (dicttype(ObD))(functor_key(dom, x) => ob(codom, y)
-                           for (x, y) in ob_map)
-  hom_map = (dicttype(HomD))(functor_key(dom, f) => hom(codom, g)
-                             for (f, g) in hom_map)
+function FinDomFunctor(ob_map::AbstractDict, hom_map::AbstractDict,
+                       dom::FinCat, codom::Cat)
+  ob_map = mapdict(x -> functor_key(dom, x), y -> ob(codom, y), ob_map)
+  hom_map = mapdict(f -> functor_key(dom, f), g -> hom(codom, g), hom_map)
   FinDomFunctorDict(ob_map, hom_map, dom, codom)
 end
-
-# XXX: Is there a less hacky way to get a dictionary constructor?
-dicttype(T::Type) = roottype(T)
-dicttype(::Type{<:Iterators.Pairs}) = Dict
 
 functor_key(C::FinCat, x) = x
 functor_key(C::FinCat, expr::GATExpr) = head(expr) == :generator ?
@@ -337,6 +340,20 @@ ob_map(F::FinDomFunctorDict{Dom,Codom,ObMap}, x::Key) where
   {Key, Dom, Codom, ObMap<:AbstractDict{Key}} = F.ob_map[x]
 hom_map(F::FinDomFunctorDict{Dom,Codom,ObMap,HomMap}, f::Key) where
   {Key, Dom, Codom, ObMap, HomMap<:AbstractDict{Key}} = F.hom_map[f]
+
+function Categories.do_compose(F::FinDomFunctorDict, G::FinDomFunctorMap)
+  FinDomFunctorDict(mapdict(identity, x -> ob_map(G, x), F.ob_map),
+                    mapdict(identity, f -> hom_map(G, f), F.hom_map),
+                    dom(F), codom(G))
+end
+
+# Something like this should be built into Julia. Am I missing it?
+mapdict(kmap, vmap, pairs::T) where T =
+  (dicttype(T))(kmap(k) => vmap(v) for (k,v) in pairs)
+mapvalues(f, pairs::T) where T = (dicttype(T))(k => f(k,v) for (k,v) in pairs)
+
+dicttype(::Type{T}) where T <: AbstractDict = roottype(T)
+dicttype(::Type{<:Iterators.Pairs}) = Dict
 
 # C-set interop
 #--------------
@@ -379,15 +396,14 @@ given by a finite amount of data (one morphism in ``D`` for each generating
 object of ``C``) and its naturality is verified by finitely many equations (one
 equation for each generating morphism of ``C``).
 """
-const FinNatTransformation{C<:FinCat,D<:Cat,Dom<:FinDomFunctor{C,D},Codom<:FinDomFunctor{C,D}} =
-  NatTransformation{C,D,Dom,Codom}
+const FinTransformation{C<:FinCat,D<:Cat,Dom<:FinDomFunctor{C,D},Codom<:FinDomFunctor{C,D}} =
+  Transformation{C,D,Dom,Codom}
 
-FinNatTransformation(F, G; components...) =
-  FinNatTransformation(components, F, G)
+FinTransformation(F, G; components...) = FinTransformation(components, F, G)
 
 """ Components of a natural transformation.
 """
-components(α::FinNatTransformation) = α.components
+components(α::FinTransformation) = α.components
 
 """ Is the transformation between `FinDomFunctors` a natural transformation?
 
@@ -395,7 +411,7 @@ This function uses the fact that to check whether a transformation is natural,
 it suffices to check the naturality equation on a generating set of morphisms of
 the domain category.
 """
-function is_natural(α::FinNatTransformation)
+function is_natural(α::FinTransformation)
   F, G = dom(α), codom(α)
   C, D = dom(F), codom(F) # == dom(G), codom(G)
   all(hom_generators(C)) do f
@@ -416,54 +432,93 @@ end
 # Vector-based transformations
 #-----------------------------
 
-""" Natural transformation given explicitly by a vector of morphisms.
+""" Natural transformation with components given by a vector of morphisms.
 """
-@auto_hash_equals struct FinNatTransformationVector{C<:FinCat,D<:Cat,
+@auto_hash_equals struct FinTransformationVector{C<:FinCat,D<:Cat,
     Dom<:FinDomFunctor{C,D},Codom<:FinDomFunctor{C,D},Comp<:AbstractVector} <:
-    FinNatTransformation{C,D,Dom,Codom}
+    FinTransformation{C,D,Dom,Codom}
   components::Comp
   dom::Dom
   codom::Codom
 end
 
-function FinNatTransformation(components::AbstractVector,
-                              F::FinDomFunctor, G::FinDomFunctor)
+function FinTransformation(components::AbstractVector,
+                           F::FinDomFunctor, G::FinDomFunctor)
   C, D = check_transformation_domains(F, G)
   length(components) == length(ob_generators(C)) ||
     error("Incorrect number of components in $components for domain category $C")
-  FinNatTransformationVector(map(f -> hom(D,f), components), F, G)
+  FinTransformationVector(map(f -> hom(D,f), components), F, G)
 end
 
-component(α::FinNatTransformationVector, c::Integer) = α.components[c]
+component(α::FinTransformationVector, c::Integer) = α.components[c]
+
+function Categories.do_compose(α::FinTransformationVector, β::FinTransformation)
+  F = dom(α)
+  D = codom(F)
+  FinTransformationVector(map(α.components, eachindex(α.components)) do f, c
+                            compose(D, f, component(β,c))
+                          end, F, codom(β))
+end
+
+function Categories.do_composeH(F::FinDomFunctorVector, β::Transformation)
+  G, H = dom(β), codom(β)
+  FinTransformationVector(map(c -> component(β, c), F.ob_map),
+                          compose(F, G), compose(F, H))
+end
+
+function Categories.do_composeH(α::FinTransformationVector, H::Functor)
+  F, G = dom(α), codom(α)
+  FinTransformationVector(map(f -> hom_map(H, f), α.components),
+                          compose(F, H), compose(G, H))
+end
 
 # Dict-based transformations
 #---------------------------
 
-""" Natural transformation given explicitly by a dictionary.
+""" Natural transformation with components given by a dictionary of morphisms.
 """
-@auto_hash_equals struct FinNatTransformationDict{C<:FinCat,D<:Cat,
+@auto_hash_equals struct FinTransformationDict{C<:FinCat,D<:Cat,
     Dom<:FinDomFunctor{C,D},Codom<:FinDomFunctor{C,D},Comp<:AbstractDict} <:
-    FinNatTransformation{C,D,Dom,Codom}
+    FinTransformation{C,D,Dom,Codom}
   components::Comp
   dom::Dom
   codom::Codom
 end
 
-function FinNatTransformation(components::Comp, F::FinDomFunctor,
-                              G::FinDomFunctor) where Comp<:AbstractDict
+function FinTransformation(components::AbstractDict,
+                           F::FinDomFunctor, G::FinDomFunctor)
   C, D = check_transformation_domains(F, G)
-  components = (dicttype(Comp))(transformation_key(C,x) => hom(D,f)
-                                for (x, f) in components)
-  FinNatTransformationDict(components, F, G)
+  components = mapdict(x -> transformation_key(C,x), f -> hom(D,f), components)
+  FinTransformationDict(components, F, G)
 end
 
 transformation_key(C::FinCat, x) = x
 transformation_key(C::FinCat, expr::GATExpr) = head(expr) == :generator ?
   first(expr) : error("Natural transformation must be defined on generators")
 
-component(α::FinNatTransformationDict{C,D,F,G,Comp}, c::Key) where
+component(α::FinTransformationDict{C,D,F,G,Comp}, c::Key) where
   {Key,C,D,F,G,Comp<:AbstractDict{Key}} = α.components[c]
-component(α::FinNatTransformationDict, expr::GATExpr) =
+component(α::FinTransformationDict, expr::GATExpr) =
   component(α, first(expr))
+
+function Categories.do_compose(α::FinTransformationDict, β::FinTransformation)
+  F = dom(α)
+  D = codom(F)
+  FinTransformationDict(mapvalues(α.components) do c, f
+                          compose(D, f, component(β,c))
+                        end, F, codom(β))
+end
+
+function Categories.do_composeH(F::FinDomFunctorDict, β::Transformation)
+  G, H = dom(β), codom(β)
+  FinTransformationDict(mapdict(identity, c -> component(β, c), F.ob_map),
+                        compose(F, G), compose(F, H))
+end
+
+function Categories.do_composeH(α::FinTransformationDict, H::Functor)
+  F, G = dom(α), codom(α)
+  FinTransformationDict(mapdict(identity, f -> hom_map(H, f), α.components),
+                        compose(F, H), compose(G, H))
+end
 
 end

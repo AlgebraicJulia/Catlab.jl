@@ -159,14 +159,14 @@ end
   function compose(f::SetFunction, g::SetFunction)
     codom(f) == dom(g) ||
       error("Domain mismatch in composition: $(codom(f)) != $(dom(g))")
-    compose_maybe_id(f, g)
+    compose_id(f, g)
   end
 end
 
-@inline compose_maybe_id(f::SetFunction, g::SetFunction) = do_compose(f, g)
-@inline compose_maybe_id(f::SetFunction, ::SetFunctionIdentity) = f
-@inline compose_maybe_id(::SetFunctionIdentity, f::SetFunction) = f
-@inline compose_maybe_id(f::SetFunctionIdentity, ::SetFunctionIdentity) = f
+@inline compose_id(f::SetFunction, g::SetFunction) = do_compose(f, g)
+@inline compose_id(f::SetFunction, ::SetFunctionIdentity) = f
+@inline compose_id(::SetFunctionIdentity, g::SetFunction) = g
+@inline compose_id(f::SetFunctionIdentity, ::SetFunctionIdentity) = f
 
 do_compose(f::SetFunction, g::SetFunction) = SetFunction(g∘f, dom(f), codom(g))
 do_compose(f::SetFunction, c::ConstantFunction) =
