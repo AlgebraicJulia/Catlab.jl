@@ -163,19 +163,17 @@ end
   end
 end
 
-@inline compose_maybe_id(f::SetFunction, g::SetFunction) = compose_impl(f, g)
+@inline compose_maybe_id(f::SetFunction, g::SetFunction) = do_compose(f, g)
 @inline compose_maybe_id(f::SetFunction, ::SetFunctionIdentity) = f
 @inline compose_maybe_id(::SetFunctionIdentity, f::SetFunction) = f
 @inline compose_maybe_id(f::SetFunctionIdentity, ::SetFunctionIdentity) = f
 
-compose_impl(f::SetFunction, g::SetFunction) =
-  SetFunction(g ∘ f, dom(f), codom(g))
-
-compose_impl(f::SetFunction, c::ConstantFunction) =
+do_compose(f::SetFunction, g::SetFunction) = SetFunction(g∘f, dom(f), codom(g))
+do_compose(f::SetFunction, c::ConstantFunction) =
   ConstantFunction(c.value, dom(f), codom(c))
-compose_impl(c::ConstantFunction, f::SetFunction) =
+do_compose(c::ConstantFunction, f::SetFunction) =
   ConstantFunction(f(c.value), dom(c), codom(f))
-compose_impl(c::ConstantFunction, d::ConstantFunction) =
+do_compose(c::ConstantFunction, d::ConstantFunction) =
   ConstantFunction(d.value, dom(c), codom(d))
 
 @cartesian_monoidal_instance SetOb SetFunction
