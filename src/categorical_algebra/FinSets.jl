@@ -5,11 +5,9 @@ export FinSet, FinFunction, FinDomFunction, force, is_indexed, preimage,
   JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin,
   SubFinSet, SubOpBoolean
 
-using Reexport
-
 using AutoHashEquals
 using DataStructures: OrderedDict, IntDisjointSets, union!, find_root!
-using FunctionWrappers: FunctionWrapper
+using Reexport
 import StaticArrays
 using StaticArrays: StaticVector, SVector, SizedVector, similar_type
 
@@ -22,37 +20,39 @@ import ..Limits: limit, colimit, universal, pushout_complement,
 import ..Subobjects: Subobject, SubobjectLattice
 using ..Sets: SetFunctionCallable, SetFunctionIdentity
 
-# Data types
-############
-
 # Finite sets
-#------------
+#############
 
 """ Finite set.
 
-This generic type encompasses the category **FinSet** of finite sets and
-functions, through types `FinSet{S} where S <: AbstractSet`, as well as the
-skeleton of this category, through the type `FinSet{Int}`. In the latter case,
-the object `FinSet(n)` represents the set ``{1,...,n}``.
+A finite set has abstract type `FinSet{S,T}`. The second type parameter `T` is
+the element type of the set and the first parameter `S` is the collection type,
+which can be a subtype of `AbstractSet` or another Julia iterable. In addition,
+the skeleton of the category **FinSet** is the important special case `S = Int`.
+The set ``{1,…,n}`` is represented by the object `FinSet(n)` of type
+`FinSet{Int,Int}`.
 """
-@auto_hash_equals struct FinSet{S,T} <: SetOb{T}
-  set::S
+abstract type FinSet{S,T} <: SetOb{T} end
+
+FinSet(set::FinSet) = set
+
+""" Finite set of the form ``{1,…,n}`` for some number ``n ≥ 0``.
+"""
+@auto_hash_equals struct FinSetInt <: FinSet{Int,Int}
+  n::Int
 end
 
-FinSet(n::Int) = FinSet{Int,Int}(n)
-FinSet(set::S) where {T,S<:AbstractSet{T}} = FinSet{S,T}(set)
-FinSet(s::FinSet) = s
+FinSet{Int,Int}(n::Int) = FinSetInt(n)
+FinSet(n::Int) = FinSetInt(n)
 
-Base.iterate(s::FinSet, args...) = iterate(iterable(s), args...)
-Base.length(s::FinSet) = length(iterable(s))
-Base.in(s::FinSet, elem) = in(s, iterable(s))
-iterable(s::FinSet{Int}) = 1:s.set
-iterable(s::FinSet{<:AbstractSet}) = s.set
+Base.iterate(set::FinSetInt, args...) = iterate(1:set.n, args...)
+Base.length(set::FinSetInt) = set.n
+Base.in(set::FinSetInt, elem) = in(elem, 1:set.n)
 
-Base.show(io::IO, s::FinSet) = print(io, "FinSet($(s.set))")
+Base.show(io::IO, set::FinSetInt) = print(io, "FinSet($(set.n))")
 
 # Finite functions
-#-----------------
+##################
 
 """ Function between finite sets.
 
@@ -88,7 +88,7 @@ Sets.show_type(io::IO, ::Type{<:FinFunction}) = print(io, "FinFunction")
 This class of functions is convenient because it is exactly the class that can
 be represented explicitly by a vector of values from the codomain.
 """
-const FinDomFunction{S, Dom<:FinSet{S}, Codom} = SetFunction{Dom,Codom}
+const FinDomFunction{S, Dom<:FinSet{S}, Codom<:SetOb} = SetFunction{Dom,Codom}
 
 FinDomFunction(f::Function, dom, codom) =
   SetFunctionCallable(f, FinSet(dom), codom)
@@ -111,7 +111,7 @@ The domain of this function is always of type `FinSet{Int}`, with elements of
 the form ``{1,...,n}``.
 """
 struct FinDomFunctionVector{T,V<:AbstractVector{T}, Codom<:SetOb{T}} <:
-    FinDomFunction{Int,FinSet{Int,Int},Codom}
+    FinDomFunction{Int,FinSetInt,Codom}
   func::V
   codom::Codom
 end
@@ -142,7 +142,7 @@ Base.collect(f::SetFunction) = force(f).func
 """ Function in **FinSet** represented explicitly by a vector.
 """
 const FinFunctionVector{S,T,V<:AbstractVector{T}} =
-  FinDomFunctionVector{T,V,FinSet{S,T}}
+  FinDomFunctionVector{T,V,<:FinSet{S,T}}
 
 Base.show(io::IO, f::FinFunctionVector) =
   print(io, "FinFunction($(f.func), $(length(dom(f))), $(length(codom(f))))")
@@ -163,7 +163,7 @@ Works in the same way as the special case of [`IndexedFinFunction`](@ref),
 except that the index is typically a dictionary, not a vector.
 """
 struct IndexedFinDomFunction{T,V<:AbstractVector{T},Index,Codom<:SetOb{T}} <:
-    SetFunction{FinSet{Int,Int},Codom}
+    FinDomFunction{Int,FinSetInt,Codom}
   func::V
   index::Index
   codom::Codom
@@ -226,8 +226,7 @@ is called the *index*. If it is not supplied through the keyword argument
 
 This type is mildly generalized by [`IndexedFinDomFunction`](@ref).
 """
-const IndexedFinFunction{V,Index} =
-  IndexedFinDomFunction{Int,V,Index,FinSet{Int,Int}}
+const IndexedFinFunction{V,Index} = IndexedFinDomFunction{Int,V,Index,FinSetInt}
 
 function IndexedFinFunction(f::AbstractVector{Int}; index=nothing)
   codom = isnothing(index) ? (isempty(f) ? 0 : maximum(f)) : length(index)
@@ -924,14 +923,14 @@ const AbstractBoolVector = Union{AbstractVector{Bool},BitVector}
 This is the subobject classifier representation since `Bool` is the subobject
 classifier for `Set`.
 """
-@auto_hash_equals struct SubFinSetVector <: Subobject{FinSet{Int,Int}}
-  set::FinSet{Int,Int}
+@auto_hash_equals struct SubFinSetVector{S<:FinSet} <: Subobject{S}
+  set::S
   predicate::AbstractBoolVector
 
-  function SubFinSetVector(X::FinSet{Int}, pred::AbstractBoolVector)
+  function SubFinSetVector(X::S, pred::AbstractBoolVector) where S<:FinSet
     length(pred) == length(X) ||
       error("Size of predicate $pred does not equal size of object $X")
-    new(X, pred)
+    new{S}(X, pred)
   end
 end
 
