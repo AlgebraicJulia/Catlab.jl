@@ -4,6 +4,16 @@ using Test
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
 using Catlab.Graphs.BasicGraphs: TheoryGraph
 
+# Discrete categories
+#####################
+
+C = FinCat(FinSet(3))
+@test C isa FinCat{Int,Int}
+@test collect(ob_generators(C)) == 1:3
+@test isempty(hom_generators(C))
+@test (dom(C, 1), codom(C, 1)) == (1, 1)
+@test (id(C, 2), compose(C, 2, 2)) == (2, 2)
+
 # Categories on graphs
 ######################
 
@@ -143,14 +153,14 @@ G = FinDomFunctor(TheoryGraph, g)
 @test α⋅σ == FinTransformation(F, G, V=FinFunction([1,2,2]), E=FinFunction([2,4]))
 
 # Pullback data migration by pre-whiskering.
-ιV = FinFunctor([:V], [], FinCat(Graph(1)), FinCat(TheoryGraph))
+ιV = FinFunctor([:V], [], FinCat(FinSet(1)), FinCat(TheoryGraph))
 αV = ιV * α
 @test ob_map(dom(αV), 1) == ob_map(F, :V)
 @test ob_map(codom(αV), 1) == ob_map(G, :V)
 @test component(αV, 1) == component(α, :V)
 
 # Post-whiskering and horizontal composition.
-ιE = FinFunctor([:E], [], FinCat(Graph(1)), FinCat(TheoryGraph))
+ιE = FinFunctor([:E], [], FinCat(FinSet(1)), FinCat(TheoryGraph))
 ϕ = FinTransformation([:src], ιE, ιV)
 @test is_natural(ϕ)
 @test component(ϕ*F, 1) == hom_map(F, :src)
