@@ -14,7 +14,8 @@ using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
 import Catlab.Theories: compose
 using DataStructures
 using PrettyTables
-PrettyTables.pretty_table(f::FinFunction, name::Symbol=:f) = pretty_table(OrderedDict(:x=>1:dom(f).set, Symbol("$(name)(x)")=>collect(f)))
+PrettyTables.pretty_table(f::FinFunction, name::Symbol=:f) =
+  pretty_table(OrderedDict(:x=>1:length(dom(f)), Symbol("$(name)(x)")=>collect(f)))
 using LaTeXStrings
 
 Quiversty = L"""
