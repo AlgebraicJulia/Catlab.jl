@@ -59,6 +59,29 @@ is_free(C::FinCat) = isempty(equations(C))
 
 Ob(C::FinCat{Int}) = FinSet(length(ob_generators(C)))
 
+# Discrete categories
+#####################
+
+""" Discrete category on a finite set.
+
+The only morphisms in a discrete category are the identities, which in this
+implementation are identified with the objects.
+"""
+@auto_hash_equals struct DiscreteCat{Ob,S<:FinSet{<:Any,Ob}} <: FinCat{Ob,Ob}
+  set::S
+end
+
+FinCat(s::FinSet) = DiscreteCat(s)
+
+ob_generators(C::DiscreteCat) = C.set
+hom_generators(C::DiscreteCat) = ()
+
+dom(C::DiscreteCat{T}, f) where T = f::T
+codom(C::DiscreteCat{T}, f) where T = f::T
+id(C::DiscreteCat{T}, x) where T = x::T
+compose(C::DiscreteCat{T}, f, g) where T = (f::T == g::T) ? f :
+  error("Nontrivial composite in discrete category: $f != $g")
+
 # Categories on graphs
 ######################
 

@@ -40,21 +40,13 @@ The basic operations available in any category are: [`dom`](@ref),
 """
 abstract type Cat{Ob,Hom} end
 
-""" Look up object in category.
-
-```julia
-ob(C::Cat{Ob,Hom}, x)::Ob where {Ob,Hom}
-```
+""" Coerce or look up object in category.
 """
-function ob end
+ob(::Cat, x) = x
 
-""" Look up morphism in category.
-
-```julia
-hom(C::Cat{Ob,Hom}, f)::Hom where {Ob,Hom}
-```
+""" Coerce or look up morphism in category.
 """
-function hom end
+hom(::Cat, f) = f
 
 """ Domain of morphism in category.
 """
@@ -89,8 +81,6 @@ Ob(::TypeCat{T}) where T = TypeSet{T}()
 # FIXME: This isn't practical because types are often too tight.
 #ob(::TypeCat{Ob,Hom}, x) where {Ob,Hom} = convert(Ob, x)
 #hom(::TypeCat{Ob,Hom}, f) where {Ob,Hom} = convert(Hom, f)
-ob(::TypeCat, x) = x
-hom(::TypeCat, f) = f
 
 # Functors
 ##########
