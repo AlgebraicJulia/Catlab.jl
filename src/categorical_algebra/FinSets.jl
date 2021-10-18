@@ -1,7 +1,8 @@
 """ The category of finite sets and functions, and its skeleton.
 """
 module FinSets
-export FinSet, FinFunction, FinDomFunction, force, is_indexed, preimage,
+export FinSet, TabularSet, FinFunction, FinDomFunction,
+  force, is_indexed, preimage,
   JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin,
   SubFinSet, SubOpBoolean
 
@@ -10,6 +11,7 @@ using DataStructures: OrderedDict, IntDisjointSets, union!, find_root!
 using Reexport
 import StaticArrays
 using StaticArrays: StaticVector, SVector, SizedVector, similar_type
+import Tables
 
 @reexport using ..Sets
 using ...GAT, ...Theories
@@ -27,9 +29,9 @@ using ..Sets: SetFunctionCallable, SetFunctionIdentity
 
 A finite set has abstract type `FinSet{S,T}`. The second type parameter `T` is
 the element type of the set and the first parameter `S` is the collection type,
-which can be a subtype of `AbstractSet` or another Julia iterable. In addition,
-the skeleton of the category **FinSet** is the important special case `S = Int`.
-The set ``{1,…,n}`` is represented by the object `FinSet(n)` of type
+which can be a subtype of `AbstractSet` or another Julia collection type. In
+addition, the skeleton of the category **FinSet** is the important special case
+`S = Int`. The set ``{1,…,n}`` is represented by the object `FinSet(n)` of type
 `FinSet{Int,Int}`.
 """
 abstract type FinSet{S,T} <: SetOb{T} end
@@ -50,6 +52,37 @@ Base.length(set::FinSetInt) = set.n
 Base.in(set::FinSetInt, elem) = in(elem, 1:set.n)
 
 Base.show(io::IO, set::FinSetInt) = print(io, "FinSet($(set.n))")
+
+""" Finite set given by Julia collection.
+
+The underlying collection can be, but is not required to be, set-like (a subtype
+of `AbstractSet`).
+"""
+@auto_hash_equals struct FinSetCollection{S,T} <: FinSet{S,T}
+  collection::S
+end
+
+FinSet(col::S) where {T, S<:Union{AbstractVector{T},AbstractSet{T}}} =
+  FinSetCollection{S,T}(col)
+
+Base.iterate(set::FinSetCollection, args...) = iterate(set.collection, args...)
+Base.length(set::FinSetCollection) = length(set.collection)
+Base.in(set::FinSetCollection, elem) = in(elem, set.collection)
+
+Base.show(io::IO, set::FinSetCollection) = print(io, "FinSet($(set.collection)")
+
+""" Finite set whose elements are rows of a table.
+
+The underlying table should be compliant with Tables.jl.
+"""
+@auto_hash_equals struct TabularSet{Table} <: FinSet{Table,Tables.AbstractRow}
+  table::Table
+end
+
+FinSet(nt::NamedTuple) = TabularSet(nt)
+
+Base.iterate(set::TabularSet, args...) = iterate(Tables.rows(set.table), args...)
+Base.length(set::TabularSet) = Tables.rowcount(set.table)
 
 # Finite functions
 ##################
