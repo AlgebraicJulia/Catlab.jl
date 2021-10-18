@@ -11,3 +11,7 @@ end
 @testset "RelationalPrograms" begin
   include("RelationalPrograms.jl")
 end
+
+@testset "DiagrammaticPrograms" begin
+  include("DiagrammaticPrograms.jl")
+end

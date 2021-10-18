@@ -102,7 +102,7 @@ function Ob end
 """ Pair of Julia types regarded as a category.
 
 The Julia types should form an `@instance` of the theory of categories
-([`Catlab.Theories.Category`](@ref)).
+(`Theories.Category`).
 """
 struct TypeCat{Ob,Hom} <: Cat{Ob,Hom} end
 
