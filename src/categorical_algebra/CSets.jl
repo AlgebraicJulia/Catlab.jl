@@ -117,7 +117,10 @@ and colimits of acsets. In practice, the tight morphisms suffice for most
 purposes, including computing colimits. However, when computing limits of
 acsets, the loose morphism are usually preferable.
 """
-abstract type ACSetTransformation{S<:SchemaDescType} end
+abstract type ACSetTransformation{S<:SchemaDescType,Comp,
+                                  Dom<:StructACSet{S},Codom<:StructACSet{S}} end
+# FIXME: The components `Comp` shouldn't be a type parameter in this abstract
+# type but for now it is retained for backwards compatibility.
 
 ACSetTransformation(components, X::StructACSet{S}, Y::StructACSet{S}) where S =
   ACSetTransformation{S}(components, X, Y)
@@ -149,7 +152,8 @@ This data type records the data of a C-set transformation. Naturality is not
 strictly enforced but is expected to be satisfied. It can be checked using the
 function [`is_natural`](@ref).
 """
-const CSetTransformation{S<:CSetSchemaDescType} = ACSetTransformation{S}
+const CSetTransformation{S<:CSetSchemaDescType,Comp,
+  Dom<:StructCSet{S},Codom<:StructCSet{S}} = ACSetTransformation{S,Comp,Dom,Codom}
 
 CSetTransformation(components, X::StructCSet, Y::StructCSet) =
   TightACSetTransformation(components, X, Y)
@@ -161,8 +165,8 @@ CSetTransformation(X::StructCSet, Y::StructCSet; components...) =
 See [`ACSetTranformation`](@ref) for the distinction between tight and loose.
 """
 @auto_hash_equals struct TightACSetTransformation{
-    S <: SchemaDescType, Dom <: StructACSet{S}, Codom <: StructACSet{S},
-    Comp <: NamedTuple} <: ACSetTransformation{S}
+    S <: SchemaDescType, Comp <: NamedTuple,
+    Dom <: StructACSet{S}, Codom <: StructACSet{S}} <: ACSetTransformation{S,Comp,Dom,Codom}
   components::Comp
   dom::Dom
   codom::Codom
@@ -173,7 +177,7 @@ See [`ACSetTranformation`](@ref) for the distinction between tight and loose.
     components = NamedTuple(
       c => coerce_component(c, get(components,c,1:0), nparts(X,c), nparts(Y,c))
       for c in ob(S))
-    new{S,Dom,Codom,typeof(components)}(components, X, Y)
+    new{S,typeof(components),Dom,Codom}(components, X, Y)
   end
 end
 TightACSetTransformation(components, X::StructACSet{S}, Y::StructACSet{S}) where S =
@@ -207,8 +211,8 @@ map_components(f, α::TightACSetTransformation) =
 See [`ACSetTranformation`](@ref) for the distinction between tight and loose.
 """
 @auto_hash_equals struct LooseACSetTransformation{
-    S <: SchemaDescType, Dom <: StructACSet{S}, Codom <: StructACSet{S},
-    Comp <: NamedTuple, TypeComp <: NamedTuple} <: ACSetTransformation{S}
+    S <: SchemaDescType, Comp <: NamedTuple, TypeComp <: NamedTuple,
+    Dom <: StructACSet{S}, Codom <: StructACSet{S}} <: ACSetTransformation{S,Comp,Dom,Codom}
   components::Comp
   type_components::TypeComp
   dom::Dom
@@ -225,7 +229,7 @@ See [`ACSetTranformation`](@ref) for the distinction between tight and loose.
       type => coerce_type_component(type, get(type_components, type, identity),
                                     Dom.parameters[i], Codom.parameters[i])
       for (type, i) in zip(attrtype(S), acodom_nums(S)))
-    new{S,Dom,Codom,typeof(components),typeof(type_components)}(
+    new{S,typeof(components),typeof(type_components),Dom,Codom}(
       components, type_components, X, Y)
   end
 end
