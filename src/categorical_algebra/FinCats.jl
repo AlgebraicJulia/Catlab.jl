@@ -22,7 +22,7 @@ using StaticArrays: SVector
 @reexport using ..Categories
 using ...GAT, ...Present, ...Syntax
 import ...Present: equations
-using ...Theories: Category, ObExpr, HomExpr, roottype
+using ...Theories: Category, ObExpr, HomExpr
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ...CSetDataStructures, ...Graphs, ..FreeDiagrams, ..FinSets
 import ...Graphs: edges, src, tgt
@@ -237,10 +237,6 @@ hom(C::FinCatPresentation, fs::AbstractVector) =
 """
 const FinDomFunctor{Dom<:FinCat,Codom<:Cat} = Functor{Dom,Codom}
 
-FinDomFunctor(ob_map::Union{AbstractVector{Ob},AbstractDict{<:Any,Ob}},
-              hom_map::Union{AbstractVector{Hom},AbstractDict{<:Any,Hom}},
-              dom) where {Ob,Hom} =
-  FinDomFunctor(ob_map, hom_map, dom, TypeCat(Ob,Hom))
 FinDomFunctor(maps::NamedTuple{(:V,:E)}, dom::FinCatGraph, codom::Cat) =
   FinDomFunctor(maps.V, maps.E, dom, codom)
 
@@ -294,33 +290,51 @@ FinFunctor(ob_map, hom_map, dom::FinCat, codom::FinCat) =
 FinFunctor(ob_map, hom_map, dom::Presentation, codom::Presentation) =
   FinDomFunctor(ob_map, hom_map, FinCat(dom), FinCat(codom))
 
+# Mapping-based functors
+#-----------------------
+
 """ Functor out of a finitely presented category given by explicit mappings.
 """
-abstract type FinDomFunctorMap{Dom<:FinCat,Codom<:Cat} <: FinDomFunctor{Dom,Codom} end
-
-# Vector-based functors
-#----------------------
-
-""" Functor object and morphism maps given as vectors.
-"""
-@auto_hash_equals struct FinDomFunctorVector{Dom<:FinCat, Codom<:Cat,
-    ObMap<:AbstractVector, HomMap<:AbstractVector} <: FinDomFunctorMap{Dom,Codom}
+@auto_hash_equals struct FinDomFunctorMap{Dom<:FinCat, Codom<:Cat,
+    ObMap, HomMap} <: FinDomFunctor{Dom,Codom}
   ob_map::ObMap
   hom_map::HomMap
   dom::Dom
   codom::Codom
 end
 
-function FinDomFunctor(ob_map::AbstractVector, hom_map::AbstractVector,
+function FinDomFunctor(ob_map::Union{AbstractVector,AbstractDict},
+                       hom_map::Union{AbstractVector,AbstractDict},
                        dom::FinCat, codom::Cat)
-  length(ob_map) == length(ob_generators(dom)) ||
+  # FIXME: Disable checks for dicts due to `DataMigration` issue above.
+  ob_map isa AbstractDict || length(ob_map) == length(ob_generators(dom)) ||
     error("Length of object map $ob_map does not match domain $dom")
-  length(hom_map) == length(hom_generators(dom)) ||
+  hom_map isa AbstractDict || length(hom_map) == length(hom_generators(dom)) ||
     error("Length of morphism map $hom_map does not match domain $dom")
-  ob_map = map(x -> ob(codom, x), ob_map)
-  hom_map = map(f -> hom(codom, f), hom_map)
-  FinDomFunctorVector(ob_map, hom_map, dom, codom)
+
+  ob_map = mappairs(x -> functor_key(dom, x), y -> ob(codom, y), ob_map)
+  hom_map = mappairs(f -> functor_key(dom, f), g -> hom(codom, g), hom_map)
+  FinDomFunctorMap(ob_map, hom_map, dom, codom)
 end
+FinDomFunctor(ob_map::Union{AbstractVector{Ob},AbstractDict{<:Any,Ob}},
+              hom_map::Union{AbstractVector{Hom},AbstractDict{<:Any,Hom}},
+              dom::FinCat) where {Ob,Hom} =
+  FinDomFunctor(ob_map, hom_map, dom, TypeCat(Ob, Hom))
+
+functor_key(C::FinCat, x) = x
+functor_key(C::FinCat, expr::GATExpr) = head(expr) == :generator ?
+  first(expr) : error("Functor must be defined on generators")
+
+function Categories.do_compose(F::FinDomFunctorMap, G::FinDomFunctorMap)
+  FinDomFunctorMap(mapvals(x -> ob_map(G, x), F.ob_map),
+                   mapvals(f -> hom_map(G, f), F.hom_map), dom(F), codom(G))
+end
+
+""" Functor object and morphism maps given as vectors.
+"""
+const FinDomFunctorVector{Dom<:FinCat,Codom<:Cat,
+                          ObMap<:AbstractVector,HomMap<:AbstractVector} =
+  FinDomFunctorMap{Dom,Codom,ObMap,HomMap}
 
 ob_map(F::FinDomFunctorVector, x::Integer) = F.ob_map[x]
 hom_map(F::FinDomFunctorVector, f::Integer) = F.hom_map[f]
@@ -330,53 +344,16 @@ collect_hom(F::FinDomFunctorVector) = F.hom_map
 
 Ob(F::FinDomFunctorVector) = FinDomFunction(F.ob_map, Ob(codom(F)))
 
-function Categories.do_compose(F::FinDomFunctorVector, G::FinDomFunctorMap)
-  FinDomFunctorVector(map(x -> ob_map(G, x), F.ob_map),
-                      map(f -> hom_map(G, f), F.hom_map), dom(F), codom(G))
-end
-
-# Dict-based functors
-#--------------------
-
 """ Functor with object and morphism maps given as dictionaries.
 """
-@auto_hash_equals struct FinDomFunctorDict{Dom<:FinCat, Codom<:Cat,
-    ObMap<:AbstractDict, HomMap<:AbstractDict} <: FinDomFunctorMap{Dom,Codom}
-  ob_map::ObMap
-  hom_map::HomMap
-  dom::Dom
-  codom::Codom
-end
+const FinDomFunctorDict{Dom<:FinCat,Codom<:Cat,ObKey,HomKey,
+                        ObMap<:AbstractDict{ObKey},HomMap<:AbstractDict{HomKey}} =
+  FinDomFunctorMap{Dom,Codom,ObMap,HomMap}
 
-function FinDomFunctor(ob_map::AbstractDict, hom_map::AbstractDict,
-                       dom::FinCat, codom::Cat)
-  ob_map = mapdict(x -> functor_key(dom, x), y -> ob(codom, y), ob_map)
-  hom_map = mapdict(f -> functor_key(dom, f), g -> hom(codom, g), hom_map)
-  FinDomFunctorDict(ob_map, hom_map, dom, codom)
-end
-
-functor_key(C::FinCat, x) = x
-functor_key(C::FinCat, expr::GATExpr) = head(expr) == :generator ?
-  first(expr) : error("Functor must be defined on generators")
-
-ob_map(F::FinDomFunctorDict{Dom,Codom,ObMap}, x::Key) where
-  {Key, Dom, Codom, ObMap<:AbstractDict{Key}} = F.ob_map[x]
-hom_map(F::FinDomFunctorDict{Dom,Codom,ObMap,HomMap}, f::Key) where
-  {Key, Dom, Codom, ObMap, HomMap<:AbstractDict{Key}} = F.hom_map[f]
-
-function Categories.do_compose(F::FinDomFunctorDict, G::FinDomFunctorMap)
-  FinDomFunctorDict(mapdict(identity, x -> ob_map(G, x), F.ob_map),
-                    mapdict(identity, f -> hom_map(G, f), F.hom_map),
-                    dom(F), codom(G))
-end
-
-# Something like this should be built into Julia. Am I missing it?
-mapdict(kmap, vmap, pairs::T) where T =
-  (dicttype(T))(kmap(k) => vmap(v) for (k,v) in pairs)
-mapvalues(f, pairs::T) where T = (dicttype(T))(k => f(k,v) for (k,v) in pairs)
-
-dicttype(::Type{T}) where T <: AbstractDict = roottype(T)
-dicttype(::Type{<:Iterators.Pairs}) = Dict
+ob_map(F::FinDomFunctorDict{Dom,Codom,ObKey}, x::ObKey) where
+  {Dom,Codom,ObKey} = F.ob_map[x]
+hom_map(F::FinDomFunctorDict{Dom,Codom,ObKey,HomKey}, f::HomKey) where
+  {Dom,Codom,ObKey,HomKey} = F.hom_map[f]
 
 # C-set interop
 #--------------
@@ -452,96 +429,81 @@ function check_transformation_domains(F::Functor, G::Functor)
   (C, D)
 end
 
-# Vector-based transformations
-#-----------------------------
+# Mapping-based transformations
+#------------------------------
 
-""" Natural transformation with components given by a vector of morphisms.
+""" Natural transformation with components given by explicit mapping.
 """
-@auto_hash_equals struct FinTransformationVector{C<:FinCat,D<:Cat,
-    Dom<:FinDomFunctor{C,D},Codom<:FinDomFunctor{C,D},Comp<:AbstractVector} <:
+@auto_hash_equals struct FinTransformationMap{C<:FinCat,D<:Cat,
+    Dom<:FinDomFunctor{C,D},Codom<:FinDomFunctor{C,D},Comp} <:
     FinTransformation{C,D,Dom,Codom}
   components::Comp
   dom::Dom
   codom::Codom
 end
 
-function FinTransformation(components::AbstractVector,
+function FinTransformation(components::Union{AbstractVector,AbstractDict},
                            F::FinDomFunctor, G::FinDomFunctor)
   C, D = check_transformation_domains(F, G)
   length(components) == length(ob_generators(C)) ||
     error("Incorrect number of components in $components for domain category $C")
-  FinTransformationVector(map(f -> hom(D,f), components), F, G)
-end
-
-component(α::FinTransformationVector, c::Integer) = α.components[c]
-
-function Categories.do_compose(α::FinTransformationVector, β::FinTransformation)
-  F = dom(α)
-  D = codom(F)
-  FinTransformationVector(map(α.components, eachindex(α.components)) do f, c
-                            compose(D, f, component(β,c))
-                          end, F, codom(β))
-end
-
-function Categories.do_composeH(F::FinDomFunctorVector, β::Transformation)
-  G, H = dom(β), codom(β)
-  FinTransformationVector(map(c -> component(β, c), F.ob_map),
-                          compose(F, G), compose(F, H))
-end
-
-function Categories.do_composeH(α::FinTransformationVector, H::Functor)
-  F, G = dom(α), codom(α)
-  FinTransformationVector(map(f -> hom_map(H, f), α.components),
-                          compose(F, H), compose(G, H))
-end
-
-# Dict-based transformations
-#---------------------------
-
-""" Natural transformation with components given by a dictionary of morphisms.
-"""
-@auto_hash_equals struct FinTransformationDict{C<:FinCat,D<:Cat,
-    Dom<:FinDomFunctor{C,D},Codom<:FinDomFunctor{C,D},Comp<:AbstractDict} <:
-    FinTransformation{C,D,Dom,Codom}
-  components::Comp
-  dom::Dom
-  codom::Codom
-end
-
-function FinTransformation(components::AbstractDict,
-                           F::FinDomFunctor, G::FinDomFunctor)
-  C, D = check_transformation_domains(F, G)
-  components = mapdict(x -> transformation_key(C,x), f -> hom(D,f), components)
-  FinTransformationDict(components, F, G)
+  components = mappairs(x -> transformation_key(C,x), f -> hom(D,f), components)
+  FinTransformationMap(components, F, G)
 end
 
 transformation_key(C::FinCat, x) = x
 transformation_key(C::FinCat, expr::GATExpr) = head(expr) == :generator ?
   first(expr) : error("Natural transformation must be defined on generators")
 
-component(α::FinTransformationDict{C,D,F,G,Comp}, c::Key) where
+component(α::FinTransformationMap{C,D,F,G,Comp}, c::Integer) where
+  {C,D,F,G,Comp<:AbstractVector} = α.components[c]
+component(α::FinTransformationMap{C,D,F,G,Comp}, c::Key) where
   {Key,C,D,F,G,Comp<:AbstractDict{Key}} = α.components[c]
-component(α::FinTransformationDict, expr::GATExpr) =
+component(α::FinTransformationMap, expr::GATExpr) =
   component(α, first(expr))
 
-function Categories.do_compose(α::FinTransformationDict, β::FinTransformation)
+function Categories.do_compose(α::FinTransformationMap, β::FinTransformation)
   F = dom(α)
   D = codom(F)
-  FinTransformationDict(mapvalues(α.components) do c, f
-                          compose(D, f, component(β,c))
-                        end, F, codom(β))
+  FinTransformationMap(mapvals(α.components, keys=true) do c, f
+                         compose(D, f, component(β, c))
+                       end, F, codom(β))
 end
 
-function Categories.do_composeH(F::FinDomFunctorDict, β::Transformation)
+function Categories.do_composeH(F::FinDomFunctorMap, β::Transformation)
   G, H = dom(β), codom(β)
-  FinTransformationDict(mapdict(identity, c -> component(β, c), F.ob_map),
-                        compose(F, G), compose(F, H))
+  FinTransformationMap(mapvals(c -> component(β, c), F.ob_map),
+                       compose(F, G), compose(F, H))
 end
 
-function Categories.do_composeH(α::FinTransformationDict, H::Functor)
+function Categories.do_composeH(α::FinTransformationMap, H::Functor)
   F, G = dom(α), codom(α)
-  FinTransformationDict(mapdict(identity, f -> hom_map(H, f), α.components),
-                        compose(F, H), compose(G, H))
+  FinTransformationMap(mapvals(f -> hom_map(H, f), α.components),
+                       compose(F, H), compose(G, H))
 end
+
+# Dict utilities
+################
+
+# Something like this should be built into Julia, but unfortunately isn't.
+
+function mappairs(kmap, vmap, pairs::T) where T<:AbstractDict
+  (dicttype(T))(kmap(k) => vmap(v) for (k,v) in pairs)
+end
+mappairs(kmap, vmap, vec::AbstractVector) = map(vmap, vec)
+
+function mapvals(f, pairs::T; keys::Bool=false) where T<:AbstractDict
+  (dicttype(T))(if keys
+    (k => f(k,v) for (k,v) in pairs)
+  else
+    (k => f(v) for (k,v) in pairs)
+  end)
+end
+mapvals(f, vec::AbstractVector; keys::Bool=false) =
+  keys ? map(f, eachindex(vec), vec) : map(f, vec)
+
+dicttype(::Type{T}) where T <: AbstractDict = T.name.wrapper
+dicttype(::Type{<:Iterators.Pairs}) = Dict
+
 
 end
