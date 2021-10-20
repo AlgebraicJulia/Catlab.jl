@@ -13,14 +13,14 @@ include("Categories.jl")
 include("FinCats.jl")
 include("CSets.jl")
 include("GraphCategories.jl")
-include("StructuredCospans.jl")
+include("Diagrams.jl")
 include("CommutativeDiagrams.jl")
 include("CatElements.jl")
 include("DataMigration.jl")
+include("StructuredCospans.jl")
 include("DPO.jl")
 
 @reexport using .FreeDiagrams
-@reexport using .CommutativeDiagrams
 @reexport using .Limits
 @reexport using .Subobjects
 
@@ -30,9 +30,11 @@ include("DPO.jl")
 @reexport using .FinCats
 @reexport using .CSets
 
-@reexport using .StructuredCospans
+@reexport using .Diagrams
+@reexport using .CommutativeDiagrams
 @reexport using .CatElements
 @reexport using .DataMigration
+@reexport using .StructuredCospans
 @reexport using .DPO
 
 end
