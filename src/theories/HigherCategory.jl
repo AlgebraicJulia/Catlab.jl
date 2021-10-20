@@ -1,8 +1,10 @@
-export Category2, FreeCategory2, Hom2, Hom2Expr, composeV, composeH, ⋆,
+export Category2, FreeCategory2, Hom2, Hom2Expr, composeV, composeH, *,
   DoubleCategory, FreeDoubleCategory, HomH, HomV, HomHExpr, HomVExpr,
   left, right, top, bottom, idH, idV, id2, id2V, id2H,
   MonoidalDoubleCategory, SymmetricMonoidalDoubleCategory,
   FreeSymmetricMonoidalDoubleCategory, braidH, braidV, σH, σV
+
+import Base: *
 
 abstract type Hom2Expr{T} <: CategoryExpr{T} end
 abstract type HomVExpr{T} <: CategoryExpr{T} end
@@ -18,7 +20,7 @@ abstract type HomHExpr{T} <: CategoryExpr{T} end
   Hom2(dom::Hom(A,B), codom::Hom(A,B))::TYPE ⊣ (A::Ob, B::Ob)
   @op begin
     (⇒) := Hom2
-    (⋆) := composeH
+    (*) := composeH
   end
 
   # Hom categories: vertical composition
@@ -26,9 +28,13 @@ abstract type HomHExpr{T} <: CategoryExpr{T} end
   compose(α::(f ⇒ g), β::(g ⇒ h))::(f ⇒ h) ⊣
     (A::Ob, B::Ob, f::(A → B), g::(A → B), h::(A → B))
 
-  # Horizontal compostion
+  # Horizontal composition, including whiskering
   composeH(α::(f ⇒ g), β::(h ⇒ k))::((f ⋅ h) ⇒ (g ⋅ k)) ⊣
     (A::Ob, B::Ob, C::Ob, f::(A → B), g::(A → B), h::(B → C), k::(B → C))
+  composeH(α::(f ⇒ g), h::(B → C))::((f ⋅ h) ⇒ (g ⋅ h)) ⊣
+    (A::Ob, B::Ob, C::Ob, f::(A → B), g::(A → B))
+  composeH(f::(A → B), β::(g ⇒ h))::((f ⋅ g) ⇒ (f ⋅ h)) ⊣
+    (A::Ob, B::Ob, C::Ob, g::(B → C), h::(B → C))
 end
 
 # Convenience constructors
@@ -37,12 +43,14 @@ composeH(α, β, γ, αs...) = composeH([α, β, γ, αs...])
 
 """ Syntax for a 2-category.
 
-Checks domains of morphisms but not 2-morphisms.
+This syntax checks domains of morphisms but not 2-morphisms.
 """
 @syntax FreeCategory2{ObExpr,HomExpr,Hom2Expr} Category2 begin
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
   compose(α::Hom2, β::Hom2) = associate_unit(new(α,β), id)
   composeH(α::Hom2, β::Hom2) = associate(new(α,β))
+  composeH(α::Hom2, h::Hom) = composeH(α, id(h))
+  composeH(f::Hom, β::Hom2) = composeH(id(f), β)
 end
 
 function show_unicode(io::IO, expr::Hom2Expr{:compose}; kw...)
@@ -77,7 +85,7 @@ end
     (→) := HomH
     (↓) := HomV
     (⇒) := Hom2
-    (⋆) := composeH
+    (*) := composeH
     (⋅) := composeV
   end
 
@@ -87,10 +95,10 @@ end
   composeV(f::(A ↓ B), g::(B ↓ C))::(A ↓ C) ⊣ (A::Ob, B::Ob, C::Ob)
 
   # Category axioms for horizontal morphisms
-  ((f ⋆ g) ⋆ h == f ⋆ (g ⋆ h)
+  ((f * g) * h == f * (g * h)
     ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, f::(A → B), g::(B → C), h::(C → D)))
-  f ⋆ idH(B) == f ⊣ (A::Ob, B::Ob, f::(A → B))
-  idH(A) ⋆ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
+  f * idH(B) == f ⊣ (A::Ob, B::Ob, f::(A → B))
+  idH(A) * f == f ⊣ (A::Ob, B::Ob, f::(A → B))
 
   # Category axioms for vertical morphisms
   ((f ⋅ g) ⋅ h == f ⋅ (g ⋅ h)
@@ -112,7 +120,7 @@ end
      b′::(C→D), l′::(X↓C), r′::(Y↓D))
 
   # Horizontal composition of 2-cells
-  composeH(α::Hom2(t,b,l,r), β::Hom2(t′,b′,r,r′))::Hom2(t⋆t′, b⋆b′, l, r′) ⊣
+  composeH(α::Hom2(t,b,l,r), β::Hom2(t′,b′,r,r′))::Hom2(t*t′, b*b′, l, r′) ⊣
     (A::Ob, B::Ob, X::Ob, Y::Ob, C::Ob, D::Ob,
      t::(A→X), b::(B→Y), l::(A↓B), r::(X↓Y),
      t′::(X→C), b′::(Y→D), r′::(C↓D))
@@ -150,23 +158,24 @@ To avoid associators and unitors, we assume the monoidal double category is
 *strict* in both the horizontal and vertical directions. Apart from assuming
 strictness, this theory follows the definition of a monoidal double category in
 (Shulman, 2010, Constructing symmetric monoidal bicategories) and other recent
-papers, starting from an internal category (S,T: D₁ ⇉ D₀, U: D₀ → D₁,
-⋆: D₁ ×_{D₀} D₁ → D₁) in Cat where
+papers, starting from an internal category ``(S,T: D₁ ⇉ D₀, U: D₀ → D₁,
+*: D₁ ×_{D₀} D₁ → D₁)`` in **Cat** where
 
-- the objects of D₀ are objects
-- the morphisms of D₀ are vertical 1-cells
-- the objects of D₁ are horizontal 1-cells
-- the morphisms of D₁ are 2-cells.
+- the objects of ``D₀`` are objects
+- the morphisms of ``D₀`` are vertical 1-cells
+- the objects of ``D₁`` are horizontal 1-cells
+- the morphisms of ``D₁`` are 2-cells.
 
-The top and bottom of a 2-cell are given by domain and codomain in D₁ and the
-left and right are given by the functors S,T. In a monoidal double category, D₀
-and D₁ are each required to be monoidal categories, subject to further axioms
-such as S and T being strict monoidal functors.
+The top and bottom of a 2-cell are given by domain and codomain in ``D₁`` and
+the left and right are given by the functors ``S,T``. In a monoidal double
+category, ``D₀`` and ``D₁`` are each required to be monoidal categories, subject
+to further axioms such as ``S`` and ``T`` being strict monoidal functors.
 
 Despite the apparent asymmetry in this setup, the definition of a monoidal
 double category unpacks to be nearly symmetric with respect to horizontal and
-vertical, except that the monoidal unit I of D₀ induces the monoidal unit of D₁
-as U(I), which I think has no analogue in the vertical direction.
+vertical, except that the monoidal unit ``I`` of ``D₀`` induces the monoidal
+unit of ``D₁`` as ``U(I)``, which I think has no analogue in the vertical
+direction.
 """
 @theory MonoidalDoubleCategory{Ob,HomV,HomH,Hom2} <: DoubleCategory{Ob,HomV,HomH,Hom2} begin
   otimes(A::Ob, B::Ob)::Ob
@@ -203,7 +212,7 @@ as U(I), which I think has no analogue in the vertical direction.
      α::Hom2(t1, b1, l1, r1), β::Hom2(t2, b2, l2, r2), γ::Hom2(t3, b3, l3, r3))
 
   # Functorality axioms.
-  ((f ⊗ g) ⋆ (h ⊗ k) == (f ⋆ h) ⊗ (g ⋆ k)
+  ((f ⊗ g) * (h ⊗ k) == (f * h) ⊗ (g * k)
     ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
        f::(A → B), h::(B → C), g::(X → Y), k::(Y → Z)))
   ((f ⊗ g) ⋅ (h ⊗ k) == (f ⋅ h) ⊗ (g ⋅ k)

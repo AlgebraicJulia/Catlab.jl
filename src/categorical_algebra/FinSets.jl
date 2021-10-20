@@ -180,7 +180,7 @@ const FinFunctionVector{S,T,V<:AbstractVector{T}} =
 Base.show(io::IO, f::FinFunctionVector) =
   print(io, "FinFunction($(f.func), $(length(dom(f))), $(length(codom(f))))")
 
-Sets.compose_impl(f::FinFunctionVector, g::FinDomFunctionVector) =
+Sets.do_compose(f::FinFunctionVector, g::FinDomFunctionVector) =
   FinDomFunctionVector(g.func[f.func], codom(g))
 
 # Note: Cartesian monoidal structure is implemented generically for Set but
@@ -283,8 +283,8 @@ Base.show(io::IO, f::IndexedFinFunction) =
   print(io, "FinFunction($(f.func), $(length(dom(f))), $(length(codom(f))), index=true)")
 
 # For now, we do not preserve or compose indices, only the function vectors.
-Sets.compose_impl(f::Union{FinFunctionVector,IndexedFinFunction},
-                  g::Union{FinDomFunctionVector,IndexedFinDomFunction}) =
+Sets.do_compose(f::Union{FinFunctionVector,IndexedFinFunction},
+                g::Union{FinDomFunctionVector,IndexedFinDomFunction}) =
   FinDomFunctionVector(g.func[f.func], codom(g))
 
 # Limits
