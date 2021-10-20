@@ -6,10 +6,6 @@ using Test
   include("FreeDiagrams.jl")
 end
 
-@testset "CommutativeDiagrams" begin
-  include("CommutativeDiagrams.jl")
-end
-
 @testset "Limits" begin
   include("Limits.jl")
 end
@@ -42,12 +38,17 @@ end
   include("CatElements.jl")
 end
 
-@testset "StructuredCospans" begin
-  include("StructuredCospans.jl")
+@testset "Diagrams" begin
+  include("Diagrams.jl")
+  include("CommutativeDiagrams.jl")
 end
 
 @testset "DataMigration" begin
   include("DataMigration.jl")
+end
+
+@testset "StructuredCospans" begin
+  include("StructuredCospans.jl")
 end
 
 @testset "DPO" begin
