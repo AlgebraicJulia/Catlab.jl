@@ -70,8 +70,9 @@ implementation are identified with the objects.
 @auto_hash_equals struct DiscreteCat{Ob,S<:FinSet{<:Any,Ob}} <: FinCat{Ob,Ob}
   set::S
 end
+DiscreteCat(n::Integer) = DiscreteCat(FinSet(n))
 
-FinCat(s::FinSet) = DiscreteCat(s)
+FinCat(s::Union{FinSet,Integer}) = DiscreteCat(s)
 
 ob_generators(C::DiscreteCat) = C.set
 hom_generators(C::DiscreteCat) = ()
@@ -266,18 +267,27 @@ end
 
 """ Is the purported functor on a presented category functorial?
 
-Because the functor is defined only on the *generating* objects and morphisms of
-a finitely presented category, it is enough to check that object and morphism
-maps preserve domains and codomains. On the other hand, this function does *not*
-check that the functor is well-defined in the sense of respecting all equations
-in the domain category.
+This function checks that functor preserves domains and codomains. When
+`check_equations` is `true` (the default), it also checks that the functor
+preserves all equations in the domain category. Note that in some cases this may
+not be possible.
+
+See also: [`is_natural`](@ref).
 """
-function is_functorial(F::FinDomFunctor)
+function is_functorial(F::FinDomFunctor; check_equations::Bool=false)
   C, D = dom(F), codom(F)
   all(hom_generators(C)) do f
     g = hom_map(F, f)
     dom(D,g) == ob_map(F, dom(C,f)) && codom(D,g) == ob_map(F, codom(C,f))
+  end || return false
+
+  if check_equations
+    all(equations(C)) do (lhs, rhs)
+      is_hom_equal(D, hom_map(F, lhs), hom_map(F, rhs))
+    end || return false
   end
+
+  true
 end
 
 """ A functor between finitely presented categories.
@@ -408,17 +418,30 @@ components(α::FinTransformation) = α.components
 """ Is the transformation between `FinDomFunctors` a natural transformation?
 
 This function uses the fact that to check whether a transformation is natural,
-it suffices to check the naturality equation on a generating set of morphisms of
-the domain category.
+it suffices to check the naturality equations on a generating set of morphisms
+of the domain category. In some cases, checking the equations may be expensive
+or impossible. When the keyword argument `check_equations` is `false`, only the
+domains and codomains of the components are checked.
+
+See also: [`is_functorial`](@ref).
 """
-function is_natural(α::FinTransformation)
+function is_natural(α::FinTransformation; check_equations::Bool=true)
   F, G = dom(α), codom(α)
   C, D = dom(F), codom(F) # == dom(G), codom(G)
-  all(hom_generators(C)) do f
-    Ff, Gf = hom_map(F,f), hom_map(G,f)
-    α_c, α_d = α[dom(C,f)], α[codom(C,f)]
-    compose(D, α_c, Gf) == compose(D, Ff, α_d)
+  all(ob_generators(C)) do c
+    α_c = α[c]
+    dom(D, α_c) == ob_map(F,c) && codom(D, α_c) == ob_map(G,c)
+  end || return false
+
+  if check_equations
+    all(hom_generators(C)) do f
+      Ff, Gf = hom_map(F,f), hom_map(G,f)
+      α_c, α_d = α[dom(C,f)], α[codom(C,f)]
+      is_hom_equal(D, compose(D, α_c, Gf), compose(D, Ff, α_d))
+    end || return false
   end
+
+  true
 end
 
 function check_transformation_domains(F::Functor, G::Functor)

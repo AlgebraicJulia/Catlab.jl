@@ -14,7 +14,8 @@ presented categories are provided by another module, [`FinCats`](@ref).
 """
 module Categories
 export Cat, TypeCat, Ob, Functor, Transformation,
-  dom, codom, compose, id, ob, hom, ob_map, hom_map, dom_ob, codom_ob, component
+  dom, codom, compose, id, ob, hom, is_hom_equal,
+  ob_map, hom_map, dom_ob, codom_ob, component
 
 using AutoHashEquals
 
@@ -63,6 +64,14 @@ id(C::Cat, x) = id(x)
 """ Compose morphisms in a category.
 """
 compose(C::Cat, fs...) = compose(fs...)
+
+""" Are two morphisms in a category equal?
+
+By default, just checks for equality of Julia objects using ``==``. In some
+categories, checking equality of morphisms may involve nontrivial reasoning.
+"""
+is_hom_equal(C::Cat, f, g) = is_hom_equal(f, g)
+is_hom_equal(f, g) = f == g
 
 # Instances
 #----------

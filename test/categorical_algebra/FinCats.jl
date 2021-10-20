@@ -2,7 +2,7 @@ module TestFinCats
 using Test
 
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
-using Catlab.Graphs.BasicGraphs: TheoryGraph
+using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryReflexiveGraph
 
 # Discrete categories
 #####################
@@ -129,7 +129,7 @@ end
 @test length(equations(Δ¹)) == 2
 @test !is_free(Δ¹)
 
-# Graph as set-valued functor on the theory of graphs.
+# Graph as set-valued functor on a free category.
 F = FinDomFunctor(TheoryGraph, path_graph(Graph, 3))
 C = dom(F)
 @test is_functorial(F)
@@ -138,6 +138,10 @@ C = dom(F)
 @test F(ob(C, :E)) == FinSet(2)
 @test F(hom(C, :tgt)) == FinFunction([2,3], 3)
 @test F(id(ob(C, :E))) == id(FinSet(2))
+
+# Reflexive graph as set-valued functor on a category with equations.
+G = FinDomFunctor(TheoryReflexiveGraph, path_graph(ReflexiveGraph, 3))
+@test is_functorial(G)
 
 # Graph homomorphisms as natural transformations.
 g = parallel_arrows(Graph, 2)
@@ -153,18 +157,17 @@ G = FinDomFunctor(TheoryGraph, g)
 @test α⋅σ == FinTransformation(F, G, V=FinFunction([1,2,2]), E=FinFunction([2,4]))
 
 # Pullback data migration by pre-whiskering.
-ιV = FinFunctor([:V], [], FinCat(FinSet(1)), FinCat(TheoryGraph))
+ιV = FinFunctor([:V], [], FinCat(1), FinCat(TheoryGraph))
 αV = ιV * α
 @test ob_map(dom(αV), 1) == ob_map(F, :V)
 @test ob_map(codom(αV), 1) == ob_map(G, :V)
 @test component(αV, 1) == component(α, :V)
 
 # Post-whiskering and horizontal composition.
-ιE = FinFunctor([:E], [], FinCat(FinSet(1)), FinCat(TheoryGraph))
+ιE = FinFunctor([:E], [], FinCat(1), FinCat(TheoryGraph))
 ϕ = FinTransformation([:src], ιE, ιV)
 @test is_natural(ϕ)
 @test component(ϕ*F, 1) == hom_map(F, :src)
 @test component(ϕ*α, 1) == hom_map(F, :src) ⋅ α[:V]
-
 
 end
