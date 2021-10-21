@@ -240,6 +240,10 @@ const FinDomFunctor{Dom<:FinCat,Codom<:Cat} = Functor{Dom,Codom}
 
 FinDomFunctor(maps::NamedTuple{(:V,:E)}, dom::FinCatGraph, codom::Cat) =
   FinDomFunctor(maps.V, maps.E, dom, codom)
+FinDomFunctor(ob_map, dom::DiscreteCat, codom::Cat{Ob,Hom}) where {Ob,Hom} =
+  FinDomFunctor(ob_map, empty(ob_map, Hom), dom, codom)
+FinDomFunctor(ob_map, ::Nothing, dom::DiscreteCat, codom::Cat) =
+  FinDomFunctor(ob_map, dom, codom)
 
 # Diagram interface. See `FreeDiagrams` module.
 diagram_type(F::FinDomFunctor{Dom,Codom}) where {Ob,Hom,Dom,Codom<:Cat{Ob,Hom}} =

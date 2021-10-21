@@ -38,8 +38,8 @@ f² = f⋅f
 @test shape_map(f²) == FinFunctor(1:3, 1:2, C, C)
 
 f = DiagramHom{op}([(2,:inv), (1,:inv), 3], [2,1], D, D)
-ιV = FinDomFunctor([:V], [], FinCat(1), FinCat(SchSGraph))
-g = DiagramHom{op}([(1,:src)], [], D, ιV)
+ιV = FinDomFunctor([:V], FinCat(1), FinCat(SchSGraph))
+g = DiagramHom{op}([(1,:src)], D, ιV)
 @test dom(g) == Diagram{op}(D)
 @test codom(g) == Diagram{op}(ιV)
 @test compose(id(dom(g)), g) == g
@@ -53,7 +53,7 @@ d = dom(f)
 @test op(op(f)) == f
 @test dom(op(g)) == Diagram{co}(ιV)
 @test codom(op(g)) == Diagram{co}(D)
-@test op(g) == DiagramHom{co}([(1,:src)], [], ιV, D)
+@test op(g) == DiagramHom{co}([(1,:src)], ιV, D)
 @test op(g)⋅op(f) == op(f⋅g)
 
 end

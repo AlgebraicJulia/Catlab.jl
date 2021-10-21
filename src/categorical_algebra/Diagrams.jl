@@ -82,9 +82,11 @@ DiagramHom{T}(f::DiagramHom) where T =
   DiagramHom{T}(f.shape_map, f.diagram_map, f.precomposed_diagram)
 DiagramHom(args...) = DiagramHom{id}(args...)
 
-function DiagramHom{T}(ob_maps, hom_map, D::Diagram{T}, D′::Diagram{T}) where T
+DiagramHom{T}(ob_maps, hom_map, D::Diagram{T}, D′::Diagram{T}) where T =
   DiagramHom{T}(ob_maps, hom_map, diagram(D), diagram(D′))
-end
+DiagramHom{T}(ob_maps, D::FinDomFunctor, D′::FinDomFunctor) where T =
+  DiagramHom{T}(ob_maps, nothing, D, D′)
+
 function DiagramHom{id}(ob_maps, hom_map, D::FinDomFunctor, D′::FinDomFunctor)
   f = FinFunctor(mapvals(cell1, ob_maps), hom_map, dom(D), dom(D′))
   ϕ = FinTransformation(mapvals(x -> cell2(D,x), ob_maps), D, f⋅D′)
