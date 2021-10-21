@@ -9,6 +9,7 @@ using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryReflexiveGraph
 
 C = FinCat(FinSet(3))
 @test C isa FinCat{Int,Int}
+@test is_discrete(C)
 @test collect(ob_generators(C)) == 1:3
 @test isempty(hom_generators(C))
 @test (dom(C, 1), codom(C, 1)) == (1, 1)
@@ -24,6 +25,7 @@ g = parallel_arrows(Graph, 3)
 C = FinCat(g)
 @test graph(C) == g
 @test Ob(C) == FinSet(2)
+@test !is_discrete(C)
 @test is_free(C)
 @test hom(C, 1) == Path(g, 1)
 @test ob_generators(C) == 1:2
