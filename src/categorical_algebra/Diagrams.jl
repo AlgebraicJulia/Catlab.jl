@@ -4,8 +4,10 @@ module Diagrams
 export Diagram, DiagramHom, id, op, co, shape, diagram, shape_map, diagram_map,
   ob_map, hom_map
 
+using StaticArrays: SVector
+
 using ...GAT
-import ...Theories: Category, dom, codom, id, compose, ⋅, ∘
+import ...Theories: Category, dom, codom, id, compose, ⋅, ∘, munit
 import ..Categories: ob_map, hom_map
 using ..FinCats
 using ..FinCats: mapvals
@@ -84,7 +86,8 @@ DiagramHom(args...) = DiagramHom{id}(args...)
 
 DiagramHom{T}(ob_maps, hom_map, D::Diagram{T}, D′::Diagram{T}) where T =
   DiagramHom{T}(ob_maps, hom_map, diagram(D), diagram(D′))
-DiagramHom{T}(ob_maps, D::FinDomFunctor, D′::FinDomFunctor) where T =
+DiagramHom{T}(ob_maps, D::Union{Diagram{T},FinDomFunctor},
+              D′::Union{Diagram{T},FinDomFunctor}) where T =
   DiagramHom{T}(ob_maps, nothing, D, D′)
 
 function DiagramHom{id}(ob_maps, hom_map, D::FinDomFunctor, D′::FinDomFunctor)
@@ -166,5 +169,19 @@ op(d::Diagram{op}) = Diagram{co}(d)
 op(d::Diagram{co}) = Diagram{op}(d)
 op(f::DiagramHom{op}) = DiagramHom{co}(f)
 op(f::DiagramHom{co}) = DiagramHom{op}(f)
+
+# Monads of diagrams
+####################
+
+# TODO: Define monad multiplications that go along with the units.
+
+function munit(::Type{Diagram{T}}, C::Cat, c) where T
+  Diagram{T}(FinDomFunctor(SVector(c), FinCat(1), C))
+end
+
+function munit(::Type{DiagramHom{T}}, C::Cat, f) where T
+  DiagramHom{T}(SVector(Pair(1, f)), munit(DiagramHom{T}, C, dom(C,f)),
+                munit(DiagramHom{T}, C, codom(C,f)))
+end
 
 end
