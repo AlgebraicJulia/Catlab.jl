@@ -1,9 +1,14 @@
 module TestDiagrammaticPrograms
 using Test
 
-using Catlab.CategoricalAlgebra, Catlab.Programs.DiagrammaticPrograms
+using Catlab, Catlab.CategoricalAlgebra, Catlab.Programs.DiagrammaticPrograms
 using Catlab.Programs.DiagrammaticPrograms: NamedGraph, MaybeNamedGraph
 using Catlab.Graphs.BasicGraphs: TheoryGraph
+
+@present TheoryDDS(FreeSchema) begin
+  X::Ob
+  Φ::Hom(X,X)
+end
 
 # Graphs
 ########
@@ -84,8 +89,8 @@ C = FinCat(TheoryGraph)
 F_parsed = @diagram C begin
   v::V
   (e1, e2)::E
-  t::tgt : e1 → v
-  s::src : e2 → v
+  (t: e1 → v)::tgt
+  (s: e2 → v)::src
 end
 J = FinCat(@acset NamedGraph{Symbol} begin
   V = 3
@@ -99,12 +104,39 @@ end)
 F = FinFunctor([:V,:E,:E], [:tgt, :src], J, C)
 @test F_parsed == F
 
-F_parsed = @diagram C begin
+F_parsed = @diagram TheoryGraph begin
   v => V
   (e1, e2) => E
   t: e1 → v => tgt
   s: e2 → v => src
 end
 @test F_parsed == F
+
+F = @diagram TheoryDDS begin
+  x::X
+  (f: x → x)::(Φ⋅Φ)
+end
+@test only(collect_ob(F)) == TheoryDDS[:X]
+@test only(collect_hom(F)) == compose(TheoryDDS[:Φ], TheoryDDS[:Φ])
+
+# Migrations
+############
+
+F = @migration TheoryGraph begin
+  V => V
+  E => @join begin
+    v::V
+    (e₁, e₂)::E
+    (t: e₁ → v)::tgt
+    (s: e₂ → v)::src
+  end
+  (src: E → V) => e₁ ⋅ src
+  (tgt: E → V) => e₂ ⋅ tgt
+end
+F_E = diagram(ob_map(F, 2))
+@test nameof.(collect_ob(F_E)) == [:V, :E, :E]
+@test nameof.(collect_hom(F_E)) == [:tgt, :src]
+F_tgt = hom_map(F, 2)
+@test ob_map(F_tgt, 1) == (3, TheoryGraph[:tgt])
 
 end
