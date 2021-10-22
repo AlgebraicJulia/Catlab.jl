@@ -69,6 +69,27 @@ dds = DDS()
 add_parts!(dds, :X, 4, Φ=[2,3,3,4])
 @test_throws ErrorException rem_parts!(dds, :X, [4,1])
 rem_parts!(dds, :X, [1,4])
+@test subpart(dds, :Φ) == [2,2]
+@test incident(dds, 2, :Φ) == [1,2]
+@test incident(dds, 1, :Φ) == []
+
+dds = DDS()
+add_parts!(dds, :X, 3, Φ=[2,3,3])
+rem_part!(dds, :X, 2; alg=RemovalByPopAndSwap())
+@test nparts(dds, :X) == 2
+@test subpart(dds, :Φ) == [0,2]
+@test incident(dds, 1, :Φ) == []
+@test incident(dds, 2, :Φ) == [2]
+rem_part!(dds, :X, 2; alg=RemovalByPopAndSwap())
+@test nparts(dds, :X) == 1
+@test subpart(dds, :Φ) == [0]
+rem_part!(dds, :X, 1; alg=RemovalByPopAndSwap())
+@test nparts(dds, :X) == 0
+
+dds = DDS()
+add_parts!(dds, :X, 4, Φ=[2,3,3,4])
+@test_throws ErrorException rem_parts!(dds, :X, [4,1]; alg=RemovalByPopAndSwap())
+rem_parts!(dds, :X, [1,4]; alg=RemovalByPopAndSwap())
 @test subpart(dds, :Φ) == [1,1]
 @test incident(dds, 1, :Φ) == [1,2]
 @test incident(dds, 2, :Φ) == []
@@ -290,6 +311,12 @@ add_parts!(lset, :X, 2, label=[(1,1), (1,2)])
 lset = IndexedLabeledSet{Symbol}()
 add_parts!(lset, :X, 3, label=[:foo, :foo, :bar])
 rem_part!(lset, :X, 1)
+@test subpart(lset, :label) == [:foo, :bar]
+@test incident(lset, [:foo, :bar], :label) == [[1], [2]]
+
+lset = IndexedLabeledSet{Symbol}()
+add_parts!(lset, :X, 3, label=[:foo, :foo, :bar])
+rem_part!(lset, :X, 1; alg=RemovalByPopAndSwap())
 @test subpart(lset, :label) == [:bar, :foo]
 @test incident(lset, [:foo, :bar], :label) == [[2], [1]]
 
@@ -297,6 +324,11 @@ rem_part!(lset, :X, 1)
 lset = IndexedLabeledSet{Symbol}()
 add_part!(lset, :X)
 rem_part!(lset, :X, 1)
+@test nparts(lset, :X) == 0
+
+lset = IndexedLabeledSet{Symbol}()
+add_part!(lset, :X)
+rem_part!(lset, :X, 1; alg=RemovalByPopAndSwap())
 @test nparts(lset, :X) == 0
 
 # Pretty-printing with unitialized data attribute.

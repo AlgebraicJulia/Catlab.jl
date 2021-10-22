@@ -433,15 +433,17 @@ end
 
 @inline Base.setindex!(acs::StructACSet, val, ob) = set_subpart!(acs, ob, val)
 
-@inline ACSetInterface.rem_part!(acs::StructACSet, type::Symbol, part::Int) =
-  _rem_part!(acs, Val{type}, part)
+@inline ACSetInterface.rem_part!(acs::StructACSet, type::Symbol, part::Int;
+                                 alg=RemovalByShift()) =
+  _rem_part!(acs, Val{type}, part, alg)
 
 function getassigned(acs::StructACSet, arrows, i)
   assigned_subparts = filter(f -> isassigned(subpart(acs,f),i), arrows)
   Dict(f => subpart(acs,i,f) for f in assigned_subparts)
 end
 
-function rem_part_body(s::SchemaDesc, idxed, ob::Symbol)
+# Pop-and-swap implementation of rem_part
+function rem_part_body(s::SchemaDesc, idxed, ob::Symbol, ::RemovalByPopAndSwap)
   in_homs = filter(hom -> s.codoms[hom] == ob, s.homs)
   out_homs = filter(f -> s.doms[f] == ob, s.homs)
   out_attrs = filter(f -> s.doms[f] == ob, s.attrs)
@@ -482,9 +484,73 @@ function rem_part_body(s::SchemaDesc, idxed, ob::Symbol)
   end
 end
 
+# Bubble implementation of rem_part
+function rem_part_body(s::SchemaDesc, idxed, ob::Symbol, ::RemovalByShift)
+  in_homs = filter(hom -> s.codoms[hom] == ob, s.homs)
+  out_homs = filter(f -> s.doms[f] == ob, s.homs)
+  out_attrs = filter(f -> s.doms[f] == ob, s.attrs)
+  indexed_out_homs = filter(hom -> s.doms[hom] == ob && idxed[hom], s.homs)
+  indexed_attrs = filter(attr -> s.doms[attr] == ob && idxed[attr], s.attrs)
+  quote
+    last_part = acs.obs[$(ob_num(s, ob))]
+    @assert 1 <= part <= last_part
+    # Unassign superparts of the part to be removed and also reassign superparts
+    # of the last part to this part.
+    for hom in $(Tuple(in_homs))
+      set_subpart!(acs, incident(acs, part, hom, copy=true), hom, 0)
+      for p in (part+1):last_part
+        set_subpart!(acs, incident(acs, p, hom, copy=true), hom, p-1)
+      end
+      #if part == last_part
+      #  set_subpart!(acs, incident(acs, last_part, hom, copy=true), hom, part)
+      #end
+    end
+
+    for p in (part+1):last_part
+      next_row = getassigned(acs, $([out_homs;out_attrs]), p)
+      # Clear any morphism and data attribute indices for next part.
+      for hom in $(Tuple(indexed_out_homs))
+        set_subpart!(acs, p, hom, 0)
+      end
+      for attr in $(Tuple(indexed_attrs))
+        if haskey(next_row, attr)
+          unset_attr_index!(acs.attr_indices[attr], next_row[attr], p)
+        end
+      end
+      set_subparts!(acs, p - 1, (;next_row...))
+    end
+
+    if part == last_part
+      last_row = getassigned(acs, $([out_homs;out_attrs]), last_part)
+      for hom in $(Tuple(indexed_out_homs))
+        set_subpart!(acs, part, hom, 0)
+      end
+      for attr in $(Tuple(indexed_attrs))
+        if haskey(last_row, attr)
+          unset_attr_index!(acs.attr_indices[attr], last_row[attr], part)
+        end
+      end
+    end
+
+    # Finally, delete the last part and update subparts of the removed part.
+    for f in $(Tuple(out_homs))
+      resize!(acs.homs[f], last_part - 1)
+    end
+    for a in $(Tuple(out_attrs))
+      resize!(acs.attrs[a], last_part - 1)
+    end
+    acs.obs[$(ob_num(s, ob))] -= 1
+  end
+end
+
 @generated function _rem_part!(acs::StructACSet{S,Ts,idxed}, ::Type{Val{ob}},
-                               part::Int) where {S,Ts,ob,idxed}
-  rem_part_body(SchemaDesc(S),pairs(idxed),ob)
+                               part::Int, ::RemovalByShift) where {S,Ts,ob,idxed}
+  rem_part_body(SchemaDesc(S),Dict(idxed),ob, RemovalByShift())
+end
+
+@generated function _rem_part!(acs::StructACSet{S,Ts,idxed}, ::Type{Val{ob}},
+                               part::Int, ::RemovalByPopAndSwap) where {S,Ts,ob,idxed}
+  rem_part_body(SchemaDesc(S),pairs(idxed),ob, RemovalByPopAndSwap())
 end
 
 function Base.copy(acs::StructACSet)

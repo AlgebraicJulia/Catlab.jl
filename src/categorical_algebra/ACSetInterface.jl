@@ -2,7 +2,8 @@ module ACSetInterface
 export ACSet, acset_schema,
   nparts, parts, has_part, has_subpart, subpart, incident,
   add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!,
-  copy_parts!, copy_parts_only!, disjoint_union, tables, pretty_tables, @acset
+  copy_parts!, copy_parts_only!, disjoint_union, tables, pretty_tables, @acset,
+  RemovalByPopAndSwap, RemovalByShift
 
 using StaticArrays: StaticArray
 
@@ -191,6 +192,10 @@ end
 
 @inline set_subparts!(acs, part; kw...) = set_subparts!(acs, part, (;kw...))
 
+abstract type RemovalAlgorithm end
+struct RemovalByPopAndSwap <: RemovalAlgorithm end
+struct RemovalByShift <: RemovalAlgorithm end
+
 """ Remove part from a C-set.
 
 The part is removed using the "pop and swap" strategy familiar from
@@ -222,10 +227,10 @@ The parts must be supplied in sorted order, without duplicates.
 
 See also: [`rem_part!`](@ref).
 """
-@inline function rem_parts!(acs, type, parts)
+@inline function rem_parts!(acs, type, parts; alg=RemovalByShift())
   issorted(parts) || error("Parts to be removed must be in sorted order")
   for part in Iterators.reverse(parts)
-    rem_part!(acs, type, part)
+    rem_part!(acs, type, part; alg=alg)
   end
 end
 

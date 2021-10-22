@@ -44,6 +44,24 @@ rem_boxes!(d, [fv,hv])
 @test nboxes(d) == 1
 @test boxes(d) == [g]
 
+# Port order preserved in removal
+d = WiringDiagram([A, B], [C,B])
+q = Box(:q, A, B)
+r = Box(:r, [A,B], C)
+
+qv = add_box!(d, q)
+rv = add_box!(d, r)
+
+add_wire!(d, (input_id(d),1) => (qv,1))
+add_wire!(d, (qv,1) => (output_id(d),2))
+add_wire!(d, (input_id(d),1) => (rv,1))
+add_wire!(d, (input_id(d),2) => (rv,2))
+add_wire!(d, (rv,1) => (output_id(d),1))
+
+@test input_ports(d, 2) == [[:A], [:B]]
+rem_box!(d, 1)
+@test input_ports(d, 1) == [[:A], [:B]]
+
 # Operations on ports
 d = WiringDiagram(A, C)
 fv = add_box!(d, f)
