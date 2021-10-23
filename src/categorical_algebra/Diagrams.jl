@@ -33,10 +33,10 @@ perfectly well by a `FinDomFunctor`, but there are several different notions of
 morphism between diagrams. This simple wrapper type exists to distinguish them.
 See [`DiagramHom`](@ref) for more.
 """
-struct Diagram{T,D<:FinDomFunctor}
+struct Diagram{T,C<:Cat,D<:Functor{<:FinCat,C}}
   diagram::D
 end
-Diagram{T}(F::D) where {T,D<:FinDomFunctor} = Diagram{T,D}(F)
+Diagram{T}(F::D) where {T,C<:Cat,D<:Functor{<:FinCat,C}} = Diagram{T,C,D}(F)
 Diagram{T}(d::Diagram) where T = Diagram{T}(d.diagram)
 Diagram(args...) = Diagram{id}(args...)
 
@@ -72,14 +72,14 @@ type `DiagramHom{op}` induce morphisms between the limits of the diagram,
 whereas morphisms of type `DiagramHom{co}` generalize morphisms of polynomial
 functors.
 """
-struct DiagramHom{T,F<:FinFunctor,Φ<:FinTransformation,D<:FinDomFunctor}
+struct DiagramHom{T,C<:Cat,F<:FinFunctor,Φ<:FinTransformation,D<:Functor{<:FinCat,C}}
   shape_map::F
   diagram_map::Φ
   precomposed_diagram::D
 end
 DiagramHom{T}(shape_map::F, diagram_map::Φ, precomposed_diagram::D) where
-    {T,F<:FinFunctor,Φ<:FinTransformation,D<:FinDomFunctor} =
-  DiagramHom{T,F,Φ,D}(shape_map, diagram_map, precomposed_diagram)
+    {T,C,F<:FinFunctor,Φ<:FinTransformation,D<:Functor{<:FinCat,C}} =
+  DiagramHom{T,C,F,Φ,D}(shape_map, diagram_map, precomposed_diagram)
 DiagramHom{T}(f::DiagramHom) where T =
   DiagramHom{T}(f.shape_map, f.diagram_map, f.precomposed_diagram)
 DiagramHom(args...) = DiagramHom{id}(args...)

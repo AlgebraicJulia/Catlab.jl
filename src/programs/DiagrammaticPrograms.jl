@@ -287,6 +287,19 @@ end
 # Data migrations
 #################
 
+struct UnitQuery{C<:FinCat,Ob}
+  cat::C
+  ob::Ob
+end
+struct UnitQueryHom{C<:FinCat,Hom}
+  cat::C
+  hom::Hom
+end
+
+const ConjQuery{C<:FinCat} = Diagram{op,C}
+const GlueQuery{C<:FinCat} = Diagram{id,C}
+const GlueConjQuery{C<:FinCat} = Diagram{id,<:TypeCat{<:Diagram{op,C}}}
+
 """ Define a data migration query.
 
 This macro provides a DSL to specify a data migration query from a ``C``-set to
@@ -303,7 +316,7 @@ function parse_migration(body::Expr, src_schema::Presentation;
                          preprocess::Bool=true)
   src_schema = FinCat(src_schema)
   tgt_graph, tgt_eqs = NamedGraph{Symbol}(), Pair[]
-  F_ob, F_hom = Union{Some,Diagram}[], Union{Some,DiagramHom}[]
+  F_ob, F_hom = Union{UnitQuery,Diagram}[], Union{UnitQueryHom,DiagramHom}[]
   if preprocess
     body = preprocess_expr!(body)
   end
@@ -312,7 +325,7 @@ function parse_migration(body::Expr, src_schema::Presentation;
       # x => y
       Expr(:call, :(=>), x::Symbol, y::Symbol) => begin
         add_vertex!(tgt_graph, vname=x)
-        push!(F_ob, Some(y))
+        push!(F_ob, UnitQuery(src_schema, y))
       end
       # x => @limit ...
       # x => @join ...
@@ -334,28 +347,29 @@ function parse_migration(body::Expr, src_schema::Presentation;
       _ => error("@migration macro cannot parse line: $expr")
     end
   end
-  F_ob = map(x -> coerce_diagram(src_schema, something(x)), F_ob)
-  F_hom = map(f -> coerce_diagram_hom(src_schema, something(f)), F_hom)
+  query_type = mapreduce(typeof, promote_query_type, F_ob,
+                         init=UnitQuery{typeof(src_schema)})
+  F_ob = map(x -> convert_query(query_type, x), F_ob)
+  F_hom = map(f -> convert_query_hom(query_type, f), F_hom)
   J = isempty(tgt_eqs) ? FinCat(tgt_graph) : FinCat(tgt_graph, tgt_eqs)
-  F = FinDomFunctor(F_ob, F_hom, J)
+  F = if query_type <: UnitQuery
+    FinDomFunctor(map(x -> x.ob, F_ob), map(f -> f.hom, F_hom), J, src_schema)
+  else
+    FinDomFunctor(F_ob, F_hom, J)
+  end
   is_functorial(F, check_equations=false) ||
-    error("@migration macor defined diagram that is not functorial: $F")
+    error("@migration macro defined diagram that is not functorial: $F")
   return F
 end
 
-coerce_diagram(C::Cat, d::Diagram{op}) = d
-coerce_diagram(C::Cat, c) = munit(Diagram{op}, C, c)
-coerce_diagram_hom(C::Cat, f::DiagramHom{op}) = f
-coerce_diagram_hom(C::Cat, f) = munit(DiagramHom{op}, C, f)
-
 """ Parse expression defining a morphism of diagrams.
 """
-function parse_diagram_hom(C::Cat, expr, d::Diagram{op}, c′::Some)
+function parse_diagram_hom(C::Cat, expr, d::Diagram{op}, c′::UnitQuery)
   DiagramHom{op}(SVector(parse_diagram_hom_rhs(C, shape(d), expr)),
-                 d, munit(Diagram{op}, C, something(c′)))
+                 d, munit(Diagram{op}, C, c′.ob))
 end
-function parse_diagram_hom(C::Cat, expr, ::Some, ::Some)
-  Some(parse_hom(C, expr))
+function parse_diagram_hom(C::Cat, expr, ::UnitQuery, ::UnitQuery)
+  UnitQueryHom(C, parse_hom(C, expr))
 end
 
 function parse_diagram_hom_rhs(C::Cat, J::FinCat, expr)
@@ -369,6 +383,33 @@ function parse_diagram_hom_rhs(C::Cat, J::FinCat, expr)
     x::Symbol => vertex_named(g, x)
   end
 end
+
+# Query promotion
+#----------------
+
+promote_query_rule(::Type, ::Type) = Union{}
+promote_query_rule(::Type{<:ConjQuery{C}},
+                   ::Type{<:UnitQuery{C}}) where C = ConjQuery{C}
+
+promote_query_type(T, S) = promote_query_result(
+  T, S, Union{promote_query_rule(T,S), promote_query_rule(S,T)})
+promote_query_result(T, S, ::Type{Union{}}) = typejoin(T, S)
+promote_query_result(T, S, U) = U
+
+convert_query(::Type{T}, x::S) where {T, S<:T} = x
+convert_query(::Type{<:ConjQuery{C}}, x::UnitQuery{C}) where C =
+  munit(Diagram{op}, x.cat, x.ob)
+
+convert_query_hom(T::Type, f) = convert_query_hom(T, query_typeof(f), f)
+convert_query_hom(::Type{T}, ::Type{S}, f) where {T, S<:T} = f
+convert_query_hom(::Type{<:ConjQuery{C}}, ::Type{<:UnitQuery{C}}, f) where C =
+  munit(DiagramHom{op}, f.cat, f.hom)
+
+query_typeof(::DiagramHom{T,C}) where {T,C} = Diagram{T,C}
+query_typeof(::UnitQueryHom{C}) where C = UnitQuery{C}
+
+# Utilities
+###########
 
 """ Left-most argument plus remainder of left-associated binary operations.
 """
