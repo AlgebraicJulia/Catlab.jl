@@ -1,7 +1,8 @@
 module TestDiagrammaticPrograms
 using Test
 
-using Catlab, Catlab.CategoricalAlgebra, Catlab.Programs.DiagrammaticPrograms
+using Catlab, Catlab.Graphs, Catlab.CategoricalAlgebra
+using Catlab.Programs.DiagrammaticPrograms
 using Catlab.Programs.DiagrammaticPrograms: NamedGraph, MaybeNamedGraph
 using Catlab.Graphs.BasicGraphs: TheoryGraph
 
@@ -13,35 +14,21 @@ end
 # Graphs
 ########
 
-para_parsed = @graph begin
+g = @graph begin
   s
   t
   s → t
   s → t
 end
-para = @acset MaybeNamedGraph{Symbol} begin
-  V = 2
-  E = 2
-  src = [1,1]
-  tgt = [2,2]
-  vname = [:s, :t]
-  ename = [nothing, nothing]
-end
-@test para_parsed == para
+@test g == parallel_arrows(MaybeNamedGraph{Symbol}, 2,
+                           V=(vname=[:s,:t],), E=(ename=[nothing,nothing],))
 
-para_parsed = @graph NamedGraph{Symbol} begin
+g = @graph NamedGraph{Symbol} begin
   x, y
   (f, g): x → y
 end
-para = @acset NamedGraph{Symbol} begin
-  V = 2
-  E = 2
-  src = [1,1]
-  tgt = [2,2]
-  vname = [:x, :y]
-  ename = [:f, :g]
-end
-@test para_parsed == para
+@test g == parallel_arrows(NamedGraph{Symbol}, 2,
+                           V=(vname=[:x,:y],), E=(ename=[:f,:g],))
 
 tri_parsed = @graph NamedGraph{Symbol} begin
   v0, v1, v2
@@ -121,6 +108,22 @@ end
 
 # Migrations
 ############
+
+# Pullback migration
+#-------------------
+
+F = @migration TheoryGraph begin
+  E => E
+  V => V
+  (src: E → V) => tgt
+  (tgt: E → V) => src
+end
+J = FinCat(parallel_arrows(NamedGraph{Symbol}, 2,
+                           V=(vname=[:E,:V],), E=(ename=[:src,:tgt],)))
+@test F == FinDomFunctor([:E,:V], [:tgt,:src], J, FinCat(TheoryGraph))
+
+# Conjunctive migration
+#----------------------
 
 F = @migration TheoryGraph begin
   V => V
