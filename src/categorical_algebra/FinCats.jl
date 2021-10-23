@@ -10,8 +10,8 @@ and only if the graph is DAG, which is a fairly special condition. This usage of
 finitely presented are equivalent.
 """
 module FinCats
-export FinCat, Path, ob_generators, hom_generators, equations, is_discrete,
-  is_free, graph, edges, src, tgt, presentation,
+export FinCat, FinCatGraph, Path, ob_generators, hom_generators, equations,
+  is_discrete, is_free, graph, edges, src, tgt, presentation,
   FinFunctor, FinDomFunctor, is_functorial, collect_ob, collect_hom,
   FinTransformation, components, is_natural
 
