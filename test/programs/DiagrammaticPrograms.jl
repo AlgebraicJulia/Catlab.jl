@@ -5,6 +5,7 @@ using Catlab, Catlab.Graphs, Catlab.CategoricalAlgebra
 using Catlab.Programs.DiagrammaticPrograms
 using Catlab.Programs.DiagrammaticPrograms: NamedGraph, MaybeNamedGraph
 using Catlab.Graphs.BasicGraphs: TheoryGraph
+using Catlab.WiringDiagrams.CPortGraphs: ThCPortGraph
 
 @present TheoryDDS(FreeSchema) begin
   X::Ob
@@ -49,7 +50,7 @@ end
 # Categories
 ############
 
-Δ¹_parsed = @category begin
+Δ¹_parsed = @fincat begin
   V, E
   (δ₀, δ₁): V → E
   σ₀: E → V
@@ -68,6 +69,34 @@ end
 Δ¹ = FinCat(Δ¹_graph, [ [1,3] => empty(Path, Δ¹_graph, 1),
                         [2,3] => empty(Path, Δ¹_graph, 1) ])
 @test Δ¹_parsed == Δ¹
+
+# Functors
+##########
+
+F = @finfunctor TheoryGraph ThCPortGraph begin
+  V => Box
+  E => Wire
+  src => src ⨟ box
+  tgt => tgt ⨟ box
+end
+@test F == FinFunctor(Dict(:V => :Box, :E => :Wire),
+                      Dict(:src => [:src, :box], :tgt => [:tgt, :box]),
+                      TheoryGraph, ThCPortGraph)
+
+# Incomplete definition.
+@test_throws ErrorException @finfunctor(TheoryGraph, ThCPortGraph, begin
+  V => Box
+  src => src ⨟ box
+  tgt => tgt ⨟ box
+end)
+
+# Failure of functorality.
+@test_throws ErrorException (@finfunctor TheoryGraph ThCPortGraph begin
+  V => Box
+  E => Wire
+  src => src
+  tgt => tgt
+end)
 
 # Diagrams
 ##########
