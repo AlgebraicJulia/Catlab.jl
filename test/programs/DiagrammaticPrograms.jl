@@ -220,4 +220,33 @@ F_tgt = hom_map(F, :tgt)
 @test ob_map(F_tgt, 1) == (2, id(TheoryGraph[:V]))
 @test hom_map(F_tgt, 2) |> edges |> only == 4
 
+# Free/initial port graph on a graph.
+# This is the left adjoint to the underlying graph functor.
+F = @migration TheoryGraph begin
+  Box => V
+  Wire => E
+  InPort => @join begin
+    v::V
+    e::E
+    (t: e → v)::tgt
+  end
+  OutPort => @join begin
+    v::V
+    e::E
+    (s: e → v)::src
+  end
+  (in_port_box: InPort → Box) => v
+  (out_port_box: OutPort → Box) => v
+  (src: Wire → OutPort) => begin
+    v => src
+  end
+  (tgt: Wire → InPort) => begin
+    v => tgt
+  end
+end
+F_src = hom_map(F, 3)
+@test ob_map(F_src, 1) == (1, TheoryGraph[:src])
+@test ob_map(F_src, 2) == (1, id(TheoryGraph[:E]))
+@test hom_map(F_src, 1) == 1
+
 end
