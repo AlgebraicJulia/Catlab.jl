@@ -107,11 +107,11 @@ abstract type Functor{Dom<:Cat,Codom<:Cat} end
 
 """ Evaluate functor on object.
 """
-function ob_map end
+@inline ob_map(F::Functor, x) = do_ob_map(F, x)
 
 """ Evaluate functor on morphism.
 """
-function hom_map end
+@inline hom_map(F::Functor, f) = do_hom_map(F, f)
 
 """ Forgetful functor Ob: Cat → Set.
 
@@ -125,8 +125,8 @@ end
 
 codom(F::IdentityFunctor) = F.dom
 
-ob_map(F::IdentityFunctor, x) = ob(F.dom, x)
-hom_map(F::IdentityFunctor, f) = hom(F.dom, f)
+do_ob_map(F::IdentityFunctor, x) = ob(F.dom, x)
+do_hom_map(F::IdentityFunctor, f) = hom(F.dom, f)
 
 # Instances
 #----------

@@ -70,8 +70,8 @@ Ob(C::FinCat{Int}) = FinSet(length(ob_generators(C)))
 
 """ Discrete category on a finite set.
 
-The only morphisms in a discrete category are the identities, which in this
-implementation are identified with the objects.
+The only morphisms in a discrete category are the identities, which are here
+identified with the objects.
 """
 @auto_hash_equals struct DiscreteCat{Ob,S<:FinSet{<:Any,Ob}} <: FinCat{Ob,Ob}
   set::S
@@ -258,6 +258,8 @@ diagram_type(F::FinDomFunctor{Dom,Codom}) where {Ob,Hom,Dom,Codom<:Cat{Ob,Hom}} 
 cone_objects(F::FinDomFunctor) = collect_ob(F)
 cocone_objects(F::FinDomFunctor) = collect_ob(F)
 
+hom_map(F::FinDomFunctor{<:DiscreteCat}, x) = id(codom(F), ob_map(F, x))
+
 function hom_map(F::FinDomFunctor{<:FinCatPathGraph}, path::Path)
   D = codom(F)
   mapreduce(e -> hom_map(F, e), (gs...) -> compose(D, gs...),
@@ -346,6 +348,9 @@ functor_key(C::FinCat, x) = x
 functor_key(C::FinCat, expr::GATExpr) = head(expr) == :generator ?
   first(expr) : error("Functor must be defined on generators")
 
+Categories.do_ob_map(F::FinDomFunctorMap, x) = F.ob_map[x]
+Categories.do_hom_map(F::FinDomFunctorMap, f) = F.hom_map[f]
+
 function Categories.do_compose(F::FinDomFunctorMap, G::FinDomFunctorMap)
   FinDomFunctorMap(mapvals(x -> ob_map(G, x), F.ob_map),
                    mapvals(f -> hom_map(G, f), F.hom_map), dom(F), codom(G))
@@ -357,9 +362,6 @@ const FinDomFunctorVector{Dom<:FinCat,Codom<:Cat,
                           ObMap<:AbstractVector,HomMap<:AbstractVector} =
   FinDomFunctorMap{Dom,Codom,ObMap,HomMap}
 
-ob_map(F::FinDomFunctorVector, x::Integer) = F.ob_map[x]
-hom_map(F::FinDomFunctorVector, f::Integer) = F.hom_map[f]
-
 collect_ob(F::FinDomFunctorVector) = F.ob_map
 collect_hom(F::FinDomFunctorVector) = F.hom_map
 
@@ -367,14 +369,9 @@ Ob(F::FinDomFunctorVector) = FinDomFunction(F.ob_map, Ob(codom(F)))
 
 """ Functor with object and morphism maps given as dictionaries.
 """
-const FinDomFunctorDict{Dom<:FinCat,Codom<:Cat,ObKey,HomKey,
-                        ObMap<:AbstractDict{ObKey},HomMap<:AbstractDict{HomKey}} =
+const FinDomFunctorDict{Dom<:FinCat,Codom<:Cat,
+                        ObMap<:AbstractDict,HomMap<:AbstractDict} =
   FinDomFunctorMap{Dom,Codom,ObMap,HomMap}
-
-ob_map(F::FinDomFunctorDict{Dom,Codom,ObKey}, x::ObKey) where
-  {Dom,Codom,ObKey} = F.ob_map[x]
-hom_map(F::FinDomFunctorDict{Dom,Codom,ObKey,HomKey}, f::HomKey) where
-  {Dom,Codom,ObKey,HomKey} = F.hom_map[f]
 
 # C-set interop
 #--------------
@@ -538,6 +535,5 @@ mapvals(f, vec::AbstractVector; keys::Bool=false) =
 
 dicttype(::Type{T}) where T <: AbstractDict = T.name.wrapper
 dicttype(::Type{<:Iterators.Pairs}) = Dict
-
 
 end
