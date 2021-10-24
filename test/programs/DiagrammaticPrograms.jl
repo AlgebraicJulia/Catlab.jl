@@ -141,6 +141,7 @@ end
 # Pullback migration
 #-------------------
 
+# Reverse edge directions.
 F = @migration TheoryGraph begin
   E => E
   V => V
@@ -154,6 +155,7 @@ J = FinCat(parallel_arrows(NamedGraph{Symbol}, 2,
 # Conjunctive migration
 #----------------------
 
+# Graph with edges that are paths of length 2.
 F = @migration TheoryGraph begin
   V => V
   E => @join begin
@@ -170,5 +172,40 @@ F_E = diagram(ob_map(F, 2))
 @test nameof.(collect_hom(F_E)) == [:tgt, :src]
 F_tgt = hom_map(F, 2)
 @test ob_map(F_tgt, 1) == (3, TheoryGraph[:tgt])
+
+# Reflexive graph from graph.
+F = @migration TheoryGraph begin
+  V => @join begin
+    v::V
+    ℓ::E
+    (s: ℓ → v)::src
+    (t: ℓ → v)::tgt
+  end
+  E => @join begin
+    (v₁, v₂)::V
+    (ℓ₁, ℓ₂, e)::E
+    (s₁: ℓ₁ → v₁)::src
+    (t₁: ℓ₁ → v₁)::tgt
+    (s₂: ℓ₂ → v₂)::src
+    (t₂: ℓ₂ → v₂)::tgt
+    (s: e → v₁)::src
+    (t: e → v₂)::tgt
+  end
+  (refl: V → E) => begin
+    (v₁, v₂) => v
+    (ℓ₁, ℓ₂, e) => ℓ
+    (s₁, s₂, s) => s
+    (t₁, t₂, t) => t
+  end
+  (src: E → V) => begin
+    v => v₁; ℓ => ℓ₁; s => s₁; t => t₁
+  end
+  (tgt: E → V) => begin
+    v => v₂; ℓ => ℓ₂; s => s₂; t => t₂
+  end
+end
+F_tgt = hom_map(F, 3)
+@test ob_map(F_tgt, 1) == (2, id(TheoryGraph[:V]))
+@test hom_map(F_tgt, 2) |> edges |> only == 4
 
 end
