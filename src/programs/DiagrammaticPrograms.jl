@@ -13,6 +13,7 @@ using StaticArrays: SVector
 
 using ...Syntax, ...Present, ...Graphs, ...CategoricalAlgebra
 using ...Theories: munit
+using ...CategoricalAlgebra.FinCats: mapvals
 using ...Graphs.BasicGraphs: TheoryGraph
 
 # Data types
@@ -220,38 +221,47 @@ macro finfunctor(dom_cat, codom_cat, body)
   :(parse_functor($(esc(dom_cat)), $(esc(codom_cat)), $(Meta.quot(body))))
 end
 
-function parse_functor(C::FinCat, D::FinCat, body::Expr; preprocess::Bool=true)
-  assignments = Dict{Symbol,Union{Expr,Symbol}}()
-  if preprocess
-    body = Base.remove_linenums!(body)
-  end
-  for expr in body.args
-    @match expr begin
-      Expr(:call, :(=>), lhs::Symbol, rhs) => begin
-        haskey(assignments, lhs) &&
-          error("Left-hand side already assigned in expression $expr")
-        assignments[lhs] = rhs
-      end
-      _ => error("Invalid assignment expression $expr")
-    end
-  end
-  F_ob = make_map(ob_generators(C)) do x
-    ob_named(D, get(assignments, ob_name(C, x)) do
-      error("Object $(ob_name(C, x)) is not assigned")
-    end)
-  end
-  F_hom = make_map(hom_generators(C)) do f
-    parse_hom(D, get(assignments, hom_name(C, f)) do
-      error("Morphism $(hom_name(C, f)) is not assigned")
-    end)
-  end
-  F = FinFunctor(F_ob, F_hom, C, D)
+function parse_functor(C::FinCat, D::FinCat, body::Expr)
+  ob_rhs, hom_rhs = parse_ob_hom_maps(C, body)
+  F = FinFunctor(mapvals(x -> ob_named(D, x), ob_rhs),
+                 mapvals(f -> parse_hom(D, f), hom_rhs), C, D)
   is_functorial(F, check_equations=false) ||
-    error("Assignment is not functorial: $body")
+    error("Result of @finfunctor macro is not functorial: $body")
   return F
 end
 function parse_functor(C::Presentation, D::Presentation, body::Expr; kw...)
   parse_functor(FinCat(C), FinCat(D), body; kw...)
+end
+
+function parse_ob_hom_maps(C::FinCat, body::Expr)
+  assignments = Dict{Symbol,Union{Expr,Symbol}}()
+  assign(lhs, rhs) = if haskey(assignments, lhs)
+    error("Left-hand side $lhs assigned twice in $body")
+  else
+    assignments[lhs] = rhs
+  end
+  for expr in body.args
+    @match expr begin
+      # x => y
+      Expr(:call, :(=>), lhs::Symbol, rhs) => assign(lhs, rhs)
+      # (x, x′, ...) => y
+      Expr(:call, :(=>), Expr(:tuple, args...), rhs) =>
+        foreach(lhs -> assign(lhs, rhs), args)
+      ::LineNumberNode => nothing
+      _ => error("Invalid assignment expression $expr")
+    end
+  end
+  ob_rhs = make_map(ob_generators(C)) do x
+    get(assignments, ob_name(C, x)) do
+      error("Object $(ob_name(C, x)) is not assigned")
+    end
+  end
+  hom_rhs = make_map(hom_generators(C)) do f
+    get(assignments, hom_name(C, f)) do
+      error("Morphism $(hom_name(C, f)) is not assigned")
+    end
+  end
+  (ob_rhs, hom_rhs)
 end
 
 make_map(f, xs::UnitRange{Int}) = map(f, xs)
@@ -352,7 +362,7 @@ function parse_diagram(C::Cat, body::Expr; preprocess::Bool=true)
   J = isempty(eqs) ? FinCat(g) : FinCat(g, eqs)
   F = FinDomFunctor(F_ob, F_hom, J, C)
   is_functorial(F, check_equations=false) ||
-    error("@diagram macro defined diagram  is not functorial: $expr")
+    error("@diagram macro defined diagram that is not functorial: $expr")
   return F
 end
 function parse_diagram(pres::Presentation, body::Expr; kw...)
@@ -415,7 +425,7 @@ function parse_migration(body::Expr, src_schema::Presentation;
                               Expr(:call, :(→), x::Symbol, x′::Symbol)), block) => begin
         e = parse_edge!(tgt_graph, x, x′, ename=f)
         v, v′ = src(tgt_graph, e), tgt(tgt_graph, e)
-        push!(F_hom, parse_diagram_hom(src_schema, block, F_ob[v], F_ob[v′]))
+        push!(F_hom, parse_query_hom(src_schema, block, F_ob[v], F_ob[v′]))
       end
       # f == g
       Expr(:call, :(==), lhs, rhs) => push!(tgt_eqs, parse_equation(g, lhs, rhs))
@@ -437,25 +447,30 @@ function parse_migration(body::Expr, src_schema::Presentation;
   return F
 end
 
-""" Parse expression defining a morphism of diagrams.
+""" Parse expression defining a morphism of queries.
 """
-function parse_diagram_hom(C::Cat, expr, d::Diagram{op}, c′::UnitQuery)
-  DiagramHom{op}(SVector(parse_diagram_hom_rhs(C, shape(d), expr)),
+function parse_query_hom(C::Cat, expr, d::ConjQuery, d′::ConjQuery)
+  J, J′ = shape(d), shape(d′)
+  ob_rhs, hom_rhs = parse_ob_hom_maps(J′, expr)
+  DiagramHom{op}(mapvals(expr -> parse_query_ob_rhs(C, J, expr), ob_rhs),
+                 mapvals(expr -> parse_hom(J, expr), hom_rhs), d, d′)
+end
+function parse_query_hom(C::Cat, expr, d::ConjQuery, c′::UnitQuery)
+  DiagramHom{op}(SVector(parse_query_ob_rhs(C, shape(d), expr)),
                  d, munit(Diagram{op}, C, c′.ob))
 end
-function parse_diagram_hom(C::Cat, expr, ::UnitQuery, ::UnitQuery)
+function parse_query_hom(C::Cat, expr, ::UnitQuery, ::UnitQuery)
   UnitQueryHom(C, parse_hom(C, expr))
 end
 
-function parse_diagram_hom_rhs(C::Cat, J::FinCat, expr)
-  g = graph(J)
+function parse_query_ob_rhs(C::Cat, J::FinCat, expr)
   @match expr begin
     Expr(:call, :(⋅), args...) ||
     Expr(:call, :(⨟), args...) => begin
       x, f = leftmost_arg(expr, (:(⋅),:(⨟)))
-      Pair(vertex_named(g, x), parse_hom(C, f))
+      Pair(ob_named(J, x), parse_hom(C, f))
     end
-    x::Symbol => vertex_named(g, x)
+    x::Symbol => ob_named(J, x)
   end
 end
 

@@ -92,17 +92,17 @@ DiagramHom{T}(ob_maps, D::Union{Diagram{T},FinDomFunctor},
 
 function DiagramHom{id}(ob_maps, hom_map, D::FinDomFunctor, D′::FinDomFunctor)
   f = FinFunctor(mapvals(cell1, ob_maps), hom_map, dom(D), dom(D′))
-  ϕ = FinTransformation(mapvals(x -> cell2(D,x), ob_maps), D, f⋅D′)
+  ϕ = FinTransformation(mapvals(x -> cell2(D′,x), ob_maps), D, f⋅D′)
   DiagramHom{id}(f, ϕ, D′)
 end
 function DiagramHom{op}(ob_maps, hom_map, D::FinDomFunctor, D′::FinDomFunctor)
   f = FinDomFunctor(mapvals(cell1, ob_maps), hom_map, dom(D′), dom(D))
-  ϕ = FinTransformation(mapvals(x -> cell2(D′,x), ob_maps), f⋅D, D′)
+  ϕ = FinTransformation(mapvals(x -> cell2(D,x), ob_maps), f⋅D, D′)
   DiagramHom{op}(f, ϕ, D)
 end
 function DiagramHom{co}(ob_maps, hom_map, D::FinDomFunctor, D′::FinDomFunctor)
   f = FinDomFunctor(mapvals(cell1, ob_maps), hom_map, dom(D), dom(D′))
-  ϕ = FinTransformation(mapvals(x -> cell2(D,x), ob_maps), f⋅D′, D)
+  ϕ = FinTransformation(mapvals(x -> cell2(D′,x), ob_maps), f⋅D′, D)
   DiagramHom{co}(f, ϕ, D′)
 end
 
