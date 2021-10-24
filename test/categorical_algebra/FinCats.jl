@@ -15,6 +15,11 @@ C = FinCat(FinSet(3))
 @test (dom(C, 1), codom(C, 1)) == (1, 1)
 @test (id(C, 2), compose(C, 2, 2)) == (2, 2)
 
+F = FinDomFunctor([FinSet(1), FinSet(3), FinSet(1)],
+                  C, TypeCat(FinSet{Int}, FinFunction{Int}))
+@test ob_map(F, 2) == FinSet(3)
+@test hom_map(F, 2) == id(FinSet(3))
+
 # Categories on graphs
 ######################
 
