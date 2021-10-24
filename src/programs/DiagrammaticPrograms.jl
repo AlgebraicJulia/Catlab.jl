@@ -232,7 +232,7 @@ function parse_functor(C::Presentation, D::Presentation, body::Expr; kw...)
   parse_functor(FinCat(C), FinCat(D), body; kw...)
 end
 
-function parse_ob_hom_maps(C::FinCat, body::Expr)
+function parse_ob_hom_maps(C::FinCat, body::Expr; allow_missing::Bool=false)
   assignments = Dict{Symbol,Union{Expr,Symbol}}()
   assign(lhs, rhs) = if haskey(assignments, lhs)
     error("Left-hand side $lhs assigned twice in $body")
@@ -252,12 +252,12 @@ function parse_ob_hom_maps(C::FinCat, body::Expr)
   end
   ob_rhs = make_map(ob_generators(C)) do x
     get(assignments, ob_name(C, x)) do
-      error("Object $(ob_name(C, x)) is not assigned")
+      allow_missing ? missing : error("Object $(ob_name(C,x)) is not assigned")
     end
   end
   hom_rhs = make_map(hom_generators(C)) do f
     get(assignments, hom_name(C, f)) do
-      error("Morphism $(hom_name(C, f)) is not assigned")
+      allow_missing ? missing : error("Morphism $(hom_name(C,f)) is not assigned")
     end
   end
   (ob_rhs, hom_rhs)
@@ -362,7 +362,7 @@ function parse_diagram(C::Cat, body::Expr; preprocess::Bool=true)
   J = isempty(eqs) ? FinCat(g) : FinCat(g, eqs)
   F = FinDomFunctor(F_ob, F_hom, J, C)
   is_functorial(F, check_equations=false) ||
-    error("@diagram macro defined diagram that is not functorial: $expr")
+    error("@diagram macro defined diagram that is not functorial: $body")
   return F
 end
 function parse_diagram(pres::Presentation, body::Expr; kw...)
@@ -384,8 +384,6 @@ end
 const ConjQuery{C<:FinCat} = Diagram{op,C}
 const GlueQuery{C<:FinCat} = Diagram{id,C}
 const GlueConjQuery{C<:FinCat} = Diagram{id,<:TypeCat{<:Diagram{op,C}}}
-
-const limit_ops = (Symbol("@limit"), Symbol("@join"))
 
 """ Define a data migration query.
 
@@ -409,25 +407,17 @@ function parse_migration(src_schema::Presentation, body::Expr;
   end
   for expr in body.args
     @match expr begin
-      # x => y
-      Expr(:call, :(=>), x::Symbol, y::Symbol) => begin
+      # x => ...
+      Expr(:call, :(=>), x::Symbol, rhs) => begin
         add_vertex!(g, vname=x)
-        push!(F_ob, UnitQuery(C, y))
-      end
-      # x => @limit ...
-      # x => @join ...
-      Expr(:call, :(=>), x::Symbol, Expr(:macrocall, form, args...)) &&
-          if form ∈ limit_ops end => begin
-        D = parse_diagram(C, last(args), preprocess=false)
-        add_vertex!(g, vname=x)
-        push!(F_ob, Diagram{op}(D))
+        push!(F_ob, parse_query(C, rhs, preprocess=false))
       end
       # (f: x → x′) => ...
       Expr(:call, :(=>), Expr(:call, :(:), f::Symbol,
-                              Expr(:call, :(→), x::Symbol, x′::Symbol)), block) => begin
+                              Expr(:call, :(→), x::Symbol, x′::Symbol)), rhs) => begin
         e = parse_edge!(g, x, x′, ename=f)
         v, v′ = src(g, e), tgt(g, e)
-        push!(F_hom, parse_query_hom(C, block, F_ob[v], F_ob[v′]))
+        push!(F_hom, parse_query_hom(C, rhs, F_ob[v], F_ob[v′]))
       end
       # f == g
       Expr(:call, :(==), lhs, rhs) => push!(eqs, parse_equation(g, lhs, rhs))
@@ -436,7 +426,7 @@ function parse_migration(src_schema::Presentation, body::Expr;
     end
   end
   J = isempty(eqs) ? FinCat(g) : FinCat(g, eqs)
-  make_migration(F_ob, F_hom, J, C)
+  convert_migration_functor(F_ob, F_hom, J, C)
 end
 
 function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
@@ -444,28 +434,23 @@ function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
   D, C = FinCat(tgt_schema), FinCat(src_schema)
   ob_rhs, hom_rhs = parse_ob_hom_maps(D, body)
   F_ob = mapvals(ob_rhs) do expr
-    @match expr begin
-      x::Symbol => UnitQuery(C, x)
-      Expr(:macrocall, form, args...) && if form ∈ limit_ops end =>
-        Diagram{op}(parse_diagram(C, last(args), preprocess=preprocess))
-      _ => error("@migration macro cannot parse object assignment $expr")
-    end
+    parse_query(C, expr, preprocess=preprocess)
   end
   F_hom = mapvals(hom_rhs, keys=true) do f, expr
     parse_query_hom(C, expr, F_ob[dom(D,f)], F_ob[codom(D,f)])
   end
-  make_migration(F_ob, F_hom, D, C)
+  convert_migration_functor(F_ob, F_hom, D, C)
 end
 
-function make_migration(F_ob, F_hom, D::FinCat, C::FinCat)
-  query_type = mapreduce(typeof, promote_query_type, values(F_ob),
-                         init=UnitQuery{typeof(C)})
-  F_ob = mapvals(x -> convert_query(query_type, x), F_ob)
-  F_hom = mapvals(f -> convert_query_hom(query_type, f), F_hom)
-  if query_type <: UnitQuery
-    FinFunctor(mapvals(x -> x.ob, F_ob), mapvals(f -> f.hom, F_hom), D, C)
-  else
-    FinDomFunctor(F_ob, F_hom, D)
+""" Parse expression defining a query.
+"""
+function parse_query(C::Cat, expr; kw...)
+  @match expr begin
+    x::Symbol => UnitQuery(C, x)
+    Expr(:macrocall, form, args...) &&
+        if form ∈ (Symbol("@limit"), Symbol("@join")) end =>
+      Diagram{op}(parse_diagram(C, last(args); kw...))
+    _ => error("@migration macro cannot parse query $expr")
   end
 end
 
@@ -477,9 +462,15 @@ function parse_query_hom(C::Cat, expr, d::ConjQuery, d′::ConjQuery)
   DiagramHom{op}(mapvals(expr -> parse_query_ob_rhs(C, J, expr), ob_rhs),
                  mapvals(expr -> parse_hom(J, expr), hom_rhs), d, d′)
 end
+function parse_query_hom(C::Cat, expr, c::UnitQuery, d′::ConjQuery)
+  d = munit(Diagram{op}, C, c.ob)
+  ob_rhs, hom_rhs = parse_ob_hom_maps(shape(d′), expr, allow_missing=true)
+  DiagramHom{op}(mapvals(f -> ismissing(f) ? 1 : Pair(1, parse_hom(C,f)), ob_rhs),
+                 mapvals(::Missing -> 1, hom_rhs), d, d′)
+end
 function parse_query_hom(C::Cat, expr, d::ConjQuery, c′::UnitQuery)
-  DiagramHom{op}(SVector(parse_query_ob_rhs(C, shape(d), expr)),
-                 d, munit(Diagram{op}, C, c′.ob))
+  d′ = munit(Diagram{op}, C, c′.ob)
+  DiagramHom{op}(SVector(parse_query_ob_rhs(C, shape(d), expr)), d, d′)
 end
 function parse_query_hom(C::Cat, expr, ::UnitQuery, ::UnitQuery)
   UnitQueryHom(C, parse_hom(C, expr))
@@ -498,6 +489,18 @@ end
 
 # Query promotion
 #----------------
+
+function convert_migration_functor(F_ob, F_hom, D::FinCat, C::FinCat)
+  query_type = mapreduce(typeof, promote_query_type, values(F_ob),
+                         init=UnitQuery{typeof(C)})
+  F_ob = mapvals(x -> convert_query(query_type, x), F_ob)
+  F_hom = mapvals(f -> convert_query_hom(query_type, f), F_hom)
+  if query_type <: UnitQuery
+    FinFunctor(mapvals(x -> x.ob, F_ob), mapvals(f -> f.hom, F_hom), D, C)
+  else
+    FinDomFunctor(F_ob, F_hom, D)
+  end
+end
 
 promote_query_rule(::Type, ::Type) = Union{}
 promote_query_rule(::Type{<:ConjQuery{C}},
