@@ -81,17 +81,23 @@ F = FinDomFunctor([FinSet(2), FinSet(3)], [f,g], C)
 @test ob_map(F, 1) == FinSet(2)
 @test hom_map(F, 2) == g
 
-# `FreeDiagrams` interop.
-diagram = FreeDiagram(ParallelPair(f, g))
-@test FreeDiagram(F) == diagram
-@test FinDomFunctor(diagram) == F
-
 # Diagram interface.
 @test diagram_type(F) <: Tuple{FinSet{Int},FinFunction{Int}}
 @test cone_objects(F) == [FinSet(2), FinSet(3)]
 @test cocone_objects(F) == [FinSet(2), FinSet(3)]
 @test ob(limit(F)) == FinSet(1)
 @test ob(colimit(F)) == FinSet(2)
+
+# `FreeDiagrams` interop.
+diagram = FreeDiagram(ParallelPair(f, g))
+@test FreeDiagram(F) == diagram
+F = FinDomFunctor(diagram)
+@test dom(F) isa FinCat
+@test codom(F) isa TypeCat{<:FinSet{Int},<:FinFunction{Int}}
+@test ob_map(F, 1) == FinSet(2)
+@test hom_map(F, 2) == g
+@test collect_ob(F) == [FinSet(2), FinSet(3)]
+@test collect_hom(F) == [f, g]
 
 # Commutative square as natural transformation.
 C = FinCat(path_graph(Graph, 2))

@@ -394,14 +394,25 @@ function FreeDiagram(F::FinDomFunctor{<:FreeCatGraph,<:TypeCat{Ob,Hom}}) where {
   diagram
 end
 
-function FinDomFunctor(diagram::FreeDiagram)
-  g = Graph()
-  copy_parts!(g, diagram)
-  FinDomFunctor(ob(diagram), hom(diagram), FinCat(g))
-end
-
 limit(F::FinDomFunctor) = limit(FreeDiagram(F))
 colimit(F::FinDomFunctor) = colimit(FreeDiagram(F))
+
+""" Wrapper type to interpret `FreeDiagram` as a `FinDomFunctor`.
+"""
+@auto_hash_equals struct FreeDiagramFunctor{Ob,Hom} <:
+    FinDomFunctor{FreeCatGraph{FreeDiagram{Ob,Hom}},TypeCat{Ob,Hom}}
+  diagram::FreeDiagram{Ob,Hom}
+end
+FinDomFunctor(diagram::FreeDiagram) = FreeDiagramFunctor(diagram)
+
+dom(F::FreeDiagramFunctor) = FreeCatGraph(F.diagram)
+codom(F::FreeDiagramFunctor{Ob,Hom}) where {Ob,Hom} = TypeCat{Ob,Hom}()
+
+Categories.do_ob_map(F::FreeDiagramFunctor, x) = ob(F.diagram, x)
+Categories.do_hom_map(F::FreeDiagramFunctor, f) = hom(F.diagram, f)
+
+collect_ob(F::FreeDiagramFunctor) = ob(F.diagram)
+collect_hom(F::FreeDiagramFunctor) = hom(F.diagram)
 
 # Natural transformations
 #########################
