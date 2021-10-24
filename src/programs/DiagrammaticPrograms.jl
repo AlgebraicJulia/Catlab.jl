@@ -82,7 +82,7 @@ end
 function parse_graph(G::Type, body::Expr; preprocess::Bool=true)
   g = G()
   if preprocess
-    body = preprocess_expr!(body)
+    body = reparse_arrows(body)
   end
   for expr in body.args
     @match expr begin
@@ -98,6 +98,7 @@ function parse_graph(G::Type, body::Expr; preprocess::Bool=true)
       # (e, f, ...) : u → v
       Expr(:call, (:), Expr(:tuple, es...), Expr(:call, :(→), u::Symbol, v::Symbol)) =>
         for e in es; parse_edge!(g, u, v, ename=e) end
+      ::LineNumberNode => nothing
       _ => error("@graph macro cannot parse line: $expr")
     end
   end
@@ -113,9 +114,6 @@ function parse_edge!(g, s::Symbol, t::Symbol;
   return e
 end
 
-function preprocess_expr!(expr)
-  expr |> Base.remove_linenums! |> reparse_arrows
-end
 function reparse_arrows(expr)
   # `f : x → y` is parsed by Julia as `(f : x) → y`, not `f : (x → y)`.
   @match expr begin
@@ -155,7 +153,7 @@ end
 function parse_category(G::Type, body::Expr; preprocess::Bool=true)
   g, eqs = G(), Pair[]
   if preprocess
-    body = preprocess_expr!(body)
+    body = reparse_arrows(body)
   end
   for expr in body.args
     @match expr begin
@@ -171,6 +169,7 @@ function parse_category(G::Type, body::Expr; preprocess::Bool=true)
         for e in es; parse_edge!(g, u, v, ename=e) end
       # f == g
       Expr(:call, :(==), lhs, rhs) => push!(eqs, parse_path_equation(g, lhs, rhs))
+      ::LineNumberNode => nothing
       _ => error("@fincat macro cannot parse line: $expr")
     end
   end
@@ -327,7 +326,7 @@ function parse_diagram(C::Cat, body::Expr; preprocess::Bool=true)
   g, eqs = NamedGraph{Symbol}(), Pair[]
   F_ob, F_hom = [], []
   if preprocess
-    body = preprocess_expr!(body)
+    body = reparse_arrows(body)
   end
   for expr in body.args
     @match expr begin
@@ -356,6 +355,7 @@ function parse_diagram(C::Cat, body::Expr; preprocess::Bool=true)
       end
       # f == g
       Expr(:call, :(==), lhs, rhs) => push!(eqs, parse_path_equation(g, lhs, rhs))
+      ::LineNumberNode => nothing
       _ => error("@diagram macro cannot parse line: $expr")
     end
   end
@@ -385,66 +385,88 @@ const ConjQuery{C<:FinCat} = Diagram{op,C}
 const GlueQuery{C<:FinCat} = Diagram{id,C}
 const GlueConjQuery{C<:FinCat} = Diagram{id,<:TypeCat{<:Diagram{op,C}}}
 
+const limit_ops = (Symbol("@limit"), Symbol("@join"))
+
 """ Define a data migration query.
 
 This macro provides a DSL to specify a data migration query from a ``C``-set to
 a ``D``-set for arbitrary schemas ``C`` and ``D``.
 """
 macro migration(src_schema, body)
-  :(parse_migration($(Meta.quot(body)), $(esc(src_schema))))
+  :(parse_migration($(esc(src_schema)), $(Meta.quot(body))))
 end
-#macro migration(tgt_schema, src_schema, body)
-#  :(parse_migration($(Meta.quot(body)), $(esc(src_schema)), $(esc(tgt_schema))))
-#end
+macro migration(tgt_schema, src_schema, body)
+  :(parse_migration($(esc(tgt_schema)), $(esc(src_schema)), $(Meta.quot(body))))
+end
 
-function parse_migration(body::Expr, src_schema::Presentation;
+function parse_migration(src_schema::Presentation, body::Expr;
                          preprocess::Bool=true)
-  src_schema = FinCat(src_schema)
-  tgt_graph, tgt_eqs = NamedGraph{Symbol}(), Pair[]
+  C = FinCat(src_schema)
+  g, eqs = NamedGraph{Symbol}(), Pair[]
   F_ob, F_hom = Union{UnitQuery,Diagram}[], Union{UnitQueryHom,DiagramHom}[]
   if preprocess
-    body = preprocess_expr!(body)
+    body = reparse_arrows(body)
   end
   for expr in body.args
     @match expr begin
       # x => y
       Expr(:call, :(=>), x::Symbol, y::Symbol) => begin
-        add_vertex!(tgt_graph, vname=x)
-        push!(F_ob, UnitQuery(src_schema, y))
+        add_vertex!(g, vname=x)
+        push!(F_ob, UnitQuery(C, y))
       end
       # x => @limit ...
       # x => @join ...
       Expr(:call, :(=>), x::Symbol, Expr(:macrocall, form, args...)) &&
-          if form ∈ (Symbol("@limit"), Symbol("@join")) end => begin
-        D = parse_diagram(src_schema, last(args), preprocess=false)
-        add_vertex!(tgt_graph, vname=x)
+          if form ∈ limit_ops end => begin
+        D = parse_diagram(C, last(args), preprocess=false)
+        add_vertex!(g, vname=x)
         push!(F_ob, Diagram{op}(D))
       end
       # (f: x → x′) => ...
       Expr(:call, :(=>), Expr(:call, :(:), f::Symbol,
                               Expr(:call, :(→), x::Symbol, x′::Symbol)), block) => begin
-        e = parse_edge!(tgt_graph, x, x′, ename=f)
-        v, v′ = src(tgt_graph, e), tgt(tgt_graph, e)
-        push!(F_hom, parse_query_hom(src_schema, block, F_ob[v], F_ob[v′]))
+        e = parse_edge!(g, x, x′, ename=f)
+        v, v′ = src(g, e), tgt(g, e)
+        push!(F_hom, parse_query_hom(C, block, F_ob[v], F_ob[v′]))
       end
       # f == g
-      Expr(:call, :(==), lhs, rhs) => push!(tgt_eqs, parse_equation(g, lhs, rhs))
+      Expr(:call, :(==), lhs, rhs) => push!(eqs, parse_equation(g, lhs, rhs))
+      ::LineNumberNode => nothing
       _ => error("@migration macro cannot parse line: $expr")
     end
   end
-  query_type = mapreduce(typeof, promote_query_type, F_ob,
-                         init=UnitQuery{typeof(src_schema)})
-  F_ob = map(x -> convert_query(query_type, x), F_ob)
-  F_hom = map(f -> convert_query_hom(query_type, f), F_hom)
-  J = isempty(tgt_eqs) ? FinCat(tgt_graph) : FinCat(tgt_graph, tgt_eqs)
-  F = if query_type <: UnitQuery
-    FinDomFunctor(map(x -> x.ob, F_ob), map(f -> f.hom, F_hom), J, src_schema)
-  else
-    FinDomFunctor(F_ob, F_hom, J)
+  J = isempty(eqs) ? FinCat(g) : FinCat(g, eqs)
+  make_migration(F_ob, F_hom, J, C)
+end
+
+function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
+                         body::Expr; preprocess::Bool=true)
+  D, C = FinCat(tgt_schema), FinCat(src_schema)
+  ob_rhs, hom_rhs = parse_ob_hom_maps(D, body)
+  F_ob = mapvals(ob_rhs) do expr
+    @match expr begin
+      x::Symbol => UnitQuery(C, x)
+      Expr(:macrocall, form, args...) && if form ∈ limit_ops end =>
+        Diagram{op}(parse_diagram(C, last(args), preprocess=preprocess))
+      _ => error("@migration macro cannot parse object assignment $expr")
+    end
   end
-  is_functorial(F, check_equations=false) ||
-    error("@migration macro defined diagram that is not functorial: $F")
-  return F
+  F_hom = mapvals(hom_rhs, keys=true) do f, expr
+    parse_query_hom(C, expr, F_ob[dom(D,f)], F_ob[codom(D,f)])
+  end
+  make_migration(F_ob, F_hom, D, C)
+end
+
+function make_migration(F_ob, F_hom, D::FinCat, C::FinCat)
+  query_type = mapreduce(typeof, promote_query_type, values(F_ob),
+                         init=UnitQuery{typeof(C)})
+  F_ob = mapvals(x -> convert_query(query_type, x), F_ob)
+  F_hom = mapvals(f -> convert_query_hom(query_type, f), F_hom)
+  if query_type <: UnitQuery
+    FinFunctor(mapvals(x -> x.ob, F_ob), mapvals(f -> f.hom, F_hom), D, C)
+  else
+    FinDomFunctor(F_ob, F_hom, D)
+  end
 end
 
 """ Parse expression defining a morphism of queries.
