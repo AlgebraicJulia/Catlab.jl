@@ -4,7 +4,7 @@ using Test
 using Catlab, Catlab.Graphs, Catlab.CategoricalAlgebra
 using Catlab.Programs.DiagrammaticPrograms
 using Catlab.Programs.DiagrammaticPrograms: NamedGraph, MaybeNamedGraph
-using Catlab.Graphs.BasicGraphs: TheoryGraph
+using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryReflexiveGraph
 using Catlab.WiringDiagrams.CPortGraphs: ThCPortGraph
 
 @present TheoryDDS(FreeSchema) begin
@@ -73,6 +73,7 @@ end
 # Functors
 ##########
 
+# Underlying graph of circular port graph.
 F = @finfunctor TheoryGraph ThCPortGraph begin
   V => Box
   E => Wire
@@ -141,7 +142,18 @@ end
 # Pullback migration
 #-------------------
 
-# Reverse edge directions.
+# Graph with reversed edges.
+F = @migration TheoryGraph TheoryGraph begin
+  V => V
+  E => E
+  src => tgt
+  tgt => src
+end
+@test F == FinFunctor(Dict(:V => :V, :E => :E),
+                      Dict(:src => :tgt, :tgt => :src),
+                      TheoryGraph, TheoryGraph)
+
+# Variant where target schema is not given.
 F = @migration TheoryGraph begin
   E => E
   V => V
@@ -156,7 +168,7 @@ J = FinCat(parallel_arrows(NamedGraph{Symbol}, 2,
 #----------------------
 
 # Graph with edges that are paths of length 2.
-F = @migration TheoryGraph begin
+F = @migration TheoryGraph TheoryGraph begin
   V => V
   E => @join begin
     v::V
@@ -164,17 +176,17 @@ F = @migration TheoryGraph begin
     (t: e₁ → v)::tgt
     (s: e₂ → v)::src
   end
-  (src: E → V) => e₁ ⋅ src
-  (tgt: E → V) => e₂ ⋅ tgt
+  src => e₁ ⋅ src
+  tgt => e₂ ⋅ tgt
 end
-F_E = diagram(ob_map(F, 2))
+F_E = diagram(ob_map(F, :E))
 @test nameof.(collect_ob(F_E)) == [:V, :E, :E]
 @test nameof.(collect_hom(F_E)) == [:tgt, :src]
-F_tgt = hom_map(F, 2)
+F_tgt = hom_map(F, :tgt)
 @test ob_map(F_tgt, 1) == (3, TheoryGraph[:tgt])
 
 # Reflexive graph from graph.
-F = @migration TheoryGraph begin
+F = @migration TheoryReflexiveGraph TheoryGraph begin
   V => @join begin
     v::V
     ℓ::E
@@ -191,20 +203,20 @@ F = @migration TheoryGraph begin
     (s: e → v₁)::src
     (t: e → v₂)::tgt
   end
-  (refl: V → E) => begin
+  refl => begin
     (v₁, v₂) => v
     (ℓ₁, ℓ₂, e) => ℓ
     (s₁, s₂, s) => s
     (t₁, t₂, t) => t
   end
-  (src: E → V) => begin
+  src => begin
     v => v₁; ℓ => ℓ₁; s => s₁; t => t₁
   end
-  (tgt: E → V) => begin
+  tgt => begin
     v => v₂; ℓ => ℓ₂; s => s₂; t => t₂
   end
 end
-F_tgt = hom_map(F, 3)
+F_tgt = hom_map(F, :tgt)
 @test ob_map(F_tgt, 1) == (2, id(TheoryGraph[:V]))
 @test hom_map(F_tgt, 2) |> edges |> only == 4
 
