@@ -10,8 +10,8 @@ and only if the graph is DAG, which is a fairly special condition. This usage of
 finitely presented are equivalent.
 """
 module FinCats
-export FinCat, Path, ob_generators, hom_generators, equations, is_free,
-  graph, edges, src, tgt, presentation,
+export FinCat, Path, ob_generators, hom_generators, equations, is_discrete,
+  is_free, graph, edges, src, tgt, presentation,
   FinFunctor, FinDomFunctor, is_functorial, collect_ob, collect_hom,
   FinTransformation, components, is_natural
 
@@ -53,6 +53,12 @@ function ob_generators end
 """
 function hom_generators end
 
+""" Is the category discrete?
+
+A category is *discrete* if it is has no non-identity morphisms.
+"""
+is_discrete(C::FinCat) = isempty(hom_generators(C))
+
 """ Is the category freely generated?
 """
 is_free(C::FinCat) = isempty(equations(C))
@@ -75,7 +81,8 @@ DiscreteCat(n::Integer) = DiscreteCat(FinSet(n))
 FinCat(s::Union{FinSet,Integer}) = DiscreteCat(s)
 
 ob_generators(C::DiscreteCat) = C.set
-hom_generators(C::DiscreteCat) = ()
+hom_generators(::DiscreteCat) = ()
+is_discrete(::DiscreteCat) = true
 
 dom(C::DiscreteCat{T}, f) where T = f::T
 codom(C::DiscreteCat{T}, f) where T = f::T
@@ -240,6 +247,10 @@ const FinDomFunctor{Dom<:FinCat,Codom<:Cat} = Functor{Dom,Codom}
 
 FinDomFunctor(maps::NamedTuple{(:V,:E)}, dom::FinCatGraph, codom::Cat) =
   FinDomFunctor(maps.V, maps.E, dom, codom)
+FinDomFunctor(ob_map, dom::DiscreteCat, codom::Cat{Ob,Hom}) where {Ob,Hom} =
+  FinDomFunctor(ob_map, empty(ob_map, Hom), dom, codom)
+FinDomFunctor(ob_map, ::Nothing, dom::DiscreteCat, codom::Cat) =
+  FinDomFunctor(ob_map, dom, codom)
 
 # Diagram interface. See `FreeDiagrams` module.
 diagram_type(F::FinDomFunctor{Dom,Codom}) where {Ob,Hom,Dom,Codom<:Cat{Ob,Hom}} =
