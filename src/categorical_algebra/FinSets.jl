@@ -14,9 +14,11 @@ using StaticArrays: StaticVector, SVector, SizedVector, similar_type
 import Tables
 
 @reexport using ..Sets
-using ...GAT, ...Theories
-using ...CSetDataStructures, ...Graphs, ..FreeDiagrams, ..Limits, ..Subobjects
-import ...Theories: dom, codom, ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
+using ...GAT, ...Theories, ...CSetDataStructures, ...Graphs
+using ..FinCats, ..FreeDiagrams, ..Limits, ..Subobjects
+import ...Theories: Ob, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
+import ..Categories: ob, hom, dom, codom, compose, id, ob_map, hom_map
+import ..FinCats: FinDomFunctor, ob_generators, hom_generators, is_discrete
 import ..Limits: limit, colimit, universal, pushout_complement,
   can_pushout_complement
 import ..Subobjects: Subobject, SubobjectLattice
@@ -83,6 +85,38 @@ FinSet(nt::NamedTuple) = TabularSet(nt)
 
 Base.iterate(set::TabularSet, args...) = iterate(Tables.rows(set.table), args...)
 Base.length(set::TabularSet) = Tables.rowcount(set.table)
+
+# Discrete categories
+#--------------------
+
+""" Discrete category on a finite set.
+
+The only morphisms in a discrete category are the identities, which are here
+identified with the objects.
+"""
+@auto_hash_equals struct DiscreteCat{Ob,S<:FinSet{<:Any,Ob}} <: FinCat{Ob,Ob}
+  set::S
+end
+DiscreteCat(n::Integer) = DiscreteCat(FinSet(n))
+
+FinCat(s::Union{FinSet,Integer}) = DiscreteCat(s)
+
+ob_generators(C::DiscreteCat) = C.set
+hom_generators(::DiscreteCat) = ()
+is_discrete(::DiscreteCat) = true
+
+dom(C::DiscreteCat{T}, f) where T = f::T
+codom(C::DiscreteCat{T}, f) where T = f::T
+id(C::DiscreteCat{T}, x) where T = x::T
+compose(C::DiscreteCat{T}, f, g) where T = (f::T == g::T) ? f :
+  error("Nontrivial composite in discrete category: $f != $g")
+
+FinDomFunctor(ob_map, dom::DiscreteCat, codom::Cat{Ob,Hom}) where {Ob,Hom} =
+  FinDomFunctor(ob_map, empty(ob_map, Hom), dom, codom)
+FinDomFunctor(ob_map, ::Nothing, dom::DiscreteCat, codom::Cat) =
+  FinDomFunctor(ob_map, dom, codom)
+
+hom_map(F::FinDomFunctor{<:DiscreteCat}, x) = id(codom(F), ob_map(F, x))
 
 # Finite functions
 ##################
@@ -186,6 +220,9 @@ Sets.do_compose(f::FinFunctionVector, g::FinDomFunctionVector) =
 # Note: Cartesian monoidal structure is implemented generically for Set but
 # cocartesian only for FinSet.
 @cocartesian_monoidal_instance FinSet FinFunction
+
+Ob(C::FinCat{Int}) = FinSet(length(ob_generators(C)))
+Ob(F::FinCats.FinDomFunctorVector) = FinDomFunction(F.ob_map, Ob(codom(F)))
 
 # Indexed functions
 #------------------

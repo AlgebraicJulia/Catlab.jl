@@ -16,14 +16,15 @@ using Reexport
 using Tables
 
 @reexport using ...CSetDataStructures
-using ...GAT, ..FreeDiagrams, ..Limits, ..Subobjects, ..Sets, ..FinSets
+using ...GAT, ...Present
+using ..FreeDiagrams, ..Limits, ..Subobjects, ..FinSets, ..FinCats
 import ..Limits: limit, colimit, universal, pushout_complement,
   can_pushout_complement
 import ..Subobjects: Subobject, SubobjectBiHeytingAlgebra,
   implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..Sets: TypeSet
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate
-import ..FinCats: components, is_natural
+import ..FinCats: FinDomFunctor, components, is_natural
 using ...Theories: Category, SchemaDescType, CSetSchemaDescType,
   attrtype, attrtype_num, attr, adom, acodom, acodom_nums, roottype
 import ...Theories: dom, codom, compose, ⋅, id,
@@ -90,6 +91,16 @@ end
 function TypeSet(X::ACS, type::Symbol) where {S, ACS <: StructACSet{S}}
   i = attrtype_num(S, type)
   TypeSet(ACS.parameters[i])
+end
+
+# Categories interop
+####################
+
+function FinDomFunctor(pres::Presentation, X::ACSet)
+  ob_map = Dict(c => FinSet(X, nameof(c)) for c in generators(pres, :Ob))
+  hom_map = Dict(f => FinFunction(X, nameof(f)) for f in generators(pres, :Hom))
+  FinDomFunctor(ob_map, hom_map,
+                FinCat(pres), TypeCat(FinSet{Int}, FinFunction{Int}))
 end
 
 # C-set transformations

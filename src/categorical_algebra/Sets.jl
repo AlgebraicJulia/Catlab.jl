@@ -6,14 +6,14 @@ type to view Julia types as sets ([`TypeSet`](@ref)). Extensive support for
 finite sets is provided by another module, [`FinSets`](@ref).
 """
 module Sets
-export SetOb, TypeSet, PredicatedSet, SetFunction, ConstantFunction
+export SetOb, TypeSet, PredicatedSet, SetFunction, ConstantFunction, Ob
 
 using AutoHashEquals
 using FunctionWrappers: FunctionWrapper
 
-using ...GAT, ..FreeDiagrams, ..Limits
+using ...GAT, ..Categories, ..FreeDiagrams, ..Limits
 using ...Theories: Category
-import ...Theories: dom, codom, id, compose, ⋅, ∘
+import ...Theories: Ob, dom, codom, id, compose, ⋅, ∘
 import ..Limits: limit, universal
 
 # Data types
@@ -177,6 +177,12 @@ do_compose(c::ConstantFunction, d::ConstantFunction) =
   ConstantFunction(d.value, dom(c), codom(d))
 
 @cartesian_monoidal_instance SetOb SetFunction
+
+""" Forgetful functor Ob: Cat → Set.
+
+Sends a category to its set of objects and a functor to its object map.
+"""
+Ob(::TypeCat{T}) where T = TypeSet{T}()
 
 # Limits
 ########
