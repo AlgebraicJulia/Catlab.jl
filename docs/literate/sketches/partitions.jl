@@ -18,34 +18,6 @@ PrettyTables.pretty_table(f::FinFunction, name::Symbol=:f) =
   pretty_table(OrderedDict(:x=>1:length(dom(f)), Symbol("$(name)(x)")=>collect(f)))
 using LaTeXStrings
 
-Quiversty = L"""
-% contents of quiver.sty
-% `tikz-cd` is necessary to draw commutative diagrams.
-\RequirePackage{tikz-cd}
-% `amssymb` is necessary for `\lrcorner` and `\ulcorner`.
-\RequirePackage{amssymb}
-% `calc` is necessary to draw curved arrows.
-\usetikzlibrary{calc}
-% `pathmorphing` is necessary to draw squiggly arrows.
-\usetikzlibrary{decorations.pathmorphing}
-
-% A TikZ style for curved arrows of a fixed height, due to AndréC.
-\tikzset{curve/.style={settings={#1},to path={(\tikztostart)
-    .. controls ($(\tikztostart)!\pv{pos}!(\tikztotarget)!\pv{height}!270:(\tikztotarget)$)
-    and ($(\tikztostart)!1-\pv{pos}!(\tikztotarget)!\pv{height}!270:(\tikztotarget)$)
-    .. (\tikztotarget)\tikztonodes}},
-    settings/.code={\tikzset{quiver/.cd,#1}
-        \def\pv##1{\pgfkeysvalueof{/tikz/quiver/##1}}},
-    quiver/.cd,pos/.initial=0.35,height/.initial=0}
-
-% TikZ arrowhead/tail styles.
-\tikzset{tail reversed/.code={\pgfsetarrowsstart{tikzcd to}}}
-\tikzset{2tail/.code={\pgfsetarrowsstart{Implies[reversed]}}}
-\tikzset{2tail reversed/.code={\pgfsetarrowsstart{Implies}}}
-% TikZ arrow styles.
-\tikzset{no body/.style={/tikz/dash pattern=on 0 off 1mm}}
-""";
-
 # ## FinSet: the category of Finite Sets
 # In FinSet the objects are sets n = {1...n} and the morphisms are functions between finite sets.
 # You can wrap a plain old Int into a finite set with the FinSet(n::Int) function. These sets will
@@ -102,7 +74,7 @@ A &&& Q \\
 \arrow["g"', two heads, from=1-1, to=3-4]
 """;
 
-TikzCD(triangle, preamble=Quiversty)
+TikzCD(triangle, preamble=TikzCDs.Styles.Quiver)
 
 # Let's take a look at an example:
 
@@ -147,4 +119,4 @@ A &&& Q \\
 \arrow["{f\cdot h\cdot h^\prime = g\cdot h^\prime}"', two heads, from=1-1, to=5-4]
 """;
 
-TikzCD(refinement, preamble=Quiversty)
+TikzCD(refinement, preamble=TikzCDs.Styles.Quiver)
