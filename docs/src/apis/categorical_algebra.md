@@ -44,7 +44,7 @@ The most essential part of the acset machinery is the schema. The schema *parame
 
 - Objects $$X,Y$$ (`(X,Y,Z)::Ob`)
 - Homomorphisms $$f \colon X \to Y$$ (`f :: Hom(X,Y)`), which go from objects to objects
-- Data types $$\mathtt{T}$$ (`T :: Data`)
+- Attribute types $$\mathtt{T}$$ (`T :: AttrType`)
 - Attributes $$a \colon X \to \mathtt{T}$$ (`a :: Attr(X,T)`), which go from objects to data types
 
 For those with a categorical background, a schema is a presentation of a category $$|S|$$ along with a functor $$S$$ from $$|S|$$ to the arrow category $$0 \to 1$$, such that $$S^{-1}(1)$$ is discrete.
