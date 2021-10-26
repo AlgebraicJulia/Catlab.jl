@@ -729,20 +729,23 @@ function pair_all(d::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
   d_paired
 end
 
-function limit(d::FreeDiagram{<:FinSet{Int}})
+limit(d::FreeDiagram{<:FinSet{Int}}) = limit(FinDomFunctor(d))
+
+function limit(F::Functor{<:FinCat{Int},<:TypeCat{<:FinSet{Int}}})
   # Uses the general formula for limits in Set (Leinster, 2014, Basic Category
   # Theory, Example 5.1.22 / Equation 5.16). This method is simple and direct,
   # but extremely inefficient!
-  prod = product(ob(d))
+  J = dom(F)
+  prod = product(map(x -> ob_map(F, x), ob_generators(J)))
   n, πs = length(ob(prod)), legs(prod)
   ι = FinFunction(filter(1:n) do i
-    all(begin
-          s, t, h = src(d,e), tgt(d,e), hom(d,e)
-          h(πs[s](i)) == πs[t](i)
-        end for e in edges(d))
-    end, n)
-  cone = Multispan(dom(ι), [ι⋅πs[i] for i in vertices(d)])
-  FinSetFreeDiagramLimit(d, cone, prod, ι)
+    all(hom_generators(J)) do f
+      s, t, h = dom(J, f), codom(J, f), hom_map(F, f)
+      h(πs[s](i)) == πs[t](i)
+    end
+  end, n)
+  cone = Multispan(dom(ι), map(x -> ι⋅πs[x], ob_generators(J)))
+  FinSetFreeDiagramLimit(F, cone, prod, ι)
 end
 
 function universal(lim::FinSetFreeDiagramLimit, cone::Multispan{<:FinSet{Int}})
@@ -883,21 +886,24 @@ function colimit(d::BipartiteFreeDiagram{<:FinSet{Int}})
   FinSetFreeDiagramColimit(d, cocone, coprod, π)
 end
 
-function colimit(d::FreeDiagram{<:FinSet{Int}})
+colimit(d::FreeDiagram{<:FinSet{Int}}) = colimit(FinDomFunctor(d))
+
+function colimit(F::Functor{<:FinCat{Int},<:TypeCat{<:FinSet{Int}}})
   # Uses the general formula for colimits in Set (Leinster, 2014, Basic Category
   # Theory, Example 5.2.16).
-  coprod = coproduct(ob(d))
+  J = dom(F)
+  coprod = coproduct(map(x -> ob_map(F, x), ob_generators(J)))
   n, ιs = length(ob(coprod)), legs(coprod)
   sets = IntDisjointSets(n)
-  for e in edges(d)
-    s, t, h = src(d,e), tgt(d,e), hom(d,e)
+  for f in hom_generators(J)
+    s, t, h = dom(J, f), codom(J, f), hom_map(F, f)
     for i in dom(h)
       union!(sets, ιs[s](i), ιs[t](h(i)))
     end
   end
   π = quotient_projection(sets)
-  cocone = Multicospan(codom(π), [ ιs[i]⋅π for i in vertices(d) ])
-  FinSetFreeDiagramColimit(d, cocone, coprod, π)
+  cocone = Multicospan(codom(π), map(x -> ιs[x]⋅π, ob_generators(J)))
+  FinSetFreeDiagramColimit(F, cocone, coprod, π)
 end
 
 function universal(colim::FinSetFreeDiagramColimit,
