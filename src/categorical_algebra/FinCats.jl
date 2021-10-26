@@ -24,11 +24,9 @@ using ...GAT, ...Present, ...Syntax
 import ...Present: equations
 using ...Theories: Category, ObExpr, HomExpr
 import ...Theories: dom, codom, id, compose, ⋅, ∘
-using ...CSetDataStructures, ...Graphs, ..FreeDiagrams, ..FinSets
+using ...CSetDataStructures, ...Graphs
 import ...Graphs: edges, src, tgt
-import ..FreeDiagrams: FreeDiagram, diagram_type, cone_objects, cocone_objects
-import ..Limits: limit, colimit
-import ..Categories: Ob, ob, hom, ob_map, hom_map, component
+import ..Categories: ob, hom, ob_map, hom_map, component
 
 # Categories
 ############
@@ -62,33 +60,6 @@ is_discrete(C::FinCat) = isempty(hom_generators(C))
 """ Is the category freely generated?
 """
 is_free(C::FinCat) = isempty(equations(C))
-
-Ob(C::FinCat{Int}) = FinSet(length(ob_generators(C)))
-
-# Discrete categories
-#####################
-
-""" Discrete category on a finite set.
-
-The only morphisms in a discrete category are the identities, which are here
-identified with the objects.
-"""
-@auto_hash_equals struct DiscreteCat{Ob,S<:FinSet{<:Any,Ob}} <: FinCat{Ob,Ob}
-  set::S
-end
-DiscreteCat(n::Integer) = DiscreteCat(FinSet(n))
-
-FinCat(s::Union{FinSet,Integer}) = DiscreteCat(s)
-
-ob_generators(C::DiscreteCat) = C.set
-hom_generators(::DiscreteCat) = ()
-is_discrete(::DiscreteCat) = true
-
-dom(C::DiscreteCat{T}, f) where T = f::T
-codom(C::DiscreteCat{T}, f) where T = f::T
-id(C::DiscreteCat{T}, x) where T = x::T
-compose(C::DiscreteCat{T}, f, g) where T = (f::T == g::T) ? f :
-  error("Nontrivial composite in discrete category: $f != $g")
 
 # Categories on graphs
 ######################
@@ -247,18 +218,6 @@ const FinDomFunctor{Dom<:FinCat,Codom<:Cat} = Functor{Dom,Codom}
 
 FinDomFunctor(maps::NamedTuple{(:V,:E)}, dom::FinCatGraph, codom::Cat) =
   FinDomFunctor(maps.V, maps.E, dom, codom)
-FinDomFunctor(ob_map, dom::DiscreteCat, codom::Cat{Ob,Hom}) where {Ob,Hom} =
-  FinDomFunctor(ob_map, empty(ob_map, Hom), dom, codom)
-FinDomFunctor(ob_map, ::Nothing, dom::DiscreteCat, codom::Cat) =
-  FinDomFunctor(ob_map, dom, codom)
-
-# Diagram interface. See `FreeDiagrams` module.
-diagram_type(F::FinDomFunctor{Dom,Codom}) where {Ob,Hom,Dom,Codom<:Cat{Ob,Hom}} =
-  Tuple{Ob,Hom}
-cone_objects(F::FinDomFunctor) = collect_ob(F)
-cocone_objects(F::FinDomFunctor) = collect_ob(F)
-
-hom_map(F::FinDomFunctor{<:DiscreteCat}, x) = id(codom(F), ob_map(F, x))
 
 function hom_map(F::FinDomFunctor{<:FinCatPathGraph}, path::Path)
   D = codom(F)
@@ -365,54 +324,11 @@ const FinDomFunctorVector{Dom<:FinCat,Codom<:Cat,
 collect_ob(F::FinDomFunctorVector) = F.ob_map
 collect_hom(F::FinDomFunctorVector) = F.hom_map
 
-Ob(F::FinDomFunctorVector) = FinDomFunction(F.ob_map, Ob(codom(F)))
-
 """ Functor with object and morphism maps given as dictionaries.
 """
 const FinDomFunctorDict{Dom<:FinCat,Codom<:Cat,
                         ObMap<:AbstractDict,HomMap<:AbstractDict} =
   FinDomFunctorMap{Dom,Codom,ObMap,HomMap}
-
-# C-set interop
-#--------------
-
-function FinDomFunctor(pres::Presentation, X::ACSet)
-  ob_map = Dict(c => FinSet(X, nameof(c)) for c in generators(pres, :Ob))
-  hom_map = Dict(f => FinFunction(X, nameof(f)) for f in generators(pres, :Hom))
-  FinDomFunctor(ob_map, hom_map,
-                FinCat(pres), TypeCat(FinSet{Int}, FinFunction{Int}))
-end
-
-# Free diagram interop
-#---------------------
-
-function FreeDiagram(F::FinDomFunctor{<:FreeCatGraph,<:TypeCat{Ob,Hom}}) where {Ob,Hom}
-  diagram = FreeDiagram{Ob,Hom}()
-  copy_parts!(diagram, graph(dom(F)))
-  diagram[:ob] = collect_ob(F)
-  diagram[:hom] = collect_hom(F)
-  diagram
-end
-
-limit(F::FinDomFunctor) = limit(FreeDiagram(F))
-colimit(F::FinDomFunctor) = colimit(FreeDiagram(F))
-
-""" Wrapper type to interpret `FreeDiagram` as a `FinDomFunctor`.
-"""
-@auto_hash_equals struct FreeDiagramFunctor{Ob,Hom} <:
-    FinDomFunctor{FreeCatGraph{FreeDiagram{Ob,Hom}},TypeCat{Ob,Hom}}
-  diagram::FreeDiagram{Ob,Hom}
-end
-FinDomFunctor(diagram::FreeDiagram) = FreeDiagramFunctor(diagram)
-
-dom(F::FreeDiagramFunctor) = FreeCatGraph(F.diagram)
-codom(F::FreeDiagramFunctor{Ob,Hom}) where {Ob,Hom} = TypeCat{Ob,Hom}()
-
-Categories.do_ob_map(F::FreeDiagramFunctor, x) = ob(F.diagram, x)
-Categories.do_hom_map(F::FreeDiagramFunctor, f) = hom(F.diagram, f)
-
-collect_ob(F::FreeDiagramFunctor) = ob(F.diagram)
-collect_hom(F::FreeDiagramFunctor) = hom(F.diagram)
 
 # Natural transformations
 #########################

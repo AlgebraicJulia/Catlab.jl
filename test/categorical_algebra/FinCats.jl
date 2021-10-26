@@ -4,28 +4,10 @@ using Test
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
 using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryReflexiveGraph
 
-# Discrete categories
-#####################
-
-C = FinCat(FinSet(3))
-@test C isa FinCat{Int,Int}
-@test is_discrete(C)
-@test collect(ob_generators(C)) == 1:3
-@test isempty(hom_generators(C))
-@test (dom(C, 1), codom(C, 1)) == (1, 1)
-@test (id(C, 2), compose(C, 2, 2)) == (2, 2)
-
-F = FinDomFunctor([FinSet(1), FinSet(3), FinSet(1)],
-                  C, TypeCat(FinSet{Int}, FinFunction{Int}))
-@test ob_map(F, 2) == FinSet(3)
-@test hom_map(F, 2) == id(FinSet(3))
-
 # Categories on graphs
 ######################
 
 # Free categories
-#----------------
-
 g = parallel_arrows(Graph, 3)
 C = FinCat(g)
 @test graph(C) == g
@@ -69,9 +51,7 @@ G = FinFunctor([1,3,5], [[1,2],[3,4]], D, E)
 @test id(C)⋅F == F
 @test F⋅id(D) == F
 
-# Free diagrams
-#--------------
-
+# Functors out free categories.
 C = FinCat(parallel_arrows(Graph, 2))
 f, g = FinFunction([1,3], 3), FinFunction([2,3], 3)
 F = FinDomFunctor([FinSet(2), FinSet(3)], [f,g], C)
@@ -80,24 +60,6 @@ F = FinDomFunctor([FinSet(2), FinSet(3)], [f,g], C)
 @test codom(F) isa TypeCat{<:FinSet{Int},<:FinFunction{Int}}
 @test ob_map(F, 1) == FinSet(2)
 @test hom_map(F, 2) == g
-
-# Diagram interface.
-@test diagram_type(F) <: Tuple{FinSet{Int},FinFunction{Int}}
-@test cone_objects(F) == [FinSet(2), FinSet(3)]
-@test cocone_objects(F) == [FinSet(2), FinSet(3)]
-@test ob(limit(F)) == FinSet(1)
-@test ob(colimit(F)) == FinSet(2)
-
-# `FreeDiagrams` interop.
-diagram = FreeDiagram(ParallelPair(f, g))
-@test FreeDiagram(F) == diagram
-F = FinDomFunctor(diagram)
-@test dom(F) isa FinCat
-@test codom(F) isa TypeCat{<:FinSet{Int},<:FinFunction{Int}}
-@test ob_map(F, 1) == FinSet(2)
-@test hom_map(F, 2) == g
-@test collect_ob(F) == [FinSet(2), FinSet(3)]
-@test collect_hom(F) == [f, g]
 
 # Commutative square as natural transformation.
 C = FinCat(path_graph(Graph, 2))

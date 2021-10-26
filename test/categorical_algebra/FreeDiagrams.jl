@@ -1,17 +1,37 @@
 module TestFreeDiagrams
 using Test
 
-using Catlab.Theories, Catlab.CategoricalAlgebra
+using Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 
 A, B, C, D = Ob(FreeCategory, :A, :B, :C, :D)
 
 # Diagrams of flexible shape
 ############################
 
-# General free diagrams
-#----------------------
+# FinDomFunctors
+#---------------
 
 f, g, h = Hom(:f, A, C), Hom(:g, B, C), Hom(:h, A, B)
+J = FinCat(parallel_arrows(Graph, 2))
+F = FinDomFunctor([A, C], [f, h⋅g], J)
+@test is_functorial(F)
+@test diagram_type(F) <: Tuple{FreeCategory.Ob,FreeCategory.Hom}
+@test cone_objects(F) == [A, C]
+@test cocone_objects(F) == [A, C]
+
+diagram = FreeDiagram(ParallelPair(f, h⋅g))
+@test FreeDiagram(F) == diagram
+F = FinDomFunctor(diagram)
+@test dom(F) isa FinCat
+@test codom(F) isa TypeCat{<:FreeCategory.Ob,<:FreeCategory.Hom}
+@test ob_map(F, 1) == A
+@test hom_map(F, 2) == h⋅g
+@test collect_ob(F) == [A, C]
+@test collect_hom(F) == [f, h⋅g]
+
+# Free diagrams
+#--------------
+
 diagram = FreeDiagram([A,B,C], [(f,1,3),(g,2,3),(h,1,2)])
 @test diagram_type(diagram) <: Tuple{FreeCategory.Ob,FreeCategory.Hom}
 @test ob(diagram) == [A,B,C]
