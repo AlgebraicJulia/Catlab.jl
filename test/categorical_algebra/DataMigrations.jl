@@ -2,6 +2,7 @@ module TestDataMigrations
 using Test
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
+using Catlab.Programs.DiagrammaticPrograms
 using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryWeightedGraph
 using Catlab.Graphs.BipartiteGraphs: TheoryUndirectedBipartiteGraph
 
@@ -76,8 +77,46 @@ idF = FinFunctor(
 )
 @test ldds == LabeledDDS{Int}(ldds, idF)
 
-# Left pushforward data migration
-#################################
+# Conjunctive data migration
+############################
+
+V, E, src, tgt = generators(TheoryGraph)
+
+# TODO: For completeness, test a query that is constructed manually.
+#=
+C = FinCat(TheoryGraph)
+F_V = FinDomFunctor([V], FinCat(1), C)
+F_E = FinDomFunctor(FreeDiagram(Span(tgt, src)), C)
+F = FinDomFunctor(Dict(V => Diagram{op}(F_V),
+                       E => Diagram{op}(F_E)),
+                  Dict(src => DiagramHom{op}([(2, src)], F_E, F_V),
+                       tgt => DiagramHom{op}([(3, tgt)], F_E, F_V)), C)
+=#
+
+F = @migration TheoryGraph TheoryGraph begin
+  V => V
+  E => @join begin
+    v::V
+    (e₁, e₂)::E
+    (t: e₁ → v)::tgt
+    (s: e₂ → v)::src
+  end
+  src => e₁ ⋅ src
+  tgt => e₂ ⋅ tgt
+end
+@test F isa DataMigrations.ConjSchemaMigration
+
+X = path_graph(Graph, 5)
+Y = migrate(X, F)
+@test length(Y(V)) == 5
+@test length(Y(E)) == 3
+@test Y(src)((v=3, e₁=2, e₂=3)) |> only == 2
+@test Y(tgt)((v=3, e₁=2, e₂=3)) |> only == 4
+@test Y(src)((3, 2, 3)) |> only == 2
+@test Y(tgt)((3, 2, 3)) |> only == 4
+
+# Sigma data migration
+######################
 
 V1B, V2B, EB = generators(TheoryUndirectedBipartiteGraph, :Ob)
 srcB, tgtB = generators(TheoryUndirectedBipartiteGraph, :Hom)
