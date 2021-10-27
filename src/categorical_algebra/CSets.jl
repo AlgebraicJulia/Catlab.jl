@@ -22,7 +22,7 @@ import ..Limits: limit, colimit, universal, pushout_complement,
   can_pushout_complement
 import ..Subobjects: Subobject, SubobjectBiHeytingAlgebra,
   implies, ⟹, subtract, \, negate, ¬, non, ~
-import ..Sets: TypeSet
+import ..Sets: SetOb, SetFunction, TypeSet
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate
 import ..FinCats: FinDomFunctor, components, is_natural
 using ...Theories: Category, SchemaDescType, CSetSchemaDescType,
@@ -33,51 +33,95 @@ import ...Theories: dom, codom, compose, ⋅, id,
 # Sets interop
 ##############
 
-""" Create `FinSet` for part of attributed C-set.
+""" Create `SetOb` for object or attribute type of attributed C-set.
+
+For objects, the result is a `FinSet`; for attribute types, a `TypeSet`.
 """
-FinSet(X::StructACSet, type::Symbol) = FinSet{Int,Int}(nparts(X, type))
+@inline SetOb(X::StructACSet, type::Symbol)::SetOb = set_ob(X, Val{type})
 
-""" Create `FinFunction` for part or subpart of attributed C-set.
-
-The subpart must be of kind `Ob`. For indexed subparts, the index is included.
-"""
-FinFunction(X::StructACSet, name::Symbol) = fin_function(X, Val{name})
-
-@generated function fin_function(X::StructACSet{S,Ts,Idxed},
-    ::Type{Val{name}}) where {Ts,S,Idxed,name}
-  if name ∈ ob(S)
-    quote
-      FinFunction(identity, FinSet(X, $(QuoteNode(name))))
-    end
-  elseif name ∈ hom(S)
-    quote
-      FinFunction(subpart(X, $(QuoteNode(name))),
-                  FinSet(X, $(QuoteNode(codom(S, name)))),
-                  index=$(Idxed[name] ? :(X.hom_indices.$name) : false))
-    end
+@generated function set_ob(X::StructACSet{S,Ts},
+                           ::Type{Val{type}}) where {S,Ts,type}
+  if type ∈ ob(S)
+    :(FinSet(X, $(Meta.quot(type))))
+  elseif type ∈ attrtype(S)
+    T = Ts.parameters[attrtype_num(S, type)]
+    :(TypeSet{$T}())
   else
-    throw(ArgumentError("$(repr(name)) not in $(ob(S)) or $(hom(S))"))
+    throw(ArgumentError("$(repr(type)) not in $(ob(S)) or $(attrtype(S))"))
   end
 end
 
-""" Create `FinDomFunction` for part or subpart of attributed C-set.
-
-The codomain is always of type `TypeSet`, regardless of whether the subpart is
-of kind `Ob` or `AttrType`. For indexed subparts, the index is included.
+""" Create `FinSet` for object of attributed C-set.
 """
-FinDomFunction(X::StructACSet, name::Symbol) = fin_dom_function(X, Val{name})
+@inline FinSet(X::StructACSet, type::Symbol) = FinSets.FinSetInt(nparts(X, type))
+
+""" Create `TypeSet` for object or attribute type of attributed C-set.
+"""
+@inline TypeSet(X::StructACSet, type::Symbol)::TypeSet = type_set(X, Val{type})
+
+@generated function type_set(X::StructACSet{S,Ts},
+                             ::Type{Val{type}}) where {S,Ts,type}
+  T = if type ∈ ob(S)
+    Int
+  elseif type ∈ attrtype(S)
+    Ts.parameters[attrtype_num(S, type)]
+  else
+    throw(ArgumentError("$(repr(type)) not in $(ob(S)) or $(attrtype(S))"))
+  end
+  :(TypeSet{$T}())
+end
+
+""" Create `SetFunction` for morphism or attribute of attributed C-set.
+
+For morphisms, the result is a `FinFunction`; for attributes, a
+`FinDomFunction`.
+"""
+@inline SetFunction(X::StructACSet, name::Symbol)::SetFunction =
+  set_function(X, Val{name})
+
+@generated function set_function(X::StructACSet{S,Ts,Idxed},
+                                 ::Type{Val{name}}) where {S,Ts,Idxed,name}
+  if name ∈ ob(S) || name ∈ attrtype(S)
+    :(SetFunction(identity, SetOb(X, $(Meta.quot(name)))))
+  elseif name ∈ hom(S)
+    quote
+      FinFunction(subpart(X, $(Meta.quot(name))),
+                  FinSet(X, $(Meta.quot(codom(S, name)))),
+                  index=$(Idxed[name] ? :(X.hom_indices.$name) : false))
+    end
+  elseif name ∈ attr(S)
+    :(FinDomFunction(X, $(Meta.quot(name))))
+  else
+    throw(ArgumentError("$(repr(name)) does not belong to schema $S"))
+  end
+end
+
+""" Create `FinFunction` for morphism of attributed C-set.
+
+Indices are included whenever they exist.
+"""
+@inline FinFunction(X::StructACSet, name::Symbol)::FinFunction =
+  set_function(X, Val{name})
+
+""" Create `FinDomFunction` for morphism or attribute of attributed C-set.
+
+Indices are included whenever they exist. Unlike the `FinFunction` constructor,
+the codomain of the result is always of type `TypeSet`.
+"""
+@inline FinDomFunction(X::StructACSet, name::Symbol)::FinDomFunction =
+  fin_dom_function(X, Val{name})
 
 @generated function fin_dom_function(X::StructACSet{S,Ts,Idxed},
     ::Type{Val{name}}) where {S,Ts,Idxed,name}
   if name ∈ ob(S)
     quote
-      n = nparts(X, $(QuoteNode(name)))
+      n = nparts(X, $(Meta.quot(name)))
       FinDomFunction(1:n, FinSet(n), TypeSet{Int}())
     end
   elseif name ∈ hom(S) || name ∈ attr(S)
     index_name = name ∈ hom(S) ? :hom_indices : :attr_indices
     quote
-      FinDomFunction(subpart(X, $(QuoteNode(name))),
+      FinDomFunction(subpart(X, $(Meta.quot(name))),
                      index=$(Idxed[name] ? :(X.$index_name.$name) : false))
     end
   else
@@ -86,21 +130,11 @@ FinDomFunction(X::StructACSet, name::Symbol) = fin_dom_function(X, Val{name})
   end
 end
 
-""" Create `TypeSet` for attribute type of attributed C-set.
-"""
-function TypeSet(X::ACS, type::Symbol) where {S, ACS <: StructACSet{S}}
-  i = attrtype_num(S, type)
-  TypeSet(ACS.parameters[i])
-end
-
-# Categories interop
-####################
-
 function FinDomFunctor(pres::Presentation, X::ACSet)
-  ob_map = Dict(c => FinSet(X, nameof(c)) for c in generators(pres, :Ob))
-  hom_map = Dict(f => FinFunction(X, nameof(f)) for f in generators(pres, :Hom))
-  FinDomFunctor(ob_map, hom_map,
-                FinCat(pres), TypeCat(FinSet{Int}, FinFunction{Int}))
+  C = FinCat(pres)
+  ob_map = Dict(c => SetOb(X, nameof(c)) for c in ob_generators(C))
+  hom_map = Dict(f => SetFunction(X, nameof(f)) for f in hom_generators(C))
+  FinDomFunctor(ob_map, hom_map, C)
 end
 
 # C-set transformations
@@ -758,18 +792,17 @@ unpack_diagram(comp::ComposableMorphisms{<:ACSet}; kw...) =
 
 function unpack_diagram(diag::Union{FreeDiagram{ACS},BipartiteFreeDiagram{ACS}};
                         all::Bool=false) where {S, ACS <: StructACSet{S}}
-  fin_diagrams = (c => map(diag, Ob=X->FinSet(X,c), Hom=α->α[c])
-                  for c in ob(S))
-  NamedTuple(all ?
-    flatten((fin_diagrams, (d => map(diag, Ob=X->TypeSet(X,d), Hom=α->α[d])
-                            for d in attrtype(S)))) :
-    fin_diagrams)
+  names = all ? flatten((ob(S), attrtype(S))) : ob(S)
+  NamedTuple(c => map(diag, Ob=X->SetOb(X,c), Hom=α->α[c]) for c in names)
 end
 
 """ Vector of C-sets → named tuple of vectors of sets.
 """
 function unpack_sets(Xs::AbstractVector{<:StructACSet{S}};
                      all::Bool=false) where S
+  # XXX: The explicit use of `FinSet` and `TypeSet` is needed here for the
+  # nullary case (empty vector) because the Julia compiler cannot infer the
+  # return type of the more general `SetOb`.
   fin_sets = (c => map(X->FinSet(X,c), Xs) for c in ob(S))
   NamedTuple(all ?
     flatten((fin_sets, (d => map(X->TypeSet(X,d), Xs) for d in attrtype(S)))) :
@@ -780,10 +813,8 @@ end
 """
 function unpack_components(αs::AbstractVector{<:ACSetTransformation{S}};
                            all::Bool=false) where S
-  fin_components = (c => map(α -> α[c], αs) for c in ob(S))
-  NamedTuple(all ?
-    flatten((fin_components, (d => map(α -> α[d], αs) for d in attrtype(S)))) :
-    fin_components)
+  names = all ? flatten((ob(S), attrtype(S))) : ob(S)
+  NamedTuple(c => map(α -> α[c], αs) for c in names)
 end
 
 """ Named tuple of vectors of FinFunctions → vector of C-set transformations.
@@ -797,10 +828,8 @@ end
 """ C-set → named tuple of sets.
 """
 function sets(X::StructACSet{S}; all::Bool=false) where S
-  fin_sets = (c => FinSet(X,c) for c in ob(S))
-  NamedTuple(all ?
-    flatten((fin_sets, (d => TypeSet(X,d) for d in attrtype(S)))) :
-    fin_sets)
+  names = all ? flatten((ob(S), attrtype(S))) : ob(S)
+  NamedTuple(c => SetOb(X,c) for c in names)
 end
 
 """ Compute pushout complement of attributed C-sets, if possible.

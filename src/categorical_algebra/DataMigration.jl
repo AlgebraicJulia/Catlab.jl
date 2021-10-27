@@ -26,8 +26,7 @@ codom_type(F::MigrationFunctor) = F.codom_type
 """ Pullback functorial data migration from one ACSet to another.
 
 Note that this operation is contravariant: the data is transferred from `Y` to
-`X` but the functor, represented by two dictionaries, maps the schema for `X`
-to the schema for `Y`.
+`X` but the functor maps the schema for `X` to the schema for `Y`.
 
 When the functor is the identity, this operation is equivalent to
 [`copy_parts!`](@ref).

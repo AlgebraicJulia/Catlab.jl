@@ -55,14 +55,14 @@ wg = WeightedGraph{Int}(4)
 add_parts!(wg, :E, 4, src=[1,2,3,4], tgt=[2,3,4,1], weight=[101, 102, 103, 100])
 
 @test wg == WeightedGraph{Int}(ldds,
-  Dict(:V => :X, :E => :X),
+  Dict(:V => :X, :E => :X, :Weight => :Label),
   Dict(:src => id(S), :tgt => :Φ, :weight => [:Φ, :label]))
 
 @test Presentation(Graph(1)) == TheoryGraph
 @test Presentation(ldds) == TheoryLabeledDDS
 
 F = FinFunctor(
-  Dict(V => S, E => S), 
+  Dict(V => S, E => S, Weight => Label),
   Dict(s => id(S), t => ϕ, weight => compose(ϕ, label)),
   TheoryWeightedGraph, TheoryLabeledDDS
 )

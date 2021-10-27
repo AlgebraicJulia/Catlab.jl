@@ -22,7 +22,7 @@ using StaticArrays: SVector
 @reexport using ..Categories
 using ...GAT, ...Present, ...Syntax
 import ...Present: equations
-using ...Theories: Category, ObExpr, HomExpr
+using ...Theories: Category, Schema, ObExpr, HomExpr
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ...CSetDataStructures, ...Graphs
 import ...Graphs: edges, src, tgt
@@ -183,31 +183,50 @@ end
 #####################
 
 """ Category defined by a `Presentation` object.
-"""
-struct FinCatPresentation{Ob,Hom} <: FinCat{Ob,Hom}
-  presentation::Presentation
 
-  function FinCatPresentation(pres::Presentation)
-    new{pres.syntax.Ob,pres.syntax.Hom}(pres)
+The presentation type can, of course, be a category (`Theories.Category`). It
+can also be a schema (`Theories.Schema`). In this case, the schema's objects and
+attribute types are regarded as the category's objects and the schema's
+morphisms and attributes as the category's morphisms. Formalizing the schema as
+a profunctor, this amounts to taking the collage of the profunctor.
+"""
+struct FinCatPresentation{T,Ob,Hom} <: FinCat{Ob,Hom}
+  presentation::Presentation{T}
+
+  function FinCatPresentation(pres::Presentation{T}) where T
+    new{T,pres.syntax.Ob,pres.syntax.Hom}(pres)
   end
 end
 
 presentation(C::FinCatPresentation) = C.presentation
+
 ob_generators(C::FinCatPresentation) = generators(presentation(C), :Ob)
+ob_generators(C::FinCatPresentation{Schema}) = let P = presentation(C)
+  vcat(generators(P, :Ob), generators(P, :AttrType))
+end
+
 hom_generators(C::FinCatPresentation) = generators(presentation(C), :Hom)
+hom_generators(C::FinCatPresentation{Schema}) = let P = presentation(C)
+  vcat(generators(P, :Hom), generators(P, :Attr))
+end
+
 equations(C::FinCatPresentation) = equations(presentation(C))
 
 ob(C::FinCatPresentation, x) = ob(C, presentation(C)[x])
-ob(C::FinCatPresentation, x::GATExpr) = x
-  # FIXME: Commented for now because `DataMigration` uses for attr types.
-  # gat_typeof(x) == :Ob ? x : error("Expression $x is not an object")
+ob(C::FinCatPresentation, x::GATExpr) =
+  gat_typeof(x) == :Ob ? x : error("Expression $x is not an object")
+ob(C::FinCatPresentation{Schema}, x::GATExpr) =
+  gat_typeof(x) ∈ (:Ob, :AttrType) ? x :
+    error("Expression $x is not an object or attribute type")
 
 hom(C::FinCatPresentation, f) = hom(C, presentation(C)[f])
-hom(C::FinCatPresentation, f::GATExpr) = f
-  # FIXME: Commented for now because `DataMigration` uses for attributes.
-  # gat_typeof(f) == :Hom ? f : error("Expression $f is not a morphism")
 hom(C::FinCatPresentation, fs::AbstractVector) =
   mapreduce(f -> hom(C, f), compose, fs)
+hom(C::FinCatPresentation, f::GATExpr) =
+  gat_typeof(f) == :Hom ? f : error("Expression $f is not a morphism")
+hom(C::FinCatPresentation{Schema}, f::GATExpr) =
+  gat_typeof(f) ∈ (:Hom, :Attr) ? f :
+    error("Expression $f is not a morphism or attribute")
 
 # Functors
 ##########
@@ -288,10 +307,9 @@ end
 function FinDomFunctor(ob_map::Union{AbstractVector,AbstractDict},
                        hom_map::Union{AbstractVector,AbstractDict},
                        dom::FinCat, codom::Cat)
-  # FIXME: Disable checks for dicts due to `DataMigration` issue above.
-  ob_map isa AbstractDict || length(ob_map) == length(ob_generators(dom)) ||
+  length(ob_map) == length(ob_generators(dom)) ||
     error("Length of object map $ob_map does not match domain $dom")
-  hom_map isa AbstractDict || length(hom_map) == length(hom_generators(dom)) ||
+  length(hom_map) == length(hom_generators(dom)) ||
     error("Length of morphism map $hom_map does not match domain $dom")
 
   ob_map = mappairs(x -> functor_key(dom, x), y -> ob(codom, y), ob_map)
