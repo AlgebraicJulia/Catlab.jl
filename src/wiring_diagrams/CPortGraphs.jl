@@ -175,10 +175,8 @@ function ocompose(g::AbstractBundledCPG, xs::Vector)
   for e in parts(g, :Wire)
     s, t = g[e,:src], g[e,:tgt]
     sbox, tbox = g[s, :box], g[t, :box]
-    localport_src = findfirst(s .== incident(g, sbox, :box))
-    localport_tgt = findfirst(t .== incident(g, tbox, :box))
-    @assert length(findall(s .== incident(g, sbox, :box))) == 1
-    @assert length(findall(t .== incident(g, tbox, :box))) == 1
+    localport_src = only(findall(s .== incident(g, sbox, :box)))
+    localport_tgt = only(findall(t .== incident(g, tbox, :box)))
 
     sbun = incident(xs[sbox], localport_src, :bun)
     tbun = incident(xs[tbox], localport_tgt, :bun)
@@ -193,8 +191,7 @@ function ocompose(g::AbstractBundledCPG, xs::Vector)
   add_parts!(xsum, :Bundle, nparts(g, :Bundle))
   for op in parts(g, :OuterPort)
     i = g[op, [:con, :box]]
-    localport = findfirst(op .== incident(g, i, :box))
-    @assert length(findall(op .== incident(g, i, :box))) == 1
+    localport = only(findall(op .== incident(g, i, :box)))
     newop = legs(u.cocone)[i][:Port](incident(xs[i], localport, :bun))
     add_parts!(xsum, :OuterPort, length(newop), con=newop, bun=op)
   end

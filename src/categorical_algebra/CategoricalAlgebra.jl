@@ -16,7 +16,7 @@ include("GraphCategories.jl")
 include("Diagrams.jl")
 include("CommutativeDiagrams.jl")
 include("CatElements.jl")
-include("DataMigration.jl")
+include("DataMigrations.jl")
 include("StructuredCospans.jl")
 include("DPO.jl")
 
@@ -33,7 +33,7 @@ include("DPO.jl")
 
 @reexport using .Diagrams
 @reexport using .CommutativeDiagrams
-@reexport using .DataMigration
+@reexport using .DataMigrations
 @reexport using .StructuredCospans
 @reexport using .DPO
 
