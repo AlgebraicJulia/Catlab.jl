@@ -130,12 +130,13 @@ the codomain of the result is always of type `TypeSet`.
   end
 end
 
-function FinDomFunctor(pres::Presentation, X::ACSet)
-  C = FinCat(pres)
+function FinDomFunctor(C::FinCats.FinCatPresentation, X::ACSet)
+  # TODO: Make struct `FinDomFunctorACSet` to avoid allocation.
   ob_map = Dict(c => SetOb(X, nameof(c)) for c in ob_generators(C))
   hom_map = Dict(f => SetFunction(X, nameof(f)) for f in hom_generators(C))
   FinDomFunctor(ob_map, hom_map, C)
 end
+FinDomFunctor(pres::Presentation, X::ACSet) = FinDomFunctor(FinCat(pres), X)
 
 # C-set transformations
 #######################

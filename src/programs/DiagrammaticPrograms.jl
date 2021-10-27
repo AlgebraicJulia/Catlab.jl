@@ -11,10 +11,11 @@ using Base.Iterators: repeated
 using MLStyle: @match
 using StaticArrays: SVector
 
-using ...Syntax, ...Present, ...Graphs, ...CategoricalAlgebra
+using ...Present, ...Graphs, ...CategoricalAlgebra
 using ...Theories: munit
-using ...CategoricalAlgebra.FinCats: mapvals
+using ...CategoricalAlgebra.FinCats: mapvals, make_map
 using ...CategoricalAlgebra.DataMigrations: ConjQuery
+import ...CategoricalAlgebra.DataMigrations: ob_name, hom_name, ob_named, hom_named
 using ...Graphs.BasicGraphs: TheoryGraph
 
 # Data types
@@ -264,9 +265,6 @@ function parse_ob_hom_maps(C::FinCat, body::Expr; allow_missing::Bool=false)
   (ob_rhs, hom_rhs)
 end
 
-make_map(f, xs::UnitRange{Int}) = map(f, xs)
-make_map(f, xs) = Dict(x => f(x) for x in xs)
-
 """ Parse expression for morphism in a category.
 """
 function parse_hom(C::FinCat, expr)
@@ -285,17 +283,10 @@ function parse_hom(C::FinCat, expr)
   parse(expr)
 end
 
-ob_name(C::FinCat, x) = Symbol(x)
-ob_name(C::FinCat, x::GATExpr) = nameof(x)
-ob_name(C::FinCatGraph, x) = vertex_name(graph(C), x)
-hom_name(C::FinCat, f) = Symbol(f)
-hom_name(C::FinCat, f::GATExpr) = nameof(f)
-hom_name(C::FinCatGraph, f) = edge_name(graph(C), f)
-
-ob_named(C::FinCat, name) = ob(C, name)
-ob_named(C::FinCatGraph, name) = vertex_named(graph(C), name)
-hom_named(C::FinCat, name) = hom(C, name)
-hom_named(C::FinCatGraph, name) = edge_named(graph(C), name)
+ob_name(C::FinCatGraph{<:NamedGraph}, x) = vertex_name(graph(C), x)
+hom_name(C::FinCatGraph{<:NamedGraph}, f) = edge_name(graph(C), f)
+ob_named(C::FinCatGraph{<:NamedGraph}, name) = vertex_named(graph(C), name)
+hom_named(C::FinCatGraph{<:NamedGraph}, name) = edge_named(graph(C), name)
 
 # Diagrams
 ##########

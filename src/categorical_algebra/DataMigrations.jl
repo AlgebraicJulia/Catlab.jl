@@ -3,13 +3,13 @@
 module DataMigrations
 export DataMigration, DeltaMigration, SigmaMigration, migrate, migrate!
 
-using ...Present, ...Theories
+using ...Syntax, ...Present, ...Theories
 using ...Theories: SchemaDesc, ob, hom, dom, codom, attr, adom
 using ..Categories, ..FinCats, ..Limits, ..Diagrams, ..FinSets, ..CSets
 using ...Graphs, ..FreeDiagrams
 import ..Categories: ob_map, hom_map
+using ..FinCats: make_map
 import ...Present: Presentation
-import ..FreeDiagrams: FreeDiagram
 
 # Data types
 ############
@@ -20,23 +20,33 @@ The diagram defining the query specifies a finite limit.
 """
 const ConjQuery{C<:FinCat} = Diagram{op,C}
 
-""" Linear query over schema ``C``.
+""" Gluing query over schema ``C``.
 
-The diagram, required to be discrete, specifies a finite coproduct.
+The diagram defining the query specifies a finite colimit. In the important
+special case that the diagram has discrete shape, it specifies a finite
+coproduct and the query is called "linear" or "disjunctive".
 """
-const LinearQuery{C<:FinCat} = Diagram{id,C,<:Functor{<:DiscreteCat}}
+const GluingQuery{C<:FinCat} = Diagram{id,C}
 
-""" Duc (disjoint union of conjunctive) query over schema ``C``.
+""" "Gluc query" (gluing of conjunctive queries) over schema ``C``.
 
-The discrete diagram of diagrams specifies a finite coproduct of finite limits.
+The diagram of diagrams specifies a finite colimit of finite limits. In the
+important special case that the outer diagram has discrete shape, it specifies a
+finite coproduct of finite limits and the query is called a "duc query"
+(disjoint union of conjunctive queries).
 """
-const DucQuery{C<:FinCat} = Diagram{id,<:TypeCat{<:Diagram{op,C}},
-                                    <:Functor{<:DiscreteCat}}
+const GlucQuery{C<:FinCat} = Diagram{id,<:TypeCat{<:Diagram{op,C}}}
 
 const DeltaSchemaMigration{D<:FinCat,C<:FinCat} = FinFunctor{D,C}
-const ConjSchemaMigration{D<:FinCat,C<:FinCat} = FinDomFunctor{D,<:ConjQuery{C}}
-const LinearSchemaMigration{D<:FinCat,C<:FinCat} = FinDomFunctor{D,<:LinearQuery{C}}
-const DucSchemaMigration{D<:FinCat,C<:FinCat} = FinDomFunctor{D,<:DucQuery{C}}
+
+const ConjSchemaMigration{D<:FinCat,C<:FinCat} =
+  FinDomFunctor{D,<:TypeCat{<:ConjQuery{C}}}
+
+const GluingSchemaMigration{D<:FinCat,C<:FinCat} =
+  FinDomFunctor{D,<:TypeCat{<:GluingQuery{C}}}
+
+const GlucSchemaMigration{D<:FinCat,C<:FinCat} =
+  FinDomFunctor{D,<:TypeCat{<:GlucQuery{C}}}
 
 """ Abstract type for a data migration functor.
 """
@@ -80,8 +90,8 @@ const DeltaMigration{Dom,Codom} = DataMigration{Dom,Codom,<:DeltaSchemaMigration
 DeltaMigration(args...) = DataMigration(args...)::DeltaMigration
 
 const ConjMigration{Dom,Codom} = DataMigration{Dom,Codom,<:ConjSchemaMigration}
-const LinearMigration{Dom,Codom} = DataMigration{Dom,Codom,<:LinearSchemaMigration}
-const DucMigration{Dom,Codom} = DataMigration{Dom,Codom,<:DucSchemaMigration}
+const GluingMigration{Dom,Codom} = DataMigration{Dom,Codom,<:GluingSchemaMigration}
+const GlucMigration{Dom,Codom} = DataMigration{Dom,Codom,<:GlucSchemaMigration}
 
 # Delta migration
 #################
@@ -90,11 +100,11 @@ const DucMigration{Dom,Codom} = DataMigration{Dom,Codom,<:DucSchemaMigration}
 
 The mutating variant of this function is [`migrate!`](@ref).
 """
-function migrate(::Type{T}, Y::ACSet, F::DeltaSchemaMigration) where T <: ACSet
-  migrate!(T(), Y, F)
+function migrate(::Type{T}, X::ACSet, F::DeltaSchemaMigration) where T <: ACSet
+  migrate!(T(), X, F)
 end
-function migrate(::Type{T}, Y::ACSet, FOb, FHom) where T <: ACSet
-  migrate!(T(), Y, FOb, FHom)
+function migrate(::Type{T}, X::ACSet, FOb, FHom) where T <: ACSet
+  migrate!(T(), X, FOb, FHom)
 end
 
 """ Contravariantly migrate data from the acset `Y` to the acset `X`.
@@ -123,10 +133,44 @@ end
 # FIXME: These two constructors are too broad to apply to all acset types and
 # should be removed.
 
-(::Type{T})(Y::ACSet, F::FinFunctor) where T <: ACSet = migrate(T, Y, F)
+(::Type{T})(X::ACSet, F::FinFunctor) where T <: ACSet = migrate(T, X, F)
 
-(::Type{T})(Y::ACSet, FOb::AbstractDict, FHom::AbstractDict) where T <: ACSet =
-  migrate(T, Y, FOb, FHom)
+(::Type{T})(X::ACSet, FOb::AbstractDict, FHom::AbstractDict) where T <: ACSet =
+  migrate(T, X, FOb, FHom)
+
+# Conjunctive migration
+#######################
+
+function migrate(X::ACSet, F::ConjSchemaMigration)
+  tgt_schema = dom(F)
+  sets = make_map(ob_generators(tgt_schema)) do c
+    Fc = diagram(ob_map(F, c))
+    J = dom(Fc)
+    lim = limit(Fc ⋅ FinDomFunctor(codom(Fc), X))
+    names = Tuple(Symbol(ob_name(J, j)) for j in ob_generators(J))
+    TabularSet(NamedTuple{names}(Tuple(map(collect, legs(lim)))))
+  end
+  funcs = make_map(hom_generators(tgt_schema)) do f
+    c, d = dom(tgt_schema, f), codom(tgt_schema, f)
+    Ff = hom_map(F, f)
+    J′, Ff₀, Ff₁ = shape(codom(Ff)), shape_map(Ff), diagram_map(Ff)
+    names = keys(sets[d].table)
+    Ff₀ = NamedTuple{names}(Tuple(ob_map(Ff₀, j) for j in ob_generators(J′)))
+    Ff₁ = NamedTuple{names}(Tuple(SetFunction(X, nameof(component(Ff₁, j)))
+                                  # FIXME: Allow non-generator components.
+                                  for j in ob_generators(J′)))
+    FinFunction(row -> map((j,g) -> g(row[j]), Ff₀, Ff₁), sets[c], sets[d])
+  end
+  FinDomFunctor(sets, funcs, tgt_schema)
+end
+
+# FIXME: We should put this elsewhere and think more carefully about names.
+ob_name(C::FinCat, x) = x
+ob_name(C::FinCat, x::GATExpr) = nameof(x)
+hom_name(C::FinCat, f) = f
+hom_name(C::FinCat, f::GATExpr) = nameof(f)
+ob_named(C::FinCat, name) = ob(C, name)
+hom_named(C::FinCat, name) = hom(C, name)
 
 # Sigma migration
 #################
@@ -281,7 +325,7 @@ end
 Returns a `FreeDiagram` whose objects are the generating objects of `pres` and 
 whose homs are the generating homs of `pres`.
 """
-function FreeDiagram(pres::Presentation{Schema, Symbol}) where Schema
+function FreeDiagrams.FreeDiagram(pres::Presentation{Schema, Symbol}) where Schema
   obs = Array{FreeSchema.Ob}(generators(pres, :Ob))
   homs = Array{FreeSchema.Hom}(generators(pres, :Hom))
   doms = map(h -> generator_index(pres, nameof(dom(h))), homs)

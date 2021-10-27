@@ -1,7 +1,7 @@
 """ The category of finite sets and functions, and its skeleton.
 """
 module FinSets
-export FinSet, TabularSet, FinFunction, FinDomFunction, DiscreteCat,
+export FinSet, TabularSet, FinFunction, FinDomFunction,
   force, is_indexed, preimage,
   JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin,
   SubFinSet, SubOpBoolean
@@ -77,7 +77,7 @@ Base.show(io::IO, set::FinSetCollection) = print(io, "FinSet($(set.collection)")
 
 The underlying table should be compliant with Tables.jl.
 """
-@auto_hash_equals struct TabularSet{Table} <: FinSet{Table,Tables.AbstractRow}
+@auto_hash_equals struct TabularSet{Table} <: FinSet{Table,Any}
   table::Table
 end
 

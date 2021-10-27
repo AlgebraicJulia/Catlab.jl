@@ -478,14 +478,17 @@ cocone_objects(F::FinDomFunctor) = collect_ob(F)
 
 """ Wrapper type to interpret `FreeDiagram` as a `FinDomFunctor`.
 """
-@auto_hash_equals struct FreeDiagramFunctor{Ob,Hom} <:
-    FinDomFunctor{FreeCatGraph{FreeDiagram{Ob,Hom}},TypeCat{Ob,Hom}}
+@auto_hash_equals struct FreeDiagramFunctor{Ob,Hom,Codom} <:
+    FinDomFunctor{FreeCatGraph{FreeDiagram{Ob,Hom}},Codom}
   diagram::FreeDiagram{Ob,Hom}
+  codom::Codom
 end
-FinDomFunctor(diagram::FreeDiagram) = FreeDiagramFunctor(diagram)
+FinDomFunctor(diagram::FreeDiagram, codom::Cat) =
+  FreeDiagramFunctor(diagram, codom)
+FinDomFunctor(diagram::FreeDiagram{Ob,Hom}) where {Ob,Hom} =
+  FreeDiagramFunctor(diagram, TypeCat(Ob, Hom))
 
 dom(F::FreeDiagramFunctor) = FreeCatGraph(F.diagram)
-codom(F::FreeDiagramFunctor{Ob,Hom}) where {Ob,Hom} = TypeCat{Ob,Hom}()
 
 Categories.do_ob_map(F::FreeDiagramFunctor, x) = ob(F.diagram, x)
 Categories.do_hom_map(F::FreeDiagramFunctor, f) = hom(F.diagram, f)
