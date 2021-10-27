@@ -1,4 +1,4 @@
-module TestDataMigration
+module TestDataMigrations
 using Test
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
@@ -66,7 +66,7 @@ F = FinFunctor(
   Dict(s => id(S), t => ϕ, weight => compose(ϕ, label)),
   TheoryWeightedGraph, TheoryLabeledDDS
 )
-ΔF = Delta(F, LabeledDDS{Int}, WeightedGraph{Int})
+ΔF = DeltaMigration(F, LabeledDDS{Int}, WeightedGraph{Int})
 @test wg == ΔF(ldds)
 
 idF = FinFunctor(
@@ -78,8 +78,6 @@ idF = FinFunctor(
 
 # Left pushforward data migration
 #################################
-
-Σ = Sigma
 
 V1B, V2B, EB = generators(TheoryUndirectedBipartiteGraph, :Ob)
 srcB, tgtB = generators(TheoryUndirectedBipartiteGraph, :Hom)
@@ -99,7 +97,7 @@ idF = FinFunctor(
   TheoryGraph, TheoryGraph
 )
 
-ΣF = Σ(F, UndirectedBipartiteGraph, Graph)
+ΣF = SigmaMigration(F, UndirectedBipartiteGraph, Graph)
 X = UndirectedBipartiteGraph()
 
 Y = ΣF(X)
@@ -119,7 +117,7 @@ Y = ΣF(X)
 @test nparts(Y, :E) == 4
 @test length(Y[:src] ∩ Y[:tgt]) == 0
 
-@test Σ(idF, Graph, Graph)(Y) == Y
+@test SigmaMigration(idF, Graph, Graph)(Y) == Y
 
 @present ThSpan(FreeSchema) begin
   (L1, L2, A)::Ob
@@ -151,7 +149,7 @@ bang = FinFunctor(
   ThSpan, ThInitial
 )
 
-Σbang = Σ(bang, Span, Initial)
+Σbang = SigmaMigration(bang, Span, Initial)
 Y = Σbang(X)
 
 @test nparts(Y, :I) == 4
@@ -159,11 +157,11 @@ Y = Σbang(X)
 vertex = FinFunctor(Dict(I => VG), Dict(), ThInitial, TheoryGraph)
 edge = FinFunctor(Dict(I => EG), Dict(), ThInitial, TheoryGraph)
 
-Z = Σ(vertex, Initial, Graph)(Y)
+Z = SigmaMigration(vertex, Initial, Graph)(Y)
 @test nparts(Z, :V) == 4
 @test nparts(Z, :E) == 0
 
-Z = Σ(edge, Initial, Graph)(Y)
+Z = SigmaMigration(edge, Initial, Graph)(Y)
 @test nparts(Z, :V) == 8
 @test nparts(Z, :E) == 4
 @test Z[:src] ∪ Z[:tgt] == 1:8

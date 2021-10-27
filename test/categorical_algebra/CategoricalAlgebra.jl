@@ -43,8 +43,8 @@ end
   include("CommutativeDiagrams.jl")
 end
 
-@testset "DataMigration" begin
-  include("DataMigration.jl")
+@testset "DataMigrations" begin
+  include("DataMigrations.jl")
 end
 
 @testset "StructuredCospans" begin

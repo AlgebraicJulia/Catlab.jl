@@ -14,6 +14,7 @@ using StaticArrays: SVector
 using ...Syntax, ...Present, ...Graphs, ...CategoricalAlgebra
 using ...Theories: munit
 using ...CategoricalAlgebra.FinCats: mapvals
+using ...CategoricalAlgebra.DataMigrations: ConjQuery
 using ...Graphs.BasicGraphs: TheoryGraph
 
 # Data types
@@ -380,10 +381,6 @@ struct UnitQueryHom{C<:FinCat,Hom}
   cat::C
   hom::Hom
 end
-
-const ConjQuery{C<:FinCat} = Diagram{op,C}
-const GlueQuery{C<:FinCat} = Diagram{id,C}
-const GlueConjQuery{C<:FinCat} = Diagram{id,<:TypeCat{<:Diagram{op,C}}}
 
 """ Define a data migration query.
 
