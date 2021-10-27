@@ -2,7 +2,8 @@ module TestFinCats
 using Test
 
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
-using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryReflexiveGraph
+using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryReflexiveGraph,
+  TheoryWeightedGraph
 
 # Categories on graphs
 ######################
@@ -144,5 +145,15 @@ G = FinDomFunctor(TheoryGraph, g)
 @test is_natural(ϕ)
 @test component(ϕ*F, 1) == hom_map(F, :src)
 @test component(ϕ*α, 1) == hom_map(F, :src) ⋅ α[:V]
+
+# Schemas as categories.
+C = FinCat(TheoryWeightedGraph)
+@test first.(ob_generators(C)) == [:V, :E, :Weight]
+@test first.(hom_generators(C)) == [:src, :tgt, :weight]
+g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5,1.5],))
+G = FinDomFunctor(TheoryWeightedGraph, g)
+@test is_functorial(G)
+@test ob_map(G, :Weight) == TypeSet(Float64)
+@test hom_map(G, :weight) == FinDomFunction([0.5, 1.5])
 
 end
