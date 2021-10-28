@@ -5,6 +5,7 @@ export @acset_type, @abstract_acset_type, @declare_schema, StructACSet, StructCS
 using MLStyle
 using StaticArrays
 using Reexport
+import Tables
 
 @reexport using ..ACSetInterface
 using ..IndexUtils
@@ -13,8 +14,6 @@ using ...Theories: SchemaDesc, SchemaDescType, CSetSchemaDescType, SchemaDescTyp
   ob_num, codom_num, attr, attrtype
 @reexport using ...Theories: FreeSchema
 using ...Meta: strip_lines
-import Tables
-
 
 # StructACSet Struct Generation
 ###############################
@@ -601,18 +600,17 @@ end
 # Printing
 ##########
 
-function Base.show(io::IO, acs::StructACSet{S,Ts,idxed}) where {S,Ts,idxed}
+function Base.show(io::IO, acs::T) where {S,T<:StructACSet{S}}
   s = SchemaDesc(S)
-  print(io, "ACSet")
+  print(io, T)
   println(io, "(")
-  join(io, vcat(
-    [ "  $ob = 1:$(nparts(acs,ob))" for ob in s.obs ],
-    [ "  $attr_type = $(Ts.parameters[i])" for (i, attr_type) in enumerate(s.attrtypes) ],
-    [ "  $f : $(s.doms[f]) → $(s.codoms[f]) = $(subpart(acs,f))"
-      for f in s.homs ],
-    [ "  $a : $(s.doms[a]) → $(s.codoms[a]) = $(subpart(acs,a))"
-      for a in s.attrs ],
-  ), ",\n")
+  join(io, Iterators.flatten((
+    ("  $ob = $(parts(acs,ob))" for ob in s.obs),
+    ("  $f : $(s.doms[f]) → $(s.codoms[f]) = $(subpart(acs,f))"
+     for f in s.homs),
+    ("  $a : $(s.doms[a]) → $(s.codoms[a]) = $(subpart(acs,a))"
+     for a in s.attrs),
+  )), ",\n")
   print(io, ")")
 end
 

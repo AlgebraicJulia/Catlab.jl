@@ -78,12 +78,12 @@ rem_parts!(dds, :X, [1,4])
 dds = DDS()
 add_parts!(dds, :X, 3, Φ=[2,3,3])
 s = sprint(show, dds)
-@test startswith(s, "ACSet")
+@test occursin("DDS(", s)
 @test occursin("X = 1:3", s)
 @test occursin("Φ : X → X = ", s)
 
 s = sprint(show, MIME"text/plain"(), dds)
-@test startswith(s, "ACSet")
+@test occursin("DDS", s)
 @test occursin("X = 1:3", s)
 @test occursin("│ X │", s)
 
@@ -199,12 +199,11 @@ du = disjoint_union(d, d2)
 
 # Pretty printing of data attributes.
 s = sprint(show, d)
-@test startswith(s, "ACSet")
-@test occursin("R = Int64", s)
+@test occursin("Dendrogram{Int64}(", s)
 @test occursin("height : X → R = ", s)
 
 s = sprint(show, MIME"text/plain"(), d)
-@test startswith(s, "ACSet")
+@test occursin("Dendrogram{Int64}", s)
 
 # Allow type inheritance for data attributes.
 d_abs = Dendrogram{Number}()
