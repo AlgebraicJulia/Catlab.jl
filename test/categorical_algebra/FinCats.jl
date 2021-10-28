@@ -2,25 +2,13 @@ module TestFinCats
 using Test
 
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
-using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryReflexiveGraph
-
-# Discrete categories
-#####################
-
-C = FinCat(FinSet(3))
-@test C isa FinCat{Int,Int}
-@test is_discrete(C)
-@test collect(ob_generators(C)) == 1:3
-@test isempty(hom_generators(C))
-@test (dom(C, 1), codom(C, 1)) == (1, 1)
-@test (id(C, 2), compose(C, 2, 2)) == (2, 2)
+using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryReflexiveGraph,
+  TheoryWeightedGraph
 
 # Categories on graphs
 ######################
 
 # Free categories
-#----------------
-
 g = parallel_arrows(Graph, 3)
 C = FinCat(g)
 @test graph(C) == g
@@ -64,9 +52,7 @@ G = FinFunctor([1,3,5], [[1,2],[3,4]], D, E)
 @test id(C)⋅F == F
 @test F⋅id(D) == F
 
-# Free diagrams
-#--------------
-
+# Functors out free categories.
 C = FinCat(parallel_arrows(Graph, 2))
 f, g = FinFunction([1,3], 3), FinFunction([2,3], 3)
 F = FinDomFunctor([FinSet(2), FinSet(3)], [f,g], C)
@@ -75,18 +61,6 @@ F = FinDomFunctor([FinSet(2), FinSet(3)], [f,g], C)
 @test codom(F) isa TypeCat{<:FinSet{Int},<:FinFunction{Int}}
 @test ob_map(F, 1) == FinSet(2)
 @test hom_map(F, 2) == g
-
-# `FreeDiagrams` interop.
-diagram = FreeDiagram(ParallelPair(f, g))
-@test FreeDiagram(F) == diagram
-@test FinDomFunctor(diagram) == F
-
-# Diagram interface.
-@test diagram_type(F) <: Tuple{FinSet{Int},FinFunction{Int}}
-@test cone_objects(F) == [FinSet(2), FinSet(3)]
-@test cocone_objects(F) == [FinSet(2), FinSet(3)]
-@test ob(limit(F)) == FinSet(1)
-@test ob(colimit(F)) == FinSet(2)
 
 # Commutative square as natural transformation.
 C = FinCat(path_graph(Graph, 2))
@@ -171,5 +145,15 @@ G = FinDomFunctor(TheoryGraph, g)
 @test is_natural(ϕ)
 @test component(ϕ*F, 1) == hom_map(F, :src)
 @test component(ϕ*α, 1) == hom_map(F, :src) ⋅ α[:V]
+
+# Schemas as categories.
+C = FinCat(TheoryWeightedGraph)
+@test first.(ob_generators(C)) == [:V, :E, :Weight]
+@test first.(hom_generators(C)) == [:src, :tgt, :weight]
+g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5,1.5],))
+G = FinDomFunctor(TheoryWeightedGraph, g)
+@test is_functorial(G)
+@test ob_map(G, :Weight) == TypeSet(Float64)
+@test hom_map(G, :weight) == FinDomFunction([0.5, 1.5])
 
 end

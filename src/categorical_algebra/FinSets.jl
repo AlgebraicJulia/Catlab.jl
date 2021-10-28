@@ -14,9 +14,11 @@ using StaticArrays: StaticVector, SVector, SizedVector, similar_type
 import Tables
 
 @reexport using ..Sets
-using ...GAT, ...Theories
-using ...CSetDataStructures, ...Graphs, ..FreeDiagrams, ..Limits, ..Subobjects
-import ...Theories: dom, codom, ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
+using ...GAT, ...Theories, ...CSetDataStructures, ...Graphs
+using ..FinCats, ..FreeDiagrams, ..Limits, ..Subobjects
+import ...Theories: Ob, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
+import ..Categories: ob, hom, dom, codom, compose, id, ob_map, hom_map
+import ..FinCats: FinDomFunctor, ob_generators, hom_generators, is_discrete
 import ..Limits: limit, colimit, universal, pushout_complement,
   can_pushout_complement
 import ..Subobjects: Subobject, SubobjectLattice
@@ -75,7 +77,7 @@ Base.show(io::IO, set::FinSetCollection) = print(io, "FinSet($(set.collection)")
 
 The underlying table should be compliant with Tables.jl.
 """
-@auto_hash_equals struct TabularSet{Table} <: FinSet{Table,Tables.AbstractRow}
+@auto_hash_equals struct TabularSet{Table} <: FinSet{Table,Any}
   table::Table
 end
 
@@ -83,6 +85,38 @@ FinSet(nt::NamedTuple) = TabularSet(nt)
 
 Base.iterate(set::TabularSet, args...) = iterate(Tables.rows(set.table), args...)
 Base.length(set::TabularSet) = Tables.rowcount(set.table)
+
+# Discrete categories
+#--------------------
+
+""" Discrete category on a finite set.
+
+The only morphisms in a discrete category are the identities, which are here
+identified with the objects.
+"""
+@auto_hash_equals struct DiscreteCat{Ob,S<:FinSet{<:Any,Ob}} <: FinCat{Ob,Ob}
+  set::S
+end
+DiscreteCat(n::Integer) = DiscreteCat(FinSet(n))
+
+FinCat(s::Union{FinSet,Integer}) = DiscreteCat(s)
+
+ob_generators(C::DiscreteCat) = C.set
+hom_generators(::DiscreteCat) = ()
+is_discrete(::DiscreteCat) = true
+
+dom(C::DiscreteCat{T}, f) where T = f::T
+codom(C::DiscreteCat{T}, f) where T = f::T
+id(C::DiscreteCat{T}, x) where T = x::T
+compose(C::DiscreteCat{T}, f, g) where T = (f::T == g::T) ? f :
+  error("Nontrivial composite in discrete category: $f != $g")
+
+FinDomFunctor(ob_map, dom::DiscreteCat, codom::Cat{Ob,Hom}) where {Ob,Hom} =
+  FinDomFunctor(ob_map, empty(ob_map, Hom), dom, codom)
+FinDomFunctor(ob_map, ::Nothing, dom::DiscreteCat, codom::Cat) =
+  FinDomFunctor(ob_map, dom, codom)
+
+hom_map(F::FinDomFunctor{<:DiscreteCat}, x) = id(codom(F), ob_map(F, x))
 
 # Finite functions
 ##################
@@ -186,6 +220,9 @@ Sets.do_compose(f::FinFunctionVector, g::FinDomFunctionVector) =
 # Note: Cartesian monoidal structure is implemented generically for Set but
 # cocartesian only for FinSet.
 @cocartesian_monoidal_instance FinSet FinFunction
+
+Ob(C::FinCat{Int}) = FinSet(length(ob_generators(C)))
+Ob(F::FinCats.FinDomFunctorVector) = FinDomFunction(F.ob_map, Ob(codom(F)))
 
 # Indexed functions
 #------------------
@@ -692,20 +729,23 @@ function pair_all(d::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
   d_paired
 end
 
-function limit(d::FreeDiagram{<:FinSet{Int}})
+limit(d::FreeDiagram{<:FinSet{Int}}) = limit(FinDomFunctor(d))
+
+function limit(F::Functor{<:FinCat{Int},<:TypeCat{<:FinSet{Int}}})
   # Uses the general formula for limits in Set (Leinster, 2014, Basic Category
   # Theory, Example 5.1.22 / Equation 5.16). This method is simple and direct,
   # but extremely inefficient!
-  prod = product(ob(d))
+  J = dom(F)
+  prod = product(map(x -> ob_map(F, x), ob_generators(J)))
   n, πs = length(ob(prod)), legs(prod)
   ι = FinFunction(filter(1:n) do i
-    all(begin
-          s, t, h = src(d,e), tgt(d,e), hom(d,e)
-          h(πs[s](i)) == πs[t](i)
-        end for e in edges(d))
-    end, n)
-  cone = Multispan(dom(ι), [ι⋅πs[i] for i in vertices(d)])
-  FinSetFreeDiagramLimit(d, cone, prod, ι)
+    all(hom_generators(J)) do f
+      s, t, h = dom(J, f), codom(J, f), hom_map(F, f)
+      h(πs[s](i)) == πs[t](i)
+    end
+  end, n)
+  cone = Multispan(dom(ι), map(x -> ι⋅πs[x], ob_generators(J)))
+  FinSetFreeDiagramLimit(F, cone, prod, ι)
 end
 
 function universal(lim::FinSetFreeDiagramLimit, cone::Multispan{<:FinSet{Int}})
@@ -846,21 +886,24 @@ function colimit(d::BipartiteFreeDiagram{<:FinSet{Int}})
   FinSetFreeDiagramColimit(d, cocone, coprod, π)
 end
 
-function colimit(d::FreeDiagram{<:FinSet{Int}})
+colimit(d::FreeDiagram{<:FinSet{Int}}) = colimit(FinDomFunctor(d))
+
+function colimit(F::Functor{<:FinCat{Int},<:TypeCat{<:FinSet{Int}}})
   # Uses the general formula for colimits in Set (Leinster, 2014, Basic Category
   # Theory, Example 5.2.16).
-  coprod = coproduct(ob(d))
+  J = dom(F)
+  coprod = coproduct(map(x -> ob_map(F, x), ob_generators(J)))
   n, ιs = length(ob(coprod)), legs(coprod)
   sets = IntDisjointSets(n)
-  for e in edges(d)
-    s, t, h = src(d,e), tgt(d,e), hom(d,e)
+  for f in hom_generators(J)
+    s, t, h = dom(J, f), codom(J, f), hom_map(F, f)
     for i in dom(h)
       union!(sets, ιs[s](i), ιs[t](h(i)))
     end
   end
   π = quotient_projection(sets)
-  cocone = Multicospan(codom(π), [ ιs[i]⋅π for i in vertices(d) ])
-  FinSetFreeDiagramColimit(d, cocone, coprod, π)
+  cocone = Multicospan(codom(π), map(x -> ιs[x]⋅π, ob_generators(J)))
+  FinSetFreeDiagramColimit(F, cocone, coprod, π)
 end
 
 function universal(colim::FinSetFreeDiagramColimit,

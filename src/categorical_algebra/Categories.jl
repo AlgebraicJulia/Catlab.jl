@@ -13,14 +13,13 @@ instances are supported through the wrapper type [`TypeCat`](@ref). Finitely
 presented categories are provided by another module, [`FinCats`](@ref).
 """
 module Categories
-export Cat, TypeCat, Ob, Functor, Transformation,
-  dom, codom, compose, id, ob, hom, is_hom_equal,
-  ob_map, hom_map, dom_ob, codom_ob, component
+export Cat, TypeCat, Functor, Transformation, dom, codom, compose, id,
+  ob, hom, is_hom_equal, ob_map, hom_map, dom_ob, codom_ob, component
 
 using AutoHashEquals
 
-using ...GAT, ..Sets
-import ...Theories: Category2, Ob, ob, hom, dom, codom, compose, ⋅, ∘, id,
+using ...GAT
+import ...Theories: Category2, ob, hom, dom, codom, compose, ⋅, ∘, id,
   composeH, *
 
 # Categories
@@ -85,8 +84,6 @@ struct TypeCat{Ob,Hom} <: Cat{Ob,Hom} end
 
 TypeCat(Ob::Type, Hom::Type) = TypeCat{Ob,Hom}()
 
-Ob(::TypeCat{T}) where T = TypeSet{T}()
-
 # FIXME: This isn't practical because types are often too tight.
 #ob(::TypeCat{Ob,Hom}, x) where {Ob,Hom} = convert(Ob, x)
 #hom(::TypeCat{Ob,Hom}, f) where {Ob,Hom} = convert(Hom, f)
@@ -107,17 +104,11 @@ abstract type Functor{Dom<:Cat,Codom<:Cat} end
 
 """ Evaluate functor on object.
 """
-function ob_map end
+@inline ob_map(F::Functor, x) = do_ob_map(F, x)
 
 """ Evaluate functor on morphism.
 """
-function hom_map end
-
-""" Forgetful functor Ob: Cat → Set.
-
-Sends a category to its set of objects and a functor to its object map.
-"""
-function Ob end
+@inline hom_map(F::Functor, f) = do_hom_map(F, f)
 
 @auto_hash_equals struct IdentityFunctor{Dom<:Cat} <: Functor{Dom,Dom}
   dom::Dom
@@ -125,8 +116,8 @@ end
 
 codom(F::IdentityFunctor) = F.dom
 
-ob_map(F::IdentityFunctor, x) = ob(F.dom, x)
-hom_map(F::IdentityFunctor, f) = hom(F.dom, f)
+do_ob_map(F::IdentityFunctor, x) = ob(F.dom, x)
+do_hom_map(F::IdentityFunctor, f) = hom(F.dom, f)
 
 # Instances
 #----------

@@ -1,7 +1,8 @@
-module TestDataMigration
+module TestDataMigrations
 using Test
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
+using Catlab.Programs.DiagrammaticPrograms
 using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryWeightedGraph
 using Catlab.Graphs.BipartiteGraphs: TheoryUndirectedBipartiteGraph
 
@@ -55,18 +56,18 @@ wg = WeightedGraph{Int}(4)
 add_parts!(wg, :E, 4, src=[1,2,3,4], tgt=[2,3,4,1], weight=[101, 102, 103, 100])
 
 @test wg == WeightedGraph{Int}(ldds,
-  Dict(:V => :X, :E => :X),
+  Dict(:V => :X, :E => :X, :Weight => :Label),
   Dict(:src => id(S), :tgt => :Φ, :weight => [:Φ, :label]))
 
 @test Presentation(Graph(1)) == TheoryGraph
 @test Presentation(ldds) == TheoryLabeledDDS
 
 F = FinFunctor(
-  Dict(V => S, E => S), 
+  Dict(V => S, E => S, Weight => Label),
   Dict(s => id(S), t => ϕ, weight => compose(ϕ, label)),
   TheoryWeightedGraph, TheoryLabeledDDS
 )
-ΔF = Delta(F, LabeledDDS{Int}, WeightedGraph{Int})
+ΔF = DeltaMigration(F, LabeledDDS{Int}, WeightedGraph{Int})
 @test wg == ΔF(ldds)
 
 idF = FinFunctor(
@@ -76,10 +77,46 @@ idF = FinFunctor(
 )
 @test ldds == LabeledDDS{Int}(ldds, idF)
 
-# Left pushforward data migration
-#################################
+# Conjunctive data migration
+############################
 
-Σ = Sigma
+V, E, src, tgt = generators(TheoryGraph)
+
+# TODO: For completeness, test a query that is constructed manually.
+#=
+C = FinCat(TheoryGraph)
+F_V = FinDomFunctor([V], FinCat(1), C)
+F_E = FinDomFunctor(FreeDiagram(Span(tgt, src)), C)
+F = FinDomFunctor(Dict(V => Diagram{op}(F_V),
+                       E => Diagram{op}(F_E)),
+                  Dict(src => DiagramHom{op}([(2, src)], F_E, F_V),
+                       tgt => DiagramHom{op}([(3, tgt)], F_E, F_V)), C)
+=#
+
+F = @migration TheoryGraph TheoryGraph begin
+  V => V
+  E => @join begin
+    v::V
+    (e₁, e₂)::E
+    (t: e₁ → v)::tgt
+    (s: e₂ → v)::src
+  end
+  src => e₁ ⋅ src
+  tgt => e₂ ⋅ tgt
+end
+@test F isa DataMigrations.ConjSchemaMigration
+
+X = path_graph(Graph, 5)
+Y = migrate(X, F)
+@test length(Y(V)) == 5
+@test length(Y(E)) == 3
+@test Y(src)((v=3, e₁=2, e₂=3)) |> only == 2
+@test Y(tgt)((v=3, e₁=2, e₂=3)) |> only == 4
+@test Y(src)((3, 2, 3)) |> only == 2
+@test Y(tgt)((3, 2, 3)) |> only == 4
+
+# Sigma data migration
+######################
 
 V1B, V2B, EB = generators(TheoryUndirectedBipartiteGraph, :Ob)
 srcB, tgtB = generators(TheoryUndirectedBipartiteGraph, :Hom)
@@ -99,7 +136,7 @@ idF = FinFunctor(
   TheoryGraph, TheoryGraph
 )
 
-ΣF = Σ(F, UndirectedBipartiteGraph, Graph)
+ΣF = SigmaMigration(F, UndirectedBipartiteGraph, Graph)
 X = UndirectedBipartiteGraph()
 
 Y = ΣF(X)
@@ -119,7 +156,7 @@ Y = ΣF(X)
 @test nparts(Y, :E) == 4
 @test length(Y[:src] ∩ Y[:tgt]) == 0
 
-@test Σ(idF, Graph, Graph)(Y) == Y
+@test SigmaMigration(idF, Graph, Graph)(Y) == Y
 
 @present ThSpan(FreeSchema) begin
   (L1, L2, A)::Ob
@@ -151,7 +188,7 @@ bang = FinFunctor(
   ThSpan, ThInitial
 )
 
-Σbang = Σ(bang, Span, Initial)
+Σbang = SigmaMigration(bang, Span, Initial)
 Y = Σbang(X)
 
 @test nparts(Y, :I) == 4
@@ -159,11 +196,11 @@ Y = Σbang(X)
 vertex = FinFunctor(Dict(I => VG), Dict(), ThInitial, TheoryGraph)
 edge = FinFunctor(Dict(I => EG), Dict(), ThInitial, TheoryGraph)
 
-Z = Σ(vertex, Initial, Graph)(Y)
+Z = SigmaMigration(vertex, Initial, Graph)(Y)
 @test nparts(Z, :V) == 4
 @test nparts(Z, :E) == 0
 
-Z = Σ(edge, Initial, Graph)(Y)
+Z = SigmaMigration(edge, Initial, Graph)(Y)
 @test nparts(Z, :V) == 8
 @test nparts(Z, :E) == 4
 @test Z[:src] ∪ Z[:tgt] == 1:8

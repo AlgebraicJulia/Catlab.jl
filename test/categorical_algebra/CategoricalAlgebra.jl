@@ -2,6 +2,11 @@ module TestCategoricalAlgebra
 
 using Test
 
+@testset "Categories" begin
+  include("Categories.jl")
+  include("FinCats.jl")
+end
+
 @testset "FreeDiagrams" begin
   include("FreeDiagrams.jl")
 end
@@ -30,11 +35,6 @@ end
 @testset "CSets" begin
   include("CSetDataStructures.jl")
   include("CSets.jl")
-end
-
-@testset "Categories" begin
-  include("Categories.jl")
-  include("FinCats.jl")
   include("CatElements.jl")
 end
 
@@ -43,8 +43,8 @@ end
   include("CommutativeDiagrams.jl")
 end
 
-@testset "DataMigration" begin
-  include("DataMigration.jl")
+@testset "DataMigrations" begin
+  include("DataMigrations.jl")
 end
 
 @testset "StructuredCospans" begin

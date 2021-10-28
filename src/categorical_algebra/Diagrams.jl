@@ -4,8 +4,10 @@ module Diagrams
 export Diagram, DiagramHom, id, op, co, shape, diagram, shape_map, diagram_map,
   ob_map, hom_map
 
+using StaticArrays: SVector
+
 using ...GAT
-import ...Theories: Category, dom, codom, id, compose, ⋅, ∘
+import ...Theories: Category, dom, codom, id, compose, ⋅, ∘, munit
 import ..Categories: ob_map, hom_map
 using ..FinCats
 using ..FinCats: mapvals
@@ -31,10 +33,10 @@ perfectly well by a `FinDomFunctor`, but there are several different notions of
 morphism between diagrams. This simple wrapper type exists to distinguish them.
 See [`DiagramHom`](@ref) for more.
 """
-struct Diagram{T,D<:FinDomFunctor}
+struct Diagram{T,C<:Cat,D<:Functor{<:FinCat,C}}
   diagram::D
 end
-Diagram{T}(F::D) where {T,D<:FinDomFunctor} = Diagram{T,D}(F)
+Diagram{T}(F::D) where {T,C<:Cat,D<:Functor{<:FinCat,C}} = Diagram{T,C,D}(F)
 Diagram{T}(d::Diagram) where T = Diagram{T}(d.diagram)
 Diagram(args...) = Diagram{id}(args...)
 
@@ -70,36 +72,37 @@ type `DiagramHom{op}` induce morphisms between the limits of the diagram,
 whereas morphisms of type `DiagramHom{co}` generalize morphisms of polynomial
 functors.
 """
-struct DiagramHom{T,F<:FinFunctor,Φ<:FinTransformation,D<:FinDomFunctor}
+struct DiagramHom{T,C<:Cat,F<:FinFunctor,Φ<:FinTransformation,D<:Functor{<:FinCat,C}}
   shape_map::F
   diagram_map::Φ
   precomposed_diagram::D
 end
 DiagramHom{T}(shape_map::F, diagram_map::Φ, precomposed_diagram::D) where
-    {T,F<:FinFunctor,Φ<:FinTransformation,D<:FinDomFunctor} =
-  DiagramHom{T,F,Φ,D}(shape_map, diagram_map, precomposed_diagram)
+    {T,C,F<:FinFunctor,Φ<:FinTransformation,D<:Functor{<:FinCat,C}} =
+  DiagramHom{T,C,F,Φ,D}(shape_map, diagram_map, precomposed_diagram)
 DiagramHom{T}(f::DiagramHom) where T =
   DiagramHom{T}(f.shape_map, f.diagram_map, f.precomposed_diagram)
 DiagramHom(args...) = DiagramHom{id}(args...)
 
 DiagramHom{T}(ob_maps, hom_map, D::Diagram{T}, D′::Diagram{T}) where T =
   DiagramHom{T}(ob_maps, hom_map, diagram(D), diagram(D′))
-DiagramHom{T}(ob_maps, D::FinDomFunctor, D′::FinDomFunctor) where T =
+DiagramHom{T}(ob_maps, D::Union{Diagram{T},FinDomFunctor},
+              D′::Union{Diagram{T},FinDomFunctor}) where T =
   DiagramHom{T}(ob_maps, nothing, D, D′)
 
 function DiagramHom{id}(ob_maps, hom_map, D::FinDomFunctor, D′::FinDomFunctor)
   f = FinFunctor(mapvals(cell1, ob_maps), hom_map, dom(D), dom(D′))
-  ϕ = FinTransformation(mapvals(x -> cell2(D,x), ob_maps), D, f⋅D′)
+  ϕ = FinTransformation(mapvals(x -> cell2(D′,x), ob_maps), D, f⋅D′)
   DiagramHom{id}(f, ϕ, D′)
 end
 function DiagramHom{op}(ob_maps, hom_map, D::FinDomFunctor, D′::FinDomFunctor)
   f = FinDomFunctor(mapvals(cell1, ob_maps), hom_map, dom(D′), dom(D))
-  ϕ = FinTransformation(mapvals(x -> cell2(D′,x), ob_maps), f⋅D, D′)
+  ϕ = FinTransformation(mapvals(x -> cell2(D,x), ob_maps), f⋅D, D′)
   DiagramHom{op}(f, ϕ, D)
 end
 function DiagramHom{co}(ob_maps, hom_map, D::FinDomFunctor, D′::FinDomFunctor)
   f = FinDomFunctor(mapvals(cell1, ob_maps), hom_map, dom(D), dom(D′))
-  ϕ = FinTransformation(mapvals(x -> cell2(D,x), ob_maps), f⋅D′, D)
+  ϕ = FinTransformation(mapvals(x -> cell2(D′,x), ob_maps), f⋅D′, D)
   DiagramHom{co}(f, ϕ, D′)
 end
 
@@ -166,5 +169,19 @@ op(d::Diagram{op}) = Diagram{co}(d)
 op(d::Diagram{co}) = Diagram{op}(d)
 op(f::DiagramHom{op}) = DiagramHom{co}(f)
 op(f::DiagramHom{co}) = DiagramHom{op}(f)
+
+# Monads of diagrams
+####################
+
+# TODO: Define monad multiplications that go along with the units.
+
+function munit(::Type{Diagram{T}}, C::Cat, c) where T
+  Diagram{T}(FinDomFunctor(SVector(c), FinCat(1), C))
+end
+
+function munit(::Type{DiagramHom{T}}, C::Cat, f) where T
+  DiagramHom{T}(SVector(Pair(1, f)), munit(DiagramHom{T}, C, dom(C,f)),
+                munit(DiagramHom{T}, C, codom(C,f)))
+end
 
 end

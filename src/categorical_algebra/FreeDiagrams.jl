@@ -20,10 +20,11 @@ export FreeDiagram, BipartiteFreeDiagram, FixedShapeFreeDiagram,
 using AutoHashEquals
 using StaticArrays: StaticVector, SVector
 
-using ...Present, ...Theories, ...CSetDataStructures, ...Graphs
+using ...Present, ...Theories, ...CSetDataStructures, ...Graphs, ..FinCats
 import ...Theories: ob, hom, dom, codom, left, right
 using ...Graphs.BasicGraphs: TheoryGraph
 using ...Graphs.BipartiteGraphs: TheoryUndirectedBipartiteGraph
+import ..FinCats: FreeCatGraph, FinDomFunctor, collect_ob, collect_hom
 
 # Diagram interface
 ###################
@@ -385,8 +386,8 @@ function BipartiteFreeDiagram(para::ParallelMorphisms{Dom,Codom,Hom}) where {Dom
   return d
 end
 
-# General free diagrams
-#----------------------
+# Free diagrams
+#--------------
 
 @present TheoryFreeDiagram <: TheoryGraph begin
   Ob::AttrType
@@ -452,12 +453,47 @@ function FreeDiagram(comp::ComposableMorphisms{Ob,Hom}) where {Ob,Hom}
 end
 
 function FreeDiagram(diagram::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
-  # Should be a pushforward data migration but that is not yet implemented.
   d = FreeDiagram{Ob,Hom}()
   vs₁ = add_vertices!(d, nv₁(diagram), ob=ob₁(diagram))
   vs₂ = add_vertices!(d, nv₂(diagram), ob=ob₂(diagram))
   add_edges!(d, vs₁[src(diagram)], vs₂[tgt(diagram)], hom=hom(diagram))
   return d
 end
+
+function FreeDiagram(F::FinDomFunctor{<:FreeCatGraph,<:TypeCat{Ob,Hom}}) where {Ob,Hom}
+  diagram = FreeDiagram{Ob,Hom}()
+  copy_parts!(diagram, graph(dom(F)))
+  diagram[:ob] = collect_ob(F)
+  diagram[:hom] = collect_hom(F)
+  diagram
+end
+
+# FinDomFunctors as diagrams
+#---------------------------
+
+diagram_type(F::FinDomFunctor{Dom,Codom}) where {Ob,Hom,Dom,Codom<:Cat{Ob,Hom}} =
+  Tuple{Ob,Hom}
+cone_objects(F::FinDomFunctor) = collect_ob(F)
+cocone_objects(F::FinDomFunctor) = collect_ob(F)
+
+""" Wrapper type to interpret `FreeDiagram` as a `FinDomFunctor`.
+"""
+@auto_hash_equals struct FreeDiagramFunctor{Ob,Hom,Codom} <:
+    FinDomFunctor{FreeCatGraph{FreeDiagram{Ob,Hom}},Codom}
+  diagram::FreeDiagram{Ob,Hom}
+  codom::Codom
+end
+FinDomFunctor(diagram::FreeDiagram, codom::Cat) =
+  FreeDiagramFunctor(diagram, codom)
+FinDomFunctor(diagram::FreeDiagram{Ob,Hom}) where {Ob,Hom} =
+  FreeDiagramFunctor(diagram, TypeCat(Ob, Hom))
+
+dom(F::FreeDiagramFunctor) = FreeCatGraph(F.diagram)
+
+Categories.do_ob_map(F::FreeDiagramFunctor, x) = ob(F.diagram, x)
+Categories.do_hom_map(F::FreeDiagramFunctor, f) = hom(F.diagram, f)
+
+collect_ob(F::FreeDiagramFunctor) = ob(F.diagram)
+collect_hom(F::FreeDiagramFunctor) = hom(F.diagram)
 
 end

@@ -10,11 +10,12 @@ using Catlab.Graphs.BasicGraphs: TheoryGraph
 end
 @acset_type DDS(TheoryDDS, index=[:Φ])
 
-# FinSets interop
-#################
+# Sets interop
+##############
 
 g = Graph(6)
 add_edges!(g, 2:4, 3:5)
+@test FinSet(g, :V) == FinSet(6)
 f = FinFunction(g, :V)
 @test collect(f) == 1:6
 @test is_indexed(f)
@@ -32,6 +33,10 @@ f = FinDomFunction(g, :tgt)
 @test is_indexed(f)
 
 g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5, 1.5],))
+@test TypeSet(g, :Weight) == TypeSet(Float64)
+@test TypeSet(g, :V) == TypeSet(Int)
+@test_throws ArgumentError TypeSet(g, :W)
+
 f = FinDomFunction(g, :weight)
 @test codom(f) == TypeSet(Float64)
 @test collect(f) == [0.5, 1.5]
