@@ -285,20 +285,20 @@ end
 
 pretty_tables(acs::ACSet; kw...) = pretty_tables(stdout, acs; kw...)
 
-function Base.show(io::IO, ::MIME"text/plain", acs::ACSet)
-  print(io, "ACSet")
+function Base.show(io::IO, ::MIME"text/plain", acs::T) where T <: ACSet
+  print(io, T)
   print(io, " with elements ")
-  join(io, ["$ob = 1:$(nparts(acs,ob))" for ob in keys(tables(acs))], ", ")
+  join(io, ["$ob = $(parts(acs,ob))" for ob in keys(tables(acs))], ", ")
   println(io)
   pretty_tables(io, acs)
 end
 
-function Base.show(io::IO, ::MIME"text/html", acs::ACSet)
+function Base.show(io::IO, ::MIME"text/html", acs::T) where T <: ACSet
   println(io, "<div class=\"c-set\">")
   print(io, "<span class=\"c-set-summary\">")
-  print(io, "ACSet")
+  print(io, T)
   print(io, " with elements ")
-  join(io, ["$ob = 1:$(nparts(acs,ob))" for ob in keys(tables(acs))], ", ")
+  join(io, ["$ob = $(parts(acs,ob))" for ob in keys(tables(acs))], ", ")
   println(io, "</span>")
   pretty_tables(io, acs, backend=Val(:html), standalone=false)
   println(io, "</div>")
