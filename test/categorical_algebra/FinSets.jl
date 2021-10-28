@@ -25,6 +25,8 @@ set = FinSet(Set(1:2:5))
 set = FinSet((x=[1,3,5], y=['a','b','c']))
 @test length(set) == 3
 @test map(NamedTuple, set) == [(x=1, y='a'), (x=3, y='b'), (x=5, y='c')]
+@test startswith(sshow(set), "TabularSet(")
+@test startswith(sprint(show, MIME("text/plain"), set), "3-element TabularSet")
 
 # Discrete categories
 #####################

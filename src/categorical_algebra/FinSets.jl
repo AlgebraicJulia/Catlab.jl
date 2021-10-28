@@ -11,7 +11,7 @@ using DataStructures: OrderedDict, IntDisjointSets, union!, find_root!
 using Reexport
 import StaticArrays
 using StaticArrays: StaticVector, SVector, SizedVector, similar_type
-import Tables
+import Tables, PrettyTables
 
 @reexport using ..Sets
 using ...GAT, ...Theories, ...CSetDataStructures, ...Graphs
@@ -85,6 +85,16 @@ FinSet(nt::NamedTuple) = TabularSet(nt)
 
 Base.iterate(set::TabularSet, args...) = iterate(Tables.rows(set.table), args...)
 Base.length(set::TabularSet) = Tables.rowcount(set.table)
+
+Base.show(io::IO, set::TabularSet) = print(io, "TabularSet($(set.table))")
+
+function Base.show(io::IO, ::MIME"text/plain", set::TabularSet{T}) where T
+  print(io, "$(length(set))-element TabularSet{$T}")
+  if !get(io, :compact, false)
+    println(io, ":")
+    PrettyTables.pretty_table(io, set.table, nosubheader=true)
+  end
+end
 
 # Discrete categories
 #--------------------
