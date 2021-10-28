@@ -96,6 +96,14 @@ function Base.show(io::IO, ::MIME"text/plain", set::TabularSet{T}) where T
   end
 end
 
+function Base.show(io::IO, ::MIME"text/html", set::TabularSet)
+  println(io, "<div class=\"tabular-set\">")
+  println(io, "$(length(set))-element TabularSet")
+  PrettyTables.pretty_table(io, set.table, backend=Val(:html), standalone=false,
+                            nosubheader=true)
+  println(io, "</div>")
+end
+
 # Discrete categories
 #--------------------
 
