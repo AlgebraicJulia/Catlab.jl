@@ -602,16 +602,21 @@ end
 
 function Base.show(io::IO, acs::T) where {S,T<:StructACSet{S}}
   s = SchemaDesc(S)
-  print(io, T)
-  println(io, "(")
-  join(io, Iterators.flatten((
-    ("  $ob = $(parts(acs,ob))" for ob in s.obs),
-    ("  $f : $(s.doms[f]) → $(s.codoms[f]) = $(subpart(acs,f))"
-     for f in s.homs),
-    ("  $a : $(s.doms[a]) → $(s.codoms[a]) = $(subpart(acs,a))"
-     for a in s.attrs),
-  )), ",\n")
-  print(io, ")")
+  if get(io, :compact, false)
+    print(io, nameof(T))
+    print(io, ": ")
+    join(io, ("$ob = $(nparts(acs,ob))" for ob in s.obs), ", ")
+  else
+    print(io, T)
+    println(io, ":")
+    join(io, Iterators.flatten((
+      ("  $ob = $(parts(acs,ob))" for ob in s.obs),
+      ("  $f : $(s.doms[f]) → $(s.codoms[f]) = $(subpart(acs,f))"
+       for f in s.homs),
+      ("  $a : $(s.doms[a]) → $(s.codoms[a]) = $(subpart(acs,a))"
+       for a in s.attrs),
+    )), "\n")
+  end
 end
 
 # TODO: implement Tables interface
