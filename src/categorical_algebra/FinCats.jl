@@ -75,6 +75,14 @@ graph(C::FinCatGraph) = C.graph
 ob_generators(C::FinCatGraph) = vertices(graph(C))
 hom_generators(C::FinCatGraph) = edges(graph(C))
 
+function Base.show(io::IO, C::FinCatGraph)
+  print(io, "FinCat(")
+  show(io, graph(C))
+  print(io, ", [")
+  join(io, equations(C), ", ")
+  print(io, "])")
+end
+
 # Paths in graphs
 #----------------
 
@@ -114,6 +122,12 @@ function Base.vcat(p1::Path, p2::Path)
   Path(vcat(edges(p1), edges(p2)), src(p1), tgt(p2))
 end
 
+function Base.show(io::IO, path::Path)
+  print(io, "Path(")
+  show(io, edges(path))
+  print(io, ": $(src(path)) → $(tgt(path)))")
+end
+
 """ Abstract type for category whose morphisms are paths in a graph.
 
 (Or equivalence classes of paths in a graph, but we compute with
@@ -151,6 +165,12 @@ end
 FinCatGraph(g::HasGraph) = FreeCatGraph(g)
 
 is_free(::FreeCatGraph) = true
+
+function Base.show(io::IO, C::FreeCatGraph)
+  print(io, "FinCat(")
+  show(io, graph(C))
+  print(io, ")")
+end
 
 # Category on graph with equations
 #---------------------------------
@@ -227,6 +247,12 @@ hom(C::FinCatPresentation, f::GATExpr) =
 hom(C::FinCatPresentation{Schema}, f::GATExpr) =
   gat_typeof(f) ∈ (:Hom, :Attr) ? f :
     error("Expression $f is not a morphism or attribute")
+
+function Base.show(io::IO, C::FinCatPresentation)
+  print(io, "FinCat(")
+  show(io, presentation(C))
+  print(io, ")")
+end
 
 # Functors
 ##########

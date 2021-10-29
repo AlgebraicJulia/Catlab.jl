@@ -81,7 +81,7 @@ s = sprint(show, dds)
 @test occursin("X = 1:3", s)
 @test occursin("Φ : X → X = ", s)
 s = sprint(show, dds, context=:compact => true)
-@test occursin("DDS:", s)
+@test occursin("DDS", s)
 @test !occursin("\n", s)
 @test occursin("X = 3", s)
 

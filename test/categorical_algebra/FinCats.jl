@@ -18,6 +18,7 @@ C = FinCat(g)
 @test hom(C, 1) == Path(g, 1)
 @test ob_generators(C) == 1:2
 @test hom_generators(C) == 1:3
+@test startswith(sprint(show, C), "FinCat($(Graph)")
 
 h = Graph(4)
 add_edges!(h, [1,1,2,3], [2,3,4,4])
@@ -83,6 +84,9 @@ add_edges!(Δ¹_graph, [1,1,2], [2,2,1])
 @test graph(Δ¹) == Δ¹_graph
 @test length(equations(Δ¹)) == 2
 @test !is_free(Δ¹)
+s = sprint(show, Δ¹)
+@test startswith(s, "FinCat($(Graph)")
+@test contains(s, "Path")
 
 # Symbolic categories
 #####################
@@ -104,6 +108,7 @@ end
 @test first.(hom_generators(Δ¹)) == [:δ₀, :δ₁, :σ₀]
 @test length(equations(Δ¹)) == 2
 @test !is_free(Δ¹)
+@test startswith(sprint(show, Δ¹), "FinCat(")
 
 # Graph as set-valued functor on a free category.
 F = FinDomFunctor(TheoryGraph, path_graph(Graph, 3))
