@@ -71,7 +71,11 @@ Base.iterate(set::FinSetCollection, args...) = iterate(set.collection, args...)
 Base.length(set::FinSetCollection) = length(set.collection)
 Base.in(set::FinSetCollection, elem) = in(elem, set.collection)
 
-Base.show(io::IO, set::FinSetCollection) = print(io, "FinSet($(set.collection)")
+function Base.show(io::IO, set::FinSetCollection)
+  print(io, "FinSet(")
+  show(io, set.collection)
+  print(io, ")")
+end
 
 """ Finite set whose elements are rows of a table.
 
@@ -86,7 +90,11 @@ FinSet(nt::NamedTuple) = TabularSet(nt)
 Base.iterate(set::TabularSet, args...) = iterate(Tables.rows(set.table), args...)
 Base.length(set::TabularSet) = Tables.rowcount(set.table)
 
-Base.show(io::IO, set::TabularSet) = print(io, "TabularSet($(set.table))")
+function Base.show(io::IO, set::TabularSet)
+  print(io, "TabularSet(")
+  show(io, set.table)
+  print(io, ")")
+end
 
 function Base.show(io::IO, ::MIME"text/plain", set::TabularSet{T}) where T
   print(io, "$(length(set))-element TabularSet{$T}")
@@ -135,6 +143,9 @@ FinDomFunctor(ob_map, ::Nothing, dom::DiscreteCat, codom::Cat) =
   FinDomFunctor(ob_map, dom, codom)
 
 hom_map(F::FinDomFunctor{<:DiscreteCat}, x) = id(codom(F), ob_map(F, x))
+
+Base.show(io::IO, C::DiscreteCat{Int,FinSetInt}) =
+  print(io, "FinCat($(length(C.set)))")
 
 # Finite functions
 ##################

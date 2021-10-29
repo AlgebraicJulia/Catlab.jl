@@ -604,8 +604,9 @@ function Base.show(io::IO, acs::T) where {S,T<:StructACSet{S}}
   s = SchemaDesc(S)
   if get(io, :compact, false)
     print(io, nameof(T))
-    print(io, ": ")
+    print(io, " {")
     join(io, ("$ob = $(nparts(acs,ob))" for ob in s.obs), ", ")
+    print(io, "}")
   else
     print(io, T)
     println(io, ":")
