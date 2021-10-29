@@ -52,7 +52,7 @@ abstract type SetFunction{Dom <: SetOb, Codom <: SetOb} end
 SetFunction(f::Function, args...) = SetFunctionCallable(f, args...)
 SetFunction(::typeof(identity), args...) = SetFunctionIdentity(args...)
 
-show_type(io::IO, ::Type{<:SetFunction}) = print(io, "SetFunction")
+show_type_constructor(io::IO, ::Type{<:SetFunction}) = print(io, "SetFunction")
 
 """ Function in **Set** defined by a callable Julia object.
 """
@@ -75,8 +75,12 @@ end
 
 function Base.show(io::IO, f::F) where F <: SetFunctionCallable
   func = f.func.obj[] # Deference FunctionWrapper
-  show_type(io, F)
-  print(io, "($(nameof(func)), $(f.dom), $(f.codom))")
+  show_type_constructor(io, F)
+  print(io, "($(nameof(func)), ")
+  show(IOContext(io, :compact=>true), dom(f))
+  print(io, ", ")
+  show(IOContext(io, :compact=>true), codom(f))
+  print(io, ")")
 end
 
 """ Identity function in **Set**.
@@ -95,8 +99,9 @@ codom(f::SetFunctionIdentity) = f.dom
 (f::SetFunctionIdentity)(x) = x
 
 function Base.show(io::IO, f::F) where F <: SetFunctionIdentity
-  show_type(io, F)
-  print(io, "(identity, $(f.dom))")
+  print(io, "id(")
+  show(IOContext(io, :compact=>true), dom(f))
+  print(io, ")")
 end
 
 """ Function in **Set** taking a constant value.

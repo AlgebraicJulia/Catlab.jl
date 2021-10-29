@@ -36,6 +36,7 @@ F = FinFunctor((V=[1,4], E=[[1,3], [2,4]]), C, D)
 @test codom(F) == D
 @test is_functorial(F)
 @test Ob(F) == FinFunction([1,4], FinSet(4))
+@test startswith(sprint(show, F), "FinFunctor($([1,4]),")
 
 @test ob_map(F, 2) == 4
 @test hom_map(F, 1) == Path(h, [1,3])
@@ -60,6 +61,8 @@ F = FinDomFunctor([FinSet(2), FinSet(3)], [f,g], C)
 @test is_functorial(F)
 @test dom(F) == C
 @test codom(F) isa TypeCat{<:FinSet{Int},<:FinFunction{Int}}
+@test startswith(sprint(show, F), "FinDomFunctor(")
+
 @test ob_map(F, 1) == FinSet(2)
 @test hom_map(F, 2) == g
 

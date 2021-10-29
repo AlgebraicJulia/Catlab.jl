@@ -9,11 +9,14 @@ using Catlab.CategoricalAlgebra.Sets, Catlab.CategoricalAlgebra.Categories
 
 C = TypeCat(FreeCategory.Ob, FreeCategory.Hom)
 @test Ob(C) == TypeSet(FreeCategory.Ob)
+@test sprint(show, C) == "TypeCat($(FreeCategory.Ob), $(FreeCategory.Hom))"
+
+F = id(C)
+@test (dom(F), codom(F)) == (C, C)
+@test startswith(sprint(show, F), "id(TypeCat(")
 
 x, y = Ob(FreeCategory, :x, :y)
 f = Hom(:f, x, y)
-F = id(C)
-@test (dom(F), codom(F)) == (C, C)
 @test F(x) == x
 @test F(f) == f
 

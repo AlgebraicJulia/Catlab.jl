@@ -177,7 +177,8 @@ function FinFunction(f::AbstractVector{Int}, args...; index=false)
   end
 end
 
-Sets.show_type(io::IO, ::Type{<:FinFunction}) = print(io, "FinFunction")
+Sets.show_type_constructor(io::IO, ::Type{<:FinFunction}) =
+  print(io, "FinFunction")
 
 """ Function out of a finite set.
 
@@ -199,7 +200,8 @@ function FinDomFunction(f::AbstractVector, args...; index=false)
   end
 end
 
-Sets.show_type(io::IO, ::Type{<:FinDomFunction}) = print(io, "FinDomFunction")
+Sets.show_type_constructor(io::IO, ::Type{<:FinDomFunction}) =
+  print(io, "FinDomFunction")
 
 """ Function in **Set** represented by a vector.
 
@@ -225,8 +227,13 @@ dom(f::FinDomFunctionVector) = FinSet(length(f.func))
 
 (f::FinDomFunctionVector)(x) = f.func[x]
 
-Base.show(io::IO, f::FinDomFunctionVector) =
-  print(io, "FinDomFunction($(f.func), $(dom(f)), $(codom(f)))")
+function Base.show(io::IO, f::FinDomFunctionVector)
+  print(io, "FinDomFunction($(f.func), ")
+  show(IOContext(io, :compact=>true), dom(f))
+  print(io, ", ")
+  show(IOContext(io, :compact=>true), codom(f))
+  print(io, ")")
+end
 
 """ Force evaluation of lazy function or relation.
 """
@@ -251,7 +258,7 @@ Sets.do_compose(f::FinFunctionVector, g::FinDomFunctionVector) =
 @cocartesian_monoidal_instance FinSet FinFunction
 
 Ob(C::FinCat{Int}) = FinSet(length(ob_generators(C)))
-Ob(F::FinCats.FinDomFunctorVector) = FinDomFunction(F.ob_map, Ob(codom(F)))
+Ob(F::Functor{<:FinCat{Int}}) = FinDomFunction(collect_ob(F), Ob(codom(F)))
 
 # Indexed functions
 #------------------
@@ -287,8 +294,13 @@ Base.:(==)(f::Union{FinDomFunctionVector,IndexedFinDomFunction},
   # Ignore index when comparing for equality.
   f.func == g.func && codom(f) == codom(g)
 
-Base.show(io::IO, f::IndexedFinDomFunction) =
-  print(io, "FinDomFunction($(f.func), $(dom(f)), $(codom(f)), index=true)")
+function Base.show(io::IO, f::IndexedFinDomFunction)
+  print(io, "FinDomFunction($(f.func), ")
+  show(IOContext(io, :compact=>true), dom(f))
+  print(io, ", ")
+  show(IOContext(io, :compact=>true), codom(f))
+  print(io, ", index=true)")
+end
 
 dom(f::IndexedFinDomFunction) = FinSet(length(f.func))
 force(f::IndexedFinDomFunction) = f
