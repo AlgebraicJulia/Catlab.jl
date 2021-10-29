@@ -282,6 +282,9 @@ end
 (F::FinDomFunctor)(expr::ObExpr) = ob_map(F, expr)
 (F::FinDomFunctor)(expr::HomExpr) = hom_map(F, expr)
 
+Categories.show_type_constructor(io::IO, ::Type{<:FinDomFunctor}) =
+  print(io, "FinDomFunctor")
+
 """ Is the purported functor on a presented category functorial?
 
 This function checks that functor preserves domains and codomains. When
@@ -316,6 +319,9 @@ FinFunctor(ob_map, hom_map, dom::FinCat, codom::FinCat) =
   FinDomFunctor(ob_map, hom_map, dom, codom)
 FinFunctor(ob_map, hom_map, dom::Presentation, codom::Presentation) =
   FinDomFunctor(ob_map, hom_map, FinCat(dom), FinCat(codom))
+
+Categories.show_type_constructor(io::IO, ::Type{<:FinFunctor}) =
+  print(io, "FinFunctor")
 
 # Mapping-based functors
 #-----------------------
@@ -354,25 +360,21 @@ functor_key(C::FinCat, expr::GATExpr) = head(expr) == :generator ?
 Categories.do_ob_map(F::FinDomFunctorMap, x) = F.ob_map[x]
 Categories.do_hom_map(F::FinDomFunctorMap, f) = F.hom_map[f]
 
+collect_ob(F::FinDomFunctorMap) = values(F.ob_map)
+collect_hom(F::FinDomFunctorMap) = values(F.hom_map)
+
 function Categories.do_compose(F::FinDomFunctorMap, G::FinDomFunctorMap)
   FinDomFunctorMap(mapvals(x -> ob_map(G, x), F.ob_map),
                    mapvals(f -> hom_map(G, f), F.hom_map), dom(F), codom(G))
 end
 
-""" Functor object and morphism maps given as vectors.
-"""
-const FinDomFunctorVector{Dom<:FinCat,Codom<:Cat,
-                          ObMap<:AbstractVector,HomMap<:AbstractVector} =
-  FinDomFunctorMap{Dom,Codom,ObMap,HomMap}
-
-collect_ob(F::FinDomFunctorVector) = F.ob_map
-collect_hom(F::FinDomFunctorVector) = F.hom_map
-
-""" Functor with object and morphism maps given as dictionaries.
-"""
-const FinDomFunctorDict{Dom<:FinCat,Codom<:Cat,
-                        ObMap<:AbstractDict,HomMap<:AbstractDict} =
-  FinDomFunctorMap{Dom,Codom,ObMap,HomMap}
+function Base.show(io::IO, F::T) where T <: FinDomFunctorMap
+  Categories.show_type_constructor(io, T); print(io, "(")
+  show(io, F.ob_map); print(io, ", ")
+  show(io, F.hom_map); print(io, ", ")
+  show(IOContext(io, :compact=>true), dom(F)); print(io, ", ")
+  show(IOContext(io, :compact=>true), codom(F)); print(io, ")")
+end
 
 # Natural transformations
 #########################

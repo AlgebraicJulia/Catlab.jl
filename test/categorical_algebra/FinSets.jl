@@ -22,16 +22,14 @@ set = FinSet(Set(1:2:5))
 @test startswith(sshow(set), "FinSet(Set(")
 
 # Tables as sets.
-set = FinSet((x=[1,3,5], y=['a','b','c']))
+set = FinSet((x=[1,3,5], y=["a","b","c"]))
 @test length(set) == 3
-@test map(NamedTuple, set) == [(x=1, y='a'), (x=3, y='b'), (x=5, y='c')]
+@test map(NamedTuple, set) == [(x=1, y="a"), (x=3, y="b"), (x=5, y="c")]
 @test startswith(sshow(set), "TabularSet(")
-@test startswith(sprint(show, MIME("text/plain"), set), "3-element TabularSet")
-@test startswith(sprint(show, MIME("text/html"), set), "<div")
+@test startswith(sshow(MIME("text/plain"), set), "3-element TabularSet")
+@test startswith(sshow(MIME("text/html"), set), "<div")
 
-# Discrete categories
-#####################
-
+# Discrete categories.
 C = FinCat(FinSet(3))
 @test C isa FinCat{Int,Int}
 @test is_discrete(C)
@@ -89,7 +87,7 @@ g = FinFunction(5:-1:1)
 # Pretty-print.
 @test sshow(FinFunction(rot3, 3, 3)) ==
   "FinFunction(rot3, FinSet(3), FinSet(3))"
-@test sshow(id(FinSet(3))) == "FinFunction(identity, FinSet(3))"
+@test sshow(id(FinSet(3))) == "id(FinSet(3))"
 @test sshow(FinFunction([1,3,4], 5)) == "FinFunction($([1,3,4]), 3, 5)"
 @test sshow(FinFunction([1,3,4], 5, index=true)) ==
   "FinFunction($([1,3,4]), 3, 5, index=true)"
