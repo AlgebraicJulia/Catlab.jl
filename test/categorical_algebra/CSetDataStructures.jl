@@ -77,22 +77,22 @@ rem_parts!(dds, :X, [1,4])
 dds = DDS()
 add_parts!(dds, :X, 3, Φ=[2,3,3])
 s = sprint(show, dds)
-@test occursin("DDS:", s)
-@test occursin("X = 1:3", s)
-@test occursin("Φ : X → X = ", s)
+@test contains(s, "DDS:")
+@test contains(s, "X = 1:3")
+@test contains(s, "Φ : X → X = ")
 s = sprint(show, dds, context=:compact => true)
-@test occursin("DDS", s)
-@test !occursin("\n", s)
-@test occursin("X = 3", s)
+@test contains(s, "DDS")
+@test !contains(s, "\n")
+@test contains(s, "X = 3")
 
 s = sprint(show, MIME"text/plain"(), dds)
-@test occursin("DDS", s)
-@test occursin("X = 1:3", s)
-@test occursin("│ X │", s)
+@test contains(s, "DDS")
+@test contains(s, "X = 1:3")
+@test contains(s, "│ X │")
 
 s = sprint(show, MIME"text/html"(), dds)
 @test startswith(s, "<div class=\"c-set\">")
-@test occursin("<table>", s)
+@test contains(s, "<table>")
 @test endswith(rstrip(s), "</div>")
 
 # Special case of pretty print: empty table.
@@ -202,11 +202,11 @@ du = disjoint_union(d, d2)
 
 # Pretty printing of data attributes.
 s = sprint(show, d)
-@test occursin("Dendrogram{Int64}:", s)
-@test occursin("height : X → R = ", s)
+@test contains(s, "Dendrogram{Int64}:")
+@test contains(s, "height : X → R = ")
 
 s = sprint(show, MIME"text/plain"(), d)
-@test occursin("Dendrogram{Int64}", s)
+@test contains(s, "Dendrogram{Int64}")
 
 # Allow type inheritance for data attributes.
 d_abs = Dendrogram{Number}()
@@ -302,9 +302,9 @@ rem_part!(lset, :X, 1)
 # Pretty-printing with unitialized data attribute.
 lset = IndexedLabeledSet{Symbol}()
 add_part!(lset, :X)
-@test occursin("#undef", sprint(show, lset))
-@test occursin("#undef", sprint(show, MIME"text/plain"(), lset))
-@test occursin("#undef", sprint(show, MIME"text/html"(), lset))
+@test contains(sprint(show, lset), "#undef")
+@test contains(sprint(show, MIME"text/plain"(), lset), "#undef")
+@test contains(sprint(show, MIME"text/html"(), lset), "#undef")
 
 # Labeled sets with unique index
 #-------------------------------
