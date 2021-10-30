@@ -124,11 +124,23 @@ do_hom_map(F::IdentityFunctor, f) = hom(F.dom, f)
 
 function Base.show(io::IO, F::IdentityFunctor)
   print(io, "id(")
-  show(IOContext(io, :compact=>true), dom(F))
+  show_domains(io, F, codomain=false)
   print(io, ")")
 end
 
 show_type_constructor(io::IO, ::Type{<:Functor}) = print(io, "Functor")
+
+function show_domains(io::IO, f; codomain::Bool=true, recurse::Bool=true)
+  if get(io, :hide_domains, false)
+    print(io, "…")
+  else
+    show(IOContext(io, :compact=>true, :hide_domains=>!recurse), dom(f))
+    if codomain
+      print(io, ", ")
+      show(IOContext(io, :compact=>true, :hide_domains=>!recurse), codom(f))
+    end
+  end
+end
 
 # Instances
 #----------

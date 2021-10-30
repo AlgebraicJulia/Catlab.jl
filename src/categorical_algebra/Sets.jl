@@ -14,6 +14,7 @@ using FunctionWrappers: FunctionWrapper
 using ...GAT, ..Categories, ..FreeDiagrams, ..Limits
 using ...Theories: Category
 import ...Theories: Ob, dom, codom, id, compose, ⋅, ∘
+import ..Categories: show_type_constructor, show_domains
 import ..Limits: limit, universal
 
 # Data types
@@ -77,9 +78,7 @@ function Base.show(io::IO, f::F) where F <: SetFunctionCallable
   func = f.func.obj[] # Deference FunctionWrapper
   show_type_constructor(io, F)
   print(io, "($(nameof(func)), ")
-  show(IOContext(io, :compact=>true), dom(f))
-  print(io, ", ")
-  show(IOContext(io, :compact=>true), codom(f))
+  show_domains(io, f)
   print(io, ")")
 end
 
@@ -100,7 +99,7 @@ codom(f::SetFunctionIdentity) = f.dom
 
 function Base.show(io::IO, f::F) where F <: SetFunctionIdentity
   print(io, "id(")
-  show(IOContext(io, :compact=>true), dom(f))
+  show_domains(io, f, codomain=false)
   print(io, ")")
 end
 
