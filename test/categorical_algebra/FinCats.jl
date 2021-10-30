@@ -136,6 +136,8 @@ G = FinDomFunctor(TheoryGraph, g)
 @test codom_ob(α) isa TypeCat{<:FinSet{Int},<:FinFunction{Int}}
 @test is_natural(α)
 @test α[:V](3) == 2
+@test startswith(sprint(show, α), "FinTransformation(")
+
 σ = FinTransformation(G, G, V=id(FinSet(2)), E=FinFunction([2,1,4,3]))
 @test σ⋅σ == FinTransformation(G, G, V=id(FinSet(2)), E=FinFunction(1:4))
 @test α⋅σ == FinTransformation(F, G, V=FinFunction([1,2,2]), E=FinFunction([2,4]))

@@ -370,10 +370,12 @@ end
 
 function Base.show(io::IO, F::T) where T <: FinDomFunctorMap
   Categories.show_type_constructor(io, T); print(io, "(")
-  show(io, F.ob_map); print(io, ", ")
-  show(io, F.hom_map); print(io, ", ")
-  show(IOContext(io, :compact=>true), dom(F)); print(io, ", ")
-  show(IOContext(io, :compact=>true), codom(F)); print(io, ")")
+  show(io, F.ob_map)
+  print(io, ", ")
+  show(io, F.hom_map)
+  print(io, ", ")
+  Categories.show_domains(io, F)
+  print(io, ")")
 end
 
 # Natural transformations
@@ -459,11 +461,8 @@ transformation_key(C::FinCat, x) = x
 transformation_key(C::FinCat, expr::GATExpr) = head(expr) == :generator ?
   first(expr) : error("Natural transformation must be defined on generators")
 
-component(α::FinTransformationMap{C,D,F,G,Comp}, c::Integer) where
-  {C,D,F,G,Comp<:AbstractVector} = α.components[c]
-component(α::FinTransformationMap{C,D,F,G,Comp}, c::Key) where
-  {Key,C,D,F,G,Comp<:AbstractDict{Key}} = α.components[c]
-component(α::FinTransformationMap, expr::GATExpr) =
+component(α::FinTransformationMap, x) = α.components[x]
+component(α::FinTransformationMap, expr::GATExpr{:generator}) =
   component(α, first(expr))
 
 function Categories.do_compose(α::FinTransformationMap, β::FinTransformation)
@@ -484,6 +483,16 @@ function Categories.do_composeH(α::FinTransformationMap, H::Functor)
   F, G = dom(α), codom(α)
   FinTransformationMap(mapvals(f -> hom_map(H, f), α.components),
                        compose(F, H), compose(G, H))
+end
+
+function Base.show(io::IO, α::FinTransformationMap)
+  print(io, "FinTransformation(")
+  show(io, components(α))
+  print(io, ", ")
+  Categories.show_domains(io, α, recurse=false)
+  print(io, ", ")
+  Categories.show_domains(io, dom(α))
+  print(io, ")")
 end
 
 # Dict utilities

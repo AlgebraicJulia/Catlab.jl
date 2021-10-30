@@ -229,9 +229,7 @@ dom(f::FinDomFunctionVector) = FinSet(length(f.func))
 
 function Base.show(io::IO, f::FinDomFunctionVector)
   print(io, "FinDomFunction($(f.func), ")
-  show(IOContext(io, :compact=>true), dom(f))
-  print(io, ", ")
-  show(IOContext(io, :compact=>true), codom(f))
+  Sets.show_domains(io, f)
   print(io, ")")
 end
 
@@ -296,9 +294,7 @@ Base.:(==)(f::Union{FinDomFunctionVector,IndexedFinDomFunction},
 
 function Base.show(io::IO, f::IndexedFinDomFunction)
   print(io, "FinDomFunction($(f.func), ")
-  show(IOContext(io, :compact=>true), dom(f))
-  print(io, ", ")
-  show(IOContext(io, :compact=>true), codom(f))
+  Sets.show_domains(io, f)
   print(io, ", index=true)")
 end
 
