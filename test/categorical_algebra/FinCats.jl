@@ -18,6 +18,7 @@ C = FinCat(g)
 @test hom(C, 1) == Path(g, 1)
 @test ob_generators(C) == 1:2
 @test hom_generators(C) == 1:3
+@test startswith(sprint(show, C), "FinCat($(Graph)")
 
 h = Graph(4)
 add_edges!(h, [1,1,2,3], [2,3,4,4])
@@ -35,6 +36,7 @@ F = FinFunctor((V=[1,4], E=[[1,3], [2,4]]), C, D)
 @test codom(F) == D
 @test is_functorial(F)
 @test Ob(F) == FinFunction([1,4], FinSet(4))
+@test startswith(sprint(show, F), "FinFunctor($([1,4]),")
 
 @test ob_map(F, 2) == 4
 @test hom_map(F, 1) == Path(h, [1,3])
@@ -59,6 +61,8 @@ F = FinDomFunctor([FinSet(2), FinSet(3)], [f,g], C)
 @test is_functorial(F)
 @test dom(F) == C
 @test codom(F) isa TypeCat{<:FinSet{Int},<:FinFunction{Int}}
+@test startswith(sprint(show, F), "FinDomFunctor(")
+
 @test ob_map(F, 1) == FinSet(2)
 @test hom_map(F, 2) == g
 
@@ -83,6 +87,9 @@ add_edges!(Δ¹_graph, [1,1,2], [2,2,1])
 @test graph(Δ¹) == Δ¹_graph
 @test length(equations(Δ¹)) == 2
 @test !is_free(Δ¹)
+s = sprint(show, Δ¹)
+@test startswith(s, "FinCat($(Graph)")
+@test contains(s, "Path")
 
 # Symbolic categories
 #####################
@@ -104,6 +111,7 @@ end
 @test first.(hom_generators(Δ¹)) == [:δ₀, :δ₁, :σ₀]
 @test length(equations(Δ¹)) == 2
 @test !is_free(Δ¹)
+@test startswith(sprint(show, Δ¹), "FinCat(")
 
 # Graph as set-valued functor on a free category.
 F = FinDomFunctor(TheoryGraph, path_graph(Graph, 3))
@@ -128,6 +136,8 @@ G = FinDomFunctor(TheoryGraph, g)
 @test codom_ob(α) isa TypeCat{<:FinSet{Int},<:FinFunction{Int}}
 @test is_natural(α)
 @test α[:V](3) == 2
+@test startswith(sprint(show, α), "FinTransformation(")
+
 σ = FinTransformation(G, G, V=id(FinSet(2)), E=FinFunction([2,1,4,3]))
 @test σ⋅σ == FinTransformation(G, G, V=id(FinSet(2)), E=FinFunction(1:4))
 @test α⋅σ == FinTransformation(F, G, V=FinFunction([1,2,2]), E=FinFunction([2,4]))

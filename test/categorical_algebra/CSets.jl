@@ -51,6 +51,7 @@ g, h = path_graph(Graph, 4), cycle_graph(Graph, 2)
 @test α[:V] isa FinFunction{Int} && α[:E] isa FinFunction{Int}
 @test α[:V](3) == 1
 @test α[:E](2) == 2
+@test startswith(sprint(show, α), "ACSetTransformation((V = ")
 
 α′ = CSetTransformation(g, h, V=[1,2,1,2], E=[1,2,1])
 @test components(α′) == components(α)
@@ -229,6 +230,7 @@ h = path_graph(WeightedGraph{Float64}, 4, E=(weight=[1.,2.,3.],))
 @test α isa LooseACSetTransformation
 @test α[:Weight](10.0) == 5.0
 @test is_natural(α)
+@test contains(sprint(show, α), "Weight =")
 
 g = star_graph(WeightedGraph{Bool}, 3, E=(weight=[true,false],))
 α = ACSetTransformation((V=[2,1,3], E=[2,1], Weight=~), g, g)

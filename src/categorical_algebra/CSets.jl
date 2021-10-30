@@ -253,6 +253,14 @@ type_components(α::TightACSetTransformation{S}) where S =
 map_components(f, α::TightACSetTransformation) =
   TightACSetTransformation(map(f, components(α)), dom(α), codom(α))
 
+function Base.show(io::IO, α::TightACSetTransformation)
+  print(io, "ACSetTransformation(")
+  show(io, components(α))
+  print(io, ", ")
+  Categories.show_domains(io, α)
+  print(io, ")")
+end
+
 """ Loose transformation between attributed C-sets.
 
 See [`ACSetTranformation`](@ref) for the distinction between tight and loose.
@@ -306,6 +314,14 @@ function Base.getindex(α::LooseACSetTransformation, c::Symbol)
       error("No object or attribute type with name $c")
     end
   end
+end
+
+function Base.show(io::IO, α::LooseACSetTransformation)
+  print(io, "ACSetTransformation(")
+  show(io, merge(components(α), type_components(α)))
+  print(io, ", ")
+  Categories.show_domains(io, α)
+  print(io, ")")
 end
 
 function is_natural(α::ACSetTransformation{S}) where {S}

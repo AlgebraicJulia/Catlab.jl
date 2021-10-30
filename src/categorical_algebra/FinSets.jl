@@ -71,7 +71,11 @@ Base.iterate(set::FinSetCollection, args...) = iterate(set.collection, args...)
 Base.length(set::FinSetCollection) = length(set.collection)
 Base.in(set::FinSetCollection, elem) = in(elem, set.collection)
 
-Base.show(io::IO, set::FinSetCollection) = print(io, "FinSet($(set.collection)")
+function Base.show(io::IO, set::FinSetCollection)
+  print(io, "FinSet(")
+  show(io, set.collection)
+  print(io, ")")
+end
 
 """ Finite set whose elements are rows of a table.
 
@@ -86,7 +90,11 @@ FinSet(nt::NamedTuple) = TabularSet(nt)
 Base.iterate(set::TabularSet, args...) = iterate(Tables.rows(set.table), args...)
 Base.length(set::TabularSet) = Tables.rowcount(set.table)
 
-Base.show(io::IO, set::TabularSet) = print(io, "TabularSet($(set.table))")
+function Base.show(io::IO, set::TabularSet)
+  print(io, "TabularSet(")
+  show(io, set.table)
+  print(io, ")")
+end
 
 function Base.show(io::IO, ::MIME"text/plain", set::TabularSet{T}) where T
   print(io, "$(length(set))-element TabularSet{$T}")
@@ -94,6 +102,14 @@ function Base.show(io::IO, ::MIME"text/plain", set::TabularSet{T}) where T
     println(io, ":")
     PrettyTables.pretty_table(io, set.table, nosubheader=true)
   end
+end
+
+function Base.show(io::IO, ::MIME"text/html", set::TabularSet)
+  println(io, "<div class=\"tabular-set\">")
+  println(io, "$(length(set))-element TabularSet")
+  PrettyTables.pretty_table(io, set.table, backend=Val(:html), standalone=false,
+                            nosubheader=true)
+  println(io, "</div>")
 end
 
 # Discrete categories
@@ -128,6 +144,9 @@ FinDomFunctor(ob_map, ::Nothing, dom::DiscreteCat, codom::Cat) =
 
 hom_map(F::FinDomFunctor{<:DiscreteCat}, x) = id(codom(F), ob_map(F, x))
 
+Base.show(io::IO, C::DiscreteCat{Int,FinSetInt}) =
+  print(io, "FinCat($(length(C.set)))")
+
 # Finite functions
 ##################
 
@@ -158,7 +177,8 @@ function FinFunction(f::AbstractVector{Int}, args...; index=false)
   end
 end
 
-Sets.show_type(io::IO, ::Type{<:FinFunction}) = print(io, "FinFunction")
+Sets.show_type_constructor(io::IO, ::Type{<:FinFunction}) =
+  print(io, "FinFunction")
 
 """ Function out of a finite set.
 
@@ -180,7 +200,8 @@ function FinDomFunction(f::AbstractVector, args...; index=false)
   end
 end
 
-Sets.show_type(io::IO, ::Type{<:FinDomFunction}) = print(io, "FinDomFunction")
+Sets.show_type_constructor(io::IO, ::Type{<:FinDomFunction}) =
+  print(io, "FinDomFunction")
 
 """ Function in **Set** represented by a vector.
 
@@ -206,8 +227,11 @@ dom(f::FinDomFunctionVector) = FinSet(length(f.func))
 
 (f::FinDomFunctionVector)(x) = f.func[x]
 
-Base.show(io::IO, f::FinDomFunctionVector) =
-  print(io, "FinDomFunction($(f.func), $(dom(f)), $(codom(f)))")
+function Base.show(io::IO, f::FinDomFunctionVector)
+  print(io, "FinDomFunction($(f.func), ")
+  Sets.show_domains(io, f)
+  print(io, ")")
+end
 
 """ Force evaluation of lazy function or relation.
 """
@@ -232,7 +256,7 @@ Sets.do_compose(f::FinFunctionVector, g::FinDomFunctionVector) =
 @cocartesian_monoidal_instance FinSet FinFunction
 
 Ob(C::FinCat{Int}) = FinSet(length(ob_generators(C)))
-Ob(F::FinCats.FinDomFunctorVector) = FinDomFunction(F.ob_map, Ob(codom(F)))
+Ob(F::Functor{<:FinCat{Int}}) = FinDomFunction(collect_ob(F), Ob(codom(F)))
 
 # Indexed functions
 #------------------
@@ -268,8 +292,11 @@ Base.:(==)(f::Union{FinDomFunctionVector,IndexedFinDomFunction},
   # Ignore index when comparing for equality.
   f.func == g.func && codom(f) == codom(g)
 
-Base.show(io::IO, f::IndexedFinDomFunction) =
-  print(io, "FinDomFunction($(f.func), $(dom(f)), $(codom(f)), index=true)")
+function Base.show(io::IO, f::IndexedFinDomFunction)
+  print(io, "FinDomFunction($(f.func), ")
+  Sets.show_domains(io, f)
+  print(io, ", index=true)")
+end
 
 dom(f::IndexedFinDomFunction) = FinSet(length(f.func))
 force(f::IndexedFinDomFunction) = f

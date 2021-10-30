@@ -88,6 +88,9 @@ TypeCat(Ob::Type, Hom::Type) = TypeCat{Ob,Hom}()
 #ob(::TypeCat{Ob,Hom}, x) where {Ob,Hom} = convert(Ob, x)
 #hom(::TypeCat{Ob,Hom}, f) where {Ob,Hom} = convert(Hom, f)
 
+Base.show(io::IO, ::TypeCat{Ob,Hom}) where {Ob,Hom} =
+  print(io, "TypeCat($Ob, $Hom)")
+
 # Functors
 ##########
 
@@ -118,6 +121,26 @@ codom(F::IdentityFunctor) = F.dom
 
 do_ob_map(F::IdentityFunctor, x) = ob(F.dom, x)
 do_hom_map(F::IdentityFunctor, f) = hom(F.dom, f)
+
+function Base.show(io::IO, F::IdentityFunctor)
+  print(io, "id(")
+  show_domains(io, F, codomain=false)
+  print(io, ")")
+end
+
+show_type_constructor(io::IO, ::Type{<:Functor}) = print(io, "Functor")
+
+function show_domains(io::IO, f; codomain::Bool=true, recurse::Bool=true)
+  if get(io, :hide_domains, false)
+    print(io, "…")
+  else
+    show(IOContext(io, :compact=>true, :hide_domains=>!recurse), dom(f))
+    if codomain
+      print(io, ", ")
+      show(IOContext(io, :compact=>true, :hide_domains=>!recurse), codom(f))
+    end
+  end
+end
 
 # Instances
 #----------

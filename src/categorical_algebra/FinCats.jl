@@ -75,6 +75,14 @@ graph(C::FinCatGraph) = C.graph
 ob_generators(C::FinCatGraph) = vertices(graph(C))
 hom_generators(C::FinCatGraph) = edges(graph(C))
 
+function Base.show(io::IO, C::FinCatGraph)
+  print(io, "FinCat(")
+  show(io, graph(C))
+  print(io, ", [")
+  join(io, equations(C), ", ")
+  print(io, "])")
+end
+
 # Paths in graphs
 #----------------
 
@@ -114,6 +122,12 @@ function Base.vcat(p1::Path, p2::Path)
   Path(vcat(edges(p1), edges(p2)), src(p1), tgt(p2))
 end
 
+function Base.show(io::IO, path::Path)
+  print(io, "Path(")
+  show(io, edges(path))
+  print(io, ": $(src(path)) → $(tgt(path)))")
+end
+
 """ Abstract type for category whose morphisms are paths in a graph.
 
 (Or equivalence classes of paths in a graph, but we compute with
@@ -151,6 +165,12 @@ end
 FinCatGraph(g::HasGraph) = FreeCatGraph(g)
 
 is_free(::FreeCatGraph) = true
+
+function Base.show(io::IO, C::FreeCatGraph)
+  print(io, "FinCat(")
+  show(io, graph(C))
+  print(io, ")")
+end
 
 # Category on graph with equations
 #---------------------------------
@@ -228,6 +248,12 @@ hom(C::FinCatPresentation{Schema}, f::GATExpr) =
   gat_typeof(f) ∈ (:Hom, :Attr) ? f :
     error("Expression $f is not a morphism or attribute")
 
+function Base.show(io::IO, C::FinCatPresentation)
+  print(io, "FinCat(")
+  show(io, presentation(C))
+  print(io, ")")
+end
+
 # Functors
 ##########
 
@@ -255,6 +281,9 @@ end
 
 (F::FinDomFunctor)(expr::ObExpr) = ob_map(F, expr)
 (F::FinDomFunctor)(expr::HomExpr) = hom_map(F, expr)
+
+Categories.show_type_constructor(io::IO, ::Type{<:FinDomFunctor}) =
+  print(io, "FinDomFunctor")
 
 """ Is the purported functor on a presented category functorial?
 
@@ -290,6 +319,9 @@ FinFunctor(ob_map, hom_map, dom::FinCat, codom::FinCat) =
   FinDomFunctor(ob_map, hom_map, dom, codom)
 FinFunctor(ob_map, hom_map, dom::Presentation, codom::Presentation) =
   FinDomFunctor(ob_map, hom_map, FinCat(dom), FinCat(codom))
+
+Categories.show_type_constructor(io::IO, ::Type{<:FinFunctor}) =
+  print(io, "FinFunctor")
 
 # Mapping-based functors
 #-----------------------
@@ -328,25 +360,23 @@ functor_key(C::FinCat, expr::GATExpr) = head(expr) == :generator ?
 Categories.do_ob_map(F::FinDomFunctorMap, x) = F.ob_map[x]
 Categories.do_hom_map(F::FinDomFunctorMap, f) = F.hom_map[f]
 
+collect_ob(F::FinDomFunctorMap) = values(F.ob_map)
+collect_hom(F::FinDomFunctorMap) = values(F.hom_map)
+
 function Categories.do_compose(F::FinDomFunctorMap, G::FinDomFunctorMap)
   FinDomFunctorMap(mapvals(x -> ob_map(G, x), F.ob_map),
                    mapvals(f -> hom_map(G, f), F.hom_map), dom(F), codom(G))
 end
 
-""" Functor object and morphism maps given as vectors.
-"""
-const FinDomFunctorVector{Dom<:FinCat,Codom<:Cat,
-                          ObMap<:AbstractVector,HomMap<:AbstractVector} =
-  FinDomFunctorMap{Dom,Codom,ObMap,HomMap}
-
-collect_ob(F::FinDomFunctorVector) = F.ob_map
-collect_hom(F::FinDomFunctorVector) = F.hom_map
-
-""" Functor with object and morphism maps given as dictionaries.
-"""
-const FinDomFunctorDict{Dom<:FinCat,Codom<:Cat,
-                        ObMap<:AbstractDict,HomMap<:AbstractDict} =
-  FinDomFunctorMap{Dom,Codom,ObMap,HomMap}
+function Base.show(io::IO, F::T) where T <: FinDomFunctorMap
+  Categories.show_type_constructor(io, T); print(io, "(")
+  show(io, F.ob_map)
+  print(io, ", ")
+  show(io, F.hom_map)
+  print(io, ", ")
+  Categories.show_domains(io, F)
+  print(io, ")")
+end
 
 # Natural transformations
 #########################
@@ -431,11 +461,8 @@ transformation_key(C::FinCat, x) = x
 transformation_key(C::FinCat, expr::GATExpr) = head(expr) == :generator ?
   first(expr) : error("Natural transformation must be defined on generators")
 
-component(α::FinTransformationMap{C,D,F,G,Comp}, c::Integer) where
-  {C,D,F,G,Comp<:AbstractVector} = α.components[c]
-component(α::FinTransformationMap{C,D,F,G,Comp}, c::Key) where
-  {Key,C,D,F,G,Comp<:AbstractDict{Key}} = α.components[c]
-component(α::FinTransformationMap, expr::GATExpr) =
+component(α::FinTransformationMap, x) = α.components[x]
+component(α::FinTransformationMap, expr::GATExpr{:generator}) =
   component(α, first(expr))
 
 function Categories.do_compose(α::FinTransformationMap, β::FinTransformation)
@@ -456,6 +483,16 @@ function Categories.do_composeH(α::FinTransformationMap, H::Functor)
   F, G = dom(α), codom(α)
   FinTransformationMap(mapvals(f -> hom_map(H, f), α.components),
                        compose(F, H), compose(G, H))
+end
+
+function Base.show(io::IO, α::FinTransformationMap)
+  print(io, "FinTransformation(")
+  show(io, components(α))
+  print(io, ", ")
+  Categories.show_domains(io, α, recurse=false)
+  print(io, ", ")
+  Categories.show_domains(io, dom(α))
+  print(io, ")")
 end
 
 # Dict utilities
