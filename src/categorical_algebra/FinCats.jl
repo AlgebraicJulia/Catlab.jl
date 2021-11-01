@@ -505,15 +505,17 @@ function mappairs(kmap, vmap, pairs::T) where T<:AbstractDict
 end
 mappairs(kmap, vmap, vec::AbstractVector) = map(vmap, vec)
 
-function mapvals(f, pairs::T; keys::Bool=false) where T<:AbstractDict
-  (dicttype(T))(if keys
+function mapvals(f, pairs::T; keys::Bool=false, iter::Bool=false) where T<:AbstractDict
+  (iter ? identity : dicttype(T))(if keys
     (k => f(k,v) for (k,v) in pairs)
   else
     (k => f(v) for (k,v) in pairs)
   end)
 end
-mapvals(f, vec::AbstractVector; keys::Bool=false) =
-  keys ? map(f, eachindex(vec), vec) : map(f, vec)
+function mapvals(f, vec::AbstractVector; keys::Bool=false, iter::Bool=false)
+  do_map = iter ? Iterators.map : map
+  keys ? do_map(f, eachindex(vec), vec) : do_map(f, vec)
+end
 
 dicttype(::Type{T}) where T <: AbstractDict = T.name.wrapper
 dicttype(::Type{<:Iterators.Pairs}) = Dict
