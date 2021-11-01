@@ -19,6 +19,7 @@ end)
 D = FinDomFunctor([:E,:E,:V], [:tgt,:src], C, FinCat(SchSGraph))
 d = Diagram(D)
 @test shape(d) == C
+@test startswith(sprint(show, d), "Diagram{id}(")
 
 # Diagram morphisms
 ###################
@@ -45,6 +46,8 @@ g = DiagramHom{op}([(1,:src)], D, ιV)
 @test compose(id(dom(g)), g) == g
 @test compose(g, id(codom(g))) == g
 @test is_natural(diagram_map(g))
+@test startswith(sprint(show, f), "DiagramHom{op}(")
+
 fg = f⋅g
 @test ob_map(fg, 1) == (2, SchSGraph[:inv]⋅SchSGraph[:src])
 
