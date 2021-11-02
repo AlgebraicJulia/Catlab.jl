@@ -22,7 +22,7 @@ import ..FinCats: FinDomFunctor, ob_generators, hom_generators, is_discrete
 import ..Limits: limit, colimit, universal, pushout_complement,
   can_pushout_complement
 import ..Subobjects: Subobject, SubobjectLattice
-using ..Sets: SetFunctionCallable, SetFunctionIdentity
+using ..Sets: IdentityFunction, SetFunctionCallable
 
 # Finite sets
 #############
@@ -165,7 +165,7 @@ const FinFunction{S, S′, Dom <: FinSet{S}, Codom <: FinSet{S′}} =
 FinFunction(f::Function, dom, codom) =
   SetFunctionCallable(f, FinSet(dom), FinSet(codom))
 FinFunction(::typeof(identity), args...) =
-  SetFunctionIdentity((FinSet(arg) for arg in args)...)
+  IdentityFunction((FinSet(arg) for arg in args)...)
 FinFunction(f::AbstractVector{Int}; kw...) =
   FinDomFunctionVector(f, FinSet(isempty(f) ? 0 : maximum(f)); kw...)
 
@@ -190,7 +190,7 @@ const FinDomFunction{S, Dom<:FinSet{S}, Codom<:SetOb} = SetFunction{Dom,Codom}
 FinDomFunction(f::Function, dom, codom) =
   SetFunctionCallable(f, FinSet(dom), codom)
 FinDomFunction(::typeof(identity), args...) =
-  SetFunctionIdentity((FinSet(arg) for arg in args)...)
+  IdentityFunction((FinSet(arg) for arg in args)...)
 
 function FinDomFunction(f::AbstractVector, args...; index=false)
   if index == false
@@ -306,13 +306,13 @@ force(f::IndexedFinDomFunction) = f
 """ Whether the given function is indexed, i.e., supports efficient preimages.
 """
 is_indexed(f::SetFunction) = false
-is_indexed(f::SetFunctionIdentity) = true
+is_indexed(f::IdentityFunction) = true
 is_indexed(f::IndexedFinDomFunction) = true
 is_indexed(f::FinDomFunctionVector{T,<:AbstractRange{T}}) where T = true
 
 """ The preimage (inverse image) of the value y in the codomain.
 """
-preimage(f::SetFunctionIdentity, y) = SVector(y)
+preimage(f::IdentityFunction, y) = SVector(y)
 preimage(f::FinDomFunction, y) = [ x for x in dom(f) if f(x) == y ]
 preimage(f::IndexedFinDomFunction, y) = get_preimage_index(f.index, y)
 
