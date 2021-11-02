@@ -192,10 +192,6 @@ end
 # StructACSet Operations
 ########################
 
-""" This should really be in base, or at least somewhere other than this module...
-"""
-Base.Dict(nt::NamedTuple) = Dict(k => nt[k] for k in keys(nt))
-
 # Accessors
 ###########
 
@@ -308,7 +304,7 @@ end
 @generated function _incident(acs::StructACSet{S,Ts,Idxed,UniqueIdxed},
                               part, ::Type{Val{f}}; copy::Bool=false) where
   {S,Ts,Idxed,UniqueIdxed,f}
-  incident_body(SchemaDesc(S),Dict(Idxed),Dict(UniqueIdxed),f)
+  incident_body(SchemaDesc(S),Dict(pairs(Idxed)),Dict(pairs(UniqueIdxed)),f)
 end
 
 # Mutators
@@ -363,7 +359,7 @@ end
 @generated function _add_parts!(acs::StructACSet{S,Ts,Idxed,UniqueIdxed},
                                 ::Type{Val{ob}}, n::Int) where
   {S, Ts, Idxed, UniqueIdxed, ob}
-  add_parts_body(SchemaDesc(S),Dict(Idxed),Dict(UniqueIdxed),ob)
+  add_parts_body(SchemaDesc(S),Dict(pairs(Idxed)),Dict(pairs(UniqueIdxed)),ob)
 end
 
 @inline ACSetInterface.set_subpart!(acs::StructACSet, part::Int, f::Symbol, subpart) =
@@ -435,7 +431,7 @@ end
 """
 @generated function _set_subpart!(acs::StructACSet{S,Ts,Idxed,UniqueIdxed},
                                   part, ::Type{Val{f}}, subpart) where {S,Ts,Idxed,UniqueIdxed,f}
-  set_subpart_body(SchemaDesc(S),Dict(Idxed),Dict(UniqueIdxed),f)
+  set_subpart_body(SchemaDesc(S),Dict(pairs(Idxed)),Dict(pairs(UniqueIdxed)),f)
 end
 
 @inline Base.setindex!(acs::StructACSet, val, ob, part) = set_subpart!(acs, ob, part, val)
@@ -493,7 +489,7 @@ end
 
 @generated function _rem_part!(acs::StructACSet{S,Ts,idxed}, ::Type{Val{ob}},
                                part::Int) where {S,Ts,ob,idxed}
-  rem_part_body(SchemaDesc(S),Dict(idxed),ob)
+  rem_part_body(SchemaDesc(S),Dict(pairs(idxed)),ob)
 end
 
 function Base.copy(acs::StructACSet)
