@@ -113,6 +113,8 @@ abstract type Functor{Dom<:Cat,Codom<:Cat} end
 """
 @inline hom_map(F::Functor, f) = do_hom_map(F, f)
 
+""" Identity functor on a category.
+"""
 @auto_hash_equals struct IdentityFunctor{Dom<:Cat} <: Functor{Dom,Dom}
   dom::Dom
 end
@@ -125,6 +127,30 @@ do_hom_map(F::IdentityFunctor, f) = hom(F.dom, f)
 function Base.show(io::IO, F::IdentityFunctor)
   print(io, "id(")
   show_domains(io, F, codomain=false)
+  print(io, ")")
+end
+
+""" Composite of functors.
+"""
+@auto_hash_equals struct CompositeFunctor{Dom,Codom,
+    F<:Functor{Dom,<:Cat},G<:Functor{<:Cat,Codom}} <: Functor{Dom,Codom}
+  fst::F
+  snd::G
+end
+Base.first(F::CompositeFunctor) = F.fst
+Base.last(F::CompositeFunctor) = F.snd
+
+dom(F::CompositeFunctor) = dom(first(F))
+codom(F::CompositeFunctor) = codom(last(F))
+
+do_ob_map(F::CompositeFunctor, x) = ob_map(F.snd, ob_map(F.fst, x))
+do_hom_map(F::CompositeFunctor, f) = hom_map(F.snd, hom_map(F.fst, f))
+
+function Base.show(io::IO, F::CompositeFunctor)
+  print(io, "compose(")
+  show(io, first(F))
+  print(io, ", ")
+  show(io, last(F))
   print(io, ")")
 end
 
@@ -196,8 +222,9 @@ const IdIdTransformation{C<:Cat} = IdentityTransformation{C,C,IdentityFunctor{C}
   codom(F::Functor) = F.codom
   id(C::Cat) = IdentityFunctor(C)
 
-  function compose(F::Functor, G::Functor)
-    codom(F) == dom(G) || error("Domain mismatch in composition $F ⋅ $G")
+  function compose(F::Functor, G::Functor; strict::Bool=true)
+    !strict || codom(F) == dom(G) ||
+      error("Domain mismatch in composition $F ⋅ $G")
     compose_id(F, G)
   end
 
@@ -224,7 +251,7 @@ const IdIdTransformation{C<:Cat} = IdentityTransformation{C,C,IdentityFunctor{C}
 end
 
 # XXX: Is this normalization of identities using multiple dispatch a good idea?
-# In contrast to `Sets`, it requires a lot of boilerplate here.
+# Unlike in `Sets`, it doesn't feel great since it requires so much boilerplate.
 
 @inline compose_id(F::Functor, G::Functor) = do_compose(F, G)
 @inline compose_id(F::Functor, ::IdentityFunctor) = F
@@ -253,7 +280,7 @@ end
   id(compose_id(F, dom(β)))
 @inline composeH_id(::IdentityFunctor, β::IdentityTransformation) = β
 
-function do_compose end
+do_compose(F::Functor, G::Functor) = CompositeFunctor(F, G)
 
 @inline function do_composeH(α::Transformation, β::Transformation)
   do_composeH(α, β, Val{:covariant})

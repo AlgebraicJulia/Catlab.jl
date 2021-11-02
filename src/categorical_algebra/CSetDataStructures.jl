@@ -1,6 +1,6 @@
 module CSetDataStructures
-export @acset_type, @abstract_acset_type, @declare_schema, StructACSet, StructCSet,
-  ACSetTableType
+export @acset_type, @abstract_acset_type, @declare_schema, FreeSchema,
+  StructACSet, StructCSet, ACSetTableType
 
 using MLStyle
 using StaticArrays
@@ -10,10 +10,9 @@ import Tables
 @reexport using ..ACSetInterface
 using ..IndexUtils
 using ...Theories, ...Present, ...Syntax
-using ...Theories: SchemaDesc, SchemaDescType, CSetSchemaDescType, SchemaDescTypeType,
-  ob_num, codom_num, attr, attrtype
-@reexport using ...Theories: FreeSchema
-using ...Meta: strip_lines
+using ...Theories: FreeSchema, SchemaDesc, SchemaDescType, CSetSchemaDescType,
+  SchemaDescTypeType, ob_num, codom_num, attr, attrtype
+import ...Present: Presentation
 
 # StructACSet Struct Generation
 ###############################
@@ -191,6 +190,8 @@ end
 
 # StructACSet Operations
 ########################
+
+Presentation(::StructACSet{S}) where S = Presentation(S)
 
 # Accessors
 ###########

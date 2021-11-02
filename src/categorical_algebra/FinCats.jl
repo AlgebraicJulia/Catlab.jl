@@ -210,7 +210,7 @@ attribute types are regarded as the category's objects and the schema's
 morphisms and attributes as the category's morphisms. Formalizing the schema as
 a profunctor, this amounts to taking the collage of the profunctor.
 """
-struct FinCatPresentation{T,Ob,Hom} <: FinCat{Ob,Hom}
+@auto_hash_equals struct FinCatPresentation{T,Ob,Hom} <: FinCat{Ob,Hom}
   presentation::Presentation{T}
 
   function FinCatPresentation(pres::Presentation{T}) where T
