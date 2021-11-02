@@ -114,8 +114,9 @@ end
 @test startswith(sprint(show, Δ¹), "FinCat(")
 
 # Graph as set-valued functor on a free category.
-F = FinDomFunctor(TheoryGraph, path_graph(Graph, 3))
+F = FinDomFunctor(path_graph(Graph, 3))
 C = dom(F)
+@test C == FinCat(TheoryGraph)
 @test is_functorial(F)
 @test ob_map(F, :V) == FinSet(3)
 @test hom_map(F, :src) == FinFunction([1,2], 3)
@@ -124,16 +125,24 @@ C = dom(F)
 @test F(id(ob(C, :E))) == id(FinSet(2))
 
 # Reflexive graph as set-valued functor on a category with equations.
-G = FinDomFunctor(TheoryReflexiveGraph, path_graph(ReflexiveGraph, 3))
-@test is_functorial(G)
+G_refl = FinDomFunctor(path_graph(ReflexiveGraph, 3))
+@test is_functorial(G_refl)
+G = compose(FinFunctor(Dict(:V=>:V, :E=>:E), Dict(:src=>:src, :tgt=>:tgt),
+                       TheoryGraph, TheoryReflexiveGraph),
+            G_refl, strict=false)
+@test dom(G) == FinCat(TheoryGraph)
+@test codom(G) == codom(G_refl)
+@test ob_map(G, :V) == FinSet(3)
+@test hom_map(G, :src) isa FinFunction{Int}
+@test startswith(sprint(show, G), "compose(")
 
 # Graph homomorphisms as natural transformations.
 g = parallel_arrows(Graph, 2)
 add_edges!(g, [2,2], [2,2])
-G = FinDomFunctor(TheoryGraph, g)
+G = FinDomFunctor(g)
 α = FinTransformation(F, G, V=FinFunction([1,2,2]), E=FinFunction([1,3],4))
 @test dom_ob(α) == C
-@test codom_ob(α) isa TypeCat{<:FinSet{Int},<:FinFunction{Int}}
+@test codom_ob(α) isa TypeCat{<:FinSet{Int},<:FinDomFunction{Int}}
 @test is_natural(α)
 @test α[:V](3) == 2
 @test startswith(sprint(show, α), "FinTransformation(")
@@ -161,7 +170,7 @@ C = FinCat(TheoryWeightedGraph)
 @test first.(ob_generators(C)) == [:V, :E, :Weight]
 @test first.(hom_generators(C)) == [:src, :tgt, :weight]
 g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5,1.5],))
-G = FinDomFunctor(TheoryWeightedGraph, g)
+G = FinDomFunctor(g)
 @test is_functorial(G)
 @test ob_map(G, :Weight) == TypeSet(Float64)
 @test hom_map(G, :weight) == FinDomFunction([0.5, 1.5])

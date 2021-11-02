@@ -51,7 +51,7 @@ already taken by the base Julia type.
 abstract type SetFunction{Dom <: SetOb, Codom <: SetOb} end
 
 SetFunction(f::Function, args...) = SetFunctionCallable(f, args...)
-SetFunction(::typeof(identity), args...) = SetFunctionIdentity(args...)
+SetFunction(::typeof(identity), args...) = IdentityFunction(args...)
 
 show_type_constructor(io::IO, ::Type{<:SetFunction}) = print(io, "SetFunction")
 
@@ -84,22 +84,47 @@ end
 
 """ Identity function in **Set**.
 """
-@auto_hash_equals struct SetFunctionIdentity{Dom} <: SetFunction{Dom,Dom}
+@auto_hash_equals struct IdentityFunction{Dom} <: SetFunction{Dom,Dom}
   dom::Dom
 end
 
-function SetFunctionIdentity(dom::SetOb, codom::SetOb)
+function IdentityFunction(dom::SetOb, codom::SetOb)
   dom == codom || error("Domain mismatch in identity function: $dom != $codom")
-  SetFunctionIdentity(dom)
+  IdentityFunction(dom)
 end
 
-codom(f::SetFunctionIdentity) = f.dom
+codom(f::IdentityFunction) = f.dom
 
-(f::SetFunctionIdentity)(x) = x
+(f::IdentityFunction)(x) = x
 
-function Base.show(io::IO, f::F) where F <: SetFunctionIdentity
+function Base.show(io::IO, f::IdentityFunction)
   print(io, "id(")
   show_domains(io, f, codomain=false)
+  print(io, ")")
+end
+
+""" Composite of functions in **Set**.
+
+Not to be confused with `Base.ComposedFunctions` for ordinary Julia functions.
+"""
+@auto_hash_equals struct CompositeFunction{Dom,Codom,
+    F<:SetFunction{Dom,<:SetOb},G<:SetFunction{<:SetOb,Codom}} <: SetFunction{Dom,Codom}
+  fst::F
+  snd::G
+end
+Base.first(f::CompositeFunction) = f.fst
+Base.last(f::CompositeFunction) = f.snd
+
+dom(f::CompositeFunction) = dom(first(f))
+codom(f::CompositeFunction) = codom(last(f))
+
+(f::CompositeFunction)(x) = f.snd(f.fst(x))
+
+function Base.show(io::IO, f::CompositeFunction)
+  print(io, "compose(")
+  show(io, first(f))
+  print(io, ", ")
+  show(io, last(f))
   print(io, ")")
 end
 
@@ -168,11 +193,11 @@ end
 end
 
 @inline compose_id(f::SetFunction, g::SetFunction) = do_compose(f, g)
-@inline compose_id(f::SetFunction, ::SetFunctionIdentity) = f
-@inline compose_id(::SetFunctionIdentity, g::SetFunction) = g
-@inline compose_id(f::SetFunctionIdentity, ::SetFunctionIdentity) = f
+@inline compose_id(f::SetFunction, ::IdentityFunction) = f
+@inline compose_id(::IdentityFunction, g::SetFunction) = g
+@inline compose_id(f::IdentityFunction, ::IdentityFunction) = f
 
-do_compose(f::SetFunction, g::SetFunction) = SetFunction(g∘f, dom(f), codom(g))
+do_compose(f::SetFunction, g::SetFunction) = CompositeFunction(f, g)
 do_compose(f::SetFunction, c::ConstantFunction) =
   ConstantFunction(c.value, dom(f), codom(c))
 do_compose(c::ConstantFunction, f::SetFunction) =

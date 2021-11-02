@@ -130,13 +130,25 @@ the codomain of the result is always of type `TypeSet`.
   end
 end
 
-function FinDomFunctor(C::FinCats.FinCatPresentation, X::ACSet)
-  # TODO: Make struct `FinDomFunctorACSet` to avoid allocation.
-  ob_map = Dict(c => SetOb(X, nameof(c)) for c in ob_generators(C))
-  hom_map = Dict(f => SetFunction(X, nameof(f)) for f in hom_generators(C))
-  FinDomFunctor(ob_map, hom_map, C)
+# Categories interop
+####################
+
+# FIXME: Object type should be `SetOb`, not `FinSet{Int}`.
+
+""" Wrapper type to interpret attributed C-set as a functor.
+"""
+@auto_hash_equals struct ACSetFunctor{ACS<:ACSet} <:
+    Functor{FinCats.FinCatPresentation{Symbol,FreeSchema.Ob,FreeSchema.Hom},
+            TypeCat{FinSet{Int},FinDomFunction{Int}}}
+  acset::ACS
 end
-FinDomFunctor(pres::Presentation, X::ACSet) = FinDomFunctor(FinCat(pres), X)
+FinDomFunctor(X::ACSet) = ACSetFunctor(X)
+
+dom(F::ACSetFunctor) = FinCat(Presentation(F.acset))
+codom(F::ACSetFunctor) = TypeCat{FinSet{Int},FinDomFunction{Int}}()
+
+Categories.do_ob_map(F::ACSetFunctor, x) = SetOb(F.acset, x)
+Categories.do_hom_map(F::ACSetFunctor, f) = SetFunction(F.acset, f)
 
 # C-set transformations
 #######################
