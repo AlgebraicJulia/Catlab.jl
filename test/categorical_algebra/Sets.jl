@@ -24,10 +24,14 @@ X = TypeSet(Int)
 @test dom(id(X)) == X
 @test codom(id(X)) == X
 @test id(X)(1) == 1
+@test startswith(sprint(show, id(X)), "id(")
 
 # Composition.
 h = compose(f,g)
+@test dom(h) == dom(f)
+@test codom(h) == codom(g)
 @test h(1) == 6
+@test startswith(sprint(show, h), "compose(")
 @test compose(id(dom(f)), f) == f
 @test compose(f, id(codom(f))) == f
 
