@@ -351,18 +351,24 @@ diagram_type(d::AbstractBipartiteFreeDiagram{S,T}) where {S,T<:Tuple} = T
 cone_objects(diagram::AbstractBipartiteFreeDiagram) = ob₁(diagram)
 cocone_objects(diagram::AbstractBipartiteFreeDiagram) = ob₂(diagram)
 
-function BipartiteFreeDiagram(
-    obs₁::AbstractVector{Ob₁}, obs₂::AbstractVector{Ob₂},
-    homs::AbstractVector{Tuple{Hom,Int,Int}}) where {Ob₁,Ob₂,Hom}
+BipartiteFreeDiagram(obs₁::AbstractVector{Ob₁}, obs₂::AbstractVector{Ob₂},
+                     homs::AbstractVector{Tuple{Hom,Int,Int}}) where {Ob₁,Ob₂,Hom} =
+  BipartiteFreeDiagram{Union{Ob₁,Ob₂},Hom}(obs₁, obs₂, homs)
+
+function BipartiteFreeDiagram{Ob,Hom}(obs₁::AbstractVector, obs₂::AbstractVector,
+                                      homs::AbstractVector) where {Ob,Hom}
   @assert all(obs₁[s] == dom(f) && obs₂[t] == codom(f) for (f,s,t) in homs)
-  d = BipartiteFreeDiagram{Union{Ob₁,Ob₂},Hom}()
+  d = BipartiteFreeDiagram{Ob,Hom}()
   add_vertices₁!(d, length(obs₁), ob₁=obs₁)
   add_vertices₂!(d, length(obs₂), ob₂=obs₂)
   add_edges!(d, getindex.(homs,2), getindex.(homs,3), hom=first.(homs))
   return d
 end
 
-function BipartiteFreeDiagram(span::Multispan{Ob,Hom}) where {Ob,Hom}
+BipartiteFreeDiagram(d::FixedShapeFreeDiagram{Ob,Hom}) where {Ob,Hom} =
+  BipartiteFreeDiagram{Ob,Hom}(d)
+
+function BipartiteFreeDiagram{Ob,Hom}(span::Multispan) where {Ob,Hom}
   d = BipartiteFreeDiagram{Ob,Hom}()
   v₀ = add_vertex₁!(d, ob₁=apex(span))
   vs = add_vertices₂!(d, length(span), ob₂=feet(span))
@@ -370,7 +376,7 @@ function BipartiteFreeDiagram(span::Multispan{Ob,Hom}) where {Ob,Hom}
   return d
 end
 
-function BipartiteFreeDiagram(cospan::Multicospan{Ob,Hom}) where {Ob,Hom}
+function BipartiteFreeDiagram{Ob,Hom}(cospan::Multicospan) where {Ob,Hom}
   d = BipartiteFreeDiagram{Ob,Hom}()
   v₀ = add_vertex₂!(d, ob₂=apex(cospan))
   vs = add_vertices₁!(d, length(cospan), ob₁=feet(cospan))
@@ -378,8 +384,8 @@ function BipartiteFreeDiagram(cospan::Multicospan{Ob,Hom}) where {Ob,Hom}
   return d
 end
 
-function BipartiteFreeDiagram(para::ParallelMorphisms{Dom,Codom,Hom}) where {Dom,Codom,Hom}
-  d = BipartiteFreeDiagram{Union{Dom,Codom},Hom}()
+function BipartiteFreeDiagram{Ob,Hom}(para::ParallelMorphisms) where {Ob,Hom}
+  d = BipartiteFreeDiagram{Ob,Hom}()
   v₁ = add_vertex₁!(d, ob₁=dom(para))
   v₂ = add_vertex₂!(d, ob₂=codom(para))
   add_edges!(d, fill(v₁,length(para)), fill(v₂,length(para)), hom=hom(para))
@@ -406,8 +412,12 @@ hom(d::AbstractFreeDiagram, args...) = subpart(d, args..., :hom)
 
 diagram_type(d::AbstractFreeDiagram{S,T}) where {S,T<:Tuple} = T
 
-function FreeDiagram(obs::AbstractVector{Ob},
-                     homs::AbstractVector{Tuple{Hom,Int,Int}}) where {Ob,Hom}
+FreeDiagram(obs::AbstractVector{Ob},
+            homs::AbstractVector{Tuple{Hom,Int,Int}}) where {Ob,Hom} =
+  FreeDiagram{Ob,Hom}(obs, homs)
+
+function FreeDiagram{Ob,Hom}(obs::AbstractVector,
+                             homs::AbstractVector) where {Ob,Hom}
   @assert all(obs[s] == dom(f) && obs[t] == codom(f) for (f,s,t) in homs)
   d = FreeDiagram{Ob,Hom}()
   add_vertices!(d, length(obs), ob=obs)
@@ -415,13 +425,16 @@ function FreeDiagram(obs::AbstractVector{Ob},
   return d
 end
 
-function FreeDiagram(discrete::DiscreteDiagram{Ob}) where Ob
-  d = FreeDiagram{Ob,Nothing}()
+FreeDiagram(d::FixedShapeFreeDiagram{Ob,Hom}) where {Ob,Hom} =
+  FreeDiagram{Ob,Hom}(d)
+
+function FreeDiagram{Ob,Hom}(discrete::DiscreteDiagram) where {Ob,Hom}
+  d = FreeDiagram{Ob,Hom}()
   add_vertices!(d, length(discrete), ob=collect(discrete))
   return d
 end
 
-function FreeDiagram(span::Multispan{Ob,Hom}) where {Ob,Hom}
+function FreeDiagram{Ob,Hom}(span::Multispan) where {Ob,Hom}
   d = FreeDiagram{Ob,Hom}()
   v₀ = add_vertex!(d, ob=apex(span))
   vs = add_vertices!(d, length(span), ob=feet(span))
@@ -429,7 +442,7 @@ function FreeDiagram(span::Multispan{Ob,Hom}) where {Ob,Hom}
   return d
 end
 
-function FreeDiagram(cospan::Multicospan{Ob,Hom}) where {Ob,Hom}
+function FreeDiagram{Ob,Hom}(cospan::Multicospan) where {Ob,Hom}
   d = FreeDiagram{Ob,Hom}()
   vs = add_vertices!(d, length(cospan), ob=feet(cospan))
   v₀ = add_vertex!(d, ob=apex(cospan))
@@ -437,14 +450,14 @@ function FreeDiagram(cospan::Multicospan{Ob,Hom}) where {Ob,Hom}
   return d
 end
 
-function FreeDiagram(para::ParallelMorphisms{Dom,Codom,Hom}) where {Dom,Codom,Hom}
-  d = FreeDiagram{Union{Dom,Codom},Hom}()
+function FreeDiagram{Ob,Hom}(para::ParallelMorphisms) where {Ob,Hom}
+  d = FreeDiagram{Ob,Hom}()
   add_vertices!(d, 2, ob=[dom(para), codom(para)])
   add_edges!(d, fill(1,length(para)), fill(2,length(para)), hom=hom(para))
   return d
 end
 
-function FreeDiagram(comp::ComposableMorphisms{Ob,Hom}) where {Ob,Hom}
+function FreeDiagram{Ob,Hom}(comp::ComposableMorphisms) where {Ob,Hom}
   d = FreeDiagram{Ob,Hom}()
   n = length(comp)
   add_vertices!(d, n+1, ob=[dom.(comp); codom(comp)])
@@ -452,21 +465,25 @@ function FreeDiagram(comp::ComposableMorphisms{Ob,Hom}) where {Ob,Hom}
   return d
 end
 
-function FreeDiagram(diagram::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
+function FreeDiagram{Ob,Hom}(diagram::BipartiteFreeDiagram) where {Ob,Hom}
   d = FreeDiagram{Ob,Hom}()
   vs₁ = add_vertices!(d, nv₁(diagram), ob=ob₁(diagram))
   vs₂ = add_vertices!(d, nv₂(diagram), ob=ob₂(diagram))
   add_edges!(d, vs₁[src(diagram)], vs₂[tgt(diagram)], hom=hom(diagram))
   return d
 end
+FreeDiagram(diagram::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom} =
+  FreeDiagram{Ob,Hom}(diagram)
 
-function FreeDiagram(F::FinDomFunctor{<:FreeCatGraph,<:TypeCat{Ob,Hom}}) where {Ob,Hom}
+function FreeDiagram{Ob,Hom}(F::FinDomFunctor) where {Ob,Hom}
   diagram = FreeDiagram{Ob,Hom}()
   copy_parts!(diagram, graph(dom(F)))
   diagram[:ob] = collect_ob(F)
   diagram[:hom] = collect_hom(F)
   diagram
 end
+FreeDiagram(F::FinDomFunctor{<:FreeCatGraph,<:TypeCat{Ob,Hom}}) where {Ob,Hom} =
+  FreeDiagram{Ob,Hom}(F)
 
 # FinDomFunctors as diagrams
 #---------------------------
