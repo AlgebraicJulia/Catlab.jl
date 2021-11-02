@@ -251,25 +251,19 @@ end
 broadcast_findall(xs, array::AbstractArray) =
   broadcast(x -> findall(y -> x == y, array), xs)
 
-function get_attr_index(idx::Dict, k)
-  if k ∈ keys(idx)
-    idx[k]
-  else
-    []
-  end
+function get_attr_index(idx::AbstractDict, k)
+  get(idx, k, [])
 end
-
-function get_attr_index(idx::Dict, k::AbstractArray)
-  get_attr_index.(Ref(idx),k)
+function get_attr_index(idx::AbstractDict, k::AbstractArray)
+  get_attr_index.(Ref(idx), k)
 end
 
 """
 We keep the main body of the code generating out of the @generated function
 so that the code-generating function only needs to be compiled once.
 """
-function incident_body(s::SchemaDesc,
-                       idxed::Dict{Symbol,Bool}, unique_idxed::Dict{Symbol,Bool},
-                       f::Symbol)
+function incident_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
+                       unique_idxed::AbstractDict{Symbol,Bool}, f::Symbol)
   if f ∈ s.homs
     if idxed[f]
       quote
@@ -304,7 +298,7 @@ end
 @generated function _incident(acs::StructACSet{S,Ts,Idxed,UniqueIdxed},
                               part, ::Type{Val{f}}; copy::Bool=false) where
   {S,Ts,Idxed,UniqueIdxed,f}
-  incident_body(SchemaDesc(S),Dict(pairs(Idxed)),Dict(pairs(UniqueIdxed)),f)
+  incident_body(SchemaDesc(S),pairs(Idxed),pairs(UniqueIdxed),f)
 end
 
 # Mutators
@@ -312,9 +306,8 @@ end
 
 @inline ACSetInterface.add_parts!(acs::StructACSet, ob::Symbol, n::Int) = _add_parts!(acs, Val{ob}, n)
 
-function add_parts_body(s::SchemaDesc,
-                        idxed::Dict, unique_idxed::Dict,
-                        ob::Symbol)
+function add_parts_body(s::SchemaDesc, idxed::AbstractDict,
+                        unique_idxed::AbstractDict, ob::Symbol)
   code = quote
     m = acs.obs[$(ob_num(s, ob))]
     nparts = m + n
@@ -359,16 +352,15 @@ end
 @generated function _add_parts!(acs::StructACSet{S,Ts,Idxed,UniqueIdxed},
                                 ::Type{Val{ob}}, n::Int) where
   {S, Ts, Idxed, UniqueIdxed, ob}
-  add_parts_body(SchemaDesc(S),Dict(pairs(Idxed)),Dict(pairs(UniqueIdxed)),ob)
+  add_parts_body(SchemaDesc(S),pairs(Idxed),pairs(UniqueIdxed),ob)
 end
 
 @inline ACSetInterface.set_subpart!(acs::StructACSet, part::Int, f::Symbol, subpart) =
   _set_subpart!(acs, part, Val{f}, subpart)
 
 
-function set_subpart_body(s::SchemaDesc,
-                          idxed::Dict{Symbol,Bool}, unique_idxed::Dict{Symbol,Bool},
-                          f::Symbol)
+function set_subpart_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
+                          unique_idxed::AbstractDict{Symbol,Bool}, f::Symbol)
   if f ∈ s.homs
     if idxed[f]
       quote
@@ -431,7 +423,7 @@ end
 """
 @generated function _set_subpart!(acs::StructACSet{S,Ts,Idxed,UniqueIdxed},
                                   part, ::Type{Val{f}}, subpart) where {S,Ts,Idxed,UniqueIdxed,f}
-  set_subpart_body(SchemaDesc(S),Dict(pairs(Idxed)),Dict(pairs(UniqueIdxed)),f)
+  set_subpart_body(SchemaDesc(S),pairs(Idxed),pairs(UniqueIdxed),f)
 end
 
 @inline Base.setindex!(acs::StructACSet, val, ob, part) = set_subpart!(acs, ob, part, val)
@@ -489,7 +481,7 @@ end
 
 @generated function _rem_part!(acs::StructACSet{S,Ts,idxed}, ::Type{Val{ob}},
                                part::Int) where {S,Ts,ob,idxed}
-  rem_part_body(SchemaDesc(S),Dict(pairs(idxed)),ob)
+  rem_part_body(SchemaDesc(S),pairs(idxed),ob)
 end
 
 function Base.copy(acs::StructACSet)
