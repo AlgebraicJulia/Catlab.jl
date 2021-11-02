@@ -274,7 +274,8 @@ lim = limit(BipartiteFreeDiagram(Cospan(f, g)))
 
 # Equalizer as limit of bipartite free diagram.
 f, g = [FinDomFunction(x -> x % i, FinSet(100), TypeSet(Int)) for i in 2:3]
-lim = (ι,) = limit(BipartiteFreeDiagram(ParallelPair(f, g)))
+d = BipartiteFreeDiagram{SetOb,FinDomFunction{Int}}(ParallelPair(f, g))
+lim = (ι,) = limit(d)
 @test ι == incl(equalizer(f, g))
 
 # Two pullbacks, which should be reduced to a single pullback by pairing.
