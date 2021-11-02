@@ -9,7 +9,6 @@ using ..Categories, ..FinCats, ..Limits, ..Diagrams, ..FinSets, ..CSets
 using ...Graphs, ..FreeDiagrams
 import ..Categories: ob_map, hom_map
 using ..FinCats: make_map
-import ...Present: Presentation
 
 # Data types
 ############
@@ -142,11 +141,12 @@ end
 #######################
 
 function migrate(X::ACSet, F::ConjSchemaMigration)
+  X = FinDomFunctor(X)
   tgt_schema = dom(F)
   sets = make_map(ob_generators(tgt_schema)) do c
     Fc = diagram(ob_map(F, c))
+    lim = limit(compose(Fc, X, strict=false))
     J = dom(Fc)
-    lim = limit(Fc ⋅ FinDomFunctor(codom(Fc), X))
     names = Tuple(Symbol(ob_name(J, j)) for j in ob_generators(J))
     TabularSet(NamedTuple{names}(Tuple(map(collect, legs(lim)))))
   end
@@ -156,8 +156,7 @@ function migrate(X::ACSet, F::ConjSchemaMigration)
     J′, Ff₀, Ff₁ = shape(codom(Ff)), shape_map(Ff), diagram_map(Ff)
     names = keys(sets[d].table)
     Ff₀ = NamedTuple{names}(Tuple(ob_map(Ff₀, j) for j in ob_generators(J′)))
-    Ff₁ = NamedTuple{names}(Tuple(SetFunction(X, nameof(component(Ff₁, j)))
-                                  # FIXME: Allow non-generator components.
+    Ff₁ = NamedTuple{names}(Tuple(hom_map(X, component(Ff₁, j))
                                   for j in ob_generators(J′)))
     FinFunction(row -> map((j,g) -> g(row[j]), Ff₀, Ff₁), sets[c], sets[d])
   end
@@ -312,13 +311,7 @@ end
 # Schema translation
 ####################
 
-# FIXME: These functions do not belong here.
-
-""" Get the Schema from an ACSet
-"""
-function Presentation(::StructACSet{S}) where S
-  return Presentation(S)
-end
+# FIXME: This function does not belong here.
 
 """   FreeDiagram(pres::Presentation{FreeSchema, Symbol})
 
