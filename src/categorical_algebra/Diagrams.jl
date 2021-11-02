@@ -53,6 +53,12 @@ shape(d::Diagram) = dom(diagram(d))
 Base.:(==)(d1::Diagram{T}, d2::Diagram{S}) where {T,S} =
   T == S && diagram(d1) == diagram(d2)
 
+function Base.show(io::IO, d::Diagram{T}) where T
+  print(io, "Diagram{$T}(")
+  show(io, diagram(d))
+  print(io, ")")
+end
+
 """ Morphism of diagrams in a category.
 
 In fact, this type encompasses several different kinds of morphisms from a
@@ -120,6 +126,19 @@ Base.:(==)(f::DiagramHom{T}, g::DiagramHom{S}) where {T,S} =
 
 ob_map(f::DiagramHom, x) = (ob_map(f.shape_map, x), component(f.diagram_map, x))
 hom_map(f::DiagramHom, g) = hom_map(f.shape_map, g)
+
+function Base.show(io::IO, f::DiagramHom{T}) where T
+  J = dom(shape_map(f))
+  print(io, "DiagramHom{$T}([")
+  join(io, mapvals(x -> ob_map(f,x), ob_generators(J), iter=true), ", ")
+  print(io, "], [")
+  join(io, mapvals(g -> hom_map(f,g), hom_generators(J), iter=true), ", ")
+  print(io, "], ")
+  show(IOContext(io, :compact=>true, :hide_domains=>true), diagram(dom(f)))
+  print(io, ", ")
+  show(IOContext(io, :compact=>true, :hide_domains=>true), diagram(codom(f)))
+  print(io, ")")
+end
 
 # Categories of diagrams
 ########################
