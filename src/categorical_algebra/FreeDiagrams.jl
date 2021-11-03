@@ -14,7 +14,7 @@ export FreeDiagram, BipartiteFreeDiagram, FixedShapeFreeDiagram,
   ob, hom, dom, codom, apex, legs, feet, left, right, bundle_legs,
   nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
   add_vertex!, add_vertices!, add_edge!, add_edges!,
-  ob₁, ob₂, nv₁, nv₂, vertices₁, vertices₂,
+  to_bipartite_diagram, ob₁, ob₂, nv₁, nv₂, vertices₁, vertices₂,
   add_vertex₁!, add_vertex₂!, add_vertices₁!, add_vertices₂!
 
 using AutoHashEquals
@@ -365,8 +365,19 @@ function BipartiteFreeDiagram{Ob,Hom}(obs₁::AbstractVector, obs₂::AbstractVe
   return d
 end
 
-BipartiteFreeDiagram(d::FixedShapeFreeDiagram{Ob,Hom}) where {Ob,Hom} =
-  BipartiteFreeDiagram{Ob,Hom}(d)
+BipartiteFreeDiagram(d::FixedShapeFreeDiagram{Ob,Hom}; kw...) where {Ob,Hom} =
+  BipartiteFreeDiagram{Ob,Hom}(d; kw...)
+
+function BipartiteFreeDiagram{Ob,Hom}(discrete::DiscreteDiagram;
+                                      colimit::Bool=false) where {Ob,Hom}
+  d = BipartiteFreeDiagram{Ob,Hom}()
+  if colimit
+    add_vertices₂!(d, length(discrete), ob₂=collect(discrete))
+  else
+    add_vertices₁!(d, length(discrete), ob₁=collect(discrete))
+  end
+  return d
+end
 
 function BipartiteFreeDiagram{Ob,Hom}(span::Multispan) where {Ob,Hom}
   d = BipartiteFreeDiagram{Ob,Hom}()
@@ -391,6 +402,50 @@ function BipartiteFreeDiagram{Ob,Hom}(para::ParallelMorphisms) where {Ob,Hom}
   add_edges!(d, fill(v₁,length(para)), fill(v₂,length(para)), hom=hom(para))
   return d
 end
+
+BipartiteFreeDiagram{Ob,Hom}(F::FinDomFunctor; kw...) where {Ob,Hom} =
+  first(to_bipartite_diagram(BipartiteFreeDiagram{Ob,Hom}, F; kw...))
+BipartiteFreeDiagram(F::FinDomFunctor; kw...) =
+  first(to_bipartite_diagram(F; kw...))
+
+""" Convert a free diagram to a bipartite free diagram.
+
+Reduce a free diagram to a free bipartite diagram with the same limit (the
+default, `colimit=false`) or the same colimit (`colimit=true`). The reduction is
+essentially the same in both cases, except for the choice of where to put
+isolated vertices, where we follow our conventions for [`cone_objects`](@ref)
+and [`cocone_objects`](@ref). The function returns a
+[`BipartiteFreeDiagram`](@ref) together with a map from vertices in the free
+diagram to pairs of vertices in the free bipartite diagram, at least one of
+which is not `nothing`.
+"""
+function to_bipartite_diagram(::Type{BFD}, F::Functor{<:FinCatGraph};
+                              colimit::Bool=false) where
+    {BFD <: AbstractBipartiteFreeDiagram}
+  d = BFD()
+  g = graph(dom(F))
+  vmap = map(vertices(g)) do v
+    x = ob_map(F, v)
+    out_edges, in_edges = incident(g, v, :src), incident(g, v, :tgt)
+    v₁ = if !isempty(out_edges) || (!colimit && isempty(in_edges))
+      add_vertex₁!(d, ob₁=x)
+    end
+    v₂ = if !isempty(in_edges) || (colimit && isempty(out_edges))
+      add_vertex₂!(d, ob₂=x)
+    end
+    if !(isnothing(v₁) || isnothing(v₂))
+      add_edge!(d, v₁, v₂, hom=id(x))
+    end
+    (v₁, v₂)
+  end
+  for e in edges(g)
+    f = hom_map(F, e)
+    add_edge!(d, first(vmap[src(g,e)]), last(vmap[tgt(g,e)]), hom=f)
+  end
+  return (d, vmap)
+end
+to_bipartite_diagram(F::Functor{<:FinCat,<:TypeCat{Ob,Hom}}; kw...) where {Ob,Hom} =
+  to_bipartite_diagram(BipartiteFreeDiagram{Ob,Hom}, F; kw...)
 
 # Free diagrams
 #--------------
@@ -425,8 +480,8 @@ function FreeDiagram{Ob,Hom}(obs::AbstractVector,
   return d
 end
 
-FreeDiagram(d::FixedShapeFreeDiagram{Ob,Hom}) where {Ob,Hom} =
-  FreeDiagram{Ob,Hom}(d)
+FreeDiagram(d::FixedShapeFreeDiagram{Ob,Hom}; kw...) where {Ob,Hom} =
+  FreeDiagram{Ob,Hom}(d; kw...)
 
 function FreeDiagram{Ob,Hom}(discrete::DiscreteDiagram) where {Ob,Hom}
   d = FreeDiagram{Ob,Hom}()
@@ -475,14 +530,17 @@ end
 FreeDiagram(diagram::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom} =
   FreeDiagram{Ob,Hom}(diagram)
 
-function FreeDiagram{Ob,Hom}(F::FinDomFunctor) where {Ob,Hom}
+(::Type{BFD})(F::FreeDiagram; kw...) where {BFD <: BipartiteFreeDiagram} =
+  BFD(FinDomFunctor(F); kw...)
+
+function FreeDiagram{Ob,Hom}(F::Functor{<:FinCatGraph}) where {Ob,Hom}
   diagram = FreeDiagram{Ob,Hom}()
   copy_parts!(diagram, graph(dom(F)))
   diagram[:ob] = collect_ob(F)
   diagram[:hom] = collect_hom(F)
   diagram
 end
-FreeDiagram(F::FinDomFunctor{<:FreeCatGraph,<:TypeCat{Ob,Hom}}) where {Ob,Hom} =
+FreeDiagram(F::Functor{<:FinCatGraph,<:TypeCat{Ob,Hom}}) where {Ob,Hom} =
   FreeDiagram{Ob,Hom}(F)
 
 # FinDomFunctors as diagrams

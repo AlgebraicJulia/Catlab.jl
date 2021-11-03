@@ -512,9 +512,13 @@ function mapvals(f, pairs::T; keys::Bool=false, iter::Bool=false) where T<:Abstr
     (k => f(v) for (k,v) in pairs)
   end)
 end
-function mapvals(f, vec::AbstractVector; keys::Bool=false, iter::Bool=false)
+function mapvals(f, collection; keys::Bool=false, iter::Bool=false)
   do_map = iter ? Iterators.map : map
-  keys ? do_map(f, eachindex(vec), vec) : do_map(f, vec)
+  if keys
+    do_map(f, eachindex(collection), values(collection))
+  else
+    do_map(f, values(collection))
+  end
 end
 
 dicttype(::Type{T}) where T <: AbstractDict = T.name.wrapper
