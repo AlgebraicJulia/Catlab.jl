@@ -18,7 +18,8 @@ using ...GAT, ...Theories, ...CSetDataStructures, ...Graphs
 using ..FinCats, ..FreeDiagrams, ..Limits, ..Subobjects
 import ...Theories: Ob, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 import ..Categories: ob, hom, dom, codom, compose, id, ob_map, hom_map
-import ..FinCats: FinDomFunctor, ob_generators, hom_generators, is_discrete
+import ..FinCats: FinDomFunctor, ob_generators, hom_generators, graph,
+  is_discrete
 import ..Limits: limit, colimit, universal, pushout_complement,
   can_pushout_complement
 import ..Subobjects: Subobject, SubobjectLattice
@@ -130,6 +131,7 @@ FinCat(s::Union{FinSet,Integer}) = DiscreteCat(s)
 ob_generators(C::DiscreteCat) = C.set
 hom_generators(::DiscreteCat) = ()
 is_discrete(::DiscreteCat) = true
+graph(C::DiscreteCat{Int,FinSetInt}) = Graph(length(C.set))
 
 dom(C::DiscreteCat{T}, f) where T = f::T
 codom(C::DiscreteCat{T}, f) where T = f::T

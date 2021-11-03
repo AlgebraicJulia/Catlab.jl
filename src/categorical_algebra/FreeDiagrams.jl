@@ -413,13 +413,13 @@ BipartiteFreeDiagram(F::FinDomFunctor; kw...) =
 Reduce a free diagram to a free bipartite diagram with the same limit (the
 default, `colimit=false`) or the same colimit (`colimit=true`). The reduction is
 essentially the same in both cases, except for the choice of where to put
-isolated vertices, where we follow our conventions for [`cone_objects`](@ref)
-and [`cocone_objects`](@ref). The function returns a
-[`BipartiteFreeDiagram`](@ref) together with a map from vertices in the free
+isolated vertices, where we follow the conventions described at
+[`cone_objects`](@ref) and [`cocone_objects`](@ref). This function returns a
+[`BipartiteFreeDiagram`](@ref) together with a map from the vertices of the free
 diagram to pairs of vertices in the free bipartite diagram, at least one of
 which is not `nothing`.
 """
-function to_bipartite_diagram(::Type{BFD}, F::Functor{<:FinCatGraph};
+function to_bipartite_diagram(::Type{BFD}, F::FinDomFunctor;
                               colimit::Bool=false) where
     {BFD <: AbstractBipartiteFreeDiagram}
   d = BFD()
@@ -530,18 +530,21 @@ end
 FreeDiagram(diagram::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom} =
   FreeDiagram{Ob,Hom}(diagram)
 
-(::Type{BFD})(F::FreeDiagram; kw...) where {BFD <: BipartiteFreeDiagram} =
-  BFD(FinDomFunctor(F); kw...)
-
-function FreeDiagram{Ob,Hom}(F::Functor{<:FinCatGraph}) where {Ob,Hom}
+function FreeDiagram{Ob,Hom}(F::FinDomFunctor) where {Ob,Hom}
   diagram = FreeDiagram{Ob,Hom}()
   copy_parts!(diagram, graph(dom(F)))
   diagram[:ob] = collect_ob(F)
   diagram[:hom] = collect_hom(F)
   diagram
 end
-FreeDiagram(F::Functor{<:FinCatGraph,<:TypeCat{Ob,Hom}}) where {Ob,Hom} =
+FreeDiagram(F::Functor{<:FinCat,<:TypeCat{Ob,Hom}}) where {Ob,Hom} =
   FreeDiagram{Ob,Hom}(F)
+
+(::Type{BFD})(diagram::FreeDiagram; kw...) where {BFD <: BipartiteFreeDiagram} =
+  BFD(FinDomFunctor(diagram); kw...)
+
+to_bipartite_diagram(diagram::FreeDiagram; kw...) =
+  to_bipartite_diagram(FinDomFunctor(diagram); kw...)
 
 # FinDomFunctors as diagrams
 #---------------------------

@@ -12,7 +12,7 @@ export AbstractLimit, AbstractColimit, Limit, Colimit,
   BinaryPushout, Pushout, pushout, pushout_complement, can_pushout_complement,
   BinaryCoequalizer, Coequalizer, coequalizer, proj,
   @cartesian_monoidal_instance, @cocartesian_monoidal_instance,
-  ComposeProductEqualizer, ComposeCoproductCoequalizer
+  ComposeProductEqualizer, ComposeCoproductCoequalizer, BipartiteLimit
 
 using AutoHashEquals
 
@@ -20,7 +20,7 @@ using ...GAT, ...Theories
 import ...Theories: ob, terminal, product, proj1, proj2, equalizer, incl,
   initial, coproduct, coproj1, coproj2, coequalizer, proj,
   delete, create, pair, copair, factorize
-using ..FreeDiagrams
+using ...CSetDataStructures, ..FreeDiagrams
 import ..FreeDiagrams: apex, legs
 
 # Data types for limits
@@ -358,7 +358,7 @@ macro cocartesian_monoidal_instance(Ob, Hom)
   end)
 end
 
-# Composite (co)limits
+# (Co)limit algorithms
 ######################
 
 """ Compute pullback by composing a product with an equalizer.
@@ -422,6 +422,24 @@ end
 
 function universal(lim::CompositePushout, cone::Multicospan)
   factorize(lim.coeq, universal(lim.coprod, cone))
+end
+
+""" Compute a limit by reducing the diagram shape to a bipartite graph.
+"""
+struct BipartiteLimit <: LimitAlgorithm end
+
+function limit(diagram, ::BipartiteLimit)
+  bdiagram, vmap = to_bipartite_diagram(diagram)
+  lim = limit(bdiagram)
+  cone = Multispan(apex(lim), map(vmap) do (v₁, v₂)
+    if isnothing(v₁)
+      e = first(incident(bdiagram, v₂, :tgt))
+      compose(legs(lim)[src(bdiagram, e)], hom(bdiagram, e))
+    else
+      legs(lim)[v₁]
+    end
+  end)
+  Limit(diagram, cone)
 end
 
 end

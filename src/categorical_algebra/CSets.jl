@@ -133,19 +133,17 @@ end
 # Categories interop
 ####################
 
-# FIXME: Object type should be `SetOb`, not `FinSet{Int}`.
-
 """ Wrapper type to interpret attributed C-set as a functor.
 """
 @auto_hash_equals struct ACSetFunctor{ACS<:ACSet} <:
     Functor{FinCats.FinCatPresentation{Symbol,FreeSchema.Ob,FreeSchema.Hom},
-            TypeCat{FinSet{Int},FinDomFunction{Int}}}
+            TypeCat{SetOb,FinDomFunction{Int}}}
   acset::ACS
 end
 FinDomFunctor(X::ACSet) = ACSetFunctor(X)
 
 dom(F::ACSetFunctor) = FinCat(Presentation(F.acset))
-codom(F::ACSetFunctor) = TypeCat{FinSet{Int},FinDomFunction{Int}}()
+codom(F::ACSetFunctor) = TypeCat{SetOb,FinDomFunction{Int}}()
 
 Categories.do_ob_map(F::ACSetFunctor, x) = SetOb(F.acset, x)
 Categories.do_hom_map(F::ACSetFunctor, f) = SetFunction(F.acset, f)
