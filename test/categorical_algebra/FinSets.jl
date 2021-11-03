@@ -23,8 +23,9 @@ set = FinSet(Set(1:2:5))
 
 # Tables as sets.
 set = FinSet((x=[1,3,5], y=["a","b","c"]))
+@test eltype(set) == NamedTuple{(:x,:y),Tuple{Int,String}}
 @test length(set) == 3
-@test map(NamedTuple, set) == [(x=1, y="a"), (x=3, y="b"), (x=5, y="c")]
+@test collect(set) == [(x=1, y="a"), (x=3, y="b"), (x=5, y="c")]
 @test startswith(sshow(set), "TabularSet(")
 @test startswith(sshow(MIME("text/plain"), set), "3-element TabularSet")
 @test startswith(sshow(MIME("text/html"), set), "<div")
