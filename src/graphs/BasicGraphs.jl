@@ -62,8 +62,10 @@ end
 """
 @acset_type Graph(TheoryGraph, index=[:src,:tgt]) <: AbstractGraph
 
-function (::Type{T})(nv::Int) where T <: HasVertices
-  g = T(); add_vertices!(g, nv); g
+function (::Type{T})(nv::Int; kw...) where T <: HasVertices
+  g = T()
+  add_vertices!(g, nv; kw...)
+  return g
 end
 
 """ Number of vertices in a graph.

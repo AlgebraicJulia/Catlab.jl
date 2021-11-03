@@ -4,7 +4,7 @@ module Diagrams
 export Diagram, DiagramHom, id, op, co, shape, diagram, shape_map, diagram_map,
   ob_map, hom_map
 
-using StaticArrays: SVector
+using StaticArrays: @SVector
 
 using ...GAT
 import ...Theories: Category, dom, codom, id, compose, ⋅, ∘, munit
@@ -194,13 +194,21 @@ op(f::DiagramHom{co}) = DiagramHom{op}(f)
 
 # TODO: Define monad multiplications that go along with the units.
 
-function munit(::Type{Diagram{T}}, C::Cat, c) where T
-  Diagram{T}(FinDomFunctor(SVector(c), FinCat(1), C))
+function munit(::Type{Diagram{T}}, C::Cat, x; shape=nothing) where T
+  if isnothing(shape)
+    shape = FinCat(1)
+  else
+    @assert is_discrete(shape) && length(ob_generators(shape)) == 1
+  end
+  Diagram{T}(FinDomFunctor(@SVector([x]), shape, C))
 end
 
-function munit(::Type{DiagramHom{T}}, C::Cat, f) where T
-  DiagramHom{T}(SVector(Pair(1, f)), munit(DiagramHom{T}, C, dom(C,f)),
-                munit(DiagramHom{T}, C, codom(C,f)))
+function munit(::Type{DiagramHom{T}}, C::Cat, f;
+               dom_shape=nothing, codom_shape=nothing) where T
+  d = munit(DiagramHom{T}, C, dom(C,f), shape=dom_shape)
+  d′= munit(DiagramHom{T}, C, codom(C,f), shape=codom_shape)
+  j = only(ob_generators(shape(d′)))
+  DiagramHom{T}(@SVector([(j, f)]), d, d′)
 end
 
 end
