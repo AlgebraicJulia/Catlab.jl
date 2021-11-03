@@ -264,6 +264,14 @@ const FinDomFunctor{Dom<:FinCat,Codom<:Cat} = Functor{Dom,Codom}
 FinDomFunctor(maps::NamedTuple{(:V,:E)}, dom::FinCatGraph, codom::Cat) =
   FinDomFunctor(maps.V, maps.E, dom, codom)
 
+function FinDomFunctor(ob_map, dom::FinCat, codom::Cat{Ob,Hom}) where {Ob,Hom}
+  is_discrete(dom) ||
+    error("Morphism map omitted by domain category is not discrete: $dom")
+  FinDomFunctor(ob_map, empty(ob_map, Hom), dom, codom)
+end
+FinDomFunctor(ob_map, ::Nothing, dom::FinCat, codom::Cat) =
+  FinDomFunctor(ob_map, dom, codom)
+
 function hom_map(F::FinDomFunctor{<:FinCatPathGraph}, path::Path)
   D = codom(F)
   mapreduce(e -> hom_map(F, e), (gs...) -> compose(D, gs...),
