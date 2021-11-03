@@ -142,7 +142,7 @@ add_edges!(g, [2,2], [2,2])
 G = FinDomFunctor(g)
 α = FinTransformation(F, G, V=FinFunction([1,2,2]), E=FinFunction([1,3],4))
 @test dom_ob(α) == C
-@test codom_ob(α) isa TypeCat{<:FinSet{Int},<:FinDomFunction{Int}}
+@test codom_ob(α) isa TypeCat{<:SetOb,<:FinDomFunction{Int}}
 @test is_natural(α)
 @test α[:V](3) == 2
 @test startswith(sprint(show, α), "FinTransformation(")

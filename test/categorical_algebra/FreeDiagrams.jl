@@ -71,6 +71,10 @@ discrete = DiscreteDiagram([A,B,C])
 diagram = FreeDiagram(discrete)
 @test ob(diagram) == [A,B,C]
 @test isempty(hom(diagram))
+@test BipartiteFreeDiagram(discrete, colimit=false) ==
+  BipartiteFreeDiagram(diagram, colimit=false)
+@test BipartiteFreeDiagram(discrete, colimit=true) ==
+  BipartiteFreeDiagram(diagram, colimit=true)
 
 # Spans.
 f, g = Hom(:f, C, A), Hom(:g, C, B)
@@ -93,15 +97,16 @@ span = Multispan([f,g,h])
 @test legs(span) == [f,g,h]
 @test feet(span) == [A,B,A]
 
-diagram = BipartiteFreeDiagram(span)
-@test (ob₁(diagram), ob₂(diagram)) == ([C], [A,B,A])
-@test hom(diagram) == [f,g,h]
-@test (src(diagram), tgt(diagram)) == ([1,1,1], [1,2,3])
-
 diagram = FreeDiagram(span)
 @test ob(diagram) == [C,A,B,A]
 @test hom(diagram) == [f,g,h]
 @test (src(diagram), tgt(diagram)) == ([1,1,1], [2,3,4])
+
+diagram = BipartiteFreeDiagram(span)
+@test (ob₁(diagram), ob₂(diagram)) == ([C], [A,B,A])
+@test hom(diagram) == [f,g,h]
+@test (src(diagram), tgt(diagram)) == ([1,1,1], [1,2,3])
+@test diagram == BipartiteFreeDiagram(FreeDiagram(span))
 
 span = Multispan([ id(FinSet(2)) for i in 1:3 ])
 span = bundle_legs(span, [1, (2,3)])
@@ -129,15 +134,16 @@ cospan = Multicospan([f,g,h])
 @test legs(cospan) == [f,g,h]
 @test feet(cospan) == [A,B,A]
 
-diagram = BipartiteFreeDiagram(cospan)
-@test (ob₁(diagram), ob₂(diagram)) == ([A,B,A], [C])
-@test hom(diagram) == [f,g,h]
-@test (src(diagram), tgt(diagram)) == ([1,2,3], [1,1,1])
-
 diagram = FreeDiagram(cospan)
 @test ob(diagram) == [A,B,A,C]
 @test hom(diagram) == [f,g,h]
 @test (src(diagram), tgt(diagram)) == ([1,2,3], [4,4,4])
+
+diagram = BipartiteFreeDiagram(cospan)
+@test (ob₁(diagram), ob₂(diagram)) == ([A,B,A], [C])
+@test hom(diagram) == [f,g,h]
+@test (src(diagram), tgt(diagram)) == ([1,2,3], [1,1,1])
+@test diagram == BipartiteFreeDiagram(FreeDiagram(cospan))
 
 cospan = Multicospan([FinFunction([i],3) for i in 1:3])
 cospan = bundle_legs(cospan, [(1,3), 2])
@@ -156,15 +162,16 @@ para = ParallelMorphisms([f,g,h])
 @test (dom(para), codom(para)) == (A, B)
 @test hom(para) == [f,g,h]
 
-diagram = BipartiteFreeDiagram(para)
-@test (ob₁(diagram), ob₂(diagram)) == ([A], [B])
-@test hom(diagram) == [f,g,h]
-@test (src(diagram), tgt(diagram)) == ([1,1,1], [1,1,1])
-
 diagram = FreeDiagram(para)
 @test ob(diagram) == [A,B]
 @test hom(diagram) == [f,g,h]
 @test (src(diagram), tgt(diagram)) == ([1,1,1], [2,2,2])
+
+diagram = BipartiteFreeDiagram(para)
+@test (ob₁(diagram), ob₂(diagram)) == ([A], [B])
+@test hom(diagram) == [f,g,h]
+@test (src(diagram), tgt(diagram)) == ([1,1,1], [1,1,1])
+@test diagram == BipartiteFreeDiagram(FreeDiagram(para))
 
 # Composable pairs.
 f, g = Hom(:f, A, B), Hom(:g, B, C)

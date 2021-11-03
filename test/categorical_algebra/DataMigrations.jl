@@ -80,19 +80,22 @@ idF = FinFunctor(
 # Conjunctive data migration
 ############################
 
+# Graph whose edges are paths of length 2.
 V, E, src, tgt = generators(TheoryGraph)
-
-# TODO: For completeness, test a query that is constructed manually.
-#=
 C = FinCat(TheoryGraph)
 F_V = FinDomFunctor([V], FinCat(1), C)
-F_E = FinDomFunctor(FreeDiagram(Span(tgt, src)), C)
+F_E = FinDomFunctor(FreeDiagram(Cospan(tgt, src)), C)
 F = FinDomFunctor(Dict(V => Diagram{op}(F_V),
                        E => Diagram{op}(F_E)),
                   Dict(src => DiagramHom{op}([(2, src)], F_E, F_V),
                        tgt => DiagramHom{op}([(3, tgt)], F_E, F_V)), C)
-=#
+@test F isa DataMigrations.ConjSchemaMigration
+X = path_graph(Graph, 5)
+Y = migrate(X, F)
+@test length(Y(V)) == 5
+@test length(Y(E)) == 3
 
+# Same query, but with `@migration` macro.
 F = @migration TheoryGraph TheoryGraph begin
   V => V
   E => @join begin
@@ -104,9 +107,6 @@ F = @migration TheoryGraph TheoryGraph begin
   src => e₁ ⋅ src
   tgt => e₂ ⋅ tgt
 end
-@test F isa DataMigrations.ConjSchemaMigration
-
-X = path_graph(Graph, 5)
 Y = migrate(X, F)
 @test length(Y(V)) == 5
 @test length(Y(E)) == 3
