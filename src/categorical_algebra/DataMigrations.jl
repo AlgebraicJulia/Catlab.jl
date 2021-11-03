@@ -145,7 +145,7 @@ function migrate(X::ACSet, F::ConjSchemaMigration)
   tgt_schema = dom(F)
   sets = make_map(ob_generators(tgt_schema)) do c
     Fc = diagram(ob_map(F, c))
-    lim = limit(compose(Fc, X, strict=false))
+    lim = limit(compose(Fc, X, strict=false), BipartiteLimit())
     J = dom(Fc)
     names = Tuple(Symbol(ob_name(J, j)) for j in ob_generators(J))
     TabularSet(NamedTuple{names}(Tuple(map(collect, legs(lim)))))
