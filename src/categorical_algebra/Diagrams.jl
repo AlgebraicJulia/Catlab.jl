@@ -205,8 +205,9 @@ end
 
 function munit(::Type{DiagramHom{T}}, C::Cat, f;
                dom_shape=nothing, codom_shape=nothing) where T
-  d = munit(DiagramHom{T}, C, dom(C,f), shape=dom_shape)
-  d′= munit(DiagramHom{T}, C, codom(C,f), shape=codom_shape)
+  f = hom(C, f)
+  d = munit(Diagram{T}, C, dom(C, f), shape=dom_shape)
+  d′= munit(Diagram{T}, C, codom(C, f), shape=codom_shape)
   j = only(ob_generators(shape(d′)))
   DiagramHom{T}(@SVector([(j, f)]), d, d′)
 end
