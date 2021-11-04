@@ -58,6 +58,7 @@ makedocs(
         "generated/sketches/preorders.md"
         ],
       "Graphs" => Any[
+        "generated/graphs/graphs.md".
         "generated/graphs/subgraphs.md",
       ],
       "Wiring diagrams" => Any[
