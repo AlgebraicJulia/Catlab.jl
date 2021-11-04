@@ -129,13 +129,15 @@ function migrate!(X::ACSet, Y::ACSet, FOb, FHom)
   migrate!(X, Y, F)
 end
 
-# FIXME: These two constructors are too broad to apply to all acset types and
-# should be removed.
+function (::Type{T})(X::ACSet, F::FinFunctor) where T <: ACSet
+  Base.depwarn("Data migration constructor is deprecated, use `migrate` instead", :ACSet)
+  migrate(T, X, F)
+end
 
-(::Type{T})(X::ACSet, F::FinFunctor) where T <: ACSet = migrate(T, X, F)
-
-(::Type{T})(X::ACSet, FOb::AbstractDict, FHom::AbstractDict) where T <: ACSet =
+function (::Type{T})(X::ACSet, FOb::AbstractDict, FHom::AbstractDict) where T <: ACSet
+  Base.depwarn("Data migration constructor is deprecated, use `migrate` instead", :ACSet)
   migrate(T, X, FOb, FHom)
+end
 
 # Conjunctive migration
 #######################
