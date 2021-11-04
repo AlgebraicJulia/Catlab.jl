@@ -149,7 +149,7 @@ function migrate(X::ACSet, F::ConjSchemaMigration)
     Fc = diagram(ob_map(F, c))
     lim = limit(compose(Fc, X, strict=false), BipartiteLimit())
     J = dom(Fc)
-    names = Tuple(Symbol(ob_name(J, j)) for j in ob_generators(J))
+    names = Tuple(column_name(ob_name(J, j)) for j in ob_generators(J))
     TabularSet(NamedTuple{names}(Tuple(map(collect, legs(lim)))))
   end
   funcs = make_map(hom_generators(tgt_schema)) do f
@@ -164,6 +164,9 @@ function migrate(X::ACSet, F::ConjSchemaMigration)
   end
   FinDomFunctor(sets, funcs, tgt_schema)
 end
+
+column_name(name) = Symbol(name)
+column_name(i::Integer) = Symbol("x$i") # Same default as DataFrames.jl.
 
 # FIXME: We should put this elsewhere and think more carefully about names.
 ob_name(C::FinCat, x) = x

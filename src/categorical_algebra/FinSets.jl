@@ -79,16 +79,26 @@ end
 
 """ Finite set whose elements are rows of a table.
 
-The underlying table should be compliant with Tables.jl.
+The underlying table should be compliant with Tables.jl. For the sake of
+uniformity, the rows are provided as named tuples, which assumes that the table
+is not "extremely wide". This should not be a major limitation in practice but
+see the Tables.jl documentation for further discussion.
 """
-@auto_hash_equals struct TabularSet{Table} <: FinSet{Table,Any}
+@auto_hash_equals struct TabularSet{Table,Row} <: FinSet{Table,Row}
   table::Table
+
+  function TabularSet(table::Table) where Table
+    schema = Tables.schema(table)
+    new{Table,NamedTuple{schema.names,Tuple{schema.types...}}}(table)
+  end
 end
 
 FinSet(nt::NamedTuple) = TabularSet(nt)
 
-Base.iterate(set::TabularSet, args...) = iterate(Tables.rows(set.table), args...)
+Base.iterate(set::TabularSet, args...) =
+  iterate(Tables.namedtupleiterator(set.table), args...)
 Base.length(set::TabularSet) = Tables.rowcount(set.table)
+Base.collect(set::TabularSet) = Tables.rowtable(set.table)
 
 function Base.show(io::IO, set::TabularSet)
   print(io, "TabularSet(")
