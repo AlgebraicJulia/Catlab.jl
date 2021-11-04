@@ -434,7 +434,7 @@ end
 """
 function parse_query(C::Cat, expr; kw...)
   @match expr begin
-    x::Symbol => UnitQuery(C, x)
+    x::Symbol => UnitQuery(C, ob_named(C, x))
     Expr(:macrocall, form, args...) &&
         if form ∈ (Symbol("@limit"), Symbol("@join")) end =>
       Diagram{op}(parse_diagram(C, last(args); kw...))
@@ -451,13 +451,14 @@ function parse_query_hom(C::Cat, expr, d::ConjQuery, d′::ConjQuery)
                  mapvals(expr -> parse_hom(J, expr), hom_rhs), d, d′)
 end
 function parse_query_hom(C::Cat, expr, c::UnitQuery, d′::ConjQuery)
-  d = munit(Diagram{op}, C, c.ob)
-  ob_rhs, hom_rhs = parse_ob_hom_maps(shape(d′), expr, allow_missing=true)
+  d = convert_query(Diagram{op,typeof(C)}, c)
+  J, J′ = shape(d), shape(d′)
+  ob_rhs, hom_rhs = parse_ob_hom_maps(J′, expr, allow_missing=true)
   DiagramHom{op}(mapvals(f -> ismissing(f) ? 1 : Pair(1, parse_hom(C,f)), ob_rhs),
-                 mapvals(::Missing -> 1, hom_rhs), d, d′)
+                 mapvals(::Missing -> id(J,1), hom_rhs), d, d′)
 end
 function parse_query_hom(C::Cat, expr, d::ConjQuery, c′::UnitQuery)
-  d′ = munit(Diagram{op}, C, c′.ob)
+  d′ = convert_query(Diagram{op,typeof(C)}, c′)
   DiagramHom{op}(SVector(parse_query_ob_rhs(C, shape(d), expr)), d, d′)
 end
 function parse_query_hom(C::Cat, expr, ::UnitQuery, ::UnitQuery)
@@ -500,13 +501,23 @@ promote_query_result(T, S, ::Type{Union{}}) = typejoin(T, S)
 promote_query_result(T, S, U) = U
 
 convert_query(::Type{T}, x::S) where {T, S<:T} = x
-convert_query(::Type{<:ConjQuery{C}}, x::UnitQuery{C}) where C =
-  munit(Diagram{op}, x.cat, x.ob)
+
+function convert_query(::Type{<:ConjQuery{C}}, query::UnitQuery{C}) where C
+  cat, x = query.cat, query.ob
+  munit(Diagram{op}, cat, x,
+        shape=FinCat(NamedGraph{Symbol}(1, vname=nameof(x))))
+end
 
 convert_query_hom(T::Type, f) = convert_query_hom(T, query_typeof(f), f)
 convert_query_hom(::Type{T}, ::Type{S}, f) where {T, S<:T} = f
-convert_query_hom(::Type{<:ConjQuery{C}}, ::Type{<:UnitQuery{C}}, f) where C =
-  munit(DiagramHom{op}, f.cat, f.hom)
+
+function convert_query_hom(::Type{<:ConjQuery{C}}, ::Type{<:UnitQuery{C}},
+                           query_hom) where C
+  cat, f = query_hom.cat, query_hom.hom
+  munit(DiagramHom{op}, cat, f,
+        dom_shape=FinCat(NamedGraph{Symbol}(1, vname=nameof(dom(f)))),
+        codom_shape=FinCat(NamedGraph{Symbol}(1, vname=nameof(codom(f)))))
+end
 
 query_typeof(::DiagramHom{T,C}) where {T,C} = Diagram{T,C}
 query_typeof(::UnitQueryHom{C}) where C = UnitQuery{C}

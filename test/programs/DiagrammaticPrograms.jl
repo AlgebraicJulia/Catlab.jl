@@ -247,6 +247,6 @@ end
 F_src = hom_map(F, 3)
 @test ob_map(F_src, 1) == (1, TheoryGraph[:src])
 @test ob_map(F_src, 2) == (1, id(TheoryGraph[:E]))
-@test hom_map(F_src, 1) == 1
+@test hom_map(F_src, 1) == id(shape(codom(F_src)), 1)
 
 end

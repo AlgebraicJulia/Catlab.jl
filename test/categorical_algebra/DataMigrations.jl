@@ -94,6 +94,10 @@ X = path_graph(Graph, 5)
 Y = migrate(X, F)
 @test length(Y(V)) == 5
 @test length(Y(E)) == 3
+@test Y(src)((v=3, e₁=2, e₂=3)) |> only == 2
+@test Y(tgt)((v=3, e₁=2, e₂=3)) |> only == 4
+@test Y(src)((3, 2, 3)) |> only == 2
+@test Y(tgt)((3, 2, 3)) |> only == 4
 
 # Same query, but with `@migration` macro.
 F = @migration TheoryGraph TheoryGraph begin
@@ -110,10 +114,8 @@ end
 Y = migrate(X, F)
 @test length(Y(V)) == 5
 @test length(Y(E)) == 3
-@test Y(src)((v=3, e₁=2, e₂=3)) |> only == 2
-@test Y(tgt)((v=3, e₁=2, e₂=3)) |> only == 4
-@test Y(src)((3, 2, 3)) |> only == 2
-@test Y(tgt)((3, 2, 3)) |> only == 4
+@test Y(src)((v=3, e₁=2, e₂=3)) == (V=2,)
+@test Y(tgt)((v=3, e₁=2, e₂=3)) == (V=4,)
 
 # Sigma data migration
 ######################

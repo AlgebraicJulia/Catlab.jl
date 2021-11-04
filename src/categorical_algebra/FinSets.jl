@@ -18,8 +18,7 @@ using ...GAT, ...Theories, ...CSetDataStructures, ...Graphs
 using ..FinCats, ..FreeDiagrams, ..Limits, ..Subobjects
 import ...Theories: Ob, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 import ..Categories: ob, hom, dom, codom, compose, id, ob_map, hom_map
-import ..FinCats: FinDomFunctor, ob_generators, hom_generators, graph,
-  is_discrete
+import ..FinCats: ob_generators, hom_generators, graph, is_discrete
 import ..Limits: limit, colimit, universal, pushout_complement,
   can_pushout_complement
 import ..Subobjects: Subobject, SubobjectLattice
@@ -138,11 +137,6 @@ codom(C::DiscreteCat{T}, f) where T = f::T
 id(C::DiscreteCat{T}, x) where T = x::T
 compose(C::DiscreteCat{T}, f, g) where T = (f::T == g::T) ? f :
   error("Nontrivial composite in discrete category: $f != $g")
-
-FinDomFunctor(ob_map, dom::DiscreteCat, codom::Cat{Ob,Hom}) where {Ob,Hom} =
-  FinDomFunctor(ob_map, empty(ob_map, Hom), dom, codom)
-FinDomFunctor(ob_map, ::Nothing, dom::DiscreteCat, codom::Cat) =
-  FinDomFunctor(ob_map, dom, codom)
 
 hom_map(F::FinDomFunctor{<:DiscreteCat}, x) = id(codom(F), ob_map(F, x))
 
