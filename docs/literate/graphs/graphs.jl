@@ -38,11 +38,9 @@ generators(BasicGraphs.TheoryGraph)
 
 to_graphviz(Catlab.Graphs.BasicGraphs.TheoryGraph)
 
-# Constructing the Category of Graphs
-#```
-# # Graphs
-# ########
-
+# # Constructing the Category of Graphs
+# The Theory of Graphs is given by the following Schema:
+# ```julia
 # @present TheoryGraph(FreeSchema) begin
 #   V::Ob
 #   E::Ob
@@ -59,7 +57,6 @@ to_graphviz(Catlab.Graphs.BasicGraphs.TheoryGraph)
 # @acset_type Graph(TheoryGraph, index=[:src,:tgt]) <: AbstractGraph
 # ```
 #
-#
 # That is all we need to do to generate the functor category [TheoryGraph, FinSet].
 # Catlab knows how to take a finitely presented category and generate all the data structures
 # that you need to represent functors into FinSet and natural transformations between those functors.
@@ -67,7 +64,7 @@ to_graphviz(Catlab.Graphs.BasicGraphs.TheoryGraph)
 # the preimages of those morphisms. in this example, we want to be able to find the incoming and 
 # outgoing edges of a vertex in O(1) time.
 
-# Creating some Graphs
+# ## Creating some Graphs
 
 # Once you have fixed the schema (aka indexing category or theory), you can make some instances.
 # Catlab has a DSL for specifying instances of any schema. It is called `@acset`.
@@ -87,6 +84,7 @@ end
 
 draw(e)
 
+# a wedge is two edges that share a target
 w = @acset Graphs.Graph begin
     V = 3
     E = 2
@@ -115,7 +113,6 @@ w[incident(w, 2, :tgt), :src] # vertices that are the source of edges whose targ
 
 w[incident(w, 1, :src), :tgt] # vertices that are the target of edges whose src is vertex 1
 
-
 # ### Exercise:
 # a. Use the @acset macro to make a graph with at least 5 vertices
 # b. Draw the graph
@@ -123,7 +120,7 @@ w[incident(w, 1, :src), :tgt] # vertices that are the target of edges whose src 
 # d. Write a function that computes the 2-hop out-neighbors of a vertex.
 
 
-## Graph Homomorphisms
+# # Graph Homomorphisms
 # We can construct some graph homomorphisms between our two graphs.
 # What data do we need to specify?
 
@@ -138,18 +135,17 @@ is_natural(ϕ)
 is_natural(ϕᵦ)
 
 # So how does Catlab store the data of the natural transformation? 
-
+# the domain
 ϕ.dom
-
+# the codomain
 ϕ.codom
-
+# the components
 ϕ.components
 
 # We can check the  naturality squares ourselves
-
-# src ⋅ ϕᵥ == ϕₑ ⋅ src
+# The sources are preserved: `src ⋅ ϕᵥ == ϕₑ ⋅ src`
 ϕ[:V](dom(ϕ)[:,:src]) == codom(ϕ)[ϕ[:E].func, :src]
-# tgt ⋅ ϕᵥ == ϕₑ ⋅ tgt
+# The targets are preserved: `tgt ⋅ ϕᵥ == ϕₑ ⋅ tgt`
 ϕ[:V](dom(ϕ)[:,:tgt]) == codom(ϕ)[ϕ[:E].func, :tgt]
 
 # This approach generalizes to the following: 
@@ -168,9 +164,9 @@ is_natural(ϕᵦ)
 # Notice how we iterate over the homs in the schema category S `(f, c, d) in zip(hom(S), dom(S), codom(S))` We get one universally quantified equation `all(Yf[α_c(i)] == α_d(Xf[i]) for i in eachindex(Xf))` for each morphism in the indexing category
 # 
 # ### Exercise:
-# a. Take your graph from the previous exercise and construct a graph homomorphism from the wedge (w) into it.
-# b. Check that the naturality equations are satisfied.
-# c. Explain why we don't need to specify any data for the source and target morphisms in TheoryGraph when definining a graph homomorphism
+# 1. Take your graph from the previous exercise and construct a graph homomorphism from the wedge (w) into it.
+# 2. Check that the naturality equations are satisfied.
+# 3. Explain why we don't need to specify any data for the source and target morphisms in TheoryGraph when definining a graph homomorphism
 
 # ## Finding Homomorphisms Automatically
 # As you saw in the previous exercise, constructing a natural transformation can be quite tedious. We want computers to automate tedious things for us. So we use an algorithm to enumerate all the homomorphisms between two CSets.
@@ -193,15 +189,27 @@ T = @acset Graphs.Graph begin
     tgt = [2,3,3, 4, 4,6,5,6,6]
 end
 
+# The simplest pattern in a graph is just a single edge and each homomorphism ϕ:e→G is a single edge in G. 
+length(homomorphisms(e, T, monic=true)) == nparts(T,:E) # number of edges
+
 draw(T)
 
 length(homomorphisms(t, T, monic=true))
 
-map(homomorphisms(t,T)) do ϕ
-    collect(ϕ[:V])
+# We can define this helper function to print out all the homomorphisms between graphs. Because all our graphs are simple, we only need to look at the vertex components.
+graphhoms(g,h) = begin
+    map(homomorphisms(g,h)) do ϕ
+        collect(ϕ[:V])
+    end
 end
 
-length(homomorphisms(T,t))
+graphhoms(t, T)
+
+# Homs ϕ:t→T are little triangles in T, but homs ϕ:T→t are colorings of T with 3 colors. The fact that there are edges in t that are missing, means that it provides constraints on what graphs have morphisms into it. For example, there are no morphisms T→t.
+
+graphhoms(T, t)
+
+# The reason we don't have a morphism into t is vertices 2,3,4,5 aren't arranged into a triangle. We can relax those constraints by adding loops to the codomain. Loops in the codomain allow you to merge adjacent vertices when you construct the homomorphism. 
 
 add_loops!(g) = add_parts!(g, :E, nparts(g,:V), src=parts(g,:V), tgt=parts(g,:V))
 add_loops(g) = begin
@@ -210,38 +218,27 @@ add_loops(g) = begin
     return h
 end
 
-add_loops(t) |> draw
+draw(add_loops(t))
 
-draw(add_loops(T))
-
+# Once we add loops, then we have morphisms.
+ 
 length(homomorphisms(T,add_loops(t)))
 
 
-# Bipartite Graphs
+# ## Bipartite Graphs
+# Many computer science problems involve graphs that have two types of vertices. For example, when matching students to classes, you might represent the students as one type of vertex and the classes as another type of vertex. Then the edges (s,c) represent "student s is enrolled in class c". In this scenario there can be no edges from a class vertex to another class vertex, or from a student vertex to a student vertex. Graphs for which there exists such a classification are called bipartite graphs. In Category Theory, we shift from thinking about graphs with properties to graph homomorphisms that witness that property and think of bipartitioned graphs.
 
-length(homomorphisms(e, T))
-
-nparts(T, :E)
-
-length(homomorphisms(T,e))
-
+# First we construct a bipartite graph:
 sq = apex(product(add_loops(e), add_loops(e)))
 rem_parts!(sq, :E, [1,5,6,8,9])
 draw(sq)
 
+# We will use the symmetric edge graph to identify the bipartitions of this graph. 
 esym = @acset Graphs.Graph begin
     V = 2
     E = 2
     src = [1,2]
     tgt = [2,1]
-end
-
-draw(id(esym))
-
-graphhoms(g,h) = begin
-    map(homomorphisms(g,h)) do ϕ
-        collect(ϕ[:V])
-    end
 end
 
 # There are two ways to bipartition sq.
@@ -251,8 +248,10 @@ graphhoms(sq, esym)
 
 graphhoms(esym, esym)
 
+# the first coloring
 draw(homomorphisms(sq, esym)[1])
 
+# but we can also swap the roles of the colors
 draw(homomorphisms(sq, esym)[2])
 
 # We can generalize the notion of Bipartite graph to any number of parts.
@@ -273,6 +272,7 @@ K₃ = clique(3)
 
 draw(id(K₃))
 
+# then we can use 3 colors to color our graphs:
 draw(homomorphism(T, K₃))
 
 # ### Exercise:
@@ -289,8 +289,9 @@ triloop = @acset Graphs.Graph begin
     tgt = [2,3,1]
 end
 
-graphhoms(triloop, triloop)
+draw(id(triloop))
 
+# With this graph, we can pick out directed 3-cycles in a graph like T2
 T2 = @acset Graphs.Graph begin
     V = 6
     E = 6
@@ -298,9 +299,10 @@ T2 = @acset Graphs.Graph begin
     tgt = [2,3,1,5,6,4]
 end
 
-draw(T2)
+graphhoms(T2, triloop)
 
-graphhoms(triloop, T2)
+# and we can draw those cyclic roles with colors
+draw(homomorphisms(T2, triloop)[1])
 
 T3 = @acset Graphs.Graph begin
     V = 6
@@ -309,11 +311,11 @@ T3 = @acset Graphs.Graph begin
     tgt = [2,3,1,5,6,4, 4]
 end
 
-draw(T3)
-
 graphhoms(T3, triloop)
 
+# using the colors as shown
 draw(id(triloop))
 
+# we can see our coloring of T3
 draw(homomorphisms(T3, triloop)[1])
 
