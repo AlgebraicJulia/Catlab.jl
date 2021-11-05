@@ -430,9 +430,12 @@ function universal(lim::Equalizer{<:FinSet{Int}},
   FinFunction(Int[only(searchsorted(ι, h(i))) for i in dom(h)], length(ι))
 end
 
-""" Algorithm for limit of spans or multispans out of finite sets.
+""" Algorithm for limit of cospan or multicospan with feet being finite sets.
 
-In the context of relational databases, such limits are joins.
+In the context of relational databases, such limits are called *joins*. The
+trivial join algorithm is the [`NestedLoopJoin`](@ref). The [`HashJoin`](@ref)
+and [`SortMergeJoin`](@ref) algorithms are usually much faster. If you are
+unsure what algorithm to pick, use [`SmartJoin`](@ref).
 """
 abstract type JoinAlgorithm <: LimitAlgorithm end
 
@@ -618,19 +621,6 @@ ensure_indexed(f::FinFunction{Int,Int}) = is_indexed(f) ? f :
 ensure_indexed(f::FinDomFunction{Int}) = is_indexed(f) ? f :
   FinDomFunction(collect(f), index=true)
 
-""" Limit of free diagram of FinSets.
-
-See `CompositePullback` for a very similar construction.
-"""
-struct FinSetFreeDiagramLimit{Ob<:FinSet, Diagram,
-                              Cone<:Multispan{Ob}, Prod<:Product{Ob},
-                              Incl<:FinFunction} <: AbstractLimit{Ob,Diagram}
-  diagram::Diagram
-  cone::Cone
-  prod::Prod
-  incl::Incl # Inclusion for the "multi-equalizer" in general formula.
-end
-
 function limit(d::BipartiteFreeDiagram{Ob,Hom}) where
     {Ob<:SetOb, Hom<:FinDomFunction{Int}}
   # As in a pullback, this method assumes that all objects in layer 2 have
@@ -738,9 +728,9 @@ end
 
 """ Perform all possible pairings in a bipartite free diagram.
 
-The resulting diagram has the same ``V₁`` set but a possibly reduced ``V₂``.
-Layer 2 vertices are merged when they have exactly the same multiset of adjacent
-vertices.
+The resulting diagram has the same layer 1 vertices but a possibly reduced set
+of layer 2 vertices. Layer 2 vertices are merged when they have exactly the same
+multiset of adjacent vertices.
 """
 function pair_all(d::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
   d_paired = BipartiteFreeDiagram{Ob,Hom}()
@@ -772,6 +762,19 @@ function pair_all(d::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
   d_paired
 end
 
+""" Limit of general diagram of FinSets computed by product-then-filter.
+
+See `Limits.CompositePullback` for a very similar construction.
+"""
+struct FinSetCompositeLimit{Ob<:FinSet, Diagram,
+                            Cone<:Multispan{Ob}, Prod<:Product{Ob},
+                            Incl<:FinFunction} <: AbstractLimit{Ob,Diagram}
+  diagram::Diagram
+  cone::Cone
+  prod::Prod
+  incl::Incl # Inclusion for the "multi-equalizer" in general formula.
+end
+
 limit(d::FreeDiagram{<:FinSet{Int}}) = limit(FinDomFunctor(d))
 
 function limit(F::Functor{<:FinCat{Int},<:TypeCat{<:FinSet{Int}}})
@@ -788,10 +791,10 @@ function limit(F::Functor{<:FinCat{Int},<:TypeCat{<:FinSet{Int}}})
     end
   end, n)
   cone = Multispan(dom(ι), map(x -> ι⋅πs[x], ob_generators(J)))
-  FinSetFreeDiagramLimit(F, cone, prod, ι)
+  FinSetCompositeLimit(F, cone, prod, ι)
 end
 
-function universal(lim::FinSetFreeDiagramLimit, cone::Multispan{<:FinSet{Int}})
+function universal(lim::FinSetCompositeLimit, cone::Multispan{<:FinSet{Int}})
   ι = collect(lim.incl)
   h = universal(lim.prod, cone)
   FinFunction(Int[only(searchsorted(ι, h(i))) for i in dom(h)],
@@ -883,10 +886,10 @@ function pass_to_quotient(π::FinFunction{Int,Int}, h::FinFunction{Int,Int})
     if q[j] == 0
       q[j] = h(i)
     else
-      @assert q[j] == h(i) "Quotient map out of coequalizer is ill-defined"
+      q[j] == h(i) || error("Quotient map out of coequalizer is ill-defined")
     end
   end
-  @assert all(i > 0 for i in q) "Projection map is not surjective"
+  all(>(0), q) || error("Projection map is not surjective")
   FinFunction(q, codom(h))
 end
 
@@ -894,13 +897,13 @@ function colimit(span::Multispan{<:FinSet{Int}})
   colimit(span, ComposeCoproductCoequalizer())
 end
 
-""" Colimit of free diagram of FinSets.
+""" Colimit of general diagram of FinSets computed by coproduct-then-quotient.
 
-See `CompositePushout` for a very similar construction.
+See `Limits.CompositePushout` for a very similar construction.
 """
-struct FinSetFreeDiagramColimit{Ob<:FinSet, Diagram,
-                                Cocone<:Multicospan{Ob}, Coprod<:Coproduct{Ob},
-                                Proj<:FinFunction} <: AbstractColimit{Ob,Diagram}
+struct FinSetCompositeColimit{Ob<:FinSet, Diagram,
+                              Cocone<:Multicospan{Ob}, Coprod<:Coproduct{Ob},
+                              Proj<:FinFunction} <: AbstractColimit{Ob,Diagram}
   diagram::Diagram
   cocone::Cocone
   coprod::Coprod
@@ -926,7 +929,7 @@ function colimit(d::BipartiteFreeDiagram{<:FinSet{Int}})
   end
   π = quotient_projection(sets)
   cocone = Multicospan(codom(π), [ ιs[i]⋅π for i in vertices₂(d) ])
-  FinSetFreeDiagramColimit(d, cocone, coprod, π)
+  FinSetCompositeColimit(d, cocone, coprod, π)
 end
 
 colimit(d::FreeDiagram{<:FinSet{Int}}) = colimit(FinDomFunctor(d))
@@ -946,10 +949,10 @@ function colimit(F::Functor{<:FinCat{Int},<:TypeCat{<:FinSet{Int}}})
   end
   π = quotient_projection(sets)
   cocone = Multicospan(codom(π), map(x -> ιs[x]⋅π, ob_generators(J)))
-  FinSetFreeDiagramColimit(F, cocone, coprod, π)
+  FinSetCompositeColimit(F, cocone, coprod, π)
 end
 
-function universal(colim::FinSetFreeDiagramColimit,
+function universal(colim::FinSetCompositeColimit,
                    cocone::Multicospan{<:FinSet{Int}})
   h = universal(colim.coprod, cocone)
   pass_to_quotient(colim.proj, h)
