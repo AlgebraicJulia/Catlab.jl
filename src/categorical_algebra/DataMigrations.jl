@@ -146,21 +146,14 @@ function migrate(X::ACSet, F::ConjSchemaMigration)
   X = FinDomFunctor(X)
   tgt_schema = dom(F)
   limits = make_map(ob_generators(tgt_schema)) do c
-    Fc = diagram(ob_map(F, c))
-    J = dom(Fc)
+    Fc = ob_map(F, c)
+    J = shape(Fc)
     names = (ob_name(J, j) for j in ob_generators(J))
-    limit(compose(Fc, X, strict=false),
-          ToTabularLimit(alg=ToBipartiteLimit(), names=names))
+    TabularLimit(limit(compose(Fc, X), alg=ToBipartiteLimit()), names=names)
   end
   funcs = make_map(hom_generators(tgt_schema)) do f
     Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)
-    J′ = shape(codom(Ff))
-    cone = Multispan(ob(limits[c]), map(ob_generators(J′)) do j′
-      j, g = ob_map(Ff, j′)
-      πⱼ = legs(limits[c])[j]
-      compose(πⱼ, hom_map(X, g))
-    end)
-    universal(limits[d], cone)
+    universal(compose(Ff, X), limits[c], limits[d])
   end
   FinDomFunctor(mapvals(ob, limits), funcs, tgt_schema)
 end

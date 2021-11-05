@@ -1,7 +1,7 @@
 """ The category of finite sets and functions, and its skeleton.
 """
 module FinSets
-export FinSet, FinFunction, FinDomFunction, TabularSet, ToTabularLimit,
+export FinSet, FinFunction, FinDomFunction, TabularSet, TabularLimit,
   force, is_indexed, preimage,
   JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin,
   SubFinSet, SubOpBoolean
@@ -801,35 +801,31 @@ function universal(lim::FinSetCompositeLimit, cone::Multispan{<:FinSet{Int}})
               apex(cone), ob(lim))
 end
 
-""" Meta-algorithm to compute a limit of finite sets as a table.
+""" Limit of finite sets viewed as a table.
 
 Any limit of finite sets can be canonically viewed as a table
 ([`TabularSet`](@ref)) whose columns are the legs of the limit cone and whose
-rows correspond to elements of the limit object. The column names of the table
-are given by the optional argument `names`.
+rows correspond to elements of the limit object. To construct this table from an
+already computed limit, call `TabularLimit(::AbstractLimit; ...)`. The column
+names of the table are given by the optional argument `names`.
 
 In this tabular form, applying the universal property of the limit is trivial
 since it is just tupling. Thus, this representation can be useful when the
-underlying limit algorithm (given by the optional argument `alg`) does not
-support efficient application of the universal property. On the other hand, this
-representation has the disadvantage of generally making the element type of the
-limit set more complicated.
+original limit algorithm does not support efficient application of the universal
+property. On the other hand, this representation has the disadvantage of
+generally making the element type of the limit set more complicated.
 """
-Base.@kwdef struct ToTabularLimit <: LimitAlgorithm
-  alg::Union{LimitAlgorithm,Nothing} = nothing
-  names = nothing
-end
+const TabularLimit = Limit{<:TabularSet}
 
-function limit(diagram, alg::ToTabularLimit)
-  lim = isnothing(alg.alg) ? limit(diagram) : limit(diagram, alg.alg)
+function TabularLimit(lim::AbstractLimit; names=nothing)
   πs = legs(lim)
-  names = isnothing(alg.names) ? (1:length(πs)) : alg.names
+  names = isnothing(names) ? (1:length(πs)) : names
   names = Tuple(column_name(name) for name in names)
   table = TabularSet(NamedTuple{names}(Tuple(map(collect, πs))))
   cone = Multispan(table, map(πs, eachindex(πs)) do π, i
     FinFunction(row -> Tables.getcolumn(row, i), table, codom(π))
   end)
-  Limit(diagram, cone)
+  Limit(lim.diagram, cone)
 end
 
 function universal(lim::Limit{<:TabularSet{Table,Row}},
