@@ -12,7 +12,7 @@ export AbstractLimit, AbstractColimit, Limit, Colimit,
   BinaryPushout, Pushout, pushout, pushout_complement, can_pushout_complement,
   BinaryCoequalizer, Coequalizer, coequalizer, proj,
   @cartesian_monoidal_instance, @cocartesian_monoidal_instance,
-  ComposeProductEqualizer, ComposeCoproductCoequalizer, BipartiteLimit
+  ComposeProductEqualizer, ComposeCoproductCoequalizer, ToBipartiteLimit
 
 using AutoHashEquals
 
@@ -426,9 +426,9 @@ end
 
 """ Compute a limit by reducing the diagram shape to a bipartite graph.
 """
-struct BipartiteLimit <: LimitAlgorithm end
+struct ToBipartiteLimit <: LimitAlgorithm end
 
-function limit(diagram, ::BipartiteLimit)
+function limit(diagram, ::ToBipartiteLimit)
   bdiagram, vmap = to_bipartite_diagram(diagram)
   lim = limit(bdiagram)
   cone = Multispan(apex(lim), map(vmap) do (v₁, v₂)

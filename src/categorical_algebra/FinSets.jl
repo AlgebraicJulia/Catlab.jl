@@ -1,7 +1,7 @@
 """ The category of finite sets and functions, and its skeleton.
 """
 module FinSets
-export FinSet, TabularSet, FinFunction, FinDomFunction,
+export FinSet, FinFunction, FinDomFunction, TabularSet, ToTabularLimit,
   force, is_indexed, preimage,
   JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin,
   SubFinSet, SubOpBoolean
@@ -800,6 +800,46 @@ function universal(lim::FinSetCompositeLimit, cone::Multispan{<:FinSet{Int}})
   FinFunction(Int[only(searchsorted(ι, h(i))) for i in dom(h)],
               apex(cone), ob(lim))
 end
+
+""" Meta-algorithm to compute a limit of finite sets as a table.
+
+Any limit of finite sets can be canonically viewed as a table
+([`TabularSet`](@ref)) whose columns are the legs of the limit cone and whose
+rows correspond to elements of the limit object. The column names of the table
+are given by the optional argument `names`.
+
+In this tabular form, applying the universal property of the limit is trivial
+since it is just tupling. Thus, this representation can be useful when the
+underlying limit algorithm (given by the optional argument `alg`) does not
+support efficient application of the universal property. On the other hand, this
+representation has the disadvantage of generally making the element type of the
+limit set more complicated.
+"""
+Base.@kwdef struct ToTabularLimit <: LimitAlgorithm
+  alg::Union{LimitAlgorithm,Nothing} = nothing
+  names = nothing
+end
+
+function limit(diagram, alg::ToTabularLimit)
+  lim = isnothing(alg.alg) ? limit(diagram) : limit(diagram, alg.alg)
+  πs = legs(lim)
+  names = isnothing(alg.names) ? (1:length(πs)) : alg.names
+  names = Tuple(column_name(name) for name in names)
+  table = TabularSet(NamedTuple{names}(Tuple(map(collect, πs))))
+  cone = Multispan(table, map(πs, eachindex(πs)) do π, i
+    FinFunction(row -> Tables.getcolumn(row, i), table, codom(π))
+  end)
+  Limit(diagram, cone)
+end
+
+function universal(lim::Limit{<:TabularSet{Table,Row}},
+                   cone::Multispan{<:FinSet}) where {Table,Row}
+  fs = Tuple(legs(cone))
+  FinFunction(x -> Row(map(f -> f(x), fs)), apex(cone), ob(lim))
+end
+
+column_name(name) = Symbol(name)
+column_name(i::Integer) = Symbol("x$i") # Same default as DataFrames.jl.
 
 # Colimits
 ##########

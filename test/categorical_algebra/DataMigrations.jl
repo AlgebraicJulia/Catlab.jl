@@ -87,15 +87,15 @@ F_V = FinDomFunctor([V], FinCat(1), C)
 F_E = FinDomFunctor(FreeDiagram(Cospan(tgt, src)), C)
 F = FinDomFunctor(Dict(V => Diagram{op}(F_V),
                        E => Diagram{op}(F_E)),
-                  Dict(src => DiagramHom{op}([(2, src)], F_E, F_V),
-                       tgt => DiagramHom{op}([(3, tgt)], F_E, F_V)), C)
+                  Dict(src => DiagramHom{op}([(1, src)], F_E, F_V),
+                       tgt => DiagramHom{op}([(2, tgt)], F_E, F_V)), C)
 @test F isa DataMigrations.ConjSchemaMigration
 X = path_graph(Graph, 5)
 Y = migrate(X, F)
 @test length(Y(V)) == 5
 @test length(Y(E)) == 3
-@test Y(src)((x1=3, x2=2, x3=3)) == (x1=2,)
-@test Y(tgt)((x1=3, x2=2, x3=3)) == (x1=4,)
+@test Y(src)((x1=2, x2=3, x3=3)) == (x1=2,)
+@test Y(tgt)((x1=2, x2=3, x3=3)) == (x1=4,)
 
 # Same query, but with `@migration` macro.
 F = @migration TheoryGraph TheoryGraph begin
