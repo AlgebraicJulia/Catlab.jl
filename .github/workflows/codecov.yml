@@ -17,7 +17,7 @@ jobs:
           sudo apt-get install texlive-latex-base texlive-latex-extra texlive-binaries texlive-pictures texlive-luatex
       - uses: julia-actions/julia-buildpkg@latest
       - name: "Run exhaustive tests"
-        run: julia --project --code-coverage=user -e 'using Pkg; Pkg.activate("test"); Pkg.instantiate(); pkg"dev ."; include("test/runtests.jl"); Pkg.activate("docs"); Pkg.instantiate(); pkg"dev ."; map(x->map(y->include(joinpath(x[1],y)), x[3]), walkdir("docs/literate"));'
+        run: julia --project --code-coverage=user -e 'using Pkg; Pkg.activate("test"); Pkg.instantiate(); pkg"dev ."; include("test/runtests.jl"); Pkg.activate("docs"); Pkg.instantiate(); pkg"dev ."; foreach(((root, _, files),) -> foreach(file -> eval(:(module $(Symbol(first(splitext(file)))) include($(joinpath(root,file))) end)), files), walkdir("docs/literate"))'
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v1
         with:
