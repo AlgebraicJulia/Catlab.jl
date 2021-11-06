@@ -17,6 +17,10 @@ using Tables
 
 @reexport using ...CSetDataStructures
 using ...GAT, ...Present
+using ...Theories: Category, SchemaDescType, CSetSchemaDescType,
+  attrtype, attrtype_num, attr, adom, acodom, acodom_nums, roottype
+import ...Theories: dom, codom, compose, ⋅, id,
+  ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 using ..FreeDiagrams, ..Limits, ..Subobjects, ..FinSets, ..FinCats
 import ..Limits: limit, colimit, universal, pushout_complement,
   can_pushout_complement
@@ -25,10 +29,6 @@ import ..Subobjects: Subobject, SubobjectBiHeytingAlgebra,
 import ..Sets: SetOb, SetFunction, TypeSet
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate
 import ..FinCats: FinDomFunctor, components, is_natural
-using ...Theories: Category, SchemaDescType, CSetSchemaDescType,
-  attrtype, attrtype_num, attr, adom, acodom, acodom_nums, roottype
-import ...Theories: dom, codom, compose, ⋅, id,
-  ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 
 # Sets interop
 ##############
@@ -133,6 +133,8 @@ end
 # Categories interop
 ####################
 
+# ACSets as set-valued FinDomFunctors.
+
 """ Wrapper type to interpret attributed C-set as a functor.
 """
 @auto_hash_equals struct ACSetFunctor{ACS<:ACSet} <:
@@ -147,6 +149,38 @@ codom(F::ACSetFunctor) = TypeCat{SetOb,FinDomFunction{Int}}()
 
 Categories.do_ob_map(F::ACSetFunctor, x) = SetOb(F.acset, x)
 Categories.do_hom_map(F::ACSetFunctor, f) = SetFunction(F.acset, f)
+
+# Set-valued FinDomFunctors as ACSets.
+
+function (::Type{ACS})(F::FinDomFunctor) where ACS <: ACSet
+  X = if ACS isa UnionAll
+    pres = presentation(dom(F))
+    ACS{(eltype(ob_map(F, c)) for c in generators(pres, :AttrType))...}()
+  else
+    ACS()
+  end
+  copy_parts!(X, F)
+  return X
+end
+
+""" Copy parts from a set-valued `FinDomFunctor` to an `ACSet`.
+"""
+function ACSetInterface.copy_parts!(X::ACSet, F::FinDomFunctor)
+  pres = presentation(dom(F))
+  added = Dict(Iterators.map(generators(pres, :Ob)) do c
+    c = nameof(c)
+    c => add_parts!(X, c, length(ob_map(F, c)::FinSet{Int}))
+  end)
+  for f in generators(pres, :Hom)
+    dom_parts, codom_parts = added[nameof(dom(f))], added[nameof(codom(f))]
+    set_subpart!(X, dom_parts, nameof(f), codom_parts[collect(hom_map(F, f))])
+  end
+  for f in generators(pres, :Attr)
+    dom_parts = added[nameof(dom(f))]
+    set_subpart!(X, dom_parts, nameof(f), collect(hom_map(F, f)))
+  end
+  added
+end
 
 # C-set transformations
 #######################

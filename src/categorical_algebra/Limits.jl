@@ -439,7 +439,8 @@ function limit(diagram, ::ToBipartiteLimit)
       legs(lim)[v₁]
     end
   end)
-  Limit(diagram, cone)
+  # FIXME: Should have a specialized type that handles universal property.
+  (Theories.roottypeof(lim))(diagram, cone)
 end
 
 end

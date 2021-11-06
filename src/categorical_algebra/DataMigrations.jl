@@ -19,7 +19,7 @@ The diagram defining the query specifies a finite limit.
 """
 const ConjQuery{C<:FinCat} = Diagram{op,C}
 
-""" Gluing query over schema ``C``.
+""" Gluing or agglomerative query over schema ``C``.
 
 The diagram defining the query specifies a finite colimit. In the important
 special case that the diagram has discrete shape, it specifies a finite
@@ -142,14 +142,22 @@ end
 # Conjunctive migration
 #######################
 
-function migrate(X::ACSet, F::ConjSchemaMigration)
+migrate(::Type{T}, X::ACSet, F::ConjSchemaMigration; kw...) where T <: ACSet =
+  T(migrate(X, F; kw...))
+migrate!(X::ACSet, Y::ACSet, F::ConjSchemaMigration; kw...) =
+  copy_parts!(X, migrate(Y, F; kw...))
+
+function migrate(X::ACSet, F::ConjSchemaMigration; tabular::Bool=false)
   X = FinDomFunctor(X)
   tgt_schema = dom(F)
   limits = make_map(ob_generators(tgt_schema)) do c
     Fc = ob_map(F, c)
-    J = shape(Fc)
-    names = (ob_name(J, j) for j in ob_generators(J))
-    TabularLimit(limit(compose(Fc, X), alg=ToBipartiteLimit()), names=names)
+    lim = limit(compose(Fc, X), alg=ToBipartiteLimit())
+    if tabular
+      J = shape(Fc)
+      lim = TabularLimit(lim, names=(ob_name(J, j) for j in ob_generators(J)))
+    end
+    lim
   end
   funcs = make_map(hom_generators(tgt_schema)) do f
     Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)

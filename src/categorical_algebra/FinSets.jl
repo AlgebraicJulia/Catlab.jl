@@ -685,11 +685,12 @@ function limit(d::BipartiteFreeDiagram{Ob,Hom}) where
   # (product of sizes of relations to join). This is a simple greedy heuristic.
   # For more control over the order of the joins, create a UWD schedule.
   if nv₂(d) == 0
+    # FIXME: Shouldn't need FinSetIndexedLimit in these special cases.
     if nv₁(d) == 1
-      Limit(d_original, SMultispan{1}(ιs[1]))
+      FinSetIndexedLimit(d_original, SMultispan{1}(ιs[1]))
     else
       πs = legs(product(SVector(ob₁(d)...)))
-      Limit(d_original, Multispan(map(compose, πs, ιs)))
+      FinSetIndexedLimit(d_original, Multispan(map(compose, πs, ιs)))
     end
   else
     # Select the join to perform.
