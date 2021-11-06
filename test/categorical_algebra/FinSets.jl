@@ -271,7 +271,10 @@ lim = limit(BipartiteFreeDiagram(Cospan(f, g)))
 π1, π2 = legs(lim)
 @test π1 == FinFunction([1,1,2,2,4], 4)
 @test π2 == FinFunction([1,2,1,2,4], 4)
-@test π1 ⋅ f == π2 ⋅ g
+
+h = universal(lim, Span(f′, g′))
+@test force(h ⋅ π1) == f′
+@test force(h ⋅ π2) == g′
 
 # Equalizer as limit of bipartite free diagram.
 f, g = [FinDomFunction(x -> x % i, FinSet(100), TypeSet(Int)) for i in 2:3]
