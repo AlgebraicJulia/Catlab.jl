@@ -20,7 +20,7 @@ using ...GAT, ...Theories
 import ...Theories: ob, terminal, product, proj1, proj2, equalizer, incl,
   initial, coproduct, coproj1, coproj2, coequalizer, proj,
   delete, create, pair, copair, factorize
-using ...CSetDataStructures, ..FreeDiagrams
+using ...CSetDataStructures, ..Categories, ..FreeDiagrams
 import ..FreeDiagrams: apex, legs
 
 # Data types for limits
@@ -428,19 +428,20 @@ end
 """
 struct ToBipartiteLimit <: LimitAlgorithm end
 
-function limit(diagram, ::ToBipartiteLimit)
-  bdiagram, vmap = to_bipartite_diagram(diagram)
-  lim = limit(bdiagram)
-  cone = Multispan(apex(lim), map(vmap) do (v₁, v₂)
-    if isnothing(v₁)
-      e = first(incident(bdiagram, v₂, :tgt))
-      compose(legs(lim)[src(bdiagram, e)], hom(bdiagram, e))
+function limit(F::Union{Functor,FreeDiagram}, ::ToBipartiteLimit)
+  d = BipartiteFreeDiagram(F)
+  lim = limit(d)
+  cone = Multispan(apex(lim), map(incident(d, :, :orig_vert₁),
+                                  incident(d, :, :orig_vert₂)) do v₁, v₂
+    if v₁ == 0
+      e = first(incident(d, v₂, :tgt))
+      compose(legs(lim)[src(d, e)], hom(d, e))
     else
       legs(lim)[v₁]
     end
   end)
   # FIXME: Should have a specialized type that handles universal property.
-  (Theories.roottypeof(lim))(diagram, cone)
+  (Theories.roottypeof(lim))(F, cone)
 end
 
 end

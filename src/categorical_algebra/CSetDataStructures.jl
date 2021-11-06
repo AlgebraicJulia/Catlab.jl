@@ -273,7 +273,8 @@ function incident_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
       end
     elseif unique_idxed[f]
       quote
-        get.(Ref(acs.hom_unique_indices.$f), part, Ref(0))
+        indices = $(GlobalRef(ACSetInterface,:view_or_slice))(acs.hom_unique_indices.$f, part)
+        copy ? Base.copy.(indices) : indices
       end
     else
       :(broadcast_findall(part, acs.homs.$f))
