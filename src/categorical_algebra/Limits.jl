@@ -424,9 +424,18 @@ function universal(lim::CompositePushout, cone::Multicospan)
   factorize(lim.coeq, universal(lim.coprod, cone))
 end
 
-""" Compute a limit by reducing the diagram shape to a bipartite graph.
+""" Compute a limit by reducing the diagram to a free bipartite diagram.
 """
 struct ToBipartiteLimit <: LimitAlgorithm end
+
+""" Limit computed by reduction to the limit of a free bipartite diagram.
+"""
+struct BipartiteLimit{Ob, Diagram, Cone<:Multispan{Ob},
+                      Lim<:AbstractLimit} <: AbstractLimit{Ob,Diagram}
+  diagram::Diagram
+  cone::Cone
+  limit::Lim
+end
 
 function limit(F::Union{Functor,FreeDiagram}, ::ToBipartiteLimit)
   d = BipartiteFreeDiagram(F)
@@ -440,8 +449,12 @@ function limit(F::Union{Functor,FreeDiagram}, ::ToBipartiteLimit)
       legs(lim)[v₁]
     end
   end)
-  # FIXME: Should have a specialized type that handles universal property.
-  (Theories.roottypeof(lim))(F, cone)
+  BipartiteLimit(F, cone, lim)
+end
+
+function universal(lim::BipartiteLimit, cone::Multispan)
+  d = lim.limit.diagram
+  universal(lim.limit, Multispan(apex(cone), legs(cone)[d[:orig_vert₁]]))
 end
 
 end

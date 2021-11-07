@@ -124,6 +124,29 @@ migrate!(h, g, F)
 @test (nv(h), ne(h)) == (10, 3)
 @test sort!(collect(zip(h[:src], h[:tgt]))) == [(6,8), (7,9), (8,10)]
 
+# Graph whose vertices are paths of length 2 and edges are paths of length 3.
+F = @migration TheoryGraph TheoryGraph begin
+  V => @join begin
+    v::V
+    (e₁, e₂)::E
+    (t: e₁ → v)::tgt
+    (s: e₂ → v)::src
+  end
+  E => @join begin
+    (v₁, v₂)::V
+    (e₁, e₂, e₃)::E
+    (t₁: e₁ → v₁)::tgt
+    (s₁: e₂ → v₁)::src
+    (t₂: e₂ → v₂)::tgt
+    (s₂: e₃ → v₂)::src
+  end
+  src => (v => v₁; e₁ => e₁; e₂ => e₂; t => t₁; s => s₁)
+  tgt => (v => v₂; e₁ => e₂; e₂ => e₃; t => t₂; s => s₂)
+end
+g = path_graph(Graph, 6)
+h = migrate(Graph, g, F)
+@test h == path_graph(Graph, 4)
+
 # Sigma data migration
 ######################
 
