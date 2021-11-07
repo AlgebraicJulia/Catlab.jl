@@ -1,14 +1,10 @@
-using Catlab
+using Catlab, Catlab.Theories
 using Catlab.CategoricalAlgebra
 using Catlab.Graphs
-using Catlab.Graphs.BasicGraphs
 using Catlab.Graphics
 using Catlab.Graphics.Graphviz
-using Catlab.Graphics.GraphvizGraphs
-using Catlab.Graphs.PropertyGraphs
-using Catlab.Theories
-using Catlab.CategoricalAlgebra.CSets
 #import Catlab.Graphics.Graphviz: to_graphviz, to_graphviz_property_graph
+
 using Colors
 draw(g) = to_graphviz(g, node_labels=true, edge_labels=true)
 
@@ -31,14 +27,10 @@ function GraphvizGraphs.to_graphviz_property_graph(f::ACSetTransformation; kw...
   pg
 end
 
-println(Graphs.Graph)
-println(typeof(Graphs.Graph))
-
-generators(BasicGraphs.TheoryGraph)
-
 to_graphviz(Catlab.Graphs.BasicGraphs.TheoryGraph)
 
-# # Constructing the Category of Graphs
+# # The Category of Graphs
+#
 # The Theory of Graphs is given by the following Schema:
 # ```julia
 # @present TheoryGraph(FreeSchema) begin
@@ -114,10 +106,10 @@ w[incident(w, 2, :tgt), :src] # vertices that are the source of edges whose targ
 w[incident(w, 1, :src), :tgt] # vertices that are the target of edges whose src is vertex 1
 
 # ### Exercise:
-# a. Use the @acset macro to make a graph with at least 5 vertices
-# b. Draw the graph
-# c. Compute in neighbors and out neighbors and make sure they match your expectations.
-# d. Write a function that computes the 2-hop out-neighbors of a vertex.
+# 1. Use the @acset macro to make a graph with at least 5 vertices
+# 2. Draw the graph
+# 3. Compute in neighbors and out neighbors and make sure they match your expectations.
+# 4. Write a function that computes the 2-hop out-neighbors of a vertex.
 
 
 # # Graph Homomorphisms
@@ -151,9 +143,9 @@ is_natural(ϕᵦ′)
 ϕ[:E]
 # We can check the  naturality squares ourselves
 # The sources are preserved: `src ⋅ ϕᵥ == ϕₑ ⋅ src`
-ϕ[:V](dom(ϕ)[:,:src]) == codom(ϕ)[ϕ[:E].func, :src]
+ϕ[:V](dom(ϕ)[:,:src]) == codom(ϕ)[collect(ϕ[:E]), :src]
 # The targets are preserved: `tgt ⋅ ϕᵥ == ϕₑ ⋅ tgt`
-ϕ[:V](dom(ϕ)[:,:tgt]) == codom(ϕ)[ϕ[:E].func, :tgt]
+ϕ[:V](dom(ϕ)[:,:tgt]) == codom(ϕ)[collect(ϕ[:E]), :tgt]
 
 # This approach generalizes to the following: 
 #
@@ -291,8 +283,8 @@ length(homomorphisms(T, esym))
 draw(homomorphism(T, K₃))
 
 # ### Exercise:
-# a) Find a graph that is not 3-colorable
-# b) Find a graph that is not 4-colorable
+# 1. Find a graph that is not 3-colorable
+# 2. Find a graph that is not 4-colorable
 
 
 # ## Homomorphisms in [C, Set] are like Types
