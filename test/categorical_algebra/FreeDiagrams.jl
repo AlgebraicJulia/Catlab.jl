@@ -49,6 +49,9 @@ bd = BipartiteFreeDiagram([A,B], [C], [(f,1,1),(g,2,1)])
 @test (src(bd), tgt(bd)) == ([1,2], [1,1])
 @test FreeDiagram(bd) == FreeDiagram([A,B,C], [(f,1,3),(g,2,3)])
 
+as_basic_bipartite(diagram::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom} =
+  (d = BipartiteFreeDiagram{Ob,Hom}(); copy_parts!(d, diagram); d)
+
 # Diagrams of fixed shape
 #########################
 
@@ -72,9 +75,9 @@ diagram = FreeDiagram(discrete)
 @test ob(diagram) == [A,B,C]
 @test isempty(hom(diagram))
 @test BipartiteFreeDiagram(discrete, colimit=false) ==
-  BipartiteFreeDiagram(diagram, colimit=false)
+  as_basic_bipartite(BipartiteFreeDiagram(diagram, colimit=false))
 @test BipartiteFreeDiagram(discrete, colimit=true) ==
-  BipartiteFreeDiagram(diagram, colimit=true)
+  as_basic_bipartite(BipartiteFreeDiagram(diagram, colimit=true))
 
 # Spans.
 f, g = Hom(:f, C, A), Hom(:g, C, B)
@@ -106,7 +109,7 @@ diagram = BipartiteFreeDiagram(span)
 @test (ob₁(diagram), ob₂(diagram)) == ([C], [A,B,A])
 @test hom(diagram) == [f,g,h]
 @test (src(diagram), tgt(diagram)) == ([1,1,1], [1,2,3])
-@test diagram == BipartiteFreeDiagram(FreeDiagram(span))
+@test diagram == as_basic_bipartite(BipartiteFreeDiagram(FreeDiagram(span)))
 
 span = Multispan([ id(FinSet(2)) for i in 1:3 ])
 span = bundle_legs(span, [1, (2,3)])
@@ -143,7 +146,7 @@ diagram = BipartiteFreeDiagram(cospan)
 @test (ob₁(diagram), ob₂(diagram)) == ([A,B,A], [C])
 @test hom(diagram) == [f,g,h]
 @test (src(diagram), tgt(diagram)) == ([1,2,3], [1,1,1])
-@test diagram == BipartiteFreeDiagram(FreeDiagram(cospan))
+@test diagram == as_basic_bipartite(BipartiteFreeDiagram(FreeDiagram(cospan)))
 
 cospan = Multicospan([FinFunction([i],3) for i in 1:3])
 cospan = bundle_legs(cospan, [(1,3), 2])
@@ -171,7 +174,7 @@ diagram = BipartiteFreeDiagram(para)
 @test (ob₁(diagram), ob₂(diagram)) == ([A], [B])
 @test hom(diagram) == [f,g,h]
 @test (src(diagram), tgt(diagram)) == ([1,1,1], [1,1,1])
-@test diagram == BipartiteFreeDiagram(FreeDiagram(para))
+@test diagram == as_basic_bipartite(BipartiteFreeDiagram(FreeDiagram(para)))
 
 # Composable pairs.
 f, g = Hom(:f, A, B), Hom(:g, B, C)

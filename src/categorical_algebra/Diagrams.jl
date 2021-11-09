@@ -9,8 +9,9 @@ using StaticArrays: @SVector
 using ...GAT
 import ...Theories: Category, dom, codom, id, compose, ⋅, ∘, munit
 import ..Categories: ob_map, hom_map
-using ..FinCats
+using ..FinCats, ..FreeDiagrams
 using ..FinCats: mapvals
+import ..Limits: limit, colimit, universal
 
 # TODO: Implement these functions more generally, and move elsewhere.
 
@@ -28,10 +29,10 @@ function co end
 """ Diagram in a category.
 
 Recall that a *diagram* in a category ``C`` is a functor ``D: J → C``, where for
-us the *shape category* ``J`` is finitely presented. Such a diagram is captured
-perfectly well by a `FinDomFunctor`, but there are several different notions of
-morphism between diagrams. This simple wrapper type exists to distinguish them.
-See [`DiagramHom`](@ref) for more.
+us the *shape category* ``J`` is finitely presented. Although such a diagram is
+captured perfectly well by a `FinDomFunctor`, there are several different
+notions of morphism between diagrams. This simple wrapper type exists to
+distinguish them. See [`DiagramHom`](@ref) for more about the morphisms.
 """
 struct Diagram{T,C<:Cat,D<:Functor{<:FinCat,C}}
   diagram::D
@@ -71,10 +72,10 @@ diagram ``D: J → C`` to another diagram ``D′: J′ → C``:
 3. `DiagramHom{co}`: a functor ``F: J → J′`` together with a natural
    transformation ``ϕ: F⋅D′ ⇒ D``.
 
-Note that `Diagram{op}` is not the opposite category of `Diagram{id}`, but
+Note that `Diagram{op}` is *not* the opposite category of `Diagram{id}`, but
 `Diagram{op}` and `Diagram{co}` are opposites of each other. Explicit support is
 included for both because they are useful for different purposes: morphisms of
-type `DiagramHom{op}` induce morphisms between the limits of the diagram,
+type `DiagramHom{op}` induce morphisms between the limits of the diagrams,
 whereas morphisms of type `DiagramHom{co}` generalize morphisms of polynomial
 functors.
 """
@@ -177,8 +178,8 @@ function compose(f::DiagramHom{co}, g::DiagramHom{co})
     codom_diagram(g))
 end
 
-# TODO: There are actually 2-categories of diagrams, but for now we just
-# implement the category struture.
+# TODO: The diagrams in a category naturally form a 2-category, but for now we
+# just implement the category struture.
 
 @instance Category{Diagram,DiagramHom} begin
   @import dom, codom, compose, id
@@ -188,6 +189,33 @@ op(d::Diagram{op}) = Diagram{co}(d)
 op(d::Diagram{co}) = Diagram{op}(d)
 op(f::DiagramHom{op}) = DiagramHom{co}(f)
 op(f::DiagramHom{co}) = DiagramHom{op}(f)
+
+# Any functor ``F: C → D`` induces a functor ``Diag(F): Diag(C) → Diag(D)`` by
+# post-composition and post-whiskering.
+
+compose(d::Diagram{T}, F::Functor) where T = Diagram{T}(diagram(d) ⋅ F)
+compose(f::DiagramHom{T}, F::Functor) where T =
+  DiagramHom{T}(shape_map(f), diagram_map(f) * F, f.precomposed_diagram ⋅ F)
+
+# Limits and colimits
+#####################
+
+# In a cocomplete category `C`, colimits define a functor `Diag{id,C} → C`.
+# Dually, in a complete category `C`, limits define functor `Diag{op,C} → C`.
+
+function limit(d::Diagram{op}; alg=nothing)
+  isnothing(alg) ? limit(diagram(d)) : limit(diagram(d), alg)
+end
+
+function universal(f::DiagramHom{op}, dom_lim, codom_lim)
+  J′ = shape(codom(f))
+  cone = Multispan(ob(dom_lim), map(ob_generators(J′)) do j′
+    j, g = ob_map(f, j′)
+    πⱼ = legs(dom_lim)[j]
+    compose(πⱼ, g)
+  end)
+  universal(codom_lim, cone)
+end
 
 # Monads of diagrams
 ####################

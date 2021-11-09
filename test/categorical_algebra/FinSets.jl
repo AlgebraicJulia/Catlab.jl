@@ -271,7 +271,10 @@ lim = limit(BipartiteFreeDiagram(Cospan(f, g)))
 π1, π2 = legs(lim)
 @test π1 == FinFunction([1,1,2,2,4], 4)
 @test π2 == FinFunction([1,2,1,2,4], 4)
-@test π1 ⋅ f == π2 ⋅ g
+
+h = universal(lim, Span(f′, g′))
+@test force(h ⋅ π1) == f′
+@test force(h ⋅ π2) == g′
 
 # Equalizer as limit of bipartite free diagram.
 f, g = [FinDomFunction(x -> x % i, FinSet(100), TypeSet(Int)) for i in 2:3]
@@ -337,7 +340,7 @@ coeq = coequalizer(f,g)
 @test proj(coeq) == FinFunction([1,2,1], 2)
 @test proj(coequalizer([f,g])) == proj(coeq)
 @test factorize(coeq, FinFunction([4,1,4])) == FinFunction([4,1])
-@test_throws AssertionError factorize(coeq, FinFunction([3,1,4]))
+@test_throws ErrorException factorize(coeq, FinFunction([3,1,4]))
 
 # Coequalizer in case of identical functions.
 f = FinFunction([4,2,3,1], 5)
@@ -380,7 +383,7 @@ h, k = FinFunction([3,5]), FinFunction([1,3,5])
 @test force(coproj1(colim) ⋅ copair(colim,h,k)) == h
 @test force(coproj2(colim) ⋅ copair(colim,h,k)) == k
 k = FinFunction([1,2,5])
-@test_throws AssertionError copair(colim,h,k)
+@test_throws ErrorException copair(colim,h,k)
 
 # Same thing as a colimit of a general free diagram.
 diagram = FreeDiagram([FinSet(1),FinSet(2),FinSet(3)],[(f,1,2), (g,1,3)])

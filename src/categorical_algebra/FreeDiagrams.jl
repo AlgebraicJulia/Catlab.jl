@@ -14,7 +14,7 @@ export FreeDiagram, BipartiteFreeDiagram, FixedShapeFreeDiagram,
   ob, hom, dom, codom, apex, legs, feet, left, right, bundle_legs,
   nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
   add_vertex!, add_vertices!, add_edge!, add_edges!,
-  to_bipartite_diagram, ob₁, ob₂, nv₁, nv₂, vertices₁, vertices₂,
+  ob₁, ob₂, nv₁, nv₂, vertices₁, vertices₂,
   add_vertex₁!, add_vertex₂!, add_vertices₁!, add_vertices₂!
 
 using AutoHashEquals
@@ -322,17 +322,9 @@ Base.lastindex(comp::ComposableMorphisms) = lastindex(comp.homs)
 # Bipartite free diagrams
 #------------------------
 
-@present TheoryBipartiteFreeDiagram <: TheoryUndirectedBipartiteGraph begin
-  Ob::AttrType
-  Hom::AttrType
-  ob₁::Attr(V₁,Ob)
-  ob₂::Attr(V₂,Ob)
-  hom::Attr(E,Hom)
-end
+@abstract_acset_type _BipartiteFreeDiagram <: AbstractUndirectedBipartiteGraph
 
-@abstract_acset_type AbstractBipartiteFreeDiagram <: AbstractUndirectedBipartiteGraph
-
-""" A free diagram that is bipartite.
+""" A free diagram with a bipartite structure.
 
 Such diagrams include most of the fixed shapes, such as spans, cospans, and
 parallel morphisms. They are also the generic shape of diagrams for limits and
@@ -340,16 +332,42 @@ colimits arising from undirected wiring diagrams. For limits, the boxes
 correspond to vertices in ``V₁`` and the junctions to vertices in ``V₂``.
 Colimits are dual.
 """
-@acset_type BipartiteFreeDiagram(TheoryBipartiteFreeDiagram, index=[:src, :tgt]) <:
-  AbstractBipartiteFreeDiagram
+const BipartiteFreeDiagram{Ob,Hom,S} = _BipartiteFreeDiagram{S,Tuple{Ob,Hom}}
 
-ob₁(d::AbstractBipartiteFreeDiagram, args...) = subpart(d, args..., :ob₁)
-ob₂(d::AbstractBipartiteFreeDiagram, args...) = subpart(d, args..., :ob₂)
-hom(d::AbstractBipartiteFreeDiagram, args...) = subpart(d, args..., :hom)
+@present TheoryBipartiteFreeDiagram <: TheoryUndirectedBipartiteGraph begin
+  Ob::AttrType
+  Hom::AttrType
+  ob₁::Attr(V₁, Ob)
+  ob₂::Attr(V₂, Ob)
+  hom::Attr(E, Hom)
+end
 
-diagram_type(d::AbstractBipartiteFreeDiagram{S,T}) where {S,T<:Tuple} = T
-cone_objects(diagram::AbstractBipartiteFreeDiagram) = ob₁(diagram)
-cocone_objects(diagram::AbstractBipartiteFreeDiagram) = ob₂(diagram)
+""" The default concrete type for bipartite free diagrams.
+"""
+@acset_type BasicBipartiteFreeDiagram(TheoryBipartiteFreeDiagram,
+  index=[:src, :tgt]) <: _BipartiteFreeDiagram
+
+@present TheoryFreeDiagramAsBipartite <: TheoryBipartiteFreeDiagram begin
+  V::Ob
+  orig_vert₁::Hom(V₁, V)
+  orig_vert₂::Hom(V₂, V)
+end
+
+""" A free diagram that has been converted to a bipartite free diagram.
+"""
+@acset_type FreeDiagramAsBipartite(TheoryFreeDiagramAsBipartite,
+  index=[:src, :tgt], unique_index=[:orig_vert₁, :orig_vert₂]) <: _BipartiteFreeDiagram
+
+ob₁(d::BipartiteFreeDiagram, args...) = subpart(d, args..., :ob₁)
+ob₂(d::BipartiteFreeDiagram, args...) = subpart(d, args..., :ob₂)
+hom(d::BipartiteFreeDiagram, args...) = subpart(d, args..., :hom)
+
+diagram_type(::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom} = Tuple{Ob,Hom}
+cone_objects(diagram::BipartiteFreeDiagram) = ob₁(diagram)
+cocone_objects(diagram::BipartiteFreeDiagram) = ob₂(diagram)
+
+BipartiteFreeDiagram{Ob,Hom}() where {Ob,Hom} =
+  BasicBipartiteFreeDiagram{Ob,Hom}()
 
 BipartiteFreeDiagram(obs₁::AbstractVector{Ob₁}, obs₂::AbstractVector{Ob₂},
                      homs::AbstractVector{Tuple{Hom,Int,Int}}) where {Ob₁,Ob₂,Hom} =
@@ -403,49 +421,43 @@ function BipartiteFreeDiagram{Ob,Hom}(para::ParallelMorphisms) where {Ob,Hom}
   return d
 end
 
-BipartiteFreeDiagram{Ob,Hom}(F::FinDomFunctor; kw...) where {Ob,Hom} =
-  first(to_bipartite_diagram(BipartiteFreeDiagram{Ob,Hom}, F; kw...))
-BipartiteFreeDiagram(F::FinDomFunctor; kw...) =
-  first(to_bipartite_diagram(F; kw...))
-
 """ Convert a free diagram to a bipartite free diagram.
 
 Reduce a free diagram to a free bipartite diagram with the same limit (the
 default, `colimit=false`) or the same colimit (`colimit=true`). The reduction is
 essentially the same in both cases, except for the choice of where to put
 isolated vertices, where we follow the conventions described at
-[`cone_objects`](@ref) and [`cocone_objects`](@ref). This function returns a
-[`BipartiteFreeDiagram`](@ref) together with a map from the vertices of the free
-diagram to pairs of vertices in the free bipartite diagram, at least one of
-which is not `nothing`.
+[`cone_objects`](@ref) and [`cocone_objects`](@ref). The resulting object is a
+bipartite free diagram equipped with maps from the vertices of the bipartite
+diagram to the vertices of the original diagram.
 """
-function to_bipartite_diagram(::Type{BFD}, F::FinDomFunctor;
-                              colimit::Bool=false) where
-    {BFD <: AbstractBipartiteFreeDiagram}
-  d = BFD()
+function BipartiteFreeDiagram{Ob,Hom}(F::Functor{<:FinCat{Int}};
+                                      colimit::Bool=false) where {Ob,Hom}
+  d = FreeDiagramAsBipartite{Ob,Hom}()
   g = graph(dom(F))
-  vmap = map(vertices(g)) do v
+  add_parts!(d, :V, nv(g))
+  for v in vertices(g)
     x = ob_map(F, v)
     out_edges, in_edges = incident(g, v, :src), incident(g, v, :tgt)
     v₁ = if !isempty(out_edges) || (!colimit && isempty(in_edges))
-      add_vertex₁!(d, ob₁=x)
+      add_vertex₁!(d, ob₁=x, orig_vert₁=v)
     end
     v₂ = if !isempty(in_edges) || (colimit && isempty(out_edges))
-      add_vertex₂!(d, ob₂=x)
+      add_vertex₂!(d, ob₂=x, orig_vert₂=v)
     end
     if !(isnothing(v₁) || isnothing(v₂))
       add_edge!(d, v₁, v₂, hom=id(x))
     end
-    (v₁, v₂)
   end
   for e in edges(g)
-    f = hom_map(F, e)
-    add_edge!(d, first(vmap[src(g,e)]), last(vmap[tgt(g,e)]), hom=f)
+    v₁ = incident(d, src(g, e), :orig_vert₁)
+    v₂ = incident(d, tgt(g, e), :orig_vert₂)
+    add_edge!(d, v₁, v₂, hom=hom_map(F, e))
   end
-  return (d, vmap)
+  return d
 end
-to_bipartite_diagram(F::Functor{<:FinCat,<:TypeCat{Ob,Hom}}; kw...) where {Ob,Hom} =
-  to_bipartite_diagram(BipartiteFreeDiagram{Ob,Hom}, F; kw...)
+BipartiteFreeDiagram(F::Functor{<:FinCat{Int},<:TypeCat{Ob,Hom}}; kw...) where {Ob,Hom} =
+  BipartiteFreeDiagram{Ob,Hom}(F; kw...)
 
 # Free diagrams
 #--------------
@@ -465,7 +477,7 @@ end
 ob(d::AbstractFreeDiagram, args...) = subpart(d, args..., :ob)
 hom(d::AbstractFreeDiagram, args...) = subpart(d, args..., :hom)
 
-diagram_type(d::AbstractFreeDiagram{S,T}) where {S,T<:Tuple} = T
+diagram_type(::AbstractFreeDiagram{S,T}) where {S,T<:Tuple} = T
 
 FreeDiagram(obs::AbstractVector{Ob},
             homs::AbstractVector{Tuple{Hom,Int,Int}}) where {Ob,Hom} =
@@ -530,21 +542,18 @@ end
 FreeDiagram(diagram::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom} =
   FreeDiagram{Ob,Hom}(diagram)
 
-function FreeDiagram{Ob,Hom}(F::FinDomFunctor) where {Ob,Hom}
+function FreeDiagram{Ob,Hom}(F::Functor{<:FinCat{Int}}) where {Ob,Hom}
   diagram = FreeDiagram{Ob,Hom}()
   copy_parts!(diagram, graph(dom(F)))
   diagram[:ob] = collect_ob(F)
   diagram[:hom] = collect_hom(F)
   diagram
 end
-FreeDiagram(F::Functor{<:FinCat,<:TypeCat{Ob,Hom}}) where {Ob,Hom} =
+FreeDiagram(F::Functor{<:FinCat{Int},<:TypeCat{Ob,Hom}}) where {Ob,Hom} =
   FreeDiagram{Ob,Hom}(F)
 
-(::Type{BFD})(diagram::FreeDiagram; kw...) where {BFD <: BipartiteFreeDiagram} =
+(::Type{BFD})(diagram::FreeDiagram; kw...) where BFD <: BipartiteFreeDiagram =
   BFD(FinDomFunctor(diagram); kw...)
-
-to_bipartite_diagram(diagram::FreeDiagram; kw...) =
-  to_bipartite_diagram(FinDomFunctor(diagram); kw...)
 
 # FinDomFunctors as diagrams
 #---------------------------

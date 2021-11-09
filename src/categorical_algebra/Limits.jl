@@ -12,7 +12,7 @@ export AbstractLimit, AbstractColimit, Limit, Colimit,
   BinaryPushout, Pushout, pushout, pushout_complement, can_pushout_complement,
   BinaryCoequalizer, Coequalizer, coequalizer, proj,
   @cartesian_monoidal_instance, @cocartesian_monoidal_instance,
-  ComposeProductEqualizer, ComposeCoproductCoequalizer, BipartiteLimit
+  ComposeProductEqualizer, ComposeCoproductCoequalizer, ToBipartiteLimit
 
 using AutoHashEquals
 
@@ -20,7 +20,7 @@ using ...GAT, ...Theories
 import ...Theories: ob, terminal, product, proj1, proj2, equalizer, incl,
   initial, coproduct, coproj1, coproj2, coequalizer, proj,
   delete, create, pair, copair, factorize
-using ...CSetDataStructures, ..FreeDiagrams
+using ...CSetDataStructures, ..Categories, ..FreeDiagrams
 import ..FreeDiagrams: apex, legs
 
 # Data types for limits
@@ -424,22 +424,37 @@ function universal(lim::CompositePushout, cone::Multicospan)
   factorize(lim.coeq, universal(lim.coprod, cone))
 end
 
-""" Compute a limit by reducing the diagram shape to a bipartite graph.
+""" Compute a limit by reducing the diagram to a free bipartite diagram.
 """
-struct BipartiteLimit <: LimitAlgorithm end
+struct ToBipartiteLimit <: LimitAlgorithm end
 
-function limit(diagram, ::BipartiteLimit)
-  bdiagram, vmap = to_bipartite_diagram(diagram)
-  lim = limit(bdiagram)
-  cone = Multispan(apex(lim), map(vmap) do (v₁, v₂)
-    if isnothing(v₁)
-      e = first(incident(bdiagram, v₂, :tgt))
-      compose(legs(lim)[src(bdiagram, e)], hom(bdiagram, e))
+""" Limit computed by reduction to the limit of a free bipartite diagram.
+"""
+struct BipartiteLimit{Ob, Diagram, Cone<:Multispan{Ob},
+                      Lim<:AbstractLimit} <: AbstractLimit{Ob,Diagram}
+  diagram::Diagram
+  cone::Cone
+  limit::Lim
+end
+
+function limit(F::Union{Functor,FreeDiagram}, ::ToBipartiteLimit)
+  d = BipartiteFreeDiagram(F)
+  lim = limit(d)
+  cone = Multispan(apex(lim), map(incident(d, :, :orig_vert₁),
+                                  incident(d, :, :orig_vert₂)) do v₁, v₂
+    if v₁ == 0
+      e = first(incident(d, v₂, :tgt))
+      compose(legs(lim)[src(d, e)], hom(d, e))
     else
       legs(lim)[v₁]
     end
   end)
-  Limit(diagram, cone)
+  BipartiteLimit(F, cone, lim)
+end
+
+function universal(lim::BipartiteLimit, cone::Multispan)
+  d = lim.limit.diagram
+  universal(lim.limit, Multispan(apex(cone), legs(cone)[d[:orig_vert₁]]))
 end
 
 end

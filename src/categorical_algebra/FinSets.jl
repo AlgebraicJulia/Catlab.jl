@@ -1,7 +1,7 @@
 """ The category of finite sets and functions, and its skeleton.
 """
 module FinSets
-export FinSet, TabularSet, FinFunction, FinDomFunction,
+export FinSet, FinFunction, FinDomFunction, TabularSet, TabularLimit,
   force, is_indexed, preimage,
   JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin,
   SubFinSet, SubOpBoolean
@@ -374,8 +374,7 @@ function limit(Xs::EmptyDiagram{<:FinSet{Int}})
   Limit(Xs, SMultispan{0}(FinSet(1)))
 end
 
-function universal(lim::Terminal{<:FinSet{Int}},
-                   cone::SMultispan{0,<:FinSet{Int}})
+function universal(lim::Limit{<:FinSet{Int},<:EmptyDiagram}, cone::SMultispan{0})
   ConstantFunction(1, apex(cone), FinSet(1))
 end
 
@@ -387,7 +386,7 @@ function limit(Xs::ObjectPair{<:FinSet{Int}})
   Limit(Xs, Span(π1, π2))
 end
 
-function universal(lim::BinaryProduct{<:FinSet{Int}}, cone::Span{<:FinSet{Int}})
+function universal(lim::Limit{<:FinSet{Int},<:ObjectPair}, cone::Span)
   f, g = cone
   m, n = length.(codom.(cone))
   indices = LinearIndices((m, n))
@@ -402,7 +401,7 @@ function limit(Xs::DiscreteDiagram{<:FinSet{Int}})
   Limit(Xs, Multispan(FinSet(n), πs))
 end
 
-function universal(lim::Product{<:FinSet{Int}}, cone::Multispan{<:FinSet})
+function universal(lim::Limit{<:FinSet{Int},<:DiscreteDiagram}, cone::Multispan)
   ns = length.(codom.(cone))
   indices = LinearIndices(Tuple(ns))
   FinFunction(i -> indices[(f(i) for f in cone)...], apex(cone), ob(lim))
@@ -423,16 +422,57 @@ function limit(para::ParallelMorphisms{<:FinSet{Int}})
   Limit(para, SMultispan{1}(eq))
 end
 
-function universal(lim::Equalizer{<:FinSet{Int}},
-                   cone::SMultispan{1,<:FinSet{Int}})
+function universal(lim::Limit{<:FinSet{Int},<:ParallelMorphisms},
+                   cone::SMultispan{1})
   ι = collect(incl(lim))
   h = only(cone)
   FinFunction(Int[only(searchsorted(ι, h(i))) for i in dom(h)], length(ι))
 end
 
-""" Algorithm for limit of spans or multispans out of finite sets.
+""" Limit of finite sets with a reverse mapping or index into the limit set.
 
-In the context of relational databases, such limits are joins.
+This type provides a fallback for limit algorithms that do not come with a
+specialized algorithm to apply the universal property of the limit. In such
+cases, you can explicitly construct a mapping from tuples of elements in the
+feet of the limit cone to elements in the apex of the cone.
+
+The index is constructed the first time it is needed. Thus there is no extra
+cost to using this type if the universal property will not be invoked.
+"""
+mutable struct FinSetIndexedLimit{Ob<:FinSet,Diagram,Cone<:Multispan{Ob}} <:
+    AbstractLimit{Ob,Diagram}
+  diagram::Diagram
+  cone::Cone
+  index::Union{AbstractDict,Nothing}
+end
+FinSetIndexedLimit(diagram, cone::Multispan) =
+  FinSetIndexedLimit(diagram, cone, nothing)
+
+function make_limit_index(cone::Multispan{<:FinSet})
+  πs = Tuple(legs(cone))
+  index = Dict{Tuple{map(eltype∘codom, πs)...}, eltype(apex(cone))}()
+  for x in apex(cone)
+    index[map(π -> π(x), πs)] = x
+  end
+  return index
+end
+
+function universal(lim::FinSetIndexedLimit, cone::Multispan)
+  if isnothing(lim.index)
+    lim.index = make_limit_index(lim.cone)
+  end
+  fs = Tuple(legs(cone))
+  FinFunction([lim.index[map(f -> f(x), fs)] for x in apex(cone)],
+              apex(cone), ob(lim))
+end
+
+""" Algorithm for limit of cospan or multicospan with feet being finite sets.
+
+In the context of relational databases, such limits are called *joins*. The
+trivial join algorithm is [`NestedLoopJoin`](@ref), which is algorithmically
+equivalent to the generic algorithm `ComposeProductEqualizer`. The algorithms
+[`HashJoin`](@ref) and [`SortMergeJoin`](@ref) are usually much faster. If you
+are unsure what algorithm to pick, use [`SmartJoin`](@ref).
 """
 abstract type JoinAlgorithm <: LimitAlgorithm end
 
@@ -463,7 +503,7 @@ function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}}, ::SmartJoin)
       ob(prod), map(compose, legs(prod), ιs)
     end
     πs = insert(πs, i, ConstantFunction(1, x, FinSet(1)))
-    return Limit(cospan, Multispan(πs))
+    return FinSetIndexedLimit(cospan, Multispan(πs))
   end
 
   # In the general case, for now we always just do a hash join, although
@@ -500,7 +540,8 @@ function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}},
       end
     end
   end
-  Limit(cospan, Multispan(map((π,f) -> FinFunction(π, dom(f)), πs, funcs)))
+  cone = Multispan(map((π,f) -> FinFunction(π, dom(f)), πs, funcs))
+  FinSetIndexedLimit(cospan, cone)
 end
 
 """ [Sort-merge join](https://en.wikipedia.org/wiki/Sort-merge_join) algorithm.
@@ -544,7 +585,8 @@ function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}},
       next_range!(argmin(values))
     end
   end
-  Limit(cospan, Multispan(map((π,f) -> FinFunction(π, length(f)), πs, funcs)))
+  cone = Multispan(map((π,f) -> FinFunction(π, length(f)), πs, funcs))
+  FinSetIndexedLimit(cospan, cone)
 end
 
 similar_mutable(x::AbstractVector, T::Type) = similar(x, T)
@@ -572,7 +614,7 @@ function limit(cospan::Multicospan{<:SetOb,<:FinDomFunction{Int}}, ::HashJoin)
   probe = legs(cospan)[i]
   builds = map(ensure_indexed, deleteat(legs(cospan), i))
   πs_build, π_probe = hash_join(builds, probe)
-  Limit(cospan, Multispan(insert(πs_build, i, π_probe)))
+  FinSetIndexedLimit(cospan, Multispan(insert(πs_build, i, π_probe)))
 end
 
 function hash_join(builds::AbstractVector{<:FinDomFunction{Int}},
@@ -618,19 +660,6 @@ ensure_indexed(f::FinFunction{Int,Int}) = is_indexed(f) ? f :
 ensure_indexed(f::FinDomFunction{Int}) = is_indexed(f) ? f :
   FinDomFunction(collect(f), index=true)
 
-""" Limit of free diagram of FinSets.
-
-See `CompositePullback` for a very similar construction.
-"""
-struct FinSetFreeDiagramLimit{Ob<:FinSet, Diagram,
-                              Cone<:Multispan{Ob}, Prod<:Product{Ob},
-                              Incl<:FinFunction} <: AbstractLimit{Ob,Diagram}
-  diagram::Diagram
-  cone::Cone
-  prod::Prod
-  incl::Incl # Inclusion for the "multi-equalizer" in general formula.
-end
-
 function limit(d::BipartiteFreeDiagram{Ob,Hom}) where
     {Ob<:SetOb, Hom<:FinDomFunction{Int}}
   # As in a pullback, this method assumes that all objects in layer 2 have
@@ -656,11 +685,12 @@ function limit(d::BipartiteFreeDiagram{Ob,Hom}) where
   # (product of sizes of relations to join). This is a simple greedy heuristic.
   # For more control over the order of the joins, create a UWD schedule.
   if nv₂(d) == 0
+    # FIXME: Shouldn't need FinSetIndexedLimit in these special cases.
     if nv₁(d) == 1
-      Limit(d_original, SMultispan{1}(ιs[1]))
+      FinSetIndexedLimit(d_original, SMultispan{1}(ιs[1]))
     else
       πs = legs(product(SVector(ob₁(d)...)))
-      Limit(d_original, Multispan(map(compose, πs, ιs)))
+      FinSetIndexedLimit(d_original, Multispan(map(compose, πs, ιs)))
     end
   else
     # Select the join to perform.
@@ -698,7 +728,7 @@ function limit(d::BipartiteFreeDiagram{Ob,Hom}) where
     for (i, u) in enumerate(to_keep)
       πs[u] = compose(legs(lim)[i], ιs[u])
     end
-    Limit(d_original, Multispan(πs))
+    FinSetIndexedLimit(d_original, Multispan(πs))
   end
 end
 
@@ -738,9 +768,9 @@ end
 
 """ Perform all possible pairings in a bipartite free diagram.
 
-The resulting diagram has the same ``V₁`` set but a possibly reduced ``V₂``.
-Layer 2 vertices are merged when they have exactly the same multiset of adjacent
-vertices.
+The resulting diagram has the same layer 1 vertices but a possibly reduced set
+of layer 2 vertices. Layer 2 vertices are merged when they have exactly the same
+multiset of adjacent vertices.
 """
 function pair_all(d::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
   d_paired = BipartiteFreeDiagram{Ob,Hom}()
@@ -772,6 +802,19 @@ function pair_all(d::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
   d_paired
 end
 
+""" Limit of general diagram of FinSets computed by product-then-filter.
+
+See `Limits.CompositePullback` for a very similar construction.
+"""
+struct FinSetCompositeLimit{Ob<:FinSet, Diagram,
+                            Cone<:Multispan{Ob}, Prod<:Product{Ob},
+                            Incl<:FinFunction} <: AbstractLimit{Ob,Diagram}
+  diagram::Diagram
+  cone::Cone
+  prod::Prod
+  incl::Incl # Inclusion for the "multi-equalizer" in general formula.
+end
+
 limit(d::FreeDiagram{<:FinSet{Int}}) = limit(FinDomFunctor(d))
 
 function limit(F::Functor{<:FinCat{Int},<:TypeCat{<:FinSet{Int}}})
@@ -788,15 +831,51 @@ function limit(F::Functor{<:FinCat{Int},<:TypeCat{<:FinSet{Int}}})
     end
   end, n)
   cone = Multispan(dom(ι), map(x -> ι⋅πs[x], ob_generators(J)))
-  FinSetFreeDiagramLimit(F, cone, prod, ι)
+  FinSetCompositeLimit(F, cone, prod, ι)
 end
 
-function universal(lim::FinSetFreeDiagramLimit, cone::Multispan{<:FinSet{Int}})
+function universal(lim::FinSetCompositeLimit, cone::Multispan{<:FinSet{Int}})
   ι = collect(lim.incl)
   h = universal(lim.prod, cone)
   FinFunction(Int[only(searchsorted(ι, h(i))) for i in dom(h)],
               apex(cone), ob(lim))
 end
+
+""" Limit of finite sets viewed as a table.
+
+Any limit of finite sets can be canonically viewed as a table
+([`TabularSet`](@ref)) whose columns are the legs of the limit cone and whose
+rows correspond to elements of the limit object. To construct this table from an
+already computed limit, call `TabularLimit(::AbstractLimit; ...)`. The column
+names of the table are given by the optional argument `names`.
+
+In this tabular form, applying the universal property of the limit is trivial
+since it is just tupling. Thus, this representation can be useful when the
+original limit algorithm does not support efficient application of the universal
+property. On the other hand, this representation has the disadvantage of
+generally making the element type of the limit set more complicated.
+"""
+const TabularLimit = Limit{<:TabularSet}
+
+function TabularLimit(lim::AbstractLimit; names=nothing)
+  πs = legs(lim)
+  names = isnothing(names) ? (1:length(πs)) : names
+  names = Tuple(column_name(name) for name in names)
+  table = TabularSet(NamedTuple{names}(Tuple(map(collect, πs))))
+  cone = Multispan(table, map(πs, eachindex(πs)) do π, i
+    FinFunction(row -> Tables.getcolumn(row, i), table, codom(π))
+  end)
+  Limit(lim.diagram, cone)
+end
+
+function universal(lim::Limit{<:TabularSet{Table,Row}},
+                   cone::Multispan) where {Table,Row}
+  fs = Tuple(legs(cone))
+  FinFunction(x -> Row(map(f -> f(x), fs)), apex(cone), ob(lim))
+end
+
+column_name(name) = Symbol(name)
+column_name(i::Integer) = Symbol("x$i") # Same default as DataFrames.jl.
 
 # Colimits
 ##########
@@ -805,8 +884,7 @@ function colimit(Xs::EmptyDiagram{<:FinSet{Int}})
   Colimit(Xs, SMulticospan{0}(FinSet(0)))
 end
 
-function universal(colim::Initial{<:FinSet{Int}},
-                   cocone::SMulticospan{0,<:FinSet{Int}})
+function universal(colim::Initial{<:FinSet{Int}}, cocone::SMulticospan{0})
   FinFunction(Int[], apex(cocone))
 end
 
@@ -817,8 +895,7 @@ function colimit(Xs::ObjectPair{<:FinSet{Int}})
   Colimit(Xs, Cospan(ι1, ι2))
 end
 
-function universal(colim::BinaryCoproduct{<:FinSet{Int}},
-                   cocone::Cospan{<:FinSet{Int}})
+function universal(colim::BinaryCoproduct{<:FinSet{Int}}, cocone::Cospan)
   f, g = cocone
   FinFunction(vcat(collect(f), collect(g)), ob(colim), apex(cocone))
 end
@@ -831,8 +908,7 @@ function colimit(Xs::DiscreteDiagram{<:FinSet{Int}})
   Colimit(Xs, Multicospan(FinSet(n), ιs))
 end
 
-function universal(colim::Coproduct{<:FinSet{Int}},
-                   cocone::Multicospan{<:FinSet{Int}})
+function universal(colim::Coproduct{<:FinSet{Int}}, cocone::Multicospan)
   FinFunction(reduce(vcat, (collect(f) for f in cocone), init=Int[]),
               ob(colim), apex(cocone))
 end
@@ -860,8 +936,7 @@ function colimit(para::ParallelMorphisms{<:FinSet{Int}})
   Colimit(para, SMulticospan{1}(quotient_projection(sets)))
 end
 
-function universal(coeq::Coequalizer{<:FinSet{Int}},
-                   cocone::SMulticospan{1,<:FinSet{Int}})
+function universal(coeq::Coequalizer{<:FinSet{Int}}, cocone::SMulticospan{1})
   pass_to_quotient(proj(coeq), only(cocone))
 end
 
@@ -883,10 +958,10 @@ function pass_to_quotient(π::FinFunction{Int,Int}, h::FinFunction{Int,Int})
     if q[j] == 0
       q[j] = h(i)
     else
-      @assert q[j] == h(i) "Quotient map out of coequalizer is ill-defined"
+      q[j] == h(i) || error("Quotient map out of coequalizer is ill-defined")
     end
   end
-  @assert all(i > 0 for i in q) "Projection map is not surjective"
+  all(>(0), q) || error("Projection map is not surjective")
   FinFunction(q, codom(h))
 end
 
@@ -894,13 +969,13 @@ function colimit(span::Multispan{<:FinSet{Int}})
   colimit(span, ComposeCoproductCoequalizer())
 end
 
-""" Colimit of free diagram of FinSets.
+""" Colimit of general diagram of FinSets computed by coproduct-then-quotient.
 
-See `CompositePushout` for a very similar construction.
+See `Limits.CompositePushout` for a very similar construction.
 """
-struct FinSetFreeDiagramColimit{Ob<:FinSet, Diagram,
-                                Cocone<:Multicospan{Ob}, Coprod<:Coproduct{Ob},
-                                Proj<:FinFunction} <: AbstractColimit{Ob,Diagram}
+struct FinSetCompositeColimit{Ob<:FinSet, Diagram,
+                              Cocone<:Multicospan{Ob}, Coprod<:Coproduct{Ob},
+                              Proj<:FinFunction} <: AbstractColimit{Ob,Diagram}
   diagram::Diagram
   cocone::Cocone
   coprod::Coprod
@@ -926,7 +1001,7 @@ function colimit(d::BipartiteFreeDiagram{<:FinSet{Int}})
   end
   π = quotient_projection(sets)
   cocone = Multicospan(codom(π), [ ιs[i]⋅π for i in vertices₂(d) ])
-  FinSetFreeDiagramColimit(d, cocone, coprod, π)
+  FinSetCompositeColimit(d, cocone, coprod, π)
 end
 
 colimit(d::FreeDiagram{<:FinSet{Int}}) = colimit(FinDomFunctor(d))
@@ -946,11 +1021,10 @@ function colimit(F::Functor{<:FinCat{Int},<:TypeCat{<:FinSet{Int}}})
   end
   π = quotient_projection(sets)
   cocone = Multicospan(codom(π), map(x -> ιs[x]⋅π, ob_generators(J)))
-  FinSetFreeDiagramColimit(F, cocone, coprod, π)
+  FinSetCompositeColimit(F, cocone, coprod, π)
 end
 
-function universal(colim::FinSetFreeDiagramColimit,
-                   cocone::Multicospan{<:FinSet{Int}})
+function universal(colim::FinSetCompositeColimit, cocone::Multicospan)
   h = universal(colim.coprod, cocone)
   pass_to_quotient(colim.proj, h)
 end

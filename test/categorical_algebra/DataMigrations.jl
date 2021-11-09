@@ -87,15 +87,15 @@ F_V = FinDomFunctor([V], FinCat(1), C)
 F_E = FinDomFunctor(FreeDiagram(Cospan(tgt, src)), C)
 F = FinDomFunctor(Dict(V => Diagram{op}(F_V),
                        E => Diagram{op}(F_E)),
-                  Dict(src => DiagramHom{op}([(2, src)], F_E, F_V),
-                       tgt => DiagramHom{op}([(3, tgt)], F_E, F_V)), C)
+                  Dict(src => DiagramHom{op}([(1, src)], F_E, F_V),
+                       tgt => DiagramHom{op}([(2, tgt)], F_E, F_V)), C)
 @test F isa DataMigrations.ConjSchemaMigration
-X = path_graph(Graph, 5)
-Y = migrate(X, F)
-@test length(Y(V)) == 5
-@test length(Y(E)) == 3
-@test Y(src)((x1=3, x2=2, x3=3)) == (x1=2,)
-@test Y(tgt)((x1=3, x2=2, x3=3)) == (x1=4,)
+g = path_graph(Graph, 5)
+H = migrate(g, F, tabular=true)
+@test length(H(V)) == 5
+@test length(H(E)) == 3
+@test H(src)((x1=2, x2=3, x3=3)) == (x1=2,)
+@test H(tgt)((x1=2, x2=3, x3=3)) == (x1=4,)
 
 # Same query, but with `@migration` macro.
 F = @migration TheoryGraph TheoryGraph begin
@@ -109,11 +109,43 @@ F = @migration TheoryGraph TheoryGraph begin
   src => e₁ ⋅ src
   tgt => e₂ ⋅ tgt
 end
-Y = migrate(X, F)
-@test length(Y(V)) == 5
-@test length(Y(E)) == 3
-@test Y(src)((v=3, e₁=2, e₂=3)) == (V=2,)
-@test Y(tgt)((v=3, e₁=2, e₂=3)) == (V=4,)
+H = migrate(g, F, tabular=true)
+@test length(H(V)) == 5
+@test length(H(E)) == 3
+@test H(src)((v=3, e₁=2, e₂=3)) == (V=2,)
+@test H(tgt)((v=3, e₁=2, e₂=3)) == (V=4,)
+
+h = migrate(Graph, g, F)
+@test (nv(h), ne(h)) == (5, 3)
+@test sort!(collect(zip(h[:src], h[:tgt]))) == [(1,3), (2,4), (3,5)]
+
+h = Graph(5)
+migrate!(h, g, F)
+@test (nv(h), ne(h)) == (10, 3)
+@test sort!(collect(zip(h[:src], h[:tgt]))) == [(6,8), (7,9), (8,10)]
+
+# Graph whose vertices are paths of length 2 and edges are paths of length 3.
+F = @migration TheoryGraph TheoryGraph begin
+  V => @join begin
+    v::V
+    (e₁, e₂)::E
+    (t: e₁ → v)::tgt
+    (s: e₂ → v)::src
+  end
+  E => @join begin
+    (v₁, v₂)::V
+    (e₁, e₂, e₃)::E
+    (t₁: e₁ → v₁)::tgt
+    (s₁: e₂ → v₁)::src
+    (t₂: e₂ → v₂)::tgt
+    (s₂: e₃ → v₂)::src
+  end
+  src => (v => v₁; e₁ => e₁; e₂ => e₂; t => t₁; s => s₁)
+  tgt => (v => v₂; e₁ => e₂; e₂ => e₃; t => t₂; s => s₂)
+end
+g = path_graph(Graph, 6)
+h = migrate(Graph, g, F)
+@test h == path_graph(Graph, 4)
 
 # Sigma data migration
 ######################

@@ -8,7 +8,7 @@ using ...Theories: SchemaDesc, ob, hom, dom, codom, attr, adom
 using ..Categories, ..FinCats, ..Limits, ..Diagrams, ..FinSets, ..CSets
 using ...Graphs, ..FreeDiagrams
 import ..Categories: ob_map, hom_map
-using ..FinCats: make_map
+using ..FinCats: make_map, mapvals
 
 # Data types
 ############
@@ -19,7 +19,7 @@ The diagram defining the query specifies a finite limit.
 """
 const ConjQuery{C<:FinCat} = Diagram{op,C}
 
-""" Gluing query over schema ``C``.
+""" Gluing or agglomerative query over schema ``C``.
 
 The diagram defining the query specifies a finite colimit. In the important
 special case that the diagram has discrete shape, it specifies a finite
@@ -142,31 +142,29 @@ end
 # Conjunctive migration
 #######################
 
-function migrate(X::ACSet, F::ConjSchemaMigration)
+migrate(::Type{T}, X::ACSet, F::ConjSchemaMigration; kw...) where T <: ACSet =
+  T(migrate(X, F; kw...))
+migrate!(X::ACSet, Y::ACSet, F::ConjSchemaMigration; kw...) =
+  copy_parts!(X, migrate(Y, F; kw...))
+
+function migrate(X::ACSet, F::ConjSchemaMigration; tabular::Bool=false)
   X = FinDomFunctor(X)
   tgt_schema = dom(F)
-  sets = make_map(ob_generators(tgt_schema)) do c
-    Fc = diagram(ob_map(F, c))
-    lim = limit(compose(Fc, X, strict=false), BipartiteLimit())
-    J = dom(Fc)
-    names = Tuple(column_name(ob_name(J, j)) for j in ob_generators(J))
-    TabularSet(NamedTuple{names}(Tuple(map(collect, legs(lim)))))
+  limits = make_map(ob_generators(tgt_schema)) do c
+    Fc = ob_map(F, c)
+    lim = limit(compose(Fc, X), alg=ToBipartiteLimit())
+    if tabular
+      J = shape(Fc)
+      lim = TabularLimit(lim, names=(ob_name(J, j) for j in ob_generators(J)))
+    end
+    lim
   end
   funcs = make_map(hom_generators(tgt_schema)) do f
-    c, d = dom(tgt_schema, f), codom(tgt_schema, f)
-    Ff = hom_map(F, f)
-    J′, Ff₀, Ff₁ = shape(codom(Ff)), shape_map(Ff), diagram_map(Ff)
-    names = keys(sets[d].table)
-    Ff₀ = NamedTuple{names}(Tuple(ob_map(Ff₀, j) for j in ob_generators(J′)))
-    Ff₁ = NamedTuple{names}(Tuple(hom_map(X, component(Ff₁, j))
-                                  for j in ob_generators(J′)))
-    FinFunction(row -> map((j,g) -> g(row[j]), Ff₀, Ff₁), sets[c], sets[d])
+    Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)
+    universal(compose(Ff, X), limits[c], limits[d])
   end
-  FinDomFunctor(sets, funcs, tgt_schema)
+  FinDomFunctor(mapvals(ob, limits), funcs, tgt_schema)
 end
-
-column_name(name) = Symbol(name)
-column_name(i::Integer) = Symbol("x$i") # Same default as DataFrames.jl.
 
 # FIXME: We should put this elsewhere and think more carefully about names.
 ob_name(C::FinCat, x) = x
