@@ -15,24 +15,24 @@ using ..FinCats: make_map, mapvals
 
 """ Conjunctive query over schema ``C``.
 
-The diagram defining the query specifies a finite limit.
+The diagram comprising the query specifies a finite limit.
 """
 const ConjQuery{C<:FinCat} = Diagram{op,C}
 
 """ Gluing or agglomerative query over schema ``C``.
 
-The diagram defining the query specifies a finite colimit. In the important
+The diagram comprising the query specifies a finite colimit. In the important
 special case that the diagram has discrete shape, it specifies a finite
 coproduct and the query is called "linear" or "disjunctive".
 """
-const GluingQuery{C<:FinCat} = Diagram{id,C}
+const GlueQuery{C<:FinCat} = Diagram{id,C}
 
 """ "Gluc query" (gluing of conjunctive queries) over schema ``C``.
 
-The diagram of diagrams specifies a finite colimit of finite limits. In the
-important special case that the outer diagram has discrete shape, it specifies a
-finite coproduct of finite limits and the query is called a "duc query"
-(disjoint union of conjunctive queries).
+The diagram of diagrams comprising the query specifies a finite colimit of
+finite limits. In the important special case that the outer diagram has discrete
+shape, it specifies a finite coproduct of finite limits and the query is called
+a "duc query" (disjoint union of conjunctive queries).
 """
 const GlucQuery{C<:FinCat} = Diagram{id,<:TypeCat{<:Diagram{op,C}}}
 
@@ -41,8 +41,8 @@ const DeltaSchemaMigration{D<:FinCat,C<:FinCat} = FinFunctor{D,C}
 const ConjSchemaMigration{D<:FinCat,C<:FinCat} =
   FinDomFunctor{D,<:TypeCat{<:ConjQuery{C}}}
 
-const GluingSchemaMigration{D<:FinCat,C<:FinCat} =
-  FinDomFunctor{D,<:TypeCat{<:GluingQuery{C}}}
+const GlueSchemaMigration{D<:FinCat,C<:FinCat} =
+  FinDomFunctor{D,<:TypeCat{<:GlueQuery{C}}}
 
 const GlucSchemaMigration{D<:FinCat,C<:FinCat} =
   FinDomFunctor{D,<:TypeCat{<:GlucQuery{C}}}
@@ -89,7 +89,7 @@ const DeltaMigration{Dom,Codom} = DataMigration{Dom,Codom,<:DeltaSchemaMigration
 DeltaMigration(args...) = DataMigration(args...)::DeltaMigration
 
 const ConjMigration{Dom,Codom} = DataMigration{Dom,Codom,<:ConjSchemaMigration}
-const GluingMigration{Dom,Codom} = DataMigration{Dom,Codom,<:GluingSchemaMigration}
+const GlueMigration{Dom,Codom} = DataMigration{Dom,Codom,<:GlueSchemaMigration}
 const GlucMigration{Dom,Codom} = DataMigration{Dom,Codom,<:GlucSchemaMigration}
 
 # Delta migration

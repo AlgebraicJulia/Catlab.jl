@@ -9,12 +9,11 @@ export @graph, @fincat, @finfunctor, @diagram, @migration
 
 using Base.Iterators: repeated
 using MLStyle: @match
-using StaticArrays: SVector
 
 using ...Present, ...Graphs, ...CategoricalAlgebra
 using ...Theories: munit
 using ...CategoricalAlgebra.FinCats: mapvals, make_map
-using ...CategoricalAlgebra.DataMigrations: ConjQuery
+using ...CategoricalAlgebra.DataMigrations: ConjQuery, GlueQuery
 import ...CategoricalAlgebra.DataMigrations: ob_name, hom_name, ob_named, hom_named
 using ...Graphs.BasicGraphs: TheoryGraph
 
@@ -86,8 +85,8 @@ function parse_graph(G::Type, body::Expr; preprocess::Bool=true)
   if preprocess
     body = reparse_arrows(body)
   end
-  for expr in body.args
-    @match expr begin
+  for stmt in statements(body)
+    @match stmt begin
       # v
       v::Symbol => add_vertex!(g, vname=v)
       # u, v, ...
@@ -101,7 +100,7 @@ function parse_graph(G::Type, body::Expr; preprocess::Bool=true)
       Expr(:call, (:), Expr(:tuple, es...), Expr(:call, :(→), u::Symbol, v::Symbol)) =>
         for e in es; parse_edge!(g, u, v, ename=e) end
       ::LineNumberNode => nothing
-      _ => error("@graph macro cannot parse line: $expr")
+      _ => error("@graph macro cannot parse line: $stmt")
     end
   end
   return g
@@ -125,6 +124,8 @@ function reparse_arrows(expr)
     _ => expr
   end
 end
+
+statements(expr) = (expr isa Expr && expr.head == :block) ? expr.args : [expr]
 
 # Categories
 ############
@@ -157,8 +158,8 @@ function parse_category(G::Type, body::Expr; preprocess::Bool=true)
   if preprocess
     body = reparse_arrows(body)
   end
-  for expr in body.args
-    @match expr begin
+  for stmt in statements(body)
+    @match stmt begin
       # v
       v::Symbol => add_vertex!(g, vname=v)
       # u, v, ...
@@ -172,7 +173,7 @@ function parse_category(G::Type, body::Expr; preprocess::Bool=true)
       # f == g
       Expr(:call, :(==), lhs, rhs) => push!(eqs, parse_path_equation(g, lhs, rhs))
       ::LineNumberNode => nothing
-      _ => error("@fincat macro cannot parse line: $expr")
+      _ => error("@fincat macro cannot parse line: $stmt")
     end
   end
   isempty(eqs) ? FinCat(g) : FinCat(g, eqs)
@@ -234,22 +235,24 @@ function parse_functor(C::Presentation, D::Presentation, body::Expr; kw...)
   parse_functor(FinCat(C), FinCat(D), body; kw...)
 end
 
-function parse_ob_hom_maps(C::FinCat, body::Expr; allow_missing::Bool=false)
+function parse_ob_hom_maps(mapexpr, C::FinCat, body::Expr;
+                           allow_missing::Bool=false)
   assignments = Dict{Symbol,Union{Expr,Symbol}}()
   assign(lhs, rhs) = if haskey(assignments, lhs)
     error("Left-hand side $lhs assigned twice in $body")
   else
     assignments[lhs] = rhs
   end
-  for expr in body.args
-    @match expr begin
+  for stmt in statements(body)
+    @match mapexpr(stmt) begin
       # x => y
       Expr(:call, :(=>), lhs::Symbol, rhs) => assign(lhs, rhs)
       # (x, x′, ...) => y
       Expr(:call, :(=>), Expr(:tuple, args...), rhs) =>
         foreach(lhs -> assign(lhs, rhs), args)
       ::LineNumberNode => nothing
-      _ => error("Invalid assignment expression $expr")
+      ::Missing && if allow_missing end => nothing
+      _ => error("Invalid assignment statement $stmt")
     end
   end
   ob_rhs = make_map(ob_generators(C)) do x
@@ -264,6 +267,8 @@ function parse_ob_hom_maps(C::FinCat, body::Expr; allow_missing::Bool=false)
   end
   (ob_rhs, hom_rhs)
 end
+parse_ob_hom_maps(C::FinCat, body::Expr; kw...) =
+  parse_ob_hom_maps(identity, C, body; kw...)
 
 """ Parse expression for morphism in a category.
 """
@@ -320,8 +325,8 @@ function parse_diagram(C::Cat, body::Expr; preprocess::Bool=true)
   if preprocess
     body = reparse_arrows(body)
   end
-  for expr in body.args
-    @match expr begin
+  for stmt in statements(body)
+    @match stmt begin
       # x => X
       Expr(:call, :(=>), x::Symbol, X::Symbol) ||
       # x::X
@@ -348,7 +353,7 @@ function parse_diagram(C::Cat, body::Expr; preprocess::Bool=true)
       # f == g
       Expr(:call, :(==), lhs, rhs) => push!(eqs, parse_path_equation(g, lhs, rhs))
       ::LineNumberNode => nothing
-      _ => error("@diagram macro cannot parse line: $expr")
+      _ => error("@diagram macro cannot parse line: $stmt")
     end
   end
   J = isempty(eqs) ? FinCat(g) : FinCat(g, eqs)
@@ -393,8 +398,8 @@ function parse_migration(src_schema::Presentation, body::Expr;
   if preprocess
     body = reparse_arrows(body)
   end
-  for expr in body.args
-    @match expr begin
+  for stmt in statements(body)
+    @match stmt begin
       # x => ...
       Expr(:call, :(=>), x::Symbol, rhs) => begin
         add_vertex!(g, vname=x)
@@ -410,7 +415,7 @@ function parse_migration(src_schema::Presentation, body::Expr;
       # f == g
       Expr(:call, :(==), lhs, rhs) => push!(eqs, parse_equation(g, lhs, rhs))
       ::LineNumberNode => nothing
-      _ => error("@migration macro cannot parse line: $expr")
+      _ => error("@migration macro cannot parse line: $stmt")
     end
   end
   J = isempty(eqs) ? FinCat(g) : FinCat(g, eqs)
@@ -436,20 +441,40 @@ function parse_query(C::Cat, expr; kw...)
   @match expr begin
     x::Symbol => UnitQuery(C, ob_named(C, x))
     Expr(:macrocall, form, args...) &&
-        if form ∈ (Symbol("@limit"), Symbol("@join")) end =>
+        if form ∈ (Symbol("@limit"), Symbol("@join")) end => begin
       Diagram{op}(parse_diagram(C, last(args); kw...))
+    end
+    Expr(:macrocall, form, args...) &&
+        if form == Symbol("@product") end => begin
+      d = Diagram{op}(parse_diagram(C, last(args); kw...))
+      is_discrete(shape(d)) ? d : error("Product query is not discrete: $expr")
+    end
+    Expr(:macrocall, form, args...) &&
+        if form ∈ (Symbol("@colimit"), Symbol("@glue")) end => begin
+      Diagram{id}(parse_diagram(C, last(args); kw...))
+    end
+    Expr(:macrocall, form, args...) &&
+        if form ∈ (Symbol("@coproduct"), Symbol("@cases")) end => begin
+      d = Diagram{id}(parse_diagram(C, last(args); kw...))
+      is_discrete(shape(d)) ? d : error("Cases query is not discrete: $expr")
+    end
     _ => error("@migration macro cannot parse query $expr")
   end
 end
 
 """ Parse expression defining a morphism of queries.
 """
+function parse_query_hom(C::Cat, expr, ::UnitQuery, ::UnitQuery)
+  UnitQueryHom(C, parse_hom(C, expr))
+end
+
 function parse_query_hom(C::Cat, expr, d::ConjQuery, d′::ConjQuery)
   J, J′ = shape(d), shape(d′)
   ob_rhs, hom_rhs = parse_ob_hom_maps(J′, expr)
-  DiagramHom{op}(mapvals(expr -> parse_query_ob_rhs(C, J, expr), ob_rhs),
+  DiagramHom{op}(mapvals(expr -> parse_conj_query_ob_rhs(C, J, expr), ob_rhs),
                  mapvals(expr -> parse_hom(J, expr), hom_rhs), d, d′)
 end
+
 function parse_query_hom(C::Cat, expr, c::UnitQuery, d′::ConjQuery)
   d = convert_query(Diagram{op,typeof(C)}, c)
   J, J′ = shape(d), shape(d′)
@@ -457,22 +482,79 @@ function parse_query_hom(C::Cat, expr, c::UnitQuery, d′::ConjQuery)
   DiagramHom{op}(mapvals(f -> ismissing(f) ? 1 : Pair(1, parse_hom(C,f)), ob_rhs),
                  mapvals(::Missing -> id(J,1), hom_rhs), d, d′)
 end
+
 function parse_query_hom(C::Cat, expr, d::ConjQuery, c′::UnitQuery)
   d′ = convert_query(Diagram{op,typeof(C)}, c′)
-  DiagramHom{op}(SVector(parse_query_ob_rhs(C, shape(d), expr)), d, d′)
-end
-function parse_query_hom(C::Cat, expr, ::UnitQuery, ::UnitQuery)
-  UnitQueryHom(C, parse_hom(C, expr))
+  DiagramHom{op}([parse_conj_query_ob_rhs(C, shape(d), expr)], d, d′)
 end
 
-function parse_query_ob_rhs(C::Cat, J::FinCat, expr)
+""" Parse RHS of object assignment of morphism out of conjunctive query.
+"""
+function parse_conj_query_ob_rhs(C::Cat, J::FinCat, expr)
   @match expr begin
-    Expr(:call, :(⋅), args...) ||
-    Expr(:call, :(⨟), args...) => begin
-      x, f = leftmost_arg(expr, (:(⋅),:(⨟)))
+    x::Symbol => ob_named(J, x)
+    Expr(:tuple, x::Symbol, f) => Pair(ob_named(J, x), parse_hom(C, f))
+    Expr(:call, :(⋅), _...) || Expr(:call, :(⨟), _...) => begin
+      x, f = leftmost_arg(expr, (:(⋅), :(⨟)))
       Pair(ob_named(J, x), parse_hom(C, f))
     end
+    _ => error("@migration macro cannot parse object assignment $expr")
+  end
+end
+
+function parse_query_hom(C::Cat, expr, d::GlueQuery, d′::GlueQuery)
+  J, J′ = shape(d), shape(d′)
+  ob_rhs, hom_rhs = parse_ob_hom_maps(J, expr) do stmt
+    @match stmt begin
+      # (x ⋅ f) => y  ↦  x => (y, f)
+      Expr(:call, :(=>), Expr(:call, :(⋅), _...), y) ||
+      Expr(:call, :(=>), Expr(:call, :(⨟), _...), y) => begin
+        x, f = leftmost_arg(stmt.args[2], (:(⋅), :(⨟)))
+        Expr(:call, :(=>), x, Expr(:tuple, y, f))
+      end
+      _ => stmt
+    end
+  end
+  DiagramHom{id}(mapvals(expr -> parse_glue_query_ob_rhs(C, J′, expr), ob_rhs),
+                 mapvals(expr -> parse_hom(J′, expr), hom_rhs), d, d′)
+end
+
+function parse_query_hom(C::Cat, expr, c::UnitQuery, d′::GlueQuery)
+  d = convert_query(Diagram{id,typeof(C)}, c)
+  J′ = shape(d′)
+  stmt = only(statements(expr))
+  @match stmt begin
+    Expr(:call, :(=>), _...) => parse_query_hom(C, expr, d, d′)
+    _ => DiagramHom{id}([parse_glue_query_ob_rhs(C, J′, stmt)], d, d′)
+  end
+end
+
+function parse_query_hom(C::Cat, expr, d::GlueQuery, c′::UnitQuery)
+  d′ = convert_query(Diagram{id,typeof(C)}, c′)
+  J, J′ = shape(d), shape(d′)
+  ob_rhs, hom_rhs = parse_ob_hom_maps(J, expr, allow_missing=true) do stmt
+    @match stmt begin
+      # x  ↦  [omit]
+      x::Symbol => missing
+      # x ⋅ f  ↦  (x => f)
+      Expr(:call, :(⋅), _...) || Expr(:call, :(⨟), _...) => begin
+        x, f = leftmost_arg(stmt, (:(⋅), :(⨟)))
+        Expr(:call, :(=>), x, f)
+      end
+      _ => stmt
+    end
+  end
+  DiagramHom{id}(mapvals(f -> ismissing(f) ? 1 : Pair(1, parse_hom(C,f)), ob_rhs),
+                 mapvals(::Missing -> id(J′,1), hom_rhs), d, d′)
+end
+
+""" Parse RHS of object assignment of morphism into gluing query.
+"""
+function parse_glue_query_ob_rhs(C::Cat, J::FinCat, expr)
+  @match expr begin
     x::Symbol => ob_named(J, x)
+    Expr(:tuple, x::Symbol, f) => Pair(ob_named(J, x), parse_hom(C, f))
+    _ => error("@migration macro cannot parse object assignment $expr")
   end
 end
 
@@ -492,8 +574,10 @@ function convert_migration_functor(F_ob, F_hom, D::FinCat, C::FinCat)
 end
 
 promote_query_rule(::Type, ::Type) = Union{}
-promote_query_rule(::Type{<:ConjQuery{C}},
-                   ::Type{<:UnitQuery{C}}) where C = ConjQuery{C}
+promote_query_rule(::Type{<:ConjQuery{C}}, ::Type{<:UnitQuery{C}}) where C =
+  ConjQuery{C}
+promote_query_rule(::Type{<:GlueQuery{C}}, ::Type{<:UnitQuery{C}}) where C =
+  GlueQuery{C}
 
 promote_query_type(T, S) = promote_query_result(
   T, S, Union{promote_query_rule(T,S), promote_query_rule(S,T)})
@@ -503,9 +587,10 @@ promote_query_result(T, S, U) = U
 convert_query(::Type{T}, x::S) where {T, S<:T} = x
 
 function convert_query(::Type{<:ConjQuery{C}}, query::UnitQuery{C}) where C
-  cat, x = query.cat, query.ob
-  munit(Diagram{op}, cat, x,
-        shape=FinCat(NamedGraph{Symbol}(1, vname=nameof(x))))
+  munit(Diagram{op}, query.cat, query.ob, shape=unit_shape(query.ob))
+end
+function convert_query(::Type{<:GlueQuery{C}}, query::UnitQuery{C}) where C
+  munit(Diagram{id}, query.cat, query.ob, shape=unit_shape(query.ob))
 end
 
 convert_query_hom(T::Type, f) = convert_query_hom(T, query_typeof(f), f)
@@ -513,14 +598,21 @@ convert_query_hom(::Type{T}, ::Type{S}, f) where {T, S<:T} = f
 
 function convert_query_hom(::Type{<:ConjQuery{C}}, ::Type{<:UnitQuery{C}},
                            query_hom) where C
-  cat, f = query_hom.cat, query_hom.hom
-  munit(DiagramHom{op}, cat, f,
-        dom_shape=FinCat(NamedGraph{Symbol}(1, vname=nameof(dom(f)))),
-        codom_shape=FinCat(NamedGraph{Symbol}(1, vname=nameof(codom(f)))))
+  f = query_hom.hom
+  munit(DiagramHom{op}, query_hom.cat, f,
+        dom_shape=unit_shape(dom(f)), codom_shape=unit_shape(codom(f)))
+end
+function convert_query_hom(::Type{<:GlueQuery{C}}, ::Type{<:UnitQuery{C}},
+                           query_hom) where C
+  f = query_hom.hom
+  munit(DiagramHom{id}, query_hom.cat, f,
+        dom_shape=unit_shape(dom(f)), codom_shape=unit_shape(codom(f)))
 end
 
 query_typeof(::DiagramHom{T,C}) where {T,C} = Diagram{T,C}
 query_typeof(::UnitQueryHom{C}) where C = UnitQuery{C}
+
+unit_shape(x) = FinCat(NamedGraph{Symbol}(1, vname=nameof(x)))
 
 # Utilities
 ###########
