@@ -271,6 +271,8 @@ lim = limit(BipartiteFreeDiagram(Cospan(f, g)))
 π1, π2 = legs(lim)
 @test π1 == FinFunction([1,1,2,2,4], 4)
 @test π2 == FinFunction([1,2,1,2,4], 4)
+lim′ = limit(FreeDiagram(Cospan(f, g)), ToBipartiteLimit())
+@test legs(lim′)[1:2] == legs(lim)
 
 h = universal(lim, Span(f′, g′))
 @test force(h ⋅ π1) == f′
@@ -417,13 +419,15 @@ _, ι1, ι2 = colim
 @test ι2 == FinFunction([1,1,3], 3)
 
 # Same thing as a colimit of a bipartite free diagram.
-diagram = BipartiteFreeDiagram([FinSet(2)], [FinSet(2),FinSet(3)],
-                               [(f,1,1),(g,1,2)])
-colim = colimit(diagram)
+bdiagram = BipartiteFreeDiagram([FinSet(2)], [FinSet(2),FinSet(3)],
+                                [(f,1,1),(g,1,2)])
+colim = colimit(bdiagram)
 @test ob(colim) == FinSet(3)
 ι1, ι2 = colim
 @test ι1 == FinFunction([1,2], 3)
 @test ι2 == FinFunction([1,1,3], 3)
+colim′ = colimit(diagram, ToBipartiteColimit())
+@test legs(colim′)[2:3] == legs(colim)
 
 # Pushout complements
 #--------------------

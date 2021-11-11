@@ -12,7 +12,8 @@ export AbstractLimit, AbstractColimit, Limit, Colimit,
   BinaryPushout, Pushout, pushout, pushout_complement, can_pushout_complement,
   BinaryCoequalizer, Coequalizer, coequalizer, proj,
   @cartesian_monoidal_instance, @cocartesian_monoidal_instance,
-  ComposeProductEqualizer, ComposeCoproductCoequalizer, ToBipartiteLimit
+  ComposeProductEqualizer, ComposeCoproductCoequalizer,
+  ToBipartiteLimit, ToBipartiteColimit
 
 using AutoHashEquals
 
@@ -453,8 +454,43 @@ function limit(F::Union{Functor,FreeDiagram}, ::ToBipartiteLimit)
 end
 
 function universal(lim::BipartiteLimit, cone::Multispan)
-  d = lim.limit.diagram
-  universal(lim.limit, Multispan(apex(cone), legs(cone)[d[:orig_vert₁]]))
+  lim = lim.limit
+  cone = Multispan(apex(cone), legs(cone)[lim.diagram[:orig_vert₁]])
+  universal(lim, cone)
+end
+
+""" Compute a colimit by reducing the diagram to a free bipartite diagram.
+"""
+struct ToBipartiteColimit <: ColimitAlgorithm end
+
+""" Limit computed by reduction to the limit of a free bipartite diagram.
+"""
+struct BipartiteColimit{Ob, Diagram, Cocone<:Multicospan{Ob},
+                        Colim<:AbstractColimit} <: AbstractColimit{Ob,Diagram}
+  diagram::Diagram
+  cocone::Cocone
+  colimit::Colim
+end
+
+function colimit(F::Union{Functor,FreeDiagram}, ::ToBipartiteColimit)
+  d = BipartiteFreeDiagram(F, colimit=true)
+  colim = colimit(d)
+  cocone = Multicospan(apex(colim), map(incident(d, :, :orig_vert₁),
+                                        incident(d, :, :orig_vert₂)) do v₁, v₂
+    if v₂ == 0
+      e = first(incident(d, v₁, :src))
+      compose(hom(d, e), legs(colim)[tgt(d, e)])
+    else
+      legs(colim)[v₂]
+    end
+  end)
+  BipartiteColimit(F, cocone, colim)
+end
+
+function universal(colim::BipartiteColimit, cocone::Multicospan)
+  colim = colim.colimit
+  cocone = Multicospan(apex(cocone), legs(cocone)[colim.diagram[:orig_vert₂]])
+  universal(colim, cocone)
 end
 
 end
