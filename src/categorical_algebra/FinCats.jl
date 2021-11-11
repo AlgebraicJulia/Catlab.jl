@@ -12,7 +12,7 @@ finitely presented are equivalent.
 module FinCats
 export FinCat, FinCatGraph, Path, ob_generators, hom_generators, equations,
   is_discrete, is_free, graph, edges, src, tgt, presentation,
-  FinFunctor, FinDomFunctor, is_functorial, collect_ob, collect_hom,
+  FinFunctor, FinDomFunctor, is_functorial, collect_ob, collect_hom, force,
   FinTransformation, components, is_natural
 
 using AutoHashEquals
@@ -370,6 +370,15 @@ Categories.do_hom_map(F::FinDomFunctorMap, f) = F.hom_map[f]
 
 collect_ob(F::FinDomFunctorMap) = values(F.ob_map)
 collect_hom(F::FinDomFunctorMap) = values(F.hom_map)
+
+""" Force evaluation of lazily defined function or functor.
+"""
+function force(F::FinDomFunctor)
+  C = dom(F)
+  FinDomFunctor(make_map(x -> ob_map(F, x), ob_generators(C)),
+                make_map(f -> hom_map(F, f), hom_generators(C)), C)
+end
+force(F::FinDomFunctorMap) = F
 
 function Categories.do_compose(F::FinDomFunctorMap, G::FinDomFunctorMap)
   FinDomFunctorMap(mapvals(x -> ob_map(G, x), F.ob_map),

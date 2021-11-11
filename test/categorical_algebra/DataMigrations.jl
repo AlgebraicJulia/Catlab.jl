@@ -3,11 +3,12 @@ using Test
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 using Catlab.Programs.DiagrammaticPrograms
-using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryWeightedGraph
+using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryReflexiveGraph,
+  TheorySymmetricGraph, TheoryWeightedGraph
 using Catlab.Graphs.BipartiteGraphs: TheoryUndirectedBipartiteGraph
 
-# Pullback data migration
-#########################
+# Pullback migration
+####################
 
 @present TheoryDDS(FreeSchema) begin
   X::Ob
@@ -77,8 +78,8 @@ idF = FinFunctor(
 )
 @test ldds == migrate(LabeledDDS{Int}, ldds, idF)
 
-# Conjunctive data migration
-############################
+# Conjunctive migration
+#######################
 
 # Graph whose edges are paths of length 2.
 V, E, src, tgt = generators(TheoryGraph)
@@ -147,8 +148,35 @@ g = path_graph(Graph, 6)
 h = migrate(Graph, g, F)
 @test h == path_graph(Graph, 4)
 
-# Sigma data migration
-######################
+# Agglomerative migration
+#########################
+
+# Free reflexive graph on a graph.
+F = @migration TheoryReflexiveGraph TheoryGraph begin
+  V => V
+  E => @cases (v::V; e::E)
+  src => (e => src)
+  tgt => (e => tgt)
+  refl => v
+end
+g = cycle_graph(Graph, 5)
+h = migrate(ReflexiveGraph, g, F)
+@test h == cycle_graph(ReflexiveGraph, 5)
+
+# Free symmetric graph on a graph.
+F = @migration TheorySymmetricGraph TheoryGraph begin
+  V => V
+  E => @cases (fwd::E; rev::E)
+  src => (fwd => src; rev => tgt)
+  tgt => (fwd => tgt; rev => src)
+  inv => (fwd => rev; rev => fwd)
+end
+g = star_graph(Graph, 5)
+h = migrate(SymmetricGraph, g, F)
+@test is_isomorphic(h, star_graph(SymmetricGraph, 5))
+
+# Sigma migration
+#################
 
 V1B, V2B, EB = generators(TheoryUndirectedBipartiteGraph, :Ob)
 srcB, tgtB = generators(TheoryUndirectedBipartiteGraph, :Hom)

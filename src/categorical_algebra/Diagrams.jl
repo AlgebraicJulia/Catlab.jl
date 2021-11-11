@@ -11,6 +11,7 @@ import ...Theories: Category, dom, codom, id, compose, ⋅, ∘, munit
 import ..Categories: ob_map, hom_map
 using ..FinCats, ..FreeDiagrams
 using ..FinCats: mapvals
+import ..FinCats: force
 import ..Limits: limit, colimit, universal
 
 # TODO: Implement these functions more generally, and move elsewhere.
@@ -53,6 +54,8 @@ shape(d::Diagram) = dom(diagram(d))
 
 Base.:(==)(d1::Diagram{T}, d2::Diagram{S}) where {T,S} =
   T == S && diagram(d1) == diagram(d2)
+
+force(d::Diagram{T}) where T = Diagram{T}(force(diagram(d)))
 
 function Base.show(io::IO, d::Diagram{T}) where T
   print(io, "Diagram{$T}(")
@@ -204,17 +207,31 @@ compose(f::DiagramHom{T}, F::Functor) where T =
 # Dually, in a complete category `C`, limits define functor `Diag{op,C} → C`.
 
 function limit(d::Diagram{op}; alg=nothing)
-  isnothing(alg) ? limit(diagram(d)) : limit(diagram(d), alg)
+  limit(diagram(d), (isnothing(alg) ? () : (alg,))...)
+end
+
+function colimit(d::Diagram{id}; alg=nothing)
+  colimit(diagram(d), (isnothing(alg) ? () : (alg,))...)
 end
 
 function universal(f::DiagramHom{op}, dom_lim, codom_lim)
   J′ = shape(codom(f))
-  cone = Multispan(ob(dom_lim), map(ob_generators(J′)) do j′
+  cone = Multispan(apex(dom_lim), map(ob_generators(J′)) do j′
     j, g = ob_map(f, j′)
     πⱼ = legs(dom_lim)[j]
     compose(πⱼ, g)
   end)
   universal(codom_lim, cone)
+end
+
+function universal(f::DiagramHom{id}, dom_colim, codom_colim)
+  J = shape(dom(f))
+  cocone = Multicospan(apex(codom_colim), map(ob_generators(J)) do j
+    j′, g = ob_map(f, j)
+    ιⱼ′ = legs(codom_colim)[j′]
+    compose(g, ιⱼ′)
+  end)
+  universal(dom_colim, cocone)
 end
 
 # Monads of diagrams

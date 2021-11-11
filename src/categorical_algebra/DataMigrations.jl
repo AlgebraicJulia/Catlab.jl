@@ -92,26 +92,31 @@ const ConjMigration{Dom,Codom} = DataMigration{Dom,Codom,<:ConjSchemaMigration}
 const GlueMigration{Dom,Codom} = DataMigration{Dom,Codom,<:GlueSchemaMigration}
 const GlucMigration{Dom,Codom} = DataMigration{Dom,Codom,<:GlucSchemaMigration}
 
-# Delta migration
-#################
-
 """ Contravariantly migrate data from the acset `Y` to a new acset of type `T`.
 
 The mutating variant of this function is [`migrate!`](@ref).
 """
-function migrate(::Type{T}, X::ACSet, F::DeltaSchemaMigration) where T <: ACSet
-  migrate!(T(), X, F)
-end
-function migrate(::Type{T}, X::ACSet, FOb, FHom) where T <: ACSet
-  migrate!(T(), X, FOb, FHom)
+function migrate(::Type{T}, X::ACSet, F::FinDomFunctor; kw...) where T <: ACSet
+  T(migrate(X, F; kw...))
 end
 
 """ Contravariantly migrate data from the acset `Y` to the acset `X`.
 
-When the functor on schemas is the identity, this operation is equivalent to
-[`copy_parts!`](@ref). This mutating variant of [`migrate`](@ref) is currently
-only available for pullback migrations.
+This is the mutating variant of [`migrate!`](@ref). When the functor on schemas
+is the identity, this operation is equivalent to [`copy_parts!`](@ref).
 """
+function migrate!(X::ACSet, Y::ACSet, F::FinDomFunctor; kw...)
+  copy_parts!(X, migrate(Y, F; kw...))
+end
+
+# Delta migration
+#################
+
+migrate(::Type{T}, X::ACSet, F::DeltaSchemaMigration) where T <: ACSet =
+  migrate!(T(), X, F)
+migrate(::Type{T}, X::ACSet, FOb, FHom) where T <: ACSet =
+  migrate!(T(), X, FOb, FHom)
+
 function migrate!(X::StructACSet{S}, Y::ACSet, F::DeltaSchemaMigration) where S
   partsX = Dict(c => add_parts!(X, c, nparts(Y, nameof(ob_map(F,c))))
                 for c in ob(S))
@@ -142,11 +147,6 @@ end
 # Conjunctive migration
 #######################
 
-migrate(::Type{T}, X::ACSet, F::ConjSchemaMigration; kw...) where T <: ACSet =
-  T(migrate(X, F; kw...))
-migrate!(X::ACSet, Y::ACSet, F::ConjSchemaMigration; kw...) =
-  copy_parts!(X, migrate(Y, F; kw...))
-
 function migrate(X::ACSet, F::ConjSchemaMigration; tabular::Bool=false)
   X = FinDomFunctor(X)
   tgt_schema = dom(F)
@@ -173,6 +173,24 @@ hom_name(C::FinCat, f) = f
 hom_name(C::FinCat, f::GATExpr) = nameof(f)
 ob_named(C::FinCat, name) = ob(C, name)
 hom_named(C::FinCat, name) = hom(C, name)
+
+# Agglomerative migration
+#########################
+
+function migrate(X::ACSet, F::GlueSchemaMigration)
+  X = FinDomFunctor(X)
+  tgt_schema = dom(F)
+  colimits = make_map(ob_generators(tgt_schema)) do c
+    Fc = ob_map(F, c)
+    # XXX: Force composition to tighten the codomain types.
+    colimit(force(compose(Fc, X)))
+  end
+  funcs = make_map(hom_generators(tgt_schema)) do f
+    Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)
+    universal(compose(Ff, X), colimits[c], colimits[d])
+  end
+  FinDomFunctor(mapvals(ob, colimits), funcs, tgt_schema)
+end
 
 # Sigma migration
 #################
