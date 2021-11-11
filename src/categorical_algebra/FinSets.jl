@@ -18,7 +18,7 @@ using ...GAT, ...Theories, ...CSetDataStructures, ...Graphs
 using ..FinCats, ..FreeDiagrams, ..Limits, ..Subobjects
 import ...Theories: Ob, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 import ..Categories: ob, hom, dom, codom, compose, id, ob_map, hom_map
-import ..FinCats: ob_generators, hom_generators, graph, is_discrete
+import ..FinCats: force, ob_generators, hom_generators, graph, is_discrete
 import ..Limits: limit, colimit, universal, pushout_complement,
   can_pushout_complement
 import ..Subobjects: Subobject, SubobjectLattice
@@ -239,8 +239,6 @@ function Base.show(io::IO, f::FinDomFunctionVector)
   print(io, ")")
 end
 
-""" Force evaluation of lazy function or relation.
-"""
 force(f::FinDomFunction{Int}) = FinDomFunctionVector(map(f, dom(f)), codom(f))
 force(f::FinDomFunctionVector) = f
 

@@ -185,6 +185,18 @@ F_E = diagram(ob_map(F, :E))
 F_tgt = hom_map(F, :tgt)
 @test ob_map(F_tgt, 1) == (3, TheoryGraph[:tgt])
 
+# Cartesian product of graph with itself.
+F = @migration TheoryGraph TheoryGraph begin
+  V => @product (v₁::V; v₂::V)
+  E => @product (e₁::E; e₂::E)
+  src => (v₁ => e₁⋅src; v₂ => e₂⋅src)
+  tgt => (v₁ => e₁⋅tgt; v₂ => e₂⋅tgt)
+end
+F_V = diagram(ob_map(F, :V))
+@test collect_ob(F_V) == fill(TheoryGraph[:V], 2)
+F_src = hom_map(F, :src)
+@test ob_map(F_src, 2) == (2, TheoryGraph[:src])
+
 # Reflexive graph from graph.
 F = @migration TheoryReflexiveGraph TheoryGraph begin
   V => @join begin
@@ -248,5 +260,38 @@ F_src = hom_map(F, 3)
 @test ob_map(F_src, 1) == (1, TheoryGraph[:src])
 @test ob_map(F_src, 2) == (1, id(TheoryGraph[:E]))
 @test hom_map(F_src, 1) == id(shape(codom(F_src)), 1)
+
+# Agglomerative migration
+#------------------------
+
+# Coproduct of graph with itself.
+F = @migration TheoryGraph TheoryGraph begin
+  V => @cases (v₁::V; v₂::V)
+  E => @cases (e₁::E; e₂::E)
+  src => begin
+    e₁ => v₁ ∘ src
+    e₂ => v₂ ∘ src
+  end
+  tgt => begin
+    e₁ => v₁ ∘ tgt
+    e₂ => v₂ ∘ tgt
+  end
+end
+F_V = diagram(ob_map(F, :V))
+@test collect_ob(F_V) == fill(TheoryGraph[:V], 2)
+F_src = hom_map(F, :src)
+@test ob_map(F_src, 2) == (2, TheoryGraph[:src])
+
+# Free reflexive graph on a graph.
+F = @migration TheoryReflexiveGraph TheoryGraph begin
+  V => V
+  E => @cases (e::E; v::V)
+  src => (e => src)
+  tgt => (e => tgt)
+  refl => v
+end
+F_tgt = hom_map(F, :tgt)
+@test ob_map(F_tgt, 1) == (1, TheoryGraph[:tgt])
+@test ob_map(F_tgt, 2) == (1, id(TheoryGraph[:V]))
 
 end
