@@ -1,6 +1,6 @@
-# # meets
+# # Meets in Preorders
 #
-#md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/sketches/Partitions.ipynb)
+#md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/sketches/meets.ipynb)
 #
 # Our first example of a concept defined by a universal mapping property is a meet respectively meet.
 # 

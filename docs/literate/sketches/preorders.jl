@@ -1,6 +1,6 @@
 # # Preorders
 #
-#md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/sketches/Preorders.ipynb)
+#md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/sketches/preorders.ipynb)
 #
 # Many of the ideas in category theory can be viewed as generalizations of
 # preorders or monoids. This sketch shows some features of Catlab through the 

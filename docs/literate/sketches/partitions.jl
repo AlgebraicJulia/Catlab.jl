@@ -1,6 +1,6 @@
 # # Partitions
 #
-#md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/sketches/Partitions.ipynb)
+#md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/sketches/partitions.ipynb)
 #
 # Partitions are a categorical construction that we derive from sets and functions.
 # Given a set A, you can think of all of the ways to partition A into parts.

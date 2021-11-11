@@ -52,17 +52,17 @@ makedocs(
   pages       = Any[
     "Catlab.jl" => "index.md",
     "Vignettes" => no_literate ? [] : Any[
-      "Sketches" => Any[
+      "Seven Sketches" => Any[
         "generated/sketches/partitions.md",
-        "generated/sketches/meets.md",
         "generated/sketches/preorders.md",
+        "generated/sketches/meets.md",
         "generated/sketches/smc.md"
         ],
       "Graphs" => Any[
         "generated/graphs/graphs.md",
         "generated/graphs/subgraphs.md",
       ],
-      "Wiring diagrams" => Any[
+      "Wiring Diagrams" => Any[
         "generated/wiring_diagrams/wiring_diagram_basics.md",
         "generated/wiring_diagrams/diagrams_and_expressions.md",
       ],
