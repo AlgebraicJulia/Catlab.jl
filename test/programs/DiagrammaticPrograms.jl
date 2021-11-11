@@ -268,8 +268,14 @@ F_src = hom_map(F, 3)
 F = @migration TheoryGraph TheoryGraph begin
   V => @cases (v₁::V; v₂::V)
   E => @cases (e₁::E; e₂::E)
-  src => (e₁⋅src => v₁; e₂⋅src => v₂)
-  tgt => (e₁⋅tgt => v₁; e₂⋅tgt => v₂)
+  src => begin
+    e₁ => v₁ ∘ src
+    e₂ => v₂ ∘ src
+  end
+  tgt => begin
+    e₁ => v₁ ∘ tgt
+    e₂ => v₂ ∘ tgt
+  end
 end
 F_V = diagram(ob_map(F, :V))
 @test collect_ob(F_V) == fill(TheoryGraph[:V], 2)
@@ -280,29 +286,12 @@ F_src = hom_map(F, :src)
 F = @migration TheoryReflexiveGraph TheoryGraph begin
   V => V
   E => @cases (e::E; v::V)
-  src => (e⋅src; v)
-  tgt => (e⋅tgt; v)
+  src => (e => src)
+  tgt => (e => tgt)
   refl => v
 end
 F_tgt = hom_map(F, :tgt)
 @test ob_map(F_tgt, 1) == (1, TheoryGraph[:tgt])
 @test ob_map(F_tgt, 2) == (1, id(TheoryGraph[:V]))
-
-# Same query but with syntactic variations.
-F′ = @migration TheoryReflexiveGraph TheoryGraph begin
-  V => V
-  E => @coproduct begin
-    e::E
-    v::V
-  end
-  src => begin
-    e => src
-  end
-  tgt => begin
-    e => tgt
-  end
-  refl => v
-end
-@test F′ == F
 
 end

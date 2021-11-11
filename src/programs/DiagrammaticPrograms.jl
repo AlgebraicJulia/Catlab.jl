@@ -235,8 +235,7 @@ function parse_functor(C::Presentation, D::Presentation, body::Expr; kw...)
   parse_functor(FinCat(C), FinCat(D), body; kw...)
 end
 
-function parse_ob_hom_maps(mapexpr, C::FinCat, body::Expr;
-                           allow_missing::Bool=false)
+function parse_ob_hom_maps(C::FinCat, body::Expr; allow_missing::Bool=false)
   assignments = Dict{Symbol,Union{Expr,Symbol}}()
   assign(lhs, rhs) = if haskey(assignments, lhs)
     error("Left-hand side $lhs assigned twice in $body")
@@ -244,14 +243,13 @@ function parse_ob_hom_maps(mapexpr, C::FinCat, body::Expr;
     assignments[lhs] = rhs
   end
   for stmt in statements(body)
-    @match mapexpr(stmt) begin
+    @match stmt begin
       # x => y
       Expr(:call, :(=>), lhs::Symbol, rhs) => assign(lhs, rhs)
       # (x, x′, ...) => y
       Expr(:call, :(=>), Expr(:tuple, args...), rhs) =>
         foreach(lhs -> assign(lhs, rhs), args)
       ::LineNumberNode => nothing
-      ::Missing && if allow_missing end => nothing
       _ => error("Invalid assignment statement $stmt")
     end
   end
@@ -267,8 +265,6 @@ function parse_ob_hom_maps(mapexpr, C::FinCat, body::Expr;
   end
   (ob_rhs, hom_rhs)
 end
-parse_ob_hom_maps(C::FinCat, body::Expr; kw...) =
-  parse_ob_hom_maps(identity, C, body; kw...)
 
 """ Parse expression for morphism in a category.
 """
@@ -468,13 +464,13 @@ function parse_query_hom(C::Cat, expr, ::UnitQuery, ::UnitQuery)
   UnitQueryHom(C, parse_hom(C, expr))
 end
 
+# Conjunctive fragment.
 function parse_query_hom(C::Cat, expr, d::ConjQuery, d′::ConjQuery)
   J, J′ = shape(d), shape(d′)
   ob_rhs, hom_rhs = parse_ob_hom_maps(J′, expr)
   DiagramHom{op}(mapvals(expr -> parse_conj_query_ob_rhs(C, J, expr), ob_rhs),
                  mapvals(expr -> parse_hom(J, expr), hom_rhs), d, d′)
 end
-
 function parse_query_hom(C::Cat, expr, c::UnitQuery, d′::ConjQuery)
   d = convert_query(Diagram{op,typeof(C)}, c)
   J, J′ = shape(d), shape(d′)
@@ -482,10 +478,28 @@ function parse_query_hom(C::Cat, expr, c::UnitQuery, d′::ConjQuery)
   DiagramHom{op}(mapvals(f -> ismissing(f) ? 1 : Pair(1, parse_hom(C,f)), ob_rhs),
                  mapvals(::Missing -> id(J,1), hom_rhs), d, d′)
 end
-
 function parse_query_hom(C::Cat, expr, d::ConjQuery, c′::UnitQuery)
   d′ = convert_query(Diagram{op,typeof(C)}, c′)
   DiagramHom{op}([parse_conj_query_ob_rhs(C, shape(d), expr)], d, d′)
+end
+
+# Gluing fragment.
+function parse_query_hom(C::Cat, expr, d::GlueQuery, d′::GlueQuery)
+  J, J′ = shape(d), shape(d′)
+  ob_rhs, hom_rhs = parse_ob_hom_maps(J, expr)
+  DiagramHom{id}(mapvals(expr -> parse_glue_query_ob_rhs(C, J′, expr), ob_rhs),
+                 mapvals(expr -> parse_hom(J′, expr), hom_rhs), d, d′)
+end
+function parse_query_hom(C::Cat, expr, c::UnitQuery, d′::GlueQuery)
+  d = convert_query(Diagram{id,typeof(C)}, c)
+  DiagramHom{id}([parse_glue_query_ob_rhs(C, shape(d′), expr)], d, d′)
+end
+function parse_query_hom(C::Cat, expr, d::GlueQuery, c′::UnitQuery)
+  d′ = convert_query(Diagram{id,typeof(C)}, c′)
+  J, J′ = shape(d), shape(d′)
+  ob_rhs, hom_rhs = parse_ob_hom_maps(J, expr, allow_missing=true)
+  DiagramHom{id}(mapvals(f -> ismissing(f) ? 1 : Pair(1, parse_hom(C,f)), ob_rhs),
+                 mapvals(::Missing -> id(J′,1), hom_rhs), d, d′)
 end
 
 """ Parse RHS of object assignment of morphism out of conjunctive query.
@@ -494,58 +508,12 @@ function parse_conj_query_ob_rhs(C::Cat, J::FinCat, expr)
   @match expr begin
     x::Symbol => ob_named(J, x)
     Expr(:tuple, x::Symbol, f) => Pair(ob_named(J, x), parse_hom(C, f))
-    Expr(:call, :(⋅), _...) || Expr(:call, :(⨟), _...) => begin
-      x, f = leftmost_arg(expr, (:(⋅), :(⨟)))
+    Expr(:call, op, _...) && if op ∈ compose_ops end => begin
+      x, f = leftmost_arg(expr, (:(⋅), :(⨟)), all_ops=compose_ops)
       Pair(ob_named(J, x), parse_hom(C, f))
     end
     _ => error("@migration macro cannot parse object assignment $expr")
   end
-end
-
-function parse_query_hom(C::Cat, expr, d::GlueQuery, d′::GlueQuery)
-  J, J′ = shape(d), shape(d′)
-  ob_rhs, hom_rhs = parse_ob_hom_maps(J, expr) do stmt
-    @match stmt begin
-      # (x ⋅ f) => y  ↦  x => (y, f)
-      Expr(:call, :(=>), Expr(:call, :(⋅), _...), y) ||
-      Expr(:call, :(=>), Expr(:call, :(⨟), _...), y) => begin
-        x, f = leftmost_arg(stmt.args[2], (:(⋅), :(⨟)))
-        Expr(:call, :(=>), x, Expr(:tuple, y, f))
-      end
-      _ => stmt
-    end
-  end
-  DiagramHom{id}(mapvals(expr -> parse_glue_query_ob_rhs(C, J′, expr), ob_rhs),
-                 mapvals(expr -> parse_hom(J′, expr), hom_rhs), d, d′)
-end
-
-function parse_query_hom(C::Cat, expr, c::UnitQuery, d′::GlueQuery)
-  d = convert_query(Diagram{id,typeof(C)}, c)
-  J′ = shape(d′)
-  stmt = only(statements(expr))
-  @match stmt begin
-    Expr(:call, :(=>), _...) => parse_query_hom(C, expr, d, d′)
-    _ => DiagramHom{id}([parse_glue_query_ob_rhs(C, J′, stmt)], d, d′)
-  end
-end
-
-function parse_query_hom(C::Cat, expr, d::GlueQuery, c′::UnitQuery)
-  d′ = convert_query(Diagram{id,typeof(C)}, c′)
-  J, J′ = shape(d), shape(d′)
-  ob_rhs, hom_rhs = parse_ob_hom_maps(J, expr, allow_missing=true) do stmt
-    @match stmt begin
-      # x  ↦  [omit]
-      x::Symbol => missing
-      # x ⋅ f  ↦  (x => f)
-      Expr(:call, :(⋅), _...) || Expr(:call, :(⨟), _...) => begin
-        x, f = leftmost_arg(stmt, (:(⋅), :(⨟)))
-        Expr(:call, :(=>), x, f)
-      end
-      _ => stmt
-    end
-  end
-  DiagramHom{id}(mapvals(f -> ismissing(f) ? 1 : Pair(1, parse_hom(C,f)), ob_rhs),
-                 mapvals(::Missing -> id(J′,1), hom_rhs), d, d′)
 end
 
 """ Parse RHS of object assignment of morphism into gluing query.
@@ -554,9 +522,15 @@ function parse_glue_query_ob_rhs(C::Cat, J::FinCat, expr)
   @match expr begin
     x::Symbol => ob_named(J, x)
     Expr(:tuple, x::Symbol, f) => Pair(ob_named(J, x), parse_hom(C, f))
+    Expr(:call, op, _...) && if op ∈ compose_ops end => begin
+      x, f = leftmost_arg(expr, (:(∘),), all_ops=compose_ops)
+      Pair(ob_named(J, x), parse_hom(C, f))
+    end
     _ => error("@migration macro cannot parse object assignment $expr")
   end
 end
+
+const compose_ops = (:(⋅), :(⨟), :(∘))
 
 # Query promotion
 #----------------
@@ -619,16 +593,20 @@ unit_shape(x) = FinCat(NamedGraph{Symbol}(1, vname=nameof(x)))
 
 """ Left-most argument plus remainder of left-associated binary operations.
 """
-function leftmost_arg(expr, ops)
-  @match expr begin
-    Expr(:call, op2, Expr(:call, op1, x, y), z) &&
-        if op1 ∈ ops && op2 ∈ ops end => begin
-      x, rest = leftmost_arg(Expr(:call, op1, x, y), ops)
-      (x, Expr(:call, op2, rest, z))
+function leftmost_arg(expr, ops; all_ops=nothing)
+  isnothing(all_ops) && (all_ops = ops)
+  function leftmost(expr)
+    @match expr begin
+      Expr(:call, op2, Expr(:call, op1, x, y), z) &&
+          if op1 ∈ all_ops && op2 ∈ all_ops end => begin
+        x, rest = leftmost(Expr(:call, op1, x, y))
+        (x, Expr(:call, op2, rest, z))
+      end
+      Expr(:call, op, x, y) && if op ∈ ops end => (x, y)
+      _ => (nothing, expr)
     end
-    Expr(:call, op, x, y) && if op ∈ ops end => (x, y)
-    _ => (expr, nothing)
   end
+  leftmost(expr)
 end
 
 end
