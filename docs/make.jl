@@ -64,6 +64,7 @@ makedocs(
       "Wiring diagrams" => Any[
         "generated/wiring_diagrams/wiring_diagram_basics.md",
         "generated/wiring_diagrams/diagrams_and_expressions.md",
+        "generated/wiring_diagrams/wd_cset.md",
       ],
       "Graphics" => Any[
         "generated/graphics/composejl_wiring_diagrams.md",
