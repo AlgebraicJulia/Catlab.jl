@@ -8,7 +8,7 @@ using Catlab.CategoricalAlgebra.CSets
 using Catlab.WiringDiagrams
 using Catlab.WiringDiagrams.ScheduleUndirectedWiringDiagrams:
   composites, composite_junction, composite_ports, parent, box_parent
-using Catlab.LinearAlgebra.TensorNetworks: @tensor_network
+using TensorNetworks.TensorNetworks: @tensor_network
 
 composite_junctions(x::ACSet, c) =
   composite_junction.(Ref(x), composite_ports(x, c))

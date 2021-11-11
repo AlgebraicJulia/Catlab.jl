@@ -6,8 +6,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        experiment: [CompAlgebra, Markov]
-    
+        experiment: [CompAlgebra, Markov, TensorNetworks]
+
     steps:
       - uses: actions/checkout@v2
       - name: "Set up Julia"

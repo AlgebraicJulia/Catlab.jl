@@ -4,7 +4,7 @@ using Test
 using LinearAlgebra: tr
 
 using Catlab.CategoricalAlgebra.CSets, Catlab.WiringDiagrams
-using Catlab.LinearAlgebra.TensorNetworks
+using TensorNetworks.TensorNetworks
 
 # Parsing and code generation
 #############################
