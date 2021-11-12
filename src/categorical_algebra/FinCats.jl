@@ -212,10 +212,15 @@ a profunctor, this amounts to taking the collage of the profunctor.
 """
 @auto_hash_equals struct FinCatPresentation{T,Ob,Hom} <: FinCat{Ob,Hom}
   presentation::Presentation{T}
+end
 
-  function FinCatPresentation(pres::Presentation{T}) where T
-    new{T,pres.syntax.Ob,pres.syntax.Hom}(pres)
-  end
+function FinCatPresentation(pres::Presentation{T}) where T
+  S = pres.syntax
+  FinCatPresentation{T,S.Ob,S.Hom}(pres)
+end
+function FinCatPresentation(pres::Presentation{Schema})
+  S = pres.syntax
+  FinCatPresentation{Schema,Union{S.Ob,S.AttrType},Union{S.Hom,S.Attr}}(pres)
 end
 
 presentation(C::FinCatPresentation) = C.presentation

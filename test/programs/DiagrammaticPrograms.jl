@@ -294,4 +294,18 @@ F_tgt = hom_map(F, :tgt)
 @test ob_map(F_tgt, 1) == (1, TheoryGraph[:tgt])
 @test ob_map(F_tgt, 2) == (1, id(TheoryGraph[:V]))
 
+# Vertices in a graph and their connected components.
+F = @migration TheoryGraph begin
+  V => V
+  Component => @glue begin
+    e::E; v::V
+    (s: e → v)::src
+    (t: e → v)::tgt
+  end
+  (component: V → Component) => v
+end
+F_C = diagram(ob_map(F, 2))
+@test nameof.(collect_ob(F_C)) == [:E, :V]
+@test nameof.(collect_hom(F_C)) == [:src, :tgt]
+
 end
