@@ -7,7 +7,7 @@ References:
 """
 module Graphviz
 export Expression, Statement, Attributes, Graph, Digraph, Subgraph,
-  Node, NodeID, Edge, pprint, run_graphviz
+  Node, NodeID, Edge, Title, pprint, run_graphviz
 
 using DataStructures: OrderedDict
 using AutoHashEquals
@@ -107,6 +107,10 @@ Edge(path::Vararg{NodeID}; attrs...) = Edge(collect(path), attrs)
 Edge(path::Vector{String}, attrs::AbstractDict) = Edge(map(NodeID, path), attrs)
 Edge(path::Vector{String}; attrs...) = Edge(map(NodeID, path), attrs)
 Edge(path::Vararg{String}; attrs...) = Edge(map(NodeID, collect(path)), attrs)
+
+@auto_hash_equals struct Title <: Statement
+  title::String
+end
 
 # Bindings
 ##########
@@ -237,6 +241,11 @@ function pprint_attrs(io::IO, attrs::Attributes, n::Int=0;
     print(io, "]")
     print(io, post)
   end
+end
+
+function pprint(io::IO, titl::Title, n::Int; directed::Bool=false)
+  print(io, """labelloc="t";
+  label="$(titl.title)";""")
 end
 
 indent(io::IO, n::Int) = print(io, " "^n)

@@ -84,11 +84,16 @@ function to_graphviz(f::WiringDiagram;
     port_size::String="24", junction_size::String="0.05",
     outer_ports::Bool=true, anchor_outer_ports::Bool=true,
     graph_attrs::AbstractDict=Dict(), node_attrs::AbstractDict=Dict(),
+    node_colors::Dict{Int,String}=Dict{Int,String}(),
+    title::Union{Nothing,String}=nothing,
     edge_attrs::AbstractDict=Dict(), cell_attrs::AbstractDict=Dict())::Graphviz.Graph
   @assert label_attr in (:label, :xlabel, :headlabel, :taillabel)
 
   # State variables.
   stmts = Graphviz.Statement[]
+  if !isnothing(title)
+    push!(stmts, Graphviz.Title(title))
+  end
   port_map = Dict{Port,Graphviz.NodeID}()
   update_port_map! = (v::Int, kind::PortKind, node_ids) -> begin
     for (i, node_id) in enumerate(node_ids)
