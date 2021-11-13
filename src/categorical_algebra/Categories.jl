@@ -185,7 +185,7 @@ the same domain ``C`` and codomain ``D``. The transformation consists of a
 component ``αₓ: Fx → Gx`` in ``D`` for each object ``x ∈ C``, accessible using
 [`component`](@ref) or indexing notation (`Base.getindex`).
 """
-abstract type Transformation{C<:Cat,D<:Cat,Dom<:Functor{C,D},Codom<:Functor{C,D}} end
+abstract type Transformation{C<:Cat,D<:Cat,Dom<:Functor,Codom<:Functor} end
 
 """ Component of natural transformation.
 """
@@ -211,6 +211,11 @@ codom_ob(α::Transformation) = codom(dom(α)) # == codom(codom(α))
 end
 
 codom(α::IdentityTransformation) = α.dom
+
+function component(α::IdentityTransformation, x)
+  F = dom(α)
+  id(codom(F), ob_map(F, x))
+end
 
 const IdIdTransformation{C<:Cat} = IdentityTransformation{C,C,IdentityFunctor{C}}
 

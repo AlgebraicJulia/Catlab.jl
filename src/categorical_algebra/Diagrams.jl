@@ -1,17 +1,14 @@
 """ Diagrams in a category and their morphisms.
 """
 module Diagrams
-export Diagram, DiagramHom, id, op, co, shape, diagram, shape_map, diagram_map,
-  ob_map, hom_map
-
-using StaticArrays: @SVector
+export Diagram, DiagramHom, id, op, co, shape, diagram, shape_map, diagram_map
 
 using ...GAT
 import ...Theories: Category, dom, codom, id, compose, ⋅, ∘, munit
 import ..Categories: ob_map, hom_map
 using ..FinCats, ..FreeDiagrams
 using ..FinCats: mapvals
-import ..FinCats: force
+import ..FinCats: force, collect_ob, collect_hom
 import ..Limits: limit, colimit, universal
 
 # TODO: Implement these functions more generally, and move elsewhere.
@@ -54,6 +51,9 @@ shape(d::Diagram) = dom(diagram(d))
 
 Base.:(==)(d1::Diagram{T}, d2::Diagram{S}) where {T,S} =
   T == S && diagram(d1) == diagram(d2)
+
+ob_map(d::Diagram, x) = ob_map(diagram(d), x)
+hom_map(d::Diagram, f) = hom_map(diagram(d), f)
 
 force(d::Diagram{T}) where T = Diagram{T}(force(diagram(d)))
 
@@ -130,6 +130,10 @@ Base.:(==)(f::DiagramHom{T}, g::DiagramHom{S}) where {T,S} =
 
 ob_map(f::DiagramHom, x) = (ob_map(f.shape_map, x), component(f.diagram_map, x))
 hom_map(f::DiagramHom, g) = hom_map(f.shape_map, g)
+
+collect_ob(f::DiagramHom) =
+  collect(zip(collect_ob(f.shape_map), components(f.diagram_map)))
+collect_hom(f::DiagramHom) = collect_hom(f.shape_map)
 
 function Base.show(io::IO, f::DiagramHom{T}) where T
   J = dom(shape_map(f))
@@ -245,7 +249,7 @@ function munit(::Type{Diagram{T}}, C::Cat, x; shape=nothing) where T
   else
     @assert is_discrete(shape) && length(ob_generators(shape)) == 1
   end
-  Diagram{T}(FinDomFunctor(@SVector([x]), shape, C))
+  Diagram{T}(FinDomFunctor([x], shape, C))
 end
 
 function munit(::Type{DiagramHom{T}}, C::Cat, f;
@@ -254,7 +258,7 @@ function munit(::Type{DiagramHom{T}}, C::Cat, f;
   d = munit(Diagram{T}, C, dom(C, f), shape=dom_shape)
   d′= munit(Diagram{T}, C, codom(C, f), shape=codom_shape)
   j = only(ob_generators(shape(d′)))
-  DiagramHom{T}(@SVector([(j, f)]), d, d′)
+  DiagramHom{T}([Pair(j, f)], d, d′)
 end
 
 end

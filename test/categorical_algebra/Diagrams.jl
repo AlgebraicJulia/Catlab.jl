@@ -19,6 +19,8 @@ end)
 D = FinDomFunctor([:E,:E,:V], [:tgt,:src], C, FinCat(SchSGraph))
 d = Diagram(D)
 @test shape(d) == C
+@test ob_map(d, 3) == SchSGraph[:V]
+@test hom_map(d, 1) == SchSGraph[:tgt]
 @test startswith(sprint(show, d), "Diagram{id}(")
 
 # Diagram morphisms
@@ -35,6 +37,8 @@ f = DiagramHom([(2,:inv), (1,:inv), 3], [2,1], d, d)
 @test ϕ[3] == id(SchSGraph[:V])
 @test ob_map(f, 2) == (1, SchSGraph[:inv])
 @test hom_map(f, 2) == Path(graph(C), 1)
+@test collect_ob(f) == [(2, ϕ[1]), (1, ϕ[2]), (3, ϕ[3])]
+@test collect_hom(f) == [Path(graph(C), 2), Path(graph(C), 1)]
 f² = f⋅f
 @test shape_map(f²) == FinFunctor(1:3, 1:2, C, C)
 

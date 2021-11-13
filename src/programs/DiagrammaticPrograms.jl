@@ -13,7 +13,7 @@ using MLStyle: @match
 using ...Present, ...Graphs, ...CategoricalAlgebra
 using ...Theories: munit
 using ...CategoricalAlgebra.FinCats: mapvals, make_map
-using ...CategoricalAlgebra.DataMigrations: ConjQuery, GlueQuery
+using ...CategoricalAlgebra.DataMigrations: ConjQuery, GlueQuery, GlucQuery
 import ...CategoricalAlgebra.DataMigrations: ob_name, hom_name, ob_named, hom_named
 using ...Graphs.BasicGraphs: TheoryGraph
 
@@ -316,14 +316,18 @@ macro diagram(cat, body)
 end
 
 function parse_diagram(C::FinCat, body::Expr; kw...)
-  parse_diagram(x -> ob_named(C,x), (f,x,y) -> parse_hom(C,f), body;
-                make_functor=(args...) -> FinDomFunctor(args..., C), kw...)
+  F_ob, F_hom, J = parse_diagram_data(
+    x -> ob_named(C,x), (f,x,y) -> parse_hom(C,f), body; kw...)
+  F = FinFunctor(F_ob, F_hom, J, C)
+  is_functorial(F, check_equations=false) ||
+    error("@diagram macro defined diagram that is not functorial: $body")
+  return F
 end
 parse_diagram(pres::Presentation, body::Expr; kw...) =
   parse_diagram(FinCat(pres), body; kw...)
 
-function parse_diagram(parse_ob, parse_hom, body::Expr;
-                       make_functor=FinDomFunctor, preprocess::Bool=true)
+function parse_diagram_data(parse_ob, parse_hom, body::Expr;
+                            preprocess::Bool=true)
   g, eqs = NamedGraph{Symbol}(), Pair[]
   F_ob, F_hom = [], []
   if preprocess
@@ -361,14 +365,43 @@ function parse_diagram(parse_ob, parse_hom, body::Expr;
     end
   end
   J = isempty(eqs) ? FinCat(g) : FinCat(g, eqs)
-  F = make_functor(F_ob, F_hom, J)
-  is_functorial(F, check_equations=false) ||
-    error("@diagram macro defined diagram that is not functorial: $body")
-  return F
+  (F_ob, F_hom, J)
 end
 
 # Data migrations
 #################
+
+""" A diagram without a codomain category.
+
+Internal data type used by parser in [`@migration`](@ref) macro.
+"""
+struct DiagramData{T,ObMap,HomMap,Shape<:FinCat}
+  ob_map::ObMap
+  hom_map::HomMap
+  shape::Shape
+
+  function DiagramData{T}(ob_map::ObMap, hom_map::HomMap, shape::Shape) where
+      {T,ObMap,HomMap,Shape<:FinCat}
+    new{T,ObMap,HomMap,Shape}(ob_map, hom_map, shape)
+  end
+end
+
+Diagrams.ob_map(d::DiagramData, x) = d.ob_map[x]
+Diagrams.hom_map(d::DiagramData, f) = d.hom_map[f]
+Diagrams.shape(d::DiagramData) = d.shape
+
+""" A diagram morphism without a domain or codomain.
+
+Internal data type used by parser in [`@migration`](@ref) macro.
+"""
+struct DiagramHomData{T,ObMap,HomMap}
+  ob_map::ObMap
+  hom_map::HomMap
+
+  function DiagramHomData{T}(ob_map::ObMap, hom_map::HomMap) where {T,ObMap,HomMap}
+    new{T,ObMap,HomMap}(ob_map, hom_map)
+  end
+end
 
 """ Define a data migration query.
 
@@ -385,7 +418,8 @@ end
 function parse_migration(src_schema::Presentation, body::Expr;
                          preprocess::Bool=true)
   C = FinCat(src_schema)
-  parse_query_diagram(C, body; preprocess=preprocess)
+  F_ob, F_hom, J = parse_query_diagram(C, body; preprocess=preprocess)
+  make_migration_functor(F_ob, F_hom, J, C)
 end
 function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
                          body::Expr; preprocess::Bool=true)
@@ -398,8 +432,11 @@ function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
   F_hom = mapvals(hom_rhs, keys=true) do f, expr
     parse_query_hom(C, expr, F_ob[dom(D,f)], F_ob[codom(D,f)])
   end
-  convert_migration_functor(F_ob, F_hom, D, C)
+  make_migration_functor(F_ob, F_hom, D, C)
 end
+
+# Query parsing
+#--------------
 
 """ Parse expression defining a query.
 """
@@ -408,29 +445,28 @@ function parse_query(C::FinCat, expr)
     x::Symbol => ob_named(C, x)
     Expr(:macrocall, form, args...) &&
         if form ∈ (Symbol("@limit"), Symbol("@join")) end => begin
-      Diagram{op}(parse_query_diagram(C, last(args)))
+      DiagramData{op}(parse_query_diagram(C, last(args))...)
     end
     Expr(:macrocall, form, args...) &&
         if form == Symbol("@product") end => begin
-      d = Diagram{op}(parse_query_diagram(C, last(args)))
+      d = DiagramData{op}(parse_query_diagram(C, last(args))...)
       is_discrete(shape(d)) ? d : error("Product query is not discrete: $expr")
     end
     Expr(:macrocall, form, args...) &&
         if form ∈ (Symbol("@colimit"), Symbol("@glue")) end => begin
-      Diagram{id}(parse_query_diagram(C, last(args)))
+      DiagramData{id}(parse_query_diagram(C, last(args))...)
     end
     Expr(:macrocall, form, args...) &&
         if form ∈ (Symbol("@coproduct"), Symbol("@cases")) end => begin
-      d = Diagram{id}(parse_query_diagram(C, last(args)))
+      d = DiagramData{id}(parse_query_diagram(C, last(args))...)
       is_discrete(shape(d)) ? d : error("Cases query is not discrete: $expr")
     end
     _ => error("@migration macro cannot parse query $expr")
   end
 end
 function parse_query_diagram(C::FinCat, expr::Expr; preprocess::Bool=false)
-  parse_diagram(X -> parse_query(C,X), (f,x,y) -> parse_query_hom(C,f,x,y), expr;
-    make_functor = (args...) -> convert_migration_functor(args..., C),
-    preprocess = preprocess)
+  parse_diagram_data(X -> parse_query(C,X), (f,x,y) -> parse_query_hom(C,f,x,y),
+                     expr; preprocess=preprocess)
 end
 
 """ Parse expression defining a morphism of queries.
@@ -440,92 +476,177 @@ function parse_query_hom(C::FinCat{Ob}, expr, ::Ob, ::Ob) where Ob
 end
 
 # Conjunctive fragment.
-function parse_query_hom(C::FinCat, expr, d::ConjQuery, d′::ConjQuery)
-  J, J′ = shape(d), shape(d′)
-  ob_rhs, hom_rhs = parse_ob_hom_maps(J′, expr)
-  DiagramHom{op}(mapvals(expr -> parse_conj_query_ob_rhs(C, J, expr), ob_rhs),
-                 mapvals(expr -> parse_hom(J, expr), hom_rhs), d, d′)
+
+function parse_query_hom(C::FinCat, expr, d::DiagramData{op}, d′::DiagramData{op})
+  ob_rhs, hom_rhs = parse_ob_hom_maps(shape(d′), expr)
+  f_ob = mapvals(ob_rhs, keys=true) do j′, rhs
+    parse_conj_query_ob_rhs(C, rhs, d, ob_map(d′, j′))
+  end
+  f_hom = mapvals(rhs -> parse_hom(shape(d), rhs), hom_rhs)
+  DiagramHomData{op}(f_ob, f_hom)
 end
-function parse_query_hom(C::FinCat{Ob}, expr, c::Ob, d′::ConjQuery) where Ob
-  d = convert_query(C, Diagram{op,typeof(C)}, c)
-  J, J′ = shape(d), shape(d′)
-  ob_rhs, hom_rhs = parse_ob_hom_maps(J′, expr, allow_missing=true)
-  DiagramHom{op}(mapvals(f -> ismissing(f) ? 1 : Pair(1, parse_hom(C,f)), ob_rhs),
-                 mapvals(::Missing -> id(J,1), hom_rhs), d, d′)
+function parse_query_hom(C::FinCat{Ob}, expr, c::Ob, d′::DiagramData{op}) where Ob
+  ob_rhs, f_hom = parse_ob_hom_maps(shape(d′), expr, allow_missing=true)
+  f_ob = mapvals(ob_rhs, keys=true) do j′, rhs
+    ismissing(rhs) ? missing : (missing, parse_query_hom(C, rhs, c, ob_map(d′, j′)))
+  end
+  @assert all(ismissing, f_hom)
+  DiagramHomData{op}(f_ob, f_hom)
 end
-function parse_query_hom(C::FinCat{Ob}, expr, d::ConjQuery, c′::Ob) where Ob
-  d′ = convert_query(C, Diagram{op,typeof(C)}, c′)
-  DiagramHom{op}([parse_conj_query_ob_rhs(C, shape(d), expr)], d, d′)
+function parse_query_hom(C::FinCat{Ob}, expr, d::DiagramData{op}, c′::Ob) where Ob
+  DiagramHomData{op}([parse_conj_query_ob_rhs(C, expr, d, c′)], [])
 end
 
 # Gluing fragment.
-function parse_query_hom(C::FinCat, expr, d::GlueQuery, d′::GlueQuery)
-  J, J′ = shape(d), shape(d′)
-  ob_rhs, hom_rhs = parse_ob_hom_maps(J, expr)
-  DiagramHom{id}(mapvals(expr -> parse_glue_query_ob_rhs(C, J′, expr), ob_rhs),
-                 mapvals(expr -> parse_hom(J′, expr), hom_rhs), d, d′)
+
+function parse_query_hom(C::FinCat, expr, d::DiagramData{id}, d′::DiagramData{id})
+  ob_rhs, hom_rhs = parse_ob_hom_maps(shape(d), expr)
+  f_ob = mapvals(ob_rhs, keys=true) do j, rhs
+    parse_glue_query_ob_rhs(C, rhs, ob_map(d, j), d′)
+  end
+  f_hom = mapvals(expr -> parse_hom(shape(d′), expr), hom_rhs)
+  DiagramHomData{id}(f_ob, f_hom)
 end
-function parse_query_hom(C::FinCat{Ob}, expr, c::Ob, d′::GlueQuery) where Ob
-  d = convert_query(C, Diagram{id,typeof(C)}, c)
-  DiagramHom{id}([parse_glue_query_ob_rhs(C, shape(d′), expr)], d, d′)
+function parse_query_hom(C::FinCat{Ob}, expr, c::Union{Ob,DiagramData{op}},
+                         d′::DiagramData{id}) where Ob
+  DiagramHomData{id}([parse_glue_query_ob_rhs(C, expr, c, d′)], [])
 end
-function parse_query_hom(C::FinCat{Ob}, expr, d::GlueQuery, c′::Ob) where Ob
-  d′ = convert_query(C, Diagram{id,typeof(C)}, c′)
-  J, J′ = shape(d), shape(d′)
-  ob_rhs, hom_rhs = parse_ob_hom_maps(J, expr, allow_missing=true)
-  DiagramHom{id}(mapvals(f -> ismissing(f) ? 1 : Pair(1, parse_hom(C,f)), ob_rhs),
-                 mapvals(::Missing -> id(J′,1), hom_rhs), d, d′)
+function parse_query_hom(C::FinCat{Ob}, expr, d::DiagramData{id},
+                         c′::Union{Ob,DiagramData{op}}) where Ob
+  ob_rhs, f_hom = parse_ob_hom_maps(shape(d), expr, allow_missing=true)
+  f_ob = mapvals(ob_rhs, keys=true) do j, rhs
+    ismissing(rhs) ? missing : (missing, parse_query_hom(C, rhs, ob_map(d, j), c′))
+  end
+  @assert all(ismissing, f_hom)
+  DiagramHomData{id}(f_ob, f_hom)
 end
 
-""" Parse RHS of object assignment of morphism out of conjunctive query.
+""" Parse RHS of object assignment in morphism out of conjunctive query.
 """
-function parse_conj_query_ob_rhs(C::Cat, J::FinCat, expr)
-  @match expr begin
-    x::Symbol => ob_named(J, x)
-    Expr(:tuple, x::Symbol, f) => Pair(ob_named(J, x), parse_hom(C, f))
-    Expr(:call, op, _...) && if op ∈ compose_ops end => begin
-      x, f = leftmost_arg(expr, (:(⋅), :(⨟)), all_ops=compose_ops)
-      Pair(ob_named(J, x), parse_hom(C, f))
-    end
+function parse_conj_query_ob_rhs(C::FinCat, expr, d::DiagramData{op}, c′)
+  j_name, f_expr = @match expr begin
+    x::Symbol => (x, nothing)
+    Expr(:tuple, x::Symbol, f) => (x, f)
+    Expr(:call, op, _...) && if op ∈ compose_ops end =>
+      leftmost_arg(expr, (:(⋅), :(⨟)), all_ops=compose_ops)
     _ => error("@migration macro cannot parse object assignment $expr")
   end
+  j = ob_named(shape(d), j_name)
+  isnothing(f_expr) ? j :
+    (j, parse_query_hom(C, f_expr, ob_map(d, j), c′))
 end
 
-""" Parse RHS of object assignment of morphism into gluing query.
+""" Parse RHS of object assignment in morphism into gluing query.
 """
-function parse_glue_query_ob_rhs(C::Cat, J::FinCat, expr)
-  @match expr begin
-    x::Symbol => ob_named(J, x)
-    Expr(:tuple, x::Symbol, f) => Pair(ob_named(J, x), parse_hom(C, f))
-    Expr(:call, op, _...) && if op ∈ compose_ops end => begin
-      x, f = leftmost_arg(expr, (:(∘),), all_ops=compose_ops)
-      Pair(ob_named(J, x), parse_hom(C, f))
-    end
+function parse_glue_query_ob_rhs(C::FinCat, expr, c, d′::DiagramData{id})
+  j′_name, f_expr = @match expr begin
+    x::Symbol => (x, nothing)
+    Expr(:tuple, x::Symbol, f) => (x, f)
+    Expr(:call, op, _...) && if op ∈ compose_ops end =>
+      leftmost_arg(expr, (:(∘),), all_ops=compose_ops)
     _ => error("@migration macro cannot parse object assignment $expr")
   end
+  j′ = ob_named(shape(d′), j′_name)
+  isnothing(f_expr) ? j′ :
+    (j′, parse_query_hom(C, f_expr, c, ob_map(d′, j′)))
 end
 
 const compose_ops = (:(⋅), :(⨟), :(∘))
 
+# Query construction
+#-------------------
+
+function make_migration_functor(F_ob, F_hom, D::FinCat, C::FinCat)
+  diagram(make_query(C, DiagramData{id}(F_ob, F_hom, D)))
+end
+
+function make_query(C::FinCat{Ob}, d::DiagramData{T}) where {T, Ob}
+  F_ob, F_hom, J = d.ob_map, d.hom_map, shape(d)
+  F_ob = mapvals(x -> make_query(C, x), F_ob)
+  query_type = mapreduce(typeof, promote_query_type, values(F_ob), init=Ob)
+  @assert query_type != Any
+  F_ob = mapvals(x -> convert_query(C, query_type, x), F_ob)
+  F_hom = mapvals(F_hom, keys=true) do h, f
+    make_query_hom(f, F_ob[dom(J,h)], F_ob[codom(J,h)])
+  end
+  Diagram{T}(if query_type <: Ob
+    FinFunctor(F_ob, F_hom, shape(d), C)
+  else
+    # XXX: Why is the element type of `F_ob` sometimes too loose?
+    D = TypeCat(typeintersect(query_type, eltype(values(F_ob))),
+                eltype(values(F_hom)))
+    FinDomFunctor(F_ob, F_hom, shape(d), D)
+
+  end)
+end
+
+make_query(C::FinCat{Ob}, x::Ob) where Ob = x
+
+function make_query_hom(f::DiagramHomData{op}, d::Diagram{op}, d′::Diagram{op})
+  f_ob = mapvals(f.ob_map, keys=true) do j′, x
+    x = @match x begin
+      ::Missing => only_ob(shape(d))
+      (::Missing, g) => (only_ob(shape(d)), g)
+      _ => x
+    end
+    @match x begin
+      (j, g) => Pair(j, make_query_hom(g, ob_map(d, j), ob_map(d′, j′)))
+      j => j
+    end
+  end
+  f_hom = mapvals(f.hom_map) do h; @match h begin
+    ::Missing => only_hom(shape(d))
+    _ => h
+  end end
+  DiagramHom{op}(f_ob, f_hom, d, d′)
+end
+
+function make_query_hom(f::DiagramHomData{id}, d::Diagram{id}, d′::Diagram{id})
+  f_ob = mapvals(f.ob_map, keys=true) do j, x
+    x = @match x begin
+      ::Missing => only_ob(shape(d′))
+      (::Missing, g) => (only_ob(shape(d′)), g)
+      _ => x
+    end
+    @match x begin
+      (j′, g) => Pair(j′, make_query_hom(g, ob_map(d, j), ob_map(d′, j′)))
+      j′ => j′
+    end
+  end
+  f_hom = mapvals(f.hom_map) do h; @match h begin
+    ::Missing => only_hom(shape(d′))
+    _ => h
+  end end
+  DiagramHom{id}(f_ob, f_hom, d, d′)
+end
+
+function make_query_hom(f::Hom, d::Diagram{T,C}, d′::Diagram{T,C}) where
+    {T, Ob, Hom, C<:FinCat{Ob,Hom}}
+  cat = codom(diagram(d))
+  munit(DiagramHom{T}, cat, f, dom_shape=shape(d), codom_shape=shape(d′))
+end
+make_query_hom(f, x, y) = f
+
+only_ob(C::FinCat) = only(ob_generators(C))
+only_hom(C::FinCat) = (@assert is_discrete(C); id(C, only_ob(C)))
+
 # Query promotion
 #----------------
 
-function convert_migration_functor(F_ob, F_hom, D::FinCat, C::FinCat{Ob}) where Ob
-  query_type = mapreduce(typeof, promote_query_type, values(F_ob), init=Ob)
-  F_ob = mapvals(x -> convert_query(C, query_type, x), F_ob)
-  F_hom = mapvals(f -> convert_query_hom(C, query_type, f), F_hom)
-  if query_type <: Ob
-    FinFunctor(F_ob, F_hom, D, C)
-  else
-    FinDomFunctor(F_ob, F_hom, D)
-  end
-end
+# Promotion of query types is modeled loosely on Julia's type promotion system:
+# https://docs.julialang.org/en/v1/manual/conversion-and-promotion/
 
 promote_query_rule(::Type, ::Type) = Union{}
-promote_query_rule(::Type{<:ConjQuery{C}},
-                   ::Type{<:Ob}) where {Ob, C<:FinCat{Ob}} = ConjQuery{C}
-promote_query_rule(::Type{<:GlueQuery{C}},
-                   ::Type{<:Ob}) where {Ob, C<:FinCat{Ob}} = GlueQuery{C}
+promote_query_rule(::Type{<:ConjQuery{C}}, ::Type{<:Ob}) where {Ob,C<:FinCat{Ob}} =
+  ConjQuery{C}
+promote_query_rule(::Type{<:GlueQuery{C}}, ::Type{<:Ob}) where {Ob,C<:FinCat{Ob}} =
+  GlueQuery{C}
+promote_query_rule(::Type{<:GlucQuery{C}}, ::Type{<:Ob}) where {Ob,C<:FinCat{Ob}} =
+  GlucQuery{C}
+promote_query_rule(::Type{<:GlucQuery{C}}, ::Type{<:ConjQuery{C}}) where C =
+  GlucQuery{C}
+promote_query_rule(::Type{<:GlucQuery{C}}, ::Type{<:GlueQuery{C}}) where C =
+  GlucQuery{C}
 
 promote_query_type(T, S) = promote_query_result(
   T, S, Union{promote_query_rule(T,S), promote_query_rule(S,T)})
@@ -534,29 +655,29 @@ promote_query_result(T, S, U) = U
 
 convert_query(::FinCat, ::Type{T}, x::S) where {T, S<:T} = x
 
-convert_query(cat::C, ::Type{<:ConjQuery{C}}, x::X) where {Ob, C<:FinCat{Ob}, X<:Ob} =
-  munit(Diagram{op}, cat, x, shape=unit_shape(x))
-convert_query(cat::C, ::Type{<:GlueQuery{C}}, x::X) where {Ob, C<:FinCat{Ob}, X<:Ob} =
-  munit(Diagram{id}, cat, x, shape=unit_shape(x))
-
-convert_query_hom(C::FinCat, T::Type, f) =
-  convert_query_hom(C, T, query_typeof(C, f), f)
-convert_query_hom(::FinCat, ::Type{T}, ::Type{S}, f) where {T, S<:T} = f
-
-convert_query_hom(cat::C, ::Type{<:ConjQuery{C}}, ::Type{<:Ob},
-                  f) where {Ob, C<:FinCat{Ob}} =
-  munit(DiagramHom{op}, cat, f,
-        dom_shape=unit_shape(dom(f)), codom_shape=unit_shape(codom(f)))
-
-convert_query_hom(cat::C, ::Type{<:GlueQuery{C}}, ::Type{<:Ob},
-                  f) where {Ob, C<:FinCat{Ob}} =
-  munit(DiagramHom{id}, cat, f,
-        dom_shape=unit_shape(dom(f)), codom_shape=unit_shape(codom(f)))
-
-query_typeof(::FinCat, ::DiagramHom{T,C}) where {T,C} = Diagram{T,C}
-query_typeof(::C, ::F) where {Ob, Hom, C<:FinCat{Ob,Hom}, F<:Hom} = Ob
-
-unit_shape(x) = FinCat(NamedGraph{Symbol}(1, vname=nameof(x)))
+function convert_query(cat::C, ::Type{<:Diagram{T,C}}, x::Ob) where
+    {T, Ob, C<:FinCat{Ob}}
+  munit(Diagram{T}, cat, x,
+        shape=FinCat(NamedGraph{Symbol}(1, vname=nameof(x))))
+end
+function convert_query(::C, ::Type{<:GlucQuery{C}}, d::ConjQuery{C}) where C
+  munit(Diagram{id}, TypeCat(ConjQuery{C}, Any), d)
+end
+function convert_query(cat::C, ::Type{<:GlucQuery{C}}, d::GlueQuery{C}) where C
+  J = shape(d)
+  new_ob = make_map(ob_generators(J)) do j
+    convert_query(cat, ConjQuery{C}, ob_map(d, j))
+  end
+  new_hom = make_map(hom_generators(J)) do h
+    munit(Diagram{op}, cat, hom_map(d, h),
+          dom_shape=new_ob[dom(J,h)], codom_shape=new_ob[codom(J,h)])
+  end
+  Diagram{id}(FinDomFunctor(new_ob, new_hom, J))
+end
+function convert_query(cat::C, ::Type{<:GlucQuery{C}}, x::Ob) where
+    {Ob, C<:FinCat{Ob}}
+  convert_query(cat, GlucQuery{C}, convert_query(cat, ConjQuery{C}, x))
+end
 
 # Utilities
 ###########
