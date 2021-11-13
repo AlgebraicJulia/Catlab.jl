@@ -2,7 +2,7 @@
 #
 #md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/sketches/smc.ipynb)
 #
-# This vignette supports section 4.4.3 of Seven Sketches in Compositionality, which introduces the definition of symmetric monoidal categories (SMCs). SMCs are a core concept in applied category theory and are a workhorse of Catlab's utility in computing applications. We will discuss the definition as a GAT, see examples of working with formulas, and conversions to wiring diagrams (sometimes called string diagrams). 
+# This vignette supports section 4.4.3 of Seven Sketches in Compositionality, which introduces the definition of symmetric monoidal categories (SMCs). SMCs are a core concept in applied category theory and are a workhorse of Catlab's utility in computing applications. We will discuss the definition as a GAT, see examples of working with formulas, and conversions to wiring diagrams (sometimes called string diagrams). SMCs are useful for modeling mathematical structures like programs or processes where the objects represent data or things and the morphisms represent processes that happen to those things. 
 using Catlab, Catlab.Theories
 using Catlab.CategoricalAlgebra
 using Catlab.WiringDiagrams
@@ -34,6 +34,8 @@ draw(d::WiringDiagram) = to_graphviz(d,
 # 3. Associativity) (A⊗B)⊗C = A⊗(B⊗C) for all objects A,B,C in 𝒞
 # 4. Involutivity) σ(σ(A,B)) = id(A⊗B) 
 #
+# In a category, you have a composition operation that captures the sequential kind of composition. For example in Set, you compose two functions f⋅g by first applying f and then applying g. In monoidal categories, you also have the parallel composition ⊗ which you can think of as representing the simultaneous exectution of two processes. We are familiar with the cartesian product in Set which takes two sets and forms the cartesian product. The cartesian product acts on functions in a similar way, f×g is the function that takes a tuple (x:dom(f),y:dom(g)) and applies them *in parallel* and returns (f(x), g(y)):(codom(f)×codom(g)). The axioms of an SMC require that these two operations work together. The Seven Sketches book suppresses an interesting axiom called the *interchange law* for brevity, but it is worth calling some attention to it. In order for the sequential and parallel composition operators to capture our intuition, we need to assert that for any functions with compatible domains we can interchange parallel and sequential operators. Formally, ((f ⊗ g) ⋅ (h ⊗ k) == (f ⋅ h) ⊗ (g ⋅ k) where (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob, f::(A → B), h::(B → C), g::(X → Y), k::(Y → Z))). This axiom says that doing f and g in parallel and then h and k in parallel is the same as doing (f then h) and (g then k) in parallel. When using SMCs to model processes, this axiom is critical to making sure that scheduling those processes is coherent.
+#  
 # If the SMC is not strict, then the equations are replaced by natural isomorphisms. The choice of natural isomorphisms then becomes part of the data of the SMC. With MacLane's coherence theorem for SMCs mathematicians can think about strict SMCs and not really worry too much about the natural isomorphisms. As programmers, those chickens come home to roost and implementing an SMC requires making some choices about about how to do that strictification. 
 # 
 # The Catlab definitions of SMC are repeated here for convenience. Catlab allows you to implement mathematical definitions in the language of Generalized Algebraic Theories (GATs), which are a good fit for the kind of natural language definitions that mathematicians will write. Because Catlab does relatively little type inference, the GAT version of a definition can be more verbose than you would get in natural language. For example, we have to be careful about spelling out the object for an identity morphism `id(A):A → A`. The notation  `@theory MonoidalCategory{Ob,Hom} <: Category{Ob,Hom}` says that a Monoidal Category is a type of Category with additional components and axioms. Catlab has only rudimentary support for Monoidal Categories that are not Symmetric Monoidal Categories. But we separate out the definitions for completeness.
@@ -93,13 +95,12 @@ draw(d::WiringDiagram) = to_graphviz(d,
   fry::Hom(RawEgg⊗Pan, Egg⊗Pan)
   scramble::Hom(RawEgg⊗Cheese⊗Pan, Scramble⊗Pan)
 end
+generators(Cooking)
 
 # One interpretation of an SMC is that the objects are resources and the Homs are processes the domain of the Hom is the list of resources that you need to perform the process and the codomain is the list of resources that the process produces. You can think of the SMC presentation as a namespace containing all the terms in the SMC.
 
-# The objects are accessible by name
+# The objects and morphisms are accessible by name
 Cooking[:Egg]
-
-# So are the homs
 Cooking[:fry]
 
 # Then you can make complex terms using the unicode operators
@@ -124,8 +125,48 @@ map(homs) do f
   "$f: $(dom(f)) → $(codom(f))"
 end
 
-# This syntactic API is useful for manipulating terms in an arbitrary GAT and is the formal language of Catlab for representing and manipulating algebraic structures. 
-# However, when we want to work with big expressions in an SMC, the tree structure inherent to formulas is too verbose, and we want to move to a port-graph structure called `DirectedWiringDiagrams`. This gives us the benefits of combinatorial data structures like graphs with the right expressional power for representing the morphisms in an SMC.
+# The terms in a `FreeSymmetricMonoidalCategory` are trees that you can navigate with `head` and `args`. The `head` of an expression is the term constructor that created it. For SMCs, this can be `:generator`, `:otimes`, `:compose`, `:id`, or `:braid`. Then `args` will give you the list of arguments to the term constructor. For terms of type Object, this will just be the list of objects that went into constructing the object. For example A⊗B⊗C will have as its head `:otimes` and as the args `[A,B,C]`. Note that the head is a symbol, but the args are objects. For a term of type `Hom`, you have the same structure, but for Homs with the head `:generator`, you get the name of the morphism as a symbol as the first argument.
+
+# We can look at the head and args of object expressions.
+headargs(x) = (head(x),args(x))
+σ(Cooking[:Egg], Cooking[:Pan]) |> headargs
+
+# And, morphsims
+headargs(Cooking[:crack]⊗Cooking[:fry])
+
+# The base case is generators
+headargs(Cooking[:Egg])
+
+# And, morphisms
+headargs(Cooking[:crack])
+
+# For a more complete introspection of the expression trees, you can call `dump(ex)` which will print a very verbose representation of the entire expression tree. 
+#
+# In order to compose morphisms sequentially, you have to make sure that the domains match up. In a typical SMC expression this can require padding with the identity morphism and braiding monoidal products into the right order.
+
+compose(Cooking[:crack]⊗id(Cooking[:Pan]),
+        (id(Cooking[:RawEgg])⊗ σ(Cooking[:Shell], Cooking[:Pan])),
+        (Cooking[:fry]⊗id(Cooking[:Shell])))
+
+# At some point, prefix notation is more scalable than infix notation, so you might write this as a LISP programmer would.
+
+compose(
+  otimes(Cooking[:crack],
+         id(Cooking[:Pan])),
+  otimes(id(Cooking[:RawEgg]),
+         σ(Cooking[:Shell], Cooking[:Pan])),
+  otimes(Cooking[:fry],
+         id(Cooking[:Shell])))
+
+# You can view this padding as requiring explicit instructions to do noting with all the objects you aren't using. In this example, we have to tell our chef
+# 1. Crack the egg and do nothing with the pan.
+# 2. Do nothing with the egg and swap the shell with the pan.
+# 3. Fry the egg and do nothing with the shell.
+# Obviously, this is a very tedious way to write recipes. You need to have some syntactic sugar for all this padding and swapping.
+#
+
+# ## The Program Macro
+# The syntactic API above is useful for manipulating terms in an arbitrary GAT and is the formal language of Catlab for representing and manipulating algebraic structures. However, when we want to work with big expressions in an SMC, the tree structure inherent to formulas is too verbose, and we want to move to a port-graph structure called `DirectedWiringDiagrams`. This gives us the benefits of combinatorial data structures like graphs with the right expressional power for representing the morphisms in an SMC.
 
 recipe = @program Cooking (e::WholeEgg, p::Pan) begin
   e′, shell = crack(e)
