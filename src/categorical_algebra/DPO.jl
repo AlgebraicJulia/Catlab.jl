@@ -1,5 +1,5 @@
 module DPO
-export rewrite, rewrite_match, pushout_complement, can_pushout_complement,
+export rewrite, rewrite_match, rewrite_match_maps, pushout_complement, can_pushout_complement,
   id_condition, dangling_condition
 
 using ...Theories
@@ -12,14 +12,18 @@ Apply a rewrite rule (given as a span, L<-I->R) to a ACSet
 using a match morphism `m` which indicates where to apply
 the rewrite.
 """
-function rewrite_match(L::ACSetTransformation, R::ACSetTransformation,
-                       m::ACSetTransformation)::ACSet
+function rewrite_match_maps(L::ACSetTransformation, R::ACSetTransformation,
+                         m::ACSetTransformation)::Vector{ACSetTransformation}
   dom(L) == dom(R) || error("Rewriting where L, R do not share domain")
   codom(L) == dom(m) || error("Rewriting where L does not compose with m")
-  (k, _) = pushout_complement(L, m)
-  l1, _ = pushout(R, k)
-  return codom(l1)
+  (ik, kg) = pushout_complement(L, m)
+  rh, kh = pushout(R, ik)
+  return [ik, kg, rh, kh]
 end
+
+rewrite_match(L::ACSetTransformation, R::ACSetTransformation,
+  m::ACSetTransformation)::ACSet = codom(rewrite_match_maps(L, R, m)[4])
+
 
 """
 Apply a rewrite rule (given as a span, L<-I->R) to a ACSet,
