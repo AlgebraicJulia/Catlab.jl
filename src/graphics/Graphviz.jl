@@ -7,7 +7,7 @@ References:
 """
 module Graphviz
 export Expression, Statement, Attributes, Graph, Digraph, Subgraph,
-  Node, NodeID, Edge, Title, pprint, run_graphviz
+  Node, NodeID, Edge, Label, pprint, run_graphviz
 
 using DataStructures: OrderedDict
 using AutoHashEquals
@@ -108,8 +108,13 @@ Edge(path::Vector{String}, attrs::AbstractDict) = Edge(map(NodeID, path), attrs)
 Edge(path::Vector{String}; attrs...) = Edge(map(NodeID, path), attrs)
 Edge(path::Vararg{String}; attrs...) = Edge(map(NodeID, collect(path)), attrs)
 
-@auto_hash_equals struct Title <: Statement
-  title::String
+"""
+labelloc defaults: "t" (clusters) , "b" (root graphs) , "c" (nodes)
+For graphs and clusters, only labelloc=t and labelloc=b are allowed
+"""
+Base.@kwdef struct Label <: Statement
+  labelloc::String = ""
+  label::String = ""
 end
 
 # Bindings
@@ -243,9 +248,11 @@ function pprint_attrs(io::IO, attrs::Attributes, n::Int=0;
   end
 end
 
-function pprint(io::IO, titl::Title, n::Int; directed::Bool=false)
-  print(io, """labelloc="t";
-  label="$(titl.title)";""")
+function pprint(io::IO, lab::Label, n::Int; directed::Bool=false)
+  if !isempty(lab.labelloc)
+    print(io, "labelloc=\"$(lab.labelloc)\";")
+  end
+  print(io, "label=\"$(lab.label)\";")
 end
 
 indent(io::IO, n::Int) = print(io, " "^n)
