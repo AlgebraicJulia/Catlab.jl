@@ -310,8 +310,8 @@ F_C = diagram(ob_map(F, 2))
 @test nameof.(collect_ob(F_C)) == [:E, :V]
 @test nameof.(collect_hom(F_C)) == [:src, :tgt]
 
-# Duc migration
-#--------------
+# Gluc migration
+#---------------
 
 # Graph with edges that are paths of length <= 2.
 F = @migration TheoryGraph TheoryGraph begin
@@ -375,5 +375,33 @@ F_src = hom_map(F, :src)
 F_src1, F_src2 = components(diagram_map(F_src))
 @test collect_ob(F_src1) == [(2, TheoryBipartiteGraph[:src₁])]
 @test collect_ob(F_src2) == [(2, TheoryBipartiteGraph[:src₂])]
+
+# Box product of reflexive graph with itself.
+F = @migration TheoryReflexiveGraph TheoryReflexiveGraph begin
+  V => @product (v₁::V; v₂::V)
+  E => @glue begin
+    vv => @product (v₁::V; v₂::V)
+    ev => @product (e₁::E; v₂::V)
+    ve => @product (v₁::V; e₂::E)
+    (refl₁: vv → ev) => (e₁ => v₁⋅refl; v₂ => v₂)
+    (refl₂: vv → ve) => (v₁ => v₁; e₂ => v₂⋅refl)
+  end
+  src => begin
+    ev => (v₁ => e₁⋅src; v₂ => v₂)
+    ve => (v₁ => v₁; v₂ => e₂⋅src)
+  end
+  tgt => begin
+    ev => (v₁ => e₁⋅tgt; v₂ => v₂)
+    ve => (v₁ => v₁; v₂ => e₂⋅tgt)
+  end
+  refl => vv
+end
+@test ob_map(F, :V) isa DataMigrations.GlucQuery
+@test F isa DataMigrations.GlucSchemaMigration
+F_src = hom_map(F, :src)
+@test collect_ob(shape_map(F_src)) == [1,1,1]
+F_src_vv, F_src_ev, F_src_ve = components(diagram_map(F_src))
+@test collect_ob(F_src_ev) == [(1, TheoryReflexiveGraph[:src]),
+                               (2, id(TheoryReflexiveGraph[:V]))]
 
 end
