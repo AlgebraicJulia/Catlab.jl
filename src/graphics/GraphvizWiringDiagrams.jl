@@ -427,7 +427,6 @@ function to_graphviz_property_graph(d::UndirectedWiringDiagram;
   # Create nodes for boxes.
   box_vs = add_vertices!(graph, nboxes(d))
   set_vprop!(graph, box_vs, :id, [ "box$b" for b in boxes(d) ])
-  set_vprop!(graph, box_vs, :fillcolor, [ "green" for b in boxes(d) ])
   labels = if box_labels isa Symbol
     node_label.(subpart(d, box_vs, box_labels))
   else
