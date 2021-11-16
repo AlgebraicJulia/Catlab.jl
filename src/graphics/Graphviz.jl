@@ -7,7 +7,7 @@ References:
 """
 module Graphviz
 export Expression, Statement, Attributes, Graph, Digraph, Subgraph,
-  Node, NodeID, Edge, pprint, run_graphviz
+  Node, NodeID, Edge, Label, pprint, run_graphviz
 
 using DataStructures: OrderedDict
 using AutoHashEquals
@@ -107,6 +107,15 @@ Edge(path::Vararg{NodeID}; attrs...) = Edge(collect(path), attrs)
 Edge(path::Vector{String}, attrs::AbstractDict) = Edge(map(NodeID, path), attrs)
 Edge(path::Vector{String}; attrs...) = Edge(map(NodeID, path), attrs)
 Edge(path::Vararg{String}; attrs...) = Edge(map(NodeID, collect(path)), attrs)
+
+"""
+labelloc defaults: "t" (clusters) , "b" (root graphs) , "c" (nodes)
+For graphs and clusters, only labelloc=t and labelloc=b are allowed
+"""
+Base.@kwdef struct Label <: Statement
+  labelloc::String = ""
+  label::String = ""
+end
 
 # Bindings
 ##########
@@ -237,6 +246,13 @@ function pprint_attrs(io::IO, attrs::Attributes, n::Int=0;
     print(io, "]")
     print(io, post)
   end
+end
+
+function pprint(io::IO, lab::Label, n::Int; directed::Bool=false)
+  if !isempty(lab.labelloc)
+    print(io, "labelloc=\"$(lab.labelloc)\";")
+  end
+  print(io, "label=\"$(lab.label)\";")
 end
 
 indent(io::IO, n::Int) = print(io, " "^n)

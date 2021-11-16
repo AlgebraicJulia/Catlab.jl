@@ -81,7 +81,7 @@ digraph G {
 """
 
 # Subgraph statement
-subgraph = Subgraph("sub", 
+subgraph = Subgraph("sub",
   Node("n1"),
   Node("n2"),
   Edge("n1","n2")
@@ -104,5 +104,12 @@ subgraph = Subgraph(
   n1;
   n2;
 }"""
+
+# Label statement
+label1 = Label(label="abc")
+label2 = Label(labelloc="t", label="abc")
+@test spprint(label1) == "label=\"abc\";"
+@test spprint(label2) == "labelloc=\"t\";label=\"abc\";"
+
 
 end
