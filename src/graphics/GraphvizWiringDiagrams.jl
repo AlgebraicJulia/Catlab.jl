@@ -230,7 +230,7 @@ function box_html_label(nin::Int, nout::Int, text_label::String;
     Graphviz.Html("""
       <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
       <TR><TD>$(orientation == TopToBottom ? input_label : output_label)</TD></TR>
-      <TR><TD $(html_attributes(attrs))>$((text_label))</TD></TR>
+      <TR><TD $(html_attributes(attrs))>$(escape_html(text_label))</TD></TR>
       <TR><TD>$(orientation == BottomToTop ? input_label : output_label)</TD></TR>
       </TABLE>""")
   else
@@ -492,7 +492,7 @@ end
 
 """ Create a label for the main content of a box.
 """
-node_label(box_value) = box_label(MIME("text/html"), box_value)
+node_label(box_value) = box_label(MIME("text/plain"), box_value)
 
 """ Create a label for an edge.
 """
