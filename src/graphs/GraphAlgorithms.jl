@@ -2,9 +2,9 @@
 """
 module GraphAlgorithms
 export connected_components, connected_component_projection, topological_sort,
-  transitive_reduction!
+  transitive_reduction!, enumerate_paths
 
-using DataStructures: Stack
+using DataStructures: Stack, DefaultDict
 
 using ...Theories: dom, codom
 using ...CSetDataStructures, ..BasicGraphs
@@ -114,6 +114,32 @@ function longest_paths(g::ACSet;
     end
   end
   lengths
+end
+
+"""Enumerate all paths of an acyclic graph, indexed by src+tgt"""
+function enumerate_paths(G::Graph;
+                         sorted::Union{AbstractVector{Int},Nothing}=nothing
+                        )::DefaultDict{Pair{Int,Int},Set{Vector{Int}}}
+  sorted = isnothing(sorted) ? topological_sort(G) : sorted
+  Path = Vector{Int}
+  paths = [Set{Path}() for _ in 1:nv(G)] # paths that start on a particular V
+  for v in reverse(topological_sort(G))
+    push!(paths[v], Int[]) # add length 0 paths
+    for e in incident(G, v, :src)
+      push!(paths[v], [e]) # add length 1 paths
+      for p in paths[G[e, :tgt]] # add length >1 paths
+        push!(paths[v], vcat([e], p))
+      end
+    end
+  end
+  # Restructure `paths` into a data structure indexed by start AND end V
+  allpaths = DefaultDict{Pair{Int,Int},Set{Path}}(()->Set{Path}())
+  for (s, ps) in enumerate(paths)
+    for p in ps
+      push!(allpaths[s => isempty(p) ? s : G[p[end],:tgt]], p)
+    end
+  end
+  return allpaths
 end
 
 end

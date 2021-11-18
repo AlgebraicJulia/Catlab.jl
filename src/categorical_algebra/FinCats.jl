@@ -13,11 +13,12 @@ module FinCats
 export FinCat, FinCatGraph, Path, ob_generators, hom_generators, equations,
   is_discrete, is_free, graph, edges, src, tgt, presentation,
   FinFunctor, FinDomFunctor, is_functorial, collect_ob, collect_hom, force,
-  FinTransformation, components, is_natural
+  FinTransformation, components, is_natural, is_initial
 
 using AutoHashEquals
 using Reexport
 using StaticArrays: SVector
+using DataStructures: IntDisjointSets, in_same_set
 
 @reexport using ..Categories
 using ...GAT, ...Present, ...Syntax
@@ -25,7 +26,7 @@ import ...Present: equations
 using ...Theories: Category, Schema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ...CSetDataStructures, ...Graphs
-import ...Graphs: edges, src, tgt
+import ...Graphs: edges, src, tgt, enumerate_paths
 import ..Categories: ob, hom, ob_map, hom_map, component
 
 # Categories
@@ -351,6 +352,47 @@ FinFunctor(ob_map, hom_map, dom::Presentation, codom::Presentation) =
 
 Categories.show_type_constructor(io::IO, ::Type{<:FinFunctor}) =
   print(io, "FinFunctor")
+
+function is_initial(F::FinFunctor)::Bool
+  Gₛ, Gₜ = F.dom.graph, F.codom.graph
+  pathₛ, pathₜ = enumerate_paths.([Gₛ, Gₜ])
+
+  function connected_nonempty_slice(t::Int)::Bool
+    # Generate slice objects
+    ob_slice = Pair{Int,Vector{Int}}[] # s ∈Ob(S) and a path ∈ T(F(s), t)
+    for s in vertices(Gₛ)
+        append!(ob_slice, [s => p for p in pathₜ[F.ob_map[s] => t]])
+    end
+
+    # Empty case
+    if isempty(ob_slice)
+      return false
+    end
+
+    """
+    For two slice objects (m,pₘ) and (n,pₙ) check for a morphism f ∈ S(M,N) such
+    that there is a commutative triangle pₘ = f;pₙ
+    """
+    function check_pair(i::Int, j::Int)::Bool
+      (m,pₘ), (n,pₙ) = ob_slice[i], ob_slice[j]
+      return any(f -> pₘ == vcat(edges.(hom_map(F,f))..., pₙ), pathₛ[m => n])
+    end
+
+    # Use check_pair to determine pairwise connectivity
+    connected = IntDisjointSets(length(ob_slice)) # sym/trans/refl closure
+    obs = 1:length(ob_slice)
+    for (i,j) in Base.Iterators.product(obs, obs)
+      if !in_same_set(connected, i, j) && check_pair(i,j)
+        union!(connected, i, j)
+      end
+    end
+
+    return connected.ngroups == 1
+  end
+
+  # Check for each t ∈ T whether F/t is connected
+  return all(connected_nonempty_slice, 1:nv(Gₜ))
+end
 
 # Mapping-based functors
 #-----------------------
