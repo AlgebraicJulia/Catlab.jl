@@ -3,8 +3,7 @@ using Test
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 using Catlab.Programs.DiagrammaticPrograms
-using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryReflexiveGraph,
-  TheorySymmetricGraph, TheorySymmetricReflexiveGraph, TheoryWeightedGraph
+using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryWeightedGraph
 using Catlab.Graphs.BipartiteGraphs: TheoryUndirectedBipartiteGraph
 
 # Contravariant migration
@@ -129,7 +128,8 @@ migrate!(h, g, F)
 @test sort!(collect(zip(h[:src], h[:tgt]))) == [(6,8), (7,9), (8,10)]
 
 # Graph whose vertices are paths of length 2 and edges are paths of length 3.
-F = @migration TheoryGraph TheoryGraph begin
+g = path_graph(Graph, 6)
+h = @migrate Graph g begin
   V => @join begin
     v::V
     (e₁, e₂)::E
@@ -147,39 +147,36 @@ F = @migration TheoryGraph TheoryGraph begin
   src => (v => v₁; e₁ => e₁; e₂ => e₂; t => t₁; s => s₁)
   tgt => (v => v₂; e₁ => e₂; e₂ => e₃; t => t₂; s => s₂)
 end
-g = path_graph(Graph, 6)
-h = migrate(Graph, g, F)
 @test h == path_graph(Graph, 4)
 
 # Gluing migration
 #-----------------
 
 # Free reflexive graph on a graph.
-F = @migration TheoryReflexiveGraph TheoryGraph begin
+g = cycle_graph(Graph, 5)
+h = @migrate ReflexiveGraph g begin
   V => V
   E => @cases (v::V; e::E)
   src => (e => src)
   tgt => (e => tgt)
   refl => v
 end
-g = cycle_graph(Graph, 5)
-h = migrate(ReflexiveGraph, g, F)
 @test h == cycle_graph(ReflexiveGraph, 5)
 
 # Free symmetric graph on a graph.
-F = @migration TheorySymmetricGraph TheoryGraph begin
+g = star_graph(Graph, 5)
+h = @migrate SymmetricGraph g begin
   V => V
   E => @cases (fwd::E; rev::E)
   src => (fwd => src; rev => tgt)
   tgt => (fwd => tgt; rev => src)
   inv => (fwd => rev; rev => fwd)
 end
-g = star_graph(Graph, 5)
-h = migrate(SymmetricGraph, g, F)
 @test is_isomorphic(h, star_graph(SymmetricGraph, 5))
 
 # Free symmetric reflexive graph on a reflexive graph.
-F = @migration TheorySymmetricReflexiveGraph TheoryReflexiveGraph begin
+g = star_graph(ReflexiveGraph, 5)
+h = @migrate SymmetricReflexiveGraph g begin
   V => V
   E => @glue begin
     (fwd, rev)::E
@@ -195,15 +192,14 @@ F = @migration TheorySymmetricReflexiveGraph TheoryReflexiveGraph begin
     refl_fwd => refl_rev; refl_rev => refl_fwd
   end
 end
-g = star_graph(ReflexiveGraph, 5)
-h = migrate(SymmetricReflexiveGraph, g, F)
 @test is_isomorphic(h, star_graph(SymmetricReflexiveGraph, 5))
 
 # Gluc migration
 #---------------
 
 # Graph with edges that are paths of length <= 2.
-F = @migration TheoryGraph TheoryGraph begin
+g = path_graph(Graph, 4)
+h = @migrate Graph g begin
   V => V
   E => @cases begin
     v => V
@@ -218,8 +214,6 @@ F = @migration TheoryGraph TheoryGraph begin
   src => (e => src; path => e₁⋅src)
   tgt => (e => tgt; path => e₂⋅tgt)
 end
-g = path_graph(Graph, 4)
-h = migrate(Graph, g, F)
 h′ = @acset Graph begin
   V = 4
   E = 9

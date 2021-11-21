@@ -5,7 +5,7 @@ string diagram or wiring diagram. DSLs for constructing wiring diagrams are
 provided by other submodules.
 """
 module DiagrammaticPrograms
-export @graph, @fincat, @finfunctor, @diagram, @migration
+export @graph, @fincat, @finfunctor, @diagram, @migrate, @migration
 
 using Base.Iterators: repeated
 using MLStyle: @match
@@ -26,7 +26,9 @@ using ...Graphs.BasicGraphs: TheoryGraph
   ename::Attr(E, Name)
 end
 
-""" Default graph type for [`@fincat`](@ref) macro and related macros.
+""" Graph with uniquely named vertices and edges.
+
+THe default graph type for the [`@fincat`](@ref) macro and related macros.
 """
 @acset_type NamedGraph(TheoryNamedGraph, index=[:src,:tgt],
                        unique_index=[:vname,:ename]) <: AbstractGraph
@@ -41,9 +43,10 @@ end
 @acset_type _MaybeNamedGraph(TheoryMaybeNamedGraph, index=[:src,:tgt],
                              unique_index=[:vname]) <: AbstractGraph
 
-""" Default graph type for [`@graph`](@ref) macro.
+""" Graph with named vertices and possibly named edges.
 
-Vertex names are uniquely indexed and edge names are optional and unindexed.
+The default graph type for the [`@graph`](@ref) macro. Vertex names are uniquely
+indexed and edge names are optional and unindexed.
 """
 const MaybeNamedGraph{Name} = _MaybeNamedGraph{Name,Union{Nothing,Name}}
 
@@ -300,14 +303,15 @@ diagram in ``C``, i.e., constructs a finitely presented indexing category ``J``
 together with a functor ``F: J → C``. This method of simultaneous definition is
 often more convenient than defining ``J`` and ``F`` separately.
 
-For example, the following diagram specifies the paths of length two in a graph:
+For example, the limit of the following diagram consists of the paths of length
+two in a graph:
 
 ```julia
 @diagram FinCat(TheoryGraph) begin
   v::V
-  (e1, e2)::E
-  (t: e1 → v)::tgt
-  (s: e2 → v)::src
+  (e₁, e₂)::E
+  (t: e₁ → v)::tgt
+  (s: e₂ → v)::src
 end
 ```
 """
@@ -373,7 +377,8 @@ end
 
 """ A diagram without a codomain category.
 
-Internal data type used by parser in [`@migration`](@ref) macro.
+An intermediate data representation used internally by the parser for the
+[`@migration`](@ref) macro.
 """
 struct DiagramData{T,ObMap,HomMap,Shape<:FinCat}
   ob_map::ObMap
@@ -392,7 +397,8 @@ Diagrams.shape(d::DiagramData) = d.shape
 
 """ A diagram morphism without a domain or codomain.
 
-Internal data type used by parser in [`@migration`](@ref) macro.
+Like [`DiagramData`](@ref), an intermediate data representation used internally
+by the parser for the [`@migration`](@ref) macro.
 """
 struct DiagramHomData{T,ObMap,HomMap}
   ob_map::ObMap
@@ -403,10 +409,21 @@ struct DiagramHomData{T,ObMap,HomMap}
   end
 end
 
-""" Define a data migration query.
+""" Contravariantly migrate data from one acset to another.
+"""
+macro migrate(tgt_type, src_acset, body)
+  quote
+    let T = $(esc(tgt_type)), X = $(esc(src_acset))
+      migrate(T, X, parse_migration(Presentation(T), Presentation(X),
+                                    $(Meta.quot(body))))
+    end
+  end
+end
 
-This macro provides a DSL to specify a data migration query from a ``C``-set to
-a ``D``-set for arbitrary schemas ``C`` and ``D``.
+""" Define a contravariant data migration.
+
+This macro provides a DSL to specify a contravariant data migration from
+``C``-sets to ``D``-sets for given schemas ``C`` and ``D``.
 """
 macro migration(src_schema, body)
   :(parse_migration($(esc(src_schema)), $(Meta.quot(body))))

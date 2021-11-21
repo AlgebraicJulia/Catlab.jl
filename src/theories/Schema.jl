@@ -176,7 +176,7 @@ function SchemaDescTypeType(s::SchemaDesc)
   }
 end
 
-function Presentation(S::Type{T}) where T <: SchemaDescType
+function Presentation(::Type{S}) where S <: SchemaDescType
   pres = Presentation(FreeSchema)
 
   obs = map(x -> Ob(FreeSchema, x), collect(ob(S)))
