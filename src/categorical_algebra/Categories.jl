@@ -237,20 +237,24 @@ const IdIdTransformation{C<:Cat} = IdentityTransformation{C,C,IdentityFunctor{C}
   codom(α::Transformation) = α.codom
   id(F::Functor) = IdentityTransformation(F)
 
-  function compose(α::Transformation, β::Transformation)
-    codom(α) == dom(β) || error("Domain mismatch in composition $α ⋅ $β")
+  function compose(α::Transformation, β::Transformation; strict::Bool=true)
+    !strict || codom(α) == dom(β) ||
+      error("Domain mismatch in vertical composition $α ⋅ $β")
     compose_id(α, β)
   end
-  function composeH(α::Transformation, β::Transformation)
-    codom_ob(α) == dom_ob(β) || error("Domain mismatch in composition $α * $β")
+  function composeH(α::Transformation, β::Transformation; strict::Bool=true)
+    !strict || codom_ob(α) == dom_ob(β) ||
+      error("Domain mismatch in horizontal composition $α * $β")
     composeH_id(α, β)
   end
-  function composeH(α::Transformation, H::Functor)
-    codom_ob(α) == dom(H) || error("Domain mismatch in whiskering $α * $H")
+  function composeH(α::Transformation, H::Functor; strict::Bool=true)
+    !strict || codom_ob(α) == dom(H) ||
+      error("Domain mismatch in whiskering $α * $H")
     composeH_id(α, H)
   end
-  function composeH(F::Functor, β::Transformation)
-    codom(F) == dom_ob(β) || error("Domain mismatch in whiskering $F * $β")
+  function composeH(F::Functor, β::Transformation; strict::Bool=true)
+    !strict || codom(F) == dom_ob(β) ||
+      error("Domain mismatch in whiskering $F * $β")
     composeH_id(F, β)
   end
 end

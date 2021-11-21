@@ -263,8 +263,8 @@ F_src = hom_map(F, 3)
 @test collect_ob(F_src) == [(1, TheoryGraph[:src]), (1, id(TheoryGraph[:E]))]
 @test collect_hom(F_src) == [id(shape(codom(F_src)), 1)]
 
-# Agglomerative migration
-#------------------------
+# Gluing migration
+#-----------------
 
 # Coproduct of graph with itself.
 F = @migration TheoryGraph TheoryGraph begin
