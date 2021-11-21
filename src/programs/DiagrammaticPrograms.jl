@@ -410,6 +410,13 @@ struct DiagramHomData{T,ObMap,HomMap}
 end
 
 """ Contravariantly migrate data from one acset to another.
+
+This macro is shorthand for defining a data migration using the
+[`@migration`](@ref) macro and then calling the `migrate` function. If the
+migration will be used multiple times, it is more efficient to perform these
+steps separately, reusing the functor defined by `@migration`.
+
+For more about the syntax and supported features, see [`@migration`](@ref).
 """
 macro migrate(tgt_type, src_acset, body)
   quote
@@ -423,7 +430,52 @@ end
 """ Define a contravariant data migration.
 
 This macro provides a DSL to specify a contravariant data migration from
-``C``-sets to ``D``-sets for given schemas ``C`` and ``D``.
+``C``-sets to ``D``-sets for given schemas ``C`` and ``D``. A data migration is
+defined by a functor from ``D`` to a category of queries on ``C``. Thus, every
+object of ``D`` is assigned a query on ``C`` and every morphism of ``D`` is
+assigned a morphism of queries, in a compatible way. Example usages are in the
+unit tests and the AlgebraicJulia blog (TODO: link). What follows is a technical
+reference.
+
+Several categories of queries are supported by this macro:
+
+1. Trivial queries, specified by a single object of ``C``. In this case, the
+   macro simply defines a functor ``D → C`` and is equivalent to
+   [`@finfunctor`](@ref) or [`@diagram`](@ref).
+2. *Conjunctive queries*, specified by a diagram in ``C`` and evaluated as a
+   finite limit.
+3. *Gluing queries*, specified by a diagram in ``C`` and evaluated as a finite
+   colimit. An important special case is *linear queries*, evaluated as a
+   finite coproduct.
+4. *Gluc queries* (gluings of conjunctive queries), specified by a diagram of
+   diagrams in ``C`` and evaluated as a colimit of limits. An important special
+   case is *duc queries* (disjoint unions of conjunctive queries), evaluated as
+   a coproduct of limits.
+
+The query category of the data migration is not specified explicitly but is
+inferred from the queries used in the macro call. Implicit conversion is
+performed: trivial queries can be coerced to conjunctive queries or gluing
+queries, and conjunctive queries and gluing queries can both be coerced to gluc
+queries. Due to the implicit conversion, the resulting functor out of ``D`` has
+a single query type and thus a well-defined codomain.
+
+Syntax for the right-hand sides of object assignments is:
+
+- a symbol, giving object of ``C`` (query type: trivial)
+- `@product ...` (query type: conjunctive)
+- `@join ...` (alias: `@limit`, query type: conjunctive)
+- `@cases ...` (alias: `@coproduct`, query type: gluing or gluc)
+- `@glue ...` (alias: `@colimit`, query type: gluing or gluc)
+
+Thes query types supported by this macro generalize the kind of queries familiar
+from relational databases. Less familiar is the concept of a morphism between
+queries, derived from the concept of a morphism between diagrams in a category.
+A query morphism is given by a functor between the diagrams' indexing categories
+together with a natural transformation filling a triangle of the appropriate
+shape. From a practical standpoint, the most important thing to remember is that
+a morphism between conjunctive queries is contravariant with respect to the
+diagram shapes, whereas a morphism between gluing queries is covariant. TODO:
+Reference for more on this.
 """
 macro migration(src_schema, body)
   :(parse_migration($(esc(src_schema)), $(Meta.quot(body))))
@@ -432,6 +484,20 @@ macro migration(tgt_schema, src_schema, body)
   :(parse_migration($(esc(tgt_schema)), $(esc(src_schema)), $(Meta.quot(body))))
 end
 
+""" Parse a contravariant data migration from a Julia expression.
+
+The process kicked off by this internal function is somewhat complicated due to
+the need to coerce queries and query morphisms to a common category. The
+high-level steps of this process are:
+
+1. Parse the queries and query morphisms into intermediate representations
+   ([`DiagramData`](@ref) and [`DiagramHomData`](@ref)) whose final types are
+   not yet determined.
+2. Promote the query types to the tightest type encompassing all queries, an
+   approach reminiscent of Julia's own type promotion system.
+3. Convert all query and query morphisms to this common type, yielding `Diagram`
+   and `DiagramHom` objects.
+"""
 function parse_migration(src_schema::Presentation, body::Expr;
                          preprocess::Bool=true)
   C = FinCat(src_schema)
