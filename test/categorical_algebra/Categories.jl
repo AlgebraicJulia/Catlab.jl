@@ -22,5 +22,6 @@ f = Hom(:f, x, y)
 
 α = id(F)
 @test (dom(α), codom(α)) == (F, F)
+@test component(α, x) == id(F(x))
 
 end

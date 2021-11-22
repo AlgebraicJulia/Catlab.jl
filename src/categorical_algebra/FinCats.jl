@@ -212,10 +212,15 @@ a profunctor, this amounts to taking the collage of the profunctor.
 """
 @auto_hash_equals struct FinCatPresentation{T,Ob,Hom} <: FinCat{Ob,Hom}
   presentation::Presentation{T}
+end
 
-  function FinCatPresentation(pres::Presentation{T}) where T
-    new{T,pres.syntax.Ob,pres.syntax.Hom}(pres)
-  end
+function FinCatPresentation(pres::Presentation{T}) where T
+  S = pres.syntax
+  FinCatPresentation{T,S.Ob,S.Hom}(pres)
+end
+function FinCatPresentation(pres::Presentation{Schema})
+  S = pres.syntax
+  FinCatPresentation{Schema,Union{S.Ob,S.AttrType},Union{S.Hom,S.Attr}}(pres)
 end
 
 presentation(C::FinCatPresentation) = C.presentation
@@ -292,6 +297,14 @@ end
 
 Categories.show_type_constructor(io::IO, ::Type{<:FinDomFunctor}) =
   print(io, "FinDomFunctor")
+
+""" Collect assignments of functor's object map as a vector.
+"""
+collect_ob(F::FinDomFunctor) = map(x -> ob_map(F, x), ob_generators(dom(F)))
+
+""" Collect assignments of functor's morphism map as a vector.
+"""
+collect_hom(F::FinDomFunctor) = map(f -> hom_map(F, f), hom_generators(dom(F)))
 
 """ Is the purported functor on a presented category functorial?
 
@@ -406,14 +419,15 @@ given by a finite amount of data (one morphism in ``D`` for each generating
 object of ``C``) and its naturality is verified by finitely many equations (one
 equation for each generating morphism of ``C``).
 """
-const FinTransformation{C<:FinCat,D<:Cat,Dom<:FinDomFunctor{C,D},Codom<:FinDomFunctor{C,D}} =
+const FinTransformation{C<:FinCat,D<:Cat,Dom<:FinDomFunctor,Codom<:FinDomFunctor} =
   Transformation{C,D,Dom,Codom}
 
 FinTransformation(F, G; components...) = FinTransformation(components, F, G)
 
 """ Components of a natural transformation.
 """
-components(α::FinTransformation) = α.components
+components(α::FinTransformation) =
+  make_map(x -> component(α, x), ob_generators(dom_ob(α)))
 
 """ Is the transformation between `FinDomFunctors` a natural transformation?
 
@@ -445,9 +459,13 @@ function is_natural(α::FinTransformation; check_equations::Bool=true)
 end
 
 function check_transformation_domains(F::Functor, G::Functor)
-  (C = dom(F)) == dom(G) ||
+  # XXX: Equality of TypeCats is too strict, so for now we are punting on
+  # (co)domain checks in that case.
+  C, C′ = dom(F), dom(G)
+  (C isa TypeCat && C′ isa TypeCat) || C == C′ ||
     error("Mismatched domains in functors $F and $G")
-  (D = codom(F)) == codom(G) ||
+  D, D′ = codom(F), codom(G)
+  (D isa TypeCat && D′ isa TypeCat) || D == D′ ||
     error("Mismatched codomains in functors $F and $G")
   (C, D)
 end
@@ -458,8 +476,7 @@ end
 """ Natural transformation with components given by explicit mapping.
 """
 @auto_hash_equals struct FinTransformationMap{C<:FinCat,D<:Cat,
-    Dom<:FinDomFunctor{C,D},Codom<:FinDomFunctor{C,D},Comp} <:
-    FinTransformation{C,D,Dom,Codom}
+    Dom<:FinDomFunctor{C,D},Codom<:FinDomFunctor,Comp} <: FinTransformation{C,D,Dom,Codom}
   components::Comp
   dom::Dom
   codom::Codom
@@ -482,6 +499,8 @@ component(α::FinTransformationMap, x) = α.components[x]
 component(α::FinTransformationMap, expr::GATExpr{:generator}) =
   component(α, first(expr))
 
+components(α::FinTransformationMap) = α.components
+
 function Categories.do_compose(α::FinTransformationMap, β::FinTransformation)
   F = dom(α)
   D = codom(F)
@@ -493,13 +512,13 @@ end
 function Categories.do_composeH(F::FinDomFunctorMap, β::Transformation)
   G, H = dom(β), codom(β)
   FinTransformationMap(mapvals(c -> component(β, c), F.ob_map),
-                       compose(F, G), compose(F, H))
+                       compose(F, G, strict=false), compose(F, H, strict=false))
 end
 
 function Categories.do_composeH(α::FinTransformationMap, H::Functor)
   F, G = dom(α), codom(α)
   FinTransformationMap(mapvals(f -> hom_map(H, f), α.components),
-                       compose(F, H), compose(G, H))
+                       compose(F, H, strict=false), compose(G, H, strict=false))
 end
 
 function Base.show(io::IO, α::FinTransformationMap)

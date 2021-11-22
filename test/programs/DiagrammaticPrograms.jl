@@ -5,6 +5,7 @@ using Catlab, Catlab.Graphs, Catlab.CategoricalAlgebra
 using Catlab.Programs.DiagrammaticPrograms
 using Catlab.Programs.DiagrammaticPrograms: NamedGraph, MaybeNamedGraph
 using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryReflexiveGraph
+using Catlab.Graphs.BipartiteGraphs: TheoryBipartiteGraph
 using Catlab.WiringDiagrams.CPortGraphs: ThCPortGraph
 
 @present TheoryDDS(FreeSchema) begin
@@ -149,6 +150,7 @@ F = @migration TheoryGraph TheoryGraph begin
   src => tgt
   tgt => src
 end
+@test F isa DataMigrations.DeltaSchemaMigration
 @test F == FinFunctor(Dict(:V => :V, :E => :E),
                       Dict(:src => :tgt, :tgt => :src),
                       TheoryGraph, TheoryGraph)
@@ -179,11 +181,12 @@ F = @migration TheoryGraph TheoryGraph begin
   src => e₁ ⋅ src
   tgt => e₂ ⋅ tgt
 end
+@test F isa DataMigrations.ConjSchemaMigration
 F_E = diagram(ob_map(F, :E))
 @test nameof.(collect_ob(F_E)) == [:V, :E, :E]
 @test nameof.(collect_hom(F_E)) == [:tgt, :src]
 F_tgt = hom_map(F, :tgt)
-@test ob_map(F_tgt, 1) == (3, TheoryGraph[:tgt])
+@test collect_ob(F_tgt) == [(3, TheoryGraph[:tgt])]
 
 # Cartesian product of graph with itself.
 F = @migration TheoryGraph TheoryGraph begin
@@ -195,7 +198,7 @@ end
 F_V = diagram(ob_map(F, :V))
 @test collect_ob(F_V) == fill(TheoryGraph[:V], 2)
 F_src = hom_map(F, :src)
-@test ob_map(F_src, 2) == (2, TheoryGraph[:src])
+@test collect_ob(F_src) == [(1, TheoryGraph[:src]), (2, TheoryGraph[:src])]
 
 # Reflexive graph from graph.
 F = @migration TheoryReflexiveGraph TheoryGraph begin
@@ -257,12 +260,11 @@ F = @migration TheoryGraph begin
   end
 end
 F_src = hom_map(F, 3)
-@test ob_map(F_src, 1) == (1, TheoryGraph[:src])
-@test ob_map(F_src, 2) == (1, id(TheoryGraph[:E]))
-@test hom_map(F_src, 1) == id(shape(codom(F_src)), 1)
+@test collect_ob(F_src) == [(1, TheoryGraph[:src]), (1, id(TheoryGraph[:E]))]
+@test collect_hom(F_src) == [id(shape(codom(F_src)), 1)]
 
-# Agglomerative migration
-#------------------------
+# Gluing migration
+#-----------------
 
 # Coproduct of graph with itself.
 F = @migration TheoryGraph TheoryGraph begin
@@ -277,10 +279,11 @@ F = @migration TheoryGraph TheoryGraph begin
     e₂ => v₂ ∘ tgt
   end
 end
+@test F isa DataMigrations.GlueSchemaMigration
 F_V = diagram(ob_map(F, :V))
 @test collect_ob(F_V) == fill(TheoryGraph[:V], 2)
 F_src = hom_map(F, :src)
-@test ob_map(F_src, 2) == (2, TheoryGraph[:src])
+@test collect_ob(F_src) == [(1, TheoryGraph[:src]), (2, TheoryGraph[:src])]
 
 # Free reflexive graph on a graph.
 F = @migration TheoryReflexiveGraph TheoryGraph begin
@@ -291,7 +294,114 @@ F = @migration TheoryReflexiveGraph TheoryGraph begin
   refl => v
 end
 F_tgt = hom_map(F, :tgt)
-@test ob_map(F_tgt, 1) == (1, TheoryGraph[:tgt])
-@test ob_map(F_tgt, 2) == (1, id(TheoryGraph[:V]))
+@test collect_ob(F_tgt) == [(1, TheoryGraph[:tgt]), (1, id(TheoryGraph[:V]))]
+
+# Vertices in a graph and their connected components.
+F = @migration TheoryGraph begin
+  V => V
+  Component => @glue begin
+    e::E; v::V
+    (s: e → v)::src
+    (t: e → v)::tgt
+  end
+  (component: V → Component) => v
+end
+F_C = diagram(ob_map(F, 2))
+@test nameof.(collect_ob(F_C)) == [:E, :V]
+@test nameof.(collect_hom(F_C)) == [:src, :tgt]
+
+# Gluc migration
+#---------------
+
+# Graph with edges that are paths of length <= 2.
+F = @migration TheoryGraph TheoryGraph begin
+  V => V
+  E => @cases begin
+    v => V
+    e => E
+    path => @join begin
+      v::V
+      (e₁, e₂)::E
+      (t: e₁ → v)::tgt
+      (s: e₂ → v)::src
+    end
+  end
+  src => begin
+    e => src
+    path => e₁⋅src
+  end
+  tgt => begin
+    e => tgt
+    path => e₂⋅tgt
+  end
+end
+@test ob_map(F, :V) isa DataMigrations.GlucQuery
+@test F isa DataMigrations.GlucSchemaMigration
+F_src = hom_map(F, :src)
+@test collect_ob(shape_map(F_src)) == [1,1,1]
+F_src_v, F_src_e, F_src_path = components(diagram_map(F_src))
+@test collect_ob(F_src_v) == [(1, id(TheoryGraph[:V]))]
+@test collect_ob(F_src_e) == [(1, TheoryGraph[:src])]
+@test collect_ob(F_src_path) == [(2, TheoryGraph[:src])]
+
+# Graph with edges that are minimal paths b/w like vertices in bipartite graph.
+F = @migration TheoryGraph TheoryBipartiteGraph begin
+  V => @cases (v₁::V₁; v₂::V₂)
+  E => @cases begin
+    e₁ => @join begin
+      v₂::V₂; e₁₂::E₁₂; e₂₁::E₂₁
+      (t: e₁₂ → v₂)::tgt₂
+      (s: e₂₁ → v₂)::src₂
+    end
+    e₂ => @join begin
+      v₁::V₁; e₂₁::E₂₁; e₁₂::E₁₂
+      (t: e₂₁ → v₁)::tgt₁
+      (s: e₁₂ → v₁)::src₁
+    end
+  end
+  src => begin
+    e₁ => v₁ ∘ (e₁₂ ⋅ src₁)
+    e₂ => v₂ ∘ (e₂₁ ⋅ src₂)
+  end
+  tgt => begin
+    e₁ => v₁ ∘ (e₂₁ ⋅ tgt₁)
+    e₂ => v₂ ∘ (e₁₂ ⋅ tgt₂)
+  end
+end
+@test ob_map(F, :V) isa DataMigrations.GlucQuery
+@test F isa DataMigrations.GlucSchemaMigration
+F_src = hom_map(F, :src)
+@test collect_ob(shape_map(F_src)) == [1,2]
+F_src1, F_src2 = components(diagram_map(F_src))
+@test collect_ob(F_src1) == [(2, TheoryBipartiteGraph[:src₁])]
+@test collect_ob(F_src2) == [(2, TheoryBipartiteGraph[:src₂])]
+
+# Box product of reflexive graph with itself.
+F = @migration TheoryReflexiveGraph TheoryReflexiveGraph begin
+  V => @product (v₁::V; v₂::V)
+  E => @glue begin
+    vv => @product (v₁::V; v₂::V)
+    ev => @product (e₁::E; v₂::V)
+    ve => @product (v₁::V; e₂::E)
+    (refl₁: vv → ev) => (e₁ => v₁⋅refl; v₂ => v₂)
+    (refl₂: vv → ve) => (v₁ => v₁; e₂ => v₂⋅refl)
+  end
+  src => begin
+    ev => (v₁ => e₁⋅src; v₂ => v₂)
+    ve => (v₁ => v₁; v₂ => e₂⋅src)
+  end
+  tgt => begin
+    ev => (v₁ => e₁⋅tgt; v₂ => v₂)
+    ve => (v₁ => v₁; v₂ => e₂⋅tgt)
+  end
+  refl => vv
+end
+@test ob_map(F, :V) isa DataMigrations.GlucQuery
+@test F isa DataMigrations.GlucSchemaMigration
+F_src = hom_map(F, :src)
+@test collect_ob(shape_map(F_src)) == [1,1,1]
+F_src_vv, F_src_ev, F_src_ve = components(diagram_map(F_src))
+@test collect_ob(F_src_ev) == [(1, TheoryReflexiveGraph[:src]),
+                               (2, id(TheoryReflexiveGraph[:V]))]
 
 end

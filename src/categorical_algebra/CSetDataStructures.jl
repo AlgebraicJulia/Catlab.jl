@@ -191,6 +191,7 @@ end
 # StructACSet Operations
 ########################
 
+Presentation(::Type{<:StructACSet{S}}) where S = Presentation(S)
 Presentation(::StructACSet{S}) where S = Presentation(S)
 
 # Accessors

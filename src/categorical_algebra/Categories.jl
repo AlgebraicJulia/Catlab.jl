@@ -185,7 +185,7 @@ the same domain ``C`` and codomain ``D``. The transformation consists of a
 component ``αₓ: Fx → Gx`` in ``D`` for each object ``x ∈ C``, accessible using
 [`component`](@ref) or indexing notation (`Base.getindex`).
 """
-abstract type Transformation{C<:Cat,D<:Cat,Dom<:Functor{C,D},Codom<:Functor{C,D}} end
+abstract type Transformation{C<:Cat,D<:Cat,Dom<:Functor,Codom<:Functor} end
 
 """ Component of natural transformation.
 """
@@ -212,6 +212,11 @@ end
 
 codom(α::IdentityTransformation) = α.dom
 
+function component(α::IdentityTransformation, x)
+  F = dom(α)
+  id(codom(F), ob_map(F, x))
+end
+
 const IdIdTransformation{C<:Cat} = IdentityTransformation{C,C,IdentityFunctor{C}}
 
 # 2-category of categories
@@ -232,20 +237,24 @@ const IdIdTransformation{C<:Cat} = IdentityTransformation{C,C,IdentityFunctor{C}
   codom(α::Transformation) = α.codom
   id(F::Functor) = IdentityTransformation(F)
 
-  function compose(α::Transformation, β::Transformation)
-    codom(α) == dom(β) || error("Domain mismatch in composition $α ⋅ $β")
+  function compose(α::Transformation, β::Transformation; strict::Bool=true)
+    !strict || codom(α) == dom(β) ||
+      error("Domain mismatch in vertical composition $α ⋅ $β")
     compose_id(α, β)
   end
-  function composeH(α::Transformation, β::Transformation)
-    codom_ob(α) == dom_ob(β) || error("Domain mismatch in composition $α * $β")
+  function composeH(α::Transformation, β::Transformation; strict::Bool=true)
+    !strict || codom_ob(α) == dom_ob(β) ||
+      error("Domain mismatch in horizontal composition $α * $β")
     composeH_id(α, β)
   end
-  function composeH(α::Transformation, H::Functor)
-    codom_ob(α) == dom(H) || error("Domain mismatch in whiskering $α * $H")
+  function composeH(α::Transformation, H::Functor; strict::Bool=true)
+    !strict || codom_ob(α) == dom(H) ||
+      error("Domain mismatch in whiskering $α * $H")
     composeH_id(α, H)
   end
-  function composeH(F::Functor, β::Transformation)
-    codom(F) == dom_ob(β) || error("Domain mismatch in whiskering $F * $β")
+  function composeH(F::Functor, β::Transformation; strict::Bool=true)
+    !strict || codom(F) == dom_ob(β) ||
+      error("Domain mismatch in whiskering $F * $β")
     composeH_id(F, β)
   end
 end
