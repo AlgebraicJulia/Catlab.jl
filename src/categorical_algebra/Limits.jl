@@ -13,7 +13,7 @@ export AbstractLimit, AbstractColimit, Limit, Colimit,
   BinaryCoequalizer, Coequalizer, coequalizer, proj,
   @cartesian_monoidal_instance, @cocartesian_monoidal_instance,
   ComposeProductEqualizer, ComposeCoproductCoequalizer,
-  ToBipartiteLimit, ToBipartiteColimit
+  SpecializeLimit, SpecializeColimit, ToBipartiteLimit, ToBipartiteColimit
 
 using AutoHashEquals
 
@@ -362,6 +362,42 @@ end
 # (Co)limit algorithms
 ######################
 
+struct SpecializeLimit <: LimitAlgorithm end
+struct SpecializeColimit <: ColimitAlgorithm end
+
+# Trivial (co)limits
+#-------------------
+
+""" Limit of a singleton diagram.
+"""
+struct SingletonLimit{Ob,Diagram<:SingletonDiagram{Ob}} <: AbstractLimit{Ob,Diagram}
+  diagram::Diagram
+end
+
+cone(lim::SingletonLimit) = let x = only(lim.diagram)
+  SMultispan{1}(x, id(x))
+end
+universal(::SingletonLimit, cone::Multispan) = only(cone)
+
+limit(diagram::SingletonDiagram, ::SpecializeLimit) = SingletonLimit(diagram)
+
+""" Colimit of a singleton diagram.
+"""
+struct SingletonColimit{Ob,Diagram<:SingletonDiagram{Ob}} <: AbstractColimit{Ob,Diagram}
+  diagram::Diagram
+end
+
+cocone(colim::SingletonColimit) = let x = only(colim.diagram)
+  SMulticospan{1}(x, id(x))
+end
+universal(::SingletonColimit, cocone::Multicospan) = only(cocone)
+
+colimit(diagram::SingletonDiagram, ::SpecializeColimit) =
+  SingletonColimit(diagram)
+
+# Composite (co)limits
+#---------------------
+
 """ Compute pullback by composing a product with an equalizer.
 
 See also: [`ComposeCoproductCoequalizer`](@ref).
@@ -424,6 +460,9 @@ end
 function universal(lim::CompositePushout, cone::Multicospan)
   factorize(lim.coeq, universal(lim.coprod, cone))
 end
+
+# Bipartite (co)limits
+#---------------------
 
 """ Compute a limit by reducing the diagram to a free bipartite diagram.
 """

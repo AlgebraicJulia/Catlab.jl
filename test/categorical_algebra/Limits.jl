@@ -1,7 +1,7 @@
 """ Tests of limit and colimit data structures.
 
-More extensive tests are provided by (co)limits for specific categories such as
-FinSet.
+More extensive tests are provided by tests of (co)limits in specific categories
+such as Set and FinSet.
 """
 module TestLimits
 using Test
@@ -13,7 +13,6 @@ A, B, C = Ob(FreeCategory, :A, :B, :C)
 # Limits
 ########
 
-# Products.
 f, g = Hom(:f, C, A), Hom(:g, C, B)
 lim = Limit(ObjectPair(A,B), Span(f,g))
 @test lim isa BinaryProduct
@@ -27,7 +26,6 @@ lim = Limit(DiscreteDiagram([A,B]), Span(f,g))
 # Colimits
 ##########
 
-# Coproducts.
 f, g = Hom(:f, A, C), Hom(:g, B, C)
 colim = Colimit(ObjectPair(A,B), Cospan(f,g))
 @test colim isa BinaryCoproduct

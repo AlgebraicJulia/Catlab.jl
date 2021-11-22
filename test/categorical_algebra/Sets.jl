@@ -1,7 +1,7 @@
 module TestSets
 using Test
 
-using Catlab.Theories, Catlab.CategoricalAlgebra.Sets
+using Catlab.Theories, Catlab.CategoricalAlgebra
 
 # Sets from Julia types
 #######################
@@ -68,13 +68,19 @@ plus_two_to_odd = compose(plus_one_to_odd, plus_one_to_even)
 @test ob(terminal(TypeSet)) == TypeSet(Nothing)
 @test delete(terminal(TypeSet), TypeSet(Int))(3) == nothing
 
+# Trivial product.
+lim = limit(SingletonDiagram(TypeSet(Int)))
+@test ob(lim) == TypeSet(Int)
+
+f = SetFunction(length, TypeSet(Vector{String}), TypeSet(Int))
+@test universal(lim, SMultispan{1}(f)) === f
+
 # Binary product.
 lim = product(TypeSet(Int), TypeSet(String))
 @test ob(lim) == TypeSet(Tuple{Int,String})
 π1, π2 = lim
 @test (π1((1,"foo")), π2((1,"foo"))) == (1,"foo")
 
-f = SetFunction(length, TypeSet(Vector{String}), TypeSet(Int))
 g = SetFunction(v -> sprint(join, v), TypeSet(Vector{String}), TypeSet(String))
 @test pair(lim, f, g)(["foo", "bar", "baz"]) == (3, "foobarbaz")
 
@@ -101,5 +107,15 @@ fs = [ SetFunction(x -> x+i, TypeSet(Int), TypeSet(Int)) for i in 1:3 ]
 
 @test otimes(fill(TypeSet(Int), 3)) == TypeSet(Tuple{Int,Int,Int})
 @test otimes(fs)((1,5,10)) == (2,7,13)
+
+# Colimits
+##########
+
+# Trivial coproduct.
+colim = colimit(SingletonDiagram(TypeSet(Int)))
+@test ob(colim) == TypeSet(Int)
+
+f = SetFunction(string, TypeSet(Int), TypeSet(String))
+@test universal(colim, SMulticospan{1}(f)) === f
 
 end

@@ -15,7 +15,7 @@ using ...GAT, ..Categories, ..FreeDiagrams, ..Limits
 using ...Theories: Category
 import ...Theories: Ob, dom, codom, id, compose, ⋅, ∘
 import ..Categories: show_type_constructor, show_domains
-import ..Limits: limit, universal
+import ..Limits: limit, colimit, universal
 
 # Data types
 ############
@@ -219,8 +219,10 @@ Ob(::TypeCat{T}) where T = TypeSet{T}()
 limit(Xs::EmptyDiagram{<:TypeSet}) =
   Limit(Xs, SMultispan{0}(TypeSet(Nothing)))
 
-universal(lim::Terminal{TypeSet{Nothing}}, span::SMultispan{0,<:SetOb}) =
+universal(lim::Terminal{TypeSet{Nothing}}, span::SMultispan{0}) =
   ConstantFunction(nothing, apex(span), ob(lim))
+
+limit(Xs::SingletonDiagram{<:TypeSet}) = limit(Xs, SpecializeLimit())
 
 function limit(Xs::ObjectPair{<:TypeSet})
   X1, X2 = Xs
@@ -229,7 +231,7 @@ function limit(Xs::ObjectPair{<:TypeSet})
   Limit(Xs, Span(π1, π2))
 end
 
-function universal(lim::BinaryProduct{<:TypeSet}, span::Span{<:SetOb})
+function universal(lim::BinaryProduct{<:TypeSet}, span::Span)
   f, g = span
   SetFunction(x -> (f(x),g(x)), apex(span), ob(lim))
 end
@@ -240,7 +242,7 @@ function limit(Xs::DiscreteDiagram{<:TypeSet})
   Limit(Xs, Multispan(X, πs))
 end
 
-function universal(lim::Product{<:TypeSet}, span::Multispan{<:SetOb})
+function universal(lim::Product{<:TypeSet}, span::Multispan)
   @assert length(cone(lim)) == length(span)
   fs = Tuple(legs(span))
   SetFunction(x -> map(f -> f(x), fs), apex(span), ob(lim))
@@ -250,5 +252,10 @@ function limit(cospan::Multicospan{<:TypeSet})
   eltype(apex(cospan)) == Nothing ? product(feet(cospan)) :
     error("Pullbacks of TypeSets that are not products are not supported")
 end
+
+# Colimits
+##########
+
+colimit(Xs::SingletonDiagram{<:TypeSet}) = colimit(Xs, SpecializeColimit())
 
 end

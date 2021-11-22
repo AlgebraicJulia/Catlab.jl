@@ -368,13 +368,12 @@ Sets.do_compose(f::Union{FinFunctionVector,IndexedFinFunction},
 # Limits
 ########
 
-function limit(Xs::EmptyDiagram{<:FinSet{Int}})
-  Limit(Xs, SMultispan{0}(FinSet(1)))
-end
+limit(Xs::EmptyDiagram{<:FinSet{Int}}) = Limit(Xs, SMultispan{0}(FinSet(1)))
 
-function universal(lim::Limit{<:FinSet{Int},<:EmptyDiagram}, cone::SMultispan{0})
+universal(lim::Limit{<:FinSet{Int},<:EmptyDiagram}, cone::SMultispan{0}) =
   ConstantFunction(1, apex(cone), FinSet(1))
-end
+
+limit(Xs::SingletonDiagram{<:FinSet{Int}}) = limit(Xs, SpecializeLimit())
 
 function limit(Xs::ObjectPair{<:FinSet{Int}})
   m, n = length.(Xs)
@@ -878,13 +877,12 @@ column_name(i::Integer) = Symbol("x$i") # Same default as DataFrames.jl.
 # Colimits
 ##########
 
-function colimit(Xs::EmptyDiagram{<:FinSet{Int}})
-  Colimit(Xs, SMulticospan{0}(FinSet(0)))
-end
+colimit(Xs::EmptyDiagram{<:FinSet{Int}}) = Colimit(Xs, SMulticospan{0}(FinSet(0)))
 
-function universal(colim::Initial{<:FinSet{Int}}, cocone::SMulticospan{0})
+universal(colim::Initial{<:FinSet{Int}}, cocone::SMulticospan{0}) =
   FinFunction(Int[], apex(cocone))
-end
+
+colimit(Xs::SingletonDiagram{<:FinSet{Int}}) = colimit(Xs, SpecializeColimit())
 
 function colimit(Xs::ObjectPair{<:FinSet{Int}})
   m, n = length.(Xs)
