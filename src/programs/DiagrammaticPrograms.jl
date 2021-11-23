@@ -10,7 +10,7 @@ export @graph, @fincat, @finfunctor, @diagram, @migrate, @migration
 using Base.Iterators: repeated
 using MLStyle: @match
 
-using ...Present, ...Graphs, ...CategoricalAlgebra
+using ...GAT, ...Present, ...Graphs, ...CategoricalAlgebra
 using ...Theories: munit
 using ...CategoricalAlgebra.FinCats: mapvals, make_map
 using ...CategoricalAlgebra.DataMigrations: ConjQuery, GlueQuery, GlucQuery
@@ -228,7 +228,7 @@ end
 
 function parse_functor(C::FinCat, D::FinCat, body::Expr)
   ob_rhs, hom_rhs = parse_ob_hom_maps(C, body)
-  F = FinFunctor(mapvals(x -> ob_named(D, x), ob_rhs),
+  F = FinFunctor(mapvals(x -> parse_ob(D, x), ob_rhs),
                  mapvals(f -> parse_hom(D, f), hom_rhs), C, D)
   is_functorial(F, check_equations=false) ||
     error("Result of @finfunctor macro is not functorial: $body")
@@ -269,9 +269,19 @@ function parse_ob_hom_maps(C::FinCat, body::Expr; allow_missing::Bool=false)
   (ob_rhs, hom_rhs)
 end
 
+""" Parse expression for object in a category.
+"""
+function parse_ob(C::FinCat{Ob,Hom}, expr) where {Ob,Hom}
+  @match expr begin
+    x::Symbol => ob_named(C, x)
+    Expr(:curly, _...) => parse_gat_expr(C, expr)::Ob
+    _ => error("Invalid object expression $expr")
+  end
+end
+
 """ Parse expression for morphism in a category.
 """
-function parse_hom(C::FinCat, expr)
+function parse_hom(C::FinCat{Ob,Hom}, expr) where {Ob,Hom}
   function parse(expr)
     @match expr begin
       Expr(:call, :compose, args...) =>
@@ -281,6 +291,7 @@ function parse_hom(C::FinCat, expr)
       Expr(:call, :(∘), f, g) => compose(C, parse(g), parse(f))
       Expr(:call, :id, x::Symbol) => id(C, ob_named(C, x))
       f::Symbol => hom_named(C, f)
+      Expr(:curly, _...) => parse_gat_expr(C, expr)::Hom
       _ => error("Invalid morphism expression $expr")
     end
   end
@@ -291,6 +302,21 @@ ob_name(C::FinCatGraph{<:NamedGraph}, x) = vertex_name(graph(C), x)
 hom_name(C::FinCatGraph{<:NamedGraph}, f) = edge_name(graph(C), f)
 ob_named(C::FinCatGraph{<:NamedGraph}, name) = vertex_named(graph(C), name)
 hom_named(C::FinCatGraph{<:NamedGraph}, name) = edge_named(graph(C), name)
+
+""" Parse GAT expression based on curly braces, rather than parentheses.
+"""
+function parse_gat_expr(C::FinCat, root_expr)
+  pres = presentation(C)
+  function parse(expr)
+    @match expr begin
+      Expr(:curly, head::Symbol, args...) =>
+        invoke_term(pres.syntax, head, map(parse, args)...)
+      x::Symbol => generator(pres, x)
+      _ => error("Invalid GAT expression $root_expr")
+    end
+  end
+  parse(root_expr)
+end
 
 # Diagrams
 ##########
@@ -321,7 +347,7 @@ end
 
 function parse_diagram(C::FinCat, body::Expr; kw...)
   F_ob, F_hom, J = parse_diagram_data(
-    x -> ob_named(C,x), (f,x,y) -> parse_hom(C,f), body; kw...)
+    x -> parse_ob(C,x), (f,x,y) -> parse_hom(C,f), body; kw...)
   F = FinFunctor(F_ob, F_hom, J, C)
   is_functorial(F, check_equations=false) ||
     error("@diagram macro defined diagram that is not functorial: $body")

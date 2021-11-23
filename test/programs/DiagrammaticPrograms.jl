@@ -100,6 +100,15 @@ end)
   tgt => tgt
 end)
 
+# GAT expressions.
+F = @finfunctor TheoryDDS TheoryDDS begin
+  X => X; Φ => id(X)
+end
+F′ = @finfunctor TheoryDDS TheoryDDS begin
+  X => X; Φ => id{X}
+end
+@test F == F′
+
 # Diagrams
 ##########
 
