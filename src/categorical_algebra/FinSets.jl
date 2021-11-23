@@ -664,6 +664,12 @@ function limit(d::BipartiteFreeDiagram{Ob,Hom}) where
   @assert !any(isempty(incident(d, v, :tgt)) for v in vertices₂(d))
   d_original = d
 
+  # For uniformity, e.g. when pairing below, ensure that all objects in layer 2
+  # are type sets.
+  if !all(x isa TypeSet for x in ob₂(d))
+    d = map(d, ob₁=identity, ob₂=ensure_type_set, hom=ensure_type_set_codom)
+  end
+
   # It is generally optimal to compute all equalizers (self joins) first, so as
   # to reduce the sizes of later pullbacks (joins) and products (cross joins).
   d, ιs = equalize_all(d)
@@ -728,6 +734,14 @@ function limit(d::BipartiteFreeDiagram{Ob,Hom}) where
     FinSetIndexedLimit(d_original, Multispan(πs))
   end
 end
+
+ensure_type_set(s::FinSet) = TypeSet(eltype(s))
+ensure_type_set(s::TypeSet) = s
+ensure_type_set_codom(f::FinFunction) =
+  SetFunctionCallable(f, dom(f), TypeSet(eltype(codom(f))))
+ensure_type_set_codom(f::IndexedFinFunction) =
+  IndexedFinDomFunction(f.func, index=f.index)
+ensure_type_set_codom(f::FinDomFunction) = f
 
 """ Compute all possible equalizers in a bipartite free diagram.
 
@@ -879,8 +893,10 @@ column_name(i::Integer) = Symbol("x$i") # Same default as DataFrames.jl.
 
 colimit(Xs::EmptyDiagram{<:FinSet{Int}}) = Colimit(Xs, SMulticospan{0}(FinSet(0)))
 
-universal(colim::Initial{<:FinSet{Int}}, cocone::SMulticospan{0}) =
-  FinFunction(Int[], apex(cocone))
+function universal(colim::Initial{<:FinSet{Int}}, cocone::SMulticospan{0})
+  cod = apex(cocone)
+  FinDomFunction(SVector{0,eltype(cod)}(), cod)
+end
 
 colimit(Xs::SingletonDiagram{<:FinSet{Int}}) = colimit(Xs, SpecializeColimit())
 
@@ -893,7 +909,7 @@ end
 
 function universal(colim::BinaryCoproduct{<:FinSet{Int}}, cocone::Cospan)
   f, g = cocone
-  FinFunction(vcat(collect(f), collect(g)), ob(colim), apex(cocone))
+  FinDomFunction(vcat(collect(f), collect(g)), ob(colim), apex(cocone))
 end
 
 function colimit(Xs::DiscreteDiagram{<:FinSet{Int}})
@@ -905,8 +921,9 @@ function colimit(Xs::DiscreteDiagram{<:FinSet{Int}})
 end
 
 function universal(colim::Coproduct{<:FinSet{Int}}, cocone::Multicospan)
-  FinFunction(reduce(vcat, (collect(f) for f in cocone), init=Int[]),
-              ob(colim), apex(cocone))
+  cod = apex(cocone)
+  FinDomFunction(mapreduce(collect, vcat, cocone, init=eltype(cod)[]),
+                 ob(colim), cod)
 end
 
 function colimit(pair::ParallelPair{<:FinSet{Int}})
@@ -954,11 +971,26 @@ function pass_to_quotient(π::FinFunction{Int,Int}, h::FinFunction{Int,Int})
     if q[j] == 0
       q[j] = h(i)
     else
-      q[j] == h(i) || error("Quotient map out of coequalizer is ill-defined")
+      q[j] == h(i) || error("Quotient map of colimit is ill-defined")
     end
   end
-  all(>(0), q) || error("Projection map is not surjective")
+  any(==(0), q) && error("Projection map is not surjective")
   FinFunction(q, codom(h))
+end
+
+function pass_to_quotient(π::FinFunction{Int,Int}, h::FinDomFunction{Int})
+  @assert dom(π) == dom(h)
+  q = Vector{Union{Some{eltype(codom(h))},Nothing}}(nothing, length(codom(π)))
+  for i in dom(h)
+    j = π(i)
+    if isnothing(q[j])
+      q[j] = Some(h(i))
+    else
+      something(q[j]) == h(i) || error("Quotient map of colimit is ill-defined")
+    end
+  end
+  any(isnothing, q) && error("Projection map is not surjective")
+  FinDomFunction(map(something, q), codom(h))
 end
 
 function colimit(span::Multispan{<:FinSet{Int}})

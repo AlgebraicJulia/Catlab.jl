@@ -135,11 +135,15 @@ end
 
 # ACSets as set-valued FinDomFunctors.
 
+# TODO: We should wrap `SchemaDescType` instead of creating a presentation.
+const ACSetDomCat = FinCats.FinCatPresentation{
+  Symbol, Union{FreeSchema.Ob,FreeSchema.AttrType},
+  Union{FreeSchema.Hom,FreeSchema.Attr,FreeSchema.AttrType}}
+
 """ Wrapper type to interpret attributed C-set as a functor.
 """
 @auto_hash_equals struct ACSetFunctor{ACS<:ACSet} <:
-    Functor{FinCats.FinCatPresentation{Symbol,FreeSchema.Ob,FreeSchema.Hom},
-            TypeCat{SetOb,FinDomFunction{Int}}}
+    Functor{ACSetDomCat,TypeCat{SetOb,FinDomFunction{Int}}}
   acset::ACS
 end
 FinDomFunctor(X::ACSet) = ACSetFunctor(X)

@@ -496,7 +496,7 @@ high-level steps of this process are:
 2. Promote the query types to the tightest type encompassing all queries, an
    approach reminiscent of Julia's own type promotion system.
 3. Convert all query and query morphisms to this common type, yielding `Diagram`
-   and `DiagramHom` objects.
+   and `DiagramHom` instances.
 """
 function parse_migration(src_schema::Presentation, body::Expr;
                          preprocess::Bool=true)
