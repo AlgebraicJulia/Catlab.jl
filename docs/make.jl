@@ -60,6 +60,7 @@ makedocs(
         ],
       "Graphs" => Any[
         "generated/graphs/graphs.md",
+        "generated/graphs/graphs_label.md",
         "generated/graphs/subgraphs.md",
       ],
       "Wiring Diagrams" => Any[
