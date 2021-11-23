@@ -496,9 +496,9 @@ weight(g::HasGraph, args...) = subpart(g, args..., :weight)
   compose(inv, weight) == weight
 end
 
-""" Abstract type for symmetric weights graphs.
+""" Abstract type for symmetric weighted graphs.
 """
-@abstract_acset_type AbstractSymmetricWeightedGraph
+@abstract_acset_type AbstractSymmetricWeightedGraph <: AbstractSymmetricGraph
 
 """ A symmetric weighted graph.
 

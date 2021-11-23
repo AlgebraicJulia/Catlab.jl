@@ -167,12 +167,14 @@ function migrate(X::FinDomFunctor, F::ConjSchemaMigration;
   limits = make_map(ob_generators(tgt_schema)) do c
     Fc = ob_map(F, c)
     # XXX: Disable domain check because acsets don't store schema equations.
-    lim = limit(compose(Fc, X, strict=false), alg=ToBipartiteLimit())
+    lim = limit(compose(Fc, X, strict=false),
+                alg=SpecializeLimit(fallback=ToBipartiteLimit()))
     if tabular
       J = shape(Fc)
-      lim = TabularLimit(lim, names=(ob_name(J, j) for j in ob_generators(J)))
+      TabularLimit(lim, names=(ob_name(J, j) for j in ob_generators(J)))
+    else
+      lim
     end
-    lim
   end
   funcs = make_map(hom_generators(tgt_schema)) do f
     Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)
@@ -199,7 +201,7 @@ function migrate(X::FinDomFunctor, F::GlueSchemaMigration)
   colimits = make_map(ob_generators(tgt_schema)) do c
     Fc = ob_map(F, c)
     # XXX: Force composition to tighten the codomain types.
-    colimit(force(compose(Fc, X, strict=false)))
+    colimit(force(compose(Fc, X, strict=false)), alg=SpecializeColimit())
   end
   funcs = make_map(hom_generators(tgt_schema)) do f
     Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)

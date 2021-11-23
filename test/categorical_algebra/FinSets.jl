@@ -267,11 +267,12 @@ h = universal(lim, Multispan([f′, g′, f′⋅f])) # f′⋅f == g′⋅g
 @test force(h ⋅ π2) == g′
 
 # Pullback as limit of bipartite free diagram.
-lim = limit(BipartiteFreeDiagram(Cospan(f, g)))
+lim = limit(BipartiteFreeDiagram{SetOb,FinDomFunction{Int}}(Cospan(f, g)))
 π1, π2 = legs(lim)
 @test π1 == FinFunction([1,1,2,2,4], 4)
 @test π2 == FinFunction([1,2,1,2,4], 4)
-lim′ = limit(FreeDiagram(Cospan(f, g)), ToBipartiteLimit())
+lim′ = limit(FreeDiagram{SetOb,FinDomFunction{Int}}(Cospan(f, g)),
+             ToBipartiteLimit())
 @test legs(lim′)[1:2] == legs(lim)
 
 h = universal(lim, Span(f′, g′))
@@ -311,8 +312,9 @@ colim = coproduct(FinSet(2), FinSet(3))
 @test coproj2(colim) == FinFunction([3,4,5], 5)
 
 f, g = FinFunction([3,5], 5), FinFunction([1,2,3], 5)
-@test force(coproj1(colim) ⋅ copair(colim,f,g)) == f
-@test force(coproj2(colim) ⋅ copair(colim,f,g)) == g
+h = copair(colim, f, g)
+@test force(coproj1(colim) ⋅ h) == f
+@test force(coproj2(colim) ⋅ h) == g
 
 # N-ary coproduct.
 colim = coproduct([FinSet(2), FinSet(3)])
@@ -320,8 +322,9 @@ colim = coproduct([FinSet(2), FinSet(3)])
 @test legs(colim) == [FinFunction([1,2], 5), FinFunction([3,4,5], 5)]
 @test ob(coproduct(FinSet{Int}[])) == FinSet(0)
 
-@test force(first(legs(colim)) ⋅ copair(colim,[f,g])) == f
-@test force(last(legs(colim)) ⋅ copair(colim,[f,g])) == g
+h = copair(colim, [f,g])
+@test force(first(legs(colim)) ⋅ h) == f
+@test force(last(legs(colim)) ⋅ h) == g
 
 # Cocartesian monoidal structure.
 @test FinSet(2)⊕FinSet(3) == FinSet(5)
@@ -369,8 +372,9 @@ colim = pushout(f,g)
 @test coproj2(colim) == FinFunction([3,4,5], 5)
 
 h, k = FinFunction([3,5], 5), FinFunction([1,2,3], 5)
-@test force(coproj1(colim) ⋅ copair(colim,h,k)) == h
-@test force(coproj2(colim) ⋅ copair(colim,h,k)) == k
+ℓ = copair(colim, h, k)
+@test force(coproj1(colim) ⋅ ℓ) == h
+@test force(coproj2(colim) ⋅ ℓ) == k
 
 # Pushout from a singleton set.
 f, g = FinFunction([1], 2), FinFunction([2], 3)
@@ -382,9 +386,17 @@ colim = pushout(f,g)
 @test ι2 == FinFunction([3,1,4], 4)
 
 h, k = FinFunction([3,5]), FinFunction([1,3,5])
-@test force(coproj1(colim) ⋅ copair(colim,h,k)) == h
-@test force(coproj2(colim) ⋅ copair(colim,h,k)) == k
+ℓ = copair(colim, h, k)
+@test force(coproj1(colim) ⋅ ℓ) == h
+@test force(coproj2(colim) ⋅ ℓ) == k
 k = FinFunction([1,2,5])
+@test_throws ErrorException copair(colim,h,k)
+
+h, k = FinDomFunction([:b,:c]), FinDomFunction([:a,:b,:c])
+ℓ = copair(colim, h, k)
+@test force(coproj1(colim) ⋅ ℓ) == h
+@test force(coproj2(colim) ⋅ ℓ) == k
+k = FinDomFunction([:a,:d,:c])
 @test_throws ErrorException copair(colim,h,k)
 
 # Same thing as a colimit of a general free diagram.

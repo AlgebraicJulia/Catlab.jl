@@ -1,7 +1,7 @@
-""" Tests of limit and colimit data structures.
+""" Tests of limits and colimits in general.
 
-More extensive tests are provided by (co)limits for specific categories such as
-FinSet.
+More extensive tests are provided by tests of (co)limits in specific categories
+such as Set and FinSet.
 """
 module TestLimits
 using Test
@@ -13,7 +13,7 @@ A, B, C = Ob(FreeCategory, :A, :B, :C)
 # Limits
 ########
 
-# Products.
+# Limit data structure.
 f, g = Hom(:f, C, A), Hom(:g, C, B)
 lim = Limit(ObjectPair(A,B), Span(f,g))
 @test lim isa BinaryProduct
@@ -24,10 +24,15 @@ lim = Limit(ObjectPair(A,B), Span(f,g))
 lim = Limit(DiscreteDiagram([A,B]), Span(f,g))
 @test lim isa Product
 
+# Specializing to singleton limit.
+d = FreeDiagram{FreeCategory.Ob,FreeCategory.Hom}(1, ob=A)
+lim = limit(d, SpecializeLimit())
+@test ob(lim) == A
+
 # Colimits
 ##########
 
-# Coproducts.
+# Colimit data structure.
 f, g = Hom(:f, A, C), Hom(:g, B, C)
 colim = Colimit(ObjectPair(A,B), Cospan(f,g))
 @test colim isa BinaryCoproduct
@@ -37,5 +42,10 @@ colim = Colimit(ObjectPair(A,B), Cospan(f,g))
 
 colim = Colimit(DiscreteDiagram([A,B]), Cospan(f,g))
 @test colim isa Coproduct
+
+# Specializing to singleton colimit.
+d = FreeDiagram{FreeCategory.Ob,FreeCategory.Hom}(1, ob=A)
+colim = colimit(d, SpecializeColimit())
+@test ob(colim) == A
 
 end

@@ -724,13 +724,8 @@ end
 
   attrtype_instantiations = map(enumerate(s.attrtypes)) do (i,d)
     if d ∈ affected_attrtypes
-      quote
-        T = eltype(fn_vals[$(q(abc[d][1]))])
-        $(Expr(:block, (map(abc[d][2:end]) do a
-                          :(@assert T == eltype(fn_vals[$(q(a))]))
-                        end)...))
-        T
-      end
+      :(mapreduce(eltype, typejoin,
+                  $(Expr(:tuple, (:(fn_vals[$(q(a))]) for a in abc[d])...))))
     else
       :($(Ts[i]))
     end

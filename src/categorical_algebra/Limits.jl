@@ -13,15 +13,16 @@ export AbstractLimit, AbstractColimit, Limit, Colimit,
   BinaryCoequalizer, Coequalizer, coequalizer, proj,
   @cartesian_monoidal_instance, @cocartesian_monoidal_instance,
   ComposeProductEqualizer, ComposeCoproductCoequalizer,
-  ToBipartiteLimit, ToBipartiteColimit
+  SpecializeLimit, SpecializeColimit, ToBipartiteLimit, ToBipartiteColimit
 
 using AutoHashEquals
+using StaticArrays: StaticVector, SVector
 
 using ...GAT, ...Theories
 import ...Theories: ob, terminal, product, proj1, proj2, equalizer, incl,
   initial, coproduct, coproj1, coproj2, coequalizer, proj,
   delete, create, pair, copair, factorize
-using ...CSetDataStructures, ..Categories, ..FreeDiagrams
+using ...CSetDataStructures, ..FinCats, ..FreeDiagrams
 import ..FreeDiagrams: apex, legs
 
 # Data types for limits
@@ -122,7 +123,8 @@ or equalizers.
 
 See also: [`colimit`](@ref)
 """
-limit(diagram) = limit(diagram_type(diagram), diagram)
+limit(diagram; kw...) = limit(diagram_type(diagram), diagram; kw...)
+limit(diagram, ::Nothing; kw...) = limit(diagram; kw...) # alg == nothing
 
 """ Colimit of a diagram.
 
@@ -133,7 +135,8 @@ such as coproducts or coequalizers.
 
 See also: [`limit`](@ref)
 """
-colimit(diagram) = colimit(diagram_type(diagram), diagram)
+colimit(diagram; kw...) = colimit(diagram_type(diagram), diagram; kw...)
+colimit(diagram, ::Nothing; kw...) = colimit(diagram; kw...) # alg == nothing
 
 """ Universal property of (co)limits.
 
@@ -362,6 +365,96 @@ end
 # (Co)limit algorithms
 ######################
 
+# Specialize (co)limits
+#----------------------
+
+""" Meta-algorithm attempting to reduce general limits to common special cases.
+
+Specifically, reduce limits of free diagrams that happen to be discrete to
+products. TODO: Handle pullbacks similarly.
+"""
+@Base.kwdef struct SpecializeLimit <: LimitAlgorithm
+  fallback::Union{LimitAlgorithm,Nothing} = nothing
+end
+
+limit(diagram, alg::SpecializeLimit) = limit(diagram, alg.fallback)
+
+function limit(F::FinDomFunctor{<:FinCat{Int},<:TypeCat{Ob,Hom}},
+               alg::SpecializeLimit) where {Ob,Hom}
+  if is_discrete(dom(F))
+    return limit(DiscreteDiagram(collect_ob(F), Hom), alg)
+  end
+  limit(F, alg.fallback)
+end
+limit(diagram::FreeDiagram, alg::SpecializeLimit) =
+  limit(FinDomFunctor(diagram), alg)
+
+function limit(Xs::DiscreteDiagram{Ob,Hom,Obs},
+               alg::SpecializeLimit) where {Ob,Hom,Obs}
+  if !(Obs <: StaticVector) && length(Xs) <= 3
+    return limit(DiscreteDiagram(SVector{length(Xs)}(ob(Xs)), Hom), alg)
+  end
+  limit(Xs, alg.fallback)
+end
+
+""" Meta-algorithm attempting to reduce general colimits to common special cases.
+
+Dual to [`SpecializeLimit`](@ref).
+"""
+@Base.kwdef struct SpecializeColimit <: ColimitAlgorithm
+  fallback::Union{ColimitAlgorithm,Nothing} = nothing
+end
+
+colimit(diagram, alg::SpecializeColimit) = colimit(diagram, alg.fallback)
+
+function colimit(F::FinDomFunctor{<:FinCat{Int},<:TypeCat{Ob,Hom}},
+                 alg::SpecializeColimit) where {Ob,Hom}
+  if is_discrete(dom(F))
+    return colimit(DiscreteDiagram(collect_ob(F), Hom), alg)
+  end
+  colimit(F, alg.fallback)
+end
+colimit(diagram::FreeDiagram, alg::SpecializeColimit) =
+  colimit(FinDomFunctor(diagram), alg)
+
+function colimit(Xs::DiscreteDiagram{Ob,Hom,Obs},
+                 alg::SpecializeColimit) where {Ob,Hom,Obs}
+  if !(Obs <: StaticVector) && length(Xs) <= 3
+    return colimit(DiscreteDiagram(SVector{length(Xs)}(ob(Xs)), Hom), alg)
+  end
+  colimit(Xs, alg.fallback)
+end
+
+""" Limit of a singleton diagram.
+"""
+struct SingletonLimit{Ob,Diagram<:SingletonDiagram{Ob}} <: AbstractLimit{Ob,Diagram}
+  diagram::Diagram
+end
+
+cone(lim::SingletonLimit) = let x = only(lim.diagram)
+  SMultispan{1}(x, id(x))
+end
+universal(::SingletonLimit, cone::Multispan) = only(cone)
+
+limit(diagram::SingletonDiagram, ::SpecializeLimit) = SingletonLimit(diagram)
+
+""" Colimit of a singleton diagram.
+"""
+struct SingletonColimit{Ob,Diagram<:SingletonDiagram{Ob}} <: AbstractColimit{Ob,Diagram}
+  diagram::Diagram
+end
+
+cocone(colim::SingletonColimit) = let x = only(colim.diagram)
+  SMulticospan{1}(x, id(x))
+end
+universal(::SingletonColimit, cocone::Multicospan) = only(cocone)
+
+colimit(diagram::SingletonDiagram, ::SpecializeColimit) =
+  SingletonColimit(diagram)
+
+# Composite (co)limits
+#---------------------
+
 """ Compute pullback by composing a product with an equalizer.
 
 See also: [`ComposeCoproductCoequalizer`](@ref).
@@ -424,6 +517,9 @@ end
 function universal(lim::CompositePushout, cone::Multicospan)
   factorize(lim.coeq, universal(lim.coprod, cone))
 end
+
+# Bipartite (co)limits
+#---------------------
 
 """ Compute a limit by reducing the diagram to a free bipartite diagram.
 """

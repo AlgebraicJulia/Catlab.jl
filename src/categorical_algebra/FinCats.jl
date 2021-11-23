@@ -22,7 +22,7 @@ using StaticArrays: SVector
 @reexport using ..Categories
 using ...GAT, ...Present, ...Syntax
 import ...Present: equations
-using ...Theories: Category, Schema, ObExpr, HomExpr
+using ...Theories: Category, Schema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ...CSetDataStructures, ...Graphs
 import ...Graphs: edges, src, tgt
@@ -207,8 +207,10 @@ end
 The presentation type can, of course, be a category (`Theories.Category`). It
 can also be a schema (`Theories.Schema`). In this case, the schema's objects and
 attribute types are regarded as the category's objects and the schema's
-morphisms and attributes as the category's morphisms. Formalizing the schema as
-a profunctor, this amounts to taking the collage of the profunctor.
+morphisms, attributes, and attribute types as the category's morphisms (where
+the attribute types are identity morphisms). When the schema is formalized as a
+profunctor whose codomain category is discrete, this amounts to taking the
+collage of the profunctor.
 """
 @auto_hash_equals struct FinCatPresentation{T,Ob,Hom} <: FinCat{Ob,Hom}
   presentation::Presentation{T}
@@ -220,7 +222,9 @@ function FinCatPresentation(pres::Presentation{T}) where T
 end
 function FinCatPresentation(pres::Presentation{Schema})
   S = pres.syntax
-  FinCatPresentation{Schema,Union{S.Ob,S.AttrType},Union{S.Hom,S.Attr}}(pres)
+  Ob = Union{S.Ob, S.AttrType}
+  Hom = Union{S.Hom, S.Attr, S.AttrType}
+  FinCatPresentation{Schema,Ob,Hom}(pres)
 end
 
 presentation(C::FinCatPresentation) = C.presentation
@@ -250,8 +254,12 @@ hom(C::FinCatPresentation, fs::AbstractVector) =
 hom(C::FinCatPresentation, f::GATExpr) =
   gat_typeof(f) == :Hom ? f : error("Expression $f is not a morphism")
 hom(C::FinCatPresentation{Schema}, f::GATExpr) =
-  gat_typeof(f) ∈ (:Hom, :Attr) ? f :
+  gat_typeof(f) ∈ (:Hom, :Attr, :AttrType) ? f :
     error("Expression $f is not a morphism or attribute")
+
+id(C::FinCatPresentation{Schema}, x::AttrTypeExpr) = x
+compose(C::FinCatPresentation{Schema}, f::AttrTypeExpr, g::AttrTypeExpr) =
+  (f == g) ? f : error("Invalid composite of attribute type identities: $f != $g")
 
 function Base.show(io::IO, C::FinCatPresentation)
   print(io, "FinCat(")

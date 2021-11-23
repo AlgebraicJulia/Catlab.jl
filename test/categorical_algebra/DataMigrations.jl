@@ -127,6 +127,27 @@ migrate!(h, g, F)
 @test (nv(h), ne(h)) == (10, 3)
 @test sort!(collect(zip(h[:src], h[:tgt]))) == [(6,8), (7,9), (8,10)]
 
+# Weighted graph whose edges are path of length 2 with equal weight.
+F = @migration TheoryWeightedGraph TheoryWeightedGraph begin
+  V => V
+  E => @join begin
+    v::V; (e₁, e₂)::E; w::Weight
+    (t: e₁ → v)::tgt
+    (s: e₂ → v)::src
+    (w₁: e₁ → w)::weight
+    (w₂: e₂ → w)::weight
+  end
+  Weight => Weight
+  src => e₁ ⋅ src
+  tgt => e₂ ⋅ tgt
+  weight => w
+end
+g = path_graph(WeightedGraph{Float64}, 6, E=(weight=[0.5,0.5,1.5,1.5,1.5],))
+h = migrate(WeightedGraph{Float64}, g, F)
+@test (nv(h), ne(h)) == (6, 3)
+@test sort!(collect(zip(h[:src], h[:tgt], h[:weight]))) ==
+  [(1,3,0.5), (3,5,1.5), (4,6,1.5)]
+
 # Graph whose vertices are paths of length 2 and edges are paths of length 3.
 g = path_graph(Graph, 6)
 h = @migrate Graph g begin
@@ -172,7 +193,23 @@ h = @migrate SymmetricGraph g begin
   tgt => (fwd => tgt; rev => src)
   inv => (fwd => rev; rev => fwd)
 end
-@test is_isomorphic(h, star_graph(SymmetricGraph, 5))
+@test h == star_graph(SymmetricGraph, 5)
+
+# Free symmetric weighted graph on a weighted graph.
+weights = range(0, 1, length=5)
+g = star_graph(WeightedGraph{Float64}, 6, E=(weight=weights,))
+h = @migrate SymmetricWeightedGraph g begin
+  V => V
+  E => @cases (fwd::E; rev::E)
+  Weight => Weight
+  src => (fwd => src; rev => tgt)
+  tgt => (fwd => tgt; rev => src)
+  inv => (fwd => rev; rev => fwd)
+  weight => (fwd => weight; rev => weight)
+end
+h′ = star_graph(SymmetricWeightedGraph{Float64}, 6)
+h′[:weight] = vcat(weights, weights)
+@test h == h′
 
 # Free symmetric reflexive graph on a reflexive graph.
 g = star_graph(ReflexiveGraph, 5)

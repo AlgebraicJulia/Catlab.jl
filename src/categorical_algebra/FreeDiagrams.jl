@@ -7,7 +7,7 @@ and cospans. Limits and colimits are most commonly taken over free diagrams.
 """
 module FreeDiagrams
 export FreeDiagram, BipartiteFreeDiagram, FixedShapeFreeDiagram,
-  DiscreteDiagram, EmptyDiagram, ObjectPair,
+  DiscreteDiagram, EmptyDiagram, SingletonDiagram, ObjectPair,
   Span, Cospan, Multispan, Multicospan, SMultispan, SMulticospan,
   ParallelPair, ParallelMorphisms, ComposablePair, ComposableMorphisms,
   diagram_type, cone_objects, cocone_objects,
@@ -76,9 +76,11 @@ DiscreteDiagram(objects::Obs, Hom::Type=Any) where {Ob,Obs<:AbstractVector{Ob}} 
   DiscreteDiagram{Ob,Hom,Obs}(objects)
 
 const EmptyDiagram{Ob,Hom} = DiscreteDiagram{Ob,Hom,<:StaticVector{0,Ob}}
+const SingletonDiagram{Ob,Hom} = DiscreteDiagram{Ob,Hom,<:StaticVector{1,Ob}}
 const ObjectPair{Ob,Hom} = DiscreteDiagram{Ob,Hom,<:StaticVector{2,Ob}}
 
 EmptyDiagram{Ob}(Hom::Type=Any) where Ob = DiscreteDiagram(SVector{0,Ob}(), Hom)
+SingletonDiagram(ob, Hom::Type=Any) = DiscreteDiagram(SVector(ob), Hom)
 ObjectPair(first, second, Hom::Type=Any) =
   DiscreteDiagram(SVector(first, second), Hom)
 
