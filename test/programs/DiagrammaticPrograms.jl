@@ -139,6 +139,16 @@ F_parsed = @diagram TheoryGraph begin
 end
 @test F_parsed == F
 
+F_parsed = @diagram TheoryGraph begin
+  v::V
+  (e1, e2)::E
+  (e1 → v)::tgt
+  (e2 → v)::src
+end
+J_parsed = dom(F_parsed)
+@test src(graph(J_parsed)) == src(graph(J))
+@test tgt(graph(J_parsed)) == tgt(graph(J))
+
 F = @diagram TheoryDDS begin
   x::X
   (f: x → x)::(Φ⋅Φ)
@@ -184,8 +194,8 @@ F = @migration TheoryGraph TheoryGraph begin
   E => @join begin
     v::V
     (e₁, e₂)::E
-    (t: e₁ → v)::tgt
-    (s: e₂ → v)::src
+    (e₁ → v)::tgt
+    (e₂ → v)::src
   end
   src => e₁ ⋅ src
   tgt => e₂ ⋅ tgt
@@ -310,8 +320,8 @@ F = @migration TheoryGraph begin
   V => V
   Component => @glue begin
     e::E; v::V
-    (s: e → v)::src
-    (t: e → v)::tgt
+    (e → v)::src
+    (e → v)::tgt
   end
   (component: V → Component) => v
 end
@@ -331,8 +341,8 @@ F = @migration TheoryGraph TheoryGraph begin
     path => @join begin
       v::V
       (e₁, e₂)::E
-      (t: e₁ → v)::tgt
-      (s: e₂ → v)::src
+      (e₁ → v)::tgt
+      (e₂ → v)::src
     end
   end
   src => begin
@@ -359,13 +369,13 @@ F = @migration TheoryGraph TheoryBipartiteGraph begin
   E => @cases begin
     e₁ => @join begin
       v₂::V₂; e₁₂::E₁₂; e₂₁::E₂₁
-      (t: e₁₂ → v₂)::tgt₂
-      (s: e₂₁ → v₂)::src₂
+      (e₁₂ → v₂)::tgt₂
+      (e₂₁ → v₂)::src₂
     end
     e₂ => @join begin
       v₁::V₁; e₂₁::E₂₁; e₁₂::E₁₂
-      (t: e₂₁ → v₁)::tgt₁
-      (s: e₁₂ → v₁)::src₁
+      (e₂₁ → v₁)::tgt₁
+      (e₁₂ → v₁)::src₁
     end
   end
   src => begin

@@ -103,7 +103,7 @@ function parse_graph(G::Type, body::Expr; preprocess::Bool=true)
       Expr(:call, (:), Expr(:tuple, es...), Expr(:call, :(→), u::Symbol, v::Symbol)) =>
         for e in es; parse_edge!(g, u, v, ename=e) end
       ::LineNumberNode => nothing
-      _ => error("@graph macro cannot parse line: $stmt")
+      _ => error("Cannot parse line in graph definition: $stmt")
     end
   end
   return g
@@ -176,7 +176,7 @@ function parse_category(G::Type, body::Expr; preprocess::Bool=true)
       # f == g
       Expr(:call, :(==), lhs, rhs) => push!(eqs, parse_path_equation(g, lhs, rhs))
       ::LineNumberNode => nothing
-      _ => error("@fincat macro cannot parse line: $stmt")
+      _ => error("Cannot parse line in category definition: $stmt")
     end
   end
   isempty(eqs) ? FinCat(g) : FinCat(g, eqs)
@@ -231,7 +231,7 @@ function parse_functor(C::FinCat, D::FinCat, body::Expr)
   F = FinFunctor(mapvals(x -> parse_ob(D, x), ob_rhs),
                  mapvals(f -> parse_hom(D, f), hom_rhs), C, D)
   is_functorial(F, check_equations=false) ||
-    error("Result of @finfunctor macro is not functorial: $body")
+    error("Parsed functor is not functorial: $body")
   return F
 end
 function parse_functor(C::Presentation, D::Presentation, body::Expr; kw...)
@@ -327,19 +327,36 @@ Recall that a *diagram* in a category ``C`` is a functor ``F: J → C`` from a
 small category ``J`` into ``C``. Given the category ``C``, this macro presents a
 diagram in ``C``, i.e., constructs a finitely presented indexing category ``J``
 together with a functor ``F: J → C``. This method of simultaneous definition is
-often more convenient than defining ``J`` and ``F`` separately.
+often more convenient than defining ``J`` and ``F`` separately, as could be
+accomplished by calling [`@fincat`](@ref) and then [`@finfunctor`](@ref).
 
-For example, the limit of the following diagram consists of the paths of length
-two in a graph:
+As an example, the limit of the following diagram consists of the paths of
+length two in a graph:
 
 ```julia
-@diagram FinCat(TheoryGraph) begin
+@diagram TheoryGraph begin
   v::V
   (e₁, e₂)::E
   (t: e₁ → v)::tgt
   (s: e₂ → v)::src
 end
 ```
+
+Morphisms in the indexing category can be left unnamed, which is convenient for
+defining free diagrams. For example, the following diagram is isomorphic to the
+previous one:
+
+```julia
+@diagram TheoryGraph begin
+  v::V
+  (e₁, e₂)::E
+  (e₁ → v)::tgt
+  (e₂ → v)::src
+end
+```
+
+Of course, unnamed morphisms cannot be referenced by name within the `@diagram`
+call or in other settings, which can sometimes be problematic.
 """
 macro diagram(cat, body)
   :(parse_diagram($(esc(cat)), $(Meta.quot(body))))
@@ -350,7 +367,7 @@ function parse_diagram(C::FinCat, body::Expr; kw...)
     x -> parse_ob(C,x), (f,x,y) -> parse_hom(C,f), body; kw...)
   F = FinFunctor(F_ob, F_hom, J, C)
   is_functorial(F, check_equations=false) ||
-    error("@diagram macro defined diagram that is not functorial: $body")
+    error("Parsed diagram is not functorial: $body")
   return F
 end
 parse_diagram(pres::Presentation, body::Expr; kw...) =
@@ -366,32 +383,38 @@ function parse_diagram_data(parse_ob, parse_hom, body::Expr;
   for stmt in statements(body)
     @match stmt begin
       # x => X
-      Expr(:call, :(=>), x::Symbol, X) ||
       # x::X
-      Expr(:(::), x::Symbol, X) => begin
+      Expr(:call, :(=>), x::Symbol, X) || Expr(:(::), x::Symbol, X) => begin
         add_vertex!(g, vname=x)
         push!(F_ob, parse_ob(X))
       end
       # (x, y, ...) => X
-      Expr(:call, :(=>), Expr(:tuple, xs...), X) ||
       # (x, y, ...)::X
+      Expr(:call, :(=>), Expr(:tuple, xs...), X) ||
       Expr(:(::), Expr(:tuple, xs...), X) => begin
         add_vertices!(g, length(xs), vname=xs)
         append!(F_ob, repeated(parse_ob(X), length(xs)))
       end
       # (f: x → y) => h
+      # (f: x → y)::h
       Expr(:call, :(=>), Expr(:call, :(:), f::Symbol,
                               Expr(:call, :(→), x::Symbol, y::Symbol)), h) ||
-      # (f: x → y)::h
       Expr(:(::), Expr(:call, :(:), f::Symbol,
                        Expr(:call, :(→), x::Symbol, y::Symbol)), h) => begin
         e = parse_edge!(g, x, y, ename=f)
         push!(F_hom, parse_hom(h, F_ob[src(g,e)], F_ob[tgt(g,e)]))
       end
+      # (x → y) => h
+      # (x → y)::h
+      Expr(:call, :(=>), Expr(:call, :(→), x::Symbol, y::Symbol), h) ||
+      Expr(:(::), Expr(:call, :(→), x::Symbol, y::Symbol), h) => begin
+        e = parse_edge!(g, x, y, ename=gensym(:unnamed))
+        push!(F_hom, parse_hom(h, F_ob[src(g,e)], F_ob[tgt(g,e)]))
+      end
       # f == g
       Expr(:call, :(==), lhs, rhs) => push!(eqs, parse_path_equation(g, lhs, rhs))
       ::LineNumberNode => nothing
-      _ => error("@diagram macro cannot parse line: $stmt")
+      _ => error("Cannot parse line in diagram definition: $stmt")
     end
   end
   J = isempty(eqs) ? FinCat(g) : FinCat(g, eqs)
@@ -570,7 +593,7 @@ function parse_query(C::FinCat, expr)
       d = DiagramData{id}(parse_query_diagram(C, last(args))...)
       is_discrete(shape(d)) ? d : error("Cases query is not discrete: $expr")
     end
-    _ => error("@migration macro cannot parse query $expr")
+    _ => error("Cannot parse query in migration definition: $expr")
   end
 end
 function parse_query_diagram(C::FinCat, expr::Expr; preprocess::Bool=false)
@@ -638,7 +661,7 @@ function parse_conj_query_ob_rhs(C::FinCat, expr, d::DiagramData{op}, c′)
     Expr(:tuple, x::Symbol, f) => (x, f)
     Expr(:call, op, _...) && if op ∈ compose_ops end =>
       leftmost_arg(expr, (:(⋅), :(⨟)), all_ops=compose_ops)
-    _ => error("@migration macro cannot parse object assignment $expr")
+    _ => error("Cannot parse object assignment in migration: $expr")
   end
   j = ob_named(shape(d), j_name)
   isnothing(f_expr) ? j :
@@ -653,7 +676,7 @@ function parse_glue_query_ob_rhs(C::FinCat, expr, c, d′::DiagramData{id})
     Expr(:tuple, x::Symbol, f) => (x, f)
     Expr(:call, op, _...) && if op ∈ compose_ops end =>
       leftmost_arg(expr, (:(∘),), all_ops=compose_ops)
-    _ => error("@migration macro cannot parse object assignment $expr")
+    _ => error("Cannot parse object assignment in migration: $expr")
   end
   j′ = ob_named(shape(d′), j′_name)
   isnothing(f_expr) ? j′ :
