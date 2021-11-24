@@ -18,47 +18,31 @@ using ...CategoricalAlgebra.DataMigrations: ConjQuery, GlueQuery, GlucQuery
 import ...CategoricalAlgebra.DataMigrations: ob_name, hom_name, ob_named, hom_named
 using ...Graphs.BasicGraphs: TheoryGraph
 
-# Data types
-############
+# Graphs
+########
 
 @present TheoryNamedGraph <: TheoryGraph begin
-  Name::AttrType
-  vname::Attr(V, Name)
-  ename::Attr(E, Name)
-end
-
-""" Graph with uniquely named vertices and edges.
-
-THe default graph type for the [`@fincat`](@ref) macro and related macros.
-"""
-@acset_type NamedGraph(TheoryNamedGraph, index=[:src,:tgt],
-                       unique_index=[:vname,:ename]) <: AbstractGraph
-
-@present TheoryMaybeNamedGraph <: TheoryGraph begin
   VName::AttrType
   EName::AttrType
   vname::Attr(V, VName)
   ename::Attr(E, EName)
 end
 
-@acset_type _MaybeNamedGraph(TheoryMaybeNamedGraph, index=[:src,:tgt],
-                             unique_index=[:vname]) <: AbstractGraph
+""" Graph with named vertices and edges.
 
-""" Graph with named vertices and possibly named edges.
-
-The default graph type for the [`@graph`](@ref) macro. Vertex names are uniquely
-indexed and edge names are optional and unindexed.
+The default graph type used by [`@graph`](@ref), [`@fincat`](@ref),
+[`@diagram`](@ref), and related macros.
 """
-const MaybeNamedGraph{Name} = _MaybeNamedGraph{Name,Union{Nothing,Name}}
+@acset_type NamedGraph(TheoryNamedGraph, index=[:src,:tgt,:ename],
+                       unique_index=[:vname]) <: AbstractGraph
+# FIXME: The edge name should also be uniquely indexed, but this currently
+# doesn't play nicely with nullable attributes.
 
 vertex_name(g::HasGraph, args...) = subpart(g, args..., :vname)
 edge_name(g::HasGraph, args...) = subpart(g, args..., :ename)
 
-vertex_named(g::HasGraph, name) = incident(g, name, :vname)
-edge_named(g::HasGraph, name)= incident(g, name, :ename)
-
-# Graphs
-########
+vertex_named(g::HasGraph, name) = only(incident(g, name, :vname))
+edge_named(g::HasGraph, name)= only(incident(g, name, :ename))
 
 """ Construct a graph in a simple, declarative style.
 
@@ -74,14 +58,13 @@ vertices, or an edge. For example, the following defines a directed triangle:
 end
 ```
 
-Vertices in the graph must be uniquely named, whereas edges names are optional
-and need not be unique.
+Vertices in the graph must be uniquely named, whereas edges names are optional.
 """
 macro graph(graph_type, body)
   :(parse_graph($(esc(graph_type)), $(Meta.quot(body))))
 end
 macro graph(body)
-  :(parse_graph(MaybeNamedGraph{Symbol}, $(Meta.quot(body))))
+  :(parse_graph(NamedGraph{Symbol,Union{Symbol,Nothing}}, $(Meta.quot(body))))
 end
 
 function parse_graph(G::Type, body::Expr; preprocess::Bool=true)
@@ -154,7 +137,7 @@ end
 The objects and morphisms must be uniquely named.
 """
 macro fincat(body)
-  parse_category(NamedGraph{Symbol}, body)
+  parse_category(NamedGraph{Symbol,Symbol}, body)
 end
 
 function parse_category(G::Type, body::Expr; preprocess::Bool=true)
@@ -399,10 +382,9 @@ parse_diagram(pres::Presentation, body::Expr; kw...) =
 
 function parse_diagram_data(parse_ob, parse_hom, body::Expr;
                             free::Bool=false, preprocess::Bool=true)
-  g, eqs, unnamed = NamedGraph{Symbol}(), Pair[], 0
+  g, eqs = NamedGraph{Symbol,Union{Symbol,Nothing}}(), Pair[]
   F_ob, F_hom = [], []
   function push_hom!(h, x, y; name=nothing)
-    isnothing(name) && (name = Symbol("#unnamed#", (unnamed += 1)))
     e = parse_edge!(g, x, y, ename=name)
     push!(F_hom, parse_hom(h, F_ob[src(g,e)], F_ob[tgt(g,e)]))
   end
@@ -821,9 +803,9 @@ promote_query_result(T, S, U) = U
 convert_query(::FinCat, ::Type{T}, x::S) where {T, S<:T} = x
 
 function convert_query(cat::C, ::Type{<:Diagram{T,C}}, x::Ob) where
-    {T, Ob, C<:FinCat{Ob}}
-  munit(Diagram{T}, cat, x,
-        shape=FinCat(NamedGraph{Symbol}(1, vname=nameof(x))))
+  {T, Ob, C<:FinCat{Ob}}
+  g = NamedGraph{Symbol,Symbol}(1, vname=nameof(x))
+  munit(Diagram{T}, cat, x, shape=FinCat(g))
 end
 function convert_query(::C, ::Type{<:GlucQuery{C}}, d::ConjQuery{C}) where C
   munit(Diagram{id}, TypeCat(ConjQuery{C}, Any), d)
