@@ -149,6 +149,14 @@ J_parsed = dom(F_parsed)
 @test src(graph(J_parsed)) == src(graph(J))
 @test tgt(graph(J_parsed)) == tgt(graph(J))
 
+F_parsed′ = @free_diagram TheoryGraph begin
+  v::V
+  (e1, e2)::E
+  tgt(e1) == v
+  v == src(e2)
+end
+@test F_parsed′ == F_parsed
+
 F = @diagram TheoryDDS begin
   x::X
   (f: x → x)::(Φ⋅Φ)
@@ -341,8 +349,8 @@ F = @migration TheoryGraph TheoryGraph begin
     path => @join begin
       v::V
       (e₁, e₂)::E
-      (e₁ → v)::tgt
-      (e₂ → v)::src
+      tgt(e₁) == v
+      src(e₂) == v
     end
   end
   src => begin

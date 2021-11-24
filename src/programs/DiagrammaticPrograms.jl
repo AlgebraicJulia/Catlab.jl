@@ -5,7 +5,8 @@ string diagram or wiring diagram. DSLs for constructing wiring diagrams are
 provided by other submodules.
 """
 module DiagrammaticPrograms
-export @graph, @fincat, @finfunctor, @diagram, @migrate, @migration
+export @graph, @fincat, @finfunctor, @diagram, @free_diagram,
+  @migrate, @migration
 
 using Base.Iterators: repeated
 using MLStyle: @match
@@ -343,8 +344,8 @@ end
 ```
 
 Morphisms in the indexing category can be left unnamed, which is convenient for
-defining free diagrams. For example, the following diagram is isomorphic to the
-previous one:
+defining free diagrams (see also [`@free_diagram`](@ref)). For example, the
+following diagram is isomorphic to the previous one:
 
 ```julia
 @diagram TheoryGraph begin
@@ -362,6 +363,29 @@ macro diagram(cat, body)
   :(parse_diagram($(esc(cat)), $(Meta.quot(body))))
 end
 
+""" Present a free diagram in a given category.
+
+Recall that a *free diagram* in a category ``C`` is a functor ``F: J → C`` where
+``J`` is a free category on a graph, here assumed finite. This macro is
+functionally a special case of [`@diagram`](@ref) that provides a syntactic
+variant for equality expressions. Rather than interpreting them as equations
+between morphisms in ``J``, equality expresions can be used to introduce
+anonymous morphisms in a "pointful" style. For example, the limit of the
+following diagram consists of the paths of length two in a graph:
+
+```julia
+@free_diagram TheoryGraph begin
+  v::V
+  (e₁, e₂)::E
+  tgt(e₁) == v
+  src(e₂) == v
+end
+```
+"""
+macro free_diagram(cat, body)
+  :(parse_diagram($(esc(cat)), $(Meta.quot(body)), free=true))
+end
+
 function parse_diagram(C::FinCat, body::Expr; kw...)
   F_ob, F_hom, J = parse_diagram_data(
     x -> parse_ob(C,x), (f,x,y) -> parse_hom(C,f), body; kw...)
@@ -374,9 +398,15 @@ parse_diagram(pres::Presentation, body::Expr; kw...) =
   parse_diagram(FinCat(pres), body; kw...)
 
 function parse_diagram_data(parse_ob, parse_hom, body::Expr;
-                            preprocess::Bool=true)
-  g, eqs = NamedGraph{Symbol}(), Pair[]
+                            free::Bool=false, preprocess::Bool=true)
+  g, eqs, unnamed = NamedGraph{Symbol}(), Pair[], 0
   F_ob, F_hom = [], []
+  function push_hom!(h, x, y; name=nothing)
+    isnothing(name) && (name = Symbol("#unnamed#", (unnamed += 1)))
+    e = parse_edge!(g, x, y, ename=name)
+    push!(F_hom, parse_hom(h, F_ob[src(g,e)], F_ob[tgt(g,e)]))
+  end
+
   if preprocess
     body = reparse_arrows(body)
   end
@@ -400,19 +430,21 @@ function parse_diagram_data(parse_ob, parse_hom, body::Expr;
       Expr(:call, :(=>), Expr(:call, :(:), f::Symbol,
                               Expr(:call, :(→), x::Symbol, y::Symbol)), h) ||
       Expr(:(::), Expr(:call, :(:), f::Symbol,
-                       Expr(:call, :(→), x::Symbol, y::Symbol)), h) => begin
-        e = parse_edge!(g, x, y, ename=f)
-        push!(F_hom, parse_hom(h, F_ob[src(g,e)], F_ob[tgt(g,e)]))
-      end
+                       Expr(:call, :(→), x::Symbol, y::Symbol)), h) =>
+        push_hom!(h, x, y, name=f)
       # (x → y) => h
       # (x → y)::h
       Expr(:call, :(=>), Expr(:call, :(→), x::Symbol, y::Symbol), h) ||
-      Expr(:(::), Expr(:call, :(→), x::Symbol, y::Symbol), h) => begin
-        e = parse_edge!(g, x, y, ename=gensym(:unnamed))
-        push!(F_hom, parse_hom(h, F_ob[src(g,e)], F_ob[tgt(g,e)]))
-      end
+      Expr(:(::), Expr(:call, :(→), x::Symbol, y::Symbol), h) =>
+        push_hom!(h, x, y)
+      # h(x) == y
+      # y == h(x)
+      (Expr(:call, :(==), call::Expr, y::Symbol) ||
+       Expr(:call, :(==), y::Symbol, call::Expr)) && if free end =>
+        push_hom!(destructure_unary_call(call)..., y)
       # f == g
-      Expr(:call, :(==), lhs, rhs) => push!(eqs, parse_path_equation(g, lhs, rhs))
+      Expr(:call, :(==), lhs, rhs) && if !free end =>
+        push!(eqs, parse_path_equation(g, lhs, rhs))
       ::LineNumberNode => nothing
       _ => error("Cannot parse line in diagram definition: $stmt")
     end
@@ -550,7 +582,7 @@ high-level steps of this process are:
 function parse_migration(src_schema::Presentation, body::Expr;
                          preprocess::Bool=true)
   C = FinCat(src_schema)
-  F_ob, F_hom, J = parse_query_diagram(C, body; preprocess=preprocess)
+  F_ob, F_hom, J = parse_query_diagram(C, body; free=false, preprocess=preprocess)
   make_migration_functor(F_ob, F_hom, J, C)
 end
 function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
@@ -596,9 +628,10 @@ function parse_query(C::FinCat, expr)
     _ => error("Cannot parse query in migration definition: $expr")
   end
 end
-function parse_query_diagram(C::FinCat, expr::Expr; preprocess::Bool=false)
+function parse_query_diagram(C::FinCat, expr::Expr;
+                             free::Bool=true, preprocess::Bool=false)
   parse_diagram_data(X -> parse_query(C,X), (f,x,y) -> parse_query_hom(C,f,x,y),
-                     expr; preprocess=preprocess)
+                     expr; free=free, preprocess=preprocess)
 end
 
 """ Parse expression defining a morphism of queries.
@@ -830,6 +863,18 @@ function leftmost_arg(expr, ops; all_ops=nothing)
     end
   end
   leftmost(expr)
+end
+
+""" Destructure the expression `:(f(g(x)))` to `(:(f∘g), :x)`, for example.
+"""
+function destructure_unary_call(expr::Expr)
+  @match expr begin
+    Expr(:call, head, x::Symbol) => (head, x)
+    Expr(:call, head, arg) => begin
+      rest, x = destructure_unary_call(arg)
+      (Expr(:call, :(∘), head, rest), x)
+    end
+  end
 end
 
 end
