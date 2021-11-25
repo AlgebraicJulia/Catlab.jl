@@ -106,8 +106,8 @@ F = @migration TheoryGraph TheoryGraph begin
   E => @join begin
     v::V
     (e₁, e₂)::E
-    (t: e₁ → v)::tgt
-    (s: e₂ → v)::src
+    tgt(e₁) == v
+    src(e₂) == v
   end
   src => e₁ ⋅ src
   tgt => e₂ ⋅ tgt
@@ -132,10 +132,10 @@ F = @migration TheoryWeightedGraph TheoryWeightedGraph begin
   V => V
   E => @join begin
     v::V; (e₁, e₂)::E; w::Weight
-    (t: e₁ → v)::tgt
-    (s: e₂ → v)::src
-    (w₁: e₁ → w)::weight
-    (w₂: e₂ → w)::weight
+    tgt(e₁) == v
+    src(e₂) == v
+    weight(e₁) == w
+    weight(e₂) == w
   end
   Weight => Weight
   src => e₁ ⋅ src
@@ -244,8 +244,8 @@ h = @migrate Graph g begin
     path => @join begin
       v::V
       (e₁, e₂)::E
-      (t: e₁ → v)::tgt
-      (s: e₂ → v)::src
+      tgt(e₁) == v
+      src(e₂) == v
     end
   end
   src => (e => src; path => e₁⋅src)

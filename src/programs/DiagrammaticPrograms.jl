@@ -5,59 +5,44 @@ string diagram or wiring diagram. DSLs for constructing wiring diagrams are
 provided by other submodules.
 """
 module DiagrammaticPrograms
-export @graph, @fincat, @finfunctor, @diagram, @migrate, @migration
+export @graph, @fincat, @finfunctor, @diagram, @free_diagram,
+  @migrate, @migration
 
 using Base.Iterators: repeated
 using MLStyle: @match
 
-using ...Present, ...Graphs, ...CategoricalAlgebra
+using ...GAT, ...Present, ...Graphs, ...CategoricalAlgebra
 using ...Theories: munit
 using ...CategoricalAlgebra.FinCats: mapvals, make_map
 using ...CategoricalAlgebra.DataMigrations: ConjQuery, GlueQuery, GlucQuery
 import ...CategoricalAlgebra.DataMigrations: ob_name, hom_name, ob_named, hom_named
 using ...Graphs.BasicGraphs: TheoryGraph
 
-# Data types
-############
+# Graphs
+########
 
 @present TheoryNamedGraph <: TheoryGraph begin
-  Name::AttrType
-  vname::Attr(V, Name)
-  ename::Attr(E, Name)
-end
-
-""" Graph with uniquely named vertices and edges.
-
-THe default graph type for the [`@fincat`](@ref) macro and related macros.
-"""
-@acset_type NamedGraph(TheoryNamedGraph, index=[:src,:tgt],
-                       unique_index=[:vname,:ename]) <: AbstractGraph
-
-@present TheoryMaybeNamedGraph <: TheoryGraph begin
   VName::AttrType
   EName::AttrType
   vname::Attr(V, VName)
   ename::Attr(E, EName)
 end
 
-@acset_type _MaybeNamedGraph(TheoryMaybeNamedGraph, index=[:src,:tgt],
-                             unique_index=[:vname]) <: AbstractGraph
+""" Graph with named vertices and edges.
 
-""" Graph with named vertices and possibly named edges.
-
-The default graph type for the [`@graph`](@ref) macro. Vertex names are uniquely
-indexed and edge names are optional and unindexed.
+The default graph type used by [`@graph`](@ref), [`@fincat`](@ref),
+[`@diagram`](@ref), and related macros.
 """
-const MaybeNamedGraph{Name} = _MaybeNamedGraph{Name,Union{Nothing,Name}}
+@acset_type NamedGraph(TheoryNamedGraph, index=[:src,:tgt,:ename],
+                       unique_index=[:vname]) <: AbstractGraph
+# FIXME: The edge name should also be uniquely indexed, but this currently
+# doesn't play nicely with nullable attributes.
 
 vertex_name(g::HasGraph, args...) = subpart(g, args..., :vname)
 edge_name(g::HasGraph, args...) = subpart(g, args..., :ename)
 
-vertex_named(g::HasGraph, name) = incident(g, name, :vname)
-edge_named(g::HasGraph, name)= incident(g, name, :ename)
-
-# Graphs
-########
+vertex_named(g::HasGraph, name) = only(incident(g, name, :vname))
+edge_named(g::HasGraph, name)= only(incident(g, name, :ename))
 
 """ Construct a graph in a simple, declarative style.
 
@@ -73,14 +58,13 @@ vertices, or an edge. For example, the following defines a directed triangle:
 end
 ```
 
-Vertices in the graph must be uniquely named, whereas edges names are optional
-and need not be unique.
+Vertices in the graph must be uniquely named, whereas edges names are optional.
 """
 macro graph(graph_type, body)
   :(parse_graph($(esc(graph_type)), $(Meta.quot(body))))
 end
 macro graph(body)
-  :(parse_graph(MaybeNamedGraph{Symbol}, $(Meta.quot(body))))
+  :(parse_graph(NamedGraph{Symbol,Union{Symbol,Nothing}}, $(Meta.quot(body))))
 end
 
 function parse_graph(G::Type, body::Expr; preprocess::Bool=true)
@@ -103,7 +87,7 @@ function parse_graph(G::Type, body::Expr; preprocess::Bool=true)
       Expr(:call, (:), Expr(:tuple, es...), Expr(:call, :(→), u::Symbol, v::Symbol)) =>
         for e in es; parse_edge!(g, u, v, ename=e) end
       ::LineNumberNode => nothing
-      _ => error("@graph macro cannot parse line: $stmt")
+      _ => error("Cannot parse line in graph definition: $stmt")
     end
   end
   return g
@@ -153,7 +137,7 @@ end
 The objects and morphisms must be uniquely named.
 """
 macro fincat(body)
-  parse_category(NamedGraph{Symbol}, body)
+  parse_category(NamedGraph{Symbol,Symbol}, body)
 end
 
 function parse_category(G::Type, body::Expr; preprocess::Bool=true)
@@ -176,7 +160,7 @@ function parse_category(G::Type, body::Expr; preprocess::Bool=true)
       # f == g
       Expr(:call, :(==), lhs, rhs) => push!(eqs, parse_path_equation(g, lhs, rhs))
       ::LineNumberNode => nothing
-      _ => error("@fincat macro cannot parse line: $stmt")
+      _ => error("Cannot parse line in category definition: $stmt")
     end
   end
   isempty(eqs) ? FinCat(g) : FinCat(g, eqs)
@@ -228,10 +212,10 @@ end
 
 function parse_functor(C::FinCat, D::FinCat, body::Expr)
   ob_rhs, hom_rhs = parse_ob_hom_maps(C, body)
-  F = FinFunctor(mapvals(x -> ob_named(D, x), ob_rhs),
+  F = FinFunctor(mapvals(x -> parse_ob(D, x), ob_rhs),
                  mapvals(f -> parse_hom(D, f), hom_rhs), C, D)
   is_functorial(F, check_equations=false) ||
-    error("Result of @finfunctor macro is not functorial: $body")
+    error("Parsed functor is not functorial: $body")
   return F
 end
 function parse_functor(C::Presentation, D::Presentation, body::Expr; kw...)
@@ -269,9 +253,19 @@ function parse_ob_hom_maps(C::FinCat, body::Expr; allow_missing::Bool=false)
   (ob_rhs, hom_rhs)
 end
 
+""" Parse expression for object in a category.
+"""
+function parse_ob(C::FinCat{Ob,Hom}, expr) where {Ob,Hom}
+  @match expr begin
+    x::Symbol => ob_named(C, x)
+    Expr(:curly, _...) => parse_gat_expr(C, expr)::Ob
+    _ => error("Invalid object expression $expr")
+  end
+end
+
 """ Parse expression for morphism in a category.
 """
-function parse_hom(C::FinCat, expr)
+function parse_hom(C::FinCat{Ob,Hom}, expr) where {Ob,Hom}
   function parse(expr)
     @match expr begin
       Expr(:call, :compose, args...) =>
@@ -281,6 +275,7 @@ function parse_hom(C::FinCat, expr)
       Expr(:call, :(∘), f, g) => compose(C, parse(g), parse(f))
       Expr(:call, :id, x::Symbol) => id(C, ob_named(C, x))
       f::Symbol => hom_named(C, f)
+      Expr(:curly, _...) => parse_gat_expr(C, expr)::Hom
       _ => error("Invalid morphism expression $expr")
     end
   end
@@ -292,6 +287,21 @@ hom_name(C::FinCatGraph{<:NamedGraph}, f) = edge_name(graph(C), f)
 ob_named(C::FinCatGraph{<:NamedGraph}, name) = vertex_named(graph(C), name)
 hom_named(C::FinCatGraph{<:NamedGraph}, name) = edge_named(graph(C), name)
 
+""" Parse GAT expression based on curly braces, rather than parentheses.
+"""
+function parse_gat_expr(C::FinCat, root_expr)
+  pres = presentation(C)
+  function parse(expr)
+    @match expr begin
+      Expr(:curly, head::Symbol, args...) =>
+        invoke_term(pres.syntax, head, map(parse, args)...)
+      x::Symbol => generator(pres, x)
+      _ => error("Invalid GAT expression $root_expr")
+    end
+  end
+  parse(root_expr)
+end
+
 # Diagrams
 ##########
 
@@ -301,71 +311,124 @@ Recall that a *diagram* in a category ``C`` is a functor ``F: J → C`` from a
 small category ``J`` into ``C``. Given the category ``C``, this macro presents a
 diagram in ``C``, i.e., constructs a finitely presented indexing category ``J``
 together with a functor ``F: J → C``. This method of simultaneous definition is
-often more convenient than defining ``J`` and ``F`` separately.
+often more convenient than defining ``J`` and ``F`` separately, as could be
+accomplished by calling [`@fincat`](@ref) and then [`@finfunctor`](@ref).
 
-For example, the limit of the following diagram consists of the paths of length
-two in a graph:
+As an example, the limit of the following diagram consists of the paths of
+length two in a graph:
 
 ```julia
-@diagram FinCat(TheoryGraph) begin
+@diagram TheoryGraph begin
   v::V
   (e₁, e₂)::E
   (t: e₁ → v)::tgt
   (s: e₂ → v)::src
 end
 ```
+
+Morphisms in the indexing category can be left unnamed, which is convenient for
+defining free diagrams (see also [`@free_diagram`](@ref)). For example, the
+following diagram is isomorphic to the previous one:
+
+```julia
+@diagram TheoryGraph begin
+  v::V
+  (e₁, e₂)::E
+  (e₁ → v)::tgt
+  (e₂ → v)::src
+end
+```
+
+Of course, unnamed morphisms cannot be referenced by name within the `@diagram`
+call or in other settings, which can sometimes be problematic.
 """
 macro diagram(cat, body)
   :(parse_diagram($(esc(cat)), $(Meta.quot(body))))
 end
 
+""" Present a free diagram in a given category.
+
+Recall that a *free diagram* in a category ``C`` is a functor ``F: J → C`` where
+``J`` is a free category on a graph, here assumed finite. This macro is
+functionally a special case of [`@diagram`](@ref) that provides a syntactic
+variant for equality expressions. Rather than interpreting them as equations
+between morphisms in ``J``, equality expresions can be used to introduce
+anonymous morphisms in a "pointful" style. For example, the limit of the
+following diagram consists of the paths of length two in a graph:
+
+```julia
+@free_diagram TheoryGraph begin
+  v::V
+  (e₁, e₂)::E
+  tgt(e₁) == v
+  src(e₂) == v
+end
+```
+"""
+macro free_diagram(cat, body)
+  :(parse_diagram($(esc(cat)), $(Meta.quot(body)), free=true))
+end
+
 function parse_diagram(C::FinCat, body::Expr; kw...)
   F_ob, F_hom, J = parse_diagram_data(
-    x -> ob_named(C,x), (f,x,y) -> parse_hom(C,f), body; kw...)
+    x -> parse_ob(C,x), (f,x,y) -> parse_hom(C,f), body; kw...)
   F = FinFunctor(F_ob, F_hom, J, C)
   is_functorial(F, check_equations=false) ||
-    error("@diagram macro defined diagram that is not functorial: $body")
+    error("Parsed diagram is not functorial: $body")
   return F
 end
 parse_diagram(pres::Presentation, body::Expr; kw...) =
   parse_diagram(FinCat(pres), body; kw...)
 
 function parse_diagram_data(parse_ob, parse_hom, body::Expr;
-                            preprocess::Bool=true)
-  g, eqs = NamedGraph{Symbol}(), Pair[]
+                            free::Bool=false, preprocess::Bool=true)
+  g, eqs = NamedGraph{Symbol,Union{Symbol,Nothing}}(), Pair[]
   F_ob, F_hom = [], []
+  function push_hom!(h, x, y; name=nothing)
+    e = parse_edge!(g, x, y, ename=name)
+    push!(F_hom, parse_hom(h, F_ob[src(g,e)], F_ob[tgt(g,e)]))
+  end
+
   if preprocess
     body = reparse_arrows(body)
   end
   for stmt in statements(body)
     @match stmt begin
       # x => X
-      Expr(:call, :(=>), x::Symbol, X) ||
       # x::X
-      Expr(:(::), x::Symbol, X) => begin
+      Expr(:call, :(=>), x::Symbol, X) || Expr(:(::), x::Symbol, X) => begin
         add_vertex!(g, vname=x)
         push!(F_ob, parse_ob(X))
       end
       # (x, y, ...) => X
-      Expr(:call, :(=>), Expr(:tuple, xs...), X) ||
       # (x, y, ...)::X
+      Expr(:call, :(=>), Expr(:tuple, xs...), X) ||
       Expr(:(::), Expr(:tuple, xs...), X) => begin
         add_vertices!(g, length(xs), vname=xs)
         append!(F_ob, repeated(parse_ob(X), length(xs)))
       end
       # (f: x → y) => h
+      # (f: x → y)::h
       Expr(:call, :(=>), Expr(:call, :(:), f::Symbol,
                               Expr(:call, :(→), x::Symbol, y::Symbol)), h) ||
-      # (f: x → y)::h
       Expr(:(::), Expr(:call, :(:), f::Symbol,
-                       Expr(:call, :(→), x::Symbol, y::Symbol)), h) => begin
-        e = parse_edge!(g, x, y, ename=f)
-        push!(F_hom, parse_hom(h, F_ob[src(g,e)], F_ob[tgt(g,e)]))
-      end
+                       Expr(:call, :(→), x::Symbol, y::Symbol)), h) =>
+        push_hom!(h, x, y, name=f)
+      # (x → y) => h
+      # (x → y)::h
+      Expr(:call, :(=>), Expr(:call, :(→), x::Symbol, y::Symbol), h) ||
+      Expr(:(::), Expr(:call, :(→), x::Symbol, y::Symbol), h) =>
+        push_hom!(h, x, y)
+      # h(x) == y
+      # y == h(x)
+      (Expr(:call, :(==), call::Expr, y::Symbol) ||
+       Expr(:call, :(==), y::Symbol, call::Expr)) && if free end =>
+        push_hom!(destructure_unary_call(call)..., y)
       # f == g
-      Expr(:call, :(==), lhs, rhs) => push!(eqs, parse_path_equation(g, lhs, rhs))
+      Expr(:call, :(==), lhs, rhs) && if !free end =>
+        push!(eqs, parse_path_equation(g, lhs, rhs))
       ::LineNumberNode => nothing
-      _ => error("@diagram macro cannot parse line: $stmt")
+      _ => error("Cannot parse line in diagram definition: $stmt")
     end
   end
   J = isempty(eqs) ? FinCat(g) : FinCat(g, eqs)
@@ -501,7 +564,7 @@ high-level steps of this process are:
 function parse_migration(src_schema::Presentation, body::Expr;
                          preprocess::Bool=true)
   C = FinCat(src_schema)
-  F_ob, F_hom, J = parse_query_diagram(C, body; preprocess=preprocess)
+  F_ob, F_hom, J = parse_query_diagram(C, body; free=false, preprocess=preprocess)
   make_migration_functor(F_ob, F_hom, J, C)
 end
 function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
@@ -544,12 +607,13 @@ function parse_query(C::FinCat, expr)
       d = DiagramData{id}(parse_query_diagram(C, last(args))...)
       is_discrete(shape(d)) ? d : error("Cases query is not discrete: $expr")
     end
-    _ => error("@migration macro cannot parse query $expr")
+    _ => error("Cannot parse query in migration definition: $expr")
   end
 end
-function parse_query_diagram(C::FinCat, expr::Expr; preprocess::Bool=false)
+function parse_query_diagram(C::FinCat, expr::Expr;
+                             free::Bool=true, preprocess::Bool=false)
   parse_diagram_data(X -> parse_query(C,X), (f,x,y) -> parse_query_hom(C,f,x,y),
-                     expr; preprocess=preprocess)
+                     expr; free=free, preprocess=preprocess)
 end
 
 """ Parse expression defining a morphism of queries.
@@ -612,7 +676,7 @@ function parse_conj_query_ob_rhs(C::FinCat, expr, d::DiagramData{op}, c′)
     Expr(:tuple, x::Symbol, f) => (x, f)
     Expr(:call, op, _...) && if op ∈ compose_ops end =>
       leftmost_arg(expr, (:(⋅), :(⨟)), all_ops=compose_ops)
-    _ => error("@migration macro cannot parse object assignment $expr")
+    _ => error("Cannot parse object assignment in migration: $expr")
   end
   j = ob_named(shape(d), j_name)
   isnothing(f_expr) ? j :
@@ -627,7 +691,7 @@ function parse_glue_query_ob_rhs(C::FinCat, expr, c, d′::DiagramData{id})
     Expr(:tuple, x::Symbol, f) => (x, f)
     Expr(:call, op, _...) && if op ∈ compose_ops end =>
       leftmost_arg(expr, (:(∘),), all_ops=compose_ops)
-    _ => error("@migration macro cannot parse object assignment $expr")
+    _ => error("Cannot parse object assignment in migration: $expr")
   end
   j′ = ob_named(shape(d′), j′_name)
   isnothing(f_expr) ? j′ :
@@ -739,9 +803,9 @@ promote_query_result(T, S, U) = U
 convert_query(::FinCat, ::Type{T}, x::S) where {T, S<:T} = x
 
 function convert_query(cat::C, ::Type{<:Diagram{T,C}}, x::Ob) where
-    {T, Ob, C<:FinCat{Ob}}
-  munit(Diagram{T}, cat, x,
-        shape=FinCat(NamedGraph{Symbol}(1, vname=nameof(x))))
+  {T, Ob, C<:FinCat{Ob}}
+  g = NamedGraph{Symbol,Symbol}(1, vname=nameof(x))
+  munit(Diagram{T}, cat, x, shape=FinCat(g))
 end
 function convert_query(::C, ::Type{<:GlucQuery{C}}, d::ConjQuery{C}) where C
   munit(Diagram{id}, TypeCat(ConjQuery{C}, Any), d)
@@ -781,6 +845,18 @@ function leftmost_arg(expr, ops; all_ops=nothing)
     end
   end
   leftmost(expr)
+end
+
+""" Destructure the expression `:(f(g(x)))` to `(:(f∘g), :x)`, for example.
+"""
+function destructure_unary_call(expr::Expr)
+  @match expr begin
+    Expr(:call, head, x::Symbol) => (head, x)
+    Expr(:call, head, arg) => begin
+      rest, x = destructure_unary_call(arg)
+      (Expr(:call, :(∘), head, rest), x)
+    end
+  end
 end
 
 end

@@ -3,7 +3,7 @@ using Test
 
 using Catlab, Catlab.Graphs, Catlab.CategoricalAlgebra
 using Catlab.Programs.DiagrammaticPrograms
-using Catlab.Programs.DiagrammaticPrograms: NamedGraph, MaybeNamedGraph
+using Catlab.Programs.DiagrammaticPrograms: NamedGraph
 using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryReflexiveGraph
 using Catlab.Graphs.BipartiteGraphs: TheoryBipartiteGraph
 using Catlab.WiringDiagrams.CPortGraphs: ThCPortGraph
@@ -22,23 +22,23 @@ g = @graph begin
   s → t
   s → t
 end
-@test g == parallel_arrows(MaybeNamedGraph{Symbol}, 2,
+@test g == parallel_arrows(NamedGraph{Symbol,Union{Symbol,Nothing}}, 2,
                            V=(vname=[:s,:t],), E=(ename=[nothing,nothing],))
 
-g = @graph NamedGraph{Symbol} begin
+g = @graph NamedGraph{Symbol,Symbol} begin
   x, y
   (f, g): x → y
 end
-@test g == parallel_arrows(NamedGraph{Symbol}, 2,
+@test g == parallel_arrows(NamedGraph{Symbol,Symbol}, 2,
                            V=(vname=[:x,:y],), E=(ename=[:f,:g],))
 
-tri_parsed = @graph NamedGraph{Symbol} begin
+tri_parsed = @graph NamedGraph{Symbol,Symbol} begin
   v0, v1, v2
   fst: v0 → v1
   snd: v1 → v2
   comp: v0 → v2
 end
-tri = @acset NamedGraph{Symbol} begin
+tri = @acset NamedGraph{Symbol,Symbol} begin
   V = 3
   E = 3
   src = [1,2,1]
@@ -59,7 +59,7 @@ end
   σ₀ ∘ δ₀ == id(V)
   σ₀ ∘ δ₁ == id(V)
 end
-Δ¹_graph = @acset NamedGraph{Symbol} begin
+Δ¹_graph = @acset NamedGraph{Symbol,Symbol} begin
   V = 2
   E = 3
   src = [1,1,2]
@@ -100,6 +100,15 @@ end)
   tgt => tgt
 end)
 
+# GAT expressions.
+F = @finfunctor TheoryDDS TheoryDDS begin
+  X => X; Φ => id(X)
+end
+F′ = @finfunctor TheoryDDS TheoryDDS begin
+  X => X; Φ => id{X}
+end
+@test F == F′
+
 # Diagrams
 ##########
 
@@ -110,7 +119,7 @@ F_parsed = @diagram C begin
   (t: e1 → v)::tgt
   (s: e2 → v)::src
 end
-J = FinCat(@acset NamedGraph{Symbol} begin
+J = FinCat(@acset NamedGraph{Symbol,Union{Symbol,Nothing}} begin
   V = 3
   E = 2
   src = [2,3]
@@ -129,6 +138,24 @@ F_parsed = @diagram TheoryGraph begin
   s: e2 → v => src
 end
 @test F_parsed == F
+
+F_parsed = @diagram TheoryGraph begin
+  v::V
+  (e1, e2)::E
+  (e1 → v)::tgt
+  (e2 → v)::src
+end
+J_parsed = dom(F_parsed)
+@test src(graph(J_parsed)) == src(graph(J))
+@test tgt(graph(J_parsed)) == tgt(graph(J))
+
+F_parsed′ = @free_diagram TheoryGraph begin
+  v::V
+  (e1, e2)::E
+  tgt(e1) == v
+  v == src(e2)
+end
+@test F_parsed′ == F_parsed
 
 F = @diagram TheoryDDS begin
   x::X
@@ -162,7 +189,7 @@ F = @migration TheoryGraph begin
   (src: E → V) => tgt
   (tgt: E → V) => src
 end
-J = FinCat(parallel_arrows(NamedGraph{Symbol}, 2,
+J = FinCat(parallel_arrows(NamedGraph{Symbol,Union{Symbol,Nothing}}, 2,
                            V=(vname=[:E,:V],), E=(ename=[:src,:tgt],)))
 @test F == FinDomFunctor([:E,:V], [:tgt,:src], J, FinCat(TheoryGraph))
 
@@ -175,8 +202,8 @@ F = @migration TheoryGraph TheoryGraph begin
   E => @join begin
     v::V
     (e₁, e₂)::E
-    (t: e₁ → v)::tgt
-    (s: e₂ → v)::src
+    (e₁ → v)::tgt
+    (e₂ → v)::src
   end
   src => e₁ ⋅ src
   tgt => e₂ ⋅ tgt
@@ -301,8 +328,8 @@ F = @migration TheoryGraph begin
   V => V
   Component => @glue begin
     e::E; v::V
-    (s: e → v)::src
-    (t: e → v)::tgt
+    (e → v)::src
+    (e → v)::tgt
   end
   (component: V → Component) => v
 end
@@ -322,8 +349,8 @@ F = @migration TheoryGraph TheoryGraph begin
     path => @join begin
       v::V
       (e₁, e₂)::E
-      (t: e₁ → v)::tgt
-      (s: e₂ → v)::src
+      tgt(e₁) == v
+      src(e₂) == v
     end
   end
   src => begin
@@ -350,13 +377,13 @@ F = @migration TheoryGraph TheoryBipartiteGraph begin
   E => @cases begin
     e₁ => @join begin
       v₂::V₂; e₁₂::E₁₂; e₂₁::E₂₁
-      (t: e₁₂ → v₂)::tgt₂
-      (s: e₂₁ → v₂)::src₂
+      (e₁₂ → v₂)::tgt₂
+      (e₂₁ → v₂)::src₂
     end
     e₂ => @join begin
       v₁::V₁; e₂₁::E₂₁; e₁₂::E₁₂
-      (t: e₂₁ → v₁)::tgt₁
-      (s: e₁₂ → v₁)::src₁
+      (e₂₁ → v₁)::tgt₁
+      (e₁₂ → v₁)::src₁
     end
   end
   src => begin

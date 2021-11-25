@@ -125,20 +125,20 @@ generator_index(pres::Presentation, x::Symbol) = pres.generator_name_index[x].se
 function make_term(pres::Presentation, e::Symbol)
   pres[e]
 end
-
 function make_term(pres::Presentation, e::Expr)
   @match e begin
     Expr(:call, term_constructor, args...) =>
-      invoke_term(pres.syntax, term_constructor, map(e -> make_term(pres, e), args)...)
+      invoke_term(pres.syntax, term_constructor,
+                  map(e -> make_term(pres, e), args)...)
   end
 end
-
 
 """ Create a new generator in a presentation of a given type
 """
 function make_generator(pres::Presentation, name::Symbol,
                         type::Symbol, type_args::Vector)
-  invoke_term(pres.syntax, type, name, map(e -> make_term(pres, e), type_args)...)
+  invoke_term(pres.syntax, type, name,
+              map(e -> make_term(pres, e), type_args)...)
 end
 
 """ Create and add a new generator
