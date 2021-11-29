@@ -57,8 +57,8 @@ Base.show(io::IO, set::FinSetInt) = print(io, "FinSet($(set.n))")
 
 """ Finite set given by Julia collection.
 
-The underlying collection can be, but is not required to be, set-like (a subtype
-of `AbstractSet`).
+The underlying collection should be a Julia iterable of definite length. It may
+be, but is not required to be, set-like (a subtype of `AbstractSet`).
 """
 @auto_hash_equals struct FinSetCollection{S,T} <: FinSet{S,T}
   collection::S
@@ -179,7 +179,8 @@ function FinFunction(f::AbstractVector{Int}, args...; index=false)
   if index == false
     FinDomFunctionVector(f, (FinSet(arg) for arg in args)...)
   else
-    IndexedFinFunction(f, args...; index=(index == true ? nothing : index))
+    index = index == true ? nothing : index
+    IndexedFinFunctionVector(f, args...; index=index)
   end
 end
 
@@ -202,12 +203,23 @@ function FinDomFunction(f::AbstractVector, args...; index=false)
   if index == false
     FinDomFunctionVector(f, args...)
   else
-    IndexedFinDomFunction(f, args..., index=(index == true ? nothing : index))
+    index = index == true ? nothing : index
+    IndexedFinDomFunctionVector(f, args...; index=index)
   end
 end
 
 Sets.show_type_constructor(io::IO, ::Type{<:FinDomFunction}) =
   print(io, "FinDomFunction")
+
+# Note: Cartesian monoidal structure is implemented generically for Set but
+# cocartesian only for FinSet.
+@cocartesian_monoidal_instance FinSet FinFunction
+
+Ob(C::FinCat{Int}) = FinSet(length(ob_generators(C)))
+Ob(F::Functor{<:FinCat{Int}}) = FinDomFunction(collect_ob(F), Ob(codom(F)))
+
+# Vector-based functions
+#-----------------------
 
 """ Function in **Set** represented by a vector.
 
@@ -255,70 +267,63 @@ Base.show(io::IO, f::FinFunctionVector) =
 Sets.do_compose(f::FinFunctionVector, g::FinDomFunctionVector) =
   FinDomFunctionVector(g.func[f.func], codom(g))
 
-# Note: Cartesian monoidal structure is implemented generically for Set but
-# cocartesian only for FinSet.
-@cocartesian_monoidal_instance FinSet FinFunction
-
-Ob(C::FinCat{Int}) = FinSet(length(ob_generators(C)))
-Ob(F::Functor{<:FinCat{Int}}) = FinDomFunction(collect_ob(F), Ob(codom(F)))
-
-# Indexed functions
-#------------------
+# Indexed vector-based functions
+#-------------------------------
 
 """ Indexed function out of a finite set of type `FinSet{Int}`.
 
-Works in the same way as the special case of [`IndexedFinFunction`](@ref),
+Works in the same way as the special case of [`IndexedFinFunctionVector`](@ref),
 except that the index is typically a dictionary, not a vector.
 """
-struct IndexedFinDomFunction{T,V<:AbstractVector{T},Index,Codom<:SetOb{T}} <:
+struct IndexedFinDomFunctionVector{T,V<:AbstractVector{T},Index,Codom<:SetOb{T}} <:
     FinDomFunction{Int,FinSetInt,Codom}
   func::V
   index::Index
   codom::Codom
 end
 
-IndexedFinDomFunction(f::AbstractVector{T}; kw...) where T =
-  IndexedFinDomFunction(f, TypeSet{T}(); kw...)
+IndexedFinDomFunctionVector(f::AbstractVector{T}; kw...) where T =
+  IndexedFinDomFunctionVector(f, TypeSet{T}(); kw...)
 
-function IndexedFinDomFunction(f::AbstractVector{T}, codom::SetOb{T};
-                               index=nothing) where T
+function IndexedFinDomFunctionVector(f::AbstractVector{T}, codom::SetOb{T};
+                                     index=nothing) where T
   if isnothing(index)
     index = Dict{T,Vector{Int}}()
     for (i, x) in enumerate(f)
       push!(get!(index, x) do; Int[] end, i)
     end
   end
-  IndexedFinDomFunction(f, index, codom)
+  IndexedFinDomFunctionVector(f, index, codom)
 end
 
-Base.:(==)(f::Union{FinDomFunctionVector,IndexedFinDomFunction},
-           g::Union{FinDomFunctionVector,IndexedFinDomFunction}) =
+Base.:(==)(f::Union{FinDomFunctionVector,IndexedFinDomFunctionVector},
+           g::Union{FinDomFunctionVector,IndexedFinDomFunctionVector}) =
   # Ignore index when comparing for equality.
   f.func == g.func && codom(f) == codom(g)
 
-function Base.show(io::IO, f::IndexedFinDomFunction)
+function Base.show(io::IO, f::IndexedFinDomFunctionVector)
   print(io, "FinDomFunction($(f.func), ")
   Sets.show_domains(io, f)
   print(io, ", index=true)")
 end
 
-dom(f::IndexedFinDomFunction) = FinSet(length(f.func))
-force(f::IndexedFinDomFunction) = f
+dom(f::IndexedFinDomFunctionVector) = FinSet(length(f.func))
+force(f::IndexedFinDomFunctionVector) = f
 
-(f::IndexedFinDomFunction)(x) = f.func[x]
+(f::IndexedFinDomFunctionVector)(x) = f.func[x]
 
 """ Whether the given function is indexed, i.e., supports efficient preimages.
 """
 is_indexed(f::SetFunction) = false
 is_indexed(f::IdentityFunction) = true
-is_indexed(f::IndexedFinDomFunction) = true
+is_indexed(f::IndexedFinDomFunctionVector) = true
 is_indexed(f::FinDomFunctionVector{T,<:AbstractRange{T}}) where T = true
 
 """ The preimage (inverse image) of the value y in the codomain.
 """
 preimage(f::IdentityFunction, y) = SVector(y)
 preimage(f::FinDomFunction, y) = [ x for x in dom(f) if f(x) == y ]
-preimage(f::IndexedFinDomFunction, y) = get_preimage_index(f.index, y)
+preimage(f::IndexedFinDomFunctionVector, y) = get_preimage_index(f.index, y)
 
 @inline get_preimage_index(index::AbstractDict, y) = get(index, y, 1:0)
 @inline get_preimage_index(index::AbstractVector, y) = index[y]
@@ -335,16 +340,17 @@ integers, accessible through the [`preimage`](@ref) function. The backward map
 is called the *index*. If it is not supplied through the keyword argument
 `index`, it is computed when the object is constructed.
 
-This type is mildly generalized by [`IndexedFinDomFunction`](@ref).
+This type is mildly generalized by [`IndexedFinDomFunctionVector`](@ref).
 """
-const IndexedFinFunction{V,Index} = IndexedFinDomFunction{Int,V,Index,FinSetInt}
+const IndexedFinFunctionVector{V,Index} =
+  IndexedFinDomFunctionVector{Int,V,Index,FinSetInt}
 
-function IndexedFinFunction(f::AbstractVector{Int}; index=nothing)
+function IndexedFinFunctionVector(f::AbstractVector{Int}; index=nothing)
   codom = isnothing(index) ? (isempty(f) ? 0 : maximum(f)) : length(index)
-  IndexedFinFunction(f, codom; index=index)
+  IndexedFinFunctionVector(f, codom; index=index)
 end
 
-function IndexedFinFunction(f::AbstractVector{Int}, codom; index=nothing)
+function IndexedFinFunctionVector(f::AbstractVector{Int}, codom; index=nothing)
   codom = FinSet(codom)
   if isnothing(index)
     index = [ Int[] for j in codom ]
@@ -354,15 +360,15 @@ function IndexedFinFunction(f::AbstractVector{Int}, codom; index=nothing)
   elseif length(index) != length(codom)
     error("Index length $(length(index)) does not match codomain $codom")
   end
-  IndexedFinDomFunction(f, index, codom)
+  IndexedFinDomFunctionVector(f, index, codom)
 end
 
-Base.show(io::IO, f::IndexedFinFunction) =
+Base.show(io::IO, f::IndexedFinFunctionVector) =
   print(io, "FinFunction($(f.func), $(length(dom(f))), $(length(codom(f))), index=true)")
 
 # For now, we do not preserve or compose indices, only the function vectors.
-Sets.do_compose(f::Union{FinFunctionVector,IndexedFinFunction},
-                g::Union{FinDomFunctionVector,IndexedFinDomFunction}) =
+Sets.do_compose(f::Union{FinFunctionVector,IndexedFinFunctionVector},
+                g::Union{FinDomFunctionVector,IndexedFinDomFunctionVector}) =
   FinDomFunctionVector(g.func[f.func], codom(g))
 
 # Limits
@@ -739,8 +745,8 @@ ensure_type_set(s::FinSet) = TypeSet(eltype(s))
 ensure_type_set(s::TypeSet) = s
 ensure_type_set_codom(f::FinFunction) =
   SetFunctionCallable(f, dom(f), TypeSet(eltype(codom(f))))
-ensure_type_set_codom(f::IndexedFinFunction) =
-  IndexedFinDomFunction(f.func, index=f.index)
+ensure_type_set_codom(f::IndexedFinFunctionVector) =
+  IndexedFinDomFunctionVector(f.func, index=f.index)
 ensure_type_set_codom(f::FinDomFunction) = f
 
 """ Compute all possible equalizers in a bipartite free diagram.
