@@ -122,9 +122,9 @@ draw(fib_seq₃)
     f′   ::Hom(ℝ,ℝ)
 end
 # According to the standard formula xₖ₊₁ = xₖ - f(xₖ)/f′(xₖ). The standard presentation of Newton's method relies on the fact that ℝ is a field to use division in the definition of the iterative procedure. Because of the constraint that you can't divide by 0 in a field, fields are not models of any algebraic theory. Because of this, we can multiply both sides by f′(xₖ) and define a Newton's method iteration without reference to division. We also can avoid negation by adding the f(xₖ) term on both sides.
+
+# Once we have put Newton's method into this relational form we can use a prefix notation for operators which makes the structure closer to the diagrammatic approach `plus(times(f′(xₖ₊₁), xₖ₊₁), f(xₖ)) == times(f′(xₖ₊₁), x)`.
 newtons = @free_diagram Analytic begin
-    # times(f′(xₖ₊₁), xₖ₊₁) == times(f′(xₖ₊₁), x) - f(xₖ)
-    # plus(times(f′(xₖ₊₁), xₖ₊₁), f(xₖ)) == times(f′(xₖ₊₁), x)
     (xₖ, xₖ₊₁, dₖ, fx, ∏, Σ)::ℝ
     (p₁, p₂, p₃)::ℝ²
     dₖ  == f′(xₖ)
@@ -142,7 +142,7 @@ end
 
 draw(newtons)
 
-# This is definitely a case where standard mathematical notation wins for brevity and clarity. We need a few ergonamic improvements to the diagrammatic equation approach in order to compete with tradtitional notation.
+# This is definitely a case where standard mathematical notation wins for brevity and clarity. To compete with traditional notation, we need a few ergonamic improvements to the diagrammatic equation approach.
 # 1. The ability to assert equations without introducing temporary variables,
 # 2. The ability to represent morphisms f: A×B → C as bivariate functions like `f(a:A, b:B)`,
 # While encoding simple equations can be more verbose than the traditional notation, the diagrammatic encoding provides a direct route to creating a category whose objects are systems of equations and whose morphisms are relationships between systems of equations. That category is the first step towards leveraging the constructive approach in Catlab to making hierarchical representations of complex systems of equations.
