@@ -58,7 +58,7 @@ end
 draw(D₃)
 
 # ## Sequences in 𝐂
-# In any category with an endomorphism f: A → A, we can think of recurrence equations as aₙ = f(fⁿ⁻¹(a₀))
+# In any category with an endomorphism f: A → A, we can think of recurrence equations as aₙ = f(aₙ₋₁)) starting at a₀.
 @present 𝗖(FreeCartesianCategory) begin
     (A,B)::Ob
     f::Hom(A,A)
@@ -110,8 +110,12 @@ end
 
 draw(fib_seq₃)
 
+# A lift of this diagram is a choice of vectors `a₀,…,a₃` and scalars `b₁,…,b₃` that satisfy the linear recurrence formulation of the Fibonacci sequence. The arrows in 𝐃 are treated as fixed for the purpose of the lifting problem. Suppose you knew `b₁,…,b₃`, and wanted to infer the state vectors `a₁,…,a₃`. This can be seen as a boundary value problem where you have observations on a subspace playing the role of boundary conditions and want to infer the system state on the interior of the domain. As you can see from this diagram, solving the lifting problem with only partial information can require some creativity. You need to use the structure of the codomain category, in this case 𝐃 which is a subcategory of finite dimensional vector spaces over ℝ and the combinatorics of 𝐉 to set up some equations you can solve. In order to obtain an efficient algorithm for the lifting problem, you would need to exploit the structure of the morphisms `f,π₁` to create a system of equations.
+
+# An observation that `[π₁f;π₁] = f` lets you set up the equation `[b₃ ; b₂] = f a₂` and then you can use the fact that `f` is invertable to solve for a unique `a₂`. Once you have a single value of `aᵢ` you can get the rest from the application of `f` or `f⁻¹`. A general purpose algorithm for solving lifting problems in arbitrary categories would be a wildly powerful tool. 
+
 # ## Newton's Method
-# The equations that we have seen aren't particularly interesting, so we turn to a classic of numerical methods. Newton's method for root finding. For an overview of Netwon's method see [Fundamentals of Numerical Computation](https://fncbook.github.io/fnc/nonlineqn/newton.html). The following presentation doesn't know that f′ is the derivative of f, they are just two functions that are evocatively named. We could use [CombinatorialSpaces.jl](https://github.com/AlgebraicJulia/CombinatorialSpaces.jl) to formulate this in a richer categorical setting where we could assert `f := f`. 
+# The equations that we have seen aren't particularly interesting, so we turn to a classic of numerical methods. Newton's method for root finding. For an overview of Netwon's method see [Fundamentals of Numerical Computation](https://fncbook.github.io/fnc/nonlineqn/newton.html). The following presentation doesn't know that f′ is the derivative of f, they are just two functions that are evocatively named. We could use [CombinatorialSpaces.jl](https://github.com/AlgebraicJulia/CombinatorialSpaces.jl) to formulate this in a richer categorical setting where we could assert `f′ := d/dx(f)`. 
 @present Analytic(FreeCartesianCategory) begin
     (ℝ,ℝ²)::Ob
     π₁::Hom(ℝ², ℝ)
@@ -123,21 +127,21 @@ draw(fib_seq₃)
 end
 # According to the standard formula xₖ₊₁ = xₖ - f(xₖ)/f′(xₖ). The standard presentation of Newton's method relies on the fact that ℝ is a field to use division in the definition of the iterative procedure. Because of the constraint that you can't divide by 0 in a field, fields are not models of any algebraic theory. Because of this, we can multiply both sides by f′(xₖ) and define a Newton's method iteration without reference to division. We also can avoid negation by adding the f(xₖ) term on both sides.
 
-# Once we have put Newton's method into this relational form we can use a prefix notation for operators which makes the structure closer to the diagrammatic approach `plus(times(f′(xₖ₊₁), xₖ₊₁), f(xₖ)) == times(f′(xₖ₊₁), x)`.
+# Once we have put Newton's method into this relational form we can use a prefix notation for operators which makes the structure closer to the diagrammatic approach `plus(times(f′(xₖ), xₖ₊₁), f(xₖ)) == times(f′(xₖ), xₖ)`.
 newtons = @free_diagram Analytic begin
-    (xₖ, xₖ₊₁, dₖ, fx, ∏, Σ)::ℝ
+    (xₖ, xₖ₊₁, dₖ, fx, v, ∏)::ℝ
     (p₁, p₂, p₃)::ℝ²
     dₖ  == f′(xₖ)
     π₁(p₁) == dₖ
     π₂(p₁) == xₖ₊₁
     ∏ == times(p₁)
     fx == f(xₖ)
-    π₁(p₂) == ∏ 
+    π₁(p₂) == ∏
     π₂(p₂) == fx 
-    plus(p₂) == Σ
+    plus(p₂) == v
     π₁(p₃) == dₖ
     π₂(p₃) == xₖ
-    times(p₃) == Σ
+    times(p₃) == v
 end
 
 draw(newtons)
