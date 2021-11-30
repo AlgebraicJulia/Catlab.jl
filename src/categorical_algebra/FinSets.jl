@@ -950,6 +950,9 @@ column_name(i::Integer) = Symbol("x$i") # Same default as DataFrames.jl.
 # Colimits
 ##########
 
+# Colimits in Skel(FinSet)
+#-------------------------
+
 colimit(Xs::EmptyDiagram{<:FinSet{Int}}) = Colimit(Xs, SMulticospan{0}(FinSet(0)))
 
 function universal(colim::Initial{<:FinSet{Int}}, cocone::SMulticospan{0})
@@ -1115,6 +1118,77 @@ function universal(colim::FinSetCompositeColimit, cocone::Multicospan)
   h = universal(colim.coprod, cocone)
   pass_to_quotient(colim.proj, h)
 end
+
+# Colimits with names
+#--------------------
+
+""" Compute colimit of finite sets whose elements are meaningfully named.
+"""
+struct NamedColimit <: ColimitAlgorithm end
+
+function colimit(::Type{<:Tuple{<:FinSet{S,T},<:FinFunction}}, d) where
+    {S, T<:Union{Symbol,AbstractString}}
+  colimit(d, NamedColimit())
+end
+
+function colimit(span::Multispan{<:FinSet{S,T}}, ::NamedColimit) where {S,T}
+  X = skeletize(apex(span), index=false)
+  feet_skel = map(skeletize, feet(span))
+  legs_skel = map((f, Y) -> skeletize(f, X, Y), legs(span), feet_skel)
+  span_skel = Multispan(dom(X), legs_skel)
+  colim_skel = colimit(span_skel)
+
+  elems = Vector{T}(undef, length(apex(colim_skel)))
+  for (ι, Y) in zip(colim_skel, feet_skel)
+    for i in dom(Y)
+      elems[ι(i)] = Y(i)
+    end
+  end
+  ι = compose(first(span_skel), first(colim_skel))
+  for i in dom(X)
+    elems[ι(i)] = X(i)
+  end
+  unique_by_tagging!(elems)
+
+  Z = FinSet(elems)
+  ιs = map(colim_skel, feet_skel) do ι, Y
+    FinFunction(Dict(Y(i) => elems[ι(i)] for i in dom(Y)), Z)
+  end
+  Colimit(span, Multicospan(Z, ιs))
+end
+
+function skeletize(set::FinSet; index::Bool=true)
+  # FIXME: Should support `unique_index`.
+  FinDomFunction(collect(set), set, index=index)
+end
+function skeletize(f::FinFunction, X, Y)
+  FinFunction(i -> only(preimage(Y, f(X(i)))), dom(X), dom(Y))
+end
+
+""" Make list of elements unique by adding tags if necessary.
+
+If the elements are already unique, they will not be mutated.
+"""
+function unique_by_tagging!(elems::AbstractVector{T}; tag=default_tag) where T
+  tag_count = Dict{T,Int}()
+  for x in elems
+    tag_count[x] = haskey(tag_count, x) ? 1 : 0
+  end
+  for (i, x) in enumerate(elems)
+    (j = tag_count[x]) > 0 || continue
+    tagged = tag(x, j)
+    @assert !haskey(tag_count, tagged) # Don't conflict with original elems!
+    elems[i] = tagged
+    tag_count[x] += 1
+  end
+  elems
+end
+
+default_tag(x::Symbol, t) = Symbol(x, "#", t)
+default_tag(x::AbstractString, t) = string(x, "#", t)
+
+# Pushout complements
+#--------------------
 
 """ Compute a pushout complement of finite sets, if possible.
 
