@@ -458,7 +458,7 @@ function BipartiteFreeDiagram{Ob,Hom}(F::Functor{<:FinCat{Int}};
   end
   return d
 end
-BipartiteFreeDiagram(F::Functor{<:FinCat{Int},<:TypeCat{Ob,Hom}}; kw...) where {Ob,Hom} =
+BipartiteFreeDiagram(F::Functor{<:FinCat{Int},<:Cat{Ob,Hom}}; kw...) where {Ob,Hom} =
   BipartiteFreeDiagram{Ob,Hom}(F; kw...)
 
 # Free diagrams
@@ -551,7 +551,7 @@ function FreeDiagram{Ob,Hom}(F::Functor{<:FinCat{Int}}) where {Ob,Hom}
   diagram[:hom] = collect_hom(F)
   diagram
 end
-FreeDiagram(F::Functor{<:FinCat{Int},<:TypeCat{Ob,Hom}}) where {Ob,Hom} =
+FreeDiagram(F::Functor{<:FinCat{Int},<:Cat{Ob,Hom}}) where {Ob,Hom} =
   FreeDiagram{Ob,Hom}(F)
 
 (::Type{BFD})(diagram::FreeDiagram; kw...) where BFD <: BipartiteFreeDiagram =
