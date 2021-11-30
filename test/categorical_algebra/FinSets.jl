@@ -55,15 +55,26 @@ h = FinFunction([3,1,2], 3)
 @test force(f) === f
 @test codom(FinFunction([1,3,4])) == FinSet(4)
 
+X = FinSet(Set([:w,:x,:y,:z]))
+k = FinFunction(Dict(:a => :x, :b => :y, :c => :z), X)
+ℓ = FinFunction(Dict(:w => 2, :x => 1, :y => 1, :z => 4), FinSet(4))
+@test (dom(k), codom(k)) == (FinSet(Set([:a, :b, :c])), X)
+@test (dom(ℓ), codom(ℓ)) == (X, FinSet(4))
+@test force(k) === k
+@test codom(FinFunction(Dict(:a => :x, :b => :y, :c => :z))) ==
+  FinSet(Set([:x,:y,:z]))
+
 # Evaluation.
 rot3(x) = (x % 3) + 1
 @test map(f, 1:3) == [1,3,4]
+@test map(k, [:a,:b,:c]) == [:x,:y,:z]
 @test map(FinFunction(rot3, 3, 3), 1:3) == [2,3,1]
 @test map(id(FinSet(3)), 1:3) == [1,2,3]
 
 # Composition.
 @test compose(f,g) == FinFunction([1,2,2], 3)
 @test compose(g,h) == FinFunction([3,3,1,1,2], 3)
+@test compose(k,ℓ) == FinFunction(Dict(:a => 1, :b => 1, :c => 4), FinSet(4))
 @test compose(compose(f,g),h) == compose(f,compose(g,h))
 @test compose(id(dom(f)), f) == f
 @test compose(f, id(codom(f))) == f
@@ -92,6 +103,8 @@ g = FinFunction(5:-1:1)
 @test sshow(FinFunction([1,3,4], 5)) == "FinFunction($([1,3,4]), 3, 5)"
 @test sshow(FinFunction([1,3,4], 5, index=true)) ==
   "FinFunction($([1,3,4]), 3, 5, index=true)"
+@test sshow(FinFunction(Dict(:a => 1, :b => 3), FinSet(3))) ==
+  "FinFunction($(Dict(:a => 1, :b => 3)), FinSet(3))"
 
 # Functions out of finite sets
 ##############################

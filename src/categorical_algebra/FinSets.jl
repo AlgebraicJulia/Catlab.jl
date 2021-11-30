@@ -19,6 +19,7 @@ using ..FinCats, ..FreeDiagrams, ..Limits, ..Subobjects
 import ...Theories: Ob, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 import ..Categories: ob, hom, dom, codom, compose, id, ob_map, hom_map
 import ..FinCats: force, ob_generators, hom_generators, graph, is_discrete
+using ..FinCats: dicttype
 import ..Limits: limit, colimit, universal, pushout_complement,
   can_pushout_complement
 import ..Subobjects: Subobject, SubobjectLattice
@@ -63,9 +64,11 @@ be, but is not required to be, set-like (a subtype of `AbstractSet`).
 @auto_hash_equals struct FinSetCollection{S,T} <: FinSet{S,T}
   collection::S
 end
+FinSetCollection(collection::S) where S =
+  FinSetCollection{S,eltype(collection)}(collection)
 
-FinSet(col::S) where {T, S<:Union{AbstractVector{T},AbstractSet{T}}} =
-  FinSetCollection{S,T}(col)
+FinSet(collection::S) where {T, S<:Union{AbstractVector{T},AbstractSet{T}}} =
+  FinSetCollection{S,T}(collection)
 
 Base.iterate(set::FinSetCollection, args...) = iterate(set.collection, args...)
 Base.length(set::FinSetCollection) = length(set.collection)
@@ -172,8 +175,8 @@ FinFunction(f::Function, dom, codom) =
   SetFunctionCallable(f, FinSet(dom), FinSet(codom))
 FinFunction(::typeof(identity), args...) =
   IdentityFunction((FinSet(arg) for arg in args)...)
-FinFunction(f::AbstractVector{Int}; kw...) =
-  FinDomFunctionVector(f, FinSet(isempty(f) ? 0 : maximum(f)); kw...)
+FinFunction(f::AbstractDict, args...) =
+  FinFunctionDict(f, (FinSet(arg) for arg in args)...)
 
 function FinFunction(f::AbstractVector{Int}, args...; index=false)
   if index == false
@@ -183,6 +186,8 @@ function FinFunction(f::AbstractVector{Int}, args...; index=false)
     IndexedFinFunctionVector(f, args...; index=index)
   end
 end
+FinFunction(f::AbstractVector{Int}; kw...) =
+  FinFunction(f, FinSet(isempty(f) ? 0 : maximum(f)); kw...)
 
 Sets.show_type_constructor(io::IO, ::Type{<:FinFunction}) =
   print(io, "FinFunction")
@@ -198,6 +203,7 @@ FinDomFunction(f::Function, dom, codom) =
   SetFunctionCallable(f, FinSet(dom), codom)
 FinDomFunction(::typeof(identity), args...) =
   IdentityFunction((FinSet(arg) for arg in args)...)
+FinDomFunction(f::AbstractDict, args...) = FinDomFunctionDict(f, args...)
 
 function FinDomFunction(f::AbstractVector, args...; index=false)
   if index == false
@@ -370,6 +376,53 @@ Base.show(io::IO, f::IndexedFinFunctionVector) =
 Sets.do_compose(f::Union{FinFunctionVector,IndexedFinFunctionVector},
                 g::Union{FinDomFunctionVector,IndexedFinDomFunctionVector}) =
   FinDomFunctionVector(g.func[f.func], codom(g))
+
+# Dict-based functions
+#---------------------
+
+""" Function in **Set** represented by a dictionary.
+
+The domain is a `FinSet{S}` where `S` is the type of the dictionary's `keys`
+collection.
+"""
+@auto_hash_equals struct FinDomFunctionDict{K,D<:AbstractDict{K},Codom<:SetOb} <:
+    FinDomFunction{D,FinSet{AbstractSet{K},K},Codom}
+  func::D
+  codom::Codom
+end
+
+FinDomFunctionDict(d::AbstractDict{K,V}) where {K,V} =
+  FinDomFunctionDict(d, TypeSet{V}())
+
+dom(f::FinDomFunctionDict) = FinSet(keys(f.func))
+
+(f::FinDomFunctionDict)(x) = f.func[x]
+
+function Base.show(io::IO, f::F) where F <: FinDomFunctionDict
+  Sets.show_type_constructor(io, F)
+  print(io, "(")
+  show(io, f.func)
+  print(io, ", ")
+  Sets.show_domains(io, f, domain=false)
+  print(io, ")")
+end
+
+force(f::FinDomFunction) =
+  FinDomFunctionDict(Dict(x => f(x) for x in dom(f)), codom(f))
+force(f::FinDomFunctionDict) = f
+
+""" Function in **FinSet** represented by a dictionary.
+"""
+const FinFunctionDict{K,D<:AbstractDict{K},Codom<:FinSet} =
+  FinDomFunctionDict{K,D,Codom}
+
+FinFunctionDict(d::AbstractDict, codom::FinSet) = FinDomFunctionDict(d, codom)
+FinFunctionDict(d::AbstractDict{K,V}) where {K,V} =
+  FinDomFunctionDict(d, FinSet(Set(values(d))))
+
+Sets.do_compose(f::FinFunctionDict{K,D}, g::FinDomFunctionDict) where {K,D} =
+  FinDomFunctionDict(dicttype(D)(x => g.func[y] for (x,y) in pairs(f.func)),
+                     codom(g))
 
 # Limits
 ########
@@ -1121,12 +1174,10 @@ function id_condition(pair::ComposablePair{<:FinSet{Int}})
   l_image = Set(collect(l))
   l_imageᶜ = [ x for x in codom(l) if x ∉ l_image ]
   m_image = Set(map(m, l_imageᶜ))
-  return (
-    (i for i in l_image if m(i) ∈ m_image),
-    ((i, j) for i in eachindex(l_imageᶜ)
-            for j in i+1:length(l_imageᶜ)
-            if m(l_imageᶜ[i]) == m(l_imageᶜ[j]))
-  )
+  ((i for i in l_image if m(i) ∈ m_image),
+   ((i, j) for i in eachindex(l_imageᶜ)
+           for j in i+1:length(l_imageᶜ)
+           if m(l_imageᶜ[i]) == m(l_imageᶜ[j])))
 end
 
 # Subsets
