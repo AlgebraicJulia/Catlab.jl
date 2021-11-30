@@ -68,9 +68,6 @@ draw(graph(elᶠ))
 # As you are quite far in your category theoretic training, you are surely suspicious of the idea that you would construct the category of elements of a DDS and get a graph. We have a categorical construction, so your intuition should be saying "there should be some kind of morphism that goes with this object". And there is, the Elements of a C-Set X is a graph whose vertices are rows in the tables of X and whose edges are the foreign key relationships in X, along with a graph homomorphism into the schema C. We can draw this using the same color coding convention we used to draw graph homomorphisms.
 draw(elᶠ)
 
-# A category of elements derived from a C-Set is stored as a C-Set of on a bigger schema. You can see that it is the data of a graph homomorphism where the codomain graph has vertex and edge labels. The two projections πₑ and πₐ are the components of a natural transformation between graphs viewed as functors into Set. The names are attributes usually of type Symbol.
-to_graphviz(ThElements)
-
 # We can scale up our DDS drawing too.
 
 Fₓ = @acset DDS begin
@@ -78,6 +75,10 @@ Fₓ = @acset DDS begin
     nxt = [2,3,1, 1,7,7,4]
 end
 draw(elements(Fₓ))
+
+# A category of elements derived from a C-Set is stored as a C-Set of on a different schema. You can see that it is the data of a graph homomorphism where the codomain graph has vertex and edge labels. The two projections πₑ and πₐ are the components of a natural transformation between graphs viewed as functors into Set. The names are attributes usually of type Symbol.
+to_graphviz(ThElements)
+
 
 # In the case of a DDS, we have only one object and one morphism in the schema. Since the graph with one edge and one vertices is terminal in *Graph*, there is only one vertex and edge color being used.
 
@@ -106,6 +107,8 @@ draw(elements(g))
 
 # Notice that the 3 vertices of type E are interspersed between the 3 vertices of type V and vice versa. You can see that the normal visual syntax for a graph is more compact for the special case of graphs. However the category of elements works for any schema C.
 
+# ## Generality of the construction
+# Discrete Dynamical Systems and Graphs are clearly data structures from mathematics and so it would make sense that they have a clean representation in the categorical language. But how about a database schema that comes not from mathematics, but from software engineering. We turn to everyone's favorite database example, the HR database at a fictitious company. 
 @present ThCompany(FreeSchema) begin
     (P, D, S)::Ob # Person, Department, Salary 
     worksin::Hom(P, D)    # Every Person works in a Department
@@ -174,3 +177,28 @@ cset(Company, elᶜ)
 cmpy == cset(Company, elᶜ)
 
 # Hopefully you see one reason why graphs are ubiquitous in computer science. Every relational database is isomorphic to a typed graph. You can generate this graph from the database and recover the database from the typed graph. So while knowledge graphs are great for ingesting data when you aren't sure about the structure and useful for some types of computation that involve long paths. You can always build your software on relational databases knowing that you can easily get access to all the graph algorithms by applying the Grothendieck construction.
+
+# ## The Slice-Elements Transform
+# An amazing fact about presheaf toposes is that they are closed under taking slices. In the graphs section of this documentation, you can find a description of bipartite and k-partite graphs as a morphisms into a clique. That definition is very mathematically pleasing because it gives you a category of partitioned graphs that are derived from commuting triangles in Graph. However, for application oriented practitioners, the definition of a bipartite graph as "a graph with two sets of vertices, where all the edges go between the groups with no edges within either group" is probably more explicit. For example a classic way to get a bipartite graph would be to look at the graph of authors and papers that those authors wrote. People write papers, people do not write people and papers do not write papers so the authorship graph is bipartite. These two equivalent definitions of a bipartite graph are related via an isomorphism you can find on the [nlab](https://ncatlab.org/nlab/show/category+of+presheaves#RelWithOvercategories). It shows that a slice category of [C,Set]/X is isomorphic to [El(X), Set] which is a cateogory of presheaves on a different schema. Catlab knows how to use this idea to turn a category of elements into a schema for a new category of presheaves. The two directions of the isomorphism are not yet implemented.
+
+e = @acset BasicGraphs.Graph begin
+    V = 2
+    E = 1
+    src = 1
+    tgt = 2
+end
+
+draw(elements(e))
+ThBipartite = CatElements.presentation(elements(e))[1]
+to_graphviz(ThBipartite)
+@acset_type BipartiteGraph(ThBipartite)
+b = @acset BipartiteGraph begin
+    V_1 = 3
+    V_2 = 2
+    E_1 = 5
+    src_E_1 = [1,2,3,3,2]
+    tgt_E_1 = [1,2,2,1,1]
+end
+draw(elements(b))
+
+# As a very advanced exercise, you could try to implement one or both directions of the isomorphism above.
