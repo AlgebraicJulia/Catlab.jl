@@ -156,13 +156,16 @@ end
 
 show_type_constructor(io::IO, ::Type{<:Functor}) = print(io, "Functor")
 
-function show_domains(io::IO, f; codomain::Bool=true, recurse::Bool=true)
+function show_domains(io::IO, f; domain::Bool=true, codomain::Bool=true,
+                      recurse::Bool=true)
   if get(io, :hide_domains, false)
     print(io, "…")
   else
-    show(IOContext(io, :compact=>true, :hide_domains=>!recurse), dom(f))
+    if domain
+      show(IOContext(io, :compact=>true, :hide_domains=>!recurse), dom(f))
+    end
     if codomain
-      print(io, ", ")
+      domain && print(io, ", ")
       show(IOContext(io, :compact=>true, :hide_domains=>!recurse), codom(f))
     end
   end
