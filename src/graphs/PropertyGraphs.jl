@@ -201,7 +201,7 @@ end
 # Constructors from graphs
 ##########################
 
-function PropertyGraph{T}(g::Graph, make_vprops, make_eprops; gprops...) where T
+function PropertyGraph{T}(g::AbstractGraph, make_vprops, make_eprops; gprops...) where T
   pg = PropertyGraph{T}(; gprops...)
   add_vertices!(pg, nv(g))
   add_edges!(pg, src(g), tgt(g))
@@ -214,10 +214,10 @@ function PropertyGraph{T}(g::Graph, make_vprops, make_eprops; gprops...) where T
   pg
 end
 
-PropertyGraph{T}(g::Graph; gprops...) where T =
+PropertyGraph{T}(g::AbstractGraph; gprops...) where T =
   PropertyGraph{T}(g, v->Dict(), e->Dict(); gprops...)
 
-function SymmetricPropertyGraph{T}(g::SymmetricGraph,
+function SymmetricPropertyGraph{T}(g::AbstractSymmetricGraph,
                                    make_vprops, make_eprops; gprops...) where T
   pg = SymmetricPropertyGraph{T}(; gprops...)
   add_vertices!(pg, nv(g))
@@ -233,7 +233,7 @@ function SymmetricPropertyGraph{T}(g::SymmetricGraph,
   pg
 end
 
-SymmetricPropertyGraph{T}(g::SymmetricGraph; gprops...) where T =
+SymmetricPropertyGraph{T}(g::AbstractSymmetricGraph; gprops...) where T =
   SymmetricPropertyGraph{T}(g, v->Dict(), e->Dict(); gprops...)
 
 end

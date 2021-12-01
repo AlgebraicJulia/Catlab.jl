@@ -135,17 +135,13 @@ end
 # Graphs
 ########
 
-# FIXME: Should be an abstract type after StructACSets refactor.
-const IsGraph = Union{AbstractGraph, AbstractSymmetricGraph,
-                      AbstractReflexiveGraph, AbstractSymmetricReflexiveGraph}
-
 """ Convert a graph to a Graphviz graph.
 
 A simple default style is applied. For more control over the visual appearance,
 first convert the graph to a property graph, define the Graphviz attributes as
 needed, and then convert to a Graphviz graph.
 """
-function to_graphviz(g::IsGraph; kw...)
+function to_graphviz(g::HasGraph; kw...)
   to_graphviz(to_graphviz_property_graph(g; kw...))
 end
 
@@ -290,7 +286,7 @@ end
 # Subgraphs
 ###########
 
-to_graphviz(subgraph::Subobject{<:IsGraph}; kw...) =
+to_graphviz(subgraph::Subobject{<:HasGraph}; kw...) =
   to_graphviz(to_graphviz_property_graph(subgraph; kw...))
 
 function to_graphviz_property_graph(
