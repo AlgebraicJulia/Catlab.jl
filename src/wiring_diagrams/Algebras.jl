@@ -22,9 +22,10 @@ box/junction attributes. The default attributes are those compatible with the
 function oapply(composite::UndirectedWiringDiagram, hom_map::AbstractDict,
                 ob_map::Union{AbstractDict,Nothing}=nothing;
                 hom_attr::Symbol=:name, ob_attr::Symbol=:variable)
-  homs = [ hom_map[name] for name in subpart(composite, hom_attr) ]
+  # XXX: Julia should be inferring these vector eltypes but isn't on v1.7.
+  homs = valtype(hom_map)[ hom_map[name] for name in composite[hom_attr] ]
   obs = isnothing(ob_map) ? nothing :
-    [ ob_map[name] for name in subpart(composite, ob_attr) ]
+    valtype(ob_map)[ ob_map[name] for name in composite[ob_attr] ]
   oapply(composite, homs, obs)
 end
 
@@ -99,7 +100,9 @@ function oapply(composite::UndirectedWiringDiagram,
       end
     end
   end
-  diagram[:ob₁] = map(L, junction_feet)
+  for (j, foot) in enumerate(junction_feet)
+    diagram[j, :ob₁] = L(foot)
+  end
 
   # Find, or if necessary create, an outgoing edge for each junction. The
   # existence of such edges is an assumption for colimits of bipartite diagrams.
