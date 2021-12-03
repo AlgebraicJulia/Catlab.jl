@@ -32,7 +32,7 @@ b = @acset Graph begin
 end
 
 ThBPG, obmap, hommap = CatElements.presentation(elements(b))
-@test Symbol.(generators(ThBPG)) == [:E_1, :V_1, :V_2, :tgt_E_1, :src_E_1]
+@test Symbol.(generators(ThBPG)) == [:V_1, :V_2, :E_1, :src_E_1, :tgt_E_1]
 
 
 p₀ = @acset Graph begin
@@ -43,7 +43,8 @@ p₀ = @acset Graph begin
 end
 
 ThPetri, obmap, hommap = CatElements.presentation(elements(p₀))
-@test Symbol.(generators(ThPetri)) == [:E_1, :E_2, :V_1, :V_2, :src_E_2, :tgt_E_1, :tgt_E_2, :src_E_1]
+@test Symbol.(generators(ThPetri)) ==
+  [:V_1, :V_2, :E_1, :E_2, :src_E_1, :src_E_2, :tgt_E_1, :tgt_E_2]
 
 @acset_type Petri(ThPetri)
 

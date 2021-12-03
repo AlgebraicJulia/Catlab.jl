@@ -13,7 +13,7 @@ jobs:
       - name: "Set up Julia"
         uses: julia-actions/setup-julia@latest
         with:
-          version: '1.6'
+          version: '1.7'
       # XXX: Cannot change working directory for "uses" steps.
       #- name: "Run tests"
       #  uses: julia-actions/julia-runtest@master

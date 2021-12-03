@@ -8,7 +8,7 @@ jobs:
       - name: Set up Julia
         uses: julia-actions/setup-julia@latest
         with:
-          version: 1.6
+          version: 1.7
       - name: Install dependencies
         run: julia -e 'using Pkg; pkg"add PkgBenchmark BenchmarkCI@0.1"'
       - name: Run benchmarks

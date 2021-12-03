@@ -7,7 +7,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        julia-version: ['1.6']
+        julia-version: ['1.7']
         os: [ubuntu-latest]
         package:
           - {user: AlgebraicJulia, repo: AlgebraicDynamics.jl}
