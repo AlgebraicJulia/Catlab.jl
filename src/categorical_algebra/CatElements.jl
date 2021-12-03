@@ -1,6 +1,8 @@
 module CatElements
 export ThElements, AbstractElements, Elements, elements
 
+using DataStructures: OrderedDict
+
 using ..CSets, ..FinSets
 using ...Present, ...Theories
 using ...Theories: Category, ob, hom, dom_nums, codom_nums
@@ -59,7 +61,7 @@ will be mapped to `src_E_1, tgt_E_1`.
 """
 function presentation(X::AbstractElements)
   P = Presentation(FreeSchema)
-  obs = Dict{Tuple{Symbol, Int}, Any}()
+  obs = OrderedDict{Tuple{Symbol, Int}, Any}()
   for a in 1:nparts(X, :Ob)
     class = X[a, :nameo]
     for (i,j) in enumerate(incident(X, a, :πₑ))
@@ -68,7 +70,7 @@ function presentation(X::AbstractElements)
     end
   end
   add_generators!(P, values(obs))
-  homs = Dict{Tuple{Symbol, Int}, Any}()
+  homs = OrderedDict{Tuple{Symbol, Int}, Any}()
   for f in 1:nparts(X, :Hom)
     class = X[f, :nameh]
     for (i,j) in enumerate(incident(X, f, :πₐ))
