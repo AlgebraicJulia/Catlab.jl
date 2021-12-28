@@ -23,7 +23,7 @@ draw(D::FinFunctor) = to_graphviz(D, node_labels=true, edge_labels=true, prog="n
 # together with a functor ``F: J → C``. This method of simultaneous definition is
 # often more convenient than defining ``J`` and ``F`` separately.
 # often more convenient than defining ``J`` and ``F`` separately, as could be
-# accomplished by calling [`@fincat`](@ref) and then [`@finfunctor`](@ref).
+# accomplished by calling `@fincat` and then `@finfunctor`.
 # For example, the limit of the following diagram consists of the paths of length
 # two in a graph:
 
@@ -34,11 +34,13 @@ D₂ = @free_diagram TheoryGraph begin
   src(e₂) == v
 end
 
-# Morphisms in the indexing category can be left unnamed, which is convenient for defining free diagrams (see also [`@free_diagram`](@ref)). Of course, unnamed morphisms cannot be referenced by name within the `@diagram` call or in other settings, which can sometimes be problematic.
+# Morphisms in the indexing category can be left unnamed, which is convenient for 
+# defining free diagrams (see also `@free_diagram`. Of course, unnamed morphisms cannot
+# be referenced by name within the `@diagram` call or in other settings, which
+# can sometimes be problematic.
 # 
-# ## Presenting a free diagram in a given category.
-# Recall that a *free diagram* in a category ``C`` is a functor ``F: J → C`` where ``J`` is a free category on a graph, here assumed finite. This macro is functionally a special case of [`@diagram`](@ref) that provides a syntactic variant for equality expressions. Rather than interpreting them as equations between morphisms in ``J``, equality expresions can be used to introduce anonymous morphisms in a "pointful" style. For example, the limit of the following diagram consists of the paths of length two in a graph:
-    
+# We can also draw the resulting diagrams.
+
 draw(D₂)
 
 # For small equations the point-free notation commonly employed in functional programming is very convenient; however, there is a reason it is not the standard approach to presenting equations in mathematical writing. Variables are just too useful! As the size of the system of equations grows, it becomes more and more convenient to use variable names. This is why `Catlab.Programs.@program` exists to help people write SMC morphisms with the point-ful notation they are familiar with in imperative or procedural programming.
