@@ -107,6 +107,7 @@ We first give an overview of the data types used in the acset machinery.
 Modules = [
   CategoricalAlgebra.CSets,
   CategoricalAlgebra.StructuredCospans,
+  CategoricalAlgebra.ACSetInterface,
 ]
 Private = false
 ```
