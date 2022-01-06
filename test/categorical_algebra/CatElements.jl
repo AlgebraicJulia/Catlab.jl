@@ -63,11 +63,58 @@ end
 
 @testset "DiBipartite Elements" begin
   @test length(generators(ThPetri)) == 8
-  @test nparts(sir_eltsch, :V_1) == 3 
+  @test nparts(sir_eltsch, :V_1) == 3
   @test nparts(sir_eltsch, :V_2) == 2
   @test nparts(sir_eltsch, :E_1) == 3
   @test nparts(sir_eltsch, :E_2) == 3
   @test sir_eltsch[:, :src_E_2] == [1,1,2]
 end
 
+using Catlab.Graphs.BasicGraphs: TheoryGraph
+@present TheoryLabelledGraph <: TheoryGraph begin
+  Label::AttrType
+  label::Attr(V,Label)
+end
+@acset_type LabelledGraph(TheoryLabelledGraph)
+
+p₁ = @acset LabelledGraph{Symbol} begin
+  V = 2
+  E = 2
+  src=[1,2]
+  tgt=[2,1]
+  label=[:label, :label]
+end
+
+ThLabelledPetri, obmap, hommap = CatElements.presentation(attr_elements(p₁))
+@test Symbol.(generators(ThLabelledPetri)) ==
+  [:V_1, :V_2, :E_1, :E_2, :src_E_1, :src_E_2, :tgt_E_1, :tgt_E_2, :Label, :label_V_1, :label_V_2]
+
+@acset_type LabelledPetri(ThLabelledPetri)
+
+sir_lab_eltsch = @acset LabelledPetri{Symbol} begin
+  V_1 = 3
+  V_2 = 2
+  E_1 = 3
+  E_2 = 3
+
+  src_E_1 = [1,2,2]
+  tgt_E_1 = [1,1,2]
+
+  src_E_2 = [1,1,2]
+  tgt_E_2 = [2,2,3]
+
+  label_V_1 = [:S, :I, :R]
+  label_V_2 = [:inf, :rec]
+end
+
+@testset "Labelled DiBipartite Elements" begin
+  @test length(generators(ThLabelledPetri)) == 11
+  @test nparts(sir_lab_eltsch, :V_1) == 3
+  @test nparts(sir_lab_eltsch, :V_2) == 2
+  @test nparts(sir_lab_eltsch, :E_1) == 3
+  @test nparts(sir_lab_eltsch, :E_2) == 3
+  @test sir_lab_eltsch[:, :src_E_2] == [1,1,2]
+  @test sir_lab_eltsch[:, :label_V_1] == [:S, :I, :R]
+  @test sir_lab_eltsch[:, :label_V_2] == [:inf, :rec]
+end
 end
