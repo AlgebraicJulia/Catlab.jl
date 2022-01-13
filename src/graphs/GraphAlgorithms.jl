@@ -123,7 +123,7 @@ function enumerate_paths(G::Graph;
   sorted = isnothing(sorted) ? topological_sort(G) : sorted
   Path = Vector{Int}
   paths = [Set{Path}() for _ in 1:nv(G)] # paths that start on a particular V
-  for v in reverse(topological_sort(G))
+  for v in reverse(sorted)
     push!(paths[v], Int[]) # add length 0 paths
     for e in incident(G, v, :src)
       push!(paths[v], [e]) # add length 1 paths

@@ -18,7 +18,7 @@ export FinCat, FinCatGraph, Path, ob_generators, hom_generators, equations,
 using AutoHashEquals
 using Reexport
 using StaticArrays: SVector
-using DataStructures: IntDisjointSets, in_same_set
+using DataStructures: IntDisjointSets, in_same_set, num_groups
 
 @reexport using ..Categories
 using ...GAT, ...Present, ...Syntax
@@ -353,15 +353,23 @@ FinFunctor(ob_map, hom_map, dom::Presentation, codom::Presentation) =
 Categories.show_type_constructor(io::IO, ::Type{<:FinFunctor}) =
   print(io, "FinFunctor")
 
+"""
+Dual to a ["final-functor"](https://ncatlab.org/nlab/show/final+functor), an
+initial functor is one for which pulling back diagrams along it does not change
+the limits of these diagrams.
+
+This amounts to checking, for a functor C->D, that, for every object d in
+Ob(D), the comma category (F/d) is connected.
+"""
 function is_initial(F::FinFunctor)::Bool
-  Gₛ, Gₜ = F.dom.graph, F.codom.graph
+  Gₛ, Gₜ = graph(dom(F)), graph(codom(F))
   pathₛ, pathₜ = enumerate_paths.([Gₛ, Gₜ])
 
   function connected_nonempty_slice(t::Int)::Bool
     # Generate slice objects
     ob_slice = Pair{Int,Vector{Int}}[] # s ∈Ob(S) and a path ∈ T(F(s), t)
     for s in vertices(Gₛ)
-        append!(ob_slice, [s => p for p in pathₜ[F.ob_map[s] => t]])
+        append!(ob_slice, [s => p for p in pathₜ[ob_map(F,s) => t]])
     end
 
     # Empty case
@@ -387,7 +395,7 @@ function is_initial(F::FinFunctor)::Bool
       end
     end
 
-    return connected.ngroups == 1
+    return num_groups(connected) == 1
   end
 
   # Check for each t ∈ T whether F/t is connected
