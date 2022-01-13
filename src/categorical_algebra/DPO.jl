@@ -11,16 +11,31 @@ using ..CSets: dangling_condition
 Apply a rewrite rule (given as a span, L<-I->R) to a ACSet
 using a match morphism `m` which indicates where to apply
 the rewrite.
+              l   r
+           L <- I -> R
+         m ↓    ↓    ↓
+           G <- K -> H
+
+Returns:
+- The morphisms I->K, K->G (produced by pushout complement), followed by
+  R->H, and K->H (produced by pushout)
 """
-function rewrite_match_maps(L::ACSetTransformation, R::ACSetTransformation,
-                         m::ACSetTransformation)::Vector{ACSetTransformation}
+function rewrite_match_maps(
+    L::ACSetTransformation, R::ACSetTransformation, m::ACSetTransformation
+    )::Tuple{ACSetTransformation,ACSetTransformation,
+             ACSetTransformation,ACSetTransformation}
   dom(L) == dom(R) || error("Rewriting where L, R do not share domain")
   codom(L) == dom(m) || error("Rewriting where L does not compose with m")
   (ik, kg) = pushout_complement(L, m)
   rh, kh = pushout(R, ik)
-  return [ik, kg, rh, kh]
+  return ik, kg, rh, kh
 end
 
+"""
+Apply a rewrite rule (given as a span, L<-I->R) to a ACSet
+using a match morphism `m` which indicates where to apply
+the rewrite. Return the rewritten ACSet.
+"""
 rewrite_match(L::ACSetTransformation, R::ACSetTransformation,
   m::ACSetTransformation)::ACSet = codom(rewrite_match_maps(L, R, m)[4])
 
