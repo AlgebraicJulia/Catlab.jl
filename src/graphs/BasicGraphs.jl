@@ -8,17 +8,18 @@ departures due to differences between the data structures.
 """
 module BasicGraphs
 export HasVertices, HasGraph,
-  AbstractGraph, Graph, nv, ne, src, tgt, edges, vertices,
+  AbstractGraph, Graph, nv, ne, src, tgt, edges, inedges, outedges, vertices,
   has_edge, has_vertex, add_edge!, add_edges!, add_vertex!, add_vertices!, add_vertices_with_indices!,
   rem_edge!, rem_edges!, rem_vertex!, rem_vertices!,
-  neighbors, inneighbors, outneighbors, all_neighbors, induced_subgraph,
+  neighbors, inneighbors, outneighbors, all_neighbors, degree, induced_subgraph,
   AbstractSymmetricGraph, SymmetricGraph, inv,
   AbstractReflexiveGraph, ReflexiveGraph, refl,
   AbstractSymmetricReflexiveGraph, SymmetricReflexiveGraph,
   AbstractHalfEdgeGraph, HalfEdgeGraph, vertex, half_edges,
   add_dangling_edge!, add_dangling_edges!,
   AbstractWeightedGraph, WeightedGraph, weight,
-  AbstractSymmetricWeightedGraph, SymmetricWeightedGraph
+  AbstractSymmetricWeightedGraph, SymmetricWeightedGraph,
+  from_lightgraph
 
 import Base: inv
 using Requires
@@ -101,15 +102,28 @@ edges(g::HasGraph) = parts(g, :E)
 edges(g::HasGraph, src::Int, tgt::Int) =
   (e for e in incident(g, src, :src) if subpart(g, e, :tgt) == tgt)
 
+""" Edges coming out of a vertex
+"""
+@inline outedges(g::HasGraph, v) = incident(g, v, :src)
+
+""" Edges coming into a vertex
+"""
+inedges(g::HasGraph, v) = incident(g, v, :tgt)
+
 """ Whether the graph has the given vertex.
 """
 has_vertex(g::HasVertices, v) = has_part(g, :V, v)
 
 """ Whether the graph has the given edge, or an edge between two vertices.
 """
-has_edge(g::HasGraph, e) = has_part(g, :E, e)
-has_edge(g::HasGraph, src::Int, tgt::Int) =
-  has_vertex(g, src) && tgt ∈ outneighbors(g, src)
+@inline has_edge(g::HasGraph, e) = has_part(g, :E, e)
+@inline function has_edge(g::HasGraph, s::Int, t::Int)
+  (1 <= s <= nv(g)) || return false
+  for e in outedges(g,s)
+    (tgt(g,e) == t) && return true
+  end
+  false
+end
 
 """ Add a vertex to a graph.
 """
@@ -180,20 +194,22 @@ distinction is moot.
 In the presence of multiple edges, neighboring vertices are given *with
 multiplicity*. To get the unique neighbors, call `unique(neighbors(g))`.
 """
-neighbors(g::AbstractGraph, v::Int) = outneighbors(g, v)
+@inline neighbors(g::AbstractGraph, v::Int) = outneighbors(g, v)
 
 """ In-neighbors of vertex in a graph.
 """
-inneighbors(g::AbstractGraph, v::Int) = subpart(g, incident(g, v, :tgt), :src)
+@inline inneighbors(g::AbstractGraph, v::Int) = @inbounds subpart(g, incident(g, v, :tgt), :src)
 
 """ Out-neighbors of vertex in a graph.
 """
-outneighbors(g::AbstractGraph, v::Int) = subpart(g, incident(g, v, :src), :tgt)
+@inline outneighbors(g::AbstractGraph, v::Int) = @inbounds subpart(g, incident(g, v, :src), :tgt)
 
 """ Union of in-neighbors and out-neighbors in a graph.
 """
 all_neighbors(g::AbstractGraph, v::Int) =
   Iterators.flatten((inneighbors(g, v), outneighbors(g, v)))
+
+degree(g,v) = length(incident(g,v,:tgt)) + length(incident(g,v,:src))
 
 """ Subgraph induced by a set of a vertices.
 
@@ -530,6 +546,23 @@ function __init__()
       end
       lg
     end
+
+    function from_lightgraph(lg::SimpleDiGraph)
+      g = Graph(LightGraphs.nv(lg))
+      for e in LightGraphs.edges(lg)
+        add_edge!(g,LightGraphs.src(e),LightGraphs.dst(e))
+      end
+      g
+    end
+
+    function from_lightgraph(lg::SimpleGraph)
+      g = SymmetricGraph(LightGraphs.nv(lg))
+      for e in LightGraphs.edges(lg)
+        add_edge!(g,LightGraphs.src(e),LightGraphs.dst(e))
+      end
+      g
+    end
+
 
     function SimpleGraph(g::AbstractHalfEdgeGraph)
       lg = SimpleGraph(nv(g))
