@@ -2,7 +2,7 @@
 """
 module FinSets
 export FinSet, FinFunction, FinDomFunction, TabularSet, TabularLimit,
-  force, is_indexed, preimage,
+  force, is_indexed, preimage, normalize_labeling,
   JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin,
   SubFinSet, SubOpBoolean
 
@@ -1021,6 +1021,17 @@ function quotient_projection(sets::IntDisjointSets)
   h = [ find_root!(sets, i) for i in 1:length(sets) ]
   roots = unique!(sort(h))
   FinFunction([ searchsortedfirst(roots, r) for r in h ], length(roots))
+end
+
+""" Normalize labels to 1:n, where n is the number of labels
+"""
+function normalize_labeling(labeling::Vector{Int})
+  labels = unique!(sort(labeling))
+  map = Dict{Int,Int}()
+  for (i,l) in enumerate(labels)
+    map[l] = i
+  end
+  FinFunction([ map[l] for l in labeling ], length(labels))
 end
 
 """ Given h: X → Y, pass to quotient q: X/~ → Y under projection π: X → X/~.
