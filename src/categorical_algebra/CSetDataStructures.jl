@@ -378,8 +378,8 @@ function set_subpart_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
     if idxed[f]
       quote
         @assert 0 <= subpart <= acs.obs[$(ob_num(s, s.codoms[f]))]
-        old = acs.homs.$f[part]
-        acs.homs.$f[part] = subpart
+        @inbounds old = acs.homs.$f[part]
+        @inbounds acs.homs.$f[part] = subpart
         if old > 0
           @assert deletesorted!(acs.hom_indices.$f[old], part)
         end
