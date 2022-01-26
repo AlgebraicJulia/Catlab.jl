@@ -545,7 +545,7 @@ end
 
 @generated function _rem_part!(acs::StructACSet{S,Ts,idxed}, ::Type{Val{ob}},
                                part::Int, ::RemovalByShift) where {S,Ts,ob,idxed}
-  rem_part_body(SchemaDesc(S),Dict(idxed),ob, RemovalByShift())
+  rem_part_body(SchemaDesc(S),pairs(idxed),ob, RemovalByShift())
 end
 
 @generated function _rem_part!(acs::StructACSet{S,Ts,idxed}, ::Type{Val{ob}},
