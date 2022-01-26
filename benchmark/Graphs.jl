@@ -11,6 +11,33 @@ using Catlab.Graphs.BasicGraphs: TheoryGraph
 using Catlab.WiringDiagrams: query
 using Catlab.Programs: @relation
 
+testdatadir = joinpath(dirname(@__FILE__), "..", "test", "testdata")
+
+# Example Graphs
+#
+################
+
+# Stolen from the Lightgraphs benchmark suite
+
+dg1fn = joinpath(testdatadir, "graph-50-500.jgz")
+
+LG_GRAPHS = Dict{String,LG.DiGraph}(
+    "complete100"   => LG.complete_digraph(100),
+    # "5000-50000"    => LG.loadgraph(dg1fn)["graph-5000-50000"],
+    "path500"       => LG.path_digraph(500)
+)
+
+GRAPHS = Dict(k => from_lightgraph(g) for (k,g) in LG_GRAPHS)
+
+LG_SYMGRAPHS = Dict{String,LG.Graph}(
+    "complete100"   => LG.complete_graph(100),
+    "tutte"         => LG.smallgraph(:tutte),
+    "path500"       => LG.path_graph(500),
+    # "5000-49947"    => LG.SimpleGraph(DIGRAPHS["5000-50000"])
+)
+
+SYMGRAPHS = Dict(k => from_lightgraph(g) for (k,g) in LG_SYMGRAPHS)
+
 # Helpers
 #########
 
@@ -49,7 +76,7 @@ end
 function bench_iter_neighbors(g)
   count = 0
   for v in vertices(g)
-    count += length(neighbors(g, v))
+    count += length(neighbors(g,v))
   end
   count
 end
@@ -65,6 +92,7 @@ end
 function Graphs.connected_component_projection(g::LG.AbstractGraph)
   label = Vector{Int}(undef, LG.nv(g))
   LG.connected_components!(label, g)
+  normalize_labeling(label)
 end
 
 abstract type FindTrianglesAlgorithm end
@@ -116,29 +144,43 @@ lgbench["has-edge"] = @benchmarkable bench_has_edge($lg)
 clbench["iter-neighbors"] = @benchmarkable bench_iter_neighbors($g)
 lgbench["iter-neighbors"] = @benchmarkable bench_iter_neighbors($lg)
 
+
+bench = SUITE["GraphConnComponents"] = BenchmarkGroup()
+clbench = bench["Catlab"] = BenchmarkGroup()
+lgbench = bench["LightGraphs"] = BenchmarkGroup()
+
 n₀ = 2000
 g₀ = path_graph(Graph, n₀)
 g = ob(coproduct(fill(g₀, 5)))
 lg = LG.DiGraph(g)
-clbench["path-graph-components"] =
-  @benchmarkable connected_component_projection($g)
-lgbench["path-graph-components"] =
+clbench["path-graph"] =
+  @benchmarkable connected_component_projection_bfs($g)
+lgbench["path-graph"] =
   @benchmarkable connected_component_projection($lg)
 
 g₀ = star_graph(Graph, n₀)
 g = ob(coproduct(fill(g₀, 5)))
 lg = LG.DiGraph(g)
-clbench["star-graph-components"] =
-  @benchmarkable connected_component_projection($g)
-lgbench["star-graph-components"] =
+clbench["star-graph"] =
+  @benchmarkable connected_component_projection_bfs($g)
+lgbench["star-graph"] =
   @benchmarkable connected_component_projection($lg)
+
+for gn in keys(GRAPHS)
+  clbench[gn] = @benchmarkable connected_component_projection_bfs($(GRAPHS[gn]))
+  lgbench[gn] = @benchmarkable connected_component_projection($(LG_GRAPHS[gn]))
+end
+
+bench = SUITE["GraphTriangles"] = BenchmarkGroup()
+clbench = bench["Catlab"] = BenchmarkGroup()
+lgbench = bench["LightGraphs"] = BenchmarkGroup()
 
 n = 100
 g = wheel_graph(Graph, n)
 lg = LG.DiGraph(g)
 clbench["wheel-graph-triangles-hom"] =
   @benchmarkable ntriangles($g, TriangleBacktrackingSearch())
-clbench["wheel-graph-triangles-query"] =
+clbench["wheel-graph-triangles"] =
   @benchmarkable ntriangles($g, TriangleQuery())
 
 # Symmetric graphs
@@ -170,6 +212,10 @@ lgbench["has-edge"] = @benchmarkable bench_has_edge($lg)
 clbench["iter-neighbors"] = @benchmarkable bench_iter_neighbors($g)
 lgbench["iter-neighbors"] = @benchmarkable bench_iter_neighbors($lg)
 
+bench = SUITE["SymmetricGraphConnComponent"] = BenchmarkGroup()
+clbench = bench["Catlab"] = BenchmarkGroup()
+lgbench = bench["LightGraphs"] = BenchmarkGroup()
+
 n₀ = 2000
 g₀ = path_graph(SymmetricGraph, n₀)
 g = ob(coproduct(fill(g₀, 5)))
@@ -187,12 +233,22 @@ clbench["star-graph-components"] =
 lgbench["star-graph-components"] =
   @benchmarkable connected_component_projection($lg)
 
+for gn in keys(SYMGRAPHS)
+  clbench[gn] = @benchmarkable connected_component_projection_bfs($(SYMGRAPHS[gn]))
+  lgbench[gn] = @benchmarkable connected_component_projection($(LG_SYMGRAPHS[gn]))
+end
+
+bench = SUITE["SymmetricGraphTriangles"] = BenchmarkGroup()
+clbench = bench["Catlab"] = BenchmarkGroup()
+lgbench = bench["LightGraphs"] = BenchmarkGroup()
+
 n = 100
 g = wheel_graph(SymmetricGraph, n)
 lg = LG.Graph(g)
 clbench["wheel-graph-triangles-hom"] =
   @benchmarkable ntriangles($g, TriangleBacktrackingSearch())
-clbench["wheel-graph-triangles-query"] =
+# clbench["wheel-graph-triangles-query"] =
+clbench["wheel-graph-triangles"] =
   @benchmarkable ntriangles($g, TriangleQuery())
 lgbench["wheel-graph-triangles"] = @benchmarkable sum(LG.triangles($lg))
 
@@ -202,7 +258,7 @@ lgbench["wheel-graph-triangles"] = @benchmarkable sum(LG.triangles($lg))
 bench = SUITE["WeightedGraph"] = BenchmarkGroup()
 clbench = bench["Catlab"] = BenchmarkGroup()
 clvecbench = bench["Catlab-vectorized"] = BenchmarkGroup()
-lgbench = bench["LightGraphs"] = BenchmarkGroup()
+lgbench = bench["MetaGraphs"] = BenchmarkGroup()
 
 n = 10000
 g = path_graph(WeightedGraph{Float64}, n; E=(weight=range(0,1,length=n-1),))
@@ -304,4 +360,52 @@ lgbench["indexed-lookup"] = @benchmarkable begin
   for i in $σ
     @assert $mg["v$i", :label] == i
   end
+end
+
+# Random Graphs
+###############
+
+bench = SUITE["RandomGraph"] = BenchmarkGroup()
+clbench = bench["Catlab"] = BenchmarkGroup()
+lgbench = bench["LightGraphs"] = BenchmarkGroup()
+
+sizes = [10000]
+ps = [0.001]
+for size in sizes, p in ps
+  clbench["erdos_renyi-$size-$p"] =
+    @benchmarkable erdos_renyi($Graph, $size, $(p/2))
+  lgbench["erdos_renyi-$size-$p"] =
+    @benchmarkable LightGraphs.erdos_renyi($size, $p)
+end
+
+ks = [10]
+
+for size in sizes, k in ks
+  clbench["expected_degree_graph-$size-$k"] =
+    @benchmarkable expected_degree_graph($Graph, $([min(k,size-1) for _ in 1:size]))
+  lgbench["expected_degree_graph-$size-$k"] =
+    @benchmarkable LightGraphs.expected_degree_graph($([min(k,size-1) for _ in 1:size]))
+end
+
+for size in sizes, k in ks
+  clbench["watts_strogatz-$size-$k"] =
+    @benchmarkable watts_strogatz($Graph, $size, $(min(k,size-1)), 0.5)
+  lgbench["watts_strogatz-$size-$k"] =
+    @benchmarkable LightGraphs.watts_strogatz($size, $(min(k,size-1)), 0.5)
+end
+
+# Searching
+###########
+
+bench = SUITE["Searching"] = BenchmarkGroup()
+clbench = bench["Catlab"] = BenchmarkGroup()
+lgbench = bench["LightGraphs"] = BenchmarkGroup()
+
+for size in sizes, p in ps
+  local g = erdos_renyi(Graph, size, p)
+  local lg = LightGraphs.SimpleDiGraph(g)
+  clbench["bfs_erdos_renyi-$size-$p"] = @benchmarkable bfs_parents($g,1)
+  lgbench["bfs_erdos_renyi-$size-$p"] = @benchmarkable LightGraphs.bfs_parents($lg,1)
+  clbench["dfs_erdos_renyi-$size-$p"] = @benchmarkable dfs_parents($g,1)
+  lgbench["dfs_erdos_renyi-$size-$p"] = @benchmarkable LightGraphs.dfs_parents($lg,1)
 end
