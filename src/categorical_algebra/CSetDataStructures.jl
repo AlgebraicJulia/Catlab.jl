@@ -245,7 +245,7 @@ end
 @inline Base.getindex(acs::StructACSet, args...) = ACSetInterface.subpart(acs, args...)
 
 @inline ACSetInterface.incident(acs::StructACSet, part, f::Symbol; copy::Bool=false) =
-  _incident(acs, part, Val{f}; copy=copy)
+  _incident(acs, part, Val{f}, Val{copy})
 
 broadcast_findall(xs, array::AbstractArray) =
   broadcast(x -> findall(y -> x == y, array), xs)
@@ -262,17 +262,18 @@ We keep the main body of the code generating out of the @generated function
 so that the code-generating function only needs to be compiled once.
 """
 function incident_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
-                       unique_idxed::AbstractDict{Symbol,Bool}, f::Symbol)
+                       unique_idxed::AbstractDict{Symbol,Bool}, f::Symbol,
+                       copy::Bool)
   if f ∈ s.homs
     if idxed[f]
       quote
         indices = $(GlobalRef(ACSetInterface,:view_or_slice))(acs.hom_indices.$f, part)
-        copy ? Base.copy.(indices) : indices
+        $(copy ? :(Base.copy.(indices)) : :(indices))
       end
     elseif unique_idxed[f]
       quote
         indices = $(GlobalRef(ACSetInterface,:view_or_slice))(acs.hom_unique_indices.$f, part)
-        copy ? Base.copy.(indices) : indices
+        $(copy ? :(Base.copy.(indices)) : :(indices))
       end
     else
       :(broadcast_findall(part, acs.homs.$f))
@@ -281,7 +282,7 @@ function incident_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
     if idxed[f]
       quote
         indices = get_attr_index(acs.attr_indices.$f, part)
-        copy ? Base.copy.(indices) : indices
+        $(copy ? :(Base.copy.(indices)) : :(indices))
       end
     elseif unique_idxed[f]
       quote
@@ -296,9 +297,9 @@ function incident_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
 end
 
 @generated function _incident(acs::StructACSet{S,Ts,Idxed,UniqueIdxed},
-                              part, ::Type{Val{f}}; copy::Bool=false) where
-  {S,Ts,Idxed,UniqueIdxed,f}
-  incident_body(SchemaDesc(S),pairs(Idxed),pairs(UniqueIdxed),f)
+                              part, ::Type{Val{f}}, ::Type{Val{copy}}) where
+  {S,Ts,Idxed,UniqueIdxed,f,copy}
+  incident_body(SchemaDesc(S),pairs(Idxed),pairs(UniqueIdxed),f,copy)
 end
 
 # Mutators
