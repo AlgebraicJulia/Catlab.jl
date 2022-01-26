@@ -305,10 +305,15 @@ end
 # Mutators
 ##########
 
-@inline ACSetInterface.add_parts!(acs::StructACSet, ob::Symbol, n::Int) = _add_parts!(acs, Val{ob}, n)
+@inline add_parts_with_indices!(acs::StructACSet, ob::Symbol, n::Int, index_sizes::NamedTuple) =
+  _add_parts!(acs, Val{ob}, n, index_sizes)
+
+@inline ACSetInterface.add_parts!(acs::StructACSet, ob::Symbol, n::Int) =
+  _add_parts!(acs, Val{ob}, n, (;))
 
 function add_parts_body(s::SchemaDesc, idxed::AbstractDict,
-                        unique_idxed::AbstractDict, ob::Symbol)
+                        unique_idxed::AbstractDict, ob::Symbol,
+                        index_sized_homs::Vector)
   code = quote
     m = acs.obs[$(ob_num(s, ob))]
     nparts = m + n
@@ -323,10 +328,16 @@ function add_parts_body(s::SchemaDesc, idxed::AbstractDict,
             end)
     end
     if s.codoms[f] == ob && idxed[f]
+      size = if f ∈ index_sized_homs
+        :(index_sizes[$(Expr(:quote, f))])
+      else
+        0
+      end
       push!(code.args, quote
             resize!(acs.hom_indices.$f, nparts)
             for i in newparts
-              acs.hom_indices.$f[i] = Int[]
+              acs.hom_indices.$f[i] = Array{Int}(undef, $size)
+              empty!(acs.hom_indices.$f[i])
             end
             end)
     elseif s.codoms[f] == ob && unique_idxed[f]
@@ -344,16 +355,17 @@ function add_parts_body(s::SchemaDesc, idxed::AbstractDict,
       push!(code.args,:(resize!(acs.attrs.$a, nparts)))
     end
   end
-  push!(code.args, :(newparts))
+  push!(code.args, :(return newparts))
   code
 end
 
 """ This generates the _add_parts! methods for a specific object of a `StructACSet`.
 """
 @generated function _add_parts!(acs::StructACSet{S,Ts,Idxed,UniqueIdxed},
-                                ::Type{Val{ob}}, n::Int) where
-  {S, Ts, Idxed, UniqueIdxed, ob}
-  add_parts_body(SchemaDesc(S),pairs(Idxed),pairs(UniqueIdxed),ob)
+                                ::Type{Val{ob}}, n::Int,
+                                index_sizes::NamedTuple{index_sized_homs}) where
+  {S, Ts, Idxed, UniqueIdxed, ob, index_sized_homs}
+  add_parts_body(SchemaDesc(S),pairs(Idxed),pairs(UniqueIdxed),ob,[index_sized_homs...])
 end
 
 @inline ACSetInterface.set_subpart!(acs::StructACSet, part::Int, f::Symbol, subpart) =

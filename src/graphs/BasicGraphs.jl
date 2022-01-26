@@ -9,7 +9,7 @@ departures due to differences between the data structures.
 module BasicGraphs
 export HasVertices, HasGraph,
   AbstractGraph, Graph, nv, ne, src, tgt, edges, vertices,
-  has_edge, has_vertex, add_edge!, add_edges!, add_vertex!, add_vertices!,
+  has_edge, has_vertex, add_edge!, add_edges!, add_vertex!, add_vertices!, add_vertices_with_indices!,
   rem_edge!, rem_edges!, rem_vertex!, rem_vertices!,
   neighbors, inneighbors, outneighbors, all_neighbors, induced_subgraph,
   AbstractSymmetricGraph, SymmetricGraph, inv,
@@ -118,6 +118,13 @@ add_vertex!(g::HasVertices; kw...) = add_part!(g, :V; kw...)
 """ Add multiple vertices to a graph.
 """
 add_vertices!(g::HasVertices, n::Int; kw...) = add_parts!(g, :V, n; kw...)
+
+""" Add vertices with preallocated src/tgt indexes
+"""
+function add_vertices_with_indices!(g::HasVertices, n::Int, k::Int; kw...)
+  CSetDataStructures.add_parts_with_indices!(g, :V, n, (src=k,tgt=k))
+  set_subparts!(g, :V; kw...)
+end
 
 """ Add an edge to a graph.
 """
