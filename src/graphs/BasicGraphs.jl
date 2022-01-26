@@ -121,15 +121,15 @@ add_vertices!(g::HasVertices, n::Int; kw...) = add_parts!(g, :V, n; kw...)
 
 """ Add an edge to a graph.
 """
-add_edge!(g::HasGraph, src::Int, tgt::Int; kw...) =
-  add_part!(g, :E; src=src, tgt=tgt, kw...)
+add_edge!(g::HasGraph, src::Int, tgt::Int) =
+  add_part!(g, :E, (src=src, tgt=tgt))
 
 """ Add multiple edges to a graph.
 """
 function add_edges!(g::HasGraph, srcs::AbstractVector{Int},
                     tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
-  add_parts!(g, :E, n; src=srcs, tgt=tgts, kw...)
+  add_parts!(g, :E, n, (src=srcs, tgt=tgts, kw...))
 end
 
 """ Remove a vertex from a graph.

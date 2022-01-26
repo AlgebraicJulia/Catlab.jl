@@ -120,16 +120,18 @@ end
 incident(acs, part, expr::GATExpr; kw...) =
   incident(acs, part, subpart_names(expr); kw...)
 
+@inline add_part!(acs, type; kw...) = add_part!(acs, type, (;kw...))
+
 """ Add part of given type to acset, optionally setting its subparts.
 
 Returns the ID of the added part.
 
 See also: [`add_parts!`](@ref).
 """
-@inline function add_part!(acs, type::Symbol, args...; kw...)
+@inline function add_part!(acs, type::Symbol, kw)
   part = only(add_parts!(acs,type,1))
   try
-    set_subparts!(acs, part, args...; kw...)
+    set_subparts!(acs, part, kw)
   catch e
     rem_part!(acs, type, part)
     rethrow(e)
@@ -145,10 +147,12 @@ See also: [`add_part!`](@ref).
 """
 function add_parts! end
 
-@inline function add_parts!(acs, type::Symbol, n::Int, args...; kw...)
+@inline add_parts!(acs, type::Symbol, n::Int; kw...) = add_parts!(acs, type, n, (;kw...))
+
+@inline function add_parts!(acs, type::Symbol, n::Int, kw)
   parts = add_parts!(acs, type, n)
   try
-    set_subparts!(acs, parts, args...; kw...)
+    set_subparts!(acs, parts, kw)
   catch e
     rem_parts!(acs, type, parts)
     rethrow(e)
@@ -183,10 +187,8 @@ Both single and vectorized assignment are supported.
 
 See also: [`set_subpart!`](@ref).
 """
-@inline function set_subparts!(acs, part, kw::NamedTuple)
-  for name in keys(kw)
-    set_subpart!(acs, part, name, kw[name])
-  end
+@inline @generated function set_subparts!(acs, part, kw::NamedTuple{keys}) where {keys}
+  Expr(:block,[:(set_subpart!(acs, part, $(Expr(:quote, name)), kw.$name)) for name in keys]...)
 end
 
 @inline set_subparts!(acs, part; kw...) = set_subparts!(acs, part, (;kw...))
