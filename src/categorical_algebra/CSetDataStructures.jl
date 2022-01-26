@@ -404,7 +404,7 @@ function set_subpart_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
       end
     elseif unique_idxed[f]
       quote
-        @assert subpart ∉ keys(acs.attr_unique_indices.$f) "subpart not unique"
+        @boundscheck @assert subpart ∉ keys(acs.attr_unique_indices.$f) "subpart not unique"
         if isassigned(acs.attrs.$f, part)
           old = acs.attrs.$f[part]
           delete!(acs.attr_unique_indices.$f, old)
@@ -441,7 +441,7 @@ function rem_part_body(s::SchemaDesc, idxed, ob::Symbol)
   indexed_out_homs = filter(hom -> s.doms[hom] == ob && idxed[hom], s.homs)
   indexed_attrs = filter(attr -> s.doms[attr] == ob && idxed[attr], s.attrs)
   quote
-    last_part = acs.obs[$(ob_num(s, ob))]
+    last_part = @inbounds acs.obs[$(ob_num(s, ob))]
     @assert 1 <= part <= last_part
     # Unassign superparts of the part to be removed and also reassign superparts
     # of the last part to this part.
@@ -480,7 +480,7 @@ function rem_part_body(s::SchemaDesc, idxed, ob::Symbol)
     for a in $(Tuple(out_attrs))
       resize!(acs.attrs[a], last_part - 1)
     end
-    acs.obs[$(ob_num(s, ob))] -= 1
+    @inbounds acs.obs[$(ob_num(s, ob))] -= 1
     if part < last_part
       $(Expr(:block,
              (map([out_homs; out_attrs]) do f
