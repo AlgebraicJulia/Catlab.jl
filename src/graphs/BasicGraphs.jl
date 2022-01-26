@@ -142,8 +142,8 @@ end
 
 """ Add an edge to a graph.
 """
-add_edge!(g::HasGraph, src::Int, tgt::Int) =
-  add_part!(g, :E, (src=src, tgt=tgt))
+add_edge!(g::HasGraph, src::Int, tgt::Int; kw...) =
+  add_part!(g, :E, (src=src, tgt=tgt, kw...))
 
 """ Add multiple edges to a graph.
 """
