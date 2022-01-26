@@ -386,6 +386,7 @@ function set_subpart_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
         if subpart > 0
           insertsorted!(acs.hom_indices.$f[subpart], part)
         end
+        subpart
       end
     elseif unique_idxed[f]
       quote
@@ -397,11 +398,13 @@ function set_subpart_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
         end
         acs.homs.$f[part] = subpart
         acs.hom_unique_indices.$f[subpart] = part
+        subpart
       end
     else
       quote
         @assert 0 <= subpart <= acs.obs[$(ob_num(s, s.codoms[f]))]
         acs.homs.$f[part] = subpart
+        subpart
       end
     end
   elseif f ∈ s.attrs
@@ -413,6 +416,7 @@ function set_subpart_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
         end
         acs.attrs.$f[part] = subpart
         set_attr_index!(acs.attr_indices.$f, subpart, part)
+        subpart
       end
     elseif unique_idxed[f]
       quote
@@ -423,6 +427,7 @@ function set_subpart_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
         end
         acs.attrs.$f[part] = subpart
         acs.attr_unique_indices.$f[subpart] = part
+        subpart
       end
     else
       :(acs.attrs.$f[part] = subpart)
