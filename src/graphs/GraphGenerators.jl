@@ -11,8 +11,7 @@ using Random: GLOBAL_RNG
 """
 function path_graph(::Type{T}, n::Int; V=(;), E=(;)) where T <: ACSet
   g = T()
-  index_size = is_directed(T) ? 1 : 2
-  add_vertices_with_indices!(g, n, index_size; V...)
+  add_vertices!(g, n; V...)
   add_edges!(g, 1:(n-1), 2:n; E...)
   g
 end
@@ -23,8 +22,7 @@ When ``n = 1``, this is a loop graph.
 """
 function cycle_graph(::Type{T}, n::Int; V=(;), E=(;)) where T <: ACSet
   g = T()
-  index_size = is_directed(T) ? 1 : 2
-  add_vertices_with_indices!(g, n, index_size; V...)
+  add_vertices!(g, n; V...)
   add_edges!(g, 1:n, circshift(1:n, -1); E...)
   g
 end
@@ -33,8 +31,7 @@ end
 """
 function complete_graph(::Type{T}, n::Int; V=(;)) where T <: ACSet
   g = T()
-  index_size = n-1
-  add_vertices_with_indices!(g, n, index_size; V...)
+  add_vertices!(g, n; V...)
   for i in vertices(g), j in vertices(g)
     if i != j && (is_directed(T) || i < j)
       add_edge!(g, i, j)
