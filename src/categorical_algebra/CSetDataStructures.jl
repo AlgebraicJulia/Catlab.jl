@@ -434,11 +434,6 @@ end
 @inline ACSetInterface.rem_part!(acs::StructACSet, type::Symbol, part::Int) =
   _rem_part!(acs, Val{type}, part)
 
-function getassigned(acs::StructACSet, arrows, i)
-  assigned_subparts = filter(f -> isassigned(subpart(acs,f),i), arrows)
-  Dict(f => subpart(acs,i,f) for f in assigned_subparts)
-end
-
 function rem_part_body(s::SchemaDesc, idxed, ob::Symbol)
   in_homs = filter(hom -> s.codoms[hom] == ob, s.homs)
   out_homs = filter(f -> s.doms[f] == ob, s.homs)
@@ -454,15 +449,27 @@ function rem_part_body(s::SchemaDesc, idxed, ob::Symbol)
       set_subpart!(acs, incident(acs, part, hom, copy=true), hom, 0)
       set_subpart!(acs, incident(acs, last_part, hom, copy=true), hom, part)
     end
-    last_row = getassigned(acs, $([out_homs;out_attrs]), last_part)
+
+    # This is a hack to avoid allocating a named tuple, because these parts
+    # are a union type, so there would be dynamic dispatch
+    $(Expr(:block, (map([out_homs; out_attrs]) do f
+         :($(Symbol("last_row_" * string(f))) =
+           if isassigned(subpart(acs, $(Expr(:quote,f))), last_part)
+             subpart(acs, last_part, $(Expr(:quote,f)))
+           else
+             nothing
+           end)
+       end)...))
 
     # Clear any morphism and data attribute indices for last part.
-    for hom in $(Tuple(indexed_out_homs))
-      set_subpart!(acs, last_part, hom, 0)
-    end
+    $(Expr(:block,
+           (map(indexed_out_homs) do hom
+              :(set_subpart!(acs, last_part, $(Expr(:quote, hom)), 0))
+            end)...))
+
     for attr in $(Tuple(indexed_attrs))
-      if haskey(last_row, attr)
-        unset_attr_index!(acs.attr_indices[attr], last_row[attr], last_part)
+      if isassigned(subpart(acs, attr), last_part)
+        unset_attr_index!(acs.attr_indices[attr], subpart(acs, last_part, attr), last_part)
       end
     end
 
@@ -475,7 +482,15 @@ function rem_part_body(s::SchemaDesc, idxed, ob::Symbol)
     end
     acs.obs[$(ob_num(s, ob))] -= 1
     if part < last_part
-      set_subparts!(acs, part, (;last_row...))
+      $(Expr(:block,
+             (map([out_homs; out_attrs]) do f
+                quote
+                  x = $(Symbol("last_row_" * string(f)))
+                  if !isnothing(x)
+                    set_subpart!(acs, part, $(Expr(:quote, f)), x)
+                  end
+                end
+             end)...))
     end
   end
 end
