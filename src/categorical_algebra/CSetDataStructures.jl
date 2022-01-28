@@ -97,13 +97,10 @@ macro acset_type(head)
     Expr(:call, name, schema, idx_args...) => (name, schema, idx_args)
     _ => error("Unsupported head for @acset_type")
   end
-  abstract_name = Symbol("Abstract" * string(name))
-  # We assign this to an anonymous variable so that there is something
-  # to attach documentation to.
-  # TODO: this is a hack and there should be a better way
   quote
-    tmp = $(esc(:eval))($(GlobalRef(CSetDataStructures, :struct_acset))(
+    $(esc(:eval))($(GlobalRef(CSetDataStructures, :struct_acset))(
       $(Expr(:quote, name)), $(Expr(:quote, parent)), $(esc(schema)), $(idx_args...)))
+    Core.@__doc__ $(esc(name))
   end
 end
 
