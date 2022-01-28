@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Preorders · Catlab.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit">Catlab.jl</span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox" checked/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Seven Sketches</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../partitions/">Partitions</a></li><li class="is-active"><a class="tocitem" href>Preorders</a><ul class="internal"><li class="toplevel"><a class="tocitem" href="#Definition-of-a-Preorder-formalized-as-a-GAT"><span>Definition of a Preorder formalized as a GAT</span></a></li><li class="toplevel"><a class="tocitem" href="#Preorders-are-Thin-Categories"><span>Preorders are Thin Categories</span></a></li><li class="toplevel"><a class="tocitem" href="#Composition-is-transitivity"><span>Composition is transitivity</span></a></li><li class="toplevel"><a class="tocitem" href="#Monotone-Maps"><span>Monotone Maps</span></a></li></ul></li><li><a class="tocitem" href="../meets/">Meets in Preorders</a></li><li><a class="tocitem" href="../smc/">Symmetric Monoidal Categories</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/graphs/">The Category of Graphs</a></li><li><a class="tocitem" href="../../graphs/graphs_label/">Labelled Graphs</a></li><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox"/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../diagrams/diagrams/">Diagrams</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-4" type="checkbox"/><label class="tocitem" for="menuitem-2-4"><span class="docs-label">Wiring Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li><li><a class="tocitem" href="../../wiring_diagrams/wd_cset/">Wiring Diagrams as Attributed C-Sets</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox"/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphics/composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../../graphics/graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../../graphics/tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../../graphics/layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li><li><a class="tocitem" href="../../graphics/graphviz_schema_visualization/">Visualizing Acset Schemas with Graphviz</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/core/">Theories, instances, and expressions</a></li><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Seven Sketches</a></li><li class="is-active"><a href>Preorders</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Preorders</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/master/docs/literate/sketches/preorders.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Preorders"><a class="docs-heading-anchor" href="#Preorders">Preorders</a><a id="Preorders-1"></a><a class="docs-heading-anchor-permalink" href="#Preorders" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/AlgebraicJulia/Catlab.jl/blob/gh-pages/v0.13.6/generated/sketches/preorders.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><p>Many of the ideas in category theory can be viewed as generalizations of preorders or monoids. This sketch shows some features of Catlab through the lens of preorders. You will see examples of defining GATs, Presentations, Syntax, and Functors. These are illustrated with preorders or thin categories, which are particularly simple cases of categories.</p><pre><code class="language-julia">using Core: GeneratedFunctionStub
+using Test
+
+using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
+import Catlab.Theories: compose</code></pre><h1 id="Definition-of-a-Preorder-formalized-as-a-GAT"><a class="docs-heading-anchor" href="#Definition-of-a-Preorder-formalized-as-a-GAT">Definition of a Preorder formalized as a GAT</a><a id="Definition-of-a-Preorder-formalized-as-a-GAT-1"></a><a class="docs-heading-anchor-permalink" href="#Definition-of-a-Preorder-formalized-as-a-GAT" title="Permalink"></a></h1><p>The following definitions can be found in the <code>Catlab.Theories</code> module.</p><pre><code class="language-julia">&quot;&quot;&quot; Theory of *preorders*
+
+Preorders encode the axioms of reflexivity and transitivity as term constructors.
+&quot;&quot;&quot;
+@theory Preorder{El,Leq} begin
+  El::TYPE
+  Leq(lhs::El, rhs::El)::TYPE
+  @op (≤) := Leq
+
+  # Preorder axioms are lifted to term constructors in the GAT.
+  reflexive(A::El)::(A≤A) # ∀ A there is a term reflexive(A) which implies A≤A
+  transitive(f::(A≤B), g::(B≤C))::(A≤C) ⊣ (A::El, B::El, C::El)
+
+  # Axioms of the GAT are equivalences on terms or simplification rules in the logic
+  f == g ⊣ (A::El, B::El, f::(A≤B), g::(A≤B))
+  # Read as (f⟹ A≤B ∧ g⟹ A≤B) ⟹ f ≡ g
+end</code></pre><h1 id="Preorders-are-Thin-Categories"><a class="docs-heading-anchor" href="#Preorders-are-Thin-Categories">Preorders are Thin Categories</a><a id="Preorders-are-Thin-Categories-1"></a><a class="docs-heading-anchor-permalink" href="#Preorders-are-Thin-Categories" title="Permalink"></a></h1><p>Definition of a thin category</p><pre><code class="language-julia">@theory ThinCategory{Ob,Hom} &lt;: Category{Ob,Hom} begin
+  f == g ⊣ (A::Ob, B::Ob, f::Hom(A,B), g::Hom(A,B))
+end</code></pre><p>of course this definition extends the GAT of categories</p><pre><code class="language-julia">@theory Category{Ob,Hom} begin
+  # Unicode aliases.
+  @op begin
+  (→) := Hom
+  (⋅) := compose
+  end
+
+  &quot;&quot;&quot; Object in a category &quot;&quot;&quot;
+  Ob::TYPE
+
+  &quot;&quot;&quot; Morphism in a category &quot;&quot;&quot;
+  Hom(dom::Ob,codom::Ob)::TYPE
+
+  id(A::Ob)::(A → A)
+  compose(f::(A → B), g::(B → C))::(A → C) ⊣ (A::Ob, B::Ob, C::Ob)
+
+  # Category axioms.
+  ((f ⋅ g) ⋅ h == f ⋅ (g ⋅ h)
+  ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, f::(A → B), g::(B → C), h::(C → D)))
+  f ⋅ id(B) == f ⊣ (A::Ob, B::Ob, f::(A → B))
+  id(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
+end</code></pre><p>Exercise: construct an isomorphism between the theory of thin categories and the theory of preorders. Show that they have the same models.</p><p>Once you have a GAT defined using the <code>@theory</code> macro, you can define presentations, which are logical syntax for giving examples of the theory. The GAT contains type and term constructors that you can use to write expressions. A presentation uses those expressions to create a specific example of the theory. We define <code>P</code> to be a preorder with 3 elements and 2 ≤ relationships.</p><pre><code class="language-julia">@present P(FreeThinCategory) begin
+  (X,Y,Z)::Ob
+  f::Hom(X,Y)
+  g::Hom(Y,Z)
+end</code></pre><pre class="documenter-example-output">Presentation{ThinCategory, Symbol}(Catlab.Theories.FreeThinCategory, (Ob = Catlab.Theories.FreeThinCategory.Ob{:generator}[X, Y, Z], Hom = Catlab.Theories.FreeThinCategory.Hom{:generator}[f, g]), Dict(:Z =&gt; (:Ob =&gt; 3), :f =&gt; (:Hom =&gt; 1), :X =&gt; (:Ob =&gt; 1), :Y =&gt; (:Ob =&gt; 2), :g =&gt; (:Hom =&gt; 2)), Pair[])</pre><p>another example</p><pre><code class="language-julia">@present Q(FreeThinCategory) begin
+  (X,Y,Z)::Ob
+  f::Hom(X,Y)
+  g::Hom(Y,Z)
+  Y′::Ob
+  f′::Hom(X,Y′)
+  g′::Hom(Y′,Z)
+end</code></pre><pre class="documenter-example-output">Presentation{ThinCategory, Symbol}(Catlab.Theories.FreeThinCategory, (Ob = Catlab.Theories.FreeThinCategory.Ob{:generator}[X, Y, Z, Y′], Hom = Catlab.Theories.FreeThinCategory.Hom{:generator}[f, g, f′, g′]), Dict(:Z =&gt; (:Ob =&gt; 3), :f =&gt; (:Hom =&gt; 1), :f′ =&gt; (:Hom =&gt; 3), :X =&gt; (:Ob =&gt; 1), :Y =&gt; (:Ob =&gt; 2), :g =&gt; (:Hom =&gt; 2), :Y′ =&gt; (:Ob =&gt; 4), :g′ =&gt; (:Hom =&gt; 4)), Pair[])</pre><p>Exercise: draw the Hasse diagrams for these preorders by hand.</p><h1 id="Composition-is-transitivity"><a class="docs-heading-anchor" href="#Composition-is-transitivity">Composition is transitivity</a><a id="Composition-is-transitivity-1"></a><a class="docs-heading-anchor-permalink" href="#Composition-is-transitivity" title="Permalink"></a></h1><p>expressions in the presentation are paths in the Hasse Diagram</p><pre><code class="language-julia">function compose(P::Presentation, vs::Vector{Symbol})
+  compose(collect(generator(P, v) for v in vs))
+end</code></pre><pre class="documenter-example-output">compose (generic function with 56 methods)</pre><p>expressions are represented at expression trees</p><pre><code class="language-julia">ex = compose(P, [:f, :g])</code></pre><p class="math-container">\[f \cdot g : X \to Z\]</p><p>the head of an expression is the root of the expression tree</p><pre><code class="language-julia">Catlab.head(ex)</code></pre><pre class="documenter-example-output">:compose</pre><p>the julia type of the expression</p><pre><code class="language-julia">typeof(ex)</code></pre><pre class="documenter-example-output">Catlab.Theories.FreeThinCategory.Hom{:compose}</pre><p>the GAT type of the expression</p><pre><code class="language-julia">gat_typeof(ex)</code></pre><pre class="documenter-example-output">:Hom</pre><p>the parameters of the GAT Type</p><pre><code class="language-julia">gat_type_args(ex)</code></pre><pre class="documenter-example-output">2-element Vector{GATExpr}:
+ X
+ Z</pre><p>in any thin category there is at most one morphism between any pair of objects. In symbols: ex₁::Hom(X,Y) ∧ ex₂::Hom(X,Y) ⟹ ex₁ == ex₂</p><pre><code class="language-julia">function thinequal(ex₁::FreeThinCategory.Hom, ex₂::FreeThinCategory.Hom)
+  dom(ex₁) == dom(ex₂) &amp;&amp; codom(ex₁) == codom(ex₂)
+end
+
+@test thinequal(ex, compose(P, [:f,:g])⋅id(generator(P,:Z)))</code></pre><pre class="documenter-example-output">Test Passed
+  Expression: thinequal(ex, compose(P, [:f, :g]) ⋅ id(generator(P, :Z)))</pre><p>Thinking in terms of preorders, the composite f⋅g::Hom(X,Z) is a proof that X ≤ Z in logical notation you would say f::Hom(X,Y) and g::Hom(Y,Z) ⊢ f⋅g::Hom(X,Z) given a proof that X≤Y and a proof of Y≤Z then ⋅ will create a proof of X≤Z by composing the proofs sequentially like chaining inequalities in math a key aspect of category theory is that you want to work constructively you don&#39;t want to know that there exists a composite, you want to hold onto that composite. in programming, the way that you hold onto things is putting data into data structures. While computers can access things by offset or addresses, programmers want to use names so when we prove in P that X≤Z, we name that proof by adding it as a generator</p><pre><code class="language-julia">@present P₂(FreeThinCategory) begin
+  (X,Y,Z)::Ob
+  f::Hom(X,Y)
+  g::Hom(Y,Z)
+  h::Hom(X,Z)
+end
+
+ex = compose(P₂, [:f, :g])</code></pre><p class="math-container">\[f \cdot g : X \to Z\]</p><p>Now that we have a name for h, we can see that thinequal knows that f⋅g == h because according to the definition of a thin category, any two morphisms with the same domain and codomain are equal.</p><pre><code class="language-julia">@test thinequal(ex, generator(P₂, :h))</code></pre><pre class="documenter-example-output">Test Passed
+  Expression: thinequal(ex, generator(P₂, :h))</pre><p>There is an imperative interface to manipulating presentations by mutating them for this purpose</p><pre><code class="language-julia">P₂′ = copy(P)
+add_generator!(P₂′, Hom(:h, P[:X], P[:Z]))
+generators(P₂′)</code></pre><pre class="documenter-example-output">6-element Vector{Any}:
+ X
+ Y
+ Z
+ f: X → Y
+ g: Y → Z
+ h: X → Z</pre><p>We could avoid this naming the homs situation by giving all the homs the same name however, then when you tried to write down a morphism, you wouldn&#39;t be able to refer to a specific one by name, because they are all named ≤.</p><pre><code class="language-julia">@present R(FreeThinCategory) begin
+  (x,y,z)::Ob
+  (≤)::Hom(x,y)
+end
+generators(R)</code></pre><pre class="documenter-example-output">4-element Vector{Any}:
+ x
+ y
+ z
+ ≤: x → y</pre><p>Catlab won&#39;t let you make a presentation where the homs have the same exact name. So, this will error:</p><pre><code class="language-julia">@present Q(FreeThinCategory) begin
+  (x,y,z)::Ob
+  (≤)::Hom(x,y)
+  (≤)::Hom(y,z)
+  (≤)::Hom(x,z)
+end</code></pre><p>However, you can omit the names for homs with the following syntax, which is useful for thin categories.</p><pre><code class="language-julia">@present Q(FreeThinCategory) begin
+  (x,y,z)::Ob
+  ::Hom(x,y)
+  ::Hom(y,z)
+  ::Hom(x,z)
+end</code></pre><p>In a thin category, all the homs with the same domain and codomain are the same, so why don&#39;t we name them by their the domain and codomain and then use the property that any two homs with the same name are the same to encode the thinness. This is what the Hasse diagram representation does for us. The edges in the diagram are encoding the presentation data into a combinatorial object that we can visualize. There are many reasons to encode a logical structure into a combinatorial strucuture, one is that we generally have ways of drawing combinatorial objects that convey their saliant structure and enable visual reasoning. Another is algorithms, isomorphism between the combinatorial representations provide some of the isomorphisms between the logical structures. in this case, a graph homomorphism between Hasse Diagrams construct isomorphisms between the preorders they present. The converse is not true since there can be many Graphs that present the same preorder.</p><h1 id="Monotone-Maps"><a class="docs-heading-anchor" href="#Monotone-Maps">Monotone Maps</a><a id="Monotone-Maps-1"></a><a class="docs-heading-anchor-permalink" href="#Monotone-Maps" title="Permalink"></a></h1><p>a generator is in the set of homs if it is in the list of generators</p><pre><code class="language-julia">in_homs(f::FreeThinCategory.Hom{:generator}, C::FinCat) =
+  f in hom_generators(C)</code></pre><pre class="documenter-example-output">in_homs (generic function with 1 method)</pre><p>a composite hom is in the list set of homs if all of its components are.</p><pre><code class="language-julia">in_homs(f::FreeThinCategory.Hom{:compose}, C::FinCat) =
+  all(fᵢ-&gt;in_homs(fᵢ, C), args(f))</code></pre><pre class="documenter-example-output">in_homs (generic function with 2 methods)</pre><p>we can check if a map is functorial, which is called monotone for preorders.</p><ol><li>make sure all the objects in the domain are sent to objects in the codomain</li><li>make sure all the homs are sent to homs in the codomain</li><li>check that the domains and codomainss of the homs match</li></ol><pre><code class="language-julia">function is_functorial(F::FinFunctor)
+  pₒ = map(ob_generators(dom(F))) do X
+    F(X) in ob_generators(codom(F))
+  end |&gt; all
+
+  pₕ = map(hom_generators(dom(F))) do f
+    in_homs(F(f), codom(F))
+  end |&gt; all
+
+  pᵩ = map(hom_generators(dom(F))) do f
+    FX = F(dom(f))
+    FY = F(codom(f))
+    Ff = F(f)
+    dom(Ff) == FX &amp;&amp; codom(Ff) == FY
+  end |&gt; all
+  return pₒ &amp;&amp; pₕ &amp;&amp; pᵩ
+end
+
+@present Q(FreeThinCategory) begin
+  (a,b,c,d)::Ob
+  ab::Hom(a,b)
+  bc::Hom(b,c)
+  cd::Hom(c,d)
+end
+generators(Q)
+
+Fₒ = Dict(:X=&gt;:a, :Y=&gt;:b, :Z=&gt;:c)
+Fₕ = Dict(:f=&gt;:ab, :g=&gt;:bc)
+F = FinFunctor(Fₒ, Fₕ, P, Q)
+@test is_functorial(F)
+
+Fₒ = Dict(:X=&gt;:a, :Y=&gt;:b, :Z=&gt;:d)
+Fₕ = Dict(:f=&gt;:ab, :g=&gt;[:bc, :cd])
+F = FinFunctor(Fₒ, Fₕ, P, Q)
+@test is_functorial(F)
+
+
+Fₒ = Dict(:X=&gt;:a, :Y=&gt;:b, :Z=&gt;:c)
+Fₕ = Dict(:f=&gt;:ab, :g=&gt;[:bc, :cd])
+F = FinFunctor(Fₒ, Fₕ, P, Q)
+@test !is_functorial(F)</code></pre><pre class="documenter-example-output">Test Passed
+  Expression: !(is_functorial(F))</pre><p>Monotone maps are functors for thin categories. One of the benefits of category theory is that we find abstractions that work in multiple domains. The abstraction of preserving the domains and codomains of morphisms is a key abstraction that we can use to define many notions in mathematics.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../partitions/">« Partitions</a><a class="docs-footer-nextpage" href="../meets/">Meets in Preorders »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Friday 28 January 2022 22:40">Friday 28 January 2022</span>. Using Julia version 1.7.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
