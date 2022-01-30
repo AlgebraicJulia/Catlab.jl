@@ -36,7 +36,8 @@ function connected_component_projection_bfs(g::ACSet)
     end
   end
 
-  normalize_labeling(label)
+  normalized = searchsortedfirst.(Ref(unique!(sort(label))), label)
+  FinFunction(normalized)
 end
 
 end

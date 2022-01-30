@@ -92,7 +92,8 @@ end
 function Graphs.connected_component_projection(g::LG.AbstractGraph)
   label = Vector{Int}(undef, LG.nv(g))
   LG.connected_components!(label, g)
-  normalize_labeling(label)
+  normalized = searchsortedfirst.(Ref(unique!(sort(label))), label)
+  FinFunction(normalized)
 end
 
 abstract type FindTrianglesAlgorithm end
