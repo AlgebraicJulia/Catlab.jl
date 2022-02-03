@@ -9,7 +9,6 @@ module Sets
 export SetOb, TypeSet, PredicatedSet, SetFunction, ConstantFunction, Ob
 
 using AutoHashEquals
-using FunctionWrappers: FunctionWrapper
 
 using ...GAT, ..Categories, ..FreeDiagrams, ..Limits
 using ...Theories: Category
@@ -60,13 +59,13 @@ show_type_constructor(io::IO, ::Type{<:SetFunction}) = print(io, "SetFunction")
 @auto_hash_equals struct SetFunctionCallable{
     T,T′,Dom<:SetOb{T},Codom<:SetOb{T′}} <: SetFunction{Dom,Codom}
   # Field `func` is usually a `Function` but can be any Julia callable.
-  func::FunctionWrapper{T′,Tuple{T}}
+  func::Any
   dom::Dom
   codom::Codom
 
   function SetFunctionCallable(f, dom::Dom, codom::Codom) where
       {T,T′,Dom<:SetOb{T},Codom<:SetOb{T′}}
-    new{T,T′,Dom,Codom}(FunctionWrapper{T′,Tuple{T}}(f), dom, codom)
+    new{T,T′,Dom,Codom}(f, dom, codom)
   end
 end
 
@@ -75,9 +74,8 @@ function (f::SetFunctionCallable{T,T′})(x::T)::T′ where {T,T′}
 end
 
 function Base.show(io::IO, f::F) where F <: SetFunctionCallable
-  func = f.func.obj[] # Deference FunctionWrapper
   show_type_constructor(io, F)
-  print(io, "($(nameof(func)), ")
+  print(io, "($(nameof(f.func)), ")
   show_domains(io, f)
   print(io, ")")
 end
@@ -148,9 +146,9 @@ ConstantFunction(value::T, dom::SetOb) where T =
 """ Set defined by a predicate (boolean-valued function) on a Julia data type.
 """
 struct PredicatedSet{T} <: SetOb{T}
-  predicate::FunctionWrapper{Bool,Tuple{T}}
+  predicate::Any
 
-  PredicatedSet{T}(f) where T = new{T}(FunctionWrapper{Bool,Tuple{T}}(f))
+  PredicatedSet{T}(f) where T = new{T}(f)
 end
 
 PredicatedSet(T::Type, f) = PredicatedSet{T}(f)
@@ -160,8 +158,7 @@ function (s::PredicatedSet{T})(x::T)::Bool where {T}
 end
 
 function Base.show(io::IO, s::PredicatedSet{T}) where T
-  func = s.predicate.obj[] # Deference FunctionWrapper
-  print(io, "PredicatedSet($T, $(nameof(func)))")
+  print(io, "PredicatedSet($T, $(nameof(s.predicate)))")
 end
 
 const PredicatedFunction{T,T′} =
