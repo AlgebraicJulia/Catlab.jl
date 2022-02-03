@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Meets in Preorders · Catlab.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit">Catlab.jl</span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox" checked/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Seven Sketches</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../partitions/">Partitions</a></li><li><a class="tocitem" href="../preorders/">Preorders</a></li><li class="is-active"><a class="tocitem" href>Meets in Preorders</a><ul class="internal"><li class="toplevel"><a class="tocitem" href="#Defining-some-basic-preorders"><span>Defining some basic preorders</span></a></li><li><a class="tocitem" href="#Testing-it-out"><span>Testing it out</span></a></li><li><a class="tocitem" href="#Another-Example:"><span>Another Example:</span></a></li></ul></li><li><a class="tocitem" href="../smc/">Symmetric Monoidal Categories</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/graphs/">The Category of Graphs</a></li><li><a class="tocitem" href="../../graphs/graphs_label/">Labelled Graphs</a></li><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox"/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../diagrams/diagrams/">Diagrams</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-4" type="checkbox"/><label class="tocitem" for="menuitem-2-4"><span class="docs-label">Wiring Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li><li><a class="tocitem" href="../../wiring_diagrams/wd_cset/">Wiring Diagrams as Attributed C-Sets</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox"/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphics/composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../../graphics/graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../../graphics/tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../../graphics/layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li><li><a class="tocitem" href="../../graphics/graphviz_schema_visualization/">Visualizing Acset Schemas with Graphviz</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/core/">Theories, instances, and expressions</a></li><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Seven Sketches</a></li><li class="is-active"><a href>Meets in Preorders</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Meets in Preorders</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/master/docs/literate/sketches/meets.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Meets-in-Preorders"><a class="docs-heading-anchor" href="#Meets-in-Preorders">Meets in Preorders</a><a id="Meets-in-Preorders-1"></a><a class="docs-heading-anchor-permalink" href="#Meets-in-Preorders" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/AlgebraicJulia/Catlab.jl/blob/gh-pages/v0.13.7/generated/sketches/meets.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><p>Our first example of a concept defined by a universal mapping property is a meet respectively meet.</p><p>The first step is our Catlab imports</p><pre><code class="language-julia">using Core: GeneratedFunctionStub
+using Test
+
+using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
+using Catlab.Graphics, Catlab.Graphics.Graphviz
+
+import Catlab.Theories: compose
+using DataStructures</code></pre><h1 id="Defining-some-basic-preorders"><a class="docs-heading-anchor" href="#Defining-some-basic-preorders">Defining some basic preorders</a><a id="Defining-some-basic-preorders-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-some-basic-preorders" title="Permalink"></a></h1><pre><code class="language-julia">@present P(FreeSchema) begin
+  (a₁,a₂,a₃,a₄)::Ob
+  f::Hom(a₁, a₂)
+  g::Hom(a₁, a₃)
+  h::Hom(a₂, a₄)
+  k::Hom(a₃, a₄)
+end</code></pre><pre class="documenter-example-output">Presentation{Schema, Symbol}(Catlab.Theories.FreeSchema, (Ob = Catlab.Theories.FreeSchema.Ob{:generator}[a₁, a₂, a₃, a₄], Hom = Catlab.Theories.FreeSchema.Hom{:generator}[f, g, h, k], AttrType = Catlab.Theories.FreeSchema.AttrType{:generator}[], Attr = Catlab.Theories.FreeSchema.Attr{:generator}[]), Dict(:a₃ =&gt; (:Ob =&gt; 3), :f =&gt; (:Hom =&gt; 1), :k =&gt; (:Hom =&gt; 4), :a₄ =&gt; (:Ob =&gt; 4), :a₁ =&gt; (:Ob =&gt; 1), :a₂ =&gt; (:Ob =&gt; 2), :g =&gt; (:Hom =&gt; 2), :h =&gt; (:Hom =&gt; 3)), Pair[])</pre><p>We can draw a picture of our preorder as a Hasse Diagram.</p><pre><code class="language-julia">to_graphviz(P)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="181pt" height="185pt"
+ viewBox="0.00 0.00 181.06 185.36" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 181.36)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-181.36 177.06,-181.36 177.06,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="18" cy="-71.38" rx="18" ry="18"/>
+<text text-anchor="middle" x="18" y="-67.68" font-family="Times,serif" font-size="14.00">a₁</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="155.06" cy="-105.35" rx="18" ry="18"/>
+<text text-anchor="middle" x="155.06" y="-101.65" font-family="Times,serif" font-size="14.00">a₂</text>
+</g>
+<!-- n1&#45;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&#45;&gt;n2</title>
+<path fill="none" stroke="black" d="M35.64,-75.75C58.97,-81.53 100.35,-91.79 127.74,-98.58"/>
+<polygon fill="black" stroke="black" points="126.94,-101.98 137.49,-100.99 128.62,-95.19 126.94,-101.98"/>
+<text text-anchor="middle" x="78.69" y="-90.96" font-family="Times,serif" font-size="14.00">f</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="87.26" cy="-18" rx="18" ry="18"/>
+<text text-anchor="middle" x="87.26" y="-14.3" font-family="Times,serif" font-size="14.00">a₃</text>
+</g>
+<!-- n1&#45;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n1&#45;&gt;n3</title>
+<path fill="none" stroke="black" d="M32.35,-60.32C41.73,-53.09 54.17,-43.5 64.84,-35.28"/>
+<polygon fill="black" stroke="black" points="67.14,-37.92 72.93,-29.05 62.87,-32.38 67.14,-37.92"/>
+<text text-anchor="middle" x="43.6" y="-51.6" font-family="Times,serif" font-size="14.00">g</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="86.24" cy="-159.36" rx="18" ry="18"/>
+<text text-anchor="middle" x="86.24" y="-155.66" font-family="Times,serif" font-size="14.00">a₄</text>
+</g>
+<!-- n2&#45;&gt;n4 -->
+<g id="edge3" class="edge">
+<title>n2&#45;&gt;n4</title>
+<path fill="none" stroke="black" d="M140.8,-116.54C131.48,-123.85 119.11,-133.56 108.51,-141.88"/>
+<polygon fill="black" stroke="black" points="106.18,-139.26 100.48,-148.19 110.5,-144.76 106.18,-139.26"/>
+<text text-anchor="middle" x="119.65" y="-133.01" font-family="Times,serif" font-size="14.00">h</text>
+</g>
+<!-- n3&#45;&gt;n4 -->
+<g id="edge4" class="edge">
+<title>n3&#45;&gt;n4</title>
+<path fill="none" stroke="black" d="M87.13,-36.19C86.95,-60.26 86.64,-102.93 86.44,-131.19"/>
+<polygon fill="black" stroke="black" points="82.94,-131.22 86.37,-141.24 89.94,-131.27 82.94,-131.22"/>
+<text text-anchor="middle" x="82.28" y="-72.49" font-family="Times,serif" font-size="14.00">k</text>
+</g>
+</g>
+</svg>
+<p>It will be convenient to program with our preorders based on the Hasse Diagram represent as a labeled graph so we convert the Presentation{Schema, Symbol} into a FreeDigram. FreeDiagrams are implemented as an ACSet which you can think of as an in-memory database. ACSets are a key feature of Catlab that allow you to represent many data structures in a common framework.</p><pre><code class="language-julia">g = FreeDiagram(P)</code></pre><div class="c-set">
+<span class="c-set-summary">FreeDiagram{Catlab.Theories.FreeSchema.Ob, Catlab.Theories.FreeSchema.Hom} with elements V = 1:4, E = 1:4</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowNumber">V</th>
+      <th style = "text-align: right;">ob</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowNumber">1</td>
+      <td style = "text-align: right;">a₁</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber">2</td>
+      <td style = "text-align: right;">a₂</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber">3</td>
+      <td style = "text-align: right;">a₃</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber">4</td>
+      <td style = "text-align: right;">a₄</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowNumber">E</th>
+      <th style = "text-align: right;">src</th>
+      <th style = "text-align: right;">tgt</th>
+      <th style = "text-align: right;">hom</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowNumber">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">f</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">g</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber">3</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">h</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber">4</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">k</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>To give ourselves a graph-like API for Hasse Diagrams, we define parents and children.</p><pre><code class="language-julia">parents(g, y::Int) = subpart(g, incident(g, y, :tgt), :src)
+children(g, x::Int) = subpart(g, incident(g, x, :src), :tgt)</code></pre><pre class="documenter-example-output">children (generic function with 1 method)</pre><p>We can compute upsets/downsets with breadth first search.</p><pre><code class="language-julia">function bfs(g, x::Int, f=children)
+  explored = falses(nparts(g, :V))
+  explored[x] = 1
+  q = Queue{Int}()
+  enqueue!(q, x)
+  while !isempty(q)
+    v = dequeue!(q)
+    S = f(g,v)
+    map(filter(s -&gt; !explored[s], S)) do s
+      enqueue!(q, s)
+    end
+    explored[S] .= true
+  end
+  return findall(explored)
+end</code></pre><pre class="documenter-example-output">bfs (generic function with 2 methods)</pre><p>The upset of a preorder element is all the elements that come after it in the preorder.</p><pre><code class="language-julia">upset(g,x) = bfs(g,x,children)</code></pre><pre class="documenter-example-output">upset (generic function with 1 method)</pre><p>The downset is the dual notion, which we compute by reversing the role of children and parents.</p><pre><code class="language-julia">downset(g,x) = bfs(g,x,parents)
+
+upset(g, 1)</code></pre><pre class="documenter-example-output">4-element Vector{Int64}:
+ 1
+ 2
+ 3
+ 4</pre><p>We can use upsets to define the less than or equal two relation implied by any Hasse Diagram</p><pre><code class="language-julia">function leq(g::FreeDiagram, x::Int, y::Int)
+  return y in upset(g, x)
+end</code></pre><pre class="documenter-example-output">leq (generic function with 1 method)</pre><h3 id="Exercise-1"><a class="docs-heading-anchor" href="#Exercise-1">Exercise 1</a><a id="Exercise-1-1"></a><a class="docs-heading-anchor-permalink" href="#Exercise-1" title="Permalink"></a></h3><p>Define a more efficient algorithm for checking whether two elements satisfy the leq relation.</p><p>Multiple dispatch allows us to overload the leq function with another method for symbols.</p><pre><code class="language-julia">function leq(g::FreeDiagram, x::Symbol, y::Symbol)
+  leq(g, incident(g, x, :ob), incident(g, y, :ob))
+end</code></pre><pre class="documenter-example-output">leq (generic function with 2 methods)</pre><p>the meet of two elements is the largest element in the intersection of their downsets.</p><pre><code class="language-julia">function meet(g::FreeDiagram, x::Int, y::Int)
+  U = downset(g, x) ∩ downset(g,y)
+  maxima(g, U)
+  return maximum(g, U)
+end
+
+function meet(g::FreeDiagram, x, y)
+  meet(g, incident(g, x, :ob)[1], incident(g, y, :ob)[1])
+end</code></pre><pre class="documenter-example-output">meet (generic function with 2 methods)</pre><p>assuming that D is a downset, the maxima are those elements whose children are disjoint from D.</p><pre><code class="language-julia">function maxima(g::FreeDiagram, D::Vector{Int})
+  X = Set(D)
+  M = filter(D) do x
+    Pₓ = children(g, x) ∩ X
+    length(Pₓ) == 0
+  end
+  return M
+end
+
+function hastop(g::FreeDiagram, xs::Vector{Int})
+  length(maxima(g, xs)) == 1
+end
+
+function maximum(g::FreeDiagram, xs::Vector{Int})
+  m = maxima(g, xs::Vector{Int})
+  if length(m) == 1
+    return m[1]
+  end
+  if length(m) &gt; 1
+    all_iso = all(m) do a
+      Uₐ = downset(g, a)
+      a_le_allb = all(m) do b
+        b in Uₐ
+      end
+      return a_le_allb
+    end
+    if all_iso
+      return  m[1]
+    end
+  end
+  return nothing
+end</code></pre><pre class="documenter-example-output">maximum (generic function with 1 method)</pre><p>From the definition of minimum, you can see that when you want to do many leq queries in sequence, you can reuse the upsets that you compute with bfs. This is a place where mathematical abstractions don&#39;t work well with the operational needs of computer programming. In a mathematical definition you can define x ≤ y as y ∈ upset(x), but in programming, that is inefficient when you want to check a property like for all y in Y, x ≤ y. Programming requires you to reason about not only the correctness of the code, but also the performance. Much of the complexity of software engineering comes from the fact that computational performance requires the programmers to break down their clean abstractions to optimize the code.</p><h3 id="Exercise-2"><a class="docs-heading-anchor" href="#Exercise-2">Exercise 2</a><a id="Exercise-2-1"></a><a class="docs-heading-anchor-permalink" href="#Exercise-2" title="Permalink"></a></h3><p>If you wanted to perform many x ≤ y queries in a loop, you might want to precompute the matrix L where L[i,j] = 1 if and only if i ≤ j in the preorder P. Implement an algorithm that performs this computation in O(V⋅E) time where V is the number of elements in P and E is the number of edges in the corresponding FreeDiagram.</p><h2 id="Testing-it-out"><a class="docs-heading-anchor" href="#Testing-it-out">Testing it out</a><a id="Testing-it-out-1"></a><a class="docs-heading-anchor-permalink" href="#Testing-it-out" title="Permalink"></a></h2><p>Let&#39;s make sure we get the answers that we expect.</p><pre><code class="language-julia">using Test
+@testset &quot;Upsets&quot; begin
+  @test upset(g, 3) == [3,4]
+  @test upset(g, 2) == [2,4]
+  @test upset(g, 1) == [1,2,3,4]
+  @test upset(g, 4) == [4]
+end
+@testset &quot;Downsets&quot; begin
+  @test downset(g, 3) == [1,3]
+  @test downset(g, 2) == [1,2]
+  @test downset(g, 4) == [1,2,3,4]
+  @test downset(g, 1) == [1]
+end
+
+@testset &quot;Meets&quot; begin
+  @test meet(g, 2,3) == 1
+  @test meet(g, 1,2) == 1
+  @test meet(g, 3,4) == 3
+  @test meet(g, 1, 4) == 1
+  @test meet(g, 1, 1) == 1
+  @test meet(g, 2, 2) == 2
+end</code></pre><pre class="documenter-example-output">Test.DefaultTestSet(&quot;Meets&quot;, Any[], 6, false, false)</pre><h2 id="Another-Example:"><a class="docs-heading-anchor" href="#Another-Example:">Another Example:</a><a id="Another-Example:-1"></a><a class="docs-heading-anchor-permalink" href="#Another-Example:" title="Permalink"></a></h2><pre><code class="language-julia">@present P(FreeSchema) begin
+  (a₁,a₂,a₃,a₄, a₅)::Ob
+  f::Hom(a₁, a₂)
+  g::Hom(a₁, a₃)
+  h::Hom(a₂, a₄)
+  k::Hom(a₃, a₄)
+  l::Hom(a₅, a₂)
+end</code></pre><pre class="documenter-example-output">Presentation{Schema, Symbol}(Catlab.Theories.FreeSchema, (Ob = Catlab.Theories.FreeSchema.Ob{:generator}[a₁, a₂, a₃, a₄, a₅], Hom = Catlab.Theories.FreeSchema.Hom{:generator}[f, g, h, k, l], AttrType = Catlab.Theories.FreeSchema.AttrType{:generator}[], Attr = Catlab.Theories.FreeSchema.Attr{:generator}[]), Dict(:a₃ =&gt; (:Ob =&gt; 3), :f =&gt; (:Hom =&gt; 1), :l =&gt; (:Hom =&gt; 5), :k =&gt; (:Hom =&gt; 4), :a₄ =&gt; (:Ob =&gt; 4), :a₁ =&gt; (:Ob =&gt; 1), :a₂ =&gt; (:Ob =&gt; 2), :g =&gt; (:Hom =&gt; 2), :h =&gt; (:Hom =&gt; 3), :a₅ =&gt; (:Ob =&gt; 5)…), Pair[])</pre><p>Which can be viewed as a picture:</p><pre><code class="language-julia">to_graphviz(P)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="244pt" height="249pt"
+ viewBox="0.00 0.00 244.21 248.97" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 244.97)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-244.97 240.21,-244.97 240.21,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="135.94" cy="-24.12" rx="18" ry="18"/>
+<text text-anchor="middle" x="135.94" y="-20.42" font-family="Times,serif" font-size="14.00">a₁</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="139.46" cy="-142.44" rx="18" ry="18"/>
+<text text-anchor="middle" x="139.46" y="-138.74" font-family="Times,serif" font-size="14.00">a₂</text>
+</g>
+<!-- n1&#45;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&#45;&gt;n2</title>
+<path fill="none" stroke="black" d="M136.48,-42.35C137.05,-61.51 137.96,-91.91 138.62,-114.19"/>
+<polygon fill="black" stroke="black" points="135.13,-114.49 138.92,-124.38 142.12,-114.28 135.13,-114.49"/>
+<text text-anchor="middle" x="134.55" y="-82.07" font-family="Times,serif" font-size="14.00">f</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="18" cy="-18" rx="18" ry="18"/>
+<text text-anchor="middle" x="18" y="-14.3" font-family="Times,serif" font-size="14.00">a₃</text>
+</g>
+<!-- n1&#45;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n1&#45;&gt;n3</title>
+<path fill="none" stroke="black" d="M117.77,-23.18C98.67,-22.19 68.36,-20.62 46.16,-19.46"/>
+<polygon fill="black" stroke="black" points="46.16,-15.96 36,-18.93 45.8,-22.95 46.16,-15.96"/>
+<text text-anchor="middle" x="76.97" y="-25.12" font-family="Times,serif" font-size="14.00">g</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="21.27" cy="-136.06" rx="18" ry="18"/>
+<text text-anchor="middle" x="21.27" y="-132.36" font-family="Times,serif" font-size="14.00">a₄</text>
+</g>
+<!-- n2&#45;&gt;n4 -->
+<g id="edge3" class="edge">
+<title>n2&#45;&gt;n4</title>
+<path fill="none" stroke="black" d="M121.25,-141.45C102.11,-140.42 71.74,-138.78 49.49,-137.58"/>
+<polygon fill="black" stroke="black" points="49.48,-134.08 39.31,-137.03 49.1,-141.07 49.48,-134.08"/>
+<text text-anchor="middle" x="80.37" y="-143.32" font-family="Times,serif" font-size="14.00">h</text>
+</g>
+<!-- n3&#45;&gt;n4 -->
+<g id="edge4" class="edge">
+<title>n3&#45;&gt;n4</title>
+<path fill="none" stroke="black" d="M18.5,-36.19C19.03,-55.31 19.88,-85.64 20.49,-107.87"/>
+<polygon fill="black" stroke="black" points="17,-108.14 20.77,-118.04 23.99,-107.95 17,-108.14"/>
+<text text-anchor="middle" x="15" y="-75.83" font-family="Times,serif" font-size="14.00">k</text>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="none" stroke="black" cx="218.21" cy="-222.97" rx="18" ry="18"/>
+<text text-anchor="middle" x="218.21" y="-219.27" font-family="Times,serif" font-size="14.00">a₅</text>
+</g>
+<!-- n5&#45;&gt;n2 -->
+<g id="edge5" class="edge">
+<title>n5&#45;&gt;n2</title>
+<path fill="none" stroke="black" d="M205.55,-210.03C193.04,-197.23 173.71,-177.46 159.18,-162.6"/>
+<polygon fill="black" stroke="black" points="161.57,-160.05 152.08,-155.34 156.57,-164.94 161.57,-160.05"/>
+<text text-anchor="middle" x="179.87" y="-190.12" font-family="Times,serif" font-size="14.00">l</text>
+</g>
+</g>
+</svg>
+<p>Or, as tables:</p><pre><code class="language-julia">g = FreeDiagram(P)</code></pre><div class="c-set">
+<span class="c-set-summary">FreeDiagram{Catlab.Theories.FreeSchema.Ob, Catlab.Theories.FreeSchema.Hom} with elements V = 1:5, E = 1:5</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowNumber">V</th>
+      <th style = "text-align: right;">ob</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowNumber">1</td>
+      <td style = "text-align: right;">a₁</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber">2</td>
+      <td style = "text-align: right;">a₂</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber">3</td>
+      <td style = "text-align: right;">a₃</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber">4</td>
+      <td style = "text-align: right;">a₄</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber">5</td>
+      <td style = "text-align: right;">a₅</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowNumber">E</th>
+      <th style = "text-align: right;">src</th>
+      <th style = "text-align: right;">tgt</th>
+      <th style = "text-align: right;">hom</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowNumber">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">f</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">g</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber">3</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">h</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber">4</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">k</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber">5</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">l</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<h3 id="Test-suite"><a class="docs-heading-anchor" href="#Test-suite">Test suite</a><a id="Test-suite-1"></a><a class="docs-heading-anchor-permalink" href="#Test-suite" title="Permalink"></a></h3><pre><code class="language-julia">@testset &quot;meets2&quot; begin
+  @test meet(g, 2,3) == 1
+  @test meet(g, 1,2) == 1
+  @test meet(g, 3,4) == 3
+  @test meet(g, 1, 4) == 1
+  @test meet(g, 1, 1) == 1
+  @test meet(g, 2, 2) == 2
+  @test meet(g, 3, 5) == nothing
+  @test meet(g, 2, 5) == 5
+end</code></pre><pre class="documenter-example-output">Test.DefaultTestSet(&quot;meets2&quot;, Any[], 8, false, false)</pre><h3 id="Exercise-3"><a class="docs-heading-anchor" href="#Exercise-3">Exercise 3</a><a id="Exercise-3-1"></a><a class="docs-heading-anchor-permalink" href="#Exercise-3" title="Permalink"></a></h3><p>Make bigger preorders to test corner cases in the above code. If you find an example that breaks these implementations, please report it.</p><h3 id="Exercise-4"><a class="docs-heading-anchor" href="#Exercise-4">Exercise 4</a><a id="Exercise-4-1"></a><a class="docs-heading-anchor-permalink" href="#Exercise-4" title="Permalink"></a></h3><p>Implement the dual constructions for joins.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../preorders/">« Preorders</a><a class="docs-footer-nextpage" href="../smc/">Symmetric Monoidal Categories »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Thursday 3 February 2022 04:25">Thursday 3 February 2022</span>. Using Julia version 1.7.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
