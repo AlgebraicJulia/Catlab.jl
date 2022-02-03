@@ -6,7 +6,6 @@ export BoolRig, FinRel, FinRelation, FinRelationCallable, FinRelationMatrix,
 
 import Base: +, *
 using AutoHashEquals
-import FunctionWrappers: FunctionWrapper
 
 using ...GAT
 using ...Theories: DistributiveBicategoryRelations
@@ -75,12 +74,12 @@ FinRelation(R::AbstractMatrix, args...) = FinRelationMatrix(R, args...)
 """
 @auto_hash_equals struct FinRelationCallable{S,S′,T,T′} <: FinRelation{S,S′,T,T′}
   # Field `rel` is usually a `Function` but can be any Julia callable.
-  rel::FunctionWrapper{Bool,Tuple{T,T′}}
+  rel::Any
   dom::FinRel{S,T}
   codom::FinRel{S′,T′}
 
   FinRelationCallable(R, dom::FinRel{S,T}, codom::FinRel{S′,T′}) where {S,S′,T,T′} =
-    new{S,S′,T,T′}(FunctionWrapper{Bool,Tuple{T,T′}}(R), dom, codom)
+    new{S,S′,T,T′}(R, dom, codom)
 end
 
 FinRelationCallable(R, dom::Int, codom::Int) =
