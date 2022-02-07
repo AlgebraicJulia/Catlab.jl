@@ -550,10 +550,11 @@ struct BacktrackingState{S <: SchemaDescType,
   dom::Dom
   """ Codomain ACSet: the "values" in the CSP. """
   codom::Codom
+  loose::Bool
 end
 
 function backtracking_search(f, X::StructACSet{S}, Y::StructACSet{S};
-                             monic=false, iso=false, initial=(;)) where {Ob, S<:SchemaDescType{Ob}}
+                             monic=false, iso=false, initial=(;), loose=false) where {Ob, S<:SchemaDescType{Ob}}
   # Fail early if no monic/isos exist on cardinality grounds.
   if iso isa Bool
     iso = iso ? Ob : ()
@@ -575,7 +576,7 @@ function backtracking_search(f, X::StructACSet{S}, Y::StructACSet{S};
   assignment_depth = map(copy, assignment)
   inv_assignment = NamedTuple{Ob}(
     (c in monic ? zeros(Int, nparts(Y, c)) : nothing) for c in Ob)
-  state = BacktrackingState(assignment, assignment_depth, inv_assignment, X, Y)
+  state = BacktrackingState(assignment, assignment_depth, inv_assignment, X, Y, loose)
 
   # Make any initial assignments, failing immediately if inconsistent.
   for (c, c_assignments) in pairs(initial)
@@ -659,9 +660,11 @@ be mutated even when the assignment fails.
 
     # Check attributes first to fail as quickly as possible.
     X, Y = state.dom, state.codom
+    if !state.loose
     $(map(out_attr(S, c)) do f
         :(subpart(X,x,$(quot(f))) == subpart(Y,y,$(quot(f))) || return false)
       end...)
+    end
 
     # Make the assignment and recursively assign subparts.
     state.assignment.$c[x] = y
