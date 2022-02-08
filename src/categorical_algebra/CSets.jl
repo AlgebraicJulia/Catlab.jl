@@ -598,11 +598,13 @@ function backtracking_search(f, state::BacktrackingState{S}, depth::Int) where {
   if isnothing(mrv_elem)
     # No unassigned elements remain, so we have a complete assignment.
     if state.loose
-      ac = NamedTuple([at => SetFunction(
-          x_->nothing, TypeSet(typeof(state.dom).parameters[i]), TypeSet(Nothing))
-          for (at, i) in zip(attrtype(S), acodom_nums(S))])
-      res = LooseACSetTransformation{S}(state.assignment, ac, state.dom, state.codom)
-      return f(res)
+      ac = NamedTuple([at => let t_dom = typeof(state.dom).parameters[i]
+                                 t_cdm = typeof(state.codom).parameters[i];
+                             SetFunction(t_cdm === Nothing ? x_->nothing : id,
+                                          TypeSet(t_dom), TypeSet(t_cdm)) end
+                       for (at, i) in zip(attrtype(S), acodom_nums(S))])
+      return f(LooseACSetTransformation{S}(
+               state.assignment, ac, state.dom, state.codom))
     else
       return f(ACSetTransformation(state.assignment, state.dom, state.codom))
     end
