@@ -372,6 +372,9 @@ function Base.show(io::IO, α::LooseACSetTransformation)
   print(io, ")")
 end
 
+map_components(f, α::LooseACSetTransformation) =
+  LooseACSetTransformation(map(f, components(α)), α.type_components, dom(α), codom(α))
+
 function is_natural(α::ACSetTransformation{S}) where {S}
   X, Y = dom(α), codom(α)
   for (f, c, d) in flatten((zip(hom(S), dom(S), codom(S)),
@@ -589,12 +592,20 @@ function backtracking_search(f, X::StructACSet{S}, Y::StructACSet{S};
   backtracking_search(f, state, 1)
 end
 
-function backtracking_search(f, state::BacktrackingState, depth::Int)
+function backtracking_search(f, state::BacktrackingState{S}, depth::Int) where {S}
   # Choose the next unassigned element.
   mrv, mrv_elem = find_mrv_elem(state, depth)
   if isnothing(mrv_elem)
     # No unassigned elements remain, so we have a complete assignment.
-    return f(ACSetTransformation(state.assignment, state.dom, state.codom))
+    if state.loose
+      ac = NamedTuple([at => SetFunction(
+          x_->nothing, TypeSet(typeof(state.dom).parameters[i]), TypeSet(Nothing))
+          for (at, i) in zip(attrtype(S), acodom_nums(S))])
+      res = LooseACSetTransformation{S}(state.assignment, ac, state.dom, state.codom)
+      return f(res)
+    else
+      return f(ACSetTransformation(state.assignment, state.dom, state.codom))
+    end
   elseif mrv == 0
     # An element has no allowable assignment, so we must backtrack.
     return false
