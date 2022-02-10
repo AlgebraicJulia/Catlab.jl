@@ -127,6 +127,7 @@ C = dom(F)
 # Reflexive graph as set-valued functor on a category with equations.
 G_refl = FinDomFunctor(path_graph(ReflexiveGraph, 3))
 @test is_functorial(G_refl)
+@test is_functorial(G_refl, debug=true)
 G = compose(FinFunctor(Dict(:V=>:V, :E=>:E), Dict(:src=>:src, :tgt=>:tgt),
                        TheoryGraph, TheoryReflexiveGraph),
             G_refl, strict=false)
@@ -172,6 +173,7 @@ C = FinCat(TheoryWeightedGraph)
 g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5,1.5],))
 G = FinDomFunctor(g)
 @test is_functorial(G)
+@test is_functorial(G, debug=true)
 @test ob_map(G, :Weight) == TypeSet(Float64)
 @test hom_map(G, :weight) == FinDomFunction([0.5, 1.5])
 

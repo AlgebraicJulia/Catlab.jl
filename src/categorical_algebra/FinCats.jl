@@ -323,20 +323,37 @@ not be possible.
 
 See also: [`is_natural`](@ref).
 """
-function is_functorial(F::FinDomFunctor; check_equations::Bool=false)
+function is_functorial(F::FinDomFunctor; check_equations::Bool=false, debug::Bool=false)
+  functorial = true
   C, D = dom(F), codom(F)
-  all(hom_generators(C)) do f
+  failed_hom_generators = filter(hom_generators(C)) do f
     g = hom_map(F, f)
-    dom(D,g) == ob_map(F, dom(C,f)) && codom(D,g) == ob_map(F, codom(C,f))
-  end || return false
-
-  if check_equations
-    all(equations(C)) do (lhs, rhs)
-      is_hom_equal(D, hom_map(F, lhs), hom_map(F, rhs))
-    end || return false
+    !(dom(D,g) == ob_map(F, dom(C,f)) && codom(D,g) == ob_map(F, codom(C,f)))
+  end
+  if !isempty(failed_hom_generators)
+    functorial = false
+    if debug
+      println("These hom generators failed:")
+      for gen in failed_hom_generators println(gen) end
+      println("")
+    end
   end
 
-  true
+  if check_equations && (debug || functorial)
+    failed_equations = filter(equations(C)) do (lhs, rhs)
+      !(is_hom_equal(D, hom_map(F, lhs), hom_map(F, rhs)))
+    end
+    if !isempty(failed_equations)
+      functorial = false
+      if debug
+        println("These equations failed:")
+        for eq in failed_equations println(eq) end
+        println("")
+      end
+    end
+  end
+
+  functorial
 end
 
 """ A functor between finitely presented categories.

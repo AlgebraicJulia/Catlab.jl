@@ -210,11 +210,11 @@ macro finfunctor(dom_cat, codom_cat, body)
   :(parse_functor($(esc(dom_cat)), $(esc(codom_cat)), $(Meta.quot(body))))
 end
 
-function parse_functor(C::FinCat, D::FinCat, body::Expr)
+function parse_functor(C::FinCat, D::FinCat, body::Expr; debug::Bool=false)
   ob_rhs, hom_rhs = parse_ob_hom_maps(C, body)
   F = FinFunctor(mapvals(x -> parse_ob(D, x), ob_rhs),
                  mapvals(f -> parse_hom(D, f), hom_rhs), C, D)
-  is_functorial(F, check_equations=false) ||
+  is_functorial(F, check_equations=false, debug=debug) ||
     error("Parsed functor is not functorial: $body")
   return F
 end
