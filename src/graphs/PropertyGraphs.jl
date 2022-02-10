@@ -201,7 +201,8 @@ end
 # Constructors from graphs
 ##########################
 
-function PropertyGraph{T}(g::AbstractGraph, make_vprops, make_eprops; gprops...) where T
+function PropertyGraph{T}(g::HasGraph, make_vprops, make_eprops;
+                          gprops...) where T
   pg = PropertyGraph{T}(; gprops...)
   add_vertices!(pg, nv(g))
   add_edges!(pg, src(g), tgt(g))
@@ -214,18 +215,18 @@ function PropertyGraph{T}(g::AbstractGraph, make_vprops, make_eprops; gprops...)
   pg
 end
 
-PropertyGraph{T}(g::AbstractGraph; gprops...) where T =
+PropertyGraph{T}(g::HasGraph; gprops...) where T =
   PropertyGraph{T}(g, v->Dict(), e->Dict(); gprops...)
 
-function SymmetricPropertyGraph{T}(g::AbstractSymmetricGraph,
-                                   make_vprops, make_eprops; gprops...) where T
+function SymmetricPropertyGraph{T}(g::HasGraph, make_vprops, make_eprops;
+                                   gprops...) where T
   pg = SymmetricPropertyGraph{T}(; gprops...)
   add_vertices!(pg, nv(g))
   for v in vertices(g)
     set_vprops!(pg, v, make_vprops(v))
   end
   for e in edges(g)
-    if e <= inv(g,e)
+    if !has_subpart(g, :inv) || e <= inv(g,e)
       e1, e2 = add_edge!(pg, src(g,e), tgt(g,e))
       set_eprops!(pg, e1, make_eprops(e))
     end
@@ -233,7 +234,7 @@ function SymmetricPropertyGraph{T}(g::AbstractSymmetricGraph,
   pg
 end
 
-SymmetricPropertyGraph{T}(g::AbstractSymmetricGraph; gprops...) where T =
+SymmetricPropertyGraph{T}(g::HasGraph; gprops...) where T =
   SymmetricPropertyGraph{T}(g, v->Dict(), e->Dict(); gprops...)
 
 end
