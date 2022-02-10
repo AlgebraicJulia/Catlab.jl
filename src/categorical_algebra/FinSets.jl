@@ -518,7 +518,7 @@ function universal(lim::FinSetIndexedLimit, cone::Multispan)
     lim.index = make_limit_index(lim.cone)
   end
   fs = Tuple(legs(cone))
-  FinFunction([lim.index[map(f -> f(x), fs)] for x in apex(cone)],
+  FinFunction(Int[lim.index[map(f -> f(x), fs)] for x in apex(cone)],
               apex(cone), ob(lim))
 end
 
