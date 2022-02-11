@@ -1,11 +1,12 @@
 module CatElements
-export ThElements, AbstractElements, Elements, elements
+export ThElements, AbstractElements, Elements, elements, attr_elements
 
 using DataStructures: OrderedDict
 
 using ..CSets, ..FinSets
 using ...Present, ...Theories
-using ...Theories: Category, ob, hom, dom_nums, codom_nums
+using ...Theories: Category, ob, hom, dom_nums, codom_nums,
+                   attr, attrtype, adom_nums, acodom_nums
 
 @present ThElements(FreeSchema) begin
   (El, Arr, Ob, Hom)::Ob
@@ -82,6 +83,91 @@ function presentation(X::AbstractElements)
     end
   end
   add_generators!(P, values(homs))
+  return P, obs, homs
+end
+
+@present ThAttrElements <: ThElements begin
+  (Item, ItArr, AttrType, Attr)::Ob
+  Type::AttrType
+  Data::AttrType
+
+  itsrc::Hom(ItArr, El)
+  ittgt::Hom(ItArr, Item)
+  atsrc::Hom(Attr, Ob)
+  attgt::Hom(Attr, AttrType)
+
+  πᵢ::Hom(Item, AttrType)
+  πᵢₐ::Hom(ItArr, Attr)
+
+  namea::Attr(Attr, Name)
+  nameat::Attr(AttrType, Name)
+  type::Attr(AttrType, Type)
+  data::Attr(Item, Data)
+end
+
+@abstract_acset_type AbstractAttributedElements
+@acset_type AttrElements(ThAttrElements, index=[:src, :tgt, :πₑ, :πₐ,
+                                            :itsrc, :ittgt, :πᵢ, :πᵢₐ]) <: AbstractAttributedElements
+
+
+function el_inds(X::StructACSet{S}) where S
+  i = 1
+  inds = Vector{UnitRange{Int}}()
+  for o in ob(S)
+    push!(inds, i:(i+nparts(X,o) - 1))
+    i += nparts(X,o)
+  end
+  inds
+end
+
+function attr_elements(X::StructACSet{S, Ts}) where {S, Ts}
+  Y = AttrElements{Symbol, Type, Any}()
+  Y′ = elements(X)
+  copy_parts!(Y, Y′)
+  attrtypes = attrtype(S)
+  types = Ts.parameters
+
+  add_parts!(Y, :AttrType, length(attrtypes), nameat = attrtypes,  type=types)
+
+  attrs = attr(S)
+  add_parts!(Y, :Attr, length(attrs), atsrc=adom_nums(S), attgt=acodom_nums(S), namea=attrs)
+
+  els = el_inds(X)
+  map(enumerate(zip(attrs, adom_nums(S), acodom_nums(S)))) do (i, (f, oi, ai))
+    o = ob(S)[oi]
+    items = add_parts!(Y, :Item, nparts(X,o), πᵢ = ai, data = X[f])
+    add_parts!(Y, :ItArr, nparts(X,o), itsrc=els[oi], ittgt=items, πᵢₐ=i)
+  end
+  Y
+end
+
+"""    presentation(X::AbstractAttributedElements)
+
+convert a category of elements with attributes into a new schema. Currently
+this is performed by simply extending the current attributes to the new
+objects.
+
+TODO:
+If attributes are going to be treated as homomorphisms, this should check
+for unique attributes and generate a new AttrType for each one.
+"""
+function presentation(X::AbstractAttributedElements)
+  X′ = Elements{Symbol}()
+  copy_parts!(X′, X)
+  P, obs, homs = presentation(X′)
+  add_generators!(P, [AttrType(FreeSchema.AttrType, X[at, :nameat]) for at in parts(X, :AttrType)])
+
+  attrs = OrderedDict{Tuple{Symbol, Int}, Any}()
+  for a in 1:nparts(X, :Attr)
+    o = X[a, :atsrc]
+    class = X[o, :nameo]
+    for (i,j) in enumerate(incident(X, o, :πₑ))
+      oname = Symbol("$(class)_$i")
+      cur_attr = Attr(Symbol(X[a, :namea], "_", oname), P[oname], P[X[X[a, :attgt], :nameat]])
+      attrs[(class, j)] = cur_attr
+    end
+  end
+  add_generators!(P, values(attrs))
   return P, obs, homs
 end
 end
