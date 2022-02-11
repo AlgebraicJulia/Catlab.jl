@@ -541,7 +541,7 @@ is_isomorphic(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...) =
 """ Internal state for backtracking search for ACSet homomorphisms.
 """
 struct BacktrackingState{S <: SchemaDescType,
-    Assign <: NamedTuple, PartialAssign <: NamedTuple,
+    Assign <: NamedTuple, PartialAssign <: NamedTuple, LooseFun <: NamedTuple,
     Dom <: StructACSet{S}, Codom <: StructACSet{S}}
   """ The current assignment, a partially-defined homomorphism of ACSets. """
   assignment::Assign
@@ -553,11 +553,12 @@ struct BacktrackingState{S <: SchemaDescType,
   dom::Dom
   """ Codomain ACSet: the "values" in the CSP. """
   codom::Codom
-  loose::Bool
+  loose::LooseFun
 end
 
 function backtracking_search(f, X::StructACSet{S}, Y::StructACSet{S};
-                             monic=false, iso=false, initial=(;), loose=false) where {Ob, S<:SchemaDescType{Ob}}
+                             monic=false, iso=false, loose=(;), initial=(;),
+                             ) where {Ob, Hom, Attr, S<:SchemaDescType{Ob,Hom,Attr}}
   # Fail early if no monic/isos exist on cardinality grounds.
   if iso isa Bool
     iso = iso ? Ob : ()
@@ -579,7 +580,10 @@ function backtracking_search(f, X::StructACSet{S}, Y::StructACSet{S};
   assignment_depth = map(copy, assignment)
   inv_assignment = NamedTuple{Ob}(
     (c in monic ? zeros(Int, nparts(Y, c)) : nothing) for c in Ob)
-  state = BacktrackingState(assignment, assignment_depth, inv_assignment, X, Y, loose)
+  loosefuns = NamedTuple{Attr}(
+    isnothing(loose) ? identity : get(loose, c, identity) for c in Attr)
+  state = BacktrackingState(assignment, assignment_depth, inv_assignment, X, Y,
+                            loosefuns)
 
   # Make any initial assignments, failing immediately if inconsistent.
   for (c, c_assignments) in pairs(initial)
@@ -597,12 +601,12 @@ function backtracking_search(f, state::BacktrackingState{S}, depth::Int) where {
   mrv, mrv_elem = find_mrv_elem(state, depth)
   if isnothing(mrv_elem)
     # No unassigned elements remain, so we have a complete assignment.
-    if state.loose
-      ac = NamedTuple([at => let t_dom = typeof(state.dom).parameters[i]
-                                 t_cdm = typeof(state.codom).parameters[i];
-                             SetFunction(t_cdm === Nothing ? x_->nothing : id,
-                                          TypeSet(t_dom), TypeSet(t_cdm)) end
-                       for (at, i) in zip(attrtype(S), acodom_nums(S))])
+    if !isempty(state.loose) && any([f!=identity for f in state.loose])
+      ac = NamedTuple([
+        at => let t_dom = typeof(state.dom).parameters[i]
+                  t_cdm = typeof(state.codom).parameters[i];
+              SetFunction(state.loose[at],TypeSet(t_dom), TypeSet(t_cdm)) end
+        for (at, i) in zip(attrtype(S), acodom_nums(S))])
       return f(LooseACSetTransformation{S}(
                state.assignment, ac, state.dom, state.codom))
     else
@@ -673,11 +677,11 @@ be mutated even when the assignment fails.
 
     # Check attributes first to fail as quickly as possible.
     X, Y = state.dom, state.codom
-    if !state.loose
-    $(map(out_attr(S, c)) do f
-        :(subpart(X,x,$(quot(f))) == subpart(Y,y,$(quot(f))) || return false)
+    $(map(zip(attr(S), adom(S), acodom(S))) do (f, c_, d)
+         :($(quot(c_))!=c
+             || state.loose[$(quot(d))](subpart(X,x,$(quot(f))))
+                 == subpart(Y,y,$(quot(f))) || return false)
       end...)
-    end
 
     # Make the assignment and recursively assign subparts.
     state.assignment.$c[x] = y
