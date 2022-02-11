@@ -538,8 +538,8 @@ is_isomorphic(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...) =
 """ Internal state for backtracking search for ACSet homomorphisms.
 """
 struct BacktrackingState{S <: SchemaDescType,
-    Assign <: NamedTuple, PartialAssign <: NamedTuple,
-    Dom <: StructACSet{S}, Codom <: StructACSet{S}}
+    Assign <: NamedTuple, PartialAssign <: NamedTuple, Image <: NamedTuple,
+    Unassign<: NamedTuple, Dom <: StructACSet{S}, Codom <: StructACSet{S}}
   """ The current assignment, a partially-defined homomorphism of ACSets. """
   assignment::Assign
   """ Depth in search tree at which assignments were made. """
@@ -550,10 +550,15 @@ struct BacktrackingState{S <: SchemaDescType,
   dom::Dom
   """ Codomain ACSet: the "values" in the CSP. """
   codom::Codom
+  """Negative of image for epic components or if finding an epimorphism"""
+  image::Image
+  """Number of unassigned elements in domain of a component (for epi finding)"""
+  unassigned::Unassign
 end
 
 function backtracking_search(f, X::StructACSet{S}, Y::StructACSet{S};
-                             monic=false, iso=false, initial=(;)) where {Ob, S<:SchemaDescType{Ob}}
+                             monic=false, iso=false, epic=false, initial=(;),
+                             ) where {Ob, S<:SchemaDescType{Ob}}
   # Fail early if no monic/isos exist on cardinality grounds.
   if iso isa Bool
     iso = iso ? Ob : ()
@@ -564,18 +569,30 @@ function backtracking_search(f, X::StructACSet{S}, Y::StructACSet{S};
   if monic isa Bool
     monic = monic ? Ob : ()
   end
+  if epic isa Bool
+    epic = epic ? Ob : ()
+  end
   # Injections between finite sets are bijections, so reduce to that case.
   monic = unique([iso..., monic...])
   for c in monic
     nparts(X,c) <= nparts(Y,c) || return false
   end
 
+  for c in epic
+    nparts(X,c) >= nparts(Y,c) || return false
+  end
   # Initialize state variables for search.
   assignment = NamedTuple{Ob}(zeros(Int, nparts(X, c)) for c in Ob)
   assignment_depth = map(copy, assignment)
   inv_assignment = NamedTuple{Ob}(
     (c in monic ? zeros(Int, nparts(Y, c)) : nothing) for c in Ob)
-  state = BacktrackingState(assignment, assignment_depth, inv_assignment, X, Y)
+  images = NamedTuple{Ob}(
+    (c in epic ? zeros(Int, nparts(Y, c)) : nothing) for c in Ob)
+  unassigned = NamedTuple{Ob}(
+    (c in epic ? [nparts(X, c)] : nothing) for c in Ob)
+
+  state = BacktrackingState(assignment, assignment_depth, inv_assignment, X, Y,
+                            images, unassigned)
 
   # Make any initial assignments, failing immediately if inconsistent.
   for (c, c_assignments) in pairs(initial)
@@ -656,6 +673,11 @@ be mutated even when the assignment fails.
       # Also, y must unassigned in the inverse assignment.
       return false
     end
+    # With an epic constraint, fail based on the # of unassigned in dom vs codom
+    if (!isnothing(state.image.$c) && state.image.$c[y]!=0
+            && only(state.unassigned.$c) <= count(==(0), state.image.$c))
+      return false
+    end
 
     # Check attributes first to fail as quickly as possible.
     X, Y = state.dom, state.codom
@@ -668,6 +690,10 @@ be mutated even when the assignment fails.
     state.assignment_depth.$c[x] = depth
     if !isnothing(state.inv_assignment.$c)
       state.inv_assignment.$c[y] = x
+    end
+    if !isnothing(state.image.$c)
+      state.image.$c[y] += 1
+      state.unassigned.$c[1] -= 1
     end
     $(map(out_hom(S, c)) do (f, d)
         :(assign_elem!(state, depth, Val{$(quot(d))}, subpart(X,x,$(quot(f))),
@@ -690,6 +716,10 @@ end
       if !isnothing(state.inv_assignment.$c)
         y = state.assignment.$c[x]
         state.inv_assignment.$c[y] = 0
+      end
+      if !isnothing(state.unassigned.$c)
+        state.unassigned.$c[1] += 1
+        state.image.$c[state.assignment.$c[x]] -= 1
       end
       state.assignment.$c[x] = 0
       state.assignment_depth.$c[x] = 0
