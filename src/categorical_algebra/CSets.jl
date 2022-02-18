@@ -6,7 +6,7 @@ export ACSetTransformation, CSetTransformation,
   ACSetHomomorphismAlgorithm, BacktrackingSearch, HomomorphismQuery,
   components, force, is_natural, homomorphism, homomorphisms, is_homomorphic,
   isomorphism, isomorphisms, is_isomorphic,
-  generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
+  generate_json_acset, parse_json_acset, read_json_acset, write_json_acset, hom_inv, induce_subobject
 
 using Base.Iterators: flatten
 using Base.Meta: quot
@@ -1114,6 +1114,40 @@ function common_ob(A::Subobject, B::Subobject)
     error("Subobjects have different base objects: $(ob(A)) != $(ob(B))")
   return X
 end
+
+"""f:A->B as a map of subobjects of A to subjects of B"""
+(f::CSetTransformation)(X::SubACSet)::SubACSet = Subobject(codom(f); Dict(
+    [k=>f.(collect(components(X)[k])) for (k,f) in pairs(components(f))])...)
+(f::CSetTransformation)(X::StructACSet)::SubACSet = f(top(X))
+
+"""Inverse of f:A->B as a map of subobjects of B to subjects of A"""
+hom_inv(f::CSetTransformation,Y::Subobject)::SubACSet = Subobject(dom(f);
+  Dict{Symbol, Vector{Int}}(
+    [k => vcat([preimage(f,y) for y in collect(components(Y)[k])]...)
+     for (k,f) in pairs(components(f))])...)
+hom_inv(f::CSetTransformation,Y::StructACSet)::SubACSet = top(dom(f))
+
+
+
+"""Closes a fragment of a C-set under functionality."""
+function induce_subobject(X::StructACSet{S}; vs...) where {S}
+  vs = Dict([k=>Set(get(vs, k, [])) for k in ob(S)])
+  changed = true
+  while changed
+    changed = false
+    for (k, d, cd) in zip(hom(S), dom(S), codom(S))
+      for v in X[collect(vs[d]), k]
+        if v ∉ vs[cd]
+          push!(vs[cd], v)
+          changed=true
+        end
+      end
+    end
+  end
+  return Subobject(X; Dict{Symbol,Vector{Int}}([k=>sort(collect(v))
+                                                for (k,v) in pairs(vs)])...)
+end
+
 
 # FIXME: Should these two accessors go elsewhere?
 

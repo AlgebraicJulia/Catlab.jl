@@ -476,6 +476,26 @@ A = Subobject(S, X=[3,4,5])
 @test ¬Subobject(ι₂) |> force == Subobject(ι₁)
 @test ~A |> force == ⊤(S) |> force
 
+# Image and preimage
+g1 = path_graph(Graph, 2)
+g2 = apex(coproduct(g1, g1))
+g3 = @acset Graph begin V=2; E=3; src=[1,1,2]; tgt=[1,2,2] end
+h = homomorphisms(g1,g2)[2] # V=[3,4], E=[2]
+ϕ = homomorphism(g2,g3; initial=(V=[1,1,2,2],))
+@test components(hom(h(g1))) == (
+  V = FinFunction([3, 4], 2, 4), E = FinFunction([2], 1, 2))
+@test hom_inv(h, Subobject(g2, V=[1])) |> force == bottom(g1) |> force
+@test hom_inv(h, Subobject(g2, V=[3])) |> force == Subobject(g1, V=[1]) |> force
+@test ϕ(h(g1)) == Subobject(g3, V=[2,2], E=[3])
+
+# Induce subobject
+e1 = Subobject(g2, V=[1,2], E=[1])
+@test induce_subobject(g2, E=[1]) |> force == e1 |> force
+@test induce_subobject(g2, V=[1]) |> force == Subobject(g2, V=[1]) |> force
+@test induce_subobject(g2, E=[2]) |> force == h(g1) |> force
+
+
+
 # Serialization
 ###############
 
