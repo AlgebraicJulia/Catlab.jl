@@ -65,6 +65,13 @@ g, h = path_graph(Graph, 4), cycle_graph(Graph, 2)
 β = CSetTransformation((V=[2,1], E=[2,1]), h, h)
 @test is_natural(β)
 
+# Injectivity/surjectivity
+@test is_surjective(α)
+@test !is_injective(α)
+@test is_injective(homomorphism(Graph(), Graph(1)))
+@test is_injective(id(g))
+@test is_surjective(id(g))
+
 # Category of C-sets.
 @test dom(α) === g
 @test codom(α) === h

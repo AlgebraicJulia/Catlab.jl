@@ -4,7 +4,7 @@ module FinSets
 export FinSet, FinFunction, FinDomFunction, TabularSet, TabularLimit,
   force, is_indexed, preimage,
   JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin,
-  SubFinSet, SubOpBoolean
+  SubFinSet, SubOpBoolean, is_surjective, is_injective
 
 using AutoHashEquals
 using DataStructures: OrderedDict, IntDisjointSets, union!, find_root!
@@ -191,6 +191,11 @@ FinFunction(f::AbstractVector{Int}; kw...) =
 
 Sets.show_type_constructor(io::IO, ::Type{<:FinFunction}) =
   print(io, "FinFunction")
+
+# These could be made to fail early if ever used in performance-critical areas
+image(f::FinFunction) = Set([f(x) for x in dom(f)]) # need when domain isn't Int
+is_surjective(f::FinFunction) = length(codom(f)) == length(image(f))
+is_injective(f::FinFunction)  = length(dom(f)) == length(image(f))
 
 """ Function out of a finite set.
 

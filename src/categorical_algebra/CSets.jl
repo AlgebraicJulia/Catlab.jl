@@ -27,7 +27,8 @@ import ..Limits: limit, colimit, universal, pushout_complement,
 import ..Subobjects: Subobject, SubobjectBiHeytingAlgebra,
   implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..Sets: SetOb, SetFunction, TypeSet
-import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate
+import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate,
+                  is_injective, is_surjective
 import ..FinCats: FinDomFunctor, components, is_natural
 
 # Sets interop
@@ -381,6 +382,21 @@ function is_natural(α::ACSetTransformation{S}) where {S}
   end
   return true
 end
+
+function is_injective(α::ACSetTransformation{S}) where {S}
+  for c in α.components
+    if !is_injective(c) return false end
+  end
+  return true
+end
+
+function is_surjective(α::ACSetTransformation{S}) where {S}
+  for c in α.components
+    if !is_surjective(c) return false end
+  end
+  return true
+end
+
 
 # Category of C-sets
 ####################
