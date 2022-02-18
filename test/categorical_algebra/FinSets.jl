@@ -64,6 +64,16 @@ k = FinFunction(Dict(:a => :x, :b => :y, :c => :z), X)
 @test codom(FinFunction(Dict(:a => :x, :b => :y, :c => :z))) ==
   FinSet(Set([:x,:y,:z]))
 
+# FinSet
+@test is_injective(f)
+@test !is_injective(g)
+@test is_surjective(g)
+@test is_surjective(h)
+@test is_injective(k)
+@test !is_surjective(k)
+@test !is_injective(ℓ)
+
+
 # Evaluation.
 rot3(x) = (x % 3) + 1
 @test map(f, 1:3) == [1,3,4]

@@ -65,6 +65,13 @@ g, h = path_graph(Graph, 4), cycle_graph(Graph, 2)
 β = CSetTransformation((V=[2,1], E=[2,1]), h, h)
 @test is_natural(β)
 
+# Injectivity/surjectivity
+@test is_surjective(α)
+@test !is_injective(α)
+@test is_injective(homomorphism(Graph(), Graph(1)))
+@test is_injective(id(g))
+@test is_surjective(id(g))
+
 # Category of C-sets.
 @test dom(α) === g
 @test codom(α) === h
@@ -346,6 +353,24 @@ add_edge!(g2, 1, 2)  # double arrow
 @test length(homomorphisms(g2, g1, monic=[:V])) == 5 # remove vertex solutions
 @test length(homomorphisms(g2, g1, monic=[:E])) == 2 # two for 2->3
 @test length(homomorphisms(g2, g1, iso=[:E])) == 0
+
+# Epic constraint
+g0, g1, g2 = Graph(2), Graph(2), Graph(2)
+add_edges!(g0, [1,1],[1,2]) # ↻•→•
+add_edges!(g1, [1,1],[2,2]) # •⇉•
+add_edges!(g2, [1,1,1],[1,1,2]) # ↻↻•→•
+@test length(homomorphisms(g1, g2, epic=[:V])) == 1
+@test length(homomorphisms(g1, g2, epic=[:E])) == 0
+@test length(homomorphisms(g2, g0, epic=[:E])) == 1
+@test length(homomorphisms(g2, g0, epic=[:V])) == 1
+
+g3, g4 = path_graph(Graph,3), path_graph(Graph,4)
+add_edges!(g3,[1,3],[1,3])  # g3: ↻•→•→• ↺
+@test length(homomorphisms(g4,g3)) == 6 # 2 for each: 1/2/3 edges sent to loop
+@test length(homomorphisms(g4,g3; epic=[:V])) == 2 # send only one edge to loop
+@test length(homomorphisms(g4,g3; epic=[:E])) == 0 # only have 3 edges to map
+
+@test length(homomorphisms(Graph(4),Graph(2); epic=true)) == 14 # 2^4 - 2
 
 # Symmetric graphs
 #-----------------
