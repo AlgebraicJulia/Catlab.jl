@@ -25,6 +25,8 @@ const StructCSet = StructACSet{S,Tuple{},Idxed,UniqueIdxed} where
 q(s::Symbol) = Expr(:quote,s)
 q(s::GATExpr) = q(nameof(s))
 
+Syntax.nameof(s::Symbol) = s
+
 """ Creates a quoted named tuple used for `StructACSet`s
 """
 function pi_type(dom::Vector, F::Function)

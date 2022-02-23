@@ -19,6 +19,7 @@ include("CatElements.jl")
 include("DataMigrations.jl")
 include("StructuredCospans.jl")
 include("DPO.jl")
+include("PACSets.jl")
 
 @reexport using .Categories
 @reexport using .FinCats

@@ -27,5 +27,6 @@ include("HigherCategory.jl")
 include("Preorders.jl")
 include("Relations.jl")
 include("Schema.jl")
+include("MonoidalSchema.jl")
 
 end
