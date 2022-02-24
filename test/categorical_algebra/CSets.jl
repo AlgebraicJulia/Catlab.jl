@@ -264,7 +264,7 @@ end
                            index=[:src,:tgt]) <: AbstractGraph
 
 # Terminal labeled graph.
-@test ob(terminal(VELabeledGraph)) == cycle_graph(VELabeledGraph{Nothing}, 1)
+@test ob(terminal(VELabeledGraph)) == cycle_graph(VELabeledGraph{Tuple{}}, 1)
 
 # Product of labeled graphs.
 g = path_graph(VELabeledGraph{Symbol}, 2, V=(vlabel=[:a,:b],), E=(elabel=:f,))

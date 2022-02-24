@@ -14,7 +14,7 @@ using StaticArrays: StaticVector, SVector, SizedVector, similar_type
 import Tables, PrettyTables
 
 @reexport using ..Sets
-using ...GAT, ...Theories, ...CSetDataStructures, ...Graphs
+using ...GAT, ...Theories, ...CSetDataStructures, ...Graphs, ...ACSetColumns
 using ..FinCats, ..FreeDiagrams, ..Limits, ..Subobjects
 import ...Theories: Ob, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 import ..Categories: ob, hom, dom, codom, compose, id, ob_map, hom_map
@@ -193,6 +193,9 @@ end
 FinFunction(f::AbstractVector{Int}; kw...) =
   FinFunction(f, FinSet(isempty(f) ? 0 : maximum(f)); kw...)
 
+FinFunction(f::IndexedVector{Int, Vector{Vector{Int}}}, args...) =
+  IndexedFinFunctionVector(f.vals, args...; index=f.index)
+
 Sets.show_type_constructor(io::IO, ::Type{<:FinFunction}) =
   print(io, "FinFunction")
 
@@ -217,6 +220,12 @@ function FinDomFunction(f::AbstractVector, args...; index=false)
     IndexedFinDomFunctionVector(f, args...; index=index)
   end
 end
+
+FinDomFunction(f::IndexedVector{Int, Vector{Vector{Int}}}, args...) =
+  IndexedFinDomFunctionVector(f.vals, args...; index=f.index)
+
+FinDomFunction(f::IndexedVector{T, Dict{T, Vector{Int}}}, args...) where {T} =
+  IndexedFinDomFunctionVector(f.vals, args...; index=f.index)
 
 Sets.show_type_constructor(io::IO, ::Type{<:FinDomFunction}) =
   print(io, "FinDomFunction")
