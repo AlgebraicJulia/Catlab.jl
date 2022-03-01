@@ -488,6 +488,16 @@ h = homomorphisms(g1,g2)[2] # V=[3,4], E=[2]
 @test hom_inv(h, Subobject(g2, V=[3])) |> force == Subobject(g1, V=[1]) |> force
 @test ϕ(h(g1)) == Subobject(g3, V=[2,2], E=[3])
 
+# Preimage
+G = path_graph(Graph, 1) ⊕ path_graph(Graph, 2) ⊕ path_graph(Graph, 3)
+H = let Loop=apex(terminal(Graph)); Loop ⊕ Loop ⊕ Loop end
+# Each path graph gets its own loop
+f = homomorphism(G, H; initial=(V=Dict([1=>1,2=>2,4=>3]),))
+for i in 1:3
+  @test is_isomorphic(dom(hom(hom_inv(f, Subobject(H, V=[i],E=[i])))),
+                      path_graph(Graph, i))
+end
+
 # Induce subobject
 e1 = Subobject(g2, V=[1,2], E=[1])
 @test induce_subobject(g2, E=[1]) |> force == e1 |> force

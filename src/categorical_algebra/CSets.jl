@@ -1116,20 +1116,48 @@ function common_ob(A::Subobject, B::Subobject)
 end
 
 """f:A->B as a map of subobjects of A to subjects of B"""
-(f::CSetTransformation)(X::SubACSet)::SubACSet = Subobject(codom(f); Dict(
+(f::ACSetTransformation)(X::SubACSet)::SubACSet = begin
+  codom(hom(X)) == dom(f) || error("Cannot apply $f to $X")
+  Subobject(codom(f); Dict(
     [k=>f.(collect(components(X)[k])) for (k,f) in pairs(components(f))])...)
-(f::CSetTransformation)(X::StructACSet)::SubACSet = f(top(X))
+end
 
-"""Inverse of f:A->B as a map of subobjects of B to subjects of A"""
-hom_inv(f::CSetTransformation,Y::Subobject)::SubACSet = Subobject(dom(f);
-  Dict{Symbol, Vector{Int}}(
+"""
+f:A->B as a map from A to a subobject of B
+i.e. we cast the ACSet to a subobject
+"""
+(f::ACSetTransformation)(X::StructACSet)::SubACSet =
+  X == dom(f) ? f(top(X)) : error("Cannot apply $f to $X")
+
+"""
+Inverse of f:A->B as a map of subobjects of B to subjects of A.
+It can be thought of as `incident`, but for homomorphisms.
+"""
+hom_inv(f::ACSetTransformation,Y::Subobject)::SubACSet = begin
+  codom(hom(X)) == codom(f) || error("Cannot apply $f to $X")
+
+  Subobject(dom(f); Dict{Symbol, Vector{Int}}(
     [k => vcat([preimage(f,y) for y in collect(components(Y)[k])]...)
      for (k,f) in pairs(components(f))])...)
-hom_inv(f::CSetTransformation,Y::StructACSet)::SubACSet = top(dom(f))
+end
+
+"""
+Inverse f:A->B as a map from subobjects of B to subobjects of A.
+Cast an ACSet to subobject, though this has a trivial answer when computing
+the preimage (it is necessarily the top subobject of A).
+"""
+hom_inv(f::CSetTransformation,Y::StructACSet)::SubACSet =
+  Y = codom(f) ? top(dom(f)) : error("Cannot apply inverse of $f to $Y")
 
 
+"""
+Takes a partially-specified ACSet subobject and completes it so that there are
+no undefined references.
 
-"""Closes a fragment of a C-set under functionality."""
+For example: `induce_subobject(my_wiring_diagram; Wire=[2])`
+will yield a subobject of `my_wiring_diagram` with Wire#2, as well as the
+ports it's connected to and the boxes those ports are connected to.
+"""
 function induce_subobject(X::StructACSet{S}; vs...) where {S}
   vs = Dict([k=>Set(get(vs, k, [])) for k in ob(S)])
   changed = true
