@@ -60,9 +60,13 @@ g = Graph(3)
 add_edges!(g, [1,2,2], [2,3,3])
 
 ep = enumerate_paths(g)
-@test all([length(ep[i=>i]) == 1 for i in vertices(g)])
-@test length(ep[1=>2]) == 1
-@test length(ep[1=>3]) == 2
-@test length(ep[2=>1]) == 0
+@test ep[:eprops] == [
+    Set([Int[]]), # 1=>1
+    Set([Int[]]), # 2=>2
+    Set([Int[]]), # 3=>3
+    Set([[1, 2], [1, 3]]), # 1=>3
+    Set([[1]]), # 1=>2
+    Set([[2], [3]]), # 2=>3
+]
 
 end
