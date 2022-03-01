@@ -44,8 +44,7 @@ function elements(X::StructACSet{S}) where S
 
   add_parts!(Y, :Hom, length(hom(S)), dom=dom_nums(S), cod=codom_nums(S), nameh=hom(S))
   map(enumerate(zip(hom(S), dom_nums(S), codom_nums(S)))) do (i, (f, ci, di))
-    c = obs[ci] #, d = obs[di]
-    # nc = nparts(X, c)
+    c = obs[ci]
     add_parts!(Y, :Arr, nparts(X, c), src=els[ci], tgt=view(els[di], X[f]), πₐ=i)
   end
   return Y
@@ -55,7 +54,8 @@ end
 """    elements(f::ACSetTransformation)
 
 Apply category of elements functor to a morphism f: X->Y.
-This takes advantage of implementation details of elements of an object
+This relies on the fact `elements` of an object puts El components from the same
+Ob in a contiguous index range.
 """
 function elements(f::ACSetTransformation{S}) where S
   X, Y = elements.([dom(f), codom(f)])
