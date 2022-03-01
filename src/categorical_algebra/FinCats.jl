@@ -366,13 +366,12 @@ function is_initial(F::FinFunctor)::Bool
   pathₛ, pathₜ = enumerate_paths.([Gₛ, Gₜ])
 
   function connected_nonempty_slice(t::Int)::Bool
-    edges_into_t = incident(pathₜ, t, :tgt)
+    paths_into_t = incident(pathₜ, t, :tgt)
     # Generate slice objects
     ob_slice = Pair{Int,Vector{Int}}[] # s ∈Ob(S) and a path ∈ T(F(s), t)
     for s in vertices(Gₛ)
-      e = incident(pathₜ, ob_map(F,s), :src) ∩ edges_into_t
-      paths_s_to_t = isempty(e) ? [] : pathₜ[only(e), :eprops]
-      append!(ob_slice, [s => p for p in paths_s_to_t])
+      paths_s_to_t = incident(pathₜ, ob_map(F,s), :src) ∩ paths_into_t
+      append!(ob_slice, [s => pathₜ[p, :eprops] for p in paths_s_to_t])
     end
 
     # Empty case
@@ -386,8 +385,8 @@ function is_initial(F::FinFunctor)::Bool
     """
     function check_pair(i::Int, j::Int)::Bool
       (m,pₘ), (n,pₙ) = ob_slice[i], ob_slice[j]
-      e = incident(pathₛ, m, :src) ∩ incident(pathₛ, n, :tgt)
-      paths = isempty(e) ? [] : pathₛ[only(e), :eprops]
+      es = incident(pathₛ, m, :src) ∩ incident(pathₛ, n, :tgt)
+      paths = pathₛ[es, :eprops]
       return any(f -> pₘ == vcat(edges.(hom_map(F,f))..., pₙ), paths)
     end
 

@@ -60,13 +60,13 @@ g = Graph(3)
 add_edges!(g, [1,2,2], [2,3,3])
 
 ep = enumerate_paths(g)
-@test ep[:eprops] == [
-    Set([Int[]]), # 1=>1
-    Set([Int[]]), # 2=>2
-    Set([Int[]]), # 3=>3
-    Set([[1, 2], [1, 3]]), # 1=>3
-    Set([[1]]), # 1=>2
-    Set([[2], [3]]), # 2=>3
-]
-
+@test sort(collect(zip(ep[:src],ep[:tgt], ep[:eprops]))) == [
+    (1, 1, [])
+    (1, 2, [1])
+    (1, 3, [1, 2])
+    (1, 3, [1, 3])
+    (2, 2, [])
+    (2, 3, [2])
+    (2, 3, [3])
+    (3, 3, [])]
 end

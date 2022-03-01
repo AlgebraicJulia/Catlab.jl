@@ -120,7 +120,7 @@ end
 """Enumerate all paths of an acyclic graph, indexed by src+tgt"""
 function enumerate_paths(G::Graph;
                          sorted::Union{AbstractVector{Int},Nothing}=nothing
-                        )::ReflexiveEdgePropertyGraph{Set{Vector{Int}}}
+                        )::ReflexiveEdgePropertyGraph{Vector{Int}}
   sorted = isnothing(sorted) ? topological_sort(G) : sorted
   Path = Vector{Int}
 
@@ -135,19 +135,13 @@ function enumerate_paths(G::Graph;
     end
   end
   # Initialize output data structure with empty paths
-  res = @acset ReflexiveEdgePropertyGraph{Set{Path}} begin
+  res = @acset ReflexiveEdgePropertyGraph{Path} begin
     V=nv(G); E=nv(G); src=1:nv(G); tgt=1:nv(G); refl=1:nv(G)
-    eprops=[Set([Path()]) for _ in 1:nv(G)]
+    eprops=[Int[] for _ in 1:nv(G)]
   end
   for (src, ps) in enumerate(paths)
     for p in filter(x->!isempty(x), ps)
-      tgt = G[p[end],:tgt]
-      e = incident(res, src, :src) ∩ incident(res, tgt, :tgt)
-      if isempty(e)
-        add_part!(res, :E; src=src, tgt=tgt, eprops=Set([p]))
-      else
-        push!(res[only(e), :eprops], p)
-      end
+      add_part!(res, :E; src=src, tgt=G[p[end],:tgt], eprops=p)
     end
   end
   return res
