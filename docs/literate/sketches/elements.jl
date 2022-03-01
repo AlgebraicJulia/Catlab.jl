@@ -1,33 +1,28 @@
 # # The Category of Elements
-# A very useful construction in applied category theory is the Category of Elements, which is also called the Grothendieck construction. This is a very general technique in category theory, but we will look at how you can use it to explain why graphs are so useful in computer science. We have already seen that C-Sets are a model of relational databases that can be used to store data as a collection of interlocking tables. Relational databases are the bread and butter of the computing industry. Every company on earth uses software that is backed by a relational database. Most data that is not stored in a relational DB is often stored in some kind of graph data structure. This sketch will show how these approaches are interchangeable via the category of elements, which associates to every database instance a graph and a graph homomorphism into the schema of the graph.  
-using Catlab
-using Catlab.CategoricalAlgebra
-using Catlab.CategoricalAlgebra.CatElements
-using Catlab.Graphs
-using Catlab.Graphs.BasicGraphs
-using Catlab.Graphics
+# A very useful construction in applied category theory is the Category of Elements, which is also called the Grothendieck construction. This is a very general technique in category theory, but we will look at how you can use it to explain why graphs are so useful in computer science. We have already seen that C-Sets are a model of relational databases that can be used to store data as a collection of interlocking tables. Relational databases are the bread and butter of the computing industry. Every company on earth uses software that is backed by a relational database. Most data that is not stored in a relational DB is often stored in some kind of graph data structure. This sketch will show how these approaches are interchangeable via the category of elements, which associates to every database instance a graph and a graph homomorphism into the schema of the graph.
+using Catlab, Catlab.CategoricalAlgebra, Catlab.Graphs, Catlab.Graphics
 using Catlab.Graphics.Graphviz
 using Colors
 
 # Let's tell Catlab how to draw categories of elements.
 function graph(el::Elements)
-    F = FinFunctor(
-      Dict(:V => :El, :E => :Arr),
-      Dict(:src => :src, :tgt => :tgt),
-      BasicGraphs.TheoryGraph, CatElements.ThElements
-    )
-    ΔF = DeltaMigration(F, Elements{Symbol}, BasicGraphs.Graph)
-    return ΔF(el)
-  end
+  F = FinFunctor(
+    Dict(:V => :El, :E => :Arr),
+    Dict(:src => :src, :tgt => :tgt),
+    BasicGraphs.TheoryGraph, CatElements.ThElements
+  )
+  ΔF = DeltaMigration(F, Elements{Symbol}, BasicGraphs.Graph)
+  return ΔF(el)
+end
 
 safecolors(start, stop, len) = if len > 1
-    return hex.(range(start, stop=stop, length=len))
+  return hex.(range(start, stop=stop, length=len))
 else
-    return [hex.(start)]
+  return [hex.(start)]
 end
 
 GraphvizGraphs.to_graphviz(f::Elements; kw...) =
-to_graphviz(GraphvizGraphs.to_graphviz_property_graph(f; kw...))
+  to_graphviz(GraphvizGraphs.to_graphviz_property_graph(f; kw...))
 
 function GraphvizGraphs.to_graphviz_property_graph(f::Elements; kw...)
   pg = GraphvizGraphs.to_graphviz_property_graph(graph(f); kw...)
@@ -49,15 +44,15 @@ draw(g) = to_graphviz(g, node_labels=true, edge_labels=true, prog="neato")
 # ## The simplest schema 
 # First we will look at discrete dynamical systems. The set S is our state space and the funct nxt associates to every state, the next state in the system. This is a deterministic dynamical system with finitely many states and discrete time.
 @present TheoryDDS(FreeSchema) begin
-    S::Ob
-    nxt::Hom(S, S)
+  S::Ob
+  nxt::Hom(S, S)
 end
 
 @acset_type DDS(TheoryDDS, index=[:nxt])
 
 fₓ = @acset DDS begin
-    S = 3
-    nxt = [2,3,1]
+  S = 3
+  nxt = [2,3,1]
 end
 
 # Now if you want to draw a DDS, you might think to draw each state as a vertex and the next relationship as an arrow from one state to the next state. If your intuition selected that representation, you have already discovered a special case of the category of elements
@@ -71,8 +66,8 @@ draw(elᶠ)
 # We can scale up our DDS drawing too.
 
 Fₓ = @acset DDS begin
-    S = 7
-    nxt = [2,3,1, 1,7,7,4]
+  S = 7
+  nxt = [2,3,1, 1,7,7,4]
 end
 draw(elements(Fₓ))
 
@@ -85,10 +80,10 @@ to_graphviz(ThElements)
 # ## The Elements of a Graph are its Vertices and Edges
 # In what might appear as primordial ooze, we can examine the category of elements of a graph. We will look at the commuting triangle graph. Notice how there are 3 vertices and three edges with each edge incident to 2 vertices.
 g = @acset BasicGraphs.Graph begin
-    V = 3
-    E = 3
-    src = [1,2,1]
-    tgt = [2,3,3]
+  V = 3
+  E = 3
+  src = [1,2,1]
+  tgt = [2,3,3]
 end
 draw(g)
 
@@ -97,10 +92,10 @@ elᵍ = elements(g)
 draw(elᵍ)
 
 g = @acset BasicGraphs.Graph begin
-    V = 6
-    E = 7
-    src = [1,2,1,3,5,6,4]
-    tgt = [2,3,3,5,6,3,4]
+  V = 6
+  E = 7
+  src = [1,2,1,3,5,6,4]
+  tgt = [2,3,3,5,6,3,4]
 end
 draw(g)
 draw(elements(g))
@@ -110,26 +105,26 @@ draw(elements(g))
 # ## Generality of the construction
 # Discrete Dynamical Systems and Graphs are clearly data structures from mathematics and so it would make sense that they have a clean representation in the categorical language. But how about a database schema that comes not from mathematics, but from software engineering. We turn to everyone's favorite database example, the HR database at a fictitious company. 
 @present ThCompany(FreeSchema) begin
-    (P, D, S)::Ob # Person, Department, Salary 
-    worksin::Hom(P, D)    # Every Person works in a Department
-    makes::Hom(P, S)      # Every Person makes a Salary
-    reportsto::Hom(P, P)  # Every Person reports to a Person
-    managedby::Hom(D, P)  # Every Department is managed by a Person
-    leq::Hom(S,S)         # Salaries are a finite total order
+  (P, D, S)::Ob # Person, Department, Salary
+  worksin::Hom(P, D)    # Every Person works in a Department
+  makes::Hom(P, S)      # Every Person makes a Salary
+  reportsto::Hom(P, P)  # Every Person reports to a Person
+  managedby::Hom(D, P)  # Every Department is managed by a Person
+  leq::Hom(S,S)         # Salaries are a finite total order
 end
 
 @acset_type Company(ThCompany, index=[])
 
 # We can draw a company that has 4 people, 2 departments, and 3 distinct salaries. 
 cmpy = @acset Company begin
-    P = 4
-    D = 2
-    S = 3
-    worksin = [1,1,2,2]
-    makes = [3,1,2,1]
-    reportsto = [1, 1,1,3]
-    managedby = [1,3]
-    leq = [2,3,3]
+  P = 4
+  D = 2
+  S = 3
+  worksin = [1,1,2,2]
+  makes = [3,1,2,1]
+  reportsto = [1, 1,1,3]
+  managedby = [1,3]
+  leq = [2,3,3]
 end
 
 # A visualization of the elements of this functor is commonly described as a knowledge graph.
@@ -148,28 +143,28 @@ incident(elᶜ, :, :πₐ)
 # From this information, you can reassemble the knowledge graph into a database. You use the codomain graph as the schema and then these two projections πₑ and πₐ to recover the instance data.
 
 cset(T::Type, el::Elements) = begin
-    X = T()
-    ℓ = Dict{Int, Int}() # this map reverses the inclusions converting global element numbers into per-table numbers
-    for ob in parts(el, :Ob)
-        obname = el[ob, :nameo]
-        eltsob = incident(el, ob, :πₑ)
-        pts = add_parts!(X, obname, length(eltsob))
-        map(zip(pts, eltsob)) do (i,x)
-            ℓ[x] = i
-        end
+  X = T()
+  ℓ = Dict{Int, Int}() # this map reverses the inclusions converting global element numbers into per-table numbers
+  for ob in parts(el, :Ob)
+    obname = el[ob, :nameo]
+    eltsob = incident(el, ob, :πₑ)
+    pts = add_parts!(X, obname, length(eltsob))
+    map(zip(pts, eltsob)) do (i,x)
+      ℓ[x] = i
     end
-    for h in parts(el, :Hom)
-        nameh = el[h, :nameh]
-        arrₕ = incident(el, h, :πₐ)
-        doms = map(arrₕ) do e
-            ℓ[el[e, :src]]
-        end
-        codoms = map(arrₕ) do e
-            ℓ[el[e, :tgt]]
-        end
-        set_subpart!(X, doms, nameh, codoms)
+  end
+  for h in parts(el, :Hom)
+    nameh = el[h, :nameh]
+    arrₕ = incident(el, h, :πₐ)
+    doms = map(arrₕ) do e
+      ℓ[el[e, :src]]
     end
-    return X
+    codoms = map(arrₕ) do e
+      ℓ[el[e, :tgt]]
+    end
+    set_subpart!(X, doms, nameh, codoms)
+  end
+  return X
 end
 
 # We can apply this algorithm to our company knowledge graph to recover our original DB.
@@ -182,10 +177,10 @@ cmpy == cset(Company, elᶜ)
 # An amazing fact about presheaf toposes is that they are closed under taking slices. In the graphs section of this documentation, you can find a description of bipartite and k-partite graphs as a morphisms into a clique. That definition is very mathematically pleasing because it gives you a category of partitioned graphs that are derived from commuting triangles in Graph. However, for application oriented practitioners, the definition of a bipartite graph as "a graph with two sets of vertices, where all the edges go between the groups with no edges within either group" is probably more explicit. For example a classic way to get a bipartite graph would be to look at the graph of authors and papers that those authors wrote. People write papers, people do not write people and papers do not write papers so the authorship graph is bipartite. These two equivalent definitions of a bipartite graph are related via an isomorphism you can find on the [nlab](https://ncatlab.org/nlab/show/category+of+presheaves#RelWithOvercategories). It shows that a slice category of [C,Set]/X is isomorphic to [El(X), Set] which is a cateogory of presheaves on a different schema. Catlab knows how to use this idea to turn a category of elements into a schema for a new category of presheaves. The two directions of the isomorphism are not yet implemented.
 
 e = @acset BasicGraphs.Graph begin
-    V = 2
-    E = 1
-    src = 1
-    tgt = 2
+  V = 2
+  E = 1
+  src = 1
+  tgt = 2
 end
 
 draw(elements(e))
@@ -193,11 +188,11 @@ ThBipartite = CatElements.presentation(elements(e))[1]
 to_graphviz(ThBipartite)
 @acset_type BipartiteGraph(ThBipartite)
 b = @acset BipartiteGraph begin
-    V_1 = 3
-    V_2 = 2
-    E_1 = 5
-    src_E_1 = [1,2,3,3,2]
-    tgt_E_1 = [1,2,2,1,1]
+  V_1 = 3
+  V_2 = 2
+  E_1 = 5
+  src_E_1 = [1,2,3,3,2]
+  tgt_E_1 = [1,2,2,1,1]
 end
 draw(elements(b))
 
