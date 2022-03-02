@@ -372,6 +372,9 @@ function Base.show(io::IO, α::LooseACSetTransformation)
   print(io, ")")
 end
 
+map_components(f, α::LooseACSetTransformation) =
+  LooseACSetTransformation(map(f, components(α)), α.type_components, dom(α), codom(α))
+
 function is_natural(α::ACSetTransformation{S}) where {S}
   X, Y = dom(α), codom(α)
   for (f, c, d) in flatten((zip(hom(S), dom(S), codom(S)),
@@ -538,7 +541,7 @@ is_isomorphic(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...) =
 """ Internal state for backtracking search for ACSet homomorphisms.
 """
 struct BacktrackingState{S <: SchemaDescType,
-    Assign <: NamedTuple, PartialAssign <: NamedTuple,
+    Assign <: NamedTuple, PartialAssign <: NamedTuple, LooseFun <: NamedTuple,
     Dom <: StructACSet{S}, Codom <: StructACSet{S}}
   """ The current assignment, a partially-defined homomorphism of ACSets. """
   assignment::Assign
@@ -550,10 +553,12 @@ struct BacktrackingState{S <: SchemaDescType,
   dom::Dom
   """ Codomain ACSet: the "values" in the CSP. """
   codom::Codom
+  type_components::LooseFun
 end
 
 function backtracking_search(f, X::StructACSet{S}, Y::StructACSet{S};
-                             monic=false, iso=false, initial=(;)) where {Ob, S<:SchemaDescType{Ob}}
+                             monic=false, iso=false, type_components=(;), initial=(;),
+                             ) where {Ob, Hom, Attr, S<:SchemaDescType{Ob,Hom,Attr}}
   # Fail early if no monic/isos exist on cardinality grounds.
   if iso isa Bool
     iso = iso ? Ob : ()
@@ -575,7 +580,10 @@ function backtracking_search(f, X::StructACSet{S}, Y::StructACSet{S};
   assignment_depth = map(copy, assignment)
   inv_assignment = NamedTuple{Ob}(
     (c in monic ? zeros(Int, nparts(Y, c)) : nothing) for c in Ob)
-  state = BacktrackingState(assignment, assignment_depth, inv_assignment, X, Y)
+  loosefuns = NamedTuple{Attr}(
+    isnothing(type_components) ? identity : get(type_components, c, identity) for c in Attr)
+  state = BacktrackingState(assignment, assignment_depth, inv_assignment, X, Y,
+                            loosefuns)
 
   # Make any initial assignments, failing immediately if inconsistent.
   for (c, c_assignments) in pairs(initial)
@@ -588,12 +596,17 @@ function backtracking_search(f, X::StructACSet{S}, Y::StructACSet{S};
   backtracking_search(f, state, 1)
 end
 
-function backtracking_search(f, state::BacktrackingState, depth::Int)
+function backtracking_search(f, state::BacktrackingState{S}, depth::Int) where {S}
   # Choose the next unassigned element.
   mrv, mrv_elem = find_mrv_elem(state, depth)
   if isnothing(mrv_elem)
     # No unassigned elements remain, so we have a complete assignment.
-    return f(ACSetTransformation(state.assignment, state.dom, state.codom))
+    if any(!=(identity), state.type_components)
+      return f(LooseACSetTransformation{S}(
+        state.assignment, state.type_components, state.dom, state.codom))
+    else
+      return f(ACSetTransformation(state.assignment, state.dom, state.codom))
+    end
   elseif mrv == 0
     # An element has no allowable assignment, so we must backtrack.
     return false
@@ -659,8 +672,10 @@ be mutated even when the assignment fails.
 
     # Check attributes first to fail as quickly as possible.
     X, Y = state.dom, state.codom
-    $(map(out_attr(S, c)) do f
-        :(subpart(X,x,$(quot(f))) == subpart(Y,y,$(quot(f))) || return false)
+    $(map(zip(attr(S), adom(S), acodom(S))) do (f, c_, d)
+         :($(quot(c_))!=c
+             || state.type_components[$(quot(d))](subpart(X,x,$(quot(f))))
+                 == subpart(Y,y,$(quot(f))) || return false)
       end...)
 
     # Make the assignment and recursively assign subparts.
@@ -710,7 +725,6 @@ partial_assignments(x::AbstractVector) =
 # FIXME: Should these accessors go elsewhere?
 in_hom(S, c) = [dom(S,f) => f for f in hom(S) if codom(S,f) == c]
 out_hom(S, c) = [f => codom(S,f) for f in hom(S) if dom(S,f) == c]
-out_attr(S, c) = [f for f in attr(S) if dom(S, f) == c]
 
 # Limits and colimits
 #####################
