@@ -14,5 +14,7 @@ TikzCDs = "1e332c56-9431-4126-8a34-92cbdf251ae4"
 TikzPictures = "37f6aa50-8035-52d0-81c2-5a1d08754b2d"
 
 [compat]
+Convex = "^0.15"
 Documenter = "^0.25.3"
+SCS = "^1"
 TikzCDs = "^0.2.1"
