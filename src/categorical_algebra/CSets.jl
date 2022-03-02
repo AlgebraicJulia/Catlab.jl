@@ -553,11 +553,11 @@ struct BacktrackingState{S <: SchemaDescType,
   dom::Dom
   """ Codomain ACSet: the "values" in the CSP. """
   codom::Codom
-  loose::LooseFun
+  type_components::LooseFun
 end
 
 function backtracking_search(f, X::StructACSet{S}, Y::StructACSet{S};
-                             monic=false, iso=false, loose=(;), initial=(;),
+                             monic=false, iso=false, type_components=(;), initial=(;),
                              ) where {Ob, Hom, Attr, S<:SchemaDescType{Ob,Hom,Attr}}
   # Fail early if no monic/isos exist on cardinality grounds.
   if iso isa Bool
@@ -581,7 +581,7 @@ function backtracking_search(f, X::StructACSet{S}, Y::StructACSet{S};
   inv_assignment = NamedTuple{Ob}(
     (c in monic ? zeros(Int, nparts(Y, c)) : nothing) for c in Ob)
   loosefuns = NamedTuple{Attr}(
-    isnothing(loose) ? identity : get(loose, c, identity) for c in Attr)
+    isnothing(type_components) ? identity : get(type_components, c, identity) for c in Attr)
   state = BacktrackingState(assignment, assignment_depth, inv_assignment, X, Y,
                             loosefuns)
 
@@ -601,14 +601,9 @@ function backtracking_search(f, state::BacktrackingState{S}, depth::Int) where {
   mrv, mrv_elem = find_mrv_elem(state, depth)
   if isnothing(mrv_elem)
     # No unassigned elements remain, so we have a complete assignment.
-    if !isempty(state.loose) && any([f!=identity for f in state.loose])
-      ac = NamedTuple([
-        at => let t_dom = typeof(state.dom).parameters[i]
-                  t_cdm = typeof(state.codom).parameters[i];
-              SetFunction(state.loose[at],TypeSet(t_dom), TypeSet(t_cdm)) end
-        for (at, i) in zip(attrtype(S), acodom_nums(S))])
+    if any(!=(identity), state.type_components)
       return f(LooseACSetTransformation{S}(
-               state.assignment, ac, state.dom, state.codom))
+        state.assignment, state.type_components, state.dom, state.codom))
     else
       return f(ACSetTransformation(state.assignment, state.dom, state.codom))
     end
@@ -679,7 +674,7 @@ be mutated even when the assignment fails.
     X, Y = state.dom, state.codom
     $(map(zip(attr(S), adom(S), acodom(S))) do (f, c_, d)
          :($(quot(c_))!=c
-             || state.loose[$(quot(d))](subpart(X,x,$(quot(f))))
+             || state.type_components[$(quot(d))](subpart(X,x,$(quot(f))))
                  == subpart(Y,y,$(quot(f))) || return false)
       end...)
 
@@ -730,7 +725,6 @@ partial_assignments(x::AbstractVector) =
 # FIXME: Should these accessors go elsewhere?
 in_hom(S, c) = [dom(S,f) => f for f in hom(S) if codom(S,f) == c]
 out_hom(S, c) = [f => codom(S,f) for f in hom(S) if dom(S,f) == c]
-out_attr(S, c) = [f for f in attr(S) if dom(S, f) == c]
 
 # Limits and colimits
 #####################
