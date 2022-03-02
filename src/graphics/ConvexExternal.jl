@@ -5,7 +5,7 @@ import .WiringDiagramLayouts: has_port_layout_method, solve_isotonic
 
 has_port_layout_method(::Type{Val{:isotonic}}) = true
 
-function solve_isotonic(y::Vector; solver=()->SCS.Optimizer(verbose=false),
+function solve_isotonic(y::Vector; solver=SCS.Optimizer,
                         loss=sumsquares, lower::Number=-Inf, upper::Number=Inf,
                         pad::Number=0)
   if isempty(y)
@@ -19,6 +19,7 @@ function solve_isotonic(y::Vector; solver=()->SCS.Optimizer(verbose=false),
   if upper != Inf
     push!(constraints, x[end] <= upper)
   end
-  solve!(minimize(loss(x-y), constraints), solver)
+  solve!(minimize(loss(x-y), constraints), solver;
+         verbose=false, silent_solver=true)
   length(x) == 1 ? [ x.value ] : dropdims(x.value, dims=2) # XXX: MATLAB-ism.
 end
