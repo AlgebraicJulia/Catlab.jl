@@ -1,10 +1,11 @@
 module PropertyGraphs
 export AbstractPropertyGraph, PropertyGraph, SymmetricPropertyGraph,
+  ReflexiveEdgePropertyGraph,
   gprops, vprops, eprops, get_gprop, get_vprop, get_eprop,
   set_gprop!, set_vprop!, set_eprop!, set_gprops!, set_vprops!, set_eprops!
 
 using ...Present, ...CSetDataStructures, ..BasicGraphs
-using ..BasicGraphs: TheoryGraph, TheorySymmetricGraph
+using ..BasicGraphs: TheoryGraph, TheorySymmetricGraph, TheoryReflexiveGraph
 import ..BasicGraphs: nv, ne, src, tgt, inv, edges, vertices,
   has_edge, has_vertex, add_edge!, add_edges!, add_vertex!, add_vertices!
 
@@ -83,6 +84,17 @@ SymmetricPropertyGraph{T,G}(; kw...) where {T,G<:_AbstractSymmetricPropertyGraph
   SymmetricPropertyGraph(G(), Dict{Symbol,T}(kw...))
 SymmetricPropertyGraph{T}(; kw...) where T =
   SymmetricPropertyGraph{T,_SymmetricPropertyGraph{T}}(; kw...)
+
+
+
+@present TheoryReflexiveEdgePropertyGraph <: TheoryReflexiveGraph begin
+  Props::AttrType
+  eprops::Attr(E,Props)
+end
+
+@abstract_acset_type AbstractReflexiveEdgePropertyGraph <: HasGraph
+@acset_type ReflexiveEdgePropertyGraph(TheoryReflexiveEdgePropertyGraph, index=[:src,:tgt]) <:
+AbstractReflexiveEdgePropertyGraph
 
 # Accessors and mutators
 ########################

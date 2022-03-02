@@ -13,11 +13,12 @@ module FinCats
 export FinCat, FinCatGraph, Path, ob_generators, hom_generators, equations,
   is_discrete, is_free, graph, edges, src, tgt, presentation,
   FinFunctor, FinDomFunctor, is_functorial, collect_ob, collect_hom, force,
-  FinTransformation, components, is_natural
+  FinTransformation, components, is_natural, is_initial
 
 using AutoHashEquals
 using Reexport
 using StaticArrays: SVector
+using DataStructures: IntDisjointSets, in_same_set, num_groups
 
 @reexport using ..Categories
 using ...GAT, ...Present, ...Syntax
@@ -25,7 +26,7 @@ import ...Present: equations
 using ...Theories: Category, Schema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ...CSetDataStructures, ...Graphs
-import ...Graphs: edges, src, tgt
+import ...Graphs: edges, src, tgt, enumerate_paths
 import ..Categories: ob, hom, ob_map, hom_map, component
 
 # Categories
@@ -351,6 +352,59 @@ FinFunctor(ob_map, hom_map, dom::Presentation, codom::Presentation) =
 
 Categories.show_type_constructor(io::IO, ::Type{<:FinFunctor}) =
   print(io, "FinFunctor")
+
+"""
+Dual to a ["final-functor"](https://ncatlab.org/nlab/show/final+functor), an
+initial functor is one for which pulling back diagrams along it does not change
+the limits of these diagrams.
+
+This amounts to checking, for a functor C->D, that, for every object d in
+Ob(D), the comma category (F/d) is connected.
+"""
+function is_initial(F::FinFunctor)::Bool
+  Gₛ, Gₜ = graph(dom(F)), graph(codom(F))
+  pathₛ, pathₜ = enumerate_paths.([Gₛ, Gₜ])
+
+  function connected_nonempty_slice(t::Int)::Bool
+    paths_into_t = incident(pathₜ, t, :tgt)
+    # Generate slice objects
+    ob_slice = Pair{Int,Vector{Int}}[] # s ∈Ob(S) and a path ∈ T(F(s), t)
+    for s in vertices(Gₛ)
+      paths_s_to_t = incident(pathₜ, ob_map(F,s), :src) ∩ paths_into_t
+      append!(ob_slice, [s => pathₜ[p, :eprops] for p in paths_s_to_t])
+    end
+
+    # Empty case
+    if isempty(ob_slice)
+      return false
+    end
+
+    """
+    For two slice objects (m,pₘ) and (n,pₙ) check for a morphism f ∈ S(M,N) such
+    that there is a commutative triangle pₘ = f;pₙ
+    """
+    function check_pair(i::Int, j::Int)::Bool
+      (m,pₘ), (n,pₙ) = ob_slice[i], ob_slice[j]
+      es = incident(pathₛ, m, :src) ∩ incident(pathₛ, n, :tgt)
+      paths = pathₛ[es, :eprops]
+      return any(f -> pₘ == vcat(edges.(hom_map(F,f))..., pₙ), paths)
+    end
+
+    # Use check_pair to determine pairwise connectivity
+    connected = IntDisjointSets(length(ob_slice)) # sym/trans/refl closure
+    obs = 1:length(ob_slice)
+    for (i,j) in Base.Iterators.product(obs, obs)
+      if !in_same_set(connected, i, j) && check_pair(i,j)
+        union!(connected, i, j)
+      end
+    end
+
+    return num_groups(connected) == 1
+  end
+
+  # Check for each t ∈ T whether F/t is connected
+  return all(connected_nonempty_slice, 1:nv(Gₜ))
+end
 
 # Mapping-based functors
 #-----------------------

@@ -55,4 +55,18 @@ add_edges!(g, [1,1,1,1,2,3,3,4], [2,3,4,5,4,4,5,5])
 transitive_reduction!(g)
 @test sort!(collect(zip(src(g), tgt(g)))) == [(1,2),(1,3),(2,4),(3,4),(4,5)]
 
+# Enumerating paths
+g = Graph(3)
+add_edges!(g, [1,2,2], [2,3,3])
+
+ep = enumerate_paths(g)
+@test sort(collect(zip(ep[:src],ep[:tgt], ep[:eprops]))) == [
+    (1, 1, [])
+    (1, 2, [1])
+    (1, 3, [1, 2])
+    (1, 3, [1, 3])
+    (2, 2, [])
+    (2, 3, [2])
+    (2, 3, [3])
+    (3, 3, [])]
 end
