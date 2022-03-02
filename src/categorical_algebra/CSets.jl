@@ -1129,19 +1129,19 @@ i.e. we cast the ACSet to a subobject
 (f::ACSetTransformation)(X::StructACSet)::SubACSet =
   X == dom(f) ? f(top(X)) : error("Cannot apply $f to $X")
 
-"""
+"""    hom_inv(f::ACSetTransformation,Y::Subobject)::SubACSet
 Inverse of f:A->B as a map of subobjects of B to subjects of A.
 It can be thought of as `incident`, but for homomorphisms.
 """
 hom_inv(f::ACSetTransformation,Y::Subobject)::SubACSet = begin
-  codom(hom(X)) == codom(f) || error("Cannot apply $f to $X")
+  codom(hom(Y)) == codom(f) || error("Cannot apply $f to $X")
 
   Subobject(dom(f); Dict{Symbol, Vector{Int}}(
     [k => vcat([preimage(f,y) for y in collect(components(Y)[k])]...)
      for (k,f) in pairs(components(f))])...)
 end
 
-"""
+"""    hom_inv(f::CSetTransformation,Y::StructACSet)::SubACSet
 Inverse f:A->B as a map from subobjects of B to subobjects of A.
 Cast an ACSet to subobject, though this has a trivial answer when computing
 the preimage (it is necessarily the top subobject of A).
@@ -1150,7 +1150,8 @@ hom_inv(f::CSetTransformation,Y::StructACSet)::SubACSet =
   Y = codom(f) ? top(dom(f)) : error("Cannot apply inverse of $f to $Y")
 
 
-"""
+"""    induce_subobject(X::StructACSet{S}; vs...)
+
 Takes a partially-specified ACSet subobject and completes it so that there are
 no undefined references.
 
