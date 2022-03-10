@@ -1115,7 +1115,9 @@ function common_ob(A::Subobject, B::Subobject)
   return X
 end
 
-"""f:A->B as a map of subobjects of A to subjects of B"""
+"""
+f:A->B as a map of subobjects of A to subjects of B
+"""
 (f::ACSetTransformation)(X::SubACSet)::SubACSet = begin
   codom(hom(X)) == dom(f) || error("Cannot apply $f to $X")
   Subobject(codom(f); Dict(
@@ -1124,14 +1126,14 @@ end
 
 """
 f:A->B as a map from A to a subobject of B
-i.e. we cast the ACSet to a subobject
+i.e. we cast the ACSet A to its top subobject
 """
 (f::ACSetTransformation)(X::StructACSet)::SubACSet =
   X == dom(f) ? f(top(X)) : error("Cannot apply $f to $X")
 
 """    hom_inv(f::ACSetTransformation,Y::Subobject)::SubACSet
 Inverse of f:A->B as a map of subobjects of B to subjects of A.
-It can be thought of as `incident`, but for homomorphisms.
+It can be thought of as incident, but for homomorphisms.
 """
 hom_inv(f::ACSetTransformation,Y::Subobject)::SubACSet = begin
   codom(hom(Y)) == codom(f) || error("Cannot apply $f to $X")
@@ -1155,8 +1157,8 @@ hom_inv(f::CSetTransformation,Y::StructACSet)::SubACSet =
 Takes a partially-specified ACSet subobject and completes it so that there are
 no undefined references.
 
-For example: `induce_subobject(my_wiring_diagram; Wire=[2])`
-will yield a subobject of `my_wiring_diagram` with Wire#2, as well as the
+For example: induce_subobject(my_wiring_diagram; Wire=[2])
+will yield a subobject of my_wiring_diagram with Wire#2, as well as the
 ports it's connected to and the boxes those ports are connected to.
 """
 function induce_subobject(X::StructACSet{S}; vs...) where {S}
