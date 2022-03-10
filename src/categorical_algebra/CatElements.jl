@@ -1,5 +1,5 @@
 module CatElements
-export ThElements, AbstractElements, Elements, elements
+export ThElements, AbstractElements, Elements, elements, inverse_elements
 
 using DataStructures: OrderedDict
 
@@ -44,12 +44,83 @@ function elements(X::StructACSet{S}) where S
 
   add_parts!(Y, :Hom, length(hom(S)), dom=dom_nums(S), cod=codom_nums(S), nameh=hom(S))
   map(enumerate(zip(hom(S), dom_nums(S), codom_nums(S)))) do (i, (f, ci, di))
-    c, d = obs[ci], obs[di]
-    nc = nparts(X, c)
+    c = obs[ci]
     add_parts!(Y, :Arr, nparts(X, c), src=els[ci], tgt=view(els[di], X[f]), πₐ=i)
   end
   return Y
 end
+
+
+"""    elements(f::ACSetTransformation)
+
+Apply category of elements functor to a morphism f: X->Y.
+This relies on the fact `elements` of an object puts El components from the same
+Ob in a contiguous index range.
+"""
+function elements(f::ACSetTransformation{S}) where S
+  X, Y = elements.([dom(f), codom(f)])
+
+  # Apply offset to homomorphism data
+  offs = map((parts(X, :Ob))) do i
+    off=findfirst(==(i), Y[:πₑ])
+    isnothing(off) ? 0 : off-1
+  end
+  pts = vcat([collect(f[o]).+off for (o, off) in zip(ob(S), offs)]...)
+  # *strict* ACSet transformation uniquely determined by its action on vertices
+  return only(homomorphisms(X, Y; initial=Dict([:El=>pts])))
+end
+
+
+"""    inverse_elements(X::AbstractElements, typ::StructACSet)
+Compute inverse grothendieck transformation on the result of `elements`.
+Does not assume that the elements are ordered.
+Rather than dynamically create a new ACSet type, it requires any instance of
+the ACSet type that it's going to try to create
+
+If the typed graph tries to assert conflicting values for a foreign key, fail.
+If no value is specified for a foreign key, the result will have 0's.
+"""
+function inverse_elements(X::AbstractElements, typ::StructACSet)
+  res = typeof(typ)()
+  o_ids = ob_ids(X)
+  for (o, is) in pairs(o_ids)
+    add_parts!(res, o, length(is))
+  end
+  cols = [[:πₐ,:nameh], :src, :tgt, [:src,:πₑ, :nameo], [:tgt, :πₑ, :nameo]]
+  for (h, s, t, so, to) in zip([X[col] for col in cols]...)
+    src_ind, tgt_ind = o_ids[so][s], o_ids[to][t]
+    err = "Not a discrete opfibration: $h: $so#$s sent to multiple values"
+    res[src_ind, h] == 0 || error(err)
+    set_subpart!(res, src_ind, h, tgt_ind)
+  end
+  return res
+end
+
+"""
+Determine the (partial) mapping from Elements to indices for each component
+E.g. [V,E,V,V,E] ⟶ [V=>{1↦1, 3↦2, 4↦3}, E=>{2↦1, 5↦2}]
+"""
+function ob_ids(X::AbstractElements)
+  obs = Dict([o => findall(i -> X[i,[:πₑ,:nameo]] == o, parts(X,:El))
+              for o in X[:nameo]])
+  return Dict([o => Dict(v=>i for (i,v) in enumerate(is)) for (o, is) in obs])
+end
+
+"""    inverse_elements(X::AbstractElements, typ::StructACSet)
+
+Compute inverse grothendieck transformation on a morphism of Elements
+"""
+function inverse_elements(f::ACSetTransformation, typ::StructACSet)
+  iX, iY = [inverse_elements(x, typ) for x in [dom(f), codom(f)]]
+  oX, oY = ob_ids.([dom(f), codom(f)])
+  comps = map(dom(f)[:nameo]) do ob
+    offY = oY[ob]
+    x_ids = sort(collect(keys(oX[ob])))
+    ob => [offY[f[:El](xi)] for xi in x_ids]
+  end
+  return ACSetTransformation(iX, iY; Dict(comps)...)
+end
+
 
 """    presentation(X::AbstractElements)
 
