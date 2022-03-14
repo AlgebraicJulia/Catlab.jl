@@ -484,6 +484,7 @@ h = homomorphisms(g1,g2)[2] # V=[3,4], E=[2]
 ϕ = homomorphism(g2,g3; initial=(V=[1,1,2,2],))
 @test components(hom(h(g1))) == (
   V = FinFunction([3, 4], 2, 4), E = FinFunction([2], 1, 2))
+@test hom_inv(h, g2) |> force == (top(g1) |> force)
 @test hom_inv(h, Subobject(g2, V=[1])) |> force == bottom(g1) |> force
 @test hom_inv(h, Subobject(g2, V=[3])) |> force == Subobject(g1, V=[1]) |> force
 @test ϕ(h(g1)) == Subobject(g3, V=[2,2], E=[3])

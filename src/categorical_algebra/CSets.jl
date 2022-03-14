@@ -1116,7 +1116,7 @@ function common_ob(A::Subobject, B::Subobject)
 end
 
 """
-f:A->B as a map of subobjects of A to subjects of B
+A map f (from A to B) as a map of subobjects of A to subjects of B
 """
 (f::ACSetTransformation)(X::SubACSet)::SubACSet = begin
   codom(hom(X)) == dom(f) || error("Cannot apply $f to $X")
@@ -1125,14 +1125,14 @@ f:A->B as a map of subobjects of A to subjects of B
 end
 
 """
-f:A->B as a map from A to a subobject of B
+A map f (from A to B) as a map from A to a subobject of B
 i.e. we cast the ACSet A to its top subobject
 """
 (f::ACSetTransformation)(X::StructACSet)::SubACSet =
   X == dom(f) ? f(top(X)) : error("Cannot apply $f to $X")
 
 """    hom_inv(f::ACSetTransformation,Y::Subobject)::SubACSet
-Inverse of f:A->B as a map of subobjects of B to subjects of A.
+Inverse of f (from A to B) as a map of subobjects of B to subjects of A.
 It can be thought of as incident, but for homomorphisms.
 """
 hom_inv(f::ACSetTransformation,Y::Subobject)::SubACSet = begin
@@ -1144,12 +1144,12 @@ hom_inv(f::ACSetTransformation,Y::Subobject)::SubACSet = begin
 end
 
 """    hom_inv(f::CSetTransformation,Y::StructACSet)::SubACSet
-Inverse f:A->B as a map from subobjects of B to subobjects of A.
+Inverse f (from A to B) as a map from subobjects of B to subobjects of A.
 Cast an ACSet to subobject, though this has a trivial answer when computing
 the preimage (it is necessarily the top subobject of A).
 """
 hom_inv(f::CSetTransformation,Y::StructACSet)::SubACSet =
-  Y = codom(f) ? top(dom(f)) : error("Cannot apply inverse of $f to $Y")
+  Y == codom(f) ? top(dom(f)) : error("Cannot apply inverse of $f to $Y")
 
 
 """    induce_subobject(X::StructACSet{S}; vs...)
