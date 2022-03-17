@@ -1115,19 +1115,17 @@ function common_ob(A::Subobject, B::Subobject)
   return X
 end
 
-"""
-A map f (from A to B) as a map of subobjects of A to subjects of B
-"""
+
+# A map f (from A to B) as a map of subobjects of A to subjects of B
 (f::ACSetTransformation)(X::SubACSet)::SubACSet = begin
   codom(hom(X)) == dom(f) || error("Cannot apply $f to $X")
   Subobject(codom(f); Dict(
     [k=>f.(collect(components(X)[k])) for (k,f) in pairs(components(f))])...)
 end
 
-"""
-A map f (from A to B) as a map from A to a subobject of B
-i.e. we cast the ACSet A to its top subobject
-"""
+
+# A map f (from A to B) as a map from A to a subobject of B
+# i.e. we cast the ACSet A to its top subobject
 (f::ACSetTransformation)(X::StructACSet)::SubACSet =
   X == dom(f) ? f(top(X)) : error("Cannot apply $f to $X")
 
