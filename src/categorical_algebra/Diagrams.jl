@@ -4,13 +4,14 @@ module Diagrams
 export Diagram, DiagramHom, id, op, co, shape, diagram, shape_map, diagram_map
 
 using ...GAT
-import ...Theories: dom, codom, id, compose, ⋅, ∘, munit
+import ...Theories: dom, codom, id, compose, ⋅, ∘, munit, oplus, otimes
 using ...Theories: Category, composeH
 import ..Categories: ob_map, hom_map
 using ..FinCats, ..FreeDiagrams
 using ..FinCats: mapvals
 import ..FinCats: force, collect_ob, collect_hom
-import ..Limits: limit, colimit, universal
+import ..Limits: limit, colimit, universal, equalizer, product, Limit, Colimit,
+                 incl, proj, pullback, coproduct, coequalizer, copair, pushout
 
 # TODO: Implement these functions more generally, and move elsewhere.
 
@@ -235,6 +236,7 @@ end
 limit(d::Diagram{op}; alg=nothing) = limit(diagram(d), alg)
 colimit(d::Diagram{id}; alg=nothing) = colimit(diagram(d), alg)
 
+
 function universal(f::DiagramHom{op}, dom_lim, codom_lim)
   J′ = shape(codom(f))
   cone = Multispan(apex(dom_lim), map(ob_generators(J′)) do j′
@@ -278,4 +280,145 @@ function munit(::Type{DiagramHom{T}}, C::Cat, f;
   DiagramHom{T}([Pair(j, f)], d, d′)
 end
 
+
+# (co)Limits in Category of Diagrams
+####################################
+
+"""
+Product of diagrams in the same category. (coproduct for :op morphisms)
+"""
+function diagram_hom_product(Xs::AbstractVector{<: Diagram{T}}; kw...) where T
+
+  # Collect / validate type information about the input
+  cod = codom(diagram(first(Xs))) # the category the diagrams are in
+  is_id = T == id
+  is_id || T == op || error("Diagrams of type $T not supported")
+  # Equality of typecat too strict, but in theory this should be checked
+  # cods = Set([codom(diagram(x)) for x in Xs])
+  # length(cods) == 1 || error("Can't take product of diagrams in different cats")
+
+  # Collect data about the product of the shape categories
+  P = product([dom(diagram(x)) for x in Xs])
+  obs, homs = map([ob_map=>ob_generators, hom_map=>hom_generators]) do (F, gen)
+   [tuple([F(l, g) for l in legs(P)]...) for g in gen(apex(P))]
+  end;
+
+  # Take (co)products of objects in the underlying category
+  omap, nat = Dict(), Dict()
+  for os in obs
+    lim = is_id ? product : coproduct
+    p = lim([ob_map(diagram(X), o) for (o, X) in (zip(os, Xs))])
+    s = Symbol(os)
+    omap[s] = apex(p)
+    nat[s] = legs(p)
+  end
+
+  hmap = Dict(map(homs) do hs
+    maps = [hom_map(diagram(X), o) for (o, X) in (zip(hs, Xs))]
+    Symbol(hs) => (is_id ? otimes : oplus)(maps)
+  end)
+
+  # Assemble product diagram
+  apx = Diagram{T}(FinDomFunctor(omap, hmap, apex(P), cod))
+  ls = map(enumerate(zip(legs(P), Xs))) do (i, (l, X))
+    η = Dict([k=>v[i] for (k,v) in nat])
+    src, tgt = is_id ? (apx, X) : (X, apx)
+    DiagramHom{T}(l, η, src, tgt)
+  end;
+  return ls
 end
+
+"""
+Computes the equalizer (for id morphisms) / coequalizer (for op morphisms)
+"""
+function diagram_hom_equalizer(fs::AbstractVector{<: DiagramHom{T}}) where T
+  # Collect / validate type information about the input
+  X, Y = diagram.(only.(Set.([dom.(fs), codom.(fs)])));
+  is_id = T == id
+  is_id || T == op || error("diagram hom of type $T not supported")
+  eq, eq_incl = is_id ? (equalizer, incl) : (coequalizer, proj)
+  cod = codom(diagram(dom(first(fs))))
+  # Equality of typecat too strict, but in theory this should be checked
+  # cods = Set([codom(diagram(x)) for x in Xs])
+  # cod = only(Set(vcat([codom.(diagram.([dom(x),codom(x)])) for x in fs]...)))
+
+  # Shape level equalizer
+  shape_eq = equalizer(shape_map.(fs))
+  Eshape = apex(shape_eq)
+
+  # Underlying (co)equalizer on natural transformations
+  eqs = Dict(map(ob_generators(Eshape)) do o
+    o=>eq([diagram_map(f)[o] for f in fs])
+  end)
+  η = Dict([o=>eq_incl(e) for (o,e) in collect(eqs)])
+
+  om_ = Dict([o=>apex(e) for (o,e) in collect(eqs)])
+  hm_ = Dict(map(hom_generators(Eshape)) do h
+    h => compose(η[dom(h)], hom_map(is_id ? X : Y, h))
+  end)
+
+  # Assemble diagram morphism
+  E = Diagram{T}(FinDomFunctor(om_,hm_,Eshape, cod))
+  src, tgt = is_id ? (diagram(E), X) : (Y, diagram(E))
+  DiagramHom{T}(incl(shape_eq), η, src, tgt)
+end
+
+
+"""
+Coproduct of diagrams in the same category. (product for op morphisms)
+"""
+function diagram_hom_coproduct(Xs::AbstractVector{<: Diagram{T}}; kw...) where {T}
+  # Collect / validate type information about the input
+  is_id = T == id
+  is_id || T == op || error("Diagrams of type $T not supported")
+  cod = codom(diagram(first(Xs))) # the category the diagrams are in
+  # Equality of typecat too strict, but in theory this should be checked
+  # cod = only(Set([codom(diagram(x)) for x in Xs]))
+
+  # Shape level coproduct
+  hcprod = coproduct(FinCatPresentation[dom(diagram(x)) for x in Xs])
+
+  # Inclusion of data in underlying category
+  obs, homs = Dict(), Dict()
+  for (l, X) in zip(legs(hcprod), Xs)
+    for (k,v) in diagram(X).ob_map
+      obs[ob_map(l, k)] = v
+    end
+    for (k,v) in diagram(X).hom_map
+      homs[hom_map(l, k)] = v
+    end
+  end
+
+  # Assemble diagram morphism
+  apx = Diagram{T}(FinDomFunctor(obs,homs, apex(hcprod), cod))
+  ls = map(zip(legs(hcprod),Xs)) do (l, X)
+    eta = Dict(k=>id(v) for (k,v) in diagram(X).ob_map)
+    src, tgt = diagram.(is_id ? [X, apx] : [apx, X])
+    DiagramHom{T}(l, eta, src ,tgt)
+  end;
+  return ls
+end
+
+product(Xs::AbstractVector{<: Diagram{id}}; kw...) =
+  Limit(DiscreteDiagram(Xs), Multispan(diagram_hom_product(Xs)))
+coproduct(Xs::AbstractVector{<: Diagram{id}}; kw...) =
+  Colimit(DiscreteDiagram(Xs), Multicospan(diagram_hom_coproduct(Xs)))
+product(Xs::AbstractVector{<: Diagram{op}}; kw...) =
+  Limit(DiscreteDiagram(Xs), Multispan(diagram_hom_coproduct(Xs)))
+coproduct(Xs::AbstractVector{<: Diagram{op}}; kw...) =
+  Colimit(DiscreteDiagram(Xs), Multicospan(diagram_hom_product(Xs)))
+equalizer(fs::AbstractVector{<: DiagramHom{id}}) =
+  Limit(ParallelMorphisms(fs), Multispan([diagram_hom_equalizer(fs)]))
+coequalizer(fs::AbstractVector{<: DiagramHom{op}}) =
+  Colimit(ParallelMorphisms(fs), Multicospan([diagram_hom_equalizer(fs)]))
+function pullback(fs::Multicospan{<:Diagram{T}, <: DiagramHom{T}}) where {T}
+  p = product(Diagram{T}[dom(f) for f in fs])
+  equalizer(DiagramHom{T}[compose(l, f) for (l,f) in zip(legs(p), fs)])
+end
+function pushout(fs::Multispan{<:Diagram{T}, <: DiagramHom{T}}) where {T}
+  cp = coproduct(Diagram{T}[codom(f) for f in fs])
+  coequalizer(DiagramHom{op}[compose(f,l) for (l,f) in zip(legs(cp), fs)])
+end
+
+
+end # module

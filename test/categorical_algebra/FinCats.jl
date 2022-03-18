@@ -234,4 +234,39 @@ F5 = FinFunctor([1,2,3], [1,2,3], T, T2)
 @test !is_initial(F4)
 @test !is_initial(F5)
 
+# Define examples for limits and colimits
+#----------------------------------------
+@present I_(FreeSchema) begin
+  (I1, I2)::Ob; i::Hom(I1, I2)
 end
+@present J_(FreeSchema) begin
+  (J1, J2, J3)::Ob; j1::Hom(J1, J2); j2::Hom(J3,J2)
+end
+@present K_(FreeSchema) begin
+  K::Ob; k::Hom(K,K)
+end
+
+I, J, K = FinCat.([I_,J_,K_]);
+
+F_IJ = FinDomFunctor(Dict(:I1=>:J1, :I2=>:J2), Dict(:i=>:j1), I, J)
+G_IJ = FinDomFunctor(Dict(:I1=>:J3, :I2=>:J2), Dict(:i=>:j2), I, J)
+
+# Limits
+#-------
+p = product([I, J, K]);
+e = equalizer([F_IJ, G_IJ])
+
+map([p, e]) do lim
+  @test all(is_functorial.(legs(lim)))
+end
+
+# Colimits
+#---------
+cp = coproduct([I, I, J, K]);
+ce1 = coequalizer([G_IJ, G_IJ]);
+ce2 = coequalizer([F_IJ, G_IJ]);
+map([cp, ce1, ce2]) do colim
+  @test all(is_functorial.(legs(colim)))
+end
+
+end # module

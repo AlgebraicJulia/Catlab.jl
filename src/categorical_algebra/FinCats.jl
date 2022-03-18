@@ -13,7 +13,7 @@ module FinCats
 export FinCat, FinCatGraph, Path, ob_generators, hom_generators, equations,
   is_discrete, is_free, graph, edges, src, tgt, presentation,
   FinFunctor, FinDomFunctor, is_functorial, collect_ob, collect_hom, force,
-  FinTransformation, components, is_natural, is_initial
+  FinTransformation, components, is_natural, is_initial, FinCatPresentation
 
 using AutoHashEquals
 using Reexport
@@ -24,10 +24,10 @@ using DataStructures: IntDisjointSets, in_same_set, num_groups
 using ...GAT, ...Present, ...Syntax
 import ...Present: equations
 using ...Theories: Category, Schema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr
-import ...Theories: dom, codom, id, compose, ⋅, ∘
+import ...Theories: dom, codom, id, compose, ⋅, ∘, FreeCategory, Ob, Hom
 using ...CSetDataStructures, ...Graphs
 import ...Graphs: edges, src, tgt, enumerate_paths
-import ..Categories: ob, hom, ob_map, hom_map, component
+import ..Categories: ob, hom, ob_map, hom_map, component, is_hom_equal
 
 # Categories
 ############
@@ -75,6 +75,8 @@ graph(C::FinCatGraph) = C.graph
 
 ob_generators(C::FinCatGraph) = vertices(graph(C))
 hom_generators(C::FinCatGraph) = edges(graph(C))
+src(C::FinCatGraph, i::Int) = src(graph(C), i)
+tgt(C::FinCatGraph, i::Int) = tgt(graph(C), i)
 
 function Base.show(io::IO, C::FinCatGraph)
   print(io, "FinCat(")
@@ -504,6 +506,7 @@ See also: [`is_functorial`](@ref).
 function is_natural(α::FinTransformation; check_equations::Bool=true)
   F, G = dom(α), codom(α)
   C, D = dom(F), codom(F) # == dom(G), codom(G)
+
   all(ob_generators(C)) do c
     α_c = α[c]
     dom(D, α_c) == ob_map(F,c) && codom(D, α_c) == ob_map(G,c)
@@ -511,8 +514,8 @@ function is_natural(α::FinTransformation; check_equations::Bool=true)
 
   if check_equations
     all(hom_generators(C)) do f
-      Ff, Gf = hom_map(F,f), hom_map(G,f)
-      α_c, α_d = α[dom(C,f)], α[codom(C,f)]
+      Ff, Gf = force.([hom_map(F,f), hom_map(G,f)])
+      α_c, α_d = force.([α[dom(C,f)], α[codom(C,f)]])
       is_hom_equal(D, compose(D, α_c, Gf), compose(D, Ff, α_d))
     end || return false
   end
@@ -624,5 +627,7 @@ dicttype(::Type{<:Iterators.Pairs}) = Dict
 
 make_map(f, xs::UnitRange{Int}) = map(f, xs)
 make_map(f, xs) = Dict(x => f(x) for x in xs)
+
+
 
 end
