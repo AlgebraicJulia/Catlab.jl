@@ -17,8 +17,9 @@ export AbstractLimit, AbstractColimit, Limit, Colimit,
 
 using AutoHashEquals
 using StaticArrays: StaticVector, SVector
+using DataStructures: IntDisjointSets, find_root!
 
-using ...GAT, ...Theories
+using ...GAT, ...Theories, ...Graphs, ...Present
 import ...Theories: ob, terminal, product, proj1, proj2, equalizer, incl,
   initial, coproduct, coproj1, coproj2, coequalizer, proj,
   delete, create, pair, copair, factorize
@@ -589,4 +590,157 @@ function universal(colim::BipartiteColimit, cocone::Multicospan)
   universal(colim, cocone)
 end
 
+# Limits in category of diagrams
+#-------------------------------
+"""
+Currently does not add equations to the product FinCat.
+"""
+function product(Xs::AbstractVector{<: FinCatPresentation}; kw...)
+  # Get cartesian product of obs and hosm
+  obs = collect(Iterators.product([ob_generators(x)  for x in Xs]...))[:]
+
+  homs = vcat(map(enumerate(Xs)) do (i,X)
+    vcat(map(hom_generators(X)) do h
+      p = Iterators.product([id.(ob_generators(Y)) for (j,Y) in enumerate(Xs) if j!=i]...)
+      map(collect.(collect(p)[:])) do hgens
+        tuple(insert!(Vector{Any}(hgens), i, h)...)
+      end
+    end...)
+  end...)
+
+  obdict = Dict([v=>k for (k,v) in enumerate(obs)])
+
+  # Create new presentation with tuple-looking names
+  p = Presentation(FreeSchema)
+
+  ogens = [Ob(FreeSchema, Symbol(o)) for o in obs]
+  map(ogens) do g add_generator!(p, g) end
+  map(homs) do hs
+    src, tgt = map([dom, codom]) do get
+      ogens[obdict[tuple([get(X, h) for (h, X) in zip(hs,Xs)]...)]]
+    end
+    add_generator!(p, Hom(Symbol(hs), src, tgt))
+  end
+
+  # Create projection maps
+  apx = FinCat(p)
+  ls = map(enumerate(Xs)) do (i, x)
+    os, hs = map([obs, homs]) do oldgens
+      Dict([Symbol(o) => o[i] for o in oldgens])
+    end
+    FinDomFunctor(os, hs, apx, x)
+  end
+  Limit(DiscreteDiagram(Xs), Multispan(ls))
 end
+
+"""
+TODO: handle equations by filtering those including symbols not in osyms ∪ hsyms
+"""
+function equalizer(fs::AbstractVector{<:FinDomFunctor{<:FinCatPresentation}})
+  # Check fs are parallel finfunctors
+  I, _ = only.(Set.([dom.(fs), codom.(fs)]))
+
+  # identify things that maps make equal
+  Eo, Eh = map(zip([ob_generators, hom_generators], [ob_map, hom_map])) do (g, m)
+     [x for x in g(I) if length(Set([m(f, x) for f in fs])) == 1]
+  end
+  osyms, hsyms = Set.([Symbol.(Eo),Symbol.(Eh)])
+
+  # Create new sub-presentation of the domain
+  p = Presentation(FreeSchema)
+  for g in vcat(Eo,Eh) add_generator!(p, g) end
+
+  # Create inclusion morphism
+  obs, homs = map([osyms,hsyms]) do syms
+    Dict{Symbol,Symbol}(s=>s for s in syms)
+  end
+  l1 = FinDomFunctor(obs, homs, FinCat(p), I)
+  Limit(ParallelMorphisms(fs), Multispan([l1]))
+end
+
+"""
+Todo: add equations to the coproduct FinCat.
+
+Preserves the original name of the inputs if it is unambiguous, otherwise
+disambiguates with index in original input. E.g. (A,B)⊔(B,C) → (A,B#1,B#2,C)
+"""
+function coproduct(Xs::AbstractVector{<: FinCatPresentation}; kw...)
+  # Collect all generators and identify conflicting names
+  all_ob = vcat(ob_generators.(Xs)...)
+  all_hom = vcat(hom_generators.(Xs)...)
+  conflict_obs = Set([i for i in all_ob if count(==(i), all_ob) > 1])
+  conflict_homs = Set([i for i in all_hom if count(==(i), all_hom) > 1])
+
+  # Create new disjoint union presentation
+  p = Presentation(FreeSchema)
+  ogens = Dict(vcat(map(enumerate(Xs)) do (i, X)
+    map(ob_generators(X)) do o
+      (i,o) => Ob(FreeSchema, Symbol("$o" * (o ∈ conflict_obs ? "#$i" : "")))
+    end
+  end...))
+  map(values(ogens)) do g add_generator!(p, g) end
+
+  hgens = Dict(vcat(map(enumerate(Xs)) do (i, X)
+    map(hom_generators(X)) do h
+      n = Symbol("$h" * (h ∈ conflict_homs ? "#$i" : ""))
+      s, t = ogens[(i, dom(X,h))], ogens[(i, codom(X,h))]
+      (i,h) => add_generator!(p, Hom(n, s, t))
+    end
+  end...))
+
+  # Create legs
+  ls = map(enumerate(Xs)) do (i,x)
+    os, hs = map(zip([ob_generators,hom_generators], [ogens,hgens])) do (get, g)
+      Dict([Symbol(o) => Symbol(g[(i,o)]) for o in get(x)])
+    end
+    FinDomFunctor(os, hs, x, FinCat(p))
+  end
+  Colimit(DiscreteDiagram(Xs), Multicospan(ls))
+end
+
+"""
+TODO: handle equations
+"""
+function coequalizer(fs::AbstractVector{<:FinDomFunctor{<:FinCatPresentation}})
+  # Check inputs are parallel finfunctors
+  I, J = only.(Set.([dom.(fs), codom.(fs)]))
+
+  # Generate equivalence class reps for the generators of codomain
+  f1 = first(fs)
+  og, hg = ob_generators, hom_generators
+  odict, hdict = map(zip([og, hg], [ob_map, hom_map])) do (gen, map_)
+    class = IntDisjointSets(length(gen(J)))
+    inds = Dict(v=>k for (k,v) in enumerate(gen(J)))
+    map(gen(I)) do o
+      map(fs) do f
+        union!(class, inds[map_(f1, o)], inds[map_(f, o)])
+      end
+    end
+    Dict(o => find_root!(class, i) for (i, o) in enumerate(gen(J)))
+  end
+
+  # Create presentation from equivalence classes
+  p = Presentation(FreeSchema)
+
+  ogen =  map(sort(collect(Set(values(odict))), by=string)) do i
+    os = sort([k for (k, v) in collect(odict) if v==i], by=string)
+    add_generator!(p, Ob(FreeSchema, Symbol(os)))
+  end
+  hgen = map(sort(collect(Set(values(hdict))), by=string)) do i
+    hs = sort([k for (k, v) in collect(hdict) if v==i], by=string)
+    s, t = map([dom, codom]) do get
+      ogen[odict[get(J, first(hs))]]
+    end
+    add_generator!(p, Hom(Symbol(hs), s, t))
+  end
+
+  # Create surj morphism
+  obs, homs = map(zip([ogen, hgen], [odict, hdict])) do (g, d)
+    Dict{Symbol,Symbol}(Symbol(k)=>Symbol(g[v]) for (k, v) in d)
+  end
+  l1 = FinDomFunctor(obs, homs, J, FinCat(p))
+  Colimit(ParallelMorphisms(fs), Multicospan([l1]))
+end
+
+
+end # module
