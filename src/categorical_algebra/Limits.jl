@@ -743,4 +743,65 @@ function coequalizer(fs::AbstractVector{<:FinDomFunctor{<:FinCatPresentation}})
 end
 
 
+"""
+A generator a that is mapped to generators X,Y,... in the span is matched to the
+ob generator (X, Y, ...) in the product.
+
+An edge f:a->b that is mapped to morphisms α,β,γ in the span is matched to a
+composite of hom generators that yields the morphism (α,β,γ) in the product.
+This composition sequence starts with (α, id(src(β)), id(src(γ))) and ends with
+(id(tgt(α)), id(tgt(β)), γ)
+"""
+function universal(p::Product{<:FinCat}, sp::Multispan)
+  a_p, a_sp = apex.([p, sp])
+  obs = Dict(map(ob_generators(a_sp)) do o
+      p_tgts = [ob_map(l, o) for l in legs(sp)]
+      for po in ob_generators(a_p)
+        if p_tgts == [ob_map(l, po) for l in legs(p)]
+          return o => po
+        end
+      end
+      error("o $o not found")
+  end)
+  homs = Dict(map(hom_generators(a_sp)) do h
+    doms, codoms = map([dom, codom]) do get
+      id.([get(codom(l), hom_map(l, h)) for l in legs(sp)])
+    end
+    # Find the morphism generators we want to map to
+    h_comps = map(enumerate(legs(sp))) do (i, l)
+      # Identify morphism by what the product maps it to
+      h_tgt = map(1:length(legs(sp))) do j
+        if j < i      codoms[j]
+        elseif j == i hom_map(l, h)
+        else          doms[j]
+        end
+      end
+      # Locate this morphism based on what it maps to
+      for ph in hom_generators(a_p)
+        if h_tgt == [hom_map(l, ph) for l in legs(p)]
+          return ph
+        end
+      end
+      error("h $h not found")
+    end
+    h => compose(h_comps)
+  end)
+  FinFunctor(obs, homs, a_sp, a_p)
+end
+
+
+function universal(cp::Coproduct{<:FinCat}, csp::Multicospan)
+  a_cp, a_csp = apex.([cp, csp])
+  obs, homs = Dict(), Dict()
+  for (cpl, cspl) in zip(legs(cp),legs(csp))
+    for o in ob_generators(dom(cpl))
+      obs[ob_map(cpl, o)] = ob_map(cspl, o)
+    end
+    for h in hom_generators(dom(cpl))
+      homs[hom_map(cpl, h)] = hom_map(cspl, h)
+    end
+  end
+  FinFunctor(obs, homs, a_cp, a_csp)
+end
+
 end # module
