@@ -755,13 +755,13 @@ This composition sequence starts with (α, id(src(β)), id(src(γ))) and ends wi
 function universal(p::Product{<:FinCat}, sp::Multispan)
   a_p, a_sp = apex.([p, sp])
   obs = Dict(map(ob_generators(a_sp)) do o
-      p_tgts = [ob_map(l, o) for l in legs(sp)]
-      for po in ob_generators(a_p)
-        if p_tgts == [ob_map(l, po) for l in legs(p)]
-          return o => po
-        end
+    p_tgts = [ob_map(l, o) for l in legs(sp)]
+    for po in ob_generators(a_p)
+      if p_tgts == [ob_map(l, po) for l in legs(p)]
+        return o => po
       end
-      error("o $o not found")
+    end
+    error("o $o (w/ tgts $p_tgts) not found")
   end)
   homs = Dict(map(hom_generators(a_sp)) do h
     doms, codoms = map([dom, codom]) do get
@@ -803,5 +803,14 @@ function universal(cp::Coproduct{<:FinCat}, csp::Multicospan)
   end
   FinFunctor(obs, homs, a_cp, a_csp)
 end
+
+function universal(eq::Equalizer{<:FinCat}, f::FinDomFunctor)
+  error("todo")
+end
+
+function universal(ceq::Coequalizer{<:FinCat}, f::FinDomFunctor)
+  error("todo")
+end
+
 
 end # module
