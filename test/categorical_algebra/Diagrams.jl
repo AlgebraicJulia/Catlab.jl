@@ -126,12 +126,16 @@ g1_arr1, g1_arr2 = homomorphisms(g1, ar)
 gt1_arr1 = homomorphism(g1 ⊕ t1, ar)
 t1_ar = homomorphism(t1, ar)
 g12a, g12b = homomorphisms(g1, g2)
-g1_gt1 = homomorphism(g1, g1 ⊕ t1)
+g1_gt1,g1_gt1_2 = homomorphisms(g1, g1 ⊕ t1)
 ar_t1 = homomorphism(ar, t1)
 g1_t1= homomorphism(g1, t1)
+g21 = homomorphism(g2, g1)
+g2_t1 = homomorphism(g2, t1)
 ar_ar = homomorphisms(ar,ar)[2]
 f12 = homomorphism(f1,f2)
 f21 = homomorphism(f2,f1)
+f32 = homomorphism(f3,f2)
+f31 = homomorphism(f3,f1)
 f22_1 = ACSetTransformation(f2,f2;X=[1,1])
 f23 = ACSetTransformation(f2,f3; X=[2,2])
 f13_2 = ACSetTransformation(f1,f3;X=[2])
@@ -167,55 +171,88 @@ G_AAg1 = DiagramHom(F_AA, Dict(:A1=>g12b, :A2=>ig1),           AG_g1, AG_g12);
 H_CAg1 = DiagramHom(H_CA, Dict(:C1=>g12a, :C2=>ig1,:C3=>g12b), CG_g1, AG_g12);
 F_2 = DiagramHom(F_AC, Dict(:A1=>g1_gt1, :A2=>g1_arr1), AGg1, CGg1t1ar);
 G_2 = DiagramHom(G_AC, Dict(:A1=>ig1,    :A2=>g1_arr2), AGg1, CGg1t1ar);
+# ACop1 = DiagramHom{op}(H_CA, Dict(:C1=>g21,:C2=>ig1, :C3=>g21), AG_g12, CG_g1)
+# ACop2 = DiagramHom{op}(H_CA, Dict(:C1=>g2_t1,:C2=>g1_arr2, :C3=>g21),
+#                        AG_g12, CG_t1ar)
 Fop = DiagramHom{op}(F_AC, Dict(:A1=>it1, :A2=>ar_t1), CG_t1ar, AG_t1);
 Gop = DiagramHom{op}(G_AC, Dict(:A1=>g1_t1,:A2=>ar_t1), CG_t1ar, AG_t1);
 Hop = DiagramHom{op}(FS_CS, Dict(:X=>ar_ar),  CG_t1ar, FS_ar);
+AL1 = DiagramHom(A_L, Dict(:A1=>if1,:A2=>f31),  A_13, LG_g1);
+AL2 = DiagramHom(A_L, Dict(:A1=>f12, :A2=>f32),  A_13, LG_g2);
 ALop1 = DiagramHom{op}(A_L, Dict(:A1=>f21,:A2=>f22_1),  LG_g2, A_12);
 ALop2 = DiagramHom{op}(A_L, Dict(:A1=>f21,:A2=>f23),  LG_g2, A_13)
 
+ALop1 = DiagramHom{op}(A_L, Dict(:A1=>f21,:A2=>f22_1),  LG_g2, A_12);
+ALop2 = DiagramHom{op}(A_L, Dict(:A1=>f21,:A2=>f23),  LG_g2, A_13)
+ALop3 = DiagramHom{op}(A_L, Dict(:A1=>if1,:A2=>f13_2),  LG_g1, A_13)
+CA1 = DiagramHom(H_CA, Dict(:C1=>ig1, :C2=>ig1, :C3=>ig1), CGg1, AGg1)
+CC1 = DiagramHom(id(CSpan), Dict(:C1=>g1_gt1_2, :C2=>g1_arr2, :C3=>ig1),
+                 CGg1, CGg1t1ar);
+
 # Limits
 #-------
-p = product([AGg1, CGg1t1ar, AGg12, CGg1, CGt1ar]);
+p1 = product([AGg1, CGg1t1ar, AGg12, CGg1, CGt1ar]);
 p2 = product([LGg1, LGg2]);
 e1 = equalizer(DiagramHom{id}[F_AAg1,G_AAg1]);
 e2 = equalizer(DiagramHom{id}[F_2,G_2]);
 pb = pullback(Multicospan([G_AAg1,H_CAg1]));
 
-map([p, p2, e1, e2, pb]) do lim
+map([p1, p2, e1, e2, pb]) do lim
   @test is_functorial(diagram(apex(lim)))
   @test all(is_natural.(legs(lim)))
 end
+
+u = universal(p2, Multispan([AL1, AL2]))
+@test is_natural(u)
+
+# u = factorize(eq2, CA1) TODO equalizer universal prop in both fincats and diagrams
+
 
 # Limits(op)
 #-----------
-p = product(Diagram{op}.([AG_g1, CG_g1t1ar, AG_g12, CG_g1, CG_t1ar]));
+p1 = product(Diagram{op}.([A_12,A_13]));
+p2 = product(Diagram{op}.([AG_g1, CG_g1t1ar, AG_g12, CG_g1, CG_t1ar]));
 # e = equalizer() NOT SUPPORTED - requires Kan
 # pb = pullback()) NOT SUPPORTED - requires Kan
-map([p]) do lim
+map([p1, p2]) do lim
   @test is_functorial(diagram(apex(lim)))
   @test all(is_natural.(legs(lim)))
 end
 
+u = universal(p1, Multispan([ALop1, ALop2]))
+@test is_natural(u)
+
 # Colimits
 #----------
-cp = coproduct(Diagram{id}[AGg1, CGg1t1ar, AGg12, CGg1, CGt1ar]);
+cp1 = coproduct(Diagram{id}[AGg1, CGg1]);
+cp2 = coproduct(Diagram{id}[AGg1, CGg1t1ar, AGg12, CGg1, CGt1ar]);
+
 # coequalizer()  NOT SUPPORTED - requires Kan
 # pushout() NOT SUPPORTED - requires Kan
-map([cp]) do clim
+map([cp1, cp2]) do clim
   @test is_functorial(diagram(apex(clim)))
   @test all(is_natural.(legs(clim)))
 end
 
+u = universal(cp1, Multicospan([F_2,CC1]))
+@test is_natural(u)
+
 # Colimits(op)
 #------------
-cp = coproduct(Diagram{op}.([LG_g1, LG_g2]));
+cp1 = coproduct(Diagram{op}.([LG_g1, LG_g2]));
+cp2 = coproduct(Diagram{op}.([CG_g1, CG_t1ar]));
 ce = coequalizer([Fop,Gop]);
 ce2 = coequalizer(DiagramHom{op}[Fop,Fop]);
 po = pushout(Multispan([ALop1, ALop2]));
 
-map([cp, ce, ce2]) do clim
+map([cp1, cp2, ce, ce2, po]) do clim
   @test is_functorial(diagram(apex(clim)))
   @test all(is_natural.(legs(clim)))
 end
+
+u = universal(cp1, Multicospan([ALop3, ALop2]))
+@test is_natural(u)
+
+# TODO: u = factorize(ce, ...) #
 
 end # module

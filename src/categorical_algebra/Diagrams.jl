@@ -3,6 +3,8 @@
 module Diagrams
 export Diagram, DiagramHom, id, op, co, shape, diagram, shape_map, diagram_map
 
+using AutoHashEquals
+
 using ...GAT
 import ...Theories: dom, codom, id, compose, ⋅, ∘, munit, oplus, otimes
 using ...Theories: Category, composeH
@@ -11,7 +13,8 @@ using ..FinCats, ..FreeDiagrams
 using ..FinCats: mapvals
 import ..FinCats: force, collect_ob, collect_hom
 import ..Limits: limit, colimit, universal, equalizer, product, Limit, Colimit,
-                 incl, proj, pullback, coproduct, coequalizer, copair, pushout
+                 incl, proj, pullback, coproduct, coequalizer, copair, pushout,
+                 AbstractLimit, Product, Coproduct, AbstractColimit
 
 # TODO: Implement these functions more generally, and move elsewhere.
 
@@ -299,10 +302,10 @@ function diagram_hom_product(Xs::AbstractVector{<: Diagram{T}}; kw...) where T
   end;
 
   # Take (co)products of objects in the underlying category
-  omap, nat = Dict(), Dict()
+  omap, nat, base_prod = Dict(), Dict(), Dict()
   for os in obs
     lim = is_id ? product : coproduct
-    p = lim([ob_map(diagram(X), o) for (o, X) in (zip(os, Xs))])
+    base_prod[os] = p = lim([ob_map(diagram(X), o) for (o, X) in (zip(os, Xs))])
     s = Symbol(os)
     omap[s] = apex(p)
     nat[s] = legs(p)
@@ -320,7 +323,7 @@ function diagram_hom_product(Xs::AbstractVector{<: Diagram{T}}; kw...) where T
     src, tgt = is_id ? (apx, X) : (X, apx)
     DiagramHom{T}(l, η, src, tgt)
   end;
-  return ls
+  return P, base_prod, Vector{DiagramHom{T}}(ls)
 end
 
 """
@@ -355,7 +358,8 @@ function diagram_hom_equalizer(fs::AbstractVector{<: DiagramHom{T}}) where T
   # Assemble diagram morphism
   E = Diagram{T}(FinDomFunctor(om_,hm_,Eshape, cod))
   src, tgt = is_id ? (diagram(E), X) : (Y, diagram(E))
-  DiagramHom{T}(incl(shape_eq), η, src, tgt)
+  l = DiagramHom{T}(incl(shape_eq), η, src, tgt)
+  return shape_eq, eqs, l
 end
 
 
@@ -386,34 +390,121 @@ function diagram_hom_coproduct(Xs::AbstractVector{<: Diagram{T}}; kw...) where {
 
   # Assemble diagram morphism
   apx = Diagram{T}(FinDomFunctor(obs,homs, apex(hcprod), cod))
-  ls = map(zip(legs(hcprod),Xs)) do (l, X)
-    eta = Dict(k=>id(v) for (k,v) in diagram(X).ob_map)
+  ls = map(zip(legs(hcprod), Xs)) do (l, X)
+    eta = Dict(k => id(v) for (k, v) in diagram(X).ob_map)
     src, tgt = diagram.(is_id ? [X, apx] : [apx, X])
-    DiagramHom{T}(l, eta, src ,tgt)
+    DiagramHom{T}(l, eta, src, tgt)
   end;
-  return ls
+  return hcprod, Dict(), ls
+end
+# const Product{Ob} = AbstractLimit{Ob,<:DiscreteDiagram}
+
+@auto_hash_equals struct DiagLimit{
+  Ob,Diagram,LimType<:Union{Limit,Colimit},Cone<:Multispan{Ob}
+    } <: AbstractLimit{Ob,Diagram}
+  diagram::Diagram
+  shapelim::LimType
+  baselim::Dict
+  cone::Cone
+end
+
+
+@auto_hash_equals struct DiagColimit{
+  Ob,Diagram,LimType<:Union{Limit,Colimit},Cocone<:Multicospan{Ob}
+    } <: AbstractColimit{Ob,Diagram}
+  diagram::Diagram
+  shapelim::LimType
+  baselim::Dict
+  cocone::Cocone
 end
 
 product(Xs::AbstractVector{<: Diagram{id}}; kw...) =
-  Limit(DiscreteDiagram(Xs), Multispan(diagram_hom_product(Xs)))
+  let r = diagram_hom_product(Xs)
+  DiagLimit(DiscreteDiagram(Xs), r[1], r[2], Multispan(r[3])) end
+
 coproduct(Xs::AbstractVector{<: Diagram{id}}; kw...) =
-  Colimit(DiscreteDiagram(Xs), Multicospan(diagram_hom_coproduct(Xs)))
+  let (sl, dl, csp) = diagram_hom_coproduct(Xs)
+  DiagColimit(DiscreteDiagram(Xs), sl, dl, Multicospan(csp)) end
+
 product(Xs::AbstractVector{<: Diagram{op}}; kw...) =
-  Limit(DiscreteDiagram(Xs), Multispan(diagram_hom_coproduct(Xs)))
+  let r = diagram_hom_coproduct(Xs)
+  DiagLimit(DiscreteDiagram(Xs), r[1], r[2], Multispan(r[3])) end
+
 coproduct(Xs::AbstractVector{<: Diagram{op}}; kw...) =
-  Colimit(DiscreteDiagram(Xs), Multicospan(diagram_hom_product(Xs)))
+  let r = diagram_hom_product(Xs)
+  DiagColimit(DiscreteDiagram(Xs), r[1], r[2], Multicospan(r[3])) end
+
 equalizer(fs::AbstractVector{<: DiagramHom{id}}) =
-  Limit(ParallelMorphisms(fs), Multispan([diagram_hom_equalizer(fs)]))
+  let r = diagram_hom_equalizer(fs)
+  DiagLimit(ParallelMorphisms(fs), r[1], r[2], Multispan([r[3]])) end
+
 coequalizer(fs::AbstractVector{<: DiagramHom{op}}) =
-  Colimit(ParallelMorphisms(fs), Multicospan([diagram_hom_equalizer(fs)]))
+  let r = diagram_hom_equalizer(fs)
+  DiagColimit(ParallelMorphisms(fs), r[1], r[2], Multicospan([r[3]])) end
+
 function pullback(fs::Multicospan{<:Diagram{T}, <: DiagramHom{T}}) where {T}
   p = product(Diagram{T}[dom(f) for f in fs])
   equalizer(DiagramHom{T}[compose(l, f) for (l,f) in zip(legs(p), fs)])
 end
+
 function pushout(fs::Multispan{<:Diagram{T}, <: DiagramHom{T}}) where {T}
   cp = coproduct(Diagram{T}[codom(f) for f in fs])
   coequalizer(DiagramHom{op}[compose(f,l) for (l,f) in zip(legs(cp), fs)])
 end
 
+function universal(p::DiagLimit{<:Diagram{id},<:DiscreteDiagram}, sp::Multispan)
+  a_p, a_sp = apex.([p, sp])
+  s_map = universal(p.shapelim, Multispan(shape_map.(legs(sp))))
+  d_map = Dict(map(ob_generators(dom(diagram(a_sp)))) do o
+    d_tgts = [diagram_map(l)[o] for l in sp]
+    tgts = tuple([ob_map(shape_map(l),o) for l in sp]...)
+    o => universal(p.baselim[tgts], Multispan(d_tgts))
+  end)
+  DiagramHom{id}(s_map, d_map, a_sp, a_p)
+end
+
+
+function universal(p::DiagLimit{<:Diagram{op},<:DiscreteDiagram}, sp::Multispan)
+  a_p, a_sp = apex.([p, sp])
+  s_map = universal(p.shapelim, Multicospan(shape_map.(legs(sp))))
+  d_map = Dict()
+  for (spl, pl) in zip(legs(sp),legs(p))
+    for (k,v) in components(diagram_map(spl))
+      d_map[ob_map(shape_map(pl),k)] = v
+    end
+  end
+  DiagramHom{op}(s_map, d_map, a_sp, a_p)
+end
+
+function universal(cp::DiagColimit{<:Diagram{id},<:DiscreteDiagram}, csp::Multicospan)
+  a_cp, a_csp = apex.([cp, csp])
+  s_map = universal(cp.shapelim, Multicospan(shape_map.(legs(csp))))
+  d_map = Dict()
+  for (cspl, cpl) in zip(legs(csp),legs(cp))
+    for o in ob_generators(dom(diagram(dom(cpl))))
+      d_map[Symbol(ob_map(shape_map(cpl), o))] = diagram_map(cspl)[o]
+    end
+  end
+  DiagramHom{id}(s_map, d_map, a_cp, a_csp)
+end
+
+function universal(p::DiagColimit{<:Diagram{op},<:DiscreteDiagram}, sp::Multicospan)
+  a_p, a_sp = apex.([p, sp])
+  s_map = universal(p.shapelim, Multispan(shape_map.(legs(sp))))
+  d_map = Dict(map(ob_generators(dom(diagram(a_sp)))) do o
+    d_tgts = [diagram_map(l)[o] for l in sp]
+    tgts = tuple([ob_map(shape_map(l),o) for l in sp]...)
+    o => universal(p.baselim[tgts], Multicospan(d_tgts))
+  end)
+  DiagramHom{op}(s_map, d_map, a_p, a_sp)
+end
+
+
+function factorize(eq::DiagLimit{<:Diagram{T},<:ParallelPair}, f::DiagramHom{T}) where T
+  a_eq = apex(eq)
+  s_map = factorize(eq.shapelim, shape_map(f))
+  d_map = nothing # todo
+  DiagramHom{id}(s_map, d_map, dom(f), codom(a_eq))
+end
 
 end # module
