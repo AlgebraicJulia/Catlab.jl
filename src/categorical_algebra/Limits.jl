@@ -805,11 +805,13 @@ function universal(cp::Coproduct{<:FinCat}, csp::Multicospan)
 end
 
 function universal(eq::Equalizer{<:FinCat}, f::FinDomFunctor)
-  error("todo")
+  FinFunctor(ob_map(f), hom_map(f), dom(f), apex(eq))
 end
 
 function universal(ceq::Coequalizer{<:FinCat}, f::FinDomFunctor)
-  error("todo")
+  obs = Dict([ob_map(proj(ceq), k) => v for (k,v) in ob_map(f)])
+  homs = Dict([hom_map(proj(ceq), k) => v for (k,v) in hom_map(f)])
+  FinFunctor(obs, homs, apex(ceq), codom(f))
 end
 
 

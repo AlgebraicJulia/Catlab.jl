@@ -14,7 +14,7 @@ using ..FinCats: mapvals
 import ..FinCats: force, collect_ob, collect_hom
 import ..Limits: limit, colimit, universal, equalizer, product, Limit, Colimit,
                  incl, proj, pullback, coproduct, coequalizer, copair, pushout,
-                 AbstractLimit, Product, Coproduct, AbstractColimit
+                 AbstractLimit, Product, Coproduct, AbstractColimit, factorize
 
 # TODO: Implement these functions more generally, and move elsewhere.
 
@@ -385,10 +385,10 @@ function diagram_hom_coproduct(Xs::AbstractVector{<: Diagram{T}}; kw...) where {
   # Inclusion of data in underlying category
   obs, homs = Dict(), Dict()
   for (l, X) in zip(legs(hcprod), Xs)
-    for (k,v) in diagram(X).ob_map
+    for (k,v) in ob_map(diagram(X))
       obs[ob_map(l, k)] = v
     end
-    for (k,v) in diagram(X).hom_map
+    for (k,v) in hom_map(diagram(X))
       homs[hom_map(l, k)] = v
     end
   end
@@ -396,13 +396,12 @@ function diagram_hom_coproduct(Xs::AbstractVector{<: Diagram{T}}; kw...) where {
   # Assemble diagram morphism
   apx = Diagram{T}(FinDomFunctor(obs,homs, apex(hcprod), cod))
   ls = map(zip(legs(hcprod), Xs)) do (l, X)
-    eta = Dict(k => id(v) for (k, v) in diagram(X).ob_map)
+    eta = Dict(k => id(v) for (k, v) in ob_map(diagram(X)))
     src, tgt = diagram.(is_id ? [X, apx] : [apx, X])
     DiagramHom{T}(l, eta, src, tgt)
   end;
   return hcprod, Dict(), ls
 end
-# const Product{Ob} = AbstractLimit{Ob,<:DiscreteDiagram}
 
 @auto_hash_equals struct DiagLimit{
   Ob,Diagram,LimType<:Union{Limit,Colimit},Cone<:Multispan{Ob}
@@ -504,12 +503,25 @@ function universal(p::DiagColimit{<:Diagram{op},<:DiscreteDiagram}, sp::Multicos
   DiagramHom{op}(s_map, d_map, a_p, a_sp)
 end
 
-
-function factorize(eq::DiagLimit{<:Diagram{T},<:ParallelPair}, f::DiagramHom{T}) where T
+function uni_eq(eq, fs)
+  f = only(fs)
   a_eq = apex(eq)
-  s_map = factorize(eq.shapelim, shape_map(f))
-  d_map = nothing # todo
-  DiagramHom{id}(s_map, d_map, dom(f), codom(a_eq))
+  s_map = universal(eq.shapelim, shape_map(f))
+  d_map = Dict(map(collect(ob_map(shape_map(f)))) do (k, v)
+    k => factorize(eq.baselim[v], diagram_map(f)[k])
+  end)
+  s_map, d_map, a_eq
 end
+
+function universal(eq::DiagLimit{<:Diagram{id},<:ParallelMorphisms}, fs::SMultispan{1})
+  s_map, d_map, a_eq = uni_eq(eq, fs)
+  DiagramHom{id}(s_map, d_map, dom(only(fs)), a_eq)
+end
+
+function universal(eq::DiagColimit{<:Diagram{op},<:ParallelMorphisms}, fs::SMulticospan{1})
+  s_map, d_map, a_eq = uni_eq(eq, fs)
+  DiagramHom{op}(s_map, d_map, a_eq, codom(only(fs)))
+end
+
 
 end # module

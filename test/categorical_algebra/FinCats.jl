@@ -252,14 +252,16 @@ I, J, K = FinCat.([I_,J_,K_]);
 F_IJ = FinDomFunctor(Dict(:I1=>:J1, :I2=>:J2), Dict(:i=>:j1), I, J)
 G_IJ = FinDomFunctor(Dict(:I1=>:J3, :I2=>:J2), Dict(:i=>:j2), I, J)
 F_IK = FinDomFunctor(Dict(:I1=>:K, :I2=>:K), Dict(:i=>:k), I, K)
-
+J_I = FinDomFunctor(Dict(:J1=>:I1, :J2=>:I2, :J3 => :I1),
+                    Dict(:j1=>:i, :j2=>:i), J, I)
 
 # Limits
 #-------
 p = product([I, J, K]);
 e = equalizer([F_IJ, G_IJ])
+e2 = equalizer([F_IJ, F_IJ])
 
-map([p, e]) do lim
+map([p, e, e2]) do lim
   @test all(is_functorial.(legs(lim)))
 end
 
@@ -268,6 +270,9 @@ u = universal(p, Multispan([id(I), F_IJ, F_IK]))
 ij1k,i2j1k,i2j2k = [h for h in hom_generators(apex(p)) if h.args[1] in Symbol.(
   ["(i, id(J1), id(K))","(id(I2), j1, id(K))","(id(I2), id(J2), k)"])]
 @test hom_map(u, :i) == compose(ij1k, i2j1k, i2j2k)
+
+u = universal(e2, J_I)
+@test is_functorial(u)
 
 # Colimits
 #---------
@@ -283,5 +288,8 @@ u = universal(cp, Multicospan([F_IJ, G_IJ, id(J)]))
 @test is_functorial(u)
 @test ob_map(u, Symbol("I1#1")) == ob_generators(J)[1]
 @test ob_map(u, Symbol("I1#2")) == ob_generators(J)[3]
+
+u = universal(ce1, J_I)
+@test is_functorial(u)
 
 end # module

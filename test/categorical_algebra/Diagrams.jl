@@ -86,6 +86,7 @@ is_natural(D::DiagramHom) =
 
 # Nontrivial Examples
 #--------------------
+
 # FinCats
 @present ArrPres_(FreeSchema) begin
   (A1, A2)::Ob; a::Hom(A1, A2)
@@ -111,15 +112,15 @@ const Finset = ACSetCat{FSet}
 
 # FinFunctors
 FS_CS = FinDomFunctor(Dict(:X=>:C2), nothing, FS, CSpan)
+FS_A = FinDomFunctor(Dict(:X=>:A2), nothing, FS, Arr)
 F_AC = FinDomFunctor(Dict(:A1=>:C1, :A2=>:C2), Dict(:a=>:c1), Arr, CSpan)
 G_AC = FinDomFunctor(Dict(:A1=>:C3, :A2=>:C2), Dict(:a=>:c2), Arr, CSpan)
 A_L  = FinDomFunctor(Dict(:A1=>:L,:A2=>:L), Dict(:a=>:l), Arr, Loop)
-F_AA = FinDomFunctor(Dict(:A1=>:A1, :A2=>:A2), Dict(:a=>:a), Arr, Arr)
 H_CA = FinDomFunctor(Dict(:C1=>:A1, :C2=>:A2, :C3=>:A1),
                      Dict(:c1=>:a, :c2=>:a), CSpan, Arr)
 
 # Graphs/Finsets
-g1,g2 = Graph.([1,2])
+g0,g1,g2 = Graph.([0,1,2])
 t1 = apex(terminal(Graph))
 ar = @acset Graph begin V=2; E=2; src=[1,2]; tgt=[2,2] end
 f1,f2,f3,f4 = fs = [@acset FSet begin X=i end for i in 1:4]
@@ -128,12 +129,14 @@ ig1,it1 = id.([g1,t1])
 if1,if2 = id.([f1,f2])
 g1_arr1, g1_arr2 = homomorphisms(g1, ar)
 gt1_arr1 = homomorphism(g1 ⊕ t1, ar)
+t1_plus = homomorphism(t1, g1 ⊕ t1)
 t1_ar = homomorphism(t1, ar)
 g12a, g12b = homomorphisms(g1, g2)
 g1_gt1,g1_gt1_2 = homomorphisms(g1, g1 ⊕ t1)
 ar_t1 = homomorphism(ar, t1)
 g1_t1= homomorphism(g1, t1)
 g21 = homomorphism(g2, g1)
+g01 = homomorphism(g0, g1)
 g2_t1 = homomorphism(g2, t1)
 ar_ar = homomorphisms(ar,ar)[2]
 f12 = homomorphism(f1,f2)
@@ -165,22 +168,26 @@ LG_g2 = FinDomFunctor(Dict(:L=>f2), Dict(:l=>if2), Loop, Finset());
 LG_g1 = FinDomFunctor(Dict(:L=>f1), Dict(:l=>if1), Loop, Finset());
 A_12  = FinDomFunctor(Dict(:A1=>f1,:A2=>f2), Dict(:a=>f12), Arr, Finset());
 A_13  = FinDomFunctor(Dict(:A1=>f1,:A2=>f3), Dict(:a=>f13_2), Arr, Finset());
+A_01  = FinDomFunctor(Dict(:A1=>g0,:A2=>g1), Dict(:a=>g01), Arr, Grph());
 
-ds = [AG_g1, CG_g1t1ar, AG_g12, CG_g1, CG_t1ar, LG_g2, LG_g1, A_12, A_13]
-AGg1, CGg1t1ar, AGg12, CGg1, CGt1ar, LGg2, LGg1, A12, A13 = Diagram.(ds)
+ds = [AG_g1, CG_g1t1ar, AG_g12, CG_g1, CG_t1ar, LG_g2, LG_g1, A_12, A_13, A_01]
+AGg1, CGg1t1ar, AGg12, CGg1, CGt1ar, LGg2, LGg1, A12, A13, A01 = Diagram.(ds)
 
 # Diagram morphisms
 F_AAg1 = DiagramHom(id(Arr), Dict(:A1=>g12a,:A2=>ig1), AG_g1, AG_g12);
-G_AAg1 = DiagramHom(F_AA, Dict(:A1=>g12b, :A2=>ig1),           AG_g1, AG_g12);
+G_AAg1 = DiagramHom(id(Arr), Dict(:A1=>g12b, :A2=>ig1),           AG_g1, AG_g12);
 H_CAg1 = DiagramHom(H_CA, Dict(:C1=>g12a, :C2=>ig1,:C3=>g12b), CG_g1, AG_g12);
 F_2 = DiagramHom(F_AC, Dict(:A1=>g1_gt1, :A2=>g1_arr1), AGg1, CGg1t1ar);
 G_2 = DiagramHom(G_AC, Dict(:A1=>ig1,    :A2=>g1_arr2), AGg1, CGg1t1ar);
+AA_02 = DiagramHom(id(Arr), Dict(:A1=>g01, :A2=>ig1), A01, AGg1);
 # ACop1 = DiagramHom{op}(H_CA, Dict(:C1=>g21,:C2=>ig1, :C3=>g21), AG_g12, CG_g1)
 # ACop2 = DiagramHom{op}(H_CA, Dict(:C1=>g2_t1,:C2=>g1_arr2, :C3=>g21),
 #                        AG_g12, CG_t1ar)
 Fop = DiagramHom{op}(F_AC, Dict(:A1=>it1, :A2=>ar_t1), CG_t1ar, AG_t1);
 Gop = DiagramHom{op}(G_AC, Dict(:A1=>g1_t1,:A2=>ar_t1), CG_t1ar, AG_t1);
 Hop = DiagramHom{op}(FS_CS, Dict(:X=>ar_ar),  CG_t1ar, FS_ar);
+Qop = DiagramHom{op}(FS_A, Dict(:X=>t1_ar), AG_t1, FS_ar)
+
 AL1 = DiagramHom(A_L, Dict(:A1=>if1,:A2=>f31),  A_13, LG_g1);
 AL2 = DiagramHom(A_L, Dict(:A1=>f12, :A2=>f32),  A_13, LG_g2);
 ALop1 = DiagramHom{op}(A_L, Dict(:A1=>f21,:A2=>f22_1),  LG_g2, A_12);
@@ -209,15 +216,17 @@ end
 u = universal(p2, Multispan([AL1, AL2]))
 @test is_natural(u)
 
-# u = factorize(eq2, CA1) TODO equalizer universal prop in both fincats and diagrams
-
+u = factorize(e1, AA_02)
+@test is_natural(u)
 
 # Limits(op)
 #-----------
 p1 = product(Diagram{op}.([A_12,A_13]));
 p2 = product(Diagram{op}.([AG_g1, CG_g1t1ar, AG_g12, CG_g1, CG_t1ar]));
+
 # e = equalizer() NOT SUPPORTED - requires Kan
 # pb = pullback()) NOT SUPPORTED - requires Kan
+
 map([p1, p2]) do lim
   @test is_functorial(diagram(apex(lim)))
   @test all(is_natural.(legs(lim)))
@@ -233,6 +242,7 @@ cp2 = coproduct(Diagram{id}[AGg1, CGg1t1ar, AGg12, CGg1, CGt1ar]);
 
 # coequalizer()  NOT SUPPORTED - requires Kan
 # pushout() NOT SUPPORTED - requires Kan
+
 map([cp1, cp2]) do clim
   @test is_functorial(diagram(apex(clim)))
   @test all(is_natural.(legs(clim)))
@@ -245,11 +255,10 @@ u = universal(cp1, Multicospan([F_2,CC1]))
 #------------
 cp1 = coproduct(Diagram{op}.([LG_g1, LG_g2]));
 cp2 = coproduct(Diagram{op}.([CG_g1, CG_t1ar]));
-ce = coequalizer([Fop,Gop]);
-ce2 = coequalizer(DiagramHom{op}[Fop,Fop]);
+ce = coequalizer([Fop, Gop]);
 po = pushout(Multispan([ALop1, ALop2]));
 
-map([cp1, cp2, ce, ce2, po]) do clim
+map([cp1, cp2, ce, po]) do clim
   @test is_functorial(diagram(apex(clim)))
   @test all(is_natural.(legs(clim)))
 end
@@ -257,6 +266,7 @@ end
 u = universal(cp1, Multicospan([ALop3, ALop2]))
 @test is_natural(u)
 
-# TODO: u = factorize(ce, ...) #
+u = factorize(ce, Qop)
+@test is_natural(u)
 
 end # module
