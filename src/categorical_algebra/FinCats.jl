@@ -295,8 +295,11 @@ function hom_map(F::FinDomFunctor{<:FinCatPathGraph}, path::Path)
 end
 
 ob_map(F::FinDomFunctor, x::GATExpr{:generator}) = ob_map(F, first(x))
+ob_map(F::FinDomFunctor) = Dict([k=>ob_map(F,k) for k in ob_generators(dom(F))])
 hom_map(F::FinDomFunctor, f::GATExpr{:generator}) = hom_map(F, first(f))
 hom_map(F::FinDomFunctor, f::GATExpr{:id}) = id(codom(F), ob_map(F, dom(f)))
+hom_map(F::FinDomFunctor) = Dict([
+  k=>hom_map(F,k) for k in hom_generators(dom(F))])
 
 function hom_map(F::FinDomFunctor, f::GATExpr{:compose})
   D = codom(F)
