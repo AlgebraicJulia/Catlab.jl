@@ -816,7 +816,7 @@ function colimit(::Type{Tuple{ACS,Hom}}, diagram) where
   # Colimit of C-set without attributes.
   colimits = map(colimit, unpack_diagram(diagram))
   Xs = cocone_objects(diagram)
-  Y = ACS()
+  Y = Base.invokelatest(ACS)
   for (c, colim) in pairs(colimits)
     add_parts!(Y, c, length(ob(colim)))
   end
