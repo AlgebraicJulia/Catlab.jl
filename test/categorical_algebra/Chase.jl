@@ -1,5 +1,4 @@
 module TestChase
-
 using Test
 using Catlab.Graphs
 using Catlab.CategoricalAlgebra.Chase
@@ -68,7 +67,7 @@ expected = @acset School begin
     f_p = [1,2,5,6,7]
 end
 
-@test is_isomorphic(expected, chase(unchased, [ed], 1)[1])
+@test is_isomorphic(expected, codom(first(chase(unchased, [ed], 1))))
 
 # Symmetric digraph example
 #--------------------------
@@ -89,7 +88,7 @@ sym_tri = deepcopy(tri)
 add_edges!(sym_tri, [2,3,1],[1,2,3])
 
 # Tests
-@test is_isomorphic(sym_tri, chase(tri, [ed], 3)[1]) # terminates in one step
-@test biarr == chase(biarr, [ed], 3)[1]  # terminates instantly
+@test is_isomorphic(sym_tri, codom(first(chase(tri, [ed], 3)))) # terminates in one step
+@test biarr == codom(first(chase(biarr, [ed], 3)))  # terminates instantly
 
-end
+end # module
