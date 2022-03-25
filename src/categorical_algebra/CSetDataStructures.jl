@@ -305,6 +305,24 @@ end
 # Mutators
 ##########
 
+"""
+This is a specialized function to add parts to an ACSet and preallocate the indices of
+morphisms leading from those parts. This is useful if you want to reduce your
+total number of allocations when allocating an acset if you already know ahead of
+time a reasonable bound on the size of the preimages of the morphisms that you are using.
+
+For instance, if you are making a cyclic graph, then you know that the preimages of
+src and tgt will all be of size 1, and hence you can avoid allocating a zero-size
+array, and then again allocating a 1-size array and instead just allocate a
+1-size array off the bat.
+
+This function is currently exposed, but is not well-integrated with wrappers
+around add_parts; only use this if you really need it for performance and
+understand what you are doing. Additionally, the only guarantee w.r.t. to this
+is that it works the same semantically as `add_parts!`; it might make your code
+faster, but it also might not. Only use this if you have the benchmarks to back
+it up.
+"""
 @inline add_parts_with_indices!(acs::StructACSet, ob::Symbol, n::Int, index_sizes::NamedTuple) =
   _add_parts!(acs, Val{ob}, n, index_sizes)
 
