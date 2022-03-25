@@ -64,4 +64,28 @@ g = parallel_arrows(Graph, n)
 @test all(==(1), src(g))
 @test all(==(2), tgt(g))
 
+# Erdos-Renyi graphs
+#-------------------
+
+g = erdos_renyi(Graph, 100, 0.0)
+@test (nv(g), ne(g)) == (100, 0)
+g = erdos_renyi(Graph, 100, 0)
+@test (nv(g), ne(g)) == (100, 0)
+g = erdos_renyi(Graph, 100, 5)
+@test (nv(g), ne(g)) == (100, 5)
+g = erdos_renyi(Graph, 100, 1.0)
+@test g == complete_graph(Graph, 100)
+
+# Expected Degree Graph
+#----------------------
+
+g = expected_degree_graph(Graph, 5 .* ones(100))
+@test nv(g) == 100
+
+# Watts Strogatz Graph
+#---------------------
+
+g = watts_strogatz(Graph, 100, 4, 0.2)
+@test (nv(g), ne(g)) == (100, 200)
+
 end

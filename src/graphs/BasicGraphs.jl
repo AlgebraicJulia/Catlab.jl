@@ -104,7 +104,7 @@ edges(g::HasGraph, src::Int, tgt::Int) =
 
 """ Edges coming out of a vertex
 """
-@inline outedges(g::HasGraph, v) = incident(g, v, :src)
+outedges(g::HasGraph, v) = incident(g, v, :src)
 
 """ Edges coming into a vertex
 """
@@ -116,8 +116,8 @@ has_vertex(g::HasVertices, v) = has_part(g, :V, v)
 
 """ Whether the graph has the given edge, or an edge between two vertices.
 """
-@inline has_edge(g::HasGraph, e) = has_part(g, :E, e)
-@inline function has_edge(g::HasGraph, s::Int, t::Int)
+has_edge(g::HasGraph, e) = has_part(g, :E, e)
+function has_edge(g::HasGraph, s::Int, t::Int)
   (1 <= s <= nv(g)) || return false
   for e in outedges(g,s)
     (tgt(g,e) == t) && return true
@@ -209,6 +209,10 @@ multiplicity*. To get the unique neighbors, call `unique(neighbors(g))`.
 all_neighbors(g::AbstractGraph, v::Int) =
   Iterators.flatten((inneighbors(g, v), outneighbors(g, v)))
 
+""" Total degree of a vertex
+
+Equivalent to length(all_neighbors(g,v)) but faster
+"""
 degree(g,v) = length(incident(g,v,:tgt)) + length(incident(g,v,:src))
 
 """ Subgraph induced by a set of a vertices.
