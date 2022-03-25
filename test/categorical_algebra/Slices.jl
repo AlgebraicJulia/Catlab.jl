@@ -21,15 +21,16 @@ which forces its map to A to point to a₂ and its map to B to point to b₁), t
 universal property gives a map into the limit object, so it picks the element
 that maps to (a₂,b₁).
 """
-
+# create limit
 G2,G1,G3 = Graph.([2,1,3])
 GraphSlice = Slice{Graph, ACSetTransformation}
 GraphSliceMorphism = SliceMorphism{Graph, ACSetTransformation}
 A, B = GraphSlice.([ACSetTransformation(G2, G3;V=x) for x in [[1,2],[2,1]]])
+@test force(id(A)) == force(GraphSliceMorphism(A,A,id(G2)))
 slice_dia = FreeDiagram(DiscreteDiagram([A,B], GraphSliceMorphism))
 slice_lim = limit(slice_dia)
 
-
+# test universal property
 mA, mB = [ACSetTransformation(G1,G2;V=x) for x in [[1],[2]]]
 map_to_base = GraphSlice(ACSetTransformation(G1,G3;V=[1]))
 toA = GraphSliceMorphism(map_to_base, A, mA)
@@ -59,7 +60,6 @@ p1, p2 = pushout_complement(f,g)
 slice_dia = FreeDiagram{GraphSlice,GraphSliceMorphism}(Multispan(A, [f, p1]))
 clim = colimit(slice_dia)
 @test is_isomorphic(dom(apex(clim)), c)
-#pushout(f, p1)
 colimit(Span(f, p1))
 
 # DPO of slices: do the pushout complement and add an extra state

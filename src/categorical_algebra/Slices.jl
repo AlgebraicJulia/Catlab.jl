@@ -1,6 +1,7 @@
 module Slices
 export Slice, SliceMorphism,SliceLimit,SliceColimit, pushout_complement
 
+using AutoHashEquals
 using ...GAT
 using ..FreeDiagrams, ..Limits, ..CSets
 using ...Theories: Category
@@ -8,17 +9,17 @@ import ...Theories: dom, codom, compose, id
 import ..Limits: limit, colimit, universal
 import ..FinSets: force, pushout_complement
 
-struct Slice{Ob,Hom}
+@auto_hash_equals struct Slice{Ob,Hom}
   slice::Hom
 end
 
-struct SliceMorphism{Ob, Hom}
+@auto_hash_equals struct SliceMorphism{Ob, Hom}
   dom::Slice{Ob, Hom}
   codom::Slice{Ob, Hom}
   f::Hom
   function SliceMorphism{Ob, Hom}(dom, codom, f) where {Ob, Hom}
     p1, p2 = force.([dom.slice, compose(f,codom.slice)])
-    force(p1) == force(p2) ||
+    p1 == p2 ||
        error("Slice condition failed: \ndom.slice $p1\ncomposite $p2\nf " *
              "$(force(f))\ncodom $(force(codom.slice))")
     return new{Ob,Hom}(dom, codom, f)
@@ -31,7 +32,7 @@ SliceMorphism(a,b,f) = SliceMorphism{typeof(a).parameters...}(a,b,f)
 dom(s::Slice)::StructACSet = dom(s.slice)
 codom(s::Slice)::StructACSet = codom(s.slice)
 force(s::Slice{Ob,Hom}) where {Ob,Hom} = Slice{Ob,Hom}(force(s.slice))
-force(s::SliceMorphism{Ob,Hom}) where {Ob,Hom} = SliceMorphism(
+force(s::SliceMorphism{Ob,Hom}) where {Ob,Hom} = SliceMorphism{Ob,Hom}(
   force(dom(s)), force(codom(s)), force(s.f))
 
 
@@ -48,8 +49,6 @@ struct SliceColimit{Ob_, Hom, Ob <: Slice{Ob_,Hom}, Diagram,
   cocone::Cocone
   underlying::AbstractColimit
 end
-
-
 
 
 @instance Category{Slice, SliceMorphism} begin
@@ -80,8 +79,6 @@ end
 Convert a limit problem in the slice category to a limit problem of the
 underlying category.
 """
-limit(csp::Multicospan{<:Slice{Ob,Hom}}) where {Ob,Hom} = limit(FreeDiagram{Ob, Hom}(csp))
-
 function limit(::Type{Tuple{Slice{Ob, Hom}, SliceMorphism{Ob, Hom}}},
                diagram::FreeDiagram{Slice{Ob, Hom}, SliceMorphism{Ob, Hom}}
                ) where {Ob, Hom}
