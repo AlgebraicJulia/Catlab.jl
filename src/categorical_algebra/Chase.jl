@@ -49,8 +49,8 @@ tgd(e::ED) = factorize(coimage(e.ST),e.ST)
 no_change(f) = is_isomorphic(dom(f), codom(f)) # id up to isomorphism
 
 """Split a list of EDs into two lists of EGDs and TGDs"""
-function split_Σ(Σ::Vector{ED})
-  egds, tgds = [],[]
+function split_Σ(Σ::Vector{ED{Ob,Hom}})::Pair{Vector{Hom},Vector{Hom}} where {Ob,Hom}
+  egds, tgds = Hom[], Hom[]
   for ed in Σ
     e, t = egd(ed), tgd(ed)
     if !no_change(e)
@@ -252,9 +252,10 @@ This function wraps `chase` and does the necessary conversions (computing in
 C-Rel if either the initial instance or EDs are provided in C-Rel), returning
 a result morphism in C-Set if the chase terminates.
 """
-function chase_crel(I::StructACSet, Σ::Vector{ED}, n::Int;
+function chase_crel(I::Ob_, Σ::Vector{ED{Ob,Hom}}, n::Int;
                     I_is_crel::Bool=false, Σ_is_crel::Bool=false,
-                    cset_example::Union{StructACSet,Nothing}=nothing, verbose=false)
+                    cset_example::Union{StructACSet,Nothing}=nothing,
+                    verbose=false) where {Ob_, Ob, Hom}
   # Process inputs
   is_crel = I_is_crel || Σ_is_crel
   !(is_crel && isnothing(cset_example)) || error("Need CSet for conversion")
@@ -279,7 +280,7 @@ S->T->I = S->I).
 Optionally restrict to only considering a subset of the triggers with `ts`, a
 list of indices into the list of triggers.
 """
-function active_triggers(I::Ob, Σ; init::Union{NamedTuple, Nothing}
+function active_triggers(I::Ob, Σ::Vector{Hom}; init::Union{NamedTuple, Nothing}
                          ) where {Ob, Hom}
   maps = Pair{Hom, Hom}[]
   for ed in Σ
@@ -298,7 +299,8 @@ Run a single chase step. Optionally select a subset of triggers to fire on.
 This selection could be generalized to be a function which does a computation
 to determine which firings are useful.
 """
-function chase_step(I::StructACSet, Σ; init::Union{NamedTuple, Nothing}=nothing)
+function chase_step(I::Ob, Σ::Pair{Vector{Hom},Vector{Hom}};
+                    init::Union{NamedTuple, Nothing}=nothing) where {Ob,Hom}
     Σe, Σt = Σ
     ats = active_triggers(I, Σt; init=init)
     res = isempty(ats) ? id(I) : fire_triggers(ats) # first: fire TGDs

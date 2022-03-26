@@ -37,7 +37,8 @@ ed2 = @acset School begin
   t_s = [1] ;t_f = [1] ;s_p = [1] ;f_p = [1]
 end
 d = Dict([:TA=>[1], :Student=>[1], :Faculty=>[1], :Person=>[1,1]])
-ed = ED(ACSetTransformation(ed1, ed2; d...))
+sED = ED{School, ACSetTransformation}
+ed = sED(ACSetTransformation(ed1, ed2; d...))
 # initializing db from an instance with 5 faculty, 4 students, and 2 TAs
 # when we freely add elements due to functionality, we get 9 elements in Person
 unchased = @acset School begin
@@ -53,15 +54,9 @@ end
 
 @test is_isomorphic(expected, codom(first(chase(unchased, [ed], 1))))
 
-# Symmetric digraph example
-#--------------------------
-
-# Construct ED that symmetrizes arrows
-
-pg = path_graph(Graph, 2)  # 1 --> 2
-biarr = deepcopy(pg)       # 1 <-> 2
-add_edge!(biarr, 2, 1)
-ed = ED(ACSetTransformation(pg, biarr, V=[2,1], E=[2]))
+# Factorizing EDs
+#----------------
+gED = ED{Graph, ACSetTransformation}
 
 # We can factor a ED that combines EGD and TGD aspects
 etgd_s = path_graph(Graph, 3)
@@ -72,13 +67,22 @@ end
 core = @acset Graph begin V=2; E=2; src=[1,2]; tgt=[2,1] end
 
 # This adds a self loop to #1 and merges #1/#3
-etgd = ED(ACSetTransformation(etgd_s,etgd_t; V=[1,2,1], E=[2,3]))
+etgd = gED(ACSetTransformation(etgd_s,etgd_t; V=[1,2,1], E=[2,3]))
 
 @test is_isomorphic(codom(egd(etgd)), core) # EGD has no extra self-edge
 @test collect(egd(etgd)[:V]) == [1,2,1] # but it does merge vertices
 
 @test is_isomorphic(dom(tgd(etgd)), core) # TGD does not merge
 @test codom(tgd(etgd)) == codom(etgd.ST) # but it does add the self edge
+
+# Symmetric digraph example
+#--------------------------
+
+# Construct ED that symmetrizes arrows
+pg = path_graph(Graph, 2)  # 1 --> 2
+biarr = deepcopy(pg)       # 1 <-> 2
+add_edge!(biarr, 2, 1)
+ed = gED(ACSetTransformation(pg, biarr, V=[2,1], E=[2]))
 
 # Initial instance
 tri = path_graph(Graph, 3)
@@ -93,6 +97,8 @@ add_edges!(sym_tri, [2,3,1],[1,2,3])
 @test biarr == codom(first(chase(biarr, [ed], 3)))  # terminates instantly
 
 # C-Rel
+#------
+
 @present ThLoop(FreeSchema) begin
   X::Ob
   x::Hom(X, X)
@@ -100,7 +106,7 @@ add_edges!(sym_tri, [2,3,1],[1,2,3])
 end
 @acset_type Loop(ThLoop)
 LoopRel = crel_type(Loop())
-
+lED = ED{LoopRel, ACSetTransformation}
 # Constraints to encode that x is a function
 injective_l = @acset LoopRel begin  X=3; x=2; src_x=[1,1]; tgt_x=[2,3] end
 injective_r = @acset LoopRel begin  X=2; x=1; src_x=[1]; tgt_x=[2] end
@@ -114,13 +120,16 @@ three_two_r = @acset LoopRel begin
   X=5; x=5; src_x=[1,2,3,1,5]; tgt_x=[2,3,4,5,4] end
 ED_three_two = ACSetTransformation(three_two_l, three_two_r;
                                    X=[1,2,3,4,5,4], x=[1,2,3,4,5])
-ΣX = ED.([ED_injective,ED_total,ED_three_two])
+ΣX = lED.([ED_injective,ED_total,ED_three_two])
+
 # Compute the chase
 res, succ = chase_crel(total_l, ΣX, 5; I_is_crel=true, Σ_is_crel=true,
                       cset_example=Loop(), verbose=false)
 @test succ
 @test codom(res) == @acset Loop begin X=3; x=[2,3,3] end
 
+
+# Re-do the example as a diagram in FinSet, rather than as a C-set
 
 # Collage
 ##########
