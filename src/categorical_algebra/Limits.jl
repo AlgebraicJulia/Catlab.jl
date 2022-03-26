@@ -688,18 +688,40 @@ function coproduct(Xs::AbstractVector{<: FinCatPresentation}; kw...)
     end
   end...))
 
-  # Create legs
+  # Use legs to presentation without equations to map equations into new cat
+  for (i,x) in enumerate(Xs)
+    os, hs = map(zip([ob_generators,hom_generators], [ogens,hgens])) do (get, g)
+      Dict([Symbol(o) => Symbol(g[(i,o)]) for o in get(x)])
+    end
+    l = FinDomFunctor(os, hs, x, FinCat(p))
+    for (e1, e2) in equations(x)
+      add_equation!(p, hom_map(l, e1), hom_map(l, e2))
+    end
+  end
+
   ls = map(enumerate(Xs)) do (i,x)
     os, hs = map(zip([ob_generators,hom_generators], [ogens,hgens])) do (get, g)
       Dict([Symbol(o) => Symbol(g[(i,o)]) for o in get(x)])
     end
     FinDomFunctor(os, hs, x, FinCat(p))
   end
+
   Colimit(DiscreteDiagram(Xs), Multicospan(ls))
 end
 
 """
 TODO: handle equations
+
+perhaps use a functor like this?
+HDOb, HDHom = HypergraphDiagramOb{Ob,Hom}, HypergraphDiagramHom{Ob,Hom}
+  functor((HDOb, HDHom), expr; terms=Dict(
+    :Ob => expr -> HDOb([ob_map(expr)]),
+    :Hom => expr -> begin
+      A, B = to_uwd(dom(expr)), to_uwd(codom(expr))
+      HDHom(singleton_diagram(A⊗B, name=hom_map(expr)),
+            dom=[trues(length(A)); falses(length(B))])
+    end
+  ))
 """
 function coequalizer(fs::AbstractVector{<:FinDomFunctor{<:FinCatPresentation}})
   # Check inputs are parallel finfunctors

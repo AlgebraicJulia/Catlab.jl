@@ -1,13 +1,15 @@
 module Chase
 export ED, chase, chase_crel, chase_step, to_c_rel, from_c_rel, crel_type,
-       egd, tgd
+       egd, tgd, collage, pres_to_eds
 
 using Reexport # needed to access struct_acset from CSetDataStructures
 
 using ...Theories, ...Present
 using ..CSets
 using ..FinSets
+using ..FinCats
 using ..Limits
+using ..FreeDiagrams
 import ...Theories: dom, codom
 @reexport using ...CSetDataStructures
 
@@ -26,18 +28,20 @@ generating dependencies" (TGDs). Any homomorphism can be factored into EGD and
 TGD components by, respectively, restricting the codomain to the image or
 restricting the domain to the coimage.
 """
-struct ED
-  ST :: ACSetTransformation
+struct ED{Ob,Hom}
+  ST :: Hom#ACSetTransformation
 end
 
 dom(e::ED) = dom(e.ST)
 codom(e::ED) = codom(e.ST)
 image(f) = equalizer(legs(pushout(f,f))...)
 coimage(f) = coequalizer(legs(pullback(f,f))...)
+
 """    egd(e::ED)
 Distill the component of a morphism that merges elements together
 """
 egd(e::ED) = factorize(image(e.ST),e.ST)
+
 """    tgd(e::ED)
 Distill the component of a morphism that adds new elements
 """
@@ -59,6 +63,46 @@ function split_Σ(Σ::Vector{ED})
   egds => tgds
 end
 
+
+function collage(F::FinFunctor)
+  (dF, cdF) = Xs = [dom(F), codom(F)]
+  C = coproduct(Xs)
+
+  O, H = ob_generators(apex(C)), hom_generators(apex(C))
+  # inherit equations from dom and codom
+  p = presentation(apex(C))
+  α = Dict(map(ob_generators(dF)) do o
+      o => add_generator!(p, Hom(Symbol("α_$o"), o, ob_map(F, o)))
+  end)
+  for f in hom_generators(dF)
+    add_equation!(p, compose(α[dom(dF,f)], hom_map(F,f)),
+                     compose(f, α[codom(dF,f)]))
+  end
+
+  new_codom = FinCat(p)
+  ls = map(legs(C)) do l
+    FinFunctor(l.ob_map, l.hom_map, dom(l), new_codom)
+  end
+  Colimit(DiscreteDiagram(Xs), Multicospan(ls))
+end
+
+"""
+A presentation implies constraints of FKs being functional (total and injective) in addition to any extra equations
+"""
+function cset_to_eds(p::Presentation)
+  eds = []
+  for f in hom_generators(p)
+    injective_l = @acset LoopRel begin  X=3; x=2; src_x=[1,1]; tgt_x=[2,3] end
+    injective_r = @acset LoopRel begin  X=2; x=1; src_x=[1]; tgt_x=[2] end
+    push!(eds, homomorphism(injective_l, injective_r))
+    total_l = @acset LoopRel begin X=1 end
+    push!(eds, homomorphism(total_l, injective_r))
+  end
+  ED.(eds)
+end
+
+
+VPSI = Vector{Pair{Symbol,Int}}
 # C-Rel: note that (Span-C)-Set is our model for C-Rel
 ######################################################
 
@@ -183,7 +227,7 @@ forward into a cyclic schema).
 Whether or not the result is due to success or timeout is returned as a boolean
 flag.
 """
-function chase(I::StructACSet, Σ::Vector{ED}, n::Int; verbose=false)
+function chase(I::Ob, Σ::Vector{ED{Ob,Hom}}, n::Int; verbose=false) where {Ob, Hom}
 
   Σ_e_t = split_Σ(Σ)
   res = id(I)
@@ -235,10 +279,9 @@ S->T->I = S->I).
 Optionally restrict to only considering a subset of the triggers with `ts`, a
 list of indices into the list of triggers.
 """
-function active_triggers(I::T_, Σ; init::Union{NamedTuple, Nothing}
-          )::Vector{Pair{ACSetTransformation, ACSetTransformation}} where {
-                    T_<:StructACSet}
-  maps = Pair{ACSetTransformation, ACSetTransformation}[]
+function active_triggers(I::Ob, Σ; init::Union{NamedTuple, Nothing}
+                         ) where {Ob, Hom}
+  maps = Pair{Hom, Hom}[]
   for ed in Σ
     kw = Dict(isnothing(init) ? [] : [:initial=>init])
     for trigger in homomorphisms(dom(ed), I; kw...)

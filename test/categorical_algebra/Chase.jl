@@ -1,4 +1,5 @@
-module TestChase
+#module TestChase
+using Revise
 using Test
 using Catlab.Graphs
 using Catlab.CategoricalAlgebra.Chase
@@ -6,8 +7,15 @@ using Catlab.Present
 using Catlab.Theories
 using Catlab.CategoricalAlgebra
 
+
 # School example
 #---------------
+@present ThSchool′(FreeSchema) begin
+  (TA′, Student′, Faculty′)::Ob
+  t_s′::Hom(TA′, Student′)
+  t_f′::Hom(TA′, Faculty′)
+end
+
 @present ThSchool(FreeSchema) begin
   (TA, Student, Faculty, Person)::Ob
   t_s::Hom(TA, Student)
@@ -113,4 +121,15 @@ res, succ = chase_crel(total_l, ΣX, 5; I_is_crel=true, Σ_is_crel=true,
 @test succ
 @test codom(res) == @acset Loop begin X=3; x=[2,3,3] end
 
-end # module
+
+# Collage
+##########
+
+SchoolC, SchoolC′ = FinCat.([ThSchool, ThSchool′])
+F = FinFunctor(Dict(:TA′=>:TA, :Faculty′=>:Faculty, :Student′=>:Student),
+               Dict(:t_s′=>:t_s,:t_f′=>:t_f), SchoolC′, SchoolC)
+#
+col = collage(F)
+ac = apex(col)
+pres_to_eds(presentation(ac))
+# end # module
