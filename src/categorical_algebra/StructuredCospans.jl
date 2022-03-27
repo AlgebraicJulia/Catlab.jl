@@ -218,12 +218,38 @@ function OpenACSetTypes(::Type{X}, ob₀::Symbol) where
    foldr(UnionAll, type_vars, init=StructuredMulticospan{L}))
 end
 
+#SF
+""" Create types for open attributed C-sets from an attributed C-set type.
+
+Note: the difference between this function and the "OpenACSetTypes" is in the 
+small part (category A), it includes more than 1 objects; while in function "OpenACSetTypes"
+the category A  only includes one object
+"""
+function OpenACSetTypes(::Type{X}, ::Type{A}) where
+  {S<:SchemaDescType, X<:StructACSet{S}, S0<:SchemaDescType, A<:StructACSet{S0}}
+#    {S<:SchemaDescType, X<:StructACSet{S}, S0<:SchemaDescType, A<:StructACSet{S0}}
+  # TODO: assert: A \include X
+  println(attrtype(S0))
+  println(attrtype(S))
+  @assert attrtype(S0) ⊆ attrtype(S)
+  type_vars = map(TypeVar, attrtype(S))
+  type_vars0 = map(TypeVar, attrtype(S0))
+  L = DiscreteACSet{A{type_vars0...}, X{type_vars...}}
+  (foldr(UnionAll, type_vars, init=StructuredCospanOb{L}),
+   foldr(UnionAll, type_vars, init=StructuredMulticospan{L}))
+end
+
 """ Abstract type for functor L: A → X giving a discrete C-set.
 """
 abstract type AbstractDiscreteACSet{X <: StructACSet} end
 
 codom(::Type{<:AbstractDiscreteACSet{X}}) where
   {S, X<:StructACSet{S}} = (X, TightACSetTransformation{S})
+
+#SF
+StructuredCospan{L}(x::StructACSet, f::ACSetTransformation,
+                    g::ACSetTransformation) where {L<:AbstractDiscreteACSet} =
+  StructuredCospan{L}(x, Cospan(f, g))
 
 StructuredCospan{L}(x::StructACSet, f::FinFunction{Int,Int},
                     g::FinFunction{Int,Int}) where {L<:AbstractDiscreteACSet} =
@@ -232,6 +258,12 @@ StructuredCospan{L}(x::StructACSet, f::FinFunction{Int,Int},
 StructuredMulticospan{L}(x::StructACSet,
                          fs::Vararg{<:FinFunction{Int,Int},N}) where
     {L<:AbstractDiscreteACSet, N} =
+  StructuredMulticospan{L}(x, SMulticospan{N}(fs...))
+
+#SF
+StructuredMulticospan{L}(x::StructACSet,
+                         fs::Vararg{<:ACSetTransformation,N}) where
+    {L<:AbstractDiscreteACSet,N} =
   StructuredMulticospan{L}(x, SMulticospan{N}(fs...))
 
 function force(M::StructuredMulticospan{L}) where {L<:AbstractDiscreteACSet}
