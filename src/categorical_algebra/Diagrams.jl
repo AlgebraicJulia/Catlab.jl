@@ -51,7 +51,7 @@ This is the domain of the underlying functor.
 """
 shape(d::Diagram) = dom(diagram(d))
 
-Base.hash(d::Diagram{T}, h::UInt) where {T} = hash(hash(T), hash(diagram(d), h))
+Base.hash(d::Diagram{T}, h::UInt) where {T} = hash(T, hash(diagram(d), h))
 
 Base.:(==)(d1::Diagram{T}, d2::Diagram{S}) where {T,S} =
   T == S && diagram(d1) == diagram(d2)
