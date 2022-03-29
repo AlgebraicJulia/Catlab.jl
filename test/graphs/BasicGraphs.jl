@@ -23,6 +23,7 @@ add_edge!(g, 2, 3)
 @test !has_edge(g, 1, 3)
 @test outneighbors(g, 2) == [3]
 @test inneighbors(g, 2) == [1]
+@test degree(g, 2) == 2
 @test collect(all_neighbors(g, 2)) == [1,3]
 
 add_edge!(g, 1, 2)
@@ -31,6 +32,7 @@ add_edge!(g, 1, 2)
 @test collect(edges(g, 1, 2)) == [1,3]
 @test outneighbors(g, 1) == [2,2]
 @test inneighbors(g, 1) == []
+@test degree(g, 1) == 2
 @test LG.DiGraph(g) == LG.path_digraph(3)
 
 g = Graph(4)

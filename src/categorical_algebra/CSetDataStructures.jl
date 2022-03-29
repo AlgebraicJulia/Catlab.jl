@@ -245,7 +245,7 @@ end
 @inline Base.getindex(acs::StructACSet, args...) = ACSetInterface.subpart(acs, args...)
 
 @inline ACSetInterface.incident(acs::StructACSet, part, f::Symbol; copy::Bool=false) =
-  _incident(acs, part, Val{f}; copy=copy)
+  _incident(acs, part, Val{f}, Val{copy})
 
 broadcast_findall(xs, array::AbstractArray) =
   broadcast(x -> findall(y -> x == y, array), xs)
@@ -262,17 +262,18 @@ We keep the main body of the code generating out of the @generated function
 so that the code-generating function only needs to be compiled once.
 """
 function incident_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
-                       unique_idxed::AbstractDict{Symbol,Bool}, f::Symbol)
+                       unique_idxed::AbstractDict{Symbol,Bool}, f::Symbol,
+                       copy::Bool)
   if f ∈ s.homs
     if idxed[f]
       quote
         indices = $(GlobalRef(ACSetInterface,:view_or_slice))(acs.hom_indices.$f, part)
-        copy ? Base.copy.(indices) : indices
+        $(copy ? :(Base.copy.(indices)) : :(indices))
       end
     elseif unique_idxed[f]
       quote
         indices = $(GlobalRef(ACSetInterface,:view_or_slice))(acs.hom_unique_indices.$f, part)
-        copy ? Base.copy.(indices) : indices
+        $(copy ? :(Base.copy.(indices)) : :(indices))
       end
     else
       :(broadcast_findall(part, acs.homs.$f))
@@ -281,7 +282,7 @@ function incident_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
     if idxed[f]
       quote
         indices = get_attr_index(acs.attr_indices.$f, part)
-        copy ? Base.copy.(indices) : indices
+        $(copy ? :(Base.copy.(indices)) : :(indices))
       end
     elseif unique_idxed[f]
       quote
@@ -296,18 +297,41 @@ function incident_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
 end
 
 @generated function _incident(acs::StructACSet{S,Ts,Idxed,UniqueIdxed},
-                              part, ::Type{Val{f}}; copy::Bool=false) where
-  {S,Ts,Idxed,UniqueIdxed,f}
-  incident_body(SchemaDesc(S),pairs(Idxed),pairs(UniqueIdxed),f)
+                              part, ::Type{Val{f}}, ::Type{Val{copy}}) where
+  {S,Ts,Idxed,UniqueIdxed,f,copy}
+  incident_body(SchemaDesc(S),pairs(Idxed),pairs(UniqueIdxed),f,copy)
 end
 
 # Mutators
 ##########
 
-@inline ACSetInterface.add_parts!(acs::StructACSet, ob::Symbol, n::Int) = _add_parts!(acs, Val{ob}, n)
+"""
+This is a specialized function to add parts to an ACSet and preallocate the indices of
+morphisms leading from those parts. This is useful if you want to reduce your
+total number of allocations when allocating an acset if you already know ahead of
+time a reasonable bound on the size of the preimages of the morphisms that you are using.
+
+For instance, if you are making a cyclic graph, then you know that the preimages of
+src and tgt will all be of size 1, and hence you can avoid allocating a zero-size
+array, and then again allocating a 1-size array and instead just allocate a
+1-size array off the bat.
+
+This function is currently exposed, but is not well-integrated with wrappers
+around add_parts; only use this if you really need it for performance and
+understand what you are doing. Additionally, the only guarantee w.r.t. to this
+is that it works the same semantically as `add_parts!`; it might make your code
+faster, but it also might not. Only use this if you have the benchmarks to back
+it up.
+"""
+@inline add_parts_with_indices!(acs::StructACSet, ob::Symbol, n::Int, index_sizes::NamedTuple) =
+  _add_parts!(acs, Val{ob}, n, index_sizes)
+
+@inline ACSetInterface.add_parts!(acs::StructACSet, ob::Symbol, n::Int) =
+  _add_parts!(acs, Val{ob}, n, (;))
 
 function add_parts_body(s::SchemaDesc, idxed::AbstractDict,
-                        unique_idxed::AbstractDict, ob::Symbol)
+                        unique_idxed::AbstractDict, ob::Symbol,
+                        index_sized_homs::Vector)
   code = quote
     m = acs.obs[$(ob_num(s, ob))]
     nparts = m + n
@@ -322,10 +346,16 @@ function add_parts_body(s::SchemaDesc, idxed::AbstractDict,
             end)
     end
     if s.codoms[f] == ob && idxed[f]
+      size = if f ∈ index_sized_homs
+        :(index_sizes[$(Expr(:quote, f))])
+      else
+        0
+      end
       push!(code.args, quote
             resize!(acs.hom_indices.$f, nparts)
             for i in newparts
-              acs.hom_indices.$f[i] = Int[]
+              acs.hom_indices.$f[i] = Array{Int}(undef, $size)
+              empty!(acs.hom_indices.$f[i])
             end
             end)
     elseif s.codoms[f] == ob && unique_idxed[f]
@@ -343,16 +373,17 @@ function add_parts_body(s::SchemaDesc, idxed::AbstractDict,
       push!(code.args,:(resize!(acs.attrs.$a, nparts)))
     end
   end
-  push!(code.args, :(newparts))
+  push!(code.args, :(return newparts))
   code
 end
 
 """ This generates the _add_parts! methods for a specific object of a `StructACSet`.
 """
 @generated function _add_parts!(acs::StructACSet{S,Ts,Idxed,UniqueIdxed},
-                                ::Type{Val{ob}}, n::Int) where
-  {S, Ts, Idxed, UniqueIdxed, ob}
-  add_parts_body(SchemaDesc(S),pairs(Idxed),pairs(UniqueIdxed),ob)
+                                ::Type{Val{ob}}, n::Int,
+                                index_sizes::NamedTuple{index_sized_homs}) where
+  {S, Ts, Idxed, UniqueIdxed, ob, index_sized_homs}
+  add_parts_body(SchemaDesc(S),pairs(Idxed),pairs(UniqueIdxed),ob,[index_sized_homs...])
 end
 
 @inline ACSetInterface.set_subpart!(acs::StructACSet, part::Int, f::Symbol, subpart) =
@@ -365,14 +396,15 @@ function set_subpart_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
     if idxed[f]
       quote
         @assert 0 <= subpart <= acs.obs[$(ob_num(s, s.codoms[f]))]
-        old = acs.homs.$f[part]
-        acs.homs.$f[part] = subpart
+        @inbounds old = acs.homs.$f[part]
+        @inbounds acs.homs.$f[part] = subpart
         if old > 0
           @assert deletesorted!(acs.hom_indices.$f[old], part)
         end
         if subpart > 0
           insertsorted!(acs.hom_indices.$f[subpart], part)
         end
+        subpart
       end
     elseif unique_idxed[f]
       quote
@@ -384,11 +416,13 @@ function set_subpart_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
         end
         acs.homs.$f[part] = subpart
         acs.hom_unique_indices.$f[subpart] = part
+        subpart
       end
     else
       quote
         @assert 0 <= subpart <= acs.obs[$(ob_num(s, s.codoms[f]))]
         acs.homs.$f[part] = subpart
+        subpart
       end
     end
   elseif f ∈ s.attrs
@@ -400,16 +434,18 @@ function set_subpart_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
         end
         acs.attrs.$f[part] = subpart
         set_attr_index!(acs.attr_indices.$f, subpart, part)
+        subpart
       end
     elseif unique_idxed[f]
       quote
-        @assert subpart ∉ keys(acs.attr_unique_indices.$f) "subpart not unique"
+        @boundscheck @assert subpart ∉ keys(acs.attr_unique_indices.$f) "subpart not unique"
         if isassigned(acs.attrs.$f, part)
           old = acs.attrs.$f[part]
           delete!(acs.attr_unique_indices.$f, old)
         end
         acs.attrs.$f[part] = subpart
         acs.attr_unique_indices.$f[subpart] = part
+        subpart
       end
     else
       :(acs.attrs.$f[part] = subpart)
@@ -433,11 +469,6 @@ end
 @inline ACSetInterface.rem_part!(acs::StructACSet, type::Symbol, part::Int) =
   _rem_part!(acs, Val{type}, part)
 
-function getassigned(acs::StructACSet, arrows, i)
-  assigned_subparts = filter(f -> isassigned(subpart(acs,f),i), arrows)
-  Dict(f => subpart(acs,i,f) for f in assigned_subparts)
-end
-
 function rem_part_body(s::SchemaDesc, idxed, ob::Symbol)
   in_homs = filter(hom -> s.codoms[hom] == ob, s.homs)
   out_homs = filter(f -> s.doms[f] == ob, s.homs)
@@ -445,7 +476,7 @@ function rem_part_body(s::SchemaDesc, idxed, ob::Symbol)
   indexed_out_homs = filter(hom -> s.doms[hom] == ob && idxed[hom], s.homs)
   indexed_attrs = filter(attr -> s.doms[attr] == ob && idxed[attr], s.attrs)
   quote
-    last_part = acs.obs[$(ob_num(s, ob))]
+    last_part = @inbounds acs.obs[$(ob_num(s, ob))]
     @assert 1 <= part <= last_part
     # Unassign superparts of the part to be removed and also reassign superparts
     # of the last part to this part.
@@ -453,15 +484,27 @@ function rem_part_body(s::SchemaDesc, idxed, ob::Symbol)
       set_subpart!(acs, incident(acs, part, hom, copy=true), hom, 0)
       set_subpart!(acs, incident(acs, last_part, hom, copy=true), hom, part)
     end
-    last_row = getassigned(acs, $([out_homs;out_attrs]), last_part)
+
+    # This is a hack to avoid allocating a named tuple, because these parts
+    # are a union type, so there would be dynamic dispatch
+    $(Expr(:block, (map([out_homs; out_attrs]) do f
+         :($(Symbol("last_row_" * string(f))) =
+           if isassigned(subpart(acs, $(Expr(:quote,f))), last_part)
+             subpart(acs, last_part, $(Expr(:quote,f)))
+           else
+             nothing
+           end)
+       end)...))
 
     # Clear any morphism and data attribute indices for last part.
-    for hom in $(Tuple(indexed_out_homs))
-      set_subpart!(acs, last_part, hom, 0)
-    end
+    $(Expr(:block,
+           (map(indexed_out_homs) do hom
+              :(set_subpart!(acs, last_part, $(Expr(:quote, hom)), 0))
+            end)...))
+
     for attr in $(Tuple(indexed_attrs))
-      if haskey(last_row, attr)
-        unset_attr_index!(acs.attr_indices[attr], last_row[attr], last_part)
+      if isassigned(subpart(acs, attr), last_part)
+        unset_attr_index!(acs.attr_indices[attr], subpart(acs, last_part, attr), last_part)
       end
     end
 
@@ -472,9 +515,17 @@ function rem_part_body(s::SchemaDesc, idxed, ob::Symbol)
     for a in $(Tuple(out_attrs))
       resize!(acs.attrs[a], last_part - 1)
     end
-    acs.obs[$(ob_num(s, ob))] -= 1
+    @inbounds acs.obs[$(ob_num(s, ob))] -= 1
     if part < last_part
-      set_subparts!(acs, part, (;last_row...))
+      $(Expr(:block,
+             (map([out_homs; out_attrs]) do f
+                quote
+                  x = $(Symbol("last_row_" * string(f)))
+                  if !isnothing(x)
+                    set_subpart!(acs, part, $(Expr(:quote, f)), x)
+                  end
+                end
+             end)...))
     end
   end
 end
