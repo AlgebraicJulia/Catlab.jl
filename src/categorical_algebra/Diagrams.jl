@@ -51,6 +51,8 @@ This is the domain of the underlying functor.
 """
 shape(d::Diagram) = dom(diagram(d))
 
+Base.hash(d::Diagram{T}, h::UInt) where {T} = hash(T, hash(diagram(d), h))
+
 Base.:(==)(d1::Diagram{T}, d2::Diagram{S}) where {T,S} =
   T == S && diagram(d1) == diagram(d2)
 
@@ -136,6 +138,9 @@ cell2(D::FinDomFunctor, x) = id(codom(D), ob_map(D, x))
 
 shape_map(f::DiagramHom) = f.shape_map
 diagram_map(f::DiagramHom) = f.diagram_map
+
+Base.hash(f::DiagramHom{T}, h::UInt) where {T} = hash(T, hash(f.shape_map,
+  hash(f.diagram_map, hash(f.precomposed_diagram, h))))
 
 Base.:(==)(f::DiagramHom{T}, g::DiagramHom{S}) where {T,S} =
   T == S && shape_map(f) == shape_map(g) && diagram_map(f) == diagram_map(g) &&
