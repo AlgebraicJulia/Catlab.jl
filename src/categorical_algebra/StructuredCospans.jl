@@ -218,26 +218,28 @@ function OpenACSetTypes(::Type{X}, ob₀::Symbol) where
    foldr(UnionAll, type_vars, init=StructuredMulticospan{L}))
 end
 
-#SF
+#SF **********************
 """ Create types for open attributed C-sets from an attributed C-set type.
 
 Note: the difference between this function and the "OpenACSetTypes" is in the 
 small part (category A), it includes more than 1 objects; while in function "OpenACSetTypes"
 the category A  only includes one object
 """
+
 function OpenACSetTypes(::Type{X}, ::Type{A}) where
   {S<:SchemaDescType, X<:StructACSet{S}, S0<:SchemaDescType, A<:StructACSet{S0}}
 #    {S<:SchemaDescType, X<:StructACSet{S}, S0<:SchemaDescType, A<:StructACSet{S0}}
-  # TODO: assert: A \include X
+  # TODO: assert: A include X
   println(attrtype(S0))
   println(attrtype(S))
   @assert attrtype(S0) ⊆ attrtype(S)
   type_vars = map(TypeVar, attrtype(S))
   type_vars0 = map(TypeVar, attrtype(S0))
-  L = DiscreteACSet{A{type_vars0...}, X{type_vars...}}
+  L = SubStructACSet{A{type_vars0...}, X{type_vars...}}
   (foldr(UnionAll, type_vars, init=StructuredCospanOb{L}),
    foldr(UnionAll, type_vars, init=StructuredMulticospan{L}))
 end
+
 
 """ Abstract type for functor L: A → X giving a discrete C-set.
 """
@@ -246,10 +248,28 @@ abstract type AbstractDiscreteACSet{X <: StructACSet} end
 codom(::Type{<:AbstractDiscreteACSet{X}}) where
   {S, X<:StructACSet{S}} = (X, TightACSetTransformation{S})
 
-#SF
+
+#SF **********************
+""" A functor L: C₀-Set → C-Set giving the discrete C-set for C₀.
+
+Here C₀ is assumed to contain a substructure of C (more than one objects). 
+The functor L has a right adjoint R: C-Set → C₀-Set
+forgetting the rest of C. Data attributes of the chosen object are preserved.
+"""
+struct SubStructACSet{A <: StructACSet, X <: StructACSet} end
+
+dom(::Type{<:SubStructACSet{A,X}}) where {S, A<:StructACSet{S}, X} =
+  (A, TightACSetTransformation{S})
+
+codom(::Type{<:SubStructACSet{A,X}}) where
+  {A, S, X<:StructACSet{S}} = (X, TightACSetTransformation{S})
+# **********************
+
+#SF **********************
 StructuredCospan{L}(x::StructACSet, f::ACSetTransformation,
-                    g::ACSetTransformation) where {L<:AbstractDiscreteACSet} =
+                    g::ACSetTransformation) where {L<:SubStructACSet} =
   StructuredCospan{L}(x, Cospan(f, g))
+# **********************
 
 StructuredCospan{L}(x::StructACSet, f::FinFunction{Int,Int},
                     g::FinFunction{Int,Int}) where {L<:AbstractDiscreteACSet} =
@@ -260,11 +280,12 @@ StructuredMulticospan{L}(x::StructACSet,
     {L<:AbstractDiscreteACSet, N} =
   StructuredMulticospan{L}(x, SMulticospan{N}(fs...))
 
-#SF
+#SF **********************
 StructuredMulticospan{L}(x::StructACSet,
                          fs::Vararg{<:ACSetTransformation,N}) where
-    {L<:AbstractDiscreteACSet,N} =
+    {L<:SubStructACSet, N} =
   StructuredMulticospan{L}(x, SMulticospan{N}(fs...))
+# **********************
 
 function force(M::StructuredMulticospan{L}) where {L<:AbstractDiscreteACSet}
   StructuredMulticospan{L}(
@@ -291,6 +312,7 @@ struct DiscreteACSet{A <: StructACSet, X} <: AbstractDiscreteACSet{X} end
 
 dom(::Type{<:DiscreteACSet{A}}) where {S, A<:StructACSet{S}} =
   (A, TightACSetTransformation{S})
+
 
 function StructuredMulticospan{L}(x::StructACSet,
                                   cospan::Multicospan{<:FinSet{Int}}) where
@@ -339,6 +361,16 @@ function (::Type{L})(a::StructACSet) where {A,X,L<:DiscreteACSet{A,X}}
   x
 end
 
+#SF **********************
+""" Apply left adjoint L: C₀-Set → C-Set to object.
+"""
+function (::Type{L})(a::StructACSet) where {A,X,L<:SubStructACSet{A,X}}
+  x = X()
+  copy_parts_only!(x, a)
+  x
+end
+# **********************
+
 """ Apply left adjoint L: FinSet → C-Set to morphism.
 """
 function (::Type{L})(f::FinFunction{Int,Int}) where
@@ -352,6 +384,14 @@ function (::Type{L})(ϕ::ACSetTransformation) where {L <: DiscreteACSet}
   ACSetTransformation(components(ϕ), L(dom(ϕ)), L(codom(ϕ)))
 end
 
+#SF **********************
+""" Apply left adjoint L: C₀-Set → C-Set to morphism.
+"""
+function (::Type{L})(ϕ::ACSetTransformation) where {L <: SubStructACSet}
+  ACSetTransformation(components(ϕ), L(dom(ϕ)), L(codom(ϕ)))
+end
+# **********************
+
 """ Convert morphism a → R(x) to morphism L(a) → x using discrete-forgetful
 adjunction L ⊣ R: A ↔ X.
 """
@@ -363,5 +403,10 @@ function shift_left(::Type{L}, x::StructACSet, ϕ::ACSetTransformation) where
     {L <: DiscreteACSet}
   ACSetTransformation(components(ϕ), L(dom(ϕ)), x)
 end
-
+#SF **********************
+function shift_left(::Type{L}, x::StructACSet, ϕ::ACSetTransformation) where
+    {L <: SubStructACSet}
+  ACSetTransformation(components(ϕ), L(dom(ϕ)), x)
+end
+# **********************
 end
