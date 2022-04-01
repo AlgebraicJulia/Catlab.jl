@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Basics of wiring diagrams · Catlab.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit">Catlab.jl</span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox"/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Seven Sketches</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../sketches/partitions/">Partitions</a></li><li><a class="tocitem" href="../../sketches/preorders/">Preorders</a></li><li><a class="tocitem" href="../../sketches/meets/">Meets in Preorders</a></li><li><a class="tocitem" href="../../sketches/smc/">Symmetric Monoidal Categories</a></li><li><a class="tocitem" href="../../sketches/cat_elements/">The Category of Elements</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/graphs/">The Category of Graphs</a></li><li><a class="tocitem" href="../../graphs/graphs_label/">Labelled Graphs</a></li><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox"/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../diagrams/diagrams/">Diagrams</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-4" type="checkbox" checked/><label class="tocitem" for="menuitem-2-4"><span class="docs-label">Wiring Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li class="is-active"><a class="tocitem" href>Basics of wiring diagrams</a><ul class="internal"><li><a class="tocitem" href="#Data-structures"><span>Data structures</span></a></li><li><a class="tocitem" href="#Categorical-interface"><span>Categorical interface</span></a></li><li><a class="tocitem" href="#Imperative-interface"><span>Imperative interface</span></a></li></ul></li><li><a class="tocitem" href="../diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li><li><a class="tocitem" href="../wd_cset/">Wiring Diagrams as Attributed C-Sets</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox"/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphics/composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../../graphics/graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../../graphics/tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../../graphics/layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li><li><a class="tocitem" href="../../graphics/graphviz_schema_visualization/">Visualizing Acset Schemas with Graphviz</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/core/">Theories, instances, and expressions</a></li><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Wiring Diagrams</a></li><li class="is-active"><a href>Basics of wiring diagrams</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Basics of wiring diagrams</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/master/docs/literate/wiring_diagrams/wiring_diagram_basics.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="wiring_diagram_basics"><a class="docs-heading-anchor" href="#wiring_diagram_basics">Basics of wiring diagrams</a><a id="wiring_diagram_basics-1"></a><a class="docs-heading-anchor-permalink" href="#wiring_diagram_basics" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/AlgebraicJulia/Catlab.jl/blob/gh-pages/v0.13.8/generated/wiring_diagrams/wiring_diagram_basics.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><p>Using Catlab, you can create, manipulate, serialize, and visualize <em>wiring diagrams</em>, also known as <a href="https://ncatlab.org/nlab/show/string+diagram">string diagrams</a>. The flexible data structure for wiring diagrams allows arbitrary data to be attached to boxes, ports, and wires, and supports recursively nested diagrams.</p><p>You can interact with wiring diagrams using two different progamming interfaces:</p><ol><li><p><strong>Categorical</strong>: A high-level, functional interface expressed in terms of categorical concepts, such as composition (<code>compose</code>), monoidal products (<code>otimes</code>), duplication (<code>mcopy</code>), and deletion (<code>delete</code>).</p></li><li><p><strong>Imperative</strong>: A lower-level, mutating interface to directly manipulate boxes, ports, and wires, via operations like adding boxes (<code>add_box</code>) and wires (<code>add_wire</code>).</p></li></ol><p>In this notebook, we introduce both interfaces. We do not explicitly cover the visualization API, although for illustrative purposes we will draw wiring diagrams using Graphviz. Thus, you should install <a href="https://www.graphviz.org/">Graphviz</a> if you wish to run this notebook.</p><pre><code class="language-julia">using Catlab.WiringDiagrams
+
+using Catlab.Graphics
+import Catlab.Graphics: Graphviz
+
+show_diagram(d::WiringDiagram) = to_graphviz(d,
+  orientation=LeftToRight,
+  labels=true, label_attr=:xlabel,
+  node_attrs=Graphviz.Attributes(
+    :fontname =&gt; &quot;Courier&quot;,
+  ),
+  edge_attrs=Graphviz.Attributes(
+    :fontname =&gt; &quot;Courier&quot;,
+  )
+)</code></pre><pre class="documenter-example-output">show_diagram (generic function with 1 method)</pre><h2 id="Data-structures"><a class="docs-heading-anchor" href="#Data-structures">Data structures</a><a id="Data-structures-1"></a><a class="docs-heading-anchor-permalink" href="#Data-structures" title="Permalink"></a></h2><p>The basic building blocks of a wiring diagram are boxes, ports, and wires. The top-level data structure is <code>WiringDiagram</code>, defined in the module <code>Catlab.WiringDiagrams</code>. A wiring diagram consists of boxes (usually of type <code>Box</code>) connected by wires (of type <code>Wire</code>). Each box has a sequence of input ports and a sequence of output ports, as does the wiring diagram itself. The wires have sources and targets, both of which consist of a box and a port on that box.</p><p>The boxes in a wiring diagram are indexed by integer IDs. Boxes can be retrieved by ID, and wires refer to boxes using their IDs. Two special IDs, obtained by <code>input_id</code> and <code>output_id</code> methods, refer to the inputs and outputs of the diagram itself. In this way, wires can connect the (inner) boxes of a diagram to the diagram&#39;s &quot;outer box&quot;.</p><p>The <code>WiringDiagram</code> data structure is an elaborate wrapper around a directed graph from <a href="https://github.com/JuliaGraphs/LightGraphs.jl">LightGraphs.jl</a>. The underlying <code>DiGraph</code> object can be accessed using the <code>graph</code> method. The vertices of this graph are exactly the box IDs. The graph should never be mutated directly, on pain of creating inconsistent state, but it does allow convenient access to the large array of <a href="https://juliagraphs.github.io/LightGraphs.jl/latest/">graph algorithms</a> supported by LightGraphs.</p><p>All this is somewhat abstract but should become clearer as we see concrete examples.</p><h2 id="Categorical-interface"><a class="docs-heading-anchor" href="#Categorical-interface">Categorical interface</a><a id="Categorical-interface-1"></a><a class="docs-heading-anchor-permalink" href="#Categorical-interface" title="Permalink"></a></h2><p>In this example, the wiring diagrams will carry symbolic expressions (of type <code>Catlab.ObExpr</code> and <code>Catlab.HomExpr</code>).</p><pre><code class="language-julia">using Catlab.Theories
+
+A, B, C, D = Ob(FreeBiproductCategory, :A, :B, :C, :D)
+f = Hom(:f, A, B)
+g = Hom(:g, B, C)
+h = Hom(:h, C, D)
+
+f</code></pre><p class="math-container">\[f : A \to B\]</p><h3 id="Generators"><a class="docs-heading-anchor" href="#Generators">Generators</a><a id="Generators-1"></a><a class="docs-heading-anchor-permalink" href="#Generators" title="Permalink"></a></h3><p>Convert each of the morphism generators into a diagram with a single box.</p><pre><code class="language-julia">f, g, h = to_wiring_diagram(f), to_wiring_diagram(g), to_wiring_diagram(h)
+f</code></pre><pre class="documenter-example-output">WiringDiagram{BiproductCategory}([:A], [:B], 
+[ -2 =&gt; {inputs},
+  -1 =&gt; {outputs},
+  1 =&gt; Box(:f, [:A], [:B]) ],
+[ Wire((-2,1) =&gt; (1,1)),
+  Wire((1,1) =&gt; (-1,1)) ])</pre><pre><code class="language-julia">show_diagram(f)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="101pt" height="37pt"
+ viewBox="0.00 0.00 101.00 36.50" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 32.5)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-32.5 97,-32.5 97,4 -4,4"/>
+<!-- n0in1 -->
+<!-- n1 -->
+<!-- f -->
+<g id="n1" class="node">
+<title>n1</title>
+<polygon fill="none" stroke="black" points="37.5,-3 37.5,-28 56.5,-28 56.5,-3 37.5,-3"/>
+<text text-anchor="start" x="42.5" y="-11.8" font-family="Courier,monospace" font-size="14.00">f</text>
+</g>
+<!-- n0in1&#45;&gt;n1 -->
+<!-- A -->
+<g id="e1" class="edge">
+<title>n0in1:e&#45;&gt;n1:w</title>
+<path fill="none" stroke="black" d="M1,-15C15.12,-15 19.9,-15 31.83,-15"/>
+<polygon fill="black" stroke="black" points="32,-16.75 37,-15 32,-13.25 32,-16.75"/>
+<text text-anchor="middle" x="14.4" y="-3.8" font-family="Courier,monospace" font-size="14.00">A</text>
+</g>
+<!-- n0out1 -->
+<!-- n1&#45;&gt;n0out1 -->
+<!-- B -->
+<g id="e2" class="edge">
+<title>n1:e&#45;&gt;n0out1:w</title>
+<path fill="none" stroke="black" d="M56,-15C70.12,-15 74.9,-15 86.83,-15"/>
+<polygon fill="black" stroke="black" points="87,-16.75 92,-15 87,-13.25 87,-16.75"/>
+<text text-anchor="middle" x="69.4" y="-3.8" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+</g>
+</svg>
+<h3 id="Composition"><a class="docs-heading-anchor" href="#Composition">Composition</a><a id="Composition-1"></a><a class="docs-heading-anchor-permalink" href="#Composition" title="Permalink"></a></h3><pre><code class="language-julia">compose(f,g)</code></pre><pre class="documenter-example-output">WiringDiagram{BiproductCategory}([:A], [:C], 
+[ -2 =&gt; {inputs},
+  -1 =&gt; {outputs},
+  1 =&gt; Box(:f, [:A], [:B]),
+  2 =&gt; Box(:g, [:B], [:C]) ],
+[ Wire((-2,1) =&gt; (1,1)),
+  Wire((1,1) =&gt; (2,1)),
+  Wire((2,1) =&gt; (-1,1)) ])</pre><pre><code class="language-julia">show_diagram(compose(f,g))</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="156pt" height="37pt"
+ viewBox="0.00 0.00 156.00 36.50" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 32.5)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-32.5 152,-32.5 152,4 -4,4"/>
+<!-- n0in1 -->
+<!-- n1 -->
+<!-- f -->
+<g id="n1" class="node">
+<title>n1</title>
+<polygon fill="none" stroke="black" points="37.5,-3 37.5,-28 56.5,-28 56.5,-3 37.5,-3"/>
+<text text-anchor="start" x="42.5" y="-11.8" font-family="Courier,monospace" font-size="14.00">f</text>
+</g>
+<!-- n0in1&#45;&gt;n1 -->
+<!-- A -->
+<g id="e1" class="edge">
+<title>n0in1:e&#45;&gt;n1:w</title>
+<path fill="none" stroke="black" d="M1,-15C15.12,-15 19.9,-15 31.83,-15"/>
+<polygon fill="black" stroke="black" points="32,-16.75 37,-15 32,-13.25 32,-16.75"/>
+<text text-anchor="middle" x="14.4" y="-3.8" font-family="Courier,monospace" font-size="14.00">A</text>
+</g>
+<!-- n0out1 -->
+<!-- n2 -->
+<!-- g -->
+<g id="n2" class="node">
+<title>n2</title>
+<polygon fill="none" stroke="black" points="92.5,-3 92.5,-28 111.5,-28 111.5,-3 92.5,-3"/>
+<text text-anchor="start" x="97.5" y="-11.8" font-family="Courier,monospace" font-size="14.00">g</text>
+</g>
+<!-- n1&#45;&gt;n2 -->
+<!-- B -->
+<g id="e2" class="edge">
+<title>n1:e&#45;&gt;n2:w</title>
+<path fill="none" stroke="black" d="M56,-15C70.12,-15 74.9,-15 86.83,-15"/>
+<polygon fill="black" stroke="black" points="87,-16.75 92,-15 87,-13.25 87,-16.75"/>
+<text text-anchor="middle" x="69.4" y="-3.8" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+<!-- n2&#45;&gt;n0out1 -->
+<!-- C -->
+<g id="e3" class="edge">
+<title>n2:e&#45;&gt;n0out1:w</title>
+<path fill="none" stroke="black" d="M111,-15C125.12,-15 129.9,-15 141.83,-15"/>
+<polygon fill="black" stroke="black" points="142,-16.75 147,-15 142,-13.25 142,-16.75"/>
+<text text-anchor="middle" x="124.4" y="-3.8" font-family="Courier,monospace" font-size="14.00">C</text>
+</g>
+</g>
+</svg>
+<h3 id="Monoidal-products"><a class="docs-heading-anchor" href="#Monoidal-products">Monoidal products</a><a id="Monoidal-products-1"></a><a class="docs-heading-anchor-permalink" href="#Monoidal-products" title="Permalink"></a></h3><pre><code class="language-julia">otimes(f,h)</code></pre><pre class="documenter-example-output">WiringDiagram{BiproductCategory}([:A,:C], [:B,:D], 
+[ -2 =&gt; {inputs},
+  -1 =&gt; {outputs},
+  1 =&gt; Box(:f, [:A], [:B]),
+  2 =&gt; Box(:h, [:C], [:D]) ],
+[ Wire((-2,1) =&gt; (1,1)),
+  Wire((-2,2) =&gt; (2,1)),
+  Wire((1,1) =&gt; (-1,1)),
+  Wire((2,1) =&gt; (-1,2)) ])</pre><pre><code class="language-julia">show_diagram(otimes(f,h))</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="101pt" height="79pt"
+ viewBox="0.00 0.00 101.00 79.01" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 75.01)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-75.01 97,-75.01 97,4 -4,4"/>
+<!-- n0in1 -->
+<!-- n0in2 -->
+<!-- n0in1&#45;&gt;n0in2 -->
+<!-- n1 -->
+<!-- f -->
+<g id="n1" class="node">
+<title>n1</title>
+<polygon fill="none" stroke="black" points="37.5,-45.51 37.5,-70.51 56.5,-70.51 56.5,-45.51 37.5,-45.51"/>
+<text text-anchor="start" x="42.5" y="-54.31" font-family="Courier,monospace" font-size="14.00">f</text>
+</g>
+<!-- n0in1&#45;&gt;n1 -->
+<!-- A -->
+<g id="e1" class="edge">
+<title>n0in1:e&#45;&gt;n1:w</title>
+<path fill="none" stroke="black" d="M1,-57.51C15.12,-57.51 19.9,-57.51 31.83,-57.51"/>
+<polygon fill="black" stroke="black" points="32,-59.26 37,-57.51 32,-55.76 32,-59.26"/>
+<text text-anchor="middle" x="14.4" y="-46.31" font-family="Courier,monospace" font-size="14.00">A</text>
+</g>
+<!-- n2 -->
+<!-- h -->
+<g id="n2" class="node">
+<title>n2</title>
+<polygon fill="none" stroke="black" points="37.5,-2.51 37.5,-27.51 56.5,-27.51 56.5,-2.51 37.5,-2.51"/>
+<text text-anchor="start" x="42.5" y="-11.31" font-family="Courier,monospace" font-size="14.00">h</text>
+</g>
+<!-- n0in2&#45;&gt;n2 -->
+<!-- C -->
+<g id="e2" class="edge">
+<title>n0in2:e&#45;&gt;n2:w</title>
+<path fill="none" stroke="black" d="M1,-15.51C15.13,-15.51 19.89,-14.73 31.83,-14.54"/>
+<polygon fill="black" stroke="black" points="32.01,-16.29 37,-14.51 31.99,-12.79 32.01,-16.29"/>
+<text text-anchor="middle" x="14.4" y="-3.81" font-family="Courier,monospace" font-size="14.00">C</text>
+</g>
+<!-- n0out1 -->
+<!-- n0out2 -->
+<!-- n0out1&#45;&gt;n0out2 -->
+<!-- n1&#45;&gt;n0out1 -->
+<!-- B -->
+<g id="e3" class="edge">
+<title>n1:e&#45;&gt;n0out1:w</title>
+<path fill="none" stroke="black" d="M56,-57.51C70.12,-57.51 74.9,-57.51 86.83,-57.51"/>
+<polygon fill="black" stroke="black" points="87,-59.26 92,-57.51 87,-55.76 87,-59.26"/>
+<text text-anchor="middle" x="69.4" y="-46.31" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+<!-- n2&#45;&gt;n0out2 -->
+<!-- D -->
+<g id="e4" class="edge">
+<title>n2:e&#45;&gt;n0out2:w</title>
+<path fill="none" stroke="black" d="M56,-14.51C70.13,-14.51 74.89,-15.28 86.83,-15.47"/>
+<polygon fill="black" stroke="black" points="86.99,-17.22 92,-15.51 87.01,-13.72 86.99,-17.22"/>
+<text text-anchor="middle" x="69.4" y="-3.8" font-family="Courier,monospace" font-size="14.00">D</text>
+</g>
+</g>
+</svg>
+<h3 id="Copy-and-merge,-delete-and-create"><a class="docs-heading-anchor" href="#Copy-and-merge,-delete-and-create">Copy and merge, delete and create</a><a id="Copy-and-merge,-delete-and-create-1"></a><a class="docs-heading-anchor-permalink" href="#Copy-and-merge,-delete-and-create" title="Permalink"></a></h3><pre><code class="language-julia">mcopy(codom(f),2)</code></pre><pre class="documenter-example-output">WiringDiagram{BiproductCategory}([:B], [:B,:B], 
+[ -2 =&gt; {inputs},
+  -1 =&gt; {outputs},
+   ],
+[ Wire((-2,1) =&gt; (-1,1)),
+  Wire((-2,1) =&gt; (-1,2)) ])</pre><pre><code class="language-julia">show_diagram(mcopy(codom(f),2))</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="46pt" height="74pt"
+ viewBox="0.00 0.00 46.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 42,-70 42,4 -4,4"/>
+<!-- n0in1 -->
+<!-- n0out1 -->
+<!-- n0in1&#45;&gt;n0out1 -->
+<!-- B -->
+<g id="e1" class="edge">
+<title>n0in1:e&#45;&gt;n0out1:w</title>
+<path fill="none" stroke="black" d="M1,-33C17.64,-33 18.49,-49.95 31.92,-53.39"/>
+<polygon fill="black" stroke="black" points="31.83,-55.15 37,-54 32.24,-51.67 31.83,-55.15"/>
+<text text-anchor="middle" x="14.27" y="-32.03" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+<!-- n0out2 -->
+<!-- n0in1&#45;&gt;n0out2 -->
+<!-- B -->
+<g id="e2" class="edge">
+<title>n0in1:e&#45;&gt;n0out2:w</title>
+<path fill="none" stroke="black" d="M1,-33C17.64,-33 18.49,-16.05 31.92,-12.61"/>
+<polygon fill="black" stroke="black" points="32.24,-14.33 37,-12 31.83,-10.85 32.24,-14.33"/>
+<text text-anchor="middle" x="14.27" y="-11.57" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+<!-- n0out1&#45;&gt;n0out2 -->
+</g>
+</svg>
+<pre><code class="language-julia">show_diagram(compose(f, mcopy(codom(f),2)))</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="101pt" height="74pt"
+ viewBox="0.00 0.00 101.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 97,-70 97,4 -4,4"/>
+<!-- n0in1 -->
+<!-- n1 -->
+<!-- f -->
+<g id="n1" class="node">
+<title>n1</title>
+<polygon fill="none" stroke="black" points="37.5,-21 37.5,-46 56.5,-46 56.5,-21 37.5,-21"/>
+<text text-anchor="start" x="42.5" y="-29.8" font-family="Courier,monospace" font-size="14.00">f</text>
+</g>
+<!-- n0in1&#45;&gt;n1 -->
+<!-- A -->
+<g id="e1" class="edge">
+<title>n0in1:e&#45;&gt;n1:w</title>
+<path fill="none" stroke="black" d="M1,-33C15.12,-33 19.9,-33 31.83,-33"/>
+<polygon fill="black" stroke="black" points="32,-34.75 37,-33 32,-31.25 32,-34.75"/>
+<text text-anchor="middle" x="14.4" y="-21.8" font-family="Courier,monospace" font-size="14.00">A</text>
+</g>
+<!-- n0out1 -->
+<!-- n0out2 -->
+<!-- n0out1&#45;&gt;n0out2 -->
+<!-- n1&#45;&gt;n0out1 -->
+<!-- B -->
+<g id="e3" class="edge">
+<title>n1:e&#45;&gt;n0out1:w</title>
+<path fill="none" stroke="black" d="M56,-33C72.64,-33 73.49,-49.95 86.92,-53.39"/>
+<polygon fill="black" stroke="black" points="86.83,-55.15 92,-54 87.24,-51.67 86.83,-55.15"/>
+<text text-anchor="middle" x="69.27" y="-32.03" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+<!-- n1&#45;&gt;n0out2 -->
+<!-- B -->
+<g id="e2" class="edge">
+<title>n1:e&#45;&gt;n0out2:w</title>
+<path fill="none" stroke="black" d="M56,-33C72.64,-33 73.49,-16.05 86.92,-12.61"/>
+<polygon fill="black" stroke="black" points="87.24,-14.33 92,-12 86.83,-10.85 87.24,-14.33"/>
+<text text-anchor="middle" x="69.27" y="-11.57" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+</g>
+</svg>
+<pre><code class="language-julia">show_diagram(compose(mcopy(dom(f),2), otimes(f,f)))</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="101pt" height="79pt"
+ viewBox="0.00 0.00 101.00 79.01" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 75.01)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-75.01 97,-75.01 97,4 -4,4"/>
+<!-- n0in1 -->
+<!-- n1 -->
+<!-- f -->
+<g id="n1" class="node">
+<title>n1</title>
+<polygon fill="none" stroke="black" points="37.5,-45.51 37.5,-70.51 56.5,-70.51 56.5,-45.51 37.5,-45.51"/>
+<text text-anchor="start" x="42.5" y="-54.31" font-family="Courier,monospace" font-size="14.00">f</text>
+</g>
+<!-- n0in1&#45;&gt;n1 -->
+<!-- A -->
+<g id="e2" class="edge">
+<title>n0in1:e&#45;&gt;n1:w</title>
+<path fill="none" stroke="black" d="M1,-35.51C17.85,-35.51 18.35,-53.26 31.87,-56.87"/>
+<polygon fill="black" stroke="black" points="31.82,-58.63 37,-57.51 32.25,-55.15 31.82,-58.63"/>
+<text text-anchor="middle" x="14.28" y="-35.02" font-family="Courier,monospace" font-size="14.00">A</text>
+</g>
+<!-- n2 -->
+<!-- f -->
+<g id="n2" class="node">
+<title>n2</title>
+<polygon fill="none" stroke="black" points="37.5,-2.51 37.5,-27.51 56.5,-27.51 56.5,-2.51 37.5,-2.51"/>
+<text text-anchor="start" x="42.5" y="-11.31" font-family="Courier,monospace" font-size="14.00">f</text>
+</g>
+<!-- n0in1&#45;&gt;n2 -->
+<!-- A -->
+<g id="e1" class="edge">
+<title>n0in1:e&#45;&gt;n2:w</title>
+<path fill="none" stroke="black" d="M1,-35.51C17.64,-35.51 18.49,-18.55 31.92,-15.11"/>
+<polygon fill="black" stroke="black" points="32.24,-16.84 37,-14.51 31.83,-13.36 32.24,-16.84"/>
+<text text-anchor="middle" x="14.27" y="-14.08" font-family="Courier,monospace" font-size="14.00">A</text>
+</g>
+<!-- n0out1 -->
+<!-- n0out2 -->
+<!-- n0out1&#45;&gt;n0out2 -->
+<!-- n1&#45;&gt;n0out1 -->
+<!-- B -->
+<g id="e3" class="edge">
+<title>n1:e&#45;&gt;n0out1:w</title>
+<path fill="none" stroke="black" d="M56,-57.51C70.12,-57.51 74.9,-57.51 86.83,-57.51"/>
+<polygon fill="black" stroke="black" points="87,-59.26 92,-57.51 87,-55.76 87,-59.26"/>
+<text text-anchor="middle" x="69.4" y="-46.31" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+<!-- n2&#45;&gt;n0out2 -->
+<!-- B -->
+<g id="e4" class="edge">
+<title>n2:e&#45;&gt;n0out2:w</title>
+<path fill="none" stroke="black" d="M56,-14.51C70.13,-14.51 74.89,-15.28 86.83,-15.47"/>
+<polygon fill="black" stroke="black" points="86.99,-17.22 92,-15.51 87.01,-13.72 86.99,-17.22"/>
+<text text-anchor="middle" x="69.4" y="-3.8" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+</g>
+</svg>
+<h2 id="Imperative-interface"><a class="docs-heading-anchor" href="#Imperative-interface">Imperative interface</a><a id="Imperative-interface-1"></a><a class="docs-heading-anchor-permalink" href="#Imperative-interface" title="Permalink"></a></h2><p>We now show how to manipulate wiring diagrams using the low-level, imperative interface. The diagrams will carry Julia symbols.</p><pre><code class="language-julia">f = Box(:f, [:A], [:B])
+g = Box(:g, [:B], [:C])
+h = Box(:h, [:C], [:D])
+
+f</code></pre><pre class="documenter-example-output">Box(:f, [:A], [:B])</pre><h3 id="Composition-2"><a class="docs-heading-anchor" href="#Composition-2">Composition</a><a class="docs-heading-anchor-permalink" href="#Composition-2" title="Permalink"></a></h3><p>For example, here is how to manually construct a composition of two boxes.</p><p>The <code>add_box!</code> method adds a box to a wiring diagrams and returns the ID assigned to the box. How the boxes are indexed is an implementation detail that you should not rely on; use the IDs that the system gives you.</p><pre><code class="language-julia">d = WiringDiagram([:A], [:C])
+
+fv = add_box!(d, f)
+gv = add_box!(d, g)
+
+add_wires!(d, [
+  (input_id(d),1) =&gt; (fv,1),
+  (fv,1) =&gt; (gv,1),
+  (gv,1) =&gt; (output_id(d),1),
+])
+
+nboxes(d)</code></pre><pre class="documenter-example-output">2</pre><pre><code class="language-julia">nwires(d)</code></pre><pre class="documenter-example-output">3</pre><pre><code class="language-julia">d</code></pre><pre class="documenter-example-output">WiringDiagram([:A], [:C], 
+[ -2 =&gt; {inputs},
+  -1 =&gt; {outputs},
+  1 =&gt; Box(:f, [:A], [:B]),
+  2 =&gt; Box(:g, [:B], [:C]) ],
+[ Wire((-2,1) =&gt; (1,1)),
+  Wire((1,1) =&gt; (2,1)),
+  Wire((2,1) =&gt; (-1,1)) ])</pre><pre><code class="language-julia">show_diagram(d)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="156pt" height="37pt"
+ viewBox="0.00 0.00 156.00 36.50" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 32.5)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-32.5 152,-32.5 152,4 -4,4"/>
+<!-- n0in1 -->
+<!-- n1 -->
+<!-- f -->
+<g id="n1" class="node">
+<title>n1</title>
+<polygon fill="none" stroke="black" points="37.5,-3 37.5,-28 56.5,-28 56.5,-3 37.5,-3"/>
+<text text-anchor="start" x="42.5" y="-11.8" font-family="Courier,monospace" font-size="14.00">f</text>
+</g>
+<!-- n0in1&#45;&gt;n1 -->
+<!-- A -->
+<g id="e1" class="edge">
+<title>n0in1:e&#45;&gt;n1:w</title>
+<path fill="none" stroke="black" d="M1,-15C15.12,-15 19.9,-15 31.83,-15"/>
+<polygon fill="black" stroke="black" points="32,-16.75 37,-15 32,-13.25 32,-16.75"/>
+<text text-anchor="middle" x="14.4" y="-3.8" font-family="Courier,monospace" font-size="14.00">A</text>
+</g>
+<!-- n0out1 -->
+<!-- n2 -->
+<!-- g -->
+<g id="n2" class="node">
+<title>n2</title>
+<polygon fill="none" stroke="black" points="92.5,-3 92.5,-28 111.5,-28 111.5,-3 92.5,-3"/>
+<text text-anchor="start" x="97.5" y="-11.8" font-family="Courier,monospace" font-size="14.00">g</text>
+</g>
+<!-- n1&#45;&gt;n2 -->
+<!-- B -->
+<g id="e2" class="edge">
+<title>n1:e&#45;&gt;n2:w</title>
+<path fill="none" stroke="black" d="M56,-15C70.12,-15 74.9,-15 86.83,-15"/>
+<polygon fill="black" stroke="black" points="87,-16.75 92,-15 87,-13.25 87,-16.75"/>
+<text text-anchor="middle" x="69.4" y="-3.8" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+<!-- n2&#45;&gt;n0out1 -->
+<!-- C -->
+<g id="e3" class="edge">
+<title>n2:e&#45;&gt;n0out1:w</title>
+<path fill="none" stroke="black" d="M111,-15C125.12,-15 129.9,-15 141.83,-15"/>
+<polygon fill="black" stroke="black" points="142,-16.75 147,-15 142,-13.25 142,-16.75"/>
+<text text-anchor="middle" x="124.4" y="-3.8" font-family="Courier,monospace" font-size="14.00">C</text>
+</g>
+</g>
+</svg>
+<h3 id="Products"><a class="docs-heading-anchor" href="#Products">Products</a><a id="Products-1"></a><a class="docs-heading-anchor-permalink" href="#Products" title="Permalink"></a></h3><p>Here is how to manually construct a product of two boxes.</p><pre><code class="language-julia">d = WiringDiagram([:A,:C], [:B,:D])
+
+fv = add_box!(d, f)
+hv = add_box!(d, h)
+
+add_wires!(d, [
+  (input_id(d),1) =&gt; (fv,1),
+  (input_id(d),2) =&gt; (hv,1),
+  (fv,1) =&gt; (output_id(d),1),
+  (hv,1) =&gt; (output_id(d),2),
+])
+
+d</code></pre><pre class="documenter-example-output">WiringDiagram([:A,:C], [:B,:D], 
+[ -2 =&gt; {inputs},
+  -1 =&gt; {outputs},
+  1 =&gt; Box(:f, [:A], [:B]),
+  2 =&gt; Box(:h, [:C], [:D]) ],
+[ Wire((-2,1) =&gt; (1,1)),
+  Wire((-2,2) =&gt; (2,1)),
+  Wire((1,1) =&gt; (-1,1)),
+  Wire((2,1) =&gt; (-1,2)) ])</pre><pre><code class="language-julia">show_diagram(d)</code></pre><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="101pt" height="79pt"
+ viewBox="0.00 0.00 101.00 79.01" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 75.01)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-75.01 97,-75.01 97,4 -4,4"/>
+<!-- n0in1 -->
+<!-- n0in2 -->
+<!-- n0in1&#45;&gt;n0in2 -->
+<!-- n1 -->
+<!-- f -->
+<g id="n1" class="node">
+<title>n1</title>
+<polygon fill="none" stroke="black" points="37.5,-45.51 37.5,-70.51 56.5,-70.51 56.5,-45.51 37.5,-45.51"/>
+<text text-anchor="start" x="42.5" y="-54.31" font-family="Courier,monospace" font-size="14.00">f</text>
+</g>
+<!-- n0in1&#45;&gt;n1 -->
+<!-- A -->
+<g id="e1" class="edge">
+<title>n0in1:e&#45;&gt;n1:w</title>
+<path fill="none" stroke="black" d="M1,-57.51C15.12,-57.51 19.9,-57.51 31.83,-57.51"/>
+<polygon fill="black" stroke="black" points="32,-59.26 37,-57.51 32,-55.76 32,-59.26"/>
+<text text-anchor="middle" x="14.4" y="-46.31" font-family="Courier,monospace" font-size="14.00">A</text>
+</g>
+<!-- n2 -->
+<!-- h -->
+<g id="n2" class="node">
+<title>n2</title>
+<polygon fill="none" stroke="black" points="37.5,-2.51 37.5,-27.51 56.5,-27.51 56.5,-2.51 37.5,-2.51"/>
+<text text-anchor="start" x="42.5" y="-11.31" font-family="Courier,monospace" font-size="14.00">h</text>
+</g>
+<!-- n0in2&#45;&gt;n2 -->
+<!-- C -->
+<g id="e2" class="edge">
+<title>n0in2:e&#45;&gt;n2:w</title>
+<path fill="none" stroke="black" d="M1,-15.51C15.13,-15.51 19.89,-14.73 31.83,-14.54"/>
+<polygon fill="black" stroke="black" points="32.01,-16.29 37,-14.51 31.99,-12.79 32.01,-16.29"/>
+<text text-anchor="middle" x="14.4" y="-3.81" font-family="Courier,monospace" font-size="14.00">C</text>
+</g>
+<!-- n0out1 -->
+<!-- n0out2 -->
+<!-- n0out1&#45;&gt;n0out2 -->
+<!-- n1&#45;&gt;n0out1 -->
+<!-- B -->
+<g id="e3" class="edge">
+<title>n1:e&#45;&gt;n0out1:w</title>
+<path fill="none" stroke="black" d="M56,-57.51C70.12,-57.51 74.9,-57.51 86.83,-57.51"/>
+<polygon fill="black" stroke="black" points="87,-59.26 92,-57.51 87,-55.76 87,-59.26"/>
+<text text-anchor="middle" x="69.4" y="-46.31" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+<!-- n2&#45;&gt;n0out2 -->
+<!-- D -->
+<g id="e4" class="edge">
+<title>n2:e&#45;&gt;n0out2:w</title>
+<path fill="none" stroke="black" d="M56,-14.51C70.13,-14.51 74.89,-15.28 86.83,-15.47"/>
+<polygon fill="black" stroke="black" points="86.99,-17.22 92,-15.51 87.01,-13.72 86.99,-17.22"/>
+<text text-anchor="middle" x="69.4" y="-3.8" font-family="Courier,monospace" font-size="14.00">D</text>
+</g>
+</g>
+</svg>
+</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../diagrams/diagrams/">« Diagrams</a><a class="docs-footer-nextpage" href="../diagrams_and_expressions/">Wiring diagrams and syntactic expressions »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Friday 1 April 2022 05:12">Friday 1 April 2022</span>. Using Julia version 1.7.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
