@@ -60,11 +60,7 @@ otimes(x, y, z, xs...) = otimes([x, y, z, xs...])
 """
 collect(expr::ObExpr) = [ expr ]
 collect(expr::ObExpr{:otimes}) = vcat(map(collect, args(expr))...)
-collect(expr::ObExpr{:munit}) = roottypeof(expr)[]
-
-# XXX: We shouldn't have to do this.
-roottype(T) = T isa UnionAll ? T : T.name.wrapper
-roottypeof(x) = roottype(typeof(x))
+collect(expr::E) where E <: ObExpr{:munit} = Base.typename(E).wrapper[]
 
 """ Number of "dimensions" of object in monoidal category.
 """

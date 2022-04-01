@@ -18,7 +18,7 @@ using Tables
 @reexport using ...CSetDataStructures
 using ...GAT, ...Present
 using ...Theories: Category, SchemaDescType, CSetSchemaDescType,
-  attrtype, attrtype_num, attr, adom, acodom, acodom_nums, roottype
+  attrtype, attrtype_num, attr, adom, acodom, acodom_nums
 import ...Theories: dom, codom, compose, ⋅, id,
   ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 using ..FreeDiagrams, ..Limits, ..Subobjects, ..FinSets, ..FinCats
@@ -781,8 +781,10 @@ function limit(::Type{Tuple{ACS,Hom}}, diagram) where
     {S, ACS <: StructACSet{S}, Hom <: LooseACSetTransformation}
   limits = map(limit, unpack_diagram(diagram, all=true))
   Xs = cone_objects(diagram)
-  Y = isempty(attrtype(S)) ? ACS() :
-    roottype(ACS){(eltype(ob(limits[d])) for d in attrtype(S))...}()
+  Y = if isempty(attrtype(S)); ACS() else
+    ACSUnionAll = Base.typename(ACS).wrapper
+    ACSUnionAll{(eltype(ob(limits[d])) for d in attrtype(S))...}()
+  end
 
   result = limit!(Y, diagram, Xs, limits)
   for (f, c, d) in zip(attr(S), adom(S), acodom(S))
