@@ -24,6 +24,8 @@ d = Diagram(D)
 @test ob_map(d, 3) == SchSGraph[:V]
 @test hom_map(d, 1) == SchSGraph[:tgt]
 @test startswith(sprint(show, d), "Diagram{id}(")
+@test hash(D) == hash(D)
+@test hash(D) != hash(Diagram{op}(D))
 
 # Diagram morphisms
 ###################
@@ -31,6 +33,7 @@ d = Diagram(D)
 f = DiagramHom([(2,:inv), (1,:inv), 3], [2,1], d, d)
 @test dom(f) == d
 @test codom(f) == d
+@test hash(f) == hash(DiagramHom([(2,:inv), (1,:inv), 3], [2,1], d, d))
 @test is_functorial(shape_map(f))
 @test shape_map(f) == FinFunctor([2,1,3], [2,1], C, C)
 ϕ = diagram_map(f)
@@ -43,6 +46,7 @@ f = DiagramHom([(2,:inv), (1,:inv), 3], [2,1], d, d)
 @test collect_hom(f) == [Path(graph(C), 2), Path(graph(C), 1)]
 f² = f⋅f
 @test shape_map(f²) == FinFunctor(1:3, 1:2, C, C)
+@test hash(f) != hash(f²)
 
 f = DiagramHom{op}([(2,:inv), (1,:inv), 3], [2,1], D, D)
 ιV = FinDomFunctor([:V], FinCat(1), FinCat(SchSGraph))

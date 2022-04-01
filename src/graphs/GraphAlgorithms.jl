@@ -1,8 +1,8 @@
 """ Algorithms on graphs based on C-sets.
 """
 module GraphAlgorithms
-export connected_components, connected_component_projection, topological_sort,
-  transitive_reduction!, enumerate_paths
+export connected_components, connected_component_projection, connected_component_projection_bfs,
+  topological_sort, transitive_reduction!, enumerate_paths
 
 using DataStructures: Stack, DefaultDict
 
@@ -31,6 +31,8 @@ end
 Returns a function in FinSet{Int} from the vertex set to the set of components.
 """
 function connected_component_projection end
+
+function connected_component_projection_bfs end
 # Implemented elsewhere, where coequalizers are available.
 
 # DAGs

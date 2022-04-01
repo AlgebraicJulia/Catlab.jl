@@ -30,7 +30,7 @@ oplus(x, y, z, xs...) = oplus([x, y, z, xs...])
 
 # Overload `collect` and `ndims` as for multiplicative monoidal categories.
 collect(expr::ObExpr{:oplus}) = vcat(map(collect, args(expr))...)
-collect(expr::ObExpr{:mzero}) = roottypeof(expr)[]
+collect(expr::E) where E <: ObExpr{:mzero} = Base.typename(E).wrapper[]
 ndims(expr::ObExpr{:oplus}) = sum(map(ndims, args(expr)))
 ndims(expr::ObExpr{:mzero}) = 0
 
