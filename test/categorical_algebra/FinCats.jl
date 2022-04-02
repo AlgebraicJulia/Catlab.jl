@@ -245,13 +245,8 @@ end
 @present K_(FreeSchema) begin
   K::Ob; k::Hom(K,K)
 end
-@present FG_(FreeSchema) begin
-  (A,B)::Ob; f::Hom(A,B); g::Hom(B,A)
-  compose(f,g) == compose(g,f)
-end
 
-
-I, J, K, FG = FinCat.([I_,J_,K_,FG_]);
+I, J, K = FinCat.([I_,J_,K_]);
 (i,),(j1,j2),(k_,) = hom_generators.([I,J,K])
 
 F_IJ = FinDomFunctor(Dict(:I1=>:J1, :I2=>:J2), Dict(:i=>:j1), I, J)
@@ -281,13 +276,11 @@ u = universal(e2, J_I)
 
 # Colimits
 #---------
-cp = coproduct([I, I, J]); # objects are renamed appropraitely
+cp = coproduct([I, I, J]);
 @test length(ob_generators(apex(cp))) == 7
-cp2 = coproduct([FG,FG]); # equations are renamed appropriately
-@test length(Set(equations(apex(cp2)))) == 2
 ce1 = coequalizer([G_IJ, G_IJ]);
 ce2 = coequalizer([F_IJ, G_IJ]);
-map([cp, cp2, ce1, ce2]) do colim
+map([cp, ce1, ce2]) do colim
   @test all(is_functorial.(legs(colim)))
 end
 

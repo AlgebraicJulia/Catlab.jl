@@ -6,7 +6,8 @@ export ACSetTransformation, CSetTransformation,
   ACSetHomomorphismAlgorithm, BacktrackingSearch, HomomorphismQuery,
   components, force, is_natural, homomorphism, homomorphisms, is_homomorphic,
   isomorphism, isomorphisms, is_isomorphic,
-  generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
+  generate_json_acset, parse_json_acset, read_json_acset, write_json_acset,
+  curry, uncurry
 
 using Base.Iterators: flatten
 using Base.Meta: quot
@@ -139,11 +140,11 @@ end
 const ACSetDomCat = FinCats.FinCatPresentation{
   Symbol, Union{FreeSchema.Ob,FreeSchema.AttrType},
   Union{FreeSchema.Hom,FreeSchema.Attr,FreeSchema.AttrType}}
-
+const FinSetCat = TypeCat{SetOb,FinDomFunction{Int}}
 """ Wrapper type to interpret attributed C-set as a functor.
 """
 @auto_hash_equals struct ACSetFunctor{ACS<:ACSet} <:
-    Functor{ACSetDomCat,TypeCat{SetOb,FinDomFunction{Int}}}
+    Functor{ACSetDomCat,FinSetCat}
   acset::ACS
 end
 FinDomFunctor(X::ACSet) = ACSetFunctor(X)
@@ -1133,6 +1134,76 @@ end
       :(Tuple{Symbol,Int}[ ($(quot(c′)),x′) for x′ in incident(X,x,$(quot(f))) ])
     end...))
 end
+
+
+# Tensor-hom adjunction (currying of diagrams in C-Set)
+#######################################################
+const ACSetCat{S} = TypeCat{S, ACSetTransformation}
+
+function curry(d::FinFunctor{D, ACSetCat{S}}) where {D,S}
+  shapelim = product([dom(d), FinCat(Presentation(S))])
+  shape_ind, part_ind = legs(shapelim)
+  asl = apex(shapelim)
+  omap = Dict(map(ob_generators(asl)) do o
+    x = ob_map(shape_ind, o)
+    y = ob_map(part_ind, o)
+    o => FinSet(ob_map(d, x), Symbol(y))
+  end)
+
+  hmap = Dict(map(hom_generators(asl)) do o
+    x = hom_map(shape_ind, o)
+    y = hom_map(part_ind, o)
+    if x isa FreeSchema.Hom{:id}
+      o => FinFunction(ob_map(d, only(x.args)), Symbol(y))
+    elseif y isa FreeSchema.Hom{:id}
+      o => hom_map(d, x)[Symbol(only(y.args))]
+    else
+      error("x $x y $y")
+    end
+  end)
+
+  FinDomFunctor(omap,hmap,asl,FinSetCat())
+end
+
+"""
+Uses an example FinDomFunctor (in the original uncurried format).
+"""
+function uncurry(d::FinDomFunctor{D1, FinSetCat},
+                 old_d::FinDomFunctor{D2, ACSetCat{S}}) where {D1,D2,S}
+  # Recover schema for d as a product, not just the apex
+  shapelim = product([dom(old_d), FinCat(Presentation(S))])
+  asl = apex(shapelim)
+  shape_ind, part_ind = legs(shapelim)
+
+  cset_type = typeof(first(old_d.ob_map)[2])
+  omap = Dict(map(ob_generators(dom(old_d))) do o
+    x = Base.invokelatest(cset_type)
+    for o_ in ob_generators(asl)
+      if ob_map(shape_ind, o_) == o
+        add_parts!(x, Symbol(ob_map(part_ind, o_)), length(ob_map(d, o_)))
+      end
+    end
+    for h in hom_generators(asl)
+      h_ = hom_map(shape_ind, h)
+      if h_ == id(o)
+        set_subpart!(x, Symbol(hom_map(part_ind, h)), collect(hom_map(d, h)))
+      end
+    end
+    o => x
+  end)
+  hmap = Dict(map(hom_generators(dom(old_d))) do h
+    comps = Dict()
+    for h_ in hom_generators(asl)
+      if hom_map(shape_ind, h_) == h
+        comps[Symbol(only(hom_map(part_ind, h_).args))] = hom_map(d, h_)
+      end
+    end
+    dom_, codom_ = [omap[get(h)] for get in [dom, codom]]
+    h => ACSetTransformation(dom_,codom_; comps...)
+  end)
+  FinDomFunctor(omap,hmap,dom(old_d),ACSetCat{S}())
+end
+
 
 # Serialization
 ###############
