@@ -25,6 +25,7 @@ import ...Theories: ob, terminal, product, proj1, proj2, equalizer, incl,
   delete, create, pair, copair, factorize
 using ...CSetDataStructures, ..FinCats, ..FreeDiagrams
 import ..FreeDiagrams: apex, legs
+import ..FinCats: FinCatPresentation
 
 # Data types for limits
 #######################
