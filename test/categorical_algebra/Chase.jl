@@ -1,5 +1,4 @@
-#module TestChase
-using Revise
+module TestChase
 using Test
 using Catlab.Graphs
 using Catlab.CategoricalAlgebra.Chase
@@ -223,4 +222,4 @@ lk3 = leftkan(F, I, :XF; verbose=false)
 @test collect(hom_map(lk3, :f)[:V]) == [3,4,1,2]
 @test collect(hom_map(lk3, :f)[:E]) == [2,1]
 
-#end # module
+end # module

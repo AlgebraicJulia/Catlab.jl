@@ -1,5 +1,4 @@
-# module TestFinCats
-using Revise
+module TestFinCats
 using Test
 
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
@@ -306,4 +305,4 @@ u = universal(cp, Multicospan([F_IJ, G_IJ, id(J)]))
 u = universal(ce1, J_I)
 @test is_functorial(u)
 
-# end # module
+end # module
