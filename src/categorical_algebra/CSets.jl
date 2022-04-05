@@ -7,7 +7,7 @@ export ACSetTransformation, CSetTransformation,
   components, force, is_natural, homomorphism, homomorphisms, is_homomorphic,
   isomorphism, isomorphisms, is_isomorphic,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset,
-  curry, uncurry
+  uncurry, ACSetCat
 
 using Base.Iterators: flatten
 using Base.Meta: quot
@@ -21,7 +21,7 @@ using ...GAT, ...Present
 using ...Theories: Category, SchemaDescType, CSetSchemaDescType,
   attrtype, attrtype_num, attr, adom, acodom, acodom_nums
 import ...Theories: dom, codom, compose, ⋅, id,
-  ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
+  ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥, curry
 using ..FreeDiagrams, ..Limits, ..Subobjects, ..FinSets, ..FinCats
 import ..Limits: limit, colimit, universal, pushout_complement,
   can_pushout_complement
@@ -160,9 +160,9 @@ Categories.do_hom_map(F::ACSetFunctor, f) = SetFunction(F.acset, f)
 function (::Type{ACS})(F::FinDomFunctor) where ACS <: ACSet
   X = if ACS isa UnionAll
     pres = presentation(dom(F))
-    ACS{(eltype(ob_map(F, c)) for c in generators(pres, :AttrType))...}()
+    Base.invokelatest(ACS{(eltype(ob_map(F, c)) for c in generators(pres, :AttrType))...})
   else
-    ACS()
+    Base.invokelatest(ACS)
   end
   copy_parts!(X, F)
   return X
@@ -774,7 +774,7 @@ function limit(::Type{Tuple{ACS,Hom}}, diagram) where
     {S, ACS <: StructCSet{S}, Hom <: TightACSetTransformation}
   limits = map(limit, unpack_diagram(diagram))
   Xs = cone_objects(diagram)
-  Y = ACS()
+  Y = Base.invokelatest(ACS)
   limit!(Y, diagram, Xs, limits)
 end
 

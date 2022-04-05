@@ -1,8 +1,6 @@
 module Chase
 export ED, chase, chase_crel, chase_step, to_c_rel, from_c_rel, crel_type,
-       egd, tgd, collage, pres_to_eds
-
-using Reexport # needed to access struct_acset from CSetDataStructures
+       egd, tgd, collage, pres_to_eds, leftkan, pres_to_cset
 
 using ...Theories, ...Present
 using ..CSets
@@ -11,6 +9,8 @@ using ..FinCats
 using ..Limits
 using ..FreeDiagrams
 import ...Theories: dom, codom
+
+using Reexport
 @reexport using ...CSetDataStructures
 
 # EDs
@@ -45,35 +45,38 @@ egd(e::ED) = factorize(image(e.ST),e.ST)
 """    tgd(e::ED)
 Distill the component of a morphism that adds new elements
 """
-tgd(e::ED) = factorize(coimage(e.ST),e.ST)
+tgd(e::ED) = factorize(coimage(e.ST), e.ST)
 no_change(f) = is_isomorphic(dom(f), codom(f)) # id up to isomorphism
 
 """Split a list of EDs into two lists of EGDs and TGDs"""
-function split_Σ(Σ::Vector{ED{Ob,Hom}})::Pair{Vector{Hom},Vector{Hom}} where {Ob,Hom}
-  egds, tgds = Hom[], Hom[]
-  for ed in Σ
+function split_Σ(Σ::Dict{Symbol,ED{Ob,Hom}}
+                )::Pair{Dict{Symbol, Hom},Dict{Symbol, Hom}} where {Ob,Hom}
+  egds, tgds = [Dict{Symbol, Hom}() for _ in 1:2]
+  for (k, ed) in collect(Σ)
     e, t = egd(ed), tgd(ed)
     if !no_change(e)
-      push!(egds, e)
+      egds[k] = e
     end
     if !no_change(t)
-      push!(tgds, t)
+      tgds[k] = t
     end
   end
   egds => tgds
 end
 
-
+"""
+A collage of a functor is a schema encoding the data of the functor
+It has the mapping data in addition to injections from the (co)domain.
+"""
 function collage(F::FinFunctor)
-  (dF, cdF) = Xs = [dom(F), codom(F)]
+  (dF, _) = Xs = [dom(F), codom(F)]
   C = coproduct(Xs)
-
-  O, H = ob_generators(apex(C)), hom_generators(apex(C))
-  # inherit equations from dom and codom
-  p = presentation(apex(C))
+  p = presentation(apex(C)) # inherit equations from dom and codom
+  # Add natural transformations
   α = Dict(map(ob_generators(dF)) do o
       o => add_generator!(p, Hom(Symbol("α_$o"), o, ob_map(F, o)))
   end)
+  # Add naturality squares
   for f in hom_generators(dF)
     add_equation!(p, compose(α[dom(dF,f)], hom_map(F,f)),
                      compose(f, α[codom(dF,f)]))
@@ -87,22 +90,83 @@ function collage(F::FinFunctor)
 end
 
 """
-A presentation implies constraints of FKs being functional (total and injective) in addition to any extra equations
+Create constraints for enforcing a C-Set schema on a C-Rel instance.
+
+A presentation implies constraints of foreign keys being functional
+(total and unique) in addition to any extra equations.
 """
-function cset_to_eds(p::Presentation)
-  eds = []
-  for f in hom_generators(p)
-    injective_l = @acset LoopRel begin  X=3; x=2; src_x=[1,1]; tgt_x=[2,3] end
-    injective_r = @acset LoopRel begin  X=2; x=1; src_x=[1]; tgt_x=[2] end
-    push!(eds, homomorphism(injective_l, injective_r))
-    total_l = @acset LoopRel begin X=1 end
-    push!(eds, homomorphism(total_l, injective_r))
+function pres_to_eds(S::Presentation, name_::Symbol)
+  crt = crel_type(S, name_)
+  # Convert equations in presentation in EDs
+  eds = Dict{String, ACSetTransformation}(
+      map(enumerate(equations(S))) do (eqnum, (e1,e2))
+    d, cd = Symbol.([dom(e1), codom(e1)])
+    l, r1, r2 = [Base.invokelatest(crt) for _ in 1:3]
+    add_part!(l, d)
+    end1 = add_term!(l, e1)
+    end2 = add_term!(l, e2)
+    add_part!(r1, cd)
+    add_parts!(r2, cd, 2)
+    rr = homomorphism(r2, r1)
+    rl = ACSetTransformation(r2, l; Dict([cd => [end1,end2]])...)
+    "Eq$eqnum" => first(legs(pushout(rl, rr)))
+  end)
+
+  # morphisms are functional
+  for f_ in S.generators[:Hom]
+    d, f, cd = Symbol.([dom(f_), f_, codom(f_)])
+    sf, tf = add_srctgt(Symbol(f))
+    unique_l, unique_r, total_l = [Base.invokelatest(crt) for _ in 1:3]
+    # uniqueness: [d d ⟶ cd] ==> [d ⟶ cd]
+    ld = add_part!(unique_l, d); lcd = add_parts!(unique_l, cd, 2)
+    add_parts!(unique_l, f, 2; Dict([sf=>[ld], tf=>collect(lcd)])...);
+    rd1 = add_part!(unique_r, d); rcd1 = add_part!(unique_r, cd)
+    add_part!(unique_r, f; Dict([sf=>rd1, tf=>rcd1])...);
+    if d == cd
+      uni = ACSetTransformation(unique_l, unique_r;
+                                Dict(f=>[1,1], d=>[rd1, rcd1, rcd1])...)
+      eds["$(f_)_uni"] = uni
+    else
+      eds["$(f_)_uni"] = homomorphism(unique_l, unique_r;)
+    end
+    # totality: [d] ==> [d ⟶ cd]
+    add_part!(total_l, d)
+    tot = ACSetTransformation(total_l, unique_r; Dict(d=>[rd1])...)
+    eds["$(f_)_total"] = tot
   end
-  ED.(eds)
+
+  Dict([Symbol(k) => ED{crt, ACSetTransformation}(v) for (k,v) in collect(eds)])
+end
+
+"""Modify C-Set representing a pattern to add a term"""
+function add_term!(t::StructACSet, args::Vector)
+  i = 1
+  for fk in args
+    d, f, cd = Symbol.([dom(fk), fk, codom(fk)])
+    fsrc, ftgt = add_srctgt(f)
+    new_i = add_part!(t, cd)
+    add_part!(t, f; Dict([fsrc=>i, ftgt=>new_i])...)
+    i = new_i
+  end
+  return i
+end
+
+add_term!(t::StructACSet, p::HomExpr{:compose}) = add_term!(t, p.args)
+add_term!(t::StructACSet, g::HomExpr{:generator}) = add_term!(t, [g])
+add_term!(t::StructACSet,  ::HomExpr{:id}) = add_term!(t, [])
+
+"""
+Convert a Presentation to a CSet type. Note this would be improved with
+dynamic ACSets.
+"""
+function pres_to_cset(pres::Presentation, name_::Symbol)
+  edges = Symbol.(pres.generators[:Hom])
+  expr = CSetDataStructures.struct_acset(name_, StructACSet, pres, index=edges)
+  eval(expr)
+  return eval(name_)
 end
 
 
-VPSI = Vector{Pair{Symbol,Int}}
 # C-Rel: note that (Span-C)-Set is our model for C-Rel
 ######################################################
 
@@ -114,13 +178,18 @@ add_srctgt(m) = Symbol("src_$m") => Symbol("tgt_$m")
 Convert an instance of a C-Set into an Span(C)-Set type.
 """
 function crel_type(x::StructACSet{S}) where S
-  name_ = Symbol("rel_$(typeof(x).name.name)")
+  crel_type(Presentation(S), typeof(x).name.name)
+end
+
+function crel_type(S::Presentation, n::Symbol)
+  name_ = Symbol("rel_$n")
   pres = Presentation(FreeSchema)
-  edges = vcat(add_srctgt.(hom(S))...)
-  xobs = Dict(map([ob(S)...,hom(S)...]) do s
-    s => add_generator!(pres, Ob(FreeSchema, s))
+  edges = vcat(add_srctgt.(Symbol.(S.generators[:Hom]))...)
+  xobs = Dict(map([S.generators[:Ob]...,S.generators[:Hom]...]) do s
+    s => add_generator!(pres, Ob(FreeSchema, Symbol(s)))
   end)
-  for (h, hs, ht) in zip(hom(S), dom(S), codom(S))
+  for h in S.generators[:Hom]
+    hs, ht = dom(h), codom(h)
     s, t = add_srctgt(h)
     add_generator!(pres, Hom(s, xobs[h], xobs[hs]))
     add_generator!(pres, Hom(t, xobs[h], xobs[ht]))
@@ -151,32 +220,33 @@ function to_c_rel(I::StructACSet{S}) where S
 end
 
 """   to_c_rel(f::ACSetTransformation)
-A functor C-Set -> C-Rel, on morphisms
+A functor C-Set -> C-Rel, on morphisms. It simply disregards the morphism data
+in C-Rel that keeps track of the span apex objects.
 """
 function to_c_rel(f::ACSetTransformation)
   d, cd = to_c_rel.([dom(f), codom(f)])
-  init = NamedTuple([k=>collect(v) for (k,v) in pairs(components(f))])
+  init = NamedTuple([k => collect(v) for (k, v) in pairs(components(f))])
   homomorphism(d, cd; initial=init)
 end
 
 
 """    from_c_rel(J::StructACSet,cset::StructACSet{S}) where S
 
-A functor C-Rel -> C-Set, on objects.
+A partial functor C-Rel -> C-Set, on objects.
 
-This fails if a C-rel morphism is noninjective and returns a C-set with
+This fails if a C-Rel morphism is non-unique and returns a C-set with
 undefined references if the morphism isn't total (a return flag signals whether
 this occured).
 """
 function from_c_rel(J::StructACSet,cset::StructACSet{S}) where S
-    res = typeof(cset)()
+    res = Base.invokelatest(typeof(cset))
     for o in ob(S)
       add_parts!(res, o, nparts(J, o))
     end
     total = true
     for (m, s) in zip(hom(S), dom(S))
       msrc, mtgt = add_srctgt(m)
-      length(J[msrc]) == length(Set(J[msrc])) || error("noninjective $J")
+      length(J[msrc]) == length(Set(J[msrc])) || error("non-unique $J")
       total &= length(J[msrc]) != nparts(J, s)
       for (domval, codomval) in zip(J[msrc], J[mtgt])
         set_subpart!(res, domval, m, codomval)
@@ -198,18 +268,16 @@ end
 # Chase
 #######
 
-VPSI = Vector{Pair{Symbol,Int}}
-
-"""    chase(I::StructACSet, Σ::Vector{ED}, n::Int; verbose=false)
+"""    chase(I::Ob, Σ::Dict{Symbol, ED{Ob,Hom}}, n::Int; verbose=false, viz::Union{Nothing, Function}=nothing) where {Ob, Hom}
 
 Chase a C-Set or C-Rel instance (attributes are tricky - TODO) given a list of
 embedded dependencies. This may not terminate, so a bound `n` on the number of
 iterations is required.
 
     [,]
-Σ S  ⟶ Iₙ
+ ΣS  ⟶ Iₙ
 ⊕↓      ⋮  (resulting morphism)
-Σ T ... Iₙ₊₁
+ ΣT ... Iₙ₊₁
 
 There is a copy of S and T for each active trigger. A trigger is a map from S
 into the current instance. What makes it 'active' is that there is no morphism
@@ -226,15 +294,22 @@ forward into a cyclic schema).
 
 Whether or not the result is due to success or timeout is returned as a boolean
 flag.
-"""
-function chase(I::Ob, Σ::Vector{ED{Ob,Hom}}, n::Int; verbose=false) where {Ob, Hom}
 
+TODO this algorithm could be made more efficient by keeping track which EDs have
+been searched for over which subobjects, there is no need to search for the same
+homomorphism again for an unchanging portion of the instance.
+"""
+function chase(I::Ob, Σ::Dict{Symbol, ED{Ob,Hom}}, n::Int; verbose=false,
+               viz::Union{Nothing, Function}=nothing) where {Ob, Hom}
   Σ_e_t = split_Σ(Σ)
   res = id(I)
 
   for i in 1:n
-    if verbose println("Iter $i") end
-    next_morphism = chase_step(codom(res), Σ_e_t)
+    if verbose
+      println("\n\nIter $i\n")
+      show(stdout,"text/plain",(isnothing(viz) ? identity : viz)(codom(res)))
+    end
+    next_morphism = chase_step(codom(res), Σ_e_t; verbose=verbose)
     if no_change(next_morphism)
       return res => true
     else
@@ -244,15 +319,14 @@ function chase(I::Ob, Σ::Vector{ED{Ob,Hom}}, n::Int; verbose=false) where {Ob, 
   return res => false # failure
 end
 
-"""    chase_crel(I::StructACSet, Σ::Vector{ED}, n::Int; I_is_crel::Bool=false, Σ_is_crel::Bool=false, cset_example::Union{StructACSet,Nothing}=nothing, verbose=false)
-
-`chase` works when both `I` and `Σ` are in C-Set or both are in C-Rel, though in the latter case the return value is a C-Rel morphism rather than one in C-Set.
+"""
+`chase` works when both `I` and `Σ` are in C-Set or both are in C-Rel.
 
 This function wraps `chase` and does the necessary conversions (computing in
-C-Rel if either the initial instance or EDs are provided in C-Rel), returning
+C-Rel if *either* the initial instance or EDs are provided in C-Rel), returning
 a result morphism in C-Set if the chase terminates.
 """
-function chase_crel(I::Ob_, Σ::Vector{ED{Ob,Hom}}, n::Int;
+function chase_crel(I::Ob_, Σ::Dict{Symbol,ED{Ob,Hom}}, n::Int;
                     I_is_crel::Bool=false, Σ_is_crel::Bool=false,
                     cset_example::Union{StructACSet,Nothing}=nothing,
                     verbose=false) where {Ob_, Ob, Hom}
@@ -263,6 +337,7 @@ function chase_crel(I::Ob_, Σ::Vector{ED{Ob,Hom}}, n::Int;
   Σ_rel = (is_crel && !Σ_is_crel) ? to_c_rel.(Σ) : Σ
 
   # Compute the chase
+  viz(x) = from_c_rel(x, cset_example)
   res, succ = chase(I_rel, Σ_rel, n; verbose=verbose)
 
   # Postprocess results
@@ -277,16 +352,16 @@ Naively determine active triggers of EDs (S->T) by filtering all triggers
 (i.e. maps S->I) to see which are active (i.e. there exists no T->I such that
 S->T->I = S->I).
 
-Optionally restrict to only considering a subset of the triggers with `ts`, a
-list of indices into the list of triggers.
+Optionally initialize the homomorphism search to control the chase process.
 """
-function active_triggers(I::Ob, Σ::Vector{Hom}; init::Union{NamedTuple, Nothing}
-                         ) where {Ob, Hom}
+function active_triggers(I::Ob, Σ::Dict{Symbol, Hom}; init::Union{NamedTuple, Nothing},
+                         verbose::Bool=false) where {Ob, Hom}
   maps = Pair{Hom, Hom}[]
-  for ed in Σ
+  for (name,ed) in collect(Σ)
     kw = Dict(isnothing(init) ? [] : [:initial=>init])
     for trigger in homomorphisms(dom(ed), I; kw...)
       if isnothing(extend_morphism(trigger, ed))
+        if verbose println("\tActive $name") end
         push!(maps, trigger => ed)
       end
     end
@@ -295,17 +370,26 @@ function active_triggers(I::Ob, Σ::Vector{Hom}; init::Union{NamedTuple, Nothing
 end
 
 """
-Run a single chase step. Optionally select a subset of triggers to fire on.
-This selection could be generalized to be a function which does a computation
-to determine which firings are useful.
+Run a single chase step.
 """
-function chase_step(I::Ob, Σ::Pair{Vector{Hom},Vector{Hom}};
-                    init::Union{NamedTuple, Nothing}=nothing) where {Ob,Hom}
-    Σe, Σt = Σ
-    ats = active_triggers(I, Σt; init=init)
+function chase_step(I::Ob, Σ::Pair{Dict{Symbol, Hom},Dict{Symbol, Hom}};
+                    init::Union{NamedTuple, Nothing}=nothing,
+                    verbose::Bool=false, viz::Union{Function,Nothing}=nothing
+                    ) where {Ob,Hom}
+    Σegd, Σtgd = Σ
+
+    # First fire one round of TGDs
+    ats = active_triggers(I, Σtgd; init=init, verbose=verbose)
     res = isempty(ats) ? id(I) : fire_triggers(ats) # first: fire TGDs
+    if !isempty(ats) && verbose
+      println("\tPost TGD instance");
+      show(stdout,"text/plain",(isnothing(viz) ? identity : viz)(codom(res)))
+    end
+
+    # EGDs merely quotient, so this will terminate.
     while true
-      ats = active_triggers(codom(res), Σe; init=init)
+      if verbose println("\tEGDs") end
+      ats = active_triggers(codom(res), Σegd; init=init, verbose=verbose)
       res_ = isempty(ats) ? id(codom(res)) : fire_triggers(ats)
       if force(res_) == force(id(codom(res)))
         return res
@@ -316,16 +400,19 @@ function chase_step(I::Ob, Σ::Pair{Vector{Hom},Vector{Hom}};
     en
 end
 
+"""
+Compute pushout of all EDs in parallel
+"""
 function fire_triggers(ats)
   r_i_maps, r_s_maps = first.(ats), last.(ats)
   # Combine each list of morphisms into a single one & take pushout
   I_po = pushout(copair(r_i_maps), oplus(r_s_maps))
-  # Propagate info about which vertices are inputs/outputs & update I
   return legs(I_po)[1]
 end
 
 
-"""    extend_morphism(f::ACSetTransformation,g::ACSetTransformation)::Union{Nothing, ACSetTransformation}
+"""    extend_morphism(f::ACSetTransformation,g::ACSetTransformation,monic=false)::Union{Nothing, ACSetTransformation}
+
 Given a span of morphisms, we seek to find a morphism B → C that makes a
 commuting triangle if possible.
 
@@ -352,6 +439,56 @@ function extend_morphism(f::ACSetTransformation, g::ACSetTransformation;
     init[ob] = Dict(init_comp)
   end
   homomorphism(codom(g), codom(f); initial=NamedTuple(init), monic=monic)
+end
+
+
+"""    leftkan(F::FinFunctor, I::StructACSet, cd::Symbol; n=15, verbose=false)
+    F
+  A -> B
+I |  / LanF(I)
+  C
+
+Computes the left kan extension of I (a functor to Set) by F (a shape functor).
+"""
+function leftkan(F::FinFunctor, I::StructACSet, cd::Symbol; n=15, verbose=false)
+  col = collage(F)
+  ac = apex(col)
+  name = Symbol("collage_F_$cd")
+  col_eds = pres_to_eds(presentation(ac), name)
+  col_I = Base.invokelatest(crel_type(presentation(ac), name))
+  Ir = to_c_rel(I)
+  copy_parts!(col_I, Ir)
+  chase_res, check = chase(col_I, col_eds, n; verbose=verbose)
+  check || error("Chase failed to terminate")
+  res = Base.invokelatest(crel_type(presentation(codom(F)), Symbol("rel_$cd")))
+  copy_parts!(res, codom(chase_res))
+  cset = Base.invokelatest(pres_to_cset(presentation(codom(F)), cd))
+  from_c_rel(res, cset)[1]
+end
+
+
+"""
+Reduce left kan of a functor to C-Set to a computation for a functor into FinSet
+Convert result back to a functor into C-Set.
+"""
+function leftkan(F::FinFunctor{D,CD}, I::FinDomFunctor{D, ACSetCat{S}},
+                 cd::Symbol; n=15, verbose=false) where {D, CD, S}
+    Ic = curry(I)
+    ctype = pres_to_cset(presentation(dom(Ic)), Symbol("random_$cd"))
+    Ic_ = ctype(Ic)
+
+    domleg1, domleg2 = legs(product([dom(F), FinCat(Presentation(S))]))
+    codomprod = product([codom(F), FinCat(Presentation(S))])
+
+    Fc = universal(codomprod, Multispan([compose(domleg1, F), domleg2]))
+    curr_res = leftkan(Fc, Ic_, Symbol("random2_$cd"); n=n, verbose=verbose)
+    # Create a meaningless FinFunctor from CD to the C-Set category for uncurry
+    cset_rep = last(first(ob_map(I))); cset_hom = id(cset_rep)
+    fakeob = Dict([o => cset_rep for o in ob_generators(codom(F))])
+    fakehom = Dict([o => cset_hom for o in hom_generators(codom(F))])
+    cd_finfun = FinDomFunctor(fakeob, fakehom, codom(F),codom(I))
+    # Uncurry result
+    return uncurry(FinDomFunctor(curr_res), cd_finfun)
 end
 
 end # module

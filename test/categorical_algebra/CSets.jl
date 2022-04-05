@@ -1,5 +1,4 @@
-#module TestCSets
-using Revise
+module TestCSets
 using Test
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
@@ -550,5 +549,4 @@ ldds = LabeledDDS{Int}()
 add_parts!(ldds, :X, 4, Φ=[2,3,4,1], label=[100, 101, 102, 103])
 @test roundtrip_json_acset(ldds) == ldds
 
-
-# end
+end
