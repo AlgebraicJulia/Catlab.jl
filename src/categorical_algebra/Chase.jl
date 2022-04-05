@@ -10,6 +10,7 @@ using ..Limits
 using ..FreeDiagrams
 using ..Diagrams
 import ...Theories: dom, codom
+import ..Limits: universal
 
 using Reexport
 @reexport using ...CSetDataStructures
@@ -140,7 +141,10 @@ function pres_to_eds(S::Presentation, name_::Symbol)
   Dict([Symbol(k) => ED{crt, ACSetTransformation}(v) for (k,v) in collect(eds)])
 end
 
-"""Modify C-Set representing a pattern to add a term"""
+"""
+Modify C-Set representing a pattern to add a term. Assumes morphism begins from
+index 1.
+"""
 function add_term!(t::StructACSet, args::Vector)
   i = 1
   for fk in args
@@ -447,7 +451,7 @@ end
 """    leftkan(F::FinFunctor, I::StructACSet, cd::Symbol; n=15, verbose=false)
     F
   A -->  B
-I \\ => / LanF(I)
+I ↘ => ↙ LanF(I)
     C
 
 Computes the left kan extension of I (a functor to Set) by F (a shape functor).
@@ -518,6 +522,19 @@ function leftkan(F::FinFunctor{D,CD}, I::FinDomFunctor{D, ACSetCat{S}},
       o => ACSetTransformation(ob_map(I,o), ob_map(FU, o); comps...)
     end)
     return DiagramHom{id}(F, α, I, ucodom)
+end
+
+"""
+A left kan extension LanF(X) is an initial object in the category of extensions of X along F (X & F viewed as morphisms in the category of diagrams w/ covariant
+transformations).
+"""
+function universal(eta::DiagramHom{id,D,CD}, alpha::DiagramHom{id,D,CD};
+                  ) where {D,CD}
+  L, M = diagram.(codom.([eta, alpha]))
+  d, cd = [only(Set(get.([L, M]))) for get in [dom, codom]]
+  σf = Dict([Symbol(o) => only(homomorphisms(ob_map(L, o), ob_map(M, o)))
+             for o in ob_generators(d)])
+  return FinTransformation(L, M; σf...)
 end
 
 end # module

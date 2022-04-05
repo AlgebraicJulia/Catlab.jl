@@ -155,7 +155,7 @@ I = @acset School′ begin
   t_s′=[1,2]; t_f′=[1,2]
 end
 
-lk, chase_res = leftkan(F, I, :School)
+lk = leftkan(F, I, :School)
 @test is_natural(lk)
 
 @test is_isomorphic(expected, School(diagram(codom(lk))))
@@ -194,7 +194,7 @@ Arr, Arr2, One, Inv = FinCat.([ThArr, ThArr2, ThOne, ThInv])
 #-------------------
 two = path_graph(Graph, 2)
 ar = @acset Graph begin V=2; E=2; src=[1,2]; tgt=[2,2] end
-h1, h2 = homomorphisms(two, ar)
+h1, h2 = homomorphisms(two, ar) # don't send both vertices to #2, or do that
 
 # Freely adding a right inverse to a C-set transformation: f: A->B
 #-----------------------------------------------------------------
@@ -222,9 +222,15 @@ lk2 = diagram(codom(leftkan(F, I, :X2; verbose=false)))
 F = FinFunctor(Dict(:X=>:Y),nothing,One,Inv)
 # creates a copy of the starting graph, and the involution is a swap function.
 I = FinDomFunctor(Dict(:X=>two), nothing, One, Grph())
-lk3 = diagram(codom(leftkan(F, I, :XF; verbose=false)))
+lk3_ = leftkan(F, I, :XF; verbose=false)
+lk3 = diagram(codom(lk3_))
 @test ob_map(lk3, :Y) == two ⊕ two
 @test collect(hom_map(lk3, :f)[:V]) == [3,4,1,2]
 @test collect(hom_map(lk3, :f)[:E]) == [2,1]
+
+otherF = FinDomFunctor(Dict(:Y=>two), Dict(:f => id(two)), Inv, Grph())
+otherD = DiagramHom(F, Dict(:X=>id(two)), Diagram(I), Diagram(otherF))
+phi = universal(lk3_, otherD)
+@test is_natural(phi)
 
 end # module
