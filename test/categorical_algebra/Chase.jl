@@ -6,7 +6,11 @@ using Catlab.Present
 using Catlab.Theories
 using Catlab.CategoricalAlgebra
 using Catlab.Graphs.BasicGraphs: TheoryGraph
+import Catlab.CategoricalAlgebra.FinCats: is_natural
 
+
+is_natural(D::DiagramHom) =
+  is_functorial(shape_map(D)) && is_natural((diagram_map(D)))
 
 # Factorizing EDs
 #----------------
@@ -151,9 +155,10 @@ I = @acset School′ begin
   t_s′=[1,2]; t_f′=[1,2]
 end
 
-lk = leftkan(F, I, :School)
+lk, chase_res = leftkan(F, I, :School)
+@test is_natural(lk)
 
-@test is_isomorphic(expected, lk)
+@test is_isomorphic(expected, School(diagram(codom(lk))))
 
 # Left kan of Diagrams in Grph
 ##############################
@@ -197,7 +202,7 @@ F = FinFunctor(Dict(:A=>:C, :B=>:D), Dict(:f=>:m), Arr, Arr2)
 # This may require adding things to A. These must then be mapped to B in a
 # distinct place, thereby adding to B, too.
 I = FinDomFunctor(Dict(:A=>two,:B=>ar),Dict(:f=>h1),Arr,Grph())
-lk = leftkan(F, I, :X; verbose=false)
+lk = diagram(codom(leftkan(F, I, :X; verbose=false)))
 # This homomorphism is injective on vertices. Those can be easily inverted.
 # However, V2 in the codomain has a self loop not present in V2 of the domain.
 # Therefore the domain has an extra loop added to it.
@@ -207,7 +212,7 @@ lk = leftkan(F, I, :X; verbose=false)
 
 # This homomorphism sends V1 and V2 to V2 of the codomain.
 I = FinDomFunctor(Dict(:A=>two,:B=>ar),Dict(:f=>h2),Arr,Grph())
-lk2 = leftkan(F, I, :X2; verbose=false)
+lk2 = diagram(codom(leftkan(F, I, :X2; verbose=false)))
 @test is_isomorphic(ob_map(lk2, :C), ar)
 # TODO: rationalize why this is the result, if it's correct
 @test ob_map(lk2, :D) == @acset Graph begin V=3; E=3; src=[1,3,2]; tgt=3 end
@@ -217,7 +222,7 @@ lk2 = leftkan(F, I, :X2; verbose=false)
 F = FinFunctor(Dict(:X=>:Y),nothing,One,Inv)
 # creates a copy of the starting graph, and the involution is a swap function.
 I = FinDomFunctor(Dict(:X=>two), nothing, One, Grph())
-lk3 = leftkan(F, I, :XF; verbose=false)
+lk3 = diagram(codom(leftkan(F, I, :XF; verbose=false)))
 @test ob_map(lk3, :Y) == two ⊕ two
 @test collect(hom_map(lk3, :f)[:V]) == [3,4,1,2]
 @test collect(hom_map(lk3, :f)[:E]) == [2,1]

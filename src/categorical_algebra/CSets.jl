@@ -146,10 +146,17 @@ const FinSetCat = TypeCat{SetOb,FinDomFunction{Int}}
 @auto_hash_equals struct ACSetFunctor{ACS<:ACSet} <:
     Functor{ACSetDomCat,FinSetCat}
   acset::ACS
+  eqs::Vector{Pair}
 end
-FinDomFunctor(X::ACSet) = ACSetFunctor(X)
+FinDomFunctor(X::ACSet; eqs=Pair[]) = ACSetFunctor(X, eqs)
 
-dom(F::ACSetFunctor) = FinCat(Presentation(F.acset))
+function dom(F::ACSetFunctor)
+  p = Presentation(F.acset)
+  for (l,r) in F.eqs
+    add_equation!(p, l, r)
+  end
+  FinCat(p)
+end
 codom(F::ACSetFunctor) = TypeCat{SetOb,FinDomFunction{Int}}()
 
 Categories.do_ob_map(F::ACSetFunctor, x) = SetOb(F.acset, x)
