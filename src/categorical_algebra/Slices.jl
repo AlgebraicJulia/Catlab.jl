@@ -1,5 +1,5 @@
 module Slices
-export Slice, SliceMorphism,SliceLimit,SliceColimit, pushout_complement
+export Slice, SliceHom
 
 using AutoHashEquals
 using ...GAT
@@ -9,41 +9,52 @@ import ...Theories: dom, codom, compose, id
 import ..Limits: limit, colimit, universal
 import ..FinSets: force, pushout_complement
 
-@auto_hash_equals struct Slice{Ob,Hom}
+"""
+The data of the object of a slice category (say, some category C sliced over an
+object X in Ob(C)) is the data of a homomorphism in Hom(A,X) for some ob A.
+"""
+@auto_hash_equals struct Slice{Hom}
   slice::Hom
 end
 
-@auto_hash_equals struct SliceMorphism{Ob, Hom}
-  dom::Slice{Ob, Hom}
-  codom::Slice{Ob, Hom}
+"""
+The data of the morphism of a slice category (call it h, and suppose a category
+C is sliced over an object X in Ob(C)) between objects f and g is a homomorphism
+in the underlying category that makes the following triangle commute.
+
+   h
+A --> B
+f ↘ ↙ g
+   X
+"""
+@auto_hash_equals struct SliceHom{Hom, Dom<:Slice, Codom<:Slice}
+  dom::Dom
+  codom::Codom
   f::Hom
-  function SliceMorphism{Ob, Hom}(dom, codom, f) where {Ob, Hom}
-    p1, p2 = force.([dom.slice, compose(f,codom.slice)])
-    p1 == p2 ||
-       error("Slice condition failed: \ndom.slice $p1\ncomposite $p2\nf " *
-             "$(force(f))\ncodom $(force(codom.slice))")
-    return new{Ob,Hom}(dom, codom, f)
-  end
 end
 
-SliceMorphism(a,b,f) = SliceMorphism{typeof(a).parameters...}(a,b,f)
+function SliceHom(d::Dom, cd::Codom, f::Hom; strict::Bool=true) where {Dom,Codom,Hom}
+  !strict || codom(d) == codom(cd) || error("$d and $cd not in same category")
+  !strict || dom(d) == dom(f) || error("dom $d does not match $f")
+  !strict || dom(cd) == codom(f) || error("codom $cd does not match $f")
+  return SliceHom{Hom,Dom,Codom}(d, cd, f)
+end
 
-
-dom(s::Slice)::StructACSet = dom(s.slice)
-codom(s::Slice)::StructACSet = codom(s.slice)
-force(s::Slice{Ob,Hom}) where {Ob,Hom} = Slice{Ob,Hom}(force(s.slice))
-force(s::SliceMorphism{Ob,Hom}) where {Ob,Hom} = SliceMorphism{Ob,Hom}(
+dom(s::Slice) = dom(s.slice)
+codom(s::Slice) = codom(s.slice)
+force(s::Slice)  = Slice(force(s.slice))
+force(s::SliceHom) = SliceHom(
   force(dom(s)), force(codom(s)), force(s.f))
 
 
-struct SliceLimit{Ob_, Hom, Ob <: Slice{Ob_,Hom}, Diagram,
+struct SliceLimit{Hom, Ob <: Slice{Hom}, Diagram,
                   Cone <: Multispan{Ob}} <: AbstractLimit{Ob,Diagram}
   diagram::Diagram
   cone::Cone
   underlying::AbstractLimit
 end
 
-struct SliceColimit{Ob_, Hom, Ob <: Slice{Ob_,Hom}, Diagram,
+struct SliceColimit{Hom, Ob <: Slice{Hom}, Diagram,
                     Cocone <: Multicospan{Ob}} <: AbstractColimit{Ob,Diagram}
   diagram::Diagram
   cocone::Cocone
@@ -51,14 +62,14 @@ struct SliceColimit{Ob_, Hom, Ob <: Slice{Ob_,Hom}, Diagram,
 end
 
 
-@instance Category{Slice, SliceMorphism} begin
-  dom(f::SliceMorphism) = f.dom
-  codom(f::SliceMorphism) = f.codom
-  id(A::Slice) = SliceMorphism(A, A, id(dom(A.slice)))
-  function compose(f::SliceMorphism, g::SliceMorphism)
-    codom(f) == dom(g) ||
+@instance Category{Slice, SliceHom} begin
+  dom(f::SliceHom) = f.dom
+  codom(f::SliceHom) = f.codom
+  id(A::Slice) = SliceHom(A, A, id(dom(A.slice)))
+  function compose(f::SliceHom, g::SliceHom; strict::Bool=false)
+    !strict || codom(f) == dom(g) ||
       error("Domain mismatch in composition: $(codom(f)) != $(dom(g))")
-    typeof(f)(dom(f), codom(g), compose(f.f, g.f))
+    SliceHom(dom(f), codom(g), compose(f.f, g.f))
   end
 end
 
@@ -79,55 +90,61 @@ end
 Convert a limit problem in the slice category to a limit problem of the
 underlying category.
 """
-function limit(::Type{Tuple{Slice{Ob, Hom}, SliceMorphism{Ob, Hom}}},
-               diagram::FreeDiagram{Slice{Ob, Hom}, SliceMorphism{Ob, Hom}}
-               ) where {Ob, Hom}
+function limit(::Type{Tuple{S,H}}, diagram) where {S<:Slice, H<:SliceHom}
   lim = limit(slice_diagram(diagram))
-  new_apex = Slice{Ob,Hom}(first(legs(lim.cone)))
-  new_cone_legs = [SliceMorphism(new_apex, ob, leg) for (ob, leg)
+  new_apex = Slice(first(legs(lim.cone)))
+  new_cone_legs = [SliceHom(new_apex, ob, leg) for (ob, leg)
                    in zip(diagram[:ob],legs(lim.cone)[2:end])]
   return SliceLimit(diagram, Multispan(new_apex, new_cone_legs), lim)
 end
 
-"""Warning: requires nonempty diagram in order to know what is sliced over"""
-colimit(sp::Multispan{<:Slice{Ob,Hom}}) where {Ob,Hom} = colimit(FreeDiagram{Slice{Ob,Hom}, SliceMorphism{Ob,Hom}}(sp))
-colimit(::Type{Tuple{SliceMorphism{Ob, Hom}, Any}},
-                 p::ObjectPair{<:SliceMorphism}) where {Ob, Hom} =
-  colimit(Span(p[1], p[2]))
 
-function colimit(::Type{Tuple{Slice{Ob, Hom}, SliceMorphism{Ob, Hom}}},
-                  diagram::FreeDiagram{Slice{Ob, Hom}, SliceMorphism{Ob, Hom}}) where {Ob, Hom}
+colimit(s::Multispan{<:Slice}) = colimit(FreeDiagram{Slice,SliceHom}(s))
+
+"""Warning: requires nonempty diagram in order to know what is sliced over"""
+function colimit(::Type{Tuple{S,H}}, diagram) where {S<:Slice, H<:SliceHom}
   # discard all the slice info in the colimit diagram - it's irrelevant
   obs  = [x.slice for x in diagram[:ob]]
   obdoms = dom.(obs)
   X = codom(first(diagram[:ob]))
-  homs = [(h.f, s, t) for (h, s, t) in zip(diagram[:hom], diagram[:src], diagram[:tgt])]
+  homs = [(h.f, s, t) for (h, s, t)
+          in zip(diagram[:hom], diagram[:src], diagram[:tgt])]
   colim = colimit(FreeDiagram(obdoms,homs))
   csp = Multicospan(X, obs)
-  new_apex = Slice{Ob, Hom}(universal(colim, csp))
-  new_cocone_legs = [SliceMorphism(o, new_apex, l)
+  new_apex = Slice(universal(colim, csp))
+  new_cocone_legs = [SliceHom(o, new_apex, l)
                      for (o, l) in zip(diagram[:ob],legs(colim))]
   # compute new apex using the universal property of colimits
   return SliceColimit(diagram, Multicospan(new_apex, new_cocone_legs), colim)
 end
 
 """Use the universal property of the underlying category"""
-function universal(lim::SliceLimit{Ob,Hom}, sp::Multispan) where{Ob, Hom}
+function universal(lim::SliceLimit, sp::Multispan)
   apx = apex(sp)
   newspan = vcat([apx.slice],[x.f for x in sp])
   u = universal(lim.underlying, Multispan(dom(apx), newspan))
-  apx2 = Slice{Ob,Hom}(first(legs(lim.underlying.cone)))
-  return SliceMorphism(apx, apx2, u)
+  apx2 = Slice(first(legs(lim.underlying.cone)))
+  return SliceHom(apx, apx2, u)
 end
 
+"""    pushout_complement(f::SliceHom, g::SliceHom)
+Compute a pushout complement in a slice category by using the pushout complement
+in the underlying category.
 
-function pushout_complement(f::SliceMorphism{Ob, Hom}, g::SliceMorphism{Ob, Hom}
-    )::Pair{SliceMorphism{Ob, Hom}, SliceMorphism{Ob, Hom}} where {S, Ob <: StructACSet{S}, Hom <: ACSetTransformation}
-    f_, g_ = pushout_complement(ComposablePair(f.f, g.f))
-    D__ = Slice{Ob, Hom}(compose(g_, codom(g).slice))
-    g__ = SliceMorphism(D__, codom(g), g_)
-    f__ = SliceMorphism(dom(f), D__, f_)
-    return f__ => g__
+     f
+  B <-- A ---⌝
+  | ↘ ↙      |
+ g|  X       | f′
+  ↓ ↗  ↖ cx  |
+  D <--- C <--
+      g′
+
+"""
+function pushout_complement(f::SliceHom, g::SliceHom)
+    f′, g′ = pushout_complement(ComposablePair(f.f, g.f))
+    D = codom(g)
+    C = Slice(compose(g′, D.slice))
+    return SliceHom(dom(f), C, f′) => SliceHom(C, D, g′)
 end
 
 end # module
