@@ -508,4 +508,12 @@ for alg in (SubOpBoolean(), SubOpWithLimits())
   @test bottom(X, alg) |> force == SubFinSet(X, 1:0)
 end
 
+# Injectivity/Surjectivity
+##########################
+@test is_surjective(FinFunction(Dict(:a=>:a,:b=>:a,:c=>:b), FinSet([:a,:b])))
+@test is_surjective(FinFunction([3,2,1]))
+@test !is_surjective(FinFunction([3,1]))
+@test is_injective(FinFunction([3,1]))
+@test !is_injective(FinFunction(Dict(:a=>:a,:b=>:a,:c=>:b), FinSet([:a,:b])))
+
 end

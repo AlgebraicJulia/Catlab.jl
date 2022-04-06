@@ -27,7 +27,8 @@ import ..Limits: limit, colimit, universal, pushout_complement,
 import ..Subobjects: Subobject, SubobjectBiHeytingAlgebra,
   implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..Sets: SetOb, SetFunction, TypeSet
-import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate
+import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate,
+                  is_injective, is_surjective
 import ..FinCats: FinDomFunctor, components, is_natural
 
 # Sets interop
@@ -381,6 +382,19 @@ function is_natural(α::ACSetTransformation{S}) where {S}
                             zip(attr(S), adom(S), acodom(S))))
     Xf, Yf, α_c, α_d = subpart(X,f), subpart(Y,f), α[c], α[d]
     all(i -> Yf[α_c(i)] == α_d(Xf[i]), eachindex(Xf)) || return false
+  end
+  return true
+end
+
+function is_injective(α::ACSetTransformation{S}) where {S}
+  for c in components(α)
+    if !is_injective(c) return false end
+  end
+  return true
+end
+function is_surjective(α::ACSetTransformation{S}) where {S}
+  for c in components(α)
+    if !is_surjective(c) return false end
   end
   return true
 end
@@ -1133,6 +1147,18 @@ end
       :(Tuple{Symbol,Int}[ ($(quot(c′)),x′) for x′ in incident(X,x,$(quot(f))) ])
     end...))
 end
+
+(f::ACSetTransformation)(X::SubACSet)::SubACSet = begin
+  codom(hom(X)) == dom(f) || error("Cannot apply $f to $X")
+  Subobject(codom(f); Dict(
+    [k=>f.(collect(components(X)[k])) for (k,f) in pairs(components(f))])...)
+end
+
+
+# A map f (from A to B) as a map from A to a subobject of B
+# i.e. we cast the ACSet A to its top subobject
+(f::ACSetTransformation)(X::StructACSet)::SubACSet =
+  X == dom(f) ? f(top(X)) : error("Cannot apply $f to $X")
 
 # Serialization
 ###############

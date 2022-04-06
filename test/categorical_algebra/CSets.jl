@@ -59,6 +59,7 @@ g, h = path_graph(Graph, 4), cycle_graph(Graph, 2)
 @test α[:V](3) == 1
 @test α[:E](2) == 2
 @test startswith(sprint(show, α), "ACSetTransformation((V = ")
+@test is_surjective(α) && !is_injective(α)
 
 α′ = CSetTransformation(g, h, V=[1,2,1,2], E=[1,2,1])
 @test components(α′) == components(α)
@@ -69,8 +70,11 @@ g, h = path_graph(Graph, 4), cycle_graph(Graph, 2)
 @test is_natural(α)
 β = CSetTransformation((V=[1,2,1,2], E=[1,1,1]), g, h)
 @test !is_natural(β)
+@test !is_surjective(β) && !is_injective(β)
+
 β = CSetTransformation((V=[2,1], E=[2,1]), h, h)
 @test is_natural(β)
+@test is_surjective(β) && is_injective(β)
 
 # Category of C-sets.
 @test dom(α) === g
