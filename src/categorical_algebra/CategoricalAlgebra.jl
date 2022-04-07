@@ -13,13 +13,13 @@ include("Matrices.jl")
 include("FinRelations.jl")
 include("CSets.jl")
 include("GraphCategories.jl")
+include("Chase.jl")
 include("Diagrams.jl")
 include("CommutativeDiagrams.jl")
 include("CatElements.jl")
 include("DataMigrations.jl")
 include("StructuredCospans.jl")
 include("DPO.jl")
-include("Chase.jl")
 
 @reexport using .Categories
 @reexport using .FinCats
@@ -32,11 +32,11 @@ include("Chase.jl")
 @reexport using .CSets
 @reexport using .CatElements
 
+@reexport using .Chase
 @reexport using .Diagrams
 @reexport using .CommutativeDiagrams
 @reexport using .DataMigrations
 @reexport using .StructuredCospans
 @reexport using .DPO
-@reexport using .Chase
 
 end

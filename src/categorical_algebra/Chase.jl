@@ -1,6 +1,6 @@
 module Chase
 export ED, chase, chase_crel, chase_step, to_c_rel, from_c_rel, crel_type,
-       egd, tgd, collage, pres_to_eds, leftkan, pres_to_cset
+       egd, tgd, collage, pres_to_eds, pres_to_cset, extend_morphism
 
 using ...Theories, ...Present
 using ..CSets
@@ -8,13 +8,11 @@ using ..FinSets
 using ..FinCats
 using ..Limits
 using ..FreeDiagrams
-using ..Diagrams
 import ...Theories: dom, codom
 import ..Limits: universal
 
 using Reexport
 @reexport using ...CSetDataStructures
-using DataStructures: DefaultDict
 
 # EDs
 #####
@@ -428,7 +426,7 @@ commuting triangle if possible.
    f
 """
 function extend_morphism(f::ACSetTransformation, g::ACSetTransformation;
-                         monic=false)::Union{Nothing, ACSetTransformation}
+                         monic=false, many::Bool=false)
   dom(f) == dom(g) || error("f and g are not a span: $jf \n$jg")
 
   init = Dict{Symbol, Dict{Int,Int}}()
@@ -444,97 +442,10 @@ function extend_morphism(f::ACSetTransformation, g::ACSetTransformation;
     end
     init[ob] = Dict(init_comp)
   end
-  homomorphism(codom(g), codom(f); initial=NamedTuple(init), monic=monic)
+  h = many ? homomorphisms : homomorphism
+  h(codom(g), codom(f); initial=NamedTuple(init), monic=monic)
 end
 
 
-"""    leftkan(F::FinFunctor, I::StructACSet, cd::Symbol; n=15, verbose=false)
-    F
-  A -->  B
-I ↘ => ↙ LanF(I)
-    C
-
-Computes the left kan extension of I (a functor to Set) by F (a shape functor).
-"""
-function leftkan(F::FinFunctor, I::StructACSet, cd::Symbol; n=15, verbose=false)
-  # Assemble chase input using the collage of F as a schema
-  col = apex(collage(F))
-  name, cname = Symbol("collage_F_$cd"), Symbol("cset_collage_F_$cd")
-  col_eds = pres_to_eds(presentation(col), name)
-  col_I = Base.invokelatest(crel_type(presentation(col), name))
-  col_I_cset = Base.invokelatest(pres_to_cset(presentation(col), cname))
-  copy_parts!(col_I, to_c_rel(I))
-
-  # Run the chase
-  chase_res_, check = chase_crel(col_I, col_eds, n; I_is_crel=true,
-                       Σ_is_crel=true, cset_example=col_I_cset, verbose=verbose)
-  check || error("Chase failed to terminate")
-  chase_res = codom(chase_res_)
-
-  # Project the codom portion of the collage and grab the α components
-  res = Base.invokelatest(pres_to_cset(presentation(codom(F)),
-                                       Symbol("rel_$cd")))
-  copy_parts!(res, chase_res)
-  α = Dict(o=>FinFunction(chase_res, Symbol("α_$o"))
-           for o in ob_generators(dom(F)))
-
-  # Return result as a DiagramHom{id}
-  ddom = Diagram(FinDomFunctor(I; eqs=equations(dom(F))))
-  dcodom = Diagram(FinDomFunctor(res; eqs=equations(codom(F))))
-  DiagramHom{id}(F, α, ddom, dcodom)
-end
-
-
-"""
-Reduce left kan of a functor to C-Set to a computation for a functor into FinSet
-Convert result back to a functor into C-Set.
-"""
-function leftkan(F::FinFunctor{D,CD}, I::FinDomFunctor{D, ACSetCat{S}},
-                 cd::Symbol; n=15, verbose=false) where {D, CD, S}
-    Ic = curry(I)
-    ctype = pres_to_cset(presentation(dom(Ic)), Symbol("random_$cd"))
-    Ic_ = ctype(Ic)
-
-    # Map from D x S -> CD x S based on map F: D->CD
-    domprod = product([dom(F), FinCat(Presentation(S))])
-    domleg1, domleg2 = legs(domprod)
-    codomprod = product([codom(F), FinCat(Presentation(S))])
-    Fc = universal(codomprod, Multispan([compose(domleg1, F), domleg2]))
-
-    # Compute result for Functors to Set
-    curr_res = leftkan(Fc, Ic_, Symbol("random2_$cd"); n=n, verbose=verbose)
-
-    # Create a meaningless FinFunctor from CD to the C-Set category for uncurry
-    cset_rep = last(first(ob_map(I))); cset_hom = id(cset_rep)
-    fakeob = Dict([o => cset_rep for o in ob_generators(codom(F))])
-    fakehom = Dict([o => cset_hom for o in hom_generators(codom(F))])
-    cd_finfun = FinDomFunctor(fakeob, fakehom, codom(F),codom(I))
-
-    # Uncurry result
-    ucodom = uncurry(diagram(codom(curr_res)), cd_finfun)
-    αcomps = Dict(o => DefaultDict{Symbol,Vector{Int}}(()->Int[])
-                  for o in ob_generators(dom(F)))
-    for o in ob_generators(apex(domprod))
-        αcomps[ob_map(domleg1, o)][Symbol(ob_map(domleg2, o))] = collect(diagram_map(curr_res)[o])
-    end
-    FU = compose(F, ucodom)
-    α = Dict(map(collect(αcomps)) do (o, comps)
-      o => ACSetTransformation(ob_map(I,o), ob_map(FU, o); comps...)
-    end)
-    return DiagramHom{id}(F, α, I, ucodom)
-end
-
-"""
-A left kan extension LanF(X) is an initial object in the category of extensions of X along F (X & F viewed as morphisms in the category of diagrams w/ covariant
-transformations).
-"""
-function universal(eta::DiagramHom{id,D,CD}, alpha::DiagramHom{id,D,CD};
-                  ) where {D,CD}
-  L, M = diagram.(codom.([eta, alpha]))
-  d, cd = [only(Set(get.([L, M]))) for get in [dom, codom]]
-  σf = Dict([Symbol(o) => only(homomorphisms(ob_map(L, o), ob_map(M, o)))
-             for o in ob_generators(d)])
-  return FinTransformation(L, M; σf...)
-end
 
 end # module

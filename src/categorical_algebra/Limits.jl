@@ -819,27 +819,28 @@ function coequalizer(fs::AbstractVector{<:FinDomFunctor{<:FinCatPresentation}})
         union!(class, inds[map_(f1, o)], inds[map_(f, o)])
       end
     end
-    Dict(o => find_root!(class, i) for (i, o) in enumerate(gen(J)))
+    Dict(o => gen(J)[find_root!(class, i)] for (i, o) in enumerate(gen(J)))
   end
 
   # Create presentation from equivalence classes
   p = Presentation(FreeSchema)
-
-  ogen =  map(sort(collect(Set(values(odict))), by=string)) do i
-    os = sort([k for (k, v) in collect(odict) if v==i], by=string)
-    add_generator!(p, Ob(FreeSchema, Symbol(os)))
+  obs, homs = [Dict() for _ in 1:2]
+  for i in sort(collect(Set(values(odict))), by=string)
+    os = sort([string(k) for (k, v) in collect(odict) if v==i])
+    g = add_generator!(p, Ob(FreeSchema, Symbol("[$(join(os,","))]")))
+    for o in os
+      obs[Symbol(o)] = g
+    end
   end
-  hgen = map(sort(collect(Set(values(hdict))), by=string)) do i
+  for i in sort(collect(Set(values(hdict))), by=string)
     hs = sort([k for (k, v) in collect(hdict) if v==i], by=string)
     s, t = map([dom, codom]) do get
-      ogen[odict[get(J, first(hs))]]
+      obs[Symbol(get(J, first(hs)))]
     end
-    add_generator!(p, Hom(Symbol(hs), s, t))
-  end
-
-  # Create surj morphism
-  obs, homs = map(zip([ogen, hgen], [odict, hdict])) do (g, d)
-    Dict{Symbol,Symbol}(Symbol(k)=>Symbol(g[v]) for (k, v) in d)
+    g = add_generator!(p, Hom(Symbol("[$(join(string.(hs),","))]"), s, t))
+    for h in hs
+      homs[Symbol(h)] = Symbol(g)
+    end
   end
   l1 = FinDomFunctor(obs, homs, J, FinCat(p))
   Colimit(ParallelMorphisms(fs), Multicospan([l1]))

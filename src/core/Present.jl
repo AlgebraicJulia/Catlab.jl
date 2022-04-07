@@ -43,6 +43,11 @@ function Base.:(==)(pres1::Presentation, pres2::Presentation)
     pres1.equations == pres2.equations
 end
 
+Base.hash(pres::Presentation{T,N}, h::UInt) where {T,N} =
+  hash(T, hash(N, hash(pres.syntax, hash(pres.generators,
+       hash(pres.equations, h)))))
+
+
 function Base.copy(pres::Presentation{T,Name}) where {T,Name}
   Presentation{T,Name}(pres.syntax, map(copy, pres.generators),
                        copy(pres.generator_name_index), copy(pres.equations))

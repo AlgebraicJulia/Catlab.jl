@@ -79,10 +79,121 @@ d = munit(Diagram{id}, C, :V)
 f = munit(DiagramHom{id}, C, :src)
 @test only(components(diagram_map(f))) == TheoryGraph[:src]
 
+# Left Kan
+##########
+
+# Left Kan of diagram in Set (see example docs in test/Chase.jl)
+#---------------------------------------------------------------
+@present ThSchool′(FreeSchema) begin
+  (TA′, Student′, Faculty′)::Ob
+  t_s′::Hom(TA′, Student′)
+  t_f′::Hom(TA′, Faculty′)
+end
+
+@present ThSchool(FreeSchema) begin
+  (TA, Student, Faculty, Person)::Ob
+  t_s::Hom(TA, Student)
+  t_f::Hom(TA, Faculty)
+  s_p::Hom(Student, Person)
+  f_p::Hom(Faculty, Person)
+
+  compose(t_s, s_p) == compose(t_f, f_p)
+end
+
+SchoolC, SchoolC′ = FinCat.([ThSchool, ThSchool′])
+@acset_type School′(ThSchool′)
+@acset_type School(ThSchool)
+
+F = FinFunctor(Dict(:TA′=>:TA, :Faculty′=>:Faculty, :Student′=>:Student),
+               Dict(:t_s′=>:t_s,:t_f′=>:t_f), SchoolC′, SchoolC)
+
+I = @acset School′ begin
+  TA′=2; Student′=4; Faculty′=5
+  t_s′=[1,2]; t_f′=[1,2]
+end
+
+lk = leftkan(F, I, :School)
+@test is_natural(lk)
+
+expected = @acset School begin
+  TA = 2; Student = 4; Faculty = 5; Person = 7
+  t_s = [1,2]; t_f = [1,2]; s_p = [1,2,3,4]; f_p = [1,2,5,6,7]
+end
+
+@test is_isomorphic(expected, School(diagram(codom(lk))))
+
+# Left kan of Diagrams in Grph
+#-----------------------------
+
+const Grph = ACSetCat{Graph}
+
+# Set up example shape categories
+@present ThArr(FreeSchema) begin
+  (A,B)::Ob; f::Hom(A,B)
+end
+@present ThArr2(FreeSchema) begin
+  (C,D)::Ob; m::Hom(C,D); n::Hom(D, C); compose(m,n) == id(C)
+end
+@present ThInv(FreeSchema) begin
+  (Y)::Ob; f::Hom(Y,Y); compose(f,f) == id(Y)
+end
+@present ThOne(FreeSchema) begin
+  (X)::Ob
+end
+
+@present ThInv2(FreeSchema) begin
+  (Y)::Ob; f::Hom(Y,Y); compose(f,f) == f
+end
+
+pres_to_eds(ThInv2, :Inv2) # example of an equation with a :generator term
+
+
+Arr, Arr2, One, Inv = FinCat.([ThArr, ThArr2, ThOne, ThInv])
+
+# Set up graph data
+two = path_graph(Graph, 2)
+ar = @acset Graph begin V=2; E=2; src=[1,2]; tgt=[2,2] end
+h1, h2 = homomorphisms(two, ar) # don't send both vertices to #2, or do that
+
+# Freely adding a right inverse to a C-set transformation: f: A->B
+#-----------------------------------------------------------------
+F = FinFunctor(Dict(:A=>:C, :B=>:D), Dict(:f=>:m), Arr, Arr2)
+# This may require adding things to A. These must then be mapped to B in a
+# distinct place, thereby adding to B, too.
+I = FinDomFunctor(Dict(:A=>two,:B=>ar),Dict(:f=>h1),Arr,Grph())
+lk = diagram(codom(leftkan(F, I, :X; verbose=false)))
+# This homomorphism is injective on vertices. Those can be easily inverted.
+# However, V2 in the codomain has a self loop not present in V2 of the domain.
+# Therefore the domain has an extra loop added to it.
+@test ob_map(lk, :C) == ar
+# The new edge ISN'T forced to match to the self loop in the codomain, though
+@test ob_map(lk, :D) == @acset Graph begin V=2; E=3; src=[1,2,2]; tgt=2 end
+
+# This homomorphism sends V1 and V2 to V2 of the codomain.
+I = FinDomFunctor(Dict(:A=>two,:B=>ar),Dict(:f=>h2),Arr,Grph())
+lk2 = diagram(codom(leftkan(F, I, :X2; verbose=false)))
+@test is_isomorphic(ob_map(lk2, :C), ar)
+# TODO: rationalize why this is the result, if it's correct
+@test ob_map(lk2, :D) == @acset Graph begin V=3; E=3; src=[1,3,2]; tgt=3 end
+
+# Freely adding an involution
+#----------------------------
+F = FinFunctor(Dict(:X=>:Y),nothing,One,Inv)
+# creates a copy of the starting graph, and the involution is a swap function.
+I = FinDomFunctor(Dict(:X=>two), nothing, One, Grph())
+lk3_ = leftkan(F, I, :XF; verbose=false)
+lk3 = diagram(codom(lk3_))
+@test ob_map(lk3, :Y) == two ⊕ two
+@test collect(hom_map(lk3, :f)[:V]) == [3,4,1,2]
+@test collect(hom_map(lk3, :f)[:E]) == [2,1]
+
+otherF = FinDomFunctor(Dict(:Y=>two), Dict(:f => id(two)), Inv, Grph())
+otherD = DiagramHom(F, Dict(:X=>id(two)), Diagram(I), Diagram(otherF))
+phi = universal(lk3_, otherD)
+@test is_natural(phi)
+
 # Limits of diagrams
 #########################
-is_natural(D::DiagramHom) =
-  is_functorial(shape_map(D)) && is_natural((diagram_map(D)))
 
 # Nontrivial Examples
 #--------------------
@@ -106,7 +217,6 @@ end
 Arr, CSpan, Loop, FS = FinCat.([ArrPres_, CSpanPres_, LoopPres_, ThFSet])
 
 # ACSet Cats
-const ACSetCat{S} = TypeCat{S, ACSetTransformation}
 const Grph = ACSetCat{Graph}
 const Finset = ACSetCat{FSet}
 
@@ -170,8 +280,8 @@ A_12  = FinDomFunctor(Dict(:A1=>f1,:A2=>f2), Dict(:a=>f12), Arr, Finset());
 A_13  = FinDomFunctor(Dict(:A1=>f1,:A2=>f3), Dict(:a=>f13_2), Arr, Finset());
 A_01  = FinDomFunctor(Dict(:A1=>g0,:A2=>g1), Dict(:a=>g01), Arr, Grph());
 
-ds = [AG_g1, CG_g1t1ar, AG_g12, CG_g1, CG_t1ar, LG_g2, LG_g1, A_12, A_13, A_01]
-AGg1, CGg1t1ar, AGg12, CGg1, CGt1ar, LGg2, LGg1, A12, A13, A01 = Diagram.(ds)
+ds = [AG_g1, CG_g1t1ar, AG_g12, CG_g1, CG_t1ar, LG_g2, LG_g1, A_12, A_13, A_01, AG_t1]
+AGg1, CGg1t1ar, AGg12, CGg1, CGt1ar, LGg2, LGg1, A12, A13, A01, AGt1 = Diagram.(ds)
 
 # Diagram morphisms
 F_AAg1 = DiagramHom(id(Arr), Dict(:A1=>g12a,:A2=>ig1), AG_g1, AG_g12);
@@ -179,6 +289,7 @@ G_AAg1 = DiagramHom(id(Arr), Dict(:A1=>g12b, :A2=>ig1),           AG_g1, AG_g12)
 H_CAg1 = DiagramHom(H_CA, Dict(:C1=>g12a, :C2=>ig1,:C3=>g12b), CG_g1, AG_g12);
 F_2 = DiagramHom(F_AC, Dict(:A1=>g1_gt1, :A2=>g1_arr1), AGg1, CGg1t1ar);
 G_2 = DiagramHom(G_AC, Dict(:A1=>ig1,    :A2=>g1_arr2), AGg1, CGg1t1ar);
+H_2 = DiagramHom(id(Arr), Dict(:A1=>g1_t1,    :A2=>g1_t1), AGg1, AGt1)
 AA_02 = DiagramHom(id(Arr), Dict(:A1=>g01, :A2=>ig1), A01, AGg1);
 # ACop1 = DiagramHom{op}(H_CA, Dict(:C1=>g21,:C2=>ig1, :C3=>g21), AG_g12, CG_g1)
 # ACop2 = DiagramHom{op}(H_CA, Dict(:C1=>g2_t1,:C2=>g1_arr2, :C3=>g21),
@@ -240,10 +351,10 @@ u = universal(p1, Multispan([ALop1, ALop2]))
 cp1 = coproduct(Diagram{id}[AGg1, CGg1]);
 cp2 = coproduct(Diagram{id}[AGg1, CGg1t1ar, AGg12, CGg1, CGt1ar]);
 
-# coequalizer()  NOT SUPPORTED - requires Kan
-# pushout() NOT SUPPORTED - requires Kan
+ceq = coequalizer(DiagramHom{id}[F_2,G_2])
+po = pushout(Multispan([F_2,H_2]))
 
-map([cp1, cp2]) do clim
+map([cp1, cp2, ceq, po]) do clim
   @test is_functorial(diagram(apex(clim)))
   @test all(is_natural.(legs(clim)))
 end

@@ -1,22 +1,28 @@
 """ Diagrams in a category and their morphisms.
 """
 module Diagrams
-export Diagram, DiagramHom, id, op, co, shape, diagram, shape_map, diagram_map
+export Diagram, DiagramHom, id, op, co, shape, diagram, shape_map, diagram_map,
+       leftkan
 
 using AutoHashEquals
+using DataStructures: DefaultDict
 
-using ...GAT
+using ...GAT, ...Present
 import ...Theories: dom, codom, id, compose, ⋅, ∘, munit, oplus, otimes
 using ...Theories: Category, composeH
 import ..Categories: ob_map, hom_map
-using ..FinCats, ..FreeDiagrams
-using ..FinCats: mapvals
-import ..FinCats: force, collect_ob, collect_hom
+using ..FinCats, ..FreeDiagrams, ..Chase
+using ..FinCats: mapvals, FinTransformationMap
+using ..CSets, ..FinSets
+import ..FinCats: force, collect_ob, collect_hom, is_natural
 import ..Limits: limit, colimit, universal, equalizer, product, Limit, Colimit,
                  incl, proj, pullback, coproduct, coequalizer, copair, pushout,
-                 AbstractLimit, Product, Coproduct, AbstractColimit, factorize
+                 AbstractLimit, Product, Coproduct, AbstractColimit, factorize,
+                 create
 
 # TODO: Implement these functions more generally, and move elsewhere.
+
+
 
 """ Opposite of a category or, more generally, 1-cell dual of a 2-category.
 """
@@ -170,6 +176,10 @@ function Base.show(io::IO, f::DiagramHom{T}) where T
   print(io, ")")
 end
 
+is_natural(D::DiagramHom) =
+  is_functorial(shape_map(D)) && is_natural((diagram_map(D)))
+
+
 # Categories of diagrams
 ########################
 
@@ -283,6 +293,104 @@ function munit(::Type{DiagramHom{T}}, C::Cat, f;
   DiagramHom{T}([Pair(j, f)], d, d′)
 end
 
+# Left Kan extensions of Diagrams in Set or C-set along FinFunctors
+################################################################
+
+"""    leftkan(F::FinFunctor, I::StructACSet, cd::Symbol; n=15, verbose=false)
+    F
+  A -->  B
+I ↘ => ↙ LanF(I)
+    C
+
+Computes the left kan extension of I (a functor to Set) by F (a shape functor).
+"""
+function leftkan(F::FinFunctor, I::StructACSet, cd::Symbol; n=15, verbose=false)
+  # Assemble chase input using the collage of F as a schema
+  col = apex(collage(F))
+  name, cname = Symbol("collage_F_$cd"), Symbol("cset_collage_F_$cd")
+  col_eds = pres_to_eds(presentation(col), name)
+  col_I = Base.invokelatest(crel_type(presentation(col), name))
+  col_I_cset = Base.invokelatest(pres_to_cset(presentation(col), cname))
+  copy_parts!(col_I, to_c_rel(I))
+
+  # Run the chase
+  chase_res_, check = chase_crel(col_I, col_eds, n; I_is_crel=true,
+                       Σ_is_crel=true, cset_example=col_I_cset, verbose=verbose)
+  check || error("Chase failed to terminate")
+  chase_res = codom(chase_res_)
+
+  # Project the codom portion of the collage and grab the α components
+  res = Base.invokelatest(pres_to_cset(presentation(codom(F)),
+                                       Symbol("rel_$cd")))
+  copy_parts!(res, chase_res)
+  α = Dict(o=>FinFunction(chase_res, Symbol("α_$o"))
+           for o in ob_generators(dom(F)))
+
+  # Return result as a DiagramHom{id}
+  ddom = Diagram(FinDomFunctor(I; eqs=equations(dom(F))))
+  dcodom = Diagram(FinDomFunctor(res; eqs=equations(codom(F))))
+  DiagramHom{id}(F, α, ddom, dcodom)
+end
+
+"""
+Reduce left kan of a functor to C-Set to a computation for a functor into FinSet
+Convert result back to a functor into C-Set.
+"""
+function leftkan(F::FinFunctor{D,CD}, I::FinDomFunctor{D, ACSetCat{S}},
+                 cd::Symbol; n=15, verbose=false) where {D, CD, S}
+    Ic = curry(I)
+    ctype = pres_to_cset(presentation(dom(Ic)), Symbol("random_$cd"))
+    Ic_ = ctype(Ic)
+
+    # Map from D x S -> CD x S based on map F: D->CD
+    domprod = product([dom(F), FinCat(Presentation(S))])
+    domleg1, domleg2 = legs(domprod)
+    codomprod = product([codom(F), FinCat(Presentation(S))])
+    Fc = universal(codomprod, Multispan([compose(domleg1, F), domleg2]))
+
+    # Compute result for Functors to Set
+    curr_res = leftkan(Fc, Ic_, Symbol("random2_$cd"); n=n, verbose=verbose)
+
+    # Create a meaningless FinFunctor from CD to the C-Set category for uncurry
+    cset_rep = last(first(ob_map(I))); cset_hom = id(cset_rep)
+    fakeob = Dict([o => cset_rep for o in ob_generators(codom(F))])
+    fakehom = Dict([o => cset_hom for o in hom_generators(codom(F))])
+    cd_finfun = FinDomFunctor(fakeob, fakehom, codom(F),codom(I))
+
+    # Uncurry result
+    ucodom = uncurry(diagram(codom(curr_res)), cd_finfun)
+    αcomps = Dict(o => DefaultDict{Symbol,Vector{Int}}(()->Int[])
+                  for o in ob_generators(dom(F)))
+    for o in ob_generators(apex(domprod))
+        αcomps[ob_map(domleg1, o)][Symbol(ob_map(domleg2, o))] = collect(diagram_map(curr_res)[o])
+    end
+    FU = compose(F, ucodom)
+    α = Dict(map(collect(αcomps)) do (o, comps)
+      o => ACSetTransformation(ob_map(I,o), ob_map(FU, o); comps...)
+    end)
+    return DiagramHom{id}(F, α, I, ucodom)
+end
+
+"""
+A left kan extension LanF(X) is an initial object in the category of extensions
+of X along F (X & F viewed as morphisms in the category of diagrams w/ covariant
+transformations).
+"""
+function universal(eta::DiagramHom{id,D,CD}, alpha::DiagramHom{id,D,CD};
+                  ) where {D,CD}
+  L, M = diagram.(codom.([eta, alpha]))
+  _, _ = [only(Set(get.([L, M]))) for get in [dom, codom]]
+  σf = Dict{Symbol,ACSetTransformation}(map(collect(M.ob_map)) do (o, h)
+    o => create(h) # if L is not surjective on objects, map from empty set
+  end)
+  for o in ob_generators(dom(diagram(dom(eta))))
+    h = extend_morphism(alpha.diagram_map[o], eta.diagram_map[o]; many=true)
+    σf[Symbol(eta.shape_map(o))] = only(h)
+  end
+  res = FinTransformation(L, M; σf...)
+  is_natural(res) || error("res $res")
+  return res
+end
 
 # (co)Limits in Category of Diagrams
 ####################################
@@ -403,6 +511,35 @@ function diagram_hom_coproduct(Xs::AbstractVector{<: Diagram{T}}; kw...) where {
   return hcprod, Dict(), ls
 end
 
+"""
+Coequalizer of diagrams in the same category. (equalizer for op morphisms)
+"""
+function diagram_hom_coequalizer(fs::AbstractVector{<: DiagramHom{T}}; kw...) where {T}
+  X, Y = diagram.(only.(Set.([dom.(fs), codom.(fs)])));
+  h = Symbol(string(hash(fs))[1:4])
+  # Shape level coequalizer
+  shape_ceq = coequalizer(shape_map.(fs))
+  H = proj(shape_ceq)
+  # Left kan extensions
+  κ = leftkan(H, Y, Symbol("H$h"); verbose=false)
+  λ = leftkan(shape_map(first(fs))⋅H, X, Symbol("HF$h"); verbose=false) # F⋅H = G⋅H = ...
+  αs = [universal(λ, ϕ⋅κ) for ϕ in fs]
+  # Take coequalizer of universals, but need to convert them to CSet morphisms
+  # TODO: work out doing coequalizers pointwise without the currying/uncurrying
+  # This is important to return the coequalizer as a dictionary
+  curried = curry.(αs)
+  csettypes = [pres_to_cset(presentation(dom(dom(x))), Symbol("x$h"))
+               for x in curried]
+  csethoms = [αtype(αc) for (αtype, αc) in zip(csettypes, curried)]
+  ceq = coequalizer(csethoms)
+  γ = uncurry(FinTransformationMap(proj(ceq)), first(αs))
+  KX = Diagram{T}(codom(γ))
+  κγ = Dict([o=> compose(f, components(γ)[Symbol(ob_map(H, o))])
+             for (o,f) in components(diagram_map(κ))])
+  l = DiagramHom{T}(H, κγ, Diagram{T}(Y), KX)
+  return shape_ceq, Dict(nothing=>ceq), l
+end
+
 @auto_hash_equals struct DiagLimit{
   Ob,Diagram,LimType<:Union{Limit,Colimit},Cone<:Multispan{Ob}
     } <: AbstractLimit{Ob,Diagram}
@@ -446,6 +583,10 @@ coequalizer(fs::AbstractVector{<: DiagramHom{op}}) =
   let r = diagram_hom_equalizer(fs)
   DiagColimit(ParallelMorphisms(fs), r[1], r[2], Multicospan([r[3]])) end
 
+coequalizer(fs::AbstractVector{<: DiagramHom{id}}) =
+  let r = diagram_hom_coequalizer(fs)
+  DiagColimit(ParallelMorphisms(fs), r[1], r[2], Multicospan([r[3]])) end
+
 function pullback(fs::Multicospan{<:Diagram{T}, <: DiagramHom{T}}) where {T}
   p = product(Diagram{T}[dom(f) for f in fs])
   equalizer(DiagramHom{T}[compose(l, f) for (l,f) in zip(legs(p), fs)])
@@ -453,7 +594,7 @@ end
 
 function pushout(fs::Multispan{<:Diagram{T}, <: DiagramHom{T}}) where {T}
   cp = coproduct(Diagram{T}[codom(f) for f in fs])
-  coequalizer(DiagramHom{op}[compose(f,l) for (l,f) in zip(legs(cp), fs)])
+  coequalizer(DiagramHom{T}[compose(f,l) for (l,f) in zip(legs(cp), fs)])
 end
 
 function universal(p::DiagLimit{<:Diagram{id},<:DiscreteDiagram}, sp::Multispan)

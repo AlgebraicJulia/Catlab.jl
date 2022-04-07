@@ -7,7 +7,7 @@ export ACSetTransformation, CSetTransformation,
   components, force, is_natural, homomorphism, homomorphisms, is_homomorphic,
   isomorphism, isomorphisms, is_isomorphic,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset,
-  uncurry, ACSetCat
+  uncurry, curry, ACSetCat
 
 using Base.Iterators: flatten
 using Base.Meta: quot
@@ -15,6 +15,7 @@ using AutoHashEquals
 using JSON
 using Reexport
 using Tables
+using DataStructures: DefaultDict
 
 @reexport using ...CSetDataStructures
 using ...GAT, ...Present
@@ -29,7 +30,7 @@ import ..Subobjects: Subobject, SubobjectBiHeytingAlgebra,
   implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..Sets: SetOb, SetFunction, TypeSet
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate
-import ..FinCats: FinDomFunctor, components, is_natural
+import ..FinCats: FinDomFunctor, FinTransformationMap, components, is_natural, FinDomFunctorMap
 
 # Sets interop
 ##############
@@ -392,6 +393,19 @@ function is_natural(α::ACSetTransformation{S}) where {S}
   end
   return true
 end
+
+
+function (C::Type{ACS})(F::FinTransformationMap) where ACS <: ACSet
+  Cd, CCd = C(dom(F)), C(codom(F))
+  return CSetTransformation(Cd, CCd; components(F)...)
+end
+
+
+FinTransformationMap(f::ACSetTransformation; eqs=Pair[]) =
+  FinTransformationMap(components(f),
+                    FinDomFunctor(dom(f); eqs=eqs),
+                    FinDomFunctor(codom(f); eqs=eqs))
+
 
 # Category of C-sets
 ####################
@@ -1147,6 +1161,9 @@ end
 #######################################################
 const ACSetCat{S} = TypeCat{S, ACSetTransformation}
 
+"""    curry(d::FinFunctor{D, ACSetCat{S}}) where {D,S}
+Currying on objects of a functor category
+"""
 function curry(d::FinFunctor{D, ACSetCat{S}}) where {D,S}
   shapelim = product([dom(d), FinCat(Presentation(S))])
   shape_ind, part_ind = legs(shapelim)
@@ -1211,7 +1228,47 @@ function uncurry(d::FinDomFunctor{D1, FinSetCat},
   FinDomFunctor(omap,hmap,dom(old_d),ACSetCat{S}())
 end
 
+"""    curry(d::FinFunctor{D, ACSetCat{S}}) where {D,S}
+Currying on morphisms of a functor category with an ACSetCat as codom
+"""
+function curry(ϕ::FinTransformationMap{D, ACSetCat{S}}) where {D,S}
+  cur_d, cur_cd = curry.([dom(ϕ), codom(ϕ)])
+  shapelim = product([dom(dom(ϕ)), FinCat(Presentation(S))])
+  shape_ind, part_ind = legs(shapelim)
+  comps = Dict(map(ob_generators(apex(shapelim))) do o
+    oshape, opart = Symbol(shape_ind(o)), Symbol(part_ind(o))
+    Symbol(o) => components(ϕ)[oshape][opart]
+  end)
+  FinTransformationMap(comps,cur_d,cur_cd)
+end
 
+"""    uncurry(d::FinTransformationMap, old_d::FinTransformationMap{D, ACSetCat{S}}) where {D, S}
+Inverse to currying on morphisms of a functor category with an ACSetCat as codom
+"""
+function uncurry(d::FinTransformationMap,
+                 old_d::FinTransformationMap{D, ACSetCat{S}}) where {D, S}
+  # Recover schema for d as a product, not just the apex
+  shapelim = product([dom(dom(old_d)), FinCat(Presentation(S))])
+  shape_ind, part_ind = legs(shapelim)
+
+  αcomps = Dict(o => DefaultDict{Symbol,Vector{Int}}(()->Int[])
+                for o in keys(components(old_d)))
+
+  for o in (ob_generators(apex(shapelim)))
+    dic = αcomps[Symbol(ob_map(shape_ind, o))]
+    dic[Symbol(ob_map(part_ind, o))] = collect(components(d)[Symbol(o)])
+  end
+
+  uc_d, uc_cd = [uncurry(get(d), get(old_d)) for get in [dom, codom]]
+
+  α = Dict(map(collect(αcomps)) do (o, comps)
+    o => ACSetTransformation(ob_map(uc_d,   o),
+                             ob_map(uc_cd, o); comps...)
+  end)
+
+
+  FinTransformationMap(α, uc_d, uc_cd)
+end
 # Serialization
 ###############
 
