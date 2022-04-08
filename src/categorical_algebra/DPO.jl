@@ -23,39 +23,39 @@ intended to be monic or not, as well as an optional negative application
 condition (i.e. forbid any match m: L->G for which there exists a commuting
 triangle L->N->G).
 """
-struct Rule
+struct Rule{T}
   L::Any
   R::Any
   N::Union{Nothing, Any}
   monic::Bool
-  semantics::Symbol
-  function Rule(L, R, N=nothing; monic::Bool=false,
-                semantics::Symbol=:DPO)
+  function Rule{T}(L, R, N=nothing; monic::Bool=false) where {T}
     dom(L) == dom(R) || error("L<->R not a span")
     isnothing(N) || dom(N) == codom(L) || error("NAC does not compose with L")
-    new(L, R, N, monic, semantics)
+    new{T}(L, R, N, monic)
   end
 end
+
+Rule(L,R,N=nothing;monic::Bool=false) = Rule{:DPO}(L,R,N; monic=monic)
 
 # Rewriting functions that just get the final result
 """    rewrite(r::Rule, G; kw...)
 Perform a rewrite (automatically finding an arbitrary match) and return result.
 """
-rewrite(r::Rule, G; kw...) =
-  get_result(r.semantics, rewrite_maps(r, G; kw...))
+rewrite(r::Rule{T}, G; kw...) where {T} =
+  get_result(T, rewrite_maps(r, G; kw...))
 
 """    rewrite_match(r::Rule, m; kw...)
 Perform a rewrite (with a supplied match morphism) and return result.
 """
-rewrite_match(r::Rule, m; kw...) =
-  get_result(r.semantics, rewrite_match_maps(r, m; kw...))
+rewrite_match(r::Rule{T}, m; kw...) where {T} =
+  get_result(T, rewrite_match_maps(r, m; kw...))
 
 """    rewrite_parallel(rs::Vector{Rule}, G; kw...)
 Perform multiple rewrites in parallel (automatically finding arbitrary matches)
 and return result.
 """
-rewrite_parallel(rs::Vector{Rule}, G; kw...) =
-  get_result(first(rs).semantics, rewrite_parallel_maps(rs, G; kw...))
+rewrite_parallel(rs::Vector{Rule{T}}, G; kw...) where {T} =
+  get_result(T, rewrite_parallel_maps(rs, G; kw...))
 rewrite_parallel(r::Rule, G; kw...) = rewrite_parallel([r], G; kw...)
 
 """Extract the rewrite result from the full output data"""
@@ -73,10 +73,10 @@ end
 Perform a rewrite (automatically finding an arbitrary match) and return all
 computed data.
 """
-function rewrite_maps(r::Rule, G; initial=Dict(), kw...)
+function rewrite_maps(r::Rule{T}, G; initial=Dict(), kw...) where {T}
   ms = homomorphisms(codom(r.L), G; monic=r.monic, initial=NamedTuple(initial))
   for m in ms
-    DPO_pass = r.semantics != :DPO || can_pushout_complement(r.L, m)
+    DPO_pass = T != :DPO || can_pushout_complement(r.L, m)
     if DPO_pass && (isnothing(r.N) || isnothing(extend_morphism(m,r.N)))
       return rewrite_match_maps(r, m; kw...)
     end
@@ -84,32 +84,20 @@ function rewrite_maps(r::Rule, G; initial=Dict(), kw...)
   return nothing
 end
 
-"""    rewrite_match_maps(r::Rule, m; kw...)
-Perform a rewrite (with an explicit match) and return all computed data
-"""
-function rewrite_match_maps(r::Rule, m; kw...)
-  if     r.semantics == :DPO  rewrite_dpo(r.L, r.R, m; kw...)
-  elseif r.semantics == :SPO  rewrite_spo(r.L, r.R, m; kw...)
-  elseif r.semantics == :SqPO rewrite_sqpo(r.L, r.R, m; kw...)
-  else error("unsupported rewrite semantics $(r.semantics)")
-  end
-end
 
-
-"""    function rewrite_parallel_maps(rs::Vector{Rule}, G::StructACSet{S}; initial=Dict(), kw...) where {S}
+"""    rewrite_parallel_maps(rs::Vector{Rule{T}}, G::StructACSet{S}; initial=Dict(), kw...) where {S,T}
 Perform multiple rewrites in parallel (automatically finding arbitrary matches)
 and return all computed data. Restricted to C-set rewriting
 """
-function rewrite_parallel_maps(rs::Vector{Rule}, G::StructACSet{S};
-                               initial=Dict(), kw...) where {S}
-  sem = only(Set([r.semantics for r in rs]))
+function rewrite_parallel_maps(rs::Vector{Rule{T}}, G::StructACSet{S};
+                               initial=Dict(), kw...) where {S,T}
   (ms,Ls,Rs) = [ACSetTransformation{S}[] for _ in 1:3]
   seen = [Set{Int}() for _ in ob(S)]
   init = NamedTuple(initial)
   for r in rs
     ms_ = homomorphisms(codom(r.L), G; monic=r.monic, initial=init)
     for m in ms_
-      DPO_pass = sem != :DPO || can_pushout_complement(r.L, m)
+      DPO_pass = T != :DPO || can_pushout_complement(r.L, m)
       if DPO_pass && (isnothing(r.N) || isnothing(extend_morphism(m,r.N)))
         new_dels = map(zip(components(r.L), components(m))) do (l_comp, m_comp)
             L_image = Set(collect(l_comp))
@@ -129,7 +117,7 @@ function rewrite_parallel_maps(rs::Vector{Rule}, G::StructACSet{S};
   if isempty(ms) return nothing end
   length(Ls) == length(ms) || error("Ls $Ls")
   # Composite rewrite rule
-  R = Rule(oplus(Ls), oplus(Rs), semantics=sem)
+  R = Rule{T}(oplus(Ls), oplus(Rs))
   return rewrite_match_maps(R, copair(ms); kw...)
 end
 rewrite_parallel_maps(r::Rule, G; initial=Dict(), kw...) =
@@ -170,7 +158,7 @@ end
 # Double-pushout rewriting
 ##########################
 
-"""
+"""    rewrite_match_maps(r::Rule{:DPO}, m)
 Apply a DPO rewrite rule (given as a span, L<-I->R) to a ACSet
 using a match morphism `m` which indicates where to apply
 the rewrite.
@@ -184,9 +172,9 @@ This works for any type that implements `pushout_complement` and `pushout`
 Returns the morphisms I->K, K->G (produced by pushout complement), followed by
 R->H, and K->H (produced by pushout)
 """
-function rewrite_dpo(L, R, m)
-  (ik, kg) = pushout_complement(L, m)
-  rh, kh = pushout(R, ik)
+function rewrite_match_maps(r::Rule{:DPO}, m)
+  (ik, kg) = pushout_complement(r.L, m)
+  rh, kh = pushout(r.R, ik)
   return ik, kg, rh, kh
 end
 
@@ -416,13 +404,13 @@ function final_pullback_complement(fm::ComposablePair;
   return ComposablePair(n, g)
 end
 
-"""    rewrite_sqpo(l,r,m; pres::Union{Nothing, Presentation}=nothing)
+"""    rewrite_match_maps(r::Rule{:SqPO},m; pres::Union{Nothing, Presentation}=nothing)
 Sesqui-pushout is just like DPO, except we use a final pullback complement
 instead of a pushout complement.
 """
-function rewrite_sqpo(l,r,m; pres::Union{Nothing, Presentation}=nothing)
-  m_, i_ = final_pullback_complement(ComposablePair(l, m); pres=pres)
-  m__, o_ = pushout(r, m_)
+function rewrite_match_maps(r::Rule{:SqPO},m; pres::Union{Nothing, Presentation}=nothing)
+  m_, i_ = final_pullback_complement(ComposablePair(r.L, m); pres=pres)
+  m__, o_ = pushout(r.R, m_)
   return (m__, o_, m_, i_)
 end
 
@@ -451,16 +439,16 @@ function pullback_complement(f, g)
     return CSetTransformation(A, dom(d_to_c); ad...) => d_to_c
 end
 
-"""    rewrite_spo(ka, kb, ac)
+"""    rewrite_match_maps(r::Rule{:SPO}, ac)
 NOTE: In the following diagram, a double arrow indicates a monic arrow.
 
 We start with two partial morphisms, construct M by pullback, then N & O by
 pullback complement, then finally D by pushout.
 
-            ⭆
+
 A ⇇ K → B         A ⇇ K → B
 ⇈                 ⇈ ⌟ ⇈ ⌞ ⇈
-L                 L ⇇ M → N
+L          ⭆      L ⇇ M → N
 ↓                 ↓ ⌞ ↓ ⌜ ↓
 C                 C ⇇ O → D
 
@@ -470,9 +458,11 @@ as a monic K↣A and K→B.
 Specified in Fig 6 of:
 "Graph rewriting in some categories of partial morphisms"
 """
-function rewrite_spo(ka, kb, ac)
+function rewrite_match_maps(r::Rule{:SPO}, ac)
+  ka, kb = r.L, r.R
   e = "SPO rule is not a partial morphism. Left leg not monic."
   is_injective(ka) || error(e)
+
   lc, la = ac, id(dom(ac))
   ml, mk = pullback(la, ka)
   mn, nb = pullback_complement(mk, kb)

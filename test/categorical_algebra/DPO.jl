@@ -369,7 +369,7 @@ m = CSetTransformation(L, G; V=[1])
 l = CSetTransformation(I, L; V=[1,1])
 r = id(I)
 
-rw = rewrite_match(Rule(l, r; semantics=:SqPO), m)
+rw = rewrite_match(Rule{:SqPO}(l, r), m)
 @test is_isomorphic(rw, @acset Graph begin
   V=4; E=4; src=[1,1,2,2]; tgt=[3,4,3,4] end)
 
@@ -381,7 +381,7 @@ L, I, R = path_graph(Graph, 2), Graph(2), Graph(2)
 G = @acset Graph begin V=3; E=3; src=1; tgt=[2,2,3] end
 l, r = CSetTransformation(I, L; V=[1,2]), id(I)
 m = CSetTransformation(L, G; V=[1,2], E=[1])
-rw = rewrite_match(Rule(l,r; semantics=:SqPO), m)
+rw = rewrite_match(Rule{:SqPO}(l,r), m)
 @test is_isomorphic(rw, @acset Graph begin V=3; E=2; src=1; tgt=[2,3] end)
 
 # (Figure 1) Example that would be dangling condition violation for DPO
@@ -390,7 +390,7 @@ G= @acset Graph begin V=4; E=3; src=[1,3,3]; tgt=[2,2,4] end
 L,I,R = Graph.([1,0,0])
 l, r = CSetTransformation(I,L), CSetTransformation(I,R)
 m = CSetTransformation(L, G; V=[3])
-rw = rewrite_match(Rule(l,r; semantics=:SqPO), m)
+rw = rewrite_match(Rule{:SqPO}(l,r), m)
 @test is_isomorphic(rw, @acset Graph begin V=3; E=1; src=1; tgt=2 end)
 
 # Pullback complement
@@ -411,7 +411,7 @@ ka = path_graph(Graph, 2);
 ka, kb = [CSetTransformation(K, x, V=[1,2], E=[1]) for x in [A,B]];
 ac = CSetTransformation(A, C, V=[1,2,3], E=[1,2]);
 
-spr = rewrite_match(Rule(ka,kb; semantics=:SPO), ac)
+spr = rewrite_match(Rule{:SPO}(ka,kb), ac)
 @test is_isomorphic(spr, @acset Graph begin V=3; E=2; src=[1,2]; tgt=2 end)
 
 # Semisimplicial sets
@@ -466,7 +466,7 @@ Tri = @acset SSet begin
   d1=[1]; d2=[2]; d3=[3];
   src=[1,1,2]; tgt=[3,2,3]
 end
-r = Rule(homomorphisms(edge, Tri)[2], id(edge); semantics=:SPO)
+r = Rule{:SPO}(homomorphisms(edge, Tri)[2], id(edge))
 m = homomorphism(Tri, quadrangle)
 # This does not make sense for DPO
 @test !can_pushout_complement(r.L, m)
@@ -475,7 +475,7 @@ m = homomorphism(Tri, quadrangle)
 
 L = @acset SSet begin V=1 end
 I = @acset SSet begin V=2 end
-r =Rule(homomorphism(I,L),id(I); semantics=:SqPO)
+r =Rule{:SqPO}(homomorphism(I,L),id(I))
 m = CSetTransformation(L, Tri, V=[1]);
 # We get 4 'triangles' when we ignore equations
 @test nparts(rewrite_match(r, m), :T) == 4
