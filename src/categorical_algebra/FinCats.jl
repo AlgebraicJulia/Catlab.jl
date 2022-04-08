@@ -506,20 +506,31 @@ domains and codomains of the components are checked.
 
 See also: [`is_functorial`](@ref).
 """
-function is_natural(α::FinTransformation; check_equations::Bool=true)
+function is_natural(α::FinTransformation; check_equations::Bool=true,
+                    verbose::Bool=false)
   F, G = dom(α), codom(α)
   C, D = dom(F), codom(F) # == dom(G), codom(G)
 
   all(ob_generators(C)) do c
     α_c = α[c]
-    dom(D, α_c) == ob_map(F,c) && codom(D, α_c) == ob_map(G,c)
+    res = dom(D, α_c) == ob_map(F,c) && codom(D, α_c) == ob_map(G,c)
+    if !res && verbose
+      println("c $c\ndom(D, α_c) $(dom(D, α_c))\nob_map(F,c) $(ob_map(F,c))")
+      println("codom(D, α_c) $(codom(D, α_c))\nob_map(G,c) $(ob_map(G,c))")
+    end
+    res
   end || return false
 
   if check_equations
     all(hom_generators(C)) do f
       Ff, Gf = force.([hom_map(F,f), hom_map(G,f)])
       α_c, α_d = force.([α[dom(C,f)], α[codom(C,f)]])
-      is_hom_equal(D, compose(D, α_c, Gf), compose(D, Ff, α_d))
+      res = is_hom_equal(D, compose(D, α_c, Gf), compose(D, Ff, α_d))
+      if !res && verbose
+        println("f $f\nFf $Ff\nGf $Gf\nα_c $α_c\nα_d $α_d")
+        println("compose(D, α_c, Gf) $(compose(D, α_c, Gf))\ncompose(D, Ff, α_d)) $(compose(D, Ff, α_d)))")
+      end
+      res
     end || return false
   end
 

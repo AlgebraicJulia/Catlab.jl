@@ -189,7 +189,7 @@ lk3 = diagram(codom(lk3_))
 
 otherF = FinDomFunctor(Dict(:Y=>two), Dict(:f => id(two)), Inv, Grph())
 otherD = DiagramHom(F, Dict(:X=>id(two)), Diagram(I), Diagram(otherF))
-phi = universal(lk3_, otherD)
+phi = lk_universal(lk3_, otherD)
 @test is_natural(phi)
 
 # Limits of diagrams
@@ -232,12 +232,15 @@ H_CA = FinDomFunctor(Dict(:C1=>:A1, :C2=>:A2, :C3=>:A1),
 # Graphs/Finsets
 g0,g1,g2 = Graph.([0,1,2])
 t1 = apex(terminal(Graph))
+arr = path_graph(Graph, 2)
 ar = @acset Graph begin V=2; E=2; src=[1,2]; tgt=[2,2] end
 f1,f2,f3,f4 = fs = [@acset FSet begin X=i end for i in 1:4]
 
 ig1,it1 = id.([g1,t1])
 if1,if2 = id.([f1,f2])
 g1_arr1, g1_arr2 = homomorphisms(g1, ar)
+harr = homomorphisms(arr,ar)[2]
+g1arr = homomorphisms(g1,arr)[1]
 gt1_arr1 = homomorphism(g1 ⊕ t1, ar)
 t1_plus = homomorphism(t1, g1 ⊕ t1)
 t1_ar = homomorphism(t1, ar)
@@ -313,6 +316,7 @@ CC1 = DiagramHom(id(CSpan), Dict(:C1=>g1_gt1_2, :C2=>g1_arr2, :C3=>ig1),
 
 # Limits
 #-------
+if false
 p1 = product([AGg1, CGg1t1ar, AGg12, CGg1, CGt1ar]);
 p2 = product([LGg1, LGg2]);
 e1 = equalizer(DiagramHom{id}[F_AAg1,G_AAg1]);
@@ -353,8 +357,40 @@ cp2 = coproduct(Diagram{id}[AGg1, CGg1t1ar, AGg12, CGg1, CGt1ar]);
 
 ceq = coequalizer(DiagramHom{id}[F_2,G_2])
 po = pushout(Multispan([F_2,H_2]))
+end
+""" Worked out pushout for two diagram homs in Grph:
 
-map([cp1, cp2, ceq, po]) do clim
+Pushout at shape level is id(•) +. Arrow = Arrow. If we plug in the graphs:
+
+                 •↦ V₁
+                 (l1)        V₁₂ ↦ V₂
+           {[•]}  ⇒  {[•₁ → •₂]  ⟶  [•₁ → •₂↺]}
+   •↦ V₁ (l2)⇓
+         {[•₁ → •₂↺]}
+
+This results in a diagram with shape •→•. The first graph is the same as
+before with an extra l2 component glued onto V₁, while the second graph has the
+l2 component glued onto V₂. Result:
+
+   •₂       V₁₂ ↦ V₂
+   ↑         V₃ ↦ V₃
+   •₁ → •₃↺    ⟶     •₁ → •₃↺ → •₃↺
+"""
+l1_ = Diagram(FinDomFunctor(Dict(:A1=>arr,:A2=>ar),Dict(:a=>harr),Arr,Grph()))
+l2_ = Diagram(FinDomFunctor(Dict(:X=>ar), nothing, FS, Grph()));
+FS_A = FinDomFunctor(Dict(:X=>:A1), nothing, FS, Arr)
+apx = Diagram(FinDomFunctor(Dict(:X=>g1), nothing, FS, Grph()))
+l1 = DiagramHom(FS_A,Dict(:X=>g1arr),apx,l1_)
+l2 = DiagramHom(id(FS),Dict(:X=>g1_arr1),apx,l2_)
+po2 = pushout(Multispan([l1,l2]));
+
+expected_a1 = @acset Graph begin V=3;E=3; src=[1,1,3]; tgt=[2,3,3] end
+expected_a2 = @acset Graph begin V=3;E=4; src=[1,2,2,3]; tgt=[2,2,3,3] end
+@test is_isomorphic(ob_map(apex(po2), Symbol("[A1,X]")), expected_a1)
+@test is_isomorphic(ob_map(apex(po2), Symbol("[A2]")), expected_a2)
+
+
+map([cp1, cp2, ceq, po, po2]) do clim
   @test is_functorial(diagram(apex(clim)))
   @test all(is_natural.(legs(clim)))
 end

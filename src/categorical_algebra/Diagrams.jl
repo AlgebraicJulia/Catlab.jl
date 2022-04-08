@@ -2,7 +2,7 @@
 """
 module Diagrams
 export Diagram, DiagramHom, id, op, co, shape, diagram, shape_map, diagram_map,
-       leftkan
+       leftkan, lk_universal
 
 using AutoHashEquals
 using DataStructures: DefaultDict
@@ -176,8 +176,8 @@ function Base.show(io::IO, f::DiagramHom{T}) where T
   print(io, ")")
 end
 
-is_natural(D::DiagramHom) =
-  is_functorial(shape_map(D)) && is_natural((diagram_map(D)))
+is_natural(D::DiagramHom; verbose::Bool=false) =
+  is_functorial(shape_map(D)) && is_natural(diagram_map(D); verbose=verbose)
 
 
 # Categories of diagrams
@@ -297,11 +297,10 @@ end
 ################################################################
 
 """    leftkan(F::FinFunctor, I::StructACSet, cd::Symbol; n=15, verbose=false)
-    F
-  A -->  B
-I ↘ => ↙ LanF(I)
-    C
-
+    B
+F ↗ η⇑ ↘ LanF(I)
+ A  ⟶  C
+    I
 Computes the left kan extension of I (a functor to Set) by F (a shape functor).
 """
 function leftkan(F::FinFunctor, I::StructACSet, cd::Symbol; n=15, verbose=false)
@@ -375,20 +374,77 @@ end
 A left kan extension LanF(X) is an initial object in the category of extensions
 of X along F (X & F viewed as morphisms in the category of diagrams w/ covariant
 transformations).
+
+     B              B
+F ↗ η⇑ ↘ L      F ↗ α⇑ ↘ M
+ A  ⟶  C        A  ⟶  C
+    X
+
+    F⋅L  !
+  η ↗   ↘
+  X  ⟶  F⋅M      where ∀ a ∈ A: η⋅! = α
+     α
+
+We don't currently store data in the chase for computing the universal property.
+This data is the provenance of each freely added element (for which morphism f
+in B did the f_total trigger cause this element to be created?). Instead, we use
+an iterative algorithm to recover this information after the fact.
 """
-function universal(eta::DiagramHom{id,D,CD}, alpha::DiagramHom{id,D,CD};
+function lk_universal(η::DiagramHom{id,D,CD}, α::DiagramHom{id,D,CD}
                   ) where {D,CD}
-  L, M = diagram.(codom.([eta, alpha]))
-  _, _ = [only(Set(get.([L, M]))) for get in [dom, codom]]
-  σf = Dict{Symbol,ACSetTransformation}(map(collect(M.ob_map)) do (o, h)
-    o => create(h) # if L is not surjective on objects, map from empty set
-  end)
-  for o in ob_generators(dom(diagram(dom(eta))))
-    h = extend_morphism(alpha.diagram_map[o], eta.diagram_map[o]; many=true)
-    σf[Symbol(eta.shape_map(o))] = only(h)
+  ηα = [η, α]
+  L, M = diagram.(codom.(ηα))
+  B, C = [only(Set(get.([L, M]))) for get in [dom, codom]]
+  X = only(Set(diagram.(dom.(ηα))))
+  A = dom(X)
+  Fs = force.([x.shape_map for x in ηα])
+  F = first(Fs)
+  all([F_==F for F_ in Fs]) || error("Fs must match")
+  codom(X) == C || error("bad codom")
+
+  # Constraints on components of the natural transformation we wish to compute
+  init = Dict([bo => DefaultDict{Symbol,Dict{Int,Int}}(
+    ()->Dict{Int,Int}()) for bo in Symbol.(ob_generators(B))])
+  # Each element a induces constraints
+  for a in ob_generators(A)
+    # We don't know ahead of time how many paths F(a)->b we will need to explore
+    # before we no longer get any new information, so we maintain a stack.
+    stack = [(Symbol(ob_map(F,a)), α.diagram_map[a], η.diagram_map[a])]
+    while !isempty(stack)
+      # Find constraints on a homomorphism codom(η[a]) ---> codom(α[a])
+      # or, given : F(a)->b, we have constraints for η[a];F(f) and α[a];F(f)
+      b,f,g = pop!(stack)
+      changed = false
+      for (ob, mapping) in pairs(components(f))
+        for i in parts(codom(g), ob)
+          for v in Set(mapping(preimage(g[ob], i)))
+            if haskey(init[b][ob],i)
+              init[b][ob][i] == v || error("Inconsistent")
+            else
+              init[b][ob][i] = v
+              changed |= true
+            end
+          end
+        end
+      end
+      if changed
+        for h in hom_generators(B)
+          if Symbol(dom(h)) == b
+            push!(stack, (Symbol(codom(h)), f⋅hom_map(M,h),g⋅hom_map(L,h)))
+          end
+        end
+      end
+    end
   end
+
+  σf = Dict(map(Symbol.(ob_generators(B))) do bo
+    i = NamedTuple(init[bo])
+    hs = homomorphisms(ob_map(L,bo), ob_map(M,bo); initial=i)
+    Symbol(bo) => only(hs)
+  end)
+
   res = FinTransformation(L, M; σf...)
-  is_natural(res) || error("res $res")
+  # is_natural(res; verbose=true) || error("res $res")
   return res
 end
 
@@ -522,8 +578,9 @@ function diagram_hom_coequalizer(fs::AbstractVector{<: DiagramHom{T}}; kw...) wh
   H = proj(shape_ceq)
   # Left kan extensions
   κ = leftkan(H, Y, Symbol("H$h"); verbose=false)
-  λ = leftkan(shape_map(first(fs))⋅H, X, Symbol("HF$h"); verbose=false) # F⋅H = G⋅H = ...
-  αs = [universal(λ, ϕ⋅κ) for ϕ in fs]
+  FH = shape_map(first(fs))⋅H # F⋅H = G⋅H = ...
+  λ = leftkan(FH, X, Symbol("HF$h"); verbose=false)
+  αs = [lk_universal(λ, ϕ⋅κ) for ϕ in fs]
   # Take coequalizer of universals, but need to convert them to CSet morphisms
   # TODO: work out doing coequalizers pointwise without the currying/uncurrying
   # This is important to return the coequalizer as a dictionary
