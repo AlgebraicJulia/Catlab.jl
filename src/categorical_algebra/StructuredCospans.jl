@@ -221,24 +221,19 @@ end
 #SF **********************
 """ Create types for open attributed C-sets from an attributed C-set type.
 
-Note: the difference between this function and the "OpenACSetTypes" is in the 
-small part (category A), it includes more than 1 objects; while in function "OpenACSetTypes"
-the category A  only includes one object
+Note: the difference between this function and the "OpenACSetTypes(::Type{X}, ob₀::Symbol)" 
+is in the substructure part (category A), it includes more than 1 objects; while in function
+"OpenACSetTypes(::Type{X}, ob₀::Symbol)" the category A  only includes one object
 """
-
 function OpenACSetTypes(::Type{X}, ::Type{A}) where
   {S<:SchemaDescType, X<:StructACSet{S}, S0<:SchemaDescType, A<:StructACSet{S0}}
-#    {S<:SchemaDescType, X<:StructACSet{S}, S0<:SchemaDescType, A<:StructACSet{S0}}
-  # TODO: assert: A include X
-  println(attrtype(S0))
-  println(attrtype(S))
   @assert attrtype(S0) ⊆ attrtype(S)
   type_vars = map(TypeVar, attrtype(S))
   type_vars0 = map(TypeVar, attrtype(S0))
-  L = SubStructACSet{A{type_vars0...}, X{type_vars...}}
-  (foldr(UnionAll, type_vars, init=StructuredCospanOb{L}),
-   foldr(UnionAll, type_vars, init=StructuredMulticospan{L}))
+  L = SubStructACSet{A, X}
+  (StructuredCospanOb{L}, StructuredMulticospan{L})
 end
+# **********************
 
 
 """ Abstract type for functor L: A → X giving a discrete C-set.
@@ -250,7 +245,7 @@ codom(::Type{<:AbstractDiscreteACSet{X}}) where
 
 
 #SF **********************
-""" A functor L: C₀-Set → C-Set giving the discrete C-set for C₀.
+""" A functor L: C₀-Set → C-Set giving the sub-structure C-set for C₀.
 
 Here C₀ is assumed to contain a substructure of C (more than one objects). 
 The functor L has a right adjoint R: C-Set → C₀-Set
