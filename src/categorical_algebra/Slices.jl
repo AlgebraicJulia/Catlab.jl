@@ -90,7 +90,7 @@ end
 Convert a limit problem in the slice category to a limit problem of the
 underlying category.
 """
-function limit(::Type{Tuple{S,H}}, diagram) where {S<:Slice, H<:SliceHom}
+function limit(::Type{Tuple{S,H}}, diagram::FreeDiagram) where {S<:Slice, H<:SliceHom}
   lim = limit(slice_diagram(diagram))
   new_apex = Slice(first(legs(lim.cone)))
   new_cone_legs = [SliceHom(new_apex, ob, leg) for (ob, leg)
@@ -101,25 +101,25 @@ end
 
 colimit(s::Multispan{<:Slice}) = colimit(FreeDiagram{Slice,SliceHom}(s))
 
-"""Warning: requires nonempty diagram in order to know what is sliced over"""
-function colimit(::Type{Tuple{S,H}}, diagram) where {S<:Slice, H<:SliceHom}
+function colimit(::Type{Tuple{S,H}}, diagram::FreeDiagram) where {S<:Slice, H<:SliceHom}
+  nparts(diagram, :V) > 0 ||
+    error("Requires nonempty diagram in order to know what is sliced over")
+
   # discard all the slice info in the colimit diagram - it's irrelevant
-  obs  = [x.slice for x in diagram[:ob]]
-  obdoms = dom.(obs)
+  colim = colimit(map(diagram, ob = x -> dom(x.slice), hom = h -> h.f))
+
+  # compute new apex using the universal property of colimits
   X = codom(first(diagram[:ob]))
-  homs = [(h.f, s, t) for (h, s, t)
-          in zip(diagram[:hom], diagram[:src], diagram[:tgt])]
-  colim = colimit(FreeDiagram(obdoms,homs))
-  csp = Multicospan(X, obs)
+  csp = Multicospan(X, map(x -> x.slice, diagram[:ob]))
   new_apex = Slice(universal(colim, csp))
   new_cocone_legs = [SliceHom(o, new_apex, l)
                      for (o, l) in zip(diagram[:ob],legs(colim))]
-  # compute new apex using the universal property of colimits
   return SliceColimit(diagram, Multicospan(new_apex, new_cocone_legs), colim)
 end
 
-"""Use the universal property of the underlying category"""
+
 function universal(lim::SliceLimit, sp::Multispan)
+  # Use the universal property of the underlying category.
   apx = apex(sp)
   newspan = vcat([apx.slice],[x.f for x in sp])
   u = universal(lim.underlying, Multispan(dom(apx), newspan))
