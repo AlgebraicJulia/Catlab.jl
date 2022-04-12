@@ -13,7 +13,7 @@ module FinCats
 export FinCat, FinCatGraph, Path, ob_generators, hom_generators, equations,
   is_discrete, is_free, graph, edges, src, tgt, presentation,
   FinFunctor, FinDomFunctor, is_functorial, collect_ob, collect_hom, force,
-  FinTransformation, components, is_natural, is_initial
+  FinTransformation, components, is_natural, is_initial, FinCatPresentation
 
 using AutoHashEquals
 using Reexport
@@ -24,10 +24,10 @@ using DataStructures: IntDisjointSets, in_same_set, num_groups
 using ...GAT, ...Present, ...Syntax
 import ...Present: equations
 using ...Theories: Category, Schema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr
-import ...Theories: dom, codom, id, compose, ⋅, ∘
+import ...Theories: dom, codom, id, compose, ⋅, ∘, FreeCategory, Ob, Hom
 using ...CSetDataStructures, ...Graphs
 import ...Graphs: edges, src, tgt, enumerate_paths
-import ..Categories: ob, hom, ob_map, hom_map, component
+import ..Categories: ob, hom, ob_map, hom_map, component, is_hom_equal
 
 # Categories
 ############
@@ -100,6 +100,8 @@ end
 edges(path::Path) = path.edges
 src(path::Path) = path.src
 tgt(path::Path) = path.tgt
+src(C::FinCatGraph, i::Int) = src(graph(C), i)
+tgt(C::FinCatGraph, i::Int) = tgt(graph(C), i)
 
 function Path(g::HasGraph, es::AbstractVector)
   !isempty(es) || error("Nonempty edge list needed for nontrivial path")
@@ -293,8 +295,12 @@ function hom_map(F::FinDomFunctor{<:FinCatPathGraph}, path::Path)
 end
 
 ob_map(F::FinDomFunctor, x::GATExpr{:generator}) = ob_map(F, first(x))
+ob_map(F::FinDomFunctor) = Dict([k=>ob_map(F,k) for k in ob_generators(dom(F))])
+
 hom_map(F::FinDomFunctor, f::GATExpr{:generator}) = hom_map(F, first(f))
 hom_map(F::FinDomFunctor, f::GATExpr{:id}) = id(codom(F), ob_map(F, dom(f)))
+hom_map(F::FinDomFunctor) = Dict([
+  k=>hom_map(F,k) for k in hom_generators(dom(F))])
 
 function hom_map(F::FinDomFunctor, f::GATExpr{:compose})
   D = codom(F)
@@ -501,19 +507,31 @@ domains and codomains of the components are checked.
 
 See also: [`is_functorial`](@ref).
 """
-function is_natural(α::FinTransformation; check_equations::Bool=true)
-  F, G = dom(α), codom(α)
+function is_natural(α::FinTransformation; check_equations::Bool=true,
+                    verbose::Bool=false)
+F, G = dom(α), codom(α)
   C, D = dom(F), codom(F) # == dom(G), codom(G)
   all(ob_generators(C)) do c
     α_c = α[c]
-    dom(D, α_c) == ob_map(F,c) && codom(D, α_c) == ob_map(G,c)
+    res = dom(D, α_c) == ob_map(F,c) && codom(D, α_c) == ob_map(G,c)
+    if !res && verbose
+      println("c $c\ndom(D, α_c) $(dom(D, α_c))\nob_map(F,c) $(ob_map(F,c))")
+      println("codom(D, α_c) $(codom(D, α_c))\nob_map(G,c) $(ob_map(G,c))")
+    end
+    res
   end || return false
 
   if check_equations
     all(hom_generators(C)) do f
       Ff, Gf = hom_map(F,f), hom_map(G,f)
       α_c, α_d = α[dom(C,f)], α[codom(C,f)]
-      is_hom_equal(D, compose(D, α_c, Gf), compose(D, Ff, α_d))
+      res = is_hom_equal(D, compose(D, α_c, Gf), compose(D, Ff, α_d))
+      if !res && verbose
+        println("f $f\nFf $Ff\nGf $Gf\nα_c $α_c\nα_d $α_d")
+        println("\tcompose(D, α_c, Gf) $(compose(D, α_c, Gf))")
+        println("\tcompose(D, Ff, α_d)) $(compose(D, Ff, α_d)))")
+      end
+      res
     end || return false
   end
 

@@ -59,5 +59,8 @@ end
   include("Slices.jl")
 end
 
+@testset "Chase" begin
+  include("Chase.jl")
+end
 
 end

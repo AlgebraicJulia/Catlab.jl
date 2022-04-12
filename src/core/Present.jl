@@ -38,6 +38,10 @@ function Presentation{Name}(syntax::Module) where Name
 end
 Presentation(syntax::Module) = Presentation{Symbol}(syntax)
 
+Base.hash(pres::Presentation{T,N}, h::UInt) where {T,N} =
+  hash(T, hash(N, hash(pres.syntax, hash(pres.generators,
+       hash(pres.equations, h)))))
+
 function Base.:(==)(pres1::Presentation, pres2::Presentation)
   pres1.syntax == pres2.syntax && pres1.generators == pres2.generators &&
     pres1.equations == pres2.equations

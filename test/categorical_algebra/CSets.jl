@@ -476,6 +476,46 @@ A = Subobject(S, X=[3,4,5])
 @test ¬Subobject(ι₂) |> force == Subobject(ι₁)
 @test ~A |> force == ⊤(S) |> force
 
+# FinFunctors
+#############
+const Grph = ACSetCat{Graph}
+g1 = Graph(1)
+ar = @acset Graph begin V=2; E=2; src=[1,2]; tgt=[2,2] end
+t1 = apex(terminal(Graph))
+t1_ar = homomorphism(t1, ar)
+_, g1_arr2 = homomorphisms(g1, ar)
+
+@present CSpanPres_(FreeSchema) begin
+  (C1, C2, C3)::Ob; c1::Hom(C1, C2); c2::Hom(C3,C2)
+end
+CSpan = FinCat(CSpanPres_)
+
+# Example FinFunctor into Grph
+CG_t1ar = FinDomFunctor(Dict(:C1=>t1,:C2=>ar,:C3=>g1),
+                        Dict(:c1=>t1_ar,:c2=>g1_arr2),
+                        CSpan, Grph());
+
+# FinFunctor to Grph -> FinFunctor to Set
+cspan_graph_ex = curry(CG_t1ar);
+# (reversible)
+@test uncurry(cspan_graph_ex, CG_t1ar) == CG_t1ar
+
+"""Convert a FinCat to a CSet type"""
+function cset_type(f::FinCat, name_::Symbol)
+  pres = presentation(f)
+  edges = Symbol.(pres.generators[:Hom])
+  expr = CSetDataStructures.struct_acset(name_, StructACSet, pres, index=edges)
+  eval(expr)
+  return eval(name_)
+end
+
+# FinFunctor to Set -> C-Set
+cg = cset_type(dom(cspan_graph_ex), :cspangraph)
+cg_cset = cg(cspan_graph_ex)
+
+# C-Set -> FinFunctor to Set -> FinFunctor to Grph
+@test uncurry(FinDomFunctor(cg_cset), CG_t1ar) == CG_t1ar
+
 # Serialization
 ###############
 

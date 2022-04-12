@@ -13,6 +13,7 @@ include("Matrices.jl")
 include("FinRelations.jl")
 include("CSets.jl")
 include("GraphCategories.jl")
+include("Chase.jl")
 include("Diagrams.jl")
 include("CommutativeDiagrams.jl")
 include("CatElements.jl")
@@ -32,6 +33,7 @@ include("Slices.jl")
 @reexport using .CSets
 @reexport using .CatElements
 
+@reexport using .Chase
 @reexport using .Diagrams
 @reexport using .CommutativeDiagrams
 @reexport using .DataMigrations
