@@ -542,31 +542,31 @@ function __init__()
     import .Graphs as SimpleGraphs
     import .Graphs: SimpleGraph, SimpleDiGraph
 
-    function (::Type{LG})(g::HasGraph) where LG <: Union{SimpleGraph,SimpleDiGraph}
-      lg = LG(nv(g))
+    function (::Type{SG})(g::HasGraph) where SG <: Union{SimpleGraph,SimpleDiGraph}
+      sg = SG(nv(g))
       for (s, t) in zip(src(g), tgt(g))
-        SimpleGraphs.add_edge!(lg, s, t)
+        SimpleGraphs.add_edge!(sg, s, t)
       end
-      lg
+      sg
     end
 
-    function (::Type{G})(lg::Union{SimpleGraph,SimpleDiGraph}) where G <: HasGraph
-      g = G(SimpleGraphs.nv(lg))
-      for e in SimpleGraphs.edges(lg)
+    function (::Type{G})(sg::Union{SimpleGraph,SimpleDiGraph}) where G <: HasGraph
+      g = G(SimpleGraphs.nv(sg))
+      for e in SimpleGraphs.edges(sg)
         add_edge!(g, SimpleGraphs.src(e), SimpleGraphs.dst(e))
       end
       g
     end
 
     function SimpleGraph(g::AbstractHalfEdgeGraph)
-      lg = SimpleGraph(nv(g))
+      sg = SimpleGraph(nv(g))
       for e in half_edges(g)
         e′ = inv(g,e)
         if e <= e′
-          SimpleGraphs.add_edge!(lg, vertex(g,e), vertex(g,e′))
+          SimpleGraphs.add_edge!(sg, vertex(g,e), vertex(g,e′))
         end
       end
-      lg
+      sg
     end
   end
 

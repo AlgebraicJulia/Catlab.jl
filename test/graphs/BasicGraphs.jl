@@ -1,8 +1,8 @@
 module TestBasicGraphs
 using Test
 
-import Graphs, MetaGraphs
-const LG, MG = Graphs, MetaGraphs
+import Graphs as SimpleGraphs
+import MetaGraphs
 
 using Catlab.Graphs.BasicGraphs
 
@@ -33,12 +33,12 @@ add_edge!(g, 1, 2)
 @test outneighbors(g, 1) == [2,2]
 @test inneighbors(g, 1) == []
 @test degree(g, 1) == 2
-@test LG.DiGraph(g) == LG.path_digraph(3)
+@test SimpleGraphs.DiGraph(g) == SimpleGraphs.path_digraph(3)
 
 g = Graph(4)
 add_edges!(g, [1,2,3], [2,3,4])
-@test LG.DiGraph(g) == LG.path_digraph(4)
-@test Graph(LG.path_digraph(4)) == g
+@test SimpleGraphs.DiGraph(g) == SimpleGraphs.path_digraph(4)
+@test Graph(SimpleGraphs.path_digraph(4)) == g
 
 rem_edge!(g, 3, 4)
 @test ne(g) == 2
@@ -79,13 +79,13 @@ add_edge!(g, 2, 3)
 @test neighbors(g, 1) == [2]
 @test neighbors(g, 2) == [1,3]
 @test neighbors(g, 3) == [2]
-@test LG.Graph(g) == LG.path_graph(3)
-@test SymmetricGraph(LG.path_graph(3)) == g
+@test SimpleGraphs.Graph(g) == SimpleGraphs.path_graph(3)
+@test SymmetricGraph(SimpleGraphs.path_graph(3)) == g
 
 g = SymmetricGraph(4)
 add_edges!(g, [1,2,3], [2,3,4])
-lg = LG.DiGraph(map(LG.Edge, [1,2,3,2,3,4], [2,3,4,1,2,3]))
-@test LG.DiGraph(g) == lg
+lg = SimpleGraphs.DiGraph(map(SimpleGraphs.Edge, [1,2,3,2,3,4], [2,3,4,1,2,3]))
+@test SimpleGraphs.DiGraph(g) == lg
 
 rem_edge!(g, 3, 4)
 @test ne(g) == 4
@@ -178,8 +178,8 @@ add_dangling_edges!(g, [2,2])
 
 g = HalfEdgeGraph(4)
 add_edges!(g, [1,2,3], [2,3,4])
-lg = LG.Graph(map(LG.Edge, [1,2,3], [2,3,4]))
-@test LG.Graph(g) == lg
+lg = SimpleGraphs.Graph(map(SimpleGraphs.Edge, [1,2,3], [2,3,4]))
+@test SimpleGraphs.Graph(g) == lg
 
 rem_edge!(g, 3, 4)
 @test Set(zip(vertex(g), vertex(g,inv(g)))) == Set([(1,2),(2,1),(2,3),(3,2)])
@@ -198,10 +198,10 @@ add_edges!(g, 1:3, 2:4, weight=[0.25, 0.5, 0.75])
 @test weight(g, 1) == 0.25
 @test weight(g) == [0.25, 0.5, 0.75]
 
-mg = MG.MetaDiGraph{Int,Float64}(4)
-MG.add_edge!(mg, 1, 2, :weight, 0.25)
-MG.add_edge!(mg, 2, 3, :weight, 0.5)
-MG.add_edge!(mg, 3, 4, :weight, 0.75)
-@test MG.MetaDiGraph(g) == mg
+mg = MetaGraphs.MetaDiGraph{Int,Float64}(4)
+MetaGraphs.add_edge!(mg, 1, 2, :weight, 0.25)
+MetaGraphs.add_edge!(mg, 2, 3, :weight, 0.5)
+MetaGraphs.add_edge!(mg, 3, 4, :weight, 0.75)
+@test MetaGraphs.MetaDiGraph(g) == mg
 
 end
