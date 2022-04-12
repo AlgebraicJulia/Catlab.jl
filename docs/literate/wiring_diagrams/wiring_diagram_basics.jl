@@ -57,13 +57,11 @@ show_diagram(d::WiringDiagram) = to_graphviz(d,
 # boxes of a diagram to the diagram's "outer box".
 # 
 # The `WiringDiagram` data structure is an elaborate wrapper around a directed
-# graph from [LightGraphs.jl](https://github.com/JuliaGraphs/LightGraphs.jl).
+# graph from [Graphs.jl](https://github.com/JuliaGraphs/Graphs.jl).
 # The underlying `DiGraph` object can be accessed using the `graph` method. The
 # vertices of this graph are exactly the box IDs. The graph should never be
 # mutated directly, on pain of creating inconsistent state, but it does allow
-# convenient access to the large array of [graph
-# algorithms](https://juliagraphs.github.io/LightGraphs.jl/latest/) supported by
-# LightGraphs.
+# convenient access to the large array of graph algorithms supported by Graphs.
 # 
 # All this is somewhat abstract but should become clearer as we see concrete 
 # examples.

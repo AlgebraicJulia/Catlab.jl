@@ -44,9 +44,7 @@ struct TopologicalSortByDFS <: TopologicalSortAlgorithm end
 """ Topological sort of a directed acyclic graph.
 
 The [depth-first search](https://en.wikipedia.org/wiki/Topological_sorting#Depth-first_search)
-algorithm is adapted from the function
-[`topological_sort_by_dfs`](https://github.com/JuliaGraphs/LightGraphs.jl/blob/1c6cf65cc0981250e430bbef39055da23bd25bd0/src/traversals/dfs.jl#L44)
-in LightGraphs.jl.
+algorithm is adapted from the function `topological_sort_by_dfs` in Graphs.jl.
 """
 function topological_sort(g::ACSet;
                           alg::TopologicalSortAlgorithm=TopologicalSortByDFS())

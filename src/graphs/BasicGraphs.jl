@@ -3,8 +3,8 @@
 Provides the category theorist's four basic kinds of graphs: graphs (aka
 directed multigraphs), symmetric graphs, reflexive graphs, and symmetric
 reflexive graphs. Also defines half-edge graphs. The API generally follows that
-of [LightGraphs.jl](https://github.com/JuliaGraphs/LightGraphs.jl), with some
-departures due to differences between the data structures.
+of [Graphs.jl](https://github.com/JuliaGraphs/Graphs.jl), with some departures
+due to differences between the data structures.
 """
 module BasicGraphs
 export HasVertices, HasGraph,
@@ -18,8 +18,7 @@ export HasVertices, HasGraph,
   AbstractHalfEdgeGraph, HalfEdgeGraph, vertex, half_edges,
   add_dangling_edge!, add_dangling_edges!,
   AbstractWeightedGraph, WeightedGraph, weight,
-  AbstractSymmetricWeightedGraph, SymmetricWeightedGraph,
-  from_lightgraph
+  AbstractSymmetricWeightedGraph, SymmetricWeightedGraph
 
 import Base: inv
 using Requires
@@ -539,44 +538,35 @@ edge involution.
 ##########################
 
 function __init__()
-  @require LightGraphs="093fc24a-ae57-5d10-9952-331d41423f4d" begin
-    import .LightGraphs
-    import .LightGraphs: SimpleGraph, SimpleDiGraph
+  @require Graphs="86223c79-3864-5bf0-83f7-82e725a168b6" begin
+    import .Graphs as SimpleGraphs
+    import .Graphs: SimpleGraph, SimpleDiGraph
 
-    function (::Type{LG})(g::HasGraph) where LG <: Union{SimpleGraph,SimpleDiGraph}
-      lg = LG(nv(g))
+    function (::Type{SG})(g::HasGraph) where SG <: Union{SimpleGraph,SimpleDiGraph}
+      sg = SG(nv(g))
       for (s, t) in zip(src(g), tgt(g))
-        LightGraphs.add_edge!(lg, s, t)
+        SimpleGraphs.add_edge!(sg, s, t)
       end
-      lg
+      sg
     end
 
-    function from_lightgraph(lg::SimpleDiGraph)
-      g = Graph(LightGraphs.nv(lg))
-      for e in LightGraphs.edges(lg)
-        add_edge!(g,LightGraphs.src(e),LightGraphs.dst(e))
-      end
-      g
-    end
-
-    function from_lightgraph(lg::SimpleGraph)
-      g = SymmetricGraph(LightGraphs.nv(lg))
-      for e in LightGraphs.edges(lg)
-        add_edge!(g,LightGraphs.src(e),LightGraphs.dst(e))
+    function (::Type{G})(sg::Union{SimpleGraph,SimpleDiGraph}) where G <: HasGraph
+      g = G(SimpleGraphs.nv(sg))
+      for e in SimpleGraphs.edges(sg)
+        add_edge!(g, SimpleGraphs.src(e), SimpleGraphs.dst(e))
       end
       g
     end
-
 
     function SimpleGraph(g::AbstractHalfEdgeGraph)
-      lg = SimpleGraph(nv(g))
+      sg = SimpleGraph(nv(g))
       for e in half_edges(g)
         e′ = inv(g,e)
         if e <= e′
-          LightGraphs.add_edge!(lg, vertex(g,e), vertex(g,e′))
+          SimpleGraphs.add_edge!(sg, vertex(g,e), vertex(g,e′))
         end
       end
-      lg
+      sg
     end
   end
 
