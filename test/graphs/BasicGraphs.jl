@@ -1,8 +1,8 @@
 module TestBasicGraphs
 using Test
 
-import LightGraphs, MetaGraphs
-const LG, MG = LightGraphs, MetaGraphs
+import Graphs, MetaGraphs
+const LG, MG = Graphs, MetaGraphs
 
 using Catlab.Graphs.BasicGraphs
 
@@ -38,6 +38,7 @@ add_edge!(g, 1, 2)
 g = Graph(4)
 add_edges!(g, [1,2,3], [2,3,4])
 @test LG.DiGraph(g) == LG.path_digraph(4)
+@test Graph(LG.path_digraph(4)) == g
 
 rem_edge!(g, 3, 4)
 @test ne(g) == 2
@@ -79,6 +80,7 @@ add_edge!(g, 2, 3)
 @test neighbors(g, 2) == [1,3]
 @test neighbors(g, 3) == [2]
 @test LG.Graph(g) == LG.path_graph(3)
+@test SymmetricGraph(LG.path_graph(3)) == g
 
 g = SymmetricGraph(4)
 add_edges!(g, [1,2,3], [2,3,4])

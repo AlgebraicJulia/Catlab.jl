@@ -4,7 +4,7 @@ using Test
 using Catlab.Graphs.BasicGraphs, Catlab.Graphs.Searching
 import Catlab.Graphs.Searching: tree
 
-# Tests stolen from LightGraphs
+# Tests stolen from Graphs.jl
 
 # BFS
 #----

@@ -1,10 +1,11 @@
-# Benchmark Catlab.Graphs against LightGraphs and MetaGraphs.
+# Benchmark Catlab.Graphs against Graphs.jl and MetaGraphs.jl.
 using BenchmarkTools
 const SUITE = BenchmarkGroup()
 
 using Random
-import LightGraphs, MetaGraphs
-const LG, MG = LightGraphs, MetaGraphs
+import Graphs as SimpleGraphs
+import MetaGraphs
+const LG, MG = SimpleGraphs, MetaGraphs
 
 using Catlab, Catlab.CategoricalAlgebra, Catlab.Graphs
 using Catlab.Graphs.BasicGraphs: TheoryGraph
@@ -27,7 +28,7 @@ LG_GRAPHS = Dict{String,LG.DiGraph}(
     "path500"       => LG.path_digraph(500)
 )
 
-GRAPHS = Dict(k => from_lightgraph(g) for (k,g) in LG_GRAPHS)
+GRAPHS = Dict(k => Graph(g) for (k,g) in LG_GRAPHS)
 
 LG_SYMGRAPHS = Dict{String,LG.Graph}(
     "complete100"   => LG.complete_graph(100),
@@ -36,13 +37,13 @@ LG_SYMGRAPHS = Dict{String,LG.Graph}(
     # "5000-49947"    => LG.SimpleGraph(DIGRAPHS["5000-50000"])
 )
 
-SYMGRAPHS = Dict(k => from_lightgraph(g) for (k,g) in LG_SYMGRAPHS)
+SYMGRAPHS = Dict(k => SymmetricGraph(g) for (k,g) in LG_SYMGRAPHS)
 
 # Helpers
 #########
 
-# `bench_iter_edges` and `bench_has_edge` adapted from LightGraphs:
-# https://github.com/JuliaGraphs/LightGraphs.jl/blob/master/benchmark/core.jl
+# `bench_iter_edges` and `bench_has_edge` adapted from Graphs:
+# https://github.com/JuliaGraphs/Graphs.jl/blob/master/benchmark/core.jl
 
 function bench_iter_edges(g)
   count = 0
@@ -376,7 +377,7 @@ for size in sizes, p in ps
   clbench["erdos_renyi-$size-$p"] =
     @benchmarkable erdos_renyi($Graph, $size, $(p/2))
   lgbench["erdos_renyi-$size-$p"] =
-    @benchmarkable LightGraphs.erdos_renyi($size, $p)
+    @benchmarkable LG.erdos_renyi($size, $p)
 end
 
 ks = [10]
@@ -385,14 +386,14 @@ for size in sizes, k in ks
   clbench["expected_degree_graph-$size-$k"] =
     @benchmarkable expected_degree_graph($Graph, $([min(k,size-1) for _ in 1:size]))
   lgbench["expected_degree_graph-$size-$k"] =
-    @benchmarkable LightGraphs.expected_degree_graph($([min(k,size-1) for _ in 1:size]))
+    @benchmarkable LG.expected_degree_graph($([min(k,size-1) for _ in 1:size]))
 end
 
 for size in sizes, k in ks
   clbench["watts_strogatz-$size-$k"] =
     @benchmarkable watts_strogatz($Graph, $size, $(min(k,size-1)), 0.5)
   lgbench["watts_strogatz-$size-$k"] =
-    @benchmarkable LightGraphs.watts_strogatz($size, $(min(k,size-1)), 0.5)
+    @benchmarkable LG.watts_strogatz($size, $(min(k,size-1)), 0.5)
 end
 
 # Searching
@@ -404,9 +405,9 @@ lgbench = bench["LightGraphs"] = BenchmarkGroup()
 
 for size in sizes, p in ps
   local g = erdos_renyi(Graph, size, p)
-  local lg = LightGraphs.SimpleDiGraph(g)
+  local lg = LG.SimpleDiGraph(g)
   clbench["bfs_erdos_renyi-$size-$p"] = @benchmarkable bfs_parents($g,1)
-  lgbench["bfs_erdos_renyi-$size-$p"] = @benchmarkable LightGraphs.bfs_parents($lg,1)
+  lgbench["bfs_erdos_renyi-$size-$p"] = @benchmarkable LG.bfs_parents($lg,1)
   clbench["dfs_erdos_renyi-$size-$p"] = @benchmarkable dfs_parents($g,1)
-  lgbench["dfs_erdos_renyi-$size-$p"] = @benchmarkable LightGraphs.dfs_parents($lg,1)
+  lgbench["dfs_erdos_renyi-$size-$p"] = @benchmarkable LG.dfs_parents($lg,1)
 end
