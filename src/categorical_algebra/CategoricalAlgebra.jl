@@ -19,6 +19,7 @@ include("CatElements.jl")
 include("DataMigrations.jl")
 include("StructuredCospans.jl")
 include("DPO.jl")
+include("Slices.jl")
 
 @reexport using .Categories
 @reexport using .FinCats
@@ -36,5 +37,6 @@ include("DPO.jl")
 @reexport using .DataMigrations
 @reexport using .StructuredCospans
 @reexport using .DPO
+@reexport using .Slices
 
 end

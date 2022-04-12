@@ -55,4 +55,9 @@ end
   include("DPO.jl")
 end
 
+@testset "Slices" begin
+  include("Slices.jl")
+end
+
+
 end
