@@ -25,6 +25,8 @@ add_generator!(pres, B)
 @test_throws Exception add_generator!(pres, A)
 @test pres[:A] == A
 @test pres[[:A,:B]] == [A, B]
+@test generator_index(pres, :B) == 2
+@test generator_index(pres, B) == 2
 
 add_generators!(pres, (f,g))
 @test generators(pres) == [A, B, f, g]

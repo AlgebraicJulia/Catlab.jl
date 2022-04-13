@@ -9,7 +9,8 @@ in applications like knowledge representation.
 """
 module Present
 export @present, Presentation, generator, generators, generator_index,
-  has_generator, equations, add_generator!, add_generators!, add_definition!, add_equation!
+  has_generator, equations, add_generator!, add_generators!, add_definition!,
+  add_equation!
 
 using Base.Meta: ParseError
 using MLStyle: @match
@@ -116,20 +117,25 @@ function add_definition!(pres::Presentation, name::Symbol, rhs::GATExpr)
   generator
 end
 
-""" Get the index of a generator
+""" Get the index of a generator, relative to generators of same GAT type.
 """
-generator_index(pres::Presentation, x::Symbol) = pres.generator_name_index[x].second
+function generator_index(pres::Presentation{T,Name}, name::Name) where {T,Name}
+  last(pres.generator_name_index[name])
+end
+function generator_index(pres::Presentation, expr::GATExpr{:generator})
+  name = first(expr)
+  !isnothing(name) || error("Cannot lookup unnamed generator by name")
+  generator_index(pres, name)
+end
 
 """ Shorthand for contructing a term in the presentation
 """
-function make_term(pres::Presentation, e::Symbol)
-  pres[e]
-end
-function make_term(pres::Presentation, e::Expr)
-  @match e begin
+function make_term(pres::Presentation, expr)
+  @match expr begin
+    ::Symbol => pres[expr]
     Expr(:call, term_constructor, args...) =>
       invoke_term(pres.syntax, term_constructor,
-                  map(e -> make_term(pres, e), args)...)
+                  map(arg -> make_term(pres, arg), args)...)
   end
 end
 
