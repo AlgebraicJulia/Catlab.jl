@@ -316,7 +316,7 @@ CC1 = DiagramHom(id(CSpan), Dict(:C1=>g1_gt1_2, :C2=>g1_arr2, :C3=>ig1),
 
 # Limits
 #-------
-if false
+
 p1 = product([AGg1, CGg1t1ar, AGg12, CGg1, CGt1ar]);
 p2 = product([LGg1, LGg2]);
 e1 = equalizer(DiagramHom{id}[F_AAg1,G_AAg1]);
