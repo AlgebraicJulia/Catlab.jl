@@ -28,6 +28,7 @@ import ..Limits: limit, colimit, universal, pushout_complement,
   can_pushout_complement
 import ..Subobjects: Subobject, SubobjectBiHeytingAlgebra,
   implies, ⟹, subtract, \, negate, ¬, non, ~
+import ..Categories: is_hom_equal
 import ..Sets: SetOb, SetFunction, TypeSet
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate
 import ..FinCats: FinDomFunctor, components, is_natural, FinTransformationMap,
@@ -248,6 +249,8 @@ end
 
 components(α::ACSetTransformation) = α.components
 force(α::ACSetTransformation) = map_components(force, α)
+is_hom_equal(f::ACSetTransformation, g::ACSetTransformation) =
+  force(f) == force(g)
 
 """ Transformation between C-sets.
 
