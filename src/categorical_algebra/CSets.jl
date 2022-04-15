@@ -192,25 +192,24 @@ end
 """ Transformation between attributed C-sets.
 
 Homomorphisms of attributed C-sets generalize homomorphisms of C-sets
-([`CSetTransformation`](@ref)), which the user should understand before reading
+([`CSetTransformation`](@ref)), which you should understand before reading
 further.
 
-A homomorphism of attributed C-sets with schema S: C ↛ A (a profunctor) is a
+A *homomorphism* of attributed C-sets with schema S: C ↛ A (a profunctor) is a
 natural transformation between the corresponding functors col(S) → Set, where
 col(S) is the collage of S. When the components on attribute types, indexed by
 objects of A, are all identity functions, the morphism is called *tight*; in
-general, it is called *loose*. The terms "tight" and "loose" come from what the
-nLab calls an ["M-category"](https://ncatlab.org/nlab/show/M-category). The
-category of acsets on a fixed schema S is an M-category. Calling
+general, it is called *loose*. With this terminology, acsets on a fixed schema
+are the objects of an ℳ-category (see `Catlab.Theories.MCategory`). Calling
 `ACSetTransformation` will construct a tight or loose morphism as appropriate,
 depending on which components are specified.
 
 Since every tight morphism can be considered a loose one, the distinction
-between tight and loose may seem an unimportant technicality, but it can have
+between tight and loose may seem like a small technicality, but it has have
 important consequences because choosing one or the other greatly affects limits
-and colimits of acsets. In practice, the tight morphisms suffice for most
-purposes, including computing colimits. However, when computing limits of
-acsets, the loose morphism are usually preferable.
+and colimits of acsets. In practice, tight morphisms suffice for many purposes,
+including computing colimits. However, when computing limits of acsets, the
+loose morphism are usually preferable.
 """
 abstract type ACSetTransformation{S<:SchemaDescType,Comp,
                                   Dom<:StructACSet{S},Codom<:StructACSet{S}} end
