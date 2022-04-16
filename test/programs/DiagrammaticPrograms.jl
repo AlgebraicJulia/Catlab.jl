@@ -157,6 +157,14 @@ F_parsed′ = @free_diagram TheoryGraph begin
 end
 @test F_parsed′ == F_parsed
 
+F = @free_diagram TheoryGraph begin
+  (e1, e2)::E
+  tgt(e1) == src(e2)
+end
+@test is_functorial(F)
+@test collect_ob(F) == [TheoryGraph[:E], TheoryGraph[:E], TheoryGraph[:V]]
+@test collect_hom(F) == [TheoryGraph[:tgt], TheoryGraph[:src]]
+
 F = @diagram TheoryDDS begin
   x::X
   (f: x → x)::(Φ⋅Φ)
