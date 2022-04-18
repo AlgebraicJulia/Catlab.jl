@@ -350,11 +350,11 @@ end
 
 Recall that a *free diagram* in a category ``C`` is a functor ``F: J → C`` where
 ``J`` is a free category on a graph, here assumed finite. This macro is
-functionally a special case of [`@diagram`](@ref) that provides a syntactic
-variant for equality expressions. Rather than interpreting them as equations
-between morphisms in ``J``, equality expresions can be used to introduce
-anonymous morphisms in a "pointful" style. For example, the limit of the
-following diagram consists of the paths of length two in a graph:
+functionally a special case of [`@diagram`](@ref) but, for convenience, changes
+the interpretation of equality expressions. Rather than interpreting them as
+equations between morphisms in ``J``, equality expresions can be used to
+introduce anonymous morphisms in a "pointful" style. For example, the limit of
+the following diagram consists of the paths of length two in a graph:
 
 ```julia
 @free_diagram TheoryGraph begin
@@ -364,6 +364,17 @@ following diagram consists of the paths of length two in a graph:
   src(e₂) == v
 end
 ```
+
+Anonymous objects can also be introduced. For example, the previous diagram is
+isomorphic to this one:
+
+```julia
+  (e₁, e₂)::E
+  tgt(e₁) == src(e₂)
+```
+
+Some care must exercised when defining morphisms between diagrams with anonymous
+objects, since they cannot be referred to by name.
 """
 macro free_diagram(cat, body)
   :(parse_diagram($(esc(cat)), $(Meta.quot(body)), free=true))
@@ -371,7 +382,7 @@ end
 
 function parse_diagram(C::FinCat, body::Expr; kw...)
   F_ob, F_hom, J = parse_diagram_data(
-    x -> parse_ob(C,x), (f,x,y) -> parse_hom(C,f), body; kw...)
+    C, x -> parse_ob(C,x), (f,x,y) -> parse_hom(C,f), body; kw...)
   F = FinFunctor(F_ob, F_hom, J, C)
   is_functorial(F, check_equations=false) ||
     error("Parsed diagram is not functorial: $body")
@@ -380,15 +391,17 @@ end
 parse_diagram(pres::Presentation, body::Expr; kw...) =
   parse_diagram(FinCat(pres), body; kw...)
 
-function parse_diagram_data(parse_ob, parse_hom, body::Expr;
+function parse_diagram_data(C::FinCat, parse_ob, parse_hom, body::Expr;
                             free::Bool=false, preprocess::Bool=true)
   g, eqs = NamedGraph{Symbol,Union{Symbol,Nothing}}(), Pair[]
   F_ob, F_hom = [], []
   function push_hom!(h, x, y; name=nothing)
     e = parse_edge!(g, x, y, ename=name)
     push!(F_hom, parse_hom(h, F_ob[src(g,e)], F_ob[tgt(g,e)]))
+    return e
   end
 
+  nanon = 0
   if preprocess
     body = reparse_arrows(body)
   end
@@ -423,7 +436,19 @@ function parse_diagram_data(parse_ob, parse_hom, body::Expr;
       # y == h(x)
       (Expr(:call, :(==), call::Expr, y::Symbol) ||
        Expr(:call, :(==), y::Symbol, call::Expr)) && if free end =>
-        push_hom!(destructure_unary_call(call)..., y)
+         push_hom!(destructure_unary_call(call)..., y)
+      # h(x) == k(y)
+      Expr(:call, :(==), lhs::Expr, rhs::Expr) && if free end => begin
+        (h, x), (k, y) = destructure_unary_call(lhs), destructure_unary_call(rhs)
+        z = Symbol("##unnamed#$(nanon += 1)")
+        add_vertex!(g, vname=z)
+        push!(F_ob, nothing) # Assumes that codomain not needed to parse homs.
+        e1, e2 = push_hom!(h, x, z), push_hom!(k, y, z)
+        # Infer codomain from parsed homs.
+        Z1, Z2 = codom(C, F_hom[e1]), codom(C, F_hom[e2])
+        Z1 == Z2 || error("Codomain mismatch in $stmt: $Z1 != $Z2")
+        F_ob[end] = Z1
+      end
       # f == g
       Expr(:call, :(==), lhs, rhs) && if !free end =>
         push!(eqs, parse_path_equation(g, lhs, rhs))
@@ -612,15 +637,15 @@ function parse_query(C::FinCat, expr)
 end
 function parse_query_diagram(C::FinCat, expr::Expr;
                              free::Bool=true, preprocess::Bool=false)
-  parse_diagram_data(X -> parse_query(C,X), (f,x,y) -> parse_query_hom(C,f,x,y),
-                     expr; free=free, preprocess=preprocess)
+  parse_diagram_data(C, X -> parse_query(C,X),
+                     (f,x,y) -> parse_query_hom(C,f,x,y), expr;
+                     free=free, preprocess=preprocess)
 end
 
 """ Parse expression defining a morphism of queries.
 """
-function parse_query_hom(C::FinCat{Ob}, expr, ::Ob, ::Ob) where Ob
+parse_query_hom(C::FinCat{Ob}, expr, ::Ob, ::Union{Ob,Nothing}) where Ob =
   parse_hom(C, expr)
-end
 
 # Conjunctive fragment.
 
