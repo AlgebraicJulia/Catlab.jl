@@ -14,7 +14,8 @@ presented categories are provided by another module, [`FinCats`](@ref).
 """
 module Categories
 export Cat, TypeCat, Functor, Transformation, dom, codom, compose, id,
-  ob, hom, is_hom_equal, ob_map, hom_map, dom_ob, codom_ob, component, op, co
+  ob, hom, is_hom_equal, ob_map, hom_map, dom_ob, codom_ob, component,
+  OppositeCat, OppositeFunctor, OppositeTransformation, op, co
 
 using AutoHashEquals
 
@@ -24,6 +25,20 @@ import ...Theories: Category2, ob, hom, dom, codom, compose, ⋅, ∘, id,
 
 # Categories
 ############
+
+""" Size of a category, used for dispatch and subtyping purposes.
+
+A [`Cat`](@ref) type having a particular `CatSize` means that categories of that
+type are *at most* that large.
+"""
+abstract type CatSize end
+
+""" Size of a large category, such as Set.
+
+To the extent that they form a category, we regard Julia types and functions
+([`TypeCat`](@ref)) as forming a large category.
+"""
+struct LargeCatSize <: CatSize end
 
 """ Abstract base type for a category.
 
@@ -38,7 +53,7 @@ in the graph.
 The basic operations available in any category are: [`dom`](@ref),
 [`codom`](@ref), [`id`](@ref), [`compose`](@ref).
 """
-abstract type Cat{Ob,Hom} end
+abstract type Cat{Ob,Hom,Size<:CatSize} end
 
 """ Coerce or look up object in category.
 """
@@ -80,7 +95,7 @@ is_hom_equal(f, g) = f == g
 The Julia types should form an `@instance` of the theory of categories
 (`Theories.Category`).
 """
-struct TypeCat{Ob,Hom} <: Cat{Ob,Hom} end
+struct TypeCat{Ob,Hom} <: Cat{Ob,Hom,LargeCatSize} end
 
 TypeCat(Ob::Type, Hom::Type) = TypeCat{Ob,Hom}()
 
@@ -312,8 +327,11 @@ end
 #-------------------------
 
 """ Opposite category, where morphism are reversed.
+
+Call `op(::Cat)` instead of directly instantiating this type.
 """
-@auto_hash_equals struct OppositeCat{Ob,Hom,C<:Cat{Ob,Hom}} <: Cat{Ob,Hom}
+@auto_hash_equals struct OppositeCat{Ob,Hom,Size<:CatSize,C<:Cat{Ob,Hom,Size}} <:
+    Cat{Ob,Hom,Size}
   cat::C
 end
 
@@ -326,6 +344,8 @@ id(C::OppositeCat, x) = id(C.cat, x)
 compose(C::OppositeCat, f, g) = compose(C.cat, g, f)
 
 """ Opposite functor, given by the same mapping between opposite categories.
+
+Call `op(::Functor)` instead of directly instantiating this type.
 """
 @auto_hash_equals struct OppositeFunctor{C,D,F<:Functor{C,D}} <: Functor{C,D}
     # XXX: Requires more type parameters: ObC, HomC, ObD, HomD.
@@ -340,6 +360,8 @@ ob_map(F::OppositeFunctor, x) = ob_map(F.func, x)
 hom_map(F::OppositeFunctor, f) = hom_map(F.func, f)
 
 """ Opposite natural transformation between opposite functors.
+
+Call `op(::Transformation)` instead of directly instantiating this type.
 """
 @auto_hash_equals struct OppositeTransformation{C,D,F,G,T<:Transformation{C,D,F,G}} <: Transformation{C,D,F,G}
     # XXX: Requires more type parameters: ObC, HomC, ObD, HomD.

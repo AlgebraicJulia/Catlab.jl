@@ -27,14 +27,18 @@ using ...Theories: Category, Schema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ...CSetDataStructures, ...Graphs
 import ...Graphs: edges, src, tgt, enumerate_paths
-import ..Categories: OppositeCat, ob, hom, ob_map, hom_map, component
+import ..Categories: CatSize, ob, hom, ob_map, hom_map, component
 
 # Categories
 ############
 
-""" Abstract type for finitely presented category.
+""" Size of a finitely presented category.
 """
-abstract type FinCat{Ob,Hom} <: Cat{Ob,Hom} end
+struct FinCatSize <: CatSize end
+
+""" A finitely presented (but not necessarily finite!) category.
+"""
+const FinCat{Ob,Hom} = Cat{Ob,Hom,FinCatSize}
 
 FinCat(g::HasGraph, args...; kw...) = FinCatGraph(g, args...; kw...)
 FinCat(pres::Presentation, args...; kw...) =
@@ -65,8 +69,10 @@ is_free(C::FinCat) = isempty(equations(C))
 # Opposite FinCats
 #-----------------
 
-ob_generators(C::OppositeCat) = ob_generators(C.cat)
-hom_generators(C::OppositeCat) = hom_generators(C.cat)
+const OppositeFinCat{Ob,Hom} = OppositeCat{Ob,Hom,FinCatSize}
+
+ob_generators(C::OppositeFinCat) = ob_generators(C.cat)
+hom_generators(C::OppositeFinCat) = hom_generators(C.cat)
 
 # Categories on graphs
 ######################

@@ -21,6 +21,7 @@ C = FinCat(g)
 @test startswith(sprint(show, C), "FinCat($(Graph)")
 
 C_op = op(C)
+@test C_op isa FinCat
 @test ob(C_op, 1) == 1
 @test hom(C_op, 1) == Path(g, 1)
 @test ob_generators(C_op) == 1:2
@@ -57,6 +58,7 @@ F = FinFunctor((V=[1,4], E=[[1,3], [2,4]]), C, D)
 @test collect_hom(F) == [Path(h, [1,3]), Path(h, [2,4])]
 
 F_op = op(F)
+@test F_op isa FinFunctor
 @test dom(F_op) == op(C)
 @test codom(F_op) == op(D)
 @test ob_map(F_op, 2) == 4
@@ -168,6 +170,7 @@ G = FinDomFunctor(g)
 @test startswith(sprint(show, α), "FinTransformation(")
 
 α_op = op(α)
+@test α_op isa FinTransformation
 @test dom(α_op) == op(G)
 @test codom(α_op) == op(F)
 @test component(α, :V) == α[:V]
