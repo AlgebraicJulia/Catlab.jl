@@ -349,10 +349,17 @@ Z = SigmaMigration(edge, Initial, Graph)(Y)
 @test nparts(Z, :E) == 4
 @test Z[:src] ∪ Z[:tgt] == 1:8
 
-# Representables
-#---------------
+# Applications of sigma migration
+#--------------------------------
 
-@test representable(Graph, :V) == Graph(1)
-@test representable(Graph, :E) == path_graph(Graph, 2)
+yV, yE = Graph(1), path_graph(Graph, 2)
+@test representable(Graph, :V) == yV
+@test representable(Graph, :E) == yE
+
+y_Graph = yoneda(Graph)
+@test ob_map(y_Graph, :V) == yV
+@test ob_map(y_Graph, :E) == yE
+@test hom_map(y_Graph, :src) == ACSetTransformation(yV, yE, V=[1])
+@test hom_map(y_Graph, :tgt) == ACSetTransformation(yV, yE, V=[2])
 
 end

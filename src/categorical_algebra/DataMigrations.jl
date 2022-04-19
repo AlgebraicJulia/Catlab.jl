@@ -2,7 +2,7 @@
 """
 module DataMigrations
 export DataMigration, DeltaMigration, SigmaMigration, migrate, migrate!,
-  representable
+  representable, yoneda
 
 using ...Syntax, ...Present, ...Theories
 using ...Theories: SchemaDesc, ob, hom, dom, codom, attr, adom
@@ -386,8 +386,7 @@ which works because left Kan extensions take representables to representables
 representables (they can be infinite), this function thus inherits any
 limitations of our implementation of left pushforward data migrations.
 """
-function representable(::Type{T}, ob::Symbol) where T <: ACSet
-  C = Presentation(T)
+function representable(::Type{T}, C::Presentation{Schema}, ob::Symbol) where T <: ACSet
   C₀ = Presentation{Symbol}(FreeSchema)
   add_generator!(C₀, C[ob])
   F = FinFunctor(Dict(ob => ob), Dict(), C₀, C)
@@ -397,6 +396,25 @@ function representable(::Type{T}, ob::Symbol) where T <: ACSet
                     Dict{Symbol,FinFunction{Int}}(), FinCat(C₀))
   ob_map(ΣF, X)
 end
+representable(::Type{T}, ob::Symbol) where T <: StructACSet =
+  representable(T, Presentation(T), ob)
+
+""" Yoneda embedding of category C in category of C-sets.
+
+Because Catlab privileges copresheaves (C-sets) over presheaves, this is the
+*contravariant* Yoneda embedding, i.e., the embedding C^op → C-Set.
+"""
+function yoneda(::Type{T}, C::Presentation{Schema}) where T <: ACSet
+  y_ob = Dict(c => representable(T, C, nameof(c)) for c in generators(C, :Ob))
+  y_hom = Dict(Iterators.map(generators(C, :Hom)) do f
+    c, d = dom(f), codom(f)
+    yc, yd = y_ob[c], y_ob[d]
+    initial = Dict(nameof(d) => Dict(1 => yc[1,f]))
+    f => homomorphism(yd, yc, initial=initial) # Unique homomorphism.
+  end)
+  FinDomFunctor(y_ob, y_hom, op(FinCat(C)))
+end
+yoneda(::Type{T}) where T <: StructACSet = yoneda(T, Presentation(T))
 
 # Schema translation
 ####################
