@@ -6,21 +6,11 @@ export Diagram, DiagramHom, id, op, co, shape, diagram, shape_map, diagram_map
 using ...GAT
 import ...Theories: dom, codom, id, compose, ⋅, ∘, munit
 using ...Theories: Category, composeH
-import ..Categories: ob_map, hom_map
+import ..Categories: ob_map, hom_map, op, co
 using ..FinCats, ..FreeDiagrams
 using ..FinCats: mapvals
 import ..FinCats: force, collect_ob, collect_hom
 import ..Limits: limit, colimit, universal
-
-# TODO: Implement these functions more generally, and move elsewhere.
-
-""" Opposite of a category or, more generally, 1-cell dual of a 2-category.
-"""
-function op end
-
-""" 2-cell dual of a 2-category.
-"""
-function co end
 
 # Data types
 ############

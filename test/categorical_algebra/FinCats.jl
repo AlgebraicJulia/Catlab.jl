@@ -20,14 +20,27 @@ C = FinCat(g)
 @test hom_generators(C) == 1:3
 @test startswith(sprint(show, C), "FinCat($(Graph)")
 
+C_op = op(C)
+@test ob(C_op, 1) == 1
+@test hom(C_op, 1) == Path(g, 1)
+@test ob_generators(C_op) == 1:2
+@test hom_generators(C_op) == 1:3
+@test op(C_op) == C
+
 h = Graph(4)
 add_edges!(h, [1,1,2,3], [2,3,4,4])
 D = FinCat(h)
 f = id(D, 2)
 @test (src(f), tgt(f)) == (2, 2)
 @test isempty(edges(f))
-f = compose(D, 1, 3)
-@test edges(f) == [1,3]
+g = compose(D, 1, 3)
+@test edges(g) == [1,3]
+
+D_op = op(D)
+@test dom(D_op, 1) == 2
+@test codom(D_op, 1) == 1
+@test id(D_op, 2) == f
+@test compose(D_op, 3, 1) == g
 
 # Functors between free categories.
 C = FinCat(parallel_arrows(Graph, 2))
@@ -42,6 +55,13 @@ F = FinFunctor((V=[1,4], E=[[1,3], [2,4]]), C, D)
 @test hom_map(F, 1) == Path(h, [1,3])
 @test collect_ob(F) == [1,4]
 @test collect_hom(F) == [Path(h, [1,3]), Path(h, [2,4])]
+
+F_op = op(F)
+@test dom(F_op) == op(C)
+@test codom(F_op) == op(D)
+@test ob_map(F_op, 2) == 4
+@test hom_map(F_op, 1) == Path(h, [1,3])
+@test op(F_op) == F
 
 # Composition of functors.
 g, h, k = path_graph(Graph, 2), path_graph(Graph, 3), path_graph(Graph, 5)
@@ -146,6 +166,12 @@ G = FinDomFunctor(g)
 @test is_natural(α)
 @test α[:V](3) == 2
 @test startswith(sprint(show, α), "FinTransformation(")
+
+α_op = op(α)
+@test dom(α_op) == op(G)
+@test codom(α_op) == op(F)
+@test component(α, :V) == α[:V]
+@test op(α_op) == α
 
 σ = FinTransformation(G, G, V=id(FinSet(2)), E=FinFunction([2,1,4,3]))
 @test σ⋅σ == FinTransformation(G, G, V=id(FinSet(2)), E=FinFunction(1:4))

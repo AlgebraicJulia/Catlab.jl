@@ -14,7 +14,7 @@ presented categories are provided by another module, [`FinCats`](@ref).
 """
 module Categories
 export Cat, TypeCat, Functor, Transformation, dom, codom, compose, id,
-  ob, hom, is_hom_equal, ob_map, hom_map, dom_ob, codom_ob, component
+  ob, hom, is_hom_equal, ob_map, hom_map, dom_ob, codom_ob, component, op, co
 
 using AutoHashEquals
 
@@ -307,5 +307,67 @@ function do_composeH(α::Transformation, β::Transformation,
   F, K = dom(α), codom(β)
   compose_id(composeH_id(F, β), composeH_id(α, K))
 end
+
+# Oppositization 2-functor
+#-------------------------
+
+""" Opposite category, where morphism are reversed.
+"""
+@auto_hash_equals struct OppositeCat{Ob,Hom,C<:Cat{Ob,Hom}} <: Cat{Ob,Hom}
+  cat::C
+end
+
+ob(C::OppositeCat, x) = ob(C.cat, x)
+hom(C::OppositeCat, f) = hom(C.cat, f)
+
+dom(C::OppositeCat, f) = codom(C.cat, f)
+codom(C::OppositeCat, f) = dom(C.cat, f)
+id(C::OppositeCat, x) = id(C.cat, x)
+compose(C::OppositeCat, f, g) = compose(C.cat, g, f)
+
+""" Opposite functor, given by the same mapping between opposite categories.
+"""
+@auto_hash_equals struct OppositeFunctor{C,D,F<:Functor{C,D}} <: Functor{C,D}
+    # XXX: Requires more type parameters: ObC, HomC, ObD, HomD.
+    #Functor{OppositeCat{C},OppositeCat{D}}
+  func::F
+end
+
+dom(F::OppositeFunctor) = op(dom(F.func))
+codom(F::OppositeFunctor) = op(codom(F.func))
+
+ob_map(F::OppositeFunctor, x) = ob_map(F.func, x)
+hom_map(F::OppositeFunctor, f) = hom_map(F.func, f)
+
+""" Opposite natural transformation between opposite functors.
+"""
+@auto_hash_equals struct OppositeTransformation{C,D,F,G,T<:Transformation{C,D,F,G}} <: Transformation{C,D,F,G}
+    # XXX: Requires more type parameters: ObC, HomC, ObD, HomD.
+    #Transformation{OppositeCat{C},OppositeCat{D},OppositeFunctor{C,D,G},OppositeFunctor{C,D,F}}
+  trans::T
+end
+
+dom(α::OppositeTransformation) = op(codom(α.trans))
+codom(α::OppositeTransformation) = op(dom(α.trans))
+
+component(α::OppositeTransformation, x) = component(α.trans, x)
+
+""" Oppositization 2-functor.
+
+The oppositization endo-2-functor on Cat, sending a category to its opposite, is
+covariant on objects and morphisms and contravariant on 2-morphisms, i.e., is a
+2-functor ``op: Catᶜᵒ → Cat``. For more explanation, see the
+[nLab](https://ncatlab.org/nlab/show/opposite+category).
+"""
+op(C::Cat) = OppositeCat(C)
+op(F::Functor) = OppositeFunctor(F)
+op(α::Transformation) = OppositeTransformation(α)
+op(C::OppositeCat) = C.cat
+op(F::OppositeFunctor) = F.func
+op(α::OppositeTransformation) = α.trans
+
+""" 2-cell dual of a 2-category.
+"""
+function co end
 
 end

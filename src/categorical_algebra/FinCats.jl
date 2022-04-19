@@ -27,7 +27,7 @@ using ...Theories: Category, Schema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ...CSetDataStructures, ...Graphs
 import ...Graphs: edges, src, tgt, enumerate_paths
-import ..Categories: ob, hom, ob_map, hom_map, component
+import ..Categories: OppositeCat, ob, hom, ob_map, hom_map, component
 
 # Categories
 ############
@@ -61,6 +61,12 @@ is_discrete(C::FinCat) = isempty(hom_generators(C))
 """ Is the category freely generated?
 """
 is_free(C::FinCat) = isempty(equations(C))
+
+# Opposite FinCats
+#-----------------
+
+ob_generators(C::OppositeCat) = ob_generators(C.cat)
+hom_generators(C::OppositeCat) = hom_generators(C.cat)
 
 # Categories on graphs
 ######################
