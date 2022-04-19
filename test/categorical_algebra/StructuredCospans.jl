@@ -203,21 +203,18 @@ cell2 = @acset Weighted2DGlobularSet{Float64} begin
   weight = [1., 2.]
   weight2 = [1.]
 end
-g₀ = WeightedGraph{Float64}() # FIXME: Shouldn't need to do this.
-copy_parts!(g₀, cell2)
 
 # Composing along vertices.
-g = OpenWeighted2DGlobularSet{Float64}(cell2, ACSetTransformation(v, g₀, V=[1]),
-                                       ACSetTransformation(v, g₀, V=[2]))
+g = OpenWeighted2DGlobularSet{Float64}(cell2, OpenACSetLeg(v, V=[1]),
+                                       OpenACSetLeg(v, V=[2]))
 h = apex(compose(g, g))
 @test (src(h), tgt(h)) == ([1,1,2,2], [2,2,3,3])
 @test (h[:src2], h[:tgt2]) == ([1,3], [2,4])
 @test (h[:weight], h[:weight2]) == ([1.,2.,1.,2.], [1.,1.])
 
 # Composing along edges.
-g = OpenWeighted2DGlobularSet{Float64}(cell2,
-   ACSetTransformation(e1, g₀, V=[1,2], E=[1]),
-   ACSetTransformation(e2, g₀, V=[1,2], E=[2]))
+g = OpenWeighted2DGlobularSet{Float64}(cell2, OpenACSetLeg(e1, V=[1,2], E=[1]),
+                                       OpenACSetLeg(e2, V=[1,2], E=[2]))
 h = apex(compose(g, dagger(g)))
 @test (src(h), tgt(h)) == ([1,1,1], [2,2,2])
 @test (h[:src2], h[:tgt2]) == ([1,3], [2,2])
