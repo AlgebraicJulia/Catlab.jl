@@ -349,4 +349,10 @@ Z = SigmaMigration(edge, Initial, Graph)(Y)
 @test nparts(Z, :E) == 4
 @test Z[:src] ∪ Z[:tgt] == 1:8
 
+# Representables
+#---------------
+
+@test representable(Graph, :V) == Graph(1)
+@test representable(Graph, :E) == path_graph(Graph, 2)
+
 end
