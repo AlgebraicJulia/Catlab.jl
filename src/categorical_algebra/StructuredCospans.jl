@@ -226,12 +226,13 @@ is in the substructure part (category A), it includes more than 1 objects; while
 "OpenACSetTypes(::Type{X}, ob₀::Symbol)" the category A  only includes one object
 """
 function OpenACSetTypes(::Type{X}, ::Type{A}) where
-  {S<:SchemaDescType, X<:StructACSet{S}, S0<:SchemaDescType, A<:StructACSet{S0}}
-  @assert attrtype(S0) ⊆ attrtype(S)
+  {S<:SchemaDescType, X<:StructACSet{S}, S₀<:SchemaDescType, A<:StructACSet{S₀}}
+  @assert attrtype(S₀) ⊆ attrtype(S)
   type_vars = map(TypeVar, attrtype(S))
-  type_vars0 = map(TypeVar, attrtype(S0))
-  L = SubStructACSet{A, X}
-  (StructuredCospanOb{L}, StructuredMulticospan{L})
+  #type_vars₀ = map(TypeVar, attrtype(S₀))
+  L = SubStructACSet{A{type_vars...}, X{type_vars...}}
+  (foldr(UnionAll, type_vars, init=StructuredCospanOb{L}),
+   foldr(UnionAll, type_vars, init=StructuredMulticospan{L}))
 end
 # **********************
 

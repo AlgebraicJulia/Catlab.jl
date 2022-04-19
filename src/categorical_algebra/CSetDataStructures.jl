@@ -602,7 +602,7 @@ ACSetInterface.copy_parts!(to::StructACSet, from::StructACSet, parts::NamedTuple
   end
 end
 
-""" Copy parts from a C-set to a C′-set, ignoring all non-data subparts.
+""" Copy parts from a C-set to a C′-set, ignoring all non-attribute subparts.
 
 The selected parts must belong to both schemas. Attributes common to both
 schemas are also copied, but no other subparts are copied.
