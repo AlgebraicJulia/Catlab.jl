@@ -2,10 +2,6 @@ module TestStructuredCospans
 using Test
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
-<<<<<<< HEAD
-=======
-using Catlab.Graphs.BasicGraphs: AbstractGraph, TheoryGraph, TheoryWeightedGraph
->>>>>>> da88bf26 (TST: Structured cospans of acsets with multiple objects in interface.)
 
 # Structured cospans of C-sets
 ##############################
@@ -100,8 +96,8 @@ k0 = apex(k)
 @test tgt(k0) == [2,3,4]
 @test subpart(k0, :weight) == [1.5, 1.0, 2.0]
 
-# Interface schema: one object, one attribute
-#--------------------------------------------
+# Interface schema: one object, with attributes
+#----------------------------------------------
 
 @present SchVELabeledGraph <: SchGraph begin
   Label::AttrType
@@ -153,33 +149,26 @@ b = OpenVELGraphOb{Symbol}(FinSet(3), vlabel=[:x,:y,:z])
 @test dom(braid(a, b)) == a⊗b
 @test codom(braid(a, b)) == b⊗a
 
-# Interface schema: one object, many attributes
-#----------------------------------------------
-
-@present SchMultiplyAttributedGraph <: TheoryGraph begin
-  Weight::AttrType
+@present SchWeightedLabeledGraph <: SchWeightedGraph begin
   Label::AttrType
   vlabel::Attr(V,Label)
   elabel::Attr(E,Label)
-  vsize::Attr(V,Weight)
-  elength::Attr(E,Weight)
 end
 
-@acset_type MAGraph(SchMultiplyAttributedGraph, index=[:src,:tgt]) <: AbstractGraph
-const OpenMAGraphOb, OpenMAGraph = OpenACSetTypes(MAGraph, :V)
+@acset_type WeightedLabeledGraph(SchWeightedLabeledGraph) <: AbstractGraph
+const OpenWLGraphOb, OpenWLGraph = OpenACSetTypes(WeightedLabeledGraph, :V)
 
-g0 = @acset MAGraph{Float64,Symbol} begin
+g0 = @acset WeightedLabeledGraph{Float64,Symbol} begin
   V = 5
   E = 3
-  vlabel = [:a, :b, :c, :d, :e]
-  elabel = [:a, :b, :c]
-  vsize = [0., 1., 3., 3., 4.]
-  elength = [1., 2., 3.]
   src = [1, 2, 3]
   tgt = [3, 4, 5]
+  vlabel = [:a, :b, :c, :d, :e]
+  elabel = [:a, :b, :c]
+  weight = [1., 2., 3.]
 end
-g = OpenMAGraph{Float64,Symbol}(g0, FinFunction([1],5), FinFunction([3,4],5))
-g′ = OpenMAGraph{Float64,Symbol}(g0, FinFunction([1],5),
+g = OpenWLGraph{Float64,Symbol}(g0, FinFunction([1],5), FinFunction([3,4],5))
+g′ = OpenWLGraph{Float64,Symbol}(g0, FinFunction([1],5),
                                  FinFunction([3],5), FinFunction([4],5))
 @test bundle_legs(g′, [1, (2,3)]) == g
 
@@ -187,7 +176,7 @@ g′ = OpenMAGraph{Float64,Symbol}(g0, FinFunction([1],5),
 #------------------------------------------------
 
 # This is actually a semi-globular set because there are no degeneracies.
-@present TheoryWeighted2DGlobularSet <: TheoryWeightedGraph begin
+@present SchWeighted2DGlobularSet <: SchWeightedGraph begin
   Cell2::Ob
   (src2, tgt2)::Hom(Cell2, E)
   compose(src2, src) == compose(tgt2, src)
@@ -196,7 +185,7 @@ g′ = OpenMAGraph{Float64,Symbol}(g0, FinFunction([1],5),
   weight2::Attr(Cell2,Weight)
 end
 
-@acset_type Weighted2DGlobularSet(TheoryWeighted2DGlobularSet) <: HasGraph
+@acset_type Weighted2DGlobularSet(SchWeighted2DGlobularSet) <: HasGraph
 const OpenWeighted2DGlobularSetOb, OpenWeighted2DGlobularSet =
   OpenACSetTypes(Weighted2DGlobularSet, WeightedGraph)
 

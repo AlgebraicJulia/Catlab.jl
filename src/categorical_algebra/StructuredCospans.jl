@@ -183,24 +183,21 @@ munit_like(a::StructuredCospanOb{L}) where L = munit(StructuredCospanOb{L})
 
 """ Create types for open C-sets from a C-set type.
 
-Returns two types, for objects, a subtype of [`StructuredCospanOb`](@ref), and
-for morphisms, a subtype of [`StructuredMulticospan`](@ref).
+Returns two types, one for objects, a subtype of [`StructuredCospanOb`](@ref),
+and one for morphisms, a subtype of [`StructuredMulticospan`](@ref).
 
-See also: [`OpenACSetTypes`](@ref).
+For attributed C-sets, see [`OpenACSetTypes`](@ref).
 """
-function OpenCSetTypes(::Type{X}, ob₀::Symbol) where
-    {S<:CSetSchemaDescType, X<:StructCSet{S}}
-  @assert ob₀ ∈ ob(S)
-  L = FinSetDiscreteACSet{ob₀, X}
-  (StructuredCospanOb{L}, StructuredMulticospan{L})
+function OpenCSetTypes(::Type{X}, args...) where X<:StructCSet
+  OpenACSetTypes(X, args...)
 end
 
 """ Create types for open attributed C-sets from an attributed C-set type.
 
-Note: the type passed in should *not* be instantiated with concrete attribute types.
+The given type should *not* be instantiated with concrete attribute types.
 
-The resulting types, for objects and morphisms, each have the same type
-parameters for data types as the original type.
+The two resulting types, one for objects and one for morphisms, each have the
+same type parameters for data types as the original type.
 
 See also: [`OpenCSetTypes`](@ref).
 """
@@ -212,76 +209,45 @@ function OpenACSetTypes(::Type{X}, ob₀::Symbol) where
     A = ACSetTableType(X, ob₀, union_all=true)
     DiscreteACSet{A{type_vars...}, X{type_vars...}}
   else
-    FinSetDiscreteACSet{ob₀, X{type_vars...}}
+    FinSetDiscreteACSet{ob₀, isempty(type_vars) ? X : X{type_vars...}}
   end
   (foldr(UnionAll, type_vars, init=StructuredCospanOb{L}),
    foldr(UnionAll, type_vars, init=StructuredMulticospan{L}))
 end
 
-#SF **********************
-""" Create types for open attributed C-sets from an attributed C-set type.
-
-Note: the difference between this function and the "OpenACSetTypes(::Type{X}, ob₀::Symbol)" 
-is in the substructure part (category A), it includes more than 1 objects; while in function
-"OpenACSetTypes(::Type{X}, ob₀::Symbol)" the category A  only includes one object
-"""
 function OpenACSetTypes(::Type{X}, ::Type{A}) where
-  {S<:SchemaDescType, X<:StructACSet{S}, S₀<:SchemaDescType, A<:StructACSet{S₀}}
-  @assert attrtype(S₀) ⊆ attrtype(S)
+    {S<:SchemaDescType, X<:StructACSet{S}, S₀<:SchemaDescType, A<:StructACSet{S₀}}
+  @assert ob(S₀) ⊆ ob(S) && hom(S₀) ⊆ hom(S)
+  @assert attrtype(S₀) ⊆ attrtype(S) && attr(S₀) ⊆ attr(S)
   type_vars = map(TypeVar, attrtype(S))
   #type_vars₀ = map(TypeVar, attrtype(S₀))
-  L = SubStructACSet{A{type_vars...}, X{type_vars...}}
+  L = DiscreteACSet{A{type_vars...}, X{type_vars...}}
   (foldr(UnionAll, type_vars, init=StructuredCospanOb{L}),
    foldr(UnionAll, type_vars, init=StructuredMulticospan{L}))
 end
-# **********************
 
+""" Abstract type for functor L: A → X giving a discrete attribute C-set.
 
-""" Abstract type for functor L: A → X giving a discrete C-set.
+A "discrete acset functor" is a functor between categories of acsets that is
+left adjoint to a certain kind of forgetful functor, namely one that is a
+pullback along an inclusion of schemas such that the image of inclusion has no
+outgoing arrows. For example, the schema inclusion ``{V} ↪ {E ⇉ V}`` has this
+property but ``{E} ↪ {E ⇉ V}`` does not.
 """
 abstract type AbstractDiscreteACSet{X <: StructACSet} end
 
 codom(::Type{<:AbstractDiscreteACSet{X}}) where
   {S, X<:StructACSet{S}} = (X, TightACSetTransformation{S})
 
-
-#SF **********************
-""" A functor L: C₀-Set → C-Set giving the sub-structure C-set for C₀.
-
-Here C₀ is assumed to contain a substructure of C (more than one objects). 
-The functor L has a right adjoint R: C-Set → C₀-Set
-forgetting the rest of C. Data attributes of the chosen object are preserved.
-"""
-struct SubStructACSet{A <: StructACSet, X <: StructACSet} end
-
-dom(::Type{<:SubStructACSet{A,X}}) where {S, A<:StructACSet{S}, X} =
-  (A, TightACSetTransformation{S})
-
-codom(::Type{<:SubStructACSet{A,X}}) where
-  {A, S, X<:StructACSet{S}} = (X, TightACSetTransformation{S})
-# **********************
-
-#SF **********************
-StructuredCospan{L}(x::StructACSet, f::ACSetTransformation,
-                    g::ACSetTransformation) where {L<:SubStructACSet} =
-  StructuredCospan{L}(x, Cospan(f, g))
-# **********************
-
-StructuredCospan{L}(x::StructACSet, f::FinFunction{Int,Int},
-                    g::FinFunction{Int,Int}) where {L<:AbstractDiscreteACSet} =
+StructuredCospan{L}(x::StructACSet, f::Union{FinFunction,ACSetTransformation},
+                    g::Union{FinFunction,ACSetTransformation}) where
+    {L<:AbstractDiscreteACSet} =
   StructuredCospan{L}(x, Cospan(f, g))
 
 StructuredMulticospan{L}(x::StructACSet,
-                         fs::Vararg{<:FinFunction{Int,Int},N}) where
+                         fs::Vararg{<:Union{FinFunction,ACSetTransformation},N}) where
     {L<:AbstractDiscreteACSet, N} =
   StructuredMulticospan{L}(x, SMulticospan{N}(fs...))
-
-#SF **********************
-StructuredMulticospan{L}(x::StructACSet,
-                         fs::Vararg{<:ACSetTransformation,N}) where
-    {L<:SubStructACSet, N} =
-  StructuredMulticospan{L}(x, SMulticospan{N}(fs...))
-# **********************
 
 function force(M::StructuredMulticospan{L}) where {L<:AbstractDiscreteACSet}
   StructuredMulticospan{L}(
@@ -300,15 +266,17 @@ dom(::Type{<:FinSetDiscreteACSet}) = (FinSet{Int}, FinFunction{Int,Int})
 
 """ A functor L: C₀-Set → C-Set giving the discrete C-set for C₀.
 
-Here C₀ is assumed to contain a single object from C and the discreteness is
-with respect to this object. The functor L has a right adjoint R: C-Set → C₀-Set
-forgetting the rest of C. Data attributes of the chosen object are preserved.
+TODO Here C₀ is assumed to contain a single object {x₀} from C and the discreteness
+is with respect to this object. The functor L has a right adjoint R: C-Set →
+C₀-Set forgetting the rest of C.
+
+Unlike [`FinSetDiscreteACSet`](@ref), this type supports data attributes.
+
 """
 struct DiscreteACSet{A <: StructACSet, X} <: AbstractDiscreteACSet{X} end
 
 dom(::Type{<:DiscreteACSet{A}}) where {S, A<:StructACSet{S}} =
   (A, TightACSetTransformation{S})
-
 
 function StructuredMulticospan{L}(x::StructACSet,
                                   cospan::Multicospan{<:FinSet{Int}}) where
@@ -357,16 +325,6 @@ function (::Type{L})(a::StructACSet) where {A,X,L<:DiscreteACSet{A,X}}
   x
 end
 
-#SF **********************
-""" Apply left adjoint L: C₀-Set → C-Set to object.
-"""
-function (::Type{L})(a::StructACSet) where {A,X,L<:SubStructACSet{A,X}}
-  x = X()
-  copy_parts_only!(x, a)
-  x
-end
-# **********************
-
 """ Apply left adjoint L: FinSet → C-Set to morphism.
 """
 function (::Type{L})(f::FinFunction{Int,Int}) where
@@ -380,14 +338,6 @@ function (::Type{L})(ϕ::ACSetTransformation) where {L <: DiscreteACSet}
   ACSetTransformation(components(ϕ), L(dom(ϕ)), L(codom(ϕ)))
 end
 
-#SF **********************
-""" Apply left adjoint L: C₀-Set → C-Set to morphism.
-"""
-function (::Type{L})(ϕ::ACSetTransformation) where {L <: SubStructACSet}
-  ACSetTransformation(components(ϕ), L(dom(ϕ)), L(codom(ϕ)))
-end
-# **********************
-
 """ Convert morphism a → R(x) to morphism L(a) → x using discrete-forgetful
 adjunction L ⊣ R: A ↔ X.
 """
@@ -399,10 +349,5 @@ function shift_left(::Type{L}, x::StructACSet, ϕ::ACSetTransformation) where
     {L <: DiscreteACSet}
   ACSetTransformation(components(ϕ), L(dom(ϕ)), x)
 end
-#SF **********************
-function shift_left(::Type{L}, x::StructACSet, ϕ::ACSetTransformation) where
-    {L <: SubStructACSet}
-  ACSetTransformation(components(ϕ), L(dom(ϕ)), x)
-end
-# **********************
+
 end
