@@ -8,12 +8,12 @@ const SUITE = BenchmarkGroup()
 # Begin Graph Homs
 ##################
 # Grid Graphs (Using Reflexive Graphs)
+#-------------------------------------
 n = 10
 SUITE["grids"] = BenchmarkGroup()
 SUITE["grids"]["Reflexive gridToPath"] = @benchmarkable gridToPath($n)
 SUITE["grids"]["Reflexive pathToGrid"] = @benchmarkable pathToGrid($n)
 
-# Reflexive Graphs
 function gridToPath(n)
     for i in 1:n
         component = path_graph(ReflexiveGraph, i) # generate path graph of size i
@@ -33,6 +33,7 @@ function pathToGrid(n)
 end
 
 # Sparse Acyclic Graphs
+#----------------------
 SUITE["gtoh"] = BenchmarkGroup()
 SUITE["gtoh"]["Sparse Acyclic gLarger"] = @benchmarkable gLarger()
 SUITE["gtoh"]["Sparse Acyclic hLarger"] = @benchmarkable hLarger()
@@ -96,6 +97,7 @@ function analogous()
 end
 
 # Complete Graphs
+#----------------
 SUITE["complete"] = BenchmarkGroup()
 SUITE["complete"]["Complete gLarger"] = @benchmarkable c_gLarger()
 SUITE["complete"]["Complete hLarger"] = @benchmarkable c_hLarger()
@@ -103,7 +105,6 @@ SUITE["complete"]["Complete identical"] = @benchmarkable c_identical()
 
 length(complete_list)
 
-# This produces nothing
 function c_gLarger()
     len = length(complete_list)
     # avoid references - copying could work
@@ -131,6 +132,7 @@ function c_identical()
 end
 
 # Simplicial Sets
+#################
 SUITE["simplicial"] = BenchmarkGroup()
 SUITE["simplicial"]["quad pattern"] = @benchmarkable quad_pattern()
 SUITE["simplicial"]["1d pattern"] = @benchmarkable od_pattern()
