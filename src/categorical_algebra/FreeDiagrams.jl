@@ -545,10 +545,15 @@ FreeDiagram(diagram::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom} =
   FreeDiagram{Ob,Hom}(diagram)
 
 function FreeDiagram{Ob,Hom}(F::Functor{<:FinCat{Int}}) where {Ob,Hom}
+  J = dom(F)
+  js = ob_generators(J)
+  js == 1:length(js) || error("Objects must be numbers 1:n")
+
   diagram = FreeDiagram{Ob,Hom}()
-  copy_parts!(diagram, graph(dom(F)))
-  diagram[:ob] = collect_ob(F)
-  diagram[:hom] = collect_hom(F)
+  add_vertices!(diagram, length(js), ob=[ob_map(F,j) for j in js])
+  for f in hom_generators(J)
+    add_edge!(diagram, dom(J,f), codom(J,f), hom=hom_map(F,f))
+  end
   diagram
 end
 FreeDiagram(F::Functor{<:FinCat{Int},<:Cat{Ob,Hom}}) where {Ob,Hom} =
