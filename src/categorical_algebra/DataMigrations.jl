@@ -266,7 +266,7 @@ ob_map(ΣF::SigmaMigration, ::Type{T}, X::ACSet) where T<:ACSet =
   ob_map(ΣF, T, FinDomFunctor(X))
 
 function ob_map(ΣF::SigmaMigration, ::Type{T}, X::FinDomFunctor) where T<:ACSet
-  comma_cats = ΣF.comma_cats
+  comma_cats, comma_hom_map = ΣF.comma_cats
   diagramD = FreeDiagram(presentation(codom(ΣF.functor)))
 
   # define Y on objects by taking colimits
@@ -287,9 +287,11 @@ function ob_map(ΣF::SigmaMigration, ::Type{T}, X::FinDomFunctor) where T<:ACSet
     if nparts(Y, nameof(dom(hom(diagramD, g)))) == 0
       continue
     end
+    src_colim, tgt_colim = colimX[src(diagramD, g)], colimX[tgt(diagramD, g)]
+    ϕ = hom(comma_cats, comma_hom_map[g])
     set_subpart!(Y, nameof(hom(diagramD, g)),
-      collect(universal(colimX[src(diagramD, g)],
-        Multicospan(legs(colimX[tgt(diagramD, g)])[collect(hom(comma_cats, g)[:V])])
+      collect(universal(src_colim,
+        Multicospan(apex(tgt_colim), legs(tgt_colim)[collect(ϕ[:V])])
       )))
   end
   return Y
@@ -324,6 +326,7 @@ function get_comma_cats(F::FinFunctor)
     end
   )
 
+  comma_hom_map = Dict{Int,Int}()
   for d in topological_sort(diagramD)
     F∇d = ob(comma_cats, d)
     id_d = id(ob(diagramD, d))
@@ -342,11 +345,11 @@ function get_comma_cats(F::FinFunctor)
     for g in incident(diagramD, d, :tgt)
       d′ = src(diagramD, g)
       F∇g = comma_cat_hom!(F∇d, ob(comma_cats, d′), id_d, hom(diagramD, g), FHomInv)
-      add_edge!(comma_cats, d′, d, hom=F∇g)      
+      comma_hom_map[g] = add_edge!(comma_cats, d′, d, hom=F∇g)
     end 
   end
 
-  return comma_cats
+  return comma_cats, comma_hom_map
 end
 
 function comma_cat_hom!(F∇d, F∇d′, id_d, g, FHomInv)
