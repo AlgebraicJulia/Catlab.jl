@@ -356,8 +356,11 @@ end
 dom(F::OppositeFunctor) = op(dom(F.func))
 codom(F::OppositeFunctor) = op(codom(F.func))
 
-ob_map(F::OppositeFunctor, x) = ob_map(F.func, x)
-hom_map(F::OppositeFunctor, f) = hom_map(F.func, f)
+do_ob_map(F::OppositeFunctor, x) = ob_map(F.func, x)
+do_hom_map(F::OppositeFunctor, f) = hom_map(F.func, f)
+
+do_compose(F::OppositeFunctor, G::OppositeFunctor) =
+  OppositeFunctor(do_compose(F.func, G.func))
 
 """ Opposite natural transformation between opposite functors.
 
@@ -373,6 +376,15 @@ dom(α::OppositeTransformation) = op(codom(α.trans))
 codom(α::OppositeTransformation) = op(dom(α.trans))
 
 component(α::OppositeTransformation, x) = component(α.trans, x)
+
+do_compose(α::OppositeTransformation, β::OppositeTransformation) =
+  OppositeTransformation(do_compose(β.trans, α.trans))
+do_composeH(α::OppositeTransformation, β::OppositeTransformation) =
+  OppositeTransformation(do_composeH(α.trans, β.trans))
+do_composeH(F::OppositeFunctor, β::OppositeTransformation) =
+  OppositeTransformation(do_composeH(F.func, β.trans))
+do_composeH(α::OppositeTransformation, H::OppositeFunctor) =
+  OppositeTransformation(do_composeH(α.trans, H.func))
 
 """ Oppositization 2-functor.
 

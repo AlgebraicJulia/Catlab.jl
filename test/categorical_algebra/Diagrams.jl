@@ -62,9 +62,8 @@ fg = f⋅g
 d = dom(f)
 @test op(op(d)) == d
 @test op(op(f)) == f
-@test dom(op(g)) == Diagram{co}(ιV)
-@test codom(op(g)) == Diagram{co}(D)
-@test op(g) == DiagramHom{co}([(1,:src)], ιV, D)
+@test dom(op(f)) == op(codom(f))
+@test codom(op(f)) == op(dom(f))
 @test op(g)⋅op(f) == op(f⋅g)
 
 # Monads of diagrams

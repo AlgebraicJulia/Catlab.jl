@@ -200,10 +200,16 @@ end
   @import dom, codom, compose, id
 end
 
-op(d::Diagram{op}) = Diagram{co}(d)
-op(d::Diagram{co}) = Diagram{op}(d)
-op(f::DiagramHom{op}) = DiagramHom{co}(f)
-op(f::DiagramHom{co}) = DiagramHom{op}(f)
+# Oppositization 2-functor induces isomorphisms of diagram categories:
+#    op(Diag{id}(C)) ≅ Diag{op}(op(C))
+#    op(Diag{op}(C)) ≅ Diag{id}(op(C))
+
+op(d::Diagram{id}) = Diagram{op}(op(diagram(d)))
+op(d::Diagram{op}) = Diagram{id}(op(diagram(d)))
+op(f::DiagramHom{id}) = DiagramHom{op}(op(shape_map(f)), op(diagram_map(f)),
+                                       op(f.precomposed_diagram))
+op(f::DiagramHom{op}) = DiagramHom{id}(op(shape_map(f)), op(diagram_map(f)),
+                                       op(f.precomposed_diagram))
 
 # Any functor ``F: C → D`` induces a functor ``Diag(F): Diag(C) → Diag(D)`` by
 # post-composition and post-whiskering.
