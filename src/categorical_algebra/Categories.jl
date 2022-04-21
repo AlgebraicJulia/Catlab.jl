@@ -15,7 +15,7 @@ presented categories are provided by another module, [`FinCats`](@ref).
 module Categories
 export Cat, TypeCat, Functor, Transformation, dom, codom, compose, id,
   ob, hom, is_hom_equal, ob_map, hom_map, dom_ob, codom_ob, component,
-  OppositeCat, OppositeFunctor, OppositeTransformation, op, co
+  OppositeCat, op, co
 
 using AutoHashEquals
 
@@ -362,6 +362,9 @@ do_hom_map(F::OppositeFunctor, f) = hom_map(F.func, f)
 do_compose(F::OppositeFunctor, G::OppositeFunctor) =
   OppositeFunctor(do_compose(F.func, G.func))
 
+#= Not yet needed because the only natural transformations we currently support
+#are `FinTransformationMap`, for which can just implement `op` directly.
+
 """ Opposite natural transformation between opposite functors.
 
 Call `op(::Transformation)` instead of directly instantiating this type.
@@ -385,6 +388,7 @@ do_composeH(F::OppositeFunctor, β::OppositeTransformation) =
   OppositeTransformation(do_composeH(F.func, β.trans))
 do_composeH(α::OppositeTransformation, H::OppositeFunctor) =
   OppositeTransformation(do_composeH(α.trans, H.func))
+=#
 
 """ Oppositization 2-functor.
 
@@ -395,10 +399,10 @@ covariant on objects and morphisms and contravariant on 2-morphisms, i.e., is a
 """
 op(C::Cat) = OppositeCat(C)
 op(F::Functor) = OppositeFunctor(F)
-op(α::Transformation) = OppositeTransformation(α)
+#op(α::Transformation) = OppositeTransformation(α)
 op(C::OppositeCat) = C.cat
 op(F::OppositeFunctor) = F.func
-op(α::OppositeTransformation) = α.trans
+#op(α::OppositeTransformation) = α.trans
 
 """ 2-cell dual of a 2-category.
 """

@@ -34,6 +34,7 @@ D = FinCat(h)
 f = id(D, 2)
 @test (src(f), tgt(f)) == (2, 2)
 @test isempty(edges(f))
+@test reverse(f) == f
 g = compose(D, 1, 3)
 @test edges(g) == [1,3]
 
@@ -58,11 +59,9 @@ F = FinFunctor((V=[1,4], E=[[1,3], [2,4]]), C, D)
 @test collect_hom(F) == [Path(h, [1,3]), Path(h, [2,4])]
 
 F_op = op(F)
-@test F_op isa FinFunctor
+@test F_op isa FinFunctor && F_op isa FinCats.FinDomFunctorMap
 @test dom(F_op) == op(C)
 @test codom(F_op) == op(D)
-@test ob_map(F_op, 2) == 4
-@test hom_map(F_op, 1) == Path(h, [1,3])
 @test op(F_op) == F
 
 # Composition of functors.
@@ -170,10 +169,9 @@ G = FinDomFunctor(g)
 @test startswith(sprint(show, α), "FinTransformation(")
 
 α_op = op(α)
-@test α_op isa FinTransformation
+@test α_op isa FinCats.FinTransformationMap
 @test dom(α_op) == op(G)
 @test codom(α_op) == op(F)
-@test component(α, :V) == α[:V]
 @test op(α_op) == α
 
 σ = FinTransformation(G, G, V=id(FinSet(2)), E=FinFunction([2,1,4,3]))

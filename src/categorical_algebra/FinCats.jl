@@ -27,7 +27,7 @@ using ...Theories: Category, Schema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ...CSetDataStructures, ...Graphs
 import ...Graphs: edges, src, tgt, enumerate_paths
-import ..Categories: CatSize, ob, hom, ob_map, hom_map, component
+import ..Categories: CatSize, ob, hom, ob_map, hom_map, component, op
 
 # Categories
 ############
@@ -128,6 +128,8 @@ function Base.empty(::Type{Path}, g::HasGraph, v::T) where T
   has_vertex(g, v) || error("Vertex $v not contained in graph $g")
   Path(SVector{0,T}(), v, v)
 end
+
+Base.reverse(p::Path) = Path(reverse(edges(p)), tgt(p), src(p))
 
 function Base.vcat(p1::Path, p2::Path)
   tgt(p1) == src(p2) ||
@@ -299,19 +301,24 @@ FinDomFunctor(ob_map, ::Nothing, dom::FinCat, codom::Cat) =
   FinDomFunctor(ob_map, dom, codom)
 
 function hom_map(F::FinDomFunctor{<:FinCatPathGraph}, path::Path)
-  D = codom(F)
+  C, D = dom(F), codom(F)
+  path = decompose(C, path)
   mapreduce(e -> hom_map(F, e), (gs...) -> compose(D, gs...),
             edges(path), init=id(D, ob_map(F, src(path))))
 end
+decompose(C, path::Path) = path
+decompose(C::OppositeCat, path::Path) = reverse(path)
 
 ob_map(F::FinDomFunctor, x::GATExpr{:generator}) = ob_map(F, first(x))
 hom_map(F::FinDomFunctor, f::GATExpr{:generator}) = hom_map(F, first(f))
 hom_map(F::FinDomFunctor, f::GATExpr{:id}) = id(codom(F), ob_map(F, dom(f)))
 
 function hom_map(F::FinDomFunctor, f::GATExpr{:compose})
-  D = codom(F)
-  mapreduce(f -> hom_map(F, f), (gs...) -> compose(D, gs...), args(f))
+  C, D = dom(F), codom(F)
+  mapreduce(f -> hom_map(F, f), (gs...) -> compose(D, gs...), decompose(C, f))
 end
+decompose(C, f::GATExpr{:compose}) = args(f)
+decompose(C::OppositeCat, f::GATExpr{:compose}) = reverse(decompose(C.cat, f))
 
 (F::FinDomFunctor)(expr::ObExpr) = ob_map(F, expr)
 (F::FinDomFunctor)(expr::HomExpr) = hom_map(F, expr)
@@ -458,6 +465,9 @@ Categories.do_hom_map(F::FinDomFunctorMap, f) = F.hom_map[f]
 collect_ob(F::FinDomFunctorMap) = values(F.ob_map)
 collect_hom(F::FinDomFunctorMap) = values(F.hom_map)
 
+op(F::FinDomFunctorMap) = FinDomFunctorMap(F.ob_map, F.hom_map,
+                                           op(dom(F)), op(codom(F)))
+
 """ Force evaluation of lazily defined function or functor.
 """
 function force(F::FinDomFunctor)
@@ -574,6 +584,9 @@ component(α::FinTransformationMap, expr::GATExpr{:generator}) =
   component(α, first(expr))
 
 components(α::FinTransformationMap) = α.components
+
+op(α::FinTransformationMap) = FinTransformationMap(components(α),
+                                                   op(codom(α)), op(dom(α)))
 
 function Categories.do_compose(α::FinTransformationMap, β::FinTransformation)
   F = dom(α)
