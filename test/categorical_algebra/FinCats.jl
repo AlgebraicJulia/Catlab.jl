@@ -202,10 +202,10 @@ G = FinDomFunctor(g)
 @test ob_map(G, :Weight) == TypeSet(Float64)
 @test hom_map(G, :weight) == FinDomFunction([0.5, 1.5])
 
-# Initiality of functors
-########################
+# Initial functors
+##################
 
-"Commutative square diagram: with 1→2→4 and 1→3→4"
+# Commutative square diagram: with 1→2→4 and 1→3→4
 S = FinCat(@acset Graph begin
   V = 4
   E = 4
@@ -213,7 +213,7 @@ S = FinCat(@acset Graph begin
   tgt = [2,3,4,4]
 end)
 
-"Equalizer diagram: 1→2⇉3"
+# Equalizer diagram: 1→2⇉3
 T = FinCat(@acset Graph begin
   V = 3
   E = 3
@@ -221,7 +221,7 @@ T = FinCat(@acset Graph begin
   tgt = [2,3,3]
 end)
 
-"Extra bit added to beginning equalizer diagram: 4→1→2⇉3"
+# Extra bit added to beginning equalizer diagram: 4→1→2⇉3
 T2 = FinCat(@acset Graph begin
   V = 4
   E = 4
@@ -229,14 +229,13 @@ T2 = FinCat(@acset Graph begin
   tgt = [2,3,3,1]
 end)
 
-"Extra bit added to end of equalizer diagram: 1→2⇉3→4"
+# Extra bit added to end of equalizer diagram: 1→2⇉3→4
 T3 = FinCat(@acset Graph begin
   V = 4
   E = 4
   src = [1,2,2,3]
   tgt = [2,3,3,4]
 end)
-
 
 # Opposite square corners folded on top of each other
 F1 = FinFunctor([1,2,2,3], [1,1,2,3], S, T)
@@ -252,7 +251,6 @@ F4 = FinFunctor([1,2,3], [1,2,3], T, T2)
 
 # Same as F1, but there is an additional piece of data in codomain, ignored
 F5 = FinFunctor([1,2,3], [1,2,3], T, T2)
-
 
 @test all(is_functorial.([F1,F2,F3,F4]))
 @test is_initial(F1)
