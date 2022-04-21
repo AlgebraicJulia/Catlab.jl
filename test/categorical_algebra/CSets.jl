@@ -156,6 +156,8 @@ diagram = FreeDiagram([g1, g2, g0], [(ϕ,1,3), (ψ,2,3)])
 @test ob(lim′) == ob(lim)
 @test force(π1) == force(proj1(lim))
 @test force(π2) == force(proj2(lim))
+lim′ = limit(FinDomFunctor(diagram))
+@test ob(lim′) == ob(lim)
 
 # Colimits
 #---------

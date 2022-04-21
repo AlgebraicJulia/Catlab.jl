@@ -359,6 +359,12 @@ function is_functorial(F::FinDomFunctor; check_equations::Bool=false)
   true
 end
 
+function Base.map(F::Functor{<:FinCat,<:TypeCat}, f_ob, f_hom)
+  C = dom(F)
+  FinDomFunctor(map(x -> f_ob(ob_map(F, x)), ob_generators(C)),
+                map(f -> f_hom(hom_map(F, f)), hom_generators(C)), C)
+end
+
 """ A functor between finitely presented categories.
 """
 const FinFunctor{Dom<:FinCat,Codom<:FinCat} = FinDomFunctor{Dom,Codom}
