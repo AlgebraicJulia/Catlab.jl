@@ -77,7 +77,7 @@ function struct_acset(name::Symbol, parent, p::Presentation{Schema}; index=[], u
           $(pi_type_elt(homs, _ -> :(Int[]))),
           $(pi_type_elt(attrs, a -> :($(nameof(codom(a)))[]))),
           $(pi_type_elt(indexed_homs, _ -> :(Vector{Int}[]))),
-          $(pi_type_elt(unique_indexed_homs, _ -> Int[])),
+          $(pi_type_elt(unique_indexed_homs, _ -> :(Int[]))),
           $(pi_type_elt(indexed_attrs, a -> :(Dict{$(nameof(codom(a))),Vector{Int}}()))),
           $(pi_type_elt(unique_indexed_attrs, a -> :(Dict{$(nameof(codom(a))),Int}())))
         )
