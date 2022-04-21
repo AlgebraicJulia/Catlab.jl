@@ -186,6 +186,25 @@ function show_domains(io::IO, f; domain::Bool=true, codomain::Bool=true,
   end
 end
 
+# Callables
+#----------
+
+Functor(f::Function, g::Function, C::Cat, D::Cat) = FunctorCallable(f, g, C, D)
+
+""" Functor defined by two Julia callables, an object map and a morphism map.
+"""
+@auto_hash_equals struct FunctorCallable{Dom,Codom} <: Functor{Dom,Codom}
+  ob_map::Any
+  hom_map::Any
+  dom::Dom
+  codom::Codom
+end
+
+dom(F::FunctorCallable) = F.dom
+codom(F::FunctorCallable) = F.codom
+do_ob_map(F::FunctorCallable, x) = F.ob_map(x)
+do_hom_map(F::FunctorCallable, f) = F.hom_map(f)
+
 # Instances
 #----------
 

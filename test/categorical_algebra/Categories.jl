@@ -26,18 +26,12 @@ f = Hom(:f, x, y)
 @test F(x) == x
 @test F(f) == f
 
-# Is this worth putting somewhere?
-struct InstanceFunctor{Ob,Hom} <:
-  Functor{TypeCat{FreeCategory.Ob,FreeCategory.Hom},TypeCat{Ob,Hom}}
+function InstanceFunctor(T::TypeCat{Ob,Hom}) where {Ob, Hom}
+  Functor(x -> functor((Ob,Hom), x), f -> functor((Ob,Hom), f),
+          TypeCat{FreeCategory.Ob, FreeCategory.Hom}(), T)
 end
-Categories.dom(::InstanceFunctor) = TypeCat{FreeCategory.Ob,FreeCategory.Hom}()
-Categories.codom(::InstanceFunctor{Ob,Hom}) where {Ob,Hom} = TypeCat{Ob,Hom}()
-Categories.do_ob_map(::InstanceFunctor{Ob,Hom}, x) where {Ob,Hom} =
-  functor((Ob,Hom), x)::Ob
-Categories.do_hom_map(::InstanceFunctor{Ob,Hom}, f) where {Ob,Hom} =
-  functor((Ob,Hom), f)::Hom
-
-F = InstanceFunctor{FreeCategory2.Ob,FreeCategory2.Hom}()
+F = InstanceFunctor(TypeCat(FreeCategory2.Ob, FreeCategory2.Hom))
+@test dom(F) == C
 
 x′, y′ = Ob(FreeCategory2, :x, :y)
 f′ = Hom(:f, x′, y′)
