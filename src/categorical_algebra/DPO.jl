@@ -172,7 +172,10 @@ This works for any type that implements `pushout_complement` and `pushout`
 Returns the morphisms I->K, K->G (produced by pushout complement), followed by
 R->H, and K->H (produced by pushout)
 """
-function rewrite_match_maps(r::Rule{:DPO}, m)
+function rewrite_match_maps(r::Rule{:DPO}, m; check::Bool=false)
+  if check
+    can_pushout_complement(r.L, m) || error("Cannot pushout complement $r\n$m")
+  end
   (ik, kg) = pushout_complement(r.L, m)
   rh, kh = pushout(r.R, ik)
   return ik, kg, rh, kh

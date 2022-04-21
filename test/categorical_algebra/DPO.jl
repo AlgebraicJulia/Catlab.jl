@@ -466,10 +466,15 @@ Tri = @acset SSet begin
   d1=[1]; d2=[2]; d3=[3];
   src=[1,1,2]; tgt=[3,2,3]
 end
+
 r = Rule{:SPO}(homomorphisms(edge, Tri)[2], id(edge))
+r_dpo = Rule(r.L, r.R)
+
 m = homomorphism(Tri, quadrangle)
+
 # This does not make sense for DPO
 @test !can_pushout_complement(r.L, m)
+@test_throws ErrorException rewrite_match_maps(r_dpo, m; check=true)
 @test is_isomorphic(rewrite_match(r,m),
                     @acset SSet begin E=2; V=3; src=1; tgt=[2,3] end)
 
