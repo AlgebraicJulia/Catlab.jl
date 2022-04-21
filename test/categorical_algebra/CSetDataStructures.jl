@@ -22,7 +22,6 @@ end
 @test DDS <: ACSet
 
 dds = DDS()
-@test typeof(dds) <: StructACSet
 @test keys(tables(dds)) == (:X,)
 @test nparts(dds, :X) == 0
 @test add_part!(dds, :X) == 1
@@ -249,6 +248,28 @@ add_parts!(ld, :L, 3, leafparent=[2,3,4])
 d′ = Dendrogram{Int}()
 copy_parts!(d′, ld)
 @test d′ == d
+
+# Subsets
+#########
+
+# A set together with a subset, with unique indexing for fast membership checks.
+
+@present TheorySubset(FreeSchema) begin
+  (Set, Sub)::Ob
+  ι::Hom(Sub, Set)
+end
+@acset_type Subset(TheorySubset, unique_index=[:ι])
+
+Base.in(x, X::Subset) = incident(X, x, :ι) != 0
+
+A = Subset()
+add_parts!(A, :Set, 2)
+add_part!(A, :Sub, ι=1)
+B = Subset()
+add_parts!(B, :Set, 2)
+add_part!(B, :Sub, ι=2)
+@test 1 ∈ A && 2 ∉ A
+@test 1 ∉ B && 2 ∈ B
 
 # Labeled sets
 ##############
