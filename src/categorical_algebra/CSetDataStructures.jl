@@ -43,7 +43,8 @@ end
 
 """ Create the struct declaration for a `StructACSet` from a Presentation
 """
-function struct_acset(name::Symbol, parent, p::Presentation{Schema}; index=[], unique_index=[])
+function struct_acset(name::Symbol, parent, p::Presentation{Schema};
+                      index=[], unique_index=[])
   obs = p.generators[:Ob]
   homs = p.generators[:Hom]
   attr_types = p.generators[:AttrType]
@@ -99,7 +100,8 @@ macro acset_type(head)
   end
   quote
     $(esc(:eval))($(GlobalRef(CSetDataStructures, :struct_acset))(
-      $(Expr(:quote, name)), $(Expr(:quote, parent)), $(esc(schema)), $(idx_args...)))
+      $(Expr(:quote, name)), $(Expr(:quote, parent)), $(esc(schema));
+      $((esc(arg) for arg in idx_args)...)))
     Core.@__doc__ $(esc(name))
   end
 end
