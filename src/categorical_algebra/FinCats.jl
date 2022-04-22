@@ -27,14 +27,18 @@ using ...Theories: Category, Schema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ...CSetDataStructures, ...Graphs
 import ...Graphs: edges, src, tgt, enumerate_paths
-import ..Categories: ob, hom, ob_map, hom_map, component
+import ..Categories: CatSize, ob, hom, ob_map, hom_map, component, op
 
 # Categories
 ############
 
-""" Abstract type for finitely presented category.
+""" Size of a finitely presented category.
 """
-abstract type FinCat{Ob,Hom} <: Cat{Ob,Hom} end
+struct FinCatSize <: CatSize end
+
+""" A finitely presented (but not necessarily finite!) category.
+"""
+const FinCat{Ob,Hom} = Cat{Ob,Hom,FinCatSize}
 
 FinCat(g::HasGraph, args...; kw...) = FinCatGraph(g, args...; kw...)
 FinCat(pres::Presentation, args...; kw...) =
@@ -61,6 +65,14 @@ is_discrete(C::FinCat) = isempty(hom_generators(C))
 """ Is the category freely generated?
 """
 is_free(C::FinCat) = isempty(equations(C))
+
+# Opposite FinCats
+#-----------------
+
+const OppositeFinCat{Ob,Hom} = OppositeCat{Ob,Hom,FinCatSize}
+
+ob_generators(C::OppositeFinCat) = ob_generators(C.cat)
+hom_generators(C::OppositeFinCat) = hom_generators(C.cat)
 
 # Categories on graphs
 ######################
@@ -116,6 +128,8 @@ function Base.empty(::Type{Path}, g::HasGraph, v::T) where T
   has_vertex(g, v) || error("Vertex $v not contained in graph $g")
   Path(SVector{0,T}(), v, v)
 end
+
+Base.reverse(p::Path) = Path(reverse(edges(p)), tgt(p), src(p))
 
 function Base.vcat(p1::Path, p2::Path)
   tgt(p1) == src(p2) ||
@@ -287,19 +301,24 @@ FinDomFunctor(ob_map, ::Nothing, dom::FinCat, codom::Cat) =
   FinDomFunctor(ob_map, dom, codom)
 
 function hom_map(F::FinDomFunctor{<:FinCatPathGraph}, path::Path)
-  D = codom(F)
+  C, D = dom(F), codom(F)
+  path = decompose(C, path)
   mapreduce(e -> hom_map(F, e), (gs...) -> compose(D, gs...),
             edges(path), init=id(D, ob_map(F, src(path))))
 end
+decompose(C, path::Path) = path
+decompose(C::OppositeCat, path::Path) = reverse(path)
 
 ob_map(F::FinDomFunctor, x::GATExpr{:generator}) = ob_map(F, first(x))
 hom_map(F::FinDomFunctor, f::GATExpr{:generator}) = hom_map(F, first(f))
 hom_map(F::FinDomFunctor, f::GATExpr{:id}) = id(codom(F), ob_map(F, dom(f)))
 
 function hom_map(F::FinDomFunctor, f::GATExpr{:compose})
-  D = codom(F)
-  mapreduce(f -> hom_map(F, f), (gs...) -> compose(D, gs...), args(f))
+  C, D = dom(F), codom(F)
+  mapreduce(f -> hom_map(F, f), (gs...) -> compose(D, gs...), decompose(C, f))
 end
+decompose(C, f::GATExpr{:compose}) = args(f)
+decompose(C::OppositeCat, f::GATExpr{:compose}) = reverse(decompose(C.cat, f))
 
 (F::FinDomFunctor)(expr::ObExpr) = ob_map(F, expr)
 (F::FinDomFunctor)(expr::HomExpr) = hom_map(F, expr)
@@ -340,6 +359,12 @@ function is_functorial(F::FinDomFunctor; check_equations::Bool=false)
   true
 end
 
+function Base.map(F::Functor{<:FinCat,<:TypeCat}, f_ob, f_hom)
+  C = dom(F)
+  FinDomFunctor(map(x -> f_ob(ob_map(F, x)), ob_generators(C)),
+                map(f -> f_hom(hom_map(F, f)), hom_generators(C)), C)
+end
+
 """ A functor between finitely presented categories.
 """
 const FinFunctor{Dom<:FinCat,Codom<:FinCat} = FinDomFunctor{Dom,Codom}
@@ -352,59 +377,6 @@ FinFunctor(ob_map, hom_map, dom::Presentation, codom::Presentation) =
 
 Categories.show_type_constructor(io::IO, ::Type{<:FinFunctor}) =
   print(io, "FinFunctor")
-
-"""
-Dual to a ["final-functor"](https://ncatlab.org/nlab/show/final+functor), an
-initial functor is one for which pulling back diagrams along it does not change
-the limits of these diagrams.
-
-This amounts to checking, for a functor C->D, that, for every object d in
-Ob(D), the comma category (F/d) is connected.
-"""
-function is_initial(F::FinFunctor)::Bool
-  Gₛ, Gₜ = graph(dom(F)), graph(codom(F))
-  pathₛ, pathₜ = enumerate_paths.([Gₛ, Gₜ])
-
-  function connected_nonempty_slice(t::Int)::Bool
-    paths_into_t = incident(pathₜ, t, :tgt)
-    # Generate slice objects
-    ob_slice = Pair{Int,Vector{Int}}[] # s ∈Ob(S) and a path ∈ T(F(s), t)
-    for s in vertices(Gₛ)
-      paths_s_to_t = incident(pathₜ, ob_map(F,s), :src) ∩ paths_into_t
-      append!(ob_slice, [s => pathₜ[p, :eprops] for p in paths_s_to_t])
-    end
-
-    # Empty case
-    if isempty(ob_slice)
-      return false
-    end
-
-    """
-    For two slice objects (m,pₘ) and (n,pₙ) check for a morphism f ∈ S(M,N) such
-    that there is a commutative triangle pₘ = f;pₙ
-    """
-    function check_pair(i::Int, j::Int)::Bool
-      (m,pₘ), (n,pₙ) = ob_slice[i], ob_slice[j]
-      es = incident(pathₛ, m, :src) ∩ incident(pathₛ, n, :tgt)
-      paths = pathₛ[es, :eprops]
-      return any(f -> pₘ == vcat(edges.(hom_map(F,f))..., pₙ), paths)
-    end
-
-    # Use check_pair to determine pairwise connectivity
-    connected = IntDisjointSets(length(ob_slice)) # sym/trans/refl closure
-    obs = 1:length(ob_slice)
-    for (i,j) in Base.Iterators.product(obs, obs)
-      if !in_same_set(connected, i, j) && check_pair(i,j)
-        union!(connected, i, j)
-      end
-    end
-
-    return num_groups(connected) == 1
-  end
-
-  # Check for each t ∈ T whether F/t is connected
-  return all(connected_nonempty_slice, 1:nv(Gₜ))
-end
 
 # Mapping-based functors
 #-----------------------
@@ -445,6 +417,9 @@ Categories.do_hom_map(F::FinDomFunctorMap, f) = F.hom_map[f]
 
 collect_ob(F::FinDomFunctorMap) = values(F.ob_map)
 collect_hom(F::FinDomFunctorMap) = values(F.hom_map)
+
+op(F::FinDomFunctorMap) = FinDomFunctorMap(F.ob_map, F.hom_map,
+                                           op(dom(F)), op(codom(F)))
 
 """ Force evaluation of lazily defined function or functor.
 """
@@ -563,6 +538,9 @@ component(α::FinTransformationMap, expr::GATExpr{:generator}) =
 
 components(α::FinTransformationMap) = α.components
 
+op(α::FinTransformationMap) = FinTransformationMap(components(α),
+                                                   op(codom(α)), op(dom(α)))
+
 function Categories.do_compose(α::FinTransformationMap, β::FinTransformation)
   F = dom(α)
   D = codom(F)
@@ -591,6 +569,59 @@ function Base.show(io::IO, α::FinTransformationMap)
   print(io, ", ")
   Categories.show_domains(io, dom(α))
   print(io, ")")
+end
+
+# Initial functors
+##################
+
+"""
+Dual to a [final functor](https://ncatlab.org/nlab/show/final+functor), an
+*initial functor* is one for which pulling back diagrams along it does not
+change the limits of these diagrams.
+
+This amounts to checking, for a functor C->D, that, for every object d in
+Ob(D), the comma category (F/d) is connected.
+"""
+function is_initial(F::FinFunctor)::Bool
+  Gₛ, Gₜ = graph(dom(F)), graph(codom(F))
+  pathₛ, pathₜ = enumerate_paths.([Gₛ, Gₜ])
+
+  function connected_nonempty_slice(t::Int)::Bool
+    paths_into_t = incident(pathₜ, t, :tgt)
+    # Generate slice objects
+    ob_slice = Pair{Int,Vector{Int}}[] # s ∈ Ob(S) and a path ∈ T(F(s), t)
+    for s in vertices(Gₛ)
+      paths_s_to_t = incident(pathₜ, ob_map(F,s), :src) ∩ paths_into_t
+      append!(ob_slice, [s => pathₜ[p, :eprops] for p in paths_s_to_t])
+    end
+
+    # Empty case
+    isempty(ob_slice) && return false
+
+    """
+    For two slice objects (m,pₘ) and (n,pₙ) check for a morphism f ∈ S(M,N) such
+    that there is a commutative triangle pₘ = f;pₙ
+    """
+    function check_pair(i::Int, j::Int)::Bool
+      (m,pₘ), (n,pₙ) = ob_slice[i], ob_slice[j]
+      es = incident(pathₛ, m, :src) ∩ incident(pathₛ, n, :tgt)
+      paths = pathₛ[es, :eprops]
+      return any(f -> pₘ == vcat(edges.(hom_map(F,f))..., pₙ), paths)
+    end
+
+    # Use check_pair to determine pairwise connectivity
+    connected = IntDisjointSets(length(ob_slice)) # sym/trans/refl closure
+    obs = 1:length(ob_slice)
+    for (i,j) in Base.Iterators.product(obs, obs)
+      if !in_same_set(connected, i, j) && check_pair(i,j)
+        union!(connected, i, j)
+      end
+    end
+    return num_groups(connected) == 1
+  end
+
+  # Check for each t ∈ T whether F/t is connected
+  return all(connected_nonempty_slice, 1:nv(Gₜ))
 end
 
 # Dict utilities

@@ -14,7 +14,8 @@ presented categories are provided by another module, [`FinCats`](@ref).
 """
 module Categories
 export Cat, TypeCat, Functor, Transformation, dom, codom, compose, id,
-  ob, hom, is_hom_equal, ob_map, hom_map, dom_ob, codom_ob, component
+  ob, hom, is_hom_equal, ob_map, hom_map, dom_ob, codom_ob, component,
+  OppositeCat, op, co
 
 using AutoHashEquals
 
@@ -24,6 +25,20 @@ import ...Theories: Category2, ob, hom, dom, codom, compose, ⋅, ∘, id,
 
 # Categories
 ############
+
+""" Size of a category, used for dispatch and subtyping purposes.
+
+A [`Cat`](@ref) type having a particular `CatSize` means that categories of that
+type are *at most* that large.
+"""
+abstract type CatSize end
+
+""" Size of a large category, such as Set.
+
+To the extent that they form a category, we regard Julia types and functions
+([`TypeCat`](@ref)) as forming a large category.
+"""
+struct LargeCatSize <: CatSize end
 
 """ Abstract base type for a category.
 
@@ -38,7 +53,7 @@ in the graph.
 The basic operations available in any category are: [`dom`](@ref),
 [`codom`](@ref), [`id`](@ref), [`compose`](@ref).
 """
-abstract type Cat{Ob,Hom} end
+abstract type Cat{Ob,Hom,Size<:CatSize} end
 
 """ Coerce or look up object in category.
 """
@@ -80,7 +95,7 @@ is_hom_equal(f, g) = f == g
 The Julia types should form an `@instance` of the theory of categories
 (`Theories.Category`).
 """
-struct TypeCat{Ob,Hom} <: Cat{Ob,Hom} end
+struct TypeCat{Ob,Hom} <: Cat{Ob,Hom,LargeCatSize} end
 
 TypeCat(Ob::Type, Hom::Type) = TypeCat{Ob,Hom}()
 
@@ -170,6 +185,25 @@ function show_domains(io::IO, f; domain::Bool=true, codomain::Bool=true,
     end
   end
 end
+
+# Callables
+#----------
+
+Functor(f::Function, g::Function, C::Cat, D::Cat) = FunctorCallable(f, g, C, D)
+
+""" Functor defined by two Julia callables, an object map and a morphism map.
+"""
+@auto_hash_equals struct FunctorCallable{Dom,Codom} <: Functor{Dom,Codom}
+  ob_map::Any
+  hom_map::Any
+  dom::Dom
+  codom::Codom
+end
+
+dom(F::FunctorCallable) = F.dom
+codom(F::FunctorCallable) = F.codom
+do_ob_map(F::FunctorCallable, x) = F.ob_map(x)
+do_hom_map(F::FunctorCallable, f) = F.hom_map(f)
 
 # Instances
 #----------
@@ -307,5 +341,90 @@ function do_composeH(α::Transformation, β::Transformation,
   F, K = dom(α), codom(β)
   compose_id(composeH_id(F, β), composeH_id(α, K))
 end
+
+# Oppositization 2-functor
+#-------------------------
+
+""" Opposite category, where morphism are reversed.
+
+Call `op(::Cat)` instead of directly instantiating this type.
+"""
+@auto_hash_equals struct OppositeCat{Ob,Hom,Size<:CatSize,C<:Cat{Ob,Hom,Size}} <:
+    Cat{Ob,Hom,Size}
+  cat::C
+end
+
+ob(C::OppositeCat, x) = ob(C.cat, x)
+hom(C::OppositeCat, f) = hom(C.cat, f)
+
+dom(C::OppositeCat, f) = codom(C.cat, f)
+codom(C::OppositeCat, f) = dom(C.cat, f)
+id(C::OppositeCat, x) = id(C.cat, x)
+compose(C::OppositeCat, f, g) = compose(C.cat, g, f)
+
+""" Opposite functor, given by the same mapping between opposite categories.
+
+Call `op(::Functor)` instead of directly instantiating this type.
+"""
+@auto_hash_equals struct OppositeFunctor{C,D,F<:Functor{C,D}} <: Functor{C,D}
+    # XXX: Requires more type parameters: ObC, HomC, ObD, HomD.
+    #Functor{OppositeCat{C},OppositeCat{D}}
+  func::F
+end
+
+dom(F::OppositeFunctor) = op(dom(F.func))
+codom(F::OppositeFunctor) = op(codom(F.func))
+
+do_ob_map(F::OppositeFunctor, x) = ob_map(F.func, x)
+do_hom_map(F::OppositeFunctor, f) = hom_map(F.func, f)
+
+do_compose(F::OppositeFunctor, G::OppositeFunctor) =
+  OppositeFunctor(do_compose(F.func, G.func))
+
+#= Not yet needed because the only natural transformations we currently support
+#are `FinTransformationMap`, for which can just implement `op` directly.
+
+""" Opposite natural transformation between opposite functors.
+
+Call `op(::Transformation)` instead of directly instantiating this type.
+"""
+@auto_hash_equals struct OppositeTransformation{C,D,F,G,T<:Transformation{C,D,F,G}} <: Transformation{C,D,F,G}
+    # XXX: Requires more type parameters: ObC, HomC, ObD, HomD.
+    #Transformation{OppositeCat{C},OppositeCat{D},OppositeFunctor{C,D,G},OppositeFunctor{C,D,F}}
+  trans::T
+end
+
+dom(α::OppositeTransformation) = op(codom(α.trans))
+codom(α::OppositeTransformation) = op(dom(α.trans))
+
+component(α::OppositeTransformation, x) = component(α.trans, x)
+
+do_compose(α::OppositeTransformation, β::OppositeTransformation) =
+  OppositeTransformation(do_compose(β.trans, α.trans))
+do_composeH(α::OppositeTransformation, β::OppositeTransformation) =
+  OppositeTransformation(do_composeH(α.trans, β.trans))
+do_composeH(F::OppositeFunctor, β::OppositeTransformation) =
+  OppositeTransformation(do_composeH(F.func, β.trans))
+do_composeH(α::OppositeTransformation, H::OppositeFunctor) =
+  OppositeTransformation(do_composeH(α.trans, H.func))
+=#
+
+""" Oppositization 2-functor.
+
+The oppositization endo-2-functor on Cat, sending a category to its opposite, is
+covariant on objects and morphisms and contravariant on 2-morphisms, i.e., is a
+2-functor ``op: Catᶜᵒ → Cat``. For more explanation, see the
+[nLab](https://ncatlab.org/nlab/show/opposite+category).
+"""
+op(C::Cat) = OppositeCat(C)
+op(F::Functor) = OppositeFunctor(F)
+#op(α::Transformation) = OppositeTransformation(α)
+op(C::OppositeCat) = C.cat
+op(F::OppositeFunctor) = F.func
+#op(α::OppositeTransformation) = α.trans
+
+""" 2-cell dual of a 2-category.
+"""
+function co end
 
 end

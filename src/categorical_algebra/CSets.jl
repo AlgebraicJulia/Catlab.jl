@@ -875,6 +875,11 @@ function unpack_diagram(diag::Union{FreeDiagram{ACS},BipartiteFreeDiagram{ACS}};
   names = all ? flatten((ob(S), attrtype(S))) : ob(S)
   NamedTuple(c => map(diag, Ob=X->SetOb(X,c), Hom=α->α[c]) for c in names)
 end
+function unpack_diagram(F::Functor{<:FinCat,<:TypeCat{ACS}};
+                        all::Bool=false) where {S, ACS <: StructACSet{S}}
+  names = all ? flatten((ob(S), attrtype(S))) : ob(S)
+  NamedTuple(c => map(F, X->SetOb(X,c), α->α[c]) for c in names)
+end
 
 """ Vector of C-sets → named tuple of vectors of sets.
 """
