@@ -453,17 +453,17 @@ end
                    tgts::AbstractVector{Int}; kw...) =
   add_half_edge_pairs!(g, srcs, tgts; kw...)
 
-function add_half_edge_pair!(g::AbstractHalfEdgeGraph, src::Int, tgt::Int; kw...)
-  k = nparts(g, :H)
-  add_parts!(g, :H, 2; vertex=[src,tgt], inv=[k+2,k+1], kw...)
-end
+add_half_edge_pair!(g::AbstractHalfEdgeGraph, src::Int, tgt::Int; kw...) =
+  add_half_edge_pairs!(g, src:src, tgt:tgt; kw...)
 
 function add_half_edge_pairs!(g::AbstractHalfEdgeGraph, srcs::AbstractVector{Int},
                               tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
-  k = nparts(g, :H)
-  add_parts!(g, :H, 2n; vertex=vcat(srcs,tgts),
-             inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
+  hs  = add_parts!(g, :H, n; vertex=srcs, kw...)
+  hs′ = add_parts!(g, :H, n; vertex=tgts, kw...)
+  set_subpart!(g, hs, :inv, hs′)
+  set_subpart!(g, hs′, :inv, hs)
+  first(hs):last(hs′)
 end
 
 """ Add a dangling edge to a half-edge graph.
