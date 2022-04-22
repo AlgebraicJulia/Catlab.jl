@@ -263,9 +263,11 @@ add_edge!(g::AbstractSymmetricGraph, src::Int, tgt::Int; kw...) =
 function add_edges!(g::AbstractSymmetricGraph, srcs::AbstractVector{Int},
                     tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
-  k = nparts(g, :E)
-  add_parts!(g, :E, 2n; src=vcat(srcs,tgts), tgt=vcat(tgts,srcs),
-             inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
+  edges1 = add_parts!(g, :E, n; src=srcs, tgt=tgts, kw...)
+  edges2 = add_parts!(g, :E, n; src=tgts, tgt=srcs, kw...)
+  set_subpart!(g, edges1, :inv, edges2)
+  set_subpart!(g, edges2, :inv, edges1)
+  first(edges1):last(edges2)
 end
 
 function rem_vertices!(g::AbstractSymmetricGraph, vs; keep_edges::Bool=false)
@@ -374,9 +376,11 @@ add_edge!(g::AbstractSymmetricReflexiveGraph, src::Int, tgt::Int; kw...) =
 function add_edges!(g::AbstractSymmetricReflexiveGraph,
                     srcs::AbstractVector{Int}, tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
-  k = nparts(g, :E)
-  add_parts!(g, :E, 2n; src=vcat(srcs,tgts), tgt=vcat(tgts,srcs),
-             inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
+  edges1 = add_parts!(g, :E, n; src=srcs, tgt=tgts, kw...)
+  edges2 = add_parts!(g, :E, n; src=tgts, tgt=srcs, kw...)
+  set_subpart!(g, edges1, :inv, edges2)
+  set_subpart!(g, edges2, :inv, edges1)
+  first(edges1):last(edges2)
 end
 
 function rem_vertices!(g::AbstractSymmetricReflexiveGraph, vs;
