@@ -17,6 +17,7 @@ export HasVertices, HasGraph,
   AbstractSymmetricReflexiveGraph, SymmetricReflexiveGraph,
   AbstractHalfEdgeGraph, HalfEdgeGraph, vertex, half_edges,
   add_dangling_edge!, add_dangling_edges!,
+  AbstractLabeledGraph, LabeledGraph,
   AbstractWeightedGraph, WeightedGraph, weight,
   AbstractSymmetricWeightedGraph, SymmetricWeightedGraph
 
@@ -496,6 +497,26 @@ rem_edge!(g::AbstractHalfEdgeGraph, src::Int, tgt::Int) =
 rem_edge!(g::AbstractHalfEdgeGraph, h::Int) = rem_edges!(g, h:h)
 rem_edges!(g::AbstractHalfEdgeGraph, hs) =
   rem_parts!(g, :H, unique!(sort!([hs; inv(g, hs)])))
+
+# Labeled graphs
+################
+
+@present TheoryLabeledGraph <: TheoryGraph begin
+  Label::AttrType
+  label::Attr(V,Label)
+end
+
+""" Abstract type for labeled graphs.
+"""
+@abstract_acset_type AbstractLabeledGraph <: AbstractGraph
+
+""" A labeled graph.
+
+By convention, a "labeled graph" without qualification is a vertex-labeled
+graph. We do not require that the label be unique, and in this data type, the
+label attribute is not indexed.
+"""
+@acset_type LabeledGraph(TheoryLabeledGraph, index=[:src,:tgt]) <: AbstractLabeledGraph
 
 # Weighted graphs
 #################

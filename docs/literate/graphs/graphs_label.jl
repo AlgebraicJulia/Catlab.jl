@@ -25,7 +25,9 @@ to_graphviz(Catlab.Graphs.BasicGraphs.TheoryGraph)
   label::Hom(V,L)
 end
 
-# Catlab will automatically generate all the data structure and algorithms (storing, mutating, serializing, etc.) our `LGraphs` for us. This snippet declares that the Julia type `LGraph` should be composed of objects of the functor category `TheoryLGraph → Skel(FinSet)`, where `Skel(FinSet)` is the subcategory of Set containing finite sets `1:n`. We want our Julia type `LGraph` to inherit from the Graphs.jl type `AbstractGraph` so that we can run graph algorithms on it. And we want the generated data structures to make an index of the maps `src`, `tgt`, and `label` so that looking up the in and outneighbors of vertex is fast and accessing all vertices by label is also fast.  
+# Catlab will automatically generate all the data structure and algorithms (storing, mutating, serializing, etc.) our `LGraphs` for us. This snippet declares that the Julia type `LGraph` should be composed of objects of the functor category `TheoryLGraph → Skel(FinSet)`, where `Skel(FinSet)` is the subcategory of Set containing finite sets of form `1:n`. We want our Julia type `LGraph` to inherit from the type `AbstractGraph` so that we can run graph algorithms on it. And we want the generated data structures to make an index of the maps `src`, `tgt`, and `label` so that looking up the in and outneighbors of vertex is fast and accessing all vertices by label is also fast.
+#
+# **Note**: This schema differs from that of `LabeledGraph` in `Catlab.Graphs` by making the label type an object (`Ob`) rather than attribute type (`AttrType`). In this case, the set of labels can vary from instance to instance and homomorphisms can rename labels; in the other case, the set of labels is fixed by a Julia type, such as `Int` or `Symbol`, and label values must be strictly preserved homomorphisms. The graph theory literature does not always distinguish very carefully between these two cases.
 
 @acset_type LGraph(TheoryLGraph, index=[:src,:tgt,:label]) <: AbstractGraph
 

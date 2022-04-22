@@ -8,7 +8,7 @@ import MetaGraphs
 const LG, MG = SimpleGraphs, MetaGraphs
 
 using Catlab, Catlab.CategoricalAlgebra, Catlab.Graphs
-using Catlab.Graphs.BasicGraphs: TheoryGraph
+using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryLabeledGraph
 using Catlab.WiringDiagrams: query
 using Catlab.Programs: @relation
 
@@ -304,13 +304,8 @@ bench = SUITE["LabeledGraph"] = BenchmarkGroup()
 clbench = bench["Catlab"] = BenchmarkGroup()
 lgbench = bench["LightGraphs"] = BenchmarkGroup()
 
-@present TheoryLabeledGraph <: TheoryGraph begin
-  Label::AttrType
-  label::Attr(V,Label)
-end
-@acset_type LabeledGraph(TheoryLabeledGraph, index=[:src,:tgt]) <: AbstractGraph
 @acset_type IndexedLabeledGraph(TheoryLabeledGraph, index=[:src,:tgt],
-                                unique_index=[:label]) <: AbstractGraph
+                                unique_index=[:label]) <: AbstractLabeledGraph
 
 function discrete_labeled_graph(n::Int; indexed::Bool=false)
   g = (indexed ? IndexedLabeledGraph{String} : LabeledGraph{String})()

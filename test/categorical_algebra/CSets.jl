@@ -394,12 +394,6 @@ C₅, C₆ = cycle_graph(SymmetricGraph, 5), cycle_graph(SymmetricGraph, 6)
 # Labeled graphs
 #---------------
 
-@present TheoryLabeledGraph <: TheoryGraph begin
-  Label::AttrType
-  label::Attr(V,Label)
-end
-@acset_type LabeledGraph(TheoryLabeledGraph, index=[:src,:tgt]) <: AbstractGraph
-
 g = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:c,:d],))
 h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:c,:d,:a,:b],))
 α = ACSetTransformation((V=[3,4,1,2], E=[3,4,1,2]), g, h)
