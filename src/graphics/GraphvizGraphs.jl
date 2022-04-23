@@ -139,7 +139,7 @@ end
 
 A simple default style is applied. For more control over the visual appearance,
 first convert the graph to a property graph, define the Graphviz attributes as
-needed, and then convert to a Graphviz graph.
+needed, and finally convert the property graph to a Graphviz graph.
 """
 function to_graphviz(g::HasGraph; kw...)
   to_graphviz(to_graphviz_property_graph(g; kw...))
@@ -148,14 +148,9 @@ end
 function to_graphviz_property_graph(g::AbstractGraph;
     prog::AbstractString="dot", graph_attrs::AbstractDict=Dict(),
     node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
-    node_labels::Bool=false, edge_labels::Bool=false)
-  node_labeler(v) = Dict(:label => node_labels ? string(v) : "")
-  edge_labeler(e) = if edge_labels
-    Dict(:label => string(e))
-  else
-    Dict{Symbol,String}()
-  end
-  PropertyGraph{Any}(g, node_labeler, edge_labeler;
+    node_labels::Union{Symbol,Bool}=false, edge_labels::Union{Symbol,Bool}=false)
+  PropertyGraph{Any}(g, v -> node_label(g, node_labels, v),
+                     e -> edge_label(g, edge_labels, e);
     prog = prog,
     graph = merge!(Dict(:rankdir => "LR"), graph_attrs),
     node = merge!(default_node_attrs(node_labels), node_attrs),
@@ -163,12 +158,17 @@ function to_graphviz_property_graph(g::AbstractGraph;
   )
 end
 
-default_node_attrs(show_labels::Bool) = Dict(
-  :shape => show_labels ? "circle" : "point",
-  :width => "0.05",
-  :height => "0.05",
-  :margin => "0",
-)
+node_label(g, name::Symbol, v::Int) = Dict(:label => string(g[v, name]))
+node_label(g, labels::Bool, v::Int) = Dict(:label => labels ? string(v) : "")
+
+edge_label(g, name::Symbol, e::Int) = Dict(:label => string(g[e, name]))
+edge_label(g, labels::Bool, e::Int) =
+  labels ? Dict(:label => string(e)) : Dict{Symbol,String}()
+
+function default_node_attrs(labels::Union{Symbol,Bool})
+  shape = labels isa Symbol ? "ellipse" : (labels ? "circle" : "point")
+  Dict(:shape => shape, :width => "0.05", :height => "0.05", :margin => "0")
+end
 
 # Symmetric graphs
 ##################
@@ -176,20 +176,25 @@ default_node_attrs(show_labels::Bool) = Dict(
 function to_graphviz_property_graph(g::AbstractSymmetricGraph;
     prog::AbstractString="neato", graph_attrs::AbstractDict=Dict(),
     node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
-    node_labels::Bool=false, edge_labels::Bool=false)
-  node_labeler(v) = Dict(:label => node_labels ? string(v) : "")
-  edge_labeler(e) = if edge_labels
-    e′ = inv(g,e)
-    Dict(:label => "($(min(e,e′)),$(max(e,e′)))")
-  else
-    Dict{Symbol,String}()
-  end
-  SymmetricPropertyGraph{Any}(g, node_labeler, edge_labeler;
+    node_labels::Union{Symbol,Bool}=false, edge_labels::Union{Symbol,Bool}=false)
+  SymmetricPropertyGraph{Any}(g, v -> node_label(g, node_labels, v),
+                              e -> symmetric_edge_label(g, edge_labels, e);
     prog = prog,
     graph = graph_attrs,
     node = merge!(default_node_attrs(node_labels), node_attrs),
     edge = merge!(Dict(:len => "0.5"), edge_attrs),
   )
+end
+
+symmetric_edge_label(g, name::Symbol, e::Int) = edge_label(g, name, e)
+
+function symmetric_edge_label(g, labels::Bool, e::Int)
+  if labels
+    e′ = inv(g,e)
+    Dict(:label => (e == e′ ? string(e) : "($(min(e,e′)),$(max(e,e′)))"))
+  else
+    Dict{Symbol,String}()
+  end
 end
 
 # Reflexive graphs
@@ -198,23 +203,24 @@ end
 function to_graphviz_property_graph(g::AbstractReflexiveGraph;
     prog::AbstractString="dot", graph_attrs::AbstractDict=Dict(),
     node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
-    node_labels::Bool=false, edge_labels::Bool=false,
+    node_labels::Union{Symbol,Bool}=false, edge_labels::Union{Symbol,Bool}=false,
     show_reflexive::Bool=false)
   pg = PropertyGraph{Any}(; prog = prog,
     graph = graph_attrs,
     node = merge!(default_node_attrs(node_labels), node_attrs),
     edge = merge!(Dict(:arrowsize => "0.5"), edge_attrs),
   )
+  add_vertices!(pg, nv(g))
   for v in vertices(g)
-    add_vertex!(pg, label=node_labels ? string(v) : "")
+    set_vprops!(pg, v, node_label(g, node_labels, v))
   end
   reflexive_edges = Set(refl(g))
   for e in edges(g)
     is_reflexive = e ∈ reflexive_edges
     if show_reflexive || !is_reflexive
       e′ = add_edge!(pg, src(g,e), tgt(g,e))
-      if is_reflexive; set_eprop!(pg, e′, :style, "dashed") end
-      if edge_labels; set_eprop!(pg, e′, :label, string(e)) end
+      is_reflexive && set_eprop!(pg, e′, :style, "dashed")
+      set_eprops!(pg, e′, edge_label(g, edge_labels, e))
     end
   end
   pg
@@ -226,25 +232,24 @@ end
 function to_graphviz_property_graph(g::AbstractSymmetricReflexiveGraph;
     prog::AbstractString="neato", graph_attrs::AbstractDict=Dict(),
     node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
-    node_labels::Bool=false, edge_labels::Bool=false,
+    node_labels::Union{Symbol,Bool}=false, edge_labels::Union{Symbol,Bool}=false,
     show_reflexive::Bool=false)
   pg = SymmetricPropertyGraph{Any}(; prog = prog,
     graph = graph_attrs,
     node = merge!(default_node_attrs(node_labels), node_attrs),
     edge = merge!(Dict(:len => "0.5"), edge_attrs),
   )
+  add_vertices!(pg, nv(g))
   for v in vertices(g)
-    add_vertex!(pg, label=node_labels ? string(v) : "")
+    set_vprops!(pg, v, node_label(g, node_labels, v))
   end
   reflexive_edges = Set(refl(g))
   for e in edges(g)
     is_reflexive = e ∈ reflexive_edges
-    if is_reflexive && show_reflexive
-      e′ = add_edge!(pg, src(g,e), tgt(g,e), style="dashed")
-      if edge_labels; set_eprop!(pg, e′, :label, string(e)) end
-    elseif !is_reflexive && e <= inv(g,e)
-      e′ = add_edge!(pg, src(g,e), tgt(g,e))
-      if edge_labels; set_eprop!(pg, e′, :label, "($e,$(inv(g,e)))") end
+    if (is_reflexive ? show_reflexive : e <= inv(g,e))
+      e′ = first(add_edge!(pg, src(g,e), tgt(g,e)))
+      is_reflexive && set_eprop!(pg, e′, :style, "dashed")
+      set_eprops!(pg, e′, symmetric_edge_label(g, edge_labels, e))
     end
   end
   pg
@@ -259,7 +264,7 @@ to_graphviz(g::AbstractHalfEdgeGraph; kw...) =
 function to_graphviz_property_graph(g::AbstractHalfEdgeGraph;
     prog::AbstractString="neato", graph_attrs::AbstractDict=Dict(),
     node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
-    node_labels::Bool=false, edge_labels::Bool=false)
+    node_labels::Union{Symbol,Bool}=false, edge_labels::Union{Symbol,Bool}=false)
   pg = SymmetricPropertyGraph{Any}(; prog = prog,
     graph = graph_attrs,
     node = merge!(default_node_attrs(node_labels), node_attrs),
@@ -272,12 +277,12 @@ function to_graphviz_property_graph(g::AbstractHalfEdgeGraph;
     if e == inv(g,e)
       # Dangling half-edge: add an invisible vertex.
       v = add_vertex!(pg, style="invis", shape="none", label="")
-      e′ = add_edge!(pg, vertex(g,e), v)
-      if edge_labels; set_eprop!(pg, e′, :label, string(e)) end
+      e′ = first(add_edge!(pg, vertex(g,e), v))
+      set_eprops!(pg, e′, symmetric_edge_label(g, edge_labels, e))
     elseif e < inv(g,e)
       # Pair of distict half-edges: add a standard edge.
-      e′ = add_edge!(pg, vertex(g,e), vertex(g,inv(g,e)))
-      if edge_labels; set_eprop!(pg, e′, :label, "($e,$(inv(g,e)))") end
+      e′ = first(add_edge!(pg, vertex(g,e), vertex(g,inv(g,e))))
+      set_eprops!(pg, e′, symmetric_edge_label(g, edge_labels, e))
     end
   end
   pg
