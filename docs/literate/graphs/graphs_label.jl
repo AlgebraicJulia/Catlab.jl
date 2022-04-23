@@ -1,4 +1,4 @@
-# # Labelled Graphs
+# # Labeled Graphs
 # This example demonstrates how to define new C-Sets from existing C-Sets via the example of adding labels to a graph. We treat labels as members of an arbitrary FinSet of labels rather than a data attribute for pedagogical reasons. When you think of graphs where the labels are numbers, colors, or values of some kind, you would want to make them attributes. The motivation for this example is to be the simplest extension to the theory of graphs that you could possibly make. 
 
 using Catlab, Catlab.Theories
@@ -133,7 +133,7 @@ A₀ = to_graph(A)
 homsᵥ(A₀, A₀)
 
 # ## Limits and Composition by Multiplication
-# Catlab has an implementation of limits for any C-Sets over any schema. So, we can just ask about labelled graphs. Notice that we get more distinct colors in the product than in either initial graph. This is because the labels of the product are pairs of labels from the factors. If `G` has `n` colors and `H` has `m` colors `G×H` will have `n×m` colors.
+# Catlab has an implementation of limits for any C-Sets over any schema. So, we can just ask about labeled graphs. Notice that we get more distinct colors in the product than in either initial graph. This is because the labels of the product are pairs of labels from the factors. If `G` has `n` colors and `H` has `m` colors `G×H` will have `n×m` colors.
 draw(apex(product(G,G)))
 
 # The graph above looks weirdly disconnected and probably wasn't what you expected to see as the product. When we compose with products, we often want to add the reflexive edges in order to get the expected notion of product.

@@ -65,19 +65,19 @@ m=ACSetTransformation(LWD.diagram, GWD.diagram, Box=[1,2],InPort=[2],OutPort=[1]
   dec::Attr(E,X)
 end
 
-@present TheoryLabelledDecGraph <: TheoryDecGraph begin
+@present TheoryLabeledDecGraph <: TheoryDecGraph begin
   label::Attr(V,X)
 end
 
-@acset_type LabelledDecGraph(TheoryLabelledDecGraph, index=[:src,:tgt])
+@acset_type LabeledDecGraph(TheoryLabeledDecGraph, index=[:src,:tgt])
 
-aI2 = @acset LabelledDecGraph{String} begin
+aI2 = @acset LabeledDecGraph{String} begin
   V = 2
   E = 0
   label = ["a","b"]
 end
 
-aarr = @acset LabelledDecGraph{String} begin
+aarr = @acset LabeledDecGraph{String} begin
   V = 2
   E = 1
   src = [1]
@@ -86,7 +86,7 @@ aarr = @acset LabelledDecGraph{String} begin
   label = ["a","b"]
 end
 
-abiarr = @acset LabelledDecGraph{String} begin
+abiarr = @acset LabeledDecGraph{String} begin
   V = 2
   E = 2
   src = [1,2]
@@ -95,7 +95,7 @@ abiarr = @acset LabelledDecGraph{String} begin
   label = ["a","b"]
 end
 
-aspan = @acset LabelledDecGraph{String} begin
+aspan = @acset LabeledDecGraph{String} begin
   V = 3
   E = 2
   src = [1,1]
@@ -104,7 +104,7 @@ aspan = @acset LabelledDecGraph{String} begin
   label = ["a","b","c"]
 end
 
-expected = @acset LabelledDecGraph{String} begin
+expected = @acset LabeledDecGraph{String} begin
   V = 3
   E = 3
   src = [1,1,2]

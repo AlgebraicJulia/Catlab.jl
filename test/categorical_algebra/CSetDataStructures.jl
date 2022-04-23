@@ -410,13 +410,13 @@ h2 = map(g, X = f)
 @test typeof(h1).super.parameters[2] == Tuple{Int}
 @test subpart(h1,:dec) == f.(["a","b","c","d"])
 
-@present TheoryLabelledDecGraph <: TheoryDecGraph begin
+@present TheoryLabeledDecGraph <: TheoryDecGraph begin
   label::Attr(V,X)
 end
 
-@acset_type LabelledDecGraph(TheoryLabelledDecGraph, index=[:src,:tgt])
+@acset_type LabeledDecGraph(TheoryLabeledDecGraph, index=[:src,:tgt])
 
-g = @acset LabelledDecGraph{String} begin
+g = @acset LabeledDecGraph{String} begin
   V = 4
   E = 4
 
