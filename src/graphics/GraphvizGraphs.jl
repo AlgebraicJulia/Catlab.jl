@@ -1,7 +1,7 @@
 """ Graphviz support for Catlab's graph types.
 """
 module GraphvizGraphs
-export parse_graphviz, to_graphviz
+export parse_graphviz, to_graphviz, to_graphviz_property_graph
 
 using StaticArrays: StaticVector, SVector
 
@@ -145,6 +145,12 @@ function to_graphviz(g::HasGraph; kw...)
   to_graphviz(to_graphviz_property_graph(g; kw...))
 end
 
+""" Convert graph or other structure to a property graph suitable for Graphviz.
+
+This function is an intermediate step in many methods of the generic function
+[`to_graphviz`](@ref), but can be useful in its own right for customizing the
+Graphviz graph beyond whatever options are supported by [`to_graphviz`](@ref).
+"""
 function to_graphviz_property_graph(g::AbstractGraph;
     prog::AbstractString="dot", graph_attrs::AbstractDict=Dict(),
     node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),

@@ -44,11 +44,11 @@ end
 
 # Graphviz doesn't automatically know how we want to draw the labels, so we have to explicitly provide code that converts them to colors on the vertices. Note that we aren't calling these colored graphs, because that would imply some connectivity constraints on which vertices are allowed to be colored with the same colors. These labels are arbitrary, but we use color to visually encode them.
 GraphvizGraphs.to_graphviz(g::LGraph; kw...) =
-  to_graphviz(GraphvizGraphs.to_graphviz_property_graph(g; kw...))
+  to_graphviz(to_graphviz_property_graph(g; kw...))
 
 function GraphvizGraphs.to_graphviz_property_graph(g::LGraph; kw...)
   h = to_graph(g)
-  pg = GraphvizGraphs.to_graphviz_property_graph(h; kw...)
+  pg = to_graphviz_property_graph(h; kw...)
   vcolors = hex.(range(colorant"#0021A5", stop=colorant"#FA4616", length=nparts(g, :L)))
   for v in vertices(g)
     l = g[v, :label]

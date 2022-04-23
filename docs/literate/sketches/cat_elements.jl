@@ -22,7 +22,7 @@ else
 end
 
 function draw(f::Elements; kw...)
-  pg = GraphvizGraphs.to_graphviz_property_graph(graph(f);
+  pg = to_graphviz_property_graph(graph(f);
     node_labels=true, edge_labels=true, prog="neato", kw...)
   vcolors = safecolors(colorant"#0021A5", colorant"#FA4616", nparts(f, :Ob))
   ecolors = safecolors(colorant"#6C9AC3", colorant"#E28F41", nparts(f, :Hom))

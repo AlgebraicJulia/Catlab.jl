@@ -1,7 +1,7 @@
 """ Graphviz drawing of categories, functors, diagrams, and related structures.
 """
 module GraphvizCategories
-export to_graphviz
+export to_graphviz, to_graphviz_property_graph
 
 using ...Syntax, ...Present, ...Theories
 using ...CategoricalAlgebra, ...Graphs, ..GraphvizGraphs
