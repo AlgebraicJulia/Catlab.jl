@@ -17,13 +17,15 @@ draw(g) = to_graphviz(g, node_labels=true, edge_labels=true)
   tgt::Hom(E,V)
 end
 
-to_graphviz(Catlab.Graphs.BasicGraphs.TheoryGraph)
+to_graphviz(TheoryGraph)
 
 # To the theory of graphs we want to add a set of labels `L` and map that assigns to every vertex to its label in `L`.
 @present TheoryLGraph <: TheoryGraph begin
   L::Ob
   label::Hom(V,L)
 end
+
+to_graphviz(TheoryLGraph)
 
 # Catlab will automatically generate all the data structure and algorithms (storing, mutating, serializing, etc.) our `LGraphs` for us. This snippet declares that the Julia type `LGraph` should be composed of objects of the functor category `TheoryLGraph → Skel(FinSet)`, where `Skel(FinSet)` is the subcategory of Set containing finite sets of form `1:n`. We want our Julia type `LGraph` to inherit from the type `AbstractGraph` so that we can run graph algorithms on it. And we want the generated data structures to make an index of the maps `src`, `tgt`, and `label` so that looking up the in and outneighbors of vertex is fast and accessing all vertices by label is also fast.
 #
