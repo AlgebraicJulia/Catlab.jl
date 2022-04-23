@@ -21,11 +21,9 @@ else
   return [hex.(start)]
 end
 
-GraphvizGraphs.to_graphviz(f::Elements; kw...) =
-  to_graphviz(GraphvizGraphs.to_graphviz_property_graph(f; kw...))
-
-function GraphvizGraphs.to_graphviz_property_graph(f::Elements; kw...)
-  pg = GraphvizGraphs.to_graphviz_property_graph(graph(f); kw...)
+function draw(f::Elements; kw...)
+  pg = GraphvizGraphs.to_graphviz_property_graph(graph(f);
+    node_labels=true, edge_labels=true, prog="neato", kw...)
   vcolors = safecolors(colorant"#0021A5", colorant"#FA4616", nparts(f, :Ob))
   ecolors = safecolors(colorant"#6C9AC3", colorant"#E28F41", nparts(f, :Hom))
   for v in parts(f, :El)
@@ -36,7 +34,7 @@ function GraphvizGraphs.to_graphviz_property_graph(f::Elements; kw...)
     fe = f[e, :πₐ]
     set_eprops!(pg, e, Dict(:color => "#$(ecolors[fe])"))
   end
-  pg
+  to_graphviz(pg)
 end
 
 draw(g) = to_graphviz(g, node_labels=true, edge_labels=true, prog="neato")

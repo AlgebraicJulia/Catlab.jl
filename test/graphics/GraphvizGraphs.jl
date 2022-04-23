@@ -6,13 +6,7 @@ using Catlab.Graphs, Catlab.Graphics.GraphvizGraphs
 import Catlab.Graphics: Graphviz
 using Catlab.CategoricalAlgebra.Subobjects
 
-function stmts(graph::Graphviz.Graph, type::Type)
-  [ stmt for stmt in graph.stmts if stmt isa type ]
-end
-function stmts(graph::Graphviz.Graph, type::Type, attr::Symbol)
-  [ stmt.attrs[attr] for stmt in graph.stmts
-    if stmt isa type && haskey(stmt.attrs, attr) ]
-end
+const stmts = Graphviz.filter_statements
 
 # Property graphs
 #################
