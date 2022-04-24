@@ -18,10 +18,7 @@ end
 # Auto Calculation and Plotting
 # give a list of to and from graphs -> tests and plots them based on vertex/edge amounts
 function autoPlot(fromList, toList)
-    if length(fromList) != length(toList)
-        println("From and to lists should be the same size.")
-        return
-    end
+    length(fromList) == length(toList) || error("Arguments fromList and toList should be of equal lengths. fromList had a length of $(length(fromList)) and toList had a length of $(length(toList)).")
     println("Autoplotting Homs...\nTotal pairs: $(length(toList))")
     x1 = Int64[]
     y1 = Float64[]
@@ -52,10 +49,7 @@ end
 
 # Less accurate... Much faster.
 function quickPlot(fromList, toList)
-    if length(fromList) != length(toList)
-        println("From and to lists should be the same size.")
-        return
-    end
+    length(fromList) == length(toList) || error("Arguments fromList and toList should be of equal lengths. fromList had a length of $(length(fromList)) and toList had a length of $(length(toList)).")
     println("Autoplotting Homs...\nTotal pairs: $(length(toList))")
     x1 = Int64[]
     y1 = Float64[]
@@ -78,10 +72,7 @@ end
 
 # Generates and appends new graphs to the given list
 function autoGen(graphs, vertexLimit, edgeLimit)
-    if vertexLimit < 1 && edgeLimit < 1
-        println("autoGen() failed: There should be achievable limit parameters.")
-        return
-    end
+    vertexLimit >= 1 && edgeLimit >= 1 || error("Arguments vertexLimit and edgeLimit should be at least 1. Received vertexLimit $vertexLimit and edgeLimit $edgeLimit.")
     #keep original list length since it will change
     original = length(graphs)
     for i in 1:original
@@ -97,14 +88,8 @@ end
 # Generates and appends new graphs to the given lists - autoGen, but *plural*
 # It keeps the list sizes consistent and aligned.
 function autoGens(fromGraphs, toGraphs, vertexLimit, edgeLimit)
-    if vertexLimit < 1 && edgeLimit < 1
-        println("autoGens() failed: There should be achievable limit parameters.")
-        return
-    end
-    if length(fromGraphs) != length(toGraphs)
-        println("autoGens() failed: The graph lists must be of equal lengths.")
-        return
-    end
+    vertexLimit >= 1 && edgeLimit >= 1 || error("Arguments vertexLimit and edgeLimit should be at least 1. Received vertexLimit $vertexLimit and edgeLimit $edgeLimit.")
+    length(fromGraphs) == length(toGraphs) || error("Arguments fromGraphs and toGraphs should be of equal lengths. fromGraphs had a length of $(length(fromGraphs)) and toGraphs had a length of $(length(toGraphs)).")
     #keep original list length since it will change
     original = length(toGraphs)
     for i in 1:original
@@ -123,14 +108,8 @@ function autoGens(fromGraphs, toGraphs, vertexLimit, edgeLimit)
 end
 
 function autoShuffle(fromGraphs, toGraphs, vertexLimit, edgeLimit)
-    if vertexLimit < 1 && edgeLimit < 1
-        println("autoShuffle() failed: There should be achievable limit parameters.")
-        return
-    end
-    if length(fromGraphs) != length(toGraphs)
-        println("autoShuffle() failed: The graph lists must be of equal lengths.")
-        return
-    end
+    vertexLimit >= 1 && edgeLimit >= 1 || error("Arguments vertexLimit and edgeLimit should be at least 1. Received vertexLimit $vertexLimit and edgeLimit $edgeLimit.")
+    length(fromGraphs) == length(toGraphs) || error("Arguments fromGraphs and toGraphs should be of equal lengths. fromGraphs had a length of $(length(fromGraphs)) and toGraphs had a length of $(length(toGraphs)).")
     println("Shuffling...")
     #keep original list length since it will change
     original = length(toGraphs)
@@ -154,14 +133,8 @@ function autoShuffle(fromGraphs, toGraphs, vertexLimit, edgeLimit)
 end
 
 function autoShuffleThorough(fromGraphs, toGraphs, vertexLimit, edgeLimit)
-    if vertexLimit < 1 && edgeLimit < 1
-        println("autoShuffle() failed: There should be achievable limit parameters.")
-        return
-    end
-    if length(fromGraphs) != length(toGraphs)
-        println("autoShuffle() failed: The graph lists must be of equal lengths.")
-        return
-    end
+    vertexLimit >= 1 && edgeLimit >= 1 || error("Arguments vertexLimit and edgeLimit should be at least 1. Received vertexLimit $vertexLimit and edgeLimit $edgeLimit.")
+    length(fromGraphs) == length(toGraphs) || error("Arguments fromGraphs and toGraphs should be of equal lengths. fromGraphs had a length of $(length(fromGraphs)) and toGraphs had a length of $(length(toGraphs)).")
     # they should both be the same length
     for i in 1:length(fromGraphs)
         for j in 1:length(fromGraphs)
@@ -179,18 +152,9 @@ function autoShuffleThorough(fromGraphs, toGraphs, vertexLimit, edgeLimit)
 end
 
 function lightShuffle(fromGraphs, toGraphs, vertexLimit, edgeLimit, intensity)
-    if vertexLimit < 1 && edgeLimit < 1
-        println("lightShuffle() failed: There should be achievable limit parameters.")
-        return
-    end
-    if length(fromGraphs) != length(toGraphs)
-        println("lightShuffle() failed: The graph lists must be of equal lengths.")
-        return
-    end
-    if intensity >= length(fromGraphs)
-        println("lightShuffle() failed: Intensity must be less than the number of graphs per list.")
-        return
-    end
+    vertexLimit >= 1 && edgeLimit >= 1 || error("Arguments vertexLimit and edgeLimit should be at least 1. Received vertexLimit $vertexLimit and edgeLimit $edgeLimit.")
+    length(fromGraphs) == length(toGraphs) || error("Arguments fromGraphs and toGraphs should be of equal lengths. fromGraphs had a length of $(length(fromGraphs)) and toGraphs had a length of $(length(toGraphs)).")
+    intensity < length(fromGraphs) || error("Argument intensity should be less than length of lists fromGraphs and toGraphs. Received intensity $intensity and list length $(length(fromGraphs)).")
     println("Shuffling...")
     #keep original list length since it will change
     original = length(toGraphs)
