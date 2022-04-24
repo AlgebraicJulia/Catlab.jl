@@ -86,8 +86,6 @@ end
 function repeat1d(n::Int)
   res = @acset SSet begin
     V = 2 * n
-    #T = 2*(n-1)
-    #E = 4*(n-1)+1
   end
 
   # Create horizontal edges
