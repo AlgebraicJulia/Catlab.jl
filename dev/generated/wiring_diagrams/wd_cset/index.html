@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Wiring Diagrams as Attributed C-Sets · Catlab.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit">Catlab.jl</span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox"/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Seven Sketches</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../sketches/partitions/">Partitions</a></li><li><a class="tocitem" href="../../sketches/preorders/">Preorders</a></li><li><a class="tocitem" href="../../sketches/meets/">Meets in Preorders</a></li><li><a class="tocitem" href="../../sketches/smc/">Symmetric Monoidal Categories</a></li><li><a class="tocitem" href="../../sketches/cat_elements/">The Category of Elements</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/graphs/">The Category of Graphs</a></li><li><a class="tocitem" href="../../graphs/graphs_label/">Labelled Graphs</a></li><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox"/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../diagrams/diagrams/">Diagrams</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-4" type="checkbox" checked/><label class="tocitem" for="menuitem-2-4"><span class="docs-label">Wiring Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li><li class="is-active"><a class="tocitem" href>Wiring Diagrams as Attributed C-Sets</a><ul class="internal"><li><a class="tocitem" href="#Directed-Wiring-Diagrams"><span>Directed Wiring Diagrams</span></a></li><li><a class="tocitem" href="#Diagrams-as-C-Sets"><span>Diagrams as C-Sets</span></a></li><li><a class="tocitem" href="#Undirected-Wiring-Diagrams"><span>Undirected Wiring Diagrams</span></a></li><li><a class="tocitem" href="#Circular-Port-Graphs"><span>Circular Port Graphs</span></a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox"/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphics/composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../../graphics/graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../../graphics/tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../../graphics/layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li><li><a class="tocitem" href="../../graphics/graphviz_schema_visualization/">Visualizing Acset Schemas with Graphviz</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/core/">Theories, instances, and expressions</a></li><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Wiring Diagrams</a></li><li class="is-active"><a href>Wiring Diagrams as Attributed C-Sets</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Wiring Diagrams as Attributed C-Sets</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/master/docs/literate/wiring_diagrams/wd_cset.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Wiring-Diagrams-as-Attributed-C-Sets"><a class="docs-heading-anchor" href="#Wiring-Diagrams-as-Attributed-C-Sets">Wiring Diagrams as Attributed C-Sets</a><a id="Wiring-Diagrams-as-Attributed-C-Sets-1"></a><a class="docs-heading-anchor-permalink" href="#Wiring-Diagrams-as-Attributed-C-Sets" title="Permalink"></a></h1><p>Catlab supports many different flavors of diagrammatic syntax. These support the different combinatorial data structures that we use for representing categorical constructions. We will discuss DirectedWiringDiagrams, UndirectedWiringDiagrams, and CPortGraphs in this document.</p><pre><code class="language-julia">using Catlab, Catlab.Theories
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Wiring Diagrams as Attributed C-Sets · Catlab.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit">Catlab.jl</span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox"/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Seven Sketches</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../sketches/partitions/">Partitions</a></li><li><a class="tocitem" href="../../sketches/preorders/">Preorders</a></li><li><a class="tocitem" href="../../sketches/meets/">Meets in Preorders</a></li><li><a class="tocitem" href="../../sketches/smc/">Symmetric Monoidal Categories</a></li><li><a class="tocitem" href="../../sketches/cat_elements/">The Category of Elements</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/graphs/">The Category of Graphs</a></li><li><a class="tocitem" href="../../graphs/graphs_label/">Labeled Graphs</a></li><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox"/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../diagrams/diagrams/">Diagrams</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-4" type="checkbox" checked/><label class="tocitem" for="menuitem-2-4"><span class="docs-label">Wiring Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li><li class="is-active"><a class="tocitem" href>Wiring Diagrams as Attributed C-Sets</a><ul class="internal"><li><a class="tocitem" href="#Directed-Wiring-Diagrams"><span>Directed Wiring Diagrams</span></a></li><li><a class="tocitem" href="#Diagrams-as-C-Sets"><span>Diagrams as C-Sets</span></a></li><li><a class="tocitem" href="#Undirected-Wiring-Diagrams"><span>Undirected Wiring Diagrams</span></a></li><li><a class="tocitem" href="#Circular-Port-Graphs"><span>Circular Port Graphs</span></a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox"/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphics/composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../../graphics/graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../../graphics/tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../../graphics/layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/core/">Theories, instances, and expressions</a></li><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Wiring Diagrams</a></li><li class="is-active"><a href>Wiring Diagrams as Attributed C-Sets</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Wiring Diagrams as Attributed C-Sets</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/master/docs/literate/wiring_diagrams/wd_cset.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Wiring-Diagrams-as-Attributed-C-Sets"><a class="docs-heading-anchor" href="#Wiring-Diagrams-as-Attributed-C-Sets">Wiring Diagrams as Attributed C-Sets</a><a id="Wiring-Diagrams-as-Attributed-C-Sets-1"></a><a class="docs-heading-anchor-permalink" href="#Wiring-Diagrams-as-Attributed-C-Sets" title="Permalink"></a></h1><p>Catlab supports many different flavors of diagrammatic syntax. These support the different combinatorial data structures that we use for representing categorical constructions. We will discuss DirectedWiringDiagrams, UndirectedWiringDiagrams, and CPortGraphs in this document.</p><pre><code class="language-julia">using Catlab, Catlab.Theories
 using Catlab.CategoricalAlgebra
 using Catlab.WiringDiagrams
 using Catlab.Graphics
@@ -701,228 +701,228 @@ draw(add_junctions(wd))</code></pre><?xml version="1.0" encoding="UTF-8" standal
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="494pt" height="534pt"
- viewBox="0.00 0.00 494.38 533.76" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 529.76)">
+<svg width="409pt" height="358pt"
+ viewBox="0.00 0.00 408.67 357.54" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 353.54)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-529.76 490.38,-529.76 490.38,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-353.54 404.67,-353.54 404.67,4 -4,4"/>
 <!-- n1 -->
 <g id="node1" class="node">
 <title>n1</title>
-<ellipse fill="none" stroke="black" cx="174.5" cy="-401.06" rx="18" ry="18"/>
-<text text-anchor="middle" x="174.5" y="-397.36" font-family="Times,serif" font-size="14.00">Box</text>
+<ellipse fill="none" stroke="black" cx="139.25" cy="-260.81" rx="27" ry="18"/>
+<text text-anchor="middle" x="139.25" y="-257.11" font-family="Times,serif" font-size="14.00">Box</text>
 </g>
 <!-- n12 -->
 <g id="node12" class="node">
 <title>n12</title>
-<ellipse fill="black" stroke="black" cx="68.8" cy="-460.89" rx="1.8" ry="1.8"/>
-<text text-anchor="middle" x="33.5" y="-466.49" font-family="Times,serif" font-size="14.00">BoxValue</text>
+<ellipse fill="black" stroke="black" cx="68.8" cy="-300.71" rx="1.8" ry="1.8"/>
+<text text-anchor="middle" x="33.5" y="-306.31" font-family="Times,serif" font-size="14.00">BoxValue</text>
 </g>
 <!-- n1&#45;&gt;n12 -->
 <g id="edge15" class="edge">
 <title>n1&#45;&gt;n12</title>
-<path fill="none" stroke="black" d="M158.45,-410.15C136.55,-422.54 97.92,-444.4 79.35,-454.91"/>
-<polygon fill="black" stroke="black" points="77.54,-451.92 70.56,-459.89 80.99,-458.01 77.54,-451.92"/>
-<text text-anchor="middle" x="99.4" y="-436.33" font-family="Times,serif" font-size="14.00">value</text>
+<path fill="none" stroke="black" d="M118.5,-272.57C105.66,-279.84 89.72,-288.86 79.41,-294.7"/>
+<polygon fill="black" stroke="black" points="77.39,-291.83 70.41,-299.8 80.84,-297.92 77.39,-291.83"/>
+<text text-anchor="middle" x="79.45" y="-287.44" font-family="Times,serif" font-size="14.00">value</text>
 </g>
 <!-- n13 -->
 <g id="node13" class="node">
 <title>n13</title>
-<ellipse fill="black" stroke="black" cx="229.57" cy="-508.96" rx="1.8" ry="1.8"/>
-<text text-anchor="middle" x="196.77" y="-514.56" font-family="Times,serif" font-size="14.00">BoxType</text>
+<ellipse fill="black" stroke="black" cx="175.97" cy="-332.74" rx="1.8" ry="1.8"/>
+<text text-anchor="middle" x="143.17" y="-338.34" font-family="Times,serif" font-size="14.00">BoxType</text>
 </g>
 <!-- n1&#45;&gt;n13 -->
 <g id="edge16" class="edge">
 <title>n1&#45;&gt;n13</title>
-<path fill="none" stroke="black" d="M182.86,-417.45C194.27,-439.8 214.4,-479.23 224.07,-498.19"/>
-<polygon fill="black" stroke="black" points="220.99,-499.85 228.65,-507.16 227.22,-496.66 220.99,-499.85"/>
-<text text-anchor="middle" x="171.47" y="-461.62" font-family="Times,serif" font-size="14.00">box_type</text>
+<path fill="none" stroke="black" d="M147.96,-277.86C154.88,-291.42 164.37,-310.01 170.34,-321.7"/>
+<polygon fill="black" stroke="black" points="167.36,-323.56 175.02,-330.88 173.59,-320.38 167.36,-323.56"/>
+<text text-anchor="middle" x="127.15" y="-303.58" font-family="Times,serif" font-size="14.00">box_type</text>
 </g>
 <!-- n2 -->
 <g id="node2" class="node">
 <title>n2</title>
-<ellipse fill="none" stroke="black" cx="172.6" cy="-284.51" rx="24.5" ry="24.5"/>
-<text text-anchor="middle" x="172.6" y="-280.81" font-family="Times,serif" font-size="14.00">InPort</text>
+<ellipse fill="none" stroke="black" cx="137.99" cy="-183.11" rx="27" ry="18"/>
+<text text-anchor="middle" x="137.99" y="-179.41" font-family="Times,serif" font-size="14.00">InPort</text>
 </g>
 <!-- n2&#45;&gt;n1 -->
 <g id="edge9" class="edge">
 <title>n2&#45;&gt;n1</title>
-<path fill="none" stroke="black" d="M173,-309.51C173.31,-328.14 173.72,-353.58 174.04,-372.92"/>
-<polygon fill="black" stroke="black" points="170.54,-373.01 174.2,-382.95 177.54,-372.89 170.54,-373.01"/>
-<text text-anchor="middle" x="132.02" y="-345.01" font-family="Times,serif" font-size="14.00">in_port_box</text>
+<path fill="none" stroke="black" d="M138.28,-201.13C138.43,-210.48 138.62,-222.11 138.79,-232.61"/>
+<polygon fill="black" stroke="black" points="135.29,-232.68 138.96,-242.62 142.29,-232.56 135.29,-232.68"/>
+<text text-anchor="middle" x="97.04" y="-220.67" font-family="Times,serif" font-size="14.00">in_port_box</text>
 </g>
 <!-- n10 -->
 <g id="node10" class="node">
 <title>n10</title>
-<ellipse fill="black" stroke="black" cx="317.48" cy="-247.94" rx="1.8" ry="1.8"/>
-<text text-anchor="middle" x="350.68" y="-234.94" font-family="Times,serif" font-size="14.00">PortValue</text>
+<ellipse fill="black" stroke="black" cx="234.57" cy="-158.72" rx="1.8" ry="1.8"/>
+<text text-anchor="middle" x="197.77" y="-164.32" font-family="Times,serif" font-size="14.00">PortValue</text>
 </g>
 <!-- n2&#45;&gt;n10 -->
 <g id="edge11" class="edge">
 <title>n2&#45;&gt;n10</title>
-<path fill="none" stroke="black" d="M196.85,-278.39C228.24,-270.47 281.73,-256.97 305.49,-250.97"/>
-<polygon fill="black" stroke="black" points="306.65,-254.29 315.49,-248.45 304.94,-247.5 306.65,-254.29"/>
-<text text-anchor="middle" x="295.67" y="-253.48" font-family="Times,serif" font-size="14.00">in_port_type</text>
+<path fill="none" stroke="black" d="M163.36,-176.7C182.53,-171.86 207.98,-165.44 222.68,-161.72"/>
+<polygon fill="black" stroke="black" points="223.84,-165.04 232.68,-159.2 222.13,-158.25 223.84,-165.04"/>
+<text text-anchor="middle" x="237.52" y="-158.01" font-family="Times,serif" font-size="14.00">in_port_type</text>
 </g>
 <!-- n3 -->
 <g id="node3" class="node">
 <title>n3</title>
-<ellipse fill="none" stroke="black" cx="244.6" cy="-308.28" rx="31.2" ry="31.2"/>
-<text text-anchor="middle" x="244.6" y="-304.58" font-family="Times,serif" font-size="14.00">OutPort</text>
+<ellipse fill="none" stroke="black" cx="185.98" cy="-198.95" rx="31.2" ry="18"/>
+<text text-anchor="middle" x="185.98" y="-195.25" font-family="Times,serif" font-size="14.00">OutPort</text>
 </g>
 <!-- n3&#45;&gt;n1 -->
 <g id="edge10" class="edge">
 <title>n3&#45;&gt;n1</title>
-<path fill="none" stroke="black" d="M225.44,-333.63C214.94,-347.54 202.01,-364.65 191.81,-378.15"/>
-<polygon fill="black" stroke="black" points="188.78,-376.35 185.55,-386.44 194.37,-380.57 188.78,-376.35"/>
-<text text-anchor="middle" x="255.12" y="-359.69" font-family="Times,serif" font-size="14.00">out_port_box</text>
+<path fill="none" stroke="black" d="M173.46,-215.53C168.67,-221.87 163.1,-229.24 157.86,-236.18"/>
+<polygon fill="black" stroke="black" points="154.72,-234.53 151.49,-244.62 160.31,-238.75 154.72,-234.53"/>
+<text text-anchor="middle" x="212.16" y="-229.65" font-family="Times,serif" font-size="14.00">out_port_box</text>
 </g>
 <!-- n3&#45;&gt;n10 -->
 <g id="edge12" class="edge">
 <title>n3&#45;&gt;n10</title>
-<path fill="none" stroke="black" d="M268.87,-288.19C282.25,-277.11 298.1,-263.99 307.98,-255.81"/>
-<polygon fill="black" stroke="black" points="310.48,-258.29 315.95,-249.21 306.02,-252.89 310.48,-258.29"/>
-<text text-anchor="middle" x="337.92" y="-275.8" font-family="Times,serif" font-size="14.00">out_port_type</text>
+<path fill="none" stroke="black" d="M204.07,-183.97C211.26,-178.02 219.23,-171.42 225.22,-166.46"/>
+<polygon fill="black" stroke="black" points="227.47,-169.15 232.94,-160.07 223,-163.75 227.47,-169.15"/>
+<text text-anchor="middle" x="264.15" y="-179.02" font-family="Times,serif" font-size="14.00">out_port_type</text>
 </g>
 <!-- n4 -->
 <g id="node4" class="node">
 <title>n4</title>
-<ellipse fill="none" stroke="black" cx="262.12" cy="-117.91" rx="47.1" ry="47.1"/>
-<text text-anchor="middle" x="262.12" y="-114.21" font-family="Times,serif" font-size="14.00">OuterInPort</text>
+<ellipse fill="none" stroke="black" cx="197.66" cy="-72.03" rx="47.1" ry="18"/>
+<text text-anchor="middle" x="197.66" y="-68.33" font-family="Times,serif" font-size="14.00">OuterInPort</text>
 </g>
 <!-- n4&#45;&gt;n10 -->
 <g id="edge13" class="edge">
 <title>n4&#45;&gt;n10</title>
-<path fill="none" stroke="black" d="M280.71,-161.57C292.01,-188.12 305.59,-220.01 312.66,-236.62"/>
-<polygon fill="black" stroke="black" points="309.64,-238.45 316.77,-246.28 316.08,-235.71 309.64,-238.45"/>
-<text text-anchor="middle" x="229.69" y="-202.9" font-family="Times,serif" font-size="14.00">outer_in_port_type</text>
+<path fill="none" stroke="black" d="M205.31,-90C212.62,-107.18 223.44,-132.58 229.67,-147.21"/>
+<polygon fill="black" stroke="black" points="226.62,-148.98 233.76,-156.81 233.06,-146.24 226.62,-148.98"/>
+<text text-anchor="middle" x="284.49" y="-122.4" font-family="Times,serif" font-size="14.00">outer_in_port_type</text>
 </g>
 <!-- n5 -->
 <g id="node5" class="node">
 <title>n5</title>
-<ellipse fill="none" stroke="black" cx="392.73" cy="-149.16" rx="53.8" ry="53.8"/>
-<text text-anchor="middle" x="392.73" y="-145.46" font-family="Times,serif" font-size="14.00">OuterOutPort</text>
+<ellipse fill="none" stroke="black" cx="284.73" cy="-92.87" rx="53.8" ry="18"/>
+<text text-anchor="middle" x="284.73" y="-89.17" font-family="Times,serif" font-size="14.00">OuterOutPort</text>
 </g>
 <!-- n5&#45;&gt;n10 -->
 <g id="edge14" class="edge">
 <title>n5&#45;&gt;n10</title>
-<path fill="none" stroke="black" d="M359.94,-192.2C346.87,-209.36 333.01,-227.56 324.81,-238.32"/>
-<polygon fill="black" stroke="black" points="322.01,-236.23 318.73,-246.3 327.58,-240.47 322.01,-236.23"/>
-<text text-anchor="middle" x="414.38" y="-219.06" font-family="Times,serif" font-size="14.00">outer_out_port_type</text>
+<path fill="none" stroke="black" d="M271.29,-110.52C261.91,-122.83 249.74,-138.8 242.04,-148.91"/>
+<polygon fill="black" stroke="black" points="239.06,-147.05 235.79,-157.13 244.63,-151.29 239.06,-147.05"/>
+<text text-anchor="middle" x="328.67" y="-133.51" font-family="Times,serif" font-size="14.00">outer_out_port_type</text>
 </g>
 <!-- n6 -->
 <g id="node6" class="node">
 <title>n6</title>
-<ellipse fill="none" stroke="black" cx="133.42" cy="-213.84" rx="18.9" ry="18.9"/>
-<text text-anchor="middle" x="133.42" y="-210.14" font-family="Times,serif" font-size="14.00">Wire</text>
+<ellipse fill="none" stroke="black" cx="111.85" cy="-136" rx="27" ry="18"/>
+<text text-anchor="middle" x="111.85" y="-132.3" font-family="Times,serif" font-size="14.00">Wire</text>
 </g>
 <!-- n6&#45;&gt;n2 -->
 <g id="edge2" class="edge">
 <title>n6&#45;&gt;n2</title>
-<path fill="none" stroke="black" d="M142.5,-230.23C146.41,-237.28 151.11,-245.76 155.63,-253.9"/>
-<polygon fill="black" stroke="black" points="152.68,-255.8 160.59,-262.85 158.8,-252.41 152.68,-255.8"/>
-<text text-anchor="middle" x="138.06" y="-245.86" font-family="Times,serif" font-size="14.00">tgt</text>
+<path fill="none" stroke="black" d="M121.29,-153.01C122.02,-154.33 122.77,-155.67 123.52,-157.03"/>
+<polygon fill="black" stroke="black" points="120.57,-158.92 128.48,-165.97 126.69,-155.53 120.57,-158.92"/>
+<text text-anchor="middle" x="111.4" y="-158.82" font-family="Times,serif" font-size="14.00">tgt</text>
 </g>
 <!-- n6&#45;&gt;n3 -->
 <g id="edge1" class="edge">
 <title>n6&#45;&gt;n3</title>
-<path fill="none" stroke="black" d="M147.95,-226.19C164.24,-240.02 191.14,-262.87 212.43,-280.96"/>
-<polygon fill="black" stroke="black" points="210.4,-283.82 220.28,-287.62 214.93,-278.48 210.4,-283.82"/>
-<text text-anchor="middle" x="169.19" y="-242.37" font-family="Times,serif" font-size="14.00">src</text>
+<path fill="none" stroke="black" d="M128.67,-150.28C138.07,-158.26 149.97,-168.37 160.48,-177.3"/>
+<polygon fill="black" stroke="black" points="158.3,-180.04 168.19,-183.85 162.84,-174.7 158.3,-180.04"/>
+<text text-anchor="middle" x="155.58" y="-152.59" font-family="Times,serif" font-size="14.00">src</text>
 </g>
 <!-- n11 -->
 <g id="node11" class="node">
 <title>n11</title>
-<ellipse fill="black" stroke="black" cx="195.51" cy="-86.89" rx="1.8" ry="1.8"/>
-<text text-anchor="middle" x="157.21" y="-73.89" font-family="Times,serif" font-size="14.00">WireValue</text>
+<ellipse fill="black" stroke="black" cx="153.25" cy="-51.36" rx="1.8" ry="1.8"/>
+<text text-anchor="middle" x="187.95" y="-38.36" font-family="Times,serif" font-size="14.00">WireValue</text>
 </g>
 <!-- n6&#45;&gt;n11 -->
 <g id="edge17" class="edge">
 <title>n6&#45;&gt;n11</title>
-<path fill="none" stroke="black" d="M141.66,-196.98C154.58,-170.58 179.22,-120.19 190.11,-97.93"/>
-<polygon fill="black" stroke="black" points="193.33,-99.31 194.58,-88.79 187.04,-96.24 193.33,-99.31"/>
-<text text-anchor="middle" x="185.14" y="-136.26" font-family="Times,serif" font-size="14.00">wire_value</text>
+<path fill="none" stroke="black" d="M120.23,-118.87C128.5,-101.97 140.89,-76.63 147.9,-62.29"/>
+<polygon fill="black" stroke="black" points="151.07,-63.77 152.32,-53.25 144.79,-60.7 151.07,-63.77"/>
+<text text-anchor="middle" x="172.57" y="-94.38" font-family="Times,serif" font-size="14.00">wire_value</text>
 </g>
 <!-- n7 -->
 <g id="node7" class="node">
 <title>n7</title>
-<ellipse fill="none" stroke="black" cx="128.47" cy="-148.81" rx="26.9" ry="26.9"/>
-<text text-anchor="middle" x="128.47" y="-145.11" font-family="Times,serif" font-size="14.00">InWire</text>
+<ellipse fill="none" stroke="black" cx="108.56" cy="-92.64" rx="27" ry="18"/>
+<text text-anchor="middle" x="108.56" y="-88.94" font-family="Times,serif" font-size="14.00">InWire</text>
 </g>
 <!-- n7&#45;&gt;n2 -->
 <g id="edge4" class="edge">
 <title>n7&#45;&gt;n2</title>
-<path fill="none" stroke="black" d="M136.88,-174.65C143.92,-196.32 154.03,-227.41 161.7,-250.98"/>
-<polygon fill="black" stroke="black" points="158.4,-252.15 164.82,-260.58 165.05,-249.99 158.4,-252.15"/>
-<text text-anchor="middle" x="170.29" y="-216.62" font-family="Times,serif" font-size="14.00">in_tgt</text>
+<path fill="none" stroke="black" d="M114.38,-110.52C118.57,-123.4 124.3,-141.03 129.07,-155.69"/>
+<polygon fill="black" stroke="black" points="125.77,-156.85 132.19,-165.27 132.42,-154.68 125.77,-156.85"/>
+<text text-anchor="middle" x="142.72" y="-136.91" font-family="Times,serif" font-size="14.00">in_tgt</text>
 </g>
 <!-- n7&#45;&gt;n4 -->
 <g id="edge3" class="edge">
 <title>n7&#45;&gt;n4</title>
-<path fill="none" stroke="black" d="M154.88,-142.7C169.58,-139.31 188.46,-134.94 206.27,-130.82"/>
-<polygon fill="black" stroke="black" points="207.06,-134.23 216.02,-128.57 205.49,-127.41 207.06,-134.23"/>
-<text text-anchor="middle" x="191.32" y="-125.56" font-family="Times,serif" font-size="14.00">in_src</text>
+<path fill="none" stroke="black" d="M134.33,-86.68C138.43,-85.73 142.79,-84.73 147.23,-83.7"/>
+<polygon fill="black" stroke="black" points="148.05,-87.1 157.01,-81.44 146.48,-80.28 148.05,-87.1"/>
+<text text-anchor="middle" x="130.03" y="-73.99" font-family="Times,serif" font-size="14.00">in_src</text>
 </g>
 <!-- n7&#45;&gt;n11 -->
 <g id="edge18" class="edge">
 <title>n7&#45;&gt;n11</title>
-<path fill="none" stroke="black" d="M148.59,-130.23C161.18,-118.6 176.8,-104.18 186.46,-95.25"/>
-<polygon fill="black" stroke="black" points="189.02,-97.65 193.99,-88.29 184.27,-92.51 189.02,-97.65"/>
-<text text-anchor="middle" x="119.02" y="-101.54" font-family="Times,serif" font-size="14.00">in_wire_value</text>
+<path fill="none" stroke="black" d="M124.44,-77.97C131.13,-71.8 138.66,-64.84 144.34,-59.59"/>
+<polygon fill="black" stroke="black" points="146.72,-62.16 151.69,-52.8 141.97,-57.02 146.72,-62.16"/>
+<text text-anchor="middle" x="85.89" y="-57.58" font-family="Times,serif" font-size="14.00">in_wire_value</text>
 </g>
 <!-- n8 -->
 <g id="node8" class="node">
 <title>n8</title>
-<ellipse fill="none" stroke="black" cx="291.45" cy="-187.84" rx="33.6" ry="33.6"/>
-<text text-anchor="middle" x="291.45" y="-184.14" font-family="Times,serif" font-size="14.00">OutWire</text>
+<ellipse fill="none" stroke="black" cx="217.21" cy="-118.66" rx="33.6" ry="18"/>
+<text text-anchor="middle" x="217.21" y="-114.96" font-family="Times,serif" font-size="14.00">OutWire</text>
 </g>
 <!-- n8&#45;&gt;n3 -->
 <g id="edge5" class="edge">
 <title>n8&#45;&gt;n3</title>
-<path fill="none" stroke="black" d="M279.26,-219.17C273.34,-234.41 266.15,-252.88 259.86,-269.04"/>
-<polygon fill="black" stroke="black" points="256.44,-268.17 256.08,-278.76 262.97,-270.71 256.44,-268.17"/>
-<text text-anchor="middle" x="243.56" y="-232.91" font-family="Times,serif" font-size="14.00">out_src</text>
+<path fill="none" stroke="black" d="M210.28,-136.48C206.27,-146.77 201.16,-159.93 196.65,-171.52"/>
+<polygon fill="black" stroke="black" points="193.25,-170.59 192.89,-181.18 199.78,-173.13 193.25,-170.59"/>
+<text text-anchor="middle" x="229.46" y="-142.8" font-family="Times,serif" font-size="14.00">out_src</text>
 </g>
 <!-- n8&#45;&gt;n5 -->
 <g id="edge6" class="edge">
 <title>n8&#45;&gt;n5</title>
-<path fill="none" stroke="black" d="M322.94,-175.81C326.11,-174.6 329.41,-173.35 332.75,-172.07"/>
-<polygon fill="black" stroke="black" points="334.19,-175.26 342.29,-168.43 331.7,-168.72 334.19,-175.26"/>
-<text text-anchor="middle" x="353.85" y="-177.74" font-family="Times,serif" font-size="14.00">out_tgt</text>
+<path fill="none" stroke="black" d="M244.67,-108.17C244.76,-108.13 244.85,-108.1 244.94,-108.06"/>
+<polygon fill="black" stroke="black" points="240.99,-113.32 249.09,-106.48 238.5,-106.78 240.99,-113.32"/>
+<text text-anchor="middle" x="270.81" y="-111.92" font-family="Times,serif" font-size="14.00">out_tgt</text>
 </g>
 <!-- n8&#45;&gt;n11 -->
 <g id="edge19" class="edge">
 <title>n8&#45;&gt;n11</title>
-<path fill="none" stroke="black" d="M268.23,-163.41C247.48,-141.58 218.23,-110.81 203.98,-95.81"/>
-<polygon fill="black" stroke="black" points="206.45,-93.32 197.02,-88.48 201.37,-98.14 206.45,-93.32"/>
-<text text-anchor="middle" x="182.6" y="-118.41" font-family="Times,serif" font-size="14.00">out_wire_value</text>
+<path fill="none" stroke="black" d="M201.72,-102.37C189.04,-89.02 171.59,-70.67 161.46,-60.01"/>
+<polygon fill="black" stroke="black" points="163.98,-57.58 154.55,-52.74 158.9,-62.4 163.98,-57.58"/>
+<text text-anchor="middle" x="128.09" y="-84.99" font-family="Times,serif" font-size="14.00">out_wire_value</text>
 </g>
 <!-- n9 -->
 <g id="node9" class="node">
 <title>n9</title>
-<ellipse fill="none" stroke="black" cx="317.25" cy="-36.85" rx="36.7" ry="36.7"/>
-<text text-anchor="middle" x="317.25" y="-33.15" font-family="Times,serif" font-size="14.00">PassWire</text>
+<ellipse fill="none" stroke="black" cx="234.41" cy="-18" rx="36.7" ry="18"/>
+<text text-anchor="middle" x="234.41" y="-14.3" font-family="Times,serif" font-size="14.00">PassWire</text>
 </g>
 <!-- n9&#45;&gt;n4 -->
 <g id="edge7" class="edge">
 <title>n9&#45;&gt;n4</title>
-<path fill="none" stroke="black" d="M296.41,-67.5C295.78,-68.42 295.15,-69.34 294.52,-70.27"/>
-<polygon fill="black" stroke="black" points="291.49,-68.5 288.76,-78.74 297.28,-72.44 291.49,-68.5"/>
-<text text-anchor="middle" x="264.96" y="-57.68" font-family="Times,serif" font-size="14.00">pass_src</text>
+<path fill="none" stroke="black" d="M222.78,-35.1C220.42,-38.58 217.88,-42.31 215.36,-46.02"/>
+<polygon fill="black" stroke="black" points="212.32,-44.25 209.59,-54.49 218.11,-48.19 212.32,-44.25"/>
+<text text-anchor="middle" x="249.57" y="-44.36" font-family="Times,serif" font-size="14.00">pass_src</text>
 </g>
 <!-- n9&#45;&gt;n5 -->
 <g id="edge8" class="edge">
 <title>n9&#45;&gt;n5</title>
-<path fill="none" stroke="black" d="M337.87,-67.54C343.75,-76.28 350.32,-86.06 356.82,-95.74"/>
-<polygon fill="black" stroke="black" points="354.02,-97.84 362.5,-104.19 359.83,-93.93 354.02,-97.84"/>
-<text text-anchor="middle" x="377.85" y="-70.44" font-family="Times,serif" font-size="14.00">pass_tgt</text>
+<path fill="none" stroke="black" d="M246.08,-35.36C252.34,-44.68 260.18,-56.35 267.16,-66.74"/>
+<polygon fill="black" stroke="black" points="264.29,-68.73 272.77,-75.08 270.1,-64.83 264.29,-68.73"/>
+<text text-anchor="middle" x="287.12" y="-54.85" font-family="Times,serif" font-size="14.00">pass_tgt</text>
 </g>
 <!-- n9&#45;&gt;n11 -->
 <g id="edge20" class="edge">
 <title>n9&#45;&gt;n11</title>
-<path fill="none" stroke="black" d="M283.01,-50.92C257.33,-61.48 223.77,-75.28 206.63,-82.32"/>
-<polygon fill="black" stroke="black" points="205.19,-79.13 197.27,-86.17 207.85,-85.61 205.19,-79.13"/>
-<text text-anchor="middle" x="186.82" y="-55.42" font-family="Times,serif" font-size="14.00">pass_wire_value</text>
+<path fill="none" stroke="black" d="M206.02,-29.67C191.83,-35.5 175.44,-42.24 164.74,-46.64"/>
+<polygon fill="black" stroke="black" points="163.18,-43.5 155.26,-50.54 165.84,-49.97 163.18,-43.5"/>
+<text text-anchor="middle" x="127.38" y="-26.95" font-family="Times,serif" font-size="14.00">pass_wire_value</text>
 </g>
 </g>
 </svg>
@@ -971,134 +971,134 @@ end</code></pre><p>The bare minimum diagram language is:</p><pre><code class="la
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="389pt" height="406pt"
- viewBox="0.00 0.00 388.68 406.42" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 402.42)">
+<svg width="306pt" height="273pt"
+ viewBox="0.00 0.00 305.63 273.06" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 269.06)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-402.42 384.68,-402.42 384.68,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-269.06 301.63,-269.06 301.63,4 -4,4"/>
 <!-- n1 -->
 <g id="node1" class="node">
 <title>n1</title>
-<ellipse fill="none" stroke="black" cx="131.26" cy="-18" rx="18" ry="18"/>
-<text text-anchor="middle" x="131.26" y="-14.3" font-family="Times,serif" font-size="14.00">Box</text>
+<ellipse fill="none" stroke="black" cx="113.39" cy="-18" rx="27" ry="18"/>
+<text text-anchor="middle" x="113.39" y="-14.3" font-family="Times,serif" font-size="14.00">Box</text>
 </g>
 <!-- n2 -->
 <g id="node2" class="node">
 <title>n2</title>
-<ellipse fill="none" stroke="black" cx="50.07" cy="-118.76" rx="24.5" ry="24.5"/>
-<text text-anchor="middle" x="50.07" y="-115.06" font-family="Times,serif" font-size="14.00">InPort</text>
+<ellipse fill="none" stroke="black" cx="59.27" cy="-85.18" rx="27" ry="18"/>
+<text text-anchor="middle" x="59.27" y="-81.48" font-family="Times,serif" font-size="14.00">InPort</text>
 </g>
 <!-- n2&#45;&gt;n1 -->
 <g id="edge9" class="edge">
 <title>n2&#45;&gt;n1</title>
-<path fill="none" stroke="black" d="M65.72,-99.34C79.34,-82.43 99.08,-57.93 113.33,-40.24"/>
-<polygon fill="black" stroke="black" points="116.29,-42.15 119.84,-32.17 110.84,-37.76 116.29,-42.15"/>
-<text text-anchor="middle" x="48.03" y="-73.59" font-family="Times,serif" font-size="14.00">in_port_box</text>
+<path fill="none" stroke="black" d="M72.09,-69.26C78.6,-61.18 86.65,-51.19 93.91,-42.19"/>
+<polygon fill="black" stroke="black" points="96.73,-44.26 100.28,-34.27 91.28,-39.86 96.73,-44.26"/>
+<text text-anchor="middle" x="41.5" y="-44.52" font-family="Times,serif" font-size="14.00">in_port_box</text>
 </g>
 <!-- n3 -->
 <g id="node3" class="node">
 <title>n3</title>
-<ellipse fill="none" stroke="black" cx="254.5" cy="-57.98" rx="31.2" ry="31.2"/>
-<text text-anchor="middle" x="254.5" y="-54.28" font-family="Times,serif" font-size="14.00">OutPort</text>
+<ellipse fill="none" stroke="black" cx="195.55" cy="-44.66" rx="31.2" ry="18"/>
+<text text-anchor="middle" x="195.55" y="-40.96" font-family="Times,serif" font-size="14.00">OutPort</text>
 </g>
 <!-- n3&#45;&gt;n1 -->
 <g id="edge10" class="edge">
 <title>n3&#45;&gt;n1</title>
-<path fill="none" stroke="black" d="M224.67,-48.3C204.4,-41.73 177.83,-33.11 158.21,-26.74"/>
-<polygon fill="black" stroke="black" points="159.24,-23.4 148.65,-23.64 157.08,-30.06 159.24,-23.4"/>
-<text text-anchor="middle" x="144.94" y="-41.32" font-family="Times,serif" font-size="14.00">out_port_box</text>
+<path fill="none" stroke="black" d="M168.19,-35.78C161.61,-33.65 154.49,-31.34 147.63,-29.11"/>
+<polygon fill="black" stroke="black" points="148.46,-25.7 137.87,-25.94 146.3,-32.36 148.46,-25.7"/>
+<text text-anchor="middle" x="204.41" y="-21.25" font-family="Times,serif" font-size="14.00">out_port_box</text>
 </g>
 <!-- n4 -->
 <g id="node4" class="node">
 <title>n4</title>
-<ellipse fill="none" stroke="black" cx="109.73" cy="-344.43" rx="47.1" ry="47.1"/>
-<text text-anchor="middle" x="109.73" y="-340.73" font-family="Times,serif" font-size="14.00">OuterInPort</text>
+<ellipse fill="none" stroke="black" cx="99.03" cy="-235.63" rx="47.1" ry="18"/>
+<text text-anchor="middle" x="99.03" y="-231.93" font-family="Times,serif" font-size="14.00">OuterInPort</text>
 </g>
 <!-- n5 -->
 <g id="node5" class="node">
 <title>n5</title>
-<ellipse fill="none" stroke="black" cx="326.78" cy="-280.16" rx="53.8" ry="53.8"/>
-<text text-anchor="middle" x="326.78" y="-276.46" font-family="Times,serif" font-size="14.00">OuterOutPort</text>
+<ellipse fill="none" stroke="black" cx="243.73" cy="-192.79" rx="53.8" ry="18"/>
+<text text-anchor="middle" x="243.73" y="-189.09" font-family="Times,serif" font-size="14.00">OuterOutPort</text>
 </g>
 <!-- n6 -->
 <g id="node6" class="node">
 <title>n6</title>
-<ellipse fill="none" stroke="black" cx="156.31" cy="-101.68" rx="18.9" ry="18.9"/>
-<text text-anchor="middle" x="156.31" y="-97.98" font-family="Times,serif" font-size="14.00">Wire</text>
+<ellipse fill="none" stroke="black" cx="130.1" cy="-73.79" rx="27" ry="18"/>
+<text text-anchor="middle" x="130.1" y="-70.09" font-family="Times,serif" font-size="14.00">Wire</text>
 </g>
 <!-- n6&#45;&gt;n2 -->
 <g id="edge2" class="edge">
 <title>n6&#45;&gt;n2</title>
-<path fill="none" stroke="black" d="M137.8,-104.65C123.19,-107 102.39,-110.35 84.71,-113.19"/>
-<polygon fill="black" stroke="black" points="84.05,-109.75 74.73,-114.8 85.16,-116.66 84.05,-109.75"/>
-<text text-anchor="middle" x="100.26" y="-112.72" font-family="Times,serif" font-size="14.00">tgt</text>
+<path fill="none" stroke="black" d="M103.72,-78.03C101.18,-78.44 98.56,-78.86 95.94,-79.28"/>
+<polygon fill="black" stroke="black" points="95.22,-75.86 85.9,-80.9 96.33,-82.77 95.22,-75.86"/>
+<text text-anchor="middle" x="94.33" y="-67.46" font-family="Times,serif" font-size="14.00">tgt</text>
 </g>
 <!-- n6&#45;&gt;n3 -->
 <g id="edge1" class="edge">
 <title>n6&#45;&gt;n3</title>
-<path fill="none" stroke="black" d="M173.41,-94.07C185.22,-88.81 201.4,-81.61 216.21,-75.02"/>
-<polygon fill="black" stroke="black" points="217.96,-78.07 225.68,-70.81 215.12,-71.68 217.96,-78.07"/>
-<text text-anchor="middle" x="205.81" y="-88.34" font-family="Times,serif" font-size="14.00">src</text>
+<path fill="none" stroke="black" d="M152.62,-63.77C155.42,-62.52 158.32,-61.23 161.24,-59.93"/>
+<polygon fill="black" stroke="black" points="162.81,-63.07 170.52,-55.8 159.96,-56.67 162.81,-63.07"/>
+<text text-anchor="middle" x="167.93" y="-65.65" font-family="Times,serif" font-size="14.00">src</text>
 </g>
 <!-- n7 -->
 <g id="node7" class="node">
 <title>n7</title>
-<ellipse fill="none" stroke="black" cx="34.89" cy="-244.27" rx="26.9" ry="26.9"/>
-<text text-anchor="middle" x="34.89" y="-240.57" font-family="Times,serif" font-size="14.00">InWire</text>
+<ellipse fill="none" stroke="black" cx="49.15" cy="-168.85" rx="27" ry="18"/>
+<text text-anchor="middle" x="49.15" y="-165.15" font-family="Times,serif" font-size="14.00">InWire</text>
 </g>
 <!-- n7&#45;&gt;n2 -->
 <g id="edge4" class="edge">
 <title>n7&#45;&gt;n2</title>
-<path fill="none" stroke="black" d="M38.14,-217.35C40.4,-198.7 43.42,-173.71 45.86,-153.55"/>
-<polygon fill="black" stroke="black" points="49.35,-153.86 47.07,-143.51 42.4,-153.02 49.35,-153.86"/>
-<text text-anchor="middle" x="21" y="-189.25" font-family="Times,serif" font-size="14.00">in_tgt</text>
+<path fill="none" stroke="black" d="M51.34,-150.69C52.66,-139.84 54.35,-125.81 55.84,-113.53"/>
+<polygon fill="black" stroke="black" points="59.35,-113.65 57.08,-103.3 52.4,-112.81 59.35,-113.65"/>
+<text text-anchor="middle" x="32.59" y="-135.91" font-family="Times,serif" font-size="14.00">in_tgt</text>
 </g>
 <!-- n7&#45;&gt;n4 -->
 <g id="edge3" class="edge">
 <title>n7&#45;&gt;n4</title>
-<path fill="none" stroke="black" d="M51.12,-266.01C58.18,-275.45 66.74,-286.9 75.11,-298.1"/>
-<polygon fill="black" stroke="black" points="72.35,-300.26 81.14,-306.18 77.96,-296.07 72.35,-300.26"/>
-<text text-anchor="middle" x="41.62" y="-285.85" font-family="Times,serif" font-size="14.00">in_src</text>
+<path fill="none" stroke="black" d="M61.22,-185.01C66.84,-192.54 73.67,-201.68 79.96,-210.1"/>
+<polygon fill="black" stroke="black" points="77.23,-212.29 86.02,-218.21 82.83,-208.1 77.23,-212.29"/>
+<text text-anchor="middle" x="49.09" y="-201.36" font-family="Times,serif" font-size="14.00">in_src</text>
 </g>
 <!-- n8 -->
 <g id="node8" class="node">
 <title>n8</title>
-<ellipse fill="none" stroke="black" cx="335.29" cy="-155.4" rx="33.6" ry="33.6"/>
-<text text-anchor="middle" x="335.29" y="-151.7" font-family="Times,serif" font-size="14.00">OutWire</text>
+<ellipse fill="none" stroke="black" cx="249.4" cy="-109.62" rx="33.6" ry="18"/>
+<text text-anchor="middle" x="249.4" y="-105.92" font-family="Times,serif" font-size="14.00">OutWire</text>
 </g>
 <!-- n8&#45;&gt;n3 -->
 <g id="edge5" class="edge">
 <title>n8&#45;&gt;n3</title>
-<path fill="none" stroke="black" d="M313.85,-129.55C303.79,-117.41 291.69,-102.83 281.05,-90"/>
-<polygon fill="black" stroke="black" points="283.73,-87.74 274.65,-82.28 278.34,-92.21 283.73,-87.74"/>
-<text text-anchor="middle" x="271.45" y="-113.57" font-family="Times,serif" font-size="14.00">out_src</text>
+<path fill="none" stroke="black" d="M235.54,-92.89C229.52,-85.64 222.36,-77 215.77,-69.05"/>
+<polygon fill="black" stroke="black" points="218.26,-66.57 209.19,-61.11 212.88,-71.04 218.26,-66.57"/>
+<text text-anchor="middle" x="251.66" y="-69.77" font-family="Times,serif" font-size="14.00">out_src</text>
 </g>
 <!-- n8&#45;&gt;n5 -->
 <g id="edge6" class="edge">
 <title>n8&#45;&gt;n5</title>
-<path fill="none" stroke="black" d="M332.99,-189.16C332.42,-197.53 331.79,-206.79 331.15,-216.09"/>
-<polygon fill="black" stroke="black" points="327.65,-215.95 330.46,-226.16 334.64,-216.42 327.65,-215.95"/>
-<text text-anchor="middle" x="306.07" y="-206.42" font-family="Times,serif" font-size="14.00">out_tgt</text>
+<path fill="none" stroke="black" d="M248.17,-127.66C247.44,-138.45 246.49,-152.4 245.65,-164.61"/>
+<polygon fill="black" stroke="black" points="242.15,-164.56 244.96,-174.78 249.13,-165.04 242.15,-164.56"/>
+<text text-anchor="middle" x="220.91" y="-149.94" font-family="Times,serif" font-size="14.00">out_tgt</text>
 </g>
 <!-- n9 -->
 <g id="node9" class="node">
 <title>n9</title>
-<ellipse fill="none" stroke="black" cx="232.84" cy="-361.57" rx="36.7" ry="36.7"/>
-<text text-anchor="middle" x="232.84" y="-357.87" font-family="Times,serif" font-size="14.00">PassWire</text>
+<ellipse fill="none" stroke="black" cx="181.1" cy="-247.06" rx="36.7" ry="18"/>
+<text text-anchor="middle" x="181.1" y="-243.36" font-family="Times,serif" font-size="14.00">PassWire</text>
 </g>
 <!-- n9&#45;&gt;n4 -->
 <g id="edge7" class="edge">
 <title>n9&#45;&gt;n4</title>
-<path fill="none" stroke="black" d="M196.23,-356.47C186.98,-355.18 176.83,-353.77 166.83,-352.38"/>
-<polygon fill="black" stroke="black" points="167.31,-348.91 156.93,-351 166.35,-355.85 167.31,-348.91"/>
-<text text-anchor="middle" x="166.28" y="-343.23" font-family="Times,serif" font-size="14.00">pass_src</text>
+<path fill="none" stroke="black" d="M145.34,-242.08C145.19,-242.06 145.04,-242.04 144.89,-242.02"/>
+<polygon fill="black" stroke="black" points="153.91,-239.74 143.52,-241.83 152.94,-246.67 153.91,-239.74"/>
+<text text-anchor="middle" x="114.61" y="-245.85" font-family="Times,serif" font-size="14.00">pass_src</text>
 </g>
 <!-- n9&#45;&gt;n5 -->
 <g id="edge8" class="edge">
 <title>n9&#45;&gt;n5</title>
-<path fill="none" stroke="black" d="M260.77,-337.36C266.32,-332.55 272.3,-327.37 278.31,-322.16"/>
-<polygon fill="black" stroke="black" points="280.65,-324.76 285.91,-315.57 276.06,-319.47 280.65,-324.76"/>
-<text text-anchor="middle" x="300.04" y="-333.56" font-family="Times,serif" font-size="14.00">pass_tgt</text>
+<path fill="none" stroke="black" d="M199.22,-231.36C204.58,-226.72 210.58,-221.52 216.39,-216.48"/>
+<polygon fill="black" stroke="black" points="218.86,-218.97 224.12,-209.78 214.27,-213.68 218.86,-218.97"/>
+<text text-anchor="middle" x="177.3" y="-212.72" font-family="Times,serif" font-size="14.00">pass_tgt</text>
 </g>
 </g>
 </svg>
@@ -1221,55 +1221,55 @@ end</code></pre><div class="c-set">
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="387pt" height="107pt"
- viewBox="0.00 0.00 386.59 107.27" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 103.27)">
+<svg width="317pt" height="60pt"
+ viewBox="0.00 0.00 316.61 60.47" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 56.47)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-103.27 382.59,-103.27 382.59,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-56.47 312.61,-56.47 312.61,4 -4,4"/>
 <!-- n1 -->
 <g id="node1" class="node">
 <title>n1</title>
-<ellipse fill="none" stroke="black" cx="18" cy="-51.55" rx="18" ry="18"/>
-<text text-anchor="middle" x="18" y="-47.85" font-family="Times,serif" font-size="14.00">Box</text>
+<ellipse fill="none" stroke="black" cx="27" cy="-25.91" rx="27" ry="18"/>
+<text text-anchor="middle" x="27" y="-22.21" font-family="Times,serif" font-size="14.00">Box</text>
 </g>
 <!-- n2 -->
 <g id="node2" class="node">
 <title>n2</title>
-<ellipse fill="none" stroke="black" cx="125.56" cy="-62.85" rx="18" ry="18"/>
-<text text-anchor="middle" x="125.56" y="-59.15" font-family="Times,serif" font-size="14.00">Port</text>
+<ellipse fill="none" stroke="black" cx="98.75" cy="-32.89" rx="27" ry="18"/>
+<text text-anchor="middle" x="98.75" y="-29.19" font-family="Times,serif" font-size="14.00">Port</text>
 </g>
 <!-- n2&#45;&gt;n1 -->
 <g id="edge1" class="edge">
 <title>n2&#45;&gt;n1</title>
-<path fill="none" stroke="black" d="M107.31,-60.93C90.52,-59.17 65.37,-56.53 46.03,-54.5"/>
-<polygon fill="black" stroke="black" points="46.29,-51 35.98,-53.44 45.56,-57.97 46.29,-51"/>
-<text text-anchor="middle" x="63.67" y="-61.51" font-family="Times,serif" font-size="14.00">box</text>
+<path fill="none" stroke="black" d="M72.04,-30.29C69.46,-30.04 66.81,-29.78 64.15,-29.52"/>
+<polygon fill="black" stroke="black" points="64.27,-26.02 53.98,-28.53 63.59,-32.99 64.27,-26.02"/>
+<text text-anchor="middle" x="61.59" y="-18.71" font-family="Times,serif" font-size="14.00">box</text>
 </g>
 <!-- n4 -->
 <g id="node4" class="node">
 <title>n4</title>
-<ellipse fill="none" stroke="black" cx="233.92" cy="-66.81" rx="32.4" ry="32.4"/>
-<text text-anchor="middle" x="233.92" y="-63.11" font-family="Times,serif" font-size="14.00">Junction</text>
+<ellipse fill="none" stroke="black" cx="170.97" cy="-34.47" rx="32.4" ry="18"/>
+<text text-anchor="middle" x="170.97" y="-30.77" font-family="Times,serif" font-size="14.00">Junction</text>
 </g>
 <!-- n2&#45;&gt;n4 -->
 <g id="edge2" class="edge">
 <title>n2&#45;&gt;n4</title>
-<path fill="none" stroke="black" d="M143.94,-63.52C156.94,-64 174.92,-64.65 191.39,-65.26"/>
-<polygon fill="black" stroke="black" points="191.27,-68.75 201.39,-65.62 191.53,-61.76 191.27,-68.75"/>
-<text text-anchor="middle" x="167.67" y="-53.19" font-family="Times,serif" font-size="14.00">junction</text>
+<path fill="none" stroke="black" d="M126.05,-33.48C126.68,-33.5 127.31,-33.51 127.94,-33.52"/>
+<polygon fill="black" stroke="black" points="128.21,-37.03 138.28,-33.75 128.36,-30.03 128.21,-37.03"/>
+<text text-anchor="middle" x="127" y="-22.3" font-family="Times,serif" font-size="14.00">junction</text>
 </g>
 <!-- n3 -->
 <g id="node3" class="node">
 <title>n3</title>
-<ellipse fill="none" stroke="black" cx="338.99" cy="-39.6" rx="39.7" ry="39.7"/>
-<text text-anchor="middle" x="338.99" y="-35.9" font-family="Times,serif" font-size="14.00">OuterPort</text>
+<ellipse fill="none" stroke="black" cx="241.36" cy="-18" rx="39.7" ry="18"/>
+<text text-anchor="middle" x="241.36" y="-14.3" font-family="Times,serif" font-size="14.00">OuterPort</text>
 </g>
 <!-- n3&#45;&gt;n4 -->
 <g id="edge3" class="edge">
 <title>n3&#45;&gt;n4</title>
-<path fill="none" stroke="black" d="M300.46,-49.58C292.3,-51.69 283.65,-53.93 275.39,-56.07"/>
-<polygon fill="black" stroke="black" points="274.36,-52.73 265.55,-58.62 276.11,-59.5 274.36,-52.73"/>
-<text text-anchor="middle" x="262.18" y="-41.63" font-family="Times,serif" font-size="14.00">outer_junction</text>
+<path fill="none" stroke="black" d="M205.75,-26.33C205.66,-26.35 205.56,-26.37 205.47,-26.4"/>
+<polygon fill="black" stroke="black" points="210.2,-21.69 201.26,-27.38 211.8,-28.51 210.2,-21.69"/>
+<text text-anchor="middle" x="257.11" y="-30.16" font-family="Times,serif" font-size="14.00">outer_junction</text>
 </g>
 </g>
 </svg>
@@ -1676,49 +1676,49 @@ end</code></pre><div class="c-set">
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="146pt" height="232pt"
- viewBox="0.00 0.00 146.36 232.49" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 228.49)">
+<svg width="130pt" height="169pt"
+ viewBox="0.00 0.00 130.13 169.48" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 165.48)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-228.49 142.36,-228.49 142.36,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-165.48 126.13,-165.48 126.13,4 -4,4"/>
 <!-- n1 -->
 <g id="node1" class="node">
 <title>n1</title>
-<ellipse fill="none" stroke="black" cx="18" cy="-206.49" rx="18" ry="18"/>
-<text text-anchor="middle" x="18" y="-202.79" font-family="Times,serif" font-size="14.00">Box</text>
+<ellipse fill="none" stroke="black" cx="27" cy="-143.48" rx="27" ry="18"/>
+<text text-anchor="middle" x="27" y="-139.78" font-family="Times,serif" font-size="14.00">Box</text>
 </g>
 <!-- n2 -->
 <g id="node2" class="node">
 <title>n2</title>
-<ellipse fill="none" stroke="black" cx="86.08" cy="-121.95" rx="18" ry="18"/>
-<text text-anchor="middle" x="86.08" y="-118.25" font-family="Times,serif" font-size="14.00">Port</text>
+<ellipse fill="none" stroke="black" cx="71.02" cy="-86.15" rx="27" ry="18"/>
+<text text-anchor="middle" x="71.02" y="-82.45" font-family="Times,serif" font-size="14.00">Port</text>
 </g>
 <!-- n2&#45;&gt;n1 -->
 <g id="edge3" class="edge">
 <title>n2&#45;&gt;n1</title>
-<path fill="none" stroke="black" d="M74.53,-136.29C63.91,-149.49 47.98,-169.26 35.74,-184.46"/>
-<polygon fill="black" stroke="black" points="32.93,-182.38 29.38,-192.36 38.38,-186.77 32.93,-182.38"/>
-<text text-anchor="middle" x="42.14" y="-164.18" font-family="Times,serif" font-size="14.00">box</text>
+<path fill="none" stroke="black" d="M58.52,-102.43C54.49,-107.68 49.94,-113.61 45.56,-119.3"/>
+<polygon fill="black" stroke="black" points="42.69,-117.3 39.38,-127.36 48.24,-121.56 42.69,-117.3"/>
+<text text-anchor="middle" x="39.04" y="-114.67" font-family="Times,serif" font-size="14.00">box</text>
 </g>
 <!-- n3 -->
 <g id="node3" class="node">
 <title>n3</title>
-<ellipse fill="none" stroke="black" cx="119.66" cy="-18.7" rx="18.9" ry="18.9"/>
-<text text-anchor="middle" x="119.66" y="-15" font-family="Times,serif" font-size="14.00">Wire</text>
+<ellipse fill="none" stroke="black" cx="95.13" cy="-18" rx="27" ry="18"/>
+<text text-anchor="middle" x="95.13" y="-14.3" font-family="Times,serif" font-size="14.00">Wire</text>
 </g>
 <!-- n3&#45;&gt;n2 -->
 <g id="edge1" class="edge">
 <title>n3&#45;&gt;n2</title>
-<path fill="none" stroke="black" d="M109,-34.6C102.03,-50.37 93.81,-74.83 88.94,-93.87"/>
-<polygon fill="black" stroke="black" points="85.49,-93.26 86.61,-103.8 92.3,-94.86 85.49,-93.26"/>
-<text text-anchor="middle" x="87.97" y="-68.04" font-family="Times,serif" font-size="14.00">src</text>
+<path fill="none" stroke="black" d="M82.95,-34.24C79.72,-41.33 76.52,-49.85 74.03,-57.91"/>
+<polygon fill="black" stroke="black" points="70.6,-57.18 71.3,-67.75 77.35,-59.05 70.6,-57.18"/>
+<text text-anchor="middle" x="67.49" y="-49.88" font-family="Times,serif" font-size="14.00">src</text>
 </g>
 <!-- n3&#45;&gt;n2 -->
 <g id="edge2" class="edge">
 <title>n3&#45;&gt;n2</title>
-<path fill="none" stroke="black" d="M118.92,-37.83C115.29,-54.68 107.55,-79.3 100.29,-97.56"/>
-<polygon fill="black" stroke="black" points="96.98,-96.39 96.33,-106.96 103.44,-99.1 96.98,-96.39"/>
-<text text-anchor="middle" x="120.61" y="-71.49" font-family="Times,serif" font-size="14.00">tgt</text>
+<path fill="none" stroke="black" d="M94.92,-36.1C93.14,-43.53 90.34,-52.26 87.21,-60.34"/>
+<polygon fill="black" stroke="black" points="83.91,-59.16 83.27,-69.74 90.36,-61.87 83.91,-59.16"/>
+<text text-anchor="middle" x="102.06" y="-52.02" font-family="Times,serif" font-size="14.00">tgt</text>
 </g>
 </g>
 </svg>
@@ -1874,4 +1874,4 @@ end</code></pre><div class="c-set">
 </g>
 </g>
 </svg>
-<p>Almost every application of graphs in computer science could be better served by using one of these extensions to the basic graph data structure.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../diagrams_and_expressions/">« Wiring diagrams and syntactic expressions</a><a class="docs-footer-nextpage" href="../../graphics/composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Friday 22 April 2022 18:12">Friday 22 April 2022</span>. Using Julia version 1.7.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+<p>Almost every application of graphs in computer science could be better served by using one of these extensions to the basic graph data structure.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../diagrams_and_expressions/">« Wiring diagrams and syntactic expressions</a><a class="docs-footer-nextpage" href="../../graphics/composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Monday 25 April 2022 20:33">Monday 25 April 2022</span>. Using Julia version 1.7.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
