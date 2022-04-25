@@ -3,16 +3,15 @@ using Catlab.CategoricalAlgebra
 using Catlab.Graphs
 using Catlab.Graphics
 using Catlab.Graphics.Graphviz
-#import Catlab.Graphics.Graphviz: to_graphviz, to_graphviz_property_graph
 
 using Colors
 draw(g) = to_graphviz(g, node_labels=true, edge_labels=true)
 
 GraphvizGraphs.to_graphviz(f::ACSetTransformation; kw...) =
-  to_graphviz(GraphvizGraphs.to_graphviz_property_graph(f; kw...))
+  to_graphviz(to_graphviz_property_graph(f; kw...))
 
 function GraphvizGraphs.to_graphviz_property_graph(f::ACSetTransformation; kw...)
-  pg = GraphvizGraphs.to_graphviz_property_graph(dom(f); kw...)
+  pg = to_graphviz_property_graph(dom(f); kw...)
   vcolors = hex.(range(colorant"#0021A5", stop=colorant"#FA4616", length=nparts(codom(f), :V)))
   ecolors = hex.(range(colorant"#6C9AC3", stop=colorant"#E28F41", length=nparts(codom(f), :E)))
   hex.(colormap("Oranges", nparts(codom(f), :V)))

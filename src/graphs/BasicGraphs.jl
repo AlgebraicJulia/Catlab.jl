@@ -17,6 +17,7 @@ export HasVertices, HasGraph,
   AbstractSymmetricReflexiveGraph, SymmetricReflexiveGraph,
   AbstractHalfEdgeGraph, HalfEdgeGraph, vertex, half_edges,
   add_dangling_edge!, add_dangling_edges!,
+  AbstractLabeledGraph, LabeledGraph,
   AbstractWeightedGraph, WeightedGraph, weight,
   AbstractSymmetricWeightedGraph, SymmetricWeightedGraph
 
@@ -263,9 +264,11 @@ add_edge!(g::AbstractSymmetricGraph, src::Int, tgt::Int; kw...) =
 function add_edges!(g::AbstractSymmetricGraph, srcs::AbstractVector{Int},
                     tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
-  k = nparts(g, :E)
-  add_parts!(g, :E, 2n; src=vcat(srcs,tgts), tgt=vcat(tgts,srcs),
-             inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
+  edges1 = add_parts!(g, :E, n; src=srcs, tgt=tgts, kw...)
+  edges2 = add_parts!(g, :E, n; src=tgts, tgt=srcs, kw...)
+  set_subpart!(g, edges1, :inv, edges2)
+  set_subpart!(g, edges2, :inv, edges1)
+  first(edges1):last(edges2)
 end
 
 function rem_vertices!(g::AbstractSymmetricGraph, vs; keep_edges::Bool=false)
@@ -374,9 +377,11 @@ add_edge!(g::AbstractSymmetricReflexiveGraph, src::Int, tgt::Int; kw...) =
 function add_edges!(g::AbstractSymmetricReflexiveGraph,
                     srcs::AbstractVector{Int}, tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
-  k = nparts(g, :E)
-  add_parts!(g, :E, 2n; src=vcat(srcs,tgts), tgt=vcat(tgts,srcs),
-             inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
+  edges1 = add_parts!(g, :E, n; src=srcs, tgt=tgts, kw...)
+  edges2 = add_parts!(g, :E, n; src=tgts, tgt=srcs, kw...)
+  set_subpart!(g, edges1, :inv, edges2)
+  set_subpart!(g, edges2, :inv, edges1)
+  first(edges1):last(edges2)
 end
 
 function rem_vertices!(g::AbstractSymmetricReflexiveGraph, vs;
@@ -449,17 +454,17 @@ end
                    tgts::AbstractVector{Int}; kw...) =
   add_half_edge_pairs!(g, srcs, tgts; kw...)
 
-function add_half_edge_pair!(g::AbstractHalfEdgeGraph, src::Int, tgt::Int; kw...)
-  k = nparts(g, :H)
-  add_parts!(g, :H, 2; vertex=[src,tgt], inv=[k+2,k+1], kw...)
-end
+add_half_edge_pair!(g::AbstractHalfEdgeGraph, src::Int, tgt::Int; kw...) =
+  add_half_edge_pairs!(g, src:src, tgt:tgt; kw...)
 
 function add_half_edge_pairs!(g::AbstractHalfEdgeGraph, srcs::AbstractVector{Int},
                               tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
-  k = nparts(g, :H)
-  add_parts!(g, :H, 2n; vertex=vcat(srcs,tgts),
-             inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
+  hs  = add_parts!(g, :H, n; vertex=srcs, kw...)
+  hs′ = add_parts!(g, :H, n; vertex=tgts, kw...)
+  set_subpart!(g, hs, :inv, hs′)
+  set_subpart!(g, hs′, :inv, hs)
+  first(hs):last(hs′)
 end
 
 """ Add a dangling edge to a half-edge graph.
@@ -492,6 +497,26 @@ rem_edge!(g::AbstractHalfEdgeGraph, src::Int, tgt::Int) =
 rem_edge!(g::AbstractHalfEdgeGraph, h::Int) = rem_edges!(g, h:h)
 rem_edges!(g::AbstractHalfEdgeGraph, hs) =
   rem_parts!(g, :H, unique!(sort!([hs; inv(g, hs)])))
+
+# Labeled graphs
+################
+
+@present TheoryLabeledGraph <: TheoryGraph begin
+  Label::AttrType
+  label::Attr(V,Label)
+end
+
+""" Abstract type for labeled graphs.
+"""
+@abstract_acset_type AbstractLabeledGraph <: AbstractGraph
+
+""" A labeled graph.
+
+By convention, a "labeled graph" without qualification is a vertex-labeled
+graph. We do not require that the label be unique, and in this data type, the
+label attribute is not indexed.
+"""
+@acset_type LabeledGraph(TheoryLabeledGraph, index=[:src,:tgt]) <: AbstractLabeledGraph
 
 # Weighted graphs
 #################

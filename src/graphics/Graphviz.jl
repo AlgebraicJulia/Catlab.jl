@@ -117,6 +117,16 @@ Base.@kwdef struct Label <: Statement
   label::String = ""
 end
 
+# Useful in unit tests. Not exported.
+
+function filter_statements(graph::Graph, type::Type)
+  [ stmt for stmt in graph.stmts if stmt isa type ]
+end
+function filter_statements(graph::Graph, type::Type, attr::Symbol)
+  [ stmt.attrs[attr] for stmt in graph.stmts
+    if stmt isa type && haskey(stmt.attrs, attr) ]
+end
+
 # Bindings
 ##########
 

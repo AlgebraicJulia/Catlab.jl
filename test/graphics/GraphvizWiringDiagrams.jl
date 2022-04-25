@@ -3,19 +3,13 @@ module TestGraphvizWiringDiagrams
 using Test
 import JSON
 
-using Catlab.Theories, Catlab.WiringDiagrams, Catlab.Graphics,
-      Catlab.CategoricalAlgebra
+using Catlab.Theories, Catlab.WiringDiagrams, Catlab.Graphics
+using Catlab.CategoricalAlgebra: @acset
 using Catlab.Programs: @relation
 import Catlab.Graphics: Graphviz
 using Catlab.Graphics.WiringDiagramLayouts: position, normal
 
-function stmts(graph::Graphviz.Graph, type::Type)
-  [ stmt for stmt in graph.stmts if stmt isa type ]
-end
-function stmts(graph::Graphviz.Graph, type::Type, attr::Symbol)
-  [ stmt.attrs[attr] for stmt in graph.stmts
-    if stmt isa type && haskey(stmt.attrs, attr) ]
-end
+const stmts = Graphviz.filter_statements
 
 # Directed drawing
 ##################
