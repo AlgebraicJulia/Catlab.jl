@@ -701,6 +701,7 @@ function parse_conj_query_ob_rhs(C::FinCat, expr, d::DiagramData{op}, c′)
     Expr(:tuple, x::Symbol, f) => (x, f)
     Expr(:call, op, _...) && if op ∈ compose_ops end =>
       leftmost_arg(expr, (:(⋅), :(⨟)), all_ops=compose_ops)
+    Expr(:call, name::Symbol, _) => reverse(destructure_unary_call(expr))
     _ => error("Cannot parse object assignment in migration: $expr")
   end
   j = ob_named(shape(d), j_name)
