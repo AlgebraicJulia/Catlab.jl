@@ -349,8 +349,8 @@ Z = SigmaMigration(edge, Initial, Graph)(Y)
 @test nparts(Z, :E) == 4
 @test Z[:src] ∪ Z[:tgt] == 1:8
 
-# Applications of sigma migration
-#--------------------------------
+# Yoneda embedding
+#-----------------
 
 yV, yE = Graph(1), path_graph(Graph, 2)
 @test representable(Graph, :V) == yV
@@ -361,5 +361,21 @@ y_Graph = yoneda(Graph)
 @test ob_map(y_Graph, :E) == yE
 @test hom_map(y_Graph, :src) == ACSetTransformation(yV, yE, V=[1])
 @test hom_map(y_Graph, :tgt) == ACSetTransformation(yV, yE, V=[2])
+
+F = @migration TheoryGraph begin
+  X => @join begin
+    (e₁, e₂)::E
+    tgt(e₁) == src(e₂)
+  end
+  (I, O) => V
+  (i: X → I) => src(e₁)
+  (o: X → O) => tgt(e₂)
+end
+G = colimit_representables(F, y_Graph)
+X, I, O = collect_ob(G)
+@test is_isomorphic(X, path_graph(Graph, 3))
+i, o = collect_hom(G)
+@test isempty(inneighbors(X, only(collect(i[:V]))))
+@test isempty(outneighbors(X, only(collect(o[:V]))))
 
 end
