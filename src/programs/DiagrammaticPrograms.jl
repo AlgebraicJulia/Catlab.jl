@@ -241,15 +241,17 @@ function parse_ob_hom_maps(C::FinCat, body::Expr; allow_missing::Bool=false)
     end
   end
   ob_rhs = make_map(ob_generators(C)) do x
-    get(assignments, ob_name(C, x)) do
-      allow_missing ? missing : error("Object $(ob_name(C,x)) is not assigned")
-    end
+    y = pop!(assignments, ob_name(C, x), missing)
+    (!ismissing(y) || allow_missing) ? y :
+      error("Object $(ob_name(C,x)) is not assigned")
   end
   hom_rhs = make_map(hom_generators(C)) do f
-    get(assignments, hom_name(C, f)) do
-      allow_missing ? missing : error("Morphism $(hom_name(C,f)) is not assigned")
-    end
+    g = pop!(assignments, hom_name(C, f), missing)
+    (!ismissing(g) || allow_missing) ? g :
+      error("Morphism $(hom_name(C,f)) is not assigned")
   end
+  isempty(assignments) ||
+    error(string("Unused assignment(s): ", join(keys(assignments), ", ")))
   (ob_rhs, hom_rhs)
 end
 
@@ -522,8 +524,7 @@ This macro provides a DSL to specify a contravariant data migration from
 defined by a functor from ``D`` to a category of queries on ``C``. Thus, every
 object of ``D`` is assigned a query on ``C`` and every morphism of ``D`` is
 assigned a morphism of queries, in a compatible way. Example usages are in the
-unit tests and the AlgebraicJulia blog (TODO: link). What follows is a technical
-reference.
+unit tests. What follows is a technical reference.
 
 Several categories of queries are supported by this macro:
 
@@ -701,6 +702,7 @@ function parse_conj_query_ob_rhs(C::FinCat, expr, d::DiagramData{op}, c′)
     Expr(:tuple, x::Symbol, f) => (x, f)
     Expr(:call, op, _...) && if op ∈ compose_ops end =>
       leftmost_arg(expr, (:(⋅), :(⨟)), all_ops=compose_ops)
+    Expr(:call, name::Symbol, _) => reverse(destructure_unary_call(expr))
     _ => error("Cannot parse object assignment in migration: $expr")
   end
   j = ob_named(shape(d), j_name)
@@ -766,10 +768,7 @@ function make_query_hom(f::DiagramHomData{op}, d::Diagram{op}, d′::Diagram{op}
       j => j
     end
   end
-  f_hom = mapvals(f.hom_map) do h; @match h begin
-    ::Missing => only_hom(shape(d))
-    _ => h
-  end end
+  f_hom = mapvals(h -> ismissing(h) ? only_hom(shape(d)) : h, f.hom_map)
   DiagramHom{op}(f_ob, f_hom, d, d′)
 end
 
@@ -785,10 +784,7 @@ function make_query_hom(f::DiagramHomData{id}, d::Diagram{id}, d′::Diagram{id}
       j′ => j′
     end
   end
-  f_hom = mapvals(f.hom_map) do h; @match h begin
-    ::Missing => only_hom(shape(d′))
-    _ => h
-  end end
+  f_hom = mapvals(h -> ismissing(h) ? only_hom(shape(d′)) : h, f.hom_map)
   DiagramHom{id}(f_ob, f_hom, d, d′)
 end
 

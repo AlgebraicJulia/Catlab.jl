@@ -86,19 +86,34 @@ end
                       TheoryGraph, ThCPortGraph)
 
 # Incomplete definition.
-@test_throws ErrorException @finfunctor(TheoryGraph, ThCPortGraph, begin
-  V => Box
-  src => src ⨟ box
-  tgt => tgt ⨟ box
-end)
+@test_throws ErrorException begin
+  @finfunctor TheoryGraph ThCPortGraph begin
+    V => Box
+    src => src ⨟ box
+    tgt => tgt ⨟ box
+  end
+end
 
 # Failure of functorality.
-@test_throws ErrorException (@finfunctor TheoryGraph ThCPortGraph begin
-  V => Box
-  E => Wire
-  src => src
-  tgt => tgt
-end)
+@test_throws ErrorException begin
+  @finfunctor TheoryGraph ThCPortGraph begin
+    V => Box
+    E => Wire
+    src => src
+    tgt => tgt
+  end
+end
+
+# Extra definitions.
+@test_throws ErrorException begin
+  @finfunctor TheoryGraph TheoryReflexiveGraph begin
+    V => Box
+    E => Wire
+    src => src
+    tgt => tgt
+    refl => refl
+  end
+end
 
 # GAT expressions.
 F = @finfunctor TheoryDDS TheoryDDS begin
@@ -222,6 +237,20 @@ F_E = diagram(ob_map(F, :E))
 @test nameof.(collect_hom(F_E)) == [:tgt, :src]
 F_tgt = hom_map(F, :tgt)
 @test collect_ob(F_tgt) == [(3, TheoryGraph[:tgt])]
+
+# Syntactic variant of above.
+F′ = @migration TheoryGraph TheoryGraph begin
+  V => V
+  E => @join begin
+    v::V
+    (e₁, e₂)::E
+    tgt(e₁) == v
+    src(e₂) == v
+  end
+  src => src(e₁)
+  tgt => tgt(e₂)
+end
+@test F′ == F
 
 # Cartesian product of graph with itself.
 F = @migration TheoryGraph TheoryGraph begin
@@ -357,8 +386,8 @@ F = @migration TheoryGraph TheoryGraph begin
     path => @join begin
       v::V
       (e₁, e₂)::E
-      tgt(e₁) == v
-      src(e₂) == v
+      (e₁ → v)::tgt
+      (e₂ → v)::src
     end
   end
   src => begin
