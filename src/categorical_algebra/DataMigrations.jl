@@ -2,7 +2,7 @@
 """
 module DataMigrations
 export DataMigration, DeltaMigration, SigmaMigration, migrate, migrate!,
-  representable, yoneda
+  representable, yoneda, colimit_representables
 
 using ...Syntax, ...Present, ...Theories
 using ...Theories: SchemaDesc, ob, hom, dom, codom, attr, adom
@@ -186,7 +186,7 @@ function migrate(X::FinDomFunctor, F::ConjSchemaMigration;
   return_limits ? (Y, limits) : Y
 end
 
-# FIXME: We should put this elsewhere and think more carefully about names.
+# FIXME: Put this elsewhere and think more carefully about the interface.
 ob_name(C::FinCat, x) = x
 ob_name(C::FinCat, x::GATExpr) = nameof(x)
 hom_name(C::FinCat, f) = f
@@ -374,8 +374,8 @@ function comma_cat_hom!(F∇d, F∇d′, id_d, g, FHomInv)
   return ACSetTransformation((V = collect(vs), E = collect(es)), F∇d′, F∇d)
 end
 
-# Applications of sigma migration
-#--------------------------------
+# Yoneda embedding
+#-----------------
 
 """ Construct a representable C-set.
 
@@ -406,6 +406,8 @@ representable(::Type{T}, ob::Symbol) where T <: StructACSet =
 
 Because Catlab privileges copresheaves (C-sets) over presheaves, this is the
 *contravariant* Yoneda embedding, i.e., the embedding C^op → C-Set.
+
+Returns a `FinDomFunctor` with domain `op(C)`.
 """
 function yoneda(::Type{T}, C::Presentation{Schema}) where T <: ACSet
   y_ob = Dict(c => representable(T, C, nameof(c)) for c in generators(C, :Ob))
@@ -418,6 +420,28 @@ function yoneda(::Type{T}, C::Presentation{Schema}) where T <: ACSet
   FinDomFunctor(y_ob, y_hom, op(FinCat(C)))
 end
 yoneda(::Type{T}) where T <: StructACSet = yoneda(T, Presentation(T))
+
+""" Interpret conjunctive data migration as a colimit of representables.
+
+Given a conjunctive data migration (a functor `J → Diag{op}(C)`) and the Yoneda
+embedding for `C` (a functor `op(C) → C-Set` computed via [`yoneda`](@ref)),
+take colimits of representables to construct a `op(J)`-shaped diagram of C-sets.
+
+Since every C-set is a colimit of representables, this is a generic way of
+constructing diagrams of C-sets.
+"""
+function colimit_representables(F::ConjSchemaMigration, y)
+  C = dom(F)
+  colimits = make_map(ob_generators(C)) do c
+    Fc = ob_map(F, c)
+    colimit(compose(op(Fc), y))
+  end
+  homs = make_map(hom_generators(C)) do f
+    Ff, c, d = hom_map(F, f), dom(C, f), codom(C, f)
+    universal(compose(op(Ff), y), colimits[d], colimits[c])
+  end
+  FinDomFunctor(mapvals(ob, colimits), homs, op(C))
+end
 
 # Schema translation
 ####################
