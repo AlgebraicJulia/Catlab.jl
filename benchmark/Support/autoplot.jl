@@ -31,12 +31,12 @@ function autoPlot(fromList, toList)
         f = fromList[i]
         t = toList[i]
         #injection
-        append!(y1, time(median(@benchmark homomorphism($f, add_loops($t)))))
+        append!(y1, time(median(@benchmark homomorphism($f, $t))))
         append!(x1, length(vertices(f)))
         append!(x3, length(edges(t)))
         print("Injection complete.   ")
         #surjection
-        append!(y2, time(median(@benchmark homomorphism($t, add_loops($f)))))
+        append!(y2, time(median(@benchmark homomorphism($t, $f))))
         append!(x2, length(vertices(t)))
         append!(x4, length(edges(t)))
         print("Surjection complete.\n")
@@ -59,7 +59,7 @@ function quickPlot(fromList, toList)
         f = fromList[i]
         t = toList[i]
         #injection
-        tempy1 = @elapsed homomorphism(f, add_loops(t))
+        tempy1 = @elapsed homomorphism(f, t)
         append!(y1, tempy1)
         append!(x1, length(vertices(f)))
         append!(x3, length(edges(t)))
@@ -197,12 +197,12 @@ function autoPlotAll(fromList, toList)
             print("Graph pair $count:   ")
             t = toList[j]
             #injection
-            append!(y1, time(median(@benchmark homomorphism($f, add_loops($t)))))
+            append!(y1, time(median(@benchmark homomorphism($f, $t))))
             append!(x1, length(vertices(f)))
             append!(x3, length(edges(t)))
             print("Injection complete.   ")
             #surjection
-            append!(y2, time(median(@benchmark homomorphism($t, add_loops($f)))))
+            append!(y2, time(median(@benchmark homomorphism($t, $f))))
             append!(x2, length(vertices(t)))
             append!(x4, length(edges(t)))
             print("Surjection complete.\n")
