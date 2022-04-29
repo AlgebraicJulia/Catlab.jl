@@ -142,11 +142,12 @@ quad_int = @acset SSet begin
 end
 
 function elements(f::ACSetTransformation{S}) where {S}
-  offY = Dict([o => let z = findfirst(==(i), elements(codom(f))[:πₑ])
+  X, Y = elements(dom(f)), elements(codom(f))
+  offY = Dict([o => let z = findfirst(==(i), Y[:πₑ])
     isnothing(z) ? 0 : z - 1
   end
                for (i, o) in enumerate(ob(S))])
   pts = vcat([collect(f[o]) .+ offY[o] for o in ob(S)]...)
-  hs = homomorphisms(elements(dom(f)), elements(codom(f)); initial=Dict([:El => pts]))
+  hs = homomorphisms(X, Y; initial=Dict([:El => pts]))
   return only(hs)
 end
