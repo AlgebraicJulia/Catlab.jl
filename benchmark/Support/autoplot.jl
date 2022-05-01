@@ -8,10 +8,20 @@ using Colors
 using Plots
 
 # add_loops
-add_loops!(g) = add_parts!(g, :E, nparts(g, :V), src=parts(g, :V), tgt=parts(g, :V))
+# returns a graph with loops on the user-provided vertices
+# valid g input consists of Catlab ACSet graphs
+# valid vs input consists of lists or integer UnitRanges
+add_loops!(g, vs) = add_parts!(g, :E, length(vs), src=vs, tgt=vs)
+add_loops(g, vs) = begin
+    h = copy(g)
+    add_loops!(h, vs)
+    return h
+end
+
+# general version to add loops to all vertices of a graph
 add_loops(g) = begin
     h = copy(g)
-    add_loops!(h)
+    add_loops!(h, parts(h, :V))
     return h
 end
 
