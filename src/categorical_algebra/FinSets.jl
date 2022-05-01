@@ -18,8 +18,8 @@ using ...GAT, ...Theories, ...CSetDataStructures, ...Graphs
 using ..FinCats, ..FreeDiagrams, ..Limits, ..Subobjects
 import ...Theories: Ob, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 import ..Categories: ob, hom, dom, codom, compose, id, ob_map, hom_map
-import ..FinCats: force, ob_generators, hom_generators, ob_generator, graph,
-  is_discrete
+import ..FinCats: force, ob_generators, hom_generators, ob_generator,
+  ob_generator_name, graph, is_discrete
 using ..FinCats: dicttype
 import ..Limits: limit, colimit, universal, pushout_complement,
   can_pushout_complement
@@ -144,6 +144,7 @@ FinCat(s::Union{FinSet,Integer}) = DiscreteCat(s)
 ob_generators(C::DiscreteCat) = C.set
 hom_generators(::DiscreteCat) = ()
 ob_generator(C::DiscreteCat, x) = x ∈ C.set ? x : error("$x ∉ $(C.set)")
+ob_generator_name(C::DiscreteCat, x) = x
 hom(C::DiscreteCat, x) = ob_generator(C, x)
 
 is_discrete(::DiscreteCat) = true

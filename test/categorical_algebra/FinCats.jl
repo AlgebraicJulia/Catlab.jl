@@ -130,6 +130,8 @@ end
 @test hom(Δ¹, :δ₀) == Simplex1D[:δ₀]
 @test ob_generator(Δ¹, :E) == Simplex1D[:E]
 @test hom_generator(Δ¹, :σ₀) == Simplex1D[:σ₀]
+@test ob_generator_name(Δ¹, Simplex1D[:V]) == :V
+@test hom_generator_name(Δ¹, Simplex1D[:δ₀]) == :δ₀
 @test first.(ob_generators(Δ¹)) == [:V, :E]
 @test first.(hom_generators(Δ¹)) == [:δ₀, :δ₁, :σ₀]
 @test length(equations(Δ¹)) == 2

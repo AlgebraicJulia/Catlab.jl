@@ -14,10 +14,10 @@ using MLStyle: @match
 using ...GAT, ...Present, ...Graphs, ...CategoricalAlgebra
 using ...Theories: munit
 using ...CategoricalAlgebra.FinCats: mapvals, make_map
-import ...CategoricalAlgebra.FinCats: vertex_named, edge_named
-import ...CategoricalAlgebra.DataMigrations: ob_name, hom_name
 using ...CategoricalAlgebra.DataMigrations: ConjQuery, GlueQuery, GlucQuery
 using ...Graphs.BasicGraphs: TheoryGraph
+import ...CategoricalAlgebra.FinCats: vertex_name, vertex_named,
+  edge_name, edge_named
 
 # Graphs
 ########
@@ -246,14 +246,14 @@ function parse_ob_hom_maps(C::FinCat, body::Expr; allow_missing::Bool=false)
     end
   end
   ob_rhs = make_map(ob_generators(C)) do x
-    y = pop!(assignments, ob_name(C, x), missing)
+    y = pop!(assignments, ob_generator_name(C, x), missing)
     (!ismissing(y) || allow_missing) ? y :
-      error("Object $(ob_name(C,x)) is not assigned")
+      error("Object $(ob_generator_name(C,x)) is not assigned")
   end
   hom_rhs = make_map(hom_generators(C)) do f
-    g = pop!(assignments, hom_name(C, f), missing)
+    g = pop!(assignments, hom_generator_name(C, f), missing)
     (!ismissing(g) || allow_missing) ? g :
-      error("Morphism $(hom_name(C,f)) is not assigned")
+      error("Morphism $(hom_generator_name(C,f)) is not assigned")
   end
   isempty(assignments) ||
     error(string("Unused assignment(s): ", join(keys(assignments), ", ")))
@@ -288,9 +288,6 @@ function parse_hom(C::FinCat{Ob,Hom}, expr) where {Ob,Hom}
   end
   parse(expr)
 end
-
-ob_name(C::FinCatGraph{<:NamedGraph}, x) = vertex_name(graph(C), x)
-hom_name(C::FinCatGraph{<:NamedGraph}, f) = edge_name(graph(C), f)
 
 """ Parse GAT expression based on curly braces, rather than parentheses.
 """

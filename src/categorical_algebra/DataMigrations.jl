@@ -172,7 +172,8 @@ function migrate(X::FinDomFunctor, F::ConjSchemaMigration;
                 alg=SpecializeLimit(fallback=ToBipartiteLimit()))
     if tabular
       J = shape(Fc)
-      TabularLimit(lim, names=(ob_name(J, j) for j in ob_generators(J)))
+      names = (ob_generator_name(J, j) for j in ob_generators(J))
+      TabularLimit(lim, names=names)
     else
       lim
     end
@@ -185,12 +186,6 @@ function migrate(X::FinDomFunctor, F::ConjSchemaMigration;
   Y = FinDomFunctor(mapvals(ob, limits), funcs, tgt_schema)
   return_limits ? (Y, limits) : Y
 end
-
-# FIXME: Put this elsewhere and think more carefully about the interface.
-ob_name(C::FinCat, x) = x
-ob_name(C::FinCat, x::GATExpr) = nameof(x)
-hom_name(C::FinCat, f) = f
-hom_name(C::FinCat, f::GATExpr) = nameof(f)
 
 # Gluing migration
 #-----------------

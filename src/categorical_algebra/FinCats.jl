@@ -11,8 +11,8 @@ finitely presented are equivalent.
 """
 module FinCats
 export FinCat, FinCatGraph, Path, ob_generator, hom_generator,
-  ob_generators, hom_generators, equations, is_discrete, is_free,
-  graph, edges, src, tgt, presentation,
+  ob_generator_name, hom_generator_name, ob_generators, hom_generators,
+  equations, is_discrete, is_free, graph, edges, src, tgt, presentation,
   FinFunctor, FinDomFunctor, is_functorial, collect_ob, collect_hom, force,
   FinTransformation, components, is_natural, is_initial
 
@@ -75,6 +75,20 @@ than that of [`hom`](@ref).
 """
 function hom_generator end
 
+""" Name of object generator, if any.
+
+When object generators have names, this function is a one-sided inverse to
+[`ob_generator`](@ref) in that `ob_generator(C, ob_generator_name(C, x)) == x`.
+"""
+function ob_generator_name end
+
+""" Name of morphism generator, if any.
+
+When morphism generators have names, this function is a one-sided inverse to
+[`hom_generator`](@ref). See also: [`ob_generator_name`](@ref).
+"""
+function hom_generator_name end
+
 """ Is the category discrete?
 
 A category is *discrete* if it is has no non-identity morphisms.
@@ -119,9 +133,13 @@ ob_generator(C::FinCatGraph, x::Union{AbstractString,Symbol}) =
   vertex_named(graph(C), x)
 hom_generator(C::FinCatGraph, f::Union{AbstractString,Symbol}) =
   edge_named(graph(C), f)
+ob_generator_name(C::FinCatGraph, x) = vertex_name(graph(C), x)
+hom_generator_name(C::FinCatGraph, f) = edge_name(graph(C), f)
 
 # FIXME: These functions should go somewhere else, maybe in `Graphs`.
 # Better yet, we should have a notion of "primary key" to avoid this.
+vertex_name(G::HasGraph, v) = v
+edge_name(G::HasGraph, e) = e
 function vertex_named end
 function edge_named end
 
@@ -293,9 +311,11 @@ equations(C::FinCatPresentation) = equations(presentation(C))
 
 ob_generator(C::FinCatPresentation, x) = ob(C, presentation(C)[x])
 ob_generator(C::FinCatPresentation, x::GATExpr{:generator}) = ob(C, x)
+ob_generator_name(C::FinCatPresentation, x::GATExpr{:generator}) = first(x)
 
 hom_generator(C::FinCatPresentation, f) = hom(C, presentation(C)[f])
 hom_generator(C::FinCatPresentation, f::GATExpr{:generator}) = hom(C, f)
+hom_generator_name(C::FinCatPresentation, f::GATExpr{:generator}) = first(f)
 
 ob(C::FinCatPresentation, x::GATExpr) =
   gat_typeof(x) == :Ob ? x : error("Expression $x is not an object")
@@ -449,11 +469,11 @@ FinDomFunctor(ob_map::Union{AbstractVector{Ob},AbstractDict{<:Any,Ob}},
   FinDomFunctor(ob_map, hom_map, dom, TypeCat(Ob, Hom))
 
 ob_key(C::FinCat, x) = ob_generator(C, x)
-ob_key(C::FinCatPresentation, x) = presentation_key(x)
 hom_key(C::FinCat, f) = hom_generator(C, f)
-hom_key(C::FinCatPresentation, f) = presentation_key(f)
 
 # Use generator names, rather than generators themselves, for Dict keys.
+ob_key(C::FinCatPresentation, x) = presentation_key(x)
+hom_key(C::FinCatPresentation, f) = presentation_key(f)
 presentation_key(name::Union{AbstractString,Symbol}) = name
 presentation_key(expr::GATExpr{:generator}) = first(expr)
 
