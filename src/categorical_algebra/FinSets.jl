@@ -144,6 +144,7 @@ FinCat(s::Union{FinSet,Integer}) = DiscreteCat(s)
 ob_generators(C::DiscreteCat) = C.set
 hom_generators(::DiscreteCat) = ()
 ob_generator(C::DiscreteCat, x) = x ∈ C.set ? x : error("$x ∉ $(C.set)")
+hom(C::DiscreteCat, x) = ob_generator(C, x)
 
 is_discrete(::DiscreteCat) = true
 graph(C::DiscreteCat{Int,FinSetInt}) = Graph(length(C.set))
