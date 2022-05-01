@@ -56,12 +56,21 @@ The basic operations available in any category are: [`dom`](@ref),
 abstract type Cat{Ob,Hom,Size<:CatSize} end
 
 """ Coerce or look up object in category.
+
+Converts the input to an object in the category, which should be of type `Ob` in
+a category of type `Cat{Ob,Hom}`. How this works depends on the category, but a
+common case is to look up objects, which might be integers or GAT expressions,
+by their human-readable name, usually a symbol.
+
+See also: [`hom`](@ref).
 """
-ob(::Cat, x) = x
+@inline ob(::Cat, x) = x
 
 """ Coerce or look up morphism in category.
+
+See also: [`ob`](@ref).
 """
-hom(::Cat, f) = f
+@inline hom(::Cat, f) = f
 
 """ Domain of morphism in category.
 """

@@ -191,8 +191,6 @@ ob_name(C::FinCat, x) = x
 ob_name(C::FinCat, x::GATExpr) = nameof(x)
 hom_name(C::FinCat, f) = f
 hom_name(C::FinCat, f::GATExpr) = nameof(f)
-ob_named(C::FinCat, name) = ob(C, name)
-hom_named(C::FinCat, name) = hom(C, name)
 
 # Gluing migration
 #-----------------

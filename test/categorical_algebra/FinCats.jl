@@ -8,22 +8,22 @@ using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryReflexiveGraph,
 # Categories on graphs
 ######################
 
-# Free categories
+# Free categories on graphs
 g = parallel_arrows(Graph, 3)
 C = FinCat(g)
 @test graph(C) == g
 @test Ob(C) == FinSet(2)
 @test !is_discrete(C)
 @test is_free(C)
-@test hom(C, 1) == Path(g, 1)
+@test (hom(C, 1), hom_generator(C, 1)) == (Path(g, 1), 1)
 @test ob_generators(C) == 1:2
 @test hom_generators(C) == 1:3
 @test startswith(sprint(show, C), "FinCat($(Graph)")
 
 C_op = op(C)
 @test C_op isa FinCat
-@test ob(C_op, 1) == 1
-@test hom(C_op, 1) == Path(g, 1)
+@test (ob(C_op, 1), ob_generator(C_op, 1)) == (1, 1)
+@test (hom(C_op, 1), hom_generator(C_op, 1)) == (Path(g, 1), 1)
 @test ob_generators(C_op) == 1:2
 @test hom_generators(C_op) == 1:3
 @test op(C_op) == C
@@ -126,8 +126,10 @@ end
 
 Δ¹ = FinCat(Simplex1D)
 @test Δ¹ isa FinCat{FreeCategory.Ob,FreeCategory.Hom}
-@test ob(Δ¹, :V) isa FreeCategory.Ob
-@test hom(Δ¹, :δ₀) isa FreeCategory.Hom
+@test ob(Δ¹, :V) == Simplex1D[:V]
+@test hom(Δ¹, :δ₀) == Simplex1D[:δ₀]
+@test ob_generator(Δ¹, :E) == Simplex1D[:E]
+@test hom_generator(Δ¹, :σ₀) == Simplex1D[:σ₀]
 @test first.(ob_generators(Δ¹)) == [:V, :E]
 @test first.(hom_generators(Δ¹)) == [:δ₀, :δ₁, :σ₀]
 @test length(equations(Δ¹)) == 2
