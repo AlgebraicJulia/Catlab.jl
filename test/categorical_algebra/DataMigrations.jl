@@ -363,6 +363,19 @@ y_Graph = yoneda(Graph)
 @test hom_map(y_Graph, :tgt) == ACSetTransformation(yV, yE, V=[2])
 
 F = @migration TheoryGraph begin
+  X => E
+  (I, O) => V
+  (i: X → I) => src
+  (o: X → O) => tgt
+end
+G = colimit_representables(F, y_Graph) # Delta migration.
+X = ob_map(G, :X)
+@test X == path_graph(Graph, 2)
+i, o = hom_map(G, :i), hom_map(G, :o)
+@test only(collect(i[:V])) == 1
+@test only(collect(o[:V])) == 2
+
+F = @migration TheoryGraph begin
   X => @join begin
     (e₁, e₂)::E
     tgt(e₁) == src(e₂)
@@ -371,7 +384,7 @@ F = @migration TheoryGraph begin
   (i: X → I) => src(e₁)
   (o: X → O) => tgt(e₂)
 end
-G = colimit_representables(F, y_Graph)
+G = colimit_representables(F, y_Graph) # Conjunctive migration.
 X = ob_map(G, :X)
 @test is_isomorphic(X, path_graph(Graph, 3))
 i, o = hom_map(G, :i), hom_map(G, :o)

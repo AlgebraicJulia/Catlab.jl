@@ -423,6 +423,9 @@ take colimits of representables to construct a `op(J)`-shaped diagram of C-sets.
 Since every C-set is a colimit of representables, this is a generic way of
 constructing diagrams of C-sets.
 """
+function colimit_representables(F::DeltaSchemaMigration, y)
+  compose(op(F), y)
+end
 function colimit_representables(F::ConjSchemaMigration, y)
   C = dom(F)
   colimits = make_map(ob_generators(C)) do c
