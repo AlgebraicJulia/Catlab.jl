@@ -72,12 +72,12 @@ function to_graphviz_property_graph(X::AbstractElements;
   add_edges!(pg, X[:src], X[:tgt])
 
   for v in parts(X, :El)
-    ob_name = X[X[v, :πₑ], :nameo]
-    set_vprop!(pg, v, :label, node_labels ? "$v:$ob_name" : "$ob_name")
+    vlabel = X[X[v, :πₑ], :nameo]
+    set_vprop!(pg, v, :label, node_labels ? "$v:$vlabel" : "$vlabel")
   end
   for e in parts(X, :Arr)
-    hom_name = X[X[e, :πₐ], :nameh]
-    set_eprop!(pg, e, :label, edge_labels ? "$e:$hom_name" : "$hom_name")
+    elabel = X[X[e, :πₐ], :nameh]
+    set_eprop!(pg, e, :label, edge_labels ? "$e:$elabel" : "$elabel")
   end
   pg
 end

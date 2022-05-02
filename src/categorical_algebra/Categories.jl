@@ -56,12 +56,21 @@ The basic operations available in any category are: [`dom`](@ref),
 abstract type Cat{Ob,Hom,Size<:CatSize} end
 
 """ Coerce or look up object in category.
+
+Converts the input to an object in the category, which should be of type `Ob` in
+a category of type `Cat{Ob,Hom}`. How this works depends on the category, but a
+common case is to look up objects, which might be integers or GAT expressions,
+by their human-readable name, usually a symbol.
+
+See also: [`hom`](@ref).
 """
-ob(::Cat, x) = x
+function ob end
 
 """ Coerce or look up morphism in category.
+
+See also: [`ob`](@ref).
 """
-hom(::Cat, f) = f
+function hom end
 
 """ Domain of morphism in category.
 """
@@ -99,9 +108,11 @@ struct TypeCat{Ob,Hom} <: Cat{Ob,Hom,LargeCatSize} end
 
 TypeCat(Ob::Type, Hom::Type) = TypeCat{Ob,Hom}()
 
-# FIXME: This isn't practical because types are often too tight.
+# FIXME: Type conversion isn't practical because types are often too tight.
 #ob(::TypeCat{Ob,Hom}, x) where {Ob,Hom} = convert(Ob, x)
 #hom(::TypeCat{Ob,Hom}, f) where {Ob,Hom} = convert(Hom, f)
+ob(::TypeCat, x) = x
+hom(::TypeCat, f) = f
 
 Base.show(io::IO, ::TypeCat{Ob,Hom}) where {Ob,Hom} =
   print(io, "TypeCat($Ob, $Hom)")

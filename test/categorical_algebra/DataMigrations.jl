@@ -372,9 +372,9 @@ F = @migration TheoryGraph begin
   (o: X → O) => tgt(e₂)
 end
 G = colimit_representables(F, y_Graph)
-X, I, O = collect_ob(G)
+X = ob_map(G, :X)
 @test is_isomorphic(X, path_graph(Graph, 3))
-i, o = collect_hom(G)
+i, o = hom_map(G, :i), hom_map(G, :o)
 @test isempty(inneighbors(X, only(collect(i[:V]))))
 @test isempty(outneighbors(X, only(collect(o[:V]))))
 

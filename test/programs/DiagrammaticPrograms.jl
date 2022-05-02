@@ -296,8 +296,8 @@ F = @migration TheoryReflexiveGraph TheoryGraph begin
   end
 end
 F_tgt = hom_map(F, :tgt)
-@test ob_map(F_tgt, 1) == (2, id(TheoryGraph[:V]))
-@test hom_map(F_tgt, 2) |> edges |> only == 4
+@test ob_map(F_tgt, :v) == (2, id(TheoryGraph[:V]))
+@test hom_map(F_tgt, :t) |> edges |> only == 4
 
 # Free/initial port graph on a graph.
 # This is the left adjoint to the underlying graph functor.
@@ -323,7 +323,7 @@ F = @migration TheoryGraph begin
     v => tgt
   end
 end
-F_src = hom_map(F, 3)
+F_src = hom_map(F, :src)
 @test collect_ob(F_src) == [(1, TheoryGraph[:src]), (1, id(TheoryGraph[:E]))]
 @test collect_hom(F_src) == [id(shape(codom(F_src)), 1)]
 
@@ -370,7 +370,7 @@ F = @migration TheoryGraph begin
   end
   (component: V → Component) => v
 end
-F_C = diagram(ob_map(F, 2))
+F_C = diagram(ob_map(F, :Component))
 @test nameof.(collect_ob(F_C)) == [:E, :V]
 @test nameof.(collect_hom(F_C)) == [:src, :tgt]
 

@@ -14,15 +14,17 @@ C = TypeCat(FreeCategory.Ob, FreeCategory.Hom)
 @test Ob(C) == TypeSet(FreeCategory.Ob)
 @test sprint(show, C) == "TypeCat($(FreeCategory.Ob), $(FreeCategory.Hom))"
 
+x, y = Ob(FreeCategory, :x, :y)
+f = Hom(:f, x, y)
+@test ob(C, x) == x
+@test hom(C, f) == f
+
 # Functors
 #---------
 
 F = id(C)
 @test (dom(F), codom(F)) == (C, C)
 @test startswith(sprint(show, F), "id(TypeCat(")
-
-x, y = Ob(FreeCategory, :x, :y)
-f = Hom(:f, x, y)
 @test F(x) == x
 @test F(f) == f
 

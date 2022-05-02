@@ -15,8 +15,9 @@ using ...GAT, ...Present, ...Graphs, ...CategoricalAlgebra
 using ...Theories: munit
 using ...CategoricalAlgebra.FinCats: mapvals, make_map
 using ...CategoricalAlgebra.DataMigrations: ConjQuery, GlueQuery, GlucQuery
-import ...CategoricalAlgebra.DataMigrations: ob_name, hom_name, ob_named, hom_named
 using ...Graphs.BasicGraphs: TheoryGraph
+import ...CategoricalAlgebra.FinCats: vertex_name, vertex_named,
+  edge_name, edge_named
 
 # Graphs
 ########
@@ -28,21 +29,25 @@ using ...Graphs.BasicGraphs: TheoryGraph
   ename::Attr(E, EName)
 end
 
+""" Abstract type for graph with named vertices and edges.
+"""
+@abstract_acset_type AbstractNamedGraph <: AbstractGraph
+
 """ Graph with named vertices and edges.
 
 The default graph type used by [`@graph`](@ref), [`@fincat`](@ref),
 [`@diagram`](@ref), and related macros.
 """
 @acset_type NamedGraph(TheoryNamedGraph, index=[:src,:tgt,:ename],
-                       unique_index=[:vname]) <: AbstractGraph
+                       unique_index=[:vname]) <: AbstractNamedGraph
 # FIXME: The edge name should also be uniquely indexed, but this currently
 # doesn't play nicely with nullable attributes.
 
-vertex_name(g::HasGraph, args...) = subpart(g, args..., :vname)
-edge_name(g::HasGraph, args...) = subpart(g, args..., :ename)
+vertex_name(g::AbstractNamedGraph, args...) = subpart(g, args..., :vname)
+edge_name(g::AbstractNamedGraph, args...) = subpart(g, args..., :ename)
 
-vertex_named(g::HasGraph, name) = only(incident(g, name, :vname))
-edge_named(g::HasGraph, name)= only(incident(g, name, :ename))
+vertex_named(g::AbstractNamedGraph, name) = only(incident(g, name, :vname))
+edge_named(g::AbstractNamedGraph, name)= only(incident(g, name, :ename))
 
 """ Construct a graph in a simple, declarative style.
 
@@ -241,14 +246,14 @@ function parse_ob_hom_maps(C::FinCat, body::Expr; allow_missing::Bool=false)
     end
   end
   ob_rhs = make_map(ob_generators(C)) do x
-    y = pop!(assignments, ob_name(C, x), missing)
+    y = pop!(assignments, ob_generator_name(C, x), missing)
     (!ismissing(y) || allow_missing) ? y :
-      error("Object $(ob_name(C,x)) is not assigned")
+      error("Object $(ob_generator_name(C,x)) is not assigned")
   end
   hom_rhs = make_map(hom_generators(C)) do f
-    g = pop!(assignments, hom_name(C, f), missing)
+    g = pop!(assignments, hom_generator_name(C, f), missing)
     (!ismissing(g) || allow_missing) ? g :
-      error("Morphism $(hom_name(C,f)) is not assigned")
+      error("Morphism $(hom_generator_name(C,f)) is not assigned")
   end
   isempty(assignments) ||
     error(string("Unused assignment(s): ", join(keys(assignments), ", ")))
@@ -259,7 +264,7 @@ end
 """
 function parse_ob(C::FinCat{Ob,Hom}, expr) where {Ob,Hom}
   @match expr begin
-    x::Symbol => ob_named(C, x)
+    x::Symbol => ob_generator(C, x)
     Expr(:curly, _...) => parse_gat_expr(C, expr)::Ob
     _ => error("Invalid object expression $expr")
   end
@@ -275,19 +280,14 @@ function parse_hom(C::FinCat{Ob,Hom}, expr) where {Ob,Hom}
       Expr(:call, :(⋅), f, g) ||
       Expr(:call, :(⨟), f, g) => compose(C, parse(f), parse(g))
       Expr(:call, :(∘), f, g) => compose(C, parse(g), parse(f))
-      Expr(:call, :id, x::Symbol) => id(C, ob_named(C, x))
-      f::Symbol => hom_named(C, f)
+      Expr(:call, :id, x::Symbol) => id(C, ob_generator(C, x))
+      f::Symbol => hom_generator(C, f)
       Expr(:curly, _...) => parse_gat_expr(C, expr)::Hom
       _ => error("Invalid morphism expression $expr")
     end
   end
   parse(expr)
 end
-
-ob_name(C::FinCatGraph{<:NamedGraph}, x) = vertex_name(graph(C), x)
-hom_name(C::FinCatGraph{<:NamedGraph}, f) = edge_name(graph(C), f)
-ob_named(C::FinCatGraph{<:NamedGraph}, name) = vertex_named(graph(C), name)
-hom_named(C::FinCatGraph{<:NamedGraph}, name) = edge_named(graph(C), name)
 
 """ Parse GAT expression based on curly braces, rather than parentheses.
 """
@@ -614,7 +614,7 @@ end
 """
 function parse_query(C::FinCat, expr)
   @match expr begin
-    x::Symbol => ob_named(C, x)
+    x::Symbol => ob_generator(C, x)
     Expr(:macrocall, form, args...) &&
         if form ∈ (Symbol("@limit"), Symbol("@join")) end => begin
       DiagramData{op}(parse_query_diagram(C, last(args))...)
@@ -705,7 +705,7 @@ function parse_conj_query_ob_rhs(C::FinCat, expr, d::DiagramData{op}, c′)
     Expr(:call, name::Symbol, _) => reverse(destructure_unary_call(expr))
     _ => error("Cannot parse object assignment in migration: $expr")
   end
-  j = ob_named(shape(d), j_name)
+  j = ob_generator(shape(d), j_name)
   isnothing(f_expr) ? j :
     (j, parse_query_hom(C, f_expr, ob_map(d, j), c′))
 end
@@ -720,7 +720,7 @@ function parse_glue_query_ob_rhs(C::FinCat, expr, c, d′::DiagramData{id})
       leftmost_arg(expr, (:(∘),), all_ops=compose_ops)
     _ => error("Cannot parse object assignment in migration: $expr")
   end
-  j′ = ob_named(shape(d′), j′_name)
+  j′ = ob_generator(shape(d′), j′_name)
   isnothing(f_expr) ? j′ :
     (j′, parse_query_hom(C, f_expr, c, ob_map(d′, j′)))
 end

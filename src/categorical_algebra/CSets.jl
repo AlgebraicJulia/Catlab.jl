@@ -16,7 +16,7 @@ using Reexport
 using Tables
 
 @reexport using ...CSetDataStructures
-using ...GAT, ...Present
+using ...GAT, ...Present, ...Syntax
 using ...Theories: Category, SchemaDescType, CSetSchemaDescType,
   attrtype, attrtype_num, attr, adom, acodom, acodom_nums
 import ...Theories: dom, codom, compose, ⋅, id,
@@ -151,8 +151,11 @@ FinDomFunctor(X::ACSet) = ACSetFunctor(X)
 dom(F::ACSetFunctor) = FinCat(Presentation(F.acset))
 codom(F::ACSetFunctor) = TypeCat{SetOb,FinDomFunction{Int}}()
 
-Categories.do_ob_map(F::ACSetFunctor, x) = SetOb(F.acset, x)
-Categories.do_hom_map(F::ACSetFunctor, f) = SetFunction(F.acset, f)
+Categories.do_ob_map(F::ACSetFunctor, x) = SetOb(F.acset, functor_key(x))
+Categories.do_hom_map(F::ACSetFunctor, f) = SetFunction(F.acset, functor_key(f))
+
+functor_key(x) = x
+functor_key(expr::GATExpr{:generator}) = first(expr)
 
 # Set-valued FinDomFunctors as ACSets.
 
