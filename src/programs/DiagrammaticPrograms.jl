@@ -371,8 +371,11 @@ Anonymous objects can also be introduced. For example, the previous diagram is
 isomorphic to this one:
 
 ```julia
+@free_diagram TheoryGraph begin
+  v::V
   (e₁, e₂)::E
   tgt(e₁) == src(e₂)
+end
 ```
 
 Some care must exercised when defining morphisms between diagrams with anonymous
