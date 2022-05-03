@@ -372,7 +372,6 @@ isomorphic to this one:
 
 ```julia
 @free_diagram TheoryGraph begin
-  v::V
   (e₁, e₂)::E
   tgt(e₁) == src(e₂)
 end
