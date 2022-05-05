@@ -398,6 +398,7 @@ s = SetAttr{Union{Symbol,Missing}}()
 add_parts!(s, :X, 2, f=[:x,missing])
 t = copy(s)
 αs = homomorphisms(s, t)
+@test all(is_natural, αs)
 @test only.(components.(αs)) == [FinFunction([1,1],2), FinFunction([1,2],2)]
 t[1,:f] = missing
 @test isempty(homomorphisms(s, t))

@@ -379,13 +379,23 @@ map_components(f, α::LooseACSetTransformation) =
 
 function is_natural(α::ACSetTransformation{S}) where {S}
   X, Y = dom(α), codom(α)
-  for (f, c, d) in flatten((zip(hom(S), dom(S), codom(S)),
-                            zip(attr(S), adom(S), acodom(S))))
+  for (f, c, d) in zip(hom(S), dom(S), codom(S))
     Xf, Yf, α_c, α_d = subpart(X,f), subpart(Y,f), α[c], α[d]
-    all(i -> Yf[α_c(i)] == α_d(Xf[i]), eachindex(Xf)) || return false
+    all(i -> α_d(Xf[i]) == Yf[α_c(i)], eachindex(Xf)) || return false
+  end
+  for (f, c, d) in zip(attr(S), adom(S), acodom(S))
+    Xf, Yf, α_c, α_d = subpart(X,f), subpart(Y,f), α[c], α[d]
+    all(i -> can_map_attr(α_d(Xf[i]), Yf[α_c(i)]), eachindex(Xf)) || return false
   end
   return true
 end
+
+""" Can the attribute value `x` be mapped to the attribute value `y`?
+"""
+can_map_attr(x, y) = (x == y)
+can_map_attr(::Missing, ::Any) = true
+can_map_attr(::Any, ::Missing) = false
+can_map_attr(::Missing, ::Missing) = true
 
 # Category of C-sets
 ####################
@@ -676,8 +686,8 @@ be mutated even when the assignment fails.
     X, Y = state.dom, state.codom
     $(map(out_attr(S, c)) do (f, d)
         :(let f = state.type_components[$(quot(d))]
-            is_attr_equal(f(subpart(X,x,$(quot(f)))),
-                          subpart(Y,y,$(quot(f)))) || return false
+            can_map_attr(f(subpart(X,x,$(quot(f)))),
+                         subpart(Y,y,$(quot(f)))) || return false
           end)
       end...)
 
@@ -724,11 +734,6 @@ end
 partial_assignments(x::AbstractDict) = pairs(x)
 partial_assignments(x::AbstractVector) =
   ((i,y) for (i,y) in enumerate(x) if !isnothing(y) && y > 0)
-
-is_attr_equal(x, y) = (x == y)
-is_attr_equal(::Missing, ::Any) = true
-is_attr_equal(::Any, ::Missing) = false
-is_attr_equal(::Missing, ::Missing) = true
 
 # FIXME: Should these accessors go elsewhere?
 in_hom(S, c) = [dom(S,f) => f for f in hom(S) if codom(S,f) == c]
@@ -846,13 +851,11 @@ function colimit(::Type{Tuple{ACS,Hom}}, diagram) where
     for (ι, X) in zip(ιs, Xs)
       for i in parts(X, c)
         j = ι[c](i)
-        if isnothing(data[j])
-          data[j] = Some(subpart(X, i, attr))
+        data[j] = Some(if isnothing(data[j])
+          subpart(X, i, attr)
         else
-          val1, val2 = subpart(X, i, attr), something(data[j])
-          val1 == val2 || error(
-            "ACSet colimit does not exist: $attr attributes $val1 != $val2")
-        end
+          join_attrs(something(data[j]), subpart(X, i, attr))
+        end)
       end
     end
     set_subpart!(Y, attr, map(something, data))
@@ -860,6 +863,11 @@ function colimit(::Type{Tuple{ACS,Hom}}, diagram) where
 
   ACSetColimit(diagram, Multicospan(Y, ιs), colimits)
 end
+
+join_attrs(x, y) = (x == y) ? x : error("Attribute values not equal: $x != $y")
+join_attrs(::Missing, x) = x
+join_attrs(x, ::Missing) = x
+join_attrs(::Missing, ::Missing) = missing
 
 function universal(colim::ACSetColimit, cocone::Multicospan)
   components = map(universal, colim.colimits, unpack_diagram(cocone))

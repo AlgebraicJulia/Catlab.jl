@@ -118,7 +118,7 @@ L = ACSetTransformation(aI2, aarr, V=[1,2]);
 R = ACSetTransformation(aI2, abiarr, V=[1,2]);
 m = ACSetTransformation(aarr, aspan, V=[2,1], E=[1]);  # sends 'a'->'b' and 'b'->'a'
 
-@test_throws ErrorException("ACSet colimit does not exist: label attributes a != b") rewrite_match(L,R,m)
+@test_throws ErrorException rewrite_match(L,R,m)
 
 m = ACSetTransformation(aarr, aspan, V=[1,2], E=[1]);
 
