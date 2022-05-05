@@ -198,8 +198,8 @@ Presentation(::StructACSet{S}) where S = Presentation(S)
 
 function Base.:(==)(x1::T, x2::T) where T <: StructACSet
   # The indices hold redundant information, so need not be compared.
-  unref(x) = x[]
-  unref.(values(x1.obs)) == unref.(values(x2.obs)) && x1.homs == x2.homs && x1.attrs == x2.attrs
+  getindex.(values(x1.obs)) == getindex.(values(x2.obs)) &&
+    x1.homs == x2.homs && isequal(x1.attrs, x2.attrs)
 end
 
 ACSetInterface.acset_schema(::StructACSet{S}) where {S} = SchemaDesc(S)
