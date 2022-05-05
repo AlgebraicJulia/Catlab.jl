@@ -1116,24 +1116,26 @@ function common_ob(A::Subobject, B::Subobject)
 end
 
 
-# A map f (from A to B) as a map of subobjects of A to subjects of B
-(f::ACSetTransformation)(X::SubACSet)::SubACSet = begin
+"""A map f (from A to B) as a map of subobjects of A to subjects of B"""
+(f::ACSetTransformation)(X::SubACSet) = begin
   codom(hom(X)) == dom(f) || error("Cannot apply $f to $X")
   Subobject(codom(f); Dict(
     [k=>f.(collect(components(X)[k])) for (k,f) in pairs(components(f))])...)
 end
 
 
-# A map f (from A to B) as a map from A to a subobject of B
+"""
+A map f (from A to B) as a map from A to a subobject of B
 # i.e. we cast the ACSet A to its top subobject
-(f::ACSetTransformation)(X::StructACSet)::SubACSet =
+"""
+(f::ACSetTransformation)(X::StructACSet) =
   X == dom(f) ? f(top(X)) : error("Cannot apply $f to $X")
 
-"""    hom_inv(f::ACSetTransformation,Y::Subobject)::SubACSet
+"""    hom_inv(f::ACSetTransformation,Y::Subobject)
 Inverse of f (from A to B) as a map of subobjects of B to subjects of A.
 It can be thought of as incident, but for homomorphisms.
 """
-hom_inv(f::ACSetTransformation,Y::Subobject)::SubACSet = begin
+hom_inv(f::ACSetTransformation,Y::Subobject) = begin
   codom(hom(Y)) == codom(f) || error("Cannot apply $f to $X")
 
   Subobject(dom(f); Dict{Symbol, Vector{Int}}(
@@ -1141,12 +1143,12 @@ hom_inv(f::ACSetTransformation,Y::Subobject)::SubACSet = begin
      for (k,f) in pairs(components(f))])...)
 end
 
-"""    hom_inv(f::CSetTransformation,Y::StructACSet)::SubACSet
+"""    hom_inv(f::CSetTransformation,Y::StructACSet)
 Inverse f (from A to B) as a map from subobjects of B to subobjects of A.
 Cast an ACSet to subobject, though this has a trivial answer when computing
 the preimage (it is necessarily the top subobject of A).
 """
-hom_inv(f::CSetTransformation,Y::StructACSet)::SubACSet =
+hom_inv(f::CSetTransformation,Y::StructACSet) =
   Y == codom(f) ? top(dom(f)) : error("Cannot apply inverse of $f to $Y")
 
 
