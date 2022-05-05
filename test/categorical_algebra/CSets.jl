@@ -12,8 +12,8 @@ end
 
 @present TheorySetAttr(FreeSchema) begin
   X::Ob
-  D::AttrType
-  f::Attr(X,D)
+  T::AttrType
+  f::Attr(X,T)
 end
 @acset_type SetAttr(TheorySetAttr)
 
@@ -356,18 +356,6 @@ add_edge!(g2, 1, 2)  # double arrow
 @test length(homomorphisms(g2, g1, monic=[:E])) == 2 # two for 2->3
 @test length(homomorphisms(g2, g1, iso=[:E])) == 0
 
-# Loose
-s1 = SetAttr{Int}()
-add_part!(s1, :X, f=1)
-add_part!(s1, :X, f=1)
-s2, s3 = deepcopy(s1), deepcopy(s1)
-set_subpart!(s2, :f, [2,1])
-set_subpart!(s3, :f, [20,10])
-@test length(homomorphisms(s2,s3))==0
-@test length(homomorphisms(s2,s3; type_components=(D=x->10*x,)))==1
-@test homomorphism(s2,s3; type_components=(D=x->10*x,)) isa LooseACSetTransformation
-@test length(homomorphisms(s1,s1; type_components=(D=x->x^x,)))==4
-
 # Symmetric graphs
 #-----------------
 
@@ -402,6 +390,20 @@ h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:c,:d,:a,:b],))
 h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:d,:c],))
 @test !is_homomorphic(g, h)
 @test !is_homomorphic(g, h, alg=HomomorphismQuery())
+
+# Loose morphisms
+#----------------
+
+s1 = SetAttr{Int}()
+add_parts!(s1, :X, 2, f=[1,1])
+s2, s3 = copy(s1), copy(s1)
+set_subpart!(s2, :f, [2,1])
+set_subpart!(s3, :f, [20,10])
+@test isempty(homomorphisms(s2, s3))
+αs = homomorphisms(s2, s3, type_components=(T=x->10*x,))
+@test length(αs) == 1
+@test only(αs) isa LooseACSetTransformation
+@test length(homomorphisms(s1, s1, type_components=(T=x->x^x,))) == 4
 
 # Sub-C-sets
 ############
