@@ -450,10 +450,10 @@ Returns a `FreeDiagram` whose objects are the generating objects of `pres` and
 whose homs are the generating homs of `pres`.
 """
 function FreeDiagrams.FreeDiagram(pres::Presentation{Schema, Symbol}) where Schema
-  obs = Array{FreeSchema.Ob}(generators(pres, :Ob))
-  homs = Array{FreeSchema.Hom}(generators(pres, :Hom))
-  doms = map(h -> generator_index(pres, nameof(dom(h))), homs)
-  codoms = map(h -> generator_index(pres, nameof(codom(h))), homs)
+  obs = Vector{FreeSchema.Ob}(generators(pres, :Ob))
+  homs = Vector{FreeSchema.Hom}(generators(pres, :Hom))
+  doms = map(h -> generator_index(pres, dom(h)), homs)
+  codoms = map(h -> generator_index(pres, codom(h)), homs)
   return FreeDiagram(obs, collect(zip(homs, doms, codoms)))
 end
 

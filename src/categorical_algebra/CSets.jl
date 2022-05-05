@@ -675,8 +675,10 @@ be mutated even when the assignment fails.
     # Check attributes first to fail as quickly as possible.
     X, Y = state.dom, state.codom
     $(map(out_attr(S, c)) do (f, d)
-        :(state.type_components[$(quot(d))](subpart(X,x,$(quot(f))))
-          == subpart(Y,y,$(quot(f))) || return false)
+        :(let f = state.type_components[$(quot(d))]
+            is_attr_equal(f(subpart(X,x,$(quot(f)))),
+                          subpart(Y,y,$(quot(f)))) || return false
+          end)
       end...)
 
     # Make the assignment and recursively assign subparts.
@@ -722,6 +724,11 @@ end
 partial_assignments(x::AbstractDict) = pairs(x)
 partial_assignments(x::AbstractVector) =
   ((i,y) for (i,y) in enumerate(x) if !isnothing(y) && y > 0)
+
+is_attr_equal(x, y) = (x == y)
+is_attr_equal(::Missing, ::Any) = true
+is_attr_equal(::Any, ::Missing) = false
+is_attr_equal(::Missing, ::Missing) = true
 
 # FIXME: Should these accessors go elsewhere?
 in_hom(S, c) = [dom(S,f) => f for f in hom(S) if codom(S,f) == c]

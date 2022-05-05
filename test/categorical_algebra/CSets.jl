@@ -391,6 +391,17 @@ h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:d,:c],))
 @test !is_homomorphic(g, h)
 @test !is_homomorphic(g, h, alg=HomomorphismQuery())
 
+# Missing attributes
+#-------------------
+
+s = SetAttr{Union{Symbol,Missing}}()
+add_parts!(s, :X, 2, f=[:x,missing])
+t = copy(s)
+αs = homomorphisms(s, t)
+@test only.(components.(αs)) == [FinFunction([1,1],2), FinFunction([1,2],2)]
+t[1,:f] = missing
+@test isempty(homomorphisms(s, t))
+
 # Loose morphisms
 #----------------
 
