@@ -26,58 +26,60 @@ add_loops(g) = begin
 end
 
 # Auto Calculation and Plotting
-# give a list of to and from graphs -> tests and plots them based on vertex/edge amounts
-function autoPlot(fromList, toList)
+# Uses the product of the two provided lists to find approximate homomorphism performance.
+# Save parameter is a boolean value indicating the intent to save the resulting plots. This defaults to false to avoid creating unwanted files.
+# Sample size refers to the number of BenchmarkTools samples are to be run to calculate a median time. This defaults to 100 to avoid long runtimes.
+function autoPlot(fromList, toList, save=false, sampleSize=100)
     length(fromList) == length(toList) || error("Arguments fromList and toList should be of equal lengths. fromList had a length of $(length(fromList)) and toList had a length of $(length(toList)).")
-    println("Autoplotting Homs...\nTotal pairs: $(length(toList))")
-    x1 = Int64[]
-    y1 = Float64[]
-    x2 = Int64[]
-    y2 = Float64[]
-    x3 = Int64[]
-    x4 = Int64[]
-    for i in 1:length(fromList)
-        print("Graph pair $i:   ")
-        f = fromList[i]
-        t = toList[i]
-        #injection
-        append!(y1, time(median(@benchmark homomorphism($f, $t))))
-        append!(x1, length(vertices(f)))
-        append!(x3, length(edges(t)))
-        print("Injection complete.   ")
-        #surjection
-        append!(y2, time(median(@benchmark homomorphism($t, $f))))
-        append!(x2, length(vertices(t)))
-        append!(x4, length(edges(t)))
-        print("Surjection complete.\n")
-    end
-    scatter([x1, x2], [y1, y2], title="Autoplotted Graph Vertices", xlabel="Number of \"From\" Vertices", ylabel="Single Hom Calculation Time (ns)", label=["Injective" "Surjective"])
-    savefig("autoVertex.png")
-    scatter([x3, x4], [y1, y2], title="Autoplotted Graph Edges", xlabel="Number of Edges", ylabel="Single Hom Calculation Time (ns)", label=["Injective" "Surjective"])
-    savefig("autoEdge.png")
+    BenchmarkTools.DEFAULT_PARAMETERS.samples = sampleSize
+    operationList = Base.Iterators.product(fromList, toList)
+    println("Autoplotting Homs...           Note: The runtime will depend on the complexity and size of your sets.\nTotal pairs: $(length(operationList))")
+    plotGenerate(operationList, save)
+    println("Complete!")
 end
 
-# Less accurate... Much faster.
-function quickPlot(fromList, toList)
+# Uses the zip of the two provided lists to find approximate homomorphism performance.
+# Save parameter is a boolean value indicating the intent to save the resulting plots. This defaults to false to avoid creating unwanted files.
+# Sample size refers to the number of BenchmarkTools samples are to be run to calculate a median time. This defaults to 100 to avoid long runtimes.
+function quickPlot(fromList, toList, save=false, sampleSize=100)
     length(fromList) == length(toList) || error("Arguments fromList and toList should be of equal lengths. fromList had a length of $(length(fromList)) and toList had a length of $(length(toList)).")
-    println("Autoplotting Homs...\nTotal pairs: $(length(toList))")
+    BenchmarkTools.DEFAULT_PARAMETERS.samples = sampleSize
+    operationList = Base.Iterators.zip(fromList, toList)
+    println("Autoplotting Homs...           Note: The runtime will depend on the complexity and size of your sets.\nTotal pairs: $(length(operationList))")
+    plotGenerate(operationList, save)
+    println("Complete!")
+end
+
+# Helper function for automatic plotting. - Reduces clutter.
+function plotGenerate(list, save)
     x1 = Int64[]
-    y1 = Float64[]
+    x2 = Int64[]
     x3 = Int64[]
-    for i in 1:length(fromList)
-        println("Graph pair $i")
-        f = fromList[i]
-        t = toList[i]
-        #injection
-        tempy1 = @elapsed homomorphism(f, t)
-        append!(y1, tempy1)
-        append!(x1, length(vertices(f)))
-        append!(x3, length(edges(t)))
+    x4 = Int64[]
+    y1 = Float64[]
+    for i in list
+        tempY = time(median(@benchmark homomorphism($i[1], $i[2]))) / 1000000
+        append!(y1, tempY)
+        append!(x1, length(vertices(i[1])))
+        append!(x2, length(edges(i[1])))
+        append!(x3, length(vertices(i[2])))
+        append!(x4, length(edges(i[2])))
     end
-    scatter([x1], [y1], title="Autoplotted Graph Vertices", xlabel="Number of \"From\" Vertices", ylabel="Single Hom Calculation Time (sec)")
-    savefig("autoVertex.png")
-    scatter([x3], [y1], title="Autoplotted Graph Edges", xlabel="Number of Edges", ylabel="Single Hom Calculation Time (sec)")
-    savefig("autoEdge.png")
+    if save
+        scatter([x1], [y1], title="Autoplotted Graph Vertices", xlabel="Number of \"From\" Vertices", ylabel="Single Hom Calculation Time (sec)", legend=false)
+        savefig("quickFromVertex.png")
+        scatter([x2], [y1], title="Autoplotted Graph Edges", xlabel="Number of \"From\" Edges", ylabel="Single Hom Calculation Time (sec)", legend=false)
+        savefig("quickFromEdge.png")
+        scatter([x3], [y1], title="Autoplotted Graph Vertices", xlabel="Number of \"To\" Vertices", ylabel="Single Hom Calculation Time (sec)", legend=false)
+        savefig("quickToVertex.png")
+        scatter([x4], [y1], title="Autoplotted Graph Edges", xlabel="Number of \"To\" Edges", ylabel="Single Hom Calculation Time (sec)", legend=false)
+        savefig("quickToEdge.png")
+    else
+        display(scatter([x1], [y1], title="Autoplotted Graph Vertices", xlabel="Number of \"From\" Vertices", ylabel="Single Hom Calculation Time (sec)", legend=false))
+        display(scatter([x2], [y1], title="Autoplotted Graph Edges", xlabel="Number of \"From\" Edges", ylabel="Single Hom Calculation Time (sec)", legend=false))
+        display(scatter([x3], [y1], title="Autoplotted Graph Vertices", xlabel="Number of \"To\" Vertices", ylabel="Single Hom Calculation Time (sec)", legend=false))
+        display(scatter([x4], [y1], title="Autoplotted Graph Edges", xlabel="Number of \"To\" Edges", ylabel="Single Hom Calculation Time (sec)", legend=false))
+    end
 end
 
 # Generates and appends new graphs to the given list
