@@ -226,13 +226,3 @@ function autoPlotAll(fromList, toList)
     scatter([x3, x4], [y1, y2], title="Autoplotted Graph Edges", xlabel="Number of Edges", ylabel="Single Hom Calculation Time (ns)", label=["Injective" "Surjective"])
     savefig("autoEdge.png")
 end
-
-"""Arguments g ang h of box_product are of type T where T is the super type for graphs."""
-function box_product(g::T, h::T) where {T<:ACSet}
-    g₀, h₀ = T(nv(g)), T(nv(h))
-    incl_g = CSetTransformation((V=vertices(g), E=refl(g)), g₀, g)
-    incl_h = CSetTransformation((V=vertices(h), E=refl(h)), h₀, h)
-    proj_g₀, proj_h₀ = product(g₀, h₀)
-    ob(pushout(pair(proj_g₀ ⋅ incl_g, proj_h₀),
-        pair(proj_g₀, proj_h₀ ⋅ incl_h)))
-end
