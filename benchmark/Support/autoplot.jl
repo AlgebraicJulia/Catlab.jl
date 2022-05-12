@@ -227,6 +227,7 @@ function autoPlotAll(fromList, toList)
     savefig("autoEdge.png")
 end
 
+"""Arguments g ang h of box_product are of type T where T is the super type for graphs."""
 function box_product(g::T, h::T) where {T<:ACSet}
     g₀, h₀ = T(nv(g)), T(nv(h))
     incl_g = CSetTransformation((V=vertices(g), E=refl(g)), g₀, g)
