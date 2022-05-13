@@ -2,6 +2,7 @@ using Catlab, Catlab.Theories
 using Catlab.CategoricalAlgebra
 using Catlab.Graphs
 using Catlab.Graphs.GraphGenerators
+import Catlab.Graphs.BasicGraphs.Graph
 include("SSets.jl")
 
 # Graph Functions
