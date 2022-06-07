@@ -43,7 +43,8 @@ end
 
 """ Create the struct declaration for a `StructACSet` from a Presentation
 """
-function struct_acset(name::Symbol, parent, p::Presentation{Schema}; index=[], unique_index=[])
+function struct_acset(name::Symbol, parent, p::Presentation{Schema};
+                      index=[], unique_index=[])
   obs = p.generators[:Ob]
   homs = p.generators[:Hom]
   attr_types = p.generators[:AttrType]
@@ -77,7 +78,7 @@ function struct_acset(name::Symbol, parent, p::Presentation{Schema}; index=[], u
           $(pi_type_elt(homs, _ -> :(Int[]))),
           $(pi_type_elt(attrs, a -> :($(nameof(codom(a)))[]))),
           $(pi_type_elt(indexed_homs, _ -> :(Vector{Int}[]))),
-          $(pi_type_elt(unique_indexed_homs, _ -> Int[])),
+          $(pi_type_elt(unique_indexed_homs, _ -> :(Int[]))),
           $(pi_type_elt(indexed_attrs, a -> :(Dict{$(nameof(codom(a))),Vector{Int}}()))),
           $(pi_type_elt(unique_indexed_attrs, a -> :(Dict{$(nameof(codom(a))),Int}())))
         )
@@ -99,7 +100,8 @@ macro acset_type(head)
   end
   quote
     $(esc(:eval))($(GlobalRef(CSetDataStructures, :struct_acset))(
-      $(Expr(:quote, name)), $(Expr(:quote, parent)), $(esc(schema)), $(idx_args...)))
+      $(Expr(:quote, name)), $(Expr(:quote, parent)), $(esc(schema));
+      $((esc(arg) for arg in idx_args)...)))
     Core.@__doc__ $(esc(name))
   end
 end

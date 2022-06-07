@@ -6,13 +6,7 @@ using Catlab.Graphs, Catlab.Graphics.GraphvizGraphs
 import Catlab.Graphics: Graphviz
 using Catlab.CategoricalAlgebra.Subobjects
 
-function stmts(graph::Graphviz.Graph, type::Type)
-  [ stmt for stmt in graph.stmts if stmt isa type ]
-end
-function stmts(graph::Graphviz.Graph, type::Type, attr::Symbol)
-  [ stmt.attrs[attr] for stmt in graph.stmts
-    if stmt isa type && haskey(stmt.attrs, attr) ]
-end
+const stmts = Graphviz.filter_statements
 
 # Property graphs
 #################
@@ -87,6 +81,14 @@ gv = to_graphviz(g, node_labels=true, edge_labels=true)
 @test stmts(gv, Graphviz.Node, :label) == ["1", "2", "3"]
 @test stmts(gv, Graphviz.Edge, :label) == ["1", "2"]
 
+g = path_graph(LabeledGraph{Symbol}, 3, V=(label=[:x, :y, :z],))
+gv = to_graphviz(g, node_labels=:label)
+@test stmts(gv, Graphviz.Node, :label) == ["x", "y", "z"]
+
+g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5, 1.5],))
+gv = to_graphviz(g, edge_labels=:weight)
+@test stmts(gv, Graphviz.Edge, :label) == ["0.5", "1.5"]
+
 # Symmetric graphs
 ##################
 
@@ -95,6 +97,10 @@ gv = to_graphviz(g, edge_labels=true)
 @test !gv.directed
 @test stmts(gv, Graphviz.Node, :label) == fill("", 3)
 @test stmts(gv, Graphviz.Edge, :label) == ["(1,3)", "(2,4)"]
+
+g = path_graph(SymmetricWeightedGraph{Float64}, 3, E=(weight=[0.5, 1.5],))
+gv = to_graphviz(g, edge_labels=:weight)
+@test stmts(gv, Graphviz.Edge, :label) == ["0.5", "1.5"]
 
 # Reflexive graphs
 ##################

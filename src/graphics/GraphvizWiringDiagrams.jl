@@ -3,7 +3,7 @@
 This module requires Graphviz v2.42 or higher.
 """
 module GraphvizWiringDiagrams
-export to_graphviz, graphviz_layout
+export graphviz_layout, to_graphviz, to_graphviz_property_graph
 
 import JSON
 using LinearAlgebra: normalize
@@ -15,7 +15,7 @@ using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
 using ...CategoricalAlgebra.CSets, ...Graphs, ..GraphvizGraphs
 import ...CategoricalAlgebra: migrate!
 import ..Graphviz
-import ..GraphvizGraphs: to_graphviz
+import ..GraphvizGraphs: to_graphviz, to_graphviz_property_graph
 using ..WiringDiagramLayouts: BoxLayout, PortLayout, WirePoint,
   LayoutOrientation, LeftToRight, RightToLeft, TopToBottom, BottomToTop,
   is_horizontal, is_vertical, box_label, wire_label, port_sign, svector

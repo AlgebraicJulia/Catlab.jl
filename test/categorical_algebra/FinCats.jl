@@ -8,17 +8,25 @@ using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryReflexiveGraph,
 # Categories on graphs
 ######################
 
-# Free categories
+# Free categories on graphs
 g = parallel_arrows(Graph, 3)
 C = FinCat(g)
 @test graph(C) == g
 @test Ob(C) == FinSet(2)
 @test !is_discrete(C)
 @test is_free(C)
-@test hom(C, 1) == Path(g, 1)
+@test (hom(C, 1), hom_generator(C, 1)) == (Path(g, 1), 1)
 @test ob_generators(C) == 1:2
 @test hom_generators(C) == 1:3
 @test startswith(sprint(show, C), "FinCat($(Graph)")
+
+C_op = op(C)
+@test C_op isa FinCat
+@test (ob(C_op, 1), ob_generator(C_op, 1)) == (1, 1)
+@test (hom(C_op, 1), hom_generator(C_op, 1)) == (Path(g, 1), 1)
+@test ob_generators(C_op) == 1:2
+@test hom_generators(C_op) == 1:3
+@test op(C_op) == C
 
 h = Graph(4)
 add_edges!(h, [1,1,2,3], [2,3,4,4])
@@ -26,8 +34,15 @@ D = FinCat(h)
 f = id(D, 2)
 @test (src(f), tgt(f)) == (2, 2)
 @test isempty(edges(f))
-f = compose(D, 1, 3)
-@test edges(f) == [1,3]
+@test reverse(f) == f
+g = compose(D, 1, 3)
+@test edges(g) == [1,3]
+
+D_op = op(D)
+@test dom(D_op, 1) == 2
+@test codom(D_op, 1) == 1
+@test id(D_op, 2) == f
+@test compose(D_op, 3, 1) == g
 
 # Functors between free categories.
 C = FinCat(parallel_arrows(Graph, 2))
@@ -42,6 +57,12 @@ F = FinFunctor((V=[1,4], E=[[1,3], [2,4]]), C, D)
 @test hom_map(F, 1) == Path(h, [1,3])
 @test collect_ob(F) == [1,4]
 @test collect_hom(F) == [Path(h, [1,3]), Path(h, [2,4])]
+
+F_op = op(F)
+@test F_op isa FinFunctor && F_op isa FinCats.FinDomFunctorMap
+@test dom(F_op) == op(C)
+@test codom(F_op) == op(D)
+@test op(F_op) == F
 
 # Composition of functors.
 g, h, k = path_graph(Graph, 2), path_graph(Graph, 3), path_graph(Graph, 5)
@@ -105,8 +126,12 @@ end
 
 Δ¹ = FinCat(Simplex1D)
 @test Δ¹ isa FinCat{FreeCategory.Ob,FreeCategory.Hom}
-@test ob(Δ¹, :V) isa FreeCategory.Ob
-@test hom(Δ¹, :δ₀) isa FreeCategory.Hom
+@test ob(Δ¹, :V) == Simplex1D[:V]
+@test hom(Δ¹, :δ₀) == Simplex1D[:δ₀]
+@test ob_generator(Δ¹, :E) == Simplex1D[:E]
+@test hom_generator(Δ¹, :σ₀) == Simplex1D[:σ₀]
+@test ob_generator_name(Δ¹, Simplex1D[:V]) == :V
+@test hom_generator_name(Δ¹, Simplex1D[:δ₀]) == :δ₀
 @test first.(ob_generators(Δ¹)) == [:V, :E]
 @test first.(hom_generators(Δ¹)) == [:δ₀, :δ₁, :σ₀]
 @test length(equations(Δ¹)) == 2
@@ -147,6 +172,12 @@ G = FinDomFunctor(g)
 @test α[:V](3) == 2
 @test startswith(sprint(show, α), "FinTransformation(")
 
+α_op = op(α)
+@test α_op isa FinCats.FinTransformationMap
+@test dom(α_op) == op(G)
+@test codom(α_op) == op(F)
+@test op(α_op) == α
+
 σ = FinTransformation(G, G, V=id(FinSet(2)), E=FinFunction([2,1,4,3]))
 @test σ⋅σ == FinTransformation(G, G, V=id(FinSet(2)), E=FinFunction(1:4))
 @test α⋅σ == FinTransformation(F, G, V=FinFunction([1,2,2]), E=FinFunction([2,4]))
@@ -175,10 +206,10 @@ G = FinDomFunctor(g)
 @test ob_map(G, :Weight) == TypeSet(Float64)
 @test hom_map(G, :weight) == FinDomFunction([0.5, 1.5])
 
-# Initiality of functors
-########################
+# Initial functors
+##################
 
-"Commutative square diagram: with 1→2→4 and 1→3→4"
+# Commutative square diagram: with 1→2→4 and 1→3→4
 S = FinCat(@acset Graph begin
   V = 4
   E = 4
@@ -186,7 +217,7 @@ S = FinCat(@acset Graph begin
   tgt = [2,3,4,4]
 end)
 
-"Equalizer diagram: 1→2⇉3"
+# Equalizer diagram: 1→2⇉3
 T = FinCat(@acset Graph begin
   V = 3
   E = 3
@@ -194,7 +225,7 @@ T = FinCat(@acset Graph begin
   tgt = [2,3,3]
 end)
 
-"Extra bit added to beginning equalizer diagram: 4→1→2⇉3"
+# Extra bit added to beginning equalizer diagram: 4→1→2⇉3
 T2 = FinCat(@acset Graph begin
   V = 4
   E = 4
@@ -202,14 +233,13 @@ T2 = FinCat(@acset Graph begin
   tgt = [2,3,3,1]
 end)
 
-"Extra bit added to end of equalizer diagram: 1→2⇉3→4"
+# Extra bit added to end of equalizer diagram: 1→2⇉3→4
 T3 = FinCat(@acset Graph begin
   V = 4
   E = 4
   src = [1,2,2,3]
   tgt = [2,3,3,4]
 end)
-
 
 # Opposite square corners folded on top of each other
 F1 = FinFunctor([1,2,2,3], [1,1,2,3], S, T)
@@ -225,7 +255,6 @@ F4 = FinFunctor([1,2,3], [1,2,3], T, T2)
 
 # Same as F1, but there is an additional piece of data in codomain, ignored
 F5 = FinFunctor([1,2,3], [1,2,3], T, T2)
-
 
 @test all(is_functorial.([F1,F2,F3,F4]))
 @test is_initial(F1)

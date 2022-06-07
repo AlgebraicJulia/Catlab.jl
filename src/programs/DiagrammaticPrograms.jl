@@ -15,8 +15,9 @@ using ...GAT, ...Present, ...Graphs, ...CategoricalAlgebra
 using ...Theories: munit
 using ...CategoricalAlgebra.FinCats: mapvals, make_map
 using ...CategoricalAlgebra.DataMigrations: ConjQuery, GlueQuery, GlucQuery
-import ...CategoricalAlgebra.DataMigrations: ob_name, hom_name, ob_named, hom_named
 using ...Graphs.BasicGraphs: TheoryGraph
+import ...CategoricalAlgebra.FinCats: vertex_name, vertex_named,
+  edge_name, edge_named
 
 # Graphs
 ########
@@ -28,21 +29,25 @@ using ...Graphs.BasicGraphs: TheoryGraph
   ename::Attr(E, EName)
 end
 
+""" Abstract type for graph with named vertices and edges.
+"""
+@abstract_acset_type AbstractNamedGraph <: AbstractGraph
+
 """ Graph with named vertices and edges.
 
 The default graph type used by [`@graph`](@ref), [`@fincat`](@ref),
 [`@diagram`](@ref), and related macros.
 """
 @acset_type NamedGraph(TheoryNamedGraph, index=[:src,:tgt,:ename],
-                       unique_index=[:vname]) <: AbstractGraph
+                       unique_index=[:vname]) <: AbstractNamedGraph
 # FIXME: The edge name should also be uniquely indexed, but this currently
 # doesn't play nicely with nullable attributes.
 
-vertex_name(g::HasGraph, args...) = subpart(g, args..., :vname)
-edge_name(g::HasGraph, args...) = subpart(g, args..., :ename)
+vertex_name(g::AbstractNamedGraph, args...) = subpart(g, args..., :vname)
+edge_name(g::AbstractNamedGraph, args...) = subpart(g, args..., :ename)
 
-vertex_named(g::HasGraph, name) = only(incident(g, name, :vname))
-edge_named(g::HasGraph, name)= only(incident(g, name, :ename))
+vertex_named(g::AbstractNamedGraph, name) = only(incident(g, name, :vname))
+edge_named(g::AbstractNamedGraph, name)= only(incident(g, name, :ename))
 
 """ Construct a graph in a simple, declarative style.
 
@@ -241,15 +246,17 @@ function parse_ob_hom_maps(C::FinCat, body::Expr; allow_missing::Bool=false)
     end
   end
   ob_rhs = make_map(ob_generators(C)) do x
-    get(assignments, ob_name(C, x)) do
-      allow_missing ? missing : error("Object $(ob_name(C,x)) is not assigned")
-    end
+    y = pop!(assignments, ob_generator_name(C, x), missing)
+    (!ismissing(y) || allow_missing) ? y :
+      error("Object $(ob_generator_name(C,x)) is not assigned")
   end
   hom_rhs = make_map(hom_generators(C)) do f
-    get(assignments, hom_name(C, f)) do
-      allow_missing ? missing : error("Morphism $(hom_name(C,f)) is not assigned")
-    end
+    g = pop!(assignments, hom_generator_name(C, f), missing)
+    (!ismissing(g) || allow_missing) ? g :
+      error("Morphism $(hom_generator_name(C,f)) is not assigned")
   end
+  isempty(assignments) ||
+    error(string("Unused assignment(s): ", join(keys(assignments), ", ")))
   (ob_rhs, hom_rhs)
 end
 
@@ -257,7 +264,7 @@ end
 """
 function parse_ob(C::FinCat{Ob,Hom}, expr) where {Ob,Hom}
   @match expr begin
-    x::Symbol => ob_named(C, x)
+    x::Symbol => ob_generator(C, x)
     Expr(:curly, _...) => parse_gat_expr(C, expr)::Ob
     _ => error("Invalid object expression $expr")
   end
@@ -273,19 +280,14 @@ function parse_hom(C::FinCat{Ob,Hom}, expr) where {Ob,Hom}
       Expr(:call, :(⋅), f, g) ||
       Expr(:call, :(⨟), f, g) => compose(C, parse(f), parse(g))
       Expr(:call, :(∘), f, g) => compose(C, parse(g), parse(f))
-      Expr(:call, :id, x::Symbol) => id(C, ob_named(C, x))
-      f::Symbol => hom_named(C, f)
+      Expr(:call, :id, x::Symbol) => id(C, ob_generator(C, x))
+      f::Symbol => hom_generator(C, f)
       Expr(:curly, _...) => parse_gat_expr(C, expr)::Hom
       _ => error("Invalid morphism expression $expr")
     end
   end
   parse(expr)
 end
-
-ob_name(C::FinCatGraph{<:NamedGraph}, x) = vertex_name(graph(C), x)
-hom_name(C::FinCatGraph{<:NamedGraph}, f) = edge_name(graph(C), f)
-ob_named(C::FinCatGraph{<:NamedGraph}, name) = vertex_named(graph(C), name)
-hom_named(C::FinCatGraph{<:NamedGraph}, name) = edge_named(graph(C), name)
 
 """ Parse GAT expression based on curly braces, rather than parentheses.
 """
@@ -350,11 +352,11 @@ end
 
 Recall that a *free diagram* in a category ``C`` is a functor ``F: J → C`` where
 ``J`` is a free category on a graph, here assumed finite. This macro is
-functionally a special case of [`@diagram`](@ref) that provides a syntactic
-variant for equality expressions. Rather than interpreting them as equations
-between morphisms in ``J``, equality expresions can be used to introduce
-anonymous morphisms in a "pointful" style. For example, the limit of the
-following diagram consists of the paths of length two in a graph:
+functionally a special case of [`@diagram`](@ref) but, for convenience, changes
+the interpretation of equality expressions. Rather than interpreting them as
+equations between morphisms in ``J``, equality expresions can be used to
+introduce anonymous morphisms in a "pointful" style. For example, the limit of
+the following diagram consists of the paths of length two in a graph:
 
 ```julia
 @free_diagram TheoryGraph begin
@@ -364,6 +366,19 @@ following diagram consists of the paths of length two in a graph:
   src(e₂) == v
 end
 ```
+
+Anonymous objects can also be introduced. For example, the previous diagram is
+isomorphic to this one:
+
+```julia
+@free_diagram TheoryGraph begin
+  (e₁, e₂)::E
+  tgt(e₁) == src(e₂)
+end
+```
+
+Some care must exercised when defining morphisms between diagrams with anonymous
+objects, since they cannot be referred to by name.
 """
 macro free_diagram(cat, body)
   :(parse_diagram($(esc(cat)), $(Meta.quot(body)), free=true))
@@ -371,7 +386,7 @@ end
 
 function parse_diagram(C::FinCat, body::Expr; kw...)
   F_ob, F_hom, J = parse_diagram_data(
-    x -> parse_ob(C,x), (f,x,y) -> parse_hom(C,f), body; kw...)
+    C, x -> parse_ob(C,x), (f,x,y) -> parse_hom(C,f), body; kw...)
   F = FinFunctor(F_ob, F_hom, J, C)
   is_functorial(F, check_equations=false) ||
     error("Parsed diagram is not functorial: $body")
@@ -380,15 +395,17 @@ end
 parse_diagram(pres::Presentation, body::Expr; kw...) =
   parse_diagram(FinCat(pres), body; kw...)
 
-function parse_diagram_data(parse_ob, parse_hom, body::Expr;
+function parse_diagram_data(C::FinCat, parse_ob, parse_hom, body::Expr;
                             free::Bool=false, preprocess::Bool=true)
   g, eqs = NamedGraph{Symbol,Union{Symbol,Nothing}}(), Pair[]
   F_ob, F_hom = [], []
   function push_hom!(h, x, y; name=nothing)
     e = parse_edge!(g, x, y, ename=name)
     push!(F_hom, parse_hom(h, F_ob[src(g,e)], F_ob[tgt(g,e)]))
+    return e
   end
 
+  nanon = 0
   if preprocess
     body = reparse_arrows(body)
   end
@@ -423,7 +440,19 @@ function parse_diagram_data(parse_ob, parse_hom, body::Expr;
       # y == h(x)
       (Expr(:call, :(==), call::Expr, y::Symbol) ||
        Expr(:call, :(==), y::Symbol, call::Expr)) && if free end =>
-        push_hom!(destructure_unary_call(call)..., y)
+         push_hom!(destructure_unary_call(call)..., y)
+      # h(x) == k(y)
+      Expr(:call, :(==), lhs::Expr, rhs::Expr) && if free end => begin
+        (h, x), (k, y) = destructure_unary_call(lhs), destructure_unary_call(rhs)
+        z = Symbol("##unnamed#$(nanon += 1)")
+        add_vertex!(g, vname=z)
+        push!(F_ob, nothing) # Assumes that codomain not needed to parse homs.
+        e1, e2 = push_hom!(h, x, z), push_hom!(k, y, z)
+        # Infer codomain from parsed homs.
+        Z1, Z2 = codom(C, F_hom[e1]), codom(C, F_hom[e2])
+        Z1 == Z2 || error("Codomain mismatch in $stmt: $Z1 != $Z2")
+        F_ob[end] = Z1
+      end
       # f == g
       Expr(:call, :(==), lhs, rhs) && if !free end =>
         push!(eqs, parse_path_equation(g, lhs, rhs))
@@ -497,8 +526,7 @@ This macro provides a DSL to specify a contravariant data migration from
 defined by a functor from ``D`` to a category of queries on ``C``. Thus, every
 object of ``D`` is assigned a query on ``C`` and every morphism of ``D`` is
 assigned a morphism of queries, in a compatible way. Example usages are in the
-unit tests and the AlgebraicJulia blog (TODO: link). What follows is a technical
-reference.
+unit tests. What follows is a technical reference.
 
 Several categories of queries are supported by this macro:
 
@@ -588,7 +616,7 @@ end
 """
 function parse_query(C::FinCat, expr)
   @match expr begin
-    x::Symbol => ob_named(C, x)
+    x::Symbol => ob_generator(C, x)
     Expr(:macrocall, form, args...) &&
         if form ∈ (Symbol("@limit"), Symbol("@join")) end => begin
       DiagramData{op}(parse_query_diagram(C, last(args))...)
@@ -612,15 +640,15 @@ function parse_query(C::FinCat, expr)
 end
 function parse_query_diagram(C::FinCat, expr::Expr;
                              free::Bool=true, preprocess::Bool=false)
-  parse_diagram_data(X -> parse_query(C,X), (f,x,y) -> parse_query_hom(C,f,x,y),
-                     expr; free=free, preprocess=preprocess)
+  parse_diagram_data(C, X -> parse_query(C,X),
+                     (f,x,y) -> parse_query_hom(C,f,x,y), expr;
+                     free=free, preprocess=preprocess)
 end
 
 """ Parse expression defining a morphism of queries.
 """
-function parse_query_hom(C::FinCat{Ob}, expr, ::Ob, ::Ob) where Ob
+parse_query_hom(C::FinCat{Ob}, expr, ::Ob, ::Union{Ob,Nothing}) where Ob =
   parse_hom(C, expr)
-end
 
 # Conjunctive fragment.
 
@@ -676,9 +704,10 @@ function parse_conj_query_ob_rhs(C::FinCat, expr, d::DiagramData{op}, c′)
     Expr(:tuple, x::Symbol, f) => (x, f)
     Expr(:call, op, _...) && if op ∈ compose_ops end =>
       leftmost_arg(expr, (:(⋅), :(⨟)), all_ops=compose_ops)
+    Expr(:call, name::Symbol, _) => reverse(destructure_unary_call(expr))
     _ => error("Cannot parse object assignment in migration: $expr")
   end
-  j = ob_named(shape(d), j_name)
+  j = ob_generator(shape(d), j_name)
   isnothing(f_expr) ? j :
     (j, parse_query_hom(C, f_expr, ob_map(d, j), c′))
 end
@@ -693,7 +722,7 @@ function parse_glue_query_ob_rhs(C::FinCat, expr, c, d′::DiagramData{id})
       leftmost_arg(expr, (:(∘),), all_ops=compose_ops)
     _ => error("Cannot parse object assignment in migration: $expr")
   end
-  j′ = ob_named(shape(d′), j′_name)
+  j′ = ob_generator(shape(d′), j′_name)
   isnothing(f_expr) ? j′ :
     (j′, parse_query_hom(C, f_expr, c, ob_map(d′, j′)))
 end
@@ -741,10 +770,7 @@ function make_query_hom(f::DiagramHomData{op}, d::Diagram{op}, d′::Diagram{op}
       j => j
     end
   end
-  f_hom = mapvals(f.hom_map) do h; @match h begin
-    ::Missing => only_hom(shape(d))
-    _ => h
-  end end
+  f_hom = mapvals(h -> ismissing(h) ? only_hom(shape(d)) : h, f.hom_map)
   DiagramHom{op}(f_ob, f_hom, d, d′)
 end
 
@@ -760,10 +786,7 @@ function make_query_hom(f::DiagramHomData{id}, d::Diagram{id}, d′::Diagram{id}
       j′ => j′
     end
   end
-  f_hom = mapvals(f.hom_map) do h; @match h begin
-    ::Missing => only_hom(shape(d′))
-    _ => h
-  end end
+  f_hom = mapvals(h -> ismissing(h) ? only_hom(shape(d′)) : h, f.hom_map)
   DiagramHom{id}(f_ob, f_hom, d, d′)
 end
 

@@ -2,7 +2,7 @@ name = "Catlab"
 uuid = "134e5e36-593f-5add-ad60-77f754baafbe"
 license = "MIT"
 authors = ["Evan Patterson <evan@epatters.org>"]
-version = "0.13.8"
+version = "0.13.10"
 
 [deps]
 AutoHashEquals = "15f4f7f2-30c1-5605-9d31-71845cf9641f"
@@ -42,8 +42,8 @@ julia = "1.6"
 [extras]
 Convex = "f65535da-76fb-5f13-bab9-19810c17039a"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 Graphviz_jll = "3c863552-8265-54e4-a6dc-903eb78fde85"
-LightGraphs = "093fc24a-ae57-5d10-9952-331d41423f4d"
 LinearMaps = "7a12625a-238d-50fd-b39a-03d52299707e"
 LinearOperators = "5c8ed15e-5a4c-59e4-a42b-c7e8811fb125"
 MetaGraphs = "626554b9-1ddb-594c-aa3c-2596fe9399a5"

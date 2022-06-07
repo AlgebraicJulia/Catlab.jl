@@ -16,7 +16,7 @@ using Reexport
 using Tables
 
 @reexport using ...CSetDataStructures
-using ...GAT, ...Present
+using ...GAT, ...Present, ...Syntax
 using ...Theories: Category, SchemaDescType, CSetSchemaDescType,
   attrtype, attrtype_num, attr, adom, acodom, acodom_nums
 import ...Theories: dom, codom, compose, ⋅, id,
@@ -152,8 +152,11 @@ FinDomFunctor(X::ACSet) = ACSetFunctor(X)
 dom(F::ACSetFunctor) = FinCat(Presentation(F.acset))
 codom(F::ACSetFunctor) = TypeCat{SetOb,FinDomFunction{Int}}()
 
-Categories.do_ob_map(F::ACSetFunctor, x) = SetOb(F.acset, x)
-Categories.do_hom_map(F::ACSetFunctor, f) = SetFunction(F.acset, f)
+Categories.do_ob_map(F::ACSetFunctor, x) = SetOb(F.acset, functor_key(x))
+Categories.do_hom_map(F::ACSetFunctor, f) = SetFunction(F.acset, functor_key(f))
+
+functor_key(x) = x
+functor_key(expr::GATExpr{:generator}) = first(expr)
 
 # Set-valued FinDomFunctors as ACSets.
 
@@ -193,25 +196,24 @@ end
 """ Transformation between attributed C-sets.
 
 Homomorphisms of attributed C-sets generalize homomorphisms of C-sets
-([`CSetTransformation`](@ref)), which the user should understand before reading
+([`CSetTransformation`](@ref)), which you should understand before reading
 further.
 
-A homomorphism of attributed C-sets with schema S: C ↛ A (a profunctor) is a
+A *homomorphism* of attributed C-sets with schema S: C ↛ A (a profunctor) is a
 natural transformation between the corresponding functors col(S) → Set, where
 col(S) is the collage of S. When the components on attribute types, indexed by
 objects of A, are all identity functions, the morphism is called *tight*; in
-general, it is called *loose*. The terms "tight" and "loose" come from what the
-nLab calls an ["M-category"](https://ncatlab.org/nlab/show/M-category). The
-category of acsets on a fixed schema S is an M-category. Calling
+general, it is called *loose*. With this terminology, acsets on a fixed schema
+are the objects of an ℳ-category (see `Catlab.Theories.MCategory`). Calling
 `ACSetTransformation` will construct a tight or loose morphism as appropriate,
 depending on which components are specified.
 
 Since every tight morphism can be considered a loose one, the distinction
-between tight and loose may seem an unimportant technicality, but it can have
+between tight and loose may seem like a small technicality, but it has have
 important consequences because choosing one or the other greatly affects limits
-and colimits of acsets. In practice, the tight morphisms suffice for most
-purposes, including computing colimits. However, when computing limits of
-acsets, the loose morphism are usually preferable.
+and colimits of acsets. In practice, tight morphisms suffice for many purposes,
+including computing colimits. However, when computing limits of acsets, the
+loose morphism are usually preferable.
 """
 abstract type ACSetTransformation{S<:SchemaDescType,Comp,
                                   Dom<:StructACSet{S},Codom<:StructACSet{S}} end
@@ -889,6 +891,11 @@ function unpack_diagram(diag::Union{FreeDiagram{ACS},BipartiteFreeDiagram{ACS}};
                         all::Bool=false) where {S, ACS <: StructACSet{S}}
   names = all ? flatten((ob(S), attrtype(S))) : ob(S)
   NamedTuple(c => map(diag, Ob=X->SetOb(X,c), Hom=α->α[c]) for c in names)
+end
+function unpack_diagram(F::Functor{<:FinCat,<:TypeCat{ACS}};
+                        all::Bool=false) where {S, ACS <: StructACSet{S}}
+  names = all ? flatten((ob(S), attrtype(S))) : ob(S)
+  NamedTuple(c => map(F, X->SetOb(X,c), α->α[c]) for c in names)
 end
 
 """ Vector of C-sets → named tuple of vectors of sets.

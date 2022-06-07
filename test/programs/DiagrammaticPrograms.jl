@@ -86,19 +86,34 @@ end
                       TheoryGraph, ThCPortGraph)
 
 # Incomplete definition.
-@test_throws ErrorException @finfunctor(TheoryGraph, ThCPortGraph, begin
-  V => Box
-  src => src ⨟ box
-  tgt => tgt ⨟ box
-end)
+@test_throws ErrorException begin
+  @finfunctor TheoryGraph ThCPortGraph begin
+    V => Box
+    src => src ⨟ box
+    tgt => tgt ⨟ box
+  end
+end
 
 # Failure of functorality.
-@test_throws ErrorException (@finfunctor TheoryGraph ThCPortGraph begin
-  V => Box
-  E => Wire
-  src => src
-  tgt => tgt
-end)
+@test_throws ErrorException begin
+  @finfunctor TheoryGraph ThCPortGraph begin
+    V => Box
+    E => Wire
+    src => src
+    tgt => tgt
+  end
+end
+
+# Extra definitions.
+@test_throws ErrorException begin
+  @finfunctor TheoryGraph TheoryReflexiveGraph begin
+    V => Box
+    E => Wire
+    src => src
+    tgt => tgt
+    refl => refl
+  end
+end
 
 # GAT expressions.
 F = @finfunctor TheoryDDS TheoryDDS begin
@@ -156,6 +171,14 @@ F_parsed′ = @free_diagram TheoryGraph begin
   v == src(e2)
 end
 @test F_parsed′ == F_parsed
+
+F = @free_diagram TheoryGraph begin
+  (e1, e2)::E
+  tgt(e1) == src(e2)
+end
+@test is_functorial(F)
+@test collect_ob(F) == [TheoryGraph[:E], TheoryGraph[:E], TheoryGraph[:V]]
+@test collect_hom(F) == [TheoryGraph[:tgt], TheoryGraph[:src]]
 
 F = @diagram TheoryDDS begin
   x::X
@@ -215,6 +238,20 @@ F_E = diagram(ob_map(F, :E))
 F_tgt = hom_map(F, :tgt)
 @test collect_ob(F_tgt) == [(3, TheoryGraph[:tgt])]
 
+# Syntactic variant of above.
+F′ = @migration TheoryGraph TheoryGraph begin
+  V => V
+  E => @join begin
+    v::V
+    (e₁, e₂)::E
+    tgt(e₁) == v
+    src(e₂) == v
+  end
+  src => src(e₁)
+  tgt => tgt(e₂)
+end
+@test F′ == F
+
 # Cartesian product of graph with itself.
 F = @migration TheoryGraph TheoryGraph begin
   V => @product (v₁::V; v₂::V)
@@ -259,8 +296,8 @@ F = @migration TheoryReflexiveGraph TheoryGraph begin
   end
 end
 F_tgt = hom_map(F, :tgt)
-@test ob_map(F_tgt, 1) == (2, id(TheoryGraph[:V]))
-@test hom_map(F_tgt, 2) |> edges |> only == 4
+@test ob_map(F_tgt, :v) == (2, id(TheoryGraph[:V]))
+@test hom_map(F_tgt, :t) |> edges |> only == 4
 
 # Free/initial port graph on a graph.
 # This is the left adjoint to the underlying graph functor.
@@ -286,7 +323,7 @@ F = @migration TheoryGraph begin
     v => tgt
   end
 end
-F_src = hom_map(F, 3)
+F_src = hom_map(F, :src)
 @test collect_ob(F_src) == [(1, TheoryGraph[:src]), (1, id(TheoryGraph[:E]))]
 @test collect_hom(F_src) == [id(shape(codom(F_src)), 1)]
 
@@ -333,7 +370,7 @@ F = @migration TheoryGraph begin
   end
   (component: V → Component) => v
 end
-F_C = diagram(ob_map(F, 2))
+F_C = diagram(ob_map(F, :Component))
 @test nameof.(collect_ob(F_C)) == [:E, :V]
 @test nameof.(collect_hom(F_C)) == [:src, :tgt]
 
@@ -349,8 +386,8 @@ F = @migration TheoryGraph TheoryGraph begin
     path => @join begin
       v::V
       (e₁, e₂)::E
-      tgt(e₁) == v
-      src(e₂) == v
+      (e₁ → v)::tgt
+      (e₂ → v)::src
     end
   end
   src => begin

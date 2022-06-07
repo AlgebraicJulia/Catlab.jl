@@ -9,7 +9,8 @@ in applications like knowledge representation.
 """
 module Present
 export @present, Presentation, generator, generators, generator_index,
-  has_generator, equations, add_generator!, add_generators!, add_definition!, add_equation!
+  has_generator, equations, add_generator!, add_generators!, add_definition!,
+  add_equation!
 
 using Base.Meta: ParseError
 using MLStyle: @match
@@ -116,26 +117,31 @@ function add_definition!(pres::Presentation, name::Symbol, rhs::GATExpr)
   generator
 end
 
-""" Get the index of a generator
+""" Get the index of a generator, relative to generators of same GAT type.
 """
-generator_index(pres::Presentation, x::Symbol) = pres.generator_name_index[x].second
+function generator_index(pres::Presentation{T,Name}, name::Name) where {T,Name}
+  last(pres.generator_name_index[name])
+end
+function generator_index(pres::Presentation, expr::GATExpr{:generator})
+  name = first(expr)
+  !isnothing(name) || error("Cannot lookup unnamed generator by name")
+  generator_index(pres, name)
+end
 
 """ Shorthand for contructing a term in the presentation
 """
-function make_term(pres::Presentation, e::Symbol)
-  pres[e]
-end
-function make_term(pres::Presentation, e::Expr)
-  @match e begin
+function make_term(pres::Presentation, expr)
+  @match expr begin
+    ::Symbol => pres[expr]
     Expr(:call, term_constructor, args...) =>
       invoke_term(pres.syntax, term_constructor,
-                  map(e -> make_term(pres, e), args)...)
+                  map(arg -> make_term(pres, arg), args)...)
   end
 end
 
 """ Create a new generator in a presentation of a given type
 """
-function make_generator(pres::Presentation, name::Symbol,
+function make_generator(pres::Presentation, name::Union{Symbol,Nothing},
                         type::Symbol, type_args::Vector)
   invoke_term(pres.syntax, type, name,
               map(e -> make_term(pres, e), type_args)...)
@@ -143,19 +149,17 @@ end
 
 """ Create and add a new generator
 """
-function construct_generator!(pres::Presentation, name::Symbol,
-                              type::Symbol, type_args::Vector=[]; idem=true)
-  if !(name ∈ keys(pres.generator_name_index)) || !idem
-    add_generator!(pres, make_generator(pres,name,type,type_args))
-  end
+function construct_generator!(pres::Presentation, name::Union{Symbol,Nothing},
+                              type::Symbol, type_args::Vector=[])
+  add_generator!(pres, make_generator(pres, name, type, type_args))
 end
 
 """ Create and add multiple generators
 """
-function construct_generators!(pres::Presentation, names::Vector,
-                               type::Symbol, type_args::Vector=[]; idem=true)
+function construct_generators!(pres::Presentation, names::AbstractVector,
+                               type::Symbol, type_args::Vector=[])
   for name in names
-    construct_generator!(pres, name, type, type_args, idem=idem)
+    construct_generator!(pres, name, type, type_args)
   end
 end
 

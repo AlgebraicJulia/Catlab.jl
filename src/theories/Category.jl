@@ -1,11 +1,10 @@
 export Category, FreeCategory, Ob, Hom, dom, codom, id, compose, ⋅,
   Copresheaf, FreeCopresheaf, El, ElExpr, ob, act,
   Presheaf, FreePresheaf, coact,
-  DisplayedCategory, Act, hom
+  DisplayedCategory, Act, hom,
+  MCategory, FreeMCategory, Tight, reflexive, transitive
 
 import Base: show
-
-abstract type ElExpr{T} <: GATExpr{T} end
 
 # Category
 ##########
@@ -100,6 +99,8 @@ Axiomatized as a covariant category action.
   act(x, id(A)) == x ⊣ (A::Ob, x::El(A))
 end
 
+abstract type ElExpr{T} <: GATExpr{T} end
+
 @syntax FreeCopresheaf{ObExpr,HomExpr,ElExpr} Copresheaf begin
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 end
@@ -174,4 +175,39 @@ Reference: Ahrens & Lumsdaine 2019, "Displayed categories", Definition 3.1.
      f̄::Act(f,w,x), ḡ::Act(g,x,y), h̄::Act(h,y,z)))
   f̄ ⋅ id(y) == f̄ ⊣ (A::Ob, B::Ob, f::(A → B), x::El(A), y::El(B), f̄::Act(f,x,y))
   id(x) ⋅ f̄ == f̄ ⊣ (A::Ob, B::Ob, f::(A → B), x::El(A), y::El(B), f̄::Act(f,x,y))
+end
+
+# ℳ-category
+############
+
+""" Theory of an *ℳ-category*.
+
+The term "ℳ-category", used on the
+[nLab](https://ncatlab.org/nlab/show/M-category) is not very common, but the
+concept itself shows up commonly. An *ℳ-category* is a category with a
+distinguished wide subcategory, whose morphisms are suggestively called *tight*;
+for contrast, a generic morphism is called *loose*. Equivalently, an ℳ-category
+is a category enriched in the category ℳ of injections, the full subcategory of
+the arrow category of Set spanned by injections.
+
+In the following GAT, tightness is axiomatized as a property of morphisms: a
+dependent family of sets over the hom-sets, each having at most one inhabitant.
+"""
+@theory MCategory{Ob,Hom,Tight} <: Category{Ob,Hom} begin
+  Tight(hom::Hom(A,B))::TYPE ⊣ (A::Ob, B::Ob)
+
+  # Tightness is a property.
+  t == t′ ⊣ (A::Ob, B::Ob, f::Hom(A,B), t::Tight(f), t′::Tight(f))
+
+  # Tight morphisms form a subcategory.
+  reflexive(A::Ob)::Tight(id(A))
+  transitive(t::Tight(f), u::Tight(g))::Tight(compose(f,g)) ⊣
+    (A::Ob, B::Ob, C::Ob, f::Hom(A,B), g::Hom(B,C), t::Tight(f), u::Tight(g))
+end
+
+abstract type TightExpr{T} <: GATExpr{T} end
+
+@syntax FreeMCategory{ObExpr,HomExpr,TightExpr} MCategory begin
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
+  transitive(t::Tight, u::Tight) = associate_unit(new(t,u; strict=true), reflexive)
 end

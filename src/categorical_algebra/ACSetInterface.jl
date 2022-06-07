@@ -196,11 +196,10 @@ end
 """ Remove part from a C-set.
 
 The part is removed using the "pop and swap" strategy familiar from
-[LightGraphs.jl](https://github.com/JuliaGraphs/LightGraphs.jl), where the
-"removed" part is actually replaced by the last part, which is then deleted.
-This strategy has important performance benefits since only the last part must
-be assigned a new ID, as opposed to assigning new IDs to *every* part following
-the removed part.
+[Graphs.jl](https://github.com/JuliaGraphs/Graphs.jl), where the "removed" part
+is actually replaced by the last part, which is then deleted. This strategy has
+important performance benefits since only the last part must be assigned a new
+ID, as opposed to assigning new IDs to *every* part following the removed part.
 
 The removal operation is *not* recursive. When a part is deleted, any superparts
 incident to it are retained, but their subparts become undefined (equal to the

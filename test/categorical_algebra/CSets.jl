@@ -160,6 +160,8 @@ diagram = FreeDiagram([g1, g2, g0], [(ϕ,1,3), (ψ,2,3)])
 @test ob(lim′) == ob(lim)
 @test force(π1) == force(proj1(lim))
 @test force(π2) == force(proj2(lim))
+lim′ = limit(FinDomFunctor(diagram))
+@test ob(lim′) == ob(lim)
 
 # Colimits
 #---------
@@ -395,12 +397,6 @@ C₅, C₆ = cycle_graph(SymmetricGraph, 5), cycle_graph(SymmetricGraph, 6)
 
 # Labeled graphs
 #---------------
-
-@present TheoryLabeledGraph <: TheoryGraph begin
-  Label::AttrType
-  label::Attr(V,Label)
-end
-@acset_type LabeledGraph(TheoryLabeledGraph, index=[:src,:tgt]) <: AbstractGraph
 
 g = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:c,:d],))
 h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:c,:d,:a,:b],))

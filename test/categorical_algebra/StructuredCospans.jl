@@ -100,29 +100,31 @@ k0 = apex(k)
 # Attributed boundary
 #--------------------
 
-@present TheoryLabeledGraph <: TheoryGraph begin
+@present TheoryVELabeledGraph <: TheoryGraph begin
   Label::AttrType
   vlabel::Attr(V,Label)
   elabel::Attr(E,Label)
 end
 
-@acset_type LabeledGraph(TheoryLabeledGraph, index=[:src,:tgt]) <: AbstractGraph
-const OpenLabeledGraphOb, OpenLabeledGraph = OpenACSetTypes(LabeledGraph, :V)
+@acset_type VELabeledGraph(TheoryVELabeledGraph, index=[:src,:tgt]) <: AbstractGraph
+const VELGraph = VELabeledGraph
 
-g0 = LabeledGraph{Symbol}()
+const OpenVELGraphOb, OpenVELGraph = OpenACSetTypes(VELGraph, :V)
+
+g0 = VELGraph{Symbol}()
 add_vertices!(g0, 2, vlabel=[:x,:y])
 add_edge!(g0, 1, 2, elabel=:f)
-g = OpenLabeledGraph{Symbol}(g0, FinFunction([1],2), FinFunction([2],2))
+g = OpenVELGraph{Symbol}(g0, FinFunction([1],2), FinFunction([2],2))
 
-h0 = LabeledGraph{Symbol}()
+h0 = VELGraph{Symbol}()
 add_vertices!(h0, 3, vlabel=[:y,:w,:z])
 add_edges!(h0, [1,1], [2,3], elabel=[:g,:h])
-h = OpenLabeledGraph{Symbol}(h0, FinFunction([1],3), FinFunction([2,3],3))
+h = OpenVELGraph{Symbol}(h0, FinFunction([1],3), FinFunction([2,3],3))
 lfoot, rfoot = feet(h)
 @test nparts(rfoot, :V) == 2
 @test subpart(rfoot, :vlabel) == [:w,:z]
-@test dom(h) == OpenLabeledGraphOb{Symbol}(FinSet(1), vlabel=:y)
-@test codom(h) == OpenLabeledGraphOb{Symbol}(FinSet(2), vlabel=[:w,:z])
+@test dom(h) == OpenVELGraphOb{Symbol}(FinSet(1), vlabel=:y)
+@test codom(h) == OpenVELGraphOb{Symbol}(FinSet(2), vlabel=[:w,:z])
 
 # Category
 #---------
@@ -136,7 +138,7 @@ k0 = apex(k)
 
 # Incompatible attributes.
 set_subpart!(h0, 1, :vlabel, :y′)
-h = OpenLabeledGraph{Symbol}(h0, FinFunction([1],3), FinFunction([2,3],3))
+h = OpenVELGraph{Symbol}(h0, FinFunction([1],3), FinFunction([2,3],3))
 @test_throws ErrorException compose(g, h)
 
 # Symmetric monoidal category
@@ -147,8 +149,8 @@ k = otimes(g, h)
 @test codom(k) == codom(g)⊗codom(h)
 @test (nv(apex(k)), ne(apex(k))) == (5, 3)
 
-a = OpenLabeledGraphOb{Symbol}(FinSet(2), vlabel=[:u,:v])
-b = OpenLabeledGraphOb{Symbol}(FinSet(3), vlabel=[:x,:y,:z])
+a = OpenVELGraphOb{Symbol}(FinSet(2), vlabel=[:u,:v])
+b = OpenVELGraphOb{Symbol}(FinSet(3), vlabel=[:x,:y,:z])
 @test dom(braid(a, b)) == a⊗b
 @test codom(braid(a, b)) == b⊗a
 

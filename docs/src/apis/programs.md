@@ -19,7 +19,7 @@ category-theoretic [diagrams](https://ncatlab.org/nlab/show/diagram):
   equations
 - [`@finfunctor`](@ref), for defining a functor between two finitely presented
   categories
-- [`@diagram`](@ref), for defining a diagram in a category
+- [`@diagram`](@ref) and [`@free_diagram`](@ref), for defining a diagram in a category
 
 Generalizing the last two macros, the modules provides DSLs for functorial data
 migration:

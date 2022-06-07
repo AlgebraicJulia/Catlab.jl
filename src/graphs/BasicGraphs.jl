@@ -3,8 +3,8 @@
 Provides the category theorist's four basic kinds of graphs: graphs (aka
 directed multigraphs), symmetric graphs, reflexive graphs, and symmetric
 reflexive graphs. Also defines half-edge graphs. The API generally follows that
-of [LightGraphs.jl](https://github.com/JuliaGraphs/LightGraphs.jl), with some
-departures due to differences between the data structures.
+of [Graphs.jl](https://github.com/JuliaGraphs/Graphs.jl), with some departures
+due to differences between the data structures.
 """
 module BasicGraphs
 export HasVertices, HasGraph,
@@ -17,9 +17,9 @@ export HasVertices, HasGraph,
   AbstractSymmetricReflexiveGraph, SymmetricReflexiveGraph,
   AbstractHalfEdgeGraph, HalfEdgeGraph, vertex, half_edges,
   add_dangling_edge!, add_dangling_edges!,
+  AbstractLabeledGraph, LabeledGraph,
   AbstractWeightedGraph, WeightedGraph, weight,
-  AbstractSymmetricWeightedGraph, SymmetricWeightedGraph,
-  from_lightgraph
+  AbstractSymmetricWeightedGraph, SymmetricWeightedGraph
 
 import Base: inv
 using Requires
@@ -264,9 +264,11 @@ add_edge!(g::AbstractSymmetricGraph, src::Int, tgt::Int; kw...) =
 function add_edges!(g::AbstractSymmetricGraph, srcs::AbstractVector{Int},
                     tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
-  k = nparts(g, :E)
-  add_parts!(g, :E, 2n; src=vcat(srcs,tgts), tgt=vcat(tgts,srcs),
-             inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
+  edges1 = add_parts!(g, :E, n; src=srcs, tgt=tgts, kw...)
+  edges2 = add_parts!(g, :E, n; src=tgts, tgt=srcs, kw...)
+  set_subpart!(g, edges1, :inv, edges2)
+  set_subpart!(g, edges2, :inv, edges1)
+  first(edges1):last(edges2)
 end
 
 function rem_vertices!(g::AbstractSymmetricGraph, vs; keep_edges::Bool=false)
@@ -375,9 +377,11 @@ add_edge!(g::AbstractSymmetricReflexiveGraph, src::Int, tgt::Int; kw...) =
 function add_edges!(g::AbstractSymmetricReflexiveGraph,
                     srcs::AbstractVector{Int}, tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
-  k = nparts(g, :E)
-  add_parts!(g, :E, 2n; src=vcat(srcs,tgts), tgt=vcat(tgts,srcs),
-             inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
+  edges1 = add_parts!(g, :E, n; src=srcs, tgt=tgts, kw...)
+  edges2 = add_parts!(g, :E, n; src=tgts, tgt=srcs, kw...)
+  set_subpart!(g, edges1, :inv, edges2)
+  set_subpart!(g, edges2, :inv, edges1)
+  first(edges1):last(edges2)
 end
 
 function rem_vertices!(g::AbstractSymmetricReflexiveGraph, vs;
@@ -450,17 +454,17 @@ end
                    tgts::AbstractVector{Int}; kw...) =
   add_half_edge_pairs!(g, srcs, tgts; kw...)
 
-function add_half_edge_pair!(g::AbstractHalfEdgeGraph, src::Int, tgt::Int; kw...)
-  k = nparts(g, :H)
-  add_parts!(g, :H, 2; vertex=[src,tgt], inv=[k+2,k+1], kw...)
-end
+add_half_edge_pair!(g::AbstractHalfEdgeGraph, src::Int, tgt::Int; kw...) =
+  add_half_edge_pairs!(g, src:src, tgt:tgt; kw...)
 
 function add_half_edge_pairs!(g::AbstractHalfEdgeGraph, srcs::AbstractVector{Int},
                               tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
-  k = nparts(g, :H)
-  add_parts!(g, :H, 2n; vertex=vcat(srcs,tgts),
-             inv=vcat((k+n+1):(k+2n),(k+1):(k+n)), kw...)
+  hs  = add_parts!(g, :H, n; vertex=srcs, kw...)
+  hs′ = add_parts!(g, :H, n; vertex=tgts, kw...)
+  set_subpart!(g, hs, :inv, hs′)
+  set_subpart!(g, hs′, :inv, hs)
+  first(hs):last(hs′)
 end
 
 """ Add a dangling edge to a half-edge graph.
@@ -493,6 +497,26 @@ rem_edge!(g::AbstractHalfEdgeGraph, src::Int, tgt::Int) =
 rem_edge!(g::AbstractHalfEdgeGraph, h::Int) = rem_edges!(g, h:h)
 rem_edges!(g::AbstractHalfEdgeGraph, hs) =
   rem_parts!(g, :H, unique!(sort!([hs; inv(g, hs)])))
+
+# Labeled graphs
+################
+
+@present TheoryLabeledGraph <: TheoryGraph begin
+  Label::AttrType
+  label::Attr(V,Label)
+end
+
+""" Abstract type for labeled graphs.
+"""
+@abstract_acset_type AbstractLabeledGraph <: AbstractGraph
+
+""" A labeled graph.
+
+By convention, a "labeled graph" without qualification is a vertex-labeled
+graph. We do not require that the label be unique, and in this data type, the
+label attribute is not indexed.
+"""
+@acset_type LabeledGraph(TheoryLabeledGraph, index=[:src,:tgt]) <: AbstractLabeledGraph
 
 # Weighted graphs
 #################
@@ -539,44 +563,35 @@ edge involution.
 ##########################
 
 function __init__()
-  @require LightGraphs="093fc24a-ae57-5d10-9952-331d41423f4d" begin
-    import .LightGraphs
-    import .LightGraphs: SimpleGraph, SimpleDiGraph
+  @require Graphs="86223c79-3864-5bf0-83f7-82e725a168b6" begin
+    import .Graphs as SimpleGraphs
+    import .Graphs: SimpleGraph, SimpleDiGraph
 
-    function (::Type{LG})(g::HasGraph) where LG <: Union{SimpleGraph,SimpleDiGraph}
-      lg = LG(nv(g))
+    function (::Type{SG})(g::HasGraph) where SG <: Union{SimpleGraph,SimpleDiGraph}
+      sg = SG(nv(g))
       for (s, t) in zip(src(g), tgt(g))
-        LightGraphs.add_edge!(lg, s, t)
+        SimpleGraphs.add_edge!(sg, s, t)
       end
-      lg
+      sg
     end
 
-    function from_lightgraph(lg::SimpleDiGraph)
-      g = Graph(LightGraphs.nv(lg))
-      for e in LightGraphs.edges(lg)
-        add_edge!(g,LightGraphs.src(e),LightGraphs.dst(e))
-      end
-      g
-    end
-
-    function from_lightgraph(lg::SimpleGraph)
-      g = SymmetricGraph(LightGraphs.nv(lg))
-      for e in LightGraphs.edges(lg)
-        add_edge!(g,LightGraphs.src(e),LightGraphs.dst(e))
+    function (::Type{G})(sg::Union{SimpleGraph,SimpleDiGraph}) where G <: HasGraph
+      g = G(SimpleGraphs.nv(sg))
+      for e in SimpleGraphs.edges(sg)
+        add_edge!(g, SimpleGraphs.src(e), SimpleGraphs.dst(e))
       end
       g
     end
-
 
     function SimpleGraph(g::AbstractHalfEdgeGraph)
-      lg = SimpleGraph(nv(g))
+      sg = SimpleGraph(nv(g))
       for e in half_edges(g)
         e′ = inv(g,e)
         if e <= e′
-          LightGraphs.add_edge!(lg, vertex(g,e), vertex(g,e′))
+          SimpleGraphs.add_edge!(sg, vertex(g,e), vertex(g,e′))
         end
       end
-      lg
+      sg
     end
   end
 

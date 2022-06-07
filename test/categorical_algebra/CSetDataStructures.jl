@@ -22,7 +22,6 @@ end
 @test DDS <: ACSet
 
 dds = DDS()
-@test typeof(dds) <: StructACSet
 @test keys(tables(dds)) == (:X,)
 @test nparts(dds, :X) == 0
 @test add_part!(dds, :X) == 1
@@ -250,6 +249,28 @@ d′ = Dendrogram{Int}()
 copy_parts!(d′, ld)
 @test d′ == d
 
+# Subsets
+#########
+
+# A set together with a subset, with unique indexing for fast membership checks.
+
+@present TheorySubset(FreeSchema) begin
+  (Set, Sub)::Ob
+  ι::Hom(Sub, Set)
+end
+@acset_type Subset(TheorySubset, unique_index=[:ι])
+
+Base.in(x, X::Subset) = incident(X, x, :ι) != 0
+
+A = Subset()
+add_parts!(A, :Set, 2)
+add_part!(A, :Sub, ι=1)
+B = Subset()
+add_parts!(B, :Set, 2)
+add_part!(B, :Sub, ι=2)
+@test 1 ∈ A && 2 ∉ A
+@test 1 ∉ B && 2 ∈ B
+
 # Labeled sets
 ##############
 
@@ -389,13 +410,13 @@ h2 = map(g, X = f)
 @test typeof(h1).super.parameters[2] == Tuple{Int}
 @test subpart(h1,:dec) == f.(["a","b","c","d"])
 
-@present TheoryLabelledDecGraph <: TheoryDecGraph begin
+@present TheoryLabeledDecGraph <: TheoryDecGraph begin
   label::Attr(V,X)
 end
 
-@acset_type LabelledDecGraph(TheoryLabelledDecGraph, index=[:src,:tgt])
+@acset_type LabeledDecGraph(TheoryLabeledDecGraph, index=[:src,:tgt])
 
-g = @acset LabelledDecGraph{String} begin
+g = @acset LabeledDecGraph{String} begin
   V = 4
   E = 4
 

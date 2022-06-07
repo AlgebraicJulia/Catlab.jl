@@ -21,8 +21,9 @@ d = Diagram(D)
 @test shape(d) == C
 @test ob_map(d, 3) == SchSGraph[:V]
 @test hom_map(d, 1) == SchSGraph[:tgt]
+@test first.(collect_ob(d)) == [:E,:E,:V]
+@test first.(collect_hom(d)) == [:tgt,:src]
 @test startswith(sprint(show, d), "Diagram{id}(")
-@test hash(D) == hash(D)
 @test hash(D) != hash(Diagram{op}(D))
 
 # Diagram morphisms
@@ -62,9 +63,8 @@ fg = f⋅g
 d = dom(f)
 @test op(op(d)) == d
 @test op(op(f)) == f
-@test dom(op(g)) == Diagram{co}(ιV)
-@test codom(op(g)) == Diagram{co}(D)
-@test op(g) == DiagramHom{co}([(1,:src)], ιV, D)
+@test dom(op(f)) == op(codom(f))
+@test codom(op(f)) == op(dom(f))
 @test op(g)⋅op(f) == op(f⋅g)
 
 # Monads of diagrams
@@ -73,7 +73,7 @@ d = dom(f)
 C = FinCat(TheoryGraph)
 d = munit(Diagram{id}, C, :V)
 @test is_discrete(shape(d))
-@test only(collect_ob(diagram(d))) == TheoryGraph[:V]
+@test only(collect_ob(d)) == TheoryGraph[:V]
 f = munit(DiagramHom{id}, C, :src)
 @test only(components(diagram_map(f))) == TheoryGraph[:src]
 
