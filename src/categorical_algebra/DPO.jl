@@ -20,18 +20,19 @@ A semantics (DPO, SPO, or SqPO) must be chosen.
 
 Control the match-finding process by specifying whether the match is
 intended to be monic or not, as well as an optional negative application
-condition (i.e. forbid any match m: L->G for which there exists a commuting
-triangle L->N->G).
+condition(s) (i.e. forbid any match m: L->G for which there exists a commuting
+triangle L->Nᵢ->G, for each Nᵢ).
 """
 struct Rule{T}
   L::Any
   R::Any
-  N::Union{Nothing, Any}
+  N::Vector{Any}
   monic::Bool
   function Rule{T}(L, R, N=nothing; monic::Bool=false) where {T}
     dom(L) == dom(R) || error("L<->R not a span")
-    isnothing(N) || dom(N) == codom(L) || error("NAC does not compose with L")
-    new{T}(L, R, N, monic)
+    Ns = isnothing(N) ? [] : (N isa ACSetTransformation ? Any[N] : N)
+    all(N-> dom(N) == codom(L), Ns) || error("NAC does not compose with L")
+    new{T}(L, R, Ns, monic)
   end
 end
 
@@ -77,7 +78,7 @@ function rewrite_maps(r::Rule{T}, G; initial=Dict(), kw...) where {T}
   ms = homomorphisms(codom(r.L), G; monic=r.monic, initial=NamedTuple(initial))
   for m in ms
     DPO_pass = T != :DPO || can_pushout_complement(r.L, m)
-    if DPO_pass && (isnothing(r.N) || isnothing(extend_morphism(m,r.N)))
+    if DPO_pass && all(N->isnothing(extend_morphism(m,r.N)), r.N)
       return rewrite_match_maps(r, m; kw...)
     end
   end
@@ -98,7 +99,7 @@ function rewrite_parallel_maps(rs::Vector{Rule{T}}, G::StructACSet{S};
     ms_ = homomorphisms(codom(r.L), G; monic=r.monic, initial=init)
     for m in ms_
       DPO_pass = T != :DPO || can_pushout_complement(r.L, m)
-      if DPO_pass && (isnothing(r.N) || isnothing(extend_morphism(m,r.N)))
+      if DPO_pass && all(N->isnothing(extend_morphism(m,N)), r.N)
         new_dels = map(zip(components(r.L), components(m))) do (l_comp, m_comp)
             L_image = Set(collect(l_comp))
             del = Set([m_comp(x) for x in codom(l_comp) if x ∉ L_image])

@@ -511,5 +511,6 @@ n = @acset Graph begin V=3; E=4; src=[1,1,2,3]; tgt=[2,3,2,3] end
 N = homomorphism(l,n; monic=true)
 G = @acset Graph begin V=4; E=6; src=[1,1,1,2,3,4]; tgt=[2,3,4,2,3,4] end
 @test rewrite_parallel(Rule(L,R,N; monic=true), G) === nothing
+@test rewrite_parallel(Rule(L,R,[N]; monic=true), G) === nothing
 
 end # module

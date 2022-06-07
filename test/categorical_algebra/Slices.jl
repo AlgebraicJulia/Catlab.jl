@@ -63,7 +63,7 @@ pushout(([f, p1]))
 # DPO of slices: do the pushout complement and add an extra state
 R = Slice(ACSetTransformation(Graph(2), two, V=[2, 1]))
 r = SliceHom(A,R,ACSetTransformation(a, Graph(2), V=[1]))
-res = rewrite_match(f, r, g)
+res = rewrite_match(Rule(f, r), g)
 @test is_isomorphic(dom(res), apex(coproduct(b, Graph(1))))
 
 end #module
