@@ -51,10 +51,6 @@ end
   include("StructuredCospans.jl")
 end
 
-@testset "DPO" begin
-  include("DPO.jl")
-end
-
 @testset "Slices" begin
   include("Slices.jl")
 end

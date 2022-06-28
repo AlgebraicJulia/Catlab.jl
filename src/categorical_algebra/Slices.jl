@@ -7,7 +7,7 @@ using ..FreeDiagrams, ..Limits, ..CSets
 using ...Theories: Category
 import ...Theories: dom, codom, compose, id
 import ..Limits: limit, colimit, universal
-import ..FinSets: force, pushout_complement
+import ..FinSets: force
 
 """
 The data of the object of a slice category (say, some category C sliced over an
@@ -125,26 +125,6 @@ function universal(lim::SliceLimit, sp::Multispan)
   u = universal(lim.underlying, Multispan(dom(apx), newspan))
   apx2 = Slice(first(legs(lim.underlying.cone)))
   return SliceHom(apx, apx2, u)
-end
-
-"""    pushout_complement(f::SliceHom, g::SliceHom)
-Compute a pushout complement in a slice category by using the pushout complement
-in the underlying category.
-
-     f
-  B <-- A ---⌝
-  | ↘ ↙      |
- g|  X       | f′
-  ↓ ↗  ↖ cx  |
-  D <--- C <--
-      g′
-
-"""
-function pushout_complement(f::SliceHom, g::SliceHom)
-    f′, g′ = pushout_complement(ComposablePair(f.f, g.f))
-    D = codom(g)
-    C = Slice(compose(g′, D.slice))
-    return SliceHom(dom(f), C, f′) => SliceHom(C, D, g′)
 end
 
 end # module

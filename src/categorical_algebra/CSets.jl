@@ -22,8 +22,7 @@ using ...Theories: Category, SchemaDescType, CSetSchemaDescType,
 import ...Theories: dom, codom, compose, ⋅, id,
   ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 using ..FreeDiagrams, ..Limits, ..Subobjects, ..FinSets, ..FinCats
-import ..Limits: limit, colimit, universal, pushout_complement,
-  can_pushout_complement
+import ..Limits: limit, colimit, universal
 import ..Subobjects: Subobject, SubobjectBiHeytingAlgebra,
   implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..Sets: SetOb, SetFunction, TypeSet
@@ -918,64 +917,6 @@ end
 function sets(X::StructACSet{S}; all::Bool=false) where S
   names = all ? flatten((ob(S), attrtype(S))) : ob(S)
   NamedTuple(c => SetOb(X,c) for c in names)
-end
-
-""" Compute pushout complement of attributed C-sets, if possible.
-
-The pushout complement is constructed pointwise from pushout complements of
-finite sets. If any of the pointwise identification conditions fail (in FinSet),
-this method will raise an error. If the dangling condition fails, the resulting
-C-set will be only partially defined. To check all these conditions in advance,
-use the function [`can_pushout_complement`](@ref).
-"""
-function pushout_complement(pair::ComposablePair{<:ACSet})
-  # Compute pushout complements pointwise in FinSet.
-  components = map(pushout_complement, unpack_diagram(pair))
-  k_components, g_components = map(first, components), map(last, components)
-
-  # Reassemble components into natural transformations.
-  g = hom(Subobject(codom(pair), g_components))
-  k = ACSetTransformation(k_components, dom(pair), dom(g))
-  return ComposablePair(k, g)
-end
-
-function can_pushout_complement(pair::ComposablePair{<:ACSet})
-  all(can_pushout_complement, unpack_diagram(pair)) &&
-    isempty(dangling_condition(pair))
-end
-
-"""
-Check the dangling condition for a pushout comlement: m doesn't map a deleted
-element d to an element m(d) ∈ G if m(d) is connected to something outside the
-image of m.
-
-For example, in the C-Set of graphs,
-
-   e1
-v1 --> v2
-
-if e1 is not matched but either v1 or v2 are deleted, then e1 is dangling.
-"""
-function dangling_condition(pair::ComposablePair{<:StructACSet{S}}) where S
-  l, m = pair
-  orphans = map(components(l), components(m)) do l_comp, m_comp
-    image = Set(collect(l_comp))
-    Set([ m_comp(x) for x in codom(l_comp) if x ∉ image ])
-  end
-  # check that for all morphisms in C, we do not map to an orphan
-  results = Tuple{Symbol,Int,Int}[]
-  for (morph, src_obj, tgt_obj) in zip(hom(S), dom(S), codom(S))
-    n_src = parts(codom(m), src_obj)
-    unmatched_vals = setdiff(n_src, collect(m[src_obj]))
-    unmatched_tgt = map(x -> codom(m)[x,morph], collect(unmatched_vals))
-    for unmatched_val in setdiff(n_src, collect(m[src_obj]))  # G/m(L) src
-      unmatched_tgt = codom(m)[unmatched_val,morph]
-      if unmatched_tgt in orphans[tgt_obj]
-        push!(results, (morph, unmatched_val, unmatched_tgt))
-      end
-    end
-  end
-  results
 end
 
 # Sub-C-sets
