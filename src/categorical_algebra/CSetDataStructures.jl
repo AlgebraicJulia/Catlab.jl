@@ -471,12 +471,11 @@ end
 @inline ACSetInterface.rem_part!(acs::StructACSet, type::Symbol, part::Int) =
   _rem_part!(acs, Val{type}, part)
 
-function rem_part_body(s::SchemaDesc, idxed, ob::Symbol)
+function rem_part_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
+                       unique_idxed::AbstractDict{Symbol,Bool}, ob::Symbol)
   in_homs = filter(hom -> s.codoms[hom] == ob, s.homs)
   out_homs = filter(f -> s.doms[f] == ob, s.homs)
   out_attrs = filter(f -> s.doms[f] == ob, s.attrs)
-  indexed_out_homs = filter(hom -> s.doms[hom] == ob && idxed[hom], s.homs)
-  indexed_attrs = filter(attr -> s.doms[attr] == ob && idxed[attr], s.attrs)
   quote
     last_part = @inbounds acs.obs[$(ob_num(s, ob))]
     @assert 1 <= part <= last_part
@@ -500,11 +499,11 @@ function rem_part_body(s::SchemaDesc, idxed, ob::Symbol)
 
     # Clear any morphism and data attribute indices for last part.
     $(Expr(:block,
-           (map(indexed_out_homs) do hom
+           (map(filter(f -> idxed[f] || unique_idxed[f], out_homs)) do hom
               :(set_subpart!(acs, last_part, $(Expr(:quote, hom)), 0))
             end)...))
 
-    for attr in $(Tuple(indexed_attrs))
+    for attr in $(Tuple(filter(f -> idxed[f] || unique_idxed[f], out_attrs)))
       if isassigned(subpart(acs, attr), last_part)
         unset_attr_index!(acs.attr_indices[attr], subpart(acs, last_part, attr), last_part)
       end
@@ -516,6 +515,12 @@ function rem_part_body(s::SchemaDesc, idxed, ob::Symbol)
     end
     for a in $(Tuple(out_attrs))
       resize!(acs.attrs[a], last_part - 1)
+    end
+    for f in $(Tuple(filter(f -> idxed[f], in_homs)))
+      resize!(acs.hom_indices[f], last_part - 1)
+    end
+    for f in $(Tuple(filter(f -> unique_idxed[f], in_homs)))
+      resize!(acs.hom_unique_indices[f], last_part - 1)
     end
     @inbounds acs.obs[$(ob_num(s, ob))] -= 1
     if part < last_part
@@ -532,9 +537,9 @@ function rem_part_body(s::SchemaDesc, idxed, ob::Symbol)
   end
 end
 
-@generated function _rem_part!(acs::StructACSet{S,Ts,idxed}, ::Type{Val{ob}},
-                               part::Int) where {S,Ts,ob,idxed}
-  rem_part_body(SchemaDesc(S),pairs(idxed),ob)
+@generated function _rem_part!(acs::StructACSet{S,Ts,Idxed,UniqueIdxed}, ::Type{Val{ob}},
+                               part::Int) where {S,Ts,Idxed,UniqueIdxed,ob}
+  rem_part_body(SchemaDesc(S),pairs(Idxed),pairs(UniqueIdxed),ob)
 end
 
 function Base.copy(acs::StructACSet)

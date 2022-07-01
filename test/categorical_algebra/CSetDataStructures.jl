@@ -58,6 +58,7 @@ rem_part!(dds, :X, 2)
 @test subpart(dds, :Φ) == [0,2]
 @test incident(dds, 1, :Φ) == []
 @test incident(dds, 2, :Φ) == [2]
+@test_throws BoundsError incident(dds, 3, :Φ)
 rem_part!(dds, :X, 2)
 @test nparts(dds, :X) == 1
 @test subpart(dds, :Φ) == [0]
