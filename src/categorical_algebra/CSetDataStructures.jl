@@ -398,8 +398,8 @@ function set_subpart_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
     if idxed[f]
       quote
         @assert 0 <= subpart <= acs.obs[$(ob_num(s, s.codoms[f]))]
-        @inbounds old = acs.homs.$f[part]
-        @inbounds acs.homs.$f[part] = subpart
+        old = acs.homs.$f[part]
+        acs.homs.$f[part] = subpart
         if old > 0
           @assert deletesorted!(acs.hom_indices.$f[old], part)
         end
@@ -411,13 +411,15 @@ function set_subpart_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
     elseif unique_idxed[f]
       quote
         @assert 0 <= subpart <= acs.obs[$(ob_num(s, s.codoms[f]))]
-        @assert acs.hom_unique_indices.$f[subpart] == 0
+        @assert subpart == 0 || acs.hom_unique_indices.$f[subpart] == 0
         old = acs.homs.$f[part]
+        acs.homs.$f[part] = subpart
         if old > 0
           acs.hom_unique_indices.$f[old] = 0
         end
-        acs.homs.$f[part] = subpart
-        acs.hom_unique_indices.$f[subpart] = part
+        if subpart > 0
+          acs.hom_unique_indices.$f[subpart] = part
+        end
         subpart
       end
     else
@@ -482,8 +484,8 @@ function rem_part_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
     # Unassign superparts of the part to be removed and also reassign superparts
     # of the last part to this part.
     for hom in $(Tuple(in_homs))
-      set_subpart!(acs, incident(acs, part, hom, copy=true), hom, 0)
-      set_subpart!(acs, incident(acs, last_part, hom, copy=true), hom, part)
+      set_subpart!(acs, incidence_vector(acs, part, hom), hom, 0)
+      set_subpart!(acs, incidence_vector(acs, last_part, hom), hom, part)
     end
 
     # This is a hack to avoid allocating a named tuple, because these parts
@@ -541,6 +543,9 @@ end
                                part::Int) where {S,Ts,Idxed,UniqueIdxed,ob}
   rem_part_body(SchemaDesc(S),pairs(Idxed),pairs(UniqueIdxed),ob)
 end
+
+# XXX: Hack because `incident` has variable return type (issue #597).
+incidence_vector(args...) = [x for x in incident(args...) if x != 0]
 
 function Base.copy(acs::StructACSet)
   new_acs = typeof(acs)()

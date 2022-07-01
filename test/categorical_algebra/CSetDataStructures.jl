@@ -271,6 +271,12 @@ add_parts!(B, :Set, 2)
 add_part!(B, :Sub, ι=2)
 @test 1 ∈ A && 2 ∉ A
 @test 1 ∉ B && 2 ∈ B
+rem_part!(A, :Set, 2)
+@test 1 ∈ A
+@test_throws BoundsError 2 ∈ A
+rem_part!(B, :Set, 1)
+@test 1 ∈ B
+@test_throws BoundsError 2 ∈ B
 
 # Labeled sets
 ##############
