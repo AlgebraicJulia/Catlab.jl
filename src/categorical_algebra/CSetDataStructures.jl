@@ -398,8 +398,8 @@ function set_subpart_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
     if idxed[f]
       quote
         @assert 0 <= subpart <= acs.obs[$(ob_num(s, s.codoms[f]))]
-        @inbounds old = acs.homs.$f[part]
-        @inbounds acs.homs.$f[part] = subpart
+        old = acs.homs.$f[part]
+        acs.homs.$f[part] = subpart
         if old > 0
           @assert deletesorted!(acs.hom_indices.$f[old], part)
         end
@@ -411,13 +411,15 @@ function set_subpart_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
     elseif unique_idxed[f]
       quote
         @assert 0 <= subpart <= acs.obs[$(ob_num(s, s.codoms[f]))]
-        @assert acs.hom_unique_indices.$f[subpart] == 0
+        @assert subpart == 0 || acs.hom_unique_indices.$f[subpart] == 0
         old = acs.homs.$f[part]
+        acs.homs.$f[part] = subpart
         if old > 0
           acs.hom_unique_indices.$f[old] = 0
         end
-        acs.homs.$f[part] = subpart
-        acs.hom_unique_indices.$f[subpart] = part
+        if subpart > 0
+          acs.hom_unique_indices.$f[subpart] = part
+        end
         subpart
       end
     else
@@ -471,20 +473,19 @@ end
 @inline ACSetInterface.rem_part!(acs::StructACSet, type::Symbol, part::Int) =
   _rem_part!(acs, Val{type}, part)
 
-function rem_part_body(s::SchemaDesc, idxed, ob::Symbol)
+function rem_part_body(s::SchemaDesc, idxed::AbstractDict{Symbol,Bool},
+                       unique_idxed::AbstractDict{Symbol,Bool}, ob::Symbol)
   in_homs = filter(hom -> s.codoms[hom] == ob, s.homs)
   out_homs = filter(f -> s.doms[f] == ob, s.homs)
   out_attrs = filter(f -> s.doms[f] == ob, s.attrs)
-  indexed_out_homs = filter(hom -> s.doms[hom] == ob && idxed[hom], s.homs)
-  indexed_attrs = filter(attr -> s.doms[attr] == ob && idxed[attr], s.attrs)
   quote
     last_part = @inbounds acs.obs[$(ob_num(s, ob))]
     @assert 1 <= part <= last_part
     # Unassign superparts of the part to be removed and also reassign superparts
     # of the last part to this part.
     for hom in $(Tuple(in_homs))
-      set_subpart!(acs, incident(acs, part, hom, copy=true), hom, 0)
-      set_subpart!(acs, incident(acs, last_part, hom, copy=true), hom, part)
+      set_subpart!(acs, incidence_vector(acs, part, hom), hom, 0)
+      set_subpart!(acs, incidence_vector(acs, last_part, hom), hom, part)
     end
 
     # This is a hack to avoid allocating a named tuple, because these parts
@@ -500,11 +501,11 @@ function rem_part_body(s::SchemaDesc, idxed, ob::Symbol)
 
     # Clear any morphism and data attribute indices for last part.
     $(Expr(:block,
-           (map(indexed_out_homs) do hom
+           (map(filter(f -> idxed[f] || unique_idxed[f], out_homs)) do hom
               :(set_subpart!(acs, last_part, $(Expr(:quote, hom)), 0))
             end)...))
 
-    for attr in $(Tuple(indexed_attrs))
+    for attr in $(Tuple(filter(f -> idxed[f] || unique_idxed[f], out_attrs)))
       if isassigned(subpart(acs, attr), last_part)
         unset_attr_index!(acs.attr_indices[attr], subpart(acs, last_part, attr), last_part)
       end
@@ -516,6 +517,12 @@ function rem_part_body(s::SchemaDesc, idxed, ob::Symbol)
     end
     for a in $(Tuple(out_attrs))
       resize!(acs.attrs[a], last_part - 1)
+    end
+    for f in $(Tuple(filter(f -> idxed[f], in_homs)))
+      resize!(acs.hom_indices[f], last_part - 1)
+    end
+    for f in $(Tuple(filter(f -> unique_idxed[f], in_homs)))
+      resize!(acs.hom_unique_indices[f], last_part - 1)
     end
     @inbounds acs.obs[$(ob_num(s, ob))] -= 1
     if part < last_part
@@ -532,10 +539,13 @@ function rem_part_body(s::SchemaDesc, idxed, ob::Symbol)
   end
 end
 
-@generated function _rem_part!(acs::StructACSet{S,Ts,idxed}, ::Type{Val{ob}},
-                               part::Int) where {S,Ts,ob,idxed}
-  rem_part_body(SchemaDesc(S),pairs(idxed),ob)
+@generated function _rem_part!(acs::StructACSet{S,Ts,Idxed,UniqueIdxed}, ::Type{Val{ob}},
+                               part::Int) where {S,Ts,Idxed,UniqueIdxed,ob}
+  rem_part_body(SchemaDesc(S),pairs(Idxed),pairs(UniqueIdxed),ob)
 end
+
+# XXX: Hack because `incident` has variable return type (issue #597).
+incidence_vector(args...) = [x for x in incident(args...) if x != 0]
 
 function Base.copy(acs::StructACSet)
   new_acs = typeof(acs)()
