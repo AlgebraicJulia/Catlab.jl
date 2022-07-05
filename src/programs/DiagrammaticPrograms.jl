@@ -227,7 +227,8 @@ function parse_functor(C::Presentation, D::Presentation, body::Expr; kw...)
   parse_functor(FinCat(C), FinCat(D), body; kw...)
 end
 
-function parse_ob_hom_maps(C::FinCat, body::Expr; allow_missing::Bool=false)
+function parse_ob_hom_maps(C::FinCat, body::Expr;
+                           missing_ob::Bool=false, missing_hom::Bool=false)
   assignments = Dict{Symbol,Union{Expr,Symbol}}()
   assign(lhs, rhs) = if haskey(assignments, lhs)
     error("Left-hand side $lhs assigned twice in $body")
@@ -247,12 +248,12 @@ function parse_ob_hom_maps(C::FinCat, body::Expr; allow_missing::Bool=false)
   end
   ob_rhs = make_map(ob_generators(C)) do x
     y = pop!(assignments, ob_generator_name(C, x), missing)
-    (!ismissing(y) || allow_missing) ? y :
+    (!ismissing(y) || missing_ob) ? y :
       error("Object $(ob_generator_name(C,x)) is not assigned")
   end
   hom_rhs = make_map(hom_generators(C)) do f
     g = pop!(assignments, hom_generator_name(C, f), missing)
-    (!ismissing(g) || allow_missing) ? g :
+    (!ismissing(g) || missing_hom) ? g :
       error("Morphism $(hom_generator_name(C,f)) is not assigned")
   end
   isempty(assignments) ||
@@ -554,9 +555,11 @@ Syntax for the right-hand sides of object assignments is:
 
 - a symbol, giving object of ``C`` (query type: trivial)
 - `@product ...` (query type: conjunctive)
+- `@unit` (alias: `@terminal`, query type: conjunctive)
 - `@join ...` (alias: `@limit`, query type: conjunctive)
-- `@cases ...` (alias: `@coproduct`, query type: gluing or gluc)
-- `@glue ...` (alias: `@colimit`, query type: gluing or gluc)
+- `@cases ...` (alias: `@coproduct`, query type: gluing)
+- `@empty` (alias: `@initial`, query type: gluing)
+- `@glue ...` (alias: `@colimit`, query type: gluing)
 
 Thes query types supported by this macro generalize the kind of queries familiar
 from relational databases. Less familiar is the concept of a morphism between
@@ -601,10 +604,11 @@ function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
   if preprocess
     body = reparse_arrows(body)
   end
-  ob_rhs, hom_rhs = parse_ob_hom_maps(D, body)
+  ob_rhs, hom_rhs = parse_ob_hom_maps(D, body, missing_hom=true)
   F_ob = mapvals(expr -> parse_query(C, expr), ob_rhs)
   F_hom = mapvals(hom_rhs, keys=true) do f, expr
-    parse_query_hom(C, expr, F_ob[dom(D,f)], F_ob[codom(D,f)])
+    parse_query_hom(C, ismissing(expr) ? Expr(:block) : expr,
+                    F_ob[dom(D,f)], F_ob[codom(D,f)])
   end
   make_migration_functor(F_ob, F_hom, D, C)
 end
@@ -615,27 +619,39 @@ end
 """ Parse expression defining a query.
 """
 function parse_query(C::FinCat, expr)
+  expr = @match expr begin
+    Expr(:macrocall, form, ::LineNumberNode, args...) =>
+      Expr(:macrocall, form, args...)
+    _ => expr
+  end
   @match expr begin
     x::Symbol => ob_generator(C, x)
-    Expr(:macrocall, form, args...) &&
-        if form ∈ (Symbol("@limit"), Symbol("@join")) end => begin
-      DiagramData{op}(parse_query_diagram(C, last(args))...)
+    Expr(:macrocall, &(Symbol("@limit")), body) ||
+    Expr(:macrocall, &(Symbol("@join")), body) => begin
+      DiagramData{op}(parse_query_diagram(C, body)...)
     end
-    Expr(:macrocall, form, args...) &&
-        if form == Symbol("@product") end => begin
-      d = DiagramData{op}(parse_query_diagram(C, last(args))...)
+    Expr(:macrocall, &(Symbol("@product")), body) => begin
+      d = DiagramData{op}(parse_query_diagram(C, body)...)
       is_discrete(shape(d)) ? d : error("Product query is not discrete: $expr")
     end
-    Expr(:macrocall, form, args...) &&
-        if form ∈ (Symbol("@colimit"), Symbol("@glue")) end => begin
-      DiagramData{id}(parse_query_diagram(C, last(args))...)
+    Expr(:macrocall, &(Symbol("@terminal"))) ||
+    Expr(:macrocall, &(Symbol("@unit"))) => begin
+      DiagramData{op}(parse_query_diagram(C, Expr(:block))...)
     end
-    Expr(:macrocall, form, args...) &&
-        if form ∈ (Symbol("@coproduct"), Symbol("@cases")) end => begin
-      d = DiagramData{id}(parse_query_diagram(C, last(args))...)
+    Expr(:macrocall, &(Symbol("@colimit")), body) ||
+    Expr(:macrocall, &(Symbol("@glue")), body) => begin
+      DiagramData{id}(parse_query_diagram(C, body)...)
+    end
+    Expr(:macrocall, &(Symbol("@coproduct")), body) ||
+    Expr(:macrocall, &(Symbol("@cases")), body) => begin
+      d = DiagramData{id}(parse_query_diagram(C, body)...)
       is_discrete(shape(d)) ? d : error("Cases query is not discrete: $expr")
     end
-    _ => error("Cannot parse query in migration definition: $expr")
+    Expr(:macrocall, &(Symbol("@initial"))) ||
+    Expr(:macrocall, &(Symbol("@empty"))) => begin
+      DiagramData{id}(parse_query_diagram(C, Expr(:block))...)
+    end
+    _ => error("Cannot parse query in definition of migration: $expr")
   end
 end
 function parse_query_diagram(C::FinCat, expr::Expr;
@@ -661,7 +677,7 @@ function parse_query_hom(C::FinCat, expr, d::DiagramData{op}, d′::DiagramData{
   DiagramHomData{op}(f_ob, f_hom)
 end
 function parse_query_hom(C::FinCat{Ob}, expr, c::Ob, d′::DiagramData{op}) where Ob
-  ob_rhs, f_hom = parse_ob_hom_maps(shape(d′), expr, allow_missing=true)
+  ob_rhs, f_hom = parse_ob_hom_maps(shape(d′), expr, missing_ob=true, missing_hom=true)
   f_ob = mapvals(ob_rhs, keys=true) do j′, rhs
     ismissing(rhs) ? missing : (missing, parse_query_hom(C, rhs, c, ob_map(d′, j′)))
   end
@@ -688,7 +704,7 @@ function parse_query_hom(C::FinCat{Ob}, expr, c::Union{Ob,DiagramData{op}},
 end
 function parse_query_hom(C::FinCat{Ob}, expr, d::DiagramData{id},
                          c′::Union{Ob,DiagramData{op}}) where Ob
-  ob_rhs, f_hom = parse_ob_hom_maps(shape(d), expr, allow_missing=true)
+  ob_rhs, f_hom = parse_ob_hom_maps(shape(d), expr, missing_ob=true, missing_hom=true)
   f_ob = mapvals(ob_rhs, keys=true) do j, rhs
     ismissing(rhs) ? missing : (missing, parse_query_hom(C, rhs, ob_map(d, j), c′))
   end
