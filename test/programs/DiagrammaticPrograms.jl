@@ -8,8 +8,10 @@ using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryReflexiveGraph
 using Catlab.Graphs.BipartiteGraphs: TheoryBipartiteGraph
 using Catlab.WiringDiagrams.CPortGraphs: ThCPortGraph
 
-@present TheoryDDS(FreeSchema) begin
+@present TheorySet(FreeSchema) begin
   X::Ob
+end
+@present TheoryDDS <: TheorySet begin
   Φ::Hom(X,X)
 end
 
@@ -252,6 +254,26 @@ F′ = @migration TheoryGraph TheoryGraph begin
 end
 @test F′ == F
 
+# "Bouquet graph" on set.
+# This is the right adjoint to the underlying edge set functor.
+F = @migration TheoryGraph TheorySet begin
+  V => @product begin end
+  E => X
+  src => begin end
+  tgt => begin end
+end
+@test F isa DataMigrations.ConjSchemaMigration
+F_V = ob_map(F, :V)
+@test isempty(ob_generators(shape(F_V)))
+@test isempty(hom_generators(shape(F_V)))
+
+# Syntactic variant of above.
+F′ = @migration TheoryGraph TheorySet begin
+  V => @unit
+  E => X
+end
+@test F′ == F
+
 # Cartesian product of graph with itself.
 F = @migration TheoryGraph TheoryGraph begin
   V => @product (v₁::V; v₂::V)
@@ -329,6 +351,17 @@ F_src = hom_map(F, :src)
 
 # Gluing migration
 #-----------------
+
+# Discrete graph on set.
+# This is the left adjoint to the underlying vertex set functor.
+F = @migration TheoryGraph TheorySet begin
+  V => X
+  E => @empty
+end
+@test F isa DataMigrations.GlueSchemaMigration
+F_E = ob_map(F, :E)
+@test isempty(ob_generators(shape(F_E)))
+@test isempty(hom_generators(shape(F_E)))
 
 # Coproduct of graph with itself.
 F = @migration TheoryGraph TheoryGraph begin
