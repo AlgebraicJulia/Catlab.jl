@@ -263,9 +263,7 @@ F = @migration TheoryGraph TheorySet begin
   tgt => begin end
 end
 @test F isa DataMigrations.ConjSchemaMigration
-F_V = ob_map(F, :V)
-@test isempty(ob_generators(shape(F_V)))
-@test isempty(hom_generators(shape(F_V)))
+@test isempty(shape(ob_map(F, :V)))
 
 # Syntactic variant of above.
 F′ = @migration TheoryGraph TheorySet begin
@@ -359,9 +357,7 @@ F = @migration TheoryGraph TheorySet begin
   E => @empty
 end
 @test F isa DataMigrations.GlueSchemaMigration
-F_E = ob_map(F, :E)
-@test isempty(ob_generators(shape(F_E)))
-@test isempty(hom_generators(shape(F_E)))
+@test isempty(shape(ob_map(F, :E)))
 
 # Coproduct of graph with itself.
 F = @migration TheoryGraph TheoryGraph begin

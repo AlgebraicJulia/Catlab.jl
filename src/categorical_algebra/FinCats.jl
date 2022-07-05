@@ -89,6 +89,9 @@ When morphism generators have names, this function is a one-sided inverse to
 """
 function hom_generator_name end
 
+# Second clause should be superfluous but we'll include it anyway.
+Base.isempty(C::FinCat) = isempty(ob_generators(C)) && isempty(hom_generators(C))
+
 """ Is the category discrete?
 
 A category is *discrete* if it is has no non-identity morphisms.
@@ -450,23 +453,28 @@ Categories.show_type_constructor(io::IO, ::Type{<:FinFunctor}) =
   dom::Dom
   codom::Codom
 end
+FinDomFunctorMap(ob_map::Union{AbstractVector{Ob},AbstractDict{<:Any,Ob}},
+                 hom_map::Union{AbstractVector{Hom},AbstractDict{<:Any,Hom}},
+                 dom::FinCat) where {Ob,Hom} =
+  FinDomFunctorMap(ob_map, hom_map, dom, TypeCat(Ob, Hom))
 
-function FinDomFunctor(ob_map::Union{AbstractVector,AbstractDict},
-                       hom_map::Union{AbstractVector,AbstractDict},
-                       dom::FinCat, codom::Cat)
+function FinDomFunctor(ob_map::Union{AbstractVector{Ob},AbstractDict{<:Any,Ob}},
+                       hom_map::Union{AbstractVector{Hom},AbstractDict{<:Any,Hom}},
+                       dom::FinCat, codom::Union{Cat,Nothing}=nothing) where {Ob,Hom}
   length(ob_map) == length(ob_generators(dom)) ||
     error("Length of object map $ob_map does not match domain $dom")
   length(hom_map) == length(hom_generators(dom)) ||
     error("Length of morphism map $hom_map does not match domain $dom")
-
-  ob_map = mappairs(x -> ob_key(dom, x), y -> ob(codom, y), ob_map)
-  hom_map = mappairs(f -> hom_key(dom, f), g -> hom(codom, g), hom_map)
-  FinDomFunctorMap(ob_map, hom_map, dom, codom)
+  if isnothing(codom)
+    ob_map = mappairs(x -> ob_key(dom, x), identity, ob_map)
+    hom_map = mappairs(f -> hom_key(dom, f), identity, hom_map)
+    FinDomFunctorMap(ob_map, hom_map, dom)
+  else
+    ob_map = mappairs(x -> ob_key(dom, x), y -> ob(codom, y), ob_map)
+    hom_map = mappairs(f -> hom_key(dom, f), g -> hom(codom, g), hom_map)
+    FinDomFunctorMap(ob_map, hom_map, dom, codom)
+  end
 end
-FinDomFunctor(ob_map::Union{AbstractVector{Ob},AbstractDict{<:Any,Ob}},
-              hom_map::Union{AbstractVector{Hom},AbstractDict{<:Any,Hom}},
-              dom::FinCat) where {Ob,Hom} =
-  FinDomFunctor(ob_map, hom_map, dom, TypeCat(Ob, Hom))
 
 ob_key(C::FinCat, x) = ob_generator(C, x)
 hom_key(C::FinCat, f) = hom_generator(C, f)
@@ -480,18 +488,20 @@ presentation_key(expr::GATExpr{:generator}) = first(expr)
 Categories.do_ob_map(F::FinDomFunctorMap, x) = F.ob_map[ob_key(F.dom, x)]
 Categories.do_hom_map(F::FinDomFunctorMap, f) = F.hom_map[hom_key(F.dom, f)]
 
-collect_ob(F::FinDomFunctorMap) = values(F.ob_map)
-collect_hom(F::FinDomFunctorMap) = values(F.hom_map)
+collect_ob(F::FinDomFunctorMap) = collect_values(F.ob_map)
+collect_hom(F::FinDomFunctorMap) = collect_values(F.hom_map)
+collect_values(vect::AbstractVector) = vect
+collect_values(dict::AbstractDict) = collect(values(dict))
 
 op(F::FinDomFunctorMap) = FinDomFunctorMap(F.ob_map, F.hom_map,
                                            op(dom(F)), op(codom(F)))
 
 """ Force evaluation of lazily defined function or functor.
 """
-function force(F::FinDomFunctor)
+function force(F::FinDomFunctor, Ob::Type=Any, Hom::Type=Any)
   C = dom(F)
-  FinDomFunctor(make_map(x -> ob_map(F, x), ob_generators(C)),
-                make_map(f -> hom_map(F, f), hom_generators(C)), C)
+  FinDomFunctorMap(make_map(x -> ob_map(F, x), ob_generators(C), Ob),
+                   make_map(f -> hom_map(F, f), hom_generators(C), Hom), C)
 end
 force(F::FinDomFunctorMap) = F
 
@@ -711,7 +721,29 @@ end
 dicttype(::Type{T}) where T <: AbstractDict = T.name.wrapper
 dicttype(::Type{<:Iterators.Pairs}) = Dict
 
-make_map(f, xs::UnitRange{Int}) = map(f, xs)
-make_map(f, xs) = Dict(x => f(x) for x in xs)
+@inline make_map(f, xs) = make_map(f, xs, Any)
+
+make_map(f, xs::UnitRange{Int}, ::Type{Any}) = map(f, xs)
+make_map(f, xs, ::Type{Any}) = Dict(x => f(x) for x in xs)
+
+function make_map(f, xs::UnitRange{Int}, ::Type{T}) where T
+  if isempty(xs)
+    T[]
+  else
+    ys = map(f, xs)
+    eltype(ys) <: T || error("Element(s) of $ys are not instances of $T")
+    ys
+  end
+end
+
+function make_map(f, xs, ::Type{T}) where T
+  if isempty(xs)
+    Dict{eltype(xs),T}()
+  else
+    xys = Dict(x => f(x) for x in xs)
+    valtype(xys) <: T || error("Value(s) of $xys are not instances of $T")
+    xys
+  end
+end
 
 end

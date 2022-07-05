@@ -6,19 +6,21 @@ using Catlab.Programs.DiagrammaticPrograms
 using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryWeightedGraph
 using Catlab.Graphs.BipartiteGraphs: TheoryUndirectedBipartiteGraph
 
+@present TheorySet(FreeSchema) begin
+  X::Ob
+end
+@acset_type AcsetSet(TheorySet)
+
+@present TheoryDDS <: TheorySet begin
+  Φ::Hom(X,X)
+end
+@acset_type DDS(TheoryDDS, index=[:Φ])
+
 # Contravariant migration
 #########################
 
 # Pullback migration
 #-------------------
-
-@present TheoryDDS(FreeSchema) begin
-  X::Ob
-  Φ::Hom(X,X)
-end
-
-@abstract_acset_type AbstractDDS
-@acset_type DDS(TheoryDDS, index=[:Φ]) <: AbstractDDS
 
 h = Graph(3)
 add_parts!(h, :E, 3, src = [1,2,3], tgt = [2,3,1])
@@ -230,6 +232,16 @@ h = @migrate SymmetricReflexiveGraph g begin
   end
 end
 @test is_isomorphic(h, star_graph(SymmetricReflexiveGraph, 5))
+
+# Discrete graph on set.
+set = @acset AcsetSet begin
+  X = 5
+end
+g = @migrate Graph set begin
+  V => X
+  E => @empty
+end
+@test g == Graph(5)
 
 # Gluc migration
 #---------------
