@@ -167,14 +167,19 @@ function migrate(X::FinDomFunctor, F::ConjSchemaMigration;
   tgt_schema = dom(F)
   limits = make_map(ob_generators(tgt_schema)) do c
     Fc = ob_map(F, c)
-    # XXX: Must manually supply types to handle case of empty diagram.
-    diagram_types = c isa AttrTypeExpr ? (TypeSet, SetFunction) :
+    J = shape(Fc)
+    # XXX: Must supply object/morphism types to handle case of empty diagram.
+    diagram_types = if c isa AttrTypeExpr
+      (TypeSet, SetFunction)
+    elseif isempty(J)
+      (FinSet{Int}, FinFunction{Int})
+    else
       (SetOb, FinDomFunction{Int})
+    end
     # XXX: Disable domain check because acsets don't store schema equations.
     lim = limit(force(compose(Fc, X, strict=false), diagram_types...),
                 alg=SpecializeLimit(fallback=ToBipartiteLimit()))
     if tabular
-      J = shape(Fc)
       names = (ob_generator_name(J, j) for j in ob_generators(J))
       TabularLimit(lim, names=names)
     else

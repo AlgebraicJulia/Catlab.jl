@@ -172,6 +172,20 @@ h = @migrate Graph g begin
 end
 @test h == path_graph(Graph, 4)
 
+# Bouquet graph on a set.
+set = @acset AcsetSet begin X = 5 end
+g = @migrate Graph set begin
+  V => @unit
+  E => X
+end
+g′ = @acset Graph begin
+  V = 1
+  E = 5
+  src = [1,1,1,1,1]
+  tgt = [1,1,1,1,1]
+end
+@test g == g′
+
 # Gluing migration
 #-----------------
 
@@ -234,9 +248,7 @@ end
 @test is_isomorphic(h, star_graph(SymmetricReflexiveGraph, 5))
 
 # Discrete graph on set.
-set = @acset AcsetSet begin
-  X = 5
-end
+set = @acset AcsetSet begin X = 5 end
 g = @migrate Graph set begin
   V => X
   E => @empty
