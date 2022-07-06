@@ -52,7 +52,7 @@ hom_map(d::Diagram, f) = hom_map(diagram(d), f)
 collect_ob(d::Diagram) = collect_ob(diagram(d))
 collect_hom(d::Diagram) = collect_hom(diagram(d))
 
-force(d::Diagram{T}) where T = Diagram{T}(force(diagram(d)))
+force(d::Diagram{T}, args...) where T = Diagram{T}(force(diagram(d), args...))
 
 function Base.show(io::IO, d::Diagram{T}) where T
   print(io, "Diagram{$T}(")

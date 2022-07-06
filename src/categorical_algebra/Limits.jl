@@ -368,10 +368,12 @@ end
 # Specialize (co)limits
 #----------------------
 
-""" Meta-algorithm attempting to reduce general limits to common special cases.
+""" Meta-algorithm that reduces general limits to common special cases.
 
-Specifically, reduce limits of free diagrams that happen to be discrete to
-products. TODO: Handle pullbacks similarly.
+Reduces limits of free diagrams that happen to be discrete to products. If this
+fails, fall back to the given algorithm (if any).
+
+TODO: Reduce free diagrams that are (multi)cospans to (wide) pullbacks.
 """
 @Base.kwdef struct SpecializeLimit <: LimitAlgorithm
   fallback::Union{LimitAlgorithm,Nothing} = nothing
@@ -382,9 +384,10 @@ limit(diagram, alg::SpecializeLimit) = limit(diagram, alg.fallback)
 function limit(F::FinDomFunctor{<:FinCat{Int},<:TypeCat{Ob,Hom}},
                alg::SpecializeLimit) where {Ob,Hom}
   if is_discrete(dom(F))
-    return limit(DiscreteDiagram(collect_ob(F), Hom), alg)
+    limit(DiscreteDiagram(collect_ob(F), Hom), SpecializeLimit())
+  else
+    limit(F, alg.fallback)
   end
-  limit(F, alg.fallback)
 end
 limit(diagram::FreeDiagram, alg::SpecializeLimit) =
   limit(FinDomFunctor(diagram), alg)
@@ -392,12 +395,13 @@ limit(diagram::FreeDiagram, alg::SpecializeLimit) =
 function limit(Xs::DiscreteDiagram{Ob,Hom,Obs},
                alg::SpecializeLimit) where {Ob,Hom,Obs}
   if !(Obs <: StaticVector) && length(Xs) <= 3
-    return limit(DiscreteDiagram(SVector{length(Xs)}(ob(Xs)), Hom), alg)
+    limit(DiscreteDiagram(SVector{length(Xs)}(ob(Xs)), Hom), SpecializeLimit())
+  else
+    limit(Xs, alg.fallback)
   end
-  limit(Xs, alg.fallback)
 end
 
-""" Meta-algorithm attempting to reduce general colimits to common special cases.
+""" Meta-algorithm that reduces general colimits to common special cases.
 
 Dual to [`SpecializeLimit`](@ref).
 """
@@ -410,9 +414,10 @@ colimit(diagram, alg::SpecializeColimit) = colimit(diagram, alg.fallback)
 function colimit(F::FinDomFunctor{<:FinCat{Int},<:TypeCat{Ob,Hom}},
                  alg::SpecializeColimit) where {Ob,Hom}
   if is_discrete(dom(F))
-    return colimit(DiscreteDiagram(collect_ob(F), Hom), alg)
+    colimit(DiscreteDiagram(collect_ob(F), Hom), SpecializeColimit())
+  else
+    colimit(F, alg.fallback)
   end
-  colimit(F, alg.fallback)
 end
 colimit(diagram::FreeDiagram, alg::SpecializeColimit) =
   colimit(FinDomFunctor(diagram), alg)
@@ -420,9 +425,10 @@ colimit(diagram::FreeDiagram, alg::SpecializeColimit) =
 function colimit(Xs::DiscreteDiagram{Ob,Hom,Obs},
                  alg::SpecializeColimit) where {Ob,Hom,Obs}
   if !(Obs <: StaticVector) && length(Xs) <= 3
-    return colimit(DiscreteDiagram(SVector{length(Xs)}(ob(Xs)), Hom), alg)
+    colimit(DiscreteDiagram(SVector{length(Xs)}(ob(Xs)), Hom), SpecializeColimit())
+  else
+    colimit(Xs, alg.fallback)
   end
-  colimit(Xs, alg.fallback)
 end
 
 """ Limit of a singleton diagram.

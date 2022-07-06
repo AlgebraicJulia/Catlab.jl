@@ -167,11 +167,19 @@ function migrate(X::FinDomFunctor, F::ConjSchemaMigration;
   tgt_schema = dom(F)
   limits = make_map(ob_generators(tgt_schema)) do c
     Fc = ob_map(F, c)
+    J = shape(Fc)
+    # XXX: Must supply object/morphism types to handle case of empty diagram.
+    diagram_types = if c isa AttrTypeExpr
+      (TypeSet, SetFunction)
+    elseif isempty(J)
+      (FinSet{Int}, FinFunction{Int})
+    else
+      (SetOb, FinDomFunction{Int})
+    end
     # XXX: Disable domain check because acsets don't store schema equations.
-    lim = limit(compose(Fc, X, strict=false),
+    lim = limit(force(compose(Fc, X, strict=false), diagram_types...),
                 alg=SpecializeLimit(fallback=ToBipartiteLimit()))
     if tabular
-      J = shape(Fc)
       names = (ob_generator_name(J, j) for j in ob_generators(J))
       TabularLimit(lim, names=names)
     else
@@ -194,8 +202,10 @@ function migrate(X::FinDomFunctor, F::GlueSchemaMigration)
   tgt_schema = dom(F)
   colimits = make_map(ob_generators(tgt_schema)) do c
     Fc = ob_map(F, c)
-    # XXX: Force composition to tighten the codomain types.
-    colimit(force(compose(Fc, X, strict=false)), alg=SpecializeColimit())
+    diagram_types = c isa AttrTypeExpr ? (TypeSet, SetFunction) :
+      (FinSet{Int}, FinFunction{Int})
+    colimit(force(compose(Fc, X, strict=false), diagram_types...),
+            alg=SpecializeColimit())
   end
   funcs = make_map(hom_generators(tgt_schema)) do f
     Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)

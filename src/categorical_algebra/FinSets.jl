@@ -721,8 +721,7 @@ ensure_indexed(f::FinFunction{Int,Int}) = is_indexed(f) ? f :
 ensure_indexed(f::FinDomFunction{Int}) = is_indexed(f) ? f :
   FinDomFunction(collect(f), index=true)
 
-function limit(d::BipartiteFreeDiagram{Ob,Hom}) where
-    {Ob<:SetOb, Hom<:FinDomFunction{Int}}
+function limit(d::BipartiteFreeDiagram{<:SetOb,<:FinDomFunction{Int}})
   # As in a pullback, this method assumes that all objects in layer 2 have
   # incoming morphisms.
   @assert !any(isempty(incident(d, v, :tgt)) for v in vertices₂(d))
@@ -774,7 +773,7 @@ function limit(d::BipartiteFreeDiagram{Ob,Hom}) where
     pb = pullback(SVector(hom(d, join_edges)...), alg=SmartJoin())
 
     # Create a new bipartite diagram with joined vertices.
-    d_joined = BipartiteFreeDiagram{Ob,Hom}()
+    d_joined = BipartiteFreeDiagram{SetOb,FinDomFunction{Int}}()
     copy_parts!(d_joined, d, V₁=to_keep, V₂=setdiff(vertices₂(d),v), E=edges(d))
     joined = add_vertex₁!(d_joined, ob₁=apex(pb))
     for (u, π) in zip(to_join, legs(pb))
@@ -788,7 +787,7 @@ function limit(d::BipartiteFreeDiagram{Ob,Hom}) where
     lim = limit(d_joined)
 
     # Assemble limit cone from cones for pullback and reduced limit.
-    πs = Vector{Hom}(undef, nv₁(d))
+    πs = Vector{FinDomFunction{Int}}(undef, nv₁(d))
     for (i, u) in enumerate(to_join)
       πs[u] = compose(last(legs(lim)), legs(pb)[i], ιs[u])
     end
