@@ -26,10 +26,10 @@ By the coherence theorem there is no loss of generality, but we may add a
 theory for weak monoidal categories later.
 """
 @theory MonoidalCategory{Ob,Hom} <: Category{Ob,Hom} begin
+  @op (⊗) := otimes
   otimes(A::Ob, B::Ob)::Ob
   otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣
     (A::Ob, B::Ob, C::Ob, D::Ob)
-  @op (⊗) := otimes
   munit()::Ob
 
   # Monoid axioms.
