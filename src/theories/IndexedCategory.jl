@@ -57,9 +57,15 @@ category as a generalized algebraic theory.
   Fib(ob::Ob)::TYPE
   FibHom(dom::Fib(A), codom::Fib(A))::TYPE ⊣ (A::Ob)
 
+  # Category operations for each fiber.
   id(X::Fib(A))::FibHom(X,X) ⊣ (A::Ob)
   compose(u::FibHom(X,Y), v::FibHom(Y,Z))::FibHom(X,Z) ⊣
     (A::Ob, X::Fib(A), Y::Fib(A), Z::Fib(A))
+
+  # Transitions between fibers.
+  act(X::Fib(A), f::(A → B))::Fib(B) ⊣ (A::Ob, B::Ob)
+  act(u::(X → Y), f::(A → B))::(act(X,f) → act(Y,f)) ⊣
+    (A::Ob, B::Ob, X::Fib(A), Y::Fib(A))
 
   # Category axioms for each fiber.
   ((u ⋅ v) ⋅ w == u ⋅ (v ⋅ w)
@@ -67,11 +73,6 @@ category as a generalized algebraic theory.
       u::(W → X), v::(X → Y), w::(Y → Z)))
   u ⋅ id(X) == u ⊣ (A::Ob, X::Fib(A), Y::Fib(A), u::(X → Y))
   id(X) ⋅ u == u ⊣ (A::Ob, X::Fib(A), Y::Fib(A), v::(X → Y))
-
-  # Transitions between fibers.
-  act(X::Fib(A), f::(A → B))::Fib(B) ⊣ (A::Ob, B::Ob)
-  act(u::(X → Y), f::(A → B))::(act(X,f) → act(Y,f)) ⊣
-    (A::Ob, B::Ob, X::Fib(A), Y::Fib(A))
 
   # Functorality of transitions.
   (u⋅v)⊙f == (u⊙f) ⋅ (v⊙f) ⊣ (A::Ob, B::Ob, X::Fib(A), Y::Fib(A), Z::Fib(A),
@@ -83,4 +84,46 @@ category as a generalized algebraic theory.
                         f::(A → B), g::(B → C), u::(X → Y))
   X⊙(id(A)) == X ⊣ (A::Ob, X::Fib(A))
   u⊙(id(A)) == u ⊣ (A::Ob, X::Fib(A), Y::Fib(A), u::(X → Y))
+end
+
+""" Theory of a (covariantly) *indexed monoidal category*.
+
+An *indexed monoidal category* is a pseudofunctor into **MonCat**, the
+2-category of monoidal categories, lax monoidal functor, and monoidal natural
+transformations. As usual, we take both the pseudofunctor and the monoidal
+categories to be strict. However, unlike the most common definition of an
+indexed monoidal category (see
+[nLab](https://ncatlab.org/nlab/show/indexed+monoidal+category)), we allow the
+transition functors between monoidal categories to be lax monoidal. This follows
+the usage in (Hofstra & De Marchi 2006).
+
+References:
+
+- Hofstra & De Marchi, 2006: Descent for monads
+- Moeller & Vasilakopoulou, 2020: Monoidal Grothendieck construction,
+  Remark 3.18 [this paper is about a different notion!]
+"""
+@theory FiberedMonoidalCategory{Ob,Hom,Fib,FibHom} <: IndexedCategory{Ob,Hom,Fib,FibHom} begin
+  @op (⊗) := otimes
+  otimes(X::Fib(A), Y::Fib(A))::Fib(A) ⊣ (A::Ob)
+  otimes(u::(X → Y), v::(W → Z))::(otimes(X,W) → otimes(Y,Z)) ⊣
+    (A::Ob, W::Fib(A), X::Fib(A), Y::Fib(A), Z::Fib(A))
+  munit(A::Ob)::Fib(A)
+
+  # Components of the laxator for `f: A → B`.
+  otimes(f::(A → B), X::Fib(A), Y::Fib(A))::(((X⊙f) ⊗ (Y⊙f)) → ((X⊗Y) ⊙ f)) ⊣
+    (A::Ob, B::Ob)
+  munit(f::(A → B))::(munit(B) → (munit(A)⊙f)) ⊣ (A::Ob, B::Ob)
+
+  # TODO: Monoid axioms for each fiber.
+
+  # Naturality for laxity cells.
+  ⊗(f,X,Y) ⋅ ((u⊗v) ⊙ f) == ((u⊙f) ⊗ (v⊙f)) ⋅ ⊗(f,Z,W) ⊣
+    (A::Ob, B::Ob, X::Fib(A), Y::Fib(A), Z::Fib(A), W::Fib(A),
+     f::(A → B), u::(X → Z), v::(Y → W))
+
+  # Functorality of laxity cells.
+  ⊗(f⋅g,X,Y) == ⊗(g,X⊙f,Y⊙f) ⋅ (⊗(f,X,Y)⊙g) ⊣
+    (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), X::Fib(A), Y::Fib(A))
+  ⊗(id(A),X,Y) == id(X⊗Y) ⊣ (A::Ob, X::Fib(A), Y::Fib(A))
 end
