@@ -86,6 +86,9 @@ category as a generalized algebraic theory.
   u⊙(id(A)) == u ⊣ (A::Ob, X::Fib(A), Y::Fib(A), u::(X → Y))
 end
 
+# Indexed monoidal category
+###########################
+
 """ Theory of a (covariantly) *indexed monoidal category*.
 
 An *indexed monoidal category* is a pseudofunctor into **MonCat**, the
@@ -103,8 +106,10 @@ References:
 - Moeller & Vasilakopoulou, 2020: Monoidal Grothendieck construction,
   Remark 3.18 [this paper is about a different notion!]
 """
-@theory FiberedMonoidalCategory{Ob,Hom,Fib,FibHom} <: IndexedCategory{Ob,Hom,Fib,FibHom} begin
+@theory IndexedMonoidalCategory{Ob,Hom,Fib,FibHom} <: IndexedCategory{Ob,Hom,Fib,FibHom} begin
   @op (⊗) := otimes
+
+  # Monoid operations in each fiber.
   otimes(X::Fib(A), Y::Fib(A))::Fib(A) ⊣ (A::Ob)
   otimes(u::(X → Y), v::(W → Z))::(otimes(X,W) → otimes(Y,Z)) ⊣
     (A::Ob, W::Fib(A), X::Fib(A), Y::Fib(A), Z::Fib(A))
@@ -115,7 +120,21 @@ References:
     (A::Ob, B::Ob)
   munit(f::(A → B))::(munit(B) → (munit(A)⊙f)) ⊣ (A::Ob, B::Ob)
 
-  # TODO: Monoid axioms for each fiber.
+  # Monoid axioms for each fiber.
+  (X ⊗ Y) ⊗ Z == X ⊗ (Y ⊗ Z) ⊣ (A::Ob, X::Fib(A), Y::Fib(A), Z::Fib(A))
+  munit(A) ⊗ X == X ⊣ (A::Ob, X::Fib(A))
+  X ⊗ munit(A) == X ⊣ (A::Ob, X::Fib(A))
+  ((u ⊗ v) ⊗ w == u ⊗ (v ⊗ w) ⊣
+    (A::Ob, U::Fib(A), V::Fib(A), W::Fib(A), X::Fib(A), Y::Fib(A), Z::Fib(A),
+     u::(U → X), v::(V → Y), w::(W → Z)))
+  id(munit(A)) ⊗ u == u ⊣ (A::Ob, X::Fib(A), Y::Fib(A), u::(X → Y))
+  u ⊗ id(munit(A)) == u ⊣ (A::Ob, X::Fib(A), Y::Fib(A), u::(X → Y))
+
+  # Monoid functorality axioms for each fiber.
+  ((t ⊗ u) ⋅ (v ⊗ w) == (t ⋅ v) ⊗ (u ⋅ w)
+    ⊣ (A::Ob, U::Fib(A), V::Fib(A), W::Fib(A), X::Fib(A), Y::Fib(A), Z::Fib(A),
+       t::(U → V), v::(V → W), u::(X → Y), w::(Y → Z)))
+  id(X ⊗ Y) == id(X) ⊗ id(Y) ⊣ (A::Ob, X::Fib(A), Y::Fib(A))
 
   # Naturality for laxity cells.
   ⊗(f,X,Y) ⋅ ((u⊗v) ⊙ f) == ((u⊙f) ⊗ (v⊙f)) ⋅ ⊗(f,Z,W) ⊣
