@@ -23,10 +23,6 @@ end
   include("Expressions.jl")
 end
 
-@testset "Scheduling" begin
-  include("ScheduleUndirected.jl")
-end
-
 @testset "Serialization" begin
   include("GraphML.jl")
   include("JSON.jl")

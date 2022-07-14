@@ -8,7 +8,7 @@ const generated_dir = joinpath(@__DIR__, "src", "generated")
 using Catlab,
   # Must explicitly load all submodules for which docs are needed.
   Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs,
-  Catlab.WiringDiagrams, Catlab.Graphics, Catlab.Programs, Catlab.LinearAlgebra
+  Catlab.WiringDiagrams, Catlab.Graphics, Catlab.Programs
 
 const no_literate = "--no-literate" in ARGS
 if !no_literate

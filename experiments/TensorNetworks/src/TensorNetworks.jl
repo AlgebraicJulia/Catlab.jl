@@ -6,10 +6,10 @@ export RelationDiagram, @tensor_network, parse_tensor_network,
 
 using MLStyle: @match
 
-using ...CategoricalAlgebra.CSets
-using ...WiringDiagrams.UndirectedWiringDiagrams
-import ...WiringDiagrams: oapply
-using ...Programs.RelationalPrograms: RelationDiagram, UntypedRelationDiagram
+using Catlab.CategoricalAlgebra.CSets
+using Catlab.WiringDiagrams.UndirectedWiringDiagrams
+import Catlab.WiringDiagrams: oapply
+using Catlab.Programs.RelationalPrograms: RelationDiagram, UntypedRelationDiagram
 
 # Evaluation
 ############
