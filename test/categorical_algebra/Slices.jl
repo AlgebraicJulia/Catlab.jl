@@ -39,31 +39,24 @@ u = universal(slice_lim, Span(toA, toB))
 @test force(compose(u, legs(slice_lim)[1]).f) == force(toA.f)
 
 
-# Pushout complement in Petri, computed as slice in Grph
-two = @acset Graph begin V=2; E=2; src=[1,2]; tgt=[2,1] end
-a,b,c = Graph(1), path_graph(Graph, 2), path_graph(Graph, 3)
-A = Slice(ACSetTransformation(a, two, V=[2])) # a transition
-B = Slice(ACSetTransformation(b, two, V=[2,1], E=[2]))
-C = Slice(ACSetTransformation(c, two, V=[1,2,1], E=[1,2]))
-ff = ACSetTransformation(a,b,V=[1])
-gg = ACSetTransformation(b,c,V=[2,3], E=[2])
-f = SliceHom(A,B,ff)
-g = SliceHom(B,C,gg)
-pc1, pc2 = pushout_complement(ComposablePair(ff,gg))
-p1, p2 = pushout_complement(f,g)
-
 # Colimit: a pushout of slices
 #------------------------------
-# do the pushout associated with the pushout complement above
-slice_dia = FreeDiagram{Slice,SliceHom}(Multispan(A, [f, p1]))
+
+# Pushout in Petri, computed as slice in Grph
+two = @acset Graph begin V=2; E=2; src=[1,2]; tgt=[2,1] end
+a,b,c = Graph(1), path_graph(Graph, 2), path_graph(Graph, 2)
+d = path_graph(Graph, 3)
+A = Slice(ACSetTransformation(a, two, V=[2])) # □
+B = Slice(ACSetTransformation(b, two, V=[2,1], E=[2])) # □→⊚
+C = Slice(ACSetTransformation(b, two, V=[1,2], E=[1])) # ⊚→□
+D = Slice(ACSetTransformation(d, two, V=[1,2,1], E=[1,2])) # ⊚→□→⊚
+ff = ACSetTransformation(a,b,V=[1])
+gg = ACSetTransformation(a,c,V=[2])
+f = SliceHom(A,B,ff)
+g = SliceHom(A,C,gg)
+
+slice_dia = FreeDiagram{Slice,SliceHom}(Multispan(A, [f, g]))
 clim = colimit(slice_dia)
-@test is_isomorphic(dom(apex(clim)), c)
-pushout(([f, p1]))
+@test is_isomorphic(dom(apex(clim)), d)
 
-# DPO of slices: do the pushout complement and add an extra state
-R = Slice(ACSetTransformation(Graph(2), two, V=[2, 1]))
-r = SliceHom(A,R,ACSetTransformation(a, Graph(2), V=[1]))
-res = rewrite_match(f, r, g)
-@test is_isomorphic(dom(res), apex(coproduct(b, Graph(1))))
-
-end #module
+end # module
