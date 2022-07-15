@@ -2,9 +2,8 @@ module TestDiagrams
 using Test
 
 using Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
-using Catlab.Graphs.BasicGraphs: TheoryGraph, TheorySymmetricGraph
 
-const SchSGraph = TheorySymmetricGraph
+const SchSGraph = SchSymmetricGraph
 
 # Diagrams
 ##########
@@ -70,11 +69,11 @@ d = dom(f)
 # Monads of diagrams
 ####################
 
-C = FinCat(TheoryGraph)
+C = FinCat(SchGraph)
 d = munit(Diagram{id}, C, :V)
 @test is_discrete(shape(d))
-@test only(collect_ob(d)) == TheoryGraph[:V]
+@test only(collect_ob(d)) == SchGraph[:V]
 f = munit(DiagramHom{id}, C, :src)
-@test only(components(diagram_map(f))) == TheoryGraph[:src]
+@test only(components(diagram_map(f))) == SchGraph[:src]
 
 end

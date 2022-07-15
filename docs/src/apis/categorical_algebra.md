@@ -66,7 +66,7 @@ We will now give an example of how this all works in practice.
 using Catlab, Catlab.CategoricalAlgebra
 
 # Write down the schema for a weighted graph
-@present TheoryWeightedGraph(FreeSchema) begin
+@present SchWeightedGraph(FreeSchema) begin
   V::Ob
   E::Ob
   src::Hom(E,V)
@@ -78,7 +78,7 @@ end
 # Construct the type used to store acsets on the previous schema
 # We *index* src and tgt, which means that we store not only
 # the forwards map, but also the backwards map.
-@acset_type WeightedGraph(TheoryWeightedGraph, index=[:src,:tgt])
+@acset_type WeightedGraph(SchWeightedGraph, index=[:src,:tgt])
 
 # Construct a weighted graph, with floats as edge weights
 g = @acset WeightedGraph{Float64} begin

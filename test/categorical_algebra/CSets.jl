@@ -2,20 +2,19 @@ module TestCSets
 using Test
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
-using Catlab.Graphs.BasicGraphs: TheoryGraph
 
-@present TheoryDDS(FreeSchema) begin
+@present SchDDS(FreeSchema) begin
   X::Ob
   Φ::Hom(X,X)
 end
-@acset_type DDS(TheoryDDS, index=[:Φ])
+@acset_type DDS(SchDDS, index=[:Φ])
 
-@present TheorySetAttr(FreeSchema) begin
+@present SchSetAttr(FreeSchema) begin
   X::Ob
   D::AttrType
   f::Attr(X,D)
 end
-@acset_type SetAttr(TheorySetAttr)
+@acset_type SetAttr(SchSetAttr)
 
 # Sets interop
 ##############
@@ -252,13 +251,13 @@ g = star_graph(WeightedGraph{Bool}, 3, E=(weight=[true,false],))
 # Limits
 #-------
 
-@present TheoryVELabeledGraph <: TheoryGraph begin
+@present SchVELabeledGraph <: SchGraph begin
   Label::AttrType
   vlabel::Attr(V,Label)
   elabel::Attr(E,Label)
 end
 
-@acset_type VELabeledGraph(TheoryVELabeledGraph,
+@acset_type VELabeledGraph(SchVELabeledGraph,
                            index=[:src,:tgt]) <: AbstractGraph
 
 # Terminal labeled graph.
@@ -494,11 +493,11 @@ add_vertices!(g, 2, vlabel=[:u,:v])
 add_edge!(g, 1, 2, elabel=:e)
 @test roundtrip_json_acset(g) == g
 
-@present TheoryLabeledDDS <: TheoryDDS begin
+@present SchLabeledDDS <: SchDDS begin
   Label::AttrType
   label::Attr(X, Label)
 end
-@acset_type LabeledDDS(TheoryLabeledDDS, index=[:Φ, :label])
+@acset_type LabeledDDS(SchLabeledDDS, index=[:Φ, :label])
 
 ldds = LabeledDDS{Int}()
 add_parts!(ldds, :X, 4, Φ=[2,3,4,1], label=[100, 101, 102, 103])

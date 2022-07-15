@@ -16,8 +16,9 @@ representation that can be serialized to and from GraphML or translated into
 Graphviz or other declarative diagram languages.
 """
 module DirectedWiringDiagrams
-export AbstractBox, Box, WiringDiagram, Wire, Port, PortKind,
-  InputPort, OutputPort, input_ports, output_ports,
+export AbstractBox, Box, WiringDiagram, SchWiringDiagram,
+  SchTypedWiringDiagram, SchAttributedWiringDiagram,
+  Wire, Port, PortKind, InputPort, OutputPort, input_ports, output_ports,
   set_input_ports!, set_output_ports!, add_input_ports!, add_output_ports!,
   input_id, output_id, outer_ids, boxes, box_ids, nboxes, nwires, box, wires,
   has_wire, graph, internal_graph,
@@ -32,7 +33,6 @@ using AutoHashEquals
 using ...Present, ...Graphs.BasicGraphs, ...CategoricalAlgebra.CSets
 import ...CategoricalAlgebra.CSets: is_isomorphic
 import ...CategoricalAlgebra.FinCats: graph
-using ...Graphs.BasicGraphs: TheoryGraph
 import ...Graphs: all_neighbors, neighbors, outneighbors, inneighbors
 
 # Data types
@@ -137,7 +137,7 @@ function Base.show(io::IO, box::Box)
   print(io, "])")
 end
 
-@present TheoryWiringDiagram(FreeSchema) begin
+@present SchWiringDiagram(FreeSchema) begin
   Box::Ob
   (InPort, OutPort, OuterInPort, OuterOutPort)::Ob
   (Wire, InWire, OutWire, PassWire)::Ob
@@ -157,7 +157,7 @@ end
 
 @abstract_acset_type AbstractWiringDiagram <: AbstractGraph
 
-@present TheoryTypedWiringDiagram <: TheoryWiringDiagram begin
+@present SchTypedWiringDiagram <: SchWiringDiagram begin
   PortValue::AttrType
   in_port_type::Attr(InPort, PortValue)
   out_port_type::Attr(OutPort, PortValue)
@@ -165,7 +165,7 @@ end
   outer_out_port_type::Attr(OuterOutPort, PortValue)
 end
 
-@present TheoryAttributedWiringDiagram <: TheoryTypedWiringDiagram begin
+@present SchAttributedWiringDiagram <: SchTypedWiringDiagram begin
   WireValue::AttrType
   BoxValue::AttrType
   BoxType::AttrType
@@ -178,7 +178,7 @@ end
   pass_wire_value::Attr(PassWire, WireValue)
 end
 
-@acset_type WiringDiagramACSet(TheoryAttributedWiringDiagram,
+@acset_type WiringDiagramACSet(SchAttributedWiringDiagram,
   index=[:src, :tgt, :in_src, :in_tgt, :out_src, :out_tgt, :pass_src, :pass_tgt]) <: AbstractWiringDiagram
 
 """ A directed wiring diagram, also known as a string diagram.
@@ -264,7 +264,7 @@ function Base.show(io::IO, diagram::WiringDiagram{T}) where T
   print(io, ")")
 end
 
-@present TheoryWiringDiagramGraph <: TheoryGraph begin
+@present SchWiringDiagramGraph <: SchGraph begin
   ID::AttrType
   box::Attr(V,ID)
   wire::Attr(E,ID)
@@ -272,7 +272,7 @@ end
 
 """ Graph underlying a directed wiring diagram.
 """
-@acset_type WiringDiagramGraphACSet(TheoryWiringDiagramGraph,
+@acset_type WiringDiagramGraphACSet(SchWiringDiagramGraph,
   index=[:src, :tgt], unique_index=[:box]) <: AbstractWiringDiagram
 const WiringDiagramGraph = WiringDiagramGraphACSet{Int}
 

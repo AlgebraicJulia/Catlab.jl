@@ -1,7 +1,8 @@
 """ Undirected wiring diagrams as SMCs and hypergraph categories.
 """
 module MonoidalUndirectedWiringDiagrams
-export HypergraphDiagram, HypergraphDiagramOb, HypergraphDiagramHom,
+export HypergraphDiagram, SchUntypedHypergraphDiagram, SchHypergraphDiagram,
+  HypergraphDiagramOb, HypergraphDiagramHom,
   ObUWD, HomUWD, cospan_action, dom_mask, codom_mask
 
 using AutoHashEquals
@@ -12,13 +13,12 @@ import ...Theories: dom, codom, compose, id, ⋅, ∘, otimes, ⊗, munit, braid
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dunit, dcounit, dagger
 using ...CategoricalAlgebra.CSets: disjoint_union
 using ..UndirectedWiringDiagrams
-using ..UndirectedWiringDiagrams: AbstractUWD, TheoryUWD, TheoryTypedUWD
 import ..UndirectedWiringDiagrams: singleton_diagram, junction_diagram
 
 # Data types
 ############
 
-@present TheoryUntypedHypergraphDiagram <: TheoryUWD begin
+@present SchUntypedHypergraphDiagram <: SchUWD begin
   Name::AttrType
   name::Attr(Box, Name)
 end
@@ -28,10 +28,10 @@ end
 By "single-sorted", we mean that the monoid of objects is free on one generator.
 See [`HypergraphDiagram`](@ref) for the more standard case.
 """
-@acset_type UntypedHypergraphDiagram(TheoryUntypedHypergraphDiagram, 
+@acset_type UntypedHypergraphDiagram(SchUntypedHypergraphDiagram,
   index=[:box, :junction, :outer_junction]) <: AbstractUWD
 
-@present TheoryHypergraphDiagram <: TheoryTypedUWD begin
+@present SchHypergraphDiagram <: SchTypedUWD begin
   Name::AttrType
   name::Attr(Box, Name)
 end
@@ -41,7 +41,7 @@ end
 An undirected wiring diagram where the ports and junctions are typed and the
 boxes have names identifying the morphisms.
 """
-@acset_type HypergraphDiagram(TheoryHypergraphDiagram,
+@acset_type HypergraphDiagram(SchHypergraphDiagram,
   index=[:box, :junction, :outer_junction]) <: AbstractUWD
 
 # Cospan algebra

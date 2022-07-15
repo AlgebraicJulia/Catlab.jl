@@ -2,7 +2,6 @@ module TestGraphvizCategories
 using Test
 
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
-using Catlab.Graphs.BasicGraphs: TheoryWeightedGraph
 using Catlab.Graphics.GraphvizCategories
 using Catlab.Graphics: Graphviz
 
@@ -11,33 +10,33 @@ const stmts = Graphviz.filter_statements
 # Categories
 ############
 
-@present TheorySectionRetract(FreeCategory) begin
+@present SchSectionRetract(FreeCategory) begin
   (A, B)::Ob
   i::Hom(A, B)
   r::Hom(B, A)
   compose(i, r) == id(A)
 end
 
-gv = to_graphviz(TheorySectionRetract)
+gv = to_graphviz(SchSectionRetract)
 @test stmts(gv, Graphviz.Node, :label) == ["A", "B"]
 @test stmts(gv, Graphviz.Edge, :label) == ["i", "r"]
 
 # ℳ-categories.
-@present TheorySubobject₀(FreeMCategory) begin
+@present SchSubobject₀(FreeMCategory) begin
   (A, X)::Ob
   ι::Hom(A, X)
 end
 
-gv = to_graphviz(TheorySubobject₀, edge_attrs=Dict(:arrowhead => "vee"),
+gv = to_graphviz(SchSubobject₀, edge_attrs=Dict(:arrowhead => "vee"),
                  tight_attrs=Dict(:dir => "both", :arrowtail => "crow"))
 @test stmts(gv, Graphviz.Node, :label) == ["A", "X"]
 @test stmts(gv, Graphviz.Edge, :arrowtail) == []
 
-@present TheorySubobject <: TheorySubobject₀ begin
+@present SchSubobject <: SchSubobject₀ begin
   ::Tight(ι)
 end
 
-gv = to_graphviz(TheorySubobject, edge_attrs=Dict(:arrowhead => "vee"),
+gv = to_graphviz(SchSubobject, edge_attrs=Dict(:arrowhead => "vee"),
                  tight_attrs=Dict(:dir => "both", :arrowtail => "crow"))
 @test stmts(gv, Graphviz.Edge, :arrowtail) == ["crow"]
 
@@ -54,7 +53,7 @@ gv = to_graphviz(el, node_labels=true, edge_labels=true)
 # Schemas
 #########
 
-gv = to_graphviz(TheoryWeightedGraph)
+gv = to_graphviz(SchWeightedGraph)
 @test length(stmts(gv, Graphviz.Node)) == 3
 @test stmts(gv, Graphviz.Node, :label) == ["V", "E"]
 @test stmts(gv, Graphviz.Node, :xlabel) == ["Weight"]

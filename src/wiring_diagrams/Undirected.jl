@@ -1,7 +1,8 @@
 """ Data structure for undirected wiring diagrams.
 """
 module UndirectedWiringDiagrams
-export UndirectedWiringDiagram, HasUWD, AbstractUWD, UntypedUWD, TypedUWD,
+export UndirectedWiringDiagram, HasUWD,
+  AbstractUWD, UntypedUWD, TypedUWD, SchUWD, SchTypedUWD,
   outer_box, box, junction, nboxes, njunctions, boxes, junctions,
   ports, ports_with_junction, junction_type, port_type,
   add_box!, add_junction!, add_junctions!, set_junction!, add_wire!,
@@ -23,7 +24,7 @@ This type includes UWDs, scheduled UWDs, and nested UWDs.
 """
 @abstract_acset_type HasUWD
 
-@present TheoryUWD(FreeSchema) begin
+@present SchUWD(FreeSchema) begin
   Box::Ob
   Port::Ob
   OuterPort::Ob
@@ -43,10 +44,10 @@ const UndirectedWiringDiagram = AbstractUWD
 
 The most basic kind of UWD, without types or other extra attributes.
 """
-@acset_type UntypedUWD(TheoryUWD, 
+@acset_type UntypedUWD(SchUWD,
   index=[:box, :junction, :outer_junction]) <: AbstractUWD
 
-@present TheoryTypedUWD <: TheoryUWD begin
+@present SchTypedUWD <: SchUWD begin
   Type::AttrType
 
   port_type::Attr(Port, Type)
@@ -61,7 +62,7 @@ end
 
 A UWD whose ports and junctions must be compatibly typed.
 """
-@acset_type TypedUWD(TheoryTypedUWD, 
+@acset_type TypedUWD(SchTypedUWD,
   index=[:box, :junction, :outer_junction]) <: AbstractUWD
 
 function (::Type{UWD})(nports::Int) where UWD <: AbstractUWD

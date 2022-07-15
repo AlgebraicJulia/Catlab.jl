@@ -2,7 +2,6 @@ module TestStructuredCospans
 using Test
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
-using Catlab.Graphs.BasicGraphs: AbstractGraph, TheoryGraph
 
 # Structured cospans of C-sets
 ##############################
@@ -100,13 +99,13 @@ k0 = apex(k)
 # Attributed boundary
 #--------------------
 
-@present TheoryVELabeledGraph <: TheoryGraph begin
+@present SchVELabeledGraph <: SchGraph begin
   Label::AttrType
   vlabel::Attr(V,Label)
   elabel::Attr(E,Label)
 end
 
-@acset_type VELabeledGraph(TheoryVELabeledGraph, index=[:src,:tgt]) <: AbstractGraph
+@acset_type VELabeledGraph(SchVELabeledGraph, index=[:src,:tgt]) <: AbstractGraph
 const VELGraph = VELabeledGraph
 
 const OpenVELGraphOb, OpenVELGraph = OpenACSetTypes(VELGraph, :V)
@@ -160,7 +159,7 @@ b = OpenVELGraphOb{Symbol}(FinSet(3), vlabel=[:x,:y,:z])
 # Attributed boundary
 #--------------------
 
-@present TheoryMultiplyAttributedGraph <: TheoryGraph begin
+@present SchMultiplyAttributedGraph <: SchGraph begin
   Length::AttrType
   Size::AttrType
   Label::AttrType
@@ -170,7 +169,7 @@ b = OpenVELGraphOb{Symbol}(FinSet(3), vlabel=[:x,:y,:z])
   elength::Attr(E, Length)
 end
 
-@acset_type MAGraph(TheoryMultiplyAttributedGraph, index=[:src,:tgt]) <: AbstractGraph
+@acset_type MAGraph(SchMultiplyAttributedGraph, index=[:src,:tgt]) <: AbstractGraph
 const OpenMAGraphOb, OpenMAGraph = OpenACSetTypes(MAGraph, :V)
 
 g0 = @acset MAGraph{Int, Float64, Symbol} begin

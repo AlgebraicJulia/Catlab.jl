@@ -5,37 +5,36 @@ using Catlab, Catlab.Theories
 using Catlab.CategoricalAlgebra
 using Catlab.Graphs
 using Catlab.Graphics
-using Catlab.Graphics.Graphviz
 using Colors
 draw(g) = to_graphviz(g, node_labels=true, edge_labels=true)
 
 # We start with the theory of graphs, which is copied from `Catlab.Graphs.BasicGraphs`. The two objects are the edges and vertices and we have two functions `src,tgt` that assign to every edge the source vertex and target vertex respectively. Functors from this category to Set (diagrams in Set of this shape) are category theoretic graphs (directed multigraphs).
-@present TheoryGraph(FreeSchema) begin
+@present SchGraph(FreeSchema) begin
   V::Ob
   E::Ob
   src::Hom(E,V)
   tgt::Hom(E,V)
 end
 
-to_graphviz(TheoryGraph)
+to_graphviz(SchGraph)
 
 # To the theory of graphs we want to add a set of labels `L` and map that assigns to every vertex to its label in `L`.
-@present TheoryLGraph <: TheoryGraph begin
+@present SchLGraph <: SchGraph begin
   L::Ob
   label::Hom(V,L)
 end
 
-to_graphviz(TheoryLGraph)
+to_graphviz(SchLGraph)
 
-# Catlab will automatically generate all the data structure and algorithms (storing, mutating, serializing, etc.) our `LGraphs` for us. This snippet declares that the Julia type `LGraph` should be composed of objects of the functor category `TheoryLGraph → Skel(FinSet)`, where `Skel(FinSet)` is the subcategory of Set containing finite sets of form `1:n`. We want our Julia type `LGraph` to inherit from the type `AbstractGraph` so that we can run graph algorithms on it. And we want the generated data structures to make an index of the maps `src`, `tgt`, and `label` so that looking up the in and outneighbors of vertex is fast and accessing all vertices by label is also fast.
+# Catlab will automatically generate all the data structure and algorithms (storing, mutating, serializing, etc.) our `LGraphs` for us. This snippet declares that the Julia type `LGraph` should be composed of objects of the functor category `SchLGraph → Skel(FinSet)`, where `Skel(FinSet)` is the subcategory of Set containing finite sets of form `1:n`. We want our Julia type `LGraph` to inherit from the type `AbstractGraph` so that we can run graph algorithms on it. And we want the generated data structures to make an index of the maps `src`, `tgt`, and `label` so that looking up the in and outneighbors of vertex is fast and accessing all vertices by label is also fast.
 #
 # **Note**: This schema differs from that of `LabeledGraph` in `Catlab.Graphs` by making the label type an object (`Ob`) rather than attribute type (`AttrType`). In this case, the set of labels can vary from instance to instance and homomorphisms can rename labels; in the other case, the set of labels is fixed by a Julia type, such as `Int` or `Symbol`, and label values must be strictly preserved homomorphisms. The graph theory literature does not always distinguish very carefully between these two cases.
 
-@acset_type LGraph(TheoryLGraph, index=[:src,:tgt,:label]) <: AbstractGraph
+@acset_type LGraph(SchLGraph, index=[:src,:tgt,:label]) <: AbstractGraph
 
 # We need to tell Catlab how to convert our `LGraph` type into the normal `Graph` type by taking just the edges and vertices. This could be computed with Functorial Data Migration, but that is left for another sketch.
 to_graph(g::LGraph) = begin
-  h = Graphs.Graph(nparts(g,:V))
+  h = Graph(nparts(g,:V))
   for e in edges(g)
     add_edge!(h, g[e, :src], g[e,:tgt])
   end

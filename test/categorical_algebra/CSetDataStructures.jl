@@ -9,13 +9,13 @@ using Tables
 # Discrete dynamical systems
 ############################
 
-@present TheoryDDS(FreeSchema) begin
+@present SchDDS(FreeSchema) begin
   X::Ob
   Φ::Hom(X,X)
 end
 
 @abstract_acset_type AbstractDDS
-@acset_type DDS(TheoryDDS, index=[:Φ]) <: AbstractDDS
+@acset_type DDS(SchDDS, index=[:Φ]) <: AbstractDDS
 @test DDS <: AbstractDDS
 @test DDS <: StructACSet
 @test DDS <: StructCSet
@@ -112,7 +112,7 @@ add_parts!(dds, :X, 3, Φ=[1,1,1])
 @test incident(dds, 3, :Φ) == []
 
 # Incidence without indexing.
-@acset_type UnindexedDDS(TheoryDDS)
+@acset_type UnindexedDDS(SchDDS)
 dds = UnindexedDDS()
 add_parts!(dds, :X, 4, Φ=[3,3,4,4])
 # @test isempty(keys(dds.indices))
@@ -127,7 +127,7 @@ add_parts!(dds, :X, 4, Φ=[3,3,4,4])
 # in order to be valid dendrograms, there must be no nontrivial cycles and the
 # `height` map must satisfy `compose(parent, height) ≥ height` pointwise.
 
-@present TheoryDendrogram(FreeSchema) begin
+@present SchDendrogram(FreeSchema) begin
   X::Ob
   R::AttrType
   parent::Hom(X,X)
@@ -136,7 +136,7 @@ end
 
 @abstract_acset_type AbstractDendrogram
 
-@acset_type Dendrogram(TheoryDendrogram, index=[:parent]) <: AbstractDendrogram
+@acset_type Dendrogram(SchDendrogram, index=[:parent]) <: AbstractDendrogram
 
 @test Dendrogram <: AbstractDendrogram
 @test Dendrogram <: ACSet
@@ -167,7 +167,7 @@ set_subpart!(d, [4,5], :parent, 5)
 @test incident(d, 5, [:parent, :parent]) == [1,2,3,4,5]
 @test incident(d, 10, [:parent, :height]) == [1,2,3]
 
-X, parent, height = TheoryDendrogram[[:X, :parent, :height]]
+X, parent, height = SchDendrogram[[:X, :parent, :height]]
 @test subpart(d, 3, parent) == 4
 @test subpart(d, 3, compose(parent, height)) == 10
 @test subpart(d, 3, id(X)) == 3
@@ -231,12 +231,12 @@ rows = [Tables.rows(td.X)...]
 # Dendrograms with leaves
 #------------------------
 
-@present TheoryLDendrogram <: TheoryDendrogram begin
+@present SchLDendrogram <: SchDendrogram begin
   L::Ob
   leafparent::Hom(L,X)
 end
 
-@acset_type LDendrogram(TheoryLDendrogram, index=[:parent, :leafparent]) <: AbstractDendrogram
+@acset_type LDendrogram(SchLDendrogram, index=[:parent, :leafparent]) <: AbstractDendrogram
 
 # Copying between C-sets and C′-sets with C != C′.
 ld = LDendrogram{Int}()
@@ -255,11 +255,11 @@ copy_parts!(d′, ld)
 
 # A set together with a subset, with unique indexing for fast membership checks.
 
-@present TheorySubset(FreeSchema) begin
+@present SchSubset(FreeSchema) begin
   (Set, Sub)::Ob
   ι::Hom(Sub, Set)
 end
-@acset_type Subset(TheorySubset, unique_index=[:ι])
+@acset_type Subset(SchSubset, unique_index=[:ι])
 
 Base.in(x, X::Subset) = incident(X, x, :ι) != 0
 
@@ -283,7 +283,7 @@ rem_part!(B, :Set, 1)
 
 # The simplest example of a C-set with a data attribute, to test data indexing.
 
-@present TheoryLabeledSet(FreeSchema) begin
+@present SchLabeledSet(FreeSchema) begin
   X::Ob
   Label::AttrType
   label::Attr(X,Label)
@@ -292,7 +292,7 @@ end
 # Labeled sets with index
 #------------------------
 
-@acset_type IndexedLabeledSet(TheoryLabeledSet, index=[:label])
+@acset_type IndexedLabeledSet(SchLabeledSet, index=[:label])
 
 lset = IndexedLabeledSet{Symbol}()
 # @test keys(lset.indices) == (:label,)
@@ -337,7 +337,7 @@ add_part!(lset, :X)
 # Labeled sets with unique index
 #-------------------------------
 
-@acset_type UniqueIndexedLabeledSet(TheoryLabeledSet, unique_index=[:label])
+@acset_type UniqueIndexedLabeledSet(SchLabeledSet, unique_index=[:label])
 
 lset = UniqueIndexedLabeledSet{Symbol}()
 add_parts!(lset, :X, 2, label=[:foo, :bar])
@@ -356,7 +356,7 @@ set_subpart!(lset, 1, :label, :baz)
 # @acset macro
 #-------------
 
-@present TheoryDecGraph(FreeSchema) begin
+@present SchDecGraph(FreeSchema) begin
   E::Ob
   V::Ob
   src::Hom(E,V)
@@ -366,7 +366,7 @@ set_subpart!(lset, 1, :label, :baz)
   dec::Attr(E,X)
 end
 
-@acset_type DecGraph(TheoryDecGraph, index=[:src,:tgt])
+@acset_type DecGraph(SchDecGraph, index=[:src,:tgt])
 
 g = @acset DecGraph{String} begin
   V = 4
@@ -417,11 +417,11 @@ h2 = map(g, X = f)
 @test typeof(h1).super.parameters[2] == Tuple{Int}
 @test subpart(h1,:dec) == f.(["a","b","c","d"])
 
-@present TheoryLabeledDecGraph <: TheoryDecGraph begin
+@present SchLabeledDecGraph <: SchDecGraph begin
   label::Attr(V,X)
 end
 
-@acset_type LabeledDecGraph(TheoryLabeledDecGraph, index=[:src,:tgt])
+@acset_type LabeledDecGraph(SchLabeledDecGraph, index=[:src,:tgt])
 
 g = @acset LabeledDecGraph{String} begin
   V = 4

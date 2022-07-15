@@ -7,24 +7,24 @@ of [Graphs.jl](https://github.com/JuliaGraphs/Graphs.jl), with some departures
 due to differences between the data structures.
 """
 module BasicGraphs
-export HasVertices, HasGraph,
-  AbstractGraph, Graph, nv, ne, src, tgt, edges, inedges, outedges, vertices,
-  has_edge, has_vertex, add_edge!, add_edges!, add_vertex!, add_vertices!, add_vertices_with_indices!,
+export HasVertices, HasGraph, AbstractGraph, Graph, SchGraph,
+  nv, ne, src, tgt, edges, inedges, outedges, vertices, has_edge, has_vertex,
+  add_edge!, add_edges!, add_vertex!, add_vertices!, add_vertices_with_indices!,
   rem_edge!, rem_edges!, rem_vertex!, rem_vertices!,
   neighbors, inneighbors, outneighbors, all_neighbors, degree, induced_subgraph,
-  AbstractSymmetricGraph, SymmetricGraph, inv,
-  AbstractReflexiveGraph, ReflexiveGraph, refl,
-  AbstractSymmetricReflexiveGraph, SymmetricReflexiveGraph,
-  AbstractHalfEdgeGraph, HalfEdgeGraph, vertex, half_edges,
+  AbstractSymmetricGraph, SymmetricGraph, SchSymmetricGraph, inv,
+  AbstractReflexiveGraph, ReflexiveGraph, SchReflexiveGraph, refl,
+  AbstractSymmetricReflexiveGraph, SymmetricReflexiveGraph, SchSymmetricReflexiveGraph,
+  AbstractHalfEdgeGraph, HalfEdgeGraph, SchHalfEdgeGraph, vertex, half_edges,
   add_dangling_edge!, add_dangling_edges!,
-  AbstractLabeledGraph, LabeledGraph,
-  AbstractWeightedGraph, WeightedGraph, weight,
-  AbstractSymmetricWeightedGraph, SymmetricWeightedGraph
+  AbstractLabeledGraph, LabeledGraph, SchLabeledGraph,
+  AbstractWeightedGraph, WeightedGraph, SchWeightedGraph, weight,
+  AbstractSymmetricWeightedGraph, SymmetricWeightedGraph, SchSymmetricWeightedGraph
 
 import Base: inv
 using Requires
 
-using ...Present, ...CSetDataStructures, ...Theories
+using ...Present, ...CSetDataStructures
 
 # Base types
 ############
@@ -48,7 +48,7 @@ not half-edge graphs.
 # Graphs
 ########
 
-@present TheoryGraph(FreeSchema) begin
+@present SchGraph(FreeSchema) begin
   V::Ob
   E::Ob
   src::Hom(E,V)
@@ -61,7 +61,7 @@ end
 
 """ A graph, also known as a directed multigraph.
 """
-@acset_type Graph(TheoryGraph, index=[:src,:tgt]) <: AbstractGraph
+@acset_type Graph(SchGraph, index=[:src,:tgt]) <: AbstractGraph
 
 function (::Type{T})(nv::Int; kw...) where T <: HasVertices
   g = T()
@@ -234,7 +234,7 @@ end
 # Symmetric graphs
 ##################
 
-@present TheorySymmetricGraph <: TheoryGraph begin
+@present SchSymmetricGraph <: SchGraph begin
   inv::Hom(E,E)
 
   compose(inv,inv) == id(E)
@@ -250,7 +250,7 @@ end
 
 Symmetric graphs are closely related, but not identical, to undirected graphs.
 """
-@acset_type SymmetricGraph(TheorySymmetricGraph, index=[:src]) <: AbstractSymmetricGraph
+@acset_type SymmetricGraph(SchSymmetricGraph, index=[:src]) <: AbstractSymmetricGraph
 # Don't index `inv` because it is self-inverse and don't index `tgt`
 # because `src` contains the same information due to symmetry of graph.
 
@@ -294,7 +294,7 @@ all_neighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
 # Reflexive graphs
 ##################
 
-@present TheoryReflexiveGraph <: TheoryGraph begin
+@present SchReflexiveGraph <: SchGraph begin
   refl::Hom(V,E)
 
   compose(refl, src) == id(V)
@@ -310,7 +310,7 @@ end
 [Reflexive graphs](https://ncatlab.org/nlab/show/reflexive+graph) are graphs in
 which every vertex has a distinguished self-loop.
 """
-@acset_type ReflexiveGraph(TheoryReflexiveGraph, index=[:src,:tgt]) <: AbstractReflexiveGraph
+@acset_type ReflexiveGraph(SchReflexiveGraph, index=[:src,:tgt]) <: AbstractReflexiveGraph
 
 """ Reflexive loop(s) of vertex (vertices) in a reflexive graph.
 """
@@ -339,7 +339,7 @@ end
 # Symmetric reflexive graphs
 ############################
 
-@present TheorySymmetricReflexiveGraph <: TheorySymmetricGraph begin
+@present SchSymmetricReflexiveGraph <: SchSymmetricGraph begin
   refl::Hom(V,E)
 
   compose(refl, src) == id(V)
@@ -357,7 +357,7 @@ Symmetric reflexive graphs are both symmetric graphs ([`SymmetricGraph`](@ref))
 and reflexive graphs ([`ReflexiveGraph`](@ref)) such that the reflexive loops
 are fixed by the edge involution.
 """
-@acset_type SymmetricReflexiveGraph(TheorySymmetricReflexiveGraph, index=[:src]) <:
+@acset_type SymmetricReflexiveGraph(SchSymmetricReflexiveGraph, index=[:src]) <:
   AbstractSymmetricReflexiveGraph
 
 add_vertex!(g::AbstractSymmetricReflexiveGraph; kw...) =
@@ -404,7 +404,7 @@ rem_edges!(g::AbstractSymmetricReflexiveGraph, es) =
 # Half-edge graphs
 ##################
 
-@present TheoryHalfEdgeGraph(FreeSchema) begin
+@present SchHalfEdgeGraph(FreeSchema) begin
   V::Ob
   H::Ob
   vertex::Hom(H,V)
@@ -425,7 +425,7 @@ variant of undirected graphs whose edges are pairs of "half-edges" or "darts".
 Half-edge graphs are isomorphic to symmetric graphs but have a different data
 model.
 """
-@acset_type HalfEdgeGraph(TheoryHalfEdgeGraph, index=[:vertex]) <: AbstractHalfEdgeGraph
+@acset_type HalfEdgeGraph(SchHalfEdgeGraph, index=[:vertex]) <: AbstractHalfEdgeGraph
 
 """ Incident vertex (vertices) of half-edge(s) in a half-edge graph.
 """
@@ -501,7 +501,7 @@ rem_edges!(g::AbstractHalfEdgeGraph, hs) =
 # Labeled graphs
 ################
 
-@present TheoryLabeledGraph <: TheoryGraph begin
+@present SchLabeledGraph <: SchGraph begin
   Label::AttrType
   label::Attr(V,Label)
 end
@@ -516,12 +516,12 @@ By convention, a "labeled graph" without qualification is a vertex-labeled
 graph. We do not require that the label be unique, and in this data type, the
 label attribute is not indexed.
 """
-@acset_type LabeledGraph(TheoryLabeledGraph, index=[:src,:tgt]) <: AbstractLabeledGraph
+@acset_type LabeledGraph(SchLabeledGraph, index=[:src,:tgt]) <: AbstractLabeledGraph
 
 # Weighted graphs
 #################
 
-@present TheoryWeightedGraph <: TheoryGraph begin
+@present SchWeightedGraph <: SchGraph begin
   Weight::AttrType
   weight::Attr(E,Weight)
 end
@@ -534,13 +534,13 @@ end
 
 A graph in which every edge has a numerical weight.
 """
-@acset_type WeightedGraph(TheoryWeightedGraph, index=[:src,:tgt]) <: AbstractWeightedGraph
+@acset_type WeightedGraph(SchWeightedGraph, index=[:src,:tgt]) <: AbstractWeightedGraph
 
 """ Weight(s) of edge(s) in a weighted graph.
 """
 weight(g::HasGraph, args...) = subpart(g, args..., :weight)
 
-@present TheorySymmetricWeightedGraph <: TheorySymmetricGraph begin
+@present SchSymmetricWeightedGraph <: SchSymmetricGraph begin
   Weight::AttrType
   weight::Attr(E,Weight)
 
@@ -556,7 +556,7 @@ end
 A symmetric graph in which every edge has a numerical weight, preserved by the
 edge involution.
 """
-@acset_type SymmetricWeightedGraph(TheorySymmetricWeightedGraph, index=[:src]) <:
+@acset_type SymmetricWeightedGraph(SchSymmetricWeightedGraph, index=[:src]) <:
   AbstractSymmetricWeightedGraph
 
 # JuliaGraphs constructors

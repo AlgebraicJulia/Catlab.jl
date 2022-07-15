@@ -2,13 +2,14 @@
 """
 module RelationalPrograms
 export RelationDiagram, UntypedRelationDiagram, TypedRelationDiagram,
+  SchRelationDiagram, SchTypedRelationDiagram,
+  SchNamedRelationDiagram, SchTypedNamedRelationDiagram,
   @relation, parse_relation_diagram
 
 using MLStyle: @match
 
 using ...CategoricalAlgebra.CSets, ...Present
 using ...WiringDiagrams.UndirectedWiringDiagrams
-using ...WiringDiagrams.UndirectedWiringDiagrams: TheoryUWD, TheoryTypedUWD
 
 # Data types
 ############
@@ -29,36 +30,36 @@ const UntypedRelationDiagram{Name,VarName} =
 const TypedRelationDiagram{T,Name,VarName} =
   _TypedRelationDiagram{S, Tuple{T,Name,VarName}} where S
 
-@present TheoryRelationDiagram <: TheoryUWD begin
+@present SchRelationDiagram <: SchUWD begin
   (Name, VarName)::AttrType
   name::Attr(Box, Name)
   variable::Attr(Junction, VarName)
 end
 
-@present TheoryTypedRelationDiagram <: TheoryTypedUWD begin
+@present SchTypedRelationDiagram <: SchTypedUWD begin
   (Name, VarName)::AttrType
   name::Attr(Box, Name)
   variable::Attr(Junction, VarName)
 end
 
-@acset_type UntypedUnnamedRelationDiagram(TheoryRelationDiagram,
+@acset_type UntypedUnnamedRelationDiagram(SchRelationDiagram,
   index=[:box, :junction, :outer_junction], unique_index=[:variable]) <: _UntypedRelationDiagram
-@acset_type TypedUnnamedRelationDiagram(TheoryTypedRelationDiagram,
+@acset_type TypedUnnamedRelationDiagram(SchTypedRelationDiagram,
   index=[:box, :junction, :outer_junction], unique_index=[:variable]) <: _TypedRelationDiagram
 
-@present TheoryNamedRelationDiagram <: TheoryRelationDiagram begin
+@present SchNamedRelationDiagram <: SchRelationDiagram begin
   port_name::Attr(Port, Name)
   outer_port_name::Attr(OuterPort, Name)
 end
 
-@present TheoryTypedNamedRelationDiagram <: TheoryTypedRelationDiagram begin
+@present SchTypedNamedRelationDiagram <: SchTypedRelationDiagram begin
   port_name::Attr(Port, Name)
   outer_port_name::Attr(OuterPort, Name)
 end
 
-@acset_type UntypedNamedRelationDiagram(TheoryNamedRelationDiagram,
+@acset_type UntypedNamedRelationDiagram(SchNamedRelationDiagram,
   index=[:box, :junction, :outer_junction], unique_index=[:variable]) <: _UntypedRelationDiagram
-@acset_type TypedNamedRelationDiagram(TheoryTypedNamedRelationDiagram,
+@acset_type TypedNamedRelationDiagram(SchTypedNamedRelationDiagram,
   index=[:box, :junction, :outer_junction], unique_index=[:variable]) <: _TypedRelationDiagram
 
 function UntypedRelationDiagram{Name,VarName}(

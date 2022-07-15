@@ -2,8 +2,6 @@ module TestFinCats
 using Test
 
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
-using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryReflexiveGraph,
-  TheoryWeightedGraph
 
 # Categories on graphs
 ######################
@@ -141,7 +139,7 @@ end
 # Graph as set-valued functor on a free category.
 F = FinDomFunctor(path_graph(Graph, 3))
 C = dom(F)
-@test C == FinCat(TheoryGraph)
+@test C == FinCat(SchGraph)
 @test is_functorial(F)
 @test ob_map(F, :V) == FinSet(3)
 @test hom_map(F, :src) == FinFunction([1,2], 3)
@@ -153,9 +151,9 @@ C = dom(F)
 G_refl = FinDomFunctor(path_graph(ReflexiveGraph, 3))
 @test is_functorial(G_refl)
 G = compose(FinFunctor(Dict(:V=>:V, :E=>:E), Dict(:src=>:src, :tgt=>:tgt),
-                       TheoryGraph, TheoryReflexiveGraph),
+                       SchGraph, SchReflexiveGraph),
             G_refl, strict=false)
-@test dom(G) == FinCat(TheoryGraph)
+@test dom(G) == FinCat(SchGraph)
 @test codom(G) == codom(G_refl)
 @test ob_map(G, :V) == FinSet(3)
 @test hom_map(G, :src) isa FinFunction{Int}
@@ -183,21 +181,21 @@ G = FinDomFunctor(g)
 @test α⋅σ == FinTransformation(F, G, V=FinFunction([1,2,2]), E=FinFunction([2,4]))
 
 # Pullback data migration by pre-whiskering.
-ιV = FinFunctor([:V], FinCat(1), FinCat(TheoryGraph))
+ιV = FinFunctor([:V], FinCat(1), FinCat(SchGraph))
 αV = ιV * α
 @test ob_map(dom(αV), 1) == ob_map(F, :V)
 @test ob_map(codom(αV), 1) == ob_map(G, :V)
 @test component(αV, 1) == component(α, :V)
 
 # Post-whiskering and horizontal composition.
-ιE = FinFunctor([:E], FinCat(1), FinCat(TheoryGraph))
+ιE = FinFunctor([:E], FinCat(1), FinCat(SchGraph))
 ϕ = FinTransformation([:src], ιE, ιV)
 @test is_natural(ϕ)
 @test component(ϕ*F, 1) == hom_map(F, :src)
 @test component(ϕ*α, 1) == hom_map(F, :src) ⋅ α[:V]
 
 # Schemas as categories.
-C = FinCat(TheoryWeightedGraph)
+C = FinCat(SchWeightedGraph)
 @test first.(ob_generators(C)) == [:V, :E, :Weight]
 @test first.(hom_generators(C)) == [:src, :tgt, :weight]
 g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5,1.5],))

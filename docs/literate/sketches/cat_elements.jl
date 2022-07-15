@@ -1,17 +1,13 @@
 # # The Category of Elements
 # A very useful construction in applied category theory is the Category of Elements, which is also called the Grothendieck construction. This is a very general technique in category theory, but we will look at how you can use it to explain why graphs are so useful in computer science. We have already seen that C-Sets are a model of relational databases that can be used to store data as a collection of interlocking tables. Relational databases are the bread and butter of the computing industry. Every company on earth uses software that is backed by a relational database. Most data that is not stored in a relational DB is often stored in some kind of graph data structure. This sketch will show how these approaches are interchangeable via the category of elements, which associates to every database instance a graph and a graph homomorphism into the schema of the graph.
 using Catlab, Catlab.CategoricalAlgebra, Catlab.Graphs, Catlab.Graphics
-using Catlab.Graphics.Graphviz
 using Colors
 
 # Let's tell Catlab how to draw categories of elements.
 function graph(el::Elements)
-  F = FinFunctor(
-    Dict(:V => :El, :E => :Arr),
-    Dict(:src => :src, :tgt => :tgt),
-    BasicGraphs.TheoryGraph, CatElements.ThElements
-  )
-  ΔF = DeltaMigration(F, Elements{Symbol}, BasicGraphs.Graph)
+  F = FinFunctor(Dict(:V => :El, :E => :Arr), Dict(:src => :src, :tgt => :tgt),
+                 SchGraph, SchElements)
+  ΔF = DeltaMigration(F, Elements{Symbol}, Graph)
   return ΔF(el)
 end
 
@@ -41,12 +37,12 @@ draw(g) = to_graphviz(g, node_labels=true, edge_labels=true, prog="neato")
 
 # ## The simplest schema 
 # First we will look at discrete dynamical systems. The set S is our state space and the funct nxt associates to every state, the next state in the system. This is a deterministic dynamical system with finitely many states and discrete time.
-@present TheoryDDS(FreeSchema) begin
+@present SchDDS(FreeSchema) begin
   S::Ob
   nxt::Hom(S, S)
 end
 
-@acset_type DDS(TheoryDDS, index=[:nxt])
+@acset_type DDS(SchDDS, index=[:nxt])
 
 fₓ = @acset DDS begin
   S = 3
@@ -70,14 +66,14 @@ end
 draw(elements(Fₓ))
 
 # A category of elements derived from a C-Set is stored as a C-Set of on a different schema. You can see that it is the data of a graph homomorphism where the codomain graph has vertex and edge labels. The two projections πₑ and πₐ are the components of a natural transformation between graphs viewed as functors into Set. The names are attributes usually of type Symbol.
-to_graphviz(ThElements)
+to_graphviz(SchElements)
 
 
 # In the case of a DDS, we have only one object and one morphism in the schema. Since the graph with one edge and one vertices is terminal in *Graph*, there is only one vertex and edge color being used.
 
 # ## The Elements of a Graph are its Vertices and Edges
 # In what might appear as primordial ooze, we can examine the category of elements of a graph. We will look at the commuting triangle graph. Notice how there are 3 vertices and three edges with each edge incident to 2 vertices.
-g = @acset BasicGraphs.Graph begin
+g = @acset Graph begin
   V = 3
   E = 3
   src = [1,2,1]
@@ -89,7 +85,7 @@ draw(g)
 elᵍ = elements(g)
 draw(elᵍ)
 
-g = @acset BasicGraphs.Graph begin
+g = @acset Graph begin
   V = 6
   E = 7
   src = [1,2,1,3,5,6,4]
@@ -102,7 +98,7 @@ draw(elements(g))
 
 # ## Generality of the construction
 # Discrete Dynamical Systems and Graphs are clearly data structures from mathematics and so it would make sense that they have a clean representation in the categorical language. But how about a database schema that comes not from mathematics, but from software engineering. We turn to everyone's favorite database example, the HR database at a fictitious company. 
-@present ThCompany(FreeSchema) begin
+@present SchCompany(FreeSchema) begin
   (P, D, S)::Ob # Person, Department, Salary
   worksin::Hom(P, D)    # Every Person works in a Department
   makes::Hom(P, S)      # Every Person makes a Salary
@@ -111,7 +107,7 @@ draw(elements(g))
   leq::Hom(S,S)         # Salaries are a finite total order
 end
 
-@acset_type Company(ThCompany, index=[])
+@acset_type Company(SchCompany, index=[])
 
 # We can draw a company that has 4 people, 2 departments, and 3 distinct salaries. 
 cmpy = @acset Company begin
@@ -174,7 +170,7 @@ cmpy == cset(Company, elᶜ)
 # ## The Slice-Elements Transform
 # An amazing fact about presheaf toposes is that they are closed under taking slices. In the graphs section of this documentation, you can find a description of bipartite and k-partite graphs as a morphisms into a clique. That definition is very mathematically pleasing because it gives you a category of partitioned graphs that are derived from commuting triangles in Graph. However, for application oriented practitioners, the definition of a bipartite graph as "a graph with two sets of vertices, where all the edges go between the groups with no edges within either group" is probably more explicit. For example a classic way to get a bipartite graph would be to look at the graph of authors and papers that those authors wrote. People write papers, people do not write people and papers do not write papers so the authorship graph is bipartite. These two equivalent definitions of a bipartite graph are related via an isomorphism you can find on the [nlab](https://ncatlab.org/nlab/show/category+of+presheaves#RelWithOvercategories). It shows that a slice category of [C,Set]/X is isomorphic to [El(X), Set] which is a cateogory of presheaves on a different schema. Catlab knows how to use this idea to turn a category of elements into a schema for a new category of presheaves. The two directions of the isomorphism are not yet implemented.
 
-e = @acset BasicGraphs.Graph begin
+e = @acset Graph begin
   V = 2
   E = 1
   src = 1
@@ -182,9 +178,11 @@ e = @acset BasicGraphs.Graph begin
 end
 
 draw(elements(e))
-ThBipartite = CatElements.presentation(elements(e))[1]
-to_graphviz(ThBipartite)
-@acset_type BipartiteGraph(ThBipartite)
+
+SchBipartite = CatElements.presentation(elements(e))[1]
+to_graphviz(SchBipartite)
+
+@acset_type BipartiteGraph(SchBipartite)
 b = @acset BipartiteGraph begin
   V_1 = 3
   V_2 = 2

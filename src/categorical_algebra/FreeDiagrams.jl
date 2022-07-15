@@ -6,7 +6,8 @@ pairs of objects, discrete diagrams, parallel pairs, composable pairs, and spans
 and cospans. Limits and colimits are most commonly taken over free diagrams.
 """
 module FreeDiagrams
-export FreeDiagram, BipartiteFreeDiagram, FixedShapeFreeDiagram,
+export FixedShapeFreeDiagram, FreeDiagram, SchFreeDiagram,
+  BipartiteFreeDiagram, SchBipartiteFreeDiagram,
   DiscreteDiagram, EmptyDiagram, SingletonDiagram, ObjectPair,
   Span, Cospan, Multispan, Multicospan, SMultispan, SMulticospan,
   ParallelPair, ParallelMorphisms, ComposablePair, ComposableMorphisms,
@@ -22,8 +23,6 @@ using StaticArrays: StaticVector, SVector
 
 using ...Present, ...Theories, ...CSetDataStructures, ...Graphs, ..FinCats
 import ...Theories: ob, hom, dom, codom, left, right
-using ...Graphs.BasicGraphs: TheoryGraph
-using ...Graphs.BipartiteGraphs: TheoryUndirectedBipartiteGraph
 import ..FinCats: FreeCatGraph, FinDomFunctor, collect_ob, collect_hom
 
 # Diagram interface
@@ -336,7 +335,7 @@ Colimits are dual.
 """
 const BipartiteFreeDiagram{Ob,Hom,S} = _BipartiteFreeDiagram{S,Tuple{Ob,Hom}}
 
-@present TheoryBipartiteFreeDiagram <: TheoryUndirectedBipartiteGraph begin
+@present SchBipartiteFreeDiagram <: SchUndirectedBipartiteGraph begin
   Ob::AttrType
   Hom::AttrType
   ob₁::Attr(V₁, Ob)
@@ -346,10 +345,10 @@ end
 
 """ The default concrete type for bipartite free diagrams.
 """
-@acset_type BasicBipartiteFreeDiagram(TheoryBipartiteFreeDiagram,
+@acset_type BasicBipartiteFreeDiagram(SchBipartiteFreeDiagram,
   index=[:src, :tgt]) <: _BipartiteFreeDiagram
 
-@present TheoryFreeDiagramAsBipartite <: TheoryBipartiteFreeDiagram begin
+@present SchFreeDiagramAsBipartite <: SchBipartiteFreeDiagram begin
   V::Ob
   orig_vert₁::Hom(V₁, V)
   orig_vert₂::Hom(V₂, V)
@@ -357,7 +356,7 @@ end
 
 """ A free diagram that has been converted to a bipartite free diagram.
 """
-@acset_type FreeDiagramAsBipartite(TheoryFreeDiagramAsBipartite,
+@acset_type FreeDiagramAsBipartite(SchFreeDiagramAsBipartite,
   index=[:src, :tgt], unique_index=[:orig_vert₁, :orig_vert₂]) <: _BipartiteFreeDiagram
 
 ob₁(d::BipartiteFreeDiagram, args...) = subpart(d, args..., :ob₁)
@@ -464,7 +463,7 @@ BipartiteFreeDiagram(F::Functor{<:FinCat{Int},<:Cat{Ob,Hom}}; kw...) where {Ob,H
 # Free diagrams
 #--------------
 
-@present TheoryFreeDiagram <: TheoryGraph begin
+@present SchFreeDiagram <: SchGraph begin
   Ob::AttrType
   Hom::AttrType
   ob::Attr(V,Ob)
@@ -473,7 +472,7 @@ end
 
 @abstract_acset_type AbstractFreeDiagram <: AbstractGraph
 
-@acset_type FreeDiagram(TheoryFreeDiagram, index=[:src,:tgt]) <:
+@acset_type FreeDiagram(SchFreeDiagram, index=[:src,:tgt]) <:
   AbstractFreeDiagram
 
 ob(d::AbstractFreeDiagram, args...) = subpart(d, args..., :ob)

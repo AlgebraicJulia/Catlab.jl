@@ -2,7 +2,6 @@ using Catlab, Catlab.Theories
 using Catlab.CategoricalAlgebra
 using Catlab.Graphs
 using Catlab.Graphics
-using Catlab.Graphics.Graphviz
 
 using Colors
 draw(g) = to_graphviz(g, node_labels=true, edge_labels=true)
@@ -26,13 +25,13 @@ function GraphvizGraphs.to_graphviz_property_graph(f::ACSetTransformation; kw...
   pg
 end
 
-to_graphviz(Catlab.Graphs.BasicGraphs.TheoryGraph)
+to_graphviz(SchGraph)
 
 # # The Category of Graphs
 #
 # The Theory of Graphs is given by the following Schema:
 # ```julia
-# @present TheoryGraph(FreeSchema) begin
+# @present SchGraph(FreeSchema) begin
 #   V::Ob
 #   E::Ob
 #   src::Hom(E,V)
@@ -45,10 +44,10 @@ to_graphviz(Catlab.Graphs.BasicGraphs.TheoryGraph)
 
 # """ A graph, also known as a directed multigraph.
 # """
-# @acset_type Graph(TheoryGraph, index=[:src,:tgt]) <: AbstractGraph
+# @acset_type Graph(SchGraph, index=[:src,:tgt]) <: AbstractGraph
 # ```
 #
-# That is all we need to do to generate the functor category [TheoryGraph, FinSet].
+# That is all we need to do to generate the functor category [SchGraph, FinSet].
 # Catlab knows how to take a finitely presented category and generate all the data structures
 # that you need to represent functors into FinSet and natural transformations between those functors.
 # Note: the index=[:src, :tgt] keyword argument tells Catlab that you want to have an efficient index
@@ -66,7 +65,7 @@ to_graphviz(Catlab.Graphs.BasicGraphs.TheoryGraph)
 # The theory of graphs has no equations, so there are no constraints on the data you provide, 
 # except for those that come from functoriality.
 
-e = @acset Graphs.Graph begin
+e = @acset Graph begin
     V = 2
     E = 1
     src = [1]
@@ -76,7 +75,7 @@ end
 draw(e)
 
 # a wedge is two edges that share a target
-w = @acset Graphs.Graph begin
+w = @acset Graph begin
     V = 3
     E = 2
     src=[1,3]
@@ -164,14 +163,14 @@ is_natural(ϕᵦ′)
 # ### Exercise:
 # 1. Take your graph from the previous exercise and construct a graph homomorphism from the wedge (w) into it.
 # 2. Check that the naturality equations are satisfied.
-# 3. Explain why we don't need to specify any data for the source and target morphisms in TheoryGraph when definining a graph homomorphism
+# 3. Explain why we don't need to specify any data for the source and target morphisms in SchGraph when definining a graph homomorphism
 
 # ## Finding Homomorphisms Automatically
 # As you saw in the previous exercise, constructing a natural transformation can be quite tedious. We want computers to automate tedious things for us. So we use an algorithm to enumerate all the homomorphisms between two CSets.
 
 # CSet homomorphisms f:A→B are ways of finding a part of B that is shaped like A. You can view this as pattern matching. The graph A is the pattern and the graph B is the data. A morphism f:A→B is a collection of vertices and edges in B that is shaped like A. Note that you can ask Catlab to enforce constraints on the homomorphisms it will find including computing monic (injective) morphisms by passing the keyword `monic=true`. A monic morphism into B is a subobject of B.  You can pass `iso=true` to get isomorphisms.
 
-t = @acset Graphs.Graph begin
+t = @acset Graph begin
     V = 3
     E = 3
     src = [1,2,1]
@@ -180,7 +179,7 @@ end
 
 draw(t)
 
-T = @acset Graphs.Graph begin
+T = @acset Graph begin
     V = 6
     E = 9
     src = [1,2,1, 3, 1,5,2,2,4]
@@ -234,7 +233,7 @@ rem_parts!(sq, :E, [1,5,6,8,9])
 draw(sq)
 
 # We will use the symmetric edge graph to identify the bipartitions of this graph. 
-esym = @acset Graphs.Graph begin
+esym = @acset Graph begin
     V = 2
     E = 2
     src = [1,2]
@@ -261,7 +260,7 @@ draw(homomorphisms(sq, esym)[2])
 # We can generalize the notion of Bipartite graph to any number of parts. I like to call Kₖ the k-coloring classifier because homomorphims into α:G → Kₖ are k-colorings of G.
 
 clique(k::Int) = begin
-    Kₖ = Graphs.Graph(k)
+    Kₖ = Graph(k)
     for i in 1:k
         for j in 1:k
             if j ≠ i
@@ -288,7 +287,7 @@ draw(homomorphism(T, K₃))
 
 # ## Homomorphisms in [C, Set] are like Types
 # Any graph can play the role of the codomain. If you pick a graph that is incomplete, you get a more constrained notion of coloring where there are color combinations that are forbidden.
-triloop = @acset Graphs.Graph begin
+triloop = @acset Graph begin
     V = 3
     E = 3
     src = [1,2,3]
@@ -298,7 +297,7 @@ end
 draw(id(triloop))
 
 # With this graph, we can pick out directed 3-cycles in a graph like T2,
-T2 = @acset Graphs.Graph begin
+T2 = @acset Graph begin
     V = 6
     E = 6
     src = [1,2,3,4,5,6]
@@ -309,7 +308,7 @@ graphhoms(T2, triloop)
 # and we can draw those cyclic roles with colors
 draw(homomorphisms(T2, triloop)[1])
 
-T3 = @acset Graphs.Graph begin
+T3 = @acset Graph begin
     V = 6
     E = 7
     src = [1,2,3,4,5,6, 2]

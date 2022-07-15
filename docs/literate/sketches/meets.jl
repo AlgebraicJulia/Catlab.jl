@@ -10,7 +10,7 @@ using Core: GeneratedFunctionStub
 using Test
 
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
-using Catlab.Graphics, Catlab.Graphics.Graphviz
+using Catlab.Graphics
 
 import Catlab.Theories: compose
 using DataStructures

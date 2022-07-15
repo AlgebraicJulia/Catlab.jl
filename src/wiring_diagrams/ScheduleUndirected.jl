@@ -13,7 +13,7 @@ using DataStructures: IntDisjointSets, union!, in_same_set
 
 using ...Present, ...CategoricalAlgebra.CSets, ...CategoricalAlgebra.FinSets
 using ..UndirectedWiringDiagrams, ..WiringDiagramAlgebras
-using ..UndirectedWiringDiagrams: TheoryUWD, flat
+using ..UndirectedWiringDiagrams: flat
 
 # Data types
 ############
@@ -24,7 +24,7 @@ This type includes [`ScheduledUWD`](@ref) and [`NestedUWD`](@ref).
 """
 @abstract_acset_type HasScheduledUWD <: HasUWD
 
-@present TheoryScheduledUWD <: TheoryUWD begin
+@present SchScheduledUWD <: SchUWD begin
   Composite::Ob
 
   parent::Hom(Composite, Composite)
@@ -44,7 +44,7 @@ diagram's boxes.
 
 See also: [`NestedUWD`](@ref).
 """
-@acset_type ScheduledUWD(TheoryScheduledUWD,
+@acset_type ScheduledUWD(SchScheduledUWD,
   index=[:box, :junction, :outer_junction, :parent, :box_parent]) <: AbstractScheduledUWD
 
 ncomposites(x::HasScheduledUWD) = nparts(x, :Composite)
@@ -59,7 +59,7 @@ box_children(x::HasScheduledUWD, args...) = incident(x, args..., :box_parent)
 """
 @abstract_acset_type HasNestedUWD <: HasScheduledUWD
 
-@present TheoryNestedUWD <: TheoryScheduledUWD begin
+@present SchNestedUWD <: SchScheduledUWD begin
   CompositePort::Ob
 
   composite::Hom(CompositePort, Composite)
@@ -78,7 +78,7 @@ Nested UWDs are very similar but not quite identical to Robin Milner's
 
 See also: [`ScheduledUWD`](@ref).
 """
-@acset_type NestedUWD(TheoryNestedUWD,
+@acset_type NestedUWD(SchNestedUWD,
   index=[:box, :junction, :outer_junction,
          :composite, :composite_junction, :parent, :box_parent]) <: AbstractNestedUWD
 

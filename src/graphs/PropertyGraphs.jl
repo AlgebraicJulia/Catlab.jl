@@ -1,11 +1,11 @@
 module PropertyGraphs
-export AbstractPropertyGraph, PropertyGraph, SymmetricPropertyGraph,
-  ReflexiveEdgePropertyGraph,
+export AbstractPropertyGraph, PropertyGraph, SchPropertyGraph,
+  SymmetricPropertyGraph, SchSymmetricPropertyGraph,
+  ReflexiveEdgePropertyGraph, SchReflexivePropertyGraph,
   gprops, vprops, eprops, get_gprop, get_vprop, get_eprop,
   set_gprop!, set_vprop!, set_eprop!, set_gprops!, set_vprops!, set_eprops!
 
 using ...Present, ...CSetDataStructures, ..BasicGraphs
-using ..BasicGraphs: TheoryGraph, TheorySymmetricGraph, TheoryReflexiveGraph
 import ..BasicGraphs: nv, ne, src, tgt, inv, edges, vertices,
   has_edge, has_vertex, add_edge!, add_edges!, add_vertex!, add_vertices!
 
@@ -18,7 +18,7 @@ Concrete types are [`PropertyGraph`](@ref) and [`SymmetricPropertyGraph`](@ref).
 """
 abstract type AbstractPropertyGraph{T} end
 
-@present TheoryPropertyGraph <: TheoryGraph begin
+@present SchPropertyGraph <: SchGraph begin
   Props::AttrType
   vprops::Attr(V,Props)
   eprops::Attr(E,Props)
@@ -28,7 +28,7 @@ end
 
 const _AbstractPropertyGraph{T} = __AbstractPropertyGraph{S, Tuple{Dict{Symbol,T}}} where {S}
 
-@acset_type __PropertyGraph(TheoryPropertyGraph, index=[:src,:tgt]) <: __AbstractPropertyGraph
+@acset_type __PropertyGraph(SchPropertyGraph, index=[:src,:tgt]) <: __AbstractPropertyGraph
 
 const _PropertyGraph{T} = __PropertyGraph{Dict{Symbol,T}}
 
@@ -50,7 +50,7 @@ PropertyGraph{T,G}(; kw...) where {T,G<:_AbstractPropertyGraph{T}} =
   PropertyGraph(G(), Dict{Symbol,T}(kw...))
 PropertyGraph{T}(; kw...) where T = PropertyGraph{T,_PropertyGraph{T}}(; kw...)
 
-@present TheorySymmetricPropertyGraph <: TheorySymmetricGraph begin
+@present SchSymmetricPropertyGraph <: SchSymmetricGraph begin
   Props::AttrType
   vprops::Attr(V,Props)
   eprops::Attr(E,Props)
@@ -62,7 +62,7 @@ end
 
 const _AbstractSymmetricPropertyGraph{T} = __AbstractSymmetricPropertyGraph{S, Tuple{Dict{Symbol,T}}} where {S}
 
-@acset_type __SymmetricPropertyGraph(TheorySymmetricPropertyGraph, index=[:src,:tgt]) <:
+@acset_type __SymmetricPropertyGraph(SchSymmetricPropertyGraph, index=[:src,:tgt]) <:
   __AbstractSymmetricPropertyGraph
 
 const _SymmetricPropertyGraph{T} = __SymmetricPropertyGraph{Dict{Symbol,T}}
@@ -86,15 +86,14 @@ SymmetricPropertyGraph{T}(; kw...) where T =
   SymmetricPropertyGraph{T,_SymmetricPropertyGraph{T}}(; kw...)
 
 
-
-@present TheoryReflexiveEdgePropertyGraph <: TheoryReflexiveGraph begin
+@present SchReflexiveEdgePropertyGraph <: SchReflexiveGraph begin
   Props::AttrType
   eprops::Attr(E,Props)
 end
 
 @abstract_acset_type AbstractReflexiveEdgePropertyGraph <: HasGraph
-@acset_type ReflexiveEdgePropertyGraph(TheoryReflexiveEdgePropertyGraph, index=[:src,:tgt]) <:
-AbstractReflexiveEdgePropertyGraph
+@acset_type ReflexiveEdgePropertyGraph(SchReflexiveEdgePropertyGraph, index=[:src,:tgt]) <:
+  AbstractReflexiveEdgePropertyGraph
 
 # Accessors and mutators
 ########################
