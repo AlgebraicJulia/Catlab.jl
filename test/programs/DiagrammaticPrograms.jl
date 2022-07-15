@@ -9,7 +9,7 @@ using Catlab.WiringDiagrams.CPortGraphs
 @present SchSet(FreeSchema) begin
   X::Ob
 end
-@present SchemaDDS <: SchSet begin
+@present SchDDS <: SchSet begin
   Φ::Hom(X,X)
 end
 
@@ -116,10 +116,10 @@ end
 end
 
 # GAT expressions.
-F = @finfunctor SchemaDDS SchemaDDS begin
+F = @finfunctor SchDDS SchDDS begin
   X => X; Φ => id(X)
 end
-F′ = @finfunctor SchemaDDS SchemaDDS begin
+F′ = @finfunctor SchDDS SchDDS begin
   X => X; Φ => id{X}
 end
 @test F == F′
@@ -180,12 +180,12 @@ end
 @test collect_ob(F) == [SchGraph[:E], SchGraph[:E], SchGraph[:V]]
 @test collect_hom(F) == [SchGraph[:tgt], SchGraph[:src]]
 
-F = @diagram SchemaDDS begin
+F = @diagram SchDDS begin
   x::X
   (f: x → x)::(Φ⋅Φ)
 end
-@test only(collect_ob(F)) == SchemaDDS[:X]
-@test only(collect_hom(F)) == compose(SchemaDDS[:Φ], SchemaDDS[:Φ])
+@test only(collect_ob(F)) == SchDDS[:X]
+@test only(collect_hom(F)) == compose(SchDDS[:Φ], SchDDS[:Φ])
 
 # Migrations
 ############

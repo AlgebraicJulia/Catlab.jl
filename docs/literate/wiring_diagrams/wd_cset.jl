@@ -3,10 +3,9 @@
 using Catlab, Catlab.Theories
 using Catlab.CategoricalAlgebra
 using Catlab.WiringDiagrams
-using Catlab.Graphics
-using Catlab.Graphics.Graphviz
 using Catlab.Programs
-using Catlab.WiringDiagrams
+using Catlab.Graphics
+using Catlab.Graphics: Graphviz
 
 draw(d::WiringDiagram) = to_graphviz(d,
   orientation=LeftToRight,
@@ -195,7 +194,7 @@ end
 
 # ## Undirected Wiring Diagrams
 # A much simpler structure than DWDs are known as undirected wiring diagrams. They are called undirected because ports boxes have one set of ports that aren't divided into inputs and outputs, and the wires are undirected. Wires connect junctions to ports (which live on boxes). 
-to_graphviz(WiringDiagrams.UndirectedWiringDiagrams.SchUWD)
+to_graphviz(SchUWD)
 
 # These UWDs are combinatorial syntax for relations. The junctions are variables and the boxes are the relations. A relation R ⊆ X × Y has two ports one for the value of X and one for the value of Y. The expression R(x:X, y:Y) says to connect the X port of R to the junction for the variable x, and the Y port of R to the y variable junction. If two ports are attached to the same junction, then you have a constraint that those values must be equal. The outer ports are the components of the final relation. For example the following UWD encodes the relation {(x,y,z) | R(x,y) and S(y,z) for all x∈X, y∈Y, z∈Z}. 
 uwd = @relation (x, y, z) begin

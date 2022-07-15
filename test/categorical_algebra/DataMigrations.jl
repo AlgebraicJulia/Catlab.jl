@@ -9,10 +9,10 @@ using Catlab.Programs.DiagrammaticPrograms
 end
 @acset_type AcsetSet(SchSet)
 
-@present SchemaDDS <: SchSet begin
+@present SchDDS <: SchSet begin
   Φ::Hom(X,X)
 end
-@acset_type DDS(SchemaDDS, index=[:Φ])
+@acset_type DDS(SchDDS, index=[:Φ])
 
 # Contravariant migration
 #########################
@@ -30,7 +30,7 @@ add_parts!(h, :E, 3, src = [1,2,3], tgt = [2,3,1])
 # Migrate DDS → Graph.
 dds = DDS()
 add_parts!(dds, :X, 3, Φ=[2,3,1])
-X = SchemaDDS[:X]
+X = SchDDS[:X]
 @test h == migrate(Graph, dds, Dict(:V => :X, :E => :X),
                    Dict(:src => id(X), :tgt => :Φ))
 
@@ -43,7 +43,7 @@ migrate!(h2, dds, Dict(:V => :X, :E => :X),
 @test dds == migrate(DDS, dds, Dict(:X => :X),
                      Dict(:Φ => [:Φ, :Φ, :Φ, :Φ]))
 
-@present SchLabeledDDS <: SchemaDDS begin
+@present SchLabeledDDS <: SchDDS begin
   Label::AttrType
   label::Attr(X, Label)
 end

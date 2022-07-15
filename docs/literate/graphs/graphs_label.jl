@@ -5,7 +5,6 @@ using Catlab, Catlab.Theories
 using Catlab.CategoricalAlgebra
 using Catlab.Graphs
 using Catlab.Graphics
-using Catlab.Graphics.Graphviz
 using Colors
 draw(g) = to_graphviz(g, node_labels=true, edge_labels=true)
 
@@ -35,7 +34,7 @@ to_graphviz(SchLGraph)
 
 # We need to tell Catlab how to convert our `LGraph` type into the normal `Graph` type by taking just the edges and vertices. This could be computed with Functorial Data Migration, but that is left for another sketch.
 to_graph(g::LGraph) = begin
-  h = Graphs.Graph(nparts(g,:V))
+  h = Graph(nparts(g,:V))
   for e in edges(g)
     add_edge!(h, g[e, :src], g[e,:tgt])
   end

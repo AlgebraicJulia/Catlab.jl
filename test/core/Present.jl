@@ -105,13 +105,13 @@ I = munit(FreeSymmetricMonoidalCategory.Ob)
 @present SchSet(FreeCategory) begin
   X::Ob
 end
-@present SchemaDDS <: SchSet begin
+@present SchDDS <: SchSet begin
   Φ::Hom(X,X)
 end
 X = Ob(FreeCategory, :X)
 Φ = Hom(:Φ, X, X)
-@test generators(SchemaDDS, :Ob) == [X]
-@test generators(SchemaDDS, :Hom) == [Φ]
+@test generators(SchDDS, :Ob) == [X]
+@test generators(SchDDS, :Hom) == [Φ]
 
 # Abbreviated syntax.
 @present SchGraph(FreeCategory) begin

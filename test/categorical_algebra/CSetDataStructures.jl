@@ -9,13 +9,13 @@ using Tables
 # Discrete dynamical systems
 ############################
 
-@present SchemaDDS(FreeSchema) begin
+@present SchDDS(FreeSchema) begin
   X::Ob
   Φ::Hom(X,X)
 end
 
 @abstract_acset_type AbstractDDS
-@acset_type DDS(SchemaDDS, index=[:Φ]) <: AbstractDDS
+@acset_type DDS(SchDDS, index=[:Φ]) <: AbstractDDS
 @test DDS <: AbstractDDS
 @test DDS <: StructACSet
 @test DDS <: StructCSet
@@ -112,7 +112,7 @@ add_parts!(dds, :X, 3, Φ=[1,1,1])
 @test incident(dds, 3, :Φ) == []
 
 # Incidence without indexing.
-@acset_type UnindexedDDS(SchemaDDS)
+@acset_type UnindexedDDS(SchDDS)
 dds = UnindexedDDS()
 add_parts!(dds, :X, 4, Φ=[3,3,4,4])
 # @test isempty(keys(dds.indices))

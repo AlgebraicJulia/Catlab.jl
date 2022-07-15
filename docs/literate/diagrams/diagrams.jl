@@ -10,7 +10,6 @@
 
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
 using Catlab.Graphs, Catlab.Graphics, Catlab.Programs
-using Catlab.Graphics.Graphviz
 
 draw(D::FinFunctor) = to_graphviz(D, node_labels=true, edge_labels=true, prog="neato")
 

@@ -6,10 +6,9 @@
 using Catlab, Catlab.Theories
 using Catlab.CategoricalAlgebra
 using Catlab.WiringDiagrams
-using Catlab.Graphics
-using Catlab.Graphics.Graphviz
 using Catlab.Programs
-using Catlab.WiringDiagrams
+using Catlab.Graphics
+using Catlab.Graphics: Graphviz
 
 draw(d::WiringDiagram) = to_graphviz(d,
   orientation=LeftToRight,

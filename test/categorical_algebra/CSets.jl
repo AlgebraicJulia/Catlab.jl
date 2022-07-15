@@ -3,11 +3,11 @@ using Test
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 
-@present SchemaDDS(FreeSchema) begin
+@present SchDDS(FreeSchema) begin
   X::Ob
   Φ::Hom(X,X)
 end
-@acset_type DDS(SchemaDDS, index=[:Φ])
+@acset_type DDS(SchDDS, index=[:Φ])
 
 @present SchSetAttr(FreeSchema) begin
   X::Ob
@@ -493,7 +493,7 @@ add_vertices!(g, 2, vlabel=[:u,:v])
 add_edge!(g, 1, 2, elabel=:e)
 @test roundtrip_json_acset(g) == g
 
-@present SchLabeledDDS <: SchemaDDS begin
+@present SchLabeledDDS <: SchDDS begin
   Label::AttrType
   label::Attr(X, Label)
 end

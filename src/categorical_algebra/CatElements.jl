@@ -1,5 +1,5 @@
 module CatElements
-export ThElements, AbstractElements, Elements, elements, inverse_elements
+export SchElements, AbstractElements, Elements, elements, inverse_elements
 
 using DataStructures: OrderedDict
 
@@ -7,7 +7,7 @@ using ..CSets, ..FinSets
 using ...Present, ...Theories
 using ...Theories: Category, ob, hom, dom_nums, codom_nums
 
-@present ThElements(FreeSchema) begin
+@present SchElements(FreeSchema) begin
   (El, Arr, Ob, Hom)::Ob
   Name::AttrType
   src::Hom(Arr, El)
@@ -24,7 +24,7 @@ using ...Theories: Category, ob, hom, dom_nums, codom_nums
 end
 
 @abstract_acset_type AbstractElements
-@acset_type Elements(ThElements, index=[:src, :tgt, :πₑ, :πₐ]) <: AbstractElements
+@acset_type Elements(SchElements, index=[:src, :tgt, :πₑ, :πₐ]) <: AbstractElements
 
 """    elements(X::AbstractACSet)
 
