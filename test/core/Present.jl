@@ -102,29 +102,29 @@ I = munit(FreeSymmetricMonoidalCategory.Ob)
 @test generator(C, :scalar) == Hom(:scalar, I, I)
 
 # Inheritance.
-@present TheorySet(FreeCategory) begin
+@present SchSet(FreeCategory) begin
   X::Ob
 end
-@present TheoryDDS <: TheorySet begin
+@present SchemaDDS <: SchSet begin
   Φ::Hom(X,X)
 end
 X = Ob(FreeCategory, :X)
 Φ = Hom(:Φ, X, X)
-@test generators(TheoryDDS, :Ob) == [X]
-@test generators(TheoryDDS, :Hom) == [Φ]
+@test generators(SchemaDDS, :Ob) == [X]
+@test generators(SchemaDDS, :Hom) == [Φ]
 
 # Abbreviated syntax.
-@present TheoryGraph(FreeCategory) begin
+@present SchGraph(FreeCategory) begin
   V::Ob
   E::Ob
   src::Hom(E,V)
   tgt::Hom(E,V)
 end
-@present TheoryGraph′(FreeCategory) begin
+@present SchGraph′(FreeCategory) begin
   (V, E)::Ob
   (src, tgt)::Hom(E,V)
 end
-@test TheoryGraph == TheoryGraph′
+@test SchGraph == SchGraph′
 
 # Serialization
 ###############

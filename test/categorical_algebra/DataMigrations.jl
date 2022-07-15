@@ -3,18 +3,16 @@ using Test
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 using Catlab.Programs.DiagrammaticPrograms
-using Catlab.Graphs.BasicGraphs: TheoryGraph, TheoryWeightedGraph
-using Catlab.Graphs.BipartiteGraphs: TheoryUndirectedBipartiteGraph
 
-@present TheorySet(FreeSchema) begin
+@present SchSet(FreeSchema) begin
   X::Ob
 end
-@acset_type AcsetSet(TheorySet)
+@acset_type AcsetSet(SchSet)
 
-@present TheoryDDS <: TheorySet begin
+@present SchemaDDS <: SchSet begin
   Φ::Hom(X,X)
 end
-@acset_type DDS(TheoryDDS, index=[:Φ])
+@acset_type DDS(SchemaDDS, index=[:Φ])
 
 # Contravariant migration
 #########################
@@ -32,7 +30,7 @@ add_parts!(h, :E, 3, src = [1,2,3], tgt = [2,3,1])
 # Migrate DDS → Graph.
 dds = DDS()
 add_parts!(dds, :X, 3, Φ=[2,3,1])
-X = TheoryDDS[:X]
+X = SchemaDDS[:X]
 @test h == migrate(Graph, dds, Dict(:V => :X, :E => :X),
                    Dict(:src => id(X), :tgt => :Φ))
 
@@ -45,14 +43,14 @@ migrate!(h2, dds, Dict(:V => :X, :E => :X),
 @test dds == migrate(DDS, dds, Dict(:X => :X),
                      Dict(:Φ => [:Φ, :Φ, :Φ, :Φ]))
 
-@present TheoryLabeledDDS <: TheoryDDS begin
+@present SchLabeledDDS <: SchemaDDS begin
   Label::AttrType
   label::Attr(X, Label)
 end
-@acset_type LabeledDDS(TheoryLabeledDDS, index=[:Φ, :label])
+@acset_type LabeledDDS(SchLabeledDDS, index=[:Φ, :label])
 
-S, ϕ, Label, label = generators(TheoryLabeledDDS)
-V, E, s, t, Weight, weight = generators(TheoryWeightedGraph)
+S, ϕ, Label, label = generators(SchLabeledDDS)
+V, E, s, t, Weight, weight = generators(SchWeightedGraph)
 
 ldds = LabeledDDS{Int}()
 add_parts!(ldds, :X, 4, Φ=[2,3,4,1], label=[100, 101, 102, 103])
@@ -64,13 +62,13 @@ add_parts!(wg, :E, 4, src=[1,2,3,4], tgt=[2,3,4,1], weight=[101, 102, 103, 100])
   Dict(:V => :X, :E => :X, :Weight => :Label),
   Dict(:src => id(S), :tgt => :Φ, :weight => [:Φ, :label]))
 
-@test Presentation(Graph(1)) == TheoryGraph
-@test Presentation(ldds) == TheoryLabeledDDS
+@test Presentation(Graph(1)) == SchGraph
+@test Presentation(ldds) == SchLabeledDDS
 
 F = FinFunctor(
   Dict(V => S, E => S, Weight => Label),
   Dict(s => id(S), t => ϕ, weight => compose(ϕ, label)),
-  TheoryWeightedGraph, TheoryLabeledDDS
+  SchWeightedGraph, SchLabeledDDS
 )
 ΔF = DeltaMigration(F, LabeledDDS{Int}, WeightedGraph{Int})
 @test wg == ΔF(ldds)
@@ -78,7 +76,7 @@ F = FinFunctor(
 idF = FinFunctor(
   Dict(X => X, Label => Label), 
   Dict(ϕ => ϕ, label => label), 
-  TheoryLabeledDDS, TheoryLabeledDDS
+  SchLabeledDDS, SchLabeledDDS
 )
 @test ldds == migrate(LabeledDDS{Int}, ldds, idF)
 
@@ -86,8 +84,8 @@ idF = FinFunctor(
 #----------------------
 
 # Graph whose edges are paths of length 2.
-V, E, src, tgt = generators(TheoryGraph)
-C = FinCat(TheoryGraph)
+V, E, src, tgt = generators(SchGraph)
+C = FinCat(SchGraph)
 F_V = FinDomFunctor([V], FinCat(1), C)
 F_E = FinDomFunctor(FreeDiagram(Cospan(tgt, src)), C)
 F = FinDomFunctor(Dict(V => Diagram{op}(F_V),
@@ -103,7 +101,7 @@ H = migrate(g, F, tabular=true)
 @test H(tgt)((x1=2, x2=3, x3=3)) == (x1=4,)
 
 # Same migration, but defining using the `@migration` macro.
-F = @migration TheoryGraph TheoryGraph begin
+F = @migration SchGraph SchGraph begin
   V => V
   E => @join begin
     v::V
@@ -130,7 +128,7 @@ migrate!(h, g, F)
 @test sort!(collect(zip(h[:src], h[:tgt]))) == [(6,8), (7,9), (8,10)]
 
 # Weighted graph whose edges are path of length 2 with equal weight.
-F = @migration TheoryWeightedGraph TheoryWeightedGraph begin
+F = @migration SchWeightedGraph SchWeightedGraph begin
   V => V
   E => @join begin
     v::V; (e₁, e₂)::E; w::Weight
@@ -286,22 +284,22 @@ end
 # Sigma migration
 #################
 
-V1B, V2B, EB = generators(TheoryUndirectedBipartiteGraph, :Ob)
-srcB, tgtB = generators(TheoryUndirectedBipartiteGraph, :Hom)
+V1B, V2B, EB = generators(SchUndirectedBipartiteGraph, :Ob)
+srcB, tgtB = generators(SchUndirectedBipartiteGraph, :Hom)
 
-VG, EG = generators(TheoryGraph, :Ob)
-srcG, tgtG = generators(TheoryGraph, :Hom)
+VG, EG = generators(SchGraph, :Ob)
+srcG, tgtG = generators(SchGraph, :Hom)
 
 F = FinFunctor(
   Dict(V1B => VG, V2B => VG, EB => EG),
   Dict(srcB => srcG, tgtB => tgtG),
-  TheoryUndirectedBipartiteGraph, TheoryGraph
+  SchUndirectedBipartiteGraph, SchGraph
 )
 
 idF = FinFunctor(
   Dict(VG => VG, EG => EG),
   Dict(srcG => srcG, tgtG => tgtG),
-  TheoryGraph, TheoryGraph
+  SchGraph, SchGraph
 )
 
 ΣF = SigmaMigration(F, UndirectedBipartiteGraph, Graph)
@@ -361,8 +359,8 @@ Y = Σbang(X)
 
 @test nparts(Y, :I) == 4
 
-vertex = FinFunctor(Dict(I => VG), Dict(), ThInitial, TheoryGraph)
-edge = FinFunctor(Dict(I => EG), Dict(), ThInitial, TheoryGraph)
+vertex = FinFunctor(Dict(I => VG), Dict(), ThInitial, SchGraph)
+edge = FinFunctor(Dict(I => EG), Dict(), ThInitial, SchGraph)
 
 Z = SigmaMigration(vertex, Initial, Graph)(Y)
 @test nparts(Z, :V) == 4
@@ -386,7 +384,7 @@ y_Graph = yoneda(Graph)
 @test hom_map(y_Graph, :src) == ACSetTransformation(yV, yE, V=[1])
 @test hom_map(y_Graph, :tgt) == ACSetTransformation(yV, yE, V=[2])
 
-F = @migration TheoryGraph begin
+F = @migration SchGraph begin
   X => E
   (I, O) => V
   (i: X → I) => src
@@ -399,7 +397,7 @@ i, o = hom_map(G, :i), hom_map(G, :o)
 @test only(collect(i[:V])) == 1
 @test only(collect(o[:V])) == 2
 
-F = @migration TheoryGraph begin
+F = @migration SchGraph begin
   X => @join begin
     (e₁, e₂)::E
     tgt(e₁) == src(e₂)

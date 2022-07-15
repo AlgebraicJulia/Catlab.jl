@@ -15,14 +15,13 @@ using ...GAT, ...Present, ...Graphs, ...CategoricalAlgebra
 using ...Theories: munit
 using ...CategoricalAlgebra.FinCats: mapvals, make_map
 using ...CategoricalAlgebra.DataMigrations: ConjQuery, GlueQuery, GlucQuery
-using ...Graphs.BasicGraphs: TheoryGraph
 import ...CategoricalAlgebra.FinCats: vertex_name, vertex_named,
   edge_name, edge_named
 
 # Graphs
 ########
 
-@present TheoryNamedGraph <: TheoryGraph begin
+@present SchNamedGraph <: SchGraph begin
   VName::AttrType
   EName::AttrType
   vname::Attr(V, VName)
@@ -38,7 +37,7 @@ end
 The default graph type used by [`@graph`](@ref), [`@fincat`](@ref),
 [`@diagram`](@ref), and related macros.
 """
-@acset_type NamedGraph(TheoryNamedGraph, index=[:src,:tgt,:ename],
+@acset_type NamedGraph(SchNamedGraph, index=[:src,:tgt,:ename],
                        unique_index=[:vname]) <: AbstractNamedGraph
 # FIXME: The edge name should also be uniquely indexed, but this currently
 # doesn't play nicely with nullable attributes.
@@ -203,7 +202,7 @@ category. For example, the following functor embeds the schema for graphs into
 the schema for circular port graphs by ignoring the ports:
 
 ```julia
-@finfunctor TheoryGraph ThCPortGraph begin
+@finfunctor SchGraph SchCPortGraph begin
   V => Box
   E => Wire
   src => src ⨟ box
@@ -321,7 +320,7 @@ As an example, the limit of the following diagram consists of the paths of
 length two in a graph:
 
 ```julia
-@diagram TheoryGraph begin
+@diagram SchGraph begin
   v::V
   (e₁, e₂)::E
   (t: e₁ → v)::tgt
@@ -334,7 +333,7 @@ defining free diagrams (see also [`@free_diagram`](@ref)). For example, the
 following diagram is isomorphic to the previous one:
 
 ```julia
-@diagram TheoryGraph begin
+@diagram SchGraph begin
   v::V
   (e₁, e₂)::E
   (e₁ → v)::tgt
@@ -360,7 +359,7 @@ introduce anonymous morphisms in a "pointful" style. For example, the limit of
 the following diagram consists of the paths of length two in a graph:
 
 ```julia
-@free_diagram TheoryGraph begin
+@free_diagram SchGraph begin
   v::V
   (e₁, e₂)::E
   tgt(e₁) == v
@@ -372,7 +371,7 @@ Anonymous objects can also be introduced. For example, the previous diagram is
 isomorphic to this one:
 
 ```julia
-@free_diagram TheoryGraph begin
+@free_diagram SchGraph begin
   (e₁, e₂)::E
   tgt(e₁) == src(e₂)
 end

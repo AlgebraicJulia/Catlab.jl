@@ -100,12 +100,12 @@ wd.diagram
 
 # Ok, there is a lot in there. The columns with integer entries are the combinatorial data encoding the connectivity of the wiring diagram. The columns with Symbols in them are encoding the labels for the diagram, the `value` of a box is the content of the box. Ports have types and wires have values. When we define the wiring diagram with the `@program` macro, we get a diagram that has labels and types, but no values. These values are initialized to nothing, but could be filled with values to be carried down the wires in an application.
 
-# The schema of for wiring diagrams is called TheoryAttributedWiringDiagrams and is a little overwhelming, so we can explore how to build it up with C-Set schema inheritance.
-to_graphviz(WiringDiagrams.DirectedWiringDiagrams.TheoryAttributedWiringDiagram)
+# The schema of for wiring diagrams is called `SchAttributedWiringDiagrams` and is a little overwhelming, so we can explore how to build it up with C-Set schema inheritance.
+to_graphviz(SchAttributedWiringDiagram)
 
 # From the file Catlab/src/WiringDiagrams/Directed.jl
 # ```julia
-# @present TheoryWiringDiagram(FreeSchema) begin
+# @present SchWiringDiagram(FreeSchema) begin
 #   Box::Ob
 #   (InPort, OutPort, OuterInPort, OuterOutPort)::Ob
 #   (Wire, InWire, OutWire, PassWire)::Ob
@@ -125,7 +125,7 @@ to_graphviz(WiringDiagrams.DirectedWiringDiagrams.TheoryAttributedWiringDiagram)
 
 # @abstract_acset_type AbstractWiringDiagram <: AbstractGraph
 
-# @present TheoryTypedWiringDiagram <: TheoryWiringDiagram begin
+# @present SchTypedWiringDiagram <: SchWiringDiagram begin
 #   PortValue::AttrType
 #   in_port_type::Attr(InPort, PortValue)
 #   out_port_type::Attr(OutPort, PortValue)
@@ -133,7 +133,7 @@ to_graphviz(WiringDiagrams.DirectedWiringDiagrams.TheoryAttributedWiringDiagram)
 #   outer_out_port_type::Attr(OuterOutPort, PortValue)
 # end
 
-# @present TheoryAttributedWiringDiagram <: TheoryTypedWiringDiagram begin
+# @present SchAttributedWiringDiagram <: SchTypedWiringDiagram begin
 #   WireValue::AttrType
 #   BoxValue::AttrType
 #   BoxType::AttrType
@@ -148,16 +148,15 @@ to_graphviz(WiringDiagrams.DirectedWiringDiagrams.TheoryAttributedWiringDiagram)
 # ```
 
 # The bare minimum diagram language is:
-to_graphviz(WiringDiagrams.DirectedWiringDiagrams.TheoryWiringDiagram)
+to_graphviz(SchWiringDiagram)
 
 # And then you can add back in the types.
-to_graphviz(WiringDiagrams.DirectedWiringDiagrams.TheoryTypedWiringDiagram)
+to_graphviz(SchTypedWiringDiagram)
 
-#Layout is hard, so if you want to understand the `TheoryAttributedWiringDiagrams`, you should do the layout by hand as an exercise.
-
+# Layout is hard, so if you want to understand the `SchAttributedWiringDiagrams`, you should do the layout by hand as an exercise.
 
 # We can create our own version of the theory of DWDs to see how it works:
-@present MyTheoryWiringDiagram(FreeSchema) begin
+@present MySchWiringDiagram(FreeSchema) begin
   Box::Ob
   (InPort, OutPort, OuterInPort, OuterOutPort)::Ob
   (Wire, InWire, OutWire, PassWire)::Ob
@@ -175,10 +174,10 @@ to_graphviz(WiringDiagrams.DirectedWiringDiagrams.TheoryTypedWiringDiagram)
   out_port_box::Hom(OutPort, Box)
 end
 
-# If your application of wiring diagrams needs to attach numeric or textual information to the boxes of a wiring diagram, you would extend the `TheoryWiringDiagram` with the attributes that you need. That will give you a custom data structure that has those fields. One of the goals of Catlab is to make it so much easier to generate custom data structures that interoperate, that you don't need to create generic structures that can be used for many purposes. Just snap your fingers and create a new structure perfectly tailored to your needs, when your needs change, snap again to get a new version of that structure.
+# If your application of wiring diagrams needs to attach numeric or textual information to the boxes of a wiring diagram, you would extend the `SchWiringDiagram` with the attributes that you need. That will give you a custom data structure that has those fields. One of the goals of Catlab is to make it so much easier to generate custom data structures that interoperate, that you don't need to create generic structures that can be used for many purposes. Just snap your fingers and create a new structure perfectly tailored to your needs, when your needs change, snap again to get a new version of that structure.
 
 # The `@acset_type` macro does the hard work of generating the data structure and accessors and mutators for you. The form of this call is `@acset_type NewStructName(Schema, index=[morphisms in Schema]) <: Supertype`. You should index any morphism where you need to use `incident` frequently. For wiring diagrams you will often want to know what all the wires that are incident to a port. 
-@acset_type MyWiringDiagramACSet(MyTheoryWiringDiagram,
+@acset_type MyWiringDiagramACSet(MySchWiringDiagram,
   index=[:src, :tgt, :in_src, :in_tgt, :out_src, :out_tgt, :pass_src, :pass_tgt]) <: WiringDiagrams.DirectedWiringDiagrams.AbstractWiringDiagram
 
 # We get the `@acset` macro from Catlab and can create DWDs by hand. It is very tedious, which is why the `@program` macro exists!
@@ -196,7 +195,7 @@ end
 
 # ## Undirected Wiring Diagrams
 # A much simpler structure than DWDs are known as undirected wiring diagrams. They are called undirected because ports boxes have one set of ports that aren't divided into inputs and outputs, and the wires are undirected. Wires connect junctions to ports (which live on boxes). 
-to_graphviz(WiringDiagrams.UndirectedWiringDiagrams.TheoryUWD)
+to_graphviz(WiringDiagrams.UndirectedWiringDiagrams.SchUWD)
 
 # These UWDs are combinatorial syntax for relations. The junctions are variables and the boxes are the relations. A relation R ⊆ X × Y has two ports one for the value of X and one for the value of Y. The expression R(x:X, y:Y) says to connect the X port of R to the junction for the variable x, and the Y port of R to the y variable junction. If two ports are attached to the same junction, then you have a constraint that those values must be equal. The outer ports are the components of the final relation. For example the following UWD encodes the relation {(x,y,z) | R(x,y) and S(y,z) for all x∈X, y∈Y, z∈Z}. 
 uwd = @relation (x, y, z) begin
@@ -219,7 +218,7 @@ draw(uwd₂)
 
 # ## Circular Port Graphs
 # CPGs are the natural data structure for representing process of interconnected systems that share information along wires, but send different information to their different neighbors.
-to_graphviz(ThCPortGraph)
+to_graphviz(SchCPortGraph)
 
 # They are also a kind of CSet, so we can use the `@acset` macro to construct them.
 cpg = @acset CPortGraph begin

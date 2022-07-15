@@ -2,7 +2,6 @@ module TestGraphvizCategories
 using Test
 
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
-using Catlab.Graphs.BasicGraphs: TheoryWeightedGraph
 using Catlab.Graphics.GraphvizCategories
 using Catlab.Graphics: Graphviz
 
@@ -54,7 +53,7 @@ gv = to_graphviz(el, node_labels=true, edge_labels=true)
 # Schemas
 #########
 
-gv = to_graphviz(TheoryWeightedGraph)
+gv = to_graphviz(SchWeightedGraph)
 @test length(stmts(gv, Graphviz.Node)) == 3
 @test stmts(gv, Graphviz.Node, :label) == ["V", "E"]
 @test stmts(gv, Graphviz.Node, :xlabel) == ["Weight"]

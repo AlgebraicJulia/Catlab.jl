@@ -1,15 +1,14 @@
 module CPortGraphs
-export ThCPortGraph, ThOpenCPortGraph, ThSymCPortGraph, ThOpenSymCPortGraph,
+export SchCPortGraph, SchOpenCPortGraph, SchSymCPortGraph, SchOpenSymCPortGraph,
   CPortGraph, OpenCPortGraph, SymCPortGraph, OpenSymCPortGraph,
   ThBundledCPG, BundledCPG
 
 using ...Theories, ...Present,  ...CategoricalAlgebra
 import ...CategoricalAlgebra: migrate!
 using ...Graphs
-import ...Graphs.BasicGraphs: TheoryGraph
 import ..DirectedWiringDiagrams: ocompose
 
-@present ThCPortGraph(FreeSchema) begin
+@present SchCPortGraph(FreeSchema) begin
   Box::Ob
   Port::Ob
   Wire::Ob
@@ -19,12 +18,12 @@ import ..DirectedWiringDiagrams: ocompose
   box::Hom(Port, Box)
 end
 
-@present ThOpenCPortGraph <: ThCPortGraph begin
+@present SchOpenCPortGraph <: SchCPortGraph begin
   OuterPort::Ob
   con::Hom(OuterPort, Port)
 end
 
-@present ThSymCPortGraph <: ThCPortGraph begin
+@present SchSymCPortGraph <: SchCPortGraph begin
   inv::Hom(Wire, Wire)
 
   compose(inv,inv) == id(Wire)
@@ -32,7 +31,7 @@ end
   compose(inv,tgt) == src
 end
 
-@present ThOpenSymCPortGraph <: ThSymCPortGraph begin
+@present SchOpenSymCPortGraph <: SchSymCPortGraph begin
   OuterPort::Ob
   con::Hom(OuterPort, Port)
 end
@@ -47,7 +46,7 @@ Circular port graphs consist of boxes with ports connected by directed wires.
 The ports are not seperated into inputs and outputs, so the "boxes" are actually
 circular, hence the name.
 """
-@acset_type CPortGraph(ThCPortGraph, index=[:box, :src, :tgt]) <: AbstractCPortGraph
+@acset_type CPortGraph(SchCPortGraph, index=[:box, :src, :tgt]) <: AbstractCPortGraph
 
 """ Abstract type for open circular port graphs.
 """
@@ -59,13 +58,13 @@ Open circular port graphs are circular port graphs with a distinguished set of
 outer ports. They have a natural operad structure and can be seen as a
 specialization of directed wiring diagrams.
 """
-@acset_type OpenCPortGraph(ThOpenCPortGraph, index=[:box, :src, :tgt]) <: AbstractOpenCPortGraph
+@acset_type OpenCPortGraph(SchOpenCPortGraph, index=[:box, :src, :tgt]) <: AbstractOpenCPortGraph
 
 @abstract_acset_type AbstractSymCPortGraph <: AbstractCPortGraph
-@acset_type SymCPortGraph(ThSymCPortGraph, index=[:box, :src]) <: AbstractSymCPortGraph
+@acset_type SymCPortGraph(SchSymCPortGraph, index=[:box, :src]) <: AbstractSymCPortGraph
 
 @abstract_acset_type AbstractOpenSymCPortGraph <: AbstractSymCPortGraph
-@acset_type OpenSymCPortGraph(ThOpenSymCPortGraph, index=[:box, :src]) <: AbstractOpenSymCPortGraph
+@acset_type OpenSymCPortGraph(SchOpenSymCPortGraph, index=[:box, :src]) <: AbstractOpenSymCPortGraph
 const OSCPGraph = OpenSymCPortGraph
 
 function OpenCPortGraph(g::AbstractCPortGraph)
@@ -77,8 +76,8 @@ end
 function migrate!(g::AbstractGraph, cpg::AbstractCPortGraph)
   migrate!(g, cpg,
     Dict(:E=>:Wire, :V=>:Box),
-    Dict(:src=>compose(ThCPortGraph[:src], ThCPortGraph[:box]),
-         :tgt=>compose(ThCPortGraph[:tgt], ThCPortGraph[:box])))
+    Dict(:src=>compose(SchCPortGraph[:src], SchCPortGraph[:box]),
+         :tgt=>compose(SchCPortGraph[:tgt], SchCPortGraph[:box])))
 end
 
 function migrate!(pg::AbstractCPortGraph, opg::AbstractOpenCPortGraph)
@@ -91,9 +90,9 @@ function migrate!(pg::AbstractCPortGraph, g::AbstractGraph)
   migrate!(pg, g,
     Dict(:Box=>:V, :Port=>:V, :Wire=>:E),
     Dict(
-      :box=>id(TheoryGraph[:V]),
-      :src=>TheoryGraph[:src],
-      :tgt=>TheoryGraph[:tgt],
+      :box=>id(SchGraph[:V]),
+      :src=>SchGraph[:src],
+      :tgt=>SchGraph[:tgt],
     )
   )
 end
@@ -105,7 +104,7 @@ function migrate!(og::AbstractOpenCPortGraph, g::AbstractCPortGraph)
       :src=>:src,
       :tgt=>:tgt,
       :box=>:box,
-      :con=>id(ThCPortGraph[:Port]),
+      :con=>id(SchCPortGraph[:Port]),
     )
   )
 end
@@ -116,10 +115,10 @@ function migrate!(pg::AbstractSymCPortGraph, g::AbstractSymmetricGraph)
   migrate!(pg, g,
     Dict(:Box=>:V, :Port=>:V, :Wire=>:E),
     Dict(
-      :box=>id(TheorySymmetricGraph[:V]),
-      :src=>id(TheorySymmetricGraph[:src]),
-      :tgt=>id(TheorySymmetricGraph[:tgt]),
-      :inv=>TheorySymmetricGraph[:inv],
+      :box=>id(SchSymmetricGraph[:V]),
+      :src=>id(SchSymmetricGraph[:src]),
+      :tgt=>id(SchSymmetricGraph[:tgt]),
+      :inv=>SchSymmetricGraph[:inv],
     )
   )
 end
@@ -147,7 +146,7 @@ function ocompose(g::AbstractOpenCPortGraph, xs::Vector)
   return sum
 end
 
-@present ThBundledCPG <: ThOpenCPortGraph begin
+@present ThBundledCPG <: SchOpenCPortGraph begin
   Bundle::Ob
   bun::Hom(OuterPort, Bundle)
 end
@@ -160,7 +159,7 @@ function migrate!(b::AbstractBundledCPG, g::AbstractOpenCPortGraph)
     Dict(:Box=>:Box, :Port=>:Port, :Wire=>:Wire, :OuterPort=>:OuterPort,
          :Bundle=>:OuterPort),
     Dict(:src=>:src, :tgt=>:tgt, :box=>:box,
-         :con=>:con, :bun=>id(ThOpenCPortGraph[:OuterPort])))
+         :con=>:con, :bun=>id(SchOpenCPortGraph[:OuterPort])))
 end
 
 function BundledCPG(g::AbstractOpenCPortGraph)

@@ -26,13 +26,13 @@ function GraphvizGraphs.to_graphviz_property_graph(f::ACSetTransformation; kw...
   pg
 end
 
-to_graphviz(Catlab.Graphs.BasicGraphs.TheoryGraph)
+to_graphviz(Catlab.Graphs.BasicGraphs.SchGraph)
 
 # # The Category of Graphs
 #
 # The Theory of Graphs is given by the following Schema:
 # ```julia
-# @present TheoryGraph(FreeSchema) begin
+# @present SchGraph(FreeSchema) begin
 #   V::Ob
 #   E::Ob
 #   src::Hom(E,V)
@@ -45,10 +45,10 @@ to_graphviz(Catlab.Graphs.BasicGraphs.TheoryGraph)
 
 # """ A graph, also known as a directed multigraph.
 # """
-# @acset_type Graph(TheoryGraph, index=[:src,:tgt]) <: AbstractGraph
+# @acset_type Graph(SchGraph, index=[:src,:tgt]) <: AbstractGraph
 # ```
 #
-# That is all we need to do to generate the functor category [TheoryGraph, FinSet].
+# That is all we need to do to generate the functor category [SchGraph, FinSet].
 # Catlab knows how to take a finitely presented category and generate all the data structures
 # that you need to represent functors into FinSet and natural transformations between those functors.
 # Note: the index=[:src, :tgt] keyword argument tells Catlab that you want to have an efficient index
@@ -164,7 +164,7 @@ is_natural(ϕᵦ′)
 # ### Exercise:
 # 1. Take your graph from the previous exercise and construct a graph homomorphism from the wedge (w) into it.
 # 2. Check that the naturality equations are satisfied.
-# 3. Explain why we don't need to specify any data for the source and target morphisms in TheoryGraph when definining a graph homomorphism
+# 3. Explain why we don't need to specify any data for the source and target morphisms in SchGraph when definining a graph homomorphism
 
 # ## Finding Homomorphisms Automatically
 # As you saw in the previous exercise, constructing a natural transformation can be quite tedious. We want computers to automate tedious things for us. So we use an algorithm to enumerate all the homomorphisms between two CSets.

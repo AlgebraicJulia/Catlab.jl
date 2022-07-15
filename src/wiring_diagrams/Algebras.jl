@@ -10,7 +10,6 @@ using ...Theories: dom_nums, codom_nums, attr, adom, adom_nums
 using ...CategoricalAlgebra
 import ...CategoricalAlgebra.CSets: homomorphisms, homomorphism, is_homomorphic
 using ..UndirectedWiringDiagrams
-using ..UndirectedWiringDiagrams: TheoryUWD
 
 """ Compose morphisms according to UWD.
 
@@ -232,12 +231,12 @@ function homomorphism_query(X::StructACSet{S}; count::Bool=false) where S
   (diagram, params)
 end
 
-@present TheoryHomomorphismQueryDiagram <: TheoryUWD begin
+@present SchHomomorphismQueryDiagram <: SchUWD begin
   Name::AttrType
   name::Attr(Box, Name)
   port_name::Attr(Port, Name)
 end
-@acset_type HomomorphismQueryDiagram(TheoryHomomorphismQueryDiagram,
+@acset_type HomomorphismQueryDiagram(SchHomomorphismQueryDiagram,
   index=[:box, :junction, :outer_junction]) <: UndirectedWiringDiagram
 
 function homomorphisms(X::ACSet, Y::ACSet, ::HomomorphismQuery)

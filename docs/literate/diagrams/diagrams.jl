@@ -10,7 +10,6 @@
 
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
 using Catlab.Graphs, Catlab.Graphics, Catlab.Programs
-using Catlab.Graphs.BasicGraphs: TheoryGraph
 using Catlab.Graphics.Graphviz
 
 draw(D::FinFunctor) = to_graphviz(D, node_labels=true, edge_labels=true, prog="neato")
@@ -27,7 +26,7 @@ draw(D::FinFunctor) = to_graphviz(D, node_labels=true, edge_labels=true, prog="n
 # For example, the limit of the following diagram consists of the paths of length
 # two in a graph:
 
-D₂ = @free_diagram TheoryGraph begin
+D₂ = @free_diagram SchGraph begin
   v::V
   (e₁, e₂)::E
   tgt(e₁) == v
@@ -46,7 +45,7 @@ draw(D₂)
 # For small equations the point-free notation commonly employed in functional programming is very convenient; however, there is a reason it is not the standard approach to presenting equations in mathematical writing. Variables are just too useful! As the size of the system of equations grows, it becomes more and more convenient to use variable names. This is why `Catlab.Programs.@program` exists to help people write SMC morphisms with the point-ful notation they are familiar with in imperative or procedural programming.
 
 # We can describe a triangle in a graph using the vertex variables v₁, v₂, v₃ and edge variables e₁, e₂, e₃. Then we use the equation notation to assert the `src` and `tgt` relationships between the edges and vertices. 
-D₃ = @free_diagram TheoryGraph begin
+D₃ = @free_diagram SchGraph begin
   (v₁, v₂, v₃)::V
   (e₁, e₂, e₃)::E
   src(e₁) == v₁

@@ -8,9 +8,10 @@ shorter and more familiar.
 """
 module BipartiteGraphs
 export HasBipartiteVertices, HasBipartiteGraph,
-  AbstractUndirectedBipartiteGraph, UndirectedBipartiteGraph,
-  AbstractBipartiteGraph, BipartiteGraph, nv₁, nv₂, vertices₁, vertices₂,
-  ne₁₂, ne₂₁, edges₁₂, edges₂₁, src₁, src₂, tgt₁, tgt₂,
+  AbstractUndirectedBipartiteGraph, UndirectedBipartiteGraph, SchUndirectedBipartiteGraph,
+  AbstractBipartiteGraph, BipartiteGraph, SchBipartiteGraph,
+  nv₁, nv₂, vertices₁, vertices₂, ne₁₂, ne₂₁, edges₁₂, edges₂₁,
+  src₁, src₂, tgt₁, tgt₂,
   add_vertex₁!, add_vertex₂!, add_vertices₁!, add_vertices₂!,
   rem_vertex₁!, rem_vertex₂!, rem_vertices₁!, rem_vertices₂!,
   add_edge₁₂!, add_edge₂₁!, add_edges₁₂!, add_edges₂₁!,
@@ -18,7 +19,6 @@ export HasBipartiteVertices, HasBipartiteGraph,
 
 using ...Present, ...CSetDataStructures
 using ..BasicGraphs: flatten
-using ...Theories
 import ..BasicGraphs: nv, ne, vertices, edges, src, tgt, add_edge!, add_edges!,
   rem_edge!, rem_edges!, inneighbors, outneighbors
 
@@ -36,7 +36,7 @@ import ..BasicGraphs: nv, ne, vertices, edges, src, tgt, add_edge!, add_edges!,
 # Undirected bipartite graphs
 #############################
 
-@present TheoryUndirectedBipartiteGraph(FreeSchema) begin
+@present SchUndirectedBipartiteGraph(FreeSchema) begin
   (V₁, V₂)::Ob
   E::Ob
   src::Hom(E, V₁)
@@ -53,7 +53,7 @@ It is a matter of perspective whether to consider such graphs "undirected," in
 the sense that the edges have no orientation, or "unidirected," in the sense
 that all edges go from vertices of type 1 to vertices of type 2.
 """
-@acset_type UndirectedBipartiteGraph(TheoryUndirectedBipartiteGraph, index=[:src, :tgt]) <:
+@acset_type UndirectedBipartiteGraph(SchUndirectedBipartiteGraph, index=[:src, :tgt]) <:
   AbstractUndirectedBipartiteGraph
 
 function (::Type{T})(nv₁::Int, nv₂::Int) where T <: HasBipartiteVertices
@@ -159,7 +159,7 @@ outneighbors(g::AbstractUndirectedBipartiteGraph, v::Int) =
 # Bipartite graphs
 ##################
 
-@present TheoryBipartiteGraph(FreeSchema) begin
+@present SchBipartiteGraph(FreeSchema) begin
   (V₁, V₂)::Ob
   (E₁₂, E₂₁)::Ob
   src₁::Hom(E₁₂, V₁)
@@ -178,7 +178,7 @@ multigraph](https://cs.stackexchange.com/a/91521).
 Directed bipartite graphs are isomorphic to port hypergraphs and to whole grain
 Petri nets.
 """
-@acset_type BipartiteGraph(TheoryBipartiteGraph, index=[:src₁, :src₂, :tgt₁, :tgt₂]) <:
+@acset_type BipartiteGraph(SchBipartiteGraph, index=[:src₁, :src₂, :tgt₁, :tgt₂]) <:
   AbstractBipartiteGraph
 
 """ Number of edges from V₁ to V₂ in a bipartite graph.

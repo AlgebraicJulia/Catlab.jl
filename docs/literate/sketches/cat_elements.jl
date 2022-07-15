@@ -9,7 +9,7 @@ function graph(el::Elements)
   F = FinFunctor(
     Dict(:V => :El, :E => :Arr),
     Dict(:src => :src, :tgt => :tgt),
-    BasicGraphs.TheoryGraph, CatElements.ThElements
+    BasicGraphs.SchGraph, CatElements.ThElements
   )
   ΔF = DeltaMigration(F, Elements{Symbol}, BasicGraphs.Graph)
   return ΔF(el)
@@ -41,12 +41,12 @@ draw(g) = to_graphviz(g, node_labels=true, edge_labels=true, prog="neato")
 
 # ## The simplest schema 
 # First we will look at discrete dynamical systems. The set S is our state space and the funct nxt associates to every state, the next state in the system. This is a deterministic dynamical system with finitely many states and discrete time.
-@present TheoryDDS(FreeSchema) begin
+@present SchemaDDS(FreeSchema) begin
   S::Ob
   nxt::Hom(S, S)
 end
 
-@acset_type DDS(TheoryDDS, index=[:nxt])
+@acset_type DDS(SchemaDDS, index=[:nxt])
 
 fₓ = @acset DDS begin
   S = 3
