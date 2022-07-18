@@ -11,7 +11,7 @@ export Ports, Junction, PortOp, BoxOp, functor, permute,
   junction_diagram, add_junctions, add_junctions!, rem_junctions, merge_junctions,
   junction_caps, junction_cups, junctioned_dunit, junctioned_dcounit
 
-using AutoHashEquals
+using StructEquality
 
 using ...GAT, ...Theories
 import ...Theories: dom, codom, id, compose, ⋅, ∘,
@@ -34,7 +34,7 @@ import ..UndirectedWiringDiagrams: add_junctions!, junction_diagram
 
 The objects in categories of wiring diagrams.
 """
-@auto_hash_equals struct Ports{Theory,Value}
+@struct_hash_equal struct Ports{Theory,Value}
   ports::Vector{Value}
   Ports{T}(ports::Vector{V}) where {T,V} = new{T,V}(ports)
 end

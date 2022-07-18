@@ -5,7 +5,6 @@ authors = ["Evan Patterson <evan@epatters.org>"]
 version = "0.13.12"
 
 [deps]
-AutoHashEquals = "15f4f7f2-30c1-5605-9d31-71845cf9641f"
 Compose = "a81c6b42-2e10-5240-aca2-a61377ecd94b"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 GeneralizedGenerated = "6b9d7cbe-bcb9-11e9-073f-15a7a543e2eb"
@@ -22,10 +21,10 @@ Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+StructEquality = "6ec83bb0-ed9f-11e9-3b4c-2b04cb4e219c"
 Tables = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
 
 [compat]
-AutoHashEquals = "0.2"
 Compose = "0.7, 0.8, 0.9"
 DataStructures = "0.17, 0.18"
 GeneralizedGenerated = "0.2, 0.3"
@@ -36,6 +35,7 @@ PrettyTables = "0.12, 1.0"
 Reexport = "^1"
 Requires = "^1"
 StaticArrays = "0.12, 1.0"
+StructEquality = "2.1"
 Tables = "^1"
 julia = "1.6"
 

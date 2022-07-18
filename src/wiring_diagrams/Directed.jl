@@ -28,7 +28,7 @@ export AbstractBox, Box, WiringDiagram, SchWiringDiagram,
   singleton_diagram, induced_subdiagram, encapsulated_subdiagram,
   ocompose, substitute, encapsulate
 
-using AutoHashEquals
+using StructEquality
 
 using ...Present, ...Graphs.BasicGraphs, ...CategoricalAlgebra.CSets
 import ...CategoricalAlgebra.CSets: is_isomorphic
@@ -44,7 +44,7 @@ import ...Graphs: all_neighbors, neighbors, outneighbors, inneighbors
 
 """ A port on a box to which wires can be connected.
 """
-@auto_hash_equals struct Port
+@struct_hash_equal struct Port
   box::Int
   kind::PortKind
   port::Int
@@ -60,7 +60,7 @@ end
 
 """ A wire connecting one port to another.
 """
-@auto_hash_equals struct Wire{Value}
+@struct_hash_equal struct Wire{Value}
   value::Value
   source::Port
   target::Port
@@ -116,7 +116,7 @@ value(b::AbstractBox) = b.value
 
 These boxes have no internal structure.
 """
-@auto_hash_equals struct Box{Value} <: AbstractBox
+@struct_hash_equal struct Box{Value} <: AbstractBox
   value::Value
   input_ports::Vector
   output_ports::Vector

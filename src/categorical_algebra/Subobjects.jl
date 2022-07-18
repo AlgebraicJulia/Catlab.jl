@@ -11,7 +11,7 @@ export Subobject, ob, hom, SubOpAlgorithm, SubOpWithLimits,
   implies, ⟹, subtract, \, negate, ¬, non, ~
 
 import Base: \, ~
-using AutoHashEquals
+using StructEquality
 using StaticArrays: SVector
 
 using ...GAT, ...Theories, ..Limits
@@ -87,7 +87,7 @@ abstract type Subobject{Ob} end
 # Default constructor for subobjects assumes a morphism representation.
 Subobject(hom) = SubobjectHom(hom)
 
-@auto_hash_equals struct SubobjectHom{Ob,Hom} <: Subobject{Ob}
+@struct_hash_equal struct SubobjectHom{Ob,Hom} <: Subobject{Ob}
   hom::Hom
   SubobjectHom(hom::Hom) where Hom = new{typeof(codom(hom)),Hom}(hom)
 end

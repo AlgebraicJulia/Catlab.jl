@@ -6,7 +6,7 @@ export Expr0, JuliaFunction, JuliaFunctionSig, parse_docstring, parse_function,
   append_expr!, concat_expr, replace_symbols, strip_lines
 
 using Base.Meta: ParseError
-using AutoHashEquals
+using StructEquality
 using MLStyle: @match
 
 # Data types
@@ -14,7 +14,7 @@ using MLStyle: @match
 
 const Expr0 = Union{Symbol,Expr}
 
-@auto_hash_equals struct JuliaFunction
+@struct_hash_equal struct JuliaFunction
   call_expr::Expr
   return_type::Union{Expr0,Nothing}
   impl::Union{Expr,Nothing}
@@ -26,7 +26,7 @@ const Expr0 = Union{Symbol,Expr}
   end
 end
 
-@auto_hash_equals struct JuliaFunctionSig
+@struct_hash_equal struct JuliaFunctionSig
   name::Symbol
   types::Vector{Expr0}
 end

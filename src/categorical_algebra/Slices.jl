@@ -1,7 +1,7 @@
 module Slices
 export Slice, SliceHom
 
-using AutoHashEquals
+using StructEquality
 using ...GAT
 using ..FreeDiagrams, ..Limits, ..CSets
 using ...Theories: Category
@@ -13,7 +13,7 @@ import ..FinSets: force
 The data of the object of a slice category (say, some category C sliced over an
 object X in Ob(C)) is the data of a homomorphism in Hom(A,X) for some ob A.
 """
-@auto_hash_equals struct Slice{Hom}
+@struct_hash_equal struct Slice{Hom}
   slice::Hom
 end
 
@@ -27,7 +27,7 @@ A --> B
 f ↘ ↙ g
    X
 """
-@auto_hash_equals struct SliceHom{Hom, Dom<:Slice, Codom<:Slice}
+@struct_hash_equal struct SliceHom{Hom, Dom<:Slice, Codom<:Slice}
   dom::Dom
   codom::Codom
   f::Hom

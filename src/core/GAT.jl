@@ -4,7 +4,7 @@ module GAT
 export @theory, @signature, @instance, theory, invoke_term
 
 using Base.Meta: ParseError
-using AutoHashEquals
+using StructEquality
 using DataStructures: OrderedDict
 using Logging
 using MLStyle: @match
@@ -18,7 +18,7 @@ const Context = OrderedDict{Symbol,Expr0}
 
 """ Type constructor in a GAT.
 """
-@auto_hash_equals struct TypeConstructor
+@struct_hash_equal struct TypeConstructor
   name::Symbol
   params::Vector{Symbol}
   context::Context
@@ -32,7 +32,7 @@ end
 
 """ Term constructor in a GAT.
 """
-@auto_hash_equals struct TermConstructor
+@struct_hash_equal struct TermConstructor
   name::Symbol
   params::Vector{Symbol}
   typ::Expr0
@@ -47,7 +47,7 @@ end
 
 """ Axiom constructor in a GAT.
 """
-@auto_hash_equals struct AxiomConstructor
+@struct_hash_equal struct AxiomConstructor
   name::Symbol
   left::Expr0
   right::Expr0
@@ -62,7 +62,7 @@ end
 
 """ Data structure for a generalized algebraic theory (GAT).
 """
-@auto_hash_equals struct Theory
+@struct_hash_equal struct Theory
   types::Vector{TypeConstructor}
   terms::Vector{TermConstructor}
   axioms::Vector{AxiomConstructor}

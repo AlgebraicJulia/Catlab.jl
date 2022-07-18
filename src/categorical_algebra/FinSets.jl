@@ -6,7 +6,7 @@ export FinSet, FinFunction, FinDomFunction, TabularSet, TabularLimit,
   JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin,
   SubFinSet, SubOpBoolean
 
-using AutoHashEquals
+using StructEquality
 using DataStructures: OrderedDict, IntDisjointSets, union!, find_root!
 using Reexport
 import StaticArrays
@@ -43,7 +43,7 @@ FinSet(set::FinSet) = set
 
 """ Finite set of the form ``{1,…,n}`` for some number ``n ≥ 0``.
 """
-@auto_hash_equals struct FinSetInt <: FinSet{Int,Int}
+@struct_hash_equal struct FinSetInt <: FinSet{Int,Int}
   n::Int
 end
 
@@ -61,7 +61,7 @@ Base.show(io::IO, set::FinSetInt) = print(io, "FinSet($(set.n))")
 The underlying collection should be a Julia iterable of definite length. It may
 be, but is not required to be, set-like (a subtype of `AbstractSet`).
 """
-@auto_hash_equals struct FinSetCollection{S,T} <: FinSet{S,T}
+@struct_hash_equal struct FinSetCollection{S,T} <: FinSet{S,T}
   collection::S
 end
 FinSetCollection(collection::S) where S =
@@ -87,7 +87,7 @@ uniformity, the rows are provided as named tuples, which assumes that the table
 is not "extremely wide". This should not be a major limitation in practice but
 see the Tables.jl documentation for further discussion.
 """
-@auto_hash_equals struct TabularSet{Table,Row} <: FinSet{Table,Row}
+@struct_hash_equal struct TabularSet{Table,Row} <: FinSet{Table,Row}
   table::Table
 
   function TabularSet(table::Table) where Table
@@ -133,7 +133,7 @@ end
 The only morphisms in a discrete category are the identities, which are here
 identified with the objects.
 """
-@auto_hash_equals struct DiscreteCat{Ob,S<:FinSet{<:Any,Ob}} <: FinCat{Ob,Ob}
+@struct_hash_equal struct DiscreteCat{Ob,S<:FinSet{<:Any,Ob}} <: FinCat{Ob,Ob}
   set::S
 end
 DiscreteCat(n::Integer) = DiscreteCat(FinSet(n))
@@ -389,7 +389,7 @@ Sets.do_compose(f::Union{FinFunctionVector,IndexedFinFunctionVector},
 The domain is a `FinSet{S}` where `S` is the type of the dictionary's `keys`
 collection.
 """
-@auto_hash_equals struct FinDomFunctionDict{K,D<:AbstractDict{K},Codom<:SetOb} <:
+@struct_hash_equal struct FinDomFunctionDict{K,D<:AbstractDict{K},Codom<:SetOb} <:
     FinDomFunction{D,FinSet{AbstractSet{K},K},Codom}
   func::D
   codom::Codom
@@ -1238,7 +1238,7 @@ const AbstractBoolVector = Union{AbstractVector{Bool},BitVector}
 This is the subobject classifier representation since `Bool` is the subobject
 classifier for `Set`.
 """
-@auto_hash_equals struct SubFinSetVector{S<:FinSet} <: Subobject{S}
+@struct_hash_equal struct SubFinSetVector{S<:FinSet} <: Subobject{S}
   set::S
   predicate::AbstractBoolVector
 
