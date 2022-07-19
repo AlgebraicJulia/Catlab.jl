@@ -3,6 +3,8 @@
 module Diagrams
 export Diagram, DiagramHom, id, op, co, shape, diagram, shape_map, diagram_map
 
+using StructEquality
+
 using ...GAT
 import ...Theories: dom, codom, id, compose, ⋅, ∘, munit
 using ...Theories: Category, composeH
@@ -41,10 +43,10 @@ This is the domain of the underlying functor.
 """
 shape(d::Diagram) = dom(diagram(d))
 
-Base.hash(d::Diagram{T}, h::UInt) where {T} = hash(T, hash(diagram(d), h))
+Base.hash(d::Diagram{T}, h::UInt) where {T} = hash(T, struct_hash(d, h))
 
 Base.:(==)(d1::Diagram{T}, d2::Diagram{S}) where {T,S} =
-  T == S && diagram(d1) == diagram(d2)
+  T == S && struct_equal(d1, d2)
 
 ob_map(d::Diagram, x) = ob_map(diagram(d), x)
 hom_map(d::Diagram, f) = hom_map(diagram(d), f)
@@ -132,12 +134,10 @@ cell2(D::FinDomFunctor, x) = id(codom(D), ob_map(D, x))
 shape_map(f::DiagramHom) = f.shape_map
 diagram_map(f::DiagramHom) = f.diagram_map
 
-Base.hash(f::DiagramHom{T}, h::UInt) where {T} = hash(T, hash(f.shape_map,
-  hash(f.diagram_map, hash(f.precomposed_diagram, h))))
+Base.hash(f::DiagramHom{T}, h::UInt) where {T} = hash(T, struct_hash(f, h))
 
 Base.:(==)(f::DiagramHom{T}, g::DiagramHom{S}) where {T,S} =
-  T == S && shape_map(f) == shape_map(g) && diagram_map(f) == diagram_map(g) &&
-  f.precomposed_diagram == g.precomposed_diagram
+  T == S && struct_equal(f, g)
 
 ob_map(f::DiagramHom, x) = (ob_map(f.shape_map, x), component(f.diagram_map, x))
 hom_map(f::DiagramHom, g) = hom_map(f.shape_map, g)

@@ -382,8 +382,7 @@ Junction{Op}(value, ninputs::Int, noutputs::Int) where Op =
 head(junction::Junction{Op}) where Op = Op
 
 Base.:(==)(j1::Junction, j2::Junction) =
-  head(j1) == head(j2) && j1.value == j2.value &&
-  input_ports(j1) == input_ports(j2) && output_ports(j1) == output_ports(j2)
+  head(j1) == head(j2) && struct_equal(j1, j2)
 
 """ Wiring diagram with a junction node for each of the given ports.
 """
@@ -538,7 +537,7 @@ end
 head(::PortOp{Op}) where Op = Op
 
 Base.:(==)(op1::PortOp, op2::PortOp) =
-  head(op1) == head(op2) && op1.value == op2.value
+  head(op1) == head(op2) && struct_equal(op1, op2)
 
 """ Box wrapping another box.
 
@@ -556,7 +555,7 @@ output_ports(op::BoxOp) = output_ports(op.box)
 value(op::BoxOp) = value(op.box)
 
 Base.:(==)(op1::BoxOp, op2::BoxOp) =
-  head(op1) == head(op2) && op1.box == op2.box
+  head(op1) == head(op2) && struct_equal(op1, op2)
 
 # Duals
 #------
