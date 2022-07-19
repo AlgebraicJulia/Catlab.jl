@@ -15,7 +15,7 @@ export AbstractLimit, AbstractColimit, Limit, Colimit,
   ComposeProductEqualizer, ComposeCoproductCoequalizer,
   SpecializeLimit, SpecializeColimit, ToBipartiteLimit, ToBipartiteColimit
 
-using AutoHashEquals
+using StructEquality
 using StaticArrays: StaticVector, SVector
 
 using ...GAT, ...Theories
@@ -46,7 +46,7 @@ Base.length(lim::AbstractLimit) = length(cone(lim))
 
 """ Limit in a category.
 """
-@auto_hash_equals struct Limit{Ob,Diagram,Cone<:Multispan{Ob}} <:
+@struct_hash_equal struct Limit{Ob,Diagram,Cone<:Multispan{Ob}} <:
     AbstractLimit{Ob,Diagram}
   diagram::Diagram
   cone::Cone
@@ -89,7 +89,7 @@ Base.length(colim::AbstractColimit) = length(cocone(colim))
 
 """ Colimit in a category.
 """
-@auto_hash_equals struct Colimit{Ob,Diagram,Cocone<:Multicospan{Ob}} <:
+@struct_hash_equal struct Colimit{Ob,Diagram,Cocone<:Multicospan{Ob}} <:
     AbstractColimit{Ob,Diagram}
   diagram::Diagram
   cocone::Cocone

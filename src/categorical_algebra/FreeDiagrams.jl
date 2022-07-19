@@ -18,7 +18,7 @@ export FixedShapeFreeDiagram, FreeDiagram, SchFreeDiagram,
   ob₁, ob₂, nv₁, nv₂, vertices₁, vertices₂,
   add_vertex₁!, add_vertex₂!, add_vertices₁!, add_vertices₂!
 
-using AutoHashEquals
+using StructEquality
 using StaticArrays: StaticVector, SVector
 
 using ...Present, ...Theories, ...CSetDataStructures, ...Graphs, ..FinCats
@@ -66,7 +66,7 @@ diagram_type(::FixedShapeFreeDiagram{Ob,Hom}) where {Ob,Hom} = Tuple{Ob,Hom}
 
 """ Discrete diagram: a diagram with no non-identity morphisms.
 """
-@auto_hash_equals struct DiscreteDiagram{Ob,Hom,Obs<:AbstractVector{Ob}} <:
+@struct_hash_equal struct DiscreteDiagram{Ob,Hom,Obs<:AbstractVector{Ob}} <:
     FixedShapeFreeDiagram{Ob,Hom}
   objects::Obs
 end
@@ -101,7 +101,7 @@ A [multispan](https://ncatlab.org/nlab/show/multispan) is like a [`Span`](@ref)
 except that it may have a number of legs different than two. A colimit of this
 shape is a pushout.
 """
-@auto_hash_equals struct Multispan{Ob,Hom,Legs<:AbstractVector{Hom}} <:
+@struct_hash_equal struct Multispan{Ob,Hom,Legs<:AbstractVector{Hom}} <:
     FixedShapeFreeDiagram{Ob,Hom}
   apex::Ob
   legs::Legs
@@ -164,7 +164,7 @@ Base.length(span::Multispan) = length(span.legs)
 A multicospan is like a [`Cospan`](@ref) except that it may have a number of
 legs different than two. A limit of this shape is a pullback.
 """
-@auto_hash_equals struct Multicospan{Ob,Hom,Legs<:AbstractVector{Hom}} <:
+@struct_hash_equal struct Multicospan{Ob,Hom,Legs<:AbstractVector{Hom}} <:
     FixedShapeFreeDiagram{Ob,Hom}
   apex::Ob
   legs::Legs
@@ -232,7 +232,7 @@ morphisms with the same domain and codomain. A (co)limit of this shape is a
 
 For the common special case of two morphisms, see [`ParallelPair`](@ref).
 """
-@auto_hash_equals struct ParallelMorphisms{Dom,Codom,Hom,Homs<:AbstractVector{Hom}} <:
+@struct_hash_equal struct ParallelMorphisms{Dom,Codom,Hom,Homs<:AbstractVector{Hom}} <:
     FixedShapeFreeDiagram{Union{Dom,Codom},Hom}
   dom::Dom
   codom::Codom
@@ -285,7 +285,7 @@ in the underlying graph of the category.
 
 For the common special case of two morphisms, see [`ComposablePair`](@ref).
 """
-@auto_hash_equals struct ComposableMorphisms{Ob,Hom,Homs<:AbstractVector{Hom}} <:
+@struct_hash_equal struct ComposableMorphisms{Ob,Hom,Homs<:AbstractVector{Hom}} <:
     FixedShapeFreeDiagram{Ob,Hom}
   homs::Homs
 end
@@ -571,7 +571,7 @@ cocone_objects(F::FinDomFunctor) = collect_ob(F)
 
 """ Wrapper type to interpret `FreeDiagram` as a `FinDomFunctor`.
 """
-@auto_hash_equals struct FreeDiagramFunctor{Ob,Hom,Codom} <:
+@struct_hash_equal struct FreeDiagramFunctor{Ob,Hom,Codom} <:
     FinDomFunctor{FreeCatGraph{FreeDiagram{Ob,Hom}},Codom}
   diagram::FreeDiagram{Ob,Hom}
   codom::Codom

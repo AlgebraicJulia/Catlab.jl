@@ -8,7 +8,7 @@ finite sets is provided by another module, [`FinSets`](@ref).
 module Sets
 export SetOb, TypeSet, PredicatedSet, SetFunction, ConstantFunction, Ob
 
-using AutoHashEquals
+using StructEquality
 
 using ...GAT, ..Categories, ..FreeDiagrams, ..Limits
 using ...Theories: Category
@@ -56,7 +56,7 @@ show_type_constructor(io::IO, ::Type{<:SetFunction}) = print(io, "SetFunction")
 
 """ Function in **Set** defined by a callable Julia object.
 """
-@auto_hash_equals struct SetFunctionCallable{
+@struct_hash_equal struct SetFunctionCallable{
     T,T′,Dom<:SetOb{T},Codom<:SetOb{T′}} <: SetFunction{Dom,Codom}
   # Field `func` is usually a `Function` but can be any Julia callable.
   func::Any
@@ -82,7 +82,7 @@ end
 
 """ Identity function in **Set**.
 """
-@auto_hash_equals struct IdentityFunction{Dom} <: SetFunction{Dom,Dom}
+@struct_hash_equal struct IdentityFunction{Dom} <: SetFunction{Dom,Dom}
   dom::Dom
 end
 
@@ -105,7 +105,7 @@ end
 
 Not to be confused with `Base.ComposedFunctions` for ordinary Julia functions.
 """
-@auto_hash_equals struct CompositeFunction{Dom,Codom,
+@struct_hash_equal struct CompositeFunction{Dom,Codom,
     F<:SetFunction{Dom,<:SetOb},G<:SetFunction{<:SetOb,Codom}} <: SetFunction{Dom,Codom}
   fst::F
   snd::G
@@ -128,7 +128,7 @@ end
 
 """ Function in **Set** taking a constant value.
 """
-@auto_hash_equals struct ConstantFunction{T,Value<:T,Dom,Codom<:SetOb{T}} <:
+@struct_hash_equal struct ConstantFunction{T,Value<:T,Dom,Codom<:SetOb{T}} <:
     SetFunction{Dom,Codom}
   value::Value
   dom::Dom

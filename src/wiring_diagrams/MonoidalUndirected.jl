@@ -5,7 +5,7 @@ export HypergraphDiagram, SchUntypedHypergraphDiagram, SchHypergraphDiagram,
   HypergraphDiagramOb, HypergraphDiagramHom,
   ObUWD, HomUWD, cospan_action, dom_mask, codom_mask
 
-using AutoHashEquals
+using StructEquality
 
 using ...GAT, ...Present, ...CategoricalAlgebra.CSets
 using ...Theories: HypergraphCategory
@@ -84,7 +84,7 @@ otimes(f::UWD, g::UWD) where UWD <: AbstractUWD = disjoint_union(f, g)
 
 """ List of port types representing outer boundary of undirected wiring diagram.
 """
-@auto_hash_equals struct ObUWD{UWD <: AbstractUWD, Types <: AbstractVector}
+@struct_hash_equal struct ObUWD{UWD <: AbstractUWD, Types <: AbstractVector}
   types::Types
 end
 ObUWD{UWD}(types::Types) where {UWD<:AbstractUWD, Types<:AbstractVector} =
@@ -99,7 +99,7 @@ Base.cat(A::ObUWD{UWD}, B::ObUWD{UWD}) where UWD =
 The outer ports of the undirected wiring diagram are partitioned into domain and
 codomain by masks (bit vectors).
 """
-@auto_hash_equals struct HomUWD{UWD <: AbstractUWD}
+@struct_hash_equal struct HomUWD{UWD <: AbstractUWD}
   diagram::UWD
   dom::BitVector
 

@@ -7,7 +7,7 @@ module StructuredCospans
 export StructuredMulticospan, StructuredCospan, StructuredCospanOb,
   OpenCSetTypes, OpenACSetTypes
 
-using AutoHashEquals
+using StructEquality
 using StaticArrays: StaticVector, SVector
 
 using ...GAT, ..FreeDiagrams, ..Limits, ..FinSets, ..CSets
@@ -28,7 +28,7 @@ number of legs different than two.
 
 See also: [`StructuredCospan`](@ref).
 """
-@auto_hash_equals struct StructuredMulticospan{L, Cosp <: Multicospan,
+@struct_hash_equal struct StructuredMulticospan{L, Cosp <: Multicospan,
                                                Feet <: AbstractVector}
   cospan::Cosp
   feet::Feet
@@ -97,7 +97,7 @@ bundle_feet(cospan, i::AbstractVector{Int}) = ob(coproduct(feet(cospan)[i]))
 
 """ Object in the category of L-structured cospans.
 """
-@auto_hash_equals struct StructuredCospanOb{L,T}
+@struct_hash_equal struct StructuredCospanOb{L,T}
   ob::T
   StructuredCospanOb{L}(ob::T) where {L,T} = new{L,T}(ob)
 end

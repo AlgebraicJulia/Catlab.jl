@@ -6,7 +6,7 @@ commutative squares are implemented.
 module CommutativeDiagrams
 export SquareDiagram, ob, hom, left, right, top, bottom
 
-using AutoHashEquals
+using StructEquality
 
 using ...GAT
 using ...Theories: DoubleCategory
@@ -23,7 +23,7 @@ Creates a square diagram in a category, which forms the 2-cells of the double
 category Sq(C). The four 1-cells are given in top, bottom, left, right order, to
 match the GAT of a double category.
 """
-@auto_hash_equals struct SquareDiagram{Ob,Hom,Homs<:AbstractVector{Hom}}
+@struct_hash_equal struct SquareDiagram{Ob,Hom,Homs<:AbstractVector{Hom}}
   corners::Vector{Ob}
   sides::Homs
 end

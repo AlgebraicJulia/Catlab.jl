@@ -17,7 +17,7 @@ export Cat, TypeCat, Functor, Transformation, dom, codom, compose, id,
   ob, hom, is_hom_equal, ob_map, hom_map, dom_ob, codom_ob, component,
   OppositeCat, op, co
 
-using AutoHashEquals
+using StructEquality
 
 using ...GAT
 import ...Theories: Category2, ob, hom, dom, codom, compose, ⋅, ∘, id,
@@ -141,7 +141,7 @@ abstract type Functor{Dom<:Cat,Codom<:Cat} end
 
 """ Identity functor on a category.
 """
-@auto_hash_equals struct IdentityFunctor{Dom<:Cat} <: Functor{Dom,Dom}
+@struct_hash_equal struct IdentityFunctor{Dom<:Cat} <: Functor{Dom,Dom}
   dom::Dom
 end
 
@@ -158,7 +158,7 @@ end
 
 """ Composite of functors.
 """
-@auto_hash_equals struct CompositeFunctor{Dom,Codom,
+@struct_hash_equal struct CompositeFunctor{Dom,Codom,
     F<:Functor{Dom,<:Cat},G<:Functor{<:Cat,Codom}} <: Functor{Dom,Codom}
   fst::F
   snd::G
@@ -204,7 +204,7 @@ Functor(f::Function, g::Function, C::Cat, D::Cat) = FunctorCallable(f, g, C, D)
 
 """ Functor defined by two Julia callables, an object map and a morphism map.
 """
-@auto_hash_equals struct FunctorCallable{Dom,Codom} <: Functor{Dom,Codom}
+@struct_hash_equal struct FunctorCallable{Dom,Codom} <: Functor{Dom,Codom}
   ob_map::Any
   hom_map::Any
   dom::Dom
@@ -253,7 +253,7 @@ Given ``α: F ⇒ G: C → D``, this function returns ``D``.
 """
 codom_ob(α::Transformation) = codom(dom(α)) # == codom(codom(α))
 
-@auto_hash_equals struct IdentityTransformation{C<:Cat,D<:Cat,Dom<:Functor{C,D}} <:
+@struct_hash_equal struct IdentityTransformation{C<:Cat,D<:Cat,Dom<:Functor{C,D}} <:
      Transformation{C,D,Dom,Dom}
   dom::Dom
 end
@@ -360,7 +360,7 @@ end
 
 Call `op(::Cat)` instead of directly instantiating this type.
 """
-@auto_hash_equals struct OppositeCat{Ob,Hom,Size<:CatSize,C<:Cat{Ob,Hom,Size}} <:
+@struct_hash_equal struct OppositeCat{Ob,Hom,Size<:CatSize,C<:Cat{Ob,Hom,Size}} <:
     Cat{Ob,Hom,Size}
   cat::C
 end
@@ -377,7 +377,7 @@ compose(C::OppositeCat, f, g) = compose(C.cat, g, f)
 
 Call `op(::Functor)` instead of directly instantiating this type.
 """
-@auto_hash_equals struct OppositeFunctor{C,D,F<:Functor{C,D}} <: Functor{C,D}
+@struct_hash_equal struct OppositeFunctor{C,D,F<:Functor{C,D}} <: Functor{C,D}
     # XXX: Requires more type parameters: ObC, HomC, ObD, HomD.
     #Functor{OppositeCat{C},OppositeCat{D}}
   func::F
@@ -399,7 +399,7 @@ do_compose(F::OppositeFunctor, G::OppositeFunctor) =
 
 Call `op(::Transformation)` instead of directly instantiating this type.
 """
-@auto_hash_equals struct OppositeTransformation{C,D,F,G,T<:Transformation{C,D,F,G}} <: Transformation{C,D,F,G}
+@struct_hash_equal struct OppositeTransformation{C,D,F,G,T<:Transformation{C,D,F,G}} <: Transformation{C,D,F,G}
     # XXX: Requires more type parameters: ObC, HomC, ObD, HomD.
     #Transformation{OppositeCat{C},OppositeCat{D},OppositeFunctor{C,D,G},OppositeFunctor{C,D,F}}
   trans::T

@@ -19,7 +19,7 @@ export Expression, PathExpression, Statement, GraphStatement, Property,
   Document, Picture, Scope, Coordinate, Node, NodeCoordinate, Edge, EdgeNode,
   PathOperation, Graph, GraphScope, GraphNode, GraphEdge, MatrixNode, pprint
 
-using AutoHashEquals
+using StructEquality
 
 # AST
 #####
@@ -29,7 +29,7 @@ abstract type PathExpression <: Expression end
 abstract type Statement <: Expression end
 abstract type GraphStatement <: Expression end
 
-@auto_hash_equals struct Property <: Expression
+@struct_hash_equal struct Property <: Expression
   key::String
   value::Union{String,Vector{Property},Nothing}
   
@@ -44,14 +44,14 @@ as_property(key::String, values::AbstractVector) = Property(key, as_properties(v
 as_properties(props::Vector{Property}) = props
 as_properties(props) = Property[ as_property(prop) for prop in props ]
 
-@auto_hash_equals struct Picture <: Expression
+@struct_hash_equal struct Picture <: Expression
   stmts::Vector{Statement}
   props::Vector{Property}
   
   Picture(stmts::Vararg{Statement}; props=Property[]) = new([stmts...], props)
 end
 
-@auto_hash_equals struct Document <: Expression
+@struct_hash_equal struct Document <: Expression
   picture::Picture
   libraries::Vector{String}
   packages::Vector{String}
@@ -60,14 +60,14 @@ end
     new(picture, libraries, packages)
 end
 
-@auto_hash_equals struct Scope <: Statement
+@struct_hash_equal struct Scope <: Statement
   stmts::Vector{Statement}
   props::Vector{Property}
   
   Scope(stmts::Vararg{Statement}; props=Property[]) = new([stmts...], props)
 end
 
-@auto_hash_equals struct Coordinate <: PathExpression
+@struct_hash_equal struct Coordinate <: PathExpression
   x::String
   y::String
   
@@ -75,7 +75,7 @@ end
   Coordinate(x::Number, y::Number) = new(string(x), string(y))
 end
 
-@auto_hash_equals struct Node <: Statement
+@struct_hash_equal struct Node <: Statement
   name::Union{String,Nothing}
   props::Vector{Property}
   coord::Union{Coordinate,Nothing}
@@ -86,18 +86,18 @@ end
 end
 Node(name::Union{String,Nothing}; kw...) = Node(; name=name, kw...)
 
-@auto_hash_equals struct NodeCoordinate <: PathExpression
+@struct_hash_equal struct NodeCoordinate <: PathExpression
   name::String
 end
 
-@auto_hash_equals struct EdgeNode <: PathExpression
+@struct_hash_equal struct EdgeNode <: PathExpression
   props::Vector{Property}
   content::Union{String,Nothing}
   
   EdgeNode(; props=Property[], content=nothing) = new(props, content)
 end
 
-@auto_hash_equals struct Edge <: Statement
+@struct_hash_equal struct Edge <: Statement
   exprs::Vector{PathExpression}
   props::Vector{Property}
   
@@ -105,14 +105,14 @@ end
     new([arg isa String ? NodeCoordinate(arg) : arg for arg in args], props)
 end
 
-@auto_hash_equals struct PathOperation <: PathExpression
+@struct_hash_equal struct PathOperation <: PathExpression
   op::String
   props::Vector{Property}
   
   PathOperation(op::String; props=Property[]) = new(op, props)
 end
 
-@auto_hash_equals struct Graph <: Statement
+@struct_hash_equal struct Graph <: Statement
   stmts::Vector{GraphStatement}
   props::Vector{Property}
   
@@ -120,7 +120,7 @@ end
     new([stmts...], props)
 end
 
-@auto_hash_equals struct GraphScope <: GraphStatement
+@struct_hash_equal struct GraphScope <: GraphStatement
   stmts::Vector{GraphStatement}
   props::Vector{Property}
   
@@ -128,7 +128,7 @@ end
     new([stmts...], props)
 end
 
-@auto_hash_equals struct GraphNode <: GraphStatement
+@struct_hash_equal struct GraphNode <: GraphStatement
   name::String
   props::Vector{Property}
   content::Union{String,Nothing}
@@ -137,7 +137,7 @@ end
     new(name, props, content)
 end
 
-@auto_hash_equals struct GraphEdge <: GraphStatement
+@struct_hash_equal struct GraphEdge <: GraphStatement
   src::String
   tgt::String
   props::Vector{Property}
@@ -146,7 +146,7 @@ end
     new(src, tgt, props)
 end
 
-@auto_hash_equals struct MatrixNode <: Statement
+@struct_hash_equal struct MatrixNode <: Statement
   stmts::Matrix{Vector{Statement}}
   props::Vector{Property}
   

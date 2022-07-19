@@ -5,7 +5,7 @@ export BoolRig, FinRel, FinRelation, FinRelationCallable, FinRelationMatrix,
   force
 
 import Base: +, *
-using AutoHashEquals
+using StructEquality
 
 using ...GAT
 using ...Theories: DistributiveBicategoryRelations
@@ -25,7 +25,7 @@ using ..Matrices: zero_matrix
 This struct is needed because in base Julia, the product of booleans is another
 boolean, but the sum of booleans is coerced to an integer: `true + true == 2`.
 """
-@auto_hash_equals struct BoolRig <: Number
+@struct_hash_equal struct BoolRig <: Number
   value::Bool
 end
 
@@ -44,7 +44,7 @@ Base.show(io::IO, x::BoolRig) = print(io, x.value)
 
 See also: [`FinSet`](@ref).
 """
-@auto_hash_equals struct FinRel{S,T}
+@struct_hash_equal struct FinRel{S,T}
   set::S
 end
 
@@ -72,7 +72,7 @@ FinRelation(R::AbstractMatrix, args...) = FinRelationMatrix(R, args...)
 
 """ Relation in FinRel defined by a callable Julia object.
 """
-@auto_hash_equals struct FinRelationCallable{S,S′,T,T′} <: FinRelation{S,S′,T,T′}
+@struct_hash_equal struct FinRelationCallable{S,S′,T,T′} <: FinRelation{S,S′,T,T′}
   # Field `rel` is usually a `Function` but can be any Julia callable.
   rel::Any
   dom::FinRel{S,T}
@@ -91,7 +91,7 @@ FinRelationCallable(R, dom::Int, codom::Int) =
 
 Boolean matrices are also known as logical matrices or relation matrices.
 """
-@auto_hash_equals struct FinRelationMatrix{M<:AbstractMatrix{BoolRig}} <: FinRelation{Int,Int,Int,Int}
+@struct_hash_equal struct FinRelationMatrix{M<:AbstractMatrix{BoolRig}} <: FinRelation{Int,Int,Int,Int}
   rel::M
 end
 

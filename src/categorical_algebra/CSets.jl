@@ -10,7 +10,7 @@ export ACSetTransformation, CSetTransformation,
 
 using Base.Iterators: flatten
 using Base.Meta: quot
-using AutoHashEquals
+using StructEquality
 using JSON
 using Reexport
 using Tables
@@ -141,7 +141,7 @@ const ACSetDomCat = FinCats.FinCatPresentation{
 
 """ Wrapper type to interpret attributed C-set as a functor.
 """
-@auto_hash_equals struct ACSetFunctor{ACS<:ACSet} <:
+@struct_hash_equal struct ACSetFunctor{ACS<:ACSet} <:
     Functor{ACSetDomCat,TypeCat{SetOb,FinDomFunction{Int}}}
   acset::ACS
 end
@@ -260,7 +260,7 @@ CSetTransformation(X::StructCSet, Y::StructCSet; components...) =
 
 See [`ACSetTranformation`](@ref) for the distinction between tight and loose.
 """
-@auto_hash_equals struct TightACSetTransformation{
+@struct_hash_equal struct TightACSetTransformation{
     S <: SchemaDescType, Comp <: NamedTuple,
     Dom <: StructACSet{S}, Codom <: StructACSet{S}} <: ACSetTransformation{S,Comp,Dom,Codom}
   components::Comp
@@ -314,7 +314,7 @@ end
 
 See [`ACSetTranformation`](@ref) for the distinction between tight and loose.
 """
-@auto_hash_equals struct LooseACSetTransformation{
+@struct_hash_equal struct LooseACSetTransformation{
     S <: SchemaDescType, Comp <: NamedTuple, TypeComp <: NamedTuple,
     Dom <: StructACSet{S}, Codom <: StructACSet{S}} <: ACSetTransformation{S,Comp,Dom,Codom}
   components::Comp
@@ -932,7 +932,7 @@ force(A::SubACSet) = Subobject(force(hom(A)))
 
 """ Sub-C-set represented componentwise as a collection of subsets.
 """
-@auto_hash_equals struct SubACSetComponentwise{
+@struct_hash_equal struct SubACSetComponentwise{
     Ob<:ACSet, Comp<:NamedTuple} <: Subobject{Ob}
   ob::Ob
   components::Comp

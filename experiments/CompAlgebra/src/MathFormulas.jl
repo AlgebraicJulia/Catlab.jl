@@ -15,7 +15,7 @@ export Formula, head, args, first, last, to_formula, to_wiring_diagram,
 import Base: first, last, show
 import Base.Meta: show_sexpr
 
-using AutoHashEquals
+using StructEquality
 using Match
 
 using Catlab
@@ -39,7 +39,7 @@ the operations (head symbols) are interpreted as Julia functions, e.g., `:/` is
 right multiplication by the matrix pseudoinverse while `:./` is the elementwise
 division.
 """
-@auto_hash_equals struct Formula
+@struct_hash_equal struct Formula
   head::Symbol
   args::Vector
   Formula(head::Symbol, args...) = new(head, collect(args))
