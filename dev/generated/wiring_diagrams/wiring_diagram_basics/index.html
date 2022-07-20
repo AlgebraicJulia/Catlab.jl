@@ -21,7 +21,7 @@ g = Hom(:g, B, C)
 h = Hom(:h, C, D)
 
 f</code></pre><p class="math-container">\[f : A \to B\]</p><h3 id="Generators"><a class="docs-heading-anchor" href="#Generators">Generators</a><a id="Generators-1"></a><a class="docs-heading-anchor-permalink" href="#Generators" title="Permalink"></a></h3><p>Convert each of the morphism generators into a diagram with a single box.</p><pre><code class="language-julia hljs">f, g, h = to_wiring_diagram(f), to_wiring_diagram(g), to_wiring_diagram(h)
-f</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">WiringDiagram{BiproductCategory}([:A], [:B], 
+f</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">WiringDiagram{ThBiproductCategory}([:A], [:B], 
 [ -2 =&gt; {inputs},
   -1 =&gt; {outputs},
   1 =&gt; Box(:f, [:A], [:B]) ],
@@ -64,7 +64,7 @@ f</code></pre><pre class="documenter-example-output"><code class="nohighlight hl
 </g>
 </g>
 </svg>
-'/><h3 id="Composition"><a class="docs-heading-anchor" href="#Composition">Composition</a><a id="Composition-1"></a><a class="docs-heading-anchor-permalink" href="#Composition" title="Permalink"></a></h3><pre><code class="language-julia hljs">compose(f,g)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">WiringDiagram{BiproductCategory}([:A], [:C], 
+'/><h3 id="Composition"><a class="docs-heading-anchor" href="#Composition">Composition</a><a id="Composition-1"></a><a class="docs-heading-anchor-permalink" href="#Composition" title="Permalink"></a></h3><pre><code class="language-julia hljs">compose(f,g)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">WiringDiagram{ThBiproductCategory}([:A], [:C], 
 [ -2 =&gt; {inputs},
   -1 =&gt; {outputs},
   1 =&gt; Box(:f, [:A], [:B]),
@@ -124,7 +124,7 @@ f</code></pre><pre class="documenter-example-output"><code class="nohighlight hl
 </g>
 </g>
 </svg>
-'/><h3 id="Monoidal-products"><a class="docs-heading-anchor" href="#Monoidal-products">Monoidal products</a><a id="Monoidal-products-1"></a><a class="docs-heading-anchor-permalink" href="#Monoidal-products" title="Permalink"></a></h3><pre><code class="language-julia hljs">otimes(f,h)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">WiringDiagram{BiproductCategory}([:A,:C], [:B,:D], 
+'/><h3 id="Monoidal-products"><a class="docs-heading-anchor" href="#Monoidal-products">Monoidal products</a><a id="Monoidal-products-1"></a><a class="docs-heading-anchor-permalink" href="#Monoidal-products" title="Permalink"></a></h3><pre><code class="language-julia hljs">otimes(f,h)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">WiringDiagram{ThBiproductCategory}([:A,:C], [:B,:D], 
 [ -2 =&gt; {inputs},
   -1 =&gt; {outputs},
   1 =&gt; Box(:f, [:A], [:B]),
@@ -197,7 +197,7 @@ f</code></pre><pre class="documenter-example-output"><code class="nohighlight hl
 </g>
 </g>
 </svg>
-'/><h3 id="Copy-and-merge,-delete-and-create"><a class="docs-heading-anchor" href="#Copy-and-merge,-delete-and-create">Copy and merge, delete and create</a><a id="Copy-and-merge,-delete-and-create-1"></a><a class="docs-heading-anchor-permalink" href="#Copy-and-merge,-delete-and-create" title="Permalink"></a></h3><pre><code class="language-julia hljs">mcopy(codom(f),2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">WiringDiagram{BiproductCategory}([:B], [:B,:B], 
+'/><h3 id="Copy-and-merge,-delete-and-create"><a class="docs-heading-anchor" href="#Copy-and-merge,-delete-and-create">Copy and merge, delete and create</a><a id="Copy-and-merge,-delete-and-create-1"></a><a class="docs-heading-anchor-permalink" href="#Copy-and-merge,-delete-and-create" title="Permalink"></a></h3><pre><code class="language-julia hljs">mcopy(codom(f),2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">WiringDiagram{ThBiproductCategory}([:B], [:B,:B], 
 [ -2 =&gt; {inputs},
   -1 =&gt; {outputs},
    ],
@@ -506,4 +506,4 @@ d</code></pre><pre class="documenter-example-output"><code class="nohighlight hl
 </g>
 </g>
 </svg>
-'/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../diagrams/diagrams/">« Diagrams</a><a class="docs-footer-nextpage" href="../diagrams_and_expressions/">Wiring diagrams and syntactic expressions »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.21 on <span class="colophon-date" title="Tuesday 19 July 2022 17:25">Tuesday 19 July 2022</span>. Using Julia version 1.7.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+'/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../diagrams/diagrams/">« Diagrams</a><a class="docs-footer-nextpage" href="../diagrams_and_expressions/">Wiring diagrams and syntactic expressions »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.21 on <span class="colophon-date" title="Wednesday 20 July 2022 18:07">Wednesday 20 July 2022</span>. Using Julia version 1.7.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
