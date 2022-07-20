@@ -13,14 +13,14 @@ instances are supported through the wrapper type [`TypeCat`](@ref). Finitely
 presented categories are provided by another module, [`FinCats`](@ref).
 """
 module Categories
-export Cat, TypeCat, Functor, Transformation, dom, codom, compose, id,
+export Category, Cat, TypeCat, Functor, Transformation, dom, codom, compose, id,
   ob, hom, is_hom_equal, ob_map, hom_map, dom_ob, codom_ob, component,
   OppositeCat, op, co
 
 using StructEquality
 
 using ...GAT
-import ...Theories: Category2, ob, hom, dom, codom, compose, ⋅, ∘, id,
+import ...Theories: ThCategory2, ob, hom, dom, codom, compose, ⋅, ∘, id,
   composeH, *
 
 # Categories
@@ -28,8 +28,8 @@ import ...Theories: Category2, ob, hom, dom, codom, compose, ⋅, ∘, id,
 
 """ Size of a category, used for dispatch and subtyping purposes.
 
-A [`Cat`](@ref) type having a particular `CatSize` means that categories of that
-type are *at most* that large.
+A [`Category`](@ref) type having a particular `CatSize` means that categories of
+that type are *at most* that large.
 """
 abstract type CatSize end
 
@@ -53,7 +53,11 @@ in the graph.
 The basic operations available in any category are: [`dom`](@ref),
 [`codom`](@ref), [`id`](@ref), [`compose`](@ref).
 """
-abstract type Cat{Ob,Hom,Size<:CatSize} end
+abstract type Category{Ob,Hom,Size<:CatSize} end
+
+""" Alias for [`Category`](@ref).
+"""
+const Cat = Category
 
 """ Coerce or look up object in category.
 
@@ -126,8 +130,8 @@ A functor has a domain and a codomain ([`dom`](@ref) and [`codom`](@ref)), which
 are categories, and object and morphism maps, which can be evaluated using
 [`ob_map`](@ref) and [`hom_map`](@ref). The functor object can also be called
 directly when the objects and morphisms have distinct Julia types. This is
-sometimes but not always the case (see [`Cat`](@ref)), so when writing generic
-code one should prefer the `ob_map` and `hom_map` functions.
+sometimes but not always the case (see [`Category`](@ref)), so when writing
+generic code one should prefer the `ob_map` and `hom_map` functions.
 """
 abstract type Functor{Dom<:Cat,Codom<:Cat} end
 
@@ -270,7 +274,7 @@ const IdIdTransformation{C<:Cat} = IdentityTransformation{C,C,IdentityFunctor{C}
 # 2-category of categories
 ##########################
 
-@instance Category2{Cat,Functor,Transformation} begin
+@instance ThCategory2{Cat,Functor,Transformation} begin
   dom(F::Functor) = F.dom
   codom(F::Functor) = F.codom
   id(C::Cat) = IdentityFunctor(C)

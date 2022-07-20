@@ -1,7 +1,7 @@
-export Category2, FreeCategory2, Hom2, Hom2Expr, composeV, composeH, *,
-  DoubleCategory, FreeDoubleCategory, HomH, HomV, HomHExpr, HomVExpr,
+export ThCategory2, FreeCategory2, Hom2, Hom2Expr, composeV, composeH, *,
+  ThDoubleCategory, FreeDoubleCategory, HomH, HomV, HomHExpr, HomVExpr,
   left, right, top, bottom, idH, idV, id2, id2V, id2H,
-  MonoidalDoubleCategory, SymmetricMonoidalDoubleCategory,
+  ThMonoidalDoubleCategory, ThSymmetricMonoidalDoubleCategory,
   FreeSymmetricMonoidalDoubleCategory, braidH, braidV, σH, σV
 
 import Base: *
@@ -15,7 +15,7 @@ abstract type HomHExpr{T} <: CategoryExpr{T} end
 
 """ Theory of (strict) *2-categories*
 """
-@signature Category2{Ob,Hom,Hom2} <: Category{Ob,Hom} begin
+@signature ThCategory2{Ob,Hom,Hom2} <: ThCategory{Ob,Hom} begin
   """ 2-morphism in a 2-category """
   Hom2(dom::Hom(A,B), codom::Hom(A,B))::TYPE ⊣ (A::Ob, B::Ob)
   @op begin
@@ -45,7 +45,7 @@ composeH(α, β, γ, αs...) = composeH([α, β, γ, αs...])
 
 This syntax checks domains of morphisms but not 2-morphisms.
 """
-@syntax FreeCategory2{ObExpr,HomExpr,Hom2Expr} Category2 begin
+@syntax FreeCategory2{ObExpr,HomExpr,Hom2Expr} ThCategory2 begin
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
   compose(α::Hom2, β::Hom2) = associate_unit(new(α,β), id)
   composeH(α::Hom2, β::Hom2) = associate(new(α,β))
@@ -72,7 +72,7 @@ end
 
 """ Theory of (strict) *double categories*
 """
-@theory DoubleCategory{Ob,HomV,HomH,Hom2} begin
+@theory ThDoubleCategory{Ob,HomV,HomH,Hom2} begin
   Ob::TYPE
   """ Vertical morphism in a double category """
   HomV(dom::Ob, codom::Ob)::TYPE
@@ -134,7 +134,7 @@ composeV(α, β, γ, αs...) = composeV([α, β, γ, αs...])
 
 Checks domains of morphisms but not 2-morphisms.
 """
-@syntax FreeDoubleCategory{ObExpr,HomVExpr,HomHExpr,Hom2Expr} DoubleCategory begin
+@syntax FreeDoubleCategory{ObExpr,HomVExpr,HomHExpr,Hom2Expr} ThDoubleCategory begin
   composeV(f::HomV, g::HomV) = associate_unit(new(f,g; strict=true), idV)
   composeH(f::HomH, g::HomH) = associate_unit(new(f,g; strict=true), idH)
   composeV(α::Hom2, β::Hom2) = associate_unit(new(α,β), id2V)
@@ -177,7 +177,7 @@ vertical, except that the monoidal unit ``I`` of ``D₀`` induces the monoidal
 unit of ``D₁`` as ``U(I)``, which I think has no analogue in the vertical
 direction.
 """
-@theory MonoidalDoubleCategory{Ob,HomV,HomH,Hom2} <: DoubleCategory{Ob,HomV,HomH,Hom2} begin
+@theory ThMonoidalDoubleCategory{Ob,HomV,HomH,Hom2} <: ThDoubleCategory{Ob,HomV,HomH,Hom2} begin
   otimes(A::Ob, B::Ob)::Ob
   otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣
     (A::Ob, B::Ob, C::Ob, D::Ob)
@@ -242,7 +242,7 @@ Unlike classical double categories, symmetric monoidal double categories do not
 treat the vertical and horizontal directions on an equal footing, even in the
 strict case. See [`MonoidalDoubleCategory`](@ref) for details and references.
 """
-@theory SymmetricMonoidalDoubleCategory{Ob,HomV,HomH,Hom2} <: MonoidalDoubleCategory{Ob,HomV,HomH,Hom2} begin
+@theory ThSymmetricMonoidalDoubleCategory{Ob,HomV,HomH,Hom2} <: ThMonoidalDoubleCategory{Ob,HomV,HomH,Hom2} begin
   braidV(A::Ob, B::Ob)::((A ⊗ B) ↓ (B ⊗ A))
   braidH(f::(A → C), g::(B → D))::Hom2((f ⊗ g), (g ⊗ f), σV(A,B), σV(C,D)) ⊣
     (A::Ob, B::Ob, C::Ob, D::Ob)
@@ -274,7 +274,7 @@ strict case. See [`MonoidalDoubleCategory`](@ref) for details and references.
      f::(A → D), g::(B → E), h::(C → F)))
 end
 
-@syntax FreeSymmetricMonoidalDoubleCategory{ObExpr,HomVExpr,HomHExpr,Hom2Expr} SymmetricMonoidalDoubleCategory begin
+@syntax FreeSymmetricMonoidalDoubleCategory{ObExpr,HomVExpr,HomHExpr,Hom2Expr} ThSymmetricMonoidalDoubleCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::HomV, g::HomV) = associate(new(f,g))
   otimes(f::HomH, g::HomH) = associate(new(f,g))

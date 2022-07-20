@@ -392,7 +392,7 @@ which works because left Kan extensions take representables to representables
 representables (they can be infinite), this function thus inherits any
 limitations of our implementation of left pushforward data migrations.
 """
-function representable(::Type{T}, C::Presentation{Schema}, ob::Symbol) where T <: ACSet
+function representable(::Type{T}, C::Presentation{ThSchema}, ob::Symbol) where T <: ACSet
   C₀ = Presentation{Symbol}(FreeSchema)
   add_generator!(C₀, C[ob])
   F = FinFunctor(Dict(ob => ob), Dict(), C₀, C)
@@ -412,7 +412,7 @@ Because Catlab privileges copresheaves (C-sets) over presheaves, this is the
 
 Returns a `FinDomFunctor` with domain `op(C)`.
 """
-function yoneda(::Type{T}, C::Presentation{Schema}) where T <: ACSet
+function yoneda(::Type{T}, C::Presentation{ThSchema}) where T <: ACSet
   y_ob = Dict(c => representable(T, C, nameof(c)) for c in generators(C, :Ob))
   y_hom = Dict(Iterators.map(generators(C, :Hom)) do f
     c, d = dom(f), codom(f)
@@ -459,7 +459,7 @@ end
 Returns a `FreeDiagram` whose objects are the generating objects of `pres` and 
 whose homs are the generating homs of `pres`.
 """
-function FreeDiagrams.FreeDiagram(pres::Presentation{Schema, Symbol}) where Schema
+function FreeDiagrams.FreeDiagram(pres::Presentation{ThSchema, Symbol}) where Schema
   obs = Array{FreeSchema.Ob}(generators(pres, :Ob))
   homs = Array{FreeSchema.Hom}(generators(pres, :Hom))
   doms = map(h -> generator_index(pres, nameof(dom(h))), homs)

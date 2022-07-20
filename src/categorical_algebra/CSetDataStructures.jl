@@ -43,7 +43,7 @@ end
 
 """ Create the struct declaration for a `StructACSet` from a Presentation
 """
-function struct_acset(name::Symbol, parent, p::Presentation{Schema};
+function struct_acset(name::Symbol, parent, p::Presentation{ThSchema};
                       index=[], unique_index=[])
   obs = p.generators[:Ob]
   homs = p.generators[:Hom]

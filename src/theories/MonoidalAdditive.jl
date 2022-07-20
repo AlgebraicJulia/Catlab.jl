@@ -1,10 +1,11 @@
-export MonoidalCategoryAdditive, SymmetricMonoidalCategoryAdditive,
+export ThMonoidalCategoryAdditive, ThSymmetricMonoidalCategoryAdditive,
   FreeSymmetricMonoidalCategoryAdditive, oplus, ⊕, mzero, swap,
-  MonoidalCategoryWithCodiagonals, CocartesianCategory, FreeCocartesianCategory,
-  plus, zero, copair, coproj1, coproj2,
-  MonoidalCategoryWithBidiagonalsAdditive, SemiadditiveCategory, AdditiveCategory,
+  ThMonoidalCategoryWithCodiagonals, ThCocartesianCategory,
+  FreeCocartesianCategory, plus, zero, copair, coproj1, coproj2,
+  ThMonoidalCategoryWithBidiagonalsAdditive,
+  ThSemiadditiveCategory, ThAdditiveCategory,
   mcopy, delete, pair, proj1, proj2, Δ, ◊, +, antipode,
-  HypergraphCategoryAdditive
+  ThHypergraphCategoryAdditive
 
 import Base: collect, ndims, +, zero
 
@@ -13,10 +14,10 @@ import Base: collect, ndims, +, zero
 
 """ Theory of *monoidal categories*, in additive notation
 
-Mathematically the same as [`MonoidalCategory`](@ref) but with different
+Mathematically the same as [`ThMonoidalCategory`](@ref) but with different
 notation.
 """
-@signature MonoidalCategoryAdditive{Ob,Hom} <: Category{Ob,Hom} begin
+@signature ThMonoidalCategoryAdditive{Ob,Hom} <: ThCategory{Ob,Hom} begin
   oplus(A::Ob, B::Ob)::Ob
   oplus(f::(A → B), g::(C → D))::((A ⊕ C) → (B ⊕ D)) <=
     (A::Ob, B::Ob, C::Ob, D::Ob)
@@ -49,15 +50,15 @@ show_latex(io::IO, expr::ObExpr{:mzero}; kw...) = print(io, "O")
 
 """ Theory of *symmetric monoidal categories*, in additive notation
 
-Mathematically the same as [`SymmetricMonoidalCategory`](@ref) but with
+Mathematically the same as [`ThSymmetricMonoidalCategory`](@ref) but with
 different notation.
 """
-@signature SymmetricMonoidalCategoryAdditive{Ob,Hom} <:
-    MonoidalCategoryAdditive{Ob,Hom} begin
+@signature ThSymmetricMonoidalCategoryAdditive{Ob,Hom} <:
+    ThMonoidalCategoryAdditive{Ob,Hom} begin
   swap(A::Ob, B::Ob)::Hom(oplus(A,B),oplus(B,A))
 end
 
-@syntax FreeSymmetricMonoidalCategoryAdditive{ObExpr,HomExpr} SymmetricMonoidalCategoryAdditive begin
+@syntax FreeSymmetricMonoidalCategoryAdditive{ObExpr,HomExpr} ThSymmetricMonoidalCategoryAdditive begin
   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
   oplus(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
@@ -76,10 +77,10 @@ A monoidal category with codiagonals is a symmetric monoidal category equipped
 with coherent collections of merging and creating morphisms (monoids).
 Unlike in a cocartesian category, the naturality axioms need not be satisfied.
 
-For references, see [`MonoidalCategoryWithDiagonals`](@ref).
+For references, see [`ThMonoidalCategoryWithDiagonals`](@ref).
 """
-@theory MonoidalCategoryWithCodiagonals{Ob,Hom} <:
-    SymmetricMonoidalCategoryAdditive{Ob,Hom} begin
+@theory ThMonoidalCategoryWithCodiagonals{Ob,Hom} <:
+    ThSymmetricMonoidalCategoryAdditive{Ob,Hom} begin
   plus(A::Ob)::((A ⊕ A) → A)
   zero(A::Ob)::(mzero() → A)
   
@@ -99,9 +100,9 @@ end
 """ Theory of *cocartesian (monoidal) categories*
 
 For the traditional axiomatization of coproducts, see
-[`CategoryWithCoproducts`](@ref).
+[`ThCategoryWithCoproducts`](@ref).
 """
-@theory CocartesianCategory{Ob,Hom} <: MonoidalCategoryWithCodiagonals{Ob,Hom} begin
+@theory ThCocartesianCategory{Ob,Hom} <: ThMonoidalCategoryWithCodiagonals{Ob,Hom} begin
   copair(f::(A → C), g::(B → C))::((A ⊕ B) → C) <= (A::Ob, B::Ob, C::Ob)
   coproj1(A::Ob, B::Ob)::(A → (A ⊕ B))
   coproj2(A::Ob, B::Ob)::(B → (A ⊕ B))
@@ -122,7 +123,7 @@ In this syntax, the copairing and inclusion operations are defined using merging
 and creation, and do not have their own syntactic elements. This convention
 could be dropped or reversed.
 """
-@syntax FreeCocartesianCategory{ObExpr,HomExpr} CocartesianCategory begin
+@syntax FreeCocartesianCategory{ObExpr,HomExpr} ThCocartesianCategory begin
   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
   oplus(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
@@ -152,8 +153,8 @@ end
 Mathematically the same as [`MonoidalCategoryWithBidiagonals`](@ref) but written
 additively, instead of multiplicatively.
 """
-@theory MonoidalCategoryWithBidiagonalsAdditive{Ob,Hom} <:
-    MonoidalCategoryWithCodiagonals{Ob,Hom} begin
+@theory ThMonoidalCategoryWithBidiagonalsAdditive{Ob,Hom} <:
+    ThMonoidalCategoryWithCodiagonals{Ob,Hom} begin
   mcopy(A::Ob)::(A → (A ⊕ A))
   @op (Δ) := mcopy
   delete(A::Ob)::(A → mzero())
@@ -171,8 +172,8 @@ end
 Mathematically the same as [`BiproductCategory`](@ref) but written additively,
 instead of multiplicatively.
 """
-@theory SemiadditiveCategory{Ob,Hom} <:
-    MonoidalCategoryWithBidiagonalsAdditive{Ob,Hom} begin
+@theory ThSemiadditiveCategory{Ob,Hom} <:
+    ThMonoidalCategoryWithBidiagonalsAdditive{Ob,Hom} begin
   pair(f::(A → B), g::(A → C))::(A → (B ⊕ C)) ⊣ (A::Ob, B::Ob, C::Ob)
   copair(f::(A → C), g::(B → C))::((A ⊕ B) → C) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊕ B) → A)
@@ -201,7 +202,7 @@ end
 An additive category is a biproduct category enriched in abelian groups. Thus,
 it is a semiadditive category where the hom-monoids have negatives.
 """
-@theory AdditiveCategory{Ob,Hom} <: SemiadditiveCategory{Ob,Hom} begin
+@theory ThAdditiveCategory{Ob,Hom} <: ThSemiadditiveCategory{Ob,Hom} begin
   antipode(A::Ob)::(A → A)
 
   # Antipode axioms.
@@ -218,8 +219,8 @@ end
 Mathematically the same as [`HypergraphCategory`](@ref) but with different
 notation.
 """
-@signature HypergraphCategoryAdditive{Ob,Hom} <:
-    SymmetricMonoidalCategoryAdditive{Ob,Hom} begin
+@signature ThHypergraphCategoryAdditive{Ob,Hom} <:
+    ThSymmetricMonoidalCategoryAdditive{Ob,Hom} begin
   # Supply of Frobenius monoids.
   mcopy(A::Ob)::(A → (A ⊕ A))
   @op (Δ) := mcopy

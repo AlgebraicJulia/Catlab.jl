@@ -7,7 +7,7 @@ using StructEquality
 
 using ...GAT
 import ...Theories: dom, codom, id, compose, ⋅, ∘, munit
-using ...Theories: Category, composeH
+using ...Theories: ThCategory, composeH
 import ..Categories: ob_map, hom_map, op, co
 using ..FinCats, ..FreeDiagrams
 using ..FinCats: mapvals
@@ -199,7 +199,7 @@ end
 # TODO: The diagrams in a category naturally form a 2-category, but for now we
 # just implement the category struture.
 
-@instance Category{Diagram,DiagramHom} begin
+@instance ThCategory{Diagram,DiagramHom} begin
   @import dom, codom, compose, id
 end
 

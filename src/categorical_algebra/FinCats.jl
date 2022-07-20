@@ -24,7 +24,7 @@ using DataStructures: IntDisjointSets, in_same_set, num_groups
 @reexport using ..Categories
 using ...GAT, ...Present, ...Syntax
 import ...Present: equations
-using ...Theories: Category, Schema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr
+using ...Theories: ThCategory, ThSchema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ...CSetDataStructures, ...Graphs
 import ...Graphs: edges, src, tgt, enumerate_paths
@@ -291,22 +291,22 @@ function FinCatPresentation(pres::Presentation{T}) where T
   S = pres.syntax
   FinCatPresentation{T,S.Ob,S.Hom}(pres)
 end
-function FinCatPresentation(pres::Presentation{Schema})
+function FinCatPresentation(pres::Presentation{ThSchema})
   S = pres.syntax
   Ob = Union{S.Ob, S.AttrType}
   Hom = Union{S.Hom, S.Attr, S.AttrType}
-  FinCatPresentation{Schema,Ob,Hom}(pres)
+  FinCatPresentation{ThSchema,Ob,Hom}(pres)
 end
 
 presentation(C::FinCatPresentation) = C.presentation
 
 ob_generators(C::FinCatPresentation) = generators(presentation(C), :Ob)
-ob_generators(C::FinCatPresentation{Schema}) = let P = presentation(C)
+ob_generators(C::FinCatPresentation{ThSchema}) = let P = presentation(C)
   vcat(generators(P, :Ob), generators(P, :AttrType))
 end
 
 hom_generators(C::FinCatPresentation) = generators(presentation(C), :Hom)
-hom_generators(C::FinCatPresentation{Schema}) = let P = presentation(C)
+hom_generators(C::FinCatPresentation{ThSchema}) = let P = presentation(C)
   vcat(generators(P, :Hom), generators(P, :Attr))
 end
 
@@ -322,7 +322,7 @@ hom_generator_name(C::FinCatPresentation, f::GATExpr{:generator}) = first(f)
 
 ob(C::FinCatPresentation, x::GATExpr) =
   gat_typeof(x) == :Ob ? x : error("Expression $x is not an object")
-ob(C::FinCatPresentation{Schema}, x::GATExpr) =
+ob(C::FinCatPresentation{ThSchema}, x::GATExpr) =
   gat_typeof(x) ∈ (:Ob, :AttrType) ? x :
     error("Expression $x is not an object or attribute type")
 
@@ -331,12 +331,12 @@ hom(C::FinCatPresentation, fs::AbstractVector) =
   mapreduce(f -> hom(C, f), compose, fs)
 hom(C::FinCatPresentation, f::GATExpr) =
   gat_typeof(f) == :Hom ? f : error("Expression $f is not a morphism")
-hom(C::FinCatPresentation{Schema}, f::GATExpr) =
+hom(C::FinCatPresentation{ThSchema}, f::GATExpr) =
   gat_typeof(f) ∈ (:Hom, :Attr, :AttrType) ? f :
     error("Expression $f is not a morphism or attribute")
 
-id(C::FinCatPresentation{Schema}, x::AttrTypeExpr) = x
-compose(C::FinCatPresentation{Schema}, f::AttrTypeExpr, g::AttrTypeExpr) =
+id(C::FinCatPresentation{ThSchema}, x::AttrTypeExpr) = x
+compose(C::FinCatPresentation{ThSchema}, f::AttrTypeExpr, g::AttrTypeExpr) =
   (f == g) ? f : error("Invalid composite of attribute type identities: $f != $g")
 
 function Base.show(io::IO, C::FinCatPresentation)

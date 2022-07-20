@@ -8,7 +8,7 @@ export HypergraphDiagram, SchUntypedHypergraphDiagram, SchHypergraphDiagram,
 using StructEquality
 
 using ...GAT, ...Present, ...CategoricalAlgebra.CSets
-using ...Theories: HypergraphCategory
+using ...Theories: ThHypergraphCategory
 import ...Theories: dom, codom, compose, id, ⋅, ∘, otimes, ⊗, munit, braid, σ,
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dunit, dcounit, dagger
 using ...CategoricalAlgebra.CSets: disjoint_union
@@ -140,7 +140,7 @@ codom(f::HomUWD{UWD}) where UWD = ObUWD{UWD}(codom_port_types(f))
 The objects are lists of port types and morphisms are undirected wiring diagrams
 whose outer ports are partitioned into domain and codomain.
 """
-@instance HypergraphCategory{ObUWD, HomUWD} begin
+@instance ThHypergraphCategory{ObUWD, HomUWD} begin
   @import dom, codom
 
   function compose(f::HomUWD, g::HomUWD)

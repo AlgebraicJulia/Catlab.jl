@@ -98,7 +98,7 @@ target = Dict(:→ => :Mor)
 
 # This try-catch block is a necessary work around because of a current bug
 # where test_throws doesn't catch errors thrown from inside of a macro
-@test_throws ParseError try @eval @signature Category{Ob,Hom} begin
+@test_throws ParseError try @eval @signature ThCategory{Ob,Hom} begin
   Ob::TYPE
   Hom(dom, codom)::TYPE ⊣ (dom::Ob, codom::Ob)
   @op (→) := Hom
@@ -118,7 +118,7 @@ end
 
 """ Theory of categories
 """
-@theory Category{Ob,Hom} begin
+@theory ThCategory{Ob,Hom} begin
   Ob::TYPE
   Hom(dom, codom)::TYPE ⊣ (dom::Ob, codom::Ob)
   @op (→) := Hom
@@ -133,8 +133,8 @@ end
   id(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 
-@test Category isa Type
-@test occursin("theory of categories", lowercase(string(Docs.doc(Category))))
+@test ThCategory isa Type
+@test occursin("theory of categories", lowercase(string(Docs.doc(ThCategory))))
 @test isempty(methods(dom)) && isempty(methods(codom))
 @test isempty(methods(id)) && isempty(methods(compose))
 
@@ -163,11 +163,11 @@ axioms = [
 aliases = Dict(:⋅ => :compose, :→ => :Hom)
 category_theory = GAT.Theory(types, terms, axioms, aliases)
 
-@test GAT.theory(Category) == category_theory
+@test GAT.theory(ThCategory) == category_theory
 
 """ Equivalent shorthand definition of Category theory
 """
-@theory CategoryAbbrev{Ob,Hom} begin
+@theory ThCategoryAbbrev{Ob,Hom} begin
   @op begin
     (→) := Hom
     (⋅) := compose
@@ -185,7 +185,7 @@ category_theory = GAT.Theory(types, terms, axioms, aliases)
   id(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
 end
 
-@test GAT.theory(CategoryAbbrev) == category_theory
+@test GAT.theory(ThCategoryAbbrev) == category_theory
 
 # Methods for theory
 accessors = [ GAT.JuliaFunction(:(dom(::Hom)), :Ob),
@@ -193,23 +193,23 @@ accessors = [ GAT.JuliaFunction(:(dom(::Hom)), :Ob),
 constructors = [ GAT.JuliaFunction(:(id(X::Ob)), :Hom),
                  GAT.JuliaFunction(:(compose(f::Hom, g::Hom)), :Hom) ]
 alias_functions = [ GAT.JuliaFunction(:(⋅(f::Hom, g::Hom)), :Hom, :(compose(f, g))) ]
-theory = GAT.theory(Category)
+theory = GAT.theory(ThCategory)
 @test GAT.accessors(theory) == accessors
 @test GAT.constructors(theory) == constructors
 @test GAT.alias_functions(theory) == alias_functions
 @test GAT.interface(theory) == [accessors; constructors; alias_functions]
 
 # Theory extension
-@signature Semigroup{S} begin
+@signature ThSemigroup{S} begin
   S::TYPE
   times(x::S,y::S)::S
 end
 
-@signature MonoidExt{M} <: Semigroup{M} begin
+@signature ThMonoidExt{M} <: ThSemigroup{M} begin
   munit()::M
 end
 
-@test Semigroup isa Type && MonoidExt isa Type
+@test ThSemigroup isa Type && ThMonoidExt isa Type
 
 theory = GAT.Theory(
   [ GAT.TypeConstructor(:M, [], GAT.Context()) ],
@@ -220,12 +220,12 @@ theory = GAT.Theory(
   Dict{Symbol,Symbol}()
 )
 
-@test GAT.theory(MonoidExt) == theory
+@test GAT.theory(ThMonoidExt) == theory
 
 # GAT expressions in a theory
 ################################
 
-theory = GAT.theory(Category)
+theory = GAT.theory(ThCategory)
 context = GAT.Context((:X => :Ob, :Y => :Ob, :Z => :Ob,
                        :f => :(Hom(X,Y)), :g => :(Hom(Y,Z))))
 @test GAT.expand_in_context(:X, [:f,:g], context, theory) == :(dom(f))
@@ -252,13 +252,13 @@ context = GAT.Context((:X => :Ob, :Y => :Ob, :Z => :Ob,
 
 """ Vectors as an instance of the theory of semigroups
 """
-@instance Semigroup{Vector} begin
+@instance ThSemigroup{Vector} begin
   times(x::Vector, y::Vector) = [x; y]
 end
 
 @test times([1,2],[3,4]) == [1,2,3,4]
 
-@signature Monoid{M} begin
+@signature ThMonoid{M} begin
   M::TYPE
   munit()::M
   times(x::M,y::M)::M
@@ -266,12 +266,12 @@ end
 
 # Incomplete instance of Monoid
 # XXX: Cannot use `@test_warn` since generated code won't be at toplevel.
-#@test_warn "not implemented" @instance Monoid{String} begin
+#@test_warn "not implemented" @instance ThMonoid{String} begin
 #  times(x::AbsStringtractString, y::String) = string(x,y)
 #end
 
 # Complete instance of Monoid
-@instance Monoid{String} begin
+@instance ThMonoid{String} begin
   munit(::Type{String}) = ""
   times(x::String, y::String) = string(x,y)
 end
@@ -280,7 +280,7 @@ end
 @test times("a", "b") == "ab"
 
 # Reflection
-@test invoke_term(Monoid, (String,), :munit) == ""
-@test invoke_term(Monoid, (String,), :times, "a", "b") == "ab"
+@test invoke_term(ThMonoid, (String,), :munit) == ""
+@test invoke_term(ThMonoid, (String,), :times, "a", "b") == "ab"
 
 end

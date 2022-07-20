@@ -8,7 +8,7 @@ import Base: +, *
 using StructEquality
 
 using ...GAT
-using ...Theories: DistributiveBicategoryRelations
+using ...Theories: ThDistributiveBicategoryRelations
 import ...Theories: dom, codom, id, compose, ⋅, ∘, dagger, dunit, dcounit,
   otimes, ⊗, munit, braid, oplus, ⊕, mzero, swap,
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, plus, zero, coplus, cozero,
@@ -125,7 +125,7 @@ FIXME: Many methods only work for `FinRel{Int}`. The default methods should
 assume `FinRel{<:AbstractSet}` and the case `FinRel{Int}` should be handled
 specially.
 """
-@instance DistributiveBicategoryRelations{FinRel, FinRelation} begin
+@instance ThDistributiveBicategoryRelations{FinRel, FinRelation} begin
   dom(R::FinRelation) = R.dom
   codom(R::FinRelation) = R.codom
 

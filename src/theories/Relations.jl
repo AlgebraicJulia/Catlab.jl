@@ -1,6 +1,6 @@
-export BicategoryRelations, FreeBicategoryRelations,
-  AbelianBicategoryRelations, FreeAbelianBicategoryRelations,
-  DistributiveBicategoryRelations,
+export ThBicategoryRelations, FreeBicategoryRelations,
+  ThAbelianBicategoryRelations, FreeAbelianBicategoryRelations,
+  ThDistributiveBicategoryRelations,
   meet, join, top, bottom, plus, zero, coplus, cozero
 
 import Base: join, zero
@@ -18,13 +18,13 @@ References:
 - Walters, 2009, blog post, "Categorical algebras of relations",
   http://rfcwalters.blogspot.com/2009/10/categorical-algebras-of-relations.html
 """
-@signature BicategoryRelations{Ob,Hom} <: HypergraphCategory{Ob,Hom} begin
+@signature ThBicategoryRelations{Ob,Hom} <: ThHypergraphCategory{Ob,Hom} begin
   # Logical operations.
   meet(R::(A → B), S::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
   top(A::Ob, B::Ob)::(A → B)
 end
 
-@syntax FreeBicategoryRelations{ObExpr,HomExpr} BicategoryRelations begin
+@syntax FreeBicategoryRelations{ObExpr,HomExpr} ThBicategoryRelations begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(R::Hom, S::Hom) = associate(new(R,S))
   compose(R::Hom, S::Hom) = associate_unit(new(R,S; strict=true), id)
@@ -36,14 +36,14 @@ end
 
 """ Theory of *abelian bicategories of relations*
 
-Unlike [`BicategoryRelations`](@ref), this theory uses additive notation.
+Unlike [`ThBicategoryRelations`](@ref), this theory uses additive notation.
 
 References:
 
 - Carboni & Walters, 1987, "Cartesian bicategories I", Sec. 5
 - Baez & Erbele, 2015, "Categories in control"
 """
-@signature AbelianBicategoryRelations{Ob,Hom} <: HypergraphCategoryAdditive{Ob,Hom} begin
+@signature ThAbelianBicategoryRelations{Ob,Hom} <: ThHypergraphCategoryAdditive{Ob,Hom} begin
   # Second supply of Frobenius monoids.
   plus(A::Ob)::((A ⊕ A) → A)
   zero(A::Ob)::(mzero() → A)
@@ -57,7 +57,7 @@ References:
   bottom(A::Ob, B::Ob)::(A → B)
 end
 
-@syntax FreeAbelianBicategoryRelations{ObExpr,HomExpr} AbelianBicategoryRelations begin
+@syntax FreeAbelianBicategoryRelations{ObExpr,HomExpr} ThAbelianBicategoryRelations begin
   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
   oplus(R::Hom, S::Hom) = associate(new(R,S))
   compose(R::Hom, S::Hom) = associate_unit(new(R,S; strict=true), id)
@@ -77,11 +77,11 @@ References:
   - Patterson, 2017, "Knowledge representation in bicategories of relations",
     Section 9.2
 
-FIXME: Should also inherit `BicategoryOfRelations`, but multiple inheritance is
+FIXME: Should also inherit `ThBicategoryOfRelations`, but multiple inheritance is
 not yet supported.
 """
-@signature DistributiveBicategoryRelations{Ob,Hom} <:
-    DistributiveMonoidalCategoryWithDiagonals{Ob,Hom} begin
+@signature ThDistributiveBicategoryRelations{Ob,Hom} <:
+    ThDistributiveMonoidalCategoryWithDiagonals{Ob,Hom} begin
   # Self-dual dagger compact category.
   dagger(R::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
   dunit(A::Ob)::(munit() → (A ⊗ A))

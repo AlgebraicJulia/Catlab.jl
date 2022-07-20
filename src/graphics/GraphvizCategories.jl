@@ -41,11 +41,11 @@ end
 # Categories
 ############
 
-function to_graphviz_property_graph(pres::Presentation{Category}; kw...)
+function to_graphviz_property_graph(pres::Presentation{ThCategory}; kw...)
   to_graphviz_property_graph(pres, :Ob, :Hom; kw...)
 end
 
-function to_graphviz_property_graph(pres::Presentation{MCategory};
+function to_graphviz_property_graph(pres::Presentation{ThMCategory};
     tight_attrs::AbstractDict=Dict(:arrowhead => "empty"), kw...)
   pg = to_graphviz_property_graph(pres, :Ob, :Hom; kw...)
   for tight_hom in generators(pres, :Tight)
@@ -106,7 +106,7 @@ end
 # Schemas
 #########
 
-function to_graphviz_property_graph(pres::Presentation{Schema}; kw...)
+function to_graphviz_property_graph(pres::Presentation{ThSchema}; kw...)
   pg = to_graphviz_property_graph(pres, :Ob, :Hom; kw...)
   ob_vertices = vertices(pg)
   hom_edges = edges(pg)

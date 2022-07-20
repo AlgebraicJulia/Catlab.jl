@@ -1,5 +1,5 @@
-export RigCategory, SymmetricRigCategory, DistributiveMonoidalCategory,
-  DistributiveSemiadditiveCategory, DistributiveCategory
+export ThRigCategory, ThSymmetricRigCategory, ThDistributiveMonoidalCategory,
+  ThDistributiveSemiadditiveCategory, ThDistributiveCategory
 
 # Distributive categories
 #########################
@@ -10,13 +10,13 @@ export RigCategory, SymmetricRigCategory, DistributiveMonoidalCategory,
 general in the hierarchy of [distributive monoidal
 structures](https://ncatlab.org/nlab/show/distributivity+for+monoidal+structures).
 
-TODO: Do we also want the distributivty and absorption isomorphisms? Usually we
-ignore coherence isomorphisms such as associators and unitors.
+Question: Do we also want the distributivty and absorption isomorphisms? Usually
+we ignore coherence isomorphisms such as associators and unitors.
 
-FIXME: This theory should also inherit `MonoidalCategory`, but multiple
+FIXME: This theory should also inherit `ThMonoidalCategory`, but multiple
 inheritance is not supported.
 """
-@signature RigCategory{Ob,Hom} <: SymmetricMonoidalCategoryAdditive{Ob,Hom} begin
+@signature ThRigCategory{Ob,Hom} <: ThSymmetricMonoidalCategoryAdditive{Ob,Hom} begin
   otimes(A::Ob, B::Ob)::Ob
   otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣
     (A::Ob, B::Ob, C::Ob, D::Ob)
@@ -26,9 +26,9 @@ end
 
 """ Theory of a *symmetric rig category*
 
-FIXME: Should also inherit `SymmetricMonoidalCategory`.
+FIXME: Should also inherit `ThSymmetricMonoidalCategory`.
 """
-@signature SymmetricRigCategory{Ob,Hom} <: RigCategory{Ob,Hom} begin
+@signature ThSymmetricRigCategory{Ob,Hom} <: ThRigCategory{Ob,Hom} begin
   braid(A::Ob, B::Ob)::((A ⊗ B) → (B ⊗ A))
   @op (σ) := braid
 end
@@ -38,9 +38,9 @@ end
 Reference: Jay, 1992, LFCS tech report LFCS-92-205, "Tail recursion through
 universal invariants", Section 3.2
 
-FIXME: Should also inherit `CocartesianCategory`.
+FIXME: Should also inherit `ThCocartesianCategory`.
 """
-@theory DistributiveMonoidalCategory{Ob,Hom} <: SymmetricRigCategory{Ob,Hom} begin
+@theory ThDistributiveMonoidalCategory{Ob,Hom} <: ThSymmetricRigCategory{Ob,Hom} begin
   plus(A::Ob)::((A ⊕ A) → A)
   zero(A::Ob)::(mzero() → A)
   
@@ -59,10 +59,10 @@ end
 
 """ Theory of a *distributive monoidal category with diagonals*
 
-FIXME: Should also inherit `MonoidalCategoryWithDiagonals`.
+FIXME: Should also inherit `ThMonoidalCategoryWithDiagonals`.
 """
-@theory DistributiveMonoidalCategoryWithDiagonals{Ob,Hom} <:
-    DistributiveMonoidalCategory{Ob,Hom} begin
+@theory ThDistributiveMonoidalCategoryWithDiagonals{Ob,Hom} <:
+    ThDistributiveMonoidalCategory{Ob,Hom} begin
   mcopy(A::Ob)::(A → (A ⊗ A))
   @op (Δ) := mcopy
   delete(A::Ob)::(A → munit())
@@ -76,9 +76,9 @@ distributive semiadditive category is a semiadditive category (or biproduct)
 category, written additively, with a tensor product that distributes over the
 biproduct.
 
-FIXME: Should also inherit `SemiadditiveCategory`
+FIXME: Should also inherit `ThSemiadditiveCategory`
 """
-@theory DistributiveSemiadditiveCategory{Ob,Hom} <: DistributiveMonoidalCategory{Ob,Hom} begin
+@theory ThDistributiveSemiadditiveCategory{Ob,Hom} <: ThDistributiveMonoidalCategory{Ob,Hom} begin
   mcopy(A::Ob)::(A → (A ⊕ A))
   @op (Δ) := mcopy
   delete(A::Ob)::(A → mzero())
@@ -96,11 +96,11 @@ end
 """ Theory of a *distributive category*
 
 A distributive category is a distributive monoidal category whose tensor product
-is the cartesian product, see [`DistributiveMonoidalCategory`](@ref).
+is the cartesian product, see [`ThDistributiveMonoidalCategory`](@ref).
 
-FIXME: Should also inherit `CartesianCategory`.
+FIXME: Should also inherit `ThCartesianCategory`.
 """
-@theory DistributiveCategory{Ob,Hom} <: DistributiveMonoidalCategoryWithDiagonals{Ob,Hom} begin
+@theory ThDistributiveCategory{Ob,Hom} <: ThDistributiveMonoidalCategoryWithDiagonals{Ob,Hom} begin
   pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
