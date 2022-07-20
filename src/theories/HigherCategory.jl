@@ -53,19 +53,11 @@ This syntax checks domains of morphisms but not 2-morphisms.
   composeH(f::Hom, β::Hom2) = composeH(id(f), β)
 end
 
-function show_unicode(io::IO, expr::Hom2Expr{:compose}; kw...)
-  Syntax.show_unicode_infix(io, expr, "⋅"; kw...)
-end
-function show_unicode(io::IO, expr::Hom2Expr{:composeH}; kw...)
+show_unicode(io::IO, expr::Hom2Expr{:composeH}; kw...) =
   Syntax.show_unicode_infix(io, expr, "*"; kw...)
-end
 
-function show_latex(io::IO, expr::Hom2Expr{:compose}; kw...)
-  Syntax.show_latex_infix(io, expr, "\\cdot"; kw...)
-end
-function show_latex(io::IO, expr::Hom2Expr{:composeH}; kw...)
+show_latex(io::IO, expr::Hom2Expr{:composeH}; kw...) =
   Syntax.show_latex_infix(io, expr, "*"; kw...)
-end
 
 # Double category
 #################

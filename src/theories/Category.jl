@@ -50,16 +50,13 @@ compose(f, g, h, fs...) = compose([f, g, h, fs...])
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 end
 
-function show_unicode(io::IO, expr::HomExpr{:compose}; kw...)
+show_unicode(io::IO, expr::CategoryExpr{:compose}; kw...) =
   Syntax.show_unicode_infix(io, expr, "⋅"; kw...)
-end
 
-function show_latex(io::IO, expr::HomExpr{:id}; kw...)
+show_latex(io::IO, expr::CategoryExpr{:id}; kw...) =
   Syntax.show_latex_script(io, expr, "\\mathrm{id}")
-end
-function show_latex(io::IO, expr::HomExpr{:compose}; paren::Bool=false, kw...)
+show_latex(io::IO, expr::CategoryExpr{:compose}; paren::Bool=false, kw...) =
   Syntax.show_latex_infix(io, expr, "\\cdot"; paren=paren)
-end
 
 function show(io::IO, ::MIME"text/plain", expr::HomExpr)
   show_unicode(io, expr)
