@@ -106,7 +106,7 @@ end
 # Schemas
 #########
 
-function to_graphviz_property_graph(pres::Presentation{Schema}; kw...)
+function to_graphviz_property_graph(pres::Presentation{ThSchema}; kw...)
   pg = to_graphviz_property_graph(pres, :Ob, :Hom; kw...)
   ob_vertices = vertices(pg)
   hom_edges = edges(pg)
