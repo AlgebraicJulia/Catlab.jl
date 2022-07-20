@@ -20,7 +20,7 @@ export Cat, TypeCat, Functor, Transformation, dom, codom, compose, id,
 using StructEquality
 
 using ...GAT
-import ...Theories: Category2, ob, hom, dom, codom, compose, ⋅, ∘, id,
+import ...Theories: ThCategory2, ob, hom, dom, codom, compose, ⋅, ∘, id,
   composeH, *
 
 # Categories
@@ -270,7 +270,7 @@ const IdIdTransformation{C<:Cat} = IdentityTransformation{C,C,IdentityFunctor{C}
 # 2-category of categories
 ##########################
 
-@instance Category2{Cat,Functor,Transformation} begin
+@instance ThCategory2{Cat,Functor,Transformation} begin
   dom(F::Functor) = F.dom
   codom(F::Functor) = F.codom
   id(C::Cat) = IdentityFunctor(C)

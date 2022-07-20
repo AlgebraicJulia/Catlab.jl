@@ -94,7 +94,7 @@ A = Ports([:A])
 @test compose(mcopy(A), otimes(id(A),delete(A))) == id(A)
 
 # Cartesian categories
-A = Ports{CartesianCategory}([:A])
+A = Ports{ThCartesianCategory}([:A])
 @test mcopy(A) == mcopy(Ports([:A]))
 @test delete(A) == delete(Ports([:A]))
 @test_throws MethodError mmerge(A)
@@ -121,7 +121,7 @@ A = Ports([:A])
 @test compose(otimes(id(A),create(A)), mmerge(A)) == id(A)
 
 # Cocartesian categories
-A = Ports{CocartesianCategory}([:A])
+A = Ports{ThCocartesianCategory}([:A])
 @test mmerge(A) == mmerge(Ports([:A]))
 @test create(A) == create(Ports([:A]))
 @test_throws MethodError mcopy(A)
@@ -132,22 +132,22 @@ A = Ports{CocartesianCategory}([:A])
 
 # Monoidal categories with bidiagonals, and non-naturality of explicit
 # representation.
-A = Ports{MonoidalCategoryWithBidiagonals}([:A])
+A = Ports{ThMonoidalCategoryWithBidiagonals}([:A])
 @test boxes(mcopy(A)) == [ Junction(:A,1,2) ]
 @test boxes(mcopy(otimes(A,A))) == repeat([ Junction(:A,1,2) ], 2)
 @test compose(create(A), mcopy(A)) != create(otimes(A,A))
 @test compose(mmerge(A), delete(A)) != delete(otimes(A,A))
 
 # Biproduct categories, and naturality of implicit representation.
-A = Ports{BiproductCategory}([:A])
+A = Ports{ThBiproductCategory}([:A])
 @test compose(create(A), mcopy(A)) == create(otimes(A,A))
 @test compose(mmerge(A), delete(A)) == delete(otimes(A,A))
 
 # Dagger category
 #----------------
 
-f = singleton_diagram(DaggerSymmetricMonoidalCategory, Box(:f,[:A],[:B]))
-g = singleton_diagram(DaggerSymmetricMonoidalCategory, Box(:g,[:B],[:A]))
+f = singleton_diagram(ThDaggerSymmetricMonoidalCategory, Box(:f,[:A],[:B]))
+g = singleton_diagram(ThDaggerSymmetricMonoidalCategory, Box(:g,[:B],[:A]))
 
 @test boxes(dagger(f)) == [ BoxOp{:dagger}(Box(:f,[:A],[:B])) ]
 
@@ -169,7 +169,7 @@ g = singleton_diagram(DaggerSymmetricMonoidalCategory, Box(:g,[:B],[:A]))
 
 ### Duals
 
-A, B = [ Ports{CompactClosedCategory}([sym]) for sym in [:A, :B] ]
+A, B = [ Ports{ThCompactClosedCategory}([sym]) for sym in [:A, :B] ]
 I = munit(typeof(A))
 
 @test boxes(dunit(A)) == [ Junction(:A, [], [PortOp{:dual}(:A), :A]) ]
@@ -189,8 +189,8 @@ I = munit(typeof(A))
 
 ### Adjoint mates
 
-f = singleton_diagram(CompactClosedCategory, Box(:f,[:A],[:B]))
-g = singleton_diagram(CompactClosedCategory, Box(:g,[:B],[:A]))
+f = singleton_diagram(ThCompactClosedCategory, Box(:f,[:A],[:B]))
+g = singleton_diagram(ThCompactClosedCategory, Box(:g,[:B],[:A]))
 
 @test boxes(mate(f)) == [ BoxOp{:mate}(Box(:f,[:A],[:B])) ]
 
@@ -210,7 +210,7 @@ g = singleton_diagram(CompactClosedCategory, Box(:g,[:B],[:A]))
 # Traced monoidal category
 #-------------------------
 
-const TracedMon = TracedMonoidalCategory
+const TracedMon = ThTracedMonoidalCategory
 A, B, X, Y = [ Ports{TracedMon}([sym]) for sym in [:A,:B,:X,:Y] ]
 I = munit(typeof(A))
 f = singleton_diagram(TracedMon, Box(:f, [:X,:A], [:X,:B]))
@@ -245,9 +245,9 @@ f = singleton_diagram(TracedMon, Box(:f, [:A], [:B]))
 # Bicategory of relations
 #------------------------
 
-A, B = [ Ports{BicategoryRelations}([sym]) for sym in [:A, :B] ]
-R = singleton_diagram(BicategoryRelations, Box(:R,[:A],[:B]))
-S = singleton_diagram(BicategoryRelations, Box(:S,[:A],[:B]))
+A, B = [ Ports{ThBicategoryRelations}([sym]) for sym in [:A, :B] ]
+R = singleton_diagram(ThBicategoryRelations, Box(:R,[:A],[:B]))
+S = singleton_diagram(ThBicategoryRelations, Box(:S,[:A],[:B]))
 
 # Domains and codomains
 @test dom(meet(R,S)) == A
@@ -262,9 +262,9 @@ S = singleton_diagram(BicategoryRelations, Box(:S,[:A],[:B]))
 # Abelian bicategory of relations
 #--------------------------------
 
-A, B = [ Ports{AbelianBicategoryRelations}([sym]) for sym in [:A, :B] ]
-R = singleton_diagram(AbelianBicategoryRelations, Box(:R,[:A],[:B]))
-S = singleton_diagram(AbelianBicategoryRelations, Box(:S,[:A],[:B]))
+A, B = [ Ports{ThAbelianBicategoryRelations}([sym]) for sym in [:A, :B] ]
+R = singleton_diagram(ThAbelianBicategoryRelations, Box(:R,[:A],[:B]))
+S = singleton_diagram(ThAbelianBicategoryRelations, Box(:S,[:A],[:B]))
 
 # Domains and codomains.
 @test dom(plus(A)) == dom(mmerge(A)) && codom(plus(A)) == codom(mmerge(A))

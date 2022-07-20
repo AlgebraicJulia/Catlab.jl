@@ -7,6 +7,7 @@ C-Set) are defined elsewhere.
 """
 module Subobjects
 export Subobject, ob, hom, SubOpAlgorithm, SubOpWithLimits,
+  ThSubobjectLattice, ThSubobjectHeytingAlgebra, ThSubobjectBiHeytingAlgebra,
   meet, ∧, join, ∨, top, ⊤, bottom, ⊥,
   implies, ⟹, subtract, \, negate, ¬, non, ~
 
@@ -23,12 +24,12 @@ import ...Theories: ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 """ Theory of lattice of subobjects in a coherent category, such as a pretopos.
 
 The axioms are omitted since this theory is the same as the theory
-[`Catlab.Theories.AlgebraicLattice`](@ref) except that the lattice elements are
-dependent on another type. TODO: It should be possible to define a projection
-morphism of GATs from `SubobjectLattice` to `AlgebraicLattice` that sends `Ob`
-to the unit type.
+[`Catlab.Theories.ThAlgebraicLattice`](@ref) except that the lattice elements
+are dependent on another type. In fact, if we supported GAT morphisms, it should
+be possible to define a projection morphism of GATs from `ThSubobjectLattice` to
+`ThAlgebraicLattice` that sends `Ob` to the unit type.
 """
-@signature SubobjectLattice{Ob,Sub} begin
+@signature ThSubobjectLattice{Ob,Sub} begin
   Ob::TYPE
   Sub(ob::X)::TYPE
 
@@ -48,7 +49,7 @@ end
 """ Theory of Heyting algebra of subobjects in a Heyting category, such as a
 topos.
 """
-@signature SubobjectHeytingAlgebra{Ob,Sub} <: SubobjectLattice{Ob,Sub} begin
+@signature ThSubobjectHeytingAlgebra{Ob,Sub} <: ThSubobjectLattice{Ob,Sub} begin
   @op begin
     (⟹) := implies
     (¬) := negate
@@ -61,7 +62,7 @@ end
 """ Theory of bi-Heyting algebra of subobjects in a bi-Heyting topos, such as a
 presheaf topos.
 """
-@signature SubobjectBiHeytingAlgebra{Ob,Sub} <: SubobjectHeytingAlgebra{Ob,Sub} begin
+@signature ThSubobjectBiHeytingAlgebra{Ob,Sub} <: ThSubobjectHeytingAlgebra{Ob,Sub} begin
   @op begin
     (\) := subtract
     (~) := non

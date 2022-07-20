@@ -1,7 +1,7 @@
-export CategoryWithProducts, ob, terminal, delete, product, proj1, proj2, pair,
-  CategoryWithCoproducts, initial, create, coproduct, coproj1, coproj2, copair,
-  CompleteCategory, equalizer, incl, factorize,
-  CocompleteCategory, coequalizer, proj
+export ThCategoryWithProducts, ob, terminal, delete, product, proj1, proj2, pair,
+  ThCategoryWithCoproducts, initial, create, coproduct, coproj1, coproj2, copair,
+  ThCompleteCategory, equalizer, incl, factorize,
+  ThCocompleteCategory, coequalizer, proj
 
 # Limits
 ########
@@ -15,9 +15,10 @@ Section I.3). Strictly speaking, this theory is not of a "category with finite
 products" (a category in which finite products exist) but of a "category with
 *chosen* finite products".
 
-For a monoidal category axiomatization, see [`CartesianCategory`](@ref).
+For a monoidal category axiomatization of finite products, see
+[`ThCartesianCategory`](@ref).
 """
-@theory CategoryWithProducts{Ob,Hom,Terminal,Product} <: Category{Ob,Hom} begin
+@theory ThCategoryWithProducts{Ob,Hom,Terminal,Product} <: ThCategory{Ob,Hom} begin
   Terminal()::TYPE
   Product(foot1::Ob, foot2::Ob)::TYPE
   
@@ -50,12 +51,13 @@ end
 
 Finite limits are presented in biased style, via finite products and equalizers.
 The equational axioms for equalizers are obscure, but can found in (Lambek &
-Scott, 1986, Section 0.5), which follow "Burroni's pioneering ideas". Strictly
-speaking, this theory is not of a "finitely complete category" (a category in
-which finite limits exist) but of a "category with *chosen* finite limits".
+Scott, 1986, Section 0.5), who in turn attribute them to "Burroni's pioneering
+ideas". Strictly speaking, this theory is not of a "finitely complete category"
+(a category in which finite limits exist) but of a "category with *chosen*
+finite limits".
 """
-@theory CompleteCategory{Ob,Hom,Terminal,Product,Equalizer} <:
-    CategoryWithProducts{Ob,Hom,Terminal,Product} begin
+@theory ThCompleteCategory{Ob,Hom,Terminal,Product,Equalizer} <:
+    ThCategoryWithProducts{Ob,Hom,Terminal,Product} begin
   Equalizer(f::(A → B), g::(A → B))::TYPE ⊣ (A::Ob, B::Ob)
   
   # Equalizers.
@@ -87,11 +89,12 @@ end
 
 Finite coproducts are presented in biased style, via the nullary case (initial
 objects) and the binary case (binary coproducts). The axioms are dual to those
-of [`CategoryWithProducts`](@ref).
+of [`ThCategoryWithProducts`](@ref).
 
-For a monoidal category axiomatization, see [`CocartesianCategory`](@ref).
+For a monoidal category axiomatization of finite coproducts, see
+[`ThCocartesianCategory`](@ref).
 """
-@theory CategoryWithCoproducts{Ob,Hom,Initial,Coproduct} <: Category{Ob,Hom} begin
+@theory ThCategoryWithCoproducts{Ob,Hom,Initial,Coproduct} <: ThCategory{Ob,Hom} begin
   Initial()::TYPE
   Coproduct(foot1::Ob, foot2::Ob)::TYPE
 
@@ -123,10 +126,10 @@ end
 """ Theory of a *(finitely) cocomplete category*
 
 Finite colimits are presented in biased style, via finite coproducts and
-coequalizers. The axioms are dual to those of [`CompleteCategory`](@ref).
+coequalizers. The axioms are dual to those of [`ThCompleteCategory`](@ref).
 """
-@theory CocompleteCategory{Ob,Hom,Initial,Coproduct,Coequalizer} <:
-    CategoryWithCoproducts{Ob,Hom,Initial,Coproduct} begin
+@theory ThCocompleteCategory{Ob,Hom,Initial,Coproduct,Coequalizer} <:
+    ThCategoryWithCoproducts{Ob,Hom,Initial,Coproduct} begin
   Coequalizer(f::(A → B), g::(A → B))::TYPE ⊣ (A::Ob, B::Ob)
   
   # Coequalizers.

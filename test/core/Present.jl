@@ -14,7 +14,7 @@ g = Hom(:g, B, C)
 
 # Generators
 pres = Presentation(FreeCategory)
-@test presentation_theory(pres) == Category
+@test presentation_theory(pres) == ThCategory
 @test !has_generator(pres, :A)
 add_generator!(pres, A)
 @test generators(pres) == [A]
@@ -61,7 +61,7 @@ add_generators!(pres, (f,g))
 end
 
 # Check type parameter.
-@test presentation_theory(Company) == Category
+@test presentation_theory(Company) == ThCategory
 
 # Check generators.
 Employee, Department, Str = Ob(FreeCategory, :Employee, :Department, :Str)

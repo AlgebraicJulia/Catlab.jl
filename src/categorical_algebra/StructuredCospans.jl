@@ -13,7 +13,7 @@ using StaticArrays: StaticVector, SVector
 using ...GAT, ..FreeDiagrams, ..Limits, ..FinSets, ..CSets
 import ..FreeDiagrams: apex, legs, feet, left, right, bundle_legs
 import ..CSets: force
-using ...Theories: Category, SchemaDesc, SchemaDescType, CSetSchemaDescType, SchemaDescTypeType,
+using ...Theories: ThCategory, SchemaDesc, SchemaDescType, CSetSchemaDescType, SchemaDescTypeType,
   attrtype, attr, adom, adom_nums, acodom
 import ...Theories: dom, codom, compose, ⋅, id, otimes, ⊗, munit, braid, σ,
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dunit, dcounit, dagger
@@ -108,7 +108,7 @@ function StructuredCospan{L}(cospan::Cospan, lfoot::StructuredCospanOb{L},
 end
 
 # FIXME: Instances don't support type parameters.
-# @instance HypergraphCategory{StructuredCospanOb{L}, StructuredCospan{L}} where L begin
+# @instance ThHypergraphCategory{StructuredCospanOb{L}, StructuredCospan{L}} where L begin
 begin
   dom(cospan::StructuredCospan{L}) where L =
     StructuredCospanOb{L}(first(feet(cospan)))

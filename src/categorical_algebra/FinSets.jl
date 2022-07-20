@@ -22,7 +22,7 @@ import ..FinCats: force, ob_generators, hom_generators, ob_generator,
   ob_generator_name, graph, is_discrete
 using ..FinCats: dicttype
 import ..Limits: limit, colimit, universal
-import ..Subobjects: Subobject, SubobjectLattice
+import ..Subobjects: Subobject
 using ..Sets: IdentityFunction, SetFunctionCallable
 
 # Finite sets
@@ -1265,7 +1265,7 @@ function predicate(A::SubFinSet)
   pred
 end
 
-@instance SubobjectLattice{FinSet,SubFinSet} begin
+@instance ThSubobjectLattice{FinSet,SubFinSet} begin
   @import ob
   meet(A::SubFinSet, B::SubFinSet) = meet(A, B, SubOpBoolean())
   join(A::SubFinSet, B::SubFinSet) = join(A, B, SubOpBoolean())

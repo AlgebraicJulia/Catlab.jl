@@ -6,9 +6,8 @@ arithmetic operations or elementary or special functions. The idea here is to
 represent expressions as morphisms in a monoidal category.
 """
 module AlgebraicNets
-export AlgebraicNetTheory, AlgebraicNet, Ob, Hom, dom, codom,
-  id, compose, ⋅, ∘, otimes, ⊗, munit, braid, mcopy, delete, mmerge, create,
-  linear, constant,
+export ThAlgebraicNet, AlgebraicNet, Ob, Hom, dom, codom, id, compose, ⋅, ∘,
+  otimes, ⊗, munit, braid, mcopy, delete, mmerge, create, linear, constant,
   compile, compile_expr, compile_expr_vector, compile_block, evaluate
 
 using GeneralizedGenerated: mk_function
@@ -18,7 +17,7 @@ import StaticArrays
 using Catlab
 using Catlab.Meta: concat_expr
 import Catlab.Syntax: show_latex, show_unicode
-using Catlab.Theories: MonoidalCategoryWithBidiagonals, ObExpr, HomExpr
+using Catlab.Theories: ThMonoidalCategoryWithBidiagonals, ObExpr, HomExpr
 import Catlab.Theories: Ob, Hom, dom, codom,
   id, compose, ⋅, ∘, otimes, ⊗, munit, braid, mcopy, delete, mmerge, create
 using Catlab.Programs
@@ -33,12 +32,12 @@ import Catlab.Programs.GenerateJuliaPrograms: genvar, genvars, to_function_expr,
 
 TODO: Explain
 """
-@signature AlgebraicNetTheory{Ob,Hom} <: MonoidalCategoryWithBidiagonals{Ob,Hom} begin
+@signature ThAlgebraicNet{Ob,Hom} <: ThMonoidalCategoryWithBidiagonals{Ob,Hom} begin
   linear(x::Any, A::Ob, B::Ob)::(A → B)
   constant(x::Any, A::Ob)::(munit() → A)
 end
 
-@syntax AlgebraicNet{ObExpr,HomExpr} AlgebraicNetTheory begin
+@syntax AlgebraicNet{ObExpr,HomExpr} ThAlgebraicNet begin
   # FIXME: `compose` and `otimes` should delegate to wiring layer when possible.
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)

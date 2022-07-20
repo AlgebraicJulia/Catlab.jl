@@ -1,5 +1,5 @@
 module MarkovCategories
-export MarkovCategory, FreeMarkovCategory,
+export ThMarkovCategory, FreeMarkovCategory,
   Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, braid, mcopy, Δ, delete, ◊,
   expectation, 𝔼
 
@@ -11,14 +11,14 @@ import Catlab.Theories: Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, bra
 # Theories
 ###########
 
-""" Theory of *Markov categories*
+""" Theory of *Markov categories with expectation*
 """
-@signature MarkovCategory{Ob,Hom} <: MonoidalCategoryWithDiagonals{Ob,Hom} begin
+@signature ThMarkovCategory{Ob,Hom} <: ThMonoidalCategoryWithDiagonals{Ob,Hom} begin
   expectation(M::(A → B))::(A → B) <= (A::Ob, B::Ob)
   @op (𝔼) := expectation
 end
 
-@syntax FreeMarkovCategory{ObExpr,HomExpr} MarkovCategory begin
+@syntax FreeMarkovCategory{ObExpr,HomExpr} ThMarkovCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
@@ -33,13 +33,13 @@ end
 # Wiring diagrams
 #################
 
-mcopy(A::Ports{MarkovCategory}, n::Int) = implicit_mcopy(A, n)
+mcopy(A::Ports{ThMarkovCategory}, n::Int) = implicit_mcopy(A, n)
 
-function expectation(M::WiringDiagram{MarkovCategory})
+function expectation(M::WiringDiagram{ThMarkovCategory})
   if nboxes(M) <= 1
     functor(M, identity, expectation_box)
   else
-    singleton_diagram(MarkovCategory, expectation_box(M))
+    singleton_diagram(ThMarkovCategory, expectation_box(M))
   end
 end
 

@@ -1,18 +1,18 @@
-export MonoidalCategory, otimes, munit, ⊗, collect, ndims,
-  SymmetricMonoidalCategory, FreeSymmetricMonoidalCategory, braid, σ,
-  SymmetricMonoidalCopresheaf, elunit,
-  MonoidalCategoryWithDiagonals, CartesianCategory, FreeCartesianCategory,
+export ThMonoidalCategory, otimes, munit, ⊗, collect, ndims,
+  ThSymmetricMonoidalCategory, FreeSymmetricMonoidalCategory, braid, σ,
+  ThSymmetricMonoidalCopresheaf, elunit,
+  ThMonoidalCategoryWithDiagonals, ThCartesianCategory, FreeCartesianCategory,
   mcopy, delete, pair, proj1, proj2, Δ, ◊,
   mmerge, create, copair, coproj1, coproj2, ∇, □,
-  MonoidalCategoryWithBidiagonals, BiproductCategory, FreeBiproductCategory,
-  ClosedMonoidalCategory, FreeClosedMonoidalCategory, hom, ev, curry,
-  CartesianClosedCategory, FreeCartesianClosedCategory,
-  CompactClosedCategory, FreeCompactClosedCategory, dual, dunit, dcounit, mate,
-  DaggerCategory, FreeDaggerCategory, dagger,
-  DaggerSymmetricMonoidalCategory, FreeDaggerSymmetricMonoidalCategory,
-  DaggerCompactCategory, FreeDaggerCompactCategory,
-  TracedMonoidalCategory, FreeTracedMonoidalCategory, trace,
-  HypergraphCategory, FreeHypergraphCategory
+  ThMonoidalCategoryWithBidiagonals, ThBiproductCategory, FreeBiproductCategory,
+  ThClosedMonoidalCategory, FreeClosedMonoidalCategory, hom, ev, curry,
+  ThCartesianClosedCategory, FreeCartesianClosedCategory,
+  ThCompactClosedCategory, FreeCompactClosedCategory, dual, dunit, dcounit, mate,
+  ThDaggerCategory, FreeDaggerCategory, dagger,
+  ThDaggerSymmetricMonoidalCategory, FreeDaggerSymmetricMonoidalCategory,
+  ThDaggerCompactCategory, FreeDaggerCompactCategory,
+  ThTracedMonoidalCategory, FreeTracedMonoidalCategory, trace,
+  ThHypergraphCategory, FreeHypergraphCategory
 
 import Base: collect, ndims
 
@@ -21,11 +21,11 @@ import Base: collect, ndims
 
 """ Theory of *monoidal categories*
 
-To avoid associators and unitors, we assume the monoidal category is *strict*.
-By the coherence theorem there is no loss of generality, but we may add a
-theory for weak monoidal categories later.
+To avoid associators and unitors, we assume that the monoidal category is
+*strict*. By the coherence theorem this involves no loss of generality, but we
+might add a theory for weak monoidal categories later.
 """
-@theory MonoidalCategory{Ob,Hom} <: Category{Ob,Hom} begin
+@theory ThMonoidalCategory{Ob,Hom} <: ThCategory{Ob,Hom} begin
   @op (⊗) := otimes
 
   # Monoid operations.
@@ -85,7 +85,7 @@ show_latex(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
 
 """ Theory of (strict) *symmetric monoidal categories*
 """
-@theory SymmetricMonoidalCategory{Ob,Hom} <: MonoidalCategory{Ob,Hom} begin
+@theory ThSymmetricMonoidalCategory{Ob,Hom} <: ThMonoidalCategory{Ob,Hom} begin
   braid(A::Ob, B::Ob)::((A ⊗ B) → (B ⊗ A))
   @op (σ) := braid
 
@@ -107,7 +107,7 @@ show_latex(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
                                           f::(A → B), g::(C → D))
 end
 
-@syntax FreeSymmetricMonoidalCategory{ObExpr,HomExpr} SymmetricMonoidalCategory begin
+@syntax FreeSymmetricMonoidalCategory{ObExpr,HomExpr} ThSymmetricMonoidalCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
@@ -126,10 +126,10 @@ is simpler than that of a general lax monoidal functor because (1) the domain is
 a strict monoidal category and (2) the codomain is fixed to the cartesian
 monoidal category **Set**.
 
-FIXME: This theory should also extend `Copresheaf` but multiple inheritance is
+FIXME: This theory should also extend `ThCopresheaf` but multiple inheritance is
 not yet supported.
 """
-@theory SymmetricMonoidalCopresheaf{Ob,Hom,El} <: SymmetricMonoidalCategory{Ob,Hom} begin
+@theory ThSymmetricMonoidalCopresheaf{Ob,Hom,El} <: ThSymmetricMonoidalCategory{Ob,Hom} begin
   El(ob::Ob)::TYPE
 
   # Functor.
@@ -175,7 +175,7 @@ References:
   Section 6.6: "Cartesian center"
 - Selinger, 1999, "Categorical structure of asynchrony"
 """
-@theory MonoidalCategoryWithDiagonals{Ob,Hom} <: SymmetricMonoidalCategory{Ob,Hom} begin
+@theory ThMonoidalCategoryWithDiagonals{Ob,Hom} <: ThSymmetricMonoidalCategory{Ob,Hom} begin
   mcopy(A::Ob)::(A → (A ⊗ A))
   @op (Δ) := mcopy
   delete(A::Ob)::(A → munit())
@@ -197,9 +197,9 @@ end
 """ Theory of *cartesian (monoidal) categories*
 
 For the traditional axiomatization of products, see
-[`CategoryWithProducts`](@ref).
+[`ThCategoryWithProducts`](@ref).
 """
-@theory CartesianCategory{Ob,Hom} <: MonoidalCategoryWithDiagonals{Ob,Hom} begin
+@theory ThCartesianCategory{Ob,Hom} <: ThMonoidalCategoryWithDiagonals{Ob,Hom} begin
   pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
@@ -220,7 +220,7 @@ In this syntax, the pairing and projection operations are defined using
 duplication and deletion, and do not have their own syntactic elements.
 This convention could be dropped or reversed.
 """
-@syntax FreeCartesianCategory{ObExpr,HomExpr} CartesianCategory begin
+@syntax FreeCartesianCategory{ObExpr,HomExpr} ThCartesianCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
@@ -246,8 +246,8 @@ The terminology is nonstandard (is there any standard terminology?) but is
 supposed to mean a monoidal category with coherent diagonals and codiagonals.
 Unlike in a biproduct category, the naturality axioms need not be satisfied.
 """
-@signature MonoidalCategoryWithBidiagonals{Ob,Hom} <:
-    MonoidalCategoryWithDiagonals{Ob,Hom} begin
+@signature ThMonoidalCategoryWithBidiagonals{Ob,Hom} <:
+    ThMonoidalCategoryWithDiagonals{Ob,Hom} begin
   mmerge(A::Ob)::((A ⊗ A) → A)
   @op (∇) := mmerge
   create(A::Ob)::(munit() → A)
@@ -256,10 +256,10 @@ end
 
 """ Theory of *biproduct categories*
 
-Mathematically the same as [`SemiadditiveCategory`](@ref) but written
+Mathematically the same as [`ThSemiadditiveCategory`](@ref) but written
 multiplicatively, instead of additively.
 """
-@theory BiproductCategory{Ob,Hom} <: MonoidalCategoryWithBidiagonals{Ob,Hom} begin
+@theory ThBiproductCategory{Ob,Hom} <: ThMonoidalCategoryWithBidiagonals{Ob,Hom} begin
   pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
   copair(f::(A → C), g::(B → C))::((A ⊗ B) → C) ⊣ (A::Ob, B::Ob, C::Ob)
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
@@ -280,7 +280,7 @@ multiplicatively, instead of additively.
   □(A)⋅◊(A) == id(munit()) ⊣ (A::Ob)
 end
 
-@syntax FreeBiproductCategory{ObExpr,HomExpr} BiproductCategory begin
+@syntax FreeBiproductCategory{ObExpr,HomExpr} ThBiproductCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
@@ -305,7 +305,7 @@ end
 
 """ Theory of (symmetric) *closed monoidal categories*
 """
-@signature ClosedMonoidalCategory{Ob,Hom} <: SymmetricMonoidalCategory{Ob,Hom} begin
+@signature ThClosedMonoidalCategory{Ob,Hom} <: ThSymmetricMonoidalCategory{Ob,Hom} begin
   # Internal hom of A and B, an object representing Hom(A,B)
   hom(A::Ob, B::Ob)::Ob
 
@@ -318,7 +318,7 @@ end
 
 """ Syntax for a free closed monoidal category.
 """
-@syntax FreeClosedMonoidalCategory{ObExpr,HomExpr} ClosedMonoidalCategory begin
+@syntax FreeClosedMonoidalCategory{ObExpr,HomExpr} ThClosedMonoidalCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
@@ -346,10 +346,10 @@ end
 
 A CCC is a cartesian category with internal homs (aka, exponential objects).
 
-FIXME: This theory should also extend `ClosedMonoidalCategory`, but multiple
+FIXME: This theory should also extend `ThClosedMonoidalCategory`, but multiple
 inheritance is not yet supported.
 """
-@signature CartesianClosedCategory{Ob,Hom} <: CartesianCategory{Ob,Hom} begin
+@signature ThCartesianClosedCategory{Ob,Hom} <: ThCartesianCategory{Ob,Hom} begin
   hom(A::Ob, B::Ob)::Ob
   ev(A::Ob, B::Ob)::((hom(A,B) ⊗ A) → B)
   curry(A::Ob, B::Ob, f::((A ⊗ B) → C))::(A → hom(B,C)) ⊣ (C::Ob)
@@ -359,7 +359,7 @@ end
 
 See also `FreeCartesianCategory`.
 """
-@syntax FreeCartesianClosedCategory{ObExpr,HomExpr} CartesianClosedCategory begin
+@syntax FreeCartesianClosedCategory{ObExpr,HomExpr} ThCartesianClosedCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
@@ -374,7 +374,7 @@ end
 
 """ Theory of *compact closed categories*
 """
-@theory CompactClosedCategory{Ob,Hom} <: ClosedMonoidalCategory{Ob,Hom} begin
+@theory ThCompactClosedCategory{Ob,Hom} <: ThClosedMonoidalCategory{Ob,Hom} begin
   # Dual A^* of object A
   dual(A::Ob)::Ob
 
@@ -394,7 +394,7 @@ end
    ⊣ (A::Ob, B::Ob, C::Ob, f::((A ⊗ B) → C)))
 end
 
-@syntax FreeCompactClosedCategory{ObExpr,HomExpr} CompactClosedCategory begin
+@syntax FreeCompactClosedCategory{ObExpr,HomExpr} ThCompactClosedCategory begin
   dual(A::Ob) = distribute_unary(involute(new(A)), dual, otimes,
                                  unit=munit, contravariant=true)
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
@@ -433,11 +433,11 @@ end
 
 """ Theory of *dagger categories*
 """
-@signature DaggerCategory{Ob,Hom} <: Category{Ob,Hom} begin
+@signature ThDaggerCategory{Ob,Hom} <: ThCategory{Ob,Hom} begin
   dagger(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
 end
 
-@syntax FreeDaggerCategory{ObExpr,HomExpr} DaggerCategory begin
+@syntax FreeDaggerCategory{ObExpr,HomExpr} ThDaggerCategory begin
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
   dagger(f::Hom) = distribute_dagger(involute(new(f)))
 end
@@ -453,14 +453,14 @@ end
 Also known as a [symmetric monoidal dagger
 category](https://ncatlab.org/nlab/show/symmetric+monoidal+dagger-category).
 
-FIXME: This theory should also extend `DaggerCategory`, but multiple inheritance
-is not yet supported.
+FIXME: This theory should also extend `ThDaggerCategory`, but multiple
+inheritance is not yet supported.
 """
-@signature DaggerSymmetricMonoidalCategory{Ob,Hom} <: SymmetricMonoidalCategory{Ob,Hom} begin
+@signature ThDaggerSymmetricMonoidalCategory{Ob,Hom} <: ThSymmetricMonoidalCategory{Ob,Hom} begin
   dagger(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
 end
 
-@syntax FreeDaggerSymmetricMonoidalCategory{ObExpr,HomExpr} DaggerSymmetricMonoidalCategory begin
+@syntax FreeDaggerSymmetricMonoidalCategory{ObExpr,HomExpr} ThDaggerSymmetricMonoidalCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
@@ -479,14 +479,14 @@ in the official `LinearAlegbra` module. For the general relationship between
 mates and daggers, see Selinger's survey of graphical languages for monoidal
 categories.
 
-FIXME: This theory should also extend `DaggerCategory`, but multiple inheritance
-is not yet supported.
+FIXME: This theory should also extend `ThDaggerCategory`, but multiple
+inheritance is not yet supported.
 """
-@signature DaggerCompactCategory{Ob,Hom} <: CompactClosedCategory{Ob,Hom} begin
+@signature ThDaggerCompactCategory{Ob,Hom} <: ThCompactClosedCategory{Ob,Hom} begin
   dagger(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
 end
 
-@syntax FreeDaggerCompactCategory{ObExpr,HomExpr} DaggerCompactCategory begin
+@syntax FreeDaggerCompactCategory{ObExpr,HomExpr} ThDaggerCompactCategory begin
   dual(A::Ob) = distribute_unary(involute(new(A)), dual, otimes,
                                  unit=munit, contravariant=true)
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
@@ -506,11 +506,11 @@ end
 
 """ Theory of *traced monoidal categories*
 """
-@signature TracedMonoidalCategory{Ob,Hom} <: SymmetricMonoidalCategory{Ob,Hom} begin
+@signature ThTracedMonoidalCategory{Ob,Hom} <: ThSymmetricMonoidalCategory{Ob,Hom} begin
   trace(X::Ob, A::Ob, B::Ob, f::((X ⊗ A) → (X ⊗ B)))::(A → B)
 end
 
-@syntax FreeTracedMonoidalCategory{ObExpr,HomExpr} TracedMonoidalCategory begin
+@syntax FreeTracedMonoidalCategory{ObExpr,HomExpr} ThTracedMonoidalCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
@@ -531,10 +531,10 @@ end
 Hypergraph categories are also known as "well-supported compact closed
 categories" and "spidered/dungeon categories", among other things.
 
-FIXME: Should also inherit `ClosedMonoidalCategory` and `DaggerCategory`, but
-multiple inheritance is not yet supported.
+FIXME: Should also inherit `ThClosedMonoidalCategory` and `ThDaggerCategory`,
+but multiple inheritance is not yet supported.
 """
-@theory HypergraphCategory{Ob,Hom} <: MonoidalCategoryWithBidiagonals{Ob,Hom} begin
+@theory ThHypergraphCategory{Ob,Hom} <: ThMonoidalCategoryWithBidiagonals{Ob,Hom} begin
   # Self-dual compact closed category.
   dunit(A::Ob)::(munit() → (A ⊗ A))
   dcounit(A::Ob)::((A ⊗ A) → munit())
@@ -546,7 +546,7 @@ multiple inheritance is not yet supported.
    ⊣ (A::Ob, B::Ob, f::(A → B)))
 end
 
-@syntax FreeHypergraphCategory{ObExpr,HomExpr} HypergraphCategory begin
+@syntax FreeHypergraphCategory{ObExpr,HomExpr} ThHypergraphCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)

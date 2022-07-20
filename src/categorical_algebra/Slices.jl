@@ -4,7 +4,7 @@ export Slice, SliceHom
 using StructEquality
 using ...GAT
 using ..FreeDiagrams, ..Limits, ..CSets
-using ...Theories: Category
+using ...Theories: ThCategory
 import ...Theories: dom, codom, compose, id
 import ..Limits: limit, colimit, universal
 import ..FinSets: force
@@ -62,7 +62,7 @@ struct SliceColimit{Hom, Ob <: Slice{Hom}, Diagram,
 end
 
 
-@instance Category{Slice, SliceHom} begin
+@instance ThCategory{Slice, SliceHom} begin
   dom(f::SliceHom) = f.dom
   codom(f::SliceHom) = f.codom
   id(A::Slice) = SliceHom(A, A, id(dom(A.slice)))

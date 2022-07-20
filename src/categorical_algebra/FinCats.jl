@@ -24,7 +24,7 @@ using DataStructures: IntDisjointSets, in_same_set, num_groups
 @reexport using ..Categories
 using ...GAT, ...Present, ...Syntax
 import ...Present: equations
-using ...Theories: Category, Schema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr
+using ...Theories: ThCategory, Schema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ...CSetDataStructures, ...Graphs
 import ...Graphs: edges, src, tgt, enumerate_paths

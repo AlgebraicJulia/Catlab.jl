@@ -9,7 +9,7 @@ export SquareDiagram, ob, hom, left, right, top, bottom
 using StructEquality
 
 using ...GAT
-using ...Theories: DoubleCategory
+using ...Theories: ThDoubleCategory
 import ...Theories: ob, hom, dom, codom, compose, ⋅, *, HomV, HomH,
   composeH, composeV, id, idH, idV, id2, id2H, id2V, left, right, top, bottom
 using ..FinSets
@@ -66,7 +66,7 @@ of commutative squares.
 TODO: This construction has nothing specifically to do with finite sets and
 functions and should be generalized to any category C.
 """
-@instance DoubleCategory{FinSet, FinFunction, FinFunction, SquareDiagram} begin
+@instance ThDoubleCategory{FinSet, FinFunction, FinFunction, SquareDiagram} begin
   @import dom, codom, top, bottom, left, right, ⋅
   idH(A::FinSet) = FinFunction(identity, A, A)
   idV(A::FinSet) = FinFunction(identity, A, A)

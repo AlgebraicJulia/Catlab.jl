@@ -1,5 +1,5 @@
-export DisplayedCategory, Fib, FibHom, ob, hom,
-  IndexedCategory, act, ⊙
+export ThDisplayedCategory, Fib, FibHom, ob, hom,
+  ThIndexedCategory, act, ⊙, ThIndexedMonoidalCategory
 
 # Displayed category
 ####################
@@ -13,7 +13,7 @@ category ``**Cat**/C``, in a generalized algebraic style.
 
 Reference: Ahrens & Lumsdaine 2019, "Displayed categories", Definition 3.1.
 """
-@theory DisplayedCategory{Ob,Hom,Fib,FibHom} <: Category{Ob,Hom} begin
+@theory ThDisplayedCategory{Ob,Hom,Fib,FibHom} <: ThCategory{Ob,Hom} begin
   """ Fiber over an object. """
   Fib(ob::Ob)::TYPE
 
@@ -48,7 +48,7 @@ action of a family of sets, an indexed category can be seen as a category action
 on a family of categories. This picture guides our axiomatization of an indexed
 category as a generalized algebraic theory.
 """
-@theory IndexedCategory{Ob,Hom,Fib,FibHom} <: Category{Ob,Hom} begin
+@theory ThIndexedCategory{Ob,Hom,Fib,FibHom} <: ThCategory{Ob,Hom} begin
   @op begin
     (→) := FibHom
     (⊙) := act
@@ -106,7 +106,7 @@ References:
 - Moeller & Vasilakopoulou, 2020: Monoidal Grothendieck construction,
   Remark 3.18 [this paper is about a different notion!]
 """
-@theory IndexedMonoidalCategory{Ob,Hom,Fib,FibHom} <: IndexedCategory{Ob,Hom,Fib,FibHom} begin
+@theory ThIndexedMonoidalCategory{Ob,Hom,Fib,FibHom} <: ThIndexedCategory{Ob,Hom,Fib,FibHom} begin
   @op (⊗) := otimes
 
   # Monoid operations in each fiber.

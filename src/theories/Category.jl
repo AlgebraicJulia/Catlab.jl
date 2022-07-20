@@ -1,24 +1,25 @@
-export Category, FreeCategory, Ob, Hom, dom, codom, id, compose, ⋅,
-  Copresheaf, FreeCopresheaf, El, ElExpr, ob, act,
-  Presheaf, FreePresheaf, coact,
-  MCategory, FreeMCategory, Tight, reflexive, transitive
+export ThCategory, FreeCategory, Ob, Hom, dom, codom, id, compose, ⋅,
+  ThCopresheaf, FreeCopresheaf, El, ElExpr, ob, act,
+  ThPresheaf, FreePresheaf, coact,
+  ThMCategory, FreeMCategory, Tight, reflexive, transitive
 
 import Base: show
 
 # Category
 ##########
 
-""" Theory of *categories* (with no extra structure)
+""" Theory of *categories*
 
-**Warning**: We compose functions from left to right, i.e., if f:A→B and g:B→C
-then compose(f,g):A→C. Under this convention function are applied on the right,
-e.g., if a∈A then af∈B.
+**Note**: Throughout Catlab, we compose morphisms in diagrammatic order (from
+left to right), i.e., if ``f:A→B`` and ``g:B→C`` then the composite morphism
+``f⋅g:A→C`` is `compose(f,g)`. Under this convention, functions are applied on
+the right, e.g., if ``a ∈ A`` then ``af ∈ B``.
 
-We retain the usual meaning of the symbol ∘ (\\circ), i.e., g∘f = compose(f,g).
-This usage is too entrenched to overturn, inconvenient though it may be.
-We use symbol ⋅ (\\cdot) for diagrammatic composition: f⋅g = compose(f,g).
+We retain the usual meaning of the symbol ``∘`` (`\\circ`), i.e., ``g∘f`` is
+`compose(f,g)`. This usage is too entrenched to overturn. However, we use the
+symbol ``⋅`` (`\\cdot`) for composition in diagrammatic order.
 """
-@theory Category{Ob,Hom} begin
+@theory ThCategory{Ob,Hom} begin
   # Unicode aliases.
   @op begin
     (→) := Hom
@@ -45,7 +46,7 @@ end
 compose(fs::AbstractVector) = foldl(compose, fs)
 compose(f, g, h, fs...) = compose([f, g, h, fs...])
 
-@syntax FreeCategory{ObExpr,HomExpr} Category begin
+@syntax FreeCategory{ObExpr,HomExpr} ThCategory begin
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 end
 
@@ -84,7 +85,7 @@ end
 
 Axiomatized as a covariant category action.
 """
-@theory Copresheaf{Ob,Hom,El} <: Category{Ob,Hom} begin
+@theory ThCopresheaf{Ob,Hom,El} <: ThCategory{Ob,Hom} begin
   # copresheaf = object-indexed family
   El(ob::Ob)::TYPE
 
@@ -100,7 +101,7 @@ end
 
 abstract type ElExpr{T} <: GATExpr{T} end
 
-@syntax FreeCopresheaf{ObExpr,HomExpr,ElExpr} Copresheaf begin
+@syntax FreeCopresheaf{ObExpr,HomExpr,ElExpr} ThCopresheaf begin
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 end
 
@@ -108,7 +109,7 @@ end
 
 Axiomatized as a contravariant category action.
 """
-@theory Presheaf{Ob,Hom,El} <: Category{Ob,Hom} begin
+@theory ThPresheaf{Ob,Hom,El} <: ThCategory{Ob,Hom} begin
   # presheaf = object-indexed family
   El(ob::Ob)::TYPE
 
@@ -122,7 +123,7 @@ Axiomatized as a contravariant category action.
   coact(id(A), x) == x ⊣ (A::Ob, x::El(A))
 end
 
-@syntax FreePresheaf{ObExpr,HomExpr,ElExpr} Presheaf begin
+@syntax FreePresheaf{ObExpr,HomExpr,ElExpr} ThPresheaf begin
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 end
 
@@ -163,7 +164,7 @@ the arrow category of Set spanned by injections.
 In the following GAT, tightness is axiomatized as a property of morphisms: a
 dependent family of sets over the hom-sets, each having at most one inhabitant.
 """
-@theory MCategory{Ob,Hom,Tight} <: Category{Ob,Hom} begin
+@theory ThMCategory{Ob,Hom,Tight} <: ThCategory{Ob,Hom} begin
   Tight(hom::Hom(A,B))::TYPE ⊣ (A::Ob, B::Ob)
 
   # Tightness is a property.
@@ -177,7 +178,7 @@ end
 
 abstract type TightExpr{T} <: GATExpr{T} end
 
-@syntax FreeMCategory{ObExpr,HomExpr,TightExpr} MCategory begin
+@syntax FreeMCategory{ObExpr,HomExpr,TightExpr} ThMCategory begin
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
   transitive(t::Tight, u::Tight) = associate_unit(new(t,u; strict=true), reflexive)
 end

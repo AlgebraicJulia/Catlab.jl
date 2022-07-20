@@ -17,14 +17,13 @@ using Tables
 
 @reexport using ...CSetDataStructures
 using ...GAT, ...Present, ...Syntax
-using ...Theories: Category, SchemaDescType, CSetSchemaDescType,
+using ...Theories: ThCategory, SchemaDescType, CSetSchemaDescType,
   attrtype, attrtype_num, attr, adom, acodom, acodom_nums
 import ...Theories: dom, codom, compose, ⋅, id,
   ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 using ..FreeDiagrams, ..Limits, ..Subobjects, ..FinSets, ..FinCats
 import ..Limits: limit, colimit, universal
-import ..Subobjects: Subobject, SubobjectBiHeytingAlgebra,
-  implies, ⟹, subtract, \, negate, ¬, non, ~
+import ..Subobjects: Subobject, implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..Sets: SetOb, SetFunction, TypeSet
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate
 import ..FinCats: FinDomFunctor, components, is_natural
@@ -389,7 +388,7 @@ end
 # Category of C-sets
 ####################
 
-@instance Category{StructACSet, ACSetTransformation} begin
+@instance ThCategory{StructACSet, ACSetTransformation} begin
   dom(α::ACSetTransformation) = α.dom
   codom(α::ACSetTransformation) = α.codom
 
@@ -971,7 +970,7 @@ function hom(A::SubACSetComponentwise{T}) where T <: ACSet
   ACSetTransformation(hom_components, U, X)
 end
 
-@instance SubobjectBiHeytingAlgebra{ACSet,SubACSet} begin
+@instance ThSubobjectBiHeytingAlgebra{ACSet,SubACSet} begin
   @import ob
   meet(A::SubACSet, B::SubACSet) = meet(A, B, SubOpBoolean())
   join(A::SubACSet, B::SubACSet) = join(A, B, SubOpBoolean())

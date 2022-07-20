@@ -13,7 +13,7 @@ Attr : C^op x D → Set. In GAT form, this is given by extending the theory of
 categories with two extra types, AttrType for objects of D, and Attr, for elements
 of the sets given by the profunctor.
 """
-@theory Schema{Ob,Hom,AttrType,Attr} <: Category{Ob,Hom} begin
+@theory Schema{Ob,Hom,AttrType,Attr} <: ThCategory{Ob,Hom} begin
   AttrType::TYPE
   Attr(dom::Ob,codom::AttrType)::TYPE
 

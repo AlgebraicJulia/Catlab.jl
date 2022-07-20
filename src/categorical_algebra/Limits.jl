@@ -269,15 +269,15 @@ factorize(colim::Coequalizer, h) = universal(colim, SMulticospan{1}(h))
 
 """ Define cartesian monoidal structure using limits.
 
-Implements an instance of [`CartesianCategory`](@ref) assuming that finite
+Implements an instance of [`ThCartesianCategory`](@ref) assuming that finite
 products have been implemented following the limits interface.
 """
 macro cartesian_monoidal_instance(Ob, Hom)
   esc(quote
-    import Catlab.Theories: CartesianCategory, otimes, ⊗, munit, braid, σ,
+    import Catlab.Theories: ThCartesianCategory, otimes, ⊗, munit, braid, σ,
       mcopy, delete, pair, proj1, proj2, Δ, ◊
 
-    @instance CartesianCategory{$Ob, $Hom} begin
+    @instance ThCartesianCategory{$Ob, $Hom} begin
       @import dom, codom, compose, ⋅, id, munit, delete, pair
 
       otimes(A::$Ob, B::$Ob) = ob(product(A, B))
@@ -310,15 +310,15 @@ end
 
 """ Define cocartesian monoidal structure using colimits.
 
-Implements an instance of [`CocartesianCategory`](@ref) assuming that finite
+Implements an instance of [`ThCocartesianCategory`](@ref) assuming that finite
 coproducts have been implemented following the colimits interface.
 """
 macro cocartesian_monoidal_instance(Ob, Hom)
   esc(quote
-    import Catlab.Theories: CocartesianCategory, oplus, ⊕, mzero, swap,
+    import Catlab.Theories: ThCocartesianCategory, oplus, ⊕, mzero, swap,
       plus, zero, copair, coproj1, coproj2
 
-    @instance CocartesianCategory{$Ob, $Hom} begin
+    @instance ThCocartesianCategory{$Ob, $Hom} begin
       @import dom, codom, compose, ⋅, id, mzero, copair
 
       oplus(A::$Ob, B::$Ob) = ob(coproduct(A, B))

@@ -1,7 +1,7 @@
-export ThinCategory, FreeThinCategory,
-  ThinSymmetricMonoidalCategory, FreeThinSymmetricMonoidalCategory,
-  Preorder, Poset, FreePreorder, El, Leq, ≤, lhs, rhs, reflexive, transitive,
-  Lattice, AlgebraicLattice, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
+export ThThinCategory, FreeThinCategory,
+  ThThinSymmetricMonoidalCategory, FreeThinSymmetricMonoidalCategory,
+  ThPreorder, ThPoset, FreePreorder, El, Leq, ≤, lhs, rhs, reflexive, transitive,
+  ThLattice, ThAlgebraicLattice, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 
 import Base: join
 
@@ -13,11 +13,11 @@ import Base: join
 Thin categories have at most one morphism between any two objects and are
 isomorphic to preorders.
 """
-@theory ThinCategory{Ob,Hom} <: Category{Ob,Hom} begin
+@theory ThThinCategory{Ob,Hom} <: ThCategory{Ob,Hom} begin
   f == g ⊣ (A::Ob, B::Ob, f::Hom(A,B), g::Hom(A,B))
 end
 
-@syntax FreeThinCategory{ObExpr,HomExpr} ThinCategory begin
+@syntax FreeThinCategory{ObExpr,HomExpr} ThThinCategory begin
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 end
 
@@ -25,11 +25,11 @@ end
 
 Thin SMCs are isomorphic to commutative monoidal prosets.
 """
-@theory ThinSymmetricMonoidalCategory{Ob,Hom} <: SymmetricMonoidalCategory{Ob,Hom} begin
+@theory ThThinSymmetricMonoidalCategory{Ob,Hom} <: ThSymmetricMonoidalCategory{Ob,Hom} begin
   f == g ⊣ (A::Ob, B::Ob, f::Hom(A,B), g::Hom(A,B))
 end
 
-@syntax FreeThinSymmetricMonoidalCategory{ObExpr,HomExpr} ThinSymmetricMonoidalCategory begin
+@syntax FreeThinSymmetricMonoidalCategory{ObExpr,HomExpr} ThThinSymmetricMonoidalCategory begin
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
@@ -44,7 +44,7 @@ The generalized algebraic theory of preorders encodes inequalities ``A≤B`` as
 dependent types ```Leq(A,B)`` and the axioms of reflexivity and transitivity as
 term constructors.
 """
-@theory Preorder{El,Leq} begin
+@theory ThPreorder{El,Leq} begin
   El::TYPE
   Leq(lhs::El, rhs::El)::TYPE
   @op (≤) := Leq
@@ -55,14 +55,14 @@ term constructors.
   f == g ⊣ (A::El, B::El, f::(A≤B), g::(A≤B))
 end
 
-@syntax FreePreorder{ObExpr,HomExpr} Preorder begin
+@syntax FreePreorder{ObExpr,HomExpr} ThPreorder begin
   transitive(f::Leq, g::Leq) = associate(new(f,g; strict=true))
 end
 
 # TODO: There should be an isomorphism in the category GAT between the theories
 # of preorders and thin categories.
 #
-# @functor F(Preorder(El, Leq))::ThinCategory(Ob, Hom) begin
+# @functor F(ThPreorder(El, Leq))::ThThinCategory(Ob, Hom) begin
 #   El ↦ Ob
 #   Leq ↦ Hom
 #   reflexive ↦ id
@@ -71,7 +71,7 @@ end
 
 """ Theory of *partial orders* (posets)
 """
-@theory Poset{El,Leq} <: Preorder{El,Leq} begin
+@theory ThPoset{El,Leq} <: ThPreorder{El,Leq} begin
   A == B ⊣ (A::El, B::El, f::(A≤B), g::(B≤A))
 end
 
@@ -83,12 +83,12 @@ end
 A (bounded) lattice is a poset with all finite meets and joins. Viewed as a thin
 category, this means that the category has all finite products and coproducts,
 hence the names for the inequality constructors in the theory. Compare with
-[`CartesianCategory`](@ref) and [`CocartesianCategory`](@ref).
+[`ThCartesianCategory`](@ref) and [`ThCocartesianCategory`](@ref).
 
 This is one of two standard axiomatizations of a lattice, the other being
-[`AlgebraicLattice`](@ref).
+[`ThAlgebraicLattice`](@ref).
 """
-@theory Lattice{El,Leq} <: Poset{El,Leq} begin
+@theory ThLattice{El,Leq} <: ThPoset{El,Leq} begin
   @op begin
     (∧) := meet
     (⊤) := top
@@ -120,7 +120,7 @@ end
 """ Theory of *lattices* as algebraic structures
 
 This is one of two standard axiomatizations of a lattice, the other being
-[`Lattice`](@ref). Because the partial order is not present, this theory is
+[`ThLattice`](@ref). Because the partial order is not present, this theory is
 merely an algebraic theory (no dependent types).
 
 The partial order is recovered as ``A ≤ B`` iff ``A ∧ B = A`` iff ``A ∨ B = B``.
@@ -128,9 +128,9 @@ This definition could be reintroduced into a generalized algebraic theory using
 an equality type `Eq(lhs::El, rhs::El)::TYPE` combined with term constructors
 ``meet_leq(eq::Eq(A∧B, A))::(A ≤ B)` and `join_leq(eq::Eq(A∨B, B))::(A ≤ B)`. We
 do not employ that trick here because at that point it is more convenient to
-just start with the poset structure, as in [`Lattice`](@ref).
+just start with the poset structure, as in [`ThLattice`](@ref).
 """
-@theory AlgebraicLattice{El} begin
+@theory ThAlgebraicLattice{El} begin
   @op begin
     (∧) := meet
     (⊤) := top

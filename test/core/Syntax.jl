@@ -13,7 +13,7 @@ using Catlab
 
 """ Theory of monoids.
 """
-@signature Monoid{Elem} begin
+@signature ThMonoid{Elem} begin
   Elem::TYPE
   munit()::Elem
   mtimes(x::Elem,y::Elem)::Elem
@@ -21,7 +21,7 @@ end
 
 """ Syntax for the theory of monoids.
 """
-@syntax FreeMonoid Monoid
+@syntax FreeMonoid ThMonoid
 
 Elem(mod::Module, args...) = Elem(mod.Elem, args...)
 
@@ -48,7 +48,7 @@ x, y, z = Elem(FreeMonoid,:x), Elem(FreeMonoid,:y), Elem(FreeMonoid,:z)
 @test hash(mtimes(x,y)) == hash(mtimes(x,y))
 @test hash(mtimes(x,y)) != hash(mtimes(x,z))
 
-@syntax FreeMonoidAssoc Monoid begin
+@syntax FreeMonoidAssoc ThMonoid begin
   mtimes(x::Elem, y::Elem) = associate(new(x,y))
 end
 
@@ -57,7 +57,7 @@ e = munit(FreeMonoidAssoc.Elem)
 @test mtimes(mtimes(x,y),z) == mtimes(x,mtimes(y,z))
 @test mtimes(e,x) != x && mtimes(x,e) != x
 
-@syntax FreeMonoidAssocUnit Monoid begin
+@syntax FreeMonoidAssocUnit ThMonoid begin
   mtimes(x::Elem, y::Elem) = associate_unit(new(x,y), munit)
 end
 
@@ -67,16 +67,16 @@ e = munit(FreeMonoidAssocUnit.Elem)
 @test mtimes(e,x) == x && mtimes(x,e) == x
 
 abstract type MonoidExpr{T} <: GATExpr{T} end
-@syntax FreeMonoidTyped{MonoidExpr} Monoid
+@syntax FreeMonoidTyped{MonoidExpr} ThMonoid
 
 x = Elem(FreeMonoidTyped.Elem, :x)
 @test FreeMonoidTyped.Elem <: MonoidExpr
 @test isa(x, FreeMonoidTyped.Elem) && isa(x, MonoidExpr)
 
-@signature MonoidNumeric{Elem} <: Monoid{Elem} begin
+@signature ThMonoidNumeric{Elem} <: ThMonoid{Elem} begin
   elem_int(x::Int)::Elem
 end
-@syntax FreeMonoidNumeric MonoidNumeric
+@syntax FreeMonoidNumeric ThMonoidNumeric
 
 x = elem_int(FreeMonoidNumeric.Elem, 1)
 @test isa(x, FreeMonoidNumeric.Elem)
@@ -84,14 +84,14 @@ x = elem_int(FreeMonoidNumeric.Elem, 1)
 
 """ A monoid with two distinguished elements.
 """
-@signature MonoidTwo{Elem} <: Monoid{Elem} begin
+@signature ThMonoidTwo{Elem} <: ThMonoid{Elem} begin
   one()::Elem
   two()::Elem
 end
 
 """ The free monoid on two generators.
 """
-@syntax FreeMonoidTwo MonoidTwo begin
+@syntax FreeMonoidTwo ThMonoidTwo begin
   Elem(::Type{Elem}, value) = error("No extra generators allowed!")
 end
 
@@ -102,7 +102,7 @@ x, y = one(FreeMonoidTwo.Elem), two(FreeMonoidTwo.Elem)
 # Category
 ##########
 
-@signature Category{Ob,Hom} begin
+@signature ThCategory{Ob,Hom} begin
   Ob::TYPE
   Hom(dom::Ob, codom::Ob)::TYPE
 
@@ -110,7 +110,7 @@ x, y = one(FreeMonoidTwo.Elem), two(FreeMonoidTwo.Elem)
   compose(f::Hom(X,Y), g::Hom(Y,Z))::Hom(X,Z) ⊣ (X::Ob, Y::Ob, Z::Ob)
 end
 
-@syntax FreeCategory Category begin
+@syntax FreeCategory ThCategory begin
   compose(f::Hom, g::Hom) = associate(new(f,g))
 end
 
@@ -134,7 +134,7 @@ f, g, h = Hom(:f, X, Y), Hom(:g, Y, Z), Hom(:h, Z, W)
 @test isa(compose(f,f), FreeCategory.Hom) # Doesn't check domains.
 @test compose(compose(f,g),h) == compose(f,compose(g,h))
 
-@syntax FreeCategoryStrict Category begin
+@syntax FreeCategoryStrict ThCategory begin
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
 end
 
@@ -147,7 +147,7 @@ f, g = Hom(:f, X, Y), Hom(:g, Y, X)
 # Functor
 #########
 
-@instance Monoid{String} begin
+@instance ThMonoid{String} begin
   munit(::Type{String}) = ""
   mtimes(x::String, y::String) = string(x,y)
 end
