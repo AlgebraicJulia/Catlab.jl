@@ -65,19 +65,19 @@ show_latex(io::IO, expr::CategoryExpr{:composeH}; kw...) =
 
 """ Theory of *double categories*
 
-A *strict double category* ``𝔻`` is an internal category
+A *strict double category* ``D`` is an internal category
 
-``(S,T: 𝔻₁ ⇉ 𝔻₀, U: 𝔻₀ → 𝔻₁, *: 𝔻₁ ×_{𝔻₀} 𝔻₁ → 𝔻₁)``
+``(S,T: D₁ ⇉ D₀, U: D₀ → D₁, *: D₁ ×_{D₀} D₁ → D₁)``
 
 in **Cat** where
 
-- objects of ``𝔻₀`` are objects of ``𝔻``
-- morphisms of ``𝔻₀`` are arrows (vertical morphisms) of ``𝔻``
-- objects of ``𝔻₁`` are proarrows (horizontal morphisms) of ``𝔻``
-- morphisms of ``D₁`` are cells of ``𝔻``.
+- objects of ``D₀`` are objects of ``D``
+- morphisms of ``D₀`` are arrows (vertical morphisms) of ``D``
+- objects of ``D₁`` are proarrows (horizontal morphisms) of ``D``
+- morphisms of ``D₁`` are cells of ``D``.
 
 The domain and codomain (top and bottom) of a cell are given by the domain and
-codomain in ``𝔻₁`` and the source and target (left and right) are given by the
+codomain in ``D₁`` and the source and target (left and right) are given by the
 functors ``S,T``.
 """
 @theory ThDoubleCategory{Ob,Hom,Pro,Cell} <: ThCategory{Ob,Hom} begin
@@ -94,7 +94,7 @@ functors ``S,T``.
     (*) := pcompose
   end
 
-  # Category 𝔻₁: internal category structure for proarrows and cells.
+  # Category D₁: internal category structure for proarrows and cells.
   compose(α::Cell(m, n, f, g), β::Cell(n, p, h, k))::Cell(m, p, f⋅h, g⋅k) ⊣
     (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
      f::(A → B), g::(X → Y), h::(B → C), k::(Y → Z),
@@ -141,6 +141,36 @@ show_unicode(io::IO, expr::CategoryExpr{:pcompose}; kw...) =
 show_latex(io::IO, expr::CategoryExpr{:pcompose}; kw...) =
   Syntax.show_latex_infix(io, expr, "*"; kw...)
 
+# Equipment
+###########
+
+""" Theory of a *proarrow equipment*, or *equipment* for short
+
+Equipments have also been called "framed bicategories," "fibrant double
+categories," and "gregarious double categories" (?!).
+
+References:
+
+- Shulman, 2008: Framed bicategories and monoidal fibrations
+- Cruttwell & Shulman, 2010: A unified framework for generalized multicategories
+"""
+@theory ThEquipment{Ob,Hom,Pro,Cell} <: ThDoubleCategory{Ob,Hom,Pro,Cell} begin
+  companion(f::(A → B))::(A ↛ B) ⊣ (A::Ob, B::Ob)
+  conjoint(f::(A → B))::(B ↛ A) ⊣ (A::Ob, B::Ob)
+
+  # Binding cells (unit and counit) for companions and conjoints.
+  companion_unit(f::(A → B))::Cell(pid(A), companion(f), id(A), f) ⊣ (A::Ob, B::Ob)
+  companion_counit(f::(A → B))::Cell(companion(f), pid(B), f, id(B)) ⊣ (A::Ob, B::Ob)
+  conjoint_unit(f::(A → B))::Cell(pid(A), conjoint(f), f, id(A)) ⊣ (A::Ob, B::Ob)
+  conjoint_counit(f::(A → B))::Cell(conjoint(f), pid(B), id(B), f) ⊣ (A::Ob, B::Ob)
+
+  # Triangle-style identities for binding cells.
+  companion_unit(f) ⋅ companion_counit(f) == pid(f) ⊣ (A::Ob, B::Ob, f::(A → B))
+  companion_unit(f) * companion_counit(f) == id(companion(f)) ⊣ (A::Ob, B::Ob, f::(A → B))
+  conjoint_unit(f) ⋅ conjoint_counit(f) == pid(f) ⊣ (A::Ob, B::Ob, f::(A → B))
+  conjoint_counit(f) * conjoint_unit(f) == id(conjoint(f)) ⊣ (A::Ob, B::Ob, f::(A → B))
+end
+
 # Monoidal double category
 ##########################
 
@@ -151,15 +181,15 @@ fully *strict*: both the double category and its monoidal product are strict.
 Apart from assuming strictness, this theory agrees with the definition of a
 monoidal double category in (Shulman 2010) and other recent works.
 
-In a monoidal double category ``(𝔻,⊗,I)``, the underlying categories ``𝔻₀`` and
-``𝔻₁`` are each monoidal categories, ``(𝔻₀,⊗₀,I₀)`` and ``(𝔻₁,⊗₁,I₁)``, subject
-to further axioms such as the source and target functors ``S, T: 𝔻₁ → 𝔻₀`` being
+In a monoidal double category ``(D,⊗,I)``, the underlying categories ``D₀`` and
+``D₁`` are each monoidal categories, ``(D₀,⊗₀,I₀)`` and ``(D₁,⊗₁,I₁)``, subject
+to further axioms such as the source and target functors ``S, T: D₁ → D₀`` being
 strict monoidal functors.
 
 Despite the apparent asymmetry in this setup, the definition of a monoidal
 double category unpacks to be nearly symmetric with respect to arrows and
-proarrows, except that the monoidal unit ``I₀`` of ``𝔻₀`` induces the monoidal
-unit of ``𝔻₁`` as ``I₁ = U(I₀)``.
+proarrows, except that the monoidal unit ``I₀`` of ``D₀`` induces the monoidal
+unit of ``D₁`` as ``I₁ = U(I₀)``.
 
 References:
 
@@ -171,32 +201,32 @@ is not supported.
 @theory ThMonoidalDoubleCategory{Ob,Hom,Pro,Cell} <: ThDoubleCategory{Ob,Hom,Pro,Cell} begin
   @op (⊗) := otimes
 
-  # Monoid in 𝔻₀.
+  # Monoid in D₀.
   otimes(A::Ob, B::Ob)::Ob
   otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob)
   munit()::Ob
 
-  # Monoid axioms for (𝔻₀,⊗₀,I₀).
+  # Monoid axioms for (D₀,⊗₀,I₀).
   (A ⊗ B) ⊗ C == A ⊗ (B ⊗ C) ⊣ (A::Ob, B::Ob, C::Ob)
   A ⊗ munit() == A ⊣ (A::Ob)
   munit() ⊗ A == A ⊣ (A::Ob)
   (f ⊗ g) ⊗ h == f ⊗ (g ⊗ h) ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
                                 f::(A → X), g::(B → Y), h::(C → Z))
 
-  # Functorality axioms for (𝔻₀,⊗₀,I₀).
+  # Functorality axioms for (D₀,⊗₀,I₀).
   ((f ⊗ g) ⋅ (h ⊗ k) == (f ⋅ h) ⊗ (g ⋅ k)
     ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
        f::(A → B), h::(B → C), g::(X → Y), k::(Y → Z)))
   id(A ⊗ B) == id(A) ⊗ id(B) ⊣ (A::Ob, B::Ob)
 
-  # Monoid in 𝔻₁.
+  # Monoid in D₁.
   otimes(m::(A ↛ B), n::(C ↛ D))::((A ⊗ C) ↛ (B ⊗ D)) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob)
   otimes(α::Cell(m,n,f,g), β::Cell(m′,n′,f′,g′))::Cell(m⊗m′,n⊗n′,f⊗f′,g⊗g′) ⊣
     (A::Ob, B::Ob, C::Ob, D::Ob, A′::Ob, B′::Ob, C′::Ob, D′::Ob,
      f::(A → C), g::(B → D), f′::(A′ → C′), g′::(B′ → D′),
      m::(A ↛ B), n::(C ↛ D), m′::(A′ ↛ B′), n′::(C′ ↛ D′))
 
-  # Monoid axioms for (𝔻₁,⊗₁,I₁).
+  # Monoid axioms for (D₁,⊗₁,I₁).
   (m ⊗ n) ⊗ p == m ⊗ (n ⊗ p) ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
                                 m::(A ↛ X), n::(B ↛ Y), p::(C ↛ Z))
   m ⊗ pid(munit()) == m ⊣ (A::Ob, B::Ob, m::(A ↛ B))
@@ -208,7 +238,7 @@ is not supported.
      m₁::(A₁↛B₁), m₂::(A₂↛B₂), m₃::(A₃↛B₃), n₁::(C₁↛D₁), n₂::(C₂↛D₂), n₃::(C₃↛D₃),
      α::Cell(m₁,n₁,f₁,g₁), β::Cell(m₂,n₂,f₂,g₂), γ::Cell(m₃,m₃,f₃,g₃))
 
-  # Functorality axioms for (𝔻₁,⊗₁,I₁).
+  # Functorality axioms for (D₁,⊗₁,I₁).
   ((α ⊗ α′) ⋅ (β ⊗ β′)) == (α ⋅ β) ⊗ (α′ ⋅ β′) ⊣
     (A::Ob, B::Ob, C::Ob, A′::Ob, B′::Ob, C′::Ob,
      X::Ob, Y::Ob, Z::Ob, X′::Ob, Y′::Ob, Z′::Ob,
@@ -219,7 +249,7 @@ is not supported.
      β::Cell(n,p,h,k), β′::Cell(n′,p′,h′,k′))
   id(m ⊗ n) == id(m) ⊗ id(n) ⊣ (A::Ob, B::Ob, X::Ob, Y::Ob, m::(A ↛ X), n::(B ↛ Y))
 
-  # External functorality of ⊗: 𝔻×𝔻 → 𝔻 and I: 1 → 𝔻.
+  # External functorality of ⊗: D×D → D and I: 1 → D.
   # TODO: Interchange of external composition of cells.
   ((m ⊗ n) * (p ⊗ q) == (m * p) ⊗ (n * q)
     ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
