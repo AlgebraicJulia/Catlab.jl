@@ -14,7 +14,7 @@ include("FinRelations.jl")
 include("CSets.jl")
 include("GraphCategories.jl")
 include("Diagrams.jl")
-include("CommutativeDiagrams.jl")
+#include("CommutativeDiagrams.jl")
 include("CatElements.jl")
 include("DataMigrations.jl")
 include("StructuredCospans.jl")
@@ -32,7 +32,7 @@ include("Slices.jl")
 @reexport using .CatElements
 
 @reexport using .Diagrams
-@reexport using .CommutativeDiagrams
+#@reexport using .CommutativeDiagrams
 @reexport using .DataMigrations
 @reexport using .StructuredCospans
 @reexport using .Slices

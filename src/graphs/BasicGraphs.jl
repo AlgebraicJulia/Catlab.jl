@@ -25,6 +25,7 @@ import Base: inv
 using Requires
 
 using ...Present, ...CSetDataStructures
+import ...Theories: src, tgt
 
 # Base types
 ############

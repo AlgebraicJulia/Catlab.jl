@@ -137,13 +137,12 @@ function show(io::IO, ::MIME"text/latex", expr::ElExpr)
   print(io, "\$")
 end
 
-function show_unicode(io::IO, expr::Union{ElExpr{:act},ElExpr{:coact}}; kw...)
+show_unicode(io::IO, expr::Union{ElExpr{:act},ElExpr{:coact}}; kw...) =
   Syntax.show_unicode_infix(io, expr, "⋅"; kw...)
-end
-function show_latex(io::IO, expr::Union{ElExpr{:act},ElExpr{:coact}};
-                    paren::Bool=false, kw...)
+
+show_latex(io::IO, expr::Union{ElExpr{:act},ElExpr{:coact}};
+           paren::Bool=false, kw...) =
   Syntax.show_latex_infix(io, expr, "\\cdot"; paren=paren)
-end
 
 # ℳ-category
 ############

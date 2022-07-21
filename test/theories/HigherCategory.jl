@@ -37,45 +37,49 @@ h, k = [Hom(sym, B, C) for sym in [:h,:k]]
 # Double category
 #################
 
-A, B, C, D, X, Y = Ob(FreeDoubleCategory, :A, :B, :C, :D, :X, :Y)
-f, g, h, k = HomH(:f, A, X), HomH(:g, B, Y), HomH(:h, X, C), HomH(:k, Y, D)
-l, r, rr = HomV(:ϕ, A, B), HomV(:r, X, Y), HomV(:rr, C, D)
-α, β = Hom2(:α, f, g, l, r), Hom2(:β, h, k, r, rr)
-αβ = composeH(α, β)
+A, B, C, X, Y, Z = Ob(FreeDoubleCategory, :A, :B, :C, :X, :Y, :Z)
+f, g, h = Hom(:f, A, X), Hom(:g, B, Y), Hom(:h, C, Z)
+m, n, p, q = Pro(:m, A, B), Pro(:n, B, C), Pro(:p, X, Y), Pro(:q, Y, Z)
+@test src(m) == A
+@test tgt(m) == B
+
+# Cell domains and codomains
+α, β = Cell(:α, m, p, f, g), Cell(:β, n, q, g, h)
+@test dom(α) == m
+@test codom(α) == p
+@test src(α) == f
+@test tgt(α) == g
+
+# External composition
+αβ = pcompose(α, β)
 @test α*β == αβ
-@test top(αβ) == composeH(f, h)
-@test bottom(αβ) == composeH(g, k)
+@test dom(αβ) == pcompose(m, n)
+@test codom(αβ) == pcompose(p, q)
+@test src(αβ) == f
+@test tgt(αβ) == h
 
-# Mmonoidal double category
-###########################
+# Monoidal double category
+##########################
 
-A, B, C, D = Ob(FreeSymmetricMonoidalDoubleCategory, :A, :B, :C, :D)
-E, F, G, H = Ob(FreeSymmetricMonoidalDoubleCategory, :E, :F, :G, :H)
-t, b, l, r = HomH(:t, A, B), HomH(:b, C, D), HomV(:l, A, C), HomV(:r, B, D)
-t′, b′, l′, r′ = HomH(:t′, E, F), HomH(:b′, G, H), HomV(:l′, E, G), HomV(:r′, F, H)
-s = Hom2(:s, t, b, l, r)
-s′ = Hom2(:s′, t′, b′, l′, r′)
+A, B, C, D, A′, B′, C′, D′ = Ob(FreeSymmetricMonoidalDoubleCategory,
+                                :A, :B, :C, :D, :A′, :B′, :C′, :D′)
+m, n, m′, n′ = Pro(:m,A,B), Pro(:n,C,D), Pro(:m′,A′,B′), Pro(:n′,C′,D′)
+f, g, f′, g′ = Hom(:f,A,C), Hom(:g,B,D), Hom(:f′,A′,C′), Hom(:g′,B′,D′)
+α, α′ = Cell(:α, m, n, f, g), Cell(:α′, m′, n′, f′, g′)
 
 # Domains and codomains
-@test dom(otimes(t,b)) == otimes(dom(t),dom(b))
-@test codom(otimes(t,b)) == otimes(codom(t),codom(b))
-@test dom(otimes(l,r)) == otimes(dom(l),dom(r))
-@test codom(otimes(l,r)) == otimes(codom(l),codom(r))
-@test top(otimes(s,s′)) == otimes(top(s),top(s′))
-@test bottom(otimes(s,s′)) == otimes(bottom(s),bottom(s′))
+@test src(m ⊗ n) == src(m) ⊗ src(n)
+@test tgt(m ⊗ n) == tgt(m) ⊗ tgt(n)
+@test dom(f ⊗ g) == dom(f) ⊗ dom(g)
+@test codom(f ⊗ g) == codom(f) ⊗ codom(g)
+@test src(α ⊗ α′) == src(α) ⊗ src(α′)
+@test tgt(α ⊗ α′) == tgt(α) ⊗ tgt(α′)
+@test dom(α ⊗ α′) == dom(α) ⊗ dom(α′)
+@test codom(α ⊗ α′) == codom(α) ⊗ codom(α′)
 
-@test dom(braidV(A,B)) == otimes(A,B)
-@test codom(braidV(A,B)) == otimes(B,A)
-@test top(braidH(t,b)) == otimes(t,b)
-@test bottom(braidH(t,b)) == otimes(b,t)
-@test left(braidH(t,b)) == braidV(A,C)
-@test right(braidH(t,b)) == braidV(B,D)
-@test σV(A, B) == braidV(A,B)
-@test σH(t, b) == braidH(t,b)
-
-# Associativity and unit
-I = munit(FreeSymmetricMonoidalDoubleCategory.Ob)
-@test otimes(A,I) == A
-@test otimes(I,A) == A
-@test otimes(otimes(A,B),A) == otimes(A,otimes(B,A))
-@test otimes(otimes(t,b),t) == otimes(t,otimes(b,t))
+@test dom(σ(A,B)) == A⊗B
+@test codom(σ(A,B)) == B⊗A
+@test dom(σ(m,n)) == m⊗n
+@test codom(σ(m,n)) == n⊗m
+@test src(σ(m,n)) == σ(A,C)
+@test tgt(σ(m,n)) == σ(B,D)

@@ -1,19 +1,20 @@
-export ThCategory2, FreeCategory2, Hom2, Hom2Expr, composeV, composeH, *,
-  ThDoubleCategory, FreeDoubleCategory, HomH, HomV, HomHExpr, HomVExpr,
-  left, right, top, bottom, idH, idV, id2, id2V, id2H,
+export ThCategory2, FreeCategory2, Hom2, Hom2Expr, composeH, *,
+  ThDoubleCategory, FreeDoubleCategory, Pro, Cell, ProExpr, CellExpr,
+  dom, codom, src, tgt, pcompose, pid,
   ThMonoidalDoubleCategory, ThSymmetricMonoidalDoubleCategory,
-  FreeSymmetricMonoidalDoubleCategory, braidH, braidV, σH, σV
+  FreeSymmetricMonoidalDoubleCategory
 
 import Base: *
 
 abstract type Hom2Expr{T} <: CategoryExpr{T} end
-abstract type HomVExpr{T} <: CategoryExpr{T} end
-abstract type HomHExpr{T} <: CategoryExpr{T} end
+abstract type ArrExpr{T} <: CategoryExpr{T} end
+abstract type ProExpr{T} <: CategoryExpr{T} end
+abstract type CellExpr{T} <: CategoryExpr{T} end
 
 # 2-category
 ############
 
-""" Theory of (strict) *2-categories*
+""" Theory of *2-categories*
 """
 @signature ThCategory2{Ob,Hom,Hom2} <: ThCategory{Ob,Hom} begin
   """ 2-morphism in a 2-category """
@@ -53,240 +54,230 @@ This syntax checks domains of morphisms but not 2-morphisms.
   composeH(f::Hom, β::Hom2) = composeH(id(f), β)
 end
 
-show_unicode(io::IO, expr::Hom2Expr{:composeH}; kw...) =
+show_unicode(io::IO, expr::CategoryExpr{:composeH}; kw...) =
   Syntax.show_unicode_infix(io, expr, "*"; kw...)
 
-show_latex(io::IO, expr::Hom2Expr{:composeH}; kw...) =
+show_latex(io::IO, expr::CategoryExpr{:composeH}; kw...) =
   Syntax.show_latex_infix(io, expr, "*"; kw...)
 
 # Double category
 #################
 
-""" Theory of (strict) *double categories*
+""" Theory of *double categories*
+
+A *strict double category* ``𝔻`` is an internal category
+
+``(S,T: 𝔻₁ ⇉ 𝔻₀, U: 𝔻₀ → 𝔻₁, *: 𝔻₁ ×_{𝔻₀} 𝔻₁ → 𝔻₁)``
+
+in **Cat** where
+
+- objects of ``𝔻₀`` are objects of ``𝔻``
+- morphisms of ``𝔻₀`` are arrows (vertical morphisms) of ``𝔻``
+- objects of ``𝔻₁`` are proarrows (horizontal morphisms) of ``𝔻``
+- morphisms of ``D₁`` are cells of ``𝔻``.
+
+The domain and codomain (top and bottom) of a cell are given by the domain and
+codomain in ``𝔻₁`` and the source and target (left and right) are given by the
+functors ``S,T``.
 """
-@theory ThDoubleCategory{Ob,HomV,HomH,Hom2} begin
-  Ob::TYPE
-  """ Vertical morphism in a double category """
-  HomV(dom::Ob, codom::Ob)::TYPE
-  """ Horizontal morphism in a double category """
-  HomH(dom::Ob, codom::Ob)::TYPE
+@theory ThDoubleCategory{Ob,Hom,Pro,Cell} <: ThCategory{Ob,Hom} begin
+  """ Proarrow (horizontal morphism) in a double category """
+  Pro(src::Ob, tgt::Ob)::TYPE
+
   """ 2-cell in a double category """
-  Hom2(top::HomH(A,B), bottom::HomH(C,D),
-       left::HomV(A,C), right::HomV(B,D))::TYPE ⊣ (A::Ob, B::Ob, C::Ob, D::Ob)
+  Cell(dom::Pro(A,B), codom::Pro(C,D),
+       src::Hom(A,C), tgt::Hom(B,D))::TYPE ⊣ (A::Ob, B::Ob, C::Ob, D::Ob)
+
   @op begin
-    (→) := HomH
-    (↓) := HomV
-    (⇒) := Hom2
-    (*) := composeH
-    (⋅) := composeV
+    (↛) := Pro
+    (⇒) := Cell
+    (*) := pcompose
   end
 
-  idH(A::Ob)::(A → A) ⊣ (A::Ob)
-  idV(A::Ob)::(A ↓ A) ⊣ (A::Ob)
-  composeH(f::(A → B), g::(B → C))::(A → C) ⊣ (A::Ob, B::Ob, C::Ob)
-  composeV(f::(A ↓ B), g::(B ↓ C))::(A ↓ C) ⊣ (A::Ob, B::Ob, C::Ob)
+  # Category 𝔻₁: internal category structure for proarrows and cells.
+  compose(α::Cell(m, n, f, g), β::Cell(n, p, h, k))::Cell(m, p, f⋅h, g⋅k) ⊣
+    (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
+     f::(A → B), g::(X → Y), h::(B → C), k::(Y → Z),
+     m::(A ↛ X), n::(B ↛ Y), p::(C ↛ Z))
+  id(m::(A ↛ B))::Cell(m, m, id(A), id(B)) ⊣ (A::Ob, B::Ob)
 
-  # Category axioms for horizontal morphisms
-  ((f * g) * h == f * (g * h)
-    ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, f::(A → B), g::(B → C), h::(C → D)))
-  f * idH(B) == f ⊣ (A::Ob, B::Ob, f::(A → B))
-  idH(A) * f == f ⊣ (A::Ob, B::Ob, f::(A → B))
+  # External composition.
+  pcompose(m::(A ↛ B), n::(B ↛ C))::(A ↛ C) ⊣ (A::Ob, B::Ob, C::Ob)
+  pid(A::Ob)::(A ↛ A) ⊣ (A::Ob)
 
-  # Category axioms for vertical morphisms
-  ((f ⋅ g) ⋅ h == f ⋅ (g ⋅ h)
-    ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, f::(A ↓ B), g::(B ↓ C), h::(C ↓ D)))
-  f ⋅ idV(B) == f ⊣ (A::Ob, B::Ob, f::(A ↓ B))
-  idV(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A ↓ B))
+  pcompose(α::Cell(m, p, f, g), β::Cell(n, q, g, h))::Cell(m*n, p*q, f, h) ⊣
+    (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
+     f::(A → X), g::(B → Y), h::(C → Z),
+     m::(A ↛ B), n::(B ↛ C), p::(X ↛ Y), q::(Y ↛ Z))
+  pid(f::(A → B))::Cell(pid(A), pid(B), f, f) ⊣ (A::Ob, B::Ob)
 
-  # Identity 2-cell on object
-  id2(X::Ob)::Hom2(idH(X), idH(X), idV(X), idV(X)) ⊣ (X::Ob)
-  # Identity 2-cell for vertical composition
-  id2V(f::(X→Y))::Hom2(f, f, idV(X), idV(Y)) ⊣ (X::Ob, Y::Ob)
-  # Identity 2-cell for horizontal composition
-  id2H(f::(X↓Y))::Hom2(idH(X), idH(Y), f, f) ⊣ (X::Ob, Y::Ob)
+  # Axioms for external category structure.
+  ((m * n) * p == m * (n * p)
+    ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, m::(A ↛ B), n::(B ↛ C), p::(C ↛ D)))
+  m * pid(B) == m ⊣ (A::Ob, B::Ob, m::(A ↛ B))
+  pid(A) * m == m ⊣ (A::Ob, B::Ob, m::(A ↛ B))
 
-  # Vertical composition of 2-cells
-  composeV(α::Hom2(t,b,l,r), β::Hom2(b,b′,l′,r′))::Hom2(t, b′, l⋅l′, r⋅r′) ⊣
-    (A::Ob, B::Ob, X::Ob, Y::Ob, C::Ob, D::Ob,
-     t::(A→B), b::(X→Y), l::(A↓X), r::(B↓Y),
-     b′::(C→D), l′::(X↓C), r′::(Y↓D))
-
-  # Horizontal composition of 2-cells
-  composeH(α::Hom2(t,b,l,r), β::Hom2(t′,b′,r,r′))::Hom2(t*t′, b*b′, l, r′) ⊣
-    (A::Ob, B::Ob, X::Ob, Y::Ob, C::Ob, D::Ob,
-     t::(A→X), b::(B→Y), l::(A↓B), r::(X↓Y),
-     t′::(X→C), b′::(Y→D), r′::(C↓D))
+  # TODO: Axioms for cells.
 end
 
 # Convenience constructors
-composeV(αs::AbstractVector) = foldl(composeV, αs)
-composeV(α, β, γ, αs...) = composeV([α, β, γ, αs...])
+pcompose(αs::AbstractVector) = foldl(pcompose, αs)
+pcompose(α, β, γ, αs...) = pcompose([α, β, γ, αs...])
 
 """ Syntax for a double category.
 
 Checks domains of morphisms but not 2-morphisms.
 """
-@syntax FreeDoubleCategory{ObExpr,HomVExpr,HomHExpr,Hom2Expr} ThDoubleCategory begin
-  composeV(f::HomV, g::HomV) = associate_unit(new(f,g; strict=true), idV)
-  composeH(f::HomH, g::HomH) = associate_unit(new(f,g; strict=true), idH)
-  composeV(α::Hom2, β::Hom2) = associate_unit(new(α,β), id2V)
-  composeH(α::Hom2, β::Hom2) = associate_unit(new(α,β), id2H)
+@syntax FreeDoubleCategory{ObExpr,HomExpr,ProExpr,CellExpr} ThDoubleCategory begin
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
+  compose(α::Cell, β::Cell) = associate_unit(new(α,β), id)
+  pcompose(m::Pro, n::Pro) = associate_unit(new(m,n; strict=true), pid)
+  pcompose(α::Cell, β::Cell) = associate_unit(new(α,β), pid)
 end
 
-function show_unicode(io::IO, expr::Hom2Expr{:composeV}; kw...)
-  Syntax.show_unicode_infix(io, expr, "⋅"; kw...)
-end
+show_unicode(io::IO, expr::CategoryExpr{:pcompose}; kw...) =
+  Syntax.show_unicode_infix(io, expr, "*"; kw...)
 
-function show_latex(io::IO, expr::Hom2Expr{:composeV}; kw...)
-  Syntax.show_latex_infix(io, expr, "\\cdot"; kw...)
-end
+show_latex(io::IO, expr::CategoryExpr{:pcompose}; kw...) =
+  Syntax.show_latex_infix(io, expr, "*"; kw...)
 
 # Monoidal double category
 ##########################
 
 """ Theory of *monoidal double categories*
 
-To avoid associators and unitors, we assume the monoidal double category is
-*strict* in both the horizontal and vertical directions. Apart from assuming
-strictness, this theory follows the definition of a monoidal double category in
-(Shulman, 2010, Constructing symmetric monoidal bicategories) and other recent
-papers, starting from an internal category ``(S,T: D₁ ⇉ D₀, U: D₀ → D₁,
-*: D₁ ×_{D₀} D₁ → D₁)`` in **Cat** where
+To avoid associators and unitors, we assume that the monoidal double category is
+fully *strict*: both the double category and its monoidal product are strict.
+Apart from assuming strictness, this theory agrees with the definition of a
+monoidal double category in (Shulman 2010) and other recent works.
 
-- the objects of ``D₀`` are objects
-- the morphisms of ``D₀`` are vertical 1-cells
-- the objects of ``D₁`` are horizontal 1-cells
-- the morphisms of ``D₁`` are 2-cells.
-
-The top and bottom of a 2-cell are given by domain and codomain in ``D₁`` and
-the left and right are given by the functors ``S,T``. In a monoidal double
-category, ``D₀`` and ``D₁`` are each required to be monoidal categories, subject
-to further axioms such as ``S`` and ``T`` being strict monoidal functors.
+In a monoidal double category ``(𝔻,⊗,I)``, the underlying categories ``𝔻₀`` and
+``𝔻₁`` are each monoidal categories, ``(𝔻₀,⊗₀,I₀)`` and ``(𝔻₁,⊗₁,I₁)``, subject
+to further axioms such as the source and target functors ``S, T: 𝔻₁ → 𝔻₀`` being
+strict monoidal functors.
 
 Despite the apparent asymmetry in this setup, the definition of a monoidal
-double category unpacks to be nearly symmetric with respect to horizontal and
-vertical, except that the monoidal unit ``I`` of ``D₀`` induces the monoidal
-unit of ``D₁`` as ``U(I)``, which I think has no analogue in the vertical
-direction.
-"""
-@theory ThMonoidalDoubleCategory{Ob,HomV,HomH,Hom2} <: ThDoubleCategory{Ob,HomV,HomH,Hom2} begin
-  otimes(A::Ob, B::Ob)::Ob
-  otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣
-    (A::Ob, B::Ob, C::Ob, D::Ob)
-  otimes(f::(A ↓ B), g::(C ↓ D))::((A ⊗ C) ↓ (B ⊗ D)) ⊣
-    (A::Ob, B::Ob, C::Ob, D::Ob)
-  otimes(f::Hom2(t,b,l,r),g::Hom2(t′,b′,l′,r′))::Hom2(t⊗t′,b⊗b′,l⊗l′,r⊗r′) ⊣
-    (A::Ob, B::Ob, C::Ob, D::Ob, E::Ob, F::Ob, G::Ob, H::Ob,
-     t::(A → B), b::(C → D), l::(A ↓ C), r::(B ↓ D),
-     t′::(E → F), b′::(G → H), l′::(E ↓ G), r′::(F ↓ H))
+double category unpacks to be nearly symmetric with respect to arrows and
+proarrows, except that the monoidal unit ``I₀`` of ``𝔻₀`` induces the monoidal
+unit of ``𝔻₁`` as ``I₁ = U(I₀)``.
 
+References:
+
+- Shulman, 2010: Constructing symmetric monoidal bicategories
+
+FIXME: Should also inherit `ThMonoidalCategory{Ob,Hom}` but multiple inheritance
+is not supported.
+"""
+@theory ThMonoidalDoubleCategory{Ob,Hom,Pro,Cell} <: ThDoubleCategory{Ob,Hom,Pro,Cell} begin
   @op (⊗) := otimes
+
+  # Monoid in 𝔻₀.
+  otimes(A::Ob, B::Ob)::Ob
+  otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob)
   munit()::Ob
 
-  # Monoid axioms, vertical.
+  # Monoid axioms for (𝔻₀,⊗₀,I₀).
   (A ⊗ B) ⊗ C == A ⊗ (B ⊗ C) ⊣ (A::Ob, B::Ob, C::Ob)
   A ⊗ munit() == A ⊣ (A::Ob)
   munit() ⊗ A == A ⊣ (A::Ob)
   (f ⊗ g) ⊗ h == f ⊗ (g ⊗ h) ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
-                                f::(A ↓ X), g::(B ↓ Y), h::(C ↓ Z))
-
-  # Monoid axioms, horizontal.
-  (f ⊗ g) ⊗ h == f ⊗ (g ⊗ h) ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
                                 f::(A → X), g::(B → Y), h::(C → Z))
-  f ⊗ idH(munit()) == f ⊣ (A::Ob, B::Ob, f::(A → B))
-  idH(munit()) ⊗ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
-  (α ⊗ β) ⊗ γ == α ⊗ (β ⊗ γ) ⊣
-    (A::Ob, B::Ob, C::Ob, D::Ob, E::Ob, F::Ob,
-     G::Ob, H::Ob, I::Ob, J::Ob, K::Ob, L::Ob,
-     t1::(A → B), b1::(C → D), l1::(A ↓ C), r1::(B ↓ D),
-     t2::(E → F), b2::(G → H), l2::(E ↓ G), r2::(F ↓ H),
-     t3::(I → J), b3::(K → L), l3::(I ↓ K), r3::(J ↓ L),
-     α::Hom2(t1, b1, l1, r1), β::Hom2(t2, b2, l2, r2), γ::Hom2(t3, b3, l3, r3))
 
-  # Functorality axioms.
-  ((f ⊗ g) * (h ⊗ k) == (f * h) ⊗ (g * k)
-    ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
-       f::(A → B), h::(B → C), g::(X → Y), k::(Y → Z)))
+  # Functorality axioms for (𝔻₀,⊗₀,I₀).
   ((f ⊗ g) ⋅ (h ⊗ k) == (f ⋅ h) ⊗ (g ⋅ k)
     ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
-       f::(A ↓ B), h::(B ↓ C), g::(X ↓ Y), k::(Y ↓ Z)))
-  ((α ⊗ β) ⋅ (γ ⊗ δ) == (α ⋅ γ) ⊗ (β ⋅ δ)
-    ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, E::Ob, F::Ob, G::Ob, H::Ob,
-       I::Ob, J::Ob, K::Ob, L::Ob, M::Ob, N::Ob, O::Ob, P::Ob,
-       t1::(A → B), b1::(C → D), l1::(A ↓ C), r1::(B ↓ D),
-       t2::(E → F), b2::(G → H), l2::(E ↓ G), r2::(F ↓ H),
-       t3::(I → J), b3::(K → L), l3::(I ↓ K), r3::(J ↓ L),
-       t4::(M → N), b4::(O → P), l4::(M ↓ O), r4::(N ↓ P),
-       α::Hom2(t1, b1, l1, r1), β::Hom2(t2, b2, l2, r2),
-       γ::Hom2(t3, b3, l3, r3), δ::Hom2(t4, b4, l4, r4)))
-  idH(A ⊗ B) == idH(A) ⊗ idH(B) ⊣ (A::Ob, B::Ob)
-  idV(A ⊗ B) == idV(A) ⊗ idV(B) ⊣ (A::Ob, B::Ob)
-  id2(A ⊗ B) == id2(A) ⊗ id2(B) ⊣ (A::Ob, B::Ob)
-  id2H(f ⊗ g) == id2H(f) ⊗ id2H(g) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
-                                      f::(A↓C), g::(B↓D))
-  id2V(f ⊗ g) == id2V(f) ⊗ id2V(g) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
-                                      f::(A→C), g::(B→D))
+       f::(A → B), h::(B → C), g::(X → Y), k::(Y → Z)))
+  id(A ⊗ B) == id(A) ⊗ id(B) ⊣ (A::Ob, B::Ob)
+
+  # Monoid in 𝔻₁.
+  otimes(m::(A ↛ B), n::(C ↛ D))::((A ⊗ C) ↛ (B ⊗ D)) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob)
+  otimes(α::Cell(m,n,f,g), β::Cell(m′,n′,f′,g′))::Cell(m⊗m′,n⊗n′,f⊗f′,g⊗g′) ⊣
+    (A::Ob, B::Ob, C::Ob, D::Ob, A′::Ob, B′::Ob, C′::Ob, D′::Ob,
+     f::(A → C), g::(B → D), f′::(A′ → C′), g′::(B′ → D′),
+     m::(A ↛ B), n::(C ↛ D), m′::(A′ ↛ B′), n′::(C′ ↛ D′))
+
+  # Monoid axioms for (𝔻₁,⊗₁,I₁).
+  (m ⊗ n) ⊗ p == m ⊗ (n ⊗ p) ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
+                                m::(A ↛ X), n::(B ↛ Y), p::(C ↛ Z))
+  m ⊗ pid(munit()) == m ⊣ (A::Ob, B::Ob, m::(A ↛ B))
+  pid(munit()) ⊗ m == m ⊣ (A::Ob, B::Ob, m::(A ↛ B))
+  (α ⊗ β) ⊗ γ == α ⊗ (β ⊗ γ) ⊣
+    (A₁::Ob, A₂::Ob, A₃::Ob, B₁::Ob, B₂::Ob, B₃::Ob,
+     C₁::Ob, C₂::Ob, C₃::Ob, D₁::Ob, D₂::Ob, D₃::Ob,
+     f₁::(A₁→C₁), f₂::(A₂→C₂), f₃::(A₃→C₃), g₁::(B₁→D₁), g₂::(B₂→D₂), g₃::(B₃→D₃),
+     m₁::(A₁↛B₁), m₂::(A₂↛B₂), m₃::(A₃↛B₃), n₁::(C₁↛D₁), n₂::(C₂↛D₂), n₃::(C₃↛D₃),
+     α::Cell(m₁,n₁,f₁,g₁), β::Cell(m₂,n₂,f₂,g₂), γ::Cell(m₃,m₃,f₃,g₃))
+
+  # Functorality axioms for (𝔻₁,⊗₁,I₁).
+  ((α ⊗ α′) ⋅ (β ⊗ β′)) == (α ⋅ β) ⊗ (α′ ⋅ β′) ⊣
+    (A::Ob, B::Ob, C::Ob, A′::Ob, B′::Ob, C′::Ob,
+     X::Ob, Y::Ob, Z::Ob, X′::Ob, Y′::Ob, Z′::Ob,
+     f::(A→B), g::(X→Y), f′::(A′→B′), g′::(X′→Y′),
+     h::(B→C), k::(Y→Z), h′::(B′→C′), k′::(Y′→Z′),
+     m::(A↛X), n::(B↛Y), p::(C↛Z), m′::(A′↛X′), n′::(B′↛Y′), p′::(C′↛Z′),
+     α::Cell(m,n,f,g), α′::Cell(m′,n′,f′,g′),
+     β::Cell(n,p,h,k), β′::Cell(n′,p′,h′,k′))
+  id(m ⊗ n) == id(m) ⊗ id(n) ⊣ (A::Ob, B::Ob, X::Ob, Y::Ob, m::(A ↛ X), n::(B ↛ Y))
+
+  # External functorality of ⊗: 𝔻×𝔻 → 𝔻 and I: 1 → 𝔻.
+  # TODO: Interchange of external composition of cells.
+  ((m ⊗ n) * (p ⊗ q) == (m * p) ⊗ (n * q)
+    ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
+       m::(A ↛ B), p::(B ↛ C), n::(X ↛ Y), q::(Y ↛ Z)))
+  pid(A ⊗ B) == pid(A) ⊗ pid(B) ⊣ (A::Ob, B::Ob)
 end
 
-""" Theory of (strict) *symmetric monoidal double categories*
+""" Theory of *symmetric monoidal double categories*
 
-Unlike classical double categories, symmetric monoidal double categories do not
-treat the vertical and horizontal directions on an equal footing, even in the
-strict case. See [`MonoidalDoubleCategory`](@ref) for details and references.
+Unlike the classical notion of strict double categories, symmetric monoidal
+double categories do not treat the two directions on an equal footing, even when
+everything (except the braiding) is strict. See [`MonoidalDoubleCategory`](@ref)
+for references.
+
+FIXME: Should also inherit `ThSymmetricMonoidalCategory{Ob,Hom}` but multiple
+inheritance is not supported.
 """
-@theory ThSymmetricMonoidalDoubleCategory{Ob,HomV,HomH,Hom2} <: ThMonoidalDoubleCategory{Ob,HomV,HomH,Hom2} begin
-  braidV(A::Ob, B::Ob)::((A ⊗ B) ↓ (B ⊗ A))
-  braidH(f::(A → C), g::(B → D))::Hom2((f ⊗ g), (g ⊗ f), σV(A,B), σV(C,D)) ⊣
+@theory ThSymmetricMonoidalDoubleCategory{Ob,Hom,Pro,Cell} <: ThMonoidalDoubleCategory{Ob,Hom,Pro,Cell} begin
+  braid(A::Ob, B::Ob)::((A ⊗ B) → (B ⊗ A))
+  braid(m::(A ↛ C), n::(B ↛ D))::Cell(m ⊗ n, n ⊗ m, σ(A,B), σ(C,D)) ⊣
     (A::Ob, B::Ob, C::Ob, D::Ob)
-  @op (σV) := braidV
-  @op (σH) := braidH
+  @op (σ) := braid
 
   # Involutivity axioms.
-  σV(A,B) ⋅ σV(B,A) == idV(A ⊗ B) ⊣ (A::Ob, B::Ob)
-  σH(f,g) ⋅ σH(g,f) == id2V(f ⊗ g) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
-                                      f::(A → C), g::(B → D))
+  σ(A,B) ⋅ σ(B,A) == id(A ⊗ B) ⊣ (A::Ob, B::Ob)
+  σ(m,n) ⋅ σ(n,m) == id(m ⊗ n) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
+                                  m::(A ↛ C), n::(B ↛ D))
 
   # Naturality axioms.
-  (f⊗g) ⋅ σV(C,D) == σV(A,B) ⋅ (g⊗f) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
-                                        f::(A ↓ C), g::(B ↓ D))
-  ((α⊗β) ⋅ σH(h,k) == σH(f,g) ⋅ (β⊗α) ⊣
-    (A::Ob, B::Ob, C::Ob, D::Ob, E::Ob, F::Ob, G::Ob, H::Ob,
-     f::(A → C), g::(B → D), h::(E → G), k::(F → H),
-     ℓ1::(A ↓ E), r1::(C ↓ G), ℓ2::(B ↓ F), r2::(D ↓ H),
-     α::Hom2(f,h,ℓ1,r1), β::Hom2(g,k,ℓ2,r2)))
+  (f⊗g) ⋅ σ(C,D) == σ(A,B) ⋅ (g⊗f) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
+                                      f::(A → C), g::(B → D))
+  ((α⊗β) ⋅ σ(m′,n′) == σ(m,n) ⋅ (β⊗α) ⊣
+    (A::Ob, B::Ob, C::Ob, D::Ob, A′::Ob, B′::Ob, C′::Ob, D′::Ob,
+     f::(A → C), g::(B → D), f′::(A′ → C′), g′::(B′ → D′),
+     m::(A ↛ B), n::(C ↛ D), m′::(A′ ↛ B′), n′::(C′ ↛ D′),
+     α::Cell(m,n,f,g), β::Cell(m′,n′,f′,g′)))
 
   # Coherence axioms.
-  σV(A,B⊗C) == (σV(A,B) ⊗ idV(C)) ⋅ (idV(B) ⊗ σV(A,C)) ⊣ (A::Ob, B::Ob, C::Ob)
-  σV(A⊗B,C) == (idV(A) ⊗ σV(B,C)) ⋅ (σV(A,C) ⊗ idV(B)) ⊣ (A::Ob, B::Ob, C::Ob)
-  (σH(f,g⊗h) == (σH(f,g) ⊗ id2V(h)) ⋅ (id2V(g) ⊗ σH(f,h)) ⊣
-    (A::Ob, B::Ob, C::Ob, D::Ob, E::Ob, F::Ob,
-     f::(A → D), g::(B → E), h::(C → F)))
-  (σH(f⊗g,h) == (id2V(f) ⊗ σH(g,h)) ⋅ (σH(f,h) ⊗ id2V(g)) ⊣
-    (A::Ob, B::Ob, C::Ob, D::Ob, E::Ob, F::Ob,
-     f::(A → D), g::(B → E), h::(C → F)))
+  σ(A,B⊗C) == (σ(A,B) ⊗ id(C)) ⋅ (id(B) ⊗ σ(A,C)) ⊣ (A::Ob, B::Ob, C::Ob)
+  σ(A⊗B,C) == (id(A) ⊗ σ(B,C)) ⋅ (σ(A,C) ⊗ id(B)) ⊣ (A::Ob, B::Ob, C::Ob)
+  σ(m,n⊗p) == (σ(m,n) ⊗ id(p)) ⋅ (id(n) ⊗ σ(m,p)) ⊣
+    (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob, m::(A↛X), n::(B↛Y), p::(C↛Z))
+  σ(m⊗n,p) == (id(m) ⊗ σ(n,p)) ⋅ (σ(m,p) ⊗ id(n)) ⊣
+    (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob, m::(A↛X), n::(B↛Y), p::(C↛Z))
 end
 
-@syntax FreeSymmetricMonoidalDoubleCategory{ObExpr,HomVExpr,HomHExpr,Hom2Expr} ThSymmetricMonoidalDoubleCategory begin
+@syntax FreeSymmetricMonoidalDoubleCategory{ObExpr,HomExpr,ProExpr,CellExpr} ThSymmetricMonoidalDoubleCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
-  otimes(f::HomV, g::HomV) = associate(new(f,g))
-  otimes(f::HomH, g::HomH) = associate(new(f,g))
-  otimes(f::Hom2, g::Hom2) = associate(new(f,g))
-  composeV(f::HomV, g::HomV) = associate_unit(new(f,g; strict=true), idV)
-  composeH(f::HomH, g::HomH) = associate_unit(new(f,g; strict=true), idH)
-  composeV(α::Hom2, β::Hom2) = associate_unit(new(α,β), id2V)
-  composeH(α::Hom2, β::Hom2) = associate_unit(new(α,β), id2H)
+  otimes(f::Hom, g::Hom) = associate(new(f,g))
+  otimes(f::Pro, g::Pro) = associate(new(f,g))
+  otimes(f::Cell, g::Cell) = associate(new(f,g))
+  compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
+  compose(α::Cell, β::Cell) = associate_unit(new(α,β), id)
+  pcompose(m::Pro, n::Pro) = associate_unit(new(m,n; strict=true), pid)
+  pcompose(α::Cell, β::Cell) = associate_unit(new(α,β), pid)
 end
 
-function show_unicode(io::IO, expr::HomVExpr{:braidV}; kw...)
-  Syntax.show_unicode_infix(io, expr, "σV"; kw...)
-end
-function show_unicode(io::IO, expr::Hom2Expr{:braidH}; kw...)
-  Syntax.show_unicode_infix(io, expr, "σH"; kw...)
-end
-
-function show_latex(io::IO, expr::HomVExpr{:braidV}; kw...)
-  Syntax.show_latex_script(io, expr, "\\sigmaV")
-end
-function show_latex(io::IO, expr::Hom2Expr{:braidH}; kw...)
-  Syntax.show_latex_script(io, expr, "\\sigmaH")
-end
+show_unicode(io::IO, expr::CategoryExpr{:pbraid}; kw...) =
+  Syntax.show_unicode_infix(io, expr, "σ"; kw...)
+show_latex(io::IO, expr::CategoryExpr{:pbraid}; kw...) =
+  Syntax.show_latex_script(io, expr, "\\sigma")
