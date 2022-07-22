@@ -1,8 +1,11 @@
 export ThCategory2, FreeCategory2, Hom2, Hom2Expr, composeH, *,
   ThDoubleCategory, FreeDoubleCategory, Pro, Cell, ProExpr, CellExpr,
   dom, codom, src, tgt, pcompose, pid,
+  ThEquipment, companion, companion_unit, companion_counit,
+  conjoint, conjoint_unit, conjoint_counit,
   ThMonoidalDoubleCategory, ThSymmetricMonoidalDoubleCategory,
-  FreeSymmetricMonoidalDoubleCategory
+  FreeSymmetricMonoidalDoubleCategory,
+  ThCartesianDoubleCategory
 
 import Base: *
 
@@ -201,9 +204,10 @@ is not supported.
 @theory ThMonoidalDoubleCategory{Ob,Hom,Pro,Cell} <: ThDoubleCategory{Ob,Hom,Pro,Cell} begin
   @op (⊗) := otimes
 
-  # Monoid in D₀.
+  # Monoidal operations on D₀.
   otimes(A::Ob, B::Ob)::Ob
-  otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob)
+  otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣
+    (A::Ob, B::Ob, C::Ob, D::Ob)
   munit()::Ob
 
   # Monoid axioms for (D₀,⊗₀,I₀).
@@ -219,8 +223,9 @@ is not supported.
        f::(A → B), h::(B → C), g::(X → Y), k::(Y → Z)))
   id(A ⊗ B) == id(A) ⊗ id(B) ⊣ (A::Ob, B::Ob)
 
-  # Monoid in D₁.
-  otimes(m::(A ↛ B), n::(C ↛ D))::((A ⊗ C) ↛ (B ⊗ D)) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob)
+  # Monoidal operations on D₁ + src/tgt are strict monoidal functors.
+  otimes(m::(A ↛ B), n::(C ↛ D))::((A ⊗ C) ↛ (B ⊗ D)) ⊣
+    (A::Ob, B::Ob, C::Ob, D::Ob)
   otimes(α::Cell(m,n,f,g), β::Cell(m′,n′,f′,g′))::Cell(m⊗m′,n⊗n′,f⊗f′,g⊗g′) ⊣
     (A::Ob, B::Ob, C::Ob, D::Ob, A′::Ob, B′::Ob, C′::Ob, D′::Ob,
      f::(A → C), g::(B → D), f′::(A′ → C′), g′::(B′ → D′),
@@ -247,7 +252,8 @@ is not supported.
      m::(A↛X), n::(B↛Y), p::(C↛Z), m′::(A′↛X′), n′::(B′↛Y′), p′::(C′↛Z′),
      α::Cell(m,n,f,g), α′::Cell(m′,n′,f′,g′),
      β::Cell(n,p,h,k), β′::Cell(n′,p′,h′,k′))
-  id(m ⊗ n) == id(m) ⊗ id(n) ⊣ (A::Ob, B::Ob, X::Ob, Y::Ob, m::(A ↛ X), n::(B ↛ Y))
+  id(m ⊗ n) == id(m) ⊗ id(n) ⊣
+    (A::Ob, B::Ob, X::Ob, Y::Ob, m::(A ↛ X), n::(B ↛ Y))
 
   # External functorality of ⊗: D×D → D and I: 1 → D.
   # TODO: Interchange of external composition of cells.
@@ -287,6 +293,8 @@ inheritance is not supported.
      m::(A ↛ B), n::(C ↛ D), m′::(A′ ↛ B′), n′::(C′ ↛ D′),
      α::Cell(m,n,f,g), β::Cell(m′,n′,f′,g′)))
 
+  # TODO: (Shulman 2010, Defintion 2.9, Equation (ix))
+
   # Coherence axioms.
   σ(A,B⊗C) == (σ(A,B) ⊗ id(C)) ⋅ (id(B) ⊗ σ(A,C)) ⊣ (A::Ob, B::Ob, C::Ob)
   σ(A⊗B,C) == (id(A) ⊗ σ(B,C)) ⋅ (σ(A,C) ⊗ id(B)) ⊣ (A::Ob, B::Ob, C::Ob)
@@ -311,3 +319,57 @@ show_unicode(io::IO, expr::CategoryExpr{:pbraid}; kw...) =
   Syntax.show_unicode_infix(io, expr, "σ"; kw...)
 show_latex(io::IO, expr::CategoryExpr{:pbraid}; kw...) =
   Syntax.show_latex_script(io, expr, "\\sigma")
+
+# Cartesian double category
+###########################
+
+""" Theory of a *cartesian double category*
+
+Loosely speaking, a cartesian double category is a double category ``D`` such
+that the underlying catgories ``D₀`` and ``D₁`` are both cartesian categories,
+in a compatible way.
+
+Reference: Aleiferi 2018, PhD thesis.
+"""
+@theory ThCartesianDoubleCategory{Ob,Hom,Pro,Cell} <: ThSymmetricMonoidalDoubleCategory{Ob,Hom,Pro,Cell} begin
+  # Pairing and projection in D₀.
+  pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
+  proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
+  proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
+
+  pair(f,g) ⋅ proj1(B,C) == f ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(A → C))
+  pair(f,g) ⋅ proj2(B,C) == g ⊣ (A::Ob, B::Ob, C::Ob, f::(A → B), g::(A → C))
+  pair(h ⋅ proj1(B,C), h ⋅ proj2(B,C)) == h ⊣
+    (A::Ob, B::Ob, C::Ob, h::(A → (B ⊗ C)))
+
+  # Pairing and projection in D₁.
+  pair(α::Cell(m,p,f,h), β::Cell(m,q,g,k))::Cell(m,p⊗q,pair(f,g),pair(h,k)) ⊣
+    (A::Ob, B::Ob, W::Ob, X::Ob, Y::Ob, Z::Ob,
+     f::(A → W), g::(A → Y), h::(B → X), k::(B → Z),
+     m::(A ↛ B), p::(W ↛ X), q::(Y ↛ Z))
+  proj1(m::(A ↛ B), n::(C ↛ D))::Cell(m⊗n, m, proj1(A,C), proj1(B,D)) ⊣
+    (A::Ob, B::Ob, C::Ob, D::Ob)
+  proj2(m::(A ↛ B), n::(C ↛ D))::Cell(m⊗n, n, proj2(A,C), proj2(B,D)) ⊣
+    (A::Ob, B::Ob, C::Ob, D::Ob)
+
+  # TODO: Pairing/projection axioms for D₁.
+
+  # Pairing is compatible with external composition.
+  pair(α * γ, β * δ) == pair(α,β) * pair(γ,δ) ⊣
+    (A::Ob, B::Ob, C::Ob, P::Ob, Q::Ob, W::Ob, X::Ob, Y::Ob, Z::Ob,
+     f::(A → W), g::(A → Y), h::(B → X), k::(B → Z), i::(C → P), j::(C → Q),
+     m::(A ↛ B), n::(B ↛ C), p::(W ↛ X), q::(Y ↛ Z), u::(X ↛ P), v::(Z ↛ Q),
+     α::Cell(m,p,f,h), β::Cell(m,q,g,k), γ::Cell(n,u,h,i), δ::Cell(n,v,k,j))
+  pair(pid(f), pid(g)) == pid(pair(f,g)) ⊣
+    (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C))
+
+  # Projection is compatible with external composition.
+  proj1(m * n, p * q) == proj1(m, p) * proj2(n, q) ⊣
+    (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
+     m::(A ↛ B), n::(B ↛ C), p::(X ↛ Y), q::(Y ↛ Z))
+  proj2(m * n, p * q) == proj2(m, p) * proj2(n, q) ⊣
+    (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
+     m::(A ↛ B), n::(B ↛ C), p::(X ↛ Y), q::(Y ↛ Z))
+  proj1(pid(A), pid(B)) == pid(proj1(A, B)) ⊣ (A::Ob, B::Ob)
+  proj2(pid(A), pid(B)) == pid(proj2(A, B)) ⊣ (A::Ob, B::Ob)
+end
