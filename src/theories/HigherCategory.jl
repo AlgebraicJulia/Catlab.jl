@@ -97,30 +97,53 @@ functors ``S,T``.
     (*) := pcompose
   end
 
-  # Category D₁: internal category structure for proarrows and cells.
+  # Category D₀: category structure on objects and arrows.
+  # Inherited from `ThCategory`.
+
+  # Category D₁: category structure on proarrows and cells.
   compose(α::Cell(m, n, f, g), β::Cell(n, p, h, k))::Cell(m, p, f⋅h, g⋅k) ⊣
     (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
-     f::(A → B), g::(X → Y), h::(B → C), k::(Y → Z),
-     m::(A ↛ X), n::(B ↛ Y), p::(C ↛ Z))
+     m::(A ↛ X), n::(B ↛ Y), p::(C ↛ Z),
+     f::(A → B), g::(X → Y), h::(B → C), k::(Y → Z))
   id(m::(A ↛ B))::Cell(m, m, id(A), id(B)) ⊣ (A::Ob, B::Ob)
 
-  # External composition.
+  (α ⋅ β) ⋅ γ == α ⋅ (β ⋅ γ) ⊣
+    (A::Ob, B::Ob, C::Ob, D::Ob, W::Ob, X::Ob, Y::Ob, Z::Ob,
+     m::(A↛W), n::(B↛X), p::(C↛Y), q::(D↛Z),
+     f::(A→B), g::(B→C), h::(C→D), i::(W→X), j::(X→Y), k::(Y→Z),
+     α::Cell(m,n,f,i), β::Cell(n,p,g,j), γ::Cell(p,q,h,k))
+  α ⋅ id(n) == α ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, m::(A↛B), n::(C↛D),
+                    f::(A→C), g::(B→D), α::Cell(m,n,f,g))
+  id(m) ⋅ α == α ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, m::(A↛B), n::(C↛D),
+                    f::(A→C), g::(B→D), α::Cell(m,n,f,g))
+
+  # External category operations.
   pcompose(m::(A ↛ B), n::(B ↛ C))::(A ↛ C) ⊣ (A::Ob, B::Ob, C::Ob)
   pid(A::Ob)::(A ↛ A) ⊣ (A::Ob)
 
   pcompose(α::Cell(m, p, f, g), β::Cell(n, q, g, h))::Cell(m*n, p*q, f, h) ⊣
     (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
-     f::(A → X), g::(B → Y), h::(C → Z),
-     m::(A ↛ B), n::(B ↛ C), p::(X ↛ Y), q::(Y ↛ Z))
+     m::(A ↛ B), n::(B ↛ C), p::(X ↛ Y), q::(Y ↛ Z),
+     f::(A → X), g::(B → Y), h::(C → Z))
   pid(f::(A → B))::Cell(pid(A), pid(B), f, f) ⊣ (A::Ob, B::Ob)
 
-  # Axioms for external category structure.
-  ((m * n) * p == m * (n * p)
-    ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, m::(A ↛ B), n::(B ↛ C), p::(C ↛ D)))
+  # External category axioms.
+  (m * n) * p == m * (n * p) ⊣
+    (A::Ob, B::Ob, C::Ob, D::Ob, m::(A ↛ B), n::(B ↛ C), p::(C ↛ D))
   m * pid(B) == m ⊣ (A::Ob, B::Ob, m::(A ↛ B))
   pid(A) * m == m ⊣ (A::Ob, B::Ob, m::(A ↛ B))
 
-  # TODO: Axioms for cells.
+  (α * β) * γ == α * (β * γ) ⊣
+    (A::Ob, B::Ob, C::Ob, D::Ob, W::Ob, X::Ob, Y::Ob, Z::Ob,
+     m::(A↛B), n::(B↛C), p::(C↛D), u::(W↛X), v::(X↛Y), w::(Y↛Z),
+     f::(A→W), g::(B→X), h::(C→Y), k::(D→Z),
+     α::Cell(m,u,f,g), β::Cell(n,v,g,h), γ::Cell(p,w,h,k))
+  α * pid(g) == α ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, m::(A↛B), n::(C↛D),
+                     f::(A→C), g::(B→D), α::Cell(m,n,f,g))
+  pid(f) * α == α ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, m::(A↛B), n::(C↛D),
+                     f::(A→C), g::(B→D), α::Cell(m,n,f,g))
+
+  # TODO: Interchange laws.
 end
 
 # Convenience constructors
@@ -293,8 +316,6 @@ inheritance is not supported.
      m::(A ↛ B), n::(C ↛ D), m′::(A′ ↛ B′), n′::(C′ ↛ D′),
      α::Cell(m,n,f,g), β::Cell(m′,n′,f′,g′)))
 
-  # TODO: (Shulman 2010, Defintion 2.9, Equation (ix))
-
   # Coherence axioms.
   σ(A,B⊗C) == (σ(A,B) ⊗ id(C)) ⋅ (id(B) ⊗ σ(A,C)) ⊣ (A::Ob, B::Ob, C::Ob)
   σ(A⊗B,C) == (id(A) ⊗ σ(B,C)) ⋅ (σ(A,C) ⊗ id(B)) ⊣ (A::Ob, B::Ob, C::Ob)
@@ -302,6 +323,12 @@ inheritance is not supported.
     (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob, m::(A↛X), n::(B↛Y), p::(C↛Z))
   σ(m⊗n,p) == (id(m) ⊗ σ(n,p)) ⋅ (σ(m,p) ⊗ id(n)) ⊣
     (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob, m::(A↛X), n::(B↛Y), p::(C↛Z))
+
+  # Interchange of braiding with external composition.
+  σ(m*n, m′*n′) == σ(m,m′) * σ(n,n′) ⊣
+    (A::Ob, B::Ob, C::Ob, A′::Ob, B′::Ob, C′::Ob,
+     m::(A↛B), n::(B↛C), m′::(A′↛B′), n′::(B′↛C′))
+  σ(pid(A), pid(B)) == pid(σ(A,B)) ⊣ (A::Ob, B::Ob)
 end
 
 @syntax FreeSymmetricMonoidalDoubleCategory{ObExpr,HomExpr,ProExpr,CellExpr} ThSymmetricMonoidalDoubleCategory begin
@@ -354,7 +381,7 @@ Reference: Aleiferi 2018, PhD thesis.
 
   # TODO: Pairing/projection axioms for D₁.
 
-  # Pairing is compatible with external composition.
+  # Interchange of pairing with external composition.
   pair(α * γ, β * δ) == pair(α,β) * pair(γ,δ) ⊣
     (A::Ob, B::Ob, C::Ob, P::Ob, Q::Ob, W::Ob, X::Ob, Y::Ob, Z::Ob,
      f::(A → W), g::(A → Y), h::(B → X), k::(B → Z), i::(C → P), j::(C → Q),
@@ -363,7 +390,7 @@ Reference: Aleiferi 2018, PhD thesis.
   pair(pid(f), pid(g)) == pid(pair(f,g)) ⊣
     (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C))
 
-  # Projection is compatible with external composition.
+  # Interchange of projection with external composition.
   proj1(m * n, p * q) == proj1(m, p) * proj2(n, q) ⊣
     (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
      m::(A ↛ B), n::(B ↛ C), p::(X ↛ Y), q::(Y ↛ Z))
