@@ -332,8 +332,9 @@ See [`ACSetTranformation`](@ref) for the distinction between tight and loose.
       for c in ob(S))
     type_components = NamedTuple(
       type => coerce_type_component(type, get(type_components, type, identity),
-                                    Dom.parameters[i], Codom.parameters[i])
-      for (type, i) in zip(attrtype(S), acodom_nums(S)))
+                                    Dom.parameters[attrtype_num(S,type)],
+                                    Codom.parameters[attrtype_num(S,type)])
+      for type in attrtype(S))
     new{S,typeof(components),typeof(type_components),Dom,Codom}(
       components, type_components, X, Y)
   end
