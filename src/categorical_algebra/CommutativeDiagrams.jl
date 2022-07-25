@@ -1,128 +1,115 @@
 """ Commutative diagrams in a category.
 
-**NOTE**: This module is at an early stage of construction. At this time, only
+**Note**: This module is at an early stage of construction. For now, only
 commutative squares are implemented.
 """
 module CommutativeDiagrams
-export SquareDiagram, ob, hom, left, right, top, bottom
+export SquareDiagram, SquareOb, SquareHom, ob, hom, dom, codom, src, tgt,
+  top, bottom, left, right
 
+using StaticArrays: StaticVector, SVector
 using StructEquality
 
 using ...GAT
 using ...Theories: ThDoubleCategory
-import ...Theories: ob, hom, dom, codom, compose, ⋅, *, HomV, HomH,
-  composeH, composeV, id, idH, idV, id2, id2H, id2V, left, right, top, bottom
-using ..FinSets
+import ...Theories: ob, hom, dom, codom, src, tgt, top, bottom,
+  compose, id, pcompose, pid, ⋅, *
+import ..FreeDiagrams: left, right
 
 # Commutative squares
 #####################
 
-"""    SquareDiagram(top, bottom, left, right)
+""" Commutative square in a category.
 
-Creates a square diagram in a category, which forms the 2-cells of the double
-category Sq(C). The four 1-cells are given in top, bottom, left, right order, to
-match the GAT of a double category.
+Commutative squares in a category ``C`` form the cells of a strict double
+category, the *arrow double category* or *double category of squares* in ``C``,
+with composition in both directions given by pasting of commutative squares.
+
+In this data structure, the four morphisms comprising the square are stored as a
+static vector of length 4, ordered as domain (top), codomain (bottom), source
+(left), and target (right). This convention agrees with the GAT for double
+categories (`ThDoubleCategory`).
 """
-@struct_hash_equal struct SquareDiagram{Ob,Hom,Homs<:AbstractVector{Hom}}
-  corners::Vector{Ob}
-  sides::Homs
+@struct_hash_equal struct SquareDiagram{Hom,Homs<:StaticVector{4,Hom}}
+  homs::Homs
 end
 
-function SquareDiagram(homs::AbstractVector)
-  length(homs) == 4 ||
-    error("Square diagrams accept exactly 4 homs, in order top, bottom, left, right")
-  obs = [dom(homs[1]), dom(homs[2]), dom(homs[4]), codom(homs[4])]
-
-  # checking well-formedness
-  # top-left share domains
-  @assert dom(homs[1]) == dom(homs[3])
-  # bottom-right share codomains
-  @assert codom(homs[2]) == codom(homs[4])
-  # left-bottom intersection
-  @assert codom(homs[3]) == dom(homs[2])
-  # top-right intersection
-  @assert codom(homs[1]) == dom(homs[4])
-
-  SquareDiagram(obs, homs)
+function SquareDiagram(top, bottom, left, right)
+  dom(top) == dom(left) ||
+    error("Domain mismatch in top-left corner: $top vs $left")
+  codom(top) == dom(right) ||
+    error("Domain mismatch top-right corner: $top vs $right")
+  dom(bottom) == codom(left) ||
+    error("Domain mismatch in bottom-left corner: $bottom vs $left")
+  codom(bottom) == codom(right) ||
+    error("Domain mismatch in bottom-right corner: $bottom vs $right")
+  SquareDiagram(SVector(top, bottom, left, right))
 end
 
-SquareDiagram(top, bottom, left, right) =
-  SquareDiagram([top, bottom, left, right])
+ob(sq::SquareDiagram) =
+  SVector(dom(top(sq)), codom(top(sq)), dom(bottom(sq)), codom(bottom(sq)))
+hom(sq::SquareDiagram) = sq.homs
 
-ob(sq::SquareDiagram) = sq.corners
-hom(sq::SquareDiagram) = sq.sides
+top(sq::SquareDiagram) = sq.homs[1]
+bottom(sq::SquareDiagram) = sq.homs[2]
+left(sq::SquareDiagram) = sq.homs[3]
+right(sq::SquareDiagram) = sq.homs[4]
 
-top(sq::SquareDiagram) = sq.sides[1]
-bottom(sq::SquareDiagram) = sq.sides[2]
-left(sq::SquareDiagram) = sq.sides[3]
-right(sq::SquareDiagram) = sq.sides[4]
+""" Object in the double category of squares.
 
-""" Arrow category of FinSet as a double category of commutative squares.
-
-For any category C, you can construct Sq(C) as a
-[double category](https://ncatlab.org/nlab/show/double+category)
-of commutative squares.
-
-TODO: This construction has nothing specifically to do with finite sets and
-functions and should be generalized to any category C.
+See also: [`SquareDiagram`](@ref).
 """
-@instance ThDoubleCategory{FinSet, FinFunction, FinFunction, SquareDiagram} begin
-  @import dom, codom, top, bottom, left, right, ⋅
-  idH(A::FinSet) = FinFunction(identity, A, A)
-  idV(A::FinSet) = FinFunction(identity, A, A)
+@struct_hash_equal struct SquareOb{Ob}
+  ob::Ob
+end
 
-  composeH(f::FinFunction, g::FinFunction) = compose(f,g)
-  composeV(f::FinFunction, g::FinFunction) = compose(f,g)
+ob(x::SquareOb) = x.ob
 
-  id2(A::FinSet) = SquareDiagram(idH(A), idH(A), idV(A), idV(A))
-  # FIXME: how do you distinguish between vertical and horizontal if they are the same type?
-  id2V(f::FinFunction) = SquareDiagram(f, f, idV(A), idV(A))
-  id2H(f::FinFunction) = SquareDiagram(idH(A), idH(A), f, f)
+""" Arrow or proarrow in the double category of squares.
 
-  """    composeH(s₁, s₂)
+See also: [`SquareDiagram`](@ref).
+"""
+@struct_hash_equal struct SquareHom{Hom}
+  hom::Hom
+end
 
-  compose two squares horizontally as shown below:
-      1   -f->   3  -g->   5
-      |          |         |
-      |          |         |
-      v          v         v
-      2  -f'->   4  -g'->  6
-   """
-  function composeH(s₁::SquareDiagram, s₂::SquareDiagram)
-    @assert ob(s₁)[3] == ob(s₂)[1]
-    @assert ob(s₁)[4] == ob(s₂)[2]
-    @assert right(s₁) == left(s₂)
+hom(f::SquareHom) = f.hom
 
-    f = top(s₁)
-    f′= bottom(s₁)
-    g = top(s₂)
-    g′= bottom(s₂)
-    return SquareDiagram(f⋅g, f′⋅g′, left(s₁), right(s₂))
+@instance ThDoubleCategory{SquareOb,SquareHom,SquareHom,SquareDiagram} begin
+  dom(f::SquareHom) = SquareOb(dom(hom(f)))
+  codom(f::SquareHom) = SquareOb(codom(hom(f)))
+  src(m::SquareHom) = SquareOb(dom(hom(m)))
+  tgt(m::SquareHom) = SquareOb(codom(hom(m)))
+
+  dom(α::SquareDiagram) = SquareHom(top(α))
+  codom(α::SquareDiagram) = SquareHom(bottom(α))
+  src(α::SquareDiagram) = SquareHom(left(α))
+  tgt(α::SquareDiagram) = SquareHom(right(α))
+
+  compose(f::SquareHom, g::SquareHom) = SquareHom(compose(hom(f), hom(g)))
+  id(x::SquareOb) = SquareHom(id(ob(x)))
+
+  pcompose(m::SquareHom, n::SquareHom) = SquareHom(compose(hom(m), hom(n)))
+  pid(x::SquareOb) = SquareHom(id(ob(x)))
+
+  function compose(α::SquareDiagram, β::SquareDiagram)
+    bottom(α) == top(β) || error("Domain mismatch: $(bottom(α)) != $(top(β))")
+    SquareDiagram(SVector(
+      top(α), bottom(β), left(α)⋅left(β), right(α)⋅right(β)))
+  end
+  function id(m::SquareHom)
+    f = hom(m)
+    SquareDiagram(f, f, id(dom(f)), id(codom(f)))
   end
 
-  """    composeV(s₁, s₂)
-
-  compose two squares vertically as shown below:
-      1   -->  3
-      |        |
-      |        |
-      v        v
-      2  -->   4
-      |        |
-      |        |
-      v        v
-      5  -->   6
-  """
-  function composeV(s₁::SquareDiagram, s₂::SquareDiagram)
-    @assert ob(s₁)[2] == ob(s₂)[1]
-    @assert ob(s₁)[4] == ob(s₂)[3]
-    @assert bottom(s₁) == top(s₂)
-
-    f = left(s₁)
-    f′= right(s₁)
-    g = left(s₂)
-    g′= right(s₂)
-    return SquareDiagram(top(s₁), bottom(s₂), f⋅g, f′⋅g′)
+  function pcompose(α::SquareDiagram, β::SquareDiagram)
+    right(α) == left(β) || error("Domain mismatch: $(right(α)) != $(left(β))")
+    SquareDiagram(SVector(
+      top(α)⋅top(β), bottom(α)⋅bottom(β), left(α), right(β)))
+  end
+  function pid(f::SquareHom)
+    f = hom(f)
+    SquareDiagram(id(dom(f)), id(codom(f)), f, f)
   end
 end
 

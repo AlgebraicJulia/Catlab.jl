@@ -70,14 +70,12 @@ ndims(expr::ObExpr) = 1
 ndims(expr::ObExpr{:otimes}) = sum(map(ndims, args(expr)))
 ndims(expr::ObExpr{:munit}) = 0
 
-function show_unicode(io::IO, expr::GATExpr{:otimes}; kw...)
+show_unicode(io::IO, expr::CategoryExpr{:otimes}; kw...) =
   Syntax.show_unicode_infix(io, expr, "⊗"; kw...)
-end
 show_unicode(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
 
-function show_latex(io::IO, expr::GATExpr{:otimes}; kw...)
+show_latex(io::IO, expr::CategoryExpr{:otimes}; kw...) =
   Syntax.show_latex_infix(io, expr, "\\otimes"; kw...)
-end
 show_latex(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
 
 # Symmetric monoidal category
@@ -113,9 +111,10 @@ end
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 end
 
-function show_latex(io::IO, expr::HomExpr{:braid}; kw...)
+show_unicode(io::IO, expr::CategoryExpr{:braid}; kw...) =
+  Syntax.show_unicode_infix(io, expr, "σ"; kw...)
+show_latex(io::IO, expr::CategoryExpr{:braid}; kw...) =
   Syntax.show_latex_script(io, expr, "\\sigma")
-end
 
 """ Theory of a *symmetric monoidal copresheaf*
 

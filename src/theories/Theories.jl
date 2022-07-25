@@ -9,9 +9,19 @@ export CategoryExpr, ObExpr, HomExpr
 using ..Catlab
 import ..Syntax: GATExpr, show_unicode, show_latex
 
-# Base types for expressions in a category.
+""" Base type for GAT expressions in categories or other categorical structures.
+
+All symbolic expression types exported by `Catlab.Theories` are subtypes of this
+abstract type.
+"""
 abstract type CategoryExpr{T} <: GATExpr{T} end
+
+""" Base type for object expressions in categorical structures.
+"""
 abstract type ObExpr{T} <: CategoryExpr{T} end
+
+""" Base type for morphism expressions in categorical structures.
+"""
 abstract type HomExpr{T} <: CategoryExpr{T} end
 
 # Convenience methods
