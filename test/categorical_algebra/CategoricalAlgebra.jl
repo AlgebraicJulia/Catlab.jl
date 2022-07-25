@@ -40,7 +40,7 @@ end
 
 @testset "Diagrams" begin
   include("Diagrams.jl")
-  #include("CommutativeDiagrams.jl")
+  include("CommutativeDiagrams.jl")
 end
 
 @testset "DataMigrations" begin
