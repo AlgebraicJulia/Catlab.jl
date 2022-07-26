@@ -177,12 +177,12 @@ g′ = OpenWLGraph{Float64,Symbol}(g0, FinFunction([1],5),
 
 # This is actually a semi-globular set because there are no degeneracies.
 @present SchWeighted2DGlobularSet <: SchWeightedGraph begin
-  Cell2::Ob
-  (src2, tgt2)::Hom(Cell2, E)
+  Cell::Ob
+  (src2, tgt2)::Hom(Cell, E)
   compose(src2, src) == compose(tgt2, src)
   compose(src2, tgt) == compose(tgt2, tgt)
 
-  weight2::Attr(Cell2,Weight)
+  weight2::Attr(Cell, Weight)
 end
 
 @acset_type Weighted2DGlobularSet(SchWeighted2DGlobularSet) <: HasGraph
@@ -194,10 +194,10 @@ e1, e2 = WeightedGraph{Float64}(2), WeightedGraph{Float64}(2)
 add_edge!(e1, 1, 2, weight=1)
 add_edge!(e2, 1, 2, weight=2)
 
-cell2 = @acset Weighted2DGlobularSet{Float64} begin
+cell = @acset Weighted2DGlobularSet{Float64} begin
   V = 2
   E = 2
-  Cell2 = 1
+  Cell = 1
   src = [1,1]; tgt = [2,2]
   src2 = [1]; tgt2 = [2]
   weight = [1., 2.]
@@ -205,7 +205,7 @@ cell2 = @acset Weighted2DGlobularSet{Float64} begin
 end
 
 # Composing along vertices.
-g = OpenWeighted2DGlobularSet{Float64}(cell2, OpenACSetLeg(v, V=[1]),
+g = OpenWeighted2DGlobularSet{Float64}(cell, OpenACSetLeg(v, V=[1]),
                                        OpenACSetLeg(v, V=[2]))
 h = apex(compose(g, g))
 @test (src(h), tgt(h)) == ([1,1,2,2], [2,2,3,3])
@@ -213,7 +213,7 @@ h = apex(compose(g, g))
 @test (h[:weight], h[:weight2]) == ([1.,2.,1.,2.], [1.,1.])
 
 # Composing along edges.
-g = OpenWeighted2DGlobularSet{Float64}(cell2, OpenACSetLeg(e1, V=[1,2], E=[1]),
+g = OpenWeighted2DGlobularSet{Float64}(cell, OpenACSetLeg(e1, V=[1,2], E=[1]),
                                        OpenACSetLeg(e2, V=[1,2], E=[2]))
 h = apex(compose(g, dagger(g)))
 @test (src(h), tgt(h)) == ([1,1,1], [2,2,2])

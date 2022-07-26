@@ -13,8 +13,7 @@ using StaticArrays: StaticVector, SVector
 using ...GAT, ..FreeDiagrams, ..Limits, ..FinSets, ..CSets
 import ..FreeDiagrams: apex, legs, feet, left, right, bundle_legs
 import ..CSets: components, force
-using ...Theories: ThCategory, SchemaDesc, SchemaDescType, CSetSchemaDescType, SchemaDescTypeType,
-  attrtype, attr, adom, adom_nums, acodom
+using ...Theories: ThCategory, attrtype, attr, adom, adom_nums, acodom
 import ...Theories: dom, codom, compose, ⋅, id, otimes, ⊗, munit, braid, σ,
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dunit, dcounit, dagger
 
@@ -191,11 +190,11 @@ end
 
 """ Create types for open attributed C-sets from an attributed C-set type.
 
-The given acset type should *not* be instantiated with concrete attribute types.
-
-Returns two types, one for objects, a subtype of [`StructuredCospanOb`](@ref),
-and one for morphisms, a subtype of [`StructuredMulticospan`](@ref). Both types
-have the same type parameters for attribute types as the given acset type.
+The type parameters of the given acset type should *not* be instantiated with
+specific Julia types. This function returns a pair of types, one for objects, a
+subtype of [`StructuredCospanOb`](@ref), and one for morphisms, a subtype of
+[`StructuredMulticospan`](@ref). Both types will have the same type parameters
+for attribute types as the given acset type.
 
 Mathematically speaking, this function sets up structured (multi)cospans with a
 functor ``L: A → X`` between categories of acsets that creates "discrete
@@ -207,8 +206,7 @@ property but ``{E} ↪ {E ⇉ V}`` does not.
 
 See also: [`OpenCSetTypes`](@ref).
 """
-function OpenACSetTypes(::Type{X}, ob₀::Symbol) where
-    {S<:SchemaDescType, X<:StructACSet{S}}
+function OpenACSetTypes(::Type{X}, ob₀::Symbol) where {S, X<:StructACSet{S}}
   @assert ob₀ ∈ ob(S)
   vars = map(TypeVar, attrtype(S))
   L = if any(ob(S)[j] == ob₀ for (i,j) in enumerate(adom_nums(S)))
@@ -222,11 +220,15 @@ function OpenACSetTypes(::Type{X}, ob₀::Symbol) where
 end
 
 function OpenACSetTypes(::Type{X}, ::Type{A}) where
-    {S<:SchemaDescType, X<:StructACSet{S}, S₀<:SchemaDescType, A<:StructACSet{S₀}}
-  @assert ob(S₀) ⊆ ob(S) && hom(S₀) ⊆ hom(S)
-  @assert attrtype(S₀) ⊆ attrtype(S) && attr(S₀) ⊆ attr(S)
+    {S, X<:StructACSet{S}, S₀, A<:StructACSet{S₀}}
+  @assert ob(S₀) ⊆ ob(S) && hom(S₀) ⊆ hom(S) && attr(S₀) ⊆ attr(S)
+  attr_types₀, attr_types = collect(attrtype(S₀)), collect(attrtype(S))
+  attr_type_indices₀ = indexin(attr_types₀, attr_types)
+  @assert all(!isnothing, attr_type_indices₀)
+
   vars = map(TypeVar, attrtype(S))
-  L = isempty(vars) ? DiscreteACSet{A,X} : DiscreteACSet{A{vars...}, X{vars...}}
+  vars₀ = vars[attr_type_indices₀]
+  L = isempty(vars) ? DiscreteACSet{A,X} : DiscreteACSet{A{vars₀...}, X{vars...}}
   (foldr(UnionAll, vars, init=StructuredCospanOb{L}),
    foldr(UnionAll, vars, init=StructuredMulticospan{L}))
 end
