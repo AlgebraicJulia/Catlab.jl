@@ -6,7 +6,7 @@ export ACSetTransformation, CSetTransformation,
   ACSetHomomorphismAlgorithm, BacktrackingSearch, HomomorphismQuery,
   components, force, is_natural, homomorphism, homomorphisms, is_homomorphic,
   isomorphism, isomorphisms, is_isomorphic,
-  generate_json_acset, parse_json_acset, read_json_acset, write_json_acset
+  generate_json_acset, parse_json_acset, read_json_acset, write_json_acset, get_pkg_version, generate_dict_from_schema, generate_schema_from_dict, serialize_schema_to_json, deserialize_json_to_schema
 
 using Base.Iterators: flatten
 using Base.Meta: quot
@@ -14,11 +14,12 @@ using StructEquality
 using JSON
 using Reexport
 using Tables
+using Pkg
 
 @reexport using ...CSetDataStructures
 using ...GAT, ...Present, ...Syntax
 using ...Theories: ThCategory, SchemaDescType, CSetSchemaDescType,
-  attrtype, attrtype_num, attr, adom, acodom, acodom_nums
+  attrtype, attrtype_num, attr, adom, acodom, acodom_nums, Hom, Ob, Attr, AttrType
 import ...Theories: dom, codom, compose, ⋅, id,
   ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 using ..FreeDiagrams, ..Limits, ..Subobjects, ..FinSets, ..FinCats
@@ -1082,7 +1083,7 @@ end
     end...))
 end
 
-# Serialization
+# Serialization of ACSet
 ###############
 
 """ Serialize an ACSet object to a JSON string
@@ -1131,6 +1132,99 @@ function write_json_acset(x::T, fname::AbstractString) where T <: ACSet
   open(string(fname), "w") do f
     write(f, generate_json_acset(x))
   end
+end
+
+# Serialization of ACSet Presentation (schema)
+###############
+
+""" Get version of specific Julia package.
+
+Given the name of a package, get its version number.
+"""
+function get_pkg_version(name::AbstractString)
+    pkg = only([x for x in values(Pkg.dependencies()) if x.name == name])
+    return string(pkg.version)
+end
+
+""" Convert ACSet presentation to dictionary of generators.
+
+Given an ACSet presentation, e.g. SchWeightedGraph, SchGraph, construct a dictionary with keys `["Version", "Ob", "Hom", "AttrType", "Attr"]`.
+"""
+function generate_dict_from_schema(p::Presentation)
+    schema_dict = Dict(
+        "Version" => 
+            Dict("ACSetSchema" => "0.0.1",
+                 "Catlab" => get_pkg_version("Catlab")),
+        "Ob" => [
+            Dict("name" => string(x)) for x in generators(p, :Ob)
+            ],
+        "Hom" => [
+            Dict("name" => string(x), 
+                "domain" => string(dom(x)), 
+                "codomain" => string(codom(x))) for x in generators(p, :Hom)
+                ],
+        "AttrType" => [
+            Dict("name" => string(x)) for x in generators(p, :AttrType)
+            ],
+        "Attr" => [
+            Dict("name" => string(x), 
+                "domain" => string(dom(x)), 
+                "codomain" => string(codom(x))) for x in generators(p, :Attr)
+                ]
+    )
+    return schema_dict
+end
+
+""" Convert dictionary of generators to ACSet presentation.
+
+Given a dictionary specifying the generators of an ACset presentation, construct a Presentation object.
+"""
+function generate_schema_from_dict(d::Dict)
+    # Initialize presentation of FreeSchema
+    theory = FreeSchema
+    pres = Presentation(theory)
+
+    ob_list, hom_list, attrtype_list, attr_list = d["Ob"], d["Hom"], d["AttrType"], d["Attr"]
+
+    # Parse objects
+    obs = [Ob(theory, Symbol(x["name"])) for x in ob_list]
+    add_generators!(pres, obs)
+
+    # Parse morphisms
+    homs = [Hom(Symbol(x["name"]), Ob(theory, Symbol(x["domain"])), Ob(theory, Symbol(x["codomain"]))) for x in hom_list]
+    add_generators!(pres, homs)
+
+    # Parse attribute types
+    attrtypes = [AttrType(theory.AttrType, Symbol(x["name"])) for x in attrtype_list]
+    add_generators!(pres, attrtypes)
+
+    # Parse attributes
+    attrs = [Attr(Symbol(x["name"]), Ob(theory, Symbol(x["domain"])), AttrType(theory.AttrType, Symbol(x["codomain"]))) for x in attr_list]
+    add_generators!(pres, attrs)
+
+    return pres
+end
+
+""" Serialize ACSet presentation to JSON.
+
+Given a presentation, generate a JSON that adheres to the JSON Schema specification <insert link>.
+"""
+function serialize_schema_to_json(p::Presentation)
+    schema_dict = generate_dict_from_schema(p)
+    schema_json = JSON.json(schema_dict)
+    # println(schema_json)
+    return schema_json
+end
+
+""" Deserialize JSON to produce ACSet presentation.
+
+Given a JSON that adheres to <insert link>, generate an ACSet presentation using the specified generators.
+"""
+function deserialize_json_to_schema(data::String)
+    schema_dict = JSON.parse(data)
+    schema = generate_schema_from_dict(schema_dict)
+    # println(schema)
+    return schema
 end
 
 end
