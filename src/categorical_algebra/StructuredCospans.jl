@@ -5,16 +5,15 @@ implementation for attributed C-sets.
 """
 module StructuredCospans
 export StructuredMulticospan, StructuredCospan, StructuredCospanOb,
-  OpenCSetTypes, OpenACSetTypes
+  OpenCSetTypes, OpenACSetTypes, OpenACSetLeg
 
 using StructEquality
 using StaticArrays: StaticVector, SVector
 
 using ...GAT, ..FreeDiagrams, ..Limits, ..FinSets, ..CSets
 import ..FreeDiagrams: apex, legs, feet, left, right, bundle_legs
-import ..CSets: force
-using ...Theories: ThCategory, SchemaDesc, SchemaDescType, CSetSchemaDescType, SchemaDescTypeType,
-  attrtype, attr, adom, adom_nums, acodom
+import ..CSets: components, force
+using ...Theories: ThCategory, attrtype, attr, adom, adom_nums, acodom
 import ...Theories: dom, codom, compose, ⋅, id, otimes, ⊗, munit, braid, σ,
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dunit, dcounit, dagger
 
@@ -183,54 +182,87 @@ munit_like(a::StructuredCospanOb{L}) where L = munit(StructuredCospanOb{L})
 
 """ Create types for open C-sets from a C-set type.
 
-Returns two types, for objects, a subtype of [`StructuredCospanOb`](@ref), and
-for morphisms, a subtype of [`StructuredMulticospan`](@ref).
-
-See also: [`OpenACSetTypes`](@ref).
+A special case of [`OpenACSetTypes`](@ref). See there for details.
 """
-function OpenCSetTypes(::Type{X}, ob₀::Symbol) where
-    {S<:CSetSchemaDescType, X<:StructCSet{S}}
-  @assert ob₀ ∈ ob(S)
-  L = FinSetDiscreteACSet{ob₀, X}
-  (StructuredCospanOb{L}, StructuredMulticospan{L})
+function OpenCSetTypes(::Type{X}, args...) where X<:StructCSet
+  OpenACSetTypes(X, args...)
 end
 
 """ Create types for open attributed C-sets from an attributed C-set type.
 
-Note: the type passed in should *not* be instantiated with concrete attribute types.
+The type parameters of the given acset type should *not* be instantiated with
+specific Julia types. This function returns a pair of types, one for objects, a
+subtype of [`StructuredCospanOb`](@ref), and one for morphisms, a subtype of
+[`StructuredMulticospan`](@ref). Both types will have the same type parameters
+for attribute types as the given acset type.
 
-The resulting types, for objects and morphisms, each have the same type
-parameters for data types as the original type.
+Mathematically speaking, this function sets up structured (multi)cospans with a
+functor ``L: A → X`` between categories of acsets that creates "discrete
+acsets." Such a "discrete acset functor" is a functor that is left adjoint to a
+certain kind of forgetful functor between categories of acsets, namely one that
+is a pullback along an inclusion of schemas such that the image of inclusion has
+no outgoing arrows. For example, the schema inclusion ``{V} ↪ {E ⇉ V}`` has this
+property but ``{E} ↪ {E ⇉ V}`` does not.
 
 See also: [`OpenCSetTypes`](@ref).
 """
-function OpenACSetTypes(::Type{X}, ob₀::Symbol) where
-    {S<:SchemaDescType, X<:StructACSet{S}}
+function OpenACSetTypes(::Type{X}, ob₀::Symbol) where {S, X<:StructACSet{S}}
   @assert ob₀ ∈ ob(S)
-  type_vars = map(TypeVar, attrtype(S))
+  vars = map(TypeVar, attrtype(S))
   L = if any(ob(S)[j] == ob₀ for (i,j) in enumerate(adom_nums(S)))
     A = ACSetTableType(X, ob₀, union_all=true)
-    DiscreteACSet{A{type_vars...}, X{type_vars...}}
+    DiscreteACSet{A{vars...}, X{vars...}}
   else
-    FinSetDiscreteACSet{ob₀, X{type_vars...}}
+    FinSetDiscreteACSet{ob₀, isempty(vars) ? X : X{vars...}}
   end
-  (foldr(UnionAll, type_vars, init=StructuredCospanOb{L}),
-   foldr(UnionAll, type_vars, init=StructuredMulticospan{L}))
+  (foldr(UnionAll, vars, init=StructuredCospanOb{L}),
+   foldr(UnionAll, vars, init=StructuredMulticospan{L}))
 end
 
-""" Abstract type for functor L: A → X giving a discrete C-set.
+function OpenACSetTypes(::Type{X}, ::Type{A}) where
+    {S, X<:StructACSet{S}, S₀, A<:StructACSet{S₀}}
+  @assert ob(S₀) ⊆ ob(S) && hom(S₀) ⊆ hom(S) && attr(S₀) ⊆ attr(S)
+  attr_types₀, attr_types = collect(attrtype(S₀)), collect(attrtype(S))
+  attr_type_indices₀ = indexin(attr_types₀, attr_types)
+  @assert all(!isnothing, attr_type_indices₀)
+
+  vars = map(TypeVar, attrtype(S))
+  vars₀ = vars[attr_type_indices₀]
+  L = isempty(vars) ? DiscreteACSet{A,X} : DiscreteACSet{A{vars₀...}, X{vars...}}
+  (foldr(UnionAll, vars, init=StructuredCospanOb{L}),
+   foldr(UnionAll, vars, init=StructuredMulticospan{L}))
+end
+
+""" Leg of a structured (multi)cospan of acsets in R-form.
+
+A convenience type that contains the data of an acset transformation, except for
+the codomain, since that data is already given by the decoration of the R-form
+structured cospan.
+"""
+@struct_hash_equal struct OpenACSetLeg{Comp<:NamedTuple, Dom<:StructACSet}
+  components::Comp
+  dom::Dom
+end
+OpenACSetLeg(a::StructACSet; components...) = OpenACSetLeg((; components...), a)
+
+components(ϕ::OpenACSetLeg) = ϕ.components
+dom(ϕ::OpenACSetLeg) = ϕ.dom
+codom(::OpenACSetLeg) = nothing
+
+""" Abstract type for functor L: A → X giving a discrete attribute C-set.
 """
 abstract type AbstractDiscreteACSet{X <: StructACSet} end
 
 codom(::Type{<:AbstractDiscreteACSet{X}}) where
   {S, X<:StructACSet{S}} = (X, TightACSetTransformation{S})
 
-StructuredCospan{L}(x::StructACSet, f::FinFunction{Int,Int},
-                    g::FinFunction{Int,Int}) where {L<:AbstractDiscreteACSet} =
+StructuredCospan{L}(x::StructACSet, f::Union{FinFunction,OpenACSetLeg},
+                    g::Union{FinFunction,ACSetTransformation}) where
+    {L<:AbstractDiscreteACSet} =
   StructuredCospan{L}(x, Cospan(f, g))
 
 StructuredMulticospan{L}(x::StructACSet,
-                         fs::Vararg{<:FinFunction{Int,Int},N}) where
+                         fs::Vararg{<:Union{FinFunction,OpenACSetLeg},N}) where
     {L<:AbstractDiscreteACSet, N} =
   StructuredMulticospan{L}(x, SMulticospan{N}(fs...))
 
@@ -242,8 +274,7 @@ end
 """ A functor L: FinSet → C-Set giving the discrete C-set wrt an object in C.
 
 This functor has a right adjoint R: C-Set → FinSet giving the underlying set at
-that object. Instead of instantiating this type directly, you should use
-[`OpenCSetTypes`](@ref) or [`OpenACSetTypes`](@ref).
+that object.
 """
 struct FinSetDiscreteACSet{ob₀, X} <: AbstractDiscreteACSet{X} end
 
@@ -251,9 +282,10 @@ dom(::Type{<:FinSetDiscreteACSet}) = (FinSet{Int}, FinFunction{Int,Int})
 
 """ A functor L: C₀-Set → C-Set giving the discrete C-set for C₀.
 
-Here C₀ is assumed to contain a single object from C and the discreteness is
-with respect to this object. The functor L has a right adjoint R: C-Set → C₀-Set
-forgetting the rest of C. Data attributes of the chosen object are preserved.
+Unlike [`FinSetDiscreteACSet`](@ref), this type supports data attributes. In
+addition, the sub-schema C₀ may contain more than one object. In all cases, the
+inclusion of schemas ``C₀ → C`` must satisfy the property described in
+[`OpenACSetTypes`](@ref).
 """
 struct DiscreteACSet{A <: StructACSet, X} <: AbstractDiscreteACSet{X} end
 
@@ -264,7 +296,7 @@ function StructuredMulticospan{L}(x::StructACSet,
                                   cospan::Multicospan{<:FinSet{Int}}) where
     {A, L <: DiscreteACSet{A}}
   a = A()
-  copy_parts_only!(a, x)
+  copy_parts!(a, x)
   induced_legs = map(leg -> induced_transformation(a, leg), legs(cospan))
   StructuredMulticospan{L}(x, Multicospan(a, induced_legs))
 end
@@ -303,7 +335,7 @@ end
 """
 function (::Type{L})(a::StructACSet) where {A,X,L<:DiscreteACSet{A,X}}
   x = X()
-  copy_parts_only!(x, a)
+  copy_parts!(x, a)
   x
 end
 
@@ -327,7 +359,8 @@ function shift_left(::Type{L}, x::StructACSet, f::FinFunction{Int,Int}) where
     {ob₀, L <: FinSetDiscreteACSet{ob₀}}
   ACSetTransformation((; ob₀ => f), L(dom(f)), x)
 end
-function shift_left(::Type{L}, x::StructACSet, ϕ::ACSetTransformation) where
+function shift_left(::Type{L}, x::StructACSet,
+                    ϕ::Union{ACSetTransformation,OpenACSetLeg}) where
     {L <: DiscreteACSet}
   ACSetTransformation(components(ϕ), L(dom(ϕ)), x)
 end
