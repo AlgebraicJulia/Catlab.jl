@@ -1207,7 +1207,7 @@ end
 
 """ Serialize ACSet presentation to JSON.
 
-Given a presentation, generate a JSON that adheres to the JSON Schema specification <insert link>.
+Given a presentation, generate a JSON that adheres to the JSON Schema specification (https://github.com/AlgebraicJulia/Catlab.jl/tree/master/test/categorical_algebra/acset.schema.json).
 """
 function serialize_schema_to_json(p::Presentation)
     schema_dict = generate_dict_from_schema(p)
@@ -1218,7 +1218,7 @@ end
 
 """ Deserialize JSON to produce ACSet presentation.
 
-Given a JSON that adheres to <insert link>, generate an ACSet presentation using the specified generators.
+Given a JSON that adheres to the JSON schema specification (https://github.com/AlgebraicJulia/Catlab.jl/tree/master/test/categorical_algebra/acset.schema.json), generate an ACSet presentation using the specified generators.
 """
 function deserialize_json_to_schema(data::String)
     schema_dict = JSON.parse(data)

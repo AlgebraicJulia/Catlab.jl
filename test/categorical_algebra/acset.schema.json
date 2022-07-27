@@ -1,5 +1,5 @@
 {
-    "id": "https://github.com/AlgebraicJulia/Catlab.jl/tree/master/src/categorical_algebra/acset.schema.json",
+    "id": "https://github.com/AlgebraicJulia/Catlab.jl/tree/master/test/categorical_algebra/acset.schema.json",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "ACSet",
     "type": "object",
