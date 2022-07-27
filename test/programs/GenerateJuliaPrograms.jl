@@ -23,6 +23,14 @@ x = collect(range(-2,stop=2,length=50))
 
 # Test generator assignment
 @test compile(f_hom,generators=Dict(:f => :cos)).(x) == cos.(x)
+@test compile(compose(f_hom, g_hom),generators=Dict(:f => :cos,:g => :sin)).(x) == @. sin(cos(x))
+@test compile(otimes(f_hom, g_hom),generators=Dict(:f => :cos, :g => :sin))(π/2, π/2) == (cos(π/2), sin(π/2))
+
+# Compile a local function using @__MODULE__
+local_f(x) = x + 1
+@test compile(@__MODULE__,f_hom,generators=Dict(:f => :local_f)).(x) == [xi+1 for xi in x]
+
+
 
 # Evaluation
 ############
