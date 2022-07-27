@@ -8,6 +8,7 @@ using Catlab.Programs.GenerateJuliaPrograms
 ℝ = Ob(FreeCartesianCategory, :ℝ)
 plus_hom = Hom(:+, ℝ⊗ℝ, ℝ)
 cos_hom, sin_hom = Hom(:cos, ℝ, ℝ), Hom(:sin, ℝ, ℝ)
+f_hom, g_hom = Hom(:f, ℝ, ℝ), Hom(:g, ℝ, ℝ)
 
 # Compilation
 #############
@@ -19,6 +20,9 @@ x = collect(range(-2,stop=2,length=50))
 @test compile(cos_hom).(x) == cos.(x)
 @test compile(compose(cos_hom, sin_hom)).(x) == @. sin(cos(x))
 @test compile(otimes(cos_hom, sin_hom))(π/2, π/2) == (cos(π/2), sin(π/2))
+
+# Test generator assignment
+@test compile(f_hom,generators=Dict(:f => :cos)).(x) == cos.(x)
 
 # Evaluation
 ############
