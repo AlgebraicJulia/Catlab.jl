@@ -515,7 +515,7 @@ add_parts!(ldds, :X, 4, Φ=[2,3,4,1], label=[100, 101, 102, 103])
 theories = [SchWeightedGraph, SchGraph, SchLabeledDDS]
 
 # Validate that serialization and deserialization is identity
-json_schema_path = joinpath(pwd(), "test", "categorical_algebra", "acset.schema.json")
+json_schema_path = joinpath(pwd(), "categorical_algebra", "acset.schema.json") # pwd() is test dir
 valid_schema = Schema(JSON.parsefile(json_schema_path)) 
 for theory in theories
     schema_json = serialize_schema_to_json(theory)
