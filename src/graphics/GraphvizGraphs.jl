@@ -1,12 +1,13 @@
 """ Graphviz support for Catlab's graph types.
 """
 module GraphvizGraphs
-export parse_graphviz, to_graphviz, to_graphviz_property_graph
+export parse_graphviz, to_graphviz, to_graphviz_property_graph, visualize_graph_homomorphism
 
 using StaticArrays: StaticVector, SVector
+using Colors: @colorant_str, hex, distinguishable_colors
 
 using ...Theories
-using ...Graphs, ...CategoricalAlgebra.Subobjects
+using ...Graphs, ...CategoricalAlgebra.Subobjects, ...CategoricalAlgebra.CSets
 import ..Graphviz
 
 # Property graphs
@@ -174,6 +175,83 @@ edge_label(g, labels::Bool, e::Int) =
 function default_node_attrs(labels::Union{Symbol,Bool})
   shape = labels isa Symbol ? "ellipse" : (labels ? "circle" : "point")
   Dict(:shape => shape, :width => "0.05", :height => "0.05", :margin => "0")
+end
+
+# Graph Homomorphism
+####################
+
+make_tagged_subgraph = function(g; pre="")
+  stmts = map(g.stmts) do st
+    add_label(st, pre)
+  end
+  Graphviz.Subgraph(g.name, stmts, g.graph_attrs, g.node_attrs, g.edge_attrs)
+end
+
+add_label(n::Graphviz.Node, pre) = Graphviz.Node("$pre$(n.name)", n.attrs)
+add_label(e::Graphviz.Edge, pre) = begin
+  path = map(e.path) do n_id
+    Graphviz.NodeID("$pre$(n_id.name)", n_id.port, n_id.anchor)
+  end
+  Graphviz.Edge(path, e.attrs)
+end
+
+default_edge_colors(n) = "#" .* hex.(distinguishable_colors(n, colorant"#F8766D", lchoices = [65], cchoices = [100]))
+default_edge_labels(e, dom::Bool) = "$(e)"
+
+default_vertex_colors(n) = repeat(["black"], n)
+default_vertex_labels(v, dom::Bool) = "$(v)"
+
+""" Visualize a graph homomorphism using Graphviz
+
+Visualize an ACSetTransformation between two Graph objects. By default the edge mapping is represented by colors, and vertex mapping by edges between the domain and codomain subgraphs.
+
+Keyword arguments are listed below:
+- `edge_colors::Function`: a function which returns a `Vector{String}` giving a color for each element in the map from edges in the domain to codomain.
+- `edge_labels::Function`: a function taking two arguments, the integer edge id and a boolean specifying if this edge is in the domain or codomain, and returning a string label.
+- `vertex_colors::Function`: a function which returns a `Vector{String}` giving a color for each element in the map from vertices in the domain to codomain.
+- `vertex_labels::Function`: a function taking two arguments, the vertex edge id and a boolean specifying if this vertex is in the domain or codomain, and returning a string label.
+"""
+function visualize_graph_homomorphism(f::ACSetTransformation; 
+  edge_colors::Function=default_edge_colors, edge_labels::Function=default_edge_labels,
+  vertex_colors::Function=default_vertex_colors, vertex_labels::Function=default_vertex_labels,
+  name="G", prog="dot")
+
+  (dom(f) isa BasicGraphs.Graph && codom(f) isa BasicGraphs.Graph) || throw(ArgumentError("f should be a homomorphism between Graphs"))
+  
+  # mapping between edges given by colors
+  ecolors = edge_colors(nparts(codom(f), :E))
+
+  # mapping between vertices given by colors
+  vcolors = vertex_colors(nparts(codom(f), :V))
+
+  # subgraph of dom(f)
+  if (nparts(dom(f), :V) > 0)
+    dom_nodes = [Graphviz.Node("$v", Graphviz.Attributes(:label=>vertex_labels(v, true),:shape=>"circle",:color=>vcolors[f[:V](v)])) for v in parts(dom(f), :V)]
+    dom_edges = [Graphviz.Edge(["$(dom(f)[e,:src])", "$(dom(f)[e,:tgt])"], Graphviz.Attributes(:label=>edge_labels(e, true),:color=>ecolors[f[:E](e)])) for e in parts(dom(f), :E)]
+  
+    dom_stmts = vcat(dom_nodes, dom_edges)
+    dom_subgraph = make_tagged_subgraph(Graphviz.Digraph("G", dom_stmts; prog=prog, name="clusterDom"), pre="dom_")  
+  else
+    dom_subgraph = Graphviz.Statement[]
+  end
+
+  # subgraph of codom(f)
+  codom_nodes = [Graphviz.Node("$v", Graphviz.Attributes(:label=>vertex_labels(v, false),:shape=>"circle",:color=>vcolors[v])) for v in parts(codom(f), :V)]
+  codom_edges = [Graphviz.Edge(["$(codom(f)[e,:src])", "$(codom(f)[e,:tgt])"], Graphviz.Attributes(:label=>edge_labels(e, false),:color=>ecolors[e])) for e in parts(codom(f), :E)]
+
+  codom_stmts = vcat(codom_nodes, codom_edges)
+  codom_subgraph = make_tagged_subgraph(Graphviz.Digraph("G", codom_stmts; prog=prog, name="clusterCodom"), pre="codom_")
+
+  # mapping between vertices
+  if (nparts(dom(f), :V) > 0)
+    node_map = [Graphviz.Edge(["\"dom_$i\"", "\"codom_$(components(f)[:V](i))\""], Graphviz.Attributes(:constraint=>"false", :style=>"dotted")) for i in 1:length(dom(components(f)[:V]))]
+  else
+    node_map = Graphviz.Statement[]
+  end
+
+  stmts = vcat(dom_subgraph, codom_subgraph, node_map...)
+  g = Graphviz.Digraph(name, stmts)
+  return g
 end
 
 # Symmetric graphs
