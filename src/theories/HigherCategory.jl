@@ -167,6 +167,42 @@ show_unicode(io::IO, expr::CategoryExpr{:pcompose}; kw...) =
 show_latex(io::IO, expr::CategoryExpr{:pcompose}; kw...) =
   Syntax.show_latex_infix(io, expr, "*"; kw...)
 
+# Double Category with Tabulators
+#################################
+
+""" Theory of a *double category with tabulators*
+
+A tabulator of a proarrow is a double-categorical limit. It is a certain cell with 
+identity domain to the given proarrow that is univeral among all cells of that form.
+A double category "has tabulators" if the external identity functor has a right adjoint.
+The values of this right adjoint are the apex objects of its tabulators. The counit of
+the adjunction provides the universal cells. Tabulators figure in the double-categorical
+limit construction theorem of Grandis-Pare 1999. In the case where the double category is
+actually a 2-category, tabulators specialize to cotensors, a more familiar 2-categorical
+limit.
+
+"""
+@theory TheDoubleCategoryWithTabulators{Ob,Hom,Pro,Cell,Tab} <: ThDoubleCategory{Ob,Hom,Pro,Cell} begin
+  Tab(proarrow::(A→/B))::TYPE
+  
+  # data: a cell with domain p and two specified projections
+  tabulator(p::(A→/B))::Tab(p) ⊣ (A::Ob,B::Ob)
+  apex(τ::Tab(p))::Ob ⊣ (A::Ob,B::Ob,p::(A→/B))
+  proj1(τ::Tab(p))::(apex(τ) → A) ⊣ (A::Ob, B::Ob, p::(A→/B))
+  proj2(τ::Tab(p))::(apex(τ) → B) ⊣ (A::Ob, B::Ob, p::(A→/B))
+  cell(τ::Tab(p))::Cell(pid(apex(τ)), p, proj1, proj2) ⊣ (A::Ob, B::Ob, p::(A→/B))
+  
+  # factorization existence
+  universal(τ::Tab(p), θ::Cell(pid(X),p,f,g))::(X→apex(τ)) ⊣ (A::Ob, B::Ob, X::Ob, p::(A→/B), f::(X→A), g::(X→B))
+  (universal(τ,θ) ⋅ proj1(τ)) == f ⊣ (A::Ob, B::Ob, X::Ob, p::(A→/B), f::(X→A), g::(X→B), τ::Tab(p), θ::Cell(pid(X),p,f,g))
+  (universal(τ,θ) ⋅ proj2(τ)) == g ⊣ (A::Ob, B::Ob, X::Ob, p::(A→/B), f::(X→A), g::(X→B), τ::Tab(p), θ::Cell(pid(X),p,f,g))
+  (universal(τ,θ) ⋅ τ) == θ ⊣ (A::Ob, B::Ob, X::Ob, p::(A→/B), f::(X→A), g::(X→B), τ::Tab(p), θ::Cell(pid(X),p,f,g))
+
+  # uniqueness of factorization
+  universal(τ, id(h)⋅ τ) == h ⊣ (A::Ob,B::Ob,X::Ob,p::(A→/B),τ::Tab(p),h::(X→apex(τ)))
+
+end
+
 # Equipment
 ###########
 
