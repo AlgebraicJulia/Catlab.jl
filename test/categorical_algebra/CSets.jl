@@ -515,15 +515,15 @@ add_parts!(ldds, :X, 4, Φ=[2,3,4,1], label=[100, 101, 102, 103])
 theories = [SchWeightedGraph, SchGraph, SchLabeledDDS]
 
 # Validate that serialization and deserialization is identity
-json_schema_path = joinpath(@__DIR__, "acset.schema.json") # @__DIR__ is package home dir
+json_schema_path = joinpath(@__DIR__, "acset.schema.json")
 valid_schema = Schema(JSON.parsefile(json_schema_path)) 
 for theory in theories
-    schema_json = serialize_schema_to_json(theory)
-    schema_dict = JSON.parse(schema_json)
-    schema = deserialize_json_to_schema(schema_json)
+  schema_json = serialize_schema_to_json(theory)
+  schema_dict = JSON.parse(schema_json)
+  schema = deserialize_json_to_schema(schema_json)
     
-    @test schema == theory
-    @test validate(valid_schema, schema_dict) === nothing
+  @test schema == theory
+  @test validate(valid_schema, schema_dict) === nothing
 end
 
 end

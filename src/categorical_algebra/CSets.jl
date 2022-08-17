@@ -14,7 +14,7 @@ using StructEquality
 using JSON
 using Reexport
 using Tables
-using Pkg
+import Pkg
 
 @reexport using ...CSetDataStructures
 using ...GAT, ...Present, ...Syntax
@@ -1083,8 +1083,8 @@ end
     end...))
 end
 
-# Serialization of ACSet
-###############
+# ACSet serialization
+#####################
 
 """ Serialize an ACSet object to a JSON string
 """
@@ -1134,16 +1134,16 @@ function write_json_acset(x::T, fname::AbstractString) where T <: ACSet
   end
 end
 
-# Serialization of ACSet Presentation (schema)
-###############
+# Schema serialization
+######################
 
 """ Get version of specific Julia package.
 
 Given the name of a package, get its version number.
 """
 function get_pkg_version(name::AbstractString)
-    pkg = only([x for x in values(Pkg.dependencies()) if x.name == name])
-    return string(pkg.version)
+  pkg = only([x for x in values(Pkg.dependencies()) if x.name == name])
+  return string(pkg.version)
 end
 
 """ Convert ACSet presentation to dictionary of generators.
@@ -1151,28 +1151,21 @@ end
 Given an ACSet presentation, e.g. SchWeightedGraph, SchGraph, construct a dictionary with keys `["Version", "Ob", "Hom", "AttrType", "Attr"]`.
 """
 function generate_dict_from_schema(p::Presentation)
-    schema_dict = Dict(
-        "Version" => 
-            Dict("ACSetSchema" => "0.0.1",
-                 "Catlab" => get_pkg_version("Catlab")),
-        "Ob" => [
-            Dict("name" => string(x)) for x in generators(p, :Ob)
-            ],
-        "Hom" => [
-            Dict("name" => string(x), 
-                "domain" => string(dom(x)), 
-                "codomain" => string(codom(x))) for x in generators(p, :Hom)
-                ],
-        "AttrType" => [
-            Dict("name" => string(x)) for x in generators(p, :AttrType)
-            ],
-        "Attr" => [
-            Dict("name" => string(x), 
-                "domain" => string(dom(x)), 
-                "codomain" => string(codom(x))) for x in generators(p, :Attr)
-                ]
-    )
-    return schema_dict
+  Dict(
+    "Version" => Dict("ACSetSchema" => "0.0.1",
+                      "Catlab" => get_pkg_version("Catlab")),
+    "Ob" => [ Dict("name" => string(x)) for x in generators(p, :Ob) ],
+    "Hom" => [ Dict("name" => string(x),
+                    "domain" => string(dom(x)),
+                    "codomain" => string(codom(x)))
+               for x in generators(p, :Hom) ],
+    "AttrType" => [ Dict("name" => string(x))
+                    for x in generators(p, :AttrType) ],
+    "Attr" => [ Dict("name" => string(x),
+                     "domain" => string(dom(x)),
+                     "codomain" => string(codom(x)))
+                for x in generators(p, :Attr) ],
+  )
 end
 
 """ Convert dictionary of generators to ACSet presentation.
@@ -1180,29 +1173,29 @@ end
 Given a dictionary specifying the generators of an ACset presentation, construct a Presentation object.
 """
 function generate_schema_from_dict(d::Dict)
-    # Initialize presentation of FreeSchema
-    theory = FreeSchema
-    pres = Presentation(theory)
+  # Initialize presentation of FreeSchema
+  theory = FreeSchema
+  pres = Presentation(theory)
 
-    ob_list, hom_list, attrtype_list, attr_list = d["Ob"], d["Hom"], d["AttrType"], d["Attr"]
+  ob_list, hom_list, attrtype_list, attr_list = d["Ob"], d["Hom"], d["AttrType"], d["Attr"]
 
-    # Parse objects
-    obs = [Ob(theory, Symbol(x["name"])) for x in ob_list]
-    add_generators!(pres, obs)
+  # Parse objects
+  obs = [Ob(theory, Symbol(x["name"])) for x in ob_list]
+  add_generators!(pres, obs)
 
-    # Parse morphisms
-    homs = [Hom(Symbol(x["name"]), Ob(theory, Symbol(x["domain"])), Ob(theory, Symbol(x["codomain"]))) for x in hom_list]
-    add_generators!(pres, homs)
+  # Parse morphisms
+  homs = [Hom(Symbol(x["name"]), Ob(theory, Symbol(x["domain"])), Ob(theory, Symbol(x["codomain"]))) for x in hom_list]
+  add_generators!(pres, homs)
 
-    # Parse attribute types
-    attrtypes = [AttrType(theory.AttrType, Symbol(x["name"])) for x in attrtype_list]
-    add_generators!(pres, attrtypes)
+  # Parse attribute types
+  attrtypes = [AttrType(theory.AttrType, Symbol(x["name"])) for x in attrtype_list]
+  add_generators!(pres, attrtypes)
 
-    # Parse attributes
-    attrs = [Attr(Symbol(x["name"]), Ob(theory, Symbol(x["domain"])), AttrType(theory.AttrType, Symbol(x["codomain"]))) for x in attr_list]
-    add_generators!(pres, attrs)
+  # Parse attributes
+  attrs = [Attr(Symbol(x["name"]), Ob(theory, Symbol(x["domain"])), AttrType(theory.AttrType, Symbol(x["codomain"]))) for x in attr_list]
+  add_generators!(pres, attrs)
 
-    return pres
+  return pres
 end
 
 """ Serialize ACSet presentation to JSON.
@@ -1210,10 +1203,9 @@ end
 Given a presentation, generate a JSON that adheres to the JSON Schema specification (https://github.com/AlgebraicJulia/Catlab.jl/tree/master/test/categorical_algebra/acset.schema.json).
 """
 function serialize_schema_to_json(p::Presentation)
-    schema_dict = generate_dict_from_schema(p)
-    schema_json = JSON.json(schema_dict)
-    # println(schema_json)
-    return schema_json
+  schema_dict = generate_dict_from_schema(p)
+  schema_json = JSON.json(schema_dict)
+  return schema_json
 end
 
 """ Deserialize JSON to produce ACSet presentation.
@@ -1221,10 +1213,9 @@ end
 Given a JSON that adheres to the JSON schema specification (https://github.com/AlgebraicJulia/Catlab.jl/tree/master/test/categorical_algebra/acset.schema.json), generate an ACSet presentation using the specified generators.
 """
 function deserialize_json_to_schema(data::String)
-    schema_dict = JSON.parse(data)
-    schema = generate_schema_from_dict(schema_dict)
-    # println(schema)
-    return schema
+  schema_dict = JSON.parse(data)
+  schema = generate_schema_from_dict(schema_dict)
+  return schema
 end
 
 end
