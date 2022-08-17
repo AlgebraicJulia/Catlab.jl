@@ -59,17 +59,17 @@
                     "name": {
                         "type": "string"
                     },
-                    "domain": {
+                    "dom": {
                         "type": "string"
                     },
-                    "codomain": {
+                    "codom": {
                         "type": "string"
                     }
                 },
                 "required": [
                     "name",
-                    "domain",
-                    "codomain"
+                    "dom",
+                    "codom"
                 ]
             }
         },
@@ -81,17 +81,17 @@
                     "name": {
                         "type": "string"
                     },
-                    "domain": {
+                    "dom": {
                         "type": "string"
                     },
-                    "codomain": {
+                    "codom": {
                         "type": "string"
                     }
                 },
                 "required": [
                     "name",
-                    "domain",
-                    "codomain"
+                    "dom",
+                    "codom"
                 ]
             }
         }
