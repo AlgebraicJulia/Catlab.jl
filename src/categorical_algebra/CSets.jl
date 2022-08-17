@@ -7,7 +7,8 @@ export ACSetTransformation, CSetTransformation,
   components, force, is_natural, homomorphism, homomorphisms, is_homomorphic,
   isomorphism, isomorphisms, is_isomorphic,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset,
-  generate_dict_from_schema, generate_schema_from_dict, serialize_schema_to_json, deserialize_json_to_schema
+  generate_json_acset_schema, parse_json_acset_schema,
+  read_json_acset_schema, write_json_acset_schema
 
 using Base.Iterators: flatten
 using Base.Meta: quot
@@ -1087,17 +1088,21 @@ end
 # ACSet serialization
 #####################
 
-""" Serialize an ACSet object to a JSON string
+""" Generate JSON-able object representing an ACSet.
+
+Inverse to [`parse_json_acset`](@ref).
 """
-function generate_json_acset(x::T) where T <: ACSet
+function generate_json_acset(x::ACSet)
   ts = tables(x)
-  JSON.json(Dict(k => Tables.rowtable(v) for (k,v) in zip(keys(ts),ts)))
+  Dict(k => Tables.rowtable(v) for (k,v) in zip(keys(ts), ts))
 end
 
-""" Deserialize a dictionary from a parsed JSON string to an object of the given ACSet type
+""" Parse JSON-able object or JSON string representing an ACSet.
+
+Inverse to [`generate_json_acset`](@ref).
 """
-function parse_json_acset(type::Type{T}, input::Dict) where T <: ACSet
-  out = type()
+function parse_json_acset(::Type{T}, input::AbstractDict) where T <: ACSet
+  out = T()
   for (k,v) ∈ input
     add_parts!(out, Symbol(k), length(v))
   end
@@ -1105,7 +1110,7 @@ function parse_json_acset(type::Type{T}, input::Dict) where T <: ACSet
     for (i, j) ∈ enumerate(l)
       for (k,v) ∈ j
         vtype = eltype(out[Symbol(k)])
-        if !(typeof(v) <: vtype)
+        if !(v isa vtype)
           v = vtype(v)
         end
         set_subpart!(out, i, Symbol(k), v)
@@ -1115,59 +1120,67 @@ function parse_json_acset(type::Type{T}, input::Dict) where T <: ACSet
   out
 end
 
-""" Deserialize a JSON string to an object of the given ACSet type
-"""
-function parse_json_acset(type::Type{T}, input::String) where T <: ACSet
-  parse_json_acset(type, JSON.parse(input))
+function parse_json_acset(::Type{T}, input::AbstractString) where T <: ACSet
+  parse_json_acset(T, JSON.parse(input))
 end
 
-""" Read a JSON file to an object of the given ACSet type
+""" Deserialize an ACSet object from a JSON file.
+
+Inverse to [`write_json_acset`](@ref).
 """
-function read_json_acset(type::Type{T}, input::String) where T <: ACSet
-  parse_json_acset(type, open(f->read(f, String), input))
+function read_json_acset(::Type{T}, fname::AbstractString) where T <: ACSet
+  parse_json_acset(T, open(f->read(f, String), fname))
 end
 
-""" Serialize an ACSet object to a JSON file
+""" Serialize an ACSet object to a JSON file.
+
+Inverse to [`read_json_acset`](@ref).
 """
-function write_json_acset(x::T, fname::AbstractString) where T <: ACSet
-  open(string(fname), "w") do f
-    write(f, generate_json_acset(x))
+function write_json_acset(x::ACSet, fname::AbstractString)
+  open(fname, "w") do f
+    write(f, JSON.json(generate_json_acset(x)))
   end
 end
 
 # Schema serialization
 ######################
 
-""" Convert ACSet presentation to dictionary of generators.
+""" Generate JSON-able object representing an ACSet schema.
 
-Given an ACSet presentation, e.g. SchWeightedGraph, SchGraph, construct a dictionary with keys `["Version", "Ob", "Hom", "AttrType", "Attr"]`.
+Given a presentation of an ACSet schema, such as SchWeightedGraph or SchGraph,
+construct a dictionary with keys "Version", "Ob", "Hom", "AttrType", "Attr".
+
+Inverse to [`parse_json_acset_schema`](@ref).
 """
-function generate_dict_from_schema(pres::Presentation)
+function generate_json_acset_schema(pres::Presentation)
   catlab_pkg = Pkg.dependencies()[
     Base.UUID("134e5e36-593f-5add-ad60-77f754baafbe")]
   Dict(
     "version" => Dict("ACSetSchema" => "0.0.1",
                       "Catlab" => string(catlab_pkg.version)),
-    "Ob" => [ Dict("name" => nameof(x))
+    "Ob" => [ Dict("name" => string(first(x)))
               for x in generators(pres, :Ob) ],
-    "Hom" => [ Dict("name" => nameof(f),
-                    "dom" => nameof(dom(f)),
-                    "codom" => nameof(codom(f)))
+    "Hom" => [ Dict("name" => string(first(f)),
+                    "dom" => string(first(dom(f))),
+                    "codom" => string(first(codom(f))))
                for f in generators(pres, :Hom) ],
-    "AttrType" => [ Dict("name" => nameof(x))
+    "AttrType" => [ Dict("name" => string(first(x)))
                     for x in generators(pres, :AttrType) ],
-    "Attr" => [ Dict("name" => nameof(f),
-                     "dom" => nameof(dom(f)),
-                     "codom" => nameof(codom(f)))
+    "Attr" => [ Dict("name" => string(first(f)),
+                     "dom" => string(first(dom(f))),
+                     "codom" => string(first(codom(f))))
                 for f in generators(pres, :Attr) ],
   )
 end
 
-""" Convert dictionary of generators to ACSet presentation.
+""" Parse JSON-able object or JSON string representing an ACSet schema.
 
-Given a dictionary specifying the generators of an ACset presentation, construct a Presentation object.
+Given a JSON object specifying a presentation of an ACSet schema, construct a
+Presentation object.
+
+Inverse to [`generate_json_acset_schema`](@ref).
 """
-function generate_schema_from_dict(d::AbstractDict)
+function parse_json_acset_schema(d::AbstractDict)
   # Initialize presentation of FreeSchema
   theory = FreeSchema
   pres = Presentation(theory)
@@ -1192,25 +1205,34 @@ function generate_schema_from_dict(d::AbstractDict)
 
   return pres
 end
-
-""" Serialize ACSet presentation to JSON.
-
-Given a presentation, generate a JSON that adheres to the JSON Schema specification (https://github.com/AlgebraicJulia/Catlab.jl/tree/master/test/categorical_algebra/acset.schema.json).
-"""
-function serialize_schema_to_json(p::Presentation)
-  schema_dict = generate_dict_from_schema(p)
-  schema_json = JSON.json(schema_dict)
-  return schema_json
+function parse_json_acset_schema(input::AbstractString)
+  parse_json_acset_schema(JSON.parse(input))
 end
 
-""" Deserialize JSON to produce ACSet presentation.
+""" Deserialize ACSet schema from JSON.
 
-Given a JSON that adheres to the JSON schema specification (https://github.com/AlgebraicJulia/Catlab.jl/tree/master/test/categorical_algebra/acset.schema.json), generate an ACSet presentation using the specified generators.
+Given a JSON that adheres to the JSON schema specification
+(https://github.com/AlgebraicJulia/Catlab.jl/tree/master/test/categorical_algebra/acset.schema.json),
+generate an ACSet presentation using the specified generators.
+
+Inverse to [`write_json_acset_schema`](@ref).
 """
-function deserialize_json_to_schema(data::String)
-  schema_dict = JSON.parse(data)
-  schema = generate_schema_from_dict(schema_dict)
-  return schema
+function read_json_acset_schema(fname::AbstractString)
+  parse_json_acset_schema(open(f->read(f, String), fname))
+end
+
+""" Serialize ACSet schema to JSON file.
+
+Given a presentation, generate a JSON that adheres to the JSON Schema
+specification
+(https://github.com/AlgebraicJulia/Catlab.jl/tree/master/test/categorical_algebra/acset.schema.json).
+
+Inverse to [`read_json_acset_schema`](@ref).
+"""
+function write_json_acset_schema(pres::Presentation, fname::AbstractString)
+  open(fname, "w") do f
+    write(f, JSON.json(generate_json_acset_schema(pres)))
+  end
 end
 
 end
