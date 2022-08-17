@@ -2,12 +2,9 @@ module TestCSets
 using Test
 
 using JSON
-using Pkg
-using JSONSchema: Schema, validate
+import JSONSchema
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
-using Catlab.Graphs.BasicGraphs: SchGraph, SchWeightedGraph
-
 
 @present SchDDS(FreeSchema) begin
   X::Ob
@@ -520,12 +517,11 @@ function roundtrip_json_acset_schema(pres::Presentation)
   end
 end
 
-json_schema_path = joinpath(@__DIR__, "acset.schema.json")
-valid_schema = Schema(JSON.parsefile(json_schema_path))
+json_schema = JSONSchema.Schema(acset_schema_json_schema())
 
 for schema in [SchGraph, SchWeightedGraph, SchLabeledDDS]
   schema_dict = generate_json_acset_schema(schema)
-  @test isnothing(validate(valid_schema, schema_dict))
+  @test isnothing(JSONSchema.validate(json_schema, schema_dict))
   @test roundtrip_json_acset_schema(schema) == schema
 end
 
