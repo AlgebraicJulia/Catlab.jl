@@ -1,6 +1,8 @@
 export ThCategory2, FreeCategory2, Hom2, Hom2Expr, composeH, *,
   ThDoubleCategory, FreeDoubleCategory, Pro, Cell, ProExpr, CellExpr,
   dom, codom, src, tgt, pcompose, pid,
+  ThDoubleCategoryWithTabulators, Tab, proarrow,
+  tabulator, ob, proj1, proj2, cell, universal,
   ThEquipment, companion, companion_unit, companion_counit,
   conjoint, conjoint_unit, conjoint_counit,
   ThMonoidalDoubleCategory, ThSymmetricMonoidalDoubleCategory,
@@ -166,6 +168,50 @@ show_unicode(io::IO, expr::CategoryExpr{:pcompose}; kw...) =
 
 show_latex(io::IO, expr::CategoryExpr{:pcompose}; kw...) =
   Syntax.show_latex_infix(io, expr, "*"; kw...)
+
+# Tabulators
+############
+
+""" Theory of a *double category with tabulators*
+
+A tabulator of a proarrow is a double-categorical limit. It is a certain cell
+with identity domain to the given proarrow that is universal among all cells of
+that form. A double category "has tabulators" if the external identity functor
+has a right adjoint. The values of this right adjoint are the apex objects of
+its tabulators. The counit of the adjunction provides the universal cells.
+Tabulators figure in the double-categorical limit construction theorem of
+Grandis-Pare 1999. In the case where the double category is actually a
+2-category, tabulators specialize to cotensors, a more familiar 2-categorical
+limit.
+"""
+@theory ThDoubleCategoryWithTabulators{Ob,Hom,Pro,Cell,Tab} <: ThDoubleCategory{Ob,Hom,Pro,Cell} begin
+  Tab(proarrow::(A ↛ B))::TYPE
+  
+  # data: a cell with domain p and two specified projections
+  tabulator(p::(A↛B))::Tab(p) ⊣ (A::Ob,B::Ob)
+  ob(τ::Tab(p))::Ob ⊣ (A::Ob,B::Ob,p::(A↛B))
+  proj1(τ::Tab(p))::(ob(τ) → A) ⊣ (A::Ob, B::Ob, p::(A↛B))
+  proj2(τ::Tab(p))::(ob(τ) → B) ⊣ (A::Ob, B::Ob, p::(A↛B))
+  cell(τ::Tab(p))::Cell(pid(ob(τ)), p, proj1(τ), proj2(τ)) ⊣ 
+    (A::Ob, B::Ob, p::(A↛B))
+  
+  # factorization existence
+  universal(τ::Tab(p), θ::Cell(pid(X),p,f,g))::(X→ob(τ)) ⊣ 
+    (A::Ob, B::Ob, X::Ob, p::(A↛B), f::(X→A), g::(X→B))
+  universal(τ,θ) ⋅ proj1(τ) == f ⊣
+    (A::Ob, B::Ob, X::Ob, p::(A↛B), f::(X→A), g::(X→B),
+     τ::Tab(p), θ::Cell(pid(X),p,f,g))
+  universal(τ,θ) ⋅ proj2(τ) == g ⊣
+    (A::Ob, B::Ob, X::Ob, p::(A↛B), f::(X→A), g::(X→B),
+     τ::Tab(p), θ::Cell(pid(X),p,f,g))
+  pid(universal(τ,θ)) ⋅ cell(τ) == θ ⊣
+    (A::Ob, B::Ob, X::Ob, p::(A↛B), f::(X→A), g::(X→B),
+     τ::Tab(p), θ::Cell(pid(X),p,f,g))
+
+  # uniqueness of factorization
+  universal(τ, pid(h) ⋅ cell(τ)) == h ⊣ (A::Ob,B::Ob,X::Ob,p::(A↛B),
+                                         τ::Tab(p),h::(X→ob(τ)))
+end
 
 # Equipment
 ###########
