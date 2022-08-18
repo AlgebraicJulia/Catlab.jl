@@ -1,6 +1,9 @@
 module TestCSets
 using Test
 
+using JSON
+import JSONSchema
+
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 
 @present SchDDS(FreeSchema) begin
@@ -471,8 +474,8 @@ A = Subobject(S, X=[3,4,5])
 @test ¬Subobject(ι₂) |> force == Subobject(ι₁)
 @test ~A |> force == ⊤(S) |> force
 
-# Serialization
-###############
+# Acset serialization
+#####################
 
 function roundtrip_json_acset(x::T) where T <: ACSet
   mktempdir() do dir
@@ -502,5 +505,24 @@ end
 ldds = LabeledDDS{Int}()
 add_parts!(ldds, :X, 4, Φ=[2,3,4,1], label=[100, 101, 102, 103])
 @test roundtrip_json_acset(ldds) == ldds
+
+# Schema serialization
+######################
+
+function roundtrip_json_acset_schema(pres::Presentation)
+  mktempdir() do dir
+    path = joinpath(dir, "schema.json")
+    write_json_acset_schema(pres, path)
+    read_json_acset_schema(path)
+  end
+end
+
+json_schema = JSONSchema.Schema(acset_schema_json_schema())
+
+for schema in [SchGraph, SchWeightedGraph, SchLabeledDDS]
+  schema_dict = generate_json_acset_schema(schema)
+  @test isnothing(JSONSchema.validate(json_schema, schema_dict))
+  @test roundtrip_json_acset_schema(schema) == schema
+end
 
 end

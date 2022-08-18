@@ -1,0 +1,105 @@
+{
+    "id": "https://github.com/AlgebraicJulia/Catlab.jl/tree/master/test/categorical_algebra/acset.schema.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "ACSet",
+    "type": "object",
+    "properties": {
+        "version": {
+            "type": "object",
+            "properties": {
+                "ACSetSchema": {
+                    "type": "string",
+                    "pattern": "^[0-9][0-9.]*",
+                    "additionalProperties": false
+                },
+                "Catlab": {
+                    "type": "string",
+                    "pattern": "^[0-9][0-9.]*",
+                    "additionalProperties": false
+                }
+            },
+            "required": [
+                "ACSetSchema",
+                "Catlab"
+            ]
+        },
+        "Ob": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            }
+        },
+        "AttrType": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            }
+        },
+        "Hom": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "dom": {
+                        "type": "string"
+                    },
+                    "codom": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name",
+                    "dom",
+                    "codom"
+                ]
+            }
+        },
+        "Attr": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "dom": {
+                        "type": "string"
+                    },
+                    "codom": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name",
+                    "dom",
+                    "codom"
+                ]
+            }
+        }
+    },
+    "required": [
+        "Ob",
+        "AttrType",
+        "Hom",
+        "Attr"
+    ]
+}
