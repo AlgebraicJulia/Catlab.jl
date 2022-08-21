@@ -29,6 +29,7 @@ Ob(mod::Module, args...) = Ob(mod.Ob, args...)
 Ob(typ::Type, x1, x2, args...) = [Ob(typ, arg) for arg in [x1; x2; args...]]
 
 include("Category.jl")
+include("Groupoid.jl")
 include("Limits.jl")
 include("Monoidal.jl")
 include("MonoidalAdditive.jl")
