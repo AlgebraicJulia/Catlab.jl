@@ -4,7 +4,8 @@ The current content of this module is just a stopgap until I can implement
 a generic term rewriting system.
 """
 module Rewrite
-export associate, associate_unit, distribute_unary, involute
+export associate, associate_id_inverse, associate_unit,
+  distribute_unary, involute
 
 using ..Syntax
 
@@ -29,6 +30,37 @@ function associate_unit(expr::GATExpr, unit::Function)::GATExpr
   if (head(e1) == nameof(unit)) e2
   elseif (head(e2) == nameof(unit)) e1
   else associate(expr) end
+end
+
+""" Simplify associative binary operation with identity and inverses.
+"""
+function associate_id_inverse(expr::E, identity::Function,
+                              inverse::Function)::GATExpr where E <: GATExpr
+  op, e1, e2 = head(expr), first(expr), last(expr)
+  if (head(e1) == nameof(identity)) e2
+  elseif (head(e2) == nameof(identity)) e1
+  else
+    args1 = head(e1) == op ? args(e1) : [e1]
+    args2 = head(e2) == op ? args(e2) : [e2]
+    while !isempty(args1) && !isempty(args2)
+      l = args1[end]; r = args2[1]
+      if (head(l) == nameof(inverse) && first(l) == r ||
+          head(r) == nameof(inverse) && l == first(r))
+        pop!(args1); popfirst!(args2)
+      else break end
+    end
+    newargs = [args1; args2]
+    # DEVELOPER NOTE
+    # This next line is the one that I fear represents a breaking-away from the
+    # intended pattern of this module's rewrite utilies, namely that they
+    # manipulate expressions in some coherent way without "looking into" the
+    # terms of the expression, so to speak. I found there seemed to be no other
+    # way to make the syntax system work as needed this case of a composition
+    # expression that "fully cancels out" into an identity.
+    if (isempty(newargs)) identity(only(unique(gat_type_args(expr))))
+    elseif (length(newargs) == 1) only(newargs)
+    else E(newargs, gat_type_args(expr)) end
+  end
 end
 
 """ Distribute unary operation over binary operation.
