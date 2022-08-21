@@ -31,4 +31,8 @@ end
   include("Schema.jl")
 end
 
+@testset "Groupoids" begin
+  include("Groupoid.jl")
+end
+
 end
