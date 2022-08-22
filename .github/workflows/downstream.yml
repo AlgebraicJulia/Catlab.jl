@@ -13,6 +13,7 @@ jobs:
           - {user: AlgebraicJulia, repo: AlgebraicDynamics.jl}
           - {user: AlgebraicJulia, repo: AlgebraicPetri.jl}
           - {user: AlgebraicJulia, repo: AlgebraicRelations.jl}
+          - {user: AlgebraicJulia, repo: AlgebraicRewriting.jl}
           - {user: AlgebraicJulia, repo: CombinatorialSpaces.jl}
 
     steps:
