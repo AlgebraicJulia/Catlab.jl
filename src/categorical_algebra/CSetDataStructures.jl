@@ -19,11 +19,22 @@ import ...Present: Presentation
 # StructACSet Struct Generation
 ###############################
 
-# ACSets that use a particular data layout: i.e. "parts" and "subparts"
+""" A `SimpleACSet` is an abstract type for any acset that has a certain layout
+
+Specifically, subtypes of `SimpleACSet` are expected to have a `parts` field
+which is a LabeledVector of Ints, and a `subparts` field which is a NamedTuple
+of acset columns, which are any data structure that satisfies the interface
+given in ACSetColumns.jl.
+"""
 abstract type SimpleACSet <: ACSet end
 
+""" A `StructACSet` is a SimpleACSet where the schema and the types assigned
+to the attrtypes are available in the type.
+"""
 abstract type StructACSet{S<:SchemaDescType,Ts<:Tuple} <: SimpleACSet end
 
+""" A special case where there are no attributes.
+"""
 const StructCSet = StructACSet{S,Tuple{}} where
   {S<:CSetSchemaDescType}
 
@@ -145,6 +156,9 @@ end
 
 unquote(x::QuoteNode) = x.value
 
+""" This macro creates custom structs that subclass `StructACSet{S}` for specific `S`.
+These are used for acsets whose schema is known at compile time.
+"""
 macro acset_type(head)
   head, parent = @match head begin
     Expr(:(<:), h, p) => (h,p)
@@ -162,6 +176,11 @@ macro acset_type(head)
   end
 end
 
+""" We want control over the type class hierarchy of acsets; this allows us
+to create abstract types that subtype StructACSet. For instance, we might have
+an `AbstractGraph` type, and then assume (this is not enforced) that any
+subtype of `AbstractGraph` has `E,V,src,tgt` in its schema.
+"""
 macro abstract_acset_type(head)
   type, parent = @match head begin
     Expr(:(<:), h, p) => (h,p)
@@ -172,6 +191,8 @@ macro abstract_acset_type(head)
   end)
 end
 
+# FIXME: we have two slightly similar column_type functions
+# which are not exactly the same. Merge these.
 function column_type(s, f, attrtypes, index, unique_index)
   if f ∈ s.homs
     if f ∈ index
@@ -193,6 +214,9 @@ function column_type(s, f, attrtypes, index, unique_index)
   end
 end
 
+""" This is a SimpleACSet which has the schema as a field value rather
+than as a type parameter.
+"""
 struct DynamicACSet <: SimpleACSet
   name::String
   schema::SchemaDesc
@@ -227,6 +251,9 @@ struct DynamicACSet <: SimpleACSet
   end
 end
 
+""" This works the same as something made with `@acset_type`, only the types of the
+parts and subparts are stored as type parameters. Thus, this can be used with any schema.
+"""
 struct AnonACSet{S,Ts,Parts,Subparts} <: StructACSet{S,Ts}
   parts::Parts
   subparts::Subparts
@@ -255,6 +282,8 @@ struct AnonACSet{S,Ts,Parts,Subparts} <: StructACSet{S,Ts}
   end
 end
 
+""" This can be used to fill out the type parameters to an AnonACSet ahead of time.
+"""
 function AnonACSetType(
   s::SchemaDesc;
   attrtypes::Dict{Symbol, Type}=Dict{Symbol,Type}(),
@@ -321,6 +350,10 @@ function ACSetTableUnionAll(::Type{<:StructACSet{S}}, ob::Symbol) where {S}
   AnonACSetType(s′;union_all=true)
 end
 
+""" This takes an ACSet type, and produces an AnonACSet which represents
+an acset with just the object passed in, and then all of the attributes of
+that object.
+"""
 function ACSetTableType(X::Type, ob::Symbol; union_all::Bool=false)
   (union_all ? ACSetTableUnionAll : ACSetTableDataType)(X, ob)
 end
