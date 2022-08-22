@@ -27,7 +27,7 @@ function connected_component_projection_bfs(g::ACSet)
     enqueue!(q, v)
     while !isempty(q)
       src = dequeue!(q)
-      for vertex in neighbors(g, src)
+      for vertex in all_neighbors(g, src)
         if label[vertex] == 0
           enqueue!(q,vertex)
           label[vertex] = v
