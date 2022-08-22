@@ -2,12 +2,13 @@ module TestGraphAlgorithms
 using Test
 
 using Catlab.Graphs
-
+using Catlab.Theories
 # Connectivity
 ##############
 
 g = Graph(6)
-add_edges!(g, [2,3], [4,5])
+add_edges!(g, [2,5], [4,3])
+@test length(codom(connected_component_projection_bfs(g)))==4
 @test connected_components(g) == [[1], [2,4], [3,5], [6]]
 
 # DAGs
