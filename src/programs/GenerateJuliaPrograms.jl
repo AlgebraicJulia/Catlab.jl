@@ -25,12 +25,10 @@ end
 """
 abstract type CompileState end
 
-mutable struct SimpleCompileState <: CompileState
-  nvars::Int
-  generators::Dict{Symbol,Symbol}
-  SimpleCompileState(; nvars::Int=0, generators::Dict{Symbol,Symbol} = Dict{Symbol,Symbol}()) = new(nvars,generators)
+@Base.kwdef mutable struct SimpleCompileState <: CompileState
+  nvars::Int = 0
+  generators::AbstractDict{Symbol} = Dict{Symbol,Any}()
 end
-
 
 """ Compile a morphism expression into a Julia function.
 """
@@ -43,17 +41,16 @@ compile(f::HomExpr; kw...) = compile(Main, f; kw...)
 """
 function compile_expr(f::HomExpr; name::Symbol=Symbol(),
                       args::Vector{Symbol}=Symbol[],
-                      arg_types::Vector{<:Expr0}=Symbol[],
-                      generators::Dict{Symbol,Symbol}=Dict{Symbol,Symbol}())
+                      arg_types::Vector{<:Expr0}=Symbol[], kw...)
   inputs = isempty(args) ? input_exprs(ndims(dom(f)), kind=:variables) : args
-  block = compile_block(f,inputs,generators)
+  block = compile_block(f, inputs; kw...)
   to_function_expr(block; name=name, arg_types=arg_types)
 end
 
 """ Compile a morphism expression into a block of Julia code.
 """
-function compile_block(f::HomExpr, inputs::Vector,generators::Dict{Symbol,Symbol}=Dict{Symbol,Symbol}())
-  compile_block(f, inputs, SimpleCompileState(generators=generators))
+function compile_block(f::HomExpr, inputs::Vector; kw...)
+  compile_block(f, inputs, SimpleCompileState(; kw...))
 end
 
 function compile_block(f::HomExpr{:generator}, inputs::Vector,
@@ -159,8 +156,9 @@ function generator_expr(f::HomExpr{:generator}, inputs::Vector,
                         state::CompileState)
   # By default, treat even nullary generators as functions, not constants.
   value = first(f)
-  if value ∈ keys(state.generators)
-    Expr(:call, state.generators[value]::Symbol, inputs...)
+  if haskey(state.generators, value)
+    func = state.generators[value]
+    Expr(:call, GlobalRef(parentmodule(func), nameof(func)), inputs...)
   else
     Expr(:call, value::Symbol, inputs...)
   end
