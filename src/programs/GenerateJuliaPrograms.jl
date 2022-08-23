@@ -25,9 +25,9 @@ end
 """
 abstract type CompileState end
 
-mutable struct SimpleCompileState <: CompileState
-  nvars::Int
-  SimpleCompileState(; nvars::Int=0) = new(nvars)
+@Base.kwdef mutable struct SimpleCompileState <: CompileState
+  nvars::Int = 0
+  generators::AbstractDict{Symbol} = Dict{Symbol,Any}()
 end
 
 """ Compile a morphism expression into a Julia function.
@@ -35,22 +35,22 @@ end
 function compile(mod::Module, f::HomExpr; kw...)
   mk_function(mod, compile_expr(f; kw...))
 end
-compile(f::HomExpr; kw...) = compile(Main, f)
+compile(f::HomExpr; kw...) = compile(Main, f; kw...)
 
 """ Compile a morphism expression into a Julia function expression.
 """
 function compile_expr(f::HomExpr; name::Symbol=Symbol(),
                       args::Vector{Symbol}=Symbol[],
-                      arg_types::Vector{<:Expr0}=Symbol[])
+                      arg_types::Vector{<:Expr0}=Symbol[], kw...)
   inputs = isempty(args) ? input_exprs(ndims(dom(f)), kind=:variables) : args
-  block = compile_block(f, inputs)
+  block = compile_block(f, inputs; kw...)
   to_function_expr(block; name=name, arg_types=arg_types)
 end
 
 """ Compile a morphism expression into a block of Julia code.
 """
-function compile_block(f::HomExpr, inputs::Vector)
-  compile_block(f, inputs, SimpleCompileState())
+function compile_block(f::HomExpr, inputs::Vector; kw...)
+  compile_block(f, inputs, SimpleCompileState(; kw...))
 end
 
 function compile_block(f::HomExpr{:generator}, inputs::Vector,
@@ -58,7 +58,7 @@ function compile_block(f::HomExpr{:generator}, inputs::Vector,
   nin, nout = ndims(dom(f)), ndims(codom(f))
   @assert length(inputs) == nin
   outputs = genvars(state, nout)
-  
+
   lhs = nout == 1 ? first(outputs) : Expr(:tuple, outputs...)
   rhs = generator_expr(f, inputs, state)
   Block(Expr(:(=), lhs, rhs), inputs, outputs)
@@ -131,14 +131,14 @@ function to_function_expr(block::Block; name::Symbol=Symbol(),
     kwargs = [ (kw isa Expr ? kw : Expr(:kw, kw, nothing)) for kw in kwargs ]
     args = [ Expr(:parameters, kwargs...); args ]
   end
-  
+
   # Create call expression (function header).
   call_expr = if name == Symbol() # Anonymous function
     Expr(:tuple, args...)
   else # Named function
     Expr(:call, name, args...)
   end
-  
+
   # Create function body.
   return_expr = Expr(:return, if length(block.outputs) == 1
     block.outputs[1]
@@ -146,7 +146,7 @@ function to_function_expr(block::Block; name::Symbol=Symbol(),
     Expr(:tuple, block.outputs...)
   end)
   body_expr = concat_expr(block.code, return_expr)
-  
+
   Expr(:function, call_expr, body_expr)
 end
 
@@ -156,7 +156,12 @@ function generator_expr(f::HomExpr{:generator}, inputs::Vector,
                         state::CompileState)
   # By default, treat even nullary generators as functions, not constants.
   value = first(f)
-  Expr(:call, value::Symbol, inputs...)
+  if haskey(state.generators, value)
+    func = state.generators[value]
+    Expr(:call, GlobalRef(parentmodule(func), nameof(func)), inputs...)
+  else
+    Expr(:call, value::Symbol, inputs...)
+  end
 end
 
 """ Generate expressions for inputs to Julia code.
