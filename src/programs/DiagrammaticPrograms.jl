@@ -146,9 +146,9 @@ function insert_missing(tgt_schema::Presentation,body::Expr)
   end
   for gen in gens
     if gen isa HomExpr && codom(gen) ∈ singletons
-      push!(body.args,:($(nameof(gen)) => begin end))
+      push!(body.args,:($(nameof(gen)) => @delete))
     elseif gen isa HomExpr && dom(gen) ∈ empties 
-      push!(body.args,:($(nameof(gen)) => begin end))
+      push!(body.args,:($(nameof(gen)) => @zero))
     else
       push!(body.args,:($(nameof(gen)) => $(nameof(gen))))
     end
