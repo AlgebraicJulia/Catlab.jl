@@ -125,11 +125,13 @@ function insert_missing(tgt_schema::Presentation,body::Expr)
     @match stmt begin
       # x => y
       Expr(:call, :(=>), lhs, rhs) => @match rhs begin
-        Expr(:macrocall, &(Symbol("@unit")), _) => begin
+        Expr(:macrocall, &(Symbol("@unit")), _) || 
+        Expr(:macrocall, &(Symbol("@terminal")), _) => begin
           pop!(gens,tgt_schema[lhs])
           push!(singletons,tgt_schema[lhs])
         end
-        Expr(:macrocall, &(Symbol("@empty")), _) => begin
+        Expr(:macrocall, &(Symbol("@empty")), _) ||
+        Expr(:macrocall, &(Symbol("@initial")), _) => begin
           pop!(gens,tgt_schema[lhs])
           push!(empties,tgt_schema[lhs])
         end
