@@ -2,7 +2,7 @@ module TestGraphvizGraphs
 using Test
 import JSON
 
-using Catlab.Graphs, Catlab.Graphics.GraphvizGraphs
+using Catlab.Theories, Catlab.Graphs, Catlab.Graphics.GraphvizGraphs
 import Catlab.Graphics: Graphviz
 using Catlab.CategoricalAlgebra.Subobjects
 using Catlab.CategoricalAlgebra.CSets
@@ -90,31 +90,6 @@ g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5, 1.5],))
 gv = to_graphviz(g, edge_labels=:weight)
 @test stmts(gv, Graphviz.Edge, :label) == ["0.5", "1.5"]
 
-# Graph Homomorphism
-####################
-
-# test we only get 1 subgraph with empty function
-A = BasicGraphs.Graph(0)
-B = BasicGraphs.Graph(1)
-f = ACSetTransformation(A, B)
-
-gv = visualize_graph_homomorphism(f)
-@test gv.directed
-@test length(stmts(gv, Graphviz.Subgraph)) == 1
-
-# homomorphism between graphs with edges
-A = BasicGraphs.Graph(3)
-add_edges!(A, [1,1], [2,3])
-
-B = BasicGraphs.Graph(4)
-add_edges!(B, [1,3], [2,4])
-
-f = ACSetTransformation(A, B; V = [1,2,2], E = [1,1])
-
-gv = visualize_graph_homomorphism(f)
-@test gv.directed
-@test length(stmts(gv, Graphviz.Subgraph)) == 2
-
 # Symmetric graphs
 ##################
 
@@ -182,5 +157,25 @@ gv = to_graphviz(subgraph)
 @test length(stmts(gv, Graphviz.Edge)) == 2
 @test length(stmts(gv, Graphviz.Node, :color)) == 2
 @test length(stmts(gv, Graphviz.Edge, :color)) == 1
+
+# Graph homomorphisms
+#####################
+
+# test we only get 1 subgraph with empty function
+f = delete(Graph())
+gv = to_graphviz(f)
+@test gv.directed
+@test length(stmts(gv, Graphviz.Subgraph)) == 1
+
+# homomorphism between graphs with edges
+A = Graph(3)
+add_edges!(A, [1,1], [2,3])
+B = Graph(4)
+add_edges!(B, [1,3], [2,4])
+f = ACSetTransformation(A, B; V = [1,2,2], E = [1,1])
+
+gv = to_graphviz(f)
+@test gv.directed
+@test length(stmts(gv, Graphviz.Subgraph)) == 2
 
 end
