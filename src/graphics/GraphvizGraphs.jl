@@ -332,44 +332,58 @@ Keyword arguments are listed below:
 - `vertex_labels::Function`: a function taking two arguments, the vertex edge id and a boolean specifying if this vertex is in the domain or codomain, and returning a string label.
 """
 function to_graphviz(f::ACSetTransformation{S,Comp,<:AbstractGraph,<:AbstractGraph};
-   edge_colors::Function=default_edge_colors,
-   edge_labels::Function=default_edge_labels,
-   vertex_colors::Function=default_vertex_colors,
-   vertex_labels::Function=default_vertex_labels,
-   name="G", prog="dot") where {S,Comp}
+   name::AbstractString="hom", prog::AbstractString="dot",
+   node_labels::Union{Symbol,Bool}=false, edge_labels::Union{Symbol,Bool}=false,
+   node_colors=default_node_colors, edge_colors=default_edge_colors) where {S,Comp}
+  g, h = dom(f), codom(f)
 
-  # mapping between edges given by colors
-  ecolors = edge_colors(nparts(codom(f), :E))
+  # mapping between edges and between vertices given by colors
+  ecolors = edge_colors(ne(h))
+  vcolors = node_colors(nv(h))
 
-  # mapping between vertices given by colors
-  vcolors = vertex_colors(nparts(codom(f), :V))
-
-  # subgraph of dom(f)
-  if (nparts(dom(f), :V) > 0)
-    dom_nodes = [Graphviz.Node("$v", Graphviz.Attributes(:label=>vertex_labels(v, true),:shape=>"circle",:color=>vcolors[f[:V](v)])) for v in parts(dom(f), :V)]
-    dom_edges = [Graphviz.Edge(["$(dom(f)[e,:src])", "$(dom(f)[e,:tgt])"], Graphviz.Attributes(:label=>edge_labels(e, true),:color=>ecolors[f[:E](e)])) for e in parts(dom(f), :E)]
-
+  # subgraph for g = dom(f)
+  dom_subgraph = if nv(g) > 0
+    dom_nodes = map(vertices(g)) do v
+      attrs = Graphviz.Attributes(
+        :shape => "circle",
+        :color => vcolors[f[:V](v)])
+      Graphviz.Node("$v", merge!(attrs, node_label(g, node_labels, v)))
+    end
+    dom_edges = map(edges(g)) do e
+      attrs = Graphviz.Attributes(:color => ecolors[f[:E](e)])
+      Graphviz.Edge(["$(src(g,e))", "$(tgt(g,e))"],
+                    merge!(attrs, edge_label(g, edge_labels, e)))
+    end
     dom_stmts = vcat(dom_nodes, dom_edges)
-    dom_subgraph = make_tagged_subgraph(Graphviz.Digraph("G", dom_stmts; prog=prog, name="clusterDom"), pre="dom_")
+    dom_gv = Graphviz.Digraph("G", dom_stmts; prog=prog, name="clusterDom")
+    make_tagged_subgraph(dom_gv, pre="dom_")
   else
-    dom_subgraph = Graphviz.Statement[]
+    Graphviz.Statement[]
   end
 
-  # subgraph of codom(f)
-  codom_nodes = [Graphviz.Node("$v", Graphviz.Attributes(:label=>vertex_labels(v, false),:shape=>"circle",:color=>vcolors[v])) for v in parts(codom(f), :V)]
-  codom_edges = [Graphviz.Edge(["$(codom(f)[e,:src])", "$(codom(f)[e,:tgt])"], Graphviz.Attributes(:label=>edge_labels(e, false),:color=>ecolors[e])) for e in parts(codom(f), :E)]
-
+  # subgraph for h = codom(f)
+  codom_nodes = map(vertices(h)) do v
+    attrs = Graphviz.Attributes(
+      :shape => "circle",
+      :color => vcolors[v])
+    Graphviz.Node("$v", merge!(attrs, node_label(h, node_labels, v)))
+  end
+  codom_edges = map(edges(h)) do e
+    attrs = Graphviz.Attributes(:color => ecolors[e])
+    Graphviz.Edge(["$(src(h,e))", "$(tgt(h,e))"],
+                  merge!(attrs, edge_label(h, edge_labels, e)))
+  end
   codom_stmts = vcat(codom_nodes, codom_edges)
-  codom_subgraph = make_tagged_subgraph(Graphviz.Digraph("G", codom_stmts; prog=prog, name="clusterCodom"), pre="codom_")
+  codom_gv = Graphviz.Digraph("G", codom_stmts; prog=prog, name="clusterCodom")
+  codom_subgraph = make_tagged_subgraph(codom_gv, pre="codom_")
 
   # mapping between vertices
-  if (nparts(dom(f), :V) > 0)
-    node_map = [Graphviz.Edge(["\"dom_$i\"", "\"codom_$(components(f)[:V](i))\""], Graphviz.Attributes(:constraint=>"false", :style=>"dotted")) for i in 1:length(dom(components(f)[:V]))]
-  else
-    node_map = Graphviz.Statement[]
+  node_map_stmts = map(vertices(g)) do v
+    Graphviz.Edge(["\"dom_$v\"", "\"codom_$(f[:V](v))\""], Graphviz.Attributes(
+      :constraint => "false", :style => "dotted"))
   end
 
-  stmts = vcat(dom_subgraph, codom_subgraph, node_map...)
+  stmts = vcat(dom_subgraph, codom_subgraph, node_map_stmts...)
   g = Graphviz.Digraph(name, stmts)
   return g
 end
@@ -389,10 +403,10 @@ add_label(e::Graphviz.Edge, pre) = begin
   Graphviz.Edge(path, e.attrs)
 end
 
-default_edge_colors(n) = "#" .* hex.(distinguishable_colors(n, colorant"#F8766D", lchoices = [65], cchoices = [100]))
-default_edge_labels(e, dom::Bool) = "$(e)"
-
-default_vertex_colors(n) = repeat(["black"], n)
-default_vertex_labels(v, dom::Bool) = "$(v)"
+function default_edge_colors(n)
+  "#" .* hex.(distinguishable_colors(n, colorant"#F8766D",
+                                     lchoices=[65], cchoices=[100]))
+end
+default_node_colors(n) = repeat(["black"], n)
 
 end
