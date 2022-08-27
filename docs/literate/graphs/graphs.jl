@@ -3,7 +3,9 @@ using Catlab.CategoricalAlgebra
 using Catlab.Graphs
 using Catlab.Graphics
 
-draw(g) = to_graphviz(g, node_labels=true, edge_labels=true)
+draw(g; kw...) = to_graphviz(g; node_labels=true, edge_labels=true, kw...)
+draw(f::ACSetTransformation; kw...) =
+  to_graphviz(f; node_labels=true, edge_labels=true, draw_codom=false, kw...)
 
 to_graphviz(SchGraph)
 

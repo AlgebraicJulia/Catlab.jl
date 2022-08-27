@@ -4,7 +4,7 @@ module GraphvizGraphs
 export parse_graphviz, to_graphviz, to_graphviz_property_graph
 
 using StaticArrays: StaticVector, SVector
-using Colors: @colorant_str, hex, distinguishable_colors
+using Colors: Colorant, @colorant_str, hex, distinguishable_colors
 
 using ...Theories
 using ...Graphs, ...CategoricalAlgebra.Subobjects, ...CategoricalAlgebra.CSets
@@ -321,92 +321,100 @@ end
 
 """ Visualize a graph homomorphism using Graphviz.
 
-Visualize a homomorphism (`ACSetTransformation`) between graphs (instances of
-`AbstractGraph`). By default the edge mapping is represented by colors, and
-vertex mapping by edges between the domain and codomain subgraphs.
+Visualize a homomorphism (`ACSetTransformation`) between two graphs (instances
+of `AbstractGraph`). By default, the domain and codomain are drawn as subgraphs
+and the vertex mapping is drawn using dotted edges, whereas the edge map is
+suppressed. The vertex and edge mapping can also be shown using colors, via the
+`node_colors` and `edge_colors` keyword arguments.
 
-Keyword arguments are listed below:
-- `edge_colors::Function`: a function which returns a `Vector{String}` giving a color for each element in the map from edges in the domain to codomain.
-- `edge_labels::Function`: a function taking two arguments, the integer edge id and a boolean specifying if this edge is in the domain or codomain, and returning a string label.
-- `vertex_colors::Function`: a function which returns a `Vector{String}` giving a color for each element in the map from vertices in the domain to codomain.
-- `vertex_labels::Function`: a function taking two arguments, the vertex edge id and a boolean specifying if this vertex is in the domain or codomain, and returning a string label.
+# Arguments
+- `draw_codom=true`: whether to draw the codomain graph
+- `draw_mapping=true`: whether to draw the vertex mapping using edges
+- `prog="dot"`: Graphviz program to use
+- `graph_attrs`: Graph-level Graphviz attributes
+- `node_attrs`: Node-level Graphviz attributes
+- `edge_attrs`: Edge-level Graphviz attributes
+- `node_labels=false`: whether to draw node labels and which vertex attribute to use
+- `edge_labels=false`: whether to draw edge labels and which edge attribute to use
+- `node_colors=!draw_codom`: whether and how to color nodes based on vertex map
+- `edge_colors=!draw_codom`: whether and how to color edges based on edge map
 """
 function to_graphviz(f::ACSetTransformation{S,Comp,<:AbstractGraph,<:AbstractGraph};
-   name::AbstractString="hom", prog::AbstractString="dot",
-   node_labels::Union{Symbol,Bool}=false, edge_labels::Union{Symbol,Bool}=false,
-   node_colors=default_node_colors, edge_colors=default_edge_colors) where {S,Comp}
+    draw_codom::Bool=true, draw_mapping::Bool=true,
+    prog::AbstractString="dot", graph_attrs::AbstractDict=Dict(),
+    node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
+    node_labels::Union{Symbol,Bool}=false, edge_labels::Union{Symbol,Bool}=false,
+    node_colors::Union{Nothing,Bool}=nothing,
+    edge_colors::Union{Nothing,Bool}=nothing) where {S,Comp}
+  stmts = Graphviz.Statement[]
   g, h = dom(f), codom(f)
 
   # mapping between edges and between vertices given by colors
-  ecolors = edge_colors(ne(h))
-  vcolors = node_colors(nv(h))
+  isnothing(node_colors) && (node_colors = !draw_codom)
+  isnothing(edge_colors) && (edge_colors = !draw_codom)
+  node_colors == true && (node_colors = default_node_colors)
+  edge_colors == true && (edge_colors = default_edge_colors)
+  vcolors = node_colors != false ? node_colors(nv(h)) : nothing
+  ecolors = edge_colors != false ? edge_colors(ne(h)) : nothing
 
   # subgraph for g = dom(f)
-  dom_subgraph = if nv(g) > 0
-    dom_nodes = map(vertices(g)) do v
-      attrs = Graphviz.Attributes(
-        :shape => "circle",
-        :color => vcolors[f[:V](v)])
-      Graphviz.Node("$v", merge!(attrs, node_label(g, node_labels, v)))
-    end
-    dom_edges = map(edges(g)) do e
-      attrs = Graphviz.Attributes(:color => ecolors[f[:E](e)])
-      Graphviz.Edge(["$(src(g,e))", "$(tgt(g,e))"],
-                    merge!(attrs, edge_label(g, edge_labels, e)))
-    end
-    dom_stmts = vcat(dom_nodes, dom_edges)
-    dom_gv = Graphviz.Digraph("G", dom_stmts; prog=prog, name="clusterDom")
-    make_tagged_subgraph(dom_gv, pre="dom_")
+  dom_nodes = map(vertices(g)) do v
+    Graphviz.Node("dom_$v", merge(node_color(vcolors, f[:V](v)),
+                                  node_label(g, node_labels, v)))
+  end
+  dom_edges = map(edges(g)) do e
+    Graphviz.Edge(["dom_$(src(g,e))", "dom_$(tgt(g,e))"],
+                  merge(edge_color(ecolors, f[:E](e)),
+                        edge_label(g, edge_labels, e)))
+  end
+  dom_stmts = vcat(dom_nodes, dom_edges)
+  if draw_codom && nv(g) > 0
+    push!(stmts, Graphviz.Subgraph("cluster_dom", dom_stmts))
   else
-    Graphviz.Statement[]
+    append!(stmts, dom_stmts)
   end
 
   # subgraph for h = codom(f)
-  codom_nodes = map(vertices(h)) do v
-    attrs = Graphviz.Attributes(
-      :shape => "circle",
-      :color => vcolors[v])
-    Graphviz.Node("$v", merge!(attrs, node_label(h, node_labels, v)))
+  if draw_codom
+    codom_nodes = map(vertices(h)) do v
+      Graphviz.Node("cod_$v", merge(node_color(vcolors, v),
+                                    node_label(h, node_labels, v)))
+    end
+    codom_edges = map(edges(h)) do e
+      Graphviz.Edge(["cod_$(src(h,e))", "cod_$(tgt(h,e))"],
+                    merge(edge_color(ecolors, e),
+                          edge_label(h, edge_labels, e)))
+    end
+    codom_stmts = vcat(codom_nodes, codom_edges)
+    push!(stmts, Graphviz.Subgraph("cluster_cod", codom_stmts))
   end
-  codom_edges = map(edges(h)) do e
-    attrs = Graphviz.Attributes(:color => ecolors[e])
-    Graphviz.Edge(["$(src(h,e))", "$(tgt(h,e))"],
-                  merge!(attrs, edge_label(h, edge_labels, e)))
-  end
-  codom_stmts = vcat(codom_nodes, codom_edges)
-  codom_gv = Graphviz.Digraph("G", codom_stmts; prog=prog, name="clusterCodom")
-  codom_subgraph = make_tagged_subgraph(codom_gv, pre="codom_")
 
   # mapping between vertices
-  node_map_stmts = map(vertices(g)) do v
-    Graphviz.Edge(["\"dom_$v\"", "\"codom_$(f[:V](v))\""], Graphviz.Attributes(
-      :constraint => "false", :style => "dotted"))
+  if draw_codom && draw_mapping
+    map_stmts = map(vertices(g)) do v
+      Graphviz.Edge(["\"dom_$v\"", "\"cod_$(f[:V](v))\""], Graphviz.Attributes(
+        :constraint => "false", :style => "dotted"))
+    end
+    append!(stmts, map_stmts)
   end
 
-  stmts = vcat(dom_subgraph, codom_subgraph, node_map_stmts...)
-  g = Graphviz.Digraph(name, stmts)
-  return g
+  Graphviz.Digraph("hom_graph", stmts, prog=prog,
+    graph_attrs = merge!(Dict(:rankdir => "LR"), graph_attrs),
+    node_attrs = merge!(default_node_attrs(node_labels), node_attrs),
+    edge_attrs = merge!(Dict(:arrowsize => "0.5"), edge_attrs))
 end
 
-function make_tagged_subgraph(g; pre="")
-  stmts = map(g.stmts) do st
-    add_label(st, pre)
-  end
-  Graphviz.Subgraph(g.name, stmts, g.graph_attrs, g.node_attrs, g.edge_attrs)
-end
+node_color(colors::AbstractVector{<:Colorant}, v::Int) =
+  Graphviz.Attributes(:color => string("#", hex(colors[v])))
+node_color(::Nothing, v::Int) = Graphviz.Attributes()
 
-add_label(n::Graphviz.Node, pre) = Graphviz.Node("$pre$(n.name)", n.attrs)
-add_label(e::Graphviz.Edge, pre) = begin
-  path = map(e.path) do n_id
-    Graphviz.NodeID("$pre$(n_id.name)", n_id.port, n_id.anchor)
-  end
-  Graphviz.Edge(path, e.attrs)
-end
+edge_color(colors::AbstractVector{<:Colorant}, e::Int) =
+  Graphviz.Attributes(:color => string("#", hex(colors[e])))
+edge_color(::Nothing, e::Int) = Graphviz.Attributes()
 
-function default_edge_colors(n)
-  "#" .* hex.(distinguishable_colors(n, colorant"#F8766D",
-                                     lchoices=[65], cchoices=[100]))
-end
-default_node_colors(n) = repeat(["black"], n)
+default_node_colors(n) =
+  distinguishable_colors(n, [colorant"white", colorant"black"], dropseed=true)
+default_edge_colors(n) =
+  distinguishable_colors(n, colorant"#F8766D", lchoices=[65], cchoices=[100])
 
 end
