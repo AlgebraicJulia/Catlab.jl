@@ -4,9 +4,10 @@ module GraphvizGraphs
 export parse_graphviz, to_graphviz, to_graphviz_property_graph
 
 using StaticArrays: StaticVector, SVector
+using Colors: Colorant, @colorant_str, hex, distinguishable_colors
 
 using ...Theories
-using ...Graphs, ...CategoricalAlgebra.Subobjects
+using ...Graphs, ...CategoricalAlgebra.Subobjects, ...CategoricalAlgebra.CSets
 import ..Graphviz
 
 # Property graphs
@@ -158,9 +159,9 @@ function to_graphviz_property_graph(g::AbstractGraph;
   PropertyGraph{Any}(g, v -> node_label(g, node_labels, v),
                      e -> edge_label(g, edge_labels, e);
     prog = prog,
-    graph = merge!(Dict(:rankdir => "LR"), graph_attrs),
+    graph = merge!(default_graph_attrs(prog), graph_attrs),
     node = merge!(default_node_attrs(node_labels), node_attrs),
-    edge = merge!(Dict(:arrowsize => "0.5"), edge_attrs),
+    edge = merge!(default_edge_attrs(prog), edge_attrs),
   )
 end
 
@@ -171,9 +172,21 @@ edge_label(g, name::Symbol, e::Int) = Dict(:label => string(g[e, name]))
 edge_label(g, labels::Bool, e::Int) =
   labels ? Dict(:label => string(e)) : Dict{Symbol,String}()
 
+function default_graph_attrs(prog::AbstractString)
+  attrs = Dict{Symbol,String}()
+  prog == "dot" && (attrs[:rankdir] = "LR")
+  attrs
+end
+
 function default_node_attrs(labels::Union{Symbol,Bool})
   shape = labels isa Symbol ? "ellipse" : (labels ? "circle" : "point")
   Dict(:shape => shape, :width => "0.05", :height => "0.05", :margin => "0")
+end
+
+function default_edge_attrs(prog::AbstractString)
+  attrs = Dict(:arrowsize => "0.5")
+  prog ∈ ("neato", "fdp") && (attrs[:len] = "0.5")
+  attrs
 end
 
 # Symmetric graphs
@@ -186,9 +199,9 @@ function to_graphviz_property_graph(g::AbstractSymmetricGraph;
   SymmetricPropertyGraph{Any}(g, v -> node_label(g, node_labels, v),
                               e -> symmetric_edge_label(g, edge_labels, e);
     prog = prog,
-    graph = graph_attrs,
+    graph = merge!(default_graph_attrs(prog), graph_attrs),
     node = merge!(default_node_attrs(node_labels), node_attrs),
-    edge = merge!(Dict(:len => "0.5"), edge_attrs),
+    edge = merge!(default_edge_attrs(prog), edge_attrs),
   )
 end
 
@@ -212,9 +225,9 @@ function to_graphviz_property_graph(g::AbstractReflexiveGraph;
     node_labels::Union{Symbol,Bool}=false, edge_labels::Union{Symbol,Bool}=false,
     show_reflexive::Bool=false)
   pg = PropertyGraph{Any}(; prog = prog,
-    graph = graph_attrs,
+    graph = merge!(default_graph_attrs(prog), graph_attrs),
     node = merge!(default_node_attrs(node_labels), node_attrs),
-    edge = merge!(Dict(:arrowsize => "0.5"), edge_attrs),
+    edge = merge!(default_edge_attrs(prog), edge_attrs),
   )
   add_vertices!(pg, nv(g))
   for v in vertices(g)
@@ -241,9 +254,9 @@ function to_graphviz_property_graph(g::AbstractSymmetricReflexiveGraph;
     node_labels::Union{Symbol,Bool}=false, edge_labels::Union{Symbol,Bool}=false,
     show_reflexive::Bool=false)
   pg = SymmetricPropertyGraph{Any}(; prog = prog,
-    graph = graph_attrs,
+    graph = merge!(default_graph_attrs(prog), graph_attrs),
     node = merge!(default_node_attrs(node_labels), node_attrs),
-    edge = merge!(Dict(:len => "0.5"), edge_attrs),
+    edge = merge!(default_edge_attrs(prog), edge_attrs),
   )
   add_vertices!(pg, nv(g))
   for v in vertices(g)
@@ -272,9 +285,9 @@ function to_graphviz_property_graph(g::AbstractHalfEdgeGraph;
     node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
     node_labels::Union{Symbol,Bool}=false, edge_labels::Union{Symbol,Bool}=false)
   pg = SymmetricPropertyGraph{Any}(; prog = prog,
-    graph = graph_attrs,
+    graph = merge!(default_graph_attrs(prog), graph_attrs),
     node = merge!(default_node_attrs(node_labels), node_attrs),
-    edge = merge!(Dict(:len => "0.5"), edge_attrs),
+    edge = merge!(default_edge_attrs(prog), edge_attrs),
   )
   for v in vertices(g)
     add_vertex!(pg, label=node_labels ? string(v) : "")
@@ -302,8 +315,8 @@ to_graphviz(subgraph::Subobject{<:HasGraph}; kw...) =
 
 function to_graphviz_property_graph(
     subgraph::Subobject{<:Union{AbstractGraph,AbstractSymmetricGraph}};
-    subgraph_node_attrs::AbstractDict=Dict(:color => "cornflowerblue"),
-    subgraph_edge_attrs::AbstractDict=Dict(:color => "cornflowerblue"), kw...)
+    subgraph_node_attrs::AbstractDict=default_subgraph_node_attrs,
+    subgraph_edge_attrs::AbstractDict=default_subgraph_edge_attrs, kw...)
   pg = to_graphviz_property_graph(ob(subgraph); kw...)
   f = hom(subgraph)
   for v in vertices(dom(f))
@@ -313,6 +326,114 @@ function to_graphviz_property_graph(
     set_eprops!(pg, f[:E](e), subgraph_edge_attrs)
   end
   pg
+end
+
+const default_subgraph_node_attrs = Dict(:color => "cornflowerblue")
+const default_subgraph_edge_attrs = Dict(:color => "cornflowerblue")
+
+# Graph homomorphisms
+#####################
+
+""" Visualize a graph homomorphism using Graphviz.
+
+Visualize a homomorphism (`ACSetTransformation`) between two graphs (instances
+of `AbstractGraph`). By default, the domain and codomain are drawn as subgraphs
+and the vertex mapping is drawn using dotted edges, whereas the edge map is
+suppressed. The vertex and edge mapping can also be shown using colors, via the
+`node_colors` and `edge_colors` keyword arguments.
+
+# Arguments
+- `draw_codom=true`: whether to draw the codomain graph
+- `draw_mapping=true`: whether to draw the vertex mapping using edges
+- `prog="dot"`: Graphviz program to use
+- `graph_attrs`: Graph-level Graphviz attributes
+- `node_attrs`: Node-level Graphviz attributes
+- `edge_attrs`: Edge-level Graphviz attributes
+- `node_labels=false`: whether to draw node labels and which vertex attribute to use
+- `edge_labels=false`: whether to draw edge labels and which edge attribute to use
+- `node_colors=!draw_codom`: whether and how to color nodes based on vertex map
+- `edge_colors=!draw_codom`: whether and how to color edges based on edge map
+"""
+function to_graphviz(f::ACSetTransformation{S,Comp,<:AbstractGraph,<:AbstractGraph};
+    draw_codom::Bool=true, draw_mapping::Bool=true,
+    prog::AbstractString="dot", graph_attrs::AbstractDict=Dict(),
+    node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
+    node_labels::Union{Symbol,Bool}=false, edge_labels::Union{Symbol,Bool}=false,
+    node_colors::Union{Nothing,Bool}=nothing,
+    edge_colors::Union{Nothing,Bool}=nothing) where {S,Comp}
+  stmts = Graphviz.Statement[]
+  g, h = dom(f), codom(f)
+
+  # mapping between edges and between vertices given by colors
+  isnothing(node_colors) && (node_colors = !draw_codom)
+  isnothing(edge_colors) && (edge_colors = !draw_codom)
+  node_colors == true && (node_colors = default_node_colors)
+  edge_colors == true && (edge_colors = default_edge_colors)
+  vcolors = node_colors != false ? node_colors(nv(h)) : nothing
+  ecolors = edge_colors != false ? edge_colors(ne(h)) : nothing
+
+  # subgraph for g = dom(f)
+  dom_nodes = map(vertices(g)) do v
+    Graphviz.Node("dom_$v", merge!(node_color(vcolors, f[:V](v)),
+                                   node_label(g, node_labels, v)))
+  end
+  dom_edges = map(edges(g)) do e
+    Graphviz.Edge(["dom_$(src(g,e))", "dom_$(tgt(g,e))"],
+                  merge!(edge_color(ecolors, f[:E](e)),
+                         edge_label(g, edge_labels, e)))
+  end
+  dom_stmts = vcat(dom_nodes, dom_edges)
+  if draw_codom && nv(g) > 0
+    push!(stmts, Graphviz.Subgraph("cluster_dom", dom_stmts))
+  else
+    append!(stmts, dom_stmts)
+  end
+
+  # subgraph for h = codom(f)
+  if draw_codom
+    codom_nodes = map(vertices(h)) do v
+      Graphviz.Node("cod_$v", merge!(node_color(vcolors, v),
+                                     node_label(h, node_labels, v)))
+    end
+    codom_edges = map(edges(h)) do e
+      Graphviz.Edge(["cod_$(src(h,e))", "cod_$(tgt(h,e))"],
+                    merge!(edge_color(ecolors, e),
+                           edge_label(h, edge_labels, e)))
+    end
+    codom_stmts = vcat(codom_nodes, codom_edges)
+    push!(stmts, Graphviz.Subgraph("cluster_cod", codom_stmts))
+  end
+
+  # mapping between vertices
+  if draw_codom && draw_mapping
+    map_stmts = map(vertices(g)) do v
+      Graphviz.Edge(["\"dom_$v\"", "\"cod_$(f[:V](v))\""], Graphviz.Attributes(
+        :constraint => "false", :style => "dotted"))
+    end
+    append!(stmts, map_stmts)
+  end
+
+  Graphviz.Digraph("hom_graph", stmts, prog=prog,
+    graph_attrs = merge!(default_graph_attrs(prog), graph_attrs),
+    node_attrs = merge!(default_node_attrs(node_labels), node_attrs),
+    edge_attrs = merge!(default_edge_attrs(prog), edge_attrs))
+end
+
+function node_color(colors::AbstractVector{<:Colorant}, v::Int)
+  Dict(:color => string("#", hex(colors[v])))
+end
+node_color(::Nothing, v::Int) = Dict{Symbol,String}()
+
+function edge_color(colors::AbstractVector{<:Colorant}, e::Int)
+  Dict(:color => string("#", hex(colors[e])))
+end
+edge_color(::Nothing, e::Int) = Dict{Symbol,String}()
+
+function default_node_colors(n)
+  distinguishable_colors(n, [colorant"white", colorant"black"], dropseed=true)
+end
+function default_edge_colors(n)
+  distinguishable_colors(n, colorant"#F8766D", lchoices=[65], cchoices=[100])
 end
 
 end

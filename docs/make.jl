@@ -73,8 +73,9 @@ makedocs(
         "generated/wiring_diagrams/wd_cset.md",
       ],
       "Graphics" => Any[
-        "generated/graphics/composejl_wiring_diagrams.md",
+        "generated/graphics/graphviz_graphs.md",
         "generated/graphics/graphviz_wiring_diagrams.md",
+        "generated/graphics/composejl_wiring_diagrams.md",
         "generated/graphics/tikz_wiring_diagrams.md",
         "generated/graphics/layouts_vs_drawings.md",
       ],
