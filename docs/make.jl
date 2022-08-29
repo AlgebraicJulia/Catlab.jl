@@ -66,6 +66,7 @@ makedocs(
       ],
       "Diagrams" => Any[
         "generated/diagrams/diagrams.md",
+        "generated/diagrams/serialization.md",
       ],
       "Wiring Diagrams" => Any[
         "generated/wiring_diagrams/wiring_diagram_basics.md",
