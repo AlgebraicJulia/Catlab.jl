@@ -1,17 +1,13 @@
-# # Serialization
+# # Serializing acsets
 #
-# Catlab supports the serialization of CSets into JSON with their schemas.
+# Catlab supports the serialization of attributed C-sets (acsets) into JSON with their schemas.
 # This functionality should allow you to interoperate with database representations
 # in other languages by serializing both the data and the type into a network interoperability layer.
 
-using JSON
-import JSONSchema
+import JSON, JSONSchema
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
-using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
 using Catlab.Graphics
-using Catlab.Graphics.Graphviz
-
 
 # You can interact with the schema representation using JSON Schema with the
 # `write_json_acset_schema` and `read_json_acset_schema` functions.
