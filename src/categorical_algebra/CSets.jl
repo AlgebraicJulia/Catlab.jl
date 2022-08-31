@@ -1242,8 +1242,9 @@ end
 The result is a JSON-able object (dictionary) from which a `JSONSchema.Schema`
 can be constructed, using the package JSONSchema.jl.
 """
-function acset_schema_json_schema()
-  JSON.parsefile(joinpath(@__DIR__, "data", "acset.schema.json"))
+function acset_schema_json_schema(; kw...)
+  JSON.parsefile(joinpath(@__DIR__, "data", "acset.schema.json");
+                 dicttype=OrderedDict{String,Any}, kw...)
 end
 
 end
