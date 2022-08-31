@@ -1,17 +1,13 @@
-# # Serialization
+# # Serializing acsets
 #
-# Catlab supports the serialization of CSets into JSON with their schemas.
+# Catlab supports the serialization of attributed C-sets (acsets) into JSON with their schemas.
 # This functionality should allow you to interoperate with database representations
 # in other languages by serializing both the data and the type into a network interoperability layer.
 
-using JSON
-import JSONSchema
+import JSON, JSONSchema
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
-using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
 using Catlab.Graphics
-using Catlab.Graphics.Graphviz
-
 
 # You can interact with the schema representation using JSON Schema with the
 # `write_json_acset_schema` and `read_json_acset_schema` functions.
@@ -37,7 +33,8 @@ end
 json_schema = JSONSchema.Schema(acset_schema_json_schema())
 JSON.print(json_schema, 2)
 
-# # Example 1: Discrete Dynamical Systems
+# ## Example 1: Discrete Dynamical Systems
+#
 # Here is an example of an ACSet schema for Discrete Dynamical Systems.
 # A DDS is just a set `X` whose elements we call states, and a function `next`, which take the current state and gives you the next state.
 # Such systems are used to model processes that occur autonomously and are the simplest possible dynamical system.
@@ -48,6 +45,7 @@ JSON.print(json_schema, 2)
 end
 
 JSON.print(generate_json_acset_schema(SchDDS), 2)
+#-
 to_graphviz(SchDDS)
 
 # LabeledDDS are a variation on DDS where the states can have symbolic names. In Catlab, every element of an object has to be identified by its integer row number.
@@ -59,9 +57,11 @@ to_graphviz(SchDDS)
 end
 
 JSON.print(generate_json_acset_schema(SchLabeledDDS), 2)
+#-
 to_graphviz(SchLabeledDDS)
 
-# Example 2: LabeledDDS
+# ## Example 2: Labeled DDS
+#
 # With the LabeledDDS, we will create an instance by specifying data that fits the schema. 
 # Then we will create the JSON output to show how it is encoded. 
 # The JSON encoded schema above tells you how to read the JSON encoded data below.
@@ -78,10 +78,12 @@ ldds = LabeledDDS{Int}()
 add_parts!(ldds, :X, 4, next=[2,3,4,1], label=[100, 101, 102, 103])
 JSON.print(generate_json_acset(ldds),2)
 
-# Example 3: Graphs
+# ## Example 3: Graphs
+#
 # Relational databases are great, because they are capable of representing almost anything that can be stored on a computer. We move up to graphs, which is a nice data structure you have probably seen before. Notably, graphs have two tables, one for edges and one for vertices. These are the category theorist's graph, which means that they support multiple parallel edges and self-loops.
 
 JSON.print(generate_json_acset_schema(SchGraph), 2)
+#-
 to_graphviz(SchGraph)
 
 # An example graph with 4 vertices and 2 edges.
@@ -97,7 +99,8 @@ end
 
 JSON.print(generate_json_acset(g), 2)
 
-# Example 4: Vertex and Edge Labeled Graph Graph Schema
+# ## Example 4: Vertex and Edge Labeled Graph Graph Schema
+#
 # You can extend schemas by adding more tables and columns. This inheritance is flattened when you serialize to JSON, but could be encoded in a future version.
 
 @present SchVELabeledGraph <: SchGraph begin
@@ -107,6 +110,7 @@ JSON.print(generate_json_acset(g), 2)
 end
 
 JSON.print(generate_json_acset_schema(SchVELabeledGraph), 2)
+#-
 to_graphviz(SchVELabeledGraph)
 
 # An example labeled graph using symbols for the vertex and edge names. Note that you can use unicode symbols in Julia.
