@@ -12,8 +12,9 @@ export ACSetTransformation, CSetTransformation,
 
 using Base.Iterators: flatten
 using Base.Meta: quot
+using DataStructures: OrderedDict
 using StructEquality
-using JSON
+import JSON
 using Reexport
 using Tables
 import Pkg
@@ -1094,7 +1095,7 @@ Inverse to [`parse_json_acset`](@ref).
 """
 function generate_json_acset(x::ACSet)
   ts = tables(x)
-  Dict(k => Tables.rowtable(v) for (k,v) in zip(keys(ts), ts))
+  OrderedDict(k => Tables.rowtable(v) for (k,v) in zip(keys(ts), ts))
 end
 
 """ Parse JSON-able object or JSON string representing an ACSet.
@@ -1156,7 +1157,7 @@ Inverse to [`parse_json_acset_schema`](@ref).
 function generate_json_acset_schema(pres::Presentation)
   catlab_pkg = Pkg.dependencies()[
     Base.UUID("134e5e36-593f-5add-ad60-77f754baafbe")]
-  Dict(
+  OrderedDict(
     "version" => Dict("ACSetSchema" => "0.0.1",
                       "Catlab" => string(catlab_pkg.version)),
     "Ob" => map(generators(pres, :Ob)) do x
