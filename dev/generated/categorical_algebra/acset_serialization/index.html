@@ -1,11 +1,8 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Serialization · Catlab.jl</title><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">Catlab.jl</a></span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox"/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Seven Sketches</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../sketches/partitions/">Partitions</a></li><li><a class="tocitem" href="../../sketches/preorders/">Preorders</a></li><li><a class="tocitem" href="../../sketches/meets/">Meets in Preorders</a></li><li><a class="tocitem" href="../../sketches/smc/">Symmetric Monoidal Categories</a></li><li><a class="tocitem" href="../../sketches/cat_elements/">The Category of Elements</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/graphs/">The Category of Graphs</a></li><li><a class="tocitem" href="../../graphs/graphs_label/">Labeled Graphs</a></li><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox" checked/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../diagrams/">Diagrams</a></li><li class="is-active"><a class="tocitem" href>Serialization</a><ul class="internal"><li><a class="tocitem" href="#The-JSONSchema-for-Schemas"><span>The JSONSchema for Schemas</span></a></li><li class="toplevel"><a class="tocitem" href="#Example-1:-Discrete-Dynamical-Systems"><span>Example 1: Discrete Dynamical Systems</span></a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-4" type="checkbox"/><label class="tocitem" for="menuitem-2-4"><span class="docs-label">Wiring Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li><li><a class="tocitem" href="../../wiring_diagrams/wd_cset/">Wiring Diagrams as Attributed C-Sets</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox"/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphics/graphviz_graphs/">Drawing graphs in Graphviz</a></li><li><a class="tocitem" href="../../graphics/graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../../graphics/composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../../graphics/tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../../graphics/layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/core/">Theories, instances, and expressions</a></li><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Diagrams</a></li><li class="is-active"><a href>Serialization</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Serialization</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/master/docs/literate/diagrams/serialization.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Serialization"><a class="docs-heading-anchor" href="#Serialization">Serialization</a><a id="Serialization-1"></a><a class="docs-heading-anchor-permalink" href="#Serialization" title="Permalink"></a></h1><p>Catlab supports the serialization of CSets into JSON with their schemas. This functionality should allow you to interoperate with database representations in other languages by serializing both the data and the type into a network interoperability layer.</p><pre><code class="language-julia hljs">using JSON
-import JSONSchema
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Serializing acsets · Catlab.jl</title><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">Catlab.jl</a></span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox"/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Seven Sketches in Compositionality</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../sketches/partitions/">Partitions</a></li><li><a class="tocitem" href="../../sketches/preorders/">Preorders</a></li><li><a class="tocitem" href="../../sketches/meets/">Meets in Preorders</a></li><li><a class="tocitem" href="../../sketches/smc/">Symmetric Monoidal Categories</a></li><li><a class="tocitem" href="../../sketches/cat_elements/">The Category of Elements</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/graphs/">The Category of Graphs</a></li><li><a class="tocitem" href="../../graphs/graphs_label/">Labeled Graphs</a></li><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox" checked/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">Categorical Algebra</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../diagrams/">Diagrams</a></li><li class="is-active"><a class="tocitem" href>Serializing acsets</a><ul class="internal"><li><a class="tocitem" href="#The-JSONSchema-for-Schemas"><span>The JSONSchema for Schemas</span></a></li><li><a class="tocitem" href="#Example-1:-Discrete-Dynamical-Systems"><span>Example 1: Discrete Dynamical Systems</span></a></li><li><a class="tocitem" href="#Example-2:-Labeled-DDS"><span>Example 2: Labeled DDS</span></a></li><li><a class="tocitem" href="#Example-3:-Graphs"><span>Example 3: Graphs</span></a></li><li><a class="tocitem" href="#Example-4:-Vertex-and-Edge-Labeled-Graph-Graph-Schema"><span>Example 4: Vertex and Edge Labeled Graph Graph Schema</span></a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-4" type="checkbox"/><label class="tocitem" for="menuitem-2-4"><span class="docs-label">Wiring Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li><li><a class="tocitem" href="../../wiring_diagrams/wd_cset/">Wiring Diagrams as Attributed C-Sets</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox"/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphics/graphviz_graphs/">Drawing graphs in Graphviz</a></li><li><a class="tocitem" href="../../graphics/graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../../graphics/composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../../graphics/tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../../graphics/layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/core/">Theories, instances, and expressions</a></li><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Categorical Algebra</a></li><li class="is-active"><a href>Serializing acsets</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Serializing acsets</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/master/docs/literate/categorical_algebra/acset_serialization.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Serializing-acsets"><a class="docs-heading-anchor" href="#Serializing-acsets">Serializing acsets</a><a id="Serializing-acsets-1"></a><a class="docs-heading-anchor-permalink" href="#Serializing-acsets" title="Permalink"></a></h1><p>Catlab supports the serialization of attributed C-sets (acsets) into JSON with their schemas. This functionality should allow you to interoperate with database representations in other languages by serializing both the data and the type into a network interoperability layer.</p><pre><code class="language-julia hljs">import JSON, JSONSchema
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
-using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
-using Catlab.Graphics
-using Catlab.Graphics.Graphviz</code></pre><p>You can interact with the schema representation using JSON Schema with the <code>write_json_acset_schema</code> and <code>read_json_acset_schema</code> functions.</p><pre><code class="language-julia hljs">function roundtrip_json_acset_schema(pres::Presentation)
+using Catlab.Graphics</code></pre><p>You can interact with the schema representation using JSON Schema with the <code>write_json_acset_schema</code> and <code>read_json_acset_schema</code> functions.</p><pre><code class="language-julia hljs">function roundtrip_json_acset_schema(pres::Presentation)
   mktempdir() do dir
     path = joinpath(dir, &quot;schema.json&quot;)
     write_json_acset_schema(pres, path)
@@ -118,13 +115,31 @@ JSON.print(json_schema, 2)</code></pre><pre class="documenter-example-output"><c
     &quot;title&quot;: &quot;ACSet&quot;,
     &quot;type&quot;: &quot;object&quot;
   }
-}</code></pre><h1 id="Example-1:-Discrete-Dynamical-Systems"><a class="docs-heading-anchor" href="#Example-1:-Discrete-Dynamical-Systems">Example 1: Discrete Dynamical Systems</a><a id="Example-1:-Discrete-Dynamical-Systems-1"></a><a class="docs-heading-anchor-permalink" href="#Example-1:-Discrete-Dynamical-Systems" title="Permalink"></a></h1><p>Here is an example of an ACSet schema for Discrete Dynamical Systems. A DDS is just a set <code>X</code> whose elements we call states, and a function <code>next</code>, which take the current state and gives you the next state. Such systems are used to model processes that occur autonomously and are the simplest possible dynamical system.</p><pre><code class="language-julia hljs">@present SchDDS(FreeSchema) begin
+}</code></pre><h2 id="Example-1:-Discrete-Dynamical-Systems"><a class="docs-heading-anchor" href="#Example-1:-Discrete-Dynamical-Systems">Example 1: Discrete Dynamical Systems</a><a id="Example-1:-Discrete-Dynamical-Systems-1"></a><a class="docs-heading-anchor-permalink" href="#Example-1:-Discrete-Dynamical-Systems" title="Permalink"></a></h2><p>Here is an example of an ACSet schema for Discrete Dynamical Systems. A DDS is just a set <code>X</code> whose elements we call states, and a function <code>next</code>, which take the current state and gives you the next state. Such systems are used to model processes that occur autonomously and are the simplest possible dynamical system.</p><pre><code class="language-julia hljs">@present SchDDS(FreeSchema) begin
   X::Ob
   next::Hom(X,X)
 end
 
-JSON.print(generate_json_acset_schema(SchDDS), 2)
-to_graphviz(SchDDS)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+JSON.print(generate_json_acset_schema(SchDDS), 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
+  &quot;Hom&quot;: [
+    {
+      &quot;name&quot;: &quot;next&quot;,
+      &quot;codom&quot;: &quot;X&quot;,
+      &quot;dom&quot;: &quot;X&quot;
+    }
+  ],
+  &quot;Attr&quot;: [],
+  &quot;AttrType&quot;: [],
+  &quot;Ob&quot;: [
+    {
+      &quot;name&quot;: &quot;X&quot;
+    }
+  ],
+  &quot;version&quot;: {
+    &quot;ACSetSchema&quot;: &quot;0.0.1&quot;,
+    &quot;Catlab&quot;: &quot;0.14.2&quot;
+  }
+}</code></pre><pre><code class="language-julia hljs">to_graphviz(SchDDS)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.43.0 (0)
@@ -155,8 +170,36 @@ to_graphviz(SchDDS)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version
   label::Attr(X, Label)
 end
 
-JSON.print(generate_json_acset_schema(SchLabeledDDS), 2)
-to_graphviz(SchLabeledDDS)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+JSON.print(generate_json_acset_schema(SchLabeledDDS), 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
+  &quot;Hom&quot;: [
+    {
+      &quot;name&quot;: &quot;next&quot;,
+      &quot;codom&quot;: &quot;X&quot;,
+      &quot;dom&quot;: &quot;X&quot;
+    }
+  ],
+  &quot;Attr&quot;: [
+    {
+      &quot;name&quot;: &quot;label&quot;,
+      &quot;codom&quot;: &quot;Label&quot;,
+      &quot;dom&quot;: &quot;X&quot;
+    }
+  ],
+  &quot;AttrType&quot;: [
+    {
+      &quot;name&quot;: &quot;Label&quot;
+    }
+  ],
+  &quot;Ob&quot;: [
+    {
+      &quot;name&quot;: &quot;X&quot;
+    }
+  ],
+  &quot;version&quot;: {
+    &quot;ACSetSchema&quot;: &quot;0.0.1&quot;,
+    &quot;Catlab&quot;: &quot;0.14.2&quot;
+  }
+}</code></pre><pre><code class="language-julia hljs">to_graphviz(SchLabeledDDS)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.43.0 (0)
@@ -195,7 +238,7 @@ to_graphviz(SchLabeledDDS)</code></pre><img src='data:image/svg+xml;utf-8,<?xml 
 </g>
 </g>
 </svg>
-'/><p>Example 2: LabeledDDS With the LabeledDDS, we will create an instance by specifying data that fits the schema. Then we will create the JSON output to show how it is encoded. The JSON encoded schema above tells you how to read the JSON encoded data below. You can see that the <code>LabeledDDS</code> will have a set for <code>X</code> with a <code>Hom</code> for <code>next</code> and an attribute for <code>label</code>. Thus we can expect to see the JSON encoding of a single table database below:     1. The first level of JSON is keyed by the table names     2. Each Table is an array of rows     3. Each row is an object keyed by fields. This is the simplest way to put a relational database in a JSON document. It is a little redundant, because the field names are repeated for each row. But that makes it easy to emit and easy to parse. If this becomes a problem, we can upgrade to a more efficient representation by writing more sophisticated parsers. Something like https://github.com/JuliaIO/MsgPack.jl would be appropriate.</p><pre><code class="language-julia hljs">@acset_type LabeledDDS(SchLabeledDDS, index=[:next, :label])
+'/><h2 id="Example-2:-Labeled-DDS"><a class="docs-heading-anchor" href="#Example-2:-Labeled-DDS">Example 2: Labeled DDS</a><a id="Example-2:-Labeled-DDS-1"></a><a class="docs-heading-anchor-permalink" href="#Example-2:-Labeled-DDS" title="Permalink"></a></h2><p>With the LabeledDDS, we will create an instance by specifying data that fits the schema. Then we will create the JSON output to show how it is encoded. The JSON encoded schema above tells you how to read the JSON encoded data below. You can see that the <code>LabeledDDS</code> will have a set for <code>X</code> with a <code>Hom</code> for <code>next</code> and an attribute for <code>label</code>. Thus we can expect to see the JSON encoding of a single table database below:     1. The first level of JSON is keyed by the table names     2. Each Table is an array of rows     3. Each row is an object keyed by fields. This is the simplest way to put a relational database in a JSON document. It is a little redundant, because the field names are repeated for each row. But that makes it easy to emit and easy to parse. If this becomes a problem, we can upgrade to a more efficient representation by writing more sophisticated parsers. Something like https://github.com/JuliaIO/MsgPack.jl would be appropriate.</p><pre><code class="language-julia hljs">@acset_type LabeledDDS(SchLabeledDDS, index=[:next, :label])
 
 ldds = LabeledDDS{Int}()
 add_parts!(ldds, :X, 4, next=[2,3,4,1], label=[100, 101, 102, 103])
@@ -218,8 +261,34 @@ JSON.print(generate_json_acset(ldds),2)</code></pre><pre class="documenter-examp
       &quot;label&quot;: 103
     }
   ]
-}</code></pre><p>Example 3: Graphs Relational databases are great, because they are capable of representing almost anything that can be stored on a computer. We move up to graphs, which is a nice data structure you have probably seen before. Notably, graphs have two tables, one for edges and one for vertices. These are the category theorist&#39;s graph, which means that they support multiple parallel edges and self-loops.</p><pre><code class="language-julia hljs">JSON.print(generate_json_acset_schema(SchGraph), 2)
-to_graphviz(SchGraph)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+}</code></pre><h2 id="Example-3:-Graphs"><a class="docs-heading-anchor" href="#Example-3:-Graphs">Example 3: Graphs</a><a id="Example-3:-Graphs-1"></a><a class="docs-heading-anchor-permalink" href="#Example-3:-Graphs" title="Permalink"></a></h2><p>Relational databases are great, because they are capable of representing almost anything that can be stored on a computer. We move up to graphs, which is a nice data structure you have probably seen before. Notably, graphs have two tables, one for edges and one for vertices. These are the category theorist&#39;s graph, which means that they support multiple parallel edges and self-loops.</p><pre><code class="language-julia hljs">JSON.print(generate_json_acset_schema(SchGraph), 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
+  &quot;Hom&quot;: [
+    {
+      &quot;name&quot;: &quot;src&quot;,
+      &quot;codom&quot;: &quot;V&quot;,
+      &quot;dom&quot;: &quot;E&quot;
+    },
+    {
+      &quot;name&quot;: &quot;tgt&quot;,
+      &quot;codom&quot;: &quot;V&quot;,
+      &quot;dom&quot;: &quot;E&quot;
+    }
+  ],
+  &quot;Attr&quot;: [],
+  &quot;AttrType&quot;: [],
+  &quot;Ob&quot;: [
+    {
+      &quot;name&quot;: &quot;V&quot;
+    },
+    {
+      &quot;name&quot;: &quot;E&quot;
+    }
+  ],
+  &quot;version&quot;: {
+    &quot;ACSetSchema&quot;: &quot;0.0.1&quot;,
+    &quot;Catlab&quot;: &quot;0.14.2&quot;
+  }
+}</code></pre><pre><code class="language-julia hljs">to_graphviz(SchGraph)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.43.0 (0)
@@ -304,14 +373,55 @@ end</code></pre><div class="c-set">
       &quot;tgt&quot;: 3
     }
   ]
-}</code></pre><p>Example 4: Vertex and Edge Labeled Graph Graph Schema You can extend schemas by adding more tables and columns. This inheritance is flattened when you serialize to JSON, but could be encoded in a future version.</p><pre><code class="language-julia hljs">@present SchVELabeledGraph &lt;: SchGraph begin
+}</code></pre><h2 id="Example-4:-Vertex-and-Edge-Labeled-Graph-Graph-Schema"><a class="docs-heading-anchor" href="#Example-4:-Vertex-and-Edge-Labeled-Graph-Graph-Schema">Example 4: Vertex and Edge Labeled Graph Graph Schema</a><a id="Example-4:-Vertex-and-Edge-Labeled-Graph-Graph-Schema-1"></a><a class="docs-heading-anchor-permalink" href="#Example-4:-Vertex-and-Edge-Labeled-Graph-Graph-Schema" title="Permalink"></a></h2><p>You can extend schemas by adding more tables and columns. This inheritance is flattened when you serialize to JSON, but could be encoded in a future version.</p><pre><code class="language-julia hljs">@present SchVELabeledGraph &lt;: SchGraph begin
   Label::AttrType
   vlabel::Attr(V,Label)
   elabel::Attr(E,Label)
 end
 
-JSON.print(generate_json_acset_schema(SchVELabeledGraph), 2)
-to_graphviz(SchVELabeledGraph)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+JSON.print(generate_json_acset_schema(SchVELabeledGraph), 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
+  &quot;Hom&quot;: [
+    {
+      &quot;name&quot;: &quot;src&quot;,
+      &quot;codom&quot;: &quot;V&quot;,
+      &quot;dom&quot;: &quot;E&quot;
+    },
+    {
+      &quot;name&quot;: &quot;tgt&quot;,
+      &quot;codom&quot;: &quot;V&quot;,
+      &quot;dom&quot;: &quot;E&quot;
+    }
+  ],
+  &quot;Attr&quot;: [
+    {
+      &quot;name&quot;: &quot;vlabel&quot;,
+      &quot;codom&quot;: &quot;Label&quot;,
+      &quot;dom&quot;: &quot;V&quot;
+    },
+    {
+      &quot;name&quot;: &quot;elabel&quot;,
+      &quot;codom&quot;: &quot;Label&quot;,
+      &quot;dom&quot;: &quot;E&quot;
+    }
+  ],
+  &quot;AttrType&quot;: [
+    {
+      &quot;name&quot;: &quot;Label&quot;
+    }
+  ],
+  &quot;Ob&quot;: [
+    {
+      &quot;name&quot;: &quot;V&quot;
+    },
+    {
+      &quot;name&quot;: &quot;E&quot;
+    }
+  ],
+  &quot;version&quot;: {
+    &quot;ACSetSchema&quot;: &quot;0.0.1&quot;,
+    &quot;Catlab&quot;: &quot;0.14.2&quot;
+  }
+}</code></pre><pre><code class="language-julia hljs">to_graphviz(SchVELabeledGraph)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.43.0 (0)
@@ -381,7 +491,7 @@ lg = @acset VELabeledGraph{Symbol} begin
   src=[1,2]
   tgt = [2,3]
 end</code></pre><div class="c-set">
-<span class="c-set-summary">Main.__atexample__named__serialization.VELabeledGraph{Symbol} with elements V = 1:4, E = 1:2</span>
+<span class="c-set-summary">Main.__atexample__named__acset_serialization.VELabeledGraph{Symbol} with elements V = 1:4, E = 1:2</span>
 <table>
   <thead>
     <tr class = "header headerLastRow">
@@ -460,4 +570,4 @@ end</code></pre><div class="c-set">
       &quot;elabel&quot;: &quot;e₂&quot;
     }
   ]
-}</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../diagrams/">« Diagrams</a><a class="docs-footer-nextpage" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Monday 29 August 2022 22:03">Monday 29 August 2022</span>. Using Julia version 1.8.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+}</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../diagrams/">« Diagrams</a><a class="docs-footer-nextpage" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Wednesday 31 August 2022 01:05">Wednesday 31 August 2022</span>. Using Julia version 1.8.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
