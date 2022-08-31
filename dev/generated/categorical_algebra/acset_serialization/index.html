@@ -121,6 +121,15 @@ JSON.print(json_schema, 2)</code></pre><pre class="documenter-example-output"><c
 end
 
 JSON.print(generate_json_acset_schema(SchDDS), 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
+  &quot;version&quot;: {
+    &quot;ACSetSchema&quot;: &quot;0.0.1&quot;,
+    &quot;Catlab&quot;: &quot;0.14.2&quot;
+  },
+  &quot;Ob&quot;: [
+    {
+      &quot;name&quot;: &quot;X&quot;
+    }
+  ],
   &quot;Hom&quot;: [
     {
       &quot;name&quot;: &quot;next&quot;,
@@ -128,17 +137,8 @@ JSON.print(generate_json_acset_schema(SchDDS), 2)</code></pre><pre class="docume
       &quot;dom&quot;: &quot;X&quot;
     }
   ],
-  &quot;Attr&quot;: [],
   &quot;AttrType&quot;: [],
-  &quot;Ob&quot;: [
-    {
-      &quot;name&quot;: &quot;X&quot;
-    }
-  ],
-  &quot;version&quot;: {
-    &quot;ACSetSchema&quot;: &quot;0.0.1&quot;,
-    &quot;Catlab&quot;: &quot;0.14.2&quot;
-  }
+  &quot;Attr&quot;: []
 }</code></pre><pre><code class="language-julia hljs">to_graphviz(SchDDS)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
@@ -171,17 +171,19 @@ JSON.print(generate_json_acset_schema(SchDDS), 2)</code></pre><pre class="docume
 end
 
 JSON.print(generate_json_acset_schema(SchLabeledDDS), 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
+  &quot;version&quot;: {
+    &quot;ACSetSchema&quot;: &quot;0.0.1&quot;,
+    &quot;Catlab&quot;: &quot;0.14.2&quot;
+  },
+  &quot;Ob&quot;: [
+    {
+      &quot;name&quot;: &quot;X&quot;
+    }
+  ],
   &quot;Hom&quot;: [
     {
       &quot;name&quot;: &quot;next&quot;,
       &quot;codom&quot;: &quot;X&quot;,
-      &quot;dom&quot;: &quot;X&quot;
-    }
-  ],
-  &quot;Attr&quot;: [
-    {
-      &quot;name&quot;: &quot;label&quot;,
-      &quot;codom&quot;: &quot;Label&quot;,
       &quot;dom&quot;: &quot;X&quot;
     }
   ],
@@ -190,15 +192,13 @@ JSON.print(generate_json_acset_schema(SchLabeledDDS), 2)</code></pre><pre class=
       &quot;name&quot;: &quot;Label&quot;
     }
   ],
-  &quot;Ob&quot;: [
+  &quot;Attr&quot;: [
     {
-      &quot;name&quot;: &quot;X&quot;
+      &quot;name&quot;: &quot;label&quot;,
+      &quot;codom&quot;: &quot;Label&quot;,
+      &quot;dom&quot;: &quot;X&quot;
     }
-  ],
-  &quot;version&quot;: {
-    &quot;ACSetSchema&quot;: &quot;0.0.1&quot;,
-    &quot;Catlab&quot;: &quot;0.14.2&quot;
-  }
+  ]
 }</code></pre><pre><code class="language-julia hljs">to_graphviz(SchLabeledDDS)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
@@ -262,6 +262,18 @@ JSON.print(generate_json_acset(ldds),2)</code></pre><pre class="documenter-examp
     }
   ]
 }</code></pre><h2 id="Example-3:-Graphs"><a class="docs-heading-anchor" href="#Example-3:-Graphs">Example 3: Graphs</a><a id="Example-3:-Graphs-1"></a><a class="docs-heading-anchor-permalink" href="#Example-3:-Graphs" title="Permalink"></a></h2><p>Relational databases are great, because they are capable of representing almost anything that can be stored on a computer. We move up to graphs, which is a nice data structure you have probably seen before. Notably, graphs have two tables, one for edges and one for vertices. These are the category theorist&#39;s graph, which means that they support multiple parallel edges and self-loops.</p><pre><code class="language-julia hljs">JSON.print(generate_json_acset_schema(SchGraph), 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
+  &quot;version&quot;: {
+    &quot;ACSetSchema&quot;: &quot;0.0.1&quot;,
+    &quot;Catlab&quot;: &quot;0.14.2&quot;
+  },
+  &quot;Ob&quot;: [
+    {
+      &quot;name&quot;: &quot;V&quot;
+    },
+    {
+      &quot;name&quot;: &quot;E&quot;
+    }
+  ],
   &quot;Hom&quot;: [
     {
       &quot;name&quot;: &quot;src&quot;,
@@ -274,20 +286,8 @@ JSON.print(generate_json_acset(ldds),2)</code></pre><pre class="documenter-examp
       &quot;dom&quot;: &quot;E&quot;
     }
   ],
-  &quot;Attr&quot;: [],
   &quot;AttrType&quot;: [],
-  &quot;Ob&quot;: [
-    {
-      &quot;name&quot;: &quot;V&quot;
-    },
-    {
-      &quot;name&quot;: &quot;E&quot;
-    }
-  ],
-  &quot;version&quot;: {
-    &quot;ACSetSchema&quot;: &quot;0.0.1&quot;,
-    &quot;Catlab&quot;: &quot;0.14.2&quot;
-  }
+  &quot;Attr&quot;: []
 }</code></pre><pre><code class="language-julia hljs">to_graphviz(SchGraph)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
@@ -380,6 +380,18 @@ end</code></pre><div class="c-set">
 end
 
 JSON.print(generate_json_acset_schema(SchVELabeledGraph), 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
+  &quot;version&quot;: {
+    &quot;ACSetSchema&quot;: &quot;0.0.1&quot;,
+    &quot;Catlab&quot;: &quot;0.14.2&quot;
+  },
+  &quot;Ob&quot;: [
+    {
+      &quot;name&quot;: &quot;V&quot;
+    },
+    {
+      &quot;name&quot;: &quot;E&quot;
+    }
+  ],
   &quot;Hom&quot;: [
     {
       &quot;name&quot;: &quot;src&quot;,
@@ -390,6 +402,11 @@ JSON.print(generate_json_acset_schema(SchVELabeledGraph), 2)</code></pre><pre cl
       &quot;name&quot;: &quot;tgt&quot;,
       &quot;codom&quot;: &quot;V&quot;,
       &quot;dom&quot;: &quot;E&quot;
+    }
+  ],
+  &quot;AttrType&quot;: [
+    {
+      &quot;name&quot;: &quot;Label&quot;
     }
   ],
   &quot;Attr&quot;: [
@@ -403,24 +420,7 @@ JSON.print(generate_json_acset_schema(SchVELabeledGraph), 2)</code></pre><pre cl
       &quot;codom&quot;: &quot;Label&quot;,
       &quot;dom&quot;: &quot;E&quot;
     }
-  ],
-  &quot;AttrType&quot;: [
-    {
-      &quot;name&quot;: &quot;Label&quot;
-    }
-  ],
-  &quot;Ob&quot;: [
-    {
-      &quot;name&quot;: &quot;V&quot;
-    },
-    {
-      &quot;name&quot;: &quot;E&quot;
-    }
-  ],
-  &quot;version&quot;: {
-    &quot;ACSetSchema&quot;: &quot;0.0.1&quot;,
-    &quot;Catlab&quot;: &quot;0.14.2&quot;
-  }
+  ]
 }</code></pre><pre><code class="language-julia hljs">to_graphviz(SchVELabeledGraph)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
@@ -570,4 +570,4 @@ end</code></pre><div class="c-set">
       &quot;elabel&quot;: &quot;e₂&quot;
     }
   ]
-}</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../diagrams/">« Diagrams</a><a class="docs-footer-nextpage" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Wednesday 31 August 2022 01:05">Wednesday 31 August 2022</span>. Using Julia version 1.8.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+}</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../diagrams/">« Diagrams</a><a class="docs-footer-nextpage" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Wednesday 31 August 2022 01:47">Wednesday 31 August 2022</span>. Using Julia version 1.8.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
