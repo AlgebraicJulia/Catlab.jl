@@ -11,109 +11,109 @@ using Catlab.Graphics</code></pre><p>You can interact with the schema representa
 end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">roundtrip_json_acset_schema (generic function with 1 method)</code></pre><h2 id="The-JSONSchema-for-Schemas"><a class="docs-heading-anchor" href="#The-JSONSchema-for-Schemas">The JSONSchema for Schemas</a><a id="The-JSONSchema-for-Schemas-1"></a><a class="docs-heading-anchor-permalink" href="#The-JSONSchema-for-Schemas" title="Permalink"></a></h2><p>The following code shows how to view the schema for storing schemas. You can see that this data is encoded in the standardized JSONSchema format, which is a generic way of representing data structures that are serialized to JSON. Notice that there are properties for Homs and Obs. The Homs have fields like name, dom, and codom. The Obs just have a name. AttrTypes are like Obs, but they store the name of the type that the attribute can have. In Julia, the Schemas are parametric in the AttrTypes so that uses can set those types at instance creation time. Attrs are the names of columns that point into the AttrTypes.</p><pre><code class="language-julia hljs">json_schema = JSONSchema.Schema(acset_schema_json_schema())
 JSON.print(json_schema, 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
   &quot;data&quot;: {
+    &quot;id&quot;: &quot;https://github.com/AlgebraicJulia/Catlab.jl/tree/master/test/categorical_algebra/acset.schema.json&quot;,
     &quot;$schema&quot;: &quot;https://json-schema.org/draft/2020-12/schema&quot;,
+    &quot;title&quot;: &quot;ACSet&quot;,
+    &quot;type&quot;: &quot;object&quot;,
     &quot;properties&quot;: {
-      &quot;Hom&quot;: {
-        &quot;items&quot;: {
-          &quot;properties&quot;: {
-            &quot;name&quot;: {
-              &quot;type&quot;: &quot;string&quot;
-            },
-            &quot;codom&quot;: {
-              &quot;type&quot;: &quot;string&quot;
-            },
-            &quot;dom&quot;: {
-              &quot;type&quot;: &quot;string&quot;
-            }
-          },
-          &quot;required&quot;: [
-            &quot;name&quot;,
-            &quot;dom&quot;,
-            &quot;codom&quot;
-          ],
-          &quot;type&quot;: &quot;object&quot;
-        },
-        &quot;type&quot;: &quot;array&quot;
-      },
-      &quot;Attr&quot;: {
-        &quot;items&quot;: {
-          &quot;properties&quot;: {
-            &quot;name&quot;: {
-              &quot;type&quot;: &quot;string&quot;
-            },
-            &quot;codom&quot;: {
-              &quot;type&quot;: &quot;string&quot;
-            },
-            &quot;dom&quot;: {
-              &quot;type&quot;: &quot;string&quot;
-            }
-          },
-          &quot;required&quot;: [
-            &quot;name&quot;,
-            &quot;dom&quot;,
-            &quot;codom&quot;
-          ],
-          &quot;type&quot;: &quot;object&quot;
-        },
-        &quot;type&quot;: &quot;array&quot;
-      },
-      &quot;AttrType&quot;: {
-        &quot;items&quot;: {
-          &quot;properties&quot;: {
-            &quot;name&quot;: {
-              &quot;type&quot;: &quot;string&quot;
-            }
-          },
-          &quot;required&quot;: [
-            &quot;name&quot;
-          ],
-          &quot;type&quot;: &quot;object&quot;
-        },
-        &quot;type&quot;: &quot;array&quot;
-      },
-      &quot;Ob&quot;: {
-        &quot;items&quot;: {
-          &quot;properties&quot;: {
-            &quot;name&quot;: {
-              &quot;type&quot;: &quot;string&quot;
-            }
-          },
-          &quot;required&quot;: [
-            &quot;name&quot;
-          ],
-          &quot;type&quot;: &quot;object&quot;
-        },
-        &quot;type&quot;: &quot;array&quot;
-      },
       &quot;version&quot;: {
+        &quot;type&quot;: &quot;object&quot;,
         &quot;properties&quot;: {
           &quot;ACSetSchema&quot;: {
+            &quot;type&quot;: &quot;string&quot;,
             &quot;pattern&quot;: &quot;^[0-9][0-9.]*&quot;,
-            &quot;additionalProperties&quot;: false,
-            &quot;type&quot;: &quot;string&quot;
+            &quot;additionalProperties&quot;: false
           },
           &quot;Catlab&quot;: {
+            &quot;type&quot;: &quot;string&quot;,
             &quot;pattern&quot;: &quot;^[0-9][0-9.]*&quot;,
-            &quot;additionalProperties&quot;: false,
-            &quot;type&quot;: &quot;string&quot;
+            &quot;additionalProperties&quot;: false
           }
         },
         &quot;required&quot;: [
           &quot;ACSetSchema&quot;,
           &quot;Catlab&quot;
-        ],
-        &quot;type&quot;: &quot;object&quot;
+        ]
+      },
+      &quot;Ob&quot;: {
+        &quot;type&quot;: &quot;array&quot;,
+        &quot;items&quot;: {
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;properties&quot;: {
+            &quot;name&quot;: {
+              &quot;type&quot;: &quot;string&quot;
+            }
+          },
+          &quot;required&quot;: [
+            &quot;name&quot;
+          ]
+        }
+      },
+      &quot;AttrType&quot;: {
+        &quot;type&quot;: &quot;array&quot;,
+        &quot;items&quot;: {
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;properties&quot;: {
+            &quot;name&quot;: {
+              &quot;type&quot;: &quot;string&quot;
+            }
+          },
+          &quot;required&quot;: [
+            &quot;name&quot;
+          ]
+        }
+      },
+      &quot;Hom&quot;: {
+        &quot;type&quot;: &quot;array&quot;,
+        &quot;items&quot;: {
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;properties&quot;: {
+            &quot;name&quot;: {
+              &quot;type&quot;: &quot;string&quot;
+            },
+            &quot;dom&quot;: {
+              &quot;type&quot;: &quot;string&quot;
+            },
+            &quot;codom&quot;: {
+              &quot;type&quot;: &quot;string&quot;
+            }
+          },
+          &quot;required&quot;: [
+            &quot;name&quot;,
+            &quot;dom&quot;,
+            &quot;codom&quot;
+          ]
+        }
+      },
+      &quot;Attr&quot;: {
+        &quot;type&quot;: &quot;array&quot;,
+        &quot;items&quot;: {
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;properties&quot;: {
+            &quot;name&quot;: {
+              &quot;type&quot;: &quot;string&quot;
+            },
+            &quot;dom&quot;: {
+              &quot;type&quot;: &quot;string&quot;
+            },
+            &quot;codom&quot;: {
+              &quot;type&quot;: &quot;string&quot;
+            }
+          },
+          &quot;required&quot;: [
+            &quot;name&quot;,
+            &quot;dom&quot;,
+            &quot;codom&quot;
+          ]
+        }
       }
     },
-    &quot;id&quot;: &quot;https://github.com/AlgebraicJulia/Catlab.jl/tree/master/test/categorical_algebra/acset.schema.json&quot;,
     &quot;required&quot;: [
       &quot;Ob&quot;,
       &quot;AttrType&quot;,
       &quot;Hom&quot;,
       &quot;Attr&quot;
-    ],
-    &quot;title&quot;: &quot;ACSet&quot;,
-    &quot;type&quot;: &quot;object&quot;
+    ]
   }
 }</code></pre><h2 id="Example-1:-Discrete-Dynamical-Systems"><a class="docs-heading-anchor" href="#Example-1:-Discrete-Dynamical-Systems">Example 1: Discrete Dynamical Systems</a><a id="Example-1:-Discrete-Dynamical-Systems-1"></a><a class="docs-heading-anchor-permalink" href="#Example-1:-Discrete-Dynamical-Systems" title="Permalink"></a></h2><p>Here is an example of an ACSet schema for Discrete Dynamical Systems. A DDS is just a set <code>X</code> whose elements we call states, and a function <code>next</code>, which take the current state and gives you the next state. Such systems are used to model processes that occur autonomously and are the simplest possible dynamical system.</p><pre><code class="language-julia hljs">@present SchDDS(FreeSchema) begin
   X::Ob
@@ -123,7 +123,7 @@ end
 JSON.print(generate_json_acset_schema(SchDDS), 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
   &quot;version&quot;: {
     &quot;ACSetSchema&quot;: &quot;0.0.1&quot;,
-    &quot;Catlab&quot;: &quot;0.14.2&quot;
+    &quot;Catlab&quot;: &quot;0.14.3&quot;
   },
   &quot;Ob&quot;: [
     {
@@ -173,7 +173,7 @@ end
 JSON.print(generate_json_acset_schema(SchLabeledDDS), 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
   &quot;version&quot;: {
     &quot;ACSetSchema&quot;: &quot;0.0.1&quot;,
-    &quot;Catlab&quot;: &quot;0.14.2&quot;
+    &quot;Catlab&quot;: &quot;0.14.3&quot;
   },
   &quot;Ob&quot;: [
     {
@@ -264,7 +264,7 @@ JSON.print(generate_json_acset(ldds),2)</code></pre><pre class="documenter-examp
 }</code></pre><h2 id="Example-3:-Graphs"><a class="docs-heading-anchor" href="#Example-3:-Graphs">Example 3: Graphs</a><a id="Example-3:-Graphs-1"></a><a class="docs-heading-anchor-permalink" href="#Example-3:-Graphs" title="Permalink"></a></h2><p>Relational databases are great, because they are capable of representing almost anything that can be stored on a computer. We move up to graphs, which is a nice data structure you have probably seen before. Notably, graphs have two tables, one for edges and one for vertices. These are the category theorist&#39;s graph, which means that they support multiple parallel edges and self-loops.</p><pre><code class="language-julia hljs">JSON.print(generate_json_acset_schema(SchGraph), 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
   &quot;version&quot;: {
     &quot;ACSetSchema&quot;: &quot;0.0.1&quot;,
-    &quot;Catlab&quot;: &quot;0.14.2&quot;
+    &quot;Catlab&quot;: &quot;0.14.3&quot;
   },
   &quot;Ob&quot;: [
     {
@@ -382,7 +382,7 @@ end
 JSON.print(generate_json_acset_schema(SchVELabeledGraph), 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
   &quot;version&quot;: {
     &quot;ACSetSchema&quot;: &quot;0.0.1&quot;,
-    &quot;Catlab&quot;: &quot;0.14.2&quot;
+    &quot;Catlab&quot;: &quot;0.14.3&quot;
   },
   &quot;Ob&quot;: [
     {
@@ -570,4 +570,4 @@ end</code></pre><div class="c-set">
       &quot;elabel&quot;: &quot;e₂&quot;
     }
   ]
-}</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../diagrams/">« Diagrams</a><a class="docs-footer-nextpage" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Wednesday 31 August 2022 01:47">Wednesday 31 August 2022</span>. Using Julia version 1.8.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+}</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../diagrams/">« Diagrams</a><a class="docs-footer-nextpage" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Wednesday 31 August 2022 02:23">Wednesday 31 August 2022</span>. Using Julia version 1.8.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
