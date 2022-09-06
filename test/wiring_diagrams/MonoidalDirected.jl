@@ -1,7 +1,7 @@
 module TestMonoidalDirectedWiringDiagrams
 using Test
 
-using Catlab.Theories, Catlab.WiringDiagrams
+using Catlab.Theories, Catlab.WiringDiagrams, Catlab.Present
 
 # Categorical interface
 #######################
@@ -55,6 +55,24 @@ I = munit(Ports)
 
 # Permutations
 W = otimes(X,Y)
+@test permute(W, [1,2,3,4]) == id(W)
+@test permute(W, [1,2,3,4], inverse=true) == id(W)
+@test permute(W, [3,4,1,2]) == braid(X,Y)
+@test permute(W, [3,4,1,2], inverse=true) == braid(Y,X)
+@test_throws AssertionError permute(W, [1,2])
+
+# Permutations on DWDs over presentations of SMCs
+@present TestSMC(FreeSymmetricMonoidalCategory) begin
+  A::Ob
+  B::Ob
+  C::Ob
+  D::Ob
+end
+X_expr, Y_expr = otimes(TestSMC[:A], TestSMC[:B]), otimes(TestSMC[:C], TestSMC[:D])
+W_expr = otimes(X_expr, Y_expr)
+X = to_wiring_diagram(X_expr)
+Y = to_wiring_diagram(Y_expr)
+W = to_wiring_diagram(W_expr)
 @test permute(W, [1,2,3,4]) == id(W)
 @test permute(W, [1,2,3,4], inverse=true) == id(W)
 @test permute(W, [3,4,1,2]) == braid(X,Y)
