@@ -11,7 +11,48 @@ using ..IndexUtils
 # clear_index!
 # codom_hint!
 # preimage
+# preimage_multi
 # resize_clearing!
+
+
+"""
+This function takes an acset column and an element of the domain and sets the column
+value at that element be "missing"; 0 in the case of an integer, or nothing in the case
+of a type that is a supertype of nothing. It also clears the index of the previous value
+at the element.
+
+The semantics of this function are deeply janky because we don't have proper support
+for partial acsets; this will be fixed soon.
+"""
+function clear_index! end
+
+"""
+This is called to alert the column that there are new values in its codomain; the column
+may then potentially preallocate some space for those new values.
+"""
+function codom_hint! end
+
+"""
+This gets the preimage of a single value in the codomain.
+"""
+function preimage end
+
+"""
+This gets the preimage of several values in the codomain. This is semantically equivalent
+to broadcasting preimage, but a column implementation might instead return a view of
+the index.
+"""
+function preimage_multi end
+
+"""
+This resizes a column, and if the column grows, initializes the new elements to the "missing"
+value: 0 in the case of an integer or nothing in the case of a type that is a supertype of Nothing.
+
+The semantics of this function are deeply janky because we don't have proper support for partial
+acsets; this will be fixed soon. Specifically, if we have values that aren't a supertype of Nothing
+or an integer, we get random uninitialized memory.
+"""
+function resize_clearing! end
 
 # Additionally, the type should be able to be called with no arguments to create an empty column
 
@@ -21,35 +62,35 @@ function clear_indices!(v, idxs)
   end
 end
 
-function preimage(v::Vector, x)
+function preimage(v::AbstractVector, x)
   findall(y -> x == y, v)
 end
 
-function preimage_multi(v::Vector, xs)
+function preimage_multi(v::AbstractVector, xs)
   broadcast(x -> preimage(v,x), xs)
 end
 
-function clear_index!(v::Vector{Int}, i::Int)
+function clear_index!(v::AbstractVector{Int}, i::Int)
   v[i] = 0
 end
 
-function clear_index!(v::Vector{T}, i::Int) where {T >: Nothing}
+function clear_index!(v::AbstractVector{T}, i::Int) where {T >: Nothing}
   v[i] = nothing
 end
 
-function clear_index!(v::Vector{T}, i::Int) where {T}
+function clear_index!(v::AbstractVector{T}, i::Int) where {T}
 end
 
-function codom_hint!(v::Vector{T}, n::Int) where {T}
+function codom_hint!(v::AbstractVector{T}, n::Int) where {T}
 end
 
-function resize_clearing!(v::Vector{Int}, n::Int)
+function resize_clearing!(v::AbstractVector{Int}, n::Int)
   oldn = length(v)
   resize!(v, n)
   v[(oldn+1):n] .= 0
 end
 
-function resize_clearing!(v::Vector{T}, n::Int) where {T}
+function resize_clearing!(v::AbstractVector{T}, n::Int) where {T}
   resize!(v, n)
 end
 

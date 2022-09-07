@@ -22,9 +22,9 @@ import ...Present: Presentation
 """ A `SimpleACSet` is an abstract type for any acset that has a certain layout
 
 Specifically, subtypes of `SimpleACSet` are expected to have a `parts` field
-which is a LabeledVector of Ints, and a `subparts` field which is a NamedTuple
-of acset columns, which are any data structure that satisfies the interface
-given in ACSetColumns.jl.
+which is a mapping from symbols to ints, and a `subparts` field which is a
+mapping from symbols to acset columns, which are any data structure that
+satisfies the interface given in ACSetColumns.jl.
 """
 abstract type SimpleACSet <: ACSet end
 
@@ -350,9 +350,12 @@ function ACSetTableUnionAll(::Type{<:StructACSet{S}}, ob::Symbol) where {S}
   AnonACSetType(s′;union_all=true)
 end
 
-""" This takes an ACSet type, and produces an AnonACSet which represents
-an acset with just the object passed in, and then all of the attributes of
-that object.
+""" This takes an ACSet type, and produces an AnonACSet which represents an
+acset with just the object passed in, and then all of the attributes of that
+object.
+
+TODO: rename this to be less confusing with ACSetTable. Maybe ASet (attributed
+set)
 """
 function ACSetTableType(X::Type, ob::Symbol; union_all::Bool=false)
   (union_all ? ACSetTableUnionAll : ACSetTableDataType)(X, ob)
