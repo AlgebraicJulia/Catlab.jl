@@ -130,9 +130,9 @@ munit(::Type{Ports{T,V}}) where {T,V} = Ports{T}(V[])
 
 # Unbiased version of braiding (permutation).
 
-function permute(A::Ports, σ::Vector{Int}; inverse::Bool=false)
+function permute(A::Ports{T}, σ::Vector{Int}; inverse::Bool=false) where T
   @assert length(A) == length(σ)
-  B = Ports([ A[σ[i]] for i in eachindex(σ) ])
+  B = Ports{T}([ A[σ[i]] for i in eachindex(σ) ])
   if inverse
     f = WiringDiagram(B, A)
     add_wires!(f, ((input_id(f),σ[i]) => (output_id(f),i) for i in eachindex(σ)))

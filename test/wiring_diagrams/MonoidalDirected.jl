@@ -61,6 +61,14 @@ W = otimes(X,Y)
 @test permute(W, [3,4,1,2], inverse=true) == braid(Y,X)
 @test_throws AssertionError permute(W, [1,2])
 
+# Permutations on DWDs with GAT exprs.
+A, B, C, D = Ob(FreeSymmetricMonoidalCategory, :A, :B, :C, :D)
+X_expr, Y_expr = otimes(A, B), otimes(C, D)
+W_expr = otimes(X_expr, Y_expr)
+X, Y, W = to_wiring_diagram.([X_expr, Y_expr, W_expr])
+@test permute(W, [1,2,3,4]) == id(W)
+@test permute(W, [3,4,1,2]) == braid(X,Y)
+
 # Diagonals
 #----------
 
