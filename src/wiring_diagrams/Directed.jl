@@ -273,7 +273,7 @@ end
 """ Graph underlying a directed wiring diagram.
 """
 @acset_type WiringDiagramGraphACSet(SchWiringDiagramGraph,
-  index=[:src, :tgt], unique_index=[:box]) <: AbstractWiringDiagram
+  index=[:src, :tgt], unique_index=[:box]) <: AbstractGraph
 const WiringDiagramGraph = WiringDiagramGraphACSet{Int}
 
 # Imperative interface
