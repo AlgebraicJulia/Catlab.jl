@@ -82,8 +82,67 @@ There are several core parts to the Catlab design, we start with a brief overvie
 
 4. [`@present`](@ref) enumerates a finite set of generators for a model of the GAT just like you would write out a group (model of the theory of groups) as list of generators and relations, the presentation lets you enumerate the objects and morphisms that generate a category.
 
+## Conventions
 
+In several places in Catlab, we use what we call "Abstract Field Convention". Instead of doing the following:
 
+```julia
+struct Pair{A}
+  x1::A
+  x2::A
+end
+
+add(xs::Pair) = xs.x1 + xs.x2
+
+const IntPair = Pair{Int}
+```
+
+which leads to potentially longer and longer type names as the type parameters increase in size,
+we do
+
+```julia
+"""
+Abstract Fields
+- x1::A
+- x2::A
+"""
+abstract type Pair{A} end
+
+add(xs::Pair) = xs.x1 + xs.x2
+
+struct IntPair <: Pair{Int}
+  x1::Int
+  x2::Int
+end
+```
+
+That is, we assume that all subtypes of a certain abstract types have the same
+field names, and are organized in roughly the same way. There is no way of
+enforcing this within Julia, so instead we leave a comment on the abstract type
+to document that we are working this way.
+
+Note that this is contrary to the standard wisdom in Julia that one should as
+much as possible access structs through methods, not field accesses. The reason
+why we do not do this here is twofold. First of all, sometimes it can be
+annoying to write out the trivial field-access methods in addition to defining
+the struct.  For instance, we have 12 different structs in
+`src/acsets/ColumnImplementations.jl` that all are subtypes of an Abstract Field
+Convention abstract type. It would be 24 lines of boilerplate to write out the
+field accessors for these types with little appreciable benefit. The second
+reason is that the Abstract Field Convention is a stronger guarantee than an
+interface: we are claiming that any subtype has precisely these fields in this
+order, and no others! This is essential for defining methods like copy, which
+might be defined as follows.
+
+```julia
+function copy(p::T) where {T<:Pair}
+  T(p.x1, p.x2)
+end
+```
+
+So the Abstract Field Convention is stronger than a normal interface. It's not
+really about encapsulating data, it's more about cutting down on long names in
+debug messages.
 
 ## Table of Contents
 

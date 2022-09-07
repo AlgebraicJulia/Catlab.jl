@@ -6,10 +6,6 @@ export ACSet, acset_schema, acset_name,
 
 using StaticArrays: StaticArray
 
-using ..Syntax: GATExpr, args
-using ..Theories: dom, codom
-using ...Meta: strip_lines
-
 using PrettyTables: pretty_table
 using Tables
 
@@ -66,7 +62,7 @@ convention differs from DataFrames but note that the alternative interpretation
 of `[:src,:vattr]` as two independent columns does not even make sense, since
 they have different domains (belong to different tables).
 """
-function  subpart end
+function subpart end
 @inline Base.@propagate_inbounds subpart(acs, part, name) = view_or_slice(subpart(acs, name), part)
 
 function view_or_slice end
@@ -74,28 +70,18 @@ function view_or_slice end
 @inline view_or_slice(x::AbstractVector, ::Colon) = x
 @inline Base.@propagate_inbounds view_or_slice(x::AbstractVector, i) = @view x[i]
 
-@inline subpart(acs, expr::GATExpr{:generator}) = subpart(acs, first(expr))
-@inline subpart(acs, expr::GATExpr{:id}) = parts(acs, first(dom(expr)))
-
 function subpart(acs, part, names::AbstractVector{Symbol})
   foldl(names, init=part) do part, name
     subpart(acs, part, name)
   end
 end
-subpart(acs, part, expr::GATExpr{:compose}) =
-  subpart(acs, part, subpart_names(expr))
 
 subpart(acs, names::AbstractVector{Symbol}) =
   subpart(acs, subpart(acs, names[1]), names[2:end])
-subpart(acs, expr::GATExpr{:compose}) = subpart(acs, subpart_names(expr))
 
 Base.getindex(acs::ACSet, part, name) = subpart(acs, part, name)
 Base.getindex(acs::ACSet, name) = subpart(acs, name)
 
-subpart_names(expr::GATExpr{:generator}) = Symbol[first(expr)]
-subpart_names(expr::GATExpr{:id}) = Symbol[]
-subpart_names(expr::GATExpr{:compose}) =
-  mapreduce(subpart_names, vcat, args(expr))
 
 """ Get superparts incident to part in acset.
 
@@ -125,8 +111,6 @@ function incident(acs, part, names::AbstractVector{Symbol};
   end
 end
 
-incident(acs, part, expr::GATExpr; kw...) =
-  incident(acs, part, subpart_names(expr); kw...)
 
 @inline add_part!(acs, type; kw...) = add_part!(acs, type, (;kw...))
 
@@ -333,30 +317,6 @@ function Base.show(io::IO, ::MIME"text/html", acs::T) where T <: ACSet
   println(io, "</div>")
 end
 
-macro acset(head, body)
-  @assert body.head == :block
-  vals = Expr(:call, :(Dict{Symbol,Any}))
-  for l in strip_lines(body).args
-    @assert l.head == :(=)
-    push!(vals.args, :($(Expr(:quote, l.args[1])) => $(l.args[2])))
-  end
-  :(init_acset($(esc(head)), $(esc(vals))))
-end
-
-function init_acset(T::Type{<:ACSet}, initvals::Dict{Symbol,Any})
-  acs = T()
-  s = acset_schema(acs)
-  ob_specs = filter((kv) -> kv[1] ∈ s.obs, pairs(initvals))
-  hom_specs = filter((kv) -> kv[1] ∈ s.homs, pairs(initvals))
-  attr_specs = filter((kv) -> kv[1] ∈ s.attrs, pairs(initvals))
-  for (k,v) in ob_specs
-    add_parts!(acs, k, Int(v))
-  end
-  for (k,v) in Iterators.flatten((hom_specs, attr_specs))
-    set_subpart!(acs, :, k, collect_nonvector(v))
-  end
-  acs
-end
 collect_nonvector(v::AbstractVector) = v
 collect_nonvector(v) = collect(v)
 

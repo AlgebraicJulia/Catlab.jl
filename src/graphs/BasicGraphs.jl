@@ -137,7 +137,7 @@ add_vertices!(g::HasVertices, n::Int; kw...) = add_parts!(g, :V, n; kw...)
 """ Add vertices with preallocated src/tgt indexes
 """
 function add_vertices_with_indices!(g::HasVertices, n::Int, k::Int; kw...)
-  CSetDataStructures.add_parts_with_indices!(g, :V, n, (src=k,tgt=k))
+  DenseACSets.add_parts_with_indices!(g, :V, n, (src=k,tgt=k))
   set_subparts!(g, :V; kw...)
 end
 

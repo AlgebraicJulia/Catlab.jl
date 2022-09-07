@@ -19,7 +19,8 @@ using StructEquality
 using StaticArrays: StaticVector, SVector
 
 using ...GAT, ...Theories
-import ...Theories: ob, terminal, product, proj1, proj2, equalizer, incl,
+import ...Schemas: ob, hom, dom, codom
+import ...Theories: terminal, product, proj1, proj2, equalizer, incl,
   initial, coproduct, coproj1, coproj2, coequalizer, proj,
   delete, create, pair, copair, factorize, universal
 using ...CSetDataStructures, ..FinCats, ..FreeDiagrams

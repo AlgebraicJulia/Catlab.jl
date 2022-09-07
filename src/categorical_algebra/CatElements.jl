@@ -5,7 +5,8 @@ using DataStructures: OrderedDict
 
 using ..CSets, ..FinSets
 using ...Present, ...Theories
-using ...Theories: ThCategory, ob, hom, dom_nums, codom_nums
+using ...Theories: ThCategory
+using ...Schemas: ob, hom, dom_nums, codom_nums
 
 @present SchElements(FreeSchema) begin
   (El, Arr, Ob, Hom)::Ob
