@@ -222,7 +222,7 @@ struct DynamicACSet <: SimpleACSet
   schema::SchemaDesc
   attrtypes::Dict{Symbol,Type}
   parts::Dict{Symbol,Int}
-  subparts::Dict{Symbol, AbstractVector}
+  subparts::Dict{Symbol,AbstractVector}
   function DynamicACSet(
     name::String,
     p::Presentation;
@@ -372,7 +372,7 @@ ACSetInterface.acset_schema(acs::DynamicACSet) = acs.schema
 add_parts_with_indices!(acs::SimpleACSet, ob::Symbol, n::Int, index_sizes::NamedTuple) =
   add_parts!(acs, ob, n)
 
-ACSetInterface.add_parts!(acs::StructACSet{S}, type::Symbol, n::Int) where {S} =
+@inline ACSetInterface.add_parts!(acs::StructACSet{S}, type::Symbol, n::Int) where {S} =
   _add_parts!(acs, Val{S}, Val{type}, n)
 
 ACSetInterface.add_parts!(acs::DynamicACSet, type::Symbol, n::Int) =
@@ -397,7 +397,7 @@ ACSetInterface.add_parts!(acs::DynamicACSet, type::Symbol, n::Int) =
   newparts
 end
 
-ACSetInterface.nparts(acs::SimpleACSet, type::Symbol) = acs.parts[type]
+@inline ACSetInterface.nparts(acs::SimpleACSet, type::Symbol) = acs.parts[type]
 
 ACSetInterface.has_part(acs::StructACSet{S}, ob::Symbol) where {S} =
   _has_part(Val{S}, Val{ob})
@@ -419,11 +419,11 @@ outgoing(acs::DynamicACSet, ob::Symbol) = runtime(_outgoing, acs.schema, ob)
   @ct Tuple(filter(f -> s.doms[f] == ob, vcat(s.homs,s.attrs)))
 end
 
-ACSetInterface.subpart(acs::SimpleACSet, f::Symbol) = values(acs.subparts[f])
+@inline ACSetInterface.subpart(acs::SimpleACSet, f::Symbol) = values(acs.subparts[f])
 
-ACSetInterface.subpart(acs::SimpleACSet, part::Int, f::Symbol) = acs.subparts[f][part]
+@inline ACSetInterface.subpart(acs::SimpleACSet, part::Int, f::Symbol) = acs.subparts[f][part]
 
-ACSetInterface.has_subpart(acs::StructACSet{S}, f::Symbol) where {S} =
+@inline ACSetInterface.has_subpart(acs::StructACSet{S}, f::Symbol) where {S} =
   _has_subpart(Val{S}, Val{f})
 
 ACSetInterface.has_subpart(acs::DynamicACSet, f::Symbol) =
@@ -434,10 +434,10 @@ ACSetInterface.has_subpart(acs::DynamicACSet, f::Symbol) =
   @ct f ∈ [s.homs; s.attrs]
 end
 
-ACSetInterface.incident(acs::SimpleACSet, part, f::Symbol) = preimage(acs.subparts[f], part)
-ACSetInterface.incident(acs::SimpleACSet, parts::Union{AbstractVector,UnitRange}, f::Symbol) =
+@inline ACSetInterface.incident(acs::SimpleACSet, part, f::Symbol) = preimage(acs.subparts[f], part)
+@inline ACSetInterface.incident(acs::SimpleACSet, parts::Union{AbstractVector,UnitRange}, f::Symbol) =
   preimage_multi(acs.subparts[f], parts)
-ACSetInterface.incident(acs::StructACSet{S}, ::Colon, f::Symbol) where {S} =
+@inline ACSetInterface.incident(acs::StructACSet{S}, ::Colon, f::Symbol) where {S} =
   _incident(acs, Val{S}, :, Val{f})
 
 ACSetInterface.incident(acs::DynamicACSet, ::Colon, f::Symbol) where {S} =
@@ -448,7 +448,7 @@ ACSetInterface.incident(acs::DynamicACSet, ::Colon, f::Symbol) where {S} =
   incident(acs, parts(acs, @ct(s.codoms[f])), @ct(f))
 end
 
-ACSetInterface.set_subpart!(acs::StructACSet{S}, part::Int, f::Symbol, subpart) where {S} =
+@inline ACSetInterface.set_subpart!(acs::StructACSet{S}, part::Int, f::Symbol, subpart) where {S} =
   _set_subpart!(acs, Val{S}, part, Val{f}, subpart)
 
 ACSetInterface.set_subpart!(acs::DynamicACSet, part::Int, f::Symbol, subpart) =
@@ -462,10 +462,10 @@ ACSetInterface.set_subpart!(acs::DynamicACSet, part::Int, f::Symbol, subpart) =
   acs.subparts[@ct f][part] = subpart
 end
 
-ACSetInterface.clear_subpart!(acs::SimpleACSet, part::Int, f::Symbol) =
+@inline ACSetInterface.clear_subpart!(acs::SimpleACSet, part::Int, f::Symbol) =
   clear_index!(acs.subparts[f], part)
 
-ACSetInterface.rem_part!(acs::StructACSet{S}, type::Symbol, part::Int) where {S} =
+@inline ACSetInterface.rem_part!(acs::StructACSet{S}, type::Symbol, part::Int) where {S} =
   _rem_part!(acs, Val{S}, Val{type}, part)
 
 ACSetInterface.rem_part!(acs::DynamicACSet, type::Symbol, part::Int) =
