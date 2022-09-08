@@ -303,7 +303,7 @@ This works for any acset that implements tables
 # Fancy Displaying
 
 function pretty_tables(io::IO, acs::ACSet; kw...)
-  options = merge((nosubheader=true, show_row_number=true), (; kw...))
+  options = merge((show_subheader=false, show_row_number=true), (; kw...))
   for (ob, table) in pairs(tables(acs))
     # Note: PrettyTables will not print tables with zero rows.
     if !(isempty(Tables.columnnames(table)) || Tables.rowcount(table) == 0)
