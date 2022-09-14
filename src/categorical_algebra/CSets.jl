@@ -729,7 +729,7 @@ out_hom(S, c) = [f => codom(S,f) for f in hom(S) if dom(S,f) == c]
 
 """ Limit of attributed C-sets that stores the pointwise limits in Set.
 """
-struct ACSetLimit{Ob <: StructACSet, Diagram, Cone <: Multispan{Ob},
+@struct_hash_equal struct ACSetLimit{Ob <: StructACSet, Diagram, Cone <: Multispan{Ob},
                  Limits <: NamedTuple} <: AbstractLimit{Ob,Diagram}
   diagram::Diagram
   cone::Cone
@@ -738,7 +738,7 @@ end
 
 """ Colimit of attributed C-sets that stores the pointwise colimits in Set.
 """
-struct ACSetColimit{Ob <: StructACSet, Diagram, Cocone <: Multicospan{Ob},
+@struct_hash_equal struct ACSetColimit{Ob <: StructACSet, Diagram, Cocone <: Multicospan{Ob},
                     Colimits <: NamedTuple} <: AbstractColimit{Ob,Diagram}
   diagram::Diagram
   cocone::Cocone

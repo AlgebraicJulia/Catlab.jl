@@ -25,6 +25,10 @@ d = Diagram(D)
 @test startswith(sprint(show, d), "Diagram{id}(")
 @test hash(D) != hash(Diagram{op}(D))
 
+C′ = FinCat(@acset Graph begin V = 3; E = 2; src = [1,2]; tgt = [3,3] end)
+d′ = Diagram(FinDomFunctor([:E,:E,:V], [:tgt,:src], C′, FinCat(SchSGraph)))
+@test hash(d) == hash(d′)
+
 # Diagram morphisms
 ###################
 

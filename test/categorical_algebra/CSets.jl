@@ -190,6 +190,9 @@ coprod = ob(colim)
 @test force(coproj1(colim)⋅γ) == α
 @test force(coproj2(colim)⋅γ) == force(β)
 
+colim2 = coproduct(path_graph(Graph, 4), cycle_graph(Graph, 2))
+@test hash(colim2) == hash(colim)
+
 # Coequalizer in Graph: collapsing a segment to a loop.
 g = Graph(2)
 add_edge!(g, 1, 2)
