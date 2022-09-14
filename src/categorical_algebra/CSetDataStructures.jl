@@ -412,6 +412,9 @@ ACSetInterface.acset_schema(acs::DynamicACSet) = acs.schema
 add_parts_with_indices!(acs::SimpleACSet, ob::Symbol, n::Int, index_sizes::NamedTuple) =
   add_parts!(acs, ob, n)
 
+Base.hash(x::T,h::UInt) where T <: StructACSet =
+  hash(x.parts, hash(x.subparts, h))
+
 @inline ACSetInterface.add_parts!(acs::StructACSet{S}, type::Symbol, n::Int) where {S} =
   _add_parts!(acs, Val{S}, Val{type}, n)
 

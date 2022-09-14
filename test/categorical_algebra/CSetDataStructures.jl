@@ -126,6 +126,18 @@ for dds_maker in dds_makers
   @test incident(dds, 3, :Φ) == []
 end
 
+# Hashing
+@test hash(DDS()) == hash(DDS())
+
+dds = DDS()
+add_parts!(dds, :X, 3, Φ=[2,3,3])
+@test hash(dds) != hash(DDS())
+
+dds2 = DDS()
+add_parts!(dds, :X, 3, Φ=[2,3,2])
+@test hash(dds) != hash(dds2)
+
+
 # Dendrograms
 #############
 
