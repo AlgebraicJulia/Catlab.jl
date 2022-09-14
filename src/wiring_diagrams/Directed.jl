@@ -205,6 +205,11 @@ mutable struct WiringDiagram{Theory, PortValue, WireValue, BoxValue} <: Abstract
     # Copy constructor for shallow copy
     new{T, PortValue, WireValue, BoxValue}(copy(f.diagram), f.value)
   end
+  function WiringDiagram{T, PortValue, WireValue, BoxValue}(
+      diagram::WiringDiagramACSet{PortValue, WireValue, Union{BoxValue, AbstractBox}, DataType},
+      value) where {T, PortValue, WireValue, BoxValue}
+    new{T, PortValue, WireValue, BoxValue}(diagram, value)
+  end
 end
 
 function WiringDiagram{T, PortValue, WireValue, BoxValue}(inputs::Vector, outputs::Vector) where {T, PortValue, WireValue, BoxValue}
