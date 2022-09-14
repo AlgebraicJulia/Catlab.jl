@@ -736,6 +736,20 @@ function make_acset(T::Type{<:StructACSet{S}}, rows::NamedTuple) where {S}
   _make_acset(Val{S}, T, rows)
 end
 
+"""
+This provides a shorthand for constructing an acset by giving its parts and
+subparts
+
+Usage:
+
+@acset WeightedGraph{String} begin
+  V = 2
+  E = 1
+  src = [1]
+  tgt = [2]
+  weight = ["fig"]
+end
+"""
 macro acset(head, body)
   tuplized_body = @match body begin
     Expr(:block, lines...) => begin

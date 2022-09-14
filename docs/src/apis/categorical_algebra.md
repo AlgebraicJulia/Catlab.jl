@@ -96,7 +96,7 @@ The mathematical abstraction of an acset can of course be implemented in many di
 
 These implementations can be split into two categories.
 
-The first category is **static acset types**. In this implementation, different schemas correspond to different Julia types. Methods on these Julia types are then custom-generated for the schema, using [CompTime.jl](https://github.com/olynch/CompTime.jl).
+The first category is **static acset types**. In this implementation, different schemas correspond to different Julia types. Methods on these Julia types are then custom-generated for the schema, using [CompTime.jl](https://github.com/AlgebraicJulia/CompTime.jl).
 
 Under this category, there are two classes of static acset types. The first class is acset types that are generated using the `@acset_type` macro. These acset types are custom-derived structs. The advantage of this is that the structs have names like `Graph` or `WiringDiagram` that are printed out in error messages. The disadvantage is that if you are taking in schemas at runtime, you have to `eval` code in order to use them.
 

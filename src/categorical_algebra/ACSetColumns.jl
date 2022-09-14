@@ -1,18 +1,21 @@
+"""
+An acset column should satisfy the following interface
+
+```julia
+Base.getindex
+Base.setindex!
+Base.values
+clear_index!
+codom_hint!
+preimage
+preimage_multi
+resize_clearing!
+```
+"""
 module ACSetColumns
 export preimage, preimage_multi, clear_index!, clear_indices!, codom_hint!, IndexedVector, resize_clearing!
 
 using ..IndexUtils
-
-# An acset column should satisfy the following interface
-#
-# Base.getindex
-# Base.setindex!
-# Base.values
-# clear_index!
-# codom_hint!
-# preimage
-# preimage_multi
-# resize_clearing!
 
 
 """
