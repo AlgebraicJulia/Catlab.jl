@@ -3,7 +3,6 @@ export @acset_type, @abstract_acset_type, @declare_schema, FreeSchema,
   StructACSet, DynamicACSet, SimpleACSet, AnonACSet, StructCSet, ACSetTableType
 
 using MLStyle
-using LabelledArrays
 using Reexport
 using CompTime
 import Tables
@@ -15,6 +14,44 @@ using ...Theories, ...Present, ...Syntax
 using ...Theories: FreeSchema, SchemaDesc, SchemaDescType, CSetSchemaDescType,
   SchemaDescTypeType, ob_num, codom_num, attr, attrtype
 import ...Present: Presentation
+
+# Homebrew LVector
+#################
+
+struct LVector{T,Labels} <: AbstractVector{T}
+  v::Vector{T}
+  function LVector{T,Labels}(v::Vector{T}) where {T,Labels}
+    @assert length(v) == length(Labels)
+    new{T,Labels}(v)
+  end
+end
+
+Base.copy(v::LVector{T,Labels}) where {T,Labels} = LVector{T,Labels}(copy(v.v))
+
+@inline Base.getindex(v::LVector, i::Int) = v.v[i]
+
+@ct_enable function label_to_index(v::LVector{T,Labels}, @ct l) where {T,Labels}
+  @ct begin
+    i = findfirst(Labels .== l)
+    if i != nothing
+      i
+    else
+      error("label $l not found")
+    end
+  end
+end
+
+@inline Base.getindex(v::LVector, l::Symbol) = v.v[label_to_index(v,Val{l})]
+
+@inline Base.setindex!(v::LVector{T}, x::T, i::Int) where {T} =
+  setindex!(v.v, x, i)
+
+@inline Base.setindex!(v::LVector{T}, x::T, l::Symbol) where {T} =
+  setindex!(v.v, x, label_to_index(v, Val{l}))
+
+@inline Base.size(v::LVector) = size(v.v)
+@inline Base.length(v::LVector) = length(v.v)
+
 
 # StructACSet Struct Generation
 ###############################
@@ -133,8 +170,8 @@ function struct_acset(name::Symbol, parent, p::Presentation{ThSchema},
     name, :new
   end
   schema_type = SchemaDescTypeType(p)
-  parts_t = :($(GlobalRef(LabelledArrays, :LArray)){
-    Int64, 1, Vector{Int64}, $(Tuple([nameof.(obs)...]))
+  parts_t = :($(GlobalRef(CSetDataStructures, :LVector)){
+    Int64, $(Tuple([nameof.(obs)...]))
   })
   subparts_t = genericize(pi_type(vcat(homs,attrs), subpart_type),TypeVar[values(Tvars)...])
   quote
@@ -300,7 +337,7 @@ function AnonACSetType(
     type_vars = [attrtypes[at] for at in s.attrtypes]
   end
   Ts = Tuple{type_vars...}
-  Parts = LArray{Int64, 1, Vector{Int64}, (s.obs...,)}
+  Parts = LVector{Int64, (s.obs...,)}
   Subparts = NamedTuple{
     ([s.homs; s.attrs]...,),
     Tuple{(column_type(s,f,attrtypes,index,unique_index) for f in [s.homs; s.attrs])...}
