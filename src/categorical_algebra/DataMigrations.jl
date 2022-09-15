@@ -277,7 +277,7 @@ function ob_map(ΣF::SigmaMigration, ::Type{T}, X::FinDomFunctor) where T<:ACSet
   colimX = map(parts(diagramD, :V)) do i
     F∇d = ob(comma_cats, i)
     Xobs = FinSet{Int,Int}[ ob_map(X, c) for (c,_) in ob(F∇d) ]
-    Xhoms = [ hom_map(X, hom(F∇d, g)) for g in parts(F∇d, :E) ]
+    Xhoms = FinFunction[ hom_map(X, hom(F∇d, g)) for g in parts(F∇d, :E) ]
     colimit(FreeDiagram(Xobs, collect(zip(Xhoms, src(F∇d), tgt(F∇d)))))
   end
 

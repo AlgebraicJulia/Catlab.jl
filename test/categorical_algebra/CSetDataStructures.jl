@@ -16,108 +16,115 @@ end
 
 @abstract_acset_type AbstractDDS
 @acset_type DDS(SchDDS, index=[:Φ]) <: AbstractDDS
+@acset_type UnindexedDDS(SchDDS)
 @test DDS <: AbstractDDS
 @test DDS <: StructACSet
 @test DDS <: StructCSet
 @test DDS <: ACSet
 
-dds = DDS()
-@test keys(tables(dds)) == (:X,)
-@test nparts(dds, :X) == 0
-@test add_part!(dds, :X) == 1
-@test nparts(dds, :X) == 1
-@test incident(dds, 1, :Φ) == []
+dds_makers = [
+  DDS,
+  UnindexedDDS,
+  () -> DynamicACSet("DDS", SchDDS; index=[:Φ]),
+  () -> AnonACSet(SchDDS; index=[:Φ])
+]
 
-set_subpart!(dds, 1, :Φ, 1)
-@test subpart(dds, 1, :Φ) == 1
-@test incident(dds, 1, :Φ) == [1]
+for dds_maker in dds_makers
+  dds = dds_maker()
+  @test keys(tables(dds)) == (:X,)
+  @test nparts(dds, :X) == 0
+  @test add_part!(dds, :X) == 1
+  @test nparts(dds, :X) == 1
+  @test incident(dds, 1, :Φ) == Int[]
 
-@test add_part!(dds, :X, Φ=1) == 2
-@test add_part!(dds, :X, Φ=1) == 3
-@test subpart(dds, :Φ) == [1,1,1]
-@test subpart(dds, [2,3], :Φ) == [1,1]
-@test incident(dds, 1, :Φ) == [1,2,3]
+  set_subpart!(dds, 1, :Φ, 1)
+  @test subpart(dds, 1, :Φ) == 1
+  @test incident(dds, 1, :Φ) == [1]
 
-@test has_part(dds, :X)
-@test !has_part(dds, :nonpart)
-@test has_part(dds, :X, 3)
-@test !has_part(dds, :X, 4)
-@test has_part(dds, :X, 1:5) == [true, true, true, false, false]
+  @test add_part!(dds, :X, Φ=1) == 2
+  @test add_part!(dds, :X, Φ=1) == 3
+  @test subpart(dds, :Φ) == [1,1,1]
+  @test subpart(dds, [2,3], :Φ) == [1,1]
+  @test incident(dds, 1, :Φ) == [1,2,3]
 
-@test has_subpart(dds, :Φ)
-@test !has_subpart(dds, :nonsubpart)
-@test_throws ArgumentError subpart(dds, 1, :nonsubpart)
-@test_throws ArgumentError incident(dds, 1, :nonsuppart)
-@test_throws ArgumentError set_subpart!(dds, 1, :nonsubpart, 1)
+  @test has_part(dds, :X)
+  @test !has_part(dds, :nonpart)
+  @test has_part(dds, :X, 3)
+  @test !has_part(dds, :X, 4)
+  @test has_part(dds, :X, 1:5) == [true, true, true, false, false]
 
-# Deletion.
-dds = DDS()
-add_parts!(dds, :X, 3, Φ=[2,3,3])
-rem_part!(dds, :X, 2)
-@test nparts(dds, :X) == 2
-@test subpart(dds, :Φ) == [0,2]
-@test incident(dds, 1, :Φ) == []
-@test incident(dds, 2, :Φ) == [2]
-@test_throws BoundsError incident(dds, 3, :Φ)
-rem_part!(dds, :X, 2)
-@test nparts(dds, :X) == 1
-@test subpart(dds, :Φ) == [0]
-rem_part!(dds, :X, 1)
-@test nparts(dds, :X) == 0
+  @test has_subpart(dds, :Φ)
+  @test !has_subpart(dds, :nonsubpart)
+  # @test_throws ArgumentError subpart(dds, 1, :nonsubpart)
+  # @test_throws ArgumentError incident(dds, 1, :nonsuppart)
+  # @test_throws ArgumentError set_subpart!(dds, 1, :nonsubpart, 1)
 
-dds = DDS()
-add_parts!(dds, :X, 4, Φ=[2,3,3,4])
-@test_throws ErrorException rem_parts!(dds, :X, [4,1])
-rem_parts!(dds, :X, [1,4])
-@test subpart(dds, :Φ) == [1,1]
-@test incident(dds, 1, :Φ) == [1,2]
-@test incident(dds, 2, :Φ) == []
+  # Deletion.
+  dds = dds_maker()
+  add_parts!(dds, :X, 3, Φ=[2,3,3])
+  rem_part!(dds, :X, 2)
+  @test nparts(dds, :X) == 2
+  @test subpart(dds, :Φ) == [0,2]
+  @test incident(dds, 1, :Φ) == []
+  @test incident(dds, 2, :Φ) == [2]
+  rem_part!(dds, :X, 2)
+  @test nparts(dds, :X) == 1
+  @test subpart(dds, :Φ) == [0]
+  rem_part!(dds, :X, 1)
+  @test nparts(dds, :X) == 0
 
-# Pretty printing.
-dds = DDS()
-add_parts!(dds, :X, 3, Φ=[2,3,3])
-s = sprint(show, dds)
-@test contains(s, "DDS:")
-@test contains(s, "X = 1:3")
-@test contains(s, "Φ : X → X = ")
-s = sprint(show, dds, context=:compact=>true)
-@test contains(s, "DDS")
-@test !contains(s, "\n")
-@test contains(s, "X = 3")
+  dds = dds_maker()
+  add_parts!(dds, :X, 4, Φ=[2,3,3,4])
+  @test_throws ErrorException rem_parts!(dds, :X, [4,1])
+  rem_parts!(dds, :X, [1,4])
+  @test subpart(dds, :Φ) == [1,1]
+  @test incident(dds, 1, :Φ) == [1,2]
+  @test incident(dds, 2, :Φ) == []
 
-s = sprint(show, MIME"text/plain"(), dds)
-@test contains(s, "DDS")
-@test contains(s, "X = 1:3")
-@test contains(s, "│ X │")
+  # Pretty printing.
+  dds = dds_maker()
+  add_parts!(dds, :X, 3, Φ=[2,3,3])
+  s = sprint(show, dds)
+  if !(dds isa AnonACSet)
+    @test contains(s, "DDS:")
+  end
+  @test contains(s, "X = 1:3")
+  @test contains(s, "Φ : X → X = ")
+  s = sprint(show, dds, context=:compact=>true)
+  if !(dds isa AnonACSet)
+    @test contains(s, "DDS")
+  end
+  @test !contains(s, "\n")
+  @test contains(s, "X = 3")
 
-s = sprint(show, MIME"text/html"(), dds)
-@test startswith(s, "<div class=\"c-set\">")
-@test contains(s, "<table>")
-@test endswith(rstrip(s), "</div>")
+  s = sprint(show, MIME"text/plain"(), dds)
+  if !(dds isa AnonACSet)
+    @test contains(s, "DDS")
+  end
+  @test contains(s, "X = 1:3")
+  @test contains(s, "│ X │")
 
-# Special case of pretty print: empty table.
-empty_dds = DDS()
-@test !isempty(sprint(show, empty_dds))
-@test !isempty(sprint(show, MIME"text/plain"(), empty_dds))
-@test !isempty(sprint(show, MIME"text/html"(), empty_dds))
+  s = sprint(show, MIME"text/html"(), dds)
+  @test startswith(s, "<div class=\"c-set\">")
+  @test contains(s, "<table>")
+  @test endswith(rstrip(s), "</div>")
 
-# Error handling when adding parts.
-dds = DDS()
-add_parts!(dds, :X, 3, Φ=[1,1,1])
-@test_throws AssertionError add_part!(dds, :X, Φ=5)
-@test nparts(dds, :X) == 3
-@test subpart(dds, :Φ) == [1,1,1]
-@test_throws AssertionError add_parts!(dds, :X, 2, Φ=[3,6])
-@test nparts(dds, :X) == 3
-@test incident(dds, 3, :Φ) == []
+  # Special case of pretty print: empty table.
+  empty_dds = dds_maker()
+  @test !isempty(sprint(show, empty_dds))
+  @test !isempty(sprint(show, MIME"text/plain"(), empty_dds))
+  @test !isempty(sprint(show, MIME"text/html"(), empty_dds))
 
-# Incidence without indexing.
-@acset_type UnindexedDDS(SchDDS)
-dds = UnindexedDDS()
-add_parts!(dds, :X, 4, Φ=[3,3,4,4])
-# @test isempty(keys(dds.indices))
-@test incident(dds, 3, :Φ) == [1,2]
-@test incident(dds, 4, :Φ) == [3,4]
+  # # Error handling when adding parts.
+  dds = dds_maker()
+  add_parts!(dds, :X, 3, Φ=[1,1,1])
+  @test_throws AssertionError add_part!(dds, :X, Φ=5)
+  @test nparts(dds, :X) == 3
+  @test subpart(dds, :Φ) == [1,1,1]
+  @test_throws AssertionError add_parts!(dds, :X, 2, Φ=[3,6])
+  @test nparts(dds, :X) == 3
+  @test incident(dds, 3, :Φ) == []
+end
 
 # Dendrograms
 #############
@@ -142,95 +149,6 @@ end
 @test Dendrogram <: ACSet
 @test Dendrogram{Real} <: AbstractDendrogram{S,Tuple{Real}} where {S}
 
-d = Dendrogram{Int}()
-add_parts!(d, :X, 3, height=0)
-add_parts!(d, :X, 2, height=[10,20])
-set_subpart!(d, 1:3, :parent, 4)
-set_subpart!(d, [4,5], :parent, 5)
-
-@test nparts(d, :X) == 5
-@test subpart(d, 1:3, :parent) isa SubArray{Int,1}
-@test subpart(d, 1:3, :parent) == [4,4,4]
-@test subpart(d, 4, :parent) == 5
-@test subpart(d, :, :parent) == [4,4,4,5,5]
-@test incident(d, 4, :parent) == [1,2,3]
-@test incident(d, 4:5, :parent) isa SubArray{Vector{Int},1}
-@test incident(d, 4:5, :parent) == [[1,2,3], [4,5]]
-@test has_subpart(d, :height)
-@test subpart(d, [1,2,3], :height) == [0,0,0]
-@test subpart(d, 4, :height) == 10
-@test subpart(d, :, :height) == [0,0,0,10,20]
-
-# Chained accessors.
-@test subpart(d, 3, [:parent, :parent]) == 5
-@test subpart(d, 3, [:parent, :height]) == 10
-@test incident(d, 5, [:parent, :parent]) == [1,2,3,4,5]
-@test incident(d, 10, [:parent, :height]) == [1,2,3]
-
-X, parent, height = SchDendrogram[[:X, :parent, :height]]
-@test subpart(d, 3, parent) == 4
-@test subpart(d, 3, compose(parent, height)) == 10
-@test subpart(d, 3, id(X)) == 3
-@test incident(d, 10, compose(parent, height)) == [1,2,3]
-@test subpart(d, parent) == [4,4,4,5,5]
-@test subpart(d, id(X)) == 1:5
-@test subpart(d, compose(parent, height)) == [10,10,10,20,20]
-
-# Indexing syntax.
-@test d[3, :parent] == 4
-@test d[3, [:parent, :height]] == 10
-@test d[3:5, [:parent, :height]] == [10,20,20]
-@test d[:, :parent] == [4,4,4,5,5]
-d2 = copy(d)
-d2[1, :parent] = 1
-d2[2:3, :parent] = 2:3
-@test d2[1:3, :parent] == 1:3
-d2[1:3, :parent] = 4
-@test d2 == d
-
-# Copying parts.
-d2 = Dendrogram{Int}()
-copy_parts!(d2, d, X=[4,5])
-@test nparts(d2, :X) == 2
-@test subpart(d2, [1,2], :parent) == [2,2]
-@test subpart(d2, [1,2], :height) == [10,20]
-
-du = disjoint_union(d, d2)
-@test nparts(du, :X) == 7
-@test subpart(du, :parent) == [4,4,4,5,5,7,7]
-@test subpart(du, :height) == [0,0,0,10,20,10,20]
-
-# Pretty printing of data attributes.
-s = sprint(show, d)
-@test contains(s, "Dendrogram{Int64}:")
-@test contains(s, "height : X → R = ")
-
-s = sprint(show, MIME"text/plain"(), d)
-@test contains(s, "Dendrogram{Int64}")
-
-# Allow type inheritance for data attributes.
-d_abs = Dendrogram{Number}()
-add_parts!(d_abs, :X, 2, height=[10.0, 4])
-@test subpart(d_abs, :height) == [10.0, 4]
-
-# Tables interface
-td = tables(d)
-@test keys(td) == (:X,)
-@test Tables.istable(td.X) == true
-cols = Tables.columns(td.X)
-@test Tables.columnnames(cols) == (:parent, :height)
-@test Tables.getcolumn(cols, :parent) == [4,4,4,5,5]
-@test Tables.getcolumn(cols, 1) == [4,4,4,5,5]
-rows = [Tables.rows(td.X)...]
-@test length(rows) == 5
-@test Tables.columnnames(rows[1]) == (:parent, :height)
-@test Tables.getcolumn(rows[1], :parent) == 4
-@test Tables.getcolumn(rows[1], :height) == 0
-@test Tables.getcolumn(rows[1], 1) == 4
-
-# Dendrograms with leaves
-#------------------------
-
 @present SchLDendrogram <: SchDendrogram begin
   L::Ob
   leafparent::Hom(L,X)
@@ -238,17 +156,113 @@ end
 
 @acset_type LDendrogram(SchLDendrogram, index=[:parent, :leafparent]) <: AbstractDendrogram
 
-# Copying between C-sets and C′-sets with C != C′.
-ld = LDendrogram{Int}()
-copy_parts!(ld, d)
-@test nparts(ld, :L) == 0
-@test subpart(ld, :parent) == subpart(d, :parent)
+dgram_makers = [
+  (T -> Dendrogram{T}(), T -> LDendrogram{T}()),
+  (T -> DynamicACSet("Dendrogram", SchDendrogram; attrtypes=Dict(:R=>T), index=[:parent]),
+   T -> DynamicACSet("LDendrogram", SchLDendrogram; attrtypes=Dict(:R=>T), index=[:parent, :leafparent])
+   )
+]
 
-add_parts!(ld, :L, 3, leafparent=[2,3,4])
-@test subpart(ld, :leafparent) == [2,3,4]
-d′ = Dendrogram{Int}()
-copy_parts!(d′, ld)
-@test d′ == d
+for (dgram_maker, ldgram_maker) in dgram_makers
+  d = dgram_maker(Int)
+  add_parts!(d, :X, 3, height=0)
+  add_parts!(d, :X, 2, height=[10,20])
+  set_subpart!(d, 1:3, :parent, 4)
+  set_subpart!(d, [4,5], :parent, 5)
+
+  @test nparts(d, :X) == 5
+  @test subpart(d, 1:3, :parent) isa SubArray{Int,1}
+  @test subpart(d, 1:3, :parent) == [4,4,4]
+  @test subpart(d, 4, :parent) == 5
+  @test subpart(d, :, :parent) == [4,4,4,5,5]
+  @test incident(d, 4, :parent) == [1,2,3]
+  @test incident(d, 4:5, :parent) isa SubArray{Vector{Int},1}
+  @test incident(d, 4:5, :parent) == [[1,2,3], [4,5]]
+  @test has_subpart(d, :height)
+  @test subpart(d, [1,2,3], :height) == [0,0,0]
+  @test subpart(d, 4, :height) == 10
+  @test subpart(d, :, :height) == [0,0,0,10,20]
+
+  # Chained accessors.
+  @test subpart(d, 3, [:parent, :parent]) == 5
+  @test subpart(d, 3, [:parent, :height]) == 10
+  @test incident(d, 5, [:parent, :parent]) == [1,2,3,4,5]
+  @test incident(d, 10, [:parent, :height]) == [1,2,3]
+
+  X, parent, height = SchDendrogram[[:X, :parent, :height]]
+  @test subpart(d, 3, parent) == 4
+  @test subpart(d, 3, compose(parent, height)) == 10
+  @test subpart(d, 3, id(X)) == 3
+  @test incident(d, 10, compose(parent, height)) == [1,2,3]
+  @test subpart(d, parent) == [4,4,4,5,5]
+  @test subpart(d, id(X)) == 1:5
+  @test subpart(d, compose(parent, height)) == [10,10,10,20,20]
+
+  # Indexing syntax.
+  @test d[3, :parent] == 4
+  @test d[3, [:parent, :height]] == 10
+  @test d[3:5, [:parent, :height]] == [10,20,20]
+  @test d[:, :parent] == [4,4,4,5,5]
+  d2 = copy(d)
+  d2[1, :parent] = 1
+  d2[2:3, :parent] = 2:3
+  @test d2[1:3, :parent] == 1:3
+  d2[1:3, :parent] = 4
+  @test d2 == d
+
+  # Copying parts.
+  d2 = dgram_maker(Int)
+  copy_parts!(d2, d, X=[4,5])
+  @test nparts(d2, :X) == 2
+  @test subpart(d2, [1,2], :parent) == [2,2]
+  @test subpart(d2, [1,2], :height) == [10,20]
+
+  du = disjoint_union(d, d2)
+  @test nparts(du, :X) == 7
+  @test subpart(du, :parent) == [4,4,4,5,5,7,7]
+  @test subpart(du, :height) == [0,0,0,10,20,10,20]
+
+  # Pretty printing of data attributes.
+  s = sprint(show, d)
+  @test contains(s, "Dendrogram{Int64}:")
+  @test contains(s, "height : X → R = ")
+
+  s = sprint(show, MIME"text/plain"(), d)
+  @test contains(s, "Dendrogram{Int64}")
+
+  # Allow type inheritance for data attributes.
+  d_abs = dgram_maker(Number)
+  add_parts!(d_abs, :X, 2, height=[10.0, 4])
+  @test subpart(d_abs, :height) == [10.0, 4]
+
+  # Tables interface
+  td = tables(d)
+  @test keys(td) == (:X,)
+  @test Tables.istable(td.X) == true
+  cols = Tables.columns(td.X)
+  @test Tables.columnnames(cols) == (:parent, :height)
+  @test Tables.getcolumn(cols, :parent) == [4,4,4,5,5]
+  @test Tables.getcolumn(cols, 1) == [4,4,4,5,5]
+  rows = [Tables.rows(td.X)...]
+  @test length(rows) == 5
+  @test Tables.columnnames(rows[1]) == (:parent, :height)
+  @test Tables.getcolumn(rows[1], :parent) == 4
+  @test Tables.getcolumn(rows[1], :height) == 0
+  @test Tables.getcolumn(rows[1], 1) == 4
+
+  # Copying between C-sets and C′-sets with C != C′.
+  ld = ldgram_maker(Int)
+  copy_parts!(ld, d)
+  @test nparts(ld, :L) == 0
+  @test subpart(ld, :parent) == subpart(d, :parent)
+
+  add_parts!(ld, :L, 3, leafparent=[2,3,4])
+  @test subpart(ld, :leafparent) == [2,3,4]
+  d′ = dgram_maker(Int)
+  copy_parts!(d′, ld)
+  @test d′ == d
+end
+
 
 # Subsets
 #########
@@ -294,64 +308,77 @@ end
 
 @acset_type IndexedLabeledSet(SchLabeledSet, index=[:label])
 
-lset = IndexedLabeledSet{Symbol}()
-# @test keys(lset.indices) == (:label,)
-add_parts!(lset, :X, 2, label=[:foo, :bar])
-@test subpart(lset, :, :label) == [:foo, :bar]
-@test incident(lset, :foo, :label) == [1]
-@test isempty(incident(lset, :nonkey, :label))
+lset_makers = [
+  T -> IndexedLabeledSet{T}(),
+  T -> DynamicACSet("IndexedLabeledSet", SchLabeledSet; attrtypes=Dict(:Label=>T), index=[:label])
+]
 
-add_part!(lset, :X, label=:foo)
-@test incident(lset, :foo, :label) == [1,3]
-set_subpart!(lset, 1, :label, :baz)
-@test subpart(lset, 1, :label) == :baz
-@test incident(lset, [:foo,:baz], :label) == [[3],[1]]
-set_subpart!(lset, 3, :label, :biz)
-@test incident(lset, :foo, :label) == []
+for lset_maker in lset_makers
+  lset = lset_maker(Symbol)
+  add_parts!(lset, :X, 2, label=[:foo, :bar])
+  @test subpart(lset, :, :label) == [:foo, :bar]
+  @test incident(lset, :foo, :label) == [1]
+  @test isempty(incident(lset, :nonkey, :label))
 
-# Labeled set with compound label (tuple).
-lset = IndexedLabeledSet{Tuple{Int,Int}}()
-add_parts!(lset, :X, 2, label=[(1,1), (1,2)])
-@test incident(lset, (1,2), :label) == [2]
+  add_part!(lset, :X, label=:foo)
+  @test incident(lset, :foo, :label) == [1,3]
+  set_subpart!(lset, 1, :label, :baz)
+  @test subpart(lset, 1, :label) == :baz
+  @test incident(lset, [:foo,:baz], :label) == [[3],[1]]
+  set_subpart!(lset, 3, :label, :biz)
+  @test incident(lset, :foo, :label) == []
 
-# Deletion with indexed data attribute.
-lset = IndexedLabeledSet{Symbol}()
-add_parts!(lset, :X, 3, label=[:foo, :foo, :bar])
-rem_part!(lset, :X, 1)
-@test subpart(lset, :label) == [:bar, :foo]
-@test incident(lset, [:foo, :bar], :label) == [[2], [1]]
+  # Labeled set with compound label (tuple).
+  lset = lset_maker(Tuple{Int,Int})
+  add_parts!(lset, :X, 2, label=[(1,1), (1,2)])
+  @test incident(lset, (1,2), :label) == [2]
 
-# Deletion with unitialized data attribute.
-lset = IndexedLabeledSet{Symbol}()
-add_part!(lset, :X)
-rem_part!(lset, :X, 1)
-@test nparts(lset, :X) == 0
+  # Deletion with indexed data attribute.
+  lset = lset_maker(Symbol)
+  add_parts!(lset, :X, 3, label=[:foo, :foo, :bar])
+  rem_part!(lset, :X, 1)
+  @test subpart(lset, :label) == [:bar, :foo]
+  @test incident(lset, [:foo, :bar], :label) == [[2], [1]]
 
-# Pretty-printing with unitialized data attribute.
-lset = IndexedLabeledSet{Symbol}()
-add_part!(lset, :X)
-@test contains(sprint(show, lset), "#undef")
-@test contains(sprint(show, MIME"text/plain"(), lset), "#undef")
-@test contains(sprint(show, MIME"text/html"(), lset), "#undef")
+  # Deletion with unitialized data attribute.
+  lset = lset_maker(Tuple{Int,Int})
+  add_part!(lset, :X)
+  rem_part!(lset, :X, 1)
+  @test nparts(lset, :X) == 0
+
+  # Pretty-printing with unitialized data attribute.
+  lset = lset_maker(Symbol)
+  add_part!(lset, :X)
+  @test contains(sprint(show, lset), "#undef")
+  @test contains(sprint(show, MIME"text/plain"(), lset), "#undef")
+  @test contains(sprint(show, MIME"text/html"(), lset), "#undef")
+end
 
 # Labeled sets with unique index
 #-------------------------------
 
 @acset_type UniqueIndexedLabeledSet(SchLabeledSet, unique_index=[:label])
 
-lset = UniqueIndexedLabeledSet{Symbol}()
-add_parts!(lset, :X, 2, label=[:foo, :bar])
-@test subpart(lset, :, :label) == [:foo, :bar]
-@test incident(lset, :foo, :label) == 1
-@test incident(lset, [:foo,:bar], :label) == [1,2]
-@test incident(lset, :nonkey, :label) == 0
+lset_makers = [
+  T -> UniqueIndexedLabeledSet{T}(),
+  T -> DynamicACSet("UniqueIndexedLabeledSet", SchLabeledSet; attrtypes=Dict(:Label=>T), unique_index=[:label])
+]
 
-set_subpart!(lset, 1, :label, :baz)
-@test subpart(lset, 1, :label) == :baz
-@test incident(lset, :baz, :label) == 1
-@test incident(lset, :foo, :label) == 0
+for lset_maker in lset_makers
+  lset = lset_maker(Symbol)
+  add_parts!(lset, :X, 2, label=[:foo, :bar])
+  @test subpart(lset, :, :label) == [:foo, :bar]
+  @test incident(lset, :foo, :label) == 1
+  @test incident(lset, [:foo,:bar], :label) == [1,2]
+  @test incident(lset, :nonkey, :label) == 0
 
-@test_throws Any set_subpart!(lset, 1, :label, :bar)
+  set_subpart!(lset, 1, :label, :baz)
+  @test subpart(lset, 1, :label) == :baz
+  @test incident(lset, :baz, :label) == 1
+  @test incident(lset, :foo, :label) == 0
+
+  @test_throws Any set_subpart!(lset, 1, :label, :bar)
+end
 
 # @acset macro
 #-------------
@@ -375,6 +402,7 @@ g = @acset DecGraph{String} begin
   tgt = [2,3,4,1]
   dec = ["a","b","c","d"]
 end
+
 @test nparts(g, :V) == 4
 @test subpart(g, :, :src) == [1,2,3,4]
 @test incident(g, 1, :src) == [1]

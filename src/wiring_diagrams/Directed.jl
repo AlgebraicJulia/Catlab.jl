@@ -205,6 +205,11 @@ mutable struct WiringDiagram{Theory, PortValue, WireValue, BoxValue} <: Abstract
     # Copy constructor for shallow copy
     new{T, PortValue, WireValue, BoxValue}(copy(f.diagram), f.value)
   end
+  function WiringDiagram{T, PortValue, WireValue, BoxValue}(
+      diagram::WiringDiagramACSet{PortValue, WireValue, Union{BoxValue, AbstractBox}, DataType},
+      value) where {T, PortValue, WireValue, BoxValue}
+    new{T, PortValue, WireValue, BoxValue}(diagram, value)
+  end
 end
 
 function WiringDiagram{T, PortValue, WireValue, BoxValue}(inputs::Vector, outputs::Vector) where {T, PortValue, WireValue, BoxValue}
@@ -232,7 +237,23 @@ function is_isomorphic(d1::WiringDiagram, d2::WiringDiagram)
   d1.value == d2.value && is_isomorphic(d1.diagram, d2.diagram)
 end
 
-Base.copy(diagram::WiringDiagram) = WiringDiagram(diagram)
+Base.copy(d::WiringDiagram) = begin
+  # WARNING WARNING WARNING
+  # IF YOU WANT TO UNDERSTAND WHY THIS HACK WAS NECESSARY, YOU MUST BE PREPARED
+  # TO LOSE YOUR SANITY
+  #
+  #
+  #
+  # OK, READY?
+  #
+  # THE copy METHOD FOR ACSETS BREAKS THE JULIA COMPILER WHEN THE TYPE OF THE
+  # ARGUMENT IS *PARTIALLY* INFERRED; FULL INFERENCE AND FULL DYNAMIC DISPATCH
+  # BOTH WORK FINE. SO HERE WE ARE FORGETTING OUR PARTIAL KNOWLEDGE OF THE TYPE
+  # OF THE ACSET SO THAT FULL DYNAMIC DISPATCH IS INVOKED. THIS IS ONLY
+  # NECESSARY FOR JULIA 1.6; 1.7 AND ABOVE DON'T HAVE THIS PROBLEM
+  diag = (Any[d.diagram])[1]
+  WiringDiagram(copy(diag), d.value)
+end
 
 function Base.show(io::IO, diagram::WiringDiagram{T}) where T
   sshowcompact = x -> sprint(show, x, context=:compact => true)

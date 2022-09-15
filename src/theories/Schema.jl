@@ -155,6 +155,19 @@ struct SchemaDesc
   end
 end
 
+function SchemaDesc(s::SchemaDesc)
+  s
+end
+
+function SchemaDesc(p::Presentation)
+  obs,homs,attrtypes,attrs = map(t -> p.generators[t],[:Ob,:Hom,:AttrType,:Attr])
+  ob_syms,hom_syms,attrtype_syms,attr_syms = map(xs -> Symbol[nameof.(xs)...],
+                                                 [obs,homs,attrtypes,attrs])
+  doms = Dict(nameof(f) => nameof(dom(f)) for f in [homs; attrs])
+  codoms = Dict(nameof(f) => nameof(codom(f)) for f in [homs; attrs])
+  SchemaDesc(ob_syms, hom_syms, attrtype_syms, attr_syms, doms, codoms)
+end
+
 ob_num(S::SchemaDesc, x::Symbol) where {obs} = findfirst(S.obs .== x)
 
 function SchemaDescTypeType(s::SchemaDesc)

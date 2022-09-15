@@ -58,7 +58,7 @@ An acset $$F$$ on a schema consists of...
 
 For those with a categorical background, an acset on a schema $$S$$ consists of a functor from $$S$$ to $$\mathsf{Set}$$, such that objects in $$S^{-1}(0)$$ map to finite sets, and objects in $$S^{-1}(1)$$ map to sets that represent types. For any particular functor $$K \colon S^{-1}(1) \to \mathsf{Set}$$, we can also take the category of acsets that restrict to this map on $$S^{-1}$$.
 
-We can also add relations to this presentation, but we currently do nothing with those relations in the implementation; they mostly serve as documentation.
+We can also add equations to this presentation, but we currently do nothing with those equations in the implementation; they mostly serve as documentation.
 
 We will now give an example of how this all works in practice.
 
@@ -92,22 +92,47 @@ end
 
 ### API
 
-We first give an overview of the data types used in the acset machinery.
+The mathematical abstraction of an acset can of course be implemented in many different ways. Currently, there are three implementations of acsets in Catlab, which share a great deal of code.
 
-`FreeSchema` A finite presentation of a category that will be used as the schema of a database in the *algebraic databases* conception of categorical database theory. Functors out of a schema into FinSet are combinatorial structures over the schema. Attributes in a schema allow you to encode numerical (any julia type) into the database. You can find several examples of schemas in `Catlab.Graphs` where they define categorical versions of graph theory.
+These implementations can be split into two categories.
 
-`CSet/AttributedCSet` is a struct/constructors whose values (tables, indices) are parameterized by a CatDesc/AttrDesc. These are in memory databases over the schema equiped with `ACSetTranformations` as natural transformations that encode relationships between database instances.
+The first category is **static acset types**. In this implementation, different schemas correspond to different Julia types. Methods on these Julia types are then custom-generated for the schema, using [CompTime.jl](https://github.com/AlgebraicJulia/CompTime.jl).
 
-`CSetType/AttributedCSetType`provides a function to construct a julia type for ACSet instances, parameterized by CatDesc/AttrDesc. This function constructs the new type at runtime. In order to have the interactive nature of Julia, and to dynamically construct schemas based on runtime values, we need to define new Julia types at runtime. This function converts the schema spec to the corresponding Julia type.
+Under this category, there are two classes of static acset types. The first class is acset types that are generated using the `@acset_type` macro. These acset types are custom-derived structs. The advantage of this is that the structs have names like `Graph` or `WiringDiagram` that are printed out in error messages. The disadvantage is that if you are taking in schemas at runtime, you have to `eval` code in order to use them.
 
-`CatDesc/AttrDesc` the encoding of a schema into a Julia type. These exist because Julia only allows certain kinds of data in the parameter of a dependent type. Thus, we have to serialize a schema into those primitive data types so that we can use them to parameterize the ACSet type over the schema. This is an implementation detail subject to complete overhaul.
+Here is an example of using `@acset_type`
 
+```julia
+@acset_type WeightedGraph(SchWeightedGraph, index=[:src,:tgt])
+g = WeightedGraph()
+```
+
+The second class is `AnonACSet`s. Like acset types derived from `@acset_type`, these contain the schema in their type. However, they also contain the type of their fields in their types, so the types printed out in error messages are long and ugly. The advantage of these is that they can be used in situations where the schema is passed in at runtime, and they don't require using `eval` to create a new acset type.
+
+Here is an example of using `AnonACSet`
+
+```julia
+const WeightedGraph = AnonACSetType(SchWeightedGraph, index=[:src,:tgt])
+g = WeightedGraph()
+```
+
+The second category is **dynamic acset types**. Currently, there is just one type that falls under this category: `DynamicACSet`. This type has a **field** for the schema, and no code-generation is done for operations on acsets of this type. This means that if the schema is large compared to the data, this type will often be faster than the static acsets.
+
+However, dynamics acsets are a new addition to Catlab, and much of the machinery of limits, colimits, and other high-level acset constructions assumes that the schema of an acset can be derived from the type. Thus, more work will have to be done before dynamic acsets become a drop-in replacement for static acsets.
+
+Here is an example of using a dynamic acset
+
+```julia
+g = DynamicACSet("WeightedGraph", SchWeightedGraph; index=[:src,:tgt])
+```
 
 ```@autodocs
 Modules = [
   CategoricalAlgebra.CSets,
   CategoricalAlgebra.StructuredCospans,
   CategoricalAlgebra.ACSetInterface,
+  CategoricalAlgebra.ACSetColumns,
+  CategoricalAlgebra.CSetDataStructures
 ]
 Private = false
 ```

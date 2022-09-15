@@ -1,7 +1,7 @@
 module ACSetInterface
-export ACSet, acset_schema,
+export ACSet, acset_schema, acset_name,
   nparts, parts, has_part, has_subpart, subpart, incident,
-  add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!,
+  add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!, clear_subpart!,
   copy_parts!, copy_parts_only!, disjoint_union, tables, pretty_tables, @acset
 
 using StaticArrays: StaticArray
@@ -19,6 +19,11 @@ abstract type ACSet end
 Get the schema of an acset at runtime.
 """
 function acset_schema end
+
+"""
+Get the name of an acset at runtime
+"""
+function acset_name end
 
 """ Number of parts of given type in an acset.
 """
@@ -83,6 +88,9 @@ subpart(acs, part, expr::GATExpr{:compose}) =
 subpart(acs, names::AbstractVector{Symbol}) =
   subpart(acs, subpart(acs, names[1]), names[2:end])
 subpart(acs, expr::GATExpr{:compose}) = subpart(acs, subpart_names(expr))
+
+Base.getindex(acs::ACSet, part, name) = subpart(acs, part, name)
+Base.getindex(acs::ACSet, name) = subpart(acs, name)
 
 subpart_names(expr::GATExpr{:generator}) = Symbol[first(expr)]
 subpart_names(expr::GATExpr{:id}) = Symbol[]
@@ -175,9 +183,9 @@ function set_subpart! end
 
 # Inlined for the same reason as `subpart`.
 
-@inline function set_subpart!(acs, part::AbstractVector{Int}, name, vals)
-  broadcast(part, vals) do part, vals
-    set_subpart!(acs, part, name, vals)
+@inline function set_subpart!(acs, parts::AbstractVector{Int}, name, vals)
+  broadcast(parts, vals) do part, val
+    set_subpart!(acs, part, name, val)
   end
 end
 
@@ -192,6 +200,26 @@ See also: [`set_subpart!`](@ref).
 end
 
 @inline set_subparts!(acs, part; kw...) = set_subparts!(acs, part, (;kw...))
+
+Base.setindex!(acs::ACSet, val, part, name) = set_subpart!(acs, part, name, val)
+Base.setindex!(acs::ACSet, vals, name) = set_subpart!(acs, name, vals)
+
+"""Clear a subpart in a C-set
+
+If the subpart is a hom, this is equivalent to setting it to 0
+If the subpart is an attr, then if the type has nothing as a subtype, it
+sets value to nothing. If the type doesn't have nothing as a subtype, then
+it does not change the value, but still unsets the index, so this can
+potentially cause an inconsistent acset if used without caution.
+"""
+
+function clear_subpart! end
+
+function clear_subpart!(acs, parts::AbstractVector{Int}, name)
+  for part in parts
+    clear_subpart!(acs, part, name)
+  end
+end
 
 """ Remove part from a C-set.
 
@@ -287,7 +315,7 @@ end
 pretty_tables(acs::ACSet; kw...) = pretty_tables(stdout, acs; kw...)
 
 function Base.show(io::IO, ::MIME"text/plain", acs::T) where T <: ACSet
-  print(io, T)
+  print(io, acset_name(acs))
   print(io, " with elements ")
   join(io, ["$ob = $(parts(acs,ob))" for ob in keys(tables(acs))], ", ")
   println(io)
@@ -297,7 +325,7 @@ end
 function Base.show(io::IO, ::MIME"text/html", acs::T) where T <: ACSet
   println(io, "<div class=\"c-set\">")
   print(io, "<span class=\"c-set-summary\">")
-  print(io, T)
+  print(io, acset_name(acs))
   print(io, " with elements ")
   join(io, ["$ob = $(parts(acs,ob))" for ob in keys(tables(acs))], ", ")
   println(io, "</span>")
