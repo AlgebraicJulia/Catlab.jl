@@ -14,7 +14,7 @@ export FinCat, FinCatGraph, Path, ob_generator, hom_generator,
   ob_generator_name, hom_generator_name, ob_generators, hom_generators,
   equations, is_discrete, is_free, graph, edges, src, tgt, presentation,
   FinFunctor, FinDomFunctor, is_functorial, collect_ob, collect_hom, force,
-  FinTransformation, components, is_natural, is_initial
+  FinTransformation, components, is_natural, is_initial, homomorphisms
 
 using StructEquality
 using Reexport
@@ -23,12 +23,12 @@ using DataStructures: IntDisjointSets, in_same_set, num_groups
 
 @reexport using ..Categories
 using ...GAT, ...Present, ...Syntax
-import ...Present: equations
+import ...Present: equations, generators
 using ...Theories: ThCategory, ThSchema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ...CSetDataStructures, ...Graphs
 import ...Graphs: edges, src, tgt, enumerate_paths
-import ..Categories: CatSize, ob, hom, ob_map, hom_map, component, op
+import ..Categories: CatSize, ob, hom, ob_map, hom_map, component, op, is_hom_equal
 
 # Categories
 ############
@@ -259,6 +259,7 @@ See (Spivak, 2014, *Category theory for the sciences*, §4.5).
 end
 
 equations(C::FinCatGraphEq) = C.equations
+equations(C::FinCatGraph) = Pair[]
 
 function FinCatGraph(g::HasGraph, eqs::AbstractVector)
   eqs = map(eqs) do eq
@@ -269,6 +270,10 @@ function FinCatGraph(g::HasGraph, eqs::AbstractVector)
   end
   FinCatGraphEq(g, eqs)
 end
+
+
+FinCatGraph(p::FinCatGraph) = p
+
 
 # Symbolic categories
 #####################
@@ -343,6 +348,31 @@ function Base.show(io::IO, C::FinCatPresentation)
   print(io, "FinCat(")
   show(io, presentation(C))
   print(io, ")")
+end
+
+function FinCatGraph(p::FinCatPresentation)
+  pres = p.presentation
+  eqs = map(equations(pres)) do e12
+    e1,e2 = map(e12) do e
+      s, t = [findfirst(==(st), ob_generators(p)) for st in e.type_args]
+      et = only(typeof(e).parameters)
+      if et == :compose
+        return Path(Int[findfirst(==(x), hom_generators(p)) for x in e.args], s, t)
+      elseif et == :id
+        i = findfirst(==(e), ob_generators(p))
+        return Path(Int[], s, t)
+      else
+        Path(Int[findfirst(==(et), hom_generators(p))], s, t)
+      end
+    end
+    return e1 => e2
+  end
+
+  g = Graph(length(generators(pres, :Ob)))
+  hs = generators(pres, :Hom)
+  add_edges!(g, map(f -> generator_index(pres, first(gat_type_args(f))), hs),
+                map(f -> generator_index(pres, last(gat_type_args(f))), hs))
+  return isempty(eqs) ? FinCatGraph(g) : FinCatGraphEq(g,eqs)
 end
 
 # Functors
@@ -639,6 +669,150 @@ function Base.show(io::IO, α::FinTransformationMap)
   print(io, ")")
 end
 
+
+
+"""
+Internal state for backtracking search for FinTransformations between
+FinFunctors between FinCatGraphs.
+"""
+struct BacktrackingState
+  """ The current assignment, a partially-defined homomorphism of ACSets. """
+  assignment::Vector{Union{Nothing,Path}}
+  """ Depth in search tree at which assignments were made. """
+  assignment_depth::Vector{Int}
+  """ Inverse assignment for monic components or if finding a monomorphism. """
+  inv_assignment::Union{Nothing,Vector{Int}}
+  """ Domain FinCat: the "variables" in the CSP. """
+  dom::FinFunctor
+  """ Codomain FinCat: the "values" in the CSP. """
+  codom::FinFunctor
+  """ Domain FinCat: the "variables" in the CSP. """
+  src::FinCatGraph
+  """ Codomain FinCat: the "values" in the CSP. """
+  tgt::FinCatGraph
+  cd_pths::Dict{Tuple{Int64, Int64}, Vector{Path}}
+end
+
+"""
+Search for FinTransformations between FinFunctors
+"""
+function homomorphisms(X::FinFunctor, Y::FinFunctor; kw...)
+  results = FinTransformation[]
+  backtracking_search(X, Y; kw...) do α
+    if is_natural(α)
+      push!(results, deepcopy(α));
+    end
+    return false
+  end
+  results
+end
+
+function backtracking_search(f, X::FinFunctor, Y::FinFunctor; n_max=2)
+  D, CD = dom(X), codom(X) # assume same for Y
+  Y_pths = Dict(map(collect(enumerate_paths_cyclic(CD.graph; n_max=n_max))) do (k,v)
+    v_ = [Path(x, k[1], k[2]) for x in v]
+    k => unique(h->normalize(CD, h), v_)
+  end)
+
+  # Initialize state variables for search.
+  assignment = fill(nothing, length(ob_generators(D)))
+  assignment_depth = zeros(Int, length(ob_generators(D)))
+  inv_assignment = nothing # unless monic=true ... deepcopy(assignment)
+  state = BacktrackingState(assignment, assignment_depth, inv_assignment,
+                            X, Y, D, CD, Y_pths)
+
+  # Start the main recursion for backtracking search.
+  backtracking_search(f, state, 1)
+end
+
+function backtracking_search(f, state::BacktrackingState, depth::Int) where {S}
+  # Choose the next unassigned element.
+  x = findfirst(isnothing, state.assignment)
+  if isnothing(x)
+    # No unassigned elements remain, so we have a complete assignment.
+    return f(FinTransformation(state.assignment, state.dom, state.codom))
+  end
+
+  # Attempt all assignments of the chosen element.
+  Y = state.codom
+  for y in state.cd_pths[(ob_map(state.dom,x), ob_map(state.codom,x))]
+    assign_elem!(state, depth, x, y) &&
+      backtracking_search(f, state, depth + 1) &&
+      return true
+    unassign_elem!(state, depth, x)
+  end
+  return false
+end
+
+
+""" Check whether element x can be assigned to y in current assignment.
+"""
+function can_assign_elem(state::BacktrackingState, depth, x, y)
+  # Although this method is nonmutating overall, we must temporarily mutate the
+  # backtracking state, for several reasons. First, an assignment can be a
+  # consistent at each individual subpart but not consistent for all subparts
+  # simultaneously (consider trying to assign a self-loop to an edge with
+  # distinct vertices). Moreover, in schemas with non-trivial endomorphisms, we
+  # must keep track of which elements we have visited to avoid looping forever.
+  ok = assign_elem!(state, depth, x, y)
+  unassign_elem!(state, depth, x)
+  return ok
+end
+
+""" Attempt to assign element (c,x) to (c,y) in the current assignment.
+
+Returns whether the assignment succeeded. Note that the backtracking state can
+be mutated even when the assignment fails.
+"""
+function assign_elem!(state::BacktrackingState, depth, x, y)
+  y′ = state.assignment[x]
+  y′ == y && return true  # If x is already assigned to y, return immediately.
+  isnothing(y′) || return false # Otherwise, x must be unassigned.
+
+  if !isnothing(state.inv_assignment) && state.inv_assignment[y] != 0
+    # Also, y must unassigned in the inverse assignment.
+    return false
+  end
+
+  # Make the assignment and recursively assign subparts.
+  state.assignment[x] = y
+  state.assignment_depth[x] = depth
+  if !isnothing(state.inv_assignment)
+    state.inv_assignment[y] = x
+  end
+  return true
+end
+
+""" Unassign the element (c,x) in the current assignment.
+"""
+function unassign_elem!(state::BacktrackingState, depth, x)
+
+  state.assignment[x] == 0 && return
+  assign_depth = state.assignment_depth[x]
+  @assert assign_depth <= depth
+  if assign_depth == depth
+    X = state.dom
+    if !isnothing(state.inv_assignment)
+      y = state.assignment[x]
+      state.inv_assignment[y] = 0
+    end
+    state.assignment[x] = nothing
+    state.assignment_depth[x] = 0
+  end
+end
+
+""" Get assignment pairs from partially specified component of C-set morphism.
+"""
+partial_assignments(x::AbstractDict) = pairs(x)
+partial_assignments(x::AbstractVector) =
+  ((i,y) for (i,y) in enumerate(x) if !isnothing(y) && y > 0)
+
+# FIXME: Should these accessors go elsewhere?
+in_hom(S, c) = [dom(S,f) => f for f in hom_generators(S) if codom(S,f) == c]
+out_hom(S, c) = [f => codom(S,f) for f in hom_generators(S) if dom(S,f) == c]
+
+
+
 # Initial functors
 ##################
 
@@ -744,6 +918,88 @@ function make_map(f, xs, ::Type{T}) where T
     valtype(xys) <: T || error("Value(s) of $xys are not instances of $T")
     xys
   end
+end
+
+# Word problems
+
+"""
+String rewriting (term rewriting with only unary operators) is an undecidable
+problem for the general case of arbitrary generators and equations.
+A MetaTheory.jl interop could give a more satisfying approximate solution.
+
+For now, we repeatedly apply equations as rewrite rules that make a
+term smaller or equal size.
+"""
+function is_hom_equal(C::FinCat, f, g)
+  is_hom_equal(normalize(C,f),  normalize(C,g))
+end
+
+
+term_size(t::Path) = length(edges(t))
+
+"""Used to orient equations into rewrite rules"""
+function term_size(t)
+  typ = only(typeof(t).parameters)
+  if typ == :id
+    0
+  elseif typ == :generator
+    1
+  elseif typ == :compose
+    length(t.args)
+  else error("is_hom_equal does not support terms of this type: $t")
+  end
+end
+"""Apply substitution to a list"""
+function sublist(xs, pat, rep)
+  pat != rep || error("Pattern and replacement must differ")
+  for i in 1:(length(xs)-(length(pat)-1))
+    if xs[i:i+length(pat)-1] == pat
+      return vcat(xs[1:i-1], rep, xs[i+length(pat):end]) => true
+    end
+  end
+  xs => false
+end
+
+function sub(t::Path,pat,rep)
+  new_edges, changed = sublist(edges(t), edges(pat), edges(rep))
+  return changed ? Path(new_edges, t.src, t.tgt) => true : t => false
+end
+
+"""Substitute pattern in a FreeSchema term"""
+function sub(t,pat,rep)
+  ttyp,pattyp, reptyp = [only(typeof(x).parameters) for x in [t,pat,rep]]
+  ttyp == :compose || return t => false
+  pattyp == :compose || error("pattern must be compose $pat")
+  if reptyp == :id
+    r = []
+  elseif reptyp == :generator
+    r = [rep]
+  else
+    r = rep.args
+  end
+  new_args, changed = sublist(t.args, pat.args, r)
+  if !changed
+    return t => false
+  elseif isempty(new_args)
+    return id(t.type_args[1]) => true
+  elseif length(new_args) == 1
+    return only(new_args) => true
+  else
+    return typeof(t)(new_args, t.type_args) => true
+  end
+end
+"""Use path equalities to make term as small as possible"""
+function normalize(C::FinCat, m)
+  changed = true
+  while changed
+    changed = false
+    for eqterms in equations(C)
+      r, l = sort(collect(eqterms); by=term_size)
+      m, was_changed = sub(m, l, r)
+      changed |= was_changed
+    end
+  end
+  m
 end
 
 end

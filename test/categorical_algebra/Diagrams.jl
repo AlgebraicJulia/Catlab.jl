@@ -1,5 +1,7 @@
 module TestDiagrams
+
 using Test
+using Revise
 
 using Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 
@@ -9,13 +11,10 @@ const SchSGraph = SchSymmetricGraph
 ##########
 
 # Diagram for paths of length 2.
-C = FinCat(@acset Graph begin
-  V = 3
-  E = 2
-  src = [1,2]
-  tgt = [3,3]
-end)
+C = FinCat(@acset Graph begin V = 3; E = 2; src = [1,2]; tgt = [3,3] end)
 D = FinDomFunctor([:E,:E,:V], [:tgt,:src], C, FinCat(SchSGraph))
+
+
 d = Diagram(D)
 @test shape(d) == C
 @test ob_map(d, 3) == SchSGraph[:V]
@@ -65,6 +64,21 @@ d = dom(f)
 @test dom(op(f)) == op(codom(f))
 @test codom(op(f)) == op(dom(f))
 @test op(g)⋅op(f) == op(f⋅g)
+
+# Morphism search
+##################
+Squarish = FinCatGraph(@acset(Graph, begin
+  V=4;E=4;src=[1,1,2,3]; tgt=[2,3,4,4]
+end), [[[1,3],[2,4]]])
+
+Arr = FinCat(path_graph(Graph, 2))
+XF = FinFunctor((V=[1,3], E=[[2]]), Arr, Squarish)
+XG = FinFunctor((V=[2,4], E=[[3]]), Arr, Squarish)
+@test all(is_functorial,[XF,XG])
+F, G = Diagram.([XF,XG])
+hs = homomorphisms(F,G)
+
+
 
 # Monads of diagrams
 ####################

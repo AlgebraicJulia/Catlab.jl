@@ -1,6 +1,7 @@
 module TestFinCats
-using Test
 
+using Test
+using Revise
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
 
 # Categories on graphs
@@ -17,6 +18,9 @@ C = FinCat(g)
 @test ob_generators(C) == 1:2
 @test hom_generators(C) == 1:3
 @test startswith(sprint(show, C), "FinCat($(Graph)")
+
+# all gens to id (src or tgt) or 3*3*3 possibilities for V map = [1,2]
+@test length(homomorphisms(C,C)) == 29
 
 C_op = op(C)
 @test C_op isa FinCat
@@ -36,6 +40,9 @@ f = id(D, 2)
 g = compose(D, 1, 3)
 @test edges(g) == [1,3]
 
+homs = homomorphisms(D,D)
+@test all(is_functorial, homs)
+
 D_op = op(D)
 @test dom(D_op, 1) == 2
 @test codom(D_op, 1) == 1
@@ -45,11 +52,16 @@ D_op = op(D)
 # Functors between free categories.
 C = FinCat(parallel_arrows(Graph, 2))
 F = FinFunctor((V=[1,4], E=[[1,3], [2,4]]), C, D)
+@test length(homomorphisms(F,F))==1
 @test dom(F) == C
 @test codom(F) == D
 @test is_functorial(F)
 @test Ob(F) == FinFunction([1,4], FinSet(4))
 @test startswith(sprint(show, F), "FinFunctor($([1,4]),")
+
+homs = homomorphisms(C,D; monic=true);
+@test F ∈ homs
+@test length(homs) == 2
 
 @test ob_map(F, 2) == 4
 @test hom_map(F, 1) == Path(h, [1,3])
@@ -136,6 +148,15 @@ end
 @test !is_free(Δ¹)
 @test startswith(sprint(show, Δ¹), "FinCat(")
 
+SG = FinCat(SchGraph)
+@test length(homomorphisms(Δ¹,Δ¹; n_max=0, monic=true))==2
+
+
+# not tested yet, but have possible swap for obs and homs
+SG = FinCat(SchGraph)
+@test length(homomorphisms(SG,SG; n_max=2, monic=true))==2
+
+
 # Graph as set-valued functor on a free category.
 F = FinDomFunctor(path_graph(Graph, 3))
 C = dom(F)
@@ -204,39 +225,38 @@ G = FinDomFunctor(g)
 @test ob_map(G, :Weight) == TypeSet(Float64)
 @test hom_map(G, :weight) == FinDomFunction([0.5, 1.5])
 
+# FinTransformation search
+##########################
+Squarish = FinCatGraph(@acset(Graph, begin
+  V=4; E=5; src=[1,1,1,2,3]; tgt=[2,2,3,4,4]
+end), [[[1,4],[3,5]]])
+Arr = FinCat(path_graph(Graph, 2))
+F = FinFunctor((V=[1,3], E=[[3]]), Arr, Squarish)
+G = FinFunctor((V=[2,4], E=[[4]]), Arr, Squarish)
+FGs = homomorphisms(F,G)
+@test only(FGs) == FinTransformation([[1], [5]], F, G)
+
 # Initial functors
 ##################
 
 # Commutative square diagram: with 1→2→4 and 1→3→4
 S = FinCat(@acset Graph begin
-  V = 4
-  E = 4
-  src = [1,1,2,3]
-  tgt = [2,3,4,4]
+  V = 4; E = 4; src = [1,1,2,3]; tgt = [2,3,4,4]
 end)
 
 # Equalizer diagram: 1→2⇉3
 T = FinCat(@acset Graph begin
-  V = 3
-  E = 3
-  src = [1,2,2]
-  tgt = [2,3,3]
+  V = 3; E = 3; src = [1,2,2]; tgt = [2,3,3]
 end)
 
 # Extra bit added to beginning equalizer diagram: 4→1→2⇉3
 T2 = FinCat(@acset Graph begin
-  V = 4
-  E = 4
-  src = [1,2,2,4]
-  tgt = [2,3,3,1]
+  V = 4; E = 4; src = [1,2,2,4]; tgt = [2,3,3,1]
 end)
 
 # Extra bit added to end of equalizer diagram: 1→2⇉3→4
 T3 = FinCat(@acset Graph begin
-  V = 4
-  E = 4
-  src = [1,2,2,3]
-  tgt = [2,3,3,4]
+  V = 4; E = 4; src = [1,2,2,3]; tgt = [2,3,3,4]
 end)
 
 # Opposite square corners folded on top of each other
@@ -254,11 +274,11 @@ F4 = FinFunctor([1,2,3], [1,2,3], T, T2)
 # Same as F1, but there is an additional piece of data in codomain, ignored
 F5 = FinFunctor([1,2,3], [1,2,3], T, T2)
 
-@test all(is_functorial.([F1,F2,F3,F4]))
+@test all(is_functorial.([F1,F2,F3,F4,F5]))
 @test is_initial(F1)
 @test !is_initial(F2)
 @test !is_initial(F3)
 @test !is_initial(F4)
 @test !is_initial(F5)
 
-end
+end # module

@@ -30,6 +30,9 @@ using ..FreeDiagrams, ..Limits, ..Subobjects, ..FinSets, ..FinCats
 import ..Limits: limit, colimit, universal
 import ..Subobjects: Subobject, implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..Sets: SetOb, SetFunction, TypeSet
+import ..FinCats: FinDomFunctor, components, is_natural, FinCatGraph, FinCatPresentation, homomorphisms
+using ...Graphs
+using ..FinCats: normalize, Path
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate, is_monic, is_epic
 import ..FinCats: FinDomFunctor, components, is_natural
 
@@ -737,6 +740,106 @@ partial_assignments(x::AbstractVector) =
 # FIXME: Should these accessors go elsewhere?
 in_hom(S, c) = [dom(S,f) => f for f in hom(S) if codom(S,f) == c]
 out_hom(S, c) = [f => codom(S,f) for f in hom(S) if dom(S,f) == c]
+
+
+
+"""
+Convert a FinFunctor between graph FinCats and add labels from
+FinCatPresentations
+"""
+function grph_fun_to_pres_fun(F, X,Y)
+  hs = map(F.hom_map) do p
+    if isempty(p.edges)
+      return id(ob_generators(Y)[p.src])
+    else
+      compose(hom_generators(Y)[p.edges])
+    end
+  end
+  FinFunctor(Dict(zip(ob_generators(X), ob_generators(Y)[F.ob_map])),
+             Dict(zip(hom_generators(X),hs)), X, Y)
+end
+
+# Convert presentation inputs into graph inputs, opposite for outputs
+homomorphisms(X::FinCatPresentation, Y::FinCatPresentation; kwargs...) =
+  [grph_fun_to_pres_fun(F,X,Y) for F in
+   homomorphisms(FinCatGraph(X),FinCatGraph(Y); kwargs...)]
+
+"""
+Search for FinFunctors between FinCats. I.e. map objects onto objects and
+generating morphisms onto paths. Note that there can be infinite paths in a
+FinCat with a cyclic underlying graph (although equations make make it finite).
+`nmax` restricts the paths found to those which pass over the same object at
+most `nmax` times.
+
+Because morphism equality modulo codomain equations is not implemented, there
+may be "duplicate" morphisms in the results. To be safe, we error if the
+`monic`/`iso` constraints are used when the codomain has equations.
+ob and hom maps can be initialized. Hom maps can be restricted to be a
+particular length (e.g. 1 means a generator must map onto another generator, not
+a composite).
+"""
+function homomorphisms(gX::FinCatGraph, gY::FinCatGraph; n_max::Int=3,
+                       monic=false, iso=false,init_obs=nothing,
+                       init_homs=nothing, hom_lens=nothing)
+
+  y_pths = Dict(map(collect(enumerate_paths_cyclic(gY.graph; n_max=n_max))) do (k,v)
+    k => unique(h->normalize(gY, Path(h, k[1], k[2])), v)
+  end)
+
+  yGrph = Graph(nv(gY.graph))
+
+  for (i,j) in Iterators.product(vertices(gY.graph), vertices(gY.graph))
+    if !isempty(y_pths[(i, j)])
+      add_edge!(yGrph, i, j)
+    end
+  end
+  no,nh = [length(f(gX)) for f in [ob_generators,hom_generators]]
+  init_obs = isnothing(init_obs) ? fill(nothing,no) : init_obs
+  init_homs = isnothing(init_homs) ? fill(nothing,nh) : init_homs
+  hom_lens = isnothing(hom_lens) ? fill(nothing,nh) : hom_lens
+  res = []
+  kwargs = Dict{Symbol,Any}(:initial=>(V=Dict([
+    i=>v for (i, v) in enumerate(init_obs) if !isnothing(v)]),))
+  if iso kwargs[:iso] = [:V]
+  elseif monic kwargs[:monic] = [:V]
+  end
+  for h in homomorphisms(gX.graph, yGrph; kwargs...)
+    om = collect(h[:V])
+
+    pths = map(zip(collect(h[:E]), init_homs, hom_lens)) do (e, ih, hl)
+      p = y_pths[(src(yGrph,e),tgt(yGrph,e))]
+      # Apply init_homs and hom_lens constraints to possible paths
+      if !isnothing(hl)
+        filter!(z->length(z)==hl, p)
+      end
+      if !isnothing(ih)
+        maybe_e = findfirst(x->(x isa Vector ? x : edges(x)) == e, p)
+        if isnothing(maybe_e)
+          p = []
+        else
+          p = [p[maybe_e]]
+        end
+      end
+      return p
+    end
+
+    for combo in Iterators.product(pths...) # pick a path for each edge in X
+      hm = map(enumerate(combo)) do (ei,z)
+        isempty(z) ? id(gY, om[src(gX.graph,ei)]) : z
+      end
+      if (monic || iso) && ((length(hm) != length(unique(hm))) || any(isempty,combo))
+        continue
+      elseif iso
+        error("how to check hom map is surjective?")
+      end
+      F = FinFunctor((V=om, E=hm), gX, gY)
+      if is_functorial(F; check_equations=true)
+        push!(res, F)
+      end
+    end
+  end
+  return res
+end
 
 # Limits and colimits
 #####################

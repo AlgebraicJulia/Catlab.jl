@@ -13,7 +13,7 @@ using ..FinCats, ..FreeDiagrams
 using ..FinCats: mapvals
 import ..FinCats: force, collect_ob, collect_hom
 import ..Limits: limit, colimit, universal
-
+import ..CSets: homomorphisms, is_natural
 # Data types
 ############
 
@@ -159,6 +159,11 @@ function Base.show(io::IO, f::DiagramHom{T}) where T
   print(io, ")")
 end
 
+function is_natural(f::DiagramHom)
+  all(is_functorial,[shape_map(f), diagram.([dom(f), codom(f)])...]
+     ) && is_natural(diagram_map(f))
+end
+
 # Categories of diagrams
 ########################
 
@@ -223,6 +228,33 @@ end
 function compose(f::DiagramHom{T}, F::Functor; kw...) where T
   DiagramHom{T}(shape_map(f), composeH(diagram_map(f), F; kw...),
                 compose(f.precomposed_diagram, F; kw...))
+end
+
+"""
+Diagram morphisms by first finding shape maps and then, for each,
+finding a diagram map.
+"""
+function homomorphisms(X::Diagram{T}, Y::Diagram{T}; n_max::Int=3, monic=false,
+                       iso=false,init_obs=nothing,init_homs=nothing,
+                       hom_lens=nothing) where T
+  fs = homomorphisms(shape(X),shape(Y))
+
+  res = []
+  for f in fs
+    codom(f) == shape(Y) || error("SHOULD COMPOSE")
+    if T == id
+      hargs = [diagram(X), f ⋅ diagram(Y)]
+    elseif T == op
+      hargs = [f ⋅ diagram(Y),diagram(X)]
+    else
+      error("$T not supported")
+    end
+    nts =  homomorphisms(hargs...)
+    for nt in nts
+      push!(res, DiagramHom{T}(f, nt.components, X, Y))
+    end
+  end
+  return res
 end
 
 # Limits and colimits
