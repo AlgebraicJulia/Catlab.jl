@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Drawing graphs in Graphviz · Catlab.jl</title><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">Catlab.jl</a></span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox"/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Seven Sketches in Compositionality</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../sketches/partitions/">Partitions</a></li><li><a class="tocitem" href="../../sketches/preorders/">Preorders</a></li><li><a class="tocitem" href="../../sketches/meets/">Meets in Preorders</a></li><li><a class="tocitem" href="../../sketches/smc/">Symmetric Monoidal Categories</a></li><li><a class="tocitem" href="../../sketches/cat_elements/">The Category of Elements</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/graphs/">The Category of Graphs</a></li><li><a class="tocitem" href="../../graphs/graphs_label/">Labeled Graphs</a></li><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox"/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">Categorical Algebra</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../categorical_algebra/diagrams/">Diagrams</a></li><li><a class="tocitem" href="../../categorical_algebra/acset_serialization/">Serializing acsets</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-4" type="checkbox"/><label class="tocitem" for="menuitem-2-4"><span class="docs-label">Wiring Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li><li><a class="tocitem" href="../../wiring_diagrams/wd_cset/">Wiring Diagrams as Attributed C-Sets</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox" checked/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li class="is-active"><a class="tocitem" href>Drawing graphs in Graphviz</a><ul class="internal"><li><a class="tocitem" href="#Drawing-basic-graphs"><span>Drawing basic graphs</span></a></li><li><a class="tocitem" href="#Drawing-graph-homomorphisms"><span>Drawing graph homomorphisms</span></a></li></ul></li><li><a class="tocitem" href="../graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/core/">Theories, instances, and expressions</a></li><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Graphics</a></li><li class="is-active"><a href>Drawing graphs in Graphviz</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Drawing graphs in Graphviz</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/master/docs/literate/graphics/graphviz_graphs.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Drawing-graphs-in-Graphviz"><a class="docs-heading-anchor" href="#Drawing-graphs-in-Graphviz">Drawing graphs in Graphviz</a><a id="Drawing-graphs-in-Graphviz-1"></a><a class="docs-heading-anchor-permalink" href="#Drawing-graphs-in-Graphviz" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/AlgebraicJulia/Catlab.jl/blob/gh-pages/v0.14.5/generated/graphics/graphviz_graphs.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><p>All of the basic graph types provided by the Catlab <code>Graphs</code> module can be drawn using <a href="https://www.graphviz.org/">Graphviz</a>. By default, &quot;directed&quot; graph types (<code>Graph</code>, <code>ReflexiveGraph</code>) are drawn using the <code>dot</code> program and &quot;undirected&quot; graph types (<code>SymmetricGraph</code>, <code>HalfEdgeGraph</code>) are drawn using the <code>neato</code> program.</p><pre><code class="language-julia hljs">using Catlab.Graphs, Catlab.Graphics</code></pre><h2 id="Drawing-basic-graphs"><a class="docs-heading-anchor" href="#Drawing-basic-graphs">Drawing basic graphs</a><a id="Drawing-basic-graphs-1"></a><a class="docs-heading-anchor-permalink" href="#Drawing-basic-graphs" title="Permalink"></a></h2><pre><code class="language-julia hljs">g = cycle_graph(Graph, 3)
+to_graphviz(g)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="91pt" height="27pt"
+ viewBox="0.00 0.00 90.80 26.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 22.6)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-22.6 86.8,-22.6 86.8,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="black" stroke="black" cx="1.8" cy="-1.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="black" stroke="black" cx="41.4" cy="-16.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M3.73,-2.17C7.89,-3.83 24.97,-10.64 34.28,-14.36"/>
+<polygon fill="black" stroke="black" points="33.77,-16.04 39.06,-16.27 35.07,-12.79 33.77,-16.04"/>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="black" stroke="black" cx="81" cy="-1.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2&%2345;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M43.33,-16.43C47.49,-14.77 64.57,-7.96 73.88,-4.24"/>
+<polygon fill="black" stroke="black" points="74.67,-5.81 78.66,-2.33 73.37,-2.56 74.67,-5.81"/>
+</g>
+<!-- n3&%2345;&gt;n1 -->
+<g id="edge3" class="edge">
+<title>n3&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M79.04,-1.8C71.79,-1.8 25.56,-1.8 8.83,-1.8"/>
+<polygon fill="black" stroke="black" points="8.67,-0.05 3.67,-1.8 8.67,-3.55 8.67,-0.05"/>
+</g>
+</g>
+</svg>
+'/><pre><code class="language-julia hljs">sg = cycle_graph(SymmetricGraph, 3)
+to_graphviz(sg)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="48pt" height="43pt"
+ viewBox="0.00 0.00 47.70 42.80" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 38.8)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-38.8 43.7,-38.8 43.7,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="black" stroke="black" cx="1.8" cy="-32.77" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="black" stroke="black" cx="37.9" cy="-33" rx="1.8" ry="1.8"/>
+</g>
+<!-- n1&%2345;&%2345;n2 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&%2345;n2</title>
+<path fill="none" stroke="black" d="M3.74,-32.78C9.95,-32.82 29.3,-32.95 35.77,-32.99"/>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="black" stroke="black" cx="20.1" cy="-1.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2&%2345;&%2345;n3 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&%2345;n3</title>
+<path fill="none" stroke="black" d="M36.95,-31.33C33.88,-25.96 24.34,-9.23 21.15,-3.64"/>
+</g>
+<!-- n3&%2345;&%2345;n1 -->
+<g id="edge3" class="edge">
+<title>n3&%2345;&%2345;n1</title>
+<path fill="none" stroke="black" d="M19.11,-3.46C15.97,-8.79 6.16,-25.39 2.88,-30.94"/>
+</g>
+</g>
+</svg>
+'/><p>Node and edge IDs can be shown by setting <code>node_labels=true</code> and <code>edge_labels=true</code>, or a data attribute can be used as a label by setting <code>node_labels=:my_vertex_attr</code> and <code>edge_lables=:my_edge_attr</code>.</p><pre><code class="language-julia hljs">to_graphviz(g, node_labels=true, edge_labels=true)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="164pt" height="57pt"
+ viewBox="0.00 0.00 163.64 57.21" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 53.21)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-53.21 159.64,-53.21 159.64,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="10.61" cy="-10.61" rx="10.71" ry="10.71"/>
+<text text-anchor="middle" x="10.61" y="-6.91" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="77.82" cy="-38.61" rx="10.71" ry="10.71"/>
+<text text-anchor="middle" x="77.82" y="-34.91" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M20.67,-14.5C31.67,-19.22 50.32,-27.23 63.09,-32.71"/>
+<polygon fill="black" stroke="black" points="62.54,-34.38 67.83,-34.75 63.93,-31.17 62.54,-34.38"/>
+<text text-anchor="middle" x="44.21" y="-30.41" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="145.03" cy="-10.61" rx="10.71" ry="10.71"/>
+<text text-anchor="middle" x="145.03" y="-6.91" font-family="Times,serif" font-size="14.00">3</text>
+</g>
+<!-- n2&%2345;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M87.89,-34.71C98.89,-29.99 117.54,-21.98 130.3,-16.5"/>
+<polygon fill="black" stroke="black" points="131.14,-18.05 135.04,-14.47 129.76,-14.83 131.14,-18.05"/>
+<text text-anchor="middle" x="111.43" y="-30.41" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+<!-- n3&%2345;&gt;n1 -->
+<g id="edge3" class="edge">
+<title>n3&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M134.22,-8.99C123.14,-7.26 104.55,-4.62 88.43,-3.61 67,-2.26 42.28,-5.35 26.8,-7.84"/>
+<polygon fill="black" stroke="black" points="26.18,-6.17 21.54,-8.72 26.76,-9.62 26.18,-6.17"/>
+<text text-anchor="middle" x="77.82" y="-7.41" font-family="Times,serif" font-size="14.00">3</text>
+</g>
+</g>
+</svg>
+'/><p>Graph-level, node-level, and edge-level <a href="https://graphviz.org/doc/info/attrs.html">Graphviz attributes</a> can be supplied using the <code>graph_attrs</code>, <code>node_attrs</code>, and <code>edge_attrs</code> keyword arguments.</p><pre><code class="language-julia hljs">to_graphviz(g, node_attrs=Dict(:color =&gt; &quot;cornflowerblue&quot;),
+            edge_attrs=Dict(:style =&gt; &quot;dotted&quot;))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="91pt" height="27pt"
+ viewBox="0.00 0.00 90.80 26.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 22.6)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-22.6 86.8,-22.6 86.8,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="1.8" cy="-1.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="41.4" cy="-16.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&gt;n2</title>
+<path fill="none" stroke="black" stroke-dasharray="1,5" d="M3.73,-2.17C7.89,-3.83 24.97,-10.64 34.28,-14.36"/>
+<polygon fill="black" stroke="black" points="33.77,-16.04 39.06,-16.27 35.07,-12.79 33.77,-16.04"/>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="cornflowerblue" stroke="cornflowerblue" cx="81" cy="-1.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- n2&%2345;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&gt;n3</title>
+<path fill="none" stroke="black" stroke-dasharray="1,5" d="M43.33,-16.43C47.49,-14.77 64.57,-7.96 73.88,-4.24"/>
+<polygon fill="black" stroke="black" points="74.67,-5.81 78.66,-2.33 73.37,-2.56 74.67,-5.81"/>
+</g>
+<!-- n3&%2345;&gt;n1 -->
+<g id="edge3" class="edge">
+<title>n3&%2345;&gt;n1</title>
+<path fill="none" stroke="black" stroke-dasharray="1,5" d="M79.04,-1.8C71.79,-1.8 25.56,-1.8 8.83,-1.8"/>
+<polygon fill="black" stroke="black" points="8.67,-0.05 3.67,-1.8 8.67,-3.55 8.67,-0.05"/>
+</g>
+</g>
+</svg>
+'/><h2 id="Drawing-graph-homomorphisms"><a class="docs-heading-anchor" href="#Drawing-graph-homomorphisms">Drawing graph homomorphisms</a><a id="Drawing-graph-homomorphisms-1"></a><a class="docs-heading-anchor-permalink" href="#Drawing-graph-homomorphisms" title="Permalink"></a></h2><p>Graph homomorphsims (<code>ACSetTransformation</code>s between graphs) can also be drawn using Graphviz, in several different styles.</p><pre><code class="language-julia hljs">using Catlab.CategoricalAlgebra
+
+f = homomorphism(cycle_graph(Graph, 4), complete_graph(Graph, 2))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ACSetTransformation((V = FinFunction([1, 2, 1, 2], 4, 2), E = FinFunction([1, 2, 1, 2], 4, 2)), Graph {V = 4, E = 4}, Graph {V = 2, E = 2})</code></pre><p>By default, the domain and codomain graph are both drawn, as well the vertex mapping between them.</p><pre><code class="language-julia hljs">to_graphviz(f)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: hom_graph Pages: 1 -->
+<svg width="162pt" height="93pt"
+ viewBox="0.00 0.00 162.40 93.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 89)">
+<title>hom_graph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-89 158.4,-89 158.4,4 -4,4"/>
+<g id="clust1" class="cluster">
+<title>cluster_dom</title>
+<polygon fill="none" stroke="black" points="8,-37 8,-77 146.4,-77 146.4,-37 8,-37"/>
+</g>
+<g id="clust2" class="cluster">
+<title>cluster_cod</title>
+<polygon fill="none" stroke="black" points="8,-8 8,-28 67.2,-28 67.2,-8 8,-8"/>
+</g>
+<!-- dom_1 -->
+<g id="node1" class="node">
+<title>dom_1</title>
+<ellipse fill="black" stroke="black" cx="17.8" cy="-57" rx="1.8" ry="1.8"/>
+</g>
+<!-- dom_2 -->
+<g id="node2" class="node">
+<title>dom_2</title>
+<ellipse fill="black" stroke="black" cx="57.4" cy="-47" rx="1.8" ry="1.8"/>
+</g>
+<!-- dom_1&%2345;&gt;dom_2 -->
+<g id="edge1" class="edge">
+<title>dom_1&%2345;&gt;dom_2</title>
+<path fill="none" stroke="black" d="M19.73,-56.75C23.85,-55.66 40.64,-51.19 50.01,-48.7"/>
+<polygon fill="black" stroke="black" points="50.68,-50.33 55.06,-47.36 49.78,-46.95 50.68,-50.33"/>
+</g>
+<!-- cod_1 -->
+<g id="node5" class="node">
+<title>cod_1</title>
+<ellipse fill="black" stroke="black" cx="17.8" cy="-18" rx="1.8" ry="1.8"/>
+</g>
+<!-- dom_1&%2345;&gt;cod_1 -->
+<g id="edge7" class="edge">
+<title>dom_1&%2345;&gt;cod_1</title>
+<path fill="none" stroke="black" stroke-dasharray="1,5" d="M17.8,-54.97C17.8,-44.99 17.8,-35.02 17.8,-25.04"/>
+<polygon fill="black" stroke="black" points="19.55,-24.83 17.8,-19.83 16.05,-24.83 19.55,-24.83"/>
+</g>
+<!-- dom_3 -->
+<g id="node3" class="node">
+<title>dom_3</title>
+<ellipse fill="black" stroke="black" cx="97" cy="-47" rx="1.8" ry="1.8"/>
+</g>
+<!-- dom_2&%2345;&gt;dom_3 -->
+<g id="edge2" class="edge">
+<title>dom_2&%2345;&gt;dom_3</title>
+<path fill="none" stroke="black" d="M59.33,-47C63.45,-47 80.24,-47 89.61,-47"/>
+<polygon fill="black" stroke="black" points="89.66,-48.75 94.66,-47 89.66,-45.25 89.66,-48.75"/>
+</g>
+<!-- cod_2 -->
+<g id="node6" class="node">
+<title>cod_2</title>
+<ellipse fill="black" stroke="black" cx="57.4" cy="-18" rx="1.8" ry="1.8"/>
+</g>
+<!-- dom_2&%2345;&gt;cod_2 -->
+<g id="edge8" class="edge">
+<title>dom_2&%2345;&gt;cod_2</title>
+<path fill="none" stroke="black" stroke-dasharray="1,5" d="M57.4,-44.88C57.4,-38.22 57.4,-31.56 57.4,-24.9"/>
+<polygon fill="black" stroke="black" points="59.15,-24.81 57.4,-19.81 55.65,-24.81 59.15,-24.81"/>
+</g>
+<!-- dom_4 -->
+<g id="node4" class="node">
+<title>dom_4</title>
+<ellipse fill="black" stroke="black" cx="136.6" cy="-57" rx="1.8" ry="1.8"/>
+</g>
+<!-- dom_3&%2345;&gt;dom_4 -->
+<g id="edge3" class="edge">
+<title>dom_3&%2345;&gt;dom_4</title>
+<path fill="none" stroke="black" d="M98.93,-47.25C103.05,-48.34 119.84,-52.81 129.21,-55.3"/>
+<polygon fill="black" stroke="black" points="128.98,-57.05 134.26,-56.64 129.88,-53.67 128.98,-57.05"/>
+</g>
+<!-- dom_3&%2345;&gt;cod_1 -->
+<g id="edge9" class="edge">
+<title>dom_3&%2345;&gt;cod_1</title>
+<path fill="none" stroke="black" stroke-dasharray="1,5" d="M95.56,-45.69C93.52,-39.81 84.26,-15.74 67.2,-7 52.74,0.41 33.33,-9.06 24.11,-14.56"/>
+<polygon fill="black" stroke="black" points="22.8,-13.32 19.53,-17.49 24.68,-16.27 22.8,-13.32"/>
+</g>
+<!-- dom_4&%2345;&gt;dom_1 -->
+<g id="edge4" class="edge">
+<title>dom_4&%2345;&gt;dom_1</title>
+<path fill="none" stroke="black" d="M134.69,-57.03C130.55,-57.19 113.12,-57.81 98.8,-58 79.6,-58.26 74.8,-58.26 55.6,-58 44.86,-57.85 32.37,-57.47 25.05,-57.22"/>
+<polygon fill="black" stroke="black" points="24.77,-55.46 19.71,-57.03 24.65,-58.96 24.77,-55.46"/>
+</g>
+<!-- dom_4&%2345;&gt;cod_2 -->
+<g id="edge10" class="edge">
+<title>dom_4&%2345;&gt;cod_2</title>
+<path fill="none" stroke="black" stroke-dasharray="1,5" d="M134.71,-56.45C130.65,-53.94 113.5,-43.45 98.8,-36 86.81,-29.93 72.34,-23.75 64.37,-20.44"/>
+<polygon fill="black" stroke="black" points="64.71,-18.69 59.42,-18.41 63.38,-21.93 64.71,-18.69"/>
+</g>
+<!-- cod_1&%2345;&gt;cod_2 -->
+<g id="edge5" class="edge">
+<title>cod_1&%2345;&gt;cod_2</title>
+<path fill="none" stroke="black" d="M19.22,-16.42C22.4,-10.74 42.68,-9.74 51.88,-13.42"/>
+<polygon fill="black" stroke="black" points="50.97,-14.93 56.03,-16.51 53.06,-12.12 50.97,-14.93"/>
+</g>
+<!-- cod_2&%2345;&gt;cod_1 -->
+<g id="edge6" class="edge">
+<title>cod_2&%2345;&gt;cod_1</title>
+<path fill="none" stroke="black" d="M56.03,-19.49C53.04,-25.22 32.79,-26.27 23.48,-22.64"/>
+<polygon fill="black" stroke="black" points="24.3,-21.08 19.22,-19.58 22.26,-23.92 24.3,-21.08"/>
+</g>
+</g>
+</svg>
+'/><p>To see the edge mapping, which is not necessarily unique in the presence of the multiple edges, colors can be used.</p><pre><code class="language-julia hljs">to_graphviz(f, edge_colors=true)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: hom_graph Pages: 1 -->
+<svg width="162pt" height="93pt"
+ viewBox="0.00 0.00 162.40 93.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 89)">
+<title>hom_graph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-89 158.4,-89 158.4,4 -4,4"/>
+<g id="clust1" class="cluster">
+<title>cluster_dom</title>
+<polygon fill="none" stroke="black" points="8,-37 8,-77 146.4,-77 146.4,-37 8,-37"/>
+</g>
+<g id="clust2" class="cluster">
+<title>cluster_cod</title>
+<polygon fill="none" stroke="black" points="8,-8 8,-28 67.2,-28 67.2,-8 8,-8"/>
+</g>
+<!-- dom_1 -->
+<g id="node1" class="node">
+<title>dom_1</title>
+<ellipse fill="black" stroke="black" cx="17.8" cy="-57" rx="1.8" ry="1.8"/>
+</g>
+<!-- dom_2 -->
+<g id="node2" class="node">
+<title>dom_2</title>
+<ellipse fill="black" stroke="black" cx="57.4" cy="-47" rx="1.8" ry="1.8"/>
+</g>
+<!-- dom_1&%2345;&gt;dom_2 -->
+<g id="edge1" class="edge">
+<title>dom_1&%2345;&gt;dom_2</title>
+<path fill="none" stroke="%23f8766d" d="M19.73,-56.75C23.85,-55.66 40.64,-51.19 50.01,-48.7"/>
+<polygon fill="%23f8766d" stroke="%23f8766d" points="50.68,-50.33 55.06,-47.36 49.78,-46.95 50.68,-50.33"/>
+</g>
+<!-- cod_1 -->
+<g id="node5" class="node">
+<title>cod_1</title>
+<ellipse fill="black" stroke="black" cx="17.8" cy="-18" rx="1.8" ry="1.8"/>
+</g>
+<!-- dom_1&%2345;&gt;cod_1 -->
+<g id="edge7" class="edge">
+<title>dom_1&%2345;&gt;cod_1</title>
+<path fill="none" stroke="black" stroke-dasharray="1,5" d="M17.8,-54.97C17.8,-44.99 17.8,-35.02 17.8,-25.04"/>
+<polygon fill="black" stroke="black" points="19.55,-24.83 17.8,-19.83 16.05,-24.83 19.55,-24.83"/>
+</g>
+<!-- dom_3 -->
+<g id="node3" class="node">
+<title>dom_3</title>
+<ellipse fill="black" stroke="black" cx="97" cy="-47" rx="1.8" ry="1.8"/>
+</g>
+<!-- dom_2&%2345;&gt;dom_3 -->
+<g id="edge2" class="edge">
+<title>dom_2&%2345;&gt;dom_3</title>
+<path fill="none" stroke="%2300bb20" d="M59.33,-47C63.45,-47 80.24,-47 89.61,-47"/>
+<polygon fill="%2300bb20" stroke="%2300bb20" points="89.66,-48.75 94.66,-47 89.66,-45.25 89.66,-48.75"/>
+</g>
+<!-- cod_2 -->
+<g id="node6" class="node">
+<title>cod_2</title>
+<ellipse fill="black" stroke="black" cx="57.4" cy="-18" rx="1.8" ry="1.8"/>
+</g>
+<!-- dom_2&%2345;&gt;cod_2 -->
+<g id="edge8" class="edge">
+<title>dom_2&%2345;&gt;cod_2</title>
+<path fill="none" stroke="black" stroke-dasharray="1,5" d="M57.4,-44.88C57.4,-38.22 57.4,-31.56 57.4,-24.9"/>
+<polygon fill="black" stroke="black" points="59.15,-24.81 57.4,-19.81 55.65,-24.81 59.15,-24.81"/>
+</g>
+<!-- dom_4 -->
+<g id="node4" class="node">
+<title>dom_4</title>
+<ellipse fill="black" stroke="black" cx="136.6" cy="-57" rx="1.8" ry="1.8"/>
+</g>
+<!-- dom_3&%2345;&gt;dom_4 -->
+<g id="edge3" class="edge">
+<title>dom_3&%2345;&gt;dom_4</title>
+<path fill="none" stroke="%23f8766d" d="M98.93,-47.25C103.05,-48.34 119.84,-52.81 129.21,-55.3"/>
+<polygon fill="%23f8766d" stroke="%23f8766d" points="128.98,-57.05 134.26,-56.64 129.88,-53.67 128.98,-57.05"/>
+</g>
+<!-- dom_3&%2345;&gt;cod_1 -->
+<g id="edge9" class="edge">
+<title>dom_3&%2345;&gt;cod_1</title>
+<path fill="none" stroke="black" stroke-dasharray="1,5" d="M95.56,-45.69C93.52,-39.81 84.26,-15.74 67.2,-7 52.74,0.41 33.33,-9.06 24.11,-14.56"/>
+<polygon fill="black" stroke="black" points="22.8,-13.32 19.53,-17.49 24.68,-16.27 22.8,-13.32"/>
+</g>
+<!-- dom_4&%2345;&gt;dom_1 -->
+<g id="edge4" class="edge">
+<title>dom_4&%2345;&gt;dom_1</title>
+<path fill="none" stroke="%2300bb20" d="M134.69,-57.03C130.55,-57.19 113.12,-57.81 98.8,-58 79.6,-58.26 74.8,-58.26 55.6,-58 44.86,-57.85 32.37,-57.47 25.05,-57.22"/>
+<polygon fill="%2300bb20" stroke="%2300bb20" points="24.77,-55.46 19.71,-57.03 24.65,-58.96 24.77,-55.46"/>
+</g>
+<!-- dom_4&%2345;&gt;cod_2 -->
+<g id="edge10" class="edge">
+<title>dom_4&%2345;&gt;cod_2</title>
+<path fill="none" stroke="black" stroke-dasharray="1,5" d="M134.71,-56.45C130.65,-53.94 113.5,-43.45 98.8,-36 86.81,-29.93 72.34,-23.75 64.37,-20.44"/>
+<polygon fill="black" stroke="black" points="64.71,-18.69 59.42,-18.41 63.38,-21.93 64.71,-18.69"/>
+</g>
+<!-- cod_1&%2345;&gt;cod_2 -->
+<g id="edge5" class="edge">
+<title>cod_1&%2345;&gt;cod_2</title>
+<path fill="none" stroke="%23f8766d" d="M19.22,-16.42C22.4,-10.74 42.68,-9.74 51.88,-13.42"/>
+<polygon fill="%23f8766d" stroke="%23f8766d" points="50.97,-14.93 56.03,-16.51 53.06,-12.12 50.97,-14.93"/>
+</g>
+<!-- cod_2&%2345;&gt;cod_1 -->
+<g id="edge6" class="edge">
+<title>cod_2&%2345;&gt;cod_1</title>
+<path fill="none" stroke="%2300bb20" d="M56.03,-19.49C53.04,-25.22 32.79,-26.27 23.48,-22.64"/>
+<polygon fill="%2300bb20" stroke="%2300bb20" points="24.3,-21.08 19.22,-19.58 22.26,-23.92 24.3,-21.08"/>
+</g>
+</g>
+</svg>
+'/><p>Alternatively, the graph homomorphism can be depicted by drawing only the domain graph and coloring its nodes and edges. By default, setting <code>draw_codom=false</code> sets both <code>node_colors=true</code> and <code>edge_colors=true</code>.</p><pre><code class="language-julia hljs">to_graphviz(f, draw_codom=false)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: hom_graph Pages: 1 -->
+<svg width="130pt" height="27pt"
+ viewBox="0.00 0.00 130.40 26.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 22.6)">
+<title>hom_graph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-22.6 126.4,-22.6 126.4,4 -4,4"/>
+<!-- dom_1 -->
+<g id="node1" class="node">
+<title>dom_1</title>
+<ellipse fill="%23c721dd" stroke="%23c721dd" cx="1.8" cy="-1.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- dom_2 -->
+<g id="node2" class="node">
+<title>dom_2</title>
+<ellipse fill="%23d14a00" stroke="%23d14a00" cx="41.4" cy="-16.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- dom_1&%2345;&gt;dom_2 -->
+<g id="edge1" class="edge">
+<title>dom_1&%2345;&gt;dom_2</title>
+<path fill="none" stroke="%23f8766d" d="M3.73,-2.17C7.89,-3.83 24.97,-10.64 34.28,-14.36"/>
+<polygon fill="%23f8766d" stroke="%23f8766d" points="33.77,-16.04 39.06,-16.27 35.07,-12.79 33.77,-16.04"/>
+</g>
+<!-- dom_3 -->
+<g id="node3" class="node">
+<title>dom_3</title>
+<ellipse fill="%23c721dd" stroke="%23c721dd" cx="81" cy="-16.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- dom_2&%2345;&gt;dom_3 -->
+<g id="edge2" class="edge">
+<title>dom_2&%2345;&gt;dom_3</title>
+<path fill="none" stroke="%2300bb20" d="M43.33,-16.8C47.45,-16.8 64.24,-16.8 73.61,-16.8"/>
+<polygon fill="%2300bb20" stroke="%2300bb20" points="73.66,-18.55 78.66,-16.8 73.66,-15.05 73.66,-18.55"/>
+</g>
+<!-- dom_4 -->
+<g id="node4" class="node">
+<title>dom_4</title>
+<ellipse fill="%23d14a00" stroke="%23d14a00" cx="120.6" cy="-1.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- dom_3&%2345;&gt;dom_4 -->
+<g id="edge3" class="edge">
+<title>dom_3&%2345;&gt;dom_4</title>
+<path fill="none" stroke="%23f8766d" d="M82.93,-16.43C87.09,-14.77 104.17,-7.96 113.48,-4.24"/>
+<polygon fill="%23f8766d" stroke="%23f8766d" points="114.27,-5.81 118.26,-2.33 112.97,-2.56 114.27,-5.81"/>
+</g>
+<!-- dom_4&%2345;&gt;dom_1 -->
+<g id="edge4" class="edge">
+<title>dom_4&%2345;&gt;dom_1</title>
+<path fill="none" stroke="%2300bb20" d="M118.44,-1.8C108.14,-1.8 31.85,-1.8 9.15,-1.8"/>
+<polygon fill="%2300bb20" stroke="%2300bb20" points="9.11,-0.05 4.11,-1.8 9.11,-3.55 9.11,-0.05"/>
+</g>
+</g>
+</svg>
+'/><pre><code class="language-julia hljs">to_graphviz(f, draw_codom=false, edge_colors=false)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: hom_graph Pages: 1 -->
+<svg width="130pt" height="27pt"
+ viewBox="0.00 0.00 130.40 26.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 22.6)">
+<title>hom_graph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-22.6 126.4,-22.6 126.4,4 -4,4"/>
+<!-- dom_1 -->
+<g id="node1" class="node">
+<title>dom_1</title>
+<ellipse fill="%23c721dd" stroke="%23c721dd" cx="1.8" cy="-1.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- dom_2 -->
+<g id="node2" class="node">
+<title>dom_2</title>
+<ellipse fill="%23d14a00" stroke="%23d14a00" cx="41.4" cy="-16.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- dom_1&%2345;&gt;dom_2 -->
+<g id="edge1" class="edge">
+<title>dom_1&%2345;&gt;dom_2</title>
+<path fill="none" stroke="black" d="M3.73,-2.17C7.89,-3.83 24.97,-10.64 34.28,-14.36"/>
+<polygon fill="black" stroke="black" points="33.77,-16.04 39.06,-16.27 35.07,-12.79 33.77,-16.04"/>
+</g>
+<!-- dom_3 -->
+<g id="node3" class="node">
+<title>dom_3</title>
+<ellipse fill="%23c721dd" stroke="%23c721dd" cx="81" cy="-16.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- dom_2&%2345;&gt;dom_3 -->
+<g id="edge2" class="edge">
+<title>dom_2&%2345;&gt;dom_3</title>
+<path fill="none" stroke="black" d="M43.33,-16.8C47.45,-16.8 64.24,-16.8 73.61,-16.8"/>
+<polygon fill="black" stroke="black" points="73.66,-18.55 78.66,-16.8 73.66,-15.05 73.66,-18.55"/>
+</g>
+<!-- dom_4 -->
+<g id="node4" class="node">
+<title>dom_4</title>
+<ellipse fill="%23d14a00" stroke="%23d14a00" cx="120.6" cy="-1.8" rx="1.8" ry="1.8"/>
+</g>
+<!-- dom_3&%2345;&gt;dom_4 -->
+<g id="edge3" class="edge">
+<title>dom_3&%2345;&gt;dom_4</title>
+<path fill="none" stroke="black" d="M82.93,-16.43C87.09,-14.77 104.17,-7.96 113.48,-4.24"/>
+<polygon fill="black" stroke="black" points="114.27,-5.81 118.26,-2.33 112.97,-2.56 114.27,-5.81"/>
+</g>
+<!-- dom_4&%2345;&gt;dom_1 -->
+<g id="edge4" class="edge">
+<title>dom_4&%2345;&gt;dom_1</title>
+<path fill="none" stroke="black" d="M118.44,-1.8C108.14,-1.8 31.85,-1.8 9.15,-1.8"/>
+<polygon fill="black" stroke="black" points="9.11,-0.05 4.11,-1.8 9.11,-3.55 9.11,-0.05"/>
+</g>
+</g>
+</svg>
+'/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../wiring_diagrams/wd_cset/">« Wiring Diagrams as Attributed C-Sets</a><a class="docs-footer-nextpage" href="../graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Thursday 22 September 2022 01:05">Thursday 22 September 2022</span>. Using Julia version 1.8.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
