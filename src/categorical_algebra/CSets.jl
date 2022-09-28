@@ -8,7 +8,7 @@ export ACSetTransformation, CSetTransformation,
   isomorphism, isomorphisms, is_isomorphic,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset,
   generate_json_acset_schema, parse_json_acset_schema,
-  read_json_acset_schema, write_json_acset_schema, acset_schema_json_schema
+  read_json_acset_schema, write_json_acset_schema, acset_schema_json_schema, glue
 
 using Base.Iterators: flatten
 using Base.Meta: quot
@@ -848,6 +848,54 @@ function colimit(::Type{Tuple{ACS,Hom}}, diagram) where
 
   ACSetColimit(diagram, Multicospan(Y, ιs), colimits)
 end
+
+"""
+Glue attributed C-Sets with a *fixed*, predetermined transformation on
+attributes. This looks a lot like a colimit (though technically is not one)
+where we know ahead of time what the type_components of the resulting colimit
+legs should be. This is almost exactly identical to the colimit code for
+TightACSetTransformations, except the colimit legs are assigned the type
+components and the apex is assigned values after applying the type component
+function applied.
+"""
+function glue(diagram::Multispan{ACS,Hom}, tcs) where
+    {S, Ts, ACS <: StructACSet{S,Ts}, Hom <: LooseACSetTransformation}
+  # Colimit of C-set without attributes.
+  colimits = map(colimit, unpack_diagram(diagram))
+  Xs = cocone_objects(diagram)
+  Y = ACS()
+  for (c, colim) in pairs(colimits)
+    add_parts!(Y, c, length(ob(colim)))
+  end
+  for (f, c, d) in zip(hom(S), dom(S), codom(S))
+    Yfs = map((ι, X) -> FinFunction(X, f) ⋅ ι, legs(colimits[d]), Xs)
+    Yf = universal(colimits[c], Multicospan(ob(colimits[d]), Yfs))
+    set_subpart!(Y, f, collect(Yf))
+  end
+  ιs = [LooseACSetTransformation(components(ι), t, dom(ι), codom(ι)) for (t, ι)
+        in zip(tcs, pack_components(map(legs, colimits), Xs, map(X -> Y, Xs)))]
+  # Set data attributes by canonical inclusion from attributes in diagram.
+  for (attr, c, d, dn) in zip(attr(S), adom(S), acodom_nums(S), acodom(S))
+    T = Ts.parameters[d]
+    data = Vector{Union{Some{T},Nothing}}(nothing, nparts(Y, c))
+    for (ι, X) in zip(ιs, Xs)
+      for i in parts(X, c)
+        j = ι[c](i)
+        if isnothing(data[j])
+          data[j] = Some(ι[dn](subpart(X, i, attr)))
+        else
+          val1, val2 = ι[dn](subpart(X, i, attr)), something(data[j])
+          val1 == val2 || error(
+            "ACSet colimit does not exist: $attr attributes $val1 != $val2")
+        end
+      end
+    end
+    set_subpart!(Y, attr, map(something, data))
+  end
+
+  ACSetColimit(diagram, Multicospan(Y, ιs), colimits)
+end
+
 
 function universal(colim::ACSetColimit, cocone::Multicospan)
   components = map(universal, colim.colimits, unpack_diagram(cocone))

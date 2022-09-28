@@ -318,6 +318,27 @@ colim = pushout(α, β)
 @test !is_natural(α′) # Vertex labels don't match.
 @test_throws ErrorException pushout(α′, β)
 
+# "gluing" acsets
+#-----------------
+@present SchX(FreeSchema) begin X::Ob; D::AttrType; f::Attr(X,D) end;
+@acset_type XAttr_(SchX);
+const XAttr = XAttr_{Symbol};
+A = @acset XAttr begin X=2; f=[:a,:b] end;
+B = @acset XAttr begin X=2; f=[:x,:y] end;
+C = @acset XAttr begin X=1; f=[:z] end;
+ab = LooseACSetTransformation(
+  Dict([:X=>[1,2]]),Dict([:D=>FinFunction(Dict(:a=>:x,:b=>:y))]),A,B);
+ac = LooseACSetTransformation(
+  Dict([:X=>[1,1]]),Dict([:D=>FinFunction(Dict(:a=>:z,:b=>:z))]),A,C);
+@test all(is_natural,[ab,ac]);
+f1 = Dict(:D=>FinFunction(Dict(:x=>:q,:y=>:q)));
+f2 = Dict(:D=>FinFunction(Dict(:z=>:q,)));
+f3 = Dict(:D=>FinFunction(Dict(:z=>:b,)));
+res = glue(Span(ab,ac),[f1,f2]) |> apex
+expected = @acset XAttr begin X=1; f=[:q] end;
+@test res == expected
+@test_throws(ErrorException, glue(Span(ab,ac),[f1,f3]))
+
 # Finding C-set morphisms
 #########################
 
