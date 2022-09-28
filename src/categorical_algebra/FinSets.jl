@@ -4,7 +4,7 @@ module FinSets
 export FinSet, FinFunction, FinDomFunction, TabularSet, TabularLimit,
   force, is_indexed, preimage,
   JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin,
-  SubFinSet, SubOpBoolean
+  SubFinSet, SubOpBoolean, is_injective, is_surjective
 
 using StructEquality
 using DataStructures: OrderedDict, IntDisjointSets, union!, find_root!
@@ -389,6 +389,12 @@ Base.show(io::IO, f::IndexedFinFunctionVector) =
 Sets.do_compose(f::Union{FinFunctionVector,IndexedFinFunctionVector},
                 g::Union{FinDomFunctionVector,IndexedFinDomFunctionVector}) =
   FinDomFunctionVector(g.func[f.func], codom(g))
+
+# These could be made to fail early if ever used in performance-critical areas
+is_surjective(f::FinFunction) =
+length(codom(f)) == length(Set(values(collect(f))))
+is_injective(f::FinFunction)  =
+length(dom(f)) == length(Set(values(collect(f))))
 
 # Dict-based functions
 #---------------------

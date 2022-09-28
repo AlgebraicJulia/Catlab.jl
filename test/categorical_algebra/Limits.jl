@@ -6,7 +6,7 @@ such as Set and FinSet.
 module TestLimits
 using Test
 
-using Catlab.Theories, Catlab.CategoricalAlgebra
+using Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
 
 A, B, C = Ob(FreeCategory, :A, :B, :C)
 
@@ -47,5 +47,17 @@ colim = Colimit(DiscreteDiagram([A,B]), Cospan(f,g))
 d = FreeDiagram{FreeCategory.Ob,FreeCategory.Hom}(1, ob=A)
 colim = colimit(d, SpecializeColimit())
 @test ob(colim) == A
+
+# Epi mono.
+X = path_graph(Graph, 2) ⊕ path_graph(Graph, 2)
+Y = path_graph(Graph, 2) ⊕ apex(terminal(Graph))
+f = ACSetTransformation(X, Y; V=[1,2,1,2],E=[1,1])
+Im = path_graph(Graph, 2)
+epi, mono = epi_mono(f)
+@test is_isomorphic(codom(epi), Im)
+@test is_isomorphic(image(f)|>apex, Im)
+@test is_isomorphic(coimage(f)|>apex, Im)
+@test is_surjective(epi)
+@test is_injective(mono)
 
 end

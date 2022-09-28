@@ -106,6 +106,19 @@ g = FinFunction(5:-1:1)
 @test sshow(FinFunction(Dict(:a => 1, :b => 3), FinSet(3))) ==
   "FinFunction($(Dict(:a => 1, :b => 3)), FinSet(3))"
 
+# Injectivity / Surjectivity.
+f = FinFunction([1,3,4])
+g = FinFunction([1,1,2])
+X = FinSet(Set([:x,:y,:z]))
+k = FinFunction(Dict(:a => :x, :b => :y, :c => :z), X)
+
+@test is_injective(f)
+@test !is_surjective(f)
+@test is_surjective(g)
+@test !is_injective(g)
+@test is_injective(k)
+@test is_surjective(k)
+
 # Functions out of finite sets
 ##############################
 

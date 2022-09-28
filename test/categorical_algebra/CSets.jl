@@ -84,6 +84,21 @@ g, h = path_graph(Graph, 4), cycle_graph(Graph, 2)
 @test force(compose(id(g), α)) == α
 @test force(compose(α, id(h))) == α
 
+# Injectivity / surjectivity.
+G = @acset Graph begin V=2; E=1; src=1; tgt=2 end
+H = @acset Graph begin V=2; E=2; src=1; tgt=2 end
+I = @acset Graph begin V=2; E=2; src=[1,2]; tgt=[1,2] end
+f_ = homomorphism(G, H; monic=true)
+g_ = homomorphism(H, G)
+h_ = homomorphism(G, I)
+@test is_injective(f_)
+@test !is_surjective(f_)
+@test !is_injective(g_)
+@test is_surjective(g_)
+@test !is_injective(h_)
+@test !is_surjective(h_)
+
+
 # Limits
 #-------
 
