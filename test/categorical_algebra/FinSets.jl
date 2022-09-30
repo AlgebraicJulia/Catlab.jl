@@ -112,12 +112,12 @@ g = FinFunction([1,1,2])
 X = FinSet(Set([:x,:y,:z]))
 k = FinFunction(Dict(:a => :x, :b => :y, :c => :z), X)
 
-@test is_injective(f)
-@test !is_surjective(f)
-@test is_surjective(g)
-@test !is_injective(g)
-@test is_injective(k)
-@test is_surjective(k)
+@test is_monic(f)
+@test !is_epic(f)
+@test is_epic(g)
+@test !is_monic(g)
+@test is_monic(k)
+@test is_epic(k)
 
 # Functions out of finite sets
 ##############################

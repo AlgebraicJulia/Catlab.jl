@@ -57,7 +57,7 @@ epi, mono = epi_mono(f)
 @test is_isomorphic(codom(epi), Im)
 @test is_isomorphic(image(f)|>apex, Im)
 @test is_isomorphic(coimage(f)|>apex, Im)
-@test is_surjective(epi)
-@test is_injective(mono)
+@test is_epic(epi)
+@test is_monic(mono)
 
 end

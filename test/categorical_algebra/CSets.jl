@@ -91,12 +91,12 @@ I = @acset Graph begin V=2; E=2; src=[1,2]; tgt=[1,2] end
 f_ = homomorphism(G, H; monic=true)
 g_ = homomorphism(H, G)
 h_ = homomorphism(G, I)
-@test is_injective(f_)
-@test !is_surjective(f_)
-@test !is_injective(g_)
-@test is_surjective(g_)
-@test !is_injective(h_)
-@test !is_surjective(h_)
+@test is_monic(f_)
+@test !is_epic(f_)
+@test !is_monic(g_)
+@test is_epic(g_)
+@test !is_monic(h_)
+@test !is_epic(h_)
 
 
 # Limits
