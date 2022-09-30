@@ -12,7 +12,7 @@ using Base.Iterators: repeated
 using MLStyle: @match
 
 using ...GAT, ...Present, ...Graphs, ...CategoricalAlgebra
-using ...Theories: munit
+using ...Theories: munit, HomExpr
 using ...CategoricalAlgebra.FinCats: mapvals, make_map
 using ...CategoricalAlgebra.DataMigrations: ConjQuery, GlueQuery, GlucQuery
 import ...CategoricalAlgebra.FinCats: vertex_name, vertex_named,
@@ -114,6 +114,48 @@ function reparse_arrows(expr)
     Expr(head, args...) => Expr(head, (reparse_arrows(arg) for arg in args)...)
     _ => expr
   end
+end
+
+function insert_missing(tgt_schema::Presentation,body::Expr)
+  stmts = statements(body)
+  gens = Set(generators(tgt_schema))
+  singletons = Set()
+  empties = Set()
+  for stmt in stmts
+    @match stmt begin
+      # x => y
+      Expr(:call, :(=>), lhs, rhs) => @match rhs begin
+        Expr(:macrocall, &(Symbol("@unit")), _) || 
+        Expr(:macrocall, &(Symbol("@terminal")), _) => begin
+          pop!(gens,tgt_schema[lhs])
+          push!(singletons,tgt_schema[lhs])
+        end
+        Expr(:macrocall, &(Symbol("@empty")), _) ||
+        Expr(:macrocall, &(Symbol("@initial")), _) => begin
+          pop!(gens,tgt_schema[lhs])
+          push!(empties,tgt_schema[lhs])
+        end
+        _ => begin
+          pop!(gens,tgt_schema[lhs])
+        end
+      end
+      # (x, x′, ...) => y
+      Expr(:call, :(=>), Expr(:tuple,args...), _) => for lhs in args
+        pop!(gens,tgt_schema[lhs])
+      end
+      _ => nothing
+    end
+  end
+  for gen in gens
+    if gen isa HomExpr && codom(gen) ∈ singletons
+      push!(body.args,:($(nameof(gen)) => @delete))
+    elseif gen isa HomExpr && dom(gen) ∈ empties 
+      push!(body.args,:($(nameof(gen)) => @zero))
+    else
+      push!(body.args,:($(nameof(gen)) => $(nameof(gen))))
+    end
+  end
+  body
 end
 
 statements(expr) = (expr isa Expr && expr.head == :block) ? expr.args : [expr]
@@ -239,7 +281,7 @@ function parse_ob_hom_maps(C::FinCat, body::Expr;
       # x => y
       Expr(:call, :(=>), lhs::Symbol, rhs) => assign(lhs, rhs)
       # (x, x′, ...) => y
-      Expr(:call, :(=>), Expr(:tuple, args...), rhs) =>
+      Expr(:call, :(=>), Expr(:tuple, args...), rhs) => 
         foreach(lhs -> assign(lhs, rhs), args)
       ::LineNumberNode => nothing
       _ => error("Invalid assignment statement $stmt")
@@ -602,12 +644,17 @@ function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
   D, C = FinCat(tgt_schema), FinCat(src_schema)
   if preprocess
     body = reparse_arrows(body)
+    body = insert_missing(tgt_schema,body)
   end
   ob_rhs, hom_rhs = parse_ob_hom_maps(D, body, missing_hom=true)
   F_ob = mapvals(expr -> parse_query(C, expr), ob_rhs)
   F_hom = mapvals(hom_rhs, keys=true) do f, expr
-    parse_query_hom(C, ismissing(expr) ? Expr(:block) : expr,
-                    F_ob[dom(D,f)], F_ob[codom(D,f)])
+    expr = @match expr begin
+      Expr(:macrocall,&(Symbol("@delete")),_) => quote end
+      Expr(:macrocall,&(Symbol("@zero")),_) => quote end
+      e => e
+    end
+    parse_query_hom(C, expr, F_ob[dom(D,f)], F_ob[codom(D,f)])
   end
   make_migration_functor(F_ob, F_hom, D, C)
 end

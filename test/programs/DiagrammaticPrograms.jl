@@ -193,10 +193,10 @@ end
 # Pullback migration
 #-------------------
 
-# Graph with reversed edges.
+# Graph with reversed edges. By-name mappings can be omitted.
 F = @migration SchGraph SchGraph begin
   V => V
-  E => E
+  # E => E
   src => tgt
   tgt => src
 end
@@ -263,10 +263,12 @@ end
 @test F isa DataMigrations.ConjSchemaMigration
 @test isempty(shape(ob_map(F, :V)))
 
-# Syntactic variant of above.
+# Syntactic variant of above. Maps to the unit can be omitted.
 F′ = @migration SchGraph SchSet begin
   V => @unit
   E => X
+  src => @delete
+  # tgt => @delete
 end
 @test F′ == F
 
