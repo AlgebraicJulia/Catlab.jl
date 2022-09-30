@@ -30,7 +30,7 @@ using ..FreeDiagrams, ..Limits, ..Subobjects, ..FinSets, ..FinCats
 import ..Limits: limit, colimit, universal
 import ..Subobjects: Subobject, implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..Sets: SetOb, SetFunction, TypeSet
-import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate, is_injective, is_surjective
+import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate, is_monic, is_epic
 import ..FinCats: FinDomFunctor, components, is_natural
 
 # Sets interop
@@ -383,16 +383,16 @@ function is_natural(α::ACSetTransformation{S}) where {S}
   return true
 end
 
-function is_injective(α::CSetTransformation{S}) where {S}
+function is_monic(α::TightACSetTransformation{S}) where {S}
   for c in components(α)
-    if !is_injective(c) return false end
+    if !is_monic(c) return false end
   end
   return true
 end
 
-function is_surjective(α::CSetTransformation{S}) where {S}
+function is_epic(α::TightACSetTransformation{S}) where {S}
   for c in components(α)
-    if !is_surjective(c) return false end
+    if !is_epic(c) return false end
   end
   return true
 end
