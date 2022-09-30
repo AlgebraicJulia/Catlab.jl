@@ -1,7 +1,7 @@
 module TestDiagrams
 
 using Test
-using Revise
+# using Revise
 
 using Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 

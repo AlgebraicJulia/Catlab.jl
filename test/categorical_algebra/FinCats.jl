@@ -1,7 +1,7 @@
 module TestFinCats
 
 using Test
-using Revise
+# using Revise
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
 
 # Categories on graphs
