@@ -1,7 +1,7 @@
 module TestFinCats
 
 using Test
-# using Revise
+using Revise
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
 
 # Categories on graphs
@@ -227,6 +227,20 @@ G = FinDomFunctor(g)
 
 # FinTransformation search
 ##########################
+"""
+Only one natural transformation between the functor which sends the arrow to
+the left hand side and another which sends it to the right hand side of a
+commutative square. If we add another edge on top yet don't make the composite
+path (from 1->4) commute with the lower route, then the naturality condition
+will forbid returning a result that uses this other arrow.
+
+         α_src
+        1  ⇉  2
+F(arr)  |     | G(arr)
+        v     v
+        3 --> 4
+         α_tgt
+"""
 Squarish = FinCatGraph(@acset(Graph, begin
   V=4; E=5; src=[1,1,1,2,3]; tgt=[2,2,3,4,4]
 end), [[[1,4],[3,5]]])
@@ -235,6 +249,10 @@ F = FinFunctor((V=[1,3], E=[[3]]), Arr, Squarish)
 G = FinFunctor((V=[2,4], E=[[4]]), Arr, Squarish)
 FGs = homomorphisms(F,G)
 @test only(FGs) == FinTransformation([[1], [5]], F, G)
+@test FGs == homomorphisms(F,G, initial=Dict(2=>Path([5],3,4)))
+
+# try to force it to use the non-commuting arrow
+@test isempty(homomorphisms(F,G; initial=Dict(1=>Path([2],1,2))))
 
 # Initial functors
 ##################

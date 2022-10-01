@@ -694,7 +694,30 @@ struct BacktrackingState
 end
 
 """
-Search for FinTransformations between FinFunctors
+Search for FinTransformations between FinFunctors F,G: C->D. This requires
+sending each object A ∈ Ob(C) to a path of morphism generators in the codomain
+category, αₐ, such that the naturality square below commutes for all morphisms
+f ∈ Hom(A,B):
+          αₐ
+    F(A) --> G(A)
+ F(f)|        | G(f)
+     v        v
+    F(β) --> G(β)
+          αᵦ
+
+We first compute Hom(A,B) for all pairs of objects in D. This could potentially
+be infinite, so we restrict the max # of cycles possible in any morphism in this
+set with keyword `n_max`. This Hom-Set is quotiented by the equations of D,
+using a naive algorithm by default.
+
+We simply assign elements to objects of C in order (e.g. look in Hom(F(A),G(A))
+for each A). Naively we only check the naturality condition at the very end,
+though this ought to be done whenever a new assignment is made (a set of
+morphisms in C whose naturality has yet to be checked should be maintained).
+
+Therefore this code currently loops through all roughly |Path(D)|^Ob(C)
+possibilities and ought to be fixed up before applied to any problem of
+nontrivial scale.
 """
 function homomorphisms(X::FinFunctor, Y::FinFunctor; kw...)
   results = FinTransformation[]
@@ -707,8 +730,9 @@ function homomorphisms(X::FinFunctor, Y::FinFunctor; kw...)
   results
 end
 
-function backtracking_search(f, X::FinFunctor, Y::FinFunctor; n_max=2)
-  D, CD = dom(X), codom(X) # assume same for Y
+function backtracking_search(f, X::FinFunctor, Y::FinFunctor;
+                             n_max=2, initial::AbstractDict=Dict())
+  D, CD = dom(X), codom(X) # assume Y is also D->CD
   Y_pths = Dict(map(collect(enumerate_paths_cyclic(CD.graph; n_max=n_max))) do (k,v)
     v_ = [Path(x, k[1], k[2]) for x in v]
     k => unique(h->normalize(CD, h), v_)
@@ -717,14 +741,22 @@ function backtracking_search(f, X::FinFunctor, Y::FinFunctor; n_max=2)
   # Initialize state variables for search.
   assignment = fill(nothing, length(ob_generators(D)))
   assignment_depth = zeros(Int, length(ob_generators(D)))
-  inv_assignment = nothing # unless monic=true ... deepcopy(assignment)
+  inv_assignment = nothing # currently not used
   state = BacktrackingState(assignment, assignment_depth, inv_assignment,
                             X, Y, D, CD, Y_pths)
 
   # Start the main recursion for backtracking search.
+  for (k,v) in collect(initial)
+    assign_elem!(state, 0, k, v) || return false
+  end
+
   backtracking_search(f, state, 1)
 end
 
+"""
+To reduce the branching factor, the element to branch on ought be the one with
+the smallest hom-set: Hom(F(x),G(x)). TODO.
+"""
 function backtracking_search(f, state::BacktrackingState, depth::Int) where {S}
   # Choose the next unassigned element.
   x = findfirst(isnothing, state.assignment)
@@ -748,12 +780,6 @@ end
 """ Check whether element x can be assigned to y in current assignment.
 """
 function can_assign_elem(state::BacktrackingState, depth, x, y)
-  # Although this method is nonmutating overall, we must temporarily mutate the
-  # backtracking state, for several reasons. First, an assignment can be a
-  # consistent at each individual subpart but not consistent for all subparts
-  # simultaneously (consider trying to assign a self-loop to an edge with
-  # distinct vertices). Moreover, in schemas with non-trivial endomorphisms, we
-  # must keep track of which elements we have visited to avoid looping forever.
   ok = assign_elem!(state, depth, x, y)
   unassign_elem!(state, depth, x)
   return ok
@@ -786,7 +812,6 @@ end
 """ Unassign the element (c,x) in the current assignment.
 """
 function unassign_elem!(state::BacktrackingState, depth, x)
-
   state.assignment[x] == 0 && return
   assign_depth = state.assignment_depth[x]
   @assert assign_depth <= depth
