@@ -334,10 +334,26 @@ ac = LooseACSetTransformation(
 f1 = Dict(:D=>FinFunction(Dict(:x=>:q,:y=>:q)));
 f2 = Dict(:D=>FinFunction(Dict(:z=>:q,)));
 f3 = Dict(:D=>FinFunction(Dict(:z=>:b,)));
-res = glue(Span(ab,ac),[f1,f2]) |> apex
+res = glue(Span(ab,ac),[f1,f2])
+@test all(is_natural, legs(res))
 expected = @acset XAttr begin X=1; f=[:q] end;
-@test res == expected
+@test res |> apex == expected
 @test_throws(ErrorException, glue(Span(ab,ac),[f1,f3]))
+
+# Limit analogue
+A = @acset XAttr begin X=2; f=[:a,:b] end;
+B = @acset XAttr begin X=2; f=[:q,:z] end;
+C = @acset XAttr begin X=2; f=[:x,:y] end;
+ac = LooseACSetTransformation(
+  Dict([:X=>[1,2]]),Dict([:D=>FinFunction(Dict(:a=>:x,:b=>:y))]),A,C);
+bc = LooseACSetTransformation(
+  Dict([:X=>[1,1]]),Dict([:D=>FinFunction(Dict(:q=>:x,:z=>:x))]),B,C);
+f1 = Dict(:D=>FinFunction(Dict(:a_z=>:a,:a_q=>:a)));
+f2 = Dict(:D=>FinFunction(Dict(:a_z=>:z,:a_q=>:q)));
+@test all(is_natural,[ac,bc])
+res = coglue(Cospan(ac,bc),[f1,f2]);
+@test all(is_natural,legs(res))
+@test apex(res)[:f] == [:a_q,:a_z]
 
 # Finding C-set morphisms
 #########################

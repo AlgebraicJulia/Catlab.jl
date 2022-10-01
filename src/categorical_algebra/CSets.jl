@@ -8,7 +8,7 @@ export ACSetTransformation, CSetTransformation,
   isomorphism, isomorphisms, is_isomorphic,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset,
   generate_json_acset_schema, parse_json_acset_schema,
-  read_json_acset_schema, write_json_acset_schema, acset_schema_json_schema, glue
+  read_json_acset_schema, write_json_acset_schema, acset_schema_json_schema, glue, coglue
 
 using Base.Iterators: flatten
 using Base.Meta: quot
@@ -791,6 +791,34 @@ function limit(::Type{Tuple{ACS,Hom}}, diagram) where
     set_subpart!(Y, f, collect(Yf))
   end
   result
+end
+
+
+"""
+Take a pullback of attributed C-Sets with a *fixed*, predetermined
+transformation on attributes. This looks a lot like a limit (though technically
+is not one) where we know ahead of time what the type_components of the
+resulting limit legs should be. To assign attributes on the apex, we take the
+intersection of the preimages of the provided type components and fail if it
+does not produce a unique value.
+"""
+function coglue(diagram::Multicospan{ACS,Hom}, tcs) where
+    {S, Ts, ACS <: StructACSet{S,Ts}, Hom <: LooseACSetTransformation}
+  limits = map(limit, unpack_diagram(diagram, all=false))
+  Xs = cone_objects(diagram)
+  Y = ACS()
+  result = limit!(Y, diagram, Xs, limits)
+  for (f, c, d) in zip(attr(S), adom(S), acodom(S))
+    c_legs = collect.(legs(limits[c]))
+    Yf = map(zip([X[l, f] for (X, l) in zip(Xs, c_legs)]...)) do vals
+      only(intersect([preimage(tc[d], v) for (tc, v) in zip(tcs, vals)]...))
+    end
+    set_subpart!(Y, f, collect(Yf))
+  end
+  fixed_cone = Multispan(map(zip(tcs,result.cone)) do (tc, l)
+    LooseACSetTransformation(components(l), tc, dom(l), codom(l))
+  end)
+  ACSetLimit(result.diagram, fixed_cone, result.limits)
 end
 
 function limit!(Y::StructACSet{S}, diagram, Xs, limits) where S
