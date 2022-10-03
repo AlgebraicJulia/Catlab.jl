@@ -1,7 +1,6 @@
 module TestFinCats
 
 using Test
-using Revise
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
 
 # Categories on graphs
@@ -21,6 +20,9 @@ C = FinCat(g)
 
 # all gens to id (src or tgt) or 3*3*3 possibilities for V map = [1,2]
 @test length(homomorphisms(C,C)) == 29
+@test length(homomorphisms(C,C; init_obs=[1,2])) == 27
+@test length(homomorphisms(C,C; init_homs=[[1],[1],nothing])) == 3
+@test length(homomorphisms(C,C; hom_lens=[0, nothing, nothing])) == 2
 
 C_op = op(C)
 @test C_op isa FinCat
@@ -59,9 +61,8 @@ F = FinFunctor((V=[1,4], E=[[1,3], [2,4]]), C, D)
 @test Ob(F) == FinFunction([1,4], FinSet(4))
 @test startswith(sprint(show, F), "FinFunctor($([1,4]),")
 
-homs = homomorphisms(C,D; monic=true);
+homs = homomorphisms(C,D; monic_obs=true);
 @test F ∈ homs
-@test length(homs) == 2
 
 @test ob_map(F, 2) == 4
 @test hom_map(F, 1) == Path(h, [1,3])
@@ -149,12 +150,14 @@ end
 @test startswith(sprint(show, Δ¹), "FinCat(")
 
 SG = FinCat(SchGraph)
-@test length(homomorphisms(Δ¹,Δ¹; n_max=0, monic=true))==2
+# Because of the equations, we must map V to V and E to E. There are four ways
+# to map the δ's onto each other.
+@test length(homomorphisms(Δ¹,Δ¹; n_max=0, monic_obs=true))==4
 
 
-# not tested yet, but have possible swap for obs and homs
 SG = FinCat(SchGraph)
-@test length(homomorphisms(SG,SG; n_max=2, monic=true))==2
+# four ways to map src+tgt onto themselves
+@test length(homomorphisms(SG,SG; n_max=2, monic_obs=true))==4
 
 
 # Graph as set-valued functor on a free category.

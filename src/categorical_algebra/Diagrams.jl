@@ -10,10 +10,12 @@ import ...Theories: dom, codom, id, compose, ⋅, ∘, munit
 using ...Theories: ThCategory, composeH
 import ..Categories: ob_map, hom_map, op, co
 using ..FinCats, ..FreeDiagrams
-using ..FinCats: mapvals
+using ..FinCats: mapvals, FinDomFunctorMap, FinTransformationMap
 import ..FinCats: force, collect_ob, collect_hom
 import ..Limits: limit, colimit, universal
+using ..CSets: curry, uncurry, ACSetTransformation
 import ..CSets: homomorphisms, is_natural
+using ...CSetDataStructures: AnonACSetType
 # Data types
 ############
 
@@ -230,28 +232,53 @@ function compose(f::DiagramHom{T}, F::Functor; kw...) where T
                 compose(f.precomposed_diagram, F; kw...))
 end
 
+const ACSetCat{S} = TypeCat{S, ACSetTransformation}
+
+"""
+Search for natural transformations between Functors F,G: C->(D-Set) by
+translating the problem into natural transformations in CxD->Set.
+"""
+function homomorphisms(x::FinDomFunctorMap{D,ACSetCat{S}},
+                       y::FinDomFunctorMap{D,ACSetCat{S}}; kwargs...) where {D,S}
+    cx, cy = uncurry.([x,y])
+    dt = AnonACSetType(presentation(dom(cx)))
+    [curry(FinTransformationMap(h), x) for h in homomorphisms(dt(cx), dt(cy); kwargs...)]
+end
+
+function homomorphism(x::FinDomFunctorMap{D,ACSetCat{S}},
+                      y::FinDomFunctorMap{D,ACSetCat{S}}; kwargs...) where {D,S}
+  cx, cy = uncurry.([x,y])
+  dt = AnonACSetType(presentation(dom(cx)))
+  h = homomorphism(dt(cx), dt(cy); kwargs...)
+  return isnothing(h) ? nothing : curry(FinTransformationMap(h), x)
+end
+
+
 """
 Diagram morphisms by first finding shape maps and then, for each,
 finding a diagram map.
 """
-function homomorphisms(X::Diagram{T}, Y::Diagram{T}; n_max::Int=3, monic=false,
-                       iso=false,init_obs=nothing,init_homs=nothing,
-                       hom_lens=nothing) where T
-  fs = homomorphisms(shape(X),shape(Y))
+function homomorphisms(X::Diagram{T}, Y::Diagram{T}; n_max::Int=3,
+                       monic_obs=false, epic_obs=false,
+                       init_obs=nothing,init_homs=nothing,
+                       hom_lens=nothing, diag_kws=(;)) where T
+  fs = homomorphisms(shape(X),shape(Y); init_obs=init_obs, monic_obs=monic_obs,
+                     epic_obs=epic_obs, init_homs=init_homs, n_max=n_max,
+                     hom_lens=hom_lens)
 
   res = []
-  for f in fs
-    codom(f) == shape(Y) || error("SHOULD COMPOSE")
+  for shapemap in fs
     if T == id
-      hargs = [diagram(X), f ⋅ diagram(Y)]
+      hargs = [diagram(X), shapemap ⋅ diagram(Y)]
     elseif T == op
-      hargs = [f ⋅ diagram(Y),diagram(X)]
+      hargs = [shapemap ⋅ diagram(Y), diagram(X)]
     else
       error("$T not supported")
     end
-    nts =  homomorphisms(hargs...)
-    for nt in nts
-      push!(res, DiagramHom{T}(f, nt.components, X, Y))
+    tt = typeof(hargs[1]).parameters[2]
+    natural_transformations = homomorphisms(hargs...; diag_kws...)
+    for nt in natural_transformations
+      push!(res, DiagramHom{T}(shapemap, nt.components, X, Y))
     end
   end
   return res

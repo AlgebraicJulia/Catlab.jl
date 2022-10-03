@@ -1,9 +1,8 @@
 module TestDiagrams
 
 using Test
-# using Revise
 
-using Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
+using Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra, Catlab.Present
 
 const SchSGraph = SchSymmetricGraph
 
@@ -67,9 +66,27 @@ d = dom(f)
 
 # Morphism search
 ##################
-Squarish = FinCatGraph(@acset(Graph, begin
-  V=4;E=4;src=[1,1,2,3]; tgt=[2,3,4,4]
-end), [[[1,3],[2,4]]])
+
+# Diagrams in a FinCat
+
+"""
+Shapes:       •         •
+              ↓    ==>  ↓
+              •         •
+
+living        1 --> 2
+over          |     |
+square:       v     v
+              3 --> 4
+A diagram morphism in the forward direction is equivalent to a
+natural transformation. When the shape map is identity, this is
+the calculation of FinTransformations into Squarish, as found in the FinCats test suite. However, there are also shape maps which
+send  both objects to the first or the second object. Only in the
+second case does there exist a diagram morphism.
+
+"""
+Sq = @acset(Graph, begin V=4;E=4;src=[1,1,2,3]; tgt=[2,3,4,4] end)
+Squarish = FinCatGraph(Sq, [[[1,3],[2,4]]])
 
 Arr = FinCat(path_graph(Graph, 2))
 XF = FinFunctor((V=[1,3], E=[[2]]), Arr, Squarish)
@@ -77,7 +94,61 @@ XG = FinFunctor((V=[2,4], E=[[3]]), Arr, Squarish)
 @test all(is_functorial,[XF,XG])
 F, G = Diagram.([XF,XG])
 hs = homomorphisms(F,G)
+@test length(hs) == 2
+@test length(homomorphisms(F,G; monic_obs=true))==1
 
+# There are no morphisms from RHS to LHS, so there are no op functors
+@test isempty(homomorphisms((Diagram{op}.([XF,XG]))...))
+
+# But if we look for op morphisms from the RHS *to* the LHS, we get 2
+# one of which has id shape map and the other which send both objs to 1.
+hs = homomorphisms((Diagram{op}.([XG,XF]))...)
+@test length(hs) == 2
+@test length(homomorphisms((Diagram{op}.([XG,XF]))...; monic_obs=true))==1
+
+# Diagrams in C-Set
+
+# dots shapes are just C-Sets
+@present SchDot(FreeSchema) begin X::Ob end
+toDot(x::StructACSet) = FinDomFunctor(Dict(:X=>x), nothing, FinCat(SchDot), ACSetCat{typeof(x)}())
+ar = path_graph(Graph, 2)
+g1 = toDot(ar)
+g2 = toDot(Sq)
+@test length(homomorphisms(g1,g2)) == length(homomorphisms(ar,Sq))
+
+# more complicated shapes
+
+const Grph = ACSetCat{Graph}
+@present SchArr(FreeSchema) begin (A,B)::Ob; f::Hom(A,B) end
+Arr = FinCat(SchArr)
+A,B = SchArr.generators[:Ob]
+
+toArr(f::ACSetTransformation) = FinDomFunctor(
+  Dict(:A=>dom(f), :B=>codom(f)),
+  Dict(:f=>f),
+  Arr, ACSetCat{typeof(dom(f))}())
+f1 = toArr(homomorphism(Graph(1), Graph(2)))
+f2 = toArr(homomorphism(Graph(2), Graph(1)))
+
+res = homomorphisms(f1,f2)
+@test length(res) == 2
+
+trm = terminal(Graph) |> apex
+f1 = toArr(homomorphism(Graph(2), ar; monic=true))
+f2 = toArr(homomorphism(Graph(2), trm ⊕ trm; monic=true))
+res = homomorphisms(f1,f2)
+@test length(res) == 2
+
+twoC, fourC =  [cycle_graph(Graph, i) for i in [2,4]]
+otherG = @acset Graph begin V=2; E=3; src=[1,1,2]; tgt=[1,2,1] end
+xF = FinDomFunctor(Dict(:A=>ar,:B=>fourC), Dict(:f=>homomorphism(ar,fourC)),
+                   Arr, Grph())
+xG = FinDomFunctor(Dict(:A=>twoC,:B=>otherG),
+                   Dict(:f=>homomorphism(twoC,otherG;monic=true)),
+                   Arr, Grph())
+@test all(is_functorial, [xF,xG])
+F,G=Diagram.([xF,xG]);
+res = homomorphisms(F,G; diag_kws=(monic=Symbol.(["(A, V)"]),));
 
 
 # Monads of diagrams
