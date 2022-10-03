@@ -100,6 +100,7 @@ categories, checking equality of morphisms may involve nontrivial reasoning.
 is_hom_equal(C::Cat, f, g) = is_hom_equal(f, g)
 is_hom_equal(f, g) = f == g
 
+
 # Instances
 #----------
 

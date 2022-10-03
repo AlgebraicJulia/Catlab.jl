@@ -2,7 +2,7 @@
 """
 module GraphAlgorithms
 export connected_components, connected_component_projection, connected_component_projection_bfs,
-  topological_sort, transitive_reduction!, enumerate_paths
+  topological_sort, transitive_reduction!, enumerate_paths, enumerate_paths_cyclic
 
 using DataStructures: Stack, DefaultDict
 
@@ -147,4 +147,43 @@ function enumerate_paths(G::Graph;
   return res
 end
 
+"""
+Idea: have a DAG <: Graph type that stores the graph as well as
+an ordering. That way dispatch could use the correct function.
+
+Because cyclic graphs have an infinite number of paths, a cap on the the number of loops is required
+"""
+const Pth = Vector{Int}
+function enumerate_paths_cyclic(G::Graph; n_max=2)
+  ijs = collect(Iterators.product(vertices(G),vertices(G)))
+  es = Dict([(i,j)=>i==j ? [Int[]] : Pth[] for (i,j) in ijs])
+  n,done = 0,false
+
+  """False iff any vertex is visited more than n_max times"""
+  function count_cycles(p::Vector{Int})
+    cnt = zeros(Int, nv(G))
+    for e in p
+      cnt[src(G,e)] += 1
+      if cnt[src(G,e)] > n_max return false end
+    end
+    return true
+  end
+
+  while !done
+    done = true
+    n += 1 # we now add paths of length n
+    new_unseen = Dict([ij=>Int[] for ij in ijs])
+    for e in edges(G) # try to postcompose this edge w/ len n-1 paths
+      s, t = src(G,e), tgt(G,e)
+      for src_v in vertices(G)
+        for u in filter(u->length(u)==n-1 && count_cycles(u),es[(src_v, s)])
+          push!(es[(src_v, t)], [u; [e]])
+          done = false
+        end
+      end
+    end
+  end
+  return es
 end
+
+end # module

@@ -8,11 +8,12 @@ export ACSetTransformation, CSetTransformation,
   isomorphism, isomorphisms, is_isomorphic,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset,
   generate_json_acset_schema, parse_json_acset_schema,
-  read_json_acset_schema, write_json_acset_schema, acset_schema_json_schema
+  read_json_acset_schema, write_json_acset_schema, acset_schema_json_schema,
+  uncurry, curry, ACSetCat
 
 using Base.Iterators: flatten
 using Base.Meta: quot
-using DataStructures: OrderedDict
+using DataStructures: OrderedDict, DefaultDict
 using StructEquality
 import JSON
 using Reexport
@@ -30,8 +31,11 @@ using ..FreeDiagrams, ..Limits, ..Subobjects, ..FinSets, ..FinCats
 import ..Limits: limit, colimit, universal
 import ..Subobjects: Subobject, implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..Sets: SetOb, SetFunction, TypeSet
+import ..FinCats: FinDomFunctor, components, is_natural, FinCatGraph, FinCatPresentation, homomorphisms
+using ...Graphs
+using ..FinCats: normalize, Path
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate, is_monic, is_epic
-import ..FinCats: FinDomFunctor, components, is_natural
+import ..FinCats: FinDomFunctor, components, is_natural, FinTransformationMap, FinDomFunctorMap
 
 # Sets interop
 ##############
@@ -134,17 +138,24 @@ end
 const ACSetDomCat = FinCats.FinCatPresentation{
   Symbol, Union{FreeSchema.Ob,FreeSchema.AttrType},
   Union{FreeSchema.Hom,FreeSchema.Attr,FreeSchema.AttrType}}
+const FinSetCat = TypeCat{SetOb,FinDomFunction{Int}}
 
-""" Wrapper type to interpret attributed C-set as a functor.
-"""
 @struct_hash_equal struct ACSetFunctor{ACS<:ACSet} <:
-    Functor{ACSetDomCat,TypeCat{SetOb,FinDomFunction{Int}}}
+    Functor{ACSetDomCat,FinSetCat}
   acset::ACS
+  eqs::Vector{Pair}
 end
-FinDomFunctor(X::ACSet) = ACSetFunctor(X)
+FinDomFunctor(X::ACSet; eqs=Pair[]) = ACSetFunctor(X, eqs)
 
-dom(F::ACSetFunctor) = FinCat(Presentation(F.acset))
-codom(F::ACSetFunctor) = TypeCat{SetOb,FinDomFunction{Int}}()
+function dom(F::ACSetFunctor)
+  p = Presentation(F.acset)
+  for (l,r) in F.eqs
+    add_equation!(p, l, r)
+  end
+  FinCat(p)
+end
+
+codom(F::ACSetFunctor) = FinSetCat()
 
 Categories.do_ob_map(F::ACSetFunctor, x) = SetOb(F.acset, functor_key(x))
 Categories.do_hom_map(F::ACSetFunctor, f) = SetFunction(F.acset, functor_key(f))
@@ -165,13 +176,19 @@ function (::Type{ACS})(F::FinDomFunctor) where ACS <: ACSet
   return X
 end
 
+function (C::Type{ACS})(F::FinTransformationMap) where ACS <: ACSet
+  Cd, CCd = C(dom(F)), C(codom(F))
+  return CSetTransformation(Cd, CCd; components(F)...)
+end
+
+
 """ Copy parts from a set-valued `FinDomFunctor` to an `ACSet`.
 """
 function ACSetInterface.copy_parts!(X::ACSet, F::FinDomFunctor)
   pres = presentation(dom(F))
   added = Dict(Iterators.map(generators(pres, :Ob)) do c
     c = nameof(c)
-    c => add_parts!(X, c, length(ob_map(F, c)::FinSet{Int}))
+    c => add_parts!(X, c, length(ob_map(F, Symbol(c))::FinSet{Int}))
   end)
   for f in generators(pres, :Hom)
     dom_parts, codom_parts = added[nameof(dom(f))], added[nameof(codom(f))]
@@ -233,6 +250,11 @@ end
 
 components(α::ACSetTransformation) = α.components
 force(α::ACSetTransformation) = map_components(force, α)
+
+FinTransformationMap(f::ACSetTransformation; eqs=Pair[]) =
+  FinTransformationMap(components(f),
+                    FinDomFunctor(dom(f); eqs=eqs),
+                    FinDomFunctor(codom(f); eqs=eqs))
 
 """ Transformation between C-sets.
 
@@ -738,6 +760,94 @@ partial_assignments(x::AbstractVector) =
 in_hom(S, c) = [dom(S,f) => f for f in hom(S) if codom(S,f) == c]
 out_hom(S, c) = [f => codom(S,f) for f in hom(S) if dom(S,f) == c]
 
+
+
+"""
+Convert a FinFunctor between graph FinCats and add labels from
+FinCatPresentations
+"""
+function grph_fun_to_pres_fun(F, X,Y)
+  hs = map(F.hom_map) do p
+    if isempty(p.edges)
+      return id(ob_generators(Y)[p.src])
+    else
+      compose(hom_generators(Y)[p.edges])
+    end
+  end
+  FinFunctor(Dict(zip(ob_generators(X), ob_generators(Y)[F.ob_map])),
+             Dict(zip(hom_generators(X),hs)), X, Y)
+end
+
+# Convert presentation inputs into graph inputs, opposite for outputs
+homomorphisms(X::FinCatPresentation, Y::FinCatPresentation; kwargs...) =
+  [grph_fun_to_pres_fun(F,X,Y) for F in
+   homomorphisms(FinCatGraph(X),FinCatGraph(Y); kwargs...)]
+
+"""
+Search for FinFunctors between FinCats. I.e. map objects onto objects and
+generating morphisms onto paths. Note that there can be infinite paths in a
+FinCat with a cyclic underlying graph (although equations make make it finite).
+`nmax` restricts the paths found to those which pass over the same object at
+most `nmax` times.
+
+Because morphism equality modulo codomain equations is not implemented, there
+may be "duplicate" morphisms in the results. To be safe, we error if the
+`monic`/`iso` constraints are used when the codomain has equations.
+ob and hom maps can be initialized. Hom maps can be restricted to be a
+particular length (e.g. 1 means a generator must map onto another generator, not
+a composite).
+"""
+function homomorphisms(gX::FinCatGraph, gY::FinCatGraph; n_max::Int=3,
+                       monic_obs=false, epic_obs=false, init_obs=nothing,
+                       init_homs=nothing, hom_lens=nothing)
+
+  y_pths = map(collect(enumerate_paths_cyclic(gY.graph; n_max=n_max))) do (k,v)
+    k => unique(h->normalize(gY, Path(h, k[1], k[2])), v)
+  end |> Dict
+
+  yGrph = Graph(nv(gY.graph))
+
+  for (i,j) in Iterators.product(vertices(gY.graph), vertices(gY.graph))
+    if !isempty(y_pths[(i, j)])
+      add_edge!(yGrph, i, j)
+    end
+  end
+  no,nh = [length(f(gX)) for f in [ob_generators,hom_generators]]
+  init_obs = isnothing(init_obs) ? fill(nothing,no) : init_obs
+  init_homs = isnothing(init_homs) ? fill(nothing,nh) : init_homs
+  hom_lens = isnothing(hom_lens) ? fill(nothing,nh) : hom_lens
+  res = []
+  kwargs = Dict{Symbol,Any}(:initial=>(V=Dict([
+    i=>v for (i, v) in enumerate(init_obs) if !isnothing(v)]),))
+  if monic_obs kwargs[:monic] = [:V] end
+  if epic_obs error("depends on is_surjective PR") end
+  for h in homomorphisms(gX.graph, yGrph; kwargs...)
+    om = collect(h[:V])
+    pths = map(zip(collect(h[:E]), init_homs, hom_lens)) do (e, ih, hl)
+      p = y_pths[(src(yGrph,e),tgt(yGrph,e))]
+      # Apply init_homs and hom_lens constraints to possible paths
+      if !isnothing(hl)
+        p = filter(z->length(z)==hl, p)
+      end
+      if !isnothing(ih)
+        p = filter(x->is_hom_equal(gY,x,ih), p)
+      end
+      return p
+    end
+    # This should be done in a backtracking style
+    for combo in Iterators.product(pths...) # pick a path for each edge in X
+      hm = map(enumerate(combo)) do (ei,z)
+        isempty(z) ? id(gY, om[src(gX.graph,ei)]) : z
+      end
+      F = FinFunctor((V=om, E=hm), gX, gY)
+      if is_functorial(F; check_equations=true)
+        push!(res, F)
+      end
+    end
+  end
+  return res
+end
+
 # Limits and colimits
 #####################
 
@@ -1091,6 +1201,123 @@ end
     Expr(:tuple, map(in_hom(S, c)) do (c′,f)
       :(Tuple{Symbol,Int}[ ($(quot(c′)),x′) for x′ in incident(X,x,$(quot(f))) ])
     end...))
+end
+
+
+# Tensor-hom adjunction (currying of diagrams in C-Set)
+#######################################################
+const ACSetCat{S} = TypeCat{S, ACSetTransformation}
+
+"""    uncurry(d::FinFunctor{D, ACSetCat{S}}) where {D,S}
+Undoing currying on objects of a functor category. C->D->Set ==> (CxD)->Set
+"""
+function uncurry(d::FinFunctor{D, ACSetCat{S}}) where {D,S}
+  shapelim = product(FinCatPresentation[dom(d), FinCat(Presentation(S))])
+  shape_ind, part_ind = legs(shapelim)
+  asl = apex(shapelim)
+  omap = Dict(map(ob_generators(asl)) do o
+    x = ob_map(shape_ind, o)
+    y = ob_map(part_ind, o)
+    o => FinSet(ob_map(d, x), Symbol(y))
+  end)
+
+  hmap = Dict(map(hom_generators(asl)) do o
+    x = hom_map(shape_ind, o)
+    y = hom_map(part_ind, o)
+    if first(typeof(x).parameters) == :id
+      o => FinFunction(ob_map(d, only(x.args)), Symbol(y))
+    elseif first(typeof(y).parameters) == :id
+      o => hom_map(d, x)[Symbol(only(y.args))]
+    else
+      error("x $x $(typeof(x)) y $y $(typeof(y))")
+    end
+  end)
+
+  FinDomFunctor(omap,hmap,asl,FinSetCat())
+end
+
+"""
+Currying a FinFunctor into Set: (CxD)->Set ==> C->D->Set
+
+An example FinDomFunctor (in the original curried format) is required.
+"""
+function curry(d::FinDomFunctor{D1, FinSetCat},
+                 old_d::FinDomFunctor{D2, ACSetCat{S}}) where {D1,D2,S}
+  # Recover schema for d as a product, not just the apex
+  shapelim = product([dom(old_d), FinCat(Presentation(S))])
+  asl = apex(shapelim)
+  shape_ind, part_ind = legs(shapelim)
+
+  cset_type = typeof(first(old_d.ob_map)[2])
+  omap = Dict(map(ob_generators(dom(old_d))) do o
+    x = Base.invokelatest(cset_type)
+    for o_ in ob_generators(asl)
+      if ob_map(shape_ind, o_) == o
+        add_parts!(x, Symbol(ob_map(part_ind, o_)), length(ob_map(d, o_)))
+      end
+    end
+    for h in hom_generators(asl)
+      h_ = hom_map(shape_ind, h)
+      if h_ == id(o)
+        set_subpart!(x, Symbol(hom_map(part_ind, h)), collect(hom_map(d, h)))
+      end
+    end
+    o => x
+  end)
+  hmap = Dict(map(hom_generators(dom(old_d))) do h
+    comps = Dict()
+    for h_ in hom_generators(asl)
+      if hom_map(shape_ind, h_) == h
+        comps[Symbol(only(hom_map(part_ind, h_).args))] = hom_map(d, h_)
+      end
+    end
+    dom_, codom_ = [omap[get(h)] for get in [dom, codom]]
+    h => ACSetTransformation(dom_,codom_; comps...)
+  end)
+  FinDomFunctor(omap,hmap,dom(old_d),ACSetCat{S}())
+end
+
+"""    uncurry(d::FinFunctor{D, ACSetCat{S}}) where {D,S}
+Uncurrying on morphisms of a functor category with an ACSetCat as codom
+"""
+function uncurry(ϕ::FinTransformationMap{D, ACSetCat{S}}) where {D,S}
+  cur_d, cur_cd = uncurry.([dom(ϕ), codom(ϕ)])
+  shapelim = product([dom(dom(ϕ)), FinCat(Presentation(S))])
+  shape_ind, part_ind = legs(shapelim)
+  comps = Dict(map(ob_generators(apex(shapelim))) do o
+    oshape, opart = Symbol(shape_ind(o)), Symbol(part_ind(o))
+    Symbol(o) => components(ϕ)[oshape][opart]
+  end)
+  FinTransformationMap(comps,cur_d,cur_cd)
+end
+
+"""    curry(d::FinTransformationMap, old_d::FinTransformationMap{D, ACSetCat{S}}) where {D, S}
+Currying on morphisms of a functor category with an ACSetCat as codom
+An example FinDomFunctor (in the original curried format) is required.
+"""
+function curry(d::FinTransformationMap,
+                 old_d::FinDomFunctor{D, ACSetCat{S}}
+                 ) where {D, S}
+  # Recover schema for d as a product, not just the apex
+  shapelim = product([dom(old_d), FinCat(Presentation(S))])
+  shape_ind, part_ind = legs(shapelim)
+
+  αcomps = Dict(o => DefaultDict{Symbol,Vector{Int}}(()->Int[])
+                for o in Symbol.(ob_generators(dom(old_d))))
+  for o in (ob_generators(apex(shapelim)))
+    dic = αcomps[Symbol(ob_map(shape_ind, o))]
+    dic[Symbol(ob_map(part_ind, o))] = collect(components(d)[Symbol(o)])
+  end
+
+  uc_d, uc_cd = [curry(get(d), old_d) for get in [dom, codom]]
+
+  α = Dict(map(collect(αcomps)) do (o, comps)
+    o => ACSetTransformation(ob_map(uc_d,   o),
+                             ob_map(uc_cd, o); comps...)
+  end)
+
+
+  FinTransformationMap(α, uc_d, uc_cd)
 end
 
 # ACSet serialization

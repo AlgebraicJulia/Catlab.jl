@@ -1,6 +1,6 @@
 module TestFinCats
-using Test
 
+using Test
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
 
 # Categories on graphs
@@ -17,6 +17,12 @@ C = FinCat(g)
 @test ob_generators(C) == 1:2
 @test hom_generators(C) == 1:3
 @test startswith(sprint(show, C), "FinCat($(Graph)")
+
+# all gens to id (src or tgt) or 3*3*3 possibilities for V map = [1,2]
+@test length(homomorphisms(C,C)) == 29
+@test length(homomorphisms(C,C; init_obs=[1,2])) == 27
+@test length(homomorphisms(C,C; init_homs=[[1],[1],nothing])) == 3
+@test length(homomorphisms(C,C; hom_lens=[0, nothing, nothing])) == 2
 
 C_op = op(C)
 @test C_op isa FinCat
@@ -36,6 +42,9 @@ f = id(D, 2)
 g = compose(D, 1, 3)
 @test edges(g) == [1,3]
 
+homs = homomorphisms(D,D)
+@test all(is_functorial, homs)
+
 D_op = op(D)
 @test dom(D_op, 1) == 2
 @test codom(D_op, 1) == 1
@@ -45,11 +54,15 @@ D_op = op(D)
 # Functors between free categories.
 C = FinCat(parallel_arrows(Graph, 2))
 F = FinFunctor((V=[1,4], E=[[1,3], [2,4]]), C, D)
+@test length(homomorphisms(F,F))==1
 @test dom(F) == C
 @test codom(F) == D
 @test is_functorial(F)
 @test Ob(F) == FinFunction([1,4], FinSet(4))
 @test startswith(sprint(show, F), "FinFunctor($([1,4]),")
+
+homs = homomorphisms(C,D; monic_obs=true);
+@test F ∈ homs
 
 @test ob_map(F, 2) == 4
 @test hom_map(F, 1) == Path(h, [1,3])
@@ -136,6 +149,17 @@ end
 @test !is_free(Δ¹)
 @test startswith(sprint(show, Δ¹), "FinCat(")
 
+SG = FinCat(SchGraph)
+# Because of the equations, we must map V to V and E to E. There are four ways
+# to map the δ's onto each other.
+@test length(homomorphisms(Δ¹,Δ¹; n_max=0, monic_obs=true))==4
+
+
+SG = FinCat(SchGraph)
+# four ways to map src+tgt onto themselves
+@test length(homomorphisms(SG,SG; n_max=2, monic_obs=true))==4
+
+
 # Graph as set-valued functor on a free category.
 F = FinDomFunctor(path_graph(Graph, 3))
 C = dom(F)
@@ -204,39 +228,56 @@ G = FinDomFunctor(g)
 @test ob_map(G, :Weight) == TypeSet(Float64)
 @test hom_map(G, :weight) == FinDomFunction([0.5, 1.5])
 
+# FinTransformation search
+##########################
+"""
+Only one natural transformation between the functor which sends the arrow to
+the left hand side and another which sends it to the right hand side of a
+commutative square. If we add another edge on top yet don't make the composite
+path (from 1->4) commute with the lower route, then the naturality condition
+will forbid returning a result that uses this other arrow.
+
+         α_src
+        1  ⇉  2
+F(arr)  |     | G(arr)
+        v     v
+        3 --> 4
+         α_tgt
+"""
+Squarish = FinCatGraph(@acset(Graph, begin
+  V=4; E=5; src=[1,1,1,2,3]; tgt=[2,2,3,4,4]
+end), [[[1,4],[3,5]]])
+Arr = FinCat(path_graph(Graph, 2))
+F = FinFunctor((V=[1,3], E=[[3]]), Arr, Squarish)
+G = FinFunctor((V=[2,4], E=[[4]]), Arr, Squarish)
+FGs = homomorphisms(F,G)
+@test only(FGs) == FinTransformation([[1], [5]], F, G)
+@test FGs == homomorphisms(F,G, initial=Dict(2=>Path([5],3,4)))
+
+# try to force it to use the non-commuting arrow
+@test isempty(homomorphisms(F,G; initial=Dict(1=>Path([2],1,2))))
+
 # Initial functors
 ##################
 
 # Commutative square diagram: with 1→2→4 and 1→3→4
 S = FinCat(@acset Graph begin
-  V = 4
-  E = 4
-  src = [1,1,2,3]
-  tgt = [2,3,4,4]
+  V = 4; E = 4; src = [1,1,2,3]; tgt = [2,3,4,4]
 end)
 
 # Equalizer diagram: 1→2⇉3
 T = FinCat(@acset Graph begin
-  V = 3
-  E = 3
-  src = [1,2,2]
-  tgt = [2,3,3]
+  V = 3; E = 3; src = [1,2,2]; tgt = [2,3,3]
 end)
 
 # Extra bit added to beginning equalizer diagram: 4→1→2⇉3
 T2 = FinCat(@acset Graph begin
-  V = 4
-  E = 4
-  src = [1,2,2,4]
-  tgt = [2,3,3,1]
+  V = 4; E = 4; src = [1,2,2,4]; tgt = [2,3,3,1]
 end)
 
 # Extra bit added to end of equalizer diagram: 1→2⇉3→4
 T3 = FinCat(@acset Graph begin
-  V = 4
-  E = 4
-  src = [1,2,2,3]
-  tgt = [2,3,3,4]
+  V = 4; E = 4; src = [1,2,2,3]; tgt = [2,3,3,4]
 end)
 
 # Opposite square corners folded on top of each other
@@ -254,11 +295,11 @@ F4 = FinFunctor([1,2,3], [1,2,3], T, T2)
 # Same as F1, but there is an additional piece of data in codomain, ignored
 F5 = FinFunctor([1,2,3], [1,2,3], T, T2)
 
-@test all(is_functorial.([F1,F2,F3,F4]))
+@test all(is_functorial.([F1,F2,F3,F4,F5]))
 @test is_initial(F1)
 @test !is_initial(F2)
 @test !is_initial(F3)
 @test !is_initial(F4)
 @test !is_initial(F5)
 
-end
+end # module
