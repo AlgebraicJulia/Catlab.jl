@@ -113,7 +113,7 @@ function Base.show(io::IO, ::MIME"text/plain", set::TabularSet{T}) where T
   print(io, "$(length(set))-element TabularSet{$T}")
   if !get(io, :compact, false)
     println(io, ":")
-    PrettyTables.pretty_table(io, set.table, nosubheader=true)
+    PrettyTables.pretty_table(io, set.table, show_subheader=false)
   end
 end
 
@@ -121,7 +121,7 @@ function Base.show(io::IO, ::MIME"text/html", set::TabularSet)
   println(io, "<div class=\"tabular-set\">")
   println(io, "$(length(set))-element TabularSet")
   PrettyTables.pretty_table(io, set.table, backend=Val(:html), standalone=false,
-                            nosubheader=true)
+                            show_subheader=false)
   println(io, "</div>")
 end
 
