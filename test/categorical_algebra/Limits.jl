@@ -21,6 +21,10 @@ lim = Limit(ObjectPair(A,B), Span(f,g))
 @test apex(lim) == C
 @test legs(lim) == [f,g]
 
+lim2 = Limit(ObjectPair(A,B), Span(Hom(:f, C, A),Hom(:g, C, B)))
+@test hash(lim2) == hash(lim)
+
+
 lim = Limit(DiscreteDiagram([A,B]), Span(f,g))
 @test lim isa Product
 
