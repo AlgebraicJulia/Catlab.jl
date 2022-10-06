@@ -797,29 +797,34 @@ function limit(::Type{Tuple{ACS,Hom}}, diagram) where
     {S, ACS <: StructCSet{S}, Hom <: TightACSetTransformation}
   limits = map(limit, unpack_diagram(diagram))
   Xs = cone_objects(diagram)
-  Y = ACS()
-  limit!(Y, diagram, Xs, limits)
+  pack_limit(ACS, diagram, Xs, limits)
 end
 
 function limit(::Type{Tuple{ACS,Hom}}, diagram) where
     {S, ACS <: StructACSet{S}, Hom <: LooseACSetTransformation}
   limits = map(limit, unpack_diagram(diagram, all=true))
   Xs = cone_objects(diagram)
-  Y = if isempty(attrtypes(S)); ACS() else
+  LimitACS = if isempty(attrtypes(S)); ACS
+  else
     ACSUnionAll = Base.typename(ACS).wrapper
-    ACSUnionAll{(eltype(ob(limits[d])) for d in attrtypes(S))...}()
+    ACSUnionAll{(eltype(ob(limits[d])) for d in attrtypes(S))...}
   end
+  lim = pack_limit(LimitACS, diagram, Xs, limits)
 
-  result = limit!(Y, diagram, Xs, limits)
+  Y = ob(lim)
   for (f, c, d) in attrs(S)
     Yfs = map((π, X) -> π ⋅ FinDomFunction(X, f), legs(limits[c]), Xs)
     Yf = universal(limits[d], Multispan(ob(limits[c]), Yfs))
     set_subpart!(Y, f, collect(Yf))
   end
-  result
+  lim
 end
 
-function limit!(Y::StructACSet{S}, diagram, Xs, limits) where S
+""" Make limit of acsets from limits of underlying sets, ignoring attributes.
+"""
+function pack_limit(::Type{ACS}, diagram, Xs, limits) where
+    {S, ACS <: StructACSet{S}}
+  Y = ACS()
   for c in objects(S)
     add_parts!(Y, c, length(ob(limits[c])))
   end
@@ -842,18 +847,10 @@ function colimit(::Type{Tuple{ACS,Hom}}, diagram) where
   # Colimit of C-set without attributes.
   colimits = map(colimit, unpack_diagram(diagram))
   Xs = cocone_objects(diagram)
-  Y = ACS()
-  for (c, colim) in pairs(colimits)
-    add_parts!(Y, c, length(ob(colim)))
-  end
-  for (f, c, d) in homs(S)
-    Yfs = map((ι, X) -> FinFunction(X, f) ⋅ ι, legs(colimits[d]), Xs)
-    Yf = universal(colimits[c], Multicospan(ob(colimits[d]), Yfs))
-    set_subpart!(Y, f, collect(Yf))
-  end
-  ιs = pack_components(map(legs, colimits), Xs, map(X -> Y, Xs))
+  colim = pack_colimit(ACS, diagram, Xs, colimits)
 
   # Set data attributes by canonical inclusion from attributes in diagram.
+  Y, ιs = ob(colim), legs(colim)
   for (attr, c, d) in attrs(S)
     T = attrtype_instantiation(S, Ts, d)
     data = Vector{Union{Some{T},Nothing}}(nothing, nparts(Y, c))
@@ -871,7 +868,23 @@ function colimit(::Type{Tuple{ACS,Hom}}, diagram) where
     end
     set_subpart!(Y, attr, map(something, data))
   end
+  colim
+end
 
+""" Make colimit of acsets from colimits of sets, ignoring attributes.
+"""
+function pack_colimit(::Type{ACS}, diagram, Xs, colimits) where
+    {S, ACS <: StructACSet{S}}
+  Y = ACS()
+  for (c, colim) in pairs(colimits)
+    add_parts!(Y, c, length(ob(colim)))
+  end
+  for (f, c, d) in homs(S)
+    Yfs = map((ι, X) -> FinFunction(X, f) ⋅ ι, legs(colimits[d]), Xs)
+    Yf = universal(colimits[c], Multicospan(ob(colimits[d]), Yfs))
+    set_subpart!(Y, f, collect(Yf))
+  end
+  ιs = pack_components(map(legs, colimits), Xs, map(X -> Y, Xs))
   ACSetColimit(diagram, Multicospan(Y, ιs), colimits)
 end
 

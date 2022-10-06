@@ -287,14 +287,16 @@ end
 # Product of labeled graphs.
 g = path_graph(VELabeledGraph{Symbol}, 2, V=(vlabel=[:a,:b],), E=(elabel=:f,))
 h = path_graph(VELabeledGraph{String}, 2, V=(vlabel=["x","y"],), E=(elabel="f",))
-lim = product(g, h)
-@test is_natural(proj1(lim)) && is_natural(proj2(lim))
+π1, π2 = lim = product(g, h)
 prod = ob(lim)
 @test prod isa VELabeledGraph{Tuple{Symbol,String}}
 @test Set(prod[:vlabel]) == Set([(:a, "x"), (:a, "y"), (:b, "x"), (:b, "y")])
 @test only(prod[:elabel]) == (:f, "f")
 @test prod[src(prod,1), :vlabel] == (:a, "x")
 @test prod[tgt(prod,1), :vlabel] == (:b, "y")
+@test is_natural(π1) && is_natural(π2)
+@test π1[:Label]((:a, "x")) == :a
+@test π2[:Label]((:a, "x")) == "x"
 
 # Pullback of weighted graphs.
 g0 = WeightedGraph{Nothing}(2)
