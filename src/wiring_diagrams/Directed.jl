@@ -406,8 +406,8 @@ has_wire(f::WiringDiagram, wire::Wire) =
   wire in wires(f, wire.source.box, wire.target.box)
 has_wire(f::WiringDiagram, pair::Pair) = has_wire(f, Wire(pair))
 
-input_ports(f::WiringDiagram) = subpart(f.diagram, :outer_in_port_type)
-output_ports(f::WiringDiagram) = subpart(f.diagram, :outer_out_port_type)
+input_ports(f::WiringDiagram) = subpart(f.diagram, :outer_in_port_type) |> collect
+output_ports(f::WiringDiagram) = subpart(f.diagram, :outer_out_port_type) |> collect
 
 set_input_ports!(f::WiringDiagram, input_ports::AbstractVector) =
   set_subpart!(f.diagram, :outer_in_port_type, input_ports)

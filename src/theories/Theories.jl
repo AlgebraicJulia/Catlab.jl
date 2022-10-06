@@ -7,7 +7,9 @@ module Theories
 export CategoryExpr, ObExpr, HomExpr
 
 using ..Catlab
+import ..Schemas: dom, codom, ob, hom, attr, attrtype
 import ..Syntax: GATExpr, show_unicode, show_latex
+import Base: ≤
 
 """ Base type for GAT expressions in categories or other categorical structures.
 

@@ -6,7 +6,7 @@ export oapply, query
 using Requires
 
 using ...Present, ...Theories
-using ...Theories: dom_nums, codom_nums, attr, adom, adom_nums
+using ...Schemas: dom_nums, codom_nums, attr
 using ...CategoricalAlgebra
 import ...CategoricalAlgebra.CSets: homomorphisms, homomorphism, is_homomorphic
 using ..UndirectedWiringDiagrams
@@ -216,12 +216,12 @@ function homomorphism_query(X::StructACSet{S}; count::Bool=false) where S
     add_parts!(diagram, :Port, n, box=boxes, port_name=:_id,
                junction=(1:n) .+ offsets[i])
   end
-  for (f, c, i, j) in zip(hom(S), dom(S), dom_nums(S), codom_nums(S))
+  for ((f, c, _), i, j) in zip(homs(S), dom_nums(S), codom_nums(S))
     n = nparts(X,c)
     add_parts!(diagram, :Port, n, box=(1:n) .+ offsets[i], port_name=f,
                junction=X[:,f] .+ offsets[j])
   end
-  for (f, c, i) in zip(attr(S), adom(S), adom_nums(S))
+  for ((f, c, _), i) in zip(attrs(S), acodom_nums(S))
     n = nparts(X,c)
     junctions = add_parts!(diagram, :Junction, n)
     add_parts!(diagram, :Port, n, box=(1:n) .+ offsets[i], port_name=f,

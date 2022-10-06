@@ -1,8 +1,6 @@
 module TestCSetDataStructures
 using Test
 
-using Catlab: @present, generator
-using Catlab.Theories: compose, id
 using Catlab.CSetDataStructures
 using Tables
 
@@ -55,9 +53,9 @@ for dds_maker in dds_makers
 
   @test has_subpart(dds, :Φ)
   @test !has_subpart(dds, :nonsubpart)
-  # @test_throws ArgumentError subpart(dds, 1, :nonsubpart)
-  # @test_throws ArgumentError incident(dds, 1, :nonsuppart)
-  # @test_throws ArgumentError set_subpart!(dds, 1, :nonsubpart, 1)
+  @test_throws Exception subpart(dds, 1, :nonsubpart)
+  @test_throws Exception incident(dds, 1, :nonsuppart)
+  @test_throws Exception set_subpart!(dds, 1, :nonsubpart, 1)
 
   # Deletion.
   dds = dds_maker()
@@ -124,18 +122,20 @@ for dds_maker in dds_makers
   @test_throws AssertionError add_parts!(dds, :X, 2, Φ=[3,6])
   @test nparts(dds, :X) == 3
   @test incident(dds, 3, :Φ) == []
+
+  # Hashing
+  @test hash(dds_maker()) == hash(dds_maker())
+
+  dds = dds_maker()
+  add_parts!(dds, :X, 3, Φ=[2,3,3])
+  @test hash(dds) != hash(DDS())
+
+  dds2 = dds_maker()
+  add_parts!(dds, :X, 3, Φ=[2,3,2])
+  @test hash(dds) != hash(dds2)
 end
 
-# Hashing
-@test hash(DDS()) == hash(DDS())
 
-dds = DDS()
-add_parts!(dds, :X, 3, Φ=[2,3,3])
-@test hash(dds) != hash(DDS())
-
-dds2 = DDS()
-add_parts!(dds, :X, 3, Φ=[2,3,2])
-@test hash(dds) != hash(dds2)
 
 
 # Dendrograms
@@ -170,8 +170,8 @@ end
 
 dgram_makers = [
   (T -> Dendrogram{T}(), T -> LDendrogram{T}()),
-  (T -> DynamicACSet("Dendrogram", SchDendrogram; attrtypes=Dict(:R=>T), index=[:parent]),
-   T -> DynamicACSet("LDendrogram", SchLDendrogram; attrtypes=Dict(:R=>T), index=[:parent, :leafparent])
+  (T -> DynamicACSet("Dendrogram", SchDendrogram; type_assignment=Dict(:R=>T), index=[:parent]),
+   T -> DynamicACSet("LDendrogram", SchLDendrogram; type_assignment=Dict(:R=>T), index=[:parent, :leafparent])
    )
 ]
 
@@ -188,7 +188,7 @@ for (dgram_maker, ldgram_maker) in dgram_makers
   @test subpart(d, 4, :parent) == 5
   @test subpart(d, :, :parent) == [4,4,4,5,5]
   @test incident(d, 4, :parent) == [1,2,3]
-  @test incident(d, 4:5, :parent) isa SubArray{Vector{Int},1}
+  # @test incident(d, 4:5, :parent) isa SubArray{Vector{Int}, 1}
   @test incident(d, 4:5, :parent) == [[1,2,3], [4,5]]
   @test has_subpart(d, :height)
   @test subpart(d, [1,2,3], :height) == [0,0,0]
@@ -283,8 +283,9 @@ end
 
 @present SchSubset(FreeSchema) begin
   (Set, Sub)::Ob
-  ι::Hom(Sub, Set)
+  ι::Hom(Sub,Set)
 end
+
 @acset_type Subset(SchSubset, unique_index=[:ι])
 
 Base.in(x, X::Subset) = incident(X, x, :ι) != 0
@@ -322,7 +323,7 @@ end
 
 lset_makers = [
   T -> IndexedLabeledSet{T}(),
-  T -> DynamicACSet("IndexedLabeledSet", SchLabeledSet; attrtypes=Dict(:Label=>T), index=[:label])
+  T -> DynamicACSet("IndexedLabeledSet", SchLabeledSet; type_assignment=Dict(:Label=>T), index=[:label])
 ]
 
 for lset_maker in lset_makers
@@ -373,7 +374,7 @@ end
 
 lset_makers = [
   T -> UniqueIndexedLabeledSet{T}(),
-  T -> DynamicACSet("UniqueIndexedLabeledSet", SchLabeledSet; attrtypes=Dict(:Label=>T), unique_index=[:label])
+  T -> DynamicACSet("UniqueIndexedLabeledSet", SchLabeledSet; type_assignment=Dict(:Label=>T), unique_index=[:label])
 ]
 
 for lset_maker in lset_makers
@@ -389,7 +390,7 @@ for lset_maker in lset_makers
   @test incident(lset, :baz, :label) == 1
   @test incident(lset, :foo, :label) == 0
 
-  @test_throws Any set_subpart!(lset, 1, :label, :bar)
+  @test_throws Exception set_subpart!(lset, 1, :label, :bar)
 end
 
 # @acset macro
@@ -404,7 +405,6 @@ end
   X::AttrType
   dec::Attr(E,X)
 end
-
 @acset_type DecGraph(SchDecGraph, index=[:src,:tgt])
 
 g = @acset DecGraph{String} begin
@@ -481,6 +481,6 @@ h2 = map(g, dec = f, label = i -> 3)
 @test subpart(h2,:dec) == f.(["a","b","c","d"])
 @test subpart(h2,:label) == [3,3,3,3]
 
-@test_throws Any map(g, dec = f)
+@test_throws Exception map(g, dec = f)
 
 end

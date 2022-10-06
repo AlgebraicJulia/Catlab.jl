@@ -27,19 +27,19 @@ add_edges!(g, 2:4, 3:5)
 @test FinSet(g, :V) == FinSet(6)
 f = FinFunction(g, :V)
 @test collect(f) == 1:6
-@test is_indexed(f)
+# @test is_indexed(f)
 f = FinFunction(g, :src)
 @test codom(f) == FinSet(6)
 @test collect(f) == 2:4
-@test is_indexed(f)
+# @test is_indexed(f)
 
 f = FinDomFunction(g, :E)
 @test collect(f) == 1:3
-@test is_indexed(f)
+# @test is_indexed(f)
 f = FinDomFunction(g, :tgt)
 @test codom(f) == TypeSet(Int)
 @test collect(f) == 3:5
-@test is_indexed(f)
+# @test is_indexed(f)
 
 g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5, 1.5],))
 @test TypeSet(g, :Weight) == TypeSet(Float64)
@@ -282,7 +282,7 @@ end
                            index=[:src,:tgt]) <: AbstractGraph
 
 # Terminal labeled graph.
-@test ob(terminal(VELabeledGraph)) == cycle_graph(VELabeledGraph{Tuple{}}, 1)
+@test ob(terminal(VELabeledGraph)) == cycle_graph(VELabeledGraph{Tuple{}}, 1; E=(;elabel=[()]), V=(;vlabel=[()]))
 
 # Product of labeled graphs.
 g = path_graph(VELabeledGraph{Symbol}, 2, V=(vlabel=[:a,:b],), E=(elabel=:f,))

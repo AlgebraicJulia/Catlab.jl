@@ -13,7 +13,8 @@ using StaticArrays: StaticVector, SVector
 using ...GAT, ..FreeDiagrams, ..Limits, ..FinSets, ..CSets
 import ..FreeDiagrams: apex, legs, feet, left, right, bundle_legs
 import ..CSets: components, force
-using ...Theories: ThCategory, attrtype, attr, adom, adom_nums, acodom
+using ...Schemas
+using ...Theories: ThCategory
 import ...Theories: dom, codom, compose, ⋅, id, otimes, ⊗, munit, braid, σ,
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dunit, dcounit, dagger
 
@@ -208,8 +209,8 @@ See also: [`OpenCSetTypes`](@ref).
 """
 function OpenACSetTypes(::Type{X}, ob₀::Symbol) where {S, X<:StructACSet{S}}
   @assert ob₀ ∈ ob(S)
-  vars = map(TypeVar, attrtype(S))
-  L = if any(ob(S)[j] == ob₀ for (i,j) in enumerate(adom_nums(S)))
+  vars = map(TypeVar, attrtypes(S))
+  L = if any(d == ob₀ for (_,d,_) in attrs(S))
     A = ACSetTableType(X, ob₀, union_all=true)
     DiscreteACSet{A{vars...}, X{vars...}}
   else

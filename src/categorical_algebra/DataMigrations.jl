@@ -5,7 +5,7 @@ export DataMigration, DeltaMigration, SigmaMigration, migrate, migrate!,
   representable, yoneda, colimit_representables
 
 using ...Syntax, ...Present, ...Theories
-using ...Theories: SchemaDesc, ob, hom, dom, codom, attr, adom
+using ...Theories: ob, hom, dom, codom, attr
 using ..Categories, ..FinCats, ..Limits, ..Diagrams, ..FinSets, ..CSets
 using ...Graphs, ..FreeDiagrams
 import ..Categories: ob_map, hom_map
@@ -135,10 +135,10 @@ migrate(::Type{T}, X::ACSet, FOb, FHom) where T <: ACSet =
 function migrate!(X::StructACSet{S}, Y::ACSet, F::DeltaSchemaMigration) where S
   partsX = Dict(c => add_parts!(X, c, nparts(Y, nameof(ob_map(F,c))))
                 for c in ob(S))
-  for (f,c,d) in zip(hom(S), dom(S), codom(S))
+  for (f,c,d) in homs(S)
     set_subpart!(X, partsX[c], f, partsX[d][subpart(Y, hom_map(F,f))])
   end
-  for (f,c) in zip(attr(S), adom(S))
+  for (f,c,_) in attrs(S)
     set_subpart!(X, partsX[c], f, subpart(Y, hom_map(F,f)))
   end
   return X
