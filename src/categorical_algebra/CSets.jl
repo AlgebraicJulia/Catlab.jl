@@ -201,8 +201,7 @@ end
 """ Transformation between attributed C-sets.
 
 Homomorphisms of attributed C-sets generalize homomorphisms of C-sets
-([`CSetTransformation`](@ref)), which you should understand before reading
-further.
+([`CSetTransformation`](@ref)), which you should understand before reading this.
 
 A *homomorphism* of attributed C-sets with schema S: C ↛ A (a profunctor) is a
 natural transformation between the corresponding functors col(S) → Set, where
@@ -214,11 +213,15 @@ are the objects of an ℳ-category (see `Catlab.Theories.MCategory`). Calling
 depending on which components are specified.
 
 Since every tight morphism can be considered a loose one, the distinction
-between tight and loose may seem like a small technicality, but it has have
-important consequences because choosing one or the other greatly affects limits
-and colimits of acsets. In practice, tight morphisms suffice for many purposes,
-including computing colimits. However, when computing limits of acsets, the
-loose morphism are usually preferable.
+between tight and loose may seem a minor technicality, but it has important
+consequences because limits and colimits in a category depend as much on the
+morphisms as on the objects. In particular, limits and colimits of acsets differ
+greatly depending on whether they are taken in the category of acsets with tight
+morphisms or with loose morphisms. Tight morphisms suffice for many purposes,
+including most applications of colimits. However, when computing limits of
+acsets, loose morphisms are usually preferable. For more information about
+limits and colimits in these categories, see [`TightACSetTransformation`](@ref)
+and [`LooseACSetTransformation`](@ref).
 """
 abstract type ACSetTransformation{S<:TypeLevelSchema,Comp,
                                   Dom<:StructACSet{S},Codom<:StructACSet{S}} end
@@ -248,8 +251,8 @@ force(α::ACSetTransformation) = map_components(force, α)
 """ Transformation between C-sets.
 
 Recall that a C-set homomorphism is a natural transformation: a transformation
-between functors C → Set satisfying the naturality axiom for every (generating)
-morphism in C.
+between functors C → Set satisfying the naturality axiom for every morphism, or
+equivalently every generating morphism, in C.
 
 This data type records the data of a C-set transformation. Naturality is not
 strictly enforced but is expected to be satisfied. It can be checked using the
@@ -265,7 +268,13 @@ CSetTransformation(X::StructCSet, Y::StructCSet; components...) =
 
 """ Tight transformation between attributed C-sets.
 
-See [`ACSetTranformation`](@ref) for the distinction between tight and loose.
+The category of attributed C-sets and tight homomorphisms is isomorphic to a
+slice category of C-Set, as explained in our paper "Categorical Data Structures
+for Technical Computing". Colimits in this category thus reduce to colimits of
+C-sets, by a standard result about slice categories. Limits are more complicated
+and are currently not supported.
+
+For the distinction between tight and loose, see [`ACSetTranformation`](@ref).
 """
 @struct_hash_equal struct TightACSetTransformation{
     S <: TypeLevelSchema, Comp <: NamedTuple,
@@ -319,7 +328,26 @@ end
 
 """ Loose transformation between attributed C-sets.
 
-See [`ACSetTranformation`](@ref) for the distinction between tight and loose.
+Limits and colimits in the category of attributed C-sets and loose homomorphisms
+are computed pointwise on both objects *and* attribute types. This implies that
+(co)limits of Julia types must be computed. Due to limitations in the
+expressivity of Julia's type system, only certain simple kinds of (co)limits,
+such as products, are supported.
+
+Alternatively, colimits involving loose acset transformations can be constructed
+with respect to explicitly given attribute type components for the legs of the
+cocone, via the keyword argument `type_components` to `colimit` and related
+functions. This uses the universal property of the colimit. To see how this
+works, notice that a diagram of acsets and loose acset transformations can be
+expressed as a diagram D: J → C-Set (for the C-sets) along with another diagram
+A: J → C-Set (for the attribute sets) and a natural transformation α: D ⇒ A
+(assigning attributes). Given a natural transformation τ: A ⇒ ΔB to a constant
+functor ΔB, with components given by `type_components`, the composite
+transformation α⋅τ: D ⇒ ΔB is a cocone under D, hence factors through the
+colimit cocone of D. This factoring yields an assigment of attributes to the
+colimit in C-Set.
+
+For the distinction between tight and loose, see [`ACSetTranformation`](@ref).
 """
 @struct_hash_equal struct LooseACSetTransformation{
     S <: TypeLevelSchema, Comp <: NamedTuple, TypeComp <: NamedTuple,
@@ -755,8 +783,8 @@ out_hom(S, c) = [f => codom(S,f) for f in hom(S) if dom(S,f) == c]
 
 """ Limit of attributed C-sets that stores the pointwise limits in Set.
 """
-@struct_hash_equal struct ACSetLimit{Ob <: StructACSet, Diagram, Cone <: Multispan{Ob},
-                 Limits <: NamedTuple} <: AbstractLimit{Ob,Diagram}
+@struct_hash_equal struct ACSetLimit{Ob <: StructACSet, Diagram,
+    Cone <: Multispan{Ob}, Limits <: NamedTuple} <: AbstractLimit{Ob,Diagram}
   diagram::Diagram
   cone::Cone
   limits::Limits
@@ -764,8 +792,8 @@ end
 
 """ Colimit of attributed C-sets that stores the pointwise colimits in Set.
 """
-@struct_hash_equal struct ACSetColimit{Ob <: StructACSet, Diagram, Cocone <: Multicospan{Ob},
-                    Colimits <: NamedTuple} <: AbstractColimit{Ob,Diagram}
+@struct_hash_equal struct ACSetColimit{Ob <: StructACSet, Diagram,
+    Cocone <: Multicospan{Ob}, Colimits <: NamedTuple} <: AbstractColimit{Ob,Diagram}
   diagram::Diagram
   cocone::Cocone
   colimits::Colimits
@@ -793,33 +821,38 @@ Limits.coproduct(Xs::AbstractVector{<:ACSet}; kw...) =
 # Compute limits and colimits in C-Set by reducing to those in Set using the
 # "pointwise" formula for (co)limits in functor categories.
 
-function limit(::Type{Tuple{ACS,Hom}}, diagram) where
-    {S, ACS <: StructCSet{S}, Hom <: TightACSetTransformation}
+function limit(::Type{<:Tuple{ACS,TightACSetTransformation}}, diagram) where
+    {ACS <: StructCSet}
   limits = map(limit, unpack_diagram(diagram))
   Xs = cone_objects(diagram)
-  Y = ACS()
-  limit!(Y, diagram, Xs, limits)
+  pack_limit(ACS, diagram, Xs, limits)
 end
 
 function limit(::Type{Tuple{ACS,Hom}}, diagram) where
     {S, ACS <: StructACSet{S}, Hom <: LooseACSetTransformation}
   limits = map(limit, unpack_diagram(diagram, all=true))
   Xs = cone_objects(diagram)
-  Y = if isempty(attrtypes(S)); ACS() else
+  LimitACS = if isempty(attrtypes(S)); ACS
+  else
     ACSUnionAll = Base.typename(ACS).wrapper
-    ACSUnionAll{(eltype(ob(limits[d])) for d in attrtypes(S))...}()
+    ACSUnionAll{(eltype(ob(limits[d])) for d in attrtypes(S))...}
   end
+  lim = pack_limit(LimitACS, diagram, Xs, limits)
 
-  result = limit!(Y, diagram, Xs, limits)
+  Y = ob(lim)
   for (f, c, d) in attrs(S)
     Yfs = map((π, X) -> π ⋅ FinDomFunction(X, f), legs(limits[c]), Xs)
     Yf = universal(limits[d], Multispan(ob(limits[c]), Yfs))
     set_subpart!(Y, f, collect(Yf))
   end
-  result
+  lim
 end
 
-function limit!(Y::StructACSet{S}, diagram, Xs, limits) where S
+""" Make limit of acsets from limits of underlying sets, ignoring attributes.
+"""
+function pack_limit(::Type{ACS}, diagram, Xs, limits) where
+    {S, ACS <: StructACSet{S}}
+  Y = ACS()
   for c in objects(S)
     add_parts!(Y, c, length(ob(limits[c])))
   end
@@ -837,11 +870,34 @@ function universal(lim::ACSetLimit, cone::Multispan)
   CSetTransformation(components, apex(cone), ob(lim))
 end
 
-function colimit(::Type{Tuple{ACS,Hom}}, diagram) where
-    {S, Ts, ACS <: StructACSet{S,Ts}, Hom <: TightACSetTransformation}
-  # Colimit of C-set without attributes.
+function colimit(::Type{<:Tuple{ACS,TightACSetTransformation}}, diagram) where
+    {ACS <: ACSet}
   colimits = map(colimit, unpack_diagram(diagram))
   Xs = cocone_objects(diagram)
+  colimit_attrs!(pack_colimit(ACS, diagram, Xs, colimits), Xs)
+end
+
+function colimit(::Type{<:Tuple{ACS,LooseACSetTransformation}}, diagram;
+                 type_components=nothing) where {S, ACS<:StructACSet{S}}
+  isnothing(type_components) &&
+    error("Colimits of loose acset transformations are not supported " *
+          "unless attrtype components of coprojections are given explicitly")
+
+  ACSUnionAll = Base.typename(ACS).wrapper
+  ColimitACS = ACSUnionAll{
+    (mapreduce(tc -> eltype(codom(tc[d])), typejoin, type_components)
+     for d in attrtypes(S))...}
+
+  colimits = map(colimit, unpack_diagram(diagram))
+  Xs = cocone_objects(diagram)
+  colimit_attrs!(pack_colimit(ColimitACS, diagram, Xs, colimits;
+                              type_components=type_components), Xs)
+end
+
+""" Make colimit of acsets from colimits of sets, ignoring attributes.
+"""
+function pack_colimit(::Type{ACS}, diagram, Xs, colimits; kw...) where
+    {S, ACS <: StructACSet{S}}
   Y = ACS()
   for (c, colim) in pairs(colimits)
     add_parts!(Y, c, length(ob(colim)))
@@ -851,19 +907,25 @@ function colimit(::Type{Tuple{ACS,Hom}}, diagram) where
     Yf = universal(colimits[c], Multicospan(ob(colimits[d]), Yfs))
     set_subpart!(Y, f, collect(Yf))
   end
-  ιs = pack_components(map(legs, colimits), Xs, map(X -> Y, Xs))
+  ιs = pack_components(map(legs, colimits), Xs, map(X -> Y, Xs); kw...)
+  ACSetColimit(diagram, Multicospan(Y, ιs), colimits)
+end
 
-  # Set data attributes by canonical inclusion from attributes in diagram.
+""" Set data attributes of colimit of acsets using universal property.
+"""
+function colimit_attrs!(colim::ACSetColimit{<:StructACSet{S,Ts}}, Xs) where {S,Ts}
+  Y, ιs = ob(colim), legs(colim)
   for (attr, c, d) in attrs(S)
     T = attrtype_instantiation(S, Ts, d)
     data = Vector{Union{Some{T},Nothing}}(nothing, nparts(Y, c))
     for (ι, X) in zip(ιs, Xs)
+      ιc, ιd = ι[c], ι[d]
       for i in parts(X, c)
-        j = ι[c](i)
+        j = ιc(i)
         if isnothing(data[j])
-          data[j] = Some(subpart(X, i, attr))
+          data[j] = Some(ιd(subpart(X, i, attr)))
         else
-          val1, val2 = subpart(X, i, attr), something(data[j])
+          val1, val2 = ιd(subpart(X, i, attr)), something(data[j])
           val1 == val2 || error(
             "ACSet colimit does not exist: $attr attributes $val1 != $val2")
         end
@@ -871,8 +933,7 @@ function colimit(::Type{Tuple{ACS,Hom}}, diagram) where
     end
     set_subpart!(Y, attr, map(something, data))
   end
-
-  ACSetColimit(diagram, Multicospan(Y, ιs), colimits)
+  colim
 end
 
 function universal(colim::ACSetColimit, cocone::Multicospan)
@@ -929,9 +990,13 @@ end
 
 """ Named tuple of vectors of FinFunctions → vector of C-set transformations.
 """
-function pack_components(fs::NamedTuple{names}, doms, codoms) where names
+function pack_components(fs::NamedTuple{names}, doms, codoms;
+                         type_components=nothing) where names
   # XXX: Is there a better way?
   components = map((x...) -> NamedTuple{names}(x), fs...)
+  if !isnothing(type_components)
+    components = map(merge, components, type_components)
+  end
   map(ACSetTransformation, components, doms, codoms)
 end
 

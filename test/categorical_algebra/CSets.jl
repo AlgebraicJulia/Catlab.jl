@@ -287,14 +287,16 @@ end
 # Product of labeled graphs.
 g = path_graph(VELabeledGraph{Symbol}, 2, V=(vlabel=[:a,:b],), E=(elabel=:f,))
 h = path_graph(VELabeledGraph{String}, 2, V=(vlabel=["x","y"],), E=(elabel="f",))
-lim = product(g, h)
-@test is_natural(proj1(lim)) && is_natural(proj2(lim))
+π1, π2 = lim = product(g, h)
 prod = ob(lim)
 @test prod isa VELabeledGraph{Tuple{Symbol,String}}
 @test Set(prod[:vlabel]) == Set([(:a, "x"), (:a, "y"), (:b, "x"), (:b, "y")])
 @test only(prod[:elabel]) == (:f, "f")
 @test prod[src(prod,1), :vlabel] == (:a, "x")
 @test prod[tgt(prod,1), :vlabel] == (:b, "y")
+@test is_natural(π1) && is_natural(π2)
+@test π1[:Label]((:a, "x")) == :a
+@test π2[:Label]((:a, "x")) == "x"
 
 # Pullback of weighted graphs.
 g0 = WeightedGraph{Nothing}(2)
@@ -335,6 +337,21 @@ colim = pushout(α, β)
 α′ = ACSetTransformation(V=[2], E=Int[], g0, g)
 @test !is_natural(α′) # Vertex labels don't match.
 @test_throws ErrorException pushout(α′, β)
+
+# Pushout with given type components.
+A = @acset SetAttr{Symbol} begin X=2; f=[:a,:b] end
+B = @acset SetAttr{Symbol} begin X=2; f=[:x,:y] end
+C = @acset SetAttr{Symbol} begin X=1; f=[:z] end
+β = ACSetTransformation((X=[1,2], D=FinFunction(Dict(:a=>:x,:b=>:y))), A, B)
+γ = ACSetTransformation((X=[1,1], D=FinFunction(Dict(:a=>:z,:b=>:z))), A, C)
+@test all(is_natural, (β,γ))
+g = (D=FinFunction(Dict(:x=>:q, :y=>:q)),)
+h = (D=FinFunction(Dict(:z=>:q)),)
+colim = pushout(β, γ, type_components=[g,h])
+@test all(is_natural, legs(colim))
+@test ob(colim) == @acset(SetAttr{Symbol}, begin X=1; f=[:q] end)
+h′ = (D=FinFunction(Dict(:z=>:b)),)
+@test_throws ErrorException pushout(β, γ, type_components=[g,h′])
 
 # Finding C-set morphisms
 #########################
