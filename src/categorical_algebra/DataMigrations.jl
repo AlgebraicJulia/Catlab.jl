@@ -459,7 +459,7 @@ end
 Returns a `FreeDiagram` whose objects are the generating objects of `pres` and 
 whose homs are the generating homs of `pres`.
 """
-function FreeDiagrams.FreeDiagram(pres::Presentation{ThSchema, Symbol}) where Schema
+function FreeDiagrams.FreeDiagram(pres::Presentation{ThSchema, Symbol})
   obs = Array{FreeSchema.Ob}(generators(pres, :Ob))
   homs = Array{FreeSchema.Hom}(generators(pres, :Hom))
   doms = map(h -> generator_index(pres, nameof(dom(h))), homs)
