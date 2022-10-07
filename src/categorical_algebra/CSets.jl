@@ -755,8 +755,8 @@ out_hom(S, c) = [f => codom(S,f) for f in hom(S) if dom(S,f) == c]
 
 """ Limit of attributed C-sets that stores the pointwise limits in Set.
 """
-@struct_hash_equal struct ACSetLimit{Ob <: StructACSet, Diagram, Cone <: Multispan{Ob},
-                 Limits <: NamedTuple} <: AbstractLimit{Ob,Diagram}
+@struct_hash_equal struct ACSetLimit{Ob <: StructACSet, Diagram,
+    Cone <: Multispan{Ob}, Limits <: NamedTuple} <: AbstractLimit{Ob,Diagram}
   diagram::Diagram
   cone::Cone
   limits::Limits
@@ -764,8 +764,8 @@ end
 
 """ Colimit of attributed C-sets that stores the pointwise colimits in Set.
 """
-@struct_hash_equal struct ACSetColimit{Ob <: StructACSet, Diagram, Cocone <: Multicospan{Ob},
-                    Colimits <: NamedTuple} <: AbstractColimit{Ob,Diagram}
+@struct_hash_equal struct ACSetColimit{Ob <: StructACSet, Diagram,
+    Cocone <: Multicospan{Ob}, Colimits <: NamedTuple} <: AbstractColimit{Ob,Diagram}
   diagram::Diagram
   cocone::Cocone
   colimits::Colimits
@@ -793,8 +793,8 @@ Limits.coproduct(Xs::AbstractVector{<:ACSet}; kw...) =
 # Compute limits and colimits in C-Set by reducing to those in Set using the
 # "pointwise" formula for (co)limits in functor categories.
 
-function limit(::Type{Tuple{ACS,Hom}}, diagram) where
-    {S, ACS <: StructCSet{S}, Hom <: TightACSetTransformation}
+function limit(::Type{<:Tuple{ACS,TightACSetTransformation}}, diagram) where
+    {ACS <: StructCSet}
   limits = map(limit, unpack_diagram(diagram))
   Xs = cone_objects(diagram)
   pack_limit(ACS, diagram, Xs, limits)
@@ -842,38 +842,33 @@ function universal(lim::ACSetLimit, cone::Multispan)
   CSetTransformation(components, apex(cone), ob(lim))
 end
 
-function colimit(::Type{Tuple{ACS,Hom}}, diagram) where
-    {S, Ts, ACS <: StructACSet{S,Ts}, Hom <: TightACSetTransformation}
-  # Colimit of C-set without attributes.
+function colimit(::Type{<:Tuple{ACS,TightACSetTransformation}}, diagram) where
+    {ACS <: ACSet}
   colimits = map(colimit, unpack_diagram(diagram))
   Xs = cocone_objects(diagram)
-  colim = pack_colimit(ACS, diagram, Xs, colimits)
+  colimit_attrs!(pack_colimit(ACS, diagram, Xs, colimits), Xs)
+end
 
-  # Set data attributes by canonical inclusion from attributes in diagram.
-  Y, ιs = ob(colim), legs(colim)
-  for (attr, c, d) in attrs(S)
-    T = attrtype_instantiation(S, Ts, d)
-    data = Vector{Union{Some{T},Nothing}}(nothing, nparts(Y, c))
-    for (ι, X) in zip(ιs, Xs)
-      for i in parts(X, c)
-        j = ι[c](i)
-        if isnothing(data[j])
-          data[j] = Some(subpart(X, i, attr))
-        else
-          val1, val2 = subpart(X, i, attr), something(data[j])
-          val1 == val2 || error(
-            "ACSet colimit does not exist: $attr attributes $val1 != $val2")
-        end
-      end
-    end
-    set_subpart!(Y, attr, map(something, data))
-  end
-  colim
+function colimit(::Type{<:Tuple{ACS,LooseACSetTransformation}}, diagram;
+                 type_components=nothing) where {S, ACS<:StructACSet{S}}
+  isnothing(type_components) &&
+    error("Colimits of loose acset transformations are not supported " *
+          "unless attrtype components of coprojections are given explicitly")
+
+  ACSUnionAll = Base.typename(ACS).wrapper
+  ColimitACS = ACSUnionAll{
+    (mapreduce(tc -> eltype(codom(tc[d])), typejoin, type_components)
+     for d in attrtypes(S))...}
+
+  colimits = map(colimit, unpack_diagram(diagram))
+  Xs = cocone_objects(diagram)
+  colimit_attrs!(pack_colimit(ColimitACS, diagram, Xs, colimits;
+                              type_components=type_components), Xs)
 end
 
 """ Make colimit of acsets from colimits of sets, ignoring attributes.
 """
-function pack_colimit(::Type{ACS}, diagram, Xs, colimits) where
+function pack_colimit(::Type{ACS}, diagram, Xs, colimits; kw...) where
     {S, ACS <: StructACSet{S}}
   Y = ACS()
   for (c, colim) in pairs(colimits)
@@ -884,8 +879,33 @@ function pack_colimit(::Type{ACS}, diagram, Xs, colimits) where
     Yf = universal(colimits[c], Multicospan(ob(colimits[d]), Yfs))
     set_subpart!(Y, f, collect(Yf))
   end
-  ιs = pack_components(map(legs, colimits), Xs, map(X -> Y, Xs))
+  ιs = pack_components(map(legs, colimits), Xs, map(X -> Y, Xs); kw...)
   ACSetColimit(diagram, Multicospan(Y, ιs), colimits)
+end
+
+""" Set data attributes of colimit of acsets using universal property.
+"""
+function colimit_attrs!(colim::ACSetColimit{<:StructACSet{S,Ts}}, Xs) where {S,Ts}
+  Y, ιs = ob(colim), legs(colim)
+  for (attr, c, d) in attrs(S)
+    T = attrtype_instantiation(S, Ts, d)
+    data = Vector{Union{Some{T},Nothing}}(nothing, nparts(Y, c))
+    for (ι, X) in zip(ιs, Xs)
+      ιc, ιd = ι[c], ι[d]
+      for i in parts(X, c)
+        j = ιc(i)
+        if isnothing(data[j])
+          data[j] = Some(ιd(subpart(X, i, attr)))
+        else
+          val1, val2 = ιd(subpart(X, i, attr)), something(data[j])
+          val1 == val2 || error(
+            "ACSet colimit does not exist: $attr attributes $val1 != $val2")
+        end
+      end
+    end
+    set_subpart!(Y, attr, map(something, data))
+  end
+  colim
 end
 
 function universal(colim::ACSetColimit, cocone::Multicospan)
@@ -942,9 +962,13 @@ end
 
 """ Named tuple of vectors of FinFunctions → vector of C-set transformations.
 """
-function pack_components(fs::NamedTuple{names}, doms, codoms) where names
+function pack_components(fs::NamedTuple{names}, doms, codoms;
+                         type_components=nothing) where names
   # XXX: Is there a better way?
   components = map((x...) -> NamedTuple{names}(x), fs...)
+  if !isnothing(type_components)
+    components = map(merge, components, type_components)
+  end
   map(ACSetTransformation, components, doms, codoms)
 end
 
