@@ -256,7 +256,7 @@ function AnonACSetType(
   end
 end
 
-function ACSetTableSchema(s::Schema{Symbol}, ob::Symbol) where {S}
+function ACSetTableSchema(s::Schema{Symbol}, ob::Symbol)
   attrs = filter(Schemas.attrs(s)) do (f,d,c)
     d == ob
   end
@@ -396,7 +396,7 @@ end
 @inline ACSetInterface.incident(acs::StructACSet{S}, ::Colon, f::Symbol; unbox_injective=true) where {S} =
   _incident(acs, Val{S}, :, Val{f}, unbox_injective)
 
-ACSetInterface.incident(acs::DynamicACSet, ::Colon, f::Symbol; unbox_injective=true) where {S} =
+ACSetInterface.incident(acs::DynamicACSet, ::Colon, f::Symbol; unbox_injective=true) =
   runtime(_incident, acs, acs.schema, :, f, unbox_injective)
 
 @ct_enable function _incident(acs::SimpleACSet, @ct(S), ::Colon, @ct(f), unbox_injective)
