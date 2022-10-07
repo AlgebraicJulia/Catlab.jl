@@ -201,8 +201,7 @@ end
 """ Transformation between attributed C-sets.
 
 Homomorphisms of attributed C-sets generalize homomorphisms of C-sets
-([`CSetTransformation`](@ref)), which you should understand before reading
-further.
+([`CSetTransformation`](@ref)), which you should understand before reading this.
 
 A *homomorphism* of attributed C-sets with schema S: C ↛ A (a profunctor) is a
 natural transformation between the corresponding functors col(S) → Set, where
@@ -214,11 +213,15 @@ are the objects of an ℳ-category (see `Catlab.Theories.MCategory`). Calling
 depending on which components are specified.
 
 Since every tight morphism can be considered a loose one, the distinction
-between tight and loose may seem like a small technicality, but it has have
-important consequences because choosing one or the other greatly affects limits
-and colimits of acsets. In practice, tight morphisms suffice for many purposes,
-including computing colimits. However, when computing limits of acsets, the
-loose morphism are usually preferable.
+between tight and loose may seem a minor technicality, but it has important
+consequences because limits and colimits in a category depend as much on the
+morphisms as on the objects. In particular, limits and colimits of acsets differ
+greatly depending on whether they are taken in the category of acsets with tight
+morphisms or with loose morphisms. Tight morphisms suffice for many purposes,
+including most applications of colimits. However, when computing limits of
+acsets, loose morphisms are usually preferable. For more information about
+limits and colimits in these categories, see [`TightACSetTransformation`](@ref)
+and [`LooseACSetTransformation`](@ref).
 """
 abstract type ACSetTransformation{S<:TypeLevelSchema,Comp,
                                   Dom<:StructACSet{S},Codom<:StructACSet{S}} end
@@ -248,8 +251,8 @@ force(α::ACSetTransformation) = map_components(force, α)
 """ Transformation between C-sets.
 
 Recall that a C-set homomorphism is a natural transformation: a transformation
-between functors C → Set satisfying the naturality axiom for every (generating)
-morphism in C.
+between functors C → Set satisfying the naturality axiom for every morphism, or
+equivalently every generating morphism, in C.
 
 This data type records the data of a C-set transformation. Naturality is not
 strictly enforced but is expected to be satisfied. It can be checked using the
@@ -265,7 +268,13 @@ CSetTransformation(X::StructCSet, Y::StructCSet; components...) =
 
 """ Tight transformation between attributed C-sets.
 
-See [`ACSetTranformation`](@ref) for the distinction between tight and loose.
+The category of attributed C-sets and tight homomorphisms is isomorphic to a
+slice category of C-Set, as explained in our paper "Categorical Data Structures
+for Technical Computing". Colimits in this category thus reduce to colimits of
+C-sets, by a standard result about slice categories. Limits are more complicated
+and are currently not supported.
+
+For the distinction between tight and loose, see [`ACSetTranformation`](@ref).
 """
 @struct_hash_equal struct TightACSetTransformation{
     S <: TypeLevelSchema, Comp <: NamedTuple,
@@ -319,7 +328,26 @@ end
 
 """ Loose transformation between attributed C-sets.
 
-See [`ACSetTranformation`](@ref) for the distinction between tight and loose.
+Limits and colimits in the category of attributed C-sets and loose homomorphisms
+are computed pointwise on both objects *and* attribute types. This implies that
+(co)limits of Julia types must be computed. Due to limitations in the
+expressivity of Julia's type system, only certain simple kinds of (co)limits,
+such as products, are supported.
+
+Alternatively, colimits involving loose acset transformations can be constructed
+with respect to explicitly given attribute type components for the legs of the
+cocone, via the keyword argument `type_components` to `colimit` and related
+functions. This uses the universal property of the colimit. To see how this
+works, notice that a diagram of acsets and loose acset transformations can be
+expressed as a diagram D: J → C-Set (for the C-sets) along with another diagram
+A: J → C-Set (for the attribute sets) and a natural transformation α: D ⇒ A
+(assigning attributes). Given a natural transformation τ: A ⇒ ΔB to a constant
+functor ΔB, with components given by `type_components`, the composite
+transformation α⋅τ: D ⇒ ΔB is a cocone under D, hence factors through the
+colimit cocone of D. This factoring yields an assigment of attributes to the
+colimit in C-Set.
+
+For the distinction between tight and loose, see [`ACSetTranformation`](@ref).
 """
 @struct_hash_equal struct LooseACSetTransformation{
     S <: TypeLevelSchema, Comp <: NamedTuple, TypeComp <: NamedTuple,
