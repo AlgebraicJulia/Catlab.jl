@@ -4,6 +4,7 @@ This is a compatibility module that integrates ACSets with GATs
 module CSetDataStructures
 
 using Reexport
+using DataStructures: OrderedDict
 
 @reexport using ..ACSetInterface
 @reexport using ..Schemas
@@ -35,8 +36,8 @@ end
 
 function Present.Presentation(s::BasicSchema{Symbol})
   pres = Presentation(FreeSchema)
-  obs = Dict(x => Ob(FreeSchema.Ob, x) for x in Schemas.objects(s))
-  attrtypes = Dict(x => AttrType(FreeSchema.AttrType, x) for x in Schemas.attrtypes(s))
+  obs = OrderedDict(x => Ob(FreeSchema.Ob, x) for x in Schemas.objects(s))
+  attrtypes = OrderedDict(x => AttrType(FreeSchema.AttrType, x) for x in Schemas.attrtypes(s))
   homs = [Hom(f, obs[d], obs[c]) for (f,d,c) in Schemas.homs(s)]
   attrs = [Attr(f, obs[d], attrtypes[c]) for (f,d,c) in Schemas.attrs(s)]
 
