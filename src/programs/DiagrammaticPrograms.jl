@@ -15,8 +15,86 @@ using ...GAT, ...Present, ...Graphs, ...CategoricalAlgebra
 using ...Theories: munit
 using ...CategoricalAlgebra.FinCats: mapvals, make_map
 using ...CategoricalAlgebra.DataMigrations: ConjQuery, GlueQuery, GlucQuery
-import ...CategoricalAlgebra.FinCats: vertex_name, vertex_named,
+import ...CategoricalAlgebra.FinCats: FinCat, vertex_name, vertex_named,
   edge_name, edge_named
+
+# Abstract syntax
+#################
+
+""" Abstract syntax trees for category and diagram DSLs.
+"""
+module AST
+using MLStyle: @data
+
+@data HomExpr begin
+  HomGenerator(name::Symbol)
+  Compose(homs::Vector{<:HomExpr})
+  Id(ob::Symbol)
+end
+
+@data Cat begin
+  Ob(name::Symbol)
+  Hom(name::Union{Symbol,Nothing}, src::Symbol, tgt::Symbol)
+  HomEq(lhs::HomExpr, rhs::HomExpr)
+end
+
+@data DisplayedCat <: Cat begin
+  ObOver(name::Symbol, over::Symbol)
+  HomOver(name::Union{Symbol,Nothing}, over::HomExpr)
+end
+
+end # AST module
+
+function parse_category_ast(body::Expr; preprocess::Bool=true)
+  if preprocess
+    body = reparse_arrows(body)
+  end
+  mapreduce(vcat, statements(body), init=AST.Cat[]) do stmt
+    @match stmt begin
+      # X
+      X::Symbol => [AST.Ob(X)]
+      # X, Y, ...
+      Expr(:tuple, Xs...) => map(AST.Ob, Xs)
+      # X → Y
+      Expr(:call, :(→), X::Symbol, Y::Symbol) => [AST.Hom(nothing, X, Y)]
+      # f : X → Y
+      Expr(:call, :(:), f::Symbol, Expr(:call, :(→), X::Symbol, Y::Symbol)) =>
+        [AST.Hom(f, X, Y)]
+      # (f, g, ...) : X → Y
+      Expr(:call, (:), Expr(:tuple, fs...), Expr(:call, :(→), X::Symbol, Y::Symbol)) =>
+        map(f -> AST.Hom(f, X, Y), fs)
+      # f == g
+      Expr(:call, :(==), lhs, rhs) =>
+        [AST.HomEq(parse_hom_ast(lhs), parse_hom_ast(rhs))]
+      ::LineNumberNode => AST.Cat[]
+      _ => error("Cannot parse line in category definition: $stmt")
+    end
+  end
+end
+
+function parse_hom_ast(expr)
+  @match expr begin
+    Expr(:call, :compose, args...) => AST.Compose(map(parse_hom_ast, args))
+    Expr(:call, :(⋅), f, g) || Expr(:call, :(⨟), f, g) =>
+      AST.Compose([parse_hom_ast(f), parse_hom_ast(g)])
+    Expr(:call, :(∘), f, g) => AST.Compose([parse_hom_ast(g), parse_hom_ast(f)])
+    Expr(:call, :id, x) => AST.Id(x)
+    f::Symbol || Expr(:curly, _...) => AST.HomGenerator(expr)
+    _ => error("Invalid morphism expression $expr")
+  end
+end
+
+function reparse_arrows(expr)
+  # `f : x → y` is parsed by Julia as `(f : x) → y`, not `f : (x → y)`.
+  @match expr begin
+    Expr(:call, :(→), Expr(:call, :(:), f, x), y) =>
+      Expr(:call, :(:), f, Expr(:call, :(→), x, y))
+    Expr(head, args...) => Expr(head, (reparse_arrows(arg) for arg in args)...)
+    _ => expr
+  end
+end
+
+statements(expr) = (expr isa Expr && expr.head == :block) ? expr.args : [expr]
 
 # Graphs
 ########
@@ -65,61 +143,41 @@ end
 Vertices in the graph must be uniquely named, whereas edges names are optional.
 """
 macro graph(graph_type, body)
-  :(parse_graph($(esc(graph_type)), $(Meta.quot(body))))
+  stmts = parse_category_ast(body)
+  :(parse_graph($(esc(graph_type)), $(stmts)))
 end
 macro graph(body)
-  :(parse_graph(NamedGraph{Symbol,Union{Symbol,Nothing}}, $(Meta.quot(body))))
+  stmts = parse_category_ast(body)
+  :(parse_graph(NamedGraph{Symbol,Union{Symbol,Nothing}}, $(stmts)))
 end
 
-function parse_graph(G::Type, body::Expr; preprocess::Bool=true)
+function parse_graph(::Type{G}, stmts::AbstractVector{<:AST.Cat}) where
+    {G <: HasGraph}
   g = G()
-  if preprocess
-    body = reparse_arrows(body)
-  end
-  for stmt in statements(body)
-    @match stmt begin
-      # v
-      v::Symbol => add_vertex!(g, vname=v)
-      # u, v, ...
-      Expr(:tuple, vs...) => add_vertices!(g, length(vs), vname=vs)
-      # u → v
-      Expr(:call, :(→), u::Symbol, v::Symbol) => parse_edge!(g, u, v)
-      # e : u → v
-      Expr(:call, :(:), e::Symbol, Expr(:call, :(→), u::Symbol, v::Symbol)) =>
-        parse_edge!(g, u, v, ename=e)
-      # (e, f, ...) : u → v
-      Expr(:call, (:), Expr(:tuple, es...), Expr(:call, :(→), u::Symbol, v::Symbol)) =>
-        for e in es; parse_edge!(g, u, v, ename=e) end
-      ::LineNumberNode => nothing
-      _ => error("Cannot parse line in graph definition: $stmt")
-    end
-  end
+  foreach(stmt -> parse!(g, stmt), stmts)
   return g
 end
 
-function parse_edge!(g, s::Symbol, t::Symbol;
-                     ename::Union{Symbol,Nothing}=nothing)
-  e = add_edge!(g, vertex_named(g, s), vertex_named(g, t))
+parse!(g::HasGraph, ob::AST.Ob) = add_vertex!(g, vname=ob.name)
+
+function parse!(g::HasGraph, hom::AST.Hom)
+  e = add_edge!(g, vertex_named(g, hom.src), vertex_named(g, hom.tgt))
   if has_subpart(g, :ename)
-    g[e,:ename] = ename
+    g[e,:ename] = hom.name
   end
   return e
 end
 
-function reparse_arrows(expr)
-  # `f : x → y` is parsed by Julia as `(f : x) → y`, not `f : (x → y)`.
-  @match expr begin
-    Expr(:call, :(→), Expr(:call, :(:), f, x), y) =>
-      Expr(:call, :(:), f, Expr(:call, :(→), x, y))
-    Expr(head, args...) => Expr(head, (reparse_arrows(arg) for arg in args)...)
-    _ => expr
-  end
-end
-
-statements(expr) = (expr isa Expr && expr.head == :block) ? expr.args : [expr]
-
 # Categories
 ############
+
+struct FinCatData{G<:HasGraph}
+  graph::G
+  equations::Vector{Pair}
+end
+
+FinCat(C::FinCatData) = isempty(C.equations) ? FinCat(C.graph) :
+  FinCat(C.graph, C.equations)
 
 """ Present a category by generators and relations.
 
@@ -141,54 +199,27 @@ end
 The objects and morphisms must be uniquely named.
 """
 macro fincat(body)
-  parse_category(NamedGraph{Symbol,Symbol}, body)
+  stmts = parse_category_ast(body)
+  :(parse_category(NamedGraph{Symbol,Symbol}, $(stmts)))
 end
 
-function parse_category(G::Type, body::Expr; preprocess::Bool=true)
-  g, eqs = G(), Pair[]
-  if preprocess
-    body = reparse_arrows(body)
-  end
-  for stmt in statements(body)
-    @match stmt begin
-      # v
-      v::Symbol => add_vertex!(g, vname=v)
-      # u, v, ...
-      Expr(:tuple, vs...) => add_vertices!(g, length(vs), vname=vs)
-      # e : u → v
-      Expr(:call, :(:), e::Symbol, Expr(:call, :(→), u::Symbol, v::Symbol)) =>
-        parse_edge!(g, u, v, ename=e)
-      # (e, f, ...) : u → v
-      Expr(:call, (:), Expr(:tuple, es...), Expr(:call, :(→), u::Symbol, v::Symbol)) =>
-        for e in es; parse_edge!(g, u, v, ename=e) end
-      # f == g
-      Expr(:call, :(==), lhs, rhs) => push!(eqs, parse_path_equation(g, lhs, rhs))
-      ::LineNumberNode => nothing
-      _ => error("Cannot parse line in category definition: $stmt")
-    end
-  end
-  isempty(eqs) ? FinCat(g) : FinCat(g, eqs)
+function parse_category(::Type{G}, stmts::AbstractVector{<:AST.Cat}) where
+    {G <: HasGraph}
+  cat = FinCatData(G(), Pair[])
+  foreach(stmt -> parse!(cat, stmt), stmts)
+  FinCat(cat)
 end
 
-""" Parse an equation between paths in a named graph.
-"""
-parse_path_equation(g, lhs, rhs) = parse_path(g, lhs) => parse_path(g, rhs)
+parse!(C::FinCatData, stmt) = parse!(C.graph, stmt)
+parse!(C::FinCatData, eq::AST.HomEq) =
+  push!(C.equations, parse_path(C.graph, eq.lhs) => parse_path(C.graph, eq.rhs))
 
-""" Parse a path in a named graph.
-"""
-function parse_path(g, expr)
-  function parse(expr)
-    @match expr begin
-      Expr(:call, :compose, args...) => mapreduce(parse, vcat, args)
-      Expr(:call, :(⋅), f, g) ||
-      Expr(:call, :(⨟), f, g) => vcat(parse(f), parse(g))
-      Expr(:call, :(∘), f, g) => vcat(parse(g), parse(f))
-      Expr(:call, :id, x::Symbol) => empty(Path, g, vertex_named(g, x))
-      f::Symbol => Path(g, edge_named(g, f))
-      _ => error("Invalid morphism expression $expr")
-    end
+function parse_path(g::HasGraph, expr::AST.HomExpr)
+  @match expr begin
+    AST.HomGenerator(f::Symbol) => Path(g, edge_named(g, f))
+    AST.Compose(args) => mapreduce(arg -> parse_path(g, arg), vcat, args)
+    AST.Id(x::Symbol) => empty(Path, g, vertex_named(g, x))
   end
-  parse(expr)
 end
 
 # Functors
