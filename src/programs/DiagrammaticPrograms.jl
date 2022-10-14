@@ -24,32 +24,51 @@ import ...CategoricalAlgebra.FinCats: FinCat, vertex_name, vertex_named,
 """ Abstract syntax trees for category and diagram DSLs.
 """
 module AST
+
 using MLStyle: @data
+using StructEquality
 
 @data HomExpr begin
-  HomGenerator(name::Symbol)
+  HomGenerator(name)
   Compose(homs::Vector{<:HomExpr})
-  Id(ob::Symbol)
+  Id(ob)
 end
 
-@data Cat begin
+@data DisplayedCatExpr begin
+  ObOver(name::Symbol, over::Union{Symbol,Nothing})
+  HomOver(name::Union{Symbol,Nothing}, src::Symbol, tgt::Symbol, over::HomExpr)
+end
+
+@data CatExpr <: DisplayedCatExpr begin
   Ob(name::Symbol)
   Hom(name::Union{Symbol,Nothing}, src::Symbol, tgt::Symbol)
   HomEq(lhs::HomExpr, rhs::HomExpr)
 end
 
-@data DisplayedCat <: Cat begin
-  ObOver(name::Symbol, over::Symbol)
-  HomOver(name::Union{Symbol,Nothing}, over::HomExpr)
+@data MappingExpr begin
+  MapsTo(lhs, rhs)
+end
+
+@struct_equal struct Cat
+  statements::Vector{CatExpr}
+end
+@struct_equal struct DisplayedCat
+  statements::Vector{DisplayedCatExpr}
+end
+@struct_equal struct Mapping
+  statements::Vector{MappingExpr}
 end
 
 end # AST module
 
-function parse_category_ast(body::Expr; preprocess::Bool=true)
+""" Parse category or displayed category from Julia expression to AST.
+"""
+function parse_category_ast(body::Expr; free::Bool=false, preprocess::Bool=true)
+  nanon = 0
   if preprocess
     body = reparse_arrows(body)
   end
-  mapreduce(vcat, statements(body), init=AST.Cat[]) do stmt
+  stmts = mapreduce(vcat, statements(body), init=AST.CatExpr[]) do stmt
     @match stmt begin
       # X
       X::Symbol => [AST.Ob(X)]
@@ -61,18 +80,57 @@ function parse_category_ast(body::Expr; preprocess::Bool=true)
       Expr(:call, :(:), f::Symbol, Expr(:call, :(→), X::Symbol, Y::Symbol)) =>
         [AST.Hom(f, X, Y)]
       # (f, g, ...) : X → Y
-      Expr(:call, (:), Expr(:tuple, fs...), Expr(:call, :(→), X::Symbol, Y::Symbol)) =>
+      Expr(:call, (:), Expr(:tuple, fs...),
+           Expr(:call, :(→), X::Symbol, Y::Symbol)) =>
         map(f -> AST.Hom(f, X, Y), fs)
+      # x => X
+      # x::X
+      Expr(:call, :(=>), x::Symbol, X) || Expr(:(::), x::Symbol, X) =>
+        [AST.ObOver(x, X)]
+      # (x, y, ...) => X
+      # (x, y, ...)::X
+      Expr(:call, :(=>), Expr(:tuple, xs...), X) ||
+      Expr(:(::), Expr(:tuple, xs...), X) =>
+        map(x -> AST.ObOver(x, X), xs)
+      # (f: x → y) => h
+      # (f: x → y)::h
+      Expr(:call, :(=>), Expr(:call, :(:), f::Symbol,
+                              Expr(:call, :(→), x::Symbol, y::Symbol)), h) ||
+      Expr(:(::), Expr(:call, :(:), f::Symbol,
+                       Expr(:call, :(→), x::Symbol, y::Symbol)), h) =>
+        [AST.HomOver(f, x, y, parse_hom_ast(h))]
+      # (x → y) => h
+      # (x → y)::h
+      Expr(:call, :(=>), Expr(:call, :(→), x::Symbol, y::Symbol), h) ||
+      Expr(:(::), Expr(:call, :(→), x::Symbol, y::Symbol), h) =>
+        [AST.HomOver(nothing, x, y, parse_hom_ast(h))]
+      # h(x) == y
+      # y == h(x)
+      (Expr(:call, :(==), call::Expr, y::Symbol) ||
+       Expr(:call, :(==), y::Symbol, call::Expr)) && if free end => begin
+         h, x = destructure_unary_call(call)
+         [AST.HomOver(nothing, x, y, parse_hom_ast(h))]
+      end
+      # h(x) == k(y)
+      Expr(:call, :(==), lhs::Expr, rhs::Expr) && if free end => begin
+        (h, x), (k, y) = destructure_unary_call(lhs), destructure_unary_call(rhs)
+        z = Symbol("##unnamed#$(nanon += 1)")
+        [AST.ObOver(z, nothing), AST.HomOver(nothing, x, z, parse_hom_ast(h)),
+         AST.HomOver(nothing, y, z, parse_hom_ast(k))]
+      end
       # f == g
-      Expr(:call, :(==), lhs, rhs) =>
+      Expr(:call, :(==), lhs, rhs) && if !free end =>
         [AST.HomEq(parse_hom_ast(lhs), parse_hom_ast(rhs))]
-      ::LineNumberNode => AST.Cat[]
-      _ => error("Cannot parse line in category definition: $stmt")
+      ::LineNumberNode => AST.CatExpr[]
+      _ => error("Cannot parse statement in category definition: $stmt")
     end
   end
+  (all(x -> x isa AST.CatExpr, stmts) ? AST.Cat : AST.DisplayedCat)(stmts)
 end
 
-function parse_hom_ast(expr)
+""" Parse morphism expression from Julia expression to AST.
+"""
+function parse_hom_ast(expr)::AST.HomExpr
   @match expr begin
     Expr(:call, :compose, args...) => AST.Compose(map(parse_hom_ast, args))
     Expr(:call, :(⋅), f, g) || Expr(:call, :(⨟), f, g) =>
@@ -84,8 +142,28 @@ function parse_hom_ast(expr)
   end
 end
 
+function parse_mapping_ast(body)
+  stmts = mapreduce(vcat, statements(body), init=AST.Mapping[]) do stmt
+    @match stmt begin
+      # x => y
+      Expr(:call, :(=>), x::Symbol, rhs) => [AST.MapsTo(x, rhs)]
+      # (x, x′, ...) => y
+      Expr(:call, :(=>), Expr(:tuple, xs...), rhs) =>
+        map(x -> AST.MapsTo(x, rhs), xs)
+      ::LineNumberNode => AST.Mapping[]
+      _ => error("Cannot parse statement in mapping definition: $stmt")
+    end
+  end
+  AST.Mapping(stmts)
+end
+
+statements(expr) = (expr isa Expr && expr.head == :block) ? expr.args : [expr]
+
+""" Reparse Julia expressions for function/arrow types.
+
+In Julia, `f : x → y` is parsed as `(f : x) → y` instead of `f : (x → y)`.
+"""
 function reparse_arrows(expr)
-  # `f : x → y` is parsed by Julia as `(f : x) → y`, not `f : (x → y)`.
   @match expr begin
     Expr(:call, :(→), Expr(:call, :(:), f, x), y) =>
       Expr(:call, :(:), f, Expr(:call, :(→), x, y))
@@ -94,7 +172,17 @@ function reparse_arrows(expr)
   end
 end
 
-statements(expr) = (expr isa Expr && expr.head == :block) ? expr.args : [expr]
+""" Destructure Julia expression `:(f(g(x)))` to `(:(f∘g), :x)`, for example.
+"""
+function destructure_unary_call(expr::Expr)
+  @match expr begin
+    Expr(:call, head, x::Symbol) => (head, x)
+    Expr(:call, head, arg) => begin
+      rest, x = destructure_unary_call(arg)
+      (Expr(:call, :(∘), head, rest), x)
+    end
+  end
+end
 
 # Graphs
 ########
@@ -144,17 +232,17 @@ Vertices in the graph must be uniquely named, whereas edges names are optional.
 """
 macro graph(graph_type, body)
   stmts = parse_category_ast(body)
-  :(parse_graph($(esc(graph_type)), $(stmts)))
+  :(parse_graph($(esc(graph_type)), $stmts))
 end
 macro graph(body)
   stmts = parse_category_ast(body)
-  :(parse_graph(NamedGraph{Symbol,Union{Symbol,Nothing}}, $(stmts)))
+  :(parse_graph(NamedGraph{Symbol,Union{Symbol,Nothing}}, $stmts))
 end
 
-function parse_graph(::Type{G}, stmts::AbstractVector{<:AST.Cat}) where
+function parse_graph(::Type{G}, ast::AST.Cat) where
     {G <: HasGraph}
   g = G()
-  foreach(stmt -> parse!(g, stmt), stmts)
+  foreach(stmt -> parse!(g, stmt), ast.statements)
   return g
 end
 
@@ -200,13 +288,13 @@ The objects and morphisms must be uniquely named.
 """
 macro fincat(body)
   stmts = parse_category_ast(body)
-  :(parse_category(NamedGraph{Symbol,Symbol}, $(stmts)))
+  :(parse_category(NamedGraph{Symbol,Symbol}, $stmts))
 end
 
-function parse_category(::Type{G}, stmts::AbstractVector{<:AST.Cat}) where
+function parse_category(::Type{G}, ast::AST.Cat) where
     {G <: HasGraph}
   cat = FinCatData(G(), Pair[])
-  foreach(stmt -> parse!(cat, stmt), stmts)
+  foreach(stmt -> parse!(cat, stmt), ast.statements)
   FinCat(cat)
 end
 
@@ -242,39 +330,29 @@ end
 ```
 """
 macro finfunctor(dom_cat, codom_cat, body)
-  :(parse_functor($(esc(dom_cat)), $(esc(codom_cat)), $(Meta.quot(body))))
+  stmts = parse_mapping_ast(body)
+  :(parse_functor($(esc(dom_cat)), $(esc(codom_cat)), $stmts))
 end
 
-function parse_functor(C::FinCat, D::FinCat, body::Expr)
-  ob_rhs, hom_rhs = parse_ob_hom_maps(C, body)
+function parse_functor(C::FinCat, D::FinCat, stmts)
+  ob_rhs, hom_rhs = parse_ob_hom_maps(C, stmts)
   F = FinFunctor(mapvals(x -> parse_ob(D, x), ob_rhs),
-                 mapvals(f -> parse_hom(D, f), hom_rhs), C, D)
+                 mapvals(f -> parse_hom(D, parse_hom_ast(f)), hom_rhs), C, D)
   is_functorial(F, check_equations=false) ||
-    error("Parsed functor is not functorial: $body")
+    error("Parsed functor is not functorial: $stmts")
   return F
 end
-function parse_functor(C::Presentation, D::Presentation, body::Expr; kw...)
-  parse_functor(FinCat(C), FinCat(D), body; kw...)
+function parse_functor(C::Presentation, D::Presentation, stmts; kw...)
+  parse_functor(FinCat(C), FinCat(D), stmts; kw...)
 end
 
-function parse_ob_hom_maps(C::FinCat, body::Expr;
+function parse_ob_hom_maps(C::FinCat, ast::AST.Mapping;
                            missing_ob::Bool=false, missing_hom::Bool=false)
   assignments = Dict{Symbol,Union{Expr,Symbol}}()
-  assign(lhs, rhs) = if haskey(assignments, lhs)
-    error("Left-hand side $lhs assigned twice in $body")
-  else
+  for (stmt::AST.MapsTo) in ast.statements
+    lhs, rhs = stmt.lhs, stmt.rhs
+    haskey(assignments, lhs) && error("Left-hand side $lhs assigned twice")
     assignments[lhs] = rhs
-  end
-  for stmt in statements(body)
-    @match stmt begin
-      # x => y
-      Expr(:call, :(=>), lhs::Symbol, rhs) => assign(lhs, rhs)
-      # (x, x′, ...) => y
-      Expr(:call, :(=>), Expr(:tuple, args...), rhs) =>
-        foreach(lhs -> assign(lhs, rhs), args)
-      ::LineNumberNode => nothing
-      _ => error("Invalid assignment statement $stmt")
-    end
   end
   ob_rhs = make_map(ob_generators(C)) do x
     y = pop!(assignments, ob_generator_name(C, x), missing)
@@ -303,21 +381,17 @@ end
 
 """ Parse expression for morphism in a category.
 """
-function parse_hom(C::FinCat{Ob,Hom}, expr) where {Ob,Hom}
-  function parse(expr)
-    @match expr begin
-      Expr(:call, :compose, args...) =>
-        mapreduce(parse, (fs...) -> compose(C, fs...), args)
-      Expr(:call, :(⋅), f, g) ||
-      Expr(:call, :(⨟), f, g) => compose(C, parse(f), parse(g))
-      Expr(:call, :(∘), f, g) => compose(C, parse(g), parse(f))
-      Expr(:call, :id, x::Symbol) => id(C, ob_generator(C, x))
+function parse_hom(C::FinCat{Ob,Hom}, expr::AST.HomExpr) where {Ob,Hom}
+  @match expr begin
+    AST.HomGenerator(fexpr) => @match fexpr begin
       f::Symbol => hom_generator(C, f)
-      Expr(:curly, _...) => parse_gat_expr(C, expr)::Hom
+      Expr(:curly, _...) => parse_gat_expr(C, fexpr)::Hom
       _ => error("Invalid morphism expression $expr")
     end
+    AST.Compose(args) => mapreduce(
+      arg -> parse_hom(C, arg), (fs...) -> compose(C, fs...), args)
+    AST.Id(x) => id(C, parse_ob(C, x))
   end
-  parse(expr)
 end
 
 """ Parse GAT expression based on curly braces, rather than parentheses.
@@ -426,69 +500,29 @@ end
 parse_diagram(pres::Presentation, body::Expr; kw...) =
   parse_diagram(FinCat(pres), body; kw...)
 
-function parse_diagram_data(C::FinCat, parse_ob, parse_hom, body::Expr;
-                            free::Bool=false, preprocess::Bool=true)
+function parse_diagram_data(C::FinCat, parse_ob, parse_hom, body::Expr; kw...)
   g, eqs = NamedGraph{Symbol,Union{Symbol,Nothing}}(), Pair[]
   F_ob, F_hom = [], []
-  function push_hom!(h, x, y; name=nothing)
-    e = parse_edge!(g, x, y, ename=name)
-    push!(F_hom, parse_hom(h, F_ob[src(g,e)], F_ob[tgt(g,e)]))
-    return e
-  end
 
-  nanon = 0
-  if preprocess
-    body = reparse_arrows(body)
-  end
-  for stmt in statements(body)
+  ast = parse_category_ast(body; kw...)
+  for stmt in ast.statements
     @match stmt begin
-      # x => X
-      # x::X
-      Expr(:call, :(=>), x::Symbol, X) || Expr(:(::), x::Symbol, X) => begin
-        add_vertex!(g, vname=x)
-        push!(F_ob, parse_ob(X))
+      AST.ObOver(x, X) => begin
+        parse!(g, AST.Ob(x))
+        push!(F_ob, isnothing(X) ? nothing : parse_ob(X))
       end
-      # (x, y, ...) => X
-      # (x, y, ...)::X
-      Expr(:call, :(=>), Expr(:tuple, xs...), X) ||
-      Expr(:(::), Expr(:tuple, xs...), X) => begin
-        add_vertices!(g, length(xs), vname=xs)
-        append!(F_ob, repeated(parse_ob(X), length(xs)))
+      AST.HomOver(f, x, y, h) => begin
+        e = parse!(g, AST.Hom(f, x, y))
+        X, Y = F_ob[src(g,e)], F_ob[tgt(g,e)]
+        push!(F_hom, parse_hom(h, X, Y))
+        if isnothing(Y)
+          # Infer codomain in base category from parsed homs.
+          F_ob[tgt(g,e)] = codom(C, F_hom[end])
+        end
       end
-      # (f: x → y) => h
-      # (f: x → y)::h
-      Expr(:call, :(=>), Expr(:call, :(:), f::Symbol,
-                              Expr(:call, :(→), x::Symbol, y::Symbol)), h) ||
-      Expr(:(::), Expr(:call, :(:), f::Symbol,
-                       Expr(:call, :(→), x::Symbol, y::Symbol)), h) =>
-        push_hom!(h, x, y, name=f)
-      # (x → y) => h
-      # (x → y)::h
-      Expr(:call, :(=>), Expr(:call, :(→), x::Symbol, y::Symbol), h) ||
-      Expr(:(::), Expr(:call, :(→), x::Symbol, y::Symbol), h) =>
-        push_hom!(h, x, y)
-      # h(x) == y
-      # y == h(x)
-      (Expr(:call, :(==), call::Expr, y::Symbol) ||
-       Expr(:call, :(==), y::Symbol, call::Expr)) && if free end =>
-         push_hom!(destructure_unary_call(call)..., y)
-      # h(x) == k(y)
-      Expr(:call, :(==), lhs::Expr, rhs::Expr) && if free end => begin
-        (h, x), (k, y) = destructure_unary_call(lhs), destructure_unary_call(rhs)
-        z = Symbol("##unnamed#$(nanon += 1)")
-        add_vertex!(g, vname=z)
-        push!(F_ob, nothing) # Assumes that codomain not needed to parse homs.
-        e1, e2 = push_hom!(h, x, z), push_hom!(k, y, z)
-        # Infer codomain from parsed homs.
-        Z1, Z2 = codom(C, F_hom[e1]), codom(C, F_hom[e2])
-        Z1 == Z2 || error("Codomain mismatch in $stmt: $Z1 != $Z2")
-        F_ob[end] = Z1
-      end
-      # f == g
-      Expr(:call, :(==), lhs, rhs) && if !free end =>
-        push!(eqs, parse_path_equation(g, lhs, rhs))
-      ::LineNumberNode => nothing
-      _ => error("Cannot parse line in diagram definition: $stmt")
+      AST.HomEq(lhs, rhs) =>
+        push!(eqs, parse_path(g, lhs) => parse_path(g, rhs))
+      _ => error("Cannot use statement $stmt in diagram definition")
     end
   end
   J = isempty(eqs) ? FinCat(g) : FinCat(g, eqs)
@@ -914,18 +948,6 @@ function leftmost_arg(expr, ops; all_ops=nothing)
     end
   end
   leftmost(expr)
-end
-
-""" Destructure the expression `:(f(g(x)))` to `(:(f∘g), :x)`, for example.
-"""
-function destructure_unary_call(expr::Expr)
-  @match expr begin
-    Expr(:call, head, x::Symbol) => (head, x)
-    Expr(:call, head, arg) => begin
-      rest, x = destructure_unary_call(arg)
-      (Expr(:call, :(∘), head, rest), x)
-    end
-  end
 end
 
 end
