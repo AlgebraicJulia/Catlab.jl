@@ -28,161 +28,60 @@ module AST
 using MLStyle: @data
 using StructEquality
 
-@data HomExpr begin
-  HomGenerator(name)
-  Compose(homs::Vector{<:HomExpr})
-  Id(ob)
-end
+abstract type ObExpr end
+abstract type HomExpr end
+abstract type AssignExpr end
 
-@data DisplayedCatExpr begin
-  ObOver(name::Symbol, over::Union{Symbol,Nothing})
+@data DiagramExpr begin
+  ObOver(name::Symbol, over::Union{ObExpr,Nothing})
   HomOver(name::Union{Symbol,Nothing}, src::Symbol, tgt::Symbol, over::HomExpr)
 end
 
-@data CatExpr <: DisplayedCatExpr begin
+@data CatExpr <: DiagramExpr begin
   Ob(name::Symbol)
   Hom(name::Union{Symbol,Nothing}, src::Symbol, tgt::Symbol)
   HomEq(lhs::HomExpr, rhs::HomExpr)
 end
 
-@data MappingExpr begin
-  MapsTo(lhs, rhs)
+@struct_equal struct Cat
+  statements::Vector{<:CatExpr}
+end
+@struct_equal struct Diagram
+  statements::Vector{<:DiagramExpr}
 end
 
-@struct_equal struct Cat
-  statements::Vector{CatExpr}
+@data ObExpr begin
+  ObGenerator(name)
+  OnlyOb()
+  Apply(ob::ObExpr, hom::HomExpr)
+  Coapply(hom::HomExpr, ob::ObExpr)
 end
-@struct_equal struct DisplayedCat
-  statements::Vector{DisplayedCatExpr}
+@data LimitExpr <: ObExpr begin
+  Limit(statements::Vector{<:DiagramExpr})
+  Product(statements::Vector{ObOver})
+  Terminal()
 end
-@struct_equal struct Mapping
-  statements::Vector{MappingExpr}
+@data ColimitExpr <: ObExpr begin
+  Colimit(statements::Vector{<:DiagramExpr})
+  Coproduct(statements::Vector{ObOver})
+  Initial()
 end
+
+@data HomExpr begin
+  HomGenerator(name)
+  Compose(homs::Vector{<:HomExpr})
+  Id(ob::ObExpr)
+  Mapping(assignments::Vector{<:AssignExpr})
+end
+
+@data AssignExpr begin
+  ObAssign(lhs::Union{ObGenerator,OnlyOb}, rhs::ObExpr)
+  HomAssign(lhs::HomGenerator, rhs::HomExpr)
+end
+
+Base.Pair(assign::AssignExpr) = Pair(assign.lhs.name, assign.rhs)
 
 end # AST module
-
-""" Parse category or displayed category from Julia expression to AST.
-"""
-function parse_category_ast(body::Expr; free::Bool=false, preprocess::Bool=true)
-  nanon = 0
-  if preprocess
-    body = reparse_arrows(body)
-  end
-  stmts = mapreduce(vcat, statements(body), init=AST.CatExpr[]) do stmt
-    @match stmt begin
-      # X
-      X::Symbol => [AST.Ob(X)]
-      # X, Y, ...
-      Expr(:tuple, Xs...) => map(AST.Ob, Xs)
-      # X → Y
-      Expr(:call, :(→), X::Symbol, Y::Symbol) => [AST.Hom(nothing, X, Y)]
-      # f : X → Y
-      Expr(:call, :(:), f::Symbol, Expr(:call, :(→), X::Symbol, Y::Symbol)) =>
-        [AST.Hom(f, X, Y)]
-      # (f, g, ...) : X → Y
-      Expr(:call, (:), Expr(:tuple, fs...),
-           Expr(:call, :(→), X::Symbol, Y::Symbol)) =>
-        map(f -> AST.Hom(f, X, Y), fs)
-      # x => X
-      # x::X
-      Expr(:call, :(=>), x::Symbol, X) || Expr(:(::), x::Symbol, X) =>
-        [AST.ObOver(x, X)]
-      # (x, y, ...) => X
-      # (x, y, ...)::X
-      Expr(:call, :(=>), Expr(:tuple, xs...), X) ||
-      Expr(:(::), Expr(:tuple, xs...), X) =>
-        map(x -> AST.ObOver(x, X), xs)
-      # (f: x → y) => h
-      # (f: x → y)::h
-      Expr(:call, :(=>), Expr(:call, :(:), f::Symbol,
-                              Expr(:call, :(→), x::Symbol, y::Symbol)), h) ||
-      Expr(:(::), Expr(:call, :(:), f::Symbol,
-                       Expr(:call, :(→), x::Symbol, y::Symbol)), h) =>
-        [AST.HomOver(f, x, y, parse_hom_ast(h))]
-      # (x → y) => h
-      # (x → y)::h
-      Expr(:call, :(=>), Expr(:call, :(→), x::Symbol, y::Symbol), h) ||
-      Expr(:(::), Expr(:call, :(→), x::Symbol, y::Symbol), h) =>
-        [AST.HomOver(nothing, x, y, parse_hom_ast(h))]
-      # h(x) == y
-      # y == h(x)
-      (Expr(:call, :(==), call::Expr, y::Symbol) ||
-       Expr(:call, :(==), y::Symbol, call::Expr)) && if free end => begin
-         h, x = destructure_unary_call(call)
-         [AST.HomOver(nothing, x, y, parse_hom_ast(h))]
-      end
-      # h(x) == k(y)
-      Expr(:call, :(==), lhs::Expr, rhs::Expr) && if free end => begin
-        (h, x), (k, y) = destructure_unary_call(lhs), destructure_unary_call(rhs)
-        z = Symbol("##unnamed#$(nanon += 1)")
-        [AST.ObOver(z, nothing), AST.HomOver(nothing, x, z, parse_hom_ast(h)),
-         AST.HomOver(nothing, y, z, parse_hom_ast(k))]
-      end
-      # f == g
-      Expr(:call, :(==), lhs, rhs) && if !free end =>
-        [AST.HomEq(parse_hom_ast(lhs), parse_hom_ast(rhs))]
-      ::LineNumberNode => AST.CatExpr[]
-      _ => error("Cannot parse statement in category definition: $stmt")
-    end
-  end
-  (all(x -> x isa AST.CatExpr, stmts) ? AST.Cat : AST.DisplayedCat)(stmts)
-end
-
-""" Parse morphism expression from Julia expression to AST.
-"""
-function parse_hom_ast(expr)::AST.HomExpr
-  @match expr begin
-    Expr(:call, :compose, args...) => AST.Compose(map(parse_hom_ast, args))
-    Expr(:call, :(⋅), f, g) || Expr(:call, :(⨟), f, g) =>
-      AST.Compose([parse_hom_ast(f), parse_hom_ast(g)])
-    Expr(:call, :(∘), f, g) => AST.Compose([parse_hom_ast(g), parse_hom_ast(f)])
-    Expr(:call, :id, x) => AST.Id(x)
-    f::Symbol || Expr(:curly, _...) => AST.HomGenerator(expr)
-    _ => error("Invalid morphism expression $expr")
-  end
-end
-
-function parse_mapping_ast(body)
-  stmts = mapreduce(vcat, statements(body), init=AST.Mapping[]) do stmt
-    @match stmt begin
-      # x => y
-      Expr(:call, :(=>), x::Symbol, rhs) => [AST.MapsTo(x, rhs)]
-      # (x, x′, ...) => y
-      Expr(:call, :(=>), Expr(:tuple, xs...), rhs) =>
-        map(x -> AST.MapsTo(x, rhs), xs)
-      ::LineNumberNode => AST.Mapping[]
-      _ => error("Cannot parse statement in mapping definition: $stmt")
-    end
-  end
-  AST.Mapping(stmts)
-end
-
-statements(expr) = (expr isa Expr && expr.head == :block) ? expr.args : [expr]
-
-""" Reparse Julia expressions for function/arrow types.
-
-In Julia, `f : x → y` is parsed as `(f : x) → y` instead of `f : (x → y)`.
-"""
-function reparse_arrows(expr)
-  @match expr begin
-    Expr(:call, :(→), Expr(:call, :(:), f, x), y) =>
-      Expr(:call, :(:), f, Expr(:call, :(→), x, y))
-    Expr(head, args...) => Expr(head, (reparse_arrows(arg) for arg in args)...)
-    _ => expr
-  end
-end
-
-""" Destructure Julia expression `:(f(g(x)))` to `(:(f∘g), :x)`, for example.
-"""
-function destructure_unary_call(expr::Expr)
-  @match expr begin
-    Expr(:call, head, x::Symbol) => (head, x)
-    Expr(:call, head, arg) => begin
-      rest, x = destructure_unary_call(arg)
-      (Expr(:call, :(∘), head, rest), x)
-    end
-  end
-end
 
 # Graphs
 ########
@@ -231,12 +130,12 @@ end
 Vertices in the graph must be uniquely named, whereas edges names are optional.
 """
 macro graph(graph_type, body)
-  stmts = parse_category_ast(body)
-  :(parse_graph($(esc(graph_type)), $stmts))
+  ast = AST.Cat(parse_diagram_ast(body))
+  :(parse_graph($(esc(graph_type)), $ast))
 end
 macro graph(body)
-  stmts = parse_category_ast(body)
-  :(parse_graph(NamedGraph{Symbol,Union{Symbol,Nothing}}, $stmts))
+  ast = AST.Cat(parse_diagram_ast(body))
+  :(parse_graph(NamedGraph{Symbol,Union{Symbol,Nothing}}, $ast))
 end
 
 function parse_graph(::Type{G}, ast::AST.Cat) where
@@ -287,8 +186,8 @@ end
 The objects and morphisms must be uniquely named.
 """
 macro fincat(body)
-  stmts = parse_category_ast(body)
-  :(parse_category(NamedGraph{Symbol,Symbol}, $stmts))
+  ast = AST.Cat(parse_diagram_ast(body))
+  :(parse_category(NamedGraph{Symbol,Symbol}, $ast))
 end
 
 function parse_category(::Type{G}, ast::AST.Cat) where
@@ -306,7 +205,7 @@ function parse_path(g::HasGraph, expr::AST.HomExpr)
   @match expr begin
     AST.HomGenerator(f::Symbol) => Path(g, edge_named(g, f))
     AST.Compose(args) => mapreduce(arg -> parse_path(g, arg), vcat, args)
-    AST.Id(x::Symbol) => empty(Path, g, vertex_named(g, x))
+    AST.Id(AST.ObGenerator(x::Symbol)) => empty(Path, g, vertex_named(g, x))
   end
 end
 
@@ -330,52 +229,51 @@ end
 ```
 """
 macro finfunctor(dom_cat, codom_cat, body)
-  stmts = parse_mapping_ast(body)
-  :(parse_functor($(esc(dom_cat)), $(esc(codom_cat)), $stmts))
+  :(parse_functor($(esc(dom_cat)), $(esc(codom_cat)), $(Meta.quot(body))))
 end
 
-function parse_functor(C::FinCat, D::FinCat, stmts)
-  ob_rhs, hom_rhs = parse_ob_hom_maps(C, stmts)
-  F = FinFunctor(mapvals(x -> parse_ob(D, x), ob_rhs),
-                 mapvals(f -> parse_hom(D, parse_hom_ast(f)), hom_rhs), C, D)
+function parse_functor(C::FinCat, D::FinCat, body)
+  ast = parse_mapping_ast(body, C)
+  ob_map, hom_map = make_ob_hom_maps(C, ast)
+  F = FinFunctor(mapvals(x -> parse_ob(D, x), ob_map),
+                 mapvals(f -> parse_hom(D, f), hom_map), C, D)
   is_functorial(F, check_equations=false) ||
-    error("Parsed functor is not functorial: $stmts")
+    error("Parsed functor is not functorial: $body")
   return F
 end
-function parse_functor(C::Presentation, D::Presentation, stmts; kw...)
-  parse_functor(FinCat(C), FinCat(D), stmts; kw...)
+function parse_functor(C::Presentation, D::Presentation, body; kw...)
+  parse_functor(FinCat(C), FinCat(D), body; kw...)
 end
 
-function parse_ob_hom_maps(C::FinCat, ast::AST.Mapping;
-                           missing_ob::Bool=false, missing_hom::Bool=false)
-  assignments = Dict{Symbol,Union{Expr,Symbol}}()
-  for (stmt::AST.MapsTo) in ast.statements
-    lhs, rhs = stmt.lhs, stmt.rhs
-    haskey(assignments, lhs) && error("Left-hand side $lhs assigned twice")
-    assignments[lhs] = rhs
-  end
-  ob_rhs = make_map(ob_generators(C)) do x
-    y = pop!(assignments, ob_generator_name(C, x), missing)
+function make_ob_hom_maps(C::FinCat, ast::AST.Mapping;
+                          missing_ob::Bool=false, missing_hom::Bool=false)
+  ob_assign = Dict(Pair(a) for a in ast.assignments if a isa AST.ObAssign)
+  hom_assign = Dict(Pair(a) for a in ast.assignments if a isa AST.HomAssign)
+  ob_map = make_map(ob_generators(C)) do x
+    y = pop!(ob_assign, ob_generator_name(C, x), missing)
     (!ismissing(y) || missing_ob) ? y :
       error("Object $(ob_generator_name(C,x)) is not assigned")
   end
-  hom_rhs = make_map(hom_generators(C)) do f
-    g = pop!(assignments, hom_generator_name(C, f), missing)
+  hom_map = make_map(hom_generators(C)) do f
+    g = pop!(hom_assign, hom_generator_name(C, f), missing)
     (!ismissing(g) || missing_hom) ? g :
       error("Morphism $(hom_generator_name(C,f)) is not assigned")
   end
-  isempty(assignments) ||
-    error(string("Unused assignment(s): ", join(keys(assignments), ", ")))
-  (ob_rhs, hom_rhs)
+  isempty(ob_assign) || error("Unused object assignment(s): $(keys(ob_assign))")
+  isempty(hom_assign) || error("Unused morphism assignment(s): $(keys(hom_assign))")
+  (ob_map, hom_map)
 end
 
 """ Parse expression for object in a category.
 """
-function parse_ob(C::FinCat{Ob,Hom}, expr) where {Ob,Hom}
+function parse_ob(C::FinCat{Ob,Hom}, expr::AST.ObExpr) where {Ob,Hom}
   @match expr begin
-    x::Symbol => ob_generator(C, x)
-    Expr(:curly, _...) => parse_gat_expr(C, expr)::Ob
-    _ => error("Invalid object expression $expr")
+    AST.ObGenerator(name) => @match name begin
+      x::Symbol => ob_generator(C, x)
+      Expr(:curly, _...) => parse_gat_expr(C, name)::Ob
+      _ => error("Invalid object generator $name")
+    end
+    AST.OnlyOb() => only(ob_generators(C))
   end
 end
 
@@ -383,10 +281,10 @@ end
 """
 function parse_hom(C::FinCat{Ob,Hom}, expr::AST.HomExpr) where {Ob,Hom}
   @match expr begin
-    AST.HomGenerator(fexpr) => @match fexpr begin
+    AST.HomGenerator(name) => @match name begin
       f::Symbol => hom_generator(C, f)
-      Expr(:curly, _...) => parse_gat_expr(C, fexpr)::Hom
-      _ => error("Invalid morphism expression $expr")
+      Expr(:curly, _...) => parse_gat_expr(C, name)::Hom
+      _ => error("Invalid morphism generator $name")
     end
     AST.Compose(args) => mapreduce(
       arg -> parse_hom(C, arg), (fs...) -> compose(C, fs...), args)
@@ -490,8 +388,9 @@ macro free_diagram(cat, body)
 end
 
 function parse_diagram(C::FinCat, body::Expr; kw...)
+  ast = parse_diagram_ast(body; kw...)
   F_ob, F_hom, J = parse_diagram_data(
-    C, x -> parse_ob(C,x), (f,x,y) -> parse_hom(C,f), body; kw...)
+    C, x -> parse_ob(C,x), (f,x,y) -> parse_hom(C,f), ast; kw...)
   F = FinFunctor(F_ob, F_hom, J, C)
   is_functorial(F, check_equations=false) ||
     error("Parsed diagram is not functorial: $body")
@@ -500,12 +399,11 @@ end
 parse_diagram(pres::Presentation, body::Expr; kw...) =
   parse_diagram(FinCat(pres), body; kw...)
 
-function parse_diagram_data(C::FinCat, parse_ob, parse_hom, body::Expr; kw...)
+function parse_diagram_data(C::FinCat, parse_ob, parse_hom,
+                            statements::Vector{<:AST.DiagramExpr}; kw...)
   g, eqs = NamedGraph{Symbol,Union{Symbol,Nothing}}(), Pair[]
   F_ob, F_hom = [], []
-
-  ast = parse_category_ast(body; kw...)
-  for stmt in ast.statements
+  for stmt in statements
     @match stmt begin
       AST.ObOver(x, X) => begin
         parse!(g, AST.Ob(x))
@@ -659,7 +557,8 @@ high-level steps of this process are:
 function parse_migration(src_schema::Presentation, body::Expr;
                          preprocess::Bool=true)
   C = FinCat(src_schema)
-  F_ob, F_hom, J = parse_query_diagram(C, body; free=false, preprocess=preprocess)
+  stmts = parse_diagram_ast(body)
+  F_ob, F_hom, J = parse_query_diagram(C, stmts; free=false, preprocess=preprocess)
   make_migration_functor(F_ob, F_hom, J, C)
 end
 function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
@@ -668,10 +567,11 @@ function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
   if preprocess
     body = reparse_arrows(body)
   end
-  ob_rhs, hom_rhs = parse_ob_hom_maps(D, body, missing_hom=true)
+  ast = parse_mapping_ast(body, D)
+  ob_rhs, hom_rhs = make_ob_hom_maps(D, ast, missing_hom=true)
   F_ob = mapvals(expr -> parse_query(C, expr), ob_rhs)
   F_hom = mapvals(hom_rhs, keys=true) do f, expr
-    parse_query_hom(C, ismissing(expr) ? Expr(:block) : expr,
+    parse_query_hom(C, ismissing(expr) ? AST.Mapping(AST.AssignExpr[]) : expr,
                     F_ob[dom(D,f)], F_ob[codom(D,f)])
   end
   make_migration_functor(F_ob, F_hom, D, C)
@@ -682,132 +582,102 @@ end
 
 """ Parse expression defining a query.
 """
-function parse_query(C::FinCat, expr)
-  expr = @match expr begin
-    Expr(:macrocall, form, ::LineNumberNode, args...) =>
-      Expr(:macrocall, form, args...)
-    _ => expr
-  end
+function parse_query(C::FinCat, expr::AST.ObExpr)
   @match expr begin
-    x::Symbol => ob_generator(C, x)
-    Expr(:macrocall, &(Symbol("@limit")), body) ||
-    Expr(:macrocall, &(Symbol("@join")), body) => begin
-      DiagramData{op}(parse_query_diagram(C, body)...)
-    end
-    Expr(:macrocall, &(Symbol("@product")), body) => begin
-      d = DiagramData{op}(parse_query_diagram(C, body)...)
-      is_discrete(shape(d)) ? d : error("Product query is not discrete: $expr")
-    end
-    Expr(:macrocall, &(Symbol("@terminal"))) ||
-    Expr(:macrocall, &(Symbol("@unit"))) => begin
-      DiagramData{op}(parse_query_diagram(C, Expr(:block))...)
-    end
-    Expr(:macrocall, &(Symbol("@colimit")), body) ||
-    Expr(:macrocall, &(Symbol("@glue")), body) => begin
-      DiagramData{id}(parse_query_diagram(C, body)...)
-    end
-    Expr(:macrocall, &(Symbol("@coproduct")), body) ||
-    Expr(:macrocall, &(Symbol("@cases")), body) => begin
-      d = DiagramData{id}(parse_query_diagram(C, body)...)
-      is_discrete(shape(d)) ? d : error("Cases query is not discrete: $expr")
-    end
-    Expr(:macrocall, &(Symbol("@initial"))) ||
-    Expr(:macrocall, &(Symbol("@empty"))) => begin
-      DiagramData{id}(parse_query_diagram(C, Expr(:block))...)
-    end
-    _ => error("Cannot parse query in definition of migration: $expr")
+    AST.ObGenerator(x) => ob_generator(C, x)
+    AST.Limit(stmts) || AST.Product(stmts) =>
+      DiagramData{op}(parse_query_diagram(C, stmts)...)
+    AST.Terminal() =>
+      DiagramData{op}(parse_query_diagram(C, AST.DiagramExpr[])...)
+    AST.Colimit(stmts) || AST.Coproduct(stmts) =>
+      DiagramData{id}(parse_query_diagram(C, stmts)...)
+    AST.Initial() =>
+      DiagramData{id}(parse_query_diagram(C, AST.DiagramExpr[])...)
   end
 end
-function parse_query_diagram(C::FinCat, expr::Expr;
+function parse_query_diagram(C::FinCat, stmts::Vector{<:AST.DiagramExpr};
                              free::Bool=true, preprocess::Bool=false)
   parse_diagram_data(C, X -> parse_query(C,X),
-                     (f,x,y) -> parse_query_hom(C,f,x,y), expr;
+                     (f,X,Y) -> parse_query_hom(C,f,X,Y), stmts;
                      free=free, preprocess=preprocess)
 end
 
 """ Parse expression defining a morphism of queries.
 """
-parse_query_hom(C::FinCat{Ob}, expr, ::Ob, ::Union{Ob,Nothing}) where Ob =
+function parse_query_hom(C::FinCat{Ob}, expr::AST.HomExpr,
+                         ::Ob, ::Union{Ob,Nothing}) where Ob
   parse_hom(C, expr)
+end
 
 # Conjunctive fragment.
 
-function parse_query_hom(C::FinCat, expr, d::DiagramData{op}, d′::DiagramData{op})
-  ob_rhs, hom_rhs = parse_ob_hom_maps(shape(d′), expr)
+function parse_query_hom(C::FinCat, mapping::AST.Mapping,
+                         d::DiagramData{op}, d′::DiagramData{op})
+  ob_rhs, hom_rhs = make_ob_hom_maps(shape(d′), mapping)
   f_ob = mapvals(ob_rhs, keys=true) do j′, rhs
-    parse_conj_query_ob_rhs(C, rhs, d, ob_map(d′, j′))
+    parse_diagram_ob_rhs(C, rhs, ob_map(d′, j′), d)
   end
   f_hom = mapvals(rhs -> parse_hom(shape(d), rhs), hom_rhs)
   DiagramHomData{op}(f_ob, f_hom)
 end
 function parse_query_hom(C::FinCat{Ob}, expr, c::Ob, d′::DiagramData{op}) where Ob
-  ob_rhs, f_hom = parse_ob_hom_maps(shape(d′), expr, missing_ob=true, missing_hom=true)
+  ob_rhs, f_hom = make_ob_hom_maps(shape(d′), expr, missing_ob=true, missing_hom=true)
   f_ob = mapvals(ob_rhs, keys=true) do j′, rhs
-    ismissing(rhs) ? missing : (missing, parse_query_hom(C, rhs, c, ob_map(d′, j′)))
+    ismissing(rhs) ? missing : parse_diagram_ob_rhs(C, rhs, ob_map(d′, j′), c)
   end
   @assert all(ismissing, f_hom)
   DiagramHomData{op}(f_ob, f_hom)
 end
-function parse_query_hom(C::FinCat{Ob}, expr, d::DiagramData{op}, c′::Ob) where Ob
-  DiagramHomData{op}([parse_conj_query_ob_rhs(C, expr, d, c′)], [])
+function parse_query_hom(C::FinCat{Ob}, mapping::AST.Mapping,
+                         d::DiagramData{op}, c′::Ob) where Ob
+  expr = only(mapping.assignments).rhs # FIXME: Hacky.
+  DiagramHomData{op}([parse_diagram_ob_rhs(C, expr, c′, d)], [])
 end
 
 # Gluing fragment.
 
-function parse_query_hom(C::FinCat, expr, d::DiagramData{id}, d′::DiagramData{id})
-  ob_rhs, hom_rhs = parse_ob_hom_maps(shape(d), expr)
+function parse_query_hom(C::FinCat, mapping::AST.Mapping,
+                         d::DiagramData{id}, d′::DiagramData{id})
+  ob_rhs, hom_rhs = make_ob_hom_maps(shape(d), mapping)
   f_ob = mapvals(ob_rhs, keys=true) do j, rhs
-    parse_glue_query_ob_rhs(C, rhs, ob_map(d, j), d′)
+    parse_diagram_ob_rhs(C, rhs, ob_map(d, j), d′)
   end
   f_hom = mapvals(expr -> parse_hom(shape(d′), expr), hom_rhs)
   DiagramHomData{id}(f_ob, f_hom)
 end
-function parse_query_hom(C::FinCat{Ob}, expr, c::Union{Ob,DiagramData{op}},
-                         d′::DiagramData{id}) where Ob
-  DiagramHomData{id}([parse_glue_query_ob_rhs(C, expr, c, d′)], [])
+function parse_query_hom(C::FinCat{Ob}, mapping::AST.Mapping,
+                         c::Union{Ob,DiagramData{op}}, d′::DiagramData{id}) where Ob
+  expr = only(mapping.assignments).rhs # FIXME: See above.
+  DiagramHomData{id}([parse_diagram_ob_rhs(C, expr, c, d′)], [])
 end
 function parse_query_hom(C::FinCat{Ob}, expr, d::DiagramData{id},
                          c′::Union{Ob,DiagramData{op}}) where Ob
-  ob_rhs, f_hom = parse_ob_hom_maps(shape(d), expr, missing_ob=true, missing_hom=true)
+  ob_rhs, f_hom = make_ob_hom_maps(shape(d), expr, missing_ob=true, missing_hom=true)
   f_ob = mapvals(ob_rhs, keys=true) do j, rhs
-    ismissing(rhs) ? missing : (missing, parse_query_hom(C, rhs, ob_map(d, j), c′))
+    ismissing(rhs) ? missing : parse_diagram_ob_rhs(C, rhs, ob_map(d, j), c′)
   end
   @assert all(ismissing, f_hom)
   DiagramHomData{id}(f_ob, f_hom)
 end
 
-""" Parse RHS of object assignment in morphism out of conjunctive query.
-"""
-function parse_conj_query_ob_rhs(C::FinCat, expr, d::DiagramData{op}, c′)
-  j_name, f_expr = @match expr begin
-    x::Symbol => (x, nothing)
-    Expr(:tuple, x::Symbol, f) => (x, f)
-    Expr(:call, op, _...) && if op ∈ compose_ops end =>
-      leftmost_arg(expr, (:(⋅), :(⨟)), all_ops=compose_ops)
-    Expr(:call, name::Symbol, _) => reverse(destructure_unary_call(expr))
-    _ => error("Cannot parse object assignment in migration: $expr")
+function parse_diagram_ob_rhs(C::FinCat, expr::AST.ObExpr, X, Y)
+  @match expr begin
+    AST.Apply(AST.OnlyOb(), f_expr) =>
+      (missing, parse_query_hom(C, f_expr, Y, X))
+    AST.Apply(j_expr, f_expr) => begin
+      j = parse_ob(Y, j_expr)
+      (j, parse_query_hom(C, f_expr, ob_map(Y, j), X))
+    end
+    AST.Coapply(f_expr, AST.OnlyOb()) =>
+      (missing, parse_query_hom(C, f_expr, X, Y))
+    AST.Coapply(f_expr, j_expr) => begin
+      j = parse_ob(Y, j_expr)
+      (j, parse_query_hom(C, f_expr, X, ob_map(Y, j)))
+    end
+    _ => parse_ob(Y, expr)
   end
-  j = ob_generator(shape(d), j_name)
-  isnothing(f_expr) ? j :
-    (j, parse_query_hom(C, f_expr, ob_map(d, j), c′))
 end
-
-""" Parse RHS of object assignment in morphism into gluing query.
-"""
-function parse_glue_query_ob_rhs(C::FinCat, expr, c, d′::DiagramData{id})
-  j′_name, f_expr = @match expr begin
-    x::Symbol => (x, nothing)
-    Expr(:tuple, x::Symbol, f) => (x, f)
-    Expr(:call, op, _...) && if op ∈ compose_ops end =>
-      leftmost_arg(expr, (:(∘),), all_ops=compose_ops)
-    _ => error("Cannot parse object assignment in migration: $expr")
-  end
-  j′ = ob_generator(shape(d′), j′_name)
-  isnothing(f_expr) ? j′ :
-    (j′, parse_query_hom(C, f_expr, c, ob_map(d′, j′)))
-end
-
-const compose_ops = (:(⋅), :(⨟), :(∘))
+parse_ob(d::DiagramData, args...) = parse_ob(shape(d), args...)
 
 # Query construction
 #-------------------
@@ -929,8 +799,293 @@ function convert_query(cat::C, ::Type{<:GlucQuery{C}}, x::Ob) where
   convert_query(cat, GlucQuery{C}, convert_query(cat, ConjQuery{C}, x))
 end
 
-# Utilities
-###########
+# Julia expression to AST
+#########################
+
+""" Parse category or diagram from Julia expression to AST.
+"""
+function parse_diagram_ast(body::Expr; free::Bool=false, preprocess::Bool=true)
+  if preprocess
+    body = reparse_arrows(body)
+  end
+  state = DiagramASTState()
+  stmts = mapreduce(vcat, statements(body), init=AST.CatExpr[]) do expr
+    @match expr begin
+      # X
+      X::Symbol => [AST.Ob(X)]
+      # X, Y, ...
+      Expr(:tuple, Xs...) => map(AST.Ob, Xs)
+      # X → Y
+      Expr(:call, :(→), X::Symbol, Y::Symbol) => [AST.Hom(nothing, X, Y)]
+      # f : X → Y
+      Expr(:call, :(:), f::Symbol, Expr(:call, :(→), X::Symbol, Y::Symbol)) =>
+        [AST.Hom(f, X, Y)]
+      # (f, g, ...) : X → Y
+      Expr(:call, (:), Expr(:tuple, fs...),
+           Expr(:call, :(→), X::Symbol, Y::Symbol)) =>
+        map(f -> AST.Hom(f, X, Y), fs)
+      # x => X
+      # x::X
+      Expr(:call, :(=>), x::Symbol, X) || Expr(:(::), x::Symbol, X) =>
+        [push_ob_over!(state, AST.ObOver(x, parse_ob_ast(X)))]
+      # (x, y, ...) => X
+      # (x, y, ...)::X
+      Expr(:call, :(=>), Expr(:tuple, xs...), X) ||
+      Expr(:(::), Expr(:tuple, xs...), X) => let ob = parse_ob_ast(X)
+        map(x -> push_ob_over!(state, AST.ObOver(x, ob)), xs)
+      end
+      # (f: x → y) => h
+      # (f: x → y)::h
+      Expr(:call, :(=>), Expr(:call, :(:), f::Symbol,
+                              Expr(:call, :(→), x::Symbol, y::Symbol)), h) ||
+      Expr(:(::), Expr(:call, :(:), f::Symbol,
+      Expr(:call, :(→), x::Symbol, y::Symbol)), h) => begin
+        X, Y = state.ob_over[x], state.ob_over[y]
+        [AST.HomOver(f, x, y, parse_hom_ast(h, X, Y))]
+      end
+      # (x → y) => h
+      # (x → y)::h
+      Expr(:call, :(=>), Expr(:call, :(→), x::Symbol, y::Symbol), h) ||
+      Expr(:(::), Expr(:call, :(→), x::Symbol, y::Symbol), h) => begin
+        X, Y = state.ob_over[x], state.ob_over[y]
+        [AST.HomOver(nothing, x, y, parse_hom_ast(h, X, Y))]
+      end
+      # h(x) == y
+      # y == h(x)
+      (Expr(:call, :(==), call::Expr, y::Symbol) ||
+       Expr(:call, :(==), y::Symbol, call::Expr)) && if free end => begin
+         h, x = destructure_unary_call(call)
+         X, Y = state.ob_over[x], state.ob_over[y]
+         [AST.HomOver(nothing, x, y, parse_hom_ast(h, X, Y))]
+      end
+      # h(x) == k(y)
+      Expr(:call, :(==), lhs::Expr, rhs::Expr) && if free end => begin
+        (h, x), (k, y) = destructure_unary_call(lhs), destructure_unary_call(rhs)
+        z = Symbol("##unnamed#$(state.nanon += 1)")
+        X, Y = state.ob_over[x], state.ob_over[y]
+        # Assumes that codomain not needed to parse morphisms.
+        [AST.ObOver(z, nothing),
+         AST.HomOver(nothing, x, z, parse_hom_ast(h, X)),
+         AST.HomOver(nothing, y, z, parse_hom_ast(k, Y))]
+      end
+      # f == g
+      Expr(:call, :(==), lhs, rhs) && if !free end =>
+        [AST.HomEq(parse_hom_ast(lhs), parse_hom_ast(rhs))]
+      ::LineNumberNode => AST.CatExpr[]
+      _ => error("Cannot parse statement in category/diagram definition: $expr")
+    end
+  end
+end
+
+Base.@kwdef mutable struct DiagramASTState
+  nanon::Int = 0
+  ob_over::Dict{Symbol,AST.ObExpr} = Dict{Symbol,AST.ObExpr}()
+end
+function push_ob_over!(state::DiagramASTState, ob::AST.ObOver)
+  isnothing(ob.name) && return ob
+  haskey(state.ob_over, ob.name) &&
+    error("Object with name $x has already been defined")
+  state.ob_over[ob.name] = ob.over
+  return ob
+end
+
+""" Parse object expression from Julia expression to AST.
+"""
+function parse_ob_ast(expr)::AST.ObExpr
+  @match expr begin
+    Expr(:macrocall, _...) => parse_ob_macro_ast(expr)
+    x::Symbol || Expr(:curly, _...) => AST.ObGenerator(expr)
+    _ => error("Invalid object expression $expr")
+  end
+end
+const compose_ops = (:(⋅), :(⨟), :(∘))
+
+function parse_ob_macro_ast(expr)::AST.ObExpr
+  @match expr begin
+    Expr(:macrocall, form, ::LineNumberNode, args...) =>
+      parse_ob_macro_ast(Expr(:macrocall, form, args...))
+    Expr(:macrocall, &(Symbol("@limit")), body) ||
+    Expr(:macrocall, &(Symbol("@join")), body) =>
+      AST.Limit(parse_diagram_ast(body, free=true, preprocess=false))
+    Expr(:macrocall, &(Symbol("@product")), body) =>
+      AST.Product(parse_diagram_ast(body, free=true, preprocess=false))
+    Expr(:macrocall, &(Symbol("@terminal"))) ||
+    Expr(:macrocall, &(Symbol("@unit"))) =>
+      AST.Terminal()
+    Expr(:macrocall, &(Symbol("@colimit")), body) ||
+    Expr(:macrocall, &(Symbol("@glue")), body) =>
+      AST.Colimit(parse_diagram_ast(body, free=true, preprocess=false))
+    Expr(:macrocall, &(Symbol("@coproduct")), body) ||
+    Expr(:macrocall, &(Symbol("@cases")), body) =>
+      AST.Coproduct(parse_diagram_ast(body, free=true, preprocess=false))
+    Expr(:macrocall, &(Symbol("@initial"))) ||
+    Expr(:macrocall, &(Symbol("@empty"))) =>
+      AST.Initial()
+    _ => error("Invalid object macro $expr")
+  end
+end
+
+""" Parse morphism expression from Julia expression to AST.
+"""
+function parse_hom_ast(expr, dom::Union{AST.ObGenerator,Nothing}=nothing,
+                       codom::Union{AST.ObGenerator,Nothing}=nothing)
+  # Domain and codomain are not used, but may be supplied for uniformity.
+  @match expr begin
+    Expr(:call, :compose, args...) => AST.Compose(map(parse_hom_ast, args))
+    Expr(:call, :(⋅), f, g) || Expr(:call, :(⨟), f, g) =>
+      AST.Compose([parse_hom_ast(f), parse_hom_ast(g)])
+    Expr(:call, :(∘), f, g) => AST.Compose([parse_hom_ast(g), parse_hom_ast(f)])
+    Expr(:call, :id, x) => AST.Id(parse_ob_ast(x))
+    f::Symbol || Expr(:curly, _...) => AST.HomGenerator(expr)
+    _ => error("Invalid morphism expression $expr")
+  end
+end
+
+# Limit fragment.
+function parse_hom_ast(expr, dom::AST.LimitExpr, cod::AST.LimitExpr)
+  parse_mapping_ast((args...) -> parse_apply_ast(args..., dom), expr, cod)
+end
+function parse_hom_ast(expr, dom::AST.ObGenerator, cod::AST.LimitExpr)
+  parse_mapping_ast(expr, cod) do (args...)
+    AST.Apply(AST.OnlyOb(), parse_hom_ast(args..., dom))
+  end
+end
+function parse_hom_ast(expr, dom::AST.LimitExpr, cod::AST.ObGenerator)
+  [AST.ObAssign(AST.OnlyOb(), parse_apply_ast(expr, cod, dom))] |> AST.Mapping
+end
+
+# Colimit fragment.
+function parse_hom_ast(expr, dom::AST.ColimitExpr, cod::AST.ColimitExpr)
+  parse_mapping_ast((args...) -> parse_coapply_ast(args..., cod), expr, dom)
+end
+function parse_hom_ast(expr, dom::Union{AST.ObGenerator,AST.LimitExpr},
+                       cod::AST.ColimitExpr)
+  [AST.ObAssign(AST.OnlyOb(), parse_coapply_ast(expr, dom, cod))] |> AST.Mapping
+end
+function parse_hom_ast(expr, dom::AST.ColimitExpr,
+                       cod::Union{AST.ObGenerator,AST.LimitExpr})
+  parse_mapping_ast(expr, dom) do (args...)
+    AST.Coapply(parse_hom_ast(args..., cod), AST.OnlyOb())
+  end
+end
+
+""" Parse object/morphism mapping from Julia expression to AST.
+"""
+function parse_mapping_ast(f_parse_ob_assign, body, dom)
+  ob_map = Dict{Symbol,AST.ObExpr}()
+  dom_obs, dom_homs = Dict(ob_over_pairs(dom)), Dict(hom_over_pairs(dom))
+  stmts = mapreduce(vcat, statements(body), init=AST.AssignExpr[]) do expr
+    @match expr begin
+      # lhs => rhs
+      Expr(:call, :(=>), lhs::Symbol, rhs) => begin
+        if lhs ∈ keys(dom_obs)
+          x, X = lhs, dom_obs[lhs]
+          ob_map[x] = x′ = f_parse_ob_assign(rhs, X)
+          [AST.ObAssign(AST.ObGenerator(x), x′)]
+        elseif lhs ∈ keys(dom_homs)
+          f, (x, y) = lhs, dom_homs[lhs]
+          x′, y′ = ob_map[x], ob_map[y]
+          f′ = parse_hom_ast(rhs, x′, y′)
+          [AST.HomAssign(AST.HomGenerator(f), f′)]
+        else
+          error("$lhs is not the name of an object or morphism generator")
+        end
+      end
+      # (lhs, lhs′, ...) => rhs
+      Expr(:call, :(=>), Expr(:tuple, lhs...), rhs) => begin
+        if all(∈(keys(dom_obs)), lhs)
+          X = only(unique(dom_obs[x] for x in lhs))
+          x′ = f_parse_ob_assign(rhs, X)
+          for x in lhs; ob_map[x] = x′ end
+          map(x -> AST.ObAssign(AST.ObGenerator(x), x′), lhs)
+        elseif all(∈(keys(dom_homs)), lhs)
+          x′, y′ = only(unique((let (x, y) = dom_homs[f]
+                                  ob_map[x] => ob_map[y]
+                                end for f in lhs)))
+          f′ = parse_hom_ast(rhs, x′, y′)
+          map(f -> AST.HomAssign(AST.HomGenerator(f), f′), lhs)
+        else
+          error("$lhs are not all names of object or morphism generators")
+        end
+      end
+      ::LineNumberNode => AST.AssignExpr[]
+      _ => error("Cannot parse object or morphism assignment: $expr")
+    end
+  end
+  AST.Mapping(stmts)
+end
+function parse_mapping_ast(body, dom)
+  parse_mapping_ast((rhs, _) -> parse_ob_ast(rhs), body, dom)
+end
+
+function parse_apply_ast(expr, X, target)
+  y::Symbol, f = @match expr begin
+    ::Symbol => (expr, nothing)
+    Expr(:call, op, _...) && if op ∈ compose_ops end =>
+      leftmost_arg(expr, (:(⋅), :(⨟)), all_ops=compose_ops)
+    Expr(:call, name::Symbol, _) => reverse(destructure_unary_call(expr))
+    _ => error("Cannot parse object assignment in migration: $expr")
+  end
+  isnothing(f) && return AST.ObGenerator(y)
+  Y = only(Y′ for (y′,Y′) in ob_over_pairs(target) if y == y′)
+  AST.Apply(AST.ObGenerator(y), parse_hom_ast(f, Y, X))
+end
+function parse_coapply_ast(expr, X, target)
+  y::Symbol, f = @match expr begin
+    ::Symbol => (expr, nothing)
+    Expr(:call, op, _...) && if op ∈ compose_ops end =>
+      leftmost_arg(expr, (:(∘),), all_ops=compose_ops)
+    _ => error("Cannot parse object assignment in migration: $expr")
+  end
+  isnothing(f) && return AST.ObGenerator(y)
+  Y = only(Y′ for (y′,Y′) in ob_over_pairs(target) if y == y′)
+  AST.Coapply(parse_hom_ast(f, X, Y), AST.ObGenerator(y))
+end
+
+function ob_over_pairs(C::FinCat)
+  (ob_generator_name(C,x) => nothing for x in ob_generators(C))
+end
+function ob_over_pairs(expr::Union{AST.LimitExpr,AST.ColimitExpr})
+  @match expr begin
+    AST.Limit(statements) || AST.Colimit(statements) =>
+      (ob.name => ob.over for ob in statements if ob isa AST.ObOver)
+    AST.Product(statements) || AST.Coproduct(statements) =>
+      (ob.name => ob.over for ob in statements)
+    AST.Terminal() || AST.Initial() => ()
+  end
+end
+
+function hom_over_pairs(C::FinCat)
+  (hom_generator_name(C,f) =>
+    (ob_generator_name(C,dom(C,f)) => ob_generator_name(C,codom(C,f)))
+   for f in hom_generators(C))
+end
+function hom_over_pairs(expr::Union{AST.LimitExpr,AST.ColimitExpr})
+  @match expr begin
+    AST.Limit(statements) || AST.Colimit(statements) =>
+      (hom.name => (hom.src => hom.tgt)
+       for hom in statements if hom isa AST.HomOver)
+    _ => ()
+  end
+end
+
+# Julia expression utilities
+############################
+
+statements(expr) = (expr isa Expr && expr.head == :block) ? expr.args : [expr]
+
+""" Reparse Julia expressions for function/arrow types.
+
+In Julia, `f : x → y` is parsed as `(f : x) → y` instead of `f : (x → y)`.
+"""
+function reparse_arrows(expr)
+  @match expr begin
+    Expr(:call, :(→), Expr(:call, :(:), f, x), y) =>
+      Expr(:call, :(:), f, Expr(:call, :(→), x, y))
+    Expr(head, args...) => Expr(head, (reparse_arrows(arg) for arg in args)...)
+    _ => expr
+  end
+end
 
 """ Left-most argument plus remainder of left-associated binary operations.
 """
@@ -948,6 +1103,18 @@ function leftmost_arg(expr, ops; all_ops=nothing)
     end
   end
   leftmost(expr)
+end
+
+""" Destructure Julia expression `:(f(g(x)))` to `(:(f∘g), :x)`, for example.
+"""
+function destructure_unary_call(expr::Expr)
+  @match expr begin
+    Expr(:call, head, x::Symbol) => (head, x)
+    Expr(:call, head, arg) => begin
+      rest, x = destructure_unary_call(arg)
+      (Expr(:call, :(∘), head, rest), x)
+    end
+  end
 end
 
 end

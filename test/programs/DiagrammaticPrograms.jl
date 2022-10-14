@@ -86,7 +86,8 @@ end
                       SchGraph, SchCPortGraph)
 
 # Incomplete definition.
-@test_throws ErrorException begin
+# FIXME: Throw more informative exception.
+@test_throws Exception begin
   @finfunctor SchGraph SchCPortGraph begin
     V => Box
     src => src ⨟ box
