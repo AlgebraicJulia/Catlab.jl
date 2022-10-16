@@ -24,9 +24,7 @@ import ...CategoricalAlgebra.FinCats: FinCat, vertex_name, vertex_named,
 """ Abstract syntax trees for category and diagram DSLs.
 """
 module AST
-
-using MLStyle: @data
-using StructEquality
+using MLStyle
 
 abstract type ObExpr end
 abstract type HomExpr end
@@ -43,11 +41,9 @@ end
   HomEq(lhs::HomExpr, rhs::HomExpr)
 end
 
-@struct_equal struct Cat
-  statements::Vector{<:CatExpr}
-end
-@struct_equal struct Diagram
-  statements::Vector{<:DiagramExpr}
+@data CatDefinition begin
+  Cat(statements::Vector{<:CatExpr})
+  Diagram(statements::Vector{<:DiagramExpr})
 end
 
 @data ObExpr begin
@@ -79,7 +75,24 @@ end
   HomAssign(lhs::HomGenerator, rhs::HomExpr)
 end
 
-Base.Pair(assign::AssignExpr) = Pair(assign.lhs.name, assign.rhs)
+function ob_over_pairs(expr::Union{Diagram,ObExpr})
+  @match expr begin
+    Diagram(statements) || Limit(statements) || Colimit(statements) =>
+      (ob.name => ob.over for ob in statements if ob isa AST.ObOver)
+    Product(statements) || Coproduct(statements) =>
+      (ob.name => ob.over for ob in statements)
+    Terminal() || Initial() => ()
+  end
+end
+
+function hom_over_pairs(expr::Union{Diagram,ObExpr})
+  @match expr begin
+    Diagram(statements) || Limit(statements) || Colimit(statements) =>
+      (hom.name => (hom.src => hom.tgt)
+       for hom in statements if hom isa AST.HomOver)
+    _ => ()
+  end
+end
 
 end # AST module
 
@@ -245,10 +258,13 @@ function parse_functor(C::Presentation, D::Presentation, body; kw...)
   parse_functor(FinCat(C), FinCat(D), body; kw...)
 end
 
-function make_ob_hom_maps(C::FinCat, ast::AST.Mapping;
+function make_ob_hom_maps(C::FinCat, ast::AST.Mapping; allow_missing::Bool=false,
                           missing_ob::Bool=false, missing_hom::Bool=false)
-  ob_assign = Dict(Pair(a) for a in ast.assignments if a isa AST.ObAssign)
-  hom_assign = Dict(Pair(a) for a in ast.assignments if a isa AST.HomAssign)
+  allow_missing && (missing_ob = missing_hom = true)
+  ob_assign = Dict(a.lhs.name => a.rhs
+                   for a in ast.assignments if a isa AST.ObAssign)
+  hom_assign = Dict(a.lhs.name => a.rhs
+                    for a in ast.assignments if a isa AST.HomAssign)
   ob_map = make_map(ob_generators(C)) do x
     y = pop!(ob_assign, ob_generator_name(C, x), missing)
     (!ismissing(y) || missing_ob) ? y :
@@ -401,7 +417,7 @@ parse_diagram(pres::Presentation, body::Expr; kw...) =
 
 function parse_diagram_data(C::FinCat, parse_ob, parse_hom,
                             statements::Vector{<:AST.DiagramExpr}; kw...)
-  g, eqs = NamedGraph{Symbol,Union{Symbol,Nothing}}(), Pair[]
+  g, eqs = DiagramGraph(), Pair[]
   F_ob, F_hom = [], []
   for stmt in statements
     @match stmt begin
@@ -426,6 +442,8 @@ function parse_diagram_data(C::FinCat, parse_ob, parse_hom,
   J = isempty(eqs) ? FinCat(g) : FinCat(g, eqs)
   (F_ob, F_hom, J)
 end
+
+const DiagramGraph = NamedGraph{Symbol,Union{Symbol,Nothing}}
 
 # Data migrations
 #################
@@ -587,12 +605,10 @@ function parse_query(C::FinCat, expr::AST.ObExpr)
     AST.ObGenerator(x) => ob_generator(C, x)
     AST.Limit(stmts) || AST.Product(stmts) =>
       DiagramData{op}(parse_query_diagram(C, stmts)...)
-    AST.Terminal() =>
-      DiagramData{op}(parse_query_diagram(C, AST.DiagramExpr[])...)
     AST.Colimit(stmts) || AST.Coproduct(stmts) =>
       DiagramData{id}(parse_query_diagram(C, stmts)...)
-    AST.Initial() =>
-      DiagramData{id}(parse_query_diagram(C, AST.DiagramExpr[])...)
+    AST.Terminal() => DiagramData{op}([], [], FinCat(DiagramGraph()))
+    AST.Initial() => DiagramData{id}([], [], FinCat(DiagramGraph()))
   end
 end
 function parse_query_diagram(C::FinCat, stmts::Vector{<:AST.DiagramExpr};
@@ -604,63 +620,45 @@ end
 
 """ Parse expression defining a morphism of queries.
 """
-function parse_query_hom(C::FinCat{Ob}, expr::AST.HomExpr,
-                         ::Ob, ::Union{Ob,Nothing}) where Ob
-  parse_hom(C, expr)
-end
+parse_query_hom(C::FinCat{Ob}, expr::AST.HomExpr,
+                ::Ob, ::Union{Ob,Nothing}) where Ob = parse_hom(C, expr)
 
 # Conjunctive fragment.
 
-function parse_query_hom(C::FinCat, mapping::AST.Mapping,
-                         d::DiagramData{op}, d′::DiagramData{op})
-  ob_rhs, hom_rhs = make_ob_hom_maps(shape(d′), mapping)
+function parse_query_hom(C::FinCat{Ob}, mapping::AST.Mapping,
+                         d::Union{Ob,DiagramData{op}}, d′::DiagramData{op}) where Ob
+  ob_rhs, hom_rhs = make_ob_hom_maps(shape(d′), mapping, allow_missing=d isa Ob)
   f_ob = mapvals(ob_rhs, keys=true) do j′, rhs
     parse_diagram_ob_rhs(C, rhs, ob_map(d′, j′), d)
   end
-  f_hom = mapvals(rhs -> parse_hom(shape(d), rhs), hom_rhs)
-  DiagramHomData{op}(f_ob, f_hom)
-end
-function parse_query_hom(C::FinCat{Ob}, expr, c::Ob, d′::DiagramData{op}) where Ob
-  ob_rhs, f_hom = make_ob_hom_maps(shape(d′), expr, missing_ob=true, missing_hom=true)
-  f_ob = mapvals(ob_rhs, keys=true) do j′, rhs
-    ismissing(rhs) ? missing : parse_diagram_ob_rhs(C, rhs, ob_map(d′, j′), c)
-  end
-  @assert all(ismissing, f_hom)
+  f_hom = mapvals(rhs -> parse_hom(d, rhs), hom_rhs)
   DiagramHomData{op}(f_ob, f_hom)
 end
 function parse_query_hom(C::FinCat{Ob}, mapping::AST.Mapping,
                          d::DiagramData{op}, c′::Ob) where Ob
-  expr = only(mapping.assignments).rhs # FIXME: Hacky.
-  DiagramHomData{op}([parse_diagram_ob_rhs(C, expr, c′, d)], [])
+  assign = only(mapping.assignments)
+  DiagramHomData{op}([parse_diagram_ob_rhs(C, assign.rhs, c′, d)], [])
 end
 
 # Gluing fragment.
 
-function parse_query_hom(C::FinCat, mapping::AST.Mapping,
-                         d::DiagramData{id}, d′::DiagramData{id})
-  ob_rhs, hom_rhs = make_ob_hom_maps(shape(d), mapping)
+function parse_query_hom(C::FinCat{Ob}, mapping::AST.Mapping,
+                         d::DiagramData{id}, d′::Union{Ob,DiagramData}) where Ob
+  ob_rhs, hom_rhs = make_ob_hom_maps(shape(d), mapping,
+    allow_missing=!(d′ isa DiagramData{id}))
   f_ob = mapvals(ob_rhs, keys=true) do j, rhs
     parse_diagram_ob_rhs(C, rhs, ob_map(d, j), d′)
   end
-  f_hom = mapvals(expr -> parse_hom(shape(d′), expr), hom_rhs)
+  f_hom = mapvals(rhs -> parse_hom(d′, rhs), hom_rhs)
   DiagramHomData{id}(f_ob, f_hom)
 end
 function parse_query_hom(C::FinCat{Ob}, mapping::AST.Mapping,
                          c::Union{Ob,DiagramData{op}}, d′::DiagramData{id}) where Ob
-  expr = only(mapping.assignments).rhs # FIXME: See above.
-  DiagramHomData{id}([parse_diagram_ob_rhs(C, expr, c, d′)], [])
-end
-function parse_query_hom(C::FinCat{Ob}, expr, d::DiagramData{id},
-                         c′::Union{Ob,DiagramData{op}}) where Ob
-  ob_rhs, f_hom = make_ob_hom_maps(shape(d), expr, missing_ob=true, missing_hom=true)
-  f_ob = mapvals(ob_rhs, keys=true) do j, rhs
-    ismissing(rhs) ? missing : parse_diagram_ob_rhs(C, rhs, ob_map(d, j), c′)
-  end
-  @assert all(ismissing, f_hom)
-  DiagramHomData{id}(f_ob, f_hom)
+  assign = only(mapping.assignments)
+  DiagramHomData{id}([parse_diagram_ob_rhs(C, assign.rhs, c, d′)], [])
 end
 
-function parse_diagram_ob_rhs(C::FinCat, expr::AST.ObExpr, X, Y)
+function parse_diagram_ob_rhs(C::FinCat, expr, X, Y)
   @match expr begin
     AST.Apply(AST.OnlyOb(), f_expr) =>
       (missing, parse_query_hom(C, f_expr, Y, X))
@@ -677,7 +675,12 @@ function parse_diagram_ob_rhs(C::FinCat, expr::AST.ObExpr, X, Y)
     _ => parse_ob(Y, expr)
   end
 end
-parse_ob(d::DiagramData, args...) = parse_ob(shape(d), args...)
+
+parse_ob(d::DiagramData, expr::AST.ObExpr) = parse_ob(shape(d), expr)
+parse_hom(d::DiagramData, expr::AST.HomExpr) = parse_hom(shape(d), expr)
+
+parse_ob(C, ::Missing) = missing
+parse_hom(C, ::Missing) = missing
 
 # Query construction
 #-------------------
@@ -1030,6 +1033,7 @@ function parse_apply_ast(expr, X, target)
   Y = only(Y′ for (y′,Y′) in ob_over_pairs(target) if y == y′)
   AST.Apply(AST.ObGenerator(y), parse_hom_ast(f, Y, X))
 end
+
 function parse_coapply_ast(expr, X, target)
   y::Symbol, f = @match expr begin
     ::Symbol => (expr, nothing)
@@ -1042,31 +1046,15 @@ function parse_coapply_ast(expr, X, target)
   AST.Coapply(parse_hom_ast(f, X, Y), AST.ObGenerator(y))
 end
 
-function ob_over_pairs(C::FinCat)
+ob_over_pairs(expr) = AST.ob_over_pairs(expr)
+ob_over_pairs(C::FinCat) =
   (ob_generator_name(C,x) => nothing for x in ob_generators(C))
-end
-function ob_over_pairs(expr::Union{AST.LimitExpr,AST.ColimitExpr})
-  @match expr begin
-    AST.Limit(statements) || AST.Colimit(statements) =>
-      (ob.name => ob.over for ob in statements if ob isa AST.ObOver)
-    AST.Product(statements) || AST.Coproduct(statements) =>
-      (ob.name => ob.over for ob in statements)
-    AST.Terminal() || AST.Initial() => ()
-  end
-end
 
-function hom_over_pairs(C::FinCat)
+hom_over_pairs(expr) = AST.hom_over_pairs(expr)
+hom_over_pairs(C::FinCat) = begin
   (hom_generator_name(C,f) =>
     (ob_generator_name(C,dom(C,f)) => ob_generator_name(C,codom(C,f)))
    for f in hom_generators(C))
-end
-function hom_over_pairs(expr::Union{AST.LimitExpr,AST.ColimitExpr})
-  @match expr begin
-    AST.Limit(statements) || AST.Colimit(statements) =>
-      (hom.name => (hom.src => hom.tgt)
-       for hom in statements if hom isa AST.HomOver)
-    _ => ()
-  end
 end
 
 # Julia expression utilities
