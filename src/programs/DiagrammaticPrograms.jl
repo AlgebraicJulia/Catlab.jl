@@ -364,7 +364,7 @@ Of course, unnamed morphisms cannot be referenced by name within the `@diagram`
 call or in other settings, which can sometimes be problematic.
 """
 macro diagram(cat, body)
-  :(parse_diagram($(esc(cat)), $(Meta.quot(body))))
+  :(parse_diagram($(esc(cat)), $(Meta.quot(body)), free=false))
 end
 
 """ Present a free diagram in a given category.
@@ -404,10 +404,8 @@ macro free_diagram(cat, body)
 end
 
 function parse_diagram(C::FinCat, body::Expr; kw...)
-  ast = parse_diagram_ast(body; kw...)
-  F_ob, F_hom, J = parse_diagram_data(
-    C, x -> parse_ob(C,x), (f,x,y) -> parse_hom(C,f), ast; kw...)
-  F = FinFunctor(F_ob, F_hom, J, C)
+  d = parse_diagram_data(C, parse_diagram_ast(body; kw...))
+  F = FinFunctor(d.ob_map, d.hom_map, shape(d), C)
   is_functorial(F, check_equations=false) ||
     error("Parsed diagram is not functorial: $body")
   return F
@@ -415,20 +413,22 @@ end
 parse_diagram(pres::Presentation, body::Expr; kw...) =
   parse_diagram(FinCat(pres), body; kw...)
 
-function parse_diagram_data(C::FinCat, parse_ob, parse_hom,
-                            statements::Vector{<:AST.DiagramExpr}; kw...)
+function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
+                            type=id, ob_parser=nothing, hom_parser=nothing)
+  isnothing(ob_parser) && (ob_parser = x -> parse_ob(C, x))
+  isnothing(hom_parser) && (hom_parser = (f,x,y) -> parse_hom(C,f))
   g, eqs = DiagramGraph(), Pair[]
   F_ob, F_hom = [], []
   for stmt in statements
     @match stmt begin
       AST.ObOver(x, X) => begin
         parse!(g, AST.Ob(x))
-        push!(F_ob, isnothing(X) ? nothing : parse_ob(X))
+        push!(F_ob, isnothing(X) ? nothing : ob_parser(X))
       end
       AST.HomOver(f, x, y, h) => begin
         e = parse!(g, AST.Hom(f, x, y))
         X, Y = F_ob[src(g,e)], F_ob[tgt(g,e)]
-        push!(F_hom, parse_hom(h, X, Y))
+        push!(F_hom, hom_parser(h, X, Y))
         if isnothing(Y)
           # Infer codomain in base category from parsed homs.
           F_ob[tgt(g,e)] = codom(C, F_hom[end])
@@ -440,7 +440,7 @@ function parse_diagram_data(C::FinCat, parse_ob, parse_hom,
     end
   end
   J = isempty(eqs) ? FinCat(g) : FinCat(g, eqs)
-  (F_ob, F_hom, J)
+  DiagramData{type}(F_ob, F_hom, J)
 end
 
 const DiagramGraph = NamedGraph{Symbol,Union{Symbol,Nothing}}
@@ -572,27 +572,22 @@ high-level steps of this process are:
 3. Convert all query and query morphisms to this common type, yielding `Diagram`
    and `DiagramHom` instances.
 """
-function parse_migration(src_schema::Presentation, body::Expr;
-                         preprocess::Bool=true)
+function parse_migration(src_schema::Presentation, body::Expr)
   C = FinCat(src_schema)
-  stmts = parse_diagram_ast(body)
-  F_ob, F_hom, J = parse_query_diagram(C, stmts; free=false, preprocess=preprocess)
-  make_migration_functor(F_ob, F_hom, J, C)
+  d = parse_query_diagram(C, parse_diagram_ast(body))
+  diagram(make_query(C, d))
 end
 function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
-                         body::Expr; preprocess::Bool=true)
+                         body::Expr)
   D, C = FinCat(tgt_schema), FinCat(src_schema)
-  if preprocess
-    body = reparse_arrows(body)
-  end
-  ast = parse_mapping_ast(body, D)
+  ast = parse_mapping_ast(body, D, preprocess=true)
   ob_rhs, hom_rhs = make_ob_hom_maps(D, ast, missing_hom=true)
   F_ob = mapvals(expr -> parse_query(C, expr), ob_rhs)
   F_hom = mapvals(hom_rhs, keys=true) do f, expr
     parse_query_hom(C, ismissing(expr) ? AST.Mapping(AST.AssignExpr[]) : expr,
                     F_ob[dom(D,f)], F_ob[codom(D,f)])
   end
-  make_migration_functor(F_ob, F_hom, D, C)
+  diagram(make_query(C, DiagramData{id}(F_ob, F_hom, D)))
 end
 
 # Query parsing
@@ -604,57 +599,58 @@ function parse_query(C::FinCat, expr::AST.ObExpr)
   @match expr begin
     AST.ObGenerator(x) => ob_generator(C, x)
     AST.Limit(stmts) || AST.Product(stmts) =>
-      DiagramData{op}(parse_query_diagram(C, stmts)...)
+      parse_query_diagram(C, stmts, type=op)
     AST.Colimit(stmts) || AST.Coproduct(stmts) =>
-      DiagramData{id}(parse_query_diagram(C, stmts)...)
+      parse_query_diagram(C, stmts, type=id)
     AST.Terminal() => DiagramData{op}([], [], FinCat(DiagramGraph()))
     AST.Initial() => DiagramData{id}([], [], FinCat(DiagramGraph()))
   end
 end
-function parse_query_diagram(C::FinCat, stmts::Vector{<:AST.DiagramExpr};
-                             free::Bool=true, preprocess::Bool=false)
-  parse_diagram_data(C, X -> parse_query(C,X),
-                     (f,X,Y) -> parse_query_hom(C,f,X,Y), stmts;
-                     free=free, preprocess=preprocess)
+function parse_query_diagram(C::FinCat, stmts::Vector{<:AST.DiagramExpr}; kw...)
+  parse_diagram_data(C, stmts;
+    ob_parser = X -> parse_query(C,X),
+    hom_parser = (f,X,Y) -> parse_query_hom(C,f,X,Y), kw...)
 end
 
 """ Parse expression defining a morphism of queries.
 """
-parse_query_hom(C::FinCat{Ob}, expr::AST.HomExpr,
-                ::Ob, ::Union{Ob,Nothing}) where Ob = parse_hom(C, expr)
+function parse_query_hom(C::FinCat{Ob}, expr::AST.HomExpr,
+                         ::Ob, ::Union{Ob,Nothing}) where Ob
+  parse_hom(C, expr)
+end
 
 # Conjunctive fragment.
 
-function parse_query_hom(C::FinCat{Ob}, mapping::AST.Mapping,
+function parse_query_hom(C::FinCat{Ob}, ast::AST.Mapping,
                          d::Union{Ob,DiagramData{op}}, d′::DiagramData{op}) where Ob
-  ob_rhs, hom_rhs = make_ob_hom_maps(shape(d′), mapping, allow_missing=d isa Ob)
+  ob_rhs, hom_rhs = make_ob_hom_maps(shape(d′), ast, allow_missing=d isa Ob)
   f_ob = mapvals(ob_rhs, keys=true) do j′, rhs
     parse_diagram_ob_rhs(C, rhs, ob_map(d′, j′), d)
   end
   f_hom = mapvals(rhs -> parse_hom(d, rhs), hom_rhs)
   DiagramHomData{op}(f_ob, f_hom)
 end
-function parse_query_hom(C::FinCat{Ob}, mapping::AST.Mapping,
+function parse_query_hom(C::FinCat{Ob}, ast::AST.Mapping,
                          d::DiagramData{op}, c′::Ob) where Ob
-  assign = only(mapping.assignments)
+  assign = only(ast.assignments)
   DiagramHomData{op}([parse_diagram_ob_rhs(C, assign.rhs, c′, d)], [])
 end
 
 # Gluing fragment.
 
-function parse_query_hom(C::FinCat{Ob}, mapping::AST.Mapping,
-                         d::DiagramData{id}, d′::Union{Ob,DiagramData}) where Ob
-  ob_rhs, hom_rhs = make_ob_hom_maps(shape(d), mapping,
-    allow_missing=!(d′ isa DiagramData{id}))
+function parse_query_hom(C::FinCat{Ob}, ast::AST.Mapping, d::DiagramData{id},
+                         d′::Union{Ob,DiagramData{op},DiagramData{id}}) where Ob
+  ob_rhs, hom_rhs = make_ob_hom_maps(shape(d), ast,
+                                     allow_missing=!(d′ isa DiagramData{id}))
   f_ob = mapvals(ob_rhs, keys=true) do j, rhs
     parse_diagram_ob_rhs(C, rhs, ob_map(d, j), d′)
   end
   f_hom = mapvals(rhs -> parse_hom(d′, rhs), hom_rhs)
   DiagramHomData{id}(f_ob, f_hom)
 end
-function parse_query_hom(C::FinCat{Ob}, mapping::AST.Mapping,
+function parse_query_hom(C::FinCat{Ob}, ast::AST.Mapping,
                          c::Union{Ob,DiagramData{op}}, d′::DiagramData{id}) where Ob
-  assign = only(mapping.assignments)
+  assign = only(ast.assignments)
   DiagramHomData{id}([parse_diagram_ob_rhs(C, assign.rhs, c, d′)], [])
 end
 
@@ -662,14 +658,12 @@ function parse_diagram_ob_rhs(C::FinCat, expr, X, Y)
   @match expr begin
     AST.Apply(AST.OnlyOb(), f_expr) =>
       (missing, parse_query_hom(C, f_expr, Y, X))
-    AST.Apply(j_expr, f_expr) => begin
-      j = parse_ob(Y, j_expr)
+    AST.Apply(j_expr, f_expr) => let j = parse_ob(Y, j_expr)
       (j, parse_query_hom(C, f_expr, ob_map(Y, j), X))
     end
     AST.Coapply(f_expr, AST.OnlyOb()) =>
       (missing, parse_query_hom(C, f_expr, X, Y))
-    AST.Coapply(f_expr, j_expr) => begin
-      j = parse_ob(Y, j_expr)
+    AST.Coapply(f_expr, j_expr) => let j = parse_ob(Y, j_expr)
       (j, parse_query_hom(C, f_expr, X, ob_map(Y, j)))
     end
     _ => parse_ob(Y, expr)
@@ -684,10 +678,6 @@ parse_hom(C, ::Missing) = missing
 
 # Query construction
 #-------------------
-
-function make_migration_functor(F_ob, F_hom, D::FinCat, C::FinCat)
-  diagram(make_query(C, DiagramData{id}(F_ob, F_hom, D)))
-end
 
 function make_query(C::FinCat{Ob}, d::DiagramData{T}) where {T, Ob}
   F_ob, F_hom, J = d.ob_map, d.hom_map, shape(d)
@@ -974,7 +964,10 @@ end
 
 """ Parse object/morphism mapping from Julia expression to AST.
 """
-function parse_mapping_ast(f_parse_ob_assign, body, dom)
+function parse_mapping_ast(f_parse_ob_assign, body, dom; preprocess::Bool=false)
+  if preprocess
+    body = reparse_arrows(body)
+  end
   ob_map = Dict{Symbol,AST.ObExpr}()
   dom_obs, dom_homs = Dict(ob_over_pairs(dom)), Dict(hom_over_pairs(dom))
   stmts = mapreduce(vcat, statements(body), init=AST.AssignExpr[]) do expr
@@ -1017,8 +1010,8 @@ function parse_mapping_ast(f_parse_ob_assign, body, dom)
   end
   AST.Mapping(stmts)
 end
-function parse_mapping_ast(body, dom)
-  parse_mapping_ast((rhs, _) -> parse_ob_ast(rhs), body, dom)
+function parse_mapping_ast(body, dom; kw...)
+  parse_mapping_ast((rhs, _) -> parse_ob_ast(rhs), body, dom; kw...)
 end
 
 function parse_apply_ast(expr, X, target)
