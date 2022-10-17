@@ -85,9 +85,13 @@ end
                       Dict(:src => [:src, :box], :tgt => [:tgt, :box]),
                       SchGraph, SchCPortGraph)
 
-# Incomplete definition.
-# FIXME: Throw more informative exception.
-@test_throws Exception begin
+# Incomplete definitions.
+@test_throws ErrorException begin
+  @finfunctor SchGraph SchCPortGraph begin
+    V => Box
+  end
+end
+@test_throws ErrorException begin
   @finfunctor SchGraph SchCPortGraph begin
     V => Box
     src => src ⨟ box

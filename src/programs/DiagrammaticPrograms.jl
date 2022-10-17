@@ -969,6 +969,9 @@ function parse_mapping_ast(f_parse_ob_assign, body, dom; preprocess::Bool=false)
     body = reparse_arrows(body)
   end
   ob_map = Dict{Symbol,AST.ObExpr}()
+  get_ob(x) = get(ob_map, x) do
+    error("Morphism assigned before assigning (co)domain $x")
+  end
   dom_obs, dom_homs = Dict(ob_over_pairs(dom)), Dict(hom_over_pairs(dom))
   stmts = mapreduce(vcat, statements(body), init=AST.AssignExpr[]) do expr
     @match expr begin
@@ -980,7 +983,7 @@ function parse_mapping_ast(f_parse_ob_assign, body, dom; preprocess::Bool=false)
           [AST.ObAssign(AST.ObGenerator(x), x′)]
         elseif lhs ∈ keys(dom_homs)
           f, (x, y) = lhs, dom_homs[lhs]
-          x′, y′ = ob_map[x], ob_map[y]
+          x′, y′ = get_ob(x), get_ob(y)
           f′ = parse_hom_ast(rhs, x′, y′)
           [AST.HomAssign(AST.HomGenerator(f), f′)]
         else
@@ -995,9 +998,8 @@ function parse_mapping_ast(f_parse_ob_assign, body, dom; preprocess::Bool=false)
           for x in lhs; ob_map[x] = x′ end
           map(x -> AST.ObAssign(AST.ObGenerator(x), x′), lhs)
         elseif all(∈(keys(dom_homs)), lhs)
-          x′, y′ = only(unique((let (x, y) = dom_homs[f]
-                                  ob_map[x] => ob_map[y]
-                                end for f in lhs)))
+          x′, y′ = only(unique(
+            (let (x,y) = dom_homs[f]; get_ob(x) => get_ob(y) end for f in lhs)))
           f′ = parse_hom_ast(rhs, x′, y′)
           map(f -> AST.HomAssign(AST.HomGenerator(f), f′), lhs)
         else
