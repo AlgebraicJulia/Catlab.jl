@@ -1,8 +1,8 @@
 """ Diagrams in a category and their morphisms.
 """
 module Diagrams
-export Diagram, SimpleDiagram, DiagramHom, id, op, co, shape, diagram,
-  shape_map, diagram_map
+export Diagram, SimpleDiagram, QueryDiagram, DiagramHom, id, op, co,
+  shape, diagram, shape_map, diagram_map
 
 using StructEquality
 
@@ -56,6 +56,19 @@ end
 
 force(d::SimpleDiagram{T}, args...) where T =
   SimpleDiagram{T}(force(diagram(d), args...))
+
+""" Diagram representing a (conjunctive or gluing) query.
+
+Besides the diagram functor itself, a query diagram contains a dictionary of
+query parameters.
+"""
+struct QueryDiagram{T,C<:Cat,D<:Functor{<:FinCat,C},
+                    Params<:AbstractDict} <: Diagram{T,C,D}
+  diagram::D
+  params::Params
+end
+QueryDiagram{T}(F::D, params::P) where {T,C<:Cat,D<:Functor{<:FinCat,C},P} =
+  QueryDiagram{T,C,D,P}(F, params)
 
 """ Functor underlying a diagram object.
 """

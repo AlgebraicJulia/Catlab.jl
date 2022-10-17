@@ -184,8 +184,8 @@ d = @free_diagram SchGraph begin
   tgt(e1) == src(e2)
 end
 @test is_functorial(diagram(d))
-@test collect_ob(d) == [SchGraph[:E], SchGraph[:E], SchGraph[:V]]
-@test collect_hom(d) == [SchGraph[:tgt], SchGraph[:src]]
+@test collect_ob(d) == SchGraph[[:E, :E, :V]]
+@test collect_hom(d) == SchGraph[[:tgt, :src]]
 
 d = @diagram SchDDS begin
   x::X
@@ -193,6 +193,34 @@ d = @diagram SchDDS begin
 end
 @test only(collect_ob(d)) == SchDDS[:X]
 @test only(collect_hom(d)) == compose(SchDDS[:Φ], SchDDS[:Φ])
+
+# Diagrams with parameters
+#-------------------------
+
+d = @free_diagram SchWeightedGraph begin
+  v::V
+  (e1, e2)::E
+  tgt(e1) == v
+  src(e2) == v
+
+  w::Weight
+  weight(e1) == w
+  weight(e2) == w
+  w == 5.0
+end
+@test collect_ob(d) == SchWeightedGraph[[:V, :E, :E, :Weight]]
+@test collect_hom(d) == SchWeightedGraph[[:tgt, :src, :weight, :weight]]
+@test d.params == Dict(4 => 5.0)
+
+d = @free_diagram SchWeightedGraph begin
+  (e1, e2)::E
+  tgt(e1) == src(e2)
+  weight(e1) == 0.5
+  weight(e2) == 1.5
+end
+@test collect_ob(d) == SchWeightedGraph[[:E, :E, :V, :Weight, :Weight]]
+@test collect_hom(d) == SchWeightedGraph[[:tgt, :src, :weight, :weight]]
+@test d.params == Dict(4 => 0.5, 5 => 1.5)
 
 # Migrations
 ############

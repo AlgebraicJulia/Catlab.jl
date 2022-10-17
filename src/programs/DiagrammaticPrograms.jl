@@ -33,6 +33,7 @@ abstract type AssignExpr end
 @data DiagramExpr begin
   ObOver(name::Symbol, over::Union{ObExpr,Nothing})
   HomOver(name::Union{Symbol,Nothing}, src::Symbol, tgt::Symbol, over::HomExpr)
+  AssignLiteral(name::Symbol, value)
 end
 
 @data CatExpr <: DiagramExpr begin
@@ -326,6 +327,31 @@ end
 # Diagrams
 ##########
 
+""" A diagram without a codomain category.
+
+An intermediate data representation used internally by the parser for the
+[`@diagram`](@ref) and [`@migration`](@ref) macros.
+"""
+struct DiagramData{T,ObMap,HomMap}
+  ob_map::ObMap
+  hom_map::HomMap
+  shape::FinCat
+  params::AbstractDict
+end
+function DiagramData{T}(ob_map::ObMap, hom_map::HomMap,
+                        shape, params=Dict()) where {T,ObMap,HomMap}
+  DiagramData{T,ObMap,HomMap}(ob_map, hom_map, shape, params)
+end
+
+Diagrams.ob_map(d::DiagramData, x) = d.ob_map[x]
+Diagrams.hom_map(d::DiagramData, f) = d.hom_map[f]
+Diagrams.shape(d::DiagramData) = d.shape
+
+function Diagrams.Diagram(d::DiagramData{T}, codom) where T
+  F = FinDomFunctor(d.ob_map, d.hom_map, d.shape, codom)
+  isempty(d.params) ? SimpleDiagram{T}(F) : QueryDiagram{T}(F, d.params)
+end
+
 """ Present a diagram in a given category.
 
 Recall that a *diagram* in a category ``C`` is a functor ``F: J → C`` from a
@@ -404,21 +430,21 @@ macro free_diagram(cat, body)
 end
 
 function parse_diagram(C::FinCat, body::Expr; kw...)
-  d = parse_diagram_data(C, parse_diagram_ast(body; kw...))
-  F = FinFunctor(d.ob_map, d.hom_map, shape(d), C)
-  is_functorial(F, check_equations=false) ||
+  data = parse_diagram_data(C, parse_diagram_ast(body; kw...))
+  d = Diagram(data, C)
+  is_functorial(diagram(d), check_equations=false) ||
     error("Parsed diagram is not functorial: $body")
-  Diagram(F)
+  return d
 end
 parse_diagram(pres::Presentation, body::Expr; kw...) =
   parse_diagram(FinCat(pres), body; kw...)
 
 function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
-                            type=id, ob_parser=nothing, hom_parser=nothing)
+                            type=Any, ob_parser=nothing, hom_parser=nothing)
   isnothing(ob_parser) && (ob_parser = x -> parse_ob(C, x))
   isnothing(hom_parser) && (hom_parser = (f,x,y) -> parse_hom(C,f))
   g, eqs = DiagramGraph(), Pair[]
-  F_ob, F_hom = [], []
+  F_ob, F_hom, params = [], [], Dict{Int,Any}()
   for stmt in statements
     @match stmt begin
       AST.ObOver(x, X) => begin
@@ -430,9 +456,14 @@ function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
         X, Y = F_ob[src(g,e)], F_ob[tgt(g,e)]
         push!(F_hom, hom_parser(h, X, Y))
         if isnothing(Y)
-          # Infer codomain in base category from parsed homs.
+          # Infer codomain in base category from parsed hom.
           F_ob[tgt(g,e)] = codom(C, F_hom[end])
         end
+      end
+      AST.AssignLiteral(x, value) => begin
+        v = vertex_named(g, x)
+        haskey(params, v) && error("Literal already assigned to $x")
+        params[v] = value
       end
       AST.HomEq(lhs, rhs) =>
         push!(eqs, parse_path(g, lhs) => parse_path(g, rhs))
@@ -440,7 +471,7 @@ function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
     end
   end
   J = isempty(eqs) ? FinCat(g) : FinCat(g, eqs)
-  DiagramData{type}(F_ob, F_hom, J)
+  DiagramData{type}(F_ob, F_hom, J, params)
 end
 
 const DiagramGraph = NamedGraph{Symbol,Union{Symbol,Nothing}}
@@ -448,39 +479,17 @@ const DiagramGraph = NamedGraph{Symbol,Union{Symbol,Nothing}}
 # Data migrations
 #################
 
-""" A diagram without a codomain category.
-
-An intermediate data representation used internally by the parser for the
-[`@migration`](@ref) macro.
-"""
-struct DiagramData{T,ObMap,HomMap,Shape<:FinCat}
-  ob_map::ObMap
-  hom_map::HomMap
-  shape::Shape
-
-  function DiagramData{T}(ob_map::ObMap, hom_map::HomMap, shape::Shape) where
-      {T,ObMap,HomMap,Shape<:FinCat}
-    new{T,ObMap,HomMap,Shape}(ob_map, hom_map, shape)
-  end
-end
-
-Diagrams.ob_map(d::DiagramData, x) = d.ob_map[x]
-Diagrams.hom_map(d::DiagramData, f) = d.hom_map[f]
-Diagrams.shape(d::DiagramData) = d.shape
-
 """ A diagram morphism without a domain or codomain.
 
-Like [`DiagramData`](@ref), an intermediate data representation used internally
-by the parser for the [`@migration`](@ref) macro.
+Like [`DiagramData`](@ref), this an intermediate data representation used
+internally by the parser for the [`@migration`](@ref) macro.
 """
 struct DiagramHomData{T,ObMap,HomMap}
   ob_map::ObMap
   hom_map::HomMap
-
-  function DiagramHomData{T}(ob_map::ObMap, hom_map::HomMap) where {T,ObMap,HomMap}
-    new{T,ObMap,HomMap}(ob_map, hom_map)
-  end
 end
+DiagramHomData{T}(ob_map::ObMap, hom_map::HomMap) where {T,ObMap,HomMap} =
+  DiagramHomData{T,ObMap,HomMap}(ob_map, hom_map)
 
 """ Contravariantly migrate data from one acset to another.
 
@@ -587,7 +596,7 @@ function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
     parse_query_hom(C, ismissing(expr) ? AST.Mapping(AST.AssignExpr[]) : expr,
                     F_ob[dom(D,f)], F_ob[codom(D,f)])
   end
-  diagram(make_query(C, DiagramData{id}(F_ob, F_hom, D)))
+  diagram(make_query(C, DiagramData{Any}(F_ob, F_hom, D)))
 end
 
 # Query parsing
@@ -840,6 +849,11 @@ function parse_diagram_ast(body::Expr; free::Bool=false, preprocess::Bool=true)
         X, Y = state.ob_over[x], state.ob_over[y]
         [AST.HomOver(nothing, x, y, parse_hom_ast(h, X, Y))]
       end
+      # x == "foo"
+      # "foo" == x
+      Expr(:call, :(==), x::Symbol, value::Literal) ||
+      Expr(:call, :(==), value::Literal, x::Symbol) =>
+        [AST.AssignLiteral(x, get_literal(value))]
       # h(x) == y
       # y == h(x)
       (Expr(:call, :(==), call::Expr, y::Symbol) ||
@@ -848,10 +862,20 @@ function parse_diagram_ast(body::Expr; free::Bool=false, preprocess::Bool=true)
          X, Y = state.ob_over[x], state.ob_over[y]
          [AST.HomOver(nothing, x, y, parse_hom_ast(h, X, Y))]
       end
+      # h(x) == "foo"
+      # "foo" == h(x)
+      (Expr(:call, :(==), call::Expr, value::Literal) ||
+       Expr(:call, :(==), value::Literal, call::Expr)) && if free end => begin
+         (h, x), y = destructure_unary_call(call), gen_anon!(state)
+         X = state.ob_over[x]
+         [AST.ObOver(y, nothing),
+          AST.AssignLiteral(y, get_literal(value)),
+          AST.HomOver(nothing, x, y, parse_hom_ast(h, X))]
+      end
       # h(x) == k(y)
       Expr(:call, :(==), lhs::Expr, rhs::Expr) && if free end => begin
         (h, x), (k, y) = destructure_unary_call(lhs), destructure_unary_call(rhs)
-        z = Symbol("##unnamed#$(state.nanon += 1)")
+        z = gen_anon!(state)
         X, Y = state.ob_over[x], state.ob_over[y]
         # Assumes that codomain not needed to parse morphisms.
         [AST.ObOver(z, nothing),
@@ -871,6 +895,8 @@ Base.@kwdef mutable struct DiagramASTState
   nanon::Int = 0
   ob_over::Dict{Symbol,AST.ObExpr} = Dict{Symbol,AST.ObExpr}()
 end
+gen_anon!(state::DiagramASTState) = Symbol("##unnamed#$(state.nanon += 1)")
+
 function push_ob_over!(state::DiagramASTState, ob::AST.ObOver)
   isnothing(ob.name) && return ob
   haskey(state.ob_over, ob.name) &&
@@ -1051,6 +1077,12 @@ end
 
 # Julia expression utilities
 ############################
+
+# Types that can be Julia literals.
+const Literal = Union{Number,Char,String,QuoteNode}
+
+get_literal(value::Literal) = value
+get_literal(node::QuoteNode) = node.value::Symbol
 
 statements(expr) = (expr isa Expr && expr.head == :block) ? expr.args : [expr]
 
