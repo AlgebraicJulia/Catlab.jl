@@ -16,7 +16,7 @@ C = FinCat(@acset Graph begin
   tgt = [3,3]
 end)
 D = FinDomFunctor([:E,:E,:V], [:tgt,:src], C, FinCat(SchSGraph))
-d = Diagram(D)
+d = Diagram{id}(D)
 @test shape(d) == C
 @test ob_map(d, 3) == SchSGraph[:V]
 @test hom_map(d, 1) == SchSGraph[:tgt]
@@ -25,17 +25,17 @@ d = Diagram(D)
 @test startswith(sprint(show, d), "Diagram{id}(")
 @test hash(D) != hash(Diagram{op}(D))
 
-C′ = FinCat(@acset Graph begin V = 3; E = 2; src = [1,2]; tgt = [3,3] end)
-d′ = Diagram(FinDomFunctor([:E,:E,:V], [:tgt,:src], C′, FinCat(SchSGraph)))
+C′ = deepcopy(C)
+d′ = Diagram{id}(FinDomFunctor([:E,:E,:V], [:tgt,:src], C′, FinCat(SchSGraph)))
 @test hash(d) == hash(d′)
 
 # Diagram morphisms
 ###################
 
-f = DiagramHom([(2,:inv), (1,:inv), 3], [2,1], d, d)
+f = DiagramHom{id}([(2,:inv), (1,:inv), 3], [2,1], d, d)
 @test dom(f) == d
 @test codom(f) == d
-@test hash(f) == hash(DiagramHom([(2,:inv), (1,:inv), 3], [2,1], d, d))
+@test hash(f) == hash(DiagramHom{id}([(2,:inv), (1,:inv), 3], [2,1], d, d))
 @test is_functorial(shape_map(f))
 @test shape_map(f) == FinFunctor([2,1,3], [2,1], C, C)
 ϕ = diagram_map(f)

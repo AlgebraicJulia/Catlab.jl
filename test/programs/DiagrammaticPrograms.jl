@@ -133,7 +133,7 @@ end
 ##########
 
 C = FinCat(SchGraph)
-F_parsed = @diagram C begin
+d = @diagram C begin
   v::V
   (e1, e2)::E
   (t: e1 → v)::tgt
@@ -147,50 +147,80 @@ J = FinCat(@acset NamedGraph{Symbol,Union{Symbol,Nothing}} begin
   vname = [:v, :e1, :e2]
   ename = [:t, :s]
 end)
+F_parsed = diagram(d)
 @test dom(F_parsed) == J
 F = FinFunctor([:V,:E,:E], [:tgt, :src], J, C)
 @test F_parsed == F
 
-F_parsed = @diagram SchGraph begin
+d = @diagram SchGraph begin
   v => V
   (e1, e2) => E
   t: e1 → v => tgt
   s: e2 → v => src
 end
-@test F_parsed == F
+@test diagram(d) == F
 
-F_parsed = @diagram SchGraph begin
+d = @diagram SchGraph begin
   v::V
   (e1, e2)::E
   (e1 → v)::tgt
   (e2 → v)::src
 end
+F_parsed = diagram(d)
 J_parsed = dom(F_parsed)
 @test src(graph(J_parsed)) == src(graph(J))
 @test tgt(graph(J_parsed)) == tgt(graph(J))
 
-F_parsed′ = @free_diagram SchGraph begin
+d′ = @free_diagram SchGraph begin
   v::V
   (e1, e2)::E
   tgt(e1) == v
   v == src(e2)
 end
-@test F_parsed′ == F_parsed
+@test d′ == d
 
-F = @free_diagram SchGraph begin
+d = @free_diagram SchGraph begin
   (e1, e2)::E
   tgt(e1) == src(e2)
 end
-@test is_functorial(F)
-@test collect_ob(F) == [SchGraph[:E], SchGraph[:E], SchGraph[:V]]
-@test collect_hom(F) == [SchGraph[:tgt], SchGraph[:src]]
+@test is_functorial(diagram(d))
+@test collect_ob(d) == SchGraph[[:E, :E, :V]]
+@test collect_hom(d) == SchGraph[[:tgt, :src]]
 
-F = @diagram SchDDS begin
+d = @diagram SchDDS begin
   x::X
   (f: x → x)::(Φ⋅Φ)
 end
-@test only(collect_ob(F)) == SchDDS[:X]
-@test only(collect_hom(F)) == compose(SchDDS[:Φ], SchDDS[:Φ])
+@test only(collect_ob(d)) == SchDDS[:X]
+@test only(collect_hom(d)) == compose(SchDDS[:Φ], SchDDS[:Φ])
+
+# Diagrams with parameters
+#-------------------------
+
+d = @free_diagram SchWeightedGraph begin
+  v::V
+  (e1, e2)::E
+  tgt(e1) == v
+  src(e2) == v
+
+  w::Weight
+  weight(e1) == w
+  weight(e2) == w
+  w == 5.0
+end
+@test collect_ob(d) == SchWeightedGraph[[:V, :E, :E, :Weight]]
+@test collect_hom(d) == SchWeightedGraph[[:tgt, :src, :weight, :weight]]
+@test d.params == Dict(4 => 5.0)
+
+d = @free_diagram SchWeightedGraph begin
+  (e1, e2)::E
+  tgt(e1) == src(e2)
+  weight(e1) == 0.5
+  weight(e2) == 1.5
+end
+@test collect_ob(d) == SchWeightedGraph[[:E, :E, :V, :Weight, :Weight]]
+@test collect_hom(d) == SchWeightedGraph[[:tgt, :src, :weight, :weight]]
+@test d.params == Dict(4 => 0.5, 5 => 1.5)
 
 # Migrations
 ############
@@ -256,6 +286,22 @@ F′ = @migration SchGraph SchGraph begin
   tgt => tgt(e₂)
 end
 @test F′ == F
+
+# Graph with edges of weight 5.0.
+F = @migration SchGraph SchWeightedGraph begin
+  V => V
+  E => @join begin
+    e::E
+    weight(e) == 5.0
+  end
+  src => e
+  tgt => e
+end
+@test F isa DataMigrations.ConjSchemaMigration
+F_E = ob_map(F, :E)
+@test only(values(F_E.params)) == 5.0
+F_src = hom_map(F, :src)
+@test collect_ob(F_src) == [(1, id(SchWeightedGraph[:E]))]
 
 # "Bouquet graph" on set.
 # This is the right adjoint to the underlying edge set functor.

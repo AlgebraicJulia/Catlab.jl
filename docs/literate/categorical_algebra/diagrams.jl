@@ -11,7 +11,7 @@
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
 using Catlab.Graphs, Catlab.Graphics, Catlab.Programs
 
-draw(D::FinFunctor) = to_graphviz(D, node_labels=true, edge_labels=true, prog="neato")
+draw(d::Diagram) = to_graphviz(d, prog="neato", node_labels=true, edge_labels=true)
 
 # ## Present a diagram in a given category
 #

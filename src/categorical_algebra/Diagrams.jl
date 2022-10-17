@@ -1,7 +1,8 @@
 """ Diagrams in a category and their morphisms.
 """
 module Diagrams
-export Diagram, DiagramHom, id, op, co, shape, diagram, shape_map, diagram_map
+export Diagram, SimpleDiagram, QueryDiagram, DiagramHom, id, op, co,
+  shape, diagram, shape_map, diagram_map
 
 using StructEquality
 
@@ -22,16 +23,52 @@ import ..Limits: limit, colimit, universal
 Recall that a *diagram* in a category ``C`` is a functor ``D: J → C``, where for
 us the *shape category* ``J`` is finitely presented. Although such a diagram is
 captured perfectly well by a `FinDomFunctor`, there are several different
-notions of morphism between diagrams. This simple wrapper type exists to
-distinguish them. See [`DiagramHom`](@ref) for more about the morphisms.
+notions of morphism between diagrams. The first type parameter `T` in this
+wrapper type distinguishes which diagram category the diagram belongs to. See
+[`DiagramHom`](@ref) for more about the possible choices. The parameter `T` may
+also be `Any` to indicate that no choice has (yet) been made.
 """
-struct Diagram{T,C<:Cat,D<:Functor{<:FinCat,C}}
+abstract type Diagram{T,C<:Cat,D<:FinDomFunctor} end
+
+Diagram(args...) = Diagram{Any}(args...)
+
+# The first type parameter is considered part of the data!
+Base.hash(d::Diagram{T}, h::UInt) where T = hash(T, struct_hash(d, h))
+Base.:(==)(d1::Diagram{T}, d2::Diagram{S}) where {T,S} =
+  T == S && struct_equal(d1, d2)
+
+""" Default concrete type for diagram in a category.
+"""
+struct SimpleDiagram{T,C<:Cat,D<:Functor{<:FinCat,C}} <: Diagram{T,C,D}
   diagram::D
 end
-Diagram{T}(F::D) where {T,C<:Cat,D<:Functor{<:FinCat,C}} = Diagram{T,C,D}(F)
+SimpleDiagram{T}(F::D) where {T,C<:Cat,D<:Functor{<:FinCat,C}} =
+  SimpleDiagram{T,C,D}(F)
+SimpleDiagram{T}(d::SimpleDiagram) where T = SimpleDiagram{T}(d.diagram)
 
-Diagram{T}(d::Diagram) where T = Diagram{T}(d.diagram)
-Diagram(args...) = Diagram{id}(args...)
+Diagram{T}(F::Union{Functor,SimpleDiagram}) where T = SimpleDiagram{T}(F)
+
+function Base.show(io::IO, d::SimpleDiagram{T}) where T
+  print(io, "Diagram{$T}(")
+  show(io, diagram(d))
+  print(io, ")")
+end
+
+force(d::SimpleDiagram{T}, args...) where T =
+  SimpleDiagram{T}(force(diagram(d), args...))
+
+""" Diagram representing a (conjunctive or gluing) query.
+
+Besides the diagram functor itself, a query diagram contains a dictionary of
+query parameters.
+"""
+struct QueryDiagram{T,C<:Cat,D<:Functor{<:FinCat,C},
+                    Params<:AbstractDict} <: Diagram{T,C,D}
+  diagram::D
+  params::Params
+end
+QueryDiagram{T}(F::D, params::P) where {T,C<:Cat,D<:Functor{<:FinCat,C},P} =
+  QueryDiagram{T,C,D,P}(F, params)
 
 """ Functor underlying a diagram object.
 """
@@ -43,24 +80,11 @@ This is the domain of the underlying functor.
 """
 shape(d::Diagram) = dom(diagram(d))
 
-Base.hash(d::Diagram{T}, h::UInt) where {T} = hash(T, struct_hash(d, h))
-
-Base.:(==)(d1::Diagram{T}, d2::Diagram{S}) where {T,S} =
-  T == S && struct_equal(d1, d2)
-
 ob_map(d::Diagram, x) = ob_map(diagram(d), x)
 hom_map(d::Diagram, f) = hom_map(diagram(d), f)
 
 collect_ob(d::Diagram) = collect_ob(diagram(d))
 collect_hom(d::Diagram) = collect_hom(diagram(d))
-
-force(d::Diagram{T}, args...) where T = Diagram{T}(force(diagram(d), args...))
-
-function Base.show(io::IO, d::Diagram{T}) where T
-  print(io, "Diagram{$T}(")
-  show(io, diagram(d))
-  print(io, ")")
-end
 
 """ Morphism of diagrams in a category.
 
@@ -77,9 +101,9 @@ diagram ``D: J → C`` to another diagram ``D′: J′ → C``:
 Note that `Diagram{op}` is *not* the opposite category of `Diagram{id}`, but
 `Diagram{op}` and `Diagram{co}` are opposites of each other. Explicit support is
 included for both because they are useful for different purposes: morphisms of
-type `DiagramHom{op}` induce morphisms between the limits of the diagrams,
-whereas morphisms of type `DiagramHom{co}` generalize morphisms of polynomial
-functors.
+type `DiagramHom{id}` and `DiagramHom{op}` induce morphisms between colimits and
+between limits of the diagrams, respectively, whereas morphisms of type
+`DiagramHom{co}` generalize morphisms of polynomial functors.
 """
 struct DiagramHom{T,C<:Cat,F<:FinFunctor,Φ<:FinTransformation,D<:Functor{<:FinCat,C}}
   shape_map::F
@@ -92,7 +116,6 @@ DiagramHom{T}(shape_map::F, diagram_map::Φ, precomposed_diagram::D) where
 
 DiagramHom{T}(f::DiagramHom) where T =
   DiagramHom{T}(f.shape_map, f.diagram_map, f.precomposed_diagram)
-DiagramHom(args...) = DiagramHom{id}(args...)
 
 DiagramHom{T}(ob_maps, hom_map, D::Diagram{T}, D′::Diagram{T}) where T =
   DiagramHom{T}(ob_maps, hom_map, diagram(D), diagram(D′))
@@ -231,8 +254,12 @@ end
 # In a cocomplete category `C`, colimits define a functor `Diag{id,C} → C`.
 # Dually, in a complete category `C`, limits define functor `Diag{op,C} → C`.
 
-limit(d::Diagram{op}; alg=nothing) = limit(diagram(d), alg)
-colimit(d::Diagram{id}; alg=nothing) = colimit(diagram(d), alg)
+function limit(d::Union{Diagram{op},Diagram{Any}}; alg=nothing)
+  limit(diagram(d), alg)
+end
+function colimit(d::Union{Diagram{id},Diagram{Any}}; alg=nothing)
+  colimit(diagram(d), alg)
+end
 
 function universal(f::DiagramHom{op}, dom_lim, codom_lim)
   J′ = shape(codom(f))
