@@ -688,8 +688,8 @@ parse_hom(C, ::Missing) = missing
 # Query construction
 #-------------------
 
-function make_query(C::FinCat{Ob}, d::DiagramData{T}) where {T, Ob}
-  F_ob, F_hom, J = d.ob_map, d.hom_map, shape(d)
+function make_query(C::FinCat{Ob}, data::DiagramData{T}) where {T, Ob}
+  F_ob, F_hom, J = data.ob_map, data.hom_map, shape(data)
   F_ob = mapvals(x -> make_query(C, x), F_ob)
   query_type = mapreduce(typeof, promote_query_type, values(F_ob), init=Ob)
   @assert query_type != Any
@@ -697,12 +697,15 @@ function make_query(C::FinCat{Ob}, d::DiagramData{T}) where {T, Ob}
   F_hom = mapvals(F_hom, keys=true) do h, f
     make_query_hom(f, F_ob[dom(J,h)], F_ob[codom(J,h)])
   end
-  F_codom = if query_type <: Ob; C else
+  if query_type <: Ob
+    Diagram(DiagramData{T}(F_ob, F_hom, J, data.params), C)
+  else
     # XXX: Why is the element type of `F_ob` sometimes too loose?
-    TypeCat(typeintersect(query_type, eltype(values(F_ob))),
-            eltype(values(F_hom)))
+    D = TypeCat(typeintersect(query_type, eltype(values(F_ob))),
+                eltype(values(F_hom)))
+    @assert isempty(data.params)
+    Diagram(DiagramData{T}(F_ob, F_hom, J), D)
   end
-  Diagram{T}(FinDomFunctor(F_ob, F_hom, J, F_codom))
 end
 
 make_query(C::FinCat{Ob}, x::Ob) where Ob = x

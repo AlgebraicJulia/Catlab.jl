@@ -287,6 +287,22 @@ F′ = @migration SchGraph SchGraph begin
 end
 @test F′ == F
 
+# Graph with edges of weight 5.0.
+F = @migration SchGraph SchWeightedGraph begin
+  V => V
+  E => @join begin
+    e::E
+    weight(e) == 5.0
+  end
+  src => e
+  tgt => e
+end
+@test F isa DataMigrations.ConjSchemaMigration
+F_E = ob_map(F, :E)
+@test only(values(F_E.params)) == 5.0
+F_src = hom_map(F, :src)
+@test collect_ob(F_src) == [(1, id(SchWeightedGraph[:E]))]
+
 # "Bouquet graph" on set.
 # This is the right adjoint to the underlying edge set functor.
 F = @migration SchGraph SchSet begin
