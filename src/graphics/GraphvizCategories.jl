@@ -85,19 +85,19 @@ end
 # Diagrams
 ##########
 
-to_graphviz(F::FinFunctor; kw...) =
-  to_graphviz(to_graphviz_property_graph(F; kw...))
+to_graphviz(d::Diagram; kw...) =
+  to_graphviz(to_graphviz_property_graph(d; kw...))
 
-function to_graphviz_property_graph(F::FinFunctor; kw...)
-  g = graph(dom(F))
+function to_graphviz_property_graph(d::Diagram; kw...)
+  g = graph(shape(d))
   pg = to_graphviz_property_graph(g; kw...)
   for v in vertices(g)
     lᵥ = g[v, :vname]
-    tᵥ = ob_map(F, v)
+    tᵥ = ob_map(d, v)
     set_vprop!(pg, v, :label, string(lᵥ, ":", tᵥ))
   end
   for e in edges(g)
-    tₑ = hom_map(F, e)
+    tₑ = hom_map(d, e)
     set_eprop!(pg, e, :label, string(tₑ))
   end
   pg

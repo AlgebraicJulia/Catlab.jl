@@ -241,8 +241,12 @@ end
 # In a cocomplete category `C`, colimits define a functor `Diag{id,C} → C`.
 # Dually, in a complete category `C`, limits define functor `Diag{op,C} → C`.
 
-limit(d::Diagram{op}; alg=nothing) = limit(diagram(d), alg)
-colimit(d::Diagram{id}; alg=nothing) = colimit(diagram(d), alg)
+function limit(d::Union{Diagram{op},Diagram{Any}}; alg=nothing)
+  limit(diagram(d), alg)
+end
+function colimit(d::Union{Diagram{id},Diagram{Any}}; alg=nothing)
+  colimit(diagram(d), alg)
+end
 
 function universal(f::DiagramHom{op}, dom_lim, codom_lim)
   J′ = shape(codom(f))

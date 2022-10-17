@@ -371,11 +371,11 @@ end
 
 Recall that a *free diagram* in a category ``C`` is a functor ``F: J → C`` where
 ``J`` is a free category on a graph, here assumed finite. This macro is
-functionally a special case of [`@diagram`](@ref) but, for convenience, changes
-the interpretation of equality expressions. Rather than interpreting them as
-equations between morphisms in ``J``, equality expresions can be used to
-introduce anonymous morphisms in a "pointful" style. For example, the limit of
-the following diagram consists of the paths of length two in a graph:
+functionally a special case of [`@diagram`](@ref) but changes the interpretation
+of equality expressions. Rather than interpreting them as equations between
+morphisms in ``J``, equality expresions can be used to introduce anonymous
+morphisms in a "pointful" style. For example, the limit of the following diagram
+consists of the paths of length two in a graph:
 
 ```julia
 @free_diagram SchGraph begin
@@ -408,7 +408,7 @@ function parse_diagram(C::FinCat, body::Expr; kw...)
   F = FinFunctor(d.ob_map, d.hom_map, shape(d), C)
   is_functorial(F, check_equations=false) ||
     error("Parsed diagram is not functorial: $body")
-  return F
+  Diagram(F)
 end
 parse_diagram(pres::Presentation, body::Expr; kw...) =
   parse_diagram(FinCat(pres), body; kw...)
@@ -688,14 +688,12 @@ function make_query(C::FinCat{Ob}, d::DiagramData{T}) where {T, Ob}
   F_hom = mapvals(F_hom, keys=true) do h, f
     make_query_hom(f, F_ob[dom(J,h)], F_ob[codom(J,h)])
   end
-  Diagram{T}(if query_type <: Ob
-    FinFunctor(F_ob, F_hom, J, C)
-  else
+  F_codom = if query_type <: Ob; C else
     # XXX: Why is the element type of `F_ob` sometimes too loose?
-    D = TypeCat(typeintersect(query_type, eltype(values(F_ob))),
-                eltype(values(F_hom)))
-    FinDomFunctor(F_ob, F_hom, J, D)
-  end)
+    TypeCat(typeintersect(query_type, eltype(values(F_ob))),
+            eltype(values(F_hom)))
+  end
+  Diagram{T}(FinDomFunctor(F_ob, F_hom, J, F_codom))
 end
 
 make_query(C::FinCat{Ob}, x::Ob) where Ob = x
