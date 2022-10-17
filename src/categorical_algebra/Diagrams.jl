@@ -22,8 +22,10 @@ import ..Limits: limit, colimit, universal
 Recall that a *diagram* in a category ``C`` is a functor ``D: J → C``, where for
 us the *shape category* ``J`` is finitely presented. Although such a diagram is
 captured perfectly well by a `FinDomFunctor`, there are several different
-notions of morphism between diagrams. This simple wrapper type exists to
-distinguish them. See [`DiagramHom`](@ref) for more about the morphisms.
+notions of morphism between diagrams. The first type parameter `T` in this
+wrapper type distinguishes which diagram category the diagram belongs to. See
+[`DiagramHom`](@ref) for more about the possible choices. The parameter `T` may
+also be `Any` to indicate that no choice has (yet) been made.
 """
 struct Diagram{T,C<:Cat,D<:Functor{<:FinCat,C}}
   diagram::D
@@ -31,7 +33,7 @@ end
 Diagram{T}(F::D) where {T,C<:Cat,D<:Functor{<:FinCat,C}} = Diagram{T,C,D}(F)
 
 Diagram{T}(d::Diagram) where T = Diagram{T}(d.diagram)
-Diagram(args...) = Diagram{id}(args...)
+Diagram(args...) = Diagram{Any}(args...)
 
 """ Functor underlying a diagram object.
 """
@@ -77,9 +79,9 @@ diagram ``D: J → C`` to another diagram ``D′: J′ → C``:
 Note that `Diagram{op}` is *not* the opposite category of `Diagram{id}`, but
 `Diagram{op}` and `Diagram{co}` are opposites of each other. Explicit support is
 included for both because they are useful for different purposes: morphisms of
-type `DiagramHom{op}` induce morphisms between the limits of the diagrams,
-whereas morphisms of type `DiagramHom{co}` generalize morphisms of polynomial
-functors.
+type `DiagramHom{id}` and `DiagramHom{op}` induce morphisms between colimits and
+between limits of the diagrams, respectively, whereas morphisms of type
+`DiagramHom{co}` generalize morphisms of polynomial functors.
 """
 struct DiagramHom{T,C<:Cat,F<:FinFunctor,Φ<:FinTransformation,D<:Functor{<:FinCat,C}}
   shape_map::F
@@ -92,7 +94,6 @@ DiagramHom{T}(shape_map::F, diagram_map::Φ, precomposed_diagram::D) where
 
 DiagramHom{T}(f::DiagramHom) where T =
   DiagramHom{T}(f.shape_map, f.diagram_map, f.precomposed_diagram)
-DiagramHom(args...) = DiagramHom{id}(args...)
 
 DiagramHom{T}(ob_maps, hom_map, D::Diagram{T}, D′::Diagram{T}) where T =
   DiagramHom{T}(ob_maps, hom_map, diagram(D), diagram(D′))
