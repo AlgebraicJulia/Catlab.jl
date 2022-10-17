@@ -1,7 +1,8 @@
 """ Diagrams in a category and their morphisms.
 """
 module Diagrams
-export Diagram, DiagramHom, id, op, co, shape, diagram, shape_map, diagram_map
+export Diagram, SimpleDiagram, DiagramHom, id, op, co, shape, diagram,
+  shape_map, diagram_map
 
 using StructEquality
 
@@ -27,13 +28,34 @@ wrapper type distinguishes which diagram category the diagram belongs to. See
 [`DiagramHom`](@ref) for more about the possible choices. The parameter `T` may
 also be `Any` to indicate that no choice has (yet) been made.
 """
-struct Diagram{T,C<:Cat,D<:Functor{<:FinCat,C}}
+abstract type Diagram{T,C<:Cat,D<:FinDomFunctor} end
+
+Diagram(args...) = Diagram{Any}(args...)
+
+# The first type parameter is considered part of the data!
+Base.hash(d::Diagram{T}, h::UInt) where T = hash(T, struct_hash(d, h))
+Base.:(==)(d1::Diagram{T}, d2::Diagram{S}) where {T,S} =
+  T == S && struct_equal(d1, d2)
+
+""" Default concrete type for diagram in a category.
+"""
+struct SimpleDiagram{T,C<:Cat,D<:Functor{<:FinCat,C}} <: Diagram{T,C,D}
   diagram::D
 end
-Diagram{T}(F::D) where {T,C<:Cat,D<:Functor{<:FinCat,C}} = Diagram{T,C,D}(F)
+SimpleDiagram{T}(F::D) where {T,C<:Cat,D<:Functor{<:FinCat,C}} =
+  SimpleDiagram{T,C,D}(F)
+SimpleDiagram{T}(d::SimpleDiagram) where T = SimpleDiagram{T}(d.diagram)
 
-Diagram{T}(d::Diagram) where T = Diagram{T}(d.diagram)
-Diagram(args...) = Diagram{Any}(args...)
+Diagram{T}(F::Union{Functor,SimpleDiagram}) where T = SimpleDiagram{T}(F)
+
+function Base.show(io::IO, d::SimpleDiagram{T}) where T
+  print(io, "Diagram{$T}(")
+  show(io, diagram(d))
+  print(io, ")")
+end
+
+force(d::SimpleDiagram{T}, args...) where T =
+  SimpleDiagram{T}(force(diagram(d), args...))
 
 """ Functor underlying a diagram object.
 """
@@ -45,24 +67,11 @@ This is the domain of the underlying functor.
 """
 shape(d::Diagram) = dom(diagram(d))
 
-Base.hash(d::Diagram{T}, h::UInt) where {T} = hash(T, struct_hash(d, h))
-
-Base.:(==)(d1::Diagram{T}, d2::Diagram{S}) where {T,S} =
-  T == S && struct_equal(d1, d2)
-
 ob_map(d::Diagram, x) = ob_map(diagram(d), x)
 hom_map(d::Diagram, f) = hom_map(diagram(d), f)
 
 collect_ob(d::Diagram) = collect_ob(diagram(d))
 collect_hom(d::Diagram) = collect_hom(diagram(d))
-
-force(d::Diagram{T}, args...) where T = Diagram{T}(force(diagram(d), args...))
-
-function Base.show(io::IO, d::Diagram{T}) where T
-  print(io, "Diagram{$T}(")
-  show(io, diagram(d))
-  print(io, ")")
-end
 
 """ Morphism of diagrams in a category.
 

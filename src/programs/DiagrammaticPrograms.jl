@@ -689,13 +689,12 @@ function make_query(C::FinCat{Ob}, d::DiagramData{T}) where {T, Ob}
     make_query_hom(f, F_ob[dom(J,h)], F_ob[codom(J,h)])
   end
   Diagram{T}(if query_type <: Ob
-    FinFunctor(F_ob, F_hom, shape(d), C)
+    FinFunctor(F_ob, F_hom, J, C)
   else
     # XXX: Why is the element type of `F_ob` sometimes too loose?
     D = TypeCat(typeintersect(query_type, eltype(values(F_ob))),
                 eltype(values(F_hom)))
-    FinDomFunctor(F_ob, F_hom, shape(d), D)
-
+    FinDomFunctor(F_ob, F_hom, J, D)
   end)
 end
 
