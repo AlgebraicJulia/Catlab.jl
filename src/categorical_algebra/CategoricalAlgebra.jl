@@ -16,6 +16,7 @@ include("GraphCategories.jl")
 include("Diagrams.jl")
 include("CommutativeDiagrams.jl")
 include("CatElements.jl")
+include("DataMigrationSupp.jl")
 include("DataMigrations.jl")
 include("StructuredCospans.jl")
 include("Slices.jl")
@@ -33,6 +34,7 @@ include("Slices.jl")
 
 @reexport using .Diagrams
 @reexport using .CommutativeDiagrams
+@reexport using .DataMigrationSupp
 @reexport using .DataMigrations
 @reexport using .StructuredCospans
 @reexport using .Slices

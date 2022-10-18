@@ -413,4 +413,21 @@ i, o = hom_map(G, :i), hom_map(G, :o)
 @test isempty(inneighbors(X, only(collect(i[:V]))))
 @test isempty(outneighbors(X, only(collect(o[:V]))))
 
+# Comparison of migration with attributes
+
+F2 = @migration SchWeightedGraph begin
+  X => @join begin
+    (e₁, e₂)::E
+    tgt(e₁) == src(e₂)
+    weight(e₁) == 5.0
+  end
+  (I, O) => V
+  (i: X → I) => src(e₁)
+  (o: X → O) => tgt(e₂)
 end
+
+G2 = colimit_representables(F2, y_Graph; acset_type=WeightedGraph{Int}) # Conjunctive migration.
+X2 = ob_map(G2, :X)
+@test X2[1, :weight] == 5
+
+end # module

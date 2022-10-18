@@ -10,6 +10,7 @@ using ..Categories, ..FinCats, ..Limits, ..Diagrams, ..FinSets, ..CSets
 using ...Graphs, ..FreeDiagrams
 import ..Categories: ob_map, hom_map
 using ..FinCats: make_map, mapvals
+using ..DataMigrationSupp: de_attr, add_attrs
 
 # Data types
 ############
@@ -436,17 +437,19 @@ constructing diagrams of C-sets.
 function colimit_representables(F::DeltaSchemaMigration, y)
   compose(op(F), y)
 end
-function colimit_representables(F::ConjSchemaMigration, y)
+
+function colimit_representables(F::ConjSchemaMigration, y; acset_type=nothing)
   C = dom(F)
   colimits = make_map(ob_generators(C)) do c
-    Fc = ob_map(F, c)
+    Fc = de_attr(ob_map(F, c))
     colimit(compose(op(Fc), y))
   end
   homs = make_map(hom_generators(C)) do f
-    Ff, c, d = hom_map(F, f), dom(C, f), codom(C, f)
+    Ff, c, d = de_attr(hom_map(F, f)), dom(C, f), codom(C, f)
     universal(compose(op(Ff), y), colimits[d], colimits[c])
   end
-  FinDomFunctor(mapvals(ob, colimits), homs, op(C))
+  res = FinDomFunctor(mapvals(ob, colimits), homs, op(C))
+  return isnothing(acset_type) ? res : add_attrs(F, res, colimits, acset_type)
 end
 
 # Schema translation
