@@ -47,7 +47,7 @@ function parse_graphviz(doc::AbstractDict)::AbstractPropertyGraph
   # Add edge for each Graphviz edge.
   edge_keys = ("id", "comment", "label", "xlabel", "headlabel", "taillabel",
                "headport", "tailport")
-  for edge in doc["edges"]
+  for edge in get(doc, "edges", ())
     if get(edge, "style", nothing) == "invis"
       # Omit invisible edges, which are used to tweak the layout in Graphviz.
       continue
