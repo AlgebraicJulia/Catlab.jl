@@ -243,21 +243,22 @@ end
 ```
 """
 macro finfunctor(dom_cat, codom_cat, body)
+  # Cannot parse Julia expr during expansion because domain category is needed.
   :(parse_functor($(esc(dom_cat)), $(esc(codom_cat)), $(Meta.quot(body))))
 end
 
-function parse_functor(C::FinCat, D::FinCat, body)
-  ast = parse_mapping_ast(body, C)
+function parse_functor(C::FinCat, D::FinCat, ast::AST.Mapping)
   ob_map, hom_map = make_ob_hom_maps(C, ast)
   F = FinFunctor(mapvals(x -> parse_ob(D, x), ob_map),
                  mapvals(f -> parse_hom(D, f), hom_map), C, D)
   is_functorial(F, check_equations=false) ||
-    error("Parsed functor is not functorial: $body")
+    error("Parsed functor is not functorial: $ast")
   return F
 end
-function parse_functor(C::Presentation, D::Presentation, body; kw...)
-  parse_functor(FinCat(C), FinCat(D), body; kw...)
-end
+parse_functor(C::FinCat, D::FinCat, body::Expr) =
+  parse_functor(C, D, parse_mapping_ast(body, C))
+parse_functor(C::Presentation, D::Presentation, args...) =
+  parse_functor(FinCat(C), FinCat(D), args...)
 
 function make_ob_hom_maps(C::FinCat, ast::AST.Mapping; allow_missing::Bool=false,
                           missing_ob::Bool=false, missing_hom::Bool=false)
@@ -390,7 +391,8 @@ Of course, unnamed morphisms cannot be referenced by name within the `@diagram`
 call or in other settings, which can sometimes be problematic.
 """
 macro diagram(cat, body)
-  :(parse_diagram($(esc(cat)), $(Meta.quot(body)), free=false))
+  ast = AST.Diagram(parse_diagram_ast(body, free=false))
+  :(parse_diagram($(esc(cat)), $ast))
 end
 
 """ Present a free diagram in a given category.
@@ -426,18 +428,18 @@ Some care must exercised when defining morphisms between diagrams with anonymous
 objects, since they cannot be referred to by name.
 """
 macro free_diagram(cat, body)
-  :(parse_diagram($(esc(cat)), $(Meta.quot(body)), free=true))
+  ast = AST.Diagram(parse_diagram_ast(body, free=true))
+  :(parse_diagram($(esc(cat)), $ast))
 end
 
-function parse_diagram(C::FinCat, body::Expr; kw...)
-  data = parse_diagram_data(C, parse_diagram_ast(body; kw...))
-  d = Diagram(data, C)
+function parse_diagram(C::FinCat, ast::AST.Diagram)
+  d = Diagram(parse_diagram_data(C, ast), C)
   is_functorial(diagram(d), check_equations=false) ||
-    error("Parsed diagram is not functorial: $body")
+    error("Parsed diagram is not functorial: $ast")
   return d
 end
-parse_diagram(pres::Presentation, body::Expr; kw...) =
-  parse_diagram(FinCat(pres), body; kw...)
+parse_diagram(pres::Presentation, ast::AST.Diagram) =
+  parse_diagram(FinCat(pres), ast)
 
 function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
                             type=Any, ob_parser=nothing, hom_parser=nothing)
@@ -473,6 +475,8 @@ function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
   J = isempty(eqs) ? FinCat(g) : FinCat(g, eqs)
   DiagramData{type}(F_ob, F_hom, J, params)
 end
+parse_diagram_data(C::FinCat, ast::AST.Diagram; kw...) =
+  parse_diagram_data(C, ast.statements; kw...)
 
 const DiagramGraph = NamedGraph{Symbol,Union{Symbol,Nothing}}
 
@@ -561,9 +565,11 @@ diagram shapes, whereas a morphism between gluing queries is covariant. TODO:
 Reference for more on this.
 """
 macro migration(src_schema, body)
-  :(parse_migration($(esc(src_schema)), $(Meta.quot(body))))
+  ast = AST.Diagram(parse_diagram_ast(body))
+  :(parse_migration($(esc(src_schema)), $ast))
 end
 macro migration(tgt_schema, src_schema, body)
+  # Cannot parse Julia expr during expansion because target schema is needed.
   :(parse_migration($(esc(tgt_schema)), $(esc(src_schema)), $(Meta.quot(body))))
 end
 
@@ -581,15 +587,14 @@ high-level steps of this process are:
 3. Convert all query and query morphisms to this common type, yielding `Diagram`
    and `DiagramHom` instances.
 """
-function parse_migration(src_schema::Presentation, body::Expr)
+function parse_migration(src_schema::Presentation, ast::AST.Diagram)
   C = FinCat(src_schema)
-  d = parse_query_diagram(C, parse_diagram_ast(body))
+  d = parse_query_diagram(C, ast.statements)
   diagram(make_query(C, d))
 end
 function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
-                         body::Expr)
+                         ast::AST.Mapping)
   D, C = FinCat(tgt_schema), FinCat(src_schema)
-  ast = parse_mapping_ast(body, D, preprocess=true)
   ob_rhs, hom_rhs = make_ob_hom_maps(D, ast, missing_hom=true)
   F_ob = mapvals(expr -> parse_query(C, expr), ob_rhs)
   F_hom = mapvals(hom_rhs, keys=true) do f, expr
@@ -597,6 +602,11 @@ function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
                     F_ob[dom(D,f)], F_ob[codom(D,f)])
   end
   diagram(make_query(C, DiagramData{Any}(F_ob, F_hom, D)))
+end
+function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
+                         body::Expr)
+  ast = parse_mapping_ast(body, FinCat(tgt_schema), preprocess=true)
+  parse_migration(tgt_schema, src_schema, ast)
 end
 
 # Query parsing
