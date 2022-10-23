@@ -390,7 +390,8 @@ Of course, unnamed morphisms cannot be referenced by name within the `@diagram`
 call or in other settings, which can sometimes be problematic.
 """
 macro diagram(cat, body)
-  :(parse_diagram($(esc(cat)), $(Meta.quot(body)), free=false))
+  ast = AST.Diagram(parse_diagram_ast(body, free=false))
+  :(parse_diagram($(esc(cat)), $ast))
 end
 
 """ Present a free diagram in a given category.
@@ -426,18 +427,18 @@ Some care must exercised when defining morphisms between diagrams with anonymous
 objects, since they cannot be referred to by name.
 """
 macro free_diagram(cat, body)
-  :(parse_diagram($(esc(cat)), $(Meta.quot(body)), free=true))
+  ast = AST.Diagram(parse_diagram_ast(body, free=true))
+  :(parse_diagram($(esc(cat)), $ast))
 end
 
-function parse_diagram(C::FinCat, body::Expr; kw...)
-  data = parse_diagram_data(C, parse_diagram_ast(body; kw...))
-  d = Diagram(data, C)
+function parse_diagram(C::FinCat, ast::AST.Diagram)
+  d = Diagram(parse_diagram_data(C, ast), C)
   is_functorial(diagram(d), check_equations=false) ||
-    error("Parsed diagram is not functorial: $body")
+    error("Parsed diagram is not functorial: $ast")
   return d
 end
-parse_diagram(pres::Presentation, body::Expr; kw...) =
-  parse_diagram(FinCat(pres), body; kw...)
+parse_diagram(pres::Presentation, ast::AST.Diagram) =
+  parse_diagram(FinCat(pres), ast)
 
 function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
                             type=Any, ob_parser=nothing, hom_parser=nothing)
@@ -473,6 +474,8 @@ function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
   J = isempty(eqs) ? FinCat(g) : FinCat(g, eqs)
   DiagramData{type}(F_ob, F_hom, J, params)
 end
+parse_diagram_data(C::FinCat, ast::AST.Diagram; kw...) =
+  parse_diagram_data(C, ast.statements; kw...)
 
 const DiagramGraph = NamedGraph{Symbol,Union{Symbol,Nothing}}
 
