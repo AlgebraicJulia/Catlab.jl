@@ -243,21 +243,22 @@ end
 ```
 """
 macro finfunctor(dom_cat, codom_cat, body)
+  # Cannot parse Julia expr during expansion because domain category is needed.
   :(parse_functor($(esc(dom_cat)), $(esc(codom_cat)), $(Meta.quot(body))))
 end
 
-function parse_functor(C::FinCat, D::FinCat, body)
-  ast = parse_mapping_ast(body, C)
+function parse_functor(C::FinCat, D::FinCat, ast::AST.Mapping)
   ob_map, hom_map = make_ob_hom_maps(C, ast)
   F = FinFunctor(mapvals(x -> parse_ob(D, x), ob_map),
                  mapvals(f -> parse_hom(D, f), hom_map), C, D)
   is_functorial(F, check_equations=false) ||
-    error("Parsed functor is not functorial: $body")
+    error("Parsed functor is not functorial: $ast")
   return F
 end
-function parse_functor(C::Presentation, D::Presentation, body; kw...)
-  parse_functor(FinCat(C), FinCat(D), body; kw...)
-end
+parse_functor(C::FinCat, D::FinCat, body::Expr) =
+  parse_functor(C, D, parse_mapping_ast(body, C))
+parse_functor(C::Presentation, D::Presentation, args...) =
+  parse_functor(FinCat(C), FinCat(D), args...)
 
 function make_ob_hom_maps(C::FinCat, ast::AST.Mapping; allow_missing::Bool=false,
                           missing_ob::Bool=false, missing_hom::Bool=false)
@@ -564,9 +565,11 @@ diagram shapes, whereas a morphism between gluing queries is covariant. TODO:
 Reference for more on this.
 """
 macro migration(src_schema, body)
-  :(parse_migration($(esc(src_schema)), $(Meta.quot(body))))
+  ast = AST.Diagram(parse_diagram_ast(body))
+  :(parse_migration($(esc(src_schema)), $ast))
 end
 macro migration(tgt_schema, src_schema, body)
+  # Cannot parse Julia expr during expansion because target schema is needed.
   :(parse_migration($(esc(tgt_schema)), $(esc(src_schema)), $(Meta.quot(body))))
 end
 
@@ -584,15 +587,14 @@ high-level steps of this process are:
 3. Convert all query and query morphisms to this common type, yielding `Diagram`
    and `DiagramHom` instances.
 """
-function parse_migration(src_schema::Presentation, body::Expr)
+function parse_migration(src_schema::Presentation, ast::AST.Diagram)
   C = FinCat(src_schema)
-  d = parse_query_diagram(C, parse_diagram_ast(body))
+  d = parse_query_diagram(C, ast.statements)
   diagram(make_query(C, d))
 end
 function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
-                         body::Expr)
+                         ast::AST.Mapping)
   D, C = FinCat(tgt_schema), FinCat(src_schema)
-  ast = parse_mapping_ast(body, D, preprocess=true)
   ob_rhs, hom_rhs = make_ob_hom_maps(D, ast, missing_hom=true)
   F_ob = mapvals(expr -> parse_query(C, expr), ob_rhs)
   F_hom = mapvals(hom_rhs, keys=true) do f, expr
@@ -600,6 +602,11 @@ function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
                     F_ob[dom(D,f)], F_ob[codom(D,f)])
   end
   diagram(make_query(C, DiagramData{Any}(F_ob, F_hom, D)))
+end
+function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
+                         body::Expr)
+  ast = parse_mapping_ast(body, FinCat(tgt_schema), preprocess=true)
+  parse_migration(tgt_schema, src_schema, ast)
 end
 
 # Query parsing
