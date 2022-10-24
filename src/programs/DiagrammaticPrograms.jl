@@ -913,7 +913,7 @@ gen_anon!(state::DiagramASTState) = Symbol("##unnamed#$(state.nanon += 1)")
 function push_ob_over!(state::DiagramASTState, ob::AST.ObOver)
   isnothing(ob.name) && return ob
   haskey(state.ob_over, ob.name) &&
-    error("Object with name $x has already been defined")
+    error("Object with name $ob has already been defined")
   state.ob_over[ob.name] = ob.over
   return ob
 end
