@@ -396,7 +396,7 @@ The domain is a `FinSet{S}` where `S` is the type of the dictionary's `keys`
 collection.
 """
 @struct_hash_equal struct FinDomFunctionDict{K,D<:AbstractDict{K},Codom<:SetOb} <:
-    SetFunction{FinSet{AbstractSet{K},K},Codom}
+    SetFunction{FinSetCollection{Base.KeySet{K,D},K},Codom}
   func::D
   codom::Codom
 end
