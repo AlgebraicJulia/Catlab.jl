@@ -237,7 +237,7 @@ The domain of this function is always of type `FinSet{Int}`, with elements of
 the form ``{1,...,n}``.
 """
 struct FinDomFunctionVector{T,V<:AbstractVector{T}, Codom<:SetOb{T}} <:
-    FinDomFunction{Int,FinSetInt,Codom}
+    SetFunction{FinSetInt,Codom}
   func::V
   codom::Codom
 end
@@ -286,7 +286,7 @@ Works in the same way as the special case of [`IndexedFinFunctionVector`](@ref),
 except that the index is typically a dictionary, not a vector.
 """
 struct IndexedFinDomFunctionVector{T,V<:AbstractVector{T},Index,Codom<:SetOb{T}} <:
-    FinDomFunction{Int,FinSetInt,Codom}
+    SetFunction{FinSetInt,Codom}
   func::V
   index::Index
   codom::Codom
@@ -396,7 +396,7 @@ The domain is a `FinSet{S}` where `S` is the type of the dictionary's `keys`
 collection.
 """
 @struct_hash_equal struct FinDomFunctionDict{K,D<:AbstractDict{K},Codom<:SetOb} <:
-    FinDomFunction{D,FinSet{AbstractSet{K},K},Codom}
+    SetFunction{FinSetCollection{Base.KeySet{K,D},K},Codom}
   func::D
   codom::Codom
 end

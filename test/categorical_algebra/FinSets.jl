@@ -51,6 +51,7 @@ F = FinDomFunctor([FinSet(1), FinSet(3), FinSet(1)],
 f = FinFunction([1,3,4], 5)
 g = FinFunction([1,1,2,2,3], 3)
 h = FinFunction([3,1,2], 3)
+@test f isa FinFunction{Int,Int}
 @test (dom(f), codom(f)) == (FinSet(3), FinSet(5))
 @test force(f) === f
 @test codom(FinFunction([1,3,4])) == FinSet(4)
@@ -58,6 +59,7 @@ h = FinFunction([3,1,2], 3)
 X = FinSet(Set([:w,:x,:y,:z]))
 k = FinFunction(Dict(:a => :x, :b => :y, :c => :z), X)
 ℓ = FinFunction(Dict(:w => 2, :x => 1, :y => 1, :z => 4), FinSet(4))
+@test ℓ isa FinFunction{<:AbstractSet{Symbol},Int}
 @test (dom(k), codom(k)) == (FinSet(Set([:a, :b, :c])), X)
 @test (dom(ℓ), codom(ℓ)) == (X, FinSet(4))
 @test force(k) === k
