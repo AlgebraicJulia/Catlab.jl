@@ -279,24 +279,36 @@ Get a named tuple of Tables.jl-compatible tables from an acset
 """
 function tables end
 
-""" Display an ACSet prettily
+# Pretty printing
+#################
 
-This works for any acset that implements tables
+""" Display an acset using PrettyTables.jl.
+
+This works for any acset that implements [`tables`](@ref).
 """
+function pretty_tables(io::IO, acs::ACSet; tables=nothing, kw...)
+  options = merge(default_pretty_table_options, (; kw...))
+  all_tables = ACSetInterface.tables(acs)
+  table_names = isnothing(tables) ? keys(all_tables) : tables
+  for name in table_names
+    table = all_tables[name]
 
-# Fancy Displaying
+    # By convention, omit trivial tables with no columns.
+    isempty(Tables.columnnames(table)) && continue
 
-function pretty_tables(io::IO, acs::ACSet; kw...)
-  options = merge((show_subheader=false, show_row_number=true), (; kw...))
-  for (ob, table) in pairs(tables(acs))
-    # Note: PrettyTables will not print tables with zero rows.
-    if !(isempty(Tables.columnnames(table)) || Tables.rowcount(table) == 0)
-      pretty_table(io, table, row_number_column_title=string(ob); options...)
-    end
+    # By necessity, omit tables with no rows. PrettyTables will not print them.
+    Tables.rowcount(table) == 0 && continue
+
+    pretty_table(io, table; row_number_column_title=string(name), options...)
   end
 end
 
 pretty_tables(acs::ACSet; kw...) = pretty_tables(stdout, acs; kw...)
+
+const default_pretty_table_options = (
+  show_subheader = false,
+  show_row_number = true,
+)
 
 function Base.show(io::IO, ::MIME"text/plain", acs::T) where T <: ACSet
   print(io, acset_name(acs))
