@@ -1,6 +1,6 @@
 """ 2-category of finitely presented categories.
 
-This module is for the 2-category **Cat** what the module [`FinSets](@ref) is
+This module is for the 2-category **Cat** what the module [`FinSets`](@ref) is
 for the category **Set**: a finitary, combinatorial setting where explicit
 calculations can be carried out. We emphasize that the prefix `Fin` means
 "finitely presented," not "finite," as finite categories are too restrictive a
