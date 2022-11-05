@@ -33,7 +33,6 @@ end
 end
 
 @testset "CSets" begin
-  include("CSetDataStructures.jl")
   include("CSets.jl")
   include("CatElements.jl")
 end
