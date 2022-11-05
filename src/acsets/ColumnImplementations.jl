@@ -464,9 +464,8 @@ A column for a dict-backed indexed hom with key type K
 struct SparseIndexedFinColumn{K,D<:AbstractDict{K,K}} <: Column{K,K}
   m::PartialDictMap{K, K, D}
   i::StoredPreimageCache{K, K, Set{K},
-                      DefaultDictMap{K, Set{K}, DefaultEmpty{Set{K}},
-                                     Dict{K,Set{K}}},
-                      }
+                         DefaultDictMap{K, Set{K}, DefaultEmpty{Set{K}},
+                                        Dict{K,Set{K}}}}
 end
 
 """

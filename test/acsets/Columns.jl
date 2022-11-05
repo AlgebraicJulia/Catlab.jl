@@ -2,6 +2,7 @@ module TestColumns
 using Test
 using Base: OneTo
 
+using DataStructures: OrderedDict
 using Catlab.Columns, Catlab.ColumnImplementations
 using Catlab.ColumnImplementations: PartialVecMap, PartialDictMap,
   SentinelVecMap, FilledVecMap, DefaultDictMap, DefaultVal, 
@@ -79,6 +80,7 @@ coltypes = [
   DenseIndexedFinColumn{Vector{Int}},
   SparseFinColumn{Int,Dict{Int,Int}},
   SparseIndexedFinColumn{Int,Dict{Int,Int}},
+  SparseIndexedFinColumn{Int,OrderedDict{Int,Int}},
 ]
 
 for coltype in coltypes
