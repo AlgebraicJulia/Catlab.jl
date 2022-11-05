@@ -163,7 +163,7 @@ end
 #----------------------
 
 function migrate(X::FinDomFunctor, F::ConjSchemaMigration;
-                 return_limits::Bool=false, tabular::Bool=false)
+                 return_limits::Bool=false)
   tgt_schema = dom(F)
   limits = make_map(ob_generators(tgt_schema)) do c
     Fc = ob_map(F, c)
@@ -177,14 +177,8 @@ function migrate(X::FinDomFunctor, F::ConjSchemaMigration;
       (SetOb, FinDomFunction{Int})
     end
     # XXX: Disable domain check because acsets don't store schema equations.
-    lim = limit(force(compose(Fc, X, strict=false), diagram_types...),
-                alg=SpecializeLimit(fallback=ToBipartiteLimit()))
-    if tabular
-      names = (ob_generator_name(J, j) for j in ob_generators(J))
-      TabularLimit(lim, names=names)
-    else
-      lim
-    end
+    limit(force(compose(Fc, X, strict=false), diagram_types...),
+          alg=SpecializeLimit(fallback=ToBipartiteLimit()))
   end
   funcs = make_map(hom_generators(tgt_schema)) do f
     Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)

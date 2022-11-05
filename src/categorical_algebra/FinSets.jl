@@ -1,7 +1,7 @@
 """ The category of finite sets and functions, and its skeleton.
 """
 module FinSets
-export FinSet, FinFunction, FinDomFunction, TabularSet, TabularLimit,
+export FinSet, FinSetInt, FinFunction, FinDomFunction,
   force, is_indexed, preimage,
   JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin,
   SubFinSet, SubOpBoolean, is_monic, is_epic
@@ -11,10 +11,9 @@ using DataStructures: OrderedDict, IntDisjointSets, union!, find_root!
 using Reexport
 import StaticArrays
 using StaticArrays: StaticVector, SVector, SizedVector, similar_type
-import Tables, PrettyTables
 
 @reexport using ..Sets
-using ...GAT, ...Theories, ...CSetDataStructures, ...Graphs
+using ...GAT, ...Theories, ...CSetDataStructures, ...Graphs, ...Columns
 using ..FinCats, ..FreeDiagrams, ..Limits, ..Subobjects
 import ...Theories: Ob, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 import ..Categories: ob, hom, dom, codom, compose, id, ob_map, hom_map
@@ -34,95 +33,29 @@ A finite set has abstract type `FinSet{S,T}`. The second type parameter `T` is
 the element type of the set and the first parameter `S` is the collection type,
 which can be a subtype of `AbstractSet` or another Julia collection type. In
 addition, the skeleton of the category **FinSet** is the important special case
-`S = Int`. The set ``{1,…,n}`` is represented by the object `FinSet(n)` of type
-`FinSet{Int,Int}`.
+`S = Base.OneTo`. The set ``{1,…,n}`` is represented by the object `FinSet(n)` of type
+`FinSet{Base.OneTo,Int}`.
 """
-abstract type FinSet{S,T} <: SetOb{T} end
-
-FinSet(set::FinSet) = set
-
-""" Finite set of the form ``{1,…,n}`` for some number ``n ≥ 0``.
-"""
-@struct_hash_equal struct FinSetInt <: FinSet{Int,Int}
-  n::Int
-end
-
-FinSet{Int,Int}(n::Int) = FinSetInt(n)
-FinSet(n::Int) = FinSetInt(n)
-
-Base.iterate(set::FinSetInt, args...) = iterate(1:set.n, args...)
-Base.length(set::FinSetInt) = set.n
-Base.in(set::FinSetInt, elem) = in(elem, 1:set.n)
-
-Base.show(io::IO, set::FinSetInt) = print(io, "FinSet($(set.n))")
-
-""" Finite set given by Julia collection.
-
-The underlying collection should be a Julia iterable of definite length. It may
-be, but is not required to be, set-like (a subtype of `AbstractSet`).
-"""
-@struct_hash_equal struct FinSetCollection{S,T} <: FinSet{S,T}
+@struct_hash_equal struct FinSet{S,T} <: SetOb{T}
   collection::S
 end
-FinSetCollection(collection::S) where S =
-  FinSetCollection{S,eltype(collection)}(collection)
+
+const FinSetInt = FinSet{Base.OneTo, Int}
+
+FinSet(set::FinSet) = set
+FinSet(n::Int) = FinSet{Base.OneTo, Int}(Base.OneTo(n))
 
 FinSet(collection::S) where {T, S<:Union{AbstractVector{T},AbstractSet{T}}} =
-  FinSetCollection{S,T}(collection)
+  FinSet{S,T}(collection)
 
-Base.iterate(set::FinSetCollection, args...) = iterate(set.collection, args...)
-Base.length(set::FinSetCollection) = length(set.collection)
-Base.in(set::FinSetCollection, elem) = in(elem, set.collection)
+Base.iterate(set::FinSet, args...) = iterate(set.collection, args...)
+Base.length(set::FinSet) = length(set.collection)
+Base.in(set::FinSet, elem) = in(elem, set.collection)
 
-function Base.show(io::IO, set::FinSetCollection)
+function Base.show(io::IO, set::FinSet)
   print(io, "FinSet(")
   show(io, set.collection)
   print(io, ")")
-end
-
-""" Finite set whose elements are rows of a table.
-
-The underlying table should be compliant with Tables.jl. For the sake of
-uniformity, the rows are provided as named tuples, which assumes that the table
-is not "extremely wide". This should not be a major limitation in practice but
-see the Tables.jl documentation for further discussion.
-"""
-@struct_hash_equal struct TabularSet{Table,Row} <: FinSet{Table,Row}
-  table::Table
-
-  function TabularSet(table::Table) where Table
-    schema = Tables.schema(table)
-    new{Table,NamedTuple{schema.names,Tuple{schema.types...}}}(table)
-  end
-end
-
-FinSet(nt::NamedTuple) = TabularSet(nt)
-
-Base.iterate(set::TabularSet, args...) =
-  iterate(Tables.namedtupleiterator(set.table), args...)
-Base.length(set::TabularSet) = Tables.rowcount(set.table)
-Base.collect(set::TabularSet) = Tables.rowtable(set.table)
-
-function Base.show(io::IO, set::TabularSet)
-  print(io, "TabularSet(")
-  show(io, set.table)
-  print(io, ")")
-end
-
-function Base.show(io::IO, ::MIME"text/plain", set::TabularSet{T}) where T
-  print(io, "$(length(set))-element TabularSet{$T}")
-  if !get(io, :compact, false)
-    println(io, ":")
-    PrettyTables.pretty_table(io, set.table, show_subheader=false)
-  end
-end
-
-function Base.show(io::IO, ::MIME"text/html", set::TabularSet)
-  println(io, "<div class=\"tabular-set\">")
-  println(io, "$(length(set))-element TabularSet")
-  PrettyTables.pretty_table(io, set.table, backend=Val(:html), standalone=false,
-                            show_subheader=false)
-  println(io, "</div>")
 end
 
 # Discrete categories
@@ -236,7 +169,7 @@ Ob(F::Functor{<:FinCat{Int}}) = FinDomFunction(collect_ob(F), Ob(codom(F)))
 The domain of this function is always of type `FinSet{Int}`, with elements of
 the form ``{1,...,n}``.
 """
-struct FinDomFunctionVector{T,V<:AbstractVector{T}, Codom<:SetOb{T}} <:
+struct FinDomFunctionColumn{T,V<:Column{Int,T}, Codom<:SetOb{T}} <:
     SetFunction{FinSetInt,Codom}
   func::V
   codom::Codom
@@ -251,7 +184,7 @@ function FinDomFunctionVector(f::AbstractVector, dom::FinSet{Int}, codom)
   FinDomFunctionVector(f, codom)
 end
 
-dom(f::FinDomFunctionVector) = FinSet(length(f.func))
+dom(f::FinDomFunctionColumn{_,V}) where V = FinSet(length(f.func)) 
 
 (f::FinDomFunctionVector)(x) = f.func[x]
 
@@ -276,51 +209,6 @@ Base.show(io::IO, f::FinFunctionVector) =
 
 Sets.do_compose(f::FinFunctionVector, g::FinDomFunctionVector) =
   FinDomFunctionVector(g.func[f.func], codom(g))
-
-# Indexed vector-based functions
-#-------------------------------
-
-""" Indexed function out of a finite set of type `FinSet{Int}`.
-
-Works in the same way as the special case of [`IndexedFinFunctionVector`](@ref),
-except that the index is typically a dictionary, not a vector.
-"""
-struct IndexedFinDomFunctionVector{T,V<:AbstractVector{T},Index,Codom<:SetOb{T}} <:
-    SetFunction{FinSetInt,Codom}
-  func::V
-  index::Index
-  codom::Codom
-end
-
-IndexedFinDomFunctionVector(f::AbstractVector{T}; kw...) where T =
-  IndexedFinDomFunctionVector(f, TypeSet{T}(); kw...)
-
-function IndexedFinDomFunctionVector(f::AbstractVector{T}, codom::SetOb{T};
-                                     index=nothing) where T
-  if isnothing(index)
-    index = Dict{T,Vector{Int}}()
-    for (i, x) in enumerate(f)
-      push!(get!(index, x) do; Int[] end, i)
-    end
-  end
-  IndexedFinDomFunctionVector(f, index, codom)
-end
-
-Base.:(==)(f::Union{FinDomFunctionVector,IndexedFinDomFunctionVector},
-           g::Union{FinDomFunctionVector,IndexedFinDomFunctionVector}) =
-  # Ignore index when comparing for equality.
-  f.func == g.func && codom(f) == codom(g)
-
-function Base.show(io::IO, f::IndexedFinDomFunctionVector)
-  print(io, "FinDomFunction($(f.func), ")
-  Sets.show_domains(io, f)
-  print(io, ", index=true)")
-end
-
-dom(f::IndexedFinDomFunctionVector) = FinSet(length(f.func))
-force(f::IndexedFinDomFunctionVector) = f
-
-(f::IndexedFinDomFunctionVector)(x) = f.func[x]
 
 """ Whether the given function is indexed, i.e., supports efficient preimages.
 """
@@ -919,42 +807,6 @@ function universal(lim::FinSetCompositeLimit, cone::Multispan{<:FinSet{Int}})
   FinFunction(Int[only(searchsorted(ι, h(i))) for i in dom(h)],
               apex(cone), ob(lim))
 end
-
-""" Limit of finite sets viewed as a table.
-
-Any limit of finite sets can be canonically viewed as a table
-([`TabularSet`](@ref)) whose columns are the legs of the limit cone and whose
-rows correspond to elements of the limit object. To construct this table from an
-already computed limit, call `TabularLimit(::AbstractLimit; ...)`. The column
-names of the table are given by the optional argument `names`.
-
-In this tabular form, applying the universal property of the limit is trivial
-since it is just tupling. Thus, this representation can be useful when the
-original limit algorithm does not support efficient application of the universal
-property. On the other hand, this representation has the disadvantage of
-generally making the element type of the limit set more complicated.
-"""
-const TabularLimit = Limit{<:TabularSet}
-
-function TabularLimit(lim::AbstractLimit; names=nothing)
-  πs = legs(lim)
-  names = isnothing(names) ? (1:length(πs)) : names
-  names = Tuple(column_name(name) for name in names)
-  table = TabularSet(NamedTuple{names}(Tuple(map(collect, πs))))
-  cone = Multispan(table, map(πs, eachindex(πs)) do π, i
-    FinFunction(row -> Tables.getcolumn(row, i), table, codom(π))
-  end)
-  Limit(lim.diagram, cone)
-end
-
-function universal(lim::Limit{<:TabularSet{Table,Row}},
-                   cone::Multispan) where {Table,Row}
-  fs = Tuple(legs(cone))
-  FinFunction(x -> Row(map(f -> f(x), fs)), apex(cone), ob(lim))
-end
-
-column_name(name) = Symbol(name)
-column_name(i::Integer) = Symbol("x$i") # Same default as DataFrames.jl.
 
 # Colimits
 ##########

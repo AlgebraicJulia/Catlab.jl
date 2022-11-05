@@ -94,11 +94,9 @@ F = FinDomFunctor(Dict(V => Diagram{op}(F_V),
                        tgt => DiagramHom{op}([(2, tgt)], F_E, F_V)), C)
 @test F isa DataMigrations.ConjSchemaMigration
 g = path_graph(Graph, 5)
-H = migrate(g, F, tabular=true)
-@test length(H(V)) == 5
-@test length(H(E)) == 3
-@test H(src)((x1=2, x2=3, x3=3)) == (x1=2,)
-@test H(tgt)((x1=2, x2=3, x3=3)) == (x1=4,)
+h = migrate(Graph, g, F)
+@test (nv(h), ne(h)) == (5, 3)
+@test sort!(collect(zip(h[:src], h[:tgt]))) == [(1,3), (2,4), (3,5)]
 
 # Same migration, but defining using the `@migration` macro.
 F = @migration SchGraph SchGraph begin
@@ -112,12 +110,6 @@ F = @migration SchGraph SchGraph begin
   src => e₁ ⋅ src
   tgt => e₂ ⋅ tgt
 end
-H = migrate(g, F, tabular=true)
-@test length(H(V)) == 5
-@test length(H(E)) == 3
-@test H(src)((v=3, e₁=2, e₂=3)) == (V=2,)
-@test H(tgt)((v=3, e₁=2, e₂=3)) == (V=4,)
-
 h = migrate(Graph, g, F)
 @test (nv(h), ne(h)) == (5, 3)
 @test sort!(collect(zip(h[:src], h[:tgt]))) == [(1,3), (2,4), (3,5)]

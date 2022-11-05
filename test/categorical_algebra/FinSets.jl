@@ -21,15 +21,6 @@ set = FinSet(Set(1:2:5))
 @test 3 ∈ set && 4 ∉ set
 @test startswith(sshow(set), "FinSet(Set(")
 
-# Tables as sets.
-set = FinSet((x=[1,3,5], y=["a","b","c"]))
-@test eltype(set) == NamedTuple{(:x,:y),Tuple{Int,String}}
-@test length(set) == 3
-@test collect(set) == [(x=1, y="a"), (x=3, y="b"), (x=5, y="c")]
-@test startswith(sshow(set), "TabularSet(")
-@test startswith(sshow(MIME("text/plain"), set), "3-element TabularSet")
-@test startswith(sshow(MIME("text/html"), set), "<div")
-
 # Discrete categories.
 C = FinCat(FinSet(3))
 @test C isa FinCat{Int,Int}
