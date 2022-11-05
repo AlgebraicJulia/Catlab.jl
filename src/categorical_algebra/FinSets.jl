@@ -1,7 +1,7 @@
 """ The category of finite sets and functions, and its skeleton.
 """
 module FinSets
-export FinSet, FinSetInt, FinFunction, FinDomFunction,
+export FinSet, FinSetCollection, FinSetInt, FinFunction, FinDomFunction,
   force, is_indexed, preimage,
   JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin,
   SubFinSet, SubOpBoolean, is_monic, is_epic
@@ -27,32 +27,38 @@ using ..Sets: IdentityFunction, SetFunctionCallable
 # Finite sets
 #############
 
-""" Finite set.
-
-A finite set has abstract type `FinSet{S,T}`. The second type parameter `T` is
-the element type of the set and the first parameter `S` is the collection type,
-which can be a subtype of `AbstractSet` or another Julia collection type. In
-addition, the skeleton of the category **FinSet** is the important special case
-`S = Base.OneTo`. The set ``{1,…,n}`` is represented by the object `FinSet(n)` of type
-`FinSet{Base.OneTo,Int}`.
+""" Abstract type for a finite set with elements of type `T`.
 """
-@struct_hash_equal struct FinSet{S,T} <: SetOb{T}
+abstract type FinSet{T} <: SetOb{T} end
+
+FinSet(set::FinSet) = set
+
+""" Finite set backed by a collection.
+
+In the type `FinSetCollection{S,T}`, the second type parameter `T` is the
+element type of the set and the first parameter `S` is the collection type,
+which can be a subtype of `AbstractSet` or another Julia collection type.
+"""
+@struct_hash_equal struct FinSetCollection{S,T} <: FinSet{T}
   collection::S
 end
 
-const FinSetInt = FinSet{Base.OneTo, Int}
+""" Finite set of the form ``{1,…,n}``.
 
-FinSet(set::FinSet) = set
-FinSet(n::Int) = FinSet{Base.OneTo, Int}(Base.OneTo(n))
+These are the objects of the skeleton of the category **FinSet**, an important
+special case implemented as `FinSetCollection{S}` for `S = Base.OneTo`.
+"""
+const FinSetInt = FinSetCollection{Base.OneTo,Int}
 
+FinSet(n::Int) = FinSetCollection{Base.OneTo, Int}(Base.OneTo(n))
 FinSet(collection::S) where {T, S<:Union{AbstractVector{T},AbstractSet{T}}} =
-  FinSet{S,T}(collection)
+  FinSetCollection{S,T}(collection)
 
-Base.iterate(set::FinSet, args...) = iterate(set.collection, args...)
-Base.length(set::FinSet) = length(set.collection)
-Base.in(set::FinSet, elem) = in(elem, set.collection)
+Base.iterate(set::FinSetCollection, args...) = iterate(set.collection, args...)
+Base.length(set::FinSetCollection) = length(set.collection)
+Base.in(set::FinSetCollection, elem) = in(elem, set.collection)
 
-function Base.show(io::IO, set::FinSet)
+function Base.show(io::IO, set::FinSetCollection)
   print(io, "FinSet(")
   show(io, set.collection)
   print(io, ")")
@@ -66,7 +72,7 @@ end
 The only morphisms in a discrete category are the identities, which are here
 identified with the objects.
 """
-@struct_hash_equal struct DiscreteCat{Ob,S<:FinSet{<:Any,Ob}} <: FinCat{Ob,Ob}
+@struct_hash_equal struct DiscreteCat{Ob,S<:FinSet{Ob}} <: FinCat{Ob,Ob}
   set::S
 end
 DiscreteCat(n::Integer) = DiscreteCat(FinSet(n))
@@ -164,163 +170,68 @@ Ob(F::Functor{<:FinCat{Int}}) = FinDomFunction(collect_ob(F), Ob(codom(F)))
 # Vector-based functions
 #-----------------------
 
-""" Function in **Set** represented by a vector.
-
-The domain of this function is always of type `FinSet{Int}`, with elements of
-the form ``{1,...,n}``.
+""" Function in **Set** represented by a [`Column`](@ref).
 """
-struct FinDomFunctionColumn{T,V<:Column{Int,T}, Codom<:SetOb{T}} <:
-    SetFunction{FinSetInt,Codom}
-  func::V
+struct FinDomFunctionColumn{T,T′,Col<:Column{T,T′}, Dom<:FinSet{T}, Codom<:SetOb{T′}} <:
+    SetFunction{Dom,Codom}
+  col::Col
+  dom::Dom
   codom::Codom
 end
 
-FinDomFunctionVector(f::AbstractVector{T}) where T =
-  FinDomFunctionVector(f, TypeSet{T}())
+(f::FinDomFunctionColumn)(x) = f.col[x]
 
-function FinDomFunctionVector(f::AbstractVector, dom::FinSet{Int}, codom)
-  length(f) == length(dom) ||
-    error("Length of vector $f does not match domain $dom")
-  FinDomFunctionVector(f, codom)
-end
-
-dom(f::FinDomFunctionColumn{_,V}) where V = FinSet(length(f.func)) 
-
-(f::FinDomFunctionVector)(x) = f.func[x]
-
-function Base.show(io::IO, f::FinDomFunctionVector)
-  print(io, "FinDomFunction($(f.func), ")
+function Base.show(io::IO, f::FinDomFunctionColumn)
+  print(io, "FinDomFunction($(f.col), ")
   Sets.show_domains(io, f)
   print(io, ")")
 end
 
-force(f::FinDomFunction{Int}) = FinDomFunctionVector(map(f, dom(f)), codom(f))
-force(f::FinDomFunctionVector) = f
+#force(f::FinDomFunction{Int}) = FinDomFunctionVector(map(f, dom(f)), codom(f))
+#force(f::FinDomFunctionVector) = f
 
-Base.collect(f::SetFunction) = force(f).func
+#Base.collect(f::SetFunction) = force(f).func
 
-""" Function in **FinSet** represented explicitly by a vector.
+""" Function in **FinSet** represented explicitly by a column.
 """
-const FinFunctionVector{S,T,V<:AbstractVector{T}} =
-  FinDomFunctionVector{T,V,<:FinSet{S,T}}
+const FinFunctionColumn{T,T′,Col<:Column{T,T′}, Dom<:FinSet{T}, Codom<:FinSet{T′}} =
+  FinDomFunctionColumn{T,T′,Col,Dom,Codom}
 
-Base.show(io::IO, f::FinFunctionVector) =
-  print(io, "FinFunction($(f.func), $(length(dom(f))), $(length(codom(f))))")
+Base.show(io::IO, f::FinFunctionColumn) =
+  print(io, "FinFunction($(f.col), $(length(dom(f))), $(length(codom(f))))")
 
 Sets.do_compose(f::FinFunctionVector, g::FinDomFunctionVector) =
   FinDomFunctionVector(g.func[f.func], codom(g))
 
 """ Whether the given function is indexed, i.e., supports efficient preimages.
 """
-is_indexed(f::SetFunction) = false
-is_indexed(f::IdentityFunction) = true
-is_indexed(f::IndexedFinDomFunctionVector) = true
-is_indexed(f::FinDomFunctionVector{T,<:AbstractRange{T}}) where T = true
+is_indexed(::SetFunction) = false
+is_indexed(::IdentityFunction) = true
+is_indexed(f::FinDomFunctionColumn) = is_indexed(f.col)
 
 """ The preimage (inverse image) of the value y in the codomain.
 """
 preimage(f::IdentityFunction, y) = SVector(y)
-preimage(f::FinDomFunction, y) = [ x for x in dom(f) if f(x) == y ]
-preimage(f::IndexedFinDomFunctionVector, y) = get_preimage_index(f.index, y)
+preimage(f::FinDomFunctionColumn, y) = preimage(f.col, y)
 
-@inline get_preimage_index(index::AbstractDict, y) = get(index, y, 1:0)
-@inline get_preimage_index(index::AbstractVector, y) = index[y]
+# Forcing
+#########
 
-preimage(f::FinDomFunctionVector{T,<:AbstractRange{T}}, y::T) where T =
-  # Both `in` and `searchsortedfirst` are specialized for AbstractRange.
-  y ∈ f.func ? SVector(searchsortedfirst(f.func, y)) : SVector{0,Int}()
-
-""" Indexed function between finite sets of type `FinSet{Int}`.
-
-Indexed functions store both the forward map ``f: X → Y``, as a vector of
-integers, and the backward map ``f: Y → X⁻¹``, as a vector of vectors of
-integers, accessible through the [`preimage`](@ref) function. The backward map
-is called the *index*. If it is not supplied through the keyword argument
-`index`, it is computed when the object is constructed.
-
-This type is mildly generalized by [`IndexedFinDomFunctionVector`](@ref).
+""" Default column type when constructing/forcing functions out of finite sets.
 """
-const IndexedFinFunctionVector{V,Index} =
-  IndexedFinDomFunctionVector{Int,V,Index,FinSetInt}
+default_column(X::S, X′::S′; kw...) where {S<:SetOb, S′<:SetOb} =
+  default_column(S, S′; kw...)
 
-function IndexedFinFunctionVector(f::AbstractVector{Int}; index=nothing)
-  codom = isnothing(index) ? (isempty(f) ? 0 : maximum(f)) : length(index)
-  IndexedFinFunctionVector(f, codom; index=index)
-end
+default_column(::Type{<:SetOb{T}}, ::Type{<:SetOb{T′}}; index::Bool=false) where {T, T′} =
+  index ? SparseAttrIndexed{T,T′} : SparseAttr{T,T′}
 
-function IndexedFinFunctionVector(f::AbstractVector{Int}, codom; index=nothing)
-  codom = FinSet(codom)
-  if isnothing(index)
-    index = [ Int[] for j in codom ]
-    for (i, j) in enumerate(f)
-      push!(index[j], i)
-    end
-  elseif length(index) != length(codom)
-    error("Index length $(length(index)) does not match codomain $codom")
-  end
-  IndexedFinDomFunctionVector(f, index, codom)
-end
+default_column(::Type{FinSetInt}, ::Type{<:SetOb{T}}; index::Bool=false) where {T} =
+  index ? DenseAttrIndexed{T} : DenseAttr{T}
 
-Base.show(io::IO, f::IndexedFinFunctionVector) =
-  print(io, "FinFunction($(f.func), $(length(dom(f))), $(length(codom(f))), index=true)")
+default_column(::Type{FinSetInt}, ::Type{FinSetInt}; index::Bool=false) =
+  index ? DenseHomIndexed : DenseHom
 
-# For now, we do not preserve or compose indices, only the function vectors.
-Sets.do_compose(f::Union{FinFunctionVector,IndexedFinFunctionVector},
-                g::Union{FinDomFunctionVector,IndexedFinDomFunctionVector}) =
-  FinDomFunctionVector(g.func[f.func], codom(g))
-
-# These could be made to fail early if ever used in performance-critical areas
-is_epic(f::FinFunction) =
-length(codom(f)) == length(Set(values(collect(f))))
-is_monic(f::FinFunction)  =
-length(dom(f)) == length(Set(values(collect(f))))
-
-# Dict-based functions
-#---------------------
-
-""" Function in **Set** represented by a dictionary.
-
-The domain is a `FinSet{S}` where `S` is the type of the dictionary's `keys`
-collection.
-"""
-@struct_hash_equal struct FinDomFunctionDict{K,D<:AbstractDict{K},Codom<:SetOb} <:
-    SetFunction{FinSetCollection{Base.KeySet{K,D},K},Codom}
-  func::D
-  codom::Codom
-end
-
-FinDomFunctionDict(d::AbstractDict{K,V}) where {K,V} =
-  FinDomFunctionDict(d, TypeSet{V}())
-
-dom(f::FinDomFunctionDict) = FinSet(keys(f.func))
-
-(f::FinDomFunctionDict)(x) = f.func[x]
-
-function Base.show(io::IO, f::F) where F <: FinDomFunctionDict
-  Sets.show_type_constructor(io, F)
-  print(io, "(")
-  show(io, f.func)
-  print(io, ", ")
-  Sets.show_domains(io, f, domain=false)
-  print(io, ")")
-end
-
-force(f::FinDomFunction) =
-  FinDomFunctionDict(Dict(x => f(x) for x in dom(f)), codom(f))
-force(f::FinDomFunctionDict) = f
-
-""" Function in **FinSet** represented by a dictionary.
-"""
-const FinFunctionDict{K,D<:AbstractDict{K},Codom<:FinSet} =
-  FinDomFunctionDict{K,D,Codom}
-
-FinFunctionDict(d::AbstractDict, codom::FinSet) = FinDomFunctionDict(d, codom)
-FinFunctionDict(d::AbstractDict{K,V}) where {K,V} =
-  FinDomFunctionDict(d, FinSet(Set(values(d))))
-
-Sets.do_compose(f::FinFunctionDict{K,D}, g::FinDomFunctionDict) where {K,D} =
-  FinDomFunctionDict(dicttype(D)(x => g.func[y] for (x,y) in pairs(f.func)),
-                     codom(g))
+force(::FinDomFunctionColumn)
 
 # Limits
 ########
