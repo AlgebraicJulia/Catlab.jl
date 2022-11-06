@@ -1,5 +1,5 @@
 module IndexUtils
-export insertsorted!, deletesorted!, set_attr_index!, unset_attr_index!, SortedSet
+export insertsorted!, deletesorted!, SortedSet
 using StructEquality
 
 """ Insert into sorted vector, preserving the sorting.
@@ -19,31 +19,12 @@ function deletesorted!(a::AbstractVector, x)
   found
 end
 
-""" Set key and value for acset attribute index.
-"""
-function set_attr_index!(d::AbstractDict{K,<:AbstractVector{Int}},
-                         k::K, v::Int) where K
-  insertsorted!(get!(d, k) do; Int[] end, v)
-end
-
-""" Unset key and value from acset attribute index, if it is set.
-"""
-function unset_attr_index!(d::AbstractDict{K,<:AbstractVector{Int}},
-                           k::K, v::Int) where K
-  if haskey(d, k)
-    vs = d[k]
-    if deletesorted!(vs, v) && isempty(vs)
-      delete!(d, k)
-    end
-  end
-end
-
 @struct_hash_equal struct SortedSet{T} <: AbstractSet{T}
   v::Vector{T}
   function SortedSet{T}() where {T}
     new{T}(Vector{T}())
   end
-  # Note: only use this if you are sure v is sorted
+  # Note: only use this if you are sure v is sorted and unique
   function SortedSet{T}(v::Vector{T}) where {T}
     new{T}(v)
   end
@@ -52,6 +33,8 @@ end
 Base.copy(s::SortedSet{T}) where {T} = SortedSet{T}(copy(s.v))
 
 Base.iterate(s::SortedSet) = iterate(s.v)
+
+Base.iterate(s::SortedSet, i::Int) = iterate(s.v, i)
 
 Base.push!(s::SortedSet{T}, x::T) where {T} = insertsorted!(s.v, x)
 Base.delete!(s::SortedSet{T}, x::T) where {T} = deletesorted!(s.v, x)

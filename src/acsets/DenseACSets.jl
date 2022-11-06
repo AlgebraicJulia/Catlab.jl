@@ -73,7 +73,7 @@ function genericize(T::Type, tvars::Vector{TypeVar})
 end
 
 function make_parts(s::Schema{Symbol})
-  parts_t = LVector{Int, Tuple(objects(s))}
+  parts_t = LVector{Tuple(objects(s)), Int}
 end
 
 function make_columns(s::Schema{Symbol}, index, unique_index, Tvars)

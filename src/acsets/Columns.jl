@@ -9,14 +9,16 @@ using MLStyle
 using StructEquality
 using ..IndexUtils
 
+# Mappings
+##########
+
 """
 A `Mapping{S,T}` is a partial, mutable map from type `S` to type `T`.
 
-For a mapping, there are 5 distinct notions.
-
-Mathematically, the only notions which matter are the domain and the defined
-domain. But issues of implementation and performance force us to use domain type
-definable domain, and stored domain as well.
+For a mapping, there are 5 distinct notions of "domain." Mathematically, the
+only notions which matter are the domain and the defined domain. But issues of
+implementation and performance force us to use domain type definable domain, and
+stored domain as well.
 
 1. The type of values in its domain. (Domain type)
 2. The subset of values that it can be defined on without erroring. (Definable
@@ -59,9 +61,9 @@ mapping `i`, then `m[i] === m[i]`.  However, if `i` is defined but not stored,
 we have `m[i] == m[i]` but not necessarily `m[i] === m[i]`.  Thus, mutating
 `m[i]` will not be saved.
 
-Within this file, elements of `S` will be known as "indices", and elements
-of `T` will be known as "values". The sense of "index" as "reverse mapping"
-will always be called "preimage", as in [`PreimageCache`](@ref).
+Within this file, elements of `S` will be known as "indices", and elements of
+`T` will be known as "values". The sense of "index" as "reverse mapping" will
+always be called "preimage", as in [`PreimageCache`](@ref).
 
 `Mapping`s should support the following functions, documented below:
 - [`Base.getindex`](@ref)
@@ -84,12 +86,15 @@ mapping are preserved.
 
 The point of the Mapping interface is not for every implementor to have the same
 semantics with regard to the functions that manipulate the various domains. The
-point is to provide a language in which different implementations can express their
-quirks, and for users of Mappings to express options that the implementations can
-take advantage of.
+point is to provide a language in which different implementations can express
+their quirks, and for users of Mappings to express options that the
+implementations can take advantage of.
 
-TODO: come up with a coherent picture for which of these functions are automatically
-vectorized.
+Construction
+- you should be able to create a mapping from an iterable + a callable 
+
+TODO: come up with a coherent picture for which of these functions are
+automatically vectorized.
 """
 abstract type Mapping{S,T} end
 
@@ -104,6 +109,19 @@ A `DefaultMapping` returns a fixed default value when called on an element of
 their definable domain that is not in their defined domain.
 """
 abstract type DefaultMapping{S,T} <: Mapping{S,T} end
+
+function (::Type{M})(domain, iterable, callable) where {S, T, M <: Mapping{S,T}}
+  m = M()
+  set_definable!(m, domain)
+  for i in iterable
+    m[i] = callable(i)
+  end
+  m
+end
+
+function (::Type{M})(domain, callable) where {S, T, M <: Mapping{S,T}}
+  M(domain, domain, callable)
+end
 
 """
 Arguments:
@@ -222,12 +240,15 @@ May add an index `x` in the defined domain to the stored domain.
 """
 function store! end
 
+# Preimage caches
+#################
+
 """
-An `PreimageCache` is a cache of the preimage of a `Mapping`. Many of the methods for
-`PreimageCache` take in a `Mapping`; this is so that `PreimageCache` can choose how
-much to cache. That is, `PreimageCache` could be a unit type, and simply
-dynamically compute the preimage mapping on demand, or it could store the full
-preimage mapping, or perhaps something in between.
+A `PreimageCache` is a cache of the preimage of a `Mapping`. Many of the methods
+for `PreimageCache` take in a `Mapping`; this is so that `PreimageCache` can
+choose how much to cache. That is, `PreimageCache` could be a unit type, and
+simply dynamically compute the preimage mapping on demand, or it could store the
+full preimage mapping, or perhaps something in between.
 
 Just like a `Mapping`, an `PreimageCache` has a definable codomain, which is a
 subset of `T`. Calling `add_mapping!` and `remove_mapping!` on elements out of
@@ -250,6 +271,15 @@ performance implications.
 - [`set_definable!`](@ref)
 """
 abstract type PreimageCache{S,T} end
+
+function (::Type{PC})(mapping::Mapping{S,T}, dom, codom) where {S,T,PC<:PreimageCache{S,T}}
+  pc = PC()
+  set_definable!(pc, codom)
+  for i in dom
+    add_mapping!(pc, mapping[i], i)
+  end
+  pc
+end
 
 """
 Arguments:
@@ -325,7 +355,10 @@ Arguments:
 
 Sets the definable codomain of `i`
 """
-# isdefineable
+# set_definable!
+
+# Columns
+#########
 
 """
 A column wraps a mapping and a cache of its preimages, and provides methods that
@@ -338,8 +371,19 @@ Abstract Fields:
 abstract type Column{S,T} end
 
 function (::Type{Col})() where {S,T,Col <: Column{S,T}}
-  (M,I) = Col.types
-  Col(M(), I())
+  M, PC = Col.types
+  Col(M(), PC())
+end
+
+function (::Type{Col})(dom, definable_dom, codom, callable) where {S,T,Col<:Column{S,T}}
+  M, PC = Col.types
+  m = M(definable_dom, dom, callable)
+  pc = PC(m, dom, codom)
+  Col(m,pc)
+end
+
+function (::Type{Col})(dom, codom, callable) where {S,T,Col<:Column{S,T}}
+  Col(dom,dom,codom,callable)
 end
 
 Base.:(==)(c1::Column, c2::Column) = c1.m == c2.m
