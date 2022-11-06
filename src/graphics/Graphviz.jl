@@ -36,7 +36,7 @@ abstract type Statement <: Expression end
 
 For now, the HTML content is just a string.
 """
-struct Html
+@struct_hash_equal struct Html
   content::String
 end
 Base.print(io::IO, html::Html) = print(io, html.content)
@@ -49,39 +49,55 @@ as_attributes(d::OrderedDict) = Attributes(Symbol(k) => d[k] for k in keys(d))
 as_attributes(d::AbstractDict) =
   Attributes(Symbol(k) => d[k] for k in sort!(collect(keys(d))))
 
-Base.@kwdef struct Graph <: Expression
+struct Graph <: Expression
   name::String
   directed::Bool
-  prog::String="dot"
-  stmts::Vector{Statement}=Statement[]
-  graph_attrs::Attributes=Attributes()
-  node_attrs::Attributes=Attributes()
-  edge_attrs::Attributes=Attributes()
+  prog::String
+  stmts::Vector{Statement}
+  graph_attrs::Attributes
+  node_attrs::Attributes
+  edge_attrs::Attributes
 end
 
-Graph(name::String, stmts::Vector{Statement}; kw...) =
+Graph(; name::AbstractString="g", directed::Bool=false,
+      prog::AbstractString="dot", stmts::Vector{Statement}=Statement[],
+      graph_attrs::AbstractDict=Attributes(),
+      node_attrs::AbstractDict=Attributes(),
+      edge_attrs::AbstractDict=Attributes()) =
+ Graph(name, directed, prog, stmts, as_attributes(graph_attrs),
+       as_attributes(node_attrs), as_attributes(edge_attrs))
+
+Graph(name::AbstractString, stmts::Vector{Statement}; kw...) =
   Graph(; name=name, directed=false, stmts=stmts, kw...)
-Graph(name::String, stmts::Vararg{Statement}; kw...) =
-  Graph(; name=name, directed=false, stmts=collect(stmts), kw...)
-Digraph(name::String, stmts::Vector{Statement}; kw...) =
+Graph(name::AbstractString, stmts::Vararg{Statement}; kw...) =
+  Graph(; name=name, directed=false, stmts=collect(Statement, stmts), kw...)
+Digraph(name::AbstractString, stmts::Vector{Statement}; kw...) =
   Graph(; name=name, directed=true, stmts=stmts, kw...)
-Digraph(name::String, stmts::Vararg{Statement}; kw...) =
-  Graph(; name=name, directed=true, stmts=collect(stmts), kw...)
+Digraph(name::AbstractString, stmts::Vararg{Statement}; kw...) =
+  Graph(; name=name, directed=true, stmts=collect(Statement, stmts), kw...)
 
-Base.@kwdef struct Subgraph <: Statement
-  name::String="" # Subgraphs can be anonymous
-  stmts::Vector{Statement}=Statement[]
-  graph_attrs::Attributes=Attributes()
-  node_attrs::Attributes=Attributes()
-  edge_attrs::Attributes=Attributes()
+struct Subgraph <: Statement
+  name::String
+  stmts::Vector{Statement}
+  graph_attrs::Attributes
+  node_attrs::Attributes
+  edge_attrs::Attributes
 end
+
+Subgraph(; name::AbstractString="", stmts::Vector{Statement}=Statement[],
+         graph_attrs::AbstractDict=Attributes(),
+         node_attrs::AbstractDict=Attributes(),
+         edge_attrs::AbstractDict=Attributes()) =
+ Subgraph(name, stmts, as_attributes(graph_attrs),
+          as_attributes(node_attrs), as_attributes(edge_attrs))
 
 Subgraph(stmts::Vector{Statement}; kw...) = Subgraph(; stmts=stmts, kw...)
-Subgraph(stmts::Vararg{Statement}; kw...) = Subgraph(; stmts=collect(stmts), kw...)
-Subgraph(name::String, stmts::Vector{Statement}; kw...) =
+Subgraph(stmts::Vararg{Statement}; kw...) =
+  Subgraph(; stmts=collect(Statement, stmts), kw...)
+Subgraph(name::AbstractString, stmts::Vector{Statement}; kw...) =
   Subgraph(; name=name, stmts=stmts, kw...)
-Subgraph(name::String, stmts::Vararg{Statement}; kw...) =
-  Subgraph(; name=name, stmts=collect(stmts), kw...)
+Subgraph(name::AbstractString, stmts::Vararg{Statement}; kw...) =
+  Subgraph(; name=name, stmts=collect(Statement, stmts), kw...)
 
 struct Node <: Statement
   name::String
@@ -112,10 +128,13 @@ Edge(path::Vararg{String}; attrs...) = Edge(map(NodeID, collect(path)), attrs)
 labelloc defaults: "t" (clusters) , "b" (root graphs) , "c" (nodes)
 For graphs and clusters, only labelloc=t and labelloc=b are allowed
 """
-Base.@kwdef struct Label <: Statement
-  labelloc::String = ""
-  label::String = ""
+@struct_hash_equal struct Label <: Statement
+  labelloc::String
+  label::String
 end
+
+Label(; labelloc::AbstractString="", label::AbstractString="") =
+  Label(labelloc, label)
 
 # Useful in unit tests. Not exported.
 

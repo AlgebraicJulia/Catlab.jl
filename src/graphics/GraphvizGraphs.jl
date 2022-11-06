@@ -127,9 +127,9 @@ function to_graphviz(g::AbstractPropertyGraph)::Graphviz.Graph
     directed = is_directed,
     prog = get(attrs, :prog, is_directed ? "dot" : "neato"),
     stmts = stmts,
-    graph_attrs = Graphviz.as_attributes(get(attrs, :graph, Dict())),
-    node_attrs = Graphviz.as_attributes(get(attrs, :node, Dict())),
-    edge_attrs = Graphviz.as_attributes(get(attrs, :edge, Dict())),
+    graph_attrs = get(attrs, :graph, Dict()),
+    node_attrs = get(attrs, :node, Dict()),
+    edge_attrs = get(attrs, :edge, Dict()),
   )
 end
 
