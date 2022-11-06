@@ -263,7 +263,7 @@ StructuredCospan{L}(x::StructACSet, f::Union{FinFunction,OpenACSetLeg},
   StructuredCospan{L}(x, Cospan(f, g))
 
 StructuredMulticospan{L}(x::StructACSet,
-                         fs::Vararg{<:Union{FinFunction,OpenACSetLeg},N}) where
+                         fs::Vararg{Union{FinFunction,OpenACSetLeg},N}) where
     {L<:AbstractDiscreteACSet, N} =
   StructuredMulticospan{L}(x, SMulticospan{N}(fs...))
 
