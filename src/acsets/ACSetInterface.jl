@@ -70,14 +70,17 @@ function view_or_slice end
 @inline view_or_slice(x::AbstractVector, ::Colon) = x
 @inline Base.@propagate_inbounds view_or_slice(x::AbstractVector, i) = @view x[i]
 
+collect_or_id(i) = i
+collect_or_id(xs::AbstractVector{T}) where {T} = T[xs...]
+
 function subpart(acs, part, names::AbstractVector{Symbol})
   foldl(names, init=part) do part, name
-    subpart(acs, part, name)
+    collect_or_id(subpart(acs, part, name))
   end
 end
 
 subpart(acs, names::AbstractVector{Symbol}) =
-  subpart(acs, subpart(acs, names[1]), names[2:end])
+  subpart(acs, Int[subpart(acs, names[1])...], names[2:end])
 
 Base.getindex(acs::ACSet, part, name) = subpart(acs, part, name)
 Base.getindex(acs::ACSet, name) = subpart(acs, name)
@@ -107,7 +110,7 @@ function incident(acs, part, names::AbstractVector{Symbol};
                   copy::Bool=false)
   # Don't need to pass `copy` because copy will be made regardless.
   foldr(names, init=part) do name, part
-    reduce(vcat, incident(acs, part, name), init=Int[])
+    reduce(vcat, collect.(incident(acs, part, name)), init=Int[])
   end
 end
 
@@ -167,7 +170,7 @@ function set_subpart! end
 
 # Inlined for the same reason as `subpart`.
 
-@inline function set_subpart!(acs, parts::AbstractVector{Int}, name, vals)
+@inline function set_subpart!(acs, parts::Union{AbstractVector{Int}, AbstractSet{Int}}, name, vals)
   broadcast(parts, vals) do part, val
     set_subpart!(acs, part, name, val)
   end
@@ -199,7 +202,7 @@ potentially cause an inconsistent acset if used without caution.
 
 function clear_subpart! end
 
-function clear_subpart!(acs, parts::AbstractVector{Int}, name)
+function clear_subpart!(acs, parts::Union{AbstractVector{Int}, AbstractSet{Int}}, name)
   for part in parts
     clear_subpart!(acs, part, name)
   end

@@ -1109,7 +1109,7 @@ function colimit(F::Functor{<:FinCat{Int},<:TypeCat{<:FinSet{Int}}})
   # Uses the general formula for colimits in Set (Leinster, 2014, Basic Category
   # Theory, Example 5.2.16).
   J = dom(F)
-  coprod = coproduct(map(x -> ob_map(F, x), ob_generators(J)))
+  coprod = coproduct(map(x -> ob_map(F, x)::FinSet{Int,Int}, ob_generators(J)))
   n, ιs = length(ob(coprod)), legs(coprod)
   sets = IntDisjointSets(n)
   for f in hom_generators(J)

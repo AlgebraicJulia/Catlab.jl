@@ -2,7 +2,7 @@ module TestACSets
 
 include("IndexUtils.jl")
 include("LVectors.jl")
-include("Columns.jl")
+include("Mappings.jl")
 include("Schemas.jl")
 include("CSetDataStructures.jl")
 

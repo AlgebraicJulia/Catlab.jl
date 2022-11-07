@@ -309,28 +309,11 @@ add_parts_with_indices!(acs::SimpleACSet, ob::Symbol, n::Int, index_sizes::Named
 Base.hash(x::T, h::UInt) where T <: SimpleACSet =
   hash(x.parts, hash(x.subparts, h))
 
-@inline ACSetInterface.add_parts!(acs::StructACSet{S}, type::Symbol, n::Int) where {S} =
-  _add_parts!(acs, Val{S}, Val{type}, n)
-
-ACSetInterface.add_parts!(acs::DynamicACSet, type::Symbol, n::Int) =
-  runtime(_add_parts!, acs, acs.schema, type, n)
-
-@ct_enable function _add_parts!(acs::SimpleACSet, @ct(S), @ct(ob), n::Int)
-  @ct s = Schema(S)
-  m = acs.parts[@ct ob]
+@inline function ACSetInterface.add_parts!(acs::SimpleACSet, ob::Symbol, n::Int)
+  m = acs.parts[ob]
   nparts = m + n
   newparts = (m+1):nparts
-  acs.parts[@ct ob] = nparts
-
-  @ct_ctrl for (f,d,c) in arrows(s)
-    @ct_ctrl if d == ob
-      dom_hint!(acs.subparts[@ct f], Base.OneTo(nparts))
-    end
-    @ct_ctrl if c == ob
-      codom_hint!(acs.subparts[@ct f], Base.OneTo(nparts))
-    end
-  end
-
+  acs.parts[ob] = nparts
   newparts
 end
 
@@ -356,9 +339,27 @@ outgoing(acs::DynamicACSet, ob::Symbol) = runtime(_outgoing, acs.schema, ob)
   @ct Tuple(arrows(s; from=ob, just_names=true))
 end
 
-@inline ACSetInterface.subpart(acs::SimpleACSet, f::Symbol) = view(acs.subparts[f], :)
+@inline default_value(acs::StructACSet{S}, f::Symbol) where {S} = _default_value(Val{S}, Val{f})
+@inline default_value(acs::DynamicACSet, f::Symbol) = runtime(_default_value, acs.schema, f)
 
-@inline ACSetInterface.subpart(acs::SimpleACSet, part::Int, f::Symbol) = acs.subparts[f][part]
+@ct_enable function _default_value(@ct(S), @ct(f))
+  @ct begin
+    s = Schema(S)
+    if f ∈ homs(s; just_names=true)
+      0
+    elseif f ∈ attrs(s; just_names=true)
+      nothing
+    else
+      error("$f not in schema")
+    end
+  end
+end
+
+@inline ACSetInterface.subpart(acs::SimpleACSet, f::Symbol) =
+  view_with_default(acs.subparts[f], domain(acs, f), DefaultVal{default_value(acs, f)})
+
+@inline ACSetInterface.subpart(acs::SimpleACSet, part::Int, f::Symbol) =
+  get(acs.subparts[f], part, default_value(acs, f))
 
 @inline ACSetInterface.has_subpart(acs::StructACSet{S}, f::Symbol) where {S} =
   _has_subpart(Val{S}, Val{f})
@@ -419,7 +420,7 @@ ACSetInterface.set_subpart!(acs::DynamicACSet, part::Int, f::Symbol, subpart) =
 end
 
 @inline ACSetInterface.clear_subpart!(acs::SimpleACSet, part::Int, f::Symbol) =
-  undefine!(acs.subparts[f], part)
+  delete!(acs.subparts[f], part)
 
 @inline ACSetInterface.rem_part!(acs::StructACSet{S}, type::Symbol, part::Int) where {S} =
   _rem_part!(acs, Val{S}, Val{type}, part)
@@ -441,16 +442,13 @@ ACSetInterface.rem_part!(acs::DynamicACSet, type::Symbol, part::Int) =
 
     incoming_to_last_part = copy(incident(acs, last_part, @ct hom; unbox_injective=false))
     set_subpart!(acs, incoming_to_last_part, (@ct hom), part)
-
-    codom_hint!(acs.subparts[@ct hom], Base.OneTo(last_part - 1))
   end
 
   @ct_ctrl for f in [out_homs; out_attrs]
-    if Columns.isdefined(acs.subparts[@ct f], last_part)
+    if haskey(acs.subparts[@ct f], last_part)
       set_subpart!(acs, part, (@ct f), subpart(acs, last_part, @ct f))
     end
     clear_subpart!(acs, last_part, @ct f)
-    dom_hint!(acs.subparts[@ct f], Base.OneTo(last_part - 1))
   end
 
   acs.parts[@ct ob] -= 1
