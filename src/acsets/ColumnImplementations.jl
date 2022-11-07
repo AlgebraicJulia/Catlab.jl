@@ -21,15 +21,22 @@ As a partial mapping, `getindex` will error outside of the defined domain.
 @struct_hash_equal struct PartialVecMap{T, V<:AbstractVector{T}} <: PartialMapping{Int,T}
   v::V
   defined::BitVector
-  function PartialVecMap{T,V}(n::Int) where {T, V<:AbstractVector{T}}
-    new{T,V}(V(undef, n), falses(n))
-  end
-  function PartialVecMap{T,V}() where {T, V<:AbstractVector{T}}
-    PartialVecMap{T,V}(0)
-  end
-  function PartialVecMap(v::V, defined::BitVector) where {T, V<:AbstractVector{T}}
+
+  PartialVector(v::V, defined::BitVector) where {T,V<:AbstractVector{T}} =
     new{T,V}(v, defined)
-  end
+  PartialVecMap{T,V}(v::V, defined::BitVector) where {T, V<:AbstractVector{T}} =
+    new{T,V}(v, defined)
+end
+
+PartialVecMap{T,V}(n::Int) where {T, V<:AbstractVector{T}} =
+  PartialVecMap{T,V}(V(undef, n), falses(n))
+PartialVecMap{T,V}() where {T, V<:AbstractVector{T}} =
+  PartialVecMap{T,V}(0)
+
+function PartialVecMap(domain::Base.OneTo, v::V) where {T, V<:AbstractVector{T}}
+  n = length(v)
+  @assert length(domain) == n
+  PartialVecMap{T,V}(v, trues(n))
 end
 
 # Check that the defined domains are the same, and then check that the maps are
@@ -198,7 +205,6 @@ This is a dictionary-backed mapping, that is partial.
   d::D
 end
 
-
 PartialDictMap{S,T}(pairs) where {S,T} = PartialDictMap{S,T,Dict{S,T}}(Dict{S,T}(pairs))
 PartialDictMap{S,T,D}() where {S,T,D<:AbstractDict{S,T}} = PartialDictMap{S,T,D}(D())
 
@@ -240,7 +246,7 @@ end
 DefaultDictMap{S,T,Def}(pairs) where {S,T,Def<:Default{T}} =
   DefaultDictMap{S,T,Def,Dict{S,T}}(Dict{S,T}(pairs))
 
-DefaultDictMap{S,T,Def, D}() where {S,T,Def<:Default{T}, D<:AbstractDict{S,T}} =
+DefaultDictMap{S,T,Def,D}() where {S,T,Def<:Default{T}, D<:AbstractDict{S,T}} =
   DefaultDictMap{S,T,Def,D}(D())
 
 function Base.getindex(m::DefaultDictMap{S,T,Def,D}, x::S) where 
@@ -518,25 +524,26 @@ end
 """
 A column for a dict-backed unindexed hom with key type K
 """
-struct SparseColumn{K, T} <: Column{K,T}
-  m::PartialDictMap{K, T}
+struct SparseColumn{K, T, D<:AbstractDict{K,T}} <: Column{K,T}
+  m::PartialDictMap{K, T, D}
   i::TrivialCache{K, T}
 end
 
 """
 A column for a dict-backed indexed hom with key type K
 """
-struct SparseIndexedColumn{K, T} <: Column{K,T}
-  m::PartialDictMap{K, T}
+struct SparseIndexedColumn{K, T, D<:AbstractDict{K,T}} <: Column{K,T}
+  m::PartialDictMap{K, T, D}
   i::StoredPreimageCache{K, T, Set{K},
-                      DefaultDictMap{T, Set{K}, DefaultEmpty{Set{K}}}}
+                         DefaultDictMap{T, Set{K}, DefaultEmpty{Set{K}}, 
+                                        Dict{T, Set{K}}}}
 end
 
 """
 A column for a dict-backed injective hom with key type K
 """
-struct SparseInjectiveColumn{K, T} <: Column{K,T}
-  m::PartialDictMap{K,T}
+struct SparseInjectiveColumn{K, T, D<:AbstractDict{K,T}} <: Column{K,T}
+  m::PartialDictMap{K,T,D}
   i::InjectiveCache{K, T, PartialDictMap{T, K, Dict{K,T}}}
 end
 

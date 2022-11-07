@@ -90,8 +90,6 @@ point is to provide a language in which different implementations can express
 their quirks, and for users of Mappings to express options that the
 implementations can take advantage of.
 
-Construction
-- you should be able to create a mapping from an iterable + a callable 
 
 TODO: come up with a coherent picture for which of these functions are
 automatically vectorized.
@@ -110,17 +108,13 @@ their definable domain that is not in their defined domain.
 """
 abstract type DefaultMapping{S,T} <: Mapping{S,T} end
 
-function (::Type{M})(domain, iterable, callable) where {S, T, M <: Mapping{S,T}}
+function (::Type{M})(definable_dom, data) where {S, T, M <: Mapping{S,T}}
   m = M()
-  set_definable!(m, domain)
-  for i in iterable
-    m[i] = callable(i)
+  set_definable!(m, definable_dom)
+  for i in eachindex(data)
+    m[i] = data[i]
   end
   m
-end
-
-function (::Type{M})(domain, callable) where {S, T, M <: Mapping{S,T}}
-  M(domain, domain, callable)
 end
 
 """
@@ -272,11 +266,13 @@ performance implications.
 """
 abstract type PreimageCache{S,T} end
 
-function (::Type{PC})(mapping::Mapping{S,T}, dom, codom) where {S,T,PC<:PreimageCache{S,T}}
+function (::Type{PC})(mapping::Mapping{S,T}, definable_dom, codom) where {S,T,PC<:PreimageCache{S,T}}
   pc = PC()
   set_definable!(pc, codom)
-  for i in dom
-    add_mapping!(pc, mapping[i], i)
+  for i in definable_dom
+    if Columns.isdefined(mapping, i)
+      add_mapping!(pc, mapping[i], i)
+    end
   end
   pc
 end
@@ -370,20 +366,16 @@ Abstract Fields:
 """
 abstract type Column{S,T} end
 
-function (::Type{Col})() where {S,T,Col <: Column{S,T}}
+function (::Type{Col})() where {Col <: Column}
   M, PC = Col.types
   Col(M(), PC())
 end
 
-function (::Type{Col})(dom, definable_dom, codom, callable) where {S,T,Col<:Column{S,T}}
+function (::Type{Col})(definable_dom, codom, data) where {Col<:Column}
   M, PC = Col.types
-  m = M(definable_dom, dom, callable)
-  pc = PC(m, dom, codom)
+  m = M(definable_dom, data)
+  pc = PC(m, definable_dom, codom)
   Col(m,pc)
-end
-
-function (::Type{Col})(dom, codom, callable) where {S,T,Col<:Column{S,T}}
-  Col(dom,dom,codom,callable)
 end
 
 Base.:(==)(c1::Column, c2::Column) = c1.m == c2.m
