@@ -1437,8 +1437,17 @@ end
 Inverse to [`parse_json_acset`](@ref).
 """
 function generate_json_acset(x::ACSet)
+  """ Enrich data with object ID and type. 
+  The `_id` field specifies the unique identifier for the object. Currently, the unique identifier is the same as the value in the specified `field`. This can be replaced with another function that produces a unique identifier.
+  """
+  function enrich(v)
+    rows = Tables.rowtable(v)
+    map(((ind, nt),) -> merge((_id=ind,), nt), enumerate(rows))    
+  end 
+
   ts = tables(x)
-  res = OrderedDict(k => Tables.rowtable(v) for (k,v) in zip(keys(ts), ts))
+
+  res = OrderedDict(k => enrich(v) for (k,v) in zip(keys(ts), ts))
   for a in attrtypes(acset_schema(x))
     res[a] = fill(NamedTuple(), nparts(x, a))
   end 
@@ -1462,6 +1471,7 @@ function _parse_json_acset(cons, input::AbstractDict)
   for l ∈ values(input)
     for (i, j) ∈ enumerate(l)
       for (k,v) ∈ j
+        k == "_id" && continue
         is_attr = Symbol(k) ∈ attrs(acset_schema(out); just_names=true)
         vtype = is_attr ? attr_type(out, Symbol(k)) : Int
         v = v isa Dict && haskey(v, "val") ? AttrVar(v["val"]) : vtype(v)
