@@ -828,21 +828,28 @@ function limit(::Type{<:Tuple{ACS,TightACSetTransformation}}, diagram) where
   pack_limit(ACS, diagram, Xs, limits)
 end
 
-function limit(::Type{Tuple{ACS,Hom}}, diagram) where
+function limit(::Type{Tuple{ACS,Hom}}, diagram; product_attrs::Bool=false) where
     {S, ACS <: StructACSet{S}, Hom <: LooseACSetTransformation}
-  limits = map(limit, unpack_diagram(diagram, all=true))
+  limits = map(limit, unpack_diagram(diagram, all=!product_attrs))
   Xs = cone_objects(diagram)
+
+  attr_lims = (product_attrs ? 
+    map(limit, unpack_diagram(DiscreteDiagram(Xs, Hom), all=true)) : limits )
+
   LimitACS = if isempty(attrtypes(S)); ACS
   else
     ACSUnionAll = Base.typename(ACS).wrapper
-    ACSUnionAll{(eltype(ob(limits[d])) for d in attrtypes(S))...}
+    ACSUnionAll{(eltype(ob(attr_lims[d])) for d in attrtypes(S))...}
   end
-  lim = pack_limit(LimitACS, diagram, Xs, limits)
-
+  
+  type_components = [
+    Dict(d=>legs(attr_lims[d])[i] for d in attrtypes(S)) for i in eachindex(Xs)]
+  
+  lim = pack_limit(LimitACS, diagram, Xs, limits; type_components = type_components)
   Y = ob(lim)
   for (f, c, d) in attrs(S)
     Yfs = map((π, X) -> π ⋅ FinDomFunction(X, f), legs(limits[c]), Xs)
-    Yf = universal(limits[d], Multispan(ob(limits[c]), Yfs))
+    Yf = universal(attr_lims[d], Multispan(ob(limits[c]), Yfs))
     set_subpart!(Y, f, collect(Yf))
   end
   lim
@@ -850,7 +857,7 @@ end
 
 """ Make limit of acsets from limits of underlying sets, ignoring attributes.
 """
-function pack_limit(::Type{ACS}, diagram, Xs, limits) where
+function pack_limit(::Type{ACS}, diagram, Xs, limits; type_components=nothing) where
     {S, ACS <: StructACSet{S}}
   Y = ACS()
   for c in objects(S)
@@ -861,7 +868,7 @@ function pack_limit(::Type{ACS}, diagram, Xs, limits) where
     Yf = universal(limits[d], Multispan(ob(limits[c]), Yfs))
     set_subpart!(Y, f, collect(Yf))
   end
-  πs = pack_components(map(legs, limits), map(X -> Y, Xs), Xs)
+  πs = pack_components(map(legs, limits), map(X -> Y, Xs), Xs; type_components=type_components)
   ACSetLimit(diagram, Multispan(Y, πs), limits)
 end
 
