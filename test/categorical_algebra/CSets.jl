@@ -309,6 +309,20 @@ pb = ob(pullback(ϕ, ψ))
 @test (nv(pb), ne(pb)) == (8, 2)
 @test Set(pb[:weight]) == Set([(+1, -1), (-1, +1)])
 
+# Limit with LooseACSetTransformations 
+A = @acset VELabeledGraph{Symbol} begin V=2; vlabel=[:a,:b] end;
+B = @acset VELabeledGraph{Symbol} begin V=2; vlabel=[:q,:z] end;
+C = @acset VELabeledGraph{Symbol} begin V=2; vlabel=[:x,:y] end;
+ac = LooseACSetTransformation(
+  Dict([:V=>[1,2]]),Dict([:Label=>FinFunction(Dict(:a=>:x,:b=>:y))]),A,C);
+bc = LooseACSetTransformation(
+  Dict([:V=>[1,1]]),Dict([:Label=>FinFunction(Dict(:q=>:x,:z=>:x))]),B,C);
+@test all(is_natural,[ac,bc])
+res = limit(Cospan(ac,bc); product_attrs=true);
+@test all(is_natural,legs(res))
+@test apex(res)[:vlabel] == [(:a,:q),(:a,:z)]
+
+
 # Colimits
 #---------
 
