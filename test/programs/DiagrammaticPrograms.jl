@@ -455,8 +455,8 @@ F_C = diagram(ob_map(F, :Component))
 # Gluc migration
 #---------------
 
-# Graph with edges that are paths of length <= 2.
-F = @migration SchGraph SchGraph begin
+# Labeled graph with edges that are paths of length <= 2.
+F = @migration SchLabeledGraph SchLabeledGraph begin
   V => V
   E => @cases begin
     v => V
@@ -476,6 +476,8 @@ F = @migration SchGraph SchGraph begin
     e => tgt
     path => e₂⋅tgt
   end
+  Label => Label
+  label => label
 end
 @test ob_map(F, :V) isa DataMigrations.GlucQuery
 @test F isa DataMigrations.GlucSchemaMigration

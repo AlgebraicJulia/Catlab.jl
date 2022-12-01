@@ -705,7 +705,7 @@ function make_query(C::FinCat{Ob}, data::DiagramData{T}) where {T, Ob}
   @assert query_type != Any
   F_ob = mapvals(x -> convert_query(C, query_type, x), F_ob)
   F_hom = mapvals(F_hom, keys=true) do h, f
-    make_query_hom(f, F_ob[dom(J,h)], F_ob[codom(J,h)])
+    make_query_hom(C, f, F_ob[dom(J,h)], F_ob[codom(J,h)])
   end
   if query_type <: Ob
     Diagram(DiagramData{T}(F_ob, F_hom, J, data.params), C)
@@ -720,7 +720,8 @@ end
 
 make_query(C::FinCat{Ob}, x::Ob) where Ob = x
 
-function make_query_hom(f::DiagramHomData{op}, d::Diagram{op}, d′::Diagram{op})
+function make_query_hom(C::FinCat, f::DiagramHomData{op},
+                        d::Diagram{op}, d′::Diagram{op})
   f_ob = mapvals(f.ob_map, keys=true) do j′, x
     x = @match x begin
       ::Missing => only_ob(shape(d))
@@ -728,7 +729,7 @@ function make_query_hom(f::DiagramHomData{op}, d::Diagram{op}, d′::Diagram{op}
       _ => x
     end
     @match x begin
-      (j, g) => Pair(j, make_query_hom(g, ob_map(d, j), ob_map(d′, j′)))
+      (j, g) => Pair(j, make_query_hom(C, g, ob_map(d, j), ob_map(d′, j′)))
       j => j
     end
   end
@@ -736,7 +737,8 @@ function make_query_hom(f::DiagramHomData{op}, d::Diagram{op}, d′::Diagram{op}
   DiagramHom{op}(f_ob, f_hom, d, d′)
 end
 
-function make_query_hom(f::DiagramHomData{id}, d::Diagram{id}, d′::Diagram{id})
+function make_query_hom(C::FinCat, f::DiagramHomData{id},
+                        d::Diagram{id}, d′::Diagram{id})
   f_ob = mapvals(f.ob_map, keys=true) do j, x
     x = @match x begin
       ::Missing => only_ob(shape(d′))
@@ -744,7 +746,7 @@ function make_query_hom(f::DiagramHomData{id}, d::Diagram{id}, d′::Diagram{id}
       _ => x
     end
     @match x begin
-      (j′, g) => Pair(j′, make_query_hom(g, ob_map(d, j), ob_map(d′, j′)))
+      (j′, g) => Pair(j′, make_query_hom(C, g, ob_map(d, j), ob_map(d′, j′)))
       j′ => j′
     end
   end
@@ -752,12 +754,21 @@ function make_query_hom(f::DiagramHomData{id}, d::Diagram{id}, d′::Diagram{id}
   DiagramHom{id}(f_ob, f_hom, d, d′)
 end
 
-function make_query_hom(f::Hom, d::Diagram{T,C}, d′::Diagram{T,C}) where
+function make_query_hom(::C, f::Hom, d::Diagram{T,C}, d′::Diagram{T,C}) where
     {T, Ob, Hom, C<:FinCat{Ob,Hom}}
-  cat = codom(diagram(d))
-  munit(DiagramHom{T}, cat, f, dom_shape=shape(d), codom_shape=shape(d′))
+  munit(DiagramHom{T}, codom(diagram(d)), f,
+        dom_shape=shape(d), codom_shape=shape(d′))
 end
-make_query_hom(f, x, y) = f
+
+function make_query_hom(cat::C, f::Union{Hom,DiagramHomData{op}},
+                        d::Diagram{id}, d′::Diagram{id}) where
+    {Ob, Hom, C<:FinCat{Ob,Hom}}
+  f = make_query_hom(cat, f, only(collect_ob(d)), only(collect_ob(d′)))
+  munit(DiagramHom{id}, codom(diagram(d)), f,
+        dom_shape=shape(d), codom_shape=shape(d′))
+end
+
+make_query_hom(C::FinCat{Ob,Hom}, f::Hom, x::Ob, y::Ob) where {Ob,Hom} = f
 
 only_ob(C::FinCat) = only(ob_generators(C))
 only_hom(C::FinCat) = (@assert is_discrete(C); id(C, only_ob(C)))

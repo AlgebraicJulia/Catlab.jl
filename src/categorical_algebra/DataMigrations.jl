@@ -222,7 +222,7 @@ function migrate(X::FinDomFunctor, F::GlucSchemaMigration)
   colimits_of_limits = make_map(ob_generators(tgt_schema)) do c
     Fc = ob_map(F, c)
     Fc_set, limits = migrate(X, diagram(Fc), return_limits=true)
-    (colimit(Fc_set), Fc_set, limits)
+    (colimit(Fc_set, SpecializeColimit()), Fc_set, limits)
   end
   funcs = make_map(hom_generators(tgt_schema)) do f
     Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)
