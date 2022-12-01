@@ -2,7 +2,7 @@ name = "Catlab"
 uuid = "134e5e36-593f-5add-ad60-77f754baafbe"
 license = "MIT"
 authors = ["Evan Patterson <evan@epatters.org>"]
-version = "0.14.10"
+version = "0.14.11"
 
 [deps]
 Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
