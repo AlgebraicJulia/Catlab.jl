@@ -183,7 +183,6 @@ for (dgram_maker, ldgram_maker) in dgram_makers
   set_subpart!(d, [4,5], :parent, 5)
 
   @test nparts(d, :X) == 5
-  @test subpart(d, 1:3, :parent) isa SubArray{Int,1}
   @test subpart(d, 1:3, :parent) == [4,4,4]
   @test subpart(d, 4, :parent) == 5
   @test subpart(d, :, :parent) == [4,4,4,5,5]

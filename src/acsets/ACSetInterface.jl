@@ -1,5 +1,5 @@
 module ACSetInterface
-export ACSet, acset_schema, acset_name,
+export ACSet, acset_schema, acset_name, domain, subpart_type,
   nparts, parts, has_part, has_subpart, subpart, incident,
   add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!, clear_subpart!,
   copy_parts!, copy_parts_only!, disjoint_union, tables, pretty_tables, @acset
@@ -39,6 +39,22 @@ function has_part end
 
 function has_subpart end
 
+"""
+Get the domain of a morphism in an acset
+
+domain(acs, f) == parts(acs, X)
+
+where X is the dom of the f in the schema
+"""
+function domain end
+
+"""
+Get the type assigned to a subpart in an acset, i.e.
+
+subpart_type(acs::WeightedGraph{T}, :weight) == T
+"""
+function subpart_type end
+
 """ Get subpart of part in acset.
 
 Both single and vectorized access are supported, with a view of the underlying
@@ -63,6 +79,35 @@ of `[:src,:vattr]` as two independent columns does not even make sense, since
 they have different domains (belong to different tables).
 """
 function subpart end
+
+struct ACSetSubpartView{A<:ACSet, Indices<:AbstractVector{Int}, f, T} <: AbstractVector{T}
+  acset::A
+  indices::Indices
+end
+
+_subpart_name(av::ACSetSubpartView{A,Indices,f}) where {A,Indices,f} = f
+
+@inline Base.getindex(av::ACSetSubpartView, i) =
+  av.acset[av.indices[i], _subpart_name(av)]
+
+@inline Base.setindex!(av::ACSetSubpartView, x, i) =
+  av.acset[av.indices[i], _subpart_name(av)] = x
+
+Base.size(av::ACSetSubpartView) = size(av.indices)
+
+range_compose(xs, ys) = (xs.start + ys.start - 1):(xs.stop + ys.start - 1)
+
+@inline Base.view(av::ACSetSubpartView{A, UnitRange{Int}, f, T}, xs::UnitRange{Int}) where {A,f,T} =
+  ACSetSubpartView{A, UnitRange{Int}, f, T}(av.acset, range_compose(xs, av.indices))
+
+@inline Base.view(av::ACSetSubpartView{A, I, f, T}, xs) where {A,I,f,T} =
+  ACSetSubpartView{A, Vector{Int}, f, T}(av.acset, [av.indices[j] for j in xs])
+
+@inline function subpart(acs::ACSet, f::Symbol)
+  xs = domain(acs, f)
+  ACSetSubpartView{typeof(acs), typeof(xs), f, subpart_type(acs, f)}(acs, xs)
+end
+
 @inline Base.@propagate_inbounds subpart(acs, part, name) = view_or_slice(subpart(acs, name), part)
 
 function view_or_slice end
