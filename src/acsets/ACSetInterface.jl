@@ -101,7 +101,10 @@ range_compose(xs, ys) = (xs.start + ys.start - 1):(xs.stop + ys.start - 1)
   ACSetSubpartView{A, UnitRange{Int}, f, T}(av.acset, range_compose(xs, av.indices))
 
 @inline Base.view(av::ACSetSubpartView{A, I, f, T}, xs) where {A,I,f,T} =
-  ACSetSubpartView{A, Vector{Int}, f, T}(av.acset, [av.indices[j] for j in xs])
+  ACSetSubpartView{A, Vector{Int}, f, T}(av.acset, Int[av.indices[j] for j in xs])
+
+@inline Base.view(av::ACSetSubpartView{A, I, f, T}, xs::BitVector) where {A,I,f,T} =
+  ACSetSubpartView{A, Vector{Int}, f, T}(av.acset, Int[av.indices[j] for j in 1:length(av.indices) if xs[j]])
 
 @inline function subpart(acs::ACSet, f::Symbol)
   xs = domain(acs, f)
