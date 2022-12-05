@@ -97,7 +97,7 @@ Base.getindex(cv::ColumnView, xs::AbstractVector{Bool}) =
   [cv[i] for i in 1:length(cv.indices) if xs[i]]
 
 Base.setindex!(cv::ColumnView, y, x) =
-  cv.column[indices[x]] = y
+  cv.column[cv.indices[x]] = y
 
 Base.view(c::Column, xs) = ColumnView(c, xs, nothing)
 view_with_default(c::Column, xs, def) = ColumnView(c, xs, def)
