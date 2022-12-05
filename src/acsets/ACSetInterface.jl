@@ -80,37 +80,6 @@ they have different domains (belong to different tables).
 """
 function subpart end
 
-struct ACSetSubpartView{A<:ACSet, Indices<:AbstractVector{Int}, f, T} <: AbstractVector{T}
-  acset::A
-  indices::Indices
-end
-
-_subpart_name(av::ACSetSubpartView{A,Indices,f}) where {A,Indices,f} = f
-
-@inline Base.getindex(av::ACSetSubpartView, i) =
-  av.acset[av.indices[i], _subpart_name(av)]
-
-@inline Base.setindex!(av::ACSetSubpartView, x, i) =
-  av.acset[av.indices[i], _subpart_name(av)] = x
-
-Base.size(av::ACSetSubpartView) = size(av.indices)
-
-range_compose(xs, ys) = (xs.start + ys.start - 1):(xs.stop + ys.start - 1)
-
-@inline Base.view(av::ACSetSubpartView{A, UnitRange{Int}, f, T}, xs::UnitRange{Int}) where {A,f,T} =
-  ACSetSubpartView{A, UnitRange{Int}, f, T}(av.acset, range_compose(xs, av.indices))
-
-@inline Base.view(av::ACSetSubpartView{A, I, f, T}, xs) where {A,I,f,T} =
-  ACSetSubpartView{A, Vector{Int}, f, T}(av.acset, Int[av.indices[j] for j in xs])
-
-@inline Base.view(av::ACSetSubpartView{A, I, f, T}, xs::BitVector) where {A,I,f,T} =
-  ACSetSubpartView{A, Vector{Int}, f, T}(av.acset, Int[av.indices[j] for j in 1:length(av.indices) if xs[j]])
-
-@inline function subpart(acs::ACSet, f::Symbol)
-  xs = domain(acs, f)
-  ACSetSubpartView{typeof(acs), typeof(xs), f, subpart_type(acs, f)}(acs, xs)
-end
-
 @inline Base.@propagate_inbounds subpart(acs, part, name) = view_or_slice(subpart(acs, name), part)
 
 function view_or_slice end

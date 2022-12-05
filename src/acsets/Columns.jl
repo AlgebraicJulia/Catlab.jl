@@ -44,7 +44,6 @@ Base.hash(c::Column, h::UInt) = hash(c.m, h)
 
 Base.copy(c::T) where {T <: Column} = T(copy(c.m), copy(c.pc))
 
-Base.view(c::Column, xs) = view(c.m, xs)
 
 Base.getindex(c::Column, x) = c.m[x]
 
@@ -81,6 +80,23 @@ function Base.haskey(c::Column{S}, x::S) where {S}
   haskey(c.m, x)
 end
 
-view_with_default(c::Column, indices, def) = view_with_default(c.m, indices, def)
+# Column Views
+##############
+
+struct ColumnView{S,T,C <: Column{S,T},I<:AbstractVector{S},Def} <: AbstractVector{T}
+  column::C
+  indices::I
+  def::Def
+end
+
+Base.getindex(cv::ColumnView, x) = get(cv.column, cv.indices[x], cv.def)
+
+Base.setindex!(cv::ColumnView, y, x) =
+  cv.column[indices[x]] = y
+
+Base.view(c::Column, xs) = ColumnView(c, xs, nothing)
+view_with_default(c::Column, xs, def) = ColumnView(c, xs, def)
+
+Base.size(c::ColumnView) = size(c.indices)
 
 end

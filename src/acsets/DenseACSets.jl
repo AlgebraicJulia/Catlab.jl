@@ -355,30 +355,8 @@ end
   end
 end
 
-@inline ACSetInterface.subpart_type(acs::StructACSet, f::Symbol) = _subpart_type(acs, Val{f})
-@inline function ACSetInterface.subpart_type(acs::DynamicACSet, f::Symbol)
-  s = acs.schema
-  if f ∈ homs(s; just_names=true)
-    Int
-  elseif f ∈ attrs(s; just_names=true)
-    acs.type_assignment[codom(acs.schema, f)]
-  else
-    error("$f not in schema")
-  end
-end
-
-@ct_enable function _subpart_type(acs::StructACSet{S,Ts}, @ct(f)) where {S, Ts}
-  @ct begin
-    s = Schema(S)
-    if f ∈ homs(s; just_names=true)
-      Int
-    elseif f ∈ attrs(s; just_names=true)
-      Ts.parameters[findfirst(attrtypes(s) .== codom(s, f))]
-    else
-      error("$f not in schema")
-    end
-  end
-end
+@inline ACSetInterface.subpart(acs::SimpleACSet, f::Symbol) =
+  view_with_default(acs.subparts[f], domain(acs, f), default_value(acs, f))
 
 @inline ACSetInterface.subpart(acs::SimpleACSet, part::Int, f::Symbol) =
   get(acs.subparts[f], part, default_value(acs, f))
