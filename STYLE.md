@@ -52,3 +52,7 @@ Modules and types should always be UpperCamelCase. Functions should always be lo
 Fields of structs should be lower\_snake\_case, or ideally lowercase single words.
 
 Arguments to functions should ideally be single-letter. If your function is so specific that the arguments need to be described with long argument names, consider generalizing your function. If arguments need to be longer, then lower\_snake\_case should be used.
+
+## Indentation
+
+We indent with two spaces. Look up how to make your editor indent with two spaces.
