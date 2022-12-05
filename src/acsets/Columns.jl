@@ -89,7 +89,12 @@ struct ColumnView{S,T,C <: Column{S,T},I<:AbstractVector{S},Def} <: AbstractVect
   def::Def
 end
 
-Base.getindex(cv::ColumnView, x) = get(cv.column, cv.indices[x], cv.def)
+Base.getindex(cv::ColumnView, xs) = broadcast(xs) do x
+  get(cv.column, cv.indices[x], cv.def)
+end
+
+Base.getindex(cv::ColumnView, xs::AbstractVector{Bool}) =
+  [cv[i] for i in 1:length(cv.indices) if xs[i]]
 
 Base.setindex!(cv::ColumnView, y, x) =
   cv.column[indices[x]] = y
