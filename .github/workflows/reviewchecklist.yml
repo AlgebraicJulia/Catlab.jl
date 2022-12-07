@@ -18,7 +18,7 @@ jobs:
               repo: context.repo.repo,
               body: `### Review Checklist
 
-            Does this PR follow the [development guidelines](https://github.com/AlgebraicJulia/Catlab.jl/wiki/Guidelines-for-PR-writers-and-reviewers)? Following is a *partial* checklist:
+            Does this PR follow the [development guidelines](https://algebraicjulia.github.io/Catlab.jl/dev/devdocs/style/)? Following is a *partial* checklist:
 
             **Tests**
 
