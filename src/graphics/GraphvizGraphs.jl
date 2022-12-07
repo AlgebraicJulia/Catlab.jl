@@ -7,7 +7,7 @@ using StaticArrays: StaticVector, SVector
 using Colors: Colorant, @colorant_str, hex, distinguishable_colors
 
 using ...Theories
-using ...Graphs, ...CategoricalAlgebra.Subobjects, ...CategoricalAlgebra.CSets
+using ...Graphs, ...CategoricalAlgebra.Subobjects, ...CategoricalAlgebra.CSets, ...CategoricalAlgebra.FinSets
 import ..Graphviz
 
 # Property graphs
@@ -434,6 +434,96 @@ function default_node_colors(n)
 end
 function default_edge_colors(n)
   distinguishable_colors(n, colorant"#F8766D", lchoices=[65], cchoices=[100])
+end
+
+# homomorphisms between FinSet(s)
+#################################
+
+""" Visualize a function between finite sets using Graphviz.
+
+Visualize a homomorphism (`FinFunction`) between two sets (instances
+of `FinSet`). By default, the domain and codomain are drawn as subgraphs
+and the element map is drawn using dotted edges. 
+The element map can also be shown using colors, via the `elem_colors` 
+keyword argument.
+
+# Arguments
+- `prog="dot"`: Graphviz program to use
+- `graph_attrs`: Graph-level Graphviz attributes
+- `invis_edge_dom`: whether to draw invisible edges between elements in the domain;
+   this can be useful for getting a particular layout, especially when combined
+    with `Attributes(:rankdir => "LR")` as a graph attribute.
+- `invis_edge_codom`: whether to draw invisible edges between elements in the 
+  codomain
+- `draw_edge`: whether to draw edges to represent the element map
+- `elem_attrs`: Node-level Graphviz attributes
+- `elem_labels=false`: whether to draw node labels and which vertex attribute to use
+- `elem_colors=!draw_codom`: whether and how to color edges based on edge map
+"""
+function to_graphviz(f::FinFunction;
+  prog::AbstractString="dot", graph_attrs::AbstractDict=Dict(),
+  invis_edge_dom::Bool=false, invis_edge_codom::Bool=false,
+  draw_edge::Bool=true,
+  edge_colors::Bool=false,
+  elem_attrs::AbstractDict=Dict(),
+  elem_labels::Bool=false,
+  elem_colors::Bool=false)
+
+  stmts = Graphviz.Statement[]
+  A, B = dom(f), codom(f)
+
+  # element map can be given by colors
+  elem_colors == true && (elem_colors = default_node_colors)
+  ecolors = elem_colors != false ? elem_colors(length(B)) : nothing
+  mcolors = edge_colors != false ? ecolors : nothing
+
+  # domain: A
+  dom_nodes = map(A) do e
+    Graphviz.Node("dom_$(e)", merge!(node_color(ecolors, f(e)),
+                                   node_label(A, elem_labels, e)))
+  end
+
+  dom_invis_edges = Graphviz.Statement[]
+  if invis_edge_dom && length(A) > 1
+      dom_invis_edges = map(1:length(A)-1) do e
+          Graphviz.Edge("dom_$(e)", "dom_$(e+1)"; style = "invis")
+      end
+  end
+
+  dom_stmts = vcat(dom_nodes, dom_invis_edges)
+  push!(stmts, Graphviz.Subgraph("cluster_dom", dom_stmts))
+
+  # codomain: B
+  codom_nodes = map(B) do e
+    Graphviz.Node("cod_$(e)", merge!(node_color(ecolors, e),
+                                     node_label(B, elem_labels, e)))
+  end
+
+  codom_invis_edges = Graphviz.Statement[]
+  if invis_edge_codom && length(B) > 1
+    codom_invis_edges = map(1:length(B)-1) do e
+          Graphviz.Edge("cod_$(e)", "cod_$(e+1)"; style = "invis")
+      end
+  end
+
+  codom_stmts = vcat(codom_nodes, codom_invis_edges)
+  push!(stmts, Graphviz.Subgraph("cluster_codom", codom_stmts))
+
+  # map: A->B
+  if draw_edge
+    map_stmts = map(A) do e
+      # Graphviz.Edge(["\"dom_$(e)\"", "\"cod_$(f(e))\""], 
+      #               Graphviz.Attributes(:constraint => "false", :style => "dotted"))
+      Graphviz.Edge(["\"dom_$(e)\"", "\"cod_$(f(e))\""],
+                    merge!(edge_color(mcolors, f(e)),
+                          Dict(:constraint => "false", :style => "dotted")))
+    end
+    append!(stmts, map_stmts)
+  end
+
+  Graphviz.Digraph("FinFunction_graph", stmts, prog=prog,
+    graph_attrs = merge!(default_graph_attrs(prog), graph_attrs),
+    node_attrs = merge!(default_node_attrs(elem_labels), elem_attrs))
 end
 
 end
