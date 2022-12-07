@@ -6,6 +6,7 @@ using Catlab.Theories, Catlab.Graphs, Catlab.Graphics.GraphvizGraphs
 import Catlab.Graphics: Graphviz
 using Catlab.CategoricalAlgebra.Subobjects
 using Catlab.CategoricalAlgebra.CSets
+using Catlab.CategoricalAlgebra.FinSets
 
 const stmts = Graphviz.filter_statements
 
@@ -209,5 +210,28 @@ f = ACSetTransformation(A, B; V = [1,2,2], E = [1,1])
 gv = to_graphviz(f, draw_codom=true)
 @test gv.directed
 @test length(stmts(gv, Graphviz.Subgraph)) == 2
+
+# homomorphisms between FinSet(s)
+#################################
+
+A = FinSet(4)
+B = FinSet(4)
+f = FinFunction([1,2,2,3], A, B)
+
+gv = to_graphviz(f)
+@test length(stmts(gv, Graphviz.Subgraph)) == 2
+@test length(stmts(gv, Graphviz.Edge)) == 4
+@test gv.directed
+
+A = FinSet(1)
+B = FinSet(2)
+f = FinFunction([2], A, B)
+
+gv = to_graphviz(f)
+@test length(stmts(gv, Graphviz.Subgraph)) == 2
+@test length(stmts(gv, Graphviz.Edge)) == 1
+
+# gv = to_graphviz(f, graph_attrs = Dict(:rankdir => "TB"))
+# stmts(gv, Graphviz.AttributeValue, :rankdir)
 
 end
