@@ -177,7 +177,7 @@ DictMap(p::Pair{K,V}, ps...) where {K,V} = DictMap{K,V,Dict{K,V}}(p, ps...)
 
 Base.:(==)(m::M,m′::M) where {M<:DictMap} = m.d == m′.d
 
-Base.getindex(m::DictMap, k) = get(m.d, k, nothing)
+Base.getindex(m::DictMap, k) = m.d[k]
 
 Base.get(m::DictMap, k, def) = get(m.d, k, def)
 
