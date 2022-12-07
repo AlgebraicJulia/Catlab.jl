@@ -40,13 +40,15 @@ VecMap{T}() where {T} = VecMap{T,Vector{T}}()
 
 VecMap(v::AbstractVector{T}) where {T} = VecMap{T, typeof(v)}(v)
 
-function VecMap{T}(ps...) where {T}
-  m = VecMap{T}()
+function VecMap{T,V}(ps...) where {T,V}
+  m = VecMap{T,V}()
   for (k,v) in ps
     m[k] = v
   end
   m
 end
+
+VecMap{T}(ps...) where {T} = VecMap{T,Vector{T}}(ps...)
 
 function VecMap(p::Pair{Int,T}, ps...) where {T}
   VecMap{T}(p, ps...)

@@ -31,9 +31,9 @@ function (::Type{Col})() where {Col <: Column}
   Col(M(),PC())
 end
 
-function (::Type{Col})(pairs) where {Col<:Column}
+function (::Type{Col})(pairs...) where {Col<:Column}
   M, PC = Col.types
-  m = M(pairs)
+  m = M(pairs...)
   pc = PC(m)
   Col(m,pc)
 end
@@ -43,7 +43,6 @@ Base.:(==)(c1::Column, c2::Column) = c1.m == c2.m
 Base.hash(c::Column, h::UInt) = hash(c.m, h)
 
 Base.copy(c::T) where {T <: Column} = T(copy(c.m), copy(c.pc))
-
 
 Base.getindex(c::Column, x) = c.m[x]
 

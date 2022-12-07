@@ -142,7 +142,7 @@ A column for a dict-backed injective hom with key type K
 """
 struct SparseInjectiveColumn{K, T, D<:AbstractDict{K,T}} <: Column{K,T}
   m::DictMap{K,T,D}
-  pc::InjectiveCache{K, T, DictMap{T, K, Dict{K,T}}}
+  pc::InjectiveCache{K,T,DictMap{T,K,Dict{T,K}}}
 end
 
 
