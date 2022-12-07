@@ -19,7 +19,7 @@ Additional directories one might also use
 
 For most repositories in AlgebraicJulia, this should describe the top-level structure. However, some repositories might be multi-project. In that case, there is a top-level directory consisting of project directories, some of which may depend on each other.
 
-## Capitalization and multi-word conventions
+## Naming conventions
 
 There are two ways of joining words together without spaces that are in use across AlgebraicJulia.
 
@@ -27,7 +27,7 @@ The first way is UpperCamelCase. In UpperCamelCase, each word is capitalized, an
 
 The second way is lower\_snake\_case. In lower\_snake\_case, each word is lowercase, and then joined together with underscores. The use of uppercase acronyms in lower\_snake\_case is tolerable, but not preferred.
 
-Occasionally, it is also acceptable to join lowercase words together without underscores, i.e. `setindex!` instead of `set_index!`; judgement about readability and consistency should be used when making the decision to use underscores or not.
+Occasionally, it is also acceptable to join lowercase words together without underscores, e.g., `setindex!` instead of `set_index!`; judgement about readability and consistency should be used when making the decision to use underscores or not.
 
 Here are some example of names that are not consistent with the AlgebraicJulia style.
 
@@ -65,7 +65,7 @@ f(g::AbstractGraph, v::AbstractVector) # GOOD
 See the official [Julia style guide](https://docs.julialang.org/en/v1/manual/style-guide/) for general guidelines but note the following additions and exceptions:
 
 - Indent width is **2 spaces**. For VSCode, go to settings and set `Editor: Tab Size` to 2.
-- Try to avoid lines longer than **80 characters**. Occasionally it may be convenient to go over slightly, but never do so egregiously.
+- Try to avoid lines longer than **80 characters**. Occasionally it may be convenient to go over slightly, but never do so egregiously. To hard wrap docstrings in VSCode, the extension [Rewrap](https://marketplace.visualstudio.com/items?itemName=stkb.rewrap) provides the keybinding `Alt+Q` (as in Emacs).
 - Introduce a new struct when many (≥3) functions have overlapping arguments that are common aspects of a shared concept
 - Catlab uses modules more often than most Julia packages. While this may be idiosyncratic, it helps keep different components of Catlab isolated, which will be useful in the future when we spin out modules as their own packages.
 - Prefer accessor and mutator functions (e.g. `dom(f)`) over direct manipulation of struct fields or keys (e.g. `f.dom`), especially when the functions already exist. This convention supports writing generic code and makes it easier to change data structure internals without breaking existing code.
