@@ -153,6 +153,7 @@ Pages = [
      "apis/wiring_diagrams.md",
      "apis/graphics.md",
      "apis/programs.md",
+     "devdocs/style.md",
      ]
 Depth = 2
 ```
