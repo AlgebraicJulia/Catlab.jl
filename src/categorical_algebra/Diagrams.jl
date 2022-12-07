@@ -230,6 +230,7 @@ end
 #    op(Diag{id}(C)) ≅ Diag{op}(op(C))
 #    op(Diag{op}(C)) ≅ Diag{id}(op(C))
 
+op(d::Diagram{Any}) = Diagram{Any}(op(diagram(d)))
 op(d::Diagram{id}) = Diagram{op}(op(diagram(d)))
 op(d::Diagram{op}) = Diagram{id}(op(diagram(d)))
 op(f::DiagramHom{id}) = DiagramHom{op}(op(shape_map(f)), op(diagram_map(f)),

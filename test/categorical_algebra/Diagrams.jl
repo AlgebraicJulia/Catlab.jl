@@ -63,6 +63,7 @@ g = DiagramHom{op}([(1,:src)], D, ιV)
 fg = f⋅g
 @test ob_map(fg, 1) == (2, SchSGraph[:inv]⋅SchSGraph[:src])
 
+@test op(Diagram(D)) == Diagram(op(D))
 d = dom(f)
 @test op(op(d)) == d
 @test op(op(f)) == f
