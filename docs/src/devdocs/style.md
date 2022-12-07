@@ -23,13 +23,13 @@ For most repositories in AlgebraicJulia, this should describe the top-level stru
 
 There are two ways of joining words together without spaces that are in use across AlgebraicJulia.
 
-The first way is UpperCamelCase. In UpperCamelCase, each word is capitalized, and then joined together without a separating character.
+1. UpperCamelCase, in which each word is capitalized, and then joined together without a separating character.
 
-The second way is lower\_snake\_case. In lower\_snake\_case, each word is lowercase, and then joined together with underscores. The use of uppercase acronyms in lower\_snake\_case is tolerable, but not preferred.
+2. lower\_snake\_case, in which each word is lowercase, and then joined together with underscores. The use of uppercase acronyms in lower\_snake\_case is tolerable but discouraged.
 
 Occasionally, it is also acceptable to join lowercase words together without underscores, e.g., `setindex!` instead of `set_index!`; judgement about readability and consistency should be used when making the decision to use underscores or not.
 
-Here are some example of names that are not consistent with the AlgebraicJulia style.
+Here are some example of names that are **not** consistent with the AlgebraicJulia style.
 
 - `camelCase`
 - `UpperCamel_and_snake`
@@ -37,7 +37,7 @@ Here are some example of names that are not consistent with the AlgebraicJulia s
 
 ### Projects
 
-Projects should be named using UpperCamelCase with a `.jl` suffix, i.e. AlgebraicPetri.jl, or Semagrams.jl.
+Projects should be named using UpperCamelCase with a `.jl` suffix, e.g. AlgebraicPetri.jl or Semagrams.jl.
 
 ### Files and directories
 
@@ -47,11 +47,9 @@ Library julia files and test julia files should be named with UpperCamelCase. Sc
 
 ### Julia values
 
-Modules and types should always be UpperCamelCase. Functions should always be lower\_snake\_case, and ideally single words. Constants should be lower\_snake\_case, or occasionally `SCREAMING_SNAKE_CASE` (judgement should be exercised about use of `SCREAMING_SNAKE_CASE`).
+Modules and types should always be UpperCamelCase. Functions should always be lower\_snake\_case, and ideally single words. Constants should be lower\_snake\_case, or occasionally `SCREAMING_SNAKE_CASE` (judgement should be exercised about use of `SCREAMING_SNAKE_CASE`). Fields of structs should be lower\_snake\_case, or ideally lowercase single words.
 
-Fields of structs should be lower\_snake\_case, or ideally lowercase single words.
-
-Arguments to functions should ideally be single-letter. If your function is so specific that the arguments need to be described with long argument names, consider generalizing your function. If arguments need to be longer, then lower\_snake\_case should be used. Additionally, you can use types and comments to document what a variable is for instead of making the names long, i.e.
+Arguments to functions should have short names, often just single letters. If your function is so specific that the arguments need to be described with long argument names, consider generalizing your function. If arguments need to be longer, then lower\_snake\_case should be used. Additionally, you can use types and comments to document what a variable is for instead of making the names long. Some examples:
 
 ```julia
 f(a_natural_number) # BAD
@@ -65,7 +63,7 @@ f(g::AbstractGraph, v::AbstractVector) # GOOD
 See the official [Julia style guide](https://docs.julialang.org/en/v1/manual/style-guide/) for general guidelines but note the following additions and exceptions:
 
 - Indent width is **2 spaces**. For VSCode, go to settings and set `Editor: Tab Size` to 2.
-- Try to avoid lines longer than **80 characters**. Occasionally it may be convenient to go over slightly, but never do so egregiously. To hard wrap docstrings in VSCode, the extension [Rewrap](https://marketplace.visualstudio.com/items?itemName=stkb.rewrap) provides the keybinding `Alt+Q` (as in Emacs).
+- Try to avoid lines longer than **80 characters**. Occasionally it may be convenient to go over slightly, but never do so egregiously. To hard wrap docstrings in VSCode, the extension [Rewrap](https://marketplace.visualstudio.com/items?itemName=stkb.rewrap) adds the keybinding `Alt+Q` (as in Emacs).
 - Introduce a new struct when many (≥3) functions have overlapping arguments that are common aspects of a shared concept
 - Catlab uses modules more often than most Julia packages. While this may be idiosyncratic, it helps keep different components of Catlab isolated, which will be useful in the future when we spin out modules as their own packages.
 - Prefer accessor and mutator functions (e.g. `dom(f)`) over direct manipulation of struct fields or keys (e.g. `f.dom`), especially when the functions already exist. This convention supports writing generic code and makes it easier to change data structure internals without breaking existing code.
@@ -79,7 +77,7 @@ See the official [Julia style guide](https://docs.julialang.org/en/v1/manual/sty
 #-----------
 ```
 
-## Guidelines for Pull requests
+## Guidelines for pull requests
 
 Every pull request to Catlab should be reviewed by at least one person. Following are some things to check when making a PR yourself or reviewing someone else's PR. The goal of this list is to ensure that the Catlab codebase is robust and maintainable. When any of these guidelines are violated, it should be documented in a comment on the PR page.
 
