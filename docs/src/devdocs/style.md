@@ -51,13 +51,20 @@ Modules and types should always be UpperCamelCase. Functions should always be lo
 
 Fields of structs should be lower\_snake\_case, or ideally lowercase single words.
 
-Arguments to functions should ideally be single-letter. If your function is so specific that the arguments need to be described with long argument names, consider generalizing your function. If arguments need to be longer, then lower\_snake\_case should be used.
+Arguments to functions should ideally be single-letter. If your function is so specific that the arguments need to be described with long argument names, consider generalizing your function. If arguments need to be longer, then lower\_snake\_case should be used. Additionally, you can use types and comments to document what a variable is for instead of making the names long, i.e.
+
+```julia
+f(a_natural_number) # BAD
+f(n::Nat) # GOOD
+f(graph, vector_of_weights) # BAD
+f(g::AbstractGraph, v::AbstractVector) # GOOD
+```
 
 ## General style tips
 
 See the official [Julia style guide](https://docs.julialang.org/en/v1/manual/style-guide/) for general guidelines but note the following additions and exceptions:
 
-- Indent width is **2 spaces**
+- Indent width is **2 spaces**. For VSCode, go to settings and set `Editor: Tab Size` to 2.
 - Try to avoid lines longer than **80 characters**. Occasionally it may be convenient to go over slightly, but never do so egregiously.
 - Introduce a new struct when many (≥3) functions have overlapping arguments that are common aspects of a shared concept
 - Catlab uses modules more often than most Julia packages. While this may be idiosyncratic, it helps keep different components of Catlab isolated, which will be useful in the future when we spin out modules as their own packages.
