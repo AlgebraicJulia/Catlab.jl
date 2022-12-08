@@ -515,8 +515,6 @@ function to_graphviz(f::FinFunction;
   # map: A->B
   if draw_edge
     map_stmts = map(A) do e
-      # Graphviz.Edge(["\"dom_$(e)\"", "\"cod_$(f(e))\""], 
-      #               Graphviz.Attributes(:constraint => "false", :style => "dotted"))
       Graphviz.Edge(["\"dom_$(e)\"", "\"cod_$(f(e))\""],
                     merge!(edge_color(mcolors, f(e)),
                           Dict(:constraint => "false", :style => "dotted")))

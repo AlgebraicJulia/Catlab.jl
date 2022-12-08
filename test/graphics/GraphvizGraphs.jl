@@ -231,7 +231,22 @@ gv = to_graphviz(f)
 @test length(stmts(gv, Graphviz.Subgraph)) == 2
 @test length(stmts(gv, Graphviz.Edge)) == 1
 
-# gv = to_graphviz(f, graph_attrs = Dict(:rankdir => "TB"))
-# stmts(gv, Graphviz.AttributeValue, :rankdir)
+gv = to_graphviz(f, graph_attrs = Dict(:rankdir => "TB"))
+@test length(gv.graph_attrs) == 1
+@test gv.graph_attrs[:rankdir] == "TB"
+
+gv = to_graphviz(f, invis_edge_dom=true, invis_edge_codom=true)
+@test stmts(gv, Graphviz.Subgraph)[2].stmts[1] isa Graphviz.Node
+@test stmts(gv, Graphviz.Subgraph)[2].stmts[2] isa Graphviz.Node
+@test stmts(gv, Graphviz.Subgraph)[2].stmts[3] isa Graphviz.Edge
+@test length(stmts(gv, Graphviz.Subgraph)[1].stmts) == 1
+
+gv = to_graphviz(f, draw_edge=false)
+@test length(stmts(gv, Graphviz.Edge)) == 0 
+
+gv = to_graphviz(f, edge_colors=true, elem_colors=true)
+@test haskey(stmts(gv, Graphviz.Edge)[1].attrs, :color)
+@test haskey(stmts(gv, Graphviz.Subgraph)[2].stmts[1].attrs, :color)
+@test haskey(stmts(gv, Graphviz.Subgraph)[2].stmts[2].attrs, :color)
 
 end
