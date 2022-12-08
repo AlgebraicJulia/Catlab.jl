@@ -81,7 +81,7 @@ end
 
 FinFunction(c::Column{Int,Int}, dom, codom) =
   FinFunction(
-    [c[i] for i in dom], codom
+    Int[c[i] for i in dom], codom
   )
 
 FinDomFunction(c::Column{Int,T}, dom, codom) where {T} =
