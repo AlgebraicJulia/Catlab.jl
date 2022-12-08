@@ -33,17 +33,17 @@ for dds_maker in dds_makers
   @test nparts(dds, :X) == 0
   @test add_part!(dds, :X) == 1
   @test nparts(dds, :X) == 1
-  @test collect(incident(dds, 1, :Φ)) == Int[]
+  @test incident(dds, 1, :Φ) == Int[]
 
   set_subpart!(dds, 1, :Φ, 1)
   @test subpart(dds, 1, :Φ) == 1
-  @test collect(incident(dds, 1, :Φ)) == [1]
+  @test incident(dds, 1, :Φ) == [1]
 
   @test add_part!(dds, :X, Φ=1) == 2
   @test add_part!(dds, :X, Φ=1) == 3
   @test subpart(dds, :Φ) == [1,1,1]
   @test subpart(dds, [2,3], :Φ) == [1,1]
-  @test collect(incident(dds, 1, :Φ)) == [1,2,3]
+  @test incident(dds, 1, :Φ) == [1,2,3]
 
   @test has_part(dds, :X)
   @test !has_part(dds, :nonpart)
@@ -63,8 +63,8 @@ for dds_maker in dds_makers
   rem_part!(dds, :X, 2)
   @test nparts(dds, :X) == 2
   @test subpart(dds, :Φ) == [0,2]
-  @test collect(incident(dds, 1, :Φ)) == []
-  @test collect(incident(dds, 2, :Φ)) == [2]
+  @test incident(dds, 1, :Φ) == []
+  @test incident(dds, 2, :Φ) == [2]
   rem_part!(dds, :X, 2)
   @test nparts(dds, :X) == 1
   @test subpart(dds, :Φ) == [0]
@@ -76,8 +76,8 @@ for dds_maker in dds_makers
   @test_throws ErrorException rem_parts!(dds, :X, [4,1])
   rem_parts!(dds, :X, [1,4])
   @test subpart(dds, :Φ) == [1,1]
-  @test collect(incident(dds, 1, :Φ)) == [1,2]
-  @test collect(incident(dds, 2, :Φ)) == []
+  @test incident(dds, 1, :Φ) == [1,2]
+  @test incident(dds, 2, :Φ) == []
 
   # Pretty printing.
   dds = dds_maker()
@@ -121,7 +121,7 @@ for dds_maker in dds_makers
   @test subpart(dds, :Φ) == [1,1,1]
   @test_throws AssertionError add_parts!(dds, :X, 2, Φ=[3,6])
   @test nparts(dds, :X) == 3
-  @test collect(incident(dds, 3, :Φ)) == []
+  @test incident(dds, 3, :Φ) == []
 
   # Hashing
   @test hash(dds_maker()) == hash(dds_maker())
@@ -186,8 +186,8 @@ for (dgram_maker, ldgram_maker) in dgram_makers
   @test subpart(d, 1:3, :parent) == [4,4,4]
   @test subpart(d, 4, :parent) == 5
   @test subpart(d, :, :parent) == [4,4,4,5,5]
-  @test collect(incident(d, 4, :parent)) == [1,2,3]
-  @test collect.(incident(d, 4:5, :parent)) == [[1,2,3], [4,5]]
+  @test incident(d, 4, :parent) == [1,2,3]
+  @test incident(d, 4:5, :parent) == [[1,2,3], [4,5]]
   @test has_subpart(d, :height)
   @test subpart(d, [1,2,3], :height) == [0,0,0]
   @test subpart(d, 4, :height) == 10
@@ -196,14 +196,14 @@ for (dgram_maker, ldgram_maker) in dgram_makers
   # Chained accessors.
   @test subpart(d, 3, [:parent, :parent]) == 5
   @test subpart(d, 3, [:parent, :height]) == 10
-  @test collect(incident(d, 5, [:parent, :parent])) == [1,2,3,4,5]
-  @test collect(incident(d, 10, [:parent, :height])) == [1,2,3]
+  @test incident(d, 5, [:parent, :parent]) == [1,2,3,4,5]
+  @test incident(d, 10, [:parent, :height]) == [1,2,3]
 
   X, parent, height = SchDendrogram[[:X, :parent, :height]]
   @test subpart(d, 3, parent) == 4
   @test subpart(d, 3, compose(parent, height)) == 10
   @test subpart(d, 3, id(X)) == 3
-  @test collect(incident(d, 10, compose(parent, height))) == [1,2,3]
+  @test incident(d, 10, compose(parent, height)) == [1,2,3]
   @test subpart(d, parent) == [4,4,4,5,5]
   @test subpart(d, id(X)) == 1:5
   @test subpart(d, compose(parent, height)) == [10,10,10,20,20]
@@ -326,28 +326,28 @@ for lset_maker in lset_makers
   lset = lset_maker(Symbol)
   add_parts!(lset, :X, 2, label=[:foo, :bar])
   @test subpart(lset, :, :label) == [:foo, :bar]
-  @test collect(incident(lset, :foo, :label)) == [1]
+  @test incident(lset, :foo, :label) == [1]
   @test isempty(incident(lset, :nonkey, :label))
 
   add_part!(lset, :X, label=:foo)
-  @test collect(incident(lset, :foo, :label)) == [1,3]
+  @test incident(lset, :foo, :label) == [1,3]
   set_subpart!(lset, 1, :label, :baz)
   @test subpart(lset, 1, :label) == :baz
-  @test collect.(incident(lset, [:foo,:baz], :label)) == [[3],[1]]
+  @test incident(lset, [:foo,:baz], :label) == [[3],[1]]
   set_subpart!(lset, 3, :label, :biz)
-  @test collect(incident(lset, :foo, :label)) == []
+  @test incident(lset, :foo, :label) == []
 
   # Labeled set with compound label (tuple).
   lset = lset_maker(Tuple{Int,Int})
   add_parts!(lset, :X, 2, label=[(1,1), (1,2)])
-  @test collect(incident(lset, (1,2), :label)) == [2]
+  @test incident(lset, (1,2), :label) == [2]
 
   # Deletion with indexed data attribute.
   lset = lset_maker(Symbol)
   add_parts!(lset, :X, 3, label=[:foo, :foo, :bar])
   rem_part!(lset, :X, 1)
   @test subpart(lset, :label) == [:bar, :foo]
-  @test collect.(incident(lset, [:foo, :bar], :label)) == [[2], [1]]
+  @test incident(lset, [:foo, :bar], :label) == [[2], [1]]
 
   # Deletion with unitialized data attribute.
   lset = lset_maker(Tuple{Int,Int})
@@ -413,7 +413,7 @@ end
 
 @test nparts(g, :V) == 4
 @test subpart(g, :, :src) == [1,2,3,4]
-@test collect(incident(g, 1, :src)) == [1]
+@test incident(g, 1, :src) == [1]
 
 function path_graph(n::Int)
   @acset DecGraph{Float64} begin
@@ -427,7 +427,7 @@ end
 
 pg = path_graph(30)
 @test (nparts(pg, :V), nparts(pg, :E)) == (30, 29)
-@test collect(incident(pg, 1, :src)) == [1]
+@test incident(pg, 1, :src) == [1]
 
 n = 4
 pg = @acset DecGraph{Tuple{Int,Int}} begin

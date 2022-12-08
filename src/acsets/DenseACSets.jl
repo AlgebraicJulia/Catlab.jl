@@ -356,7 +356,7 @@ end
 end
 
 @inline ACSetInterface.subpart(acs::SimpleACSet, f::Symbol) =
-  view_with_default(acs.subparts[f], domain(acs, f), default_value(acs, f))
+  view_with_default(acs.subparts[f], dom_parts(acs, f), default_value(acs, f))
 
 @inline ACSetInterface.subpart(acs::SimpleACSet, part::Int, f::Symbol) =
   get(acs.subparts[f], part, default_value(acs, f))
@@ -372,26 +372,26 @@ ACSetInterface.has_subpart(acs::DynamicACSet, f::Symbol) =
   @ct f ∈ arrows(s; just_names=true)
 end
 
-@inline ACSetInterface.domain(acs::StructACSet{S}, f::Symbol) where {S} = _domain(acs, Val{S}, Val{f})
-@inline ACSetInterface.domain(acs::DynamicACSet, f::Symbol) = runtime(_domain, acs, acs.schema, f)
+@inline ACSetInterface.dom_parts(acs::StructACSet{S}, f::Symbol) where {S} = _dom_parts(acs, Val{S}, Val{f})
+@inline ACSetInterface.dom_parts(acs::DynamicACSet, f::Symbol) = runtime(_dom_parts, acs, acs.schema, f)
 
-@ct_enable function _domain(acs, @ct(S), @ct(f))
+@ct_enable function _dom_parts(acs, @ct(S), @ct(f))
   @ct s = Schema(S)
   parts(acs, @ct dom(s, f))
 end
 
 @inline ACSetInterface.incident(acs::SimpleACSet, part, f::Symbol; unbox_injective=true) =
   if !unbox_injective
-    preimage(domain(acs, f), acs.subparts[f], part)
+    preimage(dom_parts(acs, f), acs.subparts[f], part)
   else
-    preimage(domain(acs, f), acs.subparts[f], part, UnboxInjectiveFlag())
+    preimage(dom_parts(acs, f), acs.subparts[f], part, UnboxInjectiveFlag())
   end
 
 @inline ACSetInterface.incident(acs::SimpleACSet, parts::Union{AbstractVector,UnitRange}, f::Symbol; unbox_injective=true) =
   if !unbox_injective
-    preimage_multi(domain(acs, f), acs.subparts[f], parts)
+    preimage_multi(dom_parts(acs, f), acs.subparts[f], parts)
   else
-    preimage_multi(domain(acs, f), acs.subparts[f], parts, UnboxInjectiveFlag())
+    preimage_multi(dom_parts(acs, f), acs.subparts[f], parts, UnboxInjectiveFlag())
   end
 
 @inline ACSetInterface.incident(acs::StructACSet{S}, ::Colon, f::Symbol; unbox_injective=true) where {S} =

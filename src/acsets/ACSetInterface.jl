@@ -1,5 +1,5 @@
 module ACSetInterface
-export ACSet, acset_schema, acset_name, domain, subpart_type,
+export ACSet, acset_schema, acset_name, dom_parts, subpart_type,
   nparts, parts, has_part, has_subpart, subpart, incident,
   add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!, clear_subpart!,
   copy_parts!, copy_parts_only!, disjoint_union, tables, pretty_tables, @acset
@@ -40,13 +40,13 @@ function has_part end
 function has_subpart end
 
 """
-Get the domain of a morphism in an acset
+Get the parts of the domain of a morphism in an acset
 
-domain(acs, f) == parts(acs, X)
+dom_parts(acs, f) == parts(acs, X)
 
 where X is the dom of the f in the schema
 """
-function domain end
+function dom_parts end
 
 """
 Get the type assigned to a subpart in an acset, i.e.
