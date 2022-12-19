@@ -14,6 +14,7 @@ import Tables
 using ..Columns
 using ..ColumnImplementations
 using ..TypeUtils
+using ..LVectors
 
 abstract type SimpleACSet <: ACSet end
 
@@ -64,6 +65,7 @@ function struct_acset(name::Symbol, parent, s::Schema{Symbol};
   Subparts = genericize(pi_type(columns), TypeVar[values(Tvars)...])
   quote
     struct $parameterized_type <: $parent{$schema_type, Tuple{$(attrtypes(s)...)}}
+      maxes::$Maxes
       parts::$Parts
       subparts::$Subparts
       function $parameterized_type() where {$(attrtypes(s)...)}
@@ -117,28 +119,92 @@ macro abstract_acset_type(head)
   end)
 end
 
-@inline function ACSetInterface.add_parts!(acs::SimpleACSet, ob, k)
+@inline ACSetInterface.nparts(acs::SimpleACSet, ob) = length(acs.parts[ob])
+
+@inline ACSetInterface.parts(acs::SimpleACSet, ob) = acs.parts[ob]
+
+@inline _possible_parts(acs::SimpleACSet, ob) = 1:acs.maxes[ob]
+
+@inline function ACSetInterface.add_parts!(acs::SimpleACSet, ob::Symbol, k::Int)
   n = acs.maxes[ob]
   acs.maxes[ob] = n+k
-  union!(acs.parts, (n+1):(n+k))
+  newparts = (n+1):(n+k)
+  union!(acs.parts[ob], newparts)
+  newparts
 end
+
+@inline default_value(acs::StructACSet{S}, f::Symbol) where {S} = _default_value(Val{S}, Val{f})
+
+@ct_enable function _default_value(@ct(S), @ct(f))
+  @ct begin
+    s = Schema(S)
+    if f ∈ homs(s; just_names=true)
+      0
+    elseif f ∈ attrs(s; just_names=true)
+      nothing
+    else
+      error("$f not in schema")
+    end
+  end
+end
+
+@inline ACSetInterface.dom_parts(acs::StructACSet{S}, f::Symbol) where {S} = _dom_parts(acs, Val{S}, Val{f})
+
+@ct_enable function _dom_parts(acs, @ct(S), @ct(f))
+  @ct s = Schema(S)
+  _possible_parts(acs, @ct dom(s, f))
+end
+
+@inline ACSetInterface.subpart(acs::SimpleACSet, f::Symbol) =
+  view_with_default(acs.subparts[f], dom_parts(acs, f), default_value(acs, f))
+
+@inline ACSetInterface.subpart(acs::SimpleACSet, part::Int, f::Symbol) =
+  get(acs.subparts[f], part, default_value(acs, f))
 
 @inline ACSetInterface.set_subpart!(acs::SimpleACSet, i, f, x) =
   acs.subparts[f][i] = x
 
-@inline ACSetInterface.rem_part!(acs::StructACSet{S}, ob, i) = _rem_part!(acs, Val{S}, Val{ob}, i)
+@inline ACSetInterface.rem_part!(acs::StructACSet{S}, ob, i) where {S} =
+  _rem_part!(acs, Val{S}, Val{ob}, i)
 
 @ct_enable function _rem_part!(acs::SimpleACSet, @ct(S), @ct(ob), i)
   delete!(acs.parts[@ct ob], i)
   @ct s = Schema(S)
-  @ct outhoms = homs(s; from=ob; just_names=true)
+  @ct outhoms = homs(s; from=ob, just_names=true)
   @ct inhoms = homs(s; from=ob)
   @ct_ctrl for f in outhoms
     delete!(acs.subparts[@ct f], i)
   end
   @ct_ctrl for (f,d,_) in inhoms
-    delete_codomain!(acs.subparts[@ct f], i)
+    # We could probably do this without a copy, but copy is the simplest way to
+    # avoid the problem of mutating while iterating
+    to_delete = copy(incident(acs, i, @ct f))
+    for j in to_delete
+      delete!(acs.subparts[@ct f], j)
+    end
   end
+end
+
+@inline ACSetInterface.incident(acs::SimpleACSet, part, f::Symbol; unbox_injective=true) =
+  if !unbox_injective
+    preimage(dom_parts(acs, f), acs.subparts[f], part)
+  else
+    preimage(dom_parts(acs, f), acs.subparts[f], part, UnboxInjectiveFlag())
+  end
+
+@inline ACSetInterface.incident(acs::SimpleACSet, parts::Union{AbstractVector,UnitRange}, f::Symbol; unbox_injective=true) =
+  if !unbox_injective
+    preimage_multi(dom_parts(acs, f), acs.subparts[f], parts)
+  else
+    preimage_multi(dom_parts(acs, f), acs.subparts[f], parts, UnboxInjectiveFlag())
+  end
+
+@inline ACSetInterface.incident(acs::StructACSet{S}, ::Colon, f::Symbol; unbox_injective=true) where {S} =
+  _incident(acs, Val{S}, :, Val{f}, unbox_injective)
+
+@ct_enable function _incident(acs::SimpleACSet, @ct(S), ::Colon, @ct(f), unbox_injective)
+  @ct s = Schema(S)
+  incident(acs, parts(acs, @ct(codom(s, f))), @ct(f); unbox_injective)
 end
 
 end
