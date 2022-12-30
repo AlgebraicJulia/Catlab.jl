@@ -41,12 +41,6 @@ for dds_maker in dds_makers
   @test subpart(dds, [2,3], :Φ) == [1,1]
   @test incident(dds, 1, :Φ) == [1,2,3]
 
-  # @test has_part(dds, :X)
-  # @test !has_part(dds, :nonpart)
-  # @test has_part(dds, :X, 3)
-  # @test !has_part(dds, :X, 4)
-  # @test has_part(dds, :X, 1:5) == [true, true, true, false, false]
-
   rem_part!(dds, :X, 1)
 
   @test nparts(dds, :X) == 2
