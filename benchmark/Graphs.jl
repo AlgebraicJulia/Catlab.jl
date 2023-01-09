@@ -281,10 +281,6 @@ lgbench["sum-weights"] = @benchmarkable begin
   total
 end
 
-clvecbench["increment-weights"] = @benchmarkable begin
-  $g[:weight] .= $g[:weight] .+ 1.0
-end
-
 clbench["increment-weights"] = @benchmarkable begin
   for e in edges($g)
     $g[e,:weight] += 1.0
@@ -294,6 +290,9 @@ lgbench["increment-weights"] = @benchmarkable begin
   for e in MG.edges($mg)
     MG.set_prop!($mg, e, :weight, MG.get_prop($mg, e, :weight) + 1.0)
   end
+end
+clvecbench["increment-weights"] = @benchmarkable begin
+  $g[:weight] .= $g[:weight] .+ 1.0
 end
 
 # Labeled graphs

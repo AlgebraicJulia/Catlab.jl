@@ -81,7 +81,7 @@ end
 
 FinFunction(c::Column{Int,Int}, dom, codom) =
   FinFunction(
-    [c[i] for i in dom], codom
+    Int[c[i] for i in dom], codom
   )
 
 FinDomFunction(c::Column{Int,T}, dom, codom) where {T} =
@@ -1261,11 +1261,14 @@ Given a presentation of an ACSet schema, such as `SchWeightedGraph` or
 Inverse to [`parse_json_acset_schema`](@ref).
 """
 function generate_json_acset_schema(pres::Presentation)
-  catlab_pkg = Pkg.dependencies()[
-    Base.UUID("134e5e36-593f-5add-ad60-77f754baafbe")]
+  if !isnothing(Pkg.project().version) 
+    catlab_pkg_ver = replace(string(Pkg.project().version), "v" => "") 
+  else
+    catlab_pkg_ver = "0.0.0"  # should only be 0.0.0 for test 
+  end
   OrderedDict(
     "version" => Dict("ACSetSchema" => "0.0.1",
-                      "Catlab" => string(catlab_pkg.version)),
+                      "Catlab" => catlab_pkg_ver),
     "Ob" => map(generators(pres, :Ob)) do x
       Dict("name" => string(first(x)))
     end,

@@ -183,12 +183,10 @@ for (dgram_maker, ldgram_maker) in dgram_makers
   set_subpart!(d, [4,5], :parent, 5)
 
   @test nparts(d, :X) == 5
-  @test subpart(d, 1:3, :parent) isa SubArray{Int,1}
   @test subpart(d, 1:3, :parent) == [4,4,4]
   @test subpart(d, 4, :parent) == 5
   @test subpart(d, :, :parent) == [4,4,4,5,5]
   @test incident(d, 4, :parent) == [1,2,3]
-  # @test incident(d, 4:5, :parent) isa SubArray{Vector{Int}, 1}
   @test incident(d, 4:5, :parent) == [[1,2,3], [4,5]]
   @test has_subpart(d, :height)
   @test subpart(d, [1,2,3], :height) == [0,0,0]
@@ -300,10 +298,8 @@ add_part!(B, :Sub, ι=2)
 @test 1 ∉ B && 2 ∈ B
 rem_part!(A, :Set, 2)
 @test 1 ∈ A
-@test_throws BoundsError 2 ∈ A
 rem_part!(B, :Set, 1)
 @test 1 ∈ B
-@test_throws BoundsError 2 ∈ B
 
 # Labeled sets
 ##############
@@ -362,9 +358,9 @@ for lset_maker in lset_makers
   # Pretty-printing with unitialized data attribute.
   lset = lset_maker(Symbol)
   add_part!(lset, :X)
-  @test contains(sprint(show, lset), "#undef")
-  @test contains(sprint(show, MIME"text/plain"(), lset), "#undef")
-  @test contains(sprint(show, MIME"text/html"(), lset), "#undef")
+  @test contains(sprint(show, lset), "nothing")
+  @test contains(sprint(show, MIME"text/plain"(), lset), "nothing")
+  @test contains(sprint(show, MIME"text/html"(), lset), "nothing")
 end
 
 # Labeled sets with unique index

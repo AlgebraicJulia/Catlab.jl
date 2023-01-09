@@ -1,5 +1,5 @@
 module ACSetInterface
-export ACSet, acset_schema, acset_name,
+export ACSet, acset_schema, acset_name, dom_parts, subpart_type,
   nparts, parts, has_part, has_subpart, subpart, incident,
   add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!, clear_subpart!,
   copy_parts!, copy_parts_only!, disjoint_union, tables, pretty_tables, @acset
@@ -39,6 +39,22 @@ function has_part end
 
 function has_subpart end
 
+"""
+Get the parts of the domain of a morphism in an acset
+
+dom_parts(acs, f) == parts(acs, X)
+
+where X is the dom of the f in the schema
+"""
+function dom_parts end
+
+"""
+Get the type assigned to a subpart in an acset, i.e.
+
+subpart_type(acs::WeightedGraph{T}, :weight) == T
+"""
+function subpart_type end
+
 """ Get subpart of part in acset.
 
 Both single and vectorized access are supported, with a view of the underlying
@@ -63,6 +79,7 @@ of `[:src,:vattr]` as two independent columns does not even make sense, since
 they have different domains (belong to different tables).
 """
 function subpart end
+
 @inline Base.@propagate_inbounds subpart(acs, part, name) = view_or_slice(subpart(acs, name), part)
 
 function view_or_slice end
@@ -70,14 +87,17 @@ function view_or_slice end
 @inline view_or_slice(x::AbstractVector, ::Colon) = x
 @inline Base.@propagate_inbounds view_or_slice(x::AbstractVector, i) = @view x[i]
 
+collect_or_id(i) = i
+collect_or_id(xs::AbstractVector{T}) where {T} = T[xs...]
+
 function subpart(acs, part, names::AbstractVector{Symbol})
   foldl(names, init=part) do part, name
-    subpart(acs, part, name)
+    collect_or_id(subpart(acs, part, name))
   end
 end
 
 subpart(acs, names::AbstractVector{Symbol}) =
-  subpart(acs, subpart(acs, names[1]), names[2:end])
+  subpart(acs, Int[subpart(acs, names[1])...], names[2:end])
 
 Base.getindex(acs::ACSet, part, name) = subpart(acs, part, name)
 Base.getindex(acs::ACSet, name) = subpart(acs, name)
@@ -107,7 +127,7 @@ function incident(acs, part, names::AbstractVector{Symbol};
                   copy::Bool=false)
   # Don't need to pass `copy` because copy will be made regardless.
   foldr(names, init=part) do name, part
-    reduce(vcat, incident(acs, part, name), init=Int[])
+    reduce(vcat, collect.(incident(acs, part, name)), init=Int[])
   end
 end
 
@@ -167,7 +187,7 @@ function set_subpart! end
 
 # Inlined for the same reason as `subpart`.
 
-@inline function set_subpart!(acs, parts::AbstractVector{Int}, name, vals)
+@inline function set_subpart!(acs, parts::Union{AbstractVector{Int}, AbstractSet{Int}}, name, vals)
   broadcast(parts, vals) do part, val
     set_subpart!(acs, part, name, val)
   end
@@ -199,7 +219,7 @@ potentially cause an inconsistent acset if used without caution.
 
 function clear_subpart! end
 
-function clear_subpart!(acs, parts::AbstractVector{Int}, name)
+function clear_subpart!(acs, parts::Union{AbstractVector{Int}, AbstractSet{Int}}, name)
   for part in parts
     clear_subpart!(acs, part, name)
   end
