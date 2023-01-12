@@ -165,8 +165,12 @@ function to_graphviz_property_graph(g::AbstractGraph;
   )
 end
 
-node_label(g, name::Symbol, v::Int) = Dict(:label => string(g[v, name]))
+# node_label(g, name::Symbol, v::Int) = Dict(:label => string(g[v, name]))
+node_label(g, name::Symbol, v::Int) = Dict(:label => node_label_to_string(g[v, name]))
 node_label(g, labels::Bool, v::Int) = Dict(:label => labels ? string(v) : "")
+
+node_label_to_string(vlabel::T) where {T} = string(vlabel)
+node_label_to_string(vlabel::Tuple) = join(string.(vlabel), ',')
 
 edge_label(g, name::Symbol, e::Int) = Dict(:label => string(g[e, name]))
 edge_label(g, labels::Bool, e::Int) =
