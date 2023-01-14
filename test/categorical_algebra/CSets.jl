@@ -7,7 +7,7 @@ using Random: seed!
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 
-seed!(101)
+seed!(100)
 
 @present SchDDS(FreeSchema) begin
   X::Ob
@@ -461,11 +461,12 @@ h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:d,:c],))
 #-------
 comps(x) = sort([k=>collect(v) for (k,v) in pairs(components(x))])
 # same set of morphisms
-hs = homomorphisms(K₃,K₃)
-rand_hs = homomorphisms(K₃,K₃; random=true)
+K₇ = complete_graph(SymmetricGraph, 7)
+hs = homomorphisms(K₇,K₇)
+rand_hs = homomorphisms(K₇,K₇; random=true)
 @test sort(hs,by=comps) == sort(rand_hs,by=comps) # equal up to order
 @test hs != rand_hs # not equal given order
-@test homomorphism(K₃,K₃) != homomorphism(K₃,K₃;random=true)
+@test homomorphism(K₇,K₇) != homomorphism(K₇,K₇;random=true)
 
 # Sub-C-sets
 ############
