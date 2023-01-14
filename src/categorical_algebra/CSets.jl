@@ -18,6 +18,7 @@ import JSON
 using Reexport
 using Tables
 using CompTime
+using Random
 import Pkg
 
 @reexport using ...CSetDataStructures
@@ -607,7 +608,8 @@ struct BacktrackingState{S <: TypeLevelSchema,
 end
 
 function backtracking_search(f, X::StructACSet{S}, Y::StructACSet{S};
-                             monic=false, iso=false, type_components=(;), initial=(;),
+                             monic=false, iso=false, random=false,
+                             type_components=(;), initial=(;),
                              ) where {S<:TypeLevelSchema}
   Ob = Tuple(objects(S))
   Attr = Tuple(attrtypes(S))
@@ -645,10 +647,11 @@ function backtracking_search(f, X::StructACSet{S}, Y::StructACSet{S};
   end
 
   # Start the main recursion for backtracking search.
-  backtracking_search(f, state, 1)
+  backtracking_search(f, state, 1; random=random)
 end
 
-function backtracking_search(f, state::BacktrackingState{S}, depth::Int) where {S}
+function backtracking_search(f, state::BacktrackingState{S}, depth::Int; 
+                             random=false) where {S}
   # Choose the next unassigned element.
   mrv, mrv_elem = find_mrv_elem(state, depth)
   if isnothing(mrv_elem)
@@ -667,7 +670,7 @@ function backtracking_search(f, state::BacktrackingState{S}, depth::Int) where {
 
   # Attempt all assignments of the chosen element.
   Y = state.codom
-  for y in parts(Y, c)
+  for y in (random ? shuffle : identity)(parts(Y, c))
     assign_elem!(state, depth, Val{c}, x, y) &&
       backtracking_search(f, state, depth + 1) &&
       return true
