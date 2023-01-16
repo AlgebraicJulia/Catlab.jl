@@ -3,8 +3,11 @@ using Test
 
 using JSON
 import JSONSchema
+using Random: seed!
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
+
+seed!(100)
 
 @present SchDDS(FreeSchema) begin
   X::Ob
@@ -453,6 +456,17 @@ h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:c,:d,:a,:b],))
 h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:d,:c],))
 @test !is_homomorphic(g, h)
 @test !is_homomorphic(g, h, alg=HomomorphismQuery())
+
+# Random
+#-------
+comps(x) = sort([k=>collect(v) for (k,v) in pairs(components(x))])
+# same set of morphisms
+K₇ = complete_graph(SymmetricGraph, 7)
+hs = homomorphisms(K₇,K₇)
+rand_hs = homomorphisms(K₇,K₇; random=true)
+@test sort(hs,by=comps) == sort(rand_hs,by=comps) # equal up to order
+@test hs != rand_hs # not equal given order
+@test homomorphism(K₇,K₇) != homomorphism(K₇,K₇;random=true)
 
 # Sub-C-sets
 ############
