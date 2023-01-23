@@ -165,12 +165,15 @@ function to_graphviz_property_graph(g::AbstractGraph;
   )
 end
 
-node_label(g, name::Symbol, v::Int) = Dict(:label => string(g[v, name]))
+node_label(g, name::Symbol, v::Int) = Dict(:label => label_to_string(g[v, name]))
 node_label(g, labels::Bool, v::Int) = Dict(:label => labels ? string(v) : "")
 
-edge_label(g, name::Symbol, e::Int) = Dict(:label => string(g[e, name]))
+edge_label(g, name::Symbol, e::Int) = Dict(:label => label_to_string(g[e, name]))
 edge_label(g, labels::Bool, e::Int) =
   labels ? Dict(:label => string(e)) : Dict{Symbol,String}()
+
+label_to_string(vlabel::T) where {T} = string(vlabel)
+label_to_string(vlabel::Tuple) = join(string.(vlabel), ',')  
 
 function default_graph_attrs(prog::AbstractString)
   attrs = Dict{Symbol,String}()

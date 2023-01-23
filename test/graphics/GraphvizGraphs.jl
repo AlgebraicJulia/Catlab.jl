@@ -86,9 +86,41 @@ g = path_graph(LabeledGraph{Symbol}, 3, V=(label=[:x, :y, :z],))
 gv = to_graphviz(g, node_labels=:label)
 @test stmts(gv, Graphviz.Node, :label) == ["x", "y", "z"]
 
+g = path_graph(LabeledGraph{Tuple}, 3, V=(label=[("1",), ("2",), ("3",)],))
+gv = to_graphviz(g, node_labels=:label)
+@test stmts(gv, Graphviz.Node, :label) == ["1", "2", "3"]
+
+g = path_graph(LabeledGraph{Tuple}, 3, V=(label=[("1", "a"), ("2", "b"), ("3", "c")],))
+gv = to_graphviz(g, node_labels=:label)
+@test stmts(gv, Graphviz.Node, :label) == ["1,a", "2,b", "3,c"]
+
+g = path_graph(LabeledGraph{Tuple}, 3, V=(label=[("1", :a), ("2", :b), ("3", :c)],))
+gv = to_graphviz(g, node_labels=:label)
+@test stmts(gv, Graphviz.Node, :label) == ["1,a", "2,b", "3,c"]
+
 g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5, 1.5],))
 gv = to_graphviz(g, edge_labels=:weight)
 @test stmts(gv, Graphviz.Edge, :label) == ["0.5", "1.5"]
+
+@present SchEdgeLabeledGraph <: SchLabeledGraph begin
+    Edge_Label::AttrType
+    edge_label::Attr(E,Edge_Label)
+end
+
+@acset_type EdgeLabeledGraph(SchEdgeLabeledGraph, index=[:src,:tgt]) <: AbstractLabeledGraph
+
+g = @acset EdgeLabeledGraph{Tuple, Tuple} begin
+    V = 2
+    label = [("a", "1"), ("b", "2")]
+end
+
+gv = to_graphviz(g, node_labels=:label)
+@test stmts(gv, Graphviz.Node, :label) == ["a,1", "b,2"]
+
+add_edges!(g, [1], [2], edge_label = [("a", "1")])
+
+gv = to_graphviz(g, edge_labels=:edge_label, node_labels=:label)
+@test stmts(gv, Graphviz.Edge, :label) == ["a,1"]
 
 # Symmetric graphs
 ##################
