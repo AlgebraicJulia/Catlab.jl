@@ -74,7 +74,7 @@ g, h = path_graph(Graph, 4), cycle_graph(Graph, 2)
 β = CSetTransformation((V=[2,1], E=[2,1]), h, h)
 @test is_natural(β)
 β = CSetTransformation((V=[2,1], E=[2,2]), h, h)
-@test is_natural(β;debug=true) == [(:src,2,2,1),(:tgt,2,1,2)]
+@test is_natural(β;return_failures=true) == [(:src,2,2,1),(:tgt,2,1,2)]
 
 
 # Category of C-sets.
@@ -257,7 +257,7 @@ h = path_graph(WeightedGraph{Float64}, 4, E=(weight=[1.,2.,3.],))
 β = ACSetTransformation((V=[1,2], E=[1]), g, h)
 @test !is_natural(β) # Graph homomorphism but does not preserve weight
 β = ACSetTransformation((V=[1,3], E=[1]), g, h)
-@test is_natural(β; debug=true) == [(:tgt,1,2,3), (:weight,1,1.,2.)]
+@test is_natural(β; return_failures=true) == [(:tgt,1,2,3), (:weight,1,1.,2.)]
 
 # Loose morphisms.
 α = ACSetTransformation(g, h, V=[1,2], E=[1], Weight=x->x/2)

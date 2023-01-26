@@ -421,19 +421,19 @@ Xₕ ↓  ✓  ↓ Yₕ
   Xₙ --> Yₙ
      αₙ 
 
-If debug is true, return a list of violations, with elements such as: 
-  (h, index i in Xₐ, Yₕ(αₘ(i)), αₙ(Xₕ(i)))
+If `return_failures` is true, return a list of violations, with elements such as: 
+  (h, index i in Xₘ, Yₕ(αₘ(i)), αₙ(Xₕ(i)))
 
 This is type-unstable, so it should not be used in performance-sensitive code.
 """
-function is_natural(α::ACSetTransformation{S}; debug::Bool=false) where {S}
+function is_natural(α::ACSetTransformation{S}; return_failures::Bool=false) where {S}
   X, Y = dom(α), codom(α)
   unnatural = []
   for (f, c, d) in arrows(S)
     Xf, Yf, α_c, α_d = subpart(X,f), subpart(Y,f), α[c], α[d]
     for i in eachindex(Xf)
       if Yf[α_c(i)] != α_d(Xf[i])
-        if debug 
+        if return_failures 
           push!(unnatural, (f, i, Yf[α_c(i)], α_d(Xf[i])))
         else
           return false 
@@ -441,7 +441,7 @@ function is_natural(α::ACSetTransformation{S}; debug::Bool=false) where {S}
       end
     end
   end
-  return debug ? unnatural : true
+  return return_failures ? unnatural : true
 end
 
 function is_monic(α::TightACSetTransformation{S}) where {S}
