@@ -20,19 +20,19 @@ box/junction attributes. The default attributes are those compatible with the
 """
 function oapply(composite::UndirectedWiringDiagram, hom_map::AbstractDict,
                 ob_map::Union{AbstractDict,Nothing}=nothing;
-                hom_attr::Symbol=:name, ob_attr::Symbol=:variable)
+                hom_attr::Symbol=:name, ob_attr::Symbol=:variable, kwargs...)
   # XXX: Julia should be inferring these vector eltypes but isn't on v1.7.
   homs = valtype(hom_map)[ hom_map[name] for name in composite[hom_attr] ]
   obs = isnothing(ob_map) ? nothing :
     valtype(ob_map)[ ob_map[name] for name in composite[ob_attr] ]
-  oapply(composite, homs, obs)
+  oapply(composite, homs, obs; kwargs...)
 end
 
 # UWD algebras of multi(co)spans
 ################################
 
 function oapply(composite::UndirectedWiringDiagram,
-                spans::AbstractVector{<:Multispan}; Ob=nothing, Hom=nothing)
+                spans::AbstractVector{<:Multispan}; Ob=nothing, Hom=nothing, return_limits=false)
   @assert nboxes(composite) == length(spans)
   # FIXME: This manual type inference is hacky and bad. The right solution is to
   # extend `Multi(co)span` with type parameters that allow abstract types.
@@ -69,12 +69,17 @@ function oapply(composite::UndirectedWiringDiagram,
     e = first(incident(diagram, j, :tgt))
     legs(lim)[src(diagram, e)] ⋅ hom(diagram, e)
   end
-  Multispan(ob(lim), outer_legs)
+  span = Multispan(ob(lim), outer_legs)
+  if return_limits
+    (lim, span)
+  else
+    span
+  end
 end
 
 function oapply(composite::UndirectedWiringDiagram,
                 cospans::AbstractVector{<:StructuredMulticospan{L}},
-                junction_feet::Union{AbstractVector,Nothing}=nothing) where L
+                junction_feet::Union{AbstractVector,Nothing}=nothing; return_colimits=false) where L
   @assert nboxes(composite) == length(cospans)
   if isnothing(junction_feet)
     junction_feet = Vector{first(dom(L))}(undef, njunctions(composite))
@@ -124,7 +129,12 @@ function oapply(composite::UndirectedWiringDiagram,
     hom(diagram, e) ⋅ legs(colim)[tgt(diagram, e)]
   end
   outer_feet = junction_feet[outer_js]
-  StructuredMulticospan{L}(Multicospan(ob(colim), outer_legs), outer_feet)
+  cospan = StructuredMulticospan{L}(Multicospan(ob(colim), outer_legs), outer_feet)
+  if return_colimits
+    (colim, cospan)
+  else
+    cospan
+  end
 end
 
 # Queries via UWD algebras
