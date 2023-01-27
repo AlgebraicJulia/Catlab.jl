@@ -413,13 +413,36 @@ end
 map_components(f, α::LooseACSetTransformation) =
   LooseACSetTransformation(map(f, components(α)), α.type_components, dom(α), codom(α))
 
-function is_natural(α::ACSetTransformation{S}) where {S}
+"""
+Check naturality condition for a purported ACSetTransformation, α: X→Y. 
+For each hom in the schema, e.g. h: m → n, the following square must commute:
+     αₘ
+  Xₘ --> Yₘ
+Xₕ ↓  ✓  ↓ Yₕ
+  Xₙ --> Yₙ
+     αₙ 
+
+If `return_failures` is true, return a list of violations, with elements such as: 
+  (h, index i in Xₘ, Yₕ(αₘ(i)), αₙ(Xₕ(i)))
+
+This is type-unstable, so it should not be used in performance-sensitive code.
+"""
+function is_natural(α::ACSetTransformation{S}; return_failures::Bool=false) where {S}
   X, Y = dom(α), codom(α)
+  unnatural = []
   for (f, c, d) in arrows(S)
     Xf, Yf, α_c, α_d = subpart(X,f), subpart(Y,f), α[c], α[d]
-    all(i -> Yf[α_c(i)] == α_d(Xf[i]), eachindex(Xf)) || return false
+    for i in eachindex(Xf)
+      if Yf[α_c(i)] != α_d(Xf[i])
+        if return_failures 
+          push!(unnatural, (f, i, Yf[α_c(i)], α_d(Xf[i])))
+        else
+          return false 
+        end 
+      end
+    end
   end
-  return true
+  return return_failures ? unnatural : true
 end
 
 function is_monic(α::TightACSetTransformation{S}) where {S}
