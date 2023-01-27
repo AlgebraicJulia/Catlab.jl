@@ -32,7 +32,8 @@ end
 ################################
 
 function oapply(composite::UndirectedWiringDiagram,
-                spans::AbstractVector{<:Multispan}; Ob=nothing, Hom=nothing, return_limits=false)
+                spans::AbstractVector{<:Multispan};
+                Ob=nothing, Hom=nothing, return_limits::Bool=false)
   @assert nboxes(composite) == length(spans)
   # FIXME: This manual type inference is hacky and bad. The right solution is to
   # extend `Multi(co)span` with type parameters that allow abstract types.
@@ -70,16 +71,13 @@ function oapply(composite::UndirectedWiringDiagram,
     legs(lim)[src(diagram, e)] ⋅ hom(diagram, e)
   end
   span = Multispan(ob(lim), outer_legs)
-  if return_limits
-    (lim, span)
-  else
-    span
-  end
+  return_limits ? (span, lim) : span
 end
 
 function oapply(composite::UndirectedWiringDiagram,
                 cospans::AbstractVector{<:StructuredMulticospan{L}},
-                junction_feet::Union{AbstractVector,Nothing}=nothing; return_colimits=false) where L
+                junction_feet::Union{AbstractVector,Nothing}=nothing;
+                return_colimits::Bool=false) where L
   @assert nboxes(composite) == length(cospans)
   if isnothing(junction_feet)
     junction_feet = Vector{first(dom(L))}(undef, njunctions(composite))
@@ -130,11 +128,7 @@ function oapply(composite::UndirectedWiringDiagram,
   end
   outer_feet = junction_feet[outer_js]
   cospan = StructuredMulticospan{L}(Multicospan(ob(colim), outer_legs), outer_feet)
-  if return_colimits
-    (colim, cospan)
-  else
-    cospan
-  end
+  return_colimits ? (cospan, colim) : cospan
 end
 
 # Queries via UWD algebras
