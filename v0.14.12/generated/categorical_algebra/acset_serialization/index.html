@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Serializing acsets · Catlab.jl</title><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">Catlab.jl</a></span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox"/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Seven Sketches in Compositionality</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../sketches/partitions/">Partitions</a></li><li><a class="tocitem" href="../../sketches/preorders/">Preorders</a></li><li><a class="tocitem" href="../../sketches/meets/">Meets in Preorders</a></li><li><a class="tocitem" href="../../sketches/smc/">Symmetric Monoidal Categories</a></li><li><a class="tocitem" href="../../sketches/cat_elements/">The Category of Elements</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/graphs/">The Category of Graphs</a></li><li><a class="tocitem" href="../../graphs/graphs_label/">Labeled Graphs</a></li><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox" checked/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">Categorical Algebra</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../diagrams/">Diagrams</a></li><li class="is-active"><a class="tocitem" href>Serializing acsets</a><ul class="internal"><li><a class="tocitem" href="#The-JSONSchema-for-Schemas"><span>The JSONSchema for Schemas</span></a></li><li><a class="tocitem" href="#Example-1:-Discrete-Dynamical-Systems"><span>Example 1: Discrete Dynamical Systems</span></a></li><li><a class="tocitem" href="#Example-2:-Labeled-DDS"><span>Example 2: Labeled DDS</span></a></li><li><a class="tocitem" href="#Example-3:-Graphs"><span>Example 3: Graphs</span></a></li><li><a class="tocitem" href="#Example-4:-Vertex-and-Edge-Labeled-Graph-Graph-Schema"><span>Example 4: Vertex and Edge Labeled Graph Graph Schema</span></a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-4" type="checkbox"/><label class="tocitem" for="menuitem-2-4"><span class="docs-label">Wiring Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li><li><a class="tocitem" href="../../wiring_diagrams/wd_cset/">Wiring Diagrams as Attributed C-Sets</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox"/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphics/graphviz_graphs/">Drawing graphs in Graphviz</a></li><li><a class="tocitem" href="../../graphics/graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../../graphics/composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../../graphics/tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../../graphics/layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/core/">Theories, instances, and expressions</a></li><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li><li><span class="tocitem">Developer Docs</span><ul><li><a class="tocitem" href="../../../devdocs/style/">Style Guide for AlgebraicJulia</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Categorical Algebra</a></li><li class="is-active"><a href>Serializing acsets</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Serializing acsets</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/master/docs/literate/categorical_algebra/acset_serialization.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Serializing-acsets"><a class="docs-heading-anchor" href="#Serializing-acsets">Serializing acsets</a><a id="Serializing-acsets-1"></a><a class="docs-heading-anchor-permalink" href="#Serializing-acsets" title="Permalink"></a></h1><p>Catlab supports the serialization of attributed C-sets (acsets) into JSON with their schemas. This functionality should allow you to interoperate with database representations in other languages by serializing both the data and the type into a network interoperability layer.</p><pre><code class="language-julia hljs">import JSON, JSONSchema
+
+using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
+using Catlab.Graphics</code></pre><p>You can interact with the schema representation using JSON Schema with the <code>write_json_acset_schema</code> and <code>read_json_acset_schema</code> functions.</p><pre><code class="language-julia hljs">function roundtrip_json_acset_schema(pres::Presentation)
+  mktempdir() do dir
+    path = joinpath(dir, &quot;schema.json&quot;)
+    write_json_acset_schema(pres, path)
+    read_json_acset_schema(path)
+  end
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">roundtrip_json_acset_schema (generic function with 1 method)</code></pre><h2 id="The-JSONSchema-for-Schemas"><a class="docs-heading-anchor" href="#The-JSONSchema-for-Schemas">The JSONSchema for Schemas</a><a id="The-JSONSchema-for-Schemas-1"></a><a class="docs-heading-anchor-permalink" href="#The-JSONSchema-for-Schemas" title="Permalink"></a></h2><p>The following code shows how to view the schema for storing schemas. You can see that this data is encoded in the standardized JSONSchema format, which is a generic way of representing data structures that are serialized to JSON. Notice that there are properties for Homs and Obs. The Homs have fields like name, dom, and codom. The Obs just have a name. AttrTypes are like Obs, but they store the name of the type that the attribute can have. In Julia, the Schemas are parametric in the AttrTypes so that uses can set those types at instance creation time. Attrs are the names of columns that point into the AttrTypes.</p><pre><code class="language-julia hljs">json_schema = JSONSchema.Schema(acset_schema_json_schema())
+JSON.print(json_schema, 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
+  &quot;data&quot;: {
+    &quot;id&quot;: &quot;https://github.com/AlgebraicJulia/Catlab.jl/tree/master/test/categorical_algebra/acset.schema.json&quot;,
+    &quot;$schema&quot;: &quot;https://json-schema.org/draft/2020-12/schema&quot;,
+    &quot;title&quot;: &quot;ACSet&quot;,
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;properties&quot;: {
+      &quot;version&quot;: {
+        &quot;type&quot;: &quot;object&quot;,
+        &quot;properties&quot;: {
+          &quot;ACSetSchema&quot;: {
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;pattern&quot;: &quot;^[0-9][0-9.]*&quot;,
+            &quot;additionalProperties&quot;: false
+          },
+          &quot;Catlab&quot;: {
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;pattern&quot;: &quot;^[0-9][0-9.]*&quot;,
+            &quot;additionalProperties&quot;: false
+          }
+        },
+        &quot;required&quot;: [
+          &quot;ACSetSchema&quot;,
+          &quot;Catlab&quot;
+        ]
+      },
+      &quot;Ob&quot;: {
+        &quot;type&quot;: &quot;array&quot;,
+        &quot;items&quot;: {
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;properties&quot;: {
+            &quot;name&quot;: {
+              &quot;type&quot;: &quot;string&quot;
+            }
+          },
+          &quot;required&quot;: [
+            &quot;name&quot;
+          ]
+        }
+      },
+      &quot;AttrType&quot;: {
+        &quot;type&quot;: &quot;array&quot;,
+        &quot;items&quot;: {
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;properties&quot;: {
+            &quot;name&quot;: {
+              &quot;type&quot;: &quot;string&quot;
+            }
+          },
+          &quot;required&quot;: [
+            &quot;name&quot;
+          ]
+        }
+      },
+      &quot;Hom&quot;: {
+        &quot;type&quot;: &quot;array&quot;,
+        &quot;items&quot;: {
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;properties&quot;: {
+            &quot;name&quot;: {
+              &quot;type&quot;: &quot;string&quot;
+            },
+            &quot;dom&quot;: {
+              &quot;type&quot;: &quot;string&quot;
+            },
+            &quot;codom&quot;: {
+              &quot;type&quot;: &quot;string&quot;
+            }
+          },
+          &quot;required&quot;: [
+            &quot;name&quot;,
+            &quot;dom&quot;,
+            &quot;codom&quot;
+          ]
+        }
+      },
+      &quot;Attr&quot;: {
+        &quot;type&quot;: &quot;array&quot;,
+        &quot;items&quot;: {
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;properties&quot;: {
+            &quot;name&quot;: {
+              &quot;type&quot;: &quot;string&quot;
+            },
+            &quot;dom&quot;: {
+              &quot;type&quot;: &quot;string&quot;
+            },
+            &quot;codom&quot;: {
+              &quot;type&quot;: &quot;string&quot;
+            }
+          },
+          &quot;required&quot;: [
+            &quot;name&quot;,
+            &quot;dom&quot;,
+            &quot;codom&quot;
+          ]
+        }
+      }
+    },
+    &quot;required&quot;: [
+      &quot;Ob&quot;,
+      &quot;AttrType&quot;,
+      &quot;Hom&quot;,
+      &quot;Attr&quot;
+    ]
+  }
+}</code></pre><h2 id="Example-1:-Discrete-Dynamical-Systems"><a class="docs-heading-anchor" href="#Example-1:-Discrete-Dynamical-Systems">Example 1: Discrete Dynamical Systems</a><a id="Example-1:-Discrete-Dynamical-Systems-1"></a><a class="docs-heading-anchor-permalink" href="#Example-1:-Discrete-Dynamical-Systems" title="Permalink"></a></h2><p>Here is an example of an ACSet schema for Discrete Dynamical Systems. A DDS is just a set <code>X</code> whose elements we call states, and a function <code>next</code>, which take the current state and gives you the next state. Such systems are used to model processes that occur autonomously and are the simplest possible dynamical system.</p><pre><code class="language-julia hljs">@present SchDDS(FreeSchema) begin
+  X::Ob
+  next::Hom(X,X)
+end
+
+JSON.print(generate_json_acset_schema(SchDDS), 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
+  &quot;version&quot;: {
+    &quot;ACSetSchema&quot;: &quot;0.0.1&quot;,
+    &quot;Catlab&quot;: &quot;0.0.0&quot;
+  },
+  &quot;Ob&quot;: [
+    {
+      &quot;name&quot;: &quot;X&quot;
+    }
+  ],
+  &quot;Hom&quot;: [
+    {
+      &quot;name&quot;: &quot;next&quot;,
+      &quot;codom&quot;: &quot;X&quot;,
+      &quot;dom&quot;: &quot;X&quot;
+    }
+  ],
+  &quot;AttrType&quot;: [],
+  &quot;Attr&quot;: []
+}</code></pre><pre><code class="language-julia hljs">to_graphviz(SchDDS)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="112pt" height="44pt"
+ viewBox="0.00 0.00 112.00 44.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 40)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-40 108,-40 108,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="27" cy="-18" rx="27" ry="18"/>
+<text text-anchor="middle" x="27" y="-14.3" font-family="Times,serif" font-size="14.00">X</text>
+</g>
+<!-- n1&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M52.44,-24.69C63.03,-25.15 72,-22.92 72,-18 72,-14.77 68.14,-12.7 62.49,-11.79"/>
+<polygon fill="black" stroke="black" points="62.6,-8.29 52.44,-11.31 62.27,-15.28 62.6,-8.29"/>
+<text text-anchor="middle" x="88" y="-14.3" font-family="Times,serif" font-size="14.00">next</text>
+</g>
+</g>
+</svg>
+'/><p>LabeledDDS are a variation on DDS where the states can have symbolic names. In Catlab, every element of an object has to be identified by its integer row number. This comes out of a tradition in database design where every table has a natural number primary key. In mathematics, we often want to think of the state space not as a set of integers, but as an arbitrary set. In Catlab, we call that set the Labels and use a <code>label</code> attribute to implement the mapping of state numbers to state labels. This way the underlying database implementation can still be designed aroung natural number primary keys, but the user can use symbolic labels. Note also that this shows the schema inheritance. We state that a <code>SchLabeledDDS</code> inherits from <code>SchDDS</code> by adding a <code>label</code> attribute of type <code>Label</code>.</p><pre><code class="language-julia hljs">@present SchLabeledDDS &lt;: SchDDS begin
+  Label::AttrType
+  label::Attr(X, Label)
+end
+
+JSON.print(generate_json_acset_schema(SchLabeledDDS), 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
+  &quot;version&quot;: {
+    &quot;ACSetSchema&quot;: &quot;0.0.1&quot;,
+    &quot;Catlab&quot;: &quot;0.0.0&quot;
+  },
+  &quot;Ob&quot;: [
+    {
+      &quot;name&quot;: &quot;X&quot;
+    }
+  ],
+  &quot;Hom&quot;: [
+    {
+      &quot;name&quot;: &quot;next&quot;,
+      &quot;codom&quot;: &quot;X&quot;,
+      &quot;dom&quot;: &quot;X&quot;
+    }
+  ],
+  &quot;AttrType&quot;: [
+    {
+      &quot;name&quot;: &quot;Label&quot;
+    }
+  ],
+  &quot;Attr&quot;: [
+    {
+      &quot;name&quot;: &quot;label&quot;,
+      &quot;codom&quot;: &quot;Label&quot;,
+      &quot;dom&quot;: &quot;X&quot;
+    }
+  ]
+}</code></pre><pre><code class="language-julia hljs">to_graphviz(SchLabeledDDS)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="144pt" height="53pt"
+ viewBox="0.00 0.00 144.41 53.44" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 49.44)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-49.44 140.41,-49.44 140.41,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="27" cy="-27.44" rx="27" ry="18"/>
+<text text-anchor="middle" x="27" y="-23.74" font-family="Times,serif" font-size="14.00">X</text>
+</g>
+<!-- n1&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M52.44,-34.13C63.03,-34.59 72,-32.36 72,-27.44 72,-24.21 68.14,-22.14 62.49,-21.23"/>
+<polygon fill="black" stroke="black" points="62.6,-17.73 52.44,-20.75 62.27,-24.72 62.6,-17.73"/>
+<text text-anchor="middle" x="88" y="-23.74" font-family="Times,serif" font-size="14.00">next</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="black" stroke="black" cx="98.21" cy="-16.8" rx="1.8" ry="1.8"/>
+<text text-anchor="middle" x="116.41" y="-3.8" font-family="Times,serif" font-size="14.00">Label</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<g id="edge2" class="edge">
+<title>n1&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M53.52,-23.48C64.78,-21.79 77.35,-19.92 86.28,-18.58"/>
+<polygon fill="black" stroke="black" points="86.82,-22.04 96.19,-17.1 85.78,-15.12 86.82,-22.04"/>
+<text text-anchor="middle" x="78.65" y="-9.83" font-family="Times,serif" font-size="14.00">label</text>
+</g>
+</g>
+</svg>
+'/><h2 id="Example-2:-Labeled-DDS"><a class="docs-heading-anchor" href="#Example-2:-Labeled-DDS">Example 2: Labeled DDS</a><a id="Example-2:-Labeled-DDS-1"></a><a class="docs-heading-anchor-permalink" href="#Example-2:-Labeled-DDS" title="Permalink"></a></h2><p>With the LabeledDDS, we will create an instance by specifying data that fits the schema. Then we will create the JSON output to show how it is encoded. The JSON encoded schema above tells you how to read the JSON encoded data below. You can see that the <code>LabeledDDS</code> will have a set for <code>X</code> with a <code>Hom</code> for <code>next</code> and an attribute for <code>label</code>. Thus we can expect to see the JSON encoding of a single table database below:     1. The first level of JSON is keyed by the table names     2. Each Table is an array of rows     3. Each row is an object keyed by fields. This is the simplest way to put a relational database in a JSON document. It is a little redundant, because the field names are repeated for each row. But that makes it easy to emit and easy to parse. If this becomes a problem, we can upgrade to a more efficient representation by writing more sophisticated parsers. Something like https://github.com/JuliaIO/MsgPack.jl would be appropriate.</p><pre><code class="language-julia hljs">@acset_type LabeledDDS(SchLabeledDDS, index=[:next, :label])
+
+ldds = LabeledDDS{Int}()
+add_parts!(ldds, :X, 4, next=[2,3,4,1], label=[100, 101, 102, 103])
+JSON.print(generate_json_acset(ldds),2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
+  &quot;X&quot;: [
+    {
+      &quot;next&quot;: 2,
+      &quot;label&quot;: 100
+    },
+    {
+      &quot;next&quot;: 3,
+      &quot;label&quot;: 101
+    },
+    {
+      &quot;next&quot;: 4,
+      &quot;label&quot;: 102
+    },
+    {
+      &quot;next&quot;: 1,
+      &quot;label&quot;: 103
+    }
+  ]
+}</code></pre><h2 id="Example-3:-Graphs"><a class="docs-heading-anchor" href="#Example-3:-Graphs">Example 3: Graphs</a><a id="Example-3:-Graphs-1"></a><a class="docs-heading-anchor-permalink" href="#Example-3:-Graphs" title="Permalink"></a></h2><p>Relational databases are great, because they are capable of representing almost anything that can be stored on a computer. We move up to graphs, which is a nice data structure you have probably seen before. Notably, graphs have two tables, one for edges and one for vertices. These are the category theorist&#39;s graph, which means that they support multiple parallel edges and self-loops.</p><pre><code class="language-julia hljs">JSON.print(generate_json_acset_schema(SchGraph), 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
+  &quot;version&quot;: {
+    &quot;ACSetSchema&quot;: &quot;0.0.1&quot;,
+    &quot;Catlab&quot;: &quot;0.0.0&quot;
+  },
+  &quot;Ob&quot;: [
+    {
+      &quot;name&quot;: &quot;V&quot;
+    },
+    {
+      &quot;name&quot;: &quot;E&quot;
+    }
+  ],
+  &quot;Hom&quot;: [
+    {
+      &quot;name&quot;: &quot;src&quot;,
+      &quot;codom&quot;: &quot;V&quot;,
+      &quot;dom&quot;: &quot;E&quot;
+    },
+    {
+      &quot;name&quot;: &quot;tgt&quot;,
+      &quot;codom&quot;: &quot;V&quot;,
+      &quot;dom&quot;: &quot;E&quot;
+    }
+  ],
+  &quot;AttrType&quot;: [],
+  &quot;Attr&quot;: []
+}</code></pre><pre><code class="language-julia hljs">to_graphviz(SchGraph)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="133pt" height="55pt"
+ viewBox="0.00 0.00 133.21 54.64" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 50.64)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-50.64 129.21,-50.64 129.21,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="27" cy="-28.64" rx="27" ry="18"/>
+<text text-anchor="middle" x="27" y="-24.94" font-family="Times,serif" font-size="14.00">V</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="98.21" cy="-18" rx="27" ry="18"/>
+<text text-anchor="middle" x="98.21" y="-14.3" font-family="Times,serif" font-size="14.00">E</text>
+</g>
+<!-- n2&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n2&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M71.13,-15.44C67.4,-15.82 63.53,-16.33 59.7,-16.94"/>
+<polygon fill="black" stroke="black" points="59.01,-13.51 49.8,-18.76 60.27,-20.39 59.01,-13.51"/>
+<text text-anchor="middle" x="59.92" y="-4.99" font-family="Times,serif" font-size="14.00">src</text>
+</g>
+<!-- n2&%2345;&gt;n1 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M75.44,-27.88C71.78,-28.65 67.91,-29.34 64.01,-29.93"/>
+<polygon fill="black" stroke="black" points="63.26,-26.5 53.78,-31.23 64.14,-33.45 63.26,-26.5"/>
+<text text-anchor="middle" x="58.73" y="-32.7" font-family="Times,serif" font-size="14.00">tgt</text>
+</g>
+</g>
+</svg>
+'/><p>An example graph with 4 vertices and 2 edges.</p><pre><code class="language-julia hljs">g = @acset Catlab.Graphs.Graph begin
+  V = 4
+  E = 2
+  src=[1,2]
+  tgt = [2,3]
+end</code></pre><div class="c-set">
+<span class="c-set-summary">Graph with elements V = 1:4, E = 1:2</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowNumber" style = "font-weight: bold; text-align: right;">E</th>
+      <th style = "text-align: right;">src</th>
+      <th style = "text-align: right;">tgt</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>Note that the vertices are listed out in a somewhat silly way. They are given as a table with no columns, so they show up in the JSON as a bunch of empty objects. This is for consistency with our next example.</p><pre><code class="language-julia hljs">JSON.print(generate_json_acset(g), 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
+  &quot;V&quot;: [
+    {},
+    {},
+    {},
+    {}
+  ],
+  &quot;E&quot;: [
+    {
+      &quot;src&quot;: 1,
+      &quot;tgt&quot;: 2
+    },
+    {
+      &quot;src&quot;: 2,
+      &quot;tgt&quot;: 3
+    }
+  ]
+}</code></pre><h2 id="Example-4:-Vertex-and-Edge-Labeled-Graph-Graph-Schema"><a class="docs-heading-anchor" href="#Example-4:-Vertex-and-Edge-Labeled-Graph-Graph-Schema">Example 4: Vertex and Edge Labeled Graph Graph Schema</a><a id="Example-4:-Vertex-and-Edge-Labeled-Graph-Graph-Schema-1"></a><a class="docs-heading-anchor-permalink" href="#Example-4:-Vertex-and-Edge-Labeled-Graph-Graph-Schema" title="Permalink"></a></h2><p>You can extend schemas by adding more tables and columns. This inheritance is flattened when you serialize to JSON, but could be encoded in a future version.</p><pre><code class="language-julia hljs">@present SchVELabeledGraph &lt;: SchGraph begin
+  Label::AttrType
+  vlabel::Attr(V,Label)
+  elabel::Attr(E,Label)
+end
+
+JSON.print(generate_json_acset_schema(SchVELabeledGraph), 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
+  &quot;version&quot;: {
+    &quot;ACSetSchema&quot;: &quot;0.0.1&quot;,
+    &quot;Catlab&quot;: &quot;0.0.0&quot;
+  },
+  &quot;Ob&quot;: [
+    {
+      &quot;name&quot;: &quot;V&quot;
+    },
+    {
+      &quot;name&quot;: &quot;E&quot;
+    }
+  ],
+  &quot;Hom&quot;: [
+    {
+      &quot;name&quot;: &quot;src&quot;,
+      &quot;codom&quot;: &quot;V&quot;,
+      &quot;dom&quot;: &quot;E&quot;
+    },
+    {
+      &quot;name&quot;: &quot;tgt&quot;,
+      &quot;codom&quot;: &quot;V&quot;,
+      &quot;dom&quot;: &quot;E&quot;
+    }
+  ],
+  &quot;AttrType&quot;: [
+    {
+      &quot;name&quot;: &quot;Label&quot;
+    }
+  ],
+  &quot;Attr&quot;: [
+    {
+      &quot;name&quot;: &quot;vlabel&quot;,
+      &quot;codom&quot;: &quot;Label&quot;,
+      &quot;dom&quot;: &quot;V&quot;
+    },
+    {
+      &quot;name&quot;: &quot;elabel&quot;,
+      &quot;codom&quot;: &quot;Label&quot;,
+      &quot;dom&quot;: &quot;E&quot;
+    }
+  ]
+}</code></pre><pre><code class="language-julia hljs">to_graphviz(SchVELabeledGraph)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="134pt" height="94pt"
+ viewBox="0.00 0.00 134.21 93.61" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 89.61)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-89.61 130.21,-89.61 130.21,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="27" cy="-63.73" rx="27" ry="18"/>
+<text text-anchor="middle" x="27" y="-60.03" font-family="Times,serif" font-size="14.00">V</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="black" stroke="black" cx="63.59" cy="-1.8" rx="1.8" ry="1.8"/>
+<text text-anchor="middle" x="41.79" y="-7.4" font-family="Times,serif" font-size="14.00">Label</text>
+</g>
+<!-- n1&%2345;&gt;n3 -->
+<g id="edge3" class="edge">
+<title>n1&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M37,-46.81C43.5,-35.81 51.77,-21.81 57.35,-12.37"/>
+<polygon fill="black" stroke="black" points="60.44,-14.01 62.52,-3.62 54.42,-10.45 60.44,-14.01"/>
+<text text-anchor="middle" x="25.67" y="-33.39" font-family="Times,serif" font-size="14.00">vlabel</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="99.21" cy="-64.21" rx="27" ry="18"/>
+<text text-anchor="middle" x="99.21" y="-60.51" font-family="Times,serif" font-size="14.00">E</text>
+</g>
+<!-- n2&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n2&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M73.99,-57.57C70.28,-57.35 66.4,-57.23 62.52,-57.22"/>
+<polygon fill="black" stroke="black" points="62.33,-53.72 52.4,-57.42 62.47,-60.72 62.33,-53.72"/>
+<text text-anchor="middle" x="62.76" y="-46.19" font-family="Times,serif" font-size="14.00">src</text>
+</g>
+<!-- n2&%2345;&gt;n1 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M73.91,-70.51C70.19,-70.69 66.31,-70.75 62.43,-70.72"/>
+<polygon fill="black" stroke="black" points="62.43,-67.21 52.32,-70.38 62.2,-74.21 62.43,-67.21"/>
+<text text-anchor="middle" x="57.17" y="-74.41" font-family="Times,serif" font-size="14.00">tgt</text>
+</g>
+<!-- n2&%2345;&gt;n3 -->
+<g id="edge4" class="edge">
+<title>n2&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M89.47,-47.15C83.15,-36.07 75.1,-21.96 69.67,-12.45"/>
+<polygon fill="black" stroke="black" points="72.64,-10.58 64.64,-3.63 66.56,-14.05 72.64,-10.58"/>
+<text text-anchor="middle" x="101.07" y="-33.6" font-family="Times,serif" font-size="14.00">elabel</text>
+</g>
+</g>
+</svg>
+'/><p>An example labeled graph using symbols for the vertex and edge names. Note that you can use unicode symbols in Julia.</p><pre><code class="language-julia hljs">@acset_type VELabeledGraph(SchVELabeledGraph,
+                           index=[:src,:tgt]) &lt;: AbstractGraph
+
+lg = @acset VELabeledGraph{Symbol} begin
+  V = 4
+  E = 2
+  vlabel = [:a, :b, :c, :d]
+  elabel = [:e₁, :e₂]
+  src=[1,2]
+  tgt = [2,3]
+end</code></pre><div class="c-set">
+<span class="c-set-summary">Main.__atexample__named__acset_serialization.VELabeledGraph{Symbol} with elements V = 1:4, E = 1:2</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowNumber" style = "font-weight: bold; text-align: right;">V</th>
+      <th style = "text-align: right;">vlabel</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">a</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">b</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">c</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowNumber" style = "font-weight: bold; text-align: right;">E</th>
+      <th style = "text-align: right;">src</th>
+      <th style = "text-align: right;">tgt</th>
+      <th style = "text-align: right;">elabel</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">e₁</td>
+    </tr>
+    <tr>
+      <td class = "rowNumber" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">e₂</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>This Graph is represented by the following JSON. Now you can see that the vertices have their <code>vlabels</code></p><pre><code class="language-julia hljs">JSON.print(generate_json_acset(lg), 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
+  &quot;V&quot;: [
+    {
+      &quot;vlabel&quot;: &quot;a&quot;
+    },
+    {
+      &quot;vlabel&quot;: &quot;b&quot;
+    },
+    {
+      &quot;vlabel&quot;: &quot;c&quot;
+    },
+    {
+      &quot;vlabel&quot;: &quot;d&quot;
+    }
+  ],
+  &quot;E&quot;: [
+    {
+      &quot;src&quot;: 1,
+      &quot;tgt&quot;: 2,
+      &quot;elabel&quot;: &quot;e₁&quot;
+    },
+    {
+      &quot;src&quot;: 2,
+      &quot;tgt&quot;: 3,
+      &quot;elabel&quot;: &quot;e₂&quot;
+    }
+  ]
+}</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../diagrams/">« Diagrams</a><a class="docs-footer-nextpage" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Friday 27 January 2023 04:58">Friday 27 January 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
