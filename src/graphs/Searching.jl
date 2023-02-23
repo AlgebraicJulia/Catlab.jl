@@ -8,7 +8,7 @@ using ...CSetDataStructures, ..BasicGraphs
 Convert a parents array into a directed graph.
 """
 function tree(parents::AbstractVector{Int})
-    n = T(length(parents))
+    n = length(parents)
     t = Graph(n)
     for (v, u) in enumerate(parents)
         if u > 0 && u != v
