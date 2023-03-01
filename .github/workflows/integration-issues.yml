@@ -1,0 +1,19 @@
+name: Add integration tasks to Integration project
+
+on:
+  issues:
+    types:
+      - reopened
+      - opened
+
+jobs:
+  add-to-project:
+    name: Add integration issue to project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/add-to-project@4756e6330fe1e0a736690d3cfd9f11c9399c2ed4
+        with:
+          project-url: https://github.com/orgs/DARPA-ASKEM/projects/5
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          labeled: integration
+          label-operator: OR
