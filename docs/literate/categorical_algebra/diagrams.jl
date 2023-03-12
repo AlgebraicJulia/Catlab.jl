@@ -19,7 +19,6 @@ draw(d::Diagram) = to_graphviz(d, prog="neato", node_labels=true, edge_labels=tr
 # small category ``J`` into ``C``. Given the category ``C``, this macro presents a
 # diagram in ``C``, i.e., constructs a finitely presented indexing category ``J``
 # together with a functor ``F: J → C``. This method of simultaneous definition is
-# often more convenient than defining ``J`` and ``F`` separately.
 # often more convenient than defining ``J`` and ``F`` separately, as could be
 # accomplished by calling `@fincat` and then `@finfunctor`.
 # For example, the limit of the following diagram consists of the paths of length
