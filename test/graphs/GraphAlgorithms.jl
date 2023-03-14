@@ -73,7 +73,6 @@ ep = enumerate_paths(g)
     (2, 3, [2])
     (2, 3, [3])
     (3, 3, [])]
-end
 
 # Trees
 #######
@@ -87,3 +86,5 @@ g′ = @acset Graph begin
 end
 
 @test is_isomorphic(g,g′)
+
+end
