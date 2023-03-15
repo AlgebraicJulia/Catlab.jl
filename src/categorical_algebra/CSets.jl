@@ -336,7 +336,7 @@ type_components(α::StructTightACSetTransformation{S}) where S =
              for (i, c) in enumerate(attrtypes(S)))
 
 map_components(f, α::T) where T<:TightACSetTransformation =
-  T(map(f, components(α)), dom(α), codom(α))
+  ACSetTransformation(map(f, components(α)), dom(α), codom(α))
 
 function Base.show(io::IO, α::TightACSetTransformation)
   print(io, "ACSetTransformation(")
