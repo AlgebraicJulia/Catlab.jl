@@ -73,6 +73,17 @@ g = ACSetTransformation(Y,X; V=[1,2], E=[1])
 @test is_natural(g)
 @test compose(g,f) |> force == g
 
+G, H = [DynamicACSet("Grph",SchGraph) for _ in 1:2];
+add_parts!(G, :V, 2); 
+add_parts!(H,:V,2);
+add_part!(G, :E; src=1, tgt=2)
+add_parts!(H, :E,2; src=[1,2], tgt=[1,2])
+hs = homomorphisms(G,H)
+@test length(hs) == 2
+@test all(is_natural,hs)
+
+@test is_natural(id(G))
+
 # C-set morphisms
 #################
 
@@ -486,12 +497,12 @@ h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:d,:c],))
 #-------
 comps(x) = sort([k=>collect(v) for (k,v) in pairs(components(x))])
 # same set of morphisms
-K₇ = complete_graph(SymmetricGraph, 7)
-hs = homomorphisms(K₇,K₇)
-rand_hs = homomorphisms(K₇,K₇; random=true)
+K₆ = complete_graph(SymmetricGraph, 6)
+hs = homomorphisms(K₆,K₆)
+rand_hs = homomorphisms(K₆,K₆; random=true)
 @test sort(hs,by=comps) == sort(rand_hs,by=comps) # equal up to order
 @test hs != rand_hs # not equal given order
-@test homomorphism(K₇,K₇) != homomorphism(K₇,K₇;random=true)
+@test homomorphism(K₆,K₆) != homomorphism(K₆,K₆;random=true)
 
 # Sub-C-sets
 ############

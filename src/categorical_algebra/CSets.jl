@@ -46,7 +46,7 @@ For objects, the result is a `FinSet`; for attribute types, a `TypeSet`.
   set_ob(X, Val{S}, Val{Ts}, Val{type})
 
 @inline SetOb(X::DynamicACSet, type::Symbol) =
-  runtime(set_ob, X.schema, types(X), type)
+  runtime(set_ob, X, X.schema, X.type_assignment, type)
 
 @ct_enable function set_ob(X::ACSet, @ct(S), @ct(Ts), @ct(type))
   @ct_ctrl if type ∈ objects(S)
@@ -61,7 +61,7 @@ end
 
 """ Create `FinSet` for object of attributed C-set.
 """
-@inline FinSet(X::StructACSet, type::Symbol) = FinSets.FinSetInt(nparts(X, type))
+@inline FinSet(X::ACSet, type::Symbol) = FinSets.FinSetInt(nparts(X, type))
 
 """ Create `TypeSet` for object or attribute type of attributed C-set.
 """
@@ -603,9 +603,8 @@ homomorphisms exist, it is exactly as expensive.
 homomorphisms(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
   homomorphisms(X, Y, alg; kw...)
 
-function homomorphisms(X::StructACSet{S}, Y::StructACSet{S},
-                       alg::BacktrackingSearch; kw...) where {S}
-  results = StructACSetTransformation{S}[]
+function homomorphisms(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...) 
+  results = []
   backtracking_search(X, Y; kw...) do α
     push!(results, map_components(deepcopy, α)); return false
   end
@@ -658,30 +657,44 @@ is_isomorphic(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...) =
 # Backtracking search
 #--------------------
 
+""" Get assignment pairs from partially specified component of C-set morphism.
+"""
+partial_assignments(x::FinFunction; is_attr=false) = partial_assignments(collect(x))
+partial_assignments(x::AbstractDict; is_attr=false) = pairs(x)
+partial_assignments(x::AbstractVector; is_attr=false) =
+  ((i,y) for (i,y) in enumerate(x) if is_attr || (!isnothing(y) && y > 0))
+
+# FIXME: Should these accessors go elsewhere?
+in_hom(S, c) = [dom(S,f) => f for f in hom(S) if codom(S,f) == c]
+out_hom(S, c) = [f => codom(S,f) for f in hom(S) if dom(S,f) == c]
+
+
+# Dynamic morphism search
+##########################
 """ Internal state for backtracking search for ACSet homomorphisms.
 """
-struct BacktrackingState{S <: TypeLevelSchema,
-    Assign <: NamedTuple, PartialAssign <: NamedTuple, LooseFun <: NamedTuple,
-    Dom <: StructACSet{S}, Codom <: StructACSet{S}}
-  """ The current assignment, a partially-defined homomorphism of ACSets. """
+struct BacktrackingState{
+  Dom <: ACSet, Codom <: ACSet,
+  Assign <: NamedTuple, PartialAssign <: NamedTuple, LooseFun <: NamedTuple,
+  }
   assignment::Assign
-  """ Depth in search tree at which assignments were made. """
   assignment_depth::Assign
-  """ Inverse assignment for monic components or if finding a monomorphism. """
   inv_assignment::PartialAssign
-  """ Domain ACSet: the "variables" in the CSP. """
   dom::Dom
-  """ Codomain ACSet: the "values" in the CSP. """
   codom::Codom
   type_components::LooseFun
 end
 
-function backtracking_search(f, X::StructACSet{S}, Y::StructACSet{S};
-                             monic=false, iso=false, random=false,
-                             type_components=(;), initial=(;),
-                             ) where {S<:TypeLevelSchema}
+function backtracking_search(f, X::ACSet, Y::ACSet;
+  monic=false, iso=false, random=false,
+  type_components=(;), initial=(;),
+  )
+  S, Sy = acset_schema.([X,Y])
+  S == Sy || error("Schemas must match for morphism search")
   Ob = Tuple(objects(S))
   Attr = Tuple(attrtypes(S))
+  ObAttr = Tuple(objects(S) ∪ attrtypes(S))
+
   # Fail early if no monic/isos exist on cardinality grounds.
   if iso isa Bool
     iso = iso ? Ob : ()
@@ -701,26 +714,27 @@ function backtracking_search(f, X::StructACSet{S}, Y::StructACSet{S};
   # Initialize state variables for search.
   assignment = NamedTuple{Ob}(zeros(Int, nparts(X, c)) for c in Ob)
   assignment_depth = map(copy, assignment)
-  inv_assignment = NamedTuple{Ob}(
-    (c in monic ? zeros(Int, nparts(Y, c)) : nothing) for c in Ob)
+  inv_assignment = NamedTuple{ObAttr}(
+    (c in monic ? zeros(Int, nparts(Y, c)) : nothing) for c in ObAttr)
   loosefuns = NamedTuple{Attr}(
     isnothing(type_components) ? identity : get(type_components, c, identity) for c in Attr)
-  state = BacktrackingState(assignment, assignment_depth, inv_assignment, X, Y,
-                            loosefuns)
+  state = BacktrackingState(assignment, assignment_depth, 
+                                  inv_assignment, X, Y, loosefuns)
 
   # Make any initial assignments, failing immediately if inconsistent.
   for (c, c_assignments) in pairs(initial)
-    for (x, y) in partial_assignments(c_assignments)
-      assign_elem!(state, 0, Val{c}, x, y) || return false
+    for (x, y) in partial_assignments(c_assignments; is_attr = c ∈ Attr)
+      if c ∈ ob(S)
+        assign_elem!(state, 0, c, x, y) || return false
+      end 
     end
   end
-
   # Start the main recursion for backtracking search.
   backtracking_search(f, state, 1; random=random)
 end
 
-function backtracking_search(f, state::BacktrackingState{S}, depth::Int; 
-                             random=false) where {S}
+function backtracking_search(f, state::BacktrackingState, depth::Int; 
+                              random=false) 
   # Choose the next unassigned element.
   mrv, mrv_elem = find_mrv_elem(state, depth)
   if isnothing(mrv_elem)
@@ -729,33 +743,33 @@ function backtracking_search(f, state::BacktrackingState{S}, depth::Int;
       return f(LooseACSetTransformation(
         state.assignment, state.type_components, state.dom, state.codom))
     else
-      return f(TightACSetTransformation(state.assignment, state.dom, state.codom))
+      return f(ACSetTransformation(state.assignment, state.dom, state.codom))
     end
-  elseif mrv == 0
-    # An element has no allowable assignment, so we must backtrack.
-    return false
+    elseif mrv == 0
+      # An element has no allowable assignment, so we must backtrack.
+      return false
   end
   c, x = mrv_elem
 
   # Attempt all assignments of the chosen element.
   Y = state.codom
   for y in (random ? shuffle : identity)(parts(Y, c))
-    assign_elem!(state, depth, Val{c}, x, y) &&
-      backtracking_search(f, state, depth + 1) &&
-      return true
-    unassign_elem!(state, depth, Val{c}, x)
+    (assign_elem!(state, depth, c, x, y) 
+      && backtracking_search(f, state, depth + 1)) && return true
+    unassign_elem!(state, depth, c, x)
   end
   return false
 end
 
 """ Find an unassigned element having the minimum remaining values (MRV).
 """
-function find_mrv_elem(state::BacktrackingState{S}, depth) where S
+function find_mrv_elem(state::BacktrackingState, depth)
+  S = acset_schema(state.dom)
   mrv, mrv_elem = Inf, nothing
   Y = state.codom
   for c in ob(S), (x, y) in enumerate(state.assignment[c])
     y == 0 || continue
-    n = count(can_assign_elem(state, depth, Val{c}, x, y) for y in parts(Y, c))
+    n = count(can_assign_elem(state, depth, c, x, y) for y in parts(Y, c))
     if n < mrv
       mrv, mrv_elem = n, (c, x)
     end
@@ -765,16 +779,15 @@ end
 
 """ Check whether element (c,x) can be assigned to (c,y) in current assignment.
 """
-function can_assign_elem(state::BacktrackingState, depth,
-                         ::Type{Val{c}}, x, y) where c
+function can_assign_elem(state::BacktrackingState, depth, c, x, y)
   # Although this method is nonmutating overall, we must temporarily mutate the
   # backtracking state, for several reasons. First, an assignment can be a
   # consistent at each individual subpart but not consistent for all subparts
   # simultaneously (consider trying to assign a self-loop to an edge with
   # distinct vertices). Moreover, in schemas with non-trivial endomorphisms, we
   # must keep track of which elements we have visited to avoid looping forever.
-  ok = assign_elem!(state, depth, Val{c}, x, y)
-  unassign_elem!(state, depth, Val{c}, x)
+  ok = assign_elem!(state, depth, c, x, y)
+  unassign_elem!(state, depth, c, x)
   return ok
 end
 
@@ -783,73 +796,63 @@ end
 Returns whether the assignment succeeded. Note that the backtracking state can
 be mutated even when the assignment fails.
 """
-@generated function assign_elem!(state::BacktrackingState{S}, depth,
-                                 ::Type{Val{c}}, x, y) where {S, c}
-  quote
-    y′ = state.assignment.$c[x]
-    y′ == y && return true  # If x is already assigned to y, return immediately.
-    y′ == 0 || return false # Otherwise, x must be unassigned.
-    if !isnothing(state.inv_assignment.$c) && state.inv_assignment.$c[y] != 0
-      # Also, y must unassigned in the inverse assignment.
-      return false
-    end
+assign_elem!(state::BacktrackingState{<:StructACSet{S}}, depth, c, x, y) where S = 
+  _assign_elem!(Val{S}, state, depth,Val{c},x,y)
+assign_elem!(state::BacktrackingState{DynamicACSet}, depth, c, x, y) = 
+  runtime(_assign_elem!,acset_schema(state.dom), state, depth,c,x,y)
 
-    # Check attributes first to fail as quickly as possible.
-    X, Y = state.dom, state.codom
-    $(map(attrs(S)) do (f, c_, d)
-         :($(quot(c_))!=c
-             || state.type_components[$(quot(d))](subpart(X,x,$(quot(f))))
-                 == subpart(Y,y,$(quot(f))) || return false)
-      end...)
 
-    # Make the assignment and recursively assign subparts.
-    state.assignment.$c[x] = y
-    state.assignment_depth.$c[x] = depth
-    if !isnothing(state.inv_assignment.$c)
-      state.inv_assignment.$c[y] = x
-    end
-    $(map(homs(S; from=c)) do (f, _, d)
-        :(assign_elem!(state, depth, Val{$(quot(d))}, subpart(X,x,$(quot(f))),
-                       subpart(Y,y,$(quot(f)))) || return false)
-      end...)
-    return true
+@ct_enable function _assign_elem!(@ct(S), state::BacktrackingState, depth, @ct(c), x, y)
+  y′ = state.assignment[@ct c][x]
+  y′ == y && return true  # If x is already assigned to y, return immediately.
+  y′ == 0 || return false # Otherwise, x must be unassigned.
+  if !isnothing(state.inv_assignment[@ct c]) && state.inv_assignment[@ct c][y] != 0
+    # Also, y must unassigned in the inverse assignment.
+    return false
   end
+
+  # Check attributes first to fail as quickly as possible.
+  X, Y = state.dom, state.codom
+  @ct_ctrl for (f, _, d) in attrs(S; from=c)
+    state.type_components[@ct(d)](subpart(X,x,@ct f)) == subpart(Y,y,@ct f) || return false
+  end
+
+  # Make the assignment and recursively assign subparts.
+  state.assignment[@ct c][x] = y
+  state.assignment_depth[@ct c][x] = depth
+  if !isnothing(state.inv_assignment[@ct c])
+    state.inv_assignment[@ct c][y] = x
+  end
+  @ct_ctrl for (f, _, d) in homs(S; from=c) 
+    assign_elem!(state, depth, @ct(d), subpart(X,x,@ct f),subpart(Y,y,@ct f)) || return false
+  end
+  return true
 end
 
 """ Unassign the element (c,x) in the current assignment.
 """
-@generated function unassign_elem!(state::BacktrackingState{S}, depth,
-                                   ::Type{Val{c}}, x) where {S, c}
-  quote
-    state.assignment.$c[x] == 0 && return
-    assign_depth = state.assignment_depth.$c[x]
-    @assert assign_depth <= depth
-    if assign_depth == depth
-      X = state.dom
-      if !isnothing(state.inv_assignment.$c)
-        y = state.assignment.$c[x]
-        state.inv_assignment.$c[y] = 0
-      end
-      state.assignment.$c[x] = 0
-      state.assignment_depth.$c[x] = 0
-      $(map(out_hom(S, c)) do (f, d)
-          :(unassign_elem!(state, depth, Val{$(quot(d))},
-                           subpart(X,x,$(quot(f)))))
-        end...)
+unassign_elem!(state::DynamicBacktrackingState{<:StructACSet{S}}, depth, c, x) where S = 
+  _unassign_elem!(Val{S}, state, depth,Val{c},x)
+unassign_elem!(state::DynamicBacktrackingState{DynamicACSet}, depth, c, x) = 
+  runtime(_unassign_elem!,acset_schema(state.dom), state, depth,c,x)
+
+@ct_enable function _unassign_elem!(@ct(S), state::DynamicBacktrackingState, depth, @ct(c), x) 
+  state.assignment[@ct c][x] == 0 && return
+  assign_depth = state.assignment_depth[@ct c][x]
+  @assert assign_depth <= depth
+  if assign_depth == depth
+    X = state.dom
+    if !isnothing(state.inv_assignment[@ct c])
+      y = state.assignment[@ct c][x]
+      state.inv_assignment[@ct c][y] = 0
+    end
+    state.assignment[@ct c][x] = 0
+    state.assignment_depth[@ct c][x] = 0
+    @ct_ctrl for (f, d) in out_hom(S, c)
+      unassign_elem!(state, depth, @ct(d), subpart(X,x,@ct(f)))
     end
   end
 end
-
-""" Get assignment pairs from partially specified component of C-set morphism.
-"""
-partial_assignments(x::AbstractDict) = pairs(x)
-partial_assignments(x::AbstractVector) =
-  ((i,y) for (i,y) in enumerate(x) if !isnothing(y) && y > 0)
-
-# FIXME: Should these accessors go elsewhere?
-in_hom(S, c) = [dom(S,f) => f for f in hom(S) if codom(S,f) == c]
-out_hom(S, c) = [f => codom(S,f) for f in hom(S) if dom(S,f) == c]
-
 # Limits and colimits
 #####################
 
@@ -1096,10 +1099,17 @@ end
 
 """ C-set → named tuple of sets.
 """
-function sets(X::StructACSet{S}; all::Bool=false) where S
+function sets(X::StructACSet{S}; all::Bool=false) where S 
   names = all ? flatten((objects(S), attrtypes(S))) : objects(S)
   NamedTuple(c => SetOb(X,c) for c in names)
 end
+
+function sets(X::DynamicACSet; all::Bool=false) 
+  S = X.schema
+  names = all ? flatten((objects(S), attrtypes(S))) : objects(S)
+  NamedTuple(c => SetOb(X,c) for c in names)
+end
+
 
 # Sub-C-sets
 ############

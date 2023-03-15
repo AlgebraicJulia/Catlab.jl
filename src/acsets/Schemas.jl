@@ -4,6 +4,8 @@ export Schema, TypeLevelSchema, BasicSchema, TypeLevelBasicSchema, typelevel,
   objects, attrtypes, attrtype_instantiation, homs, attrs, arrows, dom, codom,
   ob, hom, attrtype, attr, dom_nums, codom_nums, adom_nums, acodom_nums
 
+using StructEquality
+
 # Schemas
 #########
 
@@ -106,7 +108,7 @@ abstract type TypeLevelBasicSchema{Name, obs, homs, attrtypes, attrs} <: TypeLev
 
 const TypeLevelBasicCSetSchema{Name, obs, homs} = TypeLevelBasicSchema{Name, obs, homs, Tuple{}, Tuple{}}
 
-struct BasicSchema{Name} <: Schema{Name}
+@struct_hash_equal struct BasicSchema{Name} <: Schema{Name}
   obs::Vector{Name}
   homs::Vector{Tuple{Name,Name,Name}}
   attrtypes::Vector{Name}
