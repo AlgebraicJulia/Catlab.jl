@@ -255,7 +255,7 @@ codom(::OpenACSetLeg) = nothing
 abstract type AbstractDiscreteACSet{X <: StructACSet} end
 
 codom(::Type{<:AbstractDiscreteACSet{X}}) where
-  {S, X<:StructACSet{S}} = (X, TightACSetTransformation{S})
+  {S, X<:StructACSet{S}} = (X, StructTightACSetTransformation{S})
 
 StructuredCospan{L}(x::StructACSet, f::Union{FinFunction,OpenACSetLeg},
                     g::Union{FinFunction,ACSetTransformation}) where
@@ -291,7 +291,7 @@ inclusion of schemas ``C₀ → C`` must satisfy the property described in
 struct DiscreteACSet{A <: StructACSet, X} <: AbstractDiscreteACSet{X} end
 
 dom(::Type{<:DiscreteACSet{A}}) where {S, A<:StructACSet{S}} =
-  (A, TightACSetTransformation{S})
+  (A, StructTightACSetTransformation{S})
 
 function StructuredMulticospan{L}(x::StructACSet,
                                   cospan::Multicospan{<:FinSet{Int}}) where

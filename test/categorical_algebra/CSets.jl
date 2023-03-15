@@ -1,9 +1,9 @@
 module TestCSets
-using Test
-
 using JSON
 import JSONSchema
 using Random: seed!
+
+using Test
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 
@@ -52,6 +52,26 @@ g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5, 1.5],))
 f = FinDomFunction(g, :weight)
 @test codom(f) == TypeSet(Float64)
 @test collect(f) == [0.5, 1.5]
+
+# Dynamic ACSets 
+################
+
+X,Y = [DynamicACSet("WG", SchWeightedGraph; type_assignment=Dict(:Weight=>Float64)) 
+       for _ in 1:2]
+add_parts!(X, :V, 2)
+add_parts!(X, :E, 3; src=[1,1,2],tgt=[2,1,1,],weight=[4.,3.,4.])
+add_parts!(Y, :V, 2)
+add_part!(Y, :E; src=1, tgt=2, weight=4.)
+
+f = ACSetTransformation(X,X; V=[1,2], E=[1,2,3])
+@test is_natural(f)
+@test !is_natural(ACSetTransformation(X,X; V=[2,1], E=[1,2,3])) # bad homs
+@test !is_natural(ACSetTransformation(X,X; V=[1,1], E=[2,1,3])) # bad attrs
+@test components(f) == (V=FinFunction([1,2]), E=FinFunction([1,2,3]))
+ 
+g = ACSetTransformation(Y,X; V=[1,2], E=[1])
+@test is_natural(g)
+@test compose(g,f) |> force == g
 
 # C-set morphisms
 #################

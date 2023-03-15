@@ -58,8 +58,9 @@ Apply category of elements functor to a morphism f: X->Y.
 This relies on the fact `elements` of an object puts El components from the same
 Ob in a contiguous index range.
 """
-function elements(f::ACSetTransformation{S}) where S
+function elements(f::ACSetTransformation) 
   X, Y = elements.([dom(f), codom(f)])
+  S = acset_schema(dom(f))
 
   # Apply offset to homomorphism data
   offs = map((parts(X, :Ob))) do i
