@@ -357,7 +357,7 @@ suppressed. The vertex and edge mapping can also be shown using colors, via the
 - `node_colors=!draw_codom`: whether and how to color nodes based on vertex map
 - `edge_colors=!draw_codom`: whether and how to color edges based on edge map
 """
-function to_graphviz(f::ACSetTransformation{S,Comp,<:AbstractGraph,<:AbstractGraph};
+function to_graphviz(f::StructACSetTransformation{S,Comp,<:AbstractGraph,<:AbstractGraph};
     draw_codom::Bool=true, draw_mapping::Bool=true,
     prog::AbstractString="dot", graph_attrs::AbstractDict=Dict(),
     node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),

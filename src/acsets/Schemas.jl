@@ -144,6 +144,8 @@ attrtypes(S::Type{<:TypeLevelBasicSchema}) = Tuple(S.parameters[4].parameters)
 attrtype_instantiation(S::Type{<:TypeLevelBasicSchema}, Ts, a::Symbol) =
   Ts.parameters[findfirst(attrtypes(S) .== a)]
 
+attrtype_instantiation(::BasicSchema, D::AbstractDict, a::Symbol) = D[a]
+
 contained_in(T, x, y) =
   if typeof(x) == T
     x == y
