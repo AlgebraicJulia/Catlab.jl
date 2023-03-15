@@ -831,12 +831,12 @@ end
 
 """ Unassign the element (c,x) in the current assignment.
 """
-unassign_elem!(state::DynamicBacktrackingState{<:StructACSet{S}}, depth, c, x) where S = 
+unassign_elem!(state::BacktrackingState{<:StructACSet{S}}, depth, c, x) where S = 
   _unassign_elem!(Val{S}, state, depth,Val{c},x)
-unassign_elem!(state::DynamicBacktrackingState{DynamicACSet}, depth, c, x) = 
+unassign_elem!(state::BacktrackingState{DynamicACSet}, depth, c, x) = 
   runtime(_unassign_elem!,acset_schema(state.dom), state, depth,c,x)
 
-@ct_enable function _unassign_elem!(@ct(S), state::DynamicBacktrackingState, depth, @ct(c), x) 
+@ct_enable function _unassign_elem!(@ct(S), state::BacktrackingState, depth, @ct(c), x) 
   state.assignment[@ct c][x] == 0 && return
   assign_depth = state.assignment_depth[@ct c][x]
   @assert assign_depth <= depth
