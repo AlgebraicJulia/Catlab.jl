@@ -669,8 +669,6 @@ in_hom(S, c) = [dom(S,f) => f for f in hom(S) if codom(S,f) == c]
 out_hom(S, c) = [f => codom(S,f) for f in hom(S) if dom(S,f) == c]
 
 
-# Dynamic morphism search
-##########################
 """ Internal state for backtracking search for ACSet homomorphisms.
 """
 struct BacktrackingState{
@@ -745,9 +743,9 @@ function backtracking_search(f, state::BacktrackingState, depth::Int;
     else
       return f(ACSetTransformation(state.assignment, state.dom, state.codom))
     end
-    elseif mrv == 0
-      # An element has no allowable assignment, so we must backtrack.
-      return false
+  elseif mrv == 0
+    # An element has no allowable assignment, so we must backtrack.
+    return false
   end
   c, x = mrv_elem
 
