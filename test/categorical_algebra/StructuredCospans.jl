@@ -3,6 +3,8 @@ using Test
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 
+const Float = typeof(0.0)
+
 # Structured cospans of C-sets
 ##############################
 
@@ -78,17 +80,17 @@ k = otimes(g, h)
 
 const OpenWeightedGraphOb, OpenWeightedGraph = OpenACSetTypes(WeightedGraph, :V)
 
-g0 = WeightedGraph{Float64}(2)
+g0 = WeightedGraph{Float}(2)
 add_edge!(g0, 1, 2, weight=1.5)
-g = OpenWeightedGraph{Float64}(g0, FinFunction([1],2), FinFunction([2],2))
+g = OpenWeightedGraph{Float}(g0, FinFunction([1],2), FinFunction([2],2))
 
-h0 = WeightedGraph{Float64}(3)
+h0 = WeightedGraph{Float}(3)
 add_edges!(h0, [1,1], [2,3], weight=[1.0,2.0])
-h = OpenWeightedGraph{Float64}(h0, FinFunction([1],3), FinFunction([2,3],3))
-@test dom.(legs(h)) == [WeightedGraph{Float64}(1), WeightedGraph{Float64}(2)]
+h = OpenWeightedGraph{Float}(h0, FinFunction([1],3), FinFunction([2,3],3))
+@test dom.(legs(h)) == [WeightedGraph{Float}(1), WeightedGraph{Float}(2)]
 @test feet(h) == [FinSet(1), FinSet(2)]
-@test dom(h) == OpenWeightedGraphOb{Float64}(FinSet(1))
-@test codom(h) == OpenWeightedGraphOb{Float64}(FinSet(2))
+@test dom(h) == OpenWeightedGraphOb{Float}(FinSet(1))
+@test codom(h) == OpenWeightedGraphOb{Float}(FinSet(2))
 
 k = compose(g, h)
 k0 = apex(k)
@@ -158,7 +160,7 @@ end
 @acset_type WeightedLabeledGraph(SchWeightedLabeledGraph) <: AbstractGraph
 const OpenWLGraphOb, OpenWLGraph = OpenACSetTypes(WeightedLabeledGraph, :V)
 
-g0 = @acset WeightedLabeledGraph{Float64,Symbol} begin
+g0 = @acset WeightedLabeledGraph{Float,Symbol} begin
   V = 5
   E = 3
   src = [1, 2, 3]
@@ -167,9 +169,9 @@ g0 = @acset WeightedLabeledGraph{Float64,Symbol} begin
   elabel = [:a, :b, :c]
   weight = [1., 2., 3.]
 end
-g = OpenWLGraph{Float64,Symbol}(g0, FinFunction([1],5), FinFunction([3,4],5))
-g′ = OpenWLGraph{Float64,Symbol}(g0, FinFunction([1],5),
-                                 FinFunction([3],5), FinFunction([4],5))
+g = OpenWLGraph{Float,Symbol}(g0, FinFunction([1],5), FinFunction([3,4],5))
+g′ = OpenWLGraph{Float,Symbol}(g0, FinFunction([1],5),
+                               FinFunction([3],5), FinFunction([4],5))
 @test bundle_legs(g′, [1, (2,3)]) == g
 
 # Interface schema: many objects, with attributes
@@ -189,12 +191,12 @@ end
 const OpenWeighted2DGlobularSetOb, OpenWeighted2DGlobularSet =
   OpenACSetTypes(Weighted2DGlobularSet, WeightedGraph)
 
-v = WeightedGraph{Float64}(1)
-e1, e2 = WeightedGraph{Float64}(2), WeightedGraph{Float64}(2)
+v = WeightedGraph{Float}(1)
+e1, e2 = WeightedGraph{Float}(2), WeightedGraph{Float}(2)
 add_edge!(e1, 1, 2, weight=1)
 add_edge!(e2, 1, 2, weight=2)
 
-cell = @acset Weighted2DGlobularSet{Float64} begin
+cell = @acset Weighted2DGlobularSet{Float} begin
   V = 2
   E = 2
   Cell = 1
@@ -205,16 +207,16 @@ cell = @acset Weighted2DGlobularSet{Float64} begin
 end
 
 # Composing along vertices.
-g = OpenWeighted2DGlobularSet{Float64}(cell, OpenACSetLeg(v, V=[1]),
-                                       OpenACSetLeg(v, V=[2]))
+g = OpenWeighted2DGlobularSet{Float}(cell, OpenACSetLeg(v, V=[1]),
+                                     OpenACSetLeg(v, V=[2]))
 h = apex(compose(g, g))
 @test (src(h), tgt(h)) == ([1,1,2,2], [2,2,3,3])
 @test (h[:src2], h[:tgt2]) == ([1,3], [2,4])
 @test (h[:weight], h[:weight2]) == ([1.,2.,1.,2.], [1.,1.])
 
 # Composing along edges.
-g = OpenWeighted2DGlobularSet{Float64}(cell, OpenACSetLeg(e1, V=[1,2], E=[1]),
-                                       OpenACSetLeg(e2, V=[1,2], E=[2]))
+g = OpenWeighted2DGlobularSet{Float}(cell, OpenACSetLeg(e1, V=[1,2], E=[1]),
+                                     OpenACSetLeg(e2, V=[1,2], E=[2]))
 h = apex(compose(g, dagger(g)))
 @test (src(h), tgt(h)) == ([1,1,1], [2,2,2])
 @test (h[:src2], h[:tgt2]) == ([1,3], [2,2])

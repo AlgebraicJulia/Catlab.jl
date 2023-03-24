@@ -55,8 +55,8 @@ function parse_graphviz(doc::AbstractDict)::AbstractPropertyGraph
     props = Dict{Symbol,Any}(
       Symbol(k) => edge[k] for k in edge_keys if haskey(edge, k))
     props[:spline] = parse_spline(edge["pos"])
-    src = edge["tail"] - nsubgraphs + 1
-    tgt = edge["head"] - nsubgraphs + 1
+    src = Int(edge["tail"] - nsubgraphs + 1)
+    tgt = Int(edge["head"] - nsubgraphs + 1)
     add_edge!(graph, src, tgt, props)
   end
 
