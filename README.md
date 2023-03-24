@@ -1,8 +1,8 @@
 # ![Catlab.jl](docs/src/assets/logo.png) Catlab.jl
 
-[![Build Status](https://github.com/AlgebraicJulia/Catlab.jl/workflows/Tests/badge.svg)](https://github.com/AlgebraicJulia/Catlab.jl/actions?query=workflow%3ATests)
 [![Stable Docs](https://img.shields.io/badge/docs-stable-blue.svg)](https://algebraicjulia.github.io/Catlab.jl/stable)
 [![Dev Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://algebraicjulia.github.io/Catlab.jl/dev)
+[![Julia CI/CD](https://github.com/AlgebraicJulia/Catlab.jl/actions/workflows/julia_ci.yml/badge.svg)](https://github.com/AlgebraicJulia/Catlab.jl/actions/workflows/julia_ci.yml)
 [![Code Coverage](https://codecov.io/gh/AlgebraicJulia/Catlab.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/AlgebraicJulia/Catlab.jl)
 [![DOI](https://img.shields.io/badge/DOI-10.17605%2FOSF.IO%2FHMNFE-blue)](https://doi.org/10.17605/OSF.IO/HMNFE)
 
@@ -64,7 +64,7 @@ classical abstract algebra, see
 
 ### What is Catlab not?
 
-Catlab is *not* currently any of the following things, although we do not rule
+Catlab is _not_ currently any of the following things, although we do not rule
 out that it could eventually evolve in these directions.
 
 **Automated theorem prover**: Although there is some overlap between computer
