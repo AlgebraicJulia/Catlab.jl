@@ -1020,7 +1020,7 @@ function colimit(para::ParallelMorphisms{<:FinSet{Int}})
   Colimit(para, SMulticospan{1}(quotient_projection(sets)))
 end
 
-function universal(coeq::Coequalizer{<:FinSet{Int}}, cocone::SMulticospan{1})
+function universal(coeq::Coequalizer{<:FinSet{Int}}, cocone::Multicospan)
   pass_to_quotient(proj(coeq), only(cocone))
 end
 

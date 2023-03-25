@@ -80,9 +80,20 @@ add_part!(G, :E; src=1, tgt=2)
 add_parts!(H, :E,2; src=[1,2], tgt=[1,2])
 hs = homomorphisms(G,H)
 @test length(hs) == 2
-@test all(is_natural,hs)
+@test all(is_natural, hs)
 
 @test is_natural(id(G))
+
+G, H, expected = [DynamicACSet("Grph",SchGraph) for _ in 1:3];
+add_parts!(G, :V, 2); 
+add_parts!(H, :V, 2);
+add_parts!(expected, :V, 3);
+add_part!(G, :E; src=1, tgt=2)
+add_parts!(H, :E,2; src=[1,2], tgt=[1,2])
+add_parts!(expected, :E, 3; src=[1,2,3], tgt=[1,2,3])
+h1,h2 = homomorphisms(G,H)
+clim = colimit(Span(h1,h2));
+@test apex(clim) == expected
 
 # C-set morphisms
 #################
