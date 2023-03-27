@@ -1,0 +1,42 @@
+name: Julia CI/CD
+
+on:
+  schedule:
+    - cron: 0 0 * * *
+  push:
+    branches: ["master"]
+    tags: ["*"]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Tag and release version:"
+        required: true
+
+permissions:
+  actions: read
+  checks: read
+  contents: write
+  deployments: read
+  discussions: read
+  issues: read
+  packages: read
+  pages: read
+  pull-requests: write
+  repository-projects: read
+  security-events: read
+  statuses: read
+
+jobs:
+  CI:
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    uses: AlgebraicJulia/.github/.github/workflows/julia_ci.yml@main
+    secrets: inherit
+  CompatHelper:
+    if: github.event_name == 'schedule'
+    uses: AlgebraicJulia/.github/.github/workflows/julia_compat.yml@main
+    secrets: inherit
+  Release:
+    if: github.event_name == 'workflow_dispatch'
+    uses: AlgebraicJulia/.github/.github/workflows/julia_release.yml@main
+    secrets: inherit

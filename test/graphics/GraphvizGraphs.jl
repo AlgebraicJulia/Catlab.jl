@@ -9,6 +9,8 @@ using Catlab.CategoricalAlgebra.CSets
 
 const stmts = Graphviz.filter_statements
 
+const Float = typeof(0.0)
+
 # Property graphs
 #################
 
@@ -98,7 +100,7 @@ g = path_graph(LabeledGraph{Tuple}, 3, V=(label=[("1", :a), ("2", :b), ("3", :c)
 gv = to_graphviz(g, node_labels=:label)
 @test stmts(gv, Graphviz.Node, :label) == ["1,a", "2,b", "3,c"]
 
-g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5, 1.5],))
+g = path_graph(WeightedGraph{Float}, 3, E=(weight=[0.5, 1.5],))
 gv = to_graphviz(g, edge_labels=:weight)
 @test stmts(gv, Graphviz.Edge, :label) == ["0.5", "1.5"]
 
@@ -131,7 +133,7 @@ gv = to_graphviz(g, edge_labels=true)
 @test stmts(gv, Graphviz.Node, :label) == fill("", 3)
 @test stmts(gv, Graphviz.Edge, :label) == ["(1,3)", "(2,4)"]
 
-g = path_graph(SymmetricWeightedGraph{Float64}, 3, E=(weight=[0.5, 1.5],))
+g = path_graph(SymmetricWeightedGraph{Float}, 3, E=(weight=[0.5, 1.5],))
 gv = to_graphviz(g, edge_labels=:weight)
 @test stmts(gv, Graphviz.Edge, :label) == ["0.5", "1.5"]
 

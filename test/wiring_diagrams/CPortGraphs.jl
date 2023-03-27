@@ -28,7 +28,7 @@ add_parts!(g, :Wire, 2; src=[1,2], tgt=[3,4])
 @test subpart(g, :src) == 1:2
 @test subpart(g, :tgt) == 3:4
 @test subpart(g, :box) == [1,1,2,2]
-@test subpart(g, :con) == Int64[]
+@test subpart(g, :con) == Int[]
 
 h = ocompose(g, [Bar, Bar])
 @test subpart(h, :src) == [1,3,1,2]

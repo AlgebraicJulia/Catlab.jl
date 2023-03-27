@@ -4,6 +4,8 @@ using Test
 using Catlab.CSetDataStructures
 using Tables
 
+const Float = typeof(0.0)
+
 # Discrete dynamical systems
 ############################
 
@@ -234,11 +236,11 @@ for (dgram_maker, ldgram_maker) in dgram_makers
 
   # Pretty printing of data attributes.
   s = sprint(show, d)
-  @test contains(s, "Dendrogram{Int64}:")
+  @test contains(s, "Dendrogram{$Int}:")
   @test contains(s, "height : X → R = ")
 
   s = sprint(show, MIME"text/plain"(), d)
-  @test contains(s, "Dendrogram{Int64}")
+  @test contains(s, "Dendrogram{$Int}")
 
   # Allow type inheritance for data attributes.
   d_abs = dgram_maker(Number)
@@ -416,7 +418,7 @@ end
 @test incident(g, 1, :src) == [1]
 
 function path_graph(n::Int)
-  @acset DecGraph{Float64} begin
+  @acset DecGraph{Float} begin
     V = n
     E = n-1
     src = 1:n-1

@@ -1,5 +1,8 @@
 name: Experiments
-on: [push, pull_request]
+on:
+  push:
+    branches: ["master"]
+  pull_request:
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -13,7 +16,7 @@ jobs:
       - name: "Set up Julia"
         uses: julia-actions/setup-julia@latest
         with:
-          version: '1.8'
+          version: "1.8"
       # XXX: Cannot change working directory for "uses" steps.
       #- name: "Run tests"
       #  uses: julia-actions/julia-runtest@master

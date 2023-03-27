@@ -7,6 +7,8 @@ using Test
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 
+const Float = typeof(0.0)
+
 seed!(100)
 
 @present SchDDS(FreeSchema) begin
@@ -44,19 +46,19 @@ f = FinDomFunction(g, :tgt)
 @test collect(f) == 3:5
 # @test is_indexed(f)
 
-g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5, 1.5],))
-@test TypeSet(g, :Weight) == TypeSet(Float64)
+g = path_graph(WeightedGraph{Float}, 3, E=(weight=[0.5, 1.5],))
+@test TypeSet(g, :Weight) == TypeSet(Float)
 @test TypeSet(g, :V) == TypeSet(Int)
 @test_throws ArgumentError TypeSet(g, :W)
 
 f = FinDomFunction(g, :weight)
-@test codom(f) == TypeSet(Float64)
+@test codom(f) == TypeSet(Float)
 @test collect(f) == [0.5, 1.5]
 
 # Dynamic ACSets 
 ################
 
-X,Y = [DynamicACSet("WG", SchWeightedGraph; type_assignment=Dict(:Weight=>Float64)) 
+X,Y = [DynamicACSet("WG", SchWeightedGraph; type_assignment=Dict(:Weight=>Float)) 
        for _ in 1:2]
 add_parts!(X, :V, 2)
 add_parts!(X, :E, 3; src=[1,1,2],tgt=[2,1,1,],weight=[4.,3.,4.])
@@ -279,8 +281,8 @@ diagram = FreeDiagram([g, ob(terminal(Graph)), Graph(1)], [(α,3,1), (β,3,2)])
 ############################
 
 # Constructors and accessors.
-g = path_graph(WeightedGraph{Float64}, 2, E=(weight=2.0,))
-h = path_graph(WeightedGraph{Float64}, 4, E=(weight=[1.,2.,3.],))
+g = path_graph(WeightedGraph{Float}, 2, E=(weight=2.0,))
+h = path_graph(WeightedGraph{Float}, 4, E=(weight=[1.,2.,3.],))
 α = ACSetTransformation((V=[2,3], E=[2]), g, h)
 @test length(components(α)) == 2
 
@@ -587,7 +589,7 @@ end
 g = star_graph(Graph, 5)
 @test roundtrip_json_acset(g) == g
 
-g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5, 1.5],))
+g = path_graph(WeightedGraph{Float}, 3, E=(weight=[0.5, 1.5],))
 @test roundtrip_json_acset(g) == g
 
 g = VELabeledGraph{Symbol}()
