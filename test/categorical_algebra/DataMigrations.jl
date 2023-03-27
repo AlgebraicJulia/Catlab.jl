@@ -4,8 +4,6 @@ using Test
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 using Catlab.Programs.DiagrammaticPrograms
 
-const Float = typeof(0.0)
-
 @present SchSet(FreeSchema) begin
   X::Ob
 end
@@ -144,8 +142,8 @@ F = @migration SchWeightedGraph SchWeightedGraph begin
   tgt => e₂ ⋅ tgt
   weight => w
 end
-g = path_graph(WeightedGraph{Float}, 6, E=(weight=[0.5,0.5,1.5,1.5,1.5],))
-h = migrate(WeightedGraph{Float}, g, F)
+g = path_graph(WeightedGraph{Float64}, 6, E=(weight=[0.5,0.5,1.5,1.5,1.5],))
+h = migrate(WeightedGraph{Float64}, g, F)
 @test (nv(h), ne(h)) == (6, 3)
 @test sort!(collect(zip(h[:src], h[:tgt], h[:weight]))) ==
   [(1,3,0.5), (3,5,1.5), (4,6,1.5)]
@@ -213,7 +211,7 @@ end
 
 # Free symmetric weighted graph on a weighted graph.
 weights = range(0, 1, length=5)
-g = star_graph(WeightedGraph{Float}, 6, E=(weight=weights,))
+g = star_graph(WeightedGraph{Float64}, 6, E=(weight=weights,))
 h = @migrate SymmetricWeightedGraph g begin
   V => V
   E => @cases (fwd::E; rev::E)
@@ -223,7 +221,7 @@ h = @migrate SymmetricWeightedGraph g begin
   inv => (fwd => rev; rev => fwd)
   weight => (fwd => weight; rev => weight)
 end
-h′ = star_graph(SymmetricWeightedGraph{Float}, 6)
+h′ = star_graph(SymmetricWeightedGraph{Float64}, 6)
 h′[:weight] = vcat(weights, weights)
 @test h == h′
 

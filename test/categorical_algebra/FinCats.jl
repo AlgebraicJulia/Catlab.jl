@@ -3,8 +3,6 @@ using Test
 
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
 
-const Float = typeof(0.0)
-
 # Categories on graphs
 ######################
 
@@ -200,10 +198,10 @@ G = FinDomFunctor(g)
 C = FinCat(SchWeightedGraph)
 @test first.(ob_generators(C)) == [:V, :E, :Weight]
 @test first.(hom_generators(C)) == [:src, :tgt, :weight]
-g = path_graph(WeightedGraph{Float}, 3, E=(weight=[0.5,1.5],))
+g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5,1.5],))
 G = FinDomFunctor(g)
 @test is_functorial(G)
-@test ob_map(G, :Weight) == TypeSet(Float)
+@test ob_map(G, :Weight) == TypeSet(Float64)
 @test hom_map(G, :weight) == FinDomFunction([0.5, 1.5])
 
 # Initial functors
