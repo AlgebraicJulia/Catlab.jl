@@ -1,6 +1,8 @@
 name: Julia CI/CD
 
 on:
+  issue_comment:
+    types: ["created"]
   schedule:
     - cron: 0 0 * * *
   push:
@@ -39,4 +41,8 @@ jobs:
   Release:
     if: github.event_name == 'workflow_dispatch'
     uses: AlgebraicJulia/.github/.github/workflows/julia_release.yml@main
+    secrets: inherit
+  TagBot:
+    if: github.event_name == 'issue_comment'
+    uses: AlgebraicJulia/.github/.github/workflows/julia_tag.yml@main
     secrets: inherit
