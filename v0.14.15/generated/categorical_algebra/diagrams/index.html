@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Diagrams · Catlab.jl</title><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">Catlab.jl</a></span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox"/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Seven Sketches in Compositionality</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../sketches/partitions/">Partitions</a></li><li><a class="tocitem" href="../../sketches/preorders/">Preorders</a></li><li><a class="tocitem" href="../../sketches/meets/">Meets in Preorders</a></li><li><a class="tocitem" href="../../sketches/smc/">Symmetric Monoidal Categories</a></li><li><a class="tocitem" href="../../sketches/cat_elements/">The Category of Elements</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/graphs/">The Category of Graphs</a></li><li><a class="tocitem" href="../../graphs/graphs_label/">Labeled Graphs</a></li><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox" checked/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">Categorical Algebra</span><i class="docs-chevron"></i></label><ul class="collapsed"><li class="is-active"><a class="tocitem" href>Diagrams</a><ul class="internal"><li><a class="tocitem" href="#Present-a-diagram-in-a-given-category"><span>Present a diagram in a given category</span></a></li><li><a class="tocitem" href="#Sequences-in"><span>Sequences in</span></a></li><li><a class="tocitem" href="#Newton&#39;s-Method"><span>Newton&#39;s Method</span></a></li></ul></li><li><a class="tocitem" href="../acset_serialization/">Serializing acsets</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-4" type="checkbox"/><label class="tocitem" for="menuitem-2-4"><span class="docs-label">Wiring Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li><li><a class="tocitem" href="../../wiring_diagrams/wd_cset/">Wiring Diagrams as Attributed C-Sets</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox"/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphics/graphviz_graphs/">Drawing graphs in Graphviz</a></li><li><a class="tocitem" href="../../graphics/graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../../graphics/composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../../graphics/tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../../graphics/layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/core/">Theories, instances, and expressions</a></li><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li><li><span class="tocitem">Developer Docs</span><ul><li><a class="tocitem" href="../../../devdocs/style/">Style Guide for AlgebraicJulia</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Categorical Algebra</a></li><li class="is-active"><a href>Diagrams</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Diagrams</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/master/docs/literate/categorical_algebra/diagrams.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Diagrams"><a class="docs-heading-anchor" href="#Diagrams">Diagrams</a><a id="Diagrams-1"></a><a class="docs-heading-anchor-permalink" href="#Diagrams" title="Permalink"></a></h1><p>Catlab supports the expression of equations in an arbitrary category via diagrams, or functors from a finitely presented category. This view of diagrammatic equations builds on the Catlab approach to functorial semantics by asserting that a system of equations of shape J is a functor F: J → 𝐂. We can draw these equations with Graphviz, where each node is an object in X:Ob(J) labeled with its type F(X) and each edge is a morphism in J labeled with its image under F.</p><pre><code class="language-julia hljs">using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
+using Catlab.Graphs, Catlab.Graphics, Catlab.Programs
+
+draw(d::Diagram) = to_graphviz(d, prog=&quot;neato&quot;, node_labels=true, edge_labels=true)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">draw (generic function with 1 method)</code></pre><h2 id="Present-a-diagram-in-a-given-category"><a class="docs-heading-anchor" href="#Present-a-diagram-in-a-given-category">Present a diagram in a given category</a><a id="Present-a-diagram-in-a-given-category-1"></a><a class="docs-heading-anchor-permalink" href="#Present-a-diagram-in-a-given-category" title="Permalink"></a></h2><p>Recall that a <em>diagram</em> in a category <span>$C$</span> is a functor <span>$F: J → C$</span> from a small category <span>$J$</span> into <span>$C$</span>. Given the category <span>$C$</span>, this macro presents a diagram in <span>$C$</span>, i.e., constructs a finitely presented indexing category <span>$J$</span> together with a functor <span>$F: J → C$</span>. This method of simultaneous definition is often more convenient than defining <span>$J$</span> and <span>$F$</span> separately, as could be accomplished by calling <code>@fincat</code> and then <code>@finfunctor</code>. For example, the limit of the following diagram consists of the paths of length two in a graph:</p><pre><code class="language-julia hljs">D₂ = @free_diagram SchGraph begin
+  v::V
+  (e₁, e₂)::E
+  tgt(e₁) == v
+  src(e₂) == v
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Diagram{Any}(FinFunctor(Catlab.Theories.FreeSchema.Ob{:generator}[V, E, E], Catlab.Theories.FreeSchema.Hom{:generator}[tgt, src], FinCat(Catlab.Programs.DiagrammaticPrograms.NamedGraph{Symbol, Union{Nothing, Symbol}} {V = 3, E = 2}), FinCat(Presentation{ThSchema, Symbol}(Catlab.Theories.FreeSchema, (Ob = Catlab.Theories.FreeSchema.Ob{:generator}[V, E], Hom = Catlab.Theories.FreeSchema.Hom{:generator}[src, tgt], AttrType = Catlab.Theories.FreeSchema.AttrType{:generator}[], Attr = Catlab.Theories.FreeSchema.Attr{:generator}[]), Dict(:src=&gt;(:Hom=&gt;1), :V=&gt;(:Ob=&gt;1), :E=&gt;(:Ob=&gt;2), :tgt=&gt;(:Hom=&gt;2)), Pair[]))))</code></pre><p>Morphisms in the indexing category can be left unnamed, which is convenient for defining free diagrams (see also <code>@free_diagram</code>. Of course, unnamed morphisms cannot be referenced by name within the <code>@diagram</code> call or in other settings, which can sometimes be problematic.</p><p>We can also draw the resulting diagrams.</p><pre><code class="language-julia hljs">draw(D₂)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="83pt" height="112pt"
+ viewBox="0.00 0.00 82.99 111.82" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 107.82)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-107.82 78.99,-107.82 78.99,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="32.58" cy="-54.57" rx="16.03" ry="16.03"/>
+<text text-anchor="middle" x="32.58" y="-50.87" font-family="Times,serif" font-size="14.00">v:V</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="54.48" cy="-83.32" rx="20.51" ry="20.51"/>
+<text text-anchor="middle" x="54.48" y="-79.62" font-family="Times,serif" font-size="14.00">e₁:E</text>
+</g>
+<!-- n2&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n2&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M42,-66.93C41.96,-66.88 41.92,-66.83 41.88,-66.78"/>
+<polygon fill="black" stroke="black" points="46.19,-69.54 41.77,-66.63 43.41,-71.67 46.19,-69.54"/>
+<text text-anchor="middle" x="52.94" y="-55.65" font-family="Times,serif" font-size="14.00">tgt</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="20.51" cy="-20.51" rx="20.51" ry="20.51"/>
+<text text-anchor="middle" x="20.51" y="-16.81" font-family="Times,serif" font-size="14.00">e₂:E</text>
+</g>
+<!-- n3&%2345;&gt;n1 -->
+<g id="edge2" class="edge">
+<title>n3&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M27.39,-39.93C27.41,-39.99 27.43,-40.05 27.45,-40.11"/>
+<polygon fill="black" stroke="black" points="24.19,-36.16 27.52,-40.28 27.49,-34.99 24.19,-36.16"/>
+<text text-anchor="middle" x="38.42" y="-28.82" font-family="Times,serif" font-size="14.00">src</text>
+</g>
+</g>
+</svg>
+'/><p>For small equations the point-free notation commonly employed in functional programming is very convenient; however, there is a reason it is not the standard approach to presenting equations in mathematical writing. Variables are just too useful! As the size of the system of equations grows, it becomes more and more convenient to use variable names. This is why <code>Catlab.Programs.@program</code> exists to help people write SMC morphisms with the point-ful notation they are familiar with in imperative or procedural programming.</p><p>We can describe a triangle in a graph using the vertex variables v₁, v₂, v₃ and edge variables e₁, e₂, e₃. Then we use the equation notation to assert the <code>src</code> and <code>tgt</code> relationships between the edges and vertices.</p><pre><code class="language-julia hljs">D₃ = @free_diagram SchGraph begin
+  (v₁, v₂, v₃)::V
+  (e₁, e₂, e₃)::E
+  src(e₁) == v₁
+  tgt(e₁) == v₂
+  src(e₂) == v₂
+  src(e₃) == v₁
+  tgt(e₂) == v₃
+  tgt(e₃) == v₃
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Diagram{Any}(FinFunctor(Catlab.Theories.FreeSchema.Ob{:generator}[V, V, V, E, E, E], Catlab.Theories.FreeSchema.Hom{:generator}[src, tgt, src, src, tgt, tgt], FinCat(Catlab.Programs.DiagrammaticPrograms.NamedGraph{Symbol, Union{Nothing, Symbol}} {V = 6, E = 6}), FinCat(Presentation{ThSchema, Symbol}(Catlab.Theories.FreeSchema, (Ob = Catlab.Theories.FreeSchema.Ob{:generator}[V, E], Hom = Catlab.Theories.FreeSchema.Hom{:generator}[src, tgt], AttrType = Catlab.Theories.FreeSchema.AttrType{:generator}[], Attr = Catlab.Theories.FreeSchema.Attr{:generator}[]), Dict(:src=&gt;(:Hom=&gt;1), :V=&gt;(:Ob=&gt;1), :E=&gt;(:Ob=&gt;2), :tgt=&gt;(:Hom=&gt;2)), Pair[]))))</code></pre><p>You can see the shape of a triangle when you draw this diagram. This coincidence can be systematically understood (by an experienced category theorist) via the Grothendieck construction and representable functors.</p><pre><code class="language-julia hljs">draw(D₃)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="121pt" height="128pt"
+ viewBox="0.00 0.00 120.82 128.46" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 124.46)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-124.46 116.82,-124.46 116.82,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="19.8" cy="-77.18" rx="19.6" ry="19.6"/>
+<text text-anchor="middle" x="19.8" y="-73.48" font-family="Times,serif" font-size="14.00">v₁:V</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="89.11" cy="-82.67" rx="19.6" ry="19.6"/>
+<text text-anchor="middle" x="89.11" y="-78.97" font-family="Times,serif" font-size="14.00">v₂:V</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="59.31" cy="-19.8" rx="19.6" ry="19.6"/>
+<text text-anchor="middle" x="59.31" y="-16.1" font-family="Times,serif" font-size="14.00">v₃:V</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="52.87" cy="-99.95" rx="20.51" ry="20.51"/>
+<text text-anchor="middle" x="52.87" y="-96.25" font-family="Times,serif" font-size="14.00">e₁:E</text>
+</g>
+<!-- n4&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n4&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M35.95,-88.3C35.88,-88.26 35.82,-88.21 35.76,-88.17"/>
+<polygon fill="black" stroke="black" points="40.68,-89.43 35.57,-88.04 38.69,-92.32 40.68,-89.43"/>
+<text text-anchor="middle" x="24.85" y="-92.03" font-family="Times,serif" font-size="14.00">src</text>
+</g>
+<!-- n4&%2345;&gt;n2 -->
+<g id="edge2" class="edge">
+<title>n4&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M71.41,-91.11C71.48,-91.08 71.55,-91.04 71.62,-91.01"/>
+<polygon fill="black" stroke="black" points="68.07,-94.64 71.83,-90.91 66.56,-91.48 68.07,-94.64"/>
+<text text-anchor="middle" x="66.02" y="-79.86" font-family="Times,serif" font-size="14.00">tgt</text>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="none" stroke="black" cx="92.32" cy="-42.66" rx="20.51" ry="20.51"/>
+<text text-anchor="middle" x="92.32" y="-38.96" font-family="Times,serif" font-size="14.00">e₂:E</text>
+</g>
+<!-- n5&%2345;&gt;n2 -->
+<g id="edge3" class="edge">
+<title>n5&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M90.67,-63.14C90.67,-63.21 90.66,-63.29 90.66,-63.37"/>
+<polygon fill="black" stroke="black" points="89.29,-58.47 90.64,-63.6 92.78,-58.75 89.29,-58.47"/>
+<text text-anchor="middle" x="101.67" y="-67.05" font-family="Times,serif" font-size="14.00">src</text>
+</g>
+<!-- n5&%2345;&gt;n3 -->
+<g id="edge5" class="edge">
+<title>n5&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M75.43,-30.96C75.36,-30.92 75.3,-30.88 75.24,-30.83"/>
+<polygon fill="black" stroke="black" points="80.15,-32.11 75.05,-30.7 78.16,-34.99 80.15,-32.11"/>
+<text text-anchor="middle" x="64.33" y="-34.7" font-family="Times,serif" font-size="14.00">tgt</text>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="none" stroke="black" cx="23.13" cy="-37.19" rx="20.51" ry="20.51"/>
+<text text-anchor="middle" x="23.13" y="-33.49" font-family="Times,serif" font-size="14.00">e₃:E</text>
+</g>
+<!-- n6&%2345;&gt;n1 -->
+<g id="edge4" class="edge">
+<title>n6&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M21.43,-57.65C21.42,-57.73 21.41,-57.81 21.41,-57.88"/>
+<polygon fill="black" stroke="black" points="20.06,-52.99 21.39,-58.11 23.55,-53.28 20.06,-52.99"/>
+<text text-anchor="middle" x="32.42" y="-61.57" font-family="Times,serif" font-size="14.00">src</text>
+</g>
+<!-- n6&%2345;&gt;n3 -->
+<g id="edge6" class="edge">
+<title>n6&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M41.64,-28.29C41.71,-28.26 41.78,-28.22 41.85,-28.19"/>
+<polygon fill="black" stroke="black" points="38.31,-31.83 42.06,-28.09 36.8,-28.68 38.31,-31.83"/>
+<text text-anchor="middle" x="41.75" y="-17.04" font-family="Times,serif" font-size="14.00">tgt</text>
+</g>
+</g>
+</svg>
+'/><h2 id="Sequences-in"><a class="docs-heading-anchor" href="#Sequences-in">Sequences in</a><a id="Sequences-in-1"></a><a class="docs-heading-anchor-permalink" href="#Sequences-in" title="Permalink"></a></h2><p>In any category with an endomorphism f: A → A, we can think of recurrence equations as aₙ = f(aₙ₋₁)) starting at a₀.</p><pre><code class="language-julia hljs">@present 𝗖(FreeCartesianCategory) begin
+  (A,B)::Ob
+  f::Hom(A,A)
+  g::Hom(A,B)
+end
+
+seq₃ = @free_diagram 𝗖 begin
+  (a₀,a₁,a₂,a₃)::A
+  a₁ == f(a₀)
+  a₂ == f(a₁)
+  a₃ == f(a₂)
+end
+
+draw(seq₃)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="56pt" height="155pt"
+ viewBox="0.00 0.00 55.66 154.79" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 150.79)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-150.79 51.66,-150.79 51.66,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="19.8" cy="-19.8" rx="19.6" ry="19.6"/>
+<text text-anchor="middle" x="19.8" y="-16.1" font-family="Times,serif" font-size="14.00">a₀:A</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="27.86" cy="-55.04" rx="19.6" ry="19.6"/>
+<text text-anchor="middle" x="27.86" y="-51.34" font-family="Times,serif" font-size="14.00">a₁:A</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M24.3,-39.48C24.32,-39.55 24.33,-39.61 24.35,-39.67"/>
+<polygon fill="black" stroke="black" points="21.57,-35.38 24.39,-39.86 24.98,-34.59 21.57,-35.38"/>
+<text text-anchor="middle" x="21.32" y="-43.38" font-family="Times,serif" font-size="14.00">f</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="26.92" cy="-91.15" rx="19.6" ry="19.6"/>
+<text text-anchor="middle" x="26.92" y="-87.45" font-family="Times,serif" font-size="14.00">a₂:A</text>
+</g>
+<!-- n2&%2345;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M27.34,-75.21C27.34,-75.27 27.33,-75.34 27.33,-75.4"/>
+<polygon fill="black" stroke="black" points="25.71,-70.55 27.33,-75.6 29.21,-70.64 25.71,-70.55"/>
+<text text-anchor="middle" x="24.34" y="-79.11" font-family="Times,serif" font-size="14.00">f</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="23.05" cy="-126.99" rx="19.6" ry="19.6"/>
+<text text-anchor="middle" x="23.05" y="-123.29" font-family="Times,serif" font-size="14.00">a₃:A</text>
+</g>
+<!-- n3&%2345;&gt;n4 -->
+<g id="edge3" class="edge">
+<title>n3&%2345;&gt;n4</title>
+<path fill="none" stroke="black" d="M24.76,-111.17C24.75,-111.23 24.74,-111.3 24.74,-111.36"/>
+<polygon fill="black" stroke="black" points="23.52,-106.39 24.72,-111.55 27,-106.77 23.52,-106.39"/>
+<text text-anchor="middle" x="21.75" y="-115.06" font-family="Times,serif" font-size="14.00">f</text>
+</g>
+</g>
+</svg>
+'/><p>Inspired by linear recurrence relations like the Fibonacci sequence we can think of A and B as vector spaces. An endomorphism f: A → A and morphism g: A → B defines a linear recurrence by applying f to update the system state and g to compute the current term in the sequence. This can be visualized as follows.</p><pre><code class="language-julia hljs">obs_seq₃ = @free_diagram 𝗖 begin
+  (a₀,a₁,a₂,a₃)::A
+  (b₁, b₂, b₃ )::B
+  a₁ == f(a₀)
+  b₁ == g(a₁)
+  a₂ == f(a₁)
+  b₂ == g(a₂)
+  a₃ == f(a₂)
+  b₃ == g(a₃)
+end
+draw(obs_seq₃)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="170pt" height="143pt"
+ viewBox="0.00 0.00 170.38 143.23" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 139.23)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-139.23 166.38,-139.23 166.38,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="132.82" cy="-115.44" rx="19.6" ry="19.6"/>
+<text text-anchor="middle" x="132.82" y="-111.74" font-family="Times,serif" font-size="14.00">a₀:A</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="111.48" cy="-82.13" rx="19.6" ry="19.6"/>
+<text text-anchor="middle" x="111.48" y="-78.43" font-family="Times,serif" font-size="14.00">a₁:A</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M121.9,-98.39C121.86,-98.33 121.82,-98.27 121.78,-98.2"/>
+<polygon fill="black" stroke="black" points="125.83,-101.28 121.65,-98.01 122.88,-103.16 125.83,-101.28"/>
+<text text-anchor="middle" x="118.84" y="-87.1" font-family="Times,serif" font-size="14.00">f</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="70.91" cy="-79.03" rx="19.6" ry="19.6"/>
+<text text-anchor="middle" x="70.91" y="-75.33" font-family="Times,serif" font-size="14.00">a₂:A</text>
+</g>
+<!-- n2&%2345;&gt;n3 -->
+<g id="edge3" class="edge">
+<title>n2&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M91.67,-80.62C91.51,-80.61 91.35,-80.59 91.19,-80.58"/>
+<polygon fill="black" stroke="black" points="95.83,-79.18 90.71,-80.54 95.56,-82.67 95.83,-79.18"/>
+<text text-anchor="middle" x="88.43" y="-84.4" font-family="Times,serif" font-size="14.00">f</text>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="none" stroke="black" cx="141.17" cy="-56.11" rx="21.43" ry="21.43"/>
+<text text-anchor="middle" x="141.17" y="-52.41" font-family="Times,serif" font-size="14.00">b₁:B</text>
+</g>
+<!-- n2&%2345;&gt;n5 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&gt;n5</title>
+<path fill="none" stroke="black" d="M126.67,-68.82C126.73,-68.77 126.79,-68.72 126.84,-68.67"/>
+<polygon fill="black" stroke="black" points="124.41,-73.13 127.02,-68.52 122.1,-70.5 124.41,-73.13"/>
+<text text-anchor="middle" x="131.76" y="-72.54" font-family="Times,serif" font-size="14.00">g</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="47.58" cy="-47.32" rx="19.6" ry="19.6"/>
+<text text-anchor="middle" x="47.58" y="-43.62" font-family="Times,serif" font-size="14.00">a₃:A</text>
+</g>
+<!-- n3&%2345;&gt;n4 -->
+<g id="edge5" class="edge">
+<title>n3&%2345;&gt;n4</title>
+<path fill="none" stroke="black" d="M58.97,-62.8C58.93,-62.74 58.88,-62.68 58.84,-62.62"/>
+<polygon fill="black" stroke="black" points="63.08,-65.43 58.7,-62.44 60.26,-67.5 63.08,-65.43"/>
+<text text-anchor="middle" x="55.9" y="-51.51" font-family="Times,serif" font-size="14.00">f</text>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="none" stroke="black" cx="47.65" cy="-111.72" rx="21.43" ry="21.43"/>
+<text text-anchor="middle" x="47.65" y="-108.02" font-family="Times,serif" font-size="14.00">b₂:B</text>
+</g>
+<!-- n3&%2345;&gt;n6 -->
+<g id="edge4" class="edge">
+<title>n3&%2345;&gt;n6</title>
+<path fill="none" stroke="black" d="M59.28,-95.38C59.24,-95.44 59.19,-95.5 59.15,-95.57"/>
+<polygon fill="black" stroke="black" points="60.48,-90.67 59.01,-95.76 63.34,-92.7 60.48,-90.67"/>
+<text text-anchor="middle" x="54.21" y="-84.27" font-family="Times,serif" font-size="14.00">g</text>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="none" stroke="black" cx="21.21" cy="-21.21" rx="21.43" ry="21.43"/>
+<text text-anchor="middle" x="21.21" y="-17.51" font-family="Times,serif" font-size="14.00">b₃:B</text>
+</g>
+<!-- n4&%2345;&gt;n7 -->
+<g id="edge6" class="edge">
+<title>n4&%2345;&gt;n7</title>
+<path fill="none" stroke="black" d="M33.47,-33.35C33.42,-33.3 33.37,-33.25 33.32,-33.2"/>
+<polygon fill="black" stroke="black" points="37.96,-35.33 33.17,-33.06 35.5,-37.82 37.96,-35.33"/>
+<text text-anchor="middle" x="28.39" y="-37.08" font-family="Times,serif" font-size="14.00">g</text>
+</g>
+</g>
+</svg>
+'/><p>In the case of the Fibonacci sequence A is ℝ² and B is ℝ with f = [1 1; 1 0] and g = π₁.</p><pre><code class="language-julia hljs">@present 𝐃(FreeCartesianCategory) begin
+  (ℝ²,ℝ)::Ob
+  f::Hom(ℝ²,ℝ²)
+  π₁::Hom(ℝ²,ℝ)
+end
+
+fib_seq₃ = @free_diagram 𝐃 begin
+  (a₀,a₁,a₂,a₃)::ℝ²
+  (b₁, b₂, b₃ )::ℝ
+  a₁ == f(a₀)
+  b₁ == π₁(a₁)
+  a₂ == f(a₁)
+  b₂ == π₁(a₂)
+  a₃ == f(a₂)
+  b₃ == π₁(a₃)
+end
+
+draw(fib_seq₃)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="172pt" height="150pt"
+ viewBox="0.00 0.00 171.80 149.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 145.6)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-145.6 167.8,-145.6 167.8,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="133.53" cy="-116.14" rx="25.41" ry="25.41"/>
+<text text-anchor="middle" x="133.53" y="-112.44" font-family="Times,serif" font-size="14.00">a₀:ℝ²</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="112.19" cy="-82.84" rx="25.41" ry="25.41"/>
+<text text-anchor="middle" x="112.19" y="-79.14" font-family="Times,serif" font-size="14.00">a₁:ℝ²</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M119.65,-94.49C119.62,-94.44 119.59,-94.39 119.56,-94.34"/>
+<polygon fill="black" stroke="black" points="123.63,-97.46 119.46,-94.19 120.69,-99.34 123.63,-97.46"/>
+<text text-anchor="middle" x="116.6" y="-83.21" font-family="Times,serif" font-size="14.00">f</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="71.62" cy="-79.74" rx="25.41" ry="25.41"/>
+<text text-anchor="middle" x="71.62" y="-76.04" font-family="Times,serif" font-size="14.00">a₂:ℝ²</text>
+</g>
+<!-- n2&%2345;&gt;n3 -->
+<g id="edge3" class="edge">
+<title>n2&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M86.73,-80.89C86.66,-80.89 86.6,-80.88 86.53,-80.88"/>
+<polygon fill="black" stroke="black" points="91.46,-79.5 86.34,-80.86 91.2,-82.99 91.46,-79.5"/>
+<text text-anchor="middle" x="83.63" y="-84.69" font-family="Times,serif" font-size="14.00">f</text>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="none" stroke="black" cx="141.88" cy="-56.82" rx="21.84" ry="21.84"/>
+<text text-anchor="middle" x="141.88" y="-53.12" font-family="Times,serif" font-size="14.00">b₁:ℝ</text>
+</g>
+<!-- n2&%2345;&gt;n5 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&gt;n5</title>
+<path fill="none" stroke="black" d="M131.49,-65.92C131.54,-65.88 131.58,-65.84 131.63,-65.8"/>
+<polygon fill="black" stroke="black" points="129.15,-70.3 131.76,-65.69 126.84,-67.67 129.15,-70.3"/>
+<text text-anchor="middle" x="124.06" y="-54.66" font-family="Times,serif" font-size="14.00">π₁</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="48.28" cy="-48.02" rx="25.41" ry="25.41"/>
+<text text-anchor="middle" x="48.28" y="-44.32" font-family="Times,serif" font-size="14.00">a₃:ℝ²</text>
+</g>
+<!-- n3&%2345;&gt;n4 -->
+<g id="edge5" class="edge">
+<title>n3&%2345;&gt;n4</title>
+<path fill="none" stroke="black" d="M56.44,-59.12C56.41,-59.07 56.38,-59.02 56.34,-58.98"/>
+<polygon fill="black" stroke="black" points="60.61,-61.82 56.24,-58.83 57.79,-63.9 60.61,-61.82"/>
+<text text-anchor="middle" x="53.39" y="-47.85" font-family="Times,serif" font-size="14.00">f</text>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="none" stroke="black" cx="48.36" cy="-112.43" rx="21.84" ry="21.84"/>
+<text text-anchor="middle" x="48.36" y="-108.73" font-family="Times,serif" font-size="14.00">b₂:ℝ</text>
+</g>
+<!-- n3&%2345;&gt;n6 -->
+<g id="edge4" class="edge">
+<title>n3&%2345;&gt;n6</title>
+<path fill="none" stroke="black" d="M56.76,-100.63C56.72,-100.68 56.69,-100.73 56.65,-100.78"/>
+<polygon fill="black" stroke="black" points="58.02,-95.84 56.54,-100.93 60.87,-97.87 58.02,-95.84"/>
+<text text-anchor="middle" x="49.2" y="-89.5" font-family="Times,serif" font-size="14.00">π₁</text>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="none" stroke="black" cx="21.92" cy="-21.92" rx="21.84" ry="21.84"/>
+<text text-anchor="middle" x="21.92" y="-18.22" font-family="Times,serif" font-size="14.00">b₃:ℝ</text>
+</g>
+<!-- n4&%2345;&gt;n7 -->
+<g id="edge6" class="edge">
+<title>n4&%2345;&gt;n7</title>
+<path fill="none" stroke="black" d="M29.97,-29.89C29.9,-29.82 29.83,-29.76 29.76,-29.69"/>
+<polygon fill="black" stroke="black" points="34.34,-31.75 29.55,-29.48 31.88,-34.24 34.34,-31.75"/>
+<text text-anchor="middle" x="22.37" y="-33.59" font-family="Times,serif" font-size="14.00">π₁</text>
+</g>
+</g>
+</svg>
+'/><p>A lift of this diagram is a choice of vectors <code>a₀,…,a₃</code> and scalars <code>b₁,…,b₃</code> that satisfy the linear recurrence formulation of the Fibonacci sequence. The arrows in 𝐃 are treated as fixed for the purpose of the lifting problem. Suppose you knew <code>b₁,…,b₃</code>, and wanted to infer the state vectors <code>a₁,…,a₃</code>. This can be seen as a boundary value problem where you have observations on a subspace playing the role of boundary conditions and want to infer the system state on the interior of the domain. As you can see from this diagram, solving the lifting problem with only partial information can require some creativity. You need to use the structure of the codomain category, in this case 𝐃 which is a subcategory of finite dimensional vector spaces over ℝ and the combinatorics of 𝐉 to set up some equations you can solve. In order to obtain an efficient algorithm for the lifting problem, you would need to exploit the structure of the morphisms <code>f,π₁</code> to create a system of equations.</p><p>An observation that <code>[π₁f;π₁] = f</code> lets you set up the equation <code>[b₃ ; b₂] = f a₂</code> and then you can use the fact that <code>f</code> is invertable to solve for a unique <code>a₂</code>. Once you have a single value of <code>aᵢ</code> you can get the rest from the application of <code>f</code> or <code>f⁻¹</code>. A general purpose algorithm for solving lifting problems in arbitrary categories would be a wildly powerful tool.</p><h2 id="Newton&#39;s-Method"><a class="docs-heading-anchor" href="#Newton&#39;s-Method">Newton&#39;s Method</a><a id="Newton&#39;s-Method-1"></a><a class="docs-heading-anchor-permalink" href="#Newton&#39;s-Method" title="Permalink"></a></h2><p>The equations that we have seen aren&#39;t particularly interesting, so we turn to a classic of numerical methods. Newton&#39;s method for root finding. For an overview of Netwon&#39;s method see <a href="https://fncbook.github.io/fnc/nonlineqn/newton.html">Fundamentals of Numerical Computation</a>. The following presentation doesn&#39;t know that f′ is the derivative of f, they are just two functions that are evocatively named. We could use <a href="https://github.com/AlgebraicJulia/CombinatorialSpaces.jl">CombinatorialSpaces.jl</a> to formulate this in a richer categorical setting where we could assert <code>f′ := d/dx(f)</code>.</p><pre><code class="language-julia hljs">@present Analytic(FreeCartesianCategory) begin
+  (ℝ,ℝ²)::Ob
+  π₁::Hom(ℝ², ℝ)
+  π₂::Hom(ℝ², ℝ)
+  plus ::Hom(ℝ², ℝ)
+  times::Hom(ℝ², ℝ)
+  f    ::Hom(ℝ,ℝ)
+  f′   ::Hom(ℝ,ℝ)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Presentation{ThCartesianCategory, Symbol}(Catlab.Theories.FreeCartesianCategory, (Ob = Catlab.Theories.FreeCartesianCategory.Ob{:generator}[ℝ, ℝ²], Hom = Catlab.Theories.FreeCartesianCategory.Hom{:generator}[π₁, π₂, plus, times, f, f′]), Dict(:f =&gt; (:Hom =&gt; 5), :f′ =&gt; (:Hom =&gt; 6), :times =&gt; (:Hom =&gt; 4), :ℝ² =&gt; (:Ob =&gt; 2), :π₁ =&gt; (:Hom =&gt; 1), :ℝ =&gt; (:Ob =&gt; 1), :π₂ =&gt; (:Hom =&gt; 2), :plus =&gt; (:Hom =&gt; 3)), Pair[])</code></pre><p>According to the standard formula xₖ₊₁ = xₖ - f(xₖ)/f′(xₖ). The standard presentation of Newton&#39;s method relies on the fact that ℝ is a field to use division in the definition of the iterative procedure. Because of the constraint that you can&#39;t divide by 0 in a field, fields are not models of any algebraic theory. Because of this, we can multiply both sides by f′(xₖ) and define a Newton&#39;s method iteration without reference to division. We also can avoid negation by adding the f(xₖ) term on both sides.</p><p>Once we have put Newton&#39;s method into this relational form we can use a prefix notation for operators which makes the structure closer to the diagrammatic approach <code>plus(times(f′(xₖ), xₖ₊₁), f(xₖ)) == times(f′(xₖ), xₖ)</code>.</p><pre><code class="language-julia hljs">newtons = @free_diagram Analytic begin
+  (xₖ, xₖ₊₁, dₖ, fx, v, ∏)::ℝ
+  (p₁, p₂, p₃)::ℝ²
+  dₖ  == f′(xₖ)
+  π₁(p₁) == dₖ
+  π₂(p₁) == xₖ₊₁
+  ∏ == times(p₁)
+  fx == f(xₖ)
+  π₁(p₂) == ∏
+  π₂(p₂) == fx
+  plus(p₂) == v
+  π₁(p₃) == dₖ
+  π₂(p₃) == xₖ
+  times(p₃) == v
+end
+
+draw(newtons)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="152pt" height="192pt"
+ viewBox="0.00 0.00 152.35 191.62" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 187.62)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-187.62 148.35,-187.62 148.35,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="88.12" cy="-122.84" rx="21.84" ry="21.84"/>
+<text text-anchor="middle" x="88.12" y="-119.14" font-family="Times,serif" font-size="14.00">xₖ:ℝ</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="94.81" cy="-85.77" rx="21.84" ry="21.84"/>
+<text text-anchor="middle" x="94.81" y="-82.07" font-family="Times,serif" font-size="14.00">dₖ:ℝ</text>
+</g>
+<!-- n1&%2345;&gt;n3 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M92.09,-100.85C92.1,-100.79 92.11,-100.73 92.12,-100.66"/>
+<polygon fill="black" stroke="black" points="92.99,-105.71 92.16,-100.48 89.54,-105.09 92.99,-105.71"/>
+<text text-anchor="middle" x="87.61" y="-89.56" font-family="Times,serif" font-size="14.00">f′</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="63.67" cy="-161.7" rx="21.84" ry="21.84"/>
+<text text-anchor="middle" x="63.67" y="-158" font-family="Times,serif" font-size="14.00">fx:ℝ</text>
+</g>
+<!-- n1&%2345;&gt;n4 -->
+<g id="edge5" class="edge">
+<title>n1&%2345;&gt;n4</title>
+<path fill="none" stroke="black" d="M76.18,-141.81C76.08,-141.97 75.99,-142.12 75.89,-142.28"/>
+<polygon fill="black" stroke="black" points="76.78,-137.58 75.6,-142.74 79.74,-139.44 76.78,-137.58"/>
+<text text-anchor="middle" x="73.04" y="-130.85" font-family="Times,serif" font-size="14.00">f</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="49.34" cy="-30.41" rx="30.31" ry="30.31"/>
+<text text-anchor="middle" x="49.34" y="-26.71" font-family="Times,serif" font-size="14.00">xₖ₊₁:ℝ</text>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="none" stroke="black" cx="94.47" cy="-152.4" rx="17.86" ry="17.86"/>
+<text text-anchor="middle" x="94.47" y="-148.7" font-family="Times,serif" font-size="14.00">v:ℝ</text>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="none" stroke="black" cx="29.82" cy="-99.53" rx="19.6" ry="19.6"/>
+<text text-anchor="middle" x="29.82" y="-95.83" font-family="Times,serif" font-size="14.00">∏:ℝ</text>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="none" stroke="black" cx="57.33" cy="-67.93" rx="26.33" ry="26.33"/>
+<text text-anchor="middle" x="57.33" y="-64.23" font-family="Times,serif" font-size="14.00">p₁:ℝ²</text>
+</g>
+<!-- n7&%2345;&gt;n2 -->
+<g id="edge3" class="edge">
+<title>n7&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M51.87,-42.28C51.86,-42.23 51.85,-42.17 51.83,-42.12"/>
+<polygon fill="black" stroke="black" points="54.56,-46.49 51.8,-41.97 51.14,-47.23 54.56,-46.49"/>
+<text text-anchor="middle" x="44.35" y="-46" font-family="Times,serif" font-size="14.00">π₂</text>
+</g>
+<!-- n7&%2345;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n7&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M81.28,-79.33C81.34,-79.36 81.39,-79.38 81.45,-79.41"/>
+<polygon fill="black" stroke="black" points="76.35,-78.92 81.62,-79.49 77.86,-75.76 76.35,-78.92"/>
+<text text-anchor="middle" x="77.62" y="-68.17" font-family="Times,serif" font-size="14.00">π₁</text>
+</g>
+<!-- n7&%2345;&gt;n6 -->
+<g id="edge4" class="edge">
+<title>n7&%2345;&gt;n6</title>
+<path fill="none" stroke="black" d="M40.06,-87.77C40.02,-87.82 39.98,-87.86 39.94,-87.91"/>
+<polygon fill="black" stroke="black" points="41.77,-83.14 39.81,-88.06 44.41,-85.44 41.77,-83.14"/>
+<text text-anchor="middle" x="20" y="-76.64" font-family="Times,serif" font-size="14.00">times</text>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+<ellipse fill="none" stroke="black" cx="46.03" cy="-137.45" rx="26.33" ry="26.33"/>
+<text text-anchor="middle" x="46.03" y="-133.75" font-family="Times,serif" font-size="14.00">p₂:ℝ²</text>
+</g>
+<!-- n8&%2345;&gt;n4 -->
+<g id="edge7" class="edge">
+<title>n8&%2345;&gt;n4</title>
+<path fill="none" stroke="black" d="M61.5,-158.72C61.55,-158.78 61.59,-158.84 61.63,-158.89"/>
+<polygon fill="black" stroke="black" points="57.39,-156.04 61.75,-159.06 60.22,-153.98 57.39,-156.04"/>
+<text text-anchor="middle" x="54.07" y="-162.61" font-family="Times,serif" font-size="14.00">π₂</text>
+</g>
+<!-- n8&%2345;&gt;n5 -->
+<g id="edge8" class="edge">
+<title>n8&%2345;&gt;n5</title>
+<path fill="none" stroke="black" d="M71.1,-145.19C71.5,-145.31 71.9,-145.43 72.29,-145.56"/>
+<polygon fill="black" stroke="black" points="72.09,-147.32 77.38,-147.13 73.12,-143.98 72.09,-147.32"/>
+<text text-anchor="middle" x="87.2" y="-149.17" font-family="Times,serif" font-size="14.00">plus</text>
+</g>
+<!-- n8&%2345;&gt;n6 -->
+<g id="edge6" class="edge">
+<title>n8&%2345;&gt;n6</title>
+<path fill="none" stroke="black" d="M35.67,-113.22C35.65,-113.17 35.62,-113.11 35.6,-113.05"/>
+<polygon fill="black" stroke="black" points="39.1,-116.79 35.52,-112.88 35.88,-118.16 39.1,-116.79"/>
+<text text-anchor="middle" x="43.13" y="-101.94" font-family="Times,serif" font-size="14.00">π₁</text>
+</g>
+<!-- n9 -->
+<g id="node9" class="node">
+<title>n9</title>
+<ellipse fill="none" stroke="black" cx="118.19" cy="-117.68" rx="26.33" ry="26.33"/>
+<text text-anchor="middle" x="118.19" y="-113.98" font-family="Times,serif" font-size="14.00">p₃:ℝ²</text>
+</g>
+<!-- n9&%2345;&gt;n1 -->
+<g id="edge10" class="edge">
+<title>n9&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M92.3,-122.13C92.22,-122.14 92.15,-122.15 92.07,-122.17"/>
+<polygon fill="black" stroke="black" points="96.47,-119.63 91.84,-122.21 97.06,-123.08 96.47,-119.63"/>
+<text text-anchor="middle" x="84.69" y="-110.95" font-family="Times,serif" font-size="14.00">π₂</text>
+</g>
+<!-- n9&%2345;&gt;n3 -->
+<g id="edge9" class="edge">
+<title>n9&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M102.72,-96.57C102.69,-96.53 102.66,-96.48 102.62,-96.43"/>
+<polygon fill="black" stroke="black" points="106.89,-99.29 102.52,-96.3 104.07,-101.36 106.89,-99.29"/>
+<text text-anchor="middle" x="110.17" y="-85.3" font-family="Times,serif" font-size="14.00">π₁</text>
+</g>
+<!-- n9&%2345;&gt;n5 -->
+<g id="edge11" class="edge">
+<title>n9&%2345;&gt;n5</title>
+<path fill="none" stroke="black" d="M103.3,-139.47C103.26,-139.52 103.23,-139.58 103.19,-139.63"/>
+<polygon fill="black" stroke="black" points="104.45,-134.68 103.08,-139.8 107.34,-136.65 104.45,-134.68"/>
+<text text-anchor="middle" x="123.24" y="-143.35" font-family="Times,serif" font-size="14.00">times</text>
+</g>
+</g>
+</svg>
+'/><p>This is definitely a case where standard mathematical notation wins for brevity and clarity. To compete with traditional notation, we need a few ergonamic improvements to the diagrammatic equation approach.</p><ol><li>The ability to assert equations without introducing temporary variables,</li><li>The ability to represent morphisms f: A×B → C as bivariate functions like <code>f(a:A, b:B)</code>,</li></ol><p>While encoding simple equations can be more verbose than the traditional notation, the diagrammatic encoding provides a direct route to creating a category whose objects are systems of equations and whose morphisms are relationships between systems of equations. That category is the first step towards leveraging the constructive approach in Catlab to making hierarchical representations of complex systems of equations.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../graphs/subgraphs/">« Algebra of subgraphs</a><a class="docs-footer-nextpage" href="../acset_serialization/">Serializing acsets »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Monday 27 March 2023 14:18">Monday 27 March 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
