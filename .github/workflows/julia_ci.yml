@@ -1,8 +1,6 @@
 name: Julia CI/CD
 
 on:
-  issue_comment:
-    types: ["created"]
   schedule:
     - cron: 0 0 * * *
   push:
@@ -11,9 +9,17 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
+      action:
+        description: "Action"
+        required: true
+        default: "test"
+        type: choice
+        options:
+          - test
+          - release
       version:
         description: "Tag and release version:"
-        required: true
+        required: false
 
 permissions:
   actions: read
@@ -31,7 +37,7 @@ permissions:
 
 jobs:
   CI:
-    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    if: github.event_name == 'pull_request' || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'test')
     uses: AlgebraicJulia/.github/.github/workflows/julia_ci.yml@main
     secrets: inherit
   CompatHelper:
@@ -39,10 +45,6 @@ jobs:
     uses: AlgebraicJulia/.github/.github/workflows/julia_compat.yml@main
     secrets: inherit
   Release:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.action == 'release' && inputs.version != ''
     uses: AlgebraicJulia/.github/.github/workflows/julia_release.yml@main
-    secrets: inherit
-  TagBot:
-    if: github.event_name == 'issue_comment'
-    uses: AlgebraicJulia/.github/.github/workflows/julia_tag.yml@main
     secrets: inherit
