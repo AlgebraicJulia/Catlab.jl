@@ -6,8 +6,6 @@ import MetaGraphs
 
 using Catlab.Graphs.BasicGraphs
 
-const Float = typeof(0.0)
-
 # Graphs
 ########
 
@@ -195,12 +193,12 @@ rem_vertex!(g, 2)
 # Weighted graphs
 #################
 
-g = WeightedGraph{Float}(4)
+g = WeightedGraph{Float64}(4)
 add_edges!(g, 1:3, 2:4, weight=[0.25, 0.5, 0.75])
 @test weight(g, 1) == 0.25
 @test weight(g) == [0.25, 0.5, 0.75]
 
-mg = MetaGraphs.MetaDiGraph{Int,Float}(4)
+mg = MetaGraphs.MetaDiGraph{Int,Float64}(4)
 MetaGraphs.add_edge!(mg, 1, 2, :weight, 0.25)
 MetaGraphs.add_edge!(mg, 2, 3, :weight, 0.5)
 MetaGraphs.add_edge!(mg, 3, 4, :weight, 0.75)

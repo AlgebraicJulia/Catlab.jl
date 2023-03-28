@@ -4,8 +4,6 @@ using Test
 using Catlab.CSetDataStructures
 using Tables
 
-const Float = typeof(0.0)
-
 # Discrete dynamical systems
 ############################
 
@@ -418,7 +416,7 @@ end
 @test incident(g, 1, :src) == [1]
 
 function path_graph(n::Int)
-  @acset DecGraph{Float} begin
+  @acset DecGraph{Float64} begin
     V = n
     E = n-1
     src = 1:n-1
