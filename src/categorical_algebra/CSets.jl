@@ -980,7 +980,7 @@ end
 
 
 function colimit(::Type{<:Tuple{DynamicACSet,TightACSetTransformation}}, diagram) 
-  X = first(cocone_objects(d))
+  X = first(cocone_objects(diagram))
   S = acset_schema(X)
   ACS = ()->DynamicACSet(X.name,S)
   colimits = map(colimit, unpack_diagram(diagram))
