@@ -295,6 +295,11 @@ Base.copy(acs::DynamicACSet) =
     deepcopy(acs.subparts)
   )
 
+indices(acs::DynamicACSet) = 
+  [k for (k,v) in collect(acs.subparts) if v.pc isa StoredPreimageCache]
+unique_indices(acs::DynamicACSet) = 
+  [k for (k,v) in collect(acs.subparts) if v.pc isa InjectiveCache]
+
 Base.copy(acs::T) where {T <: StructACSet} = T(copy(acs.parts), map(copy, acs.subparts))
 
 Base.:(==)(acs1::T, acs2::T) where {T <: SimpleACSet} =

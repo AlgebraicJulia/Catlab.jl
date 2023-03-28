@@ -34,6 +34,7 @@ import ..Subobjects: Subobject, implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..Sets: SetOb, SetFunction, TypeSet
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate, is_monic, is_epic
 import ..FinCats: FinDomFunctor, components, is_natural
+using ...DenseACSets: indices, unique_indices
 
 # Sets interop
 ##############
@@ -972,24 +973,26 @@ function universal(lim::ACSetLimit, cone::Multispan)
   CSetTransformation(components, apex(cone), ob(lim))
 end
 
-function colimit(::Type{<:Tuple{ACS,TightACSetTransformation}}, diagram) where {S,ACS <: StructACSet{S}}  
+function colimit(::Type{<:Tuple{ACS,TightACSetTransformation}}, diagram) where {S,Ts,ACS <: StructACSet{S,Ts}}  
   colimits = map(colimit, unpack_diagram(diagram))
   Xs = cocone_objects(diagram)
-  colimit_attrs!(pack_colimit(ACS, S, diagram, Xs, colimits), Xs)
+  colimit_attrs!(pack_colimit(ACS, S, diagram, Xs, colimits), S, Ts, Xs)
 end
 
 
 function colimit(::Type{<:Tuple{DynamicACSet,TightACSetTransformation}}, diagram) 
   X = first(cocone_objects(diagram))
   S = acset_schema(X)
-  ACS = ()->DynamicACSet(X.name,S)
+  Ts = X.type_assignment
+  ACS = ()->DynamicACSet(X.name,S, type_assignment=X.type_assignment, 
+                         index=indices(X), unique_index=unique_indices(X))
   colimits = map(colimit, unpack_diagram(diagram))
   Xs = cocone_objects(diagram)
-  colimit_attrs!(pack_colimit(ACS, S, diagram, Xs, colimits), Xs)
+  colimit_attrs!(pack_colimit(ACS, S, diagram, Xs, colimits), S, Ts, Xs)
 end
 
 function colimit(::Type{<:Tuple{ACS,LooseACSetTransformation}}, diagram;
-                 type_components=nothing) where {S, ACS<:StructACSet{S}}
+                 type_components=nothing) where {S,Ts, ACS<:StructACSet{S,Ts}}
   isnothing(type_components) &&
     error("Colimits of loose acset transformations are not supported " *
           "unless attrtype components of coprojections are given explicitly")
@@ -1002,7 +1005,7 @@ function colimit(::Type{<:Tuple{ACS,LooseACSetTransformation}}, diagram;
   colimits = map(colimit, unpack_diagram(diagram))
   Xs = cocone_objects(diagram)
   colimit_attrs!(pack_colimit(ColimitACS, S, diagram, Xs, colimits; 
-                              type_components=type_components), Xs)
+                              type_components=type_components), S,Ts,Xs)
 end
 
 """ Make colimit of acsets from colimits of sets, ignoring attributes.
@@ -1024,14 +1027,7 @@ end
 
 """ Set data attributes of colimit of acsets using universal property.
 """
-colimit_attrs!(colim::ACSetColimit{<:StructACSet{S,Ts}}, Xs) where {S,Ts} =
-  _colimit_attrs!(colim, Val{S}, Val{Ts}, Xs)
-function colimit_attrs!(colim::ACSetColimit{<:DynamicACSet}, Xs)
-  X = apex(colim)
-  runtime(_colimit_attrs!, colim, acset_schema(X), X.type_assignment, Xs)
-end 
-
-@ct_enable function _colimit_attrs!(colim, @ct(S), @ct(Ts), Xs) 
+function colimit_attrs!(colim,S,Ts, Xs) 
   Y, ιs = ob(colim), legs(colim)
   for (attr, c, d) in attrs(S)
     T = attrtype_instantiation(S, Ts, d)
