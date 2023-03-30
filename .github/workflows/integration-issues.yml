@@ -5,6 +5,7 @@ on:
     types:
       - reopened
       - opened
+      - labeled
 
 jobs:
   add-to-project:
