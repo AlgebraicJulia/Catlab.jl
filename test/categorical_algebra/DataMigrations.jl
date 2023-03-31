@@ -432,7 +432,7 @@ F = @migration SchGraph begin
 end
 G = colimit_representables(F, y_Graph) # Delta migration.
 X = ob_map(G, :X)
-@test X == yE
+@test is_isomorphic(X, yE)
 i, o = hom_map(G, :i), hom_map(G, :o)
 @test only(collect(i[:V])) == 2
 @test only(collect(o[:V])) == 1

@@ -8,9 +8,6 @@ using ..IndexUtils
 using ..Columns
 
 
-# Tagged unions
-###############
-
 """
 Maps from attribute variables can go into arbitrary Julia types or other 
 variables (indexed by integers). This wrapper types allows us to not confuse 
