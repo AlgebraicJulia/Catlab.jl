@@ -215,7 +215,7 @@ struct AnonACSet{S,Ts,Parts,Subparts} <: StructACSet{S,Ts}
 
   function AnonACSet{S,Ts,Parts,Subparts}() where {S,Ts,Parts,Subparts}
     new{S,Ts,Parts,Subparts}(
-      Parts(zeros(Int64, length(S.parameters[2].parameters)+length(Ts.parameters))),
+      Parts(zeros(Int, length(S.parameters[2].parameters)+length(Ts.parameters))),
       Subparts(T() for T in Subparts.parameters[2].parameters)
     )
   end
