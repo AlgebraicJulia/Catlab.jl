@@ -2,7 +2,7 @@ module Schemas
 
 export Schema, TypeLevelSchema, BasicSchema, TypeLevelBasicSchema, typelevel,
   objects, attrtypes, attrtype_instantiation, homs, attrs, arrows, dom, codom,
-  ob, hom, attrtype, attr, dom_nums, codom_nums, adom_nums, acodom_nums
+  ob, hom, attrtype, attr, dom_nums, codom_nums, adom_nums, acodom_nums, types
 
 using StructEquality
 
@@ -27,6 +27,12 @@ Parameters:
 Returns an iterable of the names of the attrtypes for this schema.
 """
 function attrtypes end
+
+"""
+Returns objects and attrtypes.
+"""
+function types end 
+
 
 """
 Parameters:
@@ -142,6 +148,8 @@ objects(S::Type{<:TypeLevelBasicSchema}) = Tuple(S.parameters[2].parameters)
 attrtypes(s::BasicSchema) = s.attrtypes
 
 attrtypes(S::Type{<:TypeLevelBasicSchema}) = Tuple(S.parameters[4].parameters)
+
+types(S::Union{Schema,Type{<:TypeLevelSchema}}) = [objects(S)..., attrtypes(S)...]
 
 attrtype_instantiation(S::Type{<:TypeLevelBasicSchema}, Ts, a::Symbol) =
   Ts.parameters[findfirst(attrtypes(S) .== a)]

@@ -802,7 +802,7 @@ function substitute(d::WD, vs::AbstractVector{Int}, subs::Vector{<:WiringDiagram
   # we need them to represent identities, braidings, etc.
   @assert length(vs) == length(subs)
   result = WD(d.value, input_ports(d), output_ports(d))
-  
+
   # Add boxes by interleaving, in the correct order, the non-substituted boxes
   # of the original diagram and the internal boxes of the substituted diagrams.
   # At the very end, add the substituted boxes too.
@@ -821,7 +821,7 @@ function substitute(d::WD, vs::AbstractVector{Int}, subs::Vector{<:WiringDiagram
   for v in vs
     vmap[v] = add_box!(result, box(d, v))
   end
-  
+
   # Add the wires of the original diagram, then add the internal wires of the
   # substituted diagrams.
   for wire in wires(d)

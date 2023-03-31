@@ -73,7 +73,7 @@ function genericize(T::Type, tvars::Vector{TypeVar})
 end
 
 function make_parts(s::Schema{Symbol})
-  parts_t = LVector{Tuple(objects(s)), Int}
+  parts_t = LVector{Tuple(types(s)), Int}
 end
 
 function make_columns(s::Schema{Symbol}, index, unique_index, Tvars)
@@ -109,7 +109,7 @@ function struct_acset(name::Symbol, parent, s::Schema{Symbol};
       subparts::$Subparts
       function $parameterized_type() where {$(attrtypes(s)...)}
         $new_call(
-          $Parts(zeros(Int, $(length(objects(s))))),
+          $Parts(zeros(Int, $(length(types(s))))),
           $(pi_type_elt([(f,:($(genericize(T, TypeVar[values(Tvars)...]))())) for (f,T) in columns]))
         )
       end
@@ -177,7 +177,7 @@ struct DynamicACSet <: SimpleACSet
       name,
       s,
       type_assignment,
-      Dict(ob => 0 for ob in objects(s)),
+      Dict(ob => 0 for ob in types(s)),
       Dict([
         [f => column_type(HomChoice, indexchoice(f,index,unique_index))()
          for f in homs(s; just_names=true)];
@@ -196,6 +196,9 @@ struct DynamicACSet <: SimpleACSet
     new(name,schema,type_assignment,parts,subparts)
   end
 end
+attrtype_type(x::DynamicACSet, D::Symbol) = x.type_assignment[D]
+attr_type(x::DynamicACSet, f::Symbol) = attrtype_type(x,codom(x.schema, f))
+datatypes(x::DynamicACSet) = x.type_assignment
 
 """ This works the same as something made with `@acset_type`, only the types of the
 parts and subparts are stored as type parameters. Thus, this can be used with any schema.
@@ -212,7 +215,7 @@ struct AnonACSet{S,Ts,Parts,Subparts} <: StructACSet{S,Ts}
 
   function AnonACSet{S,Ts,Parts,Subparts}() where {S,Ts,Parts,Subparts}
     new{S,Ts,Parts,Subparts}(
-      Parts(zeros(Int, length(S.parameters[2].parameters))),
+      Parts(zeros(Int64, length(S.parameters[2].parameters)+length(Ts.parameters))),
       Subparts(T() for T in Subparts.parameters[2].parameters)
     )
   end
@@ -255,6 +258,10 @@ function AnonACSetType(
     T
   end
 end
+
+attrtype_type(::StructACSet{S,Ts}, D::Symbol) where {S,Ts} = attrtype_instantiation(S, Ts, D)
+attr_type(X::StructACSet{S}, f::Symbol) where {S} = attrtype_type(X, codom(S, f))
+datatypes(::StructACSet{S,Ts}) where {S,Ts} = Dict(zip(attrtypes(S),Ts.parameters))
 
 function ACSetTableSchema(s::Schema{Symbol}, ob::Symbol)
   attrs = filter(Schemas.attrs(s)) do (f,d,c)
@@ -332,7 +339,7 @@ ACSetInterface.has_part(acs::DynamicACSet, ob::Symbol) =
 
 @ct_enable function _has_part(@ct(S), @ct(ob))
   @ct s = Schema(S)
-  @ct ob ∈ objects(s)
+  @ct ob ∈ types(s)
 end
 
 outgoing(acs::StructACSet{S}, ob::Symbol) where {S} = _outgoing(Val{S}, Val{ob})
@@ -385,19 +392,29 @@ end
   parts(acs, @ct dom(s, f))
 end
 
-@inline ACSetInterface.incident(acs::SimpleACSet, part, f::Symbol; unbox_injective=true) =
+@inline function ACSetInterface.incident(acs::SimpleACSet, part, f::Symbol; unbox_injective=true) 
   if !unbox_injective
-    preimage(dom_parts(acs, f), acs.subparts[f], part)
+    return preimage(dom_parts(acs, f), acs.subparts[f], part)
   else
-    preimage(dom_parts(acs, f), acs.subparts[f], part, UnboxInjectiveFlag())
+    return preimage(dom_parts(acs, f), acs.subparts[f], part, UnboxInjectiveFlag())
   end
+end 
 
-@inline ACSetInterface.incident(acs::SimpleACSet, parts::Union{AbstractVector,UnitRange}, f::Symbol; unbox_injective=true) =
-  if !unbox_injective
-    preimage_multi(dom_parts(acs, f), acs.subparts[f], parts)
-  else
-    preimage_multi(dom_parts(acs, f), acs.subparts[f], parts, UnboxInjectiveFlag())
-  end
+"""
+Performance regression by avoiding preimage_multi, which does not work for 
+attributes.
+"""
+@inline function ACSetInterface.incident(acs::SimpleACSet, 
+    parts::Union{AbstractVector,UnitRange}, f::Symbol; unbox_injective=true) 
+  T = isempty(parts) ? Vector{Int} : typeof(incident(acs, first(parts), f; unbox_injective=unbox_injective))
+  res = T[incident(acs, part, f; unbox_injective=unbox_injective) for part in parts]
+  return res 
+  # if !unbox_injective
+  #   preimage_multi(dom_parts(acs, f), acs.subparts[f], parts)
+  # else
+  #   preimage_multi(dom_parts(acs, f), acs.subparts[f], parts, UnboxInjectiveFlag())
+  # end
+end 
 
 @inline ACSetInterface.incident(acs::StructACSet{S}, ::Colon, f::Symbol; unbox_injective=true) where {S} =
   _incident(acs, Val{S}, :, Val{f}, unbox_injective)
@@ -410,13 +427,15 @@ ACSetInterface.incident(acs::DynamicACSet, ::Colon, f::Symbol; unbox_injective=t
   incident(acs, parts(acs, @ct(codom(s, f))), @ct(f); unbox_injective)
 end
 
-@inline ACSetInterface.set_subpart!(acs::StructACSet{S}, part::Int, f::Symbol, subpart) where {S} =
-  _set_subpart!(acs, Val{S}, part, Val{f}, subpart)
+@inline ACSetInterface.set_subpart!(acs::StructACSet{S,Ts}, part::Int, f::Symbol, subpart) where {S,Ts} =
+  _set_subpart!(acs, Val{S}, Val{Ts}, part, Val{f}, subpart)
 
 ACSetInterface.set_subpart!(acs::DynamicACSet, part::Int, f::Symbol, subpart) =
-  runtime(_set_subpart!, acs, acs.schema, part, f, subpart)
+  runtime(_set_subpart!, acs, acs.schema, 
+    Tuple{[acs.type_assignment[t] for t in acs.schema.attrtypes]...}, 
+    part, f, subpart)
 
-@ct_enable function _set_subpart!(acs::SimpleACSet, @ct(S), part, @ct(f), subpart)
+@ct_enable function _set_subpart!(acs::SimpleACSet, @ct(S), @ct(Ts), part, @ct(f), subpart)
   @ct s = Schema(S)
   @ct_ctrl if f ∈ homs(s; just_names=true)
     @assert 0 <= subpart <= acs.parts[@ct codom(s, f)]
@@ -495,7 +514,7 @@ ACSetInterface.cascading_rem_parts!(acs::ACSet, type, parts) =
 
 @ct_enable function common_objects(@ct(S), @ct(S′))
   @ct s,s′ = Schema(S), Schema(S′)
-  @ct Tuple(intersect(objects(s), s′.obs))
+  @ct Tuple(intersect(types(s), types(s′)))
 end
 
 ACSetInterface.copy_parts!(to::StructACSet{S}, from::StructACSet{S′}) where {S,S′} =
@@ -523,7 +542,7 @@ ACSetInterface.copy_parts!(to::DynamicACSet, from::DynamicACSet, parts::NamedTup
 ) where {obs}
   @ct begin
     s, s′ = Schema(S), Schema(S′)
-    @assert obs ⊆ intersect(objects(s), objects(s′))
+    @assert obs ⊆ intersect(types(s), types(s′))
     common_homs = intersect(homs(s), homs(s′))
     relevant_homs = [(f,d,c) for (f,d,c) in common_homs if d ∈ obs && c ∈ obs]
     in_obs = unique!([c for (_,_,c) in relevant_homs])
@@ -571,7 +590,7 @@ ACSetInterface.copy_parts_only!(to::DynamicACSet, from::DynamicACSet, parts::Nam
 
   @ct begin
     s, s′ = Schema(S), Schema(S′)
-    @assert obs ⊆ intersect(objects(s), objects(s′))
+    @assert obs ⊆ intersect(types(s), types(s′))
     common_attrs = intersect(attrs(s), attrs(s′))
     relevant_attrs = [(f,d,c) for (f,d,c) in common_attrs if d ∈ obs]
   end
@@ -631,13 +650,13 @@ function Base.show(io::IO, acs::SimpleACSet)
   if get(io, :compact, false)
     print(io, acset_name(acs))
     print(io, " {")
-    join(io, ("$ob = $(nparts(acs,ob))" for ob in objects(s)), ", ")
+    join(io, ("$ob = $(nparts(acs,ob))" for ob in types(s)), ", ")
     print(io, "}")
   else
     print(io, acset_name(acs))
     println(io, ":")
     join(io, Iterators.flatten((
-      ("  $ob = $(parts(acs,ob))" for ob in objects(s)),
+      ("  $ob = $(parts(acs,ob))" for ob in types(s)),
       ("  $f : $d → $c = $(subpart(acs,f))"
        for (f,d,c) in homs(s)),
       ("  $a : $d → $c = $(subpart(acs,a))"
@@ -712,7 +731,7 @@ Tables.columnnames(row::ACSetRow) = Base.propertynames(row)
     s = Schema(S)
   end
   acs = T()
-  @ct_ctrl for ob in intersect(objects(s), names)
+  @ct_ctrl for ob in intersect(types(s), names)
     add_parts!(acs, @ct(ob), rows[@ct ob])
   end
   @ct_ctrl for f in intersect(arrows(s; just_names=true), names)

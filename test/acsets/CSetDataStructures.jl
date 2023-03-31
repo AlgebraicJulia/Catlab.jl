@@ -182,7 +182,6 @@ dgram_makers = [
    T -> DynamicACSet("LDendrogram", SchLDendrogram; type_assignment=Dict(:R=>T), index=[:parent, :leafparent])
    )
 ]
-
 for (dgram_maker, ldgram_maker) in dgram_makers
   d = dgram_maker(Int)
   add_parts!(d, :X, 3, height=0)
@@ -250,7 +249,7 @@ for (dgram_maker, ldgram_maker) in dgram_makers
 
   # Allow type inheritance for data attributes.
   d_abs = dgram_maker(Number)
-  add_parts!(d_abs, :X, 2, height=[10.0, 4])
+  add_parts!(d_abs, :X, 2, height=Number[10, 4])
   @test subpart(d_abs, :height) == [10.0, 4]
 
   # Tables interface
@@ -274,7 +273,7 @@ for (dgram_maker, ldgram_maker) in dgram_makers
   @test nparts(ld, :L) == 0
   @test subpart(ld, :parent) == subpart(d, :parent)
 
-  add_parts!(ld, :L, 3, leafparent=[2,3,4])
+  add_parts!(ld, :L, 3, leafparent=Number[2,3,4])
   @test subpart(ld, :leafparent) == [2,3,4]
   d′ = dgram_maker(Int)
   copy_parts!(d′, ld)

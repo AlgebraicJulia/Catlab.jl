@@ -1,7 +1,7 @@
 """ Functorial data migration for attributed C-sets.
 """
 module DataMigrations
-export DataMigration, DeltaMigration, SigmaMigration, migrate, migrate!,
+export DataMigration, SigmaMigration, DeltaMigration, migrate, migrate!,
   representable, yoneda, colimit_representables
 
 using ...Syntax, ...Present, ...Theories
@@ -10,6 +10,7 @@ using ..Categories, ..FinCats, ..Limits, ..Diagrams, ..FinSets, ..CSets
 using ...Graphs, ..FreeDiagrams
 import ..Categories: ob_map, hom_map
 using ..FinCats: make_map, mapvals
+using ..Chase: collage, attrtype_dict, crel_type, pres_to_eds, add_srctgt, chase
 
 # Data types
 ############
@@ -251,54 +252,54 @@ X ∘ π``, where ``π: (F ↓ d) → C`` is the projection.
 
 See (Spivak, 2014, *Category Theory for the Sciences*) for details.
 """
-struct SigmaMigration{Dom,Codom,F<:FinFunctor,CC} <: MigrationFunctor{Dom,Codom}
-  functor::F
-  comma_cats::CC
+struct SigmaMigration{Dom,Codom} <: MigrationFunctor{Dom,Codom}
+  F::FinFunctor 
+  dom::Type 
+  codom::Type 
+  SigmaMigration(f,d,c) = new{d,c}(f,d,c)
+end 
 
-  function SigmaMigration(functor::F, ::Type{Dom}, ::Type{Codom}) where
-      {F<:FinFunctor, Dom, Codom}
-    comma_cats = get_comma_cats(functor)
-    new{Dom,Codom,F,typeof(comma_cats)}(functor, comma_cats)
+"""
+Create a C-Set for the collage of the functor. Initialize data in the domain 
+portion of the collage, then run the chase.
+"""
+function (F::SigmaMigration)(d::ACSet; n=100, verbose=false)
+  S = acset_schema(d)
+  col, col_pres = collage(F.F)
+  i1,i2 = legs(col)
+  # Initialize collage C-Set with data from `d`
+  atypes = Dict{Symbol,Type}()
+  for (k,v) in attrtype_dict(F.dom())   atypes[Symbol(ob_map(i1,k))] = v end
+  for (k,v) in attrtype_dict(F.codom()) atypes[Symbol(ob_map(i2,k))] = v end
+  col_type = crel_type(presentation(apex(col)); types=atypes, name="Sigma")()
+  for o in ob(S)
+    add_parts!(col_type, Symbol(ob_map(i1,o)), nparts(d,o))
   end
-end
-
-SigmaMigration(functor::FinFunctor, ::Type{Codom}) where Codom =
-  SigmaMigration(functor, ACSet, Codom)
-
-ob_map(ΣF::SigmaMigration, ::Type{T}, X::ACSet) where T<:ACSet =
-  ob_map(ΣF, T, FinDomFunctor(X))
-
-function ob_map(ΣF::SigmaMigration, ::Type{T}, X::FinDomFunctor) where T<:ACSet
-  comma_cats, comma_hom_map = ΣF.comma_cats
-  diagramD = FreeDiagram(presentation(codom(ΣF.functor)))
-
-  # define Y on objects by taking colimits
-  Y = T()
-  colimX = map(parts(diagramD, :V)) do i
-    F∇d = ob(comma_cats, i)
-    Xobs = FinSet{Int,Int}[ ob_map(X, c) for (c,_) in ob(F∇d) ]
-    Xhoms = FinFunction[ hom_map(X, hom(F∇d, g)) for g in parts(F∇d, :E) ]
-    colimit(FreeDiagram(Xobs, collect(zip(Xhoms, src(F∇d), tgt(F∇d)))))
-  end
-
-  for d in parts(diagramD, :V)
-    add_parts!(Y, nameof(ob(diagramD, d)), length(apex(colimX[d])))
-  end
-  
-  # Define Y on morphisms by the universal property
-  for g in parts(diagramD, :E)
-    if nparts(Y, nameof(dom(hom(diagramD, g)))) == 0
-      continue
+  for h in homs(S; just_names=true)
+    s,t = add_srctgt(hom_map(i1,h))
+    add_parts!(col_type, Symbol(hom_map(i1,h)), length(d[h]))
+    col_type[s] = 1:length(d[h])
+    col_type[t] = d[h]
+  end 
+  # Run chase 
+  eds = pres_to_eds(col_pres; types=atypes, name="Sigma")
+  chase_rel_res, ok = chase(col_type, eds, n; verbose=verbose)
+  # Postprocess result
+  ok || error("Sigma migration did not terminate with n=$n")
+  res = F.codom()
+  rel_res = codom(chase_rel_res)
+  S2 = acset_schema(res)
+  for o in types(S2)
+    add_parts!(res, o, nparts(rel_res, Symbol(ob_map(i2,o))))
+  end 
+  for h in arrows(S2;just_names=true)
+    hsrc, htgt = add_srctgt(hom_map(i2,h))
+    for (domval, codomval) in zip(rel_res[hsrc], rel_res[htgt])
+      res[domval,h] = codomval
     end
-    src_colim, tgt_colim = colimX[src(diagramD, g)], colimX[tgt(diagramD, g)]
-    ϕ = hom(comma_cats, comma_hom_map[g])
-    set_subpart!(Y, nameof(hom(diagramD, g)),
-      collect(universal(src_colim,
-        Multicospan(apex(tgt_colim), legs(tgt_colim)[collect(ϕ[:V])])
-      )))
   end
-  return Y
-end
+  return res
+end 
 
 """ add_hom!(d::FreeDiagram{Ob, Hom}, src_ob::Ob, tgt_ob::Ob, hom::Hom)
 
@@ -325,7 +326,7 @@ function get_comma_cats(F::FinFunctor)
   add_vertices!(comma_cats,
     nparts(diagramD, :V), 
     ob = map(parts(diagramD, :V)) do _
-      FreeDiagram{Pair{FreeSchema.Ob, FreeSchema.Hom}, FreeSchema.Hom}() 
+      FreeDiagram{Pair{<:FreeSchema.Ob, <:FreeSchema.Hom}, FreeSchema.Hom}() 
     end
   )
 
@@ -392,15 +393,14 @@ which works because left Kan extensions take representables to representables
 representables (they can be infinite), this function thus inherits any
 limitations of our implementation of left pushforward data migrations.
 """
-function representable(::Type{T}, C::Presentation{ThSchema}, ob::Symbol) where T <: ACSet
+function representable(::Type{T}, C::Presentation{ThSchema}, ob::Symbol; 
+                       verbose=false) where T <: ACSet
   C₀ = Presentation{Symbol}(FreeSchema)
   add_generator!(C₀, C[ob])
+  X = AnonACSet(C₀); add_part!(X, ob)
   F = FinFunctor(Dict(ob => ob), Dict(), C₀, C)
-  ΣF = SigmaMigration(F, T)
-
-  X = FinDomFunctor(Dict(ob => FinSet(1)),
-                    Dict{Symbol,FinFunction{Int}}(), FinCat(C₀))
-  ob_map(ΣF, X)
+  ΣF = SigmaMigration(F, typeof(X), T)
+  return ΣF(X; verbose=verbose)
 end
 representable(::Type{T}, ob::Symbol) where T <: StructACSet =
   representable(T, Presentation(T), ob)
@@ -412,8 +412,11 @@ Because Catlab privileges copresheaves (C-sets) over presheaves, this is the
 
 Returns a `FinDomFunctor` with domain `op(C)`.
 """
-function yoneda(::Type{T}, C::Presentation{ThSchema}) where T <: ACSet
-  y_ob = Dict(c => representable(T, C, nameof(c)) for c in generators(C, :Ob))
+function yoneda(::Type{T}, C::Presentation{ThSchema}; verbose=false) where T <: ACSet
+  y_ob = Dict(map(generators(C, :Ob)) do c 
+    if verbose println("Computing generator for $c") end 
+    c => representable(T, C, nameof(c); verbose=verbose)
+  end)
   y_hom = Dict(Iterators.map(generators(C, :Hom)) do f
     c, d = dom(f), codom(f)
     yc, yd = y_ob[c], y_ob[d]

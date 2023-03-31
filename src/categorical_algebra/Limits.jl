@@ -552,7 +552,7 @@ struct BipartiteLimit{Ob, Diagram, Cone<:Multispan{Ob},
   limit::Lim
 end
 
-function limit(F::Union{Functor,FreeDiagram}, ::ToBipartiteLimit)
+function limit(F::Union{Functor,FreeDiagram,FixedShapeFreeDiagram}, ::ToBipartiteLimit)
   d = BipartiteFreeDiagram(F)
   lim = limit(d)
   cone = Multispan(apex(lim), map(incident(d, :, :orig_vert₁),
@@ -585,6 +585,13 @@ struct BipartiteColimit{Ob, Diagram, Cocone<:Multicospan{Ob},
   cocone::Cocone
   colimit::Colim
 end
+
+function colimit(F::FixedShapeFreeDiagram, ::ToBipartiteColimit)
+  kwarg = F isa DiscreteDiagram ? Dict(:colimit=>true) : Dict()
+  d = BipartiteFreeDiagram(F; kwarg...)
+  colim = colimit(d)
+  return BipartiteColimit(F, cocone(colim), colim)
+end 
 
 function colimit(F::Union{Functor,FreeDiagram}, ::ToBipartiteColimit)
   d = BipartiteFreeDiagram(F, colimit=true)

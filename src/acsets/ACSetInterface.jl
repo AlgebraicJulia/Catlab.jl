@@ -6,6 +6,7 @@ export ACSet, acset_schema, acset_name, dom_parts, subpart_type,
   copy_parts!, copy_parts_only!, disjoint_union, tables, pretty_tables, @acset
 
 using StaticArrays: StaticArray
+using ..Schemas: types
 
 using PrettyTables: pretty_table
 using Tables
@@ -350,7 +351,7 @@ const default_pretty_table_options = (
 function Base.show(io::IO, ::MIME"text/plain", acs::T) where T <: ACSet
   print(io, acset_name(acs))
   print(io, " with elements ")
-  join(io, ["$ob = $(parts(acs,ob))" for ob in keys(tables(acs))], ", ")
+  join(io, ["$ob = $(parts(acs,ob))" for ob in types(acset_schema(acs))], ", ")
   println(io)
   pretty_tables(io, acs)
 end
@@ -360,7 +361,7 @@ function Base.show(io::IO, ::MIME"text/html", acs::T) where T <: ACSet
   print(io, "<span class=\"c-set-summary\">")
   print(io, acset_name(acs))
   print(io, " with elements ")
-  join(io, ["$ob = $(parts(acs,ob))" for ob in keys(tables(acs))], ", ")
+  join(io, ["$ob = $(parts(acs,ob))" for ob in types(acset_schema(acs))], ", ")
   println(io, "</span>")
   pretty_tables(io, acs, backend=Val(:html), standalone=false)
   println(io, "</div>")

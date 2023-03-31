@@ -1,9 +1,9 @@
 module TestCSets
+
 using JSON
 import JSONSchema
-using Random: seed!
-
 using Test
+using Random: seed!
 
 using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 
@@ -56,8 +56,8 @@ f = FinDomFunction(g, :weight)
 # Dynamic ACSets 
 ################
 
-X,Y = [DynamicACSet("WG", SchWeightedGraph; type_assignment=Dict(:Weight=>Float64))
-       for _ in 1:2]
+X,Y = [DynamicACSet("WG", SchWeightedGraph; type_assignment=Dict(:Weight=>Float64)) 
+      for _ in 1:2]
 add_parts!(X, :V, 2)
 add_parts!(X, :E, 3; src=[1,1,2],tgt=[2,1,1,],weight=[4.,3.,4.])
 add_parts!(Y, :V, 2)
@@ -67,8 +67,9 @@ f = ACSetTransformation(X,X; V=[1,2], E=[1,2,3])
 @test is_natural(f)
 @test !is_natural(ACSetTransformation(X,X; V=[2,1], E=[1,2,3])) # bad homs
 @test !is_natural(ACSetTransformation(X,X; V=[1,1], E=[2,1,3])) # bad attrs
-@test components(f) == (V=FinFunction([1,2]), E=FinFunction([1,2,3]))
- 
+@test components(f) == (V=FinFunction([1,2]), E=FinFunction([1,2,3]), 
+                        Weight=VarFunction{Float64}([], FinSet(0)))
+
 g = ACSetTransformation(Y,X; V=[1,2], E=[1])
 @test is_natural(g)
 @test compose(g,f) |> force == g
@@ -167,9 +168,9 @@ lim = product(g, term)
 
 # Product in Graph: two directed intervals (Reyes et al 2004, p. 48).
 I = path_graph(Graph, 2)
-prod = ob(product(I, I))
-@test (nv(prod), ne(prod)) == (4, 1)
-@test src(prod) != tgt(prod)
+prod′ = ob(product(I, I))
+@test (nv(prod′), ne(prod′)) == (4, 1)
+@test src(prod′) != tgt(prod′)
 
 # Product in Graph: deleting edges by multiplying by an isolated vertex.
 g = path_graph(Graph, 4)
@@ -294,7 +295,7 @@ diagram = FreeDiagram([g, ob(terminal(Graph)), Graph(1)], [(α,3,1), (β,3,2)])
 g = path_graph(WeightedGraph{Float64}, 2, E=(weight=2.0,))
 h = path_graph(WeightedGraph{Float64}, 4, E=(weight=[1.,2.,3.],))
 α = ACSetTransformation((V=[2,3], E=[2]), g, h)
-@test length(components(α)) == 2
+@test length(components(α)) == 3
 
 # Naturality.
 @test is_natural(α)
@@ -306,14 +307,14 @@ h = path_graph(WeightedGraph{Float64}, 4, E=(weight=[1.,2.,3.],))
 @test is_natural(β; return_failures=true) == [(:tgt,1,2,3), (:weight,1,1.,2.)]
 
 # Loose morphisms.
-α = ACSetTransformation(g, h, V=[1,2], E=[1], Weight=x->x/2)
+α = LooseACSetTransformation((V=[1,2], E=[1]), (Weight=x->x/2,), g, h)
 @test α isa LooseACSetTransformation
-@test α[:Weight](10.0) == 5.0
+@test type_components(α)[:Weight](10.0) == 5.0
 @test is_natural(α)
 @test contains(sprint(show, α), "Weight =")
 
 g = star_graph(WeightedGraph{Bool}, 3, E=(weight=[true,false],))
-α = ACSetTransformation((V=[2,1,3], E=[2,1], Weight=~), g, g)
+α = LooseACSetTransformation((V=[2,1,3], E=[2,1]), (Weight=~,), g, g)
 @test is_natural(α)
 α² = compose(α, α)
 @test α² isa LooseACSetTransformation
@@ -339,23 +340,23 @@ end
 g = path_graph(VELabeledGraph{Symbol}, 2, V=(vlabel=[:a,:b],), E=(elabel=:f,))
 h = path_graph(VELabeledGraph{String}, 2, V=(vlabel=["x","y"],), E=(elabel="f",))
 π1, π2 = lim = product(g, h)
-prod = ob(lim)
-@test prod isa VELabeledGraph{Tuple{Symbol,String}}
-@test Set(prod[:vlabel]) == Set([(:a, "x"), (:a, "y"), (:b, "x"), (:b, "y")])
-@test only(prod[:elabel]) == (:f, "f")
-@test prod[src(prod,1), :vlabel] == (:a, "x")
-@test prod[tgt(prod,1), :vlabel] == (:b, "y")
+prod′ = ob(lim)
+@test prod′ isa VELabeledGraph{Tuple{Symbol,String}}
+@test Set(prod′[:vlabel]) == Set([(:a, "x"), (:a, "y"), (:b, "x"), (:b, "y")])
+@test only(prod′[:elabel]) == (:f, "f")
+@test prod′[src(prod′,1), :vlabel] == (:a, "x")
+@test prod′[tgt(prod′,1), :vlabel] == (:b, "y")
 @test is_natural(π1) && is_natural(π2)
-@test π1[:Label]((:a, "x")) == :a
-@test π2[:Label]((:a, "x")) == "x"
+@test type_components(π1)[:Label]((:a, "x")) == :a
+@test type_components(π2)[:Label]((:a, "x")) == "x"
 
 # Pullback of weighted graphs.
 g0 = WeightedGraph{Nothing}(2)
 add_edges!(g0, 1:2, 1:2)
 g = WeightedGraph{Int}(4)
 add_edges!(g, [1,3], [2,4], weight=[+1, -1])
-ϕ = ACSetTransformation(g, g0, V=[1,1,2,2], E=[1,2], Weight=nothing)
-ψ = ACSetTransformation(g, g0, V=[2,2,1,1], E=[2,1], Weight=nothing)
+ϕ = LooseACSetTransformation((V=[1,1,2,2], E=[1,2]),(Weight=nothing,), g, g0)
+ψ = LooseACSetTransformation((V=[2,2,1,1], E=[2,1]), (Weight=nothing,),g, g0)
 pb = ob(pullback(ϕ, ψ))
 @test (nv(pb), ne(pb)) == (8, 2)
 @test Set(pb[:weight]) == Set([(+1, -1), (-1, +1)])
@@ -407,8 +408,8 @@ colim = pushout(α, β)
 A = @acset SetAttr{Symbol} begin X=2; f=[:a,:b] end
 B = @acset SetAttr{Symbol} begin X=2; f=[:x,:y] end
 C = @acset SetAttr{Symbol} begin X=1; f=[:z] end
-β = ACSetTransformation((X=[1,2], D=FinFunction(Dict(:a=>:x,:b=>:y))), A, B)
-γ = ACSetTransformation((X=[1,1], D=FinFunction(Dict(:a=>:z,:b=>:z))), A, C)
+β = LooseACSetTransformation((X=[1,2],), (D=FinFunction(Dict(:a=>:x,:b=>:y)),), A, B)
+γ = LooseACSetTransformation((X=[1,1],), (D=FinFunction(Dict(:a=>:z,:b=>:z)),), A, C)
 @test all(is_natural, (β,γ))
 g = (D=FinFunction(Dict(:x=>:q, :y=>:q)),)
 h = (D=FinFunction(Dict(:z=>:q)),)
@@ -635,5 +636,115 @@ for schema in [SchGraph, SchWeightedGraph, SchLabeledDDS]
   @test isnothing(JSONSchema.validate(json_schema, schema_dict))
   @test roundtrip_json_acset_schema(schema) == schema
 end
+
+
+# AttrVars 
+##########
+
+const WG = WeightedGraph
+A = @acset WG{Bool} begin V=1;E=2;Weight=2;src=1;tgt=1;weight=[AttrVar(1),true] end
+B = @acset WG{Bool} begin V=1;E=2;Weight=1;src=1;tgt=1;weight=[true, false] end
+
+@test VarFunction(A,:weight) == VarFunction{Bool}([AttrVar(1), true], FinSet(2))
+@test roundtrip_json_acset(A) == A
+
+f= ACSetTransformation(Dict(:V=>[1],:E=>[2,1],:Weight=>[false, AttrVar(1)]), A,B)
+@test is_natural(f)
+@test force(id(A) ⋅ f) == force(f) == force(f ⋅ id(B))
+@test f isa TightACSetTransformation
+@test_throws ErrorException ACSetTransformation(
+  Dict(:V=>[1],:E=>[2,1],:Weight=>[false, AttrVar(5)]), A,B)
+
+w1,w2,w3 = ws = [WG{x}() for x in [Symbol,Bool,Int]]
+[add_parts!(w, :Weight, 2) for w in ws]
+rem_part!(w1, :Weight, 1)
+@test [nparts(w, :Weight) for w in ws] == [1,2,2]
+
+# Construct Tight/Loose ACSet Transformations
+#--------------------------------------------
+f21 = LooseVarFunction{Bool,Symbol}([AttrVar(1),AttrVar(1)], x->Symbol(x), FinSet(1))
+t21 = ACSetTransformation(Dict(:Weight=>f21), w2, w1) 
+@test t21 isa LooseACSetTransformation
+t22 = ACSetTransformation(Dict(:Weight=>[AttrVar(1),false]), w2, w2)
+
+
+bool_to_sym(x::Bool)::Symbol = x ? :A : :B
+
+f21 = LooseVarFunction{Bool,Symbol}([AttrVar(1),:X], bool_to_sym, FinSet(1))
+l21 = ACSetTransformation((Weight = f21,), w2, w1)
+
+t32 = LooseVarFunction{Int,Bool}([AttrVar(2),false], iseven,FinSet(2))
+l32 = ACSetTransformation((Weight = t32,), w3, w2)
+@test all(is_natural,[l21,l32])
+
+# Composition 
+#------------
+
+@test collect((l32 ⋅ l21)[:Weight]) == [:X,:B]
+l = l32 ⋅ l21 # {Int}->{Bool} x {Bool}->{Symbol} = {Int}->{Symbol}
+@test collect(l[:Weight]) == [:X,:B]
+
+
+# Homomorphism search
+#####################
+
+A = @acset WG{Bool} begin V=1;E=2;Weight=1;src=1;tgt=1;
+                          weight=[true, AttrVar(1)] end
+B = @acset WG{Bool} begin V=1;E=3;Weight=2;src=1;tgt=1;
+                          weight=[true, false, AttrVar(2)] end
+@test length(homomorphisms(A,B))==3 # E1 forced to E1, E2 can go anywhere
+
+A = @acset WG{Bool} begin V=1;E=3;Weight=1;src=1;tgt=1;
+                          weight=[false, AttrVar(1), AttrVar(1)] end
+B = @acset WG{Bool} begin V=1;E=4;Weight=2;src=1;tgt=1;
+                          weight=[false, true, true, AttrVar(2)] end
+# E1 is forced to E1, E2 and E3 are forced to go to the same value
+# so either false, AttrVar(2), or 4 choices for (true,true).
+@test length(homomorphisms(A,B))== 6
+
+
+# with a different C-set where different attributes affect each other
+@present ThA2(FreeSchema) begin X::Ob; D::AttrType; (f,g)::Attr(X,D) end 
+@acset_type A2(ThA2)
+X = @acset A2{Symbol} begin X=2; D=2; f=[:A,AttrVar(1)]; g=[AttrVar(2), :B] end 
+Y = @acset A2{Symbol} begin X=2; D=1; f=[:C,:A]; g=[:C; :B] end 
+@test length(homomorphisms(X,Y)) == 1
+
+X = @acset A2{Symbol} begin X=3; D=3; f=[:A,AttrVar(1),AttrVar(2)]; g=[AttrVar(2), :B, AttrVar(3)] end 
+Y = @acset A2{Symbol} begin X=3; D=1; f=[:C,:A,:Z]; g=[:C, :B,:Z] end 
+@test isempty(homomorphisms(X,Y))
+
+@test length(homomorphisms(Y,Y;initial=(D=[:Q],)))==1
+
+Z = @acset A2{Symbol} begin X=1; D=1; f=[AttrVar(1)]; g=[AttrVar(1)] end 
+@test isnothing(homomorphism(Z,Z;initial=(D=[:Q],)))
+
+# Colimits 
+#---------
+
+# COPRODUCT
+A = @acset WG{Bool} begin V=1;E=2;Weight=2;src=1;tgt=1;weight=[AttrVar(1),true] end
+diagram = DiscreteDiagram([A,A])
+AA = coproduct([A,A])
+@test apex(AA)[:weight] == [AttrVar(1),true,AttrVar(3),true]
+@test legs(AA)[2] isa TightACSetTransformation
+@test collect(legs(AA)[2][:Weight]) == AttrVar.(3:4)
+
+# PUSHOUTS
+V = @acset WG{Bool} begin Weight=1 end 
+f = ACSetTransformation(Dict(:Weight=>[AttrVar(1)]), V, A)
+g = ACSetTransformation(Dict(:Weight=>[AttrVar(2)]), V, A)
+
+clim = colimit(Span(f,g));
+@test all(is_natural, legs(clim))
+@test collect(legs(clim)[2][:Weight]) == AttrVar.([3,1]) # not [3,4] anymore
+
+f = ACSetTransformation(Dict(:Weight=>[AttrVar(1)]), V, A)
+g = ACSetTransformation(Dict(:Weight=>[true]), V, A)
+
+clim = colimit(Span(f,g));
+@test all(is_natural, legs(clim))
+@test apex(clim)[:weight] == [true,true,AttrVar(2),true]
+@test collect(legs(clim)[1][:Weight]) == [true,AttrVar(1)]
 
 end

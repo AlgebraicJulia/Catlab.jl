@@ -49,6 +49,12 @@ d = RelationDiagram(0)
 add_box!(d, 0, name=:A)
 @test parsed == d
 
+sird_uwd = @relation () where (S::Pop, I::Pop, R::Pop, D::Pop) begin
+  infect(S,I,I,I) # inf
+  disease(I,R) # recover
+  disease(I,D) # die
+end
+
 # Typed
 #------
 

@@ -150,7 +150,8 @@ add_junctions!(d::AbstractUWD, types::AbstractVector; data...) =
 
 function set_junction!(d::AbstractUWD, port, junction; outer::Bool=false)
   if has_subpart(d, :junction_type)
-    ptype, jtype = port_type(d, port, outer=outer), junction_type(d, junction)
+    ptype = port_type(d, port, outer=outer)
+    jtype = isempty(junction) ? nothing : junction_type(d, junction)
     all(ptype .== jtype) || error(
       "Domain error: port type $ptype and junction type $jtype do not match")
   end
