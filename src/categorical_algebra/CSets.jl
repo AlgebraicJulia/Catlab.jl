@@ -103,7 +103,23 @@ FinDomFunction(c::Column{Int,Union{AttrVar,T}}, dom, codom) where {T} =
 
 
 """ Create `VarSet` for attribute type of attributed C-set."""
-VarOb(X::ACSet, type::Symbol) = VarSet{attrtype_type(X,type)}(nparts(X,type))
+function VarSet(X::ACSet, type::Symbol)
+  S = acset_schema(X)
+  if type ∈ ob(S)
+    return VarSet{Union{}}(nparts(X,type))
+  else 
+    return VarSet{attrtype_type(X,type)}(nparts(X,type))
+  end
+end
+
+function VarFunction(X::ACSet, f::Symbol)
+  S = acset_schema(X)
+  if f ∈ attrs(S; just_names=true)
+    VarFunction(X.subparts[f], parts(X,dom(S,f)), FinSet(nparts(X,codom(S,f))))
+  else
+    VarFunction(FinFunction(X,f))
+  end
+end
 
 VarFunction(c::Column{Int,Union{AttrVar, T}}, dom, codom) where {T} =
   VarFunction{T}([c[i] for i in dom], codom)
@@ -163,9 +179,9 @@ the codomain of the result is always of type `TypeSet`.
 end
 
 """ Create `VarFunction` for attribute of an ACSet """
-@inline VarFunction(X::StructACSet{S}, name::Symbol) where {S} =
-  VarFunction(X.subparts[name], parts(X,dom(S,name)), 
-              FinSet(nparts(X, codom(S,name))))
+# @inline VarFunction(X::StructACSet{S}, name::Symbol) where {S} =
+#   VarFunction(X.subparts[name], parts(X,dom(S,name)), 
+#               FinSet(nparts(X, codom(S,name))))
 
 
 # Categories interop
@@ -188,21 +204,16 @@ const ACSetDomCat = FinCats.FinCatPresentation{
 end
 FinDomFunctor(X::ACSet) = ACSetFunctor(X)
 
-dom(F::ACSetFunctor) = FinCat(Presentation(F.acset))
-codom(F::ACSetFunctor) = TypeCat{SetOb,FinDomFunction{Int}}()
+hasvar(X::ACSet) = any(o->nparts(X,o) > 0, attrtypes(acset_schema(X)))
+hasvar(X::ACSetFunctor) = hasvar(X.acset)
 
-Categories.do_ob_map(F::ACSetFunctor, x) = SetOb(F.acset, functor_key(x))
-Categories.do_hom_map(F::ACSetFunctor, f) = FinFunction(F.acset, functor_key(f))
-# function Categories.do_ob_map(F::ACSetFunctor, x)::Union{FinSet, VarSet}
-#   k = functor_key(x)
-#   is_o = k ∈ ob(acset_schema(F.acset))
-#   return is_o ? SetOb(F.acset, k) : VarOb(F.acset, k)
-# end
-# function Categories.do_hom_map(F::ACSetFunctor, f)::Union{FinFunction, VarFunction}
-#   k = functor_key(f)
-#   is_h = k ∈ hom(acset_schema(F.acset))
-#   return is_h ? FinFunction(F.acset, k) : VarFunction(F.acset, k)
-# end 
+dom(F::ACSetFunctor) = FinCat(Presentation(F.acset))
+codom(F::ACSetFunctor) = hasvar(F) ? TypeCat{VarSet,VarFunction}() : TypeCat{SetOb,FinDomFunction{Int}}()
+
+Categories.do_ob_map(F::ACSetFunctor, x) = 
+  (hasvar(F) ? VarSet : SetOb)(F.acset, functor_key(x))
+Categories.do_hom_map(F::ACSetFunctor, f) =  
+  (hasvar(F) ? VarFunction : FinFunction)(F.acset, functor_key(f))
 
 functor_key(x) = x
 functor_key(expr::GATExpr{:generator}) = first(expr)
@@ -1098,33 +1109,6 @@ end
 colimit(::Type{<:Tuple{VarSet,<:Any}}, diagram) = 
   colimit(diagram, ToBipartiteColimit())
 
-"""Generated from diagrams of VarACSets
-...need to replace TypeSet{T} with VarSet{T}
-
-second type parameter should be <:VarFunction{T}, but sometimes it is Any if 
-there are no morphisms
-this is hacky
-"""
-# function colimit(::Type{<:Tuple{TypeSet{T},Any}}, diagram::F) where {T,F<:FinDomFunctor}  
-#   C = dom(diagram)
-#   om = Dict(map(ob_generators(C)) do o 
-#     for h in hom_generators(C)
-#       if dom(C, h) == o 
-#         return o => dom(hom_map(diagram, h))
-#       elseif codom(C,h) == o 
-#         return o => codom(hom_map(diagram, h))
-#       end
-#     end
-#     return o => VarSet{T}(0)
-#   end )
-#   hm= Dict([h=>hom_map(diagram,h) for h in hom_generators(C)])
-#   new_diag = FinDomFunctor(om, hm, C, TypeCat(VarSet{T},VarFunction{T}))
-#   (fd, fc, feq) = fails = is_functorial(new_diag; check_equations=true,return_failures=true) 
-#   all(isempty, fails) || error("non functorial\n$fd\n\n$fc\n\n$feq")
-#   colimit(new_diag, ToBipartiteColimit())
-# end
-
-
 function colimit(::Type{<:Tuple{ACS,LooseACSetTransformation}}, diagram;
                  type_components=nothing) where {S,Ts, ACS<:StructACSet{S,Ts}}
   isnothing(type_components) &&
@@ -1211,14 +1195,20 @@ unpack_diagram(comp::ComposableMorphisms{<:ACSet}; kw...) =
 function unpack_diagram(diag::Union{FreeDiagram{ACS},BipartiteFreeDiagram{ACS}};
                         S=nothing, Ts=nothing,all::Bool=false, var::Bool=false
                         ) where {ACS <: ACSet}
-  names = all ? flatten((objects(S), attrtypes(S))) : objects(S)
-  NamedTuple(c => map(diag, Ob=X->SetOb(X,c), Hom=α->α[c]) for c in names)
+  res = NamedTuple(c => map(diag, Ob=X->SetOb(X,c), Hom=α->α[c]) for c in objects(S))
+  if all || var 
+    return merge(res, NamedTuple(c => map(diag, Ob=X->VarSet(X,c), Hom=α->α[c]) for c in attrtypes(S)))
+  end
+  return res 
 end
 function unpack_diagram(F::Functor{<:FinCat,<:TypeCat{ACS}};
                         S=nothing, Ts=nothing, all::Bool=false, var::Bool=false
                         ) where {ACS <: ACSet}
-  names = (all || var) ? flatten((objects(S), attrtypes(S))) : objects(S)
-  NamedTuple(c => map(F, X->SetOb(X,c), α->α[c]) for c in names)
+  res = NamedTuple(c => map(F, X->SetOb(X,c), α->α[c]) for c in objects(S))
+  if all || var 
+    return merge(res, NamedTuple(c => map(F, X->VarSet(X,c), α->α[c]) for c in attrtypes(S)))
+  end 
+  return res 
 end
 
 """ Vector of C-sets → named tuple of vectors of sets.

@@ -414,6 +414,7 @@ end
 # Yoneda embedding
 #-----------------
 
+# Yoneda embedding for graphs (no attributes).
 yV, yE = Graph(1), @acset(Graph, begin V=2;E=1;src=2;tgt=1 end)
 @test representable(Graph, :V) == yV
 @test is_isomorphic(representable(Graph, :E), yE)
@@ -450,5 +451,43 @@ X = ob_map(G, :X)
 i, o = hom_map(G, :i), hom_map(G, :o)
 @test isempty(inneighbors(X, only(collect(i[:V]))))
 @test isempty(outneighbors(X, only(collect(o[:V]))))
+
+# Yoneda embedding for weights graphs (has attributes).
+yV, yE = WeightedGraph{Float64}(1), @acset(WeightedGraph{Float64}, begin 
+  V=2;E=1;Weight=1;src=2;tgt=1; weight=[AttrVar(1)]
+end)
+@test representable(WeightedGraph{Float64}, SchWeightedGraph, :V) == yV
+@test is_isomorphic(representable(WeightedGraph{Float64}, SchWeightedGraph, :E), yE)
+
+yWG = yoneda(WeightedGraph{Float64})
+
+F = @migration SchWeightedGraph begin
+  X => E
+  (I, O) => V
+  (i: X → I) => src
+  (o: X → O) => tgt
+end
+G = colimit_representables(F, yWG) # Delta migration.
+X = ob_map(G, :X)
+@test is_isomorphic(X, yE)
+i, o = hom_map(G, :i), hom_map(G, :o)
+@test sort(only.(collect.([i[:V],o[:V]]))) == [1,2]
+
+
+d = @migration(SchWeightedGraph, begin
+    I => @join begin
+      (e1,e2,e3)::E
+      (w1,w3)::Weight
+      weight(e1) == w1
+      w1 == 1.9     
+      weight(e2) == 1.8 
+      weight(e3) == w3
+    end
+end)
+
+expected = @acset WeightedGraph{Float64} begin
+  V=6; E=3; Weight=1; src=[1,2,3]; tgt=[4,5,6]; weight=[1.8,1.9,AttrVar(1)]
+end
+@test is_isomorphic(ob_map(colimit_representables(d, yWG), :I), expected)
 
 end

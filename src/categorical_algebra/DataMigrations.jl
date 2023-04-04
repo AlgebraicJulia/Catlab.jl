@@ -420,19 +420,19 @@ Returns a `FinDomFunctor` with domain `op(C)`.
 function yoneda(::Type{T}, C::Presentation{ThSchema}; 
                 cache=nothing, verbose=false) where T <: ACSet
   cache = isnothing(cache) ? Dict() : cache
-  y_ob = Dict(map(generators(C, :Ob)) do c 
+  y_ob = Dict(map(nameof.(generators(C, :Ob))) do c 
     if verbose println("Computing generator for $c") end 
-    c => get(cache, c, representable(T, C, nameof(c); verbose=verbose))
+    c => haskey(cache, c) ? cache[c] : representable(T, C, c; verbose=verbose)
   end)
-  y_ob = merge(y_ob,Dict(map(generators(C,:AttrType)) do c 
+  y_ob = merge(y_ob, Dict(map(nameof.(generators(C,:AttrType))) do c 
     rep = T()
-    add_part!(rep, nameof(c))
+    add_part!(rep, c)
     c => rep
   end))
   y_hom = Dict(Iterators.map(generators(C, :Hom) ∪ generators(C, :Attr)) do f
-    c, d = dom(f), codom(f)
+    c, d = nameof.([dom(f), codom(f)])
     yc, yd = y_ob[c], y_ob[d]
-    initial = Dict(nameof(d) => Dict(1 => yc[1,f]))
+    initial = Dict(d => Dict(1 => yc[1,f]))
     f => homomorphism(yd, yc, initial=initial) # Unique homomorphism.
   end)
   FinDomFunctor(y_ob, y_hom, op(FinCat(C)))
@@ -458,19 +458,18 @@ function colimit_representables(F::ConjSchemaMigration, y)
     Fc = ob_map(F, c) # e.g. I
     clim_diag = deepcopy(compose(op(Fc), y))
     # modify the diagram we take a colimit of to concretize some vars
-    if false 
-      params = Fc isa SimpleDiagram ? Dict() : Fc.params
-      G = dom(clim_diag.diagram).cat.graph
-      for (i,val) in collect(params)
-        v = add_vertex!(G; vname=Symbol("param$i"))
-        add_edge!(G, v, i; ename=Symbol("param$i"))
-        at = nameof(ob_map(Fc, i)) # attribute type name 
-        h = only(homomorphisms(ob_map(clim_diag,i), ACS(); initial=Dict(at=>[val])))
-        push!(clim_diag.diagram.ob_map, ACS())
-        push!(clim_diag.diagram.hom_map, h)
-      end
-      is_functorial(clim_diag.diagram) || error("here")
+    params = Fc isa SimpleDiagram ? Dict() : Fc.params
+    G = dom(clim_diag.diagram).cat.graph
+    for (i,val) in collect(params)
+      v = add_vertex!(G; vname=Symbol("param$i"))
+      add_edge!(G, v, i; ename=Symbol("param$i"))
+      at = nameof(ob_map(Fc, i)) # attribute type name 
+      h = only(homomorphisms(ob_map(clim_diag,i), ACS(); initial=Dict(at=>[val])))
+      push!(clim_diag.diagram.ob_map, ACS())
+      push!(clim_diag.diagram.hom_map, h)
     end
+    is_functorial(clim_diag.diagram) || error("here")
+    # take colimit
     colimit(clim_diag)
   end
   homs = make_map(hom_generators(C)) do f

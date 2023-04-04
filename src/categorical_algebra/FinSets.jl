@@ -302,12 +302,14 @@ Control dispatch in the category of VarFunctions
 @struct_hash_equal struct VarSet{T}
   n::Int 
 end
+VarSet(i::Int) = VarSet{Union{}}(i)
+FinSet(s::VarSet{Union{}}) = FinSet(s.n)
 Base.iterate(set::VarSet{T}, args...) where T = iterate(1:set.n, args...)
 Base.length(set::VarSet{T}) where T = set.n
 Base.in(set::VarSet{T}, elem) where T = in(elem, 1:set.n)
 
 
-abstract type AbsVarFunction{T} end 
+abstract type AbsVarFunction{T} end # either VarFunction or LooseVarFunction
 """
 Data type of a map out of a set of attribute variables
 
@@ -322,13 +324,15 @@ symbolic attributes. (Likewise, AttrVars will have to wrap Any rather than Int)
     all(e-> (e isa AttrVar && e.val ∈ cod) || e isa T, f) || error("Codom error: $f $T $cod")
     return new(FinDomFunction(Vector{Union{AttrVar,T}}(f)), cod)
   end 
-end 
+end
+VarFunction(f::AbstractVector{Int},cod::Int) = VarFunction(FinFunction(f,cod))
+VarFunction(f::FinDomFunction) = VarFunction{Union{}}(AttrVar.(collect(f)),codom(f))
 Base.length(f::AbsVarFunction{T}) where T = length(collect(f.fun))
 Base.collect(f::AbsVarFunction{T}) where T = collect(f.fun)
 (f::VarFunction{T})(v::T) where T = v 
 (f::AbsVarFunction{T})(v::AttrVar) where T = f.fun(v.val) 
 (f::AbsVarFunction{T})(v::AbstractVector) where T = f.(v) 
-dom(f::AbsVarFunction{T}) where T = dom(f.fun)
+dom(f::AbsVarFunction{T}) where T = VarSet{T}(length(collect(f.fun)))
 codom(f::VarFunction{T}) where T = VarSet{T}(length(f.codom))
 id(s::VarSet{T}) where T = VarFunction{T}(AttrVar.(1:s.n), FinSet(s.n))
 function is_monic(f::VarFunction) 
