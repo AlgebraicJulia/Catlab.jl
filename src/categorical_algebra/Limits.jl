@@ -593,7 +593,7 @@ function colimit(F::FixedShapeFreeDiagram, ::ToBipartiteColimit)
   return BipartiteColimit(F, cocone(colim), colim)
 end 
 
-function colimit(F::Union{Functor,FreeDiagram}, ::ToBipartiteColimit)
+function colimit(F::Union{T,FreeDiagram}, ::ToBipartiteColimit) where {T<:Functor}
   d = BipartiteFreeDiagram(F, colimit=true)
   colim = colimit(d)
   cocone = Multicospan(apex(colim), map(incident(d, :, :orig_vert₁),

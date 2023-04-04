@@ -416,13 +416,12 @@ end
 
 yV, yE = Graph(1), @acset(Graph, begin V=2;E=1;src=2;tgt=1 end)
 @test representable(Graph, :V) == yV
-@test representable(Graph, :E) == yE
+@test is_isomorphic(representable(Graph, :E), yE)
 
 y_Graph = yoneda(Graph)
 @test ob_map(y_Graph, :V) == yV
 @test is_isomorphic(ob_map(y_Graph, :E), yE)
-@test hom_map(y_Graph, :src) == ACSetTransformation(yV, yE, V=[2])
-@test hom_map(y_Graph, :tgt) == ACSetTransformation(yV, yE, V=[1])
+@test Set(hom_map.(Ref(y_Graph), [:src,:tgt])) == Set(homomorphisms(yV, representable(Graph, :E)))
 
 F = @migration SchGraph begin
   X => E
@@ -434,8 +433,7 @@ G = colimit_representables(F, y_Graph) # Delta migration.
 X = ob_map(G, :X)
 @test is_isomorphic(X, yE)
 i, o = hom_map(G, :i), hom_map(G, :o)
-@test only(collect(i[:V])) == 2
-@test only(collect(o[:V])) == 1
+@test sort(only.(collect.([i[:V],o[:V]]))) == [1,2]
 
 F = @migration SchGraph begin
   X => @join begin

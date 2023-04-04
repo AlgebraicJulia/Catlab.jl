@@ -124,6 +124,14 @@ abstract type FinCatGraph{G,Ob,Hom} <: FinCat{Ob,Hom} end
 """
 graph(C::FinCatGraph) = C.graph
 
+graph(C::OppositeCat) = op(graph(op(C)))
+function op(g::G) where G<:HasGraph 
+  op_g = deepcopy(g)
+  op_g[:tgt] = g[:src] 
+  op_g[:src] = g[:tgt]
+  return op_g
+end
+
 ob_generators(C::FinCatGraph) = vertices(graph(C))
 hom_generators(C::FinCatGraph) = edges(graph(C))
 
@@ -236,6 +244,7 @@ end
 FinCatGraph(g::HasGraph) = FreeCatGraph(g)
 
 is_free(::FreeCatGraph) = true
+equations(::FreeCatGraph) = []
 
 function Base.show(io::IO, C::FreeCatGraph)
   print(io, "FinCat(")
@@ -259,6 +268,7 @@ See (Spivak, 2014, *Category theory for the sciences*, §4.5).
 end
 
 equations(C::FinCatGraphEq) = C.equations
+equations(C::OppositeCat) = op.(equations(op(C)))
 
 function FinCatGraph(g::HasGraph, eqs::AbstractVector)
   eqs = map(eqs) do eq

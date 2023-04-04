@@ -11,6 +11,8 @@ using ...Graphs, ..FreeDiagrams
 import ..Categories: ob_map, hom_map
 using ..FinCats: make_map, mapvals
 using ..Chase: collage, attrtype_dict, crel_type, pres_to_eds, add_srctgt, chase
+using ...ColumnImplementations: AttrVar 
+using ..FinSets: VarSet
 
 # Data types
 ############
@@ -410,14 +412,24 @@ representable(::Type{T}, ob::Symbol) where T <: StructACSet =
 Because Catlab privileges copresheaves (C-sets) over presheaves, this is the
 *contravariant* Yoneda embedding, i.e., the embedding C^op → C-Set.
 
+If representables have already been computed (which can be expensive) they can
+be provided via the `cache` keyword argument.
+
 Returns a `FinDomFunctor` with domain `op(C)`.
 """
-function yoneda(::Type{T}, C::Presentation{ThSchema}; verbose=false) where T <: ACSet
+function yoneda(::Type{T}, C::Presentation{ThSchema}; 
+                cache=nothing, verbose=false) where T <: ACSet
+  cache = isnothing(cache) ? Dict() : cache
   y_ob = Dict(map(generators(C, :Ob)) do c 
     if verbose println("Computing generator for $c") end 
-    c => representable(T, C, nameof(c); verbose=verbose)
+    c => get(cache, c, representable(T, C, nameof(c); verbose=verbose))
   end)
-  y_hom = Dict(Iterators.map(generators(C, :Hom)) do f
+  y_ob = merge(y_ob,Dict(map(generators(C,:AttrType)) do c 
+    rep = T()
+    add_part!(rep, nameof(c))
+    c => rep
+  end))
+  y_hom = Dict(Iterators.map(generators(C, :Hom) ∪ generators(C, :Attr)) do f
     c, d = dom(f), codom(f)
     yc, yd = y_ob[c], y_ob[d]
     initial = Dict(nameof(d) => Dict(1 => yc[1,f]))
@@ -441,9 +453,25 @@ function colimit_representables(F::DeltaSchemaMigration, y)
 end
 function colimit_representables(F::ConjSchemaMigration, y)
   C = dom(F)
+  ACS = first(typeof(y.codom).parameters) 
   colimits = make_map(ob_generators(C)) do c
-    Fc = ob_map(F, c)
-    colimit(compose(op(Fc), y))
+    Fc = ob_map(F, c) # e.g. I
+    clim_diag = deepcopy(compose(op(Fc), y))
+    # modify the diagram we take a colimit of to concretize some vars
+    if false 
+      params = Fc isa SimpleDiagram ? Dict() : Fc.params
+      G = dom(clim_diag.diagram).cat.graph
+      for (i,val) in collect(params)
+        v = add_vertex!(G; vname=Symbol("param$i"))
+        add_edge!(G, v, i; ename=Symbol("param$i"))
+        at = nameof(ob_map(Fc, i)) # attribute type name 
+        h = only(homomorphisms(ob_map(clim_diag,i), ACS(); initial=Dict(at=>[val])))
+        push!(clim_diag.diagram.ob_map, ACS())
+        push!(clim_diag.diagram.hom_map, h)
+      end
+      is_functorial(clim_diag.diagram) || error("here")
+    end
+    colimit(clim_diag)
   end
   homs = make_map(hom_generators(C)) do f
     Ff, c, d = hom_map(F, f), dom(C, f), codom(C, f)

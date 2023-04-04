@@ -49,7 +49,7 @@ For objects, the result is a `FinSet`; for attribute types, a `TypeSet`.
 @inline SetOb(X::StructACSet{S,Ts}, type::Symbol) where {S,Ts} =
   set_ob(X, Val{S}, Val{Ts}, Val{type})
 
-@inline SetOb(X::DynamicACSet, type::Symbol) =
+SetOb(X::DynamicACSet, type::Symbol) =
   runtime(set_ob, X, X.schema, X.type_assignment, type)
 
 @ct_enable function set_ob(X::ACSet, @ct(S), @ct(Ts), @ct(type))
@@ -100,6 +100,10 @@ FinDomFunction(c::Column{Int,Union{AttrVar,T}}, dom, codom) where {T} =
   FinDomFunction(
     T[c[i] for i in dom], codom
   )
+
+
+""" Create `VarSet` for attribute type of attributed C-set."""
+VarOb(X::ACSet, type::Symbol) = VarSet{attrtype_type(X,type)}(nparts(X,type))
 
 VarFunction(c::Column{Int,Union{AttrVar, T}}, dom, codom) where {T} =
   VarFunction{T}([c[i] for i in dom], codom)
@@ -177,7 +181,9 @@ const ACSetDomCat = FinCats.FinCatPresentation{
 """ Wrapper type to interpret attributed C-set as a functor.
 """
 @struct_hash_equal struct ACSetFunctor{ACS<:ACSet} <:
-    Functor{ACSetDomCat,TypeCat{SetOb,FinDomFunction{Int}}}
+    Functor{ACSetDomCat,
+            TypeCat{Union{FinSet,VarSet},
+                    Union{VarFunction,FinDomFunction{Int}}}}
   acset::ACS
 end
 FinDomFunctor(X::ACSet) = ACSetFunctor(X)
@@ -186,7 +192,17 @@ dom(F::ACSetFunctor) = FinCat(Presentation(F.acset))
 codom(F::ACSetFunctor) = TypeCat{SetOb,FinDomFunction{Int}}()
 
 Categories.do_ob_map(F::ACSetFunctor, x) = SetOb(F.acset, functor_key(x))
-Categories.do_hom_map(F::ACSetFunctor, f) = SetFunction(F.acset, functor_key(f))
+Categories.do_hom_map(F::ACSetFunctor, f) = FinFunction(F.acset, functor_key(f))
+# function Categories.do_ob_map(F::ACSetFunctor, x)::Union{FinSet, VarSet}
+#   k = functor_key(x)
+#   is_o = k ∈ ob(acset_schema(F.acset))
+#   return is_o ? SetOb(F.acset, k) : VarOb(F.acset, k)
+# end
+# function Categories.do_hom_map(F::ACSetFunctor, f)::Union{FinFunction, VarFunction}
+#   k = functor_key(f)
+#   is_h = k ∈ hom(acset_schema(F.acset))
+#   return is_h ? FinFunction(F.acset, k) : VarFunction(F.acset, k)
+# end 
 
 functor_key(x) = x
 functor_key(expr::GATExpr{:generator}) = first(expr)
@@ -364,7 +380,7 @@ function coerce_components(S, components, X,Y)
   ocomps = NamedTuple(
     c => coerce_component(c, get(components,c,1:0), nparts(X,c), nparts(Y,c))
     for c in objects(S))
-  acomps = NamedTuple(map(attrtypes(S)) do c #filter(c->tight || haskey(components,c),attrtypes(S))) do c 
+  acomps = NamedTuple(map(attrtypes(S)) do c
     c => coerce_attrvar_component(c, get(components,c,1:0), 
           TypeSet(X, c), TypeSet(Y, c), nparts(X,c), nparts(Y,c))
   end)
@@ -392,7 +408,7 @@ end
 function coerce_attrvar_component(
     ob::Symbol, f::VarFunction,::TypeSet{T},::TypeSet{T},
     dom_size::Int, codom_size::Int) where {T}
-  length(dom(f.fun)) == dom_size || error("Domain error in component $ob")
+  # length(dom(f.fun)) == dom_size || error("Domain error in component $ob: $(dom(f.fun))!=$dom_size")
   length(f.codom) == codom_size || error("Codomain error in component $ob: $(f.fun.codom)!=$codom_size")
   return f
 end
@@ -1082,6 +1098,33 @@ end
 colimit(::Type{<:Tuple{VarSet,<:Any}}, diagram) = 
   colimit(diagram, ToBipartiteColimit())
 
+"""Generated from diagrams of VarACSets
+...need to replace TypeSet{T} with VarSet{T}
+
+second type parameter should be <:VarFunction{T}, but sometimes it is Any if 
+there are no morphisms
+this is hacky
+"""
+# function colimit(::Type{<:Tuple{TypeSet{T},Any}}, diagram::F) where {T,F<:FinDomFunctor}  
+#   C = dom(diagram)
+#   om = Dict(map(ob_generators(C)) do o 
+#     for h in hom_generators(C)
+#       if dom(C, h) == o 
+#         return o => dom(hom_map(diagram, h))
+#       elseif codom(C,h) == o 
+#         return o => codom(hom_map(diagram, h))
+#       end
+#     end
+#     return o => VarSet{T}(0)
+#   end )
+#   hm= Dict([h=>hom_map(diagram,h) for h in hom_generators(C)])
+#   new_diag = FinDomFunctor(om, hm, C, TypeCat(VarSet{T},VarFunction{T}))
+#   (fd, fc, feq) = fails = is_functorial(new_diag; check_equations=true,return_failures=true) 
+#   all(isempty, fails) || error("non functorial\n$fd\n\n$fc\n\n$feq")
+#   colimit(new_diag, ToBipartiteColimit())
+# end
+
+
 function colimit(::Type{<:Tuple{ACS,LooseACSetTransformation}}, diagram;
                  type_components=nothing) where {S,Ts, ACS<:StructACSet{S,Ts}}
   isnothing(type_components) &&
@@ -1120,6 +1163,7 @@ end
 """
 function colimit_attrs!(colim,S,Ts, Xs) 
   Y, ιs = ob(colim), legs(colim)
+  # show(stdout,"text/plain", Y)
   for (attr, c, d) in attrs(S)
     T = attrtype_instantiation(S, Ts, d)
     data = Vector{Union{Some{Union{T,AttrVar}},Nothing}}(nothing, nparts(Y, c))
@@ -1173,7 +1217,7 @@ end
 function unpack_diagram(F::Functor{<:FinCat,<:TypeCat{ACS}};
                         S=nothing, Ts=nothing, all::Bool=false, var::Bool=false
                         ) where {ACS <: ACSet}
-  names = all ? flatten((objects(S), attrtypes(S))) : objects(S)
+  names = (all || var) ? flatten((objects(S), attrtypes(S))) : objects(S)
   NamedTuple(c => map(F, X->SetOb(X,c), α->α[c]) for c in names)
 end
 

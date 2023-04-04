@@ -16,6 +16,8 @@ our Attr Variable indices with the Julia type of Int
 @struct_hash_equal struct AttrVar 
   val::Int 
 end 
+Base.isless(x::AttrVar,y::AttrVar) = x.val < y.val
+
 
 # Column types for acsets
 #########################

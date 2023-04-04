@@ -2,6 +2,7 @@ module TestFinCats
 using Test
 
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
+using Catlab.CategoricalAlgebra.FinSets: VarSet
 
 # Categories on graphs
 ######################
@@ -205,6 +206,9 @@ G = FinDomFunctor(g)
 @test is_functorial(G)
 @test ob_map(G, :Weight) == TypeSet(Float64)
 @test hom_map(G, :weight) == FinDomFunction([0.5, 1.5])
+
+# @test ob_map(G, :Weight) == VarSet{Float64}(0)
+# @test hom_map(G, :weight) == VarFunction{Float64}([0.5, 1.5], FinSet(0))
 
 # Initial functors
 ##################

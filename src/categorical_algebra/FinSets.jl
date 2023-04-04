@@ -253,7 +253,7 @@ Ob(F::Functor{<:FinCat{Int}}) = FinDomFunction(collect_ob(F), Ob(codom(F)))
 The domain of this function is always of type `FinSet{Int}`, with elements of
 the form ``{1,...,n}``.
 """
-struct FinDomFunctionVector{T,V<:AbstractVector{T}, Codom<:SetOb{T}} <:
+@struct_hash_equal struct FinDomFunctionVector{T,V<:AbstractVector{T}, Codom<:SetOb{T}} <:
     SetFunction{FinSetInt,Codom}
   func::V
   codom::Codom
@@ -299,7 +299,7 @@ Sets.do_compose(f::FinFunctionVector, g::FinDomFunctionVector) =
 """
 Control dispatch in the category of VarFunctions
 """
-struct VarSet{T}
+@struct_hash_equal struct VarSet{T}
   n::Int 
 end
 Base.iterate(set::VarSet{T}, args...) where T = iterate(1:set.n, args...)
@@ -328,7 +328,7 @@ Base.collect(f::AbsVarFunction{T}) where T = collect(f.fun)
 (f::VarFunction{T})(v::T) where T = v 
 (f::AbsVarFunction{T})(v::AttrVar) where T = f.fun(v.val) 
 (f::AbsVarFunction{T})(v::AbstractVector) where T = f.(v) 
-dom(f::AbsVarFunction{T}) where T = VarSet{T}(length(dom(f.fun)))
+dom(f::AbsVarFunction{T}) where T = dom(f.fun)
 codom(f::VarFunction{T}) where T = VarSet{T}(length(f.codom))
 id(s::VarSet{T}) where T = VarFunction{T}(AttrVar.(1:s.n), FinSet(s.n))
 function is_monic(f::VarFunction) 
@@ -413,6 +413,9 @@ function IndexedFinDomFunctionVector(f::AbstractVector{T}, dom::FinSet{Int},
     error("Length of vector $f does not match domain $dom")
   IndexedFinDomFunctionVector(f, index, codom)
 end
+
+Base.hash(f::IndexedFinDomFunctionVector, h::UInt) =
+  hash(f.func, hash(f.codom, h))
 
 Base.:(==)(f::Union{FinDomFunctionVector,IndexedFinDomFunctionVector},
            g::Union{FinDomFunctionVector,IndexedFinDomFunctionVector}) =
@@ -1302,6 +1305,8 @@ function colimit(d::FixedShapeFreeDiagram{<:FinSet{<:Any,T},Hom},
   # using `SpecializeColimit` below should avoid some gross inefficiencies.
   colimit(BipartiteFreeDiagram{FinSet{<:Any,T},Hom}(d), alg)
 end
+
+
 function colimit(d::BipartiteFreeDiagram{<:FinSet{<:Any,T}}, ::NamedColimit) where T
   # Compute colimit of diagram in the skeleton of FinSet (`FinSet{Int}`).
   # Note: no performance would be gained by using `DisjointSets{T}` from
