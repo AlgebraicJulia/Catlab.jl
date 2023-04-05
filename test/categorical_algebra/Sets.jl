@@ -6,6 +6,11 @@ using Catlab.Theories, Catlab.CategoricalAlgebra
 # Sets from Julia types
 #######################
 
+# Elementhood for TypeSets
+strings = TypeSet(String)
+@test "hi" ∈ strings
+@test 7 ∉ strings
+
 # Callables.
 f = SetFunction(x -> 2x, TypeSet(Int), TypeSet(Int))
 g = SetFunction(x -> 3x, TypeSet(Int), TypeSet(Int))
