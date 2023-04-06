@@ -199,6 +199,18 @@ end
 attrtype_type(x::DynamicACSet, D::Symbol) = x.type_assignment[D]
 attr_type(x::DynamicACSet, f::Symbol) = attrtype_type(x,codom(x.schema, f))
 datatypes(x::DynamicACSet) = x.type_assignment
+constructor(X::DynamicACSet) = ()->DynamicACSet(X.name,X.schema,
+  type_assignment=X.type_assignment, 
+  index=indices(X), unique_index=unique_indices(X))
+
+"""Cast StructACSet into a DynamicACSet"""
+function DynamicACSet(X::StructACSet{S}) where S 
+  Y = DynamicACSet(string(typeof(X).name.name), Schema(S); type_assignment=datatypes(X))
+  copy_parts!(Y,X, NamedTuple(Dict(k=>parts(X,k) for k in types(S))))
+  return Y
+end
+
+
 
 """ This works the same as something made with `@acset_type`, only the types of the
 parts and subparts are stored as type parameters. Thus, this can be used with any schema.
@@ -262,6 +274,8 @@ end
 attrtype_type(::StructACSet{S,Ts}, D::Symbol) where {S,Ts} = attrtype_instantiation(S, Ts, D)
 attr_type(X::StructACSet{S}, f::Symbol) where {S} = attrtype_type(X, codom(S, f))
 datatypes(::StructACSet{S,Ts}) where {S,Ts} = Dict(zip(attrtypes(S),Ts.parameters))
+constructor(X::StructACSet) = typeof(X)
+Base.isempty(X::ACSet) = all(o->nparts(X,o)==0, types(acset_schema(X)))
 
 function ACSetTableSchema(s::Schema{Symbol}, ob::Symbol)
   attrs = filter(Schemas.attrs(s)) do (f,d,c)
@@ -532,8 +546,8 @@ ACSetInterface.copy_parts!(to::SimpleACSet, from::SimpleACSet, obs::Tuple) =
 ACSetInterface.copy_parts!(to::StructACSet{S}, from::StructACSet{S′}, parts::NamedTuple) where {S,S′} =
   _copy_parts!(to, Val{S}, from, Val{S′}, replace_colons(from, parts))
 
-ACSetInterface.copy_parts!(to::DynamicACSet, from::DynamicACSet, parts::NamedTuple) =
-  runtime(_copy_parts!, to, to.schema, from, from.schema, replace_colons(from, parts))
+ACSetInterface.copy_parts!(to::ACSet, from::ACSet, parts::NamedTuple) =
+  runtime(_copy_parts!, to, acset_schema(to), from, acset_schema(from), replace_colons(from, parts))
 
 @ct_enable function _copy_parts!(
   to::SimpleACSet, @ct(S),
@@ -579,8 +593,8 @@ ACSetInterface.copy_parts_only!(to::SimpleACSet, from::SimpleACSet, obs::Tuple) 
 ACSetInterface.copy_parts_only!(to::StructACSet{S}, from::StructACSet{S′}, parts::NamedTuple) where {S,S′}=
   _copy_parts_only!(to, Val{S}, from, Val{S′}, replace_colons(from, parts))
 
-ACSetInterface.copy_parts_only!(to::DynamicACSet, from::DynamicACSet, parts::NamedTuple) =
-  runtime(_copy_parts_only!, to, to.schema, from, from.schema, replace_colons(from, parts))
+ACSetInterface.copy_parts_only!(to::ACSet, from::ACSet, parts::NamedTuple) =
+  runtime(_copy_parts_only!, to, acset_schema(to), from, acset_schema(from), replace_colons(from, parts))
 
 @ct_enable function _copy_parts_only!(
   to::SimpleACSet, @ct(S),

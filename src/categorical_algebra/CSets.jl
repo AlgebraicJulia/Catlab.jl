@@ -35,7 +35,7 @@ import ..Subobjects: Subobject, implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..Sets: SetOb, SetFunction, TypeSet
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate, is_monic, is_epic
 import ..FinCats: FinDomFunctor, components, is_natural
-using ...DenseACSets: indices, unique_indices, attr_type, attrtype_type, datatypes
+using ...DenseACSets: indices, unique_indices, attr_type, attrtype_type, datatypes, constructor
 using ...ColumnImplementations: AttrVar 
 
 
@@ -1098,10 +1098,7 @@ end
 function colimit(::Type{<:Tuple{DynamicACSet,TightACSetTransformation}}, diagram) 
   Xs = cocone_objects(diagram)
   X = first(Xs)
-  S = acset_schema(X)
-  Ts = datatypes(X)
-  ACS = ()->DynamicACSet(X.name,S, type_assignment=X.type_assignment, 
-                         index=indices(X), unique_index=unique_indices(X))
+  S, Ts, ACS = acset_schema(X), datatypes(X), constructor(X)
   colimits = map(colimit, unpack_diagram(diagram; S=S, Ts=Ts, var=true))
   colimit_attrs!(pack_colimit(ACS, S, diagram, Xs, colimits), S, Ts, Xs)
 end
@@ -1147,7 +1144,6 @@ end
 """
 function colimit_attrs!(colim,S,Ts, Xs) 
   Y, ιs = ob(colim), legs(colim)
-  # show(stdout,"text/plain", Y)
   for (attr, c, d) in attrs(S)
     T = attrtype_instantiation(S, Ts, d)
     data = Vector{Union{Some{Union{T,AttrVar}},Nothing}}(nothing, nparts(Y, c))
@@ -1454,8 +1450,13 @@ end
 
 Inverse to [`generate_json_acset`](@ref).
 """
-function parse_json_acset(::Type{T}, input::AbstractDict) where T <: ACSet
-  out = T()
+parse_json_acset(::Type{T}, input::AbstractDict) where {T<:StructACSet} = 
+  _parse_json_acset(T, input)
+parse_json_acset(d::DynamicACSet, input::AbstractDict) = 
+  _parse_json_acset(constructor(d), input)
+
+function _parse_json_acset(cons, input::AbstractDict)
+  out = cons()
   for (k,v) ∈ input
     add_parts!(out, Symbol(k), length(v))
   end
@@ -1479,8 +1480,8 @@ end
 
 Inverse to [`write_json_acset`](@ref).
 """
-function read_json_acset(::Type{T}, fname::AbstractString) where T <: ACSet
-  parse_json_acset(T, JSON.parsefile(fname))
+function read_json_acset(ty, fname::AbstractString)
+  parse_json_acset(ty, JSON.parsefile(fname))
 end
 
 """ Serialize an ACSet object to a JSON file.

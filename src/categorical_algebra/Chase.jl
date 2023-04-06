@@ -10,6 +10,7 @@ using ..Limits
 using ..FreeDiagrams
 using ...ColumnImplementations: AttrVar
 import ..Categories: ob_map
+using ...DenseACSets: datatypes
 
 import ...Theories: dom, codom
 import ..Limits: universal, coproduct
@@ -191,15 +192,12 @@ function crel_type(S::Presentation; types=Dict(), name="")
   end
 end
 
-attrtype_dict(::StructACSet{S,Ts}) where {S,Ts} = Dict{Symbol,Type}([
-  a=>attrtype_instantiation(S,Ts,a) for a in attrtypes(S)]) 
-
 """
 A functor C-Set -> C-Rel, on objects. Can be applied safely to C-sets with
 undefined references.
 """
 function to_c_rel(I::StructACSet{S, Ts}) where {S,Ts}
-  J = crel_type(Presentation(S); types=attrtype_dict(I))()
+  J = crel_type(Presentation(S); types=datatypes(I))()
   for o in ob(S)
     add_parts!(J, o, nparts(I, o))
   end
