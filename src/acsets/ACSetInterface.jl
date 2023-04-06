@@ -140,7 +140,7 @@ Returns the ID of the added part.
 
 See also: [`add_parts!`](@ref).
 """
-@inline function add_part!(acs, type::Symbol, kw)
+@inline function add_part!(acs::ACSet , type::Symbol, kw)
   part = only(add_parts!(acs,type,1))
   try
     set_subparts!(acs, part, kw)
@@ -161,7 +161,7 @@ function add_parts! end
 
 @inline add_parts!(acs, type::Symbol, n::Int; kw...) = add_parts!(acs, type, n, (;kw...))
 
-@inline function add_parts!(acs, type::Symbol, n::Int, kw)
+@inline function add_parts!(acs::ACSet, type::Symbol, n::Int, kw)
   parts = add_parts!(acs, type, n)
   try
     set_subparts!(acs, parts, kw)
@@ -187,7 +187,7 @@ function set_subpart! end
 
 # Inlined for the same reason as `subpart`.
 
-@inline function set_subpart!(acs, parts::Union{AbstractVector{Int}, AbstractSet{Int}}, name, vals)
+@inline function set_subpart!(acs::ACSet , parts::Union{AbstractVector{Int}, AbstractSet{Int}}, name, vals)
   broadcast(parts, vals) do part, val
     set_subpart!(acs, part, name, val)
   end
@@ -199,7 +199,7 @@ Both single and vectorized assignment are supported.
 
 See also: [`set_subpart!`](@ref).
 """
-@inline @generated function set_subparts!(acs, part, kw::NamedTuple{keys}) where {keys}
+@inline @generated function set_subparts!(acs::ACSet, part, kw::NamedTuple{keys}) where {keys}
   Expr(:block,[:(set_subpart!(acs, part, $(Expr(:quote, name)), kw.$name)) for name in keys]...)
 end
 
@@ -219,7 +219,7 @@ potentially cause an inconsistent acset if used without caution.
 
 function clear_subpart! end
 
-function clear_subpart!(acs, parts::Union{AbstractVector{Int}, AbstractSet{Int}}, name)
+function clear_subpart!(acs::ACSet, parts::Union{AbstractVector{Int}, AbstractSet{Int}}, name)
   for part in parts
     clear_subpart!(acs, part, name)
   end
@@ -255,7 +255,7 @@ The parts must be supplied in sorted order, without duplicates.
 
 See also: [`rem_part!`](@ref).
 """
-@inline function rem_parts!(acs, type, parts)
+@inline function rem_parts!(acs::ACSet, type, parts)
   issorted(parts) || error("Parts to be removed must be in sorted order")
   for part in Iterators.reverse(parts)
     rem_part!(acs, type, part)
@@ -274,10 +274,10 @@ TODO: handle colons
 """
 function copy_parts! end
 
-copy_parts!(to, from, obs::Tuple) =
+copy_parts!(to::ACSet, from::ACSet , obs::Tuple) =
   copy_parts!(to, from, NamedTuple{obs}((:) for ob in obs))
 
-copy_parts!(to, from; kw...) = copy_parts!(to, from, (;kw...))
+copy_parts!(to::ACSet, from::ACSet; kw...) = copy_parts!(to, from, (;kw...))
 
 """ Copy parts from a C-set to a C′-set, ignoring all non-data subparts.
 
