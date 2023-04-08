@@ -1313,7 +1313,8 @@ ob(A::SubACSetComponentwise) = A.ob
 components(A::SubACSetComponentwise) = A.components
 
 function hom(A::SubACSetComponentwise{T}) where T <: ACSet
-  U, X = T(), ob(A)
+  X = ob(A)
+  U = constructor(X)()
   hom_components = map(collect∘hom, components(A))
   copy_parts!(U, X, hom_components)
   ACSetTransformation(hom_components, U, X)
