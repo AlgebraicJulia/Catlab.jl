@@ -13,7 +13,7 @@ module FinCats
 export FinCat, FinCatGraph, Path, ob_generator, hom_generator,
   ob_generator_name, hom_generator_name, ob_generators, hom_generators,
   equations, is_discrete, is_free, graph, edges, src, tgt, presentation,
-  FinFunctor, FinDomFunctor, is_functorial, collect_ob, collect_hom, force,
+  FinFunctor, FinDomFunctor, get_nonfunctorialities, is_functorial, collect_ob, collect_hom, force,
   FinTransformation, components, is_natural, is_initial
 
 using StructEquality
@@ -400,26 +400,36 @@ collect_hom(F::FinDomFunctor) = map(f -> hom_map(F, f), hom_generators(dom(F)))
 """ Is the purported functor on a presented category functorial?
 
 This function checks that functor preserves domains and codomains. When
-`check_equations` is `true` (the default), it also checks that the functor
-preserves all equations in the domain category. Note that in some cases this may
-not be possible.
+`check_equations` is `true` (the default is `false`), it also purports to check
+that the functor preserves all equations in the domain category. No nontrivial 
+checks are currently implemented, so this only functions for identity functors.
 
 See also: [`is_natural`](@ref).
 """
-function is_functorial(F::FinDomFunctor; check_equations::Bool=false)
-  C, D = dom(F), codom(F)
-  all(hom_generators(C)) do f
+function get_nonfunctorialities(F::FinDomFunctor; check_equations::Bool=false)
+  C, D = dom(F),codom(F)
+  bad_dom = Iterators.filter(hom_generators(C)) do f 
     g = hom_map(F, f)
-    dom(D,g) == ob_map(F, dom(C,f)) && codom(D,g) == ob_map(F, codom(C,f))
-  end || return false
-
-  if check_equations
-    all(equations(C)) do (lhs, rhs)
-      is_hom_equal(D, hom_map(F, lhs), hom_map(F, rhs))
-    end || return false
+    dom(D,g) != ob_map(F, dom(C,f))
+  end 
+  bad_cod = Iterators.filter(hom_generators(C)) do f 
+    g = hom_map(F, f)
+    codom(D,g) != ob_map(F, codom(C,f))
   end
+  bad_eqn = []
+  #currently this won't check for nontrivial equalities
+  if check_equations
+    bad_eqn = Iterators.filter(equations(C)) do (lhs,rhs)
+              !is_hom_equal(D,hom_map(F,lhs),hom_map(F,rhs))
+    end
+    return bad_dom, bad_cod, bad_eqn
+  end
+  return bad_dom, bad_cod
+end
 
-  true
+function is_functorial(F::FinDomFunctor; check_equations::Bool=false)
+  failures = get_nonfunctorialities(F; check_equations=check_equations)
+  all(isempty,failures) || false
 end
 
 function Base.map(F::Functor{<:FinCat,<:TypeCat}, f_ob, f_hom)

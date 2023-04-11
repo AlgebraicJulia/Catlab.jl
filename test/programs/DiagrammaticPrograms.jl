@@ -548,4 +548,9 @@ F_src_vv, F_src_ev, F_src_ve = components(diagram_map(F_src))
 @test collect_ob(F_src_ev) == [(1, SchReflexiveGraph[:src]),
                                (2, id(SchReflexiveGraph[:V]))]
 
+#Little parsing functions
+import Catlab.Programs.DiagrammaticPrograms.get_keyword_arg_val as get_keyword_arg_val
+@test get_keyword_arg_val(:(x=3)) == 3
+@test_throws ErrorException get_keyword_arg_val(:("not an assignment!"+3))
+@test Catlab.Programs.DiagrammaticPrograms.destructure_unary_call(:(f(g(x)))) == (:(f∘g),:x)
 end
