@@ -51,10 +51,13 @@ F = FinDomFunctor([FinSet(1), FinSet(3), FinSet(1)],
 f = FinFunction([1,3,4], 5)
 g = FinFunction([1,1,2,2,3], 3)
 h = FinFunction([3,1,2], 3)
+k = FinFunction([1,3,4],3,5)
 @test f isa FinFunction{Int,Int}
 @test (dom(f), codom(f)) == (FinSet(3), FinSet(5))
 @test force(f) === f
 @test codom(FinFunction([1,3,4])) == FinSet(4)
+@test k == f 
+
 
 X = FinSet(Set([:w,:x,:y,:z]))
 k = FinFunction(Dict(:a => :x, :b => :y, :c => :z), X)
@@ -87,7 +90,9 @@ rot3(x) = (x % 3) + 1
 @test preimage(id(FinSet(3)), 2) == [2]
 
 f = FinFunction([1,2,1,3], 5, index=true)
+l = FinFunction([1,2,1,3],4,5,index=true)
 @test is_indexed(f)
+@test f == l
 @test force(f) === f
 @test (dom(f), codom(f)) == (FinSet(4), FinSet(5))
 @test f(1) == 1
@@ -144,8 +149,10 @@ k = FinDomFunction(5:10)
 @test isempty(preimage(k, 4))
 
 k = FinDomFunction([:a,:b,:a,:c], index=true)
+l = FinDomFunction([:a,:b,:a,:c],TypeSet(Symbol),index=true)
 @test is_indexed(k)
 @test (dom(k), codom(k)) == (FinSet(4), TypeSet(Symbol))
+@test k == l
 @test k(1) == :a
 @test preimage(k, :a) == [1,3]
 @test preimage(k, :c) == [4]
@@ -155,6 +162,24 @@ k = FinDomFunction([:a,:b,:a,:c], index=true)
 
 f = FinFunction([1,3,2], 4)
 @test compose(f,k) == FinDomFunction([:a,:a,:b])
+
+#codomain checks
+
+three = FinSet(3)
+four = FinSet(4)
+badfunc = [1,5,2]
+strfunc = ["one","two","three"]
+strings = TypeSet(String)
+
+f = FinFunction(badfunc,three,four,known_correct=true)
+g = FinDomFunction(strfunc,strings,known_correct=false) #known_correct does nothing
+h = FinDomFunction(strfunc,strings,index=true,known_correct=true) #known_correct does nothing
+
+@test_throws ErrorException h = FinFunction(badfunc,three,four,index=true)
+@test_throws ErrorException l = FinFunction(badfunc,three,four)
+@test_throws ErrorException m = FinFunction(badfunc,three,four,index=true)
+@test_throws BoundsError n = FinFunction(badfunc,three,four,index=true,known_correct=true) 
+
 
 # Limits
 ########

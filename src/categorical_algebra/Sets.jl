@@ -38,6 +38,7 @@ struct TypeSet{T} <: SetOb{T} end
 TypeSet(T::Type) = TypeSet{T}()
 
 Base.show(io::IO, ::TypeSet{T}) where T = print(io, "TypeSet($T)")
+Base.in(elem,::TypeSet{T}) where T = isa(elem,T)
 
 """ Abstract type for morphism in the category **Set**.
 

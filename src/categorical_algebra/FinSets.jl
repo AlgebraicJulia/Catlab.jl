@@ -47,7 +47,7 @@ FinSet(set::FinSet) = set
   n::Int
 end
 
-FinSet{Int,Int}(n::Int) = FinSetInt(n)
+FinSet{Int,Int}(n::Int) = FinSetInt(n) 
 FinSet(n::Int) = FinSetInt(n)
 
 Base.iterate(set::FinSetInt, args...) = iterate(1:set.n, args...)
@@ -170,6 +170,9 @@ case it is evaluated lazily, or explictly by a vector of integers. In the vector
 representation, the function (1↦1, 2↦3, 3↦2, 4↦3), for example, is represented
 by the vector [1,3,2,3].
 
+FinFunctions can be constructed with or without an explicitly provided codomain.
+If a codomain is provided, by default the constructor checks it is valid.
+
 This type is mildly generalized by [`FinDomFunction`](@ref).
 """
 const FinFunction{S, S′, Dom <: FinSet{S}, Codom <: FinSet{S′}} =
@@ -182,14 +185,21 @@ FinFunction(::typeof(identity), args...) =
 FinFunction(f::AbstractDict, args...) =
   FinFunctionDict(f, (FinSet(arg) for arg in args)...)
 
-function FinFunction(f::AbstractVector{Int}, args...; index=false)
-  if index == false
+function FinFunction(f::AbstractVector{Int}, args...; index=false, known_correct = false)
+  cod = FinSet(args[end])
+  if !known_correct
+    for (i,t) ∈ enumerate(f)
+      t ∈ cod || error("Value $t at index $i is not in $cod.")
+    end
+  end
+  if !index
     FinDomFunctionVector(f, (FinSet(arg) for arg in args)...)
   else
     index = index == true ? nothing : index
-    IndexedFinFunctionVector(f, args...; index=index)
+    IndexedFinFunctionVector(f, cod; index=index)
   end
 end
+#Below method stops previous method from being called without a codomain
 FinFunction(f::AbstractVector{Int}; kw...) =
   FinFunction(f, FinSet(isempty(f) ? 0 : maximum(f)); kw...)
 
@@ -209,7 +219,8 @@ FinDomFunction(::typeof(identity), args...) =
   IdentityFunction((FinSet(arg) for arg in args)...)
 FinDomFunction(f::AbstractDict, args...) = FinDomFunctionDict(f, args...)
 
-function FinDomFunction(f::AbstractVector, args...; index=false)
+#kw is to capture is_correct, which does nothing for this type.
+function FinDomFunction(f::AbstractVector, args...; index=false, kw...)
   if index == false
     FinDomFunctionVector(f, args...)
   else
@@ -217,6 +228,9 @@ function FinDomFunction(f::AbstractVector, args...; index=false)
     IndexedFinDomFunctionVector(f, args...; index=index)
   end
 end
+#Below method stops above method from being called without a codomain
+FinDomFunction(f::AbstractVector{T}; kw...) where T =
+  FinDomFunction(f,TypeSet(T); kw...)
 
 Sets.show_type_constructor(io::IO, ::Type{<:FinDomFunction}) =
   print(io, "FinDomFunction")
@@ -306,6 +320,11 @@ function IndexedFinDomFunctionVector(f::AbstractVector{T}, codom::SetOb{T};
   IndexedFinDomFunctionVector(f, index, codom)
 end
 
+function IndexedFinDomFunctionVector(f::AbstractVector{T}, dom, codom::SetOb{T};
+  index=nothing) where T
+  IndexedFinDomFunctionVector(f, index, codom)
+end
+
 Base.:(==)(f::Union{FinDomFunctionVector,IndexedFinDomFunctionVector},
            g::Union{FinDomFunctionVector,IndexedFinDomFunctionVector}) =
   # Ignore index when comparing for equality.
@@ -370,7 +389,11 @@ function IndexedFinFunctionVector(f::AbstractVector{Int}, codom; index=nothing)
   elseif length(index) != length(codom)
     error("Index length $(length(index)) does not match codomain $codom")
   end
-  IndexedFinDomFunctionVector(f, index, codom)
+  IndexedFinDomFunctionVector(f, codom, index=index)
+end
+
+function IndexedFinFunctionVector(f::AbstractVector{Int},dom,codom; index=nothing)
+  IndexedFinFunctionVector(f,codom;index=index)
 end
 
 Base.show(io::IO, f::IndexedFinFunctionVector) =
