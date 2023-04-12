@@ -1,21 +1,18 @@
 module Chase
 export chase
 
+using StructEquality
+
 using ...Theories, ...Present
-using ..CSets
-using ..FinSets
-using ..FinCats
+using ..CSets, ..FinSets, ..FinCats
 using ..FinCats: FinCatPresentation
-using ..Limits
-using ..FreeDiagrams
+using ..Limits, ..FreeDiagrams
 using ...ColumnImplementations: AttrVar
 import ..Categories: ob_map
 using ...DenseACSets: datatypes
 
 import ...Theories: dom, codom
 import ..Limits: universal, coproduct
-
-using StructEquality
 
 # EDs
 #####
@@ -257,7 +254,7 @@ end
 # Chase
 #######
 
-"""    chase(I::ACSet, Σ::AbstractDict, n::Int; verbose=false)
+"""    chase(I::ACSet, Σ::AbstractDict, n::Int)
 
 Chase a C-Set or C-Rel instance given a list of
 embedded dependencies. This may not terminate, so a bound `n` on the number of
@@ -281,14 +278,12 @@ flag.
 
 TODO: this algorithm could be made more efficient by homomorphism caching.
 """
-function chase(I::ACSet, Σ::AbstractDict, n::Int; verbose=false)
+function chase(I::ACSet, Σ::AbstractDict, n::Int)
   Σ_egd, Σ_tgd = split_Σ(Σ)
   res = id(I) # initialize result
   for i in 1:n
-    if verbose
-      println("\n\nIter $i\n"); show(stdout,"text/plain",codom(res))
-    end
-    next_morphism = chase_step(codom(res), Σ_egd, Σ_tgd; verbose=verbose)
+    @debug "Chase iteration $i" result = codom(res)
+    next_morphism = chase_step(codom(res), Σ_egd, Σ_tgd)
     if no_change(next_morphism)
       return res => true
     else
@@ -306,37 +301,35 @@ S->T->I = S->I). Store the trigger with the ED as a span, I<-S->T.
 Optionally initialize the homomorphism search to control the chase process.
 """
 function active_triggers(I::ACSet, Σ::AbstractDict; 
-                         init::Union{NamedTuple, Nothing}, verbose::Bool=false)
+                         init::Union{NamedTuple, Nothing})
   maps = Span[]
-  if verbose println("Looking for active triggers") end 
+  @debug "Looking for active triggers"
   for (name,ed) in collect(Σ)
-    if verbose println("\tChecking if $name is active") end
+    @debug "Checking if trigger $name is active"
     kw = Dict(isnothing(init) ? [] : [:initial=>init])
     for trigger in homomorphisms(dom(ed), I; kw...)
       if isnothing(extend_morphism(trigger, ed))
-        if verbose println("\tActive $name") end
+        @debug "Active $name"
         push!(maps, Span(trigger, ed))
       end
     end
   end
-  if verbose println("Found $(length(maps)) active triggers") end 
+  @debug "Found $(length(maps)) active triggers"
   return maps
 end
 
 """Run a single chase step."""
-function chase_step(I::ACSet, Σegd, Σtgd; init::Union{NamedTuple, Nothing}=nothing,
-                    verbose::Bool=false)
+function chase_step(I::ACSet, Σegd, Σtgd; init::Union{NamedTuple, Nothing}=nothing)
     # First fire one round of TGDs
-    ats = active_triggers(I, Σtgd; init=init, verbose=verbose)
+    ats = active_triggers(I, Σtgd; init=init)
     res = isempty(ats) ? id(I) : fire_triggers(ats) # first: fire TGDs
-    if !isempty(ats) && verbose
-      println("\tPost TGD instance"); show(stdout,"text/plain",codom(res))
+    if !isempty(ats)
+      @debug "Post TGD instance" result = codom(res)
     end
 
     # EGDs merely quotient, so this will terminate.
     while true
-      if verbose println("\tEGDs") end
-      ats = active_triggers(codom(res), Σegd; init=init, verbose=verbose)
+      ats = active_triggers(codom(res), Σegd; init=init)
       res_ = isempty(ats) ? id(codom(res)) : fire_triggers(ats)
       if force(res_) == force(id(codom(res)))
         return res

@@ -269,7 +269,7 @@ end
 Create a C-Set for the collage of the functor. Initialize data in the domain 
 portion of the collage, then run the chase.
 """
-function (F::SigmaMigration)(d::ACSet; n=100, verbose=false) 
+function (F::SigmaMigration)(d::ACSet; n=100)
   D,CD = F.dom_constructor(), F.codom_constructor()
   S = acset_schema(d)
   col, col_pres = collage(F.F)
@@ -290,7 +290,7 @@ function (F::SigmaMigration)(d::ACSet; n=100, verbose=false)
   end 
   # Run chase 
   eds = pres_to_eds(col_pres; types=atypes, name="Sigma")
-  chase_rel_res, ok = chase(col_type, eds, n; verbose=verbose)
+  chase_rel_res, ok = chase(col_type, eds, n)
   # Postprocess result
   ok || error("Sigma migration did not terminate with n=$n")
   res = CD
@@ -324,14 +324,13 @@ which works because left Kan extensions take representables to representables
 representables (they can be infinite), this function thus inherits any
 limitations of our implementation of left pushforward data migrations.
 """
-function representable(T, C::Presentation{ThSchema}, ob::Symbol; 
-                       verbose=false)
+function representable(T, C::Presentation{ThSchema}, ob::Symbol)
   C₀ = Presentation{Symbol}(FreeSchema)
   add_generator!(C₀, C[ob])
   X = AnonACSet(C₀); add_part!(X, ob)
   F = FinFunctor(Dict(ob => ob), Dict(), C₀, C)
   ΣF = SigmaMigration(F, X, T)
-  return ΣF(X; verbose=verbose)
+  return ΣF(X)
 end
 representable(::Type{T}, ob::Symbol) where T <: StructACSet =
   representable(T, Presentation(T), ob)
@@ -348,11 +347,11 @@ Input `cons` is a constructor for the ACSet
 
 Returns a `FinDomFunctor` with domain `op(C)`.
 """
-function yoneda(cons, C::Presentation{ThSchema}; cache=nothing, verbose=false)
+function yoneda(cons, C::Presentation{ThSchema}; cache=nothing)
   cache = isnothing(cache) ? Dict() : cache
   y_ob = Dict(map(nameof.(generators(C, :Ob))) do c 
-    if verbose println("Computing generator for $c") end 
-    c => haskey(cache, c) ? cache[c] : representable(cons, C, c; verbose=verbose)
+    @debug "Computing representable $c"
+    c => haskey(cache, c) ? cache[c] : representable(cons, C, c)
   end)
   y_ob = merge(y_ob, Dict(map(nameof.(generators(C,:AttrType))) do c 
     rep = cons()
