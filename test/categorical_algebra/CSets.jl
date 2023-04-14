@@ -721,9 +721,14 @@ Z = @acset A2{Symbol} begin X=1; D=1; f=[AttrVar(1)]; g=[AttrVar(1)] end
 
 # Colimits 
 #---------
+const WG = WeightedGraph
+
+A = @acset WG{Bool} begin V=1;E=2;Weight=2;src=1;tgt=1;weight=[AttrVar(1),true] end
+
+# CREATE 
+@test dom(create(A)) == WG{Bool}()
 
 # COPRODUCT
-A = @acset WG{Bool} begin V=1;E=2;Weight=2;src=1;tgt=1;weight=[AttrVar(1),true] end
 diagram = DiscreteDiagram([A,A])
 AA = coproduct([A,A])
 @test apex(AA)[:weight] == [AttrVar(1),true,AttrVar(3),true]

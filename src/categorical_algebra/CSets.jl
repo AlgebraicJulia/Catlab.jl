@@ -1218,8 +1218,10 @@ function unpack_sets(Xs::AbstractVector{<:ACSet}; S=nothing, Ts=nothing,
   if all
     return merge(fin_sets, (d => Vector{TypeSet}(map(X->TypeSet(X,d), Xs)) for d in attrtypes(S)))
   elseif var 
-    return merge(fin_sets, (d => [VarSet{attrtype_instantiation(S,Ts,d)}(
-      nparts(X,d)) for X in Xs] for d in attrtypes(S)))
+    return merge(fin_sets, map(attrtypes(S)) do d 
+      T = VarSet{attrtype_instantiation(S,Ts,d)}
+      d => T[T(nparts(X,d)) for X in Xs]
+    end)
   else 
     return fin_sets
   end 

@@ -2,6 +2,7 @@ module TestFinSets
 using Test
 
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
+using Catlab.CategoricalAlgebra.FinSets: VarSet
 
 sshow(args...) = sprint(show, args...)
 
@@ -570,5 +571,8 @@ f = VarFunction{Bool}(AttrVar.([1,1,true]),FinSet(2))
 @test !(is_monic(f) || is_epic(f))
 f = VarFunction{Bool}(AttrVar.([1,2,true]),FinSet(2))
 @test !is_monic(f) && is_epic(f)
+
+# Create 
+@test dom(create(VarSet{Int}(1))) == VarSet{Int}(0)
 
 end
