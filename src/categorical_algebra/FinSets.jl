@@ -331,7 +331,7 @@ Base.length(f::AbsVarFunction{T}) where T = length(collect(f.fun))
 Base.collect(f::AbsVarFunction{T}) where T = collect(f.fun)
 (f::VarFunction{T})(v::T) where T = v 
 (f::AbsVarFunction{T})(v::AttrVar) where T = f.fun(v.val) 
-(f::AbsVarFunction{T})(v::AbstractVector) where T = f.(v) 
+
 dom(f::AbsVarFunction{T}) where T = VarSet{T}(length(collect(f.fun)))
 codom(f::VarFunction{T}) where T = VarSet{T}(length(f.codom))
 id(s::VarSet{T}) where T = VarFunction{T}(AttrVar.(1:s.n), FinSet(s.n))

@@ -532,13 +532,16 @@ end
 
 # VarFunctions
 ##############
+# Construction 
+f = VarFunction{Vector{Int}}([AttrVar(1),[1,2,3]], FinSet(1))
+@test f([1,2]) == [1,2]
 
 # Composition 
 f = VarFunction{Bool}(([AttrVar(2),AttrVar(1), true]),FinSet(3))
 @test collect(f⋅ f) == [AttrVar(1),AttrVar(2), true]
 
 @test force(f) == f
-@test f(AttrVar.(3:-1:1)) == [true, AttrVar.(1:2)...]
+@test f.(AttrVar.(3:-1:1)) == [true, AttrVar.(1:2)...]
 @test length(f) == 3
 @test preimage(f, false) == []
 @test preimage(f, true) == [3]
@@ -553,7 +556,7 @@ f2 = LooseVarFunction{Int,String}(
   SetFunction(string,TypeSet(Int),TypeSet(String)), 
   FinSet(2))
 f12 = f1 ⋅ f2 
-@test f12([false,true]) == ["20","10"]
+@test f12.([false,true]) == ["20","10"]
 @test collect(f1 ⋅ f2) == [AttrVar(1),"a", "3"]
 
 # Monos and epis

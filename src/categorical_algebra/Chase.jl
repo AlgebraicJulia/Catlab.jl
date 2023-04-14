@@ -379,8 +379,8 @@ function collage(F::FinFunctor)
 end
 
 
-# Extending morphisms
-#####################
+# Extending morphisms (should this be in CSets.jl)
+##################################################
 """
 Given a span of morphisms, we seek to find a morphism B → C that makes a
 commuting triangle if possible.
@@ -414,7 +414,7 @@ function extend_morphism_constraints(f::ACSetTransformation,
     is_var = ob ∈ attrtypes(S)
     for i in parts(codom(g), ob)
       p = preimage(g[ob], is_var ? AttrVar(i) : i )
-      vs = Set(mapping(is_var ? AttrVar.(p) : p))
+      vs = Set(mapping.(is_var ? AttrVar.(p) : p))
       if length(vs) == 1
         push!(init_comp, i => only(vs))
       elseif length(vs) > 1 # no homomorphism possible
