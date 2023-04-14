@@ -730,14 +730,21 @@ AA = coproduct([A,A])
 @test legs(AA)[2] isa TightACSetTransformation
 @test collect(legs(AA)[2][:Weight]) == AttrVar.(3:4)
 
+X = @acset WG{Bool} begin V=1;E=1;Weight=2;src=1;tgt=1;weight=[true] end
+f′ = homomorphism(A, X; initial=(Weight=[true,AttrVar(1)],))
+g′ = homomorphism(A, X; initial=(Weight=[true,AttrVar(2)],))
+fg = universal(AA, Cospan(f′,g′))
+
 # PUSHOUTS
-V = @acset WG{Bool} begin Weight=1 end 
+V = @acset WG{Bool} begin Weight=1 end
 f = ACSetTransformation(Dict(:Weight=>[AttrVar(1)]), V, A)
 g = ACSetTransformation(Dict(:Weight=>[AttrVar(2)]), V, A)
 
 clim = colimit(Span(f,g));
 @test all(is_natural, legs(clim))
 @test collect(legs(clim)[2][:Weight]) == AttrVar.([3,1]) # not [3,4] anymore
+
+fg = universal(clim, Cospan(f′,g′))
 
 f = ACSetTransformation(Dict(:Weight=>[AttrVar(1)]), V, A)
 g = ACSetTransformation(Dict(:Weight=>[true]), V, A)

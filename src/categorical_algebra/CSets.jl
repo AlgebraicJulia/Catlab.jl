@@ -1168,9 +1168,9 @@ end
 function universal(colim::ACSetColimit, cocone::Multicospan)
   X = apex(cocone)
   S, Ts = acset_schema(X), datatypes(X)
-  ud = unpack_diagram(cocone; S=S, Ts=Ts)
+  ud = unpack_diagram(cocone; S=S, Ts=Ts, var=true)
   components = Dict(k=>collect(universal(colim.colimits[k], ud[k])) for k in keys(ud))
-  only(homomorphisms(ob(colim), apex(cocone); initial=components)) # because of variables
+  ACSetTransformation(ob(colim), apex(cocone); components...)
 end
 
 """ Diagram in C-Set → named tuple of diagrams in Set.

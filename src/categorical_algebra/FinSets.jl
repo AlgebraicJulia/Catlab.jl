@@ -22,7 +22,7 @@ import ..Categories: ob, hom, dom, codom, compose, id, ob_map, hom_map
 import ..FinCats: force, ob_generators, hom_generators, ob_generator,
   ob_generator_name, graph, is_discrete
 using ..FinCats: dicttype
-import ..Limits: limit, colimit, universal
+import ..Limits: limit, colimit, universal, BipartiteColimit
 import ..Subobjects: Subobject
 using ..Sets: IdentityFunction, SetFunctionCallable
 using ...ColumnImplementations: AttrVar
@@ -1249,17 +1249,31 @@ function colimit(d::BipartiteFreeDiagram{<:VarSet{T}}) where T
   concretes = Dict([find_root!(vars, k)=>v for (k,v) in collect(concrete)])
   roots = unique(filter(r->!haskey(concretes,r), 
                         [find_root!(vars, i) for i in 1:length(vars)]))
-  n_var = FinSet(length(roots)) # number of resulting variables
+  n_var = VarSet{T}(length(roots)) # number of resulting variables
   # Construct maps into apex
   csp = Multicospan(n_var, map(var_indices[(1:n₂).+n₁]) do v_is 
     VarFunction{T}(map(v_is) do v_i 
       r = find_root!(vars, v_i)
       haskey(concretes,r) ? concretes[r] : AttrVar(findfirst(==(r), roots))
-    end, n_var)
+    end, FinSet(n_var.n))
   end)
   # Cocone diagram
-  Colimit(d, csp)
+  return Colimit(d, csp) # FIXME why is this a Colimit{FinSet{Int}, Diagram{VarSet}} ?
 end 
+
+# FIXME: Handle more specific diagrams? Now only VarSet colimits will be bipartite
+function universal(lim::BipartiteColimit{<:VarSet{T}}, cocone::Multicospan) where {T}
+  VarFunction{T}(map(AttrVar.(collect(apex(lim)))) do p 
+    for (l, csp) in zip(legs(lim), cocone)
+      pre = preimage(l, p) # find some colimit leg which maps onto this part
+      if !isempty(pre)
+        return csp(AttrVar(first(pre))) # pick arbitrary elem and apply cocone map
+      end 
+    end 
+    error("Colimit legs should be jointly surjective")
+  end, FinSet(apex(cocone).n))
+end
+
 
 colimit(d::FreeDiagram{<:FinSet{Int}}) = colimit(FinDomFunctor(d))
 

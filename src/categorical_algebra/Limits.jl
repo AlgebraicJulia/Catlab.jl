@@ -552,6 +552,8 @@ struct BipartiteLimit{Ob, Diagram, Cone<:Multispan{Ob},
   limit::Lim
 end
 
+
+# FIXME: make this similar to how colimits are treated
 function limit(F::Union{Functor,FreeDiagram,FixedShapeFreeDiagram}, ::ToBipartiteLimit)
   d = BipartiteFreeDiagram(F)
   lim = limit(d)
@@ -610,8 +612,9 @@ end
 
 function universal(colim::BipartiteColimit, cocone::Multicospan)
   colim = colim.colimit
-  cocone = Multicospan(apex(cocone), legs(cocone)[colim.diagram[:orig_vert₂]])
+  cocone = Multicospan(apex(cocone), legs(cocone)[cocone_indices(colim.diagram)])
   universal(colim, cocone)
 end
+
 
 end
