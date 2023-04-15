@@ -2,7 +2,7 @@
 These are ACSets where the set associated to each object is of the form `1:n`
 """
 module DenseACSets
-export @acset_type, @abstract_acset_type, @declare_schema, FreeSchema,
+export @acset_type, @abstract_acset_type, @declare_schema, @acset_transformation, FreeSchema,
   StructACSet, StructCSet, DynamicACSet, SimpleACSet, AnonACSet, StructCSet, ACSetTableType,
   AnonACSetType
 
@@ -786,6 +786,57 @@ macro acset(head, body)
   end)
 end
 
+"""
+Provides a shorthand for constructing an acset transformation by giving
+  its components. Homomorphism search allows partial specification, 
+  with the return value being the unique extension if it exists.
+
+Keyword arguments can be passed on to the search function after 
+  the body of the transformation.
+
+If the domain and codomain restrict to the same attribute functor
+  and no mapping is specified on any attribute type, the search
+  will try for a tight extension and return a loose one if that's
+  not possible. Otherwise the search will be loose.
+
+Usage example on WeightedGraph{String}s: 
+
+```
+@acsettransformation A B begin
+  V = [3,5,2] #complete specification can be a vector
+  E = [1 => 3, 4 => 3] #otherwise use a dict
+  W = ["cool" => "warm"] #loose transformation
+end monic=true iso=V #or iso=[V] or iso=[:V]
+#brackets required for iso=[V,E] or [:V,E]
+```
+"""
+macro acset_transformation(dom,cod,body,kw...)
+  kw = map(parse_kwargs,kw)
+  initial = @match body begin
+    Expr(:block,lines...) => filter(!isnothing,map(escape_assignment_lhs,lines))
+    _ => error("you really done it now, givin' me $body")
+  end
+  Expr(:call,esc(:homomorphism),esc(dom),esc(cod),Expr(:kw,:initial,Expr(:tuple,initial...)),kw...)
+end
+
+function parse_kwargs(expr)
+  @match expr begin
+    Expr(:(=),x,y::Bool) => Expr(:kw,x,y)
+    Expr(:(=),x,y::Symbol) => Expr(:kw,x,[QuoteNode(y)])
+    Expr(:(=),x,y::QuoteNode) => Expr(:kw,x,[y])
+    Expr(:(=),x,Expr(:vect,args...)) => @match args begin
+      Any[] => Expr(:kw,x,[])
+      [::Symbol,_...] => Expr(:kw,x,[z for z in args])
+      _ => Expr(:kw,x,Expr(:vect,args...))
+    end
+    _ => nothing
+  end 
+end
+function escape_assignment_lhs(expr)
+  @match expr begin
+    Expr(:(=),x,y) => Expr(:(=),esc(x),y)
+    _ => nothing end
+  end
 # Mapping
 #########
 
