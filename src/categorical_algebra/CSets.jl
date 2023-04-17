@@ -538,29 +538,25 @@ For each hom in the schema, e.g. h: m → n, the following square must commute:
 Xₕ ↓  ✓  ↓ Yₕ
   Xₙ --> Yₙ
      αₙ 
-
-If `return_failures` is true, return a list of violations, with elements such as: 
-  (h, index i in Xₘ, Yₕ(αₘ(i)), αₙ(Xₕ(i)))
-
-This is type-unstable, so it should not be used in performance-sensitive code.
 """
-function is_natural(α::ACSetTransformation; return_failures::Bool=false)
-  X, Y = dom(α), codom(α)
+function is_natural(α::ACSetTransformation)
+  all(isempty(get_unnaturalities(α)))
+end
+
+"""
+Returns a lazy iterator of the same length as `arrows(S)`
+whose values at an arrow (f,c,d) is a lazy iterator
+over the elements of X(c) on which α's naturality square
+for f does not commute. 
+"""
+function get_unnaturalities(α::ACSetTransformation)
+  X,Y = dom(α), codom(α)
   S = acset_schema(X)
-  unnatural = []
-  for (f, c, d) in arrows(S)
-    Xf, Yf, α_c, α_d = subpart(X,f), subpart(Y,f), α[c], α[d]
-    for i in eachindex(Xf)
-      if Yf[α_c(i)] != α_d(Xf[i])
-        if return_failures 
-          push!(unnatural, (f, i, Yf[α_c(i)], α_d(Xf[i])))
-        else
-          return false 
-        end 
-      end
-    end
+  Iterators.map(arrows(S)) do (f,c,d)
+    Xf,Yf = SetFunction(X,f), SetFunction(Y,f)
+    α_c,α_d = α[c], α[d]
+    Iterators.filter(i->(Xf⋅α_d)(i) != (α_c⋅Yf)(i),dom(Xf))
   end
-  return return_failures ? unnatural : true
 end
 
 function is_monic(α::TightACSetTransformation)
@@ -600,8 +596,7 @@ end
 # Finding C-set transformations
 ###############################
 
-""" Algorithm for finding homomorphisms between attributed ``C``-sets.
-"""
+""" Algorithm for finding homomorphisms between attributed ``C``-sets."""
 abstract type ACSetHomomorphismAlgorithm end
 
 """ Find attributed ``C``-set homomorphisms using backtracking search.
