@@ -121,7 +121,9 @@ g, h = path_graph(Graph, 4), cycle_graph(Graph, 2)
 β = CSetTransformation((V=[2,1], E=[2,1]), h, h)
 @test is_natural(β)
 β = CSetTransformation((V=[2,1], E=[2,2]), h, h)
-@test is_natural(β;return_failures=true) == [(:src,2,2,1),(:tgt,2,1,2)]
+uns = get_unnaturalities(β)
+@test Dict([f => collect(uns[f]) for (f,c,d) in arrows(acset_schema(dom(β)))]) == 
+      Dict([:src=>[(2,2,1)],:tgt=>[(2,1,2)]])
 
 
 # Category of C-sets.
@@ -304,7 +306,9 @@ h = path_graph(WeightedGraph{Float64}, 4, E=(weight=[1.,2.,3.],))
 β = ACSetTransformation((V=[1,2], E=[1]), g, h)
 @test !is_natural(β) # Graph homomorphism but does not preserve weight
 β = ACSetTransformation((V=[1,3], E=[1]), g, h)
-@test is_natural(β; return_failures=true) == [(:tgt,1,2,3), (:weight,1,1.,2.)]
+uns = get_unnaturalities(β)
+@test collect(uns[:src]) == [] && collect(uns[:tgt]) == [(1,2,3)] &&
+  collect(uns[:weight]) == [(1,1.0,2.0)]
 
 # Loose morphisms.
 α = LooseACSetTransformation((V=[1,2], E=[1]), (Weight=x->x/2,), g, h)
@@ -470,6 +474,15 @@ set_subpart!(s3, :f, [20,10])
 @test length(homomorphisms(s2,s3; type_components=(D=x->10*x,)))==1
 @test homomorphism(s2,s3; type_components=(D=x->10*x,)) isa LooseACSetTransformation
 @test length(homomorphisms(s1,s1; type_components=(D=x->x^x,)))==4
+
+#Backtracking with monic and iso failure objects
+g1, g2 = path_graph(Graph, 3), path_graph(Graph, 2)
+@test collect(Catlab.CategoricalAlgebra.CSets.backtracking_search(identity,g1,g2;monic=true)[2]) == [:V,:E]
+rem_part!(g1,:E,2)
+@test collect(Catlab.CategoricalAlgebra.CSets.backtracking_search(identity,g1,g2;monic=true)[2]) == [:V]
+@test collect(Catlab.CategoricalAlgebra.CSets.backtracking_search(identity,g1,g2;iso=true)[1]) == [:V]
+@test_throws ErrorException homomorphism_error_failures(g1,g2;monic=true)
+
 
 # Symmetric graphs
 #-----------------

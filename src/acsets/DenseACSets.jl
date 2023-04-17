@@ -2,7 +2,7 @@
 These are ACSets where the set associated to each object is of the form `1:n`
 """
 module DenseACSets
-export @acset_type, @abstract_acset_type, @declare_schema, @acset_transformation, FreeSchema,
+export @acset_type, @abstract_acset_type, @declare_schema, FreeSchema,
   StructACSet, StructCSet, DynamicACSet, SimpleACSet, AnonACSet, StructCSet, ACSetTableType,
   AnonACSetType
 
@@ -814,29 +814,34 @@ macro acset_transformation(dom,cod,body,kw...)
   kw = map(parse_kwargs,kw)
   initial = @match body begin
     Expr(:block,lines...) => filter(!isnothing,map(escape_assignment_lhs,lines))
-    _ => error("you really done it now, givin' me $body")
+    _ => error("Expected: `begin...end`, received: $body")
   end
-  Expr(:call,esc(:homomorphism),esc(dom),esc(cod),Expr(:kw,:initial,Expr(:tuple,initial...)),kw...)
+  Expr(:call,esc(:homomorphism_error_failures),esc(dom),esc(cod),Expr(:kw,:initial,Expr(:tuple,initial...)),kw...)
 end
 
 function parse_kwargs(expr)
   @match expr begin
     Expr(:(=),x,y::Bool) => Expr(:kw,x,y)
-    Expr(:(=),x,y::Symbol) => Expr(:kw,x,[QuoteNode(y)])
-    Expr(:(=),x,y::QuoteNode) => Expr(:kw,x,[y])
+    Expr(:(=),x,y::Symbol) => begin println("here"); Expr(:kw,x,[y]) end
+    Expr(:(=),x,y::QuoteNode) => Expr(:kw,x,[y.value])
     Expr(:(=),x,Expr(:vect,args...)) => @match args begin
       Any[] => Expr(:kw,x,[])
       [::Symbol,_...] => Expr(:kw,x,[z for z in args])
-      _ => Expr(:kw,x,Expr(:vect,args...))
+      _ =>  Expr(:kw,x,Expr(:vect,args...))
     end
     _ => nothing
   end 
 end
 function escape_assignment_lhs(expr)
+#  println(dump(expr))
   @match expr begin
-    Expr(:(=),x,y) => Expr(:(=),esc(x),y)
-    _ => nothing end
+    Expr(:(=),x,Expr(:vect,fst,args...)) => @match fst begin
+      Expr(:call,:(=>),_...) => Expr(:(=),esc(x),Expr(:call,:Dict,Expr(:vect,fst,args...)))
+      _ => Expr(:(=),esc(x),Expr(:vect,fst,args...))
+    end
+    _ => nothing 
   end
+end
 # Mapping
 #########
 

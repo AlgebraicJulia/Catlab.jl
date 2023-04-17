@@ -5,8 +5,8 @@ export ACSetTransformation, CSetTransformation,StructACSetTransformation,
   StructTightACSetTransformation,
   TightACSetTransformation, LooseACSetTransformation, SubACSet, SubCSet,
   ACSetHomomorphismAlgorithm, BacktrackingSearch, HomomorphismQuery,
-  components, force, is_natural, homomorphism, homomorphisms, is_homomorphic,
-  isomorphism, isomorphisms, is_isomorphic, type_components,
+  components, type_components, force, get_unnaturalities, is_natural, homomorphism, homomorphisms,
+  homomorphism_error_failures, is_homomorphic, isomorphism, isomorphisms, is_isomorphic,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset,
   generate_json_acset_schema, parse_json_acset_schema,
   read_json_acset_schema, write_json_acset_schema, acset_schema_json_schema
@@ -540,7 +540,7 @@ Xₕ ↓  ✓  ↓ Yₕ
      αₙ 
 """
 function is_natural(α::ACSetTransformation)
-  all(isempty(get_unnaturalities(α)))
+  all(isempty,[a.second for a in get_unnaturalities(α)])
 end
 
 """
@@ -552,12 +552,16 @@ for f does not commute.
 function get_unnaturalities(α::ACSetTransformation)
   X,Y = dom(α), codom(α)
   S = acset_schema(X)
-  Iterators.map(arrows(S)) do (f,c,d)
-    Xf,Yf = SetFunction(X,f), SetFunction(Y,f)
-    α_c,α_d = α[c], α[d]
-    Iterators.filter(i->(Xf⋅α_d)(i) != (α_c⋅Yf)(i),dom(Xf))
+  pairs = Iterators.map(arrows(S)) do (f,c,d)
+    Xf,Yf,α_c,α_d = subpart(X,f),subpart(Y,f), α[c], α[d]
+    Pair(f,
+    Iterators.map(Iterators.filter(i->Yf[α_c(i)] != α_d(Xf[i]),eachindex(Xf))) do i
+      (i,Yf[α_c(i)],α_d(Xf[i]))
+    end)
   end
+  Dict(pairs)
 end
+
 
 function is_monic(α::TightACSetTransformation)
   for c in components(α)
@@ -656,6 +660,33 @@ function homomorphism(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...)
   result
 end
 
+"""
+Searches for a homomorphism,  return inconsistencies in the givens
+if the search fails before recursion starts. TODO: partialacsettransformation
+type to allow checking for naturality of initial assignment?
+"""
+function homomorphism_error_failures(dom,cod;kw...)
+  result = nothing
+  backtracking_search(dom,cod;kw...) do α
+      result = α; return isa(α,ACSetTransformation)
+  end 
+  if isa(result,Tuple)
+    isoFailures, monoFailures = result
+    isoFailures,monoFailures = collect(isoFailures),collect(monoFailures)
+    error("""
+          Cardinalities inconsistent with request for...
+            iso at object(s) $isoFailures
+            mono at object(s) $monoFailures
+          """)
+  end
+  if result == false
+    error("""
+          No homomorphism exists extending given data.
+          """)
+  end
+  return result
+end
+
 """ Find all homomorphisms between two attributed ``C``-sets.
 
 This function is at least as expensive as [`homomorphism`](@ref) and when no
@@ -749,6 +780,7 @@ struct BacktrackingState{
   type_components::LooseFun
 end
 
+#f needs to return bool
 function backtracking_search(f, X::ACSet, Y::ACSet;
     monic=false, iso=false, random=false, type_components=(;), initial=(;))
   S, Sy = acset_schema.([X,Y])
@@ -769,17 +801,17 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
   if iso isa Bool
     iso = iso ? Ob : ()
   end
-  for c in iso
-    nparts(X,c) == nparts(Y,c) || return false
-  end
   if monic isa Bool
     monic = monic ? Ob : ()
   end
-  # Injections between finite sets are bijections, so reduce to that case.
+  isoFailures = Iterators.filter(c->nparts(X,c)!=nparts(Y,c),iso)
+  monoFailures = Iterators.filter(c->nparts(X,c)>nparts(Y,c),monic)  
+
+  # Injections between finite sets of the same size are bijections, so reduce to that case.
   monic = unique([iso..., monic...])
-  for c in monic
-    nparts(X,c) <= nparts(Y,c) || return false
-  end
+
+  isempty(isoFailures) && isempty(monoFailures)||
+      return f((isoFailures,monoFailures))
 
   # Initialize state variables for search.
   assignment = merge(
