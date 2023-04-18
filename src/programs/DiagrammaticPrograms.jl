@@ -6,7 +6,7 @@ provided by other submodules.
 """
 module DiagrammaticPrograms
 export @graph, @fincat, @finfunctor, @diagram, @free_diagram,
-  @migrate, @migration
+  @migrate, @migration, @acset_colim
 
 using Base.Iterators: repeated
 using MLStyle: @match
@@ -595,6 +595,26 @@ macro migration(tgt_schema, src_schema, body)
   :(parse_migration($(esc(tgt_schema)), $(esc(src_schema)), $(Meta.quot(body))))
 end
 
+"""
+Uses the output of `yoneda`:
+
+@acset_colim yGraph begin 
+  (e1,e2)::E 
+  src(e1) == tgt(e2) 
+end
+"""
+macro acset_colim(yon, body)
+  body2 = quote
+    I => @join $body
+  end
+  ast = AST.Diagram(parse_diagram_ast(body2))
+  quote
+    p = Presentation(acset_schema(last(first($(esc(yon)).ob_map))))
+    tmp = parse_migration(p, $ast)
+    ob_map(colimit_representables(tmp, $(esc(yon))), :I)
+  end
+end
+
 """ Parse a contravariant data migration from a Julia expression.
 
 The process kicked off by this internal function is somewhat complicated due to
@@ -1125,6 +1145,9 @@ end
 ############################
 
 # Types that can be Julia literals.
+struct Lit 
+  val::Any
+end
 const Literal = Union{Number,Char,String,QuoteNode}
 
 get_literal(value::Literal) = value
