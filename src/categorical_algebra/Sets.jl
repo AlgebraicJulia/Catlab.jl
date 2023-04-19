@@ -52,6 +52,7 @@ abstract type SetFunction{Dom <: SetOb, Codom <: SetOb} end
 
 SetFunction(f::Function, args...) = SetFunctionCallable(f, args...)
 SetFunction(::typeof(identity), args...) = IdentityFunction(args...)
+SetFunction(f::SetFunction) = f
 
 show_type_constructor(io::IO, ::Type{<:SetFunction}) = print(io, "SetFunction")
 

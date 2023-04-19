@@ -5,8 +5,8 @@ export ACSetTransformation, CSetTransformation,StructACSetTransformation,
   StructTightACSetTransformation,
   TightACSetTransformation, LooseACSetTransformation, SubACSet, SubCSet,
   ACSetHomomorphismAlgorithm, BacktrackingSearch, HomomorphismQuery,
-  components, type_components, force, get_unnaturalities, is_natural, homomorphism, homomorphisms,
-  homomorphism_error_failures, is_homomorphic, isomorphism, isomorphisms, is_isomorphic,
+  components, type_components, force, get_unnaturalities, show_unnaturalities, is_natural, homomorphism, homomorphisms,
+  homomorphism_error_failures, homomorphisms_error_failures, is_homomorphic, isomorphism, isomorphisms, is_isomorphic,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset,
   generate_json_acset_schema, parse_json_acset_schema,
   read_json_acset_schema, write_json_acset_schema, acset_schema_json_schema
@@ -33,6 +33,7 @@ using ..FinSets: VarFunction, LooseVarFunction, IdentityFunction, VarSet
 import ..Limits: limit, colimit, universal
 import ..Subobjects: Subobject, implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..Sets: SetOb, SetFunction, TypeSet
+using ..Sets
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate, is_monic, is_epic
 import ..FinCats: FinDomFunctor, components, is_natural
 using ...DenseACSets: indices, unique_indices, attr_type, attrtype_type, datatypes, constructor
@@ -538,30 +539,81 @@ For each hom in the schema, e.g. h: m → n, the following square must commute:
 Xₕ ↓  ✓  ↓ Yₕ
   Xₙ --> Yₙ
      αₙ 
+You're allowed to run this on a named tuple partly specifying an ACSetTransformation,
+though at this time the domain and codomain must be fully specified ACSets.
 """
-function is_natural(α::ACSetTransformation)
-  all(isempty,[a.second for a in get_unnaturalities(α)])
+function is_natural(α::ACSetTransformation) 
+  isa(α,LooseACSetTransformation) ? 
+    is_natural(dom(α),codom(α),α.components,α.type_components) :
+    is_natural(dom(α),codom(α),α.components)
 end
-
+function is_natural(dom,codom,comps...)
+  all(isempty,[a.second for a in get_unnaturalities(dom,codom,comps...)])
+end
 """
-Returns a lazy iterator of the same length as `arrows(S)`
-whose values at an arrow (f,c,d) is a lazy iterator
+Returns a dictionary whose keys are the names in `arrows(S)`
+and whose value at `:f`, for an arrow `(f,c,d)`, is a lazy iterator
 over the elements of X(c) on which α's naturality square
-for f does not commute. 
+for f does not commute. Components should be a NamedTuple or Dictionary
+with keys contained in the names of S's morphisms and values vectors or dicts
+defining partial functions from X(c) to Y(c).
 """
-function get_unnaturalities(α::ACSetTransformation)
-  X,Y = dom(α), codom(α)
+function get_unnaturalities(X,Y,comps)
   S = acset_schema(X)
-  pairs = Iterators.map(arrows(S)) do (f,c,d)
+  type_comps = Dict(attr=>SetFunction(identity,SetOb(X,attr),SetOb(X,attr)) for attr in attrtype(S))
+  get_unnaturalities(X,Y,comps,type_comps)
+end
+function get_unnaturalities(X,Y,comps,type_comps)
+  S = acset_schema(X)
+  comps = Dict(a=> isa(comps[a],SetFunction) ? comps[a] : FinFunction(comps[a]) for a in keys(comps))
+  type_comps = Dict(a=>isa(type_comps[a],SetFunction) ? type_comps[a] : SetFunction(type_comps[a]) for a in keys(type_comps))
+  for ob in ob(S)
+    if !haskey(comps,ob) 
+      comps[ob] = FinFunction(Int[],SetOb(Y,ob))
+    end
+  end
+  for attr in attrtype(S)
+    if !haskey(type_comps,attr)
+      type_comps[attr] = SetFunction(identity,SetOb(X,attr),SetOb(X,attr))
+    end
+  end
+  α = merge(comps,type_comps)
+  ps = Iterators.map(arrows(S)) do (f,c,d)
     Xf,Yf,α_c,α_d = subpart(X,f),subpart(Y,f), α[c], α[d]
     Pair(f,
-    Iterators.map(Iterators.filter(i->Yf[α_c(i)] != α_d(Xf[i]),eachindex(Xf))) do i
-      (i,Yf[α_c(i)],α_d(Xf[i]))
-    end)
+    Iterators.map(i->(i,Yf[α_c(i)],α_d(Xf[i])),
+      Iterators.filter(dom(α_c)) do i
+        Xf[i] in dom(α_d) && Yf[α_c(i)] != α_d(Xf[i])
+      end))
   end
-  Dict(pairs)
+  Dict(ps)
 end
+function get_unnaturalities(α::ACSetTransformation) 
+  isa(α,LooseACSetTransformation) ? 
+    get_unnaturalities(dom(α),codom(α),α.components,α.type_components) :
+    get_unnaturalities(dom(α),codom(α),α.components)
+end
+function show_unnaturalities(d::AbstractDict)
+  s = """
+      Failures of naturality! 
+      
+      (i,j,k) on line labelled by f:c->d below means,
+      if the given nat is α:X -> Y, f's naturality square 
+      fails to commute at i ∈ X(c), 
+      with Y(f)(α_c(i))=j and α_d(X(f)(i))=k.
+      
 
+      """ 
+  for f in keys(d)
+    isempty(d[f]) || begin
+      failures = collect(d[f])
+      s *= reduce(*,[["$f: "];["$failure" for failure in failures];["\n"]])
+    end
+  end
+  s
+end
+show_unnaturalities(α::ACSetTransformation) =show_unnaturalities(get_unnaturalities(α))
+show_unnaturalities(X,Y,comps...) = show_unnaturalities(get_unnaturalities(X,Y,comps))
 
 function is_monic(α::TightACSetTransformation)
   for c in components(α)
@@ -642,7 +694,10 @@ that the vertex map is injective but imposes no constraints on the edge map.
 
 To restrict the homomorphism to a given partial assignment, set the keyword
 argument `initial`. For example, to fix the first source vertex to the third
-target vertex in a graph homomorphism, set `initial=(V=Dict(1 => 3),)`.
+target vertex in a graph homomorphism, set `initial=(V=Dict(1 => 3),)`. Use 
+the keyword argument `type_components` to specify nontrivial components on 
+attribute types for a loose homomorphism. These components must be callable:
+either Julia functions on the appropriate types or FinFunction(Dict(...)).
 
 Use the keyword argument `alg` to set the homomorphism-finding algorithm. By
 default, a backtracking search algorithm is used ([`BacktrackingSearch`](@ref)).
@@ -650,7 +705,7 @@ default, a backtracking search algorithm is used ([`BacktrackingSearch`](@ref)).
 See also: [`homomorphisms`](@ref), [`isomorphism`](@ref).
 """
 homomorphism(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
-  homomorphism(X, Y, alg; kw...)
+  homomorphism(X, Y, alg; kw. ..)
 
 function homomorphism(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...)
   result = nothing
@@ -665,9 +720,9 @@ Searches for a homomorphism,  return inconsistencies in the givens
 if the search fails before recursion starts. TODO: partialacsettransformation
 type to allow checking for naturality of initial assignment?
 """
-function homomorphism_error_failures(dom,cod;kw...)
+function homomorphism_error_failures(X,Y;kw...)
   result = nothing
-  backtracking_search(dom,cod;kw...) do α
+  backtracking_search(X,Y;kw...) do α
       result = α; return isa(α,ACSetTransformation)
   end 
   if isa(result,Tuple)
@@ -679,12 +734,18 @@ function homomorphism_error_failures(dom,cod;kw...)
             mono at object(s) $monoFailures
           """)
   end
-  if result == false
-    error("""
-          No homomorphism exists extending given data.
-          """)
+  if isa(result,Dict)
+    error(show_unnaturalities(result))
   end
+  if result == false return nothing end
   return result
+end
+#TODO: This is currently up to twice as slow as `homomorphisms`, in the case 
+#when there's exactly one solution. Needs refactoring of 
+#`backtracking_search`, which is like a whole dang thing right now.
+function homomorphisms_error_failures(X,Y;kw...)
+  homomorphism_error_failures(X,Y;kw...)
+  homomorphisms(X,Y;kw...)
 end
 
 """ Find all homomorphisms between two attributed ``C``-sets.
@@ -806,12 +867,15 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
   end
   isoFailures = Iterators.filter(c->nparts(X,c)!=nparts(Y,c),iso)
   monoFailures = Iterators.filter(c->nparts(X,c)>nparts(Y,c),monic)  
+  isempty(isoFailures) && isempty(monoFailures)||
+      return f((isoFailures,monoFailures))
 
   # Injections between finite sets of the same size are bijections, so reduce to that case.
   monic = unique([iso..., monic...])
+  
 
-  isempty(isoFailures) && isempty(monoFailures)||
-      return f((isoFailures,monoFailures))
+  uns = get_unnaturalities(X,Y,initial,type_components)
+  all(isempty,[uns[a] for a in keys(uns)]) || return f(uns)
 
   # Initialize state variables for search.
   assignment = merge(

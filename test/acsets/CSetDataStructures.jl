@@ -398,7 +398,7 @@ for lset_maker in lset_makers
   @test_throws Exception set_subpart!(lset, 1, :label, :bar)
 end
 
-# @acset macro
+# @acset and @acset_transformation macros
 #-------------
 
 @present SchDecGraph(FreeSchema) begin
@@ -448,6 +448,13 @@ pg = @acset DecGraph{Tuple{Int,Int}} begin
 end
 @test pg[:dec] == [(1,2), (2,3), (3,4)]
 
+h = @acset DecGraph{String} begin
+  V = 4
+  E = 4
+  src = [1,2,3,4]
+  tgt = [2,3,4,1]
+  dec = ["b","c","d","a"]
+end
 # Test mapping
 #-------------
 

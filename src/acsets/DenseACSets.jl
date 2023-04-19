@@ -787,25 +787,19 @@ macro acset(head, body)
 end
 
 """
-Provides a shorthand for constructing an acset transformation by giving
+Provides a shorthand for constructing a tight acset transformation by giving
   its components. Homomorphism search allows partial specification, 
   with the return value being the unique extension if it exists.
 
 Keyword arguments can be passed on to the search function after 
   the body of the transformation.
 
-If the domain and codomain restrict to the same attribute functor
-  and no mapping is specified on any attribute type, the search
-  will try for a tight extension and return a loose one if that's
-  not possible. Otherwise the search will be loose.
-
 Usage example on WeightedGraph{String}s: 
 
 ```
-@acsettransformation A B begin
+@acset_transformation A B begin
   V = [3,5,2] #complete specification can be a vector
   E = [1 => 3, 4 => 3] #otherwise use a dict
-  W = ["cool" => "warm"] #loose transformation
 end monic=true iso=V #or iso=[V] or iso=[:V]
 #brackets required for iso=[V,E] or [:V,E]
 ```
@@ -817,6 +811,14 @@ macro acset_transformation(dom,cod,body,kw...)
     _ => error("Expected: `begin...end`, received: $body")
   end
   Expr(:call,esc(:homomorphism_error_failures),esc(dom),esc(cod),Expr(:kw,:initial,Expr(:tuple,initial...)),kw...)
+end
+macro acset_transformations(dom,cod,body,kw...)
+  kw = map(parse_kwargs,kw)
+  initial = @match body begin
+    Expr(:block,lines...) => filter(!isnothing,map(escape_assignment_lhs,lines))
+    _ => error("Expected: `begin...end`, received: $body")
+  end
+  Expr(:call,esc(:homomorphisms_error_failures),esc(dom),esc(cod),Expr(:kw,:initial,Expr(:tuple,initial...)),kw...)
 end
 
 function parse_kwargs(expr)
@@ -836,7 +838,7 @@ function escape_assignment_lhs(expr)
 #  println(dump(expr))
   @match expr begin
     Expr(:(=),x,Expr(:vect,fst,args...)) => @match fst begin
-      Expr(:call,:(=>),_...) => Expr(:(=),esc(x),Expr(:call,:Dict,Expr(:vect,fst,args...)))
+      Expr(:call,:(=>),_...) => Expr(:(=),esc(x),Expr(:call,esc(:Dict),Expr(:vect,fst,args...)))
       _ => Expr(:(=),esc(x),Expr(:vect,fst,args...))
     end
     _ => nothing 
