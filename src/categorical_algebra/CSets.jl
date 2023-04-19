@@ -6,7 +6,7 @@ export ACSetTransformation, CSetTransformation,StructACSetTransformation,
   TightACSetTransformation, LooseACSetTransformation, SubACSet, SubCSet,
   ACSetHomomorphismAlgorithm, BacktrackingSearch, HomomorphismQuery,
   components, type_components, force, get_unnaturalities, show_unnaturalities, is_natural, homomorphism, homomorphisms,
-  homomorphism_error_failures, homomorphisms_error_failures, is_homomorphic, isomorphism, isomorphisms, is_isomorphic,
+  homomorphism_error_failures, is_homomorphic, isomorphism, isomorphisms, is_isomorphic,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset,
   generate_json_acset_schema, parse_json_acset_schema,
   read_json_acset_schema, write_json_acset_schema, acset_schema_json_schema
@@ -737,6 +737,11 @@ function homomorphism_error_failures(X,Y;kw...)
   if isa(result,Dict)
     error(show_unnaturalities(result))
   end
+  if result == false
+    error("""
+          No homomorphism exists extending given data.
+          """)
+  end
   if result == false return nothing end
   return result
 end
@@ -869,6 +874,12 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
   monoFailures = Iterators.filter(c->nparts(X,c)>nparts(Y,c),monic)  
   isempty(isoFailures) && isempty(monoFailures)||
       return f((isoFailures,monoFailures))
+
+  # Injections between finite sets of the same size are bijections, so reduce to that case.
+  monic = unique([iso..., monic...])
+
+  uns = get_unnaturalities(X,Y,initial,type_components)
+  all(isempty,[uns[a] for a in keys(uns)]) || return f(uns)
 
   # Injections between finite sets of the same size are bijections, so reduce to that case.
   monic = unique([iso..., monic...])
