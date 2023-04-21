@@ -37,8 +37,7 @@ using ..Sets
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate, is_monic, is_epic
 import ..FinCats: FinDomFunctor, components, is_natural
 using ...DenseACSets: indices, unique_indices, attr_type, attrtype_type, datatypes, constructor
-using ...ColumnImplementations: AttrVar 
-
+using ...ColumnImplementations: AttrVar
 
 # Sets interop
 ##############
@@ -551,7 +550,7 @@ function is_natural(dom,codom,comps...)
   all(isempty,[a.second for a in get_unnaturalities(dom,codom,comps...)])
 end
 """
-Returns a dictionary whose keys are the names in `arrows(S)`
+Returns a dictionary whose keys are contained in the names in `arrows(S)`
 and whose value at `:f`, for an arrow `(f,c,d)`, is a lazy iterator
 over the elements of X(c) on which α's naturality square
 for f does not commute. Components should be a NamedTuple or Dictionary
@@ -566,19 +565,10 @@ end
 function get_unnaturalities(X,Y,comps,type_comps)
   S = acset_schema(X)
   comps = Dict(a=> isa(comps[a],SetFunction) ? comps[a] : FinFunction(comps[a]) for a in keys(comps))
-  type_comps = Dict(a=>isa(type_comps[a],SetFunction) ? type_comps[a] : SetFunction(type_comps[a]) for a in keys(type_comps))
-  for ob in ob(S)
-    if !haskey(comps,ob) 
-      comps[ob] = FinFunction(Int[],SetOb(Y,ob))
-    end
-  end
-  for attr in attrtype(S)
-    if !haskey(type_comps,attr)
-      type_comps[attr] = SetFunction(identity,SetOb(X,attr),SetOb(X,attr))
-    end
-  end
+  type_comps = Dict(a=>isa(type_comps[a],SetFunction) ? type_comps[a] : SetFunction(type_comps[a],TypeSet(X,a),TypeSet(Y,a)) for a in keys(type_comps))
   α = merge(comps,type_comps)
-  ps = Iterators.map(arrows(S)) do (f,c,d)
+  arrs = [(f,c,d) for (f,c,d) in arrows(S) if haskey(α,c) && haskey(α,d)]
+  ps = Iterators.map(arrs) do (f,c,d)
     Xf,Yf,α_c,α_d = subpart(X,f),subpart(Y,f), α[c], α[d]
     Pair(f,
     Iterators.map(i->(i,Yf[α_c(i)],α_d(Xf[i])),
@@ -593,6 +583,8 @@ function get_unnaturalities(α::ACSetTransformation)
     get_unnaturalities(dom(α),codom(α),α.components,α.type_components) :
     get_unnaturalities(dom(α),codom(α),α.components)
 end
+show_unnaturalities(α::ACSetTransformation) =show_unnaturalities(get_unnaturalities(α))
+show_unnaturalities(X,Y,comps...) = show_unnaturalities(get_unnaturalities(X,Y,comps))
 function show_unnaturalities(d::AbstractDict)
   s = """
       Failures of naturality! 
@@ -710,7 +702,7 @@ homomorphism(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
 function homomorphism(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...)
   result = nothing
   backtracking_search(X, Y; kw...) do α
-    result = α; return true
+    result = isa(α,ACSetTransformation) ? α : nothing; return true
   end
   result
 end
@@ -737,7 +729,7 @@ function homomorphism_error_failures(X,Y;kw...)
   if isa(result,Dict)
     error(show_unnaturalities(result))
   end
-  if result == false
+  if isnothing(result)
     error("""
           No homomorphism exists extending given data.
           """)
@@ -764,7 +756,7 @@ homomorphisms(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
 function homomorphisms(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...) 
   results = []
   backtracking_search(X, Y; kw...) do α
-    push!(results, map_components(deepcopy, α)); return false
+    if isa(α,ACSetTransformation) push!(results, map_components(deepcopy, α)) end; return false
   end
   results
 end

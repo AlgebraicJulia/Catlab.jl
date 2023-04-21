@@ -2,6 +2,7 @@ module TestCSetDataStructures
 using Test
 
 using Catlab.CSetDataStructures
+using Catlab.CategoricalAlgebra.CSets
 using Tables
 
 # Discrete dynamical systems
@@ -398,7 +399,7 @@ for lset_maker in lset_makers
   @test_throws Exception set_subpart!(lset, 1, :label, :bar)
 end
 
-# @acset and @acset_transformation macros
+# @acset and @acset_transformation(s) macros
 #-------------
 
 @present SchDecGraph(FreeSchema) begin
@@ -448,6 +449,9 @@ pg = @acset DecGraph{Tuple{Int,Int}} begin
 end
 @test pg[:dec] == [(1,2), (2,3), (3,4)]
 
+# Acset transformation macros 
+#-----------------
+
 h = @acset DecGraph{String} begin
   V = 4
   E = 4
@@ -455,6 +459,33 @@ h = @acset DecGraph{String} begin
   tgt = [2,3,4,1]
   dec = ["b","c","d","a"]
 end
+
+k = @acset DecGraph{String} begin
+  V = 2
+  E = 2
+  src = [1,1]
+  tgt = [2,2]
+  dec = ["a","a"]
+end
+l = @acset DecGraph{String} begin
+  V = 2
+  E = 2
+  src = [1,2]
+  tgt = [1,2]
+  dec = ["a","a"]
+end
+α = @acset_transformation g h
+@acset_transformation g h monic=true
+β = @acset_transformation g h begin 
+  V = [4,1,2,3]
+  E = [4,1,2,3]
+end
+@test α[:V](1) == α[:E](1) == 4
+@test α == β
+@test length(@acset_transformations g h) == length(@acset_transformations g h begin end) == 1
+@test_throws ErrorException @acset_transformation k l begin V = [1,2] ; E = [1,2] end
+@test_throws ErrorException @acset_transformation k l begin V = [1,2] end
+
 # Test mapping
 #-------------
 

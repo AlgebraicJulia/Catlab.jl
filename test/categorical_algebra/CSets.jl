@@ -115,15 +115,17 @@ g, h = path_graph(Graph, 4), cycle_graph(Graph, 2)
 @test components(α′′) == components(α)
 
 # Naturality.
+d = get_unnaturalities(α)
+@test [collect(d[a]) for a in keys(d)] == [[],[]]
 @test is_natural(α)
 β = CSetTransformation((V=[1,2,1,2], E=[1,1,1]), g, h)
+d = get_unnaturalities(β)
+@test [collect(d[a]) for a in keys(d)] == [[(2,1,2)],[(2,2,1)]]
+@test startswith(show_unnaturalities(β),"Failures")
 @test !is_natural(β)
 β = CSetTransformation((V=[2,1], E=[2,1]), h, h)
 @test is_natural(β)
 β = CSetTransformation((V=[2,1], E=[2,2]), h, h)
-uns = get_unnaturalities(β)
-@test Dict([f => collect(uns[f]) for (f,c,d) in arrows(acset_schema(dom(β)))]) == 
-      Dict([:src=>[(2,2,1)],:tgt=>[(2,1,2)]])
 
 
 # Category of C-sets.
@@ -149,7 +151,7 @@ h_ = homomorphism(G, I)
 @test is_epic(g_)
 @test !is_monic(h_)
 @test !is_epic(h_)
-
+@test_throws ErrorException homomorphism_error_failures(H,G,monic=true)
 
 # Limits
 #-------

@@ -804,23 +804,32 @@ end monic=true iso=V #or iso=[V] or iso=[:V]
 #brackets required for iso=[V,E] or [:V,E]
 ```
 """
+macro acset_transformation(dom,cod,kw...)
+  kw = map(parse_kwargs,kw)
+  Expr(:call,esc(:homomorphism_error_failures),esc(dom),esc(cod),kw...)
+end
 macro acset_transformation(dom,cod,body,kw...)
   kw = map(parse_kwargs,kw)
-  initial = @match body begin
-    Expr(:block,lines...) => filter(!isnothing,map(escape_assignment_lhs,lines))
-    _ => error("Expected: `begin...end`, received: $body")
-  end
-  Expr(:call,esc(:homomorphism_error_failures),esc(dom),esc(cod),Expr(:kw,:initial,Expr(:tuple,initial...)),kw...)
+  initial = process_initial(body)
+  Expr(:call,esc(:homomorphism_error_failures),esc(dom),esc(cod),initial,kw...)
+end
+macro acset_transformations(dom,cod,kw...)
+  kw = map(parse_kwargs,kw)
+  Expr(:call,esc(:homomorphisms_error_failures),esc(dom),esc(cod),kw...)
 end
 macro acset_transformations(dom,cod,body,kw...)
   kw = map(parse_kwargs,kw)
-  initial = @match body begin
-    Expr(:block,lines...) => filter(!isnothing,map(escape_assignment_lhs,lines))
-    _ => error("Expected: `begin...end`, received: $body")
-  end
-  Expr(:call,esc(:homomorphisms_error_failures),esc(dom),esc(cod),Expr(:kw,:initial,Expr(:tuple,initial...)),kw...)
+  initial = process_initial(body)
+  Expr(:call,esc(:homomorphisms_error_failures),esc(dom),esc(cod),initial,kw...)
 end
-
+function process_initial(expr) 
+  initial = @match expr begin
+    Expr(:block,lines...) => filter(!isnothing,map(escape_assignment_lhs,lines))
+    Expr(:(=),x,y) => parse_kwargs(expr)
+    _ => error("Expected begin...end block or kwarg, received $body")
+  end
+  isa(initial,Vector) ? Expr(:kw,:initial,Expr(:tuple,initial...)) : initial
+end
 function parse_kwargs(expr)
   @match expr begin
     Expr(:(=),x,y::Bool) => Expr(:kw,x,y)
