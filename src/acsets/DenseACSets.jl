@@ -427,11 +427,11 @@ end
 @inline ACSetInterface.clear_subpart!(acs::SimpleACSet, part::Int, f::Symbol) =
   delete!(acs.subparts[f], part)
 
-@inline ACSetInterface.rem_part!(acs::StructACSet{S}, type::Symbol, part::Int) where {S} =
-  _rem_part!(acs, Val{S}, Val{type}, part)
+@inline ACSetInterface.rem_part!(acs::StructACSet{S}, type::Symbol, part::Int; recurse=false) where {S} =
+  recurse ? delete_subobj!(acs, Dict([type=>[part]])) : _rem_part!(acs, Val{S}, Val{type}, part)
 
-ACSetInterface.rem_part!(acs::DynamicACSet, type::Symbol, part::Int) =
-  runtime(_rem_part!, acs, acs.schema, type, part)
+ACSetInterface.rem_part!(acs::DynamicACSet, type::Symbol, part::Int; recurse=false) =
+  recurse ? delete_subobj!(acs, Dict([type=>[part]])) : runtime(_rem_part!, acs, acs.schema, type, part)
 
 @ct_enable function _rem_part!(acs::SimpleACSet, @ct(S), @ct(ob), part)
   @ct s = Schema(S)
@@ -457,6 +457,34 @@ ACSetInterface.rem_part!(acs::DynamicACSet, type::Symbol, part::Int) =
   end
 
   acs.parts[@ct ob] -= 1
+end
+
+"""
+Identify which parts of an ACSet need to be deleted if some initial collection 
+of parts is to be deleted. E.g. deleting a vertex deletes its edge
+"""
+function delete_subobj(X::ACSet, delparts)
+  S = acset_schema(X)
+  delparts = Dict([k=>Set{Int}(get(delparts, k, [])) for k in ob(S)])
+  change = true
+  while change
+    change = false
+    for (f,c,d) in homs(S)
+      for c_part in setdiff(parts(X,c),delparts[c])
+        if X[c_part,f] ∈ delparts[d]
+          change = true
+          push!(delparts[c], c_part)
+        end
+      end
+    end
+  end
+  return Dict([k => sort(collect(v)) for (k,v) in pairs(delparts)])
+end
+
+function delete_subobj!(X::ACSet, sub)
+  for (type,parts) in delete_subobj(X, sub)
+    rem_parts!(X, type, parts)
+  end 
 end
 
 # Copy Parts

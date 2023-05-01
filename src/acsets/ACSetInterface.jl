@@ -255,10 +255,14 @@ The parts must be supplied in sorted order, without duplicates.
 
 See also: [`rem_part!`](@ref).
 """
-@inline function rem_parts!(acs::ACSet, type, parts)
+@inline function rem_parts!(acs::ACSet, type, parts; recurse=false)
   issorted(parts) || error("Parts to be removed must be in sorted order")
-  for part in Iterators.reverse(parts)
-    rem_part!(acs, type, part)
+  if recurse
+    delete_subobj!(acs, Dict([type=>parts]))
+  else 
+    for part in Iterators.reverse(parts)
+      rem_part!(acs, type, part)
+    end
   end
 end
 

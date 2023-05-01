@@ -79,6 +79,12 @@ for dds_maker in dds_makers
   @test incident(dds, 1, :Φ) == [1,2]
   @test incident(dds, 2, :Φ) == []
 
+  # recursive deletion
+  dds = dds_maker()
+  add_parts!(dds, :X, 3, Φ=[2,3,3])
+  rem_part!(dds, :X, 2; recurse=true)
+  @test nparts(dds, :X) == 1
+
   # Pretty printing.
   dds = dds_maker()
   add_parts!(dds, :X, 3, Φ=[2,3,3])
