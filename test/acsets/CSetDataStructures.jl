@@ -82,8 +82,15 @@ for dds_maker in dds_makers
   # recursive deletion
   dds = dds_maker()
   add_parts!(dds, :X, 3, Φ=[2,3,3])
-  rem_part!(dds, :X, 2; recurse=true)
+  rem_part_rec!(dds, :X, 2)
   @test nparts(dds, :X) == 1
+
+  dds = dds_maker()
+  add_parts!(dds, :X, 3, Φ=[2,3,3])
+  rem_parts_rec!(dds, :X, [1,2])
+  @test nparts(dds, :X) == 1
+
+  
 
   # Pretty printing.
   dds = dds_maker()

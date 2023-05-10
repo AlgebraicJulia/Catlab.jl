@@ -1,7 +1,8 @@
 module ACSetInterface
 export ACSet, acset_schema, acset_name, dom_parts, subpart_type,
   nparts, parts, has_part, has_subpart, subpart, incident,
-  add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!, clear_subpart!,
+  add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!, 
+  rem_part_rec!, rem_parts_rec!, clear_subpart!,
   copy_parts!, copy_parts_only!, disjoint_union, tables, pretty_tables, @acset
 
 using StaticArrays: StaticArray
@@ -249,22 +250,24 @@ See also: [`rem_parts!`](@ref).
 """
 function rem_part! end
 
+"""Recursive removal of a part. See [`rem_part!`](@ref)."""
+function rem_part_rec! end
+
 """ Remove parts from a C-set.
 
 The parts must be supplied in sorted order, without duplicates.
 
 See also: [`rem_part!`](@ref).
 """
-@inline function rem_parts!(acs::ACSet, type, parts; recurse=false)
+@inline function rem_parts!(acs::ACSet, type, parts)
   issorted(parts) || error("Parts to be removed must be in sorted order")
-  if recurse
-    delete_subobj!(acs, Dict([type=>parts]))
-  else 
-    for part in Iterators.reverse(parts)
-      rem_part!(acs, type, part)
-    end
+  for part in Iterators.reverse(parts)
+    rem_part!(acs, type, part)
   end
 end
+
+"""Recursive removal of parts. See [`rem_parts!`](@ref)."""
+function rem_parts_rec! end 
 
 """ Copy parts from a C-set to a C′-set.
 

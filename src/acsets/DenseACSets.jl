@@ -427,11 +427,14 @@ end
 @inline ACSetInterface.clear_subpart!(acs::SimpleACSet, part::Int, f::Symbol) =
   delete!(acs.subparts[f], part)
 
-@inline ACSetInterface.rem_part!(acs::StructACSet{S}, type::Symbol, part::Int; recurse=false) where {S} =
-  recurse ? delete_subobj!(acs, Dict([type=>[part]])) : _rem_part!(acs, Val{S}, Val{type}, part)
+@inline ACSetInterface.rem_part!(acs::StructACSet{S}, type::Symbol, part::Int) where {S} =
+  _rem_part!(acs, Val{S}, Val{type}, part)
+  
+ACSetInterface.rem_part!(acs::DynamicACSet, type::Symbol, part::Int) =
+  runtime(_rem_part!, acs, acs.schema, type, part)
 
-ACSetInterface.rem_part!(acs::DynamicACSet, type::Symbol, part::Int; recurse=false) =
-  recurse ? delete_subobj!(acs, Dict([type=>[part]])) : runtime(_rem_part!, acs, acs.schema, type, part)
+ACSetInterface.rem_part_rec!(acs::ACSet, type::Symbol, part::Int) = 
+  delete_subobj!(acs, Dict([type=>[part]]))
 
 @ct_enable function _rem_part!(acs::SimpleACSet, @ct(S), @ct(ob), part)
   @ct s = Schema(S)
@@ -486,6 +489,10 @@ function delete_subobj!(X::ACSet, sub)
     rem_parts!(X, type, parts)
   end 
 end
+
+ACSetInterface.rem_parts_rec!(acs::ACSet, type, parts) = 
+  delete_subobj!(acs, Dict([type=>sort(parts)]))
+
 
 # Copy Parts
 ############
