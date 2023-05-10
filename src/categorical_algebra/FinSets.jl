@@ -185,7 +185,8 @@ FinFunction(::typeof(identity), args...) =
 FinFunction(f::AbstractDict, args...) =
   FinFunctionDict(f, (FinSet(arg) for arg in args)...)
 
-function FinFunction(f::AbstractVector{Int}, args...; index=false, known_correct = false)
+function FinFunction(f::AbstractVector{Int}, args...;
+                     index=false, known_correct = false)
   cod = FinSet(args[end])
   if !known_correct
     for (i,t) ∈ enumerate(f)
@@ -320,8 +321,10 @@ function IndexedFinDomFunctionVector(f::AbstractVector{T}, codom::SetOb{T};
   IndexedFinDomFunctionVector(f, index, codom)
 end
 
-function IndexedFinDomFunctionVector(f::AbstractVector{T}, dom, codom::SetOb{T};
-  index=nothing) where T
+function IndexedFinDomFunctionVector(f::AbstractVector{T}, dom::FinSet{Int},
+                                     codom::SetOb{T}; index=nothing) where T
+  length(f) == length(dom) ||
+    error("Length of vector $f does not match domain $dom")
   IndexedFinDomFunctionVector(f, index, codom)
 end
 

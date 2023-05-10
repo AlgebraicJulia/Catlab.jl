@@ -149,10 +149,10 @@ k = FinDomFunction(5:10)
 @test isempty(preimage(k, 4))
 
 k = FinDomFunction([:a,:b,:a,:c], index=true)
-l = FinDomFunction([:a,:b,:a,:c],TypeSet(Symbol),index=true)
+@test k == FinDomFunction([:a,:b,:a,:c], TypeSet(Symbol), index=true)
+@test k == FinDomFunction([:a,:b,:a,:c], FinSet(4), TypeSet(Symbol), index=true)
 @test is_indexed(k)
 @test (dom(k), codom(k)) == (FinSet(4), TypeSet(Symbol))
-@test k == l
 @test k(1) == :a
 @test preimage(k, :a) == [1,3]
 @test preimage(k, :c) == [4]
