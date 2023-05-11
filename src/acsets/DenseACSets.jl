@@ -433,9 +433,6 @@ end
 ACSetInterface.rem_part!(acs::DynamicACSet, type::Symbol, part::Int) =
   runtime(_rem_part!, acs, acs.schema, type, part)
 
-ACSetInterface.cascading_rem_part!(acs::ACSet, type::Symbol, part::Int) =
-  delete_subobj!(acs, Dict([type=>[part]]))
-
 @ct_enable function _rem_part!(acs::SimpleACSet, @ct(S), @ct(ob), part)
   @ct s = Schema(S)
   @ct in_homs = homs(s; to=ob, just_names=true)
@@ -484,14 +481,14 @@ function delete_subobj(X::ACSet, delparts)
   return Dict([k => sort(collect(v)) for (k,v) in pairs(delparts)])
 end
 
-function delete_subobj!(X::ACSet, sub)
-  for (type,parts) in delete_subobj(X, sub)
+function delete_subobj!(X::ACSet, delparts)
+  for (type, parts) in delete_subobj(X, delparts)
     rem_parts!(X, type, parts)
   end 
 end
 
 ACSetInterface.cascading_rem_parts!(acs::ACSet, type, parts) =
-  delete_subobj!(acs, Dict([type=>sort(parts)]))
+  delete_subobj!(acs, Dict(type=>parts))
 
 # Copy Parts
 ############

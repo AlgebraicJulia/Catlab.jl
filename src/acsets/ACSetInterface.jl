@@ -254,7 +254,9 @@ function rem_part! end
 
 Cf. [`rem_part!`](@ref), which is not recursive.
 """
-function cascading_rem_part! end
+function cascading_rem_part!(acset::ACSet, type, part)
+  cascading_rem_parts!(acset, type, [part])
+end
 
 """ Remove parts from a C-set.
 
@@ -270,6 +272,8 @@ See also: [`rem_part!`](@ref).
 end
 
 """ Remove parts and all parts incident to them, recursively.
+
+The parts may be supplied in any order and may include duplicates.
 
 Cf. [`rem_parts!`](@ref), which is not recursive.
 """
