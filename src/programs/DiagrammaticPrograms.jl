@@ -263,7 +263,7 @@ function parse_functor(C::FinCat, D::FinCat,check_equations::Bool, ast::AST.Mapp
   ob_map, hom_map = make_ob_hom_maps(C, ast)
   F = FinFunctor(mapvals(x -> parse_ob(D, x), ob_map),
                  mapvals(f -> parse_hom(D, f), hom_map), C, D)
-  failures = get_nonfunctorialities(F,check_equations=check_equations)
+  failures = functoriality_failures(F,check_equations=check_equations)
   if !all(isempty,failures)
     if !check_equations
       doms, cods = failures
@@ -275,14 +275,6 @@ function parse_functor(C::FinCat, D::FinCat,check_equations::Bool, ast::AST.Mapp
       Image of codomain differs from codomain of image: $cods
       """)
     end
-    #below doesn't actually work yet
-    doms, cods, eqns = failures
-    error("""
-      Parsed functor is not functorial. 
-      Domain errors: $doms 
-      Codomain errors: $cods
-      Equation errors: $eqns
-      """)
   end
   F
 end
@@ -1192,7 +1184,7 @@ Return the right-hand side of the assignment in an expression of the form
 function get_keyword_arg_val(expr::Expr)
   @match expr begin
     Expr(:(=),var,x) => x
-    Expr(_...) => error("""
+    _ => error("""
                         Unexpected argument $expr.
                         Acceptable inputs are of the form
                         `:(var=val)`.

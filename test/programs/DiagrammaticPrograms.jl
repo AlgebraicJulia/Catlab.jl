@@ -4,6 +4,7 @@ using Test
 using Catlab, Catlab.Graphs, Catlab.CategoricalAlgebra
 using Catlab.Programs.DiagrammaticPrograms
 using Catlab.Programs.DiagrammaticPrograms: NamedGraph
+using Catlab.Programs.DiagrammaticPrograms: get_keyword_arg_val, destructure_unary_call
 using Catlab.WiringDiagrams.CPortGraphs
 
 @present SchSet(FreeSchema) begin
@@ -549,8 +550,7 @@ F_src_vv, F_src_ev, F_src_ve = components(diagram_map(F_src))
                                (2, id(SchReflexiveGraph[:V]))]
 
 #Little parsing functions
-import Catlab.Programs.DiagrammaticPrograms.get_keyword_arg_val as get_keyword_arg_val
 @test get_keyword_arg_val(:(x=3)) == 3
 @test_throws ErrorException get_keyword_arg_val(:("not an assignment!"+3))
-@test Catlab.Programs.DiagrammaticPrograms.destructure_unary_call(:(f(g(x)))) == (:(f∘g),:x)
+@test destructure_unary_call(:(f(g(x)))) == (:(f∘g),:x)
 end

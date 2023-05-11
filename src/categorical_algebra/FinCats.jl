@@ -13,7 +13,7 @@ module FinCats
 export FinCat, FinCatGraph, Path, ob_generator, hom_generator,
   ob_generator_name, hom_generator_name, ob_generators, hom_generators,
   equations, is_discrete, is_free, graph, edges, src, tgt, presentation,
-  FinFunctor, FinDomFunctor, get_nonfunctorialities, is_functorial, collect_ob, collect_hom, force,
+  FinFunctor, FinDomFunctor, functoriality_failures, is_functorial, collect_ob, collect_hom, force,
   FinTransformation, components, is_natural, is_initial
 
 using StructEquality
@@ -406,7 +406,7 @@ checks are currently implemented, so this only functions for identity functors.
 
 See also: [`is_natural`](@ref).
 """
-function get_nonfunctorialities(F::FinDomFunctor; check_equations::Bool=false)
+function functoriality_failures(F::FinDomFunctor; check_equations::Bool=false)
   C, D = dom(F),codom(F)
   bad_dom = Iterators.filter(hom_generators(C)) do f 
     g = hom_map(F, f)
@@ -428,8 +428,8 @@ function get_nonfunctorialities(F::FinDomFunctor; check_equations::Bool=false)
 end
 
 function is_functorial(F::FinDomFunctor; check_equations::Bool=false)
-  failures = get_nonfunctorialities(F; check_equations=check_equations)
-  all(isempty,failures) || false
+  failures = functoriality_failures(F; check_equations=check_equations)
+  all(isempty,failures)
 end
 
 function Base.map(F::Functor{<:FinCat,<:TypeCat}, f_ob, f_hom)

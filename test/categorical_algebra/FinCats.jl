@@ -50,7 +50,7 @@ G = FinFunctor((V=[2,1], E=[[1],[2]]),C,C)
 @test codom(F) == D
 @test is_functorial(F)
 @test !is_functorial(G)
-@test map(collect,get_nonfunctorialities(G)) == ([1,2],[1,2])
+@test map(collect,functoriality_failures(G)) == ([1,2],[1,2])
 @test Ob(F) == FinFunction([1,4], FinSet(4))
 @test startswith(sprint(show, F), "FinFunctor($([1,4]),")
 @test ob_map(F, 2) == 4
