@@ -1,10 +1,25 @@
 module TestACSets
+using Test
 
-include("IndexUtils.jl")
-include("LVectors.jl")
-include("Mappings.jl")
-include("Columns.jl")
-include("Schemas.jl")
-include("CSetDataStructures.jl")
+@testset "Utilities" begin
+  include("IndexUtils.jl")
+  include("LVectors.jl")
+end
+
+@testset "Mappings" begin
+  include("Mappings.jl")
+end
+
+@testset "Columns" begin
+  include("Columns.jl")
+end
+
+@testset "Schemas" begin
+  include("Schemas.jl")
+end
+
+@testset "DataStructures" begin
+  include("CSetDataStructures.jl")
+end
 
 end # module

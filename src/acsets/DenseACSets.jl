@@ -459,6 +459,37 @@ ACSetInterface.rem_part!(acs::DynamicACSet, type::Symbol, part::Int) =
   acs.parts[@ct ob] -= 1
 end
 
+"""
+Identify which parts of an ACSet need to be deleted if some initial collection 
+of parts is to be deleted. E.g. deleting a vertex deletes its edge
+"""
+function delete_subobj(X::ACSet, delparts)
+  S = acset_schema(X)
+  delparts = Dict([k=>Set{Int}(get(delparts, k, [])) for k in ob(S)])
+  change = true
+  while change
+    change = false
+    for (f,c,d) in homs(S)
+      for c_part in setdiff(parts(X,c),delparts[c])
+        if X[c_part,f] ∈ delparts[d]
+          change = true
+          push!(delparts[c], c_part)
+        end
+      end
+    end
+  end
+  return Dict([k => sort(collect(v)) for (k,v) in pairs(delparts)])
+end
+
+function delete_subobj!(X::ACSet, delparts)
+  for (type, parts) in delete_subobj(X, delparts)
+    rem_parts!(X, type, parts)
+  end 
+end
+
+ACSetInterface.cascading_rem_parts!(acs::ACSet, type, parts) =
+  delete_subobj!(acs, Dict(type=>parts))
+
 # Copy Parts
 ############
 

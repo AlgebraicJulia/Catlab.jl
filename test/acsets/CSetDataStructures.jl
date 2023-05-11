@@ -79,6 +79,17 @@ for dds_maker in dds_makers
   @test incident(dds, 1, :Φ) == [1,2]
   @test incident(dds, 2, :Φ) == []
 
+  # Recursive deletion.
+  dds = dds_maker()
+  add_parts!(dds, :X, 3, Φ=[2,3,3])
+  cascading_rem_part!(dds, :X, 2)
+  @test nparts(dds, :X) == 1
+
+  dds = dds_maker()
+  add_parts!(dds, :X, 3, Φ=[2,3,3])
+  cascading_rem_parts!(dds, :X, [1,2])
+  @test nparts(dds, :X) == 1
+
   # Pretty printing.
   dds = dds_maker()
   add_parts!(dds, :X, 3, Φ=[2,3,3])
@@ -113,7 +124,7 @@ for dds_maker in dds_makers
   @test !isempty(sprint(show, MIME"text/plain"(), empty_dds))
   @test !isempty(sprint(show, MIME"text/html"(), empty_dds))
 
-  # # Error handling when adding parts.
+  # Error handling when adding parts.
   dds = dds_maker()
   add_parts!(dds, :X, 3, Φ=[1,1,1])
   @test_throws AssertionError add_part!(dds, :X, Φ=5)
@@ -134,9 +145,6 @@ for dds_maker in dds_makers
   add_parts!(dds, :X, 3, Φ=[2,3,2])
   @test hash(dds) != hash(dds2)
 end
-
-
-
 
 # Dendrograms
 #############
