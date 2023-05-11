@@ -1,8 +1,8 @@
 module ACSetInterface
 export ACSet, acset_schema, acset_name, dom_parts, subpart_type,
   nparts, parts, has_part, has_subpart, subpart, incident,
-  add_part!, add_parts!, set_subpart!, set_subparts!, rem_part!, rem_parts!, 
-  rem_part_rec!, rem_parts_rec!, clear_subpart!,
+  add_part!, add_parts!, set_subpart!, set_subparts!, clear_subpart!,
+  rem_part!, rem_parts!, cascading_rem_part!, cascading_rem_parts!,
   copy_parts!, copy_parts_only!, disjoint_union, tables, pretty_tables, @acset
 
 using StaticArrays: StaticArray
@@ -250,8 +250,11 @@ See also: [`rem_parts!`](@ref).
 """
 function rem_part! end
 
-"""Recursive removal of a part. See [`rem_part!`](@ref)."""
-function rem_part_rec! end
+""" Remove part and all parts incident to it, recursively.
+
+Cf. [`rem_part!`](@ref), which is not recursive.
+"""
+function cascading_rem_part! end
 
 """ Remove parts from a C-set.
 
@@ -266,8 +269,11 @@ See also: [`rem_part!`](@ref).
   end
 end
 
-"""Recursive removal of parts. See [`rem_parts!`](@ref)."""
-function rem_parts_rec! end 
+""" Remove parts and all parts incident to them, recursively.
+
+Cf. [`rem_parts!`](@ref), which is not recursive.
+"""
+function cascading_rem_parts! end
 
 """ Copy parts from a C-set to a C′-set.
 
