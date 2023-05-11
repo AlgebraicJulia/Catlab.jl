@@ -5,8 +5,8 @@ export ACSetTransformation, CSetTransformation,StructACSetTransformation,
   StructTightACSetTransformation,
   TightACSetTransformation, LooseACSetTransformation, SubACSet, SubCSet,
   ACSetHomomorphismAlgorithm, BacktrackingSearch, HomomorphismQuery,
-  components, type_components, force, get_unnaturalities, show_unnaturalities, is_natural, homomorphism, homomorphisms,
-  homomorphism_error_failures, is_homomorphic, isomorphism, isomorphisms, is_isomorphic,
+  components, type_components, force, naturality_failures, show_unnaturalities, is_natural, homomorphism, homomorphisms,
+  homomorphism_error_failures, homomorphisms_error_failures, is_homomorphic, isomorphism, isomorphisms, is_isomorphic,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset,
   generate_json_acset_schema, parse_json_acset_schema,
   read_json_acset_schema, write_json_acset_schema, acset_schema_json_schema
@@ -547,7 +547,7 @@ function is_natural(α::ACSetTransformation)
     is_natural(dom(α),codom(α),α.components)
 end
 function is_natural(dom,codom,comps...)
-  all(isempty,[a.second for a in get_unnaturalities(dom,codom,comps...)])
+  all(isempty,[a.second for a in naturality_failures(dom,codom,comps...)])
 end
 """
 Returns a dictionary whose keys are contained in the names in `arrows(S)`
@@ -557,12 +557,12 @@ for f does not commute. Components should be a NamedTuple or Dictionary
 with keys contained in the names of S's morphisms and values vectors or dicts
 defining partial functions from X(c) to Y(c).
 """
-function get_unnaturalities(X,Y,comps)
+function naturality_failures(X,Y,comps)
   S = acset_schema(X)
   type_comps = Dict(attr=>SetFunction(identity,SetOb(X,attr),SetOb(X,attr)) for attr in attrtype(S))
-  get_unnaturalities(X,Y,comps,type_comps)
+  naturality_failures(X,Y,comps,type_comps)
 end
-function get_unnaturalities(X,Y,comps,type_comps)
+function naturality_failures(X,Y,comps,type_comps)
   S = acset_schema(X)
   comps = Dict(a=> isa(comps[a],SetFunction) ? comps[a] : FinFunction(comps[a]) for a in keys(comps))
   type_comps = Dict(a=>isa(type_comps[a],SetFunction) ? type_comps[a] : SetFunction(type_comps[a],TypeSet(X,a),TypeSet(Y,a)) for a in keys(type_comps))
@@ -578,13 +578,12 @@ function get_unnaturalities(X,Y,comps,type_comps)
   end
   Dict(ps)
 end
-function get_unnaturalities(α::ACSetTransformation) 
+function naturality_failures(α::ACSetTransformation) 
   isa(α,LooseACSetTransformation) ? 
-    get_unnaturalities(dom(α),codom(α),α.components,α.type_components) :
-    get_unnaturalities(dom(α),codom(α),α.components)
+    naturality_failures(dom(α),codom(α),α.components,α.type_components) :
+    naturality_failures(dom(α),codom(α),α.components)
 end
-show_unnaturalities(α::ACSetTransformation) =show_unnaturalities(get_unnaturalities(α))
-show_unnaturalities(X,Y,comps...) = show_unnaturalities(get_unnaturalities(X,Y,comps))
+
 function show_unnaturalities(d::AbstractDict)
   s = """
       Failures of naturality! 
@@ -604,8 +603,8 @@ function show_unnaturalities(d::AbstractDict)
   end
   s
 end
-show_unnaturalities(α::ACSetTransformation) =show_unnaturalities(get_unnaturalities(α))
-show_unnaturalities(X,Y,comps...) = show_unnaturalities(get_unnaturalities(X,Y,comps))
+show_unnaturalities(α::ACSetTransformation) = show_unnaturalities(naturality_failures(α))
+show_unnaturalities(X,Y,comps...) = show_unnaturalities(naturality_failures(X,Y,comps))
 
 function is_monic(α::TightACSetTransformation)
   for c in components(α)
@@ -870,14 +869,7 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
   # Injections between finite sets of the same size are bijections, so reduce to that case.
   monic = unique([iso..., monic...])
 
-  uns = get_unnaturalities(X,Y,initial,type_components)
-  all(isempty,[uns[a] for a in keys(uns)]) || return f(uns)
-
-  # Injections between finite sets of the same size are bijections, so reduce to that case.
-  monic = unique([iso..., monic...])
-  
-
-  uns = get_unnaturalities(X,Y,initial,type_components)
+  uns = naturality_failures(X,Y,initial,type_components)
   all(isempty,[uns[a] for a in keys(uns)]) || return f(uns)
 
   # Initialize state variables for search.

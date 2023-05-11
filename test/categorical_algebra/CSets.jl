@@ -115,11 +115,11 @@ g, h = path_graph(Graph, 4), cycle_graph(Graph, 2)
 @test components(α′′) == components(α)
 
 # Naturality.
-d = get_unnaturalities(α)
+d = naturality_failures(α)
 @test [collect(d[a]) for a in keys(d)] == [[],[]]
 @test is_natural(α)
 β = CSetTransformation((V=[1,2,1,2], E=[1,1,1]), g, h)
-d = get_unnaturalities(β)
+d = naturality_failures(β)
 @test sort([collect(v) for v in values(d)]) == [[(2,1,2)],[(2,2,1)]]
 @test startswith(show_unnaturalities(β),"Failures")
 @test !is_natural(β)
@@ -308,7 +308,7 @@ h = path_graph(WeightedGraph{Float64}, 4, E=(weight=[1.,2.,3.],))
 β = ACSetTransformation((V=[1,2], E=[1]), g, h)
 @test !is_natural(β) # Graph homomorphism but does not preserve weight
 β = ACSetTransformation((V=[1,3], E=[1]), g, h)
-uns = get_unnaturalities(β)
+uns = naturality_failures(β)
 @test collect(uns[:src]) == [] && collect(uns[:tgt]) == [(1,2,3)] &&
   collect(uns[:weight]) == [(1,1.0,2.0)]
 
