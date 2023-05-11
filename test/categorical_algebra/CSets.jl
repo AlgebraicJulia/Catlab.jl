@@ -120,7 +120,7 @@ d = get_unnaturalities(α)
 @test is_natural(α)
 β = CSetTransformation((V=[1,2,1,2], E=[1,1,1]), g, h)
 d = get_unnaturalities(β)
-@test [collect(d[a]) for a in keys(d)] == [[(2,1,2)],[(2,2,1)]]
+@test sort([collect(v) for v in values(d)]) == [[(2,1,2)],[(2,2,1)]]
 @test startswith(show_unnaturalities(β),"Failures")
 @test !is_natural(β)
 β = CSetTransformation((V=[2,1], E=[2,1]), h, h)
