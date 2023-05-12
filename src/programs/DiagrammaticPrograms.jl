@@ -252,37 +252,35 @@ source and target.
 macro finfunctor(dom_cat, codom_cat, check_equations, body)
   check_equations = get_keyword_arg_val(check_equations) 
   # Cannot parse Julia expr during expansion because domain category is needed.
-  :(parse_functor($(esc(dom_cat)), $(esc(codom_cat)),$check_equations, $(Meta.quot(body))))
+  :(parse_functor($(esc(dom_cat)), $(esc(codom_cat)), $(Meta.quot(body)),
+                  check_equations=$check_equations))
 end
 
 macro finfunctor(dom_cat, codom_cat, body)
-  :(parse_functor($(esc(dom_cat)), $(esc(codom_cat)),false, $(Meta.quot(body))))
+  :(parse_functor($(esc(dom_cat)), $(esc(codom_cat)), $(Meta.quot(body))))
 end
 
-function parse_functor(C::FinCat, D::FinCat,check_equations::Bool, ast::AST.Mapping)
+function parse_functor(C::FinCat, D::FinCat, ast::AST.Mapping;
+                       check_equations::Bool=false)
   ob_map, hom_map = make_ob_hom_maps(C, ast)
   F = FinFunctor(mapvals(x -> parse_ob(D, x), ob_map),
                  mapvals(f -> parse_hom(D, f), hom_map), C, D)
-  failures = functoriality_failures(F,check_equations=check_equations)
+  failures = functoriality_failures(F, check_equations=check_equations)
   if !all(isempty,failures)
-    if !check_equations
-      doms, cods = failures
-      doms = map(x -> hom_generator_name(C,x),doms)
-      cods = map(x -> hom_generator_name(C,x),cods)
-      error("""
-      Parsed functor is not functorial. 
-      Image of domain differs from domain of image: $doms 
-      Image of codomain differs from codomain of image: $cods
-      """)
-    end
+    doms, cods = failures[1], failures[2]
+    doms = map(x -> hom_generator_name(C,x),doms)
+    cods = map(x -> hom_generator_name(C,x),cods)
+    error("Parsed functor is not functorial. " *
+          "Images of domain differing from domain of image: $doms " *
+          "Images of codomain differing from codomain of image: $cods")
   end
   F
 end
 
-parse_functor(C::FinCat, D::FinCat, check_equations::Bool, body::Expr) =
-  parse_functor(C, D,check_equations, parse_mapping_ast(body, C))
-parse_functor(C::Presentation, D::Presentation, args...) =
-  parse_functor(FinCat(C), FinCat(D), args...)
+parse_functor(C::FinCat, D::FinCat, body::Expr; kw...) =
+  parse_functor(C, D, parse_mapping_ast(body, C); kw...)
+parse_functor(C::Presentation, D::Presentation, args...; kw...) =
+  parse_functor(FinCat(C), FinCat(D), args...; kw...)
 
 function make_ob_hom_maps(C::FinCat, ast; allow_missing::Bool=false,
                           missing_ob::Bool=false, missing_hom::Bool=false)
@@ -1184,11 +1182,9 @@ Return the right-hand side of the assignment in an expression of the form
 function get_keyword_arg_val(expr::Expr)
   @match expr begin
     Expr(:(=),var,x) => x
-    _ => error("""
-                        Unexpected argument $expr.
-                        Acceptable inputs are of the form
-                        `:(var=val)`.
-                        """)
+    _ => error("Unexpected argument $expr."*
+               "Acceptable inputs are of the form `:(var=val)`.")
   end
 end
+
 end
