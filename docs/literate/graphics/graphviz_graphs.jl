@@ -67,9 +67,9 @@ using Catlab.CategoricalAlgebra.FinSets
 
 A = FinSet(4)
 B = FinSet(3)
-f = FinFunction([1,2,2,3], A, B)
+f = FinFunction([1,3,2,2], A, B)
 
-to_graphviz(f, invis_edges=false)
+to_graphviz(f, graph_attrs=Dict(:splines=>"false"))
 #-
-to_graphviz(f, invis_edges=true, node_labels=true,
-            graph_attrs=Dict(:rankdir => "TB"))
+to_graphviz(f, node_labels=true,
+            graph_attrs=Dict(:splines=>"false", :rankdir => "TB"))

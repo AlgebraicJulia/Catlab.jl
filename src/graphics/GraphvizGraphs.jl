@@ -354,8 +354,7 @@ in the bipartite graph become nodes in the Graphviz graph.
 - `edge_labels=false`: whether to label edges and if so, which data attribute
   (undirected case) or pair of attributes (directed case) to use
 - `invis_edge=true`: whether to add invisible edges between vertices of same
-  type; this can be useful for getting a nice layout, especially when combined
-  with `Attributes(:rankdir => "LR")` as a graph attribute
+  type, which ensures that the order of the nodes is preserved.
 """
 function to_graphviz(g::AbstractUndirectedBipartiteGraph;
     prog::AbstractString="dot", graph_attrs::AbstractDict=Dict(),
@@ -366,8 +365,8 @@ function to_graphviz(g::AbstractUndirectedBipartiteGraph;
     node_labels=node_labels, kw...)
 
   for e in edges(g)
-    push!(stmts, Graphviz.Edge([nodes1[src(g,e)], nodes2[tgt(g,e)]],
-                               edge_label(g, edge_labels, e)))
+    attrs = merge!(Dict(:constraint => "false"), edge_label(g, edge_labels, e))
+    push!(stmts, Graphviz.Edge([nodes1[src(g,e)], nodes2[tgt(g,e)]], attrs))
   end
 
   Graphviz.Digraph("bipartite_graph", stmts, prog=prog,
@@ -387,12 +386,12 @@ function to_graphviz(g::AbstractBipartiteGraph;
   edge12_labels, edge21_labels = edge_labels isa Tuple ? edge_labels :
     (edge_labels, edge_labels)
   for e in edges₁₂(g)
-    push!(stmts, Graphviz.Edge([nodes1[src₁(g,e)], nodes2[tgt₂(g,e)]],
-                               edge_label(g, edge12_labels, e)))
+    attrs = merge!(Dict(:constraint => "false"), edge_label(g, edge12_labels, e))
+    push!(stmts, Graphviz.Edge([nodes1[src₁(g,e)], nodes2[tgt₂(g,e)]], attrs))
   end
   for e in edges₂₁(g)
-    push!(stmts, Graphviz.Edge([nodes2[src₂(g,e)], nodes1[tgt₁(g,e)]],
-                               edge_label(g, edge21_labels, e)))
+    attrs = merge!(Dict(:constraint => "false"), edge_label(g, edge21_labels, e))
+    push!(stmts, Graphviz.Edge([nodes2[src₂(g,e)], nodes1[tgt₁(g,e)]], attrs))
   end
 
   Graphviz.Digraph("bipartite_graph", stmts, prog=prog,
@@ -418,7 +417,8 @@ function bipartite_graphviz_nodes(g::HasBipartiteVertices;
       push!(edges1, Graphviz.Edge("n1_$u", "n1_$v"; style="invis"))
     end
   end
-  cluster1 = Graphviz.Subgraph("cluster_nodes1", [nodes1; edges1])
+  cluster1 = Graphviz.Subgraph("cluster_nodes1", [nodes1; edges1];
+    graph_attrs=Graphviz.Attributes(:rank => "same"))
 
   # Vertices of type 2.
   nodes2 = map(V₂) do v
@@ -430,7 +430,8 @@ function bipartite_graphviz_nodes(g::HasBipartiteVertices;
       push!(edges2, Graphviz.Edge("n2_$u", "n2_$v"; style="invis"))
     end
   end
-  cluster2 = Graphviz.Subgraph("cluster_nodes2", [nodes2; edges2])
+  cluster2 = Graphviz.Subgraph("cluster_nodes2", [nodes2; edges2];
+    graph_attrs=Graphviz.Attributes(:rank => "same"))
 
   stmts = Graphviz.Statement[cluster1, cluster2]
   (stmts, map(n -> n.name, nodes1), map(n -> n.name, nodes2))
