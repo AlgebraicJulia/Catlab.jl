@@ -138,13 +138,12 @@ Label(; labelloc::AbstractString="", label::AbstractString="") =
 
 # Useful in unit tests. Not exported.
 
-function filter_statements(graph::Graph, type::Type)
+filter_statements(graph::Union{Graph,Subgraph}, type::Type) =
   [ stmt for stmt in graph.stmts if stmt isa type ]
-end
-function filter_statements(graph::Graph, type::Type, attr::Symbol)
+
+filter_statements(graph::Union{Graph,Subgraph}, type::Type, attr::Symbol) =
   [ stmt.attrs[attr] for stmt in graph.stmts
     if stmt isa type && haskey(stmt.attrs, attr) ]
-end
 
 # Bindings
 ##########

@@ -181,10 +181,12 @@ function default_graph_attrs(prog::AbstractString)
   attrs
 end
 
-function default_node_attrs(labels::Union{Symbol,Bool})
-  shape = labels isa Symbol ? "ellipse" : (labels ? "circle" : "point")
-  Dict(:shape => shape, :width => "0.05", :height => "0.05", :margin => "0")
+function default_node_attrs(labels)
+  Dict(:shape => default_node_shape(labels),
+       :width => "0.05", :height => "0.05", :margin => "0")
 end
+default_node_shape(labels::Bool) = labels ? "circle" : "point"
+default_node_shape(::Symbol) = "ellipse"
 
 function default_edge_attrs(prog::AbstractString)
   attrs = Dict(:arrowsize => "0.5")
@@ -334,6 +336,108 @@ end
 const default_subgraph_node_attrs = Dict(:color => "cornflowerblue")
 const default_subgraph_edge_attrs = Dict(:color => "cornflowerblue")
 
+# Bipartite graphs
+##################
+
+""" Visualize a bipartite graph using Graphviz.
+
+Works for both directed and undirected bipartite graphs. Both types of vertices
+in the bipartite graph become nodes in the Graphviz graph.
+
+# Arguments
+- `prog="dot"`: Graphviz program to use
+- `graph_attrs`: Graph-level Graphviz attributes
+- `node_attrs`: Node-level Graphviz attributes
+- `edge_attrs`: Edge-level Graphviz attributes
+- `node_labels=false`: whether to label nodes and if so, which pair of
+  data attributes to use
+- `edge_labels=false`: whether to label edges and if so, which data attribute
+  (undirected case) or pair of attributes (directed case) to use
+- `invis_edge=true`: whether to add invisible edges between vertices of same
+  type; this can be useful for getting a nice layout, especially when combined
+  with `Attributes(:rankdir => "LR")` as a graph attribute
+"""
+function to_graphviz(g::AbstractUndirectedBipartiteGraph;
+    prog::AbstractString="dot", graph_attrs::AbstractDict=Dict(),
+    node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
+    node_labels::Union{Tuple{Symbol,Symbol},Bool}=false,
+    edge_labels::Union{Symbol,Bool}=false, kw...)
+  stmts, nodes1, nodes2 = bipartite_graphviz_nodes(g;
+    node_labels=node_labels, kw...)
+
+  for e in edges(g)
+    push!(stmts, Graphviz.Edge([nodes1[src(g,e)], nodes2[tgt(g,e)]],
+                               edge_label(g, edge_labels, e)))
+  end
+
+  Graphviz.Digraph("bipartite_graph", stmts, prog=prog,
+    graph_attrs = merge!(default_graph_attrs(prog), graph_attrs),
+    node_attrs = merge!(default_node_attrs(node_labels), node_attrs),
+    edge_attrs = merge!(default_edge_attrs(prog), edge_attrs))
+end
+
+function to_graphviz(g::AbstractBipartiteGraph;
+    prog::AbstractString="dot", graph_attrs::AbstractDict=Dict(),
+    node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
+    node_labels::Union{Tuple{Symbol,Symbol},Bool}=false,
+    edge_labels::Union{Tuple{Symbol,Symbol},Bool}=false, kw...)
+  stmts, nodes1, nodes2 = bipartite_graphviz_nodes(g;
+    node_labels=node_labels, kw...)
+
+  edge12_labels, edge21_labels = edge_labels isa Tuple ? edge_labels :
+    (edge_labels, edge_labels)
+  for e in edges₁₂(g)
+    push!(stmts, Graphviz.Edge([nodes1[src₁(g,e)], nodes2[tgt₂(g,e)]],
+                               edge_label(g, edge12_labels, e)))
+  end
+  for e in edges₂₁(g)
+    push!(stmts, Graphviz.Edge([nodes2[src₂(g,e)], nodes1[tgt₁(g,e)]],
+                               edge_label(g, edge21_labels, e)))
+  end
+
+  Graphviz.Digraph("bipartite_graph", stmts, prog=prog,
+    graph_attrs = merge!(default_graph_attrs(prog), graph_attrs),
+    node_attrs = merge!(default_node_attrs(node_labels), node_attrs),
+    edge_attrs = merge!(default_edge_attrs(prog), edge_attrs))
+end
+
+function bipartite_graphviz_nodes(g::HasBipartiteVertices;
+    node_labels::Union{Tuple{Symbol,Symbol},Bool}=false,
+    invis_edges::Bool=true)
+  V₁, V₂ = vertices₁(g), vertices₂(g)
+  node1_labels, node2_labels = node_labels isa Tuple ? node_labels :
+    (node_labels, node_labels)
+
+  # Vertices of type 1.
+  nodes1 = map(V₁) do v
+    Graphviz.Node("n1_$v", node_label(g, node1_labels, v))
+  end
+  edges1 = Graphviz.Edge[]
+  if invis_edges
+    for (u, v) in zip(V₁[1:end-1], V₁[2:end])
+      push!(edges1, Graphviz.Edge("n1_$u", "n1_$v"; style="invis"))
+    end
+  end
+  cluster1 = Graphviz.Subgraph("cluster_nodes1", [nodes1; edges1])
+
+  # Vertices of type 2.
+  nodes2 = map(V₂) do v
+    Graphviz.Node("n2_$v", node_label(g, node2_labels, v))
+  end
+  edges2 = Graphviz.Edge[]
+  if invis_edges
+    for (u, v) in zip(V₂[1:end-1], V₂[2:end])
+      push!(edges2, Graphviz.Edge("n2_$u", "n2_$v"; style="invis"))
+    end
+  end
+  cluster2 = Graphviz.Subgraph("cluster_nodes2", [nodes2; edges2])
+
+  stmts = Graphviz.Statement[cluster1, cluster2]
+  (stmts, map(n -> n.name, nodes1), map(n -> n.name, nodes2))
+end
+
+default_node_shape(::Tuple{Symbol,Symbol}) = "ellipse"
+
 # Graph homomorphisms
 #####################
 
@@ -437,94 +541,6 @@ function default_node_colors(n)
 end
 function default_edge_colors(n)
   distinguishable_colors(n, colorant"#F8766D", lchoices=[65], cchoices=[100])
-end
-
-# homomorphisms between FinSet(s)
-#################################
-
-""" Visualize a function between finite sets using Graphviz.
-
-Visualize a homomorphism (`FinFunction`) between two sets (instances
-of `FinSet`). By default, the domain and codomain are drawn as subgraphs
-and the element map is drawn using dotted edges. 
-The element map can also be shown using colors, via the `elem_colors` 
-keyword argument.
-
-# Arguments
-- `prog="dot"`: Graphviz program to use
-- `graph_attrs`: Graph-level Graphviz attributes
-- `invis_edge_dom`: whether to draw invisible edges between elements in the domain;
-   this can be useful for getting a particular layout, especially when combined
-    with `Attributes(:rankdir => "LR")` as a graph attribute.
-- `invis_edge_codom`: whether to draw invisible edges between elements in the 
-  codomain
-- `draw_edge`: whether to draw edges to represent the element map
-- `elem_attrs`: Node-level Graphviz attributes
-- `elem_labels=false`: whether to draw node labels and which vertex attribute to use
-- `elem_colors=!draw_codom`: whether and how to color edges based on edge map
-"""
-function to_graphviz(f::FinFunction;
-  prog::AbstractString="dot", graph_attrs::AbstractDict=Dict(),
-  invis_edge_dom::Bool=false, invis_edge_codom::Bool=false,
-  draw_edge::Bool=true,
-  edge_colors::Bool=false,
-  elem_attrs::AbstractDict=Dict(),
-  elem_labels::Bool=false,
-  elem_colors::Bool=false)
-
-  stmts = Graphviz.Statement[]
-  A, B = dom(f), codom(f)
-
-  # element map can be given by colors
-  elem_colors == true && (elem_colors = default_node_colors)
-  ecolors = elem_colors != false ? elem_colors(length(B)) : nothing
-  mcolors = edge_colors != false ? ecolors : nothing
-
-  # domain: A
-  dom_nodes = map(A) do e
-    Graphviz.Node("dom_$(e)", merge!(node_color(ecolors, f(e)),
-                                   node_label(A, elem_labels, e)))
-  end
-
-  dom_invis_edges = Graphviz.Statement[]
-  if invis_edge_dom && length(A) > 1
-      dom_invis_edges = map(1:length(A)-1) do e
-          Graphviz.Edge("dom_$(e)", "dom_$(e+1)"; style = "invis")
-      end
-  end
-
-  dom_stmts = vcat(dom_nodes, dom_invis_edges)
-  push!(stmts, Graphviz.Subgraph("cluster_dom", dom_stmts))
-
-  # codomain: B
-  codom_nodes = map(B) do e
-    Graphviz.Node("cod_$(e)", merge!(node_color(ecolors, e),
-                                     node_label(B, elem_labels, e)))
-  end
-
-  codom_invis_edges = Graphviz.Statement[]
-  if invis_edge_codom && length(B) > 1
-    codom_invis_edges = map(1:length(B)-1) do e
-          Graphviz.Edge("cod_$(e)", "cod_$(e+1)"; style = "invis")
-      end
-  end
-
-  codom_stmts = vcat(codom_nodes, codom_invis_edges)
-  push!(stmts, Graphviz.Subgraph("cluster_codom", codom_stmts))
-
-  # map: A->B
-  if draw_edge
-    map_stmts = map(A) do e
-      Graphviz.Edge(["\"dom_$(e)\"", "\"cod_$(f(e))\""],
-                    merge!(edge_color(mcolors, f(e)),
-                          Dict(:constraint => "false", :style => "dotted")))
-    end
-    append!(stmts, map_stmts)
-  end
-
-  Graphviz.Digraph("FinFunction_graph", stmts, prog=prog,
-    graph_attrs = merge!(default_graph_attrs(prog), graph_attrs),
-    node_attrs = merge!(default_node_attrs(elem_labels), elem_attrs))
 end
 
 end

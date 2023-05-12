@@ -60,8 +60,8 @@ to_graphviz(f, draw_codom=false, edge_colors=false)
 
 # ## Drawing maps between finite sets
 # 
-# It is also possible to visualize maps between finite sets (`FinFunction`s between
-# `FinSet`s) using Graphviz.
+# It is also possible to visualize maps between finite sets (`FinFunction`s
+# between `FinSet`s) using Graphviz.
 
 using Catlab.CategoricalAlgebra.FinSets
 
@@ -69,27 +69,7 @@ A = FinSet(4)
 B = FinSet(3)
 f = FinFunction([1,2,2,3], A, B)
 
-# By default the mapping is shown by edges between the domain and codomain
-# subgraphs. One can turn this off with `draw_edge=false` if desired. By
-# using `elem_colors=true`, the mapping will be denoted with colors instead of
-# or in addition to edges. If using colors one can additionally use 
-# `edge_colors=true` to color the edges between subgraphs.
-
-to_graphviz(f)
-
-# For example:
-
-to_graphviz(f, elem_colors=true, edge_colors=true)
-
-# Elements in the sets can be labeled by setting `elem_labels=true`. Additionally
-# there are keyword args `invis_edge_dom` and `invis_edge_codom` which accept
-# boolean values. If set to `true` then invisible edges are drawn between elements
-# in the subgraph for which the argument was selected. This can help align the
-# subgraphs when trying to achieve a desired "look" for the graphic, especially
-# when combined with the graph attribute [`rankdir`](https://graphviz.org/docs/attrs/rankdir/).
-
-to_graphviz(
-    f, elem_colors=true, edge_colors=true,
-    invis_edge_dom=true, invis_edge_codom=true,
-    graph_attrs=Dict(:rankdir => "TB")
-)
+to_graphviz(f, invis_edges=false)
+#-
+to_graphviz(f, invis_edges=true, node_labels=true,
+            graph_attrs=Dict(:rankdir => "TB"))

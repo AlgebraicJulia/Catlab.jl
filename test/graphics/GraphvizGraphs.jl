@@ -191,6 +191,27 @@ gv = to_graphviz(subgraph)
 @test length(stmts(gv, Graphviz.Node, :color)) == 2
 @test length(stmts(gv, Graphviz.Edge, :color)) == 1
 
+# Bipartite graphs
+##################
+
+g = UndirectedBipartiteGraph(3, 4)
+add_edges!(g, [1,1,3], [1,4,2])
+gv = to_graphviz(g, invis_edges=true)
+@test length(stmts(gv, Graphviz.Subgraph)) == 2
+@test length(stmts(gv, Graphviz.Edge)) == ne(g)
+gv1, gv2 = stmts(gv, Graphviz.Subgraph)
+@test length(stmts(gv1, Graphviz.Node)) == nv₁(g)
+@test length(stmts(gv2, Graphviz.Node)) == nv₂(g)
+@test length(stmts(gv1, Graphviz.Edge)) == nv₁(g) - 1
+@test length(stmts(gv2, Graphviz.Edge)) == nv₂(g) - 1
+
+g = BipartiteGraph(3, 4)
+add_edges₁₂!(g, [1,1,3], [1,4,2])
+add_edges₂₁!(g, 1:4, [1,2,2,3])
+gv = to_graphviz(g, invis_edges=true)
+@test length(stmts(gv, Graphviz.Subgraph)) == 2
+@test length(stmts(gv, Graphviz.Edge)) == ne₁₂(g) + ne₂₁(g)
+
 # Graph homomorphisms
 #####################
 
@@ -210,43 +231,5 @@ f = ACSetTransformation(A, B; V = [1,2,2], E = [1,1])
 gv = to_graphviz(f, draw_codom=true)
 @test gv.directed
 @test length(stmts(gv, Graphviz.Subgraph)) == 2
-
-# homomorphisms between FinSet(s)
-#################################
-
-A = FinSet(4)
-B = FinSet(4)
-f = FinFunction([1,2,2,3], A, B)
-
-gv = to_graphviz(f)
-@test length(stmts(gv, Graphviz.Subgraph)) == 2
-@test length(stmts(gv, Graphviz.Edge)) == 4
-@test gv.directed
-
-A = FinSet(1)
-B = FinSet(2)
-f = FinFunction([2], A, B)
-
-gv = to_graphviz(f)
-@test length(stmts(gv, Graphviz.Subgraph)) == 2
-@test length(stmts(gv, Graphviz.Edge)) == 1
-
-gv = to_graphviz(f, graph_attrs = Dict(:rankdir => "TB"))
-@test length(gv.graph_attrs) == 1
-@test gv.graph_attrs[:rankdir] == "TB"
-
-gv = to_graphviz(f, invis_edge_dom=true, invis_edge_codom=true)
-@test stmts(gv, Graphviz.Subgraph)[2].stmts[1] isa Graphviz.Node
-@test stmts(gv, Graphviz.Subgraph)[2].stmts[2] isa Graphviz.Node
-@test stmts(gv, Graphviz.Subgraph)[2].stmts[3] isa Graphviz.Edge
-@test length(stmts(gv, Graphviz.Subgraph)[1].stmts) == 1
-
-gv = to_graphviz(f, draw_edge=false)
-@test length(stmts(gv, Graphviz.Edge)) == 0 
-
-gv = to_graphviz(f, edge_colors=true, elem_colors=true)
-@test haskey(stmts(gv, Graphviz.Edge)[1].attrs, :color)
-@test haskey(stmts(gv, Graphviz.Subgraph)[2].stmts[1].attrs, :color)
-@test haskey(stmts(gv, Graphviz.Subgraph)[2].stmts[2].attrs, :color)
 
 end
