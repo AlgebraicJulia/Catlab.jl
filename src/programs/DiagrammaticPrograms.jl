@@ -197,6 +197,7 @@ dimension is:
 end
 ```
 
+
 The objects and morphisms must be uniquely named.
 """
 macro fincat(body)
@@ -241,26 +242,47 @@ the schema for circular port graphs by ignoring the ports:
   tgt => tgt ⨟ box
 end
 ```
+
+A constructor exists that purports to allow the user to check that a proposed
+functor satisfies relations in the domain, but this functionality doesn't
+yet exist (and the problem is undecidable in general.) Thus the only check
+is that the source and target of the image of an arrow are the image of its
+source and target.
 """
-macro finfunctor(dom_cat, codom_cat, body)
+macro finfunctor(dom_cat, codom_cat, check_equations, body)
+  check_equations = get_keyword_arg_val(check_equations) 
   # Cannot parse Julia expr during expansion because domain category is needed.
+  :(parse_functor($(esc(dom_cat)), $(esc(codom_cat)), $(Meta.quot(body)),
+                  check_equations=$check_equations))
+end
+
+macro finfunctor(dom_cat, codom_cat, body)
   :(parse_functor($(esc(dom_cat)), $(esc(codom_cat)), $(Meta.quot(body))))
 end
 
-function parse_functor(C::FinCat, D::FinCat, ast::AST.Mapping)
+function parse_functor(C::FinCat, D::FinCat, ast::AST.Mapping;
+                       check_equations::Bool=false)
   ob_map, hom_map = make_ob_hom_maps(C, ast)
   F = FinFunctor(mapvals(x -> parse_ob(D, x), ob_map),
                  mapvals(f -> parse_hom(D, f), hom_map), C, D)
-  is_functorial(F, check_equations=false) ||
-    error("Parsed functor is not functorial: $ast")
-  return F
+  failures = functoriality_failures(F, check_equations=check_equations)
+  if !all(isempty,failures)
+    doms, cods = failures[1], failures[2]
+    doms = map(x -> hom_generator_name(C,x),doms)
+    cods = map(x -> hom_generator_name(C,x),cods)
+    error("Parsed functor is not functorial. " *
+          "Images of domain differing from domain of image: $doms " *
+          "Images of codomain differing from codomain of image: $cods")
+  end
+  F
 end
-parse_functor(C::FinCat, D::FinCat, body::Expr) =
-  parse_functor(C, D, parse_mapping_ast(body, C))
-parse_functor(C::Presentation, D::Presentation, args...) =
-  parse_functor(FinCat(C), FinCat(D), args...)
 
-function make_ob_hom_maps(C::FinCat, ast::AST.Mapping; allow_missing::Bool=false,
+parse_functor(C::FinCat, D::FinCat, body::Expr; kw...) =
+  parse_functor(C, D, parse_mapping_ast(body, C); kw...)
+parse_functor(C::Presentation, D::Presentation, args...; kw...) =
+  parse_functor(FinCat(C), FinCat(D), args...; kw...)
+
+function make_ob_hom_maps(C::FinCat, ast; allow_missing::Bool=false,
                           missing_ob::Bool=false, missing_hom::Bool=false)
   allow_missing && (missing_ob = missing_hom = true)
   ob_assign = Dict(a.lhs.name => a.rhs
@@ -1150,6 +1172,18 @@ function destructure_unary_call(expr::Expr)
       rest, x = destructure_unary_call(arg)
       (Expr(:call, :(∘), head, rest), x)
     end
+  end
+end
+
+"""
+Return the right-hand side of the assignment in an expression of the form
+`:(var=val)`.
+"""
+function get_keyword_arg_val(expr::Expr)
+  @match expr begin
+    Expr(:(=),var,x) => x
+    _ => error("Unexpected argument $expr."*
+               "Acceptable inputs are of the form `:(var=val)`.")
   end
 end
 
