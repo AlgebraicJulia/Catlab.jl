@@ -59,4 +59,14 @@ gv = to_graphviz(SchWeightedGraph)
 @test stmts(gv, Graphviz.Node, :xlabel) == ["Weight"]
 @test stmts(gv, Graphviz.Edge, :label) == ["src", "tgt", "weight"]
 
+# Functions
+###########
+
+A = FinSet(4)
+B = FinSet(4)
+f = FinFunction([1,2,2,3], A, B)
+gv = to_graphviz(f)
+@test length(stmts(gv, Graphviz.Subgraph)) == 2
+@test length(stmts(gv, Graphviz.Edge)) == 4
+
 end

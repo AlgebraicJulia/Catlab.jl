@@ -127,4 +127,20 @@ function to_graphviz_property_graph(pres::Presentation{ThSchema}; kw...)
   pg
 end
 
+# Functions
+###########
+
+""" Visualize a function between finite sets using Graphviz.
+
+Visualize a function (`FinFunction`) between two finite sets (`FinSet`s).
+Reduces to drawing an undirected bipartite graph; see that method for more.
+"""
+function to_graphviz(f::FinFunction{Int,Int}; kw...)
+  g = UndirectedBipartiteGraph(length(dom(f)), length(codom(f)))
+  for i in dom(f)
+    add_edge!(g, i, f(i))
+  end
+  to_graphviz(g; kw...)
+end
+
 end

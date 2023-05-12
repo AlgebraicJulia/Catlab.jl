@@ -6,6 +6,7 @@ using Catlab.Theories, Catlab.Graphs, Catlab.Graphics.GraphvizGraphs
 import Catlab.Graphics: Graphviz
 using Catlab.CategoricalAlgebra.Subobjects
 using Catlab.CategoricalAlgebra.CSets
+using Catlab.CategoricalAlgebra.FinSets
 
 const stmts = Graphviz.filter_statements
 
@@ -189,6 +190,27 @@ gv = to_graphviz(subgraph)
 @test length(stmts(gv, Graphviz.Edge)) == 2
 @test length(stmts(gv, Graphviz.Node, :color)) == 2
 @test length(stmts(gv, Graphviz.Edge, :color)) == 1
+
+# Bipartite graphs
+##################
+
+g = UndirectedBipartiteGraph(3, 4)
+add_edges!(g, [1,1,3], [1,4,2])
+gv = to_graphviz(g, invis_edges=true)
+@test length(stmts(gv, Graphviz.Subgraph)) == 2
+@test length(stmts(gv, Graphviz.Edge)) == ne(g)
+gv1, gv2 = stmts(gv, Graphviz.Subgraph)
+@test length(stmts(gv1, Graphviz.Node)) == nv₁(g)
+@test length(stmts(gv2, Graphviz.Node)) == nv₂(g)
+@test length(stmts(gv1, Graphviz.Edge)) == nv₁(g) - 1
+@test length(stmts(gv2, Graphviz.Edge)) == nv₂(g) - 1
+
+g = BipartiteGraph(3, 4)
+add_edges₁₂!(g, [1,1,3], [1,4,2])
+add_edges₂₁!(g, 1:4, [1,2,2,3])
+gv = to_graphviz(g, invis_edges=true)
+@test length(stmts(gv, Graphviz.Subgraph)) == 2
+@test length(stmts(gv, Graphviz.Edge)) == ne₁₂(g) + ne₂₁(g)
 
 # Graph homomorphisms
 #####################

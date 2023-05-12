@@ -57,3 +57,19 @@ to_graphviz(f, edge_colors=true)
 to_graphviz(f, draw_codom=false)
 #-
 to_graphviz(f, draw_codom=false, edge_colors=false)
+
+# ## Drawing maps between finite sets
+# 
+# It is also possible to visualize maps between finite sets (`FinFunction`s
+# between `FinSet`s) using Graphviz.
+
+using Catlab.CategoricalAlgebra.FinSets
+
+A = FinSet(4)
+B = FinSet(3)
+f = FinFunction([1,3,2,2], A, B)
+
+to_graphviz(f, graph_attrs=Dict(:splines=>"false"))
+#-
+to_graphviz(f, node_labels=true,
+            graph_attrs=Dict(:splines=>"false", :rankdir => "TB"))
