@@ -7,15 +7,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        julia-version: ['1.8']
+        julia-version: ["1"]
         os: [ubuntu-latest]
         package:
-          - {user: AlgebraicJulia, repo: AlgebraicDynamics.jl}
-          - {user: AlgebraicJulia, repo: AlgebraicPetri.jl}
-          - {user: AlgebraicJulia, repo: AlgebraicRelations.jl}
-          - {user: AlgebraicJulia, repo: AlgebraicRewriting.jl}
-          - {user: AlgebraicJulia, repo: CombinatorialSpaces.jl}
-          - {user: AlgebraicJulia, repo: Decapodes.jl}
+          - { user: AlgebraicJulia, repo: AlgebraicDynamics.jl }
+          - { user: AlgebraicJulia, repo: AlgebraicPetri.jl }
+          - { user: AlgebraicJulia, repo: AlgebraicRelations.jl }
+          - { user: AlgebraicJulia, repo: AlgebraicRewriting.jl }
+          - { user: AlgebraicJulia, repo: CombinatorialSpaces.jl }
+          - { user: AlgebraicJulia, repo: Decapodes.jl }
 
     steps:
       - uses: actions/checkout@v2
