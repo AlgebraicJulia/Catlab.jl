@@ -25,9 +25,6 @@ function __init__()
       include("ConvexExternal.jl")
     end
   end
-  @require TikzPictures="37f6aa50-8035-52d0-81c2-5a1d08754b2d" begin
-    include("TikZExternal.jl")
-  end
 end
 
 end

@@ -1,6 +1,7 @@
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 MetaGraphs = "626554b9-1ddb-594c-aa3c-2596fe9399a5"
 PkgBenchmark = "32113eaa-f34f-5b0d-bd6c-c81e245fc73d"

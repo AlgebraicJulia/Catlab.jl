@@ -1,7 +1,8 @@
 # External packages.
-import .TikzPictures: TikzPicture
 
-import .TikZ
+using Catlab.TikZ
+
+import TikzPictures: TikzPicture
 
 """ Convert TikZ document to `TikzPicture` object (from `TikzPictures.jl`).
 """

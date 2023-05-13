@@ -22,7 +22,6 @@ export HasVertices, HasGraph, AbstractGraph, Graph, SchGraph,
   AbstractSymmetricWeightedGraph, SymmetricWeightedGraph, SchSymmetricWeightedGraph
 
 import Base: inv
-using Requires
 
 using ...Present, ...CSetDataStructures
 import ...Theories: src, tgt
@@ -559,60 +558,5 @@ edge involution.
 """
 @acset_type SymmetricWeightedGraph(SchSymmetricWeightedGraph, index=[:src]) <:
   AbstractSymmetricWeightedGraph
-
-# JuliaGraphs constructors
-##########################
-
-function __init__()
-  @require Graphs="86223c79-3864-5bf0-83f7-82e725a168b6" begin
-    import .Graphs as SimpleGraphs
-    import .Graphs: SimpleGraph, SimpleDiGraph
-
-    function (::Type{SG})(g::HasGraph) where SG <: Union{SimpleGraph,SimpleDiGraph}
-      sg = SG(nv(g))
-      for (s, t) in zip(src(g), tgt(g))
-        SimpleGraphs.add_edge!(sg, s, t)
-      end
-      sg
-    end
-
-    function (::Type{G})(sg::Union{SimpleGraph,SimpleDiGraph}) where G <: HasGraph
-      g = G(SimpleGraphs.nv(sg))
-      for e in SimpleGraphs.edges(sg)
-        add_edge!(g, SimpleGraphs.src(e), SimpleGraphs.dst(e))
-      end
-      g
-    end
-
-    function SimpleGraph(g::AbstractHalfEdgeGraph)
-      sg = SimpleGraph(nv(g))
-      for e in half_edges(g)
-        e′ = inv(g,e)
-        if e <= e′
-          SimpleGraphs.add_edge!(sg, vertex(g,e), vertex(g,e′))
-        end
-      end
-      sg
-    end
-  end
-
-  @require MetaGraphs="626554b9-1ddb-594c-aa3c-2596fe9399a5" begin
-    import .MetaGraphs
-    import .MetaGraphs: MetaGraph, MetaDiGraph
-
-    MetaDiGraph(g::AbstractWeightedGraph{S, Tuple{U}}) where {S,U} =
-      to_weighted_metagraph(MetaDiGraph{Int,U}, g)
-    MetaGraph(g::AbstractSymmetricWeightedGraph{S, Tuple{U}}) where {S,U} =
-      to_weighted_metagraph(MetaGraph{Int,U}, g)
-
-    function to_weighted_metagraph(MG::Type{<:MetaGraphs.AbstractMetaGraph}, g)
-      mg = MG(nv(g))
-      for (s, t, w) in zip(src(g), tgt(g), weight(g))
-        MetaGraphs.add_edge!(mg, s, t, :weight, w)
-      end
-      mg
-    end
-  end
-end
 
 end
