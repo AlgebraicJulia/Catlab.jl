@@ -11,20 +11,8 @@ export Expression, Statement, Attributes, Graph, Digraph, Subgraph,
 
 using DataStructures: OrderedDict
 using StructEquality
-using Requires: @require
 
 const USE_GV_JLL = Ref(false)
-
-function __init__()
-  @require Graphviz_jll="3c863552-8265-54e4-a6dc-903eb78fde85" begin
-    USE_GV_JLL[] = true
-    let cfg = joinpath(Graphviz_jll.artifact_dir, "lib", "graphviz", "config6")
-      if !isfile(cfg)
-        Graphviz_jll.dot(path -> run(`$path -c`))
-      end
-    end
-  end
-end
 
 # AST
 #####
