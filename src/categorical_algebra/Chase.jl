@@ -151,6 +151,7 @@ end
 add_term!(t::ACSet, p::HomExpr{:compose}) = add_term!(t, p.args)
 add_term!(t::ACSet, p::FreeSchema.Attr{:compose}) = add_term!(t, p.args)
 add_term!(t::ACSet, g::HomExpr{:generator}) = add_term!(t, [g])
+add_term!(t::ACSet, g::FreeSchema.Attr{:generator}) = add_term!(t, [g])
 add_term!(t::ACSet,  ::HomExpr{:id}) = add_term!(t, [])
 
 
@@ -320,24 +321,23 @@ end
 
 """Run a single chase step."""
 function chase_step(I::ACSet, Σegd, Σtgd; init::Union{NamedTuple, Nothing}=nothing)
-    # First fire one round of TGDs
-    ats = active_triggers(I, Σtgd; init=init)
-    res = isempty(ats) ? id(I) : fire_triggers(ats) # first: fire TGDs
-    if !isempty(ats)
-      @debug "Post TGD instance" result = codom(res)
-    end
+  # First fire one round of TGDs
+  ats = active_triggers(I, Σtgd; init=init)
+  res = isempty(ats) ? id(I) : fire_triggers(ats) # first: fire TGDs
+  if !isempty(ats)
+    @debug "Post TGD instance" result = codom(res)
+  end
 
-    # EGDs merely quotient, so this will terminate.
-    while true
-      ats = active_triggers(codom(res), Σegd; init=init)
-      res_ = isempty(ats) ? id(codom(res)) : fire_triggers(ats)
-      if force(res_) == force(id(codom(res)))
-        return res
-      else
-        res = compose(res, res_)
-      end
+  # EGDs merely quotient, so this will terminate.
+  while true
+    ats = active_triggers(codom(res), Σegd; init=init)
+    res_ = isempty(ats) ? id(codom(res)) : fire_triggers(ats)
+    if force(res_) == force(id(codom(res)))
+      return res
+    else
+      res = compose(res, res_)
     end
-    en
+  end
 end
 
 """
@@ -496,7 +496,7 @@ function coproduct(Xs::AbstractVector{<: FinCatPresentation{ThSchema}}; kw...)
   gens′ = merge(hgens, atgens)
 
   # Create legs into equationless target to help us project the equations
-  for  (i,x) in enumerate(Xs)
+  for (i,x) in enumerate(Xs)
     os, hs = map(zip([ob_generators,hom_generators], [gens,gens′])) do (get, g)
       Dict([o => Symbol(g[(i,o)]) for o in Symbol.(get(x))])
     end

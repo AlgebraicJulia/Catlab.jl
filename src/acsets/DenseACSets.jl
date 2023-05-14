@@ -275,7 +275,6 @@ attrtype_type(::StructACSet{S,Ts}, D::Symbol) where {S,Ts} = attrtype_instantiat
 attr_type(X::StructACSet{S}, f::Symbol) where {S} = attrtype_type(X, codom(S, f))
 datatypes(::StructACSet{S,Ts}) where {S,Ts} = Dict(zip(attrtypes(S),Ts.parameters))
 constructor(X::StructACSet) = typeof(X)
-Base.isempty(X::ACSet) = all(o->nparts(X,o)==0, types(acset_schema(X)))
 
 function ACSetTableSchema(s::Schema{Symbol}, ob::Symbol)
   attrs = filter(Schemas.attrs(s)) do (f,d,c)
@@ -415,19 +414,15 @@ end
 end 
 
 """
-Performance regression by avoiding preimage_multi, which does not work for 
-attributes.
+Calling incident on a range of values, e.g. `incident(G, 1:2, :src)` is 
+equivalent to concatenating the results of incident on each part, i.e. 
+`[incident(G,1,:src), incident(G,2,:src)]`.
 """
 @inline function ACSetInterface.incident(acs::SimpleACSet, 
     parts::Union{AbstractVector,UnitRange}, f::Symbol; unbox_injective=true) 
   T = isempty(parts) ? Vector{Int} : typeof(incident(acs, first(parts), f; unbox_injective=unbox_injective))
   res = T[incident(acs, part, f; unbox_injective=unbox_injective) for part in parts]
-  return res 
-  # if !unbox_injective
-  #   preimage_multi(dom_parts(acs, f), acs.subparts[f], parts)
-  # else
-  #   preimage_multi(dom_parts(acs, f), acs.subparts[f], parts, UnboxInjectiveFlag())
-  # end
+  return res # FIXME: update preimage_multi to work on attrs for better performance
 end 
 
 @inline ACSetInterface.incident(acs::StructACSet{S}, ::Colon, f::Symbol; unbox_injective=true) where {S} =

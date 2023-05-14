@@ -312,6 +312,8 @@ function disjoint_union(acs1, acs2)
   acs
 end
 
+Base.isempty(X::ACSet) = all(o->nparts(X,o)==0, types(acset_schema(X)))
+
 """
 Get a named tuple of Tables.jl-compatible tables from an acset
 """

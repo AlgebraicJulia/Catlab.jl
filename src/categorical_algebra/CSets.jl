@@ -142,7 +142,7 @@ SetFunction(X::DynamicACSet, name::Symbol)  =
   elseif name ∈ homs(S; just_names=true)
     FinFunction(X.subparts[@ct name], FinSet(X, @ct(dom(S, name))), FinSet(X, @ct(codom(S, name))))
   elseif name ∈ attrs(S; just_names=true)
-    FinDomFunction(X, @ct name) # VarFunction unfortunately breaks diagram code
+    FinDomFunction(X, @ct name)
   else
     @ct throw(ArgumentError("$(repr(name)) does not belong to schema $(S)"))
   end
@@ -177,11 +177,6 @@ the codomain of the result is always of type `TypeSet`.
     @ct throw(ArgumentError("$(repr(name)) not in $(objects(S)), $(homs(S)), or $(attrs(S))"))
   end
 end
-
-""" Create `VarFunction` for attribute of an ACSet """
-# @inline VarFunction(X::StructACSet{S}, name::Symbol) where {S} =
-#   VarFunction(X.subparts[name], parts(X,dom(S,name)), 
-#               FinSet(nparts(X, codom(S,name))))
 
 
 # Categories interop
@@ -425,15 +420,16 @@ function coerce_attrvar_component(
 end
 
 function coerce_attrvar_component(
-  ob::Symbol, f::LooseVarFunction,d::TypeSet{T},cd::TypeSet{T′},
-  dom_size::Int, codom_size::Int) where {T,T′}
-length(dom(f.fun)) == dom_size || error("Domain error in component $ob")
-length(f.codom) == codom_size || error("Codomain error in component $ob: $(f.fun.codom)!=$codom_size")
-# We do not check types (equality is too strict)
-# dom(f.loose) == d || error("Dom of type comp mismatch $(dom(f.loose)), $d")
-# codom(f.loose) == cd || error("Codom of type comp mismatch $(codom(f.loose)), $cd")
-return f
+    ob::Symbol, f::LooseVarFunction,d::TypeSet{T},cd::TypeSet{T′},
+    dom_size::Int, codom_size::Int) where {T,T′}
+  length(dom(f.fun)) == dom_size || error("Domain error in component $ob")
+  length(f.codom) == codom_size || error("Codomain error in component $ob: $(f.fun.codom)!=$codom_size")
+  # We do not check types (equality is too strict)
+  # dom(f.loose) == d || error("Dom of type comp mismatch $(dom(f.loose)), $d")
+  # codom(f.loose) == cd || error("Codom of type comp mismatch $(codom(f.loose)), $cd")
+  return f
 end
+
 function Base.getindex(α::ACSetTransformation, c) 
   get(α.components, c) do
     c ∈ attrtypes(acset_schema(dom(α))) || error("No object or attribute type with name $c")

@@ -1144,10 +1144,6 @@ end
 # Julia expression utilities
 ############################
 
-# Types that can be Julia literals.
-struct Lit 
-  val::Any
-end
 const Literal = Union{Number,Char,String,QuoteNode}
 
 get_literal(value::Literal) = value

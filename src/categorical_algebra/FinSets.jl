@@ -1258,7 +1258,7 @@ function colimit(d::BipartiteFreeDiagram{<:VarSet{T}}) where T
     end, FinSet(n_var.n))
   end)
   # Cocone diagram
-  return Colimit(d, csp) # FIXME why is this a Colimit{FinSet{Int}, Diagram{VarSet}} ?
+  return Colimit(d, csp)
 end 
 
 # FIXME: Handle more specific diagrams? Now only VarSet colimits will be bipartite

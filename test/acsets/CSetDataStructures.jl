@@ -120,6 +120,7 @@ for dds_maker in dds_makers
 
   # Special case of pretty print: empty table.
   empty_dds = dds_maker()
+  @test isempty(empty_dds)
   @test !isempty(sprint(show, empty_dds))
   @test !isempty(sprint(show, MIME"text/plain"(), empty_dds))
   @test !isempty(sprint(show, MIME"text/html"(), empty_dds))
@@ -127,6 +128,7 @@ for dds_maker in dds_makers
   # Error handling when adding parts.
   dds = dds_maker()
   add_parts!(dds, :X, 3, Φ=[1,1,1])
+  @test !isempty(dds)
   @test_throws AssertionError add_part!(dds, :X, Φ=5)
   @test nparts(dds, :X) == 3
   @test subpart(dds, :Φ) == [1,1,1]
@@ -249,7 +251,7 @@ for (dgram_maker, ldgram_maker) in dgram_makers
 
   # Allow type inheritance for data attributes.
   d_abs = dgram_maker(Number)
-  add_parts!(d_abs, :X, 2, height=Number[10, 4])
+  add_parts!(d_abs, :X, 2, height=[10.0, 4])
   @test subpart(d_abs, :height) == [10.0, 4]
 
   # Tables interface

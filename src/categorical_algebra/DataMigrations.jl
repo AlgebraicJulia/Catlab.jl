@@ -332,6 +332,12 @@ function representable(T, C::Presentation{ThSchema}, ob::Symbol)
   ΣF = SigmaMigration(F, X, T)
   return ΣF(X)
 end
+
+"""
+ACSet types do not store info about equations, so this info is lost when we try
+to recover the presentation from the datatype. Thus, this method for 
+`representable` should only be used for free schemas
+""" 
 representable(::Type{T}, ob::Symbol) where T <: StructACSet =
   representable(T, Presentation(T), ob)
 
