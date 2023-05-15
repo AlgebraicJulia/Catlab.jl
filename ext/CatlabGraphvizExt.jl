@@ -1,10 +1,11 @@
-module CatlabGraphviz_jllExt
+module CatlabGraphvizExt
 
 using Graphviz_jll
 
-using Catlab.Graphics.Graphviz
+import Catlab.Graphics.Graphviz: gv_backend
 
-Graphviz.USE_GV_JLL[] = true
+gv_backend(::Type{Val{:graphviz_jll}}, prog) = getfield(Graphviz_jll, Symbol(prog))(identity)
+
 let cfg = joinpath(Graphviz_jll.artifact_dir, "lib", "graphviz", "config6")
   if !isfile(cfg)
     Graphviz_jll.dot(path -> run(`$path -c`))

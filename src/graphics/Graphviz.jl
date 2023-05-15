@@ -12,7 +12,10 @@ export Expression, Statement, Attributes, Graph, Digraph, Subgraph,
 using DataStructures: OrderedDict
 using StructEquality
 
-const USE_GV_JLL = Ref(false)
+const USE_GV_JLL = Ref(true)
+
+gv_backend(backend::Symbol, prog) = gv_backend(Val{backend}, prog)
+gv_backend(::Type{<:Val}, prog) = prog
 
 # AST
 #####
@@ -153,8 +156,7 @@ function run_graphviz(io::IO, graph::Graph; prog::Union{String,Nothing}=nothing,
   end
   @assert prog in ("dot","neato","fdp","sfdp","twopi","circo")
   if USE_GV_JLL[]
-    fun = getfield(Graphviz_jll, Symbol(prog))
-    prog = fun(identity)
+    prog = gv_backend(:graphviz_jll, prog)
   end
   open(`$prog -T$format`, io, write=true) do gv
     pprint(gv, graph)
