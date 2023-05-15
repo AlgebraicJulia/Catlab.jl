@@ -1,7 +1,9 @@
+module CatlabTikzPicturesExt
 # External packages.
-import .TikzPictures: TikzPicture
 
-import .TikZ
+using Catlab.Graphics.TikZ
+
+import TikzPictures: TikzPicture
 
 """ Convert TikZ document to `TikzPicture` object (from `TikzPictures.jl`).
 """
@@ -17,4 +19,6 @@ end
 
 function Base.show(io::IO, ::MIME"image/svg+xml", doc::TikZ.Document)
   show(io, MIME"image/svg+xml"(), TikzPicture(doc))
+end
+
 end

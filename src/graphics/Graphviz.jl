@@ -11,20 +11,11 @@ export Expression, Statement, Attributes, Graph, Digraph, Subgraph,
 
 using DataStructures: OrderedDict
 using StructEquality
-using Requires: @require
 
-const USE_GV_JLL = Ref(false)
+const USE_GV_JLL = Ref(true)
 
-function __init__()
-  @require Graphviz_jll="3c863552-8265-54e4-a6dc-903eb78fde85" begin
-    USE_GV_JLL[] = true
-    let cfg = joinpath(Graphviz_jll.artifact_dir, "lib", "graphviz", "config6")
-      if !isfile(cfg)
-        Graphviz_jll.dot(path -> run(`$path -c`))
-      end
-    end
-  end
-end
+gv_backend(backend::Symbol, prog) = gv_backend(Val{backend}, prog)
+gv_backend(::Type{<:Val}, prog) = prog
 
 # AST
 #####
@@ -165,8 +156,7 @@ function run_graphviz(io::IO, graph::Graph; prog::Union{String,Nothing}=nothing,
   end
   @assert prog in ("dot","neato","fdp","sfdp","twopi","circo")
   if USE_GV_JLL[]
-    fun = getfield(Graphviz_jll, Symbol(prog))
-    prog = fun(identity)
+    prog = gv_backend(:graphviz_jll, prog)
   end
   open(`$prog -T$format`, io, write=true) do gv
     pprint(gv, graph)

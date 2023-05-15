@@ -1,13 +1,17 @@
-# External packages.
-using .Convex, .SCS
+module CatlabConvexExt
 
-import .WiringDiagramLayouts: has_port_layout_method, solve_isotonic
+using Convex
+
+import Catlab.Graphics.WiringDiagramLayouts: has_port_layout_method, solve_isotonic
 
 has_port_layout_method(::Type{Val{:isotonic}}) = true
 
-function solve_isotonic(y::Vector; solver=SCS.Optimizer,
+function solve_isotonic(y::Vector, solver=nothing;
                         loss=sumsquares, lower::Number=-Inf, upper::Number=Inf,
                         pad::Number=0)
+  if isnothing(solver)
+    error("Isotonic solver backend not available")
+  end
   if isempty(y)
     return empty(y)
   end
@@ -22,4 +26,6 @@ function solve_isotonic(y::Vector; solver=SCS.Optimizer,
   solve!(minimize(loss(x-y), constraints), solver;
          verbose=false, silent_solver=true)
   length(x) == 1 ? [ x.value ] : dropdims(x.value, dims=2) # XXX: MATLAB-ism.
+end
+
 end
