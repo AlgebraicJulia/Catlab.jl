@@ -2,20 +2,25 @@ module CatlabSCSExt
 
 using SCS
 
+# HACK: sort of a hacky way around the lack of multiple package dependencies for an extension
+# Hopefully this is a feature that can be added and this hack can be removed
+using Pkg
+const HasConvex = haskey(Pkg.project().dependencies, "Convex")
+if HasConvex
+  using Convex
+end
+
 import Catlab.Graphics.WiringDiagramLayouts: has_port_layout_method, solve_isotonic
 
-has_port_layout_method(::Type{Val{:isotonic}}) = true
+has_port_layout_method(::Type{Val{:isotonic}}) = HasConvex
 
 function solve_isotonic(y::Vector; solver=SCS.Optimizer,
                         loss=sumsquares, lower::Number=-Inf, upper::Number=Inf,
                         pad::Number=0)
-  # HACK: sort of a hacky way around the lack of multiple package dependencies for an extension
-  # Hopefully this is a feature that can be added and this hack can be removed
-  try
-    using Convex
-  catch e
+  if !HasConvex
     error("Convex is required along with SCS for isotonic regression.")
   end
+
   if isempty(y)
     return empty(y)
   end

@@ -1,6 +1,7 @@
+module CatlabTikzPicturesExt
 # External packages.
 
-using Catlab.TikZ
+using Catlab.Graphics.TikZ
 
 import TikzPictures: TikzPicture
 
@@ -18,4 +19,6 @@ end
 
 function Base.show(io::IO, ::MIME"image/svg+xml", doc::TikZ.Document)
   show(io, MIME"image/svg+xml"(), TikzPicture(doc))
+end
+
 end
