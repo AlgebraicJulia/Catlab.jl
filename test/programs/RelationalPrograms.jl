@@ -49,12 +49,6 @@ d = RelationDiagram(0)
 add_box!(d, 0, name=:A)
 @test parsed == d
 
-sird_uwd = @relation () where (S::Pop, I::Pop, R::Pop, D::Pop) begin
-  infect(S,I,I,I) # inf
-  disease(I,R) # recover
-  disease(I,D) # die
-end
-
 # Typed
 #------
 
@@ -71,6 +65,14 @@ add_junctions!(d, [:X,:Y,:Z,:W], variable=[:x,:y,:z,:w])
 set_junction!(d, [1,4,2,4,3,4])
 set_junction!(d, [1,2,3], outer=true)
 @test parsed == d
+
+# Special case: closed diagram.
+sird_uwd = @relation () where (S::Pop, I::Pop, R::Pop, D::Pop) begin
+  infect(S,I,I,I) # inf
+  disease(I,R) # recover
+  disease(I,D) # die
+end
+@test all(==(:Pop), subpart(sird_uwd, :port_type))
 
 # Untyped, named ports
 #---------------------
@@ -104,13 +106,11 @@ parsed = @relation ((src=v) where (v, w)) -> E(src=v, tgt=w)
 @test parsed[:outer_port_name] == [:src]
 
 # Special case: closed diagram.
-if VERSION >= v"1.5"
-  d1 = @relation ((;) where (v,)) -> E(src=v, tgt=v)
-  @test subpart(d1, :port_name) == [:src, :tgt]
+d1 = @relation ((;) where (v,)) -> E(src=v, tgt=v)
+@test subpart(d1, :port_name) == [:src, :tgt]
 
-  d2 = @relation (;) -> E(src=v, tgt=v)
-  @test d1 == d2
-end
+d2 = @relation (;) -> E(src=v, tgt=v)
+@test d1 == d2
 
 # Typed, named ports
 #-------------------
