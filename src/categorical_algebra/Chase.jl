@@ -1,7 +1,21 @@
+"""
+The chase is an algorithm which subjects a C-Set instance to constraints 
+expressed in the language of regular logic, called embedded dependencies 
+(EDs, or 'triggers'). 
+
+A morphism S->T, encodes an embedded dependency. If the pattern 
+S is matched (via a homomorphism S->I), we demand there exist a morphism T->I 
+(for some database instance I) that makes the triangle commute in order to 
+satisfy the dependency (if this is not the case, then the trigger is 'active').
+
+Homomorphisms can merge elements and introduce new ones. The former kind are
+called "equality generating dependencies" (EGDs) and the latter "tuple
+generating dependencies" (TGDs). Any homomorphism can be factored into EGD and
+TGD components by, respectively, restricting the codomain to the image or
+restricting the domain to the coimage.
+"""
 module Chase
 export chase
-
-using StructEquality
 
 using ...Theories, ...Present
 using ..CSets, ..FinSets, ..FinCats
@@ -12,24 +26,10 @@ import ..Categories: ob_map
 using ...DenseACSets: datatypes
 
 import ...Theories: dom, codom
-import ..Limits: universal, coproduct
+import ..Limits: universal
 
 # EDs
 #####
-
-"""
-A morphism S->T, encoding an embedded dependency (or trigger). If the pattern S
-is matched (via a homomorphism S->I), we demand there exist a morphism T->I (for
-some database instance I) that makes the triangle commute in order to satisfy
-the dependency (if this is not the case, then the trigger is 'active').
-
-Homomorphisms can merge elements and introduce new ones. The former kind are
-called "equality generating dependencies" (EGDs) and the latter "tuple
-generating dependencies" (TGDs). Any homomorphism can be factored into EGD and
-TGD components by, respectively, restricting the codomain to the image or
-restricting the domain to the coimage.
-"""
-
 
 """Distill the component of a morphism that merges elements together"""
 egd(e::CSetTransformation) = factorize(image(e),e)
@@ -74,8 +74,8 @@ function pres_to_eds(S::Presentation; types=Dict(), name="")
       for (i, (e1,e2)) in enumerate(equations(S))])
 
   # morphisms are functional, i.e. unique and total
-  for f_ in S.generators[:Hom] ∪  S.generators[:Attr]
-    atvar(i) = f_ ∈ S.generators[:Attr] ? AttrVar(i) : i 
+  for f_ in generators(S,:Hom) ∪  generators(S,:Attr)
+    atvar(i) = f_ ∈ generators(S,:Attr) ? AttrVar(i) : i 
     d, f, cd = Symbol.([dom(f_), f_, codom(f_)])
     sf, tf = add_srctgt(Symbol(f))
     unique_l, unique_r, total_l = [ACS() for _ in 1:3]
@@ -122,11 +122,10 @@ function equation_to_ed(S,ACS,e1,e2)
   end2 = add_term!(l, e2)
   add_part!(r1, cd)
   add_parts!(r2, cd, 2)
-  is_attr = cd ∈ Symbol.(S.generators[:AttrType])
+  is_attr = cd ∈ Symbol.(generators(S,:AttrType))
   rrcomps = Dict(cd=>(is_attr ? AttrVar : identity).([1,1]))
   rr = ACSetTransformation(r2, r1; rrcomps...)
   rl = ACSetTransformation(r2, l; Dict([cd => [end1,end2]])...)
-  dom(rl) == dom(rr) || error("Here")
   return first(legs(pushout(rl, rr)))
 end
 
@@ -167,17 +166,17 @@ If a name is provided, return a ()->DynamicACSet, otherwise an AnonACSetType.
 """
 function crel_type(S::Presentation; types=Dict(), name="")
   pres = Presentation(FreeSchema)
-  xobs = merge(Dict(map(vcat([S.generators[x] for x in [:Ob,:Hom,:Attr]]...)) do s
+  xobs = merge(Dict(map(vcat([generators(S,x) for x in [:Ob,:Hom,:Attr]]...)) do s
     Symbol(s) => add_generator!(pres, Ob(FreeSchema, Symbol(s)))
   end), Dict([o=>add_generator!(pres,AttrType(FreeSchema.AttrType, o)) 
-             for o in Symbol.(S.generators[:AttrType])]))
-  for h in S.generators[:Hom]
+             for o in Symbol.(generators(S,:AttrType))]))
+  for h in generators(S,:Hom)
     hs, ht = Symbol.([dom(h), codom(h)])
     s, t = add_srctgt(h)
     add_generator!(pres, Hom(s, xobs[Symbol(h)], xobs[hs]))
     add_generator!(pres, Hom(t, xobs[Symbol(h)], xobs[ht]))
   end
-  for h in S.generators[:Attr]
+  for h in generators(S, :Attr)
     hs, ht = Symbol.([dom(h), codom(h)])
     s, t = add_srctgt(h)
     add_generator!(pres, Hom(s, xobs[Symbol(h)], xobs[hs]))
@@ -359,7 +358,7 @@ It has the mapping data in addition to injections from the (co)domain.
 """
 function collage(F::FinFunctor)
   (dF, _) = Xs = [dom(F), codom(F)]
-  C = coproduct(Xs)
+  C = coproduct_fincat(Xs)
   i1, i2 = legs(C)
   p = presentation(apex(C)) # inherit equations from dom and codom
   # Add natural transformations
@@ -451,24 +450,24 @@ end
 Preserves the original name of the inputs if it is unambiguous, otherwise
 disambiguates with index in original input. E.g. (A,B)⊔(B,C) → (A,B#1,B#2,C)
 """
-function coproduct(Xs::AbstractVector{<: FinCatPresentation{ThSchema}}; kw...)
+function coproduct_fincat(Xs::AbstractVector{<: FinCatPresentation{ThSchema}}; kw...)
   Xps = [X.presentation for X in Xs]
   # Collect all generators and identify conflicting names
   cnflobs, cnflats, cnflhoms, cnflattrs = map([:Ob,:AttrType,:Hom,:Attr]) do x 
-    all_ob = Symbol.(vcat([X.generators[x] for X in Xps]...))
+    all_ob = Symbol.(vcat([generators(X,x) for X in Xps]...))
     Set([i for i in all_ob if count(==(i), all_ob) > 1])
   end
   # Create new disjoint union presentation
   p = Presentation(FreeSchema)
   ogens = Dict(vcat(map(enumerate(Xps)) do (i, X)
-    map(Symbol.(X.generators[:Ob])) do o
+    map(Symbol.(generators(X,:Ob))) do o
       (i,o) => Ob(FreeSchema, Symbol("$o" * (o ∈ cnflobs ? "#$i" : "")))
     end
   end...))
   map(values(ogens)) do g add_generator!(p, g) end
 
   agens = Dict(vcat(map(enumerate(Xps)) do (i, X)
-    map(Symbol.(X.generators[:AttrType])) do o
+    map(Symbol.(generators(X,:AttrType))) do o
       (i,o) => AttrType(FreeSchema.AttrType, Symbol("$o" * (o ∈ cnflats ? "#$i" : "")))
     end
   end...))
@@ -476,7 +475,7 @@ function coproduct(Xs::AbstractVector{<: FinCatPresentation{ThSchema}}; kw...)
   gens = merge(ogens,agens)
 
   hgens = Dict(vcat(map(enumerate(Xs)) do (i, X)
-    map(X.presentation.generators[:Hom]) do h
+    map(generators(X.presentation,:Hom)) do h
       n = Symbol("$h" * (Symbol(h) ∈ cnflhoms ? "#$i" : ""))
       d, cd = Symbol.([dom(X,h), codom(X,h)])
       s, t = gens[(i, Symbol(d))], gens[(i, Symbol(cd))]
@@ -485,7 +484,7 @@ function coproduct(Xs::AbstractVector{<: FinCatPresentation{ThSchema}}; kw...)
   end...))
 
   atgens = Dict(vcat(map(enumerate(Xs)) do (i, X)
-    map(X.presentation.generators[:Attr]) do h
+    map(generators(X.presentation,:Attr)) do h
       n = Symbol("$h" * (Symbol(h) ∈ cnflattrs ? "#$i" : ""))
       d, cd = Symbol.([dom(X,h), codom(X,h)])
       s, t = gens[(i, Symbol(d))], gens[(i, Symbol(cd))]

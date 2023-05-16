@@ -478,6 +478,7 @@ d = @migration(SchWeightedGraph, begin
     I => @join begin
       (e1,e2,e3)::E
       (w1,w3)::Weight
+      src(e1) == src(e2)      
       weight(e1) == w1
       w1 == 1.9     
       weight(e2) == 1.8 
@@ -486,7 +487,7 @@ d = @migration(SchWeightedGraph, begin
 end)
 
 expected = @acset WeightedGraph{Float64} begin
-  V=6; E=3; Weight=1; src=[1,2,3]; tgt=[4,5,6]; weight=[1.8,1.9,AttrVar(1)]
+  V=5; E=3; Weight=1; src=[1,1,3]; tgt=[2,4,5]; weight=[1.8,1.9,AttrVar(1)]
 end
 @test is_isomorphic(ob_map(colimit_representables(d, yWG), :I), expected)
 

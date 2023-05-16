@@ -559,4 +559,15 @@ edge involution.
 @acset_type SymmetricWeightedGraph(SchSymmetricWeightedGraph, index=[:src]) <:
   AbstractSymmetricWeightedGraph
 
+"""
+Interchange src and tgt, keeping all other data the same
+"""
+function Base.reverse!(g::G) where G<:HasGraph
+  tmp = deepcopy(g[:tgt])
+  g[:tgt] = g[:src] 
+  g[:src] = tmp
+  return g
 end
+Base.reverse(g::G) where G<:HasGraph = g |> deepcopy |> reverse!
+
+end # module

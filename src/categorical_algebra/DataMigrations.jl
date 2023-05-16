@@ -260,10 +260,10 @@ struct SigmaMigration{Dom,Codom} <: MigrationFunctor{Dom,Codom}
   dom_constructor
   codom_constructor
   SigmaMigration(f,d::ACSet,c::ACSet) = new{typeof(d),typeof(c)}(f,constructor(d),constructor(c))
-  SigmaMigration(f,::Type{T},c::ACSet) where T<:StructACSet = SigmaMigration(f,T(),constructor(c))
-  SigmaMigration(f,d::ACSet,::Type{T}) where T<:StructACSet = SigmaMigration(f,d,T())
-  SigmaMigration(f,d::Type{T′},::Type{T}) where {T<:StructACSet, T′<:StructACSet} = SigmaMigration(f,d,T())
 end 
+SigmaMigration(f,::Type{T},c::ACSet) where T<:StructACSet = SigmaMigration(f,T(),constructor(c))
+SigmaMigration(f,d::ACSet,::Type{T}) where T<:StructACSet = SigmaMigration(f,d,T())
+SigmaMigration(f,d::Type{T′},::Type{T}) where {T<:StructACSet, T′<:StructACSet} = SigmaMigration(f,d,T())
 
 """
 Create a C-Set for the collage of the functor. Initialize data in the domain 
@@ -392,21 +392,20 @@ function colimit_representables(F::ConjSchemaMigration, y)
   ACS = constructor(ob_map(y,first(ob_generators(dom(y)))))
   colimits = make_map(ob_generators(C)) do c
     Fc = ob_map(F, c) # e.g. I
-    clim_diag = deepcopy(compose(op(Fc), y))
+    clim_diag = deepcopy(diagram(compose(op(Fc), y)))
     # modify the diagram we take a colimit of to concretize some vars
     params = Fc isa SimpleDiagram ? Dict() : Fc.params
-    G = dom(clim_diag.diagram).cat.graph
+    G, om, hm = [f(clim_diag) for f in [graph ∘ dom, ob_map, hom_map]]
     for (i,val) in collect(params)
       v = add_vertex!(G; vname=Symbol("param$i"))
-      add_edge!(G, v, i; ename=Symbol("param$i"))
+      add_edge!(G, i, v; ename=Symbol("param$i"))
       at = nameof(ob_map(Fc, i)) # attribute type name 
       h = only(homomorphisms(ob_map(clim_diag,i), ACS(); initial=Dict(at=>[val])))
-      push!(clim_diag.diagram.ob_map, ACS())
-      push!(clim_diag.diagram.hom_map, h)
+      push!(om, ACS())
+      push!(hm, h)
     end
-    is_functorial(clim_diag.diagram) || error("here")
-    # take colimit
-    colimit(clim_diag)
+    updated_diagram = FinDomFunctor(om, hm, FinCat(G), codom(clim_diag))
+    colimit(updated_diagram) # take colimit
   end
   homs = make_map(hom_generators(C)) do f
     Ff, c, d = hom_map(F, f), dom(C, f), codom(C, f)

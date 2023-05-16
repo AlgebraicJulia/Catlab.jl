@@ -124,13 +124,8 @@ abstract type FinCatGraph{G,Ob,Hom} <: FinCat{Ob,Hom} end
 """
 graph(C::FinCatGraph) = C.graph
 
-graph(C::OppositeCat) = op(graph(op(C)))
-function op(g::G) where G<:HasGraph 
-  op_g = deepcopy(g)
-  op_g[:tgt] = g[:src] 
-  op_g[:src] = g[:tgt]
-  return op_g
-end
+graph(C::OppositeCat) = reverse(graph(op(C)))
+
 
 ob_generators(C::FinCatGraph) = vertices(graph(C))
 hom_generators(C::FinCatGraph) = edges(graph(C))
@@ -498,6 +493,8 @@ end
 
 ob_key(C::FinCat, x) = ob_generator(C, x)
 hom_key(C::FinCat, f) = hom_generator(C, f)
+ob_map(F::FinDomFunctorMap) = F.ob_map
+hom_map(F::FinDomFunctorMap) = F.hom_map
 
 # Use generator names, rather than generators themselves, for Dict keys.
 ob_key(C::FinCatPresentation, x) = presentation_key(x)
