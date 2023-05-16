@@ -11,8 +11,8 @@ export @graph, @fincat, @finfunctor, @diagram, @free_diagram,
 using Base.Iterators: repeated
 using MLStyle: @match
 
-using ...GATs, ...Graphs, ...CategoricalAlgebra
-using ...Theories: munit
+using ...GATs, ...Present, ...Graphs, ...CategoricalAlgebra
+using ...Theories: munit, FreeSchema.Attr
 using ...CategoricalAlgebra.FinCats: mapvals, make_map
 using ...CategoricalAlgebra.DataMigrations: ConjQuery, GlueQuery, GlucQuery
 import ...CategoricalAlgebra.FinCats: FinCat, vertex_name, vertex_named,
@@ -47,7 +47,7 @@ end
 @data DiagramExpr begin
   ObOver(name::Symbol, over::Union{ObExpr,Nothing}) #probably shouldn't be nothing
   HomOver(name::Symbol, src::Symbol, tgt::Symbol, over::HomExpr)
-  AttrOver(name::Symbol, src::Symbol,tgt::Symbol,aux_index::Integer,over::Vector{HomExpr})
+  AttrOver(name::Symbol, src::Symbol,tgt::Symbol,aux_func_def::Expr)
 end
 
 @data CatExpr <: DiagramExpr begin
@@ -466,11 +466,12 @@ parse_diagram(pres::Presentation, ast::AST.Diagram) =
 
 function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
                             type=Any, ob_parser=nothing, hom_parser=nothing, 
-                            aux_funcs = Function[],kw...)
+                            kw...)
   isnothing(ob_parser) && (ob_parser = x -> parse_ob(C, x))
   isnothing(hom_parser) && (hom_parser = (f,x,y) -> parse_hom(C,f))
   g, eqs = DiagramGraph(), Pair[]
   F_ob, F_hom, params = [], [], Dict{Int,Any}()
+  attrnames = map(first,presentation(C).generators[:Attr])
   for stmt in statements
     @match stmt begin
       AST.ObOver(x, X) => begin
@@ -488,10 +489,11 @@ function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
         end
       end
       #add the hom that's going to map to h, then save for later
-      AST.AttrOver(f,x,y,n,h) => begin
+      AST.AttrOver(f,x,y,expr) => begin
         e = parse!(g,AST.Hom(f,x,y))
-        push!(F_hom, nothing) #TODO: a trivial GatExpr X to Y
-        params[e] = (h,aux_funcs[n])
+        push!(F_hom, FreeSchema.Attr{:nothing}([f],[]))
+        aux_func = make_func(expr,attrnames)
+        params[e] = aux_func
       end
       #AST.AssignLiteral(x, value) => begin
       #  v = vertex_named(g, x)
@@ -597,9 +599,8 @@ diagram shapes, whereas a morphism between gluing queries is covariant. TODO:
 Reference for more on this.
 """
 macro migration(src_schema, body)
-  aux_funcs = Function[]
-  ast = AST.Diagram(parse_diagram_ast(body,aux_funcs=aux_funcs))
-  :(parse_migration($(esc(src_schema)), $ast,aux_funcs=$aux_funcs))
+  ast = AST.Diagram(parse_diagram_ast(body))
+  :(parse_migration($(esc(src_schema)), $ast))
 end
 macro migration(tgt_schema, src_schema, body)
   # Cannot parse Julia expr during expansion because target schema is needed.
@@ -647,7 +648,7 @@ function parse_migration(src_schema::Presentation, ast::AST.Diagram;
   DataMigration(make_query(C, d))
 end
 function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
-                         ast::AST.Mapping,aux_funcs::Vector{Function})
+                         ast::AST.Mapping)
   D, C = FinCat(tgt_schema), FinCat(src_schema)
   ob_rhs, hom_rhs = make_ob_hom_maps(D, ast, missing_hom=true)
   F_ob = mapvals(expr -> parse_query(C, expr), ob_rhs)
@@ -659,10 +660,9 @@ function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
 end
 function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
                          body::Expr)
-  aux_funcs = Function[]
   #need to look into function below
-  ast = parse_mapping_ast(body, FinCat(tgt_schema), preprocess=true,aux_funcs=aux_funcs)
-  parse_migration(tgt_schema, src_schema, ast,aux_funcs)
+  ast = parse_mapping_ast(body, FinCat(tgt_schema), preprocess=true)
+  parse_migration(tgt_schema, src_schema, ast)
 end
 DataMigrations.DataMigration(h::SimpleDiagram) = DataMigration(diagram(h))
 DataMigrations.DataMigration(h::QueryDiagram) = DataMigration(diagram(h),h.params)
@@ -770,8 +770,8 @@ function make_query(C::FinCat{Ob}, data::DiagramData{T}) where {T, Ob}
     # XXX: Why is the element type of `F_ob` sometimes too loose?
     D = TypeCat(typeintersect(query_type, eltype(values(F_ob))),
                 eltype(values(F_hom)))
-    @assert isempty(data.params)
-    Diagram(DiagramData{T}(F_ob, F_hom, J), D)
+    #@assert isempty(data.params)
+    Diagram(DiagramData{T}(F_ob, F_hom, J,data.params), D)
   end
 end
 
@@ -884,9 +884,9 @@ end
 
 """ Parse category or diagram from Julia expression to AST.
 """
-function parse_diagram_ast(body::Expr; free::Bool=false, preprocess::Bool=true,aux_funcs::Vector{Function}=Function[])
+function parse_diagram_ast(body::Expr; free::Bool=false, preprocess::Bool=true)
   if preprocess
-    body = reparse_arrows_and_lets(body,aux_funcs)
+    body = reparse_arrows(body)
   end
   state = DiagramASTState()
   stmts = mapreduce(vcat, statements(body), init=AST.CatExpr[]) do expr
@@ -921,8 +921,9 @@ function parse_diagram_ast(body::Expr; free::Bool=false, preprocess::Bool=true,a
       Expr(:call, :(=>), Expr(:call, :(:), f::Symbol,
                               Expr(:call, :(→), x::Symbol, y::Symbol)), h) ||
       Expr(:(::), Expr(:call, :(:), f::Symbol,
-      Expr(:call, :(→), x::Symbol, y::Symbol)), h) => 
+      Expr(:call, :(→), x::Symbol, y::Symbol)), h) => begin
         parse_hom_over(f,x,y,state.ob_over[x],state.ob_over[y],h)
+    end
       
       #begin
       #  X, Y = state.ob_over[x], state.ob_over[y] #X,Y are ObGenerators (in the base)
@@ -987,11 +988,17 @@ function parse_diagram_ast(body::Expr; free::Bool=false, preprocess::Bool=true,a
       _ => error("Cannot parse statement in category/diagram definition: $expr")
     end
   end
+  return stmts
 end
 function parse_hom_over(name,x,y,X,Y,rhs)
   @match rhs begin
-    Expr(:tuple,Expr(:vect,exprs...),n) =>
-      [AST.AttrOver(name,x,y,n,[parse_hom_ast(h,X,Y) for h in exprs])]
+    Expr(:(->),_...) => begin
+      #push!(aux_funcs,rhs)
+      #n = length(aux_funcs)
+      [AST.AttrOver(name,x,y,rhs)]
+  end
+#    Expr(:tuple,Expr(:vect,exprs...),n) =>
+#      [AST.AttrOver(name,x,y,n,[parse_hom_ast(h,X,Y) for h in exprs])]
     _ => [AST.HomOver(name,x,y,parse_hom_ast(rhs,X,Y))]
   end
 end
@@ -1029,33 +1036,33 @@ end
 
 """ Parse object expression from Julia expression to AST.
 """
-function parse_ob_ast(expr)::AST.ObExpr
+function parse_ob_ast(expr;kw...)::AST.ObExpr
   @match expr begin
-    Expr(:macrocall, _...) => parse_ob_macro_ast(expr)
+    Expr(:macrocall, _...) => parse_ob_macro_ast(expr;kw...)
     x::Symbol || Expr(:curly, _...) => AST.ObGenerator(expr)
     _ => error("Invalid object expression $expr")
   end
 end
 const compose_ops = (:(⋅), :(⨟), :(∘))
 
-function parse_ob_macro_ast(expr)::AST.ObExpr
+function parse_ob_macro_ast(expr;kw...)::AST.ObExpr
   @match expr begin
     Expr(:macrocall, form, ::LineNumberNode, args...) =>
-      parse_ob_macro_ast(Expr(:macrocall, form, args...))
+      parse_ob_macro_ast(Expr(:macrocall, form, args...);kw...)
     Expr(:macrocall, &(Symbol("@limit")), body) ||
     Expr(:macrocall, &(Symbol("@join")), body) =>
-      AST.Limit(parse_diagram_ast(body, free=true, preprocess=false))
+      AST.Limit(parse_diagram_ast(body, free=true, preprocess=false;kw...))
     Expr(:macrocall, &(Symbol("@product")), body) =>
-      AST.Product(parse_diagram_ast(body, free=true, preprocess=false))
+      AST.Product(parse_diagram_ast(body, free=true, preprocess=false;kw...))
     Expr(:macrocall, &(Symbol("@terminal"))) ||
     Expr(:macrocall, &(Symbol("@unit"))) =>
       AST.Terminal()
     Expr(:macrocall, &(Symbol("@colimit")), body) ||
     Expr(:macrocall, &(Symbol("@glue")), body) =>
-      AST.Colimit(parse_diagram_ast(body, free=true, preprocess=false))
+      AST.Colimit(parse_diagram_ast(body, free=true, preprocess=false;kw...))
     Expr(:macrocall, &(Symbol("@coproduct")), body) ||
     Expr(:macrocall, &(Symbol("@cases")), body) =>
-      AST.Coproduct(parse_diagram_ast(body, free=true, preprocess=false))
+      AST.Coproduct(parse_diagram_ast(body, free=true, preprocess=false;kw...))
     Expr(:macrocall, &(Symbol("@initial"))) ||
     Expr(:macrocall, &(Symbol("@empty"))) =>
       AST.Initial()
@@ -1110,9 +1117,9 @@ end
 
 """ Parse object/morphism mapping from Julia expression to AST.
 """
-function parse_mapping_ast(f_parse_ob_assign, body, dom; preprocess::Bool=false,aux_funcs::Vector{Function}=Function[])
+function parse_mapping_ast(f_parse_ob_assign, body, dom; preprocess::Bool=false)
   if preprocess
-    body = reparse_arrows_and_lets(body,aux_funcs)
+    body = reparse_arrows(body)
   end
   ob_map = Dict{Symbol,AST.ObExpr}()
   get_ob(x) = get(ob_map, x) do
@@ -1211,11 +1218,11 @@ statements(expr) = (expr isa Expr && expr.head == :block) ? expr.args : [expr]
 
 In Julia, `f : x → y` is parsed as `(f : x) → y` instead of `f : (x → y)`.
 """
-function reparse_arrows_and_lets(expr,aux_funcs)
+function reparse_arrows(expr)
   @match expr begin
     Expr(:call, :(→), Expr(:call, :(:), f, x), y) =>
       Expr(:call, :(:), f, Expr(:call, :(→), x, y))
-    Expr(:let,decs,body) => begin
+    #=Expr(:let,decs,body) => begin
       #currently requires user to put var on LHS, which seems hard to avoid
       (vars, homs) = @match decs begin #vector of homexprs to be passed in the anonfunc
         Expr(:(=),lhs::Symbol,rhs) => ([lhs],Expr(:vect,rhs)) #rhs to be parsed as HomOvers
@@ -1226,12 +1233,12 @@ function reparse_arrows_and_lets(expr,aux_funcs)
       aux_func = make_func(body,vars...)
       push!(aux_funcs,aux_func)
       Expr(:tuple,homs,length(aux_funcs))
-    end
-    Expr(head, args...) => Expr(head, (reparse_arrows_and_lets(arg,aux_funcs) for arg in args)...)
+    end=#
+    Expr(head, args...) => Expr(head, (reparse_arrows(arg) for arg in args)...)
     _ => expr
   end
 end
-function make_func(body,vars...)
+function make_func(body,vars)
   eval(Expr(:(->),Expr(:tuple,vars...),body))
 end
 """ Left-most argument plus remainder of left-associated binary operations.

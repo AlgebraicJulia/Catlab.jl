@@ -414,16 +414,6 @@ function IndexedFinDomFunctionVector(f::AbstractVector{T}, codom::SetOb{T};
   IndexedFinDomFunctionVector(f, index, codom)
 end
 
-function IndexedFinDomFunctionVector(f::AbstractVector{T}, dom::FinSet{Int},
-                                     codom::SetOb{T}; index=nothing) where T
-  length(f) == length(dom) ||
-    error("Length of vector $f does not match domain $dom")
-  IndexedFinDomFunctionVector(f, index, codom)
-end
-
-Base.hash(f::IndexedFinDomFunctionVector, h::UInt) =
-  hash(f.func, hash(f.codom, h))
-
 Base.:(==)(f::Union{FinDomFunctionVector,IndexedFinDomFunctionVector},
            g::Union{FinDomFunctionVector,IndexedFinDomFunctionVector}) =
   # Ignore index when comparing for equality.

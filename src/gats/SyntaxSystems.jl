@@ -63,10 +63,15 @@ function Base.show(io::IO, expr::GATExpr)
   join(io, args(expr), ",")
   print(io, ")")
 end
+function Base.show(io::IO,expr::GATExpr{:nothing})
+  print(io, "GATExpr{:nothing}")
+end
 function Base.show(io::IO, expr::GATExpr{:generator})
   print(io, first(expr))
 end
-
+function Base.show(io::IO, ::MIME"text/plain", expr::GATExpr{:nothing})
+  show(expr)
+end
 function Base.show(io::IO, ::MIME"text/plain", expr::GATExpr)
   show_unicode(io, expr)
 end

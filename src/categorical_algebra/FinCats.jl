@@ -67,6 +67,7 @@ Because object generators usually coincide with objects, the default method for
 function ob_generator end
 
 ob(C::FinCat, x) = ob_generator(C, x)
+hom(C::FinCat,x::Nothing) = x
 
 """ Coerce or look up morphism generator in a finitely presented category.
 
@@ -220,6 +221,7 @@ compose(C::FinCatPathGraph, fs...) =
   reduce(vcat, coerce_path(graph(C), f) for f in fs)
 
 hom(C::FinCatPathGraph, f) = coerce_path(graph(C), f)
+hom(C::FinCatPathGraph, f::Nothing) = nothing
 
 coerce_path(g::HasGraph, path::Path) = path
 coerce_path(g::HasGraph, x) = Path(g, x)
@@ -332,6 +334,7 @@ ob(C::FinCatPresentation{ThSchema}, x::GATExpr) =
     error("Expression $x is not an object or attribute type")
 
 hom(C::FinCatPresentation, f) = hom_generator(C, f)
+hom(C::FinCatPresentation,f::Nothing) = nothing
 hom(C::FinCatPresentation, fs::AbstractVector) =
   mapreduce(f -> hom(C, f), compose, fs)
 hom(C::FinCatPresentation, f::GATExpr) =
@@ -387,6 +390,7 @@ decompose(C::OppositeCat, f::GATExpr{:compose}) = reverse(decompose(C.cat, f))
 function hom_map(F::FinDomFunctor, f::GATExpr{:id})
   id(codom(F), ob_map(F, dom(f)))
 end
+hom_map(F::FinDomFunctor, n::GATExpr{:nothing}) = n
 
 (F::FinDomFunctor)(expr::ObExpr) = ob_map(F, expr)
 (F::FinDomFunctor)(expr::HomExpr) = hom_map(F, expr)

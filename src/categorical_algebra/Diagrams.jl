@@ -14,6 +14,7 @@ using ..FinCats, ..FreeDiagrams
 using ..FinCats: mapvals
 import ..FinCats: force, collect_ob, collect_hom
 import ..Limits: limit, colimit, universal
+import ..FinSets: FinDomFunction
 
 # Data types
 ############
@@ -69,6 +70,7 @@ struct QueryDiagram{T,C<:Cat,D<:Functor{<:FinCat,C},
 end
 QueryDiagram{T}(F::D, params::P) where {T,C<:Cat,D<:Functor{<:FinCat,C},P} =
   QueryDiagram{T,C,D,P}(F, params)
+
 
 """ Functor underlying a diagram object.
 """
@@ -248,7 +250,31 @@ function compose(f::DiagramHom{T}, F::Functor; kw...) where T
   DiagramHom{T}(shape_map(f), composeH(diagram_map(f), F; kw...),
                 compose(f.precomposed_diagram, F; kw...))
 end
-
+#This is only to be used when F lands in Set, or wherever
+#the functions in d's params are supposed to live. 
+#Perhaps needs a keyword argument about whether to fill in 
+#blanks
+#Also inelegant way of returning
+function compose(d::QueryDiagram{T},F::Functor; kw...) where T
+  D = diagram(d)
+  partial = force(compose(D,F)) #easy part
+  params = d.params #auxiliary functions
+  attrnames = presentation(codom(D)).generators[:Attr]
+  attrfuns = map(x->hom_map(F,x),attrnames)
+  partial
+  for (n,f) in params #Populate the hom_map of partial appropriately
+    domain = ob_map(partial,hom(dom(partial),n).src)
+    codomain = ob_map(partial,hom(dom(partial),n).tgt)
+    partial.hom_map[n] =
+      FinDomFunction(f(attrfuns...),domain,codomain)
+  end
+  Diagram{T}(FinDomFunctor(
+      partial.ob_map,
+      partial.hom_map,
+      dom(partial),
+      codom(F)
+    ))
+end
 # Limits and colimits
 #####################
 
