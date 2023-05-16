@@ -598,6 +598,20 @@ A = Subobject(S, X=[3,4,5])
 @test ¬Subobject(ι₂) |> force == Subobject(ι₁)
 @test ~A |> force == ⊤(S) |> force
 
+# Maximum Common C-Set
+######################
+g = Graphs.Graph(4)
+add_edges!(g, [1,1,2], [3,4,4])
+g′ = Graphs.Graph(4)
+add_edges!(g′, [1,1,3], [2,4,4])
+mca_g, mca_g_morphs = mca(g, g′)
+@test is_isomorphic(mca_g,CategoricalAlgebra.CSets.strip_attributes(g))
+@test is_isomorphic(mca_g,CategoricalAlgebra.CSets.strip_attributes(g′))
+@test length(mca_g_morphs) == 2
+@test length(mca_g_morphs[1]) == 1
+@test length(mca_g_morphs[2]) == 1
+# Add checks for the specifics of the morphisms
+
 # Acset serialization
 #####################
 
