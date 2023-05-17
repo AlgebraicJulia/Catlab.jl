@@ -42,6 +42,10 @@ end
   include("CommutativeDiagrams.jl")
 end
 
+@testset "Chase" begin
+  include("Chase.jl")
+end
+
 @testset "DataMigrations" begin
   include("DataMigrations.jl")
 end

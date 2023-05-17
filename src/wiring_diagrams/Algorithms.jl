@@ -135,8 +135,8 @@ wires. Typical choices are:
 In both cases, this algorithm has the property that if there is a permutation
 with no crossings, it will find it.
 """
-function crossing_minimization_by_sort(d::WiringDiagram, vs::AbstractVector{Int};
-    sources::AbstractVector{Int}=Int[], targets::AbstractVector{Int}=Int[],
+function crossing_minimization_by_sort(d::WiringDiagram, vs::AbstractVector;
+    sources::AbstractVector=Int[], targets::AbstractVector=Int[],
     statistic::Function=mean)::AbstractVector{Int}
   @assert allunique(vs) && allunique(sources) && allunique(targets)
   if isempty(sources) && isempty(targets)

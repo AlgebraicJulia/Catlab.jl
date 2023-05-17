@@ -552,7 +552,9 @@ struct BipartiteLimit{Ob, Diagram, Cone<:Multispan{Ob},
   limit::Lim
 end
 
-function limit(F::Union{Functor,FreeDiagram}, ::ToBipartiteLimit)
+
+# FIXME: make this similar to how colimits are treated
+function limit(F::Union{Functor,FreeDiagram,FixedShapeFreeDiagram}, ::ToBipartiteLimit)
   d = BipartiteFreeDiagram(F)
   lim = limit(d)
   cone = Multispan(apex(lim), map(incident(d, :, :orig_vert₁),
@@ -586,7 +588,14 @@ struct BipartiteColimit{Ob, Diagram, Cocone<:Multicospan{Ob},
   colimit::Colim
 end
 
-function colimit(F::Union{Functor,FreeDiagram}, ::ToBipartiteColimit)
+function colimit(F::FixedShapeFreeDiagram, ::ToBipartiteColimit)
+  kwarg = F isa DiscreteDiagram ? Dict(:colimit=>true) : Dict()
+  d = BipartiteFreeDiagram(F; kwarg...)
+  colim = colimit(d)
+  return BipartiteColimit(F, cocone(colim), colim)
+end 
+
+function colimit(F::Union{T,FreeDiagram}, ::ToBipartiteColimit) where {T<:Functor}
   d = BipartiteFreeDiagram(F, colimit=true)
   colim = colimit(d)
   cocone = Multicospan(apex(colim), map(incident(d, :, :orig_vert₁),
@@ -603,8 +612,9 @@ end
 
 function universal(colim::BipartiteColimit, cocone::Multicospan)
   colim = colim.colimit
-  cocone = Multicospan(apex(cocone), legs(cocone)[colim.diagram[:orig_vert₂]])
+  cocone = Multicospan(apex(cocone), legs(cocone)[cocone_indices(colim.diagram)])
   universal(colim, cocone)
 end
+
 
 end

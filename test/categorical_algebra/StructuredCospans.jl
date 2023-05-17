@@ -191,8 +191,8 @@ const OpenWeighted2DGlobularSetOb, OpenWeighted2DGlobularSet =
 
 v = WeightedGraph{Float64}(1)
 e1, e2 = WeightedGraph{Float64}(2), WeightedGraph{Float64}(2)
-add_edge!(e1, 1, 2, weight=1)
-add_edge!(e2, 1, 2, weight=2)
+add_edge!(e1, 1, 2, weight=1.)
+add_edge!(e2, 1, 2, weight=2.)
 
 cell = @acset Weighted2DGlobularSet{Float64} begin
   V = 2

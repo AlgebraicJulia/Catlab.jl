@@ -120,6 +120,7 @@ for dds_maker in dds_makers
 
   # Special case of pretty print: empty table.
   empty_dds = dds_maker()
+  @test isempty(empty_dds)
   @test !isempty(sprint(show, empty_dds))
   @test !isempty(sprint(show, MIME"text/plain"(), empty_dds))
   @test !isempty(sprint(show, MIME"text/html"(), empty_dds))
@@ -127,6 +128,7 @@ for dds_maker in dds_makers
   # Error handling when adding parts.
   dds = dds_maker()
   add_parts!(dds, :X, 3, Φ=[1,1,1])
+  @test !isempty(dds)
   @test_throws AssertionError add_part!(dds, :X, Φ=5)
   @test nparts(dds, :X) == 3
   @test subpart(dds, :Φ) == [1,1,1]
@@ -182,7 +184,6 @@ dgram_makers = [
    T -> DynamicACSet("LDendrogram", SchLDendrogram; type_assignment=Dict(:R=>T), index=[:parent, :leafparent])
    )
 ]
-
 for (dgram_maker, ldgram_maker) in dgram_makers
   d = dgram_maker(Int)
   add_parts!(d, :X, 3, height=0)
@@ -274,7 +275,7 @@ for (dgram_maker, ldgram_maker) in dgram_makers
   @test nparts(ld, :L) == 0
   @test subpart(ld, :parent) == subpart(d, :parent)
 
-  add_parts!(ld, :L, 3, leafparent=[2,3,4])
+  add_parts!(ld, :L, 3, leafparent=Number[2,3,4])
   @test subpart(ld, :leafparent) == [2,3,4]
   d′ = dgram_maker(Int)
   copy_parts!(d′, ld)

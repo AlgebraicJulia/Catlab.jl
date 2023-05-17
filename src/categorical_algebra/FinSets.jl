@@ -2,7 +2,7 @@
 """
 module FinSets
 export FinSet, FinFunction, FinDomFunction, TabularSet, TabularLimit,
-  force, is_indexed, preimage,
+  force, is_indexed, preimage, VarFunction, LooseVarFunction,
   JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin,
   SubFinSet, SubOpBoolean, is_monic, is_epic
 
@@ -16,14 +16,16 @@ import Tables, PrettyTables
 @reexport using ..Sets
 using ...GAT, ...Theories, ...CSetDataStructures, ...Graphs
 using ..FinCats, ..FreeDiagrams, ..Limits, ..Subobjects
-import ...Theories: Ob, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
+import ...Theories: Ob, meet, ∧, join, ∨, top, ⊤, bottom, ⊥, ⋅, dom, codom, 
+                    compose
 import ..Categories: ob, hom, dom, codom, compose, id, ob_map, hom_map
 import ..FinCats: force, ob_generators, hom_generators, ob_generator,
   ob_generator_name, graph, is_discrete
 using ..FinCats: dicttype
-import ..Limits: limit, colimit, universal
+import ..Limits: limit, colimit, universal, BipartiteColimit
 import ..Subobjects: Subobject
 using ..Sets: IdentityFunction, SetFunctionCallable
+using ...ColumnImplementations: AttrVar
 
 # Finite sets
 #############
@@ -251,7 +253,7 @@ Ob(F::Functor{<:FinCat{Int}}) = FinDomFunction(collect_ob(F), Ob(codom(F)))
 The domain of this function is always of type `FinSet{Int}`, with elements of
 the form ``{1,...,n}``.
 """
-struct FinDomFunctionVector{T,V<:AbstractVector{T}, Codom<:SetOb{T}} <:
+@struct_hash_equal struct FinDomFunctionVector{T,V<:AbstractVector{T}, Codom<:SetOb{T}} <:
     SetFunction{FinSetInt,Codom}
   func::V
   codom::Codom
@@ -292,6 +294,94 @@ Base.show(io::IO, f::FinFunctionVector) =
 Sets.do_compose(f::FinFunctionVector, g::FinDomFunctionVector) =
   FinDomFunctionVector(g.func[f.func], codom(g))
 
+# Variable component maps 
+#########################
+"""
+Control dispatch in the category of VarFunctions
+"""
+@struct_hash_equal struct VarSet{T}
+  n::Int 
+end
+VarSet(i::Int) = VarSet{Union{}}(i)
+FinSet(s::VarSet{Union{}}) = FinSet(s.n)
+Base.iterate(set::VarSet{T}, args...) where T = iterate(1:set.n, args...)
+Base.length(set::VarSet{T}) where T = set.n
+Base.in(set::VarSet{T}, elem) where T = in(elem, 1:set.n)
+
+
+abstract type AbsVarFunction{T} end # either VarFunction or LooseVarFunction
+"""
+Data type of a map out of a set of attribute variables
+
+Currently, domains are FinSet{Int} and codomains are expected to be FinSet{Int}.
+This could be generalized to being FinSet{Symbol} to allow for
+symbolic attributes. (Likewise, AttrVars will have to wrap Any rather than Int)
+"""
+@struct_hash_equal struct VarFunction{T} <: AbsVarFunction{T}
+  fun::FinDomFunction
+  codom::FinSet
+  function VarFunction{T}(f,cod::FinSet) where T
+    all(e-> (e isa AttrVar && e.val ∈ cod) || e isa T, f) || error("Codom error: $f $T $cod")
+    return new(FinDomFunction(Vector{Union{AttrVar,T}}(f)), cod)
+  end 
+end
+VarFunction(f::AbstractVector{Int},cod::Int) = VarFunction(FinFunction(f,cod))
+VarFunction(f::FinDomFunction) = VarFunction{Union{}}(AttrVar.(collect(f)),codom(f))
+Base.length(f::AbsVarFunction{T}) where T = length(collect(f.fun))
+Base.collect(f::AbsVarFunction{T}) where T = collect(f.fun)
+(f::VarFunction{T})(v::T) where T = v 
+(f::AbsVarFunction{T})(v::AttrVar) where T = f.fun(v.val) 
+
+dom(f::AbsVarFunction{T}) where T = VarSet{T}(length(collect(f.fun)))
+codom(f::VarFunction{T}) where T = VarSet{T}(length(f.codom))
+id(s::VarSet{T}) where T = VarFunction{T}(AttrVar.(1:s.n), FinSet(s.n))
+function is_monic(f::VarFunction) 
+  if any(x-> !(x isa AttrVar), collect(f.fun)) return false end 
+  vals = [v.val for v in collect(f.fun)]
+  return length(vals) == length(unique(vals))
+end
+is_epic(f::VarFunction) = AttrVar.(f.codom) ⊆ collect(f)
+
+compose(::IdentityFunction{TypeSet{T}}, f::AbsVarFunction{T}) where T = f
+compose(f::VarFunction{T}, ::IdentityFunction{TypeSet{T}}) where T = f
+
+"""Kleisi composition of [n]->T+[m] and [m]->T'+[p], yielding a [n]->T'+[p]"""
+compose(f::VarFunction{T},g::VarFunction{T}) where {T} =
+  VarFunction{T}([elem isa AttrVar ? g.fun(elem.val) : elem 
+                  for elem in collect(f)], g.codom)
+
+
+"""Compose [n]->[m]+T with [m]->[p], yielding a [n]->T+[p]"""
+compose(f::VarFunction{T}, g::FinFunction) where T =
+  VarFunction{T}([elem isa AttrVar ? AttrVar(g(elem.val)) : elem 
+                  for elem in collect(f)], g.codom)
+
+preimage(f::VarFunction{T}, v::AttrVar) where T = preimage(f.fun, v)
+preimage(f::VarFunction{T}, v::T) where T = preimage(f.fun, v)
+force(f::VarFunction{T}) where T = f
+
+@struct_hash_equal struct LooseVarFunction{T,T′}  <: AbsVarFunction{T}
+  fun::FinDomFunction
+  loose::SetFunction
+  codom::FinSet
+  function LooseVarFunction{T,T′}(f,loose,cod) where {T, T′}
+    all(e-> (e isa AttrVar && e.val ∈ cod) || e isa T′, f) || error("Codomain error: $f")
+    return new(FinDomFunction(Vector{Union{AttrVar,T′}}(f)), loose, cod)
+  end
+end
+LooseVarFunction{T,T′}(f, loose::F, cod) where {T,T′,F<:Function} = 
+  LooseVarFunction{T,T′}(f, SetFunction(loose,TypeSet(T),TypeSet(T′)),cod)
+
+(f::LooseVarFunction{T})(v::T) where T = f.loose(v)
+codom(f::LooseVarFunction{T,T′}) where {T,T′} = VarSet{T′}(length(f.codom))
+compose(f::LooseVarFunction{<:Any,T′}, ::IdentityFunction{TypeSet{T′}}) where {T′} = f
+
+compose(f::LooseVarFunction{T,T′},g::LooseVarFunction{T′,T′′}) where {T, T′,T′′} =
+  LooseVarFunction{T,T′′}([elem isa AttrVar ? g.fun(elem.val) : g.loose(elem) 
+                           for elem in collect(f)], f.loose⋅g.loose, g.codom)
+
+⋅(f::AbsVarFunction, g::AbsVarFunction) = compose(f,g)
+force(f::LooseVarFunction{T,T′}) where {T,T′} = f
 # Indexed vector-based functions
 #-------------------------------
 
@@ -327,6 +417,9 @@ function IndexedFinDomFunctionVector(f::AbstractVector{T}, dom::FinSet{Int},
     error("Length of vector $f does not match domain $dom")
   IndexedFinDomFunctionVector(f, index, codom)
 end
+
+Base.hash(f::IndexedFinDomFunctionVector, h::UInt) =
+  hash(f.func, hash(f.codom, h))
 
 Base.:(==)(f::Union{FinDomFunctionVector,IndexedFinDomFunctionVector},
            g::Union{FinDomFunctionVector,IndexedFinDomFunctionVector}) =
@@ -1023,7 +1116,7 @@ function universal(colim::Coproduct{<:FinSet{Int}}, cocone::Multicospan)
                  ob(colim), cod)
 end
 
-function colimit(pair::ParallelPair{<:FinSet{Int}})
+function colimit(pair::ParallelPair{<:FinSet{Int},T,K}) where {T,K} 
   f, g = pair
   m, n = length(dom(pair)), length(codom(pair))
   sets = IntDisjointSets(n)
@@ -1032,6 +1125,8 @@ function colimit(pair::ParallelPair{<:FinSet{Int}})
   end
   Colimit(pair, SMulticospan{1}(quotient_projection(sets)))
 end
+
+
 
 function colimit(para::ParallelMorphisms{<:FinSet{Int}})
   @assert !isempty(para)
@@ -1111,7 +1206,7 @@ function colimit(d::BipartiteFreeDiagram{<:FinSet{Int}})
   # As in a pushout, this method assume that all objects in layer 1 have
   # outgoing morphisms so that they can be excluded from the coproduct.
   @assert !any(isempty(incident(d, u, :src)) for u in vertices₁(d))
-  coprod = coproduct(ob₂(d))
+  coprod = coproduct(FinSet{Int}[ob₂(d)...])
   n, ιs = length(ob(coprod)), legs(coprod)
   sets = IntDisjointSets(n)
   for u in vertices₁(d)
@@ -1128,6 +1223,57 @@ function colimit(d::BipartiteFreeDiagram{<:FinSet{Int}})
   cocone = Multicospan(codom(π), [ ιs[i]⋅π for i in vertices₂(d) ])
   FinSetCompositeColimit(d, cocone, coprod, π)
 end
+
+function colimit(d::BipartiteFreeDiagram{<:VarSet{T}}) where T
+  n₁,n₂ = [nparts(d,x) for x in [:V₁,:V₂]]
+  # Get list of variables across all ACSets in diagram
+  n_vars = [x.n for x in vcat(d[:ob₁], d[:ob₂])]
+  cs = cumsum(n_vars) |> collect
+  var_indices = [(a+1):b for (a,b) in zip([0,cs...],cs)]
+  vars = IntDisjointSets(sum(n_vars))
+
+  concrete = Dict{Int,T}() # map vars to concrete attributes, if any
+
+  # quotient variable set using homs + bind vars to concrete attributes
+  for (h, s, t) in zip(d[:hom], d[:src], d[:tgt])
+    for (local_src_var, local_tgt) in enumerate(collect(h))
+      if local_tgt isa AttrVar 
+        union!(vars, var_indices[s][local_src_var], 
+                     var_indices[t+n₁][local_tgt.val])
+      else
+        concrete[var_indices[s][local_src_var]] = local_tgt
+      end 
+    end
+  end
+
+  concretes = Dict([find_root!(vars, k)=>v for (k,v) in collect(concrete)])
+  roots = unique(filter(r->!haskey(concretes,r), 
+                        [find_root!(vars, i) for i in 1:length(vars)]))
+  n_var = VarSet{T}(length(roots)) # number of resulting variables
+  # Construct maps into apex
+  csp = Multicospan(n_var, map(var_indices[(1:n₂).+n₁]) do v_is 
+    VarFunction{T}(map(v_is) do v_i 
+      r = find_root!(vars, v_i)
+      haskey(concretes,r) ? concretes[r] : AttrVar(findfirst(==(r), roots))
+    end, FinSet(n_var.n))
+  end)
+  # Cocone diagram
+  return Colimit(d, csp)
+end 
+
+# FIXME: Handle more specific diagrams? Now only VarSet colimits will be bipartite
+function universal(lim::BipartiteColimit{<:VarSet{T}}, cocone::Multicospan) where {T}
+  VarFunction{T}(map(AttrVar.(collect(apex(lim)))) do p 
+    for (l, csp) in zip(legs(lim), cocone)
+      pre = preimage(l, p) # find some colimit leg which maps onto this part
+      if !isempty(pre)
+        return csp(AttrVar(first(pre))) # pick arbitrary elem and apply cocone map
+      end 
+    end 
+    error("Colimit legs should be jointly surjective")
+  end, FinSet(apex(cocone).n))
+end
+
 
 colimit(d::FreeDiagram{<:FinSet{Int}}) = colimit(FinDomFunctor(d))
 
@@ -1177,6 +1323,8 @@ function colimit(d::FixedShapeFreeDiagram{<:FinSet{<:Any,T},Hom},
   # using `SpecializeColimit` below should avoid some gross inefficiencies.
   colimit(BipartiteFreeDiagram{FinSet{<:Any,T},Hom}(d), alg)
 end
+
+
 function colimit(d::BipartiteFreeDiagram{<:FinSet{<:Any,T}}, ::NamedColimit) where T
   # Compute colimit of diagram in the skeleton of FinSet (`FinSet{Int}`).
   # Note: no performance would be gained by using `DisjointSets{T}` from

@@ -1,11 +1,22 @@
 module ColumnImplementations
 export column_type, indexchoice,
-  HomChoice, AttrChoice, NoIndex, Index, UniqueIndex, Sparse, Dense
+  HomChoice, AttrChoice, NoIndex, Index, UniqueIndex, Sparse, Dense, AttrVar 
 
 using MLStyle
 using StructEquality
 using ..IndexUtils
 using ..Columns
+
+
+"""
+Maps from attribute variables can go into arbitrary Julia types or other 
+variables (indexed by integers). This wrapper types allows us to not confuse 
+our Attr Variable indices with the Julia type of Int
+"""
+@struct_hash_equal struct AttrVar 
+  val::Int 
+end 
+Base.isless(x::AttrVar,y::AttrVar) = x.val < y.val
 
 
 # Column types for acsets
@@ -178,14 +189,14 @@ function column_type(hom_or_attr::HomOrAttr, index::IndexChoice, sparsity::Spars
     end
     AttrChoice(T) => @match sparsity begin
       Dense => @match index begin
-        NoIndex => DenseColumn{T,Vector{T}}
-        Index => DenseIndexedColumn{T,Vector{T}}
-        UniqueIndex => DenseInjectiveColumn{T,Vector{T}}
+        NoIndex => DenseColumn{Union{AttrVar,T},Vector{Union{AttrVar,T}}}
+        Index => DenseIndexedColumn{Union{AttrVar,T},Vector{Union{AttrVar,T}}}
+        UniqueIndex => DenseInjectiveColumn{Union{AttrVar,T},Vector{Union{AttrVar,T}}}
       end
       Sparse(K) => @match index begin
-        NoIndex => SparseColumn{K,T,Dict{K,T}}
-        Index => SparseIndexedColumn{K,T,Dict{K,T}}
-        UniqueIndex => SparseInjectiveColumn{K,T,Dict{K,T}}
+        NoIndex => SparseColumn{K,Union{AttrVar,T},Dict{K,Union{AttrVar,T}}}
+        Index => SparseIndexedColumn{K,Union{AttrVar,T},Dict{K,Union{AttrVar,T}}}
+        UniqueIndex => SparseInjectiveColumn{K,Union{AttrVar,T},Dict{K,Union{AttrVar,T}}}
       end
     end
   end

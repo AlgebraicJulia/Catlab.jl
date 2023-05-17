@@ -1,7 +1,7 @@
 """ Functorial data migration for attributed C-sets.
 """
 module DataMigrations
-export DataMigration, DeltaMigration, SigmaMigration, migrate, migrate!,
+export DataMigration, SigmaMigration, DeltaMigration, migrate, migrate!,
   representable, yoneda, colimit_representables
 
 using ...Syntax, ...Present, ...Theories
@@ -10,6 +10,10 @@ using ..Categories, ..FinCats, ..Limits, ..Diagrams, ..FinSets, ..CSets
 using ...Graphs, ..FreeDiagrams
 import ..Categories: ob_map, hom_map
 using ..FinCats: make_map, mapvals
+using ..Chase: collage, crel_type, pres_to_eds, add_srctgt, chase
+using ...ColumnImplementations: AttrVar 
+using ..FinSets: VarSet
+using ...DenseACSets: constructor, datatypes
 
 # Data types
 ############
@@ -251,131 +255,59 @@ X ∘ π``, where ``π: (F ↓ d) → C`` is the projection.
 
 See (Spivak, 2014, *Category Theory for the Sciences*) for details.
 """
-struct SigmaMigration{Dom,Codom,F<:FinFunctor,CC} <: MigrationFunctor{Dom,Codom}
-  functor::F
-  comma_cats::CC
+struct SigmaMigration{Dom,Codom} <: MigrationFunctor{Dom,Codom}
+  F::FinFunctor 
+  dom_constructor
+  codom_constructor
+  SigmaMigration(f,d::ACSet,c::ACSet) = new{typeof(d),typeof(c)}(f,constructor(d),constructor(c))
+end 
+SigmaMigration(f,::Type{T},c::ACSet) where T<:StructACSet = SigmaMigration(f,T(),constructor(c))
+SigmaMigration(f,d::ACSet,::Type{T}) where T<:StructACSet = SigmaMigration(f,d,T())
+SigmaMigration(f,d::Type{T′},::Type{T}) where {T<:StructACSet, T′<:StructACSet} = SigmaMigration(f,d,T())
 
-  function SigmaMigration(functor::F, ::Type{Dom}, ::Type{Codom}) where
-      {F<:FinFunctor, Dom, Codom}
-    comma_cats = get_comma_cats(functor)
-    new{Dom,Codom,F,typeof(comma_cats)}(functor, comma_cats)
-  end
-end
-
-SigmaMigration(functor::FinFunctor, ::Type{Codom}) where Codom =
-  SigmaMigration(functor, ACSet, Codom)
-
-ob_map(ΣF::SigmaMigration, ::Type{T}, X::ACSet) where T<:ACSet =
-  ob_map(ΣF, T, FinDomFunctor(X))
-
-function ob_map(ΣF::SigmaMigration, ::Type{T}, X::FinDomFunctor) where T<:ACSet
-  comma_cats, comma_hom_map = ΣF.comma_cats
-  diagramD = FreeDiagram(presentation(codom(ΣF.functor)))
-
-  # define Y on objects by taking colimits
-  Y = T()
-  colimX = map(parts(diagramD, :V)) do i
-    F∇d = ob(comma_cats, i)
-    Xobs = FinSet{Int,Int}[ ob_map(X, c) for (c,_) in ob(F∇d) ]
-    Xhoms = FinFunction[ hom_map(X, hom(F∇d, g)) for g in parts(F∇d, :E) ]
-    colimit(FreeDiagram(Xobs, collect(zip(Xhoms, src(F∇d), tgt(F∇d)))))
-  end
-
-  for d in parts(diagramD, :V)
-    add_parts!(Y, nameof(ob(diagramD, d)), length(apex(colimX[d])))
-  end
-  
-  # Define Y on morphisms by the universal property
-  for g in parts(diagramD, :E)
-    if nparts(Y, nameof(dom(hom(diagramD, g)))) == 0
-      continue
-    end
-    src_colim, tgt_colim = colimX[src(diagramD, g)], colimX[tgt(diagramD, g)]
-    ϕ = hom(comma_cats, comma_hom_map[g])
-    set_subpart!(Y, nameof(hom(diagramD, g)),
-      collect(universal(src_colim,
-        Multicospan(apex(tgt_colim), legs(tgt_colim)[collect(ϕ[:V])])
-      )))
-  end
-  return Y
-end
-
-""" add_hom!(d::FreeDiagram{Ob, Hom}, src_ob::Ob, tgt_ob::Ob, hom::Hom)
-
-Adds a hom to `d` from the vertex with object `src_ob` to the vertex with object `tgt_ob`.
 """
-function add_hom!(d::FreeDiagram, src_ob, tgt_ob, hom) 
-  src_idx = first(incident(d, src_ob, :ob))
-  tgt_idx = first(incident(d, tgt_ob, :ob))
-  return add_edge!(d, src_idx, tgt_idx, hom = hom)
-end
-
-"""   comma_cats(diagramD::FreeDiagram{FreeSchema.Ob, FreeSchema.Hom}, FOb, FHom)
-
-Given a free category ``\\mathcal{D}`` with no cycles and 
-a functor represented by the pair `(FOb, FHom)`, returns a diagram 
-``\\mathcal{D} \\to \\mathsf{Cat}`` which on objects takes ``d \\in \\mathcal{D}`` to the 
-comma category ``F \\downarrow d``.
+Create a C-Set for the collage of the functor. Initialize data in the domain 
+portion of the collage, then run the chase.
 """
-function get_comma_cats(F::FinFunctor)
-  diagramD = FreeDiagram(presentation(codom(F)))
-  FObInv = y -> filter(x -> ob_map(F,x) == y, ob_generators(dom(F)))
-  FHomInv = g -> filter(f -> hom_map(F,f) == g, hom_generators(dom(F)))
-  comma_cats = FreeDiagram{FreeDiagram, ACSetTransformation}()
-  add_vertices!(comma_cats,
-    nparts(diagramD, :V), 
-    ob = map(parts(diagramD, :V)) do _
-      FreeDiagram{Pair{FreeSchema.Ob, FreeSchema.Hom}, FreeSchema.Hom}() 
-    end
-  )
-
-  comma_hom_map = Dict{Int,Int}()
-  for d in topological_sort(diagramD)
-    F∇d = ob(comma_cats, d)
-    id_d = id(ob(diagramD, d))
-
-    # If FOb[c] = d, add an objects (c, id(d)) to F∇d
-    preimage_d = FObInv(ob(diagramD, d)) 
-    id_obs = add_vertices!(F∇d, length(preimage_d), ob = map(c->c=>id_d, preimage_d))
-    
-    # if FHom[h] = id(d), add a hom h: (dom(h), id(d)) -> (codom(h), id(d)) to F∇d 
-    id_homs = map(FHomInv(id_d)) do h
-      add_hom!(F∇d, dom(h) => id_d, codom(h) => id_d, h)
-    end
-
-    # for g: d' -> d in D (note that F∇d' must have already been constructed)
-    #     populate F∇d with obs and homs coming from F∇d′
-    for g in incident(diagramD, d, :tgt)
-      d′ = src(diagramD, g)
-      F∇g = comma_cat_hom!(F∇d, ob(comma_cats, d′), id_d, hom(diagramD, g), FHomInv)
-      comma_hom_map[g] = add_edge!(comma_cats, d′, d, hom=F∇g)
-    end 
+function (F::SigmaMigration)(d::ACSet; n=100)
+  D,CD = F.dom_constructor(), F.codom_constructor()
+  S = acset_schema(d)
+  col, col_pres = collage(F.F)
+  i1,i2 = legs(col)
+  # Initialize collage C-Set with data from `d`
+  atypes = Dict{Symbol,Type}()
+  for (k,v) in datatypes(D)  atypes[Symbol(ob_map(i1,k))] = v end
+  for (k,v) in datatypes(CD) atypes[Symbol(ob_map(i2,k))] = v end
+  col_type = crel_type(presentation(apex(col)); types=atypes, name="Sigma")()
+  for o in ob(S)
+    add_parts!(col_type, Symbol(ob_map(i1,o)), nparts(d,o))
   end
-
-  return comma_cats, comma_hom_map
-end
-
-function comma_cat_hom!(F∇d, F∇d′, id_d, g, FHomInv)
-  # for (c,f) in F∇d' add ob (c, compose(f,g)) to F∇d
-  vs = add_vertices!(F∇d, nparts(F∇d′, :V), ob = map(ob(F∇d′)) do (c,f)
-    c => compose(f, g)                
-  end)
-
-  # for h: (c, f) -> (c', f') in diagram_d', add hom h to F∇d    
-  es = add_edges!(F∇d, vs[src(F∇d′)], vs[tgt(F∇d′)], hom = hom(F∇d′))
-
-  # for every (c,f) in the recently added objects. If FHom[h] == f, then add the hom 
-  #       h: (c,f) -> (codom(h), idv)
-  # relies on D being free
-  for (c, f) in ob(F∇d, vs)
-    for h in FHomInv(f)
-      dom(h) == c && add_hom!(F∇d, c => f, codom(h) => id_d, h)
+  for h in homs(S; just_names=true)
+    s,t = add_srctgt(hom_map(i1,h))
+    add_parts!(col_type, Symbol(hom_map(i1,h)), length(d[h]))
+    col_type[s] = 1:length(d[h])
+    col_type[t] = d[h]
+  end 
+  # Run chase 
+  eds = pres_to_eds(col_pres; types=atypes, name="Sigma")
+  chase_rel_res, ok = chase(col_type, eds, n)
+  # Postprocess result
+  ok || error("Sigma migration did not terminate with n=$n")
+  res = CD
+  rel_res = codom(chase_rel_res)
+  S2 = acset_schema(res)
+  for o in types(S2)
+    add_parts!(res, o, nparts(rel_res, Symbol(ob_map(i2,o))))
+  end 
+  for h in arrows(S2;just_names=true)
+    hsrc, htgt = add_srctgt(hom_map(i2,h))
+    for (domval, codomval) in zip(rel_res[hsrc], rel_res[htgt])
+      res[domval,h] = codomval
     end
   end
+  return res
+end 
 
-  # return the inclusion from F∇d′ to F∇d 
-  return ACSetTransformation((V = collect(vs), E = collect(es)), F∇d′, F∇d)
-end
 
 # Yoneda embedding
 #-----------------
@@ -392,16 +324,20 @@ which works because left Kan extensions take representables to representables
 representables (they can be infinite), this function thus inherits any
 limitations of our implementation of left pushforward data migrations.
 """
-function representable(::Type{T}, C::Presentation{ThSchema}, ob::Symbol) where T <: ACSet
+function representable(T, C::Presentation{ThSchema}, ob::Symbol)
   C₀ = Presentation{Symbol}(FreeSchema)
   add_generator!(C₀, C[ob])
+  X = AnonACSet(C₀); add_part!(X, ob)
   F = FinFunctor(Dict(ob => ob), Dict(), C₀, C)
-  ΣF = SigmaMigration(F, T)
-
-  X = FinDomFunctor(Dict(ob => FinSet(1)),
-                    Dict{Symbol,FinFunction{Int}}(), FinCat(C₀))
-  ob_map(ΣF, X)
+  ΣF = SigmaMigration(F, X, T)
+  return ΣF(X)
 end
+
+"""
+ACSet types do not store info about equations, so this info is lost when we try
+to recover the presentation from the datatype. Thus, this method for 
+`representable` should only be used for free schemas
+""" 
 representable(::Type{T}, ob::Symbol) where T <: StructACSet =
   representable(T, Presentation(T), ob)
 
@@ -410,19 +346,34 @@ representable(::Type{T}, ob::Symbol) where T <: StructACSet =
 Because Catlab privileges copresheaves (C-sets) over presheaves, this is the
 *contravariant* Yoneda embedding, i.e., the embedding C^op → C-Set.
 
+If representables have already been computed (which can be expensive) they can
+be provided via the `cache` keyword argument.
+
+Input `cons` is a constructor for the ACSet
+
 Returns a `FinDomFunctor` with domain `op(C)`.
 """
-function yoneda(::Type{T}, C::Presentation{ThSchema}) where T <: ACSet
-  y_ob = Dict(c => representable(T, C, nameof(c)) for c in generators(C, :Ob))
-  y_hom = Dict(Iterators.map(generators(C, :Hom)) do f
-    c, d = dom(f), codom(f)
+function yoneda(cons, C::Presentation{ThSchema}; cache=nothing)
+  cache = isnothing(cache) ? Dict() : cache
+  y_ob = Dict(map(nameof.(generators(C, :Ob))) do c 
+    @debug "Computing representable $c"
+    c => haskey(cache, c) ? cache[c] : representable(cons, C, c)
+  end)
+  y_ob = merge(y_ob, Dict(map(nameof.(generators(C,:AttrType))) do c 
+    rep = cons()
+    add_part!(rep, c)
+    c => rep
+  end))
+  y_hom = Dict(Iterators.map(generators(C, :Hom) ∪ generators(C, :Attr)) do f
+    c, d = nameof.([dom(f), codom(f)])
     yc, yd = y_ob[c], y_ob[d]
-    initial = Dict(nameof(d) => Dict(1 => yc[1,f]))
+    initial = Dict(d => Dict(1 => yc[1,f]))
     f => homomorphism(yd, yc, initial=initial) # Unique homomorphism.
   end)
   FinDomFunctor(y_ob, y_hom, op(FinCat(C)))
 end
-yoneda(::Type{T}) where T <: StructACSet = yoneda(T, Presentation(T))
+yoneda(::Type{T}; kw...) where T <: StructACSet = yoneda(T, Presentation(T); kw...)
+yoneda(X::DynamicACSet; kw...) = yoneda(constructor(X), Presentation(X.schema); kw...)
 
 """ Interpret conjunctive data migration as a colimit of representables.
 
@@ -438,9 +389,23 @@ function colimit_representables(F::DeltaSchemaMigration, y)
 end
 function colimit_representables(F::ConjSchemaMigration, y)
   C = dom(F)
+  ACS = constructor(ob_map(y,first(ob_generators(dom(y)))))
   colimits = make_map(ob_generators(C)) do c
-    Fc = ob_map(F, c)
-    colimit(compose(op(Fc), y))
+    Fc = ob_map(F, c) # e.g. I
+    clim_diag = deepcopy(diagram(compose(op(Fc), y)))
+    # modify the diagram we take a colimit of to concretize some vars
+    params = Fc isa SimpleDiagram ? Dict() : Fc.params
+    G, om, hm = [f(clim_diag) for f in [graph ∘ dom, ob_map, hom_map]]
+    for (i,val) in collect(params)
+      v = add_vertex!(G; vname=Symbol("param$i"))
+      add_edge!(G, i, v; ename=Symbol("param$i"))
+      at = nameof(ob_map(Fc, i)) # attribute type name 
+      h = only(homomorphisms(ob_map(clim_diag,i), ACS(); initial=Dict(at=>[val])))
+      push!(om, ACS())
+      push!(hm, h)
+    end
+    updated_diagram = FinDomFunctor(om, hm, FinCat(G), codom(clim_diag))
+    colimit(updated_diagram) # take colimit
   end
   homs = make_map(hom_generators(C)) do f
     Ff, c, d = hom_map(F, f), dom(C, f), codom(C, f)

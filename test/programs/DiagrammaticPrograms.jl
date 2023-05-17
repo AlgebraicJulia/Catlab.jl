@@ -397,6 +397,17 @@ F_src = hom_map(F, :src)
 @test collect_ob(F_src) == [(1, SchGraph[:src]), (1, id(SchGraph[:E]))]
 @test collect_hom(F_src) == [id(shape(codom(F_src)), 1)]
 
+yGraph = yoneda(Graph)
+
+@migration(SchGraph, begin 
+  I => @join begin v::V end 
+end)
+
+@test is_isomorphic(
+  @acset(Graph, begin E=2;V=3;src=[1,2];tgt=[2,3] end),
+  @acset_colim(yGraph, begin (e1,e2)::E; src(e1) == tgt(e2) end)
+)
+
 # Gluing migration
 #-----------------
 

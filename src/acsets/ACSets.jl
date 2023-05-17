@@ -1,3 +1,5 @@
+using Reexport 
+
 include("IndexUtils.jl")
 include("LVectors.jl")
 include("Defaults.jl")
@@ -8,3 +10,5 @@ include("ColumnImplementations.jl")
 include("Schemas.jl")
 include("ACSetInterface.jl")
 include("DenseACSets.jl")
+
+@reexport using .ColumnImplementations: AttrVar

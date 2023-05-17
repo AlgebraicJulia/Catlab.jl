@@ -204,4 +204,10 @@ MetaGraphs.add_edge!(mg, 2, 3, :weight, 0.5)
 MetaGraphs.add_edge!(mg, 3, 4, :weight, 0.75)
 @test MetaGraphs.MetaDiGraph(g) == mg
 
+rev = WeightedGraph{Float64}(4)
+add_edges!(rev, 2:4, 1:3, weight=[0.25, 0.5, 0.75])
+@test reverse(g) == rev 
+reverse!(g)
+@test g == rev
+
 end

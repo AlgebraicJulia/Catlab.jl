@@ -145,7 +145,8 @@ function preimage(
 end
 
 function preimage_multi(dom, m::Mapping, pc::StoredPreimageCache{S,T,Preimage}, ys) where {S,T,Preimage}
-  Vector{Vector{S}}(collect(Iterators.map(values, view_with_default(pc.preimages, ys, DefaultEmpty{Preimage}))))
+  vwd = view_with_default(pc.preimages, ys, DefaultEmpty{Preimage})
+  Vector{Vector{S}}(collect(Iterators.map(values, vwd)))
 end
 
 # Assumes that i.preimages[y] is already stored

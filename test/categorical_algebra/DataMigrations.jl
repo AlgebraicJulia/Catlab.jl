@@ -281,6 +281,7 @@ h′ = @acset Graph begin
 end
 @test h == h′
 
+
 # Sigma migration
 #################
 
@@ -324,6 +325,8 @@ Y = ΣF(X)
 
 @test SigmaMigration(idF, Graph, Graph)(Y) == Y
 
+# Terminal map
+#-------------
 @present ThSpan(FreeSchema) begin
   (L1, L2, A)::Ob
   l1::Hom(A, L1)
@@ -359,6 +362,9 @@ Y = Σbang(X)
 
 @test nparts(Y, :I) == 4
 
+# Map from terminal C 
+#--------------------
+
 vertex = FinFunctor(Dict(I => VG), Dict(), ThInitial, SchGraph)
 edge = FinFunctor(Dict(I => EG), Dict(), ThInitial, SchGraph)
 
@@ -367,22 +373,56 @@ Z = SigmaMigration(vertex, Initial, Graph)(Y)
 @test nparts(Z, :E) == 0
 
 Z = SigmaMigration(edge, Initial, Graph)(Y)
-@test nparts(Z, :V) == 8
-@test nparts(Z, :E) == 4
-@test Z[:src] ∪ Z[:tgt] == 1:8
+expected = foldl(⊕,fill(path_graph(Graph,2), 4))  
+@test is_isomorphic(Z,expected)
+
+# Using the equations of the schema 
+#----------------------------------
+F = FinFunctor(
+  Dict(:V => :V, :E=> :E),
+  Dict(:src=>:src, :tgt=>:tgt),
+  SchGraph, SchReflexiveGraph
+)
+G = path_graph(Graph,3)
+Σ = SigmaMigration(F, Graph, ReflexiveGraph)
+expected = @acset ReflexiveGraph  begin 
+  V=3; E=5; refl=1:3; src=[1,2,3,1,2]; tgt=[1,2,3,2,3] 
+end 
+@test is_isomorphic(Σ(G),expected)
+
+# Sigma with attributes 
+#----------------------
+
+# Connected components must be monochromatic
+@present SchWG <: SchGraph begin
+  Color::AttrType
+  color::Attr(V,Color)
+  src ⋅ color == tgt ⋅ color
+end
+@acset_type WG(SchWG)
+
+F = FinFunctor(Dict(:V => :V, :E=> :E), Dict(:src=>:src, :tgt=>:tgt), SchGraph, SchWG)
+Σ = SigmaMigration(F, Graph, WG{Float64})
+
+G = path_graph(Graph,3) ⊕ Graph(1) # two connected components
+expected = @acset WG{Float64} begin 
+  V=4; E=2; Color=2; src=[2,3]; tgt=[3,1]; color=AttrVar.([1,1,1,2]) 
+end
+
+@test is_isomorphic(Σ(G), expected)
 
 # Yoneda embedding
 #-----------------
 
-yV, yE = Graph(1), path_graph(Graph, 2)
+# Yoneda embedding for graphs (no attributes).
+yV, yE = Graph(1), @acset(Graph, begin V=2;E=1;src=2;tgt=1 end)
 @test representable(Graph, :V) == yV
-@test representable(Graph, :E) == yE
+@test is_isomorphic(representable(Graph, :E), yE)
 
 y_Graph = yoneda(Graph)
 @test ob_map(y_Graph, :V) == yV
-@test ob_map(y_Graph, :E) == yE
-@test hom_map(y_Graph, :src) == ACSetTransformation(yV, yE, V=[1])
-@test hom_map(y_Graph, :tgt) == ACSetTransformation(yV, yE, V=[2])
+@test is_isomorphic(ob_map(y_Graph, :E), yE)
+@test Set(hom_map.(Ref(y_Graph), [:src,:tgt])) == Set(homomorphisms(yV, representable(Graph, :E)))
 
 F = @migration SchGraph begin
   X => E
@@ -392,10 +432,9 @@ F = @migration SchGraph begin
 end
 G = colimit_representables(F, y_Graph) # Delta migration.
 X = ob_map(G, :X)
-@test X == path_graph(Graph, 2)
+@test is_isomorphic(X, yE)
 i, o = hom_map(G, :i), hom_map(G, :o)
-@test only(collect(i[:V])) == 1
-@test only(collect(o[:V])) == 2
+@test sort(only.(collect.([i[:V],o[:V]]))) == [1,2]
 
 F = @migration SchGraph begin
   X => @join begin
@@ -412,5 +451,44 @@ X = ob_map(G, :X)
 i, o = hom_map(G, :i), hom_map(G, :o)
 @test isempty(inneighbors(X, only(collect(i[:V]))))
 @test isempty(outneighbors(X, only(collect(o[:V]))))
+
+# Yoneda embedding for weights graphs (has attributes).
+yV, yE = WeightedGraph{Float64}(1), @acset(WeightedGraph{Float64}, begin 
+  V=2;E=1;Weight=1;src=2;tgt=1; weight=[AttrVar(1)]
+end)
+@test representable(WeightedGraph{Float64}, SchWeightedGraph, :V) == yV
+@test is_isomorphic(representable(WeightedGraph{Float64}, SchWeightedGraph, :E), yE)
+
+yWG = yoneda(WeightedGraph{Float64})
+
+F = @migration SchWeightedGraph begin
+  X => E
+  (I, O) => V
+  (i: X → I) => src
+  (o: X → O) => tgt
+end
+G = colimit_representables(F, yWG) # Delta migration.
+X = ob_map(G, :X)
+@test is_isomorphic(X, yE)
+i, o = hom_map(G, :i), hom_map(G, :o)
+@test sort(only.(collect.([i[:V],o[:V]]))) == [1,2]
+
+
+d = @migration(SchWeightedGraph, begin
+    I => @join begin
+      (e1,e2,e3)::E
+      (w1,w3)::Weight
+      src(e1) == src(e2)      
+      weight(e1) == w1
+      w1 == 1.9     
+      weight(e2) == 1.8 
+      weight(e3) == w3
+    end
+end)
+
+expected = @acset WeightedGraph{Float64} begin
+  V=5; E=3; Weight=1; src=[1,1,3]; tgt=[2,4,5]; weight=[1.8,1.9,AttrVar(1)]
+end
+@test is_isomorphic(ob_map(colimit_representables(d, yWG), :I), expected)
 
 end

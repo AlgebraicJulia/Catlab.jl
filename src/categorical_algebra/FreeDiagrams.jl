@@ -11,7 +11,7 @@ export FixedShapeFreeDiagram, FreeDiagram, SchFreeDiagram,
   DiscreteDiagram, EmptyDiagram, SingletonDiagram, ObjectPair,
   Span, Cospan, Multispan, Multicospan, SMultispan, SMulticospan,
   ParallelPair, ParallelMorphisms, ComposablePair, ComposableMorphisms,
-  diagram_type, cone_objects, cocone_objects,
+  diagram_type, cone_objects, cocone_objects, cocone_indices,
   ob, hom, dom, codom, apex, legs, feet, left, right, bundle_legs,
   nv, ne, src, tgt, vertices, edges, has_vertex, has_edge,
   add_vertex!, add_vertices!, add_edge!, add_edges!,
@@ -421,6 +421,9 @@ function BipartiteFreeDiagram{Ob,Hom}(para::ParallelMorphisms) where {Ob,Hom}
   add_edges!(d, fill(v₁,length(para)), fill(v₂,length(para)), hom=hom(para))
   return d
 end
+
+cocone_indices(d::FreeDiagramAsBipartite) = d[:orig_vert₂]
+cocone_indices(d::BasicBipartiteFreeDiagram) = parts(d,:V₂)
 
 """ Convert a free diagram to a bipartite free diagram.
 

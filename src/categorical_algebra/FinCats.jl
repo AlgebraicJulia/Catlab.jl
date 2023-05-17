@@ -124,6 +124,9 @@ abstract type FinCatGraph{G,Ob,Hom} <: FinCat{Ob,Hom} end
 """
 graph(C::FinCatGraph) = C.graph
 
+graph(C::OppositeCat) = reverse(graph(op(C)))
+
+
 ob_generators(C::FinCatGraph) = vertices(graph(C))
 hom_generators(C::FinCatGraph) = edges(graph(C))
 
@@ -236,6 +239,7 @@ end
 FinCatGraph(g::HasGraph) = FreeCatGraph(g)
 
 is_free(::FreeCatGraph) = true
+equations(::FreeCatGraph) = []
 
 function Base.show(io::IO, C::FreeCatGraph)
   print(io, "FinCat(")
@@ -259,6 +263,7 @@ See (Spivak, 2014, *Category theory for the sciences*, §4.5).
 end
 
 equations(C::FinCatGraphEq) = C.equations
+equations(C::OppositeCat) = op.(equations(op(C)))
 
 function FinCatGraph(g::HasGraph, eqs::AbstractVector)
   eqs = map(eqs) do eq
@@ -488,6 +493,8 @@ end
 
 ob_key(C::FinCat, x) = ob_generator(C, x)
 hom_key(C::FinCat, f) = hom_generator(C, f)
+ob_map(F::FinDomFunctorMap) = F.ob_map
+hom_map(F::FinDomFunctorMap) = F.hom_map
 
 # Use generator names, rather than generators themselves, for Dict keys.
 ob_key(C::FinCatPresentation, x) = presentation_key(x)

@@ -10,6 +10,7 @@ using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
 g = parallel_arrows(Graph, 3)
 C = FinCat(g)
 @test graph(C) == g
+@test graph(op(C)) == reverse(g)
 @test Ob(C) == FinSet(2)
 @test !is_discrete(C)
 @test is_free(C)

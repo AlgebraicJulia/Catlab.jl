@@ -1,7 +1,8 @@
 module TestFinSets
 using Test
 
-using Catlab.Theories, Catlab.CategoricalAlgebra
+using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
+using Catlab.CategoricalAlgebra.FinSets: VarSet
 
 sshow(args...) = sprint(show, args...)
 
@@ -529,5 +530,49 @@ for alg in (SubOpBoolean(), SubOpWithLimits())
   @test top(X, alg) |> force == SubFinSet(X, 1:10)
   @test bottom(X, alg) |> force == SubFinSet(X, 1:0)
 end
+
+# VarFunctions
+##############
+# Construction 
+f = VarFunction{Vector{Int}}([AttrVar(1),[1,2,3]], FinSet(1))
+@test f([1,2]) == [1,2]
+
+# Composition 
+f = VarFunction{Bool}(([AttrVar(2),AttrVar(1), true]),FinSet(3))
+@test collect(f⋅ f) == [AttrVar(1),AttrVar(2), true]
+
+@test force(f) == f
+@test f.(AttrVar.(3:-1:1)) == [true, AttrVar.(1:2)...]
+@test length(f) == 3
+@test preimage(f, false) == []
+@test preimage(f, true) == [3]
+@test preimage(f, AttrVar(2)) == [1]
+
+f1 = LooseVarFunction{Bool,Int}(
+  [AttrVar(2),AttrVar(1), 3],
+  SetFunction(x->x ? 10 : 20,TypeSet(Bool),TypeSet(Int)), 
+  FinSet(3))
+f2 = LooseVarFunction{Int,String}(
+  ["a",AttrVar(1), AttrVar(2)],
+  SetFunction(string,TypeSet(Int),TypeSet(String)), 
+  FinSet(2))
+f12 = f1 ⋅ f2 
+@test f12.([false,true]) == ["20","10"]
+@test collect(f1 ⋅ f2) == [AttrVar(1),"a", "3"]
+
+# Monos and epis
+f = VarFunction{Bool}(AttrVar.([2,1]),FinSet(2))
+@test is_monic(f) && is_epic(f)
+f = VarFunction{Bool}(AttrVar.([2,1]),FinSet(3))
+@test is_monic(f) && !is_epic(f)
+f = VarFunction{Bool}(AttrVar.([1,1]),FinSet(1))
+@test !is_monic(f) && is_epic(f)
+f = VarFunction{Bool}(AttrVar.([1,1,true]),FinSet(2))
+@test !(is_monic(f) || is_epic(f))
+f = VarFunction{Bool}(AttrVar.([1,2,true]),FinSet(2))
+@test !is_monic(f) && is_epic(f)
+
+# Create 
+@test dom(create(VarSet{Int}(1))) == VarSet{Int}(0)
 
 end
