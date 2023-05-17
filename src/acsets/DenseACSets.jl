@@ -828,7 +828,10 @@ function process_initial(expr)
     Expr(:(=),x,y) => parse_kwargs(expr)
     _ => error("Expected begin...end block or kwarg, received $body")
   end
-  isa(initial,Vector) ? Expr(:kw,:initial,Expr(:tuple,initial...)) : initial
+  isa(initial,Vector) ? length(initial) > 0 ? 
+      Expr(:kw,:initial,Expr(:tuple,initial...)) : 
+      Expr(:kw,:initial,Expr(:tuple,Expr(:parameters,))) :
+    initial
 end
 function parse_kwargs(expr)
   @match expr begin

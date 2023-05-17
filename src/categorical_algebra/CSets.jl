@@ -543,7 +543,7 @@ though at this time the domain and codomain must be fully specified ACSets.
 """
 function is_natural(α::ACSetTransformation) 
   isa(α,LooseACSetTransformation) ? 
-    is_natural(dom(α),codom(α),α.components,α.type_components) :
+    is_natural(dom(α),codom(α),α.components,type_components(α)) :
     is_natural(dom(α),codom(α),α.components)
 end
 function is_natural(dom,codom,comps...)
@@ -564,8 +564,9 @@ function naturality_failures(X,Y,comps)
 end
 function naturality_failures(X,Y,comps,type_comps)
   S = acset_schema(X)
-  comps = Dict(a=> isa(comps[a],SetFunction) ? comps[a] : FinFunction(comps[a]) for a in keys(comps))
-  type_comps = Dict(a=>isa(type_comps[a],SetFunction) ? type_comps[a] : SetFunction(type_comps[a],TypeSet(X,a),TypeSet(Y,a)) for a in keys(type_comps))
+  comps = Dict(a=> isa(comps[a],Union{SetFunction,VarFunction,LooseVarFunction}) ? comps[a] : FinDomFunction(comps[a])  for a in keys(comps))
+  type_comps = Dict(a=>isa(type_comps[a],Union{SetFunction,VarFunction,LooseVarFunction}) ? type_comps[a] : 
+                        SetFunction(type_comps[a],TypeSet(X,a),TypeSet(Y,a)) for a in keys(type_comps))
   α = merge(comps,type_comps)
   arrs = [(f,c,d) for (f,c,d) in arrows(S) if haskey(α,c) && haskey(α,d)]
   ps = Iterators.map(arrs) do (f,c,d)
@@ -695,8 +696,9 @@ default, a backtracking search algorithm is used ([`BacktrackingSearch`](@ref)).
 
 See also: [`homomorphisms`](@ref), [`isomorphism`](@ref).
 """
-homomorphism(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
-  homomorphism(X, Y, alg; kw. ..)
+homomorphism(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) = begin 
+  homomorphism(X, Y, alg; kw...)
+end
 
 function homomorphism(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...)
   result = nothing
