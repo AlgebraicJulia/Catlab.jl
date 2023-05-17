@@ -1441,7 +1441,7 @@ function generate_json_acset(X::ACSet)
     ob => map(parts(X, ob), Tables.rowtable(table)) do id, row
       merge((_id=id,), row)
     end
-  end |> OrderedDict
+  end |> OrderedDict{Symbol,Any}
   for attrtype in attrtypes(acset_schema(X))
     result[attrtype] = map(id -> (_id=id,), parts(X, attrtype))
   end

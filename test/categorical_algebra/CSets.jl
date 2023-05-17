@@ -616,9 +616,12 @@ add_edge!(g, 1, 2, elabel=:e)
 end
 @acset_type LabeledDDS(SchLabeledDDS, index=[:Φ, :label])
 
-ldds = LabeledDDS{Int}()
-add_parts!(ldds, :X, 4, Φ=[2,3,4,1], label=[100, 101, 102, 103])
+ldds = LabeledDDS{Symbol}()
+add_parts!(ldds, :Label, 2)
+add_parts!(ldds, :X, 4, Φ=[2,3,4,1], label=[AttrVar(1), :a, :b, AttrVar(2)])
 @test roundtrip_json_acset(ldds) == ldds
+json = generate_json_acset(ldds)
+@test all(row -> haskey(row, :_id), json[:Label])
 
 # Schema serialization
 ######################
@@ -638,7 +641,6 @@ for schema in [SchGraph, SchWeightedGraph, SchLabeledDDS]
   @test isnothing(JSONSchema.validate(json_schema, schema_dict))
   @test roundtrip_json_acset_schema(schema) == schema
 end
-
 
 # AttrVars 
 ##########
