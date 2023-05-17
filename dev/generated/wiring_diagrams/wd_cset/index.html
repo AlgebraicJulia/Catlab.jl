@@ -489,7 +489,7 @@ draw(add_junctions(wd))</code></pre><img src='data:image/svg+xml;utf-8,<?xml ver
 </g>
 </svg>
 '/><p>For more details about working with wiring diagrams in Catlab, you should look at the other vignettes in this section which explain how wiring diagrams interact with SMC expressions and the basics of constructing and manipulation wiring diagrams.</p><h2 id="Diagrams-as-C-Sets"><a class="docs-heading-anchor" href="#Diagrams-as-C-Sets">Diagrams as C-Sets</a><a id="Diagrams-as-C-Sets-1"></a><a class="docs-heading-anchor-permalink" href="#Diagrams-as-C-Sets" title="Permalink"></a></h2><p>The underlying data of a wiring diagram is combinatorial. That means we can represent it as a C-Set</p><pre><code class="language-julia hljs">wd.diagram</code></pre><div class="c-set">
-<span class="c-set-summary">Catlab.WiringDiagrams.DirectedWiringDiagrams.WiringDiagramACSet{Any, Any, Any, DataType} with elements Box = 1:4, InPort = 1:5, OutPort = 1:5, OuterInPort = 1:1, OuterOutPort = 1:1, Wire = 1:3, InWire = 1:2, OutWire = 1:1, PassWire = 1:0</span>
+<span class="c-set-summary">Catlab.WiringDiagrams.DirectedWiringDiagrams.WiringDiagramACSet{Any, Any, Any, DataType} with elements Box = 1:4, InPort = 1:5, OutPort = 1:5, OuterInPort = 1:1, OuterOutPort = 1:1, Wire = 1:3, InWire = 1:2, OutWire = 1:1, PassWire = 1:0, PortValue = 1:0, WireValue = 1:0, BoxValue = 1:0, BoxType = 1:0</span>
 <table>
   <thead>
     <tr class = "header headerLastRow">
@@ -1445,7 +1445,7 @@ end</code></pre><div class="c-set">
   R(x,y)
   S(y,z)
 end</code></pre><div class="c-set">
-<span class="c-set-summary">Catlab.Programs.RelationalPrograms.UntypedUnnamedRelationDiagram{Symbol, Symbol} with elements Box = 1:2, Port = 1:4, OuterPort = 1:3, Junction = 1:3</span>
+<span class="c-set-summary">Catlab.Programs.RelationalPrograms.UntypedUnnamedRelationDiagram{Symbol, Symbol} with elements Box = 1:2, Port = 1:4, OuterPort = 1:3, Junction = 1:3, Name = 1:0, VarName = 1:0</span>
 <table>
   <thead>
     <tr class = "header headerLastRow">
@@ -1629,7 +1629,7 @@ end</code></pre><div class="c-set">
   S(y,z)
   T(x,z,y)
 end</code></pre><div class="c-set">
-<span class="c-set-summary">Catlab.Programs.RelationalPrograms.UntypedUnnamedRelationDiagram{Symbol, Symbol} with elements Box = 1:3, Port = 1:7, OuterPort = 1:2, Junction = 1:3</span>
+<span class="c-set-summary">Catlab.Programs.RelationalPrograms.UntypedUnnamedRelationDiagram{Symbol, Symbol} with elements Box = 1:3, Port = 1:7, OuterPort = 1:2, Junction = 1:3, Name = 1:0, VarName = 1:0</span>
 <table>
   <thead>
     <tr class = "header headerLastRow">
@@ -2042,4 +2042,4 @@ end</code></pre><div class="c-set">
 </g>
 </g>
 </svg>
-'/><p>Almost every application of graphs in computer science could be better served by using one of these extensions to the basic graph data structure.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../diagrams_and_expressions/">« Wiring diagrams and syntactic expressions</a><a class="docs-footer-nextpage" href="../../graphics/graphviz_graphs/">Drawing graphs in Graphviz »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Monday 15 May 2023 20:37">Monday 15 May 2023</span>. Using Julia version 1.9.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+'/><p>Almost every application of graphs in computer science could be better served by using one of these extensions to the basic graph data structure.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../diagrams_and_expressions/">« Wiring diagrams and syntactic expressions</a><a class="docs-footer-nextpage" href="../../graphics/graphviz_graphs/">Drawing graphs in Graphviz »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Wednesday 17 May 2023 00:32">Wednesday 17 May 2023</span>. Using Julia version 1.9.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
