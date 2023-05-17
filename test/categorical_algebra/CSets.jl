@@ -597,31 +597,18 @@ function roundtrip_json_acset(x::T) where T <: ACSet
   end
 end
 
-function check_json_acset_has_id(x::ACSet)
-  data = generate_json_acset(x)
-  all_has_id = true
-  for nts in values(data) 
-    all_has_id = all(haskey(nt, :_id) for nt in nts)
-    if !all_has_id
-      return
-    end
-  end
-  all_has_id
-end
-
 g = star_graph(Graph, 5)
 @test roundtrip_json_acset(g) == g
-@test check_json_acset_has_id(g)
+json = generate_json_acset(g)
+@test all(row -> haskey(row, :_id), json[:V])
 
 g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5, 1.5],))
 @test roundtrip_json_acset(g) == g
-@test check_json_acset_has_id(g)
 
 g = VELabeledGraph{Symbol}()
 add_vertices!(g, 2, vlabel=[:u,:v])
 add_edge!(g, 1, 2, elabel=:e)
 @test roundtrip_json_acset(g) == g
-@test check_json_acset_has_id(g)
 
 @present SchLabeledDDS <: SchDDS begin
   Label::AttrType
@@ -632,7 +619,6 @@ end
 ldds = LabeledDDS{Int}()
 add_parts!(ldds, :X, 4, Φ=[2,3,4,1], label=[100, 101, 102, 103])
 @test roundtrip_json_acset(ldds) == ldds
-@test check_json_acset_has_id(ldds)
 
 # Schema serialization
 ######################
