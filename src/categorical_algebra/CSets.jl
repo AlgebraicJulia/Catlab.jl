@@ -1436,13 +1436,16 @@ end
 
 Inverse to [`parse_json_acset`](@ref).
 """
-function generate_json_acset(x::ACSet)
-  ts = tables(x)
-  res = OrderedDict(k => Tables.rowtable(v) for (k,v) in zip(keys(ts), ts))
-  for a in attrtypes(acset_schema(x))
-    res[a] = fill(NamedTuple(), nparts(x, a))
-  end 
-  return res
+function generate_json_acset(X::ACSet)
+  result = Iterators.map(pairs(tables(X))) do (ob, table)
+    ob => map(parts(X, ob), Tables.rowtable(table)) do id, row
+      merge((_id=id,), row)
+    end
+  end |> OrderedDict{Symbol,Any}
+  for attrtype in attrtypes(acset_schema(X))
+    result[attrtype] = map(id -> (_id=id,), parts(X, attrtype))
+  end
+  return result
 end
 
 """ Parse JSON-able object or JSON string representing an ACSet.
@@ -1456,23 +1459,31 @@ parse_json_acset(d::DynamicACSet, input::AbstractDict) =
 
 function _parse_json_acset(cons, input::AbstractDict)
   out = cons()
-  for (k,v) ∈ input
-    add_parts!(out, Symbol(k), length(v))
+  for (type, rows) ∈ input
+    add_parts!(out, Symbol(type), length(rows))
   end
-  for l ∈ values(input)
-    for (i, j) ∈ enumerate(l)
-      for (k,v) ∈ j
-        is_attr = Symbol(k) ∈ attrs(acset_schema(out); just_names=true)
-        vtype = is_attr ? attr_type(out, Symbol(k)) : Int
-        v = v isa Dict && haskey(v, "val") ? AttrVar(v["val"]) : vtype(v)
-        set_subpart!(out, i, Symbol(k), v)
+  for rows ∈ values(input)
+    for (rownum, row) ∈ enumerate(rows)
+      for (k, v) ∈ row
+        k = Symbol(k)
+        if k == :_id
+          # For now, IDs are assumed to coincide with row number.
+          @assert rownum == v
+          continue
+        end
+        is_attr = k ∈ attrs(acset_schema(out); just_names=true)
+        vtype = is_attr ? attr_type(out, k) : Int
+        v = v isa AbstractDict && haskey(v, "val") ?
+          AttrVar(v["val"]) : vtype(v)
+        set_subpart!(out, rownum, k, v)
       end
     end
   end
   out
 end
-function parse_json_acset(::Type{T}, input::AbstractString) where T <: ACSet
-  parse_json_acset(T, JSON.parse(input))
+
+function parse_json_acset(target, input::AbstractString)
+  parse_json_acset(target, JSON.parse(input))
 end
 
 """ Deserialize an ACSet object from a JSON file.
