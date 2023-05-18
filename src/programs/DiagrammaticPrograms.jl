@@ -42,6 +42,7 @@ end
   Compose(homs::Vector{<:HomExpr})
   Id(ob::ObExpr)
   Mapping(assignments::Vector{<:AssignExpr})
+  JuliaCode(code::Expr)
 end
 
 @data DiagramExpr begin
@@ -330,6 +331,7 @@ function parse_hom(C::FinCat{Ob,Hom}, expr::AST.HomExpr) where {Ob,Hom}
     AST.Compose(args) => mapreduce(
       arg -> parse_hom(C, arg), (fs...) -> compose(C, fs...), args)
     AST.Id(x) => id(C, parse_ob(C, x))
+    AST.JuliaCode(expr) => FreeSchema.Attr{:nothing}([],[])
   end
 end
 
@@ -471,7 +473,8 @@ function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
   isnothing(hom_parser) && (hom_parser = (f,x,y) -> parse_hom(C,f))
   g, eqs = DiagramGraph(), Pair[]
   F_ob, F_hom, params = [], [], Dict{Int,Any}()
-  attrnames = map(first,presentation(C).generators[:Attr])
+  attrs,homs = generators(presentation(C),:Attr),generators(presentation(C),:Hom)
+  mornames = map(first,[attrs;homs])
   for stmt in statements
     @match stmt begin
       AST.ObOver(x, X) => begin
@@ -492,7 +495,7 @@ function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
       AST.AttrOver(f,x,y,expr) => begin
         e = parse!(g,AST.Hom(f,x,y))
         push!(F_hom, FreeSchema.Attr{:nothing}([f],[]))
-        aux_func = make_func(expr,attrnames)
+        aux_func = make_func(expr,mornames)
         params[e] = aux_func
       end
       #AST.AssignLiteral(x, value) => begin
@@ -643,20 +646,26 @@ high-level steps of this process are:
 """
 function parse_migration(src_schema::Presentation, ast::AST.Diagram;
                         kw...)
-  C = FinCat(src_schema)
+  C = FinCat(src_schema)q
   d = parse_query_diagram(C, ast.statements)
   DataMigration(make_query(C, d))
 end
 function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
                          ast::AST.Mapping)
   D, C = FinCat(tgt_schema), FinCat(src_schema)
+  homnames = map(first,hom_generators(C))
+  params = Dict()
   ob_rhs, hom_rhs = make_ob_hom_maps(D, ast, missing_hom=true)
   F_ob = mapvals(expr -> parse_query(C, expr), ob_rhs)
   F_hom = mapvals(hom_rhs, keys=true) do f, expr
+    if expr isa AST.JuliaCode
+      aux_func = make_func(expr.code,homnames)
+      params[f] = aux_func
+    end
     parse_query_hom(C, ismissing(expr) ? AST.Mapping(AST.AssignExpr[]) : expr,
                     F_ob[dom(D,f)], F_ob[codom(D,f)])
   end
-  DataMigration(make_query(C, DiagramData{Any}(F_ob, F_hom, D)))
+  DataMigration(make_query(C, DiagramData{Any}(F_ob, F_hom, D,params)))
 end
 function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
                          body::Expr)
@@ -764,6 +773,8 @@ function make_query(C::FinCat{Ob}, data::DiagramData{T}) where {T, Ob}
   F_hom = mapvals(F_hom, keys=true) do h, f
     make_query_hom(C, f, F_ob[dom(J,h)], F_ob[codom(J,h)])
   end
+  F_hom = typeof(F_hom) == Vector{FreeSchema.Attr{:nothing}} ? 
+    Any[a for a in F_hom] : F_hom
   if query_type <: Ob
     Diagram(DiagramData{T}(F_ob, F_hom, J, data.params), C)
   else
@@ -925,22 +936,12 @@ function parse_diagram_ast(body::Expr; free::Bool=false, preprocess::Bool=true)
         parse_hom_over(f,x,y,state.ob_over[x],state.ob_over[y],h)
     end
       
-      #begin
-      #  X, Y = state.ob_over[x], state.ob_over[y] #X,Y are ObGenerators (in the base)
-      #  [AST.HomOver(f, x, y, parse_hom_ast(h, X, Y))]
-      #end
-
-      # h could be Julia if y is over an attr
       # (x → y) => h
       # (x → y)::h
       Expr(:call, :(=>), Expr(:call, :(→), x::Symbol, y::Symbol), h) ||
       Expr(:(::), Expr(:call, :(→), x::Symbol, y::Symbol), h) => 
         parse_hom_over(gen_anonhom!(state),x,y,state.ob_over[x],state.ob_over[y],h)
-#        begin
-#          X, Y, z = state.ob_over[x], state.ob_over[y], gen_anonhom!(state)
-#          [AST.HomOver(z, x, y, parse_hom_ast(h, X, Y))]
-#        end
-      # no reason to be special for literals?
+      # make sure to handle literals!
       # x == "foo"
       # "foo" == x
      # Expr(:call, :(==), x::Symbol, value::Literal) ||
@@ -992,13 +993,9 @@ function parse_diagram_ast(body::Expr; free::Bool=false, preprocess::Bool=true)
 end
 function parse_hom_over(name,x,y,X,Y,rhs)
   @match rhs begin
-    Expr(:(->),_...) => begin
-      #push!(aux_funcs,rhs)
-      #n = length(aux_funcs)
+    Expr(:(->),_...) || Expr(:block,_...)=> begin #maybe add check that block ends with a lambda
       [AST.AttrOver(name,x,y,rhs)]
-  end
-#    Expr(:tuple,Expr(:vect,exprs...),n) =>
-#      [AST.AttrOver(name,x,y,n,[parse_hom_ast(h,X,Y) for h in exprs])]
+    end
     _ => [AST.HomOver(name,x,y,parse_hom_ast(rhs,X,Y))]
   end
 end
@@ -1082,6 +1079,7 @@ function parse_hom_ast(expr, dom::Union{AST.ObGenerator,Nothing}=nothing,
     Expr(:call, :(∘), f, g) => AST.Compose([parse_hom_ast(g), parse_hom_ast(f)])
     Expr(:call, :id, x) => AST.Id(parse_ob_ast(x))
     f::Symbol || Expr(:curly, _...) => AST.HomGenerator(expr)
+    Expr(:block,args...) => AST.JuliaCode(expr)
     _ => error("Invalid morphism expression $expr")
   end
 end
@@ -1222,24 +1220,14 @@ function reparse_arrows(expr)
   @match expr begin
     Expr(:call, :(→), Expr(:call, :(:), f, x), y) =>
       Expr(:call, :(:), f, Expr(:call, :(→), x, y))
-    #=Expr(:let,decs,body) => begin
-      #currently requires user to put var on LHS, which seems hard to avoid
-      (vars, homs) = @match decs begin #vector of homexprs to be passed in the anonfunc
-        Expr(:(=),lhs::Symbol,rhs) => ([lhs],Expr(:vect,rhs)) #rhs to be parsed as HomOvers
-        Expr(:block,_...) => ([a.args[1] for a in decs.args],
-                              Expr(:vect,[a.args[2] for a in decs.args]...))
-        _ => "You messed up kid"
-      end 
-      aux_func = make_func(body,vars...)
-      push!(aux_funcs,aux_func)
-      Expr(:tuple,homs,length(aux_funcs))
-    end=#
     Expr(head, args...) => Expr(head, (reparse_arrows(arg) for arg in args)...)
     _ => expr
   end
 end
 function make_func(body,vars)
-  eval(Expr(:(->),Expr(:tuple,vars...),body))
+  expr = Expr(:(->),Expr(:tuple,vars...),body)
+  println(expr)
+  eval(expr)
 end
 """ Left-most argument plus remainder of left-associated binary operations.
 `ops` denotes the operations that won't need to be reversed for the desired

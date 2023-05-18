@@ -6,12 +6,12 @@ export Diagram, SimpleDiagram, QueryDiagram, DiagramHom, id, op, co,
 
 using StructEquality
 
-using ...GATs
+using ...GAT, ...Present
 import ...Theories: dom, codom, id, compose, ⋅, ∘, munit
 using ...Theories: ThCategory, composeH
 import ..Categories: ob_map, hom_map, op, co
-using ..FinCats, ..FreeDiagrams
-using ..FinCats: mapvals
+using ..FinCats, ..FreeDiagrams, ..FinSets
+using ..FinCats: mapvals,FinDomFunctorMap
 import ..FinCats: force, collect_ob, collect_hom
 import ..Limits: limit, colimit, universal
 import ..FinSets: FinDomFunction
@@ -259,18 +259,20 @@ function compose(d::QueryDiagram{T},F::Functor; kw...) where T
   D = diagram(d)
   partial = force(compose(D,F)) #easy part
   params = d.params #auxiliary functions
-  attrnames = presentation(codom(D)).generators[:Attr]
-  attrfuns = map(x->hom_map(F,x),attrnames)
-  partial
+  attrs,homs = generators(presentation(codom(D)),:Attr),generators(presentation(codom(D)),:Hom)
+  mornames = map(first,[attrs;homs])
+  morfuns = map(x->hom_map(F,x),mornames)
+  #prevents getting stuck with all GATExpr{:nothing}s.
+  hm = Dict{Int,FinDomFunction}(a=>b for (a,b) in pairs(D.hom_map) if b isa FinDomFunction)
   for (n,f) in params #Populate the hom_map of partial appropriately
     domain = ob_map(partial,hom(dom(partial),n).src)
     codomain = ob_map(partial,hom(dom(partial),n).tgt)
-    partial.hom_map[n] =
-      FinDomFunction(f(attrfuns...),domain,codomain)
+    hm[n] =
+      FinDomFunction(f(morfuns...),domain,codomain)
   end
-  Diagram{T}(FinDomFunctor(
+  Diagram{T}(FinDomFunctorMap(
       partial.ob_map,
-      partial.hom_map,
+      hm,
       dom(partial),
       codom(F)
     ))
@@ -293,6 +295,9 @@ function universal(f::DiagramHom{op}, dom_lim, codom_lim)
   cone = Multispan(apex(dom_lim), map(ob_generators(J′)) do j′
     j, g = ob_map(f, j′)
     πⱼ = legs(dom_lim)[j]
+    πⱼ = πⱼ isa AbstractVector ? only(πⱼ) : πⱼ 
+    #this is gross but I don't understand why this is sometimes a vector and sometimes a function
+    #can see both cases by migrating my mechlink
     compose(πⱼ, g)
   end)
   universal(codom_lim, cone)

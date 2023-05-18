@@ -13,8 +13,7 @@ using ...Theories: ob, hom, dom, codom, attr, AttrTypeExpr, ⋅
 using ..Categories, ..FinCats, ..Limits, ..Diagrams, ..FinSets, ..CSets, ..HomSearch
 using ...Graphs, ..FreeDiagrams
 import ..Categories: ob_map, hom_map
-import ...GATs: functor
-using ..FinCats: make_map, mapvals
+using ..FinCats: make_map, mapvals, presentation_key
 using ..Chase: collage, crel_type, pres_to_eds, add_srctgt, chase
 using ..FinSets: VarSet
 
@@ -71,13 +70,13 @@ struct DataMigration{F<:FinDomFunctor,Params<:AbstractDict} <: ContravariantMigr
   functor::F
   params::Params
 end
-DataMigration(F::FinDomFunctor) = DataMigration(F,Dict())
+DataMigration(F::FinDomFunctor) = DataMigration(F,Dict{Any,Union{}}())
 """ Schema-level functor defining a pullback or delta data migration.
 """
 const DeltaSchemaMigration{D<:FinCat,C<:FinCat} = ContravariantMigration{<:FinFunctor{D,C}}
 #This only exists for the acset to acset migrate! method which is performance-optimized for 
 #the easy Delta case
-const DeltaMigration{D<:FinCat,C<:FinCat} = DataMigration{<:FinFunctor{D,C},<:AbstractDict}
+const DeltaMigration{D<:FinCat,C<:FinCat} = DataMigration{<:FinFunctor{D,C},<:AbstractDict{Any,Union{}}}
 
 """ Schema-level functor defining a contravariant data migration using conjunctive queries.
 """
@@ -134,9 +133,34 @@ end
 
 # Delta migration
 #----------------
-#migrate(Y::ACSet,M::DeltaSchemaMigration) = migrate(FinDomFunctor(Y),M)
-#migrate(Y::FinDomFunctor,M::DeltaSchemaMigration) = compose(M,Y)
-#TODO: write compose
+function migrate(X::FinDomFunctor,M::DeltaSchemaMigration)
+  F = func(M)
+  tgt_schema = dom(F)
+  obs = make_map(ob_generators(tgt_schema)) do c
+    Fc = ob_map(F,c)
+    ob_map(X,Fc)
+  end
+  hg = hom_generators(tgt_schema)
+  homnames = map(presentation_key,hg)
+  homfuns = map(x->hom_map(X,x),homnames)
+  params = M.params
+  funcs = make_map(hom_generators(tgt_schema)) do f
+    Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)
+    if Ff isa FreeSchema.Attr{:nothing} 
+      domain = obs[c]
+      codomain = obs[d]
+      FinDomFunction(params[f](homfuns...),domain,codomain)
+    else 
+      hom_map(X,Ff)
+    end
+  end
+  FinDomFunctor(
+      obs,
+      funcs,
+      dom(F),
+      codom(X)
+    )
+end
 
 migrate(::Type{T}, X::ACSet, M::DeltaMigration) where T <: ACSet =
   migrate!(T(), X, M)

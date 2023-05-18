@@ -502,7 +502,7 @@ hom_key(C::FinCat, f) = hom_generator(C, f)
 ob_map(F::FinDomFunctorMap) = F.ob_map
 hom_map(F::FinDomFunctorMap) = F.hom_map
 
-# Use generator names, rather than generators themselves, for Dict keys.
+# Use generator names, rather than generators themselves, for Dict keys!
 ob_key(C::FinCatPresentation, x) = presentation_key(x)
 hom_key(C::FinCatPresentation, f) = presentation_key(f)
 presentation_key(name::Union{AbstractString,Symbol}) = name

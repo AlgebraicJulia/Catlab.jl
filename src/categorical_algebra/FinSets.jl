@@ -4,7 +4,7 @@ module FinSets
 export FinSet, FinFunction, FinDomFunction, TabularSet, TabularLimit,
   force, is_indexed, preimage, VarFunction, LooseVarFunction,
   JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin,
-  SubFinSet, SubOpBoolean, is_monic, is_epic
+  SubFinSet, SubOpBoolean, is_monic, is_epic, convert
 
 using StructEquality
 using DataStructures: OrderedDict, IntDisjointSets, union!, find_root!
@@ -258,7 +258,11 @@ the form ``{1,...,n}``.
   func::V
   codom::Codom
 end
-
+function Base.convert(::Type{SetFunctionCallable},S::FinDomFunctionVector)
+  FinDomFunction((i->S.func[i]),
+                        FinSet(length(S.func)),
+                        S.codom)
+end
 FinDomFunctionVector(f::AbstractVector{T}) where T =
   FinDomFunctionVector(f, TypeSet{T}())
 
@@ -844,11 +848,15 @@ function limit(d::BipartiteFreeDiagram{<:SetOb,<:FinDomFunction{Int}})
   @assert !any(isempty(incident(d, v, :tgt)) for v in vertices₂(d))
   d_original = d
 
+  d = BipartiteFreeDiagram{SetOb,FinDomFunction{Int}}(
+    ob₁(d), ensure_type_set.(ob₂(d)),
+    collect(zip(ensure_type_set_codom.(hom(d)), src(d), tgt(d))))
+
   # For uniformity, e.g. when pairing below, ensure that all objects in layer 2
   # are type sets.
-  if !all(x isa TypeSet for x in ob₂(d))
-    d = map(d, ob₁=identity, ob₂=ensure_type_set, hom=ensure_type_set_codom)
-  end
+  #if !all(x isa TypeSet for x in ob₂(d))
+  #  d = map(d, ob₁=identity, ob₂=ensure_type_set, hom=ensure_type_set_codom)
+  #end
 
   # It is generally optimal to compute all equalizers (self joins) first, so as
   # to reduce the sizes of later pullbacks (joins) and products (cross joins).
@@ -950,7 +958,7 @@ function equalize_all(d::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
 
     add_vertex₁!(d_simple, ob₁=dom(ι)) # == u
     for (v, es) in pairs(out_edges)
-      add_edge!(d_simple, u, v, hom=ι⋅hom(d, first(es)))
+      add_edge!(d_simple, u, v, hom=force(ι⋅hom(d, first(es))))
     end
     ι
   end
