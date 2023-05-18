@@ -245,18 +245,22 @@ add_parts!(ldds, :X, 4, next=[2,3,4,1], label=[100, 101, 102, 103])
 JSON.print(generate_json_acset(ldds),2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
   &quot;X&quot;: [
     {
+      &quot;_id&quot;: 1,
       &quot;next&quot;: 2,
       &quot;label&quot;: 100
     },
     {
+      &quot;_id&quot;: 2,
       &quot;next&quot;: 3,
       &quot;label&quot;: 101
     },
     {
+      &quot;_id&quot;: 3,
       &quot;next&quot;: 4,
       &quot;label&quot;: 102
     },
     {
+      &quot;_id&quot;: 4,
       &quot;next&quot;: 1,
       &quot;label&quot;: 103
     }
@@ -359,17 +363,27 @@ end</code></pre><div class="c-set">
 </div>
 <p>Note that the vertices are listed out in a somewhat silly way. They are given as a table with no columns, so they show up in the JSON as a bunch of empty objects. This is for consistency with our next example.</p><pre><code class="language-julia hljs">JSON.print(generate_json_acset(g), 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
   &quot;V&quot;: [
-    {},
-    {},
-    {},
-    {}
+    {
+      &quot;_id&quot;: 1
+    },
+    {
+      &quot;_id&quot;: 2
+    },
+    {
+      &quot;_id&quot;: 3
+    },
+    {
+      &quot;_id&quot;: 4
+    }
   ],
   &quot;E&quot;: [
     {
+      &quot;_id&quot;: 1,
       &quot;src&quot;: 1,
       &quot;tgt&quot;: 2
     },
     {
+      &quot;_id&quot;: 2,
       &quot;src&quot;: 2,
       &quot;tgt&quot;: 3
     }
@@ -547,29 +561,35 @@ end</code></pre><div class="c-set">
 <p>This Graph is represented by the following JSON. Now you can see that the vertices have their <code>vlabels</code></p><pre><code class="language-julia hljs">JSON.print(generate_json_acset(lg), 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
   &quot;V&quot;: [
     {
+      &quot;_id&quot;: 1,
       &quot;vlabel&quot;: &quot;a&quot;
     },
     {
+      &quot;_id&quot;: 2,
       &quot;vlabel&quot;: &quot;b&quot;
     },
     {
+      &quot;_id&quot;: 3,
       &quot;vlabel&quot;: &quot;c&quot;
     },
     {
+      &quot;_id&quot;: 4,
       &quot;vlabel&quot;: &quot;d&quot;
     }
   ],
   &quot;E&quot;: [
     {
+      &quot;_id&quot;: 1,
       &quot;src&quot;: 1,
       &quot;tgt&quot;: 2,
       &quot;elabel&quot;: &quot;e₁&quot;
     },
     {
+      &quot;_id&quot;: 2,
       &quot;src&quot;: 2,
       &quot;tgt&quot;: 3,
       &quot;elabel&quot;: &quot;e₂&quot;
     }
   ],
   &quot;Label&quot;: []
-}</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../diagrams/">« Diagrams</a><a class="docs-footer-nextpage" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Wednesday 17 May 2023 18:56">Wednesday 17 May 2023</span>. Using Julia version 1.9.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+}</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../diagrams/">« Diagrams</a><a class="docs-footer-nextpage" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 18 May 2023 00:55">Thursday 18 May 2023</span>. Using Julia version 1.9.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
