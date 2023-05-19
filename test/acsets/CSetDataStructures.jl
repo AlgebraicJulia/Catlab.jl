@@ -1,7 +1,7 @@
 module TestCSetDataStructures
 using Test
 
-using Catlab.CSetDataStructures
+using Catlab.CSetDataStructures, Catlab.Graphs
 using Catlab.CategoricalAlgebra.CSets
 using Tables
 
@@ -475,16 +475,25 @@ l = @acset DecGraph{String} begin
   dec = ["a","a"]
 end
 α = @acset_transformation g h
-@acset_transformation g h monic=true
 β = @acset_transformation g h begin 
   V = [4,1,2,3]
   E = [4,1,2,3]
-end
+end monic=true
+γ = @acset_transformation g h begin end monic=[:V]
 @test α[:V](1) == α[:E](1) == 4
-@test α == β
-@test length(@acset_transformations g h) == length(@acset_transformations g h begin end) == 1
+@test α == β == γ
+
+x = @acset Graph begin
+  V = 2
+  E = 2
+  src = [1,1]
+  tgt = [2,2]
+end
+@test length(@acset_transformations x x) == length(@acset_transformations x x monic=[:V]) == 4
+@test length(@acset_transformations x x monic = true) == 
+      length(@acset_transformations x x begin V=[1,2] end monic = [:E]) == 
+      length(@acset_transformations x x begin V = Dict(1=>1) end monic = [:E]) == 2
 @test_throws ErrorException @acset_transformation k l begin V = [1,2] ; E = [1,2] end
-@test_throws ErrorException @acset_transformation k l begin V = [1,2] end
 
 # Test mapping
 #-------------

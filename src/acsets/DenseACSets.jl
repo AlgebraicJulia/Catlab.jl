@@ -799,34 +799,33 @@ Usage example on WeightedGraph{String}s:
 ```
 @acset_transformation A B begin
   V = [3,5,2] #complete specification can be a vector
-  E = [1 => 3, 4 => 3] #otherwise use a dict
-end monic=true iso=V #or iso=[V] or iso=[:V]
-#brackets required for iso=[V,E] or [:V,E]
+  E = Dict(1 => 3, 4 => 3) #otherwise use a dict
+end monic=true iso=[:V] or [:V,:E], etc
 ```
 """
 macro acset_transformation(dom,cod,kw...)
   kw = map(parse_kwargs,kw)
-  Expr(:call,esc(:homomorphism_error_failures),esc(dom),esc(cod),kw...)
+  Expr(:call,esc(:homomorphism),esc(dom),esc(cod), Expr(:kw,:error_failures,true),kw...)
 end
 macro acset_transformation(dom,cod,body,kw...)
   kw = map(parse_kwargs,kw)
   initial = process_initial(body)
-  Expr(:call,esc(:homomorphism_error_failures),esc(dom),esc(cod),initial,kw...)
+  Expr(:call,esc(:homomorphism),esc(dom),esc(cod),initial,Expr(:kw,:error_failures,true),kw...)
 end
 macro acset_transformations(dom,cod,kw...)
   kw = map(parse_kwargs,kw)
-  Expr(:call,esc(:homomorphisms_error_failures),esc(dom),esc(cod),kw...)
+  Expr(:call,esc(:homomorphisms),esc(dom),esc(cod),Expr(:kw,:error_failures,true),kw...)
 end
 macro acset_transformations(dom,cod,body,kw...)
   kw = map(parse_kwargs,kw)
   initial = process_initial(body)
-  Expr(:call,esc(:homomorphisms_error_failures),esc(dom),esc(cod),initial,kw...)
+  Expr(:call,esc(:homomorphisms),esc(dom),esc(cod),initial,Expr(:kw,:error_failures,true),kw...)
 end
 function process_initial(expr) 
   initial = @match expr begin
     Expr(:block,lines...) => filter(!isnothing,map(escape_assignment_lhs,lines))
-    Expr(:(=),x,y) => parse_kwargs(expr)
-    _ => error("Expected begin...end block or kwarg, received $body")
+    Expr(:(=),x,y) => parse_kwargs(expr) #does this ever happen?
+    _ => error("Expected begin...end block or kwarg, received $expr")
   end
   isa(initial,Vector) ? length(initial) > 0 ? 
       Expr(:kw,:initial,Expr(:tuple,initial...)) : 
@@ -835,24 +834,13 @@ function process_initial(expr)
 end
 function parse_kwargs(expr)
   @match expr begin
-    Expr(:(=),x,y::Bool) => Expr(:kw,x,y)
-    Expr(:(=),x,y::Symbol) => begin println("here"); Expr(:kw,x,[y]) end
-    Expr(:(=),x,y::QuoteNode) => Expr(:kw,x,[y.value])
-    Expr(:(=),x,Expr(:vect,args...)) => @match args begin
-      Any[] => Expr(:kw,x,[])
-      [::Symbol,_...] => Expr(:kw,x,[z for z in args])
-      _ =>  Expr(:kw,x,Expr(:vect,args...))
-    end
+    Expr(:(=),x,y) => Expr(:kw,x,y)
     _ => nothing
   end 
 end
 function escape_assignment_lhs(expr)
-#  println(dump(expr))
   @match expr begin
-    Expr(:(=),x,Expr(:vect,fst,args...)) => @match fst begin
-      Expr(:call,:(=>),_...) => Expr(:(=),esc(x),Expr(:call,esc(:Dict),Expr(:vect,fst,args...)))
-      _ => Expr(:(=),esc(x),Expr(:vect,fst,args...))
-    end
+    Expr(:(=),x,y) => Expr(:(=),esc(x),y)
     _ => nothing 
   end
 end

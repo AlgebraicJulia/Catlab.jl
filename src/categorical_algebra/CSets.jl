@@ -693,6 +693,8 @@ either Julia functions on the appropriate types or FinFunction(Dict(...)).
 
 Use the keyword argument `alg` to set the homomorphism-finding algorithm. By
 default, a backtracking search algorithm is used ([`BacktrackingSearch`](@ref)).
+Use the keyword argument error_failures = true to get errors explaining 
+any immediate inconsistencies in specified initial data.
 
 See also: [`homomorphisms`](@ref), [`isomorphism`](@ref).
 """
@@ -706,44 +708,6 @@ function homomorphism(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...)
     result = isa(α,ACSetTransformation) ? α : nothing; return true
   end
   result
-end
-
-"""
-Searches for a homomorphism,  return inconsistencies in the givens
-if the search fails before recursion starts. TODO: partialacsettransformation
-type to allow checking for naturality of initial assignment?
-"""
-function homomorphism_error_failures(X,Y;kw...)
-  result = nothing
-  backtracking_search(X,Y;kw...) do α
-      result = α; return isa(α,ACSetTransformation)
-  end 
-  if isa(result,Tuple)
-    isoFailures, monoFailures = result
-    isoFailures,monoFailures = collect(isoFailures),collect(monoFailures)
-    error("""
-          Cardinalities inconsistent with request for...
-            iso at object(s) $isoFailures
-            mono at object(s) $monoFailures
-          """)
-  end
-  if isa(result,Dict)
-    error(show_unnaturalities(result))
-  end
-  if isnothing(result)
-    error("""
-          No homomorphism exists extending given data.
-          """)
-  end
-  if result == false return nothing end
-  return result
-end
-#TODO: This is currently up to twice as slow as `homomorphisms`, in the case 
-#when there's exactly one solution. Needs refactoring of 
-#`backtracking_search`, which is like a whole dang thing right now.
-function homomorphisms_error_failures(X,Y;kw...)
-  homomorphism_error_failures(X,Y;kw...)
-  homomorphisms(X,Y;kw...)
 end
 
 """ Find all homomorphisms between two attributed ``C``-sets.
@@ -839,9 +803,9 @@ struct BacktrackingState{
   type_components::LooseFun
 end
 
-#f needs to return bool
 function backtracking_search(f, X::ACSet, Y::ACSet;
-    monic=false, iso=false, random=false, type_components=(;), initial=(;))
+    monic=false, iso=false, random=false, 
+    type_components=(;), initial=(;), error_failures=false)
   S, Sy = acset_schema.([X,Y])
   S == Sy || error("Schemas must match for morphism search")
   Ob = Tuple(objects(S))
@@ -865,14 +829,21 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
   end
   isoFailures = Iterators.filter(c->nparts(X,c)!=nparts(Y,c),iso)
   monoFailures = Iterators.filter(c->nparts(X,c)>nparts(Y,c),monic)  
-  isempty(isoFailures) && isempty(monoFailures)||
-      return f((isoFailures,monoFailures))
+   (isempty(isoFailures) && isempty(monoFailures)) ||
+    (!error_failures && return f(false)) ||
+    error("""
+    Cardinalities inconsistent with request for...
+      iso at object(s) $isoFailures
+      mono at object(s) $monoFailures
+    """)
 
   # Injections between finite sets of the same size are bijections, so reduce to that case.
   monic = unique([iso..., monic...])
 
-  uns = naturality_failures(X,Y,initial,type_components)
-  all(isempty,[uns[a] for a in keys(uns)]) || return f(uns)
+  if error_failures 
+    uns = naturality_failures(X,Y,initial,type_components)
+    all(isempty,[uns[a] for a in keys(uns)]) || error(show_unnaturalities(uns))
+  end
 
   # Initialize state variables for search.
   assignment = merge(

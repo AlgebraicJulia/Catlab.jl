@@ -151,7 +151,7 @@ h_ = homomorphism(G, I)
 @test is_epic(g_)
 @test !is_monic(h_)
 @test !is_epic(h_)
-@test_throws ErrorException homomorphism_error_failures(H,G,monic=true)
+@test_throws ErrorException homomorphism(H,G,monic=true,error_failures=true)
 
 # Limits
 #-------
@@ -479,11 +479,8 @@ set_subpart!(s3, :f, [20,10])
 
 #Backtracking with monic and iso failure objects
 g1, g2 = path_graph(Graph, 3), path_graph(Graph, 2)
-@test collect(Catlab.CategoricalAlgebra.CSets.backtracking_search(identity,g1,g2;monic=true)[2]) == [:V,:E]
 rem_part!(g1,:E,2)
-@test collect(Catlab.CategoricalAlgebra.CSets.backtracking_search(identity,g1,g2;monic=true)[2]) == [:V]
-@test collect(Catlab.CategoricalAlgebra.CSets.backtracking_search(identity,g1,g2;iso=true)[1]) == [:V]
-@test_throws ErrorException homomorphism_error_failures(g1,g2;monic=true)
+@test_throws ErrorException homomorphism(g1,g2;monic=true,error_failures=true)
 
 
 # Symmetric graphs

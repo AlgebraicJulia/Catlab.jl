@@ -13,7 +13,7 @@ module FinCats
 export FinCat, FinCatGraph, Path, ob_generator, hom_generator,
   ob_generator_name, hom_generator_name, ob_generators, hom_generators,
   equations, is_discrete, is_free, graph, edges, src, tgt, presentation,
-  FinFunctor, FinDomFunctor, functoriality_failures, is_functorial, collect_ob, collect_hom, force,
+  FinFunctor, FinDomFunctor, is_functorial, functoriality_failures,collect_ob, collect_hom, force,
   FinTransformation, components, is_natural, is_initial
 
 using StructEquality
@@ -65,6 +65,7 @@ Because object generators usually coincide with objects, the default method for
 function ob_generator end
 
 ob(C::FinCat, x) = ob_generator(C, x)
+hom(C::FinCat,x::Nothing) = x
 
 """ Coerce or look up morphism generator in a finitely presented category.
 
@@ -123,9 +124,7 @@ abstract type FinCatGraph{G,Ob,Hom} <: FinCat{Ob,Hom} end
 """ Generating graph for a finitely presented category.
 """
 graph(C::FinCatGraph) = C.graph
-
 graph(C::OppositeCat) = reverse(graph(op(C)))
-
 
 ob_generators(C::FinCatGraph) = vertices(graph(C))
 hom_generators(C::FinCatGraph) = edges(graph(C))
@@ -220,6 +219,7 @@ compose(C::FinCatPathGraph, fs...) =
   reduce(vcat, coerce_path(graph(C), f) for f in fs)
 
 hom(C::FinCatPathGraph, f) = coerce_path(graph(C), f)
+hom(C::FinCatPathGraph, f::Nothing) = nothing
 
 coerce_path(g::HasGraph, path::Path) = path
 coerce_path(g::HasGraph, x) = Path(g, x)
@@ -239,7 +239,6 @@ end
 FinCatGraph(g::HasGraph) = FreeCatGraph(g)
 
 is_free(::FreeCatGraph) = true
-equations(::FreeCatGraph) = []
 
 function Base.show(io::IO, C::FreeCatGraph)
   print(io, "FinCat(")
@@ -263,7 +262,6 @@ See (Spivak, 2014, *Category theory for the sciences*, §4.5).
 end
 
 equations(C::FinCatGraphEq) = C.equations
-equations(C::OppositeCat) = op.(equations(op(C)))
 
 function FinCatGraph(g::HasGraph, eqs::AbstractVector)
   eqs = map(eqs) do eq
@@ -332,6 +330,7 @@ ob(C::FinCatPresentation{ThSchema}, x::GATExpr) =
     error("Expression $x is not an object or attribute type")
 
 hom(C::FinCatPresentation, f) = hom_generator(C, f)
+hom(C::FinCatPresentation,f::Nothing) = nothing
 hom(C::FinCatPresentation, fs::AbstractVector) =
   mapreduce(f -> hom(C, f), compose, fs)
 hom(C::FinCatPresentation, f::GATExpr) =
@@ -387,6 +386,7 @@ decompose(C::OppositeCat, f::GATExpr{:compose}) = reverse(decompose(C.cat, f))
 function hom_map(F::FinDomFunctor, f::GATExpr{:id})
   id(codom(F), ob_map(F, dom(f)))
 end
+hom_map(F::FinDomFunctor, n::GATExpr{:nothing}) = n
 
 (F::FinDomFunctor)(expr::ObExpr) = ob_map(F, expr)
 (F::FinDomFunctor)(expr::HomExpr) = hom_map(F, expr)
@@ -437,6 +437,7 @@ function is_functorial(F::FinDomFunctor; check_equations::Bool=false)
   all(isempty,failures)
 end
 
+
 function Base.map(F::Functor{<:FinCat,<:TypeCat}, f_ob, f_hom)
   C = dom(F)
   FinDomFunctor(map(x -> f_ob(ob_map(F, x)), ob_generators(C)),
@@ -473,7 +474,7 @@ FinDomFunctorMap(ob_map::Union{AbstractVector{Ob},AbstractDict{<:Any,Ob}},
                  dom::FinCat) where {Ob,Hom} =
   FinDomFunctorMap(ob_map, hom_map, dom, TypeCat(Ob, Hom))
 
-function FinDomFunctor(ob_map::Union{AbstractVector{Ob},AbstractDict{<:Any,Ob}},
+function FinDomFunctor(ob_map::Union{AbstractVector{Ob},AbstractDict{<:Any,Ob}}, 
                        hom_map::Union{AbstractVector{Hom},AbstractDict{<:Any,Hom}},
                        dom::FinCat, codom::Union{Cat,Nothing}=nothing) where {Ob,Hom}
   length(ob_map) == length(ob_generators(dom)) ||
