@@ -1723,76 +1723,17 @@ If there are attributes, we ignore these and use variables in the apex of the
 overlap.
 """
 function mca(Xs::Vector{T}) where T <: ACSet
-  error("TO INTEGRATE W/ ABOVE")
+  it = CommonSubobjectIterator(Xs)
+  osize = -1
+  res = []
+  for overlap in it 
+    osize = osize == -1 ? size(apex(overlap)) : osize
+    if size(apex(overlap)) < osize return res end 
+    push!(res, overlap)
+  end 
+  return res
 end
-#   acset_order = sortperm(size.(Xs))
-  
-#   # mca_match1, _ = mca_help(X[acset_order[1]],X[acset_order[2:end]])
-#   # X_mca = mca_match1[1]
-#   for subobj in SubobjectIterator(Xs[first(acset_order)])
-#     abs_subobj = abstract(dom(hom(subobj)))
-#     Y = dom(abs_subobj)
-#     maps = [abs_subobj]
-#     for X in Xs[acset_order[2:end]]
-#       f = homomorphism(X,Y; monic=true)
-#       if isnothing(f)
-#         break 
-#       else
-#         push!(maps,f)
-#       end
-#     end
-#     if length(maps) != length(X)
-#     return Multispan(maps)
-#   end 
-#   error("Empty subobject should always be a subobject")
-# end
-
-#   @assert all([is_isomorphic(strip_attributes(X_mca),strip_attributes(match)) for match in mca_match1])
-#   mca_morphs = [Vector{ACSetTransformation}() for _ in 1:length(X)]
-#   C = acset_schema(X[acset_order[1]])
-#   mca_morphs[acset_order[1]] = [ACSetTransformation(strip_attributes(X_mca),X[acset_order[1]]; 
-#                                   Dict([k => parts(match, k) for k ∈ objects(C)])...) for match in mca_match1]
-#   for (jj, curr_X) in enumerate(X[acset_order[2:end]])
-#     curr_X_matches, _ = mca_help(curr_X,X_mca;f_reverse=true)
-#     mca_morphs[acset_order[jj+1]] = [ACSetTransformation(strip_attributes(X_mca),curr_X; 
-#                                       Dict([k => parts(match, k) for k ∈ objects(C)])...) for match in curr_X_matches]
-#   end
-  
-#   return Multispan(strip_attributes(X_mca), mca_morphs)
-# end
-
-# function mca_help(X::T, Y::Union{T,Vector{T}}; f_reverse = false) where T <: ACSet
-#   X_subs = BinaryHeap(Base.By(size, Base.Order.Reverse), [X])
-#   mca_list = Set{T}()
-#   if typeof(Y)==Vector{T} f_reverse = false end
-#   while_cond = !isempty(X_subs) && (f_reverse ? size(Y) <= size(first(X_subs)) :
-#                 (isempty(mca_list) || size(first(mca_list)) <= size(first(X_subs))))
-#   while while_cond
-#     curr_X_sub = pop!(X_subs)
-#     C = acset_schema(curr_X_sub) #X: C → Set
-#     match_cond = f_reverse ? is_isomorphic(strip_attributes(curr_X_sub),strip_attributes(Y)) : 
-#                   all([
-#                     is_homomorphic(strip_attributes(curr_X_sub), strip_attributes(x); monic=true)
-#                     for x in Y
-#                   ])
-#     if match_cond
-#       # if all([!is_isomorphic(curr_X_sub,tmp) for tmp in mca_list])
-#         push!(mca_list, curr_X_sub)
-#       # end
-#     else
-#       for c ∈ objects(C)
-#         for p ∈ parts(curr_X_sub, c)
-#           new_X_sub = deepcopy(curr_X_sub)
-#           cascading_rem_part!(new_X_sub, c, p)
-#           push!(X_subs, new_X_sub)
-#         end
-#       end
-#     end
-#     while_cond = !isempty(X_subs) && (f_reverse ? size(Y) <= size(first(X_subs)) :
-#                   (isempty(mca_list) || size(first(mca_list)) <= size(first(X_subs))))
-#   end
-#   return collect(mca_list), X_subs
-# end
+mca(Xs::T...) where T <: ACSet = mca(collect(Xs))
 
 
 # ACSet serialization

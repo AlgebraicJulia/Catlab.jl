@@ -600,17 +600,30 @@ A = Subobject(S, X=[3,4,5])
 
 # Maximum Common C-Set
 ######################
-g = Graphs.Graph(4)
-add_edges!(g, [1,1,2], [3,4,4])
-g′ = Graphs.Graph(4)
-add_edges!(g′, [1,1,3], [2,4,4])
-mca_g, mca_g_morphs = mca(g, g′)
-@test is_isomorphic(mca_g,CategoricalAlgebra.CSets.strip_attributes(g))
-@test is_isomorphic(mca_g,CategoricalAlgebra.CSets.strip_attributes(g′))
-@test length(mca_g_morphs) == 2
-@test length(mca_g_morphs[1]) == 1
-@test length(mca_g_morphs[2]) == 1
-# Add checks for the specifics of the morphisms
+"""
+Searching for overlaps: •→•→•↺  vs ↻•→•→•
+Two results: •→•→• || •→• •↺
+"""
+g1 = @acset WeightedGraph{Bool} begin 
+  V=3; E=3; src=[1,1,2]; tgt=[1,2,3]; weight=[true,false,false]
+end 
+g2 = @acset WeightedGraph{Bool} begin 
+  V=3; E=3; src=[1,2,3]; tgt=[2,3,3]; weight=[true,false,false] 
+end 
+mca1, mca2 = mca(g1, g2)
+apex1 = @acset WeightedGraph{Bool} begin 
+  V=3; E=2; Weight=2; src=[1,2]; tgt=[2,3]; weight=AttrVar.(1:2)
+end
+apex2 = @acset WeightedGraph{Bool} begin 
+  V=3; E=2; Weight=2; src=[1,3]; tgt=[2,3]; weight=AttrVar.(1:2)
+end 
+@test is_isomorphic(apex(mca1), apex1)
+@test collect(left(mca1)[:V]) == [1,2,3]
+@test collect(right(mca1)[:V]) == [1,2,3]
+
+@test is_isomorphic(apex(mca2), apex2)
+@test collect(left(mca2)[:V]) == [1,2,3]
+@test collect(right(mca2)[:V]) == [3,1,2]
 
 # Acset serialization
 #####################
