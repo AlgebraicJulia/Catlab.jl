@@ -6,7 +6,8 @@ export ACSetTransformation, CSetTransformation,StructACSetTransformation,
   TightACSetTransformation, LooseACSetTransformation, SubACSet, SubCSet,
   ACSetHomomorphismAlgorithm, BacktrackingSearch, HomomorphismQuery,
   components, type_components, force, naturality_failures, show_unnaturalities, is_natural, homomorphism, homomorphisms,
-  homomorphism_error_failures, homomorphisms_error_failures, is_homomorphic, isomorphism, isomorphisms, is_isomorphic, mca,
+  homomorphism_error_failures, homomorphisms_error_failures, is_homomorphic, isomorphism, isomorphisms, is_isomorphic,
+  subobject_graph, partial_overlaps, mca,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset,
   generate_json_acset_schema, parse_json_acset_schema,
   read_json_acset_schema, write_json_acset_schema, acset_schema_json_schema
@@ -27,6 +28,7 @@ using ...GAT, ...Present, ...Syntax
 using ...Theories: ThCategory, Hom, Ob, Attr, AttrType
 import ...Schemas: objects, homs, attrtypes, attrs, ob, hom, dom, codom
 using ...Columns
+using ...Graphs.BasicGraphs
 import ...Theories: compose, ⋅, id, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 using ..FreeDiagrams, ..Limits, ..Subobjects, ..FinSets, ..FinCats
 using ..FinSets: VarFunction, LooseVarFunction, IdentityFunction, VarSet
@@ -34,7 +36,8 @@ import ..Limits: limit, colimit, universal
 import ..Subobjects: Subobject, implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..Sets: SetOb, SetFunction, TypeSet
 using ..Sets
-import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate, is_monic, is_epic
+import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate, 
+                  is_monic, is_epic, preimage
 import ..FinCats: FinDomFunctor, components, is_natural
 using ...DenseACSets: indices, unique_indices, attr_type, attrtype_type, 
                       datatypes, constructor, delete_subobj!
@@ -1494,6 +1497,42 @@ end
     end...))
 end
 
+
+"""A map f (from A to B) as a map of subobjects of A to subjects of B"""
+(f::ACSetTransformation)(X::SubACSet) = begin
+  codom(hom(X)) == dom(f) || error("Cannot apply $f to $X")
+  Subobject(codom(f); Dict(map(ob(acset_schema(dom(f)))) do o
+    o => sort(unique(f[o].(collect(components(X)[o]))))
+  end)...)
+end
+
+
+"""
+A map f (from A to B) as a map from A to a subobject of B
+# i.e. we cast the ACSet A to its top subobject
+"""
+(f::ACSetTransformation)(X::StructACSet) =
+  X == dom(f) ? f(top(X)) : error("Cannot apply $f to $X")
+
+"""    hom_inv(f::ACSetTransformation,Y::Subobject)
+Inverse of f (from A to B) as a map of subobjects of B to subjects of A.
+It can be thought of as incident, but for homomorphisms.
+"""
+preimage(f::ACSetTransformation,Y::Subobject) = begin
+  codom(hom(Y)) == codom(f) || error("Cannot apply $f to $X")
+  Subobject(dom(f); Dict{Symbol, Vector{Int}}(map(ob(acset_schema(dom(f)))) do o
+    o => sort(unique(vcat([preimage(f[o],y) for y in collect(components(Y)[o])]...)))
+  end)...)
+end
+
+"""    hom_inv(f::CSetTransformation,Y::StructACSet)
+Inverse f (from A to B) as a map from subobjects of B to subobjects of A.
+Cast an ACSet to subobject, though this has a trivial answer when computing
+the preimage (it is necessarily the top subobject of A).
+"""
+preimage(f::CSetTransformation,Y::StructACSet) =
+  Y == codom(f) ? top(dom(f)) : error("Cannot apply inverse of $f to $Y")
+
 # VarACSets
 ###########
 
@@ -1544,6 +1583,27 @@ function Base.collect(it::SubobjectIterator)
   res = Subobject[]
   for x in it push!(res, x) end 
   return res
+end
+
+"""
+Preorder of subobjects via inclusion. 
+Returns a graph + list of subobjects corresponding to its vertices. 
+The subobjects are ordered by decreasing size (so it's topologically sorted)
+"""
+function subobject_graph(X::ACSet)
+  S = acset_schema(X)
+  subs = X |> SubobjectIterator |> collect
+  G = Graph(length(subs))
+  for (i,s1) in enumerate(subs)
+    for (j,s2) in enumerate(subs)
+      if all(ob(S)) do o 
+          collect(hom(s1)[o]) ⊆ collect(hom(s2)[o])
+        end
+        add_edge!(G, i, j)
+      end
+    end
+  end
+  return (G, subs)
 end
 
 """
@@ -1611,6 +1671,8 @@ function Base.iterate(Sub::SubobjectIterator, state=SubobjectIteratorState())
   end 
 end
 
+
+# Could be cleaner/faster if we used CSetAutomorphisms to handle symmetries
 """
 Given a list of ACSets X₁...Xₙ, find all multispans A ⇉ X ordered by decreasing 
 size of A.
@@ -1623,113 +1685,78 @@ we need to cache a lot of work because we consider each such subobject
 independently. This is the maps from A into all the other objects as well as the 
 automorphisms of A.  
 """
-struct CommonSubobjectIterator
-  Xs::Vector{ACSet}
-  Xiter::SubobjectIterator
-  function CommonSubobjectIterator(Xs::Vector{T}) where T <: ACSet
-    !isempty(Xs) || error("Vector must not be empty")
-    ordered = Xs[sortperm(size.(Xs))]
-    return new(ordered, SubobjectIterator(first(ordered)))
-  end
-end
-CommonSubobjectIterator(Xs::ACSet...) = CommonSubobjectIterator(collect(Xs))
-function Base.collect(it::CommonSubobjectIterator)
-  res = Multispan[]
-  for x in it push!(res, x) end 
-  return res
-end
-
-"""
-state - keep track of where we are in the iteration over subobjects of X₁
-yield - an iterator of data to produce spans which should be emitted
-cache - store automorphism and span data in case an isomorphic subobject comes up
-"""
-mutable struct CommonSubobjectIteratorState 
-  state::SubobjectIteratorState
-  yield::Any
-  cache::Dict
-  CommonSubobjectIteratorState() = new(SubobjectIteratorState(), [], Dict())
-end
-function pop_yield!(S::CommonSubobjectIteratorState)
-  res, yield2 = Iterators.peel(S.yield)
-  S.yield = yield2
-  return res
-end
-function pop_state!(S::CommonSubobjectIteratorState, S2::SubobjectIterator)
-  nxt = iterate(S2, S.state)
-  if isnothing(nxt) return nothing end 
-  S.state = nxt[2]
-  return nxt[1]
-end
-
-function Base.getindex(S::CommonSubobjectIteratorState, Y::ACSet)
-  for (k,(automorphs, maps_out)) in S.cache
-    σ = isomorphism(Y, k)
-    if !isnothing(σ)
-      return automorphs, [[σ ⋅ m for m in maps] for maps in maps_out]
-    end
-  end
-  return nothing
-end
-
-function Base.iterate(Sub::CommonSubobjectIterator, state=CommonSubobjectIteratorState())
-  if !isempty(state.yield)
-    return Multispan(collect(pop_yield!(state))), state
-  end
-  while true
-    # Get the next subobject of the first object. Abstract if any attributes.
-    subobj = pop_state!(state, Sub.Xiter)
-    if isnothing(subobj) return nothing end
-    abs_subobj = let h = hom(subobj); abstract(dom(h)) ⋅ h end
+function overlap_maps(Xs::Vector{T}) where T<:ACSet
+  !isempty(Xs) || error("Vector must not be empty")
+  Xs = Xs[sortperm(size.(Xs))] # put the smallest X first
+  res = OrderedDict()
+  for subobj in hom.(SubobjectIterator(Xs[1]))
+    abs_subobj = abstract(dom(subobj)) ⋅ subobj
     Y = dom(abs_subobj)
-    cache = state[Y] # don't repeat work if already computed syms/maps for Y
-    if !isnothing(cache)
-      syms, maps = cache
-    else 
-      # Compute the automorphisms so that we can remove spurious symmetries
-      syms = isomorphisms(Y, Y)
-      # Get monic maps from Y into each of the objects. The first comes for free
-      maps = Vector{ACSetTransformation}[[abs_subobj]]
-      for X in Sub.Xs[2:end]
-        fs = homomorphisms(Y, X; monic=true)
-        real_fs = Set() # quotient fs via automorphisms of Y
-        for f in fs 
-          if all(rf->all(σ -> force(σ⋅f) != force(rf),  syms), real_fs)  
-            push!(real_fs, f)
-          end
-        end
-        if isempty(real_fs)
-          break # this subobject of Xs[1] does not have common overlap w/ all Xs
-        else
-          push!(maps,collect(real_fs))
+    # don't repeat work if already computed syms/maps for something iso to Y
+    seen = false
+    for (Y′, Y′maps) in collect(res)
+      σ = isomorphism(Y, Y′)
+      if !isnothing(σ)
+        push!(Y′maps[1], σ ⋅ abs_subobj)
+        seen = true
+        break
+      end
+    end
+    if seen continue end 
+    # Compute the automorphisms so that we can remove spurious symmetries
+    syms = isomorphisms(Y, Y)
+    # Get monic maps from Y into each of the objects. The first comes for free
+    maps = Vector{ACSetTransformation}[[abs_subobj]]
+    for X in Xs[2:end]
+      fs = homomorphisms(Y, X; monic=true)
+      real_fs = Set() # quotient fs via automorphisms of Y
+      for f in fs 
+        if all(rf->all(σ -> force(σ⋅f) != force(rf),  syms), real_fs)  
+          push!(real_fs, f)
         end
       end
-      state.cache[Y] = (syms, maps)
+      if isempty(real_fs)
+        break # this subobject of Xs[1] does not have common overlap w/ all Xs
+      else
+        push!(maps,collect(real_fs))
+      end
     end
-    if length(maps) == length(Sub.Xs) # we did not break at any point
-      state.yield = Iterators.product(maps...)
-      return iterate(Sub,state)
+    if length(maps) == length(Xs)
+      res[Y] = maps
     end
-  end 
-  return nothing 
+  end
+  return res 
 end
+
+function partial_overlaps(Xs::Vector{T}) where T<:ACSet
+  res = []
+  for (_,v) in collect(overlap_maps(Xs))
+    append!(res, [Multispan(collect(ms)) for ms in Iterators.product(v...)])
+  end
+  return res
+end 
+partial_overlaps(Xs::ACSet...) = Xs |> collect |> partial_overlaps
 
 """ Compute the Maximimum Common C-Sets from a vector of C-Sets.
 
-Find a C-Set ```a`` with maximum possible size (``|a|``) such that there is a  
-monic span of C-Sets ``a₁ ← a → a₂``. Return the span.
+Find an ACSet ```a`` with maximum possible size (``|a|``) such that there is a  
+monic span of ACSets ``a₁ ← a → a₂``. There may be many maps from this overlap 
+into each of the inputs, so a Vector{Vector{ACSetTransformations}} per overlap 
+is returned (a cartesian product can be taken of these to obtain all possible 
+multispans for that overlap). If there are multiple overlaps of equal size, 
+these are all returned.
 
 If there are attributes, we ignore these and use variables in the apex of the 
 overlap.
 """
 function mca(Xs::Vector{T}) where T <: ACSet
-  it = CommonSubobjectIterator(Xs)
+  it = overlap_maps(Xs)
   osize = -1
-  res = []
-  for overlap in it 
-    osize = osize == -1 ? size(apex(overlap)) : osize
-    if size(apex(overlap)) < osize return res end 
-    push!(res, overlap)
+  res = OrderedDict()
+  for (apx, overlap) in it 
+    osize = osize == -1 ? size(apx) : osize
+    if size(apx) < osize return res end 
+    res[apx]=overlap
   end 
   return res
 end

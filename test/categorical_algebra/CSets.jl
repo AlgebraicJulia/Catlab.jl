@@ -598,11 +598,46 @@ A = Subobject(S, X=[3,4,5])
 @test ¬Subobject(ι₂) |> force == Subobject(ι₁)
 @test ~A |> force == ⊤(S) |> force
 
+# Image and preimage
+g1 = path_graph(Graph, 2)
+g2 = apex(coproduct(g1, g1))
+g3 = @acset Graph begin V=2; E=3; src=[1,1,2]; tgt=[1,2,2] end
+h = homomorphisms(g1,g2)[2] # V=[3,4], E=[2]
+ϕ = homomorphism(g2,g3; initial=(V=[1,1,2,2],))
+@test components(hom(h(g1))) == (
+  V = FinFunction([3, 4], 2, 4), E = FinFunction([2], 1, 2))
+@test preimage(h, g2) |> force == (top(g1) |> force)
+@test preimage(h, Subobject(g2, V=[1])) |> force == bottom(g1) |> force
+@test preimage(h, Subobject(g2, V=[3])) |> force == Subobject(g1, V=[1]) |> force
+@test ϕ(h(g1)) == Subobject(g3, V=[2], E=[3])
+
+# Preimage
+G = path_graph(Graph, 1) ⊕ path_graph(Graph, 2) ⊕ path_graph(Graph, 3)
+H = let Loop=apex(terminal(Graph)); Loop ⊕ Loop ⊕ Loop end
+# Each path graph gets its own loop
+f = homomorphism(G, H; initial=(V=Dict([1=>1,2=>2,4=>3]),))
+for i in 1:3
+  @test is_isomorphic(dom(hom(preimage(f, Subobject(H, V=[i],E=[i])))),
+                      path_graph(Graph, i))
+end
+
+# Enumeration of subobjects 
+G = path_graph(Graph, 3)
+subG, subobjs = subobject_graph(G) |> collect
+@test length(subobjs) == 13 # ⊤,2x •→• •,2x •→•, •••,3x ••, 3x •, ⊥
+@test length(incident(subG, 13, :src)) == 13 # ⊥ is initial
+@test length(incident(subG, 1, :src)) == 1 # ⊤ is terminal
+
+# Partial overlaps 
+G = path_graph(Graph, 2)
+os = partial_overlaps(G,G)
+@test length(os) == 7 # ⊤, ••, 4x •, ⊥
+
 # Maximum Common C-Set
 ######################
 """
 Searching for overlaps: •→•→•↺  vs ↻•→•→•
-Two results: •→•→• || •→• •↺
+Two results: •→•→• || •↺ •→• 
 """
 g1 = @acset WeightedGraph{Bool} begin 
   V=3; E=3; src=[1,1,2]; tgt=[1,2,3]; weight=[true,false,false]
@@ -610,20 +645,22 @@ end
 g2 = @acset WeightedGraph{Bool} begin 
   V=3; E=3; src=[1,2,3]; tgt=[2,3,3]; weight=[true,false,false] 
 end 
-mca1, mca2 = mca(g1, g2)
+(apx1, ((L1,),(R1,))), (apx2, ((L2,),(R2,))) = collect(mca(g1, g2))
 apex1 = @acset WeightedGraph{Bool} begin 
   V=3; E=2; Weight=2; src=[1,2]; tgt=[2,3]; weight=AttrVar.(1:2)
 end
 apex2 = @acset WeightedGraph{Bool} begin 
   V=3; E=2; Weight=2; src=[1,3]; tgt=[2,3]; weight=AttrVar.(1:2)
-end 
-@test is_isomorphic(apex(mca1), apex1)
-@test collect(left(mca1)[:V]) == [1,2,3]
-@test collect(right(mca1)[:V]) == [1,2,3]
+end
+@test is_isomorphic(apx1, apex1)
+@test collect(L1[:V]) == [1,2,3]
+@test collect(R1[:V]) == [1,2,3]
+@test L1(apx1) == Subobject(g1, V=[1,2,3], E=[2,3])
 
-@test is_isomorphic(apex(mca2), apex2)
-@test collect(left(mca2)[:V]) == [1,2,3]
-@test collect(right(mca2)[:V]) == [3,1,2]
+@test is_isomorphic(apx2, apex2)
+@test collect(L2[:V]) == [1,2,3]
+@test collect(R2[:V]) == [3,1,2]
+@test L2(apx2) == Subobject(g1, V=[1,2,3], E=[1,3])
 
 # Acset serialization
 #####################
