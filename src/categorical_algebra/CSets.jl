@@ -1674,7 +1674,7 @@ end
 
 function Base.iterate(Sub::CommonSubobjectIterator, state=CommonSubobjectIteratorState())
   if !isempty(state.yield)
-    return Span(pop_yield!(state)...), state
+    return Multispan(collect(pop_yield!(state))), state
   end
   while true
     # Get the next subobject of the first object. Abstract if any attributes.
