@@ -509,10 +509,22 @@ function delete_subobj(X::ACSet, delparts)
   return Dict([k => sort(collect(v)) for (k,v) in pairs(delparts)])
 end
 
+"""Return a mapping of from parts of updated X to the old X"""
 function delete_subobj!(X::ACSet, delparts)
-  for (type, parts) in delete_subobj(X, delparts)
-    rem_parts!(X, type, parts)
-  end 
+  dels = delete_subobj(X, delparts)
+  return NamedTuple(Dict(map(ob(acset_schema(X))) do o
+    ps = collect(parts(X,o))
+    rm = rem_parts!(X, o, dels[o])
+    res = map(parts(X,o)) do i 
+      if i ∈ dels[o]
+        return pop!(ps)
+      else 
+        return i 
+      end
+    end
+    return o => res
+  end))
+  dels
 end
 
 ACSetInterface.cascading_rem_parts!(acs::ACSet, type, parts) =

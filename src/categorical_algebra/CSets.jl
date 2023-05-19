@@ -36,8 +36,10 @@ import ..Sets: SetOb, SetFunction, TypeSet
 using ..Sets
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate, is_monic, is_epic
 import ..FinCats: FinDomFunctor, components, is_natural
-using ...DenseACSets: indices, unique_indices, attr_type, attrtype_type, datatypes, constructor
-using ...ColumnImplementations: AttrVar
+using ...DenseACSets: indices, unique_indices, attr_type, attrtype_type, 
+                      datatypes, constructor, delete_subobj!
+using ...ColumnImplementations: AttrVar 
+
 
 # Sets interop
 ##############
@@ -1492,6 +1494,29 @@ end
     end...))
 end
 
+# VarACSets
+###########
+
+"""
+For any ACSet, X, a canonical map A→X where A has distinct variables for all
+subparts.
+"""
+function abstract(X::ACSet)
+  S = acset_schema(X)
+  A = deepcopy(X); 
+  comps = Dict{Any,Any}(map(attrtypes(S)) do at
+    rem_parts!(A, at, parts(A,at))
+    comp = Union{AttrVar,attrtype_type(X,at)}[]
+    for (f, d, _) in attrs(S; to=at)
+      append!(comp, A[f])
+      A[f] = AttrVar.(add_parts!(A, at, nparts(A,d)))
+    end 
+    at => comp
+  end)
+  for o in ob(S) comps[o]=parts(X,o) end
+  res = ACSetTransformation(A,X; comps...)
+  return res
+end 
 
 # Maximum Common C-Set
 ######################
@@ -1505,68 +1530,269 @@ Defintion: let 𝐺: C → 𝐒et be a C-set, we define the _size_ of 𝐺 to be
     num input arcs + num output arcs).
 """
 size(X::ACSet) = mapreduce(oₛ -> nparts(X, oₛ), +, objects(acset_schema(X)); init=0)
+size(X::ACSetTransformation) = size(dom(X)) 
+
+"""
+Enumerate subobjects of an ACSet in order of largest to smallest 
+(assumes no wandering variables).
+"""
+struct SubobjectIterator
+  top::ACSet
+end
+
+function Base.collect(it::SubobjectIterator)
+  res = Subobject[]
+  for x in it push!(res, x) end 
+  return res
+end
+
+"""
+seen       - any subobject we've seen so far
+to_recurse - frontier of subobjects we've yet to recursively explore
+to_yield   - Subobjects which we've yet to yield
+"""
+struct SubobjectIteratorState
+  seen::Set{ACSetTransformation}
+  to_recurse::BinaryHeap
+  to_yield::BinaryHeap
+  function SubobjectIteratorState()  
+    heap = BinaryHeap(Base.By(size, Base.Order.Reverse), ACSetTransformation[])
+    new(Set{ACSetTransformation}(), heap, deepcopy(heap))
+  end
+end
+Base.isempty(S::SubobjectIteratorState) = isempty(S.seen)
+function Base.push!(S::SubobjectIteratorState,h::ACSetTransformation)
+  push!(S.seen, h); push!(S.to_recurse, h); push!(S.to_yield, h)
+end
+
+"""
+We recurse only if there is nothing to yield or we have something to recurse on 
+that is bigger than the biggest thing in our to-yield set.
+"""
+should_yield(S::SubobjectIteratorState) = !isempty(S.to_yield) && (
+    isempty(S.to_recurse) || size(first(S.to_yield)) > size(first(S.to_recurse)))
+
+
+function Base.iterate(Sub::SubobjectIterator, state=SubobjectIteratorState())
+  S = acset_schema(Sub.top)
+  T = id(Sub.top)
+  if isempty(state) # first time
+    push!(state.seen, T); push!(state.to_recurse, T)
+    return (Subobject(T), state)
+  end
+
+  # Before recursing, check if we should yield things or terminate
+  if should_yield(state)
+    return (Subobject(pop!(state.to_yield)), state)
+  end
+  if isempty(state.to_recurse) 
+    return nothing
+  end
+  # Explore by trying to delete each ACSet part independently 
+  X = pop!(state.to_recurse)
+  dX = dom(X)
+  for o in ob(S)
+    for p in parts(dX, o)
+      rem = copy(dX)
+      comps = delete_subobj!(rem, Dict([o => [p]]))
+      h = ACSetTransformation(rem, dX; comps...) ⋅ X
+      if h ∉ state.seen
+        push!(state, h)
+      end
+    end
+  end
+
+  if should_yield(state)
+    return (Subobject(pop!(state.to_yield)), state)
+  elseif !isempty(state.to_recurse)
+    return Base.iterate(Sub, (state))
+  else 
+    return nothing
+  end 
+end
+
+"""
+Given a list of ACSets X₁...Xₙ, find all multispans A ⇉ X ordered by decreasing 
+size of A.
+
+We search for overlaps guided by iterating through the subobjects of the 
+smallest ACSet.
+  
+If a subobject of the first object, A↪X, has multiple maps into X₁, then 
+we need to cache a lot of work because we consider each such subobject 
+independently. This is the maps from A into all the other objects as well as the 
+automorphisms of A.  
+"""
+struct CommonSubobjectIterator
+  Xs::Vector{ACSet}
+  Xiter::SubobjectIterator
+  function CommonSubobjectIterator(Xs::Vector{T}) where T <: ACSet
+    !isempty(Xs) || error("Vector must not be empty")
+    ordered = Xs[sortperm(size.(Xs))]
+    return new(ordered, SubobjectIterator(first(ordered)))
+  end
+end
+CommonSubobjectIterator(Xs::ACSet...) = CommonSubobjectIterator(collect(Xs))
+function Base.collect(it::CommonSubobjectIterator)
+  res = Multispan[]
+  for x in it push!(res, x) end 
+  return res
+end
+
+"""
+state - keep track of where we are in the iteration over subobjects of X₁
+yield - an iterator of data to produce spans which should be emitted
+cache - store automorphism and span data in case an isomorphic subobject comes up
+"""
+mutable struct CommonSubobjectIteratorState 
+  state::SubobjectIteratorState
+  yield::Any
+  cache::Dict
+  CommonSubobjectIteratorState() = new(SubobjectIteratorState(), [], Dict())
+end
+function pop_yield!(S::CommonSubobjectIteratorState)
+  res, yield2 = Iterators.peel(S.yield)
+  S.yield = yield2
+  return res
+end
+function pop_state!(S::CommonSubobjectIteratorState, S2::SubobjectIterator)
+  nxt = iterate(S2, S.state)
+  if isnothing(nxt) return nothing end 
+  S.state = nxt[2]
+  return nxt[1]
+end
+
+function Base.getindex(S::CommonSubobjectIteratorState, Y::ACSet)
+  for (k,(automorphs, maps_out)) in S.cache
+    σ = isomorphism(Y, k)
+    if !isnothing(σ)
+      return automorphs, [[σ ⋅ m for m in maps] for maps in maps_out]
+    end
+  end
+  return nothing
+end
+
+function Base.iterate(Sub::CommonSubobjectIterator, state=CommonSubobjectIteratorState())
+  if !isempty(state.yield)
+    return Span(pop_yield!(state)...), state
+  end
+  while true
+    # Get the next subobject of the first object. Abstract if any attributes.
+    subobj = pop_state!(state, Sub.Xiter)
+    if isnothing(subobj) return nothing end
+    abs_subobj = let h = hom(subobj); abstract(dom(h)) ⋅ h end
+    Y = dom(abs_subobj)
+    cache = state[Y] # don't repeat work if already computed syms/maps for Y
+    if !isnothing(cache)
+      syms, maps = cache
+    else 
+      # Compute the automorphisms so that we can remove spurious symmetries
+      syms = isomorphisms(Y, Y)
+      # Get monic maps from Y into each of the objects. The first comes for free
+      maps = Vector{ACSetTransformation}[[abs_subobj]]
+      for X in Sub.Xs[2:end]
+        fs = homomorphisms(Y, X; monic=true)
+        real_fs = Set() # quotient fs via automorphisms of Y
+        for f in fs 
+          if all(rf->all(σ -> force(σ⋅f) != force(rf),  syms), real_fs)  
+            push!(real_fs, f)
+          end
+        end
+        if isempty(real_fs)
+          break # this subobject of Xs[1] does not have common overlap w/ all Xs
+        else
+          push!(maps,collect(real_fs))
+        end
+      end
+      state.cache[Y] = (syms, maps)
+    end
+    if length(maps) == length(Sub.Xs) # we did not break at any point
+      state.yield = Iterators.product(maps...)
+      return iterate(Sub,state)
+    end
+  end 
+  return nothing 
+end
 
 """ Compute the Maximimum Common C-Sets from a vector of C-Sets.
 
-Find all a with with ``|a|`` maximum possible such that there is a monic span of C-Set ``a₁ ← a → a₂``.
+Find a C-Set ```a`` with maximum possible size (``|a|``) such that there is a  
+monic span of C-Sets ``a₁ ← a → a₂``. Return the span.
+
+If there are attributes, we ignore these and use variables in the apex of the 
+overlap.
 """
-function mca(X::Vector{T}) where T <: ACSet
-  acset_order = sortperm(size.(X))
-  mca_match1, _ = mca_help(X[acset_order[1]],X[acset_order[2:end]])
-  X_mca = mca_match1[1]
-
-  @assert all([is_isomorphic(strip_attributes(X_mca),strip_attributes(match)) for match in mca_match1])
-  mca_morphs = [Vector{ACSetTransformation}() for _ in 1:length(X)]
-  C = acset_schema(X[acset_order[1]])
-  mca_morphs[acset_order[1]] = [ACSetTransformation(strip_attributes(X_mca),X[acset_order[1]]; 
-                                  Dict([k => parts(match, k) for k ∈ objects(C)])...) for match in mca_match1]
-  for (jj, curr_X) in enumerate(X[acset_order[2:end]])
-    curr_X_matches, _ = mca_help(curr_X,X_mca;f_reverse=true)
-    mca_morphs[acset_order[jj+1]] = [ACSetTransformation(strip_attributes(X_mca),curr_X; 
-                                      Dict([k => parts(match, k) for k ∈ objects(C)])...) for match in curr_X_matches]
-  end
+function mca(Xs::Vector{T}) where T <: ACSet
+  error("TO INTEGRATE W/ ABOVE")
+end
+#   acset_order = sortperm(size.(Xs))
   
-  return strip_attributes(X_mca), mca_morphs
-end
-mca(Xs::ACSet...) = mca(collect(Xs))
+#   # mca_match1, _ = mca_help(X[acset_order[1]],X[acset_order[2:end]])
+#   # X_mca = mca_match1[1]
+#   for subobj in SubobjectIterator(Xs[first(acset_order)])
+#     abs_subobj = abstract(dom(hom(subobj)))
+#     Y = dom(abs_subobj)
+#     maps = [abs_subobj]
+#     for X in Xs[acset_order[2:end]]
+#       f = homomorphism(X,Y; monic=true)
+#       if isnothing(f)
+#         break 
+#       else
+#         push!(maps,f)
+#       end
+#     end
+#     if length(maps) != length(X)
+#     return Multispan(maps)
+#   end 
+#   error("Empty subobject should always be a subobject")
+# end
 
-function strip_attributes(p::ACSet)
-  attributes = attrtypes(acset_schema(p))
-  isempty(attributes) ? p : map(p; Dict(attr => (x -> nothing) for attr ∈ attributes)...)
-end
+#   @assert all([is_isomorphic(strip_attributes(X_mca),strip_attributes(match)) for match in mca_match1])
+#   mca_morphs = [Vector{ACSetTransformation}() for _ in 1:length(X)]
+#   C = acset_schema(X[acset_order[1]])
+#   mca_morphs[acset_order[1]] = [ACSetTransformation(strip_attributes(X_mca),X[acset_order[1]]; 
+#                                   Dict([k => parts(match, k) for k ∈ objects(C)])...) for match in mca_match1]
+#   for (jj, curr_X) in enumerate(X[acset_order[2:end]])
+#     curr_X_matches, _ = mca_help(curr_X,X_mca;f_reverse=true)
+#     mca_morphs[acset_order[jj+1]] = [ACSetTransformation(strip_attributes(X_mca),curr_X; 
+#                                       Dict([k => parts(match, k) for k ∈ objects(C)])...) for match in curr_X_matches]
+#   end
+  
+#   return Multispan(strip_attributes(X_mca), mca_morphs)
+# end
 
-function mca_help(X::T, Y::Union{T,Vector{T}}; f_reverse = false) where T <: ACSet
-  X_subs = BinaryHeap(Base.By(size, Base.Order.Reverse), [X])
-  mca_list = Set{T}()
-  if typeof(Y)==Vector{T} f_reverse = false end
-  while_cond = !isempty(X_subs) && (f_reverse ? size(Y) <= size(first(X_subs)) :
-                (isempty(mca_list) || size(first(mca_list)) <= size(first(X_subs))))
-  while while_cond
-    curr_X_sub = pop!(X_subs)
-    C = acset_schema(curr_X_sub) #X: C → Set
-    match_cond = f_reverse ? is_isomorphic(strip_attributes(curr_X_sub),strip_attributes(Y)) : 
-                  all([
-                    is_homomorphic(strip_attributes(curr_X_sub), strip_attributes(x); monic=true)
-                    for x in Y
-                  ])
-    if match_cond
-      # if all([!is_isomorphic(curr_X_sub,tmp) for tmp in mca_list])
-        push!(mca_list, curr_X_sub)
-      # end
-    else
-      for c ∈ objects(C)
-        for p ∈ parts(curr_X_sub, c)
-          new_X_sub = deepcopy(curr_X_sub)
-          cascading_rem_part!(new_X_sub, c, p)
-          push!(X_subs, new_X_sub)
-        end
-      end
-    end
-    while_cond = !isempty(X_subs) && (f_reverse ? size(Y) <= size(first(X_subs)) :
-                  (isempty(mca_list) || size(first(mca_list)) <= size(first(X_subs))))
-  end
-  return collect(mca_list), X_subs
-end
+# function mca_help(X::T, Y::Union{T,Vector{T}}; f_reverse = false) where T <: ACSet
+#   X_subs = BinaryHeap(Base.By(size, Base.Order.Reverse), [X])
+#   mca_list = Set{T}()
+#   if typeof(Y)==Vector{T} f_reverse = false end
+#   while_cond = !isempty(X_subs) && (f_reverse ? size(Y) <= size(first(X_subs)) :
+#                 (isempty(mca_list) || size(first(mca_list)) <= size(first(X_subs))))
+#   while while_cond
+#     curr_X_sub = pop!(X_subs)
+#     C = acset_schema(curr_X_sub) #X: C → Set
+#     match_cond = f_reverse ? is_isomorphic(strip_attributes(curr_X_sub),strip_attributes(Y)) : 
+#                   all([
+#                     is_homomorphic(strip_attributes(curr_X_sub), strip_attributes(x); monic=true)
+#                     for x in Y
+#                   ])
+#     if match_cond
+#       # if all([!is_isomorphic(curr_X_sub,tmp) for tmp in mca_list])
+#         push!(mca_list, curr_X_sub)
+#       # end
+#     else
+#       for c ∈ objects(C)
+#         for p ∈ parts(curr_X_sub, c)
+#           new_X_sub = deepcopy(curr_X_sub)
+#           cascading_rem_part!(new_X_sub, c, p)
+#           push!(X_subs, new_X_sub)
+#         end
+#       end
+#     end
+#     while_cond = !isempty(X_subs) && (f_reverse ? size(Y) <= size(first(X_subs)) :
+#                   (isempty(mca_list) || size(first(mca_list)) <= size(first(X_subs))))
+#   end
+#   return collect(mca_list), X_subs
+# end
 
 
 # ACSet serialization
