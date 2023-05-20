@@ -1695,7 +1695,7 @@ function overlap_maps(Xs::Vector{T}) where T<:ACSet
     # don't repeat work if already computed syms/maps for something iso to Y
     seen = false
     for (Y′, Y′maps) in collect(res)
-      σ = isomorphism(Y, Y′)
+      σ = isomorphism(Y′, Y)
       if !isnothing(σ)
         push!(Y′maps[1], σ ⋅ abs_subobj)
         seen = true
