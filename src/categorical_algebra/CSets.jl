@@ -1509,23 +1509,22 @@ end
 
 """
 A map f (from A to B) as a map from A to a subobject of B
-# i.e. we cast the ACSet A to its top subobject
+# i.e. get the image of f as a subobject of B
 """
 (f::ACSetTransformation)(X::StructACSet) =
   X == dom(f) ? f(top(X)) : error("Cannot apply $f to $X")
 
-"""    hom_inv(f::ACSetTransformation,Y::Subobject)
+"""    preimage(f::ACSetTransformation,Y::Subobject)
 Inverse of f (from A to B) as a map of subobjects of B to subjects of A.
-It can be thought of as incident, but for homomorphisms.
 """
-preimage(f::ACSetTransformation,Y::Subobject) = begin
+function preimage(f::ACSetTransformation,Y::SubACSet)
   codom(hom(Y)) == codom(f) || error("Cannot apply $f to $X")
   Subobject(dom(f); Dict{Symbol, Vector{Int}}(map(ob(acset_schema(dom(f)))) do o
     o => sort(unique(vcat([preimage(f[o],y) for y in collect(components(Y)[o])]...)))
   end)...)
 end
 
-"""    hom_inv(f::CSetTransformation,Y::StructACSet)
+"""    preimage(f::CSetTransformation,Y::StructACSet)
 Inverse f (from A to B) as a map from subobjects of B to subobjects of A.
 Cast an ACSet to subobject, though this has a trivial answer when computing
 the preimage (it is necessarily the top subobject of A).

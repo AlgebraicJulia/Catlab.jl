@@ -509,20 +509,23 @@ function delete_subobj(X::ACSet, delparts)
   return Dict([k => sort(collect(v)) for (k,v) in pairs(delparts)])
 end
 
-"""Return a mapping of from parts of updated X to the old X"""
+"""
+Return a mapping of from parts of updated X to the old X
+
+Note: the correctness is dependent on the implementation details of `rem_parts!`
+"""
 function delete_subobj!(X::ACSet, delparts)
   dels = delete_subobj(X, delparts)
   return NamedTuple(Dict(map(ob(acset_schema(X))) do o
     ps = collect(parts(X,o))
-    rm = rem_parts!(X, o, dels[o])
-    res = map(parts(X,o)) do i 
+    rem_parts!(X, o, dels[o])
+    return o => map(parts(X,o)) do i 
       if i ∈ dels[o]
-        return pop!(ps)
+        return pop!(ps) # if idx is deleted, it's replaced with last idx
       else 
         return i 
       end
     end
-    return o => res
   end))
   dels
 end
