@@ -17,6 +17,9 @@ our Attr Variable indices with the Julia type of Int
   val::Int 
 end 
 Base.isless(x::AttrVar,y::AttrVar) = x.val < y.val
+Base.convert(::Type{T}, x::T) where {T>:Union{Nothing,AttrVar}} = x
+Base.convert(::Type{T}, x::T) where {T>:AttrVar} = x
+Base.convert(::Type{T}, x) where {T>:AttrVar} = convert(Base.typesplit(T, AttrVar), x)
 
 
 # Column types for acsets
