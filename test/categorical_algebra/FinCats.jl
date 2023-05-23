@@ -117,8 +117,6 @@ s = sprint(show, Δ¹)
 @test startswith(s, "FinCat($(Graph)")
 @test contains(s, "Path")
 
-
-
 # Symbolic categories
 #####################
 

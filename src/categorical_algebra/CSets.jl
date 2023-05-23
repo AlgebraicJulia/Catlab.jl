@@ -542,7 +542,7 @@ You're allowed to run this on a named tuple partly specifying an ACSetTransforma
 though at this time the domain and codomain must be fully specified ACSets.
 """
 function is_natural(α::LooseACSetTransformation) 
-    is_natural(dom(α),codom(α),α.components,type_components(α))
+  is_natural(dom(α),codom(α),α.components,type_components(α))
 end
 function is_natural(α::ACSetTransformation)
   is_natural(dom(α),codom(α),α.components)
@@ -700,9 +700,8 @@ any immediate inconsistencies in specified initial data.
 
 See also: [`homomorphisms`](@ref), [`isomorphism`](@ref).
 """
-homomorphism(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) = begin 
+homomorphism(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
   homomorphism(X, Y, alg; kw...)
-end
 
 function homomorphism(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...)
   result = nothing
