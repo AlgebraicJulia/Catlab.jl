@@ -291,9 +291,9 @@ diagram = FreeDiagram([g, ob(terminal(Graph)), Graph(1)], [(α,3,1), (β,3,2)])
 # Attributed C-set morphisms
 ############################
 
-# Constructors and accessors.
-g = path_graph(WeightedGraph{Float64}, 2, E=(weight=2.0,))
-h = path_graph(WeightedGraph{Float64}, 4, E=(weight=[1.,2.,3.],))
+# Constructors and accessors. Test type conversion as well Int -> Float64
+g = path_graph(WeightedGraph{Float64}, 2, E=(weight=2,))
+h = path_graph(WeightedGraph{Float64}, 4, E=(weight=[1,2,3],))
 α = ACSetTransformation((V=[2,3], E=[2]), g, h)
 @test length(components(α)) == 3
 
