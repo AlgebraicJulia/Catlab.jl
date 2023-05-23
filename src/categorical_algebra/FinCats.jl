@@ -13,7 +13,7 @@ module FinCats
 export FinCat, FinCatGraph, Path, ob_generator, hom_generator,
   ob_generator_name, hom_generator_name, ob_generators, hom_generators,
   equations, is_discrete, is_free, graph, edges, src, tgt, presentation,
-  FinFunctor, FinDomFunctor, functoriality_failures, is_functorial, collect_ob, collect_hom, force,
+  FinFunctor, FinDomFunctor, is_functorial, functoriality_failures,collect_ob, collect_hom, force,
   FinTransformation, components, is_natural, is_initial
 
 using StructEquality
@@ -123,9 +123,7 @@ abstract type FinCatGraph{G,Ob,Hom} <: FinCat{Ob,Hom} end
 """ Generating graph for a finitely presented category.
 """
 graph(C::FinCatGraph) = C.graph
-
 graph(C::OppositeCat) = reverse(graph(op(C)))
-
 
 ob_generators(C::FinCatGraph) = vertices(graph(C))
 hom_generators(C::FinCatGraph) = edges(graph(C))
@@ -263,7 +261,7 @@ See (Spivak, 2014, *Category theory for the sciences*, §4.5).
 end
 
 equations(C::FinCatGraphEq) = C.equations
-equations(C::OppositeCat) = op.(equations(op(C)))
+equations(C::OppositeCat) = map(x->reverse(x.first)=>reverse(x.second),equations(C.cat))
 
 function FinCatGraph(g::HasGraph, eqs::AbstractVector)
   eqs = map(eqs) do eq

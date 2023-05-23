@@ -59,6 +59,7 @@ plus_one_to_even = SetFunction(x -> x+1, evens, odds)
 @test_throws ErrorException plus_one_to_odd(2) == 3
 @test plus_one_to_even(2) == 3
 @test_throws ErrorException plus_one_to_even(3) == 4
+@test SetFunction(plus_one_to_odd) == plus_one_to_odd
 
 plus_two_to_odd = compose(plus_one_to_odd, plus_one_to_even)
 @test plus_two_to_odd(3) == 5

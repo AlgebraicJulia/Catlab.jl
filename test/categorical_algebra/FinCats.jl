@@ -18,6 +18,7 @@ C = FinCat(g)
 @test ob_generators(C) == 1:2
 @test hom_generators(C) == 1:3
 @test startswith(sprint(show, C), "FinCat($(Graph)")
+@test equations(C) == []
 
 C_op = op(C)
 @test C_op isa FinCat
@@ -26,6 +27,7 @@ C_op = op(C)
 @test ob_generators(C_op) == 1:2
 @test hom_generators(C_op) == 1:3
 @test op(C_op) == C
+@test equations(C) == []
 
 h = Graph(4)
 add_edges!(h, [1,1,2,3], [2,3,4,4])
@@ -106,8 +108,10 @@ F = FinDomFunctor([FinSet(4), FinSet(2)], [FinFunction([1,1,2,2])], C)
 add_edges!(Δ¹_graph, [1,1,2], [2,2,1])
 Δ¹ = FinCat(Δ¹_graph, [ [1,3] => empty(Path, Δ¹_graph, 1),
                         [2,3] => empty(Path, Δ¹_graph, 1) ])
+Δ¹_op = op(Δ¹)
 @test graph(Δ¹) == Δ¹_graph
 @test length(equations(Δ¹)) == 2
+@test length(equations(Δ¹_op)) == 2
 @test !is_free(Δ¹)
 s = sprint(show, Δ¹)
 @test startswith(s, "FinCat($(Graph)")

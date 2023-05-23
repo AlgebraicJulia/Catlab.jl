@@ -786,6 +786,64 @@ macro acset(head, body)
   end)
 end
 
+"""
+Provides a shorthand for constructing a tight acset transformation by giving
+  its components. Homomorphism search allows partial specification, 
+  with the return value being the unique extension if it exists.
+
+Keyword arguments can be passed on to the search function after 
+  the body of the transformation.
+
+Usage example on WeightedGraph{String}s: 
+
+```
+@acset_transformation A B begin
+  V = [3,5,2] #complete specification can be a vector
+  E = Dict(1 => 3, 4 => 3) #otherwise use a dict
+end monic=true iso=[:V] or [:V,:E], etc
+```
+"""
+macro acset_transformation(dom,cod,kw...)
+  kw = map(parse_kwargs,kw)
+  Expr(:call,esc(:homomorphism),esc(dom),esc(cod), Expr(:kw,:error_failures,true),kw...)
+end
+macro acset_transformation(dom,cod,body,kw...)
+  kw = map(parse_kwargs,kw)
+  initial = process_initial(body)
+  Expr(:call,esc(:homomorphism),esc(dom),esc(cod),initial,Expr(:kw,:error_failures,true),kw...)
+end
+macro acset_transformations(dom,cod,kw...)
+  kw = map(parse_kwargs,kw)
+  Expr(:call,esc(:homomorphisms),esc(dom),esc(cod),Expr(:kw,:error_failures,true),kw...)
+end
+macro acset_transformations(dom,cod,body,kw...)
+  kw = map(parse_kwargs,kw)
+  initial = process_initial(body)
+  Expr(:call,esc(:homomorphisms),esc(dom),esc(cod),initial,Expr(:kw,:error_failures,true),kw...)
+end
+function process_initial(expr) 
+  initial = @match expr begin
+    Expr(:block,lines...) => filter(!isnothing,map(escape_assignment_lhs,lines))
+    Expr(:(=),x,y) => parse_kwargs(expr) #does this ever happen?
+    _ => error("Expected begin...end block or kwarg, received $expr")
+  end
+  isa(initial,Vector) ? length(initial) > 0 ? 
+      Expr(:kw,:initial,Expr(:tuple,initial...)) : 
+      Expr(:kw,:initial,Expr(:tuple,Expr(:parameters,))) :
+    initial
+end
+function parse_kwargs(expr)
+  @match expr begin
+    Expr(:(=),x,y) => Expr(:kw,x,y)
+    _ => nothing
+  end 
+end
+function escape_assignment_lhs(expr)
+  @match expr begin
+    Expr(:(=),x,y) => Expr(:(=),esc(x),y)
+    _ => nothing 
+  end
+end
 # Mapping
 #########
 

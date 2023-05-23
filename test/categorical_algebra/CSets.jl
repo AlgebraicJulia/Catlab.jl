@@ -115,13 +115,17 @@ g, h = path_graph(Graph, 4), cycle_graph(Graph, 2)
 @test components(α′′) == components(α)
 
 # Naturality.
+d = naturality_failures(α)
+@test [collect(d[a]) for a in keys(d)] == [[],[]]
 @test is_natural(α)
 β = CSetTransformation((V=[1,2,1,2], E=[1,1,1]), g, h)
+d = naturality_failures(β)
+@test sort([collect(v) for v in values(d)]) == [[(2,1,2)],[(2,2,1)]]
+@test startswith(show_unnaturalities(β),"Failures")
 @test !is_natural(β)
 β = CSetTransformation((V=[2,1], E=[2,1]), h, h)
 @test is_natural(β)
 β = CSetTransformation((V=[2,1], E=[2,2]), h, h)
-@test is_natural(β;return_failures=true) == [(:src,2,2,1),(:tgt,2,1,2)]
 
 
 # Category of C-sets.
@@ -147,7 +151,7 @@ h_ = homomorphism(G, I)
 @test is_epic(g_)
 @test !is_monic(h_)
 @test !is_epic(h_)
-
+@test_throws ErrorException homomorphism(H,G,monic=true,error_failures=true)
 
 # Limits
 #-------
@@ -304,7 +308,9 @@ h = path_graph(WeightedGraph{Float64}, 4, E=(weight=[1,2,3],))
 β = ACSetTransformation((V=[1,2], E=[1]), g, h)
 @test !is_natural(β) # Graph homomorphism but does not preserve weight
 β = ACSetTransformation((V=[1,3], E=[1]), g, h)
-@test is_natural(β; return_failures=true) == [(:tgt,1,2,3), (:weight,1,1.,2.)]
+uns = naturality_failures(β)
+@test collect(uns[:src]) == [] && collect(uns[:tgt]) == [(1,2,3)] &&
+  collect(uns[:weight]) == [(1,1.0,2.0)]
 
 # Loose morphisms.
 α = LooseACSetTransformation((V=[1,2], E=[1]), (Weight=x->x/2,), g, h)
@@ -470,6 +476,12 @@ set_subpart!(s3, :f, [20,10])
 @test length(homomorphisms(s2,s3; type_components=(D=x->10*x,)))==1
 @test homomorphism(s2,s3; type_components=(D=x->10*x,)) isa LooseACSetTransformation
 @test length(homomorphisms(s1,s1; type_components=(D=x->x^x,)))==4
+
+#Backtracking with monic and iso failure objects
+g1, g2 = path_graph(Graph, 3), path_graph(Graph, 2)
+rem_part!(g1,:E,2)
+@test_throws ErrorException homomorphism(g1,g2;monic=true,error_failures=true)
+
 
 # Symmetric graphs
 #-----------------

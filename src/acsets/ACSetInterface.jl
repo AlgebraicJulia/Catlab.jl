@@ -3,7 +3,8 @@ export ACSet, acset_schema, acset_name, dom_parts, subpart_type,
   nparts, parts, has_part, has_subpart, subpart, incident,
   add_part!, add_parts!, set_subpart!, set_subparts!, clear_subpart!,
   rem_part!, rem_parts!, cascading_rem_part!, cascading_rem_parts!,
-  copy_parts!, copy_parts_only!, disjoint_union, tables, pretty_tables, @acset
+  copy_parts!, copy_parts_only!, disjoint_union, tables, pretty_tables,
+  @acset, @acset_transformation, @acset_transformations
 
 using StaticArrays: StaticArray
 using ..Schemas: types
