@@ -1567,8 +1567,8 @@ Defintion: let 𝐺: C → 𝐒et be a C-set, we define the _size_ of 𝐺 to be
   * a Petri net P is |PT| + |PS| + |PI| + |PO| (num transitions + num species +
     num input arcs + num output arcs).
 """
-size(X::ACSet) = mapreduce(oₛ -> nparts(X, oₛ), +, objects(acset_schema(X)); init=0)
-size(X::ACSetTransformation) = size(dom(X)) 
+total_parts(X::ACSet) = mapreduce(oₛ -> nparts(X, oₛ), +, objects(acset_schema(X)); init=0)
+total_parts(X::ACSetTransformation) = total_parts(dom(X)) 
 
 """
 Enumerate subobjects of an ACSet in order of largest to smallest 
@@ -1612,7 +1612,7 @@ struct SubobjectIteratorState
   to_recurse::BinaryHeap
   to_yield::BinaryHeap
   function SubobjectIteratorState()  
-    heap = BinaryHeap(Base.By(size, Base.Order.Reverse), ACSetTransformation[])
+    heap = BinaryHeap(Base.By(total_parts, Base.Order.Reverse), ACSetTransformation[])
     new(Set{ACSetTransformation}(), heap, deepcopy(heap))
   end
 end
@@ -1626,7 +1626,7 @@ We recurse only if there is nothing to yield or we have something to recurse on
 that is bigger than the biggest thing in our to-yield set.
 """
 should_yield(S::SubobjectIteratorState) = !isempty(S.to_yield) && (
-    isempty(S.to_recurse) || size(first(S.to_yield)) > size(first(S.to_recurse)))
+    isempty(S.to_recurse) || total_parts(first(S.to_yield)) > total_parts(first(S.to_recurse)))
 
 
 function Base.iterate(Sub::SubobjectIterator, state=SubobjectIteratorState())
@@ -1671,7 +1671,7 @@ end
 # Could be cleaner/faster if we used CSetAutomorphisms to handle symmetries
 """
 Given a list of ACSets X₁...Xₙ, find all multispans A ⇉ X ordered by decreasing 
-size of A.
+number of total parts of A.
 
 We search for overlaps guided by iterating through the subobjects of the 
 smallest ACSet.
@@ -1683,7 +1683,7 @@ automorphisms of A.
 """
 function overlap_maps(Xs::Vector{T}) where T<:ACSet
   !isempty(Xs) || error("Vector must not be empty")
-  Xs = Xs[sortperm(size.(Xs))] # put the smallest X first
+  Xs = Xs[sortperm(total_parts.(Xs))] # put the smallest X first
   res = OrderedDict()
   for subobj in hom.(SubobjectIterator(Xs[1]))
     abs_subobj = abstract_attributes(dom(subobj)) ⋅ subobj
@@ -1750,8 +1750,9 @@ function maximum_common_subobject(Xs::Vector{T}) where T <: ACSet
   osize = -1
   res = OrderedDict()
   for (apx, overlap) in it 
-    osize = osize == -1 ? size(apx) : osize
-    if size(apx) < osize return res end 
+    size = total_parts(apx)
+    osize = osize == -1 ? size : osize
+    if size < osize return res end 
     res[apx]=overlap
   end 
   return res
