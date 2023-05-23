@@ -831,13 +831,16 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
   end
   iso_failures = Iterators.filter(c->nparts(X,c)!=nparts(Y,c),iso)
   mono_failures = Iterators.filter(c->nparts(X,c)>nparts(Y,c),monic)  
-   (isempty(iso_failures) && isempty(mono_failures)) ||
-    (!error_failures && return f(false)) ||
-    error("""
-    Cardinalities inconsistent with request for...
-      iso at object(s) $isoFailures
-      mono at object(s) $monoFailures
-    """)
+  if (!isempty(iso_failures) || !isempty(mono_failures))
+    if !error_failures 
+      return false 
+    else error("""
+      Cardinalities inconsistent with request for...
+        iso at object(s) $iso_failures
+        mono at object(s) $mono_failures
+      """)
+    end
+  end
 
   # Injections between finite sets of the same size are bijections, so reduce to that case.
   monic = unique([iso..., monic...])
