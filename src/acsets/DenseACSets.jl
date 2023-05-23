@@ -516,18 +516,13 @@ Note: the correctness is dependent on the implementation details of `rem_parts!`
 """
 function delete_subobj!(X::ACSet, delparts)
   dels = delete_subobj(X, delparts)
-  return NamedTuple(Dict(map(ob(acset_schema(X))) do o
+  return NamedTuple(map(ob(acset_schema(X))) do o
     ps = collect(parts(X,o))
     rem_parts!(X, o, dels[o])
     return o => map(parts(X,o)) do i 
-      if i ∈ dels[o]
-        return pop!(ps) # if idx is deleted, it's replaced with last idx
-      else 
-        return i 
-      end
+      return i ∈ dels[o] ? pop!(ps) : i
     end
-  end))
-  dels
+  end)
 end
 
 ACSetInterface.cascading_rem_parts!(acs::ACSet, type, parts) =

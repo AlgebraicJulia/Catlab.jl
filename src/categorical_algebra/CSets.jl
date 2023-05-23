@@ -7,7 +7,7 @@ export ACSetTransformation, CSetTransformation,StructACSetTransformation,
   ACSetHomomorphismAlgorithm, BacktrackingSearch, HomomorphismQuery,
   components, type_components, force, naturality_failures, show_unnaturalities, is_natural, homomorphism, homomorphisms,
   homomorphism_error_failures, homomorphisms_error_failures, is_homomorphic, isomorphism, isomorphisms, is_isomorphic,
-  subobject_graph, partial_overlaps, mca,
+  subobject_graph, partial_overlaps, maximum_common_subobject,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset,
   generate_json_acset_schema, parse_json_acset_schema,
   read_json_acset_schema, write_json_acset_schema, acset_schema_json_schema
@@ -1500,7 +1500,7 @@ end
 
 """A map f (from A to B) as a map of subobjects of A to subjects of B"""
 (f::ACSetTransformation)(X::SubACSet) = begin
-  codom(hom(X)) == dom(f) || error("Cannot apply $f to $X")
+  ob(X) == dom(f) || error("Cannot apply $f to $X")
   Subobject(codom(f); Dict(map(ob(acset_schema(dom(f)))) do o
     o => sort(unique(f[o].(collect(components(X)[o]))))
   end)...)
@@ -1518,7 +1518,7 @@ A map f (from A to B) as a map from A to a subobject of B
 Inverse of f (from A to B) as a map of subobjects of B to subjects of A.
 """
 function preimage(f::ACSetTransformation,Y::SubACSet)
-  codom(hom(Y)) == codom(f) || error("Cannot apply $f to $X")
+  ob(Y) == codom(f) || error("Cannot apply $f to $X")
   Subobject(dom(f); Dict{Symbol, Vector{Int}}(map(ob(acset_schema(dom(f)))) do o
     o => sort(unique(vcat([preimage(f[o],y) for y in collect(components(Y)[o])]...)))
   end)...)
@@ -1539,9 +1539,9 @@ preimage(f::CSetTransformation,Y::StructACSet) =
 For any ACSet, X, a canonical map A→X where A has distinct variables for all
 subparts.
 """
-function abstract(X::ACSet)
+function abstract_attributes(X::ACSet)
   S = acset_schema(X)
-  A = deepcopy(X); 
+  A = copy(X); 
   comps = Dict{Any,Any}(map(attrtypes(S)) do at
     rem_parts!(A, at, parts(A,at))
     comp = Union{AttrVar,attrtype_type(X,at)}[]
@@ -1578,11 +1578,8 @@ struct SubobjectIterator
   top::ACSet
 end
 
-function Base.collect(it::SubobjectIterator)
-  res = Subobject[]
-  for x in it push!(res, x) end 
-  return res
-end
+Base.eltype(::Type{SubobjectIterator}) = Subobject
+Base.IteratorSize(::Type{SubobjectIterator}) = Base.SizeUnknown()
 
 """
 Preorder of subobjects via inclusion. 
@@ -1689,7 +1686,7 @@ function overlap_maps(Xs::Vector{T}) where T<:ACSet
   Xs = Xs[sortperm(size.(Xs))] # put the smallest X first
   res = OrderedDict()
   for subobj in hom.(SubobjectIterator(Xs[1]))
-    abs_subobj = abstract(dom(subobj)) ⋅ subobj
+    abs_subobj = abstract_attributes(dom(subobj)) ⋅ subobj
     Y = dom(abs_subobj)
     # don't repeat work if already computed syms/maps for something iso to Y
     seen = false
@@ -1748,7 +1745,7 @@ these are all returned.
 If there are attributes, we ignore these and use variables in the apex of the 
 overlap.
 """
-function mca(Xs::Vector{T}) where T <: ACSet
+function maximum_common_subobject(Xs::Vector{T}) where T <: ACSet
   it = overlap_maps(Xs)
   osize = -1
   res = OrderedDict()
@@ -1759,7 +1756,7 @@ function mca(Xs::Vector{T}) where T <: ACSet
   end 
   return res
 end
-mca(Xs::T...) where T <: ACSet = mca(collect(Xs))
+maximum_common_subobject(Xs::T...) where T <: ACSet = maximum_common_subobject(collect(Xs))
 
 
 # ACSet serialization

@@ -645,7 +645,7 @@ end
 g2 = @acset WeightedGraph{Bool} begin 
   V=3; E=3; src=[1,2,3]; tgt=[2,3,3]; weight=[true,false,false] 
 end 
-(apx1, ((L1,),(R1,))), (apx2, ((L2,),(R2,))) = collect(mca(g1, g2))
+(apx1, ((L1,),(R1,))), (apx2, ((L2,),(R2,))) = collect(maximum_common_subobject(g1, g2))
 apex1 = @acset WeightedGraph{Bool} begin 
   V=3; E=2; Weight=2; src=[1,2]; tgt=[2,3]; weight=AttrVar.(1:2)
 end
