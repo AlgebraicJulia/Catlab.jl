@@ -65,7 +65,6 @@ Because object generators usually coincide with objects, the default method for
 function ob_generator end
 
 ob(C::FinCat, x) = ob_generator(C, x)
-hom(C::FinCat,x::Nothing) = x
 
 """ Coerce or look up morphism generator in a finitely presented category.
 
@@ -219,7 +218,6 @@ compose(C::FinCatPathGraph, fs...) =
   reduce(vcat, coerce_path(graph(C), f) for f in fs)
 
 hom(C::FinCatPathGraph, f) = coerce_path(graph(C), f)
-hom(C::FinCatPathGraph, f::Nothing) = nothing
 
 coerce_path(g::HasGraph, path::Path) = path
 coerce_path(g::HasGraph, x) = Path(g, x)
@@ -239,6 +237,7 @@ end
 FinCatGraph(g::HasGraph) = FreeCatGraph(g)
 
 is_free(::FreeCatGraph) = true
+equations(::FreeCatGraph) = []
 
 function Base.show(io::IO, C::FreeCatGraph)
   print(io, "FinCat(")
@@ -262,6 +261,7 @@ See (Spivak, 2014, *Category theory for the sciences*, §4.5).
 end
 
 equations(C::FinCatGraphEq) = C.equations
+equations(C::OppositeCat) = map(x->reverse(x.first)=>reverse(x.second),equations(C.cat))
 
 function FinCatGraph(g::HasGraph, eqs::AbstractVector)
   eqs = map(eqs) do eq

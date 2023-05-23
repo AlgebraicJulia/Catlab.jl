@@ -541,10 +541,11 @@ Xₕ ↓  ✓  ↓ Yₕ
 You're allowed to run this on a named tuple partly specifying an ACSetTransformation,
 though at this time the domain and codomain must be fully specified ACSets.
 """
-function is_natural(α::ACSetTransformation) 
-  isa(α,LooseACSetTransformation) ? 
-    is_natural(dom(α),codom(α),α.components,type_components(α)) :
-    is_natural(dom(α),codom(α),α.components)
+function is_natural(α::LooseACSetTransformation) 
+    is_natural(dom(α),codom(α),α.components,type_components(α))
+end
+function is_natural(α::ACSetTransformation)
+  is_natural(dom(α),codom(α),α.components)
 end
 function is_natural(dom,codom,comps...)
   all(isempty,[a.second for a in naturality_failures(dom,codom,comps...)])
@@ -579,10 +580,11 @@ function naturality_failures(X,Y,comps,type_comps)
   end
   Dict(ps)
 end
-function naturality_failures(α::ACSetTransformation) 
-  isa(α,LooseACSetTransformation) ? 
-    naturality_failures(dom(α),codom(α),α.components,α.type_components) :
-    naturality_failures(dom(α),codom(α),α.components)
+function naturality_failures(α::LooseACSetTransformation) 
+  naturality_failures(dom(α),codom(α),α.components,α.type_components)
+end
+function naturality_failures(α::ACSetTransformation)
+  naturality_failures(dom(α),codom(α),α.components)
 end
 
 function show_unnaturalities(d::AbstractDict)
@@ -599,7 +601,7 @@ function show_unnaturalities(d::AbstractDict)
   for f in keys(d)
     isempty(d[f]) || begin
       failures = collect(d[f])
-      s *= reduce(*,[["$f: "];["$failure" for failure in failures];["\n"]])
+      s *= join([["$f: "];["$failure" for failure in failures];["\n"]])
     end
   end
   s
@@ -705,7 +707,7 @@ end
 function homomorphism(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...)
   result = nothing
   backtracking_search(X, Y; kw...) do α
-    result = isa(α,ACSetTransformation) ? α : nothing; return true
+    result = α; return true
   end
   result
 end
@@ -721,7 +723,7 @@ homomorphisms(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
 function homomorphisms(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...) 
   results = []
   backtracking_search(X, Y; kw...) do α
-    if isa(α,ACSetTransformation) push!(results, map_components(deepcopy, α)) end; return false
+    push!(results, map_components(deepcopy, α)); return false
   end
   results
 end
@@ -827,9 +829,9 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
   if monic isa Bool
     monic = monic ? Ob : ()
   end
-  isoFailures = Iterators.filter(c->nparts(X,c)!=nparts(Y,c),iso)
-  monoFailures = Iterators.filter(c->nparts(X,c)>nparts(Y,c),monic)  
-   (isempty(isoFailures) && isempty(monoFailures)) ||
+  iso_failures = Iterators.filter(c->nparts(X,c)!=nparts(Y,c),iso)
+  mono_failures = Iterators.filter(c->nparts(X,c)>nparts(Y,c),monic)  
+   (isempty(iso_failures) && isempty(mono_failures)) ||
     (!error_failures && return f(false)) ||
     error("""
     Cardinalities inconsistent with request for...
