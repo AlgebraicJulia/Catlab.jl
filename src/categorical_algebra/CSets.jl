@@ -1685,6 +1685,16 @@ function Base.push!(S::SubobjectIteratorState,h::ACSetTransformation)
   push!(S.seen, h); push!(S.to_recurse, h); push!(S.to_yield, h)
 end
 
+"""This would be much more efficient with canonical isomorph"""
+function seen(S::SubobjectIteratorState, f::ACSetTransformation)
+  for h in S.seen 
+    if any(σ -> force(σ⋅h) == force(f), isomorphisms(dom(f),dom(h)))
+      return true 
+    end
+  end
+  return false
+end
+
 """
 We recurse only if there is nothing to yield or we have something to recurse on 
 that is bigger than the biggest thing in our to-yield set.
@@ -1716,7 +1726,7 @@ function Base.iterate(Sub::SubobjectIterator, state=SubobjectIteratorState())
       rem = copy(dX)
       comps = delete_subobj!(rem, Dict([o => [p]]))
       h = ACSetTransformation(rem, dX; comps...) ⋅ X
-      if h ∉ state.seen
+      if !seen(state, h)
         push!(state, h)
       end
     end

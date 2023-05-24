@@ -575,6 +575,11 @@ F = FinFunctor(Dict(:V=>:V, :E=>:E), Dict(:src=>:src, :tgt=>:tgt),
 ΔF = DeltaMigration(F, ReflexiveGraph, Graph)
 @test is_isomorphic(ΩG, ΔF(ΩrG))
 
+# Searching for maps into the subobject classifier is much faster than 
+# enumerating them via `subobject_graph`
+G = (star_graph(Graph, 2)⊗path_graph(Graph, 3)) 
+@test length(homomorphisms(G, ΩG)) == length(subobject_graph(G)[2])
+
 @present SchDDS42(FreeSchema) begin
   X::Ob
   Φ::Hom(X,X)
@@ -582,6 +587,20 @@ F = FinFunctor(Dict(:V=>:V, :E=>:E), Dict(:src=>:src, :tgt=>:tgt),
 end
 @acset_type DDS42(SchDDS42, index=[:Φ])
 ΩDDs,sos = subobject_classifier(DDS42, SchDDS42)
-@test is_isomorphic(ΩDDs, @acset DDS42 begin X=4; Φ=[1,3,4,4] end) 
-  
-end
+@test is_isomorphic(ΩDDs, @acset DDS42 begin X=4; Φ=[1,3,4,4] end)
+
+# Internal Hom
+##############
+G = ReflexiveGraph(2)
+F = path_graph(ReflexiveGraph, 2)
+Fᴳ,_ = internal_hom(G,F, SchReflexiveGraph)
+Z = apex(terminal(ReflexiveGraph)) ⊕ path_graph(ReflexiveGraph, 3)
+@test length(homomorphisms(Z, Fᴳ)) == length(homomorphisms(Z ⊗ G, F)) # 64
+
+G = @acset DDS42 begin X=3; Φ=[2,3,3] end
+F = @acset DDS42 begin X=4; Φ=[2,2,4,4] end
+Fᴳ,_ = internal_hom(G,F, SchDDS42)
+Z = @acset DDS42 begin X=5; Φ=[2,3,4,3,4] end
+@test length(homomorphisms(Z, Fᴳ)) == length(homomorphisms(Z ⊗ G, F)) # 1024
+
+end # module

@@ -1,8 +1,9 @@
 """ Functorial data migration for attributed C-sets.
 """
 module DataMigrations
-export DataMigration, SigmaMigration, DeltaMigration, SigmaMigrationFunctor, 
-  DeltaMigrationFunctor, DataMigrationFunctor, functor, migrate, migrate!,  representable, yoneda, colimit_representables
+export DataMigration, SigmaMigration, DeltaMigration, migrate, migrate!,
+  representable, yoneda, colimit_representables, subobject_classifier, 
+  internal_hom
 
 using ACSets
 using ACSets.DenseACSets: constructor, datatypes
@@ -439,9 +440,7 @@ function subobject_classifier(T::Type, S::Presentation{ThSchema})
   for o in obs add_parts!(Ω, o, length(subobs[o])) end 
 
   for (f, a, b) in homs(acset_schema(Ω))
-    (A, distA′), (B, distB′) = reprs[a], reprs[b] # reprs + distinguished points
-    A′, B′ = [only(x)[2](1) for x in [distA′, distB′]]
-    BA = only(homomorphisms(B,A; initial=Dict([b=>Dict([B′=>A[A′,f]])])))
+    BA = repr_map(Schema(S), reprs, f) 
     Ω[f] = map(parts(Ω, a)) do pᵢ
       Aᵢ = hom(subobs[a][pᵢ])
       _, PB = force.(pullback(Aᵢ, BA))
@@ -454,6 +453,44 @@ function subobject_classifier(T::Type, S::Presentation{ThSchema})
   return Ω, subobs
 end
 
+"""
+Objects: Fᴳ(c) = C-Set(C × G, F)    where C is the representable c
+
+Given a map f: a->b, we compute that f(Aᵢ) = Bⱼ by constructing the following:
+          Aᵢ
+    A × G → F
+  f*↑ ↑ ↑ ↗ Bⱼ       find the hom Bⱼ that makes this commute
+    B × G 
+
+where f* is given by `repr_map`.
+"""
+function internal_hom(G::T, F::T, S::Presentation{ThSchema}) where T<:ACSet
+  obs    = nameof.(generators(S,:Ob))
+  reprs  = Dict(o=>representable(T, S,o) for o in obs)
+  prods  = Dict(o=>product(first(reprs[o]),G) for o in obs)
+  maps   = Dict(o=>homomorphisms(apex(prods[o]),F) for o in obs)
+  Fᴳ     = T()
+  for o in obs add_parts!(Fᴳ, o, length(maps[o])) end 
+  for (f, a, b) in homs(acset_schema(G))
+    BA = repr_map(Schema(S), reprs, f) 
+    π₁, π₂ = prods[b]
+    Fᴳ[f] = map(parts(Fᴳ, a)) do pᵢ
+      composite = force(universal(prods[a], Span(π₁⋅BA, π₂)) ⋅ maps[a][pᵢ])
+      findfirst(==(composite), maps[b])
+    end
+  end
+  return Fᴳ, homs
+end
+
+"""
+Any hom f: A->B induces a map from the representable of B to the repr of A
+"""
+function repr_map(S, reprs, f::Symbol)
+  a, b = dom(S,f), codom(S,f)
+  (A, distA′), (B, distB′) = reprs[a], reprs[b] # reprs + distinguished points
+  A′, B′ = [only(x)[2](1) for x in [distA′, distB′]]
+  return only(homomorphisms(B,A; initial=Dict([b=>Dict([B′=>A[A′,f]])])))
+end
 
 """ Yoneda embedding of category C in category of C-sets.
 
