@@ -7,13 +7,14 @@ export ACSetTransformation, CSetTransformation,StructACSetTransformation,
   ACSetHomomorphismAlgorithm, BacktrackingSearch, HomomorphismQuery,
   components, type_components, force, naturality_failures, show_unnaturalities, is_natural, homomorphism, homomorphisms,
   homomorphism_error_failures, homomorphisms_error_failures, is_homomorphic, isomorphism, isomorphisms, is_isomorphic,
+  subobject_graph, partial_overlaps, maximum_common_subobject,
   generate_json_acset, parse_json_acset, read_json_acset, write_json_acset,
   generate_json_acset_schema, parse_json_acset_schema,
   read_json_acset_schema, write_json_acset_schema, acset_schema_json_schema
 
 using Base.Iterators: flatten
 using Base.Meta: quot
-using DataStructures: OrderedDict
+using DataStructures: OrderedDict, BinaryHeap
 using StructEquality
 import JSON
 using Reexport
@@ -27,6 +28,7 @@ using ...GAT, ...Present, ...Syntax
 using ...Theories: ThCategory, Hom, Ob, Attr, AttrType
 import ...Schemas: objects, homs, attrtypes, attrs, ob, hom, dom, codom
 using ...Columns
+using ...Graphs.BasicGraphs
 import ...Theories: compose, ⋅, id, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 using ..FreeDiagrams, ..Limits, ..Subobjects, ..FinSets, ..FinCats
 using ..FinSets: VarFunction, LooseVarFunction, IdentityFunction, VarSet
@@ -34,10 +36,13 @@ import ..Limits: limit, colimit, universal
 import ..Subobjects: Subobject, implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..Sets: SetOb, SetFunction, TypeSet
 using ..Sets
-import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate, is_monic, is_epic
+import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate, 
+                  is_monic, is_epic, preimage
 import ..FinCats: FinDomFunctor, components, is_natural
-using ...DenseACSets: indices, unique_indices, attr_type, attrtype_type, datatypes, constructor
-using ...ColumnImplementations: AttrVar
+using ...DenseACSets: indices, unique_indices, attr_type, attrtype_type, 
+                      datatypes, constructor, delete_subobj!
+using ...ColumnImplementations: AttrVar 
+
 
 # Sets interop
 ##############
@@ -1491,6 +1496,269 @@ end
       :(Tuple{Symbol,Int}[ ($(quot(c′)),x′) for x′ in incident(X,x,$(quot(f))) ])
     end...))
 end
+
+
+"""A map f (from A to B) as a map of subobjects of A to subjects of B"""
+(f::ACSetTransformation)(X::SubACSet) = begin
+  ob(X) == dom(f) || error("Cannot apply $f to $X")
+  Subobject(codom(f); Dict(map(ob(acset_schema(dom(f)))) do o
+    o => sort(unique(f[o].(collect(components(X)[o]))))
+  end)...)
+end
+
+
+"""
+A map f (from A to B) as a map from A to a subobject of B
+# i.e. get the image of f as a subobject of B
+"""
+(f::ACSetTransformation)(X::StructACSet) =
+  X == dom(f) ? f(top(X)) : error("Cannot apply $f to $X")
+
+"""    preimage(f::ACSetTransformation,Y::Subobject)
+Inverse of f (from A to B) as a map of subobjects of B to subjects of A.
+"""
+function preimage(f::ACSetTransformation,Y::SubACSet)
+  ob(Y) == codom(f) || error("Cannot apply $f to $X")
+  Subobject(dom(f); Dict{Symbol, Vector{Int}}(map(ob(acset_schema(dom(f)))) do o
+    o => sort(unique(vcat([preimage(f[o],y) for y in collect(components(Y)[o])]...)))
+  end)...)
+end
+
+"""    preimage(f::CSetTransformation,Y::StructACSet)
+Inverse f (from A to B) as a map from subobjects of B to subobjects of A.
+Cast an ACSet to subobject, though this has a trivial answer when computing
+the preimage (it is necessarily the top subobject of A).
+"""
+preimage(f::CSetTransformation,Y::StructACSet) =
+  Y == codom(f) ? top(dom(f)) : error("Cannot apply inverse of $f to $Y")
+
+# VarACSets
+###########
+
+"""
+For any ACSet, X, a canonical map A→X where A has distinct variables for all
+subparts.
+"""
+function abstract_attributes(X::ACSet)
+  S = acset_schema(X)
+  A = copy(X); 
+  comps = Dict{Any,Any}(map(attrtypes(S)) do at
+    rem_parts!(A, at, parts(A,at))
+    comp = Union{AttrVar,attrtype_type(X,at)}[]
+    for (f, d, _) in attrs(S; to=at)
+      append!(comp, A[f])
+      A[f] = AttrVar.(add_parts!(A, at, nparts(A,d)))
+    end 
+    at => comp
+  end)
+  for o in ob(S) comps[o]=parts(X,o) end
+  res = ACSetTransformation(A,X; comps...)
+  return res
+end 
+
+# Maximum Common C-Set
+######################
+
+""" Compute the size of a C-Set
+
+Defintion: let 𝐺: C → 𝐒et be a C-set, we define the _size_ of 𝐺 to be ∑_{c ∈ C}
+|𝐺c|.  For example, under this definition, the size of:
+  * a graph G is |GE| + |GV| (num edges + num vertices)
+  * a Petri net P is |PT| + |PS| + |PI| + |PO| (num transitions + num species +
+    num input arcs + num output arcs).
+"""
+total_parts(X::ACSet) = mapreduce(oₛ -> nparts(X, oₛ), +, objects(acset_schema(X)); init=0)
+total_parts(X::ACSetTransformation) = total_parts(dom(X)) 
+
+"""
+Enumerate subobjects of an ACSet in order of largest to smallest 
+(assumes no wandering variables).
+"""
+struct SubobjectIterator
+  top::ACSet
+end
+
+Base.eltype(::Type{SubobjectIterator}) = Subobject
+Base.IteratorSize(::Type{SubobjectIterator}) = Base.SizeUnknown()
+
+"""
+Preorder of subobjects via inclusion. 
+Returns a graph + list of subobjects corresponding to its vertices. 
+The subobjects are ordered by decreasing size (so it's topologically sorted)
+"""
+function subobject_graph(X::ACSet)
+  S = acset_schema(X)
+  subs = X |> SubobjectIterator |> collect
+  G = Graph(length(subs))
+  for (i,s1) in enumerate(subs)
+    for (j,s2) in enumerate(subs)
+      if all(ob(S)) do o 
+          collect(hom(s1)[o]) ⊆ collect(hom(s2)[o])
+        end
+        add_edge!(G, i, j)
+      end
+    end
+  end
+  return (G, subs)
+end
+
+"""
+seen       - any subobject we've seen so far
+to_recurse - frontier of subobjects we've yet to recursively explore
+to_yield   - Subobjects which we've yet to yield
+"""
+struct SubobjectIteratorState
+  seen::Set{ACSetTransformation}
+  to_recurse::BinaryHeap
+  to_yield::BinaryHeap
+  function SubobjectIteratorState()  
+    heap = BinaryHeap(Base.By(total_parts, Base.Order.Reverse), ACSetTransformation[])
+    new(Set{ACSetTransformation}(), heap, deepcopy(heap))
+  end
+end
+Base.isempty(S::SubobjectIteratorState) = isempty(S.seen)
+function Base.push!(S::SubobjectIteratorState,h::ACSetTransformation)
+  push!(S.seen, h); push!(S.to_recurse, h); push!(S.to_yield, h)
+end
+
+"""
+We recurse only if there is nothing to yield or we have something to recurse on 
+that is bigger than the biggest thing in our to-yield set.
+"""
+should_yield(S::SubobjectIteratorState) = !isempty(S.to_yield) && (
+    isempty(S.to_recurse) || total_parts(first(S.to_yield)) > total_parts(first(S.to_recurse)))
+
+
+function Base.iterate(Sub::SubobjectIterator, state=SubobjectIteratorState())
+  S = acset_schema(Sub.top)
+  T = id(Sub.top)
+  if isempty(state) # first time
+    push!(state.seen, T); push!(state.to_recurse, T)
+    return (Subobject(T), state)
+  end
+
+  # Before recursing, check if we should yield things or terminate
+  if should_yield(state)
+    return (Subobject(pop!(state.to_yield)), state)
+  end
+  if isempty(state.to_recurse) 
+    return nothing
+  end
+  # Explore by trying to delete each ACSet part independently 
+  X = pop!(state.to_recurse)
+  dX = dom(X)
+  for o in ob(S)
+    for p in parts(dX, o)
+      rem = copy(dX)
+      comps = delete_subobj!(rem, Dict([o => [p]]))
+      h = ACSetTransformation(rem, dX; comps...) ⋅ X
+      if h ∉ state.seen
+        push!(state, h)
+      end
+    end
+  end
+
+  if should_yield(state)
+    return (Subobject(pop!(state.to_yield)), state)
+  elseif !isempty(state.to_recurse)
+    return Base.iterate(Sub, (state))
+  else 
+    return nothing
+  end 
+end
+
+
+# Could be cleaner/faster if we used CSetAutomorphisms to handle symmetries
+"""
+Given a list of ACSets X₁...Xₙ, find all multispans A ⇉ X ordered by decreasing 
+number of total parts of A.
+
+We search for overlaps guided by iterating through the subobjects of the 
+smallest ACSet.
+  
+If a subobject of the first object, A↪X, has multiple maps into X₁, then 
+we need to cache a lot of work because we consider each such subobject 
+independently. This is the maps from A into all the other objects as well as the 
+automorphisms of A.  
+"""
+function overlap_maps(Xs::Vector{T}) where T<:ACSet
+  !isempty(Xs) || error("Vector must not be empty")
+  Xs = Xs[sortperm(total_parts.(Xs))] # put the smallest X first
+  res = OrderedDict()
+  for subobj in hom.(SubobjectIterator(Xs[1]))
+    abs_subobj = abstract_attributes(dom(subobj)) ⋅ subobj
+    Y = dom(abs_subobj)
+    # don't repeat work if already computed syms/maps for something iso to Y
+    seen = false
+    for (Y′, Y′maps) in collect(res)
+      σ = isomorphism(Y′, Y)
+      if !isnothing(σ)
+        push!(Y′maps[1], σ ⋅ abs_subobj)
+        seen = true
+        break
+      end
+    end
+    if seen continue end 
+    # Compute the automorphisms so that we can remove spurious symmetries
+    syms = isomorphisms(Y, Y)
+    # Get monic maps from Y into each of the objects. The first comes for free
+    maps = Vector{ACSetTransformation}[[abs_subobj]]
+    for X in Xs[2:end]
+      fs = homomorphisms(Y, X; monic=true)
+      real_fs = Set() # quotient fs via automorphisms of Y
+      for f in fs 
+        if all(rf->all(σ -> force(σ⋅f) != force(rf),  syms), real_fs)  
+          push!(real_fs, f)
+        end
+      end
+      if isempty(real_fs)
+        break # this subobject of Xs[1] does not have common overlap w/ all Xs
+      else
+        push!(maps,collect(real_fs))
+      end
+    end
+    if length(maps) == length(Xs)
+      res[Y] = maps
+    end
+  end
+  return res 
+end
+
+function partial_overlaps(Xs::Vector{T}) where T<:ACSet
+  res = []
+  for (_,v) in collect(overlap_maps(Xs))
+    append!(res, [Multispan(collect(ms)) for ms in Iterators.product(v...)])
+  end
+  return res
+end 
+partial_overlaps(Xs::ACSet...) = Xs |> collect |> partial_overlaps
+
+""" Compute the Maximimum Common C-Sets from a vector of C-Sets.
+
+Find an ACSet ```a`` with maximum possible size (``|a|``) such that there is a  
+monic span of ACSets ``a₁ ← a → a₂``. There may be many maps from this overlap 
+into each of the inputs, so a Vector{Vector{ACSetTransformations}} per overlap 
+is returned (a cartesian product can be taken of these to obtain all possible 
+multispans for that overlap). If there are multiple overlaps of equal size, 
+these are all returned.
+
+If there are attributes, we ignore these and use variables in the apex of the 
+overlap.
+"""
+function maximum_common_subobject(Xs::Vector{T}) where T <: ACSet
+  it = overlap_maps(Xs)
+  osize = -1
+  res = OrderedDict()
+  for (apx, overlap) in it 
+    size = total_parts(apx)
+    osize = osize == -1 ? size : osize
+    if size < osize return res end 
+    res[apx]=overlap
+  end 
+  return res
+end
+maximum_common_subobject(Xs::T...) where T <: ACSet = maximum_common_subobject(collect(Xs))
+
 
 # ACSet serialization
 #####################
