@@ -628,6 +628,12 @@ subG, subobjs = subobject_graph(G) |> collect
 @test length(incident(subG, 13, :src)) == 13 # ⊥ is initial
 @test length(incident(subG, 1, :src)) == 1 # ⊤ is terminal
 
+# Graph and ReflexiveGraph should have same subobject structure
+subG = subobject_graph(path_graph(Graph, 2)) |> first
+subRG, sos = subobject_graph(path_graph(ReflexiveGraph, 2))
+@test all(is_natural, hom.(sos))
+@test is_isomorphic(subG, subRG)
+
 # Partial overlaps 
 G = path_graph(Graph, 2)
 os = partial_overlaps(G,G)
