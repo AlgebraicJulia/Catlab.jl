@@ -295,6 +295,9 @@ SigmaMigrationFunctor(f,d::Type{T′},::Type{T}) where {T<:StructACSet, T′<:St
 """
 Create a C-Set for the collage of the functor. Initialize data in the domain 
 portion of the collage, then run the chase.
+
+The true result data is a diagram morphism. We return the result ACSet and the 
+diagram map data as a dictionary with FinFunctions for each Ob.
 """
 #This should be deprecated in terms of a new migrate function if anybody works on sigma migrations sometime.
 #Also, we probably don't want to construct the collage every time we migrate using M, at least it should
@@ -340,7 +343,7 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100)
       res[domval,h] = codomval
     end
   end
-  #Go back and make sure attributes that ought to have 
+  #Go back and make sure attributes that ought to have
   #specific values because of d do have those values.
   for (k,kdom,kcod) in attrs(S)
     f = hom_map(F,k)
@@ -363,8 +366,15 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100)
       res[f1j,nameof(f2)] = oldval
     end
   end
-  return res
-end 
+  diagram_map = Dict(map(types(S)) do o
+    s, t= add_srctgt("α_$o")    
+    m = last.(sort(collect(zip([rel_res[x] for x in [s,t]]...))))
+    ff = o ∈ ob(S) ? FinFunction : VarFunction{attrtype_type(D,o)}
+    o => ff(m, nparts(rel_res, nameof(ob_map(F.F⋅i2,o))))
+  end)
+  return res, diagram_map
+end
+
 """
 Split an n-fold composite (n may be 1) 
 Hom or Attr into its left n-1 and rightmost 1 components
@@ -403,6 +413,48 @@ to recover the presentation from the datatype. Thus, this method for
 representable(::Type{T}, ob::Symbol) where T <: StructACSet =
   representable(T, Presentation(T), ob)
 
+
+"""
+The subobject classifier Ω in a presheaf topos is the presheaf that sends each 
+object A to the set of sieves on it (equivalently, the set of subobjects of the 
+representable presheaf for A). Counting subobjects gives us the *number* of A 
+parts; the hom data for f:A->B for subobject Aᵢ is determined via:
+
+Aᵢ ↪ A 
+↑    ↑ f*  
+PB⌝↪ B          (PB picks out a subobject of B, up to isomorphism.)
+
+(where A and B are the representables for objects A and B and f* is the unique 
+map from B into the A which sends the point of B to f applied to the point of A)
+
+Returns the classifier as well as a dictionary of subobjects corresponding to 
+the parts of the classifier.
+"""
+function subobject_classifier(T::Type, S::Presentation{ThSchema})
+  isempty(generators(S,:AttrType)) || error("Cannot compute Ω for schema with attributes")
+  obs    = nameof.(generators(S,:Ob))
+  reprs  = Dict(o=>representable(T, S,o) for o in obs)
+  subobs = Dict(o=>subobject_graph(reprs[o][1])[2] for o in obs)
+  Ω      = T()
+  for o in obs add_parts!(Ω, o, length(subobs[o])) end 
+
+  for (f, a, b) in homs(acset_schema(Ω))
+    (A, distA′), (B, distB′) = reprs[a], reprs[b] # reprs + distinguished points
+    A′, B′ = [only(x)[2](1) for x in [distA′, distB′]]
+    BA = only(homomorphisms(B,A; initial=Dict([b=>Dict([B′=>A[A′,f]])])))
+    Ω[f] = map(parts(Ω, a)) do pᵢ
+      Aᵢ = hom(subobs[a][pᵢ])
+      _, PB = force.(pullback(Aᵢ, BA))
+      return only(filter(parts(Ω, b)) do pⱼ
+        Bⱼ = hom(subobs[b][pⱼ])
+        any(σ ->  force(σ ⋅ Bⱼ) == PB, isomorphisms(dom(PB),dom(Bⱼ)))
+      end)
+    end
+  end
+  return Ω, subobs
+end
+
+
 """ Yoneda embedding of category C in category of C-sets.
 
 Because Catlab privileges copresheaves (C-sets) over presheaves, this is the
@@ -419,7 +471,7 @@ function yoneda(cons, C::Presentation{ThSchema}; cache=nothing)
   cache = isnothing(cache) ? Dict() : cache
   y_ob = Dict(map(nameof.(generators(C, :Ob))) do c 
     @debug "Computing representable $c"
-    c => haskey(cache, c) ? cache[c] : representable(cons, C, c)
+    c => haskey(cache, c) ? cache[c] : first(representable(cons, C, c))
   end)
   y_ob = merge(y_ob, Dict(map(nameof.(generators(C,:AttrType))) do c 
     rep = cons()

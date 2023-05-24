@@ -306,7 +306,7 @@ idF = FinFunctor(
 ΣF = SigmaMigrationFunctor(F, UndirectedBipartiteGraph, Graph)
 X = UndirectedBipartiteGraph()
 
-Y = ΣF(X)
+Y,_ = ΣF(X)
 @test nparts(Y, :V) == 0
 @test nparts(Y, :E) == 0
 
@@ -318,14 +318,17 @@ X = @acset UndirectedBipartiteGraph begin
   tgt = [1,1,2,3]
 end
 
-Y = ΣF(X)
+Y,α = ΣF(X)
 @test nparts(Y, :V) == 7
 @test nparts(Y, :E) == 4
 @test length(Y[:src] ∩ Y[:tgt]) == 0
+@test isempty(collect(α[:V₁]) ∩ collect(α[:V₂]))
 
 @test SigmaMigrationFunctor(idF, Graph, Graph)(Y) == Y
 
-###Test sigma migrations with attributes
+# Sigma migrations with attributes
+#---------------------------------
+
 @present SchTwoThings(FreeSchema) begin
   Th1::Ob
   Th2::Ob
@@ -379,6 +382,19 @@ YY = ΔF(X)
 XX = ΣF(Y)
 @test YY == Y
 @test incident(XX,false,[:f,:prop]) == incident(XX,"ffee cup",:id)
+
+idF = FinFunctor(
+  Dict(VG => VG, EG => EG, :Weight=>:Weight),
+  Dict(srcG => srcG, tgtG => tgtG, :weight=>:weight),
+  SchWeightedGraph, SchWeightedGraph
+)
+Y = @acset WeightedGraph{Symbol} begin 
+  V=2; E=2; Weight=1; src=1; tgt=[1,2]; weight=[AttrVar(1), :X] 
+end
+@test_throws ErrorException SigmaMigration(idF, WeightedGraph{Symbol}, WeightedGraph{Symbol})
+ 
+# @test ΣF(Y) == Y # TODO allow homs between attrtypes
+
 # Terminal map
 #-------------
 @present ThSpan(FreeSchema) begin
@@ -411,8 +427,9 @@ bang = FinFunctor(
   ThSpan, ThInitial
 )
 
-Σbang = SigmaMigrationFunctor(bang, Span, Initial)
-Y = Σbang(X)
+Σbang = SigmaMigration(bang, Span, Initial)
+Y,α = Σbang(X)
+@test length(unique([α[:A](1:2)...,α[:L1](1),α[:L2](1:2)...])) == 1
 
 @test nparts(Y, :I) == 4
 
@@ -422,11 +439,11 @@ Y = Σbang(X)
 vertex = FinFunctor(Dict(I => VG), Dict(), ThInitial, SchGraph)
 edge = FinFunctor(Dict(I => EG), Dict(), ThInitial, SchGraph)
 
-Z = SigmaMigrationFunctor(vertex, Initial, Graph)(Y)
+Z,_ = SigmaMigration(vertex, Initial, Graph)(Y)
 @test nparts(Z, :V) == 4
 @test nparts(Z, :E) == 0
 
-Z = SigmaMigrationFunctor(edge, Initial, Graph)(Y)
+Z,_ = SigmaMigration(edge, Initial, Graph)(Y)
 expected = foldl(⊕,fill(path_graph(Graph,2), 4))  
 @test is_isomorphic(Z,expected)
 
@@ -442,7 +459,7 @@ G = path_graph(Graph,3)
 expected = @acset ReflexiveGraph  begin 
   V=3; E=5; refl=1:3; src=[1,2,3,1,2]; tgt=[1,2,3,2,3] 
 end 
-@test is_isomorphic(Σ(G),expected)
+@test is_isomorphic(first(Σ(G)),expected)
 
 # Sigma with attributes 
 #----------------------
@@ -463,20 +480,22 @@ expected = @acset WG{Float64} begin
   V=4; E=2; Color=2; src=[2,3]; tgt=[3,1]; color=AttrVar.([1,1,1,2]) 
 end
 
-@test is_isomorphic(Σ(G), expected)
-
+res, _ = Σ(G)
+@test is_isomorphic(res, expected)
+ 
 # Yoneda embedding
 #-----------------
 
 # Yoneda embedding for graphs (no attributes).
 yV, yE = Graph(1), @acset(Graph, begin V=2;E=1;src=2;tgt=1 end)
-@test representable(Graph, :V) == yV
-@test is_isomorphic(representable(Graph, :E), yE)
+@test first(representable(Graph, :V)) == yV
+@test is_isomorphic(first(representable(Graph, :E)), yE)
 
 y_Graph = yoneda(Graph)
 @test ob_map(y_Graph, :V) == yV
 @test is_isomorphic(ob_map(y_Graph, :E), yE)
-@test Set(hom_map.(Ref(y_Graph), [:src,:tgt])) == Set(homomorphisms(yV, representable(Graph, :E)))
+@test Set(hom_map.(Ref(y_Graph), [:src,:tgt])) == Set(
+  homomorphisms(yV, first(representable(Graph, :E))))
 
 F = @migration SchGraph begin
   X => E
@@ -510,8 +529,8 @@ i, o = hom_map(G, :i), hom_map(G, :o)
 yV, yE = WeightedGraph{Float64}(1), @acset(WeightedGraph{Float64}, begin 
   V=2;E=1;Weight=1;src=2;tgt=1; weight=[AttrVar(1)]
 end)
-@test representable(WeightedGraph{Float64}, SchWeightedGraph, :V) == yV
-@test is_isomorphic(representable(WeightedGraph{Float64}, SchWeightedGraph, :E), yE)
+@test first(representable(WeightedGraph{Float64}, SchWeightedGraph, :V)) == yV
+@test is_isomorphic(first(representable(WeightedGraph{Float64}, SchWeightedGraph, :E)), yE)
 
 yWG = yoneda(WeightedGraph{Float64})
 
@@ -545,4 +564,24 @@ expected = @acset WeightedGraph{Float64} begin
 end
 @test is_isomorphic(ob_map(colimit_representables(d, yWG), :I), expected)
 
+
+# Subobject classifier
+######################
+# Graph and ReflGraph have 'same' subobject classifier
+ΩG,_ = subobject_classifier(Graph, SchGraph)
+ΩrG,_ = subobject_classifier(ReflexiveGraph, SchReflexiveGraph)
+F = FinFunctor(Dict(:V=>:V, :E=>:E), Dict(:src=>:src, :tgt=>:tgt), 
+               SchGraph, SchReflexiveGraph)
+ΔF = DeltaMigration(F, ReflexiveGraph, Graph)
+@test is_isomorphic(ΩG, ΔF(ΩrG))
+
+@present SchDDS42(FreeSchema) begin
+  X::Ob
+  Φ::Hom(X,X)
+  Φ⋅Φ⋅Φ⋅Φ == Φ⋅Φ
+end
+@acset_type DDS42(SchDDS42, index=[:Φ])
+ΩDDs,sos = subobject_classifier(DDS42, SchDDS42)
+@test is_isomorphic(ΩDDs, @acset DDS42 begin X=4; Φ=[1,3,4,4] end) 
+  
 end
