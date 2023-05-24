@@ -518,10 +518,15 @@ function delete_subobj!(X::ACSet, delparts)
   dels = delete_subobj(X, delparts)
   return NamedTuple(map(ob(acset_schema(X))) do o
     ps = collect(parts(X,o))
+    for r in dels[o]
+      idx  = findfirst(==(r), ps)
+      idx2 = pop!(ps) 
+      if idx <= length(ps) 
+        ps[idx] = idx2
+      end
+    end 
     rem_parts!(X, o, dels[o])
-    return o => map(parts(X,o)) do i 
-      return i ∈ dels[o] ? pop!(ps) : i
-    end
+    return o => ps
   end)
 end
 
