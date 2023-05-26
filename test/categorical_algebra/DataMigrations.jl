@@ -70,7 +70,7 @@ F = FinFunctor(
   Dict(s => id(S), t => ϕ, weight => compose(ϕ, label)),
   SchWeightedGraph, SchLabeledDDS
 )
-ΔF = DeltaMigration(F, LabeledDDS{Int}, WeightedGraph{Int})
+ΔF = DataMigrationFunctor(F, LabeledDDS{Int}, WeightedGraph{Int})
 @test wg == ΔF(ldds)
 
 idF = FinFunctor(
@@ -78,7 +78,7 @@ idF = FinFunctor(
   Dict(ϕ => ϕ, label => label), 
   SchLabeledDDS, SchLabeledDDS
 )
-@test ldds == migrate(LabeledDDS{Int}, ldds, idF)
+@test ldds == migrate(LabeledDDS{Int}, ldds, TotalDataMigration(idF))
 
 # Conjunctive migration
 #----------------------
@@ -88,20 +88,20 @@ V, E, src, tgt = generators(SchGraph)
 C = FinCat(SchGraph)
 F_V = FinDomFunctor([V], FinCat(1), C)
 F_E = FinDomFunctor(FreeDiagram(Cospan(tgt, src)), C)
-F = FinDomFunctor(Dict(V => Diagram{op}(F_V),
+M = TotalDataMigration(FinDomFunctor(Dict(V => Diagram{op}(F_V),
                        E => Diagram{op}(F_E)),
                   Dict(src => DiagramHom{op}([(1, src)], F_E, F_V),
-                       tgt => DiagramHom{op}([(2, tgt)], F_E, F_V)), C)
-@test F isa DataMigrations.ConjSchemaMigration
+                       tgt => DiagramHom{op}([(2, tgt)], F_E, F_V)), C))
+@test M isa DataMigrations.ConjSchemaMigration
 g = path_graph(Graph, 5)
-H = migrate(g, F, tabular=true)
+H = migrate(g, M, tabular=true)
 @test length(H(V)) == 5
 @test length(H(E)) == 3
 @test H(src)((x1=2, x2=3, x3=3)) == (x1=2,)
 @test H(tgt)((x1=2, x2=3, x3=3)) == (x1=4,)
 
 # Same migration, but defining using the `@migration` macro.
-F = @migration SchGraph SchGraph begin
+M = @migration SchGraph SchGraph begin
   V => V
   E => @join begin
     v::V
@@ -112,7 +112,7 @@ F = @migration SchGraph SchGraph begin
   src => e₁ ⋅ src
   tgt => e₂ ⋅ tgt
 end
-H = migrate(g, F, tabular=true)
+H = migrate(g, M, tabular=true)
 @test length(H(V)) == 5
 @test length(H(E)) == 3
 @test H(src)((v=3, e₁=2, e₂=3)) == (V=2,)
@@ -303,7 +303,7 @@ idF = FinFunctor(
   SchGraph, SchGraph
 )
 
-ΣF = SigmaMigration(F, UndirectedBipartiteGraph, Graph)
+ΣF = SigmaMigrationFunctor(F, UndirectedBipartiteGraph, Graph)
 X = UndirectedBipartiteGraph()
 
 Y = ΣF(X)
@@ -323,7 +323,7 @@ Y = ΣF(X)
 @test nparts(Y, :E) == 4
 @test length(Y[:src] ∩ Y[:tgt]) == 0
 
-@test SigmaMigration(idF, Graph, Graph)(Y) == Y
+@test SigmaMigrationFunctor(idF, Graph, Graph)(Y) == Y
 
 # Terminal map
 #-------------
@@ -357,7 +357,7 @@ bang = FinFunctor(
   ThSpan, ThInitial
 )
 
-Σbang = SigmaMigration(bang, Span, Initial)
+Σbang = SigmaMigrationFunctor(bang, Span, Initial)
 Y = Σbang(X)
 
 @test nparts(Y, :I) == 4
@@ -368,11 +368,11 @@ Y = Σbang(X)
 vertex = FinFunctor(Dict(I => VG), Dict(), ThInitial, SchGraph)
 edge = FinFunctor(Dict(I => EG), Dict(), ThInitial, SchGraph)
 
-Z = SigmaMigration(vertex, Initial, Graph)(Y)
+Z = SigmaMigrationFunctor(vertex, Initial, Graph)(Y)
 @test nparts(Z, :V) == 4
 @test nparts(Z, :E) == 0
 
-Z = SigmaMigration(edge, Initial, Graph)(Y)
+Z = SigmaMigrationFunctor(edge, Initial, Graph)(Y)
 expected = foldl(⊕,fill(path_graph(Graph,2), 4))  
 @test is_isomorphic(Z,expected)
 
@@ -384,7 +384,7 @@ F = FinFunctor(
   SchGraph, SchReflexiveGraph
 )
 G = path_graph(Graph,3)
-Σ = SigmaMigration(F, Graph, ReflexiveGraph)
+Σ = SigmaMigrationFunctor(F, Graph, ReflexiveGraph)
 expected = @acset ReflexiveGraph  begin 
   V=3; E=5; refl=1:3; src=[1,2,3,1,2]; tgt=[1,2,3,2,3] 
 end 
@@ -402,7 +402,7 @@ end
 @acset_type WG(SchWG)
 
 F = FinFunctor(Dict(:V => :V, :E=> :E), Dict(:src=>:src, :tgt=>:tgt), SchGraph, SchWG)
-Σ = SigmaMigration(F, Graph, WG{Float64})
+Σ = SigmaMigrationFunctor(F, Graph, WG{Float64})
 
 G = path_graph(Graph,3) ⊕ Graph(1) # two connected components
 expected = @acset WG{Float64} begin 
