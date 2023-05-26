@@ -1,8 +1,8 @@
 """ Functorial data migration for attributed C-sets.
 """
 module DataMigrations
-export DataMigration, TotalDataMigration, SigmaMigration, DeltaMigration, SigmaMigrationFunctor, 
-  DeltaMigrationFunctor, DataMigrationFunctor, functor, migrate, migrate!,  representable, yoneda, colimit_representables
+export DataMigration, SigmaMigration, DeltaMigration, SigmaMigrationFunctor, 
+  DeltaMigrationFunctor, DataMigrationFunctor, func, migrate, migrate!,  representable, yoneda, colimit_representables
 
 using ACSets
 using ACSets.DenseACSets: constructor, datatypes
@@ -51,7 +51,7 @@ duc, or gluc (contravariant) data migration. Alternatively, ``F`` may
 be a schema functor specifying a ``Σ`` migration in the covariant direction.
 """
 abstract type AbstractDataMigration{F<:FinDomFunctor} end
-functor(M::AbstractDataMigration) = M.functor
+func(M::AbstractDataMigration) = M.functor
 abstract type AbstractContravariantMigration{F<:FinDomFunctor} <: AbstractDataMigration{F} end
 abstract type AbstractCovariantMigration{F<:FinDomFunctor} <: AbstractDataMigration{F} end
 
@@ -68,16 +68,13 @@ struct DataMigration{F<:FinDomFunctor,Params<:AbstractDict} <: AbstractContravar
   functor::F
   params::Params
 end
-#This is possibly a bit ugly/ought to be an abstract type? But it allows for some pseudo multiple inheritance
-const TotalDataMigration{F<:FinDomFunctor} = DataMigration{F,Dict{Any,Union{}}}
-TotalDataMigration(functor)=DataMigration(functor,Dict{Any,Union{}}())
+DataMigration(F::FinDomFunctor) = DataMigration(F,Dict())
 """ Schema-level functor defining a pullback or delta data migration.
 """
 const DeltaSchemaMigration{D<:FinCat,C<:FinCat} = AbstractContravariantMigration{<:FinFunctor{D,C}}
-#Note TotalDeltaMigration <: DeltaSchemaMigration as well as TotalDataMigration. 
 #This only exists for the acset to acset migrate! method which is performance-optimized for 
 #the easy Delta case
-const TotalDeltaMigration{D<:FinCat,C<:FinCat} = TotalDataMigration{<:FinFunctor{D,C}}
+const DeltaMigration{D<:FinCat,C<:FinCat} = DataMigration{<:FinFunctor{D,C},<:AbstractDict}
 
 """ Schema-level functor defining a contravariant data migration using conjunctive queries.
 """
@@ -134,17 +131,17 @@ end
 
 # Delta migration
 #----------------
-migrate(Y::ACSet,M::DeltaSchemaMigration) = migrate(FinDomFunctor(Y),M)
-migrate(Y::FinDomFunctor,M::DeltaSchemaMigration) = compose(M,Y)
+#migrate(Y::ACSet,M::DeltaSchemaMigration) = migrate(FinDomFunctor(Y),M)
+#migrate(Y::FinDomFunctor,M::DeltaSchemaMigration) = compose(M,Y)
 #TODO: write compose
 
-migrate(::Type{T}, X::ACSet, M::TotalDeltaMigration) where T <: ACSet =
+migrate(::Type{T}, X::ACSet, M::DeltaMigration) where T <: ACSet =
   migrate!(T(), X, M)
 migrate(::Type{T}, X::ACSet, FOb, FHom) where T <: ACSet =
   migrate!(T(), X, FOb, FHom)
 
-function migrate!(X::StructACSet{S}, Y::ACSet, M::TotalDeltaMigration) where S
-  F = functor(M)
+function migrate!(X::StructACSet{S}, Y::ACSet, M::DeltaMigration) where S
+  F = func(M)
   partsX = Dict(c => add_parts!(X, c, nparts(Y, nameof(ob_map(F,c))))
                 for c in ob(S))
   for (f,c,d) in homs(S)
@@ -157,7 +154,7 @@ function migrate!(X::StructACSet{S}, Y::ACSet, M::TotalDeltaMigration) where S
 end
 
 function migrate!(X::ACSet, Y::ACSet, FOb, FHom)
-  M = TotalDataMigration(FinFunctor(FOb, FHom, FinCat(Presentation(X)), FinCat(Presentation(Y))))
+  M = DataMigration(FinFunctor(FOb, FHom, FinCat(Presentation(X)), FinCat(Presentation(Y))))
   migrate!(X, Y, M)
 end
 
@@ -166,7 +163,7 @@ end
 #todo: generalize compose for non-total migrations
 function migrate(X::FinDomFunctor, M::ConjSchemaMigration;
                  return_limits::Bool=false, tabular::Bool=false)
-  F = functor(M)
+  F = func(M)
   tgt_schema = dom(F)
   limits = make_map(ob_generators(tgt_schema)) do c
     Fc = ob_map(F, c)
@@ -203,7 +200,7 @@ end
 #-----------------
 
 function migrate(X::FinDomFunctor, M::GlueSchemaMigration)
-  F = functor(M)
+  F = func(M)
   tgt_schema = dom(F)
   colimits = make_map(ob_generators(tgt_schema)) do c
     Fc = ob_map(F, c)
@@ -223,11 +220,11 @@ end
 #---------------
 
 function migrate(X::FinDomFunctor, M::GlucSchemaMigration)
-  F = functor(M)
+  F = func(M)
   tgt_schema = dom(F)
   colimits_of_limits = make_map(ob_generators(tgt_schema)) do c
     Fc = ob_map(F, c)
-    Fc_set, limits = migrate(X, diagram(Fc), return_limits=true)
+    Fc_set, limits = migrate(X, DataMigration(diagram(Fc)), return_limits=true)
     (colimit(Fc_set, SpecializeColimit()), Fc_set, limits)
   end
   funcs = make_map(hom_generators(tgt_schema)) do f
@@ -265,12 +262,12 @@ struct DataMigrationFunctor{Dom,Codom,M<:AbstractContravariantMigration} <: Migr
   migration::M
 end
 migration(F::DataMigrationFunctor) = F.migration
-functor(F::DataMigrationFunctor) = functor(migration(F))
+func(F::DataMigrationFunctor) = func(migration(F))
 
 DataMigrationFunctor(functor::F, ::Type{Dom}, ::Type{Codom}) where {F,Dom,Codom} =
-  DataMigrationFunctor{Dom,Codom,TotalDataMigration{F}}(TotalDataMigration(functor))
+  DataMigrationFunctor{Dom,Codom,DataMigration{F,Dict{Any,Any}}}(DataMigration(functor))
 DataMigrationFunctor(functor::F, ::Type{Codom}) where {F,Codom} =
-  DataMigrationFunctor{ACSet,Codom,TotalDataMigration{F}}(TotalDataMigration(functor))
+  DataMigrationFunctor{ACSet,Codom,DataMigration{F,Dict{Any,Any}}}(DataMigration(functor))
 
 ob_map(F::DataMigrationFunctor, T::Type, X) = migrate(T, X, migration(F))
 
@@ -289,7 +286,7 @@ struct SigmaMigrationFunctor{Dom,Codom,M<:SigmaSchemaMigration} <: MigrationFunc
     new{typeof(d),typeof(c),SigmaMigration{F}}(SigmaMigration(f),constructor(d),constructor(c))
 end 
 migration(F::SigmaMigrationFunctor) = F.migration
-functor(F::SigmaMigrationFunctor) = functor(migration(F))
+func(F::SigmaMigrationFunctor) = func(migration(F))
 
 SigmaMigrationFunctor(f,::Type{T},c::ACSet) where T<:StructACSet = SigmaMigrationFunctor(f,T(),constructor(c))
 SigmaMigrationFunctor(f,d::ACSet,::Type{T}) where T<:StructACSet = SigmaMigrationFunctor(f,d,T())
@@ -304,7 +301,7 @@ portion of the collage, then run the chase.
 function (M::SigmaMigrationFunctor)(d::ACSet; n=100)
   D,CD = M.dom_constructor(), M.codom_constructor()
   S = acset_schema(d)
-  col, col_pres = collage(functor(M))
+  col, col_pres = collage(func(M))
   i1,i2 = legs(col)
   # Initialize collage C-Set with data from `d`
   atypes = Dict{Symbol,Type}()
@@ -417,10 +414,10 @@ Since every C-set is a colimit of representables, this is a generic way of
 constructing diagrams of C-sets.
 """
 function colimit_representables(M::DeltaSchemaMigration, y)
-  compose(op(functor(M)), y)
+  compose(op(func(M)), y)
 end
 function colimit_representables(M::ConjSchemaMigration, y)
-  F = functor(M)
+  F = func(M)
   C = dom(F)
   ACS = constructor(ob_map(y,first(ob_generators(dom(y)))))
   colimits = make_map(ob_generators(C)) do c

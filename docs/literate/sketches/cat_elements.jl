@@ -7,7 +7,7 @@ using Colors
 function graph(el::Elements)
   F = FinFunctor(Dict(:V => :El, :E => :Arr), Dict(:src => :src, :tgt => :tgt),
                  SchGraph, SchElements)
-  ΔF = DeltaMigration(F, Elements{Symbol}, Graph)
+  ΔF = DataMigrationFunctor(F, Elements{Symbol}, Graph)
   return ΔF(el)
 end
 

@@ -78,7 +78,7 @@ idF = FinFunctor(
   Dict(ϕ => ϕ, label => label), 
   SchLabeledDDS, SchLabeledDDS
 )
-@test ldds == migrate(LabeledDDS{Int}, ldds, TotalDataMigration(idF))
+@test ldds == migrate(LabeledDDS{Int}, ldds, DataMigration(idF))
 
 # Conjunctive migration
 #----------------------
@@ -88,7 +88,7 @@ V, E, src, tgt = generators(SchGraph)
 C = FinCat(SchGraph)
 F_V = FinDomFunctor([V], FinCat(1), C)
 F_E = FinDomFunctor(FreeDiagram(Cospan(tgt, src)), C)
-M = TotalDataMigration(FinDomFunctor(Dict(V => Diagram{op}(F_V),
+M = DataMigration(FinDomFunctor(Dict(V => Diagram{op}(F_V),
                        E => Diagram{op}(F_E)),
                   Dict(src => DiagramHom{op}([(1, src)], F_E, F_V),
                        tgt => DiagramHom{op}([(2, tgt)], F_E, F_V)), C))
@@ -112,18 +112,19 @@ M = @migration SchGraph SchGraph begin
   src => e₁ ⋅ src
   tgt => e₂ ⋅ tgt
 end
+F = func(M)
 H = migrate(g, M, tabular=true)
 @test length(H(V)) == 5
 @test length(H(E)) == 3
 @test H(src)((v=3, e₁=2, e₂=3)) == (V=2,)
 @test H(tgt)((v=3, e₁=2, e₂=3)) == (V=4,)
 
-h = migrate(Graph, g, F)
+h = migrate(Graph, g, M)
 @test (nv(h), ne(h)) == (5, 3)
 @test sort!(collect(zip(h[:src], h[:tgt]))) == [(1,3), (2,4), (3,5)]
 
 h = Graph(5)
-migrate!(h, g, F)
+migrate!(h, g, M)
 @test (nv(h), ne(h)) == (10, 3)
 @test sort!(collect(zip(h[:src], h[:tgt]))) == [(6,8), (7,9), (8,10)]
 
@@ -280,7 +281,6 @@ h′ = @acset Graph begin
   tgt = [1,2,3,4, 2,3,4, 3,4]
 end
 @test h == h′
-
 
 # Sigma migration
 #################
