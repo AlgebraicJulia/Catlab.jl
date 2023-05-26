@@ -35,6 +35,7 @@ end
 @testset "CSets" begin
   include("CSets.jl")
   include("CatElements.jl")
+  include("ACSetTransformationSerialization.jl")
 end
 
 @testset "Diagrams" begin

@@ -8,7 +8,7 @@ export ACSetTransformation, CSetTransformation,StructACSetTransformation,
   components, type_components, force, naturality_failures, show_unnaturalities, is_natural, homomorphism, homomorphisms,
   homomorphism_error_failures, homomorphisms_error_failures, is_homomorphic, isomorphism, isomorphisms, is_isomorphic,
   subobject_graph, partial_overlaps, maximum_common_subobject,
-  generate_json_acset, parse_json_acset, read_json_acset, write_json_acset,
+  generate_json_acset, parse_json_acset, read_json_acset, write_json_acset, parse_json_acset_transformation,
   generate_json_acset_schema, parse_json_acset_schema,
   read_json_acset_schema, write_json_acset_schema, acset_schema_json_schema
 
@@ -1779,6 +1779,19 @@ function generate_json_acset(X::ACSet)
   return result
 end
 
+
+""" Generate JSON-able object representing an ACSetTransformation
+
+Inverse to [`parse_json_acset`](@ref).
+"""
+generate_json_acset(f::ACSetTransformation) = begin
+    d = OrderedDict{Symbol, Any}()
+    d[:dom] = generate_json_acset(dom(f))
+    d[:codom] = generate_json_acset(codom(f))
+    d[:transformation] = f.components
+    d
+end
+
 """ Parse JSON-able object or JSON string representing an ACSet.
 
 Inverse to [`generate_json_acset`](@ref).
@@ -1815,6 +1828,26 @@ end
 
 function parse_json_acset(target, input::AbstractString)
   parse_json_acset(target, JSON.parse(input))
+end
+
+""" Parse JSON-able object or JSON string representing an ACSet transformation.
+
+Inverse to [`generate_json_acset`](@ref), but for ACSetTransformations.
+"""
+function parse_json_acset_transformation(target, input::AbstractString)
+  parse_json_acset_transformation(target, JSON.parse(input))
+end
+
+parse_json_acset_transformation(target, input::AbstractDict) = _parse_json_acset_transformation(target, input)
+
+_parse_json_acset_transformation(cons, input::AbstractDict) = begin
+    X = _parse_json_acset(cons, input["dom"])
+    Y = _parse_json_acset(cons, input["codom"])
+    components = map(collect(pairs(input["transformation"]))) do (k,v)
+        f = input["transformation"][k]
+        Symbol(k) => FinFunction(Int.(f["func"]), FinSet(f["codom"]["n"]))
+    end
+    f = ACSetTransformation(Dict(components...), X, Y)
 end
 
 """ Deserialize an ACSet object from a JSON file.
