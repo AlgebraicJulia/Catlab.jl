@@ -1,7 +1,8 @@
 module Searching
 export bfs_parents, bfs_tree, dfs_parents, dfs_tree
 
-using ...CSetDataStructures, ..BasicGraphs
+using ACSets
+using ..BasicGraphs
 
 """
     tree(parents)

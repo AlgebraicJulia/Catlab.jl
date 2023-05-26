@@ -21,13 +21,14 @@ using Reexport
 using StaticArrays: SVector
 using DataStructures: IntDisjointSets, in_same_set, num_groups
 
-@reexport using ..Categories
-using ...GAT, ...Present, ...Syntax
+using ACSets
+using ...Present, ...Syntax
 import ...Present: equations
 using ...Theories: ThCategory, ThSchema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr
 import ...Theories: dom, codom, id, compose, ⋅, ∘
-using ...CSetDataStructures, ...Graphs
+using ...Graphs
 import ...Graphs: edges, src, tgt, enumerate_paths
+@reexport using ..Categories
 import ..Categories: CatSize, ob, hom, ob_map, hom_map, component, op
 
 # Categories

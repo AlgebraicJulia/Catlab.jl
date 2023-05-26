@@ -23,7 +23,7 @@ export HasVertices, HasGraph, AbstractGraph, Graph, SchGraph,
 
 import Base: inv
 
-using ...Present, ...CSetDataStructures
+using ACSets, ...ACSetsGATsInterop
 import ...Theories: src, tgt
 
 # Base types

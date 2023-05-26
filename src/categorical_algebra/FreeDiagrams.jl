@@ -21,8 +21,9 @@ export FixedShapeFreeDiagram, FreeDiagram, SchFreeDiagram,
 using StructEquality
 using StaticArrays: StaticVector, SVector
 
-using ...Present, ...Theories, ...CSetDataStructures, ...Graphs, ..FinCats
-import ...Schemas: ob, hom, dom, codom
+using ACSets
+using ...Present, ...Theories, ...Graphs, ..FinCats
+import ...Theories: ob, hom, dom, codom
 import ..FinCats: FreeCatGraph, FinDomFunctor, collect_ob, collect_hom
 
 # Diagram interface

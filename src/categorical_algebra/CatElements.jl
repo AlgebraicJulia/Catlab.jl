@@ -3,10 +3,8 @@ export SchElements, AbstractElements, Elements, elements, inverse_elements
 
 using DataStructures: OrderedDict
 
-using ..CSets, ..FinSets
 using ...Present, ...Theories
-using ...Theories: ThCategory
-using ...Schemas: ob, hom, dom_nums, codom_nums
+using ..CSets, ..FinSets
 
 @present SchElements(FreeSchema) begin
   (El, Arr, Ob, Hom)::Ob

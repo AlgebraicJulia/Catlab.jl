@@ -1,8 +1,4 @@
-export ThSchema, FreeSchema, AttrType, Attr,
-  SchemaExpr, AttrTypeExpr, AttrExpr, parse_schema
-
-using MLStyle: @match
-using ...Meta: strip_lines
+export ThSchema, FreeSchema, AttrType, Attr, SchemaExpr, AttrTypeExpr, AttrExpr
 
 # Schema
 ########

@@ -17,7 +17,7 @@ export HasBipartiteVertices, HasBipartiteGraph,
   add_edge₁₂!, add_edge₂₁!, add_edges₁₂!, add_edges₂₁!,
   rem_edge₁₂!, rem_edge₂₁!, rem_edges₁₂!, rem_edges₂₁!
 
-using ...Present, ...CSetDataStructures
+using ACSets, ...ACSetsGATsInterop
 using ..BasicGraphs: flatten
 import ..BasicGraphs: nv, ne, vertices, edges, src, tgt, add_edge!, add_edges!,
   rem_edge!, rem_edges!, inneighbors, outneighbors

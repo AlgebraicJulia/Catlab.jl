@@ -8,10 +8,6 @@ end
   include("theories/Theories.jl")
 end
 
-@testset "Acsets" begin
-  include("acsets/ACSets.jl")
-end
-
 @testset "CategoricalAlgebra" begin
   include("categorical_algebra/CategoricalAlgebra.jl")
 end

@@ -132,7 +132,6 @@ Modules = [
   CategoricalAlgebra.StructuredCospans,
   CategoricalAlgebra.ACSetInterface,
   CategoricalAlgebra.ACSetColumns,
-  CategoricalAlgebra.CSetDataStructures
 ]
 Private = false
 ```

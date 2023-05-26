@@ -1,40 +1,41 @@
+""" Compatibility module that integrates ACSets with GATs.
 """
-This is a compatibility module that integrates ACSets with GATs
-"""
-module CSetDataStructures
+module ACSetsGATsInterop
+export ThSchema, FreeSchema, Presentation, @present
 
-using Reexport
 using DataStructures: OrderedDict
 
-@reexport using ..ACSetInterface
-@reexport using ..Schemas
-@reexport using ..DenseACSets
-@reexport using ..Theories
-@reexport using ..Present
+using ACSets
+import ACSets: Schema
 
-using ..Syntax
+using ...Present, ...Syntax
+import ...Present: Presentation
+using ...Theories
 
-function Schemas.Schema(p::Presentation)
+# Schema <-> presentation
+#########################
+
+function Schema(p::Presentation)
   obs, attrtypes = map(xs -> Symbol[nameof.(xs)...],
                        [p.generators[:Ob],p.generators[:AttrType]])
-  homs, attrs = map(fs -> Tuple{Symbol,Symbol,Symbol}[(nameof(f), nameof(Theories.dom(f)), nameof(Theories.codom(f))) for f in fs],
+  homs, attrs = map(fs -> Tuple{Symbol,Symbol,Symbol}[(nameof(f), nameof(dom(f)), nameof(codom(f))) for f in fs],
                     [p.generators[:Hom], p.generators[:Attr]])
   BasicSchema(obs,homs,attrtypes,attrs)
 end
 
-function Present.Presentation(::Type{S}) where S <: TypeLevelBasicSchema{Symbol}
+function Presentation(::Type{S}) where S <: TypeLevelBasicSchema{Symbol}
   Presentation(Schema(S))
 end
 
-function Present.Presentation(::StructACSet{S}) where S <: TypeLevelBasicSchema{Symbol}
+function Presentation(::StructACSet{S}) where S <: TypeLevelBasicSchema{Symbol}
   Presentation(Schema(S))
 end
 
-function Present.Presentation(::Type{<:StructACSet{S}}) where S <: TypeLevelBasicSchema{Symbol}
+function Presentation(::Type{<:StructACSet{S}}) where S <: TypeLevelBasicSchema{Symbol}
   Presentation(Schema(S))
 end
 
-function Present.Presentation(s::BasicSchema{Symbol})
+function Presentation(s::BasicSchema{Symbol})
   pres = Presentation(FreeSchema)
   obs = OrderedDict(x => Ob(FreeSchema.Ob, x) for x in Schemas.objects(s))
   attrtypes = OrderedDict(x => AttrType(FreeSchema.AttrType, x) for x in Schemas.attrtypes(s))
@@ -72,6 +73,24 @@ end
 function DenseACSets.AnonACSet(p::Presentation; kwargs...)
   AnonACSet(Schema(p); kwargs...)
 end
+
+# JSON serialization
+#-------------------
+
+JSONACSets.generate_json_acset_schema(pres::Presentation) =
+  generate_json_acset_schema(Schema(pres))
+
+JSONACSets.parse_json_acset_schema(::Type{Presentation{ThSchema,Symbol}},
+                                   data::AbstractDict) =
+  Presentation(parse_json_acset_schema(BasicSchema, data))
+JSONACSets.parse_json_acset_schema(data) =
+  parse_json_acset_schema(Presentation{ThSchema,Symbol}, data)
+
+JSONACSets.read_json_acset_schema(fname::AbstractString) =
+  read_json_acset_schema(Presentation{ThSchema,Symbol}, fname)
+
+# ACSet <-> GAT exprs
+#####################
 
 subpart_names(expr::GATExpr{:generator}) = Symbol[first(expr)]
 subpart_names(expr::GATExpr{:id}) = Symbol[]

@@ -4,7 +4,8 @@ module GraphCategories
 
 using DataStructures
 
-using ..FinSets, ...ACSetInterface, ..Limits
+using ACSets
+using ..FinSets, ..Limits
 using ...Graphs.BasicGraphs
 import ...Graphs.GraphAlgorithms: connected_component_projection,
   connected_component_projection_bfs
