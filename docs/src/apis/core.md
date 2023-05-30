@@ -53,7 +53,7 @@ import Catlab.Theories: Ob, Hom, ObExpr, HomExpr, dom, codom, compose, ⋅, id
 ```
 
 ```@example category
-@theory Category{Ob,Hom} begin
+@theory ThCategory{Ob,Hom} begin
   @op begin
     (→) := Hom
     (⋅) := compose
@@ -74,10 +74,10 @@ nothing # hide
 ```
 
 The code is simplified only slightly from the official Catlab definition of
-`Category`. The theory has two *type constructors*, `Ob` (object) and `Hom`
+`ThCategory`. The theory has two *type constructors*, `Ob` (object) and `Hom`
 (morphism). The type `Hom` is a dependent type, depending on two objects, named
-`dom` (domain) and `codom` (codomain). The theory has two *term
-constructors*, `id` (identity) and `compose` (composition).
+`dom` (domain) and `codom` (codomain). The theory has two *term constructors*,
+`id` (identity) and `compose` (composition).
 
 Notice how the return types of the term constructors depend on the argument
 values. For example, the term `id(A)` has type `Hom(A,A)`. The term constructor
@@ -134,7 +134,7 @@ struct MatrixDomain
   dim::Int
 end
 
-@instance Category{MatrixDomain, Matrix} begin
+@instance ThCategory{MatrixDomain, Matrix} begin
   dom(M::Matrix) = MatrixDomain(eltype(M), size(M,1))
   codom(M::Matrix) = MatrixDomain(eltype(M), size(M,2))
 
@@ -173,7 +173,7 @@ Below, we subtype from Catlab's abstract types `ObExpr` and `HomExpr` to enable
 LaTeX pretty-printing and other convenient features, but this is not required.
 
 ```@example category
-@syntax CategoryExprs{ObExpr, HomExpr} Category begin
+@syntax CategoryExprs{ObExpr, HomExpr} ThCategory begin
 end
 
 A, B, C, D = [ Ob(CategoryExprs.Ob, X) for X in [:A, :B, :C, :D] ]
@@ -200,7 +200,7 @@ $n$. The option `strict=true` tells Catlab to check that the domain and codomain
 objects are strictly equal and throw an error if they are not.
 
 ```@example category
-@syntax SimplifyingCategoryExprs{ObExpr, HomExpr} Category begin
+@syntax SimplifyingCategoryExprs{ObExpr, HomExpr} ThCategory begin
   compose(f::Hom, g::Hom) = associate(new(f,g; strict=true))
 end
 
@@ -235,12 +235,12 @@ by inheriting from the builtin theory `SymmetricMonoidalCategory`.
 
 ```@setup cartesian-monoidal-category
 using Catlab
-import Catlab.Theories: Ob, Hom, ObExpr, HomExpr, SymmetricMonoidalCategory,
+import Catlab.Theories: Ob, Hom, ObExpr, HomExpr, ThSymmetricMonoidalCategory,
   dom, codom, compose, id, otimes, munit, braid
 ```
 
 ```@example cartesian-monoidal-category
-@signature CartesianCategory{Ob,Hom} <: SymmetricMonoidalCategory{Ob,Hom} begin
+@signature ThCartesianCategory{Ob,Hom} <: ThSymmetricMonoidalCategory{Ob,Hom} begin
   mcopy(A::Ob)::(A → (A ⊗ A))
   delete(A::Ob)::(A → munit())
 
@@ -254,7 +254,7 @@ nothing # hide
 We could then define the copying operation in terms of the pairing.
 
 ```@example cartesian-monoidal-category
-@syntax CartesianCategoryExprsV1{ObExpr,HomExpr} CartesianCategory begin
+@syntax CartesianCategoryExprsV1{ObExpr,HomExpr} ThCartesianCategory begin
   mcopy(A::Ob) = pair(id(A), id(A))
 end
 
@@ -266,7 +266,7 @@ Alternatively, we could define the pairing and projections in terms of the
 copying and deleting operations.
 
 ```@example cartesian-monoidal-category
-@syntax CartesianCategoryExprsV2{ObExpr,HomExpr} CartesianCategory begin
+@syntax CartesianCategoryExprsV2{ObExpr,HomExpr} ThCartesianCategory begin
   pair(f::Hom, g::Hom) = compose(mcopy(dom(f)), otimes(f,g))
   proj1(A::Ob, B::Ob) = otimes(id(A), delete(B))
   proj2(A::Ob, B::Ob) = otimes(delete(A), id(B))
