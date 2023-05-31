@@ -10,10 +10,10 @@ export StructuredMulticospan, StructuredCospan, StructuredCospanOb,
 using StructEquality
 using StaticArrays: StaticVector, SVector
 
+using ACSets
 using ...GAT, ..FreeDiagrams, ..Limits, ..FinSets, ..CSets
 import ..FreeDiagrams: apex, legs, feet, left, right, bundle_legs
 import ..CSets: components, force
-using ...Schemas
 using ...Theories: ThCategory
 import ...Theories: dom, codom, compose, ⋅, id, otimes, ⊗, munit, braid, σ,
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dunit, dcounit, dagger

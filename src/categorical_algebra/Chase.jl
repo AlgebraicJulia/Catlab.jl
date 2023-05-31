@@ -17,16 +17,12 @@ restricting the domain to the coimage.
 module Chase
 export chase
 
-using ...Theories, ...Present
-using ..CSets, ..FinSets, ..FinCats
+using ACSets.DenseACSets: datatypes
+using ...Present, ...Theories
+using ..CSets, ..FinSets, ..FinCats, ..Limits, ..FreeDiagrams
 using ..FinCats: FinCatPresentation
-using ..Limits, ..FreeDiagrams
-using ...ColumnImplementations: AttrVar
-import ..Categories: ob_map
-using ...DenseACSets: datatypes
-
-import ...Theories: dom, codom
 import ..Limits: universal
+import ..Categories: ob_map
 
 # EDs
 #####

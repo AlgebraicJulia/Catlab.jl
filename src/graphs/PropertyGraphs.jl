@@ -5,7 +5,8 @@ export AbstractPropertyGraph, PropertyGraph, SchPropertyGraph,
   gprops, vprops, eprops, get_gprop, get_vprop, get_eprop,
   set_gprop!, set_vprop!, set_eprop!, set_gprops!, set_vprops!, set_eprops!
 
-using ...Present, ...CSetDataStructures, ..BasicGraphs
+using ACSets
+using ...Present, ..BasicGraphs
 import ..BasicGraphs: nv, ne, src, tgt, inv, edges, vertices,
   has_edge, has_vertex, add_edge!, add_edges!, add_vertex!, add_vertices!
 

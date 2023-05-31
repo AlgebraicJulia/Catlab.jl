@@ -1,7 +1,4 @@
 module TestCSets
-
-using JSON
-import JSONSchema
 using Test
 using Random: seed!
 
@@ -380,7 +377,6 @@ res = limit(Cospan(ac,bc); product_attrs=true);
 @test all(is_natural,legs(res))
 @test apex(res)[:vlabel] == [(:a,:q),(:a,:z)]
 
-
 # Colimits
 #---------
 
@@ -482,7 +478,6 @@ g1, g2 = path_graph(Graph, 3), path_graph(Graph, 2)
 rem_part!(g1,:E,2)
 @test_throws ErrorException homomorphism(g1,g2;monic=true,error_failures=true)
 
-
 # Symmetric graphs
 #-----------------
 
@@ -520,6 +515,7 @@ h = cycle_graph(LabeledGraph{Symbol}, 4, V=(label=[:a,:b,:d,:c],))
 
 # Random
 #-------
+
 comps(x) = sort([k=>collect(v) for (k,v) in pairs(components(x))])
 # same set of morphisms
 K₆ = complete_graph(SymmetricGraph, 6)
@@ -528,6 +524,33 @@ rand_hs = homomorphisms(K₆,K₆; random=true)
 @test sort(hs,by=comps) == sort(rand_hs,by=comps) # equal up to order
 @test hs != rand_hs # not equal given order
 @test homomorphism(K₆,K₆) != homomorphism(K₆,K₆;random=true)
+
+# As a macro
+#-----------
+
+g = cycle_graph(LabeledGraph{String}, 4, V=(label=["a","b","c","d"],))
+h = cycle_graph(LabeledGraph{String}, 4, V=(label=["b","c","d","a"],))
+α = @acset_transformation g h
+β = @acset_transformation g h begin
+  V = [4,1,2,3]
+  E = [4,1,2,3]
+end monic=true
+γ = @acset_transformation g h begin end monic=[:V]
+@test α[:V](1) == 4
+@test α[:E](1) == 4
+@test α == β == γ
+
+x = @acset Graph begin
+  V = 2
+  E = 2
+  src = [1,1]
+  tgt = [2,2]
+end
+@test length(@acset_transformations x x) == length(@acset_transformations x x monic=[:V]) == 4
+@test length(@acset_transformations x x monic = true) == 2
+@test length(@acset_transformations x x begin V=[1,2] end monic = [:E]) == 2
+@test length(@acset_transformations x x begin V = Dict(1=>1) end monic = [:E]) == 2
+@test_throws ErrorException @acset_transformation g h begin V = [4,3,2,1]; E = [1,2,3,4] end
 
 # Sub-C-sets
 ############
@@ -641,6 +664,7 @@ os = partial_overlaps(G,G)
 
 # Maximum Common C-Set
 ######################
+
 """
 Searching for overlaps: •→•→•↺  vs ↻•→•→•
 Two results: •→•→• || •↺ •→• 
@@ -668,62 +692,6 @@ end
 @test collect(R2[:V]) == [3,1,2]
 @test L2(apx2) == Subobject(g1, V=[1,2,3], E=[1,3])
 
-# Acset serialization
-#####################
-
-function roundtrip_json_acset(x::T) where T <: ACSet
-  mktempdir() do dir
-    path = joinpath(dir, "acset.json")
-    write_json_acset(x, path)
-    read_json_acset(T, path)
-  end
-end
-
-g = star_graph(Graph, 5)
-@test roundtrip_json_acset(g) == g
-json = generate_json_acset(g)
-@test all(row -> haskey(row, :_id), json[:V])
-
-g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5, 1.5],))
-@test roundtrip_json_acset(g) == g
-
-g = VELabeledGraph{Symbol}()
-add_vertices!(g, 2, vlabel=[:u,:v])
-add_edge!(g, 1, 2, elabel=:e)
-@test roundtrip_json_acset(g) == g
-
-@present SchLabeledDDS <: SchDDS begin
-  Label::AttrType
-  label::Attr(X, Label)
-end
-@acset_type LabeledDDS(SchLabeledDDS, index=[:Φ, :label])
-
-ldds = LabeledDDS{Symbol}()
-add_parts!(ldds, :Label, 2)
-add_parts!(ldds, :X, 4, Φ=[2,3,4,1], label=[AttrVar(1), :a, :b, AttrVar(2)])
-@test roundtrip_json_acset(ldds) == ldds
-json = generate_json_acset(ldds)
-@test all(row -> haskey(row, :_id), json[:Label])
-
-# Schema serialization
-######################
-
-function roundtrip_json_acset_schema(pres::Presentation)
-  mktempdir() do dir
-    path = joinpath(dir, "schema.json")
-    write_json_acset_schema(pres, path)
-    read_json_acset_schema(path)
-  end
-end
-
-json_schema = JSONSchema.Schema(acset_schema_json_schema())
-
-for schema in [SchGraph, SchWeightedGraph, SchLabeledDDS]
-  schema_dict = generate_json_acset_schema(schema)
-  @test isnothing(JSONSchema.validate(json_schema, schema_dict))
-  @test roundtrip_json_acset_schema(schema) == schema
-end
-
 # AttrVars 
 ##########
 
@@ -732,9 +700,8 @@ A = @acset WG{Bool} begin V=1;E=2;Weight=2;src=1;tgt=1;weight=[AttrVar(1),true] 
 B = @acset WG{Bool} begin V=1;E=2;Weight=1;src=1;tgt=1;weight=[true, false] end
 
 @test VarFunction(A,:weight) == VarFunction{Bool}([AttrVar(1), true], FinSet(2))
-@test roundtrip_json_acset(A) == A
 
-f= ACSetTransformation(Dict(:V=>[1],:E=>[2,1],:Weight=>[false, AttrVar(1)]), A,B)
+f = ACSetTransformation(Dict(:V=>[1],:E=>[2,1],:Weight=>[false, AttrVar(1)]), A,B)
 @test is_natural(f)
 @test force(id(A) ⋅ f) == force(f) == force(f ⋅ id(B))
 @test f isa TightACSetTransformation

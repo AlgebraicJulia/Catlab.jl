@@ -57,7 +57,7 @@ makedocs(
         "generated/sketches/preorders.md",
         "generated/sketches/meets.md",
         "generated/sketches/smc.md",
-        "generated/sketches/cat_elements.md"
+        "generated/sketches/cat_elements.md",
         ],
       "Graphs" => Any[
         "generated/graphs/graphs.md",
@@ -66,7 +66,6 @@ makedocs(
       ],
       "Categorical Algebra" => Any[
         "generated/categorical_algebra/diagrams.md",
-        "generated/categorical_algebra/acset_serialization.md",
       ],
       "Wiring Diagrams" => Any[
         "generated/wiring_diagrams/wiring_diagram_basics.md",

@@ -150,8 +150,8 @@ end
 
 """ Theory of *monoidal categories with bidiagonals*, in additive notation
 
-Mathematically the same as [`MonoidalCategoryWithBidiagonals`](@ref) but written
-additively, instead of multiplicatively.
+Mathematically the same as [`ThMonoidalCategoryWithBidiagonals`](@ref) but
+written additively, instead of multiplicatively.
 """
 @theory ThMonoidalCategoryWithBidiagonalsAdditive{Ob,Hom} <:
     ThMonoidalCategoryWithCodiagonals{Ob,Hom} begin
@@ -169,7 +169,7 @@ end
 
 """ Theory of *semiadditive categories*
 
-Mathematically the same as [`BiproductCategory`](@ref) but written additively,
+Mathematically the same as [`ThBiproductCategory`](@ref) but written additively,
 instead of multiplicatively.
 """
 @theory ThSemiadditiveCategory{Ob,Hom} <:
@@ -216,7 +216,7 @@ end
 
 """ Theory of *hypergraph categories*, in additive notation
 
-Mathematically the same as [`HypergraphCategory`](@ref) but with different
+Mathematically the same as [`ThHypergraphCategory`](@ref) but with different
 notation.
 """
 @signature ThHypergraphCategoryAdditive{Ob,Hom} <:

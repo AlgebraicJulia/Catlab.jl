@@ -7,29 +7,28 @@ export ACSetTransformation, CSetTransformation,StructACSetTransformation,
   ACSetHomomorphismAlgorithm, BacktrackingSearch, HomomorphismQuery,
   components, type_components, force, naturality_failures, show_unnaturalities, is_natural, homomorphism, homomorphisms,
   homomorphism_error_failures, homomorphisms_error_failures, is_homomorphic, isomorphism, isomorphisms, is_isomorphic,
-  subobject_graph, partial_overlaps, maximum_common_subobject,
-  generate_json_acset, parse_json_acset, read_json_acset, write_json_acset,
-  generate_json_acset_schema, parse_json_acset_schema,
-  read_json_acset_schema, write_json_acset_schema, acset_schema_json_schema
+  subobject_graph, partial_overlaps, maximum_common_subobject
 
 using Base.Iterators: flatten
 using Base.Meta: quot
-using DataStructures: OrderedDict, BinaryHeap
-using StructEquality
-import JSON
-using Reexport
-using Tables
-using CompTime
+using DataStructures: BinaryHeap, OrderedDict
+using MLStyle: @match
 using Random
-import Pkg
+using Reexport
+using StructEquality
 
-@reexport using ...CSetDataStructures
+using CompTime
+@reexport using ACSets
+@reexport using ...ACSetsGATsInterop
+using ACSets.Columns
+using ACSets.DenseACSets: indices, unique_indices, attr_type, attrtype_type,
+  datatypes, constructor, delete_subobj!
+
 using ...GAT, ...Present, ...Syntax
 using ...Theories: ThCategory, Hom, Ob, Attr, AttrType
-import ...Schemas: objects, homs, attrtypes, attrs, ob, hom, dom, codom
-using ...Columns
 using ...Graphs.BasicGraphs
-import ...Theories: compose, ⋅, id, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
+import ...Theories: ob, hom, dom, codom, compose, ⋅, id,
+  meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 using ..FreeDiagrams, ..Limits, ..Subobjects, ..FinSets, ..FinCats
 using ..FinSets: VarFunction, LooseVarFunction, IdentityFunction, VarSet
 import ..Limits: limit, colimit, universal
@@ -39,10 +38,6 @@ using ..Sets
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate, 
                   is_monic, is_epic, preimage
 import ..FinCats: FinDomFunctor, components, is_natural
-using ...DenseACSets: indices, unique_indices, attr_type, attrtype_type, 
-                      datatypes, constructor, delete_subobj!
-using ...ColumnImplementations: AttrVar 
-
 
 # Sets interop
 ##############
@@ -628,6 +623,65 @@ function is_epic(α::TightACSetTransformation)
   return true
 end
 
+"""
+Provides a shorthand for constructing a tight acset transformation by giving its
+components. Homomorphism search allows partial specification, with the return
+value being the unique extension if it exists.
+
+Keyword arguments can be passed on to the search function after the body of the
+transformation.
+
+Example usage for transformation between `WeightedGraph{String}`:
+
+```
+@acset_transformation A B begin
+  V = [3,5,2] #complete specification can be a vector
+  E = Dict(1 => 3, 4 => 3) #otherwise use a dict
+end monic=true iso=[:V] or [:V,:E], etc
+```
+"""
+macro acset_transformation(dom,cod,kw...)
+  kw = map(parse_kwargs,kw)
+  Expr(:call,esc(:homomorphism),esc(dom),esc(cod), Expr(:kw,:error_failures,true),kw...)
+end
+macro acset_transformation(dom,cod,body,kw...)
+  kw = map(parse_kwargs,kw)
+  initial = process_initial(body)
+  Expr(:call,esc(:homomorphism),esc(dom),esc(cod),initial,Expr(:kw,:error_failures,true),kw...)
+end
+macro acset_transformations(dom,cod,kw...)
+  kw = map(parse_kwargs,kw)
+  Expr(:call,esc(:homomorphisms),esc(dom),esc(cod),Expr(:kw,:error_failures,true),kw...)
+end
+macro acset_transformations(dom,cod,body,kw...)
+  kw = map(parse_kwargs,kw)
+  initial = process_initial(body)
+  Expr(:call,esc(:homomorphisms),esc(dom),esc(cod),initial,Expr(:kw,:error_failures,true),kw...)
+end
+function process_initial(expr)
+  initial = @match expr begin
+    Expr(:block,lines...) => filter(!isnothing,map(escape_assignment_lhs,lines))
+    Expr(:(=),x,y) => parse_kwargs(expr) #does this ever happen?
+    _ => error("Expected begin...end block or kwarg, received $expr")
+  end
+  isa(initial,Vector) ? length(initial) > 0 ?
+      Expr(:kw,:initial,Expr(:tuple,initial...)) :
+      Expr(:kw,:initial,Expr(:tuple,Expr(:parameters,))) :
+    initial
+end
+function parse_kwargs(expr)
+  @match expr begin
+    Expr(:(=),x,y) => Expr(:kw,x,y)
+    _ => nothing
+  end
+end
+function escape_assignment_lhs(expr)
+  @match expr begin
+    Expr(:(=),x,y) => Expr(:(=),esc(x),y)
+    _ => nothing
+  end
+end
+
 # Category of C-sets
 ####################
 
@@ -641,9 +695,7 @@ end
   # If either is Loose, return a Loose
   compose(α::ACSetTransformation, β::ACSetTransformation) =
     ACSetTransformation(map(compose, components(α), components(β)), dom(α), codom(β))
-  end
-
-  
+end
 
 @cartesian_monoidal_instance ACSet ACSetTransformation
 @cocartesian_monoidal_instance ACSet ACSetTransformation
@@ -1332,7 +1384,6 @@ function sets(X::ACSet; S=nothing, Ts=nothing, all::Bool=false,var::Bool=false)
   end 
 end
 
-
 # Sub-C-sets
 ############
 
@@ -1758,179 +1809,5 @@ function maximum_common_subobject(Xs::Vector{T}) where T <: ACSet
   return res
 end
 maximum_common_subobject(Xs::T...) where T <: ACSet = maximum_common_subobject(collect(Xs))
-
-
-# ACSet serialization
-#####################
-
-""" Generate JSON-able object representing an ACSet.
-
-Inverse to [`parse_json_acset`](@ref).
-"""
-function generate_json_acset(X::ACSet)
-  result = Iterators.map(pairs(tables(X))) do (ob, table)
-    ob => map(parts(X, ob), Tables.rowtable(table)) do id, row
-      merge((_id=id,), row)
-    end
-  end |> OrderedDict{Symbol,Any}
-  for attrtype in attrtypes(acset_schema(X))
-    result[attrtype] = map(id -> (_id=id,), parts(X, attrtype))
-  end
-  return result
-end
-
-""" Parse JSON-able object or JSON string representing an ACSet.
-
-Inverse to [`generate_json_acset`](@ref).
-"""
-parse_json_acset(::Type{T}, input::AbstractDict) where {T<:StructACSet} = 
-  _parse_json_acset(T, input)
-parse_json_acset(d::DynamicACSet, input::AbstractDict) = 
-  _parse_json_acset(constructor(d), input)
-
-function _parse_json_acset(cons, input::AbstractDict)
-  out = cons()
-  for (type, rows) ∈ input
-    add_parts!(out, Symbol(type), length(rows))
-  end
-  for rows ∈ values(input)
-    for (rownum, row) ∈ enumerate(rows)
-      for (k, v) ∈ row
-        k = Symbol(k)
-        if k == :_id
-          # For now, IDs are assumed to coincide with row number.
-          @assert rownum == v
-          continue
-        end
-        is_attr = k ∈ attrs(acset_schema(out); just_names=true)
-        vtype = is_attr ? attr_type(out, k) : Int
-        v = v isa AbstractDict && haskey(v, "val") ?
-          AttrVar(v["val"]) : vtype(v)
-        set_subpart!(out, rownum, k, v)
-      end
-    end
-  end
-  out
-end
-
-function parse_json_acset(target, input::AbstractString)
-  parse_json_acset(target, JSON.parse(input))
-end
-
-""" Deserialize an ACSet object from a JSON file.
-
-Inverse to [`write_json_acset`](@ref).
-"""
-function read_json_acset(ty, fname::AbstractString)
-  parse_json_acset(ty, JSON.parsefile(fname))
-end
-
-""" Serialize an ACSet object to a JSON file.
-
-Inverse to [`read_json_acset`](@ref).
-"""
-function write_json_acset(x::ACSet, fname::AbstractString)
-  open(fname, "w") do f
-    write(f, JSON.json(generate_json_acset(x)))
-  end
-end
-
-# Schema serialization
-######################
-
-""" Generate JSON-able object representing an ACSet schema.
-
-Given an ACSet schema (either a `Schema` or a `Presentation`), such as
-`SchGraph` or `SchWeightedGraph`, construct a JSON-able dictionary with keys
-"Ob", "Hom", "AttrType", and "Attr", conforming to the JSON Schema in
-[`acset_schema_json_schema`](@ref).
-
-Inverse to [`parse_json_acset_schema`](@ref).
-"""
-function generate_json_acset_schema(schema::Schema)
-  if !isnothing(Pkg.project().version) 
-    catlab_pkg_ver = replace(string(Pkg.project().version), "v" => "") 
-  else
-    catlab_pkg_ver = "0.0.0"  # should only be 0.0.0 for test 
-  end
-  OrderedDict(
-    "version" => Dict("ACSetSchema" => "0.0.1",
-                      "Catlab" => catlab_pkg_ver),
-    "Ob" => map(objects(schema)) do x
-      Dict("name" => string(x))
-    end,
-    "Hom" => map(homs(schema)) do (f, x, y)
-      Dict("name" => string(f), "dom" => string(x), "codom" => string(y))
-    end,
-    "AttrType" => map(attrtypes(schema)) do x
-      Dict("name" => string(x))
-    end,
-    "Attr" => map(attrs(schema)) do (f, x, y)
-      Dict("name" => string(f), "dom" => string(x), "codom" => string(y))
-    end,
-  )
-end
-generate_json_acset_schema(pres::Presentation) =
-  generate_json_acset_schema(Schema(pres))
-
-""" Parse JSON-able object or JSON string representing an ACSet schema.
-
-Given a JSON object specifying a presentation of an ACSet schema, construct a
-schema object: either a `Schema` or, by default, a `Presentation`.
-
-Inverse to [`generate_json_acset_schema`](@ref).
-"""
-function parse_json_acset_schema(::Type{BasicSchema}, data::AbstractDict)
-  obs = [Symbol(d["name"]) for d in data["Ob"]]
-  homs = map(data["Hom"]) do d
-    map(Symbol, (d["name"], d["dom"], d["codom"]))
-  end
-  attrtypes = [Symbol(d["name"]) for d in data["AttrType"]]
-  attrs = map(data["Attr"]) do d
-    map(Symbol, (d["name"], d["dom"], d["codom"]))
-  end
-  BasicSchema(obs, homs, attrtypes, attrs)
-end
-
-parse_json_acset_schema(::Type{Presentation{ThSchema,Symbol}},
-                        data::AbstractDict) =
-  Presentation(parse_json_acset_schema(BasicSchema, data))
-parse_json_acset_schema(T, input::AbstractString) =
-  parse_json_acset_schema(T, JSON.parse(input))
-parse_json_acset_schema(data) =
-  parse_json_acset_schema(Presentation{ThSchema,Symbol}, data)
-
-""" Deserialize ACSet schema from JSON file.
-
-Similar to [`parse_json_acset_schema`](@ref) except reads from a file.
-Inverse to [`write_json_acset_schema`](@ref).
-"""
-function read_json_acset_schema(T, fname::AbstractString)
-  parse_json_acset_schema(T, JSON.parsefile(fname))
-end
-
-read_json_acset_schema(fname::AbstractString) =
-  read_json_acset_schema(Presentation{ThSchema,Symbol}, fname)
-
-""" Serialize ACSet schema to JSON file.
-
-Similar to [`generate_json_acset_schema`](@ref) except writes to a file.
-Inverse to [`read_json_acset_schema`](@ref).
-"""
-function write_json_acset_schema(schema, fname::AbstractString)
-  open(fname, "w") do f
-    write(f, JSON.json(generate_json_acset_schema(schema)))
-  end
-end
-
-""" Returns the JSON schema for the JSON serialization of ACSet schemas.
-
-The result is a JSON-able object (dictionary) from which a `JSONSchema.Schema`
-can be constructed, using the package JSONSchema.jl.
-"""
-function acset_schema_json_schema(; kw...)
-  JSON.parsefile(joinpath(@__DIR__, "data", "acset.schema.json");
-                 dicttype=OrderedDict{String,Any}, kw...)
-end
 
 end

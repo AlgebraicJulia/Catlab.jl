@@ -1,10 +1,8 @@
 module TestGraphAlgorithms
 using Test
 
-using Catlab.Graphs
+using Catlab.Graphs, Catlab.CategoricalAlgebra
 using Catlab.Theories
-using Catlab.CategoricalAlgebra
-using Catlab.CSetDataStructures
 
 # Connectivity
 ##############

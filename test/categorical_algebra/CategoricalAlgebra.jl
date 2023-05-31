@@ -33,6 +33,7 @@ end
 end
 
 @testset "CSets" begin
+  include("ACSetsGATsInterop.jl")
   include("CSets.jl")
   include("CatElements.jl")
 end

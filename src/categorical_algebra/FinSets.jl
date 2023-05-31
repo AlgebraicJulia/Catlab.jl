@@ -13,11 +13,12 @@ import StaticArrays
 using StaticArrays: StaticVector, SVector, SizedVector, similar_type
 import Tables, PrettyTables
 
+using ACSets
 @reexport using ..Sets
-using ...GAT, ...Theories, ...CSetDataStructures, ...Graphs
+using ...GAT, ...Theories, ...Graphs
 using ..FinCats, ..FreeDiagrams, ..Limits, ..Subobjects
-import ...Theories: Ob, meet, ∧, join, ∨, top, ⊤, bottom, ⊥, ⋅, dom, codom, 
-                    compose
+import ...Theories: Ob, meet, ∧, join, ∨, top, ⊤, bottom, ⊥, ⋅, dom, codom,
+  compose
 import ..Categories: ob, hom, dom, codom, compose, id, ob_map, hom_map
 import ..FinCats: force, ob_generators, hom_generators, ob_generator,
   ob_generator_name, graph, is_discrete
@@ -25,7 +26,6 @@ using ..FinCats: dicttype
 import ..Limits: limit, colimit, universal, BipartiteColimit
 import ..Subobjects: Subobject
 using ..Sets: IdentityFunction, SetFunctionCallable
-using ...ColumnImplementations: AttrVar
 
 # Finite sets
 #############

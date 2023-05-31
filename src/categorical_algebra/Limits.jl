@@ -18,12 +18,13 @@ export AbstractLimit, AbstractColimit, Limit, Colimit,
 using StructEquality
 using StaticArrays: StaticVector, SVector
 
+using ACSets
 using ...GAT, ...Theories
-import ...Schemas: ob, hom, dom, codom
-import ...Theories: terminal, product, proj1, proj2, equalizer, incl,
+import ...Theories: dom, codom, ob, hom,
+  terminal, product, proj1, proj2, equalizer, incl,
   initial, coproduct, coproj1, coproj2, coequalizer, proj,
   delete, create, pair, copair, factorize, universal
-using ...CSetDataStructures, ..FinCats, ..FreeDiagrams
+using ..FinCats, ..FreeDiagrams
 import ..FreeDiagrams: apex, legs
 
 # Data types for limits

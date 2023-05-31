@@ -3,8 +3,7 @@
 module WiringDiagramAlgebras
 export oapply, query
 
-using ...Present, ...Theories
-using ...Schemas: dom_nums, codom_nums, attr
+using ...Theories
 using ...CategoricalAlgebra
 import ...CategoricalAlgebra.CSets: homomorphisms, homomorphism, is_homomorphic
 using ..UndirectedWiringDiagrams

@@ -336,8 +336,8 @@ end
 
 Unlike the classical notion of strict double categories, symmetric monoidal
 double categories do not treat the two directions on an equal footing, even when
-everything (except the braiding) is strict. See [`MonoidalDoubleCategory`](@ref)
-for references.
+everything (except the braiding) is strict. See
+[`ThMonoidalDoubleCategory`](@ref) for references.
 
 FIXME: Should also inherit `ThSymmetricMonoidalCategory{Ob,Hom}` but multiple
 inheritance is not supported.

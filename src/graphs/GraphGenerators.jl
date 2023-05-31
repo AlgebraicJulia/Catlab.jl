@@ -2,10 +2,12 @@ module GraphGenerators
 export path_graph, cycle_graph, complete_graph, star_graph, wheel_graph,
   parallel_arrows, erdos_renyi, expected_degree_graph, watts_strogatz
 
-using ...CSetDataStructures, ..BasicGraphs
-using ...CSetDataStructures: hom
 using Random
 using Random: GLOBAL_RNG
+
+using ACSets
+using ..BasicGraphs
+using ...Theories: hom
 
 """ Path graph on ``n`` vertices.
 """

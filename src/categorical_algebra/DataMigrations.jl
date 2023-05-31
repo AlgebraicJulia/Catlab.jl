@@ -4,16 +4,16 @@ module DataMigrations
 export DataMigration, SigmaMigration, DeltaMigration, migrate, migrate!,
   representable, yoneda, colimit_representables
 
-using ...Syntax, ...Present, ...Theories
-using ...Theories: ob, hom, dom, codom, attr
+using ACSets
+using ACSets.DenseACSets: constructor, datatypes
+using ...Present
+using ...Theories: ob, hom, dom, codom, attr, AttrTypeExpr
 using ..Categories, ..FinCats, ..Limits, ..Diagrams, ..FinSets, ..CSets
 using ...Graphs, ..FreeDiagrams
 import ..Categories: ob_map, hom_map
 using ..FinCats: make_map, mapvals
 using ..Chase: collage, crel_type, pres_to_eds, add_srctgt, chase
-using ...ColumnImplementations: AttrVar 
 using ..FinSets: VarSet
-using ...DenseACSets: constructor, datatypes
 
 # Data types
 ############
