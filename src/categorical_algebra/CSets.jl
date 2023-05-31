@@ -273,9 +273,7 @@ acsets, loose morphisms are usually preferable. For more information about
 limits and colimits in these categories, see [`TightACSetTransformation`](@ref)
 and [`LooseACSetTransformation`](@ref).
 """
-abstract type ACSetTransformation{S,Comp,Dom,Codom} end
-# FIXME: The first parameters are included for backwards compatibility and
-# should be removed in a future release.
+abstract type ACSetTransformation{Dom,Codom} end
 
 """ Tight transformation between attributed C-sets.
 
@@ -287,8 +285,8 @@ and are currently not supported.
 
 For the distinction between tight and loose, see [`ACSetTranformation`](@ref).
 """
-abstract type TightACSetTransformation{S,Comp,Dom,Codom} <:
-  ACSetTransformation{S,Comp,Dom,Codom} end
+abstract type TightACSetTransformation{Dom,Codom} <:
+  ACSetTransformation{Dom,Codom} end
 
 """ Loose transformation between attributed C-sets.
 
@@ -313,8 +311,8 @@ colimit in C-Set.
 
 For the distinction between tight and loose, see [`ACSetTranformation`](@ref).
 """
-abstract type LooseACSetTransformation{S,Comp,Dom,Codom} <:
-  ACSetTransformation{S,Comp,Dom,Codom} end
+abstract type LooseACSetTransformation{Dom,Codom} <:
+  ACSetTransformation{Dom,Codom} end
 
 components(α::ACSetTransformation) = α.components
 force(α::ACSetTransformation) = map_components(force, α)
@@ -322,7 +320,7 @@ force(α::ACSetTransformation) = map_components(force, α)
 # Dynamic ACSet transformations
 
 @struct_hash_equal struct DynamicTightACSetTransformation <:
-    TightACSetTransformation{Nothing,NamedTuple,ACSet,ACSet}
+    TightACSetTransformation{ACSet,ACSet}
   components::NamedTuple
   dom::ACSet
   codom::ACSet
@@ -334,7 +332,7 @@ force(α::ACSetTransformation) = map_components(force, α)
 end
 
 @struct_hash_equal struct DynamicLooseACSetTransformation <:
-    LooseACSetTransformation{Nothing,NamedTuple,ACSet,ACSet}
+    LooseACSetTransformation{ACSet,ACSet}
   components::NamedTuple
   type_components::NamedTuple
   dom::ACSet
@@ -344,8 +342,8 @@ end
 # Struct ACSet transformations
 
 @struct_hash_equal struct StructTightACSetTransformation{
-    S <: TypeLevelSchema, Comp <: NamedTuple,
-    Dom <: StructACSet{S}, Codom <: StructACSet{S}} <: TightACSetTransformation{S,Comp,Dom,Codom}
+    S <: TypeLevelSchema, Comp <: NamedTuple, Dom <: StructACSet{S},
+    Codom <: StructACSet{S}} <: TightACSetTransformation{Dom,Codom}
   components::Comp
   dom::Dom
   codom::Codom  
@@ -368,8 +366,8 @@ This data type records the data of a C-set transformation. Naturality is not
 strictly enforced but is expected to be satisfied. It can be checked using the
 function [`is_natural`](@ref).
 """
-const CSetTransformation{S<:TypeLevelSchema,Comp,
-  Dom<:StructCSet{S},Codom<:StructCSet{S}} = StructTightACSetTransformation{S,Comp,Dom,Codom}
+const CSetTransformation{Dom<:StructCSet,Codom<:StructCSet} =
+  TightACSetTransformation{Dom,Codom}
 
 CSetTransformation(components, X::StructCSet{S}, Y::StructCSet{S}) where S =
   StructTightACSetTransformation{S}(components, X, Y)
@@ -437,7 +435,6 @@ function Base.getindex(α::ACSetTransformation, c)
   end
 end
 
-
 map_components(f, α::ACSetTransformation) =
   ACSetTransformation(map(f, components(α)), dom(α), codom(α))
 
@@ -451,7 +448,7 @@ end
 
 @struct_hash_equal struct StructLooseACSetTransformation{
     S <: TypeLevelSchema, Comp <: NamedTuple, Dom <: StructACSet{S}, 
-    Codom <: StructACSet{S}} <: LooseACSetTransformation{S,Comp,Dom,Codom}
+    Codom <: StructACSet{S}} <: LooseACSetTransformation{Dom,Codom}
   components::Comp
   dom::Dom
   codom::Codom
