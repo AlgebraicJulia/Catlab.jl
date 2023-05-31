@@ -129,9 +129,9 @@ g = DynamicACSet("WeightedGraph", SchWeightedGraph; index=[:src,:tgt])
 ```@autodocs
 Modules = [
   CategoricalAlgebra.CSets,
+  CategoricalAlgebra.DataMigrations,
+  CategoricalAlgebra.Chase,
   CategoricalAlgebra.StructuredCospans,
-  CategoricalAlgebra.ACSetInterface,
-  CategoricalAlgebra.ACSetColumns,
 ]
 Private = false
 ```
