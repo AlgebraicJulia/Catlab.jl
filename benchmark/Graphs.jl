@@ -348,7 +348,7 @@ Random.seed!(1)
 σ = randperm(n)
 clbench["indexed-lookup"] = @benchmarkable begin
   for i in $σ
-    @assert incident($g, "v$i", :label) == i
+    @assert only(incident($g, "v$i", :label)) == i
   end
 end
 lgbench["indexed-lookup"] = @benchmarkable begin

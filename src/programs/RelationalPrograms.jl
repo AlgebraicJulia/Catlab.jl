@@ -163,7 +163,7 @@ function parse_relation_diagram(head::Expr, body::Expr)
     add_junctions!(d, var_types(all_vars), variable=all_vars)
   end
   set_junction!(d, ports(d, outer=true),
-                incident(d, outer_vars, :variable), outer=true)
+                only.(incident(d, outer_vars, :variable)), outer=true)
 
   # Add box to diagram for each relation call.
   body = Base.remove_linenums!(body)
@@ -179,7 +179,7 @@ function parse_relation_diagram(head::Expr, body::Expr)
       new_vars = setdiff(unique(vars), d[:variable])
       add_junctions!(d, var_types(new_vars), variable=new_vars)
     end
-    set_junction!(d, ports(d, box), incident(d, vars, :variable))
+    set_junction!(d, ports(d, box), only.(incident(d, vars, :variable)))
   end
   return d
 end

@@ -560,11 +560,11 @@ function limit(F::Union{Functor,FreeDiagram,FixedShapeFreeDiagram}, ::ToBipartit
   lim = limit(d)
   cone = Multispan(apex(lim), map(incident(d, :, :orig_vert₁),
                                   incident(d, :, :orig_vert₂)) do v₁, v₂
-    if v₁ == 0
-      e = first(incident(d, v₂, :tgt))
+    if isempty(v₁)
+      e = first(incident(d, only(v₂), :tgt))
       compose(legs(lim)[src(d, e)], hom(d, e))
     else
-      legs(lim)[v₁]
+      legs(lim)[only(v₁)]
     end
   end)
   BipartiteLimit(F, cone, lim)
@@ -601,11 +601,11 @@ function colimit(F::Union{T,FreeDiagram}, ::ToBipartiteColimit) where {T<:Functo
   colim = colimit(d)
   cocone = Multicospan(apex(colim), map(incident(d, :, :orig_vert₁),
                                         incident(d, :, :orig_vert₂)) do v₁, v₂
-    if v₂ == 0
-      e = first(incident(d, v₁, :src))
+    if isempty(v₂)
+      e = first(incident(d, only(v₁), :src))
       compose(hom(d, e), legs(colim)[tgt(d, e)])
     else
-      legs(colim)[v₂]
+      legs(colim)[only(v₂)]
     end
   end)
   BipartiteColimit(F, cocone, colim)

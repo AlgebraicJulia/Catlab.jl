@@ -175,10 +175,10 @@ function parse_tensor_network(expr::Expr; all_vars=nothing)
   d = UntypedRelationDiagram{Symbol,Symbol}(length(outer_vars))
   add_junctions!(d, length(all_vars), variable=all_vars)
   set_junction!(d, ports(d, outer=true),
-                incident(d, outer_vars, :variable), outer=true)
+                only.(incident(d, outer_vars, :variable)), outer=true)
   for (name, vars) in names_and_vars
     box = add_box!(d, length(vars), name=name)
-    set_junction!(d, ports(d, box), incident(d, vars, :variable))
+    set_junction!(d, ports(d, box), only.(incident(d, vars, :variable)))
   end
   return d
 end

@@ -455,8 +455,8 @@ function BipartiteFreeDiagram{Ob,Hom}(F::Functor{<:FinCat{Int}};
     end
   end
   for e in edges(g)
-    v₁ = incident(d, src(g, e), :orig_vert₁)
-    v₂ = incident(d, tgt(g, e), :orig_vert₂)
+    v₁ = only(incident(d, src(g, e), :orig_vert₁))
+    v₂ = only(incident(d, tgt(g, e), :orig_vert₂))
     add_edge!(d, v₁, v₂, hom=hom_map(F, e))
   end
   return d
