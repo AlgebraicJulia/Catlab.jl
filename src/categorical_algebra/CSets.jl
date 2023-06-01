@@ -1,9 +1,10 @@
 """ Categories of C-sets and attributed C-sets.
 """
 module CSets
-export ACSetTransformation, CSetTransformation,StructACSetTransformation,
-  StructTightACSetTransformation,
-  TightACSetTransformation, LooseACSetTransformation, SubACSet, SubCSet,
+export ACSetTransformation, CSetTransformation, StructACSetTransformation,
+  StructTightACSetTransformation, TightACSetTransformation,
+  LooseACSetTransformation, @acset_transformation, @acset_transformations,
+  SubACSet, SubCSet,
   ACSetHomomorphismAlgorithm, BacktrackingSearch, HomomorphismQuery,
   components, type_components, force, naturality_failures, show_unnaturalities, is_natural, homomorphism, homomorphisms,
   homomorphism_error_failures, homomorphisms_error_failures, is_homomorphic, isomorphism, isomorphisms, is_isomorphic,

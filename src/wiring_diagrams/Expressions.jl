@@ -305,8 +305,8 @@ end
 
 function graph_with_outer_ids(d::WiringDiagram)
   g = graph(d)
-  outer = (incident(g, input_id(d), :box), incident(g, output_id(d), :box))
-  (g, outer)
+  (g, (only(incident(g, input_id(d), :box)),
+       only(incident(g, output_id(d), :box))))
 end
 
 box_id(g::WiringDiagramGraph, v) = subpart(g, v, :box)

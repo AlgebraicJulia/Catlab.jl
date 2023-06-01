@@ -170,7 +170,7 @@ function query(X::ACSet, diagram::UndirectedWiringDiagram,
     diagram = copy(diagram)
     spans = vcat(spans, map_pairs(params) do (key, value)
       box = add_part!(diagram, :Box, name=:_const)
-      junction = key isa Integer ? key : incident(diagram, key, :variable)
+      junction = key isa Integer ? key : only(incident(diagram, key, :variable))
       add_part!(diagram, :Port, port_name=:_value,
                 box=box, junction=junction)
       SMultispan{1}(ConstantFunction(value, FinSet(1)))
