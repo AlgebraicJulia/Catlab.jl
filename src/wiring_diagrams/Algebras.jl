@@ -77,7 +77,8 @@ function oapply(composite::UndirectedWiringDiagram,
                 return_colimit::Bool=false) where L
   @assert nboxes(composite) == length(cospans)
   if isnothing(junction_feet)
-    junction_feet = Vector{first(dom(L))}(undef, njunctions(composite))
+    junction_feet = Vector{Union{first(dom(L)),Nothing}}(
+      nothing, njunctions(composite))
   else
     @assert njunctions(composite) == length(junction_feet)
   end
@@ -91,7 +92,7 @@ function oapply(composite::UndirectedWiringDiagram,
     for (p, leg, foot) in zip(ports(composite, b), legs(cospan), feet(cospan))
       j = junction(composite, p)
       add_edge!(diagram, j, b, hom=leg)
-      if isassigned(junction_feet, j)
+      if !isnothing(junction_feet[j])
         foot′ = junction_feet[j]
         foot == foot′ || error("Feet of cospans are not equal: $foot != $foot′")
       else
