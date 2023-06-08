@@ -37,7 +37,7 @@ function oapply(composite::UndirectedWiringDiagram,
   if isnothing(Ob); Ob = typejoin(mapreduce(typeof∘apex, typejoin, spans),
                                   mapreduce(eltype∘feet, typejoin, spans)) end
   if isnothing(Hom); Hom = mapreduce(eltype∘legs, typejoin, spans) end
-  junction_feet = Vector{Ob}(undef, njunctions(composite))
+  junction_feet = Vector{Union{Some{Ob},Nothing}}(nothing, njunctions(composite))
 
   # Create bipartite free diagram whose vertices of types 1 and 2 are the UWD's
   # boxes and junctions, respectively.
@@ -49,17 +49,17 @@ function oapply(composite::UndirectedWiringDiagram,
       j = junction(composite, p)
       add_edge!(diagram, b, j, hom=leg)
       foot = codom(leg)
-      if isassigned(junction_feet, j)
-        foot′ = junction_feet[j]
+      if !isnothing(junction_feet[j])
+        foot′ = something(junction_feet[j])
         foot == foot′ || error("Feet of spans are not equal: $foot != $foot′")
       else
-        junction_feet[j] = foot
+        junction_feet[j] = Some(foot)
       end
     end
   end
-  all(isassigned(junction_feet, j) for j in junctions(composite)) ||
+  any(isnothing, junction_feet) &&
     error("Limits with isolated junctions are not supported")
-  diagram[:ob₂] = junction_feet
+  diagram[:ob₂] = map(something, junction_feet)
 
   # The composite multispan is given by the limit of this diagram.
   lim = limit(diagram)
