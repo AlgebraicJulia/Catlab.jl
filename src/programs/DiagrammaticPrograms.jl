@@ -632,7 +632,7 @@ high-level steps of this process are:
 function parse_migration(src_schema::Presentation, ast::AST.Diagram)
   C = FinCat(src_schema)
   d = parse_query_diagram(C, ast.statements)
-  diagram(make_query(C, d))
+  DataMigration(make_query(C, d))
 end
 function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
                          ast::AST.Mapping)
@@ -643,14 +643,15 @@ function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
     parse_query_hom(C, ismissing(expr) ? AST.Mapping(AST.AssignExpr[]) : expr,
                     F_ob[dom(D,f)], F_ob[codom(D,f)])
   end
-  diagram(make_query(C, DiagramData{Any}(F_ob, F_hom, D)))
+  DataMigration(make_query(C, DiagramData{Any}(F_ob, F_hom, D)))
 end
 function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
                          body::Expr)
   ast = parse_mapping_ast(body, FinCat(tgt_schema), preprocess=true)
   parse_migration(tgt_schema, src_schema, ast)
 end
-
+DataMigrations.DataMigration(h::SimpleDiagram) = DataMigration(diagram(h))
+DataMigrations.DataMigration(h::QueryDiagram) = DataMigration(diagram(h),h.params)
 # Query parsing
 #--------------
 

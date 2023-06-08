@@ -230,19 +230,19 @@ end
 #-------------------
 
 # Graph with reversed edges.
-F = @migration SchGraph SchGraph begin
+M = @migration SchGraph SchGraph begin
   V => V
   E => E
   src => tgt
   tgt => src
 end
-@test F isa DataMigrations.DeltaSchemaMigration
-@test F == FinFunctor(Dict(:V => :V, :E => :E),
+@test M isa DataMigrations.DeltaSchemaMigration
+@test functor(M) == FinFunctor(Dict(:V => :V, :E => :E),
                       Dict(:src => :tgt, :tgt => :src),
                       SchGraph, SchGraph)
 
 # Variant where target schema is not given.
-F = @migration SchGraph begin
+M = @migration SchGraph begin
   E => E
   V => V
   (src: E → V) => tgt
@@ -250,13 +250,13 @@ F = @migration SchGraph begin
 end
 J = FinCat(parallel_arrows(NamedGraph{Symbol,Union{Symbol,Nothing}}, 2,
                            V=(vname=[:E,:V],), E=(ename=[:src,:tgt],)))
-@test F == FinDomFunctor([:E,:V], [:tgt,:src], J, FinCat(SchGraph))
+@test functor(M) == FinDomFunctor([:E,:V], [:tgt,:src], J, FinCat(SchGraph))
 
 # Conjunctive migration
 #----------------------
 
 # Graph with edges that are paths of length 2.
-F = @migration SchGraph SchGraph begin
+M = @migration SchGraph SchGraph begin
   V => V
   E => @join begin
     v::V
@@ -267,7 +267,8 @@ F = @migration SchGraph SchGraph begin
   src => e₁ ⋅ src
   tgt => e₂ ⋅ tgt
 end
-@test F isa DataMigrations.ConjSchemaMigration
+@test M isa DataMigrations.ConjSchemaMigration
+F = functor(M)
 F_E = diagram(ob_map(F, :E))
 @test nameof.(collect_ob(F_E)) == [:V, :E, :E]
 @test nameof.(collect_hom(F_E)) == [:tgt, :src]
@@ -275,7 +276,7 @@ F_tgt = hom_map(F, :tgt)
 @test collect_ob(F_tgt) == [(3, SchGraph[:tgt])]
 
 # Syntactic variant of above.
-F′ = @migration SchGraph SchGraph begin
+M′ = @migration SchGraph SchGraph begin
   V => V
   E => @join begin
     v::V
@@ -286,10 +287,10 @@ F′ = @migration SchGraph SchGraph begin
   src => src(e₁)
   tgt => tgt(e₂)
 end
-@test F′ == F
+@test functor(M′) == F
 
 # Graph with edges of weight 5.0.
-F = @migration SchGraph SchWeightedGraph begin
+M = @migration SchGraph SchWeightedGraph begin
   V => V
   E => @join begin
     e::E
@@ -298,7 +299,8 @@ F = @migration SchGraph SchWeightedGraph begin
   src => e
   tgt => e
 end
-@test F isa DataMigrations.ConjSchemaMigration
+@test M isa DataMigrations.ConjSchemaMigration
+F = functor(M)
 F_E = ob_map(F, :E)
 @test only(values(F_E.params)) == 5.0
 F_src = hom_map(F, :src)
@@ -306,36 +308,38 @@ F_src = hom_map(F, :src)
 
 # "Bouquet graph" on set.
 # This is the right adjoint to the underlying edge set functor.
-F = @migration SchGraph SchSet begin
+M = @migration SchGraph SchSet begin
   V => @product begin end
   E => X
   src => begin end
   tgt => begin end
 end
-@test F isa DataMigrations.ConjSchemaMigration
-@test isempty(shape(ob_map(F, :V)))
+@test M isa DataMigrations.ConjSchemaMigration
+@test isempty(shape(ob_map(functor(M), :V)))
 
 # Syntactic variant of above.
-F′ = @migration SchGraph SchSet begin
+M′ = @migration SchGraph SchSet begin
   V => @unit
   E => X
 end
-@test F′ == F
+# something weird about == for datamigrations
+@test functor(M′) == functor(M) && M′.params == M.params
 
 # Cartesian product of graph with itself.
-F = @migration SchGraph SchGraph begin
+M = @migration SchGraph SchGraph begin
   V => @product (v₁::V; v₂::V)
   E => @product (e₁::E; e₂::E)
   src => (v₁ => e₁⋅src; v₂ => e₂⋅src)
   tgt => (v₁ => e₁⋅tgt; v₂ => e₂⋅tgt)
 end
+F = functor(M)
 F_V = diagram(ob_map(F, :V))
 @test collect_ob(F_V) == fill(SchGraph[:V], 2)
 F_src = hom_map(F, :src)
 @test collect_ob(F_src) == [(1, SchGraph[:src]), (2, SchGraph[:src])]
 
 # Reflexive graph from graph.
-F = @migration SchReflexiveGraph SchGraph begin
+M = @migration SchReflexiveGraph SchGraph begin
   V => @join begin
     v::V
     ℓ::E
@@ -365,13 +369,14 @@ F = @migration SchReflexiveGraph SchGraph begin
     v => v₂; ℓ => ℓ₂; s => s₂; t => t₂
   end
 end
+F = functor(M)
 F_tgt = hom_map(F, :tgt)
 @test ob_map(F_tgt, :v) == (2, id(SchGraph[:V]))
 @test hom_map(F_tgt, :t) |> edges |> only == 4
 
 # Free/initial port graph on a graph.
 # This is the left adjoint to the underlying graph functor.
-F = @migration SchGraph begin
+M = @migration SchGraph begin
   Box => V
   Wire => E
   InPort => @join begin
@@ -393,6 +398,7 @@ F = @migration SchGraph begin
     v => tgt
   end
 end
+F = functor(M)
 F_src = hom_map(F, :src)
 @test collect_ob(F_src) == [(1, SchGraph[:src]), (1, id(SchGraph[:E]))]
 @test collect_hom(F_src) == [id(shape(codom(F_src)), 1)]
@@ -413,15 +419,16 @@ end)
 
 # Discrete graph on set.
 # This is the left adjoint to the underlying vertex set functor.
-F = @migration SchGraph SchSet begin
+M = @migration SchGraph SchSet begin
   V => X
   E => @empty
 end
-@test F isa DataMigrations.GlueSchemaMigration
+F = functor(M)
+@test M isa DataMigrations.GlueSchemaMigration
 @test isempty(shape(ob_map(F, :E)))
 
 # Coproduct of graph with itself.
-F = @migration SchGraph SchGraph begin
+M = @migration SchGraph SchGraph begin
   V => @cases (v₁::V; v₂::V)
   E => @cases (e₁::E; e₂::E)
   src => begin
@@ -433,25 +440,27 @@ F = @migration SchGraph SchGraph begin
     e₂ => v₂ ∘ tgt
   end
 end
-@test F isa DataMigrations.GlueSchemaMigration
+@test M isa DataMigrations.GlueSchemaMigration
+F = functor(M)
 F_V = diagram(ob_map(F, :V))
 @test collect_ob(F_V) == fill(SchGraph[:V], 2)
 F_src = hom_map(F, :src)
 @test collect_ob(F_src) == [(1, SchGraph[:src]), (2, SchGraph[:src])]
 
 # Free reflexive graph on a graph.
-F = @migration SchReflexiveGraph SchGraph begin
+M = @migration SchReflexiveGraph SchGraph begin
   V => V
   E => @cases (e::E; v::V)
   src => (e => src)
   tgt => (e => tgt)
   refl => v
 end
+F = functor(M)
 F_tgt = hom_map(F, :tgt)
 @test collect_ob(F_tgt) == [(1, SchGraph[:tgt]), (1, id(SchGraph[:V]))]
 
 # Vertices in a graph and their connected components.
-F = @migration SchGraph begin
+M = @migration SchGraph begin
   V => V
   Component => @glue begin
     e::E; v::V
@@ -460,6 +469,7 @@ F = @migration SchGraph begin
   end
   (component: V → Component) => v
 end
+F = functor(M)
 F_C = diagram(ob_map(F, :Component))
 @test nameof.(collect_ob(F_C)) == [:E, :V]
 @test nameof.(collect_hom(F_C)) == [:src, :tgt]
@@ -468,7 +478,7 @@ F_C = diagram(ob_map(F, :Component))
 #---------------
 
 # Labeled graph with edges that are paths of length <= 2.
-F = @migration SchLabeledGraph SchLabeledGraph begin
+M = @migration SchLabeledGraph SchLabeledGraph begin
   V => V
   E => @cases begin
     v => V
@@ -491,8 +501,9 @@ F = @migration SchLabeledGraph SchLabeledGraph begin
   Label => Label
   label => label
 end
+F = functor(M)
 @test ob_map(F, :V) isa DataMigrations.GlucQuery
-@test F isa DataMigrations.GlucSchemaMigration
+@test M isa DataMigrations.GlucSchemaMigration
 F_src = hom_map(F, :src)
 @test collect_ob(shape_map(F_src)) == [1,1,1]
 F_src_v, F_src_e, F_src_path = components(diagram_map(F_src))
@@ -501,7 +512,7 @@ F_src_v, F_src_e, F_src_path = components(diagram_map(F_src))
 @test collect_ob(F_src_path) == [(2, SchGraph[:src])]
 
 # Graph with edges that are minimal paths b/w like vertices in bipartite graph.
-F = @migration SchGraph SchBipartiteGraph begin
+M = @migration SchGraph SchBipartiteGraph begin
   V => @cases (v₁::V₁; v₂::V₂)
   E => @cases begin
     e₁ => @join begin
@@ -524,8 +535,9 @@ F = @migration SchGraph SchBipartiteGraph begin
     e₂ => v₂ ∘ (e₁₂ ⋅ tgt₂)
   end
 end
+F = functor(M)
 @test ob_map(F, :V) isa DataMigrations.GlucQuery
-@test F isa DataMigrations.GlucSchemaMigration
+@test M isa DataMigrations.GlucSchemaMigration
 F_src = hom_map(F, :src)
 @test collect_ob(shape_map(F_src)) == [1,2]
 F_src1, F_src2 = components(diagram_map(F_src))
@@ -533,7 +545,7 @@ F_src1, F_src2 = components(diagram_map(F_src))
 @test collect_ob(F_src2) == [(2, SchBipartiteGraph[:src₂])]
 
 # Box product of reflexive graph with itself.
-F = @migration SchReflexiveGraph SchReflexiveGraph begin
+M = @migration SchReflexiveGraph SchReflexiveGraph begin
   V => @product (v₁::V; v₂::V)
   E => @glue begin
     vv => @product (v₁::V; v₂::V)
@@ -552,8 +564,9 @@ F = @migration SchReflexiveGraph SchReflexiveGraph begin
   end
   refl => vv
 end
+F = functor(M)
 @test ob_map(F, :V) isa DataMigrations.GlucQuery
-@test F isa DataMigrations.GlucSchemaMigration
+@test M isa DataMigrations.GlucSchemaMigration
 F_src = hom_map(F, :src)
 @test collect_ob(shape_map(F_src)) == [1,1,1]
 F_src_vv, F_src_ev, F_src_ve = components(diagram_map(F_src))
