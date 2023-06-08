@@ -112,7 +112,7 @@ M = @migration SchGraph SchGraph begin
   src => e₁ ⋅ src
   tgt => e₂ ⋅ tgt
 end
-F = func(M)
+F = functor(M)
 H = migrate(g, M, tabular=true)
 @test length(H(V)) == 5
 @test length(H(E)) == 3

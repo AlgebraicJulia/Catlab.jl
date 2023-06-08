@@ -2,7 +2,7 @@
 """
 module DataMigrations
 export DataMigration, SigmaMigration, DeltaMigration, SigmaMigrationFunctor, 
-  DeltaMigrationFunctor, DataMigrationFunctor, func, migrate, migrate!,  representable, yoneda, colimit_representables
+  DeltaMigrationFunctor, DataMigrationFunctor, functor, migrate, migrate!,  representable, yoneda, colimit_representables
 
 using ACSets
 using ACSets.DenseACSets: constructor, datatypes
@@ -11,6 +11,7 @@ using ...Theories: ob, hom, dom, codom, attr, AttrTypeExpr
 using ..Categories, ..FinCats, ..Limits, ..Diagrams, ..FinSets, ..CSets
 using ...Graphs, ..FreeDiagrams
 import ..Categories: ob_map, hom_map
+import ...Syntax: functor
 using ..FinCats: make_map, mapvals
 using ..Chase: collage, crel_type, pres_to_eds, add_srctgt, chase
 using ..FinSets: VarSet
@@ -51,9 +52,9 @@ duc, or gluc (contravariant) data migration. Alternatively, ``F`` may
 be a schema functor specifying a ``Σ`` migration in the covariant direction.
 """
 abstract type AbstractDataMigration{F<:FinDomFunctor} end
-func(M::AbstractDataMigration) = M.functor
-abstract type AbstractContravariantMigration{F<:FinDomFunctor} <: AbstractDataMigration{F} end
-abstract type AbstractCovariantMigration{F<:FinDomFunctor} <: AbstractDataMigration{F} end
+functor(M::AbstractDataMigration) = M.functor
+abstract type ContravariantMigration{F<:FinDomFunctor} <: AbstractDataMigration{F} end
+abstract type CovariantMigration{F<:FinDomFunctor} <: AbstractDataMigration{F} end
 
 """
 A contravariant data migration whose functor ``F`` may not be fully defined. Instead,
@@ -64,14 +65,14 @@ these attribute types.
 """
 #The same, except for the supertype and the variance parameter T, as a QueryDiagram in older code.
 #(Instead, `C` itself is probably a category of queries, which thus contain the information of T further down.)
-struct DataMigration{F<:FinDomFunctor,Params<:AbstractDict} <: AbstractContravariantMigration{F}
+struct DataMigration{F<:FinDomFunctor,Params<:AbstractDict} <: ContravariantMigration{F}
   functor::F
   params::Params
 end
 DataMigration(F::FinDomFunctor) = DataMigration(F,Dict())
 """ Schema-level functor defining a pullback or delta data migration.
 """
-const DeltaSchemaMigration{D<:FinCat,C<:FinCat} = AbstractContravariantMigration{<:FinFunctor{D,C}}
+const DeltaSchemaMigration{D<:FinCat,C<:FinCat} = ContravariantMigration{<:FinFunctor{D,C}}
 #This only exists for the acset to acset migrate! method which is performance-optimized for 
 #the easy Delta case
 const DeltaMigration{D<:FinCat,C<:FinCat} = DataMigration{<:FinFunctor{D,C},<:AbstractDict}
@@ -79,17 +80,17 @@ const DeltaMigration{D<:FinCat,C<:FinCat} = DataMigration{<:FinFunctor{D,C},<:Ab
 """ Schema-level functor defining a contravariant data migration using conjunctive queries.
 """
 const ConjSchemaMigration{D<:FinCat,C<:FinCat} =
-  AbstractContravariantMigration{<:FinDomFunctor{D,<:TypeCat{<:ConjQuery{C}}}}
+  ContravariantMigration{<:FinDomFunctor{D,<:TypeCat{<:ConjQuery{C}}}}
 
 """ Schema-level functor defining a contravariant data migration using gluing queries.
 """
 const GlueSchemaMigration{D<:FinCat,C<:FinCat} =
-  AbstractContravariantMigration{<:FinDomFunctor{D,<:TypeCat{<:GlueQuery{C}}}}
+  ContravariantMigration{<:FinDomFunctor{D,<:TypeCat{<:GlueQuery{C}}}}
 
 """ Schema-level functor defining a contravariant data migration using gluc queries.
 """
 const GlucSchemaMigration{D<:FinCat,C<:FinCat} =
-  AbstractContravariantMigration{<:FinDomFunctor{D,<:TypeCat{<:GlucQuery{C}}}}
+  ContravariantMigration{<:FinDomFunctor{D,<:TypeCat{<:GlucQuery{C}}}}
 
 """ Sigma or left pushforward functorial data migration between acsets.
 
@@ -101,7 +102,7 @@ const GlucSchemaMigration{D<:FinCat,C<:FinCat} =
   
   See (Spivak, 2014, *Category Theory for the Sciences*) for details.
 """
-const SigmaSchemaMigration{F<:FinFunctor} = AbstractCovariantMigration{F}
+const SigmaSchemaMigration{F<:FinFunctor} = CovariantMigration{F}
 struct SigmaMigration{F<:FinFunctor} <: SigmaSchemaMigration{F}
   functor::F
 end
@@ -141,7 +142,7 @@ migrate(::Type{T}, X::ACSet, FOb, FHom) where T <: ACSet =
   migrate!(T(), X, FOb, FHom)
 
 function migrate!(X::StructACSet{S}, Y::ACSet, M::DeltaMigration) where S
-  F = func(M)
+  F = functor(M)
   partsX = Dict(c => add_parts!(X, c, nparts(Y, nameof(ob_map(F,c))))
                 for c in ob(S))
   for (f,c,d) in homs(S)
@@ -163,7 +164,7 @@ end
 #todo: generalize compose for non-total migrations
 function migrate(X::FinDomFunctor, M::ConjSchemaMigration;
                  return_limits::Bool=false, tabular::Bool=false)
-  F = func(M)
+  F = functor(M)
   tgt_schema = dom(F)
   limits = make_map(ob_generators(tgt_schema)) do c
     Fc = ob_map(F, c)
@@ -200,7 +201,7 @@ end
 #-----------------
 
 function migrate(X::FinDomFunctor, M::GlueSchemaMigration)
-  F = func(M)
+  F = functor(M)
   tgt_schema = dom(F)
   colimits = make_map(ob_generators(tgt_schema)) do c
     Fc = ob_map(F, c)
@@ -220,7 +221,7 @@ end
 #---------------
 
 function migrate(X::FinDomFunctor, M::GlucSchemaMigration)
-  F = func(M)
+  F = functor(M)
   tgt_schema = dom(F)
   colimits_of_limits = make_map(ob_generators(tgt_schema)) do c
     Fc = ob_map(F, c)
@@ -247,22 +248,22 @@ This allows the user to have an actual model of the theory of
 functors, once one knows the exact concrete types Dom and Codom
 of the relevant acsets. 
 """
-abstract type MigrationFunctor{Dom<:ACSet,Codom<:ACSet} <:
+abstract type AbstractMigrationFunctor{Dom<:ACSet,Codom<:ACSet} <:
   Functor{TypeCat{Dom,ACSetTransformation},TypeCat{Codom,ACSetTransformation}} end
 
-ob_map(F::MigrationFunctor{Dom,Codom}, X) where {Dom,Codom} =
+ob_map(F::AbstractMigrationFunctor{Dom,Codom}, X) where {Dom,Codom} =
   ob_map(F, Codom, X)
 
-(F::MigrationFunctor)(X::ACSet) = ob_map(F, X)
-(F::MigrationFunctor)(α::ACSetTransformation) = hom_map(F, α)
+(F::AbstractMigrationFunctor)(X::ACSet) = ob_map(F, X)
+(F::AbstractMigrationFunctor)(α::ACSetTransformation) = hom_map(F, α)
 """
 Data migration functor given contravariantly. Stores a contravariant migration.
 """
-struct DataMigrationFunctor{Dom,Codom,M<:AbstractContravariantMigration} <: MigrationFunctor{Dom,Codom}
+struct DataMigrationFunctor{Dom,Codom,M<:ContravariantMigration} <: AbstractMigrationFunctor{Dom,Codom}
   migration::M
 end
 migration(F::DataMigrationFunctor) = F.migration
-func(F::DataMigrationFunctor) = func(migration(F))
+functor(F::DataMigrationFunctor) = functor(migration(F))
 
 DataMigrationFunctor(functor::F, ::Type{Dom}, ::Type{Codom}) where {F,Dom,Codom} =
   DataMigrationFunctor{Dom,Codom,DataMigration{F,Dict{Any,Any}}}(DataMigration(functor))
@@ -278,7 +279,7 @@ const GlucMigrationFunctor{Dom,Codom} = DataMigrationFunctor{Dom,Codom,<:GlucSch
 
 # Sigma migration
 #################
-struct SigmaMigrationFunctor{Dom,Codom,M<:SigmaSchemaMigration} <: MigrationFunctor{Dom,Codom}
+struct SigmaMigrationFunctor{Dom,Codom,M<:SigmaSchemaMigration} <: AbstractMigrationFunctor{Dom,Codom}
   migration::M
   dom_constructor
   codom_constructor
@@ -286,7 +287,7 @@ struct SigmaMigrationFunctor{Dom,Codom,M<:SigmaSchemaMigration} <: MigrationFunc
     new{typeof(d),typeof(c),SigmaMigration{F}}(SigmaMigration(f),constructor(d),constructor(c))
 end 
 migration(F::SigmaMigrationFunctor) = F.migration
-func(F::SigmaMigrationFunctor) = func(migration(F))
+functor(F::SigmaMigrationFunctor) = functor(migration(F))
 
 SigmaMigrationFunctor(f,::Type{T},c::ACSet) where T<:StructACSet = SigmaMigrationFunctor(f,T(),constructor(c))
 SigmaMigrationFunctor(f,d::ACSet,::Type{T}) where T<:StructACSet = SigmaMigrationFunctor(f,d,T())
@@ -301,7 +302,7 @@ portion of the collage, then run the chase.
 function (M::SigmaMigrationFunctor)(d::ACSet; n=100)
   D,CD = M.dom_constructor(), M.codom_constructor()
   S = acset_schema(d)
-  col, col_pres = collage(func(M))
+  col, col_pres = collage(functor(M))
   i1,i2 = legs(col)
   # Initialize collage C-Set with data from `d`
   atypes = Dict{Symbol,Type}()
@@ -414,10 +415,10 @@ Since every C-set is a colimit of representables, this is a generic way of
 constructing diagrams of C-sets.
 """
 function colimit_representables(M::DeltaSchemaMigration, y)
-  compose(op(func(M)), y)
+  compose(op(functor(M)), y)
 end
 function colimit_representables(M::ConjSchemaMigration, y)
-  F = func(M)
+  F = functor(M)
   C = dom(F)
   ACS = constructor(ob_map(y,first(ob_generators(dom(y)))))
   colimits = make_map(ob_generators(C)) do c
