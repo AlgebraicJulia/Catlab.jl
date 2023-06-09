@@ -1,6 +1,6 @@
 module TestCatElements
 using Test
-using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
+using Catlab.GATs, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 
 arr = @acset Graph begin
   V = 2

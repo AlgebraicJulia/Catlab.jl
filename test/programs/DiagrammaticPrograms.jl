@@ -1,7 +1,7 @@
 module TestDiagrammaticPrograms
 using Test
 
-using Catlab, Catlab.Graphs, Catlab.CategoricalAlgebra
+using Catlab.GATs, Catlab.Graphs, Catlab.CategoricalAlgebra
 using Catlab.Programs.DiagrammaticPrograms
 using Catlab.Programs.DiagrammaticPrograms: NamedGraph
 using Catlab.Programs.DiagrammaticPrograms: get_keyword_arg_val, destructure_unary_call

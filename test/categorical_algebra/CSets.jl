@@ -2,7 +2,7 @@ module TestCSets
 using Test
 using Random: seed!
 
-using Catlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
+using Catlab.GATs, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 
 seed!(100)
 

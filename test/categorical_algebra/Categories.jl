@@ -1,7 +1,7 @@
 module TestCategories
 using Test
 
-using Catlab, Catlab.Theories
+using Catlab.GATs, Catlab.Theories
 using Catlab.CategoricalAlgebra.Sets, Catlab.CategoricalAlgebra.Categories
 
 # Instances

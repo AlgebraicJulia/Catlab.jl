@@ -2,7 +2,7 @@ module TestGenerateJuliaPrograms
 
 using Test
 
-using Catlab, Catlab.Theories
+using Catlab.GATs, Catlab.Theories
 using Catlab.Programs.GenerateJuliaPrograms
 
 ℝ = Ob(FreeCartesianCategory, :ℝ)

@@ -1,6 +1,6 @@
 # # The Category of Elements
 # A very useful construction in applied category theory is the Category of Elements, which is also called the Grothendieck construction. This is a very general technique in category theory, but we will look at how you can use it to explain why graphs are so useful in computer science. We have already seen that C-Sets are a model of relational databases that can be used to store data as a collection of interlocking tables. Relational databases are the bread and butter of the computing industry. Every company on earth uses software that is backed by a relational database. Most data that is not stored in a relational DB is often stored in some kind of graph data structure. This sketch will show how these approaches are interchangeable via the category of elements, which associates to every database instance a graph and a graph homomorphism into the schema of the graph.
-using Catlab, Catlab.CategoricalAlgebra, Catlab.Graphs, Catlab.Graphics
+using Catlab.GATs, Catlab.CategoricalAlgebra, Catlab.Graphs, Catlab.Graphics
 using Colors
 
 # Let's tell Catlab how to draw categories of elements.

@@ -5,10 +5,7 @@ const literate_dir = joinpath(@__DIR__, "literate")
 const generated_dir = joinpath(@__DIR__, "src", "generated")
 
 @info "Loading Catlab.jl"
-using Catlab,
-  # Must explicitly load all submodules for which docs are needed.
-  Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs,
-  Catlab.WiringDiagrams, Catlab.Graphics, Catlab.Programs
+using Catlab
 
 const no_literate = "--no-literate" in ARGS
 if !no_literate
@@ -81,7 +78,7 @@ makedocs(
       ],
     ],
     "Modules" => Any[
-      "apis/core.md",
+      "apis/gats.md",
       "apis/theories.md",
       "apis/categorical_algebra.md",
       "apis/graphs.md",
