@@ -48,7 +48,7 @@ using the [`@theory`](@ref) macro.
 For example, the theory of categories could be defined by:
 
 ```@setup category
-using Catlab
+using Catlab.GATs
 import Catlab.Theories: Ob, Hom, ObExpr, HomExpr, dom, codom, compose, ⋅, id
 ```
 
@@ -234,7 +234,7 @@ the cartesian monoidal category, we could define a signature `CartesianCategory`
 by inheriting from the builtin theory `SymmetricMonoidalCategory`.
 
 ```@setup cartesian-monoidal-category
-using Catlab
+using Catlab.GATs
 import Catlab.Theories: Ob, Hom, ObExpr, HomExpr, ThSymmetricMonoidalCategory,
   dom, codom, compose, id, otimes, munit, braid
 ```

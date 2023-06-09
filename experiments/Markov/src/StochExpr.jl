@@ -1,7 +1,6 @@
-using Catlab
-using Catlab.Theories
-
 export crand
+
+using Catlab.GATs, Catlab.Theories
 
 
 # How do you give semantics to a stochastic map? You call it.

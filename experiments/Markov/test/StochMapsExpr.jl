@@ -1,7 +1,7 @@
-using Markov
-using Catlab
-using Catlab.Theories
 using Test
+
+using Catlab.GATs, Catlab.Theories
+using Markov
 
 X = Ob(FreeCartesianCategory, :Float64)
 u = Hom(x->x*rand(), X, X)

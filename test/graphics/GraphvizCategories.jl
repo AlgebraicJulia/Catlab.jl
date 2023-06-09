@@ -1,7 +1,7 @@
 module TestGraphvizCategories
 using Test
 
-using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
+using Catlab.GATs, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
 using Catlab.Graphics.GraphvizCategories
 using Catlab.Graphics: Graphviz
 

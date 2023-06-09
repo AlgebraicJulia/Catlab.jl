@@ -63,7 +63,7 @@ We can also add equations to this presentation, but we currently do nothing with
 We will now give an example of how this all works in practice.
 
 ```@example
-using Catlab, Catlab.CategoricalAlgebra
+using Catlab.GATs, Catlab.CategoricalAlgebra
 
 # Write down the schema for a weighted graph
 @present SchWeightedGraph(FreeSchema) begin

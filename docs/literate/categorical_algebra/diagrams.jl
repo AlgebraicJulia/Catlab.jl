@@ -8,7 +8,7 @@
 # X:Ob(J) labeled with its type F(X) and each edge is a morphism in J labeled
 # with its image under F.
 
-using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
+using Catlab.GATs, Catlab.Theories, Catlab.CategoricalAlgebra
 using Catlab.Graphs, Catlab.Graphics, Catlab.Programs
 
 draw(d::Diagram) = to_graphviz(d, prog="neato", node_labels=true, edge_labels=true)

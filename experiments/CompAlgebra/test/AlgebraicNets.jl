@@ -3,7 +3,7 @@ module TestAlgebraicNets
 import Pkg
 using Test
 
-using Catlab
+using Catlab.GATs
 using CompAlgebra.AlgebraicNets
 
 R = Ob(AlgebraicNet, :R)

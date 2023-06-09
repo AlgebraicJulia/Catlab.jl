@@ -1,7 +1,7 @@
 module TestFinSets
 using Test
 
-using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra
+using Catlab.GATs, Catlab.Theories, Catlab.CategoricalAlgebra
 using Catlab.CategoricalAlgebra.FinSets: VarSet
 
 sshow(args...) = sprint(show, args...)
