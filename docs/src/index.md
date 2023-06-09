@@ -148,7 +148,7 @@ debug messages.
 
 ```@contents
 Pages = [
-     "apis/core.md",
+     "apis/gats.md",
      "apis/theories.md",
      "apis/wiring_diagrams.md",
      "apis/graphics.md",

@@ -281,10 +281,10 @@ pair(f, g)
 
 ```@autodocs
 Modules = [
-  GAT,
-  Syntax,
-  Rewrite,
-  Present,
+  GATs.TheoriesInstances,
+  GATs.SyntaxSystems,
+  GATs.Rewriting,
+  GATs.Presentations,
 ]
 Private = false
 ```

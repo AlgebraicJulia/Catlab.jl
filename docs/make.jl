@@ -81,7 +81,7 @@ makedocs(
       ],
     ],
     "Modules" => Any[
-      "apis/core.md",
+      "apis/gats.md",
       "apis/theories.md",
       "apis/categorical_algebra.md",
       "apis/graphs.md",
