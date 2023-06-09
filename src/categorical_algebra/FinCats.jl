@@ -13,7 +13,8 @@ module FinCats
 export FinCat, FinCatGraph, Path, ob_generator, hom_generator,
   ob_generator_name, hom_generator_name, ob_generators, hom_generators,
   equations, is_discrete, is_free, graph, edges, src, tgt, presentation,
-  FinFunctor, FinDomFunctor, is_functorial, functoriality_failures,collect_ob, collect_hom, force,
+  FinFunctor, FinDomFunctor, is_functorial, functoriality_failures,
+  collect_ob, collect_hom, force,
   FinTransformation, components, is_natural, is_initial
 
 using StructEquality
@@ -408,32 +409,34 @@ This function checks that functor preserves domains and codomains. When
 that the functor preserves all equations in the domain category. No nontrivial 
 checks are currently implemented, so this only functions for identity functors.
 
-See also: [`is_natural`](@ref).
+See also: [`functoriality_failures'](@ref) and [`is_natural`](@ref).
 """
-function functoriality_failures(F::FinDomFunctor; check_equations::Bool=false)
-  C, D = dom(F),codom(F)
-  bad_dom = Iterators.filter(hom_generators(C)) do f 
-    g = hom_map(F, f)
-    dom(D,g) != ob_map(F, dom(C,f))
-  end 
-  bad_cod = Iterators.filter(hom_generators(C)) do f 
-    g = hom_map(F, f)
-    codom(D,g) != ob_map(F, codom(C,f))
-  end
-  bad_eqn = []
-  #currently this won't check for nontrivial equalities
-  if check_equations
-    bad_eqn = Iterators.filter(equations(C)) do (lhs,rhs)
-              !is_hom_equal(D,hom_map(F,lhs),hom_map(F,rhs))
-    end
-    return bad_dom, bad_cod, bad_eqn
-  end
-  return bad_dom, bad_cod
+function is_functorial(F::FinDomFunctor; kw...)
+  failures = functoriality_failures(F; kw...)
+  all(isempty, failures)
 end
 
-function is_functorial(F::FinDomFunctor; check_equations::Bool=false)
-  failures = functoriality_failures(F; check_equations=check_equations)
-  all(isempty,failures)
+""" Failures of the purported functor on a presented category to be functorial.
+
+Similar to [`is_functorial`](@ref) (and with the same caveats) but returns
+iterators of functoriality failures: one for domain incompatibilities, one for
+codomain incompatibilities, and one for equations that are not satisfied.
+"""
+function functoriality_failures(F::FinDomFunctor; check_equations::Bool=false)
+  C, D = dom(F), codom(F)
+  bad_dom = Iterators.filter(hom_generators(C)) do f 
+    dom(D, hom_map(F, f)) != ob_map(F, dom(C,f))
+  end 
+  bad_cod = Iterators.filter(hom_generators(C)) do f 
+    codom(D, hom_map(F, f)) != ob_map(F, codom(C,f))
+  end
+  bad_eqs = if check_equations
+    # TODO: Currently this won't check for nontrivial equalities
+    Iterators.filter(equations(C)) do (lhs,rhs)
+      !is_hom_equal(D,hom_map(F,lhs),hom_map(F,rhs))
+    end
+  else () end
+  (bad_dom, bad_cod, bad_eqs)
 end
 
 function Base.map(F::Functor{<:FinCat,<:TypeCat}, f_ob, f_hom)
