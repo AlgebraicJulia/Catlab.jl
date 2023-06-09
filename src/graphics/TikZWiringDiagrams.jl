@@ -6,7 +6,7 @@ export to_tikz, layout_to_tikz
 using DataStructures: OrderedDict
 using MLStyle: @match
 
-using ...Syntax: GATExpr, show_latex
+using ...GATs: GATExpr, show_latex
 using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
 using ..WiringDiagramLayouts
 using ..WiringDiagramLayouts: AbstractVector2D, Vector2D, BoxLayout, box_label,

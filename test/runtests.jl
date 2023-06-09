@@ -1,7 +1,7 @@
 using Test
 
-@testset "Core" begin
-  include("core/Core.jl")
+@testset "GATs" begin
+  include("gats/GATs.jl")
 end
 
 @testset "Theories" begin

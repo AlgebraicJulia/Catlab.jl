@@ -1,7 +1,7 @@
 module TestMarkovCategories
 using Test
 
-using Catlab.Syntax, Catlab.WiringDiagrams
+using Catlab.GATs, Catlab.WiringDiagrams
 using Markov.MarkovCategories
 
 # Theories

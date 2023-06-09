@@ -16,9 +16,8 @@ using Logging
 using StaticArrays: StaticVector, SVector
 using Statistics: mean
 
-using ...Syntax
+using ...GATs, ...WiringDiagrams
 using ...Theories: ObExpr, HomExpr, dom, codom, compose, id, otimes, braid
-using ...WiringDiagrams
 
 # Data types
 ############

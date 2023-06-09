@@ -3,7 +3,7 @@ export SchElements, AbstractElements, Elements, elements, inverse_elements
 
 using DataStructures: OrderedDict
 
-using ...Present, ...Theories
+using ...GATs, ...Theories
 using ..CSets, ..FinSets
 
 @present SchElements(FreeSchema) begin

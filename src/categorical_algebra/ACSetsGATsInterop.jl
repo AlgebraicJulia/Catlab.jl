@@ -8,9 +8,8 @@ using DataStructures: OrderedDict
 using ACSets
 import ACSets: Schema
 
-using ...Present, ...Syntax
-import ...Present: Presentation
-using ...Theories
+using ...GATs, ...Theories
+import ...GATs: Presentation
 
 # Schema <-> presentation
 #########################

@@ -11,7 +11,7 @@ export AbstractNestedUWD, AbstractScheduledUWD, NestedUWD, ScheduledUWD,
 import Base: schedule
 using DataStructures: IntDisjointSets, union!, in_same_set
 
-using ...Present, ...CategoricalAlgebra.CSets, ...CategoricalAlgebra.FinSets
+using ...GATs, ...CategoricalAlgebra.CSets, ...CategoricalAlgebra.FinSets
 using ..UndirectedWiringDiagrams, ..WiringDiagramAlgebras
 using ..UndirectedWiringDiagrams: flat
 

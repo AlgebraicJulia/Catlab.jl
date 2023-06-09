@@ -10,7 +10,7 @@ export SetOb, TypeSet, PredicatedSet, SetFunction, ConstantFunction, Ob
 
 using StructEquality
 
-using ...GAT, ..Categories, ..FreeDiagrams, ..Limits
+using ...GATs, ..Categories, ..FreeDiagrams, ..Limits
 using ...Theories: ThCategory
 import ...Theories: Ob, dom, codom, id, compose, ⋅, ∘
 import ..Categories: show_type_constructor, show_domains

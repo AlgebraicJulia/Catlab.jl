@@ -23,8 +23,8 @@ using StaticArrays: SVector
 using DataStructures: IntDisjointSets, in_same_set, num_groups
 
 using ACSets
-using ...Present, ...Syntax
-import ...Present: equations
+using ...GATs
+import ...GATs: equations
 using ...Theories: ThCategory, ThSchema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ...Graphs

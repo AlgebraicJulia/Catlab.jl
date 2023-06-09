@@ -19,7 +19,7 @@ export Category, Cat, TypeCat, Functor, Transformation, dom, codom, compose, id,
 
 using StructEquality
 
-using ...GAT
+using ...GATs
 import ...Theories: ThCategory2, ob, hom, dom, codom, compose, ⋅, ∘, id,
   composeH, *
 

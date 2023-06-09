@@ -71,11 +71,11 @@ ndims(expr::ObExpr{:otimes}) = sum(map(ndims, args(expr)))
 ndims(expr::ObExpr{:munit}) = 0
 
 show_unicode(io::IO, expr::CategoryExpr{:otimes}; kw...) =
-  Syntax.show_unicode_infix(io, expr, "⊗"; kw...)
+  show_unicode_infix(io, expr, "⊗"; kw...)
 show_unicode(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
 
 show_latex(io::IO, expr::CategoryExpr{:otimes}; kw...) =
-  Syntax.show_latex_infix(io, expr, "\\otimes"; kw...)
+  show_latex_infix(io, expr, "\\otimes"; kw...)
 show_latex(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
 
 # Symmetric monoidal category
@@ -112,9 +112,9 @@ end
 end
 
 show_unicode(io::IO, expr::CategoryExpr{:braid}; kw...) =
-  Syntax.show_unicode_infix(io, expr, "σ"; kw...)
+  show_unicode_infix(io, expr, "σ"; kw...)
 show_latex(io::IO, expr::CategoryExpr{:braid}; kw...) =
-  Syntax.show_latex_script(io, expr, "\\sigma")
+  show_latex_script(io, expr, "\\sigma")
 
 """ Theory of a *symmetric monoidal copresheaf*
 
@@ -229,12 +229,10 @@ This convention could be dropped or reversed.
   proj2(A::Ob, B::Ob) = otimes(delete(A), id(B))
 end
 
-function show_latex(io::IO, expr::HomExpr{:mcopy}; kw...)
-  Syntax.show_latex_script(io, expr, "\\Delta")
-end
-function show_latex(io::IO, expr::HomExpr{:delete}; kw...)
-  Syntax.show_latex_script(io, expr, "\\lozenge")
-end
+show_latex(io::IO, expr::HomExpr{:mcopy}; kw...) =
+  show_latex_script(io, expr, "\\Delta")
+show_latex(io::IO, expr::HomExpr{:delete}; kw...) =
+  show_latex_script(io, expr, "\\lozenge")
 
 # Biproduct category
 ####################
@@ -292,12 +290,10 @@ end
   coproj2(A::Ob, B::Ob) = □(A) ⊗ id(B)
 end
 
-function show_latex(io::IO, expr::HomExpr{:mmerge}; kw...)
-  Syntax.show_latex_script(io, expr, "\\nabla")
-end
-function show_latex(io::IO, expr::HomExpr{:create}; kw...)
-  Syntax.show_latex_script(io, expr, "\\square")
-end
+show_latex(io::IO, expr::HomExpr{:mmerge}; kw...) =
+  show_latex_script(io, expr, "\\nabla")
+show_latex(io::IO, expr::HomExpr{:create}; kw...) =
+  show_latex_script(io, expr, "\\square")
 
 # Closed monoidal category
 ##########################
@@ -331,7 +327,7 @@ function show_latex(io::IO, expr::ObExpr{:hom}; kw...)
   print(io, "}")
 end
 function show_latex(io::IO, expr::HomExpr{:ev}; kw...)
-  Syntax.show_latex_script(io, expr, "\\mathrm{eval}")
+  show_latex_script(io, expr, "\\mathrm{eval}")
 end
 function show_latex(io::IO, expr::HomExpr{:curry}; kw...)
   print(io, "\\lambda ")
@@ -414,18 +410,14 @@ function distribute_mate(f::HomExpr)
     mate, otimes, contravariant=true)
 end
 
-function show_latex(io::IO, expr::ObExpr{:dual}; kw...)
-  Syntax.show_latex_postfix(io, expr, "^*")
-end
-function show_latex(io::IO, expr::HomExpr{:dunit}; kw...)
-  Syntax.show_latex_script(io, expr, "\\eta")
-end
-function show_latex(io::IO, expr::HomExpr{:dcounit}; kw...)
-  Syntax.show_latex_script(io, expr, "\\varepsilon")
-end
-function show_latex(io::IO, expr::HomExpr{:mate}; kw...)
-  Syntax.show_latex_postfix(io, expr, "^*")
-end
+show_latex(io::IO, expr::ObExpr{:dual}; kw...) =
+  show_latex_postfix(io, expr, "^*")
+show_latex(io::IO, expr::HomExpr{:dunit}; kw...) =
+  show_latex_script(io, expr, "\\eta")
+show_latex(io::IO, expr::HomExpr{:dcounit}; kw...) =
+  show_latex_script(io, expr, "\\varepsilon")
+show_latex(io::IO, expr::HomExpr{:mate}; kw...) =
+  show_latex_postfix(io, expr, "^*")
 
 # Dagger category
 #################
@@ -496,9 +488,8 @@ end
   mate(f::Hom) = distribute_mate(involute(new(f)))
 end
 
-function show_latex(io::IO, expr::HomExpr{:dagger}; kw...)
-  Syntax.show_latex_postfix(io, expr, "^\\dagger")
-end
+show_latex(io::IO, expr::HomExpr{:dagger}; kw...) =
+  show_latex_postfix(io, expr, "^\\dagger")
 
 # Traced monoidal category
 ##########################

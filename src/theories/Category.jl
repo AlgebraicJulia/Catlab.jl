@@ -52,12 +52,12 @@ compose(f, g, h, fs...) = compose([f, g, h, fs...])
 end
 
 show_unicode(io::IO, expr::CategoryExpr{:compose}; kw...) =
-  Syntax.show_unicode_infix(io, expr, "⋅"; kw...)
+  show_unicode_infix(io, expr, "⋅"; kw...)
 
 show_latex(io::IO, expr::CategoryExpr{:id}; kw...) =
-  Syntax.show_latex_script(io, expr, "\\mathrm{id}")
+  show_latex_script(io, expr, "\\mathrm{id}")
 show_latex(io::IO, expr::CategoryExpr{:compose}; paren::Bool=false, kw...) =
-  Syntax.show_latex_infix(io, expr, "\\cdot"; paren=paren)
+  show_latex_infix(io, expr, "\\cdot"; paren=paren)
 
 function show(io::IO, ::MIME"text/plain", expr::HomExpr)
   show_unicode(io, expr)
@@ -157,11 +157,11 @@ function show(io::IO, ::MIME"text/latex", expr::ElExpr)
 end
 
 show_unicode(io::IO, expr::Union{ElExpr{:act},ElExpr{:coact}}; kw...) =
-  Syntax.show_unicode_infix(io, expr, "⋅"; kw...)
+  show_unicode_infix(io, expr, "⋅"; kw...)
 
 show_latex(io::IO, expr::Union{ElExpr{:act},ElExpr{:coact}};
            paren::Bool=false, kw...) =
-  Syntax.show_latex_infix(io, expr, "\\cdot"; paren=paren)
+  show_latex_infix(io, expr, "\\cdot"; paren=paren)
 
 # ℳ-category
 ############

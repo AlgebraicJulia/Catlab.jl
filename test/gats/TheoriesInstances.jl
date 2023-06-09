@@ -1,11 +1,11 @@
-module TestGAT
+module TestTheoriesInstances
 
 using Base.Meta: ParseError
 using Test
 using DataStructures: OrderedDict
 
-import Catlab: GAT
-using Catlab.GAT
+using Catlab.GATs
+import Catlab.TheoriesInstances as GAT
 
 # GAT expressions
 #################

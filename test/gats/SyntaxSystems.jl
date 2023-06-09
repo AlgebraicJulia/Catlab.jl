@@ -1,12 +1,12 @@
-""" Test the Syntax module.
+""" Test the SyntaxSystems module.
 
 The unit tests are sparse because many of the Theory module tests are
-effectively just tests of the Syntax module.
+effectively just tests of the SyntaxSystems module.
 """
-module TestSyntax
+module TestSyntaxSystems
 
 using Test
-using Catlab
+using Catlab.GATs
 
 # Monoid
 ########

@@ -19,7 +19,7 @@ using StructEquality
 using StaticArrays: StaticVector, SVector
 
 using ACSets
-using ...GAT, ...Theories
+using ...GATs, ...Theories
 import ...Theories: dom, codom, ob, hom,
   terminal, product, proj1, proj2, equalizer, incl,
   initial, coproduct, coproj1, coproj2, coequalizer, proj,

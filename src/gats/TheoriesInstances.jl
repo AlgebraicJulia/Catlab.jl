@@ -1,6 +1,6 @@
-""" Generalized algebraic theories (GATs) in Julia.
+""" Generalized algebraic theories (GATs) and their models in Julia (instances).
 """
-module GAT
+module TheoriesInstances
 export @theory, @signature, @instance, theory, invoke_term
 
 using Base.Meta: ParseError
@@ -9,7 +9,7 @@ using DataStructures: OrderedDict
 using Logging
 using MLStyle: @match
 
-using ..Meta
+using ..MetaUtils
 
 # Data types
 ############
@@ -156,7 +156,7 @@ end
 function theory_code(head, theory, base_type)
   # Add types/terms/aliases from base theory, if provided.
   if !isnothing(base_type)
-    base_theory = GAT.theory(base_type)
+    base_theory = TheoriesInstances.theory(base_type)
     base_params = [ type.name for type in base_theory.types ]
     bindings = Dict(zip(base_params, only(head.base).params))
     base_theory = replace_types(bindings, base_theory)
@@ -179,7 +179,7 @@ function theory_code(head, theory, base_type)
   Expr(:block,
     Expr(:abstract, head.main.name),
     Expr(:(=),
-      Expr(:call, GlobalRef(GAT, :theory),
+      Expr(:call, GlobalRef(TheoriesInstances, :theory),
         Expr(:(::), Expr(:curly, :Type, head.main.name))),
       theory),
     (Expr(:function, name) for name in names)...,
@@ -406,7 +406,7 @@ function replace_types(bindings::Dict, aliases::Dict)::Dict
        for a in keys(aliases))
 end
 function replace_types(bindings::Dict, context::Context)::Context
-  GAT.Context(((name => @match expr begin
+  Context(((name => @match expr begin
     (Expr(:call, sym::Symbol, args...) =>
       Expr(:call, replace_symbols(bindings, sym), args...))
     sym::Symbol => replace_symbols(bindings, sym)
@@ -552,7 +552,7 @@ macro instance(head, body)
 end
 function instance_code(theory_type, instance_types, instance_fns, external_fns)
   code = Expr(:block)
-  theory = GAT.theory(theory_type)
+  theory = TheoriesInstances.theory(theory_type)
   bindings = Dict(zip([type.name for type in theory.types], instance_types))
   bound_fns = [ replace_symbols(bindings, f) for f in interface(theory) ]
   bound_fns = OrderedDict(parse_function_sig(f) => f for f in bound_fns)
@@ -680,7 +680,7 @@ function invoke_term(theory_type::Type, instance_types::Tuple,
   if !any(typeof(arg) <: typ for typ in instance_types for arg in args)
     # Case 1: Name refers to type constructor, e.g., generator constructor
     # in syntax system.
-    theory = GAT.theory(theory_type)
+    theory = TheoriesInstances.theory(theory_type)
     index = findfirst(cons -> cons.name == constructor_name, theory.types)
     if isnothing(index)
       # Case 2: Name refers to term constructor.

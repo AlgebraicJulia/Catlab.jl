@@ -27,17 +27,15 @@ using ACSets.Columns
 using ACSets.DenseACSets: indices, unique_indices, attr_type, attrtype_type,
   datatypes, constructor, delete_subobj!
 
-using ...GAT, ...Present, ...Syntax
+using ...GATs, ...Graphs.BasicGraphs
 using ...Theories: ThCategory, Hom, Ob, Attr, AttrType
-using ...Graphs.BasicGraphs
 import ...Theories: ob, hom, dom, codom, compose, ⋅, id,
   meet, ∧, join, ∨, top, ⊤, bottom, ⊥
-using ..FreeDiagrams, ..Limits, ..Subobjects, ..FinSets, ..FinCats
+using ..FreeDiagrams, ..Limits, ..Subobjects, ..Sets, ..FinSets, ..FinCats
 using ..FinSets: VarFunction, LooseVarFunction, IdentityFunction, VarSet
 import ..Limits: limit, colimit, universal
 import ..Subobjects: Subobject, implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..Sets: SetOb, SetFunction, TypeSet
-using ..Sets
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate, 
                   is_monic, is_epic, preimage
 import ..FinCats: FinDomFunctor, components, is_natural

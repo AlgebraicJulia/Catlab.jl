@@ -1,9 +1,9 @@
-module TestMeta
+module TestMetaUtils
 using Test
 
 using Base.Meta: ParseError
 
-using Catlab.Meta
+using Catlab.GATs.MetaUtils
 
 strip_all(expr) = strip_lines(expr, recurse=true)
 parse_fun(expr) = parse_function(strip_all(expr))

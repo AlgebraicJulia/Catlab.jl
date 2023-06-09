@@ -9,8 +9,10 @@ export CategoryExpr, ObExpr, HomExpr
 import Base: ≤
 import ACSets: dom, codom, ob, hom, attr, attrtype
 
-using ..Catlab
-import ..Syntax: GATExpr, show_unicode, show_latex
+using ..GATs
+import ..GATs: GATExpr, show_unicode, show_latex
+using ..GATs.SyntaxSystems: show_unicode_infix, show_latex_infix,
+  show_latex_postfix, show_latex_script
 
 """ Base type for GAT expressions in categories or other categorical structures.
 

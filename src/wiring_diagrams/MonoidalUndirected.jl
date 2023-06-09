@@ -7,7 +7,7 @@ export HypergraphDiagram, SchUntypedHypergraphDiagram, SchHypergraphDiagram,
 
 using StructEquality
 
-using ...GAT, ...Present, ...CategoricalAlgebra.CSets
+using ...GATs, ...CategoricalAlgebra.CSets
 using ...Theories: ThHypergraphCategory
 import ...Theories: dom, codom, compose, id, ⋅, ∘, otimes, ⊗, munit, braid, σ,
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dunit, dcounit, dagger

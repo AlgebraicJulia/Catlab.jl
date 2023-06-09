@@ -18,7 +18,7 @@ module Chase
 export chase
 
 using ACSets.DenseACSets: datatypes
-using ...Present, ...Theories
+using ...GATs, ...Theories
 using ..CSets, ..FinSets, ..FinCats, ..Limits, ..FreeDiagrams
 using ..FinCats: FinCatPresentation
 import ..Limits: universal

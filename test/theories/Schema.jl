@@ -1,7 +1,5 @@
 using Test
 
-using Catlab.Present
-
 # Schema
 ########
 
