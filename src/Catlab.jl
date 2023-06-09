@@ -6,7 +6,6 @@ include("gats/GATs.jl")
 include("theories/Theories.jl")
 
 include("categorical_algebra/ACSetsGATsInterop.jl")
-include("categorical_algebra/Permutations.jl")
 include("graphs/Graphs.jl")
 include("categorical_algebra/CategoricalAlgebra.jl")
 

@@ -9,6 +9,7 @@ include("Limits.jl")
 include("Subobjects.jl")
 include("Sets.jl")
 include("FinSets.jl")
+include("Permutations.jl")
 include("Matrices.jl")
 include("FinRelations.jl")
 include("CSets.jl")
@@ -29,6 +30,7 @@ include("Slices.jl")
 
 @reexport using .Sets
 @reexport using .FinSets
+@reexport using .Permutations
 @reexport using .CSets
 @reexport using .CatElements
 

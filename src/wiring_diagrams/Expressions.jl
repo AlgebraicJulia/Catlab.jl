@@ -12,7 +12,7 @@ go the other way around.
 module WiringDiagramExpressions
 export to_ob_expr, to_hom_expr, to_wiring_diagram, to_undirected_wiring_diagram
 
-using ...GATs, ...Theories, ...Permutations, ...CategoricalAlgebra
+using ...GATs, ...Theories, ...CategoricalAlgebra
 using ...GATs.SyntaxSystems: syntax_module
 using ...Graphs, ..DirectedWiringDiagrams, ..UndirectedWiringDiagrams,
   ..MonoidalDirectedWiringDiagrams, ..MonoidalUndirectedWiringDiagrams
