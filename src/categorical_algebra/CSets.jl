@@ -3,11 +3,13 @@
 module CSets
 export ACSetTransformation, CSetTransformation, StructACSetTransformation,
   StructTightACSetTransformation, TightACSetTransformation,
-  LooseACSetTransformation, @acset_transformation, @acset_transformations,
-  SubACSet, SubCSet,
+  LooseACSetTransformation, SubACSet, SubCSet,
   ACSetHomomorphismAlgorithm, BacktrackingSearch, HomomorphismQuery,
-  components, type_components, force, naturality_failures, show_unnaturalities, is_natural, homomorphism, homomorphisms,
-  homomorphism_error_failures, homomorphisms_error_failures, is_homomorphic, isomorphism, isomorphisms, is_isomorphic,
+  components, type_components, force,
+  naturality_failures, show_naturality_failures, is_natural,
+  homomorphism, homomorphisms, is_homomorphic,
+  isomorphism, isomorphisms, is_isomorphic,
+  @acset_transformation, @acset_transformations,
   subobject_graph, partial_overlaps, maximum_common_subobject
 
 using Base.Iterators: flatten
@@ -530,12 +532,16 @@ coerce_type_component(type::Symbol, f, dom_type::Type, codom_type::Type) =
   
 """
 Check naturality condition for a purported ACSetTransformation, α: X→Y. 
-For each hom in the schema, e.g. h: m → n, the following square must commute:
+For each hom in the schema, e.g. h: m → n, the following square commute must:
+
+```text
      αₘ
   Xₘ --> Yₘ
 Xₕ ↓  ✓  ↓ Yₕ
   Xₙ --> Yₙ
-     αₙ 
+     αₙ
+```
+
 You're allowed to run this on a named tuple partly specifying an ACSetTransformation,
 though at this time the domain and codomain must be fully specified ACSets.
 """
@@ -548,6 +554,7 @@ end
 function is_natural(dom,codom,comps...)
   all(isempty,[a.second for a in naturality_failures(dom,codom,comps...)])
 end
+
 """
 Returns a dictionary whose keys are contained in the names in `arrows(S)`
 and whose value at `:f`, for an arrow `(f,c,d)`, is a lazy iterator
@@ -578,34 +585,34 @@ function naturality_failures(X,Y,comps,type_comps)
   end
   Dict(ps)
 end
-function naturality_failures(α::LooseACSetTransformation) 
-  naturality_failures(dom(α),codom(α),α.components,α.type_components)
-end
-function naturality_failures(α::ACSetTransformation)
-  naturality_failures(dom(α),codom(α),α.components)
-end
 
-function show_unnaturalities(d::AbstractDict)
-  s = """
-      Failures of naturality! 
-      
-      (i,j,k) on line labelled by f:c->d below means,
-      if the given nat is α:X -> Y, f's naturality square 
-      fails to commute at i ∈ X(c), 
-      with Y(f)(α_c(i))=j and α_d(X(f)(i))=k.
-      
+naturality_failures(α::TightACSetTransformation) =
+  naturality_failures(dom(α), codom(α), α.components)
+naturality_failures(α::LooseACSetTransformation)=
+  naturality_failures(dom(α), codom(α), α.components, α.type_components)
 
-      """ 
-  for f in keys(d)
-    isempty(d[f]) || begin
-      failures = collect(d[f])
-      s *= join([["$f: "];["$failure" for failure in failures];["\n"]])
-    end
+""" Pretty-print failures of transformation to be natural.
+
+See also: [`naturality_failures`](@ref).
+"""
+function show_naturality_failures(io::IO, d::AbstractDict)
+  println(io, """
+    Failures of naturality: a tuple (x,y,y′) on line labelled by f:c→d below
+    means that, if the given transformation is α: X → Y, f's naturality square
+    fails to commute at x ∈ X(c), with Y(f)(α_c(x))=y and α_d(X(f)(x))=y′.
+    """)
+  for (f, failures) in pairs(d)
+    isempty(failures) && continue
+    print(io, "$f: ")
+    join(io, failures, ", ")
+    println(io)
   end
-  s
 end
-show_unnaturalities(α::ACSetTransformation) = show_unnaturalities(naturality_failures(α))
-show_unnaturalities(X,Y,comps...) = show_unnaturalities(naturality_failures(X,Y,comps))
+
+show_naturality_failures(io::IO, α::ACSetTransformation) =
+  show_naturality_failures(io, naturality_failures(α))
+show_naturality_failures(α::ACSetTransformation) =
+  show_naturality_failures(stdout, α)
 
 function is_monic(α::TightACSetTransformation)
   for c in components(α)
@@ -901,7 +908,8 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
 
   if error_failures 
     uns = naturality_failures(X,Y,initial,type_components)
-    all(isempty,[uns[a] for a in keys(uns)]) || error(show_unnaturalities(uns))
+    all(isempty,[uns[a] for a in keys(uns)]) ||
+      error(sprint(show_naturality_failures, uns))
   end
 
   # Initialize state variables for search.
@@ -1085,6 +1093,7 @@ unassign_elem!(state::BacktrackingState{DynamicACSet}, depth, c, x) =
     end
   end
 end
+
 # Limits and colimits
 #####################
 

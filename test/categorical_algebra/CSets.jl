@@ -118,12 +118,11 @@ d = naturality_failures(α)
 β = CSetTransformation((V=[1,2,1,2], E=[1,1,1]), g, h)
 d = naturality_failures(β)
 @test sort([collect(v) for v in values(d)]) == [[(2,1,2)],[(2,2,1)]]
-@test startswith(show_unnaturalities(β),"Failures")
+@test startswith(sprint(show_naturality_failures, β), "Failures")
 @test !is_natural(β)
 β = CSetTransformation((V=[2,1], E=[2,1]), h, h)
 @test is_natural(β)
 β = CSetTransformation((V=[2,1], E=[2,2]), h, h)
-
 
 # Category of C-sets.
 @test dom(α) === g
