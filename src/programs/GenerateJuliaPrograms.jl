@@ -7,7 +7,7 @@ export Block, CompileState, compile, compile_expr, compile_block,
 using GeneralizedGenerated: mk_function
 
 using ...Catlab
-import ...Meta: Expr0, concat_expr
+import ...GATs.MetaUtils: Expr0, concat_expr
 using ...Theories: ObExpr, HomExpr, dom, codom
 
 # Compilation

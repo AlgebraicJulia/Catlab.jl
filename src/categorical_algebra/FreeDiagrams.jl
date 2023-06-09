@@ -22,7 +22,7 @@ using StructEquality
 using StaticArrays: StaticVector, SVector
 
 using ACSets
-using ...Present, ...Theories, ...Graphs, ..FinCats
+using ...GATs, ...Theories, ...Graphs, ..FinCats
 import ...Theories: ob, hom, dom, codom
 import ..FinCats: FreeCatGraph, FinDomFunctor, collect_ob, collect_hom
 

@@ -14,9 +14,10 @@ using GeneralizedGenerated: mk_function
 using Match
 import StaticArrays
 
-using Catlab
-using Catlab.Meta: concat_expr
-import Catlab.Syntax: show_latex, show_unicode
+using Catlab.GATs
+using Catlab.GATs.MetaUtils: concat_expr
+import Catlab.GATs: show_latex, show_unicode
+using Catlab.GATs.SyntaxSystems: show_latex_infix, show_unicode_infix
 using Catlab.Theories: ThMonoidalCategoryWithBidiagonals, ObExpr, HomExpr
 import Catlab.Theories: Ob, Hom, dom, codom,
   id, compose, ⋅, ∘, otimes, ⊗, munit, braid, mcopy, delete, mmerge, create
@@ -282,10 +283,10 @@ In this context, `⋅` is too easily confused for multiplication, ` ` (space) is
 too implicit, and `∘` has a right-to-left connotation.
 """
 function show_latex(io::IO, expr::AlgebraicNet.Hom{:compose}; paren::Bool=false, kw...)
-  Syntax.show_latex_infix(io, expr, ";"; paren=paren, kw...)
+  show_latex_infix(io, expr, ";"; paren=paren, kw...)
 end
 function show_unicode(io::IO, expr::AlgebraicNet.Hom{:compose}; kw...)
-  Syntax.show_unicode_infix(io, expr, "; "; kw...)
+  show_unicode_infix(io, expr, "; "; kw...)
 end
 
 function show_latex(io::IO, expr::AlgebraicNet.Hom{:linear}; kw...)

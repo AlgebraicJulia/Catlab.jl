@@ -2,7 +2,8 @@ module Slices
 export Slice, SliceHom
 
 using StructEquality
-using ...GAT
+
+using ...GATs
 using ..FreeDiagrams, ..Limits, ..CSets
 using ...Theories: ThCategory
 import ...Theories: dom, codom, compose, id

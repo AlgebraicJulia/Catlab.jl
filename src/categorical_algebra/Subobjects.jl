@@ -15,7 +15,7 @@ import Base: \, ~
 using StructEquality
 using StaticArrays: SVector
 
-using ...GAT, ...Theories, ..Limits
+using ...GATs, ...Theories, ..Limits
 import ...Theories: ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 
 # Theories

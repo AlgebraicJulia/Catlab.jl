@@ -3,7 +3,7 @@
 In general, a single theory may have many different syntaxes. The purpose of
 this module to enable the simple but flexible construction of syntax systems.
 """
-module Syntax
+module SyntaxSystems
 export @syntax, GATExpr, SyntaxDomainError, head, args, first, last,
   gat_typeof, gat_type_args, invoke_term, functor,
   to_json_sexpr, parse_json_sexpr, show_sexpr, show_unicode, show_latex
@@ -11,10 +11,10 @@ export @syntax, GATExpr, SyntaxDomainError, head, args, first, last,
 import Base.Meta: ParseError, show_sexpr
 using MLStyle: @match
 
-using ..GAT: Context, Theory, TypeConstructor, TermConstructor
-import ..GAT
-import ..GAT: invoke_term
-using ..Meta
+import ..TheoriesInstances as GAT
+using ..TheoriesInstances: Context, Theory, TypeConstructor, TermConstructor
+import ..TheoriesInstances: invoke_term
+using ..MetaUtils
 
 # Data types
 ############
@@ -185,7 +185,7 @@ end
 """ Generate syntax type definitions.
 """
 function gen_type(cons::TypeConstructor, base_type::Type=Any)::Expr
-  base_expr = GlobalRef(Syntax, :GATExpr)
+  base_expr = GlobalRef(SyntaxSystems, :GATExpr)
   base_name = if base_type == Any
     base_expr
   else
@@ -244,7 +244,7 @@ function gen_term_constructor(cons::TermConstructor, theory::Theory,
       Expr(:if,
         Expr(:(&&), :strict, Expr(:call, :(!), conj)),
         Expr(:call, :throw,
-          Expr(:call, GlobalRef(Syntax, :SyntaxDomainError),
+          Expr(:call, GlobalRef(SyntaxSystems, :SyntaxDomainError),
             Expr(:quote, cons.name),
             Expr(:vect, cons.params...)))))
   end

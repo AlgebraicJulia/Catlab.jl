@@ -18,9 +18,9 @@ import Base.Meta: show_sexpr
 using StructEquality
 using Match
 
-using Catlab
-import Catlab.Meta: strip_lines
-import Catlab.Syntax: head, args, show_latex
+using Catlab.GATs
+import Catlab.GATs: head, args, show_latex
+using Catlab.GATs.MetaUtils: strip_lines
 using Catlab.WiringDiagrams
 import Catlab.WiringDiagrams: to_wiring_diagram
 
@@ -34,7 +34,7 @@ import ..AlgebraicNets: Ob, Hom, compose, id, dom, codom, otimes, munit, braid,
 """ An expression tree for computer algebra.
 
 We call the expression trees "formulas" to avoid confusion with Julia
-expressions (`Base.Expr`) or GAT expressions (`Catlab.Syntax.GATExpr`). Usually
+expressions (`Base.Expr`) or GAT expressions (`Catlab.GATs.GATExpr`). Usually
 the operations (head symbols) are interpreted as Julia functions, e.g., `:/` is
 right multiplication by the matrix pseudoinverse while `:./` is the elementwise
 division.

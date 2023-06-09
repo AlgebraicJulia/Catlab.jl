@@ -13,12 +13,12 @@ export Ports, Junction, PortOp, BoxOp, functor, permute,
 
 using StructEquality
 
-using ...GAT, ...Theories
+using ...GATs, ...Theories
+import ...GATs: functor, head
 import ...Theories: dom, codom, id, compose, ⋅, ∘,
   otimes, ⊗, munit, braid, σ, oplus, ⊕, mzero, swap,
   mcopy, delete, Δ, ◊, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
   plus, zero, coplus, cozero, meet, join, top, bottom, trace
-import ...Syntax: functor, head
 using ...Graphs
 using ..DirectedWiringDiagrams
 import ..DirectedWiringDiagrams: Box, WiringDiagram, input_ports, output_ports, value

@@ -60,10 +60,10 @@ This syntax checks domains of morphisms but not 2-morphisms.
 end
 
 show_unicode(io::IO, expr::CategoryExpr{:composeH}; kw...) =
-  Syntax.show_unicode_infix(io, expr, "*"; kw...)
+  show_unicode_infix(io, expr, "*"; kw...)
 
 show_latex(io::IO, expr::CategoryExpr{:composeH}; kw...) =
-  Syntax.show_latex_infix(io, expr, "*"; kw...)
+  show_latex_infix(io, expr, "*"; kw...)
 
 # Double category
 #################
@@ -164,10 +164,10 @@ Checks domains of morphisms but not 2-morphisms.
 end
 
 show_unicode(io::IO, expr::CategoryExpr{:pcompose}; kw...) =
-  Syntax.show_unicode_infix(io, expr, "*"; kw...)
+  show_unicode_infix(io, expr, "*"; kw...)
 
 show_latex(io::IO, expr::CategoryExpr{:pcompose}; kw...) =
-  Syntax.show_latex_infix(io, expr, "*"; kw...)
+  show_latex_infix(io, expr, "*"; kw...)
 
 # Tabulators
 ############
@@ -389,9 +389,9 @@ end
 end
 
 show_unicode(io::IO, expr::CategoryExpr{:pbraid}; kw...) =
-  Syntax.show_unicode_infix(io, expr, "σ"; kw...)
+  show_unicode_infix(io, expr, "σ"; kw...)
 show_latex(io::IO, expr::CategoryExpr{:pbraid}; kw...) =
-  Syntax.show_latex_script(io, expr, "\\sigma")
+  show_latex_script(io, expr, "\\sigma")
 
 # Cartesian double category
 ###########################

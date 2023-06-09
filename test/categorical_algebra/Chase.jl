@@ -1,11 +1,9 @@
 module TestChase
-
 using Test
-using Catlab, Catlab.Graphs, Catlab.Present, Catlab.Theories
-using Catlab.CategoricalAlgebra
 
-using Catlab.CategoricalAlgebra.Chase: egd, tgd, crel_type,pres_to_eds, from_c_rel
-import Catlab
+using Catlab.GATs, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
+using Catlab.CategoricalAlgebra.Chase: egd, tgd, crel_type, pres_to_eds,
+  from_c_rel
 
 # Factorizing EDs
 #----------------

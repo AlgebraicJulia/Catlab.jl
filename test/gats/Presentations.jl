@@ -1,7 +1,7 @@
-module TestPresentation
+module TestPresentations
 
 using Test
-using Catlab, Catlab.Theories
+using Catlab.GATs, Catlab.Theories
 
 presentation_theory(::Presentation{Theory}) where Theory = Theory
 

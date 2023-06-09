@@ -7,7 +7,7 @@ export BoolRig, FinRel, FinRelation, FinRelationCallable, FinRelationMatrix,
 import Base: +, *
 using StructEquality
 
-using ...GAT
+using ...GATs
 using ...Theories: ThDistributiveBicategoryRelations
 import ...Theories: dom, codom, id, compose, ⋅, ∘, dagger, dunit, dcounit,
   otimes, ⊗, munit, braid, oplus, ⊕, mzero, swap,

@@ -1,8 +1,7 @@
 module TestTheories
 using Test
 
-using Catlab.Theories
-using Catlab.Syntax
+using Catlab.GATs, Catlab.Theories
 
 sexpr(expr::GATExpr) = sprint(show_sexpr, expr)
 unicode(expr::GATExpr; all::Bool=false) =

@@ -3,11 +3,11 @@
 The current content of this module is just a stopgap until I can implement
 a generic term rewriting system.
 """
-module Rewrite
+module Rewriting
 export associate, associate_unit_inv, associate_unit,
   distribute_unary, involute
 
-using ..Syntax
+using ..SyntaxSystems
 
 """ Simplify associative binary operation.
 

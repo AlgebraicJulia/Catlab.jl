@@ -6,7 +6,7 @@ export Diagram, SimpleDiagram, QueryDiagram, DiagramHom, id, op, co,
 
 using StructEquality
 
-using ...GAT
+using ...GATs
 import ...Theories: dom, codom, id, compose, ⋅, ∘, munit
 using ...Theories: ThCategory, composeH
 import ..Categories: ob_map, hom_map, op, co

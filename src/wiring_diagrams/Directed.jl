@@ -30,7 +30,7 @@ export AbstractBox, Box, WiringDiagram, SchWiringDiagram,
 
 using StructEquality
 
-using ...Present, ...Graphs.BasicGraphs, ...CategoricalAlgebra.CSets
+using ...GATs, ...Graphs.BasicGraphs, ...CategoricalAlgebra.CSets
 import ...CategoricalAlgebra.CSets: is_isomorphic
 import ...CategoricalAlgebra.FinCats: graph
 import ...Graphs: all_neighbors, neighbors, outneighbors, inneighbors

@@ -36,12 +36,12 @@ ndims(expr::ObExpr{:oplus}) = sum(map(ndims, args(expr)))
 ndims(expr::ObExpr{:mzero}) = 0
 
 function show_unicode(io::IO, expr::Union{ObExpr{:oplus},HomExpr{:oplus}}; kw...)
-  Syntax.show_unicode_infix(io, expr, "⊕"; kw...)
+  show_unicode_infix(io, expr, "⊕"; kw...)
 end
 show_unicode(io::IO, expr::ObExpr{:mzero}; kw...) = print(io, "O")
 
 function show_latex(io::IO, expr::Union{ObExpr{:oplus},HomExpr{:oplus}}; kw...)
-  Syntax.show_latex_infix(io, expr, "\\oplus"; kw...)
+  show_latex_infix(io, expr, "\\oplus"; kw...)
 end
 show_latex(io::IO, expr::ObExpr{:mzero}; kw...) = print(io, "O")
 
@@ -65,7 +65,7 @@ end
 end
 
 function show_latex(io::IO, expr::HomExpr{:swap}; kw...)
-  Syntax.show_latex_script(io, expr, "\\sigma")
+  show_latex_script(io, expr, "\\sigma")
 end
 
 # Cocartesian category
@@ -135,14 +135,14 @@ end
 
 function show_latex(io::IO, expr::HomExpr{:plus}; kw...)
   if length(args(expr)) >= 2
-    Syntax.show_latex_infix(io, expr, "+"; kw...)
+    show_latex_infix(io, expr, "+"; kw...)
   else
-    Syntax.show_latex_script(io, expr, "\\nabla")
+    show_latex_script(io, expr, "\\nabla")
   end
 end
 
 function show_latex(io::IO, expr::HomExpr{:zero}; kw...)
-  Syntax.show_latex_script(io, expr, "0")
+  show_latex_script(io, expr, "0")
 end
 
 # Additive category

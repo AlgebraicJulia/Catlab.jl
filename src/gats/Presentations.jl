@@ -7,7 +7,7 @@ abstract tensor systems, and wiring diagrams, in categorical language.
 Presentations define small categories by generators and relations and are useful
 in applications like knowledge representation.
 """
-module Present
+module Presentations
 export @present, Presentation, generator, generators, generator_index,
   has_generator, equations, add_generator!, add_generators!, add_definition!,
   add_equation!
@@ -15,9 +15,9 @@ export @present, Presentation, generator, generators, generator_index,
 using Base.Meta: ParseError
 using MLStyle: @match
 
-using ..Meta, ..Syntax
-import ..GAT
-import ..Syntax: parse_json_sexpr, to_json_sexpr
+using ..MetaUtils, ..SyntaxSystems
+import ..TheoriesInstances as GAT
+import ..SyntaxSystems: parse_json_sexpr, to_json_sexpr
 
 # Data types
 ############
@@ -111,7 +111,7 @@ end
 """ Add a generator defined by an equation.
 """
 function add_definition!(pres::Presentation, name::Symbol, rhs::GATExpr)
-  generator = Syntax.generator_like(rhs, name)
+  generator = SyntaxSystems.generator_like(rhs, name)
   add_generator!(pres, generator)
   add_equation!(pres, generator, rhs)
   generator
@@ -209,7 +209,7 @@ end
 macro present(head, body)
   name, pres = @match head begin
     Expr(:call, name::Symbol, syntax_name::Symbol) =>
-      (name, :($(GlobalRef(Present, :Presentation))($(esc(syntax_name)))))
+      (name, :($(GlobalRef(Presentations, :Presentation))($(esc(syntax_name)))))
     Expr(:(<:), name::Symbol, parent::Symbol) => (name,:(copy($(esc(parent)))))
     _ => throw(ParseError("Ill-formed presentation header $head"))
   end

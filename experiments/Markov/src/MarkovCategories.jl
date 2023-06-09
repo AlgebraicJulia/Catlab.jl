@@ -3,8 +3,8 @@ export ThMarkovCategory, FreeMarkovCategory,
   Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, braid, mcopy, Δ, delete, ◊,
   expectation, 𝔼
 
-using Catlab.GAT, Catlab.Syntax, Catlab.Theories, Catlab.WiringDiagrams
-import Catlab.Syntax: show_latex
+using Catlab.GATs, Catlab.Theories, Catlab.WiringDiagrams
+import Catlab.GATs: show_latex
 import Catlab.Theories: Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, braid,
   mcopy, Δ, delete, ◊
 

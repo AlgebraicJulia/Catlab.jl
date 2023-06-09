@@ -3,9 +3,8 @@ export SchCPortGraph, SchOpenCPortGraph, SchSymCPortGraph, SchOpenSymCPortGraph,
   CPortGraph, OpenCPortGraph, SymCPortGraph, OpenSymCPortGraph,
   ThBundledCPG, BundledCPG
 
-using ...Theories, ...Present,  ...CategoricalAlgebra
+using ...GATs, ...Theories, ...CategoricalAlgebra, ...Graphs
 import ...CategoricalAlgebra: migrate!
-using ...Graphs
 import ..DirectedWiringDiagrams: ocompose
 
 @present SchCPortGraph(FreeSchema) begin

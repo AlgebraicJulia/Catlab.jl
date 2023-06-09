@@ -11,7 +11,7 @@ export @graph, @fincat, @finfunctor, @diagram, @free_diagram,
 using Base.Iterators: repeated
 using MLStyle: @match
 
-using ...GAT, ...Present, ...Graphs, ...CategoricalAlgebra
+using ...GATs, ...Graphs, ...CategoricalAlgebra
 using ...Theories: munit
 using ...CategoricalAlgebra.FinCats: mapvals, make_map
 using ...CategoricalAlgebra.DataMigrations: ConjQuery, GlueQuery, GlucQuery

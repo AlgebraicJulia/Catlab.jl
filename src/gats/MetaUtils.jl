@@ -1,6 +1,6 @@
 """ General-purpose tools for metaprogramming in Julia.
 """
-module Meta
+module MetaUtils
 export Expr0, JuliaFunction, JuliaFunctionSig, parse_docstring, parse_function,
   parse_function_sig, generate_docstring, generate_function,
   append_expr!, concat_expr, replace_symbols, strip_lines
