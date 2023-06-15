@@ -306,7 +306,7 @@ idF = FinFunctor(
 ΣF = SigmaMigrationFunctor(F, UndirectedBipartiteGraph, Graph)
 X = UndirectedBipartiteGraph()
 
-Y,_ = ΣF(X)
+Y = ΣF(X)
 @test nparts(Y, :V) == 0
 @test nparts(Y, :E) == 0
 
@@ -318,7 +318,9 @@ X = @acset UndirectedBipartiteGraph begin
   tgt = [1,1,2,3]
 end
 
-Y,α = ΣF(X)
+Yd = ΣF(X; components=true)
+Y = Graph(codom(Yd))
+α = diagram_map(Yd)
 @test nparts(Y, :V) == 7
 @test nparts(Y, :E) == 4
 @test length(Y[:src] ∩ Y[:tgt]) == 0
@@ -383,6 +385,9 @@ XX = ΣF(Y)
 @test YY == Y
 @test incident(XX,false,[:f,:prop]) == incident(XX,"ffee cup",:id)
 
+# TODO allow homs between attrtypes.
+# This is required if we want to do Σ: C->D where C has attributes
+# The following test would then pass
 idF = FinFunctor(
   Dict(VG => VG, EG => EG, :Weight=>:Weight),
   Dict(srcG => srcG, tgtG => tgtG, :weight=>:weight),
@@ -391,9 +396,9 @@ idF = FinFunctor(
 Y = @acset WeightedGraph{Symbol} begin 
   V=2; E=2; Weight=1; src=1; tgt=[1,2]; weight=[AttrVar(1), :X] 
 end
-@test_throws ErrorException SigmaMigration(idF, WeightedGraph{Symbol}, WeightedGraph{Symbol})
- 
-# @test ΣF(Y) == Y # TODO allow homs between attrtypes
+# @test ΣF(Y) == Y
+# However, it currently fails.
+@test_throws MethodError SigmaMigrationFunctor(idF, Graph, Graph)(Y) == Y
 
 # Terminal map
 #-------------
@@ -427,23 +432,24 @@ bang = FinFunctor(
   ThSpan, ThInitial
 )
 
-Σbang = SigmaMigration(bang, Span, Initial)
-Y,α = Σbang(X)
+Σbang = SigmaMigrationFunctor(bang, Span, Initial)
+Yd = Σbang(X; components=true)
+α = diagram_map(Yd)
 @test length(unique([α[:A](1:2)...,α[:L1](1),α[:L2](1:2)...])) == 1
-
+Y = Initial(codom(Yd))
 @test nparts(Y, :I) == 4
 
 # Map from terminal C 
 #--------------------
 
-vertex = FinFunctor(Dict(I => VG), Dict(), ThInitial, SchGraph)
-edge = FinFunctor(Dict(I => EG), Dict(), ThInitial, SchGraph)
+V = FinFunctor(Dict(I => VG), Dict(), ThInitial, SchGraph)
+E = FinFunctor(Dict(I => EG), Dict(), ThInitial, SchGraph)
 
-Z,_ = SigmaMigration(vertex, Initial, Graph)(Y)
+Z = SigmaMigrationFunctor(V, Initial, Graph)(Y)
 @test nparts(Z, :V) == 4
 @test nparts(Z, :E) == 0
 
-Z,_ = SigmaMigration(edge, Initial, Graph)(Y)
+Z = SigmaMigrationFunctor(E, Initial, Graph)(Y)
 expected = foldl(⊕,fill(path_graph(Graph,2), 4))  
 @test is_isomorphic(Z,expected)
 
@@ -459,7 +465,7 @@ G = path_graph(Graph,3)
 expected = @acset ReflexiveGraph  begin 
   V=3; E=5; refl=1:3; src=[1,2,3,1,2]; tgt=[1,2,3,2,3] 
 end 
-@test is_isomorphic(first(Σ(G)),expected)
+@test is_isomorphic(Σ(G), expected)
 
 # Sigma with attributes 
 #----------------------
@@ -480,22 +486,21 @@ expected = @acset WG{Float64} begin
   V=4; E=2; Color=2; src=[2,3]; tgt=[3,1]; color=AttrVar.([1,1,1,2]) 
 end
 
-res, _ = Σ(G)
-@test is_isomorphic(res, expected)
+@test is_isomorphic(Σ(G), expected)
  
 # Yoneda embedding
 #-----------------
 
 # Yoneda embedding for graphs (no attributes).
 yV, yE = Graph(1), @acset(Graph, begin V=2;E=1;src=2;tgt=1 end)
-@test first(representable(Graph, :V)) == yV
-@test is_isomorphic(first(representable(Graph, :E)), yE)
+@test representable(Graph, :V) == yV
+@test is_isomorphic(representable(Graph, :E), yE)
 
 y_Graph = yoneda(Graph)
 @test ob_map(y_Graph, :V) == yV
 @test is_isomorphic(ob_map(y_Graph, :E), yE)
 @test Set(hom_map.(Ref(y_Graph), [:src,:tgt])) == Set(
-  homomorphisms(yV, first(representable(Graph, :E))))
+  homomorphisms(yV, representable(Graph, :E)))
 
 F = @migration SchGraph begin
   X => E
@@ -526,13 +531,14 @@ i, o = hom_map(G, :i), hom_map(G, :o)
 @test isempty(outneighbors(X, only(collect(o[:V]))))
 
 # Yoneda embedding for weights graphs (has attributes).
-yV, yE = WeightedGraph{Float64}(1), @acset(WeightedGraph{Float64}, begin 
+WGF = WeightedGraph{Float64}
+yV, yE = WGF(1), @acset(WGF, begin 
   V=2;E=1;Weight=1;src=2;tgt=1; weight=[AttrVar(1)]
 end)
-@test first(representable(WeightedGraph{Float64}, SchWeightedGraph, :V)) == yV
-@test is_isomorphic(first(representable(WeightedGraph{Float64}, SchWeightedGraph, :E)), yE)
+@test representable(WGF, SchWeightedGraph, :V) == yV
+@test is_isomorphic(representable(WGF, SchWeightedGraph, :E), yE)
 
-yWG = yoneda(WeightedGraph{Float64})
+yWG = yoneda(WGF)
 
 F = @migration SchWeightedGraph begin
   X => E
@@ -572,12 +578,12 @@ end
 ΩrG,_ = subobject_classifier(ReflexiveGraph, SchReflexiveGraph)
 F = FinFunctor(Dict(:V=>:V, :E=>:E), Dict(:src=>:src, :tgt=>:tgt), 
                SchGraph, SchReflexiveGraph)
-ΔF = DeltaMigration(F, ReflexiveGraph, Graph)
+ΔF = DataMigrationFunctor(F, ReflexiveGraph, Graph)
 @test is_isomorphic(ΩG, ΔF(ΩrG))
 
 # Searching for maps into the subobject classifier is much faster than 
 # enumerating them via `subobject_graph`
-G = (star_graph(Graph, 2)⊗path_graph(Graph, 3)) 
+G = (star_graph(Graph, 2)⊗path_graph(Graph, 3))
 @test length(homomorphisms(G, ΩG)) == length(subobject_graph(G)[2])
 
 @present SchDDS42(FreeSchema) begin
@@ -586,7 +592,7 @@ G = (star_graph(Graph, 2)⊗path_graph(Graph, 3))
   Φ⋅Φ⋅Φ⋅Φ == Φ⋅Φ
 end
 @acset_type DDS42(SchDDS42, index=[:Φ])
-ΩDDs,sos = subobject_classifier(DDS42, SchDDS42)
+ΩDDs, _ = subobject_classifier(DDS42, SchDDS42)
 @test is_isomorphic(ΩDDs, @acset DDS42 begin X=4; Φ=[1,3,4,4] end)
 
 # Internal Hom

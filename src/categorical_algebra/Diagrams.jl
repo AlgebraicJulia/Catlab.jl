@@ -105,9 +105,9 @@ type `DiagramHom{id}` and `DiagramHom{op}` induce morphisms between colimits and
 between limits of the diagrams, respectively, whereas morphisms of type
 `DiagramHom{co}` generalize morphisms of polynomial functors.
 """
-struct DiagramHom{T,C<:Cat,F<:FinFunctor,Φ<:FinTransformation,D<:Functor{<:FinCat,C}}
+struct DiagramHom{T,C<:Cat,F<:FinFunctor,Φ,D<:Functor{<:FinCat,C}}
   shape_map::F
-  diagram_map::Φ
+  diagram_map::Φ # bug: Φ should be type constrained to be a FinTransformation  
   precomposed_diagram::D
 end
 DiagramHom{T}(shape_map::F, diagram_map::Φ, precomposed_diagram::D) where

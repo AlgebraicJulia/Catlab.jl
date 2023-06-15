@@ -3,12 +3,13 @@
 module DataMigrations
 export DataMigration, SigmaMigration, DeltaMigration, migrate, migrate!,
   representable, yoneda, colimit_representables, subobject_classifier, 
-  internal_hom
+  internal_hom, SigmaMigrationFunctor, DeltaMigrationFunctor, 
+  DataMigrationFunctor, functor
 
 using ACSets
 using ACSets.DenseACSets: constructor, datatypes
 using ...GATs
-using ...Theories: ob, hom, dom, codom, attr, AttrTypeExpr
+using ...Theories: ob, hom, dom, codom, attr, AttrTypeExpr, ⋅
 using ..Categories, ..FinCats, ..Limits, ..Diagrams, ..FinSets, ..CSets
 using ...Graphs, ..FreeDiagrams
 import ..Categories: ob_map, hom_map
@@ -297,13 +298,13 @@ SigmaMigrationFunctor(f,d::Type{T′},::Type{T}) where {T<:StructACSet, T′<:St
 Create a C-Set for the collage of the functor. Initialize data in the domain 
 portion of the collage, then run the chase.
 
-The true result data is a diagram morphism. We return the result ACSet and the 
-diagram map data as a dictionary with FinFunctions for each Ob.
+Optional return with `components` a diagram morphism induced by the unit of the 
+adjunction between Σ and Δ migration functors.
 """
 #This should be deprecated in terms of a new migrate function if anybody works on sigma migrations sometime.
 #Also, we probably don't want to construct the collage every time we migrate using M, at least it should
 #be possible to cache.
-function (M::SigmaMigrationFunctor)(d::ACSet; n=100)
+function (M::SigmaMigrationFunctor)(d::ACSet; n=100, components=false)
   D,CD = M.dom_constructor(), M.codom_constructor()
   F = functor(M)
   S = acset_schema(d)
@@ -367,13 +368,20 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100)
       res[f1j,nameof(f2)] = oldval
     end
   end
-  diagram_map = Dict(map(types(S)) do o
-    s, t= add_srctgt("α_$o")    
-    m = last.(sort(collect(zip([rel_res[x] for x in [s,t]]...))))
-    ff = o ∈ ob(S) ? FinFunction : VarFunction{attrtype_type(D,o)}
-    o => ff(m, nparts(rel_res, nameof(ob_map(F.F⋅i2,o))))
-  end)
-  return res, diagram_map
+  if !components 
+    return res
+  else  
+    diagram_map = Dict(map(types(S)) do o
+      s, t= add_srctgt("α_$o")    
+      m = last.(sort(collect(zip([rel_res[x] for x in [s,t]]...))))
+      ff = o ∈ ob(S) ? FinFunction : VarFunction{attrtype_type(D,o)}
+      o => ff(m, nparts(rel_res, nameof(ob_map(functor(M)⋅i2,o))))
+    end)
+    # Return result as a DiagramHom{id}
+    ddom = FinDomFunctor(d; eqs=equations(dom(functor(M))))
+    dcodom = FinDomFunctor(res; eqs=equations(codom(functor(M))))
+    return DiagramHom{id}(functor(M), diagram_map, ddom, dcodom)
+  end
 end
 
 """
@@ -397,13 +405,13 @@ which works because left Kan extensions take representables to representables
 representables (they can be infinite), this function thus inherits any
 limitations of our implementation of left pushforward data migrations.
 """
-function representable(T, C::Presentation{ThSchema}, ob::Symbol)
+function representable(T, C::Presentation{ThSchema}, ob::Symbol; components=false)
   C₀ = Presentation{Symbol}(FreeSchema)
   add_generator!(C₀, C[ob])
   X = AnonACSet(C₀); add_part!(X, ob)
   F = FinFunctor(Dict(ob => ob), Dict(), C₀, C)
   ΣF = SigmaMigrationFunctor(F, X, T)
-  return ΣF(X)
+  return ΣF(X; components=components)
 end
 
 """
@@ -411,8 +419,8 @@ ACSet types do not store info about equations, so this info is lost when we try
 to recover the presentation from the datatype. Thus, this method for 
 `representable` should only be used for free schemas
 """ 
-representable(::Type{T}, ob::Symbol) where T <: StructACSet =
-  representable(T, Presentation(T), ob)
+representable(::Type{T}, ob::Symbol; components=false) where T <: StructACSet =
+  representable(T, Presentation(T), ob; components=components)
 
 
 """
@@ -434,13 +442,13 @@ the parts of the classifier.
 function subobject_classifier(T::Type, S::Presentation{ThSchema})
   isempty(generators(S,:AttrType)) || error("Cannot compute Ω for schema with attributes")
   obs    = nameof.(generators(S,:Ob))
-  reprs  = Dict(o=>representable(T, S,o) for o in obs)
-  subobs = Dict(o=>subobject_graph(reprs[o][1])[2] for o in obs)
+  reprs  = Dict(o=>representable(T, S, o; components=true) for o in obs)
+  subobs = Dict(o=>subobject_graph(ACSet(codom(reprs[o])))[2] for o in obs)
   Ω      = T()
   for o in obs add_parts!(Ω, o, length(subobs[o])) end 
 
   for (f, a, b) in homs(acset_schema(Ω))
-    BA = repr_map(Schema(S), reprs, f) 
+    BA = yoneda(Schema(S), reprs, f) 
     Ω[f] = map(parts(Ω, a)) do pᵢ
       Aᵢ = hom(subobs[a][pᵢ])
       _, PB = force.(pullback(Aᵢ, BA))
@@ -462,17 +470,17 @@ Given a map f: a->b, we compute that f(Aᵢ) = Bⱼ by constructing the followin
   f*↑ ↑ ↑ ↗ Bⱼ       find the hom Bⱼ that makes this commute
     B × G 
 
-where f* is given by `repr_map`.
+where f* is given by `yoneda`.
 """
 function internal_hom(G::T, F::T, S::Presentation{ThSchema}) where T<:ACSet
   obs    = nameof.(generators(S,:Ob))
-  reprs  = Dict(o=>representable(T, S,o) for o in obs)
-  prods  = Dict(o=>product(first(reprs[o]),G) for o in obs)
+  reprs  = Dict(o=>representable(T, S,o; components=true) for o in obs)
+  prods  = Dict(o=>product(ACSet(codom(reprs[o])),G) for o in obs)
   maps   = Dict(o=>homomorphisms(apex(prods[o]),F) for o in obs)
   Fᴳ     = T()
   for o in obs add_parts!(Fᴳ, o, length(maps[o])) end 
   for (f, a, b) in homs(acset_schema(G))
-    BA = repr_map(Schema(S), reprs, f) 
+    BA = yoneda(Schema(S), reprs, f) 
     π₁, π₂ = prods[b]
     Fᴳ[f] = map(parts(Fᴳ, a)) do pᵢ
       composite = force(universal(prods[a], Span(π₁⋅BA, π₂)) ⋅ maps[a][pᵢ])
@@ -482,13 +490,21 @@ function internal_hom(G::T, F::T, S::Presentation{ThSchema}) where T<:ACSet
   return Fᴳ, homs
 end
 
-"""
+""" Action of the Yoneda embedding on morphisms
+
 Any hom f: A->B induces a map from the representable of B to the repr of A
+Arguments:
+  S     - a schema
+  reprs - a dictionary from objects in the schema to the result of `representable`
+  f     - name of a hom in S
 """
-function repr_map(S, reprs, f::Symbol)
+function yoneda(S, reprs, f::Symbol)
   a, b = dom(S,f), codom(S,f)
-  (A, distA′), (B, distB′) = reprs[a], reprs[b] # reprs + distinguished points
-  A′, B′ = [only(x)[2](1) for x in [distA′, distB′]]
+  (A, A′), (B, B′) = map([a,b]) do x # reprs + distinguished points
+    d = reprs[x]
+    (_, α), = collect(components(diagram_map(d)))
+    ACSet(diagram(codom(d))), only(collect(α))
+  end
   return only(homomorphisms(B,A; initial=Dict([b=>Dict([B′=>A[A′,f]])])))
 end
 
@@ -508,7 +524,7 @@ function yoneda(cons, C::Presentation{ThSchema}; cache=nothing)
   cache = isnothing(cache) ? Dict() : cache
   y_ob = Dict(map(nameof.(generators(C, :Ob))) do c 
     @debug "Computing representable $c"
-    c => haskey(cache, c) ? cache[c] : first(representable(cons, C, c))
+    c => haskey(cache, c) ? cache[c] : representable(cons, C, c)
   end)
   y_ob = merge(y_ob, Dict(map(nameof.(generators(C,:AttrType))) do c 
     rep = cons()

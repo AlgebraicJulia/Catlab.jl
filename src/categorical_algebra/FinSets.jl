@@ -327,6 +327,9 @@ symbolic attributes. (Likewise, AttrVars will have to wrap Any rather than Int)
 end
 VarFunction(f::AbstractVector{Int},cod::Int) = VarFunction(FinFunction(f,cod))
 VarFunction(f::FinDomFunction) = VarFunction{Union{}}(AttrVar.(collect(f)),codom(f))
+FinFunction(f::VarFunction{T}) where T = FinFunction(
+  [f.fun(i) isa AttrVar ? f.fun(i).val : error("Cannot cast to FinFunction") 
+   for i in dom(f)], f.codom)
 Base.length(f::AbsVarFunction{T}) where T = length(collect(f.fun))
 Base.collect(f::AbsVarFunction{T}) where T = collect(f.fun)
 (f::VarFunction{T})(v::T) where T = v 

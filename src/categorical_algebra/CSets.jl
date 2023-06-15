@@ -36,6 +36,8 @@ using ..FinSets: VarFunction, LooseVarFunction, IdentityFunction, VarSet
 import ..Limits: limit, colimit, universal
 import ..Subobjects: Subobject, implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..Sets: SetOb, SetFunction, TypeSet
+using ..Sets
+using ..Diagrams: Diagram, diagram
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate, 
                   is_monic, is_epic, preimage
 import ..FinCats: FinDomFunctor, components, is_natural
@@ -197,13 +199,21 @@ const ACSetDomCat = FinCats.FinCatPresentation{
             TypeCat{Union{FinSet,VarSet},
                     Union{VarFunction,FinDomFunction{Int}}}}
   acset::ACS
+  eqs::Vector{Pair}
 end
-FinDomFunctor(X::ACSet) = ACSetFunctor(X)
+FinDomFunctor(X::ACSet; eqs=Pair[]) = ACSetFunctor(X, eqs)
+ACSet(X::ACSetFunctor) = X.acset
 
 hasvar(X::ACSet) = any(o->nparts(X,o) > 0, attrtypes(acset_schema(X)))
 hasvar(X::ACSetFunctor) = hasvar(X.acset)
 
-dom(F::ACSetFunctor) = FinCat(Presentation(F.acset))
+function dom(F::ACSetFunctor)
+  p = Presentation(F.acset)
+  for (l,r) in F.eqs
+    add_equation!(p, l, r)
+  end
+  FinCat(p)
+end
 codom(F::ACSetFunctor) = hasvar(F) ? TypeCat{VarSet,VarFunction}() : TypeCat{SetOb,FinDomFunction{Int}}()
 
 Categories.do_ob_map(F::ACSetFunctor, x) = 
@@ -215,7 +225,7 @@ functor_key(x) = x
 functor_key(expr::GATExpr{:generator}) = first(expr)
 
 # Set-valued FinDomFunctors as ACSets.
-
+(T::Type{ACS})(F::Diagram) where ACS <: ACSet = F |> diagram |> T
 function (::Type{ACS})(F::FinDomFunctor) where ACS <: ACSet
   X = if ACS isa UnionAll
     pres = presentation(dom(F))
@@ -1686,7 +1696,7 @@ function Base.push!(S::SubobjectIteratorState,h::ACSetTransformation)
 end
 
 """This would be much more efficient with canonical isomorph"""
-function seen(S::SubobjectIteratorState, f::ACSetTransformation)
+function is_seen(S::SubobjectIteratorState, f::ACSetTransformation)
   for h in S.seen 
     if any(σ -> force(σ⋅h) == force(f), isomorphisms(dom(f),dom(h)))
       return true 
@@ -1726,7 +1736,7 @@ function Base.iterate(Sub::SubobjectIterator, state=SubobjectIteratorState())
       rem = copy(dX)
       comps = delete_subobj!(rem, Dict([o => [p]]))
       h = ACSetTransformation(rem, dX; comps...) ⋅ X
-      if !seen(state, h)
+      if !is_seen(state, h)
         push!(state, h)
       end
     end
