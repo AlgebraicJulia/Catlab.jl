@@ -101,7 +101,7 @@ Every pull request to Catlab should be reviewed by at least one person. Followin
 
 - Commit messages should be informative and be written in complete sentences
 - Avoid one-word commit messages like "fix" or "bug". If you need to make very simple fixes on your branch, amend a previous commit and force push.
-- Avoid repeatedly merging the master branch back into your PR branch. Instead, rebase off master and force push.
+- Avoid repeatedly merging the main branch back into your PR branch. Instead, rebase off main and force push.
 
 ### Backwards compatibility
 

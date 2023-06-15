@@ -21,7 +21,7 @@ if !no_literate
   config = Dict{String,String}()
   if !(haskey(ENV, "GITHUB_ACTIONS") || haskey(ENV, "GITLAB_CI"))
     config["nbviewer_root_url"] = "https://nbviewer.jupyter.org/github/AlgebraicJulia/Catlab.jl/blob/gh-pages/dev"
-    config["repo_root_url"] = "https://github.com/AlgebraicJulia/Catlab.jl/blob/master/docs"
+    config["repo_root_url"] = "https://github.com/AlgebraicJulia/Catlab.jl/blob/main/docs"
   end
 
   for (root, dirs, files) in walkdir(literate_dir)
