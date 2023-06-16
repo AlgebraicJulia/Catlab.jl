@@ -811,4 +811,12 @@ clim = colimit(Span(f,g));
 @test apex(clim)[:weight] == [true,true,AttrVar(2),true]
 @test collect(legs(clim)[1][:Weight]) == [true,AttrVar(1)]
 
+# Subobjects with variables 
+
+X = @acset SetAttr{Bool} begin X=2;D=1;f=[true, AttrVar(1)] end 
+A = Subobject(X, X=[1])
+B = Subobject(X, X=[2], D=[1])
+@test A ∧ B |> force == ⊥(X) |> force
+@test A ∨ B |> force == ⊤(X) |> force
+
 end

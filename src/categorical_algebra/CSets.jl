@@ -1408,7 +1408,9 @@ force(A::SubACSet) = Subobject(force(hom(A)))
   components::Comp
 
   function SubACSetComponentwise(X::Ob, components::NamedTuple) where Ob<:ACSet
-    X_sets = NamedTuple(c =>FinSet(X,c) for c in types(acset_schema(X)))
+    S = acset_schema(X)
+    X_sets = merge(NamedTuple(c => FinSet(X,c) for c in ob(S)),
+                   NamedTuple(c => VarSet(X,c) for c in attrtypes(S)))
     @assert keys(components) ⊆ keys(X_sets)
     coerced_components = NamedTuple{keys(X_sets)}(
       coerce_subob_component(set, get(components, ob, 1:0))
@@ -1429,7 +1431,13 @@ function coerce_subob_component(X::FinSet, f::FinFunction)
   X == codom(f) ? Subobject(f) :
     error("Set $X in C-set does not match codomain of inclusion $f")
 end
+function coerce_subob_component(X::VarSet, subset::SubVarSet)
+  X == ob(subset) ? subset :
+    error("Set $X in C-set does not match set of subset $subset")
+end
+
 coerce_subob_component(X::FinSet, f) = Subobject(X, f)
+coerce_subob_component(X::VarSet, f) = Subobject(X, f)
 
 ob(A::SubACSetComponentwise) = A.ob
 components(A::SubACSetComponentwise) = A.components
