@@ -1447,6 +1447,13 @@ function hom(A::SubACSetComponentwise{T}) where T <: ACSet
   U = constructor(X)()
   hom_components = map(collect∘hom, components(A))
   copy_parts!(U, X, hom_components)
+  # Reindex attrvars in the domain
+  for at in attrtypes(acset_schema(X))
+    comp = Dict(v=>AttrVar(k) for (k,v) in enumerate(collect(hom(components(A)[at]))))
+    for atr in attrs(acset_schema(X), to=at, just_names=true)
+      U[atr] = [get(comp, x, x) for x in U[atr]]
+    end
+  end
   ACSetTransformation(hom_components, U, X)
 end
 
