@@ -9,7 +9,7 @@ jobs:
     name: Review Checklist
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/github-script@v4
+      - uses: actions/github-script@v6
         with:
           script: |
             const issues = await github.paginate(github.rest.issues.listComments({
@@ -24,7 +24,7 @@ jobs:
               }
             }
 
-            github.issues.createComment({
+            github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
