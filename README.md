@@ -1,3 +1,5 @@
+# IGNORE THIS BRANCH AND DO NOT MERGE
+
 # ![Catlab.jl](docs/src/assets/logo.png) Catlab.jl
 
 [![Stable Docs](https://img.shields.io/badge/docs-stable-blue.svg)](https://algebraicjulia.github.io/Catlab.jl/stable)
