@@ -25,7 +25,7 @@ using DataStructures: IntDisjointSets, in_same_set, num_groups
 using ACSets
 using ...GATs
 import ...GATs: equations
-using ...Theories: ThCategory, ThSchema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr
+using ...Theories: ThCategory, ThSchema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr, FreeSchema
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ...Graphs
 import ...Graphs: edges, src, tgt, enumerate_paths
@@ -374,8 +374,11 @@ FinDomFunctor(ob_map, ::Nothing, dom::FinCat, codom::Cat) =
 function hom_map(F::FinDomFunctor, path::Path)
   C, D = dom(F), codom(F)
   path = decompose(C, path)
-  mapreduce(e -> hom_map(F, e), (gs...) -> compose(D, gs...),
-            edges(path), init=id(D, ob_map(F, src(path))))
+  #this is horrific, to be discussed
+  edg = map(e->hom_map(F,e),edges(path))
+  for e in edg if e isa FreeSchema.Attr{:nothing} return e end end
+  reduce((gs...) -> compose(D, gs...),
+            edg, init=id(D, ob_map(F, src(path))))
 end
 decompose(C::FinCatGraph, path::Path) = path
 decompose(C::OppositeCat, path::Path) = reverse(path)
@@ -646,10 +649,10 @@ function Categories.do_composeH(F::FinDomFunctorMap, β::Transformation)
                        compose(F, G, strict=false), compose(F, H, strict=false))
 end
 
-function Categories.do_composeH(α::FinTransformationMap, H::Functor)
+function Categories.do_composeH(α::FinTransformationMap, H::Functor; params=[])
   F, G = dom(α), codom(α)
-  FinTransformationMap(mapvals(f -> hom_map(H, f), α.components),
-                       compose(F, H, strict=false), compose(G, H, strict=false))
+  FinTransformationMap(mapvals(f->hom_map(H,f),α.components),
+                      compose(F, H, strict=false), compose(G, H, strict=false))
 end
 
 function Base.show(io::IO, α::FinTransformationMap)
@@ -720,11 +723,18 @@ end
 
 # Something like this should be built into Julia, but unfortunately isn't.
 
+"""
+Map two given functions across the respective keys and values of a dictionary.
+"""
 function mappairs(kmap, vmap, pairs::T) where T<:AbstractDict
   (dicttype(T))(kmap(k) => vmap(v) for (k,v) in pairs)
 end
 mappairs(kmap, vmap, vec::AbstractVector) = map(vmap, vec)
 
+
+"""
+Map a function, which may depend on the key, across the values of a dictionary.
+"""
 function mapvals(f, pairs::T; keys::Bool=false, iter::Bool=false) where T<:AbstractDict
   (iter ? identity : dicttype(T))(if keys
     (k => f(k,v) for (k,v) in pairs)
@@ -746,6 +756,11 @@ dicttype(::Type{<:Iterators.Pairs}) = Dict
 
 @inline make_map(f, xs) = make_map(f, xs, Any)
 
+"""
+Make a dictionary displaying the mathematical function defined
+  by map(f,xs), except I guess that if xs is a UnitRange 
+  we refuse and just do a normal map?
+"""
 make_map(f, xs::UnitRange{Int}, ::Type{Any}) = map(f, xs)
 make_map(f, xs, ::Type{Any}) = Dict(x => f(x) for x in xs)
 

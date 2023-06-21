@@ -8,7 +8,7 @@ using StructEquality
 
 using ...GAT, ...Present
 import ...Theories: dom, codom, id, compose, ⋅, ∘, munit
-using ...Theories: ThCategory, composeH
+using ...Theories: ThCategory, composeH, FreeSchema
 import ..Categories: ob_map, hom_map, op, co
 using ..FinCats, ..FreeDiagrams, ..FinSets
 using ..FinCats: mapvals,FinDomFunctorMap
@@ -246,10 +246,34 @@ op(f::DiagramHom{op}) = DiagramHom{id}(op(shape_map(f)), op(diagram_map(f)),
 function compose(d::Diagram{T}, F::Functor; kw...) where T
   Diagram{T}(compose(diagram(d), F; kw...))
 end
-function compose(f::DiagramHom{T}, F::Functor; kw...) where T
-  DiagramHom{T}(shape_map(f), composeH(diagram_map(f), F; kw...),
+function compose(f::DiagramHom{T}, F::Functor; params = [], kw...) where T
+  whiskered = isempty(params) ? composeH(diagram_map(f), F; kw...) : param_compose(diagram_map(f),F;params=params)
+  DiagramHom{T}(shape_map(f), whiskered,
                 compose(f.precomposed_diagram, F; kw...))
 end
+
+"""Whisker a partially natural transformation with a functor ``H``,
+given any needed parameters specifying the functions in ``H``'s codomain
+which the whiskered result should map to. Currently assumes
+the result will be a totally defined transformation.
+"""
+
+function param_compose(α::FinTransformation, H::Functor; params=[])
+  F, G = dom(α), codom(α)
+  params = params isa Union{AbstractArray,AbstractDict} ? params : [params]
+  new_components = mapvals(pairs(α.components);keys=true) do i,f
+    if f isa FreeSchema.Attr{:nothing}
+      compindex = ob(dom(F),i)
+      func = length(params) > 1 ? params[i] : only(params)
+      src, tgt = ob_map(F⋅H,compindex), ob_map(G⋅H,compindex)
+      FinDomFunction(func,src,tgt)
+    else hom_map(H,f)
+    end
+  end
+  FinTransformation(new_components,compose(F, H, strict=false), compose(G, H, strict=false))
+end
+
+
 #This is only to be used when F lands in Set, or wherever
 #the functions in d's params are supposed to live. 
 #Perhaps needs a keyword argument about whether to fill in 
@@ -263,7 +287,7 @@ function compose(d::QueryDiagram{T},F::Functor; kw...) where T
   mornames = map(first,[attrs;homs])
   morfuns = map(x->hom_map(F,x),mornames)
   #prevents getting stuck with all GATExpr{:nothing}s.
-  hm = Dict{Int,FinDomFunction}(a=>b for (a,b) in pairs(D.hom_map) if b isa FinDomFunction)
+  hm = Dict{keytype(partial.hom_map),FinDomFunction}(a=>b for (a,b) in pairs(partial.hom_map) if b isa FinDomFunction)
   for (n,f) in params #Populate the hom_map of partial appropriately
     domain = ob_map(partial,hom(dom(partial),n).src)
     codomain = ob_map(partial,hom(dom(partial),n).tgt)
@@ -318,6 +342,7 @@ end
 
 # TODO: Define monad multiplications that go along with the units.
 
+#Sends an object of C to the diagram picking it out.
 function munit(::Type{Diagram{T}}, C::Cat, x; shape=nothing) where T
   if isnothing(shape)
     shape = FinCat(1)

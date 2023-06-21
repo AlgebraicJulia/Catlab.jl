@@ -11,8 +11,8 @@ export @graph, @fincat, @finfunctor, @diagram, @free_diagram,
 using Base.Iterators: repeated
 using MLStyle: @match
 
-using ...GATs, ...Present, ...Graphs, ...CategoricalAlgebra
-using ...Theories: munit, FreeSchema.Attr
+using ...GAT, ...Present, ...Graphs, ...CategoricalAlgebra, ...Syntax
+using ...Theories: munit, FreeSchema
 using ...CategoricalAlgebra.FinCats: mapvals, make_map
 using ...CategoricalAlgebra.DataMigrations: ConjQuery, GlueQuery, GlucQuery
 import ...CategoricalAlgebra.FinCats: FinCat, vertex_name, vertex_named,
@@ -92,7 +92,7 @@ function hom_over_pairs(expr::Union{Diagram,ObExpr})
   @match expr begin
     Diagram(statements) || Limit(statements) || Colimit(statements) =>
       (hom.name => (hom.src => hom.tgt)
-       for hom in statements if hom isa AST.HomOver)
+       for hom in statements if hom isa Union{AST.HomOver,AST.AttrOver})
     _ => ()
   end
 end
@@ -646,18 +646,21 @@ high-level steps of this process are:
 """
 function parse_migration(src_schema::Presentation, ast::AST.Diagram;
                         kw...)
-  C = FinCat(src_schema)q
+  C = FinCat(src_schema)
   d = parse_query_diagram(C, ast.statements)
   DataMigration(make_query(C, d))
 end
 function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
                          ast::AST.Mapping)
   D, C = FinCat(tgt_schema), FinCat(src_schema)
+  #Might need names of objects in the (co)limit expressions too
   homnames = map(first,hom_generators(C))
   params = Dict()
   ob_rhs, hom_rhs = make_ob_hom_maps(D, ast, missing_hom=true)
   F_ob = mapvals(expr -> parse_query(C, expr), ob_rhs)
   F_hom = mapvals(hom_rhs, keys=true) do f, expr
+    #This is probably wrong since expr could be a Mapping containing a JuliaCode,
+    #probably need to allow params in a DiagramHomData
     if expr isa AST.JuliaCode
       aux_func = make_func(expr.code,homnames)
       params[f] = aux_func
@@ -773,11 +776,15 @@ function make_query(C::FinCat{Ob}, data::DiagramData{T}) where {T, Ob}
   F_hom = mapvals(F_hom, keys=true) do h, f
     make_query_hom(C, f, F_ob[dom(J,h)], F_ob[codom(J,h)])
   end
+  # XXX: yuck, maybe get the type right?
   F_hom = typeof(F_hom) == Vector{FreeSchema.Attr{:nothing}} ? 
     Any[a for a in F_hom] : F_hom
   if query_type <: Ob
     Diagram(DiagramData{T}(F_ob, F_hom, J, data.params), C)
   else
+    for (x,y) in pairs(data.params) #box up singleton params, which should mean you have a Julia function defining a singleton diagram map
+      data.params[x] = (y isa Union{AbstractArray,AbstractDict}) ? y : [y]
+    end
     # XXX: Why is the element type of `F_ob` sometimes too loose?
     D = TypeCat(typeintersect(query_type, eltype(values(F_ob))),
                 eltype(values(F_hom)))
@@ -822,12 +829,22 @@ function make_query_hom(C::FinCat, f::DiagramHomData{id},
   DiagramHom{id}(f_ob, f_hom, d, d′)
 end
 
+"""If d,d' are singleton diagrams and f hasn't yet been specified, make a DiagramHom with the right
+domain, codomain, and shape_map but the natural transformation component left as GATExpr{:nothing} for now.
+Otherwise just wrap f up as a DiagramHom between singletons.
+"""
 function make_query_hom(::C, f::Hom, d::Diagram{T,C}, d′::Diagram{T,C}) where
     {T, Ob, Hom, C<:FinCat{Ob,Hom}}
-  munit(DiagramHom{T}, codom(diagram(d)), f,
-        dom_shape=shape(d), codom_shape=shape(d′))
+  if f isa GATExpr{:nothing} 
+    j = only(ob_generators(shape(d′)))
+    DiagramHom{T}([Pair(j,f)],d,d′)
+  else 
+    munit(DiagramHom{T}, codom(diagram(d)), f,
+      dom_shape=shape(d), codom_shape=shape(d′))
+  end
 end
 
+#When would this happen?
 function make_query_hom(cat::C, f::Union{Hom,DiagramHomData{op}},
                         d::Diagram{id}, d′::Diagram{id}) where
     {Ob, Hom, C<:FinCat{Ob,Hom}}
@@ -1080,10 +1097,12 @@ function parse_hom_ast(expr, dom::Union{AST.ObGenerator,Nothing}=nothing,
     Expr(:call, :id, x) => AST.Id(parse_ob_ast(x))
     f::Symbol || Expr(:curly, _...) => AST.HomGenerator(expr)
     Expr(:block,args...) => AST.JuliaCode(expr)
+    Expr(:(->),inputs,body) => AST.JuliaCode(expr)
     _ => error("Invalid morphism expression $expr")
   end
 end
 
+#TODO: all of the below with Julia code
 # Limit fragment.
 function parse_hom_ast(expr, dom::AST.LimitExpr, cod::AST.LimitExpr)
   parse_mapping_ast((args...) -> parse_apply_ast(args..., dom), expr, cod)
@@ -1094,7 +1113,11 @@ function parse_hom_ast(expr, dom::AST.ObGenerator, cod::AST.LimitExpr)
   end
 end
 function parse_hom_ast(expr, dom::AST.LimitExpr, cod::AST.ObGenerator)
-  [AST.ObAssign(AST.OnlyOb(), parse_apply_ast(expr, cod, dom))] |> AST.Mapping
+  @match expr begin
+    Expr(:(->),inputs,body) => AST.JuliaCode(expr)
+    Expr(:block,args...) => AST.JuliaCode(expr)
+    _ => [AST.ObAssign(AST.OnlyOb(), parse_apply_ast(expr, cod, dom))] |> AST.Mapping
+  end
 end
 
 # Colimit fragment.
@@ -1125,6 +1148,7 @@ function parse_mapping_ast(f_parse_ob_assign, body, dom; preprocess::Bool=false)
   end
   dom_obs, dom_homs = Dict(ob_over_pairs(dom)), Dict(hom_over_pairs(dom))
   stmts = mapreduce(vcat, statements(body), init=AST.AssignExpr[]) do expr
+    #println(expr)
     @match expr begin
       # lhs => rhs
       Expr(:call, :(=>), lhs::Symbol, rhs) => begin
@@ -1226,7 +1250,6 @@ function reparse_arrows(expr)
 end
 function make_func(body,vars)
   expr = Expr(:(->),Expr(:tuple,vars...),body)
-  println(expr)
   eval(expr)
 end
 """ Left-most argument plus remainder of left-associated binary operations.

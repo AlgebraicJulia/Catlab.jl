@@ -192,6 +192,10 @@ function migrate(X::FinDomFunctor, M::ConjSchemaMigration;
                  return_limits::Bool=false, tabular::Bool=false)
   F = functor(M)
   tgt_schema = dom(F)
+  hg = hom_generators(tgt_schema)
+  homnames = map(presentation_key,hg)
+  homfuns = map(x->hom_map(X,x),homnames)
+  params = M.params
   limits = make_map(ob_generators(tgt_schema)) do c
     Fc = ob_map(F, c)
     J = shape(Fc)
@@ -216,8 +220,10 @@ function migrate(X::FinDomFunctor, M::ConjSchemaMigration;
   end
   funcs = make_map(hom_generators(tgt_schema)) do f
     Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)
+    f_params = haskey(params,f) ? map(x->x(homfuns...),params[f]) : []
     # XXX: Disable domain check for same reason.
-    universal(compose(Ff, X, strict=false), limits[c], limits[d])
+    # Hand the Julia function form of the not-yet-defined components to compose
+    universal(compose(Ff, X, strict=false,params=f_params), limits[c], limits[d])
   end
   Y = FinDomFunctor(mapvals(ob, limits), funcs, tgt_schema)
   return_limits ? (Y, limits) : Y
