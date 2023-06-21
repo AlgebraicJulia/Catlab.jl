@@ -12,17 +12,14 @@ jobs:
       - uses: actions/github-script@v6
         with:
           script: |
-            const issues = await github.paginate(github.rest.issues.listComments({
+            const { data: comments } = await github.rest.issues.listComments({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-            }))
+            });
 
-            for (const issue of issues) {
-              if (issue.body.includes("### Review Checklist")) {
-                return // review checklist has already been commented
-              }
-            }
+            // if comment already exists, then just return
+            if (comments.find(comment => comment.body.includes("### Review Checklist"))) { return; }
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
