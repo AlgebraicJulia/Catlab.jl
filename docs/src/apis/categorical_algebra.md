@@ -13,9 +13,9 @@ Modules = [
 Private = false
 ```
 
-## Free Diagrams, Limits, and Colimts
+## Free Diagrams, Limits, and Colimits
 
-The following modules define free diagrams in an arbitrary category and specify limit and colimt cones over said diagrams. Thes constructions enjoy the fullest support for FinSet and are used below to define presheaf categories as C-Sets. The general idea of these functions is that you set up a limit computation by specifying a diagram and asking for a limit or colimit cone, which is returned as a struct containing the apex object and the leg morphisms. This cone structure can be queried using the functions [`apex`](@ref) and [`legs`](@ref). Julia's multiple dispatch feature is heavily used to specialize limit and colimit computations for various diagram shapes like product/coproduct and equalizer/coequalizer. As a consumer of this API, it is highly recommended that you use multiple dispatch to specialize your code on the diagram shape whenever possible.
+The following modules define free diagrams in an arbitrary category and specify limit and colimit cones over said diagrams. Thes constructions enjoy the fullest support for FinSet and are used below to define presheaf categories as C-Sets. The general idea of these functions is that you set up a limit computation by specifying a diagram and asking for a limit or colimit cone, which is returned as a struct containing the apex object and the leg morphisms. This cone structure can be queried using the functions [`apex`](@ref) and [`legs`](@ref). Julia's multiple dispatch feature is heavily used to specialize limit and colimit computations for various diagram shapes like product/coproduct and equalizer/coequalizer. As a consumer of this API, it is highly recommended that you use multiple dispatch to specialize your code on the diagram shape whenever possible.
 
 ```@autodocs
 Modules = [
