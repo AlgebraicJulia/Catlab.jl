@@ -325,7 +325,6 @@ symbolic attributes. (Likewise, AttrVars will have to wrap Any rather than Int)
     return new(FinDomFunction(Vector{Union{AttrVar,T}}(f)), cod)
   end 
 end
-VarFunction(f::UnitRange,cod::Int) = VarFunction(FinFunction(f,cod))
 VarFunction(f::AbstractVector{Int},cod::Int) = VarFunction(FinFunction(f,cod))
 VarFunction(f::FinDomFunction) = VarFunction{Union{}}(AttrVar.(collect(f)),codom(f))
 Base.length(f::AbsVarFunction{T}) where T = length(collect(f.fun))
@@ -1471,10 +1470,7 @@ bottom(X::FinSet{Int}, ::SubOpBoolean) = SubFinSet(falses(length(X)))
 """
 const SubVarSet{T} = Subobject{VarSet{T}}
 
-Subobject(X::VarSet{T}, f::Union{AbstractVector, UnitRange}) where T = 
-  Subobject(VarFunction{T}(AttrVar.(f), FinSet(X)))
-
-Subobject(X::VarSet{T}, f::Union{AbstractVector, UnitRange}) where T = 
+Subobject(X::VarSet{T}, f::AbstractVector) where T = 
   Subobject(VarFunction{T}(AttrVar.(f), FinSet(X)))
 
 @instance ThSubobjectLattice{VarSet,SubVarSet} begin
