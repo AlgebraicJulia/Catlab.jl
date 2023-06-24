@@ -13,7 +13,9 @@ using ...Theories: ob, hom, dom, codom, attr, AttrTypeExpr, ⋅
 using ..Categories, ..FinCats, ..Limits, ..Diagrams, ..FinSets, ..CSets, ..HomSearch
 using ...Graphs, ..FreeDiagrams
 import ..Categories: ob_map, hom_map
+import ...GATs: functor
 using ..FinCats: make_map, mapvals, presentation_key
+import ..FinCats: FinCatPresentation
 using ..Chase: collage, crel_type, pres_to_eds, add_srctgt, chase
 using ..FinSets: VarSet
 
@@ -134,7 +136,7 @@ end
 # Delta migration
 #----------------
 function migrate(X::FinDomFunctor,M::DeltaSchemaMigration)
-  F = func(M)
+  F = functor(M)
   tgt_schema = dom(F)
   obs = make_map(ob_generators(tgt_schema)) do c
     Fc = ob_map(F,c)
@@ -185,6 +187,13 @@ function migrate!(X::ACSet, Y::ACSet, FOb, FHom)
   migrate!(X, Y, M)
 end
 
+"""
+Get the names of the morphisms in a schema given either
+by a NamedGraph or by a presentation.
+"""
+get_homnames(X::FinDomFunctor,S::FinCatGraph) = collect(subpart(graph(S),:,:ename))
+get_homnames(X::FinDomFunctor,S::FinCatPresentation) = map(presentation_key,hom_generators(S))
+
 # Conjunctive migration
 #----------------------
 #todo: generalize compose for non-total migrations
@@ -192,8 +201,7 @@ function migrate(X::FinDomFunctor, M::ConjSchemaMigration;
                  return_limits::Bool=false, tabular::Bool=false)
   F = functor(M)
   tgt_schema = dom(F)
-  hg = hom_generators(tgt_schema)
-  homnames = map(presentation_key,hg)
+  homnames = get_homnames(X,tgt_schema)
   homfuns = map(x->hom_map(X,x),homnames)
   params = M.params
   limits = make_map(ob_generators(tgt_schema)) do c

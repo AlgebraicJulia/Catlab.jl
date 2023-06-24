@@ -417,7 +417,14 @@ function IndexedFinDomFunctionVector(f::AbstractVector{T}, codom::SetOb{T};
   end
   IndexedFinDomFunctionVector(f, index, codom)
 end
-
+function IndexedFinDomFunctionVector(f::AbstractVector{T}, dom::FinSet{Int},
+                                     codom::SetOb{T}; index=nothing) where T
+  length(f) == length(dom) ||
+    error("Length of vector $f does not match domain $dom")
+  IndexedFinDomFunctionVector(f, index, codom)
+end
+Base.hash(f::IndexedFinDomFunctionVector, h::UInt) =
+  hash(f.func, hash(f.codom, h))
 Base.:(==)(f::Union{FinDomFunctionVector,IndexedFinDomFunctionVector},
            g::Union{FinDomFunctionVector,IndexedFinDomFunctionVector}) =
   # Ignore index when comparing for equality.
@@ -848,15 +855,11 @@ function limit(d::BipartiteFreeDiagram{<:SetOb,<:FinDomFunction{Int}})
   @assert !any(isempty(incident(d, v, :tgt)) for v in vertices₂(d))
   d_original = d
 
-  d = BipartiteFreeDiagram{SetOb,FinDomFunction{Int}}(
-    ob₁(d), ensure_type_set.(ob₂(d)),
-    collect(zip(ensure_type_set_codom.(hom(d)), src(d), tgt(d))))
-
   # For uniformity, e.g. when pairing below, ensure that all objects in layer 2
   # are type sets.
-  #if !all(x isa TypeSet for x in ob₂(d))
-  #  d = map(d, ob₁=identity, ob₂=ensure_type_set, hom=ensure_type_set_codom)
-  #end
+  if !all(x isa TypeSet for x in ob₂(d))
+    d = map(d, ob₁=identity, ob₂=ensure_type_set, hom=ensure_type_set_codom)
+  end
 
   # It is generally optimal to compute all equalizers (self joins) first, so as
   # to reduce the sizes of later pullbacks (joins) and products (cross joins).
@@ -958,7 +961,7 @@ function equalize_all(d::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
 
     add_vertex₁!(d_simple, ob₁=dom(ι)) # == u
     for (v, es) in pairs(out_edges)
-      add_edge!(d_simple, u, v, hom=force(ι⋅hom(d, first(es))))
+      add_edge!(d_simple, u, v, hom=ι⋅hom(d, first(es)))
     end
     ι
   end

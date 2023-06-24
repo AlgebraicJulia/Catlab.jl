@@ -6,7 +6,7 @@ export Diagram, SimpleDiagram, QueryDiagram, DiagramHom, id, op, co,
 
 using StructEquality
 
-using ...GAT, ...Present
+using ...GATs
 import ...Theories: dom, codom, id, compose, ⋅, ∘, munit
 using ...Theories: ThCategory, composeH, FreeSchema
 import ..Categories: ob_map, hom_map, op, co
@@ -262,12 +262,17 @@ function param_compose(α::FinTransformation, H::Functor; params=[])
   F, G = dom(α), codom(α)
   params = params isa Union{AbstractArray,AbstractDict} ? params : [params]
   new_components = mapvals(pairs(α.components);keys=true) do i,f
+    compindex = ob(dom(F),i)
+    src, tgt = ob_map(F⋅H,compindex), ob_map(G⋅H,compindex)
     if f isa FreeSchema.Attr{:nothing}
-      compindex = ob(dom(F),i)
       func = length(params) > 1 ? params[i] : only(params)
-      src, tgt = ob_map(F⋅H,compindex), ob_map(G⋅H,compindex)
       FinDomFunction(func,src,tgt)
-    else hom_map(H,f)
+    #may need to population params with identities
+    else
+      func = length(params) > 1 ? params[i] : only(params)
+      #could change target to let the attribute be valued in the
+      #wrong place fufufu
+      hom_map(H,f)⋅SetFunction(func,tgt,tgt)
     end
   end
   FinTransformation(new_components,compose(F, H, strict=false), compose(G, H, strict=false))
@@ -319,7 +324,7 @@ function universal(f::DiagramHom{op}, dom_lim, codom_lim)
   cone = Multispan(apex(dom_lim), map(ob_generators(J′)) do j′
     j, g = ob_map(f, j′)
     πⱼ = legs(dom_lim)[j]
-    πⱼ = πⱼ isa AbstractVector ? only(πⱼ) : πⱼ 
+#    πⱼ = πⱼ isa AbstractVector ? only(πⱼ) : πⱼ 
     #this is gross but I don't understand why this is sometimes a vector and sometimes a function
     #can see both cases by migrating my mechlink
     compose(πⱼ, g)

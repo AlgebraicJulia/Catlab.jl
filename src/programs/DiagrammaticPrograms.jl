@@ -11,7 +11,7 @@ export @graph, @fincat, @finfunctor, @diagram, @free_diagram,
 using Base.Iterators: repeated
 using MLStyle: @match
 
-using ...GAT, ...Present, ...Graphs, ...CategoricalAlgebra, ...Syntax
+using ...GATs, ...Graphs, ...CategoricalAlgebra
 using ...Theories: munit, FreeSchema
 using ...CategoricalAlgebra.FinCats: mapvals, make_map
 using ...CategoricalAlgebra.DataMigrations: ConjQuery, GlueQuery, GlucQuery
@@ -48,7 +48,8 @@ end
 @data DiagramExpr begin
   ObOver(name::Symbol, over::Union{ObExpr,Nothing}) #probably shouldn't be nothing
   HomOver(name::Symbol, src::Symbol, tgt::Symbol, over::HomExpr)
-  AttrOver(name::Symbol, src::Symbol,tgt::Symbol,aux_func_def::Expr)
+  AttrOver(name::Symbol, src::Symbol,tgt::Symbol,aux_func_def::Expr)#make JuliaCode
+  TwistedHomOver(lhs::HomOver,rhs::AttrOver)
 end
 
 @data CatExpr <: DiagramExpr begin
@@ -466,6 +467,11 @@ end
 parse_diagram(pres::Presentation, ast::AST.Diagram) =
   parse_diagram(FinCat(pres), ast)
 
+"""
+Take HomOvers and ObOvers, build a target schema
+for the migration and its ob and hom maps,
+ready for promotion and building the diagram.
+"""
 function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
                             type=Any, ob_parser=nothing, hom_parser=nothing, 
                             kw...)
@@ -484,7 +490,8 @@ function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
       AST.HomOver(f, x, y, h) => begin
         e = parse!(g, AST.Hom(f, x, y))
         X, Y = F_ob[src(g,e)], F_ob[tgt(g,e)]
-        push!(F_hom, hom_parser(h, X, Y;kw...))
+        push!(F_hom, hom_parser(h, X, Y;kw...)) 
+        #hom_parser might be parse_query_hom(C,...)
         if isnothing(Y)
           # OOOH look down
           # Infer codomain in base category from parsed hom.
@@ -495,6 +502,16 @@ function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
       AST.AttrOver(f,x,y,expr) => begin
         e = parse!(g,AST.Hom(f,x,y))
         push!(F_hom, FreeSchema.Attr{:nothing}([f],[]))
+        aux_func = make_func(expr,mornames)
+        params[e] = aux_func
+      end
+      AST.TwistedHomOver(AST.HomOver(f,x,y,h),AST.AttrOver(f,x,y,expr)) => begin
+        e = parse!(g,AST.Hom(f,x,y))
+        X, Y = F_ob[src(g,e)], F_ob[tgt(g,e)]
+        push!(F_hom, hom_parser(h, X, Y;kw...)) 
+        if isnothing(Y)
+          F_ob[tgt(g,e)] = codom(C, F_hom[end])
+        end
         aux_func = make_func(expr,mornames)
         params[e] = aux_func
       end
@@ -694,13 +711,19 @@ function parse_query(C::FinCat, expr::AST.ObExpr; kw...)
     AST.Initial() => DiagramData{id}([], [], FinCat(DiagramGraph()))
   end
 end
+
+"""
+Helper function to provide parsers to `parse_diagram_data`.
+"""
 function parse_query_diagram(C::FinCat, stmts::Vector{<:AST.DiagramExpr}; kw...)
   parse_diagram_data(C, stmts;
     ob_parser = X -> parse_query(C,X;kw...),
     hom_parser = (f,X,Y) -> parse_query_hom(C,f,X,Y; kw...), kw...)
 end
 
-""" Parse expression defining a morphism of queries.
+""" 
+Get the map in the source schema corresponding to a map
+of two singleton diagrams.
 """
 function parse_query_hom(C::FinCat{Ob}, expr::AST.HomExpr,
                          ::Ob, ::Union{Ob,Nothing}; kw...) where Ob
@@ -708,7 +731,10 @@ function parse_query_hom(C::FinCat{Ob}, expr::AST.HomExpr,
 end
 
 # Conjunctive fragment.
-
+"""
+Create DiagramHomData for the case of a map between two
+  conjunctive diagrams.
+"""
 function parse_query_hom(C::FinCat{Ob}, ast::AST.Mapping,
                          d::Union{Ob,DiagramData{op}}, d′::DiagramData{op}; kw...) where Ob
   ob_rhs, hom_rhs = make_ob_hom_maps(shape(d′), ast, allow_missing=d isa Ob)
@@ -718,6 +744,10 @@ function parse_query_hom(C::FinCat{Ob}, ast::AST.Mapping,
   f_hom = mapvals(rhs -> parse_hom(d, rhs), hom_rhs)
   DiagramHomData{op}(f_ob, f_hom)
 end
+"""
+Create DiagramHomData for the case of a map from a single
+  object to a conjunctive diagram.
+"""
 function parse_query_hom(C::FinCat{Ob}, ast::AST.Mapping,
                          d::DiagramData{op}, c′::Ob) where Ob
   assign = only(ast.assignments)
@@ -987,6 +1017,7 @@ function parse_diagram_ast(body::Expr; free::Bool=false, preprocess::Bool=true)
      #     AST.AssignLiteral(z, get_literal(value)),
      #     AST.HomOver(z, x, y, parse_hom_ast(h, X))]
      # end
+
       # h(x) == k(y)
       # this is for anonymous objects, how to make it work for 
       # weight(e_1)==weight(e_2)? Needs let.
@@ -1010,6 +1041,10 @@ function parse_diagram_ast(body::Expr; free::Bool=false, preprocess::Bool=true)
 end
 function parse_hom_over(name,x,y,X,Y,rhs)
   @match rhs begin
+    #a(e) |> (x-> f(x))
+    Expr(:call,:(|>),l,r) =>
+      [AST.TwistedHomOver(AST.HomOver(name,x,y,parse_hom_ast(l,X,Y)),
+       AST.AttrOver(name,x,y,r))]
     Expr(:(->),_...) || Expr(:block,_...)=> begin #maybe add check that block ends with a lambda
       [AST.AttrOver(name,x,y,rhs)]
     end

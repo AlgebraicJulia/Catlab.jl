@@ -44,6 +44,7 @@ symbol ``⋅`` (`\\cdot`) for composition in diagrammatic order.
 end
 
 # Convenience constructors
+compose(f) = f
 compose(fs::AbstractVector) = foldl(compose, fs)
 compose(f, g, h, fs...) = compose([f, g, h, fs...])
 

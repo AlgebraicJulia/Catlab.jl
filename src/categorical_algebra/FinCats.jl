@@ -523,6 +523,9 @@ op(F::FinDomFunctorMap) = FinDomFunctorMap(F.ob_map, F.hom_map,
                                            op(dom(F)), op(codom(F)))
 
 """ Force evaluation of lazily defined function or functor.
+The resulting ob_map and hom_map are guaranteed to have 
+valtype or eltype, as appropriate, equal to Ob and Hom,
+respectively.
 """
 function force(F::FinDomFunctor, Ob::Type=Any, Hom::Type=Any)
   C = dom(F)
@@ -757,9 +760,12 @@ dicttype(::Type{<:Iterators.Pairs}) = Dict
 @inline make_map(f, xs) = make_map(f, xs, Any)
 
 """
-Make a dictionary displaying the mathematical function defined
-  by map(f,xs), except I guess that if xs is a UnitRange 
-  we refuse and just do a normal map?
+If `xs` is a UnitRange, make a vector of the desired
+type by mapping `f` over `xs`. Otherwise, make a dictionary
+with the desired valtype.
+
+Seems like this wants to guarantee the output has type T,
+but the Any methods violate this.
 """
 make_map(f, xs::UnitRange{Int}, ::Type{Any}) = map(f, xs)
 make_map(f, xs, ::Type{Any}) = Dict(x => f(x) for x in xs)
@@ -770,7 +776,7 @@ function make_map(f, xs::UnitRange{Int}, ::Type{T}) where T
   else
     ys = map(f, xs)
     eltype(ys) <: T || error("Element(s) of $ys are not instances of $T")
-    ys
+    T[y for y in ys]
   end
 end
 
@@ -780,7 +786,7 @@ function make_map(f, xs, ::Type{T}) where T
   else
     xys = Dict(x => f(x) for x in xs)
     valtype(xys) <: T || error("Value(s) of $xys are not instances of $T")
-    xys
+    Dict{keytype(xys),T}(x=>y for (x,y) in xys)
   end
 end
 
