@@ -1105,7 +1105,6 @@ end
 function parse_mapping_ast(body, dom; kw...)
   parse_mapping_ast((rhs, _) -> parse_ob_ast(rhs), body, dom; kw...)
 end
-#ugh wtf is leftmost arg's even deal with \circ
 function parse_apply_ast(expr, X, target)
   y::Symbol, f = @match expr begin
     ::Symbol => (expr, nothing)

@@ -276,8 +276,8 @@ end
     (e₁ → v)::tgt
     (e₂ → v)::src
   end
-  src => e₁ ⋅ src
-  tgt => e₂ ⋅ tgt
+  src => src∘e₁
+  tgt => tgt∘e₁
 end
 @test M isa DataMigrations.ConjSchemaMigration
 F = functor(M)
