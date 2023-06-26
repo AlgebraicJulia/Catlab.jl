@@ -1105,7 +1105,7 @@ end
 function parse_mapping_ast(body, dom; kw...)
   parse_mapping_ast((rhs, _) -> parse_ob_ast(rhs), body, dom; kw...)
 end
-
+#ugh wtf is leftmost arg's even deal with \circ
 function parse_apply_ast(expr, X, target)
   y::Symbol, f = @match expr begin
     ::Symbol => (expr, nothing)
@@ -1166,6 +1166,8 @@ function reparse_arrows(expr)
 end
 
 """ Left-most argument plus remainder of left-associated binary operations.
+`ops` denotes the operations that won't need to be reversed for the desired
+parser output (AST.Apply or AST.Coapply).
 """
 function leftmost_arg(expr, ops; all_ops=nothing)
   isnothing(all_ops) && (all_ops = ops)
@@ -1177,6 +1179,7 @@ function leftmost_arg(expr, ops; all_ops=nothing)
         (x, Expr(:call, op2, rest, z))
       end
       Expr(:call, op, x, y) && if op ∈ ops end => (x, y)
+      Expr(:call, op, x, y) => (y,x)
       _ => (nothing, expr)
     end
   end

@@ -267,6 +267,18 @@ M = @migration SchGraph SchGraph begin
   src => e₁ ⋅ src
   tgt => e₂ ⋅ tgt
 end
+#Syntactic variant
+@migration SchGraph SchGraph begin
+  V => V
+  E => @join begin
+    v::V
+    (e₁, e₂)::E
+    (e₁ → v)::tgt
+    (e₂ → v)::src
+  end
+  src => e₁ ⋅ src
+  tgt => e₂ ⋅ tgt
+end
 @test M isa DataMigrations.ConjSchemaMigration
 F = functor(M)
 F_E = diagram(ob_map(F, :E))
