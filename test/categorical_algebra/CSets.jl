@@ -811,4 +811,27 @@ clim = colimit(Span(f,g));
 @test apex(clim)[:weight] == [true,true,AttrVar(2),true]
 @test collect(legs(clim)[1][:Weight]) == [true,AttrVar(1)]
 
+# Subobjects with variables 
+
+X = @acset SetAttr{Bool} begin X=2;D=1;f=[true, AttrVar(1)] end
+A = Subobject(X, X=[1])
+B = Subobject(X, X=[2], D=[1])
+@test A ∧ B |> force == ⊥(X) |> force
+@test A ∨ B |> force == ⊤(X) |> force
+
+# Lattice of sub-C-sets.
+X = @acset VELabeledGraph{Symbol} begin V=6; E=5; Label=5
+  src=[1,2,3,4,4]; tgt=[3,3,4,5,6];
+  vlabel=[:a,:b,:c,:d,:e,:f]; elabel=AttrVar.(1:5)
+end
+A, B = Subobject(X, V=1:4, E=1:3, Label=1:3), Subobject(X, V=3:6, E=3:5, Label=3:5)
+@test A ∧ B |> force == Subobject(X, V=3:4, E=3:3, Label=3:3) |> force
+expected = @acset VELabeledGraph{Symbol} begin V=2; E=1; Label=1;
+  src=1; tgt=2; vlabel=[:c,:d]; elabel=[AttrVar(1)]
+end
+@test is_isomorphic(dom(hom(A ∧ B )), expected)
+@test A ∨ B |> force == Subobject(X, V=1:6, E=1:5, Label=1:5) |> force
+@test ⊤(X) |> force == A ∨ B |> force
+@test ⊥(X) |> force == Subobject(X, V=1:0, E=1:0, Label=1:0) |> force
+
 end

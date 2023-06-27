@@ -4,7 +4,7 @@ module FinSets
 export FinSet, FinFunction, FinDomFunction, TabularSet, TabularLimit,
   force, is_indexed, preimage, VarFunction, LooseVarFunction,
   JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin,
-  SubFinSet, SubOpBoolean, is_monic, is_epic
+  SubFinSet, SubOpBoolean, is_monic, is_epic, SubVarSet
 
 using StructEquality
 using DataStructures: OrderedDict, IntDisjointSets, union!, find_root!
@@ -303,7 +303,7 @@ Control dispatch in the category of VarFunctions
   n::Int 
 end
 VarSet(i::Int) = VarSet{Union{}}(i)
-FinSet(s::VarSet{Union{}}) = FinSet(s.n)
+FinSet(s::VarSet) = FinSet(s.n)
 Base.iterate(set::VarSet{T}, args...) where T = iterate(1:set.n, args...)
 Base.length(set::VarSet{T}) where T = set.n
 Base.in(set::VarSet{T}, elem) where T = in(elem, 1:set.n)
@@ -1463,5 +1463,29 @@ join(A::SubFinSet{Int}, B::SubFinSet{Int}, ::SubOpBoolean) =
   SubFinSet(predicate(A) .| predicate(B))
 top(X::FinSet{Int}, ::SubOpBoolean) = SubFinSet(trues(length(X)))
 bottom(X::FinSet{Int}, ::SubOpBoolean) = SubFinSet(falses(length(X)))
+
+# SubVarSets
+
+""" Subset of a finite varset.
+"""
+const SubVarSet{T} = Subobject{VarSet{T}}
+
+Subobject(X::VarSet{T}, f::AbstractVector) where T = 
+  Subobject(VarFunction{T}(AttrVar.(f), FinSet(X)))
+
+@instance ThSubobjectLattice{VarSet,SubVarSet} begin
+  @import ob
+  meet(A::SubVarSet, B::SubVarSet) = meet(A,B,SubOpBoolean())
+  join(A::SubVarSet, B::SubVarSet) = join(A,B,SubOpBoolean())
+  top(X::VarSet) = top(X,SubOpBoolean())
+  bottom(X::VarSet) = bottom(X,SubOpBoolean())
+end
+
+meet(A::SubVarSet{T}, B::SubVarSet{T}, ::SubOpBoolean) where T =
+  Subobject(codom(hom(A)),[a.val for a in collect(hom(A)) ∩ collect(hom(B))])
+join(A::SubVarSet, B::SubVarSet, ::SubOpBoolean) =
+  Subobject(codom(hom(A)),unique([a.val for a in [collect(hom(A))...,collect(hom(B))...]]))
+top(X::VarSet, ::SubOpBoolean) = Subobject(codom(hom(X)),1:length(X))
+bottom(X::VarSet, ::SubOpBoolean) = Subobject(codom(hom(X)),1:0)
 
 end
