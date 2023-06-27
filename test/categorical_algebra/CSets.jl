@@ -813,7 +813,7 @@ clim = colimit(Span(f,g));
 
 # Subobjects with variables 
 
-X = @acset SetAttr{Bool} begin X=2;D=1;f=[true, AttrVar(1)] end 
+X = @acset SetAttr{Bool} begin X=2;D=1;f=[true, AttrVar(1)] end
 A = Subobject(X, X=[1])
 B = Subobject(X, X=[2], D=[1])
 @test A ∧ B |> force == ⊥(X) |> force
@@ -831,7 +831,7 @@ expected = @acset VELabeledGraph{Symbol} begin V=2; E=1; Label=1;
 end
 @test is_isomorphic(dom(hom(A ∧ B )), expected)
 @test A ∨ B |> force == Subobject(X, V=1:6, E=1:5, Label=1:5) |> force
-@test ⊤(X) |> force == Subobject(X, V=1:6, E=1:5, Label=1:5) |> force
+@test ⊤(X) |> force == A ∨ B |> force
 @test ⊥(X) |> force == Subobject(X, V=1:0, E=1:0, Label=1:0) |> force
 
 end
