@@ -15,6 +15,7 @@ using ...Graphs, ..FreeDiagrams
 import ..Categories: ob_map, hom_map
 import ...GATs: functor
 using ..FinCats: make_map, mapvals, presentation_key
+using ..Diagrams
 import ..FinCats: FinCatPresentation
 using ..Chase: collage, crel_type, pres_to_eds, add_srctgt, chase
 using ..FinSets: VarSet
@@ -193,10 +194,51 @@ by a NamedGraph or by a presentation.
 """
 get_homnames(X::FinDomFunctor,S::FinCatGraph) = collect(subpart(graph(S),:,:ename))
 get_homnames(X::FinDomFunctor,S::FinCatPresentation) = map(presentation_key,hom_generators(S))
-
+#=
+#Arbitrary migration
+function migrate(X::FinDomFunctor, M::ContravariantDataMigration;
+  return_limits::Bool=false, tabular::Bool=false,colimit::Bool=false)
+  F = functor(M)
+  tgt_schema = dom(F)
+  homnames = get_homnames(X, tgt_schema)
+  homfuns = map(x -> hom_map(X, x), homnames)
+  params = M.params
+  lims_or_colims = make_map(ob_generators(tgt_schema)) do c
+    Fc = ob_map(F, c)
+    J = shape(Fc)
+    # XXX: Must supply object/morphism types to handle case of empty diagram.
+    diagram_types = if c isa AttrTypeExpr
+      (TypeSet, SetFunction)
+    elseif isempty(J)
+      (FinSet{Int}, FinFunction{Int})
+    else
+      (SetOb, FinDomFunction{Int})
+    end
+    #
+    # XXX: Disable domain check because acsets don't store schema equations.
+    limit_or_colimit = colimit ? colimit : limit
+    alg = colimit ? SpecializeColimit() : SpecializeLimit(fallback=ToBipartiteLimit())
+    lim_or_colim = limit_or_colimit(force(compose(Fc, X, strict=false), diagram_types...),alg=alg)
+    if tabular
+      names = (ob_generator_name(J, j) for j in ob_generators(J))
+      TabularLimit(lim_or_colim, names=names)
+    else
+      lim_or_colim
+    end
+  end
+  funcs = make_map(hom_generators(tgt_schema)) do f
+    Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)
+    f_params = haskey(params, f) ? map(x -> x(homfuns...), params[f]) : []
+    # XXX: Disable domain check for same reason.
+    # Hand the Julia function form of the not-yet-defined components to compose
+    universal(compose(Ff, X, strict=false, params=f_params), limits[c], limits[d])
+  end
+  Y = FinDomFunctor(mapvals(ob, limits), funcs, tgt_schema)
+  return_limits ? (Y, limits) : Y
+end
+=#
 # Conjunctive migration
 #----------------------
-#todo: generalize compose for non-total migrations
 function migrate(X::FinDomFunctor, M::ConjSchemaMigration;
                  return_limits::Bool=false, tabular::Bool=false)
   F = functor(M)
@@ -243,6 +285,9 @@ end
 function migrate(X::FinDomFunctor, M::GlueSchemaMigration)
   F = functor(M)
   tgt_schema = dom(F)
+  homnames = get_homnames(X,tgt_schema)
+  homfuns = map(x->hom_map(X,x),homnames)
+  params = M.params
   colimits = make_map(ob_generators(tgt_schema)) do c
     Fc = ob_map(F, c)
     diagram_types = c isa AttrTypeExpr ? (TypeSet, SetFunction) :
@@ -252,7 +297,12 @@ function migrate(X::FinDomFunctor, M::GlueSchemaMigration)
   end
   funcs = make_map(hom_generators(tgt_schema)) do f
     Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)
-    universal(compose(Ff, X, strict=false), colimits[c], colimits[d])
+    #Get a single anonymous function, if there's one needed and 
+    #the domain of Ff's shape map is a singleton, or else get a dict
+    #of them if the domain is a non-singleton and there are any.
+    f_params = haskey(params,f) ? map(x->x(homfuns...),params[f]) : 
+                isempty(get_params(Ff)) ? [] : mapvals(x->x(homfuns...),get_params(Ff))
+    universal(compose(Ff, X, strict=false,params=f_params), colimits[c], colimits[d])
   end
   FinDomFunctor(mapvals(ob, colimits), funcs, tgt_schema)
 end

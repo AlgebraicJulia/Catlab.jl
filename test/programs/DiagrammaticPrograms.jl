@@ -591,7 +591,11 @@ F_src_vv, F_src_ev, F_src_ve = components(diagram_map(F_src))
 @test destructure_unary_call(:(f(g(x)))) == (:(f∘g),:x)
 end
 
-@testset "Mechanical Linkages" begin
+# Migrations with code
+#
+#------------------------------------
+
+@testset "Migrations with code" begin
   @present SchMechLink <: SchGraph begin
       Pos::AttrType
       Len::AttrType
@@ -705,4 +709,93 @@ end
   end
   D = migrate(G,M)
   @test hom_map(D,4)(1) == 2.0
+  #Variant
+  M = @migration SchMechLink SchMechLink begin
+    V => V
+    E => @join begin
+        e :: E
+        L :: Len
+        (l:e→L) :: (x->len(x)^2)
+        (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+    end
+    Pos => Pos
+    Len => Len
+    src => src(e)
+    tgt => tgt(e)
+    pos => pos
+    len => (len(e)|>(x->2x))
+end
+  Dd = migrate(MechLink,G,M)
+  @test only(subpart(Dd,:len)) == 2.0
+  #disjoint union linkage with itself, second copy reflected through origin
+  M = @migration SchMechLink SchMechLink begin
+    V => @cases (v₁::V;v₂::V)
+    E=> @cases (e₁::E;e₂::E)
+    Pos => Pos
+    Len => Len
+    src => begin
+      e₁ => v₁ ∘ src
+      e₂ => v₂ ∘ src
+    end
+    tgt => begin
+      e₁ => v₁ ∘ tgt
+      e₂ => v₂ ∘ tgt
+    end
+    pos => begin
+      v₁ => pos
+      v₂ => (pos|> (x-> -x)) 
+    end
+    len => (e₁ => len ; e₂ => len)
+  end
+  #variant
+  M = @migration SchMechLink SchMechLink begin
+    V => @cases (v₁::V;v₂::V)
+    E=> @cases (e₁::E;e₂::E)
+    Pos => Pos
+    Len => Len
+    src => begin
+      e₁ => v₁ ∘ src
+      e₂ => v₂ ∘ src
+    end
+    tgt => begin
+      e₁ => v₁ ∘ tgt
+      e₂ => v₂ ∘ tgt
+    end
+    pos => begin
+      v₁ => pos
+      v₂ => (x->-pos(x))
+    end
+    len => (e₁ => len ; e₂ => len)
+  end
+
+  #Square with summed lengths, concatenated positions
+  M = @migration SchMechLink SchMechLink begin
+    V => @join (v₁::V;v₂::V)
+    E=> @join (e₁::E;e₂::E)
+    Pos => Pos
+    Len => Len
+    src => begin
+      e₁ => v₁ ∘ src
+      e₂ => v₂ ∘ src
+    end
+    tgt => begin
+      e₁ => v₁ ∘ tgt
+      e₂ => v₂ ∘ tgt
+    end
+    pos => (@product (pos;pos)) |> (x,y-> [x;y])
+    len => (@product (len;len)) |> (x,y-> xy)
+  end
+  #Linkage plus its self-product with some silly edge lengths and scooted positions
+  M = @migration SchMechLink SchMechLink begin
+    V => @cases begin #unhelpful error message if you forget to begin
+          v₁ :: V
+          vv :: @product (v₁::V;v₂::V)
+        end
+    E => @product (e₁::E;e₂::E)
+    src => v₁ ∘ src(e₁) #or something?!
+    tgt => ...
+    pos => (v₁ => pos ; vv => -pos(v₁))
+    len => len(e₂)
+  end
+end
 end

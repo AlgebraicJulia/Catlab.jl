@@ -2,7 +2,7 @@
 """
 module Diagrams
 export Diagram, SimpleDiagram, QueryDiagram, DiagramHom, id, op, co,
-  shape, diagram, shape_map, diagram_map
+  shape, diagram, shape_map, diagram_map, get_params
 
 using StructEquality
 
@@ -107,48 +107,64 @@ type `DiagramHom{id}` and `DiagramHom{op}` induce morphisms between colimits and
 between limits of the diagrams, respectively, whereas morphisms of type
 `DiagramHom{co}` generalize morphisms of polynomial functors.
 """
-struct DiagramHom{T,C<:Cat,F<:FinFunctor,Φ,D<:Functor{<:FinCat,C}}
+abstract type DiagramHom{T,C<:Cat,F<:FinFunctor,Φ<:FinTransformation,D<:FinDomFunctor} end
+
+struct SimpleDiagramHom{T,C<:Cat,F<:FinFunctor,Φ<:FinTransformation,D<:Functor{<:FinCat,C}}<:DiagramHom{T,C,F,Φ,D}
   shape_map::F
   diagram_map::Φ # bug: Φ should be type constrained to be a FinTransformation  
   precomposed_diagram::D
 end
+struct QueryDiagramHom{T,C<:Cat,F<:FinFunctor,Φ<:FinTransformation,D<:Functor{<:FinCat,C},Params<:AbstractDict}<:DiagramHom{T,C,F,Φ,D}
+  shape_map::F
+  diagram_map::Φ
+  precomposed_diagram::D
+  params::Params
+end
+
 DiagramHom{T}(shape_map::F, diagram_map::Φ, precomposed_diagram::D) where
     {T,C,F<:FinFunctor,Φ<:FinTransformation,D<:Functor{<:FinCat,C}} =
-  DiagramHom{T,C,F,Φ,D}(shape_map, diagram_map, precomposed_diagram)
-
+  SimpleDiagramHom{T,C,F,Φ,D}(shape_map, diagram_map, precomposed_diagram)
+#makes sure you'll never accidentally build a querydiagramhom by building a diagramhom 
+#with no params.
+DiagramHom{T}(shape_map::F, diagram_map::Φ, precomposed_diagram::D,params::Params) where
+    {T,C,F<:FinFunctor,Φ<:FinTransformation,D<:Functor{<:FinCat,C},Params<:AbstractDict} =
+  isempty(params) ?   
+    SimpleDiagramHom{T,C,F,Φ,D}(shape_map, diagram_map, precomposed_diagram) :
+    QueryDiagramHom{T,C,F,Φ,D,Params}(shape_map, diagram_map, precomposed_diagram,params)
+"""Convert the diagram category in which a diagram hom is being viewed."""
 DiagramHom{T}(f::DiagramHom) where T =
-  DiagramHom{T}(f.shape_map, f.diagram_map, f.precomposed_diagram)
+  DiagramHom{T}(f.shape_map, f.diagram_map, f.precomposed_diagram,params(f))
 
-DiagramHom{T}(ob_maps, hom_map, D::Diagram{T}, D′::Diagram{T}) where T =
-  DiagramHom{T}(ob_maps, hom_map, diagram(D), diagram(D′))
+DiagramHom{T}(ob_maps, hom_map, D::Diagram{T}, D′::Diagram{T};params=Dict()) where T =
+  DiagramHom{T}(ob_maps, hom_map, diagram(D), diagram(D′);params=params)
 DiagramHom{T}(ob_maps, D::Union{Diagram{T},FinDomFunctor},
-              D′::Union{Diagram{T},FinDomFunctor}) where T =
-  DiagramHom{T}(ob_maps, nothing, D, D′)
+              D′::Union{Diagram{T},FinDomFunctor};params = Dict()) where T =
+  DiagramHom{T}(ob_maps, nothing, D, D′;params=params)
 
-function DiagramHom{id}(ob_maps, hom_map, D::FinDomFunctor, D′::FinDomFunctor)
+function DiagramHom{id}(ob_maps, hom_map, D::FinDomFunctor, D′::FinDomFunctor;params=Dict())
   f = FinFunctor(mapvals(cell1, ob_maps), hom_map, dom(D), dom(D′))
-  DiagramHom{id}(f, mapvals(x -> cell2(D′,x), ob_maps), D, D′)
+  DiagramHom{id}(f, mapvals(x -> cell2(D′,x), ob_maps), D, D′,params=params)
 end
-function DiagramHom{op}(ob_maps, hom_map, D::FinDomFunctor, D′::FinDomFunctor)
+function DiagramHom{op}(ob_maps, hom_map, D::FinDomFunctor, D′::FinDomFunctor;params=Dict())
   f = FinDomFunctor(mapvals(cell1, ob_maps), hom_map, dom(D′), dom(D))
-  DiagramHom{op}(f, mapvals(x -> cell2(D,x), ob_maps), D, D′)
+  DiagramHom{op}(f, mapvals(x -> cell2(D,x), ob_maps), D, D′,params=params)
 end
-function DiagramHom{co}(ob_maps, hom_map, D::FinDomFunctor, D′::FinDomFunctor)
+function DiagramHom{co}(ob_maps, hom_map, D::FinDomFunctor, D′::FinDomFunctor;params=Dict())
   f = FinDomFunctor(mapvals(cell1, ob_maps), hom_map, dom(D), dom(D′))
-  DiagramHom{co}(f, mapvals(x -> cell2(D′,x), ob_maps), D, D′)
+  DiagramHom{co}(f, mapvals(x -> cell2(D′,x), ob_maps), D, D′,params=params)
 end
 
-function DiagramHom{id}(f::FinFunctor, components, D::FinDomFunctor, D′::FinDomFunctor)
+function DiagramHom{id}(f::FinFunctor, components, D::FinDomFunctor, D′::FinDomFunctor;params=Dict())
   ϕ = FinTransformation(components, D, f⋅D′)
-  DiagramHom{id}(f, ϕ, D′)
+  DiagramHom{id}(f, ϕ, D′,params)
 end
-function DiagramHom{op}(f::FinFunctor, components, D::FinDomFunctor, D′::FinDomFunctor)
+function DiagramHom{op}(f::FinFunctor, components, D::FinDomFunctor, D′::FinDomFunctor;params=Dict())
   ϕ = FinTransformation(components, f⋅D, D′)
-  DiagramHom{op}(f, ϕ, D)
+  DiagramHom{op}(f, ϕ, D,params)
 end
-function DiagramHom{co}(f::FinFunctor, components, D::FinDomFunctor, D′::FinDomFunctor)
+function DiagramHom{co}(f::FinFunctor, components, D::FinDomFunctor, D′::FinDomFunctor;params=Dict())
   ϕ = FinTransformation(components, f⋅D′, D)
-  DiagramHom{co}(f, ϕ, D′)
+  DiagramHom{co}(f, ϕ, D′,params) 
 end
 
 cell1(pair::Union{Pair,Tuple{Any,Any}}) = first(pair)
@@ -170,6 +186,9 @@ hom_map(f::DiagramHom, g) = hom_map(f.shape_map, g)
 collect_ob(f::DiagramHom) =
   collect(zip(collect_ob(f.shape_map), components(f.diagram_map)))
 collect_hom(f::DiagramHom) = collect_hom(f.shape_map)
+
+get_params(f::QueryDiagramHom) = f.params
+get_params(f::DiagramHom) = Dict()
 
 function Base.show(io::IO, f::DiagramHom{T}) where T
   J = dom(shape_map(f))
@@ -202,6 +221,8 @@ function id(d::Diagram{T}) where T
   DiagramHom{T}(id(dom(F)), id(F), F)
 end
 
+#Note compose of diagramhoms throws away parameters, which is fine for current
+#purposes
 function compose(f::DiagramHom{id}, g::DiagramHom{id})
   DiagramHom{id}(
     shape_map(f) ⋅ shape_map(g),
@@ -265,14 +286,14 @@ function param_compose(α::FinTransformation, H::Functor; params=[])
     compindex = ob(dom(F),i)
     src, tgt = ob_map(F⋅H,compindex), ob_map(G⋅H,compindex)
     if f isa FreeSchema.Attr{:nothing}
-      func = length(params) > 1 ? params[i] : only(params)
+      func = params[i]
       FinDomFunction(func,src,tgt)
     #may need to population params with identities
     else
-      func = length(params) > 1 ? params[i] : only(params)
+      func = haskey(params,i) ? SetFunction(params[i],tgt,tgt) : SetFunction(identity,tgt,tgt)
       #could change target to let the attribute be valued in the
       #wrong place fufufu
-      hom_map(H,f)⋅SetFunction(func,tgt,tgt)
+      hom_map(H,f)⋅func
     end
   end
   FinTransformation(new_components,compose(F, H, strict=false), compose(G, H, strict=false))
