@@ -1174,7 +1174,7 @@ function limit(::Type{Tuple{ACS,Hom}}, diagram; product_attrs::Bool=false) where
   type_components = [
     Dict(d=>legs(attr_lims[d])[i] for d in attrtypes(S)) for i in eachindex(Xs)]
   
-  limits = NamedTuple(Dict([k=>v for (k,v) in pairs(limits) if k ∈ objects(S)]))
+  limits = NamedTuple(k=>v for (k,v) in pairs(limits) if k ∈ objects(S))
   lim = pack_limit(LimitACS, diagram, Xs, limits; type_components = type_components)
   Y = ob(lim)
   for (f, c, d) in attrs(S)
@@ -1399,9 +1399,10 @@ const SubACSet{S} = Subobject{<:StructACSet{S}}
 
 # Cast VarFunctions to FinFunctions
 components(A::SubACSet{S}) where S = 
-  NamedTuple(Dict(map(collect(pairs(components(hom(A))))) do (k,vs)
-    k => Subobject(k ∈ ob(S) ? vs : FinFunction([v.val for v in collect(vs)], FinSet(codom(vs))))
-end))
+  NamedTuple(k => Subobject(
+    k ∈ ob(S) ? vs : FinFunction([v.val for v in collect(vs)], FinSet(codom(vs))))
+  for (k,vs) in pairs(components(hom(A)))
+)
 
 force(A::SubACSet) = Subobject(force(hom(A)))
 
@@ -1497,7 +1498,7 @@ subtraction of sub-C-sets ([`subtract`](@ref)).
 function implies(A::SubACSet{S}, B::SubACSet{S}, ::SubOpBoolean) where S
   X = common_ob(A, B)
   A, B = map(predicate, components(A)), map(predicate, components(B))
-  D = NamedTuple(Dict([o => trues(nparts(X, o)) for o in types(S)]))
+  D = NamedTuple([o => trues(nparts(X, o)) for o in types(S)])
   function unset!(c, x)
     D[c][x] = false
     for (c′,x′) in all_incident(X, Val{c}, x)
@@ -1523,7 +1524,7 @@ for all ``c ∈ C`` and ``x ∈ X(c)``. Compare with [`implies`](@ref).
 function subtract(A::SubACSet{S}, B::SubACSet{S}, ::SubOpBoolean) where S
   X = common_ob(A, B)
   A, B = map(predicate, components(A)), map(predicate, components(B))
-  D = NamedTuple(Dict([o => falses(nparts(X, o)) for o in types(S)]))
+  D = NamedTuple(o => falses(nparts(X, o)) for o in types(S))
 
   function set!(c, x)
     D[c][x] = true
