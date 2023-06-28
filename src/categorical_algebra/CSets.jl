@@ -1174,7 +1174,7 @@ function limit(::Type{Tuple{ACS,Hom}}, diagram; product_attrs::Bool=false) where
   type_components = [
     Dict(d=>legs(attr_lims[d])[i] for d in attrtypes(S)) for i in eachindex(Xs)]
   
-  limits = NamedTuple(Dict([k=>v for (k,v) in pairs(limits) if k ∈ objects(S)]))
+  limits = NamedTuple(k=>v for (k,v) in pairs(limits) if k ∈ objects(S))
   lim = pack_limit(LimitACS, diagram, Xs, limits; type_components = type_components)
   Y = ob(lim)
   for (f, c, d) in attrs(S)
@@ -1397,7 +1397,13 @@ end
 const SubCSet{S} = Subobject{<:StructCSet{S}}
 const SubACSet{S} = Subobject{<:StructACSet{S}}
 
-components(A::SubACSet) = map(Subobject, components(hom(A)))
+# Cast VarFunctions to FinFunctions
+components(A::SubACSet{S}) where S = 
+  NamedTuple(k => Subobject(
+    k ∈ ob(S) ? vs : FinFunction([v.val for v in collect(vs)], FinSet(codom(vs))))
+  for (k,vs) in pairs(components(hom(A)))
+)
+
 force(A::SubACSet) = Subobject(force(hom(A)))
 
 """ Sub-C-set represented componentwise as a collection of subsets.
@@ -1409,8 +1415,7 @@ force(A::SubACSet) = Subobject(force(hom(A)))
 
   function SubACSetComponentwise(X::Ob, components::NamedTuple) where Ob<:ACSet
     S = acset_schema(X)
-    X_sets = merge(NamedTuple(c => FinSet(X,c) for c in ob(S)),
-                   NamedTuple(c => VarSet(X,c) for c in attrtypes(S)))
+    X_sets = NamedTuple(c => FinSet(X,c) for c in types(S))
     @assert keys(components) ⊆ keys(X_sets)
     coerced_components = NamedTuple{keys(X_sets)}(
       coerce_subob_component(set, get(components, ob, 1:0))
@@ -1431,13 +1436,8 @@ function coerce_subob_component(X::FinSet, f::FinFunction)
   X == codom(f) ? Subobject(f) :
     error("Set $X in C-set does not match codomain of inclusion $f")
 end
-function coerce_subob_component(X::VarSet, subset::SubVarSet)
-  X == ob(subset) ? subset :
-    error("Set $X in C-set does not match set of subset $subset")
-end
 
 coerce_subob_component(X::FinSet, f) = Subobject(X, f)
-coerce_subob_component(X::VarSet, f) = Subobject(X, f)
 
 ob(A::SubACSetComponentwise) = A.ob
 components(A::SubACSetComponentwise) = A.components
@@ -1446,10 +1446,10 @@ function hom(A::SubACSetComponentwise{T}) where T <: ACSet
   X = ob(A)
   U = constructor(X)()
   hom_components = map(collect∘hom, components(A))
-  copy_parts!(U, X; Dict(map(collect(pairs(hom_components))) do (k,vs)
-    k => k ∈ ob(acset_schema(X)) ? vs : [v.val for v in vs if v isa AttrVar]
+  copy_parts!(U, X, hom_components)
+  ACSetTransformation(U, X; Dict(map(collect(pairs(hom_components))) do (k,vs)
+    k => k ∈ ob(acset_schema(X)) ? vs : AttrVar.(vs)
   end)...)
-  ACSetTransformation(hom_components, U, X)
 end
 
 @instance ThSubobjectBiHeytingAlgebra{ACSet,SubACSet} begin
@@ -1498,8 +1498,7 @@ subtraction of sub-C-sets ([`subtract`](@ref)).
 function implies(A::SubACSet{S}, B::SubACSet{S}, ::SubOpBoolean) where S
   X = common_ob(A, B)
   A, B = map(predicate, components(A)), map(predicate, components(B))
-  D = map(X₀ -> trues(length(X₀)), sets(X))
-
+  D = NamedTuple([o => trues(nparts(X, o)) for o in types(S)])
   function unset!(c, x)
     D[c][x] = false
     for (c′,x′) in all_incident(X, Val{c}, x)
@@ -1507,7 +1506,7 @@ function implies(A::SubACSet{S}, B::SubACSet{S}, ::SubOpBoolean) where S
     end
   end
 
-  for c in objects(S), x in parts(X,c)
+  for c in types(S), x in parts(X,c)
     if D[c][x] && A[c][x] && !B[c][x]; unset!(c,x) end
   end
   Subobject(X, D)
@@ -1525,7 +1524,7 @@ for all ``c ∈ C`` and ``x ∈ X(c)``. Compare with [`implies`](@ref).
 function subtract(A::SubACSet{S}, B::SubACSet{S}, ::SubOpBoolean) where S
   X = common_ob(A, B)
   A, B = map(predicate, components(A)), map(predicate, components(B))
-  D = map(X₀ -> falses(length(X₀)), sets(X))
+  D = NamedTuple(o => falses(nparts(X, o)) for o in types(S))
 
   function set!(c, x)
     D[c][x] = true
@@ -1534,7 +1533,7 @@ function subtract(A::SubACSet{S}, B::SubACSet{S}, ::SubOpBoolean) where S
     end
   end
 
-  for c in objects(S), x in parts(X,c)
+  for c in types(S), x in parts(X,c)
     if !D[c][x] && A[c][x] && !B[c][x]; set!(c,x) end
   end
   Subobject(X, D)
