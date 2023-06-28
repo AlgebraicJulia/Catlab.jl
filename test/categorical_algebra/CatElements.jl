@@ -6,7 +6,9 @@ arr = path_graph(Graph, 2)
 
 dyn_arr = DynamicACSet("Grph", SchGraph)
 add_part!(dyn_arr, :E, src=add_part!(dyn_arr,:V), tgt=add_part!(dyn_arr,:V))
+
 elarr = elements(arr)
+@test elarr == elements(dyn_arr)
 
 @testset "Arrow Elements" begin
   @test nparts(elarr, :El)  == 3
