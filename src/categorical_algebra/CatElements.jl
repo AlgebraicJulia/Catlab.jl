@@ -32,7 +32,8 @@ This transformation converts an instance of C into a Graph homomorphism. The cod
 homomorphism is a graph shaped like the schema. This is one half of the isomorphism between
 databases and knowledge graphs.
 """
-function elements(X::StructACSet{S}) where S
+function elements(X::ACSet)
+  S = acset_schema(X)
   Y = Elements{Symbol}()
 
   obs = ob(S)
@@ -80,7 +81,7 @@ the ACSet type that it's going to try to create
 If the typed graph tries to assert conflicting values for a foreign key, fail.
 If no value is specified for a foreign key, the result will have 0's.
 """
-function inverse_elements(X::AbstractElements, typ::StructACSet)
+function inverse_elements(X::AbstractElements, typ::ACSet)
   res = typeof(typ)()
   o_ids = ob_ids(X)
   for (o, is) in pairs(o_ids)
@@ -110,7 +111,7 @@ end
 
 Compute inverse grothendieck transformation on a morphism of Elements
 """
-function inverse_elements(f::ACSetTransformation, typ::StructACSet)
+function inverse_elements(f::ACSetTransformation, typ::ACSet)
   iX, iY = [inverse_elements(x, typ) for x in [dom(f), codom(f)]]
   oX, oY = ob_ids.([dom(f), codom(f)])
   comps = map(dom(f)[:nameo]) do ob
@@ -155,4 +156,4 @@ function presentation(X::AbstractElements)
   add_generators!(P, values(homs))
   return P, obs, homs
 end
-end
+end # module
