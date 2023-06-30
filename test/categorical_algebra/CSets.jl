@@ -657,9 +657,15 @@ subRG, sos = subobject_graph(path_graph(ReflexiveGraph, 2))
 @test is_isomorphic(subG, subRG)
 
 # Partial overlaps 
-G = path_graph(Graph, 2)
-os = partial_overlaps(G,G)
-@test length(os) == 7 # ⊤, ••, 4x •, ⊥
+G,H = path_graph.(Graph, 2:3)
+os = collect(partial_overlaps(G,G))
+@test length(os) == 7 # ⊤, ••, 4× •, ⊥
+
+po = partial_overlaps([G,H])
+@test length(collect(po))==12  # 2×⊤, 3×••, 6× •, ⊥
+@test all(m -> apex(m) == G, Iterators.take(po, 2)) # first two are •→•
+@test all(m -> apex(m) == Graph(2), 
+          Iterators.take(Iterators.drop(po, 2), 3)) # next three are • •
 
 # Maximum Common C-Set
 ######################
@@ -674,7 +680,7 @@ end
 g2 = @acset WeightedGraph{Bool} begin 
   V=3; E=3; src=[1,2,3]; tgt=[2,3,3]; weight=[true,false,false] 
 end 
-(apx1, ((L1,),(R1,))), (apx2, ((L2,),(R2,))) = collect(maximum_common_subobject(g1, g2))
+(apx1,(L1,R1)), (apx2,(L2,R2)) = collect(maximum_common_subobject(g1, g2))
 apex1 = @acset WeightedGraph{Bool} begin 
   V=3; E=2; Weight=2; src=[1,2]; tgt=[2,3]; weight=AttrVar.(1:2)
 end
