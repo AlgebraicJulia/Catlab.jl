@@ -125,13 +125,16 @@ clvecbench = bench["Catlab-vectorized"] = BenchmarkGroup()
 lgbench = bench["LightGraphs"] = BenchmarkGroup()
 
 n = 10000
-clbench["make-path"] = @benchmarkable path_graph(Graph,n)
+clbench["make-path"] = @benchmarkable begin
+  g = Graph()
+  add_vertices!(g, n)
+  for v in 1:(n-1); add_edge!(g, v, v+1) end
+end
+clvecbench["make-path"] = @benchmarkable path_graph(Graph, n)
 lgbench["make-path"] = @benchmarkable begin
   g = LG.DiGraph()
   LG.add_vertices!(g, n)
-  for v in 1:(n-1)
-    LG.add_edge!(g, v, v+1)
-  end
+  for v in 1:(n-1); LG.add_edge!(g, v, v+1) end
 end
 
 g = path_graph(Graph, n)
@@ -193,13 +196,16 @@ clvecbench = bench["Catlab-vectorized"] = BenchmarkGroup()
 lgbench = bench["LightGraphs"] = BenchmarkGroup()
 
 n = 10000
-clbench["make-path"] = @benchmarkable path_graph(SymmetricGraph, n)
+clbench["make-path"] = @benchmarkable begin
+  g = SymmetricGraph()
+  add_vertices!(g, n)
+  for v in 1:(n-1); add_edge!(g, v, v+1) end
+end
+clvecbench["make-path"] = @benchmarkable path_graph(SymmetricGraph, n)
 lgbench["make-path"] = @benchmarkable begin
   g = LG.Graph()
   LG.add_vertices!(g, n)
-  for v in 1:(n-1)
-    LG.add_edge!(g, v, v+1)
-  end
+  for v in 1:(n-1); LG.add_edge!(g, v, v+1) end
 end
 
 g = path_graph(SymmetricGraph, n)
