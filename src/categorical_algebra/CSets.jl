@@ -14,7 +14,7 @@ export ACSetTransformation, CSetTransformation, StructACSetTransformation,
 
 using Base.Iterators: flatten
 using Base.Meta: quot
-using DataStructures: BinaryHeap, OrderedDict
+using DataStructures: BinaryHeap, DefaultDict
 using MLStyle: @match
 using Random
 using Reexport
@@ -1843,13 +1843,13 @@ overlap.
 function maximum_common_subobject(Xs::Vector{T}) where T <: ACSet
   it = partial_overlaps(Xs)
   osize = -1
-  res = OrderedDict()
+  res = DefaultDict(()->[])
   for overlap in it 
     apx = apex(overlap)
     size = total_parts(apx)
     osize = osize == -1 ? size : osize
     if size < osize return res end 
-    res[apx] = overlap
+    push!(res[apx], overlap)
   end 
   return res
 end
