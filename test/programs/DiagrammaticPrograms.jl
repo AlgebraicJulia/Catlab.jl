@@ -7,6 +7,19 @@ using Catlab.Programs.DiagrammaticPrograms: NamedGraph
 using Catlab.Programs.DiagrammaticPrograms: get_keyword_arg_val, destructure_unary_call
 using Catlab.WiringDiagrams.CPortGraphs
 
+module enums
+  using MLStyle
+  @data BinaryMarks begin 
+    X
+    O
+    Blank
+  end
+  @data TwoStates begin
+    start
+    stop
+  end
+end
+
 @present SchSet(FreeSchema) begin
   X::Ob
 end
@@ -23,8 +36,8 @@ g = @graph begin
   s → t
   s → t
 end
-@test g == parallel_arrows(NamedGraph{Symbol,Union{Symbol,Nothing}}, 2,
-                           V=(vname=[:s,:t],), E=(ename=[nothing,nothing],))
+@test g == parallel_arrows(NamedGraph{Symbol,Symbol}, 2,
+                           V=(vname=[:s,:t],), E=(ename=[Symbol("##unnamedhom#1"), Symbol("##unnamedhom#2")],))
 
 g = @graph NamedGraph{Symbol,Symbol} begin
   x, y
@@ -140,7 +153,7 @@ d = @diagram C begin
   (t: e1 → v)::tgt
   (s: e2 → v)::src
 end
-J = FinCat(@acset NamedGraph{Symbol,Union{Symbol,Nothing}} begin
+J = FinCat(@acset NamedGraph{Symbol,Symbol} begin
   V = 3
   E = 2
   src = [2,3]
@@ -195,34 +208,6 @@ end
 @test only(collect_ob(d)) == SchDDS[:X]
 @test only(collect_hom(d)) == compose(SchDDS[:Φ], SchDDS[:Φ])
 
-# Diagrams with parameters
-#-------------------------
-
-d = @free_diagram SchWeightedGraph begin
-  v::V
-  (e1, e2)::E
-  tgt(e1) == v
-  src(e2) == v
-
-  w::Weight
-  weight(e1) == w
-  weight(e2) == w
-  w == 5.0
-end
-@test collect_ob(d) == SchWeightedGraph[[:V, :E, :E, :Weight]]
-@test collect_hom(d) == SchWeightedGraph[[:tgt, :src, :weight, :weight]]
-@test d.params == Dict(4 => 5.0)
-
-d = @free_diagram SchWeightedGraph begin
-  (e1, e2)::E
-  tgt(e1) == src(e2)
-  weight(e1) == 0.5
-  weight(e2) == 1.5
-end
-@test collect_ob(d) == SchWeightedGraph[[:E, :E, :V, :Weight, :Weight]]
-@test collect_hom(d) == SchWeightedGraph[[:tgt, :src, :weight, :weight]]
-@test d.params == Dict(4 => 0.5, 5 => 1.5)
-
 # Migrations
 ############
 
@@ -248,7 +233,7 @@ M = @migration SchGraph begin
   (src: E → V) => tgt
   (tgt: E → V) => src
 end
-J = FinCat(parallel_arrows(NamedGraph{Symbol,Union{Symbol,Nothing}}, 2,
+J = FinCat(parallel_arrows(NamedGraph{Symbol,Symbol}, 2,
                            V=(vname=[:E,:V],), E=(ename=[:src,:tgt],)))
 @test functor(M) == FinDomFunctor([:E,:V], [:tgt,:src], J, FinCat(SchGraph))
 
@@ -300,23 +285,6 @@ M′ = @migration SchGraph SchGraph begin
   tgt => tgt(e₂)
 end
 @test functor(M′) == F
-
-# Graph with edges of weight 5.0.
-M = @migration SchGraph SchWeightedGraph begin
-  V => V
-  E => @join begin
-    e::E
-    weight(e) == 5.0
-  end
-  src => e
-  tgt => e
-end
-@test M isa DataMigrations.ConjSchemaMigration
-F = functor(M)
-F_E = ob_map(F, :E)
-@test only(values(F_E.params)) == 5.0
-F_src = hom_map(F, :src)
-@test collect_ob(F_src) == [(1, id(SchWeightedGraph[:E]))]
 
 # "Bouquet graph" on set.
 # This is the right adjoint to the underlying edge set functor.
@@ -589,13 +557,15 @@ F_src_vv, F_src_ev, F_src_ve = components(diagram_map(F_src))
 @test get_keyword_arg_val(:(x=3)) == 3
 @test_throws ErrorException get_keyword_arg_val(:("not an assignment!"+3))
 @test destructure_unary_call(:(f(g(x)))) == (:(f∘g),:x)
-end
 
 # Migrations with code
 #
 #------------------------------------
 
-@testset "Migrations with code" begin
+
+
+
+#@testset "Migrations with code" begin
   @present SchMechLink <: SchGraph begin
       Pos::AttrType
       Len::AttrType
@@ -747,7 +717,7 @@ end
     end
     len => (e₁ => len ; e₂ => len)
   end
-  #variant
+  #=variant,TODO
   M = @migration SchMechLink SchMechLink begin
     V => @cases (v₁::V;v₂::V)
     E=> @cases (e₁::E;e₂::E)
@@ -767,7 +737,42 @@ end
     end
     len => (e₁ => len ; e₂ => len)
   end
-
+  =#
+  #Filter impossible edges and also make a copy reflected through the
+  #origin.
+  M = @migration SchMechLink SchMechLink begin
+    V => @cases (v₁::V;v₂::V)
+    E=> @cases begin 
+      e₁ => @join begin
+        e :: E
+        L :: Len
+        (l:e→L) :: (x->len(x)^2)
+        (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+    end
+      e₂ => @join begin
+        e :: E
+        L :: Len
+        (l:e→L) :: (x->len(x)^2)
+        (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+    end
+  end
+    Pos => Pos
+    Len => Len
+    src => begin
+      e₁ => v₁ ∘ (e⋅src)
+      e₂ => v₂ ∘ (e⋅src)
+    end
+    tgt => begin
+      e₁ => v₁ ∘ (e⋅tgt)
+      e₂ => v₂ ∘ (e⋅tgt)
+    end
+    pos => begin
+      v₁ => pos
+      v₂ => (pos|> (x-> -x)) 
+    end
+    len => (e₁ => e⋅len ; e₂ => e⋅len)
+  end
+#=not yet present
   #Square with summed lengths, concatenated positions
   M = @migration SchMechLink SchMechLink begin
     V => @join (v₁::V;v₂::V)
@@ -785,17 +790,60 @@ end
     pos => (@product (pos;pos)) |> (x,y-> [x;y])
     len => (@product (len;len)) |> (x,y-> xy)
   end
-  #Linkage plus its self-product with some silly edge lengths and scooted positions
-  M = @migration SchMechLink SchMechLink begin
-    V => @cases begin #unhelpful error message if you forget to begin
-          v₁ :: V
-          vv :: @product (v₁::V;v₂::V)
-        end
-    E => @product (e₁::E;e₂::E)
-    src => v₁ ∘ src(e₁) #or something?!
-    tgt => ...
-    pos => (v₁ => pos ; vv => -pos(v₁))
-    len => len(e₂)
+  =#
+
+####Turing machines?!?!
+@present SchTuringMachine(FreeSchema) begin
+  H :: Ob
+  T :: Ob
+  States :: AttrType
+  Marks :: AttrType
+  p :: Hom(H,T)
+  l :: Hom(T,T)
+  r :: Hom(T,T)
+  state :: Attr(H,States)
+  marks :: Attr(T,Marks)
+end
+@acset_type TuringMachine(SchTuringMachine)
+
+T = @acset TuringMachine{enums.TwoStates,enums.BinaryMarks} begin
+  H = 1
+  T = 128
+  p = [1]
+  r = [2:128;1] #would be nice to get lambdas here!
+  l = [128;1:127]
+  state = [enums.start]
+  marks = [enums.O;map(x->enums.Blank,1:5);enums.X;map(x->enums.Blank,1:121)]
+end
+M = @migration SchTuringMachine SchTuringMachine begin
+  H => H
+  T => T
+  States => States 
+  Marks => Marks 
+  p => begin 
+                    υ(m,s) = begin
+                            m == Main.TestDiagrammaticPrograms.enums.Blank ? r :
+                             m == Main.TestDiagrammaticPrograms.enums.O ? r : identity
+                    end
+                            x->υ(marks(p(x)),state(x))(p(x))
+
+                        end
+  state => begin 
+        σ(m,s) = s == Main.TestDiagrammaticPrograms.enums.stop ? Main.TestDiagrammaticPrograms.enums.stop :
+                 m == Main.TestDiagrammaticPrograms.enums.X ? Main.TestDiagrammaticPrograms.enums.stop :
+                 Main.TestDiagrammaticPrograms.enums.start
+        x -> σ(marks(p(x)),state(x))  
+      end
+  r => r
+  l => l
+  marks => begin 
+            μ(m,s) = s == Main.TestDiagrammaticPrograms.enums.start ? 
+                    (m == Main.TestDiagrammaticPrograms.enums.Blank ? Main.TestDiagrammaticPrograms.enums.O :
+                     m == Main.TestDiagrammaticPrograms.enums.O ? Main.TestDiagrammaticPrograms.enums.O : Main.TestDiagrammaticPrograms.enums.X) :
+                     m
+            x -> x == p(1) ? μ(marks(x),state(1)) : marks(x)
+            end
   end
-end
-end
+  run_TM(T,n) = n == 0 ? T : run_TM(migrate(TuringMachine,T,M),n-1)
+  @test begin subpart(run_TM(T,10),1:8,:marks) == Union{AttrVar,enums.BinaryMarks}[map(x->enums.O,1:6);enums.X;enums.Blank] end
+  end

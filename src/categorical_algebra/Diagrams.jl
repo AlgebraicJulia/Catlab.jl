@@ -15,7 +15,7 @@ using ..FinCats: mapvals,FinDomFunctorMap
 import ..FinCats: force, collect_ob, collect_hom
 import ..Limits: limit, colimit, universal
 import ..FinSets: FinDomFunction
-
+import Base.haskey
 # Data types
 ############
 
@@ -30,7 +30,7 @@ wrapper type distinguishes which diagram category the diagram belongs to. See
 also be `Any` to indicate that no choice has (yet) been made.
 """
 abstract type Diagram{T,C<:Cat,D<:FinDomFunctor} end
-
+cat_type(::Type{Diagram{T,C,D}}) where {T,C,D} = C
 Diagram(args...) = Diagram{Any}(args...)
 
 # The first type parameter is considered part of the data!
@@ -133,7 +133,7 @@ DiagramHom{T}(shape_map::F, diagram_map::Φ, precomposed_diagram::D,params::Para
     QueryDiagramHom{T,C,F,Φ,D,Params}(shape_map, diagram_map, precomposed_diagram,params)
 """Convert the diagram category in which a diagram hom is being viewed."""
 DiagramHom{T}(f::DiagramHom) where T =
-  DiagramHom{T}(f.shape_map, f.diagram_map, f.precomposed_diagram,params(f))
+  DiagramHom{T}(f.shape_map, f.diagram_map, f.precomposed_diagram,params=get_params(f))
 
 DiagramHom{T}(ob_maps, hom_map, D::Diagram{T}, D′::Diagram{T};params=Dict()) where T =
   DiagramHom{T}(ob_maps, hom_map, diagram(D), diagram(D′);params=params)
@@ -279,6 +279,7 @@ which the whiskered result should map to. Currently assumes
 the result will be a totally defined transformation.
 """
 
+Base.haskey(v::AbstractVector,i) = 1 <= i <= length(v)
 function param_compose(α::FinTransformation, H::Functor; params=[])
   F, G = dom(α), codom(α)
   params = params isa Union{AbstractArray,AbstractDict} ? params : [params]

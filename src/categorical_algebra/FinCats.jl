@@ -14,7 +14,7 @@ export FinCat, FinCatGraph, Path, ob_generator, hom_generator,
   ob_generator_name, hom_generator_name, ob_generators, hom_generators,
   equations, is_discrete, is_free, graph, edges, src, tgt, presentation,
   FinFunctor, FinDomFunctor, is_functorial, functoriality_failures,
-  collect_ob, collect_hom, force,
+  collect_ob, collect_hom, force, make_map,
   FinTransformation, components, is_natural, is_initial
 
 using StructEquality

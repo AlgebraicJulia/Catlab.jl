@@ -1070,10 +1070,16 @@ function parse_hom_over(name,x,y,X,Y,rhs)
     Expr(:call,:(|>),l,r) =>
       [AST.TwistedHomOver(AST.HomOver(name,x,y,parse_hom_ast(l,X,Y)),
        AST.AttrOver(name,x,y,r))]
-    Expr(:(->),_...) || Expr(:block,_...)=> begin #maybe add check that block ends with a lambda
-      [AST.AttrOver(name,x,y,rhs)]
+    #A hom mapping to a lambda expression, or to a block ending with a lambda
+    #expression, will be temporarily assigned to a blank value to be filled
+    #with Julia code evaluated in the acset to be migrated.
+    Expr(:(->),_...) => [AST.AttrOver(name,x,y,rhs)]
+    Expr(:block,args) =>
+      @match args[end] begin
+        Expr(:(->),_...) => [AST.AttrOver(name,x,y,rhs)]
+        _ => [AST.HomOver(name,x,y,parse_hom_ast(rhs,X,Y))]
     end
-    _ => [AST.HomOver(name,x,y,parse_hom_ast(rhs,X,Y))]
+    _ => [AST.HomOver(name,x,y,parse_hom_ast(rhs,X,Y))] 
   end
 end
 """

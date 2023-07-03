@@ -73,15 +73,15 @@ d = dom(f)
 
 # param_compose, should probably be in FinCats
 ####################
-C = FinCat(path_graph(Graph,2))
+C = FinCat(parallel_arrows(Graph,2))
 D = FinCat(FinSet(2))
 F = FinDomFunctor([FinSet(2),TypeSet(Float64)],[FinDomFunction([1.0,2.3]),FinDomFunction([-π,π])],C)
 G = FinFunctor([1,1],D,C)
 H = FinFunctor([2,2],D,C)
-α = FinTransformationMap([1,FreeSchema.Attr{:nothing}([],[])],G,H)
-params = [(x-> x^x)]
-β = param_compose(α,F,params=params)
-@test [β.components[i](j) for i in 1:2 for j in 1:2] = [1.0,2.3,1.0,4.0]
+α = CategoricalAlgebra.FinCats.FinTransformationMap([1,FreeSchema.Attr{:nothing}([],[])],G,H)
+params = Dict(2=>(x-> x^x))
+β = CategoricalAlgebra.Diagrams.param_compose(α,F,params=params)
+@test [β.components[i](j) for i in 1:2 for j in 1:2] == [1.0,2.3,1.0,4.0]
 
 # Monads of diagrams
 ####################

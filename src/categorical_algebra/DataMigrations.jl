@@ -19,6 +19,7 @@ using ..Diagrams
 import ..FinCats: FinCatPresentation
 using ..Chase: collage, crel_type, pres_to_eds, add_srctgt, chase
 using ..FinSets: VarSet
+using MLStyle: @match
 
 # Data types
 ############
@@ -79,7 +80,7 @@ DataMigration(F::FinDomFunctor) = DataMigration(F,Dict{Any,Union{}}())
 const DeltaSchemaMigration{D<:FinCat,C<:FinCat} = ContravariantMigration{<:FinFunctor{D,C}}
 #This only exists for the acset to acset migrate! method which is performance-optimized for 
 #the easy Delta case
-const DeltaMigration{D<:FinCat,C<:FinCat} = DataMigration{<:FinFunctor{D,C},<:AbstractDict{Any,Union{}}}
+const DeltaMigration{D<:FinCat,C<:FinCat} = DataMigration{<:FinFunctor{D,C},<:AbstractDict{<:Any,Union{}}}
 
 """ Schema-level functor defining a contravariant data migration using conjunctive queries.
 """
@@ -139,11 +140,12 @@ end
 function migrate(X::FinDomFunctor,M::DeltaSchemaMigration)
   F = functor(M)
   tgt_schema = dom(F)
+  src_schema = get_src_schema(F)
   obs = make_map(ob_generators(tgt_schema)) do c
     Fc = ob_map(F,c)
     ob_map(X,Fc)
   end
-  hg = hom_generators(tgt_schema)
+  hg = hom_generators(src_schema)
   homnames = map(presentation_key,hg)
   homfuns = map(x->hom_map(X,x),homnames)
   params = M.params
@@ -192,8 +194,26 @@ end
 Get the names of the morphisms in a schema given either
 by a NamedGraph or by a presentation.
 """
-get_homnames(X::FinDomFunctor,S::FinCatGraph) = collect(subpart(graph(S),:,:ename))
-get_homnames(X::FinDomFunctor,S::FinCatPresentation) = map(presentation_key,hom_generators(S))
+get_homnames(S::FinCatGraph) = collect(subpart(graph(S),:,:ename))
+get_homnames(S::FinCatPresentation) = map(presentation_key,hom_generators(S))
+get_homnames(S::FinCat) = Symbol[]
+
+"""
+Get the source schema of a data migration functor, recursing in the case
+that the proximate codomain is a diagram category.
+"""
+function get_src_schema(F::Functor)
+  #the below is quite unhappy but I couldn't figure out how to dispatch
+    #on the parameters of the diagram object type, too much invariance.
+  if codom(F) isa TypeCat{<:Diagram}  
+    obs = collect(keys(F.ob_map))
+    length(obs) > 0 || return FinCat(0)
+    get_src_schema(diagram(ob_map(F,obs[1])))
+  else 
+    codom(F)
+  end
+end
+
 #=
 #Arbitrary migration
 function migrate(X::FinDomFunctor, M::ContravariantDataMigration;
@@ -237,13 +257,24 @@ function migrate(X::FinDomFunctor, M::ContravariantDataMigration;
   return_limits ? (Y, limits) : Y
 end
 =#
+#=
+function codom_r(F::Functor{Dom,Codom}) where {Dom,Codom}
+  @match Codom begin
+    a::Type{TypeCat{T,S}} where {T,S}=> codom_r(T)
+    a::Type{Diagram{T,C,F}} where {T,C,F} => codom_r(C)
+    a::Type{QueryDiagram{T,C,F,P}} where {T,C,F,P} => codom_r(C)
+    a::Type{<:FinCat} => C
+    _ => "you done it now"
+  end
+end
+=#
 # Conjunctive migration
 #----------------------
 function migrate(X::FinDomFunctor, M::ConjSchemaMigration;
                  return_limits::Bool=false, tabular::Bool=false)
   F = functor(M)
   tgt_schema = dom(F)
-  homnames = get_homnames(X,tgt_schema)
+  homnames = get_homnames(get_src_schema(F))
   homfuns = map(x->hom_map(X,x),homnames)
   params = M.params
   limits = make_map(ob_generators(tgt_schema)) do c
@@ -285,7 +316,7 @@ end
 function migrate(X::FinDomFunctor, M::GlueSchemaMigration)
   F = functor(M)
   tgt_schema = dom(F)
-  homnames = get_homnames(X,tgt_schema)
+  homnames = get_homnames(get_src_schema(F))
   homfuns = map(x->hom_map(X,x),homnames)
   params = M.params
   colimits = make_map(ob_generators(tgt_schema)) do c
@@ -313,18 +344,26 @@ end
 function migrate(X::FinDomFunctor, M::GlucSchemaMigration)
   F = functor(M)
   tgt_schema = dom(F)
+  homnames = get_homnames(get_src_schema(F))
+  homfuns = map(x->hom_map(X,x),homnames)
   colimits_of_limits = make_map(ob_generators(tgt_schema)) do c
     Fc = ob_map(F, c)
-    Fc_set, limits = migrate(X, DataMigration(diagram(Fc)), return_limits=true)
+    m = Fc isa QueryDiagram ? DataMigration(diagram(Fc),Fc.params) : DataMigration(diagram(Fc))
+    Fc_set, limits = migrate(X, m, return_limits=true)
     (colimit(Fc_set, SpecializeColimit()), Fc_set, limits)
   end
   funcs = make_map(hom_generators(tgt_schema)) do f
     Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)
     Fc_colim, Fc_set, Fc_limits = colimits_of_limits[c]
     Fd_colim, Fd_set, Fd_limits = colimits_of_limits[d]
+    Ff_params = Ff isa DiagramHom ? get_params(Ff) : Dict{Int,Int}()
     component_funcs = map(ob_generators(dom(Fc_set))) do j
       j′, Ffⱼ = ob_map(Ff, j)
-      universal(compose(Ffⱼ, X, strict=false), Fc_limits[j], Fd_limits[j′])
+      Ffⱼ_params = Ffⱼ isa DiagramHom ? 
+        haskey(Ff_params,j) ? Dict(1=>Ff_params[j](homfuns...)) :
+          mapvals(x->x(homfuns...),get_params(Ffⱼ)) : Dict{Int,Int}()
+      universal(compose(Ffⱼ, X, strict=false,params = Ffⱼ_params), 
+        Fc_limits[j], Fd_limits[j′])
     end
     Ff_set = DiagramHom{id}(shape_map(Ff), component_funcs, Fc_set, Fd_set)
     universal(Ff_set, Fc_colim, Fd_colim)
@@ -355,10 +394,11 @@ end
 migration(F::DataMigrationFunctor) = F.migration
 functor(F::DataMigrationFunctor) = functor(migration(F))
 
+DataMigrationFunctor(migration::ContravariantMigration{F}) where {F<:Functor{Dom,Codom} where {Dom,Codom}} = DataMigrationFunctor{Dom,Codom,M}(migration)
 DataMigrationFunctor(functor::F, ::Type{Dom}, ::Type{Codom}) where {F,Dom,Codom} =
-  DataMigrationFunctor{Dom,Codom,DataMigration{F,Dict{Any,Any}}}(DataMigration(functor))
+  DataMigrationFunctor{Dom,Codom,DataMigration{F,Dict{Any,Union{}}}}(DataMigration(functor))
 DataMigrationFunctor(functor::F, ::Type{Codom}) where {F,Codom} =
-  DataMigrationFunctor{ACSet,Codom,DataMigration{F,Dict{Any,Any}}}(DataMigration(functor))
+  DataMigrationFunctor{ACSet,Codom,DataMigration{F,Dict{Any,Union{}}}}(DataMigration(functor))
 
 ob_map(F::DataMigrationFunctor, T::Type, X) = migrate(T, X, migration(F))
 

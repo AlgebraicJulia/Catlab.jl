@@ -282,7 +282,10 @@ function Base.show(io::IO, f::FinDomFunctionVector)
   print(io, ")")
 end
 
-force(f::FinDomFunction{Int}) = FinDomFunctionVector(map(f, dom(f)), codom(f))
+function force(f::FinDomFunction{Int})
+  d = map(f, dom(f))
+  FinDomFunctionVector(Vector{eltype(codom(f))}(d), codom(f))
+end
 force(f::FinDomFunctionVector) = f
 
 Base.collect(f::SetFunction) = force(f).func
