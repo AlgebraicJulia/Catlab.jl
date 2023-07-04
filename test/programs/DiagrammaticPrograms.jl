@@ -1,6 +1,6 @@
 module TestDiagrammaticPrograms
 using Test
-using ACSets
+
 using Catlab.GATs, Catlab.Graphs, Catlab.CategoricalAlgebra
 using Catlab.Programs.DiagrammaticPrograms, Catlab.CategoricalAlgebra.DataMigrations
 using Catlab.Programs.DiagrammaticPrograms: NamedGraph
@@ -821,29 +821,28 @@ M = @migration SchTuringMachine SchTuringMachine begin
   States => States 
   Marks => Marks 
   p => begin 
-                    υ(m,s) = begin
-                            m == Main.TestDiagrammaticPrograms.enums.Blank ? r :
-                             m == Main.TestDiagrammaticPrograms.enums.O ? r : identity
-                    end
-                            x->υ(marks(p(x)),state(x))(p(x))
-
-                        end
+    υ(m,s) = begin
+            m == enums.Blank ? r :
+            m == enums.O ? r : identity
+    end
+    x->υ(marks(p(x)),state(x))(p(x))
+    end
   state => begin 
-        σ(m,s) = s == Main.TestDiagrammaticPrograms.enums.stop ? Main.TestDiagrammaticPrograms.enums.stop :
-                 m == Main.TestDiagrammaticPrograms.enums.X ? Main.TestDiagrammaticPrograms.enums.stop :
-                 Main.TestDiagrammaticPrograms.enums.start
-        x -> σ(marks(p(x)),state(x))  
-      end
+    σ(m,s) = s == enums.stop ? enums.stop :
+              m == enums.X ? enums.stop :
+              enums.start
+    x -> σ(marks(p(x)),state(x))  
+    end
   r => r
   l => l
   marks => begin 
-            μ(m,s) = s == Main.TestDiagrammaticPrograms.enums.start ? 
-                    (m == Main.TestDiagrammaticPrograms.enums.Blank ? Main.TestDiagrammaticPrograms.enums.O :
-                     m == Main.TestDiagrammaticPrograms.enums.O ? Main.TestDiagrammaticPrograms.enums.O : Main.TestDiagrammaticPrograms.enums.X) :
-                     m
-            x -> x == p(1) ? μ(marks(x),state(1)) : marks(x)
-            end
+    μ(m,s) = s == enums.start ? 
+            (m == enums.Blank ? enums.O :
+              m == enums.O ? enums.O : enums.X) :
+              m
+    x -> x == p(1) ? μ(marks(x),state(1)) : marks(x)
+    end
   end
   run_TM(T,n) = n == 0 ? T : run_TM(migrate(TuringMachine,T,M),n-1)
   @test begin subpart(run_TM(T,10),1:8,:marks) == Union{AttrVar,enums.BinaryMarks}[map(x->enums.O,1:6);enums.X;enums.Blank] end
-  end
+end

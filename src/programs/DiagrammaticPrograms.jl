@@ -35,7 +35,7 @@ abstract type AssignExpr end
   OnlyOb()
   Apply(ob::ObExpr, hom::HomExpr)
   Coapply(hom::HomExpr, ob::ObExpr)
-  JuliaCodeOb(code::Expr)
+  JuliaCodeOb(code::Expr,mod::Module)
   MixedOb(oexp::ObExpr,jcode::JuliaCodeOb)
 end
 
@@ -44,14 +44,14 @@ end
   Compose(homs::Vector{<:HomExpr})
   Id(ob::ObExpr)
   Mapping(assignments::Vector{<:AssignExpr})
-  JuliaCodeHom(code::Expr)
+  JuliaCodeHom(code::Expr,mod::Module)
   MixedHom(hexp::HomExpr,jcode::JuliaCodeHom)
 end
 
 @data DiagramExpr begin
   ObOver(name::Symbol, over::Union{ObExpr,Nothing}) #probably shouldn't be nothing
   HomOver(name::Symbol, src::Symbol, tgt::Symbol, over::HomExpr)
-  AttrOver(name::Symbol, src::Symbol,tgt::Symbol,aux_func_def::Expr)#make JuliaCode
+  AttrOver(name::Symbol, src::Symbol,tgt::Symbol,aux_func_def::Expr,mod::Module)#make JuliaCode
   TwistedHomOver(lhs::HomOver,rhs::AttrOver)
 end
 
@@ -335,7 +335,7 @@ function parse_hom(C::FinCat{Ob,Hom}, expr::AST.HomExpr) where {Ob,Hom}
     AST.Compose(args) => mapreduce(
       arg -> parse_hom(C, arg), (fs...) -> compose(C, fs...), args)
     AST.Id(x) => id(C, parse_ob(C, x))
-    AST.JuliaCodeHom(expr) => FreeSchema.Attr{:nothing}([],[])
+    AST.JuliaCodeHom(expr,mod) => FreeSchema.Attr{:nothing}([],[])
     AST.MixedHom(hexp,jcode) => parse_hom(C,hexp)
   end
 end
@@ -502,20 +502,20 @@ function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
         end
       end
       #add the hom that's going to map to h, then save for later
-      AST.AttrOver(f,x,y,expr) => begin
+      AST.AttrOver(f,x,y,expr,mod) => begin
         e = parse!(g,AST.Hom(f,x,y))
         push!(F_hom, FreeSchema.Attr{:nothing}([f],[]))
-        aux_func = make_func(expr,mornames)
+        aux_func = make_func(mod,expr,mornames)
         params[e] = aux_func
       end
-      AST.TwistedHomOver(AST.HomOver(f,x,y,h),AST.AttrOver(f,x,y,expr)) => begin
+      AST.TwistedHomOver(AST.HomOver(f,x,y,h),AST.AttrOver(f,x,y,expr,mod)) => begin
         e = parse!(g,AST.Hom(f,x,y))
         X, Y = F_ob[src(g,e)], F_ob[tgt(g,e)]
         push!(F_hom, hom_parser(h, X, Y)) 
         if isnothing(Y)
           F_ob[tgt(g,e)] = codom(C, F_hom[end])
         end
-        aux_func = make_func(expr,mornames)
+        aux_func = make_func(mod,expr,mornames)
         params[e] = aux_func
       end
       #AST.AssignLiteral(x, value) => begin
@@ -625,12 +625,12 @@ diagram shapes, whereas a morphism between gluing queries is covariant. TODO:
 Reference for more on this.
 """
 macro migration(src_schema, body)
-  ast = AST.Diagram(parse_diagram_ast(body))
+  ast = AST.Diagram(parse_diagram_ast(body,mod=__module__))
   :(parse_migration($(esc(src_schema)), $ast))
 end
 macro migration(tgt_schema, src_schema, body)
   # Cannot parse Julia expr during expansion because target schema is needed.
-  :(parse_migration($(esc(tgt_schema)), $(esc(src_schema)), $(Meta.quot(body))))
+  :(parse_migration($(esc(tgt_schema)), $(esc(src_schema)), $(Meta.quot(body)),$(Expr(:kw,:mod,__module__))))
 end
 
 """
@@ -667,8 +667,7 @@ high-level steps of this process are:
 3. Convert all query and query morphisms to this common type, yielding `Diagram`
    and `DiagramHom` instances.
 """
-function parse_migration(src_schema::Presentation, ast::AST.Diagram;
-                        kw...)
+function parse_migration(src_schema::Presentation, ast::AST.Diagram)
   C = FinCat(src_schema)
   d = parse_query_diagram(C, ast.statements)
   DataMigration(make_query(C, d))
@@ -687,11 +686,11 @@ function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
     #Actually I think it's OK-ish since you can't ever have a diagram
     #over an attribut type
     if expr isa AST.JuliaCodeHom
-      aux_func = make_func(expr.code,homnames)
+      aux_func = make_func(expr.mod,expr.code,homnames)
       params[f] = aux_func
     end
     if expr isa AST.MixedHom
-      aux_func = make_func(expr.jcode.code,homnames)
+      aux_func = make_func(expr.jcode.mod,expr.jcode.code,homnames)
       params[f] = aux_func
       expr = expr.hexp
     end
@@ -701,9 +700,9 @@ function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
   DataMigration(make_query(C, DiagramData{Any}(F_ob, F_hom, D,params)))
 end
 function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
-                         body::Expr)
+                         body::Expr;mod::Module=Main)
   #need to look into function below
-  ast = parse_mapping_ast(body, FinCat(tgt_schema), preprocess=true)
+  ast = parse_mapping_ast(body, FinCat(tgt_schema), preprocess=true,mod=mod)
   parse_migration(tgt_schema, src_schema, ast)
 end
 DataMigrations.DataMigration(h::SimpleDiagram) = DataMigration(diagram(h))
@@ -779,7 +778,7 @@ function parse_query_hom(C::FinCat{Ob}, ast::AST.Mapping, d::DiagramData{id},
   params = Dict()
   f_ob = mapvals(ob_rhs, keys=true) do j, rhs
     if rhs isa AST.MixedOb
-      aux_func = make_func(rhs.jcode.code,homnames)
+      aux_func = make_func(rhs.jcode.mod,rhs.jcode.code,homnames)
       params[j] = aux_func
       rhs = rhs.oexp
     end
@@ -967,7 +966,7 @@ end
 
 """ Parse category or diagram from Julia expression to AST.
 """
-function parse_diagram_ast(body::Expr; free::Bool=false, preprocess::Bool=true)
+function parse_diagram_ast(body::Expr; free::Bool=false, preprocess::Bool=true,mod::Module=Main)
   if preprocess
     body = reparse_arrows(body)
   end
@@ -1005,14 +1004,14 @@ function parse_diagram_ast(body::Expr; free::Bool=false, preprocess::Bool=true)
                               Expr(:call, :(→), x::Symbol, y::Symbol)), h) ||
       Expr(:(::), Expr(:call, :(:), f::Symbol,
       Expr(:call, :(→), x::Symbol, y::Symbol)), h) => begin
-        parse_hom_over(f,x,y,state.ob_over[x],state.ob_over[y],h)
+        parse_hom_over(f,x,y,state.ob_over[x],state.ob_over[y],h,mod=mod)
     end
       
       # (x → y) => h
       # (x → y)::h
       Expr(:call, :(=>), Expr(:call, :(→), x::Symbol, y::Symbol), h) ||
       Expr(:(::), Expr(:call, :(→), x::Symbol, y::Symbol), h) => 
-        parse_hom_over(gen_anonhom!(state),x,y,state.ob_over[x],state.ob_over[y],h)
+        parse_hom_over(gen_anonhom!(state),x,y,state.ob_over[x],state.ob_over[y],h,mod=mod)
       # make sure to handle literals!
       # x == "foo"
       # "foo" == x
@@ -1025,7 +1024,7 @@ function parse_diagram_ast(body::Expr; free::Bool=false, preprocess::Bool=true)
        Expr(:call, :(==), y::Symbol, call::Expr)) && if free end => begin
          h, x = destructure_unary_call(call) 
          X, Y, z = state.ob_over[x], state.ob_over[y], gen_anonhom!(state)
-         [AST.HomOver(z, x, y, parse_hom_ast(h, X, Y))]
+         [AST.HomOver(z, x, y, parse_hom_ast(h, X, Y,mod=mod))]
       end
       # h(x) == "foo"
       # "foo" == h(x)
@@ -1052,34 +1051,34 @@ function parse_diagram_ast(body::Expr; free::Bool=false, preprocess::Bool=true)
         X, Y = state.ob_over[x], state.ob_over[y]
         # Assumes that codomain not needed to parse morphisms.
         [AST.ObOver(z, nothing),
-         AST.HomOver(p, x, z, parse_hom_ast(h, X)),
-         AST.HomOver(q, y, z, parse_hom_ast(k, Y))]
+         AST.HomOver(p, x, z, parse_hom_ast(h, X,mod=mod)),
+         AST.HomOver(q, y, z, parse_hom_ast(k, Y,mod=mod))]
       end
       # f == g
       Expr(:call, :(==), lhs, rhs) && if !free end =>
-        [AST.HomEq(parse_hom_ast(lhs), parse_hom_ast(rhs))]
+        [AST.HomEq(parse_hom_ast(lhs,mod=mod), parse_hom_ast(rhs,mod=mod))]
       ::LineNumberNode => AST.CatExpr[]
       _ => error("Cannot parse statement in category/diagram definition: $expr")
     end
   end
   return stmts
 end
-function parse_hom_over(name,x,y,X,Y,rhs)
+function parse_hom_over(name,x,y,X,Y,rhs;mod::Module=Main)
   @match rhs begin
     #a(e) |> (x-> f(x))
     Expr(:call,:(|>),l,r) =>
-      [AST.TwistedHomOver(AST.HomOver(name,x,y,parse_hom_ast(l,X,Y)),
-       AST.AttrOver(name,x,y,r))]
+      [AST.TwistedHomOver(AST.HomOver(name,x,y,parse_hom_ast(l,X,Y,mod=mod)),
+       AST.AttrOver(name,x,y,r,mod))]
     #A hom mapping to a lambda expression, or to a block ending with a lambda
     #expression, will be temporarily assigned to a blank value to be filled
     #with Julia code evaluated in the acset to be migrated.
-    Expr(:(->),_...) => [AST.AttrOver(name,x,y,rhs)]
+    Expr(:(->),_...) => [AST.AttrOver(name,x,y,rhs,mod)]
     Expr(:block,args) =>
       @match args[end] begin
-        Expr(:(->),_...) => [AST.AttrOver(name,x,y,rhs)]
-        _ => [AST.HomOver(name,x,y,parse_hom_ast(rhs,X,Y))]
+        Expr(:(->),_...) => [AST.AttrOver(name,x,y,rhs,mod)]
+        _ => [AST.HomOver(name,x,y,parse_hom_ast(rhs,X,Y,mod=mod))]
     end
-    _ => [AST.HomOver(name,x,y,parse_hom_ast(rhs,X,Y))] 
+    _ => [AST.HomOver(name,x,y,parse_hom_ast(rhs,X,Y,mod=mod))] 
   end
 end
 """
@@ -1153,58 +1152,58 @@ end
 """ Parse morphism expression from Julia expression to AST.
 """
 function parse_hom_ast(expr, dom::Union{AST.ObGenerator,Nothing}=nothing,
-                       codom::Union{AST.ObGenerator,Nothing}=nothing)
+                       codom::Union{AST.ObGenerator,Nothing}=nothing;mod::Module=Main)
   # Domain and codomain are not used, but may be supplied for uniformity.
   @match expr begin
-    Expr(:call, :compose, args...) => AST.Compose(map(parse_hom_ast, args))
+    Expr(:call, :compose, args...) => AST.Compose(map(x->parse_hom_ast(x,mod=mod), args))
     Expr(:call, :(⋅), f, g) || Expr(:call, :(⨟), f, g) =>
-      AST.Compose([parse_hom_ast(f), parse_hom_ast(g)])
-    Expr(:call, :(∘), f, g) => AST.Compose([parse_hom_ast(g), parse_hom_ast(f)])
+      AST.Compose([parse_hom_ast(f,mod=mod), parse_hom_ast(g,mod=mod)])
+    Expr(:call, :(∘), f, g) => AST.Compose([parse_hom_ast(g,mod=mod), parse_hom_ast(f,mod=mod)])
     Expr(:call, :id, x) => AST.Id(parse_ob_ast(x))
     f::Symbol || Expr(:curly, _...) => AST.HomGenerator(expr)
-    Expr(:block,args...) => AST.JuliaCodeHom(expr)
-    Expr(:(->),inputs,body) => AST.JuliaCodeHom(expr)
+    Expr(:block,args...) => AST.JuliaCodeHom(expr,mod)
+    Expr(:(->),inputs,body) => AST.JuliaCodeHom(expr,mod)
     _ => error("Invalid morphism expression $expr")
   end
 end
 
 #TODO: all of the below with Julia code
 # Limit fragment.
-function parse_hom_ast(expr, dom::AST.LimitExpr, cod::AST.LimitExpr)
-  parse_mapping_ast((args...) -> parse_apply_ast(args..., dom), expr, cod)
+function parse_hom_ast(expr, dom::AST.LimitExpr, cod::AST.LimitExpr;mod::Module=Main)
+  parse_mapping_ast((args...) -> parse_apply_ast(args..., dom,mod=mod), expr, cod,mod=mod)
 end
-function parse_hom_ast(expr, dom::AST.ObGenerator, cod::AST.LimitExpr)
-  parse_mapping_ast(expr, cod) do (args...)
-    AST.Apply(AST.OnlyOb(), parse_hom_ast(args..., dom))
+function parse_hom_ast(expr, dom::AST.ObGenerator, cod::AST.LimitExpr;mod::Module=Main)
+  parse_mapping_ast(expr, cod,mod=mod) do (args...)
+    AST.Apply(AST.OnlyOb(), parse_hom_ast(args..., dom;mod=mod))
   end
 end
-function parse_hom_ast(expr, dom::AST.LimitExpr, cod::AST.ObGenerator)
+function parse_hom_ast(expr, dom::AST.LimitExpr, cod::AST.ObGenerator;mod::Module=Main)
   @match expr begin
-    Expr(:(->),inputs,body) => AST.JuliaCodeHom(expr)
-    Expr(:block,args...) => AST.JuliaCodeHom(expr)
-    _ => [AST.ObAssign(AST.OnlyOb(), parse_apply_ast(expr, cod, dom))] |> AST.Mapping
+    Expr(:(->),inputs,body) => AST.JuliaCodeHom(expr,mod)
+    Expr(:block,args...) => AST.JuliaCodeHom(expr,mod)
+    _ => [AST.ObAssign(AST.OnlyOb(), parse_apply_ast(expr, cod, dom,mod=mod))] |> AST.Mapping
   end
 end
 
 # Colimit fragment.
-function parse_hom_ast(expr, dom::AST.ColimitExpr, cod::AST.ColimitExpr)
-  parse_mapping_ast((args...) -> parse_coapply_ast(args..., cod), expr, dom)
+function parse_hom_ast(expr, dom::AST.ColimitExpr, cod::AST.ColimitExpr;mod::Module=Main)
+  parse_mapping_ast((args...) -> parse_coapply_ast(args..., cod,mod=mod), expr, dom,mod=mod)
 end
 function parse_hom_ast(expr, dom::Union{AST.ObGenerator,AST.LimitExpr},
-                       cod::AST.ColimitExpr)
-  [AST.ObAssign(AST.OnlyOb(), parse_coapply_ast(expr, dom, cod))] |> AST.Mapping
+                       cod::AST.ColimitExpr;mod::Module=Main)
+  [AST.ObAssign(AST.OnlyOb(), parse_coapply_ast(expr, dom, cod,mod=mod))] |> AST.Mapping
 end
 function parse_hom_ast(expr, dom::AST.ColimitExpr,
-                       cod::Union{AST.ObGenerator,AST.LimitExpr})
-  parse_mapping_ast(expr, dom) do (args...)
-    AST.Coapply(parse_hom_ast(args..., cod), AST.OnlyOb())
+                       cod::Union{AST.ObGenerator,AST.LimitExpr};mod::Module=Main)
+  parse_mapping_ast(expr, dom,mod=mod) do (args...)
+    AST.Coapply(parse_hom_ast(args..., cod;mod=mod), AST.OnlyOb())
   end
 end
 
 
 """ Parse object/morphism mapping from Julia expression to AST.
 """
-function parse_mapping_ast(f_parse_ob_assign, body, dom; preprocess::Bool=false)
+function parse_mapping_ast(f_parse_ob_assign, body, dom; preprocess::Bool=false,mod::Module=Main)
   #Default f_parse_ob_assign is (rhs, _) -> parse_ob_ast(rhs)
   if preprocess
     body = reparse_arrows(body)
@@ -1221,13 +1220,13 @@ function parse_mapping_ast(f_parse_ob_assign, body, dom; preprocess::Bool=false)
         if lhs ∈ keys(dom_obs)
           x, X = lhs, dom_obs[lhs]
           ob_map[x] = x′ = f_parse_ob_assign(rlhs, X)
-          [AST.ObAssign(AST.ObGenerator(x),AST.MixedOb(x′,AST.JuliaCodeOb(rrhs)))]
+          [AST.ObAssign(AST.ObGenerator(x),AST.MixedOb(x′,AST.JuliaCodeOb(rrhs,mod)))]
         elseif lhs ∈ keys(dom_homs)
           f, (x, y) = lhs, dom_homs[lhs]
           x′, y′ = get_ob(x), get_ob(y)
-          f′ = parse_hom_ast(rlhs, x′, y′)
+          f′ = parse_hom_ast(rlhs, x′, y′;mod=mod)
           [AST.HomAssign(AST.HomGenerator(f),
-                         AST.MixedHom(f′,AST.JuliaCodeHom(rrhs)))]
+                         AST.MixedHom(f′,AST.JuliaCodeHom(rrhs,mod)))]
         end             
       end
       Expr(:call, :(=>), lhs::Symbol, rhs) => begin
@@ -1238,7 +1237,7 @@ function parse_mapping_ast(f_parse_ob_assign, body, dom; preprocess::Bool=false)
         elseif lhs ∈ keys(dom_homs)
           f, (x, y) = lhs, dom_homs[lhs]
           x′, y′ = get_ob(x), get_ob(y)
-          f′ = parse_hom_ast(rhs, x′, y′)
+          f′ = parse_hom_ast(rhs, x′, y′;mod=mod)
           [AST.HomAssign(AST.HomGenerator(f), f′)]
         else
           error("$lhs is not the name of an object or morphism generator")
@@ -1254,7 +1253,7 @@ function parse_mapping_ast(f_parse_ob_assign, body, dom; preprocess::Bool=false)
         elseif all(∈(keys(dom_homs)), lhs)
           x′, y′ = only(unique(
             (let (x,y) = dom_homs[f]; get_ob(x) => get_ob(y) end for f in lhs)))
-          f′ = parse_hom_ast(rhs, x′, y′)
+          f′ = parse_hom_ast(rhs, x′, y′;mod=mod)
           map(f -> AST.HomAssign(AST.HomGenerator(f), f′), lhs)
         else
           error("$lhs are not all names of object or morphism generators")
@@ -1269,7 +1268,8 @@ end
 function parse_mapping_ast(body, dom; kw...)
   parse_mapping_ast((rhs, _) -> parse_ob_ast(rhs), body, dom; kw...)
 end
-function parse_apply_ast(expr, X, target)
+
+function parse_apply_ast(expr, X, target;mod::Module=Main)
   y::Symbol, f = @match expr begin
     ::Symbol => (expr, nothing)
     Expr(:call, op, _...) && if op ∈ compose_ops end =>
@@ -1279,10 +1279,10 @@ function parse_apply_ast(expr, X, target)
   end
   isnothing(f) && return AST.ObGenerator(y)
   Y = only(Y′ for (y′,Y′) in ob_over_pairs(target) if y == y′)
-  AST.Apply(AST.ObGenerator(y), parse_hom_ast(f, Y, X))
+  AST.Apply(AST.ObGenerator(y), parse_hom_ast(f, Y, X;mod=mod))
 end
 
-function parse_coapply_ast(expr, X, target)
+function parse_coapply_ast(expr, X, target;mod::Module=Main)
   y::Symbol, f = @match expr begin
     ::Symbol => (expr, nothing)
     Expr(:call, op, _...) && if op ∈ compose_ops end =>
@@ -1291,7 +1291,7 @@ function parse_coapply_ast(expr, X, target)
   end
   isnothing(f) && return AST.ObGenerator(y)
   Y = only(Y′ for (y′,Y′) in ob_over_pairs(target) if y == y′)
-  AST.Coapply(parse_hom_ast(f, X, Y), AST.ObGenerator(y))
+  AST.Coapply(parse_hom_ast(f, X, Y;mod=mod), AST.ObGenerator(y))
 end
 
 ob_over_pairs(expr) = AST.ob_over_pairs(expr)
@@ -1327,9 +1327,9 @@ function reparse_arrows(expr)
     _ => expr
   end
 end
-function make_func(body,vars)
+function make_func(mod::Module,body::Expr,vars::Vector{Symbol})
   expr = Expr(:(->),Expr(:tuple,vars...),body)
-  eval(expr)
+  mod.eval(expr)
 end
 """ Left-most argument plus remainder of left-associated binary operations.
 `ops` denotes the operations that won't need to be reversed for the desired
