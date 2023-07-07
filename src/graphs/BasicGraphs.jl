@@ -198,11 +198,13 @@ multiplicity*. To get the unique neighbors, call `unique(neighbors(g))`.
 
 """ In-neighbors of vertex in a graph.
 """
-inneighbors(g::AbstractGraph, v::Int) = view(g, incident(g, v, :tgt), :src)
+inneighbors(g::AbstractGraph, v::Int) =
+  (subpart(g, e, :src) for e in incident(g, v, :tgt))
 
 """ Out-neighbors of vertex in a graph.
 """
-outneighbors(g::AbstractGraph, v::Int) = view(g, incident(g, v, :src), :tgt)
+outneighbors(g::AbstractGraph, v::Int) =
+  (subpart(g, e, :tgt) for e in incident(g, v, :src))
 
 """ Union of in-neighbors and out-neighbors in a graph.
 """
@@ -285,7 +287,8 @@ rem_edge!(g::AbstractSymmetricGraph, e::Int) = rem_edges!(g, e:e)
 rem_edges!(g::AbstractSymmetricGraph, es) =
   rem_parts!(g, :E, unique!(sort!([es; inv(g, es)])))
 
-neighbors(g::AbstractSymmetricGraph, v::Int) = view(g, incident(g, v, :src), :tgt)
+neighbors(g::AbstractSymmetricGraph, v::Int) =
+  (subpart(g, e, :tgt) for e in incident(g, v, :src))
 @inline inneighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
 @inline outneighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
 @inline all_neighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)

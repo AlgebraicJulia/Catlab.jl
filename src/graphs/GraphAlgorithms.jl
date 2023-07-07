@@ -62,7 +62,7 @@ function topological_sort(g::ACSet, ::TopologicalSortByDFS)
     push!(stack, v)
     while !isempty(stack)
       u = first(stack)
-      u_out = outneighbors(g, u)
+      u_out = collect(outneighbors(g, u))
       i = findfirst(u_out) do w
         marking[w] != TempMarked || error("Graph is not acyclic: $g")
         marking[w] == Unmarked
