@@ -1738,14 +1738,12 @@ struct OverlapIterator
   top::ACSet
   others::Vector{ACSet}
   function OverlapIterator(Xs::Vector{T}) where T<:ACSet
-    t, o... = Xs[sortperm(total_parts.(Xs))]
+    t, o... = sort(Xs, by=total_parts)
     new(t, o)
   end
 end
-
-function Base.collect(itr::OverlapIterator)
-  res = []; for sp in itr push!(res, sp) end; res
-end
+Base.eltype(::Type{OverlapIterator}) = Multispan
+Base.IteratorSize(::Type{OverlapIterator}) = Base.SizeUnknown()
 
 mutable struct OverlapIteratorState
   curr_subobj::Union{Nothing,ACSetTransformation}
