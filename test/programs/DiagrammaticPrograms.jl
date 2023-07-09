@@ -844,5 +844,36 @@ M = @migration SchTuringMachine SchTuringMachine begin
     end
   end
   run_TM(T,n) = n == 0 ? T : run_TM(migrate(TuringMachine,T,M),n-1)
+
   @test begin subpart(run_TM(T,10),1:8,:marks) == Union{AttrVar,enums.BinaryMarks}[map(x->enums.O,1:6);enums.X;enums.Blank] end
 end
+
+@present SchAng(FreeSchema) begin
+  C::Ob
+  T::Ob
+  Pickable::AttrType
+  f::Hom(C,T)
+end
+@present SchAng1 <: SchAng begin
+  g::Attr(T,Pickable)
+end
+@acset_type Ang1(SchAng1)
+@present SchAng2 <: SchAng begin
+  h::Attr(C,Pickable)
+end
+@acset_type Ang2(SchAng2)
+Agg = @migration SchAng1 SchAng2 begin
+  C => C
+  T => T
+  Pickable => Pickable
+  f => f
+  g => x -> sum([h(i) for i in dom(f) if f(i)==x])
+end
+X = @acset Ang2{Float64} begin
+  C = 5
+  T = 10
+  f = [2,4,4,4,10]
+  h = map(x->1.0,1:10)
+end
+Y = migrate(Ang1,X,Agg)
+@test subpart(Y,1:5,:g) == [0.,1.,0.,3.,0.]
