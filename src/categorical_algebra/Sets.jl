@@ -64,11 +64,9 @@ show_type_constructor(io::IO, ::Type{<:SetFunction}) = print(io, "SetFunction")
   func::Any
   dom::Dom
   codom::Codom
-
-  function SetFunctionCallable(f, dom::Dom, codom::Codom) where
-      {T,T′,Dom<:SetOb{T},Codom<:SetOb{T′}}
-    new{T,T′,Dom,Codom}(f, dom, codom)
-  end
+# Code review note: the code that was here before was apparently part of
+# something that was necessary in the context of an old implementation of
+# `SetFunctionCallable`, but is no longer
 end
 
 function (f::SetFunctionCallable{T,T′})(x::T)::T′ where {T,T′}
@@ -107,7 +105,10 @@ end
 
 Not to be confused with `Base.ComposedFunctions` for ordinary Julia functions.
 """
-@struct_hash_equal struct CompositeFunction{Dom,Codom,
+@struct_hash_equal struct CompositeFunction{Dom<:SetOb, Codom<:SetOb,
+# Code review note: these additional restrictions, on the variables `Dom` and
+# `Codom`, allow `CompositeFunction` to be recognized as a subtype of
+# `SetFunction`
     F<:SetFunction{Dom,<:SetOb},G<:SetFunction{<:SetOb,Codom}} <: SetFunction{Dom,Codom}
   fst::F
   snd::G

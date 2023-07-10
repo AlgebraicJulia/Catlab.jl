@@ -54,7 +54,8 @@ FinSet(n::Int) = FinSetInt(n)
 
 Base.iterate(set::FinSetInt, args...) = iterate(1:set.n, args...)
 Base.length(set::FinSetInt) = set.n
-Base.in(set::FinSetInt, elem) = in(elem, 1:set.n)
+# Code review note: the arguments seem to have been placed backwards originally
+Base.in(elem, set::FinSetInt) = in(elem, 1:set.n)
 
 Base.show(io::IO, set::FinSetInt) = print(io, "FinSet($(set.n))")
 
@@ -285,11 +286,26 @@ Base.collect(f::SetFunction) = force(f).func
 
 """ Function in **FinSet** represented explicitly by a vector.
 """
-const FinFunctionVector{S,T,V<:AbstractVector{T}} =
-  FinDomFunctionVector{T,V,<:FinSet{S,T}}
+# Code review note: This type declaration is regarded by Julia
+# as equal (i.e. ==) to the extant declaration. I feel that giving
+# `FinFunctionVector` an explicit parameter to represent the type of the
+# codomain improves the self-documentation aspect of the code.
+const FinFunctionVector{S,T,V<:AbstractVector{T},Codom<:FinSet{S,T}} =
+  FinDomFunctionVector{T,V,Codom}
 
-Base.show(io::IO, f::FinFunctionVector) =
+# Code review note: showing just the length of the codomain is not ideal when
+# the codomain is not a `FinSetInt`
+Base.show(io::IO, f::FinFunctionVector{Int}) =
   print(io, "FinFunction($(f.func), $(length(dom(f))), $(length(codom(f))))")
+
+function Base.show(io::IO, f::F) where {F<:FinFunctionVector}
+  Sets.show_type_constructor(io, F)
+  print(io, "(")
+  show(io, f.func)
+  print(io, ", $(length(dom(f))), ")
+  Sets.show_domains(io, f, domain=false)
+  print(io, ")")
+end
 
 Sets.do_compose(f::FinFunctionVector, g::FinDomFunctionVector) =
   FinDomFunctionVector(g.func[f.func], codom(g))
@@ -542,8 +558,10 @@ force(f::FinDomFunctionDict) = f
 
 """ Function in **FinSet** represented by a dictionary.
 """
-const FinFunctionDict{K,D<:AbstractDict{K},Codom<:FinSet} =
+const FinFunctionDict{K,D<:AbstractDict{K},S,Codom<:FinSet{S}} =
   FinDomFunctionDict{K,D,Codom}
+# Code review note: The additional parameter `S` allows `FinFunctionDict` to be
+# recognized as a subtype of `FinFunction`
 
 FinFunctionDict(d::AbstractDict, codom::FinSet) = FinDomFunctionDict(d, codom)
 FinFunctionDict(d::AbstractDict{K,V}) where {K,V} =
