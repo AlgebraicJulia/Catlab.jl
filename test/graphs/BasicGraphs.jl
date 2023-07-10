@@ -21,8 +21,8 @@ add_edge!(g, 2, 3)
 @test ne(g, 1, 2) == 1
 @test has_edge(g, 1, 2)
 @test !has_edge(g, 1, 3)
-@test outneighbors(g, 2) == [3]
-@test inneighbors(g, 2) == [1]
+@test collect(outneighbors(g, 2)) == [3]
+@test collect(inneighbors(g, 2)) == [1]
 @test degree(g, 2) == 2
 @test collect(all_neighbors(g, 2)) == [1,3]
 
@@ -30,8 +30,8 @@ add_edge!(g, 1, 2)
 @test ne(g) == 3
 @test ne(g, 1, 2) == 2
 @test collect(edges(g, 1, 2)) == [1,3]
-@test outneighbors(g, 1) == [2,2]
-@test inneighbors(g, 1) == []
+@test collect(outneighbors(g, 1)) == [2,2]
+@test isempty(inneighbors(g, 1))
 @test degree(g, 1) == 2
 @test SimpleGraphs.DiGraph(g) == SimpleGraphs.path_digraph(3)
 
@@ -76,9 +76,9 @@ add_edge!(g, 1, 2)
 add_edge!(g, 2, 3)
 @test ne(g) == 4
 @test collect(edges(g, 1, 2)) == [1]
-@test neighbors(g, 1) == [2]
-@test neighbors(g, 2) == [1,3]
-@test neighbors(g, 3) == [2]
+@test collect(neighbors(g, 1)) == [2]
+@test collect(neighbors(g, 2)) == [1,3]
+@test collect(neighbors(g, 3)) == [2]
 @test SimpleGraphs.Graph(g) == SimpleGraphs.path_graph(3)
 @test SymmetricGraph(SimpleGraphs.path_graph(3)) == g
 
@@ -89,8 +89,8 @@ lg = SimpleGraphs.DiGraph(map(SimpleGraphs.Edge, [1,2,3,2,3,4], [2,3,4,1,2,3]))
 
 rem_edge!(g, 3, 4)
 @test ne(g) == 4
-@test neighbors(g, 3) == [2]
-@test neighbors(g, 4) == []
+@test collect(neighbors(g, 3)) == [2]
+@test isempty(neighbors(g, 4))
 rem_vertex!(g, 2)
 @test nv(g) == 3
 @test ne(g) == 0

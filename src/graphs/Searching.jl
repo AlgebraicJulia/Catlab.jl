@@ -34,8 +34,9 @@ implementations which are marginally faster in practice for smaller graphs,
 but the performance improvements using this implementation on large graphs
 can be significant.
 """
-bfs_parents(g::ACSet, s::Int; dir = :out) =
-    (dir == :out) ? _bfs_parents(g, s, outneighbors) : _bfs_parents(g, s, inneighbors)
+function bfs_parents(g::ACSet, s::Int; dir = :out)
+  _bfs_parents(g, s, dir == :out ? outneighbors : inneighbors)
+end
 
 function _bfs_parents(g::ACSet, source, neighborfn::Function)
     n = nv(g)
@@ -52,7 +53,7 @@ function _bfs_parents(g::ACSet, source, neighborfn::Function)
     end
     while !isempty(cur_level)
         @inbounds for v in cur_level
-            @inbounds @simd for i in neighborfn(g, v)
+            @inbounds for i in neighborfn(g, v)
                 if !visited[i]
                     push!(next_level, i)
                     parents[i] = v
@@ -86,8 +87,9 @@ use the corresponding edge direction (`:in` and `:out` are acceptable values).
 ### Implementation Notes
 This version of DFS is iterative.
 """
-dfs_parents(g::ACSet, s::Integer; dir=:out) =
-    (dir == :out) ? _dfs_parents(g, s, outneighbors) : _dfs_parents(g, s, inneighbors)
+function dfs_parents(g::ACSet, s::Integer; dir=:out)
+  _dfs_parents(g, s, dir == :out ? outneighbors : inneighbors)
+end
 
 function _dfs_parents(g::ACSet, s::Int, neighborfn::Function)
     parents = zeros(Int, nv(g))
