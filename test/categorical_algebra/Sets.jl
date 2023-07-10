@@ -45,6 +45,54 @@ c = ConstantFunction(5, TypeSet(Int))
 @test compose(f, c) == c
 @test compose(c, c) == c
 
+# Bijections
+############
+
+# Callables.
+mypredicate = s -> match(r"^(A*|a*)$", s) !== nothing
+repeatAs = PredicatedSet(String, mypredicate)
+h = SetFunction(x -> repeat(x>0 ? "A" : "a", abs(x)), TypeSet(Int), repeatAs)
+bij_h = Bijection(h)
+@test dom(bij_h) == TypeSet(Int)
+@test codom(bij_h) == repeatAs
+@test bij_h(5) == "AAAAA"
+@test Sets.unwrap(bij_h) === h
+@test startswith(sprint(show, bij_h), "Bijection(")
+
+# Bimaps.
+inv_h = Bijection(s -> length(s) * (-1)^occursin("a", s), repeatAs, TypeSet(Int))
+bimap_h = Bijection(bij_h, inv_h)
+@test dom(bimap_h) == TypeSet(Int)
+@test codom(bimap_h) == repeatAs
+@test bimap_h(-5) == "aaaaa"
+@test Sets.unwrap(bimap_h) === h
+
+bimapshowpattern = r"^Bijection\(SetFunction\(.*, inverse=SetFunction\(.*\)$"
+@test match(bimapshowpattern, sprint(show, bimap_h)) !== nothing
+
+# Inverses.
+inv_bimap_h = inv(bimap_h)
+@test dom(inv_bimap_h) == repeatAs
+@test codom(inv_bimap_h) == TypeSet(Int)
+@test inv_bimap_h("aaaa") == -4
+@test Sets.unwrap(inv_bimap_h) === Sets.unwrap(inv_h)
+@test Sets.unwrap(inv(inv_bimap_h)) === h
+
+# Composition.
+@test compose(h, inv_bimap_h) == id(dom(h))
+@test compose(inv_bimap_h, h) == id(codom(h))
+@test compose(compose(f, h), inv_bimap_h) === f
+
+bimap_f = Bijection(f, SetFunction(x -> 1/2x, TypeSet(Int), TypeSet(Int)))
+inv_bimap_f = inv(bimap_f)
+@test compose(compose(bimap_f, h), compose(inv_bimap_h, f)) == compose(bimap_f, f)
+@test compose(compose(bimap_f, h), compose(inv_bimap_h, inv_bimap_f)) == id(dom(bimap_f))
+
+# Indexing/preimages.
+@test !is_indexed(bij_h)
+@test is_indexed(bimap_h)
+@test preimage(bimap_h, "AAAAA") == 5
+
 # Predicated sets
 #################
 
