@@ -348,29 +348,23 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100)
   end
   for (k,kdom,kcod) in attrs(S)
     f = hom_map(F,k)
-    ffst,flst = hom_map(i2,first(f)),hom_map(i2,last(f)) #split_r in general
+    #split f into its hom part and its attr part
+    f1,f2 = split_r(f)
+    ffst,flst = hom_map(i2,f1),hom_map(i2,f2)
     for i in parts(d,kdom)
       oldval = subpart(d,i,k)
-      j = subpart(rel_res,i,Symbol("tgt_α_$kdom")) #need to walk span properly
-      ffstj = subpart(rel_res,j,Symbol("tgt_$ffst"))
+      j = rel_res[only(incident(rel_res,i,Symbol("src_α_$kdom"))),
+      Symbol("tgt_α_$kdom")] #need to walk span properly
+      ffstj = rel_res[only(incident(rel_res,j,Symbol("src_$ffst"))),Symbol("tgt_$ffst")]
       res[ffstj,first(flst)] = oldval
     end
   end
-  #un-abstract res
-  #=
-  for k in arrows(S;just_names=true) #if k is an attr
-    a = hom_map(F,k)
-    f,g = split_r(hom_map(F,k))    
-    for i in parts(d,dom(S,k))
-      
-    
-    c = subpart(res,f)
-    subpart(res,last_r(hom_map(F,k))) = subpart(d,k)
-  end
-  =#
   return res
 end 
-
+"""Split an n-fold composite (n may be 1) 
+Hom or Attr into its left n-1 and rightmost 1 components
+"""
+split_r(f) = f isa GATExpr{:compose} ? (compose(f.args[1:end-1]),f.args[end]) : (id(dom(f)),f)
 
 # Yoneda embedding
 #-----------------
