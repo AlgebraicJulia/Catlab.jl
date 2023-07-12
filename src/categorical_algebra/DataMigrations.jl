@@ -301,8 +301,12 @@ portion of the collage, then run the chase.
 #be possible to cache.
 function (M::SigmaMigrationFunctor)(d::ACSet; n=100)
   D,CD = M.dom_constructor(), M.codom_constructor()
+  F = functor(M)
   S = acset_schema(d)
-  col, col_pres = collage(functor(M))
+  #ask the collage to represent a transformation that's natural
+  #only on the non-attrtype objects of the domain
+  obs = map(x->Ob(FreeSchema.Ob,x),S.obs)
+  col, col_pres = collage(functor(M),obs)
   i1,i2 = legs(col)
   # Initialize collage C-Set with data from `d`
   atypes = Dict{Symbol,Type}()
@@ -311,12 +315,19 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100)
   col_type = crel_type(presentation(apex(col)); types=atypes, name="Sigma")()
   for o in ob(S)
     add_parts!(col_type, Symbol(ob_map(i1,o)), nparts(d,o))
+    #add parts for attrvars?
   end
   for h in homs(S; just_names=true)
     s,t = add_srctgt(hom_map(i1,h))
     add_parts!(col_type, Symbol(hom_map(i1,h)), length(d[h]))
     col_type[s] = 1:length(d[h])
     col_type[t] = d[h]
+  end 
+  for k in attr(S) #need triples and just_names to combine loops
+    s,t = add_srctgt(hom_map(i1,k))
+    add_parts!(col_type, Symbol(hom_map(i1,k)), length(d[k]))
+    col_type[s] = 1:length(d[k])
+    col_type[t] = d[k]
   end 
   # Run chase 
   eds = pres_to_eds(col_pres; types=atypes, name="Sigma")
@@ -335,6 +346,28 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100)
       res[domval,h] = codomval
     end
   end
+  for (k,kdom,kcod) in attrs(S)
+    f = hom_map(F,k)
+    ffst,flst = hom_map(i2,first(f)),hom_map(i2,last(f)) #split_r in general
+    for i in parts(d,kdom)
+      oldval = subpart(d,i,k)
+      j = subpart(rel_res,i,Symbol("tgt_α_$kdom")) #need to walk span properly
+      ffstj = subpart(rel_res,j,Symbol("tgt_$ffst"))
+      res[ffstj,first(flst)] = oldval
+    end
+  end
+  #un-abstract res
+  #=
+  for k in arrows(S;just_names=true) #if k is an attr
+    a = hom_map(F,k)
+    f,g = split_r(hom_map(F,k))    
+    for i in parts(d,dom(S,k))
+      
+    
+    c = subpart(res,f)
+    subpart(res,last_r(hom_map(F,k))) = subpart(d,k)
+  end
+  =#
   return res
 end 
 

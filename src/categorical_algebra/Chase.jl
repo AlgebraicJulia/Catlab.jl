@@ -352,19 +352,20 @@ end
 A collage of a functor is a schema encoding the data of the functor
 It has the mapping data in addition to injections from the (co)domain.
 """
-function collage(F::FinFunctor)
+function collage(F::FinFunctor,obs=ob_generators(dom(F)))
   (dF, _) = Xs = [dom(F), codom(F)]
+  homs = filter(hom_generators(dF)) do f dom(f) in obs && codom(f) in obs end
   C = coproduct_fincat(Xs)
   i1, i2 = legs(C)
   p = presentation(apex(C)) # inherit equations from dom and codom
   # Add natural transformations
-  α = Dict(map(ob_generators(dF)) do o
+  α = Dict(map(obs) do o
     o => add_generator!(p, Hom(Symbol("α_$o"), ob_map(i1,o), ob_map(i2,ob_map(F, o))))
   end)
   # Add naturality squares
-  for f in hom_generators(dF)
-    add_equation!(p, compose(α[dom(dF,f)], i2(hom_map(F,f))),
-                     compose(i1(f),        α[codom(dF,f)]))
+  for f in homs
+    add_equation!(p, compose(α[dom(dF,f)], hom_map(i2,hom_map(F,f))),
+                     compose(hom_map(i1,f), α[codom(dF,f)]))
   end
   new_codom = FinCat(p)
   ls = map(legs(C)) do l
