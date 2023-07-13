@@ -2,13 +2,13 @@ module TestCatElements
 using Test
 using Catlab.GATs, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 
-arr = @acset Graph begin
-  V = 2
-  E = 1
-  src=[1]
-  tgt=[2]
-end
+arr = path_graph(Graph, 2)
+
+dyn_arr = DynamicACSet("Grph", SchGraph)
+add_part!(dyn_arr, :E, src=add_part!(dyn_arr,:V), tgt=add_part!(dyn_arr,:V))
+
 elarr = elements(arr)
+@test elarr == elements(dyn_arr)
 
 @testset "Arrow Elements" begin
   @test nparts(elarr, :El)  == 3
@@ -26,12 +26,7 @@ elarr = elements(arr)
   @test inverse_elements(elarr, Graph()) == arr
 end
 
-b = @acset Graph begin
-  V = 2
-  E = 1
-  src = [1]
-  tgt = [2]
-end
+b = path_graph(Graph, 2)
 elb = elements(b)
 ThBPG, obmap, hommap = CatElements.presentation(elb)
 @test Symbol.(generators(ThBPG)) == [:V_1, :V_2, :E_1, :src_E_1, :tgt_E_1]
@@ -114,4 +109,5 @@ end
     @test inverse_elements(elements(h), sir_eltsch) == h
   end
 end
+
 end # module
