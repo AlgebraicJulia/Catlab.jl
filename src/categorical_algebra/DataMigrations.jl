@@ -317,17 +317,11 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100)
     add_parts!(col_type, Symbol(ob_map(i1,o)), nparts(d,o))
     #add parts for attrvars?
   end
-  for h in homs(S; just_names=true)
+  for h in arrows(S; just_names=true)
     s,t = add_srctgt(hom_map(i1,h))
     add_parts!(col_type, Symbol(hom_map(i1,h)), length(d[h]))
     col_type[s] = 1:length(d[h])
     col_type[t] = d[h]
-  end 
-  for k in attr(S) #need triples and just_names to combine loops
-    s,t = add_srctgt(hom_map(i1,k))
-    add_parts!(col_type, Symbol(hom_map(i1,k)), length(d[k]))
-    col_type[s] = 1:length(d[k])
-    col_type[t] = d[k]
   end 
   # Run chase 
   eds = pres_to_eds(col_pres; types=atypes, name="Sigma")
@@ -346,22 +340,29 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100)
       res[domval,h] = codomval
     end
   end
+  #Go back and make sure attributes that ought to have 
+  #specific values because of d do have those values.
   for (k,kdom,kcod) in attrs(S)
     f = hom_map(F,k)
     #split f into its hom part and its attr part
     f1,f2 = split_r(f)
-    ffst,flst = hom_map(i2,f1),hom_map(i2,f2)
+    f1 = hom_map(i2,f1)#,hom_map(i2,f2)
     for i in parts(d,kdom)
       oldval = subpart(d,i,k)
+      #Find where i goes under alpha, and then where that goes
+      #under the hom part of f, by walking the spans in rel_res.
       j = rel_res[only(incident(rel_res,i,Symbol("src_α_$kdom"))),
-      Symbol("tgt_α_$kdom")] #need to walk span properly
-      ffstj = rel_res[only(incident(rel_res,j,Symbol("src_$ffst"))),Symbol("tgt_$ffst")]
-      res[ffstj,first(flst)] = oldval
+                  Symbol("tgt_α_$kdom")] 
+      f1j = f1 isa GATExpr{:id} ? j :
+       rel_res[only(incident(rel_res,j,Symbol("src_$f1"))),
+              Symbol("tgt_$f1")]
+      res[f1j,first(f2)] = oldval
     end
   end
   return res
 end 
-"""Split an n-fold composite (n may be 1) 
+"""
+Split an n-fold composite (n may be 1) 
 Hom or Attr into its left n-1 and rightmost 1 components
 """
 split_r(f) = f isa GATExpr{:compose} ? (compose(f.args[1:end-1]),f.args[end]) : (id(dom(f)),f)

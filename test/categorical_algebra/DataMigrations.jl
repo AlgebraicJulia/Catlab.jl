@@ -325,6 +325,57 @@ Y = ΣF(X)
 
 @test SigmaMigrationFunctor(idF, Graph, Graph)(Y) == Y
 
+###Test sigma migrations with attributes
+@present SchAng(FreeSchema) begin
+  C::Ob
+  T::Ob
+  Pickable::AttrType
+  ID::AttrType
+  f::Hom(C,T)
+  id::Attr(C,ID)
+end
+@present SchAng1 <: SchAng begin
+  g::Attr(T,Pickable)
+end
+@acset_type Ang1(SchAng1)
+@present SchAng2 <: SchAng begin
+  h::Attr(C,Pickable)
+end
+@acset_type Ang2(SchAng2)
+
+X = @acset Ang1{Bool,String} begin
+  C = 2
+  T = 4
+  f = [1,3]
+  g = [false,false,true,true]
+  id = ["ffee cup","doughnut"]
+end
+
+Y = @acset Ang2{Bool,String} begin
+  C = 2
+  T = 4
+  f = [1,3]
+  h = [false,true]
+  id = ["ffee cup","doughnut"]
+end
+C1,C2 = FinCat(SchAng1),FinCat(SchAng2)
+c,t,pickable,ID = ob_generators(C1)
+f1,id1,g = hom_generators(C1)
+f2,id2,h = hom_generators(C2)
+
+F = FinFunctor(
+  Dict(c => c, t => t, pickable => pickable,ID=>ID),
+  Dict(f2 => f1, h => [f1, g],id1=>id2),
+  SchAng2, SchAng1
+)
+
+ΔF = DataMigrationFunctor(F, Ang1{Bool,String}, Ang2{Bool,String})
+ΣF = SigmaMigrationFunctor(F, Ang2{Bool,String}, Ang1{Bool,String})
+
+YY = ΔF(X)
+XX = ΣF(Y)
+@test YY == Y
+@test incident(XX,false,[:f,:g]) == incident(XX,"ffee cup",:id)
 # Terminal map
 #-------------
 @present ThSpan(FreeSchema) begin
