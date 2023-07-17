@@ -346,17 +346,21 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100)
     f = hom_map(F,k)
     #split f into its hom part and its attr part
     f1,f2 = split_r(f)
-    f1 = hom_map(i2,f1)#,hom_map(i2,f2)
+    #Need f1 on the collage for rel_res but f2 
+    #on the target schema
+    f1 = hom_map(i2,f1)
     for i in parts(d,kdom)
       oldval = subpart(d,i,k)
+      src_a,tgt_a=add_srctgt(Symbol("α_$kdom"))
+      src_f,tgt_f=add_srctgt(Symbol("$f1"))
       #Find where i goes under alpha, and then where that goes
       #under the hom part of f, by walking the spans in rel_res.
-      j = rel_res[only(incident(rel_res,i,Symbol("src_α_$kdom"))),
-                  Symbol("tgt_α_$kdom")] 
+      j = rel_res[only(incident(rel_res,i,src_a)),
+                  tgt_a] 
       f1j = f1 isa GATExpr{:id} ? j :
-       rel_res[only(incident(rel_res,j,Symbol("src_$f1"))),
-              Symbol("tgt_$f1")]
-      res[f1j,first(f2)] = oldval
+       rel_res[only(incident(rel_res,j,src_f)),
+              tgt_f]
+      res[f1j,nameof(f2)] = oldval
     end
   end
   return res
