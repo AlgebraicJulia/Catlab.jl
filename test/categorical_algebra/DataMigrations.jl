@@ -318,7 +318,7 @@ X = @acset UndirectedBipartiteGraph begin
   tgt = [1,1,2,3]
 end
 
-Yd = ΣF(X; components=true)
+Yd = ΣF(X; return_unit=true)
 Y = Graph(codom(Yd))
 α = diagram_map(Yd)
 @test nparts(Y, :V) == 7
@@ -430,7 +430,7 @@ bang = FinFunctor(
 )
 
 Σbang = SigmaMigrationFunctor(bang, Span, Initial)
-Yd = Σbang(X; components=true)
+Yd = Σbang(X; return_unit=true)
 α = diagram_map(Yd)
 @test length(unique([α[:A](1:2)...,α[:L1](1),α[:L2](1:2)...])) == 1
 Y = Initial(codom(Yd))

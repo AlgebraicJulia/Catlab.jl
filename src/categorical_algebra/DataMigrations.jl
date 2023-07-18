@@ -294,17 +294,18 @@ functor(F::SigmaMigrationFunctor) = functor(migration(F))
 SigmaMigrationFunctor(f,::Type{T},c::ACSet) where T<:StructACSet = SigmaMigrationFunctor(f,T(),constructor(c))
 SigmaMigrationFunctor(f,d::ACSet,::Type{T}) where T<:StructACSet = SigmaMigrationFunctor(f,d,T())
 SigmaMigrationFunctor(f,d::Type{T′},::Type{T}) where {T<:StructACSet, T′<:StructACSet} = SigmaMigrationFunctor(f,d,T())
+
 """
 Create a C-Set for the collage of the functor. Initialize data in the domain 
 portion of the collage, then run the chase.
 
-Optional return with `components` a diagram morphism induced by the unit of the 
-adjunction between Σ and Δ migration functors.
+When `return_unit` is true, returns the diagram morphism given by the unit of
+the adjunction between Σ and Δ migration functors.
 """
 #This should be deprecated in terms of a new migrate function if anybody works on sigma migrations sometime.
 #Also, we probably don't want to construct the collage every time we migrate using M, at least it should
 #be possible to cache.
-function (M::SigmaMigrationFunctor)(d::ACSet; n=100, components=false)
+function (M::SigmaMigrationFunctor)(d::ACSet; n=100, return_unit::Bool=false)
   D,CD = M.dom_constructor(), M.codom_constructor()
   F = functor(M)
   S = acset_schema(d)
@@ -368,20 +369,18 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100, components=false)
       res[f1j,nameof(f2)] = oldval
     end
   end
-  if !components 
-    return res
-  else  
-    diagram_map = Dict(map(types(S)) do o
-      s, t= add_srctgt("α_$o")    
-      m = last.(sort(collect(zip([rel_res[x] for x in [s,t]]...))))
-      ff = o ∈ ob(S) ? FinFunction : VarFunction{attrtype_type(D,o)}
-      o => ff(m, nparts(rel_res, nameof(ob_map(functor(M)⋅i2,o))))
-    end)
-    # Return result as a DiagramHom{id}
-    ddom = FinDomFunctor(d; eqs=equations(dom(functor(M))))
-    dcodom = FinDomFunctor(res; eqs=equations(codom(functor(M))))
-    return DiagramHom{id}(functor(M), diagram_map, ddom, dcodom)
-  end
+  return_unit || return res
+
+  # Return result as DiagramHom{id}.
+  diagram_map = Dict(map(types(S)) do o
+    s, t= add_srctgt("α_$o")
+    m = last.(sort(collect(zip([rel_res[x] for x in [s,t]]...))))
+    ff = o ∈ ob(S) ? FinFunction : VarFunction{attrtype_type(D,o)}
+    o => ff(m, nparts(rel_res, nameof(ob_map(functor(M)⋅i2,o))))
+  end)
+  ddom = FinDomFunctor(d; eqs=equations(dom(functor(M))))
+  dcodom = FinDomFunctor(res; eqs=equations(codom(functor(M))))
+  DiagramHom{id}(functor(M), diagram_map, ddom, dcodom)
 end
 
 """
@@ -405,13 +404,13 @@ which works because left Kan extensions take representables to representables
 representables (they can be infinite), this function thus inherits any
 limitations of our implementation of left pushforward data migrations.
 """
-function representable(T, C::Presentation{ThSchema}, ob::Symbol; components=false)
+function representable(T, C::Presentation{ThSchema}, ob::Symbol; kw...)
   C₀ = Presentation{Symbol}(FreeSchema)
   add_generator!(C₀, C[ob])
   X = AnonACSet(C₀); add_part!(X, ob)
   F = FinFunctor(Dict(ob => ob), Dict(), C₀, C)
   ΣF = SigmaMigrationFunctor(F, X, T)
-  return ΣF(X; components=components)
+  ΣF(X; kw...)
 end
 
 """
@@ -419,8 +418,8 @@ ACSet types do not store info about equations, so this info is lost when we try
 to recover the presentation from the datatype. Thus, this method for 
 `representable` should only be used for free schemas
 """ 
-representable(::Type{T}, ob::Symbol; components=false) where T <: StructACSet =
-  representable(T, Presentation(T), ob; components=components)
+representable(::Type{T}, ob::Symbol; kw...) where T <: StructACSet =
+  representable(T, Presentation(T), ob; kw...)
 
 
 """
@@ -442,7 +441,7 @@ the parts of the classifier.
 function subobject_classifier(T::Type, S::Presentation{ThSchema})
   isempty(generators(S,:AttrType)) || error("Cannot compute Ω for schema with attributes")
   obs    = nameof.(generators(S,:Ob))
-  reprs  = Dict(o=>representable(T, S, o; components=true) for o in obs)
+  reprs  = Dict(o=>representable(T, S, o; return_unit=true) for o in obs)
   subobs = Dict(o=>subobject_graph(ACSet(codom(reprs[o])))[2] for o in obs)
   Ω      = T()
   for o in obs add_parts!(Ω, o, length(subobs[o])) end 
@@ -474,7 +473,7 @@ where f* is given by `yoneda`.
 """
 function internal_hom(G::T, F::T, S::Presentation{ThSchema}) where T<:ACSet
   obs    = nameof.(generators(S,:Ob))
-  reprs  = Dict(o=>representable(T, S,o; components=true) for o in obs)
+  reprs  = Dict(o=>representable(T, S,o; return_unit=true) for o in obs)
   prods  = Dict(o=>product(ACSet(codom(reprs[o])),G) for o in obs)
   maps   = Dict(o=>homomorphisms(apex(prods[o]),F) for o in obs)
   Fᴳ     = T()
