@@ -325,6 +325,60 @@ Y = ΣF(X)
 
 @test SigmaMigrationFunctor(idF, Graph, Graph)(Y) == Y
 
+###Test sigma migrations with attributes
+@present SchTwoThings(FreeSchema) begin
+  Th1::Ob
+  Th2::Ob
+  Property::AttrType
+  #ID is to keep track of combinatorial objects
+  #as their non-meaningful integer IDs may be modified
+  #by the chase.
+  ID::AttrType
+  f::Hom(Th1,Th2)
+  id::Attr(Th1,ID)
+end
+@present SchThing1WithProp <: SchTwoThings begin
+  prop::Attr(Th1,Property)
+end
+@acset_type Thing1WithProp(SchThing1WithProp)
+@present SchThing2WithProp <: SchTwoThings begin
+  prop::Attr(Th2,Property)
+end
+@acset_type Thing2WithProp(SchThing2WithProp)
+
+X = @acset Thing2WithProp{Bool,String} begin
+  Th1 = 2
+  Th2 = 4
+  f = [1,3]
+  prop = [false,false,true,true]
+  id = ["ffee cup","doughnut"]
+end
+
+Y = @acset Thing1WithProp{Bool,String} begin
+  Th1 = 2
+  Th2 = 4
+  f = [1,3]
+  prop = [false,true]
+  id = ["ffee cup","doughnut"]
+end
+C1,C2 = FinCat(SchThing1WithProp),FinCat(SchThing2WithProp)
+th1,th2,property,ID = ob_generators(C1)
+f1,id1,prop1 = hom_generators(C1)
+f2,id2,prop2 = hom_generators(C2)
+
+F = FinFunctor(
+  Dict(th1 => th1, th2 => th2, property => property,ID=>ID),
+  Dict(f1 => f2, prop1 => [f2, prop2],id1=>id2),
+  SchThing1WithProp, SchThing2WithProp
+)
+
+ΔF = DataMigrationFunctor(F, Thing2WithProp{Bool,String}, Thing1WithProp{Bool,String})
+ΣF = SigmaMigrationFunctor(F, Thing1WithProp{Bool,String}, Thing2WithProp{Bool,String})
+
+YY = ΔF(X)
+XX = ΣF(Y)
+@test YY == Y
+@test incident(XX,false,[:f,:prop]) == incident(XX,"ffee cup",:id)
 # Terminal map
 #-------------
 @present ThSpan(FreeSchema) begin
