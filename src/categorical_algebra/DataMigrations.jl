@@ -319,9 +319,8 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100, return_unit::Bool=false)
   for (k,v) in datatypes(D)  atypes[Symbol(ob_map(i1,k))] = v end
   for (k,v) in datatypes(CD) atypes[Symbol(ob_map(i2,k))] = v end
   col_type = crel_type(presentation(apex(col)); types=atypes, name="Sigma")()
-  for o in ob(S)
+  for o in types(S)
     add_parts!(col_type, Symbol(ob_map(i1,o)), nparts(d,o))
-    #add parts for attrvars?
   end
   for h in arrows(S; just_names=true)
     s,t = add_srctgt(hom_map(i1,h))
