@@ -1009,7 +1009,7 @@ be mutated even when the assignment fails.
 """
 assign_elem!(state::BacktrackingState{<:StructACSet{S}}, depth, c, x, y) where S = 
   _assign_elem!(Val{S}, state, depth,Val{c},x,y)
-assign_elem!(state::BacktrackingState{DynamicACSet}, depth, c, x, y) = 
+assign_elem!(state::BacktrackingState{<:DynamicACSet}, depth, c, x, y) =
   runtime(_assign_elem!,acset_schema(state.dom), state, depth,c,x,y)
 
 
@@ -1062,7 +1062,7 @@ end
 """
 unassign_elem!(state::BacktrackingState{<:StructACSet{S}}, depth, c, x) where S = 
   _unassign_elem!(Val{S}, state, depth,Val{c},x)
-unassign_elem!(state::BacktrackingState{DynamicACSet}, depth, c, x) = 
+unassign_elem!(state::BacktrackingState{<:DynamicACSet}, depth, c, x) =
   runtime(_unassign_elem!,acset_schema(state.dom), state, depth,c,x)
 
 @ct_enable function _unassign_elem!(@ct(S), state::BacktrackingState, depth, @ct(c), x) 
@@ -1214,7 +1214,6 @@ function colimit(::Type{<:Tuple{ACS,TightACSetTransformation}}, diagram) where {
   Xs = cocone_objects(diagram)
   colimit_attrs!(pack_colimit(ACS, S, diagram, Xs, colimits), S, Ts, Xs)
 end
-
 
 function colimit(::Type{<:Tuple{DynamicACSet,TightACSetTransformation}}, diagram) 
   Xs = cocone_objects(diagram)
