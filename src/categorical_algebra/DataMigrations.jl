@@ -306,7 +306,7 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100)
   #ask the collage to represent a transformation that's natural
   #only on the non-attrtype objects of the domain
   obs = map(x->Ob(FreeSchema.Ob,x),S.obs)
-  col, col_pres = collage(functor(M),obs)
+  col, col_pres = collage(functor(M),objects=obs)
   i1,i2 = legs(col)
   # Initialize collage C-Set with data from `d`
   atypes = Dict{Symbol,Type}()
@@ -369,7 +369,7 @@ end
 Split an n-fold composite (n may be 1) 
 Hom or Attr into its left n-1 and rightmost 1 components
 """
-split_r(f) = f isa GATExpr{:compose} ? (compose(f.args[1:end-1]),f.args[end]) : (id(dom(f)),f)
+split_r(f) = head(f) == :compose ? (compose(args(f)[1:end-1]),last(f)) : (id(dom(f)),f)
 
 # Yoneda embedding
 #-----------------
