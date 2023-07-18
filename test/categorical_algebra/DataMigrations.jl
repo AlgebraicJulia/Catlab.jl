@@ -331,13 +331,25 @@ Y = Graph(codom(Yd))
 # Sigma migrations with attributes
 #---------------------------------
 
+# Identity migration on weighted graphs.
+idF = FinFunctor(
+  Dict(VG => VG, EG => EG, :Weight=>:Weight),
+  Dict(srcG => srcG, tgtG => tgtG, :weight=>:weight),
+  SchWeightedGraph, SchWeightedGraph
+)
+Y = @acset WeightedGraph{Symbol} begin
+  V=2; E=2; Weight=1; src=1; tgt=[1,2]; weight=[AttrVar(1), :X]
+end
+ΣF = SigmaMigrationFunctor(idF, WeightedGraph{Symbol}, WeightedGraph{Symbol})
+@test_skip ΣF(Y) == Y
+
+# Less trivial example.
 @present SchTwoThings(FreeSchema) begin
   Th1::Ob
   Th2::Ob
   Property::AttrType
-  #ID is to keep track of combinatorial objects
-  #as their non-meaningful integer IDs may be modified
-  #by the chase.
+  # The ID attribute keeps track of combinatorial objects as their
+  # non-meaningful integer IDs may be modified by the chase.
   ID::AttrType
   f::Hom(Th1,Th2)
   id::Attr(Th1,ID)
@@ -384,21 +396,6 @@ YY = ΔF(X)
 XX = ΣF(Y)
 @test YY == Y
 @test incident(XX,false,[:f,:prop]) == incident(XX,"ffee cup",:id)
-
-# TODO allow homs between attrtypes.
-# This is required if we want to do Σ: C->D where C has attributes
-# The following test would then pass
-idF = FinFunctor(
-  Dict(VG => VG, EG => EG, :Weight=>:Weight),
-  Dict(srcG => srcG, tgtG => tgtG, :weight=>:weight),
-  SchWeightedGraph, SchWeightedGraph
-)
-Y = @acset WeightedGraph{Symbol} begin 
-  V=2; E=2; Weight=1; src=1; tgt=[1,2]; weight=[AttrVar(1), :X] 
-end
-# @test ΣF(Y) == Y
-# However, it currently fails.
-@test_throws MethodError SigmaMigrationFunctor(idF, Graph, Graph)(Y) == Y
 
 # Terminal map
 #-------------
