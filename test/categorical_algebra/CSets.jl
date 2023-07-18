@@ -679,15 +679,20 @@ g1 = @acset WeightedGraph{Bool} begin
 end
 g2 = @acset WeightedGraph{Bool} begin 
   V=3; E=3; src=[1,2,3]; tgt=[2,3,3]; weight=[true,false,false] 
-end 
-(apx1,((L1,R1),)), (apx2,((L2,R2),)) = collect(maximum_common_subobject(g1, g2))
+end
 apex1 = @acset WeightedGraph{Bool} begin
   V=3; E=2; Weight=2; src=[1,2]; tgt=[2,3]; weight=AttrVar.(1:2)
 end
 apex2 = @acset WeightedGraph{Bool} begin 
   V=3; E=2; Weight=2; src=[1,3]; tgt=[2,3]; weight=AttrVar.(1:2)
 end
-@test is_isomorphic(apx1, apex1)
+
+results = collect(maximum_common_subobject(g1, g2))
+@test length(results) == 2
+is_iso1 = map(result -> is_isomorphic(first(result), apex1), results)
+@test sum(is_iso1) == 1
+results = first(is_iso1) ? results : reverse(results)
+(apx1,((L1,R1),)), (apx2,((L2,R2),)) = results
 @test collect(L1[:V]) == [1,2,3]
 @test collect(R1[:V]) == [1,2,3]
 @test L1(apx1) == Subobject(g1, V=[1,2,3], E=[2,3])
