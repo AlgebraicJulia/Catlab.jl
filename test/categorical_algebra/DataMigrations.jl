@@ -326,56 +326,59 @@ Y = ΣF(X)
 @test SigmaMigrationFunctor(idF, Graph, Graph)(Y) == Y
 
 ###Test sigma migrations with attributes
-@present SchAng(FreeSchema) begin
-  C::Ob
-  T::Ob
-  Pickable::AttrType
+@present SchTwoThings(FreeSchema) begin
+  Th1::Ob
+  Th2::Ob
+  Property::AttrType
+  #ID is to keep track of combinatorial objects
+  #as their non-meaningful integer IDs may be modified
+  #by the chase.
   ID::AttrType
-  f::Hom(C,T)
-  id::Attr(C,ID)
+  f::Hom(Th1,Th2)
+  id::Attr(Th1,ID)
 end
-@present SchAng1 <: SchAng begin
-  g::Attr(T,Pickable)
+@present SchThing1WithProp <: SchTwoThings begin
+  prop::Attr(Th1,Property)
 end
-@acset_type Ang1(SchAng1)
-@present SchAng2 <: SchAng begin
-  h::Attr(C,Pickable)
+@acset_type Thing1WithProp(SchThing1WithProp)
+@present SchThing2WithProp <: SchTwoThings begin
+  prop::Attr(Th2,Property)
 end
-@acset_type Ang2(SchAng2)
+@acset_type Thing2WithProp(SchThing2WithProp)
 
-X = @acset Ang1{Bool,String} begin
-  C = 2
-  T = 4
+X = @acset Thing2WithProp{Bool,String} begin
+  Th1 = 2
+  Th2 = 4
   f = [1,3]
-  g = [false,false,true,true]
+  prop = [false,false,true,true]
   id = ["ffee cup","doughnut"]
 end
 
-Y = @acset Ang2{Bool,String} begin
-  C = 2
-  T = 4
+Y = @acset Thing1WithProp{Bool,String} begin
+  Th1 = 2
+  Th2 = 4
   f = [1,3]
-  h = [false,true]
+  prop = [false,true]
   id = ["ffee cup","doughnut"]
 end
-C1,C2 = FinCat(SchAng1),FinCat(SchAng2)
-c,t,pickable,ID = ob_generators(C1)
-f1,id1,g = hom_generators(C1)
-f2,id2,h = hom_generators(C2)
+C1,C2 = FinCat(SchThing1WithProp),FinCat(SchThing2WithProp)
+th1,th2,property,ID = ob_generators(C1)
+f1,id1,prop1 = hom_generators(C1)
+f2,id2,prop2 = hom_generators(C2)
 
 F = FinFunctor(
-  Dict(c => c, t => t, pickable => pickable,ID=>ID),
-  Dict(f2 => f1, h => [f1, g],id1=>id2),
-  SchAng2, SchAng1
+  Dict(th1 => th1, th2 => th2, property => property,ID=>ID),
+  Dict(f1 => f2, prop1 => [f2, prop2],id1=>id2),
+  SchThing1WithProp, SchThing2WithProp
 )
 
-ΔF = DataMigrationFunctor(F, Ang1{Bool,String}, Ang2{Bool,String})
-ΣF = SigmaMigrationFunctor(F, Ang2{Bool,String}, Ang1{Bool,String})
+ΔF = DataMigrationFunctor(F, Thing2WithProp{Bool,String}, Thing1WithProp{Bool,String})
+ΣF = SigmaMigrationFunctor(F, Thing1WithProp{Bool,String}, Thing2WithProp{Bool,String})
 
 YY = ΔF(X)
 XX = ΣF(Y)
 @test YY == Y
-@test incident(XX,false,[:f,:g]) == incident(XX,"ffee cup",:id)
+@test incident(XX,false,[:f,:prop]) == incident(XX,"ffee cup",:id)
 # Terminal map
 #-------------
 @present ThSpan(FreeSchema) begin
