@@ -73,11 +73,7 @@ F = FinFunctor(
 ΔF = DataMigrationFunctor(F, LabeledDDS{Int}, WeightedGraph{Int})
 @test wg == ΔF(ldds)
 
-idF = FinFunctor(
-  Dict(X => X, Label => Label), 
-  Dict(ϕ => ϕ, label => label), 
-  SchLabeledDDS, SchLabeledDDS
-)
+idF = id(FinCat(SchLabeledDDS))
 @test ldds == migrate(LabeledDDS{Int}, ldds, DataMigration(idF))
 
 # Conjunctive migration
@@ -296,12 +292,7 @@ F = FinFunctor(
   Dict(srcB => srcG, tgtB => tgtG),
   SchUndirectedBipartiteGraph, SchGraph
 )
-
-idF = FinFunctor(
-  Dict(VG => VG, EG => EG),
-  Dict(srcG => srcG, tgtG => tgtG),
-  SchGraph, SchGraph
-)
+idF = id(FinCat(SchGraph))
 
 ΣF = SigmaMigrationFunctor(F, UndirectedBipartiteGraph, Graph)
 X = UndirectedBipartiteGraph()
@@ -332,15 +323,11 @@ Y = Graph(codom(Yd))
 #---------------------------------
 
 # Identity migration on weighted graphs.
-idF = FinFunctor(
-  Dict(VG => VG, EG => EG, :Weight=>:Weight),
-  Dict(srcG => srcG, tgtG => tgtG, :weight=>:weight),
-  SchWeightedGraph, SchWeightedGraph
-)
 Y = @acset WeightedGraph{Symbol} begin
   V=2; E=2; Weight=1; src=1; tgt=[1,2]; weight=[AttrVar(1), :X]
 end
-ΣF = SigmaMigrationFunctor(idF, WeightedGraph{Symbol}, WeightedGraph{Symbol})
+ΣF = SigmaMigrationFunctor(id(FinCat(SchWeightedGraph)),
+                           WeightedGraph{Symbol}, WeightedGraph{Symbol})
 @test is_isomorphic(ΣF(Y),Y)
 
 # Less trivial example.
