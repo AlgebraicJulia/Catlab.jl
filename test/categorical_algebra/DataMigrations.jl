@@ -341,7 +341,7 @@ Y = @acset WeightedGraph{Symbol} begin
   V=2; E=2; Weight=1; src=1; tgt=[1,2]; weight=[AttrVar(1), :X]
 end
 ΣF = SigmaMigrationFunctor(idF, WeightedGraph{Symbol}, WeightedGraph{Symbol})
-@test_skip ΣF(Y) == Y
+@test is_isomorphic(ΣF(Y),Y)
 
 # Less trivial example.
 @present SchTwoThings(FreeSchema) begin

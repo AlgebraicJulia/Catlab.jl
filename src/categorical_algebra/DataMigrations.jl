@@ -368,6 +368,7 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100, return_unit::Bool=false)
       res[f1j,nameof(f2)] = oldval
     end
   end
+  res = first(remove_freevars(res))
   return_unit || return res
 
   # Return result as DiagramHom{id}.
@@ -381,7 +382,29 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100, return_unit::Bool=false)
   dcodom = FinDomFunctor(res; eqs=equations(codom(functor(M))))
   DiagramHom{id}(functor(M), diagram_map, ddom, dcodom)
 end
-
+function remove_freevars(X::StructACSet{S}) where S 
+  X = deepcopy(X)
+  d = Dict(map(attrtypes(S)) do at
+    vs = Set{Int}()
+    for f in attrs(S; to=at, just_names=true)
+      for v in filter(x->x isa AttrVar, X[f])
+        push!(vs, v.val)
+      end
+    end
+    # Get new variable IDs 
+    svs = sort(collect(vs))
+    vdict = Dict(v=>k for (k,v) in enumerate(svs))
+    n_v = length(vdict)
+    rem_parts!(X,at, parts(X,at)[n_v+1:end])
+    for f in attrs(S; to=at, just_names=true)
+      for (v,fv) in filter(v_->v_[2] isa AttrVar,collect(enumerate(X[f])))
+        X[v,f] = AttrVar(vdict[fv.val])
+      end
+    end
+    return at => svs
+  end)
+  return X => d
+end 
 """
 Split an n-fold composite (n may be 1) 
 Hom or Attr into its left n-1 and rightmost 1 components
