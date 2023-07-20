@@ -281,6 +281,7 @@ const GlucMigrationFunctor{Dom,Codom} = DataMigrationFunctor{Dom,Codom,<:GlucSch
 
 # Sigma migration
 #################
+
 struct SigmaMigrationFunctor{Dom,Codom,M<:SigmaSchemaMigration} <: AbstractMigrationFunctor{Dom,Codom}
   migration::M
   dom_constructor
@@ -378,8 +379,8 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100, return_unit::Bool=false)
     ff = o ∈ ob(S) ? FinFunction : VarFunction{attrtype_type(D,o)}
     o => ff(m, nparts(rel_res, nameof(ob_map(functor(M)⋅i2,o))))
   end)
-  ddom = FinDomFunctor(d; eqs=equations(dom(functor(M))))
-  dcodom = FinDomFunctor(res; eqs=equations(codom(functor(M))))
+  ddom = FinDomFunctor(d; equations=equations(dom(functor(M))))
+  dcodom = FinDomFunctor(res; equations=equations(codom(functor(M))))
   DiagramHom{id}(functor(M), diagram_map, ddom, dcodom)
 end
 
@@ -387,7 +388,8 @@ end
 Split an n-fold composite (n may be 1) 
 Hom or Attr into its left n-1 and rightmost 1 components
 """
-split_r(f) = head(f) == :compose ? (compose(args(f)[1:end-1]),last(f)) : (id(dom(f)),f)
+split_r(f) = head(f) == :compose ?
+  (compose(args(f)[1:end-1]),last(f)) : (id(dom(f)),f)
 
 # Yoneda embedding
 #-----------------
