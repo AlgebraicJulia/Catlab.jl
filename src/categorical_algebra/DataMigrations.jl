@@ -404,13 +404,19 @@ which works because left Kan extensions take representables to representables
 representables (they can be infinite), this function thus inherits any
 limitations of our implementation of left pushforward data migrations.
 """
-function representable(T, C::Presentation{ThSchema}, ob::Symbol; kw...)
+function representable(T, C::Presentation{ThSchema}, ob::Symbol;
+                       return_unit_id::Bool=false)
   C₀ = Presentation{Symbol}(FreeSchema)
   add_generator!(C₀, C[ob])
   X = AnonACSet(C₀); add_part!(X, ob)
   F = FinFunctor(Dict(ob => ob), Dict(), C₀, C)
   ΣF = SigmaMigrationFunctor(F, X, T)
-  ΣF(X; kw...)
+  if return_unit_id
+    η = ΣF(X; return_unit=true)
+    (ACSet(diagram(codom(η))), only(collect(diagram_map(η)[ob])))
+  else
+    ΣF(X)
+  end
 end
 
 """
@@ -438,16 +444,18 @@ map from B into the A which sends the point of B to f applied to the point of A)
 Returns the classifier as well as a dictionary of subobjects corresponding to 
 the parts of the classifier.
 """
-function subobject_classifier(T::Type, S::Presentation{ThSchema})
-  isempty(generators(S,:AttrType)) || error("Cannot compute Ω for schema with attributes")
-  obs    = nameof.(generators(S,:Ob))
-  reprs  = Dict(o=>representable(T, S, o; return_unit=true) for o in obs)
-  subobs = Dict(o=>subobject_graph(ACSet(codom(reprs[o])))[2] for o in obs)
-  Ω      = T()
-  for o in obs add_parts!(Ω, o, length(subobs[o])) end 
-
+function subobject_classifier(T::Type, S::Presentation{ThSchema}; kw...)
+  isempty(generators(S, :AttrType)) ||
+    error("Cannot compute Ω for schema with attributes")
+  y = yoneda(T, S; kw...)
+  obs = nameof.(generators(S, :Ob))
+  subobs = Dict(ob => subobject_graph(ob_map(y, ob))[2] for ob in obs)
+  Ω = T()
+  for ob in obs
+    add_parts!(Ω, ob, length(subobs[ob]))
+  end
   for (f, a, b) in homs(acset_schema(Ω))
-    BA = yoneda(Schema(S), reprs, f) 
+    BA = hom_map(y, f)
     Ω[f] = map(parts(Ω, a)) do pᵢ
       Aᵢ = hom(subobs[a][pᵢ])
       _, PB = force.(pullback(Aᵢ, BA))
@@ -471,15 +479,17 @@ Given a map f: a->b, we compute that f(Aᵢ) = Bⱼ by constructing the followin
 
 where f* is given by `yoneda`.
 """
-function internal_hom(G::T, F::T, S::Presentation{ThSchema}) where T<:ACSet
-  obs    = nameof.(generators(S,:Ob))
-  reprs  = Dict(o=>representable(T, S,o; return_unit=true) for o in obs)
-  prods  = Dict(o=>product(ACSet(codom(reprs[o])),G) for o in obs)
-  maps   = Dict(o=>homomorphisms(apex(prods[o]),F) for o in obs)
-  Fᴳ     = T()
-  for o in obs add_parts!(Fᴳ, o, length(maps[o])) end 
+function internal_hom(G::T, F::T, S::Presentation{ThSchema}; kw...) where T<:ACSet
+  y = yoneda(T, S; kw...)
+  obs = nameof.(generators(S, :Ob))
+  prods = Dict(ob => product(ob_map(y, ob),G) for ob in obs)
+  maps = Dict(ob => homomorphisms(apex(prods[ob]),F) for ob in obs)
+  Fᴳ = T()
+  for ob in obs
+    add_parts!(Fᴳ, ob, length(maps[ob]))
+  end
   for (f, a, b) in homs(acset_schema(G))
-    BA = yoneda(Schema(S), reprs, f) 
+    BA = hom_map(y, f)
     π₁, π₂ = prods[b]
     Fᴳ[f] = map(parts(Fᴳ, a)) do pᵢ
       composite = force(universal(prods[a], Span(π₁⋅BA, π₂)) ⋅ maps[a][pᵢ])
@@ -489,53 +499,41 @@ function internal_hom(G::T, F::T, S::Presentation{ThSchema}) where T<:ACSet
   return Fᴳ, homs
 end
 
-""" Action of the Yoneda embedding on morphisms
-
-Any hom f: A->B induces a map from the representable of B to the repr of A
-Arguments:
-  S     - a schema
-  reprs - a dictionary from objects in the schema to the result of `representable`
-  f     - name of a hom in S
-"""
-function yoneda(S, reprs, f::Symbol)
-  a, b = dom(S,f), codom(S,f)
-  (A, A′), (B, B′) = map([a,b]) do x # reprs + distinguished points
-    d = reprs[x]
-    (_, α), = collect(components(diagram_map(d)))
-    ACSet(diagram(codom(d))), only(collect(α))
-  end
-  return only(homomorphisms(B,A; initial=Dict([b=>Dict([B′=>A[A′,f]])])))
-end
-
-""" Yoneda embedding of category C in category of C-sets.
+""" Compute the Yoneda embedding of a category C in the category of C-sets.
 
 Because Catlab privileges copresheaves (C-sets) over presheaves, this is the
-*contravariant* Yoneda embedding, i.e., the embedding C^op → C-Set.
+*contravariant* Yoneda embedding, i.e., the embedding functor C^op → C-Set.
 
-If representables have already been computed (which can be expensive) they can
-be provided via the `cache` keyword argument.
-
-Input `cons` is a constructor for the ACSet
+The first argument `cons` is a constructor for the ACSet, such as a struct acset
+type. If representables have already been computed (which can be expensive),
+they can be supplied via the `cache` keyword argument.
 
 Returns a `FinDomFunctor` with domain `op(C)`.
 """
-function yoneda(cons, C::Presentation{ThSchema}; cache=nothing)
-  cache = isnothing(cache) ? Dict() : cache
-  y_ob = Dict(map(nameof.(generators(C, :Ob))) do c 
-    @debug "Computing representable $c"
-    c => haskey(cache, c) ? cache[c] : representable(cons, C, c)
-  end)
-  y_ob = merge(y_ob, Dict(map(nameof.(generators(C,:AttrType))) do c 
+function yoneda(cons, C::Presentation{ThSchema};
+                cache::AbstractDict=Dict{Symbol,Any}())
+  # Compute any representables that have not already been computed.
+  for c in nameof.(generators(C, :Ob))
+    haskey(cache, c) && continue
+    cache[c] = representable(cons, C, c, return_unit_id=true)
+  end
+  for c in nameof.(generators(C, :AttrType))
+    haskey(cache, c) && continue
     rep = cons()
-    add_part!(rep, c)
-    c => rep
-  end))
+    cache[c] = (rep, add_part!(rep, c))
+  end
+
+  # Object map of Yoneda embedding.
+  y_ob = Dict(c => yc for (c, (yc, _)) in pairs(cache))
+
+  # Morphism map of Yoneda embedding.
   y_hom = Dict(Iterators.map(generators(C, :Hom) ∪ generators(C, :Attr)) do f
-    c, d = nameof.([dom(f), codom(f)])
-    yc, yd = y_ob[c], y_ob[d]
-    initial = Dict(d => Dict(1 => yc[1,f]))
+    c, d = nameof(dom(f)), nameof(codom(f))
+    (yc, rootc), (yd, rootd) = cache[c], cache[d]
+    initial = Dict(d => Dict(rootd => yc[rootc,f]))
     f => homomorphism(yd, yc, initial=initial) # Unique homomorphism.
   end)
+
   FinDomFunctor(y_ob, y_hom, op(FinCat(C)))
 end
 yoneda(::Type{T}; kw...) where T <: StructACSet = yoneda(T, Presentation(T); kw...)
