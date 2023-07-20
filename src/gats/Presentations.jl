@@ -10,7 +10,7 @@ in applications like knowledge representation.
 module Presentations
 export @present, Presentation, generator, generators, generator_index,
   has_generator, equations, add_generator!, add_generators!, add_definition!,
-  add_equation!
+  add_equation!, add_equations!
 
 using Base.Meta: ParseError
 using MLStyle: @match
@@ -104,9 +104,12 @@ equations(pres::Presentation) = pres.equations
 
 """ Add an equation between terms to a presentation.
 """
-function add_equation!(pres::Presentation, lhs::GATExpr, rhs::GATExpr)
+add_equation!(pres::Presentation, lhs::GATExpr, rhs::GATExpr) =
   push!(pres.equations, lhs => rhs)
-end
+
+""" Add sequence of equations to a presentation.
+"""
+add_equations!(pres::Presentation, eqs) = append!(pres.equations, eqs)
 
 """ Add a generator defined by an equation.
 """

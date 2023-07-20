@@ -36,6 +36,8 @@ using ..FinSets: VarFunction, LooseVarFunction, IdentityFunction, VarSet
 import ..Limits: limit, colimit, universal
 import ..Subobjects: Subobject, implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..Sets: SetOb, SetFunction, TypeSet
+using ..Sets
+using ..Diagrams: Diagram, diagram
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate, 
                   is_monic, is_epic, preimage
 import ..FinCats: FinDomFunctor, components, is_natural
@@ -197,14 +199,26 @@ const ACSetDomCat = FinCats.FinCatPresentation{
             TypeCat{Union{FinSet,VarSet},
                     Union{VarFunction,FinDomFunction{Int}}}}
   acset::ACS
+  # FIXME: The equations should not be here. They should be in the acset, which
+  # is not yet supported for struct acsets.
+  equations::Vector{Pair}
 end
-FinDomFunctor(X::ACSet) = ACSetFunctor(X)
+FinDomFunctor(X::ACSet; equations=Pair[]) = ACSetFunctor(X, equations)
+ACSet(X::ACSetFunctor) = X.acset
 
 hasvar(X::ACSet) = any(o->nparts(X,o) > 0, attrtypes(acset_schema(X)))
 hasvar(X::ACSetFunctor) = hasvar(X.acset)
 
-dom(F::ACSetFunctor) = FinCat(Presentation(F.acset))
-codom(F::ACSetFunctor) = hasvar(F) ? TypeCat{VarSet,VarFunction}() : TypeCat{SetOb,FinDomFunction{Int}}()
+function dom(F::ACSetFunctor)
+  pres = Presentation(F.acset)
+  add_equations!(pres, F.equations)
+  FinCat(pres)
+end
+
+function codom(F::ACSetFunctor)
+  hasvar(F) ? TypeCat{VarSet,VarFunction}() :
+    TypeCat{SetOb,FinDomFunction{Int}}()
+end
 
 Categories.do_ob_map(F::ACSetFunctor, x) = 
   (hasvar(F) ? VarSet : SetOb)(F.acset, functor_key(x))
@@ -215,7 +229,7 @@ functor_key(x) = x
 functor_key(expr::GATExpr{:generator}) = first(expr)
 
 # Set-valued FinDomFunctors as ACSets.
-
+(T::Type{ACS})(F::Diagram) where ACS <: ACSet = F |> diagram |> T
 function (::Type{ACS})(F::FinDomFunctor) where ACS <: ACSet
   X = if ACS isa UnionAll
     pres = presentation(dom(F))
@@ -1685,6 +1699,16 @@ function Base.push!(S::SubobjectIteratorState,h::ACSetTransformation)
   push!(S.seen, h); push!(S.to_recurse, h); push!(S.to_yield, h)
 end
 
+"""This would be much more efficient with canonical isomorph"""
+function is_seen(S::SubobjectIteratorState, f::ACSetTransformation)
+  for h in S.seen 
+    if any(σ -> force(σ⋅h) == force(f), isomorphisms(dom(f),dom(h)))
+      return true 
+    end
+  end
+  return false
+end
+
 """
 We recurse only if there is nothing to yield or we have something to recurse on 
 that is bigger than the biggest thing in our to-yield set.
@@ -1716,7 +1740,7 @@ function Base.iterate(Sub::SubobjectIterator, state=SubobjectIteratorState())
       rem = copy(dX)
       comps = delete_subobj!(rem, Dict([o => [p]]))
       h = ACSetTransformation(rem, dX; comps...) ⋅ X
-      if h ∉ state.seen
+      if !is_seen(state, h)
         push!(state, h)
       end
     end

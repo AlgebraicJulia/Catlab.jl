@@ -73,11 +73,7 @@ F = FinFunctor(
 ΔF = DataMigrationFunctor(F, LabeledDDS{Int}, WeightedGraph{Int})
 @test wg == ΔF(ldds)
 
-idF = FinFunctor(
-  Dict(X => X, Label => Label), 
-  Dict(ϕ => ϕ, label => label), 
-  SchLabeledDDS, SchLabeledDDS
-)
+idF = id(FinCat(SchLabeledDDS))
 @test ldds == migrate(LabeledDDS{Int}, ldds, DataMigration(idF))
 
 # Conjunctive migration
@@ -296,12 +292,7 @@ F = FinFunctor(
   Dict(srcB => srcG, tgtB => tgtG),
   SchUndirectedBipartiteGraph, SchGraph
 )
-
-idF = FinFunctor(
-  Dict(VG => VG, EG => EG),
-  Dict(srcG => srcG, tgtG => tgtG),
-  SchGraph, SchGraph
-)
+idF = id(FinCat(SchGraph))
 
 ΣF = SigmaMigrationFunctor(F, UndirectedBipartiteGraph, Graph)
 X = UndirectedBipartiteGraph()
@@ -318,21 +309,34 @@ X = @acset UndirectedBipartiteGraph begin
   tgt = [1,1,2,3]
 end
 
-Y = ΣF(X)
+Yd = ΣF(X; return_unit=true)
+Y = Graph(codom(Yd))
+α = diagram_map(Yd)
 @test nparts(Y, :V) == 7
 @test nparts(Y, :E) == 4
 @test length(Y[:src] ∩ Y[:tgt]) == 0
+@test isempty(collect(α[:V₁]) ∩ collect(α[:V₂]))
 
 @test SigmaMigrationFunctor(idF, Graph, Graph)(Y) == Y
 
-###Test sigma migrations with attributes
+# Sigma migrations with attributes
+#---------------------------------
+
+# Identity migration on weighted graphs.
+Y = @acset WeightedGraph{Symbol} begin
+  V=2; E=2; Weight=1; src=1; tgt=[1,2]; weight=[AttrVar(1), :X]
+end
+ΣF = SigmaMigrationFunctor(id(FinCat(SchWeightedGraph)),
+                           WeightedGraph{Symbol}, WeightedGraph{Symbol})
+@test is_isomorphic(ΣF(Y),Y)
+
+# Less trivial example.
 @present SchTwoThings(FreeSchema) begin
   Th1::Ob
   Th2::Ob
   Property::AttrType
-  #ID is to keep track of combinatorial objects
-  #as their non-meaningful integer IDs may be modified
-  #by the chase.
+  # The ID attribute keeps track of combinatorial objects as their
+  # non-meaningful integer IDs may be modified by the chase.
   ID::AttrType
   f::Hom(Th1,Th2)
   id::Attr(Th1,ID)
@@ -379,6 +383,7 @@ YY = ΔF(X)
 XX = ΣF(Y)
 @test YY == Y
 @test incident(XX,false,[:f,:prop]) == incident(XX,"ffee cup",:id)
+
 # Terminal map
 #-------------
 @present ThSpan(FreeSchema) begin
@@ -412,21 +417,23 @@ bang = FinFunctor(
 )
 
 Σbang = SigmaMigrationFunctor(bang, Span, Initial)
-Y = Σbang(X)
-
+Yd = Σbang(X; return_unit=true)
+α = diagram_map(Yd)
+@test length(unique([α[:A](1:2)...,α[:L1](1),α[:L2](1:2)...])) == 1
+Y = Initial(codom(Yd))
 @test nparts(Y, :I) == 4
 
 # Map from terminal C 
 #--------------------
 
-vertex = FinFunctor(Dict(I => VG), Dict(), ThInitial, SchGraph)
-edge = FinFunctor(Dict(I => EG), Dict(), ThInitial, SchGraph)
+V = FinFunctor(Dict(I => VG), Dict(), ThInitial, SchGraph)
+E = FinFunctor(Dict(I => EG), Dict(), ThInitial, SchGraph)
 
-Z = SigmaMigrationFunctor(vertex, Initial, Graph)(Y)
+Z = SigmaMigrationFunctor(V, Initial, Graph)(Y)
 @test nparts(Z, :V) == 4
 @test nparts(Z, :E) == 0
 
-Z = SigmaMigrationFunctor(edge, Initial, Graph)(Y)
+Z = SigmaMigrationFunctor(E, Initial, Graph)(Y)
 expected = foldl(⊕,fill(path_graph(Graph,2), 4))  
 @test is_isomorphic(Z,expected)
 
@@ -442,7 +449,7 @@ G = path_graph(Graph,3)
 expected = @acset ReflexiveGraph  begin 
   V=3; E=5; refl=1:3; src=[1,2,3,1,2]; tgt=[1,2,3,2,3] 
 end 
-@test is_isomorphic(Σ(G),expected)
+@test is_isomorphic(Σ(G), expected)
 
 # Sigma with attributes 
 #----------------------
@@ -464,7 +471,7 @@ expected = @acset WG{Float64} begin
 end
 
 @test is_isomorphic(Σ(G), expected)
-
+ 
 # Yoneda embedding
 #-----------------
 
@@ -476,7 +483,8 @@ yV, yE = Graph(1), @acset(Graph, begin V=2;E=1;src=2;tgt=1 end)
 y_Graph = yoneda(Graph)
 @test ob_map(y_Graph, :V) == yV
 @test is_isomorphic(ob_map(y_Graph, :E), yE)
-@test Set(hom_map.(Ref(y_Graph), [:src,:tgt])) == Set(homomorphisms(yV, representable(Graph, :E)))
+@test Set(hom_map.(Ref(y_Graph), [:src,:tgt])) == Set(
+  homomorphisms(yV, representable(Graph, :E)))
 
 F = @migration SchGraph begin
   X => E
@@ -507,13 +515,14 @@ i, o = hom_map(G, :i), hom_map(G, :o)
 @test isempty(outneighbors(X, only(collect(o[:V]))))
 
 # Yoneda embedding for weights graphs (has attributes).
-yV, yE = WeightedGraph{Float64}(1), @acset(WeightedGraph{Float64}, begin 
+WGF = WeightedGraph{Float64}
+yV, yE = WGF(1), @acset(WGF, begin 
   V=2;E=1;Weight=1;src=2;tgt=1; weight=[AttrVar(1)]
 end)
-@test representable(WeightedGraph{Float64}, SchWeightedGraph, :V) == yV
-@test is_isomorphic(representable(WeightedGraph{Float64}, SchWeightedGraph, :E), yE)
+@test representable(WGF, SchWeightedGraph, :V) == yV
+@test is_isomorphic(representable(WGF, SchWeightedGraph, :E), yE)
 
-yWG = yoneda(WeightedGraph{Float64})
+yWG = yoneda(WGF)
 
 F = @migration SchWeightedGraph begin
   X => E
@@ -545,4 +554,43 @@ expected = @acset WeightedGraph{Float64} begin
 end
 @test is_isomorphic(ob_map(colimit_representables(d, yWG), :I), expected)
 
+
+# Subobject classifier
+######################
+# Graph and ReflGraph have 'same' subobject classifier
+ΩG,_ = subobject_classifier(Graph, SchGraph)
+ΩrG,_ = subobject_classifier(ReflexiveGraph, SchReflexiveGraph)
+F = FinFunctor(Dict(:V=>:V, :E=>:E), Dict(:src=>:src, :tgt=>:tgt), 
+               SchGraph, SchReflexiveGraph)
+ΔF = DataMigrationFunctor(F, ReflexiveGraph, Graph)
+@test is_isomorphic(ΩG, ΔF(ΩrG))
+
+# Searching for maps into the subobject classifier is much faster than 
+# enumerating them via `subobject_graph`
+G = (star_graph(Graph, 2)⊗path_graph(Graph, 3))
+@test length(homomorphisms(G, ΩG)) == length(subobject_graph(G)[2])
+
+@present SchDDS42(FreeSchema) begin
+  X::Ob
+  Φ::Hom(X,X)
+  Φ⋅Φ⋅Φ⋅Φ == Φ⋅Φ
 end
+@acset_type DDS42(SchDDS42, index=[:Φ])
+ΩDDs, _ = subobject_classifier(DDS42, SchDDS42)
+@test is_isomorphic(ΩDDs, @acset DDS42 begin X=4; Φ=[1,3,4,4] end)
+
+# Internal Hom
+##############
+G = ReflexiveGraph(2)
+F = path_graph(ReflexiveGraph, 2)
+Fᴳ,_ = internal_hom(G,F, SchReflexiveGraph)
+Z = apex(terminal(ReflexiveGraph)) ⊕ path_graph(ReflexiveGraph, 3)
+@test length(homomorphisms(Z, Fᴳ)) == length(homomorphisms(Z ⊗ G, F)) # 64
+
+G = @acset DDS42 begin X=3; Φ=[2,3,3] end
+F = @acset DDS42 begin X=4; Φ=[2,2,4,4] end
+Fᴳ,_ = internal_hom(G,F, SchDDS42)
+Z = @acset DDS42 begin X=5; Φ=[2,3,4,3,4] end
+@test length(homomorphisms(Z, Fᴳ)) == length(homomorphisms(Z ⊗ G, F)) # 1024
+
+end # module

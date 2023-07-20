@@ -9,8 +9,7 @@ presentation_theory(::Presentation{Theory}) where Theory = Theory
 ##############
 
 A, B, C = Ob(FreeCategory, :A, :B, :C)
-f = Hom(:f, A, B)
-g = Hom(:g, B, C)
+f, g, h = Hom(:f, A, B), Hom(:g, B, C), Hom(:h, A, C)
 
 # Generators
 pres = Presentation(FreeCategory)
@@ -34,6 +33,15 @@ add_generators!(pres, (f,g))
 @test generators(pres, :Hom) == [f, g]
 @test generators(pres, FreeCategory.Ob) == [A, B]
 @test generators(pres, FreeCategory.Hom) == [f, g]
+
+# Equations
+add_equation!(pres, compose(f,g), h)
+@test length(equations(pres)) == 1
+
+f′, g′ = Hom(:f′, A, B), Hom(:g′, B, C)
+add_generators!(pres, [f′, g′])
+add_equations!(pres, [f => f′, g => g′])
+@test length(equations(pres)) == 3
 
 # Presentation macro
 ####################

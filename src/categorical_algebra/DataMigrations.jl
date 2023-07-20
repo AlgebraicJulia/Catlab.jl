@@ -1,13 +1,15 @@
 """ Functorial data migration for attributed C-sets.
 """
 module DataMigrations
-export DataMigration, SigmaMigration, DeltaMigration, SigmaMigrationFunctor, 
-  DeltaMigrationFunctor, DataMigrationFunctor, functor, migrate, migrate!,  representable, yoneda, colimit_representables
+export DataMigration, SigmaMigration, DeltaMigration, migrate, migrate!,
+  representable, yoneda, colimit_representables, subobject_classifier, 
+  internal_hom, SigmaMigrationFunctor, DeltaMigrationFunctor, 
+  DataMigrationFunctor, functor
 
 using ACSets
 using ACSets.DenseACSets: constructor, datatypes
 using ...GATs
-using ...Theories: ob, hom, dom, codom, attr, AttrTypeExpr
+using ...Theories: ob, hom, dom, codom, attr, AttrTypeExpr, ⋅
 using ..Categories, ..FinCats, ..Limits, ..Diagrams, ..FinSets, ..CSets
 using ...Graphs, ..FreeDiagrams
 import ..Categories: ob_map, hom_map
@@ -279,6 +281,7 @@ const GlucMigrationFunctor{Dom,Codom} = DataMigrationFunctor{Dom,Codom,<:GlucSch
 
 # Sigma migration
 #################
+
 struct SigmaMigrationFunctor{Dom,Codom,M<:SigmaSchemaMigration} <: AbstractMigrationFunctor{Dom,Codom}
   migration::M
   dom_constructor
@@ -292,14 +295,18 @@ functor(F::SigmaMigrationFunctor) = functor(migration(F))
 SigmaMigrationFunctor(f,::Type{T},c::ACSet) where T<:StructACSet = SigmaMigrationFunctor(f,T(),constructor(c))
 SigmaMigrationFunctor(f,d::ACSet,::Type{T}) where T<:StructACSet = SigmaMigrationFunctor(f,d,T())
 SigmaMigrationFunctor(f,d::Type{T′},::Type{T}) where {T<:StructACSet, T′<:StructACSet} = SigmaMigrationFunctor(f,d,T())
+
 """
 Create a C-Set for the collage of the functor. Initialize data in the domain 
 portion of the collage, then run the chase.
+
+When `return_unit` is true, returns the diagram morphism given by the unit of
+the adjunction between Σ and Δ migration functors.
 """
 #This should be deprecated in terms of a new migrate function if anybody works on sigma migrations sometime.
 #Also, we probably don't want to construct the collage every time we migrate using M, at least it should
 #be possible to cache.
-function (M::SigmaMigrationFunctor)(d::ACSet; n=100)
+function (M::SigmaMigrationFunctor)(d::ACSet; n=100, return_unit::Bool=false)
   D,CD = M.dom_constructor(), M.codom_constructor()
   F = functor(M)
   S = acset_schema(d)
@@ -313,9 +320,8 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100)
   for (k,v) in datatypes(D)  atypes[Symbol(ob_map(i1,k))] = v end
   for (k,v) in datatypes(CD) atypes[Symbol(ob_map(i2,k))] = v end
   col_type = crel_type(presentation(apex(col)); types=atypes, name="Sigma")()
-  for o in ob(S)
+  for o in types(S)
     add_parts!(col_type, Symbol(ob_map(i1,o)), nparts(d,o))
-    #add parts for attrvars?
   end
   for h in arrows(S; just_names=true)
     s,t = add_srctgt(hom_map(i1,h))
@@ -340,7 +346,7 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100)
       res[domval,h] = codomval
     end
   end
-  #Go back and make sure attributes that ought to have 
+  #Go back and make sure attributes that ought to have
   #specific values because of d do have those values.
   for (k,kdom,kcod) in attrs(S)
     f = hom_map(F,k)
@@ -363,13 +369,27 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100)
       res[f1j,nameof(f2)] = oldval
     end
   end
-  return res
-end 
+  rem_free_vars!(res)
+  return_unit || return res
+
+  # Return result as DiagramHom{id}.
+  diagram_map = Dict(map(types(S)) do o
+    s, t= add_srctgt("α_$o")
+    m = last.(sort(collect(zip([rel_res[x] for x in [s,t]]...))))
+    ff = o ∈ ob(S) ? FinFunction : VarFunction{attrtype_type(D,o)}
+    o => ff(m, nparts(rel_res, nameof(ob_map(functor(M)⋅i2,o))))
+  end)
+  ddom = FinDomFunctor(d; equations=equations(dom(functor(M))))
+  dcodom = FinDomFunctor(res; equations=equations(codom(functor(M))))
+  DiagramHom{id}(functor(M), diagram_map, ddom, dcodom)
+end
+
 """
 Split an n-fold composite (n may be 1) 
 Hom or Attr into its left n-1 and rightmost 1 components
 """
-split_r(f) = head(f) == :compose ? (compose(args(f)[1:end-1]),last(f)) : (id(dom(f)),f)
+split_r(f) = head(f) == :compose ?
+  (compose(args(f)[1:end-1]),last(f)) : (id(dom(f)),f)
 
 # Yoneda embedding
 #-----------------
@@ -386,13 +406,19 @@ which works because left Kan extensions take representables to representables
 representables (they can be infinite), this function thus inherits any
 limitations of our implementation of left pushforward data migrations.
 """
-function representable(T, C::Presentation{ThSchema}, ob::Symbol)
+function representable(T, C::Presentation{ThSchema}, ob::Symbol;
+                       return_unit_id::Bool=false)
   C₀ = Presentation{Symbol}(FreeSchema)
   add_generator!(C₀, C[ob])
   X = AnonACSet(C₀); add_part!(X, ob)
   F = FinFunctor(Dict(ob => ob), Dict(), C₀, C)
   ΣF = SigmaMigrationFunctor(F, X, T)
-  return ΣF(X)
+  if return_unit_id
+    η = ΣF(X; return_unit=true)
+    (ACSet(diagram(codom(η))), only(collect(diagram_map(η)[ob])))
+  else
+    ΣF(X)
+  end
 end
 
 """
@@ -400,38 +426,116 @@ ACSet types do not store info about equations, so this info is lost when we try
 to recover the presentation from the datatype. Thus, this method for 
 `representable` should only be used for free schemas
 """ 
-representable(::Type{T}, ob::Symbol) where T <: StructACSet =
-  representable(T, Presentation(T), ob)
+representable(::Type{T}, ob::Symbol; kw...) where T <: StructACSet =
+  representable(T, Presentation(T), ob; kw...)
 
-""" Yoneda embedding of category C in category of C-sets.
+
+"""
+The subobject classifier Ω in a presheaf topos is the presheaf that sends each 
+object A to the set of sieves on it (equivalently, the set of subobjects of the 
+representable presheaf for A). Counting subobjects gives us the *number* of A 
+parts; the hom data for f:A->B for subobject Aᵢ is determined via:
+
+Aᵢ ↪ A 
+↑    ↑ f*  
+PB⌝↪ B          (PB picks out a subobject of B, up to isomorphism.)
+
+(where A and B are the representables for objects A and B and f* is the unique 
+map from B into the A which sends the point of B to f applied to the point of A)
+
+Returns the classifier as well as a dictionary of subobjects corresponding to 
+the parts of the classifier.
+"""
+function subobject_classifier(T::Type, S::Presentation{ThSchema}; kw...)
+  isempty(generators(S, :AttrType)) ||
+    error("Cannot compute Ω for schema with attributes")
+  y = yoneda(T, S; kw...)
+  obs = nameof.(generators(S, :Ob))
+  subobs = Dict(ob => subobject_graph(ob_map(y, ob))[2] for ob in obs)
+  Ω = T()
+  for ob in obs
+    add_parts!(Ω, ob, length(subobs[ob]))
+  end
+  for (f, a, b) in homs(acset_schema(Ω))
+    BA = hom_map(y, f)
+    Ω[f] = map(parts(Ω, a)) do pᵢ
+      Aᵢ = hom(subobs[a][pᵢ])
+      _, PB = force.(pullback(Aᵢ, BA))
+      return only(filter(parts(Ω, b)) do pⱼ
+        Bⱼ = hom(subobs[b][pⱼ])
+        any(σ ->  force(σ ⋅ Bⱼ) == PB, isomorphisms(dom(PB),dom(Bⱼ)))
+      end)
+    end
+  end
+  return Ω, subobs
+end
+
+"""
+Objects: Fᴳ(c) = C-Set(C × G, F)    where C is the representable c
+
+Given a map f: a->b, we compute that f(Aᵢ) = Bⱼ by constructing the following:
+          Aᵢ
+    A × G → F
+  f*↑ ↑ ↑ ↗ Bⱼ       find the hom Bⱼ that makes this commute
+    B × G 
+
+where f* is given by `yoneda`.
+"""
+function internal_hom(G::T, F::T, S::Presentation{ThSchema}; kw...) where T<:ACSet
+  y = yoneda(T, S; kw...)
+  obs = nameof.(generators(S, :Ob))
+  prods = Dict(ob => product(ob_map(y, ob),G) for ob in obs)
+  maps = Dict(ob => homomorphisms(apex(prods[ob]),F) for ob in obs)
+  Fᴳ = T()
+  for ob in obs
+    add_parts!(Fᴳ, ob, length(maps[ob]))
+  end
+  for (f, a, b) in homs(acset_schema(G))
+    BA = hom_map(y, f)
+    π₁, π₂ = prods[b]
+    Fᴳ[f] = map(parts(Fᴳ, a)) do pᵢ
+      composite = force(universal(prods[a], Span(π₁⋅BA, π₂)) ⋅ maps[a][pᵢ])
+      findfirst(==(composite), maps[b])
+    end
+  end
+  return Fᴳ, homs
+end
+
+""" Compute the Yoneda embedding of a category C in the category of C-sets.
 
 Because Catlab privileges copresheaves (C-sets) over presheaves, this is the
-*contravariant* Yoneda embedding, i.e., the embedding C^op → C-Set.
+*contravariant* Yoneda embedding, i.e., the embedding functor C^op → C-Set.
 
-If representables have already been computed (which can be expensive) they can
-be provided via the `cache` keyword argument.
-
-Input `cons` is a constructor for the ACSet
+The first argument `cons` is a constructor for the ACSet, such as a struct acset
+type. If representables have already been computed (which can be expensive),
+they can be supplied via the `cache` keyword argument.
 
 Returns a `FinDomFunctor` with domain `op(C)`.
 """
-function yoneda(cons, C::Presentation{ThSchema}; cache=nothing)
-  cache = isnothing(cache) ? Dict() : cache
-  y_ob = Dict(map(nameof.(generators(C, :Ob))) do c 
-    @debug "Computing representable $c"
-    c => haskey(cache, c) ? cache[c] : representable(cons, C, c)
-  end)
-  y_ob = merge(y_ob, Dict(map(nameof.(generators(C,:AttrType))) do c 
+function yoneda(cons, C::Presentation{ThSchema};
+                cache::AbstractDict=Dict{Symbol,Any}())
+  # Compute any representables that have not already been computed.
+  for c in nameof.(generators(C, :Ob))
+    haskey(cache, c) && continue
+    cache[c] = representable(cons, C, c, return_unit_id=true)
+  end
+  for c in nameof.(generators(C, :AttrType))
+    haskey(cache, c) && continue
     rep = cons()
-    add_part!(rep, c)
-    c => rep
-  end))
+    cache[c] = (rep, add_part!(rep, c))
+  end
+
+  # Object map of Yoneda embedding.
+  y_ob = Dict(c => yc for (c, (yc, _)) in pairs(cache))
+
+  # Morphism map of Yoneda embedding.
   y_hom = Dict(Iterators.map(generators(C, :Hom) ∪ generators(C, :Attr)) do f
-    c, d = nameof.([dom(f), codom(f)])
-    yc, yd = y_ob[c], y_ob[d]
-    initial = Dict(d => Dict(1 => yc[1,f]))
+    c, d = nameof(dom(f)), nameof(codom(f))
+    (yc, rootc), (yd, rootd) = cache[c], cache[d]
+    initial = Dict(d => Dict(rootd => yc[rootc,f]))
     f => homomorphism(yd, yc, initial=initial) # Unique homomorphism.
   end)
+
   FinDomFunctor(y_ob, y_hom, op(FinCat(C)))
 end
 yoneda(::Type{T}; kw...) where T <: StructACSet = yoneda(T, Presentation(T); kw...)
