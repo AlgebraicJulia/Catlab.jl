@@ -151,7 +151,7 @@ function migrate(X::FinDomFunctor,M::DeltaSchemaMigration)
   params = M.params
   funcs = make_map(hom_generators(tgt_schema)) do f
     Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)
-    if Ff isa FreeSchema.Attr{:nothing} 
+    if Ff isa GATExpr{:z} #this is ugly but mo fincatgraphs mo problems
       domain = obs[c]
       codomain = obs[d]
       FinDomFunction(params[f](homfuns...),domain,codomain)

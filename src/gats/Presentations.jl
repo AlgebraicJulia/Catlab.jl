@@ -10,14 +10,14 @@ in applications like knowledge representation.
 module Presentations
 export @present, Presentation, generator, generators, generator_index,
   has_generator, equations, add_generator!, add_generators!, add_definition!,
-  add_equation!, add_equations!
+  add_equation!, add_equations!, change_theory
 
 using Base.Meta: ParseError
 using MLStyle: @match
 
 using ..MetaUtils, ..SyntaxSystems
 import ..TheoriesInstances as GAT
-import ..SyntaxSystems: parse_json_sexpr, to_json_sexpr
+import ..SyntaxSystems: parse_json_sexpr, to_json_sexpr, generator_switch_syntax
 
 # Data types
 ############
@@ -43,7 +43,14 @@ function Base.:(==)(pres1::Presentation, pres2::Presentation)
   pres1.syntax == pres2.syntax && pres1.generators == pres2.generators &&
     pres1.equations == pres2.equations
 end
-
+"""
+Move a presentation from theory S to a theory T that knows all the names in T.
+"""
+function change_theory(::Type{T},syntax::Module,pres::Presentation{S,Name}) where {S,T,Name}
+  gens = map(pres.generators) do xs map(xs) do x generator_switch_syntax(syntax,x) end end
+  #TODO test on equations
+  Presentation{T,Name}(syntax,gens,pres.generator_name_index,pres.equations)
+end
 function Base.copy(pres::Presentation{T,Name}) where {T,Name}
   Presentation{T,Name}(pres.syntax, map(copy, pres.generators),
                        copy(pres.generator_name_index), copy(pres.equations))

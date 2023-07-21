@@ -25,7 +25,7 @@ using DataStructures: IntDisjointSets, in_same_set, num_groups
 using ACSets
 using ...GATs
 import ...GATs: equations
-using ...Theories: ThCategory, ThSchema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr, FreeSchema
+using ...Theories: ThCategory, ThSchema, ThPtCategory, ThPtSchema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr, FreeSchema, FreePtCategory, ZeroHom, ZeroHomExpr, Z,z, ZeroAttr, ZeroAttrExpr, ZAtt
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ...Graphs
 import ...Graphs: edges, src, tgt, enumerate_paths
@@ -301,22 +301,37 @@ end
 function FinCatPresentation(pres::Presentation{ThSchema})
   S = pres.syntax
   Ob = Union{S.Ob, S.AttrType}
+  #AttrTypes can be homs because...Something about their identity morphisms?
   Hom = Union{S.Hom, S.Attr, S.AttrType}
   FinCatPresentation{ThSchema,Ob,Hom}(pres)
+end
+#TBD whether this guy should get explicit generators for the 
+#zero object and homs. These are legitimate generators when seen qua
+#category but not qua pointed category...
+function FinCatPresentation(pres::Presentation{ThPtCategory})
+  S = pres.syntax
+  Ob = S.Ob
+  Hom = Union{S.Hom,S.ZeroHom}
+  FinCatPresentation{ThPtCategory,Ob,Hom}(pres)
+end
+function FinCatPresentation(pres::Presentation{ThPtSchema})
+  S = pres.syntax
+  Ob = Union{S.Ob, S.AttrType}
+  Hom = Union{S.Hom, S.Attr, S.AttrType,S.ZeroHom,S.ZeroAttr}
+  FinCatPresentation{ThPtSchema,Ob,Hom}(pres)
 end
 
 presentation(C::FinCatPresentation) = C.presentation
 
 ob_generators(C::FinCatPresentation) = generators(presentation(C), :Ob)
-ob_generators(C::FinCatPresentation{ThSchema}) = let P = presentation(C)
+ob_generators(C::Union{FinCatPresentation{ThSchema},FinCatPresentation{ThPtSchema}}) = let P = presentation(C)
   vcat(generators(P, :Ob), generators(P, :AttrType))
 end
 
 hom_generators(C::FinCatPresentation) = generators(presentation(C), :Hom)
-hom_generators(C::FinCatPresentation{ThSchema}) = let P = presentation(C)
+hom_generators(C::Union{FinCatPresentation{ThSchema},FinCatPresentation{ThPtSchema}}) = let P = presentation(C)
   vcat(generators(P, :Hom), generators(P, :Attr))
 end
-
 equations(C::FinCatPresentation) = equations(presentation(C))
 
 ob_generator(C::FinCatPresentation, x) = ob(C, presentation(C)[x])
@@ -329,7 +344,7 @@ hom_generator_name(C::FinCatPresentation, f::GATExpr{:generator}) = first(f)
 
 ob(C::FinCatPresentation, x::GATExpr) =
   gat_typeof(x) == :Ob ? x : error("Expression $x is not an object")
-ob(C::FinCatPresentation{ThSchema}, x::GATExpr) =
+ob(C::Union{FinCatPresentation{ThSchema},FinCatPresentation{ThPtSchema}}, x::GATExpr) =
   gat_typeof(x) ∈ (:Ob, :AttrType) ? x :
     error("Expression $x is not an object or attribute type")
 
@@ -339,8 +354,8 @@ hom(C::FinCatPresentation, fs::AbstractVector) =
   mapreduce(f -> hom(C, f), compose, fs)
 hom(C::FinCatPresentation, f::GATExpr) =
   gat_typeof(f) == :Hom ? f : error("Expression $f is not a morphism")
-hom(C::FinCatPresentation{ThSchema}, f::GATExpr) =
-  gat_typeof(f) ∈ (:Hom, :Attr, :AttrType) ? f :
+hom(::Union{FinCatPresentation{ThSchema},FinCatPresentation{ThPtSchema}}, f::GATExpr) =
+  gat_typeof(f) ∈ (:Hom, :Attr, :AttrType,:ZeroHom,:ZeroAttr) ? f :
     error("Expression $f is not a morphism or attribute")
 
 id(C::FinCatPresentation{ThSchema}, x::AttrTypeExpr) = x

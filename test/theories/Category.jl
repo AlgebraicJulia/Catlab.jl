@@ -121,3 +121,12 @@ x = El(:x, A)
 @test latex(x, all=true) == raw"$x : A$"
 @test latex(act(x, f)) == raw"x \cdot f"
 @test latex(act(x, f), all=true) == raw"$x \cdot f : B$"
+
+# Pointed category
+##################
+
+A,B,C,D = map(x->Ob(FreePtCategory,x),[:A,:B,:C,:D])
+f,g,h = Hom(:f,A,B),Hom(:g,B,C),Hom(:h,C,D)
+zAB,zBC,zAC = z(A,B),z(B,C),z(A,C)
+@test zAC == compose(f,zBC) == compose(zAC,g)
+@test compose(f,zBC,h) == z(A,D)

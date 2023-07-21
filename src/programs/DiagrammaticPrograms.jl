@@ -12,7 +12,7 @@ using Base.Iterators: repeated
 using MLStyle: @match
 
 using ...GATs, ...Graphs, ...CategoricalAlgebra
-using ...Theories: munit, FreeSchema
+using ...Theories: munit, FreeSchema, FreePtSchema, ThPtSchema, z, Z
 using ...CategoricalAlgebra.FinCats: mapvals, make_map
 using ...CategoricalAlgebra.DataMigrations: ConjQuery, GlueQuery, GlucQuery
 import ...CategoricalAlgebra.FinCats: FinCat, vertex_name, vertex_named,
@@ -335,7 +335,7 @@ function parse_hom(C::FinCat{Ob,Hom}, expr::AST.HomExpr) where {Ob,Hom}
     AST.Compose(args) => mapreduce(
       arg -> parse_hom(C, arg), (fs...) -> compose(C, fs...), args)
     AST.Id(x) => id(C, parse_ob(C, x))
-    AST.JuliaCodeHom(expr,mod) => FreeSchema.Attr{:nothing}([],[])
+    AST.JuliaCodeHom(expr,mod) => z(Z(FreePtSchema.Ob),Z(FreePtSchema.Ob)) #get dom and codom later
     AST.MixedHom(hexp,jcode) => parse_hom(C,hexp)
   end
 end
@@ -480,7 +480,7 @@ function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
                             type=Any, ob_parser=nothing, hom_parser=nothing)
   isnothing(ob_parser) && (ob_parser = x -> parse_ob(C, x))
   isnothing(hom_parser) && (hom_parser = (f,x,y) -> parse_hom(C,f))
-  g, eqs = DiagramGraph(), Pair[]
+  g, eqs = DiagramGraph(), Pair[] #Can't we make this a Presentation? Otherwise may need another z...
   F_ob, F_hom, params = [], [], Dict{Int,Any}()
   attrs,homs = generators(presentation(C),:Attr),generators(presentation(C),:Hom)
   mornames = map(first,[attrs;homs])
@@ -504,7 +504,8 @@ function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
       #add the hom that's going to map to h, then save for later
       AST.AttrOver(f,x,y,expr,mod) => begin
         e = parse!(g,AST.Hom(f,x,y))
-        push!(F_hom, FreeSchema.Attr{:nothing}([f],[]))
+        X, Y = F_ob[src(g,e)], F_ob[tgt(g,e)]
+        push!(F_hom, z(X,Y))
         aux_func = make_func(mod,expr,mornames)
         params[e] = aux_func
       end
@@ -668,13 +669,13 @@ high-level steps of this process are:
    and `DiagramHom` instances.
 """
 function parse_migration(src_schema::Presentation, ast::AST.Diagram)
-  C = FinCat(src_schema)
+  C = FinCat(change_theory(ThPtSchema,FreePtSchema,src_schema))
   d = parse_query_diagram(C, ast.statements)
   DataMigration(make_query(C, d))
 end
 function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
                          ast::AST.Mapping)
-  D, C = FinCat(tgt_schema), FinCat(src_schema)
+  D, C = FinCat(change_theory(ThPtSchema,FreePtSchema,tgt_schema)), FinCat(change_theory(ThPtSchema,FreePtSchema,src_schema))
   #Might need names of objects in the (co)limit expressions too
   homnames = map(first,hom_generators(C))
   params = Dict()
@@ -828,11 +829,12 @@ function make_query(C::FinCat{Ob}, data::DiagramData{T}) where {T, Ob}
   @assert query_type != Any
   F_ob = mapvals(x -> convert_query(C, query_type, x), F_ob)
   F_hom = mapvals(F_hom, keys=true) do h, f
-    make_query_hom(C, f, F_ob[dom(J,h)], F_ob[codom(J,h)])
+    d,c = F_ob[dom(J,h)],F_ob[codom(J,h)]
+    if f isa GATExpr{:z} f = z(d,c) end
+    make_query_hom(C, f, d,c)
   end
-  # XXX: yuck, maybe get the type right?
-  F_hom = typeof(F_hom) == Vector{FreeSchema.Attr{:nothing}} ? 
-    Any[a for a in F_hom] : F_hom
+  # XXX: There's a danger at this point of F_hom's type being too tight,
+  # need to handle in case of both dicts and vects.
   if query_type <: Ob
     Diagram(DiagramData{T}(F_ob, F_hom, J, data.params), C)
   else
@@ -884,12 +886,12 @@ function make_query_hom(C::FinCat, f::DiagramHomData{id},
 end
 
 """If d,d' are singleton diagrams and f hasn't yet been specified, make a DiagramHom with the right
-domain, codomain, and shape_map but the natural transformation component left as GATExpr{:nothing} for now.
+domain, codomain, and shape_map but the natural transformation component left as GATExpr{:z} for now.
 Otherwise just wrap f up as a DiagramHom between singletons.
 """
 function make_query_hom(::C, f::Hom, d::Diagram{T,C}, d′::Diagram{T,C}) where
     {T, Ob, Hom, C<:FinCat{Ob,Hom}}
-  if f isa GATExpr{:nothing} 
+  if f isa GATExpr{:z} 
     j = only(ob_generators(shape(d′)))
     DiagramHom{T}([Pair(j,f)],d,d′)
   else 
