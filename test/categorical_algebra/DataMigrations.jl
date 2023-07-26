@@ -536,7 +536,6 @@ X = ob_map(G, :X)
 i, o = hom_map(G, :i), hom_map(G, :o)
 @test sort(only.(collect.([i[:V],o[:V]]))) == [1,2]
 
-<<<<<<< HEAD
 
 d = @migration(SchWeightedGraph, begin
     I => @join begin
@@ -575,8 +574,6 @@ G = (star_graph(Graph, 2)⊗path_graph(Graph, 3))
   X::Ob
   Φ::Hom(X,X)
   Φ⋅Φ⋅Φ⋅Φ == Φ⋅Φ
-=======
->>>>>>> 99175756 (PR commit)
 end
 @acset_type DDS42(SchDDS42, index=[:Φ])
 ΩDDs, _ = subobject_classifier(DDS42, SchDDS42)

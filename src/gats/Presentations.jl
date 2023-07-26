@@ -1,4 +1,5 @@
-""" Finite presentations of a model of a generalized algebraic theory (GAT).
+""" Finite presentations of a model of a generali
+ed algebraic theory (GAT).
 
 We support two methods for defining models of a GAT: as Julia objects using the
 `@instance` macro and as syntactic objects using the `@present` macro.
@@ -44,12 +45,19 @@ function Base.:(==)(pres1::Presentation, pres2::Presentation)
     pres1.equations == pres2.equations
 end
 """
-Move a presentation from theory S to a theory T that knows all the names in T.
+Move a presentation to a new syntax,
+duplicating all the data on shared names. In particular,
+this is lossless if all the generators of the original
+presentation are at names in the new syntax.
 """
-function change_theory(::Type{T},syntax::Module,pres::Presentation{S,Name}) where {S,T,Name}
-  gens = map(pres.generators) do xs map(xs) do x generator_switch_syntax(syntax,x) end end
+function change_theory(syntax::Module,pres::Presentation{S,Name}) where {S,Name}
+  T = syntax.theory()
+  presNew = Presentation(syntax)
+  types = intersect(keys(presNew.generators),keys(pres.generators))
+  for t in types map(pres.generators[t]) do x
+    add_generator!(presNew,generator_switch_syntax(syntax,x)) end end
   #TODO test on equations
-  Presentation{T,Name}(syntax,gens,pres.generator_name_index,pres.equations)
+  presNew
 end
 function Base.copy(pres::Presentation{T,Name}) where {T,Name}
   Presentation{T,Name}(pres.syntax, map(copy, pres.generators),

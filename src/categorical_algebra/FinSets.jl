@@ -149,7 +149,7 @@ ob_generator_name(C::DiscreteCat, x) = x
 hom(C::DiscreteCat, x) = ob_generator(C, x)
 
 is_discrete(::DiscreteCat) = true
-graph(C::DiscreteCat{Int,FinSetInt}) = Graph(length(C.set))
+graph(C::DiscreteCat{Int,FinSetInt};maps=false,inv=false) = maps ? (Graph(length(C.set)), Dict(pairs(length(C.set))), Dict()) : Graph(length(C.set))
 
 dom(C::DiscreteCat{T}, f) where T = f::T
 codom(C::DiscreteCat{T}, f) where T = f::T
@@ -1284,6 +1284,8 @@ end
 
 colimit(d::FreeDiagram{<:FinSet{Int}}) = colimit(FinDomFunctor(d))
 
+#Expects F's domain to be a fincatpresentation.
+colimit(F::Functor{Dom,<:TypeCat{<:FinSet{Int}}}) where Dom = colimit(dom_to_graph(F))
 function colimit(F::Functor{<:FinCat{Int},<:TypeCat{<:FinSet{Int}}})
   # Uses the general formula for colimits in Set (Leinster, 2014, Basic Category
   # Theory, Example 5.2.16).

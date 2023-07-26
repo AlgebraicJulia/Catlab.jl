@@ -285,8 +285,10 @@ function param_compose(α::FinTransformation, H::Functor; params=[])
   params = params isa Union{AbstractArray,AbstractDict} ? params : [params]
   new_components = mapvals(pairs(α.components);keys=true) do i,f
     compindex = ob(dom(F),i)
-    src, tgt = ob_map(F⋅H,compindex), ob_map(G⋅H,compindex)
-    if f isa FreeSchema.Attr{:nothing}
+    #allow non-strictness because of possible pointedness
+    src, tgt = ob_map(compose(F,H,strict=false),compindex), 
+    ob_map(compose(G,H,strict=false),compindex)
+    if head(f) == :z
       func = params[i]
       FinDomFunction(func,src,tgt)
     #may need to population params with identities
@@ -308,25 +310,24 @@ end
 #Also inelegant way of returning
 function compose(d::QueryDiagram{T},F::Functor; kw...) where T
   D = diagram(d)
-  partial = force(compose(D,F)) #easy part
-  params = d.params #auxiliary functions
+  partial = compose(D,F;strict=false) #cannot be evaluated on the keys of params yet
+  #Get the FinDomFunctions in the range of F that must be plugged into
+  #the Functions in params
+  #XXX this is more lines that it needs to be
+  params = d.params
   attrs,homs = generators(presentation(codom(D)),:Attr),generators(presentation(codom(D)),:Hom)
   mornames = map(first,[attrs;homs])
   morfuns = map(x->hom_map(F,x),mornames)
-  #prevents getting stuck with all GATExpr{:nothing}s.
-  hm = Dict{keytype(partial.hom_map),FinDomFunction}(a=>b for (a,b) in pairs(partial.hom_map) if b isa FinDomFunction)
-  for (n,f) in params #Populate the hom_map of partial appropriately
-    domain = ob_map(partial,hom(dom(partial),n).src)
-    codomain = ob_map(partial,hom(dom(partial),n).tgt)
-    hm[n] =
+  paramsNew = Dict{keytype(params),FinDomFunction}()
+  for (n,f) in params #Calculate the intended value of the composition on n
+    domain = ob_map(partial,dom(hom(dom(partial),n)))
+    codomain = ob_map(partial,codom(hom(dom(partial),n)))
+    paramsNew[n] =
       FinDomFunction(f(morfuns...),domain,codomain)
   end
-  Diagram{T}(FinDomFunctorMap(
-      partial.ob_map,
-      hm,
-      dom(partial),
-      codom(F)
-    ))
+  composite = force(partial;params = paramsNew)
+  
+  Diagram{T}(composite)
 end
 # Limits and colimits
 #####################
@@ -343,12 +344,13 @@ end
 
 function universal(f::DiagramHom{op}, dom_lim, codom_lim)
   J′ = shape(codom(f))
+  #get the map from objects of the domain diagram,
+  #if indexed by a fincatpresentation, to their 
+  #indices when reindexed by a fincatgraph.
+  obs = graph(dom(dom(f).diagram);maps=true,inv=true)[2]
   cone = Multispan(apex(dom_lim), map(ob_generators(J′)) do j′
     j, g = ob_map(f, j′)
-    πⱼ = legs(dom_lim)[j]
-#    πⱼ = πⱼ isa AbstractVector ? only(πⱼ) : πⱼ 
-    #this is gross but I don't understand why this is sometimes a vector and sometimes a function
-    #can see both cases by migrating my mechlink
+    πⱼ = legs(dom_lim)[obs[j]]
     compose(πⱼ, g)
   end)
   universal(codom_lim, cone)
@@ -356,9 +358,10 @@ end
 
 function universal(f::DiagramHom{id}, dom_colim, codom_colim)
   J = shape(dom(f))
+  obs = graph(dom(codom(f).diagram);maps=true,inv=true)[2]
   cocone = Multicospan(apex(codom_colim), map(ob_generators(J)) do j
     j′, g = ob_map(f, j)
-    ιⱼ′ = legs(codom_colim)[j′]
+    ιⱼ′ = legs(codom_colim)[obs[j′]]
     compose(g, ιⱼ′)
   end)
   universal(dom_colim, cocone)

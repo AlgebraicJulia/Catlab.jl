@@ -154,7 +154,7 @@ function migrate(X::FinDomFunctor,M::DeltaSchemaMigration)
     if Ff isa GATExpr{:z} #this is ugly but mo fincatgraphs mo problems
       domain = obs[c]
       codomain = obs[d]
-      FinDomFunction(params[f](homfuns...),domain,codomain)
+      FinDomFunction(params[nameof(f)](homfuns...),domain,codomain)
     else 
       hom_map(X,Ff)
     end
@@ -301,7 +301,10 @@ function migrate(X::FinDomFunctor, M::ConjSchemaMigration;
   end
   funcs = make_map(hom_generators(tgt_schema)) do f
     Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)
-    f_params = haskey(params,f) ? map(x->x(homfuns...),params[f]) : []
+    #Not sure whether params[nameof(f)] might ever
+    #need to have multiple entries. Also should be
+    #a dict anyway.
+    f_params = haskey(params,nameof(f)) ? [params[nameof(f)](homfuns...)] : []
     # XXX: Disable domain check for same reason.
     # Hand the Julia function form of the not-yet-defined components to compose
     universal(compose(Ff, X, strict=false,params=f_params), limits[c], limits[d])
@@ -357,7 +360,7 @@ function migrate(X::FinDomFunctor, M::GlucSchemaMigration)
     Fc_colim, Fc_set, Fc_limits = colimits_of_limits[c]
     Fd_colim, Fd_set, Fd_limits = colimits_of_limits[d]
     Ff_params = Ff isa DiagramHom ? get_params(Ff) : Dict{Int,Int}()
-    component_funcs = map(ob_generators(dom(Fc_set))) do j
+    component_funcs = make_map(ob_generators(dom(Fc_set))) do j
       j′, Ffⱼ = ob_map(Ff, j)
       Ffⱼ_params = Ffⱼ isa DiagramHom ? 
         haskey(Ff_params,j) ? Dict(1=>Ff_params[j](homfuns...)) :

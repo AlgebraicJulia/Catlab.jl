@@ -2,6 +2,7 @@ export ThSchema, FreeSchema, AttrType, Attr, SchemaExpr, AttrTypeExpr, AttrExpr,
   ThPtSchema, FreePtSchema, ZeroAttr, ZeroAttrExpr, ZAtt,z,attr
 
 # Schema
+
 ########
 
 """ The GAT that parameterizes Attributed C-sets
