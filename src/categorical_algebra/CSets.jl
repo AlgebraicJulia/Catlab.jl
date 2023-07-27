@@ -1619,20 +1619,21 @@ subparts.
 """
 function abstract_attributes(X::ACSet)
   S = acset_schema(X)
-  A = copy(X); 
-  comps = Dict{Any,Any}(map(attrtypes(S)) do at
-    rem_parts!(A, at, parts(A,at))
-    comp = Union{AttrVar,attrtype_type(X,at)}[]
+  A = deepcopy(X);
+  comps = Dict{Any, Any}(map(attrtypes(S)) do at
+    rem_parts!(A, at, parts(A, at))
+    comp = Union{AttrVar,attrtype_type(X, at)}[]
     for (f, d, _) in attrs(S; to=at)
-      append!(comp, A[f])
-      A[f] = AttrVar.(add_parts!(A, at, nparts(A,d)))
-    end 
+      append!(comp, X[f])
+      A[f] = AttrVar.(add_parts!(A, at, nparts(A, d)))
+    end
     at => comp
   end)
-  for o in ob(S) comps[o]=parts(X,o) end
-  res = ACSetTransformation(A,X; comps...)
-  return res
-end 
+  for o in ob(S)
+    comps[o] = parts(X, o)
+  end
+  ACSetTransformation(A,X; comps...)
+end
 
 # Maximum Common C-Set
 ######################
