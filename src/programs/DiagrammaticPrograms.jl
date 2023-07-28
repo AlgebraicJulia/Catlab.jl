@@ -13,7 +13,7 @@ using Base.Iterators: repeated
 using MLStyle: @match
 
 using ...GATs, ...Graphs, ...CategoricalAlgebra
-using ...Theories: munit, FreeSchema, FreePtSchema, ThPtSchema, FreeCategory, FreePtCategory, z, Z, Ob, Hom, dom, codom
+using ...Theories: munit, FreeSchema, FreePtSchema, ThPtSchema, FreeCategory, FreePtCategory, z, Ob, Hom, dom, codom
 using ...CategoricalAlgebra.FinCats: mapvals, make_map, FinCatPresentation
 using ...CategoricalAlgebra.DataMigrations: ConjQuery, GlueQuery, GlucQuery
 import ...CategoricalAlgebra.FinCats: FinCat, vertex_name, vertex_named,
@@ -345,7 +345,7 @@ function parse_hom(C::FinCat{Ob,Hom}, expr::AST.HomExpr) where {Ob,Hom}
       arg -> parse_hom(C, arg), (fs...) -> compose(C, fs...), args)
     AST.Id(x) => id(C, parse_ob(C, x))
     #Could this need to be FreePtCategory sometimes?
-    AST.JuliaCodeHom(expr,mod) => z(Z(FreePtSchema.Ob),Z(FreePtSchema.Ob)) #get dom and codom later
+    AST.JuliaCodeHom(expr,mod) => nothing #will get dom and codom later
     AST.MixedHom(hexp,jcode) => parse_hom(C,hexp)
   end
 end
@@ -525,14 +525,14 @@ function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
       AST.ObOver(x, X) => begin
         x′ = parse!(g, AST.Ob(x))
         #might need to turn this Z back to `nothing``
-        F_ob[x′] = isnothing(X) ? Z(FreePtCategory.Ob) : ob_parser(X)
+        F_ob[x′] = isnothing(X) ? nothing : ob_parser(X)
       end
       AST.HomOver(f, x, y, h) => begin
         e = parse!(g, AST.Hom(f, x, y))
         X, Y = F_ob[dom(e)], F_ob[codom(e)]
         F_hom[e] = hom_parser(h, X, Y)
         #hom_parser might be parse_query_hom(C,...)
-        if Y isa GATExpr{:Z}
+        if isnothing(Y)
           # OOOH look down
           # Infer codomain in base category from parsed hom.
           F_ob[codom(e)] = codom(C, F_hom[e])
@@ -864,7 +864,7 @@ parse_hom(C, ::Missing) = missing
 
 function make_query(C::FinCat{Ob}, data::DiagramData{T}) where {T, Ob}
   F_ob, F_hom, J = data.ob_map, data.hom_map, shape(data)
-  for (h,f) in pairs(F_hom) if f isa GATExpr{:z} F_hom[h] = z(F_ob[dom(J,h)],F_ob[codom(J,h)]) end end
+  for (h,f) in pairs(F_hom) if isnothing(f) F_hom[h] = z(F_ob[dom(J,h)],F_ob[codom(J,h)]) end end
   F_ob = mapvals(x -> make_query(C, x), F_ob)
   query_type = mapreduce(typeof, promote_query_type, values(F_ob), init=Ob)
   @assert query_type != Any

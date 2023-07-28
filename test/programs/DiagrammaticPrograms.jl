@@ -394,13 +394,13 @@ F_src = hom_map(F, :src)
 
 yGraph = yoneda(Graph)
 
-#won't even build
 @migration(SchGraph, begin 
   I => @join begin v::V end 
 end)
 
 @test is_isomorphic(
   @acset(Graph, begin E=2;V=3;src=[1,2];tgt=[2,3] end),
+  #problem with Z
   @acset_colim(yGraph, begin (e1,e2)::E; src(e1) == tgt(e2) end)
 )
 
