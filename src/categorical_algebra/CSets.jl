@@ -10,7 +10,8 @@ export ACSetTransformation, CSetTransformation, StructACSetTransformation,
   homomorphism, homomorphisms, is_homomorphic,
   isomorphism, isomorphisms, is_isomorphic,
   @acset_transformation, @acset_transformations,
-  subobject_graph, partial_overlaps, maximum_common_subobject
+  subobject_graph, partial_overlaps, maximum_common_subobject,
+  abstract_attributes
 
 using Base.Iterators: flatten
 using Base.Meta: quot
@@ -1619,10 +1620,10 @@ subparts.
 """
 function abstract_attributes(X::ACSet)
   S = acset_schema(X)
-  A = deepcopy(X);
+  A = copy(X)
   comps = Dict{Any, Any}(map(attrtypes(S)) do at
     rem_parts!(A, at, parts(A, at))
-    comp = Union{AttrVar,attrtype_type(X, at)}[]
+    comp = Union{AttrVar, attrtype_type(X, at)}[]
     for (f, d, _) in attrs(S; to=at)
       append!(comp, X[f])
       A[f] = AttrVar.(add_parts!(A, at, nparts(A, d)))
@@ -1632,7 +1633,7 @@ function abstract_attributes(X::ACSet)
   for o in ob(S)
     comps[o] = parts(X, o)
   end
-  ACSetTransformation(A,X; comps...)
+  ACSetTransformation(A, X; comps...)
 end
 
 # Maximum Common C-Set

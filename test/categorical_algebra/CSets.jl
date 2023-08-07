@@ -823,7 +823,6 @@ clim = colimit(Span(f,g));
 @test collect(legs(clim)[1][:Weight]) == [true,AttrVar(1)]
 
 # Abstracting
-using Catlab.CategoricalAlgebra.CSets: abstract_attributes
 X = @acset WG{Bool} begin 
   V=1; E=2; Weight=1; src=1; tgt=1; weight=[AttrVar(1), true]
 end
@@ -831,6 +830,10 @@ h = abstract_attributes(X)
 @test nparts(dom(h), :Weight) == 2
 @test codom(h) == X
 @test is_natural(h)
+
+# Mutation of codom of A->X should not modify domain
+rem_part!(X, :E, 2)
+@test nparts(dom(h), :E) == 2
 
 # Subobjects with variables 
 #--------------------------
