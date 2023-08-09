@@ -258,11 +258,7 @@ the form ``{1,...,n}``.
   func::V
   codom::Codom
 end
-function Base.convert(::Type{SetFunctionCallable},S::FinDomFunctionVector)
-  FinDomFunction((i->S.func[i]),
-                        FinSet(length(S.func)),
-                        S.codom)
-end
+
 FinDomFunctionVector(f::AbstractVector{T}) where T =
   FinDomFunctionVector(f, TypeSet{T}())
 
@@ -283,8 +279,7 @@ function Base.show(io::IO, f::FinDomFunctionVector)
 end
 
 function force(f::FinDomFunction{Int})
-  d = map(f, dom(f))
-  FinDomFunctionVector(Vector{eltype(codom(f))}(d), codom(f))
+  FinDomFunctionVector(eltype(codom(f))[ f(x) for x in dom(f) ], codom(f))
 end
 force(f::FinDomFunctionVector) = f
 
@@ -852,6 +847,7 @@ ensure_indexed(f::FinFunction{Int,Int}) = is_indexed(f) ? f :
 ensure_indexed(f::FinDomFunction{Int}) = is_indexed(f) ? f :
   FinDomFunction(collect(f), index=true)
 
+#limit(d::BipartiteFreeDiagram{<:SetOb}) = limit(ensure_type(d;type=FinDomFunction{Int}))
 function limit(d::BipartiteFreeDiagram{<:SetOb,<:FinDomFunction{Int}})
   # As in a pullback, this method assumes that all objects in layer 2 have
   # incoming morphisms.

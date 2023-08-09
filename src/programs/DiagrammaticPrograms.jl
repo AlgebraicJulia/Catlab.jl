@@ -13,7 +13,7 @@ using Base.Iterators: repeated
 using MLStyle: @match
 
 using ...GATs, ...Graphs, ...CategoricalAlgebra
-using ...Theories: munit, FreeSchema, FreePtSchema, ThPtSchema, FreeCategory, FreePtCategory, z, Ob, Hom, dom, codom
+using ...Theories: munit, FreeSchema, FreePtSchema, ThPtSchema, FreeCategory, FreePtCategory, zeromap, Ob, Hom, dom, codom
 using ...CategoricalAlgebra.FinCats: mapvals, make_map, FinCatPresentation
 using ...CategoricalAlgebra.DataMigrations: ConjQuery, GlueQuery, GlucQuery
 import ...CategoricalAlgebra.FinCats: FinCat, vertex_name, vertex_named,
@@ -52,8 +52,8 @@ end
 @data DiagramExpr begin
   ObOver(name::Symbol, over::Union{ObExpr,Nothing}) #probably shouldn't be nothing
   HomOver(name::Symbol, src::Symbol, tgt::Symbol, over::HomExpr)
-  AttrOver(name::Symbol, src::Symbol,tgt::Symbol,aux_func_def::Expr,mod::Module)#make JuliaCode
-  TwistedHomOver(lhs::HomOver,rhs::AttrOver)
+  AttrOver(name::Symbol, src::Symbol,tgt::Symbol,aux_func_def::Expr,mod::Module)#XX:make JuliaCode
+  HomAndAttrOver(lhs::HomOver,rhs::AttrOver)
 end
 
 @data CatExpr <: DiagramExpr begin
@@ -297,6 +297,12 @@ parse_functor(C::FinCat, D::FinCat, body::Expr; kw...) =
 parse_functor(C::Presentation, D::Presentation, args...; kw...) =
   parse_functor(FinCat(C), FinCat(D), args...; kw...)
 
+#This one's harmless.
+"""
+Converts an `AST.Mapping` of object and hom assignments to a pair
+of dictionaries indexed by the generators (note: not their names!)
+of the source schema `C`. 
+"""
 function make_ob_hom_maps(C::FinCat, ast; allow_missing::Bool=false,
                           missing_ob::Bool=false, missing_hom::Bool=false)
   allow_missing && (missing_ob = missing_hom = true)
@@ -397,18 +403,19 @@ end
 function Diagrams.Diagram(d::DiagramData{T}, codom) where T
   #if simple, we'll throw away the params and make
   #sure the shape is based on non-pointed stuff
+  #XX:is this actually needed?
   simple = isempty(d.params)
-  newShape = changeShape(simple,d.shape)
-  newCodom = changeShape(simple,codom)
-  F = FinDomFunctor(d.ob_map, d.hom_map, newShape, newCodom)
+  newShape = change_shape(simple,d.shape)
+  #newCodom = change_shape(simple,codom)
+  F = FinDomFunctor(d.ob_map, d.hom_map, newShape, codom)
   simple ? SimpleDiagram{T}(F) : QueryDiagram{T}(F, d.params)
 end
-function changeShape(simple::Bool,oldShape::FinCatPresentation)
+function change_shape(simple::Bool,oldShape::FinCatPresentation)
   oldPres = presentation(oldShape)
   oldSyntax = oldPres.syntax
   simple ? FinCat(change_theory(unpoint(oldSyntax),oldPres)) : oldShape
 end
-changeShape(simple::Bool,oldShape) = oldShape
+change_shape(simple::Bool,oldShape) = oldShape
 
 #Once you build an actual functor, ob_map and hom_map keys should no longer be GATExprs.
 function Diagrams.Diagram(d::DiagramData{T,ObMap}, codom) where {T,ObMap<:Dict{GATExpr}}
@@ -524,7 +531,7 @@ function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
     @match stmt begin
       AST.ObOver(x, X) => begin
         x′ = parse!(g, AST.Ob(x))
-        #might need to turn this Z back to `nothing``
+        #`nothing` though z would be nicer so that not everything has to be pointed
         F_ob[x′] = isnothing(X) ? nothing : ob_parser(X)
       end
       AST.HomOver(f, x, y, h) => begin
@@ -542,11 +549,11 @@ function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
       AST.AttrOver(f,x,y,expr,mod) => begin
         e = parse!(g,AST.Hom(f,x,y))
         X, Y = F_ob[dom(e)], F_ob[codom(e)]
-        F_hom[e] = z(X,Y)
+        F_hom[e] = zeromap(X,Y)
         aux_func = make_func(mod,expr,mornames)
         params[nameof(e)] = aux_func
       end
-      AST.TwistedHomOver(AST.HomOver(f,x,y,h),AST.AttrOver(f,x,y,expr,mod)) => begin
+      AST.HomAndAttrOver(AST.HomOver(f,x,y,h),AST.AttrOver(f,x,y,expr,mod)) => begin
         e = parse!(g,AST.Hom(f,x,y))
         X, Y = F_ob[dom(e)], F_ob[codom(e)]
         F_hom[e] = hom_parser(h, X, Y)
@@ -573,6 +580,7 @@ end
 parse_diagram_data(C::FinCat, ast::AST.Diagram; kw...) =
   parse_diagram_data(C, ast.statements; kw...)
 #This used to allow homs "named" `nothing` but no longer does.
+#This has all been eliminated from migrations, could probably be fully killed.
 const DiagramGraph = NamedGraph{Symbol,Symbol}
 
 
@@ -586,6 +594,7 @@ Like [`DiagramData`](@ref), this an intermediate data representation used
 internally by the parser for the [`@migration`](@ref) macro.
 """
 struct DiagramHomData{T,ObMap,HomMap,Params<:AbstractDict}
+  #should generally be indexed by gatexprs, not symbols yet
   ob_map::ObMap
   hom_map::HomMap
   params::Params
@@ -745,7 +754,17 @@ function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
   simple = check_simple(ast)
   parse_migration(tgt_schema, src_schema, ast;simple=simple)
 end
-check_simple(ast)=true
+
+check_simple(ast)= @match ast begin
+  ::AST.Mapping => all(check_simple(a) for a in ast.assignments)
+  ::AST.Apply || ::AST.Coapply => check_simple(ast.ob) && check_simple(ast.hom)
+  ::AST.Compose => all(check_simple(a) for a in ast.homs)
+  ::AST.HomAssign || ::AST.ObAssign => check_simple(ast.lhs) && check_simple(ast.rhs)
+  ::AST.Limit || ::AST.Product || ::AST.Colimit || ::AST.Coproduct || ::AST.Diagram => all(check_simple(a) for a in ast.statements)
+  ::AST.ObOver || ::AST.HomOver => check_simple(ast.over)
+  ::AST.JuliaCodeOb || ::AST.MixedOb || ::AST.JuliaCodeHom || ::AST.MixedHom || ::AST.AttrOver || ::AST.HomAndAttrOver => false
+  _ => true
+end
 DataMigrations.DataMigration(h::SimpleDiagram) = DataMigration(diagram(h))
 DataMigrations.DataMigration(h::QueryDiagram) = DataMigration(diagram(h),h.params)
 # Query parsing
@@ -760,8 +779,8 @@ function parse_query(C::FinCat, expr::AST.ObExpr)
       parse_query_diagram(C, stmts, type=op)
     AST.Colimit(stmts) || AST.Coproduct(stmts) =>
       parse_query_diagram(C, stmts, type=id)
-    AST.Terminal() => DiagramData{op}([], [], FinCat(DiagramGraph()))
-    AST.Initial() => DiagramData{id}([], [], FinCat(DiagramGraph()))
+    AST.Terminal() => DiagramData{op}([], [], FinCat(Presentation(presentation(C).syntax)))
+    AST.Initial() => DiagramData{id}([], [], FinCat(Presentation(presentation(C).syntax)))
   end
 end
 
@@ -804,7 +823,7 @@ Create DiagramHomData for the case of a map from a single
 function parse_query_hom(C::FinCat{Ob}, ast::AST.Mapping,
                          d::DiagramData{op}, c′::Ob) where Ob
   assign = only(ast.assignments)
-  DiagramHomData{op}([parse_diagram_ob_rhs(C, assign.rhs, c′, d)], [])
+  DiagramHomData{op}(Dict(c′=> parse_diagram_ob_rhs(C, assign.rhs, c′, d)), Dict())
 end
 
 # Gluing fragment.
@@ -831,7 +850,8 @@ end
 function parse_query_hom(C::FinCat{Ob}, ast::AST.Mapping,
                          c::Union{Ob,DiagramData{op}}, d′::DiagramData{id}) where Ob
   assign = only(ast.assignments)
-  DiagramHomData{id}([parse_diagram_ob_rhs(C, assign.rhs, c, d′)], [])
+  cob = c isa Ob ? c : FreeCategory.Ob(FreeCategory.Ob,:anonOb)
+  DiagramHomData{id}(Dict(cob => parse_diagram_ob_rhs(C, assign.rhs, c, d′)), Dict())
 end
 
 #It'd be nice if we could declare expr as an ObExpr and then have Match
@@ -864,14 +884,14 @@ parse_hom(C, ::Missing) = missing
 
 function make_query(C::FinCat{Ob}, data::DiagramData{T}) where {T, Ob}
   F_ob, F_hom, J = data.ob_map, data.hom_map, shape(data)
-  for (h,f) in pairs(F_hom) if isnothing(f) F_hom[h] = z(F_ob[dom(J,h)],F_ob[codom(J,h)]) end end
+  F_hom = mapvals((h,f) -> isnothing(f) ? zeromap(F_ob[dom(J,h)],F_ob[codom(J,h)]) : f,F_hom;keys=true)
   F_ob = mapvals(x -> make_query(C, x), F_ob)
   query_type = mapreduce(typeof, promote_query_type, values(F_ob), init=Ob)
   @assert query_type != Any
   F_ob = mapvals(x -> convert_query(C, query_type, x), F_ob)
-  F_hom = mapvals(F_hom, keys=true) do h, f
+  F_hom = mapvals(F_hom;keys=true) do h,f
     d,c = F_ob[dom(J,h)],F_ob[codom(J,h)]
-    make_query_hom(C, f, d,c)
+    make_query_hom(C,f,d,c)
   end
   # XXX: There's a danger at this point of F_hom's type being too tight,
   # need to handle in case of both dicts and vects.
@@ -918,7 +938,11 @@ function make_query_hom(C::FinCat, f::DiagramHomData{id},
       _ => x
     end
     @match x begin
-      (j′, g) => Pair(j′, make_query_hom(C, g, ob_map(d, j), ob_map(d′, j′)))
+      (j′, g) => begin 
+        s,t = ob_map(d, j), ob_map(d′, j′)
+        g = isnothing(g) ? zeromap(s,t) : g
+        Pair(j′, make_query_hom(C, g, s,t))
+      end
       j′ => j′
     end
   end
@@ -926,28 +950,41 @@ function make_query_hom(C::FinCat, f::DiagramHomData{id},
   DiagramHom{id}(f_ob, f_hom, d, d′,params=f.params)
 end
 
+#XX:split methods over :z?
 """If d,d' are singleton diagrams and f hasn't yet been specified, make a DiagramHom with the right
-domain, codomain, and shape_map but the natural transformation component left as GATExpr{:z} for now.
+domain, codomain, and shape_map but the natural transformation component left as GATExpr{:zeromap} for now.
 Otherwise just wrap f up as a DiagramHom between singletons.
 """
 function make_query_hom(::C, f::Hom, d::Diagram{T,C}, d′::Diagram{T,C}) where
     {T, Ob, Hom, C<:FinCat{Ob,Hom}}
-  if f isa GATExpr{:z} 
-    j = only(ob_generators(shape(d′)))
-    DiagramHom{T}([Pair(j,f)],d,d′)
+  if f isa GATExpr{:zeromap} 
+    j′ = only(ob_generators(shape(d′)))
+    j = only(ob_generators(shape(d)))
+    DiagramHom{T}(Dict(j=> Pair(j′,f)),d,d′)
   else 
     munit(DiagramHom{T}, codom(diagram(d)), f,
       dom_shape=shape(d), codom_shape=shape(d′))
   end
 end
+#XX:Maybe the diagramhom constructor can handle the reversal? seems tricky
+function make_query_hom(::C, f::Hom, d::Diagram{op,C}, d′::Diagram{op,C}) where
+    {Ob, Hom, C<:FinCat{Ob,Hom}}
+  if f isa GATExpr{:zeromap} 
+    j′ = only(ob_generators(shape(d′)))
+    j = only(ob_generators(shape(d)))
+    DiagramHom{op}(Dict(j′=> Pair(j,f)),d,d′)
+  else 
+    munit(DiagramHom{op}, codom(diagram(d)), f,
+      dom_shape=shape(d), codom_shape=shape(d′))
+  end
+end
 
 #When would this happen?
-function make_query_hom(cat::C, f::Union{Hom,DiagramHomData{op}},
+function make_query_hom(acat::C, f::Union{Hom,DiagramHomData{op}},
                         d::Diagram{id}, d′::Diagram{id}) where
     {Ob, Hom, C<:FinCat{Ob,Hom}}
-  f = make_query_hom(cat, f, only(collect_ob(d)), only(collect_ob(d′)))
-  munit(DiagramHom{id}, codom(diagram(d)), f,
-        dom_shape=shape(d), codom_shape=shape(d′))
+  f′ = make_query_hom(acat, f, only(collect_ob(d)), only(collect_ob(d′)))
+  munit(DiagramHom{id}, codom(diagram(d)), f′, dom_shape=shape(d), codom_shape=shape(d′))
 end
 
 make_query_hom(C::FinCat{Ob,Hom}, f::Hom, x::Ob, y::Ob) where {Ob,Hom} = f
@@ -982,11 +1019,16 @@ convert_query(::FinCat, ::Type{T}, x::S) where {T, S<:T} = x
 
 function convert_query(cat::C, ::Type{<:Diagram{T,C}}, x::Ob) where
   {T, Ob, C<:FinCat{Ob}}
-  g = DiagramGraph(1, vname=nameof(x))
-  munit(Diagram{T}, cat, x, shape=FinCat(g))
+  s = presentation(cat).syntax 
+  p = Presentation(s)
+  add_generator!(p,s.Ob(s.Ob,nameof(x)))
+  munit(Diagram{T}, cat, x, shape=FinCat(p))
 end
 function convert_query(::C, ::Type{<:GlucQuery{C}}, d::ConjQuery{C}) where C
-  munit(Diagram{id}, TypeCat(ConjQuery{C}, Any), d)
+  s = FreeCategory
+  p = Presentation(s)
+  add_generator!(p,s.Ob(s.Ob,Symbol("anonOb")))
+  munit(Diagram{id}, TypeCat(ConjQuery{C}, Any), d;shape=FinCat(p))
 end
 function convert_query(cat::C, ::Type{<:GlucQuery{C}}, d::GlueQuery{C}) where C
   J = shape(d)
@@ -1055,12 +1097,12 @@ function parse_diagram_ast(body::Expr; free::Bool=false, preprocess::Bool=true,m
       Expr(:call, :(=>), Expr(:call, :(→), x::Symbol, y::Symbol), h) ||
       Expr(:(::), Expr(:call, :(→), x::Symbol, y::Symbol), h) => 
         parse_hom_over(gen_anonhom!(state),x,y,state.ob_over[x],state.ob_over[y],h,mod=mod)
-      # make sure to handle literals!
       # x == "foo"
       # "foo" == x
      # Expr(:call, :(==), x::Symbol, value::Literal) ||
      # Expr(:call, :(==), value::Literal, x::Symbol) =>
      #   [AST.AssignLiteral(x, get_literal(value))]
+     
       # h(x) == y
       # y == h(x), this is for y an object of one of the diagrams.
       (Expr(:call, :(==), call::Expr, y::Symbol) ||
@@ -1110,7 +1152,7 @@ function parse_hom_over(name,x,y,X,Y,rhs;mod::Module=Main)
   @match rhs begin
     #a(e) |> (x-> f(x))
     Expr(:call,:(|>),l,r) =>
-      [AST.TwistedHomOver(AST.HomOver(name,x,y,parse_hom_ast(l,X,Y,mod=mod)),
+      [AST.HomAndAttrOver(AST.HomOver(name,x,y,parse_hom_ast(l,X,Y,mod=mod)),
        AST.AttrOver(name,x,y,r,mod))]
     #A hom mapping to a lambda expression, or to a block ending with a lambda
     #expression, will be temporarily assigned to a blank value to be filled

@@ -11,7 +11,7 @@ import ...Theories: dom, codom, id, compose, ⋅, ∘, munit
 using ...Theories: ThCategory, composeH, FreeSchema
 import ..Categories: ob_map, hom_map, op, co
 using ..FinCats, ..FreeDiagrams, ..FinSets
-using ..FinCats: mapvals,FinDomFunctorMap
+using ..FinCats: mapvals,FinDomFunctorMap,FinCatPresentation
 import ..FinCats: force, collect_ob, collect_hom
 import ..Limits: limit, colimit, universal
 import ..FinSets: FinDomFunction
@@ -286,14 +286,14 @@ function param_compose(α::FinTransformation, H::Functor; params=[])
   new_components = mapvals(pairs(α.components);keys=true) do i,f
     compindex = ob(dom(F),i)
     #allow non-strictness because of possible pointedness
-    src, tgt = ob_map(compose(F,H,strict=false),compindex), 
+    s, t = ob_map(compose(F,H,strict=false),compindex), 
     ob_map(compose(G,H,strict=false),compindex)
-    if head(f) == :z
+    if head(f) == :zeromap
       func = params[i]
-      FinDomFunction(func,src,tgt)
+      FinDomFunction(func,s,t)
     #may need to population params with identities
     else
-      func = haskey(params,i) ? SetFunction(params[i],tgt,tgt) : SetFunction(identity,tgt,tgt)
+      func = haskey(params,i) ? SetFunction(params[i],t,t) : SetFunction(identity,t,t)
       #could change target to let the attribute be valued in the
       #wrong place fufufu
       hom_map(H,f)⋅func
@@ -379,8 +379,12 @@ function munit(::Type{Diagram{T}}, C::Cat, x; shape=nothing) where T
   else
     @assert is_discrete(shape) && length(ob_generators(shape)) == 1
   end
+  hasPresentation(shape) && 
+    return Diagram{T}(FinDomFunctor(Dict(nameof(a)=> x for a in ob_generators(shape)),shape,C))
   Diagram{T}(FinDomFunctor([x], shape, C))
 end
+hasPresentation(C::FinCat) = false
+hasPresentation(C::FinCatPresentation) = true
 
 function munit(::Type{DiagramHom{T}}, C::Cat, f;
                dom_shape=nothing, codom_shape=nothing) where T
@@ -388,7 +392,17 @@ function munit(::Type{DiagramHom{T}}, C::Cat, f;
   d = munit(Diagram{T}, C, dom(C, f), shape=dom_shape)
   d′= munit(Diagram{T}, C, codom(C, f), shape=codom_shape)
   j = only(ob_generators(shape(d′)))
-  DiagramHom{T}([Pair(j, f)], d, d′)
+  isnothing(dom_shape) ? DiagramHom{T}([Pair(j, f)], d, d′) :
+   DiagramHom{T}(Dict(only(ob_generators(dom(diagram(d)))) => Pair(j, f)),d,d′)
+end
+function munit(::Type{DiagramHom{op}}, C::Cat, f;
+  dom_shape=nothing, codom_shape=nothing)
+f = hom(C, f)
+d = munit(Diagram{op}, C, dom(C, f), shape=dom_shape)
+d′= munit(Diagram{op}, C, codom(C, f), shape=codom_shape)
+j = only(ob_generators(shape(d)))
+isnothing(dom_shape) ? DiagramHom{op}([Pair(j, f)], d, d′) :
+   DiagramHom{op}(Dict(only(ob_generators(dom(diagram(d′)))) => Pair(j, f)),d,d′)
 end
 
 end

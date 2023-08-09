@@ -10,7 +10,7 @@ module BasicGraphs
 export HasVertices, HasGraph, AbstractGraph, Graph, SchGraph,
   nv, ne, src, tgt, edges, inedges, outedges, vertices, has_edge, has_vertex,
   add_edge!, add_edges!, add_vertex!, add_vertices!, add_vertices_with_indices!,
-  rem_edge!, rem_edges!, rem_vertex!, rem_vertices!,
+  rem_edge!, rem_edges!, rem_vertex!, rem_vertices!, 
   neighbors, inneighbors, outneighbors, all_neighbors, degree, induced_subgraph,
   AbstractSymmetricGraph, SymmetricGraph, SchSymmetricGraph, inv,
   AbstractReflexiveGraph, ReflexiveGraph, SchReflexiveGraph, refl,

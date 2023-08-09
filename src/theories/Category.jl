@@ -3,7 +3,7 @@ export ThCategory, FreeCategory, Ob, Hom, dom, codom, id, compose, ⋅,
   ThCopresheaf, FreeCopresheaf, El, ElExpr, ob, act,
   ThPresheaf, FreePresheaf, coact,
   ThMCategory, FreeMCategory, Tight, reflexive, transitive,
-  ThPtCategory, FreePtCategory,z
+  ThPtCategory, FreePtCategory, zeromap
 
 import Base: inv, show
 
@@ -45,7 +45,7 @@ symbol ``⋅`` (`\\cdot`) for composition in diagrammatic order.
 end
 
 # Convenience constructors
-compose(f) = f
+#compose(f) = f
 compose(fs::AbstractVector) = foldl(compose, fs)
 compose(f, g, h, fs...) = compose([f, g, h, fs...])
 
@@ -210,9 +210,9 @@ compose to a zero map, is a good notion
 of a functor that's total on objects and partial on morphisms.
 """
 @theory ThPtCategory{Ob,Hom} <: ThCategory{Ob,Hom} begin
-  z(A,B)::Hom(A,B)⊣(A::Ob,B::Ob)
-  compose(z(A,B),f::(B→C))==z(A,C)⊣(A::Ob,B::Ob,C::Ob)
-  compose(g::(A→B),z(A,B))==z(A,C)⊣(A::Ob,B::Ob,C::Ob)
+  zeromap(A,B)::Hom(A,B)⊣(A::Ob,B::Ob)
+  compose(zeromap(A,B),f::(B→C))==zeromap(A,C)⊣(A::Ob,B::Ob,C::Ob)
+  compose(g::(A→B),zeromap(A,B))==zeromap(A,C)⊣(A::Ob,B::Ob,C::Ob)
 end
 
 @syntax FreePtCategory{ObExpr,HomExpr} ThPtCategory begin

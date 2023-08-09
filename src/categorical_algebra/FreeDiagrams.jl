@@ -466,7 +466,11 @@ BipartiteFreeDiagram(F::Functor{<:FinCat{Int},<:Cat{Ob,Hom}}; kw...) where {Ob,H
 #Domain is a fincatpresentation
 BipartiteFreeDiagram(F::Functor;kw...) =
   BipartiteFreeDiagram(dom_to_graph(F);kw...)
-
+#function ensure_type(Y::BipartiteFreeDiagram{Ob};type::Type) where Ob
+#  X = BipartiteFreeDiagram{Ob,type}()
+#  copy_parts!(X,Y)
+#  X
+#end
 # Free diagrams
 #--------------
 

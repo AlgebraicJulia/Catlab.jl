@@ -394,10 +394,10 @@ end
 
 limit(diagram, alg::SpecializeLimit) = limit(diagram, alg.fallback)
 
-function limit(F::FinDomFunctor{<:FinCat{Int},<:TypeCat{Ob,Hom}},
-               alg::SpecializeLimit) where {Ob,Hom}
+function limit(F::FinDomFunctor{<:FinCat{Int},<:TypeCat{Ob,H}},
+               alg::SpecializeLimit) where {Ob,H}
   if is_discrete(dom(F))
-    limit(DiscreteDiagram(collect_ob(F), Hom), SpecializeLimit())
+    limit(DiscreteDiagram(collect_ob(F), H), SpecializeLimit())
   else
     limit(F, alg.fallback)
   end

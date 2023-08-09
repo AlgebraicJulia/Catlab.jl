@@ -151,7 +151,7 @@ function migrate(X::FinDomFunctor,M::DeltaSchemaMigration)
   params = M.params
   funcs = make_map(hom_generators(tgt_schema)) do f
     Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)
-    if Ff isa GATExpr{:z} #this is ugly but mo fincatgraphs mo problems
+    if Ff isa GATExpr{:zeromap} #this is ugly but mo fincatgraphs mo problems
       domain = obs[c]
       codomain = obs[d]
       FinDomFunction(params[nameof(f)](homfuns...),domain,codomain)
@@ -288,10 +288,10 @@ function migrate(X::FinDomFunctor, M::ConjSchemaMigration;
     else
       (SetOb, FinDomFunction{Int})
     end
-    #
+    # Make sure the diagram to be limited is a FinCat{<:Int}.
     # XXX: Disable domain check because acsets don't store schema equations.
-    lim = limit(force(compose(Fc, X, strict=false), diagram_types...),
-                alg=SpecializeLimit(fallback=ToBipartiteLimit()))
+    k = dom_to_graph(diagram(force(compose(Fc, X, strict=false), diagram_types...)))
+    lim = limit(k,SpecializeLimit(fallback=ToBipartiteLimit()))
     if tabular
       names = (ob_generator_name(J, j) for j in ob_generators(J))
       TabularLimit(lim, names=names)
@@ -302,9 +302,8 @@ function migrate(X::FinDomFunctor, M::ConjSchemaMigration;
   funcs = make_map(hom_generators(tgt_schema)) do f
     Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)
     #Not sure whether params[nameof(f)] might ever
-    #need to have multiple entries. Also should be
-    #a dict anyway.
-    f_params = haskey(params,nameof(f)) ? [params[nameof(f)](homfuns...)] : []
+    #need to have multiple entries.
+    f_params = haskey(params,nameof(f)) ? Dict(nameof(codom(f)) => params[nameof(f)](homfuns...)) : Dict()
     # XXX: Disable domain check for same reason.
     # Hand the Julia function form of the not-yet-defined components to compose
     universal(compose(Ff, X, strict=false,params=f_params), limits[c], limits[d])
@@ -326,8 +325,8 @@ function migrate(X::FinDomFunctor, M::GlueSchemaMigration)
     Fc = ob_map(F, c)
     diagram_types = c isa AttrTypeExpr ? (TypeSet, SetFunction) :
       (FinSet{Int}, FinFunction{Int})
-    colimit(force(compose(Fc, X, strict=false), diagram_types...),
-            alg=SpecializeColimit())
+    k = dom_to_graph(diagram(force(compose(Fc, X, strict=false), diagram_types...)))
+    colimit(k,SpecializeColimit())
   end
   funcs = make_map(hom_generators(tgt_schema)) do f
     Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)
@@ -353,7 +352,7 @@ function migrate(X::FinDomFunctor, M::GlucSchemaMigration)
     Fc = ob_map(F, c)
     m = Fc isa QueryDiagram ? DataMigration(diagram(Fc),Fc.params) : DataMigration(diagram(Fc))
     Fc_set, limits = migrate(X, m, return_limits=true)
-    (colimit(Fc_set, SpecializeColimit()), Fc_set, limits)
+    (colimit(dom_to_graph(Fc_set), SpecializeColimit()), Fc_set, limits)
   end
   funcs = make_map(hom_generators(tgt_schema)) do f
     Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)
@@ -363,10 +362,11 @@ function migrate(X::FinDomFunctor, M::GlucSchemaMigration)
     component_funcs = make_map(ob_generators(dom(Fc_set))) do j
       j′, Ffⱼ = ob_map(Ff, j)
       Ffⱼ_params = Ffⱼ isa DiagramHom ? 
-        haskey(Ff_params,j) ? Dict(1=>Ff_params[j](homfuns...)) :
+        haskey(Ff_params,nameof(j)) ? 
+          Dict(only(keys(components(diagram_map(Ffⱼ))))=>Ff_params[nameof(j)](homfuns...)) :
           mapvals(x->x(homfuns...),get_params(Ffⱼ)) : Dict{Int,Int}()
       universal(compose(Ffⱼ, X, strict=false,params = Ffⱼ_params), 
-        Fc_limits[j], Fd_limits[j′])
+                Fc_limits[j], Fd_limits[j′])
     end
     Ff_set = DiagramHom{id}(shape_map(Ff), component_funcs, Fc_set, Fd_set)
     universal(Ff_set, Fc_colim, Fd_colim)
@@ -693,16 +693,18 @@ function colimit_representables(M::ConjSchemaMigration, y)
     clim_diag = deepcopy(diagram(compose(op(Fc), y)))
     # modify the diagram we take a colimit of to concretize some vars
     params = Fc isa SimpleDiagram ? Dict() : Fc.params
-    G, om, hm = [f(clim_diag) for f in [graph ∘ dom, ob_map, hom_map]]
+    P, om, hm = [f(clim_diag) for f in [presentation ∘ dom, ob_map, hom_map]]
+    s = P.syntax
+    #XX:Not sure whether below is correctly modified from graph to presentation
     for (i,val) in collect(params)
-      v = add_vertex!(G; vname=Symbol("param$i"))
-      add_edge!(G, i, v; ename=Symbol("param$i"))
+      v = add_generator!(P,s.Ob(s.Ob,Symbol("param$i")))
+      f = add_generator!(P,Hom(Symbol("param$i"),i,v))
       at = nameof(ob_map(Fc, i)) # attribute type name 
       h = only(homomorphisms(ob_map(clim_diag,i), ACS(); initial=Dict(at=>[val])))
-      push!(om, ACS())
-      push!(hm, h)
+      om[v] = ACS()
+      hm[f] = h
     end
-    updated_diagram = FinDomFunctor(om, hm, FinCat(G), codom(clim_diag))
+    updated_diagram = FinDomFunctor(om, hm, FinCat(P), codom(clim_diag))
     colimit(updated_diagram) # take colimit
   end
   homs = make_map(hom_generators(C)) do f

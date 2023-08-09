@@ -1,5 +1,4 @@
-export ThSchema, FreeSchema, AttrType, Attr, SchemaExpr, AttrTypeExpr, AttrExpr,
-  ThPtSchema, FreePtSchema,z
+export ThSchema, FreeSchema, AttrType, Attr, SchemaExpr, AttrTypeExpr, AttrExpr, ThPtSchema, FreePtSchema,zeromap
 
 # Schema
 
@@ -37,12 +36,12 @@ end
 @theory ThPtSchema{Ob,Hom,AttrType,Attr} <: ThPtCategory{Ob,Hom} begin
   AttrType::TYPE
   Attr(dom::Ob,codom::AttrType)::TYPE
-  z(A::Ob,X::AttrType)::Attr(A,X)
+  zeromap(A::Ob,X::AttrType)::Attr(A,X)
 
   compose(f::Hom(A,B), g::Attr(B,X))::Attr(A,X) ⊣ (A::Ob, B::Ob, X::AttrType)
 
-  compose(f::Hom(A,B),z(B,X)) == z(A,X) ⊣ (A::Ob, B::Ob, X::AttrType)
-  compose(z(A,B),f::Hom(B,X)) == z(A,X) ⊣ (A::Ob, B::Ob, X::AttrType)
+  compose(f::Hom(A,B),zeromap(B,X)) == zeromap(A,X) ⊣ (A::Ob, B::Ob, X::AttrType)
+  compose(zeromap(A,B),f::Hom(B,X)) == zeromap(A,X) ⊣ (A::Ob, B::Ob, X::AttrType)
 
   (compose(f, compose(g, a)) == compose(compose(f, g), a)
     ⊣ (A::Ob, B::Ob, C::Ob, X::AttrType, f::Hom(A,B), g::Hom(B,C), a::Attr(C, X)))

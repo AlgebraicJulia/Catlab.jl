@@ -19,7 +19,7 @@ using MLStyle: @match
 using ..MetaUtils, ..SyntaxSystems
 import ..TheoriesInstances as GAT
 import ..SyntaxSystems: parse_json_sexpr, to_json_sexpr, generator_switch_syntax
-
+import Base.deepcopy_internal
 # Data types
 ############
 
@@ -44,6 +44,29 @@ function Base.:(==)(pres1::Presentation, pres2::Presentation)
   pres1.syntax == pres2.syntax && pres1.generators == pres2.generators &&
     pres1.equations == pres2.equations
 end
+
+"""Since Presentations have a module field and modules cannot be deep-copied,
+we need a specialized method.
+"""
+function Base.deepcopy_internal(x::Presentation,stackdict::IdDict)
+  T = typeof(x)::DataType
+  nf = nfields(x) 
+  #skip mutable case and 0-field case from built-in deepcopy
+  flds = Vector{Any}(undef,nf)
+  for i in 1:nf
+    if isdefined(x,i)
+      xi = getfield(x,i)
+      xi = xi isa Module ? xi : deepcopy_internal(xi,stackdict)
+      flds[i] = xi
+    else 
+      nf = i-1
+      break
+    end
+  end
+  y = ccall(:jl_new_structv, Any, (Any, Ptr{Any}, UInt32), T, flds, nf)
+  return y::T
+end
+
 """
 Move a presentation to a new syntax,
 duplicating all the data on shared names. In particular,

@@ -87,7 +87,7 @@ end
 If given GATExpr contains a zero morphism,
 collapse the expression to a single zero morphism.
 """
-function normalize_zero(expr::E;zname=:z) where E <: GATExpr
+function normalize_zero(expr::E;zname=:zeromap) where E <: GATExpr
   ztype = E
   for subexpr in args(expr)
     if head(subexpr) == zname 

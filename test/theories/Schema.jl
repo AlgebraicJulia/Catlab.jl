@@ -25,7 +25,7 @@ A,B,C = map(x->Ob(FreePtSchema,x),[:A,:B,:C])
 X = AttrType(FreePtSchema.AttrType,:X)
 f,g = Hom(:f,A,B),Hom(:g,B,C)
 a = Attr(:a,C,X)
-zAB,zBC,zAC,zAX,zBX,zCX = z(A,B),z(B,C),z(A,C),z(A,X),z(B,X),z(C,X)
+zAB,zBC,zAC,zAX,zBX,zCX = zeromap(A,B),zeromap(B,C),zeromap(A,C),zeromap(A,X),zeromap(B,X),zeromap(C,X)
 @test zAC == compose(f,zBC) == compose(zAB,g)
 @test zBX == compose(g,zCX) == compose(zBC,a)
 @test compose(f,zBC,a) == zAX

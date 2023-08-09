@@ -25,7 +25,7 @@ using DataStructures: IntDisjointSets, in_same_set, num_groups
 using ACSets
 using ...GATs
 import ...GATs: equations
-using ...Theories: ThCategory, ThSchema, ThPtCategory, ThPtSchema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr, FreeSchema, FreePtCategory, z
+using ...Theories: ThCategory, ThSchema, ThPtCategory, ThPtSchema, ObExpr, HomExpr, AttrExpr, AttrTypeExpr, FreeSchema, FreePtCategory, zeromap
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ...Graphs
 import ...Graphs: edges, src, tgt, enumerate_paths
@@ -127,11 +127,29 @@ end
 const OppositeFinCat{Ob,Hom} = OppositeCat{Ob,Hom,FinCatSize}
 
 ob_generators(C::OppositeFinCat) = ob_generators(C.cat)
+#wrong for presentations, redefined below
 hom_generators(C::OppositeFinCat) = hom_generators(C.cat)
 
 ob_generator(C::OppositeCat, x) = ob_generator(C.cat, x)
 hom_generator(C::OppositeCat, f) = hom_generator(C.cat, f)
 
+"""
+Reverses the domain and codomain of certain types in a presentation,
+for use in an opposite category.
+"""
+function Base.reverse(p::Presentation,types::Vector{Symbol})
+  s = p.syntax
+  newPres = Presentation(s)
+  for g in generators(p)
+    t = gat_typeof(g)
+    if t in types 
+      add_generator!(newPres,getproperty(s,t)(nameof(g),codom(g),dom(g)))  
+    else add_generator!(newPres,g) 
+    end
+  end
+  newPres
+end
+presentation(C::OppositeCat) = reverse(presentation(C.cat),[:Hom])
 # Categories on graphs
 ######################
 
@@ -340,7 +358,10 @@ function FinCatPresentation(pres::Presentation{ThPtSchema})
   Hom = Union{S.Hom, S.Attr, S.AttrType}
   FinCatPresentation{ThPtSchema,Ob,Hom}(pres)
 end
-
+function hom_generators(C::OppositeCat{Ob,Hom,FinCatSize,Ct}) where {Ob,Hom,Ct<:FinCatPresentation}
+  S = presentation(C).syntax
+  map(x->S.Hom(nameof(x),codom(x),dom(x)),hom_generators(C.cat))
+end
 """
 Computes the graph generating a finitely
 presented category. Ignores any attribute
@@ -504,10 +525,16 @@ function functoriality_failures(F::FinDomFunctor; check_equations::Bool=false)
   (bad_dom, bad_cod, bad_eqs)
 end
 
+#XX:make more principled using make_map or something similar
 function Base.map(F::Functor{<:FinCat,<:TypeCat}, f_ob, f_hom)
   C = dom(F)
   FinDomFunctor(map(x -> f_ob(ob_map(F, x)), ob_generators(C)),
                 map(f -> f_hom(hom_map(F, f)), hom_generators(C)), C)
+end
+function Base.map(F::Functor{<:FinCatPresentation,<:TypeCat}, f_ob, f_hom)
+  C = dom(F)
+  FinDomFunctor(Dict(x => f_ob(ob_map(F, x)) for x in ob_generators(C)),
+                Dict(f => f_hom(hom_map(F, f)) for f in hom_generators(C)), C)
 end
 
 """ A functor between finitely presented categories.
@@ -569,6 +596,8 @@ ob_key(C::FinCatPresentation, x) = presentation_key(x)
 hom_key(C::FinCatPresentation, f) = presentation_key(f)
 presentation_key(name::Union{AbstractString,Symbol}) = name
 presentation_key(expr::GATExpr{:generator}) = first(expr)
+ob_key(C::OppositeFinCat, x) = ob_key(C.cat,x)
+hom_key(C::OppositeFinCat, f) = hom_key(C.cat,f)
 
 Categories.do_ob_map(F::FinDomFunctorMap, x) = F.ob_map[ob_key(F.dom, x)]
 Categories.do_hom_map(F::FinDomFunctorMap, f) = F.hom_map[hom_key(F.dom, f)]
@@ -616,12 +645,12 @@ Reinterpret a functor on a finitely presented category
 as a functor on the equivalent category (ignoring equations)
 free on a graph. Could be considered as a type of force?
 """
-function dom_to_graph(F::FinDomFunctor{<:FinCatPresentation})
+function dom_to_graph(F::FinDomFunctor{<:FinCatPresentation,<:Cat{Ob,Hom}}) where {Ob,Hom}
   g, obs, homs = graph(dom(F),maps=true)
   C = FinCat(g)
-  FinDomFunctorMap([ob_map(F,obs[i]) for i in 1:length(obs)],[hom_map(F,homs[i]) for i in 1:length(homs)],C,codom(F))
+  FinDomFunctorMap(Ob[ob_map(F,obs[i]) for i in 1:length(obs)],Hom[hom_map(F,homs[i]) for i in 1:length(homs)],C,codom(F))
 end
-
+dom_to_graph(F::FinDomFunctor) = F
 function Base.show(io::IO, F::T) where T <: FinDomFunctorMap
   Categories.show_type_constructor(io, T); print(io, "(")
   show(io, F.ob_map)
