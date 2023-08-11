@@ -1,6 +1,7 @@
 export ThDisplayedCategory, Fib, FibHom, ob, hom,
   ThOpindexedCategory, act,
-  ThOpindexedMonoidalCategory, ThOpindexedMonoidalCategoryLax
+  ThOpindexedMonoidalCategory, ThOpindexedMonoidalCategoryLax,
+  ThCoindexedMonoidalCategory
 
 import Base: *
 
@@ -174,4 +175,34 @@ References:
   ⊗(f⋅g,X,Y) == ⊗(g,X*f,Y*f) ⋅ (⊗(f,X,Y)*g) ⊣
     (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), X::Fib(A), Y::Fib(A))
   ⊗(id(A),X,Y) == id(X⊗Y) ⊣ (A::Ob, X::Fib(A), Y::Fib(A))
+end
+
+""" Theory of an opindexed monoidal category with cocartesian indexing category.
+
+This is equivalent via the Grothendieck construction to a monoidal opfibration
+over a cocartesian monoidal base (Shulman 2008, Theorem 12.7). The terminology
+"coindexed monoidal category" used here is not standard and arguably not good,
+but I'm running out of ways to combine these adjectives.
+
+References:
+
+- Shulman, 2008: Framed bicategories and monoidal fibrations
+- Shulman, 2013: Enriched indexed categories
+"""
+@signature ThCoindexedMonoidalCategory{Ob,Hom,Fib,FibHom} <: ThOpindexedMonoidalCategory{Ob,Hom,Fib,FibHom} begin
+  # XXX: Copy-paste from `MonoidalAdditive`.
+  # TODO: Axioms of cocartesian monoidal category.
+  oplus(A::Ob, B::Ob)::Ob
+  oplus(f::(A → B), g::(C → D))::((A ⊕ C) → (B ⊕ D)) ⊣
+    (A::Ob, B::Ob, C::Ob, D::Ob)
+  @op (⊕) := oplus
+  mzero()::Ob
+  swap(A::Ob, B::Ob)::Hom(oplus(A,B),oplus(B,A))
+
+  plus(A::Ob)::((A ⊕ A) → A)
+  zero(A::Ob)::(mzero() → A)
+
+  copair(f::(A → C), g::(B → C))::((A ⊕ B) → C) ⊣ (A::Ob, B::Ob, C::Ob)
+  coproj1(A::Ob, B::Ob)::(A → (A ⊕ B))
+  coproj2(A::Ob, B::Ob)::(B → (A ⊕ B))
 end
