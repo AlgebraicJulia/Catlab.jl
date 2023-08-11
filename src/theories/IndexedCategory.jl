@@ -1,5 +1,5 @@
 export ThDisplayedCategory, Fib, FibHom, ob, hom,
-  ThIndexedCategory, act, ThIndexedMonoidalCategory
+  ThOpindexedCategory, act, ThOpindexedMonoidalCategory
 
 import Base: *
 
@@ -37,22 +37,22 @@ Reference: Ahrens & Lumsdaine 2019, "Displayed categories", Definition 3.1.
                     x::Fib(A), y::Fib(B), f̄::FibHom(f,x,y))
 end
 
-# Indexed category
-##################
+# Opindexed category
+####################
 
-""" Theory of a (covariantly) *indexed category*.
+""" Theory of an opindexed, or covariantly indexed, category.
 
-An *indexed category* is a **Cat**-valued pseudofunctor. For simplicitly, we
+An *opindexed category* is a **Cat**-valued pseudofunctor. For simplicitly, we
 assume that the functor is strict.
 
 Just as a copresheaf, or **Set**-valued functor, can be seen as a category
-action of a family of sets, an indexed category can be seen as a category action
-on a family of categories. This picture guides our axiomatization of an indexed
-category as a generalized algebraic theory. The symbol `*` is used for the
-actions since a common mathematical notation for the functor induced by an
-indexing morphism ``f: A → B`` is ``f_*: F(A) \to F(B)``.
+action on a family of sets, an opindexed category can be seen as a category
+action on a family of categories. This picture guides our axiomatization of an
+opindexed category as a generalized algebraic theory. The symbol `*` is used for
+the actions since a common mathematical notation for the "pushforward functor"
+induced by an indexing morphism ``f: A → B`` is ``f_*: F(A) \to F(B)``.
 """
-@theory ThIndexedCategory{Ob,Hom,Fib,FibHom} <: ThCategory{Ob,Hom} begin
+@theory ThOpindexedCategory{Ob,Hom,Fib,FibHom} <: ThCategory{Ob,Hom} begin
   @op begin
     (→) := FibHom
     (*) := act
@@ -90,8 +90,8 @@ indexing morphism ``f: A → B`` is ``f_*: F(A) \to F(B)``.
   u*(id(A)) == u ⊣ (A::Ob, X::Fib(A), Y::Fib(A), u::(X → Y))
 end
 
-# Indexed monoidal category
-###########################
+# Opindexed monoidal category
+#############################
 
 """ Theory of a (covariantly) *indexed monoidal category*.
 
@@ -110,7 +110,7 @@ References:
 - Moeller & Vasilakopoulou, 2020: Monoidal Grothendieck construction,
   Remark 3.18 [this paper is about a different notion!]
 """
-@theory ThIndexedMonoidalCategory{Ob,Hom,Fib,FibHom} <: ThIndexedCategory{Ob,Hom,Fib,FibHom} begin
+@theory ThOpindexedMonoidalCategory{Ob,Hom,Fib,FibHom} <: ThOpindexedCategory{Ob,Hom,Fib,FibHom} begin
   @op (⊗) := otimes
 
   # Monoid operations in each fiber.
