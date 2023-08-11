@@ -1,5 +1,6 @@
 export ThDisplayedCategory, Fib, FibHom, ob, hom,
-  ThOpindexedCategory, act, ThOpindexedMonoidalCategory
+  ThOpindexedCategory, act,
+  ThOpindexedMonoidalCategory, ThOpindexedMonoidalCategoryLax
 
 import Base: *
 
@@ -13,7 +14,10 @@ with a displayed category over ``C`` (`Fib`,`FibHom`). Displayed categories
 axiomatize lax functors ``C → **Span**``, or equivalently objects of a slice
 category ``**Cat**/C``, in a generalized algebraic style.
 
-Reference: Ahrens & Lumsdaine 2019, "Displayed categories", Definition 3.1.
+References:
+
+- [nLab: displayed category](https://ncatlab.org/nlab/show/displayed+category)
+- Ahrens & Lumsdaine, 2019: Displayed categories, Definition 3.1
 """
 @theory ThDisplayedCategory{Ob,Hom,Fib,FibHom} <: ThCategory{Ob,Hom} begin
   """ Fiber over an object. """
@@ -93,24 +97,8 @@ end
 # Opindexed monoidal category
 #############################
 
-""" Theory of a (covariantly) *indexed monoidal category*.
-
-An *indexed monoidal category* is a pseudofunctor into **MonCat**, the
-2-category of monoidal categories, lax monoidal functor, and monoidal natural
-transformations. As usual, we take both the pseudofunctor and the monoidal
-categories to be strict. However, unlike the most common definition of an
-indexed monoidal category (see
-[nLab](https://ncatlab.org/nlab/show/indexed+monoidal+category)), we allow the
-transition functors between monoidal categories to be lax monoidal. This follows
-the usage in (Hofstra & De Marchi 2006).
-
-References:
-
-- Hofstra & De Marchi, 2006: Descent for monads
-- Moeller & Vasilakopoulou, 2020: Monoidal Grothendieck construction,
-  Remark 3.18 [this paper is about a different notion!]
-"""
-@theory ThOpindexedMonoidalCategory{Ob,Hom,Fib,FibHom} <: ThOpindexedCategory{Ob,Hom,Fib,FibHom} begin
+# Not a standard or appealing theory, but a building block for those below.
+@theory ThOpindexedMonoidalCategoryPre{Ob,Hom,Fib,FibHom} <: ThOpindexedCategory{Ob,Hom,Fib,FibHom} begin
   @op (⊗) := otimes
 
   # Monoid operations in each fiber.
@@ -118,11 +106,6 @@ References:
   otimes(u::(X → Y), v::(W → Z))::(otimes(X,W) → otimes(Y,Z)) ⊣
     (A::Ob, W::Fib(A), X::Fib(A), Y::Fib(A), Z::Fib(A))
   munit(A::Ob)::Fib(A)
-
-  # Components of the laxator for `f: A → B`.
-  otimes(f::(A → B), X::Fib(A), Y::Fib(A))::(((X*f) ⊗ (Y*f)) → ((X⊗Y) * f)) ⊣
-    (A::Ob, B::Ob)
-  munit(f::(A → B))::(munit(B) → (munit(A)*f)) ⊣ (A::Ob, B::Ob)
 
   # Monoid axioms for each fiber.
   (X ⊗ Y) ⊗ Z == X ⊗ (Y ⊗ Z) ⊣ (A::Ob, X::Fib(A), Y::Fib(A), Z::Fib(A))
@@ -139,6 +122,48 @@ References:
     ⊣ (A::Ob, U::Fib(A), V::Fib(A), W::Fib(A), X::Fib(A), Y::Fib(A), Z::Fib(A),
        t::(U → V), v::(V → W), u::(X → Y), w::(Y → Z)))
   id(X ⊗ Y) == id(X) ⊗ id(Y) ⊣ (A::Ob, X::Fib(A), Y::Fib(A))
+end
+
+""" Theory of an opindexed, or covariantly indexed, monoidal category.
+
+An *opindexed monoidal category* is a pseudofunctor into **MonCat**, the
+2-category of monoidal categories, strong monoidal functors, and monoidal
+natural transformations. For simplicity, we take the pseudofunctor, the monoidal
+categories, and the monoidal functors all to be strict.
+
+References:
+
+- [nLab: indexed monoidal category](https://ncatlab.org/nlab/show/indexed+monoidal+category)
+- Shulman, 2008: Framed bicategories and monoidal fibrations
+- Shulman, 2013: Enriched indexed categories
+"""
+@theory ThOpindexedMonoidalCategory{Ob,Hom,Fib,FibHom} <: ThOpindexedMonoidalCategoryPre{Ob,Hom,Fib,FibHom} begin
+  (X ⊗ Y) * f == (X*f) ⊗ (Y*f) ⊣ (A::Ob, B::Ob, X::Fib(A), Y::Fib(A), f::(A → B))
+  munit(A) * f == munit(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+
+  (u ⊗ v) * f == (u*f) ⊗ (v*f) ⊣
+    (A::Ob, B::Ob, X::Fib(A), Y::Fib(A), Z::Fib(A), W::Fib(A),
+     f::(A → B), u::(X → Z), v::(Y → W))
+end
+
+""" Theory of an opindexed monoidal category with lax transition functors.
+
+This is a pseudofunctor into **MonCatLax**, the 2-category of monoidal
+categories, *lax* monoidal functors, and monoidal natural transformations. In
+(Hofstra & De Marchi 2006), these are called simply "(op)indexed monoidal
+categories," but that is not the standard usage.
+
+References:
+
+- Hofstra & De Marchi, 2006: Descent for monads
+- Moeller & Vasilakopoulou, 2020: Monoidal Grothendieck construction, Remark
+  3.18 [this paper is about monoidal indexed categories, a different notion!]
+"""
+@theory ThOpindexedMonoidalCategoryLax{Ob,Hom,Fib,FibHom} <: ThOpindexedMonoidalCategoryPre{Ob,Hom,Fib,FibHom} begin
+  # Components of the laxator for `f: A → B`.
+  otimes(f::(A → B), X::Fib(A), Y::Fib(A))::(((X*f) ⊗ (Y*f)) → ((X⊗Y) * f)) ⊣
+    (A::Ob, B::Ob)
+  munit(f::(A → B))::(munit(B) → (munit(A)*f)) ⊣ (A::Ob, B::Ob)
 
   # Naturality for laxity cells.
   ⊗(f,X,Y) ⋅ ((u⊗v) * f) == ((u*f) ⊗ (v*f)) ⋅ ⊗(f,Z,W) ⊣
