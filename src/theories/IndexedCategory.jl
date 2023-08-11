@@ -59,7 +59,7 @@ induced by an indexing morphism ``f: A → B`` is ``f_*: F(A) \to F(B)``.
 """
 @theory ThOpindexedCategory{Ob,Hom,Fib,FibHom} <: ThCategory{Ob,Hom} begin
   @op begin
-    (→) := FibHom
+    (⇢) := FibHom # XXX: Type inference not good enough to use `→` here also.
     (*) := act
   end
 
@@ -72,27 +72,27 @@ induced by an indexing morphism ``f: A → B`` is ``f_*: F(A) \to F(B)``.
     (A::Ob, X::Fib(A), Y::Fib(A), Z::Fib(A))
 
   # Transitions between fibers.
-  act(X::Fib(A), f::(A → B))::Fib(B) ⊣ (A::Ob, B::Ob)
-  act(u::(X → Y), f::(A → B))::(act(X,f) → act(Y,f)) ⊣
+  act(X::Fib(A), f::Hom(A,B))::Fib(B) ⊣ (A::Ob, B::Ob)
+  act(u::FibHom(X,Y), f::Hom(A,B))::FibHom(act(X,f), act(Y,f)) ⊣
     (A::Ob, B::Ob, X::Fib(A), Y::Fib(A))
 
   # Category axioms for each fiber.
   ((u ⋅ v) ⋅ w == u ⋅ (v ⋅ w)
    ⊣ (A::Ob, W::Fib(A), X::Fib(A), Y::Fib(A), Z::Fib(A),
-      u::(W → X), v::(X → Y), w::(Y → Z)))
-  u ⋅ id(X) == u ⊣ (A::Ob, X::Fib(A), Y::Fib(A), u::(X → Y))
-  id(X) ⋅ u == u ⊣ (A::Ob, X::Fib(A), Y::Fib(A), v::(X → Y))
+      u::(W ⇢ X), v::(X ⇢ Y), w::(Y ⇢ Z)))
+  u ⋅ id(X) == u ⊣ (A::Ob, X::Fib(A), Y::Fib(A), u::(X ⇢ Y))
+  id(X) ⋅ u == u ⊣ (A::Ob, X::Fib(A), Y::Fib(A), v::(X ⇢ Y))
 
   # Functorality of transitions.
   (u⋅v)*f == (u*f)⋅(v*f) ⊣ (A::Ob, B::Ob, X::Fib(A), Y::Fib(A), Z::Fib(A),
-                            f::(A → B), u::(X → Y), v::(Y → Z))
+                            f::(A → B), u::(X ⇢ Y), v::(Y ⇢ Z))
   (id(X))*f == id(X*f) ⊣ (A::Ob, B::Ob, X::Fib(A), f::(A → B))
 
   X*(f⋅g) == (X*f)*g ⊣ (A::Ob, B::Ob, C::Ob, X::Fib(A), f::(A → B), g::(A → C))
   u*(f⋅g) == (u*f)*g ⊣ (A::Ob, B::Ob, C::Ob, X::Fib(A), Y::Fib(A),
-                        f::(A → B), g::(B → C), u::(X → Y))
+                        f::(A → B), g::(B → C), u::(X ⇢ Y))
   X*(id(A)) == X ⊣ (A::Ob, X::Fib(A))
-  u*(id(A)) == u ⊣ (A::Ob, X::Fib(A), Y::Fib(A), u::(X → Y))
+  u*(id(A)) == u ⊣ (A::Ob, X::Fib(A), Y::Fib(A), u::(X ⇢ Y))
 end
 
 # Opindexed monoidal category
@@ -104,7 +104,7 @@ end
 
   # Monoid operations in each fiber.
   otimes(X::Fib(A), Y::Fib(A))::Fib(A) ⊣ (A::Ob)
-  otimes(u::(X → Y), v::(W → Z))::(otimes(X,W) → otimes(Y,Z)) ⊣
+  otimes(u::FibHom(X,Y), v::FibHom(W,Z))::FibHom(otimes(X,W), otimes(Y,Z)) ⊣
     (A::Ob, W::Fib(A), X::Fib(A), Y::Fib(A), Z::Fib(A))
   munit(A::Ob)::Fib(A)
 
@@ -114,14 +114,14 @@ end
   X ⊗ munit(A) == X ⊣ (A::Ob, X::Fib(A))
   ((u ⊗ v) ⊗ w == u ⊗ (v ⊗ w) ⊣
     (A::Ob, U::Fib(A), V::Fib(A), W::Fib(A), X::Fib(A), Y::Fib(A), Z::Fib(A),
-     u::(U → X), v::(V → Y), w::(W → Z)))
-  id(munit(A)) ⊗ u == u ⊣ (A::Ob, X::Fib(A), Y::Fib(A), u::(X → Y))
-  u ⊗ id(munit(A)) == u ⊣ (A::Ob, X::Fib(A), Y::Fib(A), u::(X → Y))
+     u::(U ⇢ X), v::(V ⇢ Y), w::(W ⇢ Z)))
+  id(munit(A)) ⊗ u == u ⊣ (A::Ob, X::Fib(A), Y::Fib(A), u::(X ⇢ Y))
+  u ⊗ id(munit(A)) == u ⊣ (A::Ob, X::Fib(A), Y::Fib(A), u::(X ⇢ Y))
 
   # Monoid functorality axioms for each fiber.
   ((t ⊗ u) ⋅ (v ⊗ w) == (t ⋅ v) ⊗ (u ⋅ w)
     ⊣ (A::Ob, U::Fib(A), V::Fib(A), W::Fib(A), X::Fib(A), Y::Fib(A), Z::Fib(A),
-       t::(U → V), v::(V → W), u::(X → Y), w::(Y → Z)))
+       t::(U ⇢ V), v::(V ⇢ W), u::(X ⇢ Y), w::(Y ⇢ Z)))
   id(X ⊗ Y) == id(X) ⊗ id(Y) ⊣ (A::Ob, X::Fib(A), Y::Fib(A))
 end
 
@@ -162,14 +162,14 @@ References:
 """
 @theory ThOpindexedMonoidalCategoryLax{Ob,Hom,Fib,FibHom} <: ThOpindexedMonoidalCategoryPre{Ob,Hom,Fib,FibHom} begin
   # Components of the laxator for `f: A → B`.
-  otimes(f::(A → B), X::Fib(A), Y::Fib(A))::(((X*f) ⊗ (Y*f)) → ((X⊗Y) * f)) ⊣
+  otimes(f::(A → B), X::Fib(A), Y::Fib(A))::FibHom(((X*f) ⊗ (Y*f)), ((X⊗Y) * f)) ⊣
     (A::Ob, B::Ob)
-  munit(f::(A → B))::(munit(B) → (munit(A)*f)) ⊣ (A::Ob, B::Ob)
+  munit(f::(A → B))::FibHom(munit(B), (munit(A)*f)) ⊣ (A::Ob, B::Ob)
 
   # Naturality for laxity cells.
   ⊗(f,X,Y) ⋅ ((u⊗v) * f) == ((u*f) ⊗ (v*f)) ⋅ ⊗(f,Z,W) ⊣
     (A::Ob, B::Ob, X::Fib(A), Y::Fib(A), Z::Fib(A), W::Fib(A),
-     f::(A → B), u::(X → Z), v::(Y → W))
+     f::(A → B), u::(X ⇢ Z), v::(Y ⇢ W))
 
   # Functorality of laxity cells.
   ⊗(f⋅g,X,Y) == ⊗(g,X*f,Y*f) ⋅ (⊗(f,X,Y)*g) ⊣
