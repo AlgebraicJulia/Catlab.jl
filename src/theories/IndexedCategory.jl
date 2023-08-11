@@ -1,5 +1,7 @@
 export ThDisplayedCategory, Fib, FibHom, ob, hom,
-  ThIndexedCategory, act, ⊙, ThIndexedMonoidalCategory
+  ThIndexedCategory, act, ThIndexedMonoidalCategory
+
+import Base: *
 
 # Displayed category
 ####################
@@ -46,12 +48,14 @@ assume that the functor is strict.
 Just as a copresheaf, or **Set**-valued functor, can be seen as a category
 action of a family of sets, an indexed category can be seen as a category action
 on a family of categories. This picture guides our axiomatization of an indexed
-category as a generalized algebraic theory.
+category as a generalized algebraic theory. The symbol `*` is used for the
+actions since a common mathematical notation for the functor induced by an
+indexing morphism ``f: A → B`` is ``f_*: F(A) \to F(B)``.
 """
 @theory ThIndexedCategory{Ob,Hom,Fib,FibHom} <: ThCategory{Ob,Hom} begin
   @op begin
     (→) := FibHom
-    (⊙) := act
+    (*) := act
   end
 
   Fib(ob::Ob)::TYPE
@@ -75,15 +79,15 @@ category as a generalized algebraic theory.
   id(X) ⋅ u == u ⊣ (A::Ob, X::Fib(A), Y::Fib(A), v::(X → Y))
 
   # Functorality of transitions.
-  (u⋅v)⊙f == (u⊙f) ⋅ (v⊙f) ⊣ (A::Ob, B::Ob, X::Fib(A), Y::Fib(A), Z::Fib(A),
-                              f::(A → B), u::(X → Y), v::(Y → Z))
-  (id(X))⊙f == id(X⊙f) ⊣ (A::Ob, B::Ob, X::Fib(A), f::(A → B))
+  (u⋅v)*f == (u*f)⋅(v*f) ⊣ (A::Ob, B::Ob, X::Fib(A), Y::Fib(A), Z::Fib(A),
+                            f::(A → B), u::(X → Y), v::(Y → Z))
+  (id(X))*f == id(X*f) ⊣ (A::Ob, B::Ob, X::Fib(A), f::(A → B))
 
-  X⊙(f⋅g) == (X⊙f)⊙g ⊣ (A::Ob, B::Ob, C::Ob, X::Fib(A), f::(A → B), g::(A → C))
-  u⊙(f⋅g) == (u⊙f)⊙g ⊣ (A::Ob, B::Ob, C::Ob, X::Fib(A), Y::Fib(A),
+  X*(f⋅g) == (X*f)*g ⊣ (A::Ob, B::Ob, C::Ob, X::Fib(A), f::(A → B), g::(A → C))
+  u*(f⋅g) == (u*f)*g ⊣ (A::Ob, B::Ob, C::Ob, X::Fib(A), Y::Fib(A),
                         f::(A → B), g::(B → C), u::(X → Y))
-  X⊙(id(A)) == X ⊣ (A::Ob, X::Fib(A))
-  u⊙(id(A)) == u ⊣ (A::Ob, X::Fib(A), Y::Fib(A), u::(X → Y))
+  X*(id(A)) == X ⊣ (A::Ob, X::Fib(A))
+  u*(id(A)) == u ⊣ (A::Ob, X::Fib(A), Y::Fib(A), u::(X → Y))
 end
 
 # Indexed monoidal category
@@ -116,9 +120,9 @@ References:
   munit(A::Ob)::Fib(A)
 
   # Components of the laxator for `f: A → B`.
-  otimes(f::(A → B), X::Fib(A), Y::Fib(A))::(((X⊙f) ⊗ (Y⊙f)) → ((X⊗Y) ⊙ f)) ⊣
+  otimes(f::(A → B), X::Fib(A), Y::Fib(A))::(((X*f) ⊗ (Y*f)) → ((X⊗Y) * f)) ⊣
     (A::Ob, B::Ob)
-  munit(f::(A → B))::(munit(B) → (munit(A)⊙f)) ⊣ (A::Ob, B::Ob)
+  munit(f::(A → B))::(munit(B) → (munit(A)*f)) ⊣ (A::Ob, B::Ob)
 
   # Monoid axioms for each fiber.
   (X ⊗ Y) ⊗ Z == X ⊗ (Y ⊗ Z) ⊣ (A::Ob, X::Fib(A), Y::Fib(A), Z::Fib(A))
@@ -137,12 +141,12 @@ References:
   id(X ⊗ Y) == id(X) ⊗ id(Y) ⊣ (A::Ob, X::Fib(A), Y::Fib(A))
 
   # Naturality for laxity cells.
-  ⊗(f,X,Y) ⋅ ((u⊗v) ⊙ f) == ((u⊙f) ⊗ (v⊙f)) ⋅ ⊗(f,Z,W) ⊣
+  ⊗(f,X,Y) ⋅ ((u⊗v) * f) == ((u*f) ⊗ (v*f)) ⋅ ⊗(f,Z,W) ⊣
     (A::Ob, B::Ob, X::Fib(A), Y::Fib(A), Z::Fib(A), W::Fib(A),
      f::(A → B), u::(X → Z), v::(Y → W))
 
   # Functorality of laxity cells.
-  ⊗(f⋅g,X,Y) == ⊗(g,X⊙f,Y⊙f) ⋅ (⊗(f,X,Y)⊙g) ⊣
+  ⊗(f⋅g,X,Y) == ⊗(g,X*f,Y*f) ⋅ (⊗(f,X,Y)*g) ⊣
     (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), X::Fib(A), Y::Fib(A))
   ⊗(id(A),X,Y) == id(X⊗Y) ⊣ (A::Ob, X::Fib(A), Y::Fib(A))
 end
