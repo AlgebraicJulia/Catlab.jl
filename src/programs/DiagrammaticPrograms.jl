@@ -54,6 +54,7 @@ end
   HomOver(name::Symbol, src::Symbol, tgt::Symbol, over::HomExpr)
   AttrOver(name::Symbol, src::Symbol,tgt::Symbol,aux_func_def::Expr,mod::Module)#XX:make JuliaCode
   HomAndAttrOver(lhs::HomOver,rhs::AttrOver)
+  AssignLiteral(name::Symbol, value)
 end
 
 @data CatExpr <: DiagramExpr begin
@@ -107,6 +108,7 @@ end # AST module
 # Graphs
 ########
 
+#probably move into Graphs
 @present SchNamedGraph <: SchGraph begin
   VName::AttrType
   EName::AttrType
@@ -524,14 +526,14 @@ function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
   isnothing(ob_parser) && (ob_parser = x -> parse_ob(C, x))
   isnothing(hom_parser) && (hom_parser = (f,x,y) -> parse_hom(C,f))
   g, eqs = Presentation(FreeCategory), Pair[] 
-  F_ob, F_hom, params = Dict{GATExpr,Any}(), Dict{GATExpr,Any}(), Dict{Symbol,Function}()
+  F_ob, F_hom, params = Dict{GATExpr,Any}(), Dict{GATExpr,Any}(), Dict{Symbol,Union{Literal,Function}}()
   attrs,homs = generators(presentation(C),:Attr),generators(presentation(C),:Hom)
   mornames = map(first,[attrs;homs])
   for stmt in statements
     @match stmt begin
       AST.ObOver(x, X) => begin
         x′ = parse!(g, AST.Ob(x))
-        #`nothing` though z would be nicer so that not everything has to be pointed
+        #`nothing`, though z would be nicer, so that not every category and schema has to be pointed
         F_ob[x′] = isnothing(X) ? nothing : ob_parser(X)
       end
       AST.HomOver(f, x, y, h) => begin
@@ -563,11 +565,11 @@ function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
         aux_func = make_func(mod,expr,mornames)
         params[nameof(e)] = aux_func
       end
-      #AST.AssignLiteral(x, value) => begin
-      #  v = vertex_named(g, x)
-        #haskey(params, v) && error("Literal already assigned to $x")
-        #params[v] = value #only place where params gets touched, WRONG
-      #end
+      #x should be a Symbol
+      AST.AssignLiteral(x, value) => begin
+        haskey(params, x) && error("Literal already assigned to $x")
+        params[x] = value
+      end
       AST.HomEq(lhs, rhs) =>
         push!(eqs, parse_path(g, lhs) => parse_path(g, rhs))
       _ => error("Cannot use statement $stmt in diagram definition")
@@ -1099,9 +1101,9 @@ function parse_diagram_ast(body::Expr; free::Bool=false, preprocess::Bool=true,m
         parse_hom_over(gen_anonhom!(state),x,y,state.ob_over[x],state.ob_over[y],h,mod=mod)
       # x == "foo"
       # "foo" == x
-     # Expr(:call, :(==), x::Symbol, value::Literal) ||
-     # Expr(:call, :(==), value::Literal, x::Symbol) =>
-     #   [AST.AssignLiteral(x, get_literal(value))]
+     Expr(:call, :(==), x::Symbol, value::Literal) ||
+     Expr(:call, :(==), value::Literal, x::Symbol) =>
+       [AST.AssignLiteral(x, get_literal(value))]
      
       # h(x) == y
       # y == h(x), this is for y an object of one of the diagrams.
@@ -1113,19 +1115,14 @@ function parse_diagram_ast(body::Expr; free::Bool=false, preprocess::Bool=true,m
       end
       # h(x) == "foo"
       # "foo" == h(x)
-      # this is wrong on master, assigning the literal to y instead of z
-      # this should probably just be destroyed because it's hard to generalize
-      # to parsing eg weight(e) = (x -> ...) well actually, the only definable
-      # functions from an unlabelled finite set are constants, so maybe this is fine?
-      # but it shouldn't be just for literals...Anyway this is sugar.
-     # (Expr(:call, :(==), call::Expr, value::Literal) ||
-     #  Expr(:call, :(==), value::Literal, call::Expr)) && if free end => begin
-     #    (h, x), y, z = destructure_unary_call(call), gen_anonob!(state), gen_anonhom!(state)
-     #    X = state.ob_over[x]
-     #    [AST.ObOver(y, nothing),
-     #     AST.AssignLiteral(z, get_literal(value)),
-     #     AST.HomOver(z, x, y, parse_hom_ast(h, X))]
-     # end
+     (Expr(:call, :(==), call::Expr, value::Literal) ||
+      Expr(:call, :(==), value::Literal, call::Expr)) && if free end => begin
+         (h, x), y, z = destructure_unary_call(call), gen_anonob!(state), gen_anonhom!(state)
+         X = state.ob_over[x]
+         [AST.ObOver(y, nothing),
+          AST.AssignLiteral(y, get_literal(value)),
+          AST.HomOver(z, x, y, parse_hom_ast(h, X))]
+     end
 
       # h(x) == k(y)
       # this is for anonymous objects, how to make it work for 
@@ -1465,5 +1462,4 @@ function get_keyword_arg_val(expr::Expr)
                "Acceptable inputs are of the form `:(var=val)`.")
   end
 end
-
 end

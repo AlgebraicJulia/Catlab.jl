@@ -16,7 +16,7 @@ import ..Categories: ob_map, hom_map
 import ...GATs: functor
 using ..FinCats: make_map, mapvals, presentation_key
 using ..Diagrams
-import ..FinCats: FinCatPresentation
+import ..FinCats: FinCatPresentation,vertex_named,NamedGraph
 using ..Chase: collage, crel_type, pres_to_eds, add_srctgt, chase
 using ..FinSets: VarSet
 using MLStyle: @match
@@ -664,7 +664,7 @@ function yoneda(cons, C::Presentation{ThSchema};
     c, d = nameof(dom(f)), nameof(codom(f))
     (yc, rootc), (yd, rootd) = cache[c], cache[d]
     initial = Dict(d => Dict(rootd => yc[rootc,f]))
-    f => homomorphism(yd, yc, initial=initial) # Unique homomorphism.
+    nameof(f) => homomorphism(yd, yc, initial=initial) # Unique homomorphism.
   end)
 
   FinDomFunctor(y_ob, y_hom, op(FinCat(C)))
@@ -686,34 +686,41 @@ function colimit_representables(M::DeltaSchemaMigration, y)
 end
 function colimit_representables(M::ConjSchemaMigration, y)
   F = functor(M)
-  C = dom(F)
+  J = dom(F)
+  #Get the constructor for a C-set.
   ACS = constructor(ob_map(y,first(ob_generators(dom(y)))))
-  colimits = make_map(ob_generators(C)) do c
-    Fc = ob_map(F, c) # e.g. I
-    clim_diag = deepcopy(diagram(compose(op(Fc), y)))
+  colimits = make_map(ob_generators(J)) do j
+    Fj = dom_to_graph(diagram(ob_map(F, j));named=true) #a diagram K to C
+    clim_diag = deepcopy((compose(op(Fj), y))) #K^op to C^op to C-Set
     # modify the diagram we take a colimit of to concretize some vars
-    params = Fc isa SimpleDiagram ? Dict() : Fc.params
-    P, om, hm = [f(clim_diag) for f in [presentation ∘ dom, ob_map, hom_map]]
-    s = P.syntax
-    #XX:Not sure whether below is correctly modified from graph to presentation
+    
+    params = ob_map(F,j) isa SimpleDiagram ? Dict() : ob_map(F,j).params
+    G, om, hm = [f(clim_diag) for f in [graph ∘ dom, ob_map, hom_map]]
     for (i,val) in collect(params)
-      v = add_generator!(P,s.Ob(s.Ob,Symbol("param$i")))
-      f = add_generator!(P,Hom(Symbol("param$i"),i,v))
-      at = nameof(ob_map(Fc, i)) # attribute type name 
+      v = add_vertex!(G; vname=Symbol("param$i"))
+      add_edge!(G, vertex_named(G,i), v, ename=Symbol("param$i"))
+      at = nameof(ob_map(Fj, i)) # attribute type name 
       h = only(homomorphisms(ob_map(clim_diag,i), ACS(); initial=Dict(at=>[val])))
-      om[v] = ACS()
-      hm[f] = h
+      push!(om, ACS())
+      push!(hm, h)
     end
-    updated_diagram = FinDomFunctor(om, hm, FinCat(P), codom(clim_diag))
+    updated_diagram = FinDomFunctor(om, hm, FinCat(G), codom(clim_diag))
     colimit(updated_diagram) # take colimit
   end
-  homs = make_map(hom_generators(C)) do f
-    Ff, c, d = hom_map(F, f), dom(C, f), codom(C, f)
-    universal(compose(op(Ff), y), colimits[d], colimits[c])
+  homs = make_map(hom_generators(J)) do f
+    Ff, j, k = hom_map(F, f), dom(J, f), codom(J, f)
+    universal(compose(op(Ff), y), colimits[k], colimits[j])
   end
-  FinDomFunctor(mapvals(ob, colimits), homs, op(C))
+  FinDomFunctor(mapvals(ob, colimits), homs, op(J))
 end
+# FIXME: The edge name should also be uniquely indexed, but this currently
+# doesn't play nicely with nullable attributes.
 
+#vertex_name(g::AbstractNamedGraph, args...) = subpart(g, args..., :vname)
+#edge_name(g::AbstractNamedGraph, args...) = subpart(g, args..., :ename)
+
+vertex_named(g::NamedGraph, name) = only(incident(g, name, :vname))
+#edge_named(g::AbstractNamedGraph, name)= only(incident(g, name, :ename))
 # Schema translation
 ####################
 

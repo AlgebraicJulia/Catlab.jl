@@ -507,7 +507,7 @@ F = @migration SchGraph begin
   (i: X → I) => src(e₁)
   (o: X → O) => tgt(e₂)
 end
-#=XXX: colimit_representables is broken
+#XXX: colimit_representables is broken
 G = colimit_representables(F, y_Graph) # Conjunctive migration.
 X = ob_map(G, :X)
 @test is_isomorphic(X, path_graph(Graph, 3))
@@ -554,7 +554,7 @@ expected = @acset WeightedGraph{Float64} begin
   V=5; E=3; Weight=1; src=[1,1,3]; tgt=[2,4,5]; weight=[1.8,1.9,AttrVar(1)]
 end
 @test is_isomorphic(ob_map(colimit_representables(d, yWG), :I), expected)
-=#
+
 
 # Subobject classifier
 ######################

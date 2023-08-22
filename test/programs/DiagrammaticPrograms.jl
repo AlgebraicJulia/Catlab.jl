@@ -215,13 +215,14 @@ end
   (e1, e2)::E
   tgt(e1) == v
   src(e2) == v
-
-  weight(e1) == 5.0
-  weight(e2) == 5.0
+  w :: Weight
+  w == 5.0
+  weight(e1) == w 
+  weight(e2) == w
 end
-@test collect_ob(d) == SchWeightedGraph[[:V, :E, :E, :Weight]]
-@test collect_hom(d) == SchWeightedGraph[[:tgt, :src, :weight, :weight]]
-@test d.params == Dict(4 => 5.0)
+@test sort(nameof.(collect_ob(d))) == [:E,:E,:V,:Weight]
+@test sort(nameof.(collect_hom(d))) == [:src, :tgt, :weight, :weight]
+@test d.params == Dict(:w => 5.0)
 
 d = @free_diagram SchWeightedGraph begin
   (e1, e2)::E
@@ -229,9 +230,9 @@ d = @free_diagram SchWeightedGraph begin
   weight(e1) == 0.5
   weight(e2) == 1.5
 end
-@test collect_ob(d) == SchWeightedGraph[[:E, :E, :V, :Weight, :Weight]]
-@test collect_hom(d) == SchWeightedGraph[[:tgt, :src, :weight, :weight]]
-@test d.params == Dict(4 => 0.5, 5 => 1.5)
+@test sort(nameof.(collect_ob(d))) == [:E, :E, :V, :Weight, :Weight]
+@test sort(nameof.(collect_hom(d))) == [:src, :tgt,:weight, :weight]
+@test sort(collect(values(d.params))) == [0.5,1.5]
 # Migrations
 ############
 
