@@ -310,6 +310,7 @@ uns = naturality_failures(β)
 
 # Loose morphisms.
 α = LooseACSetTransformation((V=[1,2], E=[1]), (Weight=x->x/2,), g, h)
+α = ACSetTransformation(g, h, V=[1,2], E=[1], Weight=x->x/2,)
 @test α isa LooseACSetTransformation
 @test type_components(α)[:Weight](10.0) == 5.0
 @test is_natural(α)
