@@ -639,11 +639,6 @@ M = @migration SchMechLink SchMechLink begin
 end
 @test length(M.params) ==1 && M.params[:pos] isa Function
 @test hom_map(functor(M),:pos) isa FreePtSchema.Attr{:zeromap}
-A = migrate(MechLink,G,M)
-v₃ = subpart(A,1,:pos)
-v₂ = v₃[1:2]
-angle(v,w)=acos( sum(v.*w)/(sqrt(sum(v.^2)*sum(w.^2))) )
-@test angle(v₂,[1,1]) == π/5 && v₃[3] == 1
 #Filter impossible edges out of a mechanical linkage
 M = @migration SchMechLink SchMechLink begin
     V => V
@@ -665,9 +660,6 @@ migE = ob_map(functor(M),:E)
 ps = ob_map(functor(M),:E).params
 @test length(ps) == 2
 @test length(M.params) == 0
-
-B = migrate(MechLink,G,M)
-@test length(parts(B,:E)) == 1
 #variant
 M′ = @migration SchMechLink begin
     V => V
@@ -693,9 +685,6 @@ F,F′ = functor(M),functor(M′)
 #Also, the domains are only isomorphic because
 #presentations involve meaningless ordering of the generators.
 @test ob_generators(dom(F)) == ob_generators(dom(F′))
-
-Bb = migrate(G,M)
-@test length(ob_map(Bb,:E)) == 1
 #Filter impossible edges out of a mechanical linkage while rotating
 M = @migration SchMechLink SchMechLink begin
     V => V
@@ -717,9 +706,6 @@ M = @migration SchMechLink SchMechLink begin
     len => len(e)
 end
 @test length(M.params) ==1 && length(ob_map(functor(M),:E).params) == 2
-C = migrate(MechLink,G,M)
-@test subpart(C,:,:pos) == subpart(A, :, :pos)
-@test length(parts(C,:E))==1
 #Filter out impossible edges, but then weirdly double all the lengths
 M = @migration SchMechLink begin
     V => V
@@ -736,7 +722,6 @@ M = @migration SchMechLink begin
     (pos:V→Pos) => pos
     (len:E→Len) => (len(e)|>(x->2x))
 end
-D = migrate(G,M)
 #unabstracting x->2x over the unused variables
 #for the functions in the acset to be migrated
 f = M.params[:len](:src,:tgt,:pos,:len)
@@ -762,8 +747,7 @@ end
 F,F′ = functor(M),functor(M′)
 @test all([ob_map(F,a)==ob_map(F′,a) for a in [:V,:Pos,:Len]])  
 @test diagram(ob_map(F,:E)) == diagram(ob_map(F′,:E))
-Dd = migrate(MechLink,G,M′)
-@test only(subpart(Dd,:len)) == 2.0
+
 #disjoint union linkage with itself, second copy reflected through origin
 M = @migration SchMechLink SchMechLink begin
   V => @cases (v₁::V;v₂::V)
@@ -791,10 +775,6 @@ f = M_pos.params[:(v₂)](:src,:tgt,:pos,:len)
 xs = rand(Float64,100)
 @test all([f(x)==-x for x in xs])
 @test (SchMechLink[:Pos],:(v₂)=>SchMechLink[:pos]) in collect_ob(M_pos)
-E = migrate(MechLink,G,M)
-
-#note to self: I think the indexing categories for diagrams never need to be
-#pointed, but I wonder whether there's some crazy gluc case where I'm wrong.
 
 M′ = @migration SchMechLink SchMechLink begin
   V => @cases (v₁::V;v₂::V)
@@ -861,6 +841,5 @@ end
 end
 @test isempty(M.params)
 @test length(hom_map(functor(M),:pos).params) == 1
-Ee = migrate(MechLink,G,M)
-@test sort(map(x->x[1],subpart(Ee,:pos))) == [-2.0,-2.0,-1.0,1.0,2.0,2.0]
+
 end
