@@ -354,7 +354,7 @@ It has the mapping data in addition to injections from the (co)domain.
 """
 function collage(F::FinFunctor;objects=ob_generators(dom(F)))
   (dF, _) = Xs = [dom(F), codom(F)]
-  homs = filter(hom_generators(dF)) do f dom(f) in objects && codom(f) in objects end
+  homs = filter(hom_generators(dF)) do f dom(dF,f) in objects && codom(dF,f) in objects end
   C = coproduct_fincat(Xs)
   i1, i2 = legs(C)
   p = presentation(apex(C)) # inherit equations from dom and codom

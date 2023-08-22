@@ -3,7 +3,7 @@ export ThCategory, FreeCategory, Ob, Hom, dom, codom, id, compose, ⋅,
   ThCopresheaf, FreeCopresheaf, El, ElExpr, ob, act,
   ThPresheaf, FreePresheaf, coact,
   ThMCategory, FreeMCategory, Tight, reflexive, transitive,
-  ThPtCategory, FreePtCategory, zeromap
+  ThPointedSetCategory, FreePointedSetCategory, zeromap
 
 import Base: inv, show
 
@@ -45,7 +45,6 @@ symbol ``⋅`` (`\\cdot`) for composition in diagrammatic order.
 end
 
 # Convenience constructors
-#compose(f) = f
 compose(fs::AbstractVector) = foldl(compose, fs)
 compose(f, g, h, fs...) = compose([f, g, h, fs...])
 
@@ -201,20 +200,21 @@ abstract type TightExpr{T} <: GATExpr{T} end
 end
 
 """
-Theory of a pointed category.
+Theory of a pointed set-enriched category.
 We axiomatize a category equipped with zero morphisms.
 
-A functor from an ordinary category into a freely pointed category, 
-equivalently, a pointed category in which no two nonzero maps 
+A functor from an ordinary category into a freely generated
+pointed-set enriched category, 
+equivalently, a pointed-set enriched category in which no two nonzero maps 
 compose to a zero map, is a good notion
 of a functor that's total on objects and partial on morphisms.
 """
-@theory ThPtCategory{Ob,Hom} <: ThCategory{Ob,Hom} begin
+@theory ThPointedSetCategory{Ob,Hom} <: ThCategory{Ob,Hom} begin
   zeromap(A,B)::Hom(A,B)⊣(A::Ob,B::Ob)
   compose(zeromap(A,B),f::(B→C))==zeromap(A,C)⊣(A::Ob,B::Ob,C::Ob)
   compose(g::(A→B),zeromap(A,B))==zeromap(A,C)⊣(A::Ob,B::Ob,C::Ob)
 end
 
-@syntax FreePtCategory{ObExpr,HomExpr} ThPtCategory begin
+@syntax FreePointedSetCategory{ObExpr,HomExpr} ThPointedSetCategory begin
   compose(f::Hom,g::Hom) = associate_unit(normalize_zero(new(f,g; strict=true)), id)
 end

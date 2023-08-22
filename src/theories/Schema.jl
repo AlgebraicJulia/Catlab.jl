@@ -1,4 +1,4 @@
-export ThSchema, FreeSchema, AttrType, Attr, SchemaExpr, AttrTypeExpr, AttrExpr, ThPtSchema, FreePtSchema,zeromap
+export ThSchema, FreeSchema, AttrType, Attr, SchemaExpr, AttrTypeExpr, AttrExpr, ThPointedSetSchema, FreePointedSetSchema,zeromap
 
 # Schema
 
@@ -33,7 +33,7 @@ abstract type AttrExpr{T} <: SchemaExpr{T} end
   compose(f::Hom, x::Attr) = associate_unit(new(f,x; strict=true), id)
 end
 
-@theory ThPtSchema{Ob,Hom,AttrType,Attr} <: ThPtCategory{Ob,Hom} begin
+@theory ThPointedSetSchema{Ob,Hom,AttrType,Attr} <: ThPointedSetCategory{Ob,Hom} begin
   AttrType::TYPE
   Attr(dom::Ob,codom::AttrType)::TYPE
   zeromap(A::Ob,X::AttrType)::Attr(A,X)
@@ -48,7 +48,7 @@ end
   compose(id(A), a) == a ⊣ (A::Ob, X::AttrType, a::Attr(A,X))
 end
 
-@syntax FreePtSchema{ObExpr,HomExpr,AttrTypeExpr,AttrExpr} ThPtSchema begin
+@syntax FreePointedSetSchema{ObExpr,HomExpr,AttrTypeExpr,AttrExpr} ThPointedSetSchema begin
   compose(f::Hom,g::Hom) = associate_unit(normalize_zero(new(f,g; strict=true)), id)
   compose(f::Hom,a::Attr) = associate_unit(normalize_zero(new(f,a; strict=true)), id)
 end

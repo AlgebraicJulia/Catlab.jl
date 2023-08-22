@@ -21,8 +21,8 @@ x, y = Attr(:x, A, C), Attr(:y, B, C)
 # Pointed schema
 ##################
 
-A,B,C = map(x->Ob(FreePtSchema,x),[:A,:B,:C])
-X = AttrType(FreePtSchema.AttrType,:X)
+A,B,C = map(x->Ob(FreePointedSetSchema,x),[:A,:B,:C])
+X = AttrType(FreePointedSetSchema.AttrType,:X)
 f,g = Hom(:f,A,B),Hom(:g,B,C)
 a = Attr(:a,C,X)
 zAB,zBC,zAC,zAX,zBX,zCX = zeromap(A,B),zeromap(B,C),zeromap(A,C),zeromap(A,X),zeromap(B,X),zeromap(C,X)

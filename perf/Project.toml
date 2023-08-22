@@ -1,6 +1,0 @@
-[deps]
-AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
-Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
-MethodAnalysis = "85b6ec6f-f7df-4429-9514-a64bcd9ee824"
-Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-SnoopCompile = "aa65fe97-06da-5843-b5b1-d5d13cad87d2"

@@ -508,7 +508,6 @@ F = @migration SchGraph begin
   (i: X → I) => src(e₁)
   (o: X → O) => tgt(e₂)
 end
-#XXX: colimit_representables is broken
 G = colimit_representables(F, y_Graph) # Conjunctive migration.
 X = ob_map(G, :X)
 @test is_isomorphic(X, path_graph(Graph, 3))

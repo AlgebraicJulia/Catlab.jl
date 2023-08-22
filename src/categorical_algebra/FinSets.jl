@@ -4,7 +4,7 @@ module FinSets
 export FinSet, FinFunction, FinDomFunction, TabularSet, TabularLimit,
   force, is_indexed, preimage, VarFunction, LooseVarFunction,
   JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin,
-  SubFinSet, SubOpBoolean, is_monic, is_epic, convert
+  SubFinSet, SubOpBoolean, is_monic, is_epic
 
 using StructEquality
 using DataStructures: OrderedDict, IntDisjointSets, union!, find_root!
@@ -149,7 +149,7 @@ ob_generator_name(C::DiscreteCat, x) = x
 hom(C::DiscreteCat, x) = ob_generator(C, x)
 
 is_discrete(::DiscreteCat) = true
-graph(C::DiscreteCat{Int,FinSetInt};maps=false,inv=false) = maps ? (Graph(length(C.set)), Dict(pairs(length(C.set))), Dict()) : Graph(length(C.set))
+graph(C::DiscreteCat{Int,FinSetInt}) = Graph(length(C.set))
 
 dom(C::DiscreteCat{T}, f) where T = f::T
 codom(C::DiscreteCat{T}, f) where T = f::T
@@ -278,9 +278,7 @@ function Base.show(io::IO, f::FinDomFunctionVector)
   print(io, ")")
 end
 
-function force(f::FinDomFunction{Int})
-  FinDomFunctionVector(eltype(codom(f))[ f(x) for x in dom(f) ], codom(f))
-end
+force(f::FinDomFunction{Int}) = FinDomFunctionVector(map(f, dom(f)), codom(f))
 force(f::FinDomFunctionVector) = f
 
 Base.collect(f::SetFunction) = force(f).func
@@ -847,7 +845,6 @@ ensure_indexed(f::FinFunction{Int,Int}) = is_indexed(f) ? f :
 ensure_indexed(f::FinDomFunction{Int}) = is_indexed(f) ? f :
   FinDomFunction(collect(f), index=true)
 
-#limit(d::BipartiteFreeDiagram{<:SetOb}) = limit(ensure_type(d;type=FinDomFunction{Int}))
 function limit(d::BipartiteFreeDiagram{<:SetOb,<:FinDomFunction{Int}})
   # As in a pullback, this method assumes that all objects in layer 2 have
   # incoming morphisms.

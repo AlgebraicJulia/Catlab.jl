@@ -572,4 +572,32 @@ function Base.reverse!(g::G) where G<:HasGraph
 end
 Base.reverse(g::G) where G<:HasGraph = g |> deepcopy |> reverse!
 
+vertex_name(G::HasGraph, v) = v
+edge_name(G::HasGraph, e) = e
+
+@present SchNamedGraph <: SchGraph begin
+  VName::AttrType
+  EName::AttrType
+  vname::Attr(V, VName)
+  ename::Attr(E, EName)
+end
+
+""" Abstract type for graph with named vertices and edges.
+"""
+@abstract_acset_type AbstractNamedGraph <: AbstractGraph
+
+""" Graph with named vertices and edges.
+The default graph type used to construct the graph underlying
+a finite category given by a presentation.
+"""
+@acset_type NamedGraph(SchNamedGraph, index=[:src,:tgt,:ename],
+                       unique_index=[:vname]) <: AbstractNamedGraph
+vertex_name(g::AbstractNamedGraph, args...) = subpart(g, args..., :vname)
+edge_name(g::AbstractNamedGraph, args...) = subpart(g, args..., :ename)
+
+vertex_named(g::AbstractNamedGraph, name) = only(incident(g, name, :vname))
+edge_named(g::AbstractNamedGraph, name)= only(incident(g, name, :ename))
+const DiagramGraph = NamedGraph{Symbol,Symbol}
+
+
 end # module

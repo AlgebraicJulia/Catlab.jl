@@ -30,7 +30,6 @@ wrapper type distinguishes which diagram category the diagram belongs to. See
 also be `Any` to indicate that no choice has (yet) been made.
 """
 abstract type Diagram{T,C<:Cat,D<:FinDomFunctor} end
-cat_type(::Type{Diagram{T,C,D}}) where {T,C,D} = C
 Diagram(args...) = Diagram{Any}(args...)
 
 # The first type parameter is considered part of the data!
@@ -121,50 +120,42 @@ struct QueryDiagramHom{T,C<:Cat,F<:FinFunctor,Φ<:FinTransformation,D<:Functor{<
   params::Params
 end
 
-DiagramHom{T}(shape_map::F, diagram_map::Φ, precomposed_diagram::D) where
-    {T,C,F<:FinFunctor,Φ<:FinTransformation,D<:Functor{<:FinCat,C}} =
-  SimpleDiagramHom{T,C,F,Φ,D}(shape_map, diagram_map, precomposed_diagram)
-#makes sure you'll never accidentally build a querydiagramhom by building a diagramhom 
-#with no params.
-DiagramHom{T}(shape_map::F, diagram_map::Φ, precomposed_diagram::D,params::Params) where
-    {T,C,F<:FinFunctor,Φ<:FinTransformation,D<:Functor{<:FinCat,C},Params<:AbstractDict} =
-  isempty(params) ?   
+#XX: this isn't type stable
+DiagramHom{T}(shape_map::F, diagram_map::Φ, precomposed_diagram::D;params::Params=nothing) where
+    {T,C,F<:FinFunctor,Φ<:FinTransformation,D<:Functor{<:FinCat,C},Params<:Union{AbstractDict,Nothing}} =
+  isnothing(params) ?   
     SimpleDiagramHom{T,C,F,Φ,D}(shape_map, diagram_map, precomposed_diagram) :
     QueryDiagramHom{T,C,F,Φ,D,Params}(shape_map, diagram_map, precomposed_diagram,params)
 """Convert the diagram category in which a diagram hom is being viewed."""
 DiagramHom{T}(f::DiagramHom) where T =
   DiagramHom{T}(f.shape_map, f.diagram_map, f.precomposed_diagram,params=get_params(f))
 
-DiagramHom{T}(ob_maps, hom_map, D::Diagram{T}, D′::Diagram{T};params=Dict()) where T =
-  DiagramHom{T}(ob_maps, hom_map, diagram(D), diagram(D′);params=params)
+DiagramHom{T}(ob_maps, hom_map, D::Diagram{T}, D′::Diagram{T};kw...) where T =
+  DiagramHom{T}(ob_maps, hom_map, diagram(D), diagram(D′);kw...)
 DiagramHom{T}(ob_maps, D::Union{Diagram{T},FinDomFunctor},
-              D′::Union{Diagram{T},FinDomFunctor};params = Dict()) where T =
-  DiagramHom{T}(ob_maps, nothing, D, D′;params=params)
+              D′::Union{Diagram{T},FinDomFunctor};kw...) where T =
+  DiagramHom{T}(ob_maps, nothing, D, D′;kw...)
 
-function DiagramHom{id}(ob_maps, hom_map, D::FinDomFunctor, D′::FinDomFunctor;params=Dict())
+function DiagramHom{T}(ob_maps, hom_map, D::FinDomFunctor, D′::FinDomFunctor;kw...) where T
   f = FinFunctor(mapvals(cell1, ob_maps), hom_map, dom(D), dom(D′))
-  DiagramHom{id}(f, mapvals(x -> cell2(D′,x), ob_maps), D, D′,params=params)
+  DiagramHom{T}(f, mapvals(x -> cell2(D′,x), ob_maps), D, D′;kw...)
 end
-function DiagramHom{op}(ob_maps, hom_map, D::FinDomFunctor, D′::FinDomFunctor;params=Dict())
+function DiagramHom{op}(ob_maps, hom_map, D::FinDomFunctor, D′::FinDomFunctor;kw...)
   f = FinDomFunctor(mapvals(cell1, ob_maps), hom_map, dom(D′), dom(D))
-  DiagramHom{op}(f, mapvals(x -> cell2(D,x), ob_maps), D, D′,params=params)
-end
-function DiagramHom{co}(ob_maps, hom_map, D::FinDomFunctor, D′::FinDomFunctor;params=Dict())
-  f = FinDomFunctor(mapvals(cell1, ob_maps), hom_map, dom(D), dom(D′))
-  DiagramHom{co}(f, mapvals(x -> cell2(D′,x), ob_maps), D, D′,params=params)
+  DiagramHom{op}(f, mapvals(x -> cell2(D,x), ob_maps), D, D′;kw...)
 end
 
-function DiagramHom{id}(f::FinFunctor, components, D::FinDomFunctor, D′::FinDomFunctor;params=Dict())
+function DiagramHom{id}(f::FinFunctor, components, D::FinDomFunctor, D′::FinDomFunctor;kw...)
   ϕ = FinTransformation(components, D, f⋅D′)
-  DiagramHom{id}(f, ϕ, D′,params)
+  DiagramHom{id}(f, ϕ, D′;kw...)
 end
-function DiagramHom{op}(f::FinFunctor, components, D::FinDomFunctor, D′::FinDomFunctor;params=Dict())
+function DiagramHom{op}(f::FinFunctor, components, D::FinDomFunctor, D′::FinDomFunctor;kw...)
   ϕ = FinTransformation(components, f⋅D, D′)
-  DiagramHom{op}(f, ϕ, D,params)
+  DiagramHom{op}(f, ϕ, D;kw...)
 end
-function DiagramHom{co}(f::FinFunctor, components, D::FinDomFunctor, D′::FinDomFunctor;params=Dict())
+function DiagramHom{co}(f::FinFunctor, components, D::FinDomFunctor, D′::FinDomFunctor;kw...)
   ϕ = FinTransformation(components, f⋅D′, D)
-  DiagramHom{co}(f, ϕ, D′,params) 
+  DiagramHom{co}(f, ϕ, D′;kw...)
 end
 
 cell1(pair::Union{Pair,Tuple{Any,Any}}) = first(pair)
@@ -278,11 +269,9 @@ given any needed parameters specifying the functions in ``H``'s codomain
 which the whiskered result should map to. Currently assumes
 the result will be a totally defined transformation.
 """
-
-Base.haskey(v::AbstractVector,i) = 1 <= i <= length(v)
-function param_compose(α::FinTransformation, H::Functor; params=[])
+function param_compose(α::FinTransformation, H::Functor; params=Dict())
   F, G = dom(α), codom(α)
-  params = params isa Union{AbstractArray,AbstractDict} ? params : [params]
+  #params = params isa Union{AbstractArray,AbstractDict} ? params : [params]
   new_components = mapvals(pairs(α.components);keys=true) do i,f
     compindex = ob(dom(F),i)
     #allow non-strictness because of possible pointedness
@@ -347,7 +336,7 @@ function universal(f::DiagramHom{op}, dom_lim, codom_lim)
   #get the map from objects of the domain diagram,
   #if indexed by a fincatpresentation, to their 
   #indices when reindexed by a fincatgraph.
-  obs = graph(dom(dom(f).diagram);maps=true,inv=true)[2]
+  obs = Dict(reverse(p) for p in pairs(ob_generators(dom(diagram(dom(f))))))
   cone = Multispan(apex(dom_lim), map(ob_generators(J′)) do j′
     j, g = ob_map(f, j′)
     πⱼ = legs(dom_lim)[obs[j]]
@@ -358,7 +347,7 @@ end
 
 function universal(f::DiagramHom{id}, dom_colim, codom_colim)
   J = shape(dom(f))
-  obs = graph(dom(codom(f).diagram);maps=true,inv=true)[2]
+  obs = Dict(reverse(p) for p in pairs(ob_generators(dom(diagram(codom(f))))))
   cocone = Multicospan(apex(codom_colim), map(ob_generators(J)) do j
     j′, g = ob_map(f, j)
     ιⱼ′ = legs(codom_colim)[obs[j′]]
@@ -379,12 +368,10 @@ function munit(::Type{Diagram{T}}, C::Cat, x; shape=nothing) where T
   else
     @assert is_discrete(shape) && length(ob_generators(shape)) == 1
   end
-  hasPresentation(shape) && 
+  shape isa FinCatPresentation && 
     return Diagram{T}(FinDomFunctor(Dict(nameof(a)=> x for a in ob_generators(shape)),shape,C))
   Diagram{T}(FinDomFunctor([x], shape, C))
 end
-hasPresentation(C::FinCat) = false
-hasPresentation(C::FinCatPresentation) = true
 
 function munit(::Type{DiagramHom{T}}, C::Cat, f;
                dom_shape=nothing, codom_shape=nothing) where T

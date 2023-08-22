@@ -15,7 +15,7 @@ presented categories are provided by another module, [`FinCats`](@ref).
 module Categories
 export Category, Cat, TypeCat, Functor, Transformation, dom, codom, compose, id,
   ob, hom, is_hom_equal, ob_map, hom_map, dom_ob, codom_ob, component,
-  OppositeCat, op, co, ob_type, hom_type, dom_type, codom_type
+  OppositeCat, op, co
 
 using StructEquality
 
@@ -54,8 +54,6 @@ The basic operations available in any category are: [`dom`](@ref),
 [`codom`](@ref), [`id`](@ref), [`compose`](@ref).
 """
 abstract type Category{Ob,Hom,Size<:CatSize} end
-ob_type(C::Category{Ob}) where Ob = Ob
-hom_type(C::Category{Ob,Hom}) where {Ob,Hom} = Hom
 
 """ Alias for [`Category`](@ref).
 """
@@ -136,8 +134,6 @@ sometimes but not always the case (see [`Category`](@ref)), so when writing
 generic code one should prefer the `ob_map` and `hom_map` functions.
 """
 abstract type Functor{Dom<:Cat,Codom<:Cat} end
-dom_type(F::Functor{Dom}) where Dom = Dom
-codom_type(F::Functor{Dom,Codom}) where {Dom,Codom} = Codom
 
 """ Evaluate functor on object.
 """

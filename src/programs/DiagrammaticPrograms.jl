@@ -13,12 +13,10 @@ using Base.Iterators: repeated
 using MLStyle: @match
 
 using ...GATs, ...Graphs, ...CategoricalAlgebra
-using ...Theories: munit, FreeSchema, FreePtSchema, ThPtSchema, FreeCategory, FreePtCategory, zeromap, Ob, Hom, dom, codom
-using ...CategoricalAlgebra.FinCats: mapvals, make_map, FinCatPresentation
+using ...Graphs.BasicGraphs: NamedGraph, DiagramGraph, vertex_named, edge_named
+using ...Theories: munit, FreeSchema, FreePointedSetSchema, ThPointedSetSchema, FreeCategory, FreePointedSetCategory, zeromap, Ob, Hom, dom, codom, HomExpr
+using ...CategoricalAlgebra.FinCats: FinCat, mapvals, make_map, FinCatPresentation
 using ...CategoricalAlgebra.DataMigrations: ConjQuery, GlueQuery, GlucQuery
-import ...CategoricalAlgebra.FinCats: FinCat, vertex_name, vertex_named,
-  edge_name, edge_named
-
 # Abstract syntax
 #################
 
@@ -50,7 +48,7 @@ end
 end
 
 @data DiagramExpr begin
-  ObOver(name::Symbol, over::Union{ObExpr,Nothing}) #probably shouldn't be nothing
+  ObOver(name::Symbol, over::Union{ObExpr,Nothing}) 
   HomOver(name::Symbol, src::Symbol, tgt::Symbol, over::HomExpr)
   AttrOver(name::Symbol, src::Symbol,tgt::Symbol,aux_func_def::Expr,mod::Module)#XX:make JuliaCode
   HomAndAttrOver(lhs::HomOver,rhs::AttrOver)
@@ -108,33 +106,12 @@ end # AST module
 # Graphs
 ########
 
-#probably move into Graphs
-@present SchNamedGraph <: SchGraph begin
-  VName::AttrType
-  EName::AttrType
-  vname::Attr(V, VName)
-  ename::Attr(E, EName)
-end
+#XX: probably move into Graphs
+#=
 
-""" Abstract type for graph with named vertices and edges.
-"""
-@abstract_acset_type AbstractNamedGraph <: AbstractGraph
-
-""" Graph with named vertices and edges.
-
-The default graph type used by [`@graph`](@ref), [`@fincat`](@ref),
-[`@diagram`](@ref), and related macros.
-"""
-@acset_type NamedGraph(SchNamedGraph, index=[:src,:tgt,:ename],
-                       unique_index=[:vname]) <: AbstractNamedGraph
 # FIXME: The edge name should also be uniquely indexed, but this currently
 # doesn't play nicely with nullable attributes.
-
-vertex_name(g::AbstractNamedGraph, args...) = subpart(g, args..., :vname)
-edge_name(g::AbstractNamedGraph, args...) = subpart(g, args..., :ename)
-
-vertex_named(g::AbstractNamedGraph, name) = only(incident(g, name, :vname))
-edge_named(g::AbstractNamedGraph, name)= only(incident(g, name, :ename))
+=#
 
 """ Construct a graph in a simple, declarative style.
 
@@ -299,7 +276,6 @@ parse_functor(C::FinCat, D::FinCat, body::Expr; kw...) =
 parse_functor(C::Presentation, D::Presentation, args...; kw...) =
   parse_functor(FinCat(C), FinCat(D), args...; kw...)
 
-#This one's harmless.
 """
 Converts an `AST.Mapping` of object and hom assignments to a pair
 of dictionaries indexed by the generators (note: not their names!)
@@ -352,7 +328,6 @@ function parse_hom(C::FinCat{Ob,Hom}, expr::AST.HomExpr) where {Ob,Hom}
     AST.Compose(args) => mapreduce(
       arg -> parse_hom(C, arg), (fs...) -> compose(C, fs...), args)
     AST.Id(x) => id(C, parse_ob(C, x))
-    #Could this need to be FreePtCategory sometimes?
     AST.JuliaCodeHom(expr,mod) => nothing #will get dom and codom later
     AST.MixedHom(hexp,jcode) => parse_hom(C,hexp)
   end
@@ -398,8 +373,8 @@ Diagrams.ob_map(d::DiagramData, x) = d.ob_map[x]
 Diagrams.hom_map(d::DiagramData, f) = d.hom_map[f]
 Diagrams.shape(d::DiagramData) = d.shape
 unpoint(m::Module) = @match m begin
-  FreePtSchema => FreeSchema
-  FreePtCategory => FreeCategory
+  FreePointedSetSchema => FreeSchema
+  FreePointedSetCategory => FreeCategory
   _ => m
 end
 function Diagrams.Diagram(d::DiagramData{T}, codom) where T
@@ -408,7 +383,6 @@ function Diagrams.Diagram(d::DiagramData{T}, codom) where T
   #XX:is this actually needed?
   simple = isempty(d.params)
   newShape = change_shape(simple,d.shape)
-  #newCodom = change_shape(simple,codom)
   F = FinDomFunctor(d.ob_map, d.hom_map, newShape, codom)
   simple ? SimpleDiagram{T}(F) : QueryDiagram{T}(F, d.params)
 end
@@ -418,16 +392,6 @@ function change_shape(simple::Bool,oldShape::FinCatPresentation)
   simple ? FinCat(change_theory(unpoint(oldSyntax),oldPres)) : oldShape
 end
 change_shape(simple::Bool,oldShape) = oldShape
-
-#Once you build an actual functor, ob_map and hom_map keys should no longer be GATExprs.
-function Diagrams.Diagram(d::DiagramData{T,ObMap}, codom) where {T,ObMap<:Dict{GATExpr}}
-  obmap = Dict(nameof(a)=>b for (a,b) in d.ob_map)
-  hommap = Dict(nameof(a)=>b for (a,b) in d.hom_map)
-  F = FinDomFunctor(obmap,hommap, d.shape, codom)
-  isempty(d.params) ? SimpleDiagram{T}(F) : QueryDiagram{T}(F, d.params)
-end
-
-
 """ Present a diagram in a given category.
 
 Recall that a *diagram* in a category ``C`` is a functor ``F: J → C`` from a
@@ -540,9 +504,8 @@ function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
         e = parse!(g, AST.Hom(f, x, y))
         X, Y = F_ob[dom(e)], F_ob[codom(e)]
         F_hom[e] = hom_parser(h, X, Y)
-        #hom_parser might be parse_query_hom(C,...)
+        #hom_parser might be e.g. parse_query_hom(C,...)
         if isnothing(Y)
-          # OOOH look down
           # Infer codomain in base category from parsed hom.
           F_ob[codom(e)] = codom(C, F_hom[e])
         end
@@ -581,10 +544,6 @@ function parse_diagram_data(C::FinCat, statements::Vector{<:AST.DiagramExpr};
 end
 parse_diagram_data(C::FinCat, ast::AST.Diagram; kw...) =
   parse_diagram_data(C, ast.statements; kw...)
-#This used to allow homs "named" `nothing` but no longer does.
-#This has all been eliminated from migrations, could probably be fully killed.
-const DiagramGraph = NamedGraph{Symbol,Symbol}
-
 
 
 # Data migrations
@@ -720,31 +679,30 @@ high-level steps of this process are:
 """
 function parse_migration(src_schema::Presentation, ast::AST.Diagram)
   simple = check_simple(ast)
-  C = simple ? FinCat(src_schema) : FinCat(change_theory(FreePtSchema,src_schema))
+  C = simple ? FinCat(src_schema) : FinCat(change_theory(FreePointedSetSchema,src_schema))
   d = parse_query_diagram(C, ast.statements)
   DataMigration(make_query(C, d))
 end
 function parse_migration(tgt_schema::Presentation, src_schema::Presentation,
                          ast::AST.Mapping;simple::Bool=true)
-  D, C = simple ? (FinCat(tgt_schema), FinCat(src_schema)) : (FinCat(change_theory(FreePtSchema,tgt_schema)), FinCat(change_theory(FreePtSchema,src_schema)))
+  D, C = simple ? (FinCat(tgt_schema), FinCat(src_schema)) : (FinCat(change_theory(FreePointedSetSchema,tgt_schema)), FinCat(change_theory(FreePointedSetSchema,src_schema)))
   homnames = map(first,hom_generators(C))
   params = Dict{Symbol,Function}()
   ob_rhs, hom_rhs = make_ob_hom_maps(D, ast, missing_hom=true)
   F_ob = mapvals(expr -> parse_query(C, expr), ob_rhs)
   F_hom = mapvals(hom_rhs, keys=true) do f, expr
-    #This is probably wrong since expr could be a Mapping containing a JuliaCode,
-    #probably need to allow params in a DiagramHomData
-    #Actually I think it's OK-ish since you can't ever have a diagram
-    #over an attribut type
-    if expr isa AST.JuliaCodeHom
-      aux_func = make_func(expr.mod,expr.code,homnames)
+    @match expr begin
+    AST.JuliaCodeHom(code,mod) => begin
+      aux_func = make_func(mod,code,homnames)
       params[nameof(f)] = aux_func
     end
-    if expr isa AST.MixedHom
-      aux_func = make_func(expr.jcode.mod,expr.jcode.code,homnames)
+    AST.MixedHom(hexp,jcode) => begin
+      aux_func = make_func(jcode.mod,jcode.code,homnames)
       params[nameof(f)] = aux_func
       expr = expr.hexp
     end
+    _ => begin end
+  end
     parse_query_hom(C, ismissing(expr) ? AST.Mapping(AST.AssignExpr[]) : expr,
                     F_ob[dom(D,f)], F_ob[codom(D,f)])
   end
@@ -835,8 +793,7 @@ function parse_query_hom(C::FinCat{Ob}, ast::AST.Mapping, d::DiagramData{id},
                          d′::Union{Ob,DiagramData{op},DiagramData{id}}) where Ob
   ob_rhs, hom_rhs = make_ob_hom_maps(shape(d), ast,
                                      allow_missing=!(d′ isa DiagramData{id}))
-  #need to do in terms of get_homnames? for fincatgraph vs fincatpres
-  homnames = map(first,hom_generators(C))                                 
+  homnames = map(nameof,hom_generators(C))                                 
   params = Dict()
   f_ob = mapvals(ob_rhs, keys=true) do j, rhs
     if rhs isa AST.MixedOb
@@ -856,9 +813,7 @@ function parse_query_hom(C::FinCat{Ob}, ast::AST.Mapping,
   DiagramHomData{id}(Dict(cob => parse_diagram_ob_rhs(C, assign.rhs, c, d′)), Dict())
 end
 
-#It'd be nice if we could declare expr as an ObExpr and then have Match
-#yell at us if we didn't handle any of the cases. Although not all
-#cases are actually possible here...
+#expr will be an ObExpr
 function parse_diagram_ob_rhs(C::FinCat, expr, X, Y)
   @match expr begin
     AST.Apply(AST.OnlyOb(), f_expr) =>
@@ -881,6 +836,7 @@ parse_hom(d::DiagramData, expr::AST.HomExpr) = parse_hom(shape(d), expr)
 parse_ob(C, ::Missing) = missing
 parse_hom(C, ::Missing) = missing
 
+
 # Query construction
 #-------------------
 
@@ -895,19 +851,13 @@ function make_query(C::FinCat{Ob}, data::DiagramData{T}) where {T, Ob}
     d,c = F_ob[dom(J,h)],F_ob[codom(J,h)]
     make_query_hom(C,f,d,c)
   end
-  # XXX: There's a danger at this point of F_hom's type being too tight,
-  # need to handle in case of both dicts and vects.
   if query_type <: Ob
 
     Diagram(DiagramData{T}(F_ob, F_hom, J, data.params), C)
   else
-    #for (x,y) in pairs(data.params) #box up singleton params, which should mean you have a Julia function defining a singleton diagram map
-    #  data.params[x] = (y isa Union{AbstractArray,AbstractDict}) ? y : [y]
-    #end
     # XXX: Why is the element type of `F_ob` sometimes too loose?
     D = TypeCat(typeintersect(query_type, eltype(values(F_ob))),
                 eltype(values(F_hom)))
-    #@assert isempty(data.params)
     Diagram(DiagramData{T}(F_ob, F_hom, J,data.params), D)
   end
 end
@@ -959,33 +909,30 @@ Otherwise just wrap f up as a DiagramHom between singletons.
 """
 function make_query_hom(::C, f::Hom, d::Diagram{T,C}, d′::Diagram{T,C}) where
     {T, Ob, Hom, C<:FinCat{Ob,Hom}}
-  if f isa GATExpr{:zeromap} 
-    j′ = only(ob_generators(shape(d′)))
-    j = only(ob_generators(shape(d)))
-    DiagramHom{T}(Dict(j=> Pair(j′,f)),d,d′)
-  else 
-    munit(DiagramHom{T}, codom(diagram(d)), f,
-      dom_shape=shape(d), codom_shape=shape(d′))
-  end
+  munit(DiagramHom{T}, codom(diagram(d)), f,
+  dom_shape=shape(d), codom_shape=shape(d′))
 end
-#XX:Maybe the diagramhom constructor can handle the reversal? seems tricky
-function make_query_hom(::C, f::Hom, d::Diagram{op,C}, d′::Diagram{op,C}) where
-    {Ob, Hom, C<:FinCat{Ob,Hom}}
-  if f isa GATExpr{:zeromap} 
-    j′ = only(ob_generators(shape(d′)))
-    j = only(ob_generators(shape(d)))
-    DiagramHom{op}(Dict(j′=> Pair(j,f)),d,d′)
-  else 
-    munit(DiagramHom{op}, codom(diagram(d)), f,
-      dom_shape=shape(d), codom_shape=shape(d′))
-  end
+function make_query_hom(::C, f::HomExpr{:zeromap}, d::Diagram{T,C}, d′::Diagram{T,C}) where {T,C<:FinCat}
+  j′ = only(ob_generators(shape(d′)))
+  j = only(ob_generators(shape(d)))
+  DiagramHom{T}(Dict(j=> Pair(j′,f)),d,d′)
 end
 
-#When would this happen?
-function make_query_hom(acat::C, f::Union{Hom,DiagramHomData{op}},
+function make_query_hom(::C, f::Hom, d::Diagram{op,C}, d′::Diagram{op,C}) where
+    {Ob, Hom, C<:FinCat{Ob,Hom}}
+  munit(DiagramHom{op}, codom(diagram(d)), f,
+  dom_shape=shape(d), codom_shape=shape(d′))
+end
+
+function make_query_hom(::C, f::HomExpr{:zeromap}, d::Diagram{op,C}, d′::Diagram{op,C}) where C<:FinCat
+  j′ = only(ob_generators(shape(d′)))
+  j = only(ob_generators(shape(d)))
+  DiagramHom{op}(Dict(j′=> Pair(j,f)),d,d′)
+end
+function make_query_hom(c::C, f::Union{Hom,DiagramHomData{op}},
                         d::Diagram{id}, d′::Diagram{id}) where
     {Ob, Hom, C<:FinCat{Ob,Hom}}
-  f′ = make_query_hom(acat, f, only(collect_ob(d)), only(collect_ob(d′)))
+  f′ = make_query_hom(c, f, only(collect_ob(d)), only(collect_ob(d′)))
   munit(DiagramHom{id}, codom(diagram(d)), f′, dom_shape=shape(d), codom_shape=shape(d′))
 end
 
@@ -1106,7 +1053,7 @@ function parse_diagram_ast(body::Expr; free::Bool=false, preprocess::Bool=true,m
        [AST.AssignLiteral(x, get_literal(value))]
      
       # h(x) == y
-      # y == h(x), this is for y an object of one of the diagrams.
+      # y == h(x)
       (Expr(:call, :(==), call::Expr, y::Symbol) ||
        Expr(:call, :(==), y::Symbol, call::Expr)) && if free end => begin
          h, x = destructure_unary_call(call) 
@@ -1125,8 +1072,6 @@ function parse_diagram_ast(body::Expr; free::Bool=false, preprocess::Bool=true,m
      end
 
       # h(x) == k(y)
-      # this is for anonymous objects, how to make it work for 
-      # weight(e_1)==weight(e_2)? Needs let.
       Expr(:call, :(==), lhs::Expr, rhs::Expr) && if free end => begin
         (h, x), (k, y) = destructure_unary_call(lhs), destructure_unary_call(rhs)
         z, p, q = gen_anonob!(state), gen_anonhom!(state), gen_anonhom!(state)
@@ -1172,13 +1117,6 @@ macros like fincat will handle hom uniqueness for themselves.
 Note that ob_over[x] is the object of the base which x is over, perhaps
 confusingly.
 """
-#=
-Base.@kwdef mutable struct DiagramASTState
-  nanon::Int=0 
-  ob_over::Dict{Symbol,AST.ObExpr} = Dict{Symbol,AST.ObExpr}()
-end
-gen_anon!(state::DiagramASTState) = Symbol("##unnamed#$(state.nanon += 1)")
-=#
 Base.@kwdef mutable struct DiagramASTState
   nanonob::Int=0 
   nanonhom::Int=0
