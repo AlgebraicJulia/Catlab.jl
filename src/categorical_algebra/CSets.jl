@@ -444,6 +444,14 @@ function coerce_attrvar_component(
   return f
 end
 
+"""Coerce an arbitrary julia function to a LooseVarFunction assuming no variables"""
+function coerce_attrvar_component(ob::Symbol, f::Function, d::TypeSet{T},cd::TypeSet{T′},
+  dom_size::Int, codom_size::Int) where {T,T′}
+  dom_size == 0 || error("Cannot specify $ob component with $f with $dom_size domain variables")
+  coerce_attrvar_component(ob, LooseVarFunction{T,T′}([], f, FinSet(codom_size)), 
+                           d, cd, dom_size,codom_size)
+end
+
 function Base.getindex(α::ACSetTransformation, c) 
   get(α.components, c) do
     c ∈ attrtypes(acset_schema(dom(α))) || error("No object or attribute type with name $c")
@@ -498,9 +506,16 @@ ACSetTransformation(components, X::DynamicACSet, Y::DynamicACSet) =
   acomps = NamedTuple(filter(∈(attrtypes(S))∘first, pairs(components)))
   length(ocomps) + length(acomps) == length(components) ||
     error("Not all names in $(keys(components)) are objects or attribute types")
-  is_tight = true 
+  is_tight = true  # we do this with a `for` loop (not `all`) because comptime
   for a in acomps 
-    is_tight &= (a isa Union{VarFunction, Function, AbstractVector} || a.loose isa IdentityFunction)
+    if a isa Function 
+      is_tight = false
+    elseif a isa LooseVarFunction && !(a.loose isa IdentityFunction)
+      is_tight  = false
+    elseif a isa Union{VarFunction, AbstractVector}
+    else 
+      error("Unexpected type for attrtype component of ACSetTransformation")
+    end 
   end
   if is_tight
     T = is_struct ? StructTightACSetTransformation{S} : DynamicTightACSetTransformation
