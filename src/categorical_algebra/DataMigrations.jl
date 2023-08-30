@@ -10,7 +10,7 @@ using ACSets
 using ACSets.DenseACSets: constructor, datatypes
 using ...GATs
 using ...Theories: ob, hom, dom, codom, attr, AttrTypeExpr, ⋅
-using ..Categories, ..FinCats, ..Limits, ..Diagrams, ..FinSets, ..CSets
+using ..Categories, ..FinCats, ..Limits, ..Diagrams, ..FinSets, ..CSets, ..HomSearch
 using ...Graphs, ..FreeDiagrams
 import ..Categories: ob_map, hom_map
 import ...GATs: functor

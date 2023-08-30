@@ -14,6 +14,7 @@ include("Matrices.jl")
 include("FinRelations.jl")
 include("Diagrams.jl")
 include("CSets.jl")
+include("HomSearch.jl")
 include("GraphCategories.jl")
 include("CommutativeDiagrams.jl")
 include("CatElements.jl")
@@ -32,6 +33,7 @@ include("Slices.jl")
 @reexport using .FinSets
 @reexport using .Permutations
 @reexport using .CSets
+@reexport using .HomSearch
 @reexport using .CatElements
 
 @reexport using .Diagrams
