@@ -89,6 +89,7 @@ to_graphviz(d::Diagram; kw...) =
 
 function to_graphviz_property_graph(d::Diagram; kw...)
   g = graph(shape(d))
+  d = dom_to_graph(diagram(d))
   pg = to_graphviz_property_graph(g; kw...)
   for v in vertices(g)
     lᵥ = g[v, :vname]

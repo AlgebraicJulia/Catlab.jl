@@ -54,6 +54,9 @@ function Base.show(io::IO, d::SimpleDiagram{T}) where T
   print(io, ")")
 end
 
+"""
+Force-evaluate the functor in a diagram.
+"""
 force(d::SimpleDiagram{T}, args...) where T =
   SimpleDiagram{T}(force(diagram(d), args...))
 
@@ -69,7 +72,14 @@ struct QueryDiagram{T,C<:Cat,D<:Functor{<:FinCat,C},
 end
 QueryDiagram{T}(F::D, params::P) where {T,C<:Cat,D<:Functor{<:FinCat,C},P} =
   QueryDiagram{T,C,D,P}(F, params)
-
+"""
+  Force-evaluate the functor in a query diagram,
+  including putting the parameters into the hom-map 
+  explicitly.
+"""
+force(d::QueryDiagram{T},args...) where T =
+  SimpleDiagram{T}(force(diagram(d),args...;params=d.params))
+  
 
 """ Functor underlying a diagram object.
 """
@@ -120,7 +130,6 @@ struct QueryDiagramHom{T,C<:Cat,F<:FinFunctor,Φ<:FinTransformation,D<:Functor{<
   params::Params
 end
 
-#XX: this isn't type stable
 DiagramHom{T}(shape_map::F, diagram_map::Φ, precomposed_diagram::D;params::Params=nothing) where
     {T,C,F<:FinFunctor,Φ<:FinTransformation,D<:Functor{<:FinCat,C},Params<:Union{AbstractDict,Nothing}} =
   isnothing(params) ?   
@@ -271,7 +280,6 @@ the result will be a totally defined transformation.
 """
 function param_compose(α::FinTransformation, H::Functor; params=Dict())
   F, G = dom(α), codom(α)
-  #params = params isa Union{AbstractArray,AbstractDict} ? params : [params]
   new_components = mapvals(pairs(α.components);keys=true) do i,f
     compindex = ob(dom(F),i)
     #allow non-strictness because of possible pointedness
@@ -283,8 +291,6 @@ function param_compose(α::FinTransformation, H::Functor; params=Dict())
     #may need to population params with identities
     else
       func = haskey(params,i) ? SetFunction(params[i],t,t) : SetFunction(identity,t,t)
-      #could change target to let the attribute be valued in the
-      #wrong place fufufu
       hom_map(H,f)⋅func
     end
   end
@@ -292,31 +298,28 @@ function param_compose(α::FinTransformation, H::Functor; params=Dict())
 end
 
 
-#This is only to be used when F lands in Set, or wherever
-#the functions in d's params are supposed to live. 
-#Perhaps needs a keyword argument about whether to fill in 
-#blanks
-#Also inelegant way of returning
+"""
+Compose a diagram with parameters with a functor. 
+The result is not evaluated, so the functor may remain
+partially defined with parameters still to be filled in.
+"""
 function compose(d::QueryDiagram{T},F::Functor; kw...) where T
   D = diagram(d)
   partial = compose(D,F;strict=false) #cannot be evaluated on the keys of params yet
   #Get the FinDomFunctions in the range of F that must be plugged into
   #the Functions in params
-  #XXX this is more lines that it needs to be
   params = d.params
-  attrs,homs = generators(presentation(codom(D)),:Attr),generators(presentation(codom(D)),:Hom)
-  mornames = map(first,[attrs;homs])
-  morfuns = map(x->hom_map(F,x),mornames)
-  paramsNew = Dict{keytype(params),FinDomFunction}()
+  mors = hom_generators(codom(D))
+  morfuns = map(x->hom_map(F,x),mors)
+  params_new = Dict{keytype(params),FinDomFunction}()
   for (n,f) in params #Calculate the intended value of the composition on n
     domain = ob_map(partial,dom(hom(dom(partial),n)))
     codomain = ob_map(partial,codom(hom(dom(partial),n)))
-    paramsNew[n] =
+    params_new[n] =
       FinDomFunction(f(morfuns...),domain,codomain)
   end
-  composite = force(partial;params = paramsNew)
-  
-  Diagram{T}(composite)
+  #This will now contain a composite functor which can't directly be hom-mapped; ready to be forced.
+  QueryDiagram{T}(partial,params_new)
 end
 # Limits and colimits
 #####################
@@ -333,9 +336,6 @@ end
 
 function universal(f::DiagramHom{op}, dom_lim, codom_lim)
   J′ = shape(codom(f))
-  #get the map from objects of the domain diagram,
-  #if indexed by a fincatpresentation, to their 
-  #indices when reindexed by a fincatgraph.
   obs = Dict(reverse(p) for p in pairs(ob_generators(dom(diagram(dom(f))))))
   cone = Multispan(apex(dom_lim), map(ob_generators(J′)) do j′
     j, g = ob_map(f, j′)

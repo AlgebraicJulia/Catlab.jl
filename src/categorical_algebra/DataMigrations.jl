@@ -146,9 +146,8 @@ function migrate(X::FinDomFunctor,M::DeltaSchemaMigration)
     Fc = ob_map(F,c)
     ob_map(X,Fc)
   end
-  hg = hom_generators(src_schema)
-  homnames = map(presentation_key,hg)
-  homfuns = map(x->hom_map(X,x),homnames)
+  homs = hom_generators(src_schema)
+  homfuns = map(x->hom_map(X,x),homs)
   params = M.params
   funcs = make_map(hom_generators(tgt_schema)) do f
     Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)
@@ -625,7 +624,7 @@ function colimit_representables(M::ConjSchemaMigration, y)
   ACS = constructor(ob_map(y,first(ob_generators(dom(y)))))
   colimits = make_map(ob_generators(J)) do j
     Fj = dom_to_graph(diagram(ob_map(F, j))) #a diagram K to C
-    clim_diag = deepcopy((compose(op(Fj), y))) #K^op to C^op to C-Set
+    clim_diag = compose(op(Fj), y) #K^op to C^op to C-Set
     # modify the diagram we take a colimit of to concretize some vars
     
     params = ob_map(F,j) isa SimpleDiagram ? Dict() : ob_map(F,j).params

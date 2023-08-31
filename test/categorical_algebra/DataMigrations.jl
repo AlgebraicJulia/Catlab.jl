@@ -497,7 +497,6 @@ X = ob_map(G, :X)
 @test is_isomorphic(X, yE)
 i, o = hom_map(G, :i), hom_map(G, :o)
 @test sort(only.(collect.([i[:V],o[:V]]))) == [1,2]
-y_Graph = yoneda(Graph)
 
 F = @migration SchGraph begin
   X => @join begin
@@ -536,9 +535,6 @@ X = ob_map(G, :X)
 @test is_isomorphic(X, yE)
 i, o = hom_map(G, :i), hom_map(G, :o)
 @test sort(only.(collect.([i[:V],o[:V]]))) == [1,2]
-WGF = WeightedGraph{Float64}
-
-yWG = yoneda(WGF)
 
 d = @migration(SchWeightedGraph, begin
     I => @join begin
@@ -600,36 +596,36 @@ Z = @acset DDS42 begin X=5; Φ=[2,3,4,3,4] end
 ######################
 
 @present SchMechLink <: SchGraph begin
-    Pos::AttrType
-    Len::AttrType
-    pos::Attr(V,Pos)
-    len::Attr(E,Len)
+  Pos::AttrType
+  Len::AttrType
+  pos::Attr(V,Pos)
+  len::Attr(E,Len)
 end
 @acset_type MechLink(SchMechLink, index=[:src,:tgt])
 
 G = @acset MechLink{Vector{Float64},Float64} begin
-    V = 3
-    E = 2
-    src = [1,2]
-    tgt = [2,3]
-    len = [1.0,1.0]
-    pos = [[1.0,1.0,1.0],[2.0,2.0,2.0],[2.0,2.0,1.0]]
+  V = 3
+  E = 2
+  src = [1,2]
+  tgt = [2,3]
+  len = [1.0,1.0]
+  pos = [[1.0,1.0,1.0],[2.0,2.0,2.0],[2.0,2.0,1.0]]
 end
 
 #Rotate the whole linkage by a bit
 M = @migration SchMechLink SchMechLink begin
-    V => V
-    E => E
-    Pos => Pos
-    Len => Len
-    src => src
-    tgt => tgt
-    pos => begin 
-            θ = π/5
-            M = [[cos(θ),sin(θ),0] [-sin(θ),cos(θ),0] [0,0,1]]
-            x -> M*pos(x)
-            end
-    len => len
+  V => V
+  E => E
+  Pos => Pos
+  Len => Len
+  src => src
+  tgt => tgt
+  pos => begin 
+          θ = π/5
+          M = [[cos(θ),sin(θ),0] [-sin(θ),cos(θ),0] [0,0,1]]
+          x -> M*pos(x)
+          end
+  len => len
 end
 A = migrate(MechLink,G,M)
 v₃ = subpart(A,1,:pos)
@@ -638,78 +634,78 @@ angle(v,w)=acos( sum(v.*w)/(sqrt(sum(v.^2)*sum(w.^2))) )
 @test angle(v₂,[1,1]) == π/5 && v₃[3] == 1
 #Filter impossible edges out of a mechanical linkage
 M = @migration SchMechLink SchMechLink begin
-    V => V
-    E => @join begin
-            e :: E
-            L :: Len
-            (l:e→L) :: (x->len(x)^2)
-            (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
-        end
-    Pos => Pos
-    Len => Len
-    src => src(e)
-    tgt => tgt(e)
-    pos => pos
-    len => len(e)
+  V => V
+  E => @join begin
+          e :: E
+          L :: Len
+          (l:e→L) :: (x->len(x)^2)
+          (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+      end
+  Pos => Pos
+  Len => Len
+  src => src(e)
+  tgt => tgt(e)
+  pos => pos
+  len => len(e)
 end
 B = migrate(MechLink,G,M)
 @test length(parts(B,:E)) == 1
 #variant
 M′ = @migration SchMechLink begin
-    V => V
-    E => @join begin
-            e :: E
-            L :: Len
-            (l:e→L) :: (x->len(x)^2)
-            (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
-        end
-    Pos => Pos
-    Len => Len
-    (src:E→V) => src(e)
-    (tgt:E→V) => tgt(e)
-    (pos:V→Pos) => pos
-    (len:E→Len) => len(e)
+  V => V
+  E => @join begin
+          e :: E
+          L :: Len
+          (l:e→L) :: (x->len(x)^2)
+          (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+      end
+  Pos => Pos
+  Len => Len
+  (src:E→V) => src(e)
+  (tgt:E→V) => tgt(e)
+  (pos:V→Pos) => pos
+  (len:E→Len) => len(e)
 end
 Bb = migrate(G,M)
 @test length(ob_map(Bb,:E)) == 1
 #Filter impossible edges out of a mechanical linkage while rotating
 M = @migration SchMechLink SchMechLink begin
-    V => V
-    E => @join begin
-            e :: E
-            L :: Len
-            (l:e→L) :: (x->len(x)^2)
-            (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
-        end
-    Pos => Pos
-    Len => Len
-    src => src(e)
-    tgt => tgt(e)
-    pos => begin 
-            θ = π/5
-            M = [[cos(θ),sin(θ),0] [-sin(θ),cos(θ),0] [0,0,1]]
-            x -> M*pos(x)
-            end
-    len => len(e)
+  V => V
+  E => @join begin
+          e :: E
+          L :: Len
+          (l:e→L) :: (x->len(x)^2)
+          (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+      end
+  Pos => Pos
+  Len => Len
+  src => src(e)
+  tgt => tgt(e)
+  pos => begin 
+          θ = π/5
+          M = [[cos(θ),sin(θ),0] [-sin(θ),cos(θ),0] [0,0,1]]
+          x -> M*pos(x)
+          end
+  len => len(e)
 end
 C = migrate(G,M)
 @test length(ob_map(C,:E)) == 1
 @test angle(hom_map(C,:pos)(1)[1:2],[1,1])==pi/5
 #Filter out impossible edges, but then weirdly double all the lengths
 M = @migration SchMechLink begin
-    V => V
-    E => @join begin
-        e :: E
-        L :: Len
-        (l:e→L) :: (x->len(x)^2)
-        (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
-    end
-    Pos => Pos
-    Len => Len
-    (src:E→V) => src(e)
-    (tgt:E→V) => tgt(e)
-    (pos:V→Pos) => pos
-    (len:E→Len) => (len(e)|>(x->2x))
+  V => V
+  E => @join begin
+      e :: E
+      L :: Len
+      (l:e→L) :: (x->len(x)^2)
+      (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+  end
+  Pos => Pos
+  Len => Len
+  (src:E→V) => src(e)
+  (tgt:E→V) => tgt(e)
+  (pos:V→Pos) => pos
+  (len:E→Len) => (len(e)|>(x->2x))
 end
 D = migrate(G,M)
 @test hom_map(D,:len)(1) == 2.0

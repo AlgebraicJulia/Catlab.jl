@@ -1,5 +1,4 @@
-""" Finite presentations of a model of a generali
-ed algebraic theory (GAT).
+""" Finite presentations of a model of a generalized algebraic theory (GAT).
 
 We support two methods for defining models of a GAT: as Julia objects using the
 `@instance` macro and as syntactic objects using the `@present` macro.
@@ -19,7 +18,6 @@ using MLStyle: @match
 using ..MetaUtils, ..SyntaxSystems
 import ..TheoriesInstances as GAT
 import ..SyntaxSystems: parse_json_sexpr, to_json_sexpr, generator_switch_syntax
-#import Base.deepcopy_internal
 # Data types
 ############
 
@@ -44,30 +42,6 @@ function Base.:(==)(pres1::Presentation, pres2::Presentation)
   pres1.syntax == pres2.syntax && pres1.generators == pres2.generators &&
     pres1.equations == pres2.equations
 end
-
-#=
-"""Since Presentations have a module field and modules cannot be deep-copied,
-we need a specialized method.
-"""
-function Base.deepcopy_internal(x::Presentation,stackdict::IdDict)
-  T = typeof(x)::DataType
-  nf = nfields(x) 
-  #skip mutable case and 0-field case from built-in deepcopy
-  flds = Vector{Any}(undef,nf)
-  for i in 1:nf
-    if isdefined(x,i)
-      xi = getfield(x,i)
-      xi = xi isa Module ? xi : deepcopy_internal(xi,stackdict)
-      flds[i] = xi
-    else 
-      nf = i-1
-      break
-    end
-  end
-  y = ccall(:jl_new_structv, Any, (Any, Ptr{Any}, UInt32), T, flds, nf)
-  return y::T
-end
-=#
 """
 Move a presentation to a new syntax,
 duplicating all the data on shared names. In particular,
@@ -76,12 +50,12 @@ presentation are at names in the new syntax.
 """
 function change_theory(syntax::Module,pres::Presentation{S,Name}) where {S,Name}
   T = syntax.theory()
-  presNew = Presentation(syntax)
-  types = intersect(keys(presNew.generators),keys(pres.generators))
+  pres_new = Presentation(syntax)
+  types = intersect(keys(pres_new.generators),keys(pres.generators))
   for t in types map(pres.generators[t]) do x
-    add_generator!(presNew,generator_switch_syntax(syntax,x)) end end
+    add_generator!(pres_new,generator_switch_syntax(syntax,x)) end end
   #XX: test on equations
-  presNew
+  pres_new
 end
 function Base.copy(pres::Presentation{T,Name}) where {T,Name}
   Presentation{T,Name}(pres.syntax, map(copy, pres.generators),

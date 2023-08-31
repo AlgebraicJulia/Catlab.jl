@@ -156,7 +156,7 @@ d = @diagram SchGraph begin
   t: e1 → v => tgt
   s: e2 → v => src
 end
-@test diagram(d).ob_map == F.ob_map
+@test all([ob_map(diagram(d),x) == ob_map(F,x) for x in ob_generators(dom(F))])
 
 d = @diagram SchGraph begin
   v::V
@@ -317,7 +317,6 @@ M′ = @migration SchGraph SchSet begin
 end
 @test M′ isa DataMigrations.ConjSchemaMigration
 @test isempty(shape(ob_map(functor(M′), :V)))
-# XX:This one has vector maps in the empty shape_map which isn't right
 @test isempty(shape(ob_map(functor(M),:V)))
 
 # Cartesian product of graph with itself.
@@ -332,7 +331,7 @@ F_V = diagram(ob_map(F, :V))
 @test collect_ob(F_V) == fill(SchGraph[:V], 2)
 s = hom_generators(dom(F))[1]
 F_src = hom_map(F, :src)
-@test F_src.diagram_map.components == Dict(:v₂=>s,:v₁=>s)
+@test components(diagram_map(F_src)) == Dict(:v₂=>s,:v₁=>s)
 
 # Reflexive graph from graph.
 M = @migration SchReflexiveGraph SchGraph begin
@@ -578,54 +577,54 @@ F_src_vv, F_src_ev, F_src_ve = [components(diagram_map(F_src))[a] for a in [:vv,
 #
 #------------------------------------
 @present SchMechLink <: SchGraph begin
-    Pos::AttrType
-    Len::AttrType
-    pos::Attr(V,Pos)
-    len::Attr(E,Len)
+  Pos::AttrType
+  Len::AttrType
+  pos::Attr(V,Pos)
+  len::Attr(E,Len)
 end
 @acset_type MechLink(SchMechLink, index=[:src,:tgt])
 
 G = @acset MechLink{Vector{Float64},Float64} begin
-    V = 3
-    E = 2
-    src = [1,2]
-    tgt = [2,3]
-    len = [1.0,1.0]
-    pos = [[1.0,1.0,1.0],[2.0,2.0,2.0],[2.0,2.0,1.0]]
+  V = 3
+  E = 2
+  src = [1,2]
+  tgt = [2,3]
+  len = [1.0,1.0]
+  pos = [[1.0,1.0,1.0],[2.0,2.0,2.0],[2.0,2.0,1.0]]
 end
 
 #Rotate the whole linkage by a bit
 M = @migration SchMechLink SchMechLink begin
-    V => V
-    E => E
-    Pos => Pos
-    Len => Len
-    src => src
-    tgt => tgt
-    pos => begin 
-            θ = π/5
-            M = [[cos(θ),sin(θ),0] [-sin(θ),cos(θ),0] [0,0,1]]
-            x -> M*pos(x)
-            end
-    len => len
+  V => V
+  E => E
+  Pos => Pos
+  Len => Len
+  src => src
+  tgt => tgt
+  pos => begin 
+          θ = π/5
+          M = [[cos(θ),sin(θ),0] [-sin(θ),cos(θ),0] [0,0,1]]
+          x -> M*pos(x)
+          end
+  len => len
 end
 @test length(M.params) ==1 && M.params[:pos] isa Function
 @test hom_map(functor(M),:pos) isa FreePointedSetSchema.Attr{:zeromap}
 #Filter impossible edges out of a mechanical linkage
 M = @migration SchMechLink SchMechLink begin
-    V => V
-    E => @join begin
-            e :: E
-            L :: Len
-            (l:e→L) :: (x->len(x)^2)
-            (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
-        end
-    Pos => Pos
-    Len => Len
-    src => src(e)
-    tgt => tgt(e)
-    pos => pos
-    len => len(e)
+  V => V
+  E => @join begin
+          e :: E
+          L :: Len
+          (l:e→L) :: (x->len(x)^2)
+          (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+      end
+  Pos => Pos
+  Len => Len
+  src => src(e)
+  tgt => tgt(e)
+  pos => pos
+  len => len(e)
 end
 migE = ob_map(functor(M),:E)
 @test migE isa QueryDiagram
@@ -634,19 +633,19 @@ ps = ob_map(functor(M),:E).params
 @test length(M.params) == 0
 #variant
 M′ = @migration SchMechLink begin
-    V => V
-    E => @join begin
-            e :: E
-            L :: Len
-            (l:e→L) :: (x->len(x)^2)
-            (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
-        end
-    Pos => Pos
-    Len => Len
-    (src:E→V) => src(e)
-    (tgt:E→V) => tgt(e)
-    (pos:V→Pos) => pos
-    (len:E→Len) => len(e)
+  V => V
+  E => @join begin
+          e :: E
+          L :: Len
+          (l:e→L) :: (x->len(x)^2)
+          (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+      end
+  Pos => Pos
+  Len => Len
+  (src:E→V) => src(e)
+  (tgt:E→V) => tgt(e)
+  (pos:V→Pos) => pos
+  (len:E→Len) => len(e)
 end
 F,F′ = functor(M),functor(M′)
 @test all([ob_map(F,a)==ob_map(F′,a) for a in [:V,:Pos,:Len]])
@@ -659,40 +658,40 @@ F,F′ = functor(M),functor(M′)
 @test ob_generators(dom(F)) == ob_generators(dom(F′))
 #Filter impossible edges out of a mechanical linkage while rotating
 M = @migration SchMechLink SchMechLink begin
-    V => V
-    E => @join begin
-            e :: E
-            L :: Len
-            (l:e→L) :: (x->len(x)^2)
-            (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
-        end
-    Pos => Pos
-    Len => Len
-    src => src(e)
-    tgt => tgt(e)
-    pos => begin 
-            θ = π/5
-            M = [[cos(θ),sin(θ),0] [-sin(θ),cos(θ),0] [0,0,1]]
-            x -> M*pos(x)
-            end
-    len => len(e)
+  V => V
+  E => @join begin
+          e :: E
+          L :: Len
+          (l:e→L) :: (x->len(x)^2)
+          (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+      end
+  Pos => Pos
+  Len => Len
+  src => src(e)
+  tgt => tgt(e)
+  pos => begin 
+          θ = π/5
+          M = [[cos(θ),sin(θ),0] [-sin(θ),cos(θ),0] [0,0,1]]
+          x -> M*pos(x)
+          end
+  len => len(e)
 end
 @test length(M.params) ==1 && length(ob_map(functor(M),:E).params) == 2
 #Filter out impossible edges, but then weirdly double all the lengths
 M = @migration SchMechLink begin
-    V => V
-    E => @join begin
-        e :: E
-        L :: Len
-        (l:e→L) :: (x->len(x)^2)
-        (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
-    end
-    Pos => Pos
-    Len => Len
-    (src:E→V) => src(e)
-    (tgt:E→V) => tgt(e)
-    (pos:V→Pos) => pos
-    (len:E→Len) => (len(e)|>(x->2x))
+  V => V
+  E => @join begin
+      e :: E
+      L :: Len
+      (l:e→L) :: (x->len(x)^2)
+      (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+  end
+  Pos => Pos
+  Len => Len
+  (src:E→V) => src(e)
+  (tgt:E→V) => tgt(e)
+  (pos:V→Pos) => pos
+  (len:E→Len) => (len(e)|>(x->2x))
 end
 #unabstracting x->2x over the unused variables
 #for the functions in the acset to be migrated

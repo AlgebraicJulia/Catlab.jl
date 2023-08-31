@@ -129,26 +129,6 @@ hom_generators(C::OppositeFinCat) = hom_generators(C.cat)
 
 ob_generator(C::OppositeCat, x) = ob_generator(C.cat, x)
 hom_generator(C::OppositeCat, f) = hom_generator(C.cat, f)
-
-#=
-"""
-Reverses the domain and codomain of certain types in a presentation,
-for use in an opposite category.
-"""
-function reverse_dom_codom(p::Presentation,types::Vector{Symbol})
-  s = p.syntax
-  newPres = Presentation(s)
-  for g in generators(p)
-    t = gat_typeof(g)
-    if t in types 
-      add_generator!(newPres,getproperty(s,t)(nameof(g),codom(g),dom(g)))  
-    else add_generator!(newPres,g) 
-    end
-  end
-  newPres
-end
-#presentation(C::OppositeCat) = reverse_dom_codom(presentation(C.cat),[:Hom])
-=#
 # Categories on graphs
 ######################
 
@@ -522,13 +502,14 @@ function FinDomFunctor(ob_map::Union{AbstractVector{Ob},AbstractDict{<:Any,Ob}},
     error("Length of object map $ob_map does not match domain $dom")
   length(hom_map) == length(hom_generators(dom)) ||
     error("Length of morphism map $hom_map does not match domain $dom")
+  #Empty checks here are to avoid Julia blowing up the type
   if isnothing(codom)
-    ob_map = mappairs(x -> ob_key(dom, x), identity, ob_map)
-    hom_map = mappairs(f -> hom_key(dom, f), identity, hom_map)
+    ob_map = isempty(ob_map) ? ob_map : mappairs(x -> ob_key(dom, x), identity, ob_map; fixvaltype = true)
+    hom_map = isempty(hom_map) ? hom_map : mappairs(f -> hom_key(dom, f), identity, hom_map; fixvaltype = true)
     FinDomFunctorMap(ob_map, hom_map, dom)
   else
-    ob_map = mappairs(x -> ob_key(dom, x), y -> ob(codom, y), ob_map)
-    hom_map = mappairs(f -> hom_key(dom, f), g -> hom(codom, g), hom_map)
+    ob_map = isempty(ob_map) ? ob_map : mappairs(x -> ob_key(dom, x), y -> ob(codom, y), ob_map)
+    hom_map = isempty(hom_map) ? hom_map : mappairs(f -> hom_key(dom, f), g -> hom(codom, g), hom_map)
     FinDomFunctorMap(ob_map, hom_map, dom, codom)
   end
 end
@@ -538,8 +519,7 @@ hom_key(C::FinCat, f) = hom_generator(C, f)
 ob_map(F::FinDomFunctorMap) = F.ob_map
 hom_map(F::FinDomFunctorMap) = F.hom_map
 
-# Use generator names, rather than generators themselves, for Dict keys!
-# XXX: Should this be enforced?
+# Use generator names, rather than generators themselves, for Dict keys. Enforced by FinDomFunctor constructor automatically.
 ob_key(C::FinCatPresentation, x) = presentation_key(x)
 hom_key(C::FinCatPresentation, f) = presentation_key(f)
 presentation_key(name::Union{AbstractString,Symbol}) = name
@@ -565,26 +545,20 @@ respectively.
 """
 function force(F::FinDomFunctor, Obtype::Type=Any, Homtype::Type=Any;params=Dict())
   C = dom(F)
-  FinDomFunctorMap(
-    make_map(x -> ob_map(F, x), ob_generators_simple(C), Obtype),
-    make_map(hom_generators_simple(C), Homtype) do f 
-     haskey(params,f) ? params[f] : hom_map(F,f) end , 
+  FinDomFunctor(
+    make_map(x -> ob_map(F, x), ob_generators(C), Obtype),
+    make_map(hom_generators(C), Homtype) do f 
+     haskey(params,hom_generator_name(C,f)) ? params[hom_generator_name(C,f)] : hom_map(F,f) end , 
     C)
 end
 force(F::FinDomFunctorMap) = 
-  FinDomFunctorMap(F.ob_map,
+  FinDomFunctor(F.ob_map,
     mapvals(F.hom_map,keys=true) do h,f
     haskey(params,h) ? params[h] : hom_map(F,h) end,
     F.dom,F.codom)
 
-ob_generators_simple(C::FinCatPresentation) =
-  map(nameof,ob_generators(C))
-ob_generators_simple(C::FinCat) = ob_generators(C)
-hom_generators_simple(C::FinCatPresentation) =
-  map(nameof,hom_generators(C))
-hom_generators_simple(C::FinCat) = hom_generators(C)
 function Categories.do_compose(F::FinDomFunctorMap, G::FinDomFunctorMap)
-  FinDomFunctorMap(mapvals(x -> ob_map(G, x), F.ob_map),
+  FinDomFunctor(mapvals(x -> ob_map(G, x), F.ob_map),
                    mapvals(f -> hom_map(G, f), F.hom_map), dom(F), codom(G))
 end
 
@@ -790,10 +764,15 @@ end
 """
 Map two given functions across the respective keys and values of a dictionary.
 """
-function mappairs(kmap, vmap, pairs::T) where T<:AbstractDict
-  (dicttype(T))(kmap(k) => vmap(v) for (k,v) in pairs)
+function mappairs(kmap, vmap, pairs::T;fixkeytype=false,fixvaltype=false) where {K,V,T<:AbstractDict{K,V}}
+  S = dicttype(T)
+  d = S(kmap(k) => vmap(v) for (k,v) in pairs)
+  R = fixvaltype ? fixkeytype ? T : S{keytype(d),V} :
+      fixkeytype ? S{K} : S
+  R(d)
 end
-mappairs(kmap, vmap, vec::AbstractVector) = map(vmap, vec)
+#XX:might want to add fixtype to here sometime
+mappairs(kmap, vmap, vec::AbstractVector;kw...) = map(vmap, vec)
 
 
 """
@@ -824,9 +803,6 @@ dicttype(::Type{<:Iterators.Pairs}) = Dict
 If `xs` is a UnitRange, make a vector of the desired
 type by mapping `f` over `xs`. Otherwise, make a dictionary
 with the desired valtype.
-
-Seems like this wants to guarantee the output has type T,
-but the Any methods violate this.
 """
 make_map(f, xs::UnitRange{Int}, ::Type{Any}) = map(f, xs)
 make_map(f, xs, ::Type{Any}) = Dict(x => f(x) for x in xs)

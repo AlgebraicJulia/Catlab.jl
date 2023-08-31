@@ -1277,8 +1277,6 @@ end
 
 colimit(d::FreeDiagram{<:FinSet{Int}}) = colimit(FinDomFunctor(d))
 
-#Expects F's domain to be a fincatpresentation.
-colimit(F::Functor{Dom,<:TypeCat{<:FinSet{Int}}}) where Dom = colimit(dom_to_graph(F))
 function colimit(F::Functor{<:FinCat{Int},<:TypeCat{<:FinSet{Int}}})
   # Uses the general formula for colimits in Set (Leinster, 2014, Basic Category
   # Theory, Example 5.2.16).

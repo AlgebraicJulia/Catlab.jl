@@ -463,9 +463,7 @@ function BipartiteFreeDiagram{Ob,Hom}(F::Functor{<:FinCat{Int}};
 end
 BipartiteFreeDiagram(F::Functor{<:FinCat{Int},<:Cat{Ob,Hom}}; kw...) where {Ob,Hom} =
   BipartiteFreeDiagram{Ob,Hom}(F; kw...)
-#Domain is a fincatpresentation
-BipartiteFreeDiagram(F::Functor;kw...) =
-  BipartiteFreeDiagram(dom_to_graph(F);kw...)
+  
 # Free diagrams
 #--------------
 
