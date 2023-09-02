@@ -35,6 +35,7 @@ end
 @testset "CSets" begin
   include("ACSetsGATsInterop.jl")
   include("CSets.jl")
+  include("HomSearch.jl")
   include("CatElements.jl")
 end
 
