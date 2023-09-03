@@ -5,7 +5,7 @@ export oapply, query
 
 using ...Theories
 using ...CategoricalAlgebra
-import ...CategoricalAlgebra.CSets: homomorphisms, homomorphism, is_homomorphic
+import ...CategoricalAlgebra.HomSearch: homomorphisms, homomorphism, is_homomorphic
 using ..UndirectedWiringDiagrams
 
 """ Compose morphisms according to UWD.

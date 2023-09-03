@@ -19,7 +19,7 @@ export chase
 
 using ACSets.DenseACSets: datatypes
 using ...GATs, ...Theories
-using ..CSets, ..FinSets, ..FinCats, ..Limits, ..FreeDiagrams
+using ..CSets, ..HomSearch, ..FinSets, ..FinCats, ..Limits, ..FreeDiagrams
 using ..FinCats: FinCatPresentation
 import ..Limits: universal
 import ..Categories: ob_map
