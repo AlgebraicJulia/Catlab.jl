@@ -23,14 +23,14 @@ end
 #-------
 
 g, h = path_graph(Graph, 3), path_graph(Graph, 4)
-homs = [CSetTransformation((V=[1,2,3], E=[1,2]), g, h),
-        CSetTransformation((V=[2,3,4], E=[2,3]), g, h)]
+homs = [ACSetTransformation((V=[1,2,3], E=[1,2]), g, h),
+        ACSetTransformation((V=[2,3,4], E=[2,3]), g, h)]
 @test homomorphisms(g, h) == homs
 @test homomorphisms(g, h, alg=HomomorphismQuery()) == homs
 @test !is_isomorphic(g, h)
 
 I = ob(terminal(Graph))
-α = CSetTransformation((V=[1,1,1], E=[1,1]), g, I)
+α = ACSetTransformation((V=[1,1,1], E=[1,1]), g, I)
 @test homomorphism(g, I) == α
 @test homomorphism(g, I, alg=HomomorphismQuery()) == α
 @test !is_homomorphic(g, I, monic=true)
@@ -38,7 +38,7 @@ I = ob(terminal(Graph))
 @test !is_homomorphic(I, h, alg=HomomorphismQuery())
 
 # Graph homomorphism starting from partial assignment, e.g. vertex assignment.
-α = CSetTransformation((V=[2,3,4], E=[2,3]), g, h)
+α = ACSetTransformation((V=[2,3,4], E=[2,3]), g, h)
 @test homomorphisms(g, h, initial=(V=[2,3,4],)) == [α]
 @test homomorphisms(g, h, initial=(V=Dict(1 => 2, 3 => 4),)) == [α]
 @test homomorphisms(g, h, initial=(E=Dict(1 => 2),)) == [α]

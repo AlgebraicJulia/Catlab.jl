@@ -42,7 +42,7 @@ SYMGRAPHS = Dict(k => SymmetricGraph(g) for (k,g) in LG_SYMGRAPHS)
 #########
 
 # `bench_iter_edges` and `bench_has_edge` adapted from Graphs:
-# https://github.com/JuliaGraphs/Graphs.jl/blob/master/benchmark/core.jl
+# https://github.com/JuliaGraphs/Graphs.jl/blob/main/benchmark/core.jl
 
 function bench_iter_edges(g)
   count = 0

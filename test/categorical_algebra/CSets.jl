@@ -96,37 +96,37 @@ clim = colimit(Span(h1,h2));
 
 # Constructors and accessors.
 g, h = path_graph(Graph, 4), cycle_graph(Graph, 2)
-α = CSetTransformation((V=[1,2,1,2], E=[1,2,1]), g, h)
+α = ACSetTransformation((V=[1,2,1,2], E=[1,2,1]), g, h)
 @test components(α) == (V=α[:V], E=α[:E])
 @test α[:V] isa FinFunction{Int} && α[:E] isa FinFunction{Int}
 @test α[:V](3) == 1
 @test α[:E](2) == 2
 @test startswith(sprint(show, α), "ACSetTransformation((V = ")
 
-α′ = CSetTransformation(g, h, V=[1,2,1,2], E=[1,2,1])
+α′ = ACSetTransformation(g, h, V=[1,2,1,2], E=[1,2,1])
 @test components(α′) == components(α)
-α′′ = CSetTransformation(g, h, V=FinFunction([1,2,1,2]), E=FinFunction([1,2,1]))
+α′′ = ACSetTransformation(g, h, V=FinFunction([1,2,1,2]), E=FinFunction([1,2,1]))
 @test components(α′′) == components(α)
 
 # Naturality.
 d = naturality_failures(α)
 @test [collect(d[a]) for a in keys(d)] == [[],[]]
 @test is_natural(α)
-β = CSetTransformation((V=[1,2,1,2], E=[1,1,1]), g, h)
+β = ACSetTransformation((V=[1,2,1,2], E=[1,1,1]), g, h)
 d = naturality_failures(β)
 @test sort([collect(v) for v in values(d)]) == [[(2,1,2)],[(2,2,1)]]
 @test startswith(sprint(show_naturality_failures, β), "Failures")
 @test !is_natural(β)
-β = CSetTransformation((V=[2,1], E=[2,1]), h, h)
+β = ACSetTransformation((V=[2,1], E=[2,1]), h, h)
 @test is_natural(β)
-β = CSetTransformation((V=[2,1], E=[2,2]), h, h)
+β = ACSetTransformation((V=[2,1], E=[2,2]), h, h)
 
 # Category of C-sets.
 @test dom(α) === g
 @test codom(α) === h
 γ = compose(α,β)
-@test γ isa TightACSetTransformation
-@test γ == CSetTransformation((V=α[:V]⋅β[:V], E=α[:E]⋅β[:E]), g, h)
+@test γ isa ACSetTransformation
+@test γ == ACSetTransformation((V=α[:V]⋅β[:V], E=α[:E]⋅β[:E]), g, h)
 @test id(g) isa TightACSetTransformation
 @test force(compose(id(g), α)) == α
 @test force(compose(α, id(h))) == α
@@ -154,14 +154,14 @@ term = cycle_graph(Graph, 1)
 lim = terminal(Graph)
 @test ob(lim) == term
 @test force(delete(lim, g)) ==
-  CSetTransformation((V=fill(1,4), E=fill(1,3)), g, term)
+  ACSetTransformation((V=fill(1,4), E=fill(1,3)), g, term)
 
 # Products in Graph: unitality.
 lim = product(g, term)
 @test ob(lim) == g
 @test force(proj1(lim)) == force(id(g))
 @test force(proj2(lim)) ==
-  CSetTransformation((V=fill(1,4), E=fill(1,3)), g, term)
+  ACSetTransformation((V=fill(1,4), E=fill(1,3)), g, term)
 
 # Product in Graph: two directed intervals (Reyes et al 2004, p. 48).
 I = path_graph(Graph, 2)
@@ -181,8 +181,8 @@ lim = product(g, loop2)
 g2 = ob(lim)
 @test (nv(g2), ne(g2)) == (nv(g), 2*ne(g))
 @test (src(g2), tgt(g2)) == (repeat(src(g), 2), repeat(tgt(g), 2))
-α = CSetTransformation((V=[2,3], E=[2]), I, g)
-β = CSetTransformation((V=[1,1], E=[2]), I, loop2)
+α = ACSetTransformation((V=[2,3], E=[2]), I, g)
+β = ACSetTransformation((V=[1,1], E=[2]), I, loop2)
 γ = pair(lim, α, β)
 @test force(γ⋅proj1(lim)) == α
 @test force(γ⋅proj2(lim)) == β
@@ -190,8 +190,8 @@ g2 = ob(lim)
 # Equalizer in Graph from (Reyes et al 2004, p. 50).
 g, h = cycle_graph(Graph, 2), Graph(2)
 add_edges!(h, [1,2,2], [2,1,1])
-ϕ = CSetTransformation((V=[1,2], E=[1,2]), g, h)
-ψ = CSetTransformation((V=[1,2], E=[1,3]), g, h)
+ϕ = ACSetTransformation((V=[1,2], E=[1,2]), g, h)
+ψ = ACSetTransformation((V=[1,2], E=[1,3]), g, h)
 @test is_natural(ϕ) && is_natural(ψ)
 eq = equalizer(ϕ, ψ)
 @test ob(eq) == I
@@ -205,8 +205,8 @@ g0, g1, g2 = Graph(2), Graph(3), Graph(2)
 add_edges!(g0, [1,1,2], [1,2,2])
 add_edges!(g1, [1,2,3], [2,3,3])
 add_edges!(g2, [1,2,2], [1,2,2])
-ϕ = CSetTransformation((V=[1,2,2], E=[2,3,3]), g1, g0)
-ψ = CSetTransformation((V=[1,2], E=[1,3,3]), g2, g0)
+ϕ = ACSetTransformation((V=[1,2,2], E=[2,3,3]), g1, g0)
+ψ = ACSetTransformation((V=[1,2], E=[1,3,3]), g2, g0)
 @test is_natural(ϕ) && is_natural(ψ)
 lim = pullback(ϕ, ψ)
 @test nv(ob(lim)) == 3
@@ -229,7 +229,7 @@ lim′ = limit(FinDomFunctor(diagram))
 # Initial object in graph: the empty graph.
 colim = initial(Graph)
 @test ob(colim) == Graph()
-@test create(colim, g) == CSetTransformation((V=Int[], E=Int[]), Graph(), g)
+@test create(colim, g) == ACSetTransformation((V=Int[], E=Int[]), Graph(), g)
 
 # Coproducts in Graph: unitality.
 g = path_graph(Graph, 4)
@@ -237,7 +237,7 @@ colim = coproduct(g, Graph())
 @test ob(colim) == g
 @test force(coproj1(colim)) == force(id(g))
 @test force(coproj2(colim)) ==
-  CSetTransformation((V=Int[], E=Int[]), Graph(), g)
+  ACSetTransformation((V=Int[], E=Int[]), Graph(), g)
 
 # Coproduct in Graph.
 h = cycle_graph(Graph, 2)
@@ -246,7 +246,7 @@ coprod = ob(colim)
 @test nv(coprod) == 6
 @test src(coprod) == [1,2,3,5,6]
 @test tgt(coprod) == [2,3,4,6,5]
-α = CSetTransformation((V=[1,2,1,2], E=[1,2,1]), g, h)
+α = ACSetTransformation((V=[1,2,1,2], E=[1,2,1]), g, h)
 β = id(h)
 γ = copair(colim, α, β)
 @test force(coproj1(colim)⋅γ) == α
@@ -258,8 +258,8 @@ colim2 = coproduct(path_graph(Graph, 4), cycle_graph(Graph, 2))
 # Coequalizer in Graph: collapsing a segment to a loop.
 g = Graph(2)
 add_edge!(g, 1, 2)
-α = CSetTransformation((V=[1], E=Int[]), Graph(1), g)
-β = CSetTransformation((V=[2], E=Int[]), Graph(1), g)
+α = ACSetTransformation((V=[1], E=Int[]), Graph(1), g)
+β = ACSetTransformation((V=[2], E=Int[]), Graph(1), g)
 @test is_natural(α) && is_natural(β)
 coeq = coequalizer(α, β)
 @test ob(coeq) == ob(terminal(Graph))
@@ -267,8 +267,8 @@ coeq = coequalizer(α, β)
 @test force(proj(coeq)[:E]) == FinFunction([1])
 
 # Pushout in Graph from (Reyes et al 2004, p. 59).
-α = CSetTransformation((V=[2], E=Int[]), Graph(1), g)
-β = CSetTransformation((V=[1], E=Int[]), Graph(1), ob(terminal(Graph)))
+α = ACSetTransformation((V=[2], E=Int[]), Graph(1), g)
+β = ACSetTransformation((V=[1], E=Int[]), Graph(1), ob(terminal(Graph)))
 @test is_natural(α) && is_natural(β)
 colim = pushout(α, β)
 @test nv(ob(colim)) == 2
@@ -335,13 +335,20 @@ end
 @acset_type VELabeledGraph(SchVELabeledGraph,
                            index=[:src,:tgt]) <: AbstractGraph
 
-# Terminal labeled graph.
-@test ob(terminal(VELabeledGraph)) == cycle_graph(VELabeledGraph{Tuple{}}, 1; E=(;elabel=[()]), V=(;vlabel=[()]))
+# Terminal labeled graph (across all possible choices of Julia data types)
+@test ob(terminal(VELabeledGraph; loose=true)) == 
+  cycle_graph(VELabeledGraph{Tuple{}}, 1; E=(;elabel=[()]), V=(;vlabel=[()]))
+
+# Terminal in the subcategory where all attrs are variables
+T2 = ob(terminal(VELabeledGraph{Symbol}; cset=true))
+@test T2 == @acset VELabeledGraph{Symbol} begin 
+  V=1; E=1; Label=2; src=1; tgt=1; vlabel=[AttrVar(1)]; elabel=[AttrVar(2)]
+end
 
 # Product of labeled graphs.
 g = path_graph(VELabeledGraph{Symbol}, 2, V=(vlabel=[:a,:b],), E=(elabel=:f,))
 h = path_graph(VELabeledGraph{String}, 2, V=(vlabel=["x","y"],), E=(elabel="f",))
-π1, π2 = lim = product(g, h)
+π1, π2 = lim = product(g, h; loose=true)
 prod′ = ob(lim)
 @test prod′ isa VELabeledGraph{Tuple{Symbol,String}}
 @test Set(prod′[:vlabel]) == Set([(:a, "x"), (:a, "y"), (:b, "x"), (:b, "y")])
@@ -451,8 +458,8 @@ Y = path_graph(Graph, 3) ⊕ path_graph(Graph, 2) ⊕ path_graph(Graph, 2)
 add_vertex!(Y)
 add_edge!(Y, 2, 8)
 Z = cycle_graph(Graph, 1) ⊕ cycle_graph(Graph, 1)
-ιY, ιZ = colim = pushout(CSetTransformation(I, Y, V=[3]),
-                         CSetTransformation(I, Z, V=[1]))
+ιY, ιZ = colim = pushout(ACSetTransformation(I, Y, V=[3]),
+                         ACSetTransformation(I, Z, V=[1]))
 B_implies_C, B = Subobject(ιY), Subobject(ιZ)
 C = Subobject(ob(colim), V=2:5, E=2:3)
 @test (B ⟹ C) |> force == B_implies_C |> force
@@ -557,9 +564,8 @@ l32 = ACSetTransformation((Weight = t32,), w3, w2)
 l = l32 ⋅ l21 # {Int}->{Bool} x {Bool}->{Symbol} = {Int}->{Symbol}
 @test collect(l[:Weight]) == [:X,:B]
 
-
 # Homomorphism search
-#####################
+#--------------------
 
 A = @acset WG{Bool} begin V=1;E=2;Weight=1;src=1;tgt=1;
                           weight=[true, AttrVar(1)] end
@@ -594,6 +600,7 @@ Z = @acset A2{Symbol} begin X=1; D=1; f=[AttrVar(1)]; g=[AttrVar(1)] end
 
 # Colimits 
 #---------
+
 const WG = WeightedGraph
 
 A = @acset WG{Bool} begin V=1;E=2;Weight=2;src=1;tgt=1;weight=[AttrVar(1),true] end
@@ -645,8 +652,37 @@ h = abstract_attributes(X)
 rem_part!(X, :E, 2)
 @test nparts(dom(h), :E) == 2
 
+# Limits
+#-------
+
+A = @acset WG{Symbol} begin V=1;E=2;Weight=1;src=1;tgt=1;weight=[AttrVar(1),:X] end
+B = @acset WG{Symbol} begin V=1;E=2;Weight=1;src=1;tgt=1;weight=[:X, :Y] end
+C = B ⊕ @acset WG{Symbol} begin V=1 end
+AC = homomorphism(A,C)
+BC = CSetTransformation(B,C; V=[1],E=[1,2], Weight=[:X])
+@test all(is_natural,[AC,BC])
+p1, p2 = product(A,A; cset=true);
+X = @acset WG{Symbol} begin V=1;E=2;Weight=1;src=1;tgt=1;weight=[:X, :X] end
+@test nparts(apex(product(X,X;cset=true)),:Weight) == 1
+
+# Pullback in Graph from (Reyes et al 2004, p. 53), again
+g0, g1, g2 = WG{Symbol}.([2,3,2])
+add_edges!(g0, [1,1,2], [1,2,2]; weight=[:X,:Y,:Z])
+add_edges!(g1, [1,2,3], [2,3,3]; weight=[:Y,:Z,AttrVar(add_part!(g1,:Weight))])
+add_edges!(g2, [1,2,2], [1,2,2]; weight=[AttrVar(add_part!(g2,:Weight)), :Z,:Z])
+ϕ = only(homomorphisms(g1, g0)) |> CSetTransformation
+ψ = only(homomorphisms(g2, g0; initial=(V=[1,2],))) |> CSetTransformation
+@test is_natural(ϕ) && is_natural(ψ)
+lim = pullback(ϕ, ψ)
+@test nv(ob(lim)) == 3
+@test sort!(collect(zip(src(ob(lim)), tgt(ob(lim))))) ==
+  [(2,3), (2,3), (3,3), (3,3)]
+@test is_natural(proj1(lim)) && is_natural(proj2(lim))
+
+
 # Subobjects with variables 
 #--------------------------
+
 X = @acset SetAttr{Bool} begin X=2;D=1;f=[true, AttrVar(1)] end
 A = Subobject(X, X=[1])
 B = Subobject(X, X=[2], D=[1])
@@ -679,5 +715,47 @@ end
 @test dom(hom(subtract(A,B))) == @acset VES begin V=3; E=2; Label=2
   src=[1,2]; tgt=3; vlabel=[:a,:b,:c]; elabel=AttrVar.(1:2)
 end
+
+# Limits of CSetTransformations between ACSets
+#---------------------------------------------
+# Example: "Reflexive graphs" where reflexive edges have weight -1
+A = @acset WeightedGraph{Float64} begin V=2; E=3; 
+  src=[1, 2, 1]; tgt=[1, 2, 2]; weight=[-1, -1, 5] 
+end
+B = @acset WeightedGraph{Float64} begin V=3; E=5; 
+  src=[1, 2, 3, 1, 2]; tgt=[1, 2, 3, 2, 3]; weight=[-1, -1, -1, 2, 3] 
+end
+
+# 1. Stratification with LooseACSetTransformation
+C_nothing =  @acset WeightedGraph{Nothing} begin V=1; E=2; Weight=2
+  src=1; tgt=1; weight=[nothing,nothing]
+end
+AC_nothing = LooseACSetTransformation(
+    (V=[1, 1], E=[1, 1, 2],), (Weight=(_->nothing),), A, C_nothing)
+BC_nothing = LooseACSetTransformation(
+    (V=[1, 1, 1], E=[2, 2, 2, 1, 1],), (Weight=(_->nothing),), B, C_nothing)
+res = apex(pullback(AC_nothing, BC_nothing))
+@test nparts(res, :E) == 7
+@test eltype(res[:weight]) == Tuple{Float64, Float64}
+
+# 2. Stratification with CSetTransformations
+C = @acset WeightedGraph{Float64} begin V=1; E=2; Weight=2
+  src=1; tgt=1; weight=[3.1415, 2.71]
+end
+
+AC = CSetTransformation(A, C; V=[1, 1], E=[1, 1, 2])
+BC = CSetTransformation(B, C; V=[1, 1, 1], E=[2, 2, 2, 1, 1])
+ABC = pullback(AC,BC);
+expected = @acset WeightedGraph{Float64} begin V=6; E=7; Weight=3; 
+  src=[1,1,2,3,3,4,5]; tgt=[2,3,4,4,5,6,6]; weight=AttrVar.([1,2,2,1,3,3,1]) 
+end
+@test is_isomorphic(apex(ABC),expected)
+
+# 3. Apply commutative monoid to attrs
+ABC = pullback(AC,BC; attrfun=(weight=prod,))
+expected = @acset WeightedGraph{Float64} begin V=6; E=7;
+  src=[1,1,2,3,3,4,5]; tgt=[2,3,4,4,5,6,6]; weight=[-5,-2,-2,-5,-3,-3,-5]
+end
+@test is_isomorphic(apex(ABC),expected)
 
 end

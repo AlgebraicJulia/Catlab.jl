@@ -26,7 +26,7 @@ end
 core = @acset Graph begin V=2; E=2; src=[1,2]; tgt=[2,1] end
 
 # This adds a self loop to #1 and merges #1/#3
-etgd = CSetTransformation(etgd_s,etgd_t; V=[1,2,1], E=[2,3])
+etgd = ACSetTransformation(etgd_s,etgd_t; V=[1,2,1], E=[2,3])
 
 @test is_isomorphic(codom(egd(etgd)), core) # EGD has no extra self-edge
 @test collect(egd(etgd)[:V]) == [1,2,1] # but it does merge vertices
