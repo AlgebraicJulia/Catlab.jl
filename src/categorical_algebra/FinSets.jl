@@ -25,8 +25,8 @@ import ..FinCats: force, ob_generators, hom_generators, ob_generator,
 using ..FinCats: dicttype
 import ..Limits: limit, colimit, universal, BipartiteColimit
 import ..Subobjects: Subobject
-using ..Sets: IdentityFunction, SetFunctionCallable, AbsBijectionWrap,
-  BijectionBimap, BijectionThinWrap, unwrap
+using ..Sets: IdentityFunction, SetFunctionCallable, AbsBijectionWrapper,
+  BijectionBimap, BijectionWrapper, unwrap
 
 # Finite sets
 #############
@@ -460,7 +460,7 @@ is_indexed(f::SetFunction) = false
 is_indexed(f::IdentityFunction) = true
 is_indexed(f::IndexedFinDomFunctionVector) = true
 is_indexed(f::FinDomFunctionVector{T,<:AbstractRange{T}}) where T = true
-is_indexed(f::BijectionThinWrap) = is_indexed(f.func)
+is_indexed(f::BijectionWrapper) = is_indexed(f.func)
 is_indexed(f::BijectionBimap) = true
 
 """ The preimage (inverse image) of the value y in the codomain.
@@ -468,7 +468,7 @@ is_indexed(f::BijectionBimap) = true
 preimage(f::IdentityFunction, y) = SVector(y)
 preimage(f::FinDomFunction, y) = [ x for x in dom(f) if f(x) == y ]
 preimage(f::IndexedFinDomFunctionVector, y) = get_preimage_index(f.index, y)
-preimage(f::BijectionThinWrap, y) = preimage(unwrap(f), y)
+preimage(f::BijectionWrapper, y) = preimage(unwrap(f), y)
 preimage(f::BijectionBimap, y) = f.inv(y)
 
 @inline get_preimage_index(index::AbstractDict, y) = get(index, y, 1:0)
@@ -586,15 +586,15 @@ const FinBijection{S, S′, Dom <: FinSet{S}, Codom <: FinSet{S′}} =
 
 FinBijection(f, args...) = FinBijection(f, (FinSet(a) for a in args)...)
 FinBijection(f::Function, dom::FinSet, codom::FinSet) =
-  BijectionThinWrap(SetFunction(f, dom, codom))
-FinBijection(f::FinFunction) = BijectionThinWrap(f)
+  BijectionWrapper(SetFunction(f, dom, codom))
+FinBijection(f::FinFunction) = BijectionWrapper(f)
 FinBijection(f::FinFunction, g::FinFunction) = BijectionBimap(unwrap(f), unwrap(g))
 FinBijection(f::AbstractVector) =
-  BijectionThinWrap(FinDomFunction(f, FinSet(Set(f))))
+  BijectionWrapper(FinDomFunction(f, FinSet(Set(f))))
 FinBijection(f::AbstractVector, a, args...) =
-  BijectionThinWrap(FinDomFunction(f, FinSet(a), args...))
+  BijectionWrapper(FinDomFunction(f, FinSet(a), args...))
 FinBijection(f::AbstractDict, args...) =
-  BijectionThinWrap(FinFunction(f, args...))
+  BijectionWrapper(FinFunction(f, args...))
 
 function FinBijection(f::Union{AbstractDict{K,Int},AbstractVector{Int}}) where K
   function minandmax(p::Tuple{<:Number, <:Number}, n::Int)::Tuple{Int,Int}
@@ -603,7 +603,7 @@ function FinBijection(f::Union{AbstractDict{K,Int},AbstractVector{Int}}) where K
   minval, maxval = reduce(minandmax, values(f), init=(Inf, -Inf))
   len = length(f)
   cod = minval == 1 && maxval == len ? FinSet(len) : Set(v)
-  BijectionThinWrap(FinFunction(f, cod))
+  BijectionWrapper(FinFunction(f, cod))
 end
 
 Sets.show_type_constructor(io::IO, ::Type{<:FinBijection}) =
@@ -613,17 +613,17 @@ Sets.show_type_constructor(io::IO, ::Type{<:FinBijection}) =
 by wrapping another `FinFunction` object.
 """
 const FinBijectionWrap{S,S′,Dom<:FinSet{S},Codom<:FinSet{S′},
-  F<:FinFunction{S,S′,Dom,Codom}} = AbsBijectionWrap{Dom, Codom, F}
+  F<:FinFunction{S,S′,Dom,Codom}} = AbsBijectionWrapper{Dom, Codom, F}
 
 force(f::FinBijectionWrap) = FinBijection(force(unwrap(f)))
 
 """ Alias for all `FinBijection`s that wrap `Vector`s.
 """
 const FinBijectionVector = Union{
-  AbsBijectionWrap{
+  AbsBijectionWrapper{
     FinSetInt, Codom, FinFunctionVector{S,T,V,Codom}
   } where {S, T, V<:AbstractVector{T}, Codom<:FinSet{S,T}},
-  AbsBijectionWrap{
+  AbsBijectionWrapper{
     FinSetInt, FinSetInt, IndexedFinFunctionVector{V,Index}
   } where {V<:AbstractVector{Int}, Index},
 }
@@ -631,19 +631,19 @@ const FinBijectionVector = Union{
 force(f::FinBijectionVector) = f
 
 Sets.do_compose(f::FinBijectionVector, g::FinBijectionVector) =
-  BijectionThinWrap(Sets.do_compose(unwrap(f), unwrap(g)))
+  BijectionWrapper(Sets.do_compose(unwrap(f), unwrap(g)))
 
 """ Alias for all `FinBijection`s that wrap `Dict`s.
 """
 const FinBijectionDict{K,D<:AbstractDict{K},S,Codom<:FinSet{S}} =
-  AbsBijectionWrap{
+  AbsBijectionWrapper{
     FinSetCollection{Base.KeySet{K,D}}, Codom, FinFunctionDict{K,D,S,Codom}
   } where {K, D<:AbstractDict{K}, S, Codom<:FinSet{S}}
 
 force(f::FinBijectionDict) = f
 
 Sets.do_compose(f::FinBijectionDict, g::FinBijectionDict) =
-  BijectionThinWrap(Sets.do_compose(unwrap(f), unwrap(g)))
+  BijectionWrapper(Sets.do_compose(unwrap(f), unwrap(g)))
 
 function Sets.do_inv(f::FinBijection{S,S′,Dom,Codom}) where
     {S,S′,T,T′,Dom<:FinSet{S,T},Codom<:FinSet{S′,T′}}
@@ -663,7 +663,7 @@ from its cycles just as easily as the function itself. This type is designed
 with these facts in mind.
 """
 struct FinBijectionCycles{S,T,Dom<:FinSet{S,T},F<:FinFunction{S,S,Dom,Dom},
-    G<:FinFunction{S,S,Dom,Dom}} <: AbsBijectionWrap{Dom,Dom,F}
+    G<:FinFunction{S,S,Dom,Dom}} <: AbsBijectionWrapper{Dom,Dom,F}
   func::BijectionBimap{Dom,Dom,F,G}
   cycles::Vector{Vector{T}}
 end

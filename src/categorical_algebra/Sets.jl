@@ -85,8 +85,8 @@ end
 """
 abstract type Bijection{Dom<:SetOb, Codom<:SetOb} <: SetFunction{Dom,Codom} end
 
-Bijection(f::Function, args...) = BijectionThinWrap(SetFunction(f, args...))
-Bijection(f::SetFunction) = BijectionThinWrap(f)
+Bijection(f::Function, args...) = BijectionWrapper(SetFunction(f, args...))
+Bijection(f::SetFunction) = BijectionWrapper(f)
 Bijection(f::SetFunction, g::SetFunction) = BijectionBimap(unwrap(f), unwrap(g))
 Bijection(f::Bijection) = f
 
@@ -124,27 +124,27 @@ for `SetFunction` objects.
 
 Each concrete subtype must store the wrapped `SetFunction` in the `func` field.
 """
-abstract type AbsBijectionWrap{Dom<:SetOb,Codom<:SetOb,F<:SetFunction{Dom,Codom}} <:
-  Bijection{Dom,Codom} end
+abstract type AbsBijectionWrapper{Dom<:SetOb, Codom<:SetOb,
+  F<:SetFunction{Dom,Codom}} <: Bijection{Dom,Codom} end
 
-unwrap(f::AbsBijectionWrap) = unwrap(f.func)
+unwrap(f::AbsBijectionWrapper) = unwrap(f.func)
 unwrap(f::SetFunction) = f
 
-dom(f::AbsBijectionWrap) = dom(unwrap(f))
-codom(f::AbsBijectionWrap) = codom(unwrap(f))
+dom(f::AbsBijectionWrapper) = dom(unwrap(f))
+codom(f::AbsBijectionWrapper) = codom(unwrap(f))
 
-(f::AbsBijectionWrap)(x) = (unwrap(f))(x)
+(f::AbsBijectionWrapper)(x) = (unwrap(f))(x)
 
 # Developer's note: should I add in a `known_correct` parameter, asking
 # the caller to decide whether the SetFunction should be checked for bijectivity?
-@struct_hash_equal struct BijectionThinWrap{Dom<:SetOb, Codom<:SetOb,
-    F<:SetFunction{Dom,Codom}} <: AbsBijectionWrap{Dom, Codom, F}
+@struct_hash_equal struct BijectionWrapper{Dom<:SetOb, Codom<:SetOb,
+    F<:SetFunction{Dom,Codom}} <: AbsBijectionWrapper{Dom, Codom, F}
   func::F
 end
 
-BijectionThinWrap(f::BijectionThinWrap) = f
+BijectionWrapper(f::BijectionWrapper) = f
 
-function Base.show(io::IO, f::BijectionThinWrap)
+function Base.show(io::IO, f::BijectionWrapper)
   replacerules = (r"^SetFunction" => "Bijection", r"^FinFunction" => "FinBijection")
   print(io, replace(repr(f.func), replacerules...))
 end
@@ -152,16 +152,16 @@ end
 """ Bijective function in **Set** backed by a pair of (inverse) `SetFunction`s.
 
 Methods that create `BijectionBimap`s are expected not to place objects of type
-`AbsBijectionWrap` in the `func` and `inv` fields.
+`AbsBijectionWrapper` in the `func` and `inv` fields.
 """
 @struct_hash_equal struct BijectionBimap{Dom<:SetOb, Codom<:SetOb,
     F<:SetFunction{Dom,Codom}, Inv<:SetFunction} <:
-    AbsBijectionWrap{Dom, Codom, F}
+    AbsBijectionWrapper{Dom, Codom, F}
   func::F
   inv::Inv
 end
 
-BijectionBimap(f::BijectionThinWrap) =
+BijectionBimap(f::BijectionWrapper) =
   BijectionBimap(unwrap(f), unwrap(do_inv(f)))
 
 Base.inv(f::BijectionBimap) = BijectionBimap(f.inv, f.func)
@@ -213,10 +213,10 @@ end
 """
 const CompositeBijection{Dom<:SetOb, Codom<:SetOb,
   F<:Bijection{Dom,<:SetOb}, G<:Bijection{<:SetOb,Codom}} =
-  BijectionThinWrap{Dom, Codom, CompositeFunction{Dom, Codom, F, G}}
+  BijectionWrapper{Dom, Codom, CompositeFunction{Dom, Codom, F, G}}
 
 CompositeBijection(f::Bijection, g::Bijection) =
-  BijectionThinWrap(CompositeFunction(f, g))
+  BijectionWrapper(CompositeFunction(f, g))
 
 Base.first(f::CompositeBijection) = first(unwrap(f))
 Base.last(f::CompositeBijection) = last(unwrap(f))
@@ -348,12 +348,12 @@ function comp_inv_helper(f::Composite, g::Composite)
 end
 function comp_inv_helper(f::F, g::BijectionBimap{X, Y, Z, Inv}) where
     {X, Y, Z, Dom<:SetOb, Codom<:SetOb, Inv<:SetFunction{Dom,Codom},
-    F<:Union{Inv, AbsBijectionWrap{Dom,Codom,Inv}}}
+    F<:Union{Inv, AbsBijectionWrapper{Dom,Codom,Inv}}}
   if unwrap(f) === g.inv; id(dom(f)) else nothing end
 end
 function comp_inv_helper(f::BijectionBimap{X, Y, Z, Inv}, g::G) where
     {X, Y, Z, Dom<:SetOb, Codom<:SetOb, Inv<:SetFunction{Dom,Codom},
-    G<:Union{Inv, AbsBijectionWrap{Dom,Codom,Inv}}}
+    G<:Union{Inv, AbsBijectionWrapper{Dom,Codom,Inv}}}
   if f.inv === unwrap(g); id(dom(f)) else nothing end
 end
 function comp_inv_helper(f::BijectionBimap{W, X, F, G},
