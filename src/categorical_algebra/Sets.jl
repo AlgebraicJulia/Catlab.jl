@@ -9,6 +9,7 @@ module Sets
 export SetOb, TypeSet, PredicatedSet, SetFunction, Bijection, ConstantFunction,
   Ob
 
+using MLStyle: @match
 using StructEquality
 
 using ...GATs, ..Categories, ..FreeDiagrams, ..Limits
@@ -87,10 +88,10 @@ abstract type Bijection{Dom<:SetOb, Codom<:SetOb} <: SetFunction{Dom,Codom} end
 
 Bijection(f::Function, args...) = BijectionWrapper(SetFunction(f, args...))
 Bijection(f::SetFunction) = BijectionWrapper(f)
-Bijection(f::SetFunction, g::SetFunction) = BijectionBimap(unwrap(f), unwrap(g))
+Bijection(f::SetFunction, g::SetFunction) = BijectionBimap(f, g)
 Bijection(f::Bijection) = f
 
-Base.inv(f::Bijection) = BijectionBimap(do_inv(f), unwrap(f))
+Base.inv(f::Bijection) = BijectionBimap(do_inv(f), f)
 
 function do_inv end
 
@@ -135,8 +136,6 @@ codom(f::AbsBijectionWrapper) = codom(unwrap(f))
 
 (f::AbsBijectionWrapper)(x) = (unwrap(f))(x)
 
-# Developer's note: should I add in a `known_correct` parameter, asking
-# the caller to decide whether the SetFunction should be checked for bijectivity?
 @struct_hash_equal struct BijectionWrapper{Dom<:SetOb, Codom<:SetOb,
     F<:SetFunction{Dom,Codom}} <: AbsBijectionWrapper{Dom, Codom, F}
   func::F
@@ -150,9 +149,6 @@ function Base.show(io::IO, f::BijectionWrapper)
 end
 
 """ Bijective function in **Set** backed by a pair of (inverse) `SetFunction`s.
-
-Methods that create `BijectionBimap`s are expected not to place objects of type
-`AbsBijectionWrapper` in the `func` and `inv` fields.
 """
 @struct_hash_equal struct BijectionBimap{Dom<:SetOb, Codom<:SetOb,
     F<:SetFunction{Dom,Codom}, Inv<:SetFunction} <:
@@ -161,8 +157,7 @@ Methods that create `BijectionBimap`s are expected not to place objects of type
   inv::Inv
 end
 
-BijectionBimap(f::BijectionWrapper) =
-  BijectionBimap(unwrap(f), unwrap(do_inv(f)))
+BijectionBimap(f::BijectionWrapper) = BijectionBimap(f, do_inv(f))
 
 Base.inv(f::BijectionBimap) = BijectionBimap(f.inv, f.func)
 
@@ -171,9 +166,8 @@ Base.inv(f::BijectionBimap) = BijectionBimap(f.inv, f.func)
 # I tried implementing this, but Julia's multiple dispatch system doesn't take
 # keyword parameters into account, and I couldn't find any way to reconcile it
 # with the rest of the design.
-function Base.show(io::IO, f::F) where {F<:BijectionBimap}
-  show_type_constructor(io, F)
-  print(io, "(")
+function Base.show(io::IO, f::BijectionBimap)
+  print(io, "Bimap(")
   show(io, f.func)
   print(io, ", inverse=")
   show(io, f.inv)
@@ -311,55 +305,53 @@ end
 # composition of inverses is not guaranteed to result in an `IdentityFunction`.
 # See test/categorical_algebra/FinSets.jl.
 #
-# The implementation of `compose_inv` is somewhat tortured, and it is due in
-# part to a disadvantage of the extant `CompositeFunction` type. Iterated
-# composites are represented essentially as a tree of `SetFunction`s. As a
-# consequence, it is not possible to tell from the type of a `CompositeFunction`
-# whether the leftmost (or rightmost) item of the composite is a
-# `BijectionBimap`. Because of all this, the implementation introduces an
-# efficiency loss whenever using `compose` with a `CompositeFunction`, which
-# grows worse as the "tree" of composites grows deeper. To make things simpler
-# for `compose_inv`, the obvious idea would be to try refactoring
-# `CompositeFunction` to store a list of `SetFunction`s instead of a pair.
+# The implementation of `compose_inv` is somewhat inefficient in certain cases,
+# and it is due in part to a disadvantage of the extant `CompositeFunction`
+# type. Iterated composites are represented essentially as a tree of
+# `SetFunction`s. As a consequence, it is not possible to tell from the type of
+# a `CompositeFunction` whether the leftmost (or rightmost) item of the
+# composite is a `BijectionBimap`. Because of all this, the implementation
+# suffers an efficiency loss whenever using `compose` with a
+# `CompositeFunction`, which grows worse as the "tree" of composites grows
+# deeper. To make things simpler for `compose_inv`, the obvious idea would be to
+# try refactoring `CompositeFunction` to store a list of `SetFunction`s instead
+# of a pair.
 
 function compose_inv(f::SetFunction, g::SetFunction)
   delved = comp_inv_helper(f, g) # the helper "delves" into composites
   if delved !== nothing; delved else do_compose(f, g) end
 end
 
-comp_inv_helper(f::SetFunction, g::SetFunction) = nothing
-function comp_inv_helper(f::SetFunction, g::Composite)
-  delved = comp_inv_helper(f, first(g))
-  if delved === nothing; nothing
-  elseif delved isa IdentityFunction; last(g)
-  else do_compose(delved, last(g)) end
+function comp_inv_helper(f::SetFunction, g::SetFunction)
+  @match (f, g) begin
+    (::Composite, ::Composite) =>
+      handledoublecomposite(first(f), comp_inv_helper(last(f), first(g)), last(g))
+    (::Composite, _) => maybedocompose(first(f), comp_inv_helper(last(f), g))
+    (_, ::Composite) => maybedocompose(comp_inv_helper(f, first(g)), last(g))
+    (::BijectionBimap, _) || (_, ::BijectionBimap) =>
+      if areinverses(f, g); id(dom(f)) else nothing end
+    _ => nothing
+  end
 end
-function comp_inv_helper(f::Composite, g::SetFunction)
-  delved = comp_inv_helper(last(f), g)
-  if delved === nothing; nothing
-  elseif delved isa IdentityFunction; first(f)
-  else do_compose(first(f), delved) end
+function handledoublecomposite(f, g, h)
+  if g === nothing; nothing
+  elseif g isa IdentityFunction; compose_inv(f, h)
+  else do_compose(do_compose(f, g), h) end
 end
-function comp_inv_helper(f::Composite, g::Composite)
-  delved = comp_inv_helper(last(f), first(g))
-  if delved === nothing; nothing
-  elseif delved isa IdentityFunction; compose_inv(first(f), last(g)) # `compose_inv` here instead of `do_compose`
-  else do_compose(do_compose(first(f), delved), last(g)) end
+function maybedocompose(f, g)
+  @match (f, g) begin
+    (nothing, _) || (_, nothing) => nothing
+    (::IdentityFunction, h) || (h, ::IdentityFunction)  => h
+    _ => do_compose(f, g)
+  end
 end
-function comp_inv_helper(f::F, g::BijectionBimap{X, Y, Z, Inv}) where
-    {X, Y, Z, Dom<:SetOb, Codom<:SetOb, Inv<:SetFunction{Dom,Codom},
-    F<:Union{Inv, AbsBijectionWrapper{Dom,Codom,Inv}}}
-  if unwrap(f) === g.inv; id(dom(f)) else nothing end
-end
-function comp_inv_helper(f::BijectionBimap{X, Y, Z, Inv}, g::G) where
-    {X, Y, Z, Dom<:SetOb, Codom<:SetOb, Inv<:SetFunction{Dom,Codom},
-    G<:Union{Inv, AbsBijectionWrapper{Dom,Codom,Inv}}}
-  if f.inv === unwrap(g); id(dom(f)) else nothing end
-end
-function comp_inv_helper(f::BijectionBimap{W, X, F, G},
-    g::BijectionBimap{Y,Z,G,F}) where {W,X,Y,Z,F<:SetFunction,G<:SetFunction}
-  if f.func === g.inv || f.inv === g.func; id(dom(f)) else nothing end
-end
+"""Checker for whether two `SetFunction`s are inverses as captured by
+`BijectionBimap`. Does not check for inverses in full generality."""
+areinverses(f::SetFunction, g::SetFunction) = false
+areinverses(f::BijectionBimap, g::SetFunction) = unwrap(f.inv) === unwrap(g)
+areinverses(f::SetFunction, g::BijectionBimap) = unwrap(f) === unwrap(g.inv)
+areinverses(f::BijectionBimap, g::BijectionBimap) =
+  unwrap(f.inv) === unwrap(g) || unwrap(f) === unwrap(g.inv)
 
 do_compose(f::SetFunction, g::SetFunction) = Composite(f, g)
 do_compose(f::SetFunction, c::ConstantFunction) =
@@ -368,6 +360,16 @@ do_compose(c::ConstantFunction, f::SetFunction) =
   ConstantFunction(f(c.value), dom(c), codom(f))
 do_compose(c::ConstantFunction, d::ConstantFunction) =
   ConstantFunction(d.value, dom(c), codom(d))
+do_compose(f::SetFunction,    g::BijectionBimap) = handlebimaps(f, g)
+do_compose(f::BijectionBimap, g::SetFunction)    = handlebimaps(f, g)
+do_compose(f::BijectionBimap, g::BijectionBimap) = handlebimaps(f, g)
+
+function handlebimaps(f, g)
+  funcf = if f isa BijectionBimap; f.func else f end
+  funcg = if g isa BijectionBimap; g.func else g end
+  composedfuncs = do_compose(funcf, funcg)
+  if !(composedfuncs isa Composite) composedfuncs else Composite(f, g) end
+end
 
 @cartesian_monoidal_instance SetOb SetFunction
 

@@ -588,7 +588,7 @@ FinBijection(f, args...) = FinBijection(f, (FinSet(a) for a in args)...)
 FinBijection(f::Function, dom::FinSet, codom::FinSet) =
   BijectionWrapper(SetFunction(f, dom, codom))
 FinBijection(f::FinFunction) = BijectionWrapper(f)
-FinBijection(f::FinFunction, g::FinFunction) = BijectionBimap(unwrap(f), unwrap(g))
+FinBijection(f::FinFunction, g::FinFunction) = BijectionBimap(f, g)
 FinBijection(f::AbstractVector) =
   BijectionWrapper(FinDomFunction(f, FinSet(Set(f))))
 FinBijection(f::AbstractVector, a, args...) =
@@ -597,10 +597,8 @@ FinBijection(f::AbstractDict, args...) =
   BijectionWrapper(FinFunction(f, args...))
 
 function FinBijection(f::Union{AbstractDict{K,Int},AbstractVector{Int}}) where K
-  function minandmax(p::Tuple{<:Number, <:Number}, n::Int)::Tuple{Int,Int}
-    (Int(min(p[1], n)), Int(max(p[2], n)))
-  end
-  minval, maxval = reduce(minandmax, values(f), init=(Inf, -Inf))
+  minandmax = (p, n) -> (Int(min(p[1], n)), Int(max(p[2], n)))
+  minval, maxval = reduce(minandmax, values(f), init=(typemax(Int), typemin(Int)))
   len = length(f)
   cod = minval == 1 && maxval == len ? FinSet(len) : Set(v)
   BijectionWrapper(FinFunction(f, cod))
@@ -652,7 +650,7 @@ function Sets.do_inv(f::FinBijection{S,S′,Dom,Codom}) where
   for x in domain
     func[f(x)] = x
   end
-  FinDomFunction(func, domain)
+  BijectionWrapper(FinDomFunction(func, domain))
 end
 
 """ Finite bijection whose form in cycle notation is known.

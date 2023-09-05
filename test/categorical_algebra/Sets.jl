@@ -67,7 +67,7 @@ bimap_h = Bijection(bij_h, inv_h)
 @test bimap_h(-5) == "aaaaa"
 @test Sets.unwrap(bimap_h) === h
 
-bimapshowpattern = r"^Bijection\(SetFunction\(.*, inverse=SetFunction\(.*\)$"
+bimapshowpattern = r"^Bimap\(Bijection\(.*, inverse=Bijection\(.*\)$"
 @test match(bimapshowpattern, sprint(show, bimap_h)) !== nothing
 
 # Inverses.
