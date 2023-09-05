@@ -16,6 +16,7 @@ using ...Theories, ..CSets, ..FinSets, ..FreeDiagrams, ..Subobjects
 using ...Graphs.BasicGraphs
 using ..CSets: map_components
 using ACSets.DenseACSets: attrtype_type, delete_subobj!
+import ..Limits: factorize
 
 using Random
 using CompTime
@@ -470,6 +471,59 @@ function escape_assignment_lhs(expr)
   end
 end
 
+
+
+# Factorization 
+###############
+
+"""    factorize(s::Span; initial=Dict(), single=true, kw...)
+
+Factor a morphism f: A->C by finding a morphism h: B → C such that f=g⋅h.
+
+                                   B
+                                g ↗ ↘ h = ?
+                                A ⟶ C
+                                  f
+
+This function assumes that the general form of factorizing involves creating an
+"initial" dict for homomorphism search. In some categories this may not be the 
+case, which would mean factorize_constraints should actually return a dictionary 
+that gets passed as kwargs to homomorphism search. 
+"""
+function factorize(s::Span; initial=Dict(), single::Bool=true, kw...)
+  f, g = s
+  init = factorize_constraints(f,g; initial=initial)
+  if isnothing(init) return single ? nothing : typeof(f)[] end 
+  search = single ? homomorphism : homomorphisms
+  search(codom(g), codom(f); initial=NamedTuple(init), kw...)
+end
+
+"""
+Use the data of f:A->C and g:A->B to initialize search for Hom(B,C)
+if f(a) = c, then g(a) must equal c. 
+"""
+function factorize_constraints(f::ACSetTransformation,
+                               g::ACSetTransformation;
+                               initial=Dict())
+  dom(f) == dom(g) || error("f and g are not a span: $jf \n$jg")
+  S = acset_schema(dom(f))
+  res = Dict{Symbol, Dict{Int,Int}}()
+  for o in ob(S)
+    init = haskey(initial, o) ? initial[o] : Dict{Int,Int}()
+    for (a, g_a) in enumerate(collect(g[o]))
+      f_a = f[o](a)
+      if haskey(init, g_a) 
+        if init[g_a] != f_a
+          return nothing 
+        end 
+      else 
+        init[g_a] = f_a
+      end
+    end
+    res[o] = init
+  end
+  return res   
+end
 
 # Maximum Common C-Set
 ######################

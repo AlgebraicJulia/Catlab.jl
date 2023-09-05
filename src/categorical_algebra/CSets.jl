@@ -27,6 +27,9 @@ import ...Theories: ob, hom, dom, codom, compose, ⋅, id,
 using ..FreeDiagrams, ..Limits, ..Subobjects, ..Sets, ..FinSets, ..FinCats
 using ..FinSets: VarFunction, LooseVarFunction, IdentityFunction, VarSet
 import ..Limits: limit, colimit, universal
+import ...Theories: compose, ⋅, id, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
+using ..FreeDiagrams, ..Limits, ..Subobjects, ..FinSets, ..FinCats
+import ..Limits: limit, colimit, universal, factorize
 import ..Subobjects: Subobject, implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..Sets: SetOb, SetFunction, TypeSet
 using ..Sets
@@ -665,7 +668,6 @@ end
 
 @cartesian_monoidal_instance ACSet ACSetTransformation
 @cocartesian_monoidal_instance ACSet ACSetTransformation
-
 
 # Limits and colimits
 #####################

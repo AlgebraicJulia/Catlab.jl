@@ -59,4 +59,32 @@ slice_dia = FreeDiagram{Slice,SliceHom}(Multispan(A, [f, g]))
 clim = colimit(slice_dia)
 @test is_isomorphic(dom(apex(clim)), d)
 
+
+# Factorizing morphisms (morally same tests as in CSets) 
+#-------------------------------------------------------
+p2G, p3G = [path_graph(Graph, x) for x in [3,5]]
+p2, p3 = [Slice(homomorphism(p, two)) for p in [p2G,p3G]] #  ⊚→□→⊚ and  ⊚→□→⊚□→⊚
+loop = Slice(id(two)) # ⊚ ↔ □
+g2G = Slice(ACSetTransformation(Graph(2), two; V=[1,1])) # ⊚ ⊚
+f = SliceHom(g2G, p3, ACSetTransformation(Graph(2), p3G; V=[3,1]))
+g1 = SliceHom(g2G, p2, CSetTransformation(Graph(2), p2G; V=[1,3]))
+g2 = SliceHom(g2G, p2, CSetTransformation(Graph(2), p2G; V=[3,1]))
+@test isnothing(factorize(Span(f, g1)))
+@test length(factorize(Span(f, g2); single=false)) == 1
+f2 = homomorphism(g2G, loop)
+@test isnothing(factorize(Span(f2, id(g2G)); monic=true))
+@test factorize(Span(f2, id(g2G))) == f2
+
+# Factorize C-set morphisms where the second one is known
+#--------------------------------------------------------
+
+A = path_graph(Graph, 2)
+B = @acset Graph begin V=4; E=3; src=[1,1,3]; tgt=[2,4,4] end
+C = @acset Graph begin V=2; E=2; src=1; tgt=2 end
+
+f = ACSetTransformation(A, C; V=[1,2], E=[1])
+g = ACSetTransformation(B, C; V=[1,2,1,2], E=[1,2,1])
+
+@test length(factorize(Cospan(f,g); single=false)) == 2
+
 end # module
