@@ -10,15 +10,14 @@ in applications like knowledge representation.
 module Presentations
 export @present, Presentation, generator, generators, generator_index,
   has_generator, equations, add_generator!, add_generators!, add_definition!,
-  add_equation!, add_equations!
+  add_equation!, add_equations!, change_theory
 
 using Base.Meta: ParseError
 using MLStyle: @match
 
 using ..MetaUtils, ..SyntaxSystems
 import ..TheoriesInstances as GAT
-import ..SyntaxSystems: parse_json_sexpr, to_json_sexpr
-
+import ..SyntaxSystems: parse_json_sexpr, to_json_sexpr, generator_switch_syntax
 # Data types
 ############
 
@@ -43,7 +42,21 @@ function Base.:(==)(pres1::Presentation, pres2::Presentation)
   pres1.syntax == pres2.syntax && pres1.generators == pres2.generators &&
     pres1.equations == pres2.equations
 end
-
+"""
+Move a presentation to a new syntax,
+duplicating all the data on shared names. In particular,
+this is lossless if all the generators of the original
+presentation are at names in the new syntax.
+"""
+function change_theory(syntax::Module,pres::Presentation{S,Name}) where {S,Name}
+  T = syntax.theory()
+  pres_new = Presentation(syntax)
+  types = intersect(keys(pres_new.generators),keys(pres.generators))
+  for t in types map(pres.generators[t]) do x
+    add_generator!(pres_new,generator_switch_syntax(syntax,x)) end end
+  #XX: test on equations
+  pres_new
+end
 function Base.copy(pres::Presentation{T,Name}) where {T,Name}
   Presentation{T,Name}(pres.syntax, map(copy, pres.generators),
                        copy(pres.generator_name_index), copy(pres.equations))

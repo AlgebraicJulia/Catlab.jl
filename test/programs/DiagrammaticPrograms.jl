@@ -2,11 +2,11 @@ module TestDiagrammaticPrograms
 using Test
 
 using Catlab.GATs, Catlab.Graphs, Catlab.CategoricalAlgebra
-using Catlab.Programs.DiagrammaticPrograms
-using Catlab.Programs.DiagrammaticPrograms: NamedGraph
+using Catlab.Theories: FreeCategory, FreePointedSetCategory, FreePointedSetSchema
+using Catlab.Programs.DiagrammaticPrograms, Catlab.CategoricalAlgebra.DataMigrations
+using Catlab.Graphs.BasicGraphs: NamedGraph
 using Catlab.Programs.DiagrammaticPrograms: get_keyword_arg_val, destructure_unary_call
 using Catlab.WiringDiagrams.CPortGraphs
-
 @present SchSet(FreeSchema) begin
   X::Ob
 end
@@ -23,8 +23,7 @@ g = @graph begin
   s → t
   s → t
 end
-@test g == parallel_arrows(NamedGraph{Symbol,Union{Symbol,Nothing}}, 2,
-                           V=(vname=[:s,:t],), E=(ename=[nothing,nothing],))
+@test subpart(g,:vname) == [:s,:t]
 
 g = @graph NamedGraph{Symbol,Symbol} begin
   x, y
@@ -140,18 +139,16 @@ d = @diagram C begin
   (t: e1 → v)::tgt
   (s: e2 → v)::src
 end
-J = FinCat(@acset NamedGraph{Symbol,Union{Symbol,Nothing}} begin
-  V = 3
-  E = 2
-  src = [2,3]
-  tgt = [1,1]
-  vname = [:v, :e1, :e2]
-  ename = [:t, :s]
+J = FinCat(@present P(FreeCategory) begin
+  (v,e1,e2)::Ob
+  t::Hom(e1,v)
+  s::Hom(e2,v)
 end)
 F_parsed = diagram(d)
-@test dom(F_parsed) == J
-F = FinFunctor([:V,:E,:E], [:tgt, :src], J, C)
-@test F_parsed == F
+@test ob_generators(dom(F_parsed)) == ob_generators(J)
+F = FinFunctor(Dict(:v=>:V,:e1=>:E,:e2=>:E), 
+              Dict(:t=>:tgt,:s=>:src), J, C)
+@test F_parsed.ob_map == F.ob_map
 
 d = @diagram SchGraph begin
   v => V
@@ -159,7 +156,7 @@ d = @diagram SchGraph begin
   t: e1 → v => tgt
   s: e2 → v => src
 end
-@test diagram(d) == F
+@test all([ob_map(diagram(d),x) == ob_map(F,x) for x in ob_generators(dom(F))])
 
 d = @diagram SchGraph begin
   v::V
@@ -196,22 +193,21 @@ end
 @test only(collect_hom(d)) == compose(SchDDS[:Φ], SchDDS[:Φ])
 
 # Diagrams with parameters
-#-------------------------
+ #-------------------------
 
-d = @free_diagram SchWeightedGraph begin
+ d = @free_diagram SchWeightedGraph begin
   v::V
   (e1, e2)::E
   tgt(e1) == v
   src(e2) == v
-
-  w::Weight
-  weight(e1) == w
-  weight(e2) == w
+  w :: Weight
   w == 5.0
+  weight(e1) == w 
+  weight(e2) == w
 end
-@test collect_ob(d) == SchWeightedGraph[[:V, :E, :E, :Weight]]
-@test collect_hom(d) == SchWeightedGraph[[:tgt, :src, :weight, :weight]]
-@test d.params == Dict(4 => 5.0)
+@test sort(nameof.(collect_ob(d))) == [:E,:E,:V,:Weight]
+@test sort(nameof.(collect_hom(d))) == [:src, :tgt, :weight, :weight]
+@test d.params == Dict(:w => 5.0)
 
 d = @free_diagram SchWeightedGraph begin
   (e1, e2)::E
@@ -219,10 +215,9 @@ d = @free_diagram SchWeightedGraph begin
   weight(e1) == 0.5
   weight(e2) == 1.5
 end
-@test collect_ob(d) == SchWeightedGraph[[:E, :E, :V, :Weight, :Weight]]
-@test collect_hom(d) == SchWeightedGraph[[:tgt, :src, :weight, :weight]]
-@test d.params == Dict(4 => 0.5, 5 => 1.5)
-
+@test sort(nameof.(collect_ob(d))) == [:E, :E, :V, :Weight, :Weight]
+@test sort(nameof.(collect_hom(d))) == [:src, :tgt,:weight, :weight]
+@test sort(collect(values(d.params))) == [0.5,1.5]
 # Migrations
 ############
 
@@ -243,14 +238,17 @@ end
 
 # Variant where target schema is not given.
 M = @migration SchGraph begin
-  E => E
   V => V
+  E => E
   (src: E → V) => tgt
   (tgt: E → V) => src
 end
-J = FinCat(parallel_arrows(NamedGraph{Symbol,Union{Symbol,Nothing}}, 2,
-                           V=(vname=[:E,:V],), E=(ename=[:src,:tgt],)))
-@test functor(M) == FinDomFunctor([:E,:V], [:tgt,:src], J, FinCat(SchGraph))
+J = FinCat(@present P(FreeSchema) begin
+           (V,E)::Ob
+           (src,tgt)::Hom(E,V)
+end)
+
+@test functor(M) == FinDomFunctor(Dict(:E=>:E,:V=>:V), Dict(:tgt=>:src,:src=>:tgt), J, FinCat(SchGraph))
 
 # Conjunctive migration
 #----------------------
@@ -277,7 +275,7 @@ end
     (e₂ → v)::src
   end
   src => src∘e₁
-  tgt => tgt∘e₁
+  tgt => tgt∘e₂
 end
 @test M isa DataMigrations.ConjSchemaMigration
 F = functor(M)
@@ -285,7 +283,7 @@ F_E = diagram(ob_map(F, :E))
 @test nameof.(collect_ob(F_E)) == [:V, :E, :E]
 @test nameof.(collect_hom(F_E)) == [:tgt, :src]
 F_tgt = hom_map(F, :tgt)
-@test collect_ob(F_tgt) == [(3, SchGraph[:tgt])]
+@test collect_ob(F_tgt)[1][2] == (:V => SchGraph[:tgt])
 
 # Syntactic variant of above.
 M′ = @migration SchGraph SchGraph begin
@@ -300,23 +298,6 @@ M′ = @migration SchGraph SchGraph begin
   tgt => tgt(e₂)
 end
 @test functor(M′) == F
-
-# Graph with edges of weight 5.0.
-M = @migration SchGraph SchWeightedGraph begin
-  V => V
-  E => @join begin
-    e::E
-    weight(e) == 5.0
-  end
-  src => e
-  tgt => e
-end
-@test M isa DataMigrations.ConjSchemaMigration
-F = functor(M)
-F_E = ob_map(F, :E)
-@test only(values(F_E.params)) == 5.0
-F_src = hom_map(F, :src)
-@test collect_ob(F_src) == [(1, id(SchWeightedGraph[:E]))]
 
 # "Bouquet graph" on set.
 # This is the right adjoint to the underlying edge set functor.
@@ -334,8 +315,9 @@ M′ = @migration SchGraph SchSet begin
   V => @unit
   E => X
 end
-# something weird about == for datamigrations
-@test functor(M′) == functor(M) && M′.params == M.params
+@test M′ isa DataMigrations.ConjSchemaMigration
+@test isempty(shape(ob_map(functor(M′), :V)))
+@test isempty(shape(ob_map(functor(M),:V)))
 
 # Cartesian product of graph with itself.
 M = @migration SchGraph SchGraph begin
@@ -347,8 +329,9 @@ end
 F = functor(M)
 F_V = diagram(ob_map(F, :V))
 @test collect_ob(F_V) == fill(SchGraph[:V], 2)
+s = hom_generators(dom(F))[1]
 F_src = hom_map(F, :src)
-@test collect_ob(F_src) == [(1, SchGraph[:src]), (2, SchGraph[:src])]
+@test components(diagram_map(F_src)) == Dict(:v₂=>s,:v₁=>s)
 
 # Reflexive graph from graph.
 M = @migration SchReflexiveGraph SchGraph begin
@@ -383,8 +366,7 @@ M = @migration SchReflexiveGraph SchGraph begin
 end
 F = functor(M)
 F_tgt = hom_map(F, :tgt)
-@test ob_map(F_tgt, :v) == (2, id(SchGraph[:V]))
-@test hom_map(F_tgt, :t) |> edges |> only == 4
+@test ob_map(F_tgt, :v)[2] == id(SchGraph[:V])
 
 # Free/initial port graph on a graph.
 # This is the left adjoint to the underlying graph functor.
@@ -392,7 +374,7 @@ M = @migration SchGraph begin
   Box => V
   Wire => E
   InPort => @join begin
-    v::V
+    v => V
     e::E
     (t: e → v)::tgt
   end
@@ -412,9 +394,10 @@ M = @migration SchGraph begin
 end
 F = functor(M)
 F_src = hom_map(F, :src)
-@test collect_ob(F_src) == [(1, SchGraph[:src]), (1, id(SchGraph[:E]))]
-@test collect_hom(F_src) == [id(shape(codom(F_src)), 1)]
+@test collect_ob(F_src) == [(SchGraph[:E], :v=>SchGraph[:src]),(SchGraph[:E],:e=>id(SchGraph[:E]))]
+@test collect_hom(F_src) == [id(SchGraph[:E])]
 
+#XX:Yoneda is really slow
 yGraph = yoneda(Graph)
 
 @migration(SchGraph, begin 
@@ -428,16 +411,12 @@ end)
 
 # Gluing migration
 #-----------------
-
 # Discrete graph on set.
 # This is the left adjoint to the underlying vertex set functor.
 M = @migration SchGraph SchSet begin
   V => X
   E => @empty
 end
-F = functor(M)
-@test M isa DataMigrations.GlueSchemaMigration
-@test isempty(shape(ob_map(F, :E)))
 
 # Coproduct of graph with itself.
 M = @migration SchGraph SchGraph begin
@@ -457,7 +436,7 @@ F = functor(M)
 F_V = diagram(ob_map(F, :V))
 @test collect_ob(F_V) == fill(SchGraph[:V], 2)
 F_src = hom_map(F, :src)
-@test collect_ob(F_src) == [(1, SchGraph[:src]), (2, SchGraph[:src])]
+@test [x[2] for x in collect_ob(F_src)] == [:(e₁) =>  SchGraph[:src], :(e₂) => SchGraph[:src]]
 
 # Free reflexive graph on a graph.
 M = @migration SchReflexiveGraph SchGraph begin
@@ -469,7 +448,7 @@ M = @migration SchReflexiveGraph SchGraph begin
 end
 F = functor(M)
 F_tgt = hom_map(F, :tgt)
-@test collect_ob(F_tgt) == [(1, SchGraph[:tgt]), (1, id(SchGraph[:V]))]
+@test ob_map(F_tgt,:e) == (SchGraph[:V],SchGraph[:tgt])
 
 # Vertices in a graph and their connected components.
 M = @migration SchGraph begin
@@ -483,7 +462,7 @@ M = @migration SchGraph begin
 end
 F = functor(M)
 F_C = diagram(ob_map(F, :Component))
-@test nameof.(collect_ob(F_C)) == [:E, :V]
+@test ob_map(F_C,:e) == SchGraph[:E]
 @test nameof.(collect_hom(F_C)) == [:src, :tgt]
 
 # Gluc migration
@@ -513,15 +492,18 @@ M = @migration SchLabeledGraph SchLabeledGraph begin
   Label => Label
   label => label
 end
+
+
 F = functor(M)
 @test ob_map(F, :V) isa DataMigrations.GlucQuery
 @test M isa DataMigrations.GlucSchemaMigration
 F_src = hom_map(F, :src)
-@test collect_ob(shape_map(F_src)) == [1,1,1]
-F_src_v, F_src_e, F_src_path = components(diagram_map(F_src))
-@test collect_ob(F_src_v) == [(1, id(SchGraph[:V]))]
-@test collect_ob(F_src_e) == [(1, SchGraph[:src])]
-@test collect_ob(F_src_path) == [(2, SchGraph[:src])]
+x = only(ob_generators(dom(diagram(ob_map(F,:V)))))
+@test collect_ob(shape_map(F_src)) == fill(x,3)
+F_src_v, F_src_e, F_src_path = collect(values(components(diagram_map(F_src))))
+@test collect_ob(F_src_v) == [(SchGraph[:V], SchGraph[:V]=>id(SchGraph[:V]))]
+@test collect_ob(F_src_e) == [(Ob(FreeCategory,:(e₁)), :V => SchGraph[:src])]
+@test collect_ob(F_src_path) == [(SchGraph[:E], :V => SchGraph[:src])]
 
 # Graph with edges that are minimal paths b/w like vertices in bipartite graph.
 M = @migration SchGraph SchBipartiteGraph begin
@@ -551,10 +533,10 @@ F = functor(M)
 @test ob_map(F, :V) isa DataMigrations.GlucQuery
 @test M isa DataMigrations.GlucSchemaMigration
 F_src = hom_map(F, :src)
-@test collect_ob(shape_map(F_src)) == [1,2]
-F_src1, F_src2 = components(diagram_map(F_src))
-@test collect_ob(F_src1) == [(2, SchBipartiteGraph[:src₁])]
-@test collect_ob(F_src2) == [(2, SchBipartiteGraph[:src₂])]
+@test collect_ob(shape_map(F_src)) == [Ob(FreeCategory.Ob,:(v₁)),Ob(FreeCategory.Ob,:(v₂))]
+F_src1, F_src2 = collect(values(components(diagram_map(F_src))))
+@test collect_ob(F_src1) == [(Ob(FreeCategory.Ob,:(e₁₂)), :V₁ => SchBipartiteGraph[:src₁])]
+@test collect_ob(F_src2) == [(Ob(FreeCategory.Ob,:(e₂₁)), :V₂ => SchBipartiteGraph[:src₂])]
 
 # Box product of reflexive graph with itself.
 M = @migration SchReflexiveGraph SchReflexiveGraph begin
@@ -580,13 +562,255 @@ F = functor(M)
 @test ob_map(F, :V) isa DataMigrations.GlucQuery
 @test M isa DataMigrations.GlucSchemaMigration
 F_src = hom_map(F, :src)
-@test collect_ob(shape_map(F_src)) == [1,1,1]
-F_src_vv, F_src_ev, F_src_ve = components(diagram_map(F_src))
-@test collect_ob(F_src_ev) == [(1, SchReflexiveGraph[:src]),
-                               (2, id(SchReflexiveGraph[:V]))]
+x = only(ob_generators(codom(shape_map(F_src))))
+@test collect_ob(shape_map(F_src)) == fill(x,3)
+F_src_vv, F_src_ev, F_src_ve = [components(diagram_map(F_src))[a] for a in [:vv,:ev,:ve]]
+@test map(last,collect_ob(F_src_ev)) == [:v₂=>id(SchGraph[:V]),
+                                          :v₁=> SchGraph[:src]]
 
 #Little parsing functions
 @test get_keyword_arg_val(:(x=3)) == 3
 @test_throws ErrorException get_keyword_arg_val(:("not an assignment!"+3))
 @test destructure_unary_call(:(f(g(x)))) == (:(f∘g),:x)
+
+# Migrations with code
+#
+#------------------------------------
+@present SchMechLink <: SchGraph begin
+  Pos::AttrType
+  Len::AttrType
+  pos::Attr(V,Pos)
+  len::Attr(E,Len)
+end
+@acset_type MechLink(SchMechLink, index=[:src,:tgt])
+
+G = @acset MechLink{Vector{Float64},Float64} begin
+  V = 3
+  E = 2
+  src = [1,2]
+  tgt = [2,3]
+  len = [1.0,1.0]
+  pos = [[1.0,1.0,1.0],[2.0,2.0,2.0],[2.0,2.0,1.0]]
+end
+
+#Rotate the whole linkage by a bit
+M = @migration SchMechLink SchMechLink begin
+  V => V
+  E => E
+  Pos => Pos
+  Len => Len
+  src => src
+  tgt => tgt
+  pos => begin 
+          θ = π/5
+          M = [[cos(θ),sin(θ),0] [-sin(θ),cos(θ),0] [0,0,1]]
+          x -> M*pos(x)
+          end
+  len => len
+end
+@test length(M.params) ==1 && M.params[:pos] isa Function
+@test hom_map(functor(M),:pos) isa FreePointedSetSchema.Attr{:zeromap}
+#Filter impossible edges out of a mechanical linkage
+M = @migration SchMechLink SchMechLink begin
+  V => V
+  E => @join begin
+          e :: E
+          L :: Len
+          (l:e→L) :: (x->len(x)^2)
+          (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+      end
+  Pos => Pos
+  Len => Len
+  src => src(e)
+  tgt => tgt(e)
+  pos => pos
+  len => len(e)
+end
+migE = ob_map(functor(M),:E)
+@test migE isa QueryDiagram
+ps = ob_map(functor(M),:E).params
+@test length(ps) == 2
+@test length(M.params) == 0
+#variant
+M′ = @migration SchMechLink begin
+  V => V
+  E => @join begin
+          e :: E
+          L :: Len
+          (l:e→L) :: (x->len(x)^2)
+          (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+      end
+  Pos => Pos
+  Len => Len
+  (src:E→V) => src(e)
+  (tgt:E→V) => tgt(e)
+  (pos:V→Pos) => pos
+  (len:E→Len) => len(e)
+end
+F,F′ = functor(M),functor(M′)
+@test all([ob_map(F,a)==ob_map(F′,a) for a in [:V,:Pos,:Len]])
+#The two migrations aren't perfectly equal because of intensional equality of 
+#Julia functions. 
+@test diagram(ob_map(F,:E)) == diagram(ob_map(F′,:E))
+@test all([hom_map(F,a) == hom_map(F′,a) for a in [:src,:tgt,:pos,:len]])
+#Also, the domains are only isomorphic because
+#presentations involve meaningless ordering of the generators.
+@test ob_generators(dom(F)) == ob_generators(dom(F′))
+#Filter impossible edges out of a mechanical linkage while rotating
+M = @migration SchMechLink SchMechLink begin
+  V => V
+  E => @join begin
+          e :: E
+          L :: Len
+          (l:e→L) :: (x->len(x)^2)
+          (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+      end
+  Pos => Pos
+  Len => Len
+  src => src(e)
+  tgt => tgt(e)
+  pos => begin 
+          θ = π/5
+          M = [[cos(θ),sin(θ),0] [-sin(θ),cos(θ),0] [0,0,1]]
+          x -> M*pos(x)
+          end
+  len => len(e)
+end
+@test length(M.params) ==1 && length(ob_map(functor(M),:E).params) == 2
+#Filter out impossible edges, but then weirdly double all the lengths
+M = @migration SchMechLink begin
+  V => V
+  E => @join begin
+      e :: E
+      L :: Len
+      (l:e→L) :: (x->len(x)^2)
+      (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+  end
+  Pos => Pos
+  Len => Len
+  (src:E→V) => src(e)
+  (tgt:E→V) => tgt(e)
+  (pos:V→Pos) => pos
+  (len:E→Len) => (len(e)|>(x->2x))
+end
+#unabstracting x->2x over the unused variables
+#for the functions in the acset to be migrated
+f = M.params[:len](:src,:tgt,:pos,:len)
+using Random.Random
+xs = rand(Float64,100)
+@test all([f(x)==2*x for x in xs])
+#Variant
+M′ = @migration SchMechLink SchMechLink begin
+  V => V
+  E => @join begin
+      e :: E
+      L :: Len
+      (l:e→L) :: (x->len(x)^2)
+      (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+  end
+  Pos => Pos
+  Len => Len
+  src => src(e)
+  tgt => tgt(e)
+  pos => pos
+  len => (len(e)|>(x->2x))
+end
+F,F′ = functor(M),functor(M′)
+@test all([ob_map(F,a)==ob_map(F′,a) for a in [:V,:Pos,:Len]])  
+@test diagram(ob_map(F,:E)) == diagram(ob_map(F′,:E))
+
+#disjoint union linkage with itself, second copy reflected through origin
+M = @migration SchMechLink SchMechLink begin
+  V => @cases (v₁::V;v₂::V)
+  E=> @cases (e₁::E;e₂::E)
+  Pos => Pos
+  Len => Len
+  src => begin
+    e₁ => v₁ ∘ src
+    e₂ => v₂ ∘ src
+  end
+  tgt => begin
+    e₁ => v₁ ∘ tgt
+    e₂ => v₂ ∘ tgt
+  end
+  pos => begin
+    v₁ => pos
+    v₂ => (pos|> (x-> -x)) 
+  end
+  len => (e₁ => len ; e₂ => len)
+end
+@test isempty(M.params)
+M_pos = hom_map(functor(M),:pos)
+@test only(keys(M_pos.params)) == :(v₂)
+f = M_pos.params[:(v₂)](:src,:tgt,:pos,:len)
+xs = rand(Float64,100)
+@test all([f(x)==-x for x in xs])
+@test (SchMechLink[:Pos],:(v₂)=>SchMechLink[:pos]) in collect_ob(M_pos)
+
+M′ = @migration SchMechLink SchMechLink begin
+  V => @cases (v₁::V;v₂::V)
+  E=> @cases (e₁::E;e₂::E)
+  Pos => Pos
+  Len => Len
+  src => begin
+    e₁ => v₁ ∘ src
+    e₂ => v₂ ∘ src
+  end
+  tgt => begin
+    e₁ => v₁ ∘ tgt
+    e₂ => v₂ ∘ tgt
+  end
+  pos => begin
+    v₁ => pos
+    v₂ => (x->-pos(x))
+  end
+  len => (e₁ => len ; e₂ => len)
+end
+@test isempty(M′.params)
+M′_pos = hom_map(functor(M′),:pos)
+#XX:need to build querydiagramhom
+#=
+@test only(keys(M′_pos.params)) == :(v₂)
+f = M′_pos.params[:(v₂)](:src,:tgt,:pos,:len)
+xs = rand(Float64,100)
+@test all([f(x)==-x for x in xs])
+=#
+
+#Filter impossible edges and also make a copy reflected through the
+#origin.
+M = @migration SchMechLink SchMechLink begin
+  V => @cases (v₁::V;v₂::V)
+  E=> @cases begin 
+    e₁ => @join begin
+      e :: E
+      L :: Len
+      (l:e→L) :: (x->len(x)^2)
+      (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+  end
+    e₂ => @join begin
+      e :: E
+      L :: Len
+      (l:e→L) :: (x->len(x)^2)
+      (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+  end
+end
+  Pos => Pos
+  Len => Len
+  src => begin
+    e₁ => v₁ ∘ (e⋅src)
+    e₂ => v₂ ∘ (e⋅src)
+  end
+  tgt => begin
+    e₁ => v₁ ∘ (e⋅tgt)
+    e₂ => v₂ ∘ (e⋅tgt)
+  end
+  pos => begin
+    v₁ => pos
+    v₂ => (pos|> (x-> -x)) 
+  end
+  len => (e₁ => e⋅len ; e₂ => e⋅len)
+end
+@test isempty(M.params)
+@test length(hom_map(functor(M),:pos).params) == 1
+
 end

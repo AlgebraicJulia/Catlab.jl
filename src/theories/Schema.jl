@@ -1,6 +1,7 @@
-export ThSchema, FreeSchema, AttrType, Attr, SchemaExpr, AttrTypeExpr, AttrExpr
+export ThSchema, FreeSchema, AttrType, Attr, SchemaExpr, AttrTypeExpr, AttrExpr, ThPointedSetSchema, FreePointedSetSchema,zeromap
 
 # Schema
+
 ########
 
 """ The GAT that parameterizes Attributed C-sets
@@ -32,3 +33,22 @@ abstract type AttrExpr{T} <: SchemaExpr{T} end
   compose(f::Hom, x::Attr) = associate_unit(new(f,x; strict=true), id)
 end
 
+@theory ThPointedSetSchema{Ob,Hom,AttrType,Attr} <: ThPointedSetCategory{Ob,Hom} begin
+  AttrType::TYPE
+  Attr(dom::Ob,codom::AttrType)::TYPE
+  zeromap(A::Ob,X::AttrType)::Attr(A,X)
+
+  compose(f::Hom(A,B), g::Attr(B,X))::Attr(A,X) ⊣ (A::Ob, B::Ob, X::AttrType)
+
+  compose(f::Hom(A,B),zeromap(B,X)) == zeromap(A,X) ⊣ (A::Ob, B::Ob, X::AttrType)
+  compose(zeromap(A,B),f::Hom(B,X)) == zeromap(A,X) ⊣ (A::Ob, B::Ob, X::AttrType)
+
+  (compose(f, compose(g, a)) == compose(compose(f, g), a)
+    ⊣ (A::Ob, B::Ob, C::Ob, X::AttrType, f::Hom(A,B), g::Hom(B,C), a::Attr(C, X)))
+  compose(id(A), a) == a ⊣ (A::Ob, X::AttrType, a::Attr(A,X))
+end
+
+@syntax FreePointedSetSchema{ObExpr,HomExpr,AttrTypeExpr,AttrExpr} ThPointedSetSchema begin
+  compose(f::Hom,g::Hom) = associate_unit(normalize_zero(new(f,g; strict=true)), id)
+  compose(f::Hom,a::Attr) = associate_unit(normalize_zero(new(f,a; strict=true)), id)
+end

@@ -20,7 +20,7 @@ using ACSets.Columns
 using ACSets.DenseACSets: indices, unique_indices, attr_type, attrtype_type,
   datatypes, constructor
 
-using ...GATs
+using ...GATs, ...Graphs.BasicGraphs
 using ...Theories: ThCategory, Hom, Ob, Attr, AttrType
 import ...Theories: ob, hom, dom, codom, compose, ⋅, id,
   meet, ∧, join, ∨, top, ⊤, bottom, ⊥

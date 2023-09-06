@@ -10,7 +10,7 @@ module BasicGraphs
 export HasVertices, HasGraph, AbstractGraph, Graph, SchGraph,
   nv, ne, src, tgt, edges, inedges, outedges, vertices, has_edge, has_vertex,
   add_edge!, add_edges!, add_vertex!, add_vertices!, add_vertices_with_indices!,
-  rem_edge!, rem_edges!, rem_vertex!, rem_vertices!,
+  rem_edge!, rem_edges!, rem_vertex!, rem_vertices!, 
   neighbors, inneighbors, outneighbors, all_neighbors, degree, induced_subgraph,
   AbstractSymmetricGraph, SymmetricGraph, SchSymmetricGraph, inv,
   AbstractReflexiveGraph, ReflexiveGraph, SchReflexiveGraph, refl,
@@ -571,5 +571,33 @@ function Base.reverse!(g::G) where G<:HasGraph
   return g
 end
 Base.reverse(g::G) where G<:HasGraph = g |> deepcopy |> reverse!
+
+vertex_name(G::HasGraph, v) = v
+edge_name(G::HasGraph, e) = e
+
+@present SchNamedGraph <: SchGraph begin
+  VName::AttrType
+  EName::AttrType
+  vname::Attr(V, VName)
+  ename::Attr(E, EName)
+end
+
+""" Abstract type for graph with named vertices and edges.
+"""
+@abstract_acset_type AbstractNamedGraph <: AbstractGraph
+
+""" Graph with named vertices and edges.
+The default graph type used to construct the graph underlying
+a finite category given by a presentation.
+"""
+@acset_type NamedGraph(SchNamedGraph, index=[:src,:tgt,:ename],
+                       unique_index=[:vname]) <: AbstractNamedGraph
+vertex_name(g::AbstractNamedGraph, args...) = subpart(g, args..., :vname)
+edge_name(g::AbstractNamedGraph, args...) = subpart(g, args..., :ename)
+
+vertex_named(g::AbstractNamedGraph, name) = only(incident(g, name, :vname))
+edge_named(g::AbstractNamedGraph, name)= only(incident(g, name, :ename))
+const DiagramGraph = NamedGraph{Symbol,Symbol}
+
 
 end # module

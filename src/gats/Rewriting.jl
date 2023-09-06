@@ -5,10 +5,11 @@ a generic term rewriting system.
 """
 module Rewriting
 export associate, associate_unit_inv, associate_unit,
-  distribute_unary, involute
+  distribute_unary, involute, normalize_zero
 
 using ..SyntaxSystems
 
+#Warning: assumes expr has only two args!
 """ Simplify associative binary operation.
 
 Maintains the normal form `op(e1,e2,...)` where `e1`,`e2`,... are expressions
@@ -82,5 +83,19 @@ function involute(expr::GATExpr)
   arg = first(expr)
   head(expr) == head(arg) ? first(arg) : expr
 end
-
+"""
+If given GATExpr contains a zero morphism,
+collapse the expression to a single zero morphism.
+"""
+function normalize_zero(expr::E;zname=:zeromap) where E <: GATExpr
+  ztype = E
+  for subexpr in args(expr)
+    if head(subexpr) == zname 
+      ztype = typeof(subexpr)
+      s,t = gat_type_args(expr)
+      return ztype([s,t],[s,t])
+    end end
+  expr
 end
+end
+

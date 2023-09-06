@@ -80,21 +80,21 @@ idF = id(FinCat(SchLabeledDDS))
 #----------------------
 
 # Graph whose edges are paths of length 2.
-V, E, src, tgt = generators(SchGraph)
+V, E, s, t = generators(SchGraph)
 C = FinCat(SchGraph)
 F_V = FinDomFunctor([V], FinCat(1), C)
-F_E = FinDomFunctor(FreeDiagram(Cospan(tgt, src)), C)
+F_E = FinDomFunctor(FreeDiagram(Cospan(t, s)), C)
 M = DataMigration(FinDomFunctor(Dict(V => Diagram{op}(F_V),
                        E => Diagram{op}(F_E)),
-                  Dict(src => DiagramHom{op}([(1, src)], F_E, F_V),
-                       tgt => DiagramHom{op}([(2, tgt)], F_E, F_V)), C))
+                  Dict(s => DiagramHom{op}([(1, s)], F_E, F_V),
+                       t => DiagramHom{op}([(2, t)], F_E, F_V)), C))
 @test M isa DataMigrations.ConjSchemaMigration
 g = path_graph(Graph, 5)
 H = migrate(g, M, tabular=true)
 @test length(H(V)) == 5
 @test length(H(E)) == 3
-@test H(src)((x1=2, x2=3, x3=3)) == (x1=2,)
-@test H(tgt)((x1=2, x2=3, x3=3)) == (x1=4,)
+@test H(s)((x1=2, x2=3, x3=3)) == (x1=2,)
+@test H(t)((x1=2, x2=3, x3=3)) == (x1=4,)
 
 # Same migration, but defining using the `@migration` macro.
 M = @migration SchGraph SchGraph begin
@@ -112,8 +112,8 @@ F = functor(M)
 H = migrate(g, M, tabular=true)
 @test length(H(V)) == 5
 @test length(H(E)) == 3
-@test H(src)((v=3, e₁=2, e₂=3)) == (V=2,)
-@test H(tgt)((v=3, e₁=2, e₂=3)) == (V=4,)
+@test map(H(s),dom(H(s))) == [(V=1,),(V=2,),(V=3,)]
+@test map(H(t),dom(H(t))) == [(V=3,),(V=4,),(V=5,)]
 
 h = migrate(Graph, g, M)
 @test (nv(h), ne(h)) == (5, 3)
@@ -125,7 +125,7 @@ migrate!(h, g, M)
 @test sort!(collect(zip(h[:src], h[:tgt]))) == [(6,8), (7,9), (8,10)]
 
 # Weighted graph whose edges are path of length 2 with equal weight.
-F = @migration SchWeightedGraph SchWeightedGraph begin
+M = @migration SchWeightedGraph SchWeightedGraph begin
   V => V
   E => @join begin
     v::V; (e₁, e₂)::E; w::Weight
@@ -140,7 +140,7 @@ F = @migration SchWeightedGraph SchWeightedGraph begin
   weight => w
 end
 g = path_graph(WeightedGraph{Float64}, 6, E=(weight=[0.5,0.5,1.5,1.5,1.5],))
-h = migrate(WeightedGraph{Float64}, g, F)
+h = migrate(WeightedGraph{Float64}, g, M)
 @test (nv(h), ne(h)) == (6, 3)
 @test sort!(collect(zip(h[:src], h[:tgt], h[:weight]))) ==
   [(1,3,0.5), (3,5,1.5), (4,6,1.5)]
@@ -536,7 +536,6 @@ X = ob_map(G, :X)
 i, o = hom_map(G, :i), hom_map(G, :o)
 @test sort(only.(collect.([i[:V],o[:V]]))) == [1,2]
 
-
 d = @migration(SchWeightedGraph, begin
     I => @join begin
       (e1,e2,e3)::E
@@ -593,4 +592,199 @@ Fᴳ,_ = internal_hom(G,F, SchDDS42)
 Z = @acset DDS42 begin X=5; Φ=[2,3,4,3,4] end
 @test length(homomorphisms(Z, Fᴳ)) == length(homomorphisms(Z ⊗ G, F)) # 1024
 
+# Migrations with Code
+######################
+
+@present SchMechLink <: SchGraph begin
+  Pos::AttrType
+  Len::AttrType
+  pos::Attr(V,Pos)
+  len::Attr(E,Len)
+end
+@acset_type MechLink(SchMechLink, index=[:src,:tgt])
+
+G = @acset MechLink{Vector{Float64},Float64} begin
+  V = 3
+  E = 2
+  src = [1,2]
+  tgt = [2,3]
+  len = [1.0,1.0]
+  pos = [[1.0,1.0,1.0],[2.0,2.0,2.0],[2.0,2.0,1.0]]
+end
+
+#Rotate the whole linkage by a bit
+M = @migration SchMechLink SchMechLink begin
+  V => V
+  E => E
+  Pos => Pos
+  Len => Len
+  src => src
+  tgt => tgt
+  pos => begin 
+          θ = π/5
+          M = [[cos(θ),sin(θ),0] [-sin(θ),cos(θ),0] [0,0,1]]
+          x -> M*pos(x)
+          end
+  len => len
+end
+A = migrate(MechLink,G,M)
+v₃ = subpart(A,1,:pos)
+v₂ = v₃[1:2]
+angle(v,w)=acos( sum(v.*w)/(sqrt(sum(v.^2)*sum(w.^2))) )
+@test angle(v₂,[1,1]) == π/5 && v₃[3] == 1
+#Filter impossible edges out of a mechanical linkage
+M = @migration SchMechLink SchMechLink begin
+  V => V
+  E => @join begin
+          e :: E
+          L :: Len
+          (l:e→L) :: (x->len(x)^2)
+          (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+      end
+  Pos => Pos
+  Len => Len
+  src => src(e)
+  tgt => tgt(e)
+  pos => pos
+  len => len(e)
+end
+B = migrate(MechLink,G,M)
+@test length(parts(B,:E)) == 1
+#variant
+M′ = @migration SchMechLink begin
+  V => V
+  E => @join begin
+          e :: E
+          L :: Len
+          (l:e→L) :: (x->len(x)^2)
+          (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+      end
+  Pos => Pos
+  Len => Len
+  (src:E→V) => src(e)
+  (tgt:E→V) => tgt(e)
+  (pos:V→Pos) => pos
+  (len:E→Len) => len(e)
+end
+Bb = migrate(G,M)
+@test length(ob_map(Bb,:E)) == 1
+#Filter impossible edges out of a mechanical linkage while rotating
+M = @migration SchMechLink SchMechLink begin
+  V => V
+  E => @join begin
+          e :: E
+          L :: Len
+          (l:e→L) :: (x->len(x)^2)
+          (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+      end
+  Pos => Pos
+  Len => Len
+  src => src(e)
+  tgt => tgt(e)
+  pos => begin 
+          θ = π/5
+          M = [[cos(θ),sin(θ),0] [-sin(θ),cos(θ),0] [0,0,1]]
+          x -> M*pos(x)
+          end
+  len => len(e)
+end
+C = migrate(G,M)
+@test length(ob_map(C,:E)) == 1
+@test angle(hom_map(C,:pos)(1)[1:2],[1,1])==pi/5
+#Filter out impossible edges, but then weirdly double all the lengths
+M = @migration SchMechLink begin
+  V => V
+  E => @join begin
+      e :: E
+      L :: Len
+      (l:e→L) :: (x->len(x)^2)
+      (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+  end
+  Pos => Pos
+  Len => Len
+  (src:E→V) => src(e)
+  (tgt:E→V) => tgt(e)
+  (pos:V→Pos) => pos
+  (len:E→Len) => (len(e)|>(x->2x))
+end
+D = migrate(G,M)
+@test hom_map(D,:len)(1) == 2.0
+#Variant
+M′ = @migration SchMechLink SchMechLink begin
+  V => V
+  E => @join begin
+      e :: E
+      L :: Len
+      (l:e→L) :: (x->len(x)^2)
+      (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+  end
+  Pos => Pos
+  Len => Len
+  src => src(e)
+  tgt => tgt(e)
+  pos => pos
+  len => (len(e)|>(x->2x))
+end
+Dd = migrate(MechLink,G,M′)
+@test only(subpart(Dd,:len)) == 2.0
+#disjoint union linkage with itself, second copy reflected through origin
+M = @migration SchMechLink SchMechLink begin
+  V => @cases (v₁::V;v₂::V)
+  E=> @cases (e₁::E;e₂::E)
+  Pos => Pos
+  Len => Len
+  src => begin
+    e₁ => v₁ ∘ src
+    e₂ => v₂ ∘ src
+  end
+  tgt => begin
+    e₁ => v₁ ∘ tgt
+    e₂ => v₂ ∘ tgt
+  end
+  pos => begin
+    v₁ => pos
+    v₂ => (pos|> (x-> -x)) 
+  end
+  len => (e₁ => len ; e₂ => len)
+end
+E = migrate(MechLink,G,M)
+@test sort(map(x->x[1],subpart(E,:pos))) == [-2.0,-2.0,-1.0,1.0,2.0,2.0]
+
+#Filter impossible edges and also make a copy reflected through the
+#origin.
+M = @migration SchMechLink SchMechLink begin
+  V => @cases (v₁::V;v₂::V)
+  E=> @cases begin 
+    e₁ => @join begin
+      e :: E
+      L :: Len
+      (l:e→L) :: (x->len(x)^2)
+      (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+  end
+    e₂ => @join begin
+      e :: E
+      L :: Len
+      (l:e→L) :: (x->len(x)^2)
+      (d:e→L) :: (x->sum((pos(src(x))-pos(tgt(x))).^2))
+  end
+end
+  Pos => Pos
+  Len => Len
+  src => begin
+    e₁ => v₁ ∘ (e⋅src)
+    e₂ => v₂ ∘ (e⋅src)
+  end
+  tgt => begin
+    e₁ => v₁ ∘ (e⋅tgt)
+    e₂ => v₂ ∘ (e⋅tgt)
+  end
+  pos => begin
+    v₁ => pos
+    v₂ => (pos|> (x-> -x)) 
+  end
+  len => (e₁ => e⋅len ; e₂ => e⋅len)
+end
+Ee = migrate(MechLink,G,M)
+@test sort(map(x->x[1],subpart(Ee,:pos))) == [-2.0,-2.0,-1.0,1.0,2.0,2.0]
+@test length(parts(Ee,:E)) == 2
 end # module
