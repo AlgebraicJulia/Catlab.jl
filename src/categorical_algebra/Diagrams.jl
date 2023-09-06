@@ -1,8 +1,8 @@
 """ Diagrams in a category and their morphisms.
 """
 module Diagrams
-export Diagram, SimpleDiagram, QueryDiagram, DiagramHom, id, op, co,
-  shape, diagram, shape_map, diagram_map, get_params
+export Diagram, SimpleDiagram, DiagramHom, id, op, co,
+  shape, diagram, shape_map, diagram_map
 
 using StructEquality
 
@@ -15,7 +15,6 @@ using ..FinCats: mapvals,FinDomFunctorMap,FinCatPresentation
 import ..FinCats: force, collect_ob, collect_hom
 import ..Limits: limit, colimit, universal
 import ..FinSets: FinDomFunction
-import Base.haskey
 # Data types
 ############
 
@@ -60,30 +59,11 @@ Force-evaluate the functor in a diagram.
 force(d::SimpleDiagram{T}, args...) where T =
   SimpleDiagram{T}(force(diagram(d), args...))
 
-""" Diagram representing a (conjunctive or gluing) query.
-
-Besides the diagram functor itself, a query diagram contains a dictionary of
-query parameters.
-"""
-struct QueryDiagram{T,C<:Cat,D<:Functor{<:FinCat,C},
-                    Params<:AbstractDict} <: Diagram{T,C,D}
-  diagram::D
-  params::Params
-end
-QueryDiagram{T}(F::D, params::P) where {T,C<:Cat,D<:Functor{<:FinCat,C},P} =
-  QueryDiagram{T,C,D,P}(F, params)
-"""
-  Force-evaluate the functor in a query diagram,
-  including putting the parameters into the hom-map 
-  explicitly.
-"""
-force(d::QueryDiagram{T},args...) where T =
-  SimpleDiagram{T}(force(diagram(d),args...;params=d.params))
-  
-
-""" Functor underlying a diagram object.
+""" Functor underlying a diagram in a category.
 """
 diagram(d::Diagram) = d.diagram
+"""Functor underlying a diagram in a category."""
+functor(d::Diagram) = d.diagram
 
 """ The *shape* or *indexing category* of a diagram.
 
@@ -93,7 +73,6 @@ shape(d::Diagram) = dom(diagram(d))
 
 ob_map(d::Diagram, x) = ob_map(diagram(d), x)
 hom_map(d::Diagram, f) = hom_map(diagram(d), f)
-
 collect_ob(d::Diagram) = collect_ob(diagram(d))
 collect_hom(d::Diagram) = collect_hom(diagram(d))
 
@@ -123,21 +102,14 @@ struct SimpleDiagramHom{T,C<:Cat,F<:FinFunctor,Φ<:FinTransformation,D<:Functor{
   diagram_map::Φ # bug: Φ should be type constrained to be a FinTransformation  
   precomposed_diagram::D
 end
-struct QueryDiagramHom{T,C<:Cat,F<:FinFunctor,Φ<:FinTransformation,D<:Functor{<:FinCat,C},Params<:AbstractDict}<:DiagramHom{T,C}
-  shape_map::F
-  diagram_map::Φ
-  precomposed_diagram::D
-  params::Params
-end
 
-DiagramHom{T}(shape_map::F, diagram_map::Φ, precomposed_diagram::D;params::Params=nothing) where
-    {T,C,F<:FinFunctor,Φ<:FinTransformation,D<:Functor{<:FinCat,C},Params<:Union{AbstractDict,Nothing}} =
-  isnothing(params) ?   
-    SimpleDiagramHom{T,C,F,Φ,D}(shape_map, diagram_map, precomposed_diagram) :
-    QueryDiagramHom{T,C,F,Φ,D,Params}(shape_map, diagram_map, precomposed_diagram,params)
+
+DiagramHom{T}(shape_map::F, diagram_map::Φ, precomposed_diagram::D) where
+    {T,C,F<:FinFunctor,Φ<:FinTransformation,D<:Functor{<:FinCat,C}} =
+    SimpleDiagramHom{T,C,F,Φ,D}(shape_map, diagram_map, precomposed_diagram) 
 """Convert the diagram category in which a diagram hom is being viewed."""
 DiagramHom{T}(f::DiagramHom) where T =
-  DiagramHom{T}(f.shape_map, f.diagram_map, f.precomposed_diagram,params=get_params(f))
+  DiagramHom{T}(f.shape_map, f.diagram_map, f.precomposed_diagram)
 
 DiagramHom{T}(ob_maps, hom_map, D::Diagram{T}, D′::Diagram{T};kw...) where T =
   DiagramHom{T}(ob_maps, hom_map, diagram(D), diagram(D′);kw...)
@@ -187,9 +159,6 @@ collect_ob(f::DiagramHom) =
   collect(zip(collect_ob(f.shape_map), components(f.diagram_map)))
 collect_hom(f::DiagramHom) = collect_hom(f.shape_map)
 
-get_params(f::QueryDiagramHom) = f.params
-get_params(f::DiagramHom) = Dict()
-
 function Base.show(io::IO, f::DiagramHom{T}) where T
   J = dom(shape_map(f))
   print(io, "DiagramHom{$T}([")
@@ -221,8 +190,6 @@ function id(d::Diagram{T}) where T
   DiagramHom{T}(id(dom(F)), id(F), F)
 end
 
-#Note compose of diagramhoms throws away parameters, which is fine for current
-#purposes
 function compose(f::DiagramHom{id}, g::DiagramHom{id})
   DiagramHom{id}(
     shape_map(f) ⋅ shape_map(g),
@@ -263,63 +230,13 @@ op(f::DiagramHom{op}) = DiagramHom{id}(op(shape_map(f)), op(diagram_map(f)),
 
 # Any functor ``F: C → D`` induces a functor ``Diag(F): Diag(C) → Diag(D)`` by
 # post-composition and post-whiskering.
-
 function compose(d::Diagram{T}, F::Functor; kw...) where T
   Diagram{T}(compose(diagram(d), F; kw...))
 end
-function compose(f::DiagramHom{T}, F::Functor; params = [], kw...) where T
-  whiskered = isempty(params) ? composeH(diagram_map(f), F; kw...) : param_compose(diagram_map(f),F;params=params)
+function compose(f::DiagramHom{T}, F::Functor; kw...) where T
+  whiskered = composeH(diagram_map(f), F; kw...)
   DiagramHom{T}(shape_map(f), whiskered,
                 compose(f.precomposed_diagram, F; kw...))
-end
-
-"""Whisker a partially natural transformation with a functor ``H``,
-given any needed parameters specifying the functions in ``H``'s codomain
-which the whiskered result should map to. Currently assumes
-the result will be a totally defined transformation.
-"""
-function param_compose(α::FinTransformation, H::Functor; params=Dict())
-  F, G = dom(α), codom(α)
-  new_components = mapvals(pairs(α.components);keys=true) do i,f
-    compindex = ob(dom(F),i)
-    #allow non-strictness because of possible pointedness
-    s, t = ob_map(compose(F,H,strict=false),compindex), 
-    ob_map(compose(G,H,strict=false),compindex)
-    if head(f) == :zeromap
-      func = params[i]
-      FinDomFunction(func,s,t)
-    #may need to population params with identities
-    else
-      func = haskey(params,i) ? SetFunction(params[i],t,t) : SetFunction(identity,t,t)
-      hom_map(H,f)⋅func
-    end
-  end
-  FinTransformation(new_components,compose(F, H, strict=false), compose(G, H, strict=false))
-end
-
-
-"""
-Compose a diagram with parameters with a functor. 
-The result is not evaluated, so the functor may remain
-partially defined with parameters still to be filled in.
-"""
-function compose(d::QueryDiagram{T},F::Functor; kw...) where T
-  D = diagram(d)
-  partial = compose(D,F;strict=false) #cannot be evaluated on the keys of params yet
-  #Get the FinDomFunctions in the range of F that must be plugged into
-  #the Functions in params
-  params = d.params
-  mors = hom_generators(codom(D))
-  morfuns = map(x->hom_map(F,x),mors)
-  params_new = Dict{keytype(params),FinDomFunction}()
-  for (n,f) in params #Calculate the intended value of the composition on n
-    domain = ob_map(partial,dom(hom(dom(partial),n)))
-    codomain = ob_map(partial,codom(hom(dom(partial),n)))
-    params_new[n] =
-      FinDomFunction(f(morfuns...),domain,codomain)
-  end
-  #This will now contain a composite functor which can't directly be hom-mapped; ready to be forced.
-  QueryDiagram{T}(partial,params_new)
 end
 # Limits and colimits
 #####################
