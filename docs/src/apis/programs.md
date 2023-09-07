@@ -11,21 +11,8 @@ There are two major macros for constructing wiring diagrams:
 - [`@program`](@ref), for directed wiring diagrams (DWDs)
 - [`@relation`](@ref), for undirected wiring diagrams (UWDs)
 
-In addition, there is a family of related macros for constructing
-category-theoretic [diagrams](https://ncatlab.org/nlab/show/diagram):
-
-- [`@graph`](@ref), for constructing a graph
-- [`@fincat`](@ref), for presenting a category as a graph together with path
-  equations
-- [`@finfunctor`](@ref), for defining a functor between two finitely presented
-  categories
-- [`@diagram`](@ref) and [`@free_diagram`](@ref), for defining a diagram in a category
-
-Generalizing the last two macros, the modules provides DSLs for functorial data
-migration:
-
-- [`@migrate`](@ref), for migrating data between acsets
-- [`@migration`](@ref), for defining data migrations between schemas
+There is a family of related macros for constructing
+category-theoretic [diagrams](https://ncatlab.org/nlab/show/diagram) included in `AlgebraicDataMigrations.jl`.
 
 ## API
 
@@ -33,8 +20,7 @@ migration:
 Modules = [
   Programs.GenerateJuliaPrograms,
   Programs.ParseJuliaPrograms,
-  Programs.RelationalPrograms,
-  Programs.DiagrammaticPrograms,
+  Programs.RelationalPrograms
 ]
 Private = false
 ```

@@ -66,6 +66,26 @@ struct SigmaMigration{F<:FinFunctor} <: SigmaSchemaMigration{F}
   functor::F
 end
 
+""" Contravariantly migrate data from the acset `Y` to a new acset of type `T`.
+
+The mutating variant of this function is [`migrate!`](@ref).
+"""
+function migrate(::Type{T}, X::ACSet, M::AbstractDataMigration; kw...) where T <: ACSet
+  T(migrate(X, M; kw...))
+end
+function migrate(X::ACSet, M::AbstractDataMigration; kw...)
+  migrate(FinDomFunctor(X), M; kw...)
+end
+
+""" Contravariantly migrate data from the acset `Y` to the acset `X`.
+
+This is the mutating variant of [`migrate!`](@ref). When the functor on schemas
+is the identity, this operation is equivalent to [`copy_parts!`](@ref).
+"""
+function migrate!(X::ACSet, Y::ACSet, M::AbstractDataMigration; kw...)
+  copy_parts!(X, migrate(Y, M; kw...))
+end
+
 # Delta migration
 #----------------
 """
