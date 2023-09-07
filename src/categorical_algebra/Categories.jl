@@ -19,9 +19,10 @@ export Category, Cat, TypeCat, Functor, Transformation, dom, codom, compose, id,
 
 using StructEquality
 
-using ...GATs
-import ...Theories: ThCategory2, ob, hom, dom, codom, compose, ⋅, ∘, id,
-  composeH, *
+using GATlab
+import GATlab: op
+import ...Theories: ThCategory2, ob, hom
+import .ThCategory2: dom, codom, compose, ⋅, ∘, id, composeH, *
 
 # Categories
 ############
@@ -281,9 +282,7 @@ const IdIdTransformation{C<:Cat} = IdentityTransformation{C,C,IdentityFunctor{C}
   codom(F::Functor) = F.codom
   id(C::Cat) = IdentityFunctor(C)
 
-  function compose(F::Functor, G::Functor; strict::Bool=true)
-    !strict || codom(F) == dom(G) ||
-      error("Domain mismatch in composition $F ⋅ $G")
+  function compose(F::Functor, G::Functor)
     compose_id(F, G)
   end
 
@@ -291,24 +290,16 @@ const IdIdTransformation{C<:Cat} = IdentityTransformation{C,C,IdentityFunctor{C}
   codom(α::Transformation) = α.codom
   id(F::Functor) = IdentityTransformation(F)
 
-  function compose(α::Transformation, β::Transformation; strict::Bool=true)
-    !strict || codom(α) == dom(β) ||
-      error("Domain mismatch in vertical composition $α ⋅ $β")
+  function compose(α::Transformation, β::Transformation)
     compose_id(α, β)
   end
-  function composeH(α::Transformation, β::Transformation; strict::Bool=true)
-    !strict || codom_ob(α) == dom_ob(β) ||
-      error("Domain mismatch in horizontal composition $α * $β")
+  function composeH(α::Transformation, β::Transformation)
     composeH_id(α, β)
   end
-  function composeH(α::Transformation, H::Functor; strict::Bool=true)
-    !strict || codom_ob(α) == dom(H) ||
-      error("Domain mismatch in whiskering $α * $H")
+  function composeH(α::Transformation, H::Functor)
     composeH_id(α, H)
   end
-  function composeH(F::Functor, β::Transformation; strict::Bool=true)
-    !strict || codom(F) == dom_ob(β) ||
-      error("Domain mismatch in whiskering $F * $β")
+  function composeH(F::Functor, β::Transformation)
     composeH_id(F, β)
   end
 end

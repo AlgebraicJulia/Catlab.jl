@@ -14,7 +14,6 @@ export ThMonoidalCategory, otimes, munit, ⊗, collect, ndims,
   ThTracedMonoidalCategory, FreeTracedMonoidalCategory, trace,
   ThHypergraphCategory, FreeHypergraphCategory
 
-import Base: collect, ndims
 
 # Monoidal category
 ###################
@@ -25,32 +24,32 @@ To avoid associators and unitors, we assume that the monoidal category is
 *strict*. By the coherence theorem this involves no loss of generality, but we
 might add a theory for weak monoidal categories later.
 """
-@theory ThMonoidalCategory{Ob,Hom} <: ThCategory{Ob,Hom} begin
+@theory ThMonoidalCategory <: ThCategory begin
   @op (⊗) := otimes
 
   # Monoid operations.
   otimes(A::Ob, B::Ob)::Ob
   otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣
-    (A::Ob, B::Ob, C::Ob, D::Ob)
+    [A::Ob, B::Ob, C::Ob, D::Ob]
   munit()::Ob
 
   # Monoid axioms.
   #
   # The last two axioms are the naturality equations associated with the left
   # and right unitors, in the strict case where they are identities.
-  (A ⊗ B) ⊗ C == A ⊗ (B ⊗ C) ⊣ (A::Ob, B::Ob, C::Ob)
-  munit() ⊗ A == A ⊣ (A::Ob)
-  A ⊗ munit() == A ⊣ (A::Ob)
-  (f ⊗ g) ⊗ h == f ⊗ (g ⊗ h) ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
-                                f::(A → X), g::(B → Y), h::(C → Z))
-  id(munit()) ⊗ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
-  f ⊗ id(munit()) == f ⊣ (A::Ob, B::Ob, f::(A → B))
+  (A ⊗ B) ⊗ C == A ⊗ (B ⊗ C) ⊣ [A::Ob, B::Ob, C::Ob]
+  munit() ⊗ A == A ⊣ [A::Ob]
+  A ⊗ munit() == A ⊣ [A::Ob]
+  (f ⊗ g) ⊗ h == f ⊗ (g ⊗ h) ⊣ [A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
+                                f::(A → X), g::(B → Y), h::(C → Z)]
+  id(munit()) ⊗ f == f ⊣ [A::Ob, B::Ob, f::(A → B)]
+  f ⊗ id(munit()) == f ⊣ [A::Ob, B::Ob, f::(A → B)]
 
   # Functorality axioms.
   ((f ⊗ g) ⋅ (h ⊗ k) == (f ⋅ h) ⊗ (g ⋅ k)
-    ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
-       f::(A → B), h::(B → C), g::(X → Y), k::(Y → Z)))
-  id(A ⊗ B) == id(A) ⊗ id(B) ⊣ (A::Ob, B::Ob)
+    ⊣ [A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
+       f::(A → B), h::(B → C), g::(X → Y), k::(Y → Z)])
+  id(A ⊗ B) == id(A) ⊗ id(B) ⊣ [A::Ob, B::Ob]
 end
 
 # Convenience constructors
@@ -83,29 +82,29 @@ show_latex(io::IO, expr::ObExpr{:munit}; kw...) = print(io, "I")
 
 """ Theory of (strict) *symmetric monoidal categories*
 """
-@theory ThSymmetricMonoidalCategory{Ob,Hom} <: ThMonoidalCategory{Ob,Hom} begin
+@theory ThSymmetricMonoidalCategory <: ThMonoidalCategory begin
   braid(A::Ob, B::Ob)::((A ⊗ B) → (B ⊗ A))
   @op (σ) := braid
 
   # Involutivity axiom.
-  σ(A,B) ⋅ σ(B,A) == id(A ⊗ B) ⊣ (A::Ob, B::Ob)
+  σ(A,B) ⋅ σ(B,A) == id(A ⊗ B) ⊣ [A::Ob, B::Ob]
 
   # Coherence axioms.
   #
   # Note: The last two axioms are deducible from the first two axioms together
   # with the naturality equations for the left/right unitors. We record them for
   # the sake of clarity and uniformity.
-  σ(A,B⊗C) == (σ(A,B) ⊗ id(C)) ⋅ (id(B) ⊗ σ(A,C)) ⊣ (A::Ob, B::Ob, C::Ob)
-  σ(A⊗B,C) == (id(A) ⊗ σ(B,C)) ⋅ (σ(A,C) ⊗ id(B)) ⊣ (A::Ob, B::Ob, C::Ob)
-  σ(A,munit()) == id(A) ⊣ (A::Ob)
-  σ(munit(),A) == id(A) ⊣ (A::Ob)
+  σ(A,B⊗C) == (σ(A,B) ⊗ id(C)) ⋅ (id(B) ⊗ σ(A,C)) ⊣ [A::Ob, B::Ob, C::Ob]
+  σ(A⊗B,C) == (id(A) ⊗ σ(B,C)) ⋅ (σ(A,C) ⊗ id(B)) ⊣ [A::Ob, B::Ob, C::Ob]
+  σ(A,munit()) == id(A) ⊣ [A::Ob]
+  σ(munit(),A) == id(A) ⊣ [A::Ob]
 
   # Naturality axiom.
-  (f ⊗ g) ⋅ σ(B,D) == σ(A,C) ⋅ (g ⊗ f) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
-                                          f::(A → B), g::(C → D))
+  (f ⊗ g) ⋅ σ(B,D) == σ(A,C) ⋅ (g ⊗ f) ⊣ [A::Ob, B::Ob, C::Ob, D::Ob,
+                                          f::(A → B), g::(C → D)]
 end
 
-@syntax FreeSymmetricMonoidalCategory{ObExpr,HomExpr} ThSymmetricMonoidalCategory begin
+@symbolic_model FreeSymmetricMonoidalCategory{ObExpr,HomExpr} ThSymmetricMonoidalCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
@@ -128,32 +127,32 @@ monoidal category **Set**.
 FIXME: This theory should also extend `ThCopresheaf` but multiple inheritance is
 not yet supported.
 """
-@theory ThSymmetricMonoidalCopresheaf{Ob,Hom,El} <: ThSymmetricMonoidalCategory{Ob,Hom} begin
+@theory ThSymmetricMonoidalCopresheaf <: ThSymmetricMonoidalCategory begin
   El(ob::Ob)::TYPE
 
   # Functor.
-  act(x::El(A), f::Hom(A,B))::El(B) ⊣ (A::Ob, B::Ob)
-  @op (⋅) := act
+  act(x::El(A), f::Hom(A,B))::El(B) ⊣ [A::Ob, B::Ob]
+  # @op (⋅) := act
 
   # Laxator.
-  otimes(x::El(A), y::El(B))::El(otimes(A,B)) ⊣ (A::Ob, B::Ob)
+  otimes(x::El(A), y::El(B))::El(otimes(A,B)) ⊣ [A::Ob, B::Ob]
   elunit()::El(munit())
 
   # Functorality axioms.
-  (x ⋅ f) ⋅ g == x ⋅ (f ⋅ g) ⊣
-    (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::El(A))
-  x ⋅ id(A) == x ⊣ (A::Ob, x::El(A))
+  act(act(x, f), g) == act(x, (f ⋅ g)) ⊣
+    [A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::El(A)]
+  # x ⋅ id(A) == x ⊣ [A::Ob, x::El(A)]
 
   # Naturality of laxator.
-  (x ⊗ y) ⋅ (f ⊗ g) == (x ⋅ f) ⊗ (y ⋅ g) ⊣
-    (A::Ob, B::Ob, C::Ob, D::Ob, x::El(A), y::El(B), f::(A → C), g::(B → D))
+  # (x ⊗ y), (f ⊗ g) == (x ⋅ f) ⊗ (y ⋅ g) ⊣
+  #   [A::Ob, B::Ob, C::Ob, D::Ob, x::El(A), y::El(B), f::(A → C), g::(B → D)]
 
-  # Commutative monoid axioms for laxator.
-  (x ⊗ y) ⊗ z == x ⊗ (y ⊗ z) ⊣
-    (A::Ob, B::Ob, C::Ob, x::El(A), y::El(B), z::El(C))
-  x ⊗ elunit() == x ⊣ (A::Ob, x::El(A))
-  elunit() ⊗ x == x ⊣ (A::Ob, x::El(A))
-  (x ⊗ y) ⋅ σ(A,B) == y ⊗ x ⊣ (A::Ob, B::Ob, x::El(A), y::El(B))
+  # # Commutative monoid axioms for laxator.
+  # (x ⊗ y) ⊗ z == x ⊗ (y ⊗ z) ⊣
+  #   [A::Ob, B::Ob, C::Ob, x::El(A), y::El(B), z::El(C)]
+  # x ⊗ elunit() == x ⊣ [A::Ob, x::El(A)]
+  # elunit() ⊗ x == x ⊣ [A::Ob, x::El(A)]
+  # (x ⊗ y) ⋅ σ(A,B) == y ⊗ x ⊣ [A::Ob, B::Ob, x::El(A), y::El(B)]
 end
 
 # Cartesian category
@@ -174,21 +173,21 @@ References:
   Section 6.6: "Cartesian center"
 - Selinger, 1999, "Categorical structure of asynchrony"
 """
-@theory ThMonoidalCategoryWithDiagonals{Ob,Hom} <: ThSymmetricMonoidalCategory{Ob,Hom} begin
+@theory ThMonoidalCategoryWithDiagonals <: ThSymmetricMonoidalCategory begin
   mcopy(A::Ob)::(A → (A ⊗ A))
   @op (Δ) := mcopy
   delete(A::Ob)::(A → munit())
   @op (◊) := delete
 
   # Commutative comonoid axioms.
-  Δ(A) ⋅ (Δ(A) ⊗ id(A)) == Δ(A) ⋅ (id(A) ⊗ Δ(A)) ⊣ (A::Ob)
-  Δ(A) ⋅ (◊(A) ⊗ id(A)) == id(A) ⊣ (A::Ob)
-  Δ(A) ⋅ (id(A) ⊗ ◊(A)) == id(A) ⊣ (A::Ob)
-  Δ(A) ⋅ σ(A,A) == Δ(A) ⊣ (A::Ob)
+  Δ(A) ⋅ (Δ(A) ⊗ id(A)) == Δ(A) ⋅ (id(A) ⊗ Δ(A)) ⊣ [A::Ob]
+  Δ(A) ⋅ (◊(A) ⊗ id(A)) == id(A) ⊣ [A::Ob]
+  Δ(A) ⋅ (id(A) ⊗ ◊(A)) == id(A) ⊣ [A::Ob]
+  Δ(A) ⋅ σ(A,A) == Δ(A) ⊣ [A::Ob]
 
   # Coherence axioms.
-  Δ(A⊗B) == (Δ(A) ⊗ Δ(B)) ⋅ (id(A) ⊗ σ(A,B) ⊗ id(B)) ⊣ (A::Ob, B::Ob)
-  ◊(A⊗B) == ◊(A) ⊗ ◊(B) ⊣ (A::Ob, B::Ob)
+  Δ(A⊗B) == (Δ(A) ⊗ Δ(B)) ⋅ (id(A) ⊗ σ(A,B) ⊗ id(B)) ⊣ [A::Ob, B::Ob]
+  ◊(A⊗B) == ◊(A) ⊗ ◊(B) ⊣ [A::Ob, B::Ob]
   Δ(munit()) == id(munit())
   ◊(munit()) == id(munit())
 end
@@ -198,19 +197,19 @@ end
 For the traditional axiomatization of products, see
 [`ThCategoryWithProducts`](@ref).
 """
-@theory ThCartesianCategory{Ob,Hom} <: ThMonoidalCategoryWithDiagonals{Ob,Hom} begin
-  pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
+@theory ThCartesianCategory <: ThMonoidalCategoryWithDiagonals begin
+  pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ [A::Ob, B::Ob, C::Ob]
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
 
   # Definitions of pairing and projections.
-  pair(f,g) == Δ(C)⋅(f⊗g) ⊣ (A::Ob, B::Ob, C::Ob, f::(C → A), g::(C → B))
-  proj1(A,B) == id(A)⊗◊(B) ⊣ (A::Ob, B::Ob)
-  proj2(A,B) == ◊(A)⊗id(B) ⊣ (A::Ob, B::Ob)
+  pair(f,g) == Δ(C)⋅(f⊗g) ⊣ [A::Ob, B::Ob, C::Ob, f::(C → A), g::(C → B)]
+  proj1(A,B) == id(A)⊗◊(B) ⊣ [A::Ob, B::Ob]
+  proj2(A,B) == ◊(A)⊗id(B) ⊣ [A::Ob, B::Ob]
   
   # Naturality axioms.
-  f⋅Δ(B) == Δ(A)⋅(f⊗f) ⊣ (A::Ob, B::Ob, f::(A → B))
-  f⋅◊(B) == ◊(A) ⊣ (A::Ob, B::Ob, f::(A → B))
+  f⋅Δ(B) == Δ(A)⋅(f⊗f) ⊣ [A::Ob, B::Ob, f::(A → B)]
+  f⋅◊(B) == ◊(A) ⊣ [A::Ob, B::Ob, f::(A → B)]
 end
 
 """ Syntax for a free cartesian category.
@@ -219,7 +218,7 @@ In this syntax, the pairing and projection operations are defined using
 duplication and deletion, and do not have their own syntactic elements.
 This convention could be dropped or reversed.
 """
-@syntax FreeCartesianCategory{ObExpr,HomExpr} ThCartesianCategory begin
+@symbolic_model FreeCartesianCategory{ObExpr,HomExpr} ThCartesianCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
@@ -243,8 +242,8 @@ The terminology is nonstandard (is there any standard terminology?) but is
 supposed to mean a monoidal category with coherent diagonals and codiagonals.
 Unlike in a biproduct category, the naturality axioms need not be satisfied.
 """
-@signature ThMonoidalCategoryWithBidiagonals{Ob,Hom} <:
-    ThMonoidalCategoryWithDiagonals{Ob,Hom} begin
+@signature ThMonoidalCategoryWithBidiagonals <:
+    ThMonoidalCategoryWithDiagonals begin
   mmerge(A::Ob)::((A ⊗ A) → A)
   @op (∇) := mmerge
   create(A::Ob)::(munit() → A)
@@ -256,28 +255,28 @@ end
 Mathematically the same as [`ThSemiadditiveCategory`](@ref) but written
 multiplicatively, instead of additively.
 """
-@theory ThBiproductCategory{Ob,Hom} <: ThMonoidalCategoryWithBidiagonals{Ob,Hom} begin
-  pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ (A::Ob, B::Ob, C::Ob)
-  copair(f::(A → C), g::(B → C))::((A ⊗ B) → C) ⊣ (A::Ob, B::Ob, C::Ob)
+@theory ThBiproductCategory <: ThMonoidalCategoryWithBidiagonals begin
+  pair(f::(A → B), g::(A → C))::(A → (B ⊗ C)) ⊣ [A::Ob, B::Ob, C::Ob]
+  copair(f::(A → C), g::(B → C))::((A ⊗ B) → C) ⊣ [A::Ob, B::Ob, C::Ob]
   proj1(A::Ob, B::Ob)::((A ⊗ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊗ B) → B)
   coproj1(A::Ob, B::Ob)::(A → (A ⊗ B))
   coproj2(A::Ob, B::Ob)::(B → (A ⊗ B))
   
   # Naturality axioms.
-  f⋅Δ(B) == Δ(A)⋅(f⊗f) ⊣ (A::Ob, B::Ob, f::(A → B))
-  f⋅◊(B) == ◊(A) ⊣ (A::Ob, B::Ob, f::(A → B))
-  ∇(A)⋅f == (f⊗f)⋅∇(B) ⊣ (A::Ob, B::Ob, f::(A → B))
-  □(A)⋅f == □(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  f⋅Δ(B) == Δ(A)⋅(f⊗f) ⊣ [A::Ob, B::Ob, f::(A → B)]
+  f⋅◊(B) == ◊(A) ⊣ [A::Ob, B::Ob, f::(A → B)]
+  ∇(A)⋅f == (f⊗f)⋅∇(B) ⊣ [A::Ob, B::Ob, f::(A → B)]
+  □(A)⋅f == □(B) ⊣ [A::Ob, B::Ob, f::(A → B)]
   
   # Bimonoid axioms. (These follow from naturality + coherence axioms.)
-  ∇(A)⋅Δ(A) == (Δ(A)⊗Δ(A)) ⋅ (id(A)⊗σ(A,A)⊗id(A)) ⋅ (∇(A)⊗∇(A)) ⊣ (A::Ob)
-  ∇(A)⋅◊(A) == ◊(A) ⊗ ◊(A) ⊣ (A::Ob)
-  □(A)⋅Δ(A) == □(A) ⊗ □(A) ⊣ (A::Ob)
-  □(A)⋅◊(A) == id(munit()) ⊣ (A::Ob)
+  ∇(A)⋅Δ(A) == (Δ(A)⊗Δ(A)) ⋅ (id(A)⊗σ(A,A)⊗id(A)) ⋅ (∇(A)⊗∇(A)) ⊣ [A::Ob]
+  ∇(A)⋅◊(A) == ◊(A) ⊗ ◊(A) ⊣ [A::Ob]
+  □(A)⋅Δ(A) == □(A) ⊗ □(A) ⊣ [A::Ob]
+  □(A)⋅◊(A) == id(munit()) ⊣ [A::Ob]
 end
 
-@syntax FreeBiproductCategory{ObExpr,HomExpr} ThBiproductCategory begin
+@symbolic_model FreeBiproductCategory{ObExpr,HomExpr} ThBiproductCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
@@ -300,7 +299,7 @@ show_latex(io::IO, expr::HomExpr{:create}; kw...) =
 
 """ Theory of (symmetric) *closed monoidal categories*
 """
-@signature ThClosedMonoidalCategory{Ob,Hom} <: ThSymmetricMonoidalCategory{Ob,Hom} begin
+@signature ThClosedMonoidalCategory <: ThSymmetricMonoidalCategory begin
   # Internal hom of A and B, an object representing Hom(A,B)
   hom(A::Ob, B::Ob)::Ob
 
@@ -308,12 +307,12 @@ show_latex(io::IO, expr::HomExpr{:create}; kw...) =
   ev(A::Ob, B::Ob)::((hom(A,B) ⊗ A) → B)
 
   # Currying (aka, lambda abstraction)
-  curry(A::Ob, B::Ob, f::((A ⊗ B) → C))::(A → hom(B,C)) ⊣ (C::Ob)
+  curry(A::Ob, B::Ob, f::((A ⊗ B) → C))::(A → hom(B,C)) ⊣ [C::Ob]
 end
 
 """ Syntax for a free closed monoidal category.
 """
-@syntax FreeClosedMonoidalCategory{ObExpr,HomExpr} ThClosedMonoidalCategory begin
+@symbolic_model FreeClosedMonoidalCategory{ObExpr,HomExpr} ThClosedMonoidalCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
@@ -344,17 +343,17 @@ A CCC is a cartesian category with internal homs (aka, exponential objects).
 FIXME: This theory should also extend `ThClosedMonoidalCategory`, but multiple
 inheritance is not yet supported.
 """
-@signature ThCartesianClosedCategory{Ob,Hom} <: ThCartesianCategory{Ob,Hom} begin
+@signature ThCartesianClosedCategory <: ThCartesianCategory begin
   hom(A::Ob, B::Ob)::Ob
   ev(A::Ob, B::Ob)::((hom(A,B) ⊗ A) → B)
-  curry(A::Ob, B::Ob, f::((A ⊗ B) → C))::(A → hom(B,C)) ⊣ (C::Ob)
+  curry(A::Ob, B::Ob, f::((A ⊗ B) → C))::(A → hom(B,C)) ⊣ [C::Ob]
 end
 
 """ Syntax for a free cartesian closed category.
 
 See also `FreeCartesianCategory`.
 """
-@syntax FreeCartesianClosedCategory{ObExpr,HomExpr} ThCartesianClosedCategory begin
+@symbolic_model FreeCartesianClosedCategory{ObExpr,HomExpr} ThCartesianClosedCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
@@ -369,7 +368,7 @@ end
 
 """ Theory of *compact closed categories*
 """
-@theory ThCompactClosedCategory{Ob,Hom} <: ThClosedMonoidalCategory{Ob,Hom} begin
+@theory ThCompactClosedCategory <: ThClosedMonoidalCategory begin
   # Dual A^* of object A
   dual(A::Ob)::Ob
 
@@ -380,16 +379,16 @@ end
   dcounit(A::Ob)::((A ⊗ dual(A)) → munit())
 
   # Adjoint mate of morphism f.
-  mate(f::(A → B))::(dual(B) → dual(A)) ⊣ (A::Ob, B::Ob)
+  mate(f::(A → B))::(dual(B) → dual(A)) ⊣ [A::Ob, B::Ob]
   
   # Axioms for closed monoidal structure.
-  hom(A, B) == B ⊗ dual(A) ⊣ (A::Ob, B::Ob)
-  ev(A, B) == id(B) ⊗ (σ(dual(A), A) ⋅ dcounit(A)) ⊣ (A::Ob, B::Ob)
+  hom(A, B) == B ⊗ dual(A) ⊣ [A::Ob, B::Ob]
+  ev(A, B) == id(B) ⊗ (σ(dual(A), A) ⋅ dcounit(A)) ⊣ [A::Ob, B::Ob]
   (curry(A, B, f) == (id(A) ⊗ (dunit(B) ⋅ σ(dual(B), B))) ⋅ (f ⊗ id(dual(B)))
-   ⊣ (A::Ob, B::Ob, C::Ob, f::((A ⊗ B) → C)))
+   ⊣ [A::Ob, B::Ob, C::Ob, f::((A ⊗ B) → C)])
 end
 
-@syntax FreeCompactClosedCategory{ObExpr,HomExpr} ThCompactClosedCategory begin
+@symbolic_model FreeCompactClosedCategory{ObExpr,HomExpr} ThCompactClosedCategory begin
   dual(A::Ob) = distribute_unary(involute(new(A)), dual, otimes,
                                  unit=munit, contravariant=true)
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
@@ -424,11 +423,11 @@ show_latex(io::IO, expr::HomExpr{:mate}; kw...) =
 
 """ Theory of *dagger categories*
 """
-@signature ThDaggerCategory{Ob,Hom} <: ThCategory{Ob,Hom} begin
-  dagger(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
+@signature ThDaggerCategory <: ThCategory begin
+  dagger(f::(A → B))::(B → A) ⊣ [A::Ob, B::Ob]
 end
 
-@syntax FreeDaggerCategory{ObExpr,HomExpr} ThDaggerCategory begin
+@symbolic_model FreeDaggerCategory{ObExpr,HomExpr} ThDaggerCategory begin
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
   dagger(f::Hom) = distribute_dagger(involute(new(f)))
 end
@@ -447,11 +446,11 @@ category](https://ncatlab.org/nlab/show/symmetric+monoidal+dagger-category).
 FIXME: This theory should also extend `ThDaggerCategory`, but multiple
 inheritance is not yet supported.
 """
-@signature ThDaggerSymmetricMonoidalCategory{Ob,Hom} <: ThSymmetricMonoidalCategory{Ob,Hom} begin
-  dagger(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
+@signature ThDaggerSymmetricMonoidalCategory <: ThSymmetricMonoidalCategory begin
+  dagger(f::(A → B))::(B → A) ⊣ [A::Ob, B::Ob]
 end
 
-@syntax FreeDaggerSymmetricMonoidalCategory{ObExpr,HomExpr} ThDaggerSymmetricMonoidalCategory begin
+@symbolic_model FreeDaggerSymmetricMonoidalCategory{ObExpr,HomExpr} ThDaggerSymmetricMonoidalCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
@@ -473,11 +472,11 @@ categories.
 FIXME: This theory should also extend `ThDaggerCategory`, but multiple
 inheritance is not yet supported.
 """
-@signature ThDaggerCompactCategory{Ob,Hom} <: ThCompactClosedCategory{Ob,Hom} begin
-  dagger(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
+@signature ThDaggerCompactCategory <: ThCompactClosedCategory begin
+  dagger(f::(A → B))::(B → A) ⊣ [A::Ob, B::Ob]
 end
 
-@syntax FreeDaggerCompactCategory{ObExpr,HomExpr} ThDaggerCompactCategory begin
+@symbolic_model FreeDaggerCompactCategory{ObExpr,HomExpr} ThDaggerCompactCategory begin
   dual(A::Ob) = distribute_unary(involute(new(A)), dual, otimes,
                                  unit=munit, contravariant=true)
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
@@ -496,11 +495,11 @@ show_latex(io::IO, expr::HomExpr{:dagger}; kw...) =
 
 """ Theory of *traced monoidal categories*
 """
-@signature ThTracedMonoidalCategory{Ob,Hom} <: ThSymmetricMonoidalCategory{Ob,Hom} begin
+@signature ThTracedMonoidalCategory <: ThSymmetricMonoidalCategory begin
   trace(X::Ob, A::Ob, B::Ob, f::((X ⊗ A) → (X ⊗ B)))::(A → B)
 end
 
-@syntax FreeTracedMonoidalCategory{ObExpr,HomExpr} ThTracedMonoidalCategory begin
+@symbolic_model FreeTracedMonoidalCategory{ObExpr,HomExpr} ThTracedMonoidalCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
@@ -524,19 +523,19 @@ categories" and "spidered/dungeon categories", among other things.
 FIXME: Should also inherit `ThClosedMonoidalCategory` and `ThDaggerCategory`,
 but multiple inheritance is not yet supported.
 """
-@theory ThHypergraphCategory{Ob,Hom} <: ThMonoidalCategoryWithBidiagonals{Ob,Hom} begin
+@theory ThHypergraphCategory <: ThMonoidalCategoryWithBidiagonals begin
   # Self-dual compact closed category.
   dunit(A::Ob)::(munit() → (A ⊗ A))
   dcounit(A::Ob)::((A ⊗ A) → munit())
-  dagger(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
+  dagger(f::(A → B))::(B → A) ⊣ [A::Ob, B::Ob]
 
-  dunit(A) == create(A) ⋅ mcopy(A) ⊣ (A::Ob)
-  dcounit(A) == mmerge(A) ⋅ delete(A) ⊣ (A::Ob)
-  (dagger(f) == (id(B) ⊗ dunit(A)) ⋅ (id(B) ⊗ f ⊗ id(A)) ⋅ (dcounit(B) ⊗ id(A))
-   ⊣ (A::Ob, B::Ob, f::(A → B)))
+  dunit(A) == create(A) ⋅ mcopy(A) ⊣ [A::Ob]
+  dcounit(A) == mmerge(A) ⋅ delete(A) ⊣ [A::Ob]
+  (dagger(f) == ((id(B) ⊗ dunit(A)) ⋅ (id(B) ⊗ f ⊗ id(A)) ⋅ (dcounit(B) ⊗ id(A)))
+   ⊣ [A::Ob, B::Ob, f::(A → B)])
 end
 
-@syntax FreeHypergraphCategory{ObExpr,HomExpr} ThHypergraphCategory begin
+@symbolic_model FreeHypergraphCategory{ObExpr,HomExpr} ThHypergraphCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)

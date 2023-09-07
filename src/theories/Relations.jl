@@ -3,8 +3,6 @@ export ThBicategoryRelations, FreeBicategoryRelations,
   ThDistributiveBicategoryRelations,
   meet, join, top, bottom, plus, zero, coplus, cozero
 
-import Base: join, zero
-
 # Bicategory of relations
 #########################
 
@@ -18,13 +16,13 @@ References:
 - Walters, 2009, blog post, "Categorical algebras of relations",
   http://rfcwalters.blogspot.com/2009/10/categorical-algebras-of-relations.html
 """
-@signature ThBicategoryRelations{Ob,Hom} <: ThHypergraphCategory{Ob,Hom} begin
+@signature ThBicategoryRelations <: ThHypergraphCategory begin
   # Logical operations.
-  meet(R::(A → B), S::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
+  meet(R::(A → B), S::(A → B))::(A → B) ⊣ [A::Ob, B::Ob]
   top(A::Ob, B::Ob)::(A → B)
 end
 
-@syntax FreeBicategoryRelations{ObExpr,HomExpr} ThBicategoryRelations begin
+@symbolic_model FreeBicategoryRelations{ObExpr,HomExpr} ThBicategoryRelations begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(R::Hom, S::Hom) = associate(new(R,S))
   compose(R::Hom, S::Hom) = associate_unit(new(R,S; strict=true), id)
@@ -43,7 +41,7 @@ References:
 - Carboni & Walters, 1987, "Cartesian bicategories I", Sec. 5
 - Baez & Erbele, 2015, "Categories in control"
 """
-@signature ThAbelianBicategoryRelations{Ob,Hom} <: ThHypergraphCategoryAdditive{Ob,Hom} begin
+@signature ThAbelianBicategoryRelations <: ThHypergraphCategoryAdditive begin
   # Second supply of Frobenius monoids.
   plus(A::Ob)::((A ⊕ A) → A)
   zero(A::Ob)::(mzero() → A)
@@ -51,13 +49,13 @@ References:
   cozero(A::Ob)::(A → mzero())
 
   # Logical operations.
-  meet(R::(A → B), S::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
+  meet(R::(A → B), S::(A → B))::(A → B) ⊣ [A::Ob, B::Ob]
   top(A::Ob, B::Ob)::(A → B)
-  join(R::(A → B), S::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
+  join(R::(A → B), S::(A → B))::(A → B) ⊣ [A::Ob, B::Ob]
   bottom(A::Ob, B::Ob)::(A → B)
 end
 
-@syntax FreeAbelianBicategoryRelations{ObExpr,HomExpr} ThAbelianBicategoryRelations begin
+@symbolic_model FreeAbelianBicategoryRelations{ObExpr,HomExpr} ThAbelianBicategoryRelations begin
   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
   oplus(R::Hom, S::Hom) = associate(new(R,S))
   compose(R::Hom, S::Hom) = associate_unit(new(R,S; strict=true), id)
@@ -80,10 +78,10 @@ References:
 FIXME: Should also inherit `ThBicategoryOfRelations`, but multiple inheritance is
 not yet supported.
 """
-@signature ThDistributiveBicategoryRelations{Ob,Hom} <:
-    ThDistributiveMonoidalCategoryWithDiagonals{Ob,Hom} begin
+@signature ThDistributiveBicategoryRelations <:
+    ThDistributiveMonoidalCategoryWithDiagonals begin
   # Self-dual dagger compact category.
-  dagger(R::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
+  dagger(R::(A → B))::(B → A) ⊣ [A::Ob, B::Ob]
   dunit(A::Ob)::(munit() → (A ⊗ A))
   dcounit(A::Ob)::((A ⊗ A) → munit())
   
@@ -98,13 +96,13 @@ not yet supported.
   cozero(A::Ob)::(A → mzero())
   
   # The coproduct is automatically a biproduct, due to compact closed structure.
-  pair(R::(A → B), S::(A → C))::(A → (B ⊕ C)) ⊣ (A::Ob, B::Ob, C::Ob)
+  pair(R::(A → B), S::(A → C))::(A → (B ⊕ C)) ⊣ [A::Ob, B::Ob, C::Ob]
   proj1(A::Ob, B::Ob)::((A ⊕ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊕ B) → B)
   
   # Logical operations.
-  meet(R::(A → B), S::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
+  meet(R::(A → B), S::(A → B))::(A → B) ⊣ [A::Ob, B::Ob]
   top(A::Ob, B::Ob)::(A → B)
-  join(R::(A → B), S::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
+  join(R::(A → B), S::(A → B))::(A → B) ⊣ [A::Ob, B::Ob]
   bottom(A::Ob, B::Ob)::(A → B)
 end

@@ -7,8 +7,6 @@ export ThMonoidalCategoryAdditive, ThSymmetricMonoidalCategoryAdditive,
   mcopy, delete, pair, proj1, proj2, Δ, ◊, +, antipode,
   ThHypergraphCategoryAdditive
 
-import Base: collect, ndims, +, zero
-
 # Monoidal category
 ###################
 
@@ -17,11 +15,11 @@ import Base: collect, ndims, +, zero
 Mathematically the same as [`ThMonoidalCategory`](@ref) but with different
 notation.
 """
-@signature ThMonoidalCategoryAdditive{Ob,Hom} <: ThCategory{Ob,Hom} begin
-  oplus(A::Ob, B::Ob)::Ob
-  oplus(f::(A → B), g::(C → D))::((A ⊕ C) → (B ⊕ D)) <=
-    (A::Ob, B::Ob, C::Ob, D::Ob)
+@signature ThMonoidalCategoryAdditive <: ThCategory begin
   @op (⊕) := oplus
+  oplus(A::Ob, B::Ob)::Ob
+  oplus(f::(A → B), g::(C → D))::((A ⊕ C) → (B ⊕ D)) ⊣
+    [A::Ob, B::Ob, C::Ob, D::Ob]
   mzero()::Ob
 end
 
@@ -53,12 +51,12 @@ show_latex(io::IO, expr::ObExpr{:mzero}; kw...) = print(io, "O")
 Mathematically the same as [`ThSymmetricMonoidalCategory`](@ref) but with
 different notation.
 """
-@signature ThSymmetricMonoidalCategoryAdditive{Ob,Hom} <:
-    ThMonoidalCategoryAdditive{Ob,Hom} begin
+@signature ThSymmetricMonoidalCategoryAdditive <:
+    ThMonoidalCategoryAdditive begin
   swap(A::Ob, B::Ob)::Hom(oplus(A,B),oplus(B,A))
 end
 
-@syntax FreeSymmetricMonoidalCategoryAdditive{ObExpr,HomExpr} ThSymmetricMonoidalCategoryAdditive begin
+@symbolic_model FreeSymmetricMonoidalCategoryAdditive{ObExpr,HomExpr} ThSymmetricMonoidalCategoryAdditive begin
   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
   oplus(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
@@ -79,20 +77,20 @@ Unlike in a cocartesian category, the naturality axioms need not be satisfied.
 
 For references, see [`ThMonoidalCategoryWithDiagonals`](@ref).
 """
-@theory ThMonoidalCategoryWithCodiagonals{Ob,Hom} <:
-    ThSymmetricMonoidalCategoryAdditive{Ob,Hom} begin
+@theory ThMonoidalCategoryWithCodiagonals <:
+    ThSymmetricMonoidalCategoryAdditive begin
   plus(A::Ob)::((A ⊕ A) → A)
   zero(A::Ob)::(mzero() → A)
   
   # Commutative monoid axioms.
-  (plus(A) ⊕ id(A)) ⋅ plus(A) == (id(A) ⊕ plus(A)) ⋅ plus(A) ⊣ (A::Ob)
-  (zero(A) ⊕ id(A)) ⋅ plus(A) == id(A) ⊣ (A::Ob)
-  (id(A) ⊕ zero(A)) ⋅ plus(A) == id(A) ⊣ (A::Ob)
-  plus(A) == swap(A,A) ⋅ plus(A) ⊣ (A::Ob)
+  (plus(A) ⊕ id(A)) ⋅ plus(A) == (id(A) ⊕ plus(A)) ⋅ plus(A) ⊣ [A::Ob]
+  (zero(A) ⊕ id(A)) ⋅ plus(A) == id(A) ⊣ [A::Ob]
+  (id(A) ⊕ zero(A)) ⋅ plus(A) == id(A) ⊣ [A::Ob]
+  plus(A) == swap(A,A) ⋅ plus(A) ⊣ [A::Ob]
 
   # Coherence axioms.
-  plus(A⊕B) == (id(A) ⊕ swap(B,A) ⊕ id(B)) ⋅ (plus(A) ⊕ plus(B)) ⊣ (A::Ob, B::Ob)
-  zero(A⊕B) == zero(A) ⊕ zero(B) ⊣ (A::Ob, B::Ob)
+  plus(A⊕B) == (id(A) ⊕ swap(B,A) ⊕ id(B)) ⋅ (plus(A) ⊕ plus(B)) ⊣ [A::Ob, B::Ob]
+  zero(A⊕B) == zero(A) ⊕ zero(B) ⊣ [A::Ob, B::Ob]
   plus(mzero()) == id(mzero())
   zero(mzero()) == id(mzero())
 end
@@ -102,19 +100,19 @@ end
 For the traditional axiomatization of coproducts, see
 [`ThCategoryWithCoproducts`](@ref).
 """
-@theory ThCocartesianCategory{Ob,Hom} <: ThMonoidalCategoryWithCodiagonals{Ob,Hom} begin
-  copair(f::(A → C), g::(B → C))::((A ⊕ B) → C) <= (A::Ob, B::Ob, C::Ob)
+@theory ThCocartesianCategory <: ThMonoidalCategoryWithCodiagonals begin
+  copair(f::(A → C), g::(B → C))::((A ⊕ B) → C) ⊣ [A::Ob, B::Ob, C::Ob]
   coproj1(A::Ob, B::Ob)::(A → (A ⊕ B))
   coproj2(A::Ob, B::Ob)::(B → (A ⊕ B))
 
   # Definitions of copairing and coprojections.
-  copair(f,g) == (f⊕g)⋅plus(C) ⊣ (A::Ob, B::Ob, C::Ob, f::(A → C), g::(B → C))
-  coproj1(A,B) == id(A)⊕zero(B) ⊣ (A::Ob, B::Ob)
-  coproj2(A,B) == zero(A)⊕id(B) ⊣ (A::Ob, B::Ob)
+  copair(f,g) == (f⊕g)⋅plus(C) ⊣ [A::Ob, B::Ob, C::Ob, f::(A → C), g::(B → C)]
+  coproj1(A,B) == id(A)⊕zero(B) ⊣ [A::Ob, B::Ob]
+  coproj2(A,B) == zero(A)⊕id(B) ⊣ [A::Ob, B::Ob]
   
   # Naturality axioms.
-  plus(A)⋅f == (f⊕f)⋅plus(B) ⊣ (A::Ob, B::Ob, f::(A → B))
-  zero(A)⋅f == zero(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  plus(A)⋅f == (f⊕f)⋅plus(B) ⊣ [A::Ob, B::Ob, f::(A → B)]
+  zero(A)⋅f == zero(B) ⊣ [A::Ob, B::Ob, f::(A → B)]
 end
 
 """ Syntax for a free cocartesian category.
@@ -123,7 +121,7 @@ In this syntax, the copairing and inclusion operations are defined using merging
 and creation, and do not have their own syntactic elements. This convention
 could be dropped or reversed.
 """
-@syntax FreeCocartesianCategory{ObExpr,HomExpr} ThCocartesianCategory begin
+@symbolic_model FreeCocartesianCategory{ObExpr,HomExpr} ThCocartesianCategory begin
   oplus(A::Ob, B::Ob) = associate_unit(new(A,B), mzero)
   oplus(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
@@ -150,21 +148,21 @@ end
 
 """ Theory of *monoidal categories with bidiagonals*, in additive notation
 
-Mathematically the same as [`ThMonoidalCategoryWithBidiagonals`](@ref) but
+Mathematically the same as (@ref) but
 written additively, instead of multiplicatively.
 """
-@theory ThMonoidalCategoryWithBidiagonalsAdditive{Ob,Hom} <:
-    ThMonoidalCategoryWithCodiagonals{Ob,Hom} begin
+@theory ThMonoidalCategoryWithBidiagonalsAdditive <:
+    ThMonoidalCategoryWithCodiagonals begin
   mcopy(A::Ob)::(A → (A ⊕ A))
   @op (Δ) := mcopy
   delete(A::Ob)::(A → mzero())
   @op (◊) := delete
   
   # Commutative comonoid axioms.
-  Δ(A) == Δ(A) ⋅ swap(A,A) ⊣ (A::Ob)
-  Δ(A) ⋅ (Δ(A) ⊕ id(A)) == Δ(A) ⋅ (id(A) ⊕ Δ(A)) ⊣ (A::Ob)
-  Δ(A) ⋅ (◊(A) ⊕ id(A)) == id(A) ⊣ (A::Ob)
-  Δ(A) ⋅ (id(A) ⊕ ◊(A)) == id(A) ⊣ (A::Ob)
+  Δ(A) == Δ(A) ⋅ swap(A,A) ⊣ [A::Ob]
+  Δ(A) ⋅ (Δ(A) ⊕ id(A)) == Δ(A) ⋅ (id(A) ⊕ Δ(A)) ⊣ [A::Ob]
+  Δ(A) ⋅ (◊(A) ⊕ id(A)) == id(A) ⊣ [A::Ob]
+  Δ(A) ⋅ (id(A) ⊕ ◊(A)) == id(A) ⊣ [A::Ob]
 end
 
 """ Theory of *semiadditive categories*
@@ -172,29 +170,28 @@ end
 Mathematically the same as [`ThBiproductCategory`](@ref) but written additively,
 instead of multiplicatively.
 """
-@theory ThSemiadditiveCategory{Ob,Hom} <:
-    ThMonoidalCategoryWithBidiagonalsAdditive{Ob,Hom} begin
-  pair(f::(A → B), g::(A → C))::(A → (B ⊕ C)) ⊣ (A::Ob, B::Ob, C::Ob)
-  copair(f::(A → C), g::(B → C))::((A ⊕ B) → C) ⊣ (A::Ob, B::Ob, C::Ob)
+@theory ThSemiadditiveCategory <:
+    ThMonoidalCategoryWithBidiagonalsAdditive begin
+  pair(f::(A → B), g::(A → C))::(A → (B ⊕ C)) ⊣ [A::Ob, B::Ob, C::Ob]
+  copair(f::(A → C), g::(B → C))::((A ⊕ B) → C) ⊣ [A::Ob, B::Ob, C::Ob]
   proj1(A::Ob, B::Ob)::((A ⊕ B) → A)
   proj2(A::Ob, B::Ob)::((A ⊕ B) → B)
   coproj1(A::Ob, B::Ob)::(A → (A ⊕ B))
   coproj2(A::Ob, B::Ob)::(B → (A ⊕ B))
   
-  plus(f::(A → B), g::(A → B))::(A → B) ⊣ (A::Ob, B::Ob)
-  @op (+) := plus
-  
+  plus(f::(A → B), g::(A → B))::(A → B) ⊣ [A::Ob, B::Ob]
+
   # Naturality axioms.
-  f⋅Δ(B) == Δ(A)⋅(f⊕f) ⊣ (A::Ob, B::Ob, f::(A → B))
-  f⋅◊(B) == ◊(A) ⊣ (A::Ob, B::Ob, f::(A → B))
-  plus(A)⋅f == (f⊕f)⋅plus(B) ⊣ (A::Ob, B::Ob, f::(A → B))
-  zero(A)⋅f == zero(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  f⋅Δ(B) == Δ(A)⋅(f⊕f) ⊣ [A::Ob, B::Ob, f::(A → B)]
+  f⋅◊(B) == ◊(A) ⊣ [A::Ob, B::Ob, f::(A → B)]
+  plus(A)⋅f == (f⊕f)⋅plus(B) ⊣ [A::Ob, B::Ob, f::(A → B)]
+  zero(A)⋅f == zero(B) ⊣ [A::Ob, B::Ob, f::(A → B)]
   
   # Bimonoid axioms. (These follow from naturality + coherence axioms.)
-  plus(A)⋅Δ(A) == (Δ(A)⊕Δ(A)) ⋅ (id(A)⊕swap(A,A)⊕id(A)) ⋅ (plus(A)⊕plus(A)) ⊣ (A::Ob)
-  plus(A)⋅◊(A) == ◊(A) ⊕ ◊(A) ⊣ (A::Ob)
-  zero(A)⋅Δ(A) == zero(A) ⊕ zero(A) ⊣ (A::Ob)
-  zero(A)⋅◊(A) == id(mzero()) ⊣ (A::Ob)
+  plus(A)⋅Δ(A) == (Δ(A)⊕Δ(A)) ⋅ (id(A)⊕swap(A,A)⊕id(A)) ⋅ (plus(A)⊕plus(A)) ⊣ [A::Ob]
+  plus(A)⋅◊(A) == ◊(A) ⊕ ◊(A) ⊣ [A::Ob]
+  zero(A)⋅Δ(A) == zero(A) ⊕ zero(A) ⊣ [A::Ob]
+  zero(A)⋅◊(A) == id(mzero()) ⊣ [A::Ob]
 end
 
 """ Theory of *additive categories*
@@ -202,13 +199,13 @@ end
 An additive category is a biproduct category enriched in abelian groups. Thus,
 it is a semiadditive category where the hom-monoids have negatives.
 """
-@theory ThAdditiveCategory{Ob,Hom} <: ThSemiadditiveCategory{Ob,Hom} begin
+@theory ThAdditiveCategory <: ThSemiadditiveCategory begin
   antipode(A::Ob)::(A → A)
 
   # Antipode axioms.
-  antipode(A) ⋅ f == f ⋅ antipode(B) ⊣ (A::Ob, B::Ob, f::(A → B))
-  Δ(A)⋅(id(A)⊕antipode(A))⋅plus(A) == ◊(A)⋅zero(A) ⊣ (A::Ob)
-  Δ(A)⋅(antipode(A)⊕id(A))⋅plus(A) == ◊(A)⋅zero(A) ⊣ (A::Ob)
+  antipode(A) ⋅ f == f ⋅ antipode(B) ⊣ [A::Ob, B::Ob, f::(A → B)]
+  Δ(A)⋅(id(A)⊕antipode(A))⋅plus(A) == ◊(A)⋅zero(A) ⊣ [A::Ob]
+  Δ(A)⋅(antipode(A)⊕id(A))⋅plus(A) == ◊(A)⋅zero(A) ⊣ [A::Ob]
 end
 
 # Hypergraph category
@@ -219,8 +216,8 @@ end
 Mathematically the same as [`ThHypergraphCategory`](@ref) but with different
 notation.
 """
-@signature ThHypergraphCategoryAdditive{Ob,Hom} <:
-    ThSymmetricMonoidalCategoryAdditive{Ob,Hom} begin
+@signature ThHypergraphCategoryAdditive <:
+    ThSymmetricMonoidalCategoryAdditive begin
   # Supply of Frobenius monoids.
   mcopy(A::Ob)::(A → (A ⊕ A))
   @op (Δ) := mcopy
@@ -234,5 +231,5 @@ notation.
   # Self-dual compact closed category.
   dunit(A::Ob)::(mzero() → (A ⊕ A))
   dcounit(A::Ob)::((A ⊕ A) → mzero())
-  dagger(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
+  dagger(f::(A → B))::(B → A) ⊣ [A::Ob, B::Ob]
 end

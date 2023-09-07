@@ -3,7 +3,8 @@ export SchElements, AbstractElements, Elements, elements, inverse_elements
 
 using DataStructures: OrderedDict
 
-using ...GATs, ...Theories
+using GATlab
+using ...Theories
 using ..CSets, ..FinSets, ..HomSearch
 
 @present SchElements(FreeSchema) begin

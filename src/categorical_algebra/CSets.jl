@@ -21,8 +21,9 @@ using ACSets.Columns
 using ACSets.DenseACSets: indices, unique_indices, attr_type, attrtype_type,
   datatypes, constructor
 
-using ...GATs, ...Graphs.BasicGraphs
-using ...Theories: ThCategory, Hom, Ob, Attr, AttrType
+using GATlab
+using ...Graphs.BasicGraphs
+using ...Theories
 import ...Theories: ob, hom, dom, codom, compose, ⋅, id,
   meet, ∧, join, ∨, top, ⊤, bottom, ⊥, ⊕, ⊗
 
@@ -707,6 +708,8 @@ end
 ####################
 
 @instance ThCategory{ACSet, ACSetTransformation} begin
+  @import Ob, Hom
+
   dom(α::ACSetTransformation) = α.dom
   codom(α::ACSetTransformation) = α.codom
 

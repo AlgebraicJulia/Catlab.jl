@@ -6,13 +6,11 @@ are also included.
 module Theories
 export CategoryExpr, ObExpr, HomExpr
 
-import Base: ≤
-import ACSets: dom, codom, ob, hom, attr, attrtype
+import Base: ≤, +, *, inv, zero, join, show, collect, ndims
+import AlgebraicInterfaces: dom, codom, compose, id, Ob, ob, Hom, hom, munit,
+  mcompose, ocompose, oapply, attr, attrtype
 
-using ..GATs
-import ..GATs: GATExpr, show_unicode, show_latex
-using ..GATs.SyntaxSystems: show_unicode_infix, show_latex_infix,
-  show_latex_postfix, show_latex_script
+using GATlab
 
 """ Base type for GAT expressions in categories or other categorical structures.
 

@@ -22,8 +22,9 @@ using StructEquality
 using StaticArrays: StaticVector, SVector
 
 using ACSets
-using ...GATs, ...Theories, ...Graphs, ..FinCats
-import ...Theories: ob, hom, dom, codom
+using GATlab
+using ...Theories, ...Graphs, ..FinCats
+import AlgebraicInterfaces: ob, hom, dom, codom
 import ..FinCats: FreeCatGraph, FinDomFunctor, collect_ob, collect_hom
 
 # Diagram interface

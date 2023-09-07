@@ -15,8 +15,9 @@ import Base: \, ~
 using StructEquality
 using StaticArrays: SVector
 
-using ...GATs, ...Theories, ..Limits
+using GATlab
 import ...Theories: ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
+using ...Theories, ..Limits
 
 # Theories
 ##########
@@ -29,9 +30,9 @@ are dependent on another type. In fact, if we supported GAT morphisms, it should
 be possible to define a projection morphism of GATs from `ThSubobjectLattice` to
 `ThAlgebraicLattice` that sends `Ob` to the unit type.
 """
-@signature ThSubobjectLattice{Ob,Sub} begin
+@signature ThSubobjectLattice begin
   Ob::TYPE
-  Sub(ob::X)::TYPE
+  Sub(ob::Ob)::TYPE
 
   @op begin
     (∧) := meet
@@ -40,8 +41,8 @@ be possible to define a projection morphism of GATs from `ThSubobjectLattice` to
     (⊥) := bottom
   end
 
-  meet(A::Sub(X), B::Sub(X))::Sub(X) ⊣ (X::Ob)
-  join(A::Sub(X), B::Sub(X))::Sub(X) ⊣ (X::Ob)
+  meet(A::Sub(X), B::Sub(X))::Sub(X) ⊣ [X::Ob]
+  join(A::Sub(X), B::Sub(X))::Sub(X) ⊣ [X::Ob]
   top(X::Ob)::Sub(X)
   bottom(X::Ob)::Sub(X)
 end
@@ -49,27 +50,27 @@ end
 """ Theory of Heyting algebra of subobjects in a Heyting category, such as a
 topos.
 """
-@signature ThSubobjectHeytingAlgebra{Ob,Sub} <: ThSubobjectLattice{Ob,Sub} begin
+@signature ThSubobjectHeytingAlgebra <: ThSubobjectLattice begin
   @op begin
     (⟹) := implies
     (¬) := negate
   end
 
-  implies(A::Sub(X), B::Sub(X))::Sub(X) ⊣ (X::Ob)
-  negate(A::Sub(X))::Sub(X) ⊣ (X::Ob)
+  implies(A::Sub(X), B::Sub(X))::Sub(X) ⊣ [X::Ob]
+  negate(A::Sub(X))::Sub(X) ⊣ [X::Ob]
 end
 
 """ Theory of bi-Heyting algebra of subobjects in a bi-Heyting topos, such as a
 presheaf topos.
 """
-@signature ThSubobjectBiHeytingAlgebra{Ob,Sub} <: ThSubobjectHeytingAlgebra{Ob,Sub} begin
+@signature ThSubobjectBiHeytingAlgebra <: ThSubobjectHeytingAlgebra begin
   @op begin
     (\) := subtract
     (~) := non
   end
 
-  subtract(A::Sub(X), B::Sub(X))::Sub(X) ⊣ (X::Ob)
-  non(A::Sub(X))::Sub(X) ⊣ (X::Ob)
+  subtract(A::Sub(X), B::Sub(X))::Sub(X) ⊣ [X::Ob]
+  non(A::Sub(X))::Sub(X) ⊣ [X::Ob]
 end
 
 # Data types

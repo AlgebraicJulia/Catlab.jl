@@ -10,7 +10,7 @@ using LinearAlgebra: I
 using SparseArrays
 import SparseArrays: blockdiag
 
-using ...GATs
+using GATlab
 using ...Theories: ThDistributiveSemiadditiveCategory
 import ...Theories: dom, codom, id, compose, ⋅, ∘,
   otimes, ⊗, munit, braid, oplus, ⊕, mzero, swap,

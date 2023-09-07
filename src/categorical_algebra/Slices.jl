@@ -3,7 +3,7 @@ export Slice, SliceHom
 
 using StructEquality
 
-using ...GATs
+using GATlab
 using ..FreeDiagrams, ..Limits, ..CSets
 using ...Theories: ThCategory
 import ...Theories: dom, codom, compose, id

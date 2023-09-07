@@ -10,7 +10,8 @@ export SetOb, TypeSet, PredicatedSet, SetFunction, ConstantFunction, Ob
 
 using StructEquality
 
-using ...GATs, ..Categories, ..FreeDiagrams, ..Limits
+using GATlab
+using ..Categories, ..FreeDiagrams, ..Limits
 using ...Theories: ThCategory
 import ...Theories: Ob, dom, codom, id, compose, ⋅, ∘
 import ..Categories: show_type_constructor, show_domains
@@ -178,6 +179,7 @@ end
 
 """ Category of sets and functions.
 """
+
 @instance ThCategory{SetOb, SetFunction} begin
   dom(f::SetFunction) = f.dom
   codom(f::SetFunction) = f.codom

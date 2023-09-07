@@ -7,7 +7,6 @@ using Random: GLOBAL_RNG
 
 using ACSets
 using ..BasicGraphs
-using ...Theories: hom
 
 """ Path graph on ``n`` vertices.
 """
@@ -73,8 +72,6 @@ function parallel_arrows(::Type{T}, n::Int; V=(;), E=(;)) where T <: ACSet
   g
 end
 
-# Should this be exported from `BasicGraphs`?
-@generated is_directed(::Type{T}) where {S, T<:StructACSet{S}} = :inv ∉ hom(S)
 
 getRNG(seed::Integer, rng::AbstractRNG) = seed >= 0 ? MersenneTwister(seed) : rng
 
