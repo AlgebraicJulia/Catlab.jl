@@ -61,9 +61,7 @@ makedocs(
         "generated/graphs/graphs_label.md",
         "generated/graphs/subgraphs.md",
       ],
-      "Categorical Algebra" => Any[
-        "generated/categorical_algebra/diagrams.md",
-      ],
+      "Categorical Algebra" => [],
       "Wiring Diagrams" => Any[
         "generated/wiring_diagrams/wiring_diagram_basics.md",
         "generated/wiring_diagrams/diagrams_and_expressions.md",
