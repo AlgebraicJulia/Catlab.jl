@@ -48,8 +48,8 @@ end
   include("Chase.jl")
 end
 
-@testset "DataMigrations" begin
-  include("DataMigrations.jl")
+@testset "FunctorialDataMigrations" begin
+  include("FunctorialDataMigrations.jl")
 end
 
 @testset "StructuredCospans" begin

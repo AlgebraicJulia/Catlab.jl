@@ -12,7 +12,7 @@ There are two major macros for constructing wiring diagrams:
 - [`@relation`](@ref), for undirected wiring diagrams (UWDs)
 
 There is a family of related macros for constructing
-category-theoretic [diagrams](https://ncatlab.org/nlab/show/diagram) included in `AlgebraicDataMigrations.jl`.
+category-theoretic [diagrams](https://ncatlab.org/nlab/show/diagram) included in `DataMigrations.jl`.
 
 ## API
 

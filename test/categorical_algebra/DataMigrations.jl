@@ -1,8 +1,7 @@
-module TestDataMigrations
+module TestFunctorialDataMigrations
 using Test
 
 using Catlab.GATs, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
-#using Catlab.Programs.DiagrammaticPrograms
 
 @present SchSet(FreeSchema) begin
   X::Ob
